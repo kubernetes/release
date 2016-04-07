@@ -1,0 +1,925 @@
+#!/bin/bash
+#
+# Copyright 2016 The Kubernetes Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Set PROGram name
+PROG=${0##*/}
+########################################################################
+#+
+#+ NAME
+#+     $PROG - Kubernetes Release Tool
+#+
+#+ SYNOPSIS
+#+     $PROG  [--yes] [--nomock] [--noclean] [--official] [--buildversion=]
+#+            <branch>
+#+     $PROG  [--helpshort|--usage|-?]
+#+     $PROG  [--help|-man]
+#+
+#+ DESCRIPTION
+#+     $PROG produces Kubernetes releases.
+#+
+#+     Driven by the named source <branch> and an optional [--official] flag,
+#+     $PROG determines what needs to be released and calculates the version.
+#+
+#+     [--buildversion=] will override the automatic check for a build version
+#+     Mostly used for testing as a way to re-use a known good build version.
+#+
+#+     What is going to be done is presented to the user and asks for
+#+     confirmation before continuing.
+#+
+#+     All prerequisites are checked before the process begins.
+#+
+#+     $PROG runs in mock/dryrun mode by default.  To actually execute a
+#+     release, pass in the --nomock flag.
+#+     ACLs control who can actually *push*.
+#+
+#+     Simply specify the <branch> you want to release from and follow the
+#+     prompts.  <branch> is one of master, release-1.2, etc. and the release
+#+     is based on the <branch> value and the [--official] flag:
+#+
+#+     Branch   Official    Type
+#+     ------   --------    ----
+#+     master               alpha
+#+     master      X        N/A
+#+     release-*            beta      
+#+     release-*   X        official
+#+
+#+     NOTE: <branch> can exist already or not.  If the branch doesn't exist,
+#+           it will be branched from master as part of the run.
+#+
+#+     VALUES USED AND DISPLAYED DURING RUNS:
+#+     * The RELEASE_VERSION dictionary is indexed by each of the types of 
+#+       releases that will be processed for a session (alpha,beta,official)
+#+     * RELEASE_VERSION_PRIME is the primary release version
+#+     * GCRIO_REPO and RELEASE_BUCKET are the publish locations
+#+
+#+
+#+ OPTIONS
+#+     [--yes]                   - Assume 'yes' to all queries
+#+     [--nomock]                - Complete an actual release with upstream
+#+                                 pushes
+#+     [--noclean]               - Attempt to work in existing workspace
+#+                                 Not always possible and ignored when --nomock
+#+                                 is set
+#+     [--official]              - Official releases on release branches only
+#+     [--buildversion=]         - Override Jenkins check and set a specific
+#+                                 build version
+#+     [--help | -man]           - display man page for this script
+#+     [--usage | -?]            - display in-line usage
+#+
+#+ EXAMPLES
+#+     $PROG --yes master        - Do a mock alpha release from master
+#+                                 and don't stop/prompt
+#+     $PROG release-1.1         - Do a mock beta release from release-1.1
+#+     $PROG --official release-1.1
+#+                               - Do a mock official release from release-1.1
+#+     $PROG --nomock --official release-1.1
+#+                               - Do an official release from release-1.1
+#+
+#+ FILES
+#+     build/release.sh
+#+
+#+ SEE ALSO
+#+     common.sh                 - common function definitions
+#+     gitlib.sh                 - git/jenkins function definitions
+#+     releaselib.sh             - release/push-specific functions
+#+
+#+ BUGS/TODO
+#+     * Add statefulness and re-entrancy if the need develops
+#+     * Allow --buildversion to specify the absolute version that
+#+       release::set_build_version() must wait for
+#+       - useful when targeting a specific hash for a branch release
+#+
+########################################################################
+# If NO ARGUMENTS should return usage, uncomment the following line:
+usage=${1:-yes}
+
+source $(dirname $(readlink -ne $BASH_SOURCE))/lib/common.sh
+source $TOOL_LIB_PATH/gitlib.sh
+source $TOOL_LIB_PATH/releaselib.sh
+
+# Validate command-line
+common::argc_validate 1 || common::exit 1 "Exiting..."
+
+# Set positional args
+RELEASE_BRANCH=${POSITIONAL_ARGV[0]}
+
+# Check branch format
+[[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]] \
+ || common::exit 1 "Invalid branch name!"
+
+# Check arg conflicts
+if ((FLAGS_official)) && [[ "$RELEASE_BRANCH" == "master" ]]; then
+  common::exit 1 "Can't do official releases on master!"
+fi
+
+###############################################################################
+# FUNCTIONS
+###############################################################################
+###############################################################################
+# common::cleanexit prog-specific override function
+# Do stuff here to clean up after this specific script
+# @param exit code
+#
+common::cleanexit () {
+  tput cnorm
+
+  common::strip_control_characters $LOGFILE
+
+  if [[ -d $WORKDIR ]]; then
+    logecho -n "Copying $LOGFILE to $WORKDIR: "
+    logrun -s cp -f $LOGFILE $WORKDIR
+  fi
+
+  common::timestamp end
+  exit ${1:-0}
+}
+
+
+###############################################################################
+# Simple ACL check to limit nomock runs to a short list of release folks
+check_acls () {
+  case "$USER" in
+    filipg|ihmccreery|djmm) ;;
+                         *) logecho "Releases restricted to certain users!"
+                            return 1
+                            ;;
+  esac
+}
+
+###############################################################################
+# Checks release-specific prereqs
+# Sets globals GCLOUD_ACCOUNT GCLOUD_PROJECT
+# @param package - A space separated list of packages to verify exist
+#
+check_prerequisites () {
+  local useratgoog="$USER@google.com"
+  local tempfile=/tmp/$PROG-cp.$$
+
+  # TODO: stub out for non-google
+  # Verify some hours of LOAS
+  logecho -n "Checking LOAS state: "
+  logrun -s common::loascheck 1 || return 1
+
+  if ! common::set_cloud_binaries; then
+    logecho "Releasing Kubernetes requires gsutil and gcloud. Please download,"
+    logecho "install and authorize through the Google Cloud SDK:"
+    logecho
+    logecho "https://developers.google.com/cloud/sdk/"
+    return 1
+  fi
+
+  # TODO: Users outside google? Guess domain?
+  # TODO: THe real test here is to verify that whatever auth has access to
+  #       do releasey things
+  gcloud_auth_list=$($GCLOUD auth list 2>/dev/null)
+  for user in k8s.production.user@gmail.com $useratgoog; do
+    logecho -n "Checking cloud auth for $user: "
+    if [[ "$gcloud_auth_list" =~ -\ $user ]]; then
+      logecho -r "$OK"
+    else
+      logecho -r "$FAILED"
+      logecho "$user is not in the credentialed accounts list!"
+      logecho "Sign in with gcloud auth login $user"
+      return 1
+    fi
+  done
+  # Ensure $USER is active to start
+  if ! [[ "$gcloud_auth_list" =~ -\ $useratgoog\ \(active\) ]]; then
+    logecho "$useratgoog is not the active gcloud user!"
+    logecho "Set with:"
+    logecho "$ gcloud config set account $useratgoog"
+    return 1
+  fi
+  GCLOUD_ACCOUNT=$user
+
+  # Verify write access to $RELEASE_BUCKET
+  # Insufficient for checking actual writability, but useful:
+  # ganpati list-members -g cloud-kubernetes-release -u $USER|fgrep -wq $USER
+  logecho -n "Checking writability to $RELEASE_BUCKET: "
+  if logrun touch $tempfile && \
+     logrun gsutil cp $tempfile gs://$RELEASE_BUCKET && \
+     logrun gsutil rm gs://$RELEASE_BUCKET/${tempfile##*/} && \
+     logrun rm -f $tempfile; then
+    logecho -r "$OK"
+  else
+    logecho -r "$FAILED"
+    return 1
+  fi
+
+  logecho -n "Checking cloud project state: "
+  GCLOUD_PROJECT=$($GCLOUD config list project 2>/dev/null |\
+                   awk '{project = $3} END {print project}')
+  if [[ -z "$GCLOUD_PROJECT" ]]; then
+    logecho -r "$FAILED"
+    logecho "No account authorized through gcloud.  Please fix with:"
+    logecho
+    logecho "$ gcloud config set project <project id>"
+    return 1
+  fi
+  logecho -r "$OK"
+}
+
+###############################################################################
+# Updates pkg/version/base.go with RELEASE_VERSION
+# Uses the RELEASE_VERSION global dict
+# @param label - label index to RELEASE_VERSION
+rev_version_base () {
+  local label=$1
+  local version_file="pkg/version/base.go"
+  local minor_plus
+  local gitmajor
+  local gitminor
+
+  logecho "Updating $version_file to ${RELEASE_VERSION[$label]}..."
+
+  if [[ ${RELEASE_VERSION[$label]} =~ ${VER_REGEX[release]} ]]; then
+    gitmajor=${BASH_REMATCH[1]}
+    gitminor=${BASH_REMATCH[2]}
+  fi
+
+  [[ "$label" =~ ^beta ]] && minor_plus="+"
+
+  sed -i -e "s/\(gitMajor *string = \)\"[^\"]*\"/\1\"$gitmajor\"/g" \
+      -e "s/\(gitMinor *string = \)\"[^\"]*\"/\1\"$gitminor$minor_plus\"/g" \
+    -e "s/\(gitVersion *string = \)\"[^\"]*\"/\1\"${RELEASE_VERSION[$label]}+\$Format:%h\$\"/g" $version_file
+
+  logecho -n "Formatting $version_file: "
+  logrun -s gofmt -s -w $version_file
+  logrun git add $version_file
+  logecho -n "Committing $version_file: "
+  logrun -s git commit -m "Kubernetes version ${RELEASE_VERSION[$label]}"
+}
+
+
+###############################################################################
+# Update CHANGELOG on master
+generate_release_notes() {
+  local tarball=$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/release-tars
+  tarball+=/kubernetes.tar.gz
+
+  logecho -n "Generating release notes: "
+  logrun -s relnotes $RELEASE_VERSION_PRIME --tarball=$tarball \
+                     --branch=${PARENT_BRANCH:-$RELEASE_BRANCH} --htmlize-md \
+                     --markdown-file=$RELEASE_NOTES_MD \
+                     --html-file=$RELEASE_NOTES_HTML \
+                     --release-bucket=$RELEASE_BUCKET || return 1
+
+  logecho -n "Checkout master branch to make changes: "
+  logrun -s git checkout master || return 1
+
+  logecho "Insert $RELEASE_VERSION_PRIME notes into CHANGELOG.md..."
+  # Pipe to logrun() vs using directly, because quoting.
+  sed -i -e 's/<!-- NEW RELEASE NOTES ENTRY -->/&\n/' \
+         -e "/<!-- NEW RELEASE NOTES ENTRY -->/r $RELEASE_NOTES_MD" CHANGELOG.md |\
+   logrun
+
+  # Setup and fetch upstream remote for updated-generated-docs.sh to use
+  if ! git remote |fgrep -qw upstream; then
+    logecho -n "Set upstream remote to $K8S_GITHUB_URL: "
+    logrun -s git remote add upstream $K8S_GITHUB_URL || return 1
+    logecho -n "Fetch upstream remote: "
+    logrun -s git fetch upstream || return 1
+  fi
+
+  # TODO: What other checks are necessary here.
+  # verify-all is an unacceptable superset.  Determine which ones are actually
+  # needed for updating a single markdown file.
+  logecho -n "Update CHANGELOG.md TOC: "
+  logrun -s $TREE_ROOT/hack/update-generated-docs.sh || return 1
+  logecho -n "Committing CHANGELOG.md: "
+
+  # Pipe to logrun() vs using directly, because quoting.
+  logrun -s git commit -am "Update CHANGELOG.md for $RELEASE_VERSION_PRIME." \
+   || return 1
+}
+
+
+##############################################################################
+# Prepare sources for building for a given label
+# @param label - The label to process
+prepare_tree () {
+  local label=$1
+  local tree_object="$RELEASE_BRANCH"
+  local branch_arg
+  local branch_point
+  local label_common=$label
+
+  # Check for tag first
+  if git rev-parse "${RELEASE_VERSION[$label]}" >/dev/null 2>&1; then
+    if ((FLAGS_nomock)); then
+      logecho "Something horrible went wrong." \
+              "The ${RELEASE_VERSION[$label]} tag already exists!"
+      return 1
+    elif ((FLAGS_noclean)); then
+      logecho "$ATTENTION: Found existing tag ${RELEASE_VERSION[$label]} in" \
+              "unclean tree during --noclean run"
+      logecho -n "Checking out ${RELEASE_VERSION[$label]}: "
+      logrun -s git checkout ${RELEASE_VERSION[$label]} || return 1
+      return 0
+    fi
+  fi
+
+  # if this is a new branched branch, checkout -B
+  # NOTE: We branch from the head of the $PARENT_BRANCH in this case
+  if [[ "$PARENT_BRANCH" =~ release- ]]; then
+    if [[ $RELEASE_VERSION_PRIME == ${RELEASE_VERSION[$label]} ]]; then
+      # --no-track?
+      branch_arg="-B"
+      branch_point="origin/$PARENT_BRANCH"
+    else
+      # if this is not the PRIMary version on the named RELEASE_BRANCH, use the
+      # parent
+      tree_object=$PARENT_BRANCH
+    fi
+  elif [[ $label == "alpha" ]]; then
+    if ! [[ $JENKINS_BUILD_VERSION =~ ${VER_REGEX[build]} ]]; then
+      logecho "Unable to set checkout point for alpha release!" \
+              "Invalid JENKINS_BUILD_VERSION=$JENKINS_BUILD_VERSION"
+      return 1
+    fi
+    tree_object=${BASH_REMATCH[2]}
+  fi
+
+  # Checkout location
+  logecho -n "Checking out $tree_object: "
+  logrun -s git checkout $branch_arg $tree_object $branch_point || return 1
+
+  # rev base.go
+  case $label in 
+    beta*|official) rev_version_base $label ;;
+  esac
+
+  # versionize docs
+  if [[ "$PARENT_BRANCH" == master ]]; then
+    logecho -n "Versionizing docs for ${RELEASE_VERSION[$label]}: "
+    logrun -s $TREE_ROOT/build/versionize-docs.sh ${RELEASE_VERSION[$label]}
+    logecho -n "Committing: "
+    logrun git commit -am \
+           "Versioning docs and examples for ${RELEASE_VERSION[$label]}."
+  fi
+
+  # Ensure a common name for label in case we're using the special beta indexes
+  [[ "$label" =~ ^beta ]] && label_common="beta"
+
+  # Tagging
+  commit_string="Kubernetes $label_common release ${RELEASE_VERSION[$label]}"
+  logecho -n "Tagging $commit_string on $(gitlib::current_branch): "
+  logrun -s git tag -a -m "$commit_string" "${RELEASE_VERSION[$label]}"
+}
+
+##############################################################################
+# Build the Kubernetes tree
+# @param version - The kubernetes version to build
+build_tree () {
+  local version=$1
+
+  # For official releases we need to build BOTH the official and the beta and
+  # push those releases.
+  logecho
+  logecho -n "Building Kubernetes $version on $RELEASE_BRANCH: "
+
+  # Should be an arg at some point
+  export KUBE_DOCKER_IMAGE_TAG="$version"
+
+  # TODO: Ideally we update LOCAL_OUTPUT_ROOT in build/common.sh to be
+  #       modifiable.  In the meantime just mv the dir after it's done
+  # Not until https://github.com/kubernetes/kubernetes/issues/23839
+  #logrun -s make release OUT_DIR=$BUILD_OUTPUT-${RELEASE_VERSION[$label]}
+  logrun -s make release || common::exit 1
+
+  logecho -n "Moving build _output to $BUILD_OUTPUT-$version: "
+  logrun -s mv $BUILD_OUTPUT $BUILD_OUTPUT-$version
+}
+
+##############################################################################
+# Push git objects to github
+# NOTES:
+# * alpha is alone, pushes tags only
+# * beta is alone, pushes branch and tags
+# * official pushes both official and beta items - branch and tags
+# * New branch tags a new alpha on master, new beta on new branch and pushes
+#   new branch and tags on both
+push_git_objects () {
+  local b
+  local dryrun_flag=" --dry-run"
+
+  # The real deal?
+  ((FLAGS_nomock)) && dryrun_flag=""
+
+  ((FLAGS_yes)) \
+   || common::askyorn -e "Pausing here. Confirm push$dryrun_flag of tags" \
+                         "and bits" \
+   || common::exit 1 "Exiting..."
+
+  logecho -n "Checkout master branch to push objects: "
+  logrun -s git checkout master
+
+  logecho "Pushing$dryrun_flag tags"
+  for b in ${!RELEASE_VERSION[@]}; do
+    logecho -n "* ${RELEASE_VERSION[$b]}: "
+    logrun -s git push$dryrun_flag origin ${RELEASE_VERSION[$b]} || return 1
+  done
+
+  if [[ $RELEASE_BRANCH =~ release- ]]; then
+    #logecho -n "Rebase $RELEASE_BRANCH branch: "
+    #logrun git fetch origin/$RELEASE_BRANCH || return 1
+    #logrun git rebase origin/$RELEASE_BRANCH || return 1
+    logecho -n "Pushing$dryrun_flag $RELEASE_BRANCH branch: "
+    logrun -s git push$dryrun_flag origin $RELEASE_BRANCH || return 1
+    if [[ -n "$PARENT_BRANCH" ]]; then
+      logecho -n "Pushing$dryrun_flag $PARENT_BRANCH branch: "
+      logrun -s git push$dryrun_flag origin $PARENT_BRANCH || return 1
+    fi
+  fi
+
+  # For new branches and for CHANGELOG, update the master
+  logecho -n "Rebase master branch: "
+  logrun git fetch origin || return 1
+  logrun -s git rebase origin/master || return 1
+  logecho -n "Pushing$dryrun_flag master branch: "
+  logrun -s git push$dryrun_flag origin master || return 1
+}
+
+
+###############################################################################
+# generate the announcement text to be mailed and published
+create_branch_announcement () {
+  cat <<+
+Kubernetes team,
+<P>
+Kubernetes' $RELEASE_BRANCH branch has been created and is ready to accept patches.
+<P>
+Refer to the <A HREF=https://github.com/kubernetes/kubernetes/blob/master/docs/devel/cherry-picks.md>Cherrypick Guide</A> for instructions.
+
+Announced by <A HREF=https://github.com/kubernetes/release>$PROG</A>, the Kubernetes Release Tool
++
+}
+
+###############################################################################
+# generate the announcement text to be mailed and published
+create_announcement () {
+  cat <<+
+Kubernetes team,
+<P>
+Kubernetes $RELEASE_VERSION_PRIME has been built and pushed.
+<P>
+The release notes have been updated in <A HREF=https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md/#${RELEASE_VERSION_PRIME//\./}>CHANGELOG.md</A> with a pointer to it on <A HREF=https://github.com/kubernetes/kubernetes/releases/tag/$RELEASE_VERSION_PRIME>github</A>:
+<P>
+<HR>
+$(cat $RELEASE_NOTES_HTML)
+<HR>
+<P><BR>
+Leads, the <A HREF=https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md/#${RELEASE_VERSION_PRIME//\./}>CHANGELOG.md</A> has been bootstrapped with $RELEASE_VERSION_PRIME release notes and you may edit now as needed.
+<P><BR>
+Published by <A HREF=https://github.com/kubernetes/release>$PROG</A>, the Kubernetes Release Tool
++
+}
+
+###############################################################################
+# Mail out the announcement
+# @param subject - the subject for the email notification
+announce () {
+  local mailto="cloud-kubernetes-team@google.com"
+        mailto+=",kubernetes-dev@googlegroups.com"
+        mailto+=",kubernetes-announce@googlegroups.com"
+  local subject="$*"
+  local announcement_text=/tmp/$PROG-announce.$$
+
+  ((FLAGS_nomock)) || mailto=$USER
+
+  if [[ -n "$PARENT_BRANCH" ]]; then
+    create_branch_announcement
+  else
+    create_announcement
+  fi > $announcement_text
+
+  logecho "Announcing k8s $RELEASE_VERSION_PRIME to $mailto..."
+
+  # Always cc invoker
+  mailer --to="$mailto" --cc="$USER" --file="$announcement_text" --html \
+         --from="K8s-Anago<cloud-kubernetes-release@google.com>" \
+         --subject="$subject" || return 1
+
+  logrun rm -f $announcement_text
+}
+
+###############################################################################
+# Update the releases page on github
+update_github_release () {
+  local release_id
+  local id_suffix
+  local release_verb="Posting"
+  local prerelease="true"
+  local draft="true"
+  local tarball="$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/release-tars"
+        tarball+="/kubernetes.tar.gz"
+
+  ((FLAGS_official)) && prerelease="false"
+  if ((FLAGS_nomock)); then
+    draft="false"
+
+    # Check to see that a tag exists.
+    # non-draft release posts to github create a tag.  We don't want to
+    # create any tags on the repo this way.  The tag should already exist
+    # as a result of the release process.
+    if ! $GHCURL $K8S_GITHUB_API/git/refs/tags |jq -r '.[] | .ref' |\
+        egrep -q "^refs/tags/$RELEASE_VERSION_PRIME$"; then
+      logecho
+      logecho "$FATAL: How did we get here?"
+      logecho "The $RELEASE_VERSION_PRIME tag doesn't exist yet on github." \
+              "That can't be good."
+      logecho "We certainly cannot publish a release without a tag."
+      return 1
+    fi
+  fi
+
+  # Does the release exist yet?
+  release_id=$($GHCURL $K8S_GITHUB_API/releases/tags/$RELEASE_VERSION_PRIME |\
+               jq -r '.id')
+
+  if [[ -n "$release_id" ]]; then
+    logecho "The $RELEASE_VERSION_PRIME is already published on github."
+    if ((FLAGS_yes)) || common::askyorn -e "Would you like to update it"; then
+      logecho "Setting post data id to $release_id to update existing release."
+      id_suffix="/$release_id"
+      release_verb="Updating"
+    else
+      logecho "Existing release (id #$release_id) left intact."
+      return 1
+    fi
+  fi
+ 
+  # post release data
+  logecho "$release_verb the $RELEASE_VERSION_PRIME release on github..."
+  release_id=$($GHCURL $K8S_GITHUB_API/releases$id_suffix --data \
+   '{
+    "tag_name": "'$RELEASE_VERSION_PRIME'",
+    "target_commitish": "'$RELEASE_BRANCH'",
+    "name": "'$RELEASE_VERSION_PRIME'",
+    "body": "See [kubernetes-announce@](https://groups.google.com/forum/#!forum/kubernetes-announce) and [CHANGELOG]('$K8S_GITHUB_URL'/blob/master/CHANGELOG.md/#'${RELEASE_VERSION_PRIME//\./}') for details.",
+    "draft": '$draft',
+    "prerelease": '$prerelease'
+    }' |jq -r '.id')
+
+  # verify it was created
+  if [[ -z "$release_id" ]]; then
+    logecho
+    logecho -r "$FAILED to create the $RELEASE_VERSION_PRIME release on github!"
+    return 1
+  fi
+
+  # publish binary
+  logecho -n "Uploading binary to github: "
+  logrun -s $GHCURL -H "Content-Type:application/x-compressed" \
+   --data-binary @$tarball \
+   "${K8S_GITHUB_API/api\./uploads\.}/releases/$release_id/assets?name=${tarball##*/}"
+
+  if $draft; then
+    logecho
+    logecho "$ATTENTION: A draft release of $RELEASE_VERSION_PRIME was" \
+            "created at $K8S_GITHUB_URL/releases."
+    logecho
+
+    # delete it
+    if ((FLAGS_yes)) || \
+       common::askyorn -y "Delete draft release (id #$release_id) now"; then
+      logecho -n "Deleting the draft release (id #$release_id): "
+      logrun $GHCURL -X DELETE $K8S_GITHUB_API/releases/$release_id
+    fi
+
+    # verify it was deleted
+    release_id=$($GHCURL $K8S_GITHUB_API/releases/$release_id | jq -r '.id')
+    if [[ -n "$release_id" ]]; then
+      logecho -r $FAILED
+      logecho "The draft release (id #$release_id) was NOT deleted." \
+              "Deal with it by hand"
+      logecho "$K8S_GITHUB_URL/releases/$RELEASE_VERSION_PRIME"
+    else
+      logecho -r $OK
+    fi
+  fi
+}
+
+##############################################################################
+# Calls into Jenkins looking for a build to use for release
+# Sets global PARENT_BRANCH when a new branch is created
+get_build_candidate () {
+  local testing_branch
+
+  # Are we branching to a new branch?
+  if gitlib::branch_exists $RELEASE_BRANCH; then
+    testing_branch=$RELEASE_BRANCH
+  else
+    [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]]
+
+    # if 3 part branch name, check parent exists
+    if [[ -z "${BASH_REMATCH[4]}" ]]; then
+      if ((FLAGS_official)); then
+        common::exit 1 "Can't do official releases when creating a new branch!"
+      fi
+
+      PARENT_BRANCH=master
+      testing_branch=$PARENT_BRANCH
+    elif gitlib::branch_exists ${RELEASE_BRANCH%.*}; then
+      PARENT_BRANCH=${RELEASE_BRANCH%.*}
+      testing_branch=$PARENT_BRANCH
+    else
+     common::exit 1 "$FATAL! We should never get here! branch=$RELEASE_BRANCH"
+    fi
+  fi
+
+  if [[ -n $JENKINS_BUILD_VERSION ]]; then
+    logecho -r "$ATTENTION: Using --buildversion=$JENKINS_BUILD_VERSION"
+  else
+    logecho "Asking Jenkins for a good build (this may take some time)..."
+    FLAGS_verbose=1 release::set_build_version $testing_branch || return 1
+  fi
+
+  # The RELEASE_BRANCH should always match with the JENKINS_BUILD_VERSION
+  if [[ $RELEASE_BRANCH =~ release- ]] && \
+     [[ ! $JENKINS_BUILD_VERSION =~ ^v${RELEASE_BRANCH/release-/} ]]; then
+    logecho
+    logecho "$FATAL!  branch/build mismatch!"
+    logecho "buildversion=$JENKINS_BUILD_VERSION branch=$RELEASE_BRANCH"
+    common::exit 1
+  fi
+
+  FLAGS_verbose=1 \
+   release::set_release_version $JENKINS_BUILD_VERSION $RELEASE_BRANCH \
+                                $PARENT_BRANCH || return 1
+}
+
+##############################################################################
+# Prepare the workspace and sync the tree
+prepare_workspace () {
+  local outdir
+
+  # Clean up or not
+  if ((FLAGS_noclean)); then
+    logecho "Working in existing workspace..."
+  else
+    if [[ -d $TREE_ROOT ]]; then
+      logecho "Checking for _output directories..."
+      logrun cd $TREE_ROOT
+      # set -e sillyness - yes that's a ||true there that would otherwise not
+      # be needed except for 'set -e' in all its glory
+      for outdir in $(ls -1d _output* 2>/dev/null ||true); do
+        # This craziness due to
+        # https://github.com/kubernetes/kubernetes/issues/23839
+        if [[ $outdir != "_output" ]]; then
+          logrun mv $outdir _output
+        fi
+        logecho -n "make clean for $outdir: "
+        logrun -s make clean || return 1
+        logecho -n "Removing _output: "
+        logrun -s rm -rf _output || return 1
+      done
+    fi
+    logecho -n "Removing/recreating $WORKDIR: "
+    logrun cd /tmp
+    logrun -s rm -rf $WORKDIR || return 1
+  fi
+
+  # Sync the tree
+  logrun mkdir -p $WORKDIR
+  gitlib::sync_repo $K8S_GITHUB_URL $TREE_ROOT || return 1
+  logrun cd $TREE_ROOT
+
+  logecho -n "Check/make release bucket $RELEASE_BUCKET: "
+  logrun -s release::gcs::ensure_release_bucket $RELEASE_BUCKET \
+   || return 1
+}
+
+###############################################################################
+# MAIN
+###############################################################################
+# Default mode is a mocked release workflow
+: ${FLAGS_nomock:=0}
+: ${FLAGS_noclean:=0}
+: ${FLAGS_official:=0}
+# Set with --buildversion or set it later in release::set_build_version()
+JENKINS_BUILD_VERSION=$FLAGS_buildversion
+
+RELEASE_BUCKET="kubernetes-release"
+if ((FLAGS_nomock)); then
+  # Override any --noclean setting if nomock
+  FLAGS_noclean=0
+  GCRIO_REPO="google_containers"
+else
+  # This is passed to logrun() where appropriate when we want to mock
+  # specific activities like pushes
+  LOGRUN_MOCK="-m"
+  # Point to a $USER playground
+  RELEASE_BUCKET+=-$USER
+  GCRIO_REPO="kubernetes-release-test"
+fi
+BASEDIR="/usr/local/google/$USER"
+
+# TODO:
+# These KUBE_ globals extend beyond the scope of the new release refactored
+# tooling so to pass these through as flags will require fixes across 
+# kubernetes/kubernetes and kubernetes/release which we can do at a later time
+export KUBE_DOCKER_REGISTRY="gcr.io/$GCRIO_REPO"
+export KUBE_RELEASE_RUN_TESTS=n
+export KUBE_SKIP_CONFIRMATIONS=y
+
+##############################################################################
+# Initialize logs
+##############################################################################
+# Initialize and save up to 10 (rotated logs)
+LOGFILE=/tmp/$PROG.log
+common::logfileinit $LOGFILE 10
+# BEGIN script
+common::timestamp begin
+
+##############################################################################
+common::stepheader "CHECK CREDENTIALS"
+##############################################################################
+gitlib::check_credentials
+
+# Simple check to validate who can do actual releases
+((FLAGS_nomock)) && check_acls
+
+##############################################################################
+common::stepheader "CHECK PREREQUISITES"
+##############################################################################
+common::check_packages jq docker-engine pandoc || common::exit 1 "Exiting..."
+check_prerequisites || common::exit 1 "Exiting..."
+
+##############################################################################
+common::stepheader "FIND A VALID BUILD CANDIDATE"
+##############################################################################
+common::runstep get_build_candidate || common::exit 1 "Exiting..."
+
+# WORK/BUILD area
+WORKDIR=$BASEDIR/$PROG-$RELEASE_VERSION_PRIME
+# TOOL_ROOT is release/
+# TREE_ROOT is working branch/tree
+TREE_ROOT=$WORKDIR/kubernetes
+BUILD_OUTPUT=$TREE_ROOT/_output
+RELEASE_NOTES_MD=$WORKDIR/release-notes.md
+RELEASE_NOTES_HTML=$WORKDIR/release-notes.html
+
+##############################################################################
+common::stepheader "DISK SPACE CHECK"
+##############################################################################
+# 18G per build
+common::disk_space_check $BASEDIR $((18*${#RELEASE_VERSION[*]})) ||\
+ common::exit 1 "Exiting..."
+
+if [[ $RELEASE_BRANCH =~ release- ]]; then
+  ##############################################################################
+  common::stepheader "PENDING PRS ON THE $RELEASE_BRANCH BRANCH"
+  ##############################################################################
+  gitlib::pending_prs $RELEASE_BRANCH
+fi
+
+##############################################################################
+common::stepheader "SESSION VALUES"
+##############################################################################
+# Show versions and ask for confirmation to continue
+# Pass in the indexed RELEASE_VERSION dict key by key
+ALL_RELEASE_VERSIONS=($(for key in ${!RELEASE_VERSION[@]}; do
+                         echo RELEASE_VERSION[$key]; done))
+common::printvars -p WORKDIR WORKDIR TREE_ROOT JENKINS_BUILD_VERSION \
+                     RELEASE_VERSION_PRIME ${ALL_RELEASE_VERSIONS[@]} \
+                     RELEASE_BRANCH GCRIO_REPO RELEASE_BUCKET \
+                     FLAGS_nomock FLAGS_noclean FLAGS_official LOGFILE
+
+if [[ -n "$PARENT_BRANCH" ]]; then
+  logecho
+  logecho "$ATTENTION: $RELEASE_BRANCH is a NEW branch off $PARENT_BRANCH!"
+fi
+
+logecho
+((FLAGS_yes)) || common::askyorn -e "Do these values look ok for a release" \
+ || common::exit 1 "Exiting..."
+
+logecho
+logecho -r "${TPUT[BOLD]}>>>>>>>>${TPUT[OFF]}" \
+           "View detailed session output with:  tailf $LOGFILE"
+logecho -r "${TPUT[BOLD]}>>>>>>>>${TPUT[OFF]}" \
+           "(Previous logs can be found in $LOGFILE.{1..10})"
+
+##############################################################################
+common::stepheader "PREPARE WORKSPACE"
+##############################################################################
+common::runstep prepare_workspace || common::exit 1 "Exiting..."
+
+# Need to check git push direct credentials here, deeper into the process
+# than I'd optimally like - preferably this is done way earlier up where the
+# other prerequisites are checked, but the nature of the check requires
+# an actual git repo.
+##############################################################################
+common::stepheader "CHECK GIT PUSH ACCESS"
+##############################################################################
+# TODO: capture state of access without forcing us into a prompt I have to 
+#       expose.
+logecho -n "Checking git push access (verbosely to accept password if needed)"
+logrun -v git push -q --dry-run $K8S_GITHUB_URL || common::exit 1 "Exiting..."
+
+# Iterate over session release versions for setup, tagging and building
+for label in ${!RELEASE_VERSION[@]}; do
+  ##############################################################################
+  common::stepheader "TAG AND BUILD ${RELEASE_VERSION[$label]}"
+  ##############################################################################
+  # Prepare the tree for each set of actions (keys of RELEASE_VERSION)
+  common::runstep prepare_tree $label || common::exit 1 "Exiting..."
+  common::runstep build_tree ${RELEASE_VERSION[$label]}
+done
+
+# No publishing for X.Y.Z-beta.0 releases
+if [[ -z "$PARENT_BRANCH" ]]; then
+  ##############################################################################
+  common::stepheader "GENERATE RELEASE NOTES"
+  ##############################################################################
+  common::runstep generate_release_notes || common::exit 1 "Exiting..."
+fi
+
+# On the master branch update cmd/mungedocs/mungedocs.go and
+# run update-generated-docs.sh
+if [[ "$PARENT_BRANCH" == master ]]; then
+  ##############################################################################
+  common::stepheader "MUNGEDOCS"
+  ##############################################################################
+  logecho -n "Checkout master branch to make changes: "
+  logrun -s git checkout master
+  logecho -n "Update docs for new branch $RELEASE_BRANCH: "
+  sed -i 's,\(const latestReleaseBranch =\) ,\1 "'$RELEASE_BRANCH'",g' \
+   cmd/mungedocs/mungedocs.go cmd/mungedocs/unversioned_warning_test.go
+  logrun -s $TREE_ROOT/hack/update-generated-docs.sh
+  logecho -n "Committing: "
+  logrun -s git commit -am \
+      "Update the latestReleaseBranch to $RELEASE_BRANCH in the munger."
+fi
+
+##############################################################################
+common::stepheader "PUSH GIT OBJECTS"
+##############################################################################
+common::runstep push_git_objects || common::exit 1 "Exiting..."
+
+# Get back on $RELEASE_BRANCH because we source branch-specific
+# hack/lib/golang.sh in release::docker::release()
+if [[ $RELEASE_BRANCH =~ release- ]]; then
+  logecho -n "Checkout $RELEASE_BRANCH branch to continue: "
+  logrun -s git checkout $RELEASE_BRANCH || common::exit 1 "Exiting..."
+fi
+
+# Set branch-specific KUBE_SERVER_PLATFORMS from current tree
+# Used in release::docker::release()
+source $TREE_ROOT/hack/lib/golang.sh
+
+# Push for each release version of this session
+for label in ${!RELEASE_VERSION[@]}; do
+  ##############################################################################
+  common::stepheader "PUSH ${RELEASE_VERSION[$label]} IMAGES"
+  ##############################################################################
+  common::runstep release::gcs::copy_release_artifacts \
+   ${RELEASE_VERSION[$label]} \
+   $BUILD_OUTPUT-${RELEASE_VERSION[$label]} $RELEASE_BUCKET \
+   || common::exit 1 "Exiting..."
+
+  common::runstep release::docker::release \
+   $KUBE_DOCKER_REGISTRY ${RELEASE_VERSION[$label]} \
+   || common::exit 1 "Exiting..."
+
+  common::runstep release::gcs::publish_official \
+   ${RELEASE_VERSION[$label]} \
+   $BUILD_OUTPUT-${RELEASE_VERSION[$label]} $RELEASE_BUCKET \
+   || common::exit 1 "Exiting..."
+done
+
+if [[ -n "$PARENT_BRANCH" ]]; then
+  ##############################################################################
+  common::stepheader "ANNOUNCE NEW BRANCH"
+  ##############################################################################
+  common::runstep announce "k8s $RELEASE_BRANCH branch has been created" \
+   || common::exit 1 "Exiting..."
+else
+  ##############################################################################
+  common::stepheader "ANNOUNCE RELEASE"
+  ##############################################################################
+  common::runstep announce "k8s $RELEASE_VERSION_PRIME is live!" \
+   || common::exit 1 "Exiting..."
+
+  ##############################################################################
+  common::stepheader "UPDATE GITHUB RELEASES PAGE"
+  ##############################################################################
+  common::runstep update_github_release || common::exit 1 "Exiting..."
+fi
+
+# END script
+common::cleanexit 0
