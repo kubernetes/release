@@ -167,3 +167,19 @@ gitlib::branch_exists () {
   git ls-remote --exit-code $K8S_GITHUB_URL \
    refs/heads/$branch &>/dev/null
 }
+
+##############################################################################
+# Fetch, rebase and push master.
+gitlib::push_master () {
+  local dryrun_flag=" --dry-run"
+  ((FLAGS_nomock)) && dryrun_flag=""
+
+  logecho -n "Checkout master branch to push objects: "
+  logrun -s git checkout master || return 1
+
+  logecho -n "Rebase master branch: "
+  logrun git fetch origin || return 1
+  logrun -s git rebase origin/master || return 1
+  logecho -n "Pushing$dryrun_flag master branch: "
+  logrun -s git push$dryrun_flag origin master || return 1
+}
