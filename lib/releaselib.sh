@@ -28,7 +28,7 @@ release::update_job_cache () {
   local job=$1
   local logroot="gs://kubernetes-jenkins/logs"
   local cache_limit=50
-  local buildlog
+  local buildstate
   local j
   local i
   local run
@@ -57,12 +57,10 @@ release::update_job_cache () {
     # the cache should be complete after that
     [[ -n ${JOB[$run]} ]] && break
 
-    buildlog=$($GSUTIL cat $logroot/$job/$run/build-log.txt 2>/dev/null)
-    if [[ "$buildlog" =~ Uploading\ build\ result:\ SUCCESS ]] &&
-       [[ "$buildlog" =~ \
-          (build_version=|Found Kubernetes version: )(${VER_REGEX[release]}\.${VER_REGEX[build]}) ]]; then
-      JOB[$run]=${BASH_REMATCH[2]}
-    fi
+    buildstate=$($GSUTIL cat $logroot/$job/$run/*.json 2>/dev/null)
+    [[ $(echo "$buildstate" | jq -r '.result|values') == "SUCCESS" ]] &&
+     JOB[$run]=$(echo "$buildstate" | jq -r '.version|values')
+
     ((run--))
   done
 
@@ -127,8 +125,8 @@ release::set_build_version () {
 
   # kubernetes-e2e-gke-subnet - Uses a branch version?
   # kubernetes-e2e-gke-test - Uses a branch version?
-  #"kubernetes-e2e-gke-serial"
   local -a gke_jobs=(
+                     "kubernetes-e2e-gke-serial$branch_suffix"
                      "kubernetes-e2e-gke$branch_suffix"
                      "kubernetes-e2e-gke-slow$branch_suffix"
                     )
