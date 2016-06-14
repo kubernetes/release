@@ -1,0 +1,172 @@
+#!/bin/bash
+#
+# Copyright 2016 The Kubernetes Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Set PROGram name
+PROG=${0##*/}
+########################################################################
+#+
+#+ NAME
+#+     $PROG - Fast forward a branch to master via merge
+#+
+#+ SYNOPSIS
+#+     $PROG  [--nomock] <branch> [master object]
+#+     $PROG  [--helpshort|--usage|-?]
+#+     $PROG  [--help|-man]
+#+
+#+ DESCRIPTION
+#+     $PROG fast forwards a K8s release branch to [master object] (defaults to
+#+     HEAD and then prepares the branch as a K8s release branch:
+#+     * build/versionize-docs.sh <branch>
+#+     * Run hack/update-all.sh to ensure compliance of generated files
+#+
+#+
+#+ OPTIONS
+#+     [--nomock]                 - Actually push this upstream
+#+     [--help | -man]            - display man page for this script
+#+     [--usage | -?]             - display in-line usage
+#+
+#+ EXAMPLES
+#+     $PROG release-1.3          - Resync master@HEAD onto release-1.3 branch
+#+     $PROG release-1.3 39d0135e - Resync master@39d0135e onto release-1.3
+#+                                  branch
+#+
+#+ FILES
+#+
+#+ SEE ALSO
+#+     lib/common.sh              - base function definitions
+#+     lib/gitlib.sh              - git function definitions
+#+
+#+ BUGS/TODO
+#+
+########################################################################
+# If NO ARGUMENTS should return *usage*, uncomment the following line:
+usage=${1:-yes}
+
+source $(dirname $(readlink -ne $BASH_SOURCE))/lib/common.sh
+source $TOOL_LIB_PATH/gitlib.sh
+
+# Set positional args
+RELEASE_BRANCH=${POSITIONAL_ARGV[0]}
+MASTER_OBJECT=${POSITIONAL_ARGV[1]:-"origin/master"}
+
+# Check branch format
+[[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]] || common::exit 1 "Invalid branch name!"
+
+# Branch Exists
+gitlib::branch_exists $RELEASE_BRANCH \
+ || common::exit 1 "$RELEASE_BRANCH doesn't exist.  Exiting..."
+
+##############################################################################
+# Initialize logs
+##############################################################################
+# Initialize and save up to 10 (rotated logs)
+MYLOG=/tmp/$PROG.log
+common::logfileinit $MYLOG 10
+# BEGIN script
+common::timestamp begin
+
+###############################################################################
+# MAIN
+###############################################################################
+BASEDIR="/usr/local/google/$USER"
+# WORK/BUILD area
+WORKDIR=$BASEDIR/$PROG-$RELEASE_BRANCH
+# TREE_ROOT is working branch/tree
+TREE_ROOT=$WORKDIR/kubernetes
+# The real deal?
+if ((FLAGS_nomock)); then
+  DRYRUN_FLAG=""
+else
+  DRYRUN_FLAG=" --dry-run"
+fi
+
+logecho
+logecho "Follow along in detail: tailf $MYLOG"
+
+##############################################################################
+common::stepheader "SESSION DETAILS"
+##############################################################################
+logecho "NOTE: This is a${DRYRUN_FLAG:-"n ACTUAL"} run!"
+
+##############################################################################
+common::stepheader "SYNC A WORKING REPO"
+##############################################################################
+if [[ -d $WORKDIR ]]; then
+  common::askyorn "$WORKDIR exists.  Delete" || common::exit 1 "Exiting..."
+  logrun rm -rf $WORKDIR || common::exit 1 "Exiting..."
+fi
+
+logrun mkdir -p $WORKDIR
+gitlib::sync_repo $K8S_GITHUB_URL $TREE_ROOT || common::exit 1 "Exiting..."
+logrun cd $TREE_ROOT
+
+##############################################################################
+common::stepheader "CHECK GIT PUSH ACCESS"
+##############################################################################
+# TODO: capture state of access without forcing us into a prompt I have to 
+#       expose.
+logecho -n "Checking git push access (verbosely to accept password if needed)"
+logrun -v git push -q --dry-run $K8S_GITHUB_URL || common::exit 1 "Exiting..."
+
+##############################################################################
+common::stepheader "CHECK OUT BRANCH"
+##############################################################################
+logecho -n "Checking out $RELEASE_BRANCH: "
+logrun -s git checkout -b $RELEASE_BRANCH origin/$RELEASE_BRANCH \
+ || common::exit 1 "Exiting..."
+
+##############################################################################
+common::stepheader "MERGE AND UPDATE"
+##############################################################################
+logecho -n "Merging $MASTER_OBJECT into $RELEASE_BRANCH branch: "
+logrun -s git merge -X ours $MASTER_OBJECT
+
+# TODO: This is actually broken until #27992 lands
+logecho -n "update-all.sh: "
+logrun -s hack/update-all.sh
+
+# Redo the branching activities
+logecho -n "Check/rerun versionize-docs.sh again: "
+logrun -s build/versionize-docs.sh $RELEASE_BRANCH
+
+if [[ -n "$(git status -s)" ]]; then
+  logecho -n "Commit changes: "
+  logrun git add -A
+  logrun -s git commit -am "versionize-docs.sh and update-all.sh." \
+    || common::exit 1 "Exiting..."
+fi
+
+##############################################################################
+common::stepheader "PUSH UPSTREAM"
+##############################################################################
+logecho "Go look around in $WORKDIR to make sure things look ok:"
+logecho "# Any files left uncommitted?"
+logecho "* git status -s"
+logecho "# What does the commit look like?"
+logecho "* git show"
+logecho
+
+if common::askyorn -e "OK to push now"; then
+  # Finally push it upstream
+  logecho -n "Pushing$DRYRUN_FLAG $RELEASE_BRANCH branch upstream: "
+  logrun -s git push $DRYRUN_FLAG origin $RELEASE_BRANCH:$RELEASE_BRANCH
+fi
+
+logecho
+logecho "$WORKDIR left intact for reviewing"
+
+# END script
+common::timestamp end
