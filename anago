@@ -304,10 +304,11 @@ generate_release_notes() {
 # @param label - The label to process
 prepare_tree () {
   local label=$1
+  local label_common=$label
   local tree_object="$RELEASE_BRANCH"
   local branch_arg
   local branch_point
-  local label_common=$label
+  local current_branch
 
   # Check for tag first
   if git rev-parse "${RELEASE_VERSION[$label]}" >/dev/null 2>&1; then
@@ -349,13 +350,19 @@ prepare_tree () {
   logecho -n "Checking out $tree_object: "
   logrun -s git checkout $branch_arg $tree_object $branch_point || return 1
 
+  # Now set the current_branch we're on
+  current_branch=$(gitlib::current_branch)
+
   # rev base.go
   case $label in 
     beta*|official) rev_version_base $label ;;
   esac
 
-  # versionize docs
-  if [[ "$PARENT_BRANCH" == master ]]; then
+  # versionize docs on new branches (from master) only
+  # If the entirety of this session is based on a branch from master
+  # (PARENT_BRANCH), and this iteration of prepare_tree() is operating on
+  # the NON-master branch itself, versionize the docs
+  if [[ "$PARENT_BRANCH" == master && "$current_branch" != "master" ]]; then
     logecho -n "Versionizing docs for ${RELEASE_VERSION[$label]}: "
     logrun -s $TREE_ROOT/build/versionize-docs.sh ${RELEASE_VERSION[$label]}
     logecho -n "Committing: "
@@ -368,7 +375,7 @@ prepare_tree () {
 
   # Tagging
   commit_string="Kubernetes $label_common release ${RELEASE_VERSION[$label]}"
-  logecho -n "Tagging $commit_string on $(gitlib::current_branch): "
+  logecho -n "Tagging $commit_string on $current_branch: "
   logrun -s git tag -a -m "$commit_string" "${RELEASE_VERSION[$label]}"
 }
 
