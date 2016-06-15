@@ -364,10 +364,10 @@ prepare_tree () {
   # the NON-master branch itself, versionize the docs
   if [[ "$PARENT_BRANCH" == master && "$current_branch" != "master" ]]; then
     logecho -n "Versionizing docs for ${RELEASE_VERSION[$label]}: "
-    logrun -s $TREE_ROOT/build/versionize-docs.sh ${RELEASE_VERSION[$label]}
+    logrun -s $TREE_ROOT/build/versionize-docs.sh $current_branch
     logecho -n "Committing: "
     logrun git commit -am \
-           "Versioning docs and examples for ${RELEASE_VERSION[$label]}."
+           "Versioning docs and examples for ${RELEASE_VERSION[$label]} on $current_branch."
   fi
 
   # Ensure a common name for label in case we're using the special beta indexes
