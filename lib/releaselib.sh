@@ -39,6 +39,7 @@ release::update_job_cache () {
   mkdir -p $JOB_CACHE_DIR
 
   job_file=$JOB_CACHE_DIR/$job
+  run=$($GSUTIL cat $logroot/$job/latest-build.txt 2>/dev/null) || return
 
   if ((FLAGS_verbose)); then
     if [[ -f $job_file ]]; then
@@ -50,12 +51,10 @@ release::update_job_cache () {
     logecho -r " $job cache..."
   fi
 
-  run=$($GSUTIL cat $logroot/$job/latest-build.txt 2>/dev/null) || return
-
   for ((cnt=0;cnt<=$cache_limit;cnt++)); do
-    # Once we hit one that is set, break out
+    # Once we hit a JOB[$run] that is set (or run gets to 0), break out
     # the cache should be complete after that
-    [[ -n ${JOB[$run]} ]] && break
+    ((run==0)) || [[ -n ${JOB[$run]} ]] && break
 
     buildstate=$($GSUTIL cat $logroot/$job/$run/*.json 2>/dev/null)
     [[ $(echo "$buildstate" | jq -r '.result|values') == "SUCCESS" ]] &&
@@ -165,7 +164,15 @@ release::set_build_version () {
       build_sha1_date=$($GHCURL $K8S_GITHUB_API/commits?sha=$build_sha1 |\
                         jq -r '.[0] | .commit .author .date')
       build_sha1_date=$(date +"%R %m/%d" -d "$build_sha1_date")
+    elif [[ $good_job =~ JOB\[([0-9]+)\]=(${VER_REGEX[release]}) ]]; then
+      logecho
+      logecho "$ATTENTION: Newly tagged versions exclude git hash." \
+              "Unable to continue.  This is not a valid version." \
+              "Add some new post-branch commits to the tree." \
+              "(see https://github.com/kubernetes/kubernetes/issues/24535)"
+      return 1
     else
+      logecho
       logecho "Bad build version!"
       return 1
     fi
