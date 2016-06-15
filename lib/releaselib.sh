@@ -26,6 +26,7 @@ JOB_CACHE_DIR=/tmp/buildresults-cache
 #
 release::update_job_cache () {
   local job=$1
+  local job_file=$JOB_CACHE_DIR/$job
   local logroot="gs://kubernetes-jenkins/logs"
   local cache_limit=50
   local buildstate
@@ -38,12 +39,12 @@ release::update_job_cache () {
 
   mkdir -p $JOB_CACHE_DIR
 
-  job_file=$JOB_CACHE_DIR/$job
   run=$($GSUTIL cat $logroot/$job/latest-build.txt 2>/dev/null) || return
 
   if ((FLAGS_verbose)); then
     if [[ -f $job_file ]]; then
       logecho -n "Updating"
+      # Prefill the JOB dict from the existing job (cache)
       source $job_file
     else
       logecho -n "Creating"
