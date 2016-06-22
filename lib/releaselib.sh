@@ -39,7 +39,15 @@ release::update_job_cache () {
 
   mkdir -p $JOB_CACHE_DIR
 
-  run=$($GSUTIL cat $logroot/$job/latest-build.txt 2>/dev/null) || return
+  # Jobs can fall off 'the list', but still have old latest-build.txt files
+  # on GS, so we have to poll Jenkins first and then attempt to get the latest
+  # build for an 'active' job
+  if ! $JCURL $JENKINS_URL/$job ||\
+     ! run=$($GSUTIL cat $logroot/$job/latest-build.txt 2>/dev/null); then
+    # Ensure we clean up the cache when jobs disappear
+    logrun rm -f $job_file
+    return
+  fi
 
   if ((FLAGS_verbose)); then
     if [[ -f $job_file ]]; then

@@ -119,6 +119,7 @@ extract_pr_title () {
 
   for pr in $prs; do
     pull_json="$($GHCURL $K8S_GITHUB_API/pulls/$pr)"
+    [[ -z "$pull_json" ]] && return 1
     body="$(echo "$pull_json" |jq -r '.body' |tr -d '\r')"
 
     # Look for a body release note first and default to title
@@ -311,13 +312,15 @@ EOF+
 
   if [[ -n "${notes_experimental[*]}" ]]; then
     echo "### Experimental Features" >> $PR_NOTES
-    extract_pr_title "${notes_experimental[*]}" >> $PR_NOTES
+    extract_pr_title "${notes_experimental[*]}" >> $PR_NOTES \
+     || common::exit 1 "$FAILED: github rate limiting."
     echo >> $PR_NOTES
   fi
 
   if [[ -n "${notes_action[*]}" ]]; then
     echo "### Action Required" >> $PR_NOTES
-    extract_pr_title "${notes_action[*]}" >> $PR_NOTES
+    extract_pr_title "${notes_action[*]}" >> $PR_NOTES \
+     || common::exit 1 "$FAILED: github rate limiting."
     echo >> $PR_NOTES
   fi
 
@@ -334,7 +337,8 @@ EOF+
 
   if [[ -n "${notes_normal[*]}" ]]; then
     echo "### Other notable changes" >> $PR_NOTES
-    extract_pr_title "${notes_normal[*]}" >> $PR_NOTES
+    extract_pr_title "${notes_normal[*]}" >> $PR_NOTES \
+     || common::exit 1 "$FAILED: github rate limiting."
   fi
 
   if [[ -z "${notes_normal[*]}" && -z "${notes_action[*]}" ]]; then
