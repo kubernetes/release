@@ -20,8 +20,8 @@
 ###############################################################################
 # CONSTANTS
 ###############################################################################
-GHCURL="curl -s --fail -u ${GITHUB_TOKEN:-$FLAGS_github_token}:x-oauth-basic"
-JCURL="curl -g -s"
+GHCURL="curl -s --fail --retry 10 -u ${GITHUB_TOKEN:-$FLAGS_github_token}:x-oauth-basic"
+JCURL="curl -g -s --fail --retry 10"
 K8S_GITHUB_API='https://api.github.com/repos/kubernetes/kubernetes'
 K8S_GITHUB_URL='https://github.com/kubernetes/kubernetes'
 JENKINS_URL="http://kubekins.dls.corp.google.com/job"
@@ -105,17 +105,17 @@ gitlib::pending_prs () {
   local sep
 
   if ((FLAGS_htmlize_md)); then
-    echo "PR | User | Date | Commit Message"
-    echo "-- | ---- | ---- | --------------"
+    echo "PR | Milestone | User | Date | Commit Message"
+    echo "-- | --------- | ---- | ---- | --------------"
     sep="|"
   fi
 
-  while read pr login date msg; do
-    printf "%-8s $sep %-10s $sep %-18s $sep %s\n" \
-           "#$pr" "@$login" "$(date +"%F %R" -d "$date")" "$msg"
+  while read pr milestone login date msg; do
+    printf "%-8s $sep %-4s $sep %-10s $sep %-18s $sep %s\n" \
+           "#$pr" "$milestone" "@$login" "$(date +"%F %R" -d "$date")" "$msg"
   done < <($GHCURL $K8S_GITHUB_API/pulls\?state\=open\&base\=$branch |\
            jq -r \
-            '.[] | "\(.number)\t\(.user.login)\t\(.updated_at)\t\(.title)"')
+            '.[] | "\(.number)\t\(.milestone.title)\t\(.user.login)\t\(.updated_at)\t\(.title)"')
 }
 
 ###############################################################################
