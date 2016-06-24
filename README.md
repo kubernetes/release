@@ -82,7 +82,7 @@ your favorite editor.
 ### Tools
 
 * [mailer](https://github.com/kubernetes/release/blob/master/mailer) : Generic mail interface (due to Google's deprecation of sendmail)
-* [find_green_job](https://github.com/kubernetes/release/blob/master/find_green_job) : Ask Jenkins for a good build to use
+* [find_green_build](https://github.com/kubernetes/release/blob/master/find_green_build) : Ask Jenkins for a good build to use
 * [script-template](https://github.com/kubernetes/release/blob/master/script-template) : Generate a script template in the kubernetes/release ecosystem
 * [relnotes](https://github.com/kubernetes/release/blob/master/relnotes) : Scrape github for release notes \(See below for more info\)
 
