@@ -100,7 +100,7 @@ $ relnotes
 $ relnotes --branch=release-1.2
 
 # Show release notes between two specific releases
-$ relnotes v1.2.0..1.2.1 --branch=release-1.2
+$ relnotes v1.2.0..v1.2.1 --branch=release-1.2
 ```
 
 Please report *any* [issues](https://github.com/kubernetes/release/issues)
