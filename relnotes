@@ -228,6 +228,8 @@ generate_notes () {
   local body
   local counter=0
   local tempcss=/tmp/$PROG-ca.$$
+  local changelog=$(git rev-parse --show-toplevel)/CHANGELOG.md
+  local anchor
   local -a notes_normal
   local -a notes_action
   local -a notes_experimental
@@ -302,10 +304,10 @@ generate_notes () {
   if ((FLAGS_full)) || [[ $release_tag =~ ${VER_REGEX[dotzero]} ]]; then
     cat <<EOF+ >> $PR_NOTES
 ### Major Themes
-* Add to or delete this section
+* TBD
 
 ### Other notable improvements
-* Add to or delete this section
+* TBD
 
 EOF+
   fi
@@ -327,10 +329,10 @@ EOF+
   if ((FLAGS_full)) || [[ $release_tag =~ ${VER_REGEX[dotzero]} ]]; then
     cat <<EOF+ >> $PR_NOTES
 ### Known Issues
-* Add to or delete this section
+* TBD
 
 ### Provider-specific Notes
-* Add to or delete this section
+* TBD
 
 EOF+
   fi
@@ -341,7 +343,17 @@ EOF+
      || common::exit 1 "$FAILED: github rate limiting."
   fi
 
-  if [[ -z "${notes_normal[*]}" && -z "${notes_action[*]}" ]]; then
+  # Aggregate all previous releases in series
+  if ((FLAGS_full)) || [[ $release_tag =~ ${VER_REGEX[dotzero]} ]]; then
+    echo
+    echo "### Releases Included in $release_tag"
+    while read anchor; do
+      echo "$anchor"
+    done< <(egrep '^- \[v1.3.0-' $changelog)
+  fi >> $PR_NOTES
+
+  if [[ -z "${notes_normal[*]}" && -z "${notes_action[*]}" &&
+        -z "${notes_experimental[*]}" ]]; then
     logecho
     logecho "**No notable changes for this release**" >> $PR_NOTES
     logecho
@@ -362,8 +374,11 @@ EOF+
   fi
 
   if ((FLAGS_htmlize_md)); then
+    # Make users and PRs linkable
+    # Also, expand anchors (needed for email announce())
     sed -i -e "s,#\([0-9]\{5\,\}\),[#\1]($K8S_GITHUB_URL/pull/\1),g" \
-           -e "s,@\([a-zA-Z0-9-]*\),[@\1](https://github.com/\1),g" \
+        -e "s,\(#v[0-9]\{3\}-\),$K8S_GITHUB_URL/blob/master/CHANGELOG.md\1,g" \
+        -e "s,@\([a-zA-Z0-9-]*\),[@\1](https://github.com/\1),g" \
      $RELEASE_NOTES_MD
   fi
 
