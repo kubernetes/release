@@ -45,7 +45,8 @@ release::update_job_cache () {
   if ! $JCURL $JENKINS_URL/$job ||\
      ! run=$($GSUTIL cat $logroot/$job/latest-build.txt 2>/dev/null); then
     # Ensure we clean up the cache when jobs disappear
-    logrun rm -f $job_file
+    # We're running in verbose usually but don't want to see this command run
+    FLAGS_verbose=0 logrun rm -f $job_file
     return
   fi
 
@@ -411,7 +412,16 @@ release::gcs::copy_release_artifacts() {
   local gcs_stage=$build_output/gcs-stage
   local src
   local dst
-  local gcs_destination="gs://$bucket/release/$version/"
+  local gcs_destination=gs://$bucket/release/$version/
+  local gce_path=$release_stage/full/kubernetes/cluster/gce
+  local gci_path
+
+  # GCI path changed in 1.2->1.3 time period
+  if [[ -d $gce_path/trusty ]]; then
+    gci_path=$gce_path/trusty
+  else
+    gci_path=$gce_path/gci
+  fi
 
   logrun rm -rf $gcs_stage || return 1
   logrun mkdir -p $gcs_stage || return 1
@@ -420,21 +430,17 @@ release::gcs::copy_release_artifacts() {
 
   # Stage everything in release directory
   logecho "- Staging locally to ${gcs_stage##*/}..."
-  release::gcs::stage_and_hash $gcs_stage "$release_tars"/* . || return 1
+  release::gcs::stage_and_hash $gcs_stage $release_tars/* . || return 1
 
   # Having the configure-vm.sh script and and trusty code from the GCE cluster
   # deploy hosted with the release is useful for GKE.
-  release::gcs::stage_and_hash $gcs_stage \
-    "$release_stage/full/kubernetes/cluster/gce/configure-vm.sh" extra/gce \
+  release::gcs::stage_and_hash $gcs_stage $gce_path/configure-vm.sh extra/gce \
    || return 1
-  release::gcs::stage_and_hash $gcs_stage \
-    "$release_stage/full/kubernetes/cluster/gce/gci/node.yaml" extra/gce \
+  release::gcs::stage_and_hash $gcs_stage $gci_path/node.yaml extra/gce \
    || return 1
-  release::gcs::stage_and_hash $gcs_stage \
-    "$release_stage/full/kubernetes/cluster/gce/gci/master.yaml" extra/gce \
+  release::gcs::stage_and_hash $gcs_stage $gci_path/master.yaml extra/gce \
    || return 1
-  release::gcs::stage_and_hash $gcs_stage \
-    "$release_stage/full/kubernetes/cluster/gce/gci/configure.sh" extra/gce \
+  release::gcs::stage_and_hash $gcs_stage $gci_path/configure.sh extra/gce \
    || return 1
 
   # Upload the "naked" binaries to GCS.  This is useful for install scripts that
