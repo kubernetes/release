@@ -23,7 +23,8 @@ PROG=${0##*/}
 #+
 #+ SYNOPSIS
 #+     $PROG  --to=<address,address,...> --subject="..." --file=<file>
-#+           [--html] [--cc=<address,address,...>] [--from=address]
+#+           [--html] [--cc=<address,address,...>] [--from=<address>]
+#+           [--replyto=<address> ]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
@@ -35,12 +36,13 @@ PROG=${0##*/}
 #+     $PROG by default sends plain text.  Use --html to send html.
 #+
 #+ OPTIONS
-#+     --to="address,address,..."   - space separated list of people to mail
+#+     --to=<address,address,...>   - space separated list of people to mail
 #+     --subject="..."              - mail subject
 #+     --file=<file>                - file to mail
+#+     [--cc=<address,address,...>] - space separated list of people to cc
+#+     [--replyto=<address>]        - address to reply to
+#+     [--from]=<address>]          - From address
 #+     [--html]                     - Send html content
-#+     [--cc="address,address,..."] - space separated list of people to cc
-#+     [--from]="address"]          - file to mail
 #+     [--help | -man]              - display man page for this script
 #+     [--helpshort]                - display gbash-usage
 #+     [--usage | -?]               - display in-line usage
@@ -79,6 +81,7 @@ if [[ $(hostname) =~ \.google\. ]]; then
   sendgmr \
    -to="$FLAGS_to" \
    -from="$FLAGS_from" \
+   -reply_to="$FLAGS_replyto" \
    -subject="$FLAGS_subject" \
    $CC_ARG \
    $FILE_ARGS
@@ -90,6 +93,7 @@ To: $FLAGS_to
 From: $FLAGS_from
 Subject: $FLAGS_subject
 Cc: $FLAGS_cc
+Reply-To: $FLAGS_replyto
 EOF+
   ((FLAGS_html)) && echo "Content-Type: text/html"
   cat $FLAGS_file

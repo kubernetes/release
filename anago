@@ -508,9 +508,12 @@ announce () {
   logecho "Announcing k8s $RELEASE_VERSION_PRIME to $mailto..."
 
   # Always cc invoker
+  # Due to announcements landing on public mailing lists requiring membership,
+  # post from the invoking user (for now until this is productionized further)
+  # and use reply-to to ensure replies go to the right place.
   mailer --to="$mailto" --cc="$USER" --file="$announcement_text" --html \
-         --from="K8s-Anago<cloud-kubernetes-release@google.com>" \
-         --subject="$subject" || return 1
+         --replyto="K8s-Anago<cloud-kubernetes-release@google.com>" \
+         --from="K8s-Anago<$USER@google.com>" --subject="$subject" || return 1
 
   logrun rm -f $announcement_text
 }
