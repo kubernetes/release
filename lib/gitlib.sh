@@ -59,20 +59,14 @@ gitlib::last_releases () {
   logecho -n "Setting last releases by branch: "
   for release in $($GHCURL $K8S_GITHUB_API/releases|\
                    jq -r '.[] | select(.draft==false) | .tag_name'); do
-    if [[ $release =~ v([0-9]+\.[0-9]+)\.[0-9]+ ]]; then
+    # Alpha releases only on master branch
+    if [[ $release =~ -alpha ]]; then
+      branch_name=master
+    elif [[ $release =~ v([0-9]+\.[0-9]+)\.[0-9]+ ]]; then
       branch_name=release-${BASH_REMATCH[1]}
-      # Keep the latest(first) branch
-      : ${latest_branch:=$branch_name}
-      # Does branch exist?  If not, default tag to master branch
-      git rev-parse --verify origin/$branch_name &>/dev/null ||\
-       branch_name=master
-  
-      LAST_RELEASE[$branch_name]=${LAST_RELEASE[$branch_name]:-$release}
     fi
+    LAST_RELEASE[$branch_name]=${LAST_RELEASE[$branch_name]:-$release}
   done
-
-  # If ${LAST_RELEASE[master]} is unset, set it to the last release-* branch
-  : ${LAST_RELEASE[master]:=${LAST_RELEASE[$latest_branch]}}
 
   logecho -r "$OK"
 }

@@ -22,13 +22,19 @@ JOB_CACHE_DIR=/tmp/buildresults-cache
 # build numbers and associated hashes.
 # Used by release::set_build_version()
 #
+# @optparam -d - dedup git's monotonically increasing (describe) build numbers
 # @param job - Jenkins job name
 #
 release::update_job_cache () {
+  local dedup=0
+  if [[ $1 == "-d" ]]; then
+    dedup=1
+    shift
+  fi
   local job=$1
   local job_file=$JOB_CACHE_DIR/$job
   local logroot="gs://kubernetes-jenkins/logs"
-  local cache_limit=50
+  local cache_limit=75
   local buildstate
   local j
   local i
@@ -75,10 +81,15 @@ release::update_job_cache () {
 
   # Write out cache file
   # Reverse sort the array
-  for i in $(for n in ${!JOB[*]}; do echo $n; done|sort -rh); do
-    # and dedup
-    [[ ${JOB[$i]} != $last_value ]] && echo JOB[$i]=${JOB[$i]}
-    last_value=${JOB[$i]}
+  for i in $(for n in ${!JOB[*]}; do echo $n; done|sort -rh |\
+             head -$cache_limit); do
+    # and dedup?
+    if ((dedup)); then
+      [[ ${JOB[$i]} != $last_value ]] && echo JOB[$i]=${JOB[$i]}
+      last_value=${JOB[$i]}
+    else
+      echo JOB[$i]=${JOB[$i]}
+    fi
   done > $job_file
 }
 
@@ -106,8 +117,11 @@ release::set_build_version () {
   local branch=$1
   local build_version
   local build_number
+  local cache_build
+  local last_cache_build
   local build_sha1
   local run
+  local n
   local giveup_build_number=999999
   local job_count=0
   local max_job_length
@@ -117,7 +131,7 @@ release::set_build_version () {
   local branch_suffix
   [[ $branch =~ release- ]] && branch_suffix="-$branch"
   local main_job="kubernetes-e2e-gce$branch_suffix"
-  declare -a job_array good_jobs
+  local -a JOB
 
   # Would be nice to pull/generate these jobs dynamically filtered through
   # a pattern like gce,gke so new/changed testing jobs don't require
@@ -144,8 +158,9 @@ release::set_build_version () {
   local -a secondary_jobs=(${gce_jobs[@]} ${gke_jobs[@]})
 
   # Update cache
-  for other_job in $main_job ${secondary_jobs[@]}; do
-   release::update_job_cache $other_job
+  release::update_job_cache -d $main_job
+  for other_job in ${secondary_jobs[@]}; do
+    release::update_job_cache $other_job
   done
 
   if ((FLAGS_verbose)); then
@@ -233,12 +248,35 @@ release::set_build_version () {
         continue
       fi
 
-      run=$(awk -F[][] '/\.'$build_number'\+'$build_sha1'$/ {print $2}' \
-            $JOB_CACHE_DIR/$other_job)
+      unset JOB
+      source $JOB_CACHE_DIR/$other_job
+      last_cache_build=0
+      last_run=0
+      # We reverse sort the array here so we can descend it
+      for run in $(for n in ${!JOB[*]}; do echo $n; done|sort -rh); do
+        if ! [[ ${JOB[$run]} =~ ${VER_REGEX[build]} ]]; then
+          run=""
+          break
+        fi
+        cache_build=${BASH_REMATCH[1]}
+        # if build_number matches the cache's build number we're good
+        # OR
+        # if last_run-run proves consecutive Jenkins jobs AND
+        # build_number is within a cache_build range, the build was also good
+        if ((build_number==cache_build)) || \
+           ((($((last_run-run))==1)) && \
+           (((build_number>cache_build)) && \
+           ((build_number<last_cache_build)))); then
+          break
+        fi
+        last_cache_build=$cache_build
+        last_run=$run
+        unset run
+      done
 
       if [[ -n $run ]]; then
         ((FLAGS_verbose)) && \
-         logecho "$(printf '%-7s %-7s' \#$run \#$build_number) $PASSED"
+         logecho "$(printf '%-7s %-7s' \#$run \#$cache_build) $PASSED"
         ((job_count++)) || true
         continue
       else
