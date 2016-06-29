@@ -816,7 +816,7 @@ RELEASE_NOTES_HTML=$WORKDIR/release-notes.html
 common::stepheader "DISK SPACE CHECK"
 ##############################################################################
 # 18G per build
-common::disk_space_check $BASEDIR $((25*${#RELEASE_VERSION[*]})) ||\
+common::disk_space_check $BASEDIR $((30*${#RELEASE_VERSION[*]})) ||\
  common::exit 1 "Exiting..."
 
 if [[ $RELEASE_BRANCH =~ release- ]] &&

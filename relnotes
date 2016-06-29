@@ -125,10 +125,14 @@ extract_pr_title () {
     # Look for a body release note first and default to title
     # * indent lines >1
     # Try to account for and adjust user-entered formatting
+    # * This is somewhat complicated by the fact that we convert this to
+    #   html, for things like email, group posts, dashboards, and there
+    #   is a disconnect between pandoc and github's markdown for lists.
+    #   https://github.com/jgm/pandoc/issues/2210
     content=$(echo "$body" |\
               sed -n '/```release-note/,/^```/{/^```/!p;/^```$/q}' |\
-              sed -e '/^$/d' -e '2,$s/^\( *\* \)/    \1/g' \
-                  -e '2,$s/^\( *[^ \*]\)/  * \1/g')
+              sed -e '/^$/d' -e '2,$s/^\( *\* \)/        \1/g' \
+                  -e '2,$s/^\( *[^ \*]\)/    * \1/g')
 
     # if the release-note block is empty or the template is unchanged, use title
     if [[ -z "$content" ]] || [[ "$content" =~ -OR- ]]; then
