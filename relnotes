@@ -183,10 +183,7 @@ create_body () {
     echo "[${file##*/}](https://storage.googleapis.com/$release_bucket/release/$release_tag/${file##*/}) | \`$(common::sha1 $file)\` | \`$(common::md5 $file)\`"
     echo
   fi
-  echo "## Changes since $start_tag"
-  echo
   cat $PR_NOTES
-  echo
 }
 
 ###############################################################################
@@ -313,14 +310,23 @@ generate_notes () {
   # Bootstrap notes for major (new branch) releases
   if ((FLAGS_full)) || [[ $release_tag =~ ${VER_REGEX[dotzero]} ]]; then
     cat <<EOF+ >> $PR_NOTES
-### Major Themes
+## Major Themes
 * TBD
 
-### Other notable improvements
+## Other notable improvements
+* TBD
+
+## Known Issues
+* TBD
+
+## Provider-specific Notes
 * TBD
 
 EOF+
   fi
+
+  echo "## Changelog since $start_tag" >> $PR_NOTES
+  echo >> $PR_NOTES
 
   if [[ -n "${notes_experimental[*]}" ]]; then
     echo "### Experimental Features" >> $PR_NOTES
@@ -336,17 +342,6 @@ EOF+
     echo >> $PR_NOTES
   fi
 
-  if ((FLAGS_full)) || [[ $release_tag =~ ${VER_REGEX[dotzero]} ]]; then
-    cat <<EOF+ >> $PR_NOTES
-### Known Issues
-* TBD
-
-### Provider-specific Notes
-* TBD
-
-EOF+
-  fi
-
   if [[ -n "${notes_normal[*]}" ]]; then
     echo "### Other notable changes" >> $PR_NOTES
     extract_pr_title "${notes_normal[*]}" >> $PR_NOTES \
@@ -356,7 +351,7 @@ EOF+
   # Aggregate all previous releases in series
   if ((FLAGS_full)) || [[ $release_tag =~ ${VER_REGEX[dotzero]} ]]; then
     echo
-    echo "### Releases Included in $release_tag"
+    echo "### Previous Releases Included in $release_tag"
     while read anchor; do
       echo "$anchor"
     done< <(egrep '^- \[v1.3.0-' $changelog)
@@ -368,6 +363,8 @@ EOF+
     logecho "**No notable changes for this release**" >> $PR_NOTES
     logecho
   fi
+
+  echo >> $PR_NOTES
 
   logecho "Preparing layout..."
   create_body ${FLAGS_tarball:-""} $start_tag ${release_tag:-HEAD} \

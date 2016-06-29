@@ -18,24 +18,49 @@ This bootstraps a milestone release in CHANGELOG.md with a template for
 use by the Release Czar and the subteam area leads to then further expand
 on the release notes with more detail as needed.
 
-A major milestone release (1.X.0) in CHANGELOG.md might look like:
+A example major milestone release (1.X.0) in CHANGELOG.md:
 
-* Changes since v1.2.0
-   * 1.3.0-beta.2
-   * 1.3.0-beta.1
-   * v1.3.0-alpha.5
-   * ...
-   * ...
-* Major Themes
-  * ...
-* Experimental Features
-  * ...more detail on experimental features...
-* Action required
-  * ...more detail on action-required features...
-* Known Issues
-   * Docker Known Issues
-* Provider-specific Notes
+```
+# v1.X.0
+[Documentation](http://kubernetes.github.io) & [Examples](http://releases.k8s.io/release-1.X/examples)
 
+## Downloads
+
+binary | sha1 hash | md5 hash
+------ | --------- | --------
+[kubernetes.tar.gz](https://storage.googleapis.com/kubernetes-release/release/v1.X.0/kubernetes.tar.gz) | `7deca064d2e277a0beed802c7cfe32d152434aed` | `0b735e8b9fd64064caa578d49062820d`
+
+## Major Themes
+* TBD
+
+## Other notable improvements
+* TBD
+
+## Known Issues
+* TBD
+
+## Provider-specific Notes
+* TBD
+
+## Changelog since v1.X.0-beta.2
+
+### Action Required
+* This very important item to watch out for
+
+### Other notable changes
+* this bug fix
+* that bug fix
+* this cool feature
+
+### Previous Releases Included in v1.X.0
+- [v1.X.0-beta.2](#v1X0-beta2)
+- [v1.X.0-beta.1](#v1X0-beta1)
+- [v1.X.0-alpha.5](#v1X0-alpha5)
+- [v1.X.0-alpha.4](#v1X0-alpha4)
+- [v1.X.0-alpha.3](#v1X0-alpha3)
+- [v1.X.0-alpha.2](#v1X0-alpha2)
+- [v1.X.0-alpha.1](#v1X0-alpha1)
+```
 
 ## FAQ
 
