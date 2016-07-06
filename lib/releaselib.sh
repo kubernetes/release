@@ -455,10 +455,10 @@ release::gcs::copy_release_artifacts() {
   local gci_path
 
   # GCI path changed in 1.2->1.3 time period
-  if [[ -d $gce_path/trusty ]]; then
-    gci_path=$gce_path/trusty
-  else
+  if [[ -d $gce_path/gci ]]; then
     gci_path=$gce_path/gci
+  else
+    gci_path=$gce_path/trusty
   fi
 
   logrun rm -rf $gcs_stage || return 1
