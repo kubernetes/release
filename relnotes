@@ -172,6 +172,7 @@ create_body () {
   ((FLAGS_preview)) && echo "**Release Note Preview - generated on $(date)**"
   echo
   echo "# $title"
+  echo
   echo "[Documentation](http://kubernetes.github.io) &" \
        "[Examples](http://releases.k8s.io/$CURRENT_BRANCH/examples)"
   echo
@@ -242,7 +243,7 @@ generate_notes () {
   local -a notes_experimental
   local -a prs
 
-  branch_head=$(git rev-parse refs/remotes/origin/$CURRENT_BRANCH)
+  branch_head=$(git rev-parse refs/remotes/origin/$CURRENT_BRANCH 2>/dev/null)
 
   # Default
   range="${POSITIONAL_ARGV[0]:-"${LAST_RELEASE[$CURRENT_BRANCH]}..$branch_head"}"
@@ -311,15 +312,19 @@ generate_notes () {
   if ((FLAGS_full)) || [[ $release_tag =~ ${VER_REGEX[dotzero]} ]]; then
     cat <<EOF+ >> $PR_NOTES
 ## Major Themes
+
 * TBD
 
 ## Other notable improvements
+
 * TBD
 
 ## Known Issues
+
 * TBD
 
 ## Provider-specific Notes
+
 * TBD
 
 EOF+
@@ -330,6 +335,7 @@ EOF+
 
   if [[ -n "${notes_experimental[*]}" ]]; then
     echo "### Experimental Features" >> $PR_NOTES
+    echo >> $PR_NOTES
     extract_pr_title "${notes_experimental[*]}" >> $PR_NOTES \
      || common::exit 1 "$FAILED: github rate limiting."
     echo >> $PR_NOTES
@@ -337,6 +343,7 @@ EOF+
 
   if [[ -n "${notes_action[*]}" ]]; then
     echo "### Action Required" >> $PR_NOTES
+    echo >> $PR_NOTES
     extract_pr_title "${notes_action[*]}" >> $PR_NOTES \
      || common::exit 1 "$FAILED: github rate limiting."
     echo >> $PR_NOTES
@@ -344,6 +351,7 @@ EOF+
 
   if [[ -n "${notes_normal[*]}" ]]; then
     echo "### Other notable changes" >> $PR_NOTES
+    echo >> $PR_NOTES
     extract_pr_title "${notes_normal[*]}" >> $PR_NOTES \
      || common::exit 1 "$FAILED: github rate limiting."
   fi
