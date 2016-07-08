@@ -209,7 +209,8 @@ check_prerequisites () {
   # Insufficient for checking actual writability, but useful:
   # ganpati list-members -g cloud-kubernetes-release -u $USER|fgrep -wq $USER
   logecho -n "Checking writability to $RELEASE_BUCKET: "
-  if logrun touch $tempfile && \
+  if logrun release::gcs::ensure_release_bucket $RELEASE_BUCKET && \
+     logrun touch $tempfile && \
      logrun gsutil cp $tempfile gs://$RELEASE_BUCKET && \
      logrun gsutil rm gs://$RELEASE_BUCKET/${tempfile##*/} && \
      logrun rm -f $tempfile; then
@@ -699,10 +700,6 @@ prepare_workspace () {
   logrun mkdir -p $WORKDIR
   gitlib::sync_repo $K8S_GITHUB_URL $TREE_ROOT || return 1
   logrun cd $TREE_ROOT
-
-  logecho -n "Check/make release bucket $RELEASE_BUCKET: "
-  logrun -s release::gcs::ensure_release_bucket $RELEASE_BUCKET \
-   || return 1
 }
 
 ##############################################################################
