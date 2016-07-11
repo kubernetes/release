@@ -105,6 +105,8 @@ gitlib::pending_prs () {
   fi
 
   while read pr milestone login date msg; do
+    # "escape" '*' in commit messages so they don't mess up formatting.
+    msg=$(echo $msg |sed 's, *\* *, * ,g')
     printf "%-8s $sep %-4s $sep %-10s $sep %-18s $sep %s\n" \
            "#$pr" "$milestone" "@$login" "$(date +"%F %R" -d "$date")" "$msg"
   done < <($GHCURL $K8S_GITHUB_API/pulls\?state\=open\&base\=$branch |\
