@@ -22,8 +22,9 @@ PROG=${0##*/}
 #+     $PROG - Kubernetes Release Tool
 #+
 #+ SYNOPSIS
-#+     $PROG  [--yes] [--nomock] [--noclean] [--official] [--buildversion=]
-#+            <branch>
+#+     $PROG  [--yes] [--nomock] [--noclean] [--official]
+#+            [--buildversion=<jenkins build version>]
+#+            [--basedir=<alt base work dir>] <branch>
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
@@ -74,8 +75,10 @@ PROG=${0##*/}
 #+                                 Not always possible and ignored when --nomock
 #+                                 is set
 #+     [--official]              - Official releases on release branches only
-#+     [--buildversion=]         - Override Jenkins check and set a specific
+#+     [--buildversion=ver]      - Override Jenkins check and set a specific
 #+                                 build version
+#+     [--basedir=dir]           - Specify an alternate base directory
+#+                                 (default: /usr/local/google/$USER)
 #+     [--help | -man]           - display man page for this script
 #+     [--usage | -?]            - display in-line usage
 #+
@@ -313,16 +316,18 @@ prepare_tree () {
 
   # Check for tag first
   if git rev-parse "${RELEASE_VERSION[$label]}" >/dev/null 2>&1; then
-    if ((FLAGS_nomock)); then
-      logecho "Something horrible went wrong." \
-              "The ${RELEASE_VERSION[$label]} tag already exists!"
-      return 1
-    elif ((FLAGS_noclean)); then
+    if ((FLAGS_noclean)); then
       logecho "$ATTENTION: Found existing tag ${RELEASE_VERSION[$label]} in" \
               "unclean tree during --noclean run"
       logecho -n "Checking out ${RELEASE_VERSION[$label]}: "
       logrun -s git checkout ${RELEASE_VERSION[$label]} || return 1
       return 0
+    else
+      logecho "The ${RELEASE_VERSION[$label]} tag already exists!"
+      logecho "Possible reasons for this:"
+      logecho "* --buildversion is old."
+      logecho "* $WORKDIR is unclean"
+      return 1
     fi
   fi
 
@@ -762,7 +767,7 @@ else
   RELEASE_BUCKET+=-$USER
   GCRIO_REPO="kubernetes-release-test"
 fi
-BASEDIR="/usr/local/google/$USER"
+BASEDIR=${FLAGS_basedir:-"/usr/local/google/$USER"}
 
 # TODO:
 # These KUBE_ globals extend beyond the scope of the new release refactored
