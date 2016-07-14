@@ -155,7 +155,7 @@ common::cleanexit () {
 # Simple ACL check to limit nomock runs to a short list of release folks
 check_acls () {
   case "$USER" in
-    filipg|ihmccreery|djmm) ;;
+    filipg|robertbailey|fabioy|djmm) ;;
                          *) logecho "Releases restricted to certain users!"
                             return 1
                             ;;
