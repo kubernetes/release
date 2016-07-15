@@ -149,20 +149,21 @@ fi
 #
 common::cleanexit () {
   tput cnorm
-
-  common::strip_control_characters $LOGFILE
+  local f
 
   logrun rm -rf $LOCAL_CACHE
 
   if [[ -d $WORKDIR ]]; then
-    logecho -n "Copying $LOGFILE to $WORKDIR: "
-    logrun -s cp -f $LOGFILE $WORKDIR
+    for f in $(ls $LOGFILE{,.[0-9]} 2>/dev/null); do
+      common::strip_control_characters $f
+    done
+    logecho -n "Copying $LOGFILE{,.[0-9]} to $WORKDIR: "
+    logrun -s cp -f $LOGFILE{,.[0-9]} $WORKDIR
   fi
 
   common::timestamp end
   exit ${1:-0}
 }
-
 
 ###############################################################################
 # Simple ACL check to limit nomock runs to a short list of release folks
@@ -231,8 +232,8 @@ check_prerequisites () {
   logecho -n "Checking writability and ACLs on $RELEASE_BUCKET: "
   if release::gcs::ensure_release_bucket $RELEASE_BUCKET && \
      logrun touch $tempfile && \
-     logrun gsutil cp $tempfile gs://$RELEASE_BUCKET && \
-     logrun gsutil rm gs://$RELEASE_BUCKET/${tempfile##*/} && \
+     logrun $GSUTIL cp $tempfile gs://$RELEASE_BUCKET && \
+     logrun $GSUTIL rm gs://$RELEASE_BUCKET/${tempfile##*/} && \
      logrun rm -f $tempfile; then
     logecho -r "$OK"
   else
@@ -762,6 +763,19 @@ fetch_upstream () {
   logrun -s git fetch upstream || return 1
 }
 
+
+##############################################################################
+# Archive the release on GS
+archive_release () {
+  local archive_bucket=gs://$RELEASE_BUCKET/releases
+
+  ((FLAGS_yes)) || common::askyorn -y "Archive this release on GS" || return
+
+  logecho -n "Copy $WORKDIR to $archive_bucket: "
+  logrun -s $GSUTIL -mq cp -r $WORKDIR $archive_bucket || return 1
+}
+
+
 ###############################################################################
 # MAIN
 ###############################################################################
@@ -999,7 +1013,12 @@ else
   common::stepheader "UPDATE GITHUB RELEASES PAGE"
   ##############################################################################
   common::runstep update_github_release || common::exit 1 "Exiting..."
+
+  ##############################################################################
+  common::stepheader "ARCHIVE RELEASE ON GS"
+  ##############################################################################
+  common::runstep archive_release || common::exit 1 "Exiting..."
 fi
 
 # END script
-common::cleanexit 0
+common::exit 0
