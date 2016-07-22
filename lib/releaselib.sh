@@ -497,7 +497,7 @@ release::gcs::copy_release_artifacts() {
   logecho "- Hashing files in ${gcs_stage##*/}..."
   find $gcs_stage -type f | while read path; do
     common::md5 $path > "$path.md5" || return 1
-    common::sha1 $path > "$path.sha1" || return 1
+    common::sha $path 1 > "$path.sha1" || return 1
   done
 
   logecho -n "- Copying release artifacts to $gcs_destination: "

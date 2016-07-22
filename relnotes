@@ -59,7 +59,7 @@ PROG=${0##*/}
 #+     --full                    - Force 'full' release format to show all
 #+                                 sections of release notes. (This is the
 #+                                 *default* for new branch X.Y.0 notes)
-#+     --tarball=                - tarball to md5/sha1 sum for display
+#+     --tarball=                - tarball to sha256 sum for display
 #+     --markdown-file=          - Specify an alt file to use to store notes
 #+     --html-file=              - Produce a html version of the notes
 #+     --release-bucket=         - Specify gs bucket to point to in
@@ -179,9 +179,9 @@ create_body () {
   if [[ -f "$file" ]]; then
     echo "## Downloads"
     echo
-    echo "binary | sha1 hash | md5 hash"
-    echo "------ | --------- | --------"
-    echo "[${file##*/}](https://storage.googleapis.com/$release_bucket/release/$release_tag/${file##*/}) | \`$(common::sha1 $file)\` | \`$(common::md5 $file)\`"
+    echo "binary | sha256 hash"
+    echo "------ | -----------"
+    echo "[${file##*/}](https://storage.googleapis.com/$release_bucket/release/$release_tag/${file##*/}) | \`$(common::sha $file 256)\`"
     echo
   fi
   cat $PR_NOTES
