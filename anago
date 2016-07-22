@@ -578,7 +578,7 @@ update_github_release () {
     "tag_name": "'$RELEASE_VERSION_PRIME'",
     "target_commitish": "'$RELEASE_BRANCH'",
     "name": "'$RELEASE_VERSION_PRIME'",
-    "body": "See [kubernetes-announce@](https://groups.google.com/forum/#!forum/kubernetes-announce) and [CHANGELOG]('$K8S_GITHUB_URL'/blob/master/CHANGELOG.md/#'${RELEASE_VERSION_PRIME//\./}') for details.\nSHA256: '$sha_hash'",
+    "body": "See [kubernetes-announce@](https://groups.google.com/forum/#!forum/kubernetes-announce) and [CHANGELOG]('$K8S_GITHUB_URL'/blob/master/CHANGELOG.md/#'${RELEASE_VERSION_PRIME//\./}') for details.\n\nDOWNLOAD SHA256: `'$sha_hash'`",
     "draft": '$draft',
     "prerelease": '$prerelease'
     }' |jq -r '.id')
