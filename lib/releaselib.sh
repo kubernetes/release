@@ -225,10 +225,12 @@ release::set_build_version () {
     # Deal with far-behind secondary builds and just skip forward
     ((build_number>giveup_build_number)) && continue
 
-    ((FLAGS_verbose)) && \
-     logecho "* $(printf \
-                  '%-'$max_job_length's %-7s %-7s' \
-                  $main_job \#$main_run \#$build_number) [$build_sha1_date]"
+    if ((FLAGS_verbose)); then
+      logecho "* $(printf \
+                   '%-'$max_job_length's %-7s %-7s' \
+                   $main_job \#$main_run \#$build_number) [$build_sha1_date]"
+      logecho "* (--buildversion=$build_version)"
+    fi
 
     # Check secondaries to ensure that build number is green across "all"
     for other_job in ${secondary_jobs[@]}; do
