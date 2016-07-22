@@ -604,23 +604,25 @@ common::argc_validate () {
 # @param file - The file
 # @print the md5 hash
 common::md5 () {
+  local file=$1
+
   if which md5 >/dev/null 2>&1; then
     md5 -q "$1"
   else
-    md5sum "$1" | awk '{print $1}'
+    md5sum "$file" | awk '{print $1}'
   fi
 }
 
 ###############################################################################
 # Get the sha1 hash of a file
 # @param file - The file
-# @print the sha1 hash
-common::sha1 () {
-  if which shasum >/dev/null 2>&1; then
-    shasum -a1 "$1"
-  else
-    sha1sum "$1"
-  fi | awk '{print $1}'
+# @param algo - Algorithm 1 (default), 224, 256, 384, 512, 512224, 512256
+# @print the sha hash
+common::sha () {
+  local file=$1
+  local algo=${2:-1}
+
+  which shasum >/dev/null 2>&1 && shasum -a$algo $file | awk '{print $1}'
 }
 
 ###############################################################################
