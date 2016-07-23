@@ -359,21 +359,28 @@ release::set_release_version () {
     # When we do branched branches we end up with two betas so deal with it
     # by creating a couple of beta indexes.
     RELEASE_VERSION[beta0]="v${build_version[major]}.${build_version[minor]}"
-    RELEASE_VERSION[beta0]+=".${build_version[patch]}${build_version[label]}"
-    # Need to increment the labelid since the original branch will have its
-    # predecessors.
-    RELEASE_VERSION[beta0]+=".$((${build_version[labelid]}+1))"
+    RELEASE_VERSION[beta0]+=".${build_version[patch]}-beta.1"
     RELEASE_VERSION[beta1]="v${build_version[major]}.${build_version[minor]}"
     RELEASE_VERSION[beta1]+=".$((${build_version[patch]}+1))-beta.0"
     RELEASE_VERSION_PRIME="${RELEASE_VERSION[beta0]}"
   elif [[ $branch =~ release- ]]; then
     # Build out the RELEASE_VERSION dict
     RELEASE_VERSION_PRIME="v${build_version[major]}.${build_version[minor]}"
-    RELEASE_VERSION_PRIME+=".${build_version[patch]}"
+    # If the incoming version is anything bigger than vX.Y.Z, then it's a
+    # Jenkin's build version and it stands as is, otherwise increment the patch
+    if [[ -n ${build_version[labelid]} ]]; then
+      RELEASE_VERSION_PRIME+=".${build_version[patch]}"
+    else
+      RELEASE_VERSION_PRIME+=".$((${build_version[patch]}+1))"
+    fi
+
     if ((FLAGS_official)); then
       RELEASE_VERSION[official]="$RELEASE_VERSION_PRIME"
-      RELEASE_VERSION[beta]="v${build_version[major]}.${build_version[minor]}"
-      RELEASE_VERSION[beta]+=".$((${build_version[patch]}+1))-beta.0"
+      # Only primary branches get beta releases
+      if [[ $branch =~ ^release-([0-9]{1,})\.([0-9]{1,})$ ]]; then
+        RELEASE_VERSION[beta]="v${build_version[major]}.${build_version[minor]}"
+        RELEASE_VERSION[beta]+=".$((${build_version[patch]}+1))-beta.0"
+      fi
     else
       RELEASE_VERSION[beta]="$RELEASE_VERSION_PRIME${build_version[label]}"
       RELEASE_VERSION[beta]+=".$((${build_version[labelid]}+1))"
@@ -425,10 +432,11 @@ release::gcs::stage_and_hash() {
   local srcs=("${args[@]::$split}" )
   local dst="${args[$split]}"
 
+  logrun mkdir -p $gcs_stage/$dst || return 1
+
   for src in ${srcs[@]}; do
     srcdir=$(dirname $src)
     srcthing=$(basename $src)
-    logrun mkdir -p $gcs_stage/$dst || return 1
     tar c -C $srcdir $srcthing | tar x -C $gcs_stage/$dst || return 1
   done
 }

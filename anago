@@ -124,8 +124,14 @@ RELEASE_BRANCH=${POSITIONAL_ARGV[0]}
  || common::exit 1 "Invalid branch name!"
 
 # Check arg conflicts
-if ((FLAGS_official)) && [[ "$RELEASE_BRANCH" == "master" ]]; then
-  common::exit 1 "Can't do official releases on master!"
+if ((FLAGS_official)); then
+  if [[ "$RELEASE_BRANCH" == "master" ]]; then
+    common::exit 1 "Can't do official releases on master!"
+  fi
+else
+  if [[ -n ${BASH_REMATCH[4]} ]]; then
+    common::exit 1 "Only --official releases are allowed on 3-part branches!"
+  fi
 fi
 
 ###############################################################################
@@ -332,12 +338,10 @@ prepare_tree () {
   fi
 
   # if this is a new branch, checkout -B
-  # NOTE: We branch from the head of the $PARENT_BRANCH in this case
   if [[ -n "$PARENT_BRANCH" ]]; then
     if [[ $RELEASE_VERSION_PRIME == ${RELEASE_VERSION[$label]} ]]; then
-      # --no-track?
       branch_arg="-B"
-      branch_point="origin/$PARENT_BRANCH"
+      branch_point=$BRANCH_POINT
     else
       # if this is not the PRIMary version on the named RELEASE_BRANCH, use the
       # parent
@@ -625,16 +629,24 @@ update_github_release () {
 ##############################################################################
 # Calls into Jenkins looking for a build to use for release
 # Sets global PARENT_BRANCH when a new branch is created
+# And global BRANCH_POINT when new branch is created from an existing tag
 get_build_candidate () {
   local testing_branch
 
   # Are we branching to a new branch?
   if gitlib::branch_exists $RELEASE_BRANCH; then
+    # If the branch is a 3-part branch (ie. release-1.2.3)
+    if [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]] && \
+       [[ -n ${BASH_REMATCH[4]} ]]; then
+      # The 'missing' . here between 2 and 3 is intentional. It's part of the
+      # optional regex.
+      BRANCH_POINT=v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}${BASH_REMATCH[3]}
+    fi
     testing_branch=$RELEASE_BRANCH
   else
     [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]]
 
-    # if 3 part branch name, check parent exists
+    # Not a 3 part branch
     if [[ -z "${BASH_REMATCH[4]}" ]]; then
       if ((FLAGS_official)); then
         common::exit 1 "Can't do official releases when creating a new branch!"
@@ -642,33 +654,41 @@ get_build_candidate () {
 
       PARENT_BRANCH=master
       testing_branch=$PARENT_BRANCH
+    # if 3 part branch name, check parent exists
     elif gitlib::branch_exists ${RELEASE_BRANCH%.*}; then
       PARENT_BRANCH=${RELEASE_BRANCH%.*}
+      # The 'missing' . here between 2 and 3 is intentional. It's part of the
+      # optional regex.
+      BRANCH_POINT=v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}${BASH_REMATCH[3]}
       testing_branch=$PARENT_BRANCH
     else
-     common::exit 1 "$FATAL! We should never get here! branch=$RELEASE_BRANCH"
+      common::exit 1 "$FATAL! We should never get here! branch=$RELEASE_BRANCH"
     fi
   fi
 
-  if [[ -n $JENKINS_BUILD_VERSION ]]; then
-    logecho -r "$ATTENTION: Using --buildversion=$JENKINS_BUILD_VERSION"
-  else
-    logecho "Asking Jenkins for a good build (this may take some time)..."
-    FLAGS_verbose=1 release::set_build_version $testing_branch || return 1
-  fi
+  if [[ -z $BRANCH_POINT ]]; then
+    if [[ -n $JENKINS_BUILD_VERSION ]]; then
+      logecho -r "$ATTENTION: Using --buildversion=$JENKINS_BUILD_VERSION"
+    else
+      logecho "Asking Jenkins for a good build (this may take some time)..."
+      FLAGS_verbose=1 release::set_build_version $testing_branch || return 1
+    fi
 
-  # The RELEASE_BRANCH should always match with the JENKINS_BUILD_VERSION
-  if [[ $RELEASE_BRANCH =~ release- ]] && \
-     [[ ! $JENKINS_BUILD_VERSION =~ ^v${RELEASE_BRANCH/release-/} ]]; then
-    logecho
-    logecho "$FATAL!  branch/build mismatch!"
-    logecho "buildversion=$JENKINS_BUILD_VERSION branch=$RELEASE_BRANCH"
-    common::exit 1
+    # The RELEASE_BRANCH should always match with the JENKINS_BUILD_VERSION
+    if [[ $RELEASE_BRANCH =~ release- ]] && \
+       [[ ! $JENKINS_BUILD_VERSION =~ ^v${RELEASE_BRANCH/release-/} ]]; then
+      logecho
+      logecho "$FATAL!  branch/build mismatch!"
+      logecho "buildversion=$JENKINS_BUILD_VERSION branch=$RELEASE_BRANCH"
+      common::exit 1
+    fi
   fi
 
   FLAGS_verbose=1 \
-   release::set_release_version $JENKINS_BUILD_VERSION $RELEASE_BRANCH \
-                                $PARENT_BRANCH || return 1
+   release::set_release_version ${BRANCH_POINT:-$JENKINS_BUILD_VERSION} \
+                                $RELEASE_BRANCH \
+                                $PARENT_BRANCH \
+   || return 1
 }
 
 ##############################################################################
@@ -752,6 +772,7 @@ mungedocs () {
 : ${FLAGS_nomock:=0}
 : ${FLAGS_noclean:=0}
 : ${FLAGS_official:=0}
+
 # Set with --buildversion or set it later in release::set_build_version()
 JENKINS_BUILD_VERSION=$FLAGS_buildversion
 
@@ -802,7 +823,7 @@ common::check_packages jq docker-engine pandoc || common::exit 1 "Exiting..."
 check_prerequisites || common::exit 1 "Exiting..."
 
 ##############################################################################
-common::stepheader "FIND A VALID BUILD CANDIDATE"
+common::stepheader "SET BUILD CANDIDATE"
 ##############################################################################
 common::runstep get_build_candidate || common::exit 1 "Exiting..."
 
@@ -837,7 +858,14 @@ common::stepheader "SESSION VALUES"
 # Pass in the indexed RELEASE_VERSION dict key by key
 ALL_RELEASE_VERSIONS=($(for key in ${!RELEASE_VERSION[@]}; do
                          echo RELEASE_VERSION[$key]; done))
-common::printvars -p WORKDIR WORKDIR TREE_ROOT JENKINS_BUILD_VERSION \
+
+# Depending on the type of operation being performed one of these will be set
+if [[ -n $BRANCH_POINT ]]; then
+  DISPLAY_VERSION="BRANCH_POINT"
+else
+  DISPLAY_VERSION="JENKINS_BUILD_VERSION"
+fi
+common::printvars -p WORKDIR WORKDIR TREE_ROOT $DISPLAY_VERSION \
                      RELEASE_VERSION_PRIME ${ALL_RELEASE_VERSIONS[@]} \
                      RELEASE_BRANCH GCRIO_REPO RELEASE_BUCKET \
                      FLAGS_nomock FLAGS_noclean FLAGS_official LOGFILE

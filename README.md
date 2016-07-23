@@ -69,10 +69,22 @@ Try a beta release on a new branch:
 $ anago release-9.9
 ```
 
-Try creating a new branch and beta for an emergency zero-day fix:
+Try creating a new branch and beta for an emergency zero-day fix.
+See [docs/branching.md](docs/branching.md) for more details.
+
+(The branch name should reflect the branch point/tag. So if branching at the
+v9.9.9 tag on the release-9.9 branch, create a release-9.9.9 branch):
 ```
 $ anago release-9.9.9
 ```
+
+## Official Releases
+
+Anago is currently locked down to only run for a specific set of individuals.
+when ```--nomock``` is specified.
+
+Adding that flag to the command-line indicates the release will push
+tags and artifacts.  The user is still prompted before a push occurs, however.
 
 ## Other Tools
 
@@ -85,6 +97,8 @@ your favorite editor.
 * [find_green_build](https://github.com/kubernetes/release/blob/master/find_green_build) : Ask Jenkins for a good build to use
 * [script-template](https://github.com/kubernetes/release/blob/master/script-template) : Generate a script template in the kubernetes/release ecosystem
 * [relnotes](https://github.com/kubernetes/release/blob/master/relnotes) : Scrape github for release notes \(See below for more info\)
+* [branchff](https://github.com/kubernetes/release/blob/master/branchff) : Fast-forward branching helper
+* [changelog-update](https://github.com/kubernetes/release/blob/master/changelog-update) : Update CHANGELOG.md version entries by rescanning github for text and label changes
 
 ### Release Notes Gathering
 
