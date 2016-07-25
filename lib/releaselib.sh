@@ -24,6 +24,7 @@ JOB_CACHE_DIR=/tmp/buildresults-cache
 #
 # @optparam -d - dedup git's monotonically increasing (describe) build numbers
 # @param job - Jenkins job name
+# @optparam last_main_build - The last green build in the $main_job cache
 #
 release::update_job_cache () {
   local dedup=0
@@ -32,9 +33,11 @@ release::update_job_cache () {
     shift
   fi
   local job=$1
+  # Default so below condition just works
+  local last_main_build=${2:-0}
   local job_file=$JOB_CACHE_DIR/$job
   local logroot="gs://kubernetes-jenkins/logs"
-  local cache_limit=75
+  local cache_limit=100
   local buildstate
   local j
   local i
@@ -73,24 +76,41 @@ release::update_job_cache () {
     ((run==0)) || [[ -n ${JOB[$run]} ]] && break
 
     buildstate=$($GSUTIL cat $logroot/$job/$run/*.json 2>/dev/null)
-    [[ $(echo "$buildstate" | jq -r '.result|values') == "SUCCESS" ]] &&
-     JOB[$run]=$(echo "$buildstate" | jq -r '.version|values')
+    JOB[$run]=$(echo "$buildstate" | jq -r '.version|values')
+
+    # Extract the build number
+    [[ ${JOB[$run]} =~ ${VER_REGEX[release]}.${VER_REGEX[build]} ]]
+    build_number=${BASH_REMATCH[6]}
+
+    # If the build number is less than the main_job's incoming
+    # last_main_build there's no point in collecting more Jenkin's data
+    ((build_number<last_main_build)) && break
+
+    # No success?  Unset
+    [[ $(echo "$buildstate" | jq -r '.result|values') == "SUCCESS" ]] \
+     || unset JOB[$run]
 
     ((run--))
   done
 
   # Write out cache file
   # Reverse sort the array
+  >$job_file
   for i in $(for n in ${!JOB[*]}; do echo $n; done|sort -rh |\
              head -$cache_limit); do
+    # Check for "max" build number and break
+    [[ ${JOB[$i]} =~ ${VER_REGEX[release]}.${VER_REGEX[build]} ]]
+    build_number=${BASH_REMATCH[6]}
+    ((build_number<last_main_build)) && break
+
     # and dedup?
     if ((dedup)); then
       [[ ${JOB[$i]} != $last_value ]] && echo JOB[$i]=${JOB[$i]}
       last_value=${JOB[$i]}
     else
       echo JOB[$i]=${JOB[$i]}
-    fi
-  done > $job_file
+    fi >> $job_file
+  done
 }
 
 ##############################################################################
@@ -119,6 +139,7 @@ release::set_build_version () {
   local build_number
   local cache_build
   local last_cache_build
+  local last_main_build
   local build_sha1
   local run
   local n
@@ -157,10 +178,18 @@ release::set_build_version () {
   # Combined list for cross-checking against $main_job
   local -a secondary_jobs=(${gce_jobs[@]} ${gke_jobs[@]})
 
-  # Update cache
+  # Update main cache
   release::update_job_cache -d $main_job
+
+  # Get last build of $main_job
+  if [[ -s $JOB_CACHE_DIR/$main_job ]]; then
+    [[ $(tail -1 $JOB_CACHE_DIR/$main_job) =~ ${VER_REGEX[release]}.${VER_REGEX[build]} ]]
+    last_main_build=${BASH_REMATCH[6]}
+  fi
+
+  # Update secondary caches limited by main cache last build number
   for other_job in ${secondary_jobs[@]}; do
-    release::update_job_cache $other_job
+    release::update_job_cache $other_job $last_main_build
   done
 
   if ((FLAGS_verbose)); then
