@@ -24,7 +24,8 @@ JOB_CACHE_DIR=/tmp/buildresults-cache
 #
 # @optparam -d - dedup git's monotonically increasing (describe) build numbers
 # @param job - Jenkins job name
-# @optparam last_main_build - The last green build in the $main_job cache
+# @optparam last_main_build_version - The last green version in the 
+#                                     $main_job cache
 #
 release::update_job_cache () {
   local dedup=0
@@ -33,12 +34,16 @@ release::update_job_cache () {
     shift
   fi
   local job=$1
+  local last_main_build_version=$2
+  local last_main_version
   # Default so below condition just works
-  local last_main_build=${2:-0}
+  local last_main_build=0
   local job_file=$JOB_CACHE_DIR/$job
   local logroot="gs://kubernetes-jenkins/logs"
   local cache_limit=100
   local buildstate
+  local build_number
+  local version_number
   local j
   local i
   local run
@@ -70,25 +75,37 @@ release::update_job_cache () {
     logecho -r " $job cache..."
   fi
 
+  # Set boundary checkers from last_main_build_version
+  [[ -n "$last_main_build_version" &&
+     $last_main_build_version =~ (${VER_REGEX[release]}).${VER_REGEX[build]} ]]
+  last_main_version=${BASH_REMATCH[1]}
+  last_main_build=${BASH_REMATCH[7]}
+
   for ((cnt=0;cnt<=$cache_limit;cnt++)); do
     # Once we hit a JOB[$run] that is set (or run gets to 0), break out
     # the cache should be complete after that
     ((run==0)) || [[ -n ${JOB[$run]} ]] && break
 
     buildstate=$($GSUTIL cat $logroot/$job/$run/*.json 2>/dev/null)
-    JOB[$run]=$(echo "$buildstate" | jq -r '.version|values')
+    if [[ $(echo "$buildstate" | jq -r '.result|values') == "SUCCESS" ]]; then
+      JOB[$run]=$(echo "$buildstate" | jq -r '.version|values')
+    fi
 
     # Extract the build number
-    [[ ${JOB[$run]} =~ ${VER_REGEX[release]}.${VER_REGEX[build]} ]]
-    build_number=${BASH_REMATCH[6]}
+    [[ ${JOB[$run]} =~ (${VER_REGEX[release]}).${VER_REGEX[build]} ]]
+    version_number=${BASH_REMATCH[1]}
+    build_number=${BASH_REMATCH[7]}
 
-    # If the build number is less than the main_job's incoming
-    # last_main_build there's no point in collecting more Jenkin's data
-    ((build_number<last_main_build)) && break
+    if [[ -n "$last_main_build_version" ]]; then
+      # If we cross a boundary into another version different from the incoming
+      # main version_number, stop building the cache, break
+      [[ $version_number != ${last_main_build_version:-$version_number} ]] \
+       && break
 
-    # No success?  Unset
-    [[ $(echo "$buildstate" | jq -r '.result|values') == "SUCCESS" ]] \
-     || unset JOB[$run]
+      # If the build number is less than the main_job's incoming
+      # last_main_build there's no point in collecting more Jenkin's data
+      ((build_number<last_main_build)) && break
+    fi
 
     ((run--))
   done
@@ -99,9 +116,14 @@ release::update_job_cache () {
   for i in $(for n in ${!JOB[*]}; do echo $n; done|sort -rh |\
              head -$cache_limit); do
     # Check for "max" build number and break
-    [[ ${JOB[$i]} =~ ${VER_REGEX[release]}.${VER_REGEX[build]} ]]
-    build_number=${BASH_REMATCH[6]}
+    [[ ${JOB[$i]} =~ (${VER_REGEX[release]}).${VER_REGEX[build]} ]]
+    version_number=${BASH_REMATCH[1]}
+    build_number=${BASH_REMATCH[7]}
     ((build_number<last_main_build)) && break
+    # Check for crossing a boundary on version_number and break
+    # We don't need to capture previous version in cache
+    [[ $version_number != ${last_version_number:-$version_number} ]] && break
+    last_version_number=$version_number
 
     # and dedup?
     if ((dedup)); then
@@ -139,7 +161,7 @@ release::set_build_version () {
   local build_number
   local cache_build
   local last_cache_build
-  local last_main_build
+  local last_main_build_version
   local build_sha1
   local run
   local n
@@ -184,12 +206,12 @@ release::set_build_version () {
   # Get last build of $main_job
   if [[ -s $JOB_CACHE_DIR/$main_job ]]; then
     [[ $(tail -1 $JOB_CACHE_DIR/$main_job) =~ ${VER_REGEX[release]}.${VER_REGEX[build]} ]]
-    last_main_build=${BASH_REMATCH[6]}
+    last_main_build_version=${BASH_REMATCH[0]}
   fi
 
   # Update secondary caches limited by main cache last build number
   for other_job in ${secondary_jobs[@]}; do
-    release::update_job_cache $other_job $last_main_build
+    release::update_job_cache $other_job $last_main_build_version
   done
 
   if ((FLAGS_verbose)); then
@@ -274,7 +296,7 @@ release::set_build_version () {
         continue
       elif [[ $(wc -l <$JOB_CACHE_DIR/$other_job) -lt 1 ]]; then
         ((FLAGS_verbose)) \
-         && logecho -r "No Good Runs    SKIPPING"
+         && logecho -r "No Good Runs    ${TPUT[YELLOW]}SKIPPING${TPUT[OFF]}"
         ((job_count++)) || true
         continue
       fi
