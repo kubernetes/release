@@ -494,16 +494,18 @@ release::gcs::stage_and_hash() {
 
 ###############################################################################
 # Copy the release artifacts to staging and push them up to GS
-# TODO: There is a version of this in kubernetes/build/common.sh that is also
-#       used by the build/push-*-build.sh scripts. Refactor.
-# @param version - release version
+# @param build_type - One of 'release' or 'ci'
+# @param version - The version
 # @param build_output - build output directory
 # @param bucket - GS bucket
+# @optparam bucket_mirror - (optional) mirror GS bucket
 # @return 1 on failure
 release::gcs::copy_release_artifacts() {
-  local version=$1
-  local build_output=$2
-  local bucket=$3
+  local build_type=$1
+  local version=$2
+  local build_output=$3
+  local bucket=$4
+  local bucket_mirror=$5
   local platform
   local platforms
   local release_stage=$build_output/release-stage
@@ -511,7 +513,8 @@ release::gcs::copy_release_artifacts() {
   local gcs_stage=$build_output/gcs-stage
   local src
   local dst
-  local gcs_destination=gs://$bucket/release/$version/
+  local gcs_destination=gs://$bucket/$build_type/$version
+  local gcs_mirror=gs://$bucket_mirror/$build_type/$version
   local gce_path=$release_stage/full/kubernetes/cluster/gce
   local gci_path
 
@@ -561,45 +564,60 @@ release::gcs::copy_release_artifacts() {
     common::sha $path 1 > "$path.sha1" || return 1
   done
 
+  # Copy the main set from staging to destination
   logecho -n "- Copying release artifacts to $gcs_destination: "
   logrun -s $GSUTIL -qm cp -r $gcs_stage/* $gcs_destination || return 1
 
-  # TODO(jbeda): Generate an HTML page with links for this release so it is easy
-  # to see it.  For extra credit, generate a dynamic page that builds up the
-  # release list using the GCS JSON API.  Use Angular and Bootstrap for extra
-  # extra credit.
-
   logecho -n "- Marking all uploaded objects public: "
   logrun -s $LOGRUN_MOCK $GSUTIL -q -m acl ch -R -g all:R \
-                                "$gcs_destination" || return 1
+                                 "$gcs_destination" || return 1
 
   logecho -n "- Listing final contents to log file: "
   logrun -s $GSUTIL ls -lhr "$gcs_destination" || return 1
+
+  # Push to mirror if set
+  if [[ -n "$bucket_mirror" && "$bucket" != "$bucket_mirror" ]]; then
+    logecho -n "- Mirroring build to $gcs_mirror: "
+    logrun -s $GSUTIL -q -m rsync -d -r "$gcs_destination" "$gcs_mirror" \
+     || return 1
+    logecho -n "- Marking all uploaded mirror objects public: "
+    logrun -s $LOGRUN_MOCK $GSUTIL -q -m acl ch -R -g all:R \
+                                   "$gcs_mirror" || return 1
+  fi
 }
 
 
 ###############################################################################
-# Publish a new official version, (latest or stable,) but only if the release
-# files actually exist on GCS and the release we're dealing with is newer than
-# the contents in GCS.
-# @param version - release version
+# Publish a new version, (latest or stable,) but only if the
+# files actually exist on GCS and the artifacts we're dealing with are newer
+# than the contents in GCS.
+# @param build_type - One of 'release' or 'ci'
+# @param version - The version
 # @param build_output - build output directory
 # @param bucket - GS bucket
+# @optparam bucket_mirror - GS mirror bucket
 # @return 1 on failure
-release::gcs::publish_official () {
-  local version=$1
-  local build_output=$2
-  local bucket=$3
-  local release_dir="gs://$bucket/release/$version"
+release::gcs::publish_version () {
+  local build_type=$1
+  local version=$2
+  local build_output=$3
+  local bucket=$4
+  local bucket_mirror=$5
+  local release_dir="gs://$bucket/$build_type/$version"
   local version_major
   local version_minor
   local publish_file
-  local publish_files
+  local -a publish_files
+  local -a publish_buckets=($bucket)
   local type="latest"
-  [[ "$version" =~ alpha|beta ]] || type="stable"
 
-  logecho
-  logecho "Publish official pointer text files to $bucket..."
+  # Ensure no duplicate
+  [[ "$bucket" != "$bucket_mirror" ]] && publish_buckets+=($bucket_mirror)
+
+  # For release/ targets, type could be 'stable'
+  if [[ "$build_type" == release ]]; then
+    [[ "$version" =~ alpha|beta ]] || type="stable"
+  fi
 
   if ! $GSUTIL ls $release_dir >/dev/null 2>&1 ; then
     logecho "Release files don't exist at $release_dir"
@@ -616,13 +634,18 @@ release::gcs::publish_official () {
                  $type-$version_major.$version_minor
                 )
 
-  for publish_file in ${publish_files[@]}; do
-    # If there's a version that's above the one we're trying to release, don't
-    # do anything, and just try the next one.
-    release::gcs::verify_release_gt release/$publish_file.txt \
-                                    $bucket $version || continue
-    release::gcs::publish release/$publish_file.txt $build_output \
-                          $bucket $version || return 1
+  for b in ${publish_buckets[*]}; do
+    logecho
+    logecho "Publish official pointer text files to $b..."
+
+    for publish_file in ${publish_files[@]}; do
+      # If there's a version that's above the one we're trying to release, don't
+      # do anything, and just try the next one.
+      release::gcs::verify_latest_update $build_type/$publish_file.txt \
+                                      $b $version || continue
+      release::gcs::publish $build_type/$publish_file.txt $build_output \
+                            $b $version || return 1
+    done
   done
 }
 
@@ -633,18 +656,18 @@ release::gcs::publish_official () {
 # @param publish_file - the GCS location to look in
 # @param bucket - GS bucket
 # @param version - release version
+# @optparam publish_file_dst - (for testing)
 # @return 1 if new version is not greater than the GCS version
-#
-release::gcs::verify_release_gt() {
+release::gcs::verify_latest_update () {
   local -r publish_file=$1
   local -r bucket=$2
   local -r version=$3
-  local -r publish_file_dst="gs://$bucket/$publish_file"
+  local -r publish_file_dst=${4:-"gs://$bucket/$publish_file"}
   local gcs_version
-  local greater=true
+  local greater=1
 
   logecho -n "Test $version > $publish_file (published): "
-  if ! [[ $version =~ ${VER_REGEX[release]} ]]; then
+  if ! [[ $version =~ ${VER_REGEX[release]}(.${VER_REGEX[build]})* ]]; then
     logecho -r "$FAILED"
     logecho "* Invalid version format! $version"
     return 1
@@ -655,9 +678,10 @@ release::gcs::verify_release_gt() {
   local -r version_patch="${BASH_REMATCH[3]}"
   local -r version_prerelease="${BASH_REMATCH[4]}"
   local -r version_prerelease_rev="${BASH_REMATCH[5]}"
+  local -r version_commits="${BASH_REMATCH[7]}"
 
   if gcs_version="$($GSUTIL cat $publish_file_dst 2>/dev/null)"; then
-    if ! [[ $gcs_version =~ ${VER_REGEX[release]} ]]; then
+    if ! [[ $gcs_version =~ ${VER_REGEX[release]}(.${VER_REGEX[build]})* ]]; then
       logecho -r "$FAILED"
       logecho "* file contains invalid release version," \
               "can't compare: '$gcs_version'"
@@ -669,17 +693,18 @@ release::gcs::verify_release_gt() {
     local -r gcs_version_patch="${BASH_REMATCH[3]}"
     local -r gcs_version_prerelease="${BASH_REMATCH[4]}"
     local -r gcs_version_prerelease_rev="${BASH_REMATCH[5]}"
+    local -r gcs_version_commits="${BASH_REMATCH[7]}"
 
     if [[ "$version_major" -lt "$gcs_version_major" ]]; then
-      greater=false
+      greater=0
     elif [[ "$version_major" -gt "$gcs_version_major" ]]; then
       : # fall out
     elif [[ "$version_minor" -lt "$gcs_version_minor" ]]; then
-      greater=false
+      greater=0
     elif [[ "$version_minor" -gt "$gcs_version_minor" ]]; then
       : # fall out
     elif [[ "$version_patch" -lt "$gcs_version_patch" ]]; then
-      greater=false
+      greater=0
     elif [[ "$version_patch" -gt "$gcs_version_patch" ]]; then
       : # fall out
     # Use lexicographic (instead of integer) comparison because
@@ -689,19 +714,31 @@ release::gcs::verify_release_gt() {
     # We have to do this because lexicographically "beta" > "alpha" > "", but
     # we want official > beta > alpha.
     elif [[ -n "$version_prerelease" && -z "$gcs_version_prerelease" ]]; then
-      greater=false
+      greater=0
     elif [[ -z "$version_prerelease" && -n "$gcs_version_prerelease" ]]; then
       : # fall out
     elif [[ "$version_prerelease" < "$gcs_version_prerelease" ]]; then
-      greater=false
+      greater=0
     elif [[ "$version_prerelease" > "$gcs_version_prerelease" ]]; then
       : # fall out
-    # Finally resort to -le here, since we want strictly-greater-than.
-    elif [[ "$version_prerelease_rev" -le "$gcs_version_prerelease_rev" ]]; then
-      greater=false
+    # The only reason we want to NOT update in the 'equals' case
+    # is to maintain publish_file timestamps for the original 'equals' version.
+    # for release if the new version is <=, Do Not Publish
+    # for ci if the new version is strictly <, Do Not Publish
+    elif [[ $publish_file =~ ^release && \
+            "$version_prerelease_rev" -le "$gcs_version_prerelease_rev" ]] ||\
+         [[ $publish_file =~ ^ci && \
+            "$version_prerelease_rev" -lt "$gcs_version_prerelease_rev" ]]; then
+      greater=0
+    elif [[ "$version_prerelease_rev" -gt "$gcs_version_prerelease_rev" ]]; then
+      : # fall out
+    # If either version_commits is empty, it will be considered less-than, as
+    # expected, (e.g. 1.2.3-beta < 1.2.3-beta.1).
+    elif [[ "$version_commits" -lt "$gcs_version_commits" ]]; then
+      greater=0
     fi
 
-    if $greater; then
+    if ((greater)); then
       logecho -r "$OK"
       logecho "* $version > $gcs_version (published), updating"
     else
@@ -719,16 +756,15 @@ release::gcs::verify_release_gt() {
 
 
 ###############################################################################
-# Publish a release to GCS: upload a version file, if KUBE_GCS_MAKE_PUBLIC,
+# Publish a release to GCS: upload a version file, if --nomock,
 # make it public, and verify the result.
-# TODO: There is a version of this in kubernetes/build/common.sh that is also
-#       used by kube::release::gcs::publish_ci().  Possible refactor.
 # @param publish_file - the GCS location to look in
 # @param build_output - build output directory
 # @param bucket - GS bucket
 # @param version - release version
+# @optparam bucket_mirror - (optional) mirror GS bucket
 # @return 1 on failure
-release::gcs::publish() {
+release::gcs::publish () {
   local publish_file=$1
   local build_output=$2
   local bucket=$3

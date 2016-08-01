@@ -952,17 +952,21 @@ for label in ${!RELEASE_VERSION[@]}; do
   common::stepheader "PUSH ${RELEASE_VERSION[$label]} IMAGES"
   ##############################################################################
   common::runstep release::gcs::copy_release_artifacts \
-   ${RELEASE_VERSION[$label]} \
-   $BUILD_OUTPUT-${RELEASE_VERSION[$label]} $RELEASE_BUCKET \
+   release ${RELEASE_VERSION[$label]} \
+   $BUILD_OUTPUT-${RELEASE_VERSION[$label]} \
+   $RELEASE_BUCKET \
    || common::exit 1 "Exiting..."
 
   common::runstep release::docker::release \
-   $KUBE_DOCKER_REGISTRY ${RELEASE_VERSION[$label]} \
+   $KUBE_DOCKER_REGISTRY \
+   ${RELEASE_VERSION[$label]} \
    || common::exit 1 "Exiting..."
 
-  common::runstep release::gcs::publish_official \
+  common::runstep release::gcs::publish_version \
+   release \
    ${RELEASE_VERSION[$label]} \
-   $BUILD_OUTPUT-${RELEASE_VERSION[$label]} $RELEASE_BUCKET \
+   $BUILD_OUTPUT-${RELEASE_VERSION[$label]} \
+   $RELEASE_BUCKET \
    || common::exit 1 "Exiting..."
 done
 
