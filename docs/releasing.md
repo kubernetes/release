@@ -23,4 +23,13 @@ coordination of releases.  For more info on feature and release planning see:
   `release-X.Y`.
 * Official releases (`vX.Y.Z`) are cut from their respective release branch,
   `release-X.Y`.
-* New release series are also cut directly from `master`.
+* Emergency releases (`vX.Y.Z`) are cut from a new release-X.Y.Z branch based on a tag
+
+## Release Schedule
+
+| Type      | Versioning     | Branch        | Frequency                  |
+| ----      | ----------     | ------        | ---------                  |
+| alpha     | vX.Y.0-alpha.W | master        | every ~2 weeks             |
+| beta      | vX.Y.Z-beta.W  | release-N.N   | as needed (at branch time) |
+| official  | vX.Y.Z         | release-N.N   | as needed (post beta)      |
+| emergency | vX.Y.Z         | release-N.N.N | as needed                  |
