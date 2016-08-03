@@ -31,8 +31,8 @@ set -o errtrace
 ##############################################################################
 # COMMON CONSTANTS
 #
-TOOL_LIB_PATH=${TOOL_LIB_PATH:-$(dirname $(realpath $BASH_SOURCE))}
-TOOL_ROOT=${TOOL_ROOT:-$(realpath $TOOL_LIB_PATH/..)}
+TOOL_LIB_PATH=${TOOL_LIB_PATH:-$(dirname $(readlink -ne $BASH_SOURCE))}
+TOOL_ROOT=${TOOL_ROOT:-$(readlink -ne $TOOL_LIB_PATH/..)}
 PATH=$TOOL_ROOT:$PATH
 # Provide a default EDITOR for those that don't have this set
 : ${EDITOR:="vi"}
