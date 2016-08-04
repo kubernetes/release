@@ -625,6 +625,24 @@ common::sha () {
   which shasum >/dev/null 2>&1 && shasum -a$algo $file | awk '{print $1}'
 }
 
+# Check for and source security layer
+# This function looks for an additional security layer and activates
+# special code paths to allow for enhanced features.
+# The pointer to this file is set with FLAGS_security_layer:
+# * --security_layer=/path/to/script_to_source
+# * $HOME/${PROG}rc (FLAGS_security_layer=/path/to/source)
+# SECURITY_LAYER global defaulted here.  Set to 1 in external source
+common::security_layer () {
+  SECURITY_LAYER=0
+  # Quietly source the pointer
+  source $HOME/.${PROG}rc >/dev/null 2>&1 || return 0
+  # If not there attempt to set it from env
+  FLAGS_security_layer=${FLAGS_security_layer:-":"}
+
+  [[ -s $FLAGS_security_layer ]] || return 0
+  source $FLAGS_security_layer
+}
+
 ###############################################################################
 # Check state of LOAS
 #
