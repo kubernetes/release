@@ -22,7 +22,7 @@ PROG=${0##*/}
 #+     $PROG - Push Continuous Integration Build
 #+
 #+ SYNOPSIS
-#+     $PROG  [--nomock] [--federation]
+#+     $PROG  [--nomock] [--federation] [--noupdatelatest]
 #+            [--bucket=<alt GS bucket>] [--bucket-mirror=<mirror GS bucket>]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
@@ -41,6 +41,7 @@ PROG=${0##*/}
 #+     [--federation]            - Enable FEDERATION push
 #+     [--bucket=]               - Specify an alternate bucket for pushes
 #+     [--bucket-mirror=]        - Specify a mirror bucket for pushes
+#+     [--noupdatelatest]        - Do not update the latest file
 #+     [--help | -man]           - display man page for this script
 #+     [--usage | -?]            - display in-line usage
 #+
@@ -85,6 +86,8 @@ common::timestamp begin
 ###############################################################################
 RELEASE_BUCKET=${FLAGS_bucket:-"kubernetes-release-dev"}
 RELEASE_BUCKET_MIRROR=$FLAGS_bucket_mirror
+# Compatibility with incoming global args
+[[ $KUBE_GCS_UPDATE_LATEST == "n" ]] && FLAGS_noupdatelatest=1
 
 if [[ $(cluster/kubectl.sh version --client 2>&1) =~ \
       GitVersion:\"(${VER_REGEX[release]}\.${VER_REGEX[build]})\", ]]; then
@@ -142,16 +145,19 @@ while ((attempt<max_attempts)); do
 done
 ((attempt>=max_attempts)) && common::exit 1 "Exiting..."
 
-##############################################################################
-common::stepheader UPLOAD to $RELEASE_BUCKET
-##############################################################################
-attempt=0
-while ((attempt<max_attempts)); do
-  release::gcs::publish_version ci $LATEST $KUBE_ROOT/_output \
-                                $RELEASE_BUCKET $RELEASE_BUCKET_MIRROR && break
-  ((attempt++))
-done
-((attempt>=max_attempts)) && common::exit 1 "Exiting..."
+if ! ((FLAGS_noupdatelatest)); then
+  ##############################################################################
+  common::stepheader UPLOAD to $RELEASE_BUCKET
+  ##############################################################################
+  attempt=0
+  while ((attempt<max_attempts)); do
+    release::gcs::publish_version ci $LATEST $KUBE_ROOT/_output \
+                                     $RELEASE_BUCKET \
+                                     $RELEASE_BUCKET_MIRROR && break
+    ((attempt++))
+  done
+  ((attempt>=max_attempts)) && common::exit 1 "Exiting..."
+fi
 
 # Leave push-federation-images.sh for now.  Not sure if this makes sense to
 # pull into the release repo.
