@@ -98,9 +98,6 @@ if ((FLAGS_nomock)); then
   logecho "$PROG is running a *REAL* push!!"
   logecho
 else
-  # This is passed to logrun() where appropriate when we want to mock
-  # specific activities like pushes
-  LOGRUN_MOCK="-m"
   # Point to a $USER playground
   RELEASE_BUCKET+=-$USER
   if [[ -n $RELEASE_BUCKET_MIRROR ]]; then
@@ -159,14 +156,9 @@ if ((FLAGS_federation)); then
   ############################################################################
   common::stepheader PUSH FEDERATION
   ############################################################################
-  if ((FLAGS_nomock)); then
-    logecho -n "Push federation images: "
-    # Because this executes outside the scope and control of the release infra
-    # we can't provide a true mock, so just print with $LOGRUN_MOCK
-    logrun -s $LOGRUN_MOCK ${KUBE_ROOT}/build/push-federation-images.sh
-  else
-    logecho "FEDERATION Image push skipped for mocked workflow..."
-  fi
+  logecho -n "Push federation images: "
+  # FEDERATION_PUSH_REPO_BASE should be set by the calling job (yaml)
+  logrun -s ${KUBE_ROOT}/build/push-federation-images.sh
 fi
 
 # END script
