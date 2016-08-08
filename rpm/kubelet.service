@@ -1,0 +1,11 @@
+[Unit]
+Description=Kubernetes Kubelet Server
+Documentation=https://github.com/kubernetes/kubernetes
+
+[Service]
+ExecStart=/var/lib/kubelet/kubelet-wrapper
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
