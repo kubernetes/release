@@ -71,6 +71,7 @@ mv bin/ %{buildroot}/opt/cni/
 %{_bindir}/kubelet
 %{_sysconfdir}/systemd/system/kubelet.service
 %{_sysconfdir}/sysconfig/kubelet
+%{_sysconfdir}/kubernetes/manifests/
 /var/lib/kubelet/kubelet-wrapper
 
 %files plugin-cni
