@@ -40,6 +40,7 @@ Binaries required to provision container networking.
 cp -p %{_sourcedir}/kubelet.service %{_builddir}/
 cp -p %{_sourcedir}/kubelet-wrapper %{_builddir}/
 cp -p %{_sourcedir}/99_bridge.conf %{_builddir}/
+cp -p %{_sourcedir}/kubelet.env %{_builddir}/
 
 #cp -p %{_sourcedir}/kubelet %{_builddir}/
 
@@ -50,13 +51,16 @@ curl -L --fail "https://storage.googleapis.com/kubernetes-release/release/v%{KUB
 
 install -m 755 -d %{buildroot}%{_bindir}
 install -m 755 -d %{buildroot}%{_sysconfdir}/systemd/system/
+install -m 755 -d %{buildroot}%{_sysconfdir}/sysconfig
 install -m 755 -d %{buildroot}%{_sysconfdir}/cni/net.d/
 install -m 755 -d %{buildroot}%{_sysconfdir}/kubernetes/manifests/
 install -m 755 -d %{buildroot}/var/lib/kubelet/
 install -p -m 755 -t %{buildroot}%{_bindir}/ kubelet
 install -p -m 755 -t %{buildroot}%{_sysconfdir}/systemd/system/ kubelet.service
 install -p -m 755 -t %{buildroot}%{_sysconfdir}/cni/net.d/ 99_bridge.conf
+install -p -m 755 kubelet.env %{buildroot}%{_sysconfdir}/sysconfig/kubelet
 install -p -m 755 -t %{buildroot}/var/lib/kubelet/ kubelet-wrapper
+
 
 install -m 755 -d %{buildroot}/opt/cni
 curl -sSL --fail --retry 5 https://storage.googleapis.com/kubernetes-release/network-plugins/cni-%{CNI_RELEASE}.tar.gz | tar xz
@@ -66,6 +70,7 @@ mv bin/ %{buildroot}/opt/cni/
 %files
 %{_bindir}/kubelet
 %{_sysconfdir}/systemd/system/kubelet.service
+%{_sysconfdir}/sysconfig/kubelet
 /var/lib/kubelet/kubelet-wrapper
 
 %files plugin-cni

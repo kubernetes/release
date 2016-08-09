@@ -4,7 +4,5 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-source /etc/default/kubelet
-
 /usr/bin/kubelet ${KUBELET_OPTS}
 
