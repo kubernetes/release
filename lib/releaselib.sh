@@ -566,7 +566,7 @@ release::gcs::copy_release_artifacts() {
 
   # Copy the main set from staging to destination
   logecho -n "- Copying release artifacts to $gcs_destination: "
-  logrun -s $GSUTIL -qm cp -r $gcs_stage/* $gcs_destination || return 1
+  logrun -s $GSUTIL -qm cp -r $gcs_stage/* $gcs_destination/ || return 1
 
   logecho -n "- Marking all uploaded objects public: "
   logrun -s $LOGRUN_MOCK $GSUTIL -q -m acl ch -R -g all:R \
