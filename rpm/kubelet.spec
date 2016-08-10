@@ -1,7 +1,7 @@
 %global KUBE_VERSION 1.3.4
 %global CNI_RELEASE 8a936732094c0941e1543ef5d292a1f4fffa1ac5
 
-Name: kubernetes
+Name: kubelet
 Version: %{KUBE_VERSION}
 Release: 1
 Summary: Container cluster management
@@ -24,7 +24,7 @@ The node agent of Kubernetes, the container cluster manager.
 %package plugin-cni
 
 Summary: Binaries required to provision kubernetes container networking
-Requires: kubernetes
+Requires: kubelet
 
 %description plugin-cni
 Binaries required to provision container networking.
@@ -35,7 +35,7 @@ Binaries required to provision container networking.
 # with this spec file. (where these files are stored) Copy them into
 # the builddir so they can be installed.
 #
-# Example: rpmbuild --define "_sourcedir $PWD" -bb kubernetes.spec
+# Example: rpmbuild --define "_sourcedir $PWD" -bb kubelet.spec
 #
 cp -p %{_sourcedir}/kubelet.service %{_builddir}/
 cp -p %{_sourcedir}/kubelet-wrapper %{_builddir}/
