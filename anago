@@ -206,7 +206,7 @@ check_prerequisites () {
     fi
   done
   # Ensure $USER is active to start
-  if ! [[ "$gcloud_auth_list" =~ -\ $useratgoog\ \(active\) ]]; then
+  if ! [[ "$gcloud_auth_list" =~ -\ $useratgoog\ ACTIVE ]]; then
     logecho "$useratgoog is not the active gcloud user!"
     logecho "Set with:"
     logecho "$ gcloud config set account $useratgoog"
