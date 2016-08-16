@@ -1,0 +1,20 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+#export DH_VERBOSE=1
+
+build:
+	echo noop
+
+binary:
+	dh_testroot
+	dh_auto_install
+	dh_shlibdeps
+	dh_install
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+%:
+	dh $@

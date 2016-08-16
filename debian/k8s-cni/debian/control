@@ -1,0 +1,15 @@
+Source: k8s-cni
+Section: misc
+Priority: optional
+Maintainer: Mike Danese <mikedanese@google.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.4
+Homepage: https://kubernetes.io
+Vcs-Git: https://github.com/kubernetes/kubernetes.git
+Vcs-Browser: https://github.com/kubernetes/kubernetes
+
+Package: k8s-cni
+Architecture: amd64
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Kubernetes CNI
+ The binaries required to provision container networking

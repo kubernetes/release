@@ -1,0 +1,5 @@
+k8s-cni (0.0.1-0) xenial; urgency=high
+
+  * Initial Release.
+
+ -- Mike Danese (ppa key) <mikedanese@google.com>  Wed, 13 Jul 2016 18:04:11 -0700
