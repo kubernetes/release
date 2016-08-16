@@ -7,6 +7,11 @@ build:
 	echo noop
 
 binary:
+	mkdir -p usr/bin
+	curl  --fail -sS -L \
+		-o usr/bin/kubectl \
+		"https://storage.googleapis.com/kubernetes-release/release/v{{ .Version }}/bin/linux/{{ .Arch }}/kubectl"
+	chmod +x usr/bin/kubectl
 	dh_testroot
 	dh_auto_install
 	dh_shlibdeps

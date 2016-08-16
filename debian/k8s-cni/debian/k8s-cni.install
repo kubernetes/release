@@ -1,2 +1,0 @@
-bin/ opt/cni
-99_bridge.conf etc/cni/net.d
