@@ -1,7 +1,7 @@
 Source: k8s-cni
 Section: misc
 Priority: optional
-Maintainer: Mike Danese <mikedanese@google.com>
+Maintainer: Kubernetes Authors <kubernetes-dev@googlegroups.com>
 Build-Depends: debhelper (>= 8.0.0)
 Standards-Version: 3.9.4
 Homepage: https://kubernetes.io

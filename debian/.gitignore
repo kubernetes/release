@@ -3,3 +3,5 @@
 *.tar.gz
 *.changes
 *.ppa.upload
+*.debhelper.log
+*.substvars
