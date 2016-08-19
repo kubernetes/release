@@ -201,7 +201,9 @@ check_prerequisites () {
     else
       logecho -r "$FAILED"
       logecho "$user is not in the credentialed accounts list!"
-      logecho "Sign in with gcloud auth login $user"
+      logecho "Sign in with:"
+      logecho
+      logecho "$ gcloud auth login $user"
       return 1
     fi
   done
@@ -209,6 +211,7 @@ check_prerequisites () {
   if ! [[ "$gcloud_auth_list" =~ -\ $useratgoog\ ACTIVE ]]; then
     logecho "$useratgoog is not the active gcloud user!"
     logecho "Set with:"
+    logecho
     logecho "$ gcloud config set account $useratgoog"
     return 1
   fi
