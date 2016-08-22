@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+
+cat <<EOF > "${DESTINATION}"
+${PACKAGE} (${VERSION}) ${DISTRO}; urgency=high
+
+  * https://github.com/containernetworking/cni/commits/master
+
+ -- Kubernetes Authors <kubernetes-dev@googlegroups.com>  $(date '+%a, %d %b %Y %H:%M:%S %z')
+EOF

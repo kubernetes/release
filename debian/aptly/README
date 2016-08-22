@@ -1,0 +1,10 @@
+```
+aptly -config aptly.conf repo create -distribution=xenial -component=main kubernetes
+aptly -config aptly.conf repo add kubernetes ../kubelet_1.3.4_amd64.deb
+aptly -config aptly.conf repo add kubernetes ../k8s-cni_0.0.1-0_amd64.deb
+aptly -config aptly.conf repo show -with-packages kubernetes
+aptly -config aptly.conf publish repo kubernetes
+# THIS DELETES FILES
+$ gsutil rsync -d -r repo gs://k8s-releases-backup/<RANDOM>
+$ gsutil rsync -d -n -r repo/public gs://k8s-releases/apt
+```

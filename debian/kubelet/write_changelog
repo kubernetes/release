@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+
+cat <<EOF > "${DESTINATION}"
+${PACKAGE} (${K8S_VERSION}) ${DISTRO}; urgency=high
+
+  * https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md
+
+ -- Kubernetes Authors <kubernetes-dev@googlegroups.com>  $(date '+%a, %d %b %Y %H:%M:%S %z')
+EOF
