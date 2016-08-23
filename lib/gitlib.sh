@@ -123,12 +123,16 @@ gitlib::check_credentials () {
   if ! $GHCURL $K8S_GITHUB_API >/dev/null 2>&1; then
     logecho -r "$FAILED"
     logecho
-    logecho "You must set a github token one of two ways:"
-    logecho "* Set GITHUB_TOKEN in your environment"
-    logecho "* Specify your --github-token=<token> on the command line"
+    logecho "No valid github token found in environment or command-line!"
     logecho
     logecho "If you don't have a token yet, go get one at" \
-               "https://github.com/settings/tokens"
+            "https://github.com/settings/tokens/new"
+    logecho "1. Fill in 'Token description': $PROG-token"
+    logecho "2. Check the []repo box"
+    logecho "3. Click the 'Generate token' button at the bottom of the page"
+    logecho "4. Use your new token in one of two ways:"
+    logecho "   * Set GITHUB_TOKEN in your environment"
+    logecho "   * Specify your --github-token=<token> on the command line"
     common::exit 1
   fi
   logecho -r "$OK"
