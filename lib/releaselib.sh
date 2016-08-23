@@ -14,125 +14,52 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# GLOBALS
-JOB_CACHE_DIR=/tmp/buildresults-cache
-
 ##############################################################################
-# Builds a cache mapping Jenkins run numbers to build versions including
-# build numbers and associated hashes.
+# Pulls Jenkins server job cache from GS and preprocesses it into a
+# dictionary stored in $job_path associating full job and build numbers
 # Used by release::set_build_version()
 #
 # @optparam -d - dedup git's monotonically increasing (describe) build numbers
-# @param job - Jenkins job name
-# @optparam last_main_build_version - The last green version in the 
-#                                     $main_job cache
+# @param job_path - Jenkins job name
 #
-release::update_job_cache () {
+release::get_job_cache () {
   local dedup=0
   if [[ $1 == "-d" ]]; then
     dedup=1
     shift
   fi
-  local job=$1
-  local last_main_build_version=$2
-  local last_main_version
-  # Default so below condition just works
-  local last_main_build=0
-  local job_file=$JOB_CACHE_DIR/$job
+  local job_path=$1
+  local job=${job_path##*/}
+  local outfile1=/tmp/$PROG-rgjc-1.$$
+  local outfile2=/tmp/$PROG-rgjc-2.$$
   local logroot="gs://kubernetes-jenkins/logs"
-  local cache_limit=100
-  local buildstate
-  local build_number
-  local version_number
-  local j
-  local i
-  local run
-  local cnt
-  local last_value
-  local -a JOB
+  local version
+  local lastversion
+  local buildnumber
 
-  mkdir -p $JOB_CACHE_DIR
+  logecho "Getting $job build results from Jenkins..."
+  mkdir -p ${job_path%/*}
 
-  # Jobs can fall off 'the list', but still have old latest-build.txt files
-  # on GS, so we have to poll Jenkins first and then attempt to get the latest
-  # build for an 'active' job
-  if ! $JCURL $JENKINS_URL/$job ||\
-     ! run=$($GSUTIL cat $logroot/$job/latest-build.txt 2>/dev/null); then
-    # Ensure we clean up the cache when jobs disappear
-    # We're running in verbose usually but don't want to see this command run
-    FLAGS_verbose=0 logrun rm -f $job_file
-    return
+  $GSUTIL -qm cp $logroot/$job/jobResultsCache.json $outfile2 2>&-
+  # If there's no file up on $logroot, job doesn't exist.  Skip it.
+  [[ -s $outfile2 ]] || return
+
+  # Fix the json file - this should be folded into upload-to-gcs later
+  if ! egrep -q '^\[$' $outfile2; then
+    echo "[" > $outfile1
+    sed 's/$/,/g' $outfile2 >> $outfile1
+    echo -e "{}\n]" >> $outfile1
   fi
 
-  if ((FLAGS_verbose)); then
-    if [[ -f $job_file ]]; then
-      logecho -n "Updating"
-      # Prefill the JOB dict from the existing job (cache)
-      source $job_file
-    else
-      logecho -n "Creating"
-    fi
-    logecho -r " $job cache..."
-  fi
+  # Additional select on .version is b/c we have so many empty versions for now
+  while read version buildnumber; do
+    ((dedup)) && [[ $version == $lastversion ]] && continue
+    echo "JOB[$buildnumber]=$version"
+    lastversion=$version
+  done < <(jq -r '.[] | select(.result == "SUCCESS") | select(.version != "") | [.version,.buildnumber] | "\(.[0]) \(.[1])"' $outfile1 |sort -r -k2,2) \
+   > $job_path
 
-  # Set boundary checkers from last_main_build_version
-  [[ -n "$last_main_build_version" &&
-     $last_main_build_version =~ (${VER_REGEX[release]}).${VER_REGEX[build]} ]]
-  last_main_version=${BASH_REMATCH[1]}
-  last_main_build=${BASH_REMATCH[7]}
-
-  for ((cnt=0;cnt<=$cache_limit;cnt++)); do
-    # Once we hit a JOB[$run] that is set (or run gets to 0), break out
-    # the cache should be complete after that
-    ((run==0)) || [[ -n ${JOB[$run]} ]] && break
-
-    buildstate=$($GSUTIL cat $logroot/$job/$run/*.json 2>/dev/null)
-    if [[ $(echo "$buildstate" | jq -r '.result|values') == "SUCCESS" ]]; then
-      JOB[$run]=$(echo "$buildstate" | jq -r '.version|values')
-    fi
-
-    # Extract the build number
-    [[ ${JOB[$run]} =~ (${VER_REGEX[release]}).${VER_REGEX[build]} ]]
-    version_number=${BASH_REMATCH[1]}
-    build_number=${BASH_REMATCH[7]}
-
-    if [[ -n "$last_main_build_version" ]]; then
-      # If we cross a boundary into another version different from the incoming
-      # main version_number, stop building the cache, break
-      [[ $version_number != ${last_main_build_version:-$version_number} ]] \
-       && break
-
-      # If the build number is less than the main_job's incoming
-      # last_main_build there's no point in collecting more Jenkin's data
-      ((build_number<last_main_build)) && break
-    fi
-
-    ((run--))
-  done
-
-  # Write out cache file
-  # Reverse sort the array
-  >$job_file
-  for i in $(for n in ${!JOB[*]}; do echo $n; done|sort -rh |\
-             head -$cache_limit); do
-    # Check for "max" build number and break
-    [[ ${JOB[$i]} =~ (${VER_REGEX[release]}).${VER_REGEX[build]} ]]
-    version_number=${BASH_REMATCH[1]}
-    build_number=${BASH_REMATCH[7]}
-    ((build_number<last_main_build)) && break
-    # Check for crossing a boundary on version_number and break
-    # We don't need to capture previous version in cache
-    [[ $version_number != ${last_version_number:-$version_number} ]] && break
-    last_version_number=$version_number
-
-    # and dedup?
-    if ((dedup)); then
-      [[ ${JOB[$i]} != $last_value ]] && echo JOB[$i]=${JOB[$i]}
-      last_value=${JOB[$i]}
-    else
-      echo JOB[$i]=${JOB[$i]}
-    fi >> $job_file
-  done
+  rm -f $outfile1 $outfile2
 }
 
 ##############################################################################
@@ -161,7 +88,6 @@ release::set_build_version () {
   local build_number
   local cache_build
   local last_cache_build
-  local last_main_build_version
   local build_sha1
   local run
   local n
@@ -174,6 +100,7 @@ release::set_build_version () {
   local branch_suffix
   [[ $branch =~ release- ]] && branch_suffix="-$branch"
   local main_job="kubernetes-e2e-gce$branch_suffix"
+  local job_path=/tmp/buildresults-cache.$$
   local -a JOB
 
   # Would be nice to pull/generate these jobs dynamically filtered through
@@ -201,17 +128,14 @@ release::set_build_version () {
   local -a secondary_jobs=(${gce_jobs[@]} ${gke_jobs[@]})
 
   # Update main cache
-  release::update_job_cache -d $main_job
-
-  # Get last build of $main_job
-  if [[ -s $JOB_CACHE_DIR/$main_job ]]; then
-    [[ $(tail -1 $JOB_CACHE_DIR/$main_job) =~ ${VER_REGEX[release]}.${VER_REGEX[build]} ]]
-    last_main_build_version=${BASH_REMATCH[0]}
-  fi
+  # We dedup the $main_job's list of successful runs and just run through that
+  # unique list. We then leave the full state of secondaries below so we have
+  # finer granularity at the Jenkin's job level to determine if a build is ok.
+  release::get_job_cache -d $job_path/$main_job
 
   # Update secondary caches limited by main cache last build number
   for other_job in ${secondary_jobs[@]}; do
-    release::update_job_cache $other_job $last_main_build_version
+    release::get_job_cache $job_path/$other_job
   done
 
   if ((FLAGS_verbose)); then
@@ -289,12 +213,12 @@ release::set_build_version () {
        && logecho -n "- $(printf '%-'$max_job_length's ' $other_job)"
 
       # Need to kick out when a secondary doesn't exist (anymore)
-      if [[ ! -f $JOB_CACHE_DIR/$other_job ]]; then
+      if [[ ! -f $job_path/$other_job ]]; then
         ((FLAGS_verbose)) \
          && logecho -r "Does not exist  SKIPPING"
         ((job_count++)) || true
         continue
-      elif [[ $(wc -l <$JOB_CACHE_DIR/$other_job) -lt 1 ]]; then
+      elif [[ $(wc -l <$job_path/$other_job) -lt 1 ]]; then
         ((FLAGS_verbose)) \
          && logecho -r "No Good Runs    ${TPUT[YELLOW]}SKIPPING${TPUT[OFF]}"
         ((job_count++)) || true
@@ -302,7 +226,7 @@ release::set_build_version () {
       fi
 
       unset JOB
-      source $JOB_CACHE_DIR/$other_job
+      source $job_path/$other_job
       last_cache_build=0
       last_run=0
       # We reverse sort the array here so we can descend it
@@ -344,7 +268,7 @@ release::set_build_version () {
 
     ((FLAGS_verbose)) && logecho
     ((job_count>=${#secondary_jobs[@]})) && break
-  done < $JOB_CACHE_DIR/$main_job
+  done < $job_path/$main_job
 
   if ((job_count==0)); then
     logecho "Unable to find a green set of test results!"
@@ -354,6 +278,8 @@ release::set_build_version () {
   fi
 
   ((FLAGS_verbose)) && logecho JENKINS_BUILD_VERSION=$JENKINS_BUILD_VERSION
+
+  rm -rf $job_path
 
   return 0
 }
