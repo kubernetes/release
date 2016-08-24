@@ -726,7 +726,6 @@ prepare_workspace () {
   fi
 
   # Sync the tree
-  logrun mkdir -p $WORKDIR
   gitlib::sync_repo $K8S_GITHUB_URL $TREE_ROOT || return 1
   logrun cd $TREE_ROOT
 }
@@ -838,6 +837,9 @@ TREE_ROOT=$WORKDIR/kubernetes
 BUILD_OUTPUT=$TREE_ROOT/_output
 RELEASE_NOTES_MD=$WORKDIR/release-notes.md
 RELEASE_NOTES_HTML=$WORKDIR/release-notes.html
+
+# Ensure the WORKDIR exists
+logrun mkdir -p $WORKDIR
 
 ##############################################################################
 common::stepheader "DISK SPACE CHECK"
