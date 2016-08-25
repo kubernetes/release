@@ -24,7 +24,6 @@ GHCURL="curl -s --fail --retry 10 -u ${GITHUB_TOKEN:-$FLAGS_github_token}:x-oaut
 JCURL="curl -g -s --fail --retry 10"
 K8S_GITHUB_API='https://api.github.com/repos/kubernetes/kubernetes'
 K8S_GITHUB_URL='https://github.com/kubernetes/kubernetes'
-JENKINS_URL="http://kubekins.dls.corp.google.com/job"
 
 # Regular expressions for bash regex matching
 # 0=entire branch name

@@ -633,67 +633,26 @@ common::sha () {
 # * $HOME/${PROG}rc (FLAGS_security_layer=/path/to/source)
 # SECURITY_LAYER global defaulted here.  Set to 1 in external source
 common::security_layer () {
+  local rcfile=$HOME/.kubernetes-releaserc
   SECURITY_LAYER=0
-  # Quietly source the pointer
-  source $HOME/.${PROG}rc >/dev/null 2>&1 || return 0
+
+  # Source the include
+  if [[ $(hostname -d) =~ google.com ]]; then
+    if [[ -f $rcfile ]]; then
+      source $rcfile >/dev/null 2>&1
+    else
+      logecho "$WARNING: This session is incomplete.  go/$PROG"
+      logecho
+    fi
+  fi
+
   # If not there attempt to set it from env
   FLAGS_security_layer=${FLAGS_security_layer:-":"}
 
   [[ -s $FLAGS_security_layer ]] || return 0
-  source $FLAGS_security_layer
+  source $FLAGS_security_layer >/dev/null 2>&1
 }
 
-###############################################################################
-# Check state of LOAS
-#
-# @param hour - hours remaining on prodcert
-# @optparam user - Check a specific user
-# Returns:
-#   0 if LOAS is active and will still be active for more than N hours.
-#   1 if LOAS is inactive or will expire in less than N hours.
-common::loascheck () {
-  local hour=${1:-0}
-  local user=${2:-}
-  local becomeuser=''
-  local athostname=''
-  local isroleacct=0
-  local tty_session=1
-
-  # Role account?
-  id |fgrep -q role-accts && isroleacct=1
-
-  # Interactive/tty session?
-  tty -s || tty_session=0
-
-  [[ -n "$user" ]] && becomeuser="become $user --"
-
-  if ! $becomeuser \
-       prodcertstatus --quiet --check_remaining_hours=$hour &>/dev/null; then
-    logecho
-    logecho "EXCEPTION: LOAS credentials for ${user:-$USER} will expire" \
-            "in $hour hours. Run:"
-
-    if [[ -n "$user" ]] || (($isroleacct)); then
-       # If run via cron, assume we need to instruct user where to run
-       # prodaccess
-       (($tty_session)) || athostname="@$HOSTNAME"
-
-       logecho "$ become -t ${user:-$LOGNAME}$athostname -- prodaccess --sslenroll"
-    else
-       logecho "$ prodaccess"
-    fi
-    return 1
-  else
-    # Issue a WARNING if we get close to a reasonable threshold
-    # The latest version of prodcertstatus spews useless text into stderr
-    # and we want to display the useful part of the stderr so explicitly 
-    # strip it out
-    # We also have to do a dance with stderr/stdout
-    $becomeuser prodcertstatus --check_remaining_hours=4 2>&1 1>/dev/null |\
-     egrep -v 'Reusing existing SSO cookie.'
-    return 0
-  fi
-}
 
 ###############################################################################
 # Check packages for a K8s release
@@ -733,10 +692,11 @@ common::check_packages () {
             "Run the following and try again:"
     logecho
     for prereq in ${missing[@]}; do
-      if [[ $prereq == "sendgmr" ]] && [[ $distro == "Ubuntu" ]]; then
-        logecho "sudo goobuntu-add-repo $prereq && sudo apt-get update"
+      if [[ -n ${PREREQUISITE_INSTRUCTIONS[$prereq]} ]]; then
+        logecho "# See ${PREREQUISITE_INSTRUCTIONS[$prereq]}"
+      else
+        logecho "$ sudo $packagemgr install $prereq"
       fi
-      logecho "sudo $packagemgr install $prereq"
     done
     return 1
   fi
@@ -847,6 +807,53 @@ common::set_cloud_binaries () {
     logecho -r $FAILED
     return 1
   fi
+}
+
+###############################################################################
+# sendmail/mailer front end.
+# @optparam html - Send html formatted
+# @param to - To
+# @param from - From
+# @param reply_to - Reply To
+# @param subject - Subject
+# @param cc - cc
+# @param file - file to send
+#
+common::sendmail () {
+  local cc_arg
+  local html=0
+
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      -h) html=1; shift ;;
+       *) continue ;;
+    esac
+  done
+
+  local to="$1"
+  local from="$2"
+  local reply_to="$3"
+  local subject="$4"
+  local cc="$5"
+  local file="$6"
+
+  (
+  cat <<EOF+
+To: "$to"
+From: "$from"
+Subject: "$subject"
+Cc: "$cc"
+Reply-To: "$reply_to"
+EOF+
+  ((html)) && echo "Content-Type: text/html"
+  cat $file
+  ) |/usr/sbin/sendmail -t
+}
+
+# Stubs for security_layer functions
+security_layer::auth_check () {
+  logecho "Skipping $FUNCNAME..."
+  return 0
 }
 
 # Set a common::trap() to capture ^C's and other unexpected exits and do the

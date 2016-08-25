@@ -33,8 +33,9 @@ PROG=${0##*/}
 #+
 #+ OPTIONS
 #+     [--security_layer=]       - A file containing a path to a script to
-#+                                 source:
+#+                                 source/include:
 #+                                 FLAGS_security_layer=/path/to/script
+#+                                 Default: $HOME/.kubernetes-releaserc
 #+     [--help | -man]           - display man page for this script
 #+     [--usage | -?]            - display in-line usage
 #+
@@ -107,7 +108,7 @@ show_tags () {
 
       if ((SECURITY_LAYER)); then
         hosted_days="NA"
-        [[ -n ${HOSTED_EPOCH[$tag]} ]] && \
+        [[ -n "${HOSTED_EPOCH[$tag]}" ]] && \
          hosted_days=$(echo "scale=2; (${HOSTED_EPOCH[$tag]}-$commit_seconds)/86400"|bc)
       fi
 
@@ -115,6 +116,13 @@ show_tags () {
     done
   done
   echo
+}
+
+###############################################################################
+# Stubbed out
+security_layer::hosted_map () {
+  logecho "Skipping $FUNCNAME extensions..."
+  return 0
 }
 
 
@@ -143,7 +151,6 @@ fi
 
 [[ -z "$INITIAL_COMMIT" ]] && common::exit 1 "No commit/pr found in this repo."
 
-# Conditional execute
-type -t hosted_map >/dev/null 2>&1 && hosted_map
+security_layer::hosted_map
 
 show_tags "$PR" $INITIAL_COMMIT ${CP_COMMITS[*]}

@@ -13,11 +13,11 @@ This repo contains the release infrastructure for
 
 ## Intro
 
-Kubernetes releases are done by the Kubernetes team at Google due to
+Live Kubernetes releases are done by the Kubernetes team at Google due to
 permissions and other restrictions.  This may expand eventually to allow
 other Kubernetes contributors to generate releases.
 
-The current process runs by default in *mock* mode and anyone should
+The current tooling runs by default in *mock* mode and anyone should
 be able to run it in this mode to see exactly how the process works.
 In *mock* mode all the code paths are followed for a release, but nothing
 is pushed to repositories.
@@ -48,6 +48,8 @@ run the script with --nomock to perform a real release.
 The tool was designed to require minimal inputs.
 The only information the tool needs is to know where you want to create a
 release with one optional flag `[--official]` \(used on release-\* branches only\).
+The [--official] flag indicates that a standard patch release will be created
+on a branch.  Without the [--official] flag, a beta would be created.
 
 Try an alpha release:
 ```
@@ -78,7 +80,7 @@ v9.9.9 tag on the release-9.9 branch, create a release-9.9.9 branch):
 $ anago release-9.9.9
 ```
 
-## Official Releases
+## Live Releases
 
 Anago is currently locked down to only run for a specific set of individuals.
 when ```--nomock``` is specified.
@@ -94,7 +96,6 @@ your favorite editor.
 ### Tools
 
 * [prin](https://github.com/kubernetes/release/blob/master/prin) : What tags/releases is my PR IN?
-* [mailer](https://github.com/kubernetes/release/blob/master/mailer) : Generic mail interface (due to Google's deprecation of sendmail)
 * [find_green_build](https://github.com/kubernetes/release/blob/master/find_green_build) : Ask Jenkins for a good build to use
 * [script-template](https://github.com/kubernetes/release/blob/master/script-template) : Generate a script template in the kubernetes/release ecosystem
 * [relnotes](https://github.com/kubernetes/release/blob/master/relnotes) : Scrape github for release notes \(See below for more info\)
