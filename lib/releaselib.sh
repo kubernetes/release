@@ -30,8 +30,7 @@ release::get_job_cache () {
   fi
   local job_path=$1
   local job=${job_path##*/}
-  local outfile1=/tmp/$PROG-rgjc-1.$$
-  local outfile2=/tmp/$PROG-rgjc-2.$$
+  local tempjson=/tmp/$PROG-rgjc.$$
   local logroot="gs://kubernetes-jenkins/logs"
   local version
   local lastversion
@@ -40,26 +39,19 @@ release::get_job_cache () {
   logecho "Getting $job build results from Jenkins..."
   mkdir -p ${job_path%/*}
 
-  $GSUTIL -qm cp $logroot/$job/jobResultsCache.json $outfile2 2>&-
+  $GSUTIL -qm cp $logroot/$job/jobResultsCache.json $tempjson 2>&-
   # If there's no file up on $logroot, job doesn't exist.  Skip it.
-  [[ -s $outfile2 ]] || return
-
-  # Fix the json file - this should be folded into upload-to-gcs later
-  if ! egrep -q '^\[$' $outfile2; then
-    echo "[" > $outfile1
-    sed 's/$/,/g' $outfile2 >> $outfile1
-    echo -e "{}\n]" >> $outfile1
-  fi
+  [[ -s $tempjson ]] || return
 
   # Additional select on .version is b/c we have so many empty versions for now
   while read version buildnumber; do
     ((dedup)) && [[ $version == $lastversion ]] && continue
     echo "JOB[$buildnumber]=$version"
     lastversion=$version
-  done < <(jq -r '.[] | select(.result == "SUCCESS") | select(.version != "") | [.version,.buildnumber] | "\(.[0]) \(.[1])"' $outfile1 |sort -r -k2,2) \
+  done < <(jq -r '.[] | select(.result == "SUCCESS") | select(.version != "") | [.version,.buildnumber] | "\(.[0]) \(.[1])"' $tempjson |sort -r -k2,2) \
    > $job_path
 
-  rm -f $outfile1 $outfile2
+  rm -f $tempjson
 }
 
 ##############################################################################
