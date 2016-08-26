@@ -741,8 +741,6 @@ release::docker::release () {
     "kube-scheduler"
     "kube-proxy"
     "hyperkube"
-    "federation-apiserver"
-    "federation-controller-manager"
   )
 
   [[ "$registry" =~ gcr.io/ ]] && docker_push_cmd=("$GCLOUD" "docker")
