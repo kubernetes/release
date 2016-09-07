@@ -1,9 +1,9 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: k8s-cni
+Upstream-Name: kubectl
 Source: https://github.com/kubernetes/kubernetes
 
 Files: *
-Copyright: 2016 The Linux Foundation and its contributors
+Copyright: 2016 The Kubernetes Authors.
 License: Apache-2.0
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
