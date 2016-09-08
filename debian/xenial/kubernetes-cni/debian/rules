@@ -2,14 +2,14 @@
 # -*- makefile -*-
 
 #export DH_VERBOSE=1
-CNI_RELEASE = 9d5e6e60e79491207834ae8439e80c943db65a69
+CNI_RELEASE = 07a8a28637e97b22eb8dfe710eeae1344f69d16e
 
 build:
 	echo noop
 
 binary:
 	curl -sSL --fail --retry 5 \
-		"https://storage.googleapis.com/kubernetes-release/network-plugins/cni-$(CNI_RELEASE).tar.gz" \
+		"https://storage.googleapis.com/kubernetes-release/network-plugins/cni-{{ .Arch }}-$(CNI_RELEASE).tar.gz" \
 		| tar xz
 	dh_testroot
 	dh_auto_install
