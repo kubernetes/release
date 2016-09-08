@@ -19,26 +19,30 @@ PROG=${0##*/}
 ########################################################################
 #+
 #+ NAME
-#+     $PROG - Push Continuous Integration Build
+#+     $PROG - Push Kubernetes Release Artifacts up to GCS
 #+
 #+ SYNOPSIS
-#+     $PROG  [--nomock] [--federation] [--noupdatelatest]
+#+     $PROG  [--nomock] [--federation] [--noupdatelatest] [--ci]
 #+            [--bucket=<alt GS bucket>] [--bucket-mirror=<mirror GS bucket>]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
 #+ DESCRIPTION
-#+     Replaces kubernetes/build/push-ci-build.sh.
-#+     Used for pushing CI builds during Jenkins' runs.
-#+     Runs in mock mode by default. Use --nomock to do a real push.
+#+     Replaces kubernetes/build/push-*-build.sh.
+#+     Used for pushing developer builds and Jenkins' continuous builds.
+#+
+#+     Developer pushes simply run as they do pushing to devel/ on GCS.
+#+     In --ci mode, $PROG runs in mock mode by default.  Use --nomock to do
+#+     a real push.
 #+
 #+     Federation values are just passed through as exported global vars still
 #+     due to the fact that we're still leveraging the existing federation 
 #+     interface in kubernetes proper.
 #+
 #+ OPTIONS
-#+     [--nomock]                - Enables a real push
+#+     [--nomock]                - Enables a real push (--ci only)
 #+     [--federation]            - Enable FEDERATION push
+#+     [--ci]                    - Used when called from Jekins (for ci runs)
 #+     [--bucket=]               - Specify an alternate bucket for pushes
 #+     [--bucket-mirror=]        - Specify a mirror bucket for pushes
 #+     [--noupdatelatest]        - Do not update the latest file
@@ -46,10 +50,12 @@ PROG=${0##*/}
 #+     [--usage | -?]            - display in-line usage
 #+
 #+ EXAMPLES
-#+     $PROG                     - Do a CI push
-#+     $PROG --federation        - Do a CI push with federation
+#+     $PROG                     - Do a developer push
+#+     $PROG --nomock --federation --ci
+#+                               - Do a (non-mocked) CI push with federation
 #+     $PROG --bucket=kubernetes-release-$USER
-#+                               - Do a CI push to kubernetes-release-$USER
+#+                               - Do a developer push to 
+#+                                 kubernetes-release-$USER
 #+
 #+ FILES
 #+
@@ -96,6 +102,9 @@ else
   common::exit 1 "Unable to get latest version from build tree.  Exiting..."
 fi
 
+GCS_DEST="devel"
+((FLAGS_ci)) && GCS_DEST="ci"
+
 if ((FLAGS_nomock)); then
   logecho
   logecho "$PROG is running a *REAL* push!!"
@@ -135,12 +144,15 @@ common::stepheader COPY RELEASE ARTIFACTS
 ##############################################################################
 attempt=0
 while ((attempt<max_attempts)); do
-  release::gcs::copy_release_artifacts ci $LATEST $KUBE_ROOT/_output \
+  release::gcs::copy_release_artifacts $GCS_DEST $LATEST $KUBE_ROOT/_output \
                                        $RELEASE_BUCKET \
                                        $RELEASE_BUCKET_MIRROR && break
   ((attempt++))
 done
 ((attempt>=max_attempts)) && common::exit 1 "Exiting..."
+
+# If not --ci, then we're done here.
+((FLAGS_ci)) || common::exit 0 "Exiting..."
 
 if ! ((FLAGS_noupdatelatest)); then
   ##############################################################################
@@ -148,9 +160,9 @@ if ! ((FLAGS_noupdatelatest)); then
   ##############################################################################
   attempt=0
   while ((attempt<max_attempts)); do
-    release::gcs::publish_version ci $LATEST $KUBE_ROOT/_output \
-                                     $RELEASE_BUCKET \
-                                     $RELEASE_BUCKET_MIRROR && break
+    release::gcs::publish_version $GCS_DEST $LATEST $KUBE_ROOT/_output \
+                                  $RELEASE_BUCKET \
+                                  $RELEASE_BUCKET_MIRROR && break
     ((attempt++))
   done
   ((attempt>=max_attempts)) && common::exit 1 "Exiting..."
