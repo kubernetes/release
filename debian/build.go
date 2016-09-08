@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"text/template"
 	"time"
+	"fmt"
 )
 
 type work struct {
@@ -18,7 +19,7 @@ type work struct {
 }
 
 type cfg struct {
-	Version, DistroName, Arch, Package, Revision string
+	Version, DistroName, Arch, DebArch, Package, Revision string
 }
 
 var (
@@ -29,6 +30,19 @@ var (
 	}
 )
 
+func runCommand(pwd string, command string, cmdArgs ...string) error {
+	cmd := exec.Command(command, cmdArgs...)
+	if len(pwd) != 0 {
+		cmd.Dir = pwd
+	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c cfg) run() error {
 	log.Printf("!!!!!!!!! doing: %#v", c)
 	var w []work
@@ -38,7 +52,6 @@ func (c cfg) run() error {
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(dstdir)
 
 	if err := filepath.Walk(srcdir, func(srcfile string, f os.FileInfo, err error) error {
 		if err != nil {
@@ -93,11 +106,16 @@ func (c cfg) run() error {
 		}
 	}
 
-	cmd := exec.Command("dpkg-buildpackage", "-us", "-uc", "-b")
-	cmd.Dir = dstdir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	err = runCommand(dstdir, "dpkg-buildpackage", "-us", "-uc", "-b", "--host-arch=" + c.DebArch)
+	if err != nil {
+		return err
+	}
+
+	os.MkdirAll("bin", os.ModeDir)
+
+	fileName := fmt.Sprintf("%s_%s-%s_%s.deb", c.Package, c.Version, c.Revision, c.DebArch)
+	err = runCommand("", "mv", "/tmp/" + fileName, "bin/" + fileName)
+	if err != nil {
 		return err
 	}
 
@@ -116,6 +134,12 @@ func main() {
 	flag.StringVar(&c.Package, "package", c.Package, "package")
 	flag.StringVar(&c.Revision, "revision", c.Revision, "revision")
 	flag.Parse()
+
+	if c.Arch == "arm" {
+		c.DebArch = "armhf"
+	} else {
+		c.DebArch = c.Arch
+	}
 
 	if err := c.run(); err != nil {
 		log.Fatalf("err: %v", err)
