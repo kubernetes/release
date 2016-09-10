@@ -246,8 +246,9 @@ generate_notes () {
   branch_head=$(git rev-parse refs/remotes/origin/$CURRENT_BRANCH 2>/dev/null)
 
   # If ${LAST_RELEASE[$CURRENT_BRANCH]} is unset attempt to get the last
-  # release from the parent branch
+  # release from the parent branch and then master
   : ${LAST_RELEASE[$CURRENT_BRANCH]:=${LAST_RELEASE[${CURRENT_BRANCH%.*}]}}
+  : ${LAST_RELEASE[$CURRENT_BRANCH]:=${LAST_RELEASE[master]}}
 
   # Default
   range="${POSITIONAL_ARGV[0]:-"${LAST_RELEASE[$CURRENT_BRANCH]}..$branch_head"}"
