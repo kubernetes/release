@@ -161,7 +161,7 @@ common::cleanexit () {
 # Simple ACL check to limit nomock runs to a short list of release folks
 check_acls () {
   case "$USER" in
-    filipg|robertbailey|fabioy|djmm) ;;
+    filipg|robertbailey|fabioy|djmm|pwittroc) ;;
                          *) logecho "Releases restricted to certain users!"
                             return 1
                             ;;
@@ -821,7 +821,8 @@ gitlib::check_credentials
 ##############################################################################
 common::stepheader "CHECK PREREQUISITES"
 ##############################################################################
-common::check_packages jq docker-engine pandoc || common::exit 1 "Exiting..."
+common::check_packages jq docker-engine pandoc sendgmr \
+ || common::exit 1 "Exiting..."
 check_prerequisites || common::exit 1 "Exiting..."
 
 ##############################################################################
