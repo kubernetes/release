@@ -2,7 +2,7 @@
 
 ARCHITECTURES=("amd64" "arm" "arm64")
 DISTROS=("xenial")
-K8S_VERSIONS=("1.3.6" "1.4.0-beta.0")
+K8S_VERSIONS=("1.3.6" "1.4.0-beta.3")
 
 # the cni package is named after the latest cni release (0.3.0) plus the k8s revision (1), plus the six first chars from the commit
 # this means the kubelet can demand a specific k8s revision by requiring (>= 0.3.0.1)
