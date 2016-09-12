@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -9,7 +10,6 @@ import (
 	"path/filepath"
 	"text/template"
 	"time"
-	"fmt"
 )
 
 type work struct {
@@ -106,15 +106,15 @@ func (c cfg) run() error {
 		}
 	}
 
-	err = runCommand(dstdir, "dpkg-buildpackage", "-us", "-uc", "-b", "--host-arch=" + c.DebArch)
+	err = runCommand(dstdir, "dpkg-buildpackage", "-us", "-uc", "-b", "-a"+c.DebArch)
 	if err != nil {
 		return err
 	}
 
-	os.MkdirAll("bin", os.ModeDir)
+	os.MkdirAll("bin", 0777)
 
 	fileName := fmt.Sprintf("%s_%s-%s_%s.deb", c.Package, c.Version, c.Revision, c.DebArch)
-	err = runCommand("", "mv", "/tmp/" + fileName, "bin/" + fileName)
+	err = runCommand("", "mv", "/tmp/"+fileName, "bin/"+fileName)
 	if err != nil {
 		return err
 	}
