@@ -93,6 +93,7 @@ your favorite editor.
 
 ### Tools
 
+* [prin](https://github.com/kubernetes/release/blob/master/prin) : What tags/releases is my PR IN?
 * [mailer](https://github.com/kubernetes/release/blob/master/mailer) : Generic mail interface (due to Google's deprecation of sendmail)
 * [find_green_build](https://github.com/kubernetes/release/blob/master/find_green_build) : Ask Jenkins for a good build to use
 * [script-template](https://github.com/kubernetes/release/blob/master/script-template) : Generate a script template in the kubernetes/release ecosystem
