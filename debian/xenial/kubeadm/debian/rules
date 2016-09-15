@@ -1,0 +1,26 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+#export DH_VERBOSE=1
+
+build:
+	echo noop
+
+binary:
+	mkdir -p usr/bin
+	#curl  --fail -sS -L \
+	#	-o usr/bin/kubeadm \
+	#	"https://storage.googleapis.com/kubernetes-release/release/v{{ .Version }}/bin/linux/{{ .Arch }}/kubeadm"
+	printf '#!/bin/bash\necho "this is kubeadm"' > usr/bin/kubeadm
+	chmod +x usr/bin/kubeadm
+	dh_testroot
+	dh_auto_install
+	dh_shlibdeps
+	dh_install
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+%:
+	dh $@
