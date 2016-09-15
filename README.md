@@ -121,3 +121,15 @@ $ relnotes v1.2.0..v1.2.1 --branch=release-1.2
 
 Please report *any* [issues](https://github.com/kubernetes/release/issues)
 you encounter.
+
+## Building Packages
+
+### For Debian
+
+You can build the packages in a Docker container like this:
+```
+docker build --tag=debian-packager debian
+docker run --volume="$(pwd)/debian:/src" debian-packager
+```
+
+The build runs for a while, after it's done you will find the output in `debian/bin`.
