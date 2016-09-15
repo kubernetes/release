@@ -1,0 +1,15 @@
+Source: kubeadm
+Section: misc
+Priority: optional
+Maintainer: Kubernetes Authors <kubernetes-dev@google.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.4
+Homepage: https://kubernetes.io
+Vcs-Git: https://github.com/kubernetes/kubernetes.git
+Vcs-Browser: https://github.com/kubernetes/kubernetes
+
+Package: kubeadm
+Architecture: {{ .DebArch }}
+Depends: kubelet (>= 1.4.0), ${misc:Depends}
+Description: Kubernetes Cluster Bootstrapping Tool
+ The Kubernetes command line tool for bootstrapping a Kubernetes cluster.
