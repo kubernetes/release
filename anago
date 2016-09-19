@@ -54,14 +54,14 @@ PROG=${0##*/}
 #+     ------   --------    ----
 #+     master               alpha
 #+     master      X        N/A
-#+     release-*            beta      
+#+     release-*            beta
 #+     release-*   X        official
 #+
 #+     NOTE: <branch> can exist already or not.  If the branch doesn't exist,
 #+           it will be branched from master as part of the run.
 #+
 #+     VALUES USED AND DISPLAYED DURING RUNS:
-#+     * The RELEASE_VERSION dictionary is indexed by each of the types of 
+#+     * The RELEASE_VERSION dictionary is indexed by each of the types of
 #+       releases that will be processed for a session (alpha,beta,official)
 #+     * RELEASE_VERSION_PRIME is the primary release version
 #+     * GCRIO_REPO and RELEASE_BUCKET are the publish locations
@@ -161,7 +161,7 @@ common::cleanexit () {
 # Simple ACL check to limit nomock runs to a short list of release folks
 check_acls () {
   case "$USER" in
-    filipg|robertbailey|fabioy|djmm|pwittroc|stclair) ;;
+    filipg|robertbailey|fabioy|djmm|pwittroc|stclair|mtaufen) ;;
     *) logecho "Releases restricted to certain users!"
        return 1
        ;;
@@ -367,7 +367,7 @@ prepare_tree () {
   current_branch=$(gitlib::current_branch)
 
   # rev base.go
-  case $label in 
+  case $label in
     beta*|official) rev_version_base $label ;;
   esac
 
@@ -577,7 +577,7 @@ update_github_release () {
       return 1
     fi
   fi
- 
+
   # post release data
   logecho "$release_verb the $RELEASE_VERSION_PRIME release on github..."
   release_id=$($GHCURL $K8S_GITHUB_API/releases$id_suffix --data \
@@ -795,7 +795,7 @@ BASEDIR=${FLAGS_basedir:-"/usr/local/google/$USER"}
 
 # TODO:
 # These KUBE_ globals extend beyond the scope of the new release refactored
-# tooling so to pass these through as flags will require fixes across 
+# tooling so to pass these through as flags will require fixes across
 # kubernetes/kubernetes and kubernetes/release which we can do at a later time
 export KUBE_DOCKER_REGISTRY="gcr.io/$GCRIO_REPO"
 export KUBE_RELEASE_RUN_TESTS=n
@@ -903,7 +903,7 @@ common::runstep prepare_workspace || common::exit 1 "Exiting..."
 ##############################################################################
 common::stepheader "CHECK GIT PUSH ACCESS"
 ##############################################################################
-# TODO: capture state of access without forcing us into a prompt I have to 
+# TODO: capture state of access without forcing us into a prompt I have to
 #       expose.
 logecho -n "Checking git push access (verbosely to accept password if needed)" \
            "(NOTE: If using 2factor, enter a token for password)"
