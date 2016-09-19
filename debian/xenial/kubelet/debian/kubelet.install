@@ -1,4 +1,2 @@
 usr/bin/kubelet usr/bin/
 lib/systemd/system/kubelet.service lib/systemd/system/
-var/lib/kubelet/kubelet-wrapper var/lib/kubelet/
-etc/default/kubelet etc/default
