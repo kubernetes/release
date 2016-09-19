@@ -21,8 +21,6 @@ set -o nounset
 
 case "$1" in
     configure)
-        systemctl enable kubelet
-        systemctl start kubelet
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

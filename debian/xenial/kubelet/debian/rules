@@ -16,10 +16,13 @@ binary:
 	dh_auto_install
 	dh_shlibdeps
 	dh_install
+	dh_systemd_enable
+	dh_installinit
+	dh_systemd_start
 	dh_installdeb
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
 
 %:
-	dh $@
+	dh $@ --with systemd
