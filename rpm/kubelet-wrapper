@@ -1,8 +1,0 @@
-#!/bin/bash
-
-set -o nounset
-set -o errexit
-set -o pipefail
-
-/usr/bin/kubelet ${KUBELET_OPTS}
-

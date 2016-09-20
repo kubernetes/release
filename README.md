@@ -133,3 +133,15 @@ docker run --volume="$(pwd)/debian:/src" debian-packager
 ```
 
 The build runs for a while, after it's done you will find the output in `debian/bin`.
+
+### For Fedora, CentOS, Red Hat Enterprise Linux
+
+You can build the rpm packages in a Docker container with:
+
+```
+cd rpm
+./docker-build.sh.
+```
+
+Resulting rpms, and a pre-generated yum repository will be generated in rpm/output/x86_64.
+
