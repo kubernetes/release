@@ -19,6 +19,11 @@ set -o nounset
 
 case "$1" in
     configure)
+        # because kubeadm package adds kubelet drop-ins, we must daemon-reload
+        # and restart kubelet now. restarting kubelet is ok because kubelet
+        # postinst configure step auto-starts it.
+        systemctl daemon-reload
+        systemctl restart kubelet
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
