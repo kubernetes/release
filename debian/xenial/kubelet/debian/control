@@ -2,7 +2,7 @@ Source: kubelet
 Section: misc
 Priority: optional
 Maintainer: Kubernetes Authors <kubernetes-dev@google.com>
-Build-Depends: curl, ca-certificates, debhelper (>= 8.0.0)
+Build-Depends: curl, ca-certificates, debhelper (>= 8.0.0), dh-systemd (>= 1.5)
 Standards-Version: 3.9.4
 Homepage: https://kubernetes.io
 Vcs-Git: https://github.com/kubernetes/kubernetes.git
