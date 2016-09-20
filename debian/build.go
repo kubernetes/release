@@ -20,6 +20,7 @@ type work struct {
 
 type cfg struct {
 	Version, DistroName, Arch, DebArch, Package, Revision string
+	keepTmp                                               bool
 }
 
 var (
@@ -51,6 +52,9 @@ func (c cfg) run() error {
 	dstdir, err := ioutil.TempDir(os.TempDir(), "debs")
 	if err != nil {
 		return err
+	}
+	if !c.keepTmp {
+		defer os.RemoveAll(dstdir)
 	}
 
 	if err := filepath.Walk(srcdir, func(srcfile string, f os.FileInfo, err error) error {
@@ -133,6 +137,7 @@ func main() {
 	flag.StringVar(&c.Arch, "arch", c.Arch, "arch")
 	flag.StringVar(&c.Package, "package", c.Package, "package")
 	flag.StringVar(&c.Revision, "revision", c.Revision, "revision")
+	flag.BoolVar(&c.keepTmp, "keep_tmp", c.keepTmp, "keep tmp dir after build")
 	flag.Parse()
 
 	if c.Arch == "arm" {
