@@ -774,7 +774,7 @@ release::docker::release () {
         logecho "Release legacy $legacy_docker_target:"
 
         logecho -n "- Tagging: "
-        logrun -r 5 -s docker tag -f "$registry/$docker_target" \
+        logrun -r 5 -s docker tag "$registry/$docker_target" \
                               "$registry/$legacy_docker_target" 2>/dev/null
 
         logecho -n "- Pushing: "
