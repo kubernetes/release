@@ -15,15 +15,16 @@ LOG.setLevel(0)
 
 class Build():
 
-  def __init__(self, pkg, arch, distro, version, revision):
+  def __init__(self, pkg, arch, distro, version, revision, stable):
     self.arch = arch
     self.distro = distro
     self.pkg = pkg
     self.version = version
     self.revision = revision
+    self.stable = stable
 
   def run(self):
-    cmd = (
+    cmd = [
       'go',
       'run',
       'build.go',
@@ -31,8 +32,10 @@ class Build():
       '-distro_name', self.distro,
       '-package', self.pkg,
       '-version', self.version,
-      '-revision', self.revision
-    )
+      '-revision', self.revision,
+    ]
+    if self.stable:
+      cmd.append('-stable')
     LOG.debug("running cmd: %s", cmd)
     return subprocess.call(cmd)
 
@@ -46,28 +49,29 @@ def main():
 
   packages = {
     'kubectl': (
-      ('1.3.7', '00'),
-      ('1.4.0-beta.5', '00'),
+      ('1.3.7', '00', True),
+      ('1.4.0-beta.5', '00', False),
     ),
     'kubelet': (
-      ('1.3.7', '01'),
-      ('1.4.0-beta.5', '01'),
+      ('1.3.7', '01', True),
+      ('1.4.0-beta.5', '01', False),
     ),
     'kubeadm': (
-      ('1.4.0-alpha', '00'),
+      ('1.4.0-alpha', '00', False),
     ),
     'kubernetes-cni': (
-      ('0.3.0.1-07a8a2', '00'),
+      ('0.3.0.1-07a8a2', '00', True),
+      ('0.3.0.1-07a8a2', '00', False),
     ),
   }
 
   builds = []
 
   for pkg, versions in packages.items():
-    for version, revision in versions:
+    for version, revision, stable in versions:
       for arch in architectures:
         for distro in distros:
-          builds.append(Build(pkg, arch, distro, version, revision))
+          builds.append(Build(pkg, arch, distro, version, revision, stable))
 
   for build in builds:
     LOG.debug("planning to build: %s" % build)
