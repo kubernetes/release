@@ -50,14 +50,14 @@ def main():
   packages = {
     'kubectl': (
       ('1.3.7', '00', True),
-      ('1.4.0-beta.5', '00', False),
+      ('1.4.0-beta.8', '00', False),
     ),
     'kubelet': (
-      ('1.3.7', '01', True),
-      ('1.4.0-beta.5', '01', False),
+      ('1.3.7', '00', True),
+      ('1.4.0-beta.8', '00', False),
     ),
     'kubeadm': (
-      ('1.4.0-alpha', '00', False),
+      ('0.1.0-c0d5c62', '00', False),
     ),
     'kubernetes-cni': (
       ('0.3.0.1-07a8a2', '00', True),

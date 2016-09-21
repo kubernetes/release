@@ -1,1 +1,2 @@
 usr/bin/kubeadm usr/bin/
+etc/systemd/system/kubelet.service.d/10-kubeadm.conf etc/systemd/system/kubelet.service.d/

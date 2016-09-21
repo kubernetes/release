@@ -11,7 +11,7 @@ binary:
 	#curl  --fail -sS -L \
 	#	-o usr/bin/kubeadm \
 	#	"https://storage.googleapis.com/kubernetes-release/release/v{{ .Version }}/bin/linux/{{ .Arch }}/kubeadm"
-	printf '#!/bin/bash\necho "this is kubeadm"' > usr/bin/kubeadm
+	touch usr/bin/kubeadm
 	chmod +x usr/bin/kubeadm
 	dh_testroot
 	dh_auto_install
