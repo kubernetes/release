@@ -21,6 +21,7 @@ type work struct {
 type cfg struct {
 	Version, DistroName, Arch, DebArch, Package, Revision string
 	keepTmp                                               bool
+	stable                                                bool
 }
 
 var (
@@ -115,10 +116,19 @@ func (c cfg) run() error {
 		return err
 	}
 
-	os.MkdirAll("bin", 0777)
+	dstParts := []string{"bin"}
+	if c.stable {
+		dstParts = append(dstParts, "stable")
+	} else {
+		dstParts = append(dstParts, "unstable")
+	}
+	dstParts = append(dstParts, c.DistroName)
+
+	dstPath := filepath.Join(dstParts...)
+	os.MkdirAll(dstPath, 0777)
 
 	fileName := fmt.Sprintf("%s_%s-%s_%s.deb", c.Package, c.Version, c.Revision, c.DebArch)
-	err = runCommand("", "mv", "/tmp/"+fileName, "bin/"+fileName)
+	err = runCommand("", "mv", filepath.Join("/tmp", fileName), dstPath)
 	if err != nil {
 		return err
 	}
@@ -138,6 +148,7 @@ func main() {
 	flag.StringVar(&c.Package, "package", c.Package, "package")
 	flag.StringVar(&c.Revision, "revision", c.Revision, "revision")
 	flag.BoolVar(&c.keepTmp, "keep_tmp", c.keepTmp, "keep tmp dir after build")
+	flag.BoolVar(&c.stable, "stable", c.keepTmp, "is this a stable release")
 	flag.Parse()
 
 	if c.Arch == "arm" {
