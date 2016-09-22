@@ -1,7 +1,7 @@
 Source: kubectl
 Section: misc
 Priority: optional
-Maintainer: Kubernetes Authors <kubernetes-dev@google.com>
+Maintainer: Kubernetes Authors <kubernetes-dev+release@googlegroups.com>
 Build-Depends: curl, ca-certificates, debhelper (>= 8.0.0)
 Standards-Version: 3.9.4
 Homepage: https://kubernetes.io
