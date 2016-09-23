@@ -81,7 +81,7 @@ show_tags () {
   logecho "COMMITS: $initial_commit (initial) ${cp_commits[*]} (cherrypicks)"
   [[ -n $pr ]] && echo "(https://github.com/kubernetes/kubernetes/pull/$pr)"
   logecho
-  logecho "                LATENCY (DAYS)"
+  logecho "                LATENCY TO APPEAR (DAYS)"
   logecho -n "TAG             K8S"
   if ((SECURITY_LAYER)); then
     logecho "     HOSTED"
