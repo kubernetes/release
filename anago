@@ -692,6 +692,17 @@ get_build_candidate () {
                                 $RELEASE_BRANCH \
                                 $PARENT_BRANCH \
    || return 1
+
+  # Check that this tag doesn't exist which may occur if $PROG ran partially
+  if [[ "$($GHCURL $K8S_GITHUB_API/tags |jq -r '.[] .name')" =~ \
+     $'\n'$RELEASE_VERSION_PRIME$'\n' ]]; then
+     logecho
+     logecho "The tag $RELEASE_VERSION_PRIME already exists on github."
+     logecho "* An old --buildversion was specified on the command-line"
+     logecho "* An incomplete $PROG run is being rerun.  anago is not fully" \
+             "reentrant yet.  COMING SOON."
+     return 1
+  fi
 }
 
 ##############################################################################
