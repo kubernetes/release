@@ -8,10 +8,9 @@ build:
 
 binary:
 	mkdir -p usr/bin
-	#curl  --fail -sS -L \
-	#	-o usr/bin/kubeadm \
-	#	"https://storage.googleapis.com/kubernetes-release/release/v{{ .Version }}/bin/linux/{{ .Arch }}/kubeadm"
-	touch usr/bin/kubeadm
+	curl  --fail -sS -L \
+		-o usr/bin/kubeadm \
+		"https://storage.googleapis.com/kubeadm/v{{ .Version }}/bin/kubeadm"
 	chmod +x usr/bin/kubeadm
 	dh_testroot
 	dh_auto_install
