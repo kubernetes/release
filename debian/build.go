@@ -18,18 +18,35 @@ type work struct {
 	info     os.FileInfo
 }
 
+type build struct {
+	Package  string
+	Distros  []string
+	Versions []version
+}
+
+type version struct {
+	Version, Revision string
+	Stable            bool
+}
+
 type cfg struct {
-	Version, DistroName, Arch, DebArch, Package, Revision string
-	keepTmp                                               bool
-	stable                                                bool
+	version
+	DistroName, Arch, DebArch, Package string
 }
 
 var (
+	architectures = []string{"amd64", "arm", "arm64"}
+	serverDistros = []string{"xenial"}
+	allDistros    = []string{"xenial", "jessie", "precise", "sid", "stretch", "trusty",
+		"utopic", "vivid", "wheezy", "wily", "yakkety"}
+
 	builtins = map[string]interface{}{
 		"date": func() string {
 			return time.Now().Format(time.RFC1123Z)
 		},
 	}
+
+	keepTmp = flag.Bool("keep_tmp", false, "keep tmp dir after build")
 )
 
 func runCommand(pwd string, command string, cmdArgs ...string) error {
@@ -54,15 +71,22 @@ func (c cfg) run() error {
 	if err != nil {
 		return err
 	}
-	if !c.keepTmp {
+	if !*keepTmp {
 		defer os.RemoveAll(dstdir)
 	}
 
-	if err := filepath.Walk(srcdir, func(srcfile string, f os.FileInfo, err error) error {
+	// allow base package dir to by a symlink so we can reuse packages
+	// that don't change between distros
+	realSrcdir, err := filepath.EvalSymlinks(srcdir)
+	if err != nil {
+		return err
+	}
+
+	if err := filepath.Walk(realSrcdir, func(srcfile string, f os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		dstfile := filepath.Join(dstdir, srcfile[len(srcdir):])
+		dstfile := filepath.Join(dstdir, srcfile[len(realSrcdir):])
 		if dstfile == dstdir {
 			return nil
 		}
@@ -117,7 +141,7 @@ func (c cfg) run() error {
 	}
 
 	dstParts := []string{"bin"}
-	if c.stable {
+	if c.Stable {
 		dstParts = append(dstParts, "stable")
 	} else {
 		dstParts = append(dstParts, "unstable")
@@ -136,28 +160,100 @@ func (c cfg) run() error {
 	return nil
 }
 
-func main() {
-	var (
-		c = cfg{
-			Revision: "00",
+func walkBuilds(builds []build, f func(pkg, distro, arch string, v version) error) error {
+	for _, a := range architectures {
+		for _, b := range builds {
+			for _, d := range b.Distros {
+				for _, v := range b.Versions {
+					if err := f(b.Package, d, a, v); err != nil {
+						return err
+					}
+				}
+			}
 		}
-	)
-	flag.StringVar(&c.Version, "version", c.Version, "version")
-	flag.StringVar(&c.DistroName, "distro_name", c.DistroName, "distro name")
-	flag.StringVar(&c.Arch, "arch", c.Arch, "arch")
-	flag.StringVar(&c.Package, "package", c.Package, "package")
-	flag.StringVar(&c.Revision, "revision", c.Revision, "revision")
-	flag.BoolVar(&c.keepTmp, "keep_tmp", c.keepTmp, "keep tmp dir after build")
-	flag.BoolVar(&c.stable, "stable", c.keepTmp, "is this a stable release")
+	}
+	return nil
+}
+
+func main() {
 	flag.Parse()
 
-	if c.Arch == "arm" {
-		c.DebArch = "armhf"
-	} else {
-		c.DebArch = c.Arch
+	builds := []build{
+		{
+			Package: "kubectl",
+			Distros: allDistros,
+			Versions: []version{
+				{
+					Version:  "1.3.7",
+					Revision: "00",
+					Stable:   true,
+				},
+				{
+					Version:  "1.4.0-beta.11",
+					Revision: "00",
+					Stable:   false,
+				},
+			},
+		},
+		{
+			Package: "kubelet",
+			Distros: serverDistros,
+			Versions: []version{
+				{
+					Version:  "1.3.7",
+					Revision: "00",
+					Stable:   true,
+				},
+				{
+					Version:  "1.4.0-beta.11",
+					Revision: "00",
+					Stable:   false,
+				},
+			},
+		},
+		{
+			Package: "kubernetes-cni",
+			Distros: serverDistros,
+			Versions: []version{
+				{
+					Version:  "0.3.0.1-07a8a2",
+					Revision: "00",
+					Stable:   true,
+				},
+				{
+					Version:  "0.3.0.1-07a8a2",
+					Revision: "00",
+					Stable:   true,
+				},
+			},
+		},
+		{
+			Package: "kubeadm",
+			Distros: serverDistros,
+			Versions: []version{
+				{
+					Version:  "1.5.0-alpha.0-1403-gc19e08e",
+					Revision: "00",
+					Stable:   false,
+				},
+			},
+		},
 	}
 
-	if err := c.run(); err != nil {
+	if err := walkBuilds(builds, func(pkg, distro, arch string, v version) error {
+		c := cfg{
+			Package:    pkg,
+			version:    v,
+			DistroName: distro,
+			Arch:       arch,
+		}
+		if c.Arch == "arm" {
+			c.DebArch = "armhf"
+		} else {
+			c.DebArch = c.Arch
+		}
+		return c.run()
+	}); err != nil {
 		log.Fatalf("err: %v", err)
 	}
 }
