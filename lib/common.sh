@@ -701,24 +701,42 @@ common::loascheck () {
 #
 common::check_packages () {
   local prereq
+  local packagemgr
+  local distro
   local -a missing=()
 
   # Make sure a bunch of packages are available
   logecho -n "Checking required system packages: "
-  for prereq in $*; do
-    dpkg --get-selections 2>/dev/null | fgrep -qw $prereq || missing+=($prereq)
-  done
 
+  distro=$(lsb_release -si)
+  case $distro in
+    Fedora)
+      packagemgr="dnf"
+      for prereq in $*; do
+        rpm --quiet -q $prereq 2>/dev/null || missing+=($prereq)
+      done
+      ;;
+    Ubuntu)
+      packagemgr="apt-get"
+      for prereq in $*; do
+        dpkg --get-selections 2>/dev/null | fgrep -qw $prereq || missing+=($prereq)
+      done
+      ;;
+    *)
+      logecho "Unsupported distribution. Only Fedora and Ubuntu are supported"
+      return 1
+      ;;
+  esac
   if ((${#missing[@]}>0)); then
     logecho -r "$FAILED"
     logecho "PREREQ: Missing prerequisites: ${missing[@]}" \
             "Run the following and try again:"
     logecho
     for prereq in ${missing[@]}; do
-      if [[ $prereq == "sendgmr" ]]; then
+      if [[ $prereq == "sendgmr" ]] && [[ $distro == "Ubuntu" ]]; then
         logecho "sudo goobuntu-add-repo $prereq && sudo apt-get update"
       fi
-      logecho "sudo apt-get install $prereq"
+      logecho "sudo $packagemgr install $prereq"
     done
     return 1
   fi
