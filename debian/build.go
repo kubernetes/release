@@ -232,12 +232,12 @@ func main() {
 			Distros: serverDistros,
 			Versions: []version{
 				{
-					Version:  "1.5.0-alpha.0-1403-gc19e08e",
+					Version:  "1.5.0-alpha.0-1495-g1e7fa1f",
 					Revision: "00",
 					Stable:   true,
 				},
 				{
-					Version:  "1.5.0-alpha.0-1403-gc19e08e",
+					Version:  "1.5.0-alpha.0-1495-g1e7fa1f",
 					Revision: "00",
 					Stable:   false,
 				},
