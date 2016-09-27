@@ -4,7 +4,7 @@
 
 Name: kubelet
 Version: %{KUBE_VERSION}
-Release: %{RPM_RELEASE}.beta.11
+Release: %{RPM_RELEASE}
 Summary: Container cluster management
 License: ASL 2.0
 
@@ -70,9 +70,8 @@ cp -p %{_sourcedir}/10-kubeadm.conf %{_builddir}/
 
 %install
 
-# For now we have to add -beta.8 to the version here, we can't include that in a spec file Version:
-curl -L --fail "https://storage.googleapis.com/kubernetes-release/release/v%{KUBE_VERSION}-beta.11/bin/linux/amd64/kubelet" -o kubelet
-curl -L --fail "https://storage.googleapis.com/kubernetes-release/release/v%{KUBE_VERSION}-beta.11/bin/linux/amd64/kubectl" -o kubectl
+curl -L --fail "https://storage.googleapis.com/kubernetes-release/release/v%{KUBE_VERSION}/bin/linux/amd64/kubelet" -o kubelet
+curl -L --fail "https://storage.googleapis.com/kubernetes-release/release/v%{KUBE_VERSION}/bin/linux/amd64/kubectl" -o kubectl
 curl -L --fail "https://storage.googleapis.com/kubeadm/v1.5.0-alpha.0-1403-gc19e08e/bin/kubeadm" -o kubeadm
 
 install -m 755 -d %{buildroot}%{_bindir}
