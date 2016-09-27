@@ -72,7 +72,7 @@ cp -p %{_sourcedir}/10-kubeadm.conf %{_builddir}/
 
 curl -L --fail "https://storage.googleapis.com/kubernetes-release/release/v%{KUBE_VERSION}/bin/linux/amd64/kubelet" -o kubelet
 curl -L --fail "https://storage.googleapis.com/kubernetes-release/release/v%{KUBE_VERSION}/bin/linux/amd64/kubectl" -o kubectl
-curl -L --fail "https://storage.googleapis.com/kubeadm/v1.5.0-alpha.0-1534-gcf7301f/bin/kubeadm" -o kubeadm
+curl -L --fail "https://storage.googleapis.com/kubeadm/v1.5.0-alpha.0-1534-gcf7301f/bin/linux/amd64/kubeadm" -o kubeadm
 
 install -m 755 -d %{buildroot}%{_bindir}
 install -m 755 -d %{buildroot}%{_sysconfdir}/systemd/system/
