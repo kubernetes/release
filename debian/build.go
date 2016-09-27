@@ -206,7 +206,6 @@ func main() {
 				},
 				{
 					Version:  "1.4.0",
-					Version:  "1.3.7",
 					Revision: "00",
 					Stable:   false,
 				},
