@@ -916,9 +916,9 @@ common::stepheader "CHECK GIT PUSH ACCESS"
 ##############################################################################
 # TODO: capture state of access without forcing us into a prompt I have to
 #       expose.
-logecho -n "Checking git push access (verbosely to accept password if needed)" \
-           "(NOTE: If using 2factor, enter a token for password)"
-logrun -v git push -q --dry-run $K8S_GITHUB_URL || common::exit 1 "Exiting..."
+logecho "Checking git push access - verbosely to accept password if needed..."
+logecho "(NOTE: If using 2factor, enter a token for password)"
+logrun -v git push -q --dry-run origin master || common::exit 1 "Exiting..."
 
 # Iterate over session release versions for setup, tagging and building
 for label in ${!RELEASE_VERSION[@]}; do
