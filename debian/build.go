@@ -201,12 +201,12 @@ func main() {
 			Versions: []version{
 				{
 					Version:  "1.4.0",
-					Revision: "00",
+					Revision: "01",
 					Stable:   true,
 				},
 				{
 					Version:  "1.4.0",
-					Revision: "00",
+					Revision: "01",
 					Stable:   false,
 				},
 			},
