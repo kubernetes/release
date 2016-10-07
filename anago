@@ -78,7 +78,7 @@ PROG=${0##*/}
 #+     [--buildversion=ver]      - Override Jenkins check and set a specific
 #+                                 build version
 #+     [--basedir=dir]           - Specify an alternate base directory
-#+                                 (default: /usr/local/google/$USER)
+#+                                 (default: /usr/local/google/home/$USER)
 #+     [--help | -man]           - display man page for this script
 #+     [--usage | -?]            - display in-line usage
 #+
@@ -802,7 +802,7 @@ else
   RELEASE_BUCKET+=-$USER
   GCRIO_REPO="kubernetes-release-test"
 fi
-BASEDIR=${FLAGS_basedir:-"/usr/local/google/$USER"}
+BASEDIR=${FLAGS_basedir:-"/usr/local/google/home/$USER"}
 
 # TODO:
 # These KUBE_ globals extend beyond the scope of the new release refactored
