@@ -45,6 +45,8 @@ PROG=${0##*/}
 #+     [--ci]                    - Used when called from Jekins (for ci runs)
 #+     [--bucket=]               - Specify an alternate bucket for pushes
 #+     [--bucket-mirror=]        - Specify a mirror bucket for pushes
+#+     [--gcs-suffix=]           - Specify a suffix to append to the upload
+#+                                 destination on GCS.
 #+     [--noupdatelatest]        - Do not update the latest file
 #+     [--help | -man]           - display man page for this script
 #+     [--usage | -?]            - display in-line usage
@@ -54,7 +56,7 @@ PROG=${0##*/}
 #+     $PROG --nomock --federation --ci
 #+                               - Do a (non-mocked) CI push with federation
 #+     $PROG --bucket=kubernetes-release-$USER
-#+                               - Do a developer push to 
+#+                               - Do a developer push to
 #+                                 kubernetes-release-$USER
 #+
 #+ FILES
@@ -104,6 +106,7 @@ fi
 
 GCS_DEST="devel"
 ((FLAGS_ci)) && GCS_DEST="ci"
+GCS_DEST+="$FLAGS_gcs_suffix"
 
 if ((FLAGS_nomock)); then
   logecho
