@@ -83,6 +83,9 @@ common::cleanexit () {
 # BEGIN script
 common::timestamp begin
 
+# Force verbose flag
+FLAGS_verbose=1
+
 # Initialize and save up to 10 (rotated logs)
 MYLOG=/tmp/$PROG.log
 common::logfileinit $MYLOG 10

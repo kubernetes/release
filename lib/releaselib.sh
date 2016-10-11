@@ -94,12 +94,6 @@ release::set_build_version () {
   local main_job="kubernetes-e2e-gce$branch_suffix"
   local job_path=/tmp/buildresults-cache.$$
   local -a JOB
-
-  # Would be nice to pull/generate these jobs dynamically filtered through
-  # a pattern like gce,gke so new/changed testing jobs don't require
-  # updating here, but it turns out way too much hardcoding would need
-  # to be done to make this 'dynamic', so just list these explicitly.
-  #all_jobs=$($JCURL -s "http://kubekins.dls.corp.google.com/view/Critical%20Builds/api/json" |jq -r '.jobs[] | .name' | egrep -v '-soak-|-build')
   local -a gce_jobs=("kubernetes-e2e-gce-serial$branch_suffix"
                      "kubernetes-e2e-gce-slow$branch_suffix"
                      "kubernetes-kubemark-5-gce$branch_suffix"

@@ -25,6 +25,7 @@ PROG=${0##*/}
 #+     $PROG  [--yes] [--nomock] [--noclean] [--official]
 #+            [--buildversion=<jenkins build version>]
 #+            [--basedir=<alt base work dir>] <branch>
+#+            [--security_layer=/path/to/pointer/to/script]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
@@ -79,6 +80,10 @@ PROG=${0##*/}
 #+                                 build version
 #+     [--basedir=dir]           - Specify an alternate base directory
 #+                                 (default: /usr/local/google/$USER)
+#+     [--security_layer=]       - A file containing a path to a script to
+#+                                 source/include:
+#+                                 FLAGS_security_layer=/path/to/script
+#+                                 Default: $HOME/.kubernetes-releaserc
 #+     [--help | -man]           - display man page for this script
 #+     [--usage | -?]            - display in-line usage
 #+
@@ -161,10 +166,10 @@ common::cleanexit () {
 # Simple ACL check to limit nomock runs to a short list of release folks
 check_acls () {
   case "$USER" in
-    filipg|robertbailey|fabioy|djmm|pwittroc|stclair|mtaufen) ;;
-    *) logecho "Releases restricted to certain users!"
-       return 1
-       ;;
+    $ACL_LIST) ;;
+            *) logecho "Live releases restricted to certain users!"
+               return 1
+               ;;
   esac
 }
 
@@ -174,13 +179,10 @@ check_acls () {
 # @param package - A space separated list of packages to verify exist
 #
 check_prerequisites () {
-  local useratgoog="$USER@google.com"
+  local userat="$USER@$DOMAIN_NAME"
   local tempfile=/tmp/$PROG-cp.$$
 
-  # TODO: stub out for non-google
-  # Verify some hours of LOAS
-  logecho -n "Checking LOAS state: "
-  logrun -s common::loascheck 1 || return 1
+  security_layer::auth_check 2
 
   if ! common::set_cloud_binaries; then
     logecho "Releasing Kubernetes requires gsutil and gcloud. Please download,"
@@ -190,11 +192,11 @@ check_prerequisites () {
     return 1
   fi
 
-  # TODO: Users outside google? Guess domain?
-  # TODO: THe real test here is to verify that whatever auth has access to
+  # TODO: Users outside google? Ask/derive domain?
+  # TODO: The real test here is to verify that whatever auth has access to
   #       do releasey things
   gcloud_auth_list=$($GCLOUD auth list 2>/dev/null)
-  for user in k8s.production.user@gmail.com $useratgoog; do
+  for user in $G_AUTH_USER $userat; do
     logecho -n "Checking cloud auth for $user: "
     if [[ "$gcloud_auth_list" =~ -\ $user ]]; then
       logecho -r "$OK"
@@ -208,11 +210,11 @@ check_prerequisites () {
     fi
   done
   # Ensure $USER is active to start
-  if ! [[ "$gcloud_auth_list" =~ -\ $useratgoog\ ACTIVE ]]; then
-    logecho "$useratgoog is not the active gcloud user!"
+  if ! [[ "$gcloud_auth_list" =~ -\ $userat\ ACTIVE ]]; then
+    logecho "$userat is not the active gcloud user!"
     logecho "Set with:"
     logecho
-    logecho "$ gcloud config set account $useratgoog"
+    logecho "$ gcloud config set account $userat"
     return 1
   fi
   GCLOUD_ACCOUNT=$user
@@ -377,7 +379,7 @@ prepare_tree () {
   # the NON-master branch itself, versionize the docs
   if [[ "$PARENT_BRANCH" == master && "$current_branch" != "master" ]]; then
     logecho -n "Versionizing docs for ${RELEASE_VERSION[$label]}: "
-    logrun -s $TREE_ROOT/build/versionize-docs.sh $current_branch
+    logrun -s $TREE_ROOT/build/versionize-docs.sh $current_branch || return 1
     logecho -n "Committing: "
     logrun git commit -am \
            "Versioning docs and examples for ${RELEASE_VERSION[$label]} on $current_branch."
@@ -524,9 +526,10 @@ announce () {
   # Due to announcements landing on public mailing lists requiring membership,
   # post from the invoking user (for now until this is productionized further)
   # and use reply-to to ensure replies go to the right place.
-  mailer --to="$mailto" --cc="$USER" --file="$announcement_text" --html \
-         --replyto="K8s-Anago<cloud-kubernetes-release@google.com>" \
-         --from="K8s-Anago<$USER@google.com>" --subject="$subject" || return 1
+  common::sendmail "$mailto" "K8s-Anago<$USER@$DOMAIN_NAME>" \
+                   "K8s-Anago<cloud-kubernetes-release@google.com>" \
+                   "$subject" "$USER" \
+                   "$announcement_text" --html || return 1
 
   logrun rm -f $announcement_text
 }
@@ -821,10 +824,23 @@ common::logfileinit $LOGFILE 10
 # BEGIN script
 common::timestamp begin
 
+# Additional functionality
+common::security_layer
+
 ##############################################################################
 common::stepheader "CHECK CREDENTIALS"
 ##############################################################################
 gitlib::check_credentials
+
+# Domain check
+if [[ $(hostname) =~ \.([^\.]+\.com)$ ]]; then
+  DOMAIN_NAME=${FLAGS_domain:-${BASH_REMATCH[1]}}
+  if ! [[ -n $DOMAIN_NAME ]]; then
+    common::exit 1 "Unable to determine your domain." \
+                   "Pass it in on the command-line" \
+                   "with --domain=<yourdomain.com>"
+  fi
+fi
 
 # Simple check to validate who can do actual releases
 ((FLAGS_nomock)) && check_acls
@@ -832,7 +848,7 @@ gitlib::check_credentials
 ##############################################################################
 common::stepheader "CHECK PREREQUISITES"
 ##############################################################################
-common::check_packages jq docker-engine pandoc sendgmr \
+common::check_packages jq docker-engine pandoc ${PREREQUISITE_PACKAGES[*]} \
  || common::exit 1 "Exiting..."
 check_prerequisites || common::exit 1 "Exiting..."
 
