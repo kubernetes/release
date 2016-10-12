@@ -636,21 +636,23 @@ common::security_layer () {
   local rcfile=$HOME/.kubernetes-releaserc
   SECURITY_LAYER=0
 
-  # Source the include
-  if [[ $(hostname -d) =~ google.com ]]; then
-    if [[ -f $rcfile ]]; then
-      source $rcfile >/dev/null 2>&1
-    else
-      logecho "$WARNING: This session is incomplete.  go/$PROG"
-      logecho
-    fi
-  fi
+  # Quietly attempt to source the include
+  source $rcfile >/dev/null 2>&1 || true
 
   # If not there attempt to set it from env
   FLAGS_security_layer=${FLAGS_security_layer:-":"}
 
-  [[ -s $FLAGS_security_layer ]] || return 0
-  source $FLAGS_security_layer >/dev/null 2>&1
+  if [[ -s $FLAGS_security_layer ]]; then
+    source $FLAGS_security_layer >/dev/null 2>&1
+  else
+    if [[ "$HOSTNAME" =~ google.com ]]; then
+      logecho "$FATAL! Googler, this session is incomplete." \
+              "$PROG is running with missing functionality.  See go/$PROG"
+      return 1
+    else
+      return 0
+    fi
+  fi
 }
 
 
@@ -836,6 +838,11 @@ common::sendmail () {
   local subject="$4"
   local cc="$5"
   local file="$6"
+
+  if [[ "$HOSTNAME" =~ google.com ]]; then
+    logecho "$FAILED! sendmail unavailable at Google."
+    return 1
+  fi
 
   (
   cat <<EOF+
