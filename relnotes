@@ -23,7 +23,7 @@ PROG=${0##*/}
 #+
 #+ SYNOPSIS
 #+     $PROG  [--quiet] [[starttag..]endtag] [--htmlize-md] [--full]
-#+            [--tarball=/path/to/kubernetes.tar.gz]
+#+            [--release-tars=/path/to/release-tars]
 #+            [--github-token=<token>] [--branch=<branch>]
 #+            [--markdown-file=<file>] [--html-file=<file>]
 #+            [--release-bucket=<gs bucket>] [--preview]
@@ -59,7 +59,7 @@ PROG=${0##*/}
 #+     --full                    - Force 'full' release format to show all
 #+                                 sections of release notes. (This is the
 #+                                 *default* for new branch X.Y.0 notes)
-#+     --tarball=                - tarball to sha256 sum for display
+#+     --release-tars=           - directory of tars to sha256 sum for display
 #+     --markdown-file=          - Specify an alt file to use to store notes
 #+     --html-file=              - Produce a html version of the notes
 #+     --release-bucket=         - Specify gs bucket to point to in
@@ -99,8 +99,8 @@ source $TOOL_LIB_PATH/gitlib.sh
 
 # Validate command-line
 common::argc_validate 1
-[[ -n $FLAGS_tarball && ! -f $FLAGS_tarball ]] \
- && common::exit 1 "--tarball=$FLAGS_tarball doesn't exist!  Exiting..."
+[[ -n $FLAGS_release_tars && ! -d $FLAGS_release_tars ]] \
+ && common::exit 1 "--release-tars=$FLAGS_release_tars doesn't exist!  Exiting..."
 
 ###############################################################################
 # FUNCTIONS
@@ -173,14 +173,32 @@ get_prs_by_label () {
   echo "${prs[@]}"
 }
 
+# Create a markdown dtable for the specified tarballs on GCS
+# @param heading - level-3 heading to print before the table
+# @param @ - local path to tarballs to list
+#
+create_downloads_table () {
+  local heading=$1
+  shift
+
+  [[ -n "$heading" ]] && echo "### $heading"
+  echo
+  echo "filename | sha256 hash"
+  echo "-------- | -----------"
+  for file in $@; do
+    echo "[${file##*/}](https://storage.googleapis.com/$release_bucket/release/$release_tag/${file##*/}) | \`$(common::sha $file 256)\`"
+  done
+  echo
+}
+
 ###############################################################################
 # Create the release note markdown body
-# @param file - A file (tarball) to link to on google storage
+# @param release_tars - A directory containing tarballs to link to on GCS
 # @param start_tag - The start tag of range
 # @param release_tag - The release tag of range
 #
 create_body () {
-  local file=$1
+  local release_tars=$1
   local start_tag=$2
   local release_tag=$3
   local release_bucket=${FLAGS_release_bucket:-"kubernetes-release"}
@@ -201,13 +219,12 @@ create_body () {
   echo "[Documentation](http://kubernetes.github.io) &" \
        "[Examples](http://releases.k8s.io/$CURRENT_BRANCH/examples)"
   echo
-  if [[ -f "$file" ]]; then
-    echo "## Downloads"
+  if [[ -n $release_tars ]]; then
+    echo "## Downloads for $title"
     echo
-    echo "binary | sha256 hash"
-    echo "------ | -----------"
-    echo "[${file##*/}](https://storage.googleapis.com/$release_bucket/release/$release_tag/${file##*/}) | \`$(common::sha $file 256)\`"
-    echo
+    create_downloads_table "" $release_tars/kubernetes{,-src}.tar.gz
+    create_downloads_table "Client Binaries" $release_tars/kubernetes-client*.tar.gz
+    create_downloads_table "Server Binaries" $release_tars/kubernetes-server*.tar.gz
   fi
   cat $PR_NOTES
 }
@@ -407,7 +424,7 @@ EOF+
   echo >> $PR_NOTES
 
   logecho "Preparing layout..."
-  create_body ${FLAGS_tarball:-""} $start_tag ${release_tag:-HEAD} \
+  create_body ${FLAGS_release_tars:-""} $start_tag ${release_tag:-HEAD} \
    > $RELEASE_NOTES_MD
 
   if ((FLAGS_preview)); then
