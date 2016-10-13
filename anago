@@ -197,11 +197,13 @@ check_prerequisites () {
   #       do releasey things
   gcloud_auth_list=$($GCLOUD auth list 2>/dev/null)
   for user in $G_AUTH_USER $userat; do
-    logecho -n "Checking cloud auth for $user: "
-    if [[ "$gcloud_auth_list" =~ -\ $user ]]; then
+    logecho -n "Checking cloud account/auth $user: "
+    if [[ "$gcloud_auth_list" =~ -\ $user ]] && \
+       (logrun gcloud config set account $user && logrun gcloud docker); then
       logecho -r "$OK"
     else
       logecho -r "$FAILED"
+      logecho
       logecho "$user is not in the credentialed accounts list!"
       logecho "Sign in with:"
       logecho
