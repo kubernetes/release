@@ -73,6 +73,7 @@ common::argc_validate 1 || common::exit 1 "Exiting..."
 # @param exit code
 #
 common::cleanexit () {
+  rm -rf $LOCAL_CACHE
   common::timestamp end
   exit ${1:-0}
 }
@@ -113,7 +114,7 @@ else
 fi
 
 logecho
-release::set_build_version $TESTING_BRANCH || common::exit 1
+release::set_build_version $TESTING_BRANCH $LOCAL_CACHE || common::exit 1
 release::set_release_version $JENKINS_BUILD_VERSION $RELEASE_BRANCH \
                              $BRANCH_OFF_MASTER || common::exit 1
 

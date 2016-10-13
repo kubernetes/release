@@ -58,6 +58,7 @@ release::get_job_cache () {
 # Sets the JENKINS_BUILD_VERSION global by cross checking it against a set of
 # critical jenkins build jobs
 # @param branch - branch name
+# @optparam job_path - A local directory to store the copied cache entries
 #
 # TODO:
 # * Ability to point to a particular primary job hash and validate it
@@ -76,6 +77,7 @@ release::get_job_cache () {
 # * e2e-gke-slow: :50
 release::set_build_version () {
   local branch=$1
+  local job_path=${2:-"/tmp/buildresults-cache.$$"}
   local build_version
   local build_number
   local cache_build
@@ -92,7 +94,6 @@ release::set_build_version () {
   local branch_suffix
   [[ $branch =~ release- ]] && branch_suffix="-$branch"
   local main_job="kubernetes-e2e-gce$branch_suffix"
-  local job_path=/tmp/buildresults-cache.$$
   local -a JOB
   local -a gce_jobs=("kubernetes-e2e-gce-serial$branch_suffix"
                      "kubernetes-e2e-gce-slow$branch_suffix"
