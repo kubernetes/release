@@ -742,7 +742,7 @@ prepare_workspace () {
   fi
 
   # Sync the tree
-  gitlib::sync_repo $K8S_GITHUB_URL $TREE_ROOT || return 1
+  gitlib::sync_repo $K8S_GITHUB_SSH $TREE_ROOT || return 1
   logrun cd $TREE_ROOT
 }
 
