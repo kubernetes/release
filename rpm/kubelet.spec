@@ -1,4 +1,4 @@
-%global KUBE_VERSION 1.4.0
+%global KUBE_VERSION 1.4.1
 %global CNI_RELEASE 07a8a28637e97b22eb8dfe710eeae1344f69d16e
 %global RPM_RELEASE 0
 
