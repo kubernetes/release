@@ -284,11 +284,10 @@ rev_version_base () {
 ###############################################################################
 # Update CHANGELOG on master
 generate_release_notes() {
-  local tarball=$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/release-tars
-  tarball+=/kubernetes.tar.gz
+  local release_tars=$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/release-tars
 
   logecho -n "Generating release notes: "
-  logrun -s relnotes $RELEASE_VERSION_PRIME --tarball=$tarball \
+  logrun -s relnotes $RELEASE_VERSION_PRIME --release-tars=$release_tars \
                      --branch=${PARENT_BRANCH:-$RELEASE_BRANCH} --htmlize-md \
                      --markdown-file=$RELEASE_NOTES_MD \
                      --html-file=$RELEASE_NOTES_HTML \
@@ -585,12 +584,13 @@ update_github_release () {
 
   # post release data
   logecho "$release_verb the $RELEASE_VERSION_PRIME release on github..."
+  local changelog_url="$K8S_GITHUB_URL/blob/master/CHANGELOG.md"
   release_id=$($GHCURL $K8S_GITHUB_API/releases$id_suffix --data \
    '{
     "tag_name": "'$RELEASE_VERSION_PRIME'",
     "target_commitish": "'$RELEASE_BRANCH'",
     "name": "'$RELEASE_VERSION_PRIME'",
-    "body": "See [kubernetes-announce@](https://groups.google.com/forum/#!forum/kubernetes-announce) and [CHANGELOG]('$K8S_GITHUB_URL'/blob/master/CHANGELOG.md/#'${RELEASE_VERSION_PRIME//\./}') for details.\n\nDOWNLOAD SHA256: `'$sha_hash'`",
+    "body": "See [kubernetes-announce@](https://groups.google.com/forum/#!forum/kubernetes-announce) and [CHANGELOG]('$changelog_url'#'${RELEASE_VERSION_PRIME//\./}') for details.\n\nSHA256 for `kubernetes.tar.gz`: `'$sha_hash'`\n\nAdditional binary downloads are linked in the [CHANGELOG]('$changelog_url'#downloads-for-'${RELEASE_VERSION_PRIME//\./}').",
     "draft": '$draft',
     "prerelease": '$prerelease'
     }' |jq -r '.id')
