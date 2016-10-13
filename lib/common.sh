@@ -641,18 +641,19 @@ common::security_layer () {
   source $rcfile >/dev/null 2>&1 || true
 
   # If not there attempt to set it from env
-  FLAGS_security_layer=${FLAGS_security_layer:-":"}
+  FLAGS_security_layer=${FLAGS_security_layer:-""}
 
-  if [[ -s $FLAGS_security_layer ]]; then
-    source $FLAGS_security_layer >/dev/null 2>&1
-  else
-    if [[ "$HOSTNAME" =~ google.com ]]; then
-      logecho "$FATAL! Googler, this session is incomplete." \
-              "$PROG is running with missing functionality.  See go/$PROG"
-      return 1
+  if [[ -n $FLAGS_security_layer ]]; then
+    if [[ -r $FLAGS_security_layer ]]; then
+      source $FLAGS_security_layer >/dev/null 2>&1
     else
-      return 0
+      logecho "$FATAL! $FLAGS_security_layer is not readable."
+      return 1
     fi
+  elif [[ "$HOSTNAME" =~ google.com ]]; then
+    logecho "$FATAL! Googler, this session is incomplete." \
+            "$PROG is running with missing functionality.  See go/$PROG"
+    return 1
   fi
 }
 
