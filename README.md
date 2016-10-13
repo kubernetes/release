@@ -88,6 +88,14 @@ when ```--nomock``` is specified.
 Adding that flag to the command-line indicates the release will push
 tags and artifacts.  The user is still prompted before a push occurs, however.
 
+## FAQ
+
+### How can I manually specify a build to use when anago (find_green_build) can't automatically locate a green run?
+
+The output from anago (or find_green_build) displays --buildversion in its
+output while trying to locate a build.  The user is welcome to pass any
+--buildversion value to anago to create a release at a particular hash.
+
 ## Other Tools
 
 All standalone scripts have embedded man pages.  Just use `-man` to view or
