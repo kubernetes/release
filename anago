@@ -165,12 +165,10 @@ common::cleanexit () {
 ###############################################################################
 # Simple ACL check to limit nomock runs to a short list of release folks
 check_acls () {
-  case "$USER" in
-    $ACL_LIST) ;;
-            *) logecho "Live releases restricted to certain users!"
-               return 1
-               ;;
-  esac
+  if ! (echo "$USER" | egrep -q -w "$ACL_LIST"); then
+    echo "Live releases restricted to certain users!"
+    return 1
+  fi
 }
 
 ###############################################################################
