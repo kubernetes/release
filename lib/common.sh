@@ -34,6 +34,7 @@ set -o errtrace
 TOOL_LIB_PATH=${TOOL_LIB_PATH:-$(dirname $(readlink -ne $BASH_SOURCE))}
 TOOL_ROOT=${TOOL_ROOT:-$(readlink -ne $TOOL_LIB_PATH/..)}
 PATH=$TOOL_ROOT:$PATH
+LOCAL_CACHE="/tmp/buildresults-cache.$$"
 # Provide a default EDITOR for those that don't have this set
 : ${EDITOR:="vi"}
 export PATH TOOL_ROOT TOOL_LIB_PATH EDITOR

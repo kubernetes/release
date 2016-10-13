@@ -152,6 +152,8 @@ common::cleanexit () {
 
   common::strip_control_characters $LOGFILE
 
+  logrun rm -rf $LOCAL_CACHE
+
   if [[ -d $WORKDIR ]]; then
     logecho -n "Copying $LOGFILE to $WORKDIR: "
     logrun -s cp -f $LOGFILE $WORKDIR
