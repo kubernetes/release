@@ -5,7 +5,7 @@ docker build -t kubelet-rpm-builder .
 echo "Cleaning output directory..."
 sudo rm -rf output/*
 mkdir -p output
-docker run -ti --rm -v $PWD:/root/rpmbuild/SPECS -v $PWD/output/:/root/rpmbuild/RPMS/ kubelet-rpm-builder
+docker run -ti --rm -v $PWD/output/:/root/rpmbuild/RPMS/ kubelet-rpm-builder
 sudo chown -R $USER $PWD/output
 
 echo
