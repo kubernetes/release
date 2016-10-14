@@ -474,8 +474,8 @@ common::logfileinit $MYLOG 10
 # BEGIN script
 common::timestamp begin
 
-# Check credentials
-gitlib::check_credentials
+# Check token
+gitlib::github_api_token
 
 # Check for packages
 common::check_packages jq pandoc
