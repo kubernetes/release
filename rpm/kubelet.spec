@@ -1,4 +1,4 @@
-%global KUBE_VERSION 1.4.1
+%global KUBE_VERSION 1.4.3
 %global KUBEADM_VERSION 1.5.0-alpha.1.409+714f816a349e79
 %global CNI_RELEASE 07a8a28637e97b22eb8dfe710eeae1344f69d16e
 %global RPM_RELEASE 1
@@ -114,7 +114,7 @@ mv bin/ %{buildroot}/opt/cni/
 
 
 %changelog
-* Mon Oct 17 2016 luxas <lucas.kaldstrom@hotmail.co.uk>
+* Mon Oct 17 2016 luxas <lucas.kaldstrom@hotmail.co.uk> - 1.4.3-0
 - Bump version of kubeadm
 
 * Fri Oct 14 2016 Matthew Mosesohn  <mmosesohn@mirantis.com> - 1.4.0-1
