@@ -23,6 +23,7 @@
 GHCURL="curl -s --fail --retry 10 -u ${GITHUB_TOKEN:-$FLAGS_github_token}:x-oauth-basic"
 JCURL="curl -g -s --fail --retry 10"
 K8S_GITHUB_API='https://api.github.com/repos/kubernetes/kubernetes'
+K8S_GITHUB_SEARCHAPI='https://api.github.com/search/issues?per_page=100&q=is:pr%20repo:kubernetes/kubernetes%20'
 K8S_GITHUB_URL='https://github.com/kubernetes/kubernetes'
 K8S_GITHUB_SSH='git@github.com:kubernetes/kubernetes.git'
 

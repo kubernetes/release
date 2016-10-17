@@ -147,6 +147,31 @@ extract_pr_title () {
   done
 }
 
+###############################################################################
+# Get merged PRs that match a specified label
+# @param label - A label(string) to use for searching github PRs
+get_prs_by_label () {
+  local label="$1"
+  local matching_prs
+  local -a prs
+  local total
+  local current_page
+  local num_pages
+  local prs_per_page
+
+  prs_per_page=100
+
+  matching_prs="$($GHCURL ${K8S_GITHUB_SEARCHAPI}label:${label}&per_page=1)"
+
+  total="$(echo -n $matching_prs | jq -r '.total_count')"
+  # Calculate number of pages, rounding up
+  num_pages=$(((total + prs_per_page - 1) / prs_per_page ))
+
+  for current_page in `seq 1 $num_pages`; do
+    prs+=($($GHCURL "${K8S_GITHUB_SEARCHAPI}label:${label}&page=$current_page" | jq -r '.items[] | (.number | tostring)'))
+  done
+  echo "${prs[@]}"
+}
 
 ###############################################################################
 # Create the release note markdown body
@@ -234,10 +259,12 @@ generate_notes () {
   local pretty_range
   local labels
   local body
-  local counter=0
   local tempcss=/tmp/$PROG-ca.$$
   local changelog=$(git rev-parse --show-toplevel)/CHANGELOG.md
   local anchor
+  local -a normal_prs
+  local -a action_prs
+  local -a experimental_prs
   local -a notes_normal
   local -a notes_action
   local -a notes_experimental
@@ -292,21 +319,21 @@ generate_notes () {
   done < <(git log $range --format="%s" --grep="Merge pull")
 
   logecho
-  for pr in ${prs[*]}; do
-    ((counter++))
-    # Reset line
-    printf "\r%-80s" " "
-    echo -ne "\rScanning PRs between $pretty_range on the" \
-             "$CURRENT_BRANCH branch ($counter/${#prs[*]})"
-    labels="$($GHCURL $K8S_GITHUB_API/issues/$pr/labels |\
-              jq -r '.[] | (.name| tostring)')"
 
-    if [[ "$labels" =~ $'\n'release-note-breaking-change$'\n' ||
-          "$labels" =~ $'\n'release-note-action-required$'\n' ]]; then
+  echo "Scanning action required PR labels on the $CURRENT_BRANCH branch..."
+  action_prs=($(get_prs_by_label release-note-breaking-change))
+  action_prs+=($(get_prs_by_label release-note-action-required))
+  echo "Scanning experimental PR label on the $CURRENT_BRANCH branch..."
+  experimental_prs=($(get_prs_by_label release-note-experimental))
+  echo "Scanning release-note PR label on the $CURRENT_BRANCH branch..."
+  normal_prs=($(get_prs_by_label release-note))
+
+  for pr in ${prs[*]}; do
+    if [[ " ${action_prs[@]} " =~ " ${pr} " ]]; then
       notes_action+=("$pr")
-    elif [[ "$labels" =~ $'\n'release-note-experimental$'\n' ]]; then
+    elif [[ " ${experimental_prs[@]} " =~ " ${pr} " ]]; then
       notes_experimental+=("$pr")
-    elif [[ "$labels" =~ $'\n'release-note$'\n' ]]; then
+    elif [[ " ${normal_prs[@]} " =~ " ${pr} " ]]; then
       notes_normal+=("$pr")
     fi
   done
