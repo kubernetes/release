@@ -41,7 +41,7 @@ Command-line utility for interacting with a Kubernetes cluster.
 %package -n kubeadm
 
 Version: 1.5.0
-Release: %{RPM_RELEASE}.alpha.0.1534.gcf7301f
+Release: %{RPM_RELEASE}.alpha.1.409.714f816a349e79
 Summary: Command-line utility for administering a Kubernetes cluster. (ALPHA)
 Requires: kubelet >= 1.4.0
 Requires: kubectl >= 1.4.0
@@ -72,7 +72,7 @@ cp -p %{_sourcedir}/10-kubeadm.conf %{_builddir}/
 
 curl -L --fail "https://storage.googleapis.com/kubernetes-release/release/v%{KUBE_VERSION}/bin/linux/amd64/kubelet" -o kubelet
 curl -L --fail "https://storage.googleapis.com/kubernetes-release/release/v%{KUBE_VERSION}/bin/linux/amd64/kubectl" -o kubectl
-curl -L --fail "https://storage.googleapis.com/kubeadm/v1.5.0-alpha.0-1534-gcf7301f/bin/linux/amd64/kubeadm" -o kubeadm
+curl -L --fail "http://storage.googleapis.com/kubernetes-release-dev/ci-cross/v1.5.0-alpha.1.409+714f816a349e79/bin/linux/amd64/kubeadm" -o kubeadm
 
 install -m 755 -d %{buildroot}%{_bindir}
 install -m 755 -d %{buildroot}%{_sysconfdir}/systemd/system/
@@ -111,6 +111,8 @@ mv bin/ %{buildroot}/opt/cni/
 
 
 %changelog
+* Mon Oct 17 2016 luxas <lucas.kaldstrom@hotmail.co.uk>
+- Bump version of kubeadm
 * Tue Sep 20 2016 dgoodwin <dgoodwin@redhat.com> - 1.4.0-0
 - Add kubectl and kubeadm sub-packages.
 - Rename to kubernetes-cni.
