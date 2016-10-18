@@ -40,7 +40,7 @@ The idea is that no external doc updates should be necessary and the
 tool itself contains all of the details and instructions and prerequisite
 checks needed for anyone to run the tool in at least mock mode.
 
-There is a simple $USER check to ensure that noone but a certain few people can
+There is a simple $USER check to ensure that no one but a certain few people can
 run the script with --nomock to perform a real release.
 
 ## Instructions (Quick Start)
