@@ -815,7 +815,7 @@ common::set_cloud_binaries () {
 
 ###############################################################################
 # sendmail/mailer front end.
-# @optparam html - Send html formatted
+# @optparam (flag) -h - Send html formatted
 # @param to - To
 # @param from - From
 # @param reply_to - Reply To
@@ -830,7 +830,7 @@ common::sendmail () {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
       -h) html=1; shift ;;
-       *) continue ;;
+       *) break ;;
     esac
   done
 

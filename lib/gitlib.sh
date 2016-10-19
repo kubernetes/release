@@ -47,6 +47,23 @@ declare -A VER_REGEX=([release]="v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9
 ###############################################################################
 
 ###############################################################################
+# Attempt to authenticate to github using ssh and if unsuccessful provide
+# guidance for setup
+#
+gitlib::ssh_auth () {
+
+  logecho -n "Checking ssh auth to github.com: "
+  if ssh -T ${K8S_GITHUB_SSH%%:*} 2>&1 |fgrep -wq denied; then
+    logecho $FAILED
+    logecho
+    logecho "See https://help.github.com/categories/ssh"
+    return 1
+  fi
+
+  logecho $OK
+}
+
+###############################################################################
 # Looks up the list of releases on github and puts the last release per branch
 # into a global branch-indexed dictionary LAST_RELEASE[$branch]
 #
@@ -116,11 +133,11 @@ gitlib::pending_prs () {
 }
 
 ###############################################################################
-# Validates github credentials using the standard $GITHUB_TOKEN in your env
-# returns 0 if credentials are valid
-# returns 1 if credentials are invalid
-gitlib::check_credentials () {
-  logecho -n "Checking for valid github credentials: "
+# Validates github token using the standard $GITHUB_TOKEN in your env
+# returns 0 if token is valid
+# returns 1 if token is invalid
+gitlib::github_api_token () {
+  logecho -n "Checking for a valid github API token: "
   if ! $GHCURL $K8S_GITHUB_API >/dev/null 2>&1; then
     logecho -r "$FAILED"
     logecho

@@ -199,7 +199,8 @@ check_prerequisites () {
   for user in $G_AUTH_USER $userat; do
     logecho -n "Checking cloud account/auth $user: "
     if [[ "$gcloud_auth_list" =~ -\ $user ]] && \
-       (logrun gcloud config set account $user && logrun gcloud docker); then
+       (logrun gcloud config set account $user && \
+        logrun gcloud docker >/dev/null 2>&1); then
       logecho -r "$OK"
     else
       logecho -r "$FAILED"
@@ -211,7 +212,10 @@ check_prerequisites () {
       return 1
     fi
   done
+
   # Ensure $USER is active to start
+  # The loop above finishes on $userat
+  gcloud_auth_list=$($GCLOUD auth list 2>/dev/null)
   if ! [[ "$gcloud_auth_list" =~ -\ $userat\ ACTIVE ]]; then
     logecho "$userat is not the active gcloud user!"
     logecho "Set with:"
@@ -513,7 +517,7 @@ announce () {
   local subject="$*"
   local announcement_text=/tmp/$PROG-announce.$$
 
-  ((FLAGS_nomock)) || mailto=$USER
+  ((FLAGS_nomock)) || mailto=$USER@$DOMAIN_NAME
 
   if [[ -n "$PARENT_BRANCH" ]]; then
     create_branch_announcement
@@ -527,9 +531,9 @@ announce () {
   # Due to announcements landing on public mailing lists requiring membership,
   # post from the invoking user (for now until this is productionized further)
   # and use reply-to to ensure replies go to the right place.
-  common::sendmail "$mailto" "K8s-Anago<$USER@$DOMAIN_NAME>" \
+  common::sendmail -h "$mailto" "K8s-Anago<$USER@$DOMAIN_NAME>" \
                    "K8s-Anago<cloud-kubernetes-release@google.com>" \
-                   "$subject" "$USER" \
+                   "$subject" "$USER@$DOMAIN_NAME" \
                    "$announcement_text" --html || return 1
 
   logrun rm -f $announcement_text
@@ -830,9 +834,10 @@ common::timestamp begin
 common::security_layer
 
 ##############################################################################
-common::stepheader "CHECK CREDENTIALS"
+common::stepheader "CHECK GITHUB AUTH"
 ##############################################################################
-gitlib::check_credentials
+gitlib::github_api_token
+gitlib::ssh_auth
 
 # Domain check
 if [[ "$HOSTNAME" =~ \.([^\.]+\.com)$ ]]; then
