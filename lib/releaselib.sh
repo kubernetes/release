@@ -739,7 +739,7 @@ release::docker::release () {
     "hyperkube"
   )
 
-  [[ "$registry" =~ gcr.io/ ]] && docker_push_cmd=("$GCLOUD" "docker")
+  [[ "$registry" =~ gcr.io/ ]] && docker_push_cmd=("$GCLOUD" "docker" "--")
 
   # Activate credentials for the k8s.production.user@gmail.com
   [[ "$registry" == "gcr.io/google_containers" ]] \
