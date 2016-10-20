@@ -423,7 +423,7 @@ release::gcs::copy_release_artifacts() {
   local platforms
   local release_stage=$build_output/release-stage
   local release_tars=$build_output/release-tars
-  local gcs_stage=$build_output/gcs-stage
+  local gcs_stage=$build_output/gcs-stage/$version
   local src
   local dst
   local gcs_destination=gs://$bucket/$build_type/$version
@@ -444,7 +444,7 @@ release::gcs::copy_release_artifacts() {
   logecho "Publish release artifacts to gs://$bucket..."
 
   # Stage everything in release directory
-  logecho "- Staging locally to ${gcs_stage##*/}..."
+  logecho "- Staging locally to ${gcs_stage##$build_output/}..."
   release::gcs::stage_and_hash $gcs_stage $release_tars/* . || return 1
 
   # Having the configure-vm.sh script and and trusty code from the GCE cluster
@@ -471,7 +471,7 @@ release::gcs::copy_release_artifacts() {
     release::gcs::stage_and_hash $gcs_stage "$src" "$dst" || return 1
   done
 
-  logecho "- Hashing files in ${gcs_stage##*/}..."
+  logecho "- Hashing files in ${gcs_stage##$build_output/}..."
   find $gcs_stage -type f | while read path; do
     common::md5 $path > "$path.md5" || return 1
     common::sha $path 1 > "$path.sha1" || return 1
