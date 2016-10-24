@@ -28,7 +28,7 @@ PROG=${0##*/}
 #+     $PROG  [--help|-man]
 #+
 #+ DESCRIPTION
-#+     Replaces kubernetes/build/push-*-build.sh.
+#+     Replaces kubernetes/build-tools/push-*-build.sh.
 #+     Used for pushing developer builds and Jenkins' continuous builds.
 #+
 #+     Developer pushes simply run as they do pushing to devel/ on GCS.
@@ -179,7 +179,10 @@ if ((FLAGS_federation)); then
   ############################################################################
   logecho -n "Push federation images: "
   # FEDERATION_PUSH_REPO_BASE should be set by the calling job (yaml)
-  logrun -s ${KUBE_ROOT}/build/push-federation-images.sh
+  # TODO: remove once we don't support k8s versions with build/ anymore
+  build_dir=${KUBE_ROOT}/build-tools
+  [[ -d $build_dir ]] || build_dir=${KUBE_ROOT}/build
+  logrun -s $build_dir/push-federation-images.sh
 fi
 
 # END script

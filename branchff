@@ -29,7 +29,7 @@ PROG=${0##*/}
 #+ DESCRIPTION
 #+     $PROG fast forwards a K8s release branch to [master object] (defaults to
 #+     HEAD and then prepares the branch as a K8s release branch:
-#+     * build/versionize-docs.sh <branch>
+#+     * build-tools/versionize-docs.sh <branch>
 #+     * Run hack/update-all.sh to ensure compliance of generated files
 #+
 #+
@@ -140,7 +140,10 @@ logrun -s hack/update-all.sh
 
 # Redo the branching activities
 logecho -n "Check/rerun versionize-docs.sh again: "
-logrun -s build/versionize-docs.sh $RELEASE_BRANCH
+# TODO: remove once we don't support k8s versions with build/ anymore
+build_dir=build-tools
+[[ -d $build_dir ]] || build_dir=build
+logrun -s $build_dir/versionize-docs.sh $RELEASE_BRANCH
 
 if [[ -n "$(git status -s)" ]]; then
   logecho -n "Commit changes: "
