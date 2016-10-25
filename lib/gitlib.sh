@@ -91,10 +91,16 @@ gitlib::last_releases () {
 
 ###############################################################################
 # What branch am I on?
+# @optparam repo_dir - An alternative (to current working dir) git repo
 # prints current branch name
 # returns 1 if current working directory is not git repository
 gitlib::current_branch () {
-  if ! git rev-parse --abbrev-ref HEAD 2>/dev/null; then
+  local repo_dir=$1
+  local -a git_args
+
+  [[ -n "$repo_dir" ]] && git_args=("-C" "$repo_dir")
+
+  if ! git ${git_args[*]} rev-parse --abbrev-ref HEAD 2>/dev/null; then
     (
     logecho
     logecho "Not a git repository!"
@@ -200,4 +206,27 @@ gitlib::push_master () {
   logrun -s git rebase origin/master || return 1
   logecho -n "Pushing$dryrun_flag master branch: "
   logrun -s git push$dryrun_flag origin master || return 1
+}
+
+##############################################################################
+# Ensure TOOL_ROOT running with a synced repo.
+# 
+gitlib::repo_state () {
+  local branch=$(gitlib::current_branch $TOOL_ROOT) || return 1
+  local remote=$(git -C $TOOL_ROOT remote -v |\
+                 awk '/kubernetes\/release(.git)* \(fetch\)/ {print $1}')
+  local commit=$(git -C $TOOL_ROOT \
+                     ls-remote --heads $remote refs/heads/master | cut -f1)
+  local output=$(git -C $TOOL_ROOT branch --contains $commit $branch 2>&-)
+
+  logecho -n "Checking $TOOL_ROOT state: "
+  if [[ -n "$output" ]]; then
+    logecho $OK
+  else
+    logecho "$FAILED"
+    logecho
+    logecho "$TOOL_ROOT is not up to date."
+    logecho "$ git pull # to try again"
+    return 1
+  fi
 }
