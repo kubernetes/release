@@ -135,7 +135,7 @@ you encounter.
 
 ### For Debian
 
-You can build the packages in a Docker container like this:
+You can build the deb packages in a Docker container like this:
 ```
 docker build --tag=debian-packager debian
 docker run --volume="$(pwd)/debian:/src" debian-packager
@@ -149,7 +149,7 @@ You can build the rpm packages in a Docker container with:
 
 ```
 cd rpm
-./docker-build.sh.
+./docker-build.sh
 ```
 
 Resulting rpms, and a pre-generated yum repository will be generated in rpm/output/x86_64.
