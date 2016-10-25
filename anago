@@ -833,6 +833,9 @@ common::logfileinit $LOGFILE 10
 # BEGIN script
 common::timestamp begin
 
+# Check tool repo
+gitlib::repo_state || common::exit 1
+
 # Additional functionality
 common::security_layer
 
