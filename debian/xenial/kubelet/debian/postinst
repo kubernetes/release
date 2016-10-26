@@ -34,8 +34,10 @@ esac
 
 mkdir -p /etc/kubernetes/manifests
 
+arch=$(uname -m);
 # kubelet is linked against /lib/ld-linux.so.3. On some systems, this symlink has to be present
-if [[ $(uname -m) == "arm"* && ! -f /lib/ld-linux.so.3 && -f /lib/ld-linux-armhf.so.3 ]]; then
+# ${arch#*arm} != ${arch} will be true if the $arch string contains the word arm, i.e. if it is an arm device
+if [ "${arch#*arm}" != "${arch}" ] && [ ! -f /lib/ld-linux.so.3 ] && [ -f /lib/ld-linux-armhf.so.3 ]; then
 	ln -s /lib/ld-linux-armhf.so.3 /lib/ld-linux.so.3
 fi
 
