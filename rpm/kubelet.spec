@@ -1,5 +1,5 @@
 %global KUBE_VERSION 1.4.4
-%global KUBEADM_VERSION 1.5.0-alpha.1.409+714f816a349e79
+%global KUBEADM_VERSION 1.5.0-alpha.1.955+b1d8961fe43015
 %global CNI_RELEASE 07a8a28637e97b22eb8dfe710eeae1344f69d16e
 %global RPM_RELEASE 1
 
@@ -47,7 +47,7 @@ Command-line utility for interacting with a Kubernetes cluster.
 %package -n kubeadm
 
 Version: 1.5.0
-Release: %{RPM_RELEASE}.alpha.1.409.714f816a349e79.1
+Release: %{RPM_RELEASE}.alpha.1.955.b1d8961fe43015.0
 Summary: Command-line utility for administering a Kubernetes cluster. (ALPHA)
 Requires: kubelet >= 1.4.0
 Requires: kubectl >= 1.4.0
