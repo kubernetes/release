@@ -233,13 +233,13 @@ func main() {
 			Versions: []version{
 				{
 					// Remember to update xenial/kubeadm/debian/rules with the same version
-					Version:  "1.5.0-alpha.1-409-714f816a349e79",
-					Revision: "01",
+					Version:  "1.5.0-alpha.1-955-b1d8961fe43015",
+					Revision: "00",
 					Stable:   true,
 				},
 				{
-					Version:  "1.5.0-alpha.1-409-714f816a349e79",
-					Revision: "01",
+					Version:  "1.5.0-alpha.1-955-b1d8961fe43015",
+					Revision: "00",
 					Stable:   false,
 				},
 			},
