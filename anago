@@ -200,7 +200,7 @@ check_prerequisites () {
     logecho -n "Checking cloud account/auth $user: "
     if [[ "$gcloud_auth_list" =~ -\ $user ]] && \
        (logrun gcloud config set account $user && \
-        logrun gcloud docker >/dev/null 2>&1); then
+        logrun gcloud docker version >/dev/null 2>&1); then
       logecho -r "$OK"
     else
       logecho -r "$FAILED"
