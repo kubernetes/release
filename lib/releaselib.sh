@@ -101,6 +101,7 @@ release::set_build_version () {
                      "kubernetes-e2e-gce-reboot$branch_suffix"
                      "kubernetes-e2e-gce-scalability$branch_suffix"
                      "kubernetes-test-go$branch_suffix"
+                     "kubernetes-cross-build$branch_suffix"
                     )
 
   # kubernetes-e2e-gke-subnet - Uses a branch version?
