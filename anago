@@ -329,9 +329,6 @@ prepare_tree () {
   local branch_arg
   local branch_point
   local current_branch
-  # TODO: remove once we don't support k8s versions with build/ anymore
-  local build_dir=$TREE_ROOT/build-tools
-  [[ -d $build_dir ]] || build_dir=$TREE_ROOT/build
 
   # Check for tag first
   if git rev-parse "${RELEASE_VERSION[$label]}" >/dev/null 2>&1; then
@@ -380,18 +377,6 @@ prepare_tree () {
   case $label in
     beta*|official) rev_version_base $label ;;
   esac
-
-  # versionize docs on new branches (from master) only
-  # If the entirety of this session is based on a branch from master
-  # (PARENT_BRANCH), and this iteration of prepare_tree() is operating on
-  # the NON-master branch itself, versionize the docs
-  if [[ "$PARENT_BRANCH" == master && "$current_branch" != "master" ]]; then
-    logecho -n "Versionizing docs for ${RELEASE_VERSION[$label]}: "
-    logrun -s $build_dir/versionize-docs.sh $current_branch || return 1
-    logecho -n "Committing: "
-    logrun git commit -am \
-           "Versioning docs and examples for ${RELEASE_VERSION[$label]} on $current_branch."
-  fi
 
   # Ensure a common name for label in case we're using the special beta indexes
   [[ "$label" =~ ^beta ]] && label_common="beta"
