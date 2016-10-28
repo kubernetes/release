@@ -772,7 +772,7 @@ release::docker::release () {
 
         logecho -n "- Tagging: "
         logrun -s docker rmi "$registry/$legacy_docker_target" || true
-        logrun -r 5 -s docker tag -f "$registry/$docker_target" \
+        logrun -r 5 -s docker tag "$registry/$docker_target" \
                               "$registry/$legacy_docker_target" 2>/dev/null
 
         logecho -n "- Pushing: "
