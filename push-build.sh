@@ -97,11 +97,15 @@ RELEASE_BUCKET_MIRROR=$FLAGS_bucket_mirror
 # Compatibility with incoming global args
 [[ $KUBE_GCS_UPDATE_LATEST == "n" ]] && FLAGS_noupdatelatest=1
 
-if [[ $(cluster/kubectl.sh version --client 2>&1) =~ \
-      GitVersion:\"(${VER_REGEX[release]}\.${VER_REGEX[build]})\", ]]; then
+KUBECTL_OUTPUT=$(cluster/kubectl.sh version --client 2>&1 || true)
+if [[ "$KUBECTL_OUTPUT" =~ GitVersion:\"(${VER_REGEX[release]}\.${VER_REGEX[build]})\", ]]; then
   LATEST=${BASH_REMATCH[1]}
 else
-  common::exit 1 "Unable to get latest version from build tree.  Exiting..."
+  logecho "Unable to get latest version from build tree!"
+  logecho
+  logecho "kubectl version output:"
+  logecho $KUBECTL_OUTPUT
+  common::exit 1
 fi
 
 GCS_DEST="devel"
