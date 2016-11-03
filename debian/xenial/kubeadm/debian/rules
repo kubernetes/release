@@ -10,7 +10,7 @@ binary:
 	mkdir -p usr/bin
 	curl --fail -sSL \
 		-o usr/bin/kubeadm \
-		"https://storage.googleapis.com/kubernetes-release-dev/ci-cross/v1.5.0-alpha.2.380+85fe0f1aadf91e/bin/linux/{{ .Arch }}/kubeadm"
+		"https://storage.googleapis.com/kubernetes-release-dev/ci-cross/v1.5.0-alpha.2.421+a6bea3d79b8bba/bin/linux/{{ .Arch }}/kubeadm"
 
 	chmod +x usr/bin/kubeadm
 	dh_testroot
