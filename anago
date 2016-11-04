@@ -764,8 +764,6 @@ mungedocs () {
   logecho -n "Munge docs for new branch $RELEASE_BRANCH: "
   sed -i 's,\(const latestReleaseBranch =\).*,\1 "'$RELEASE_BRANCH'",g' \
    cmd/mungedocs/mungedocs.go
-  sed -i "s/release-[0-9]\{1,\}\.[0-9]\{1,\}/$RELEASE_BRANCH/g" \
-   cmd/mungedocs/unversioned_warning_test.go
   logrun -s $TREE_ROOT/hack/update-munge-docs.sh
   logecho -n "Committing: "
   logrun -s git commit -am \
