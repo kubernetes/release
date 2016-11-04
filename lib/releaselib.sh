@@ -479,12 +479,14 @@ release::gcs::copy_release_artifacts() {
   done
 
   # Copy the main set from staging to destination
-  logecho -n "- Copying release artifacts to $gcs_destination: "
-  logrun -s $GSUTIL -qm cp -r $gcs_stage/* $gcs_destination/ || return 1
+  logecho -n "- Copying public release artifacts to $gcs_destination: "
+  logrun -s $GSUTIL -qm cp -a public_read -r $gcs_stage/* $gcs_destination/ || return 1
 
-  logecho -n "- Marking all uploaded objects public: "
-  logrun -s $LOGRUN_MOCK $GSUTIL -q -m acl ch -R -g all:R \
-                                 "$gcs_destination" || return 1
+  # This small sleep gives the eventually consistent GCS bucket listing a chance
+  # to stabilize before the diagnostic listing. There's no way to directly
+  # query for consistency, but it's OK if something is dropped from the
+  # debugging output.
+  sleep 5
 
   logecho -n "- Listing final contents to log file: "
   logrun -s $GSUTIL ls -lhr "$gcs_destination" || return 1
@@ -492,11 +494,8 @@ release::gcs::copy_release_artifacts() {
   # Push to mirror if set
   if [[ -n "$bucket_mirror" && "$bucket" != "$bucket_mirror" ]]; then
     logecho -n "- Mirroring build to $gcs_mirror: "
-    logrun -s $GSUTIL -q -m rsync -d -r "$gcs_destination" "$gcs_mirror" \
+    logrun -s $GSUTIL -q -m rsync -a public_read -d -r "$gcs_destination" "$gcs_mirror" \
      || return 1
-    logecho -n "- Marking all uploaded mirror objects public: "
-    logrun -s $LOGRUN_MOCK $GSUTIL -q -m acl ch -R -g all:R \
-                                   "$gcs_mirror" || return 1
   fi
 }
 
