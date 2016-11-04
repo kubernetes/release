@@ -412,14 +412,12 @@ release::gcs::stage_and_hash() {
 # @param version - The version
 # @param build_output - build output directory
 # @param bucket - GS bucket
-# @optparam bucket_mirror - (optional) mirror GS bucket
 # @return 1 on failure
 release::gcs::copy_release_artifacts() {
   local build_type=$1
   local version=$2
   local build_output=$3
   local bucket=$4
-  local bucket_mirror=$5
   local platform
   local platforms
   local release_stage=$build_output/release-stage
@@ -428,7 +426,6 @@ release::gcs::copy_release_artifacts() {
   local src
   local dst
   local gcs_destination=gs://$bucket/$build_type/$version
-  local gcs_mirror=gs://$bucket_mirror/$build_type/$version
   local gce_path=$release_stage/full/kubernetes/cluster/gce
   local gci_path
 
@@ -490,13 +487,6 @@ release::gcs::copy_release_artifacts() {
 
   logecho -n "- Listing final contents to log file: "
   logrun -s $GSUTIL ls -lhr "$gcs_destination" || return 1
-
-  # Push to mirror if set
-  if [[ -n "$bucket_mirror" && "$bucket" != "$bucket_mirror" ]]; then
-    logecho -n "- Mirroring build to $gcs_mirror: "
-    logrun -s $GSUTIL -q -m rsync -a public_read -d -r "$gcs_destination" "$gcs_mirror" \
-     || return 1
-  fi
 }
 
 
@@ -508,24 +498,18 @@ release::gcs::copy_release_artifacts() {
 # @param version - The version
 # @param build_output - build output directory
 # @param bucket - GS bucket
-# @optparam bucket_mirror - GS mirror bucket
 # @return 1 on failure
 release::gcs::publish_version () {
   local build_type=$1
   local version=$2
   local build_output=$3
   local bucket=$4
-  local bucket_mirror=$5
   local release_dir="gs://$bucket/$build_type/$version"
   local version_major
   local version_minor
   local publish_file
   local -a publish_files
-  local -a publish_buckets=($bucket)
   local type="latest"
-
-  # Ensure no duplicate
-  [[ "$bucket" != "$bucket_mirror" ]] && publish_buckets+=($bucket_mirror)
 
   # For release/ targets, type could be 'stable'
   if [[ "$build_type" == release ]]; then
@@ -547,18 +531,16 @@ release::gcs::publish_version () {
                  $type-$version_major.$version_minor
                 )
 
-  for b in ${publish_buckets[*]}; do
-    logecho
-    logecho "Publish official pointer text files to $b..."
+  logecho
+  logecho "Publish official pointer text files to $bucker..."
 
-    for publish_file in ${publish_files[@]}; do
-      # If there's a version that's above the one we're trying to release, don't
-      # do anything, and just try the next one.
-      release::gcs::verify_latest_update $build_type/$publish_file.txt \
-                                      $b $version || continue
-      release::gcs::publish $build_type/$publish_file.txt $build_output \
-                            $b $version || return 1
-    done
+  for publish_file in ${publish_files[@]}; do
+    # If there's a version that's above the one we're trying to release, don't
+    # do anything, and just try the next one.
+    release::gcs::verify_latest_update $build_type/$publish_file.txt \
+                                    $bucket $version || continue
+    release::gcs::publish $build_type/$publish_file.txt $build_output \
+                          $bucket $version || return 1
   done
 }
 

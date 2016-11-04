@@ -23,7 +23,7 @@ PROG=${0##*/}
 #+
 #+ SYNOPSIS
 #+     $PROG  [--nomock] [--federation] [--noupdatelatest] [--ci]
-#+            [--bucket=<alt GS bucket>] [--bucket-mirror=<mirror GS bucket>]
+#+            [--bucket=<GS bucket>]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
@@ -44,7 +44,6 @@ PROG=${0##*/}
 #+     [--federation]            - Enable FEDERATION push
 #+     [--ci]                    - Used when called from Jekins (for ci runs)
 #+     [--bucket=]               - Specify an alternate bucket for pushes
-#+     [--bucket-mirror=]        - Specify a mirror bucket for pushes
 #+     [--gcs-suffix=]           - Specify a suffix to append to the upload
 #+                                 destination on GCS.
 #+     [--noupdatelatest]        - Do not update the latest file
@@ -93,7 +92,6 @@ common::timestamp begin
 # MAIN
 ###############################################################################
 RELEASE_BUCKET=${FLAGS_bucket:-"kubernetes-release-dev"}
-RELEASE_BUCKET_MIRROR=$FLAGS_bucket_mirror
 # Compatibility with incoming global args
 [[ $KUBE_GCS_UPDATE_LATEST == "n" ]] && FLAGS_noupdatelatest=1
 
@@ -119,10 +117,6 @@ if ((FLAGS_nomock)); then
 else
   # Point to a $USER playground
   RELEASE_BUCKET+=-$USER
-  if [[ -n $RELEASE_BUCKET_MIRROR ]]; then
-    logecho "--bucket-mirror disabled for mock runs..."
-    unset RELEASE_BUCKET_MIRROR
-  fi
 fi
 
 # This will canonicalize the path
@@ -139,10 +133,8 @@ if ! common::set_cloud_binaries; then
   common::exit 1
 fi
 
-for bucket in $RELEASE_BUCKET $RELEASE_BUCKET_MIRROR; do
-  logecho -n "Check/make release bucket $bucket: "
-  logrun -s release::gcs::ensure_release_bucket $bucket || common::exit 1
-done
+logecho -n "Check/make release bucket $RELEASE_BUCKET: "
+logrun -s release::gcs::ensure_release_bucket $RELEASE_BUCKET || common::exit 1
 
 # These operations can hit bumps and are re-entrant so retry up to 3 times
 max_attempts=3
@@ -152,8 +144,7 @@ common::stepheader COPY RELEASE ARTIFACTS
 attempt=0
 while ((attempt<max_attempts)); do
   release::gcs::copy_release_artifacts $GCS_DEST $LATEST $KUBE_ROOT/_output \
-                                       $RELEASE_BUCKET \
-                                       $RELEASE_BUCKET_MIRROR && break
+                                       $RELEASE_BUCKET && break
   ((attempt++))
 done
 ((attempt>=max_attempts)) && common::exit 1 "Exiting..."
@@ -168,8 +159,7 @@ if ! ((FLAGS_noupdatelatest)); then
   attempt=0
   while ((attempt<max_attempts)); do
     release::gcs::publish_version $GCS_DEST $LATEST $KUBE_ROOT/_output \
-                                  $RELEASE_BUCKET \
-                                  $RELEASE_BUCKET_MIRROR && break
+                                  $RELEASE_BUCKET && break
     ((attempt++))
   done
   ((attempt>=max_attempts)) && common::exit 1 "Exiting..."
