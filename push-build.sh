@@ -98,7 +98,7 @@ RELEASE_BUCKET_MIRROR=$FLAGS_bucket_mirror
 [[ $KUBE_GCS_UPDATE_LATEST == "n" ]] && FLAGS_noupdatelatest=1
 
 KUBECTL_OUTPUT=$(cluster/kubectl.sh version --client 2>&1 || true)
-if [[ "$KUBECTL_OUTPUT" =~ GitVersion:\"(${VER_REGEX[release]}\.${VER_REGEX[build]})\", ]]; then
+if [[ "$KUBECTL_OUTPUT" =~ GitVersion:\"(${VER_REGEX[release]}(\.${VER_REGEX[build]})?)\", ]]; then
   LATEST=${BASH_REMATCH[1]}
 else
   logecho "Unable to get latest version from build tree!"
