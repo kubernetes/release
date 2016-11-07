@@ -1,9 +1,6 @@
 [Unit]
-Description=Kubernetes Kubelet Server
-Documentation=https://github.com/kubernetes/kubernetes
-# TODO: Use these? Or let kubeadm soft-dep handle it?
-#Requires=docker.service
-#After=docker.service
+Description=kubelet: The Kubernetes Node Agent
+Documentation=http://kubernetes.io/docs/
 
 [Service]
 ExecStart=/usr/bin/kubelet
@@ -13,4 +10,3 @@ RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
-
