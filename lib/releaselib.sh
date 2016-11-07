@@ -477,7 +477,7 @@ release::gcs::copy_release_artifacts() {
 
   # Copy the main set from staging to destination
   logecho -n "- Copying public release artifacts to $gcs_destination: "
-  logrun -s $GSUTIL -qm cp -a public_read -r $gcs_stage/* $gcs_destination/ || return 1
+  logrun -s $GSUTIL -qm cp -a public-read -r $gcs_stage/* $gcs_destination/ || return 1
 
   # This small sleep gives the eventually consistent GCS bucket listing a chance
   # to stabilize before the diagnostic listing. There's no way to directly
