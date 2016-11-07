@@ -1,7 +1,7 @@
 %global KUBE_VERSION 1.4.4
 %global KUBEADM_VERSION 1.5.0-alpha.2.421+a6bea3d79b8bba
 %global CNI_RELEASE 07a8a28637e97b22eb8dfe710eeae1344f69d16e
-%global RPM_RELEASE 1
+%global RPM_RELEASE 2
 
 Name: kubelet
 Version: %{KUBE_VERSION}
@@ -20,9 +20,14 @@ Source5: https://storage.googleapis.com/kubernetes-release/network-plugins/cni-a
 
 BuildRequires: curl
 Requires: iptables >= 1.4.21
+Requires: kubernetes-cni >= 0.3.0.1
 Requires: socat
 Requires: util-linux
 Requires: ethtool
+Requires: iproute2
+Requires: mount
+Requires: ebtables
+
 
 %description
 The node agent of Kubernetes, the container cluster manager.
@@ -39,6 +44,8 @@ Binaries required to provision container networking.
 
 %package -n kubectl
 
+Version: %{KUBE_VERSION}
+Release: %{RPM_RELEASE}
 Summary: Command-line utility for interacting with a Kubernetes cluster.
 
 %description -n kubectl
@@ -47,7 +54,7 @@ Command-line utility for interacting with a Kubernetes cluster.
 %package -n kubeadm
 
 Version: 1.5.0
-Release: %{RPM_RELEASE}.alpha.2.421.a6bea3d79b8bba.0
+Release: %{RPM_RELEASE}.alpha.2.421.a6bea3d79b8bba
 Summary: Command-line utility for administering a Kubernetes cluster. (ALPHA)
 Requires: kubelet >= 1.4.0
 Requires: kubectl >= 1.4.0
@@ -114,6 +121,9 @@ mv bin/ %{buildroot}/opt/cni/
 
 
 %changelog
+* Sun Nov 6 2016 Lucas Käldström <lucas.kaldstrom@hotmail.co.uk>
+- Sync the debs and rpm files; add some kubelet dependencies to the rpm manifest
+
 * Wed Nov 2 2016 Lucas Käldström <lucas.kaldstrom@hotmail.co.uk>
 - Bump version of kubeadm to v1.5.0-alpha.2.380+85fe0f1aadf91e
 
