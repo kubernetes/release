@@ -390,8 +390,10 @@ release::gcs::ensure_release_bucket() {
     logrun rm -f "$new_acl_file"
   fi
 
-  if [[ $($GSUTIL defacl get "gs://$bucket" 2>/dev/null |\
-          jq -r '.[] | select(.entity == "allUsers") | .role') != 'READER' ]]; then
+  if [[ $($GSUTIL defacl get "gs://$bucket" 2>/dev/null | python -c '\
+          import sys,json;\
+          print " ".join(x["role"] for x in json.load(sys.stdin) if x["entity"] == "allUsers")')\
+        != 'READER' ]]; then
     logecho "GCS bucket $bucket is missing default public-read ACL."
     logecho "Please add allUsers: READER to the gs://$bucket defacl and try again."
     return 1
