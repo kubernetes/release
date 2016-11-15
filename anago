@@ -228,7 +228,7 @@ check_prerequisites () {
   # Verify write access to $RELEASE_BUCKET
   # Insufficient for checking actual writability, but useful:
   # ganpati list-members -g cloud-kubernetes-release -u $USER|fgrep -wq $USER
-  logecho -n "Checking writability to $RELEASE_BUCKET: "
+  logecho -n "Checking writability and ACLs on $RELEASE_BUCKET: "
   if logrun release::gcs::ensure_release_bucket $RELEASE_BUCKET && \
      logrun touch $tempfile && \
      logrun gsutil cp $tempfile gs://$RELEASE_BUCKET && \

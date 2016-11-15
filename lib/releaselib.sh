@@ -369,15 +369,32 @@ release::set_release_version () {
 }
 
 ###############################################################################
-# Create a unique bucket name for releasing Kube and make sure it exists.
+# Create GCS bucket for releasing Kube if necessary. Ensure that the default
+# ACL allows public reading of artifacts.
 # @param bucket - The gs release bucket name
 # @return 1 if bucket can't be made
 release::gcs::ensure_release_bucket() {
   local bucket=$1
+  local current_defacl
+  local new_acl_file
 
   if ! $GSUTIL ls "gs://$bucket" >/dev/null 2>&1 ; then
     logecho -n "Creating Google Cloud Storage bucket $bucket: "
     logrun -s $GSUTIL mb -p "$GCLOUD_PROJECT" "gs://$bucket" || return 1
+    logecho -n "Adding public-read default ACL on bucket $bucket: "
+    current_defacl=$(gsutil defacl get "gs://$bucket") || return 1
+    new_acl_file=$(mktemp)
+    echo "$current_defacl" | jq '. + [{"entity": "allUsers", "role": "READER"}]' \
+      > "$new_acl_file" || return 1
+    logrun -s $GSUTIL defacl set "$new_acl_file" "gs://$bucket" || return 1
+    logrun rm -f "$new_acl_file"
+  fi
+
+  if [[ $($GSUTIL defacl get "gs://$bucket" 2>/dev/null |\
+          jq -r '.[] | select(.entity == "allUsers") | .role') != 'READER' ]]; then
+    logecho "GCS bucket $bucket is missing default public-read ACL."
+    logecho "Please add allUsers: READER to the gs://$bucket defacl and try again."
+    return 1
   fi
 }
 
@@ -476,8 +493,10 @@ release::gcs::copy_release_artifacts() {
   done
 
   # Copy the main set from staging to destination
+  # We explicitly don't set an ACL in the cp call, since doing so will override
+  # any default bucket ACLs.
   logecho -n "- Copying public release artifacts to $gcs_destination: "
-  logrun -s $GSUTIL -qm cp -a public-read -r $gcs_stage/* $gcs_destination/ || return 1
+  logrun -s $GSUTIL -qm cp -r $gcs_stage/* $gcs_destination/ || return 1
 
   # This small sleep gives the eventually consistent GCS bucket listing a chance
   # to stabilize before the diagnostic listing. There's no way to directly
