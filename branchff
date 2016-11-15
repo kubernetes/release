@@ -83,8 +83,10 @@ common::timestamp begin
 BASEDIR="/usr/local/google/$USER"
 # WORK/BUILD area
 WORKDIR=$BASEDIR/$PROG-$RELEASE_BRANCH
+# Go tools expect the kubernetes src to be under $GOPATH
+export GOPATH=$WORKDIR
 # TREE_ROOT is working branch/tree
-TREE_ROOT=$WORKDIR/kubernetes
+TREE_ROOT=$WORKDIR/src/k8s.io/kubernetes
 # The real deal?
 if ((FLAGS_nomock)); then
   DRYRUN_FLAG=""
