@@ -382,20 +382,18 @@ release::gcs::ensure_release_bucket() {
     logecho -n "Creating Google Cloud Storage bucket $bucket: "
     logrun -s $GSUTIL mb -p "$GCLOUD_PROJECT" "gs://$bucket" || return 1
     logecho -n "Adding public-read default ACL on bucket $bucket: "
-    current_defacl=$(gsutil defacl get "gs://$bucket") || return 1
-    new_acl_file=$(mktemp)
-    echo "$current_defacl" | jq '. + [{"entity": "allUsers", "role": "READER"}]' \
-      > "$new_acl_file" || return 1
-    logrun -s $GSUTIL defacl set "$new_acl_file" "gs://$bucket" || return 1
-    logrun rm -f "$new_acl_file"
+    logrun -s $GSUTIL defacl ch -u AllUsers:R "gs://$bucket" || return 1
   fi
 
   if [[ $($GSUTIL defacl get "gs://$bucket" 2>/dev/null | python -c '\
           import sys,json;\
           print " ".join(x["role"] for x in json.load(sys.stdin) if x["entity"] == "allUsers")')\
         != 'READER' ]]; then
-    logecho "GCS bucket $bucket is missing default public-read ACL."
-    logecho "Please add allUsers: READER to the gs://$bucket defacl and try again."
+    logecho "GCS bucket $bucket is missing default public-read ACL,"
+    logecho "or you lack permission to see the default ACL."
+    logecho "Please run"
+    logecho "  gsutil defacl ch -u AllUsers:R gs://$bucket"
+    logecho "and try again."
     return 1
   fi
 }
