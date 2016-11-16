@@ -77,6 +77,8 @@ common::logfileinit $MYLOG 10
 # BEGIN script
 common::timestamp begin
 
+gitlib::repo_state || common::exit 1
+
 ###############################################################################
 # MAIN
 ###############################################################################
@@ -149,7 +151,7 @@ fi
 ##############################################################################
 common::stepheader "PUSH UPSTREAM"
 ##############################################################################
-logecho "Go look around in $WORKDIR to make sure things look ok:"
+logecho "Go look around in $TREE_ROOT to make sure things look ok:"
 logecho "# Any files left uncommitted?"
 logecho "* git status -s"
 logecho "# What does the commit look like?"
