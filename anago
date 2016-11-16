@@ -855,9 +855,11 @@ common::runstep get_build_candidate || common::exit 1 "Exiting..."
 
 # WORK/BUILD area
 WORKDIR=$BASEDIR/$PROG-$RELEASE_VERSION_PRIME
+# Go tools expect the kubernetes src to be under $GOPATH
+export GOPATH=$WORKDIR
 # TOOL_ROOT is release/
 # TREE_ROOT is working branch/tree
-TREE_ROOT=$WORKDIR/kubernetes
+TREE_ROOT=$WORKDIR/src/k8s.io/kubernetes
 BUILD_OUTPUT=$TREE_ROOT/_output
 RELEASE_NOTES_MD=$WORKDIR/release-notes.md
 RELEASE_NOTES_HTML=$WORKDIR/release-notes.html
