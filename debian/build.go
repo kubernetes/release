@@ -223,7 +223,7 @@ func main() {
 				{
 					Version:  "0.3.0.1-07a8a2",
 					Revision: "00",
-					Stable:   true,
+					Stable:   false,
 				},
 			},
 		},
