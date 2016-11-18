@@ -1,7 +1,7 @@
 %global KUBE_VERSION 1.4.4
 %global KUBEADM_VERSION 1.5.0-alpha.2.421+a6bea3d79b8bba
 %global CNI_RELEASE 07a8a28637e97b22eb8dfe710eeae1344f69d16e
-%global RPM_RELEASE 2
+%global RPM_RELEASE 3
 
 Name: kubelet
 Version: %{KUBE_VERSION}
@@ -24,8 +24,7 @@ Requires: kubernetes-cni >= 0.3.0.1
 Requires: socat
 Requires: util-linux
 Requires: ethtool
-Requires: iproute2
-Requires: mount
+Requires: iproute
 Requires: ebtables
 
 
@@ -121,6 +120,9 @@ mv bin/ %{buildroot}/opt/cni/
 
 
 %changelog
+* Wed Nov 16 2016 Alexander Kanevskiy <alexander.kanevskiy@intel.com>
+- fix iproute and mount dependencies (#204)
+
 * Sun Nov 6 2016 Lucas Käldström <lucas.kaldstrom@hotmail.co.uk>
 - Sync the debs and rpm files; add some kubelet dependencies to the rpm manifest
 
