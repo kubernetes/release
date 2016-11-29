@@ -46,6 +46,6 @@ if __name__ == '__main__':
 
     parser.add_argument("--manifest", required=True, help="path to manifest of targets")
     parser.add_argument("--root", required=True, help="path to root of workspace")
-    parser.add_argument("gcs_path", required=True, help="path in gcs to push targets")
+    parser.add_argument("gcs_path", help="path in gcs to push targets")
 
     main(parser.parse_args())
