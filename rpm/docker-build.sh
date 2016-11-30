@@ -14,4 +14,4 @@ echo
 echo "RPMs written to: $PWD/output/x86_64/"
 ls $PWD/output/x86_64/
 echo
-echo "Yum repodata written to: $PWD/output/x86_64/yum/"
+echo "Yum repodata written to: $PWD/output/x86_64/repodata/"
