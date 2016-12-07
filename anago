@@ -229,7 +229,7 @@ check_prerequisites () {
   # Insufficient for checking actual writability, but useful:
   # ganpati list-members -g cloud-kubernetes-release -u $USER|fgrep -wq $USER
   logecho -n "Checking writability and ACLs on $RELEASE_BUCKET: "
-  if logrun release::gcs::ensure_release_bucket $RELEASE_BUCKET && \
+  if release::gcs::ensure_release_bucket $RELEASE_BUCKET && \
      logrun touch $tempfile && \
      logrun gsutil cp $tempfile gs://$RELEASE_BUCKET && \
      logrun gsutil rm gs://$RELEASE_BUCKET/${tempfile##*/} && \
@@ -306,9 +306,8 @@ generate_release_notes() {
          -e "/<!-- NEW RELEASE NOTES ENTRY -->/r $RELEASE_NOTES_MD" \
    CHANGELOG.md | logrun
 
-  # TODO: What other checks are necessary here.
-  # verify-all is an unacceptable superset.  Determine which ones are actually
-  # needed for updating a single markdown file.
+  # TODO: Need to generate a TOC here and update-munge-docs.sh is being
+  # deprecated, so find a replacement
   logecho -n "Update CHANGELOG.md TOC: "
   logrun -s $TREE_ROOT/hack/update-munge-docs.sh || return 1
   logecho -n "Committing CHANGELOG.md: "
@@ -377,6 +376,18 @@ prepare_tree () {
   case $label in
     beta*|official) rev_version_base $label ;;
   esac
+
+  # generate docs on new branches (from master) only
+  # If the entirety of this session is based on a branch from master
+  # (PARENT_BRANCH), and this iteration of prepare_tree() is operating on
+  # the NON-master branch itself, versionize the docs
+  if [[ "$PARENT_BRANCH" == "master" && "$current_branch" != "master" ]]; then
+    logecho -n "Generating docs for ${RELEASE_VERSION[$label]}: "
+    logrun -s $TREE_ROOT/hack/generate-docs.sh || return 1
+    logecho -n "Committing: "
+    logrun git commit -am \
+           "Generating docs for ${RELEASE_VERSION[$label]} on $current_branch."
+  fi
 
   # Ensure a common name for label in case we're using the special beta indexes
   [[ "$label" =~ ^beta ]] && label_common="beta"
@@ -739,8 +750,8 @@ prepare_workspace () {
 }
 
 ##############################################################################
-# Setup and fetch upstream remote for updated-munge-docs.sh to use
-# This is needed for generate_release_notes() and/or MUNGEDOCS
+# Setup and fetch upstream remote for update-munge-docs.sh to use
+# This is needed for generate_release_notes().
 fetch_upstream () {
   if ! git remote |fgrep -qw upstream; then
     logecho -n "Set upstream remote to $K8S_GITHUB_URL: "
@@ -750,28 +761,6 @@ fetch_upstream () {
   logecho -n "Fetch upstream remote: "
   logrun -s git fetch upstream || return 1
 }
-
-##############################################################################
-# Update cmd/mungedocs/mungedocs.go and
-# cmd/mungedocs/unversioned_warning_test.go with the new branch, commit and
-# push it
-mungedocs () {
-  logecho -n "Checkout master branch to make changes: "
-  logrun -s git checkout master || return 1
-
-  fetch_upstream || common::exit 1 "Exiting..."
-
-  logecho -n "Munge docs for new branch $RELEASE_BRANCH: "
-  sed -i 's,\(const latestReleaseBranch =\).*,\1 "'$RELEASE_BRANCH'",g' \
-   cmd/mungedocs/mungedocs.go
-  logrun -s $TREE_ROOT/hack/update-munge-docs.sh
-  logecho -n "Committing: "
-  logrun -s git commit -am \
-      "Update the latestReleaseBranch to $RELEASE_BRANCH in the munger."
-
-  gitlib::push_master
-}
-
 
 ###############################################################################
 # MAIN
@@ -957,15 +946,6 @@ fi
 common::stepheader "PUSH GIT OBJECTS"
 ##############################################################################
 common::runstep push_git_objects || common::exit 1 "Exiting..."
-
-# On the master branch update cmd/mungedocs/mungedocs.go and
-# run update-munge-docs.sh
-if [[ "$PARENT_BRANCH" == master ]]; then
-  ##############################################################################
-  common::stepheader "MUNGEDOCS"
-  ##############################################################################
-  common::runstep mungedocs || common::exit 1 "Exiting..."
-fi
 
 # Get back on $RELEASE_BRANCH because we source branch-specific
 # hack/lib/golang.sh in release::docker::release()
