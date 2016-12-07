@@ -1,7 +1,7 @@
-%global KUBE_VERSION 1.4.4
+%global KUBE_VERSION 1.5.0-beta.2
 %global KUBEADM_VERSION 1.5.0-alpha.2.421+a6bea3d79b8bba
 %global CNI_RELEASE 07a8a28637e97b22eb8dfe710eeae1344f69d16e
-%global RPM_RELEASE 3
+%global RPM_RELEASE 1
 
 Name: kubelet
 Version: %{KUBE_VERSION}
@@ -120,6 +120,9 @@ mv bin/ %{buildroot}/opt/cni/
 
 
 %changelog
+* Fri Dec 6 2016 Lucas Käldström <lucas.kaldstrom@hotmail.co.uk> - 1.5.0-beta.2
+- Bump version of kubelet and kubectl
+
 * Wed Nov 16 2016 Alexander Kanevskiy <alexander.kanevskiy@intel.com>
 - fix iproute and mount dependencies (#204)
 
