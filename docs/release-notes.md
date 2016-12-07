@@ -28,7 +28,7 @@ A example major milestone release (1.X.0) in CHANGELOG.md:
 
 binary | sha1 hash | md5 hash
 ------ | --------- | --------
-[kubernetes.tar.gz](https://storage.googleapis.com/kubernetes-release/release/v1.X.0/kubernetes.tar.gz) | `7deca064d2e277a0beed802c7cfe32d152434aed` | `0b735e8b9fd64064caa578d49062820d`
+[kubernetes.tar.gz](https://dl.k8s.io/v1.X.0/kubernetes.tar.gz) | `7deca064d2e277a0beed802c7cfe32d152434aed` | `0b735e8b9fd64064caa578d49062820d`
 
 ## Major Themes
 * TBD

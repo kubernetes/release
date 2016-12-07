@@ -1,7 +1,7 @@
 %global KUBE_VERSION 1.5.0-beta.2
 %global KUBEADM_VERSION 1.5.0-alpha.2.421+a6bea3d79b8bba
 %global CNI_RELEASE 07a8a28637e97b22eb8dfe710eeae1344f69d16e
-%global RPM_RELEASE 1
+%global RPM_RELEASE 2
 
 Name: kubelet
 Version: %{KUBE_VERSION}
@@ -10,12 +10,12 @@ Summary: Container cluster management
 License: ASL 2.0
 
 URL: https://kubernetes.io
-Source0: https://storage.googleapis.com/kubernetes-release/release/v%{KUBE_VERSION}/bin/linux/amd64/kubelet
+Source0: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/amd64/kubelet
 Source1: kubelet.service
-Source2: https://storage.googleapis.com/kubernetes-release/release/v%{KUBE_VERSION}/bin/linux/amd64/kubectl
-Source3: https://storage.googleapis.com/kubernetes-release-dev/ci-cross/v%{KUBEADM_VERSION}/bin/linux/amd64/kubeadm
+Source2: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/amd64/kubectl
+Source3: https://dl.k8s.io/ci-cross/v%{KUBEADM_VERSION}/bin/linux/amd64/kubeadm
 Source4: 10-kubeadm.conf
-Source5: https://storage.googleapis.com/kubernetes-release/network-plugins/cni-amd64-%{CNI_RELEASE}.tar.gz
+Source5: https://dl.k8s.io/network-plugins/cni-amd64-%{CNI_RELEASE}.tar.gz
 
 
 BuildRequires: curl

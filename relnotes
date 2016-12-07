@@ -180,13 +180,19 @@ get_prs_by_label () {
 create_downloads_table () {
   local heading=$1
   shift
+  local url_prefix
+  if [[ "$release_bucket" == "kubernetes-release" ]]; then
+    url_prefix="https://dl.k8s.io"
+  else
+    url_prefix="https://storage.googleapis.com/$release_bucket/release"
+  fi
 
   [[ -n "$heading" ]] && echo "### $heading"
   echo
   echo "filename | sha256 hash"
   echo "-------- | -----------"
   for file in $@; do
-    echo "[${file##*/}](https://storage.googleapis.com/$release_bucket/release/$release_tag/${file##*/}) | \`$(common::sha $file 256)\`"
+    echo "[${file##*/}]($url_prefix/$release_tag/${file##*/}) | \`$(common::sha $file 256)\`"
   done
   echo
 }
@@ -216,8 +222,8 @@ create_body () {
   echo
   echo "# $title"
   echo
-  echo "[Documentation](http://kubernetes.github.io) &" \
-       "[Examples](http://releases.k8s.io/$CURRENT_BRANCH/examples)"
+  echo "[Documentation](https://docs.k8s.io) &" \
+       "[Examples](https://releases.k8s.io/$CURRENT_BRANCH/examples)"
   echo
   if [[ -n $release_tars ]]; then
     echo "## Downloads for $title"

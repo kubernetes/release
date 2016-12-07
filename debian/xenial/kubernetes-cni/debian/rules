@@ -9,7 +9,7 @@ build:
 
 binary:
 	curl -sSL --fail --retry 5 \
-		"https://storage.googleapis.com/kubernetes-release/network-plugins/cni-{{ .Arch }}-$(CNI_RELEASE).tar.gz" \
+		"https://dl.k8s.io/network-plugins/cni-{{ .Arch }}-$(CNI_RELEASE).tar.gz" \
 		| tar xz
 	dh_testroot
 	dh_auto_install

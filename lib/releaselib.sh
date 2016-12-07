@@ -687,6 +687,9 @@ release::gcs::publish () {
   local publish_file_dst="gs://$bucket/$publish_file"
   local contents
   local public_link="https://storage.googleapis.com/$bucket/$publish_file"
+  if [[ "$bucket" == "kubernetes-release" ]]; then
+    public_link="https://dl.k8s.io/$publish_file"
+  fi
 
   logrun mkdir -p "$release_stage/upload" || return 1
   echo "$version" > "$release_stage/upload/latest" || return 1
