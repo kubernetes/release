@@ -22,7 +22,7 @@ PROG=${0##*/}
 #+     $PROG - Kubernetes Release Tool
 #+
 #+ SYNOPSIS
-#+     $PROG  [--yes] [--nomock] [--noclean] [--official]
+#+     $PROG  [--yes] [--nomock] [--official]
 #+            [--buildversion=<jenkins build version>]
 #+            [--basedir=<alt base work dir>] <branch>
 #+            [--security_layer=/path/to/pointer/to/script]
@@ -72,9 +72,6 @@ PROG=${0##*/}
 #+     [--yes]                   - Assume 'yes' to all queries
 #+     [--nomock]                - Complete an actual release with upstream
 #+                                 pushes
-#+     [--noclean]               - Attempt to work in existing workspace
-#+                                 Not always possible and ignored when --nomock
-#+                                 is set
 #+     [--official]              - Official releases on release branches only
 #+     [--buildversion=ver]      - Override Jenkins check and set a specific
 #+                                 build version
@@ -332,19 +329,11 @@ prepare_tree () {
 
   # Check for tag first
   if git rev-parse "${RELEASE_VERSION[$label]}" >/dev/null 2>&1; then
-    if ((FLAGS_noclean)); then
-      logecho "$ATTENTION: Found existing tag ${RELEASE_VERSION[$label]} in" \
-              "unclean tree during --noclean run"
-      logecho -n "Checking out ${RELEASE_VERSION[$label]}: "
-      logrun -s git checkout ${RELEASE_VERSION[$label]} || return 1
-      return 0
-    else
-      logecho "The ${RELEASE_VERSION[$label]} tag already exists!"
-      logecho "Possible reasons for this:"
-      logecho "* --buildversion is old."
-      logecho "* $WORKDIR is unclean"
-      return 1
-    fi
+    logecho "The ${RELEASE_VERSION[$label]} tag already exists!"
+    logecho "Possible reasons for this:"
+    logecho "* --buildversion is old."
+    logecho "* $WORKDIR is unclean"
+    return 1
   fi
 
   # if this is a new branch, checkout -B
@@ -404,6 +393,9 @@ build_tree () {
 
   # Should be an arg at some point
   export KUBE_DOCKER_IMAGE_TAG="$version"
+
+  # Clean first, just to make sure we're in a consistent state.
+  logrun -s make clean || common exit 1
 
   # TODO: Ideally we update LOCAL_OUTPUT_ROOT in build-tools/common.sh to be
   #       modifiable.  In the meantime just mv the dir after it's done
@@ -707,31 +699,26 @@ get_build_candidate () {
 prepare_workspace () {
   local outdir
 
-  # Clean up or not
-  if ((FLAGS_noclean)); then
-    logecho "Working in existing workspace..."
-  else
-    if [[ -d $TREE_ROOT ]]; then
-      logecho "Checking for _output directories..."
-      logrun cd $TREE_ROOT
-      # set -e sillyness - yes that's a ||true there that would otherwise not
-      # be needed except for 'set -e' in all its glory
-      for outdir in $(ls -1d _output* 2>/dev/null ||true); do
-        # This craziness due to
-        # https://github.com/kubernetes/kubernetes/issues/23839
-        if [[ $outdir != "_output" ]]; then
-          logrun mv $outdir _output
-        fi
-        logecho -n "make clean for $outdir: "
-        logrun -s make clean || return 1
-        logecho -n "Removing _output: "
-        logrun -s rm -rf _output || return 1
-      done
-    fi
-    logecho -n "Removing/recreating $WORKDIR: "
-    logrun cd /tmp
-    logrun -s rm -rf $WORKDIR || return 1
+  if [[ -d $TREE_ROOT ]]; then
+    logecho "Checking for _output directories..."
+    logrun cd $TREE_ROOT
+    # set -e sillyness - yes that's a ||true there that would otherwise not
+    # be needed except for 'set -e' in all its glory
+    for outdir in $(ls -1d _output* 2>/dev/null ||true); do
+      # This craziness due to
+      # https://github.com/kubernetes/kubernetes/issues/23839
+      if [[ $outdir != "_output" ]]; then
+        logrun mv $outdir _output
+      fi
+      logecho -n "make clean for $outdir: "
+      logrun -s make clean || return 1
+      logecho -n "Removing _output: "
+      logrun -s rm -rf _output || return 1
+    done
   fi
+  logecho -n "Removing/recreating $WORKDIR: "
+  logrun cd /tmp
+  logrun -s rm -rf $WORKDIR || return 1
 
   # Sync the tree
   gitlib::sync_repo $K8S_GITHUB_SSH $TREE_ROOT || return 1
@@ -778,7 +765,6 @@ mungedocs () {
 ###############################################################################
 # Default mode is a mocked release workflow
 : ${FLAGS_nomock:=0}
-: ${FLAGS_noclean:=0}
 : ${FLAGS_official:=0}
 
 # Set with --buildversion or set it later in release::set_build_version()
@@ -786,8 +772,6 @@ JENKINS_BUILD_VERSION=$FLAGS_buildversion
 
 RELEASE_BUCKET="kubernetes-release"
 if ((FLAGS_nomock)); then
-  # Override any --noclean setting if nomock
-  FLAGS_noclean=0
   GCRIO_REPO="google_containers"
 else
   # This is passed to logrun() where appropriate when we want to mock
@@ -899,7 +883,7 @@ fi
 common::printvars -p WORKDIR WORKDIR TREE_ROOT $DISPLAY_VERSION \
                      RELEASE_VERSION_PRIME ${ALL_RELEASE_VERSIONS[@]} \
                      RELEASE_BRANCH GCRIO_REPO RELEASE_BUCKET \
-                     FLAGS_nomock FLAGS_noclean FLAGS_official LOGFILE
+                     FLAGS_nomock FLAGS_official LOGFILE
 
 if [[ -n "$PARENT_BRANCH" ]]; then
   logecho
