@@ -368,7 +368,8 @@ generate_notes () {
   if ((FLAGS_full)) || [[ $release_tag =~ ${VER_REGEX[dotzero]} ]]; then
     # Check for draft and use it if available
     logecho "Checking if draft release notes exist for $release_tag..."
-    $GHCURL $K8S_GITHUB_RAW/features/master/$CURRENT_BRANCH/release-notes-draft.md > $tempfile
+    $GHCURL \
+     $K8S_GITHUB_RAW_ORG/features/master/$CURRENT_BRANCH/release-notes-draft.md > $tempfile
     if [[ -s $tempfile ]]; then
       logecho "Draft found - using for release notes..."
       cat $tempfile >> $PR_NOTES
