@@ -44,12 +44,16 @@ release::get_job_cache () {
   [[ -s $tempjson ]] || return
 
   # Additional select on .version is b/c we have so many empty versions for now
+  # 2 passes.  First pass sorts by buildnumber, Second builds the dictionary.
   while read version buildnumber; do
     ((dedup)) && [[ $version == $lastversion ]] && continue
-    echo "JOB[$buildnumber]=$version"
+    echo "$version $buildnumber"
     lastversion=$version
-  done < <(jq -r '.[] | select(.result == "SUCCESS") | select(.version != "") | [.version,.buildnumber] | "\(.[0]) \(.[1])"' $tempjson |sort -r -k2,2) \
-   > $job_path
+  done < <(jq -r '.[] | select(.result == "SUCCESS") | select(.version != "") | [.version,.buildnumber] | "\(.[0]) \(.[1])"' $tempjson |\
+   LC_ALL=C sort -rn -k2,2) |\
+  while read version buildnumber; do
+    echo "JOB[$buildnumber]=$version"
+  done > $job_path
 
   rm -f $tempjson
 }
