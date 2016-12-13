@@ -10,7 +10,7 @@ binary:
 	mkdir -p usr/bin
 	curl --fail -sSL \
 		-o usr/bin/kubeadm \
-		"https://dl.k8s.io/ci-cross/v1.5.0-alpha.2.421+a6bea3d79b8bba/bin/linux/{{ .Arch }}/kubeadm"
+		"https://dl.k8s.io/ci-cross/v1.6.0-alpha.0.2046+b4d09bf6727606/bin/linux/{{ .Arch }}/kubeadm"
 
 	chmod +x usr/bin/kubeadm
 	dh_testroot
