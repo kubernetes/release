@@ -184,12 +184,12 @@ func main() {
 			Distros: allDistros,
 			Versions: []version{
 				{
-					Version:  "1.5.0",
+					Version:  "1.5.1",
 					Revision: "00",
 					Stable:   true,
 				},
 				{
-					Version:  "1.5.0",
+					Version:  "1.5.1",
 					Revision: "00",
 					Stable:   false,
 				},
@@ -200,12 +200,12 @@ func main() {
 			Distros: serverDistros,
 			Versions: []version{
 				{
-					Version:  "1.5.0",
+					Version:  "1.5.1",
 					Revision: "00",
 					Stable:   true,
 				},
 				{
-					Version:  "1.5.0",
+					Version:  "1.5.1",
 					Revision: "00",
 					Stable:   false,
 				},
@@ -233,12 +233,12 @@ func main() {
 			Versions: []version{
 				{
 					// Remember to update xenial/kubeadm/debian/rules with the same version
-					Version:  "1.6.0-alpha.0-2046-b4d09bf6727606",
+					Version:  "1.6.0-alpha.0-2074-a092d8e0f95f52",
 					Revision: "00",
 					Stable:   true,
 				},
 				{
-					Version:  "1.6.0-alpha.0-2046-b4d09bf6727606",
+					Version:  "1.6.0-alpha.0-2074-a092d8e0f95f52",
 					Revision: "00",
 					Stable:   false,
 				},

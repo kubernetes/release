@@ -1,7 +1,7 @@
-%global KUBE_VERSION 1.5.0
-%global KUBEADM_VERSION 1.6.0-alpha.0.2046+b4d09bf6727606
+%global KUBE_VERSION 1.5.1
+%global KUBEADM_VERSION 1.6.0-alpha.0.2074+a092d8e0f95f52
 %global CNI_RELEASE 07a8a28637e97b22eb8dfe710eeae1344f69d16e
-%global RPM_RELEASE 2
+%global RPM_RELEASE 0
 
 Name: kubelet
 Version: %{KUBE_VERSION}
@@ -53,7 +53,7 @@ Command-line utility for interacting with a Kubernetes cluster.
 %package -n kubeadm
 
 Version: 1.6.0
-Release: %{RPM_RELEASE}.alpha.0.2046.b4d09bf6727606
+Release: %{RPM_RELEASE}.alpha.0.2074.a092d8e0f95f52
 Summary: Command-line utility for administering a Kubernetes cluster. (ALPHA)
 Requires: kubelet >= 1.4.0
 Requires: kubectl >= 1.4.0
@@ -120,8 +120,8 @@ mv bin/ %{buildroot}/opt/cni/
 
 
 %changelog
-* Fri Dec 6 2016 Lucas Käldström <lucas.kaldstrom@hotmail.co.uk> - 1.5.0
-- Bump version of kubelet and kubectl to v1.5.0, plus kubeadm to the third stable version
+* Tue Dec 13 2016 Lucas Käldström <lucas.kaldstrom@hotmail.co.uk> - 1.5.1
+- Bump version of kubelet and kubectl to v1.5.1, plus kubeadm to the third stable version
 
 * Fri Dec 6 2016 Lucas Käldström <lucas.kaldstrom@hotmail.co.uk> - 1.5.0-beta.2
 - Bump version of kubelet and kubectl
