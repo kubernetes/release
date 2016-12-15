@@ -130,7 +130,7 @@ extract_pr_title () {
     #   is a disconnect between pandoc and github's markdown for lists.
     #   https://github.com/jgm/pandoc/issues/2210
     content=$(echo "$body" |\
-              sed -n '/```release-note/,/^```/{/^```/!p;/^```$/q}' |\
+              sed -n '/^``` *release-note/,/^```/{/^```/!p;/^```$/q}' |\
               sed -e '/^$/d' -e '2,$s/^\( *\* \)/        \1/g' \
                   -e '2,$s/^\( *[^ \*]\)/    * \1/g')
 
