@@ -284,7 +284,6 @@ generate_notes () {
   local body
   local tempcss=/tmp/$PROG-ca.$$
   local tempfile=/tmp/$PROG-file-1.$$
-  local changelog=$(git rev-parse --show-toplevel)/CHANGELOG.md
   local anchor
   local -a normal_prs
   local -a action_prs
@@ -429,7 +428,7 @@ EOF+
     echo "### Previous Releases Included in $release_tag"
     while read anchor; do
       echo "$anchor"
-    done< <(egrep "^- \[${release_tag}-" $changelog)
+    done< <(git show master:CHANGELOG.md | egrep "^- \[${release_tag}-")
   fi >> $PR_NOTES
 
   if [[ -z "${notes_normal[*]}" && -z "${notes_action[*]}" &&
