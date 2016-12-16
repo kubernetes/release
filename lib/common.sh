@@ -686,7 +686,7 @@ common::check_packages () {
       done
       ;;
     *)
-      logecho "Unsupported distribution. Only Fedora and Ubuntu are supported"
+      logecho "Unsupported distribution '$distro'. Only Fedora and Ubuntu are supported"
       return 1
       ;;
   esac
