@@ -404,7 +404,7 @@ release::gcs::ensure_release_bucket() {
 
 ###############################################################################
 # Create a unique bucket name for releasing Kube and make sure it exists.
-# TODO: There is a version of this in kubernetes/build-tools/common.sh. Refactor.
+# TODO: There is a version of this in kubernetes/build/common.sh. Refactor.
 # @param gcs_stage - the staging directory
 # @param source and destination arguments
 # @return 1 if tar fails

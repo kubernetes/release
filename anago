@@ -97,7 +97,7 @@ PROG=${0##*/}
 #+                               - Do an official release from release-1.1
 #+
 #+ FILES
-#+     build-tools/release.sh
+#+     build/release.sh
 #+
 #+ SEE ALSO
 #+     common.sh                 - common function definitions
@@ -405,7 +405,7 @@ build_tree () {
   # Should be an arg at some point
   export KUBE_DOCKER_IMAGE_TAG="$version"
 
-  # TODO: Ideally we update LOCAL_OUTPUT_ROOT in build-tools/common.sh to be
+  # TODO: Ideally we update LOCAL_OUTPUT_ROOT in build/common.sh to be
   #       modifiable.  In the meantime just mv the dir after it's done
   # Not until https://github.com/kubernetes/kubernetes/issues/23839
   #logrun -s make release OUT_DIR=$BUILD_OUTPUT-${RELEASE_VERSION[$label]}
