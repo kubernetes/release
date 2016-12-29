@@ -5,11 +5,21 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
+)
+
+type ChannelType string
+
+const (
+	ChannelStable   ChannelType = "stable"
+	ChannelUnstable ChannelType = "unstable"
+	ChannelNightly  ChannelType = "nightly"
 )
 
 type work struct {
@@ -25,8 +35,10 @@ type build struct {
 }
 
 type version struct {
-	Version, Revision string
-	Stable            bool
+	Version, Revision, DownloadLinkBase string
+	Channel                             ChannelType
+	GetVersion                          func() (string, error)
+	GetDownloadLinkBase                 func(v version) (string, error)
 }
 
 type cfg struct {
@@ -37,8 +49,7 @@ type cfg struct {
 var (
 	architectures = []string{"amd64", "arm", "arm64"}
 	serverDistros = []string{"xenial"}
-	allDistros    = []string{"xenial", "jessie", "precise", "sid", "stretch", "trusty",
-		"utopic", "vivid", "wheezy", "wily", "yakkety"}
+	allDistros    = []string{"xenial", "jessie", "precise", "sid", "stretch", "trusty", "utopic", "vivid", "wheezy", "wily", "yakkety"}
 
 	builtins = map[string]interface{}{
 		"date": func() string {
@@ -140,13 +151,7 @@ func (c cfg) run() error {
 		return err
 	}
 
-	dstParts := []string{"bin"}
-	if c.Stable {
-		dstParts = append(dstParts, "stable")
-	} else {
-		dstParts = append(dstParts, "unstable")
-	}
-	dstParts = append(dstParts, c.DistroName)
+	dstParts := []string{"bin", string(c.Channel), c.DistroName}
 
 	dstPath := filepath.Join(dstParts...)
 	os.MkdirAll(dstPath, 0777)
@@ -165,6 +170,24 @@ func walkBuilds(builds []build, f func(pkg, distro, arch string, v version) erro
 		for _, b := range builds {
 			for _, d := range b.Distros {
 				for _, v := range b.Versions {
+					// Populate the version if it doesn't exist
+					if len(v.Version) == 0 && v.GetVersion != nil {
+						var err error
+						v.Version, err = v.GetVersion()
+						if err != nil {
+							return err
+						}
+					}
+
+					// Populate the version if it doesn't exist
+					if len(v.DownloadLinkBase) == 0 && v.GetDownloadLinkBase != nil {
+						var err error
+						v.DownloadLinkBase, err = v.GetDownloadLinkBase(v)
+						if err != nil {
+							return err
+						}
+					}
+
 					if err := f(b.Package, d, a, v); err != nil {
 						return err
 					}
@@ -173,6 +196,56 @@ func walkBuilds(builds []build, f func(pkg, distro, arch string, v version) erro
 		}
 	}
 	return nil
+}
+
+func fetchVersion(url string) (string, error) {
+	res, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+
+	versionBytes, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	if err != nil {
+		return "", err
+	}
+	// Remove a newline and the v prefix from the string
+	return strings.Replace(strings.Replace(string(versionBytes), "v", "", 1), "\n", "", 1), nil
+}
+
+func getStableKubeVersion() (string, error) {
+	return fetchVersion("https://dl.k8s.io/release/stable.txt")
+}
+
+func getLatestKubeVersion() (string, error) {
+	return fetchVersion("https://dl.k8s.io/release/latest.txt")
+}
+
+func getLatestCIVersion() (string, error) {
+	latestVersion, err := getLatestKubeCIBuild()
+	if err != nil {
+		return "", err
+	}
+
+	// Replace the "+" with a "-" to make it semver-compliant
+	return strings.Replace(latestVersion, "+", "-", 1), nil
+}
+
+func getLatestKubeCIBuild() (string, error) {
+	return fetchVersion("https://dl.k8s.io/ci-cross/latest.txt")
+}
+
+func getCIBuildsDownloadLinkBase(_ version) (string, error) {
+	latestCiVersion, err := getLatestKubeCIBuild()
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("https://dl.k8s.io/ci-cross/v%s", latestCiVersion), nil
+}
+
+func getReleaseDownloadLinkBase(v version) (string, error) {
+	return fmt.Sprintf("https://dl.k8s.io/v%s", v.Version), nil
 }
 
 func main() {
@@ -184,14 +257,22 @@ func main() {
 			Distros: allDistros,
 			Versions: []version{
 				{
-					Version:  "1.5.1",
-					Revision: "00",
-					Stable:   true,
+					GetVersion:          getStableKubeVersion,
+					Revision:            "00",
+					Channel:             ChannelStable,
+					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
-					Version:  "1.5.1",
-					Revision: "00",
-					Stable:   false,
+					GetVersion:          getLatestKubeVersion,
+					Revision:            "00",
+					Channel:             ChannelUnstable,
+					GetDownloadLinkBase: getReleaseDownloadLinkBase,
+				},
+				{
+					GetVersion:          getLatestCIVersion,
+					Revision:            "00",
+					Channel:             ChannelNightly,
+					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
 				},
 			},
 		},
@@ -200,14 +281,22 @@ func main() {
 			Distros: serverDistros,
 			Versions: []version{
 				{
-					Version:  "1.5.1",
-					Revision: "00",
-					Stable:   true,
+					GetVersion:          getStableKubeVersion,
+					Revision:            "00",
+					Channel:             ChannelStable,
+					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
-					Version:  "1.5.1",
-					Revision: "00",
-					Stable:   false,
+					GetVersion:          getLatestKubeVersion,
+					Revision:            "00",
+					Channel:             ChannelUnstable,
+					GetDownloadLinkBase: getReleaseDownloadLinkBase,
+				},
+				{
+					GetVersion:          getLatestCIVersion,
+					Revision:            "00",
+					Channel:             ChannelNightly,
+					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
 				},
 			},
 		},
@@ -218,12 +307,17 @@ func main() {
 				{
 					Version:  "0.3.0.1-07a8a2",
 					Revision: "00",
-					Stable:   true,
+					Channel:  ChannelStable,
 				},
 				{
 					Version:  "0.3.0.1-07a8a2",
 					Revision: "00",
-					Stable:   false,
+					Channel:  ChannelUnstable,
+				},
+				{
+					Version:  "0.3.0.1-07a8a2",
+					Revision: "00",
+					Channel:  ChannelNightly,
 				},
 			},
 		},
@@ -233,14 +327,22 @@ func main() {
 			Versions: []version{
 				{
 					// Remember to update xenial/kubeadm/debian/rules with the same version
-					Version:  "1.6.0-alpha.0-2074-a092d8e0f95f52",
-					Revision: "00",
-					Stable:   true,
+					Version:             "1.6.0-alpha.0.2074-a092d8e0f95f52",
+					Revision:            "00",
+					Channel:             ChannelStable,
+					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
 				},
 				{
-					Version:  "1.6.0-alpha.0-2074-a092d8e0f95f52",
-					Revision: "00",
-					Stable:   false,
+					GetVersion:          getLatestCIVersion,
+					Revision:            "00",
+					Channel:             ChannelUnstable,
+					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
+				},
+				{
+					GetVersion:          getLatestCIVersion,
+					Revision:            "00",
+					Channel:             ChannelNightly,
+					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
 				},
 			},
 		},
