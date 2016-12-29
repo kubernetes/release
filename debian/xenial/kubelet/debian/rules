@@ -10,7 +10,7 @@ binary:
 	mkdir -p usr/bin
 	curl  --fail -sS -L \
 		-o usr/bin/kubelet \
-		"https://dl.k8s.io/v{{ .Version }}/bin/linux/{{ .Arch }}/kubelet"
+		"{{ .DownloadLinkBase }}/bin/linux/{{ .Arch }}/kubelet"
 	chmod +x usr/bin/kubelet
 	dh_testroot
 	dh_auto_install

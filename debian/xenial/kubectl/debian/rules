@@ -10,7 +10,7 @@ binary:
 	mkdir -p usr/bin
 	curl  --fail -sS -L \
 		-o usr/bin/kubectl \
-		"https://dl.k8s.io/v{{ .Version }}/bin/linux/{{ .Arch }}/kubectl"
+		"{{ .DownloadLinkBase }}/bin/linux/{{ .Arch }}/kubectl"
 	chmod +x usr/bin/kubectl
 	dh_testroot
 	dh_auto_install
