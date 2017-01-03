@@ -698,15 +698,14 @@ release::gcs::publish () {
   logrun mkdir -p "$release_stage/upload" || return 1
   echo "$version" > "$release_stage/upload/latest" || return 1
 
-  logrun $GSUTIL -m -h "Content-Type:text/plain" cp \
+  logrun $GSUTIL -m -h "Content-Type:text/plain" \
+    -h "Cache-Control:private, max-age=0, no-transform" cp \
     "$release_stage/upload/latest" \
     "$publish_file_dst" || return 1
 
   if ((FLAGS_nomock)); then
-    logecho -n "Making uploaded version file public and non-cacheable: "
+    logecho -n "Making uploaded version file public: "
     logrun -s $GSUTIL acl ch -R -g all:R $publish_file_dst || return 1
-    $GSUTIL setmeta -h "Cache-Control:private, max-age=0" \
-     "$publish_file_dst" >/dev/null 2>&1 || return 1
 
     # If public, validate public link
     logecho -n "* Validating uploaded version file at $public_link: "
