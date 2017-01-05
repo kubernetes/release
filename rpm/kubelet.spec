@@ -98,6 +98,7 @@ install -p -m 755 -t %{buildroot}%{_sysconfdir}/systemd/system/kubelet.service.d
 
 
 install -m 755 -d %{buildroot}/opt/cni
+# bin directory from cni-amd64-%{CNI_RELEASE}.tar.gz with a list of cni plugins (among other things)
 mv bin/ %{buildroot}/opt/cni/
 
 
