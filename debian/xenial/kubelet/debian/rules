@@ -8,7 +8,7 @@ build:
 
 binary:
 	mkdir -p usr/bin
-	curl  --fail -sS -L --retry=5 \
+	curl  --fail -sS -L \
 		-o usr/bin/kubelet \
 		"{{ .DownloadLinkBase }}/bin/linux/{{ .Arch }}/kubelet"
 	chmod +x usr/bin/kubelet
