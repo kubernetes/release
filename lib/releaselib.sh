@@ -709,7 +709,7 @@ release::gcs::publish () {
 
     # If public, validate public link
     logecho -n "* Validating uploaded version file at $public_link: "
-    contents="$(curl -Ls $public_link)"
+    contents="$(curl --retry 5 -Ls $public_link)"
   else
     # If not public, validate using gsutil
     logecho -n "* Validating uploaded version file at $publish_file_dst: "
