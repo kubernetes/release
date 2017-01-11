@@ -8,7 +8,7 @@ build:
 
 binary:
 	mkdir -p usr/bin
-	curl --fail -sSL --retry=5 \
+	curl --fail -sSL \
 		-o usr/bin/kubeadm \
 		"{{ .DownloadLinkBase }}/bin/linux/{{ .Arch }}/kubeadm"
 

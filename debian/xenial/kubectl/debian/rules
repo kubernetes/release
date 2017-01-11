@@ -8,7 +8,7 @@ build:
 
 binary:
 	mkdir -p usr/bin
-	curl  --fail -sS -L --retry=5 \
+	curl  --fail -sS -L \
 		-o usr/bin/kubectl \
 		"{{ .DownloadLinkBase }}/bin/linux/{{ .Arch }}/kubectl"
 	chmod +x usr/bin/kubectl
