@@ -307,13 +307,10 @@ generate_release_notes() {
          -e "/<!-- NEW RELEASE NOTES ENTRY -->/r $RELEASE_NOTES_MD" \
    CHANGELOG.md | logrun
 
-  # TODO: Need to generate a TOC here and update-munge-docs.sh is being
-  # deprecated, so find a replacement
   logecho -n "Update CHANGELOG.md TOC: "
-  logrun -s $TREE_ROOT/hack/update-munge-docs.sh || return 1
-  logecho -n "Committing CHANGELOG.md: "
+  common::mdtoc CHANGELOG.md || return 1
 
-  # Pipe to logrun() vs using directly, because quoting.
+  logecho -n "Committing CHANGELOG.md: "
   logrun -s git commit -am "Update CHANGELOG.md for $RELEASE_VERSION_PRIME." \
    || return 1
 }
@@ -750,19 +747,6 @@ prepare_workspace () {
   logrun cd $TREE_ROOT
 }
 
-##############################################################################
-# Setup and fetch upstream remote for update-munge-docs.sh to use
-# This is needed for generate_release_notes().
-fetch_upstream () {
-  if ! git remote |fgrep -qw upstream; then
-    logecho -n "Set upstream remote to $K8S_GITHUB_URL: "
-    logrun -s git remote add upstream $K8S_GITHUB_URL || return 1
-  fi
-
-  logecho -n "Fetch upstream remote: "
-  logrun -s git fetch upstream || return 1
-}
-
 
 ##############################################################################
 # Archive the release on GS
@@ -952,7 +936,6 @@ if [[ -z "$PARENT_BRANCH" ]]; then
   ##############################################################################
   common::stepheader "GENERATE RELEASE NOTES"
   ##############################################################################
-  fetch_upstream || common::exit 1 "Exiting..."
   common::runstep generate_release_notes || common::exit 1 "Exiting..."
 fi
 
