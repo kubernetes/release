@@ -178,7 +178,7 @@ for TAG in ${TAGS[*]}; do
 done
 
 logecho -n "Update CHANGELOG.md TOC: "
-logrun -s hack/update-munge-docs.sh || return 1
+common::mdtoc CHANGELOG.md || return 1
 
 if git diff --quiet --exit-code; then
   common::exit 0 "No changes detected.  Nothing to update $PREVTAG..$TAG"
