@@ -496,6 +496,13 @@ release::gcs::copy_release_artifacts() {
     common::sha $path 1 > "$path.sha1" || return 1
   done
 
+  logecho "- Checking whether $gcs_destination already exists..."
+  if $GSUTIL ls $gcs_destination >/dev/null 2>&1 ; then
+    logecho "- Destination exists. Assuming artifacts at destination are correct. If not, run:"
+    logecho -n "  gsutil -m rm -r $gcs_destination\n"
+    return 0
+  fi
+
   # Copy the main set from staging to destination
   # We explicitly don't set an ACL in the cp call, since doing so will override
   # any default bucket ACLs.
