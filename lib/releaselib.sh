@@ -488,6 +488,14 @@ release::gcs::copy_release_artifacts() {
       src="$release_stage/server/$platform/kubernetes/server/bin/*"
     fi
     release::gcs::stage_and_hash $gcs_stage "$src" "$dst" || return 1
+
+    # Upload node binaries if they exist and this isn't a 'server' platform.
+    if [[ ! -d "$release_stage/server/$platform" ]]; then
+      if [[ -d "$release_stage/node/$platform" ]]; then
+        src="$release_stage/node/$platform/kubernetes/node/bin/*"
+        release::gcs::stage_and_hash $gcs_stage "$src" "$dst" || return 1
+      fi
+    fi
   done
 
   logecho "- Hashing files in ${gcs_stage##$build_output/}..."
