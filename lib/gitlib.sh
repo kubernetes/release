@@ -81,11 +81,15 @@ gitlib::last_releases () {
                    jq -r '.[] | select(.draft==false) | .tag_name'); do
     # Alpha releases only on master branch
     if [[ $release =~ -alpha ]]; then
-      branch_name=master
-    elif [[ $release =~ v([0-9]+\.[0-9]+)\.[0-9]+ ]]; then
+      LAST_RELEASE[master]=${LAST_RELEASE[master]:-$release}
+    elif [[ $release =~ v([0-9]+\.[0-9]+)\.([0-9]+(-.+)?) ]]; then
+      # Latest vx.x.0 release goes on both master and release branch.
+      if [[ ${BASH_REMATCH[2]} == "0" ]]; then
+        LAST_RELEASE[master]=${LAST_RELEASE[master]:-$release}
+      fi
       branch_name=release-${BASH_REMATCH[1]}
+      LAST_RELEASE[$branch_name]=${LAST_RELEASE[$branch_name]:-$release}
     fi
-    LAST_RELEASE[$branch_name]=${LAST_RELEASE[$branch_name]:-$release}
   done
 
   logecho -r "$OK"
