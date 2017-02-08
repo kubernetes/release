@@ -36,7 +36,7 @@ PROG=${0##*/}
 #+     a real push.
 #+
 #+     Federation values are just passed through as exported global vars still
-#+     due to the fact that we're still leveraging the existing federation 
+#+     due to the fact that we're still leveraging the existing federation
 #+     interface in kubernetes proper.
 #+
 #+ OPTIONS
@@ -96,8 +96,16 @@ RELEASE_BUCKET=${FLAGS_bucket:-"kubernetes-release-dev"}
 [[ $KUBE_GCS_UPDATE_LATEST == "n" ]] && FLAGS_noupdatelatest=1
 
 KUBECTL_OUTPUT=$(cluster/kubectl.sh version --client 2>&1 || true)
-if [[ "$KUBECTL_OUTPUT" =~ GitVersion:\"(${VER_REGEX[release]}(\.${VER_REGEX[build]})?)\", ]]; then
+if [[ "$KUBECTL_OUTPUT" =~ GitVersion:\"(${VER_REGEX[release]}(\.${VER_REGEX[build]})?(-dirty)?)\", ]]; then
   LATEST=${BASH_REMATCH[1]}
+  if ((FLAGS_ci)) && [[ "$KUBECTL_OUTPUT" =~ GitTreeState:\"dirty\" ]]; then
+    logecho "Refusing to push dirty build with --ci flag given."
+    logecho "CI builds should always be performed from clean commits."
+    logecho
+    logecho "kubectl version output:"
+    logecho $KUBECTL_OUTPUT
+    common::exit 1
+  fi
 else
   logecho "Unable to get latest version from build tree!"
   logecho
