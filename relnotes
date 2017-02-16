@@ -229,8 +229,9 @@ create_body () {
     echo "## Downloads for $title"
     echo
     create_downloads_table "" $release_tars/kubernetes{,-src}.tar.gz
-    create_downloads_table "Client Binaries" $release_tars/kubernetes-client*.tar.gz
-    create_downloads_table "Server Binaries" $release_tars/kubernetes-server*.tar.gz
+    create_downloads_table "Client Binaries" ${release_tars}/kubernetes-client*.tar.gz
+    create_downloads_table "Server Binaries" ${release_tars}/kubernetes-server*.tar.gz
+    create_downloads_table "Node Binaries" ${release_tars}/kubernetes-node*.tar.gz
   fi
   cat $PR_NOTES
 }
