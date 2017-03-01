@@ -181,7 +181,7 @@ if ((FLAGS_federation)); then
   ############################################################################
   logecho -n "Push federation images: "
   # FEDERATION_PUSH_REPO_BASE should be set by the calling job (yaml)
-  logrun -s ${KUBE_ROOT}/build/push-federation-images.sh
+  logrun -s ${KUBE_ROOT}/federation/develop/push-federation-images.sh
 fi
 
 # END script
