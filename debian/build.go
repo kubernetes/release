@@ -244,10 +244,6 @@ func getCIBuildsDownloadLinkBase(_ version) (string, error) {
 	return fmt.Sprintf("https://dl.k8s.io/ci-cross/v%s", latestCiVersion), nil
 }
 
-func getCIBuildsDownloadLinkBaseFromVersion(v version) (string, error) {
-	return fmt.Sprintf("https://dl.k8s.io/ci-cross/v%s", v.Version), nil
-}
-
 func getReleaseDownloadLinkBase(v version) (string, error) {
 	return fmt.Sprintf("https://dl.k8s.io/v%s", v.Version), nil
 }
@@ -330,10 +326,10 @@ func main() {
 			Distros: serverDistros,
 			Versions: []version{
 				{
-					Version:             "1.6.0-alpha.0.2074-a092d8e0f95f52",
-					Revision:            "00",
-					Channel:             ChannelStable,
-					GetDownloadLinkBase: getCIBuildsDownloadLinkBaseFromVersion,
+					Version:          "1.6.0-alpha.0.2074-a092d8e0f95f52",
+					Revision:         "00",
+					Channel:          ChannelStable,
+					DownloadLinkBase: "https://dl.k8s.io/ci-cross/v1.6.0-alpha.0.2074+a092d8e0f95f52",
 				},
 				{
 					GetVersion:          getLatestCIVersion,
