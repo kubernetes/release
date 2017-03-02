@@ -47,7 +47,7 @@ type cfg struct {
 }
 
 var (
-	architectures = []string{"amd64", "arm", "arm64"}
+	architectures = []string{"amd64", "arm", "arm64", "ppc64le", "s390x"}
 	serverDistros = []string{"xenial"}
 	allDistros    = []string{"xenial", "jessie", "precise", "sid", "stretch", "trusty", "utopic", "vivid", "wheezy", "wily", "yakkety"}
 
@@ -244,6 +244,10 @@ func getCIBuildsDownloadLinkBase(_ version) (string, error) {
 	return fmt.Sprintf("https://dl.k8s.io/ci-cross/v%s", latestCiVersion), nil
 }
 
+func getCIBuildsDownloadLinkBaseFromVersion(v version) (string, error) {
+	return fmt.Sprintf("https://dl.k8s.io/ci-cross/v%s", v.Version), nil
+}
+
 func getReleaseDownloadLinkBase(v version) (string, error) {
 	return fmt.Sprintf("https://dl.k8s.io/v%s", v.Version), nil
 }
@@ -326,11 +330,10 @@ func main() {
 			Distros: serverDistros,
 			Versions: []version{
 				{
-					// Remember to update xenial/kubeadm/debian/rules with the same version
 					Version:             "1.6.0-alpha.0.2074-a092d8e0f95f52",
 					Revision:            "00",
 					Channel:             ChannelStable,
-					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
+					GetDownloadLinkBase: getCIBuildsDownloadLinkBaseFromVersion,
 				},
 				{
 					GetVersion:          getLatestCIVersion,
@@ -357,8 +360,16 @@ func main() {
 		}
 		if c.Arch == "arm" {
 			c.DebArch = "armhf"
+		} else if c.Arch == "ppc64le" {
+			c.DebArch = "ppc64el"
 		} else {
 			c.DebArch = c.Arch
+		}
+		// Skip platforms that do not have binaries for a channel
+		if len(v.Channel) != 0 {
+			if v.Channel == "stable" && (c.Arch == "s390x" || c.Arch == "ppc64le") {
+				return nil
+			}
 		}
 		return c.run()
 	}); err != nil {
