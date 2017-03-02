@@ -97,13 +97,13 @@ release::set_build_version () {
   local branch_head
   local branch_suffix
   [[ $branch =~ release- ]] && branch_suffix="-$branch"
-  local main_job="ci-kubernetes-e2e-gce$branch_suffix"
+  local main_job="ci-kubernetes-e2e-gci-gce$branch_suffix"
   local -a JOB
-  local -a gce_jobs=("ci-kubernetes-e2e-gce-serial$branch_suffix"
-                     "ci-kubernetes-e2e-gce-slow$branch_suffix"
+  local -a gce_jobs=("ci-kubernetes-e2e-gci-gce-serial$branch_suffix"
+                     "ci-kubernetes-e2e-gci-gce-slow$branch_suffix"
                      "ci-kubernetes-kubemark-5-gce$branch_suffix"
-                     "ci-kubernetes-e2e-gce-reboot$branch_suffix"
-                     "ci-kubernetes-e2e-gce-scalability$branch_suffix"
+                     "ci-kubernetes-e2e-gci-gce-reboot$branch_suffix"
+                     "ci-kubernetes-e2e-gci-gce-scalability$branch_suffix"
                      "ci-kubernetes-test-go$branch_suffix"
                      "ci-kubernetes-cross-build$branch_suffix"
                     )
@@ -111,9 +111,9 @@ release::set_build_version () {
   # kubernetes-e2e-gke-subnet - Uses a branch version?
   # kubernetes-e2e-gke-test - Uses a branch version?
   local -a gke_jobs=(
-                     "ci-kubernetes-e2e-gke-serial$branch_suffix"
-                     "ci-kubernetes-e2e-gke$branch_suffix"
-                     "ci-kubernetes-e2e-gke-slow$branch_suffix"
+                     "ci-kubernetes-e2e-gci-gke-serial$branch_suffix"
+                     "ci-kubernetes-e2e-gci-gke$branch_suffix"
+                     "ci-kubernetes-e2e-gci-gke-slow$branch_suffix"
                     )
 
   # Combined list for cross-checking against $main_job
