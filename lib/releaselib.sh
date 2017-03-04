@@ -36,7 +36,7 @@ release::get_job_cache () {
   local lastversion
   local buildnumber
 
-  logecho "Getting $job build results from Jenkins..."
+  logecho "Getting $job build results from GCS..."
   mkdir -p ${job_path%/*}
 
   $GSUTIL -qm cp $logroot/$job/jobResultsCache.json $tempjson 2>&-
@@ -52,7 +52,7 @@ release::get_job_cache () {
   done < <(jq -r '.[] | select(.result == "SUCCESS") | select(.version != "") | [.version,.buildnumber] | "\(.[0]) \(.[1])"' $tempjson |\
    LC_ALL=C sort -rn -k2,2) |\
   while read version buildnumber; do
-    echo "JOB[$buildnumber]=$version"
+    [[ -n $buildnumber && -n $version ]] && echo "JOB[$buildnumber]=$version"
   done > $job_path
 
   rm -f $tempjson
@@ -96,7 +96,11 @@ release::set_build_version () {
   local good_job
   local branch_head
   local branch_suffix
-  [[ $branch =~ release- ]] && branch_suffix="-$branch"
+  local branch_version
+  if [[ $branch =~ release- ]]; then
+    branch_suffix="-$branch"
+    branch_version=${branch/release-/}
+  fi
   local main_job="ci-kubernetes-e2e-gce$branch_suffix"
   local -a JOB
   local -a gce_jobs=("ci-kubernetes-e2e-gce-serial$branch_suffix"
@@ -105,8 +109,18 @@ release::set_build_version () {
                      "ci-kubernetes-e2e-gce-reboot$branch_suffix"
                      "ci-kubernetes-e2e-gce-scalability$branch_suffix"
                      "ci-kubernetes-test-go$branch_suffix"
-                     "ci-kubernetes-cross-build$branch_suffix"
                     )
+  # Release branches don't have a special cross-build job. If we're considering
+  # a particular revision on a release branch, it must have built successfully.
+  # Also, the verify and kubelet jobs are named inconsistently.
+  if [[ -z $branch_suffix ]]; then
+    gce_jobs+=("ci-kubernetes-cross-build"
+               "ci-kubernetes-verify-master"
+               "ci-kubernetes-node-kubelet")
+  else
+    gce_jobs+=("ci-kubernetes-verify-$branch"
+               "ci-kubernetes-node-kubelet-$branch_version")
+  fi
 
   # kubernetes-e2e-gke-subnet - Uses a branch version?
   # kubernetes-e2e-gke-test - Uses a branch version?
