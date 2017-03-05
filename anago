@@ -24,6 +24,7 @@ PROG=${0##*/}
 #+ SYNOPSIS
 #+     $PROG  [--yes] [--nomock] [--noclean] [--rc] [--official]
 #+            [--buildversion=<jenkins build version>]
+#+            [--gcrio_repo=<repo name>]
 #+            [--basedir=<alt base work dir>] <branch>
 #+            [--security_layer=/path/to/pointer/to/script]
 #+     $PROG  [--helpshort|--usage|-?]
@@ -83,6 +84,9 @@ PROG=${0##*/}
 #+     [--official]              - Official releases on release branches only
 #+     [--buildversion=ver]      - Override Jenkins check and set a specific
 #+                                 build version
+#+     [--gcrio_repo=repo]       - Specify the GCR repo to use.
+#+                                 (default: google_containers for when --nomock.
+#+                                 Otherwise kubernetes-release-test)
 #+     [--basedir=dir]           - Specify an alternate base directory
 #+                                 (default: /usr/local/google/$USER or $HOME/anago)
 #+     [--security_layer=]       - A file containing a path to a script to
@@ -788,14 +792,14 @@ RELEASE_BUCKET="kubernetes-release"
 if ((FLAGS_nomock)); then
   # Override any --noclean setting if nomock
   FLAGS_noclean=0
-  GCRIO_REPO="google_containers"
+  GCRIO_REPO="${FLAGS_gcrio_repo:-google_containers}"
 else
   # This is passed to logrun() where appropriate when we want to mock
   # specific activities like pushes
   LOGRUN_MOCK="-m"
   # Point to a $USER playground
   RELEASE_BUCKET+=-$USER
-  GCRIO_REPO="kubernetes-release-test"
+  GCRIO_REPO="${FLAGS_gcrio_repo:-kubernetes-release-test}"
 fi
 BASEDIR=${FLAGS_basedir}
 if [[ -z "${BASEDIR}" ]]; then
