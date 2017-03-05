@@ -485,7 +485,7 @@ push_git_objects () {
 ###############################################################################
 # generate the announcement text to be mailed and published
 create_branch_announcement () {
-  cat <<+
+  cat <<EOF
 Kubernetes team,
 <P>
 Kubernetes' $RELEASE_BRANCH branch has been created and is ready to accept patches.
@@ -493,13 +493,13 @@ Kubernetes' $RELEASE_BRANCH branch has been created and is ready to accept patch
 Refer to the <A HREF=https://github.com/kubernetes/kubernetes/blob/master/docs/devel/cherry-picks.md>Cherrypick Guide</A> for instructions.
 <P>
 Announced by <A HREF=https://github.com/kubernetes/release>$PROG</A>, the Kubernetes Release Tool
-+
+EOF
 }
 
 ###############################################################################
 # generate the announcement text to be mailed and published
 create_announcement () {
-  cat <<+
+  cat <<EOF
 Kubernetes team,
 <P>
 Kubernetes $RELEASE_VERSION_PRIME has been built and pushed.
@@ -513,7 +513,7 @@ $(cat $RELEASE_NOTES_HTML)
 Leads, the <A HREF=https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md/#${RELEASE_VERSION_PRIME//\./}>CHANGELOG.md</A> has been bootstrapped with $RELEASE_VERSION_PRIME release notes and you may edit now as needed.
 <P><BR>
 Published by <A HREF=https://github.com/kubernetes/release>$PROG</A>, the Kubernetes Release Tool
-+
+EOF
 }
 
 ###############################################################################
