@@ -46,10 +46,20 @@ type cfg struct {
 	DistroName, Arch, DebArch, Package string
 }
 
+type stringList []string
+
+func (ss *stringList) String() string {
+	return strings.Join(*ss, ",")
+}
+func (ss *stringList) Set(v string) error {
+	*ss = strings.Split(v, ",")
+	return nil
+}
+
 var (
-	architectures = []string{"amd64", "arm", "arm64", "ppc64le", "s390x"}
-	serverDistros = []string{"xenial"}
-	allDistros    = []string{"xenial", "jessie", "precise", "sid", "stretch", "trusty", "utopic", "vivid", "wheezy", "wily", "yakkety"}
+	architectures = stringList{"amd64", "arm", "arm64", "ppc64le", "s390x"}
+	serverDistros = stringList{"xenial"}
+	allDistros    = stringList{"xenial", "jessie", "precise", "sid", "stretch", "trusty", "utopic", "vivid", "wheezy", "wily", "yakkety"}
 
 	builtins = map[string]interface{}{
 		"date": func() string {
@@ -59,6 +69,12 @@ var (
 
 	keepTmp = flag.Bool("keep_tmp", false, "keep tmp dir after build")
 )
+
+func init() {
+	flag.Var(&architectures, "arch", "Architectures to build for.")
+	flag.Var(&serverDistros, "server_distros", "Server distros to build for.")
+	flag.Var(&allDistros, "distros", "Distros to build for.")
+}
 
 func runCommand(pwd string, command string, cmdArgs ...string) error {
 	cmd := exec.Command(command, cmdArgs...)
