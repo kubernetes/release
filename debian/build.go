@@ -67,12 +67,12 @@ var (
 		},
 	}
 
-	keepTmp = flag.Bool("keep_tmp", false, "keep tmp dir after build")
+	keepTmp = flag.Bool("keep-tmp", false, "keep tmp dir after build")
 )
 
 func init() {
 	flag.Var(&architectures, "arch", "Architectures to build for.")
-	flag.Var(&serverDistros, "server_distros", "Server distros to build for.")
+	flag.Var(&serverDistros, "server-distros", "Server distros to build for.")
 	flag.Var(&allDistros, "distros", "Distros to build for.")
 }
 
