@@ -36,10 +36,10 @@ K8S_GITHUB_SSH='git@github.com:kubernetes/kubernetes.git'
 # 3=.Patch
 # 4=Patch
 BRANCH_REGEX="master|release-([0-9]{1,})\.([0-9]{1,})(\.([0-9]{1,}))*$"
-# release - 1=Major, 2=Minor, 3=Patch, 4=-(alpha|beta), 5=rev
+# release - 1=Major, 2=Minor, 3=Patch, 4=-(alpha|beta|rc), 5=rev
 # dotzero - 1=Major, 2=Minor
 # build - 1=build number, 2=sha1
-declare -A VER_REGEX=([release]="v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-alpha|-beta)*\.*(0|[1-9][0-9]*)?"
+declare -A VER_REGEX=([release]="v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-alpha|-beta|-rc)*\.*(0|[1-9][0-9]*)?"
                       [dotzero]="v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.0$"
                       [build]="([0-9]{1,})\+([0-9a-f]{5,40})"
                      )
