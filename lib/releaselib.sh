@@ -325,11 +325,11 @@ release::set_release_version () {
   build_version[major]=${BASH_REMATCH[1]}
   build_version[minor]=${BASH_REMATCH[2]}
   build_version[patch]=${BASH_REMATCH[3]}
-  build_version[label]=${BASH_REMATCH[4]}
-  build_version[labelid]=${BASH_REMATCH[5]}
+  build_version[label]=${BASH_REMATCH[4]}       # -alpha, -beta, -rc
+  build_version[labelid]=${BASH_REMATCH[5]}     # rev
 
   # RELEASE_VERSION_PRIME is the default release version for this session/type
-  # Other labels such as alpha and beta are set as needed
+  # Other labels such as alpha, beta, and rc are set as needed
   # Index ordering is important here as it's how they are processed
   if [[ "$parent_branch" == master ]]; then
     # This is a new branch, set new alpha and beta versions
@@ -364,6 +364,16 @@ release::set_release_version () {
         RELEASE_VERSION[beta]="v${build_version[major]}.${build_version[minor]}"
         RELEASE_VERSION[beta]+=".$((${build_version[patch]}+1))-beta.0"
       fi
+    elif ((FLAGS_rc)) || [[ "${build_version[label]}" == "-rc" ]]; then
+      # betas not allowed after release candidates
+      RELEASE_VERSION[rc]="$RELEASE_VERSION_PRIME"
+      if [[ "${build_version[label]}" == "-rc" ]]; then
+        RELEASE_VERSION[rc]+="-rc.$((${build_version[labelid]}+1))"
+      else
+        # Start release candidates at 1 instead of 0
+        RELEASE_VERSION[rc]+="-rc.1"
+      fi
+      RELEASE_VERSION_PRIME="${RELEASE_VERSION[rc]}"
     else
       RELEASE_VERSION[beta]="$RELEASE_VERSION_PRIME${build_version[label]}"
       RELEASE_VERSION[beta]+=".$((${build_version[labelid]}+1))"

@@ -22,7 +22,7 @@ PROG=${0##*/}
 #+     $PROG - Kubernetes Release Tool
 #+
 #+ SYNOPSIS
-#+     $PROG  [--yes] [--nomock] [--noclean] [--official]
+#+     $PROG  [--yes] [--nomock] [--noclean] [--rc] [--official]
 #+            [--buildversion=<jenkins build version>]
 #+            [--basedir=<alt base work dir>] <branch>
 #+            [--security_layer=/path/to/pointer/to/script]
@@ -32,8 +32,9 @@ PROG=${0##*/}
 #+ DESCRIPTION
 #+     $PROG produces Kubernetes releases.
 #+
-#+     Driven by the named source <branch> and an optional [--official] flag,
-#+     $PROG determines what needs to be released and calculates the version.
+#+     Driven by the named source <branch> and an optional [--rc] or
+#+     [--official] flag, $PROG determines what needs to be released
+#+     and calculates the version.
 #+
 #+     [--buildversion=] will override the automatic check for a build version
 #+     Mostly used for testing as a way to re-use a known good build version.
@@ -51,19 +52,22 @@ PROG=${0##*/}
 #+     prompts.  <branch> is one of master, release-1.2, etc. and the release
 #+     is based on the <branch> value and the [--official] flag:
 #+
-#+     Branch   Official    Type
-#+     ------   --------    ----
-#+     master               alpha
-#+     master      X        N/A
-#+     release-*            beta
-#+     release-*   X        official
+#+     Branch     RC  Official    Type
+#+     ------     --  --------    ----
+#+     master                     alpha
+#+     master                     alpha
+#+     master     X               N/A
+#+     master            X        N/A
+#+     release-*                  beta
+#+     release-*  X               release candidate
+#+     release-*         X        official
 #+
 #+     NOTE: <branch> can exist already or not.  If the branch doesn't exist,
 #+           it will be branched from master as part of the run.
 #+
 #+     VALUES USED AND DISPLAYED DURING RUNS:
 #+     * The RELEASE_VERSION dictionary is indexed by each of the types of
-#+       releases that will be processed for a session (alpha,beta,official)
+#+       releases that will be processed for a session (alpha,beta,rc,official)
 #+     * RELEASE_VERSION_PRIME is the primary release version
 #+     * GCRIO_REPO and RELEASE_BUCKET are the publish locations
 #+
@@ -75,6 +79,7 @@ PROG=${0##*/}
 #+     [--noclean]               - Attempt to work in existing workspace
 #+                                 Not always possible and ignored when --nomock
 #+                                 is set
+#+     [--rc]                    - Release candidates on release branches only
 #+     [--official]              - Official releases on release branches only
 #+     [--buildversion=ver]      - Override Jenkins check and set a specific
 #+                                 build version
@@ -91,6 +96,8 @@ PROG=${0##*/}
 #+     $PROG --yes master        - Do a mock alpha release from master
 #+                                 and don't stop/prompt
 #+     $PROG release-1.1         - Do a mock beta release from release-1.1
+#+     $PROG --rc release-1.1
+#+                               - Do a mock release candidate from release-1.1
 #+     $PROG --official release-1.1
 #+                               - Do a mock official release from release-1.1
 #+     $PROG --nomock --official release-1.1
@@ -129,14 +136,18 @@ RELEASE_BRANCH=${POSITIONAL_ARGV[0]}
  || common::exit 1 "Invalid branch name!"
 
 # Check arg conflicts
-if ((FLAGS_official)); then
+if ((FLAGS_rc)) || ((FLAGS_official)); then
   if [[ "$RELEASE_BRANCH" == "master" ]]; then
-    common::exit 1 "Can't do official releases on master!"
+    common::exit 1 "Can't do release candidate or official releases on master!"
   fi
 else
   if [[ -n ${BASH_REMATCH[4]} ]]; then
     common::exit 1 "Only --official releases are allowed on 3-part branches!"
   fi
+fi
+
+if ((FLAGS_rc)) && ((FLAGS_official)); then
+  common::exit 1 "Can't do release candidate and official release!"
 fi
 
 ###############################################################################
@@ -272,7 +283,7 @@ rev_version_base () {
     gitminor=${BASH_REMATCH[2]}
   fi
 
-  [[ "$label" =~ ^beta ]] && minor_plus="+"
+  [[ "$label" =~ ^beta || "$label" =~ ^rc ]] && minor_plus="+"
 
   sed -i -e "s/\(gitMajor *string = \)\"[^\"]*\"/\1\"$gitmajor\"/g" \
       -e "s/\(gitMinor *string = \)\"[^\"]*\"/\1\"$gitminor$minor_plus\"/g" \
@@ -372,7 +383,7 @@ prepare_tree () {
 
   # rev base.go
   case $label in
-    beta*|official) rev_version_base $label ;;
+    beta*|rc|official) rev_version_base $label ;;
   esac
 
   # generate docs on new branches (from master) only
@@ -429,6 +440,7 @@ build_tree () {
 # NOTES:
 # * alpha is alone, pushes tags only
 # * beta is alone, pushes branch and tags
+# * rc is alone, pushes branch and tags
 # * official pushes both official and beta items - branch and tags
 # * New branch tags a new alpha on master, new beta on new branch and pushes
 #   new branch and tags on both
@@ -766,6 +778,7 @@ archive_release () {
 # Default mode is a mocked release workflow
 : ${FLAGS_nomock:=0}
 : ${FLAGS_noclean:=0}
+: ${FLAGS_rc:=0}
 : ${FLAGS_official:=0}
 
 # Set with --buildversion or set it later in release::set_build_version()
@@ -886,7 +899,8 @@ fi
 common::printvars -p WORKDIR WORKDIR TREE_ROOT $DISPLAY_VERSION \
                      RELEASE_VERSION_PRIME ${ALL_RELEASE_VERSIONS[@]} \
                      RELEASE_BRANCH GCRIO_REPO RELEASE_BUCKET \
-                     FLAGS_nomock FLAGS_noclean FLAGS_official LOGFILE
+                     FLAGS_nomock FLAGS_noclean FLAGS_rc FLAGS_official \
+                     LOGFILE
 
 if [[ -n "$PARENT_BRANCH" ]]; then
   logecho

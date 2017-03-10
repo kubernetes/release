@@ -16,6 +16,7 @@ DOTZERO="v1.4.0"
 SHORT="v1.4.5"
 LONG="v1.4.5-alpha.0"
 SHA="v1.4.5-alpha.0.435+8c67d08e3a535d"
+RC="v1.4.5-rc.1"
 
 printf "%-40s" "$DOTZERO : "
 if [[ $DOTZERO =~ ${VER_REGEX[dotzero]} ]]; then
@@ -40,6 +41,13 @@ fi
 
 printf "%-40s" "$SHA : "
 if [[ $SHA =~ ${VER_REGEX[release]}\.${VER_REGEX[build]} ]]; then
+  echo "$PASSED Value: ${BASH_REMATCH[0]}"
+else
+  echo "$FAILED"
+fi
+
+printf "%-40s" "$RC : "
+if [[ $RC =~ ${VER_REGEX[release]} ]]; then
   echo "$PASSED Value: ${BASH_REMATCH[0]}"
 else
   echo "$FAILED"
