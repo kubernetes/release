@@ -1,4 +1,4 @@
-%global KUBE_VERSION 1.5.1
+%global KUBE_VERSION 1.5.4
 %global KUBEADM_VERSION 1.6.0-alpha.0.2074+a092d8e0f95f52
 %global CNI_RELEASE 07a8a28637e97b22eb8dfe710eeae1344f69d16e
 %global RPM_RELEASE 0
@@ -121,6 +121,9 @@ mv bin/ %{buildroot}/opt/cni/
 
 
 %changelog
+* Tue Dec 13 2016 Mike Danese <mikedanese@google.com> - 1.5.4
+- Bump version of kubelet and kubectl to v1.5.4.
+
 * Tue Dec 13 2016 Lucas Käldström <lucas.kaldstrom@hotmail.co.uk> - 1.5.1
 - Bump version of kubelet and kubectl to v1.5.1, plus kubeadm to the third stable version
 
