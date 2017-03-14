@@ -348,10 +348,10 @@ func main() {
 					DownloadLinkBase: "https://dl.k8s.io/ci-cross/v1.6.0-alpha.0.2074+a092d8e0f95f52",
 				},
 				{
-					GetVersion:          getLatestCIVersion,
+					GetVersion:          getLatestKubeVersion,
 					Revision:            "00",
 					Channel:             ChannelUnstable,
-					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
+					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
 					GetVersion:          getLatestCIVersion,
