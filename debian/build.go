@@ -342,10 +342,10 @@ func main() {
 			Distros: serverDistros,
 			Versions: []version{
 				{
-					Version:          "1.6.0-alpha.0.2074-a092d8e0f95f52",
+					Version:          getStableKubeVersion,
 					Revision:         "00",
 					Channel:          ChannelStable,
-					DownloadLinkBase: "https://dl.k8s.io/ci-cross/v1.6.0-alpha.0.2074+a092d8e0f95f52",
+					DownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
 					GetVersion:          getLatestKubeVersion,
