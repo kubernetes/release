@@ -46,6 +46,7 @@ PROG=${0##*/}
 #+     [--bucket=]               - Specify an alternate bucket for pushes
 #+     [--gcs-suffix=]           - Specify a suffix to append to the upload
 #+                                 destination on GCS.
+#+     [--version-suffix=]       - Append suffix to version name if set.
 #+     [--noupdatelatest]        - Do not update the latest file
 #+     [--help | -man]           - display man page for this script
 #+     [--usage | -?]            - display in-line usage
@@ -112,6 +113,10 @@ else
   logecho "kubectl version output:"
   logecho $KUBECTL_OUTPUT
   common::exit 1
+fi
+
+if [[ -n "${FLAGS_version_suffix:-}" ]]; then
+  LATEST+="-${FLAGS_version_suffix}"
 fi
 
 GCS_DEST="devel"
