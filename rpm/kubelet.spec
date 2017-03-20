@@ -1,5 +1,4 @@
-%global KUBE_VERSION 1.5.4
-%global KUBEADM_VERSION 1.6.0-alpha.0.2074+a092d8e0f95f52
+%global KUBE_VERSION 1.6.0
 %global CNI_RELEASE 07a8a28637e97b22eb8dfe710eeae1344f69d16e
 %global RPM_RELEASE 0
 
@@ -13,7 +12,7 @@ URL: https://kubernetes.io
 Source0: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/amd64/kubelet
 Source1: kubelet.service
 Source2: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/amd64/kubectl
-Source3: https://dl.k8s.io/ci-cross/v%{KUBEADM_VERSION}/bin/linux/amd64/kubeadm
+Source3: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/amd64/kubeadm
 Source4: 10-kubeadm.conf
 Source5: https://dl.k8s.io/network-plugins/cni-amd64-%{CNI_RELEASE}.tar.gz
 
@@ -52,11 +51,11 @@ Command-line utility for interacting with a Kubernetes cluster.
 
 %package -n kubeadm
 
-Version: 1.6.0
-Release: %{RPM_RELEASE}.alpha.0.2074.a092d8e0f95f52
-Summary: Command-line utility for administering a Kubernetes cluster. (ALPHA)
-Requires: kubelet >= 1.4.0
-Requires: kubectl >= 1.4.0
+Version: %{KUBE_VERSION}
+Release: %{RPM_RELEASE}
+Summary: Command-line utility for administering a Kubernetes cluster.
+Requires: kubelet >= 1.6.0
+Requires: kubectl >= 1.6.0
 Requires: kubernetes-cni
 
 %description -n kubeadm
@@ -121,6 +120,9 @@ mv bin/ %{buildroot}/opt/cni/
 
 
 %changelog
+* Wed Mar 15 2017 Lucas Käldström <lucas.kaldstrom@hotmail.co.uk> - 1.6.0
+- Bump version of kubelet, kubectl and kubeadm to v1.6.0.
+
 * Tue Dec 13 2016 Mike Danese <mikedanese@google.com> - 1.5.4
 - Bump version of kubelet and kubectl to v1.5.4.
 
