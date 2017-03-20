@@ -790,14 +790,28 @@ release::docker::release () {
   # Activate credentials for the k8s.production.user@gmail.com
   [[ "$registry" == "gcr.io/google_containers" ]] \
    && logrun $GCLOUD config set account k8s.production.user@gmail.com
+
+  if [[ -f $(which manifest-tool) ]]; then
+    MANIFEST_TOOL=$(which manifest-tool)
+  else
+    curl -sSL https://github.com/luxas/manifest-tool/releases/download/v0.3.0/manifest-tool > ./manifest-tool
+    chmod +x ./manifest-tool
+    MANIFEST_TOOL=$(pwd)/manifest-tool
+  fi
+
+  # "docker login" to the gcr.io registry so we can push manifest lists to it
+  [[ "$registry" =~ gcr.io/ ]] && docker login -u oauth2accesstoken -p "$(gcloud auth print-access-token)" https://gcr.io
+
+  # ml_platforms should be in the os1/arch1,os2/arch2,os3/arch3 form
+  local ml_platforms= $(echo "${KUBE_SERVER_PLATFORMS[@]}" | sed "s/ /,/g")
  
   logecho
   logecho "Send docker containers to $registry..."
 
   # 'gcloud docker' gives lots of internal_failure's so add retries to 
   # all of the invocations
-  for arch in "${KUBE_SERVER_PLATFORMS[@]##*/}"; do
-    for binary in "${binaries[@]}"; do
+  for binary in "${binaries[@]}"; do
+    for arch in "${KUBE_SERVER_PLATFORMS[@]##*/}"; do
       docker_target="$binary-$arch:$version"
       if ! logrun -r 5 ${docker_push_cmd[@]} \
                        history "$registry/$docker_target"; then
@@ -808,23 +822,10 @@ release::docker::release () {
       logecho "Release $docker_target:"
       logecho -n "- Pushing: "
       logrun -r 5 -s ${docker_push_cmd[@]} push "$registry/$docker_target"
-
-      # If we have a amd64 docker image. Tag it without -amd64 also
-      # and push it for compatibility with earlier versions
-      if [[ $arch == "amd64" ]]; then
-        legacy_docker_target="$binary:$version"
-        logecho "Release legacy $legacy_docker_target:"
-
-        logecho -n "- Tagging: "
-        logrun docker rmi "$registry/$legacy_docker_target" || true
-        logrun -r 5 -s docker tag "$registry/$docker_target" \
-                              "$registry/$legacy_docker_target" 2>/dev/null
-
-        logecho -n "- Pushing: "
-        logrun -r 5 -s ${docker_push_cmd[@]} \
-                       push "$registry/$legacy_docker_target"
-      fi
     done
+
+    # This command will push a manifest list: "${registry}/${binary}-ARCH:${version}" that points to each architecture depending on which platform you're pulling from
+    $MANIFEST_TOOL push from-args --platforms ${ml_platforms} --template ${registry}/${binary}-ARCH:${version} --target ${registry}/${binary}-ARCH:${version}
   done
 
   # Activate default account
