@@ -787,10 +787,10 @@ release::docker::release () {
 
   [[ "$registry" =~ gcr.io/ ]] && docker_push_cmd=("$GCLOUD" "docker" "--")
 
-  # Activate credentials for the k8s.production.user@gmail.com
+  # Activate credentials to push to gcr.io
   [[ "$registry" == "gcr.io/google_containers" ]] \
-   && logrun $GCLOUD config set account k8s.production.user@gmail.com
- 
+    && logrun $GCLOUD config set account $G_AUTH_USER
+
   logecho
   logecho "Send docker containers to $registry..."
 
