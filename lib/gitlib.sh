@@ -22,12 +22,10 @@
 ###############################################################################
 GHCURL="curl -s --fail --retry 10 -u ${GITHUB_TOKEN:-$FLAGS_github_token}:x-oauth-basic"
 JCURL="curl -g -s --fail --retry 10"
-K8S_GITHUB_API='https://api.github.com/repos/kubernetes/kubernetes'
-K8S_GITHUB_RAW_ORG='https://raw.githubusercontent.com/kubernetes'
 
-K8S_GITHUB_SEARCHAPI='https://api.github.com/search/issues?per_page=100&q=is:pr%20repo:kubernetes/kubernetes%20'
-K8S_GITHUB_URL='https://github.com/kubernetes/kubernetes'
-K8S_GITHUB_SSH='git@github.com:kubernetes/kubernetes.git'
+# TODO: make configurable
+K8S_GITHUB_ORG='kubernetes'
+K8S_GITHUB_REPO='kubernetes'
 
 # Regular expressions for bash regex matching
 # 0=entire branch name
@@ -49,13 +47,90 @@ declare -A VER_REGEX=([release]="v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9
 ###############################################################################
 
 ###############################################################################
+# Wrapper around curl call to the GitHub Repositories API.
+# @param org - GitHub organization (e.g. kubernetes)
+# @param repo - GitHub repo (e.g. release)
+# @param query - API call to make. Should be prefixed with a /, e.g. "/tags"
+# Any additional arguments will be passed to curl.
+# BUG(#287): pagination is not currently supported.
+gitlib::github_repo_query () {
+  local org=$1
+  local repo=$2
+  local query=$3
+  shift 3
+  $GHCURL "https://api.github.com/repos/$org/$repo$query" $@
+}
+
+###############################################################################
+# Wrapper around curl call to search for PRs.
+# @param org - GitHub organization (e.g. kubernetes)
+# @param repo - GitHub repo (e.g. release)
+# @param filter - additional filters to the search query (e.g. label:foo)
+# Any additional arguments will be passed to curl.
+# BUG(#287): pagination is not currently supported.
+gitlib::github_search_prs () {
+  local org=$1
+  local repo=$2
+  local filter=$3
+  $GHCURL "https://api.github.com/search/issues?per_page=100&q=is:pr%20repo:$org/$repo%20$filter"
+}
+
+###############################################################################
+# Wrapper around curl call to upload releases to GitHub.
+# @param org - GitHub organization (e.g. kubernetes)
+# @param repo - GitHub repo (e.g. release)
+# @param query - API call to make. Should be prefixed with a /, e.g. "/tags"
+# Any additional arguments will be passed to curl.
+gitlib::github_upload () {
+  local org=$1
+  local repo=$2
+  local query=$3
+  shift 3
+  $GHCURL "https://uploads.github.com/repos/$org/$repo$query" $@
+}
+
+###############################################################################
+# Wrapper around curl call to download files from GitHub.
+# @param org - GitHub organization (e.g. kubernetes)
+# @param repo - GitHub repo (e.g. release)
+# @param branch - branch (e.g. features)
+# @param path - path to file in repo, e.g. CHANGELOG.md
+gitlib::github_raw_download () {
+  local org=$1
+  local repo=$2
+  local branch=$3
+  local path=$4
+  $GHCURL "https://raw.githubusercontent.com/$org/$repo/$branch/$path"
+}
+
+###############################################################################
+# Constructs the https git URL for a GitHub repo.
+# @param org - GitHub organization (e.g. kubernetes)
+# @param repo - GitHub repo (e.g. release)
+gitlib::github_https_url () {
+  local org=$1
+  local repo=$2
+  echo "https://github.com/$org/$repo"
+}
+
+###############################################################################
+# Constructs the ssh git URL for a GitHub repo.
+# @param org - GitHub organization (e.g. kubernetes)
+# @param repo - GitHub repo (e.g. release)
+gitlib::github_ssh_url () {
+  local org=$1
+  local repo=$2
+  echo "git@github.com:$org/$repo.git"
+}
+
+###############################################################################
 # Attempt to authenticate to github using ssh and if unsuccessful provide
 # guidance for setup
 #
 gitlib::ssh_auth () {
 
   logecho -n "Checking ssh auth to github.com: "
-  if ssh -T ${K8S_GITHUB_SSH%%:*} 2>&1 |fgrep -wq denied; then
+  if ssh -T git@github.com 2>&1 |fgrep -wq denied; then
     logecho $FAILED
     logecho
     logecho "See https://help.github.com/categories/ssh"
@@ -77,7 +152,7 @@ gitlib::last_releases () {
   declare -Ag LAST_RELEASE
 
   logecho -n "Setting last releases by branch: "
-  for release in $($GHCURL $K8S_GITHUB_API/releases|\
+  for release in $(gitlib::github_repo_query $K8S_GITHUB_ORG $K8S_GITHUB_REPO /releases|\
                    jq -r '.[] | select(.draft==false) | .tag_name'); do
     # Alpha releases only on master branch
     if [[ $release =~ -alpha ]]; then
@@ -139,7 +214,7 @@ gitlib::pending_prs () {
     msg=$(echo $msg |sed 's, *\* *, * ,g')
     printf "%-8s $sep %-4s $sep %-10s $sep %-18s $sep %s\n" \
            "#$pr" "$milestone" "@$login" "$(date +"%F %R" -d "$date")" "$msg"
-  done < <($GHCURL $K8S_GITHUB_API/pulls\?state\=open\&base\=$branch |\
+  done < <(gitlib::github_repo_query $K8S_GITHUB_ORG $K8S_GITHUB_REPO /pulls\?state\=open\&base\=$branch |\
            jq -r \
             '.[] | "\(.number)\t\(.milestone.title)\t\(.user.login)\t\(.updated_at)\t\(.title)"')
 }
@@ -150,7 +225,7 @@ gitlib::pending_prs () {
 # returns 1 if token is invalid
 gitlib::github_api_token () {
   logecho -n "Checking for a valid github API token: "
-  if ! $GHCURL $K8S_GITHUB_API >/dev/null 2>&1; then
+  if ! gitlib::github_repo_query $K8S_GITHUB_ORG $K8S_GITHUB_REPO '' >/dev/null 2>&1; then
     logecho -r "$FAILED"
     logecho
     logecho "No valid github token found in environment or command-line!"
@@ -191,10 +266,12 @@ gitlib::sync_repo () {
 ##############################################################################
 # Does git branch exist?
 # @param branch - branch
-gitlib::branch_exists () {
-  local branch=$1
+gitlib::github_branch_exists () {
+  local org=$1
+  local repo=$2
+  local branch=$3
 
-  git ls-remote --exit-code $K8S_GITHUB_URL \
+  git ls-remote --exit-code $(gitlib::github_https_url $org $repo) \
    refs/heads/$branch &>/dev/null
 }
 

@@ -103,7 +103,7 @@ if (($FLAGS_official)) && [[ "$RELEASE_BRANCH" == "master" ]]; then
 fi
 
 # Are we branching to a new branch?
-if gitlib::branch_exists $RELEASE_BRANCH; then
+if gitlib::github_branch_exists $K8S_GITHUB_ORG $K8S_GITHUB_REPO $RELEASE_BRANCH; then
   TESTING_BRANCH=$RELEASE_BRANCH
   BRANCH_OFF_MASTER=0
 else

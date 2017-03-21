@@ -118,7 +118,7 @@ extract_pr_title () {
   local pull_json
 
   for pr in $prs; do
-    pull_json="$($GHCURL $K8S_GITHUB_API/pulls/$pr)"
+    pull_json="$(gitlib::github_repo_query $K8S_GITHUB_ORG $K8S_GITHUB_REPO /pulls/$pr)"
     [[ -z "$pull_json" ]] && return 1
     body="$(echo "$pull_json" |jq -r '.body' |tr -d '\r')"
 
@@ -161,14 +161,14 @@ get_prs_by_label () {
 
   prs_per_page=100
 
-  matching_prs="$($GHCURL ${K8S_GITHUB_SEARCHAPI}label:${label}&per_page=1)"
+  matching_prs="$(gitlib::github_search_prs $K8S_GITHUB_ORG $K8S_GITHUB_REPO label:${label}&per_page=1)"
 
   total="$(echo -n $matching_prs | jq -r '.total_count')"
   # Calculate number of pages, rounding up
   num_pages=$(((total + prs_per_page - 1) / prs_per_page ))
 
   for current_page in `seq 1 $num_pages`; do
-    prs+=($($GHCURL "${K8S_GITHUB_SEARCHAPI}label:${label}&page=$current_page" | jq -r '.items[] | (.number | tostring)'))
+    prs+=($(gitlib::github_search_prs $K8S_GITHUB_ORG $K8S_GITHUB_REPO "label:${label}&page=$current_page" | jq -r '.items[] | (.number | tostring)'))
   done
   echo "${prs[@]}"
 }
@@ -285,6 +285,7 @@ generate_notes () {
   local tempcss=/tmp/$PROG-ca.$$
   local tempfile=/tmp/$PROG-file-1.$$
   local anchor
+  local k8s_github_url=$(gitlib::github_https_url $K8S_GITHUB_ORG $K8S_GITHUB_REPO)
   local -a normal_prs
   local -a action_prs
   local -a experimental_prs
@@ -367,8 +368,7 @@ generate_notes () {
   if ((FLAGS_full)) || [[ $release_tag =~ ${VER_REGEX[dotzero]} ]]; then
     # Check for draft and use it if available
     logecho "Checking if draft release notes exist for $release_tag..."
-    $GHCURL \
-     $K8S_GITHUB_RAW_ORG/features/master/$CURRENT_BRANCH/release-notes-draft.md > $tempfile
+    gitlib::github_raw_download $K8S_GITHUB_ORG features master $CURRENT_BRANCH/release-notes-draft.md > $tempfile
     if [[ -s $tempfile ]]; then
       logecho "Draft found - using for release notes..."
       cat $tempfile >> $PR_NOTES
@@ -457,8 +457,8 @@ EOF+
   if ((FLAGS_htmlize_md)); then
     # Make users and PRs linkable
     # Also, expand anchors (needed for email announce())
-    sed -i -e "s,#\([0-9]\{5\,\}\),[#\1]($K8S_GITHUB_URL/pull/\1),g" \
-        -e "s,\(#v[0-9]\{3\}-\),$K8S_GITHUB_URL/blob/master/CHANGELOG.md\1,g" \
+    sed -i -e "s,#\([0-9]\{5\,\}\),[#\1]($k8s_github_url/pull/\1),g" \
+        -e "s,\(#v[0-9]\{3\}-\),$k8s_github_url/blob/master/CHANGELOG.md\1,g" \
         -e "s,@\([a-zA-Z0-9-]*\),[@\1](https://github.com/\1),g" \
      $RELEASE_NOTES_MD
   fi

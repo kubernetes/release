@@ -65,7 +65,7 @@ MASTER_OBJECT=${POSITIONAL_ARGV[1]:-"origin/master"}
 [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]] || common::exit 1 "Invalid branch name!"
 
 # Branch Exists
-gitlib::branch_exists $RELEASE_BRANCH \
+gitlib::github_branch_exists $K8S_GITHUB_ORG $K8S_GITHUB_REPO $RELEASE_BRANCH \
  || common::exit 1 "$RELEASE_BRANCH doesn't exist.  Exiting..."
 
 ##############################################################################
@@ -113,7 +113,8 @@ if [[ -d $WORKDIR ]]; then
 fi
 
 logrun mkdir -p $WORKDIR
-gitlib::sync_repo $K8S_GITHUB_SSH $TREE_ROOT || common::exit 1 "Exiting..."
+gitlib::sync_repo $(gitlib::github_ssh_url $K8S_GITHUB_ORG $K8S_GITHUB_REPO) \
+  $TREE_ROOT || common::exit 1 "Exiting..."
 logrun cd $TREE_ROOT
 
 ##############################################################################
@@ -122,7 +123,9 @@ common::stepheader "CHECK GIT PUSH ACCESS"
 # TODO: capture state of access without forcing us into a prompt I have to 
 #       expose.
 logecho -n "Checking git push access (verbosely to accept password if needed)"
-logrun -v git push -q --dry-run $K8S_GITHUB_SSH || common::exit 1 "Exiting..."
+logrun -v git push -q --dry-run \
+  $(gitlib::github_ssh_url $K8S_GITHUB_ORG $K8S_GITHUB_REPO)\
+  || common::exit 1 "Exiting..."
 
 ##############################################################################
 common::stepheader "CHECK OUT BRANCH"
