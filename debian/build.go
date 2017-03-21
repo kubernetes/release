@@ -342,10 +342,10 @@ func main() {
 			Distros: serverDistros,
 			Versions: []version{
 				{
-					Version:          getStableKubeVersion,
-					Revision:         "00",
-					Channel:          ChannelStable,
-					DownloadLinkBase: getReleaseDownloadLinkBase,
+					GetVersion:          getStableKubeVersion,
+					Revision:            "00",
+					Channel:             ChannelStable,
+					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
 					GetVersion:          getLatestKubeVersion,
