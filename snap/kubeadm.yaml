@@ -1,0 +1,19 @@
+name: kubeadm
+version: 'KUBE_VERSION'
+summary: easily bootstrap a secure Kubernetes cluster
+description: |
+  easily bootstrap a secure Kubernetes cluster
+grade: stable
+confinement: classic
+
+apps:
+  kubeadm:
+    command: kubeadm
+
+parts:
+  kubeadm:
+    plugin: dump
+    source: .
+    prepare: |
+      set -eu
+      cp $KUBE_SNAP_BINS/kubeadm .

@@ -1,0 +1,20 @@
+name: kubectl
+version: 'KUBE_VERSION'
+summary: kubectl controls the Kubernetes cluster manager.
+description: |
+  kubectl is a command line interface for running commands against Kubernetes
+  clusters.
+grade: stable
+confinement: classic
+
+apps:
+  kubectl:
+    command: kubectl
+
+parts:
+  kubectl:
+    plugin: dump
+    source: .
+    prepare: |
+      set -eu
+      cp $KUBE_SNAP_BINS/kubectl .

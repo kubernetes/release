@@ -1,0 +1,32 @@
+name: kube-scheduler
+version: 'KUBE_VERSION'
+summary: kube-scheduler controls the Kubernetes cluster manager.
+description: |
+  kube-scheduler is a command line interface for running commands against Kubernetes
+  clusters.
+grade: stable
+confinement: strict
+
+apps:
+  daemon:
+    command: run-with-config-args kube-scheduler
+    daemon: simple
+    plugs:
+        - network
+        - network-bind
+        - home
+  kube-scheduler:
+    command: kube-scheduler
+    plugs:
+        - network
+        - network-bind
+        - home
+parts:
+  kube-scheduler:
+    plugin: dump
+    source: .
+    prepare: |
+      set -eu
+      cp $KUBE_SNAP_BINS/kube-scheduler .
+      cp $KUBE_SNAP_ROOT/shared/run-with-config-args .
+      $KUBE_SNAP_ROOT/shared/generate-configure-hook kube-scheduler

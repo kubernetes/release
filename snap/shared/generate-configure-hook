@@ -1,0 +1,45 @@
+#!/bin/sh
+set -eu
+
+app=$1
+
+mkdir -p meta/hooks
+
+cat << 'EOF' > meta/hooks/configure
+#!/bin/bash
+set -eu
+
+rm -f $SNAP_DATA/args
+
+function config-arg {
+  key=$1
+  value=$(snapctl get -t $key)
+  if [ "$value" != 'null' ]; then
+    echo "--$key $value" >> $SNAP_DATA/args
+  fi
+}
+
+function config-arg-bool {
+  key=$1
+  value=$(snapctl get $key)
+  if [ "$value" = 'true' ]; then
+    echo "--$key" >> $SNAP_DATA/args
+  elif [ -n "$value" ] && [ "$value" != 'false' ]; then
+    >&2 echo "Invalid value for $key: $value, expected true or false"
+    exit 1
+  fi
+}
+
+EOF
+
+$KUBE_SNAP_BINS/$app -h 2>&1 | grep '\-\-' | perl -pe 's/.*?--(\S+ \S*).*/\1/' | while read line; do
+  if [ $(echo "$line" | wc -w) -eq 2 ]; then
+    key=$(echo "$line" | cut -d ' ' -f 1)
+    echo "config-arg $key" >> meta/hooks/configure
+  else
+    key=$line
+    echo "config-arg-bool $key" >> meta/hooks/configure
+  fi
+done
+
+chmod +x meta/hooks/configure

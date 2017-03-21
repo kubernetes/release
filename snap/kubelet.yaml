@@ -1,0 +1,29 @@
+name: kubelet
+version: 'KUBE_VERSION'
+summary: kubelet is the primary “node agent” that runs on each node in Kubernetes.
+description: |
+  The kubelet is the primary “node agent” that runs on each node. The kubelet
+  works in terms of a PodSpec. A PodSpec is a YAML or JSON object that describes
+  a pod. The kubelet takes a set of PodSpecs that are provided through various
+  mechanisms (primarily through the apiserver) and ensures that the containers
+  described in those PodSpecs are running and healthy. The kubelet doesn’t
+  manage containers which were not created by Kubernetes.
+grade: stable
+confinement: classic
+
+apps:
+  daemon:
+    command: run-with-config-args kubelet
+    daemon: simple
+  kubelet:
+    command: kubelet
+
+parts:
+  kubelet:
+    plugin: dump
+    source: .
+    prepare: |
+      set -eu
+      cp $KUBE_SNAP_BINS/kubelet .
+      cp $KUBE_SNAP_ROOT/shared/run-with-config-args .
+      $KUBE_SNAP_ROOT/shared/generate-configure-hook kubelet

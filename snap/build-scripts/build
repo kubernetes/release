@@ -1,0 +1,34 @@
+#!/bin/bash
+set -eu
+
+apps="$@"
+
+KUBE_SNAP_BINS="${KUBE_SNAP_BINS:-}"
+if [ -z "$KUBE_SNAP_BINS" ]; then
+  echo "KUBE_SNAP_BINS is not set, downloading binaries from upstream"
+  export KUBE_SNAP_BINS=build/kube_bins/$KUBE_VERSION
+  mkdir -p $KUBE_SNAP_BINS
+  cd $KUBE_SNAP_BINS
+  for app in kubectl kube-apiserver kube-controller-manager kube-scheduler kubelet kube-proxy kubeadm; do
+    curl -LO \
+      https://dl.k8s.io/${KUBE_VERSION}/bin/linux/amd64/$app
+    chmod +x $app
+  done
+  cd ../../..
+fi
+
+export KUBE_SNAP_ROOT="$(readlink -f .)"
+export KUBE_SNAP_BINS="$(readlink -f $KUBE_SNAP_BINS)"
+
+for app in $apps; do
+  echo "Building $app $KUBE_VERSION from $KUBE_SNAP_BINS"
+
+  build_dir=build/$app
+  rm -rf $build_dir
+  mkdir -p $build_dir
+
+  sed "s/KUBE_VERSION/${KUBE_VERSION:1}/g" $app.yaml > $build_dir/snapcraft.yaml
+
+  (cd $build_dir && snapcraft)
+  mv $build_dir/*.snap build
+done
