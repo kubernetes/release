@@ -11,7 +11,7 @@ source $TOOL_LIB_PATH/releaselib.sh
 # TESTING release::gcs::verify_latest_update()
 ##############################################################################
 # stable is always vX.Y.Z
-# latest is always vX.Y.Z-(alpha|beta).N
+# latest is always vX.Y.Z-(alpha|beta|rc).N
 
 # > vs >= scenarios only relevant to 'latest' .N's.
 # type release updates on >
@@ -50,6 +50,8 @@ read -r -d '' data <<'EOF' || true
 ## ci      v1.4.0-alpha.0 v1.4.0-alpha.0 0
 ## release v1.4.0-alpha.1 v1.4.0-alpha.0 0
 ## release v1.4.0-alpha.0 v1.4.0-alpha.0 1
+## release v1.4.0-rc.1    v1.4.0-beta.5  0
+## release v1.4.0         v1.4.0-rc.1    0
 EOF
 
 
