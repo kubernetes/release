@@ -575,7 +575,7 @@ release::gcs::publish_version () {
 
   # For release/ targets, type could be 'stable'
   if [[ "$build_type" == release ]]; then
-    [[ "$version" =~ alpha|beta ]] || type="stable"
+    [[ "$version" =~ alpha|beta|rc ]] || type="stable"
   fi
 
   if ! $GSUTIL ls $release_dir >/dev/null 2>&1 ; then
@@ -665,11 +665,12 @@ release::gcs::verify_latest_update () {
     elif [[ "$version_patch" -gt "$gcs_version_patch" ]]; then
       : # fall out
     # Use lexicographic (instead of integer) comparison because
-    # version_prerelease is a string, ("alpha" or "beta",) but first check if
-    # either is an official release (i.e. empty prerelease string).
+    # version_prerelease is a string, ("alpha", "beta", or "rc"),
+    # but first check if either is an official release
+    # (i.e. empty prerelease string).
     #
-    # We have to do this because lexicographically "beta" > "alpha" > "", but
-    # we want official > beta > alpha.
+    # We have to do this because lexicographically "rc" > "beta" > "alpha" > "",
+    # but we want official > rc > beta > alpha.
     elif [[ -n "$version_prerelease" && -z "$gcs_version_prerelease" ]]; then
       greater=0
     elif [[ -z "$version_prerelease" && -n "$gcs_version_prerelease" ]]; then

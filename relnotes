@@ -303,7 +303,7 @@ generate_notes () {
   # Default
   range="${POSITIONAL_ARGV[0]:-"${LAST_RELEASE[$CURRENT_BRANCH]}..$branch_head"}"
 
-  if [[ "${POSITIONAL_ARGV[0]}" =~ ([v0-9.]*-*(alpha|beta)*\.*[0-9]*)\.\.([v0-9.]*-*(alpha|beta)*\.*[0-9]*)$ ]]; then
+  if [[ "${POSITIONAL_ARGV[0]}" =~ ([v0-9.]*-*(alpha|beta|rc)*\.*[0-9]*)\.\.([v0-9.]*-*(alpha|beta|rc)*\.*[0-9]*)$ ]]; then
     start_tag=${BASH_REMATCH[1]}
     release_tag=${BASH_REMATCH[3]}
   else
