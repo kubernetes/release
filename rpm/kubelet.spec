@@ -1,5 +1,5 @@
 %global KUBE_VERSION 1.6.0
-%global CNI_RELEASE 07a8a28637e97b22eb8dfe710eeae1344f69d16e
+%global CNI_RELEASE 0799f5732f2a11b329d9e3d51b9c8f2e3759f2ff
 %global RPM_RELEASE 0
 
 Name: kubelet
@@ -32,8 +32,8 @@ The node agent of Kubernetes, the container cluster manager.
 
 %package -n kubernetes-cni
 
-Version: 0.3.0.1
-Release: %{RPM_RELEASE}.07a8a2
+Version: 0.3.0.2
+Release: %{RPM_RELEASE}.0799f5
 Summary: Binaries required to provision kubernetes container networking
 Requires: kubelet
 
@@ -120,6 +120,9 @@ mv bin/ %{buildroot}/opt/cni/
 
 
 %changelog
+* Wed Tue 28 2017 Lucas Käldström <lucas.kaldstrom@hotmail.co.uk>
+- Bump CNI version to v0.5.1.
+
 * Wed Mar 15 2017 Lucas Käldström <lucas.kaldstrom@hotmail.co.uk> - 1.6.0
 - Bump version of kubelet, kubectl and kubeadm to v1.6.0.
 
