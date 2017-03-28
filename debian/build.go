@@ -321,17 +321,17 @@ func main() {
 			Distros: serverDistros,
 			Versions: []version{
 				{
-					Version:  "0.3.0.1-07a8a2",
+					Version:  "0.3.0.1-0799f5",
 					Revision: "00",
 					Channel:  ChannelStable,
 				},
 				{
-					Version:  "0.3.0.1-07a8a2",
+					Version:  "0.3.0.1-0799f5",
 					Revision: "00",
 					Channel:  ChannelUnstable,
 				},
 				{
-					Version:  "0.3.0.1-07a8a2",
+					Version:  "0.3.0.1-0799f5",
 					Revision: "00",
 					Channel:  ChannelNightly,
 				},
