@@ -19,7 +19,7 @@ Source5: https://dl.k8s.io/network-plugins/cni-amd64-%{CNI_RELEASE}.tar.gz
 
 BuildRequires: curl
 Requires: iptables >= 1.4.21
-Requires: kubernetes-cni >= 0.3.0.1
+Requires: kubernetes-cni >= 0.5.1
 Requires: socat
 Requires: util-linux
 Requires: ethtool
@@ -32,8 +32,8 @@ The node agent of Kubernetes, the container cluster manager.
 
 %package -n kubernetes-cni
 
-Version: 0.3.0.2
-Release: %{RPM_RELEASE}.0799f5
+Version: 0.5.1
+Release: %{RPM_RELEASE}
 Summary: Binaries required to provision kubernetes container networking
 Requires: kubelet
 
