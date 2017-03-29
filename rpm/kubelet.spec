@@ -120,7 +120,7 @@ mv bin/ %{buildroot}/opt/cni/
 
 
 %changelog
-* Wed Tue 28 2017 Lucas Käldström <lucas.kaldstrom@hotmail.co.uk>
+* Tue Mar 28 2017 Lucas Käldström <lucas.kaldstrom@hotmail.co.uk>
 - Bump CNI version to v0.5.1.
 
 * Wed Mar 15 2017 Lucas Käldström <lucas.kaldstrom@hotmail.co.uk> - 1.6.0
