@@ -132,7 +132,7 @@ mv bin/ %{buildroot}/opt/cni/
 * Tue Dec 13 2016 Lucas Käldström <lucas.kaldstrom@hotmail.co.uk> - 1.5.1
 - Bump version of kubelet and kubectl to v1.5.1, plus kubeadm to the third stable version
 
-* Fri Dec 6 2016 Lucas Käldström <lucas.kaldstrom@hotmail.co.uk> - 1.5.0-beta.2
+* Tue Dec 6 2016 Lucas Käldström <lucas.kaldstrom@hotmail.co.uk> - 1.5.0-beta.2
 - Bump version of kubelet and kubectl
 
 * Wed Nov 16 2016 Alexander Kanevskiy <alexander.kanevskiy@intel.com>
