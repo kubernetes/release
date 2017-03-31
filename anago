@@ -329,6 +329,14 @@ generate_release_notes() {
   logecho -n "Checkout master branch to make changes: "
   logrun -s git checkout master || return 1
 
+  # The fetch and rebase before editing CHANGELOG.md
+  # avoids merge conflicts if another release cut
+  # completed while we were building this one.
+  logecho -n "Fetch origin/master to get latest CHANGELOG.md: "
+  logrun -s git fetch origin master || return 1
+  logecho -n "Rebase on origin/master before editing CHANGELOG.md: "
+  logrun -s git rebase origin/master || return 1
+
   logecho "Insert $RELEASE_VERSION_PRIME notes into CHANGELOG.md..."
   # Pipe to logrun() vs using directly, because quoting.
   sed -i -e 's/<!-- NEW RELEASE NOTES ENTRY -->/&\n/' \
