@@ -377,12 +377,7 @@ func main() {
 		} else {
 			c.DebArch = c.Arch
 		}
-		// Skip platforms that do not have binaries for a channel
-		if len(v.Channel) != 0 {
-			if v.Channel == "stable" && (c.Arch == "s390x" || c.Arch == "ppc64le") {
-				return nil
-			}
-		}
+
 		return c.run()
 	}); err != nil {
 		log.Fatalf("err: %v", err)
