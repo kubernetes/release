@@ -24,6 +24,7 @@ PROG=${0##*/}
 #+ SYNOPSIS
 #+     $PROG  [--yes] [--nomock] [--noclean] [--rc] [--official]
 #+            [--buildversion=<jenkins build version>]
+#+            [--gcrio_repo=<repo name>]
 #+            [--basedir=<alt base work dir>] <branch>
 #+            [--security_layer=/path/to/pointer/to/script]
 #+     $PROG  [--helpshort|--usage|-?]
@@ -83,8 +84,11 @@ PROG=${0##*/}
 #+     [--official]              - Official releases on release branches only
 #+     [--buildversion=ver]      - Override Jenkins check and set a specific
 #+                                 build version
+#+     [--gcrio_repo=repo]       - Specify the GCR repo to use.
+#+                                 (default: google_containers for when --nomock.
+#+                                 Otherwise kubernetes-release-test)
 #+     [--basedir=dir]           - Specify an alternate base directory
-#+                                 (default: /usr/local/google/$USER)
+#+                                 (default: /usr/local/google/$USER or $HOME/anago)
 #+     [--security_layer=]       - A file containing a path to a script to
 #+                                 source/include:
 #+                                 FLAGS_security_layer=/path/to/script
@@ -485,7 +489,7 @@ push_git_objects () {
 ###############################################################################
 # generate the announcement text to be mailed and published
 create_branch_announcement () {
-  cat <<+
+  cat <<EOF
 Kubernetes team,
 <P>
 Kubernetes' $RELEASE_BRANCH branch has been created and is ready to accept patches.
@@ -493,13 +497,13 @@ Kubernetes' $RELEASE_BRANCH branch has been created and is ready to accept patch
 Refer to the <A HREF=https://github.com/kubernetes/kubernetes/blob/master/docs/devel/cherry-picks.md>Cherrypick Guide</A> for instructions.
 <P>
 Announced by <A HREF=https://github.com/kubernetes/release>$PROG</A>, the Kubernetes Release Tool
-+
+EOF
 }
 
 ###############################################################################
 # generate the announcement text to be mailed and published
 create_announcement () {
-  cat <<+
+  cat <<EOF
 Kubernetes team,
 <P>
 Kubernetes $RELEASE_VERSION_PRIME has been built and pushed.
@@ -513,7 +517,7 @@ $(cat $RELEASE_NOTES_HTML)
 Leads, the <A HREF=https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md/#${RELEASE_VERSION_PRIME//\./}>CHANGELOG.md</A> has been bootstrapped with $RELEASE_VERSION_PRIME release notes and you may edit now as needed.
 <P><BR>
 Published by <A HREF=https://github.com/kubernetes/release>$PROG</A>, the Kubernetes Release Tool
-+
+EOF
 }
 
 ###############################################################################
@@ -788,16 +792,25 @@ RELEASE_BUCKET="kubernetes-release"
 if ((FLAGS_nomock)); then
   # Override any --noclean setting if nomock
   FLAGS_noclean=0
-  GCRIO_REPO="google_containers"
+  GCRIO_REPO="${FLAGS_gcrio_repo:-google_containers}"
 else
   # This is passed to logrun() where appropriate when we want to mock
   # specific activities like pushes
   LOGRUN_MOCK="-m"
   # Point to a $USER playground
   RELEASE_BUCKET+=-$USER
-  GCRIO_REPO="kubernetes-release-test"
+  GCRIO_REPO="${FLAGS_gcrio_repo:-kubernetes-release-test}"
 fi
-BASEDIR=${FLAGS_basedir:-"/usr/local/google/$USER"}
+BASEDIR=${FLAGS_basedir}
+if [[ -z "${BASEDIR}" ]]; then
+  # Goobuntu machines have a standard path for "local" disk as the home
+  # directory is often stored elsewhere (NFS or something more exotic.)
+  if [[ -d "/usr/local/google" ]]; then
+    BASEDIR="/usr/local/google/$USER"
+  else
+    BASEDIR="$HOME/anago"
+  fi
+fi
 
 # TODO:
 # These KUBE_ globals extend beyond the scope of the new release refactored

@@ -49,7 +49,7 @@ release::get_job_cache () {
     ((dedup)) && [[ $version == $lastversion ]] && continue
     echo "$version $buildnumber"
     lastversion=$version
-  done < <(jq -r '.[] | select(.result == "SUCCESS") | select(.version != "") | [.version,.buildnumber] | "\(.[0]) \(.[1])"' $tempjson |\
+  done < <(jq -r '.[] | select(.result == "SUCCESS") | select(.version != "") | [.version,.buildnumber] | "\(.[0]|rtrimstr("\n")) \(.[1])"' $tempjson |\
    LC_ALL=C sort -rn -k2,2) |\
   while read version buildnumber; do
     [[ -n $buildnumber && -n $version ]] && echo "JOB[$buildnumber]=$version"
@@ -312,7 +312,7 @@ release::set_release_version () {
 
   release_branch[major]=${BASH_REMATCH[1]}
   release_branch[minor]=${BASH_REMATCH[2]}
-  
+
   # if branch == master, version is an alpha
   # if branch == release, version is a beta
   # if branch == release+1, version is an alpha
@@ -795,7 +795,7 @@ release::docker::release () {
   logecho
   logecho "Send docker containers to $registry..."
 
-  # 'gcloud docker' gives lots of internal_failure's so add retries to 
+  # 'gcloud docker' gives lots of internal_failure's so add retries to
   # all of the invocations
   for arch in "${KUBE_SERVER_PLATFORMS[@]##*/}"; do
     for binary in "${binaries[@]}"; do
