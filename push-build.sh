@@ -44,6 +44,8 @@ PROG=${0##*/}
 #+     [--federation]            - Enable FEDERATION push
 #+     [--ci]                    - Used when called from Jekins (for ci runs)
 #+     [--bucket=]               - Specify an alternate bucket for pushes
+#+     [--release-type=]         - Override auto-detected release type
+#+                                 (normally devel or ci)
 #+     [--gcs-suffix=]           - Specify a suffix to append to the upload
 #+                                 destination on GCS.
 #+     [--version-suffix=]       - Append suffix to version name if set.
@@ -121,6 +123,7 @@ fi
 
 GCS_DEST="devel"
 ((FLAGS_ci)) && GCS_DEST="ci"
+GCS_DEST=${FLAGS_release_type:-$GCS_DEST}
 GCS_DEST+="$FLAGS_gcs_suffix"
 
 if ((FLAGS_nomock)); then
