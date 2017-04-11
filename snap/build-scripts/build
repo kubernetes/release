@@ -9,7 +9,7 @@ if [ -z "$KUBE_SNAP_BINS" ]; then
   export KUBE_SNAP_BINS=build/kube_bins/$KUBE_VERSION
   mkdir -p $KUBE_SNAP_BINS
   cd $KUBE_SNAP_BINS
-  for app in kubectl kube-apiserver kube-controller-manager kube-scheduler kubelet kube-proxy kubeadm; do
+  for app in $apps; do
     curl -LO \
       https://dl.k8s.io/${KUBE_VERSION}/bin/linux/amd64/$app
     chmod +x $app
