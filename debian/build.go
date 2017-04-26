@@ -20,6 +20,8 @@ const (
 	ChannelStable   ChannelType = "stable"
 	ChannelUnstable ChannelType = "unstable"
 	ChannelNightly  ChannelType = "nightly"
+
+	cniVersion = "0.5.1"
 )
 
 type work struct {
@@ -60,6 +62,7 @@ var (
 	architectures = stringList{"amd64", "arm", "arm64", "ppc64le", "s390x"}
 	serverDistros = stringList{"xenial"}
 	allDistros    = stringList{"xenial", "jessie", "precise", "sid", "stretch", "trusty", "utopic", "vivid", "wheezy", "wily", "yakkety"}
+	kubeVersion   = ""
 
 	builtins = map[string]interface{}{
 		"date": func() string {
@@ -74,6 +77,7 @@ func init() {
 	flag.Var(&architectures, "arch", "Architectures to build for.")
 	flag.Var(&serverDistros, "server-distros", "Server distros to build for.")
 	flag.Var(&allDistros, "distros", "Distros to build for.")
+	flag.StringVar(&kubeVersion, "kube-version", "", "Distros to build for.")
 }
 
 func runCommand(pwd string, command string, cmdArgs ...string) error {
@@ -321,17 +325,17 @@ func main() {
 			Distros: serverDistros,
 			Versions: []version{
 				{
-					Version:  "0.5.1",
+					Version:  cniVersion,
 					Revision: "00",
 					Channel:  ChannelStable,
 				},
 				{
-					Version:  "0.5.1",
+					Version:  cniVersion,
 					Revision: "00",
 					Channel:  ChannelUnstable,
 				},
 				{
-					Version:  "0.5.1",
+					Version:  cniVersion,
 					Revision: "00",
 					Channel:  ChannelNightly,
 				},
@@ -361,6 +365,61 @@ func main() {
 				},
 			},
 		},
+	}
+
+	if kubeVersion != "" {
+		getSpecifiedVersion := func() (string, error) {
+			return kubeVersion, nil
+		}
+		builds = []build{
+			{
+				Package: "kubectl",
+				Distros: allDistros,
+				Versions: []version{
+					{
+						GetVersion:          getSpecifiedVersion,
+						Revision:            "00",
+						Channel:             ChannelStable,
+						GetDownloadLinkBase: getReleaseDownloadLinkBase,
+					},
+				},
+			},
+			{
+				Package: "kubelet",
+				Distros: serverDistros,
+				Versions: []version{
+					{
+						GetVersion:          getSpecifiedVersion,
+						Revision:            "00",
+						Channel:             ChannelStable,
+						GetDownloadLinkBase: getReleaseDownloadLinkBase,
+					},
+				},
+			},
+			{
+				Package: "kubernetes-cni",
+				Distros: serverDistros,
+				Versions: []version{
+					{
+						Version:  cniVersion,
+						Revision: "00",
+						Channel:  ChannelStable,
+					},
+				},
+			},
+			{
+				Package: "kubeadm",
+				Distros: serverDistros,
+				Versions: []version{
+					{
+						GetVersion:          getSpecifiedVersion,
+						Revision:            "00",
+						Channel:             ChannelStable,
+						GetDownloadLinkBase: getReleaseDownloadLinkBase,
+					},
+				},
+			},
+		}
 	}
 
 	if err := walkBuilds(builds, func(pkg, distro, arch string, v version) error {
