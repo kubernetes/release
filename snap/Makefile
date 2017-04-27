@@ -4,7 +4,7 @@ ifndef VERBOSE
 	MAKEFLAGS += --no-print-directory
 endif
 
-targets = kubectl kube-apiserver kube-controller-manager kube-scheduler kubelet kube-proxy kubeadm kubefed
+targets = kubectl kube-apiserver kube-controller-manager kube-scheduler kubelet kube-proxy kubeadm kubefed kubernetes-test
 
 build = ./build-scripts/build
 
@@ -39,3 +39,6 @@ kubelet:
 
 kube-proxy:
 	@KUBE_VERSION=${KUBE_VERSION} ${build} kube-proxy
+
+kubernetes-test:
+	@KUBE_VERSION=${KUBE_VERSION} ${build} kubernetes-test

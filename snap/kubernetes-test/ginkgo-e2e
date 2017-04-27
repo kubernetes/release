@@ -1,0 +1,13 @@
+#!/bin/bash
+set -eu
+
+GINKGO_ARGS="${GINKGO_ARGS:-}"
+
+# e2e.test needs to be placed in a directory we have write access to.
+# Otherwise, some of the tests will fail.
+TEMP_DIR="/tmp/cdk-test.ginkgo-e2e"
+rm -rf "$TEMP_DIR"
+mkdir "$TEMP_DIR"
+cp "$SNAP/e2e.test" "$TEMP_DIR"
+
+exec "$SNAP/ginkgo" $GINKGO_ARGS "$TEMP_DIR/e2e.test" -- "$@"

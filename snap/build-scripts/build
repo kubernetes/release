@@ -8,13 +8,18 @@ if [ -z "$KUBE_SNAP_BINS" ]; then
   echo "KUBE_SNAP_BINS is not set, downloading binaries from upstream"
   export KUBE_SNAP_BINS=build/kube_bins/$KUBE_VERSION
   mkdir -p $KUBE_SNAP_BINS
-  cd $KUBE_SNAP_BINS
-  for app in $apps; do
-    curl -LO \
-      https://dl.k8s.io/${KUBE_VERSION}/bin/linux/amd64/$app
-    chmod +x $app
-  done
-  cd ../../..
+  (cd $KUBE_SNAP_BINS
+    for app in $apps; do
+      if [ "$app" = "kubernetes-test" ]; then
+        curl -LO \
+          https://dl.k8s.io/${KUBE_VERSION}/kubernetes-test.tar.gz
+      else
+        curl -LO \
+          https://dl.k8s.io/${KUBE_VERSION}/bin/linux/amd64/$app
+        chmod +x $app
+      fi
+    done
+  )
 fi
 
 export KUBE_SNAP_ROOT="$(readlink -f .)"
