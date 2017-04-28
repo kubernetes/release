@@ -1,4 +1,5 @@
 name: kube-apiserver
+architectures: ['KUBE_ARCH']
 version: 'KUBE_VERSION'
 summary: kube-apiserver
 description: kube-apiserver
@@ -25,6 +26,6 @@ parts:
     source: .
     prepare: |
       set -eu
-      cp $KUBE_SNAP_BINS/kube-apiserver .
+      cp $KUBE_SNAP_BINS/KUBE_ARCH/kube-apiserver .
       cp $KUBE_SNAP_ROOT/shared/run-with-config-args .
       $KUBE_SNAP_ROOT/shared/generate-configure-hook kube-apiserver

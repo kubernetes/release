@@ -11,12 +11,19 @@ if [ -z "$KUBE_SNAP_BINS" ]; then
   (cd $KUBE_SNAP_BINS
     for app in $apps; do
       if [ "$app" = "kubernetes-test" ]; then
+        echo "Fetching $app $KUBE_VERSION"
         curl -LO \
           https://dl.k8s.io/${KUBE_VERSION}/kubernetes-test.tar.gz
       else
-        curl -LO \
-          https://dl.k8s.io/${KUBE_VERSION}/bin/linux/amd64/$app
-        chmod +x $app
+        for arch in $KUBE_ARCH; do
+          mkdir -p $arch
+          (cd $arch
+            echo "Fetching $app $KUBE_VERSION $arch"
+            curl -LO \
+              https://dl.k8s.io/${KUBE_VERSION}/bin/linux/$arch/$app
+            chmod +x $app
+          )
+        done
       fi
     done
   )
@@ -26,14 +33,17 @@ export KUBE_SNAP_ROOT="$(readlink -f .)"
 export KUBE_SNAP_BINS="$(readlink -f $KUBE_SNAP_BINS)"
 
 for app in $apps; do
-  echo "Building $app $KUBE_VERSION from $KUBE_SNAP_BINS"
+  for arch in $KUBE_ARCH; do
+    echo "Building $app $KUBE_VERSION for $arch from $KUBE_SNAP_BINS"
 
-  build_dir=build/$app
-  rm -rf $build_dir
-  mkdir -p $build_dir
+    build_dir=build/$app
+    rm -rf $build_dir
+    mkdir -p $build_dir
 
-  sed "s/KUBE_VERSION/${KUBE_VERSION:1}/g" $app.yaml > $build_dir/snapcraft.yaml
+    sed "s/KUBE_VERSION/${KUBE_VERSION:1}/g" $app.yaml > $build_dir/snapcraft.yaml
+    sed -i "s/KUBE_ARCH/$arch/g" $build_dir/snapcraft.yaml
 
-  (cd $build_dir && snapcraft)
-  mv $build_dir/*.snap build
+    (cd $build_dir && snapcraft)
+    mv $build_dir/*.snap build
+  done
 done
