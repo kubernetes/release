@@ -32,7 +32,7 @@ function config-arg-bool {
 
 EOF
 
-$KUBE_SNAP_BINS/$app -h 2>&1 | grep '\-\-' | perl -pe 's/.*?--(\S+ \S*).*/\1/' | while read line; do
+./$app -h 2>&1 | grep '\-\-' | perl -pe 's/.*?--(\S+ \S*).*/\1/' | while read line; do
   if [ $(echo "$line" | wc -w) -eq 2 ]; then
     key=$(echo "$line" | cut -d ' ' -f 1)
     echo "config-arg $key" >> meta/hooks/configure
