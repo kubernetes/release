@@ -920,6 +920,13 @@ if [[ -n "$PARENT_BRANCH" ]]; then
   logecho "$ATTENTION: $RELEASE_BRANCH is a NEW branch off $PARENT_BRANCH!"
 fi
 
+if ! ((FLAGS_nomock)); then
+  logecho
+  logecho "$ATTENTION: This is a mock (--mock) run." \
+          "Publishing will be based on the above values for" \
+          "RELEASE_BUCKET and GCRIO_REPO."
+fi
+
 logecho
 ((FLAGS_yes)) || common::askyorn -e "Do these values look ok for a release" \
  || common::exit 1 "Exiting..."
