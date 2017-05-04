@@ -397,31 +397,38 @@ release::set_release_version () {
 }
 
 ###############################################################################
-# Create GCS bucket for releasing Kube if necessary. Ensure that the default
+# Create GCS bucket for publishing. Ensure that the default
 # ACL allows public reading of artifacts.
+#
 # @param bucket - The gs release bucket name
 # @return 1 if bucket can't be made
 release::gcs::ensure_release_bucket() {
   local bucket=$1
-  local current_defacl
-  local new_acl_file
+  local tempfile=/tmp/$PROG-gcs-write.$$
 
   if ! $GSUTIL ls "gs://$bucket" >/dev/null 2>&1 ; then
     logecho -n "Creating Google Cloud Storage bucket $bucket: "
     logrun -s $GSUTIL mb -p "$GCLOUD_PROJECT" "gs://$bucket" || return 1
-    logecho -n "Adding public-read default ACL on bucket $bucket: "
+  fi
+
+  # Bootstrap security release flow by making bucket visibility private
+  # in that case
+  if [[ "$PARENT_BRANCH" =~ release- ]]; then
+    logecho "[SECURITY RELEASE] Default private-read ACL on bucket $bucket"
+  else
+    logecho -n "Ensure public-read default ACL on bucket $bucket: "
     logrun -s $GSUTIL defacl ch -u AllUsers:R "gs://$bucket" || return 1
   fi
 
-  if [[ $($GSUTIL defacl get "gs://$bucket" 2>/dev/null | python -c '\
-          import sys,json;\
-          print " ".join(x["role"] for x in json.load(sys.stdin) if x["entity"] == "allUsers")')\
-        != 'READER' ]]; then
-    logecho "GCS bucket $bucket is missing default public-read ACL,"
-    logecho "or you lack permission to see the default ACL."
-    logecho "Please run"
-    logecho "  gsutil defacl ch -u AllUsers:R gs://$bucket"
-    logecho "and try again."
+  logecho -n "Checking write access to bucket $bucket: "
+  if logrun touch $tempfile && \
+     logrun $GSUTIL cp $tempfile gs://$bucket && \
+     logrun $GSUTIL rm gs://$bucket/${tempfile##*/} && \
+     logrun rm -f $tempfile; then
+    logecho $OK
+  else
+    logecho "$FAILED: You do not have access/write permission on $bucket." \
+            "Unable to continue."
     return 1
   fi
 }

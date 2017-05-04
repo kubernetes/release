@@ -196,7 +196,6 @@ check_acls () {
 #
 check_prerequisites () {
   local userat="$USER@$DOMAIN_NAME"
-  local tempfile=/tmp/$PROG-cp.$$
 
   security_layer::auth_check 2
 
@@ -242,19 +241,7 @@ check_prerequisites () {
   GCLOUD_ACCOUNT=$user
 
   # Verify write access to $RELEASE_BUCKET
-  # Insufficient for checking actual writability, but useful:
-  # ganpati list-members -g cloud-kubernetes-release -u $USER|fgrep -wq $USER
-  logecho -n "Checking writability and ACLs on $RELEASE_BUCKET: "
-  if release::gcs::ensure_release_bucket $RELEASE_BUCKET && \
-     logrun touch $tempfile && \
-     logrun $GSUTIL cp $tempfile gs://$RELEASE_BUCKET && \
-     logrun $GSUTIL rm gs://$RELEASE_BUCKET/${tempfile##*/} && \
-     logrun rm -f $tempfile; then
-    logecho -r "$OK"
-  else
-    logecho -r "$FAILED"
-    return 1
-  fi
+  release::gcs::ensure_release_bucket $RELEASE_BUCKET || return 1
 
   logecho -n "Checking cloud project state: "
   GCLOUD_PROJECT=$($GCLOUD config list project 2>/dev/null |\
