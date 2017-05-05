@@ -452,6 +452,27 @@ release::gcs::stage_and_hash() {
 }
 
 ###############################################################################
+# Prepare the local staging directory and ensure the destination directory
+# doesn't already exist.
+# @param gcs_stage - local staging directory
+# @param gcs_destination - GCS destination directory
+# @return 1 on failure or if GCS destination already exists
+release::gcs::prepare_for_copy() {
+  local gcs_stage=$1
+  local gcs_destination=$2
+
+  logrun rm -rf $gcs_stage || return 1
+  logrun mkdir -p $gcs_stage || return 1
+
+  logecho "- Checking whether $gcs_destination already exists..."
+  if $GSUTIL ls $gcs_destination >/dev/null 2>&1 ; then
+    logecho "- Destination exists. To remove, run:"
+    logecho -n "  gsutil -m rm -r $gcs_destination\n"
+    return 1
+  fi
+}
+
+###############################################################################
 # Copy the release artifacts to staging and push them up to GS
 # @param build_type - One of 'release' or 'ci'
 # @param version - The version
@@ -474,17 +495,16 @@ release::gcs::copy_release_artifacts() {
   local gce_path=$release_stage/full/kubernetes/cluster/gce
   local gci_path
 
+  logecho "Publish release artifacts to gs://$bucket..."
+
+  release::gcs::prepare_for_copy $gcs_stage $gcs_destination || return 1
+
   # GCI path changed in 1.2->1.3 time period
   if [[ -d $gce_path/gci ]]; then
     gci_path=$gce_path/gci
   else
     gci_path=$gce_path/trusty
   fi
-
-  logrun rm -rf $gcs_stage || return 1
-  logrun mkdir -p $gcs_stage || return 1
-
-  logecho "Publish release artifacts to gs://$bucket..."
 
   # Stage everything in release directory
   logecho "- Staging locally to ${gcs_stage##$build_output/}..."
@@ -527,13 +547,6 @@ release::gcs::copy_release_artifacts() {
     common::md5 $path > "$path.md5" || return 1
     common::sha $path 1 > "$path.sha1" || return 1
   done
-
-  logecho "- Checking whether $gcs_destination already exists..."
-  if $GSUTIL ls $gcs_destination >/dev/null 2>&1 ; then
-    logecho "- Destination exists. Assuming artifacts at destination are correct. If not, run:"
-    logecho -n "  gsutil -m rm -r $gcs_destination\n"
-    return 0
-  fi
 
   # Copy the main set from staging to destination
   # We explicitly don't set an ACL in the cp call, since doing so will override
@@ -832,4 +845,54 @@ release::docker::release () {
   if [[ "$registry" == "gcr.io/google_containers" ]]; then
     logrun $GCLOUD config set account $USER@google.com
   fi
+}
+
+###############################################################################
+# Determine whether the release was most recently built with Bazel.
+# This is achieved by looking for the most recent kubernetes.tar.gz tarball
+# in both the dockerized and Bazel output trees.
+# @param kube_root - Root of kubernetes tree
+# @return 0 if built with Bazel, 1 otherwise
+release::was_built_with_bazel() {
+  local kube_root=$1
+  local most_recent_release_tar=$( (ls -t \
+    $kube_root/{_output,bazel-bin/build}/release-tars/kubernetes.tar.gz \
+    2>/dev/null || true) | head -n 1)
+
+  [[ $most_recent_release_tar =~ /bazel-bin/ ]]
+}
+
+###############################################################################
+# Copy the release artifacts to a local staging dir and push them up to GCS
+# using the Bazel "push-build" rule.
+# @param build_type - One of 'release' or 'ci'
+# @param version - The version
+# @param build_output - legacy build output directory; artifacts will be copied
+#                       here for use by CI
+# @param bucket - GS bucket
+# @return 1 on failure
+release::gcs::bazel_push_build() {
+  local build_type=$1
+  local version=$2
+  local build_output=$3
+  local bucket=$4
+  # We don't need to locally stage, but CI uses this.
+  # TODO: make it configurable whether we also stage locally
+  local gcs_stage=$build_output/gcs-stage/$version
+  local gcs_destination=gs://$bucket/$build_type/$version
+
+  logecho "Publish release artifacts to gs://$bucket using Bazel..."
+  release::gcs::prepare_for_copy $gcs_stage $gcs_destination || return 1
+
+  logecho "- Hashing and copying public release artifacts to $gcs_destination: "
+  bazel run //:push-build $gcs_stage $gcs_destination || return 1
+
+  # This small sleep gives the eventually consistent GCS bucket listing a chance
+  # to stabilize before the diagnostic listing. There's no way to directly
+  # query for consistency, but it's OK if something is dropped from the
+  # debugging output.
+  sleep 5
+
+  logecho -n "- Listing final contents to log file: "
+  logrun -s $GSUTIL ls -lhr "$gcs_destination" || return 1
 }

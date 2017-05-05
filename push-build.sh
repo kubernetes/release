@@ -98,6 +98,9 @@ RELEASE_BUCKET=${FLAGS_bucket:-"kubernetes-release-dev"}
 # Compatibility with incoming global args
 [[ $KUBE_GCS_UPDATE_LATEST == "n" ]] && FLAGS_noupdatelatest=1
 
+# This will canonicalize the path
+KUBE_ROOT=$(pwd -P)
+
 KUBECTL_OUTPUT=$(cluster/kubectl.sh version --client 2>&1 || true)
 if [[ "$KUBECTL_OUTPUT" =~ GitVersion:\"(${VER_REGEX[release]}(\.${VER_REGEX[build]})?(-dirty)?)\", ]]; then
   LATEST=${BASH_REMATCH[1]}
@@ -117,6 +120,22 @@ else
   common::exit 1
 fi
 
+USE_BAZEL=false
+if release::was_built_with_bazel $KUBE_ROOT; then
+  USE_BAZEL=true
+  # The Bazel push-build rule will recompile if necessary, which means that the
+  # version string from kubectl might be out-of-date. Let's explicitly verify
+  # that the version we got from kubectl is correct.
+  logecho "Checking that Bazel build is up-to-date"
+  bazel build //:version
+  BAZEL_LATEST=$(cat $KUBE_ROOT/bazel-genfiles/version)
+  if [[ $BAZEL_LATEST != $LATEST ]]; then
+    logecho "kubectl version $LATEST doesn't match Bazel version $BAZEL_LATEST."
+    logecho "Do you need to rebuild?"
+    common::exit 1
+  fi
+fi
+
 if [[ -n "${FLAGS_version_suffix:-}" ]]; then
   LATEST+="-${FLAGS_version_suffix}"
 fi
@@ -134,9 +153,6 @@ else
   # Point to a $USER playground
   RELEASE_BUCKET+=-$USER
 fi
-
-# This will canonicalize the path
-KUBE_ROOT=$(pwd -P)
 
 ##############################################################################
 common::stepheader CHECK PREREQUISITES
@@ -159,8 +175,13 @@ common::stepheader COPY RELEASE ARTIFACTS
 ##############################################################################
 attempt=0
 while ((attempt<max_attempts)); do
-  release::gcs::copy_release_artifacts $GCS_DEST $LATEST $KUBE_ROOT/_output \
-                                       $RELEASE_BUCKET && break
+  if $USE_BAZEL; then
+    release::gcs::bazel_push_build $GCS_DEST $LATEST $KUBE_ROOT/_output \
+                                   $RELEASE_BUCKET && break
+  else
+    release::gcs::copy_release_artifacts $GCS_DEST $LATEST $KUBE_ROOT/_output \
+                                         $RELEASE_BUCKET && break
+  fi
   ((attempt++))
 done
 ((attempt>=max_attempts)) && common::exit 1 "Exiting..."
