@@ -1,6 +1,6 @@
 name: kubernetes-test
-architectures: ['KUBE_ARCH']
-version: 'KUBE_VERSION'
+architectures: ['$SNAP_ARCH']
+version: '$KUBE_VERSION'
 summary: tests for kubernetes
 description: |
   tests for kubernetes
@@ -26,8 +26,8 @@ parts:
       mkdir build-temp
       (cd build-temp
         tar -xf "$KUBE_SNAP_BINS/kubernetes-test.tar.gz"
-        mv kubernetes/platforms/linux/KUBE_ARCH/e2e.test ..
-        mv kubernetes/platforms/linux/KUBE_ARCH/ginkgo ..
+        mv kubernetes/platforms/linux/$KUBE_ARCH/e2e.test ..
+        mv kubernetes/platforms/linux/$KUBE_ARCH/ginkgo ..
       )
       rm -rf build-temp
       chmod +rx e2e.test

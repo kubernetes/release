@@ -1,6 +1,6 @@
 name: kubectl
-architectures: ['KUBE_ARCH']
-version: 'KUBE_VERSION'
+architectures: ['$SNAP_ARCH']
+version: '$KUBE_VERSION'
 summary: kubectl controls the Kubernetes cluster manager.
 description: |
   kubectl is a command line interface for running commands against Kubernetes
@@ -18,4 +18,4 @@ parts:
     source: .
     prepare: |
       set -eu
-      cp $KUBE_SNAP_BINS/KUBE_ARCH/kubectl .
+      cp $KUBE_SNAP_BINS/$KUBE_ARCH/kubectl .

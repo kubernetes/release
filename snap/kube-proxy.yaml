@@ -1,6 +1,6 @@
 name: kube-proxy
-architectures: ['KUBE_ARCH']
-version: 'KUBE_VERSION'
+architectures: ['$SNAP_ARCH']
+version: '$KUBE_VERSION'
 summary: Kubernetes network proxy runs on each node.
 description: |
   The Kubernetes network proxy runs on each node. This reflects services as
@@ -26,6 +26,6 @@ parts:
     source: .
     prepare: |
       set -eu
-      cp $KUBE_SNAP_BINS/KUBE_ARCH/kube-proxy .
+      cp $KUBE_SNAP_BINS/$KUBE_ARCH/kube-proxy .
       cp $KUBE_SNAP_ROOT/shared/run-with-config-args .
       $KUBE_SNAP_ROOT/shared/generate-configure-hook kube-proxy

@@ -1,6 +1,6 @@
 name: kube-scheduler
-architectures: ['KUBE_ARCH']
-version: 'KUBE_VERSION'
+architectures: ['$SNAP_ARCH']
+version: '$KUBE_VERSION'
 summary: kube-scheduler controls the Kubernetes cluster manager.
 description: |
   kube-scheduler is a command line interface for running commands against Kubernetes
@@ -28,6 +28,6 @@ parts:
     source: .
     prepare: |
       set -eu
-      cp $KUBE_SNAP_BINS/KUBE_ARCH/kube-scheduler .
+      cp $KUBE_SNAP_BINS/$KUBE_ARCH/kube-scheduler .
       cp $KUBE_SNAP_ROOT/shared/run-with-config-args .
       $KUBE_SNAP_ROOT/shared/generate-configure-hook kube-scheduler
