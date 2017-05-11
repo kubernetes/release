@@ -1,5 +1,5 @@
-%global KUBE_VERSION 1.6.2
-%global CNI_RELEASE 0799f5732f2a11b329d9e3d51b9c8f2e3759f2ff
+%global KUBE_VERSION 1.6.3
+%global CNI_RELEASE 137b4975ecab6e1f0c24c1e3c228a50a3cfba75e
 %global RPM_RELEASE 0
 %global ARCH amd64
 
@@ -33,7 +33,7 @@ The node agent of Kubernetes, the container cluster manager.
 
 %package -n kubernetes-cni
 
-Version: 0.5.1
+Version: 0.5.2
 Release: %{RPM_RELEASE}
 Summary: Binaries required to provision kubernetes container networking
 Requires: kubelet
