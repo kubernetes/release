@@ -157,18 +157,15 @@ get_prs_by_label () {
   local total
   local current_page
   local num_pages
-  local prs_per_page
+  local prs_per_page=100
 
-  prs_per_page=100
-
-  matching_prs="$($GHCURL ${K8S_GITHUB_SEARCHAPI}label:${label}&per_page=1)"
-
+  matching_prs="$($GHCURL ${K8S_GITHUB_SEARCHAPI}label:${label}%20base:${CURRENT_BRANCH}&per_page=1)"
   total="$(echo -n $matching_prs | jq -r '.total_count')"
   # Calculate number of pages, rounding up
   num_pages=$(((total + prs_per_page - 1) / prs_per_page ))
 
-  for current_page in `seq 1 $num_pages`; do
-    prs+=($($GHCURL "${K8S_GITHUB_SEARCHAPI}label:${label}&page=$current_page" | jq -r '.items[] | (.number | tostring)'))
+  for ((current_page=1; current_page<=num_pages; current_page++)); do
+    prs+=($($GHCURL "${K8S_GITHUB_SEARCHAPI}label:${label}%20base:${CURRENT_BRANCH}&page=$current_page" | jq -r '.items[] | (.number | tostring)'))
   done
   echo "${prs[@]}"
 }
@@ -229,9 +226,12 @@ create_body () {
     echo "## Downloads for $title"
     echo
     create_downloads_table "" $release_tars/kubernetes{,-src}.tar.gz
-    create_downloads_table "Client Binaries" ${release_tars}/kubernetes-client*.tar.gz
-    create_downloads_table "Server Binaries" ${release_tars}/kubernetes-server*.tar.gz
-    create_downloads_table "Node Binaries" ${release_tars}/kubernetes-node*.tar.gz
+    create_downloads_table "Client Binaries" \
+                           $release_tars/kubernetes-client*.tar.gz
+    create_downloads_table "Server Binaries" \
+                           $release_tars/kubernetes-server*.tar.gz
+    create_downloads_table "Node Binaries" \
+                           $release_tars/kubernetes-node*.tar.gz
   fi
   cat $PR_NOTES
 }
