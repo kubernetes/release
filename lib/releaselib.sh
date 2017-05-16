@@ -341,10 +341,16 @@ release::set_release_version () {
   elif [[ "$parent_branch" =~ release- ]]; then
     # When we do branched branches we end up with two betas so deal with it
     # by creating a couple of beta indexes.
+    # beta0 is the branch-point-minor + 1 + beta.1 because
+    # branch-point-minor +1 +beta.0 already exists. This tag lands on the new
+    # branch.
+    # beta1 is the branch-point-minor + 2 + beta.0 to continue the next version
+    # on the parent/source branch.
     RELEASE_VERSION[beta0]="v${build_version[major]}.${build_version[minor]}"
-    RELEASE_VERSION[beta0]+=".${build_version[patch]}-beta.1"
+    RELEASE_VERSION[beta0]+=".$((${build_version[patch]}+1))-beta.1"
     RELEASE_VERSION[beta1]="v${build_version[major]}.${build_version[minor]}"
-    RELEASE_VERSION[beta1]+=".$((${build_version[patch]}+1))-beta.0"
+    # Need to increment N+2 here.  N+1-beta.0 exists as an artifact of N.
+    RELEASE_VERSION[beta1]+=".$((${build_version[patch]}+2))-beta.0"
     RELEASE_VERSION_PRIME="${RELEASE_VERSION[beta0]}"
   elif [[ $branch =~ release- ]]; then
     # Build out the RELEASE_VERSION dict
