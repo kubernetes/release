@@ -144,10 +144,6 @@ if ((FLAGS_rc)) || ((FLAGS_official)); then
   if [[ "$RELEASE_BRANCH" == "master" ]]; then
     common::exit 1 "Can't do release candidate or official releases on master!"
   fi
-else
-  if [[ -n ${BASH_REMATCH[4]} ]]; then
-    common::exit 1 "Only --official releases are allowed on 3-part branches!"
-  fi
 fi
 
 if ((FLAGS_rc)) && ((FLAGS_official)); then
@@ -650,6 +646,9 @@ get_build_candidate () {
     # If the branch is a 3-part branch (ie. release-1.2.3)
     if [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]] && \
        [[ -n ${BASH_REMATCH[4]} ]]; then
+      ((FLAGS_official)) \
+       || common::exit 1 "--official required on 3-part branches!"
+
       # The 'missing' . here between 2 and 3 is intentional. It's part of the
       # optional regex.
       BRANCH_POINT=v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}${BASH_REMATCH[3]}
@@ -658,7 +657,7 @@ get_build_candidate () {
   else
     [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]]
 
-    # Not a 3 part branch
+    # Not a 3-part branch
     if [[ -z "${BASH_REMATCH[4]}" ]]; then
       if ((FLAGS_official)); then
         common::exit 1 "Can't do official releases when creating a new branch!"
@@ -870,7 +869,6 @@ logrun mkdir -p $WORKDIR
 ##############################################################################
 common::stepheader "DISK SPACE CHECK"
 ##############################################################################
-# 18G per build
 common::disk_space_check $BASEDIR $((30*${#RELEASE_VERSION[*]})) ||\
  common::exit 1 "Exiting..."
 
@@ -896,7 +894,10 @@ if [[ -n $BRANCH_POINT ]]; then
 else
   DISPLAY_VERSION="JENKINS_BUILD_VERSION"
 fi
-common::printvars -p WORKDIR WORKDIR TREE_ROOT $DISPLAY_VERSION \
+[[ -n $PARENT_BRANCH ]] && DISPLAY_PARENT_BRANCH="PARENT_BRANCH"
+
+common::printvars -p WORKDIR WORKDIR TREE_ROOT $DISPLAY_PARENT_BRANCH \
+                     $DISPLAY_VERSION \
                      RELEASE_VERSION_PRIME ${ALL_RELEASE_VERSIONS[@]} \
                      RELEASE_BRANCH GCRIO_REPO RELEASE_BUCKET \
                      FLAGS_nomock FLAGS_noclean FLAGS_rc FLAGS_official \
