@@ -258,9 +258,13 @@ check_prerequisites () {
 rev_version_base () {
   local label=$1
   local version_file="pkg/version/base.go"
+  local staging_file="staging/src/k8s.io/client-go/$version_file"
+  local -a swagger_files=("api/openapi-spec/swagger.json"
+                          "federation/apis/openapi-spec/swagger.json")
   local minor_plus
   local gitmajor
   local gitminor
+  local f
 
   logecho "Updating $version_file to ${RELEASE_VERSION[$label]}..."
 
@@ -278,8 +282,28 @@ rev_version_base () {
   logecho -n "Formatting $version_file: "
   logrun -s gofmt -s -w $version_file
   logrun git add $version_file
-  logecho -n "Committing $version_file: "
-  logrun -s git commit -m "Kubernetes version ${RELEASE_VERSION[$label]}"
+  if [[ -f $staging_file ]]; then
+    logrun cp $version_file $staging_file
+    logrun git add $staging_file
+  fi
+
+  #########################################################################
+  # NOTE: To avoid a significant time sink from running update-all.sh as
+  #       well as avoiding running the master-only doc stub creator
+  #       update-generated-docs.sh, we simply and quickly modify the files that
+  #       are dependent on a $version_file change
+  #       If/when the great update-all.sh revolution occurs and this runs in
+  #       under a minute, we can probably run that instead.
+  #########################################################################
+  for f in ${swagger_files[*]}; do
+    # Strip any suffix off incoming RELEASE_VERSION[$label]
+    sed -i 's,"version": "'${VER_REGEX[release]}'","version": "'${RELEASE_VERSION[$label]//-*}'",g' $f
+    logrun git add $f
+  done
+
+  logecho -n "Committing versioned files: "
+  logrun -s git commit -am \
+                "Kubernetes version ${RELEASE_VERSION[$label]} file updates"
 }
 
 
@@ -369,7 +393,7 @@ prepare_tree () {
 
   # rev base.go
   case $label in
-    beta*|rc|official) rev_version_base $label ;;
+    beta*|rc|official) rev_version_base $label || return 1 ;;
   esac
 
   # generate docs on new branches (from master) only
