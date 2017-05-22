@@ -240,8 +240,7 @@ check_prerequisites () {
   release::gcs::ensure_release_bucket $RELEASE_BUCKET || return 1
 
   logecho -n "Checking cloud project state: "
-  GCLOUD_PROJECT=$($GCLOUD config list project 2>/dev/null |\
-                   awk '/^project = / {project = $3} END {print project}')
+  GCLOUD_PROJECT=$($GCLOUD config get-value project 2>/dev/null)
   if [[ -z "$GCLOUD_PROJECT" ]]; then
     logecho -r "$FAILED"
     logecho "No account authorized through gcloud.  Please fix with:"
