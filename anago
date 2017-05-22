@@ -241,7 +241,7 @@ check_prerequisites () {
 
   logecho -n "Checking cloud project state: "
   GCLOUD_PROJECT=$($GCLOUD config list project 2>/dev/null |\
-                   awk '{project = $3} END {print project}')
+                   awk '/^project = / {project = $3} END {print project}')
   if [[ -z "$GCLOUD_PROJECT" ]]; then
     logecho -r "$FAILED"
     logecho "No account authorized through gcloud.  Please fix with:"
