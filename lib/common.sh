@@ -776,6 +776,15 @@ common::strip_control_characters () {
 }
 
 ###############################################################################
+# General log sanitizer
+# @param file text file
+common::sanitize_log () {
+  local file=$1
+
+  sed -ri 's/[a-f0-9]\{40\}:x-oauth-basic/__SANITIZED__:x-oauth-basic/g' $file
+}
+
+###############################################################################
 # Print a number of characters (with no newline)
 # @param char single character
 # @param num number to print
