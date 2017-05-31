@@ -35,9 +35,11 @@ TOOL_LIB_PATH=${TOOL_LIB_PATH:-$(dirname $(readlink -ne $BASH_SOURCE))}
 TOOL_ROOT=${TOOL_ROOT:-$(readlink -ne $TOOL_LIB_PATH/..)}
 PATH=$TOOL_ROOT:$PATH
 LOCAL_CACHE="/tmp/buildresults-cache.$$"
+# Set locale to POSIX for perl commands
+LANG=C
 # Provide a default EDITOR for those that don't have this set
 : ${EDITOR:="vi"}
-export PATH TOOL_ROOT TOOL_LIB_PATH EDITOR
+export PATH TOOL_ROOT TOOL_LIB_PATH EDITOR LANG
 
 # Pretty curses stuff for terminals
 if [[ -t 1 ]]; then
