@@ -104,6 +104,7 @@ KUBE_ROOT=$(pwd -P)
 KUBECTL_OUTPUT=$(cluster/kubectl.sh version --client 2>&1 || true)
 if [[ "$KUBECTL_OUTPUT" =~ GitVersion:\"(${VER_REGEX[release]}(\.${VER_REGEX[build]})?(-dirty)?)\", ]]; then
   LATEST=${BASH_REMATCH[1]}
+  KUBE_DOCKER_VERSION=${LATEST//+/_}
   if ((FLAGS_ci)) && [[ "$KUBECTL_OUTPUT" =~ GitTreeState:\"dirty\" ]]; then
     logecho "Refusing to push dirty build with --ci flag given."
     logecho "CI builds should always be performed from clean commits."
@@ -209,8 +210,19 @@ if ((FLAGS_federation)); then
   common::stepheader PUSH FEDERATION
   ############################################################################
   logecho -n "Push federation images: "
-  # FEDERATION_PUSH_REPO_BASE should be set by the calling job (yaml)
-  logrun -s ${KUBE_ROOT}/federation/develop/push-federation-images.sh
+  GCLOUD_PROJECT=$($GCLOUD config list project --format 'value(core.project)')
+  if [[ -z "${GCLOUD_PROJECT}" ]]; then
+    logecho "No account authorized through gcloud. So using FEDERATION_PUSH_REPO_BASE to push images"
+    KUBE_DOCKER_REGISTRY=${FEDERATION_PUSH_REPO_BASE}
+  else
+    logecho "Account authorized through gcloud. So using GCLOUD_PROJECT to push images"
+    KUBE_DOCKER_REGISTRY="gcr.io/${GCLOUD_PROJECT}"
+  fi
+
+  release::docker::release \
+   ${KUBE_DOCKER_REGISTRY} \
+   ${KUBE_DOCKER_VERSION} \
+   || common::exit 1 "Exiting..."
 fi
 
 # END script
