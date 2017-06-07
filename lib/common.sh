@@ -35,11 +35,9 @@ TOOL_LIB_PATH=${TOOL_LIB_PATH:-$(dirname $(readlink -ne $BASH_SOURCE))}
 TOOL_ROOT=${TOOL_ROOT:-$(readlink -ne $TOOL_LIB_PATH/..)}
 PATH=$TOOL_ROOT:$PATH
 LOCAL_CACHE="/tmp/buildresults-cache.$$"
-# Set locale to POSIX for perl commands
-LANG=C
 # Provide a default EDITOR for those that don't have this set
 : ${EDITOR:="vi"}
-export PATH TOOL_ROOT TOOL_LIB_PATH EDITOR LANG
+export PATH TOOL_ROOT TOOL_LIB_PATH EDITOR
 
 # Pretty curses stuff for terminals
 if [[ -t 1 ]]; then
@@ -625,7 +623,7 @@ common::sha () {
   local file=$1
   local algo=${2:-1}
 
-  which shasum >/dev/null 2>&1 && shasum -a$algo $file | awk '{print $1}'
+  which shasum >/dev/null 2>&1 && LANG=C shasum -a$algo $file | awk '{print $1}'
 }
 
 # Check for and source security layer
