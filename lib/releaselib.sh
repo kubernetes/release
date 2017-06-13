@@ -82,6 +82,7 @@ release::get_job_cache () {
 release::set_build_version () {
   local branch=$1
   local job_path=${2:-"/tmp/buildresults-cache.$$"}
+  local -a exclude_suites=($3)
   local build_version
   local build_number
   local cache_build
@@ -89,49 +90,36 @@ release::set_build_version () {
   local build_sha1
   local run
   local n
+  local i
+  local re
   local giveup_build_number=999999
   local job_count=0
   local max_job_length
   local other_job
   local good_job
   local branch_head
-  local branch_suffix
-  local branch_version
-  if [[ $branch =~ release- ]]; then
-    branch_suffix="-$branch"
-    branch_version=${branch/release-/}
-  fi
-  local main_job="ci-kubernetes-e2e-gce$branch_suffix"
+  # The instructions below for installing yq put it in /usr/local/bin
+  local yq="/usr/local/bin/yq"
   local -a JOB
-  local -a gce_jobs=("ci-kubernetes-e2e-gce-serial$branch_suffix"
-                     "ci-kubernetes-e2e-gce-slow$branch_suffix"
-                     "ci-kubernetes-kubemark-5-gce$branch_suffix"
-                     "ci-kubernetes-e2e-gce-reboot$branch_suffix"
-                     "ci-kubernetes-e2e-gce-scalability$branch_suffix"
-                     "ci-kubernetes-test-go$branch_suffix"
-                    )
-  # Release branches don't have a special cross-build job. If we're considering
-  # a particular revision on a release branch, it must have built successfully.
-  # Also, the verify and kubelet jobs are named inconsistently.
-  if [[ -z $branch_suffix ]]; then
-    gce_jobs+=("ci-kubernetes-cross-build"
-               "ci-kubernetes-verify-master"
-               "ci-kubernetes-node-kubelet")
-  else
-    gce_jobs+=("ci-kubernetes-verify-$branch"
-               "ci-kubernetes-node-kubelet-$branch_version")
-  fi
+  local -a secondary_jobs
 
-  # kubernetes-e2e-gke-subnet - Uses a branch version?
-  # kubernetes-e2e-gke-test - Uses a branch version?
-  local -a gke_jobs=(
-                     "ci-kubernetes-e2e-gke-serial$branch_suffix"
-                     "ci-kubernetes-e2e-gke$branch_suffix"
-                     "ci-kubernetes-e2e-gke-slow$branch_suffix"
-                    )
+  # Deal with somewhat inconsistent naming in config.yaml
+  case $branch in
+   master) branch="release-master"
+  esac
 
-  # Combined list for cross-checking against $main_job
-  local -a secondary_jobs=(${gce_jobs[@]} ${gke_jobs[@]})
+  local -a all_jobs=($($GHCURL \
+   $K8S_GITHUB_RAW_ORG/test-infra/master/testgrid/config/config.yaml \
+   2>/dev/null |\
+   $yq -r '.[] | .[] | select (.name=="'$branch'-blocking") |.dashboard_tab[].test_group_name' 2>/dev/null))
+
+  local main_job="${all_jobs[0]}"
+
+  # Loop through the remainder, excluding anything specified by --exclude_suites
+  for ((i=1;i<=${#all_jobs[*]};i++)); do
+    re="\\b${all_jobs[$i]}\\b"
+    [[ ${exclude_suites[*]} =~ $re ]] || secondary_jobs+=(${all_jobs[$i]})
+  done
 
   # Update main cache
   # We dedup the $main_job's list of successful runs and just run through that
@@ -183,10 +171,13 @@ release::set_build_version () {
       return 1
     fi
 
-    # For release branch, the HEAD revision has to be the one we use because
+    # For release branches, the HEAD revision has to be the one we use because
     # we make code changes on the HEAD of the branch (version.go).
     # Verify if discovered build_version's SHA1 hash == HEAD if branch
-    if [[ "$branch" =~ release- ]]; then
+    # Due to resetting $branch above based on branch==master to workaround
+    # inconsistencies in the testgrid config naming conventions, now look 
+    # *specifically* for a release branch with a version in it (non-master).
+    if [[ "$branch" =~ release-([0-9]{1,})\. ]]; then
       branch_head=$($GHCURL $K8S_GITHUB_API/commits/$branch |jq -r '.sha')
 
       if [[ $build_sha1 != ${branch_head:0:14} ]]; then

@@ -657,6 +657,34 @@ common::security_layer () {
   fi
 }
 
+###############################################################################
+# Check PIP packages
+# @param package - A space separated list of PIP packages to verify exist
+#
+common::check_pip_packages () {
+  local prereq
+  local -a missing=()
+
+  # Make sure a bunch of packages are available
+  logecho -n "Checking required PIP packages: "
+
+  for prereq in $*; do
+    pip list |fgrep -qw $prereq || missing+=($prereq)
+  done
+
+  if ((${#missing[@]}>0)); then
+    logecho -r "$FAILED"
+    logecho "PREREQ: Missing prerequisites: ${missing[@]}" \
+            "Run the following and try again:"
+    logecho
+    for prereq in ${missing[@]}; do
+      logecho "$ sudo pip install install $prereq"
+    done
+    return 1
+  fi
+  logecho -r "$OK"
+}
+
 
 ###############################################################################
 # Check packages for a K8s release
@@ -690,6 +718,7 @@ common::check_packages () {
       return 1
       ;;
   esac
+
   if ((${#missing[@]}>0)); then
     logecho -r "$FAILED"
     logecho "PREREQ: Missing prerequisites: ${missing[@]}" \
