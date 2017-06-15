@@ -304,7 +304,7 @@ rev_version_base () {
   #########################################################################
   for f in ${swagger_files[*]}; do
     # Strip any suffix off incoming RELEASE_VERSION[$label]
-    sed -i 's,"version": "'${VER_REGEX[release]}'","version": "'${RELEASE_VERSION[$label]//-*}'",g' $f
+    sed -i -r 's,"version": "'${VER_REGEX[release]}'","version": "'${RELEASE_VERSION[$label]//-*}'",g' $f
     logrun git add $f
   done
 
