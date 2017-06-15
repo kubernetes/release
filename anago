@@ -578,6 +578,7 @@ announce () {
 update_github_release () {
   local release_id
   local id_suffix
+  local k8s_github_url=$(gitlib::github_https_url $K8S_GITHUB_ORG $K8S_GITHUB_REPO)
   local release_verb="Posting"
   local prerelease="true"
   local draft="true"
@@ -593,7 +594,8 @@ update_github_release () {
     # non-draft release posts to github create a tag.  We don't want to
     # create any tags on the repo this way.  The tag should already exist
     # as a result of the release process.
-    if ! $GHCURL $K8S_GITHUB_API/git/refs/tags |jq -r '.[] | .ref' |\
+    if ! gitlib::github_repo_query $K8S_GITHUB_ORG $K8S_GITHUB_REPO \
+        /git/refs/tags | jq -r '.[] | .ref' |\
         egrep -q "^refs/tags/$RELEASE_VERSION_PRIME$"; then
       logecho
       logecho "$FATAL: How did we get here?"
@@ -605,7 +607,8 @@ update_github_release () {
   fi
 
   # Does the release exist yet?
-  release_id=$($GHCURL $K8S_GITHUB_API/releases/tags/$RELEASE_VERSION_PRIME |\
+  release_id=$(gitlib::github_repo_query $K8S_GITHUB_ORG $K8S_GITHUB_REPO \
+               /releases/tags/$RELEASE_VERSION_PRIME |\
                jq -r '.id')
 
   if [[ -n "$release_id" ]]; then
@@ -622,8 +625,9 @@ update_github_release () {
 
   # post release data
   logecho "$release_verb the $RELEASE_VERSION_PRIME release on github..."
-  local changelog_url="$K8S_GITHUB_URL/blob/master/CHANGELOG.md"
-  release_id=$($GHCURL $K8S_GITHUB_API/releases$id_suffix --data \
+  local changelog_url="$k8s_github_url/blob/master/CHANGELOG.md"
+  release_id=$(gitlib::github_repo_query $K8S_GITHUB_ORG $K8S_GITHUB_REPO \
+    /releases$id_suffix --data \
    '{
     "tag_name": "'$RELEASE_VERSION_PRIME'",
     "target_commitish": "'$RELEASE_BRANCH'",
@@ -642,30 +646,33 @@ update_github_release () {
 
   # publish binary
   logecho -n "Uploading binary to github: "
-  logrun -s $GHCURL -H "Content-Type:application/x-compressed" \
-   --data-binary @$tarball \
-   "${K8S_GITHUB_API/api\./uploads\.}/releases/$release_id/assets?name=${tarball##*/}"
+  logrun -s gitlib::github_upload $K8S_GITHUB_ORG $K8S_GITHUB_REPO \
+    "/releases/$release_id/assets?name=${tarball##*/}"
+    -H "Content-Type:application/x-compressed" \
+    --data-binary @$tarball \
 
   if $draft; then
     logecho
     logecho "$ATTENTION: A draft release of $RELEASE_VERSION_PRIME was" \
-            "created at $K8S_GITHUB_URL/releases."
+            "created at $k8s_github_url/releases."
     logecho
 
     # delete it
     if ((FLAGS_yes)) || \
        common::askyorn -y "Delete draft release (id #$release_id) now"; then
       logecho -n "Deleting the draft release (id #$release_id): "
-      logrun $GHCURL -X DELETE $K8S_GITHUB_API/releases/$release_id
+      logrun gitlib::github_repo_query $K8S_GITHUB_ORG $K8S_GITHUB_REPO \
+        /releases/$release_id -X DELETE
     fi
 
     # verify it was deleted
-    release_id=$($GHCURL $K8S_GITHUB_API/releases/$release_id | jq -r '.id')
+    release_id=$(gitlib::github_repo_query $K8S_GITHUB_ORG $K8S_GITHUB_REPO \
+      /releases/$release_id | jq -r '.id')
     if [[ -n "$release_id" ]]; then
       logecho -r $FAILED
       logecho "The draft release (id #$release_id) was NOT deleted." \
               "Deal with it by hand"
-      logecho "$K8S_GITHUB_URL/releases/$RELEASE_VERSION_PRIME"
+      logecho "$k8s_github_url/releases/$RELEASE_VERSION_PRIME"
     else
       logecho -r $OK
     fi
@@ -680,7 +687,7 @@ get_build_candidate () {
   local testing_branch
 
   # Are we branching to a new branch?
-  if gitlib::branch_exists $RELEASE_BRANCH; then
+  if gitlib::github_branch_exists $K8S_GITHUB_ORG $K8S_GITHUB_REPO $RELEASE_BRANCH; then
     # If the branch is a 3-part branch (ie. release-1.2.3)
     if [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]] && \
        [[ -n ${BASH_REMATCH[4]} ]]; then
@@ -704,7 +711,7 @@ get_build_candidate () {
       PARENT_BRANCH=master
       testing_branch=$PARENT_BRANCH
     # if 3 part branch name, check parent exists
-    elif gitlib::branch_exists ${RELEASE_BRANCH%.*}; then
+    elif gitlib::github_branch_exists $K8S_GITHUB_ORG $K8S_GITHUB_REPO ${RELEASE_BRANCH%.*}; then
       PARENT_BRANCH=${RELEASE_BRANCH%.*}
       # The 'missing' . here between 2 and 3 is intentional. It's part of the
       # optional regex.
@@ -740,8 +747,8 @@ get_build_candidate () {
    || return 1
 
   # Check that this tag doesn't exist which may occur if $PROG ran partially
-  if [[ "$($GHCURL $K8S_GITHUB_API/tags |jq -r '.[] .name')" =~ \
-     $'\n'$RELEASE_VERSION_PRIME$'\n' ]]; then
+  if [[ "$(gitlib::github_repo_query $K8S_GITHUB_ORG $K8S_GITHUB_REPO /tags \
+     |jq -r '.[] .name')" =~ $'\n'$RELEASE_VERSION_PRIME$'\n' ]]; then
      logecho
      logecho "The tag $RELEASE_VERSION_PRIME already exists on github."
      logecho "* An old --buildversion was specified on the command-line"
@@ -783,7 +790,8 @@ prepare_workspace () {
   fi
 
   # Sync the tree
-  gitlib::sync_repo $K8S_GITHUB_SSH $TREE_ROOT || return 1
+  gitlib::sync_repo $(gitlib::github_ssh_url $K8S_GITHUB_ORG $K8S_GITHUB_REPO) \
+    $TREE_ROOT || return 1
   logrun cd $TREE_ROOT
 }
 
@@ -918,7 +926,7 @@ common::disk_space_check $BASEDIR $((30*${#RELEASE_VERSION[*]})) ||\
  common::exit 1 "Exiting..."
 
 if [[ $RELEASE_BRANCH =~ release- ]] &&
-   gitlib::branch_exists $RELEASE_BRANCH; then
+  gitlib::github_branch_exists $K8S_GITHUB_ORG $K8S_GITHUB_REPO $RELEASE_BRANCH; then
   ##############################################################################
   common::stepheader "PENDING PRS ON THE $RELEASE_BRANCH BRANCH"
   ##############################################################################
@@ -932,6 +940,7 @@ common::stepheader "SESSION VALUES"
 # Pass in the indexed RELEASE_VERSION dict key by key
 ALL_RELEASE_VERSIONS=($(for key in ${!RELEASE_VERSION[@]}; do
                          echo RELEASE_VERSION[$key]; done))
+
 
 # Depending on the type of operation being performed one of these will be set
 if [[ -n $BRANCH_POINT ]]; then

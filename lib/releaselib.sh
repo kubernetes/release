@@ -167,7 +167,8 @@ release::set_build_version () {
       build_number=${BASH_REMATCH[8]}
       build_sha1=${BASH_REMATCH[9]}
       build_version=${BASH_REMATCH[2]}.$build_number+$build_sha1
-      build_sha1_date=$($GHCURL $K8S_GITHUB_API/commits?sha=$build_sha1 |\
+      build_sha1_date=$(gitlib::github_repo_query $K8S_GITHUB_ORG $K8S_GITHUB_REPO \
+                        /commits?sha=$build_sha1 |\
                         jq -r '.[0] | .commit .author .date')
       build_sha1_date=$(date +"%R %m/%d" -d "$build_sha1_date")
     elif [[ $good_job =~ JOB\[([0-9]+)\]=(${VER_REGEX[release]}) ]]; then
@@ -187,7 +188,8 @@ release::set_build_version () {
     # we make code changes on the HEAD of the branch (version.go).
     # Verify if discovered build_version's SHA1 hash == HEAD if branch
     if [[ "$branch" =~ release- ]]; then
-      branch_head=$($GHCURL $K8S_GITHUB_API/commits/$branch |jq -r '.sha')
+      branch_head=$(gitlib::github_repo_query $K8S_GITHUB_ORG $K8S_GITHUB_REPO \
+                    /commits/$branch |jq -r '.sha')
 
       if [[ $build_sha1 != ${branch_head:0:14} ]]; then
         # TODO: Figure out how to curl a list of last N commits
