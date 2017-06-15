@@ -678,7 +678,7 @@ common::check_pip_packages () {
             "Run the following and try again:"
     logecho
     for prereq in ${missing[@]}; do
-      logecho "$ sudo pip install install $prereq"
+      logecho "$ sudo pip install $prereq"
     done
     return 1
   fi
