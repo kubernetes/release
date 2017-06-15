@@ -23,7 +23,7 @@ PROG=${0##*/}
 #+
 #+ SYNOPSIS
 #+     $PROG  [--official] [<release branch>]
-#+            [--github-token=<token>]
+#+            [--github-token=<token>] [--exclude-suites="<suite> ..."]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
@@ -40,6 +40,8 @@ PROG=${0##*/}
 #+     [--official]          - Produce an official release version for a
 #+                             release branch
 #+     --github-token=       - Must be specified if GITHUB_TOKEN not set
+#+     --exclude-suites=     - Space separated list of CI suites to exclude
+#+                             from go/nogo criteria
 #+     [--help | -man]       - display man page for this script
 #+     [--usage | -?]        - display in-line usage
 #+
@@ -93,6 +95,7 @@ common::logfileinit $MYLOG 10
 
 gitlib::github_api_token
 common::check_packages jq
+common::check_pip_packages yq
 common::set_cloud_binaries
 
 # Blank for master
@@ -114,7 +117,8 @@ else
 fi
 
 logecho
-release::set_build_version $TESTING_BRANCH $LOCAL_CACHE || common::exit 1
+release::set_build_version $TESTING_BRANCH $LOCAL_CACHE \
+                           "$FLAGS_exclude_suites" || common::exit 1
 release::set_release_version $JENKINS_BUILD_VERSION $RELEASE_BRANCH \
                              $BRANCH_OFF_MASTER || common::exit 1
 

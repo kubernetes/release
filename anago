@@ -27,6 +27,7 @@ PROG=${0##*/}
 #+            [--gcrio_repo=<repo name>]
 #+            [--basedir=<alt base work dir>] <branch>
 #+            [--security_layer=/path/to/pointer/to/script]
+#+            [--exclude-suites="<suite> ..."]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
@@ -93,6 +94,8 @@ PROG=${0##*/}
 #+                                 source/include:
 #+                                 FLAGS_security_layer=/path/to/script
 #+                                 Default: $HOME/.kubernetes-releaserc
+#+     [--exclude-suites=]       - Space separated list of CI suites to exclude
+#+                                 from go/nogo criteria
 #+     [--help | -man]           - display man page for this script
 #+     [--usage | -?]            - display in-line usage
 #+
@@ -720,7 +723,8 @@ get_build_candidate () {
       logecho -r "$ATTENTION: Using --buildversion=$JENKINS_BUILD_VERSION"
     else
       logecho "Asking Jenkins for a good build (this may take some time)..."
-      FLAGS_verbose=1 release::set_build_version $testing_branch || return 1
+      FLAGS_verbose=1 release::set_build_version \
+       $testing_branch "" "$FLAGS_exclude_suites" || return 1
     fi
 
     # The RELEASE_BRANCH should always match with the JENKINS_BUILD_VERSION
@@ -889,7 +893,7 @@ fi
 common::stepheader "CHECK PREREQUISITES"
 ##############################################################################
 common::check_packages jq docker-engine pandoc ${PREREQUISITE_PACKAGES[*]} \
- || common::exit 1 "Exiting..."
+common::check_pip_packages yq || common::exit 1 "Exiting..."
 check_prerequisites || common::exit 1 "Exiting..."
 
 ##############################################################################
