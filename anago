@@ -223,6 +223,7 @@ check_prerequisites () {
        (logrun gcloud config set account $user && \
         logrun gcloud docker -- version >/dev/null 2>&1); then
       logecho -r "$OK"
+      break
     else
       logecho -r "$FAILED"
       logecho
@@ -230,18 +231,21 @@ check_prerequisites () {
       logecho "Sign in with:"
       logecho
       logecho "$ gcloud auth login $user"
+      logecho
+      logecho "To set a different user, run:"
+      logecho
+      logecho "$ export G_AUTH_USER=<account name>"
       return 1
     fi
   done
 
-  # Ensure $USER is active to start
-  # The loop above finishes on $userat
+  # Ensure $user is active to start
   gcloud_auth_list=$($GCLOUD auth list 2>/dev/null)
-  if ! [[ "$gcloud_auth_list" =~ -\ $userat\ ACTIVE ]]; then
-    logecho "$userat is not the active gcloud user!"
+  if ! [[ "$gcloud_auth_list" =~ -\ $user\ ACTIVE ]]; then
+    logecho "$user is not the active gcloud user!"
     logecho "Set with:"
     logecho
-    logecho "$ gcloud config set account $userat"
+    logecho "$ gcloud config set account $user"
     return 1
   fi
   GCLOUD_ACCOUNT=$user
