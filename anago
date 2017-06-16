@@ -892,7 +892,7 @@ fi
 ##############################################################################
 common::stepheader "CHECK PREREQUISITES"
 ##############################################################################
-common::check_packages jq docker-engine pandoc ${PREREQUISITE_PACKAGES[*]} \
+common::check_packages jq docker-engine pandoc ${PREREQUISITE_PACKAGES[*]}
 common::check_pip_packages yq || common::exit 1 "Exiting..."
 check_prerequisites || common::exit 1 "Exiting..."
 
