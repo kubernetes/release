@@ -216,11 +216,9 @@ check_prerequisites () {
   # TODO: Users outside google? Ask/derive domain?
   # TODO: The real test here is to verify that whatever auth has access to
   #       do releasey things
-  gcloud_auth_list=$($GCLOUD auth list 2>/dev/null)
   for user in $G_AUTH_USER $userat; do
     logecho -n "Checking cloud account/auth $user: "
-    if [[ "$gcloud_auth_list" =~ -\ $user ]] && \
-       (logrun gcloud config set account $user && \
+    if (logrun gcloud config set account $user && \
         logrun gcloud docker -- version >/dev/null 2>&1); then
       logecho -r "$OK"
     else
@@ -236,8 +234,9 @@ check_prerequisites () {
 
   # Ensure $USER is active to start
   # The loop above finishes on $userat
-  gcloud_auth_list=$($GCLOUD auth list 2>/dev/null)
-  if ! [[ "$gcloud_auth_list" =~ -\ $userat\ ACTIVE ]]; then
+  gcloud_auth_list=$($GCLOUD auth list --filter=status:ACTIVE \
+                     --format="value(account)" 2>/dev/null)
+  if ! [[ "$gcloud_auth_list" =~ $userat ]]; then
     logecho "$userat is not the active gcloud user!"
     logecho "Set with:"
     logecho
