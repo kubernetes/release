@@ -4,7 +4,7 @@ This repo contains the tooling and documentation for the release of
 the core Kubernetes project.  
 
 In the future it is expected that the functionality will expand and be
-generalized to support release infrastrcture for all of the kubernetes
+generalized to support release infrastructure for all of the kubernetes
 sub-projects as well.
 
 The tooling and doc here is expected to change often as requirements
