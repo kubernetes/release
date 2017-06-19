@@ -95,8 +95,8 @@ PROG=${0##*/}
 #+                                 source/include:
 #+                                 FLAGS_security_layer=/path/to/script
 #+                                 Default: $HOME/.kubernetes-releaserc
-#+     [--exclude-suites=]       - Space separated list of CI suites to exclude
-#+                                 from go/nogo criteria
+#+     [--exclude-suites=]       - Space separated list of CI suites regex to
+#+                                 exclude from go/nogo criteria
 #+     [--mailto=]               - Comma-separated list of addresses to send
 #+                                 announcement email to. Overrides default list.
 #+     [--help | -man]           - display man page for this script
