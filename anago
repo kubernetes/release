@@ -680,6 +680,7 @@ update_github_release () {
 # And global BRANCH_POINT when new branch is created from an existing tag
 get_build_candidate () {
   local testing_branch
+  local latest_official
 
   # Are we branching to a new branch?
   if gitlib::branch_exists $RELEASE_BRANCH; then
@@ -741,6 +742,33 @@ get_build_candidate () {
                                 $RELEASE_BRANCH \
                                 $PARENT_BRANCH \
    || return 1
+
+  # When creating new alphas on the master branch, make sure that X.Y-1.0
+  # has been created first or warn.
+  # This is to ensure that branchff can continue to be used as needed.  User can
+  # override here.
+  if [[ ! $JENKINS_BUILD_VERSION =~ ${VER_REGEX[release]} ]]; then
+    logecho "Invalid format: $JENKINS_BUILD_VERSION"
+    return 1
+  fi
+
+  # For master branch alpha builds, ensure we've released the previous .0 first
+  if [[ -z "$PARENT_BRANCH" && -n ${RELEASE_VERSION[alpha]} ]]; then
+    latest_official=${BASH_REMATCH[1]}.$((${BASH_REMATCH[2]}-1))
+    if [[ ! "$($GHCURL $K8S_GITHUB_API/tags |jq -r '.[] .name')" =~ \
+       $'\n'v$latest_official$'\n' ]]; then
+      logecho
+      logecho "$WARNING:" \
+              "$latest_official.0 hasn't been tagged/created yet." \
+              "Creating ${RELEASE_VERSION[alpha]} *will* preclude any future" \
+              "branch fast-forwards from master to release-$latest_official."
+      if ! ((FLAGS_yes)); then
+        logecho "Are you *really* sure you want to do this?"
+        common::askyorn "Continue creating ${RELEASE_VERSION[alpha]} now" \
+         || return 1
+      fi
+    fi
+  fi
 
   # Check that this tag doesn't exist which may occur if $PROG ran partially
   if [[ "$($GHCURL $K8S_GITHUB_API/tags |jq -r '.[] .name')" =~ \

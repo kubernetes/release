@@ -102,7 +102,7 @@ logecho "Follow along in detail: tailf $MYLOG"
 ##############################################################################
 common::stepheader "SESSION DETAILS"
 ##############################################################################
-logecho "NOTE: This is a${DRYRUN_FLAG:-"n ACTUAL"} run!"
+logecho "$ATTENTION: This is a${DRYRUN_FLAG:-"n ACTUAL"} run!"
 
 ##############################################################################
 common::stepheader "SYNC A WORKING REPO"
@@ -115,6 +115,25 @@ fi
 logrun mkdir -p $WORKDIR
 gitlib::sync_repo $K8S_GITHUB_SSH $TREE_ROOT || common::exit 1 "Exiting..."
 logrun cd $TREE_ROOT
+
+# Is the master branch in a reasonable state to fast forward over the branch?
+# When git merges from master to branch, the list of tags is overlaid and
+# sorted chronologically.
+# MERGE_BASE: Show common ancestor object/tag
+# MASTER_DESCRIBE: Show the latest tag on origin/master
+# ANCESTOR_DESCRIBE: Show the tag associated with MERGE_BASE
+MERGE_BASE=$(git merge-base origin/master origin/$RELEASE_BRANCH)
+ANCESTOR_DESCRIBE=$(git describe --abbrev=0 --tags $MERGE_BASE)
+MASTER_DESCRIBE=$(git describe --abbrev=0 --tags origin/master)
+# If these are different, there's a newer (than the branch) tag on master
+# and we cannot do a FF
+if [[ ! $MASTER_DESCRIBE == $ANCESTOR_DESCRIBE ]]; then
+  logecho
+  logecho "$FATAL!  master branch has been tagged to a newer version" \
+          "($MASTER_DESCRIBE)." \
+          "Unable to fast-forward $RELEASE_BRANCH branch to master."
+  common::exit 1
+fi
 
 ##############################################################################
 common::stepheader "CHECK GIT PUSH ACCESS"
