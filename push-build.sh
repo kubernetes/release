@@ -48,6 +48,8 @@ PROG=${0##*/}
 #+                                 (normally devel or ci)
 #+     [--gcs-suffix=]           - Specify a suffix to append to the upload
 #+                                 destination on GCS.
+#+     [--docker-registry=]      - If set, push docker images to specified
+#+                                 registry/project
 #+     [--version-suffix=]       - Append suffix to version name if set.
 #+     [--noupdatelatest]        - Do not update the latest file
 #+     [--help | -man]           - display man page for this script
@@ -185,6 +187,16 @@ while ((attempt<max_attempts)); do
   ((attempt++))
 done
 ((attempt>=max_attempts)) && common::exit 1 "Exiting..."
+
+if [[ -n "${FLAGS_docker_registry:-}" ]]; then
+  ##############################################################################
+  common::stepheader PUSH DOCKER IMAGES
+  ##############################################################################
+  # TODO: support Bazel too
+  # Docker tags cannot contain '+'
+  release::docker::release_from_tarfiles $KUBE_ROOT/_output \
+    $FLAGS_docker_registry ${LATEST/+/_}
+fi
 
 # If not --ci, then we're done here.
 ((FLAGS_ci)) || common::exit 0 "Exiting..."

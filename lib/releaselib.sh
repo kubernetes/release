@@ -852,6 +852,67 @@ release::docker::release () {
 }
 
 ###############################################################################
+# Releases all docker images to a docker registry using the docker tarfiles.
+#
+# @param build_output - build output directory
+# @param registry - docker registry
+# @param version - version tag
+# @return 1 on failure
+release::docker::release_from_tarfiles () {
+  local build_output=$1
+  local registry=$2
+  local version=$3
+  local docker_push_cmd=(docker)
+  local release_images=$build_output/release-images
+  local arch
+  local -a arches
+  local tarfile
+  local orig_tag
+  local binary
+  local -a new_tags
+  local new_tag
+
+  [[ "$registry" =~ gcr.io/ ]] && docker_push_cmd=("$GCLOUD" "docker" "--")
+
+  logecho "Send docker containers to $registry..."
+
+  arches=($(cd "$release_images"; echo *))
+  for arch in ${arches[@]}; do
+    for tarfile in $release_images/$arch/*.tar; do
+      # There may be multiple tags; just get the first
+      orig_tag=$(tar xf $tarfile manifest.json -O  | jq -r '.[0].RepoTags[0]')
+      if [[ ! "$orig_tag" =~ ^.+/(.+):.+$ ]]; then
+        logecho "$FAILED: malformed tag in $tarfile:"
+        logecho $orig_tag
+        return 1
+      fi
+      binary=${BASH_REMATCH[1]}
+
+      # If amd64, tag both the legacy tag and -amd64 tag
+      if [[ "$arch" == "amd64" ]]; then
+        # binary may or may not already contain -amd64, so strip it first
+        new_tags=(\
+          "$registry/${binary/-amd64/}:$version"
+          "$registry/${binary/-amd64/}-amd64:$version"
+        )
+      else
+        new_tags=("$registry/$binary:$version")
+      fi
+
+      docker load -qi $tarfile >/dev/null
+      for new_tag in ${new_tags[@]}; do
+        docker tag $orig_tag $new_tag
+        logecho -n "Pushing $new_tag: "
+        # 'gcloud docker' gives lots of internal_failure's so add retries
+        logrun -r 5 -s ${docker_push_cmd[@]} push "$new_tag"
+      done
+      docker rmi $orig_tag ${new_tags[@]} &>/dev/null || true
+
+    done
+  done
+}
+
+###############################################################################
 # Determine whether the release was most recently built with Bazel.
 # This is achieved by looking for the most recent kubernetes.tar.gz tarball
 # in both the dockerized and Bazel output trees.
