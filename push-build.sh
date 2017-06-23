@@ -194,8 +194,8 @@ if [[ -n "${FLAGS_docker_registry:-}" ]]; then
   ##############################################################################
   # TODO: support Bazel too
   # Docker tags cannot contain '+'
-  release::docker::release_from_tarfiles $KUBE_ROOT/_output \
-    $FLAGS_docker_registry ${LATEST/+/_}
+  release::docker::release $FLAGS_docker_registry ${LATEST/+/_} \
+    $KUBE_ROOT/_output
 fi
 
 # If not --ci, then we're done here.

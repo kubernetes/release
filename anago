@@ -1039,6 +1039,7 @@ for label in ${!RELEASE_VERSION[@]}; do
   common::runstep release::docker::release \
    $KUBE_DOCKER_REGISTRY \
    ${RELEASE_VERSION[$label]} \
+   $BUILD_OUTPUT-${RELEASE_VERSION[$label]} \
    || common::exit 1 "Exiting..."
 
   common::runstep release::gcs::publish_version \
