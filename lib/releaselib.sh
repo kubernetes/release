@@ -786,14 +786,18 @@ release::gcs::publish () {
 #
 # @param registry - docker registry
 # @param version - version tag
+# @param build_output - build output directory
 # @return 1 on failure
 release::docker::release () {
   local registry=$1
   local version=$2
+  local build_output=$3
+  local release_images=$build_output/release-images
   local docker_push_cmd=(docker)
   local docker_target
   local legacy_docker_target
   local arch
+  local ret=0
   local binary
   local binaries=(
     "kube-apiserver"
@@ -803,65 +807,73 @@ release::docker::release () {
     "hyperkube"
   )
 
-  [[ "$registry" =~ gcr.io/ ]] && docker_push_cmd=("$GCLOUD" "docker" "--")
-
   # Activate credentials to push to gcr.io
   [[ "$registry" == "gcr.io/google_containers" ]] \
     && logrun $GCLOUD config set account $G_AUTH_USER
 
-  logecho
-  logecho "Send docker containers to $registry..."
+  if [[ -d "$release_images" ]]; then
+    release::docker::release_from_tarfiles $* || ret=$?
+  else
+    # TODO: remove this when all kubernetes releases produce a release-images
+    # directory
+    [[ "$registry" =~ gcr.io/ ]] && docker_push_cmd=("$GCLOUD" "docker" "--")
 
-  # 'gcloud docker' gives lots of internal_failure's so add retries to
-  # all of the invocations
-  for arch in "${KUBE_SERVER_PLATFORMS[@]##*/}"; do
-    for binary in "${binaries[@]}"; do
-      docker_target="$binary-$arch:$version"
-      if ! logrun -r 5 ${docker_push_cmd[@]} \
-                       history "$registry/$docker_target"; then
-        logecho "$WARNING - Skipping non-existent $docker_target..."
-        continue
-      fi
+    logecho
+    logecho "Send docker containers to $registry..."
 
-      logecho "Release $docker_target:"
-      logecho -n "- Pushing: "
-      logrun -r 5 -s ${docker_push_cmd[@]} push "$registry/$docker_target"
+    # 'gcloud docker' gives lots of internal_failure's so add retries to
+    # all of the invocations
+    for arch in "${KUBE_SERVER_PLATFORMS[@]##*/}"; do
+      for binary in "${binaries[@]}"; do
+        docker_target="$binary-$arch:$version"
+        if ! logrun -r 5 ${docker_push_cmd[@]} \
+                         history "$registry/$docker_target"; then
+          logecho "$WARNING - Skipping non-existent $docker_target..."
+          continue
+        fi
 
-      # If we have a amd64 docker image. Tag it without -amd64 also
-      # and push it for compatibility with earlier versions
-      if [[ $arch == "amd64" ]]; then
-        legacy_docker_target="$binary:$version"
-        logecho "Release legacy $legacy_docker_target:"
-
-        logecho -n "- Tagging: "
-        logrun docker rmi "$registry/$legacy_docker_target" || true
-        logrun -r 5 -s docker tag "$registry/$docker_target" \
-                              "$registry/$legacy_docker_target" 2>/dev/null
-
+        logecho "Release $docker_target:"
         logecho -n "- Pushing: "
-        logrun -r 5 -s ${docker_push_cmd[@]} \
-                       push "$registry/$legacy_docker_target"
-      fi
+        logrun -r 5 -s ${docker_push_cmd[@]} push "$registry/$docker_target"
+
+        # If we have a amd64 docker image. Tag it without -amd64 also
+        # and push it for compatibility with earlier versions
+        if [[ $arch == "amd64" ]]; then
+          legacy_docker_target="$binary:$version"
+          logecho "Release legacy $legacy_docker_target:"
+
+          logecho -n "- Tagging: "
+          logrun docker rmi "$registry/$legacy_docker_target" || true
+          logrun -r 5 -s docker tag "$registry/$docker_target" \
+                                "$registry/$legacy_docker_target" 2>/dev/null
+
+          logecho -n "- Pushing: "
+          logrun -r 5 -s ${docker_push_cmd[@]} \
+                         push "$registry/$legacy_docker_target"
+        fi
+      done
     done
-  done
+  fi
 
   # Activate default account
   if [[ "$registry" == "gcr.io/google_containers" ]]; then
     logrun $GCLOUD config set account $USER@google.com
   fi
+
+  return $ret
 }
 
 ###############################################################################
 # Releases all docker images to a docker registry using the docker tarfiles.
 #
-# @param build_output - build output directory
 # @param registry - docker registry
 # @param version - version tag
+# @param build_output - build output directory
 # @return 1 on failure
 release::docker::release_from_tarfiles () {
-  local build_output=$1
-  local registry=$2
-  local version=$3
+  local registry=$1
+  local version=$2
+  local build_output=$3
   local docker_push_cmd=(docker)
   local release_images=$build_output/release-images
   local arch
@@ -874,7 +886,7 @@ release::docker::release_from_tarfiles () {
 
   [[ "$registry" =~ gcr.io/ ]] && docker_push_cmd=("$GCLOUD" "docker" "--")
 
-  logecho "Send docker containers to $registry..."
+  logecho "Send docker containers from release-images to $registry..."
 
   arches=($(cd "$release_images"; echo *))
   for arch in ${arches[@]}; do
