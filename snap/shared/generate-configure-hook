@@ -24,7 +24,9 @@ function config-arg-bool {
   value=$(snapctl get $key)
   if [ "$value" = 'true' ]; then
     echo "--$key" >> $SNAP_DATA/args
-  elif [ -n "$value" ] && [ "$value" != 'false' ]; then
+  elif [ "$value" = 'false' ]; then
+    echo "--$key=false" >> $SNAP_DATA/args
+  elif [ -n "$value" ]; then
     >&2 echo "Invalid value for $key: $value, expected true or false"
     exit 1
   fi
