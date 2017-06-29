@@ -1,4 +1,4 @@
-%global KUBE_VERSION 1.6.4
+%global KUBE_VERSION 1.6.6
 %global CNI_RELEASE 0799f5732f2a11b329d9e3d51b9c8f2e3759f2ff
 %global RPM_RELEASE 0
 %global ARCH amd64
@@ -121,6 +121,12 @@ mv bin/ %{buildroot}/opt/cni/
 
 
 %changelog
+* Fri Jun 16 2017 Jacob Beacham <beacham@google.com> - 1.6.6
+- Bump version of kubelet and kubectl to v1.6.6.
+
+* Wed Jun 14 2017 Jacob Beacham <beacham@google.com> - 1.6.5
+- Bump version of kubelet and kubectl to v1.6.5.
+
 * Fri May 19 2017 Jacob Beacham <beacham@google.com> - 1.6.4
 - Bump version of kubelet and kubectl to v1.6.4.
 
