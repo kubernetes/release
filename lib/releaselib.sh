@@ -892,7 +892,15 @@ release::docker::release_from_tarfiles () {
   for arch in ${arches[@]}; do
     for tarfile in $release_images/$arch/*.tar; do
       # There may be multiple tags; just get the first
-      orig_tag=$(tar xf $tarfile manifest.json -O  | jq -r '.[0].RepoTags[0]')
+      orig_tag=$(tar xf $tarfile manifest.json -O | jq -r '.[0].RepoTags[0]')
+      # Jenkins has an ancient version of docker that doesn't produce
+      # manifest.json, and it also doesn't have jq. Instead, let's try this
+      # hacky workaround!
+      # TODO: remove when Jenkins is updated or no longer used
+      if [[ -z "$orig_tag" && $(tar xf $tarfile repositories -O) =~ \
+          \{\"([^\"]+)\":\{\"([^\"]+)\":.+\}\} ]]; then
+        orig_tag="${BASH_REMATCH[1]}:${BASH_REMATCH[2]}"
+      fi
       if [[ ! "$orig_tag" =~ ^.+/(.+):.+$ ]]; then
         logecho "$FAILED: malformed tag in $tarfile:"
         logecho $orig_tag
