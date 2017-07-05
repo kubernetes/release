@@ -193,7 +193,11 @@ release::set_build_version () {
         logecho "$ATTENTION: The $branch branch HEAD is ahead of the last" \
                 "good Jenkins run by $commit_count commits." \
                 "Wait for Jenkins to catch up."
-        return 1
+        if ((FLAGS_allow_stale_build)); then
+          logecho
+        else
+         return 1
+       fi
       fi
     fi
 
@@ -259,10 +263,13 @@ release::set_build_version () {
       else
         ((FLAGS_verbose)) && \
          logecho "$(printf '%-7s %-7s' -- --)" \
-                    "${TPUT[RED]}GIVE UP${TPUT[OFF]}"
+                    "${TPUT[RED]}FAILED${TPUT[OFF]}"
         giveup_build_number=$build_number
         job_count=0
-        break
+        # Note: We used to break here to fail fast.
+        # However, it's often useful to see the full
+        # list of failing jobs, so now we keep going.
+        continue
       fi
     done
 

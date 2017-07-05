@@ -24,6 +24,7 @@ PROG=${0##*/}
 #+ SYNOPSIS
 #+     $PROG  [--official] [<release branch>]
 #+            [--github-token=<token>] [--exclude-suites="<suite> ..."]
+#+            [--allow-stale-build]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
@@ -39,9 +40,12 @@ PROG=${0##*/}
 #+ OPTIONS
 #+     [--official]          - Produce an official release version for a
 #+                             release branch
-#+     --github-token=       - Must be specified if GITHUB_TOKEN not set
-#+     --exclude-suites=     - Space separated list of CI suites to exclude
+#+     [--github-token=]     - Must be specified if GITHUB_TOKEN not set
+#+     [--exclude-suites=]   - Space separated list of CI suites to exclude
 #+                             from go/nogo criteria
+#+     [--allow-stale-build] - Keep going even if the build is behind HEAD.
+#+                             This should only be used to display CI status.
+#+                             Branch cuts can't actually use stale builds.
 #+     [--help | -man]       - display man page for this script
 #+     [--usage | -?]        - display in-line usage
 #+
