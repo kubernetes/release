@@ -669,7 +669,7 @@ common::check_pip_packages () {
   logecho -n "Checking required PIP packages: "
 
   for prereq in $*; do
-    pip list |fgrep -qw $prereq || missing+=($prereq)
+    pip list | fgrep -w $prereq > /dev/null || missing+=($prereq)
   done
 
   if ((${#missing[@]}>0)); then
