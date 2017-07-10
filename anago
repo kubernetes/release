@@ -176,14 +176,15 @@ common::cleanexit () {
 # Copy logs to WORKDIR
 copy_logs_to_workdir () {
   local f
+  local logfiles=$(ls $LOGFILE{,.[0-9]} 2>/dev/null || true)
 
-  for f in $(ls $LOGFILE{,.[0-9]} 2>/dev/null); do
+  for f in $logfiles; do
     common::strip_control_characters $f
     common::sanitize_log $f
   done
 
   logecho -n "Copying $LOGFILE{,.[0-9]} to $WORKDIR: "
-  logrun -s cp -f $LOGFILE{,.[0-9]} $WORKDIR
+  logrun -s cp -f $logfiles $WORKDIR
 }
 
 ###############################################################################
