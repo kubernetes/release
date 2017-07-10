@@ -30,7 +30,7 @@ release::get_job_cache () {
   fi
   local job_path=$1
   local job=${job_path##*/}
-  local tempjson=/tmp/$PROG-rgjc.$$
+  local tempjson=$(mktemp $PROG-rgjc-XXXXX.$$)
   local logroot="gs://kubernetes-jenkins/logs"
   local version
   local lastversion
@@ -125,12 +125,15 @@ release::set_build_version () {
   # We dedup the $main_job's list of successful runs and just run through that
   # unique list. We then leave the full state of secondaries below so we have
   # finer granularity at the Jenkin's job level to determine if a build is ok.
-  release::get_job_cache -d $job_path/$main_job
+  release::get_job_cache -d $job_path/$main_job &
 
   # Update secondary caches limited by main cache last build number
   for other_job in ${secondary_jobs[@]}; do
-    release::get_job_cache $job_path/$other_job
+    release::get_job_cache $job_path/$other_job &
   done
+
+  # Wait for background fetches.
+  wait
 
   if ((FLAGS_verbose)); then
     # Get the longest line for formatting
