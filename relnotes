@@ -370,6 +370,7 @@ generate_notes () {
     logecho "Checking if draft release notes exist for $release_tag..."
     $GHCURL \
      $K8S_GITHUB_RAW_ORG/features/master/$CURRENT_BRANCH/release-notes-draft.md > $tempfile
+
     if [[ -s $tempfile ]]; then
       logecho "Draft found - using for release notes..."
       cat $tempfile >> $PR_NOTES
@@ -395,48 +396,47 @@ generate_notes () {
 
 EOF+
     fi
-  fi
 
-  echo "## Changelog since $start_tag" >> $PR_NOTES
-  echo >> $PR_NOTES
-
-  if [[ -n "${notes_experimental[*]}" ]]; then
-    echo "### Experimental Features" >> $PR_NOTES
-    echo >> $PR_NOTES
-    extract_pr_title "${notes_experimental[*]}" >> $PR_NOTES \
-     || common::exit 1 "$FAILED: github rate limiting."
-    echo >> $PR_NOTES
-  fi
-
-  if [[ -n "${notes_action[*]}" ]]; then
-    echo "### Action Required" >> $PR_NOTES
-    echo >> $PR_NOTES
-    extract_pr_title "${notes_action[*]}" >> $PR_NOTES \
-     || common::exit 1 "$FAILED: github rate limiting."
-    echo >> $PR_NOTES
-  fi
-
-  if [[ -n "${notes_normal[*]}" ]]; then
-    echo "### Other notable changes" >> $PR_NOTES
-    echo >> $PR_NOTES
-    extract_pr_title "${notes_normal[*]}" >> $PR_NOTES \
-     || common::exit 1 "$FAILED: github rate limiting."
-  fi
-
-  # Aggregate all previous releases in series
-  if ((FLAGS_full)) || [[ $release_tag =~ ${VER_REGEX[dotzero]} ]]; then
+    # Aggregate all previous releases in series
     echo
     echo "### Previous Releases Included in $release_tag"
     while read anchor; do
       echo "$anchor"
-    done< <(git show master:CHANGELOG.md | egrep "^- \[${release_tag}-")
-  fi >> $PR_NOTES
+    done< <(git show master:CHANGELOG.md | egrep "^- \[${release_tag}-") \
+     >> $PR_NOTES
+  else
+    echo "## Changelog since $start_tag" >> $PR_NOTES
+    echo >> $PR_NOTES
 
-  if [[ -z "${notes_normal[*]}" && -z "${notes_action[*]}" &&
-        -z "${notes_experimental[*]}" ]]; then
-    logecho
-    logecho "**No notable changes for this release**" >> $PR_NOTES
-    logecho
+    if [[ -n "${notes_experimental[*]}" ]]; then
+      echo "### Experimental Features" >> $PR_NOTES
+      echo >> $PR_NOTES
+      extract_pr_title "${notes_experimental[*]}" >> $PR_NOTES \
+       || common::exit 1 "$FAILED: github rate limiting."
+      echo >> $PR_NOTES
+    fi
+
+    if [[ -n "${notes_action[*]}" ]]; then
+      echo "### Action Required" >> $PR_NOTES
+      echo >> $PR_NOTES
+      extract_pr_title "${notes_action[*]}" >> $PR_NOTES \
+       || common::exit 1 "$FAILED: github rate limiting."
+      echo >> $PR_NOTES
+    fi
+
+    if [[ -n "${notes_normal[*]}" ]]; then
+      echo "### Other notable changes" >> $PR_NOTES
+      echo >> $PR_NOTES
+      extract_pr_title "${notes_normal[*]}" >> $PR_NOTES \
+       || common::exit 1 "$FAILED: github rate limiting."
+    fi
+
+    if [[ -z "${notes_normal[*]}" && -z "${notes_action[*]}" &&
+          -z "${notes_experimental[*]}" ]]; then
+      logecho
+      logecho "**No notable changes for this release**" >> $PR_NOTES
+      logecho
+    fi
   fi
 
   echo >> $PR_NOTES
