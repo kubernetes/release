@@ -512,11 +512,11 @@ common::namevalue () {
             name=${arg%%=*}
             value=${arg#*=}
             # change -'s to _ in name for legal vars in bash
-            eval export FLAGS_${name/-/_}=\""$value"\"
+            eval export FLAGS_${name//-/_}=\""$value"\"
           else
             # bool=1
             # change -'s to _ in name for legal vars in bash
-            eval export FLAGS_${arg/-/_}=1
+            eval export FLAGS_${arg//-/_}=1
           fi
           ;;
     *) POSITIONAL_ARGV+=("$arg")
