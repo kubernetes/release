@@ -156,9 +156,13 @@ common::stepheader "MERGE AND UPDATE"
 logecho -n "Merging $MASTER_OBJECT into $RELEASE_BRANCH branch: "
 logrun -s git merge -X ours $MASTER_OBJECT
 
-# TODO: This is actually broken until #27992 lands
-logecho -n "update-all.sh: "
-logrun -s hack/update-all.sh
+# TODO: This should use update-all again when run-time returns to reasonable levels
+logecho -n "Run useful hack/update* scripts: "
+logecho -n "The list of scripts might be stale. If not sure, run update-all.sh:"
+for script in openapi-spec generated-docs federation-openapi-spec; do
+  logecho -n "Running $script: "
+  logrun -s "hack/update-$script.sh"
+done
 
 if [[ -n "$(git status -s)" ]]; then
   logecho -n "Commit changes: "
