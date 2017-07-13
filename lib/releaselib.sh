@@ -30,7 +30,7 @@ release::get_job_cache () {
   fi
   local job_path=$1
   local job=${job_path##*/}
-  local tempjson=$(mktemp $PROG-rgjc-XXXXX.$$)
+  local tempjson=/tmp/$PROG-$job.$$
   local logroot="gs://kubernetes-jenkins/logs"
   local version
   local lastversion
