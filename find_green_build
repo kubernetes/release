@@ -41,8 +41,8 @@ PROG=${0##*/}
 #+     [--official]          - Produce an official release version for a
 #+                             release branch
 #+     [--github-token=]     - Must be specified if GITHUB_TOKEN not set
-#+     [--exclude-suites=]   - Space separated list of CI suites to exclude
-#+                             from go/nogo criteria
+#+     [--exclude-suites=]   - Space separated list of CI suites regex to
+#+                             exclude from go/nogo criteria
 #+     [--allow-stale-build] - Keep going even if the build is behind HEAD.
 #+                             This should only be used to display CI status.
 #+                             Branch cuts can't actually use stale builds.

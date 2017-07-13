@@ -83,6 +83,7 @@ release::set_build_version () {
   local branch=$1
   local job_path=${2:-"/tmp/buildresults-cache.$$"}
   local -a exclude_suites=($3)
+  local exclude_patterns=$(IFS="|"; echo "${exclude_suites[*]}")
   local build_version
   local build_number
   local cache_build
@@ -116,11 +117,11 @@ release::set_build_version () {
   local main_job="${all_jobs[0]}"
 
   # Loop through the remainder, excluding anything specified by --exclude_suites
-  for ((i=1;i<=${#all_jobs[*]};i++)); do
-    re="\\b${all_jobs[$i]}\\b"
-    [[ ${exclude_suites[*]} =~ $re ]] || secondary_jobs+=(${all_jobs[$i]})
+  for ((i=1;i<${#all_jobs[*]};i++)); do
+    [[ -n $exclude_patterns && ${all_jobs[$i]} =~ $exclude_patterns ]] \
+        || secondary_jobs+=(${all_jobs[$i]})
   done
-
+  
   # Update main cache
   # We dedup the $main_job's list of successful runs and just run through that
   # unique list. We then leave the full state of secondaries below so we have
