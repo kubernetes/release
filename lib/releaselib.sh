@@ -815,6 +815,7 @@ release::docker::release () {
   local binaries=(
     "kube-apiserver"
     "kube-controller-manager"
+    "cloud-controller-manager"
     "kube-scheduler"
     "kube-proxy"
     "hyperkube"
