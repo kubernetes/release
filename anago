@@ -200,6 +200,46 @@ check_acls () {
 }
 
 ###############################################################################
+# Ensures all registries that will be used during both mock and --nomock
+# runs allow write access so we don't fall over later
+# @param registries - A space separated list of registries
+#
+ensure_registry_acls () {
+  local registries=($1)
+  local emptyfile="/tmp/empty-file.$$"
+  local gs_path
+  local r
+  local retcode=0
+
+  # Make an empty file to test uploading
+  logrun touch $emptyfile
+
+  # If G_AUTH_USER is set, switch to it for verifying connectivity to registries
+  [[ -n $G_AUTH_USER ]] && logrun $GCLOUD config set account $G_AUTH_USER
+
+  # Short of creating a hardcoded map of project-id to registry, translating
+  # _ to - seems to be a simple rule to keep this, well, simple.
+  for r in ${registries[*]//_/-}; do
+    gs_path="gs://artifacts.$r.appspot.com/containers"
+    logecho -n "Checking write access to registry $r: "
+    if logrun $GSUTIL -q cp $emptyfile $gs_path && \
+       logrun $GSUTIL -q rm $gs_path/${emptyfile##*/}; then
+      logecho $OK
+    else
+      logecho $FAILED
+      ((retcode++))
+    fi
+  done
+
+  # If G_AUTH_USER is set, switch to it for verifying connectivity to registries
+  [[ -n $G_AUTH_USER ]] && logrun $GCLOUD config set account $USER@$DOMAIN_NAME
+
+  logrun rm -f $emptyfile
+
+  return $retcode
+}
+
+###############################################################################
 # Checks release-specific prereqs
 # Sets globals GCLOUD_ACCOUNT GCLOUD_PROJECT
 # @param package - A space separated list of packages to verify exist
@@ -248,6 +288,10 @@ check_prerequisites () {
     return 1
   fi
   GCLOUD_ACCOUNT=$user
+
+  # Verify write access to all container registries that might be used
+  # to ensure both mock and --nomock runs will work.
+  ensure_registry_acls "${ALL_CONTAINER_REGISTRIES[*]}" || return 1
 
   # Verify write access to $RELEASE_BUCKET
   release::gcs::ensure_release_bucket $RELEASE_BUCKET || return 1
@@ -864,6 +908,7 @@ if ((FLAGS_nomock)); then
   # Override any --noclean setting if nomock
   FLAGS_noclean=0
   GCRIO_REPO="${FLAGS_gcrio_repo:-google_containers}"
+  ALL_CONTAINER_REGISTRIES=("$GCRIO_REPO" "kubernetes-release-test")
 else
   # This is passed to logrun() where appropriate when we want to mock
   # specific activities like pushes
@@ -871,6 +916,7 @@ else
   # Point to a $USER playground
   RELEASE_BUCKET+=-$USER
   GCRIO_REPO="${FLAGS_gcrio_repo:-kubernetes-release-test}"
+  ALL_CONTAINER_REGISTRIES=("$GCRIO_REPO" "google_containers")
 fi
 BASEDIR=${FLAGS_basedir}
 if [[ -z "${BASEDIR}" ]]; then
