@@ -821,9 +821,8 @@ release::docker::release () {
     "hyperkube"
   )
 
-  # Activate credentials to push to gcr.io
-  [[ "$registry" == "gcr.io/google_containers" ]] \
-    && logrun $GCLOUD config set account $G_AUTH_USER
+  # Activate G_AUTH_USER credentials to push to gcr.io if set
+  [[ -n $G_AUTH_USER ]] && logrun $GCLOUD config set account $G_AUTH_USER
 
   if [[ -d "$release_images" ]]; then
     release::docker::release_from_tarfiles $* || ret=$?
@@ -869,10 +868,7 @@ release::docker::release () {
     done
   fi
 
-  # Activate default account
-  if [[ "$registry" == "gcr.io/google_containers" ]]; then
-    logrun $GCLOUD config set account $USER@google.com
-  fi
+  [[ -n $G_AUTH_USER ]] && logrun $GCLOUD config set account $USER@$DOMAIN_NAME
 
   return $ret
 }
