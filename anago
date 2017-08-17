@@ -777,7 +777,7 @@ get_build_candidate () {
     else
       logecho "Asking Jenkins for a good build (this may take some time)..."
       FLAGS_verbose=1 release::set_build_version \
-       $testing_branch "" "$FLAGS_exclude_suites" || return 1
+       $testing_branch "" "$FLAGS_exclude_suites" "100" || return 1
     fi
 
     # The RELEASE_BRANCH should always match with the JENKINS_BUILD_VERSION

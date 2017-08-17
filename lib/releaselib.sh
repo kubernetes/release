@@ -60,9 +60,16 @@ release::get_job_cache () {
 
 ##############################################################################
 # Sets the JENKINS_BUILD_VERSION global by cross checking it against a set of
-# critical jenkins build jobs
+# blocking CI jobs
 # @param branch - branch name
 # @optparam job_path - A local directory to store the copied cache entries
+# @optparam exclude_suites - A space-separated list of (greedy) patterns to
+#                            exclude CI jobs from checking against the primary
+#                            job.
+# @optparam hard_limit - A hard limit of primary jobs to process so this doesn't
+#                        run for hours. Default should be handled by the caller.
+#                        A high value default of 1000 is here to maintain
+#                        previous functionality.
 #
 # TODO:
 # * Ability to point to a particular primary job hash and validate it
@@ -83,6 +90,7 @@ release::set_build_version () {
   local branch=$1
   local job_path=${2:-"/tmp/buildresults-cache.$$"}
   local -a exclude_suites=($3)
+  local hard_limit=${4:-1000}
   local exclude_patterns=$(IFS="|"; echo "${exclude_suites[*]}")
   local build_version
   local build_number
@@ -98,6 +106,7 @@ release::set_build_version () {
   local max_job_length
   local other_job
   local good_job
+  local good_job_count=0
   local branch_head
   # The instructions below for installing yq put it in /usr/local/bin
   local yq="/usr/local/bin/yq"
@@ -109,6 +118,7 @@ release::set_build_version () {
    master) branch="release-master"
   esac
 
+  # Get the list of 'blocking' jobs rom testgrid config yamls
   local -a all_jobs=($($GHCURL \
    $K8S_GITHUB_RAW_ORG/test-infra/master/testgrid/config/config.yaml \
    2>/dev/null |\
@@ -153,6 +163,15 @@ release::set_build_version () {
   fi
 
   while read good_job; do
+    ((good_job_count++))
+
+    if ((good_job_count>hard_limit)); then
+      logecho
+      logecho "Hard Limit of $hard_limit exceeded.  Halting test analysis..."
+      logecho
+      break
+    fi
+
     if [[ $good_job =~ \
           JOB\[([0-9]+)\]=(${VER_REGEX[release]})\.${VER_REGEX[build]} ]]; then
       main_run=${BASH_REMATCH[1]}

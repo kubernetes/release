@@ -24,7 +24,7 @@ PROG=${0##*/}
 #+ SYNOPSIS
 #+     $PROG  [--official] [<release branch>]
 #+            [--github-token=<token>] [--exclude-suites="<suite> ..."]
-#+            [--allow-stale-build]
+#+            [--allow-stale-build] [--limit=N]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
@@ -46,6 +46,8 @@ PROG=${0##*/}
 #+     [--allow-stale-build] - Keep going even if the build is behind HEAD.
 #+                             This should only be used to display CI status.
 #+                             Branch cuts can't actually use stale builds.
+#+     [--limit=]            - Limit the primary check to a count of N
+#+                             (Default: 100)
 #+     [--help | -man]       - display man page for this script
 #+     [--usage | -?]        - display in-line usage
 #+
@@ -122,7 +124,8 @@ fi
 
 logecho
 release::set_build_version $TESTING_BRANCH $LOCAL_CACHE \
-                           "$FLAGS_exclude_suites" || common::exit 1
+                           "$FLAGS_exclude_suites" \
+                           ${FLAGS_limit:-"100"} || common::exit 1
 release::set_release_version $JENKINS_BUILD_VERSION $RELEASE_BRANCH \
                              $BRANCH_OFF_MASTER || common::exit 1
 
