@@ -237,14 +237,14 @@ create_body () {
 }
 
 ###############################################################################
-# Jenkins status
+# CI job status
 # Uses global CURRENT_BRANCH
-jenkins_status () {
+ci_job_status () {
   local content
   local red=${TPUT[RED]}
   local green=${TPUT[GREEN]}
   local off=${TPUT[OFF]}
-  local official
+  local extra_flag
 
   if ((FLAGS_htmlize_md)); then
     red="<FONT COLOR=RED>"
@@ -254,12 +254,20 @@ jenkins_status () {
 
   # If working on a release branch assume --official for the
   # purpose of displaying find_green_build output
-  [[ $CURRENT_BRANCH =~ release- ]] && official="--official"
+  if [[ $CURRENT_BRANCH =~ release- ]]; then
+    extra_flag="--official"
+  else
+    # For master branch, limit the analysis to 30 primary ci jobs.
+    # This is necessary due to the recently expanded blocking test list for
+    # master.  The expanded test list is often unable to find a complete
+    # passing set and find_green_build runs unbounded for hours.
+    extra_flag="--limit=30"
+  fi
 
   # State of tree
   echo
   echo "## State of $CURRENT_BRANCH branch"
-  if content=$(find_green_build -v $official $CURRENT_BRANCH); then
+  if content=$(find_green_build -v $extra_flag $CURRENT_BRANCH); then
     echo "${green}GOOD TO GO!$off"
   else
     echo "${red}NOT READY$off"
@@ -467,8 +475,8 @@ EOF+
   if ((FLAGS_preview)); then
     # We do this after htmlizing because we don't want to update the
     # issues in the block of this section
-    logecho "Adding jenkins build status (this may take a while)..."
-    jenkins_status >> $RELEASE_NOTES_MD
+    logecho "Adding CI job status (this may take a while)..."
+    ci_job_status >> $RELEASE_NOTES_MD
   fi
 
   if [[ -n "$RELEASE_NOTES_HTML" ]]; then
