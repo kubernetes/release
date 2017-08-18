@@ -14,7 +14,7 @@ confinement: classic
 
 apps:
   daemon:
-    command: run-with-config-args kubelet
+    command: run-with-config-args kubelet-wrapper
     daemon: simple
   kubelet:
     command: kubelet
@@ -27,4 +27,5 @@ parts:
       set -eu
       cp $KUBE_SNAP_BINS/$KUBE_ARCH/kubelet .
       cp $KUBE_SNAP_ROOT/shared/run-with-config-args .
+      cp $KUBE_SNAP_ROOT/kubelet/kubelet-wrapper .
       $KUBE_SNAP_ROOT/shared/generate-configure-hook kubelet
