@@ -16,7 +16,7 @@ $ branchff release-1.3
 ```
 
 Once that happens we then open up master to milestone+1 changes
-and move to the 2 phase [cherry-pick model](https://github.com/kubernetes/kubernetes/blob/master/docs/devel/cherry-picks.md)
+and move to the 2 phase [cherry-pick model](https://github.com/kubernetes/community/blob/master/contributors/devel/cherry-picks.md)
 
 ## Branching from a tag
 
