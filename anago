@@ -970,6 +970,7 @@ common::stepheader "CHECK GITHUB AUTH"
 ##############################################################################
 gitlib::github_api_token
 gitlib::ssh_auth
+gitlib::is_repo_admin
 
 # Domain check
 if [[ "$HOSTNAME" =~ \.([^\.]+\.com)$ ]]; then

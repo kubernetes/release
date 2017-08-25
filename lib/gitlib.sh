@@ -65,6 +65,30 @@ gitlib::ssh_auth () {
   logecho $OK
 }
 
+
+###############################################################################
+# Check if authenticated (GITHUB_TOKEN) user is a repo admin.
+# Repo admins always have access to push to any restricted branch.
+# See: https://github.com/kubernetes/kubernetes/settings/branches
+#
+# returns 1 if authenticated user is NOT a repo admin
+gitlib::is_repo_admin () {
+  local result
+
+  logecho -n "Checking repo admin state: "
+  result=$($GHCURL $K8S_GITHUB_API | jq -r '.permissions.admin')
+
+  if [[ $result == "true" ]]; then
+    logecho $OK
+    return 0
+  else
+    logecho $FAILED
+    logecho
+    logecho "Authenticated user (GITHUB_TOKEN) must be a repo admin to continue"
+    return 1
+  fi
+}
+
 ###############################################################################
 # Looks up the list of releases on github and puts the last release per branch
 # into a global branch-indexed dictionary LAST_RELEASE[$branch]
