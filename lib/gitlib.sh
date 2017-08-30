@@ -84,7 +84,9 @@ gitlib::is_repo_admin () {
   else
     logecho $FAILED
     logecho
-    logecho "Authenticated user (GITHUB_TOKEN) must be a repo admin to continue"
+    logecho "You must be a repo admin to continue."
+    logecho "1. Ensure you are a member - https://github.com/kubernetes/community/blob/master/community-membership.md#requirements"
+    logecho "2. Use the 'Request to Join' button on https://github.com/orgs/kubernetes/teams/kubernetes-release-managers/members"
     return 1
   fi
 }
