@@ -134,8 +134,8 @@ extract_pr_title () {
               sed -e '/^$/d' -e '2,$s/^\( *\* \)/        \1/g' \
                   -e '2,$s/^\( *[^ \*]\)/    * \1/g')
 
-    # if the release-note block is empty or the template is unchanged, use title
-    if [[ -z "$content" ]] || [[ "$content" =~ -OR- ]]; then
+    # if the release-note block is empty (unchanged from the template), use title
+    if [[ -z "$content" ]]; then
       content=$(echo "$pull_json" | jq -r '.title')
     fi
 
