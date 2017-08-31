@@ -135,7 +135,7 @@ extract_pr_title () {
                   -e '2,$s/^\( *[^ \*]\)/    * \1/g')
 
     # if the release-note block is empty or the template is unchanged, use title
-    if [[ -z "$content" ]] || [[ "$content" =~ -OR- ]]; then
+    if [[ -z "$content" ]]; then
       content=$(echo "$pull_json" | jq -r '.title')
     fi
 
