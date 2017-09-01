@@ -49,7 +49,7 @@ release::get_job_cache () {
     ((dedup)) && [[ $version == $lastversion ]] && continue
     echo "$version $buildnumber"
     lastversion=$version
-  done < <(jq -r '.[] | select(.result == "SUCCESS") | select(.version != "") | [.version,.buildnumber] | "\(.[0]|rtrimstr("\n")) \(.[1])"' $tempjson |\
+  done < <(jq -r '.[] | select(.result == "SUCCESS") | select(.version != null) | [.version,.buildnumber] | "\(.[0]|rtrimstr("\n")) \(.[1])"' $tempjson |\
    LC_ALL=C sort -rn -k2,2) |\
   while read version buildnumber; do
     [[ -n $buildnumber && -n $version ]] && echo "JOB[$buildnumber]=$version"
