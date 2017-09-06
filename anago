@@ -309,6 +309,35 @@ check_prerequisites () {
 }
 
 ###############################################################################
+# Updates openapi-spec version files
+# Uses the RELEASE_VERSION global dict
+# @param label - label index to RELEASE_VERSION
+rev_openapi_versions () {
+  local label=$1
+  local -a swagger_files=("api/openapi-spec/swagger.json"
+                          "federation/apis/openapi-spec/swagger.json")
+  local f
+
+  #########################################################################
+  # NOTE: To avoid a significant time sink from running update-all.sh as
+  #       well as avoiding running the master-only doc stub creator
+  #       update-generated-docs.sh, we simply and quickly modify the files that
+  #       are dependent on a $version_file change
+  #       If/when the great update-all.sh revolution occurs and this runs in
+  #       under a minute, we can probably run that instead.
+  #########################################################################
+  for f in ${swagger_files[*]}; do
+    # Strip any suffix off incoming RELEASE_VERSION[$label]
+    sed -i -r 's,"version": "'${VER_REGEX[release]}'","version": "'${RELEASE_VERSION[$label]//-*}'",g' $f
+    logrun git add $f
+  done
+
+  logecho -n "Committing openapi-spec versioned files: "
+  logrun -s git commit -am \
+                "Kubernetes version ${RELEASE_VERSION[$label]} openapi-spec file updates"
+}
+
+###############################################################################
 # Updates pkg/version/base.go with RELEASE_VERSION
 # Uses the RELEASE_VERSION global dict
 # @param label - label index to RELEASE_VERSION
@@ -316,12 +345,9 @@ rev_version_base () {
   local label=$1
   local version_file="pkg/version/base.go"
   local staging_file="staging/src/k8s.io/client-go/$version_file"
-  local -a swagger_files=("api/openapi-spec/swagger.json"
-                          "federation/apis/openapi-spec/swagger.json")
   local minor_plus
   local gitmajor
   local gitminor
-  local f
 
   logecho "Updating $version_file to ${RELEASE_VERSION[$label]}..."
 
@@ -343,20 +369,6 @@ rev_version_base () {
     logrun cp $version_file $staging_file
     logrun git add $staging_file
   fi
-
-  #########################################################################
-  # NOTE: To avoid a significant time sink from running update-all.sh as
-  #       well as avoiding running the master-only doc stub creator
-  #       update-generated-docs.sh, we simply and quickly modify the files that
-  #       are dependent on a $version_file change
-  #       If/when the great update-all.sh revolution occurs and this runs in
-  #       under a minute, we can probably run that instead.
-  #########################################################################
-  for f in ${swagger_files[*]}; do
-    # Strip any suffix off incoming RELEASE_VERSION[$label]
-    sed -i -r 's,"version": "'${VER_REGEX[release]}'","version": "'${RELEASE_VERSION[$label]//-*}'",g' $f
-    logrun git add $f
-  done
 
   logecho -n "Committing versioned files: "
   logrun -s git commit -am \
@@ -430,23 +442,34 @@ prepare_tree () {
     fi
   fi
 
+  # Only check and extract VER_REGEX[build] if JENKINS_BUILD_VERSION is set.
+  # It will not be set when branching from a tag (ex. release-1.7.5)
+  # We do want to capture the sha1 however any time it is available
+  # for use below in setting branch_point and tree_object.  Those cases are
+  # covered by the fact that branch_point defaults to BRANCH_POINT (set globally
+  # earlier in the pipeline) and in the case where we're just doing a straight
+  # alpha release from master.
+  if [[ -n $JENKINS_BUILD_VERSION ]]; then
+    if ! [[ $JENKINS_BUILD_VERSION =~ ${VER_REGEX[build]} ]]; then
+      logecho "Unable to set checkout point for release!" \
+              "Invalid JENKINS_BUILD_VERSION=$JENKINS_BUILD_VERSION"
+      return 1
+    fi
+  fi
+
   # if this is a new branch, checkout -B
   if [[ -n "$PARENT_BRANCH" ]]; then
     if [[ $RELEASE_VERSION_PRIME == ${RELEASE_VERSION[$label]} ]]; then
       branch_arg="-B"
-      branch_point=$BRANCH_POINT
+      # Use BRANCH_POINT if set, otherwise, the hash from JENKINS_BUILD_VERSION
+      branch_point=${BRANCH_POINT:-${BASH_REMATCH[2]}}
     else
       # if this is not the PRIMary version on the named RELEASE_BRANCH, use the
       # parent
       tree_object=$PARENT_BRANCH
     fi
-  elif [[ $label == "alpha" ]]; then
-    if ! [[ $JENKINS_BUILD_VERSION =~ ${VER_REGEX[build]} ]]; then
-      logecho "Unable to set checkout point for alpha release!" \
-              "Invalid JENKINS_BUILD_VERSION=$JENKINS_BUILD_VERSION"
-      return 1
-    fi
-    tree_object=${BASH_REMATCH[2]}
+  else
+    [[ $label == "alpha" ]] && tree_object=${BASH_REMATCH[2]}
   fi
 
   # Checkout location
@@ -460,6 +483,19 @@ prepare_tree () {
   case $label in
     beta*|rc|official) rev_version_base $label || return 1 ;;
   esac
+
+  # if this is a new branch, rev openapi-spec version files
+  if [[ -n "$PARENT_BRANCH" ]]; then
+    # Only on master
+    if [[ $label == alpha ]]; then
+      rev_openapi_versions $label || return 1
+    fi
+  else
+    # rev openapi-spec version files on branch
+    case $label in
+      rc|official) rev_openapi_versions $label || return 1 ;;
+    esac
+  fi
 
   # generate docs on new branches (from master) only
   # If the entirety of this session is based on a branch from master
