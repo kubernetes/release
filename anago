@@ -338,7 +338,14 @@ rev_openapi_versions () {
 }
 
 ###############################################################################
-# Updates pkg/version/base.go with RELEASE_VERSION
+# Updates pkg/version/base.go files with RELEASE_VERSION
+#
+# Note: the only reason we update these files is so that the source archives
+# exported by GitHub contain a valid version. Normally the version information
+# is filled in at build time using git metadata (including the tag), but no
+# such metadata is included in the source archives, so we must commit it into
+# the tree before tagging the release.
+#
 # Uses the RELEASE_VERSION global dict
 # @param label - label index to RELEASE_VERSION
 rev_version_base () {
