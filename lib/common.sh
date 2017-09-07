@@ -34,7 +34,6 @@ set -o errtrace
 TOOL_LIB_PATH=${TOOL_LIB_PATH:-$(dirname $(readlink -ne $BASH_SOURCE))}
 TOOL_ROOT=${TOOL_ROOT:-$(readlink -ne $TOOL_LIB_PATH/..)}
 PATH=$TOOL_ROOT:$PATH
-LOCAL_CACHE="/tmp/buildresults-cache.$$"
 # Provide a default EDITOR for those that don't have this set
 : ${EDITOR:="vi"}
 export PATH TOOL_ROOT TOOL_LIB_PATH EDITOR
@@ -86,7 +85,11 @@ export PID=$$
 # Save original cmd-line.
 ORIG_CMDLINE="$*"
 
-PROGSTATE=/tmp/$PROG-runstate
+# Global arrays and dictionaries for use with common::stepheader()
+#  and common::stepindex()
+declare -A PROGSTEP
+declare -a PROGSTEPS
+declare -A PROGSTEPS_INDEX
 
 ###############################################################################
 # Define logecho() function to display to both log and stdout.
@@ -100,7 +103,7 @@ logecho () {
   local log_prefix="$PROG::${FUNCNAME[1]:-"main"}(): "
   local prefix
   # Dynamically set fmtlen
-  local fmtlen=$((${TPUT[COLS]:-"80"}))
+  local fmtlen=$((${TPUT[COLS]:-"90"}))
   local n
   local raw=0
   #local -a sed_pat=()
@@ -253,9 +256,10 @@ common::timestamp () {
   local action=$1
   local section=${2:-main}
   # convert illegal characters to (legal) underscore
-  section=${section//[-\.:\/]/_}
-  local start_var="${section}start_seconds"
-  local end_var="${section}end_seconds"
+  section_var=${section//[-\.:\/]/_}
+  local start_var="${section_var}start_seconds"
+  local end_var="${section_var}end_seconds"
+  local prefix
   local elapsed
   local d
   local h
@@ -267,14 +271,22 @@ common::timestamp () {
   local prettys
   local pretty
 
+  # Only prefix for "main"
+  if [[ $section == "main" ]]; then
+    prefix="$PROG: "
+  fi
+
   case $action in
   begin)
-
     # Get time(date) for display and calc.
     eval $start_var=$(date '+%s')
 
-    # Print BEGIN message for $PROG.
-    echo "$PROG: BEGIN $section on ${HOSTNAME%%.*} $(date)"
+    if [[ $section == "main" ]]; then
+      # Print BEGIN message for $PROG.
+      echo "${prefix}BEGIN $section on ${HOSTNAME%%.*} $(date)"
+    else
+      echo "$(date +[%Y-%b-%d\ %R:%S\ %Z]) $section"
+    fi
 
     if [[ $section == "main" ]]; then
       echo
@@ -284,7 +296,7 @@ common::timestamp () {
     # Check for "START" values before calcing.
     if [[ -z ${!start_var} ]]; then
       #display_time="EE:EE:EE - 'end' run without 'begin' in this scope or sourced script using common::timestamp"
-      return 1
+      return 0
     fi
 
     # Get time(date) for display and calc.
@@ -301,8 +313,12 @@ common::timestamp () {
     prettys="${s}s"
     pretty="$prettyd$prettyh$prettym$prettys"
 
-    [[ $section == "main" ]] && echo
-    echo "$PROG: DONE $section on ${HOSTNAME%%.*} $(date) in $pretty"
+    if [[ $section == "main" ]]; then
+      echo
+      echo "${prefix}DONE $section on ${HOSTNAME%%.*} $(date) in $pretty"
+    else
+      echo "$(date +[%Y-%b-%d\ %R:%S\ %Z]) $section in $pretty"
+    fi
     ;;
   esac
 }
@@ -391,15 +407,29 @@ common::askyorn () {
 }
 
 ###############################################################################
-# Print step header text in a consistent way
+# Print PROGSTEPs as bolded headers within scripts.
+# PROGSTEP is a globally defined dictionary (associative array) that can
+# take a function name or integer as its key
+# The function indexes the dictionary in the order the items are added (by
+# calling the function) so that progress can be shown during script execution
+# (1/4, 2/4...4/4)
+# If a PROGSTEP dictionary is empty, common::stepheader() will just show the
+# text passed in.
 common::stepheader () {
   # If called with no args, assume the key is the caller's function name
-  local msg="$*"
+  local key="${1:-${FUNCNAME[1]}}"
+  local append="$2"
+  local msg="${PROGSTEP[$key]:-$key}"
+  local index=
+
+  # Only display an index if the $key is part of one
+  [[ -n "${PROGSTEPS_INDEX[$key]:-}" ]] \
+    && index="(${PROGSTEPS_INDEX[$key]}/${#PROGSTEPS_INDEX[@]})"
 
   logecho
-  logecho -r $HR
-  logecho "$msg"
-  logecho -r $HR
+  logecho -r "$HR"
+  logecho "$msg" "$append" $index
+  logecho -r "$HR"
   logecho
 }
 
@@ -407,7 +437,7 @@ common::stepheader () {
 common::rotatelog () {
   local file=$1
   local num=$2
-  local tmpfile=/tmp/rotatelog.$PID
+  local tmpfile=$TMPDIR/rotatelog.$PID
   local counter=$num
 
   # Quiet exit
@@ -628,6 +658,18 @@ common::sha () {
   which shasum >/dev/null 2>&1 && LANG=C shasum -a$algo $file | awk '{print $1}'
 }
 
+###############################################################################
+# Stub for messaging and catching the --nomock unauthorized case
+security_layer::acl_check () {
+  logecho
+  logecho "--nomock runs from the command-line are restricted to those that" \
+          "have direct access to the K8S Release GCP project.  Contact" \
+          "https://github.com/kubernetes/kubernetes-community/tree/master/sig-release" \
+          "for more information."
+  return 1
+}
+
+###############################################################################
 # Check for and source security layer
 # This function looks for an additional security layer and activates
 # special code paths to allow for enhanced features.
@@ -671,7 +713,8 @@ common::check_pip_packages () {
   logecho -n "Checking required PIP packages: "
 
   for prereq in $*; do
-    pip list | fgrep -w $prereq > /dev/null || missing+=($prereq)
+    (pip list --format legacy 2>&- || pip list) |\
+     fgrep -w $prereq > /dev/null || missing+=($prereq)
   done
 
   if ((${#missing[@]}>0)); then
@@ -701,7 +744,12 @@ common::check_packages () {
   # Make sure a bunch of packages are available
   logecho -n "Checking required system packages: "
 
-  distro=$(lsb_release -si)
+  if ((FLAGS_gcb)); then
+    # Just force Ubuntu
+    distro="Ubuntu"
+  else
+    distro=$(lsb_release -si)
+  fi
   case $distro in
     Fedora)
       packagemgr="dnf"
@@ -709,7 +757,7 @@ common::check_packages () {
         rpm --quiet -q $prereq 2>/dev/null || missing+=($prereq)
       done
       ;;
-    Ubuntu)
+    Ubuntu|LinuxMint|Debian)
       packagemgr="apt-get"
       for prereq in $*; do
         dpkg --get-selections 2>/dev/null | fgrep -qw $prereq || missing+=($prereq)
@@ -744,6 +792,13 @@ common::check_packages () {
 # @param disk - a path
 # @param threshold - int in GB
 #
+# This is a fast moving target and difficult to estimate with any accuracy
+# so set it high.
+# A recent run of release-1.8 --official took:
+# ~95G in the build tree
+# ~90G in the docker dir
+#
+PROGSTEP[common::disk_space_check]="DISK SPACE CHECK"
 common::disk_space_check () {
   local disk=$1
   local threshold=$2
@@ -775,9 +830,7 @@ common::runstep () {
   $*
   retcode=$?
 
-  finishtime=$(common::timestamp end $function | sed 's/.* //')
-  logecho "${TPUT[BOLD]}>>>>>>>> $PROG::$function() finished in" \
-          "$finishtime${TPUT[OFF]}"
+  logecho "${TPUT[BOLD]}$(common::timestamp end $function)${TPUT[OFF]}"
   return $retcode
 }
 
@@ -839,7 +892,7 @@ common::mdtoc () {
   local heading
   local begin_block="<!-- BEGIN MUNGE: GENERATED_TOC -->"
   local end_block="<!-- END MUNGE: GENERATED_TOC -->"
-  local tmpfile=/tmp/$PROG-cm.$$
+  local tmpfile=$TMPDIR/$PROG-cm.$$
 
   declare -A count
 
@@ -949,7 +1002,171 @@ security_layer::auth_check () {
   return 0
 }
 
-# Set a common::trap() to capture ^C's and other unexpected exits and do the
+#############################################################################
+# common::join() returns a string in which the string elements of sequence
+# have been joined by str separator.
+# @param str separator
+# @param $string or "${array[@]}" (quoting is intentional for both)
+common::join() {
+  local IFS="$1"
+
+  echo "${*:2}"
+}
+
+###############################################################################
+# Run a stateful command with arguments
+# @param    fcall A quoted function and arguments to be run
+#                 The resulting unique entry in PROGSTATE will look like this:
+#                 function+arg1%%arg2%%...
+# @optparam var   A space-separated list of variables set by $fcall to be
+#                 included in the $PROGSTATE file associated with the entry
+common::run_stateful () {
+  local nonfatal=false
+  if [[ "$1" == --non-fatal ]]; then
+    nonfatal=true
+    shift
+  fi
+  local -a fcall=($1)
+  local function=${fcall[0]}
+  local args="${fcall[@]:1}"
+  local entry=$function
+  shift
+  local nameval=($@)
+  local -a setvar
+  local c
+
+  # Create the PROGSTATE entry based on function+args
+  [[ -n $args ]] && entry+="+$(common::join "%%" $args)"
+
+  common::check_state $entry && return 0
+
+  common::stepheader "$function" "$args"
+  if ! common::runstep ${fcall[@]}; then
+    logecho "$FAILED in $function."
+    $nonfatal || common::exit 1 "RELEASE INCOMPLETE! Exiting..."
+  fi
+
+  if [[ -n "${nameval[@]}" ]]; then
+    for ((c=0;c<${#nameval[@]};c++)); do
+      # Only add name=value pairs when value !null
+      [[ -n "${!nameval[$c]}" ]] && setvar+=("${nameval[$c]}=${!nameval[$c]}")
+    done
+  fi
+
+  common::check_state -a $entry ${setvar[@]}
+}
+
+###############################################################################
+# Manage the state of PROG and allow re-entrancy
+#
+# @optparam -a    Add a label to the run state file ($PROGSTATE)
+# @param    label The label to check or add
+# @optparam nv    A single name=value pair to associate with the label in the
+#                 run state file (does not support spaces in value)
+# @return 1 when no label is found in state file.
+common::check_state () {
+  local add=false
+  case "$1" in
+    -a) add=true;shift ;;
+  esac
+  local label=$1
+  shift
+  local nv=($@)
+
+  # initialize if step 1
+  if $add; then
+    echo "$label ${nv[@]}" >> $PROGSTATE
+    return 0
+  fi
+
+  # if no file exists yet, return 1
+  [[ ! -f $PROGSTATE ]] && return 1
+
+  # check to see if it's done or not
+  if grep -wq "^$label" $PROGSTATE; then
+    eval $(awk '$1 == "'$label'" {$1="";print}' $PROGSTATE)
+    return 0
+  else
+    return 1
+  fi
+}
+
+###############################################################################
+# BUILD a PROGSTEPS_INDEX from PROGSTEPS and optionally print out the TOC
+# @param List of PROGSTEPs to add to PROGSTEPS global array
+# @optparam --toc Print out the TOC of PROGSTEPs
+common::stepindex () {
+  local c=1
+  local step
+  local stepmark
+
+  # Print Table Of Contents and return
+  if [[ $1 == --toc ]]; then
+    for ((c=0; c<${#PROGSTEPS_INDEX[@]}; c++)); do
+      if common::check_state ${PROGSTEPS[$c]}; then
+        stepmark="✔"
+      else
+        stepmark="☐"
+      fi
+      logecho "$stepmark  $(printf "%-2s" "$((c+1))")" \
+      "${PROGSTEP[${PROGSTEPS[$c]}]:-"${TPUT[RED]}MISSING DESCRIPTION
+       FOR ${PROGSTEPS[$c]}${TPUT[OFF]}"}"
+    done
+    return
+  fi
+
+  # Build an index for PROGSTEPS so we can reference these by index later
+  PROGSTEPS+=("$@")
+  for step in "${PROGSTEPS[@]}"; do
+    PROGSTEPS_INDEX[$step]=$c
+    ((c++))
+  done
+}
+
+##############################################################################
+# Validate command-line for re-entrancy
+# Capture the original command-line and warn if subsequent runs differ
+# This is specific to anago but due to when it's called, it needs to be
+# pre-defined quite early.
+# @param args - The quoted full original command-line args
+# returns 1 on failure
+common::validate_command_line () {
+  local -a args=($@)
+  local -a last_args
+  local continue=0
+
+  # Ignore state clearing args
+  args=(${args[@]/--clean})
+  args=(${args[@]/--prebuild})
+  args=(${args[@]/--buildonly})
+
+  logecho
+  if [[ -f $PROGSTATE ]]; then
+    last_args=($(awk '/^CMDLINE: / {for(i=2;i<=NF;++i)print $i}' $PROGSTATE))
+    if [[ ${args[*]} != ${last_args[*]} ]]; then
+      logecho "A previous incomplete run using different command-line values" \
+              "exists."
+      logecho "Use --clean to start a new session."
+      if common::askyorn "Do you want to continue" \
+                         "this new session over top of the existing"; then
+        continue=1
+      else
+        return 1
+      fi
+    else
+      continue=1
+    fi
+  fi
+
+  if ((continue)); then
+    logecho "${TPUT[RED]}Continuing previous session ($PROGSTATE).${TPUT[OFF]}"
+    logecho "${TPUT[RED]}Use --clean to restart${TPUT[OFF]}"
+    logecho
+  else
+    echo "CMDLINE: ${args[*]}" > $PROGSTATE
+  fi
+}
+
 # right thing in common::trapclean().
 common::trap common::trapclean ERR SIGINT SIGQUIT SIGTERM SIGHUP
 
@@ -958,3 +1175,11 @@ common::namevalue "$@"
 
 # Run common::manpage to show usage and man pages
 common::manpage "$@"
+
+# Set a TMPDIR
+TMPDIR="${FLAGS_tmpdir:-/tmp}"
+mkdir -p $TMPDIR
+
+# Set some values that depend on $TMPDIR
+PROGSTATE=$TMPDIR/$PROG-runstate
+LOCAL_CACHE="$TMPDIR/buildresults-cache.$$"

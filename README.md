@@ -43,6 +43,23 @@ checks needed for anyone to run the tool in at least mock mode.
 There is a simple $USER check to ensure that no one but a certain few people can
 run the script with --nomock to perform a real release.
 
+**NEW**
+`anago` is entirely re-entrant with both stateful and stateless steps.
+Upon initial execution, a WORKFLOW TOC (table of contents) is provided that
+enumerates the stateful steps that will be followed based on context and
+command-line args.  NOTE: Stateless steps are not called out in the TOC.
+* Completed steps will show with a checkmark
+* Not-yet-run steps will show a box
+* Stateful steps will show a TITLE and index (n/N) to show progress
+* /tmp/anago-runstate contains the state in the following format:
+  - CMDLINE - stores the original *critical* command-line entries 
+  - entry_points+$label - Entry points will appear as they are completed with
+an optional +label to distinguish those that are used with arguments
+  - entry_points+$label name=value - Entry points that set stateful name=value
+    pairs will have the name=value on the same line
+* Use --clean to reset the state and start over
+
+
 ## Instructions (Quick Start)
 
 The tool was designed to require minimal inputs.
@@ -91,6 +108,23 @@ v9.9.9 tag on the release-9.9 branch, create a release-9.9.9 branch):
 ```
 $ anago release-9.9.9
 ```
+
+## Typical Workflows
+
+Stage an official (patch) release on your local disk:
+```
+# add --build-at-head to force a build, otherwise rely on find_green_build
+# in-line to find a build candidate
+$ anago release-1.8 --stage
+```
+
+Release previously staged official (patch) release from your local disk:
+```
+# $buildversion will come from the output at the end of the above --stage run
+# as will this command-line in its entirety
+$ anago release-1.8 --buildversion=$buildversion
+```
+
 
 ## Live Releases
 

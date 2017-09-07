@@ -92,7 +92,7 @@ source $TOOL_LIB_PATH/releaselib.sh
 # Initialize logs
 ##############################################################################
 # Initialize and save up to 10 (rotated logs)
-MYLOG=/tmp/$PROG.log
+MYLOG=$TMPDIR/$PROG.log
 common::logfileinit $MYLOG 10
 
 # BEGIN script

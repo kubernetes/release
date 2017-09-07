@@ -136,7 +136,7 @@ source \$(dirname \$(readlink -ne \$BASH_SOURCE))/lib/common.sh
 # Initialize logs
 ##############################################################################
 # Initialize and save up to 10 (rotated logs)
-#MYLOG=/tmp/\$PROG.log
+#MYLOG=\$TMPDIR/\$PROG.log
 #common::logfileinit \$MYLOG 10
 # BEGIN script
 common::timestamp begin

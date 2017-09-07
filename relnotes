@@ -41,7 +41,7 @@ PROG=${0##*/}
 #+      of the current branch.
 #+
 #+      The default output is pure markdown and unless [--markdown-file=] is
-#+      specified, the output file is in /tmp/$PROG-release-notes.md.
+#+      specified, the output file is in $TMPDIR/$PROG-release-notes.md.
 #+      If [--html-file=] is set, $PROG will also produce a pure html version
 #+      of the notes at that location.
 #+
@@ -80,8 +80,8 @@ PROG=${0##*/}
 #+                                 on current branch to v1.1.7
 #+
 #+ FILES
-#+     /tmp/$PROG-release-htmls.md
-#+     /tmp/$PROG-release-htmls.html
+#+     $TMPDIR/$PROG-release-htmls.md
+#+     $TMPDIR/$PROG-release-htmls.html
 #+
 #+ SEE ALSO
 #+     common.sh                 - Base function definitions
@@ -290,8 +290,8 @@ generate_notes () {
   local release_tag
   local labels
   local body
-  local tempcss=/tmp/$PROG-ca.$$
-  local tempfile=/tmp/$PROG-file-1.$$
+  local tempcss=$TMPDIR/$PROG-ca.$$
+  local tempfile=$TMPDIR/$PROG-file-1.$$
   local anchor
   local changelog_file
   local -a normal_prs
@@ -490,19 +490,19 @@ EOF+
 CURRENT_BRANCH=${FLAGS_branch:-$(gitlib::current_branch)} \
  || common::exit 1
 
-PR_NOTES=/tmp/$PROG-$CURRENT_BRANCH-prnotes
+PR_NOTES=$TMPDIR/$PROG-$CURRENT_BRANCH-prnotes
 # Initialize new PR_NOTES for session
 >$PR_NOTES
 RELEASE_NOTES_MD=$(common::absolute_path \
-                   ${FLAGS_markdown_file:-/tmp/$PROG-$CURRENT_BRANCH.md})
+                   ${FLAGS_markdown_file:-$TMPDIR/$PROG-$CURRENT_BRANCH.md})
 RELEASE_NOTES_HTML=$(common::absolute_path $FLAGS_html_file)
-ANNOUNCEMENT_TEXT=/tmp/$PROG-announcement
+ANNOUNCEMENT_TEXT=$TMPDIR/$PROG-announcement
 
 ###############################################################################
 # MAIN
 ###############################################################################
 # Initialize and save up to 10 (rotated logs)
-MYLOG=/tmp/$PROG.log
+MYLOG=$TMPDIR/$PROG.log
 common::logfileinit $MYLOG 10
 
 # BEGIN script
