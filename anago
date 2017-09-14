@@ -332,9 +332,12 @@ rev_openapi_versions () {
     logrun git add $f
   done
 
-  logecho -n "Committing openapi-spec versioned files: "
-  logrun -s git commit -am \
+  # Only commit if the files have changed.
+  if [[ -n "$(git status -s)" ]]; then
+    logecho -n "Committing openapi-spec versioned files: "
+    logrun -s git commit -am \
                 "Kubernetes version ${RELEASE_VERSION[$label]} openapi-spec file updates"
+  fi
 }
 
 ###############################################################################
@@ -498,9 +501,9 @@ prepare_tree () {
       rev_openapi_versions $label || return 1
     fi
   else
-    # rev openapi-spec version files on branch
+    # rev openapi-spec version files on branch for beta tags
     case $label in
-      rc|official) rev_openapi_versions $label || return 1 ;;
+      beta*) rev_openapi_versions $label || return 1 ;;
     esac
   fi
 
