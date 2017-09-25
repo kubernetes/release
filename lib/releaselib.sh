@@ -202,17 +202,22 @@ release::set_build_version () {
     # *specifically* for a release branch with a version in it (non-master).
     if [[ "$branch" =~ release-([0-9]{1,})\. ]]; then
       branch_head=$($GHCURL $K8S_GITHUB_API/commits/$branch |jq -r '.sha')
+      # Shorten
+      branch_head=${branch_head:0:14}
 
-      if [[ $build_sha1 != ${branch_head:0:14} ]]; then
+      if [[ $build_sha1 != $branch_head ]]; then
         # TODO: Figure out how to curl a list of last N commits
         #       So we can return a message about how far ahead the top of the
         #       release branch is from the last good commit.
-        #commit_count=$(git rev-list $build_sha1..${branch_head:0:14} |wc -l)
+        #commit_count=$(git rev-list $build_sha1..${branch_head} |wc -l)
         commit_count=some
         logecho
         logecho "$ATTENTION: The $branch branch HEAD is ahead of the last" \
                 "good Jenkins run by $commit_count commits." \
                 "Wait for Jenkins to catch up."
+        logecho
+        logecho "If you want to use the head of the branch anyway," \
+                "--buildversion=${build_version/$build_sha1/$branch_head}"
         if ((FLAGS_allow_stale_build)); then
           logecho
         else
