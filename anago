@@ -214,12 +214,15 @@ ensure_registry_acls () {
   # Make an empty file to test uploading
   logrun touch $emptyfile
 
-  # If G_AUTH_USER is set, switch to it for verifying connectivity to registries
-  [[ -n $G_AUTH_USER ]] && logrun $GCLOUD config set account $G_AUTH_USER
-
   # Short of creating a hardcoded map of project-id to registry, translating
   # _ to - seems to be a simple rule to keep this, well, simple.
   for r in ${registries[*]//_/-}; do
+    # If G_AUTH_USER is set, switch to it for verifying connectivity to
+    # google-containers
+    if [[ -n $G_AUTH_USER && $r == "google-containers" ]];then
+      logrun $GCLOUD config set account $G_AUTH_USER
+    fi
+
     gs_path="gs://artifacts.$r.appspot.com/containers"
     logecho -n "Checking write access to registry $r: "
     if logrun $GSUTIL -q cp $emptyfile $gs_path && \
@@ -229,10 +232,10 @@ ensure_registry_acls () {
       logecho $FAILED
       ((retcode++))
     fi
-  done
 
-  # If G_AUTH_USER is set, switch to it for verifying connectivity to registries
-  [[ -n $G_AUTH_USER ]] && logrun $GCLOUD config set account $USER@$DOMAIN_NAME
+    # Always reset back to $USER
+    logrun $GCLOUD config set account $USER@$DOMAIN_NAME
+  done
 
   logrun rm -f $emptyfile
 
@@ -241,7 +244,7 @@ ensure_registry_acls () {
 
 ###############################################################################
 # Checks release-specific prereqs
-# Sets globals GCLOUD_ACCOUNT GCLOUD_PROJECT
+# Sets global GCLOUD_PROJECT
 # @param package - A space separated list of packages to verify exist
 #
 check_prerequisites () {
@@ -287,7 +290,6 @@ check_prerequisites () {
     logecho "$ gcloud config set account $userat"
     return 1
   fi
-  GCLOUD_ACCOUNT=$user
 
   # Verify write access to all container registries that might be used
   # to ensure both mock and --nomock runs will work.
