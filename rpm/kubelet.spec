@@ -1,7 +1,16 @@
-%global KUBE_VERSION 1.7.3
+%global KUBE_MAJOR 1
+%global KUBE_MINOR 7
+%global KUBE_PATCH 3
+%global KUBE_VERSION %{KUBE_MAJOR}.%{KUBE_MINOR}.%{KUBE_PATCH}
 %global CNI_RELEASE 0799f5732f2a11b329d9e3d51b9c8f2e3759f2ff
 %global RPM_RELEASE 0
 %global ARCH amd64
+
+# This expands a (major, minor, patch) tuple into a single number so that it
+# can be compared against other versions. It has the current implementation
+# assumption that none of these numbers will exceed 255.
+%define semver() (%1 * 256 * 256 + %2 * 256 + %3)
+%global KUBE_SEMVER %{semver %{KUBE_MAJOR} %{KUBE_MINOR} %{KUBE_PATCH}}
 
 Name: kubelet
 Version: %{KUBE_VERSION}
@@ -73,6 +82,12 @@ Command-line utility for administering a Kubernetes cluster.
 #   spectool -gf kubelet.spec
 #   rpmbuild --define "_sourcedir $PWD" -bb kubelet.spec
 #
+
+%if %{KUBE_SEMVER} >= %{semver 1 8 0}
+ln -s 10-kubeadm-post-1.8.conf %SOURCE4
+%else
+ln -s 10-kubeadm-pre-1.8.conf %SOURCE4
+%endif
 
 cp -p %SOURCE0 %{_builddir}/
 cp -p %SOURCE1 %{_builddir}/
