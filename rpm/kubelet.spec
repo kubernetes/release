@@ -25,6 +25,9 @@ Source2: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/%{ARCH}/kubectl
 Source3: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/%{ARCH}/kubeadm
 Source4: 10-kubeadm.conf
 Source5: https://dl.k8s.io/network-plugins/cni-%{ARCH}-%{CNI_RELEASE}.tar.gz
+Source6: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/%{ARCH}/kube-proxy
+Source7: kube-proxy.service
+Source8: kube-proxy.conf
 
 
 BuildRequires: curl
@@ -71,6 +74,18 @@ Requires: kubernetes-cni
 %description -n kubeadm
 Command-line utility for administering a Kubernetes cluster.
 
+%package -n kube-proxy
+
+Version: %{KUBE_VERSION}
+Release: %{RPM_RELEASE}
+Summary: The Kubernetes network proxy.
+
+%description -n kube-proxy
+The Kubernetes network proxy runs on each node. This reflects services
+as defined in the Kubernetes API on each node and can do simple TCP, UDP
+stream forwarding or round robin TCP, UDP forwarding across a set of
+backends.
+
 %prep
 # Assumes the builder has overridden sourcedir to point to directory
 # with this spec file. (where these files are stored) Copy them into
@@ -94,6 +109,9 @@ cp -p %SOURCE1 %{_builddir}/
 cp -p %SOURCE2 %{_builddir}/
 cp -p %SOURCE3 %{_builddir}/
 cp -p %SOURCE4 %{_builddir}/
+cp -p %SOURCE6 %{_builddir}/
+cp -p %SOURCE7 %{_builddir}/
+cp -p %SOURCE8 %{_builddir}/
 %setup -D -T -a 5 -n %{_builddir}/
 
 
@@ -108,6 +126,9 @@ install -m 755 -d %{buildroot}/var/lib/kubelet/
 install -p -m 755 -t %{buildroot}%{_bindir}/ kubelet
 install -p -m 755 -t %{buildroot}%{_bindir}/ kubectl
 install -p -m 755 -t %{buildroot}%{_bindir}/ kubeadm
+install -p -m 755 -t %{buildroot}%{_bindir}/ kube-proxy
+install -p -m 755 -t %{buildroot}%{_sysconfdir}/kubernetes/ kube-proxy.conf
+install -p -m 755 -t %{buildroot}%{_sysconfdir}/systemd/system/ kube-proxy.service
 install -p -m 755 -t %{buildroot}%{_sysconfdir}/systemd/system/ kubelet.service
 install -p -m 755 -t %{buildroot}%{_sysconfdir}/systemd/system/kubelet.service.d/ 10-kubeadm.conf
 
@@ -132,6 +153,10 @@ mv bin/ %{buildroot}/opt/cni/
 %{_bindir}/kubeadm
 %{_sysconfdir}/systemd/system/kubelet.service.d/10-kubeadm.conf
 
+%files -n kube-proxy
+%{_bindir}/kube-proxy
+%{_sysconfdir}/kubernetes/kube-proxy.conf
+%{_sysconfdir}/systemd/system/kube-proxy.service
 %doc
 
 
