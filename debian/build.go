@@ -12,6 +12,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/blang/semver"
 )
 
 type ChannelType string
@@ -41,6 +43,7 @@ type version struct {
 	Channel                             ChannelType
 	GetVersion                          func() (string, error)
 	GetDownloadLinkBase                 func(v version) (string, error)
+	KubeadmKubeletConfigFile            string
 }
 
 type cfg struct {
@@ -268,6 +271,26 @@ func getReleaseDownloadLinkBase(v version) (string, error) {
 	return fmt.Sprintf("https://dl.k8s.io/v%s", v.Version), nil
 }
 
+// The version of this file to use changed in 1.8, so use the target build
+// version to figure out which copy of it to include in the deb.
+func getKubeadmKubeletConfigFile(v version) (string, error) {
+	sv, err := semver.Make(v.Version)
+	if err != nil {
+		return "", err
+	}
+
+	v180, err := semver.Make("1.8.0-alpha.0")
+	if err != nil {
+		return "", err
+	}
+
+	if sv.GTE(v180) {
+		return "post-1.8/10-kubeadm.conf", nil
+	} else {
+		return "pre-1.8/10-kubeadm.conf", nil
+	}
+}
+
 func main() {
 	flag.Parse()
 
@@ -435,6 +458,12 @@ func main() {
 			c.DebArch = "ppc64el"
 		} else {
 			c.DebArch = c.Arch
+		}
+
+		var err error
+		c.KubeadmKubeletConfigFile, err = getKubeadmKubeletConfigFile(v)
+		if err != nil {
+			log.Fatalf("error getting kubeadm config: %v", err)
 		}
 
 		return c.run()

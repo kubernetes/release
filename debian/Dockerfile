@@ -12,6 +12,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ADD . /src
+ADD vendor /go/src
 
 WORKDIR /src
 
