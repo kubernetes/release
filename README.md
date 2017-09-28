@@ -154,3 +154,13 @@ cd rpm
 
 Resulting rpms, and a pre-generated yum repository will be generated in rpm/output/x86_64.
 
+### Snap
+
+You can build snap packages with:
+
+```
+cd snap
+./docker-build.sh
+```
+
+The resulting snap packages will be located in snap/build.

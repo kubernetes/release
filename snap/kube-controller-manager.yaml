@@ -1,0 +1,34 @@
+name: kube-controller-manager
+architectures: ['$SNAP_ARCH']
+version: '$KUBE_VERSION'
+summary: kube-controller-manager
+description: kube-controller-manager
+grade: stable
+confinement: strict
+
+apps:
+  daemon:
+    command: run-with-config-args kube-controller-manager-wrapper
+    daemon: simple
+    plugs:
+        - network
+        - network-bind
+        - home
+  kube-controller-manager:
+    command: kube-controller-manager-wrapper
+    plugs:
+        - network
+        - network-bind
+        - home
+parts:
+  kube-controller-manager:
+    plugin: dump
+    source: .
+    stage-packages:
+      - ceph-common:$SNAP_ARCH
+    prepare: |
+      set -eu
+      cp $KUBE_SNAP_BINS/$KUBE_ARCH/kube-controller-manager .
+      cp $KUBE_SNAP_ROOT/shared/run-with-config-args .
+      cp $KUBE_SNAP_ROOT/kube-controller-manager/kube-controller-manager-wrapper .
+      $KUBE_SNAP_ROOT/shared/generate-configure-hook kube-controller-manager

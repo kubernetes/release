@@ -1,0 +1,29 @@
+name: kubeadm
+architectures: ['$SNAP_ARCH']
+version: '$KUBE_VERSION'
+summary: easily bootstrap a secure Kubernetes cluster
+description: |
+  easily bootstrap a secure Kubernetes cluster
+grade: stable
+confinement: classic
+
+apps:
+  kubeadm:
+    command: kubeadm
+  kubelet:
+    command: kubelet
+  kubectl:
+    command: kubectl
+    aliases: ['kubectl']
+
+parts:
+  kubeadm:
+    plugin: dump
+    source: .
+    prepare: |
+      set -eu
+      cp $KUBE_SNAP_BINS/$KUBE_ARCH/kubeadm .
+      cp $KUBE_SNAP_BINS/$KUBE_ARCH/kubelet .
+      cp $KUBE_SNAP_BINS/$KUBE_ARCH/kubectl .
+      mkdir -p meta/hooks
+      cp $KUBE_SNAP_ROOT/shared/kubeadm-config.sh meta/hooks/configure
