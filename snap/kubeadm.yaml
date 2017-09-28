@@ -10,6 +10,11 @@ confinement: classic
 apps:
   kubeadm:
     command: kubeadm
+  kubelet:
+    command: kubelet
+  kubectl:
+    command: kubectl
+    aliases: ['kubectl']
 
 parts:
   kubeadm:
@@ -18,3 +23,7 @@ parts:
     prepare: |
       set -eu
       cp $KUBE_SNAP_BINS/$KUBE_ARCH/kubeadm .
+      cp $KUBE_SNAP_BINS/$KUBE_ARCH/kubelet .
+      cp $KUBE_SNAP_BINS/$KUBE_ARCH/kubectl .
+      mkdir -p meta/hooks
+      cp $KUBE_SNAP_ROOT/shared/kubeadm-config.sh meta/hooks/configure

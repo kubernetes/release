@@ -15,6 +15,20 @@ if [ -z "$KUBE_SNAP_BINS" ]; then
         echo "Fetching $app $KUBE_VERSION"
         curl -LO \
           https://dl.k8s.io/${KUBE_VERSION}/kubernetes-test.tar.gz
+      elif [ "$app" = "kubeadm" ]; then
+        for arch in $architectures; do
+          mkdir -p $arch
+          (cd $arch
+            echo "Fetching $app $KUBE_VERSION $arch"
+            curl -LO \
+              https://dl.k8s.io/${KUBE_VERSION}/bin/linux/$arch/kubeadm
+            curl -LO \
+              https://dl.k8s.io/${KUBE_VERSION}/bin/linux/$arch/kubelet
+            curl -LO \
+              https://dl.k8s.io/${KUBE_VERSION}/bin/linux/$arch/kubectl
+            chmod +x kubeadm kubelet kubectl
+          )
+        done
       else
         for arch in $architectures; do
           mkdir -p $arch
@@ -51,7 +65,7 @@ for app in $apps; do
     sed "s/\$KUBE_VERSION/${KUBE_VERSION:1}/g" $app.yaml > $build_dir/snapcraft.yaml
     sed -i "s/\$SNAP_ARCH/$SNAP_ARCH/g" $build_dir/snapcraft.yaml
 
-    (cd $build_dir && snapcraft)
+    (cd $build_dir && snapcraft -d)
     mv $build_dir/*.snap build
   done
 done
