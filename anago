@@ -389,7 +389,7 @@ rev_version_base () {
 
 
 ###############################################################################
-# Update CHANGELOG on master
+# Update $CHANGELOG_FILE on master
 generate_release_notes() {
   local release_tars=$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/release-tars
 
@@ -403,25 +403,38 @@ generate_release_notes() {
   logecho -n "Checkout master branch to make changes: "
   logrun -s git checkout master || return 1
 
-  # The fetch and rebase before editing CHANGELOG.md
+  # The fetch and rebase before editing $CHANGELOG_FILE
   # avoids merge conflicts if another release cut
   # completed while we were building this one.
-  logecho -n "Fetch origin/master to get latest CHANGELOG.md: "
+  logecho -n "Fetch origin/master to get latest $CHANGELOG_FILE: "
   logrun -s git fetch origin master || return 1
-  logecho -n "Rebase on origin/master before editing CHANGELOG.md: "
+  logecho -n "Rebase on origin/master before editing $CHANGELOG_FILE: "
   logrun -s git rebase origin/master || return 1
 
-  logecho "Insert $RELEASE_VERSION_PRIME notes into CHANGELOG.md..."
+  if [[ ! -f $CHANGELOG_FILE ]]; then
+    logecho "$CHANGELOG_FILE not found.  Creating..."
+    cat<<EOF > $CHANGELOG_FILE
+<!-- BEGIN MUNGE: GENERATED_TOC -->
+
+<!-- END MUNGE: GENERATED_TOC -->
+
+<!-- NEW RELEASE NOTES ENTRY -->
+EOF
+    git add $CHANGELOG_FILE
+  fi
+
+  logecho "Insert $RELEASE_VERSION_PRIME notes into $CHANGELOG_FILE..."
   # Pipe to logrun() vs using directly, because quoting.
   sed -i -e 's/<!-- NEW RELEASE NOTES ENTRY -->/&\n/' \
          -e "/<!-- NEW RELEASE NOTES ENTRY -->/r $RELEASE_NOTES_MD" \
-   CHANGELOG.md | logrun
+   $CHANGELOG_FILE | logrun
 
-  logecho -n "Update CHANGELOG.md TOC: "
-  common::mdtoc CHANGELOG.md || return 1
+  logecho -n "Update $CHANGELOG_FILE TOC: "
+  common::mdtoc $CHANGELOG_FILE || return 1
 
-  logecho -n "Committing CHANGELOG.md: "
-  logrun -s git commit -am "Update CHANGELOG.md for $RELEASE_VERSION_PRIME." \
+  logecho -n "Committing $CHANGELOG_FILE: "
+  logrun -s git commit -am \
+            "Update $CHANGELOG_FILE for $RELEASE_VERSION_PRIME." \
    || return 1
 }
 
@@ -601,7 +614,7 @@ push_git_objects () {
     fi
   fi
 
-  # For new branches and for CHANGELOG, update the master
+  # For new branches and for $CHANGELOG_FILE, update the master
   gitlib::push_master
 }
 
@@ -627,13 +640,13 @@ Kubernetes team,
 <P>
 Kubernetes $RELEASE_VERSION_PRIME has been built and pushed.
 <P>
-The release notes have been updated in <A HREF=https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md/#${RELEASE_VERSION_PRIME//\./}>CHANGELOG.md</A> with a pointer to it on <A HREF=https://github.com/kubernetes/kubernetes/releases/tag/$RELEASE_VERSION_PRIME>github</A>:
+The release notes have been updated in <A HREF=https://github.com/kubernetes/kubernetes/blob/master/$CHANGELOG_FILE/#${RELEASE_VERSION_PRIME//\./}>$CHANGELOG_FILE</A> with a pointer to it on <A HREF=https://github.com/kubernetes/kubernetes/releases/tag/$RELEASE_VERSION_PRIME>github</A>:
 <P>
 <HR>
 $(cat $RELEASE_NOTES_HTML)
 <HR>
 <P><BR>
-Leads, the <A HREF=https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md/#${RELEASE_VERSION_PRIME//\./}>CHANGELOG.md</A> has been bootstrapped with $RELEASE_VERSION_PRIME release notes and you may edit now as needed.
+Leads, the <A HREF=https://github.com/kubernetes/kubernetes/blob/master/$CHANGELOG_FILE/#${RELEASE_VERSION_PRIME//\./}>$CHANGELOG_FILE</A> has been bootstrapped with $RELEASE_VERSION_PRIME release notes and you may edit now as needed.
 <P><BR>
 Published by <A HREF=https://github.com/kubernetes/release>$PROG</A>, the Kubernetes Release Tool
 EOF
@@ -725,13 +738,13 @@ update_github_release () {
 
   # post release data
   logecho "$release_verb the $RELEASE_VERSION_PRIME release on github..."
-  local changelog_url="$K8S_GITHUB_URL/blob/master/CHANGELOG.md"
+  local changelog_url="$K8S_GITHUB_URL/blob/master/$CHANGELOG_FILE"
   release_id=$($GHCURL $K8S_GITHUB_API/releases$id_suffix --data \
    '{
     "tag_name": "'$RELEASE_VERSION_PRIME'",
     "target_commitish": "'$RELEASE_BRANCH'",
     "name": "'$RELEASE_VERSION_PRIME'",
-    "body": "See [kubernetes-announce@](https://groups.google.com/forum/#!forum/kubernetes-announce) and [CHANGELOG]('$changelog_url'#'${RELEASE_VERSION_PRIME//\./}') for details.\n\nSHA256 for `kubernetes.tar.gz`: `'$sha_hash'`\n\nAdditional binary downloads are linked in the [CHANGELOG]('$changelog_url'#downloads-for-'${RELEASE_VERSION_PRIME//\./}').",
+    "body": "See [kubernetes-announce@](https://groups.google.com/forum/#!forum/kubernetes-announce) and ['$CHANGELOG_FILE']('$changelog_url'#'${RELEASE_VERSION_PRIME//\./}') for details.\n\nSHA256 for `kubernetes.tar.gz`: `'$sha_hash'`\n\nAdditional binary downloads are linked in the ['$CHANGELOG_FILE']('$changelog_url'#downloads-for-'${RELEASE_VERSION_PRIME//\./}').",
     "draft": '$draft',
     "prerelease": '$prerelease'
     }' |jq -r '.id')
@@ -1047,6 +1060,11 @@ common::runstep get_build_candidate || common::exit 1 "Exiting..."
 
 # WORK/BUILD area
 WORKDIR=$BASEDIR/$PROG-$RELEASE_VERSION_PRIME
+if [[ $RELEASE_VERSION_PRIME =~ ${VER_REGEX[release]} ]]; then
+  CHANGELOG_FILE="CHANGELOG-${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.md"
+else
+  common::exit 1 "Unable to set CHANGELOG file!"
+fi
 # Go tools expect the kubernetes src to be under $GOPATH
 export GOPATH=$WORKDIR
 # TOOL_ROOT is release/
@@ -1093,6 +1111,7 @@ common::printvars -p WORKDIR WORKDIR TREE_ROOT $DISPLAY_PARENT_BRANCH \
                      $DISPLAY_VERSION \
                      RELEASE_VERSION_PRIME ${ALL_RELEASE_VERSIONS[@]} \
                      RELEASE_BRANCH GCRIO_REPO RELEASE_BUCKET \
+                     CHANGELOG_FILE \
                      FLAGS_nomock FLAGS_noclean FLAGS_rc FLAGS_official \
                      LOGFILE
 
