@@ -393,6 +393,13 @@ rev_version_base () {
 generate_release_notes() {
   local release_tars=$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/release-tars
 
+  # Concurrent builds (e.g. 1.6.x and 1.7.x) can hit merge conflicts
+  # if more than one build enters the critical section consisting of
+  # the command sequence (generate_release_notes && push_git_objects).
+  ((FLAGS_yes)) \
+    || common::askyorn -e "Pausing before generating release notes. Confirm no other anago builds are in progress and beyond this step" \
+    || common::exit 1 "Exiting..."
+
   logecho -n "Generating release notes: "
   logrun -s relnotes $RELEASE_VERSION_PRIME --release-tars=$release_tars \
                      --branch=${PARENT_BRANCH:-$RELEASE_BRANCH} --htmlize-md \
