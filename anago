@@ -643,7 +643,7 @@ EOF
 # Mail out the announcement
 # @param subject - the subject for the email notification
 announce () {
-  local mailto="gke-kubernetes-team@google.com"
+  local mailto="gke-kubernetes-org@google.com"
         mailto+=",kubernetes-dev@googlegroups.com"
         mailto+=",kubernetes-announce@googlegroups.com"
   local subject="$*"
