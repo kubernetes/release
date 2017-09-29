@@ -1,6 +1,6 @@
 %global KUBE_MAJOR 1
-%global KUBE_MINOR 7
-%global KUBE_PATCH 3
+%global KUBE_MINOR 8
+%global KUBE_PATCH 0
 %global KUBE_VERSION %{KUBE_MAJOR}.%{KUBE_MINOR}.%{KUBE_PATCH}
 %global CNI_RELEASE 0799f5732f2a11b329d9e3d51b9c8f2e3759f2ff
 %global RPM_RELEASE 0
@@ -136,6 +136,9 @@ mv bin/ %{buildroot}/opt/cni/
 
 
 %changelog
+* Fri Sep 29 2017 Jacob Beacham <beacham@google.com> - 1.8.0
+- Bump version of kubelet and kubectl to v1.8.0.
+
 * Thu Aug 3 2017 Jacob Beacham <beacham@google.com> - 1.7.3
 - Bump version of kubelet and kubectl to v1.7.3.
 
