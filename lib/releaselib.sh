@@ -845,9 +845,7 @@ release::docker::release () {
     "hyperkube"
   )
 
-  # If G_AUTH_USER is set, switch to it for verifying connectivity to
-  # google-containers
-  if [[ -n $G_AUTH_USER && $registry == "google-containers" ]];then
+  if [[ -n $G_AUTH_USER && $registry == "gcr.io/google_containers" ]];then
     logrun $GCLOUD config set account $G_AUTH_USER
   fi
 
