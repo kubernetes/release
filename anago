@@ -28,6 +28,7 @@ PROG=${0##*/}
 #+            [--basedir=<alt base work dir>] <branch>
 #+            [--security_layer=/path/to/pointer/to/script]
 #+            [--exclude-suites="<suite> ..."]
+#+            [--build-at-head]
 #+            [--mailto=<email1>,<email2>]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
@@ -54,6 +55,9 @@ PROG=${0##*/}
 #+     Simply specify the <branch> you want to release from and follow the
 #+     prompts.  <branch> is one of master, release-1.2, etc. and the release
 #+     is based on the <branch> value and the [--official] flag:
+#+
+#+     WARNING: --build-at-head bypasses any test analysis and builds directly
+#+     at the HEAD Of the named branch.  Mostly for testing.
 #+
 #+     Branch     RC  Official    Type
 #+     ------     --  --------    ----
@@ -97,6 +101,7 @@ PROG=${0##*/}
 #+                                 Default: $HOME/.kubernetes-releaserc
 #+     [--exclude-suites=]       - Space separated list of CI suites regex to
 #+                                 exclude from go/nogo criteria
+#+     [--build-at-head]         - Force a build at HEAD of named branch
 #+     [--mailto=]               - Comma-separated list of addresses to send
 #+                                 announcement email to. Overrides default list.
 #+     [--help | -man]           - display man page for this script
