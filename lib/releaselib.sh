@@ -107,7 +107,9 @@ release::set_build_version () {
   local other_job
   local good_job
   local good_job_count=0
-  local branch_head
+  local branch_head=$($GHCURL $K8S_GITHUB_API/commits/$branch |jq -r '.sha')
+  # Shorten
+  branch_head=${branch_head:0:14}
   # The instructions below for installing yq put it in /usr/local/bin
   local yq="/usr/local/bin/yq"
   local -a JOB
@@ -181,6 +183,21 @@ release::set_build_version () {
       build_sha1_date=$($GHCURL $K8S_GITHUB_API/commits?sha=$build_sha1 |\
                         jq -r '.[0] | .commit .author .date')
       build_sha1_date=$(date +"%R %m/%d" -d "$build_sha1_date")
+
+      # See anago for --build-at-head
+      # This method requires a call to release::get_job_cache() to initially
+      # set $build_version, however it is less fragile than ls-remote and
+      # sorting
+      if ((FLAGS_build_at_head)); then
+        build_version=${build_version/$build_sha1/$branch_head}
+        # Force job_count so we don't fail
+        job_count=1
+        logecho
+        logecho "Forced --build-at-head specified." \
+                "Setting build_version=$build_version"
+        logecho
+        break
+      fi
     elif [[ $good_job =~ JOB\[([0-9]+)\]=(${VER_REGEX[release]}) ]]; then
       logecho
       logecho "$ATTENTION: Newly tagged versions exclude git hash." \
@@ -201,10 +218,6 @@ release::set_build_version () {
     # inconsistencies in the testgrid config naming conventions, now look 
     # *specifically* for a release branch with a version in it (non-master).
     if [[ "$branch" =~ release-([0-9]{1,})\. ]]; then
-      branch_head=$($GHCURL $K8S_GITHUB_API/commits/$branch |jq -r '.sha')
-      # Shorten
-      branch_head=${branch_head:0:14}
-
       if [[ $build_sha1 != $branch_head ]]; then
         # TODO: Figure out how to curl a list of last N commits
         #       So we can return a message about how far ahead the top of the
