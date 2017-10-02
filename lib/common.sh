@@ -859,7 +859,7 @@ common::mdtoc () {
   done < <(egrep "^#+ " $file) > $tmpfile
 
   # Insert new TOC
-  sed -ir "/^$begin_block/,/^$end_block/{
+  sed -ri "/^$begin_block/,/^$end_block/{
        /^$begin_block/{
          n
          r $tmpfile
