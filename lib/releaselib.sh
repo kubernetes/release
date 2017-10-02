@@ -107,11 +107,13 @@ release::set_build_version () {
   local other_job
   local good_job
   local good_job_count=0
+  local first_build_number
   local branch_head=$($GHCURL $K8S_GITHUB_API/commits/$branch |jq -r '.sha')
   # Shorten
   branch_head=${branch_head:0:14}
   # The instructions below for installing yq put it in /usr/local/bin
   local yq="/usr/local/bin/yq"
+  local job_prefix="ci-kubernetes-"
   local -a JOB
   local -a secondary_jobs
 
@@ -150,7 +152,7 @@ release::set_build_version () {
 
   if ((FLAGS_verbose)); then
     # Get the longest line for formatting
-    max_job_length=$(echo ${secondary_jobs[*]} |\
+    max_job_length=$(echo ${secondary_jobs[*]/$job_prefix/} |\
      awk '{for (i=1;i<=NF;++i) {l=length($i);if(l>x) x=l}}END{print x}')
     # Pad it a bit
     ((max_job_length+2))
@@ -158,10 +160,10 @@ release::set_build_version () {
     logecho
     logecho "(*) Primary job (-) Secondary jobs"
     logecho
-    logecho "  $(printf '%-'$max_job_length's' "Jenkins Job")" \
+    logecho "  $(printf '%-'$max_job_length's' "Job #")" \
             "Run #   Build # Time/Status"
     logecho "= $(common::print_n_char = $max_job_length)" \
-            "======  ======= ==========="
+            "=====   ======= ==========="
   fi
 
   while read good_job; do
@@ -178,6 +180,8 @@ release::set_build_version () {
           JOB\[([0-9]+)\]=(${VER_REGEX[release]})\.${VER_REGEX[build]} ]]; then
       main_run=${BASH_REMATCH[1]}
       build_number=${BASH_REMATCH[8]}
+      # Save first build_number
+      ((good_job_count==1)) && first_build_number=$build_number
       build_sha1=${BASH_REMATCH[9]}
       build_version=${BASH_REMATCH[2]}.$build_number+$build_sha1
       build_sha1_date=$($GHCURL $K8S_GITHUB_API/commits?sha=$build_sha1 |\
@@ -219,15 +223,10 @@ release::set_build_version () {
     # *specifically* for a release branch with a version in it (non-master).
     if [[ "$branch" =~ release-([0-9]{1,})\. ]]; then
       if [[ $build_sha1 != $branch_head ]]; then
-        # TODO: Figure out how to curl a list of last N commits
-        #       So we can return a message about how far ahead the top of the
-        #       release branch is from the last good commit.
-        #commit_count=$(git rev-list $build_sha1..${branch_head} |wc -l)
-        commit_count=some
+        commit_count=$((first_build_number-build_number))
         logecho
         logecho "$ATTENTION: The $branch branch HEAD is ahead of the last" \
-                "good Jenkins run by $commit_count commits." \
-                "Wait for Jenkins to catch up."
+                "good run by $commit_count commits."
         logecho
         logecho "If you want to use the head of the branch anyway," \
                 "--buildversion=${build_version/$build_sha1/$branch_head}"
@@ -245,14 +244,16 @@ release::set_build_version () {
     if ((FLAGS_verbose)); then
       logecho "* $(printf \
                    '%-'$max_job_length's %-7s %-7s' \
-                   $main_job \#$main_run \#$build_number) [$build_sha1_date]"
+                   ${main_job/$job_prefix/} \
+                   \#$main_run \#$build_number) [$build_sha1_date]"
       logecho "* (--buildversion=$build_version)"
     fi
 
     # Check secondaries to ensure that build number is green across "all"
     for other_job in ${secondary_jobs[@]}; do
       ((FLAGS_verbose)) \
-       && logecho -n "- $(printf '%-'$max_job_length's ' $other_job)"
+       && logecho -n "- $(printf '%-'$max_job_length's ' \
+                                 ${other_job/$job_prefix/})"
 
       # Need to kick out when a secondary doesn't exist (anymore)
       if [[ ! -f $job_path/$other_job ]]; then
@@ -280,7 +281,7 @@ release::set_build_version () {
         cache_build=${BASH_REMATCH[1]}
         # if build_number matches the cache's build number we're good
         # OR
-        # if last_run-run proves consecutive Jenkins jobs AND
+        # if last_run-run proves consecutive jobs AND
         # build_number is within a cache_build range, the build was also good
         if ((build_number==cache_build)) || \
            ((($((last_run-run))==1)) && \
