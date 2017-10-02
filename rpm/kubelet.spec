@@ -3,7 +3,7 @@
 %global KUBE_PATCH 0
 %global KUBE_VERSION %{KUBE_MAJOR}.%{KUBE_MINOR}.%{KUBE_PATCH}
 %global CNI_RELEASE 0799f5732f2a11b329d9e3d51b9c8f2e3759f2ff
-%global RPM_RELEASE 0
+%global RPM_RELEASE 1
 %global ARCH amd64
 
 # This expands a (major, minor, patch) tuple into a single number so that it

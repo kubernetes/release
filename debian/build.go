@@ -436,7 +436,7 @@ func main() {
 				Versions: []version{
 					{
 						GetVersion:          getSpecifiedVersion,
-						Revision:            "00",
+						Revision:            "01",
 						Channel:             ChannelStable,
 						GetDownloadLinkBase: getReleaseDownloadLinkBase,
 					},
