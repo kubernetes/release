@@ -142,10 +142,14 @@ release::set_build_version () {
   # finer granularity at the Jenkin's job level to determine if a build is ok.
   release::get_job_cache -d $job_path/$main_job &
 
-  # Update secondary caches limited by main cache last build number
-  for other_job in ${secondary_jobs[@]}; do
+  # If we're forcing a --build-at-head, we only need to capture the $main_job
+  # details.
+  if ! ((FLAGS_build_at_head)); then
+    # Update secondary caches limited by main cache last build number
+      for other_job in ${secondary_jobs[@]}; do
     release::get_job_cache $job_path/$other_job &
-  done
+    done
+  fi
 
   # Wait for background fetches.
   wait
