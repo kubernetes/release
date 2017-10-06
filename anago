@@ -397,6 +397,7 @@ rev_version_base () {
 # Update $CHANGELOG_FILE on master
 generate_release_notes() {
   local release_tars=$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/release-tars
+  local action="Update"
 
   logecho -n "Generating release notes: "
   logrun -s relnotes $RELEASE_VERSION_PRIME --release-tars=$release_tars \
@@ -417,7 +418,6 @@ generate_release_notes() {
   logrun -s git rebase origin/master || return 1
 
   if [[ ! -f $CHANGELOG_FILE ]]; then
-    logecho "$CHANGELOG_FILE not found.  Creating..."
     cat<<EOF > $CHANGELOG_FILE
 <!-- BEGIN MUNGE: GENERATED_TOC -->
 
@@ -425,22 +425,38 @@ generate_release_notes() {
 
 <!-- NEW RELEASE NOTES ENTRY -->
 EOF
-    git add $CHANGELOG_FILE
+    action="Add"
+    logecho -n "$CHANGELOG_FILE not found.  Creating: "
+    logrun -s git add $CHANGELOG_FILE
   fi
 
-  logecho "Insert $RELEASE_VERSION_PRIME notes into $CHANGELOG_FILE..."
+  logecho -n "Insert $RELEASE_VERSION_PRIME notes into $CHANGELOG_FILE: "
   # Pipe to logrun() vs using directly, because quoting.
   sed -i -e 's/<!-- NEW RELEASE NOTES ENTRY -->/&\n/' \
          -e "/<!-- NEW RELEASE NOTES ENTRY -->/r $RELEASE_NOTES_MD" \
-   $CHANGELOG_FILE | logrun
+   $CHANGELOG_FILE | logrun -s
 
   logecho -n "Update $CHANGELOG_FILE TOC: "
-  common::mdtoc $CHANGELOG_FILE || return 1
+  logrun -s common::mdtoc $CHANGELOG_FILE || return 1
 
   logecho -n "Committing $CHANGELOG_FILE: "
   logrun -s git commit -am \
-            "Update $CHANGELOG_FILE for $RELEASE_VERSION_PRIME." \
+            "$action $CHANGELOG_FILE for $RELEASE_VERSION_PRIME." \
    || return 1
+
+  # Sync $CHANGELOG_FILE to release-* branch
+  if [[ "$RELEASE_BRANCH" =~ release- ]]; then
+    logecho -n "Checkout $RELEASE_BRANCH branch to make changes: "
+    logrun -s git checkout $RELEASE_BRANCH || return 1
+    logecho -n "Remove any previous CHANGELOG*.md files: "
+    logrun -s git rm -f CHANGELOG*.md || return 1
+    logecho -n "Copy master $CHANGELOG_FILE to $RELEASE_BRANCH branch: "
+    logrun -s git checkout master -- $CHANGELOG_FILE || return 1
+    logecho -n "Committing $CHANGELOG_FILE: "
+    logrun -s git commit -am \
+              "Add/Update $CHANGELOG_FILE for $RELEASE_VERSION_PRIME." \
+     || return 1
+  fi
 }
 
 
@@ -607,9 +623,6 @@ push_git_objects () {
   done
 
   if [[ "$RELEASE_BRANCH" =~ release- ]]; then
-    #logecho -n "Rebase $RELEASE_BRANCH branch: "
-    #logrun git fetch origin/$RELEASE_BRANCH || return 1
-    #logrun git rebase origin/$RELEASE_BRANCH || return 1
     logecho -n "Pushing$dryrun_flag $RELEASE_BRANCH branch: "
     logrun -s git push$dryrun_flag origin $RELEASE_BRANCH || return 1
     # Additionally push the parent branch if a branch of branch
