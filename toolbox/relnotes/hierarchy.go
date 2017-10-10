@@ -10,7 +10,12 @@ import (
 	"github.com/google/go-github/github"
 )
 
-func hierarchicalNoteLayout(f *os.File, dict map[string]map[string]map[int]map[int]bool, issueMap map[int]*github.Issue) {
+type dictSIG map[string]dictArea
+type dictArea map[string]dictIssue
+type dictIssue map[int]dictPR
+type dictPR map[int]bool
+
+func hierarchicalNoteLayout(f *os.File, dict dictSIG, issueMap map[int]*github.Issue) {
 	for sig, areas := range dict {
 		f.WriteString(fmt.Sprintf(" - %s\n\n", strings.Title(sig)))
 		for area, issues := range areas {
@@ -32,8 +37,8 @@ func hierarchicalNoteLayout(f *os.File, dict map[string]map[string]map[int]map[i
 
 // createHierarchicalNote given release PRs and issue map, creates hierarchical release note
 // map[SIG]map[Area]map[Issue]PR.
-func createHierarchicalNote(prs []int, issueMap map[int]*github.Issue) map[string]map[string]map[int]map[int]bool {
-	var dict = map[string]map[string]map[int]map[int]bool{}
+func createHierarchicalNote(prs []int, issueMap map[int]*github.Issue) dictSIG {
+	var dict = dictSIG{}
 
 	for _, pr := range prs {
 		issues := extractFixedIssues(*issueMap[pr].Body)
@@ -59,15 +64,15 @@ func createHierarchicalNote(prs []int, issueMap map[int]*github.Issue) map[strin
 
 // setNoteDict sets the entry dict[sig][area][issue][pr] to be true, initializes nil maps along
 // the way.
-func setNoteDict(dict map[string]map[string]map[int]map[int]bool, sig, area string, issue, pr int) {
+func setNoteDict(dict dictSIG, sig, area string, issue, pr int) {
 	if dict[sig] == nil {
-		dict[sig] = map[string]map[int]map[int]bool{}
+		dict[sig] = dictArea{}
 	}
 	if dict[sig][area] == nil {
-		dict[sig][area] = map[int]map[int]bool{}
+		dict[sig][area] = dictIssue{}
 	}
 	if dict[sig][area][issue] == nil {
-		dict[sig][area][issue] = map[int]bool{}
+		dict[sig][area][issue] = dictPR{}
 	}
 	dict[sig][area][issue][pr] = true
 }
