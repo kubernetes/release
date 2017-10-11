@@ -43,12 +43,21 @@ func createHierarchicalNote(prs []int, issueMap map[int]*github.Issue) dictSIG {
 	for _, pr := range prs {
 		issues := extractFixedIssues(*issueMap[pr].Body)
 		if len(issues) == 0 {
-			setNoteDict(dict, "nullSig", "nullArea", -1, pr)
-			continue
+			// In our design doc, the automation should enforce every release-note PR
+			// with at least one issue. However it's observed that the rule is not
+			// applied yet. Also old PRs may not link to an issue.
+			//
+			// To produce info-richer release note, we try to get SIG and Area label
+			// from PRs which don't link to any issue.
+			issues = append(issues, pr)
 		}
 		for _, i := range issues {
 			sigs := extractIssueSIGs(issueMap[i])
 			area := extractIssueArea(issueMap[i])
+			// For PRs that don't link to any issue, restore the nullIssue information
+			if issueMap[i].PullRequestLinks != nil {
+				i = -1
+			}
 			if len(sigs) == 0 {
 				setNoteDict(dict, "nullSig", area, i, pr)
 				continue
@@ -81,7 +90,7 @@ func setNoteDict(dict dictSIG, sig, area string, issue, pr int) {
 func extractFixedIssues(msg string) []int {
 	var issues = make([]int, 0)
 	re, _ := regexp.Compile("fixes #([0-9]+)")
-	matches := re.FindAllStringSubmatch(msg, -1)
+	matches := re.FindAllStringSubmatch(strings.ToLower(msg), -1)
 	for _, match := range matches {
 		id, _ := strconv.Atoi(match[1])
 		issues = append(issues, id)
