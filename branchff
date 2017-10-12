@@ -79,6 +79,8 @@ common::timestamp begin
 
 gitlib::repo_state || common::exit 1
 
+# Set default API/GIT roots
+gitlib::set_api_roots
 ###############################################################################
 # MAIN
 ###############################################################################
