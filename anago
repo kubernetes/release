@@ -196,15 +196,6 @@ copy_logs_to_workdir () {
 }
 
 ###############################################################################
-# Simple ACL check to limit nomock runs to a short list of release folks
-check_acls () {
-  if ! (echo "$USER" | egrep -q -w "$ACL_LIST"); then
-    echo "Live releases restricted to certain users!"
-    return 1
-  fi
-}
-
-###############################################################################
 # Ensures all registries that will be used during both mock and --nomock
 # runs allow write access so we don't fall over later
 # @param registries - A space separated list of registries
@@ -1062,7 +1053,9 @@ if [[ "$HOSTNAME" =~ \.([^\.]+\.com)$ ]]; then
 fi
 
 # Simple check to validate who can do actual releases
-((FLAGS_nomock)) && check_acls
+if ((FLAGS_nomock)); then
+  security_layer::acl_check || common::exit 1 "Exiting..."
+fi
 
 ##############################################################################
 common::stepheader "CHECK PREREQUISITES"
