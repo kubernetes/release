@@ -521,12 +521,28 @@ release::gcs::prepare_for_copy() {
   logrun rm -rf $gcs_stage || return 1
   logrun mkdir -p $gcs_stage || return 1
 
-  logecho "- Checking whether $gcs_destination already exists..."
+  # No need to check this for mock runs
+  # Overwriting is ok
+  if ((FLAGS_nomock)); then
+    release::gcs::destination_empty $gcs_destination || return 1
+  fi
+}
+
+###############################################################################
+# Ensure the destination bucket path doesn't already exist
+# @param gcs_destination - GCS destination directory
+# @return 1 on failure or if GCS destination already exists
+release::gcs::destination_empty() {
+  local gcs_destination=$1
+
+  logecho -n "Checking whether $gcs_destination already exists: "
   if $GSUTIL ls $gcs_destination >/dev/null 2>&1 ; then
+    logecho "$FAILED"
     logecho "- Destination exists. To remove, run:"
-    logecho -n "  gsutil -m rm -r $gcs_destination\n"
+    logecho "  gsutil -m rm -r $gcs_destination"
     return 1
   fi
+  logecho "$OK"
 }
 
 ###############################################################################

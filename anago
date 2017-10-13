@@ -22,10 +22,11 @@ PROG=${0##*/}
 #+     $PROG - Kubernetes Release Tool
 #+
 #+ SYNOPSIS
-#+     $PROG  [--yes] [--nomock] [--noclean] [--rc] [--official]
+#+     $PROG  <branch> [--yes] [--nomock] [--noclean] [--rc] [--official]
+#+            [--stage]
 #+            [--buildversion=<jenkins build version>]
 #+            [--gcrio_repo=<repo name>]
-#+            [--basedir=<alt base work dir>] <branch>
+#+            [--basedir=<alt base work dir>]
 #+            [--security_layer=/path/to/pointer/to/script]
 #+            [--exclude-suites="<suite> ..."]
 #+            [--build-at-head]
@@ -50,7 +51,24 @@ PROG=${0##*/}
 #+
 #+     $PROG runs in mock/dryrun mode by default.  To actually execute a
 #+     release, pass in the --nomock flag.
-#+     ACLs control who can actually *push*.
+#+
+#+     ++++ NEW (for 1.8+) ++++
+#+     --stage writes all usual and extra artifacts to
+#+     gs://$RELEASE_BUCKET/stage for later use by 'release' runs.
+#+     * The 'staged' version identifier is the source JENKINS_BUILD_VERSION
+#+       rather than the computed version(s) that stem from it to identify
+#+       the final release artifacts.  You may stage multiple source builds
+#+       for potential release later
+#+     * When you run a standard 'release', $PROG will look for staged bits:
+#+       - LOCALLY: The complete source tree, including all commits & artifacts.
+#+       - GCS: Artifacts only in
+#+              gs://$RELEASE_BUCKET/stage/$JENKINS_BUILD_VERSION
+#+     * This method works with both mock and --nomock INTERCHANGEABLY
+#+       on the local disk. If relying on the GCS staging, be sure to use
+#+       --nomock for both --stage and the real release run.
+#+     * --stage also skips many of the usual release steps including many 
+#+       auth checks and pushes as it's primary function is to build and
+#+       stage release bits and artifacts for later use.
 #+
 #+     Simply specify the <branch> you want to release from and follow the
 #+     prompts.  <branch> is one of master, release-1.2, etc. and the release
@@ -78,8 +96,12 @@ PROG=${0##*/}
 #+     * RELEASE_VERSION_PRIME is the primary release version
 #+     * GCRIO_REPO and RELEASE_BUCKET are the publish locations
 #+
+#+     A simple $USER check controls who can run in --nomock mode as ACLs
+#+     restrict who can actually push bits anyway.
 #+
 #+ OPTIONS
+#+     [--stage]                 - Write all artifacts to
+#+                                 gs://$RELEASE_BUCKET/stage for later use
 #+     [--yes]                   - Assume 'yes' to all queries
 #+     [--nomock]                - Complete an actual release with upstream
 #+                                 pushes
@@ -117,6 +139,11 @@ PROG=${0##*/}
 #+                               - Do a mock official release from release-1.1
 #+     $PROG --nomock --official release-1.1
 #+                               - Do an official release from release-1.1
+#+     $PROG release-1.8 --stage --build-at-head
+#+                               - Stage a HEAD build locally and on GCS
+#+     $PROG release-1.8 --nomock --build-at-head
+#+                               - Release the staged build
+#+                                 (assuming HEAD hasn't changed)
 #+
 #+ FILES
 #+     build/release.sh
@@ -149,6 +176,11 @@ RELEASE_BRANCH=${POSITIONAL_ARGV[0]}
 # Check branch format
 [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]] \
  || common::exit 1 "Invalid branch name!"
+
+# Backport https://github.com/kubernetes/kubernetes/pull/47939 and remove this
+if ((FLAGS_stage)) && ((${BASH_REMATCH[2]}<8)); then
+  common::exit 1 "--stage only works for 1.8+ releases."
+fi
 
 # Check arg conflicts
 if ((FLAGS_rc)) || ((FLAGS_official)); then
@@ -246,7 +278,7 @@ ensure_registry_acls () {
 check_prerequisites () {
   local userat="$USER@$DOMAIN_NAME"
 
-  security_layer::auth_check 2
+  security_layer::auth_check 2 || return 1
 
   if ! common::set_cloud_binaries; then
     logecho "Releasing Kubernetes requires gsutil and gcloud. Please download,"
@@ -570,17 +602,113 @@ build_tree () {
   logecho
   logecho -n "Building Kubernetes $version on $branch: "
 
-  # Should be an arg at some point
-  export KUBE_DOCKER_IMAGE_TAG="$version"
-
   # TODO: Ideally we update LOCAL_OUTPUT_ROOT in build/common.sh to be
   #       modifiable.  In the meantime just mv the dir after it's done
   # Not until https://github.com/kubernetes/kubernetes/issues/23839
   #logrun -s make release OUT_DIR=$BUILD_OUTPUT-${RELEASE_VERSION[$label]}
-  logrun -s make release || common::exit 1
+  # KUBE_DOCKER_IMAGE_TAG required for hyperkube in build/lib/release.sh
+  logrun -s make release KUBE_DOCKER_IMAGE_TAG="$version" || common::exit 1
 
   logecho -n "Moving build _output to $BUILD_OUTPUT-$version: "
   logrun -s mv $BUILD_OUTPUT $BUILD_OUTPUT-$version
+}
+
+##############################################################################
+# Look for locally staged complete work trees and symlink if they contain
+# artifacts
+# @param release_versions - All release versions ${RELEASE_VERSION[@]}
+# Sets global STAGED_LOCALLY
+# returns 1 on failure
+is_staged_locally () {
+  local release_versions="$*"
+  local version
+  local jbv="$JENKINS_BUILD_VERSION"
+  local local_root="$BASEDIR/$PROG-$jbv/src"
+  local k8s_root="$local_root/k8s.io/kubernetes/_output"
+
+  for version in $release_versions; do
+    logecho -n "Searching for locally staged $jbv artifacts: "
+    if ls $k8s_root-$version/release-images/*/*.tar >/dev/null 2>&1 && \
+       ls $k8s_root-$version/release-tars/*.tar.gz* >/dev/null 2>&1; then
+      logecho "$FOUND"
+    else
+      logecho "$NOTFOUND"
+      return 1
+    fi
+  done
+
+  # Enjoy the local filesystem
+  logecho -n "Symlinking $local_root to $WORKDIR/src: "
+  logrun mkdir -p $WORKDIR
+  logrun -s ln -nsf $local_root $WORKDIR/src || return 1
+
+  # Set a global to skip other build steps in workflow
+  STAGED_LOCALLY=1
+}
+
+##############################################################################
+# Copy artifacts from GCS and between buckets as needed
+# @param label - The ${RELEASE_VERSION{index}]
+# returns 1 on failure
+copy_staged_from_gcs () {
+  local label=$1
+  local jbv="$JENKINS_BUILD_VERSION"
+  local version="${RELEASE_VERSION[$label]}"
+  local gs_stage_root="gs://$RELEASE_BUCKET/stage/$jbv/$version"
+  local gs_release_root="gs://$RELEASE_BUCKET/release/$version"
+  local type
+
+  # cp the /stage/ tarballs to /release/ on GCS directly
+  logecho -n "Copy $gs_stage_root tarballs to $gs_release_root: "
+  logrun -s $GSUTIL -mq cp -rc $gs_stage_root/*.tar.gz* \
+                               $gs_release_root \
+   || return 1
+
+  # If working from a locally staged (symlinked) workspace, relnotes has already
+  # run in that symlinked source tree.  We're done here.
+  ((STAGED_LOCALLY)) && return 0
+
+  # Copy docker images back to _output trees for later pushing
+  # TODO: Can we somehow stage these on GCR.IO using docker or even
+  #       the GCS backend to eliminate the VERY EXPENSIVE --12 minutes--
+  #       it takes to push these containers from local disk?
+  logrun mkdir -p $TREE_ROOT/_output-$version/release-images
+  logecho -n "rsync staged docker images to" \
+             "$TREE_ROOT/_output-$version/release-images: "
+  logrun -s $GSUTIL -mq rsync -Cdr \
+            $gs_stage_root/release-images \
+            $TREE_ROOT/_output-$version/release-images \
+   || return 1
+
+  # cp the /stage/ tarballs to local disk (for relnotes generation only!)
+  logrun mkdir -p $TREE_ROOT/_output-$version/release-tars
+  logecho -n "Copy stage/$jbv/$version" \
+             "to $TREE_ROOT/_output-$version/release-tars: "
+  logrun -s $GSUTIL -mq cp -rc $gs_stage_root/*.tar.gz* \
+                               $TREE_ROOT/_output-$version/release-tars \
+   || return 1
+}
+
+##############################################################################
+# Check for GCS-staged artifacts
+# @param label - The ${RELEASE_VERSION{index}]
+# returns 1 on failure
+is_staged_gcs () {
+  local label=$1
+  local jbv="$JENKINS_BUILD_VERSION"
+  local version="${RELEASE_VERSION[$label]}"
+  local gs_stage_root="gs://$RELEASE_BUCKET/stage/$jbv/$version"
+
+  logecho -n "Searching for $version GCS staged artifacts: "
+  if logrun $GSUTIL -q ls \
+            $gs_stage_root/*.tar.gz* >/dev/null  2>&1 && \
+     logrun $GSUTIL -q ls \
+            $gs_stage_root/release-images/*/*.tar >/dev/null 2>&1; then
+    logecho "$FOUND"
+  else
+    logecho "$NOTFOUND"
+    return 1
+  fi
 }
 
 ##############################################################################
@@ -926,6 +1054,11 @@ prepare_workspace () {
   # Clean up or not
   if ((FLAGS_noclean)); then
     logecho "Working in existing workspace..."
+  elif [[ -h $WORKDIR/src ]]; then
+    # The case where an existing release tree might have a symlink from a
+    # previously failed attempt.  We don't want to fall into the condition
+    # below and clean it up
+    logrun rm -f $WORKDIR/src || return 1
   else
     if [[ -d $TREE_ROOT ]]; then
       logecho "Checking for _output directories..."
@@ -949,8 +1082,14 @@ prepare_workspace () {
     logrun -s rm -rf $WORKDIR || return 1
   fi
 
-  # Sync the tree
-  gitlib::sync_repo $K8S_GITHUB_SSH $TREE_ROOT || return 1
+  # Check if locally staged directory contains all of the RELEASE_VERSIONs for
+  # this release type
+  if ! ((FLAGS_noclean)) && \
+     {((FLAGS_stage)) || ! is_staged_locally ${RELEASE_VERSION[@]};}; then
+    # Sync the tree
+    gitlib::sync_repo $K8S_GITHUB_SSH $TREE_ROOT || return 1
+  fi
+
   logrun cd $TREE_ROOT
 }
 
@@ -958,10 +1097,11 @@ prepare_workspace () {
 ##############################################################################
 # Archive the release on GS
 archive_release () {
-  local archive_bucket=gs://$RELEASE_BUCKET/releases
+  local archive_bucket="gs://$RELEASE_BUCKET/archive"
   local build_dir=${WORKDIR##*/}
 
-  ((FLAGS_yes)) || common::askyorn -y "Archive this release on GS" || return
+  ((FLAGS_yes)) \
+   || common::askyorn -y "Archive this release on $archive_bucket" || return
 
   copy_logs_to_workdir
 
@@ -987,11 +1127,16 @@ archive_release () {
 JENKINS_BUILD_VERSION=$FLAGS_buildversion
 
 RELEASE_BUCKET="kubernetes-release"
+if ((FLAGS_stage)); then
+  BUCKET_TYPE="stage"
+else
+  BUCKET_TYPE="release"
+fi
 if ((FLAGS_nomock)); then
   # Override any --noclean setting if nomock
   FLAGS_noclean=0
   GCRIO_REPO="${FLAGS_gcrio_repo:-google_containers}"
-  ALL_CONTAINER_REGISTRIES=("$GCRIO_REPO" "kubernetes-release-test")
+  ALL_CONTAINER_REGISTRIES=("$GCRIO_REPO")
 else
   # This is passed to logrun() where appropriate when we want to mock
   # specific activities like pushes
@@ -1024,7 +1169,11 @@ export KUBE_SKIP_CONFIRMATIONS=y
 # Initialize logs
 ##############################################################################
 # Initialize and save up to 10 (rotated logs)
-LOGFILE=/tmp/$PROG.log
+if ((FLAGS_stage)); then
+  LOGFILE=/tmp/$PROG-stage.log
+else
+  LOGFILE=/tmp/$PROG.log
+fi
 common::logfileinit $LOGFILE 10
 # BEGIN script
 common::timestamp begin
@@ -1035,12 +1184,14 @@ gitlib::repo_state || common::exit 1
 # Additional functionality
 common::security_layer
 
-##############################################################################
-common::stepheader "CHECK GITHUB AUTH"
-##############################################################################
-gitlib::github_api_token
-gitlib::ssh_auth
-gitlib::is_repo_admin
+if ! ((FLAGS_stage)); then
+  ##############################################################################
+  common::stepheader "CHECK GITHUB AUTH"
+  ##############################################################################
+  gitlib::github_api_token
+  gitlib::ssh_auth
+  gitlib::is_repo_admin
+fi
 
 # Domain check
 if [[ "$HOSTNAME" =~ \.([^\.]+\.com)$ ]]; then
@@ -1070,7 +1221,12 @@ common::stepheader "SET BUILD CANDIDATE"
 common::runstep get_build_candidate || common::exit 1 "Exiting..."
 
 # WORK/BUILD area
-WORKDIR=$BASEDIR/$PROG-$RELEASE_VERSION_PRIME
+# For --stage, it's JENKINS_BUILD_VERSION-based
+if ((FLAGS_stage)); then
+  WORKDIR=$BASEDIR/$PROG-$JENKINS_BUILD_VERSION
+else
+  WORKDIR=$BASEDIR/$PROG-$RELEASE_VERSION_PRIME
+fi
 if [[ $RELEASE_VERSION_PRIME =~ ${VER_REGEX[release]} ]]; then
   CHANGELOG_FILE="CHANGELOG-${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.md"
 else
@@ -1082,8 +1238,8 @@ export GOPATH=$WORKDIR
 # TREE_ROOT is working branch/tree
 TREE_ROOT=$WORKDIR/src/k8s.io/kubernetes
 BUILD_OUTPUT=$TREE_ROOT/_output
-RELEASE_NOTES_MD=$WORKDIR/release-notes.md
-RELEASE_NOTES_HTML=$WORKDIR/release-notes.html
+RELEASE_NOTES_MD=$WORKDIR/src/release-notes.md
+RELEASE_NOTES_HTML=$WORKDIR/src/release-notes.html
 
 # Ensure the WORKDIR exists
 logrun mkdir -p $WORKDIR
@@ -1091,8 +1247,13 @@ logrun mkdir -p $WORKDIR
 ##############################################################################
 common::stepheader "DISK SPACE CHECK"
 ##############################################################################
-common::disk_space_check $BASEDIR $((30*${#RELEASE_VERSION[*]})) ||\
- common::exit 1 "Exiting..."
+# This is a fast moving target and difficult to estimate with any accuracy
+# so set it high.
+# A recent run of release-1.8 --official took:
+# ~95G in the build tree
+# ~90G in the docker dir
+common::disk_space_check $BASEDIR $((100*${#RELEASE_VERSION[*]})) \
+ || common::exit 1 "Exiting..."
 
 if [[ $RELEASE_BRANCH =~ release- ]] &&
    gitlib::branch_exists $RELEASE_BRANCH; then
@@ -1100,6 +1261,18 @@ if [[ $RELEASE_BRANCH =~ release- ]] &&
   common::stepheader "PENDING PRS ON THE $RELEASE_BRANCH BRANCH"
   ##############################################################################
   gitlib::pending_prs $RELEASE_BRANCH
+fi
+
+# No need to pre-check this for mock runs.  Overwriting OK.
+if ((FLAGS_nomock)); then
+  ##############################################################################
+  common::stepheader "GCS TARGET CHECK"
+  ##############################################################################
+  # Ensure GCS destinations are clear before continuing
+  for v in ${RELEASE_VERSION[@]}; do
+    release::gcs::destination_empty \
+     gs://$RELEASE_BUCKET/$BUCKET_TYPE/$v || common::exit 1 "Exiting..."
+  done
 fi
 
 ##############################################################################
@@ -1121,7 +1294,7 @@ fi
 common::printvars -p WORKDIR WORKDIR TREE_ROOT $DISPLAY_PARENT_BRANCH \
                      $DISPLAY_VERSION \
                      RELEASE_VERSION_PRIME ${ALL_RELEASE_VERSIONS[@]} \
-                     RELEASE_BRANCH GCRIO_REPO RELEASE_BUCKET \
+                     RELEASE_BRANCH GCRIO_REPO RELEASE_BUCKET BUCKET_TYPE \
                      CHANGELOG_FILE \
                      FLAGS_nomock FLAGS_noclean FLAGS_rc FLAGS_official \
                      LOGFILE
@@ -1135,7 +1308,7 @@ if ! ((FLAGS_nomock)); then
   logecho
   logecho "$ATTENTION: This is a mock (--mock) run." \
           "Publishing will be based on the above values for" \
-          "RELEASE_BUCKET and GCRIO_REPO."
+          "RELEASE_BUCKET, BUCKET_TYPE and GCRIO_REPO."
 fi
 
 logecho
@@ -1153,49 +1326,55 @@ common::stepheader "PREPARE WORKSPACE"
 ##############################################################################
 common::runstep prepare_workspace || common::exit 1 "Exiting..."
 
-# Need to check git push direct credentials here, deeper into the process
-# than I'd optimally like - preferably this is done way earlier up where the
-# other prerequisites are checked, but the nature of the check requires
-# an actual git repo.
-##############################################################################
-common::stepheader "CHECK GIT PUSH ACCESS"
-##############################################################################
-# TODO: capture state of access without forcing us into a prompt I have to
-#       expose.
-logecho "Checking git push access - verbosely to accept password if needed..."
-logecho "(NOTE: If using 2factor, enter a token for password)"
-logrun -v git push -q --dry-run origin master || common::exit 1 "Exiting..."
-
-# Iterate over session release versions for setup, tagging and building
-for label in ${!RELEASE_VERSION[@]}; do
+if ! ((FLAGS_stage)); then
+  # Need to check git push direct credentials here, deeper into the process
+  # than I'd optimally like - preferably this is done way earlier up where the
+  # other prerequisites are checked, but the nature of the check requires
+  # an actual git repo.
   ##############################################################################
-  common::stepheader "TAG AND BUILD ${RELEASE_VERSION[$label]}"
+  common::stepheader "CHECK GIT PUSH ACCESS"
   ##############################################################################
-  # Prepare the tree for each set of actions (keys of RELEASE_VERSION)
-  common::runstep prepare_tree $label || common::exit 1 "Exiting..."
-  common::runstep build_tree ${RELEASE_VERSION[$label]}
-done
-
-# No release notes for X.Y.Z-beta.0 releases
-if [[ -z "$PARENT_BRANCH" ]]; then
-  ##############################################################################
-  common::stepheader "GENERATE RELEASE NOTES"
-  ##############################################################################
-  common::runstep generate_release_notes || common::exit 1 "Exiting..."
+  # TODO: capture state of access without forcing us into a prompt I have to
+  #       expose.
+  logecho "Checking git push access - verbosely to accept password if needed..."
+  logecho "(NOTE: If using 2factor, enter a token for password)"
+  logrun git checkout -q master && logrun git fetch -q origin \
+   && logrun git rebase -q origin/master \
+   && logrun -v git push -q --dry-run origin master \
+   || common::exit 1 "Exiting..."
 fi
 
-##############################################################################
-common::stepheader "PUSH GIT OBJECTS"
-##############################################################################
-common::runstep push_git_objects || common::exit 1 "Exiting..."
+if ! ((STAGED_LOCALLY)); then
+  # Iterate over session release versions for setup, tagging and building
+  for label in ${!RELEASE_VERSION[@]}; do
+    ###########################################################################
+    common::stepheader "TAG AND BUILD ${RELEASE_VERSION[$label]}"
+    ###########################################################################
+    # Prepare the tree for each set of actions (keys of RELEASE_VERSION)
+    common::runstep prepare_tree $label || common::exit 1 "Exiting..."
+    if ((FLAGS_stage)) || ! is_staged_gcs $label; then
+      common::runstep build_tree ${RELEASE_VERSION[$label]} \
+       || common::exit 1 "Exiting..."
+    fi
+  done
 
-# Get back on $RELEASE_BRANCH because we source branch-specific
-# hack/lib/golang.sh in release::docker::release()
-if [[ $RELEASE_BRANCH =~ release- ]]; then
-  logecho -n "Checkout $RELEASE_BRANCH branch to continue: "
-  logrun -s git checkout $RELEASE_BRANCH || common::exit 1 "Exiting..."
+  # No release notes for X.Y.Z-beta.0 releases
+  if [[ -z "$PARENT_BRANCH" ]]; then
+    ###########################################################################
+    common::stepheader "GENERATE RELEASE NOTES"
+    ###########################################################################
+    common::runstep generate_release_notes || common::exit 1 "Exiting..."
+  fi
 fi
 
+if ! ((FLAGS_stage)); then
+  ##############################################################################
+  common::stepheader "PUSH GIT OBJECTS"
+  ##############################################################################
+  common::runstep push_git_objects || common::exit 1 "Exiting..."
+fi
+
+# Only necessary for <=1.7
 # Set branch-specific KUBE_SERVER_PLATFORMS from current tree
 # Used in release::docker::release()
 source $TREE_ROOT/hack/lib/golang.sh
@@ -1205,25 +1384,53 @@ for label in ${!RELEASE_VERSION[@]}; do
   ##############################################################################
   common::stepheader "PUSH ${RELEASE_VERSION[$label]} IMAGES"
   ##############################################################################
-  common::runstep release::gcs::copy_release_artifacts \
-   release ${RELEASE_VERSION[$label]} \
-   $BUILD_OUTPUT-${RELEASE_VERSION[$label]} \
-   $RELEASE_BUCKET \
-   || common::exit 1 "Exiting..."
+  if is_staged_gcs $label; then
+    common::runstep copy_staged_from_gcs $label
+  else
+    common::runstep release::gcs::copy_release_artifacts \
+     $BUCKET_TYPE ${RELEASE_VERSION[$label]} \
+     $BUILD_OUTPUT-${RELEASE_VERSION[$label]} \
+     $RELEASE_BUCKET \
+     || common::exit 1 "Exiting..."
+  fi
 
-  common::runstep release::docker::release \
-   $KUBE_DOCKER_REGISTRY \
-   ${RELEASE_VERSION[$label]} \
-   $BUILD_OUTPUT-${RELEASE_VERSION[$label]} \
-   || common::exit 1 "Exiting..."
+  if ((FLAGS_stage)); then
+    logecho -n "Archiving (docker) release-images to" \
+               "$RELEASE_BUCKET/$BUCKET_TYPE: "
+    logrun -s $GSUTIL -qm cp -rc \
+      $BUILD_OUTPUT-${RELEASE_VERSION[$label]}/release-images \
+      gs://$RELEASE_BUCKET/$BUCKET_TYPE/$JENKINS_BUILD_VERSION/${RELEASE_VERSION[$label]}/release-images
+    logecho
+  else
+    common::runstep release::docker::release \
+     $KUBE_DOCKER_REGISTRY \
+     ${RELEASE_VERSION[$label]} \
+     $BUILD_OUTPUT-${RELEASE_VERSION[$label]} \
+     || common::exit 1 "Exiting..."
+  fi
+
+  ((FLAGS_stage)) && continue
 
   common::runstep release::gcs::publish_version \
-   release \
+   $BUCKET_TYPE \
    ${RELEASE_VERSION[$label]} \
    $BUILD_OUTPUT-${RELEASE_VERSION[$label]} \
    $RELEASE_BUCKET \
    || common::exit 1 "Exiting..."
 done
+
+# if --stage, we're done
+if ((FLAGS_stage)); then
+  ((FLAGS_nomock)) && EXTRA_FLAGS+=("--nomock")
+  ((FLAGS_official)) && EXTRA_FLAGS+=("--official")
+  logecho
+  logecho "To release this staged build, run:"
+  logecho
+  logecho "$ anago ${EXTRA_FLAGS[*]} $RELEASE_BRANCH" \
+          "--buildversion=$JENKINS_BUILD_VERSION"
+  logecho
+  common::exit 0
+fi
 
 if [[ -n "$PARENT_BRANCH" ]]; then
   ##############################################################################

@@ -51,9 +51,19 @@ release with one optional flag `[--official]` \(used on release-\* branches only
 The [--official] flag indicates that a standard patch release will be created
 on a branch.  Without the [--official] flag, a beta would be created.
 
-Try an alpha release:
+There are two workflows you can choose from:
+1. Run through a complete release end to end
+2. Create any number of staged (--stage) releases and release from there
+
+First try a staged alpha release:
 ```
-$ anago master
+$ anago master --stage
+```
+Later, release the staged bits:
+(Artifacts are cached both locally and on GCS)
+```
+# Set --buildversion based on the final output of the staging build
+$ anago master --buildversion=<staging build version>
 ```
 
 Try a beta release on a branch:
@@ -70,6 +80,8 @@ Try a beta release on a new branch:
 ```
 $ anago release-9.9
 ```
+
+NOTE: You can first stage and then release on master or any supported branch.
 
 Try creating a new branch and beta for an emergency zero-day fix.
 See [docs/branching.md](docs/branching.md) for more details.
