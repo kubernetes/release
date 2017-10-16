@@ -492,6 +492,13 @@ release::gcs::ensure_release_bucket() {
 release::gcs::stage_and_hash() {
   local gcs_stage=$1
   shift
+  local src
+  local srcdir
+  local srcthing
+  local args
+  local split
+  local srcs
+  local dst
 
   # Split the args into srcs... and dst
   local args=("$@")
@@ -506,26 +513,6 @@ release::gcs::stage_and_hash() {
     srcthing=$(basename $src)
     tar c -C $srcdir $srcthing | tar x -C $gcs_stage/$dst || return 1
   done
-}
-
-###############################################################################
-# Prepare the local staging directory and ensure the destination directory
-# doesn't already exist.
-# @param gcs_stage - local staging directory
-# @param gcs_destination - GCS destination directory
-# @return 1 on failure or if GCS destination already exists
-release::gcs::prepare_for_copy() {
-  local gcs_stage=$1
-  local gcs_destination=$2
-
-  logrun rm -rf $gcs_stage || return 1
-  logrun mkdir -p $gcs_stage || return 1
-
-  # No need to check this for mock runs
-  # Overwriting is ok
-  if ((FLAGS_nomock)); then
-    release::gcs::destination_empty $gcs_destination || return 1
-  fi
 }
 
 ###############################################################################
@@ -546,31 +533,62 @@ release::gcs::destination_empty() {
 }
 
 ###############################################################################
-# Copy the release artifacts to staging and push them up to GS
+# Push the release artifacts to GCS
+# @param src - Source path
+# @param dest - Destination path
+# @return 1 on failure
+release::gcs::push_release_artifacts() {
+  local src=$1
+  local dest=$2
+
+  logecho "Publish public release artifacts..."
+
+  # No need to check this for mock runs
+  # Overwriting is ok
+  if ((FLAGS_nomock)); then
+    release::gcs::destination_empty $dest || return 1
+  fi
+
+  # Copy the main set from staging to destination
+  # We explicitly don't set an ACL in the cp call, since doing so will override
+  # any default bucket ACLs.
+  logecho -n "- Copying artifacts to $dest: "
+  logrun -s $GSUTIL -qm cp -rc $src/* $dest/ || return 1
+
+  # This small sleep gives the eventually consistent GCS bucket listing a chance
+  # to stabilize before the diagnostic listing. There's no way to directly
+  # query for consistency, but it's OK if something is dropped from the
+  # debugging output.
+  sleep 5
+
+  logecho -n "- Listing final contents to log file: "
+  logrun -s $GSUTIL ls -lhr "$dest" || return 1
+}
+
+###############################################################################
+# Locally stage the release artifacts to staging directory
 # @param build_type - One of 'release' or 'ci'
 # @param version - The version
 # @param build_output - build output directory
-# @param bucket - GS bucket
 # @return 1 on failure
-release::gcs::copy_release_artifacts() {
+release::gcs::locally_stage_release_artifacts() {
   local build_type=$1
   local version=$2
   local build_output=$3
-  local bucket=$4
   local platform
   local platforms
   local release_stage=$build_output/release-stage
   local release_tars=$build_output/release-tars
   local gcs_stage=$build_output/gcs-stage/$version
+  local gce_path=$release_stage/full/kubernetes/cluster/gce
   local src
   local dst
-  local gcs_destination=gs://$bucket/$build_type/$version
-  local gce_path=$release_stage/full/kubernetes/cluster/gce
   local gci_path
 
-  logecho "Publish release artifacts to gs://$bucket..."
+  logecho "Locally stage release artifacts..."
 
-  release::gcs::prepare_for_copy $gcs_stage $gcs_destination || return 1
+  logrun rm -rf $gcs_stage || return 1
+  logrun mkdir -p $gcs_stage || return 1
 
   # GCI path changed in 1.2->1.3 time period
   if [[ -d $gce_path/gci ]]; then
@@ -620,21 +638,6 @@ release::gcs::copy_release_artifacts() {
     common::md5 $path > "$path.md5" || return 1
     common::sha $path 1 > "$path.sha1" || return 1
   done
-
-  # Copy the main set from staging to destination
-  # We explicitly don't set an ACL in the cp call, since doing so will override
-  # any default bucket ACLs.
-  logecho -n "- Copying public release artifacts to $gcs_destination: "
-  logrun -s $GSUTIL -qm cp -r $gcs_stage/* $gcs_destination/ || return 1
-
-  # This small sleep gives the eventually consistent GCS bucket listing a chance
-  # to stabilize before the diagnostic listing. There's no way to directly
-  # query for consistency, but it's OK if something is dropped from the
-  # debugging output.
-  sleep 5
-
-  logecho -n "- Listing final contents to log file: "
-  logrun -s $GSUTIL ls -lhr "$gcs_destination" || return 1
 }
 
 
@@ -1028,9 +1031,16 @@ release::gcs::bazel_push_build() {
   local gcs_stage=$build_output/gcs-stage/$version
   local gcs_destination=gs://$bucket/$build_type/$version
 
-  logecho "Publish release artifacts to gs://$bucket using Bazel..."
-  release::gcs::prepare_for_copy $gcs_stage $gcs_destination || return 1
+  logrun rm -rf $gcs_stage || return 1
+  logrun mkdir -p $gcs_stage || return 1
 
+  # No need to check this for mock runs
+  # Overwriting is ok
+  if ((FLAGS_nomock)); then
+    release::gcs::destination_empty $gcs_destination || return 1
+  fi
+
+  logecho "Publish release artifacts to gs://$bucket using Bazel..."
   logecho "- Hashing and copying public release artifacts to $gcs_destination: "
   bazel run //:push-build $gcs_stage $gcs_destination || return 1
 
