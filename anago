@@ -29,7 +29,7 @@ PROG=${0##*/}
 #+            [--basedir=<alt base work dir>]
 #+            [--security_layer=/path/to/pointer/to/script]
 #+            [--exclude-suites="<suite> ..."]
-#+            [--build-at-head]
+#+            [--build-at-head] [--skip-prereqs]
 #+            [--mailto=<email1>,<email2>]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
@@ -123,6 +123,10 @@ PROG=${0##*/}
 #+                                 Default: $HOME/.kubernetes-releaserc
 #+     [--exclude-suites=]       - Space separated list of CI suites regex to
 #+                                 exclude from go/nogo criteria
+#+     [--skip-prereqs]          - Skip the requisite checks that ensures a
+#+                                 complete release.  This should be used *only*
+#+                                 with subsequent full runs that confirm the
+#+                                 checks pass.
 #+     [--build-at-head]         - Force a build at HEAD of named branch
 #+     [--mailto=]               - Comma-separated list of addresses to send
 #+                                 announcement email to. Overrides default list.
@@ -1185,12 +1189,17 @@ gitlib::repo_state || common::exit 1
 common::security_layer
 
 if ! ((FLAGS_stage)); then
-  ##############################################################################
-  common::stepheader "CHECK GITHUB AUTH"
-  ##############################################################################
-  gitlib::github_api_token
-  gitlib::ssh_auth
-  gitlib::is_repo_admin
+  if ((FLAGS_skip_prereqs)); then
+    logecho
+    logecho "$WARNING: --skip-prereqs - Skipping ALL Prerequisite checks!"
+  else
+    ###########################################################################
+    common::stepheader "CHECK GITHUB AUTH"
+    ###########################################################################
+    gitlib::github_api_token
+    gitlib::ssh_auth
+    gitlib::is_repo_admin
+  fi
 fi
 
 # Domain check
@@ -1208,12 +1217,14 @@ if ((FLAGS_nomock)); then
   security_layer::acl_check || common::exit 1 "Exiting..."
 fi
 
-##############################################################################
-common::stepheader "CHECK PREREQUISITES"
-##############################################################################
-common::check_packages jq docker-engine pandoc ${PREREQUISITE_PACKAGES[*]}
-common::check_pip_packages yq || common::exit 1 "Exiting..."
-check_prerequisites || common::exit 1 "Exiting..."
+if ! ((FLAGS_skip_prereqs)); then
+  ##############################################################################
+  common::stepheader "CHECK PREREQUISITES"
+  ##############################################################################
+  common::check_packages jq docker-engine pandoc ${PREREQUISITE_PACKAGES[*]}
+  common::check_pip_packages yq || common::exit 1 "Exiting..."
+  check_prerequisites || common::exit 1 "Exiting..."
+fi
 
 ##############################################################################
 common::stepheader "SET BUILD CANDIDATE"
