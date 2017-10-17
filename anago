@@ -23,7 +23,7 @@ PROG=${0##*/}
 #+
 #+ SYNOPSIS
 #+     $PROG  <branch> [--yes] [--nomock] [--noclean] [--rc] [--official]
-#+            [--stage]
+#+            [--stage] [--github-release-draft]
 #+            [--buildversion=<jenkins build version>]
 #+            [--gcrio_repo=<repo name>]
 #+            [--basedir=<alt base work dir>]
@@ -126,6 +126,12 @@ PROG=${0##*/}
 #+     [--build-at-head]         - Force a build at HEAD of named branch
 #+     [--mailto=]               - Comma-separated list of addresses to send
 #+                                 announcement email to. Overrides default list.
+#+     [--github-release-draft]  - Force a github release draft for mock runs.
+#+                                 The draft placeholder if left behind can
+#+                                 cause issues with the real release.
+#+                                 Users are prompted to remove draft releases,
+#+                                 but the action to create them in the first
+#+                                 place should be explicit.
 #+     [--help | -man]           - display man page for this script
 #+     [--usage | -?]            - display in-line usage
 #+
@@ -855,6 +861,9 @@ update_github_release () {
       logecho "We certainly cannot publish a release without a tag."
       return 1
     fi
+  else
+    # Return unless explicitly requested
+    ((FLAGS_github_release_draft)) || return
   fi
 
   # Does the release exist yet?
