@@ -126,7 +126,7 @@ release::set_build_version () {
   local -a all_jobs=($($GHCURL \
    $K8S_GITHUB_RAW_ORG/test-infra/master/testgrid/config/config.yaml \
    2>/dev/null |\
-   $yq -r '.[] | .[] | select (.name=="'$branch'-blocking") |.dashboard_tab[].test_group_name' 2>/dev/null))
+   $yq -r '.[] | .[] | select (.name=="sig-'$branch'-blocking") |.dashboard_tab[].test_group_name' 2>/dev/null))
 
   local main_job="${all_jobs[0]}"
 
