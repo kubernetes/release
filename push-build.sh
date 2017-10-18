@@ -49,6 +49,8 @@ PROG=${0##*/}
 #+     [--bucket=]               - Specify an alternate bucket for pushes
 #+     [--release-type=]         - Override auto-detected release type
 #+                                 (normally devel or ci)
+#+     [--release-kind=]         - Kind of release to push to GCS. Supported
+#+                                 values are kubernetes(default) or federation.
 #+     [--gcs-suffix=]           - Specify a suffix to append to the upload
 #+                                 destination on GCS.
 #+     [--docker-registry=]      - If set, push docker images to specified
@@ -102,6 +104,9 @@ common::timestamp begin
 RELEASE_BUCKET=${FLAGS_bucket:-"kubernetes-release-dev"}
 # Compatibility with incoming global args
 [[ $KUBE_GCS_UPDATE_LATEST == "n" ]] && FLAGS_noupdatelatest=1
+
+# Default to kubernetes
+: ${FLAGS_release_kind:="kubernetes"}
 
 # This will canonicalize the path
 KUBE_ROOT=$(pwd -P)
