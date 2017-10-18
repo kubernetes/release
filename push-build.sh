@@ -111,39 +111,30 @@ RELEASE_BUCKET=${FLAGS_bucket:-"kubernetes-release-dev"}
 # This will canonicalize the path
 KUBE_ROOT=$(pwd -P)
 
-KUBECTL_OUTPUT=$(cluster/kubectl.sh version --client 2>&1 || true)
-if [[ "$KUBECTL_OUTPUT" =~ GitVersion:\"(${VER_REGEX[release]}(\.${VER_REGEX[build]})?(-dirty)?)\", ]]; then
-  LATEST=${BASH_REMATCH[1]}
-  if ((FLAGS_ci)) && [[ "$KUBECTL_OUTPUT" =~ GitTreeState:\"dirty\" ]]; then
+USE_BAZEL=false
+if release::was_built_with_bazel $KUBE_ROOT; then
+  USE_BAZEL=true
+  bazel build //:version
+  LATEST=$(cat $KUBE_ROOT/bazel-genfiles/version)
+else
+  LATEST=$(tar -xzf $KUBE_ROOT/_output/release-tars/$FLAGS_release_kind.tar.gz $FLAGS_release_kind/version -O)
+fi
+
+if [[ "$LATEST" =~ (${VER_REGEX[release]}(\.${VER_REGEX[build]})?(-dirty)?) ]]; then
+  if ((FLAGS_ci)) && [[ "$LATEST" =~ "dirty" ]]; then
     logecho "Refusing to push dirty build with --ci flag given."
     logecho "CI builds should always be performed from clean commits."
     logecho
-    logecho "kubectl version output:"
-    logecho $KUBECTL_OUTPUT
+    logecho "version output:"
+    logecho $LATEST
     common::exit 1
   fi
 else
   logecho "Unable to get latest version from build tree!"
   logecho
-  logecho "kubectl version output:"
-  logecho $KUBECTL_OUTPUT
+  logecho "version output:"
+  logecho $LATEST
   common::exit 1
-fi
-
-USE_BAZEL=false
-if release::was_built_with_bazel $KUBE_ROOT; then
-  USE_BAZEL=true
-  # The Bazel push-build rule will recompile if necessary, which means that the
-  # version string from kubectl might be out-of-date. Let's explicitly verify
-  # that the version we got from kubectl is correct.
-  logecho "Checking that Bazel build is up-to-date"
-  bazel build //:version
-  BAZEL_LATEST=$(cat $KUBE_ROOT/bazel-genfiles/version)
-  if [[ $BAZEL_LATEST != $LATEST ]]; then
-    logecho "kubectl version $LATEST doesn't match Bazel version $BAZEL_LATEST."
-    logecho "Do you need to rebuild?"
-    common::exit 1
-  fi
 fi
 
 if [[ -n "${FLAGS_version_suffix:-}" ]]; then
