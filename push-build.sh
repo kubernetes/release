@@ -185,8 +185,11 @@ while ((attempt<max_attempts)); do
     release::gcs::bazel_push_build $GCS_DEST $LATEST $KUBE_ROOT/_output \
                                    $RELEASE_BUCKET && break
   else
-    release::gcs::copy_release_artifacts $GCS_DEST $LATEST $KUBE_ROOT/_output \
-                                         $RELEASE_BUCKET && break
+    release::gcs::locally_stage_release_artifacts $GCS_DEST $LATEST \
+                                                  $KUBE_ROOT/_output
+    release::gcs::push_release_artifacts \
+     $KUBE_ROOT/_output/gcs-stage/$LATEST \
+     gs://$RELEASE_BUCKET/$GCS_DEST/$LATEST && break
   fi
   ((attempt++))
 done

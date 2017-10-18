@@ -178,7 +178,8 @@ RELEASE_BRANCH=${POSITIONAL_ARGV[0]}
  || common::exit 1 "Invalid branch name!"
 
 # Backport https://github.com/kubernetes/kubernetes/pull/47939 and remove this
-if ((FLAGS_stage)) && ((${BASH_REMATCH[2]}<8)); then
+if ((FLAGS_stage)) && \
+   ([[ $RELEASE_BRANCH != "master" ]] && ((${BASH_REMATCH[2]}<8))); then
   common::exit 1 "--stage only works for 1.8+ releases."
 fi
 
@@ -617,7 +618,7 @@ build_tree () {
 # Look for locally staged complete work trees and symlink if they contain
 # artifacts
 # @param release_versions - All release versions ${RELEASE_VERSION[@]}
-# Sets global STAGED_LOCALLY
+# Sets globals STAGED_LOCALLY or SRC_STAGED_LOCALLY
 # returns 1 on failure
 is_staged_locally () {
   local release_versions="$*"
@@ -625,25 +626,46 @@ is_staged_locally () {
   local jbv="$JENKINS_BUILD_VERSION"
   local local_root="$BASEDIR/$PROG-$jbv/src"
   local k8s_root="$local_root/k8s.io/kubernetes/_output"
+  local tmp_tar_archive=/tmp/$PROG-$$-src.tar.gz
 
   for version in $release_versions; do
+    # IN this case the src tree was found locally staged with
+    # all artifacts
     logecho -n "Searching for locally staged $jbv artifacts: "
-    if ls $k8s_root-$version/release-images/*/*.tar >/dev/null 2>&1 && \
-       ls $k8s_root-$version/release-tars/*.tar.gz* >/dev/null 2>&1; then
+    if logrun ls $k8s_root-$version/release-images/*/*.tar && \
+       logrun ls $k8s_root-$version/gcs-stage/$version/*.tar.gz*; then
       logecho "$FOUND"
+
+      # Enjoy the local filesystem
+      logecho -n "Symlinking $local_root to $WORKDIR/src: "
+      logrun mkdir -p $WORKDIR
+      logrun -s ln -nsf $local_root $WORKDIR/src || return 1
+
+      # Set a global to skip other build steps in workflow
+      STAGED_LOCALLY=1
     else
       logecho "$NOTFOUND"
-      return 1
+      logecho -n "Searching for source archive on GCS: "
+      # If the source is staged on GCS this provides an opportunity to pull
+      # and use the source tree.  We don't fully populate it with the artifacts
+      # however, and let the later stages using copy_staged_from_gcs() do
+      # the GCS->GCS copies and pull the docker images locally to push.
+      if logrun $GSUTIL -m \
+                cp gs://$RELEASE_BUCKET/stage/$jbv/src.tar.gz \
+                   $tmp_tar_archive; then
+       logecho "$FOUND"
+        logecho -n "Extracting $tmp_tar_archive: "
+        logrun -s tar xfz $tmp_tar_archive -C $WORKDIR || return 1
+        logrun rm -f $tmp_tar_archive
+
+        # Set a global to skip other build steps in workflow
+        SRC_STAGED_LOCALLY=1
+      else
+        logecho "$NOTFOUND"
+        return 1
+      fi
     fi
   done
-
-  # Enjoy the local filesystem
-  logecho -n "Symlinking $local_root to $WORKDIR/src: "
-  logrun mkdir -p $WORKDIR
-  logrun -s ln -nsf $local_root $WORKDIR/src || return 1
-
-  # Set a global to skip other build steps in workflow
-  STAGED_LOCALLY=1
 }
 
 ##############################################################################
@@ -656,37 +678,35 @@ copy_staged_from_gcs () {
   local version="${RELEASE_VERSION[$label]}"
   local gs_stage_root="gs://$RELEASE_BUCKET/stage/$jbv/$version"
   local gs_release_root="gs://$RELEASE_BUCKET/release/$version"
+  local outdir="$TREE_ROOT/_output-$version"
   local type
 
   # cp the /stage/ tarballs to /release/ on GCS directly
-  logecho -n "Copy $gs_stage_root tarballs to $gs_release_root: "
-  logrun -s $GSUTIL -mq cp -rc $gs_stage_root/*.tar.gz* \
-                               $gs_release_root \
-   || return 1
+  logecho -n "Bucket-to-bucket copy $gs_stage_root/gcs-stage artifacts" \
+             "to $gs_release_root: "
+  logrun -s $GSUTIL -mq cp -rc $gs_stage_root/gcs-stage/*.tar.gz* \
+                               $gs_release_root || return 1
 
-  # If working from a locally staged (symlinked) workspace, relnotes has already
-  # run in that symlinked source tree.  We're done here.
+  # In the case where just the src from GCS was staged, we need
+  # kubernetes.tar.gz for github release page publish
+  if ((SRC_STAGED_LOCALLY)); then
+    logrun mkdir -p $outdir/gcs-stage
+    logecho -n "Copy staged kubernetes.tar.gz to $outdir/gcs-stage/$version: "
+    logrun -s $GSUTIL -mq cp -rc $gs_stage_root/gcs-stage/kubernetes.tar.gz \
+                                 $outdir/gcs-stage/$version || return 1
+  fi
+
+  # If working from a locally staged (symlinked) workspace, we're done here.
   ((STAGED_LOCALLY)) && return 0
 
   # Copy docker images back to _output trees for later pushing
   # TODO: Can we somehow stage these on GCR.IO using docker or even
   #       the GCS backend to eliminate the VERY EXPENSIVE --12 minutes--
   #       it takes to push these containers from local disk?
-  logrun mkdir -p $TREE_ROOT/_output-$version/release-images
-  logecho -n "rsync staged docker images to" \
-             "$TREE_ROOT/_output-$version/release-images: "
-  logrun -s $GSUTIL -mq rsync -Cdr \
-            $gs_stage_root/release-images \
-            $TREE_ROOT/_output-$version/release-images \
-   || return 1
-
-  # cp the /stage/ tarballs to local disk (for relnotes generation only!)
-  logrun mkdir -p $TREE_ROOT/_output-$version/release-tars
-  logecho -n "Copy stage/$jbv/$version" \
-             "to $TREE_ROOT/_output-$version/release-tars: "
-  logrun -s $GSUTIL -mq cp -rc $gs_stage_root/*.tar.gz* \
-                               $TREE_ROOT/_output-$version/release-tars \
-   || return 1
+  logrun mkdir -p $outdir/release-images
+  logecho -n "rsync staged docker images to $outdir/release-images: "
+  logrun -s $GSUTIL -mq rsync -Cdr $gs_stage_root/release-images \
+                                   $outdir/release-images || return 1
 }
 
 ##############################################################################
@@ -701,7 +721,7 @@ is_staged_gcs () {
 
   logecho -n "Searching for $version GCS staged artifacts: "
   if logrun $GSUTIL -q ls \
-            $gs_stage_root/*.tar.gz* >/dev/null  2>&1 && \
+            $gs_stage_root/gcs-stage/*.tar.gz* >/dev/null  2>&1 && \
      logrun $GSUTIL -q ls \
             $gs_stage_root/release-images/*/*.tar >/dev/null 2>&1; then
     logecho "$FOUND"
@@ -834,8 +854,8 @@ update_github_release () {
   local release_verb="Posting"
   local prerelease="true"
   local draft="true"
-  local tarball="$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/release-tars"
-        tarball+="/kubernetes.tar.gz"
+  local tarball="$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/gcs-stage"
+        tarball+="/$RELEASE_VERSION_PRIME/kubernetes.tar.gz"
   local sha_hash=$(common::sha $tarball 256)
 
   ((FLAGS_official)) && prerelease="false"
@@ -1080,6 +1100,7 @@ prepare_workspace () {
     logecho -n "Removing/recreating $WORKDIR: "
     logrun cd /tmp
     logrun -s rm -rf $WORKDIR || return 1
+    logrun mkdir -p $WORKDIR || return 1
   fi
 
   # Check if locally staged directory contains all of the RELEASE_VERSIONs for
@@ -1344,7 +1365,7 @@ if ! ((FLAGS_stage)); then
    || common::exit 1 "Exiting..."
 fi
 
-if ! ((STAGED_LOCALLY)); then
+if ! ((SRC_STAGED_LOCALLY)) && ! ((STAGED_LOCALLY)); then
   # Iterate over session release versions for setup, tagging and building
   for label in ${!RELEASE_VERSION[@]}; do
     ###########################################################################
@@ -1367,7 +1388,18 @@ if ! ((STAGED_LOCALLY)); then
   fi
 fi
 
-if ! ((FLAGS_stage)); then
+if ((FLAGS_stage)); then
+  ##############################################################################
+  common::stepheader "STAGE SOURCE TREE"
+  ##############################################################################
+  logecho -n "Tar up staged source tree: "
+  logrun -s tar cvfz $WORKDIR/src.tar.gz -C $WORKDIR src --exclude="_output-*"
+  logecho -n "Archive fully staged source tree on GCS: "
+  logrun -s $GSUTIL -m cp $WORKDIR/src.tar.gz \
+            gs://$RELEASE_BUCKET/$BUCKET_TYPE/$JENKINS_BUILD_VERSION/src.tar.gz
+  # Clean up
+  logrun rm -f $WORKDIR/src.tar.gz
+else
   ##############################################################################
   common::stepheader "PUSH GIT OBJECTS"
   ##############################################################################
@@ -1384,40 +1416,46 @@ for label in ${!RELEASE_VERSION[@]}; do
   ##############################################################################
   common::stepheader "PUSH ${RELEASE_VERSION[$label]} IMAGES"
   ##############################################################################
-  if is_staged_gcs $label; then
-    common::runstep copy_staged_from_gcs $label
-  else
-    common::runstep release::gcs::copy_release_artifacts \
+  # If --stage, then stage locally
+  # if ! --stage, and ! already found/*STAGED_LOCALLY, then stage
+  if ! ((SRC_STAGED_LOCALLY)) && ! ((STAGED_LOCALLY)); then
+    # Locally Stage the release artifacts in build directory (gcs-stage)
+    common::runstep release::gcs::locally_stage_release_artifacts \
      $BUCKET_TYPE ${RELEASE_VERSION[$label]} \
      $BUILD_OUTPUT-${RELEASE_VERSION[$label]} \
-     $RELEASE_BUCKET \
      || common::exit 1 "Exiting..."
   fi
 
+  # The full release stage case
   if ((FLAGS_stage)); then
-    logecho -n "Archiving (docker) release-images to" \
-               "$RELEASE_BUCKET/$BUCKET_TYPE: "
-    logrun -s $GSUTIL -qm cp -rc \
-      $BUILD_OUTPUT-${RELEASE_VERSION[$label]}/release-images \
-      gs://$RELEASE_BUCKET/$BUCKET_TYPE/$JENKINS_BUILD_VERSION/${RELEASE_VERSION[$label]}/release-images
-    logecho
+    # Push gcs-stage to GCS
+    common::runstep release::gcs::push_release_artifacts \
+     $BUILD_OUTPUT-${RELEASE_VERSION[$label]}/gcs-stage/${RELEASE_VERSION[$label]} \
+     gs://$RELEASE_BUCKET/$BUCKET_TYPE/$JENKINS_BUILD_VERSION/${RELEASE_VERSION[$label]}/gcs-stage
+
+    # Push docker release-images to GCS
+    common::runstep release::gcs::push_release_artifacts \
+     $BUILD_OUTPUT-${RELEASE_VERSION[$label]}/release-images \
+     gs://$RELEASE_BUCKET/$BUCKET_TYPE/$JENKINS_BUILD_VERSION/${RELEASE_VERSION[$label]}/release-images
   else
+    if is_staged_gcs $label; then
+      common::runstep copy_staged_from_gcs $label
+    else
+      common::runstep release::gcs::push_release_artifacts \
+       $BUILD_OUTPUT-${RELEASE_VERSION[$label]}/gcs-stage/${RELEASE_VERSION[$label]} \
+       gs://$RELEASE_BUCKET/$BUCKET_TYPE/${RELEASE_VERSION[$label]}
+    fi || common::exit 1 "Exiting..."
     common::runstep release::docker::release \
      $KUBE_DOCKER_REGISTRY \
      ${RELEASE_VERSION[$label]} \
+     $BUILD_OUTPUT-${RELEASE_VERSION[$label]}
+    common::runstep release::gcs::publish_version \
+     $BUCKET_TYPE \
+     ${RELEASE_VERSION[$label]} \
      $BUILD_OUTPUT-${RELEASE_VERSION[$label]} \
-     || common::exit 1 "Exiting..."
+     $RELEASE_BUCKET
   fi
-
-  ((FLAGS_stage)) && continue
-
-  common::runstep release::gcs::publish_version \
-   $BUCKET_TYPE \
-   ${RELEASE_VERSION[$label]} \
-   $BUILD_OUTPUT-${RELEASE_VERSION[$label]} \
-   $RELEASE_BUCKET \
-   || common::exit 1 "Exiting..."
-done
+done || common::exit 1 "Exiting..."
 
 # if --stage, we're done
 if ((FLAGS_stage)); then
