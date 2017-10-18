@@ -469,7 +469,7 @@ EOF+
     ) >> $RELEASE_NOTES_MD
   fi
 
-  if ((FLAGS_htmlize_md)); then
+  if ((FLAGS_htmlize_md)) && [[ ! $release_tag =~ ${VER_REGEX[dotzero]} ]]; then
     # Make users and PRs linkable
     # Also, expand anchors (needed for email announce())
     sed -i -e "s,#\([0-9]\{5\,\}\),[#\1]($K8S_GITHUB_URL/pull/\1),g" \
