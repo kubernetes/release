@@ -23,7 +23,7 @@ const (
 	ChannelUnstable ChannelType = "unstable"
 	ChannelNightly  ChannelType = "nightly"
 
-	cniVersion = "0.5.1"
+	cniVersion = "0.6.0"
 )
 
 type work struct {
@@ -44,6 +44,7 @@ type version struct {
 	GetVersion                          func() (string, error)
 	GetDownloadLinkBase                 func(v version) (string, error)
 	KubeadmKubeletConfigFile            string
+	KubeletCNIVersion                   string
 }
 
 type cfg struct {
@@ -291,6 +292,25 @@ func getKubeadmKubeletConfigFile(v version) (string, error) {
 	}
 }
 
+// CNI get bumped in 1.9, which is incompatible for kubelet<1.9.
+// So we need to restrict the CNI version when install kubelet.
+func getKubeletCNIVersion(v version) (string, error) {
+	sv, err := semver.Make(v.Version)
+	if err != nil {
+		return "", err
+	}
+
+	v190, err := semver.Make("1.9.0")
+	if err != nil {
+		return "", err
+	}
+
+	if sv.GTE(v190) {
+		return fmt.Sprintf(">= %s", cniVersion), nil
+	}
+	return fmt.Sprint("<= 0.5.1"), nil
+}
+
 func main() {
 	flag.Parse()
 
@@ -464,6 +484,11 @@ func main() {
 		c.KubeadmKubeletConfigFile, err = getKubeadmKubeletConfigFile(v)
 		if err != nil {
 			log.Fatalf("error getting kubeadm config: %v", err)
+		}
+
+		c.KubeletCNIVersion, err = getKubeletCNIVersion(v)
+		if err != nil {
+			log.Fatalf("error getting kubelet config: %v", err)
 		}
 
 		return c.run()

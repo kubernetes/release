@@ -2,7 +2,7 @@
 %global KUBE_MINOR 8
 %global KUBE_PATCH 0
 %global KUBE_VERSION %{KUBE_MAJOR}.%{KUBE_MINOR}.%{KUBE_PATCH}
-%global CNI_RELEASE 0799f5732f2a11b329d9e3d51b9c8f2e3759f2ff
+%global CNI_VERSION v0.6.0
 %global RPM_RELEASE 1
 %global ARCH amd64
 
@@ -24,12 +24,16 @@ Source1: kubelet.service
 Source2: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/%{ARCH}/kubectl
 Source3: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/%{ARCH}/kubeadm
 Source4: 10-kubeadm.conf
-Source5: https://dl.k8s.io/network-plugins/cni-%{ARCH}-%{CNI_RELEASE}.tar.gz
+Source5: https://dl.k8s.io/network-plugins/cni-plugins-%{ARCH}-%{CNI_VERSION}.tgz
 
 
 BuildRequires: curl
 Requires: iptables >= 1.4.21
-Requires: kubernetes-cni >= 0.5.1
+%if %{KUBE_SEMVER} >= %{semver 1 9 0}
+Requires: kubernetes-cni >= %{CNI_VERSION}
+%else
+Requires: kubernetes-cni <= 0.5.1
+%endif
 Requires: socat
 Requires: util-linux
 Requires: ethtool
@@ -42,7 +46,7 @@ The node agent of Kubernetes, the container cluster manager.
 
 %package -n kubernetes-cni
 
-Version: 0.5.1
+Version: 0.6.0
 Release: %{RPM_RELEASE}
 Summary: Binaries required to provision kubernetes container networking
 Requires: kubelet
@@ -89,6 +93,10 @@ ln -s 10-kubeadm-post-1.8.conf %SOURCE4
 ln -s 10-kubeadm-pre-1.8.conf %SOURCE4
 %endif
 
+%if %{KUBE_SEMVER} < %{semver 1 9 0}
+Source5: https://dl.k8s.io/network-plugins/cni-%{ARCH}-0799f5732f2a11b329d9e3d51b9c8f2e3759f2ff.tar.gz
+%endif
+
 cp -p %SOURCE0 %{_builddir}/
 cp -p %SOURCE1 %{_builddir}/
 cp -p %SOURCE2 %{_builddir}/
@@ -112,10 +120,13 @@ install -p -m 755 -t %{buildroot}%{_sysconfdir}/systemd/system/ kubelet.service
 install -p -m 755 -t %{buildroot}%{_sysconfdir}/systemd/system/kubelet.service.d/ 10-kubeadm.conf
 
 
-install -m 755 -d %{buildroot}/opt/cni
-# bin directory from cni-amd64-%{CNI_RELEASE}.tar.gz with a list of cni plugins (among other things)
+install -m 755 -d %{buildroot}/opt/cni/bin
+# bin directory from cni-plugins-%{ARCH}-%{CNI_VERSION}.tgz with a list of cni plugins (among other things)
+%if %{KUBE_SEMVER} >= %{semver 1 9 0}
+mv ./ %{buildroot}/opt/cni/bin/
+%else
 mv bin/ %{buildroot}/opt/cni/
-
+%endif
 
 %files
 %{_bindir}/kubelet
@@ -136,6 +147,9 @@ mv bin/ %{buildroot}/opt/cni/
 
 
 %changelog
+* Thu Oct 19 2017 Di Xu <stephenhsu90@gmail.com>
+- Bump CNI version to v0.6.0.
+
 * Fri Sep 29 2017 Jacob Beacham <beacham@google.com> - 1.8.0
 - Bump version of kubelet and kubectl to v1.8.0.
 
