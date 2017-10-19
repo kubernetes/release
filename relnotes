@@ -296,10 +296,8 @@ generate_notes () {
   local changelog_file
   local -a normal_prs
   local -a action_prs
-  local -a experimental_prs
   local -a notes_normal
   local -a notes_action
-  local -a notes_experimental
   local -a prs
 
   branch_head=$(git rev-parse refs/remotes/origin/$CURRENT_BRANCH 2>/dev/null)
@@ -361,16 +359,12 @@ generate_notes () {
   echo "Scanning action required PR labels on the $CURRENT_BRANCH branch..."
   action_prs=($(get_prs_by_label release-note-breaking-change))
   action_prs+=($(get_prs_by_label release-note-action-required))
-  echo "Scanning experimental PR label on the $CURRENT_BRANCH branch..."
-  experimental_prs=($(get_prs_by_label release-note-experimental))
   echo "Scanning release-note PR label on the $CURRENT_BRANCH branch..."
   normal_prs=($(get_prs_by_label release-note))
 
   for pr in ${prs[*]}; do
     if [[ " ${action_prs[@]} " =~ " ${pr} " ]]; then
       notes_action+=("$pr")
-    elif [[ " ${experimental_prs[@]} " =~ " ${pr} " ]]; then
-      notes_experimental+=("$pr")
     elif [[ " ${normal_prs[@]} " =~ " ${pr} " ]]; then
       notes_normal+=("$pr")
     fi
@@ -422,14 +416,6 @@ EOF+
     echo "## Changelog since $start_tag" >> $PR_NOTES
     echo >> $PR_NOTES
 
-    if [[ -n "${notes_experimental[*]}" ]]; then
-      echo "### Experimental Features" >> $PR_NOTES
-      echo >> $PR_NOTES
-      extract_pr_title "${notes_experimental[*]}" >> $PR_NOTES \
-       || common::exit 1 "$FAILED: github rate limiting."
-      echo >> $PR_NOTES
-    fi
-
     if [[ -n "${notes_action[*]}" ]]; then
       echo "### Action Required" >> $PR_NOTES
       echo >> $PR_NOTES
@@ -445,8 +431,7 @@ EOF+
        || common::exit 1 "$FAILED: github rate limiting."
     fi
 
-    if [[ -z "${notes_normal[*]}" && -z "${notes_action[*]}" &&
-          -z "${notes_experimental[*]}" ]]; then
+    if [[ -z "${notes_normal[*]}" && -z "${notes_action[*]}" ]]; then
       logecho
       logecho "**No notable changes for this release**" >> $PR_NOTES
       logecho
