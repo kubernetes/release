@@ -262,3 +262,13 @@ gitlib::repo_state () {
     return 1
   fi
 }
+
+##############################################################################
+# Returns the name of the upstream remote repository name for the local git
+# repo, e.g. "upstream" or "origin".
+#
+gitlib::upstream_remote_name() {
+  git remote -v | grep fetch |\
+    grep -E 'github.com[/:]kubernetes/kubernetes|k8s.io/kubernetes' |\
+    head -n 1 | awk '{print $1}'
+}
