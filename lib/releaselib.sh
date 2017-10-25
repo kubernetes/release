@@ -130,6 +130,11 @@ release::set_build_version () {
 
   local main_job="${all_jobs[0]}"
 
+  if [[ -z "${all_jobs[*]}" ]]; then
+    logecho "No sig-$branch-blocking list found in the testgrid config.yaml!"
+    return 1
+  fi
+
   # Loop through the remainder, excluding anything specified by --exclude_suites
   for ((i=1;i<${#all_jobs[*]};i++)); do
     [[ -n $exclude_patterns && ${all_jobs[$i]} =~ $exclude_patterns ]] \
