@@ -428,6 +428,7 @@ rev_version_base () {
 generate_release_notes() {
   local release_tars=$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/release-tars
   local action="Update"
+  local insert_branch="$RELEASE_BRANCH-relnotes-insert"
 
   logecho -n "Generating release notes: "
   logrun -s relnotes $RELEASE_VERSION_PRIME --release-tars=$release_tars \
@@ -476,8 +477,9 @@ EOF
 
   # Sync $CHANGELOG_FILE to release-* branch
   if [[ "$RELEASE_BRANCH" =~ release- ]]; then
-    logecho -n "Checkout $RELEASE_BRANCH branch to make changes: "
-    logrun -s git checkout $RELEASE_BRANCH || return 1
+    logecho -n "Checkout $insert_branch branch" \
+               "@$RELEASE_VERSION_PRIME to make changes: "
+    logrun -s git checkout -b $insert_branch $RELEASE_VERSION_PRIME || return 1
     logecho -n "Remove any previous CHANGELOG*.md files: "
     logrun -s git rm -f CHANGELOG*.md || return 1
     logecho -n "Copy master $CHANGELOG_FILE to $RELEASE_BRANCH branch: "
@@ -486,6 +488,15 @@ EOF
     logrun -s git commit -am \
               "Add/Update $CHANGELOG_FILE for $RELEASE_VERSION_PRIME." \
      || return 1
+    logecho -n "Move the $RELEASE_VERSION_PRIME tag: "
+    logrun -s git tag -f $RELEASE_VERSION_PRIME
+    logecho -n "Checkout $RELEASE_BRANCH branch: "
+    logrun -s git checkout $RELEASE_BRANCH || return 1
+    logecho -n "Rebase CHANGELOG changes @$RELEASE_VERSION_PRIME" \
+               "to $RELEASE_BRANCH: "
+    logrun -s git rebase $insert_branch  || return 1
+    logecho -n "Clean up $insert_branch: "
+    logrun -s git branch -d $insert_branch  || return 1
   fi
 }
 
