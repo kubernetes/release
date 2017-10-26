@@ -848,7 +848,7 @@ common::mdtoc () {
     # make a valid anchor
     anchor=${heading,,}
     anchor=${anchor// /-}
-    anchor=${anchor//[\.\?\*\,\/\[\]()]/}
+    anchor=${anchor//[\.\?\*\,\/\[\]:=\<\>()]/}
     # Keep track of dups and identify
     if [[ -n ${count[$anchor]} ]]; then
       ((count[$anchor]++)) ||true
