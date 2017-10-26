@@ -585,54 +585,57 @@ release::gcs::locally_stage_release_artifacts() {
   local release_stage=$build_output/release-stage
   local release_tars=$build_output/release-tars
   local gcs_stage=$build_output/gcs-stage/$version
-  local gce_path=$release_stage/full/kubernetes/cluster/gce
   local src
   local dst
-  local gci_path
 
   logecho "Locally stage release artifacts..."
 
   logrun rm -rf $gcs_stage || return 1
   logrun mkdir -p $gcs_stage || return 1
 
-  # GCI path changed in 1.2->1.3 time period
-  if [[ -d $gce_path/gci ]]; then
-    gci_path=$gce_path/gci
-  else
-    gci_path=$gce_path/trusty
-  fi
-
   # Stage everything in release directory
   logecho "- Staging locally to ${gcs_stage##$build_output/}..."
   release::gcs::stage_and_hash $gcs_stage $release_tars/* . || return 1
 
-  # Having the configure-vm.sh script and and trusty code from the GCE cluster
-  # deploy hosted with the release is useful for GKE.
-  release::gcs::stage_and_hash $gcs_stage $gce_path/configure-vm.sh extra/gce \
-   || return 1
-  release::gcs::stage_and_hash $gcs_stage $gci_path/node.yaml extra/gce \
-   || return 1
-  release::gcs::stage_and_hash $gcs_stage $gci_path/master.yaml extra/gce \
-   || return 1
-  release::gcs::stage_and_hash $gcs_stage $gci_path/configure.sh extra/gce \
-   || return 1
+  if [[ "$FLAGS_release_kind" == "kubernetes" ]]; then
+    local gce_path=$release_stage/full/kubernetes/cluster/gce
+    local gci_path
+
+    # GCI path changed in 1.2->1.3 time period
+    if [[ -d $gce_path/gci ]]; then
+      gci_path=$gce_path/gci
+    else
+      gci_path=$gce_path/trusty
+    fi
+
+    # Having the configure-vm.sh script and and trusty code from the GCE cluster
+    # deploy hosted with the release is useful for GKE.
+    release::gcs::stage_and_hash $gcs_stage $gce_path/configure-vm.sh extra/gce \
+      || return 1
+    release::gcs::stage_and_hash $gcs_stage $gci_path/node.yaml extra/gce \
+      || return 1
+    release::gcs::stage_and_hash $gcs_stage $gci_path/master.yaml extra/gce \
+      || return 1
+    release::gcs::stage_and_hash $gcs_stage $gci_path/configure.sh extra/gce \
+      || return 1
+  fi
 
   # Upload the "naked" binaries to GCS.  This is useful for install scripts that
   # download the binaries directly and don't need tars.
   platforms=($(cd "$release_stage/client"; echo *))
   for platform in "${platforms[@]}"; do
-    src="$release_stage/client/$platform/kubernetes/client/bin/*"
+    src="$release_stage/client/$platform/$FLAGS_release_kind/client/bin/*"
     dst="bin/${platform/-//}/"
     # We assume here the "server package" is a superset of the "client package"
     if [[ -d "$release_stage/server/$platform" ]]; then
-      src="$release_stage/server/$platform/kubernetes/server/bin/*"
+      src="$release_stage/server/$platform/$FLAGS_release_kind/server/bin/*"
     fi
     release::gcs::stage_and_hash $gcs_stage "$src" "$dst" || return 1
 
     # Upload node binaries if they exist and this isn't a 'server' platform.
     if [[ ! -d "$release_stage/server/$platform" ]]; then
       if [[ -d "$release_stage/node/$platform" ]]; then
-        src="$release_stage/node/$platform/kubernetes/node/bin/*"
+        src="$release_stage/node/$platform/$FLAGS_release_kind/node/bin/*"
         release::gcs::stage_and_hash $gcs_stage "$src" "$dst" || return 1
       fi
     fi
