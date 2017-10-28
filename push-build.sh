@@ -182,7 +182,8 @@ while ((attempt<max_attempts)); do
                                    $RELEASE_BUCKET && break
   else
     release::gcs::locally_stage_release_artifacts $GCS_DEST $LATEST \
-                                                  $KUBE_ROOT/_output
+                                                  $KUBE_ROOT/_output \
+                                                  $FLAGS_release_kind
     release::gcs::push_release_artifacts \
      $KUBE_ROOT/_output/gcs-stage/$LATEST \
      gs://$RELEASE_BUCKET/$GCS_DEST/$LATEST && break
