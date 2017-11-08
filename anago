@@ -690,13 +690,13 @@ copy_staged_from_gcs () {
   # cp the /stage/ tarballs to /release/ on GCS directly
   logecho -n "Bucket-to-bucket copy $gs_stage_root/gcs-stage artifacts" \
              "to $gs_release_root: "
-  logrun -s $GSUTIL -mq cp -rc $gs_stage_root/gcs-stage/*.tar.gz* \
-                               $gs_release_root || return 1
+  logrun -s $GSUTIL -mq cp -rc $gs_stage_root/gcs-stage/* \
+                               $gs_release_root/ || return 1
 
   # In the case where just the src from GCS was staged, we need
   # kubernetes.tar.gz for github release page publish
   if ((SRC_STAGED_LOCALLY)); then
-    logrun mkdir -p $outdir/gcs-stage
+    logrun mkdir -p $outdir/gcs-stage/$version
     logecho -n "Copy staged kubernetes.tar.gz to $outdir/gcs-stage/$version: "
     logrun -s $GSUTIL -mq cp -rc $gs_stage_root/gcs-stage/kubernetes.tar.gz \
                                  $outdir/gcs-stage/$version || return 1
