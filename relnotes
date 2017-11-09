@@ -284,6 +284,7 @@ ci_job_status () {
 # release notes section of the report
 # Uses global LAST_RELEASE CURRENT_BRANCH
 generate_notes () {
+  local upstream_remote_name
   local branch_head
   local range
   local start_tag
@@ -300,7 +301,8 @@ generate_notes () {
   local -a notes_action
   local -a prs
 
-  branch_head=$(git rev-parse refs/remotes/origin/$CURRENT_BRANCH 2>/dev/null)
+  upstream_remote_name=$(gitlib::upstream_remote_name)
+  branch_head=$(git rev-parse refs/remotes/$upstream_remote_name/$CURRENT_BRANCH 2>/dev/null)
 
   # If ${LAST_RELEASE[$CURRENT_BRANCH]} is unset attempt to get the last
   # release from the parent branch and then master
@@ -325,7 +327,7 @@ generate_notes () {
                    "Specify on the command-line. Exiting..."
   fi
 
-  range="$start_tag..$release_tag"
+  range="$start_tag..$upstream_remote_name/$release_tag"
 
   if [[ $release_tag =~ ${VER_REGEX[release]} ]]; then
     changelog_file="CHANGELOG-${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.md"
