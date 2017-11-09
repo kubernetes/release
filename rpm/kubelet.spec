@@ -1,9 +1,9 @@
 %global KUBE_MAJOR 1
 %global KUBE_MINOR 8
-%global KUBE_PATCH 0
+%global KUBE_PATCH 1
 %global KUBE_VERSION %{KUBE_MAJOR}.%{KUBE_MINOR}.%{KUBE_PATCH}
 %global CNI_RELEASE 0799f5732f2a11b329d9e3d51b9c8f2e3759f2ff
-%global RPM_RELEASE 1
+%global RPM_RELEASE 0
 %global ARCH amd64
 
 # This expands a (major, minor, patch) tuple into a single number so that it
@@ -136,6 +136,9 @@ mv bin/ %{buildroot}/opt/cni/
 
 
 %changelog
+* Wed Oct 11 2017 Joe Betz <jpbetz@google.com> - 1.8.1
+- Bump version of kubelet and kubectl to v1.8.1.
+
 * Fri Sep 29 2017 Jacob Beacham <beacham@google.com> - 1.8.0
 - Bump version of kubelet and kubectl to v1.8.0.
 
