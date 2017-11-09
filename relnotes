@@ -134,10 +134,14 @@ extract_pr_title () {
               sed -e '/^$/d' -e '2,$s/^\( *\* \)/        \1/g' \
                   -e '2,$s/^\( *[^ \*]\)/    * \1/g')
 
-    # if the release-note block is empty (unchanged from the template), use title
-    if [[ -z "$content" ]]; then
+    # If the release-note block contains any of the "ignore" keywords
+    # or is empty (unchanged from the template), use title
+    if [[ "$content" == [Nn][Oo][Nn][Ee] ]] || \
+       [[ "$content" == "release-note-none" ]] || \
+       [[ -z "$content" ]]; then
       content=$(echo "$pull_json" | jq -r '.title')
     fi
+
 
     author=$(echo "$pull_json" | jq -r '.user.login')
     content=$(echo "$content" |sed -e '1s/^ *\** */* /g' \
@@ -222,9 +226,11 @@ create_body () {
   echo
   echo "# $title"
   echo
-  echo "[Documentation](https://docs.k8s.io) &" \
-       "[Examples](https://releases.k8s.io/$CURRENT_BRANCH/examples)"
-  echo
+  if [[ $GITHUB_ORG == "kubernetes" ]]; then
+    echo "[Documentation](https://docs.k8s.io) &" \
+         "[Examples](https://releases.k8s.io/$CURRENT_BRANCH/examples)"
+    echo
+  fi
   if [[ -n $release_tars ]]; then
     echo "## Downloads for $title"
     echo
@@ -294,11 +300,29 @@ generate_notes () {
   local tempfile=/tmp/$PROG-file-1.$$
   local anchor
   local changelog_file
+  local search_pattern
+  local search_field
   local -a normal_prs
   local -a action_prs
   local -a notes_normal
   local -a notes_action
   local -a prs
+
+  # Istio uses a different pattern on "merge pull"'s than Kubernetes
+  # Why is this?  Is this an experiment?  Is this going to be stable going
+  # forward?  Earlier in the commit history of the Istio org, "merge pull"'s
+  # were used, but we're not accounting for that at the moment as release notes
+  # gathering will be mostly current (from the last x.y.0 release forward).
+  if [[ $GITHUB_ORG == "istio" ]]; then
+    search_pattern="(#[0-9]*)"
+    # Awk field (NF = last field)
+    search_field="NF"
+  else
+    # Kubernetes
+    search_pattern="Merge pull"
+    # Awk field
+    search_field="4"
+  fi
 
   branch_head=$(git rev-parse refs/remotes/origin/$CURRENT_BRANCH 2>/dev/null)
 
@@ -350,9 +374,11 @@ generate_notes () {
     if [[ "$line" =~ automated-cherry-pick-of-(#[0-9]+-){1,} ]]; then
       prs+=($(echo "${BASH_REMATCH[0]}" | egrep -o "#[0-9]*" |tr -d '#'))
     else
-      prs+=($(echo "$line" | awk '{gsub(/#/,"");print $4 }'))
+      # Added gsub to deal with Istio format
+      prs+=($(echo "$line" |\
+              awk '{gsub(/#/,"");gsub(/\(|\)/,"");print $'$search_field' }'))
     fi
-  done < <(git log $range --format="%s" --grep="Merge pull")
+  done < <(git log $range --format="%s" --grep="$search_pattern")
 
   logecho
 
@@ -425,8 +451,11 @@ EOF+
     fi
 
     if [[ -n "${notes_normal[*]}" ]]; then
-      echo "### Other notable changes" >> $PR_NOTES
-      echo >> $PR_NOTES
+      # Only call out "other notable changes if there are other types
+      if [[ -n "${notes_action[*]}" || -n "${notes_experimental[*]}" ]]; then
+        echo "### Other notable changes" >> $PR_NOTES
+        echo >> $PR_NOTES
+      fi
       extract_pr_title "${notes_normal[*]}" >> $PR_NOTES \
        || common::exit 1 "$FAILED: github rate limiting."
     fi
@@ -507,6 +536,10 @@ common::logfileinit $MYLOG 10
 
 # BEGIN script
 common::timestamp begin
+
+# Set default API/GIT roots
+# Since $PROG requires running from a git clone, guess from remote
+gitlib::set_api_roots --use-remote
 
 # Check token
 gitlib::github_api_token

@@ -100,6 +100,9 @@ FLAGS_verbose=1
 MYLOG=/tmp/$PROG.log
 common::logfileinit $MYLOG 10
 
+# Set default API/GIT roots
+gitlib::set_api_roots
+
 gitlib::github_api_token
 common::check_packages jq
 common::check_pip_packages yq

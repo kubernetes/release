@@ -22,12 +22,6 @@
 ###############################################################################
 GHCURL="curl -s --fail --retry 10 -u ${GITHUB_TOKEN:-$FLAGS_github_token}:x-oauth-basic"
 JCURL="curl -g -s --fail --retry 10"
-K8S_GITHUB_API='https://api.github.com/repos/kubernetes/kubernetes'
-K8S_GITHUB_RAW_ORG='https://raw.githubusercontent.com/kubernetes'
-
-K8S_GITHUB_SEARCHAPI='https://api.github.com/search/issues?per_page=100&q=is:pr%20repo:kubernetes/kubernetes%20'
-K8S_GITHUB_URL='https://github.com/kubernetes/kubernetes'
-K8S_GITHUB_SSH='git@github.com:kubernetes/kubernetes.git'
 
 # Regular expressions for bash regex matching
 # 0=entire branch name
@@ -39,14 +33,48 @@ BRANCH_REGEX="master|release-([0-9]{1,})\.([0-9]{1,})(\.([0-9]{1,}))*$"
 # release - 1=Major, 2=Minor, 3=Patch, 4=-(alpha|beta|rc), 5=rev
 # dotzero - 1=Major, 2=Minor
 # build - 1=build number, 2=sha1
-declare -A VER_REGEX=([release]="v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[a-zA-Z0-9]+)*\.*(0|[1-9][0-9]*)?"
-                      [dotzero]="v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.0$"
-                      [build]="([0-9]{1,})\+([0-9a-f]{5,40})"
-                     )
+# Define what a "digit" looks like
+declare -A VER_REGEX=([digit]="(0|[1-9][0-9]*)")
+# v is optional (Istio)
+VER_REGEX+=([x.y]="v?${VER_REGEX[digit]}\.${VER_REGEX[digit]}")
+VER_REGEX+=([release]="${VER_REGEX[x.y]}\.${VER_REGEX[digit]}(-[a-zA-Z0-9]+)*\.*${VER_REGEX[digit]}?"
+            [dotzero]="${VER_REGEX[x.y]}\.0$"
+            [build]="([0-9]{1,})\+([0-9a-f]{5,40})"
+           )
 
 ###############################################################################
 # FUNCTIONS
 ###############################################################################
+
+###############################################################################
+# Set API roots and git URLs
+# @optparam --use-remote - instruct to try to get a remote from git clone
+# Sets GLOBALS for use throughout
+gitlib::set_api_roots () {
+  local arg=$1
+  local remote
+  local org
+  local repo
+
+  if [[ $arg == "--use-remote" ]]; then
+    if remote=$(git config --get remote.origin.url) && \
+       [[ $remote =~ .*github.com.([^/]+)/([^/]+) ]]; then
+      org="${BASH_REMATCH[1]}"
+      repo="${BASH_REMATCH[2]}"
+    fi
+  fi
+
+  GITHUB_ORG=${org:-"kubernetes"}
+  GITHUB_REPO=${repo:-"kubernetes"}
+
+  K8S_GITHUB_API_ROOT="https://api.github.com/repos"
+  K8S_GITHUB_API="$K8S_GITHUB_API_ROOT/$GITHUB_ORG/$GITHUB_REPO"
+  K8S_GITHUB_RAW_ORG="https://raw.githubusercontent.com/$GITHUB_ORG"
+
+  K8S_GITHUB_SEARCHAPI="https://api.github.com/search/issues?per_page=100&q=is:pr%20state:closed%20repo:$GITHUB_ORG/$GITHUB_REPO%20"
+  K8S_GITHUB_URL="https://github.com/$GITHUB_ORG/$GITHUB_REPO"
+  K8S_GITHUB_SSH="git@github.com:$GITHUB_ORG/$GITHUB_REPO"
+}
 
 ###############################################################################
 # Attempt to authenticate to github using ssh and if unsuccessful provide
@@ -103,17 +131,27 @@ gitlib::last_releases () {
   declare -Ag LAST_RELEASE
 
   logecho -n "Setting last releases by branch: "
-  for release in $($GHCURL $K8S_GITHUB_API/releases|\
+  # Releases are always defined at the toplevel $GITHUB_ORG (for now)
+  for release in $($GHCURL \
+                   $K8S_GITHUB_API_ROOT/$GITHUB_ORG/$GITHUB_ORG/releases |\
                    jq -r '.[] | select(.draft==false) | .tag_name'); do
     # Alpha releases only on master branch
+    # NOTE: The logic here is mostly Kubernetes specific for now
+    # As I understand it, Istio's branching and tagging strategy is in flux
+    # so don't try to guess what it is and will be here for now.
+    # As of 2017/10/12 last release on master will end up being the x.0 release
+    # and on branches will be the last x.y release. That may even be the desired
+    # result and of course this is only the 'feature' of guessing tag
+    # boundaries.  The user can always put specific ranges on the command-line.
     if [[ $release =~ -alpha ]]; then
       LAST_RELEASE[master]=${LAST_RELEASE[master]:-$release}
-    elif [[ $release =~ v([0-9]+\.[0-9]+)\.([0-9]+(-.+)?) ]]; then
+    # 1=Major, 2=Minor, 3=Patch
+    elif [[ $release =~ ${VER_REGEX[x.y]}\.${VER_REGEX[digit]} ]]; then
       # Latest vx.x.0 release goes on both master and release branch.
-      if [[ ${BASH_REMATCH[2]} == "0" ]]; then
+      if [[ ${BASH_REMATCH[3]} == "0" ]]; then
         LAST_RELEASE[master]=${LAST_RELEASE[master]:-$release}
       fi
-      branch_name=release-${BASH_REMATCH[1]}
+      branch_name=release-${BASH_REMATCH[1]}.${BASH_REMATCH[2]}
       LAST_RELEASE[$branch_name]=${LAST_RELEASE[$branch_name]:-$release}
     fi
   done
