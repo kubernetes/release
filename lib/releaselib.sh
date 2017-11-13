@@ -106,6 +106,7 @@ release::set_build_version () {
   local max_job_length
   local other_job
   local good_job
+  local retcode=0
   local good_job_count=0
   local first_build_number
   local branch_head=$($GHCURL $K8S_GITHUB_API/commits/$branch |jq -r '.sha')
@@ -186,6 +187,7 @@ release::set_build_version () {
       logecho
       logecho "Hard Limit of $hard_limit exceeded.  Halting test analysis..."
       logecho
+      retcode=1
       break
     fi
 
@@ -340,7 +342,7 @@ release::set_build_version () {
 
   rm -rf $job_path
 
-  return 0
+  return $retcode
 }
 
 
