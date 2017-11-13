@@ -72,7 +72,7 @@ gitlib::branch_exists $RELEASE_BRANCH \
 # Initialize logs
 ##############################################################################
 # Initialize and save up to 10 (rotated logs)
-MYLOG=/tmp/$PROG.log
+MYLOG=$TMPDIR/$PROG.log
 common::logfileinit $MYLOG 10
 # BEGIN script
 common::timestamp begin
@@ -113,7 +113,7 @@ if [[ -d $WORKDIR ]]; then
 fi
 
 logrun mkdir -p $WORKDIR
-gitlib::sync_repo $K8S_GITHUB_SSH $TREE_ROOT || common::exit 1 "Exiting..."
+gitlib::sync_repo $K8S_GITHUB_AUTH_URL $TREE_ROOT || common::exit 1 "Exiting..."
 logrun cd $TREE_ROOT
 
 # Is the master branch in a reasonable state to fast forward over the branch?
@@ -141,7 +141,7 @@ common::stepheader "CHECK GIT PUSH ACCESS"
 # TODO: capture state of access without forcing us into a prompt I have to 
 #       expose.
 logecho -n "Checking git push access (verbosely to accept password if needed)"
-logrun -v git push -q --dry-run $K8S_GITHUB_SSH || common::exit 1 "Exiting..."
+logrun -v git push -q --dry-run $K8S_GITHUB_AUTH_URL || common::exit 1 "Exiting..."
 
 ##############################################################################
 common::stepheader "CHECK OUT BRANCH"

@@ -30,7 +30,7 @@ release::get_job_cache () {
   fi
   local job_path=$1
   local job=${job_path##*/}
-  local tempjson=/tmp/$PROG-$job.$$
+  local tempjson=$TMPDIR/$PROG-$job.$$
   local logroot="gs://kubernetes-jenkins/logs"
   local version
   local lastversion
@@ -88,7 +88,7 @@ release::get_job_cache () {
 # * e2e-gke-slow: :50
 release::set_build_version () {
   local branch=$1
-  local job_path=${2:-"/tmp/buildresults-cache.$$"}
+  local job_path=${2:-"$TMPDIR/buildresults-cache.$$"}
   local -a exclude_suites=($3)
   local hard_limit=${4:-1000}
   local exclude_patterns=$(IFS="|"; echo "${exclude_suites[*]}")
@@ -112,7 +112,7 @@ release::set_build_version () {
   # Shorten
   branch_head=${branch_head:0:14}
   # The instructions below for installing yq put it in /usr/local/bin
-  local yq="/usr/local/bin/yq"
+  local yq=$(which yq || echo "/usr/local/bin/yq")
   local job_prefix="ci-kubernetes-"
   local -a JOB
   local -a secondary_jobs
@@ -126,7 +126,11 @@ release::set_build_version () {
   local -a all_jobs=($($GHCURL \
    $K8S_GITHUB_RAW_ORG/test-infra/master/testgrid/config/config.yaml \
    2>/dev/null |\
-   $yq -r '.[] | .[] | select (.name=="sig-'$branch'-blocking") |.dashboard_tab[].test_group_name' 2>/dev/null))
+   $yq -r '.[] | .[] | select (.name?=="sig-'$branch'-blocking") |.dashboard_tab[].test_group_name' 2>/dev/null))
+
+  if [[ -z ${all_jobs[*]} ]]; then
+    logecho "$FAILED: Curl to testgrid/config/config.yaml"
+  fi
 
   local main_job="${all_jobs[0]}"
 
@@ -459,7 +463,7 @@ release::set_release_version () {
 # @return 1 if bucket can't be made
 release::gcs::ensure_release_bucket() {
   local bucket=$1
-  local tempfile=/tmp/$PROG-gcs-write.$$
+  local tempfile=$TMPDIR/$PROG-gcs-write.$$
 
   if ! $GSUTIL ls "gs://$bucket" >/dev/null 2>&1 ; then
     logecho -n "Creating Google Cloud Storage bucket $bucket: "
@@ -490,7 +494,6 @@ release::gcs::ensure_release_bucket() {
 
 ###############################################################################
 # Create a unique bucket name for releasing Kube and make sure it exists.
-# TODO: There is a version of this in kubernetes/build/common.sh. Refactor.
 # @param gcs_stage - the staging directory
 # @param source and destination arguments
 # @return 1 if tar fails
@@ -548,9 +551,9 @@ release::gcs::push_release_artifacts() {
 
   logecho "Publish public release artifacts..."
 
-  # No need to check this for mock runs
+  # No need to check this for mock or stage runs
   # Overwriting is ok
-  if ((FLAGS_nomock)); then
+  if ((FLAGS_nomock)) && ! ((FLAGS_stage)); then
     release::gcs::destination_empty $dest || return 1
   fi
 
@@ -942,7 +945,7 @@ release::docker::release () {
   fi
   
   # Always reset back to $USER
-  logrun $GCLOUD config set account $USER@$DOMAIN_NAME
+  logrun $GCLOUD config set account $USER_AT_DOMAIN
 
   return $ret
 }
@@ -1045,9 +1048,9 @@ release::gcs::bazel_push_build() {
   logrun rm -rf $gcs_stage || return 1
   logrun mkdir -p $gcs_stage || return 1
 
-  # No need to check this for mock runs
+  # No need to check this for mock or stage runs
   # Overwriting is ok
-  if ((FLAGS_nomock)); then
+  if ((FLAGS_nomock)) && ! ((FLAGS_stage)); then
     release::gcs::destination_empty $gcs_destination || return 1
   fi
 
