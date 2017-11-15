@@ -591,7 +591,7 @@ prepare_tree () {
     return 1
   fi
 
-  checkout_object $label
+  checkout_object $label || return 1
 
   # Now set the branch we're on
   branch=$(gitlib::current_branch)
@@ -1112,6 +1112,10 @@ branchff_sanity_check () {
 PROGSTEP[get_build_candidate]="SET BUILD CANDIDATE"
 get_build_candidate () {
   local testing_branch
+  local branch_head=$($GHCURL $K8S_GITHUB_API/commits/$RELEASE_BRANCH |\
+                      jq -r '.sha')
+  # Shorten
+  branch_head=${branch_head:0:14}
 
   # Are we branching to a new branch?
   if gitlib::branch_exists $RELEASE_BRANCH; then
@@ -1167,6 +1171,17 @@ get_build_candidate () {
       common::exit 1
     fi
 
+    # The build version should never be behind HEAD on release branches
+    if [[ "$RELEASE_BRANCH" =~ release-([0-9]{1,})\. ]]; then
+      if [[ $JENKINS_BUILD_VERSION =~ ${VER_REGEX[build]} && \
+            ${BASH_REMATCH[2]} != $branch_head ]]; then
+        logecho
+        logecho "$FATAL: The $RELEASE_BRANCH HEAD is ahead of the chosen" \
+                "commit. Releases on release branches must be run from HEAD."
+        return 1
+      fi
+    fi
+
     # Check state of master branch before continuing
     branchff_sanity_check $JENKINS_BUILD_VERSION
   fi
@@ -1184,14 +1199,15 @@ set_release_values () {
                                 $PARENT_BRANCH \
    || return 1
 
-  # Check that this tag doesn't exist which may occur if $PROG ran partially
+  # Check that this tag doesn't exist. Staged builds may be old
   if [[ "$($GHCURL $K8S_GITHUB_API/tags |jq -r '.[] .name')" =~ \
-     $'\n'$RELEASE_VERSION_PRIME$'\n' ]]; then
+        $'\n'$RELEASE_VERSION_PRIME$'\n' ]]; then
      logecho
-     logecho "The tag $RELEASE_VERSION_PRIME already exists on github."
-     logecho "* An old --buildversion was specified on the command-line"
+     logecho "$FATAL: The tag $RELEASE_VERSION_PRIME already exists on github."
+     logecho "An old --buildversion was specified on the command-line."
      return 1
   fi
+
 }
 
 ##############################################################################
@@ -1497,7 +1513,7 @@ common::run_stateful get_build_candidate JENKINS_BUILD_VERSION \
                                          PARENT_BRANCH BRANCH_POINT
 # Computes a few things and creates a globals and dictionaries - not stateful
 # Always Computed from JENKINS_BUILD_VERSION
-set_release_values
+set_release_values || common::exit 1 "Exiting..."
 
 # Set values based on derived/computed values above
 # WORK/BUILD area
