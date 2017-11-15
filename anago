@@ -1429,14 +1429,6 @@ if [[ -z "${BASEDIR}" ]]; then
   fi
 fi
 
-if ! ((FLAGS_buildonly)) && ! common::set_cloud_binaries; then
-  logecho "Releasing Kubernetes requires gsutil and gcloud. Please download,"
-  logecho "install and authorize through the Google Cloud SDK:"
-  logecho
-  logecho "https://developers.google.com/cloud/sdk/"
-  common::exit 1 "Exiting..."
-fi
-
 # TODO:
 # These KUBE_ globals extend beyond the scope of the new release refactored
 # tooling so to pass these through as flags will require fixes across
@@ -1497,6 +1489,15 @@ if ! ((FLAGS_gcb)); then
 
   # Additional functionality
   common::security_layer
+fi
+
+# Set cloud binaries
+if ! ((FLAGS_buildonly)) && ! common::set_cloud_binaries; then
+  logecho "Releasing Kubernetes requires gsutil and gcloud. Please download,"
+  logecho "install and authorize through the Google Cloud SDK:"
+  logecho
+  logecho "https://developers.google.com/cloud/sdk/"
+  common::exit 1 "Exiting..."
 fi
 
 ((FLAGS_stage)) || common::run_stateful gitlib::github_acls
