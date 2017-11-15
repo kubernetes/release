@@ -946,8 +946,8 @@ release::docker::release () {
     done
   fi
   
-  # Always reset back to $USER
-  logrun $GCLOUD config set account $USER_AT_DOMAIN
+  # Always reset back to ${USER_AT_DOMAIN:-$USER@$DOMAIN_NAME}
+  logrun $GCLOUD config set account "${USER_AT_DOMAIN:-$USER@$DOMAIN_NAME}"
 
   return $ret
 }

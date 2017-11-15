@@ -23,7 +23,7 @@ PROG=${0##*/}
 #+
 #+ SYNOPSIS
 #+     $PROG  [--nomock] [--federation] [--noupdatelatest] [--ci]
-#+            [--bucket=<GS bucket>]
+#+            [--bucket=<GS bucket>] [--domain-name=domain.tld]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
@@ -53,6 +53,7 @@ PROG=${0##*/}
 #+                                 values are kubernetes(default) or federation.
 #+     [--gcs-suffix=]           - Specify a suffix to append to the upload
 #+                                 destination on GCS.
+#+     [--domain-name=]          - Specify an alternate domain.tld
 #+     [--docker-registry=]      - If set, push docker images to specified
 #+                                 registry/project
 #+     [--version-suffix=]       - Append suffix to version name if set.
@@ -102,6 +103,7 @@ common::timestamp begin
 # MAIN
 ###############################################################################
 RELEASE_BUCKET=${FLAGS_bucket:-"kubernetes-release-dev"}
+DOMAIN_NAME=${FLAGS_domain_name:-"google.com"}
 # Compatibility with incoming global args
 [[ $KUBE_GCS_UPDATE_LATEST == "n" ]] && FLAGS_noupdatelatest=1
 
