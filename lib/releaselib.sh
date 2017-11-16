@@ -701,7 +701,7 @@ release::gcs::publish_version () {
                 )
 
   logecho
-  logecho "Publish official pointer text files to $bucker..."
+  logecho "Publish official pointer text files to $bucket..."
 
   for publish_file in ${publish_files[@]}; do
     # If there's a version that's above the one we're trying to release, don't

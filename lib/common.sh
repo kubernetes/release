@@ -983,17 +983,17 @@ common::sendmail () {
     return 1
   fi
 
-  (
+  {
   cat <<EOF+
-To: "$to"
-From: "$from"
-Subject: "$subject"
-Cc: "$cc"
-Reply-To: "$reply_to"
+To: $to
+From: $from
+Subject: $subject
+Cc: $cc
+Reply-To: $reply_to
 EOF+
   ((html)) && echo "Content-Type: text/html"
   cat $file
-  ) |/usr/sbin/sendmail -t
+  } |/usr/sbin/sendmail -t
 }
 
 # Stubs for security_layer functions

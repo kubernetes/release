@@ -953,7 +953,7 @@ announce () {
     common::sendmail -h "$mailto" "K8s-Anago<$USER_AT_DOMAIN>" \
                      "K8s-Anago<cloud-kubernetes-release@google.com>" \
                      "$subject" "$USER_AT_DOMAIN" \
-                     "$announcement_text" --html || return 1
+                     "$announcement_text" || return 1
 
   fi
 
@@ -1350,8 +1350,7 @@ push_all_artifacts () {
      $KUBE_DOCKER_REGISTRY $version $BUILD_OUTPUT-$version || return 1
 
     common::runstep release::gcs::publish_version \
-     $BUCKET_TYPE $version $BUILD_OUTPUT-$version \
-                  ${STAGED_BUCKET:-$RELEASE_BUCKET} || return 1
+     $BUCKET_TYPE $version $BUILD_OUTPUT-$version $RELEASE_BUCKET || return 1
   fi
 }
 
