@@ -1015,17 +1015,24 @@ common::join() {
 
 ###############################################################################
 # Run a stateful command with arguments
+# @optparam --strip-args - Do not use function args for state or pass to
+#+                         common::stepheader().
+# @optparam --non-fatal - Do not treat failure as a fatal.  Do not exit.
 # @param    fcall A quoted function and arguments to be run
 #                 The resulting unique entry in PROGSTATE will look like this:
 #                 function+arg1%%arg2%%...
 # @optparam var   A space-separated list of variables set by $fcall to be
 #                 included in the $PROGSTATE file associated with the entry
 common::run_stateful () {
-  local nonfatal=false
-  if [[ "$1" == --non-fatal ]]; then
-    nonfatal=true
-    shift
-  fi
+  local nonfatal=0
+  local stripargs=0
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+       --non-fatal) nonfatal=1; shift ;;
+      --strip-args) stripargs=1; shift ;;
+                 *) break ;;
+    esac
+  done
   local -a fcall=($1)
   local function=${fcall[0]}
   local args="${fcall[@]:1}"
@@ -1035,6 +1042,10 @@ common::run_stateful () {
   local -a setvar
   local c
 
+  # Strip args?  Clear args for the purposes of storing their state and
+  # passing to common::stepheader()
+  ((stripargs)) && unset args
+
   # Create the PROGSTATE entry based on function+args
   [[ -n $args ]] && entry+="+$(common::join "%%" $args)"
 
@@ -1043,7 +1054,7 @@ common::run_stateful () {
   common::stepheader "$function" "$args"
   if ! common::runstep ${fcall[@]}; then
     logecho "$FAILED in $function."
-    $nonfatal || common::exit 1 "RELEASE INCOMPLETE! Exiting..."
+    ((nonfatal)) || common::exit 1 "RELEASE INCOMPLETE! Exiting..."
   fi
 
   if [[ -n "${nameval[@]}" ]]; then

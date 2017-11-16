@@ -1608,8 +1608,8 @@ logecho -r "${TPUT[BOLD]}>>>>>>>>${TPUT[OFF]}" \
 
 common::run_stateful prepare_workspace
 
-common::run_stateful \
-  "common::disk_space_check $BASEDIR $(($RELEASE_GB*${#RELEASE_VERSION[*]}))"
+common::run_stateful --strip-args \
+ "common::disk_space_check $BASEDIR $(($RELEASE_GB*${#RELEASE_VERSION[*]}))"
 
 # Everything happens in the TREE_ROOT context
 logrun cd $TREE_ROOT
@@ -1665,9 +1665,6 @@ if [[ -z $STAGED_LOCATION ]]; then
   [[ -z "$PARENT_BRANCH" ]] && common::run_stateful generate_release_notes
 else
   # Force complete for these three stages
-  logecho
-  logecho "$FOUND staged sources - Marking steps complete:"
-
   for label in ${!RELEASE_VERSION[@]}; do
     SKIP_STEPS+=(prepare_tree+$label build_tree+$label)
     ((FLAGS_gcb)) && SKIP_STEPS+=(make_cross+$label)
@@ -1676,7 +1673,7 @@ else
   for entry in ${SKIP_STEPS[*]}; do
      # Check and add for re-entrancy
      if ! common::check_state $entry; then
-       logecho "- $entry"
+       logecho "$ATTENTION: Skipping $entry step executed during staging"
        common::check_state -a $entry
      fi
   done
