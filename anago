@@ -1607,8 +1607,10 @@ logecho -r "${TPUT[BOLD]}>>>>>>>>${TPUT[OFF]}" \
 
 common::run_stateful prepare_workspace
 
+# Store RELEASE_GB key=value in $PROGSTATE
 common::run_stateful --strip-args \
- "common::disk_space_check $BASEDIR $(($RELEASE_GB*${#RELEASE_VERSION[*]}))"
+ "common::disk_space_check $BASEDIR $(($RELEASE_GB*${#RELEASE_VERSION[*]}))" \
+ RELEASE_GB
 
 # Everything happens in the TREE_ROOT context
 logrun cd $TREE_ROOT
