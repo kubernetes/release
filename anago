@@ -1665,6 +1665,7 @@ if [[ -z $STAGED_LOCATION ]]; then
   # No release notes for X.Y.Z-beta.0 releases
   [[ -z "$PARENT_BRANCH" ]] && common::run_stateful generate_release_notes
 else
+  logecho
   # Force complete for these three stages
   for label in ${!RELEASE_VERSION[@]}; do
     SKIP_STEPS+=(prepare_tree+$label build_tree+$label)
