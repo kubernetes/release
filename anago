@@ -401,6 +401,11 @@ rev_openapi_versions () {
   #       under a minute, we can probably run that instead.
   #########################################################################
   for f in ${swagger_files[*]}; do
+    # Handle the recent move of federation out of k/k
+    if [[ ! -f $f ]]; then
+      logecho "Skipping $f..."
+      continue
+    fi
     # Strip any suffix off incoming RELEASE_VERSION[$label]
     sed -i -r 's,"version": "'${VER_REGEX[release]}'","version": "'${RELEASE_VERSION[$label]//-*}'",g' $f
     logrun git add $f
@@ -521,12 +526,20 @@ checkout_object () {
     commit="${BASH_REMATCH[2]}"
   fi
 
-  # if this is a new branch, checkout -B
+  # NOTE: For new branches, files are changed on master.  Therefore, while
+  # the new branch may be based on a commit earlier than HEAD, all master
+  # activity must occur AT HEAD
   if [[ -n "$PARENT_BRANCH" ]]; then
     if [[ $RELEASE_VERSION_PRIME == $version ]]; then
-      branch_arg="-B"
-      # Use BRANCH_POINT if set, otherwise, the hash from JENKINS_BUILD_VERSION
-      branch_point=${BRANCH_POINT:-$commit}
+      if [[ $tree_object =~ release- ]] && \
+         ! git rev-parse $tree_object >/dev/null 2>&1; then
+        # Only create/reset (-B) and set a branch_point if the *release-*
+        # branch doesn't already exist locally
+        branch_arg="-b"
+        # Use BRANCH_POINT if set, otherwise, the hash from
+        # JENKINS_BUILD_VERSION
+        branch_point=${BRANCH_POINT:-$commit}
+      fi
     else
       # if this is not the PRIMary version on the named RELEASE_BRANCH, use the
       # parent
@@ -539,6 +552,25 @@ checkout_object () {
   # Checkout location
   logecho -n "Checking out $tree_object: "
   logrun -s git checkout $branch_arg $tree_object $branch_point || return 1
+}
+
+##############################################################################
+# Commit a tag with a comment to the current HEAD of a branch
+# @param label - The label to process
+# @param branch - The branch to process
+git_tag () {
+  local label=$1
+  local branch=$2
+  local commit_string
+  local label_common
+
+  # Ensure a common name for label in case we're using the special beta indexes
+  [[ "$label" =~ ^beta ]] && label_common="beta"
+
+  # Tagging
+  commit_string="Kubernetes $label_common release ${RELEASE_VERSION[$label]}"
+  logecho -n "Tagging $commit_string on $branch: "
+  logrun -s git tag -a -m "$commit_string" "${RELEASE_VERSION[$label]}"
 }
 
 ##############################################################################
@@ -564,18 +596,21 @@ prepare_tree () {
   # Now set the branch we're on
   branch=$(gitlib::current_branch)
 
-  # if this is a new branch, rev openapi-spec version files
-  if [[ -n "$PARENT_BRANCH" ]]; then
-    # Only on master
-    if [[ $label == alpha ]]; then
-      rev_openapi_versions $label || return 1
-    fi
-  else
-    # rev openapi-spec version files on branch for beta tags
-    case $label in
-      beta*) rev_openapi_versions $label || return 1 ;;
-    esac
+  # If this is a new branch, rev openapi-spec version files
+  # Because this modifies files on master and there's a good chance the
+  # master has moved ahead by now, the tag has to occur before this file
+  # change or the later rebase in gitlib::push_master() will rewrite the
+  # commit associated with the tag and orphan it.
+  if [[ -n "$PARENT_BRANCH" && $label == alpha ]]; then
+    git_tag $label $branch || return 1
+    rev_openapi_versions $label || return 1
+    return 0
   fi
+
+  # rev openapi-spec version files on branch for beta tags
+  case $label in
+    beta*) rev_openapi_versions $label || return 1 ;;
+  esac
 
   # generate docs on new branches (from master) only
   # If the entirety of this session is based on a branch from master
@@ -585,17 +620,11 @@ prepare_tree () {
     logecho -n "Generating docs for ${RELEASE_VERSION[$label]}: "
     logrun -s $TREE_ROOT/hack/generate-docs.sh || return 1
     logecho -n "Committing: "
-    logrun git commit -am \
-           "Generating docs for ${RELEASE_VERSION[$label]} on $branch."
+    logrun -s git commit -am \
+              "Generating docs for ${RELEASE_VERSION[$label]} on $branch."
   fi
 
-  # Ensure a common name for label in case we're using the special beta indexes
-  [[ "$label" =~ ^beta ]] && label_common="beta"
-
-  # Tagging
-  commit_string="Kubernetes $label_common release ${RELEASE_VERSION[$label]}"
-  logecho -n "Tagging $commit_string on $branch: "
-  logrun -s git tag -a -m "$commit_string" "${RELEASE_VERSION[$label]}"
+  git_tag $label $branch
 }
 
 ##############################################################################
@@ -840,7 +869,8 @@ push_git_objects () {
     fi
   fi
 
-  # For new branches and for $CHANGELOG_FILE, update the master
+  # For files created on master with new branches and
+  # for $CHANGELOG_FILE, update the master
   gitlib::push_master
 }
 
@@ -1416,7 +1446,6 @@ common::timestamp begin
 ((FLAGS_stage)) || common::stepindex "gitlib::github_acls"
 common::stepindex "check_prerequisites" "get_build_candidate" \
  "prepare_workspace" "common::disk_space_check"
-((FLAGS_stage)) || common::stepindex "gitlib::git_push_access"
 common::stepindex "prepare_tree"
 if ((FLAGS_buildonly)); then
   ((FLAGS_gcb)) && common::stepindex "make_cross"
@@ -1569,12 +1598,6 @@ common::run_stateful \
 logrun cd $TREE_ROOT
 
 if ! ((FLAGS_stage)); then
-  # Need to check git push direct credentials here, deeper into the process
-  # than I'd optimally like - preferably this is done way earlier up where the
-  # other prerequisites are checked, but the nature of the check requires
-  # an actual git repo.
-  common::run_stateful gitlib::git_push_access
-
   # Check or store STAGED_LOCATION and STAGED_BUCKET global bools
   # to ensure re-entrant non-stage runs cache this important state
   if ! common::check_state STAGED_LOCATION; then
