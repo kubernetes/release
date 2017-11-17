@@ -852,7 +852,7 @@ Kubernetes team,
 <P>
 Kubernetes' $RELEASE_BRANCH branch has been created and is ready to accept patches.
 <P>
-Refer to the <A HREF=https://github.com/kubernetes/kubernetes/blob/master/docs/devel/cherry-picks.md>Cherrypick Guide</A> for instructions.
+Refer to the <A HREF=https://github.com/kubernetes/community/blob/master/contributors/devel/cherry-picks.md>Cherrypick Guide</A> for instructions.
 <P>
 Announced by <A HREF=https://github.com/kubernetes/release>$PROG</A>, the Kubernetes Release Tool
 EOF
