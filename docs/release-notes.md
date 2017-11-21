@@ -2,33 +2,33 @@
 
 Release notes are captured during the development cycle from [PR titles (or body
 blocks)](https://github.com/kubernetes/kubernetes/blob/master/.github/PULL_REQUEST_TEMPLATE.md) using [release notes
-labels](https://github.com/kubernetes/kubernetes/blob/master/docs/devel/pull-requests.md#release-notes) with compliance across master and release- branches using the munger in [contrib/mungegithub](https://github.com/kubernetes/contrib/blob/master/mungegithub/README.md#submit-queue)
+labels](https://github.com/kubernetes/community/blob/master/contributors/devel/pull-requests.md#write-release-notes-if-needed) with compliance across master and release- branches using [test-infra/prow](https://github.com/kubernetes/test-infra/tree/master/prow/plugins/releasenote)
 on the main Kubernetes repository (and future repositories later).
 
-Releases are built and published by the anago tool in [this repo](https://github.com/kubernetes/release) with the release notes published in [kubernetes/CHANGELOG.md](https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md).
+Releases are built and published by the anago tool in [this repo](https://github.com/kubernetes/release) with the release notes published in [kubernetes/CHANGELOG-x.y.md files](https://github.com/kubernetes/kubernetes).
 
 The automated release notes gathered in this way are considered complete
 for alpha, beta and official patch releases.
 
-For new branch, major milestones (1.X.0), the automated release
+For new branch, major milestones (x.y.0), the automated release
 note tooling provides a complete set of changes since the last major
 milestone release by referencing all alphas and betas for the minor .X. version.
 
-This bootstraps a milestone release in CHANGELOG.md with a template for
+This bootstraps a milestone release in CHANGELOG-x.y.md with a template for
 use by the Release Czar and the subteam area leads to then further expand
 on the release notes with more detail as needed.
 
-A example major milestone release (1.X.0) in CHANGELOG.md:
+An example major milestone release (x.y.0) in CHANGELOG-x.y.md:
 
 ```
-# v1.X.0
-[Documentation](http://kubernetes.github.io) & [Examples](http://releases.k8s.io/release-1.X/examples)
+# vx.y.0
+[Documentation](https://docs.k8s.io/) & [Examples](http://releases.k8s.io/release-x.y/examples)
 
 ## Downloads
 
 binary | sha1 hash | md5 hash
 ------ | --------- | --------
-[kubernetes.tar.gz](https://dl.k8s.io/v1.X.0/kubernetes.tar.gz) | `7deca064d2e277a0beed802c7cfe32d152434aed` | `0b735e8b9fd64064caa578d49062820d`
+[kubernetes.tar.gz](https://dl.k8s.io/vx.y.0/kubernetes.tar.gz) | `7deca064d2e277a0beed802c7cfe32d152434aed` | `0b735e8b9fd64064caa578d49062820d`
 
 ## Major Themes
 * TBD
@@ -42,7 +42,7 @@ binary | sha1 hash | md5 hash
 ## Provider-specific Notes
 * TBD
 
-## Changelog since v1.X.0-beta.2
+## Changelog since vx.y.0-beta.2
 
 ### Action Required
 * This very important item to watch out for
@@ -52,14 +52,14 @@ binary | sha1 hash | md5 hash
 * that bug fix
 * this cool feature
 
-### Previous Releases Included in v1.X.0
-- [v1.X.0-beta.2](#v1X0-beta2)
-- [v1.X.0-beta.1](#v1X0-beta1)
-- [v1.X.0-alpha.5](#v1X0-alpha5)
-- [v1.X.0-alpha.4](#v1X0-alpha4)
-- [v1.X.0-alpha.3](#v1X0-alpha3)
-- [v1.X.0-alpha.2](#v1X0-alpha2)
-- [v1.X.0-alpha.1](#v1X0-alpha1)
+### Previous Releases Included in vx.y.0
+- [vx.y.0-beta.2](#vxy0-beta2)
+- [vx.y.0-beta.1](#vxy0-beta1)
+- [vx.y.0-alpha.5](#vxy0-alpha5)
+- [vx.y.0-alpha.4](#vxy0-alpha4)
+- [vx.y.0-alpha.3](#v1N0-alpha3)
+- [vx.y.0-alpha.2](#v1N0-alpha2)
+- [vx.y.0-alpha.1](#v1N0-alpha1)
 ```
 
 ## FAQ
@@ -93,7 +93,7 @@ If your known issue isn't tracked by a PR at all, please contact your area lead 
 
 ### Where can I expand on a release note for a PR when the content doesn't fit in a PR title?
 
-Use PR [body blocks]((https://github.com/kubernetes/kubernetes/blob/master/.github/PULL_REQUEST_TEMPLATE.md) for expanded release notes.
+Use PR [body blocks](https://github.com/kubernetes/kubernetes/blob/master/.github/PULL_REQUEST_TEMPLATE.md) for expanded release notes.
 
 You can add or update a body block at any time in a PR body prior to a
 release and it will end up in the release notes.
@@ -101,4 +101,4 @@ release and it will end up in the release notes.
 
 ## Related
 
-* [Original release notes proposal](https://github.com/kubernetes/kubernetes/blob/master/docs/proposals/release-notes.md))
+* [Original release notes proposal](https://github.com/kubernetes/kubernetes/blob/master/docs/proposals/release-notes.md)

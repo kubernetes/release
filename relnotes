@@ -41,7 +41,7 @@ PROG=${0##*/}
 #+      of the current branch.
 #+
 #+      The default output is pure markdown and unless [--markdown-file=] is
-#+      specified, the output file is in /tmp/$PROG-release-notes.md.
+#+      specified, the output file is in $TMPDIR/$PROG-release-notes.md.
 #+      If [--html-file=] is set, $PROG will also produce a pure html version
 #+      of the notes at that location.
 #+
@@ -55,7 +55,7 @@ PROG=${0##*/}
 #+ OPTIONS
 #+     --quiet                   - Don't display the notes when done
 #+     --htmlize-md              - Output markdown with html for PRs and
-#+                                 contributors (for use in CHANGELOG.md)
+#+                                 contributors (for use in CHANGELOG-x.y.md)
 #+     --full                    - Force 'full' release format to show all
 #+                                 sections of release notes. (This is the
 #+                                 *default* for new branch X.Y.0 notes)
@@ -80,8 +80,8 @@ PROG=${0##*/}
 #+                                 on current branch to v1.1.7
 #+
 #+ FILES
-#+     /tmp/$PROG-release-htmls.md
-#+     /tmp/$PROG-release-htmls.html
+#+     $TMPDIR/$PROG-release-htmls.md
+#+     $TMPDIR/$PROG-release-htmls.html
 #+
 #+ SEE ALSO
 #+     common.sh                 - Base function definitions
@@ -134,8 +134,8 @@ extract_pr_title () {
               sed -e '/^$/d' -e '2,$s/^\( *\* \)/        \1/g' \
                   -e '2,$s/^\( *[^ \*]\)/    * \1/g')
 
-    # if the release-note block is empty or the template is unchanged, use title
-    if [[ -z "$content" ]] || [[ "$content" =~ -OR- ]]; then
+    # if the release-note block is empty (unchanged from the template), use title
+    if [[ -z "$content" ]]; then
       content=$(echo "$pull_json" | jq -r '.title')
     fi
 
@@ -288,18 +288,16 @@ generate_notes () {
   local range
   local start_tag
   local release_tag
-  local pretty_range
   local labels
   local body
-  local tempcss=/tmp/$PROG-ca.$$
-  local tempfile=/tmp/$PROG-file-1.$$
+  local tempcss=$TMPDIR/$PROG-ca.$$
+  local tempfile=$TMPDIR/$PROG-file-1.$$
   local anchor
+  local changelog_file
   local -a normal_prs
   local -a action_prs
-  local -a experimental_prs
   local -a notes_normal
   local -a notes_action
-  local -a notes_experimental
   local -a prs
 
   branch_head=$(git rev-parse refs/remotes/origin/$CURRENT_BRANCH 2>/dev/null)
@@ -319,13 +317,22 @@ generate_notes () {
     start_tag="${LAST_RELEASE[$CURRENT_BRANCH]}"
     release_tag=${POSITIONAL_ARGV[0]}
   fi
+  # Describe/tag $branch_head if no release_tag set
+  : ${release_tag:=$(git describe $branch_head)}
 
   if [[ -z "$start_tag" ]]; then
     common::exit 1 "Unable to set beginning of range automatically." \
                    "Specify on the command-line. Exiting..."
   fi
 
-  range="$start_tag..${release_tag:-$branch_head}"
+  range="$start_tag..$release_tag"
+
+  if [[ $release_tag =~ ${VER_REGEX[release]} ]]; then
+    changelog_file="CHANGELOG-${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.md"
+  else
+    logecho "Unable to set CHANGELOG file!"
+    return 1
+  fi
 
   # If range is unterminated, finish it with $branch_head
   [[ $range =~ \.\.$ ]] && range+=$branch_head
@@ -336,9 +343,6 @@ generate_notes () {
     logecho "Invalid tags/range $range !"
     return 1
   fi
-
-  # For pretty printing
-  pretty_range=${range/$branch_head/HEAD}
 
   # Deref all the PRs back to master, paying special attention to 
   # automated cherrypicks that could have multiple sources
@@ -355,16 +359,12 @@ generate_notes () {
   echo "Scanning action required PR labels on the $CURRENT_BRANCH branch..."
   action_prs=($(get_prs_by_label release-note-breaking-change))
   action_prs+=($(get_prs_by_label release-note-action-required))
-  echo "Scanning experimental PR label on the $CURRENT_BRANCH branch..."
-  experimental_prs=($(get_prs_by_label release-note-experimental))
   echo "Scanning release-note PR label on the $CURRENT_BRANCH branch..."
   normal_prs=($(get_prs_by_label release-note))
 
   for pr in ${prs[*]}; do
     if [[ " ${action_prs[@]} " =~ " ${pr} " ]]; then
       notes_action+=("$pr")
-    elif [[ " ${experimental_prs[@]} " =~ " ${pr} " ]]; then
-      notes_experimental+=("$pr")
     elif [[ " ${normal_prs[@]} " =~ " ${pr} " ]]; then
       notes_normal+=("$pr")
     fi
@@ -410,19 +410,11 @@ EOF+
     echo "### Previous Releases Included in $release_tag"
     while read anchor; do
       echo "$anchor"
-    done< <(git show master:CHANGELOG.md | egrep "^- \[${release_tag}-") \
+    done< <(git show master:$changelog_file | egrep "^- \[${release_tag}-") \
      >> $PR_NOTES
   else
     echo "## Changelog since $start_tag" >> $PR_NOTES
     echo >> $PR_NOTES
-
-    if [[ -n "${notes_experimental[*]}" ]]; then
-      echo "### Experimental Features" >> $PR_NOTES
-      echo >> $PR_NOTES
-      extract_pr_title "${notes_experimental[*]}" >> $PR_NOTES \
-       || common::exit 1 "$FAILED: github rate limiting."
-      echo >> $PR_NOTES
-    fi
 
     if [[ -n "${notes_action[*]}" ]]; then
       echo "### Action Required" >> $PR_NOTES
@@ -439,8 +431,7 @@ EOF+
        || common::exit 1 "$FAILED: github rate limiting."
     fi
 
-    if [[ -z "${notes_normal[*]}" && -z "${notes_action[*]}" &&
-          -z "${notes_experimental[*]}" ]]; then
+    if [[ -z "${notes_normal[*]}" && -z "${notes_action[*]}" ]]; then
       logecho
       logecho "**No notable changes for this release**" >> $PR_NOTES
       logecho
@@ -463,11 +454,11 @@ EOF+
     ) >> $RELEASE_NOTES_MD
   fi
 
-  if ((FLAGS_htmlize_md)); then
+  if ((FLAGS_htmlize_md)) && [[ ! $release_tag =~ ${VER_REGEX[dotzero]} ]]; then
     # Make users and PRs linkable
     # Also, expand anchors (needed for email announce())
     sed -i -e "s,#\([0-9]\{5\,\}\),[#\1]($K8S_GITHUB_URL/pull/\1),g" \
-        -e "s,\(#v[0-9]\{3\}-\),$K8S_GITHUB_URL/blob/master/CHANGELOG.md\1,g" \
+        -e "s,\(#v[0-9]\{3\}-\),$K8S_GITHUB_URL/blob/master/$changelog_file\1,g" \
         -e "s,@\([a-zA-Z0-9-]*\),[@\1](https://github.com/\1),g" \
      $RELEASE_NOTES_MD
   fi
@@ -499,19 +490,19 @@ EOF+
 CURRENT_BRANCH=${FLAGS_branch:-$(gitlib::current_branch)} \
  || common::exit 1
 
-PR_NOTES=/tmp/$PROG-$CURRENT_BRANCH-prnotes
+PR_NOTES=$TMPDIR/$PROG-$CURRENT_BRANCH-prnotes
 # Initialize new PR_NOTES for session
 >$PR_NOTES
 RELEASE_NOTES_MD=$(common::absolute_path \
-                   ${FLAGS_markdown_file:-/tmp/$PROG-$CURRENT_BRANCH.md})
+                   ${FLAGS_markdown_file:-$TMPDIR/$PROG-$CURRENT_BRANCH.md})
 RELEASE_NOTES_HTML=$(common::absolute_path $FLAGS_html_file)
-ANNOUNCEMENT_TEXT=/tmp/$PROG-announcement
+ANNOUNCEMENT_TEXT=$TMPDIR/$PROG-announcement
 
 ###############################################################################
 # MAIN
 ###############################################################################
 # Initialize and save up to 10 (rotated logs)
-MYLOG=/tmp/$PROG.log
+MYLOG=$TMPDIR/$PROG.log
 common::logfileinit $MYLOG 10
 
 # BEGIN script

@@ -20,14 +20,30 @@
 ###############################################################################
 # CONSTANTS
 ###############################################################################
-GHCURL="curl -s --fail --retry 10 -u ${GITHUB_TOKEN:-$FLAGS_github_token}:x-oauth-basic"
+# TODO: This needs to be pulled into .netrc or some other more secure location
+# Any contributor could by accident or on purpose change the yaml or this script
+# directly to "set -x" in which case, the TOKEN would be readable in the
+# GCB logs
+# netrc with git doesn't seem to work, but a combination approach with
+# netrc for curl and git remotes with embedded tokens might be an answer
+# the files themselves in the container don't need to be encrypted necessarily
+# as noone has access to those, but we can't expose this via the env
+: ${GITHUB_TOKEN:=$FLAGS_github_token}
+GHCURL="curl -s --fail --retry 10 -u $GITHUB_TOKEN:x-oauth-basic"
 JCURL="curl -g -s --fail --retry 10"
-K8S_GITHUB_API='https://api.github.com/repos/kubernetes/kubernetes'
+K8S_GITHUB_API_ROOT='https://api.github.com/repos'
+K8S_GITHUB_API="$K8S_GITHUB_API_ROOT/kubernetes/kubernetes"
 K8S_GITHUB_RAW_ORG='https://raw.githubusercontent.com/kubernetes'
 
 K8S_GITHUB_SEARCHAPI='https://api.github.com/search/issues?per_page=100&q=is:pr%20repo:kubernetes/kubernetes%20'
 K8S_GITHUB_URL='https://github.com/kubernetes/kubernetes'
-K8S_GITHUB_SSH='git@github.com:kubernetes/kubernetes.git'
+if ((FLAGS_gcb)); then
+  K8S_GITHUB_AUTH_ROOT="https://git@github.com/"
+else
+  # ssh
+  K8S_GITHUB_AUTH_ROOT="git@github.com:"
+fi
+K8S_GITHUB_AUTH_URL="${K8S_GITHUB_AUTH_ROOT}kubernetes/kubernetes.git"
 
 # Regular expressions for bash regex matching
 # 0=entire branch name
@@ -53,9 +69,8 @@ declare -A VER_REGEX=([release]="v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9
 # guidance for setup
 #
 gitlib::ssh_auth () {
-
   logecho -n "Checking ssh auth to github.com: "
-  if ssh -T ${K8S_GITHUB_SSH%%:*} 2>&1 |fgrep -wq denied; then
+  if ssh -T ${K8S_GITHUB_AUTH_URL%%:*} 2>&1 |fgrep -wq denied; then
     logecho $FAILED
     logecho
     logecho "See https://help.github.com/categories/ssh"
@@ -89,6 +104,52 @@ gitlib::is_repo_admin () {
     logecho "2. Use the 'Request to Join' button on https://github.com/orgs/kubernetes/teams/kubernetes-release-managers/members"
     return 1
   fi
+}
+
+###############################################################################
+# Validates github token using the standard $GITHUB_TOKEN in your env
+# Ensures you have 'private' access to the repo
+# returns 0 if token is valid
+# returns 1 if token is invalid
+gitlib::github_api_token () {
+  logecho -n "Checking for a valid github API token: "
+  if [[ $($GHCURL $K8S_GITHUB_API -I) =~ Cache-Control:\ private ]]; then
+    logecho -r "$OK"
+  else
+    logecho -r "$FAILED"
+    logecho
+    logecho "No valid github token found in environment or command-line!"
+    logecho
+    logecho "If you don't have a token yet, go get one at" \
+            "https://github.com/settings/tokens/new"
+    logecho "1. Fill in 'Token description': $PROG-token"
+    logecho "2. Check the []repo box"
+    logecho "3. Click the 'Generate token' button at the bottom of the page"
+    logecho "4. Use your new token in one of two ways:"
+    logecho "   * Set GITHUB_TOKEN in your environment"
+    logecho "   * Specify your --github-token=<token> on the command line"
+    common::exit 1
+  fi
+}
+
+##############################################################################
+# Checks github ACLs
+# returns 1 on failure
+PROGSTEP[gitlib::github_acls]="CHECK GITHUB AUTH"
+gitlib::github_acls () {
+
+  gitlib::github_api_token || return 1
+  ((FLAGS_gcb)) || gitlib::ssh_auth || return 1
+  gitlib::is_repo_admin || return 1
+}
+
+###############################################################################
+# Sets up basic git config elements for running within GCB
+#
+# returns 1 on failure
+gitlib::git_config_for_gcb () {
+  logrun git config --global user.email "nobody@k8s.io" || return 1
+  logrun git config --global user.name "Anago GCB" || return 1
 }
 
 ###############################################################################
@@ -170,30 +231,6 @@ gitlib::pending_prs () {
             '.[] | "\(.number)\t\(.milestone.title)\t\(.user.login)\t\(.updated_at)\t\(.title)"')
 }
 
-###############################################################################
-# Validates github token using the standard $GITHUB_TOKEN in your env
-# returns 0 if token is valid
-# returns 1 if token is invalid
-gitlib::github_api_token () {
-  logecho -n "Checking for a valid github API token: "
-  if ! $GHCURL $K8S_GITHUB_API >/dev/null 2>&1; then
-    logecho -r "$FAILED"
-    logecho
-    logecho "No valid github token found in environment or command-line!"
-    logecho
-    logecho "If you don't have a token yet, go get one at" \
-            "https://github.com/settings/tokens/new"
-    logecho "1. Fill in 'Token description': $PROG-token"
-    logecho "2. Check the []repo box"
-    logecho "3. Click the 'Generate token' button at the bottom of the page"
-    logecho "4. Use your new token in one of two ways:"
-    logecho "   * Set GITHUB_TOKEN in your environment"
-    logecho "   * Specify your --github-token=<token> on the command line"
-    common::exit 1
-  fi
-  logecho -r "$OK"
-}
-
 ##############################################################################
 # Git repo sync
 # @param repo - full git url
@@ -211,6 +248,14 @@ gitlib::sync_repo () {
     ) || return 1
   else
     logrun -s git clone $repo $dest || return 1
+
+    # for https, update the remotes so we don't have to call the git command-line
+    # every time with a token
+    (
+    cd $dest
+    git remote set-url origin $(git remote get-url origin |\
+     sed "s,https://git@github.com,https://git:${GITHUB_TOKEN:-$FLAGS_github_token}@github.com,g")
+    )
   fi
 }
 
@@ -258,7 +303,108 @@ gitlib::repo_state () {
     logecho "$FAILED"
     logecho
     logecho "$TOOL_ROOT is not up to date."
-    logecho "$ git pull # to try again"
+    logecho "$ git pull"
     return 1
   fi
 }
+
+# Set up git config for GCB
+if ((FLAGS_gcb)); then
+  gitlib::git_config_for_gcb || common::exit "Exiting..."
+fi
+
+###############################################################################
+# Search for a matching release tracking issue
+# @param version RELEASE_VERSION_PRIME
+# returns 1 if none found
+# prints most recent issue maching
+gitlib::search_release_issue () {
+  local version=$1
+  local issue
+
+  issue=$($GHCURL $K8S_GITHUB_SEARCHAPI_ROOT&q=Release+$version+Tracking+in:title+type:issue+state:open+repo:$RELEASE_TRACKING_REPO | jq -r '.items[] | (.number | tostring)' |sort -n |tail -1)
+
+  [[ -z $issue ]] && return 1
+
+  echo $issue
+}
+
+###############################################################################
+# Create a release tracking issue for posting notifications.
+# Mostly for use by --gcb since there's no other email mechanism from which
+# to send detailed html notifictions.
+# @param version RELEASE_VERSION_PRIME
+PROGSTEP[create_release_issue]="CREATE/UPDATE RELEASE TRACKING ISSUE"
+gitlib::create_release_issue () {
+  local version=$1
+  local assignee="david-mcmahon"
+  local milestone
+  local stage
+  local text
+  local cc
+  local repo
+  local issue_number
+
+  # Set the milestone and stage
+  if [[ $version =~ ${VER_REGEX[release]} ]]; then
+    milestone=${BASH_REMATCH[1]}.${BASH_REMATCH[2]}
+    stage=${BASH_REMATCH[4]/-/}
+  fi
+
+  if ((FLAGS_nomock)); then
+    repo="kubernetes/sig-release"
+    # Let the cc below build the guide
+    assignee="null"
+    # Would be nice to have a broad distribution list here on par with email
+    # distributions
+    cc="@kubernetes/sig-release-members"
+  else
+    logecho "No PR created for mock runs..."
+    return 0
+    # Need a real mock repo to update issues in
+    # Also this might have to be a global if we end up using
+    # comment_release_issue() and search_release_issue()
+    repo="david-mcmahon/release"
+    # Force milestone to null on this repo or the curl hangs
+    milestone="null"
+  fi
+
+  text="Kubernetes $version has been built and pushed.\n\nThe release notes have been updated in <A HREF=https://github.com/kubernetes/kubernetes/blob/master/$CHANGELOG_FILE/#${version//\./}>$CHANGELOG_FILE</A> with a pointer to it on <A HREF=https://github.com/kubernetes/kubernetes/releases/tag/$version>github</A>"
+
+  # If the milestone doesn't exist, this will fail.
+  # May want to check that and only add if there's a valid value to add, Ugh.
+  issue_number=$($GHCURL $K8S_GITHUB_API_ROOT/$repo/issues --data \
+  "{
+    \"title\": \"Release $version Tracking\",
+    \"body\": \"$text\ncc $cc\n\",
+    \"assignee\": \"$assignee\",
+    \"milestone\": $milestone,
+    \"labels\": [
+      \"sig-release\",
+      \"stage/${stage:-stable}\"
+    ]
+  }" |jq -r '.number')
+
+  if [[ -n $issue_number ]]; then
+    logecho "Created issue #$issue_number on github:"
+    logecho "http://github.com/$repo/issues/$issue_number"
+  else
+    logecho "There was a problem creating the release tracking issue"
+    logecho "This should be done manually."
+  fi
+}
+
+###############################################################################
+# Create a release tracking issue for posting notifications.
+# Mostly for use by --gcb since there's no other email mechanism from which
+# to send detailed html notifictions.
+gitlib::comment_release_issue () {
+  local issue=$1
+
+  $GHCURL $K8S_GITHUB_API_ROOT/$RELEASE_TRACKING_REPO/issues/$issue/comments \
+   --data \
+  "{
+  \"body\": \"$(awk '{printf "%s\\n", $0}' $HOME/look/release-notes.md)\"
+  }"
+}
+

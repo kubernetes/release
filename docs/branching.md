@@ -11,8 +11,14 @@ During that time only milestone-specific changes are allowed into the
 master and when things are stable (enough) we effectively sync the
 release branch to the HEAD of the master branch:
 
+*NOTE:* While the new release branch is in this midway state, no alpha
+releases should be created off the master branch as this would result in new
+master branch tags landing on the release branch.  The tooling in both anago
+and in branchff will catch this case, however.  This note is simply an FYI.
+
 ```
-$ branchff release-1.3
+# branchff <release branch>
+$ branchff release-1.8
 ```
 
 Once that happens we then open up master to milestone+1 changes

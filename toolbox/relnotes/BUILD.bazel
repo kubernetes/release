@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "k8s.io/release/toolbox/relnotes",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//toolbox/util:go_default_library",
+        "//vendor/github.com/google/go-github/github:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "relnotes",
+    importpath = "k8s.io/release/toolbox/relnotes",
+    library = ":go_default_library",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["main_test.go"],
+    importpath = "k8s.io/release/toolbox/relnotes",
+    library = ":go_default_library",
+    deps = ["//toolbox/util:go_default_library"],
+)

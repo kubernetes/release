@@ -17,7 +17,7 @@ source $TOOL_LIB_PATH/releaselib.sh
 # type release updates on >
 # type ci updates on >=
 
-published_file=/tmp/published.$$
+published_file=$TMPDIR/published.$$
 
 # Fill $data with testing values and expected state
 read -r -d '' data <<'EOF' || true

@@ -30,7 +30,7 @@ release::get_job_cache () {
   fi
   local job_path=$1
   local job=${job_path##*/}
-  local tempjson=/tmp/$PROG-$job.$$
+  local tempjson=$TMPDIR/$PROG-$job.$$
   local logroot="gs://kubernetes-jenkins/logs"
   local version
   local lastversion
@@ -49,7 +49,7 @@ release::get_job_cache () {
     ((dedup)) && [[ $version == $lastversion ]] && continue
     echo "$version $buildnumber"
     lastversion=$version
-  done < <(jq -r '.[] | select(.result == "SUCCESS") | select(.version != "") | [.version,.buildnumber] | "\(.[0]|rtrimstr("\n")) \(.[1])"' $tempjson |\
+  done < <(jq -r '.[] | select(.result == "SUCCESS") | select(.version != null) | [.version,.buildnumber] | "\(.[0]|rtrimstr("\n")) \(.[1])"' $tempjson |\
    LC_ALL=C sort -rn -k2,2) |\
   while read version buildnumber; do
     [[ -n $buildnumber && -n $version ]] && echo "JOB[$buildnumber]=$version"
@@ -88,7 +88,7 @@ release::get_job_cache () {
 # * e2e-gke-slow: :50
 release::set_build_version () {
   local branch=$1
-  local job_path=${2:-"/tmp/buildresults-cache.$$"}
+  local job_path=${2:-"$TMPDIR/buildresults-cache.$$"}
   local -a exclude_suites=($3)
   local hard_limit=${4:-1000}
   local exclude_patterns=$(IFS="|"; echo "${exclude_suites[*]}")
@@ -106,10 +106,15 @@ release::set_build_version () {
   local max_job_length
   local other_job
   local good_job
+  local retcode=0
   local good_job_count=0
-  local branch_head
+  local first_build_number
+  local branch_head=$($GHCURL $K8S_GITHUB_API/commits/$branch |jq -r '.sha')
+  # Shorten
+  branch_head=${branch_head:0:14}
   # The instructions below for installing yq put it in /usr/local/bin
-  local yq="/usr/local/bin/yq"
+  local yq=$(which yq || echo "/usr/local/bin/yq")
+  local job_prefix="ci-kubernetes-"
   local -a JOB
   local -a secondary_jobs
 
@@ -122,9 +127,18 @@ release::set_build_version () {
   local -a all_jobs=($($GHCURL \
    $K8S_GITHUB_RAW_ORG/test-infra/master/testgrid/config/config.yaml \
    2>/dev/null |\
-   $yq -r '.[] | .[] | select (.name=="'$branch'-blocking") |.dashboard_tab[].test_group_name' 2>/dev/null))
+   $yq -r '.[] | .[] | select (.name?=="sig-'$branch'-blocking") |.dashboard_tab[].test_group_name' 2>/dev/null))
+
+  if [[ -z ${all_jobs[*]} ]]; then
+    logecho "$FAILED: Curl to testgrid/config/config.yaml"
+  fi
 
   local main_job="${all_jobs[0]}"
+
+  if [[ -z "${all_jobs[*]}" ]]; then
+    logecho "No sig-$branch-blocking list found in the testgrid config.yaml!"
+    return 1
+  fi
 
   # Loop through the remainder, excluding anything specified by --exclude_suites
   for ((i=1;i<${#all_jobs[*]};i++)); do
@@ -138,17 +152,21 @@ release::set_build_version () {
   # finer granularity at the Jenkin's job level to determine if a build is ok.
   release::get_job_cache -d $job_path/$main_job &
 
-  # Update secondary caches limited by main cache last build number
-  for other_job in ${secondary_jobs[@]}; do
+  # If we're forcing a --build-at-head, we only need to capture the $main_job
+  # details.
+  if ! ((FLAGS_build_at_head)); then
+    # Update secondary caches limited by main cache last build number
+      for other_job in ${secondary_jobs[@]}; do
     release::get_job_cache $job_path/$other_job &
-  done
+    done
+  fi
 
   # Wait for background fetches.
   wait
 
   if ((FLAGS_verbose)); then
     # Get the longest line for formatting
-    max_job_length=$(echo ${secondary_jobs[*]} |\
+    max_job_length=$(echo ${secondary_jobs[*]/$job_prefix/} |\
      awk '{for (i=1;i<=NF;++i) {l=length($i);if(l>x) x=l}}END{print x}')
     # Pad it a bit
     ((max_job_length+2))
@@ -156,10 +174,10 @@ release::set_build_version () {
     logecho
     logecho "(*) Primary job (-) Secondary jobs"
     logecho
-    logecho "  $(printf '%-'$max_job_length's' "Jenkins Job")" \
+    logecho "  $(printf '%-'$max_job_length's' "Job #")" \
             "Run #   Build # Time/Status"
     logecho "= $(common::print_n_char = $max_job_length)" \
-            "======  ======= ==========="
+            "=====   ======= ==========="
   fi
 
   while read good_job; do
@@ -169,6 +187,7 @@ release::set_build_version () {
       logecho
       logecho "Hard Limit of $hard_limit exceeded.  Halting test analysis..."
       logecho
+      retcode=1
       break
     fi
 
@@ -176,11 +195,28 @@ release::set_build_version () {
           JOB\[([0-9]+)\]=(${VER_REGEX[release]})\.${VER_REGEX[build]} ]]; then
       main_run=${BASH_REMATCH[1]}
       build_number=${BASH_REMATCH[8]}
+      # Save first build_number
+      ((good_job_count==1)) && first_build_number=$build_number
       build_sha1=${BASH_REMATCH[9]}
       build_version=${BASH_REMATCH[2]}.$build_number+$build_sha1
       build_sha1_date=$($GHCURL $K8S_GITHUB_API/commits?sha=$build_sha1 |\
                         jq -r '.[0] | .commit .author .date')
       build_sha1_date=$(date +"%R %m/%d" -d "$build_sha1_date")
+
+      # See anago for --build-at-head
+      # This method requires a call to release::get_job_cache() to initially
+      # set $build_version, however it is less fragile than ls-remote and
+      # sorting
+      if ((FLAGS_build_at_head)); then
+        build_version=${build_version/$build_sha1/$branch_head}
+        # Force job_count so we don't fail
+        job_count=1
+        logecho
+        logecho "Forced --build-at-head specified." \
+                "Setting build_version=$build_version"
+        logecho
+        break
+      fi
     elif [[ $good_job =~ JOB\[([0-9]+)\]=(${VER_REGEX[release]}) ]]; then
       logecho
       logecho "$ATTENTION: Newly tagged versions exclude git hash." \
@@ -201,18 +237,14 @@ release::set_build_version () {
     # inconsistencies in the testgrid config naming conventions, now look 
     # *specifically* for a release branch with a version in it (non-master).
     if [[ "$branch" =~ release-([0-9]{1,})\. ]]; then
-      branch_head=$($GHCURL $K8S_GITHUB_API/commits/$branch |jq -r '.sha')
-
-      if [[ $build_sha1 != ${branch_head:0:14} ]]; then
-        # TODO: Figure out how to curl a list of last N commits
-        #       So we can return a message about how far ahead the top of the
-        #       release branch is from the last good commit.
-        #commit_count=$(git rev-list $build_sha1..${branch_head:0:14} |wc -l)
-        commit_count=some
+      if [[ $build_sha1 != $branch_head ]]; then
+        commit_count=$((first_build_number-build_number))
         logecho
         logecho "$ATTENTION: The $branch branch HEAD is ahead of the last" \
-                "good Jenkins run by $commit_count commits." \
-                "Wait for Jenkins to catch up."
+                "good run by $commit_count commits."
+        logecho
+        logecho "If you want to use the head of the branch anyway," \
+                "--buildversion=${build_version/$build_sha1/$branch_head}"
         if ((FLAGS_allow_stale_build)); then
           logecho
         else
@@ -227,14 +259,16 @@ release::set_build_version () {
     if ((FLAGS_verbose)); then
       logecho "* $(printf \
                    '%-'$max_job_length's %-7s %-7s' \
-                   $main_job \#$main_run \#$build_number) [$build_sha1_date]"
+                   ${main_job/$job_prefix/} \
+                   \#$main_run \#$build_number) [$build_sha1_date]"
       logecho "* (--buildversion=$build_version)"
     fi
 
     # Check secondaries to ensure that build number is green across "all"
     for other_job in ${secondary_jobs[@]}; do
       ((FLAGS_verbose)) \
-       && logecho -n "- $(printf '%-'$max_job_length's ' $other_job)"
+       && logecho -n "- $(printf '%-'$max_job_length's ' \
+                                 ${other_job/$job_prefix/})"
 
       # Need to kick out when a secondary doesn't exist (anymore)
       if [[ ! -f $job_path/$other_job ]]; then
@@ -262,7 +296,7 @@ release::set_build_version () {
         cache_build=${BASH_REMATCH[1]}
         # if build_number matches the cache's build number we're good
         # OR
-        # if last_run-run proves consecutive Jenkins jobs AND
+        # if last_run-run proves consecutive jobs AND
         # build_number is within a cache_build range, the build was also good
         if ((build_number==cache_build)) || \
            ((($((last_run-run))==1)) && \
@@ -308,7 +342,7 @@ release::set_build_version () {
 
   rm -rf $job_path
 
-  return 0
+  return $retcode
 }
 
 
@@ -431,7 +465,7 @@ release::set_release_version () {
 # @return 1 if bucket can't be made
 release::gcs::ensure_release_bucket() {
   local bucket=$1
-  local tempfile=/tmp/$PROG-gcs-write.$$
+  local tempfile=$TMPDIR/$PROG-gcs-write.$$
 
   if ! $GSUTIL ls "gs://$bucket" >/dev/null 2>&1 ; then
     logecho -n "Creating Google Cloud Storage bucket $bucket: "
@@ -462,13 +496,19 @@ release::gcs::ensure_release_bucket() {
 
 ###############################################################################
 # Create a unique bucket name for releasing Kube and make sure it exists.
-# TODO: There is a version of this in kubernetes/build/common.sh. Refactor.
 # @param gcs_stage - the staging directory
 # @param source and destination arguments
 # @return 1 if tar fails
 release::gcs::stage_and_hash() {
   local gcs_stage=$1
   shift
+  local src
+  local srcdir
+  local srcthing
+  local args
+  local split
+  local srcs
+  local dst
 
   # Split the args into srcs... and dst
   local args=("$@")
@@ -486,38 +526,68 @@ release::gcs::stage_and_hash() {
 }
 
 ###############################################################################
-# Prepare the local staging directory and ensure the destination directory
-# doesn't already exist.
-# @param gcs_stage - local staging directory
+# Ensure the destination bucket path doesn't already exist
 # @param gcs_destination - GCS destination directory
 # @return 1 on failure or if GCS destination already exists
-release::gcs::prepare_for_copy() {
-  local gcs_stage=$1
-  local gcs_destination=$2
+release::gcs::destination_empty() {
+  local gcs_destination=$1
 
-  logrun rm -rf $gcs_stage || return 1
-  logrun mkdir -p $gcs_stage || return 1
-
-  logecho "- Checking whether $gcs_destination already exists..."
+  logecho -n "Checking whether $gcs_destination already exists: "
   if $GSUTIL ls $gcs_destination >/dev/null 2>&1 ; then
+    logecho "$FAILED"
     logecho "- Destination exists. To remove, run:"
-    logecho -n "  gsutil -m rm -r $gcs_destination\n"
+    logecho "  gsutil -m rm -r $gcs_destination"
     return 1
   fi
+  logecho "$OK"
 }
 
 ###############################################################################
-# Copy the release artifacts to staging and push them up to GS
+# Push the release artifacts to GCS
+# @param src - Source path
+# @param dest - Destination path
+# @return 1 on failure
+release::gcs::push_release_artifacts() {
+  local src=$1
+  local dest=$2
+
+  logecho "Publish public release artifacts..."
+
+  # No need to check this for mock or stage runs
+  # Overwriting is ok
+  if ((FLAGS_nomock)) && ! ((FLAGS_stage)); then
+    release::gcs::destination_empty $dest || return 1
+  fi
+
+  # Copy the main set from staging to destination
+  # We explicitly don't set an ACL in the cp call, since doing so will override
+  # any default bucket ACLs.
+  logecho -n "- Copying artifacts to $dest: "
+  logrun -s $GSUTIL -qm cp -rc $src/* $dest/ || return 1
+
+  # This small sleep gives the eventually consistent GCS bucket listing a chance
+  # to stabilize before the diagnostic listing. There's no way to directly
+  # query for consistency, but it's OK if something is dropped from the
+  # debugging output.
+  sleep 5
+
+  logecho -n "- Listing final contents to log file: "
+  logrun -s $GSUTIL ls -lhr "$dest" || return 1
+}
+
+###############################################################################
+# Locally stage the release artifacts to staging directory
 # @param build_type - One of 'release' or 'ci'
 # @param version - The version
 # @param build_output - build output directory
-# @param bucket - GS bucket
+# @optparam release_kind - defaults to kubernetes
 # @return 1 on failure
-release::gcs::copy_release_artifacts() {
+release::gcs::locally_stage_release_artifacts() {
   local build_type=$1
   local version=$2
   local build_output=$3
-  local bucket=$4
+  # --release-kind used by push-build.sh
+  local release_kind=${4:-"kubernetes"}
   local platform
   local platforms
   local release_stage=$build_output/release-stage
@@ -525,52 +595,55 @@ release::gcs::copy_release_artifacts() {
   local gcs_stage=$build_output/gcs-stage/$version
   local src
   local dst
-  local gcs_destination=gs://$bucket/$build_type/$version
-  local gce_path=$release_stage/full/kubernetes/cluster/gce
-  local gci_path
 
-  logecho "Publish release artifacts to gs://$bucket..."
+  logecho "Locally stage release artifacts..."
 
-  release::gcs::prepare_for_copy $gcs_stage $gcs_destination || return 1
-
-  # GCI path changed in 1.2->1.3 time period
-  if [[ -d $gce_path/gci ]]; then
-    gci_path=$gce_path/gci
-  else
-    gci_path=$gce_path/trusty
-  fi
+  logrun rm -rf $gcs_stage || return 1
+  logrun mkdir -p $gcs_stage || return 1
 
   # Stage everything in release directory
   logecho "- Staging locally to ${gcs_stage##$build_output/}..."
   release::gcs::stage_and_hash $gcs_stage $release_tars/* . || return 1
 
-  # Having the configure-vm.sh script and and trusty code from the GCE cluster
-  # deploy hosted with the release is useful for GKE.
-  release::gcs::stage_and_hash $gcs_stage $gce_path/configure-vm.sh extra/gce \
-   || return 1
-  release::gcs::stage_and_hash $gcs_stage $gci_path/node.yaml extra/gce \
-   || return 1
-  release::gcs::stage_and_hash $gcs_stage $gci_path/master.yaml extra/gce \
-   || return 1
-  release::gcs::stage_and_hash $gcs_stage $gci_path/configure.sh extra/gce \
-   || return 1
+  if [[ "$release_kind" == "kubernetes" ]]; then
+    local gce_path=$release_stage/full/kubernetes/cluster/gce
+    local gci_path
+
+    # GCI path changed in 1.2->1.3 time period
+    if [[ -d $gce_path/gci ]]; then
+      gci_path=$gce_path/gci
+    else
+      gci_path=$gce_path/trusty
+    fi
+
+    # Having the configure-vm.sh script and and trusty code from the GCE cluster
+    # deploy hosted with the release is useful for GKE.
+    release::gcs::stage_and_hash $gcs_stage $gce_path/configure-vm.sh extra/gce \
+      || return 1
+    release::gcs::stage_and_hash $gcs_stage $gci_path/node.yaml extra/gce \
+      || return 1
+    release::gcs::stage_and_hash $gcs_stage $gci_path/master.yaml extra/gce \
+      || return 1
+    release::gcs::stage_and_hash $gcs_stage $gci_path/configure.sh extra/gce \
+      || return 1
+  fi
 
   # Upload the "naked" binaries to GCS.  This is useful for install scripts that
   # download the binaries directly and don't need tars.
   platforms=($(cd "$release_stage/client"; echo *))
   for platform in "${platforms[@]}"; do
-    src="$release_stage/client/$platform/kubernetes/client/bin/*"
+    src="$release_stage/client/$platform/$release_kind/client/bin/*"
     dst="bin/${platform/-//}/"
     # We assume here the "server package" is a superset of the "client package"
     if [[ -d "$release_stage/server/$platform" ]]; then
-      src="$release_stage/server/$platform/kubernetes/server/bin/*"
+      src="$release_stage/server/$platform/$release_kind/server/bin/*"
     fi
     release::gcs::stage_and_hash $gcs_stage "$src" "$dst" || return 1
 
     # Upload node binaries if they exist and this isn't a 'server' platform.
     if [[ ! -d "$release_stage/server/$platform" ]]; then
       if [[ -d "$release_stage/node/$platform" ]]; then
-        src="$release_stage/node/$platform/kubernetes/node/bin/*"
+        src="$release_stage/node/$platform/$release_kind/node/bin/*"
         release::gcs::stage_and_hash $gcs_stage "$src" "$dst" || return 1
       fi
     fi
@@ -581,21 +654,6 @@ release::gcs::copy_release_artifacts() {
     common::md5 $path > "$path.md5" || return 1
     common::sha $path 1 > "$path.sha1" || return 1
   done
-
-  # Copy the main set from staging to destination
-  # We explicitly don't set an ACL in the cp call, since doing so will override
-  # any default bucket ACLs.
-  logecho -n "- Copying public release artifacts to $gcs_destination: "
-  logrun -s $GSUTIL -qm cp -r $gcs_stage/* $gcs_destination/ || return 1
-
-  # This small sleep gives the eventually consistent GCS bucket listing a chance
-  # to stabilize before the diagnostic listing. There's no way to directly
-  # query for consistency, but it's OK if something is dropped from the
-  # debugging output.
-  sleep 5
-
-  logecho -n "- Listing final contents to log file: "
-  logrun -s $GSUTIL ls -lhr "$gcs_destination" || return 1
 }
 
 
@@ -840,8 +898,9 @@ release::docker::release () {
     "hyperkube"
   )
 
-  # Activate G_AUTH_USER credentials to push to gcr.io if set
-  [[ -n $G_AUTH_USER ]] && logrun $GCLOUD config set account $G_AUTH_USER
+  if [[ -n $G_AUTH_USER && $registry == "gcr.io/google_containers" ]];then
+    logrun $GCLOUD config set account $G_AUTH_USER
+  fi
 
   if [[ -d "$release_images" ]]; then
     release::docker::release_from_tarfiles $* || ret=$?
@@ -886,8 +945,9 @@ release::docker::release () {
       done
     done
   fi
-
-  [[ -n $G_AUTH_USER ]] && logrun $GCLOUD config set account $USER@$DOMAIN_NAME
+  
+  # Always reset back to ${USER_AT_DOMAIN:-$USER@$DOMAIN_NAME}
+  logrun $GCLOUD config set account "${USER_AT_DOMAIN:-$USER@$DOMAIN_NAME}"
 
   return $ret
 }
@@ -987,9 +1047,16 @@ release::gcs::bazel_push_build() {
   local gcs_stage=$build_output/gcs-stage/$version
   local gcs_destination=gs://$bucket/$build_type/$version
 
-  logecho "Publish release artifacts to gs://$bucket using Bazel..."
-  release::gcs::prepare_for_copy $gcs_stage $gcs_destination || return 1
+  logrun rm -rf $gcs_stage || return 1
+  logrun mkdir -p $gcs_stage || return 1
 
+  # No need to check this for mock or stage runs
+  # Overwriting is ok
+  if ((FLAGS_nomock)) && ! ((FLAGS_stage)); then
+    release::gcs::destination_empty $gcs_destination || return 1
+  fi
+
+  logecho "Publish release artifacts to gs://$bucket using Bazel..."
   logecho "- Hashing and copying public release artifacts to $gcs_destination: "
   bazel run //:push-build $gcs_stage $gcs_destination || return 1
 

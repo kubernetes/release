@@ -23,7 +23,7 @@ PROG=${0##*/}
 #+
 #+ SYNOPSIS
 #+     $PROG  [--nomock] [--federation] [--noupdatelatest] [--ci]
-#+            [--bucket=<GS bucket>]
+#+            [--bucket=<GS bucket>] [--domain-name=domain.tld]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
@@ -49,8 +49,11 @@ PROG=${0##*/}
 #+     [--bucket=]               - Specify an alternate bucket for pushes
 #+     [--release-type=]         - Override auto-detected release type
 #+                                 (normally devel or ci)
+#+     [--release-kind=]         - Kind of release to push to GCS. Supported
+#+                                 values are kubernetes(default) or federation.
 #+     [--gcs-suffix=]           - Specify a suffix to append to the upload
 #+                                 destination on GCS.
+#+     [--domain-name=]          - Specify an alternate domain.tld
 #+     [--docker-registry=]      - If set, push docker images to specified
 #+                                 registry/project
 #+     [--version-suffix=]       - Append suffix to version name if set.
@@ -90,7 +93,7 @@ source $TOOL_LIB_PATH/releaselib.sh
 # Initialize logs
 ##############################################################################
 # Initialize and save up to 10 (rotated logs)
-MYLOG=/tmp/$PROG.log
+MYLOG=$TMPDIR/$PROG.log
 common::logfileinit $MYLOG 10
 
 # BEGIN script
@@ -100,45 +103,40 @@ common::timestamp begin
 # MAIN
 ###############################################################################
 RELEASE_BUCKET=${FLAGS_bucket:-"kubernetes-release-dev"}
+DOMAIN_NAME=${FLAGS_domain_name:-"google.com"}
 # Compatibility with incoming global args
 [[ $KUBE_GCS_UPDATE_LATEST == "n" ]] && FLAGS_noupdatelatest=1
+
+# Default to kubernetes
+: ${FLAGS_release_kind:="kubernetes"}
 
 # This will canonicalize the path
 KUBE_ROOT=$(pwd -P)
 
-KUBECTL_OUTPUT=$(cluster/kubectl.sh version --client 2>&1 || true)
-if [[ "$KUBECTL_OUTPUT" =~ GitVersion:\"(${VER_REGEX[release]}(\.${VER_REGEX[build]})?(-dirty)?)\", ]]; then
-  LATEST=${BASH_REMATCH[1]}
-  if ((FLAGS_ci)) && [[ "$KUBECTL_OUTPUT" =~ GitTreeState:\"dirty\" ]]; then
+USE_BAZEL=false
+if release::was_built_with_bazel $KUBE_ROOT; then
+  USE_BAZEL=true
+  bazel build //:version
+  LATEST=$(cat $KUBE_ROOT/bazel-genfiles/version)
+else
+  LATEST=$(tar -xzf $KUBE_ROOT/_output/release-tars/$FLAGS_release_kind.tar.gz $FLAGS_release_kind/version -O)
+fi
+
+if [[ "$LATEST" =~ (${VER_REGEX[release]}(\.${VER_REGEX[build]})?(-dirty)?) ]]; then
+  if ((FLAGS_ci)) && [[ "$LATEST" =~ "dirty" ]]; then
     logecho "Refusing to push dirty build with --ci flag given."
     logecho "CI builds should always be performed from clean commits."
     logecho
-    logecho "kubectl version output:"
-    logecho $KUBECTL_OUTPUT
+    logecho "version output:"
+    logecho $LATEST
     common::exit 1
   fi
 else
   logecho "Unable to get latest version from build tree!"
   logecho
-  logecho "kubectl version output:"
-  logecho $KUBECTL_OUTPUT
+  logecho "version output:"
+  logecho $LATEST
   common::exit 1
-fi
-
-USE_BAZEL=false
-if release::was_built_with_bazel $KUBE_ROOT; then
-  USE_BAZEL=true
-  # The Bazel push-build rule will recompile if necessary, which means that the
-  # version string from kubectl might be out-of-date. Let's explicitly verify
-  # that the version we got from kubectl is correct.
-  logecho "Checking that Bazel build is up-to-date"
-  bazel build //:version
-  BAZEL_LATEST=$(cat $KUBE_ROOT/bazel-genfiles/version)
-  if [[ $BAZEL_LATEST != $LATEST ]]; then
-    logecho "kubectl version $LATEST doesn't match Bazel version $BAZEL_LATEST."
-    logecho "Do you need to rebuild?"
-    common::exit 1
-  fi
 fi
 
 if [[ -n "${FLAGS_version_suffix:-}" ]]; then
@@ -185,8 +183,12 @@ while ((attempt<max_attempts)); do
     release::gcs::bazel_push_build $GCS_DEST $LATEST $KUBE_ROOT/_output \
                                    $RELEASE_BUCKET && break
   else
-    release::gcs::copy_release_artifacts $GCS_DEST $LATEST $KUBE_ROOT/_output \
-                                         $RELEASE_BUCKET && break
+    release::gcs::locally_stage_release_artifacts $GCS_DEST $LATEST \
+                                                  $KUBE_ROOT/_output \
+                                                  $FLAGS_release_kind
+    release::gcs::push_release_artifacts \
+     $KUBE_ROOT/_output/gcs-stage/$LATEST \
+     gs://$RELEASE_BUCKET/$GCS_DEST/$LATEST && break
   fi
   ((attempt++))
 done

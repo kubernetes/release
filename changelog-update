@@ -22,15 +22,13 @@ PROG=${0##*/}
 #+     $PROG - Changelog updater
 #+
 #+ SYNOPSIS
-#+     $PROG  <tag|all> [<tag ...]
+#+     $PROG  <tag> [<tag> ...]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
 #+ DESCRIPTION
-#+     Look in kubernetes/CHANGELOG.md for <tag>'s and update the release
+#+     Look in kubernetes/CHANGELOG-x.y.md for <tag>'s and update the release
 #+     notes with the current ones, prepare a PR and send it out.
-#+     "all" will update every single release in CHANGELOG.md and will take
-#+     quite a while to do so.
 #+
 #+     $PROG must be run inside of a USER github clone.
 #+
@@ -106,7 +104,7 @@ check_and_clean_branch () {
 # Initialize logs
 ##############################################################################
 # Initialize and save up to 10 (rotated logs)
-MYLOG=/tmp/$PROG.log
+MYLOG=$TMPDIR/$PROG.log
 common::logfileinit $MYLOG 10
 # BEGIN script
 common::timestamp begin
@@ -127,11 +125,8 @@ fi
 logecho -n "Checking out master: "
 logrun -s git checkout master || common::exit 1
 
-[[ "${TAGS[*]}" =~ all ]] \
- && TAGS=($(awk "/^# ${VER_REGEX[release]}/ {print \$2}" CHANGELOG.md))
-
 WORKBRANCH="update-${TAGS[0]}"
-MARKDOWN_FILE=/tmp/$PROG-md.$$
+MARKDOWN_FILE=$TMPDIR/$PROG-md.$$
 
 # Ask and destroy old branch
 check_and_clean_branch $WORKBRANCH
@@ -147,13 +142,19 @@ for TAG in ${TAGS[*]}; do
     continue
   fi
 
+  if [[ $TAG =~ ${VER_REGEX[release]} ]]; then
+    CHANGELOG_FILE="CHANGELOG-${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.md"
+  else
+    common::exit 1 "Unable to set CHANGELOG file!"
+  fi
+
   # Verify valid and existing tag
-  if ! egrep -q "^# $TAG$" CHANGELOG.md; then
-    logecho "Skipping - $TAG not found in CHANGELOG.md..."
+  if ! egrep -q "^# $TAG$" $CHANGELOG_FILE; then
+    logecho "Skipping - $TAG not found in $CHANGELOG_FILE..."
     continue
   fi
 
-  PREVTAG=$(sed -n "/^# $TAG$/,/^# v/p" CHANGELOG.md |\
+  PREVTAG=$(sed -n "/^# $TAG$/,/^# v/p" $CHANGELOG_FILE |\
             awk '/^## Change(s|log) since / {print $4}')
 
   logecho -n "Generating new notes for $PREVTAG..$TAG: "
@@ -163,30 +164,30 @@ for TAG in ${TAGS[*]}; do
   # Massage the result
   sed -n '/^## Change[a-z]* since '$PREVTAG'$/,${
           /^## Change[a-z]* since '$PREVTAG'$/d;p}' $MARKDOWN_FILE \
-   > /tmp/$PROG-tmp.$$
+   > $TMPDIR/$PROG-tmp.$$
 
   # Maintain existing spacing layout
   # Strip blank lines at EOF
-  sed -i -e :a -e '/^\n*$/{$d;N;};/\n$/ba' /tmp/$PROG-tmp.$$
-  echo -e '\n\n' >> /tmp/$PROG-tmp.$$
-  logrun mv /tmp/$PROG-tmp.$$ $MARKDOWN_FILE
+  sed -i -e :a -e '/^\n*$/{$d;N;};/\n$/ba' $TMPDIR/$PROG-tmp.$$
+  echo -e '\n\n' >> $TMPDIR/$PROG-tmp.$$
+  logrun mv $TMPDIR/$PROG-tmp.$$ $MARKDOWN_FILE
 
   # Delete the old entry
-  sed -i '/^## Change[a-z]* since '$PREVTAG'$/,/^# v/{//!d}' CHANGELOG.md
+  sed -i '/^## Change[a-z]* since '$PREVTAG'$/,/^# v/{//!d}' $CHANGELOG_FILE
   # Insert the new
-  sed -i "/^## Change[a-z]* since $PREVTAG$/r $MARKDOWN_FILE" CHANGELOG.md
+  sed -i "/^## Change[a-z]* since $PREVTAG$/r $MARKDOWN_FILE" $CHANGELOG_FILE
 done
 
-logecho -n "Update CHANGELOG.md TOC: "
-common::mdtoc CHANGELOG.md || return 1
+logecho -n "Update $CHANGELOG_FILE TOC: "
+common::mdtoc $CHANGELOG_FILE || return 1
 
 if git diff --quiet --exit-code; then
   common::exit 0 "No changes detected.  Nothing to update $PREVTAG..$TAG"
 fi
 
-logecho -n "Committing changes for $PREVTAG..$TAG to CHANGELOG.md: "
+logecho -n "Committing changes for $PREVTAG..$TAG to $CHANGELOG_FILE: "
 logrun -s git commit --no-verify -m "Updating release notes for ${TAGS[*]}." \
-          CHANGELOG.md
+          $CHANGELOG_FILE
 
 if common::askyorn "Push your change upstream"; then
   logecho
