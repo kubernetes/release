@@ -156,16 +156,48 @@ common::stepheader "MERGE AND UPDATE"
 logecho -n "Merging $MASTER_OBJECT into $RELEASE_BRANCH branch: "
 logrun -s git merge -X ours $MASTER_OBJECT
 
+
+# TODO: This should use update-all again when
+# - run-time returns to reasonable levels
+# - it doesn't run update-generated-docs.sh which creates placeholder docs
+#   for *master* only
+# - it doesn't result in failures like this:
+# <snip>
+# Running update-staging-godeps
+#
+#Unexpected dirty working directory:
+#
+# M api/openapi-spec/swagger.json
+# M docs/admin/cloud-controller-manager.md
+# M docs/admin/kube-apiserver.md
+# M docs/admin/kube-controller-manager.md
+# M docs/admin/kube-proxy.md
+# <snip>
+# Commit your changes in another terminal and then continue here by pressing enter.
+
+USEFUL_UPDATES=(update-openapi-spec generate-docs 
+                update-federation-openapi-spec)
+
 logecho -n "Ensure ectd is up to date: "
 logrun -s hack/install-etcd.sh
 export PATH="$TREE_ROOT/third_party/etcd:$PATH"
-logecho -n "Running update-all.sh (may take some time): "
-logrun -s "hack/update-all.sh"
+
+logecho "Run 'useful' (the list may be out of date) hack/update* scripts..."
+for script in ${USEFUL_UPDATES[*]}; do
+  fullscript="hack/$script.sh"
+  if ! [[ -f $fullscript ]]; then
+    logecho "Skipping non-existent $script..."
+    continue
+  fi
+  logecho -n "Running $fullscript: "
+  logrun -s $fullscript
+done
 
 if [[ -n "$(git status -s)" ]]; then
   logecho -n "Commit changes: "
   logrun git add -A
-  logrun -s git commit -am "update-all.sh." \
+  logrun -s git commit -am \
+                "Results of running update scripts: ${USEFUL_UPDATES[*]}" \
     || common::exit 1 "Exiting..."
 fi
 
