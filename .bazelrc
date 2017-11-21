@@ -1,0 +1,5 @@
+# TODO: Remove this default once rules_go is bumped.
+# Ref kubernetes/kubernetes#52677
+build --incompatible_comprehension_variables_do_not_leak=false
+# TODO: remove the following once repo-infra is bumped.
+build --incompatible_disallow_set_constructor=false
