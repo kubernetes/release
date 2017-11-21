@@ -131,7 +131,7 @@ func main() {
 
 	// Generating release note...
 	log.Print("Generating release notes...")
-	err = gatherPRNotes(prFileName, releaseInfo)
+	err = gatherPRNotes(client, prFileName, releaseInfo)
 	if err != nil {
 		log.Printf("failed to gather PR notes: %v", err)
 		os.Exit(1)
@@ -271,7 +271,7 @@ func gatherReleaseInfo(g *u.GithubClient, branchRange string) (*ReleaseInfo, err
 	return &info, nil
 }
 
-func gatherPRNotes(prFileName string, info *ReleaseInfo) error {
+func gatherPRNotes(g *u.GithubClient, prFileName string, info *ReleaseInfo) error {
 	var result error
 	prFile, err := os.Create(prFileName)
 	if err != nil {
@@ -289,7 +289,7 @@ func gatherPRNotes(prFileName string, info *ReleaseInfo) error {
 		changelogURL := fmt.Sprintf("%s%s/%s/master/CHANGELOG%s.md", u.GithubRawURL, *owner, *repo, branchVerSuffix)
 		minorRelease(prFile, info.releaseTag, draftURL, changelogURL)
 	} else {
-		patchRelease(prFile, info)
+		patchRelease(g, prFile, info)
 	}
 	return result
 }
@@ -620,27 +620,38 @@ func minorRelease(f *os.File, release, draftURL, changelogURL string) {
 }
 
 // patchRelease performs a patch (vX.Y.Z) release by printing out all the related changes.
-func patchRelease(f *os.File, info *ReleaseInfo) {
+func patchRelease(g *u.GithubClient, f *os.File, info *ReleaseInfo) error {
 	// Release note for different labels
 	f.WriteString(fmt.Sprintf("## Changelog since %s\n\n", info.startTag))
 
 	if len(info.releaseActionRequiredPRs) > 0 {
 		f.WriteString("### Action Required\n\n")
-		for _, pr := range info.releaseActionRequiredPRs {
-			f.WriteString(fmt.Sprintf("* %s (#%d, @%s)\n", extractReleaseNoteFromPR(info.prMap[pr]), pr, *info.prMap[pr].User.Login))
+		dict, err := createHierarchicalNote(info.releaseActionRequiredPRs, info.prMap, g, *owner, *repo)
+		if err != nil {
+			return fmt.Errorf("failed to create action required hierarchical note: %v", err)
+		}
+		err = hierarchicalNoteLayout(f, dict, info.prMap, g, *owner, *repo)
+		if err != nil {
+			return fmt.Errorf("failed to layout action required hierarchical note: %v", err)
 		}
 		f.WriteString("\n")
 	}
 
 	if len(info.releasePRs) > 0 {
 		f.WriteString("### Other notable changes\n\n")
-		for _, pr := range info.releasePRs {
-			f.WriteString(fmt.Sprintf("* %s (#%d, @%s)\n", extractReleaseNoteFromPR(info.prMap[pr]), pr, *info.prMap[pr].User.Login))
+		dict, err := createHierarchicalNote(info.releasePRs, info.prMap, g, *owner, *repo)
+		if err != nil {
+			return fmt.Errorf("failed to create normal hierarchical note: %v", err)
+		}
+		err = hierarchicalNoteLayout(f, dict, info.prMap, g, *owner, *repo)
+		if err != nil {
+			return fmt.Errorf("failed to layout normal hierarchical note: %v", err)
 		}
 		f.WriteString("\n")
 	} else {
 		f.WriteString("**No notable changes for this release**\n\n")
 	}
+	return nil
 }
 
 // extractReleaseNoteFromPR tries to fetch release note from PR body, otherwise uses PR title.
