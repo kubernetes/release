@@ -420,6 +420,46 @@ rev_openapi_versions () {
 }
 
 ###############################################################################
+# Updates pkg/version/base.go files with RELEASE_VERSION
+#
+# Uses the RELEASE_VERSION global dict
+# @param label - label index to RELEASE_VERSION
+rev_version_base () {
+  local label=$1
+  local version_file="pkg/version/base.go"
+  local staging_file="staging/src/k8s.io/client-go/$version_file"
+  local minor_plus
+  local gitmajor
+  local gitminor
+
+  logecho "Updating $version_file to ${RELEASE_VERSION[$label]}..."
+
+  if [[ ${RELEASE_VERSION[$label]} =~ ${VER_REGEX[release]} ]]; then
+    gitmajor=${BASH_REMATCH[1]}
+    gitminor=${BASH_REMATCH[2]}
+  fi
+
+  [[ "$label" =~ ^beta || "$label" =~ ^rc ]] && minor_plus="+"
+
+  sed -i -e "s/\(gitMajor *string = \)\"[^\"]*\"/\1\"$gitmajor\"/g" \
+      -e "s/\(gitMinor *string = \)\"[^\"]*\"/\1\"$gitminor$minor_plus\"/g" \
+      $version_file
+
+  logecho -n "Formatting $version_file: "
+  logrun -s gofmt -s -w $version_file
+  logrun git add $version_file
+  if [[ -f $staging_file ]]; then
+    logrun cp $version_file $staging_file
+    logrun git add $staging_file
+  fi
+
+  logecho -n "Committing versioned files: "
+  logrun -s git commit -am \
+                "Kubernetes version ${RELEASE_VERSION[$label]} file updates"
+}
+
+
+###############################################################################
 # Update $CHANGELOG_FILE on master
 PROGSTEP[generate_release_notes]="GENERATE RELEASE NOTES"
 generate_release_notes () {
@@ -601,10 +641,16 @@ prepare_tree () {
   # master has moved ahead by now, the tag has to occur before this file
   # change or the later rebase in gitlib::push_master() will rewrite the
   # commit associated with the tag and orphan it.
-  if [[ -n "$PARENT_BRANCH" && $label == alpha ]]; then
-    git_tag $label $branch || return 1
-    rev_openapi_versions $label || return 1
-    return 0
+  if [[ -n "$PARENT_BRANCH" ]]; then
+    # Only on master
+    if [[ $label == alpha ]]; then
+      git_tag $label $branch || return 1
+      rev_openapi_versions $label || return 1
+      return 0
+    else
+      # rev base.go
+      rev_version_base $label || return 1
+    fi
   fi
 
   # rev openapi-spec version files on branch for beta tags
