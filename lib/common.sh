@@ -1146,7 +1146,10 @@ common::validate_command_line () {
     if [[ ${args[*]} != ${last_args[*]} ]]; then
       logecho "A previous incomplete run using different command-line values" \
               "exists."
-      logecho "Use --clean to start a new session."
+      logecho
+      logecho "${TPUT[RED]}Did you mean to --clean" \
+              "and start a new session?${TPUT[OFF]}"
+      logecho
       if common::askyorn "Do you want to continue" \
                          "this new session over top of the existing"; then
         continue=1

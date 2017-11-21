@@ -143,24 +143,6 @@ gitlib::github_acls () {
   gitlib::is_repo_admin || return 1
 }
 
-##############################################################################
-# Ensure via git push --dry-run that the current user has direct push ACLs
-# to github.
-# @param args - The quoted full original command-line args
-# returns 1 on failure
-PROGSTEP[gitlib::git_push_access]="CHECK GIT PUSH ACCESS"
-gitlib::git_push_access () {
-
-  # TODO: capture state of access without forcing us into a prompt I have to
-  #       expose.
-  logecho "Checking git push access - verbosely to accept password if needed..."
-  logecho "(NOTE: If using 2factor, enter a token for password)"
-  logrun git checkout -q master && logrun git fetch -q origin \
-   && logrun git rebase -q origin/master \
-   && logrun -v git push -q --dry-run origin master \
-   || return 1
-}
-
 ###############################################################################
 # Sets up basic git config elements for running within GCB
 #
