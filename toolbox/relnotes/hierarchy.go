@@ -27,7 +27,7 @@ func hierarchicalNoteLayout(f *os.File, dict dictSIG, prMap map[int]*github.Issu
 	sort.Strings(keySigs)
 	for _, sig := range keySigs {
 		areas := dict[sig]
-		f.WriteString(fmt.Sprintf(" - %s\n\n", strings.Title(sig)))
+		f.WriteString(fmt.Sprintf("### %s\n\n", strings.Title(sig)))
 
 		// Sort and iterate through areas
 		var keyAreas []string
@@ -37,7 +37,7 @@ func hierarchicalNoteLayout(f *os.File, dict dictSIG, prMap map[int]*github.Issu
 		sort.Strings(keyAreas)
 		for _, area := range keyAreas {
 			issues := areas[area]
-			f.WriteString(fmt.Sprintf("    - %s\n\n", strings.Title(area)))
+			f.WriteString(fmt.Sprintf("#### %s\n\n", strings.Title(area)))
 
 			for issueID, prs := range issues {
 				if issueID >= 0 {
@@ -45,12 +45,12 @@ func hierarchicalNoteLayout(f *os.File, dict dictSIG, prMap map[int]*github.Issu
 					if err != nil {
 						return err
 					}
-					f.WriteString(fmt.Sprintf("        - %s (#%d)\n\n", *issue.Title, issueID))
+					f.WriteString(fmt.Sprintf("* %s (#%d)\n\n", *issue.Title, issueID))
 				} else {
-					f.WriteString(fmt.Sprintf("        - NullIssue\n\n"))
+					f.WriteString(fmt.Sprintf("* NullIssue\n\n"))
 				}
 				for pr := range prs {
-					f.WriteString(fmt.Sprintf("            * %s (#%d, @%s)\n", extractReleaseNoteFromPR(prMap[pr]), pr, *prMap[pr].User.Login))
+					f.WriteString(fmt.Sprintf("  * %s (#%d, @%s)\n", extractReleaseNoteFromPR(prMap[pr]), pr, *prMap[pr].User.Login))
 				}
 				f.WriteString("\n")
 			}
