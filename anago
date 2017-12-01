@@ -475,8 +475,8 @@ EOF
   if [[ "$RELEASE_BRANCH" =~ release- ]]; then
     logecho -n "Checkout $RELEASE_BRANCH branch to make changes: "
     logrun -s git checkout $RELEASE_BRANCH || return 1
-    logecho -n "Remove any previous CHANGELOG*.md files: "
-    logrun -s git rm -f CHANGELOG*.md || return 1
+    logecho -n "Remove any previous CHANGELOG-*.md files: "
+    logrun -s git rm -f CHANGELOG-*.md || return 1
     logecho -n "Copy master $CHANGELOG_FILE to $RELEASE_BRANCH branch: "
     logrun -s git checkout master -- $CHANGELOG_FILE || return 1
     logecho -n "Committing $CHANGELOG_FILE: "
