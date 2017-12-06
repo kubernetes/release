@@ -388,9 +388,12 @@ check_prerequisites () {
 # @param label - label index to RELEASE_VERSION
 rev_openapi_versions () {
   local label=$1
-  local -a swagger_files=("api/openapi-spec/swagger.json"
-                          "federation/apis/openapi-spec/swagger.json")
+  local -a swagger_files=("api/openapi-spec/swagger.json")
+  local federation_swagger="federation/apis/openapi-spec/swagger.json"
   local f
+
+  # Handle the recent move of federation out of k/k
+  [[ -f $federation_swagger ]] && swagger_files+=("$federation_swagger")
 
   #########################################################################
   # NOTE: To avoid a significant time sink from running update-all.sh as
@@ -401,21 +404,18 @@ rev_openapi_versions () {
   #       under a minute, we can probably run that instead.
   #########################################################################
   for f in ${swagger_files[*]}; do
-    # Handle the recent move of federation out of k/k
-    if [[ ! -f $f ]]; then
-      logecho "Skipping $f..."
-      continue
-    fi
     # Strip any suffix off incoming RELEASE_VERSION[$label]
     sed -i -r 's,"version": "'${VER_REGEX[release]}'","version": "'${RELEASE_VERSION[$label]//-*}'",g' $f
     logrun git add $f
   done
 
   # Only commit if the files have changed.
-  if [[ -n "$(git status -s)" ]]; then
+  if [[ -n "$(git status -s ${swagger_files[*]})" ]]; then
     logecho -n "Committing openapi-spec versioned files: "
-    logrun -s git commit -am \
-                "Kubernetes version ${RELEASE_VERSION[$label]} openapi-spec file updates"
+    logrun -s git commit -m \
+      "Kubernetes version ${RELEASE_VERSION[$label]} openapi-spec file updates" \
+      ${swagger_files[*]}
+
   fi
 }
 
@@ -467,9 +467,9 @@ EOF
   logrun -s common::mdtoc $CHANGELOG_FILE || return 1
 
   logecho -n "Committing $CHANGELOG_FILE: "
-  logrun -s git commit -am \
+  logrun -s git commit -m \
             "$action $CHANGELOG_FILE for $RELEASE_VERSION_PRIME." \
-   || return 1
+            $CHANGELOG_FILE || return 1
 
   # Sync $CHANGELOG_FILE to release-* branch
   if [[ "$RELEASE_BRANCH" =~ release- ]]; then
@@ -482,7 +482,7 @@ EOF
     logecho -n "Committing $CHANGELOG_FILE: "
     logrun -s git commit -am \
               "Add/Update $CHANGELOG_FILE for $RELEASE_VERSION_PRIME." \
-     || return 1
+      || return 1
   fi
 }
 
@@ -608,21 +608,18 @@ prepare_tree () {
   fi
 
   # rev openapi-spec version files on branch for beta tags
+  # and generate docs (not checked in) for official|rc.
   case $label in
-    beta*) rev_openapi_versions $label || return 1 ;;
+    beta*) rev_openapi_versions $label || return 1
+          ;;
+    official|rc)
+      # Generate docs at release time for official and rc labels only
+      # These are NOT checked in as {verify,update}-all.sh runs
+      # {verify,update}-generated-docs.sh which checks/generates doc stubs.
+      logecho -n "Generating docs for ${RELEASE_VERSION[$label]}: "
+      logrun -s $TREE_ROOT/hack/generate-docs.sh || return 1
+      ;;
   esac
-
-  # generate docs on new branches (from master) only
-  # If the entirety of this session is based on a branch from master
-  # (PARENT_BRANCH), and this iteration of prepare_tree() is operating on
-  # the NON-master branch itself, versionize the docs
-  if [[ "$PARENT_BRANCH" == "master" && "$branch" != "master" ]]; then
-    logecho -n "Generating docs for ${RELEASE_VERSION[$label]}: "
-    logrun -s $TREE_ROOT/hack/generate-docs.sh || return 1
-    logecho -n "Committing: "
-    logrun -s git commit -am \
-              "Generating docs for ${RELEASE_VERSION[$label]} on $branch."
-  fi
 
   git_tag $label $branch
 }
@@ -688,6 +685,16 @@ build_tree () {
     logecho -n "Moving build _output to $BUILD_OUTPUT-$version: "
     logrun -s mv $BUILD_OUTPUT $BUILD_OUTPUT-$version || return 1
   fi
+
+  case "$label" in
+    official|rc)
+      # Stash any loose generate-docs.sh changes that might be hanging around.
+      # We purposely do not check these in and they are dangerous to leave
+      # behind as a 'git commit -a" could catch them
+      logecho -n "Stashing any generated files: "
+      logrun -s git stash
+      ;;
+  esac
 }
 
 ##############################################################################
