@@ -70,9 +70,17 @@ on a branch.  Without the [--official] flag, a beta would be created.
 
 There are two workflows you can choose from:
 1. Run through a complete release end to end
-2. Create any number of staged (--stage) releases and release from there
+2. Create staged (--stage) releases and release from there
 
-First try a staged alpha release:
+*NOTE:* Again, the tooling works by default in *mock mode* and runs in *"full
+production"* mode using `--nomock`.
+
+*IMPORTANT:* Staging and release workflows operate exclusively in either mock
+or `--nomock` modes.  If you stage something in mock mode, it is not available
+in `--nomock` mode.  Be sure to both stage and release with or without
+`--nomock`.
+
+First try a (mock) staged alpha release:
 ```
 $ anago master --stage
 ```
@@ -111,14 +119,14 @@ $ anago release-9.9.9
 
 ## Typical Workflows
 
-Stage an official (patch) release on your local disk:
+Stage a (mock) official patch release on your local disk:
 ```
 # add --build-at-head to force a build, otherwise rely on find_green_build
 # in-line to find a build candidate
 $ anago release-1.8 --stage
 ```
 
-Release previously staged official (patch) release from your local disk:
+Release previously (mock) staged official patch release from your local disk:
 ```
 # $buildversion will come from the output at the end of the above --stage run
 # as will this command-line in its entirety
