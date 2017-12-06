@@ -631,10 +631,11 @@ prepare_tree () {
 # Make cross only
 # This very low level split of the build required to run exactly 'make cross'
 # only using the kube-cross container image
-# @param version - The kubernetes version to build
+# @param label - The label to process
 PROGSTEP[make_cross]="MAKE CROSS"
 make_cross () {
-  local version=${RELEASE_VERSION[$1]}
+  local label=$1
+  local version=${RELEASE_VERSION[$label]}
   local branch
 
   checkout_object $label
@@ -657,10 +658,11 @@ make_cross () {
 
 ##############################################################################
 # Build the Kubernetes tree
-# @param version - The kubernetes version to build
+# @param label - The label to process
 PROGSTEP[build_tree]="BUILD TREE"
 build_tree () {
-  local version=${RELEASE_VERSION[$1]}
+  local label=$1
+  local version=${RELEASE_VERSION[$label]}
   local branch
 
   checkout_object $label
