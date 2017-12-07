@@ -551,7 +551,7 @@ common::namevalue () {
             eval export FLAGS_${arg//-/_}=1
           fi
           ;;
-    *) POSITIONAL_ARGV+=("$arg")
+    *) POSITIONAL_ARGV+=($arg)
        ;;
     esac
   done
