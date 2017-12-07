@@ -476,6 +476,8 @@ release::gcs::ensure_release_bucket() {
   # in that case
   if [[ "$PARENT_BRANCH" =~ release- ]]; then
     logecho "[SECURITY RELEASE] Default private-read ACL on bucket $bucket"
+  elif ((FLAGS_private_bucket)); then
+    logecho "[INTERNAL RELEASE] Default private-read ACL on bucket $bucket"
   else
     logecho -n "Ensure public-read default ACL on bucket $bucket: "
     logrun -s $GSUTIL defacl ch -u AllUsers:R "gs://$bucket" || return 1
@@ -850,7 +852,7 @@ release::gcs::publish () {
     "$release_stage/upload/latest" \
     "$publish_file_dst" || return 1
 
-  if ((FLAGS_nomock)); then
+  if ((FLAGS_nomock)) && ! ((FLAGS_private_bucket)); then
     logecho -n "Making uploaded version file public: "
     logrun -s $GSUTIL acl ch -R -g all:R $publish_file_dst || return 1
 

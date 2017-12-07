@@ -24,6 +24,7 @@ PROG=${0##*/}
 #+ SYNOPSIS
 #+     $PROG  [--nomock] [--federation] [--noupdatelatest] [--ci]
 #+            [--bucket=<GS bucket>] [--domain-name=domain.tld]
+#+            [--private-bucket]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
@@ -58,6 +59,8 @@ PROG=${0##*/}
 #+                                 registry/project
 #+     [--version-suffix=]       - Append suffix to version name if set.
 #+     [--noupdatelatest]        - Do not update the latest file
+#+     [--private-bucket]        - Do not mark published bits on GCS as
+#+                                 publicly readable.
 #+     [--help | -man]           - display man page for this script
 #+     [--usage | -?]            - display in-line usage
 #+
