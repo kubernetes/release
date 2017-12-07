@@ -562,7 +562,7 @@ git_tag () {
   local label=$1
   local branch=$2
   local commit_string
-  local label_common
+  local label_common="$label"
 
   # Ensure a common name for label in case we're using the special beta indexes
   [[ "$label" =~ ^beta ]] && label_common="beta"
@@ -591,7 +591,7 @@ prepare_tree () {
     return 1
   fi
 
-  checkout_object $label
+  checkout_object $label || return 1
 
   # Now set the branch we're on
   branch=$(gitlib::current_branch)
@@ -631,10 +631,11 @@ prepare_tree () {
 # Make cross only
 # This very low level split of the build required to run exactly 'make cross'
 # only using the kube-cross container image
-# @param version - The kubernetes version to build
+# @param label - The label to process
 PROGSTEP[make_cross]="MAKE CROSS"
 make_cross () {
-  local version=${RELEASE_VERSION[$1]}
+  local label=$1
+  local version=${RELEASE_VERSION[$label]}
   local branch
 
   checkout_object $label
@@ -657,10 +658,11 @@ make_cross () {
 
 ##############################################################################
 # Build the Kubernetes tree
-# @param version - The kubernetes version to build
+# @param label - The label to process
 PROGSTEP[build_tree]="BUILD TREE"
 build_tree () {
-  local version=${RELEASE_VERSION[$1]}
+  local label=$1
+  local version=${RELEASE_VERSION[$label]}
   local branch
 
   checkout_object $label
@@ -953,7 +955,7 @@ announce () {
     common::sendmail -h "$mailto" "K8s-Anago<$USER_AT_DOMAIN>" \
                      "K8s-Anago<cloud-kubernetes-release@google.com>" \
                      "$subject" "$USER_AT_DOMAIN" \
-                     "$announcement_text" --html || return 1
+                     "$announcement_text" || return 1
 
   fi
 
@@ -1112,6 +1114,10 @@ branchff_sanity_check () {
 PROGSTEP[get_build_candidate]="SET BUILD CANDIDATE"
 get_build_candidate () {
   local testing_branch
+  local branch_head=$($GHCURL $K8S_GITHUB_API/commits/$RELEASE_BRANCH |\
+                      jq -r '.sha')
+  # Shorten
+  branch_head=${branch_head:0:14}
 
   # Are we branching to a new branch?
   if gitlib::branch_exists $RELEASE_BRANCH; then
@@ -1167,6 +1173,17 @@ get_build_candidate () {
       common::exit 1
     fi
 
+    # The build version should never be behind HEAD on release branches
+    if [[ "$RELEASE_BRANCH" =~ release-([0-9]{1,})\. ]]; then
+      if [[ $JENKINS_BUILD_VERSION =~ ${VER_REGEX[build]} && \
+            ${BASH_REMATCH[2]} != $branch_head ]]; then
+        logecho
+        logecho "$FATAL: The $RELEASE_BRANCH HEAD is ahead of the chosen" \
+                "commit. Releases on release branches must be run from HEAD."
+        return 1
+      fi
+    fi
+
     # Check state of master branch before continuing
     branchff_sanity_check $JENKINS_BUILD_VERSION
   fi
@@ -1184,14 +1201,15 @@ set_release_values () {
                                 $PARENT_BRANCH \
    || return 1
 
-  # Check that this tag doesn't exist which may occur if $PROG ran partially
+  # Check that this tag doesn't exist. Staged builds may be old
   if [[ "$($GHCURL $K8S_GITHUB_API/tags |jq -r '.[] .name')" =~ \
-     $'\n'$RELEASE_VERSION_PRIME$'\n' ]]; then
+        $'\n'$RELEASE_VERSION_PRIME$'\n' ]]; then
      logecho
-     logecho "The tag $RELEASE_VERSION_PRIME already exists on github."
-     logecho "* An old --buildversion was specified on the command-line"
+     logecho "$FATAL: The tag $RELEASE_VERSION_PRIME already exists on github."
+     logecho "An old --buildversion was specified on the command-line."
      return 1
   fi
+
 }
 
 ##############################################################################
@@ -1334,8 +1352,7 @@ push_all_artifacts () {
      $KUBE_DOCKER_REGISTRY $version $BUILD_OUTPUT-$version || return 1
 
     common::runstep release::gcs::publish_version \
-     $BUCKET_TYPE $version $BUILD_OUTPUT-$version \
-                  ${STAGED_BUCKET:-$RELEASE_BUCKET} || return 1
+     $BUCKET_TYPE $version $BUILD_OUTPUT-$version $RELEASE_BUCKET || return 1
   fi
 }
 
@@ -1413,14 +1430,6 @@ if [[ -z "${BASEDIR}" ]]; then
   fi
 fi
 
-if ! ((FLAGS_buildonly)) && ! common::set_cloud_binaries; then
-  logecho "Releasing Kubernetes requires gsutil and gcloud. Please download,"
-  logecho "install and authorize through the Google Cloud SDK:"
-  logecho
-  logecho "https://developers.google.com/cloud/sdk/"
-  common::exit 1 "Exiting..."
-fi
-
 # TODO:
 # These KUBE_ globals extend beyond the scope of the new release refactored
 # tooling so to pass these through as flags will require fixes across
@@ -1483,6 +1492,15 @@ if ! ((FLAGS_gcb)); then
   common::security_layer
 fi
 
+# Set cloud binaries
+if ! ((FLAGS_buildonly)) && ! common::set_cloud_binaries; then
+  logecho "Releasing Kubernetes requires gsutil and gcloud. Please download,"
+  logecho "install and authorize through the Google Cloud SDK:"
+  logecho
+  logecho "https://developers.google.com/cloud/sdk/"
+  common::exit 1 "Exiting..."
+fi
+
 ((FLAGS_stage)) || common::run_stateful gitlib::github_acls
 
 # Simple check to validate who can do actual releases
@@ -1497,7 +1515,7 @@ common::run_stateful get_build_candidate JENKINS_BUILD_VERSION \
                                          PARENT_BRANCH BRANCH_POINT
 # Computes a few things and creates a globals and dictionaries - not stateful
 # Always Computed from JENKINS_BUILD_VERSION
-set_release_values
+set_release_values || common::exit 1 "Exiting..."
 
 # Set values based on derived/computed values above
 # WORK/BUILD area
@@ -1591,8 +1609,10 @@ logecho -r "${TPUT[BOLD]}>>>>>>>>${TPUT[OFF]}" \
 
 common::run_stateful prepare_workspace
 
-common::run_stateful \
-  "common::disk_space_check $BASEDIR $(($RELEASE_GB*${#RELEASE_VERSION[*]}))"
+# Store RELEASE_GB key=value in $PROGSTATE
+common::run_stateful --strip-args \
+ "common::disk_space_check $BASEDIR $(($RELEASE_GB*${#RELEASE_VERSION[*]}))" \
+ RELEASE_GB
 
 # Everything happens in the TREE_ROOT context
 logrun cd $TREE_ROOT
@@ -1647,10 +1667,8 @@ if [[ -z $STAGED_LOCATION ]]; then
   # No release notes for X.Y.Z-beta.0 releases
   [[ -z "$PARENT_BRANCH" ]] && common::run_stateful generate_release_notes
 else
-  # Force complete for these three stages
   logecho
-  logecho "$FOUND staged sources - Marking steps complete:"
-
+  # Force complete for these three stages
   for label in ${!RELEASE_VERSION[@]}; do
     SKIP_STEPS+=(prepare_tree+$label build_tree+$label)
     ((FLAGS_gcb)) && SKIP_STEPS+=(make_cross+$label)
@@ -1659,7 +1677,7 @@ else
   for entry in ${SKIP_STEPS[*]}; do
      # Check and add for re-entrancy
      if ! common::check_state $entry; then
-       logecho "- $entry"
+       logecho "$ATTENTION: Skipping $entry step executed during staging"
        common::check_state -a $entry
      fi
   done
