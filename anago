@@ -562,7 +562,7 @@ git_tag () {
   local label=$1
   local branch=$2
   local commit_string
-  local label_common
+  local label_common="$label"
 
   # Ensure a common name for label in case we're using the special beta indexes
   [[ "$label" =~ ^beta ]] && label_common="beta"
