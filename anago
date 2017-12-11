@@ -1284,6 +1284,9 @@ archive_release () {
     text="contents"
   fi
 
+  # Remove temporary password file so not to alarm passers-by.
+  logrun find $WORKDIR -type f -name rsyncd.password -exec rm {};
+
   # Best effort
   logecho "Copy $WORKDIR $text to $archive_bucket/$build_dir..."
   logrun $GSUTIL -mq cp $dash_args $WORKDIR/* $archive_bucket/$build_dir || true
