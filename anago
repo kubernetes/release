@@ -1285,7 +1285,7 @@ archive_release () {
   fi
 
   # Remove temporary password file so not to alarm passers-by.
-  logrun find $WORKDIR -type f -name rsyncd.password -exec rm {};
+  logrun find $WORKDIR -type f -name rsyncd.password -delete ||true
 
   # Best effort
   logecho "Copy $WORKDIR $text to $archive_bucket/$build_dir..."
