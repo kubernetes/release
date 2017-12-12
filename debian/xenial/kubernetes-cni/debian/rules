@@ -2,15 +2,16 @@
 # -*- makefile -*-
 
 #export DH_VERBOSE=1
-CNI_RELEASE = 0799f5732f2a11b329d9e3d51b9c8f2e3759f2ff
+CNI_VERSION = v0.6.0
 
 build:
 	echo noop
 
 binary:
+	mkdir -p ./bin
 	curl -sSL --fail --retry 5 \
-		"https://dl.k8s.io/network-plugins/cni-{{ .Arch }}-$(CNI_RELEASE).tar.gz" \
-		| tar xz
+		"https://dl.k8s.io/network-plugins/cni-plugins-{{ .Arch }}-$(CNI_VERSION).tgz" \
+		| tar -C ./bin -xz
 	dh_testroot
 	dh_auto_install
 	dh_shlibdeps
