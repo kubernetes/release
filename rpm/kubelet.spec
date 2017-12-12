@@ -2,7 +2,6 @@
 %global KUBE_MINOR 8
 %global KUBE_PATCH 0
 %global KUBE_VERSION %{KUBE_MAJOR}.%{KUBE_MINOR}.%{KUBE_PATCH}
-%global CNI_VERSION v0.6.0
 %global RPM_RELEASE 1
 %global ARCH amd64
 
@@ -11,6 +10,12 @@
 # assumption that none of these numbers will exceed 255.
 %define semver() (%1 * 256 * 256 + %2 * 256 + %3)
 %global KUBE_SEMVER %{semver %{KUBE_MAJOR} %{KUBE_MINOR} %{KUBE_PATCH}}
+
+%if %{KUBE_SEMVER} >= %{semver 1 9 0}
+%global CNI_VERSION 0.6.0
+%else
+%global CNI_VERSION 0.5.1
+%endif
 
 Name: kubelet
 Version: %{KUBE_VERSION}
@@ -24,7 +29,11 @@ Source1: kubelet.service
 Source2: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/%{ARCH}/kubectl
 Source3: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/%{ARCH}/kubeadm
 Source4: 10-kubeadm.conf
-Source5: https://dl.k8s.io/network-plugins/cni-plugins-%{ARCH}-%{CNI_VERSION}.tgz
+%if %{KUBE_SEMVER} < %{semver 1 9 0}
+Source5: https://dl.k8s.io/network-plugins/cni-%{ARCH}-0799f5732f2a11b329d9e3d51b9c8f2e3759f2ff.tar.gz
+%else
+Source5: https://dl.k8s.io/network-plugins/cni-plugins-%{ARCH}-v%{CNI_VERSION}.tgz
+%endif
 
 
 BuildRequires: curl
@@ -32,7 +41,7 @@ Requires: iptables >= 1.4.21
 %if %{KUBE_SEMVER} >= %{semver 1 9 0}
 Requires: kubernetes-cni >= %{CNI_VERSION}
 %else
-Requires: kubernetes-cni <= 0.5.1
+Requires: kubernetes-cni <= %{CNI_VERSION}
 %endif
 Requires: socat
 Requires: util-linux
@@ -46,7 +55,7 @@ The node agent of Kubernetes, the container cluster manager.
 
 %package -n kubernetes-cni
 
-Version: 0.6.0
+Version: %{CNI_VERSION}
 Release: %{RPM_RELEASE}
 Summary: Binaries required to provision kubernetes container networking
 Requires: kubelet
@@ -93,20 +102,18 @@ ln -s 10-kubeadm-post-1.8.conf %SOURCE4
 ln -s 10-kubeadm-pre-1.8.conf %SOURCE4
 %endif
 
-%if %{KUBE_SEMVER} < %{semver 1 9 0}
-Source5: https://dl.k8s.io/network-plugins/cni-%{ARCH}-0799f5732f2a11b329d9e3d51b9c8f2e3759f2ff.tar.gz
-%endif
-
 cp -p %SOURCE0 %{_builddir}/
 cp -p %SOURCE1 %{_builddir}/
 cp -p %SOURCE2 %{_builddir}/
 cp -p %SOURCE3 %{_builddir}/
 cp -p %SOURCE4 %{_builddir}/
-%setup -D -T -a 5 -n %{_builddir}/
+%setup -c -D -T -a 5 -n cni-plugins
 
 
 %install
 
+# The setup macro from prep will make install start in the cni-plugins directory, so cd back to the root.
+cd %{_builddir}
 install -m 755 -d %{buildroot}%{_bindir}
 install -m 755 -d %{buildroot}%{_sysconfdir}/systemd/system/
 install -m 755 -d %{buildroot}%{_sysconfdir}/systemd/system/kubelet.service.d/
@@ -123,9 +130,9 @@ install -p -m 755 -t %{buildroot}%{_sysconfdir}/systemd/system/kubelet.service.d
 install -m 755 -d %{buildroot}/opt/cni/bin
 # bin directory from cni-plugins-%{ARCH}-%{CNI_VERSION}.tgz with a list of cni plugins (among other things)
 %if %{KUBE_SEMVER} >= %{semver 1 9 0}
-mv ./ %{buildroot}/opt/cni/bin/
+mv cni-plugins/* %{buildroot}/opt/cni/bin/
 %else
-mv bin/ %{buildroot}/opt/cni/
+mv cni-plugins/bin/ %{buildroot}/opt/cni/
 %endif
 
 %files
