@@ -154,8 +154,24 @@ logrun -s git checkout -b $RELEASE_BRANCH origin/$RELEASE_BRANCH \
 common::stepheader "MERGE AND UPDATE"
 ##############################################################################
 logecho -n "Merging $MASTER_OBJECT into $RELEASE_BRANCH branch: "
-logrun -s git merge -X ours $MASTER_OBJECT
+# If merge results in conflicts with CHANGELOG* files due to previous version
+# releases occuring between branch and branchff, resolve specifically in favor
+# of the branched (deleted) version of those files.
+if ! logrun -s git merge -X ours $MASTER_OBJECT; then
+  DELETED_FILES=($(git status -s |\
+                   awk '$1 == "DU" && $2 ~ /CHANGELOG-/ {print $2}'))
 
+  ((${#DELETED_FILES[*]}==0)) \
+   && common::exit "Unable to resolve conflict automatically.  Check $MYLOG"
+
+  logecho "Merge conflict with files deleted on branch (${DELETED_FILES[*]})." \
+          "Accepting deletes and continuing..."
+  for f in ${DELETED_FILES[*]};do
+    logrun git rm $f
+  done
+  logecho -n "Merging $MASTER_OBJECT into $RELEASE_BRANCH branch (try 2): "
+  logrun -s git commit -m "Merge remote-tracking branch 'origin/master' into $RELEASE_BRANCH.  Deleting ${DELETED_FILES[*]}" || common::exit 1 "Exiting..."
+fi
 
 # TODO: This should use update-all again when
 # - run-time returns to reasonable levels
