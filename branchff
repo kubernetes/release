@@ -175,8 +175,7 @@ logrun -s git merge -X ours $MASTER_OBJECT
 # <snip>
 # Commit your changes in another terminal and then continue here by pressing enter.
 
-USEFUL_UPDATES=(update-openapi-spec generate-docs 
-                update-federation-openapi-spec)
+USEFUL_UPDATES=(update-openapi-spec update-federation-openapi-spec)
 
 logecho -n "Ensure ectd is up to date: "
 logrun -s hack/install-etcd.sh
