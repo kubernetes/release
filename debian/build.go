@@ -300,7 +300,7 @@ func getKubeletCNIVersion(v version) (string, error) {
 		return "", err
 	}
 
-	v190, err := semver.Make("1.9.0")
+	v190, err := semver.Make("1.9.0-alpha.0")
 	if err != nil {
 		return "", err
 	}
