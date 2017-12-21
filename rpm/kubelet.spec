@@ -1,8 +1,8 @@
 %global KUBE_MAJOR 1
-%global KUBE_MINOR 8
+%global KUBE_MINOR 9
 %global KUBE_PATCH 0
 %global KUBE_VERSION %{KUBE_MAJOR}.%{KUBE_MINOR}.%{KUBE_PATCH}
-%global RPM_RELEASE 1
+%global RPM_RELEASE 0
 %global ARCH amd64
 
 # This expands a (major, minor, patch) tuple into a single number so that it
@@ -150,6 +150,9 @@ mv cni-plugins/bin/ %{buildroot}/opt/cni/
 
 
 %changelog
+* Fri Dec 15 2017 Anthony Yeh <enisoc@google.com> - 1.9.0
+- Release of Kubernetes 1.9.0.
+
 * Thu Oct 19 2017 Di Xu <stephenhsu90@gmail.com>
 - Bump CNI version to v0.6.0.
 
