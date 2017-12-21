@@ -377,7 +377,7 @@ generate_notes () {
     # Check for draft and use it if available
     logecho "Checking if draft release notes exist for $release_tag..."
     $GHCURL \
-     $K8S_GITHUB_RAW_ORG/features/master/$CURRENT_BRANCH/release-notes-draft.md > $tempfile
+     $K8S_GITHUB_RAW_ORG/sig-release/master/releases/$CURRENT_BRANCH/release-notes-draft.md > $tempfile
 
     if [[ -s $tempfile ]]; then
       logecho "Draft found - using for release notes..."

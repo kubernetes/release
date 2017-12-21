@@ -285,7 +285,7 @@ func gatherPRNotes(prFileName string, info *ReleaseInfo) error {
 
 	// Bootstrap notes for minor (new branch) releases
 	if *full || u.IsVer(info.releaseTag, verDotzero) {
-		draftURL := fmt.Sprintf("%s%s/features/master/%s/release-notes-draft.md", u.GithubRawURL, *owner, *branch)
+		draftURL := fmt.Sprintf("%s%s/sig-release/master/releases/%s/release-notes-draft.md", u.GithubRawURL, *owner, *branch)
 		changelogURL := fmt.Sprintf("%s%s/%s/master/CHANGELOG%s.md", u.GithubRawURL, *owner, *repo, branchVerSuffix)
 		minorRelease(prFile, info.releaseTag, draftURL, changelogURL)
 	} else {
