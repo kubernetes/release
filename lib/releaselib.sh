@@ -885,7 +885,7 @@ release::docker::release () {
   local version=$2
   local build_output=$3
   local release_images=$build_output/release-images
-  local docker_push_cmd=(docker)
+  local docker_push_cmd=("$GCLOUD" "docker" "--")
   local docker_target
   local legacy_docker_target
   local arch
@@ -900,7 +900,7 @@ release::docker::release () {
     "hyperkube"
   )
 
-  if [[ -n $G_AUTH_USER && $registry == "gcr.io/google_containers" ]];then
+  if [[ -n $G_AUTH_USER && $registry == "k8s.gcr.io" ]];then
     logrun $GCLOUD config set account $G_AUTH_USER
   fi
 
@@ -909,7 +909,6 @@ release::docker::release () {
   else
     # TODO: remove this when all kubernetes releases produce a release-images
     # directory
-    [[ "$registry" =~ gcr.io/ ]] && docker_push_cmd=("$GCLOUD" "docker" "--")
 
     logecho
     logecho "Send docker containers to $registry..."
@@ -966,7 +965,7 @@ release::docker::release_from_tarfiles () {
   local registry=$1
   local version=$2
   local build_output=$3
-  local docker_push_cmd=(docker)
+  local docker_push_cmd=("$GCLOUD" "docker" "--")
   local release_images=$build_output/release-images
   local arch
   local -a arches
@@ -975,8 +974,6 @@ release::docker::release_from_tarfiles () {
   local binary
   local -a new_tags
   local new_tag
-
-  [[ "$registry" =~ gcr.io/ ]] && docker_push_cmd=("$GCLOUD" "docker" "--")
 
   logecho "Send docker containers from release-images to $registry..."
 

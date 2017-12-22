@@ -113,8 +113,8 @@ PROG=${0##*/}
 #+     [--buildversion=ver]      - Override Jenkins check and set a specific
 #+                                 build version
 #+     [--gcrio_repo=repo]       - Specify the GCR repo to use.
-#+                                 (default: google_containers for when --nomock.
-#+                                 Otherwise kubernetes-release-test)
+#+                                 (default: k8s.gcr.io for when --nomock.
+#+                                 Otherwise gcr.io/kubernetes-release-test)
 #+     [--basedir=dir]           - Specify an alternate base directory
 #+                                 (default: /usr/local/google/$USER or $HOME/anago)
 #+     [--security_layer=]       - A file containing a path to a script to
@@ -554,7 +554,7 @@ git_tag () {
 # Tag/Build a local kube_cross image based on the version in scope
 PROGSTEP[local_kube_cross]="TAG/BUILD LOCAL KUBE CROSS"
 local_kube_cross () {
-  local docker_image="gcr.io/google_containers/kube-cross"
+  local docker_image="k8s.gcr.io/kube-cross"
   local version="$(cat $TREE_ROOT/build/build-image/cross/VERSION)"
   local image="$docker_image:$version"
   local local_image="$docker_image:local"
@@ -1451,7 +1451,7 @@ set_globals () {
   # These KUBE_ globals extend beyond the scope of the new release refactored
   # tooling so to pass these through as flags will require fixes across
   # kubernetes/kubernetes and kubernetes/release which we can do at a later time
-  export KUBE_DOCKER_REGISTRY="gcr.io/$GCRIO_REPO"
+  export KUBE_DOCKER_REGISTRY="k8s.gcr.io/$GCRIO_REPO"
   export KUBE_RELEASE_RUN_TESTS=n
   export KUBE_SKIP_CONFIRMATIONS=y
 
