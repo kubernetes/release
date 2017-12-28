@@ -12,8 +12,8 @@ change and the project(s) evolve.
 
 The doc and tooling in this repo is NOT designed to address the planning,
 coordination of releases.  For more info on feature and release planning see:
-* [Kubernetes Community Wiki](https://github.com/kubernetes/community/wiki)
-* [Kubernetes Feature Tracking](https://github.com/kubernetes/features)
+* [kubernetes/sig-release](https://git.k8s.io/sig-release)
+* [kubernetes/features](https://git.k8s.io/features)
 
 
 ## Types of Releases
