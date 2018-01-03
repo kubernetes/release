@@ -19,16 +19,48 @@ else
   )
 fi
 
-for ARCH in ${ARCHS[@]}; do
+if [[ -n "${KUBE_MAJOR}" ]]; then
+  KUBE_MAJOR_ARG=(--define "KUBE_MAJOR ${KUBE_MAJOR}")
+fi
+
+if [[ -n "${KUBE_MINOR}" ]]; then
+  KUBE_MINOR_ARG=(--define "KUBE_MINOR ${KUBE_MINOR}")
+fi
+
+if [[ -n "${KUBE_PATCH}" ]]; then
+  KUBE_PATCH_ARG=(--define "KUBE_PATCH ${KUBE_PATCH}")
+fi
+
+if [[ -n "${RPM_RELEASE}" ]]; then
+  RPM_RELEASE_ARG=(--define "RPM_RELEASE ${RPM_RELEASE}")
+fi
+
+for ARCH in "${ARCHS[@]}"; do
   IFS=/ read GOARCH RPMARCH<<< ${ARCH}; unset IFS;
   SRC_PATH="/root/rpmbuild/SOURCES/${RPMARCH}"
-  mkdir -p ${SRC_PATH}
-  cp -r /root/rpmbuild/SPECS/* ${SRC_PATH}
+  mkdir -p "${SRC_PATH}"
+  cp -r /root/common-sources/* "${SRC_PATH}"
   echo "Building RPM's for ${GOARCH}....."
-  sed -i "s/\%global ARCH.*/\%global ARCH ${GOARCH}/" ${SRC_PATH}/kubelet.spec
   # Download sources if not already available
-  cd ${SRC_PATH} && spectool -gf kubelet.spec
-  /usr/bin/rpmbuild --target ${RPMARCH} --define "_sourcedir ${SRC_PATH}" -bb ${SRC_PATH}/kubelet.spec
-  mkdir -p /root/rpmbuild/RPMS/${RPMARCH}
-  createrepo -o /root/rpmbuild/RPMS/${RPMARCH}/ /root/rpmbuild/RPMS/${RPMARCH}
+  cd "${SRC_PATH}"
+  spectool \
+    "${KUBE_MAJOR_ARG[@]}" \
+    "${KUBE_MINOR_ARG[@]}" \
+    "${KUBE_PATCH_ARG[@]}" \
+    "${RPM_RELEASE_ARG[@]}" \
+    -gf \
+    /root/rpmbuild/SPECS/kubelet.spec
+
+  /usr/bin/rpmbuild --target "${RPMARCH}" \
+                    --define "ARCH ${GOARCH}" \
+                    --define "_sourcedir ${SRC_PATH}" \
+                    "${KUBE_MAJOR_ARG[@]}" \
+                    "${KUBE_MINOR_ARG[@]}" \
+                    "${KUBE_PATCH_ARG[@]}" \
+                    "${RPM_RELEASE_ARG[@]}" \
+                    -bb \
+                    /root/rpmbuild/SPECS/kubelet.spec
+
+  mkdir -p /root/rpmbuild/RPMS/"${RPMARCH}"
+  createrepo -o /root/rpmbuild/RPMS/"${RPMARCH}"/ /root/rpmbuild/RPMS/"${RPMARCH}"
 done
