@@ -23,7 +23,7 @@ PROG=${0##*/}
 #+
 #+ SYNOPSIS
 #+     $PROG  [--nomock] [--federation] [--noupdatelatest] [--ci]
-#+            [--bucket=<GS bucket>] [--domain-name=domain.tld]
+#+            [--bucket=<GS bucket>]
 #+            [--private-bucket]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
@@ -54,7 +54,6 @@ PROG=${0##*/}
 #+                                 values are kubernetes(default) or federation.
 #+     [--gcs-suffix=]           - Specify a suffix to append to the upload
 #+                                 destination on GCS.
-#+     [--domain-name=]          - Specify an alternate domain.tld
 #+     [--docker-registry=]      - If set, push docker images to specified
 #+                                 registry/project
 #+     [--version-suffix=]       - Append suffix to version name if set.
@@ -106,7 +105,6 @@ common::timestamp begin
 # MAIN
 ###############################################################################
 RELEASE_BUCKET=${FLAGS_bucket:-"kubernetes-release-dev"}
-DOMAIN_NAME=${FLAGS_domain_name:-"google.com"}
 # Compatibility with incoming global args
 [[ $KUBE_GCS_UPDATE_LATEST == "n" ]] && FLAGS_noupdatelatest=1
 
@@ -171,6 +169,12 @@ if ! common::set_cloud_binaries; then
   logecho "https://developers.google.com/cloud/sdk/"
   common::exit 1
 fi
+
+# Nothing should work without this.  The entire release workflow depends
+# on it whether running from the desktop or GCB
+GCP_USER=$($GCLOUD auth list --filter=status:ACTIVE \
+                             --format="value(account)" 2>/dev/null)
+[[ -n "$GCP_USER" ]] || common::exit 1 "Unable to set a valid GCP credential!"
 
 logecho -n "Check/make release bucket $RELEASE_BUCKET: "
 logrun -s release::gcs::ensure_release_bucket $RELEASE_BUCKET || common::exit 1

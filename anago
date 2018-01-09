@@ -30,7 +30,6 @@ PROG=${0##*/}
 #+            [--security_layer=/path/to/pointer/to/script]
 #+            [--exclude-suites="<suite> ..."]
 #+            [--build-at-head]
-#+            [--user-at-domain=<user@domain.tld>]
 #+            [--prebuild] [--buildonly]
 #+            [--mailto=<email1>,<email2>] [--gcb]
 #+            [--tmpdir=</alt/tmp>]
@@ -102,10 +101,6 @@ PROG=${0##*/}
 #+     A simple $USER check controls who can run in --nomock mode as ACLs
 #+     restrict who can actually push bits anyway.
 #+
-#+     --user-at-domain will let you specify an alternate full user@domain.tld.
-#+     This should be the address associated with the release GCP project and
-#+     the account from which you will be sending mail.
-#+
 #+ OPTIONS
 #+     [--stage]                 - Write all artifacts to
 #+                                 gs://$RELEASE_BUCKET/stage for later use
@@ -137,9 +132,6 @@ PROG=${0##*/}
 #+                                 Users are prompted to remove draft releases,
 #+                                 but the action to create them in the first
 #+                                 place should be explicit.
-#+     [--user-at-domain=]       - Specify an (alternate) user@domain.tld
-#+                                 (registered at GCP project and for mailing
-#+                                  release announcements)
 #+     [--gcb]                   - Running from GCB
 #+     [--tmpdir=]               - Set an alternate temp dir
 #+     [--prebuild]              - Used during GCB to halt before building
@@ -179,7 +171,10 @@ PROG=${0##*/}
 # If NO ARGUMENTS should return usage, uncomment the following line:
 usage=${1:-yes}
 
-source $(dirname $(readlink -ne $BASH_SOURCE))/lib/common.sh
+# Deal with OSX limitations out the gate for anyone that tries this there
+BASE_ROOT=$(dirname $(readlink -e "$BASH_SOURCE" 2>&1)) \
+ || BASE_ROOT="$BASH_SOURCE"
+source $BASE_ROOT/lib/common.sh
 source $TOOL_LIB_PATH/gitlib.sh
 source $TOOL_LIB_PATH/releaselib.sh
 
@@ -198,12 +193,6 @@ RELEASE_BRANCH=${POSITIONAL_ARGV[0]}
 # Check branch format
 [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]] \
  || common::exit 1 "Invalid branch name!"
-
-# Backport https://github.com/kubernetes/kubernetes/pull/47939 and remove this
-if ((FLAGS_stage)) && \
-   ([[ $RELEASE_BRANCH != "master" ]] && ((${BASH_REMATCH[2]}<8))); then
-  common::exit 1 "--stage only works for 1.8+ releases."
-fi
 
 # Check arg conflicts
 if ((FLAGS_rc)) || ((FLAGS_official)); then
@@ -292,7 +281,7 @@ ensure_registry_acls () {
     fi
 
     # Always reset back to $USER
-    ((FLAGS_gcb)) || logrun $GCLOUD config set account $USER_AT_DOMAIN
+    ((FLAGS_gcb)) || logrun $GCLOUD config set account $GCP_USER
   done
 
   logrun rm -f $emptyfile
@@ -304,16 +293,15 @@ ensure_registry_acls () {
 # Checks GCP users to ensure they are logged in and accessible
 # return 1 on failure
 ensure_gcp_users () {
-  local userat="$USER_AT_DOMAIN"
   local user
   local -a users_to_check
 
-  users_to_check+=($G_AUTH_USER $userat)
+  users_to_check+=($G_AUTH_USER $GCP_USER)
 
   for user in ${users_to_check[*]}; do
     logecho -n "Checking cloud account/auth $user: "
-    if (logrun gcloud config set account $user && \
-        logrun gcloud docker -- version >/dev/null 2>&1); then
+    if (logrun $GCLOUD config set account $user && \
+        logrun $GCLOUD docker -- version >/dev/null 2>&1); then
       logecho -r "$OK"
     else
       logecho -r "$FAILED"
@@ -321,22 +309,10 @@ ensure_gcp_users () {
       logecho "$user is not in the credentialed accounts list!"
       logecho "Sign in with:"
       logecho
-      logecho "$ gcloud auth login $user"
+      logecho "$ $GCLOUD auth login $user"
       return 1
     fi
   done
-
-  # Ensure $USER is active to start
-  # The loop above finishes on $userat
-  gcloud_auth_list=$($GCLOUD auth list --filter=status:ACTIVE \
-                     --format="value(account)" 2>/dev/null)
-  if ! [[ "$gcloud_auth_list" =~ $userat ]]; then
-    logecho "$userat is not the active gcloud user!"
-    logecho "Set with:"
-    logecho
-    logecho "$ gcloud config set account $userat"
-    return 1
-  fi
 }
 
 ###############################################################################
@@ -352,8 +328,9 @@ check_prerequisites () {
   # We check for docker here as a word which passes for docker-ce and
   # docker-engine as docker packages are in transiation of deprecating
   # docker-engine
-  common::check_packages jq pandoc docker ${PREREQUISITE_PACKAGES[*]}
-  common::check_pip_packages yq || common::exit 1 "Exiting..."
+  common::check_packages jq pandoc docker ${PREREQUISITE_PACKAGES[*]} \
+   || return 1
+  common::check_pip_packages yq || return 1
 
   security_layer::auth_check 2 || return 1
 
@@ -365,11 +342,6 @@ check_prerequisites () {
   # to ensure both mock and --nomock runs will work.
   ensure_registry_acls "${ALL_CONTAINER_REGISTRIES[*]}" || return 1
 
-  # Verify write access to $WRITE_RELEASE_BUCKETS
-  for rb in ${WRITE_RELEASE_BUCKETS[*]}; do
-    release::gcs::ensure_release_bucket $rb || return 1
-  done
-
   logecho -n "Checking cloud project state: "
   GCLOUD_PROJECT=$($GCLOUD config get-value project 2>/dev/null)
   if [[ -z "$GCLOUD_PROJECT" ]]; then
@@ -380,6 +352,11 @@ check_prerequisites () {
     return 1
   fi
   logecho -r "$OK"
+
+  # Verify write access to $WRITE_RELEASE_BUCKETS
+  for rb in ${WRITE_RELEASE_BUCKETS[*]}; do
+    release::gcs::ensure_release_bucket $rb || return 1
+  done
 }
 
 ###############################################################################
@@ -574,6 +551,26 @@ git_tag () {
 }
 
 ##############################################################################
+# Tag/Build a local kube_cross image based on the version in scope
+PROGSTEP[local_kube_cross]="TAG/BUILD LOCAL KUBE CROSS"
+local_kube_cross () {
+  local docker_image="gcr.io/google_containers/kube-cross"
+  local version="$(cat $TREE_ROOT/build/build-image/cross/VERSION)"
+  local image="$docker_image:$version"
+  local local_image="$docker_image:local"
+
+  logecho -n "Checking if $image exists locally: "
+  if logrun -s docker pull $image; then
+    logecho -n "Tagging docker image $image as $local_image: "
+    logrun -s docker tag $image $local_image
+  else
+    logecho -n "Building docker image $image: "
+    logrun -s docker build --cache-from $docker_image -t $image \
+                           -t $local_image $TREE_ROOT/build/build-image/cross/
+  fi
+}
+
+##############################################################################
 # Prepare sources for building for a given label
 # @param label - The label to process
 PROGSTEP[prepare_tree]="PREPARE AND TAG TREE"
@@ -679,7 +676,10 @@ build_tree () {
   if ((FLAGS_gcb)); then
     # make_cross done separately
     # OUT_DIR works in this context.  Woohoo!
-    logrun -s -v make package-tarballs OUT_DIR=$OUT_DIR-$version || return 1
+    # KUBE_DOCKER_IMAGE_TAG needed here due to references deep in
+    # build/lib/release.sh
+    logrun -s -v make package-tarballs KUBE_DOCKER_IMAGE_TAG="$version" \
+                                       OUT_DIR=$OUT_DIR-$version || return 1
   else
     # TODO: Ideally we update LOCAL_OUTPUT_ROOT in build/common.sh to be
     #       modifiable.  In the meantime just mv the dir after it's done
@@ -922,7 +922,7 @@ announce () {
   local subject
   local announcement_text=$TMPDIR/$PROG-announce.$$
 
-  ((FLAGS_nomock)) || mailto=$USER_AT_DOMAIN
+  ((FLAGS_nomock)) || mailto=$GCP_USER
   mailto=${FLAGS_mailto:-$mailto}
 
   if [[ "$arg" == "--branch" ]]; then
@@ -952,9 +952,9 @@ announce () {
     # Due to announcements landing on public mailing lists requiring membership,
     # post from the invoking user (for now until this is productionized further)
     # and use reply-to to ensure replies go to the right place.
-    common::sendmail -h "$mailto" "K8s-Anago<$USER_AT_DOMAIN>" \
+    common::sendmail -h "$mailto" "K8s-Anago<$GCP_USER>" \
                      "K8s-Anago<cloud-kubernetes-release@google.com>" \
-                     "$subject" "$USER_AT_DOMAIN" \
+                     "$subject" "$GCP_USER" \
                      "$announcement_text" || return 1
 
   fi
@@ -1039,9 +1039,13 @@ update_github_release () {
 
   # publish binary
   logecho -n "Uploading binary to github: "
-  logrun -s $GHCURL -H "Content-Type:application/x-compressed" \
+  if $GHCURL -H "Content-Type:application/x-compressed" \
    --data-binary @$tarball \
-   "${K8S_GITHUB_API/api\./uploads\.}/releases/$release_id/assets?name=${tarball##*/}"
+   "${K8S_GITHUB_API/api\./uploads\.}/releases/$release_id/assets?name=${tarball##*/}"; then
+    logecho $OK
+  else
+    logecho $FAILED
+  fi
 
   if $draft; then
     logecho
@@ -1053,7 +1057,7 @@ update_github_release () {
     if ((FLAGS_yes)) || \
        common::askyorn -y "Delete draft release (id #$release_id) now"; then
       logecho -n "Deleting the draft release (id #$release_id): "
-      logrun $GHCURL -X DELETE $K8S_GITHUB_API/releases/$release_id
+      $GHCURL -X DELETE $K8S_GITHUB_API/releases/$release_id
     fi
 
     # verify it was deleted
@@ -1156,8 +1160,9 @@ get_build_candidate () {
   fi
 
   if [[ -z $BRANCH_POINT ]]; then
-    if [[ -n $JENKINS_BUILD_VERSION ]]; then
-      logecho -r "$ATTENTION: Using --buildversion=$JENKINS_BUILD_VERSION"
+    if [[ -n "$FLAGS_buildversion" ]]; then
+      logecho -r "$ATTENTION: Using --buildversion=$FLAGS_buildversion"
+      JENKINS_BUILD_VERSION="$FLAGS_buildversion"
     else
       logecho "Asking Jenkins for a good build (this may take some time)..."
       FLAGS_verbose=1 release::set_build_version \
@@ -1359,6 +1364,100 @@ push_all_artifacts () {
   fi
 }
 
+##############################################################################
+# Sets major global variables
+# RELEASE_GB - space requirements per build
+# GCP_USER - The user that drives the entire release
+# RELEASE_BUCKET - mock or standard release bucket location
+# BUCKET_TYPE - stage or release
+# WRITE_RELEASE_BUCKETS - array of writable buckets
+# READ_RELEASE_BUCKETS - array of readable buckets for multiple sourcing of 
+#                        mock staged builds
+# GCRIO_REPO - GCR repo based on mock or --nomock
+# ALL_CONTAINER_REGISTRIES - when running mock this array also contains
+#                            google_containers so we can check access in mock
+#                            mode before an actual release occurs
+set_globals () {
+  # Define the placeholder/"role" user for GCB
+  local gcb_user="gcb@google.com"
+
+  logecho -n "Setting global variables: "
+
+  # Default disk requirements per version - Modified in found_staged_location()
+  RELEASE_GB="75"
+
+  if ((FLAGS_gcb)); then
+    # a placeholder that satisfies @google.com conditional below
+    GCP_USER="$gcb_user"
+  else
+    # Nothing should work without this.  The entire release workflow depends
+    # on it whether running from the desktop or GCB
+    GCP_USER=$($GCLOUD auth list --filter=status:ACTIVE \
+                                 --format="value(account)" 2>/dev/null)
+    if [[ -z "$GCP_USER" ]]; then
+      logecho $FAILED
+      logecho "Unable to set a valid GCP credential!"
+      return 1
+    fi
+  fi
+
+  RELEASE_BUCKET="kubernetes-release"
+  if [[ $GCP_USER =~ "@google.com" ]]; then
+    WRITE_RELEASE_BUCKETS=("$RELEASE_BUCKET")
+    READ_RELEASE_BUCKETS=("$RELEASE_BUCKET")
+  fi
+
+  if ((FLAGS_stage)); then
+    BUCKET_TYPE="stage"
+  else
+    BUCKET_TYPE="release"
+  fi
+
+  if ((FLAGS_nomock)); then
+    GCRIO_REPO="${FLAGS_gcrio_repo:-google_containers}"
+    ALL_CONTAINER_REGISTRIES=("$GCRIO_REPO")
+  else
+    # GCS buckets cannot contain @ or "google", so for those users, just use
+    # the "$USER" portion of $GCP_USER/$gcb_user
+    RELEASE_BUCKET_USER="$RELEASE_BUCKET-${GCP_USER%%@google.com}"
+    RELEASE_BUCKET_GCB="$RELEASE_BUCKET-${gcb_user%%@google.com}"
+    RELEASE_BUCKET_USER="${RELEASE_BUCKET_USER/@/-at-}"
+    RELEASE_BUCKET_GCB="${RELEASE_BUCKET_GCB/@/-at-}"
+    # GCP also doesn't like anything even remotely looking like a domain name
+    # in the bucket name so convert . to -
+    RELEASE_BUCKET_USER="${RELEASE_BUCKET_USER/\./-}"
+    RELEASE_BUCKET_GCB="${RELEASE_BUCKET_GCB/\./-}"
+    RELEASE_BUCKET="$RELEASE_BUCKET_USER"
+
+    # All the RELEASE_BUCKETS we could possibly write to
+    WRITE_RELEASE_BUCKETS+=("$RELEASE_BUCKET_USER")
+    # All the RELEASE_BUCKETS we could possibly read from (for staging)
+    READ_RELEASE_BUCKETS+=("$RELEASE_BUCKET_USER")
+    # If a regular user is running mocks, also look in the GCB mock bucket for
+    # releases
+    ((FLAGS_gcb)) || READ_RELEASE_BUCKETS+=("$RELEASE_BUCKET_GCB")
+
+    # Set GCR values
+    GCRIO_REPO="${FLAGS_gcrio_repo:-kubernetes-release-test}"
+    [[ $GCP_USER =~ "@google.com" ]] \
+      && ALL_CONTAINER_REGISTRIES=("$GCRIO_REPO" "google_containers")
+
+    # This is passed to logrun() where appropriate when we want to mock
+    # specific activities like pushes
+    LOGRUN_MOCK="-m"
+  fi
+
+  # TODO:
+  # These KUBE_ globals extend beyond the scope of the new release refactored
+  # tooling so to pass these through as flags will require fixes across
+  # kubernetes/kubernetes and kubernetes/release which we can do at a later time
+  export KUBE_DOCKER_REGISTRY="gcr.io/$GCRIO_REPO"
+  export KUBE_RELEASE_RUN_TESTS=n
+  export KUBE_SKIP_CONFIRMATIONS=y
+
+  logecho $OK
+}
+
 ###############################################################################
 # MAIN
 ###############################################################################
@@ -1367,61 +1466,6 @@ push_all_artifacts () {
 : ${FLAGS_rc:=0}
 : ${FLAGS_official:=0}
 
-# Default disk requirements per version - Modified in found_staged_location()
-RELEASE_GB="75"
-
-# Domain check
-if [[ "$FLAGS_user_at_domain" ]]; then
-  USER_AT_DOMAIN="$FLAGS_user_at_domain"
-elif [[ "$HOSTNAME" =~ \.([^\.]+\.[a-z]{2,})$ ]]; then
-  USER_AT_DOMAIN="$USER@${BASH_REMATCH[1]}"
-elif ((FLAGS_gcb)); then
-  # Just a placeholder that satisfies @google.com conditionals but isn't used
-  USER_AT_DOMAIN="gcb@google.com"
-fi
-
-if [[ -z $USER_AT_DOMAIN ]]; then
-  common::exit 1 "$FATAL: Unable to determine your domain." \
-                 "Use --user-at-domain=user@domain.tld"
-fi
-
-# Set with --buildversion or set it later in release::set_build_version()
-JENKINS_BUILD_VERSION=$FLAGS_buildversion
-
-RELEASE_BUCKET="kubernetes-release"
-if [[ $USER_AT_DOMAIN =~ "google.com" ]]; then
-  WRITE_RELEASE_BUCKETS=("$RELEASE_BUCKET")
-  READ_RELEASE_BUCKETS=("$RELEASE_BUCKET")
-fi
-
-if ((FLAGS_stage)); then
-  BUCKET_TYPE="stage"
-else
-  BUCKET_TYPE="release"
-fi
-if ((FLAGS_nomock)); then
-  GCRIO_REPO="${FLAGS_gcrio_repo:-google_containers}"
-  ALL_CONTAINER_REGISTRIES=("$GCRIO_REPO")
-else
-  RELEASE_BUCKET_USER="$RELEASE_BUCKET-$USER"
-  RELEASE_BUCKET_MOCK="$RELEASE_BUCKET-mock"
-  # This is passed to logrun() where appropriate when we want to mock
-  # specific activities like pushes
-  LOGRUN_MOCK="-m"
-  # Point to a mock-specific bucket.  $USER for desktop runs
-  if ((FLAGS_gcb)); then
-    RELEASE_BUCKET=$RELEASE_BUCKET_MOCK
-  else
-    RELEASE_BUCKET=$RELEASE_BUCKET_USER
-  fi
-  # All the RELEASE_BUCKETS we could possibly write to
-  WRITE_RELEASE_BUCKETS+=("$RELEASE_BUCKET")
-  # All the RELEASE_BUCKETS we could possibly read from (for staging)
-  READ_RELEASE_BUCKETS+=("$RELEASE_BUCKET_USER" "$RELEASE_BUCKET_MOCK")
-  GCRIO_REPO="${FLAGS_gcrio_repo:-kubernetes-release-test}"
-  [[ $USER_AT_DOMAIN =~ "google.com" ]] \
-    && ALL_CONTAINER_REGISTRIES=("$GCRIO_REPO" "google_containers")
-fi
 BASEDIR=${FLAGS_basedir}
 if [[ -z "${BASEDIR}" ]]; then
   # Goobuntu machines have a standard path for "local" disk as the home
@@ -1432,14 +1476,6 @@ if [[ -z "${BASEDIR}" ]]; then
     BASEDIR="$HOME/anago"
   fi
 fi
-
-# TODO:
-# These KUBE_ globals extend beyond the scope of the new release refactored
-# tooling so to pass these through as flags will require fixes across
-# kubernetes/kubernetes and kubernetes/release which we can do at a later time
-export KUBE_DOCKER_REGISTRY="gcr.io/$GCRIO_REPO"
-export KUBE_RELEASE_RUN_TESTS=n
-export KUBE_SKIP_CONFIRMATIONS=y
 
 ##############################################################################
 # Initialize logs
@@ -1454,11 +1490,34 @@ common::logfileinit $LOGFILE 10
 # BEGIN script
 common::timestamp begin
 
+# Point release managers to GCB as the preferred method
+if ! ((FLAGS_gcb)); then
+  logecho $HR
+  logecho "${TPUT[BOLD]}**** Welcome to the Kubernetes Release Tool, Release" \
+          "Manager ****"
+  logecho
+  logecho "***************** $PROG has moved to the cloud! *******************${TPUT[OFF]}"
+  logecho
+  logecho "* Kubernetes releases have been moved off the desktop"
+  logecho
+  logecho "* Desktop $PROG has not been disabled, but running via GCB is the" \
+          "preferred method.  Usage is similar to $PROG."
+  logecho
+  logecho "* https://github.com/kubernetes/release/blob/master/README-gcb.md" \
+          "for details on how to get started."
+  logecho $HR
+  logecho
+  logecho -n "Press any key to continue..."
+  logrun read -n1
+  logecho
+fi
+
 # Order workflow based on conditions
 ((FLAGS_stage)) || common::stepindex "gitlib::github_acls"
 common::stepindex "check_prerequisites" "get_build_candidate" \
  "prepare_workspace" "common::disk_space_check"
 common::stepindex "prepare_tree"
+((FLAGS_gcb)) && common::stepindex "local_kube_cross"
 if ((FLAGS_buildonly)); then
   ((FLAGS_gcb)) && common::stepindex "make_cross"
   ((FLAGS_gcb)) || common::stepindex "build_tree"
@@ -1474,7 +1533,7 @@ elif ! ((FLAGS_prebuild)); then
   if ! ((FLAGS_stage)); then
     common::stepindex "announce"
     if ((FLAGS_gcb)); then
-      common::stepindex "gitlib::create_release_issue"
+      common::stepindex "gitlib::update_release_issue"
     else
       common::stepindex "update_github_release"
     fi
@@ -1503,6 +1562,10 @@ if ! ((FLAGS_buildonly)) && ! common::set_cloud_binaries; then
   logecho "https://developers.google.com/cloud/sdk/"
   common::exit 1 "Exiting..."
 fi
+
+# Set the majorify of global values
+# Moved here b/c now depends on gcloud
+set_globals
 
 ((FLAGS_stage)) || common::run_stateful gitlib::github_acls
 
@@ -1635,6 +1698,11 @@ if [[ -z $STAGED_LOCATION ]]; then
   # Iterate over session release versions for setup, tagging and building
   for label in ${!RELEASE_VERSION[@]}; do
     common::run_stateful "prepare_tree $label" RELEASE_VERSION[$label]
+    # This doesn't have to be done per label, but does need to be inserted
+    # after an initial prepare_tree(), so just let the statefulness of it
+    # ignore a second iteration/call.
+    ((FLAGS_gcb)) \
+     && common::run_stateful local_kube_cross
     # --prebuild for GCB, skip actual builds. Do everything else
     if ! ((FLAGS_prebuild)); then
       if ((FLAGS_gcb)); then
@@ -1674,7 +1742,7 @@ else
   # Force complete for these three stages
   for label in ${!RELEASE_VERSION[@]}; do
     SKIP_STEPS+=(prepare_tree+$label build_tree+$label)
-    ((FLAGS_gcb)) && SKIP_STEPS+=(make_cross+$label)
+    ((FLAGS_gcb)) && SKIP_STEPS+=(local_kube_cross make_cross+$label)
   done
   SKIP_STEPS+=(generate_release_notes)
   for entry in ${SKIP_STEPS[*]}; do
@@ -1721,28 +1789,28 @@ if ((FLAGS_stage)); then
   # clean up here on success
   # Debatable if this should only happen on GCB
   if ((FLAGS_gcb)) && ((FLAGS_stage)); then
-    # Get a list of things to delete
-    # Everything but the one staged by this run
-    logecho "Cleaning up old staged builds..."
+    # Delete everything that's not this build in the vX.Y. namespace
     # || true to catch non-zero exit when list is empty
-    $GSUTIL ls -d gs://$RELEASE_BUCKET/$BUCKET_TYPE/${JENKINS_BUILD_VERSION%%-*}* |grep -v $JENKINS_BUILD_VERSION |xargs $GSUTIL -mq rm -r || true
+    if [[ $JENKINS_BUILD_VERSION =~ (v[0-9]+\.[0-9]+\.) ]]; then
+      logecho "Cleaning up old staged builds from" \
+              "gs://$RELEASE_BUCKET/$BUCKET_TYPE/${BASH_REMATCH[1]}..."
+      $GSUTIL ls -d gs://$RELEASE_BUCKET/$BUCKET_TYPE/${BASH_REMATCH[1]}* |\
+       grep -v $JENKINS_BUILD_VERSION |xargs $GSUTIL -mq rm -r || true
+    fi
   fi
 
   common::exit 0
 fi
 
 if [[ -n "$PARENT_BRANCH" ]]; then
+  # TODO: This needs the gcb create/update release issue treatment
   common::run_stateful "announce --branch"
 else
   common::run_stateful announce
 
   # For GCB create/update a release tracking issue
   if ((FLAGS_gcb)); then
-    #if search_release_issue $RELEASE_VERSION_PRIME; then
-    #  comment_release_issue
-    #else
-      common::run_stateful "gitlib::create_release_issue $RELEASE_VERSION_PRIME"
-    #fi
+    common::run_stateful "gitlib::update_release_issue $RELEASE_VERSION_PRIME"
   else
     common::run_stateful update_github_release
   fi

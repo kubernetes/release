@@ -20,22 +20,16 @@
 ###############################################################################
 # CONSTANTS
 ###############################################################################
-# TODO: This needs to be pulled into .netrc or some other more secure location
-# Any contributor could by accident or on purpose change the yaml or this script
-# directly to "set -x" in which case, the TOKEN would be readable in the
-# GCB logs
-# netrc with git doesn't seem to work, but a combination approach with
-# netrc for curl and git remotes with embedded tokens might be an answer
-# the files themselves in the container don't need to be encrypted necessarily
-# as noone has access to those, but we can't expose this via the env
 : ${GITHUB_TOKEN:=$FLAGS_github_token}
-GHCURL="curl -s --fail --retry 10 -u $GITHUB_TOKEN:x-oauth-basic"
+[[ -n $GITHUB_TOKEN ]] && GITHUB_TOKEN_FLAG=("-u" "$GITHUB_TOKEN:x-oauth-basic")
+GHCURL="curl -s --fail --retry 10 ${GITHUB_TOKEN_FLAG[*]}"
 JCURL="curl -g -s --fail --retry 10"
 K8S_GITHUB_API_ROOT='https://api.github.com/repos'
 K8S_GITHUB_API="$K8S_GITHUB_API_ROOT/kubernetes/kubernetes"
 K8S_GITHUB_RAW_ORG='https://raw.githubusercontent.com/kubernetes'
 
-K8S_GITHUB_SEARCHAPI='https://api.github.com/search/issues?per_page=100&q=is:pr%20repo:kubernetes/kubernetes%20'
+K8S_GITHUB_SEARCHAPI_ROOT='https://api.github.com/search/issues?per_page=100'
+K8S_GITHUB_SEARCHAPI="$K8S_GITHUB_SEARCHAPI_ROOT&q=is:pr%20repo:kubernetes/kubernetes%20"
 K8S_GITHUB_URL='https://github.com/kubernetes/kubernetes'
 if ((FLAGS_gcb)); then
   K8S_GITHUB_AUTH_ROOT="https://git@github.com/"
@@ -315,14 +309,16 @@ fi
 
 ###############################################################################
 # Search for a matching release tracking issue
-# @param version RELEASE_VERSION_PRIME
+# @param version - RELEASE_VERSION_PRIME
+# @param repo - org/repo
 # returns 1 if none found
-# prints most recent issue maching
+# prints most recent open issue maching
 gitlib::search_release_issue () {
   local version=$1
+  local repo=$2
   local issue
 
-  issue=$($GHCURL $K8S_GITHUB_SEARCHAPI_ROOT&q=Release+$version+Tracking+in:title+type:issue+state:open+repo:$RELEASE_TRACKING_REPO | jq -r '.items[] | (.number | tostring)' |sort -n |tail -1)
+  issue=$($GHCURL "$K8S_GITHUB_SEARCHAPI_ROOT&q=Release+$version+Tracking+in:title+type:issue+state:open+repo:$repo" | jq -r '.items[] | (.number | tostring)' |sort -n |tail -1)
 
   [[ -z $issue ]] && return 1
 
@@ -330,14 +326,14 @@ gitlib::search_release_issue () {
 }
 
 ###############################################################################
-# Create a release tracking issue for posting notifications.
+# Create/update a release tracking issue for posting notifications.
 # Mostly for use by --gcb since there's no other email mechanism from which
 # to send detailed html notifictions.
 # @param version RELEASE_VERSION_PRIME
-PROGSTEP[create_release_issue]="CREATE/UPDATE RELEASE TRACKING ISSUE"
-gitlib::create_release_issue () {
+PROGSTEP[gitlib::update_release_issue]="CREATE/UPDATE RELEASE TRACKING ISSUE"
+gitlib::update_release_issue () {
   local version=$1
-  local assignee="david-mcmahon"
+  local assignee
   local milestone
   local stage
   local text
@@ -353,58 +349,52 @@ gitlib::create_release_issue () {
 
   if ((FLAGS_nomock)); then
     repo="kubernetes/sig-release"
-    # Let the cc below build the guide
-    assignee="null"
     # Would be nice to have a broad distribution list here on par with email
     # distributions
-    cc="@kubernetes/sig-release-members"
+    cc="cc @kubernetes/sig-release-members"
   else
-    logecho "No PR created for mock runs..."
-    return 0
-    # Need a real mock repo to update issues in
-    # Also this might have to be a global if we end up using
-    # comment_release_issue() and search_release_issue()
-    repo="david-mcmahon/release"
+    repo="k8s-release-robot/sig-release"
     # Force milestone to null on this repo or the curl hangs
     milestone="null"
   fi
 
-  text="Kubernetes $version has been built and pushed.\n\nThe release notes have been updated in <A HREF=https://github.com/kubernetes/kubernetes/blob/master/$CHANGELOG_FILE/#${version//\./}>$CHANGELOG_FILE</A> with a pointer to it on <A HREF=https://github.com/kubernetes/kubernetes/releases/tag/$version>github</A>"
+  text="Kubernetes $version has been built and pushed.\n\nThe release notes have been updated in <A HREF=https://github.com/kubernetes/kubernetes/blob/master/$CHANGELOG_FILE/#${version//\./}>$CHANGELOG_FILE</A> with a pointer to it on <A HREF=https://github.com/kubernetes/kubernetes/releases/tag/$version>github</A>."
 
-  # If the milestone doesn't exist, this will fail.
-  # May want to check that and only add if there's a valid value to add, Ugh.
-  issue_number=$($GHCURL $K8S_GITHUB_API_ROOT/$repo/issues --data \
-  "{
-    \"title\": \"Release $version Tracking\",
-    \"body\": \"$text\ncc $cc\n\",
-    \"assignee\": \"$assignee\",
-    \"milestone\": $milestone,
-    \"labels\": [
-      \"sig-release\",
-      \"stage/${stage:-stable}\"
-    ]
-  }" |jq -r '.number')
-
-  if [[ -n $issue_number ]]; then
-    logecho "Created issue #$issue_number on github:"
-    logecho "http://github.com/$repo/issues/$issue_number"
+  # Search for an existing OPEN issue
+  logecho -n "Searching for an existing release tracking issue: "
+  if issue_number=$(gitlib::search_release_issue $version $repo); then
+    logecho "$issue_number"
+    logecho -n "Updating issue $issue_number: "
+    # Add a comment
+    if $GHCURL $K8S_GITHUB_API_ROOT/$repo/issues/$issue_number/comments \
+               --data "{ \"body\": \"$text\n$cc\n\" }"; then
+      logecho $OK
+    else
+      logecho $FAILED
+      return 1
+    fi
   else
-    logecho "There was a problem creating the release tracking issue"
-    logecho "This should be done manually."
+    logecho "NONE"
+    # Create a new issue
+    # If the milestone doesn't exist, this will fail.
+    # May want to check that and only add if there's a valid value to add, Ugh.
+    issue_number=$($GHCURL $K8S_GITHUB_API_ROOT/$repo/issues --data \
+    "{
+      \"title\": \"Release $version Tracking\",
+      \"body\": \"$text\n$cc\n\",
+      \"milestone\": $milestone,
+      \"labels\": [
+        \"sig/release\",
+        \"stage/${stage:-stable}\"
+      ]
+    }" |jq -r '.number')
+
+    if [[ -n $issue_number ]]; then
+      logecho "Created issue #$issue_number on github:"
+      logecho "http://github.com/$repo/issues/$issue_number"
+    else
+      logecho "There was a problem creating the release tracking issue"
+      logecho "This should be done manually."
+    fi
   fi
 }
-
-###############################################################################
-# Create a release tracking issue for posting notifications.
-# Mostly for use by --gcb since there's no other email mechanism from which
-# to send detailed html notifictions.
-gitlib::comment_release_issue () {
-  local issue=$1
-
-  $GHCURL $K8S_GITHUB_API_ROOT/$RELEASE_TRACKING_REPO/issues/$issue/comments \
-   --data \
-  "{
-  \"body\": \"$(awk '{printf "%s\\n", $0}' $HOME/look/release-notes.md)\"
-  }"
-}
-

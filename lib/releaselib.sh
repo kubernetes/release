@@ -686,7 +686,7 @@ release::gcs::publish_version () {
     [[ "$version" =~ alpha|beta|rc ]] || type="stable"
   fi
 
-  if ! $GSUTIL ls $release_dir >/dev/null 2>&1 ; then
+  if ! logrun $GSUTIL ls $release_dir; then
     logecho "Release files don't exist at $release_dir"
     return 1
   fi
@@ -948,8 +948,9 @@ release::docker::release () {
     done
   fi
   
-  # Always reset back to ${USER_AT_DOMAIN:-$USER@$DOMAIN_NAME}
-  logrun $GCLOUD config set account "${USER_AT_DOMAIN:-$USER@$DOMAIN_NAME}"
+  # Always reset back to $GCP_USER
+  # This is set in push-build.sh and anago
+  ((FLAGS_gcb)) || logrun $GCLOUD config set account $GCP_USER
 
   return $ret
 }
@@ -1007,7 +1008,7 @@ release::docker::release_from_tarfiles () {
         docker tag $orig_tag $new_tag
         logecho -n "Pushing $new_tag: "
         # 'gcloud docker' gives lots of internal_failure's so add retries
-        logrun -r 5 -s ${docker_push_cmd[@]} push "$new_tag"
+        logrun -r 5 -s ${docker_push_cmd[@]} push "$new_tag" || return 1
       done
       docker rmi $orig_tag ${new_tags[@]} &>/dev/null || true
 

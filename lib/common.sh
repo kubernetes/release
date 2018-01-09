@@ -24,9 +24,11 @@ export PROG
 
 set -o errtrace
 
-# TODO:
-# - Figure out a way to share common bits with other Kubernetes sub repos
-# - cleanup / function headers
+# OSX not supported.  Tell them right away
+if [[ $(uname) == "Darwin" ]]; then
+  echo "OSX is not a supported OS for running these tools. Exiting..."
+  exit 1
+fi
 
 ##############################################################################
 # COMMON CONSTANTS

@@ -1,0 +1,38 @@
+timeout: 14400s
+
+secrets:
+- kmsKeyName: projects/kubernetes-release-test/locations/global/keyRings/anago/cryptoKeys/anago-crypto
+  secretEnv:
+    GITHUB_TOKEN: CiQAgPFXnRMc5ZcjM+vEL/4GqevMkjKgWNzwzv9vCQTqLoqzjeoSUQCWqHUkjJaDHICJxKpaJWFzktaSMH9V23XtbqbARYGQumKZYylQQ8kQ5DJPDSjisGoI5c7F+Mgic6iqHY/qmEWRGJo+wwMPqb8BMx9wrotP/A==
+
+steps:
+- name: gcr.io/cloud-builders/git
+  args:
+  - "clone"
+  - "https://github.com/kubernetes/release"
+
+- name: gcr.io/$PROJECT_ID/k8s-cloud-builder
+  dir: release
+  secretEnv:
+  - GITHUB_TOKEN
+  args:
+  - "./anago"
+  - "${_RELEASE_BRANCH}"
+  - "${_NOMOCK}"
+  - "${_OFFICIAL}"
+  - "${_BUILDVERSION}"
+  - "--yes"
+  - "--gcb"
+  - "--basedir=/workspace"
+  - "--tmpdir=/workspace/tmp"
+
+tags:
+- ${_GCP_USER_TAG}
+- ${_RELEASE_BRANCH}
+- ${_BUILD_POINT}
+- ${_NOMOCK_TAG}
+- ${_OFFICIAL_TAG}
+- RELEASE
+
+options:
+  machineType: N1_HIGHCPU_32
