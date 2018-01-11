@@ -1,9 +1,9 @@
-%global KUBE_MAJOR 1
-%global KUBE_MINOR 9
-%global KUBE_PATCH 0
+%{!?KUBE_MAJOR: %global KUBE_MAJOR 1}
+%{!?KUBE_MINOR: %global KUBE_MINOR 9}
+%{!?KUBE_PATCH: %global KUBE_PATCH 0}
 %global KUBE_VERSION %{KUBE_MAJOR}.%{KUBE_MINOR}.%{KUBE_PATCH}
-%global RPM_RELEASE 0
-%global ARCH amd64
+%{!?RPM_RELEASE: %global RPM_RELEASE 0}
+%{!?ARCH: %global ARCH amd64}
 
 # This expands a (major, minor, patch) tuple into a single number so that it
 # can be compared against other versions. It has the current implementation
@@ -93,9 +93,9 @@ Command-line utility for administering a Kubernetes cluster.
 #
 
 %if %{KUBE_SEMVER} >= %{semver 1 8 0}
-ln -s 10-kubeadm-post-1.8.conf %SOURCE4
+ln -sf 10-kubeadm-post-1.8.conf %SOURCE4
 %else
-ln -s 10-kubeadm-pre-1.8.conf %SOURCE4
+ln -sf 10-kubeadm-pre-1.8.conf %SOURCE4
 %endif
 
 cp -p %SOURCE0 %{_builddir}/

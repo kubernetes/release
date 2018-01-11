@@ -4,4 +4,5 @@ kubectl
 cni-*.tar.gz
 bin/
 output/
+sources/
 *.swp
