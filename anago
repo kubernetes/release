@@ -474,12 +474,12 @@ checkout_object () {
   local branch_arg
   local branch_point
 
-  # When building on GCB using the --buildonly flag, we split up the build
+  # When building and packaging on GCB, we split up the build and packaging
   # process so the prepared tree contains all of the tags and file changes
   # for the 2 release versions being built.
   # In that case, if the tag already exists, simply check it out for build
   # purposes.
-  if ((FLAGS_buildonly)) && \
+  if ((FLAGS_gcb)) && ! ((FLAGS_prebuild)) && \
      git rev-parse "$version" >/dev/null 2>&1; then
     logecho -n "Checking out $version: "
     logrun -s git checkout $version || return 1
@@ -503,9 +503,9 @@ checkout_object () {
     commit="${BASH_REMATCH[2]}"
   fi
 
-  # NOTE: For new branches, files are changed on master.  Therefore, while
-  # the new branch may be based on a commit earlier than HEAD, all master
-  # activity must occur AT HEAD
+  # NOTE: For new branches, files are still also updated on master (CHANGELOG).
+  # Therefore, while the new branch may be based on a commit earlier than
+  # HEAD, all master activity must occur AT HEAD.
   if [[ -n "$PARENT_BRANCH" ]]; then
     if [[ $RELEASE_VERSION_PRIME == $version ]]; then
       if [[ $tree_object =~ release- ]] && \
