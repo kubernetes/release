@@ -53,7 +53,7 @@ PROG=${0##*/}
 #+     * Type - STAGE or RELEASE
 #+     * Flags - --official and --nomock
 #+
-#+     Typical usage:
+#+     Typical usage (in mock mode):
 #+
 #+     # List running jobs
 #+     $ $PROG
@@ -68,19 +68,19 @@ PROG=${0##*/}
 #+     $ $PROG staged
 #+
 #+     # Stage a new master branch release (on passing blocking tests)
-#+     $ $PROG master
+#+     $ $PROG stage master
 #+
 #+     # Stage a new master branch release (at head)
-#+     $ $PROG master --build-at-head
+#+     $ $PROG stage master --build-at-head
 #+
 #+     # Stage a new release-1.9 branch release (on passing blocking tests)
-#+     $ $PROG release-1.9
+#+     $ $PROG stage release-1.9 --official
 #+
 #+     # Stage a new release-1.9 branch release (at head)
-#+     $ $PROG release-1.9
+#+     $ $PROG stage release-1.9 --official --build-at-head
 #+
 #+     # Release a previously staged build
-#+     $ $PROG release-1.8 --buildversion=v1.8.8-beta.0.72+cce11c6a185279
+#+     $ $PROG release release-1.8 --buildversion=v1.8.8-beta.0.72+cce11c6a185279
 #+
 #+ OPTIONS
 #+     tail|stream               - tail/stream the latest running job to your
@@ -90,6 +90,8 @@ PROG=${0##*/}
 #+                                 Default is to list jobs of any status
 #+                                 Or specified by one of WORKING, FAILURE
 #+                                 SUCCESS or CANCELLED (case not important)
+#+     stage|release             - Top level arg for staging or releasing.
+#+                                 See examples.
 #+     staged                    - Show all staged builds.  With --nomock
 #+                                 non-mock staged builds are shown.  Without
 #+                                 --nomock, both stage/*-$GCP_USER
@@ -110,13 +112,13 @@ PROG=${0##*/}
 #+ EXAMPLES
 #+     $PROG                     - Default 'list' behavior
 #+     $PROG stream              - Show the most recent active log
-#+     $PROG master --build-at-head
-#+                               - Build at head on the master branch
-#+     $PROG release-1.8 --official
+#+     $PROG stage master --build-at-head
+#+                               - Stage a build at head on the master branch
+#+     $PROG stage release-1.8 --official
 #+                               - Analyze test data to find a candidate and
 #+                                 stage an official build for release in mock
 #+                                 mode.
-#+     $PROG release-1.8 --official --nomock
+#+     $PROG stage release-1.8 --official --nomock
 #+                               - Same as above but stage in non-mock bucket.
 #+
 #+ FILES
