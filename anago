@@ -1178,7 +1178,10 @@ get_build_candidate () {
       common::exit 1
     fi
 
-    # The build version should never be behind HEAD on release branches
+    # Check state of master branch before continuing
+    branchff_sanity_check $JENKINS_BUILD_VERSION
+  else
+    # The build version should never be behind HEAD on release existing branches
     if [[ "$RELEASE_BRANCH" =~ release-([0-9]{1,})\. ]]; then
       if [[ $JENKINS_BUILD_VERSION =~ ${VER_REGEX[build]} && \
             ${BASH_REMATCH[2]} != $branch_head ]]; then
@@ -1188,9 +1191,6 @@ get_build_candidate () {
         return 1
       fi
     fi
-
-    # Check state of master branch before continuing
-    branchff_sanity_check $JENKINS_BUILD_VERSION
   fi
 }
 
