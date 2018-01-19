@@ -609,17 +609,18 @@ prepare_tree () {
     beta*) rev_openapi_versions $label || return 1 ;;
   esac
 
+  # COMMENTING OUT FOR NOW AS THE WAY FORWARD IS NOT CLEAR
   # generate docs on new branches (from master) only
   # If the entirety of this session is based on a branch from master
   # (PARENT_BRANCH), and this iteration of prepare_tree() is operating on
   # the NON-master branch itself, versionize the docs
-  if [[ "$PARENT_BRANCH" == "master" && "$branch" != "master" ]]; then
-    logecho -n "Generating docs for ${RELEASE_VERSION[$label]}: "
-    logrun -s $TREE_ROOT/hack/generate-docs.sh || return 1
-    logecho -n "Committing: "
-    logrun -s git commit -am \
-              "Generating docs for ${RELEASE_VERSION[$label]} on $branch."
-  fi
+  #if [[ "$PARENT_BRANCH" == "master" && "$branch" != "master" ]]; then
+  #  logecho -n "Generating docs for ${RELEASE_VERSION[$label]}: "
+  #  logrun -s $TREE_ROOT/hack/generate-docs.sh || return 1
+  #  logecho -n "Committing: "
+  #  logrun -s git commit -am \
+  #            "Generating docs for ${RELEASE_VERSION[$label]} on $branch."
+  #fi
 
   git_tag $label $branch
 }
