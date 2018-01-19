@@ -595,6 +595,7 @@ release::gcs::locally_stage_release_artifacts() {
   local release_stage=$build_output/release-stage
   local release_tars=$build_output/release-tars
   local gcs_stage=$build_output/gcs-stage/$version
+  local configure_vm
   local src
   local dst
 
@@ -620,7 +621,11 @@ release::gcs::locally_stage_release_artifacts() {
 
     # Having the configure-vm.sh script and and trusty code from the GCE cluster
     # deploy hosted with the release is useful for GKE.
-    release::gcs::stage_and_hash $gcs_stage $gce_path/configure-vm.sh extra/gce \
+    # Take it if available (Removed in 1.10+)
+    [[ -f $gce_path/configure-vm.sh ]] \
+     && configure_vm="$gce_path/configure-vm.sh"
+
+    release::gcs::stage_and_hash $gcs_stage $configure_vm extra/gce \
       || return 1
     release::gcs::stage_and_hash $gcs_stage $gci_path/node.yaml extra/gce \
       || return 1
