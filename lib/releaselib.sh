@@ -127,7 +127,7 @@ release::set_build_version () {
   local -a all_jobs=($($GHCURL \
    $K8S_GITHUB_RAW_ORG/test-infra/master/testgrid/config/config.yaml \
    2>/dev/null |\
-   $yq -r '.[] | .[] | select (.name?=="sig-'$branch'-blocking") |.dashboard_tab[].test_group_name' 2>/dev/null))
+   $yq -r '.[] | .[] | select (.name?=="sig-release-'$branch'-blocking") |.dashboard_tab[].test_group_name' 2>/dev/null))
 
   if [[ -z ${all_jobs[*]} ]]; then
     logecho "$FAILED: Curl to testgrid/config/config.yaml"
