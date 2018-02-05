@@ -107,7 +107,6 @@ cp -p %SOURCE4 %{_builddir}/
 
 
 %install
-
 # The setup macro from prep will make install start in the cni-plugins directory, so cd back to the root.
 cd %{_builddir}
 install -m 755 -d %{buildroot}%{_bindir}
@@ -121,8 +120,6 @@ install -p -m 755 -t %{buildroot}%{_bindir}/ kubectl
 install -p -m 755 -t %{buildroot}%{_bindir}/ kubeadm
 install -p -m 755 -t %{buildroot}%{_sysconfdir}/systemd/system/ kubelet.service
 install -p -m 755 -t %{buildroot}%{_sysconfdir}/systemd/system/kubelet.service.d/ 10-kubeadm.conf
-
-
 install -m 755 -d %{buildroot}/opt/cni/bin
 # bin directory from cni-plugins-%{ARCH}-%{CNI_VERSION}.tgz with a list of cni plugins (among other things)
 %if %{KUBE_SEMVER} >= %{semver 1 9 0}
