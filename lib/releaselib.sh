@@ -531,15 +531,21 @@ release::gcs::stage_and_hash() {
 # Ensure the destination bucket path doesn't already exist
 # @param gcs_destination - GCS destination directory
 # @return 1 on failure or if GCS destination already exists
+#           and --allow_dup does not set
 release::gcs::destination_empty() {
   local gcs_destination=$1
 
   logecho -n "Checking whether $gcs_destination already exists: "
   if $GSUTIL ls $gcs_destination >/dev/null 2>&1 ; then
-    logecho "$FAILED"
     logecho "- Destination exists. To remove, run:"
     logecho "  gsutil -m rm -r $gcs_destination"
-    return 1
+    
+    if ((FLAGS_allow_dup)) ; then
+      logecho "flag --allow-dup set, continue with overwriting"   
+    else
+      logecho "$FAILED"  
+      return 1
+    fi
   fi
   logecho "$OK"
 }

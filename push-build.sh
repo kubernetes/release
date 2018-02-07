@@ -60,6 +60,8 @@ PROG=${0##*/}
 #+     [--noupdatelatest]        - Do not update the latest file
 #+     [--private-bucket]        - Do not mark published bits on GCS as
 #+                                 publicly readable.
+#+     [--allow-dup]             - Do not exit error if the build already
+#+                                 exists on the gcs path.
 #+     [--help | -man]           - display man page for this script
 #+     [--usage | -?]            - display in-line usage
 #+
