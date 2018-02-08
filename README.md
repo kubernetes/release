@@ -192,7 +192,7 @@ you encounter.
 You can build the deb packages in a Docker container like this:
 ```
 docker build --tag=debian-packager debian
-docker run --volume="$(pwd)/debian:/src" debian-packager
+docker run --volume="$(pwd)/debian:/src:z" debian-packager
 ```
 
 The build runs for a while, after it's done you will find the output in `debian/bin`.
