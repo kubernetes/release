@@ -539,13 +539,8 @@ release::gcs::destination_empty() {
   if $GSUTIL ls $gcs_destination >/dev/null 2>&1 ; then
     logecho "- Destination exists. To remove, run:"
     logecho "  gsutil -m rm -r $gcs_destination"
-    
-    if ((FLAGS_allow_dup)) ; then
-      logecho "flag --allow-dup set, continue with overwriting"   
-    else
-      logecho "$FAILED"  
-      return 1
-    fi
+    logecho "$FAILED"
+    return 1
   fi
   logecho "$OK"
 }
@@ -563,8 +558,16 @@ release::gcs::push_release_artifacts() {
 
   # No need to check this for mock or stage runs
   # Overwriting is ok
+  # Return without error if --allow-up flag is set
   if ((FLAGS_nomock)) && ! ((FLAGS_stage)); then
-    release::gcs::destination_empty $dest || return 1
+    if release::gcs::destination_empty $dest; then
+      if ((FLAGS_allow_dup)); then
+        logecho "flag --allow-dup set, return without error"
+        return 0   
+      else
+        return 1
+      fi
+    fi
   fi
 
   # Copy the main set from staging to destination
@@ -1066,8 +1069,16 @@ release::gcs::bazel_push_build() {
 
   # No need to check this for mock or stage runs
   # Overwriting is ok
+  # Return without error if --allow-up flag is set
   if ((FLAGS_nomock)) && ! ((FLAGS_stage)); then
-    release::gcs::destination_empty $gcs_destination || return 1
+    if release::gcs::destination_empty $dest; then
+      if ((FLAGS_allow_dup)); then
+        logecho "flag --allow-dup set, return without error"
+        return 0   
+      else
+        return 1
+      fi
+    fi
   fi
 
   logecho "Publish release artifacts to gs://$bucket using Bazel..."
