@@ -30,7 +30,7 @@ steps:
   - "--basedir=/workspace"
   - "--tmpdir=/workspace/tmp"
 
-- name: gcr.io/google_containers/kube-cross:local
+- name: k8s.gcr.io/kube-cross:local
   dir: release
   args:
   - "./anago"
