@@ -117,7 +117,7 @@ RELEASE_BUCKET=${FLAGS_bucket:-"kubernetes-release-dev"}
 KUBE_ROOT=$(pwd -P)
 
 USE_BAZEL=false
-if release::was_built_with_bazel $KUBE_ROOT; then
+if release::was_built_with_bazel $KUBE_ROOT $FLAGS_release_kind; then
   USE_BAZEL=true
   bazel build //:version
   LATEST=$(cat $KUBE_ROOT/bazel-genfiles/version)
