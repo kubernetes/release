@@ -1032,11 +1032,13 @@ release::docker::release_from_tarfiles () {
 # This is achieved by looking for the most recent kubernetes.tar.gz tarball
 # in both the dockerized and Bazel output trees.
 # @param kube_root - Root of kubernetes tree
+# @param release_kind - Kind of release. kubernetes or federation
 # @return 0 if built with Bazel, 1 otherwise
 release::was_built_with_bazel() {
   local kube_root=$1
+  local release_kind=$2
   local most_recent_release_tar=$( (ls -t \
-    $kube_root/{_output,bazel-bin/build}/release-tars/kubernetes.tar.gz \
+    $kube_root/{_output,bazel-bin/build}/release-tars/$release_kind.tar.gz \
     2>/dev/null || true) | head -n 1)
 
   [[ $most_recent_release_tar =~ /bazel-bin/ ]]
