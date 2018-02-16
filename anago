@@ -448,7 +448,7 @@ EOF
             "$action $CHANGELOG_FILE for $RELEASE_VERSION_PRIME." \
    || return 1
 
-  # Sync $CHANGELOG_FILE to release-* branch
+  # Sync $CHANGELOG_FILE to release-* branch and clear all others
   if [[ "$RELEASE_BRANCH" =~ release- ]]; then
     logecho -n "Checkout $RELEASE_BRANCH branch to make changes: "
     logrun -s git checkout $RELEASE_BRANCH || return 1
@@ -621,6 +621,23 @@ prepare_tree () {
   #  logrun -s git commit -am \
   #            "Generating docs for ${RELEASE_VERSION[$label]} on $branch."
   #fi
+
+  # Clear all CHANGELOG-N.NN.md files on the branch.
+  # This replaces the above commented out change to the branch.
+  # Some unique change is required on the branch to allow it to be git
+  # describe'd as something other than the current tag on master
+  # If/when the generate-docs.sh issue is sorted out, this will become
+  # optional, though probably still useful anyway.
+  if [[ "$PARENT_BRANCH" == "master" && "$branch" != "master" ]]; then
+    logecho -n "Remove any previous CHANGELOG-*.md files: "
+    logrun -s git rm -f CHANGELOG-*.md || return 1
+    logecho -n "Copy master $CHANGELOG_FILE to $branch branch: "
+    logrun -s git checkout master -- $CHANGELOG_FILE || return 1
+    logecho -n "Committing deleted CHANGELOG-*.md files: "
+    logrun -s git commit -am \
+              "Delete extraneous CHANGELOG-*.md files on branch." \
+     || return 1
+  fi
 
   git_tag $label $branch
 }
