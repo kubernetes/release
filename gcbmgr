@@ -440,17 +440,18 @@ case $COMMAND in
          RELEASE_BRANCH="$ARG2"
          stage_it
         ;;
-  release) if ((FLAGS_nomock)); then
+  release) DISK_SIZE="100"
+           YAML_FILE="$TOOL_ROOT/gcb/release.yaml"
+           RELEASE_BRANCH="$ARG2"
+
+           if ((FLAGS_nomock)); then
              logecho
              logecho "$ATTENTION!!"
-             if ! common::askyorn "Are you sure you want to submit an actual release job against the $RELEASE_BRANCH branch"; then
+             if ! common::askyorn "Really submit a --nomock release job against the $RELEASE_BRANCH branch"; then
                common::exit 1 "Exiting..."
              fi
            fi
 
-           DISK_SIZE="100"
-           YAML_FILE="$TOOL_ROOT/gcb/release.yaml"
-           RELEASE_BRANCH="$ARG2"
            release_it
         ;;
        *) common::exit 1 "Unknown option $COMMAND.  Exiting..."
