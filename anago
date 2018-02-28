@@ -781,7 +781,11 @@ found_staged_location () {
   # Now ensure binary artifacts exist in the same location, or give up
   for version in $release_versions; do
     gs_stage_root="gs://$bucket/stage/$jbv/$version"
-    binary_artifacts_exist $gs_stage_root $version || return 1
+    if ! binary_artifacts_exist $gs_stage_root $version; then
+      # Ensure these are unset in this case
+      unset STAGED_LOCATION STAGED_BUCKET
+      return 1
+    fi
   done
 
   logecho -n "Extracting $tmp_tar_archive: "
