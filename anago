@@ -1277,6 +1277,12 @@ prepare_workspace () {
   # Check if locally staged directory contains all of the RELEASE_VERSIONs for
   # this release type
   if ((FLAGS_stage)) || ! found_staged_location ${RELEASE_VERSION[@]}; then
+    # GCB releases (gcbmgr release) requires a found staged build to use
+    if ! ((FLAGS_stage)) && ((FLAGS_gcb)); then
+      logecho "$FATAL: Releasing from GCB requires a staged" \
+              "--buildversion=<buildversion>"
+      return 1
+    fi
     # Sync the tree
     gitlib::sync_repo $K8S_GITHUB_AUTH_URL $TREE_ROOT || return 1
   fi
