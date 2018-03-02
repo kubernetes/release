@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+
+export PATH=$PATH:$SNAP/usr/sbin
+
+exec "$SNAP/kube-proxy" "$@"

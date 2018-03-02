@@ -15,7 +15,7 @@ confinement: classic
 
 apps:
   daemon:
-    command: run-with-config-args kube-proxy
+    command: run-with-config-args kube-proxy-wrapper
     daemon: simple
   kube-proxy:
     command: kube-proxy
@@ -24,8 +24,11 @@ parts:
   kube-proxy:
     plugin: dump
     source: .
+    stage-packages:
+      - conntrack:$SNAP_ARCH
     prepare: |
       set -eu
       cp $KUBE_SNAP_BINS/$KUBE_ARCH/kube-proxy .
       cp $KUBE_SNAP_ROOT/shared/run-with-config-args .
+      cp $KUBE_SNAP_ROOT/kube-proxy/kube-proxy-wrapper .
       $KUBE_SNAP_ROOT/shared/generate-configure-hook kube-proxy
