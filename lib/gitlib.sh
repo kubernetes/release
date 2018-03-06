@@ -393,8 +393,10 @@ gitlib::update_release_issue () {
       logecho "Created issue #$issue_number on github:"
       logecho "http://github.com/$repo/issues/$issue_number"
     else
-      logecho "There was a problem creating the release tracking issue"
-      logecho "This should be done manually."
+      logecho "$WARNING: There was a problem creating the release tracking" \
+              "issue.  This should be done manually."
+      logecho "Contents:"
+      logecho "$text"
     fi
   fi
 }

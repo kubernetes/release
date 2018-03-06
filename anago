@@ -1556,9 +1556,8 @@ elif ! ((FLAGS_prebuild)); then
     common::stepindex "announce"
     if ((FLAGS_gcb)); then
       common::stepindex "gitlib::update_release_issue"
-    else
-      common::stepindex "update_github_release"
     fi
+    common::stepindex "update_github_release"
   fi
 fi
 
@@ -1833,9 +1832,9 @@ else
   # For GCB create/update a release tracking issue
   if ((FLAGS_gcb)); then
     common::run_stateful "gitlib::update_release_issue $RELEASE_VERSION_PRIME"
-  else
-    common::run_stateful update_github_release
   fi
+
+  common::run_stateful update_github_release
 
   common::stepheader "ARCHIVE RELEASE ON GS"
   common::runstep archive_release
