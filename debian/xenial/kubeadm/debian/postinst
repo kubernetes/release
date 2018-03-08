@@ -22,8 +22,8 @@ case "$1" in
         # because kubeadm package adds kubelet drop-ins, we must daemon-reload
         # and restart kubelet now. restarting kubelet is ok because kubelet
         # postinst configure step auto-starts it.
-        systemctl daemon-reload
-        systemctl restart kubelet
+        systemctl daemon-reload 2>/dev/null || true
+        systemctl restart kubelet 2>/dev/null || true
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
