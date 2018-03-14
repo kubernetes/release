@@ -20,7 +20,7 @@
 ###############################################################################
 # CONSTANTS
 ###############################################################################
-: ${GITHUB_TOKEN:=$FLAGS_github_token}
+GITHUB_TOKEN=${FLAGS_github_token:-$GITHUB_TOKEN}
 [[ -n $GITHUB_TOKEN ]] && GITHUB_TOKEN_FLAG=("-u" "$GITHUB_TOKEN:x-oauth-basic")
 GHCURL="curl -s --fail --retry 10 ${GITHUB_TOKEN_FLAG[*]}"
 JCURL="curl -g -s --fail --retry 10"
@@ -334,18 +334,13 @@ PROGSTEP[gitlib::update_release_issue]="CREATE/UPDATE RELEASE TRACKING ISSUE"
 gitlib::update_release_issue () {
   local version=$1
   local assignee
-  local milestone
+  local milestone_string
+  local milestone_number
   local stage
   local text
   local cc
   local repo
   local issue_number
-
-  # Set the milestone and stage
-  if [[ $version =~ ${VER_REGEX[release]} ]]; then
-    milestone=${BASH_REMATCH[1]}.${BASH_REMATCH[2]}
-    stage=${BASH_REMATCH[4]/-/}
-  fi
 
   if ((FLAGS_nomock)); then
     repo="kubernetes/sig-release"
@@ -354,8 +349,18 @@ gitlib::update_release_issue () {
     cc="cc @kubernetes/sig-release-members"
   else
     repo="k8s-release-robot/sig-release"
-    # Force milestone to null on this repo or the curl hangs
-    milestone="null"
+  fi
+
+  # Set the milestone_string and stage
+  if [[ $version =~ ${VER_REGEX[release]} ]]; then
+    milestone_string="\"v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}\""
+    stage=${BASH_REMATCH[4]/-/}
+    # github's API "conveniently" references the milestone index number vs.
+    # the string, so convert the above.
+    milestone_number=$($GHCURL $K8S_GITHUB_API_ROOT/$repo/milestones | jq -r \
+                       ".[] |select(.title=="$milestone_string") | .number")
+    # And default to null so the curl call doesn't fall over
+    : ${milestone_number:="null"}
   fi
 
   text="Kubernetes $version has been built and pushed.\n\nThe release notes have been updated in <A HREF=https://github.com/kubernetes/kubernetes/blob/master/$CHANGELOG_FILE/#${version//\./}>$CHANGELOG_FILE</A> with a pointer to it on <A HREF=https://github.com/kubernetes/kubernetes/releases/tag/$version>github</A>."
@@ -376,13 +381,11 @@ gitlib::update_release_issue () {
   else
     logecho "NONE"
     # Create a new issue
-    # If the milestone doesn't exist, this will fail.
-    # May want to check that and only add if there's a valid value to add, Ugh.
     issue_number=$($GHCURL $K8S_GITHUB_API_ROOT/$repo/issues --data \
     "{
       \"title\": \"Release $version Tracking\",
       \"body\": \"$text\n$cc\n\",
-      \"milestone\": $milestone,
+      \"milestone\": $milestone_number,
       \"labels\": [
         \"sig/release\",
         \"stage/${stage:-stable}\"
@@ -396,7 +399,11 @@ gitlib::update_release_issue () {
       logecho "$WARNING: There was a problem creating the release tracking" \
               "issue.  This should be done manually."
       logecho "Contents:"
-      logecho "$text"
+      logecho "title: $title"
+      logecho "body: $body"
+      logecho "milestone_string: $milestone_string"
+      logecho "milestone_number: $milestone_number"
+      logecho "stage: $stage"
     fi
   fi
 }
