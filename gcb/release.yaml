@@ -21,6 +21,7 @@ steps:
   - "${_NOMOCK}"
   - "${_OFFICIAL}"
   - "${_BUILDVERSION}"
+  - "${_RC}"
   - "--yes"
   - "--gcb"
   - "--basedir=/workspace"
@@ -32,6 +33,7 @@ tags:
 - ${_BUILD_POINT}
 - ${_NOMOCK_TAG}
 - ${_OFFICIAL_TAG}
+- ${_RC_TAG}
 - RELEASE
 
 options:
