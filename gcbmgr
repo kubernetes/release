@@ -28,10 +28,10 @@ PROG=${0##*/}
 #+     $PROG  tail|stream [BUILD_ID]
 #+   Staging:
 #+     $PROG  stage <branch> [--buildversion=<known version>]
-#+             [--build-at-head] [--nomock] [--official]
+#+             [--build-at-head] [--nomock] [--official] [--rc]
 #+   Releasing:
 #+     $PROG  release <branch> --buildversion=<staged build>
-#+             [--nomock] [--official]
+#+             [--nomock] [--official] [--rc]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
@@ -51,7 +51,7 @@ PROG=${0##*/}
 #+     * Source commit - HEAD, (result of) find_green_build or --buildversion
 #+     * Branch
 #+     * Type - STAGE or RELEASE
-#+     * Flags - --official and --nomock
+#+     * Flags - --official --nomock and --rc
 #+
 #+     Typical usage (in mock mode):
 #+
@@ -76,6 +76,12 @@ PROG=${0##*/}
 #+     # Stage a new release-1.9 branch release (on passing blocking tests)
 #+     $ $PROG stage release-1.9 --official
 #+
+#+     # Stage a new release-1.9 release candidate (on passing blocking tests)
+#+     $ $PROG stage release-1.9 --rc
+#+
+#+     # Stage a new release-1.9 release candidate (at head)
+#+     $ $PROG stage release-1.9 --rc --build-at-head
+#+
 #+     # Stage a new release-1.9 branch release (at head)
 #+     $ $PROG stage release-1.9 --official --build-at-head
 #+
@@ -84,7 +90,7 @@ PROG=${0##*/}
 #+
 #+ OPTIONS
 #+     tail|stream               - tail/stream the latest running job to your
-#+                                 console window.  You can also specify a 
+#+                                 console window.  You can also specify a
 #+                                 BUILD_ID to stream.
 #+     list                      - List last (up to) 5 jobs.
 #+                                 Default is to list jobs of any status
@@ -104,6 +110,9 @@ PROG=${0##*/}
 #+     --official                - For release-* branches, stage an official
 #+                                 X.Y.Z release.  Without --official, only the
 #+                                 -beta on the branch is incremented and built.
+#+     --rc                      - For release-* branches, stage a release
+#+                                 candidate by building and incrementing -rc on
+#+                                 the branch.
 #+     --buildversion            - Release from a previously staged build or
 #+                                 stage a known version.
 #+     [--help | -man]           - display man page for this script
@@ -278,13 +287,13 @@ submit_it () {
   local substitutions
 
   # Additional TAG substitutions
-  substitutions="_OFFICIAL_TAG=$OFFICIAL_TAG,_NOMOCK_TAG=$NOMOCK_TAG"
+  substitutions="_OFFICIAL_TAG=$OFFICIAL_TAG,_NOMOCK_TAG=$NOMOCK_TAG,_RC_TAG=$RC_TAG"
   substitutions+=",_BUILD_POINT=$BUILD_POINT,_GCP_USER_TAG=$GCP_USER_TAG"
 
   [[ $COMMAND == stage ]] && substitutions+=",_BUILD_AT_HEAD=$BUILD_AT_HEAD"
 
   # The usual suspects
-  substitutions+=",_RELEASE_BRANCH=$RELEASE_BRANCH,_OFFICIAL=$OFFICIAL"
+  substitutions+=",_RELEASE_BRANCH=$RELEASE_BRANCH,_OFFICIAL=$OFFICIAL,_RC=$RC"
   substitutions+=",_NOMOCK=$NOMOCK,_BUILDVERSION=$BUILDVERSION"
 
   if ! JOB_DATA=$($GCLOUD container builds submit --no-source \
@@ -393,9 +402,18 @@ GCP_USER_TAG=${GCP_USER_TAG/@/-at-}
 # in the bucket name so convert . to -
 GCP_USER_TAG=${GCP_USER_TAG/\./-}
 
+# A build cannot be a release candidate and official at the same time
+if ((FLAGS_official)) && ((FLAGS_rc)); then
+    logecho "A release cannot be an RC and official"
+    common::exit 1 "Exiting..."
+fi
+
 if ((FLAGS_official)); then
   OFFICIAL_TAG="official"
   OFFICIAL="--$OFFICIAL_TAG"
+elif ((FLAGS_rc)); then
+  RC_TAG="rc"
+  RC="--$RC"
 fi
 
 if ((FLAGS_build_at_head)); then
