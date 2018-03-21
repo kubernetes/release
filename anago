@@ -218,6 +218,12 @@ common::cleanexit () {
 
   logrun rm -rf $LOCAL_CACHE
 
+  # Reset gcloud auth context
+  # if GCP_USER is set then we are in a state to reset this
+  if ! ((FLAGS_gcb)) && [[ -n "$GCP_USER" ]]; then
+    logrun $GCLOUD config set account $GCP_USER
+  fi
+
   if [[ -d $WORKDIR ]]; then
     if ((FLAGS_gcb)); then
       # Just copy the logs and files up. A completed release copies everything
