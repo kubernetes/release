@@ -71,7 +71,7 @@ tags:
 - ${_BUILD_POINT}
 - ${_NOMOCK_TAG}
 - ${_OFFICIAL_TAG}
-- ${_RC_TAG}"
+- ${_RC_TAG}
 - STAGE
 
 options:
