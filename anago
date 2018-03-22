@@ -906,7 +906,7 @@ push_git_objects () {
 
 ###############################################################################
 # generate the announcement text to be mailed and published
-create_branch_announcement () {
+branch_announcement_text () {
   cat <<EOF
 Kubernetes team,
 <P>
@@ -920,7 +920,7 @@ EOF
 
 ###############################################################################
 # generate the announcement text to be mailed and published
-create_announcement () {
+release_announcement_text () {
   cat <<EOF
 Kubernetes team,
 <P>
@@ -939,55 +939,33 @@ EOF
 }
 
 ###############################################################################
-# Mail out the announcement
-# @param subject - the subject for the email notification
+# Construct META for the announcement and send it out
+# @optparam --branch - Default announcement type is 'release' or --branch.
 PROGSTEP[announce]="ANNOUNCE BRANCH OR RELEASE"
 announce () {
-  local mailto="gke-kubernetes-org@google.com"
-        mailto+=",kubernetes-dev@googlegroups.com"
-        mailto+=",kubernetes-announce@googlegroups.com"
   local arg="$1"
-  local subject
-  local announcement_text=$TMPDIR/$PROG-announce.$$
+  local announcement_file=$WORKDIR/announcement.html
+  local subject_subject=$WORKDIR/announcement-subject.txt
 
-  ((FLAGS_nomock)) || mailto=$GCP_USER
-  mailto=${FLAGS_mailto:-$mailto}
+  logecho "Creating k8s $RELEASE_VERSION_PRIME announcement in $WORKDIR..."
 
   if [[ "$arg" == "--branch" ]]; then
-    subject="k8s $RELEASE_BRANCH branch has been created"
+    echo "k8s $RELEASE_BRANCH branch has been created" > $subject_file
+    branch_announcement_text
   else
-    subject="k8s $RELEASE_VERSION_PRIME is live!"
-  fi
+    echo "k8s $RELEASE_VERSION_PRIME is live!" > $subject_file
+    release_announcement_text
+  fi > $announcement_file
 
-  if [[ -n "$PARENT_BRANCH" ]]; then
-    create_branch_announcement
-  else
-    create_announcement
-  fi > $announcement_text
-
-  ((FLAGS_yes)) \
-   || common::askyorn -e "Pausing here. Confirm announce to $mailto" \
-   || common::exit 1 "Exiting..."
-
+  # Only send from desktop
   if ((FLAGS_gcb)); then
-    logecho "Copying k8s $RELEASE_VERSION_PRIME announcement text" \
-            "to $WORKDIR..."
-    logrun cp $announcement_text $WORKDIR/announcement.html
+    logecho "$WARNING: Email cannot be sent from GCB.  Execute the following" \
+            "after a completed release to send email notification:"
+    logecho
+    logecho "$ release-notifier $RELEASE_VERSION_PRIME"
   else
-    logecho "Announcing k8s $RELEASE_VERSION_PRIME to $mailto..."
-
-    # Always cc invoker
-    # Due to announcements landing on public mailing lists requiring membership,
-    # post from the invoking user (for now until this is productionized further)
-    # and use reply-to to ensure replies go to the right place.
-    common::sendmail -h "$mailto" "K8s-Anago<$GCP_USER>" \
-                     "K8s-Anago<cloud-kubernetes-release@google.com>" \
-                     "$subject" "$GCP_USER" \
-                     "$announcement_text" || return 1
-
+    release::send_announcement || return 1
   fi
-
-  logrun rm -f $announcement_text
 }
 
 ###############################################################################
@@ -1398,100 +1376,6 @@ push_all_artifacts () {
   fi
 }
 
-##############################################################################
-# Sets major global variables
-# RELEASE_GB - space requirements per build
-# GCP_USER - The user that drives the entire release
-# RELEASE_BUCKET - mock or standard release bucket location
-# BUCKET_TYPE - stage or release
-# WRITE_RELEASE_BUCKETS - array of writable buckets
-# READ_RELEASE_BUCKETS - array of readable buckets for multiple sourcing of 
-#                        mock staged builds
-# GCRIO_REPO - GCR repo based on mock or --nomock
-# ALL_CONTAINER_REGISTRIES - when running mock this array also contains
-#                            google_containers so we can check access in mock
-#                            mode before an actual release occurs
-set_globals () {
-  # Define the placeholder/"role" user for GCB
-  local gcb_user="gcb@google.com"
-
-  logecho -n "Setting global variables: "
-
-  # Default disk requirements per version - Modified in found_staged_location()
-  RELEASE_GB="75"
-
-  if ((FLAGS_gcb)); then
-    # a placeholder that satisfies @google.com conditional below
-    GCP_USER="$gcb_user"
-  else
-    # Nothing should work without this.  The entire release workflow depends
-    # on it whether running from the desktop or GCB
-    GCP_USER=$($GCLOUD auth list --filter=status:ACTIVE \
-                                 --format="value(account)" 2>/dev/null)
-    if [[ -z "$GCP_USER" ]]; then
-      logecho $FAILED
-      logecho "Unable to set a valid GCP credential!"
-      return 1
-    fi
-  fi
-
-  RELEASE_BUCKET="kubernetes-release"
-  if [[ $GCP_USER =~ "@google.com" ]]; then
-    WRITE_RELEASE_BUCKETS=("$RELEASE_BUCKET")
-    READ_RELEASE_BUCKETS=("$RELEASE_BUCKET")
-  fi
-
-  if ((FLAGS_stage)); then
-    BUCKET_TYPE="stage"
-  else
-    BUCKET_TYPE="release"
-  fi
-
-  if ((FLAGS_nomock)); then
-    GCRIO_REPO="${FLAGS_gcrio_repo:-google_containers}"
-    ALL_CONTAINER_REGISTRIES=("$GCRIO_REPO")
-  else
-    # GCS buckets cannot contain @ or "google", so for those users, just use
-    # the "$USER" portion of $GCP_USER/$gcb_user
-    RELEASE_BUCKET_USER="$RELEASE_BUCKET-${GCP_USER%%@google.com}"
-    RELEASE_BUCKET_GCB="$RELEASE_BUCKET-${gcb_user%%@google.com}"
-    RELEASE_BUCKET_USER="${RELEASE_BUCKET_USER/@/-at-}"
-    RELEASE_BUCKET_GCB="${RELEASE_BUCKET_GCB/@/-at-}"
-    # GCP also doesn't like anything even remotely looking like a domain name
-    # in the bucket name so convert . to -
-    RELEASE_BUCKET_USER="${RELEASE_BUCKET_USER/\./-}"
-    RELEASE_BUCKET_GCB="${RELEASE_BUCKET_GCB/\./-}"
-    RELEASE_BUCKET="$RELEASE_BUCKET_USER"
-
-    # All the RELEASE_BUCKETS we could possibly write to
-    WRITE_RELEASE_BUCKETS+=("$RELEASE_BUCKET_USER")
-    # All the RELEASE_BUCKETS we could possibly read from (for staging)
-    READ_RELEASE_BUCKETS+=("$RELEASE_BUCKET_USER")
-    # If a regular user is running mocks, also look in the GCB mock bucket for
-    # releases
-    ((FLAGS_gcb)) || READ_RELEASE_BUCKETS+=("$RELEASE_BUCKET_GCB")
-
-    # Set GCR values
-    GCRIO_REPO="${FLAGS_gcrio_repo:-kubernetes-release-test}"
-    [[ $GCP_USER =~ "@google.com" ]] \
-      && ALL_CONTAINER_REGISTRIES=("$GCRIO_REPO" "google_containers")
-
-    # This is passed to logrun() where appropriate when we want to mock
-    # specific activities like pushes
-    LOGRUN_MOCK="-m"
-  fi
-
-  # TODO:
-  # These KUBE_ globals extend beyond the scope of the new release refactored
-  # tooling so to pass these through as flags will require fixes across
-  # kubernetes/kubernetes and kubernetes/release which we can do at a later time
-  export KUBE_DOCKER_REGISTRY="gcr.io/$GCRIO_REPO"
-  export KUBE_RELEASE_RUN_TESTS=n
-  export KUBE_SKIP_CONFIRMATIONS=y
-
-  logecho $OK
-}
-
 ###############################################################################
 # MAIN
 ###############################################################################
@@ -1598,7 +1482,7 @@ fi
 
 # Set the majorify of global values
 # Moved here b/c now depends on gcloud
-set_globals
+release::set_globals
 
 ((FLAGS_stage)) || common::run_stateful gitlib::github_acls
 

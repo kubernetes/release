@@ -48,6 +48,17 @@ $ gcbmgr -man
 Guidance from `gcbmgr staged` instructs you how to release a staged build on
 GCB or the desktop.
 
-NOTE: Releases from GCB are currently unable to send email, so the update
-      occurs in the form of a new release tracking issue on the
-      kubernetes/sig-release repo (k8s-release-robot/sig-release for mock runs).
+**NOTE:**
+Releases from GCB are currently unable to send email, so the update
+occurs in the form of a new release tracking issue on the
+kubernetes/sig-release repo (k8s-release-robot/sig-release for mock runs).
+
+To send the standard e-mail announcement after a release on GCB, you may
+use the helper `release-notify` which will grab the notification details
+from gs://<BUCKET>/archive/anago-$VERSION/announcement.html:
+```
+$ release-notify $VERSION
+```
+
+This works like the rest of the tool and honors --nomock and prompts
+before any mail is sent.

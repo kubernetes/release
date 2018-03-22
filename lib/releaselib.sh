@@ -1085,3 +1085,153 @@ release::gcs::bazel_push_build() {
   logecho -n "- Listing final contents to log file: "
   logrun -s $GSUTIL ls -lhr "$gcs_destination" || return 1
 }
+
+###############################################################################
+# Mail out the announcement
+PROGSTEP[release::send_announcement]="SEND ANNOUNCEMENT"
+release::send_announcement () {
+  local announcement_file="$WORKDIR/announcement.html"
+  local subject_file="$WORKDIR/announcement-subject.txt"
+  local archive_root="gs://$RELEASE_BUCKET/archive/anago-$RELEASE_VERSION"
+  local announcement_text="/tmp/$PROG-rsa.$$"
+  local subject
+  local mailto="gke-kubernetes-org@google.com"
+        mailto+=",kubernetes-dev@googlegroups.com"
+        mailto+=",kubernetes-announce@googlegroups.com"
+
+  ((FLAGS_nomock)) || mailto=$GCP_USER
+  mailto=${FLAGS_mailto:-$mailto}
+
+  # Announcement file is stored normally in WORKDIR, else check GCS.
+  if [[ ! -f "$announcement_file" ]]; then
+    announcement_file="$archive_root/announcement.html"
+    if ! $GSUTIL cp $announcement_file $announcement_text >/dev/null 2>&1; then
+      logecho "Unable to find an announcement locally or on GCS!"
+      return 1
+    fi
+  fi
+
+  # Subject should be in the same place as announcement_text
+  if [[ ! -f "$subject_file" ]]; then
+    subject_file="$archive_root/announcement-subject.txt"
+    if ! subject=$($GSUTIL cat $subject_file 2>&-); then
+      logecho "Unable to find an announcement subject file locally or on GCS!"
+      return 1
+    fi
+  else
+    subject=$(<$subject_file)
+  fi
+
+  ((FLAGS_yes)) \
+   || common::askyorn -e "Pausing here. Confirm announce to $mailto" \
+   || common::exit 1 "Exiting..."
+
+  logecho "Announcing \"$subject\" to $mailto..."
+
+  # Always cc invoker
+  # Due to announcements landing on public mailing lists requiring membership,
+  # post from the invoking user (for now until this is productionized further)
+  # and use reply-to to ensure replies go to the right place.
+  common::sendmail -h "$mailto" "K8s-Anago<$GCP_USER>" \
+                   "K8s-Anago<cloud-kubernetes-release@google.com>" \
+                   "$subject" "$GCP_USER" \
+                   "$announcement_text" || return 1
+
+  # Cleanup
+  logrun rm -f $announcement_text
+}
+
+##############################################################################
+# Sets major global variables
+# Used only in anago and release-notify
+# RELEASE_GB - space requirements per build
+# GCP_USER - The user that drives the entire release
+# RELEASE_BUCKET - mock or standard release bucket location
+# BUCKET_TYPE - stage or release
+# WRITE_RELEASE_BUCKETS - array of writable buckets
+# READ_RELEASE_BUCKETS - array of readable buckets for multiple sourcing of 
+#                        mock staged builds
+# GCRIO_REPO - GCR repo based on mock or --nomock
+# ALL_CONTAINER_REGISTRIES - when running mock this array also contains
+#                            google_containers so we can check access in mock
+#                            mode before an actual release occurs
+release::set_globals () {
+  # Define the placeholder/"role" user for GCB
+  local gcb_user="gcb@google.com"
+
+  logecho -n "Setting global variables: "
+
+  # Default disk requirements per version - Modified in found_staged_location()
+  RELEASE_GB="75"
+
+  if ((FLAGS_gcb)); then
+    # a placeholder that satisfies @google.com conditional below
+    GCP_USER="$gcb_user"
+  else
+    # Nothing should work without this.  The entire release workflow depends
+    # on it whether running from the desktop or GCB
+    GCP_USER=$($GCLOUD auth list --filter=status:ACTIVE \
+                                 --format="value(account)" 2>/dev/null)
+    if [[ -z "$GCP_USER" ]]; then
+      logecho $FAILED
+      logecho "Unable to set a valid GCP credential!"
+      return 1
+    fi
+  fi
+
+  RELEASE_BUCKET="kubernetes-release"
+  if [[ $GCP_USER =~ "@google.com" ]]; then
+    WRITE_RELEASE_BUCKETS=("$RELEASE_BUCKET")
+    READ_RELEASE_BUCKETS=("$RELEASE_BUCKET")
+  fi
+
+  if ((FLAGS_stage)); then
+    BUCKET_TYPE="stage"
+  else
+    BUCKET_TYPE="release"
+  fi
+
+  if ((FLAGS_nomock)); then
+    GCRIO_REPO="${FLAGS_gcrio_repo:-google_containers}"
+    ALL_CONTAINER_REGISTRIES=("$GCRIO_REPO")
+  else
+    # GCS buckets cannot contain @ or "google", so for those users, just use
+    # the "$USER" portion of $GCP_USER/$gcb_user
+    RELEASE_BUCKET_USER="$RELEASE_BUCKET-${GCP_USER%%@google.com}"
+    RELEASE_BUCKET_GCB="$RELEASE_BUCKET-${gcb_user%%@google.com}"
+    RELEASE_BUCKET_USER="${RELEASE_BUCKET_USER/@/-at-}"
+    RELEASE_BUCKET_GCB="${RELEASE_BUCKET_GCB/@/-at-}"
+    # GCP also doesn't like anything even remotely looking like a domain name
+    # in the bucket name so convert . to -
+    RELEASE_BUCKET_USER="${RELEASE_BUCKET_USER/\./-}"
+    RELEASE_BUCKET_GCB="${RELEASE_BUCKET_GCB/\./-}"
+    RELEASE_BUCKET="$RELEASE_BUCKET_USER"
+
+    # All the RELEASE_BUCKETS we could possibly write to
+    WRITE_RELEASE_BUCKETS+=("$RELEASE_BUCKET_USER")
+    # All the RELEASE_BUCKETS we could possibly read from (for staging)
+    READ_RELEASE_BUCKETS+=("$RELEASE_BUCKET_USER")
+    # If a regular user is running mocks, also look in the GCB mock bucket for
+    # releases
+    ((FLAGS_gcb)) || READ_RELEASE_BUCKETS+=("$RELEASE_BUCKET_GCB")
+
+    # Set GCR values
+    GCRIO_REPO="${FLAGS_gcrio_repo:-kubernetes-release-test}"
+    [[ $GCP_USER =~ "@google.com" ]] \
+      && ALL_CONTAINER_REGISTRIES=("$GCRIO_REPO" "google_containers")
+
+    # This is passed to logrun() where appropriate when we want to mock
+    # specific activities like pushes
+    LOGRUN_MOCK="-m"
+  fi
+
+  # TODO:
+  # These KUBE_ globals extend beyond the scope of the new release refactored
+  # tooling so to pass these through as flags will require fixes across
+  # kubernetes/kubernetes and kubernetes/release which we can do at a later time
+  export KUBE_DOCKER_REGISTRY="gcr.io/$GCRIO_REPO"
+  export KUBE_RELEASE_RUN_TESTS=n
+  export KUBE_SKIP_CONFIRMATIONS=y
+
+  logecho $OK
+}
