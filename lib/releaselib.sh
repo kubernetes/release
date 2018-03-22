@@ -1092,18 +1092,24 @@ PROGSTEP[release::send_announcement]="SEND ANNOUNCEMENT"
 release::send_announcement () {
   local announcement_file="$WORKDIR/announcement.html"
   local subject_file="$WORKDIR/announcement-subject.txt"
-  local archive_root="gs://$RELEASE_BUCKET/archive/anago-$RELEASE_VERSION"
   local announcement_text="/tmp/$PROG-rsa.$$"
   local subject
   local mailto="gke-kubernetes-org@google.com"
         mailto+=",kubernetes-dev@googlegroups.com"
         mailto+=",kubernetes-announce@googlegroups.com"
+  # Bucket for the purposes of announcement meta is either in the "GCB" for
+  # mock runs or in the standard location defined in set_globals().
+  local bucket="$RELEASE_BUCKET_GCB"
+  ((FLAGS_nomock)) && bucket="$RELEASE_BUCKET"
+  local archive_root="gs://$bucket/archive/anago-$RELEASE_VERSION"
 
   ((FLAGS_nomock)) || mailto=$GCP_USER
   mailto=${FLAGS_mailto:-$mailto}
 
   # Announcement file is stored normally in WORKDIR, else check GCS.
-  if [[ ! -f "$announcement_file" ]]; then
+  if [[ -f "$announcement_file" ]]; then
+    announcement_text="$announcement_file"
+  else
     announcement_file="$archive_root/announcement.html"
     if ! $GSUTIL cp $announcement_file $announcement_text >/dev/null 2>&1; then
       logecho "Unable to find an announcement locally or on GCS!"
@@ -1112,16 +1118,17 @@ release::send_announcement () {
   fi
 
   # Subject should be in the same place as announcement_text
-  if [[ ! -f "$subject_file" ]]; then
+  if [[ -f "$subject_file" ]]; then
+    subject=$(<"$subject_file")
+  else
     subject_file="$archive_root/announcement-subject.txt"
-    if ! subject=$($GSUTIL cat $subject_file 2>&-); then
+    if ! subject="$($GSUTIL cat $subject_file 2>&-)"; then
       logecho "Unable to find an announcement subject file locally or on GCS!"
       return 1
     fi
-  else
-    subject=$(<$subject_file)
   fi
 
+  logecho
   ((FLAGS_yes)) \
    || common::askyorn -e "Pausing here. Confirm announce to $mailto" \
    || common::exit 1 "Exiting..."
