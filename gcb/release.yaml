@@ -35,4 +35,4 @@ tags:
 - RELEASE
 
 options:
-  machineType: N1_HIGHCPU_32
+  machineType: N1_HIGHMEM_32
