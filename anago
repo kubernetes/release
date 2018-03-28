@@ -944,25 +944,26 @@ EOF
 PROGSTEP[announce]="ANNOUNCE BRANCH OR RELEASE"
 announce () {
   local arg="$1"
-  local announcement_file=$WORKDIR/announcement.html
-  local subject_subject=$WORKDIR/announcement-subject.txt
+  local announcement_file="$WORKDIR/announcement.html"
+  local subject_file="$WORKDIR/announcement-subject.txt"
 
   logecho "Creating k8s $RELEASE_VERSION_PRIME announcement in $WORKDIR..."
 
   if [[ "$arg" == "--branch" ]]; then
     echo "k8s $RELEASE_BRANCH branch has been created" > $subject_file
-    branch_announcement_text
+    branch_announcement_text > $announcement_file
   else
     echo "k8s $RELEASE_VERSION_PRIME is live!" > $subject_file
-    release_announcement_text
-  fi > $announcement_file
+    release_announcement_text > $announcement_file
+  fi
 
   # Only send from desktop
   if ((FLAGS_gcb)); then
     logecho "$WARNING: Email cannot be sent from GCB.  Execute the following" \
             "after a completed release to send email notification:"
     logecho
-    logecho "$ release-notifier $RELEASE_VERSION_PRIME"
+    logecho "$ release-notify $RELEASE_VERSION_PRIME"
+    logecho
   else
     release::send_announcement || return 1
   fi
@@ -1308,7 +1309,8 @@ archive_release () {
   logecho "Copy $WORKDIR $text to $archive_bucket/$build_dir..."
   logrun $GSUTIL -mq cp $dash_args $WORKDIR/* $archive_bucket/$build_dir || true
 
-  logecho -n "Ensure PRIVATE ACL on $archive_bucket/$build_dir/anago.log\*: "
+  logecho -n "Ensure PRIVATE ACL on" \
+             "$archive_bucket/$build_dir/${LOGFILE##*/}\*: "
   logrun -s $GSUTIL acl ch -d AllUsers \
             "$archive_bucket/$build_dir/${LOGFILE##*/}*" || true
 }
@@ -1691,8 +1693,14 @@ done
 if ((FLAGS_stage)); then
   ((FLAGS_nomock)) && EXTRA_FLAGS+=("--nomock")
   ((FLAGS_official)) && EXTRA_FLAGS+=("--official")
+  ((FLAGS_rc)) && EXTRA_FLAGS+=("--rc")
   logecho
   logecho "To release this staged build, run:"
+  logecho
+  logecho "$ gcbmgr release ${EXTRA_FLAGS[*]} $RELEASE_BRANCH" \
+          "--buildversion=$JENKINS_BUILD_VERSION"
+  logecho
+  logecho "-OR-"
   logecho
   logecho "$ anago ${EXTRA_FLAGS[*]} $RELEASE_BRANCH" \
           "--buildversion=$JENKINS_BUILD_VERSION"
@@ -1705,7 +1713,7 @@ if ((FLAGS_stage)); then
   # IF GCB, keep only the last staged build
   # clean up here on success
   # Debatable if this should only happen on GCB
-  if ((FLAGS_gcb)) && ((FLAGS_stage)); then
+  if ((FLAGS_gcb)); then
     # Delete everything that's not this build in the vX.Y. namespace
     # || true to catch non-zero exit when list is empty
     if [[ $JENKINS_BUILD_VERSION =~ (v[0-9]+\.[0-9]+\.) ]]; then

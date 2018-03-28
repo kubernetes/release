@@ -22,7 +22,8 @@ PROG=${0##*/}
 #+     $PROG - Kubernetes Release Notification Tool
 #+
 #+ SYNOPSIS
-#+     $PROG  <version> [--nomock] [--security_layer=/path/to/pointer/to/script]
+#+     $PROG  <version> [--nomock] [--mailto=<user>,...]
+#+                     [--security_layer=/path/to/pointer/to/script]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
@@ -38,6 +39,7 @@ PROG=${0##*/}
 #+     [--security_layer=]       - A file containing a path to a script to
 #+                                 source/include:
 #+                                 FLAGS_security_layer=/path/to/script
+#+     [--mailto=]               - Useful for sending to self in --nomock mode
 #+     [--help | -man]           - display man page for this script
 #+     [--usage | -?]            - display in-line usage
 #+
