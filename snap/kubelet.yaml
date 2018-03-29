@@ -29,3 +29,127 @@ parts:
       cp $KUBE_SNAP_ROOT/shared/run-with-config-args .
       cp $KUBE_SNAP_ROOT/kubelet/kubelet-wrapper .
       $KUBE_SNAP_ROOT/shared/generate-configure-hook kubelet
+
+      # Many of the args in kubelet became hidden with the introduction of
+      # KubeletConfiguration. We need to include them for backward
+      # compatibility.
+      ensure_arg() {
+        type="$1"
+        config="$2"
+        if ! grep "^config-arg.* $config\$" meta/hooks/configure > /dev/null; then
+          if [ "$type" = "bool" ]; then
+            echo "config-arg-bool $config" >> meta/hooks/configure
+          else
+            echo "config-arg $config" >> meta/hooks/configure
+          fi
+        fi
+      }
+
+      # Hard-coded args generated from a diff of v1.9.6 -> v1.10.0
+      ensure_arg string address
+      ensure_arg bool allow-privileged
+      ensure_arg bool anonymous-auth
+      ensure_arg string application-metrics-count-limit
+      ensure_arg bool authentication-token-webhook
+      ensure_arg string authentication-token-webhook-cache-ttl
+      ensure_arg string authorization-mode
+      ensure_arg string authorization-webhook-cache-authorized-ttl
+      ensure_arg string authorization-webhook-cache-unauthorized-ttl
+      ensure_arg string boot-id-file
+      ensure_arg string cadvisor-port
+      ensure_arg string cgroup-driver
+      ensure_arg string cgroup-root
+      ensure_arg bool cgroups-per-qos
+      ensure_arg string client-ca-file
+      ensure_arg string cloud-provider-gce-lb-src-cidrs
+      ensure_arg string cluster-dns
+      ensure_arg string cluster-domain
+      ensure_arg string container-hints
+      ensure_arg string containerd
+      ensure_arg bool contention-profiling
+      ensure_arg bool cpu-cfs-quota
+      ensure_arg string cpu-manager-policy
+      ensure_arg string cpu-manager-reconcile-period
+      ensure_arg string docker
+      ensure_arg bool docker-disable-shared-pid
+      ensure_arg string docker-env-metadata-whitelist
+      ensure_arg bool docker-only
+      ensure_arg bool docker-tls
+      ensure_arg string docker-tls-ca
+      ensure_arg string docker-tls-cert
+      ensure_arg string docker-tls-key
+      ensure_arg bool enable-controller-attach-detach
+      ensure_arg bool enable-debugging-handlers
+      ensure_arg bool enable-load-reader
+      ensure_arg string enforce-node-allocatable
+      ensure_arg string event-burst
+      ensure_arg string event-qps
+      ensure_arg string event-storage-age-limit
+      ensure_arg string event-storage-event-limit
+      ensure_arg string eviction-hard
+      ensure_arg string eviction-max-pod-grace-period
+      ensure_arg string eviction-minimum-reclaim
+      ensure_arg string eviction-pressure-transition-period
+      ensure_arg string eviction-soft
+      ensure_arg string eviction-soft-grace-period
+      ensure_arg bool fail-swap-on
+      ensure_arg string feature-gates
+      ensure_arg string file-check-frequency
+      ensure_arg string global-housekeeping-interval
+      ensure_arg string google-json-key
+      ensure_arg string hairpin-mode
+      ensure_arg string healthz-bind-address
+      ensure_arg string healthz-port
+      ensure_arg string host-ipc-sources
+      ensure_arg string host-network-sources
+      ensure_arg string host-pid-sources
+      ensure_arg string http-check-frequency
+      ensure_arg string image-gc-high-threshold
+      ensure_arg string image-gc-low-threshold
+      ensure_arg string init-config-dir
+      ensure_arg string iptables-drop-bit
+      ensure_arg string iptables-masquerade-bit
+      ensure_arg string kube-api-burst
+      ensure_arg string kube-api-content-type
+      ensure_arg string kube-api-qps
+      ensure_arg string kube-reserved
+      ensure_arg string kube-reserved-cgroup
+      ensure_arg string kubelet-cgroups
+      ensure_arg bool log-cadvisor-usage
+      ensure_arg string machine-id-file
+      ensure_arg bool make-iptables-util-chains
+      ensure_arg string manifest-url
+      ensure_arg string manifest-url-header
+      ensure_arg string max-open-files
+      ensure_arg string max-pods
+      ensure_arg string minimum-image-ttl-duration
+      ensure_arg string node-status-update-frequency
+      ensure_arg string oom-score-adj
+      ensure_arg string pod-cidr
+      ensure_arg string pod-manifest-path
+      ensure_arg string pods-per-core
+      ensure_arg string port
+      ensure_arg bool protect-kernel-defaults
+      ensure_arg string read-only-port
+      ensure_arg string registry-burst
+      ensure_arg string registry-qps
+      ensure_arg string resolv-conf
+      ensure_arg string rkt-api-endpoint
+      ensure_arg string rkt-path
+      ensure_arg string runtime-request-timeout
+      ensure_arg bool serialize-image-pulls
+      ensure_arg string storage-driver-buffer-duration
+      ensure_arg string storage-driver-db
+      ensure_arg string storage-driver-host
+      ensure_arg string storage-driver-password
+      ensure_arg bool storage-driver-secure
+      ensure_arg string storage-driver-table
+      ensure_arg string storage-driver-user
+      ensure_arg string streaming-connection-idle-timeout
+      ensure_arg string sync-frequency
+      ensure_arg string system-cgroups
+      ensure_arg string system-reserved
+      ensure_arg string system-reserved-cgroup
+      ensure_arg string tls-cert-file
+      ensure_arg string tls-private-key-file
+      ensure_arg string volume-stats-agg-period
