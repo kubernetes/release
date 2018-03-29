@@ -11,21 +11,28 @@ set -eu
 
 rm -f $SNAP_DATA/args
 
+function option-to-key {
+  option=$1
+  echo $option | sed 's/_/-/g'
+}
+
 function config-arg {
-  key=$1
+  option=$1
+  key=$(option-to-key $option)
   value=$(snapctl get -t $key)
   if [ "$value" != 'null' ]; then
-    echo "--$key $value" >> $SNAP_DATA/args
+    echo "--$option $value" >> $SNAP_DATA/args
   fi
 }
 
 function config-arg-bool {
-  key=$1
+  option=$1
+  key=$(option-to-key $option)
   value=$(snapctl get $key)
   if [ "$value" = 'true' ]; then
-    echo "--$key" >> $SNAP_DATA/args
+    echo "--$option" >> $SNAP_DATA/args
   elif [ "$value" = 'false' ]; then
-    echo "--$key=false" >> $SNAP_DATA/args
+    echo "--$option=false" >> $SNAP_DATA/args
   elif [ -n "$value" ]; then
     >&2 echo "Invalid value for $key: $value, expected true or false"
     exit 1
@@ -36,11 +43,11 @@ EOF
 
 ./$app -h 2>&1 | grep '\-\-' | perl -pe 's/.*?--(\S+ \S*).*/\1/' | while read line; do
   if [ $(echo "$line" | wc -w) -eq 2 ]; then
-    key=$(echo "$line" | cut -d ' ' -f 1)
-    echo "config-arg $key" >> meta/hooks/configure
+    option=$(echo "$line" | cut -d ' ' -f 1)
+    echo "config-arg $option" >> meta/hooks/configure
   else
-    key=$line
-    echo "config-arg-bool $key" >> meta/hooks/configure
+    option=$line
+    echo "config-arg-bool $option" >> meta/hooks/configure
   fi
 done
 
