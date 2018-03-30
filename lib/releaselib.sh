@@ -458,29 +458,21 @@ release::set_release_version () {
 }
 
 ###############################################################################
-# Create GCS bucket for publishing. Ensure that the default
-# ACL allows public reading of artifacts.
+# Check that the GCS bucket exists and is writable.
 #
 # @param bucket - The gs release bucket name
-# @return 1 if bucket can't be made
-release::gcs::ensure_release_bucket() {
+# @return 1 if bucket does not exist or is not writable.
+release::gcs::check_release_bucket() {
   local bucket=$1
   local tempfile=$TMPDIR/$PROG-gcs-write.$$
 
   if ! $GSUTIL ls "gs://$bucket" >/dev/null 2>&1 ; then
-    logecho -n "Creating Google Cloud Storage bucket $bucket: "
-    logrun -s $GSUTIL mb -p "$GCLOUD_PROJECT" "gs://$bucket" || return 1
-  fi
-
-  # Bootstrap security release flow by making bucket visibility private
-  # in that case
-  if [[ "$PARENT_BRANCH" =~ release- ]]; then
-    logecho "[SECURITY RELEASE] Default private-read ACL on bucket $bucket"
-  elif ((FLAGS_private_bucket)); then
-    logecho "[INTERNAL RELEASE] Default private-read ACL on bucket $bucket"
-  else
-    logecho -n "Ensure public-read default ACL on bucket $bucket: "
-    logrun -s $GSUTIL defacl ch -u AllUsers:R "gs://$bucket" || return 1
+    logecho "Google Cloud Storage bucket does not exist: $bucket. Create the bucket with this command:"
+    logecho "$GSUTIL mb -p \"$GCLOUD_PROJECT\" \"gs://$bucket\""
+    logecho "If the bucket should be publicly readable, make it so with this command:"
+    logecho "$GSUTIL defacl ch -u AllUsers:R \"gs://$bucket\""
+    logecho "WARNING: This affects all objects uploaded to the bucket!"
+    return 1
   fi
 
   logecho -n "Checking write access to bucket $bucket: "

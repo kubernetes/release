@@ -178,8 +178,8 @@ GCP_USER=$($GCLOUD auth list --filter=status:ACTIVE \
                              --format="value(account)" 2>/dev/null)
 [[ -n "$GCP_USER" ]] || common::exit 1 "Unable to set a valid GCP credential!"
 
-logecho -n "Check/make release bucket $RELEASE_BUCKET: "
-logrun -s release::gcs::ensure_release_bucket $RELEASE_BUCKET || common::exit 1
+logecho -n "Check release bucket $RELEASE_BUCKET: "
+logrun -s release::gcs::check_release_bucket $RELEASE_BUCKET || common::exit 1
 
 # These operations can hit bumps and are re-entrant so retry up to 3 times
 max_attempts=3
