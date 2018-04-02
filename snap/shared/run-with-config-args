@@ -1,0 +1,8 @@
+#!/bin/bash
+set -e
+
+app=$1
+
+# This is really the only way I could find to get the args passed in correctly. WTF
+declare -a args="($(cat $SNAP_DATA/args))"
+exec "$SNAP/$app" "${args[@]}"

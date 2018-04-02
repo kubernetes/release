@@ -1,0 +1,57 @@
+#!/bin/bash
+set -eu
+
+apps="$@"
+architectures="$KUBE_ARCH"
+
+KUBE_SNAP_BINS="${KUBE_SNAP_BINS:-}"
+if [ -z "$KUBE_SNAP_BINS" ]; then
+  echo "KUBE_SNAP_BINS is not set, downloading binaries from upstream"
+  export KUBE_SNAP_BINS=build/kube_bins/$KUBE_VERSION
+  mkdir -p $KUBE_SNAP_BINS
+  (cd $KUBE_SNAP_BINS
+    for app in $apps; do
+      if [ "$app" = "kubernetes-test" ]; then
+        echo "Fetching $app $KUBE_VERSION"
+        curl -LO \
+          https://dl.k8s.io/${KUBE_VERSION}/kubernetes-test.tar.gz
+      else
+        for arch in $architectures; do
+          mkdir -p $arch
+          (cd $arch
+            echo "Fetching $app $KUBE_VERSION $arch"
+            curl -LO \
+              https://dl.k8s.io/${KUBE_VERSION}/bin/linux/$arch/$app
+            chmod +x $app
+          )
+        done
+      fi
+    done
+  )
+fi
+
+export KUBE_SNAP_ROOT="$(readlink -f .)"
+export KUBE_SNAP_BINS="$(readlink -f $KUBE_SNAP_BINS)"
+
+for app in $apps; do
+  for arch in $architectures; do
+    echo "Building $app $KUBE_VERSION for $arch from $KUBE_SNAP_BINS"
+
+    build_dir=build/$app
+    rm -rf $build_dir
+    mkdir -p $build_dir
+
+    export KUBE_ARCH="$arch"
+    declare -A kube_arch_to_snap_arch=(
+      [ppc64le]=ppc64el
+      [arm]=armhf
+    )
+    export SNAP_ARCH="${kube_arch_to_snap_arch[$arch]:-$arch}"
+
+    sed "s/\$KUBE_VERSION/${KUBE_VERSION:1}/g" $app.yaml > $build_dir/snapcraft.yaml
+    sed -i "s/\$SNAP_ARCH/$SNAP_ARCH/g" $build_dir/snapcraft.yaml
+
+    (cd $build_dir && snapcraft)
+    mv $build_dir/*.snap build
+  done
+done

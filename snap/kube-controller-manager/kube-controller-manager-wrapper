@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+
+# Set CEPH_CONF so `rbd` doesn't try to look in /etc/ceph and error out
+export CEPH_CONF="$SNAP_USER_DATA/ceph/ceph.conf"
+
+exec "$SNAP/kube-controller-manager" "$@"
