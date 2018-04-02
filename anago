@@ -361,7 +361,7 @@ check_prerequisites () {
 
   # Verify write access to $WRITE_RELEASE_BUCKETS
   for rb in ${WRITE_RELEASE_BUCKETS[*]}; do
-    release::gcs::ensure_release_bucket $rb || return 1
+    release::gcs::check_release_bucket $rb || return 1
   done
 }
 
