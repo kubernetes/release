@@ -14,7 +14,11 @@ if [ -z "$KUBE_SNAP_BINS" ]; then
       if [ "$app" = "kubernetes-test" ]; then
         echo "Fetching $app $KUBE_VERSION"
         curl -LO \
-          https://dl.k8s.io/${KUBE_VERSION}/kubernetes-test.tar.gz
+          https://dl.k8s.io/${KUBE_VERSION}/${app}.tar.gz
+        if ! file ${app}.tar.gz 2>&1 | grep -q 'gzip'; then
+          echo "${app}.tar.gz is not a gzip archive"
+          exit 1
+        fi
       else
         for arch in $architectures; do
           mkdir -p $arch
@@ -23,6 +27,10 @@ if [ -z "$KUBE_SNAP_BINS" ]; then
             curl -LO \
               https://dl.k8s.io/${KUBE_VERSION}/bin/linux/$arch/$app
             chmod +x $app
+            if ! file ${app} 2>&1 | grep -q 'executable'; then
+              echo "${app} is not an executable"
+              exit 1
+            fi
           )
         done
       fi
