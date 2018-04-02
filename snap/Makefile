@@ -5,7 +5,7 @@ ifndef VERBOSE
 	MAKEFLAGS += --no-print-directory
 endif
 
-targets = kubectl kube-apiserver kube-controller-manager kube-scheduler kubelet kube-proxy kubeadm kubefed kubernetes-test
+targets = kubectl kube-apiserver kube-controller-manager kube-scheduler kubelet kube-proxy kubeadm kubernetes-test
 
 build = ./build-scripts/build
 
@@ -22,9 +22,6 @@ kubectl:
 
 kubeadm:
 	@KUBE_VERSION=${KUBE_VERSION} KUBE_ARCH="${KUBE_ARCH}" ${build} kubeadm
-
-kubefed:
-	@KUBE_VERSION=${KUBE_VERSION} KUBE_ARCH="${KUBE_ARCH}" ${build} kubefed
 
 kube-apiserver:
 	@KUBE_VERSION=${KUBE_VERSION} KUBE_ARCH="${KUBE_ARCH}" ${build} kube-apiserver
