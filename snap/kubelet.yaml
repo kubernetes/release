@@ -23,6 +23,7 @@ parts:
   kubelet:
     plugin: dump
     source: .
+    build-attributes: [no-patchelf]
     prepare: |
       set -eu
       cp $KUBE_SNAP_BINS/$KUBE_ARCH/kubelet .

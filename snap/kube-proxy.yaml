@@ -23,6 +23,7 @@ apps:
 parts:
   kube-proxy:
     plugin: dump
+    build-attributes: [no-patchelf]
     source: .
     stage-packages:
       - conntrack:$SNAP_ARCH

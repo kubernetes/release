@@ -15,6 +15,7 @@ apps:
 parts:
   kubefed:
     plugin: dump
+    build-attributes: [no-patchelf]
     source: .
     prepare: |
       set -eu

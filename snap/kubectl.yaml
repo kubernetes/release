@@ -15,6 +15,7 @@ apps:
 parts:
   kubectl:
     plugin: dump
+    build-attributes: [no-patchelf]
     source: .
     prepare: |
       set -eu
