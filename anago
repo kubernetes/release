@@ -560,7 +560,7 @@ git_tag () {
 # Tag/Build a local kube_cross image based on the version in scope
 PROGSTEP[local_kube_cross]="TAG/BUILD LOCAL KUBE CROSS"
 local_kube_cross () {
-  local docker_image="gcr.io/google_containers/kube-cross"
+  local docker_image="k8s.gcr.io/kube-cross"
   local version="$(cat $TREE_ROOT/build/build-image/cross/VERSION)"
   local image="$docker_image:$version"
   local local_image="$docker_image:local"
