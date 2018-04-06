@@ -913,7 +913,8 @@ common::mdtoc () {
       count[$anchor]=0
     fi
     echo "${indent}- [$heading](#$anchor)"
-  done < <(egrep "^#+ " $file) > $tmpfile
+  done < <(sed -n '/^```$/,/^```$/!p' $file | egrep '^#+ ') > $tmpfile
+  # Above, sed a reasonable attempt to exclude comment lines within code blocks
 
   # Insert new TOC
   sed -ri "/^$begin_block/,/^$end_block/{
