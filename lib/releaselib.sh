@@ -903,7 +903,7 @@ release::docker::release () {
     "hyperkube"
   )
 
-  if [[ -n $G_AUTH_USER && $registry == "gcr.io/google_containers" ]];then
+  if [[ -n $G_AUTH_USER && $registry == "k8s.gcr.io" ]];then
     logrun $GCLOUD config set account $G_AUTH_USER
   fi
 
