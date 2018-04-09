@@ -119,6 +119,7 @@ kubernetes.tar.gz
 !\.drone\.sec
 
 /bazel-*
+BUILD.bazel
 
 # Golang dependencies
 /vendor/
