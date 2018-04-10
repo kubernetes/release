@@ -945,11 +945,15 @@ common::set_cloud_binaries () {
 
   if [[ -x "$GSUTIL" && -x "$GCLOUD" ]]; then
     logecho -r $OK
-    return 0
   else
     logecho -r $FAILED
     return 1
   fi
+
+  # 'gcloud docker' access is now set in .docker/config.json
+  logrun $GCLOUD --quiet auth configure-docker || return 1
+
+  return 0
 }
 
 ###############################################################################
