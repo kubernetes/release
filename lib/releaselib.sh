@@ -877,7 +877,7 @@ release::gcs::publish () {
 }
 
 ###############################################################################
-# Releases all docker images to a docker registry using the docker tarfiles.
+# Releases all docker images to a docker registry.
 #
 # @param registry - docker registry
 # @param version - version tag
@@ -885,28 +885,103 @@ release::gcs::publish () {
 # @return 1 on failure
 release::docker::release () {
   local registry=$1
-  local push_registry=$registry
   local version=$2
   local build_output=$3
   local release_images=$build_output/release-images
+  local docker_push_cmd=(docker)
   local docker_target
+  local legacy_docker_target
+  local arch
+  local ret=0
+  local binary
+  local binaries=(
+    "kube-apiserver"
+    "kube-controller-manager"
+    "cloud-controller-manager"
+    "kube-scheduler"
+    "kube-proxy"
+    "hyperkube"
+  )
+
+  if [[ -n $G_AUTH_USER && $registry == "gcr.io/google_containers" ]];then
+    logrun $GCLOUD config set account $G_AUTH_USER
+  fi
+
+  if [[ -d "$release_images" ]]; then
+    release::docker::release_from_tarfiles $* || ret=$?
+  else
+    # TODO: remove this when all kubernetes releases produce a release-images
+    # directory
+    [[ "$registry" =~ gcr.io/ ]] && docker_push_cmd=("$GCLOUD" "docker" "--")
+
+    logecho
+    logecho "Send docker containers to $registry..."
+
+    # 'gcloud docker' gives lots of internal_failure's so add retries to
+    # all of the invocations
+    for arch in "${KUBE_SERVER_PLATFORMS[@]##*/}"; do
+      for binary in "${binaries[@]}"; do
+        docker_target="$binary-$arch:$version"
+        if ! logrun -r 5 ${docker_push_cmd[@]} \
+                         history "$registry/$docker_target"; then
+          logecho "$WARNING - Skipping non-existent $docker_target..."
+          continue
+        fi
+
+        logecho "Release $docker_target:"
+        logecho -n "- Pushing: "
+        logrun -r 5 -s ${docker_push_cmd[@]} push "$registry/$docker_target"
+
+        # If we have a amd64 docker image. Tag it without -amd64 also
+        # and push it for compatibility with earlier versions
+        if [[ $arch == "amd64" ]]; then
+          legacy_docker_target="$binary:$version"
+          logecho "Release legacy $legacy_docker_target:"
+
+          logecho -n "- Tagging: "
+          logrun docker rmi "$registry/$legacy_docker_target" || true
+          logrun -r 5 -s docker tag "$registry/$docker_target" \
+                                "$registry/$legacy_docker_target" 2>/dev/null
+
+          logecho -n "- Pushing: "
+          logrun -r 5 -s ${docker_push_cmd[@]} \
+                         push "$registry/$legacy_docker_target"
+        fi
+      done
+    done
+  fi
+  
+  # Always reset back to $GCP_USER
+  # This is set in push-build.sh and anago
+  ((FLAGS_gcb)) || logrun $GCLOUD config set account $GCP_USER
+
+  return $ret
+}
+
+###############################################################################
+# Releases all docker images to a docker registry using the docker tarfiles.
+#
+# @param registry - docker registry
+# @param version - version tag
+# @param build_output - build output directory
+# @return 1 on failure
+release::docker::release_from_tarfiles () {
+  local registry=$1
+  local version=$2
+  local build_output=$3
+  local docker_push_cmd=(docker)
+  local release_images=$build_output/release-images
   local arch
   local -a arches
   local tarfile
   local orig_tag
+  local binary
   local -a new_tags
   local new_tag
-  local binary
 
-  if [[ "$registry" == "$GCRIO_PATH_PROD" ]]; then
-    # Switch to the push alias if using the $GCRIO_PATH_PROD alias
-    push_registry="$GCRIO_PATH_PROD_PUSH"
-    if [[ -n "$G_AUTH_USER" ]]; then
-      logrun $GCLOUD config set account $G_AUTH_USER
-    fi
-  fi
+  [[ "$registry" =~ gcr.io/ ]] && docker_push_cmd=("$GCLOUD" "docker" "--")
 
-  logecho "Send docker containers from release-images to $push_registry..."
+  logecho "Send docker containers from release-images to $registry..."
 
   arches=($(cd "$release_images"; echo *))
   for arch in ${arches[@]}; do
@@ -924,31 +999,25 @@ release::docker::release () {
       if [[ "$arch" == "amd64" ]]; then
         # binary may or may not already contain -amd64, so strip it first
         new_tags=(\
-          "$push_registry/${binary/-amd64/}:$version"
-          "$push_registry/${binary/-amd64/}-amd64:$version"
+          "$registry/${binary/-amd64/}:$version"
+          "$registry/${binary/-amd64/}-amd64:$version"
         )
       else
-        new_tags=("$push_registry/$binary:$version")
+        new_tags=("$registry/$binary:$version")
       fi
 
-      logrun docker load -qi $tarfile
+      docker load -qi $tarfile >/dev/null
       for new_tag in ${new_tags[@]}; do
-        logrun docker tag $orig_tag $new_tag
+        docker tag $orig_tag $new_tag
         logecho -n "Pushing $new_tag: "
-        logrun -r 5 -s docker push "$new_tag" || return 1
+        # 'gcloud docker' gives lots of internal_failure's so add retries
+        logrun -r 5 -s ${docker_push_cmd[@]} push "$new_tag" || return 1
       done
-      logrun docker rmi $orig_tag ${new_tags[@]} || true
+      docker rmi $orig_tag ${new_tags[@]} &>/dev/null || true
 
     done
   done
-
-  # Always reset back to $GCP_USER
-  # This is set in push-build.sh and anago
-  ((FLAGS_gcb)) || logrun $GCLOUD config set account $GCP_USER
-
-  return 0
 }
-
 
 ###############################################################################
 # Determine whether the release was most recently built with Bazel.
@@ -1081,9 +1150,9 @@ release::send_announcement () {
 # WRITE_RELEASE_BUCKETS - array of writable buckets
 # READ_RELEASE_BUCKETS - array of readable buckets for multiple sourcing of 
 #                        mock staged builds
-# GCRIO_PATH - GCR path based on mock or --nomock
+# GCRIO_REPO - GCR repo based on mock or --nomock
 # ALL_CONTAINER_REGISTRIES - when running mock this array also contains
-#                            k8s.gcr.io so we can check access in mock
+#                            google_containers so we can check access in mock
 #                            mode before an actual release occurs
 release::set_globals () {
   # Define the placeholder/"role" user for GCB
@@ -1121,16 +1190,9 @@ release::set_globals () {
     BUCKET_TYPE="release"
   fi
 
-  # The "production" GCR path is now multi-region alias
-  GCRIO_PATH_PROD="k8s.gcr.io"
-  # The "production" push path to that multi-region alias has a staging- prefix
-  GCRIO_PATH_PROD_PUSH="staging-$GCRIO_PATH_PROD"
-  # The "test" GCR path
-  GCRIO_PATH_TEST="gcr.io/kubernetes-release-test"
-
   if ((FLAGS_nomock)); then
-    GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_PROD}"
-    ALL_CONTAINER_REGISTRIES=("$GCRIO_PATH")
+    GCRIO_REPO="${FLAGS_gcrio_repo:-google_containers}"
+    ALL_CONTAINER_REGISTRIES=("$GCRIO_REPO")
   else
     # GCS buckets cannot contain @ or "google", so for those users, just use
     # the "$USER" portion of $GCP_USER/$gcb_user
@@ -1153,9 +1215,9 @@ release::set_globals () {
     ((FLAGS_gcb)) || READ_RELEASE_BUCKETS+=("$RELEASE_BUCKET_GCB")
 
     # Set GCR values
-    GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_TEST}"
+    GCRIO_REPO="${FLAGS_gcrio_repo:-kubernetes-release-test}"
     [[ $GCP_USER =~ "@google.com" ]] \
-      && ALL_CONTAINER_REGISTRIES=("$GCRIO_PATH" "$GCRIO_PATH_PROD")
+      && ALL_CONTAINER_REGISTRIES=("$GCRIO_REPO" "google_containers")
 
     # This is passed to logrun() where appropriate when we want to mock
     # specific activities like pushes
@@ -1166,7 +1228,7 @@ release::set_globals () {
   # These KUBE_ globals extend beyond the scope of the new release refactored
   # tooling so to pass these through as flags will require fixes across
   # kubernetes/kubernetes and kubernetes/release which we can do at a later time
-  export KUBE_DOCKER_REGISTRY="$GCRIO_PATH"
+  export KUBE_DOCKER_REGISTRY="gcr.io/$GCRIO_REPO"
   export KUBE_RELEASE_RUN_TESTS=n
   export KUBE_SKIP_CONFIRMATIONS=y
 
