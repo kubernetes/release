@@ -952,7 +952,9 @@ common::set_cloud_binaries () {
   fi
 
   # 'gcloud docker' access is now set in .docker/config.json
-  logrun $GCLOUD --quiet auth configure-docker || return 1
+  # TODO: Reactivate when the deprecated functionality's replacement is working
+  # See deprecated bit in lib/releaselib.sh (gcloud docker -- push)
+  #logrun $GCLOUD --quiet auth configure-docker || return 1
 
   return 0
 }
