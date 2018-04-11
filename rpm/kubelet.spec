@@ -5,6 +5,20 @@
 %global RPM_RELEASE 0
 %global ARCH amd64
 
+# If you want to build rpms for a prerelease version, you should set this to
+# the version suffix after MAJOR.MINOR.PATCH. For instance, if you want to
+# build 1.8.0-beta.1, set:
+#
+# %global KUBE_MAJOR 1
+# %global KUBE_MINOR 8
+# %global KUBE_PATCH 0
+# %global KUBE_VERSION_SUFFIX -beta.1
+#
+# However, the rpm version and name will still only be MAJOR.MINOR.PATCH, so
+# only use this for testing of prerelease versions. When building a normal
+# release, keep the suffix set to %{nil}.
+%global KUBE_VERSION_SUFFIX %{nil}
+
 # This expands a (major, minor, patch) tuple into a single number so that it
 # can be compared against other versions. It has the current implementation
 # assumption that none of these numbers will exceed 255.
@@ -24,10 +38,10 @@ Summary: Container cluster management
 License: ASL 2.0
 
 URL: https://kubernetes.io
-Source0: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/%{ARCH}/kubelet
+Source0: https://dl.k8s.io/v%{KUBE_VERSION}%{KUBE_VERSION_SUFFIX}/bin/linux/%{ARCH}/kubelet
 Source1: kubelet.service
-Source2: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/%{ARCH}/kubectl
-Source3: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/%{ARCH}/kubeadm
+Source2: https://dl.k8s.io/v%{KUBE_VERSION}%{KUBE_VERSION_SUFFIX}/bin/linux/%{ARCH}/kubectl
+Source3: https://dl.k8s.io/v%{KUBE_VERSION}%{KUBE_VERSION_SUFFIX}/bin/linux/%{ARCH}/kubeadm
 Source4: 10-kubeadm.conf
 %if %{KUBE_SEMVER} < %{semver 1 9 0}
 Source5: https://dl.k8s.io/network-plugins/cni-%{ARCH}-0799f5732f2a11b329d9e3d51b9c8f2e3759f2ff.tar.gz
