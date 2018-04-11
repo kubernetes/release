@@ -937,7 +937,7 @@ release::docker::release () {
         logecho -n "Pushing $new_tag: "
         # TODO: Use docker direct when fixed later
         #logrun -r 5 -s docker push "$new_tag" || return 1
-        logrun -r 5 -s gcloud docker -- push "$new_tag" || return 1
+        logrun -r 5 -s $GCLOUD docker -- push "$new_tag" || return 1
       done
       logrun docker rmi $orig_tag ${new_tags[@]} || true
 
