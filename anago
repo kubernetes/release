@@ -25,7 +25,7 @@ PROG=${0##*/}
 #+     $PROG  <branch> [--yes] [--nomock] [--rc] [--official]
 #+            [--clean] [--stage] [--github-release-draft]
 #+            [--buildversion=<jenkins build version>]
-#+            [--gcrio_repo=<repo name>]
+#+            [--gcrio_path=<full gcr.io path>]
 #+            [--basedir=<alt base work dir>]
 #+            [--security_layer=/path/to/pointer/to/script]
 #+            [--exclude-suites="<suite> ..."]
@@ -96,7 +96,12 @@ PROG=${0##*/}
 #+     * The RELEASE_VERSION dictionary is indexed by each of the types of
 #+       releases that will be processed for a session (alpha,beta,rc,official)
 #+     * RELEASE_VERSION_PRIME is the primary release version
-#+     * GCRIO_REPO and RELEASE_BUCKET are the publish locations
+#+     * GCRIO_PATH and RELEASE_BUCKET are the publish locations
+#+     * Default GCRIO_PATH for non-mock runs utilizes a multi-region alias,
+#+       k8s.gcr.io, and a single write alias, staging-k8s.gcr.io.
+#+       * Switching between k8s.gcr.io and staging-k8s.gcr.io for the purposes
+#+         of naming and pushing is handled by the tooling.  If --gcrio_path
+#+         overrides, only that name is used by the tooling in all cases.
 #+
 #+     A simple $USER check controls who can run in --nomock mode as ACLs
 #+     restrict who can actually push bits anyway.
@@ -112,9 +117,10 @@ PROG=${0##*/}
 #+     [--official]              - Official releases on release branches only
 #+     [--buildversion=ver]      - Override Jenkins check and set a specific
 #+                                 build version
-#+     [--gcrio_repo=repo]       - Specify the GCR repo to use.
-#+                                 (default: google_containers for when --nomock.
-#+                                 Otherwise kubernetes-release-test)
+#+     [--gcrio_path=]           - Specify the full GCR path to use.
+#+                                 defaults:
+#+                                 - gcr.io/kubernetes-release-test (mock)
+#+                                 - k8s.gcr.io for --nomock
 #+     [--basedir=dir]           - Specify an alternate base directory
 #+                                 (default: /usr/local/google/$USER or $HOME/anago)
 #+     [--security_layer=]       - A file containing a path to a script to
@@ -263,6 +269,7 @@ ensure_registry_acls () {
   local gs_path
   local r
   local retcode=0
+  local artifact_namespace
 
   # Make an empty file to test uploading
   logrun touch $emptyfile
@@ -271,12 +278,19 @@ ensure_registry_acls () {
   # _ to - seems to be a simple rule to keep this, well, simple.
   for r in ${registries[*]//_/-}; do
     # If G_AUTH_USER is set, switch to it for verifying connectivity to
-    # google-containers
-    if [[ -n $G_AUTH_USER && $r == "google-containers" ]];then
+    # k8s.gcr.io
+    if [[ -n $G_AUTH_USER && $r == "$GCRIO_PATH_PROD" ]];then
       logrun $GCLOUD config set account $G_AUTH_USER
     fi
 
-    gs_path="gs://artifacts.$r.appspot.com/containers"
+    # In this context, "google-containers" is still used
+    if [[ "$r" == "$GCRIO_PATH_PROD" ]]; then
+      artifact_namespace="google-containers"
+    else
+      artifact_namespace="${r/gcr.io\//}"
+    fi
+
+    gs_path="gs://artifacts.$artifact_namespace.appspot.com/containers"
     logecho -n "Checking write access to registry $r: "
     if logrun $GSUTIL -q cp $emptyfile $gs_path && \
        logrun $GSUTIL -q rm $gs_path/${emptyfile##*/}; then
@@ -560,7 +574,7 @@ git_tag () {
 # Tag/Build a local kube_cross image based on the version in scope
 PROGSTEP[local_kube_cross]="TAG/BUILD LOCAL KUBE CROSS"
 local_kube_cross () {
-  local docker_image="gcr.io/google_containers/kube-cross"
+  local docker_image="$GCRIO_PATH_PROD/kube-cross"
   local version="$(cat $TREE_ROOT/build/build-image/cross/VERSION)"
   local image="$docker_image:$version"
   local local_image="$docker_image:local"
@@ -1565,7 +1579,7 @@ fi
 common::printvars -p WORKDIR WORKDIR TREE_ROOT $DISPLAY_PARENT_BRANCH \
                      $DISPLAY_VERSION \
                      RELEASE_VERSION_PRIME ${ALL_RELEASE_VERSIONS[@]} \
-                     RELEASE_BRANCH GCRIO_REPO RELEASE_BUCKET BUCKET_TYPE \
+                     RELEASE_BRANCH GCRIO_PATH RELEASE_BUCKET BUCKET_TYPE \
                      CHANGELOG_FILE \
                      FLAGS_nomock FLAGS_rc FLAGS_official \
                      LOGFILE
@@ -1579,7 +1593,7 @@ if ! ((FLAGS_nomock)); then
   logecho
   logecho "$ATTENTION: This is a mock (--mock) run." \
           "Publishing will be based on the above values for" \
-          "RELEASE_BUCKET, BUCKET_TYPE and GCRIO_REPO."
+          "RELEASE_BUCKET, BUCKET_TYPE and GCRIO_PATH."
 fi
 
 logecho
@@ -1678,11 +1692,6 @@ if ((FLAGS_stage)); then
 else
   common::run_stateful push_git_objects
 fi
-
-# Only necessary for <=1.7
-# Set branch-specific KUBE_SERVER_PLATFORMS from current tree
-# Used in release::docker::release()
-source $TREE_ROOT/hack/lib/golang.sh
 
 # Push for each release version of this session
 for label in ${!RELEASE_VERSION[@]}; do
