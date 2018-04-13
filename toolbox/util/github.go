@@ -357,3 +357,8 @@ func AddQuery(query []string, queryParts ...string) []string {
 func (g GithubClient) GetBranch(ctx context.Context, owner, repo, branch string) (*github.Branch, *github.Response, error) {
 	return g.client.Repositories.GetBranch(ctx, owner, repo, branch)
 }
+
+// GetIssue is a wrapper of Github issue Get function.
+func (g GithubClient) GetIssue(ctx context.Context, owner, repo string, id int) (*github.Issue, *github.Response, error) {
+	return g.client.Issues.Get(ctx, owner, repo, id)
+}

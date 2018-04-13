@@ -2,7 +2,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = ["main.go"],
+    srcs = [
+        "hierarchy.go",
+        "main.go",
+    ],
     importpath = "k8s.io/release/toolbox/relnotes",
     visibility = ["//visibility:private"],
     deps = [
