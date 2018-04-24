@@ -3,4 +3,10 @@ set -eu
 
 export HOME="/root"
 
+if [ -e /root/cdk/kube.env ]; then
+    set -a  # enable auto-export
+    . /root/cdk/kube.env
+    set +a  # disable auto-export
+fi
+
 exec "$SNAP/kubelet" "$@"

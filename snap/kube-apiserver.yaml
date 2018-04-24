@@ -8,7 +8,7 @@ confinement: strict
 
 apps:
   daemon:
-    command: run-with-config-args kube-apiserver
+    command: run-with-config-args kube-apiserver-wrapper
     daemon: simple
     plugs:
         - home
@@ -28,4 +28,5 @@ parts:
       set -eu
       cp $KUBE_SNAP_BINS/$KUBE_ARCH/kube-apiserver .
       cp $KUBE_SNAP_ROOT/shared/run-with-config-args .
+      cp $KUBE_SNAP_ROOT/kube-apiserver/kube-apiserver-wrapper .
       $KUBE_SNAP_ROOT/shared/generate-configure-hook kube-apiserver

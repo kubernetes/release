@@ -10,7 +10,7 @@ confinement: strict
 
 apps:
   daemon:
-    command: run-with-config-args kube-scheduler
+    command: run-with-config-args kube-scheduler-wrapper
     daemon: simple
     plugs:
         - network
@@ -30,4 +30,5 @@ parts:
       set -eu
       cp $KUBE_SNAP_BINS/$KUBE_ARCH/kube-scheduler .
       cp $KUBE_SNAP_ROOT/shared/run-with-config-args .
+      cp $KUBE_SNAP_ROOT/kube-scheduler/kube-scheduler-wrapper .
       $KUBE_SNAP_ROOT/shared/generate-configure-hook kube-scheduler
