@@ -3,9 +3,9 @@ set -eu
 
 export PATH=$PATH:$SNAP/usr/sbin
 
-if [ -e /root/cdk/kube.env ]; then
+if [ -e "$SNAP_COMMON/environment" ]; then
     set -a  # enable auto-export
-    . /root/cdk/kube.env
+    . "$SNAP_COMMON/environment"
     set +a  # disable auto-export
 fi
 
