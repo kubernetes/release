@@ -277,12 +277,6 @@ ensure_registry_acls () {
   # Short of creating a hardcoded map of project-id to registry, translating
   # _ to - seems to be a simple rule to keep this, well, simple.
   for r in ${registries[*]//_/-}; do
-    # If G_AUTH_USER is set, switch to it for verifying connectivity to
-    # k8s.gcr.io
-    if [[ -n $G_AUTH_USER && $r == "$GCRIO_PATH_PROD" ]];then
-      logrun $GCLOUD config set account $G_AUTH_USER
-    fi
-
     # In this context, "google-containers" is still used
     if [[ "$r" == "$GCRIO_PATH_PROD" ]]; then
       artifact_namespace="google-containers"
@@ -316,7 +310,7 @@ ensure_gcp_users () {
   local user
   local -a users_to_check
 
-  users_to_check+=($G_AUTH_USER $GCP_USER)
+  users_to_check+=($GCP_USER)
 
   for user in ${users_to_check[*]}; do
     logecho -n "Checking cloud account/auth $user: "
@@ -1426,6 +1420,11 @@ common::timestamp begin
 
 # Point release managers to GCB as the preferred method
 if ! ((FLAGS_gcb)); then
+  if ((FLAGS_nomock)); then
+    common::exit 1 "$FATAL: --nomock is no longer available on the" \
+                   "command-line/desktop.  Use 'gcbmgr'."
+  fi
+
   logecho $HR
   logecho "${TPUT[BOLD]}**** Welcome to the Kubernetes Release Tool, Release" \
           "Manager ****"
@@ -1437,7 +1436,7 @@ if ! ((FLAGS_gcb)); then
   logecho "* Desktop $PROG has not been disabled, but running via GCB is the" \
           "preferred method.  Usage is similar to $PROG."
   logecho
-  logecho "* https://github.com/kubernetes/release/blob/master/README-gcb.md" \
+  logecho "* https://github.com/kubernetes/release/blob/master/README.md" \
           "for details on how to get started."
   logecho $HR
   logecho
