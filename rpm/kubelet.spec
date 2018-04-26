@@ -1,6 +1,6 @@
 %global KUBE_MAJOR 1
 %global KUBE_MINOR 9
-%global KUBE_PATCH 0
+%global KUBE_PATCH 7
 %global KUBE_VERSION %{KUBE_MAJOR}.%{KUBE_MINOR}.%{KUBE_PATCH}
 %global RPM_RELEASE 0
 %global ARCH amd64
