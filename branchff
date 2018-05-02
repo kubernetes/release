@@ -155,7 +155,7 @@ common::stepheader "MERGE AND UPDATE"
 ##############################################################################
 logecho -n "Merging $MASTER_OBJECT into $RELEASE_BRANCH branch: "
 # If merge results in conflicts with CHANGELOG* files due to previous version
-# releases occuring between branch and branchff, resolve specifically in favor
+# releases occurring between branch and branchff, resolve specifically in favor
 # of the branched (deleted) version of those files.
 if ! logrun -s git merge -X ours $MASTER_OBJECT; then
   DELETED_FILES=($(git status -s |\
