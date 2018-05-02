@@ -901,9 +901,6 @@ release::docker::release () {
   if [[ "$registry" == "$GCRIO_PATH_PROD" ]]; then
     # Switch to the push alias if using the $GCRIO_PATH_PROD alias
     push_registry="$GCRIO_PATH_PROD_PUSH"
-    if [[ -n "$G_AUTH_USER" ]]; then
-      logrun $GCLOUD config set account $G_AUTH_USER
-    fi
   fi
 
   logecho "Send docker containers from release-images to $push_registry..."
@@ -1084,8 +1081,8 @@ release::send_announcement () {
 # READ_RELEASE_BUCKETS - array of readable buckets for multiple sourcing of 
 #                        mock staged builds
 # GCRIO_PATH - GCR path based on mock or --nomock
-# ALL_CONTAINER_REGISTRIES - when running mock this array also contains
-#                            k8s.gcr.io so we can check access in mock
+# ALL_CONTAINER_REGISTRIES - when running mock (via GCB) this array also
+#                            contains k8s.gcr.io so we can check access in mock
 #                            mode before an actual release occurs
 release::set_globals () {
   # Define the placeholder/"role" user for GCB
@@ -1147,7 +1144,7 @@ release::set_globals () {
     RELEASE_BUCKET="$RELEASE_BUCKET_USER"
 
     # All the RELEASE_BUCKETS we could possibly write to
-    WRITE_RELEASE_BUCKETS+=("$RELEASE_BUCKET_USER")
+    WRITE_RELEASE_BUCKETS=("$RELEASE_BUCKET_USER")
     # All the RELEASE_BUCKETS we could possibly read from (for staging)
     READ_RELEASE_BUCKETS+=("$RELEASE_BUCKET_USER")
     # If a regular user is running mocks, also look in the GCB mock bucket for
@@ -1156,8 +1153,13 @@ release::set_globals () {
 
     # Set GCR values
     GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_TEST}"
-    [[ $GCP_USER =~ "@google.com" ]] \
-      && ALL_CONTAINER_REGISTRIES=("$GCRIO_PATH" "$GCRIO_PATH_PROD")
+    ALL_CONTAINER_REGISTRIES=("$GCRIO_PATH")
+    # During GCB runs also check access to $GCRIO_PATH_PROD
+    # This is not needed for command-line/desktop as --nomock is no
+    # longer valid
+    if ((FLAGS_gcb)) && [[ $GCP_USER =~ "@google.com" ]]; then
+      ALL_CONTAINER_REGISTRIES+=("$GCRIO_PATH_PROD")
+    fi
 
     # This is passed to logrun() where appropriate when we want to mock
     # specific activities like pushes
