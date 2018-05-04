@@ -593,7 +593,7 @@ func minorRelease(f *os.File, release, draftURL, changelogURL string) {
 	//     "- [v1.7.0-rc.1](#v170-rc1)"
 	//     "- [v1.7.0-beta.2](#v170-beta2)"
 	//     "- [v1.7.0-alpha.3](#v170-alpha3)"
-	reAnchor, _ := regexp.Compile(fmt.Sprintf("- \\[%s-", release))
+	reAnchor := regexp.MustCompile(fmt.Sprintf("- \\[%s-", release))
 
 	resp, err = http.Get(changelogURL)
 	if err == nil {
@@ -627,7 +627,7 @@ func patchRelease(f *os.File, info *ReleaseInfo) {
 	if len(info.releaseActionRequiredPRs) > 0 {
 		f.WriteString("### Action Required\n\n")
 		for _, pr := range info.releaseActionRequiredPRs {
-			f.WriteString(fmt.Sprintf("* %s (#%d, @%s)\n", extractReleaseNoteFromPR(info.prMap[pr]), pr, *info.prMap[pr].User.Login))
+			f.WriteString(fmt.Sprintf("* %s (#%d, @%s)\n", extractReleaseNoteFromPR(info.prMap[pr], true), pr, *info.prMap[pr].User.Login))
 		}
 		f.WriteString("\n")
 	}
@@ -635,7 +635,7 @@ func patchRelease(f *os.File, info *ReleaseInfo) {
 	if len(info.releasePRs) > 0 {
 		f.WriteString("### Other notable changes\n\n")
 		for _, pr := range info.releasePRs {
-			f.WriteString(fmt.Sprintf("* %s (#%d, @%s)\n", extractReleaseNoteFromPR(info.prMap[pr]), pr, *info.prMap[pr].User.Login))
+			f.WriteString(fmt.Sprintf("* %s (#%d, @%s)\n", extractReleaseNoteFromPR(info.prMap[pr], false), pr, *info.prMap[pr].User.Login))
 		}
 		f.WriteString("\n")
 	} else {
@@ -644,15 +644,33 @@ func patchRelease(f *os.File, info *ReleaseInfo) {
 }
 
 // extractReleaseNoteFromPR tries to fetch release note from PR body, otherwise uses PR title.
-func extractReleaseNoteFromPR(pr *github.Issue) string {
+func extractReleaseNoteFromPR(pr *github.Issue, actionRequired bool) string {
+	var releaseNote string
 	// Regexp Example:
 	// This regexp matches the release note section in Kubernetes pull request template:
 	// https://github.com/kubernetes/kubernetes/blob/master/.github/PULL_REQUEST_TEMPLATE.md
-	re, _ := regexp.Compile("```release-note\r\n(.+)\r\n```")
+	re := regexp.MustCompile("(?s)```release-note\r\n(.+)\r\n```")
 	if note := re.FindStringSubmatch(*pr.Body); note != nil {
-		return note[1]
+		releaseNote = strings.TrimSpace(note[1])
+	} else {
+		// Use PR title if unable to find release note
+		releaseNote = strings.TrimSpace(*pr.Title)
 	}
-	return *pr.Title
+	// Current PR template requires PR author to include "action required" text for PR to be
+	// labelled as release-note-action-required. We remove the extra text from the release note as
+	// all action required PRs are grouped under a "action required" section in final CHANGELOG.
+	//
+	// If PR get manually labelled as release-note (non-action-required), but has "action required"
+	// text in its release note, we don't remove the "action required" text, to allow
+	// maintainers/users to notice the inconsistency and update the label or release note as needed.
+	if actionRequired {
+		re = regexp.MustCompile("(?is)^\\[*action required\\]*:* *(.+)$")
+		if note := re.FindStringSubmatch(releaseNote); note != nil {
+			releaseNote = strings.TrimSpace(note[1])
+		}
+	}
+
+	return releaseNote
 }
 
 // determineRange examines a Git branch range in the format of [[startTag..]endTag], and
@@ -695,7 +713,7 @@ func determineRange(g *u.GithubClient, owner, repo, branch, branchRange string) 
 	//     "v1.1.4.."
 	//     "v1.1.4..v1.1.7"
 	//     "v1.1.7"
-	re, _ := regexp.Compile("([v0-9.]*-*(alpha|beta|rc)*\\.*[0-9]*)\\.\\.([v0-9.]*-*(alpha|beta|rc)*\\.*[0-9]*)$")
+	re := regexp.MustCompile("([v0-9.]*-*(alpha|beta|rc)*\\.*[0-9]*)\\.\\.([v0-9.]*-*(alpha|beta|rc)*\\.*[0-9]*)$")
 	tags := re.FindStringSubmatch(branchRange)
 	if tags != nil {
 		startTag = tags[1]
@@ -759,9 +777,9 @@ func parsePRFromCommit(commits []*github.RepositoryCommit) ([]int, error) {
 	//
 	// "automated-cherry-pick-of-#12345-#23412-"
 	// "automated-cherry-pick-of-#23791-"
-	reCherry, _ := regexp.Compile("automated-cherry-pick-of-(#[0-9]+-){1,}")
-	reCherryID, _ := regexp.Compile("#([0-9]+)-")
-	reMerge, _ := regexp.Compile("^Merge pull request #([0-9]+) from")
+	reCherry := regexp.MustCompile("automated-cherry-pick-of-(#[0-9]+-){1,}")
+	reCherryID := regexp.MustCompile("#([0-9]+)-")
+	reMerge := regexp.MustCompile("^Merge pull request #([0-9]+) from")
 
 	for _, c := range commits {
 		// Deref all PRs back to master
