@@ -38,7 +38,7 @@ Source5: https://dl.k8s.io/network-plugins/cni-plugins-%{ARCH}-v%{CNI_VERSION}.t
 
 BuildRequires: curl
 Requires: iptables >= 1.4.21
-Requires: kubernetes-cni = %{CNI_VERSION}
+Requires: kubernetes-cni = %{CNI_VERSION}-0
 Requires: socat
 Requires: util-linux
 Requires: ethtool
