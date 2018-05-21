@@ -954,6 +954,7 @@ announce () {
   local arg="$1"
   local announcement_file="$WORKDIR/announcement.html"
   local subject_file="$WORKDIR/announcement-subject.txt"
+  local nomock_flag
 
   logecho "Creating k8s $RELEASE_VERSION_PRIME announcement in $WORKDIR..."
 
@@ -970,7 +971,9 @@ announce () {
     logecho "$WARNING: Email cannot be sent from GCB.  Execute the following" \
             "after a completed release to send email notification:"
     logecho
-    logecho "$ release-notify $RELEASE_VERSION_PRIME"
+    ((FLAGS_nomock)) && nomock_flag="--nomock"
+    logecho "$ release-notify $nomock_flag $RELEASE_VERSION_PRIME"
+    fi
     logecho
   else
     release::send_announcement || return 1
