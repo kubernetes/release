@@ -631,6 +631,13 @@ release::gcs::locally_stage_release_artifacts() {
       || return 1
     release::gcs::stage_and_hash $gcs_stage $gci_path/configure.sh extra/gce \
       || return 1
+    # shutdown.sh was introduced starting from v1.11 to make Preemptible COS nodes
+    # on GCP not reboot immediately when terminated. Avoid including it in the release
+    # bundle if it is not found (for backwards compatibility).
+    if [[ -f $gci_path/shutdown.sh ]]; then
+      release::gcs::stage_and_hash $gcs_stage $gci_path/shutdown.sh extra/gce \
+       || return 1
+    fi
   fi
 
   # Upload the "naked" binaries to GCS.  This is useful for install scripts that
