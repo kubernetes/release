@@ -197,7 +197,7 @@ else
   logecho
   logecho "Nothing pushed.  Have a look around and push yourself if you like"
   logecho
-  logecho "$ git push origin udpate-$TAG"
+  logecho "$ git push origin update-$TAG"
   logecho
 fi
 
