@@ -43,8 +43,10 @@ export KUBE_SNAP_BINS="$(readlink -f $KUBE_SNAP_BINS)"
 
 for app in $apps; do
   for arch in $architectures; do
-    echo "Building $app $KUBE_VERSION for $arch from $KUBE_SNAP_BINS"
+    # Add -suffix if it's set
+    snap_name="${app}${SNAP_SUFFIX:+-${SNAP_SUFFIX}}"
 
+    echo "Building $snap_name $KUBE_VERSION for $arch from $KUBE_SNAP_BINS"
     build_dir=build/$app
     rm -rf $build_dir
     mkdir -p $build_dir
@@ -56,8 +58,11 @@ for app in $apps; do
     )
     export SNAP_ARCH="${kube_arch_to_snap_arch[$arch]:-$arch}"
 
-    sed "s/\$KUBE_VERSION/${KUBE_VERSION:1}/g" $app.yaml > $build_dir/snapcraft.yaml
-    sed -i "s/\$SNAP_ARCH/$SNAP_ARCH/g" $build_dir/snapcraft.yaml
+    # replace the name (in case we have a suffix), version (stripping the 'v'),
+    # and arch in our $app.yaml.
+    sed -e "s/name: $app/name: $snap_name/g" \
+        -e "s/\$KUBE_VERSION/${KUBE_VERSION:1}/g" \
+        -e "s/\$SNAP_ARCH/$SNAP_ARCH/g" $app.yaml > $build_dir/snapcraft.yaml
 
     (cd $build_dir && snapcraft)
     mv $build_dir/*.snap build
