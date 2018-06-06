@@ -308,7 +308,7 @@ submit_it () {
   [[ "$JOB_DATA" =~ Logs\ are\ available\ at\ \[(https.*)\]\. ]] \
    && BUILD_URL=${BASH_REMATCH[1]}
   logecho $HR
-  logecho "${COMMAND^^} $BUILD_ID submitted sucessfully."
+  logecho "${COMMAND^^} $BUILD_ID submitted successfully."
   logecho $HR
 
   logecho
