@@ -149,7 +149,7 @@ logecho () {
 # As this is widely used and to reduce clutter, we forgo the common:: prefix
 #
 # The calling function is added to the line prefix.
-# NOTE: All optparam's for logrun() (obviously) must preceed the command string
+# NOTE: All optparam's for logrun() (obviously) must precede the command string
 # @optparam -v Run verbosely
 # @optparam -s Provide a $OK or $FAILED status from running command
 # @optparam -m MOCK command by printing out command line rather than running it.
@@ -251,7 +251,7 @@ logrun () {
 ###############################################################################
 # common::timestamp() Capture block timings and display them
 # The calling function is added to the line prefix.
-# NOTE: All optparam's for logrun() (obviously) must preceed the command string
+# NOTE: All optparam's for logrun() (obviously) must precede the command string
 # @param begin|end|done
 # @optparam section defaults to main, but can be specified to time sub sections
 common::timestamp () {
