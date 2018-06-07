@@ -26,7 +26,7 @@ parts:
   kube-scheduler:
     plugin: dump
     source: .
-    prepare: |
+    override-build: |
       set -eu
       cp $KUBE_SNAP_BINS/$KUBE_ARCH/kube-scheduler .
       cp $KUBE_SNAP_ROOT/shared/run-with-config-args .

@@ -21,7 +21,7 @@ parts:
     plugin: dump
     source: .
     build-attributes: [no-patchelf]
-    prepare: |
+    override-build: |
       set -eu
 
       mkdir build-temp

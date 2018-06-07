@@ -17,6 +17,6 @@ parts:
     plugin: dump
     build-attributes: [no-patchelf]
     source: .
-    prepare: |
+    override-build: |
       set -eu
       cp $KUBE_SNAP_BINS/$KUBE_ARCH/kubefed .

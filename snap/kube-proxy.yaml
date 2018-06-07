@@ -27,7 +27,7 @@ parts:
     source: .
     stage-packages:
       - conntrack:$SNAP_ARCH
-    prepare: |
+    override-build: |
       set -eu
       cp $KUBE_SNAP_BINS/$KUBE_ARCH/kube-proxy .
       cp $KUBE_SNAP_ROOT/shared/run-with-config-args .

@@ -26,7 +26,7 @@ parts:
     source: .
     stage-packages:
       - ceph-common:$SNAP_ARCH
-    prepare: |
+    override-build: |
       set -eu
       cp $KUBE_SNAP_BINS/$KUBE_ARCH/kube-controller-manager .
       cp $KUBE_SNAP_ROOT/shared/run-with-config-args .

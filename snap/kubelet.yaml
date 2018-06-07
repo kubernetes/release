@@ -24,7 +24,7 @@ parts:
     plugin: dump
     source: .
     build-attributes: [no-patchelf]
-    prepare: |
+    override-build: |
       set -eu
       cp $KUBE_SNAP_BINS/$KUBE_ARCH/kubelet .
       cp $KUBE_SNAP_ROOT/shared/run-with-config-args .
