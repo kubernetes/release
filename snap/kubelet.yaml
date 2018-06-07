@@ -154,3 +154,5 @@ parts:
       ensure_arg string tls-cert-file
       ensure_arg string tls-private-key-file
       ensure_arg string volume-stats-agg-period
+
+      snapcraftctl build

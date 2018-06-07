@@ -30,3 +30,5 @@ parts:
       cp $KUBE_SNAP_ROOT/shared/run-with-config-args .
       cp $KUBE_SNAP_ROOT/kube-apiserver/kube-apiserver-wrapper .
       $KUBE_SNAP_ROOT/shared/generate-configure-hook kube-apiserver
+
+      snapcraftctl build

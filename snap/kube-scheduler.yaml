@@ -32,3 +32,5 @@ parts:
       cp $KUBE_SNAP_ROOT/shared/run-with-config-args .
       cp $KUBE_SNAP_ROOT/kube-scheduler/kube-scheduler-wrapper .
       $KUBE_SNAP_ROOT/shared/generate-configure-hook kube-scheduler
+
+      snapcraftctl build

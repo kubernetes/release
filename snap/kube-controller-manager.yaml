@@ -32,3 +32,5 @@ parts:
       cp $KUBE_SNAP_ROOT/shared/run-with-config-args .
       cp $KUBE_SNAP_ROOT/kube-controller-manager/kube-controller-manager-wrapper .
       $KUBE_SNAP_ROOT/shared/generate-configure-hook kube-controller-manager
+
+      snapcraftctl build

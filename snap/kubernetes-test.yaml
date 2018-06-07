@@ -35,3 +35,5 @@ parts:
       chmod +rx ginkgo
 
       cp "$KUBE_SNAP_ROOT/kubernetes-test/ginkgo-e2e" .
+
+      snapcraftctl build
