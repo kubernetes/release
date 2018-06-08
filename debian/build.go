@@ -23,7 +23,10 @@ const (
 	ChannelUnstable ChannelType = "unstable"
 	ChannelNightly  ChannelType = "nightly"
 
-	cniVersion = "0.6.0"
+	cniVersion         = "0.6.0"
+	pre180kubeadmconf  = "pre-1.8/10-kubeadm.conf"
+	pre1110kubeadmconf = "post-1.8/10-kubeadm.conf"
+	latestkubeadmconf  = "post-1.10/10-kubeadm.conf"
 )
 
 type work struct {
@@ -272,7 +275,7 @@ func getReleaseDownloadLinkBase(v version) (string, error) {
 	return fmt.Sprintf("https://dl.k8s.io/v%s", v.Version), nil
 }
 
-// The version of this file to use changed in 1.8, so use the target build
+// The version of this file to use changed in 1.8 and 1.11 so use the target build
 // version to figure out which copy of it to include in the deb.
 func getKubeadmKubeletConfigFile(v version) (string, error) {
 	sv, err := semver.Make(v.Version)
@@ -284,12 +287,18 @@ func getKubeadmKubeletConfigFile(v version) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	if sv.GTE(v180) {
-		return "post-1.8/10-kubeadm.conf", nil
-	} else {
-		return "pre-1.8/10-kubeadm.conf", nil
+	v1110, err := semver.Make("1.11.0-alpha.0")
+	if err != nil {
+		return "", err
 	}
+
+	if sv.LT(v1110) {
+		if sv.LT(v180) {
+			return pre180kubeadmconf, nil
+		}
+		return pre1110kubeadmconf, nil
+	}
+	return latestkubeadmconf, nil
 }
 
 // CNI get bumped in 1.9, which is incompatible for kubelet<1.9.
