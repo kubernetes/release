@@ -972,7 +972,7 @@ announce () {
             "after a completed release to send email notification:"
     logecho
 
-    # for an explaination of this construct look at
+    # for an explanation of this construct look at
     #
     # http://tldp.org/LDP/abs/html/testconstructs.html
     #
