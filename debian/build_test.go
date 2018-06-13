@@ -50,6 +50,21 @@ func TestGetKubeadmConfig(t *testing.T) {
 			"",
 			true,
 		},
+		{
+			"1.10.4",
+			"post-1.8/10-kubeadm.conf",
+			false,
+		},
+		{
+			"1.11.0",
+			"post-1.10/10-kubeadm.conf",
+			false,
+		},
+		{
+			"1.12.0",
+			"post-1.10/10-kubeadm.conf",
+			false,
+		},
 	}
 
 	for _, tc := range testcases {
