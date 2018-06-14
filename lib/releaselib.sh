@@ -1016,8 +1016,7 @@ release::send_announcement () {
   local subject_file="$WORKDIR/announcement-subject.txt"
   local announcement_text="/tmp/$PROG-rsa.$$"
   local subject
-  local mailto="gke-kubernetes-org@google.com"
-        mailto+=",kubernetes-dev@googlegroups.com"
+  local mailto="kubernetes-dev@googlegroups.com"
         mailto+=",kubernetes-announce@googlegroups.com"
   # Bucket for the purposes of announcement meta is either in the "GCB" for
   # mock runs or in the standard location defined in set_globals().
