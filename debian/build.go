@@ -24,6 +24,7 @@ const (
 	ChannelNightly  ChannelType = "nightly"
 
 	cniVersion         = "0.6.0"
+	criToolsVersion    = "1.0.0-beta.1"
 	pre180kubeadmconf  = "pre-1.8/10-kubeadm.conf"
 	pre1110kubeadmconf = "post-1.8/10-kubeadm.conf"
 	latestkubeadmconf  = "post-1.10/10-kubeadm.conf"
@@ -258,6 +259,10 @@ func getLatestCIVersion() (string, error) {
 	return strings.Replace(latestVersion, "+", "-", 1), nil
 }
 
+func getCRIToolsLatestVersion() (string, error) {
+	return criToolsVersion, nil
+}
+
 func getLatestKubeCIBuild() (string, error) {
 	return fetchVersion("https://dl.k8s.io/ci-cross/latest.txt")
 }
@@ -417,6 +422,27 @@ func main() {
 				},
 			},
 		},
+		{
+			Package: "cri-tools",
+			Distros: serverDistros,
+			Versions: []version{
+				{
+					GetVersion: getCRIToolsLatestVersion,
+					Revision:   "00",
+					Channel:    ChannelStable,
+				},
+				{
+					GetVersion: getCRIToolsLatestVersion,
+					Revision:   "00",
+					Channel:    ChannelUnstable,
+				},
+				{
+					GetVersion: getCRIToolsLatestVersion,
+					Revision:   "00",
+					Channel:    ChannelNightly,
+				},
+			},
+		},
 	}
 
 	if kubeVersion != "" {
@@ -468,6 +494,17 @@ func main() {
 						Revision:            "00",
 						Channel:             ChannelStable,
 						GetDownloadLinkBase: getReleaseDownloadLinkBase,
+					},
+				},
+			},
+			{
+				Package: "cri-tools",
+				Distros: serverDistros,
+				Versions: []version{
+					{
+						GetVersion: getCRIToolsLatestVersion,
+						Revision:   "00",
+						Channel:    ChannelStable,
 					},
 				},
 			},
