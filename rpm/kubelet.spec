@@ -17,6 +17,8 @@
 %global CNI_VERSION 0.5.1
 %endif
 
+%global CRI_TOOLS_VERSION 1.0.0-beta.1
+
 Name: kubelet
 Version: %{KUBE_VERSION}
 Release: %{RPM_RELEASE}
@@ -37,7 +39,7 @@ Source5: https://dl.k8s.io/network-plugins/cni-plugins-%{ARCH}-v%{CNI_VERSION}.t
 %if %{KUBE_SEMVER} >= %{semver 1 11 0}
 Source6: kubelet.env
 %endif
-
+Source7: https://github.com/kubernetes-incubator/cri-tools/releases/download/v%{CRI_TOOLS_VERSION}/crictl-v%{CRI_TOOLS_VERSION}-linux-amd64.tar.gz
 
 BuildRequires: curl
 Requires: iptables >= 1.4.21
@@ -83,6 +85,16 @@ Requires: kubernetes-cni
 %description -n kubeadm
 Command-line utility for administering a Kubernetes cluster.
 
+%package -n cri-tools
+
+%define cri_tools_clean_version %(echo -n '%{CRI_TOOLS_VERSION}' | tr '-' '_')
+Version: %{cri_tools_clean_version}
+Release: %{RPM_RELEASE}
+Summary: Command-line utility for interacting with a container runtime.
+
+%description -n cri-tools
+Command-line utility for interacting with a container runtime.
+
 %prep
 # Assumes the builder has overridden sourcedir to point to directory
 # with this spec file. (where these files are stored) Copy them into
@@ -114,7 +126,7 @@ cp -p %SOURCE4 %{_builddir}/
 cp -p %SOURCE6 %{_builddir}/
 %endif
 %setup -c -D -T -a 5 -n cni-plugins
-
+%setup -c -a 7 -T -n cri-tools
 
 %install
 
@@ -131,6 +143,7 @@ install -p -m 755 -t %{buildroot}%{_bindir}/ kubectl
 install -p -m 755 -t %{buildroot}%{_bindir}/ kubeadm
 install -p -m 755 -t %{buildroot}%{_sysconfdir}/systemd/system/ kubelet.service
 install -p -m 755 -t %{buildroot}%{_sysconfdir}/systemd/system/kubelet.service.d/ 10-kubeadm.conf
+install -p -m 755 -t %{buildroot}%{_bindir}/ cri-tools/crictl
 
 %if %{KUBE_SEMVER} >= %{semver 1 11 0}
 install -m 755 -d %{buildroot}%{_sysconfdir}/sysconfig/
@@ -165,12 +178,18 @@ mv cni-plugins/bin/ %{buildroot}/opt/cni/
 %{_bindir}/kubeadm
 %{_sysconfdir}/systemd/system/kubelet.service.d/10-kubeadm.conf
 
+%files -n cri-tools
+%{_bindir}/crictl
+
 %doc
 
 
 %changelog
+* Thu Jun 14 2018 Chuck Ha <chuck@heptio.com> - 1.11.0
+- Add a crictl sub-package.
+
 * Fri Jun 8 2018 Chuck Ha <chuck@heptio.com> - 1.11.0
-- Bump version and update rpm manifest for kubeadm
+- Bump version and update rpm manifest for kubeadm.
 
 * Fri Dec 15 2017 Anthony Yeh <enisoc@google.com> - 1.9.0
 - Release of Kubernetes 1.9.0.
