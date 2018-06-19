@@ -17,7 +17,7 @@
 %global CNI_VERSION 0.5.1
 %endif
 
-%global CRI_TOOLS_VERSION 1.0.0-beta.1
+%global CRI_TOOLS_VERSION 1.11.0
 
 Name: kubelet
 Version: %{KUBE_VERSION}
@@ -87,8 +87,7 @@ Command-line utility for administering a Kubernetes cluster.
 
 %package -n cri-tools
 
-%define cri_tools_clean_version %(echo -n '%{CRI_TOOLS_VERSION}' | tr '-' '_')
-Version: %{cri_tools_clean_version}
+Version: %{CRI_TOOLS_VERSION}
 Release: %{RPM_RELEASE}
 Summary: Command-line utility for interacting with a container runtime.
 
@@ -185,6 +184,9 @@ mv cni-plugins/bin/ %{buildroot}/opt/cni/
 
 
 %changelog
+* Tue Jun 19 2018 Chuck Ha <chuck@heptio.com> - 1.11.0
+- Bump cri-tools to GA version.
+
 * Thu Jun 14 2018 Chuck Ha <chuck@heptio.com> - 1.11.0
 - Add a crictl sub-package.
 
