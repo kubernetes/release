@@ -413,7 +413,7 @@ if ((FLAGS_official)); then
   OFFICIAL="--$OFFICIAL_TAG"
 elif ((FLAGS_rc)); then
   RC_TAG="rc"
-  RC="--$RC"
+  RC="--$RC_TAG"
 fi
 
 if ((FLAGS_build_at_head)); then
