@@ -80,7 +80,8 @@ Release: %{RPM_RELEASE}
 Summary: Command-line utility for administering a Kubernetes cluster.
 Requires: kubelet >= 1.6.0
 Requires: kubectl >= 1.6.0
-Requires: kubernetes-cni
+Requires: kubernetes-cni >= 0.6.0
+Requires: cri-tools >= 1.11.0
 
 %description -n kubeadm
 Command-line utility for administering a Kubernetes cluster.
