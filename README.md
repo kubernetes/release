@@ -47,7 +47,7 @@ can be staged and later released using this method.
 
 ### anago
 
-The main driver for created staged builds and releases.  This is what runs 
+The main driver for created staged builds and releases.  This is what runs
 inside GCB after a job is submitted using `gcbmgr`.
 
 ### branchff
@@ -116,7 +116,7 @@ a fully deployed and announced release, add `--nomock` to the command line.
 
 ```
 # get details on how to use the tool
-$ relnotes -man
+$ relnotes -h
 $ cd /kubernetes
 
 # Show release notes from the last release on a branch to HEAD
