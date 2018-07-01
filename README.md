@@ -114,19 +114,65 @@ a fully deployed and announced release, add `--nomock` to the command line.
 
 ## Release Notes Gathering
 
+To build the `release-notes` tool, check out this repo to your `$GOOPATH`:
+
 ```
-# get details on how to use the tool
-$ relnotes -h
-$ cd /kubernetes
+git clone git@github.com:kubernetes/release.git $GOPATH/src/k8s.io/release
+```
 
-# Show release notes from the last release on a branch to HEAD
-$ relnotes
+Run the following from the root of the repository to install dependencies:
 
-# Show release notes from the last release on a specific branch to branch HEAD
-$ relnotes --branch=release-1.10
+```
+go get -u github.com/golang/dep/cmd/dep
+dep ensure -vendor-only
+```
 
-# Show release notes between two specific releases
-$ relnotes v1.10.0..v1.10.1 --branch=release-1.10
+Run the following from the root of the repository to build the `release-notes` binary:
+
+```
+go build ./cmd/release-notes
+```
+
+Use the `-h` flag for help:
+
+```
+./release-notes -h
+```
+
+To generate contextualized for a commit range, run:
+
+```
+$ export GITHUB_TOKEN=a_github_api_token
+$ ./release-notes \
+  -start-sha d0a17cb4bbdf608559f257a76acfaa9acb054903 \
+	-end-sha 91e7b4fd31fcd3d5f436da26c980becec37ceefe
+level=info msg="fetching all commits. this might take a while..."
+level=info msg="got the commits, performing rendering"
+level=info msg="release notes JSON written to file" path=/var/folders/wp/6fkmvjf11gv18tdprv4g2mk40000gn/T/release-notes-048706664
+```
+
+You can then use a variet of tools (such as `jq`) to slice and dice the output:
+
+```
+$ cat /var/folders/wp/6fkmvjf11gv18tdprv4g2mk40000gn/T/release-notes-048706664 | jq ".[:3]"
+[
+  {
+    "text": "kubectl convert previous created a list inside of a list.  Now it is only wrapped once."
+  },
+  {
+    "text": "fixes a regression in kube-scheduler to properly load client connection information from a `--config` file that references a kubeconfig file",
+    "kinds": [
+      "bug"
+    ],
+    "sigs": [
+      "scheduling"
+    ]
+  },
+  {
+    "text": "Fixed cleanup of CSI metadata files."
+  }
+]
+$
 ```
 
 ## Building Linux Packages

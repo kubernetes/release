@@ -269,7 +269,7 @@ func NoteFromCommit(commit *github.RepositoryCommit) (string, error) {
 			result[name] = match[i]
 		}
 	}
-	return result["note"], nil
+	return strings.TrimRight(result["note"], "\r"), nil
 }
 
 // LabelsWithPrefix is a helper for fetching all labels on a PR that start with
