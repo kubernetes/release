@@ -31,7 +31,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/github"
-	"k8s.io/release/toolbox/util"
+	u "k8s.io/release/toolbox/util"
 )
 
 const (
@@ -64,8 +64,7 @@ var (
 )
 
 // ReleaseInfo contains release related information to generate a release note.
-// NOTE: the prMap only includes PRs with "release-note" or
-// "release-note-action-required" label.
+// NOTE: the prMap only includes PRs with "release-note" label.
 type ReleaseInfo struct {
 	startTag, releaseTag     string
 	prMap                    map[int]*github.Issue
@@ -85,7 +84,7 @@ func main() {
 	if *branch == "" {
 		// If branch isn't specified in flag, use current branch
 		var err error
-		*branch, err = util.GetCurrentBranch()
+		*branch, err = u.GetCurrentBranch()
 		if err != nil {
 			log.Printf("failed to get current branch: %v", err)
 			os.Exit(1)
@@ -107,7 +106,7 @@ func main() {
 		// If githubToken isn't specified in flag, use the GITHUB_TOKEN environment variable
 		*githubToken = os.Getenv("GITHUB_TOKEN")
 	} else {
-		token, err := util.ReadToken(*githubToken)
+		token, err := u.ReadToken(*githubToken)
 		if err != nil {
 			log.Printf("failed to read Github token: %v", err)
 			os.Exit(1)
@@ -119,7 +118,7 @@ func main() {
 		log.Print("Github token not provided. Exiting now...")
 		os.Exit(1)
 	}
-	client := util.NewClient(*githubToken)
+	client := u.NewClient(*githubToken)
 
 	// End of initialization
 
@@ -146,12 +145,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	if *htmlizeMD && !util.IsVer(releaseInfo.releaseTag, verDotzero) {
+	if *htmlizeMD && !u.IsVer(releaseInfo.releaseTag, verDotzero) {
 		// HTML-ize markdown file
 		// Make users and PRs linkable
 		// Also, expand anchors (needed for email announce())
 		projectGithubURL := fmt.Sprintf("https://github.com/%s/%s", *owner, *repo)
-		_, err = util.Shell("sed", "-i", "-e", "s,#\\([0-9]\\{5\\,\\}\\),[#\\1]("+projectGithubURL+"/pull/\\1),g",
+		_, err = u.Shell("sed", "-i", "-e", "s,#\\([0-9]\\{5\\,\\}\\),[#\\1]("+projectGithubURL+"/pull/\\1),g",
 			"-e", "s,\\(#v[0-9]\\{3\\}-\\),"+projectGithubURL+"/blob/master/CHANGELOG"+branchVerSuffix+".md\\1,g",
 			"-e", "s,@\\([a-zA-Z0-9-]*\\),[@\\1](https://github.com/\\1),g", *mdFileName)
 
@@ -201,7 +200,7 @@ func main() {
 	return
 }
 
-func gatherReleaseInfo(g *util.GithubClient, branchRange string) (*ReleaseInfo, error) {
+func gatherReleaseInfo(g *u.GithubClient, branchRange string) (*ReleaseInfo, error) {
 	var info ReleaseInfo
 	log.Print("Gathering release commits from Github...")
 	// Get release related commits on the release branch within release range
@@ -220,9 +219,9 @@ func gatherReleaseInfo(g *util.GithubClient, branchRange string) (*ReleaseInfo, 
 
 	log.Print("Gathering \"release-note\" labelled PRs using Github search API. This may take a while...")
 	var query []string
-	query = util.AddQuery(query, "repo", *owner, "/", *repo)
-	query = util.AddQuery(query, "type", "pr")
-	query = util.AddQuery(query, "label", "release-note")
+	query = u.AddQuery(query, "repo", *owner, "/", *repo)
+	query = u.AddQuery(query, "type", "pr")
+	query = u.AddQuery(query, "label", "release-note")
 	releaseNotePRs, err := g.SearchIssues(strings.Join(query, " "))
 	if err != nil {
 		return nil, fmt.Errorf("failed to search release-note labelled PRs: %v", err)
@@ -231,9 +230,9 @@ func gatherReleaseInfo(g *util.GithubClient, branchRange string) (*ReleaseInfo, 
 
 	log.Print("Gathering \"release-note-action-required\" labelled PRs using Github search API.")
 	query = nil
-	query = util.AddQuery(query, "repo", *owner, "/", *repo)
-	query = util.AddQuery(query, "type", "pr")
-	query = util.AddQuery(query, "label", "release-note-action-required")
+	query = u.AddQuery(query, "repo", *owner, "/", *repo)
+	query = u.AddQuery(query, "type", "pr")
+	query = u.AddQuery(query, "label", "release-note-action-required")
 	releaseNoteActionRequiredPRs, err := g.SearchIssues(strings.Join(query, " "))
 	if err != nil {
 		return nil, fmt.Errorf("failed to search release-note-action-required labelled PRs: %v", err)
@@ -285,9 +284,9 @@ func gatherPRNotes(prFileName string, info *ReleaseInfo) error {
 	}()
 
 	// Bootstrap notes for minor (new branch) releases
-	if *full || util.IsVer(info.releaseTag, verDotzero) {
-		draftURL := fmt.Sprintf("%s%s/sig-release/master/releases/%s/release-notes-draft.md", util.GithubRawURL, *owner, *branch)
-		changelogURL := fmt.Sprintf("%s%s/%s/master/CHANGELOG%s.md", util.GithubRawURL, *owner, *repo, branchVerSuffix)
+	if *full || u.IsVer(info.releaseTag, verDotzero) {
+		draftURL := fmt.Sprintf("%s%s/sig-release/master/releases/%s/release-notes-draft.md", u.GithubRawURL, *owner, *branch)
+		changelogURL := fmt.Sprintf("%s%s/%s/master/CHANGELOG%s.md", u.GithubRawURL, *owner, *repo, branchVerSuffix)
 		minorRelease(prFile, info.releaseTag, draftURL, changelogURL)
 	} else {
 		patchRelease(prFile, info)
@@ -295,7 +294,7 @@ func gatherPRNotes(prFileName string, info *ReleaseInfo) error {
 	return result
 }
 
-func generateMDFile(g *util.GithubClient, releaseTag, prFileName string) error {
+func generateMDFile(g *u.GithubClient, releaseTag, prFileName string) error {
 	var result error
 	mdFile, err := os.Create(*mdFileName)
 	if err != nil {
@@ -332,7 +331,7 @@ func generateMDFile(g *util.GithubClient, releaseTag, prFileName string) error {
 }
 
 // getPendingPRs gets pending PRs on given branch in the repo.
-func getPendingPRs(g *util.GithubClient, f *os.File, owner, repo, branch string) error {
+func getPendingPRs(g *u.GithubClient, f *os.File, owner, repo, branch string) error {
 	log.Print("Getting pending PR status...")
 	f.WriteString("-------\n")
 	f.WriteString(fmt.Sprintf("## PENDING PRs on the %s branch\n", branch))
@@ -343,10 +342,10 @@ func getPendingPRs(g *util.GithubClient, f *os.File, owner, repo, branch string)
 	}
 
 	var query []string
-	query = util.AddQuery(query, "repo", owner, "/", repo)
-	query = util.AddQuery(query, "is", "open")
-	query = util.AddQuery(query, "type", "pr")
-	query = util.AddQuery(query, "base", branch)
+	query = u.AddQuery(query, "repo", owner, "/", repo)
+	query = u.AddQuery(query, "is", "open")
+	query = u.AddQuery(query, "type", "pr")
+	query = u.AddQuery(query, "base", branch)
 	pendingPRs, err := g.SearchIssues(strings.Join(query, " "))
 	if err != nil {
 		return fmt.Errorf("failed to search pending PRs: %v", err)
@@ -393,7 +392,7 @@ func createHTMLNote(htmlFileName, mdFileName string) error {
 		return fmt.Errorf("failed to close file %s, %v", cssFileName, err)
 	}
 
-	htmlStr, err := util.Shell("pandoc", "-H", cssFileName, "--from", "markdown_github", "--to", "html", mdFileName)
+	htmlStr, err := u.Shell("pandoc", "-H", cssFileName, "--from", "markdown_github", "--to", "html", mdFileName)
 	if err != nil {
 		return fmt.Errorf("failed to generate html content: %v", err)
 	}
@@ -457,7 +456,7 @@ func getCIJobStatus(outputFile, branch string, htmlize bool) error {
 	f.WriteString(fmt.Sprintf("## State of %s branch\n", branch))
 
 	// Call script find_green_build to get CI job status
-	content, err := util.Shell(os.Getenv("GOPATH")+"/src/k8s.io/release/find_green_build", "-v", extraFlag, branch)
+	content, err := u.Shell(os.Getenv("GOPATH")+"/src/k8s.io/release/find_green_build", "-v", extraFlag, branch)
 	if err == nil {
 		f.WriteString(fmt.Sprintf("%sGOOD TO GO!%s\n\n", green, off))
 	} else {
@@ -548,7 +547,7 @@ func createDownloadsTable(f *os.File, releaseTag, heading string, filename ...st
 
 	for _, file := range files {
 		fn := filepath.Base(file)
-		sha, err := util.GetSha256(file)
+		sha, err := u.GetSha256(file)
 		if err != nil {
 			return fmt.Errorf("failed to calc SHA256 of file %s: %v", file, err)
 		}
@@ -668,7 +667,7 @@ func extractReleaseNoteFromPR(pr *github.Issue) string {
 //
 //     Getting "v1.1.4..v1.1.7" on branch "release-1.1" makes sense
 //     Getting "v1.1.4..v1.1.7" on branch "release-1.2" doesn't
-func determineRange(g *util.GithubClient, owner, repo, branch, branchRange string) (startTag, releaseTag string, err error) {
+func determineRange(g *u.GithubClient, owner, repo, branch, branchRange string) (startTag, releaseTag string, err error) {
 	b, _, err := g.GetBranch(context.Background(), owner, repo, branch)
 	if err != nil {
 		return "", "", err
@@ -718,7 +717,7 @@ func determineRange(g *util.GithubClient, owner, repo, branch, branchRange strin
 
 // getReleaseCommits given a Git branch range in the format of [[startTag..]endTag], determines
 // a valid range and returns all the commits on the branch in that range.
-func getReleaseCommits(g *util.GithubClient, owner, repo, branch, branchRange string) ([]*github.RepositoryCommit, string, string, error) {
+func getReleaseCommits(g *u.GithubClient, owner, repo, branch, branchRange string) ([]*github.RepositoryCommit, string, string, error) {
 	// Get start and release tag/commit based on input branch range
 	startTag, releaseTag, err := determineRange(g, owner, repo, branch, branchRange)
 	if err != nil {
