@@ -157,23 +157,16 @@ You can then use a variety of tools (such as `jq`) to slice and dice the output:
 $ cat /var/folders/wp/6fkmvjf11gv18tdprv4g2mk40000gn/T/release-notes-048706664 | jq ".[:3]"
 [
   {
-    "text": "This PR will leverage subtests on the existing table tests for the scheduler units.",
-    "author": "xchapter7x",
-    "pr_url": "https://github.com/kubernetes/kubernetes/pull/63660",
-    "pr_number": 63660,
-    "sigs": [
-      "scheduling"
-    ]
-  },
-  {
     "text": "Updated default image for nginx ingress in CDK to match current Kubernetes docs.",
     "author": "hyperbolic2346",
+    "author_url": "https://github.com/hyperbolic2346",
     "pr_url": "https://github.com/kubernetes/kubernetes/pull/64285",
     "pr_number": 64285
   },
   {
     "text": "Added block volume support to Cinder volume plugin.",
     "author": "bertinatto",
+    "author_url": "https://github.com/bertinatto",
     "pr_url": "https://github.com/kubernetes/kubernetes/pull/64879",
     "pr_number": 64879,
     "sigs": [
@@ -183,6 +176,7 @@ $ cat /var/folders/wp/6fkmvjf11gv18tdprv4g2mk40000gn/T/release-notes-048706664 |
   {
     "text": "fixed incorrect OpenAPI schema for CustomResourceDefinition objects",
     "author": "liggitt",
+    "author_url": "https://github.com/liggitt",
     "pr_url": "https://github.com/kubernetes/kubernetes/pull/65256",
     "pr_number": 65256,
     "kinds": [

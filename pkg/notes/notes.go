@@ -34,6 +34,9 @@ type ReleaseNote struct {
 	// Author is the GitHub username of the commit author
 	Author string `json:"author"`
 
+	// AuthorUrl is the GitHub URL of the commit author
+	AuthorUrl string `json:"author_url"`
+
 	// PrUrl is a URL to the PR
 	PrUrl string `json:"pr_url"`
 
@@ -153,6 +156,7 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 	return &ReleaseNote{
 		Text:           text,
 		Author:         pr.GetUser().GetLogin(),
+		AuthorUrl:      fmt.Sprintf("https://github.com/%s", pr.GetUser().GetLogin()),
 		PrUrl:          fmt.Sprintf("https://github.com/kubernetes/kubernetes/pull/%d", pr.GetNumber()),
 		PrNumber:       pr.GetNumber(),
 		SIGs:           LabelsWithPrefix(pr, "sig"),
