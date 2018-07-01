@@ -64,7 +64,8 @@ var (
 )
 
 // ReleaseInfo contains release related information to generate a release note.
-// NOTE: the prMap only includes PRs with "release-note" label.
+// NOTE: the prMap only includes PRs with "release-note" or
+// "release-note-action-required" label.
 type ReleaseInfo struct {
 	startTag, releaseTag     string
 	prMap                    map[int]*github.Issue
