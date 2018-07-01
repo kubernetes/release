@@ -24,16 +24,34 @@ import (
 	"github.com/google/go-github/github"
 )
 
+// ReleaseNote is the type that represents the total sum of all the information
+// we've gathered about a single release note.
 type ReleaseNote struct {
-	Text           string
-	Areas          []string
-	Kinds          []string
-	SIGs           []string
-	ActionRequired bool
+	// Text is the actual content of the release note
+	Text string `json:"text"`
+
+	// Areas is a list of the labels beginning with area/
+	Areas []string `json:"areas,omitempty"`
+
+	// Kinds is a list of the labels beginning with kind/
+	Kinds []string `json:"kinds,omitempty"`
+
+	// SIGs is a list of the labels beginning with sig/
+	SIGs []string `json:"sigs,omitempty"`
+
+	// ActionRequired indicates whether or not the release-note-action-required
+	// label was set on the PR
+	ActionRequired bool `json:"action_required,omitempty"`
 }
 
+// githubApiOption is a type which allows for the expression of API configuration
+// via the "functional option" pattern.
+// For more information on this pattern, see the following blog post:
+// https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
 type githubApiOption func(*githubApiConfig)
 
+// githubApiConfig is a configuration struct that is used to express optional
+// configuration for GitHub API requests
 type githubApiConfig struct {
 	ctx    context.Context
 	org    string
@@ -41,45 +59,81 @@ type githubApiConfig struct {
 	branch string
 }
 
+// WithContext allows the caller to inject a context into GitHub API requests
 func WithContext(ctx context.Context) githubApiOption {
 	return func(c *githubApiConfig) {
 		c.ctx = ctx
 	}
 }
 
+// WithOrg allows the caller to override the GitHub organization for the API
+// request. By default, it is usually "kubernetes".
 func WithOrg(org string) githubApiOption {
 	return func(c *githubApiConfig) {
 		c.org = org
 	}
 }
 
+// WithRepo allows the caller to override the GitHub repo for the API
+// request. By default, it is usually "kubernetes".
 func WithRepo(repo string) githubApiOption {
 	return func(c *githubApiConfig) {
 		c.repo = repo
 	}
 }
 
+// WithBranch allows the caller to override the repo branch for the API
+// request. By default, it is usually "master".
 func WithBranch(branch string) githubApiOption {
 	return func(c *githubApiConfig) {
 		c.branch = branch
 	}
 }
 
-func configFromOpts(opts ...githubApiOption) *githubApiConfig {
-	c := &githubApiConfig{
-		ctx:    context.Background(),
-		org:    "kubernetes",
-		repo:   "kubernetes",
-		branch: "master",
+// ListReleaseNotes produces a list of fully contextualized release notes
+// starting from a given commit SHA and ending at starting a given commit SHA.
+func ListReleaseNotes(client *github.Client, start, end string, opts ...githubApiOption) ([]*ReleaseNote, error) {
+	commits, err := ListCommitsWithNotes(client, start, end, opts...)
+	if err != nil {
+		return nil, err
 	}
 
-	for _, opt := range opts {
-		opt(c)
+	notes := []*ReleaseNote{}
+	for _, commit := range commits {
+		note, err := ReleaseNoteFromCommit(commit, client, opts...)
+		if err != nil {
+			return nil, err
+		}
+		notes = append(notes, note)
 	}
 
-	return c
+	return notes, nil
 }
 
+// ReleaseNoteFromCommit produces a full contextualized release note given a
+// GitHub commit API resource.
+func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Client, opts ...githubApiOption) (*ReleaseNote, error) {
+	pr, err := PRFromCommit(client, commit, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	text, err := NoteFromCommit(commit)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ReleaseNote{
+		Text:           text,
+		SIGs:           LabelsWithPrefix(pr, "sig"),
+		Kinds:          LabelsWithPrefix(pr, "kind"),
+		Areas:          LabelsWithPrefix(pr, "area"),
+		ActionRequired: IsActionRequired(pr),
+	}, nil
+}
+
+// ListCommits lists all commits starting from a given commit SHA and ending at
+// a given commit SHA.
 func ListCommits(client *github.Client, start, end string, opts ...githubApiOption) ([]*github.RepositoryCommit, error) {
 	c := configFromOpts(opts...)
 
@@ -123,12 +177,19 @@ func ListCommits(client *github.Client, start, end string, opts ...githubApiOpti
 	return commits, nil
 }
 
+// ListCommitsWithNotes list commits that have release notes starting from a
+// given commit SHA and ending at a given commit SHA. This function is similar
+// to ListCommits except that only commits with tagged release notes are
+// returned.
 func ListCommitsWithNotes(client *github.Client, start, end string, opts ...githubApiOption) ([]*github.RepositoryCommit, error) {
 	commits, err := ListCommits(client, start, end, opts...)
 	if err != nil {
 		return nil, err
 	}
 
+	// exclusionFilters is a list of regular expressions that match commits that
+	// do NOT contain release notes. Notably, this is all of the variations of
+	// "release note none" that appear in the commit log.
 	exclusionFilters := []string{
 		"```release-note\\r\\nNONE",
 		"```release-note\\r\\n\"NONE\"",
@@ -139,25 +200,39 @@ func ListCommitsWithNotes(client *github.Client, start, end string, opts ...gith
 		"```release-note\\r\\n```",
 	}
 
+	// We "filter" the commits and "exclude" any commits that match the patterns
+	// by setting the "include" parameter of this function to false
 	commits, err = filterCommits(commits, exclusionFilters, false)
 	if err != nil {
 		return nil, err
 	}
 
+	// Similarly, now that the known not-release-notes are filtered out, we can
+	// use some patterns to find actual release notes.
 	inclusionFilters := []string{
 		"```release-note\\r\\n",
 	}
+
+	// We "filter" the commits and only include commits that match the patterns
+	// by setting the "include" parameter of this function to true
 	commits, err = filterCommits(commits, inclusionFilters, true)
 	if err != nil {
 		return nil, err
 	}
 
+	// This final list contains all commits that contained a release notes stanza
+	// and were not some variation of "none
 	return commits, nil
 }
 
+// PRFromCommit return an API Pull Request struct given a commit struct. This is
+// useful for going from a commit log to the PR (which contains useful info such
+// as labels).
 func PRFromCommit(client *github.Client, commit *github.RepositoryCommit, opts ...githubApiOption) (*github.PullRequest, error) {
 	c := configFromOpts(opts...)
 
+	// Thankfully k8s-merge-robot commits the PR number consistently. If this ever
+	// stops being true, this definitely won't work anymore.
 	exp := regexp.MustCompile(`Merge pull request #(?P<number>\d+)`)
 	match := exp.FindStringSubmatch(*commit.Commit.Message)
 	if len(match) == 0 {
@@ -174,10 +249,14 @@ func PRFromCommit(client *github.Client, commit *github.RepositoryCommit, opts .
 		return nil, err
 	}
 
+	// Given the PR number that we've now converted to an integer, get the PR from
+	// the API
 	pr, _, err := client.PullRequests.Get(c.ctx, c.org, c.repo, number)
 	return pr, err
 }
 
+// NoteFromCommit returns the text of the release note given a commit struct.
+// This is generally the content inside the ```release-note ``` stanza.
 func NoteFromCommit(commit *github.RepositoryCommit) (string, error) {
 	exp := regexp.MustCompile("```release-note\\r\\n(?P<note>.+)")
 	match := exp.FindStringSubmatch(*commit.Commit.Message)
@@ -193,6 +272,10 @@ func NoteFromCommit(commit *github.RepositoryCommit) (string, error) {
 	return result["note"], nil
 }
 
+// LabelsWithPrefix is a helper for fetching all labels on a PR that start with
+// a given string. This pattern is used often in the k/k repo and we can take
+// advantage of this to contextualize release note generation with the kind, sig,
+// area, etc labels.
 func LabelsWithPrefix(pr *github.PullRequest, prefix string) []string {
 	labels := []string{}
 	for _, label := range pr.Labels {
@@ -203,26 +286,8 @@ func LabelsWithPrefix(pr *github.PullRequest, prefix string) []string {
 	return labels
 }
 
-func SIGsFromPR(pr *github.PullRequest) []string {
-	sigs := []string{}
-	for _, label := range pr.Labels {
-		if strings.HasPrefix(*label.Name, "sig/") {
-			sigs = append(sigs, strings.TrimPrefix(*label.Name, "sig/"))
-		}
-	}
-	return sigs
-}
-
-func KindsFromPR(pr *github.PullRequest) []string {
-	kinds := []string{}
-	for _, label := range pr.Labels {
-		if strings.HasPrefix(*label.Name, "kind/") {
-			kinds = append(kinds, strings.TrimPrefix(*label.Name, "kind/"))
-		}
-	}
-	return kinds
-}
-
+// IsActionRequired indicates whether or not the release-note-action-required
+// label was set on the PR.
 func IsActionRequired(pr *github.PullRequest) bool {
 	for _, label := range pr.Labels {
 		if *label.Name == "release-note-action-required" {
@@ -232,44 +297,10 @@ func IsActionRequired(pr *github.PullRequest) bool {
 	return false
 }
 
-func ListReleaseNotes(client *github.Client, start, end string, opts ...githubApiOption) ([]*ReleaseNote, error) {
-	commits, err := ListCommitsWithNotes(client, start, end, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	notes := []*ReleaseNote{}
-	for _, commit := range commits {
-		note, err := ReleaseNoteFromCommit(commit, client, opts...)
-		if err != nil {
-			return nil, err
-		}
-		notes = append(notes, note)
-	}
-
-	return notes, nil
-}
-
-func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Client, opts ...githubApiOption) (*ReleaseNote, error) {
-	pr, err := PRFromCommit(client, commit, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	text, err := NoteFromCommit(commit)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ReleaseNote{
-		Text:           text,
-		SIGs:           LabelsWithPrefix(pr, "sig"),
-		Kinds:          LabelsWithPrefix(pr, "kind"),
-		Areas:          LabelsWithPrefix(pr, "area"),
-		ActionRequired: IsActionRequired(pr),
-	}, nil
-}
-
+// filterCommits is a helper that allows you to filter a set of commits by
+// applying a set of regular expressions over the commit messages. If include is
+// true, only commits that match at least one expression are returned. If include
+// is false, only commits that match 0 of the expressions are returned.
 func filterCommits(commits []*github.RepositoryCommit, filters []string, include bool) ([]*github.RepositoryCommit, error) {
 	filteredCommits := []*github.RepositoryCommit{}
 	for _, commit := range commits {
@@ -292,4 +323,21 @@ func filterCommits(commits []*github.RepositoryCommit, filters []string, include
 	}
 
 	return filteredCommits, nil
+}
+
+// configFromOpts is an internal helper for turning a set of functional options
+// into a populated *githubApiConfig struct with consistent defaults.
+func configFromOpts(opts ...githubApiOption) *githubApiConfig {
+	c := &githubApiConfig{
+		ctx:    context.Background(),
+		org:    "kubernetes",
+		repo:   "kubernetes",
+		branch: "master",
+	}
+
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	return c
 }

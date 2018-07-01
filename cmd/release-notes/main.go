@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/google/go-github/github"
@@ -18,8 +18,11 @@ import (
 )
 
 func main() {
+	// use the go-kit structured logger for logging. To learn more about structured
+	// logging see: https://github.com/go-kit/kit/tree/master/log#structured-logging
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	logger = level.NewInjector(logger, level.DebugValue())
+
 	flagset := flag.NewFlagSet("release-notes", flag.ExitOnError)
 	var (
 		// flGitHubToken contains a personal GitHub access token. This is used to
@@ -38,18 +41,30 @@ func main() {
 			"The path to the where the release notes will be printed",
 		)
 
+		// flStartSHA contains the commit SHA where the release note generation
+		// begins.
 		flStartSHA = flagset.String(
 			"start-sha",
 			env.String("START_SHA", ""),
 			"The commit hash to start at",
 		)
 
+		// flEndSHA contains the commit SHA where the release note generation ends.
 		flEndSHA = flagset.String(
 			"end-sha",
 			env.String("END_SHA", ""),
 			"The commit hash to end at",
 		)
+
+		// flFormat is the output format to produce the notes in.
+		flFormat = flagset.String(
+			"format",
+			env.String("FORMAT", "json"),
+			"The format for notes output (options: json)",
+		)
 	)
+
+	// First things first, parse the options.
 	if err := flagset.Parse(os.Args[1:]); err != nil {
 		fmt.Println("Error parsing flags:", err)
 		os.Exit(1)
@@ -61,19 +76,36 @@ func main() {
 		os.Exit(1)
 	}
 
+	// The start SHA is required.
 	if *flStartSHA == "" {
 		level.Error(logger).Log("msg", "The starting commit hash must be set via -start-sha or $START_SHA")
 		os.Exit(1)
 	}
 
+	// The end SHA is required.
 	if *flEndSHA == "" {
 		level.Error(logger).Log("msg", "The ending commit hash must be set via -end-sha or $END_SHA")
 		os.Exit(1)
 	}
 
+	// Create the GitHub API client
+	ctx := context.Background()
+	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: *flGitHubToken},
+	))
+	githubClient := github.NewClient(httpClient)
+
+	// Fetch a list of fully-contextualized release notes.
+	level.Info(logger).Log("msg", "fetching all commits. this might take a while...")
+	notes, err := githubutil.ListReleaseNotes(githubClient, *flStartSHA, *flEndSHA, githubutil.WithContext(ctx))
+	if err != nil {
+		level.Error(logger).Log("msg", "error release notes", "err", err)
+		os.Exit(1)
+	}
+	level.Info(logger).Log("msg", "got the commits, performing rendering")
+
 	// Open a handle to the file which will contain the release notes output
 	var output *os.File
-	var err error
 	if *flOutput != "" {
 		output, err = os.Open(*flOutput)
 		if err != nil {
@@ -82,32 +114,28 @@ func main() {
 		}
 	} else {
 		// TODO(marpaia): change the second argument of this function invocation to:
-		// "release-notes-*.md" after Go 1.11: https://github.com/golang/go/issues/4896
-		output, err = ioutil.TempFile("", "release-notes-*")
+		// "release-notes-*.json" after Go 1.11: https://github.com/golang/go/issues/4896
+		output, err = ioutil.TempFile("", "release-notes-")
 		if err != nil {
 			level.Error(logger).Log("msg", "error creating a temporary file to write the release notes to", "err", err)
 			os.Exit(1)
 		}
 	}
 
-	level.Debug(logger).Log("msg", "successfully opened file", "name", output.Name())
+	// Contextualized release notes can be printed in a variety of formats. Right
+	// now only JSON is supported, but a markdown format would be nice as well.
+	switch *flFormat {
+	case "json":
+		enc := json.NewEncoder(output)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(notes); err != nil {
+			level.Error(logger).Log("msg", "error encoding JSON output", "err", err)
+			os.Exit(1)
+		}
 
-	ctx := context.Background()
-	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: *flGitHubToken},
-	))
-	githubClient := github.NewClient(httpClient)
-
-	notes, err := githubutil.ListReleaseNotes(githubClient, *flStartSHA, *flEndSHA, githubutil.WithContext(ctx))
-	if err != nil {
-		level.Error(logger).Log("msg", "error release notes", "err", err)
+		level.Info(logger).Log("msg", "release notes JSON written to file", "path", output.Name())
+	default:
+		level.Error(logger).Log("msg", fmt.Sprintf("%q is an unsupported format", *flFormat))
 		os.Exit(1)
-	}
-
-	level.Debug(logger).Log("msg", "found release notes", "count", len(notes))
-
-	for _, note := range notes {
-		fmt.Println("==============================================")
-		spew.Dump(note)
 	}
 }
