@@ -14,7 +14,7 @@ import (
 	"github.com/kolide/kit/env"
 	"golang.org/x/oauth2"
 
-	"k8s.io/release/pkg/githubutil"
+	"k8s.io/release/pkg/notes"
 )
 
 func main() {
@@ -97,7 +97,7 @@ func main() {
 
 	// Fetch a list of fully-contextualized release notes.
 	level.Info(logger).Log("msg", "fetching all commits. this might take a while...")
-	notes, err := githubutil.ListReleaseNotes(githubClient, *flStartSHA, *flEndSHA, githubutil.WithContext(ctx))
+	notes, err := notes.ListReleaseNotes(githubClient, *flStartSHA, *flEndSHA, notes.WithContext(ctx))
 	if err != nil {
 		level.Error(logger).Log("msg", "error release notes", "err", err)
 		os.Exit(1)

@@ -114,7 +114,7 @@ a fully deployed and announced release, add `--nomock` to the command line.
 
 ## Release Notes Gathering
 
-To build the `release-notes` tool, check out this repo to your `$GOOPATH`:
+To build the `release-notes` tool, check out this repo to your `$GOPATH`:
 
 ```
 git clone git@github.com:kubernetes/release.git $GOPATH/src/k8s.io/release
