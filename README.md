@@ -151,25 +151,42 @@ level=info msg="got the commits, performing rendering"
 level=info msg="release notes JSON written to file" path=/var/folders/wp/6fkmvjf11gv18tdprv4g2mk40000gn/T/release-notes-048706664
 ```
 
-You can then use a variet of tools (such as `jq`) to slice and dice the output:
+You can then use a variety of tools (such as `jq`) to slice and dice the output:
 
 ```
 $ cat /var/folders/wp/6fkmvjf11gv18tdprv4g2mk40000gn/T/release-notes-048706664 | jq ".[:3]"
 [
   {
-    "text": "kubectl convert previous created a list inside of a list.  Now it is only wrapped once."
-  },
-  {
-    "text": "fixes a regression in kube-scheduler to properly load client connection information from a `--config` file that references a kubeconfig file",
-    "kinds": [
-      "bug"
-    ],
+    "text": "This PR will leverage subtests on the existing table tests for the scheduler units.",
+    "author": "xchapter7x",
+    "pr_link": "https://github.com/kubernetes/kubernetes/pull/63660",
     "sigs": [
       "scheduling"
     ]
   },
   {
-    "text": "Fixed cleanup of CSI metadata files."
+    "text": "Updated default image for nginx ingress in CDK to match current Kubernetes docs.",
+    "author": "hyperbolic2346",
+    "pr_link": "https://github.com/kubernetes/kubernetes/pull/64285"
+  },
+  {
+    "text": "Added block volume support to Cinder volume plugin.",
+    "author": "bertinatto",
+    "pr_link": "https://github.com/kubernetes/kubernetes/pull/64879",
+    "sigs": [
+      "storage"
+    ]
+  },
+  {
+    "text": "fixed incorrect OpenAPI schema for CustomResourceDefinition objects",
+    "author": "liggitt",
+    "pr_link": "https://github.com/kubernetes/kubernetes/pull/65256",
+    "kinds": [
+      "bug"
+    ],
+    "sigs": [
+      "api-machinery"
+    ]
   }
 ]
 $
