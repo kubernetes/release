@@ -24,6 +24,14 @@ import (
 	"github.com/google/go-github/github"
 )
 
+type ReleaseNote struct {
+	Text           string
+	Areas          []string
+	Kinds          []string
+	SIGs           []string
+	ActionRequired bool
+}
+
 type githubApiOption func(*githubApiConfig)
 
 type githubApiConfig struct {
@@ -123,6 +131,7 @@ func ListCommitsWithNotes(client *github.Client, start, end string, opts ...gith
 
 	exclusionFilters := []string{
 		"```release-note\\r\\nNONE",
+		"```release-note\\r\\n\"NONE\"",
 		"```release-note\\r\\nNone",
 		"```release-note\\r\\nnone",
 		"```release-note\\r\\nN/A",
@@ -184,6 +193,16 @@ func NoteFromCommit(commit *github.RepositoryCommit) (string, error) {
 	return result["note"], nil
 }
 
+func LabelsWithPrefix(pr *github.PullRequest, prefix string) []string {
+	labels := []string{}
+	for _, label := range pr.Labels {
+		if strings.HasPrefix(*label.Name, prefix) {
+			labels = append(labels, strings.TrimPrefix(*label.Name, prefix+"/"))
+		}
+	}
+	return labels
+}
+
 func SIGsFromPR(pr *github.PullRequest) []string {
 	sigs := []string{}
 	for _, label := range pr.Labels {
@@ -211,6 +230,44 @@ func IsActionRequired(pr *github.PullRequest) bool {
 		}
 	}
 	return false
+}
+
+func ListReleaseNotes(client *github.Client, start, end string, opts ...githubApiOption) ([]*ReleaseNote, error) {
+	commits, err := ListCommitsWithNotes(client, start, end, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	notes := []*ReleaseNote{}
+	for _, commit := range commits {
+		note, err := ReleaseNoteFromCommit(commit, client, opts...)
+		if err != nil {
+			return nil, err
+		}
+		notes = append(notes, note)
+	}
+
+	return notes, nil
+}
+
+func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Client, opts ...githubApiOption) (*ReleaseNote, error) {
+	pr, err := PRFromCommit(client, commit, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	text, err := NoteFromCommit(commit)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ReleaseNote{
+		Text:           text,
+		SIGs:           LabelsWithPrefix(pr, "sig"),
+		Kinds:          LabelsWithPrefix(pr, "kind"),
+		Areas:          LabelsWithPrefix(pr, "area"),
+		ActionRequired: IsActionRequired(pr),
+	}, nil
 }
 
 func filterCommits(commits []*github.RepositoryCommit, filters []string, include bool) ([]*github.RepositoryCommit, error) {

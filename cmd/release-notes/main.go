@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/google/go-github/github"
@@ -97,30 +98,16 @@ func main() {
 	))
 	githubClient := github.NewClient(httpClient)
 
-	commits, err := githubutil.ListCommitsWithNotes(githubClient, *flStartSHA, *flEndSHA, githubutil.WithContext(ctx))
+	notes, err := githubutil.ListReleaseNotes(githubClient, *flStartSHA, *flEndSHA, githubutil.WithContext(ctx))
 	if err != nil {
-		level.Error(logger).Log("msg", "error listing commits with release notes", "err", err)
+		level.Error(logger).Log("msg", "error release notes", "err", err)
 		os.Exit(1)
 	}
 
-	level.Debug(logger).Log("msg", "found commits with release notes", "count", len(commits))
+	level.Debug(logger).Log("msg", "found release notes", "count", len(notes))
 
-	for _, commit := range commits {
+	for _, note := range notes {
 		fmt.Println("==============================================")
-		note, err := githubutil.NoteFromCommit(commit)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println(note)
-		pr, err := githubutil.PRFromCommit(githubClient, commit, githubutil.WithContext(ctx))
-		if err != nil {
-			panic(err)
-		}
-		for _, sig := range githubutil.SIGsFromPR(pr) {
-			level.Debug(logger).Log("sig", sig)
-		}
-		for _, kind := range githubutil.KindsFromPR(pr) {
-			level.Debug(logger).Log("kind", kind)
-		}
+		spew.Dump(note)
 	}
 }
