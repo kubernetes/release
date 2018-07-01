@@ -110,6 +110,23 @@ func ListReleaseNotes(client *github.Client, start, end string, opts ...githubAp
 	return notes, nil
 }
 
+// NoteTextFromCommit returns the text of the release note given a commit struct.
+// This is generally the content inside the ```release-note ``` stanza.
+func NoteTextFromCommit(commit *github.RepositoryCommit) (string, error) {
+	exp := regexp.MustCompile("```release-note\\r\\n(?P<note>.+)")
+	match := exp.FindStringSubmatch(*commit.Commit.Message)
+	if len(match) == 0 {
+		return "", errors.New("no matches found")
+	}
+	result := map[string]string{}
+	for i, name := range exp.SubexpNames() {
+		if i != 0 && name != "" {
+			result[name] = match[i]
+		}
+	}
+	return strings.TrimRight(result["note"], "\r"), nil
+}
+
 // ReleaseNoteFromCommit produces a full contextualized release note given a
 // GitHub commit API resource.
 func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Client, opts ...githubApiOption) (*ReleaseNote, error) {
@@ -118,7 +135,7 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 		return nil, err
 	}
 
-	text, err := NoteFromCommit(commit)
+	text, err := NoteTextFromCommit(commit)
 	if err != nil {
 		return nil, err
 	}
@@ -253,23 +270,6 @@ func PRFromCommit(client *github.Client, commit *github.RepositoryCommit, opts .
 	// the API
 	pr, _, err := client.PullRequests.Get(c.ctx, c.org, c.repo, number)
 	return pr, err
-}
-
-// NoteFromCommit returns the text of the release note given a commit struct.
-// This is generally the content inside the ```release-note ``` stanza.
-func NoteFromCommit(commit *github.RepositoryCommit) (string, error) {
-	exp := regexp.MustCompile("```release-note\\r\\n(?P<note>.+)")
-	match := exp.FindStringSubmatch(*commit.Commit.Message)
-	if len(match) == 0 {
-		return "", errors.New("no matches found")
-	}
-	result := map[string]string{}
-	for i, name := range exp.SubexpNames() {
-		if i != 0 && name != "" {
-			result[name] = match[i]
-		}
-	}
-	return strings.TrimRight(result["note"], "\r"), nil
 }
 
 // LabelsWithPrefix is a helper for fetching all labels on a PR that start with

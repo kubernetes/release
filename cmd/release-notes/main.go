@@ -52,8 +52,6 @@ func main() {
 			os.Exit(1)
 		}
 	} else {
-		// TODO(marpaia): change the second argument of this function invocation to:
-		// "release-notes-*.json" after Go 1.11: https://github.com/golang/go/issues/4896
 		output, err = ioutil.TempFile("", "release-notes-")
 		if err != nil {
 			level.Error(logger).Log("msg", "error creating a temporary file to write the release notes to", "err", err)
