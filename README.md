@@ -145,7 +145,7 @@ To generate contextualized for a commit range, run:
 $ export GITHUB_TOKEN=a_github_api_token
 $ ./release-notes \
   -start-sha d0a17cb4bbdf608559f257a76acfaa9acb054903 \
-	-end-sha 91e7b4fd31fcd3d5f436da26c980becec37ceefe
+  -end-sha   91e7b4fd31fcd3d5f436da26c980becec37ceefe
 level=info msg="fetching all commits. this might take a while..."
 level=info msg="got the commits, performing rendering"
 level=info msg="release notes JSON written to file" path=/var/folders/wp/6fkmvjf11gv18tdprv4g2mk40000gn/T/release-notes-048706664
@@ -159,7 +159,8 @@ $ cat /var/folders/wp/6fkmvjf11gv18tdprv4g2mk40000gn/T/release-notes-048706664 |
   {
     "text": "This PR will leverage subtests on the existing table tests for the scheduler units.",
     "author": "xchapter7x",
-    "pr_link": "https://github.com/kubernetes/kubernetes/pull/63660",
+    "pr_url": "https://github.com/kubernetes/kubernetes/pull/63660",
+    "pr_number": 63660,
     "sigs": [
       "scheduling"
     ]
@@ -167,12 +168,14 @@ $ cat /var/folders/wp/6fkmvjf11gv18tdprv4g2mk40000gn/T/release-notes-048706664 |
   {
     "text": "Updated default image for nginx ingress in CDK to match current Kubernetes docs.",
     "author": "hyperbolic2346",
-    "pr_link": "https://github.com/kubernetes/kubernetes/pull/64285"
+    "pr_url": "https://github.com/kubernetes/kubernetes/pull/64285",
+    "pr_number": 64285
   },
   {
     "text": "Added block volume support to Cinder volume plugin.",
     "author": "bertinatto",
-    "pr_link": "https://github.com/kubernetes/kubernetes/pull/64879",
+    "pr_url": "https://github.com/kubernetes/kubernetes/pull/64879",
+    "pr_number": 64879,
     "sigs": [
       "storage"
     ]
@@ -180,7 +183,8 @@ $ cat /var/folders/wp/6fkmvjf11gv18tdprv4g2mk40000gn/T/release-notes-048706664 |
   {
     "text": "fixed incorrect OpenAPI schema for CustomResourceDefinition objects",
     "author": "liggitt",
-    "pr_link": "https://github.com/kubernetes/kubernetes/pull/65256",
+    "pr_url": "https://github.com/kubernetes/kubernetes/pull/65256",
+    "pr_number": 65256,
     "kinds": [
       "bug"
     ],

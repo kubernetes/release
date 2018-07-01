@@ -34,8 +34,11 @@ type ReleaseNote struct {
 	// Author is the GitHub username of the commit author
 	Author string `json:"author"`
 
-	// PRLink is a URL to the PR
-	PRLink string `json:"pr_link"`
+	// PrUrl is a URL to the PR
+	PrUrl string `json:"pr_url"`
+
+	// PrNumber is the number of the PR
+	PrNumber int `json:"pr_number"`
 
 	// Areas is a list of the labels beginning with area/
 	Areas []string `json:"areas,omitempty"`
@@ -150,7 +153,8 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 	return &ReleaseNote{
 		Text:           text,
 		Author:         pr.GetUser().GetLogin(),
-		PRLink:         fmt.Sprintf("https://github.com/kubernetes/kubernetes/pull/%d", pr.GetNumber()),
+		PrUrl:          fmt.Sprintf("https://github.com/kubernetes/kubernetes/pull/%d", pr.GetNumber()),
+		PrNumber:       pr.GetNumber(),
 		SIGs:           LabelsWithPrefix(pr, "sig"),
 		Kinds:          LabelsWithPrefix(pr, "kind"),
 		Areas:          LabelsWithPrefix(pr, "area"),
