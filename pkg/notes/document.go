@@ -47,8 +47,10 @@ func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 				categorized = true
 				doc.BugFixes = append(doc.BugFixes, note.Markdown)
 			case "feature":
+				categorized = true
 				doc.NewFeatures = append(doc.NewFeatures, note.Markdown)
 			case "api-change":
+				categorized = true
 				doc.APIChanges = append(doc.APIChanges, note.Markdown)
 			}
 		}
