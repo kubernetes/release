@@ -35,6 +35,9 @@ type ReleaseNote struct {
 	// Text is the actual content of the release note
 	Text string `json:"text"`
 
+	// Markdown is the markdown formatted note
+	Markdown string `json:"markdown"`
+
 	// Author is the GitHub username of the commit author
 	Author string `json:"author"`
 
@@ -157,12 +160,18 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 		return nil, err
 	}
 
+	author := pr.GetUser().GetLogin()
+	authorUrl := fmt.Sprintf("https://github.com/%s", author)
+	prUrl := fmt.Sprintf("https://github.com/kubernetes/kubernetes/pull/%d", pr.GetNumber())
+	markdown := fmt.Sprintf("%s ([#%d](%s), [@%s](%s))", text, pr.GetNumber(), prUrl, author, authorUrl)
+
 	return &ReleaseNote{
 		Commit:         commit.GetSHA(),
 		Text:           text,
-		Author:         pr.GetUser().GetLogin(),
-		AuthorUrl:      fmt.Sprintf("https://github.com/%s", pr.GetUser().GetLogin()),
-		PrUrl:          fmt.Sprintf("https://github.com/kubernetes/kubernetes/pull/%d", pr.GetNumber()),
+		Markdown:       markdown,
+		Author:         author,
+		AuthorUrl:      authorUrl,
+		PrUrl:          prUrl,
 		PrNumber:       pr.GetNumber(),
 		SIGs:           LabelsWithPrefix(pr, "sig"),
 		Kinds:          LabelsWithPrefix(pr, "kind"),
