@@ -168,6 +168,8 @@ func prettySIG(sig string) string {
 		switch part {
 		case "vsphere":
 			parts[i] = "vSphere"
+		case "vmware":
+			parts[i] = "VMWare"
 		case "openstack":
 			parts[i] = "OpenStack"
 		case "api", "aws", "cli", "gcp":
