@@ -8,9 +8,11 @@ import (
 
 // Document represents the underlying structure of a release notes document.
 type Document struct {
+	NewFeatures    []string            `json:"new_features"`
+	ActionRequired []string            `json:"action_required"`
+	APIChanges     []string            `json:"api_changes"`
 	SIGs           map[string][]string `json:"sigs"`
 	BugFixes       []string            `json:"bug_fixes"`
-	ActionRequired []string            `json:"action_required"`
 	Uncategorized  []string            `json:"uncategorized"`
 }
 
@@ -18,9 +20,11 @@ type Document struct {
 // release notes
 func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 	doc := &Document{
+		NewFeatures:    []string{},
+		ActionRequired: []string{},
+		APIChanges:     []string{},
 		SIGs:           map[string][]string{},
 		BugFixes:       []string{},
-		ActionRequired: []string{},
 		Uncategorized:  []string{},
 	}
 
@@ -38,9 +42,14 @@ func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 		}
 
 		for _, kind := range note.Kinds {
-			if kind == "bug" {
+			switch kind {
+			case "bug":
 				categorized = true
 				doc.BugFixes = append(doc.BugFixes, note.Markdown)
+			case "feature":
+				doc.NewFeatures = append(doc.NewFeatures, note.Markdown)
+			case "api-change":
+				doc.APIChanges = append(doc.APIChanges, note.Markdown)
 			}
 		}
 
@@ -95,6 +104,24 @@ func RenderMarkdown(doc *Document, w io.Writer) error {
 	if len(doc.ActionRequired) > 0 {
 		write("## Action Required\n\n")
 		for _, note := range doc.ActionRequired {
+			writeNote(note)
+		}
+		write("\n\n")
+	}
+
+	// the "New Feautres" section
+	if len(doc.NewFeatures) > 0 {
+		write("## New Features\n\n")
+		for _, note := range doc.NewFeatures {
+			writeNote(note)
+		}
+		write("\n\n")
+	}
+
+	// the "API Changes" section
+	if len(doc.APIChanges) > 0 {
+		write("## API Changes\n\n")
+		for _, note := range doc.APIChanges {
 			writeNote(note)
 		}
 		write("\n\n")
