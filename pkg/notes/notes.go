@@ -28,6 +28,10 @@ import (
 // ReleaseNote is the type that represents the total sum of all the information
 // we've gathered about a single release note.
 type ReleaseNote struct {
+	// Commit is the SHA of the commit which is the source of this note. This is
+	// also effectively a unique ID for release notes.
+	Commit string `json:"commit"`
+
 	// Text is the actual content of the release note
 	Text string `json:"text"`
 
@@ -154,6 +158,7 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 	}
 
 	return &ReleaseNote{
+		Commit:         commit.GetSHA(),
 		Text:           text,
 		Author:         pr.GetUser().GetLogin(),
 		AuthorUrl:      fmt.Sprintf("https://github.com/%s", pr.GetUser().GetLogin()),
