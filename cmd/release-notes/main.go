@@ -16,11 +16,12 @@ import (
 )
 
 func main() {
-	// use the go-kit structured logger for logging. To learn more about structured
+	// Use the go-kit structured logger for logging. To learn more about structured
 	// logging see: https://github.com/go-kit/kit/tree/master/log#structured-logging
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	logger = level.NewInjector(logger, level.DebugValue())
 
+	// Parse the CLI options and enforce required defaults
 	opts, err := parseOptions(os.Args[1:])
 	if err != nil {
 		level.Error(logger).Log("msg", "error parsing options", "err", err)
@@ -34,7 +35,7 @@ func main() {
 	))
 	githubClient := github.NewClient(httpClient)
 
-	// Fetch a list of fully-contextualized release notes.
+	// Fetch a list of fully-contextualized release notes
 	level.Info(logger).Log("msg", "fetching all commits. this might take a while...")
 	releaseNotes, err := notes.ListReleaseNotes(githubClient, opts.startSHA, opts.endSHA, notes.WithContext(ctx))
 	if err != nil {
@@ -59,8 +60,7 @@ func main() {
 		}
 	}
 
-	// Contextualized release notes can be printed in a variety of formats. Right
-	// now only JSON is supported, but a markdown format would be nice as well.
+	// Contextualized release notes can be printed in a variety of formats
 	switch opts.format {
 	case "json":
 		enc := json.NewEncoder(output)
