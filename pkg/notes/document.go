@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// Document represents the underlying structure of a release notes document.
 type Document struct {
 	SIGs           map[string][]string `json:"sigs"`
 	BugFixes       []string            `json:"bug_fixes"`
@@ -13,6 +14,8 @@ type Document struct {
 	Uncategorized  []string            `json:"uncategorized"`
 }
 
+// CreateDocument assembles an organized document from an unorganized set of
+// release notes
 func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 	doc := &Document{
 		SIGs:           map[string][]string{},
@@ -54,21 +57,33 @@ func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 	return doc, nil
 }
 
+// RenderMarkdown accepts a Document and writes a version of that document to
+// supplied io.Writer in markdown format.
 func RenderMarkdown(doc *Document, w io.Writer) error {
+	// we always want to render the document with SIGs in alphabetical order
 	sortedSIGs := []string{}
 	for sig, _ := range doc.SIGs {
 		sortedSIGs = append(sortedSIGs, sig)
 	}
 	sort.Strings(sortedSIGs)
 
+	// this is a helper so that we don't have to check err != nil on every write
+
+	// first, we create a long-lived err that we can re-use
 	var err error
+
+	// write is a helper that writes a string to the in-scope io.Writer w
 	write := func(s string) {
+		// if write has already failed, just return and don't do anything
 		if err != nil {
 			return
 		}
+		// perform the write
 		_, err = w.Write([]byte(s))
 	}
 
+	// writeNote encapsulates the pre-processing that might happen on a note text
+	// before it gets bulleted and written to the io.Writer
 	writeNote := func(s string) {
 		if !strings.HasPrefix(s, "- ") {
 			s = "- " + s
@@ -76,6 +91,7 @@ func RenderMarkdown(doc *Document, w io.Writer) error {
 		write(s + "\n")
 	}
 
+	// the "Action Required" section
 	if len(doc.ActionRequired) > 0 {
 		write("## Action Required\n\n")
 		for _, note := range doc.ActionRequired {
@@ -84,6 +100,7 @@ func RenderMarkdown(doc *Document, w io.Writer) error {
 		write("\n\n")
 	}
 
+	// each SIG gets a section (in alphabetical order)
 	for _, sig := range sortedSIGs {
 		write("## SIG " + prettySIG(sig) + "\n\n")
 		for _, note := range doc.SIGs[sig] {
@@ -92,6 +109,7 @@ func RenderMarkdown(doc *Document, w io.Writer) error {
 		write("\n\n")
 	}
 
+	// the "Bug Fixes" section
 	if len(doc.BugFixes) > 0 {
 		write("## Bug Fixes\n\n")
 		for _, note := range doc.BugFixes {
@@ -100,6 +118,8 @@ func RenderMarkdown(doc *Document, w io.Writer) error {
 		write("\n\n")
 	}
 
+	// we call the uncategorized notes "Other Notable Changes". ideally these
+	// notes would at least have a SIG label.
 	if len(doc.Uncategorized) > 0 {
 		write("## Other Notable Changes\n\n")
 		for _, note := range doc.Uncategorized {
@@ -111,6 +131,8 @@ func RenderMarkdown(doc *Document, w io.Writer) error {
 	return err
 }
 
+// prettySIG takes a sig name as parsed by the `sig-foo` label and returns a
+// "pretty" version of it that can be printed in documents
 func prettySIG(sig string) string {
 	parts := strings.Split(sig, "-")
 	for i, part := range parts {
