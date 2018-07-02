@@ -69,8 +69,6 @@ func main() {
 			level.Error(logger).Log("msg", "error encoding JSON output", "err", err)
 			os.Exit(1)
 		}
-
-		level.Info(logger).Log("msg", "release notes JSON written to file", "path", output.Name())
 	case "markdown":
 		doc, err := notes.CreateDocument(releaseNotes)
 		if err != nil {
@@ -83,9 +81,14 @@ func main() {
 			os.Exit(1)
 		}
 
-		level.Info(logger).Log("msg", "release notes markdown written to file", "path", output.Name())
 	default:
 		level.Error(logger).Log("msg", fmt.Sprintf("%q is an unsupported format", opts.format))
 		os.Exit(1)
 	}
+
+	level.Info(logger).Log(
+		"msg", "release notes written to file",
+		"path", output.Name(),
+		"format", opts.format,
+	)
 }
