@@ -52,8 +52,8 @@ func parseOptions(args []string) (*options, error) {
 		// flFormat is the output format to produce the notes in.
 		flFormat = flagset.String(
 			"format",
-			env.String("FORMAT", "json"),
-			"The format for notes output (options: json)",
+			env.String("FORMAT", "markdown"),
+			"The format for notes output (options: markdown, json)",
 		)
 	)
 

@@ -36,7 +36,7 @@ func main() {
 
 	// Fetch a list of fully-contextualized release notes.
 	level.Info(logger).Log("msg", "fetching all commits. this might take a while...")
-	notes, err := notes.ListReleaseNotes(githubClient, opts.startSHA, opts.endSHA, notes.WithContext(ctx))
+	releaseNotes, err := notes.ListReleaseNotes(githubClient, opts.startSHA, opts.endSHA, notes.WithContext(ctx))
 	if err != nil {
 		level.Error(logger).Log("msg", "error release notes", "err", err)
 		os.Exit(1)
@@ -65,12 +65,25 @@ func main() {
 	case "json":
 		enc := json.NewEncoder(output)
 		enc.SetIndent("", "  ")
-		if err := enc.Encode(notes); err != nil {
+		if err := enc.Encode(releaseNotes); err != nil {
 			level.Error(logger).Log("msg", "error encoding JSON output", "err", err)
 			os.Exit(1)
 		}
 
 		level.Info(logger).Log("msg", "release notes JSON written to file", "path", output.Name())
+	case "markdown":
+		doc, err := notes.CreateDocument(releaseNotes)
+		if err != nil {
+			level.Error(logger).Log("msg", "error creating release note document", "err", err)
+			os.Exit(1)
+		}
+
+		if err := notes.RenderMarkdown(doc, output); err != nil {
+			level.Error(logger).Log("msg", "error rendering release note document to markdown", "err", err)
+			os.Exit(1)
+		}
+
+		level.Info(logger).Log("msg", "release notes markdown written to file", "path", output.Name())
 	default:
 		level.Error(logger).Log("msg", fmt.Sprintf("%q is an unsupported format", opts.format))
 		os.Exit(1)

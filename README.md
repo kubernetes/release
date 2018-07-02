@@ -139,7 +139,7 @@ Use the `-h` flag for help:
 ./release-notes -h
 ```
 
-To generate contextualized for a commit range, run:
+To generate release notes for a commit range, run:
 
 ```
 $ export GITHUB_TOKEN=a_github_api_token
@@ -148,10 +148,10 @@ $ ./release-notes \
   -end-sha   91e7b4fd31fcd3d5f436da26c980becec37ceefe
 level=info msg="fetching all commits. this might take a while..."
 level=info msg="got the commits, performing rendering"
-level=info msg="release notes JSON written to file" path=/var/folders/wp/6fkmvjf11gv18tdprv4g2mk40000gn/T/release-notes-048706664
+level=info msg="release notes markdown written to file" path=/var/folders/wp/6fkmvjf11gv18tdprv4g2mk40000gn/T/release-notes-048706664
 ```
 
-You can then use a variety of tools (such as `jq`) to slice and dice the output:
+Alternatively, you can call `release-notes` with `-format=json` to receive JSON output instead (if you'd like to experiment with alternative rendering). You can then use a variety of tools (such as `jq`) to slice and dice the output:
 
 ```
 $ cat /var/folders/wp/6fkmvjf11gv18tdprv4g2mk40000gn/T/release-notes-048706664 | jq ".[:3]"
