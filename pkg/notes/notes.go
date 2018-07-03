@@ -130,11 +130,12 @@ func ListReleaseNotes(client *github.Client, start, end string, opts ...githubAp
 	return notes, nil
 }
 
-// NoteTextFromCommit returns the text of the release note given a commit struct.
+// NoteTextFromString returns the text of the release note given a string which
+// may contain the commit message, the PR description, etc.
 // This is generally the content inside the ```release-note ``` stanza.
-func NoteTextFromCommit(commit *github.RepositoryCommit) (string, error) {
+func NoteTextFromString(s string) (string, error) {
 	exp := regexp.MustCompile("```release-note\\r\\n(?P<note>.+)")
-	match := exp.FindStringSubmatch(*commit.Commit.Message)
+	match := exp.FindStringSubmatch(s)
 	if len(match) == 0 {
 		return "", errors.New("no matches found")
 	}
@@ -155,7 +156,7 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 		return nil, err
 	}
 
-	text, err := NoteTextFromCommit(commit)
+	text, err := NoteTextFromString(pr.GetBody())
 	if err != nil {
 		return nil, err
 	}
