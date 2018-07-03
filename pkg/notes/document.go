@@ -31,6 +31,11 @@ func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 	for _, note := range notes {
 		categorized := false
 
+		if note.ActionRequired {
+			categorized = true
+			doc.ActionRequired = append(doc.ActionRequired, note.Markdown)
+		}
+
 		for _, sig := range note.SIGs {
 			categorized = true
 			notesForSIG, ok := doc.SIGs[sig]
@@ -41,11 +46,14 @@ func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 			}
 		}
 
+		isBug := false
 		for _, kind := range note.Kinds {
 			switch kind {
 			case "bug":
-				categorized = true
-				doc.BugFixes = append(doc.BugFixes, note.Markdown)
+				// if the PR has kind/bug, we want to make a note of it, but we don't
+				// include it in the Bug Fixes section until we haven't processed all
+				// kinds and determined that it has no other categorization label.
+				isBug = true
 			case "feature":
 				categorized = true
 				doc.NewFeatures = append(doc.NewFeatures, note.Markdown)
@@ -55,13 +63,14 @@ func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 			}
 		}
 
-		if note.ActionRequired {
-			categorized = true
-			doc.ActionRequired = append(doc.ActionRequired, note.Markdown)
-		}
-
+		// if the note has not been categorized so far, we can toss in one of two
+		// buckets
 		if !categorized {
-			doc.Uncategorized = append(doc.Uncategorized, note.Markdown)
+			if isBug {
+				doc.BugFixes = append(doc.BugFixes, note.Markdown)
+			} else {
+				doc.Uncategorized = append(doc.Uncategorized, note.Markdown)
+			}
 		}
 	}
 
