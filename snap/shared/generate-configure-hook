@@ -19,9 +19,9 @@ function option-to-key {
 function config-arg {
   option=$1
   key=$(option-to-key $option)
-  value=$(snapctl get -t $key)
-  if [ "$value" != 'null' ]; then
-    echo "--$option $value" >> $SNAP_DATA/args
+  value=$(snapctl get $key)
+  if [ -n "$value" ]; then
+    echo "--$option=\"$value\"" >> $SNAP_DATA/args
   fi
 }
 
