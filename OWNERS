@@ -1,0 +1,25 @@
+approvers:
+# maintainers
+- ixdy
+- mikedanese
+# sig-release leads
+- jdumars
+- calebamiles
+# 1.8 patch release manager
+- jpbetz
+# 1.9 patch release manager
+- mbohlool
+# 1.10 patch release manager
+- maciekpytel
+# 1.11 patch release manager
+- foxish
+# 1.8 release lead (for completeness, but dupe of sig-release leads)
+#- jdumars
+# 1.9 release lead
+- enisoc
+# 1.10 release lead (for completeness, but dupe of sig-release leads)
+#- jdumars
+# 1.11 release lead
+- jberkus
+# 1.12 release lead
+- tpepper
