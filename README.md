@@ -47,7 +47,7 @@ can be staged and later released using this method.
 
 ### anago
 
-The main driver for created staged builds and releases.  This is what runs 
+The main driver for creating staged builds and releases.  This is what runs 
 inside GCB after a job is submitted using `gcbmgr`.
 
 ### branchff
