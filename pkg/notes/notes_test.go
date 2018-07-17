@@ -54,7 +54,7 @@ func TestGitHubAPIOperations(t *testing.T) {
 	// there were 48 commits between v1.11.0-rc3 and v1.11.0
 	commits, err := ListCommits(client, v1_11_0_rc3, v1_11_0)
 	require.NoError(t, err)
-	require.Len(t, commits, 48)
+	require.Len(t, commits, 55)
 
 	// there were 4 commits with release notes between v1.11.0-rc3 and v1.11.0
 	commits, err = ListCommitsWithNotes(client, v1_11_0_rc3, v1_11_0)
@@ -88,5 +88,15 @@ func TestStripActionRequired(t *testing.T) {
 
 	for _, note := range notes {
 		require.Equal(t, "The note text", stripActionRequired(note))
+	}
+}
+
+func TestStripStar(t *testing.T) {
+	notes := []string{
+		"* The note text",
+	}
+
+	for _, note := range notes {
+		require.Equal(t, "The note text", stripStar(note))
 	}
 }
