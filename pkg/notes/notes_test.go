@@ -78,3 +78,15 @@ func TestGitHubAPIOperations(t *testing.T) {
 		require.NotContains(t, note.Text, "\r")
 	}
 }
+
+func TestStripActionRequired(t *testing.T) {
+	notes := []string{
+		"[action required] The note text",
+		"[ACTION REQUIRED] The note text",
+		"[AcTiOn ReQuIrEd] The note text",
+	}
+
+	for _, note := range notes {
+		require.Equal(t, "The note text", stripActionRequired(note))
+	}
+}

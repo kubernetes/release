@@ -145,7 +145,7 @@ func NoteTextFromString(s string) (string, error) {
 			result[name] = match[i]
 		}
 	}
-	return strings.TrimRight(result["note"], "\r"), nil
+	return stripActionRequired(strings.TrimRight(result["note"], "\r")), nil
 }
 
 // ReleaseNoteFromCommit produces a full contextualized release note given a
@@ -372,4 +372,9 @@ func configFromOpts(opts ...githubApiOption) *githubApiConfig {
 	}
 
 	return c
+}
+
+func stripActionRequired(note string) string {
+	re := regexp.MustCompile(`(?i)\[action required\]\s`)
+	return re.ReplaceAllString(note, "")
 }
