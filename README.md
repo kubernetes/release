@@ -14,6 +14,7 @@
   - [Building Linux Packages](#building-linux-packages)
     - [For Debian](#for-debian)
     - [For Fedora, CentOS, Red Hat Enterprise Linux](#for-fedora-centos-red-hat-enterprise-linux)
+  - [Contributing](#contributing)
 <!-- END MUNGE: GENERATED_TOC -->
 
 # Kubernetes Release
@@ -151,3 +152,7 @@ cd rpm
 ```
 
 Resulting rpms, and a pre-generated yum repository will be generated in rpm/output/x86_64.
+
+## Contributing
+
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how to contribute.
