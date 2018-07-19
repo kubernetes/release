@@ -1128,8 +1128,7 @@ release::set_globals () {
 
   # The "production" GCR path is now multi-region alias
   GCRIO_PATH_PROD="k8s.gcr.io"
-  # The "production" push path to that multi-region alias has a staging- prefix
-  GCRIO_PATH_PROD_PUSH="staging-$GCRIO_PATH_PROD"
+  GCRIO_PATH_PROD_PUSH="gcr.io/google-containers"
   # The "test" GCR path
   GCRIO_PATH_TEST="gcr.io/kubernetes-release-test"
 
