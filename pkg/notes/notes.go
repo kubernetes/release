@@ -244,6 +244,8 @@ func ListCommitsWithNotes(client *github.Client, start, end string, opts ...gith
 	// "release note none" that appear in the commit log.
 	exclusionFilters := []string{
 		"```release-note\\r\\nNONE",
+		"```release-note\\r\\n\\s+NONE",
+		"```release-note\\r\\nNONE",
 		"```release-note\\r\\n\"NONE\"",
 		"```release-note\\r\\nNone",
 		"```release-note\\r\\nnone",
