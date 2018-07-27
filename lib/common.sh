@@ -589,7 +589,7 @@ common::printvars () {
 
     # if var is an array, do special tricks
     # bash wizardry courtesy of
-    # http://stackoverflow.com/questions/4582137/bash-indirect-array-addressing
+    # https://stackoverflow.com/questions/4582137/bash-indirect-array-addressing
     if [[ "$(declare -p $var 2>/dev/null)" =~ ^declare\ -[aA] ]]; then
       tmp="$var[@]"
       quoted=("${!tmp}") # copy the variable
