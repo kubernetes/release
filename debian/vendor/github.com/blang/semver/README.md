@@ -1,7 +1,7 @@
 semver for golang [![Build Status](https://travis-ci.org/blang/semver.svg?branch=master)](https://travis-ci.org/blang/semver) [![GoDoc](https://godoc.org/github.com/blang/semver?status.png)](https://godoc.org/github.com/blang/semver) [![Coverage Status](https://img.shields.io/coveralls/blang/semver.svg)](https://coveralls.io/r/blang/semver?branch=master)
 ======
 
-semver is a [Semantic Versioning](http://semver.org/) library written in golang. It fully covers spec version `2.0.0`.
+semver is a [Semantic Versioning] library written in golang. It fully covers spec version `2.0.0`.
 
 Usage
 -----
@@ -17,7 +17,7 @@ v2, err := semver.Make("2.0.0-beta")
 v1.Compare(v2)
 ```
 
-Also check the [GoDocs](http://godoc.org/github.com/blang/semver).
+Also check the [GoDocs](https://godoc.org/github.com/blang/semver).
 
 Why should I use this lib?
 -----
