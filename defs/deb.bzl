@@ -2,7 +2,7 @@ load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar", "pkg_deb")
 
 KUBERNETES_AUTHORS = "Kubernetes Authors <kubernetes-dev+release@googlegroups.com>"
 
-KUBERNETES_HOMEPAGE = "http://kubernetes.io"
+KUBERNETES_HOMEPAGE = "https://kubernetes.io/"
 
 def k8s_deb(name, depends = [], description = ""):
   pkg_deb(
