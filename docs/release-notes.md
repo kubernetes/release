@@ -22,7 +22,7 @@ An example major milestone release (x.y.0) in CHANGELOG-x.y.md:
 
 ```
 # vx.y.0
-[Documentation](https://docs.k8s.io/) & [Examples](http://releases.k8s.io/release-x.y/examples)
+[Documentation](https://docs.k8s.io/)
 
 ## Downloads
 
