@@ -48,7 +48,7 @@ can be staged and later released using this method.
 
 ### anago
 
-The main driver for created staged builds and releases.  This is what runs 
+The main driver for created staged builds and releases.  This is what runs
 inside GCB after a job is submitted using `gcbmgr`.
 
 ### branchff
@@ -115,19 +115,80 @@ a fully deployed and announced release, add `--nomock` to the command line.
 
 ## Release Notes Gathering
 
+To build the `release-notes` tool, check out this repo to your `$GOPATH`:
+
 ```
-# get details on how to use the tool
-$ relnotes -man
-$ cd /kubernetes
+git clone git@github.com:kubernetes/release.git $GOPATH/src/k8s.io/release
+```
 
-# Show release notes from the last release on a branch to HEAD
-$ relnotes
+Run the following from the root of the repository to install dependencies:
 
-# Show release notes from the last release on a specific branch to branch HEAD
-$ relnotes --branch=release-1.10
+```
+go get -u github.com/golang/dep/cmd/dep
+dep ensure -vendor-only
+```
 
-# Show release notes between two specific releases
-$ relnotes v1.10.0..v1.10.1 --branch=release-1.10
+Run the following from the root of the repository to build the `release-notes` binary:
+
+```
+go build ./cmd/release-notes
+```
+
+Use the `-h` flag for help:
+
+```
+./release-notes -h
+```
+
+To generate release notes for a commit range, run:
+
+```
+$ export GITHUB_TOKEN=a_github_api_token
+$ ./release-notes \
+  -start-sha d0a17cb4bbdf608559f257a76acfaa9acb054903 \
+  -end-sha   91e7b4fd31fcd3d5f436da26c980becec37ceefe
+level=info msg="fetching all commits. this might take a while..."
+level=info msg="got the commits, performing rendering"
+level=info msg="release notes markdown written to file" path=/var/folders/wp/6fkmvjf11gv18tdprv4g2mk40000gn/T/release-notes-048706664
+```
+
+Alternatively, you can call `release-notes` with `-format=json` to receive JSON output instead (if you'd like to experiment with alternative rendering). You can then use a variety of tools (such as `jq`) to slice and dice the output:
+
+```
+$ cat /var/folders/wp/6fkmvjf11gv18tdprv4g2mk40000gn/T/release-notes-048706664 | jq ".[:3]"
+[
+  {
+    "text": "Updated default image for nginx ingress in CDK to match current Kubernetes docs.",
+    "author": "hyperbolic2346",
+    "author_url": "https://github.com/hyperbolic2346",
+    "pr_url": "https://github.com/kubernetes/kubernetes/pull/64285",
+    "pr_number": 64285
+  },
+  {
+    "text": "Added block volume support to Cinder volume plugin.",
+    "author": "bertinatto",
+    "author_url": "https://github.com/bertinatto",
+    "pr_url": "https://github.com/kubernetes/kubernetes/pull/64879",
+    "pr_number": 64879,
+    "sigs": [
+      "storage"
+    ]
+  },
+  {
+    "text": "fixed incorrect OpenAPI schema for CustomResourceDefinition objects",
+    "author": "liggitt",
+    "author_url": "https://github.com/liggitt",
+    "pr_url": "https://github.com/kubernetes/kubernetes/pull/65256",
+    "pr_number": 65256,
+    "kinds": [
+      "bug"
+    ],
+    "sigs": [
+      "api-machinery"
+    ]
+  }
+]
+$
 ```
 
 ## Building Linux Packages
