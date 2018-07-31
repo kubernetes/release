@@ -16,13 +16,15 @@ package notes
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/google/go-github/github"
+	"github.com/pkg/errors"
 )
 
 // ReleaseNote is the type that represents the total sum of all the information
@@ -112,8 +114,14 @@ func WithBranch(branch string) githubApiOption {
 
 // ListReleaseNotes produces a list of fully contextualized release notes
 // starting from a given commit SHA and ending at starting a given commit SHA.
-func ListReleaseNotes(client *github.Client, start, end string, opts ...githubApiOption) ([]*ReleaseNote, error) {
-	commits, err := ListCommitsWithNotes(client, start, end, opts...)
+func ListReleaseNotes(
+	client *github.Client,
+	logger log.Logger,
+	start,
+	end string,
+	opts ...githubApiOption,
+) ([]*ReleaseNote, error) {
+	commits, err := ListCommitsWithNotes(client, logger, start, end, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +145,7 @@ func NoteTextFromString(s string) (string, error) {
 	exp := regexp.MustCompile("```release-note\\r\\n(?P<note>.+)")
 	match := exp.FindStringSubmatch(s)
 	if len(match) == 0 {
-		return "", errors.New("no matches found")
+		return "", errors.New("no matches found when parsing note text from commit string")
 	}
 	result := map[string]string{}
 	for i, name := range exp.SubexpNames() {
@@ -156,7 +164,7 @@ func NoteTextFromString(s string) (string, error) {
 func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Client, opts ...githubApiOption) (*ReleaseNote, error) {
 	pr, err := PRFromCommit(client, commit, opts...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "error parsing release note from commit %s", commit.GetSHA())
 	}
 
 	text, err := NoteTextFromString(pr.GetBody())
@@ -233,7 +241,13 @@ func ListCommits(client *github.Client, start, end string, opts ...githubApiOpti
 // given commit SHA and ending at a given commit SHA. This function is similar
 // to ListCommits except that only commits with tagged release notes are
 // returned.
-func ListCommitsWithNotes(client *github.Client, start, end string, opts ...githubApiOption) ([]*github.RepositoryCommit, error) {
+func ListCommitsWithNotes(
+	client *github.Client,
+	logger log.Logger,
+	start,
+	end string,
+	opts ...githubApiOption,
+) ([]*github.RepositoryCommit, error) {
 	commits, err := ListCommits(client, start, end, opts...)
 	if err != nil {
 		return nil, err
@@ -256,7 +270,7 @@ func ListCommitsWithNotes(client *github.Client, start, end string, opts ...gith
 
 	// We "filter" the commits and "exclude" any commits that match the patterns
 	// by setting the "include" parameter of this function to false
-	commits, err = filterCommits(commits, exclusionFilters, false)
+	commits, err = filterCommits(client, logger, commits, exclusionFilters, false, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +283,7 @@ func ListCommitsWithNotes(client *github.Client, start, end string, opts ...gith
 
 	// We "filter" the commits and only include commits that match the patterns
 	// by setting the "include" parameter of this function to true
-	commits, err = filterCommits(commits, inclusionFilters, true)
+	commits, err = filterCommits(client, logger, commits, inclusionFilters, true, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +304,7 @@ func PRFromCommit(client *github.Client, commit *github.RepositoryCommit, opts .
 	exp := regexp.MustCompile(`Merge pull request #(?P<number>\d+)`)
 	match := exp.FindStringSubmatch(*commit.Commit.Message)
 	if len(match) == 0 {
-		return nil, errors.New("no matches found")
+		return nil, errors.New("no matches found when parsing PR from commit")
 	}
 	result := map[string]string{}
 	for i, name := range exp.SubexpNames() {
@@ -338,12 +352,33 @@ func IsActionRequired(pr *github.PullRequest) bool {
 // applying a set of regular expressions over the commit messages. If include is
 // true, only commits that match at least one expression are returned. If include
 // is false, only commits that match 0 of the expressions are returned.
-func filterCommits(commits []*github.RepositoryCommit, filters []string, include bool) ([]*github.RepositoryCommit, error) {
+func filterCommits(
+	client *github.Client,
+	logger log.Logger,
+	commits []*github.RepositoryCommit,
+	filters []string,
+	include bool,
+	opts ...githubApiOption,
+) ([]*github.RepositoryCommit, error) {
 	filteredCommits := []*github.RepositoryCommit{}
 	for _, commit := range commits {
+		body := commit.GetCommit().GetMessage()
+		if commit.GetAuthor().GetLogin() == "k8s-merge-robot" {
+			pr, err := PRFromCommit(client, commit, opts...)
+			if err != nil {
+				level.Info(logger).Log(
+					"msg", "error getting PR from k8s-merge-robot commit",
+					"err", err,
+					"sha", commit.GetSHA(),
+				)
+				continue
+			}
+			body = pr.GetBody()
+		}
+
 		skip := false
 		for _, filter := range filters {
-			match, err := regexp.MatchString(filter, *commit.Commit.Message)
+			match, err := regexp.MatchString(filter, body)
 			if err != nil {
 				return nil, err
 			}
@@ -380,8 +415,17 @@ func configFromOpts(opts ...githubApiOption) *githubApiConfig {
 }
 
 func stripActionRequired(note string) string {
-	re := regexp.MustCompile(`(?i)\[action required\]\s`)
-	return re.ReplaceAllString(note, "")
+	expressions := []string{
+		`(?i)\[action required\]\s`,
+		`(?i)action required:\s`,
+	}
+
+	for _, exp := range expressions {
+		re := regexp.MustCompile(exp)
+		note = re.ReplaceAllString(note, "")
+	}
+
+	return note
 }
 
 func stripStar(note string) string {

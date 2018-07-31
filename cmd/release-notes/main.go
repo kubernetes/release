@@ -37,9 +37,9 @@ func main() {
 
 	// Fetch a list of fully-contextualized release notes
 	level.Info(logger).Log("msg", "fetching all commits. this might take a while...")
-	releaseNotes, err := notes.ListReleaseNotes(githubClient, opts.startSHA, opts.endSHA, notes.WithContext(ctx))
+	releaseNotes, err := notes.ListReleaseNotes(githubClient, logger, opts.startSHA, opts.endSHA, notes.WithContext(ctx))
 	if err != nil {
-		level.Error(logger).Log("msg", "error release notes", "err", err)
+		level.Error(logger).Log("msg", "error generating release notes", "err", err)
 		os.Exit(1)
 	}
 	level.Info(logger).Log("msg", "got the commits, performing rendering")
