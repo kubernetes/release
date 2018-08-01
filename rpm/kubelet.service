@@ -1,6 +1,6 @@
 [Unit]
 Description=kubelet: The Kubernetes Node Agent
-Documentation=https://kubernetes.io/docs/home/?path=users&persona=app-developer&level=foundational
+Documentation=https://kubernetes.io/docs/home
 
 [Service]
 ExecStart=/usr/bin/kubelet
