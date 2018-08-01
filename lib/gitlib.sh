@@ -394,7 +394,7 @@ gitlib::update_release_issue () {
 
     if [[ -n $issue_number ]]; then
       logecho "Created issue #$issue_number on github:"
-      logecho "http://github.com/$repo/issues/$issue_number"
+      logecho "https://github.com/$repo/issues/$issue_number"
     else
       logecho "$WARNING: There was a problem creating the release tracking" \
               "issue.  This should be done manually."
