@@ -17,7 +17,7 @@ v2, err := semver.Make("2.0.0-beta")
 v1.Compare(v2)
 ```
 
-Also check the [GoDocs](http://godoc.org/github.com/blang/semver).
+Also check the [GoDocs](https://godoc.org/github.com/blang/semver).
 
 Why should I use this lib?
 -----
