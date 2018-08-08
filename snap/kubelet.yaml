@@ -16,6 +16,7 @@ apps:
   daemon:
     command: run-with-config-args kubelet-wrapper
     daemon: simple
+    restart-condition: always  # needed for Dynamic Kubelet Config support
   kubelet:
     command: kubelet
 
