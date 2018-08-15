@@ -193,7 +193,7 @@ fi
 
 USEFUL_UPDATES=(update-openapi-spec update-federation-openapi-spec)
 
-logecho -n "Ensure ectd is up to date: "
+logecho -n "Ensure etcd is up to date: "
 logrun -s hack/install-etcd.sh
 export PATH="$TREE_ROOT/third_party/etcd:$PATH"
 
