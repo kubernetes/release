@@ -227,7 +227,7 @@ list_staged_builds () {
 # Stream the latest working job log to the console
 # @optparam build_id - A specific build id to stream
 stream_job_log () {
-  local build_id=${1:-$($GCLOUD container builds list |\
+  local build_id=${1:-$($GCLOUD builds list |\
                         awk '/WORKING/{print $1;exit}')}
                         #highlighting fix'
 
@@ -239,7 +239,7 @@ stream_job_log () {
 
   logecho "Waiting for GCP to initiate stream..."
   logecho
-  $GCLOUD container builds log --stream $build_id
+  $GCLOUD builds log --stream $build_id
 }
 
 ###############################################################################
@@ -266,12 +266,12 @@ list_jobs () {
   {
   echo "TAGS S ID START($(date +%Z))"
   echo "=============== = ===================================== ==============="
-  $GCLOUD container builds list | sed -n '2,$p' | \
+  $GCLOUD builds list | sed -n '2,$p' | \
   while read id time elapsed source images status; do
     [[ $status != "${state:-$status}" ]] && continue
     ((counter++))
 
-    tags=$($GCLOUD container builds describe $id --format=json|\
+    tags=$($GCLOUD builds describe $id --format=json|\
            jq -r '.tags[]' 2>&-)
 
     # Convert time to local time
@@ -296,7 +296,7 @@ submit_it () {
   substitutions+=",_RELEASE_BRANCH=$RELEASE_BRANCH,_OFFICIAL=$OFFICIAL,_RC=$RC"
   substitutions+=",_NOMOCK=$NOMOCK,_BUILDVERSION=$BUILDVERSION"
 
-  if ! JOB_DATA=$($GCLOUD container builds submit --no-source \
+  if ! JOB_DATA=$($GCLOUD builds submit --no-source \
                           --config=$YAML_FILE --async --disk-size=$DISK_SIZE \
                           --substitutions $substitutions 2>&1); then
     logecho "$FAILED: Job was not submitted.  Details:"
@@ -318,7 +318,7 @@ submit_it () {
   logecho "To view this specific build:"
   logecho "$ $PROG tail $BUILD_ID"
   logecho "-OR-"
-  logecho "$ $GCLOUD container builds log --stream $BUILD_ID"
+  logecho "$ $GCLOUD builds log --stream $BUILD_ID"
   logecho "-OR-"
   logecho "$BUILD_URL"
 }

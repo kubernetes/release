@@ -1,5 +1,5 @@
 # To rebuild and publish this container run:
-#   gcloud container builds submit --config update_build_container.yaml .
+#   gcloud builds submit --config update_build_container.yaml .
 
 FROM ubuntu
 
