@@ -1,1 +1,1 @@
-gcloud container builds submit --config k8s-container.yaml .
+gcloud builds submit --config k8s-container.yaml .
