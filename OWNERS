@@ -1,6 +1,7 @@
 approvers:
 # maintainers
 - ixdy
+- listx
 - mikedanese
 # sig-release leads
 - jdumars
