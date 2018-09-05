@@ -940,19 +940,21 @@ release::docker::release () {
     done
   done
 
-  for image in "${!manifest_images[@]}"; do
-    local archs=$(echo "${manifest_images[$image]}" | sed -e 's/^[[:space:]]*//')
-    local manifest=$(echo $archs | sed -e "s~[^ ]*~$image\-&:$version~g")
-    # This command will push a manifest list: "${registry}/${image}-ARCH:${version}" that points to each architecture depending on which platform you're pulling from
-    logecho "Creating manifest image ${image}:${version}..."
-    logrun -r 5 -s docker manifest create --amend ${image}:${version} ${manifest} || return 1
-    for arch in ${archs}; do
-      logecho "Annotating ${image}-${arch}:${version} with --arch ${arch}..."
-      logrun -r 5 -s docker manifest annotate --arch ${arch} ${image}:${version} ${image}-${arch}:${version} || return 1
+  if [[ "${CLI_EXPERIMENTAL:-}" == "true" ]]; then
+    for image in "${!manifest_images[@]}"; do
+      local archs=$(echo "${manifest_images[$image]}" | sed -e 's/^[[:space:]]*//')
+      local manifest=$(echo $archs | sed -e "s~[^ ]*~$image\-&:$version~g")
+      # This command will push a manifest list: "${registry}/${image}-ARCH:${version}" that points to each architecture depending on which platform you're pulling from
+      logecho "Creating manifest image ${image}:${version}..."
+      logrun -r 5 -s docker manifest create --amend ${image}:${version} ${manifest} || return 1
+      for arch in ${archs}; do
+        logecho "Annotating ${image}-${arch}:${version} with --arch ${arch}..."
+        logrun -r 5 -s docker manifest annotate --arch ${arch} ${image}:${version} ${image}-${arch}:${version} || return 1
+      done
+      logecho "Pushing manifest image ${image}:${version}..."
+      logrun -r 5 -s docker manifest push ${image}:${version} || return 1
     done
-    logecho "Pushing manifest image ${image}:${version}..."
-    logrun -r 5 -s docker manifest push ${image}:${version} || return 1
-  done
+  fi
 
   # Always reset back to $GCP_USER
   # This is set in push-build.sh and anago
