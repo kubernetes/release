@@ -904,7 +904,6 @@ release::docker::release () {
   local -a new_tags
   local new_tag
   local binary
-  local -A manifest_images
 
   if [[ "$registry" == "$GCRIO_PATH_PROD" ]]; then
     # Switch to the push alias if using the $GCRIO_PATH_PROD alias
@@ -925,33 +924,28 @@ release::docker::release () {
       fi
       binary=${BASH_REMATCH[1]}
 
-      new_tag="$push_registry/${binary/-$arch/}"
-      new_tag_with_arch=("$new_tag-$arch:$version")
-      manifest_images["${new_tag}"]+=" $arch"
+      # If amd64, tag both the legacy tag and -amd64 tag
+      if [[ "$arch" == "amd64" ]]; then
+        # binary may or may not already contain -amd64, so strip it first
+        new_tags=(\
+          "$push_registry/${binary/-amd64/}:$version"
+          "$push_registry/${binary/-amd64/}-amd64:$version"
+        )
+      else
+        new_tags=("$push_registry/$binary:$version")
+      fi
 
       logrun docker load -qi $tarfile
-      logrun docker tag $orig_tag ${new_tag_with_arch}
-      logecho -n "Pushing ${new_tag_with_arch}: "
-      # TODO: Use docker direct when fixed later
-      #logrun -r 5 -s docker push "${new_tag_with_arch}" || return 1
-      logrun -r 5 -s $GCLOUD docker -- push "${new_tag_with_arch}" || return 1
-      logrun docker rmi $orig_tag ${new_tag_with_arch} || true
+      for new_tag in ${new_tags[@]}; do
+        logrun docker tag $orig_tag $new_tag
+        logecho -n "Pushing $new_tag: "
+        # TODO: Use docker direct when fixed later
+        #logrun -r 5 -s docker push "$new_tag" || return 1
+        logrun -r 5 -s $GCLOUD docker -- push "$new_tag" || return 1
+      done
+      logrun docker rmi $orig_tag ${new_tags[@]} || true
 
     done
-  done
-
-  for image in "${!manifest_images[@]}"; do
-    local archs=$(echo "${manifest_images[$image]}" | sed -e 's/^[[:space:]]*//')
-    local manifest=$(echo $archs | sed -e "s~[^ ]*~$image\-&:$version~g")
-    # This command will push a manifest list: "${registry}/${image}-ARCH:${version}" that points to each architecture depending on which platform you're pulling from
-    logecho "Creating manifest image ${image}:${version}..."
-    logrun -r 5 -s docker manifest create --amend ${image}:${version} ${manifest} || return 1
-    for arch in ${archs}; do
-      logecho "Annotating ${image}-${arch}:${version} with --arch ${arch}..."
-      logrun -r 5 -s docker manifest annotate --arch ${arch} ${image}:${version} ${image}-${arch}:${version} || return 1
-    done
-    logecho "Pushing manifest image ${image}:${version}..."
-    logrun -r 5 -s docker manifest push ${image}:${version} || return 1
   done
 
   # Always reset back to $GCP_USER
