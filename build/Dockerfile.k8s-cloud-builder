@@ -1,7 +1,7 @@
 # To rebuild and publish this container run:
 #   gcloud builds submit --config update_build_container.yaml .
 
-FROM ubuntu:16.04
+FROM ubuntu
 
 # Install packages
 RUN apt-get -q update && apt-get install -qqy apt-transport-https \
@@ -47,5 +47,7 @@ RUN \
       stable edge" && \
    apt-get -y update
 
-ARG DOCKER_VERSION=18.06.0~ce~3-0~ubuntu
+# As of 2018-04-10, leaving this pinned to 17.09 due to image pull issues
+# with 17.12
+ARG DOCKER_VERSION=17.09.0~ce-0~ubuntu
 RUN apt-get install -y docker-ce=${DOCKER_VERSION} unzip
