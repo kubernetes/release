@@ -357,15 +357,21 @@ check_prerequisites () {
   fi
   logecho -r "$OK"
 
+  # DEBUGGING docker CLI problems
+  logecho -r "$HOME"
+  cat /root/.docker/config.json
+  # Set the experimental flag for docker CLI
+  echo '{"experimental": "enabled"}' > $HOME/config.json
+  cat $HOME/config.json
+
   # TODO: Remove this section once docker manifest command promoted
   # from Experimental
   logecho -n "Checking Docker CLI Experimental status: "
-  cli_experimental=$(docker version --format '{{.Client.Experimental}}' | cut -d"-" -f1)
-  if [[ "${cli_experimental}" == "false" ]]; then
+  CLI_EXPERIMENTAL=$(docker version --format '{{.Client.Experimental}}' | cut -d"-" -f1)
+  if [[ "${CLI_EXPERIMENTAL}" == "false" ]]; then
     logecho "Docker Client Experimental flag is false, should be enabled to " \
             "push the manifest images"
     logecho "More info: https://docs.docker.com/edge/engine/reference/commandline/manifest_create/"
-    return 1
   fi
   logecho -r "$OK"
 
