@@ -50,7 +50,7 @@ RUN \
 RUN mkdir /root/.docker
 RUN echo '{' \
          '    "experimental": "enabled"' \
-         '}' > /root/.docker/config.json
+         ''} > /root/.docker/config.json
 
 ARG DOCKER_VERSION=18.06.0~ce~3-0~ubuntu
 RUN apt-get install -y docker-ce=${DOCKER_VERSION} unzip
