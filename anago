@@ -357,9 +357,12 @@ check_prerequisites () {
   fi
   logecho -r "$OK"
 
+  # Ensure that the docker command line supports the manifest images
+  export DOCKER_CLI_EXPERIMENTAL=enabled
+
   # TODO: Remove this section once docker manifest command promoted
   # from Experimental
-  logecho -n "Checking Docker CLI Experimental status: "
+  logecho -n "Verifying Docker CLI Experimental status: "
   cli_experimental=$(docker version --format '{{.Client.Experimental}}' | cut -d"-" -f1)
   if [[ "${cli_experimental}" == "false" ]]; then
     logecho "Docker Client Experimental flag is false, should be enabled to " \
