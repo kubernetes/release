@@ -348,27 +348,6 @@ check_prerequisites () {
 
   security_layer::auth_check 2 || return 1
 
-  logecho -n "Checking Docker version: "
-  docker_version=$(docker version --format '{{.Client.Version}}' | cut -d"-" -f1)
-  if [[ ${docker_version} != 18.06.0 && ${docker_version} < 18.06.0 ]]; then
-    logecho "Minimum docker version 18.06.0 is required for " \
-            "creating and pushing manifest images[found: ${docker_version}]"
-    return 1
-  fi
-  logecho -r "$OK"
-
-  # TODO: Remove this section once docker manifest command promoted
-  # from Experimental
-  logecho -n "Checking Docker CLI Experimental status: "
-  cli_experimental=$(docker version --format '{{.Client.Experimental}}' | cut -d"-" -f1)
-  if [[ "${cli_experimental}" == "false" ]]; then
-    logecho "Docker Client Experimental flag is false, should be enabled to " \
-            "push the manifest images"
-    logecho "More info: https://docs.docker.com/edge/engine/reference/commandline/manifest_create/"
-    return 1
-  fi
-  logecho -r "$OK"
-
   if ! ((FLAGS_gcb)); then
     ensure_gcp_users || return 1
   fi
