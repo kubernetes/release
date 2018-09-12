@@ -185,7 +185,7 @@ mv cni-plugins/bin/ %{buildroot}/opt/cni/
 
 
 %changelog
-* Fri July 13 2018 Lantao Liu <lantaol@google.com> - 1.11.0
+* Fri Jul 13 2018 Lantao Liu <lantaol@google.com> - 1.11.0
 - Bump cri-tools to 1.11.1.
 
 * Tue Jun 19 2018 Chuck Ha <chuck@heptio.com> - 1.11.0
