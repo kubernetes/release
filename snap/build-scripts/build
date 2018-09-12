@@ -64,7 +64,7 @@ for app in $apps; do
         -e "s/\$KUBE_VERSION/${KUBE_VERSION:1}/g" \
         -e "s/\$SNAP_ARCH/$SNAP_ARCH/g" $app.yaml > $build_dir/snapcraft.yaml
 
-    (cd $build_dir && snapcraft cleanbuild)
+    (cd $build_dir && snapcraft)
     mv $build_dir/*.snap build
   done
 done
