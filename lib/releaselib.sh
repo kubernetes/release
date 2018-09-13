@@ -940,6 +940,9 @@ release::docker::release () {
     done
   done
 
+  # Ensure that the docker command line supports the manifest images
+  export DOCKER_CLI_EXPERIMENTAL=enabled
+
   for image in "${!manifest_images[@]}"; do
     local archs=$(echo "${manifest_images[$image]}" | sed -e 's/^[[:space:]]*//')
     local manifest=$(echo $archs | sed -e "s~[^ ]*~$image\-&:$version~g")
