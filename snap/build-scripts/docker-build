@@ -1,13 +1,7 @@
 #!/bin/bash
 
-docker run --rm -v "$PWD":/root/snap -w /root/snap \
-       -e SNAPCRAFT_SETUP_CORE=1 \
+docker build -t docker-build .
+docker run --rm -v $PWD/build:/code/build \
        -e KUBE_ARCH=$KUBE_ARCH \
        -e KUBE_VERSION=$KUBE_VERSION \
-       -v /usr/bin/curl:/usr/bin/curl \
-       -v /usr/bin/make:/usr/bin/make \
-       -v /usr/share/misc/magic.mgc:/usr/share/misc/magic.mgc \
-       -v /usr/bin/file:/usr/bin/file \
-       -v /usr/lib/x86_64-linux-gnu/libmagic.so.1:/usr/lib/x86_64-linux-gnu/libmagic.so.1 \
-       snapcore/snapcraft:stable \
-       ./build-scripts/build "$@"
+       docker-build "$@"
