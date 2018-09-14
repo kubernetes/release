@@ -7,7 +7,7 @@ endif
 
 targets = kubectl kube-apiserver kube-controller-manager kube-scheduler kubelet kube-proxy kubeadm kubernetes-test
 
-build = ./docker-build.sh
+build = ./build-scripts/docker-build
 
 .PHONY: $(targets)
 
