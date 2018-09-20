@@ -7,10 +7,10 @@ In the future it is expected that the functionality will expand and be
 generalized to support release infrastructure for all of the kubernetes
 sub-projects as well.
 
-The tooling and doc here is expected to change often as requirements
+The tooling and doc here are expected to change often as requirements
 change and the project(s) evolve.
 
-The doc and tooling in this repo is NOT designed to address the planning,
+The doc and tooling in this repo are NOT designed to address the planning,
 coordination of releases.  For more info on feature and release planning see:
 * [kubernetes/sig-release](https://git.k8s.io/sig-release)
 * [kubernetes/features](https://git.k8s.io/features)
