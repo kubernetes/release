@@ -15,7 +15,7 @@ note tooling provides a complete set of changes since the last major
 milestone release by referencing all alphas and betas for the minor .X. version.
 
 This bootstraps a milestone release in CHANGELOG-x.y.md with a template for
-use by the Release Czar and the subteam area leads to then further expand
+use by the Release Czar and the subteam area leads to further expand
 on the release notes with more detail as needed.
 
 An example major milestone release (x.y.0) in CHANGELOG-x.y.md:
