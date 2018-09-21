@@ -665,6 +665,7 @@ release::gcs::locally_stage_release_artifacts() {
   find $gcs_stage -type f | while read path; do
     common::md5 $path > "$path.md5" || return 1
     common::sha $path 1 > "$path.sha1" || return 1
+    common::sha $path 512 > "$path.sha512" || return 1
   done
 }
 
