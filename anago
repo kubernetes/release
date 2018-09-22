@@ -1039,7 +1039,7 @@ update_github_release () {
   local draft="true"
   local tarball="$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/gcs-stage"
         tarball+="/$RELEASE_VERSION_PRIME/kubernetes.tar.gz"
-  local sha_hash=$(common::sha $tarball 256)
+  local sha_hash=$(common::sha $tarball 512)
 
   ((FLAGS_official)) && prerelease="false"
   if ((FLAGS_nomock)); then
@@ -1090,7 +1090,7 @@ update_github_release () {
     "tag_name": "'$RELEASE_VERSION_PRIME'",
     "target_commitish": "'$RELEASE_BRANCH'",
     "name": "'$RELEASE_VERSION_PRIME'",
-    "body": "See [kubernetes-announce@](https://groups.google.com/forum/#!forum/kubernetes-announce) and ['$CHANGELOG_FILE']('$changelog_url'#'${RELEASE_VERSION_PRIME//\./}') for details.\n\nSHA256 for `kubernetes.tar.gz`: `'$sha_hash'`\n\nAdditional binary downloads are linked in the ['$CHANGELOG_FILE']('$changelog_url'#downloads-for-'${RELEASE_VERSION_PRIME//\./}').",
+    "body": "See [kubernetes-announce@](https://groups.google.com/forum/#!forum/kubernetes-announce) and ['$CHANGELOG_FILE']('$changelog_url'#'${RELEASE_VERSION_PRIME//\./}') for details.\n\nSHA512 for `kubernetes.tar.gz`: `'$sha_hash'`\n\nAdditional binary downloads are linked in the ['$CHANGELOG_FILE']('$changelog_url'#downloads-for-'${RELEASE_VERSION_PRIME//\./}').",
     "draft": '$draft',
     "prerelease": '$prerelease'
     }' |jq -r '.id')
