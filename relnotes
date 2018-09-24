@@ -59,7 +59,7 @@ PROG=${0##*/}
 #+     --full                    - Force 'full' release format to show all
 #+                                 sections of release notes. (This is the
 #+                                 *default* for new branch X.Y.0 notes)
-#+     --release-tars=           - directory of tars to sha256 sum for display
+#+     --release-tars=           - directory of tars to sha512 sum for display
 #+     --markdown-file=          - Specify an alt file to use to store notes
 #+     --html-file=              - Produce a html version of the notes
 #+     --release-bucket=         - Specify gs bucket to point to in
@@ -189,10 +189,10 @@ create_downloads_table () {
 
   [[ -n "$heading" ]] && echo "### $heading"
   echo
-  echo "filename | sha256 hash"
+  echo "filename | sha512 hash"
   echo "-------- | -----------"
   for file in $@; do
-    echo "[${file##*/}]($url_prefix/$release_tag/${file##*/}) | \`$(common::sha $file 256)\`"
+    echo "[${file##*/}]($url_prefix/$release_tag/${file##*/}) | \`$(common::sha $file 512)\`"
   done
   echo
 }

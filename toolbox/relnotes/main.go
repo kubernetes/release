@@ -55,7 +55,7 @@ var (
 	preview       = flag.Bool("preview", false, "Report additional branch statistics (used for reporting outside of releases)")
 	quiet         = flag.Bool("quiet", false, "Don't display the notes when done")
 	releaseBucket = flag.String("release-bucket", "kubernetes-release", "Specify Google Storage bucket to point to in generated notes (informational only)")
-	releaseTars   = flag.String("release-tars", "", "Directory of tars to sha256 sum for display")
+	releaseTars   = flag.String("release-tars", "", "Directory of tars to sha512 sum for display")
 	repo          = flag.String("repo", "kubernetes", "Github repository")
 
 	// Global
@@ -515,7 +515,7 @@ func createBody(f *os.File, releaseTag, branch, docURL, exampleURL, releaseTars 
 	return nil
 }
 
-// createDownloadTable creates table of download link and sha256 hash for given file.
+// createDownloadTable creates table of download link and sha512 hash for given file.
 func createDownloadsTable(f *os.File, releaseTag, heading string, filename ...string) error {
 	var urlPrefix string
 
@@ -534,7 +534,7 @@ func createDownloadsTable(f *os.File, releaseTag, heading string, filename ...st
 	}
 
 	f.WriteString("\n")
-	f.WriteString("filename | sha256 hash\n")
+	f.WriteString("filename | sha512 hash\n")
 	f.WriteString("-------- | -----------\n")
 
 	files := make([]string, 0)
@@ -547,9 +547,9 @@ func createDownloadsTable(f *os.File, releaseTag, heading string, filename ...st
 
 	for _, file := range files {
 		fn := filepath.Base(file)
-		sha, err := u.GetSha256(file)
+		sha, err := u.GetSha512(file)
 		if err != nil {
-			return fmt.Errorf("failed to calc SHA256 of file %s: %v", file, err)
+			return fmt.Errorf("failed to calc SHA512 of file %s: %v", file, err)
 		}
 		f.WriteString(fmt.Sprintf("[%s](%s/%s/%s) | `%s`\n", fn, urlPrefix, releaseTag, fn, sha))
 	}

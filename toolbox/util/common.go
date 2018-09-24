@@ -15,7 +15,7 @@
 package util
 
 import (
-	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -31,15 +31,15 @@ func Shell(name string, arg ...string) (string, error) {
 	return string(bytes), err
 }
 
-// GetSha256 calculates SHA256 for input file.
-func GetSha256(filename string) (string, error) {
+// GetSha512 calculates SHA512 for input file.
+func GetSha512(filename string) (string, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return "", err
 	}
 	defer f.Close()
 
-	h := sha256.New()
+	h := sha512.New()
 	if _, err := io.Copy(h, f); err != nil {
 		return "", err
 	}
