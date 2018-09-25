@@ -312,7 +312,7 @@ fi
 # @param version - RELEASE_VERSION_PRIME
 # @param repo - org/repo
 # returns 1 if none found
-# prints most recent open issue maching
+# prints most recent open issue matching
 gitlib::search_release_issue () {
   local version=$1
   local repo=$2
