@@ -17,7 +17,11 @@
 %global CNI_VERSION 0.5.1
 %endif
 
+%if %{KUBE_SEMVER} >= %{semver 1 12 1}
+%global CRI_TOOLS_VERSION 1.12.0
+%else
 %global CRI_TOOLS_VERSION 1.11.1
+%endif
 
 Name: kubelet
 Version: %{KUBE_VERSION}
@@ -185,6 +189,9 @@ mv cni-plugins/bin/ %{buildroot}/opt/cni/
 
 
 %changelog
+* Tue Sep 25 2018 Chuck Ha <chuck@heptio.com> - 1.12.1
+- Bump cri-tools to 1.12.0.
+
 * Fri Jul 13 2018 Lantao Liu <lantaol@google.com> - 1.11.0
 - Bump cri-tools to 1.11.1.
 
