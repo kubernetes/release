@@ -135,14 +135,13 @@ func TestCreateBody(t *testing.T) {
 	releaseTag := "v1.7.2"
 	branch := "release-1.7"
 	docURL := "https://testdoc.com"
-	exampleURL := "https://testexample.com"
 	releaseTars := "../../../public_kubernetes/_output/release-tars"
 	f, err := os.Create(filename)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	createBody(f, releaseTag, branch, docURL, exampleURL, releaseTars)
+	createBody(f, releaseTag, branch, docURL, releaseTars)
 }
 
 func TestCreateHTMLNote(t *testing.T) {

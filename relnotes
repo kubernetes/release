@@ -222,8 +222,7 @@ create_body () {
   echo
   echo "# $title"
   echo
-  echo "[Documentation](https://docs.k8s.io) &" \
-       "[Examples](https://releases.k8s.io/$CURRENT_BRANCH/examples)"
+  echo "[Documentation](https://docs.k8s.io)"
   echo
   if [[ -n $release_tars ]]; then
     echo "## Downloads for $title"

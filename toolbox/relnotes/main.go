@@ -42,10 +42,9 @@ const (
 var (
 	// Flags
 	// TODO: golang flags and parameters syntax
-	branch           = flag.String("branch", "", "Specify a branch other than the current one")
-	documentURL      = flag.String("doc-url", "https://docs.k8s.io", "Documentation URL displayed in release notes")
-	exampleURLPrefix = flag.String("example-url-prefix", "https://releases.k8s.io/", "Example URL prefix displayed in release notes")
-	full             = flag.Bool("full", false, "Force 'full' release format to show all sections of release notes. "+
+	branch      = flag.String("branch", "", "Specify a branch other than the current one")
+	documentURL = flag.String("doc-url", "https://docs.k8s.io", "Documentation URL displayed in release notes")
+	full        = flag.Bool("full", false, "Force 'full' release format to show all sections of release notes. "+
 		"(This is the *default* for new branch X.Y.0 notes)")
 	githubToken   = flag.String("github-token", "", "The file that contains Github token. Must be specified, or set the GITHUB_TOKEN environment variable.")
 	htmlFileName  = flag.String("html-file", "", "Produce a html version of the notes")
@@ -306,9 +305,8 @@ func generateMDFile(g *u.GithubClient, releaseTag, prFileName string) error {
 		}
 	}()
 
-	// Create markdown file body with documentation and example URLs from program flags
-	exampleURL := fmt.Sprintf("%s%s/examples", *exampleURLPrefix, *branch)
-	err = createBody(mdFile, releaseTag, *branch, *documentURL, exampleURL, *releaseTars)
+	// Create markdown file body with documentation URL from program flags
+	err = createBody(mdFile, releaseTag, *branch, *documentURL, *releaseTars)
 	if err != nil {
 		return fmt.Errorf("failed to create file body: %v", err)
 	}
@@ -471,9 +469,9 @@ func getCIJobStatus(outputFile, branch string, htmlize bool) error {
 	return result
 }
 
-// createBody creates the general documentation, example and downloads table body for the
+// createBody creates the general documentation and downloads table body for the
 // markdown file.
-func createBody(f *os.File, releaseTag, branch, docURL, exampleURL, releaseTars string) error {
+func createBody(f *os.File, releaseTag, branch, docURL, releaseTars string) error {
 	var title string
 	if *preview {
 		title = "Branch "
@@ -490,7 +488,7 @@ func createBody(f *os.File, releaseTag, branch, docURL, exampleURL, releaseTars 
 	}
 
 	f.WriteString(fmt.Sprintf("\n# %s\n\n", title))
-	f.WriteString(fmt.Sprintf("[Documentation](%s) & [Examples](%s)\n\n", docURL, exampleURL))
+	f.WriteString(fmt.Sprintf("[Documentation](%s)\n\n", docURL))
 
 	if releaseTars != "" {
 		f.WriteString(fmt.Sprintf("## Downloads for %s\n\n", title))
