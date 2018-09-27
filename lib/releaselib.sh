@@ -955,7 +955,7 @@ release::docker::release () {
       logrun -r 5 -s docker manifest annotate --arch ${arch} ${image}:${version} ${image}-${arch}:${version} || return 1
     done
     logecho "Pushing manifest image ${image}:${version}..."
-    logrun -r 5 -s docker manifest push ${image}:${version} || return 1
+    logrun -r 5 -s docker manifest push --purge ${image}:${version} || return 1
   done
 
   # Always reset back to $GCP_USER
