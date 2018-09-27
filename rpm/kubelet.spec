@@ -141,7 +141,7 @@ install -m 755 -d %{buildroot}/var/lib/kubelet/
 install -p -m 755 -t %{buildroot}%{_bindir}/ kubelet
 install -p -m 755 -t %{buildroot}%{_bindir}/ kubectl
 install -p -m 755 -t %{buildroot}%{_bindir}/ kubeadm
-install -p -m 755 -t %{buildroot}%{_sysconfdir}/systemd/system/ kubelet.service
+install -p -m 644 -t %{buildroot}%{_sysconfdir}/systemd/system/ kubelet.service
 install -p -m 755 -t %{buildroot}%{_sysconfdir}/systemd/system/kubelet.service.d/ 10-kubeadm.conf
 install -p -m 755 -t %{buildroot}%{_bindir}/ cri-tools/crictl
 
