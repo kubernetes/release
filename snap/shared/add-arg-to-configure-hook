@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -eu
+
+type="$1"
+config="$2"
+if ! grep "^config-arg.* $config\$" meta/hooks/configure > /dev/null; then
+  if [ "$type" = "bool" ]; then
+    echo "config-arg-bool $config" >> meta/hooks/configure
+  else
+    echo "config-arg $config" >> meta/hooks/configure
+  fi
+fi

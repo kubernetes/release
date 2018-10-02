@@ -31,4 +31,8 @@ parts:
       cp $KUBE_SNAP_ROOT/kube-apiserver/kube-apiserver-wrapper .
       $KUBE_SNAP_ROOT/shared/generate-configure-hook kube-apiserver
 
+      # --v is missing from help output in 1.12
+      alias add-arg=$KUBE_SNAP_ROOT/shared/add-arg-to-configure-hook
+      add-arg string v
+
       snapcraftctl build
