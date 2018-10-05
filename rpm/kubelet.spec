@@ -1,6 +1,6 @@
 %global KUBE_MAJOR 1
-%global KUBE_MINOR 12
-%global KUBE_PATCH 1
+%global KUBE_MINOR 11
+%global KUBE_PATCH 0
 %global KUBE_VERSION %{KUBE_MAJOR}.%{KUBE_MINOR}.%{KUBE_PATCH}
 %global RPM_RELEASE 0
 %global ARCH amd64
@@ -17,7 +17,7 @@
 %global CNI_VERSION 0.5.1
 %endif
 
-%global CRI_TOOLS_VERSION 1.12.1
+%global CRI_TOOLS_VERSION 1.11.1
 
 Name: kubelet
 Version: %{KUBE_VERSION}
@@ -185,9 +185,6 @@ mv cni-plugins/bin/ %{buildroot}/opt/cni/
 
 
 %changelog
-* Fri Oct 5 2018 Caleb Miles <calebmiles@google.com> - 1.12.1
-  Release of Kubernetes 1.12.1
-
 * Fri Jul 13 2018 Lantao Liu <lantaol@google.com> - 1.11.0
 - Bump cri-tools to 1.11.1.
 
