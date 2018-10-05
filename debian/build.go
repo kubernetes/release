@@ -24,7 +24,7 @@ const (
 	ChannelNightly  ChannelType = "nightly"
 
 	cniVersion         = "0.6.0"
-	criToolsVersion    = "1.11.1"
+	criToolsVersion    = "1.12.0"
 	pre180kubeadmconf  = "pre-1.8/10-kubeadm.conf"
 	pre1110kubeadmconf = "post-1.8/10-kubeadm.conf"
 	latestkubeadmconf  = "post-1.10/10-kubeadm.conf"
@@ -71,6 +71,7 @@ var (
 	serverDistros = stringList{"xenial"}
 	allDistros    = stringList{"xenial", "jessie", "precise", "sid", "stretch", "trusty", "utopic", "vivid", "wheezy", "wily", "yakkety"}
 	kubeVersion   = ""
+	revision      = "00"
 
 	builtins = map[string]interface{}{
 		"date": func() string {
@@ -86,6 +87,7 @@ func init() {
 	flag.Var(&serverDistros, "server-distros", "Server distros to build for.")
 	flag.Var(&allDistros, "distros", "Distros to build for.")
 	flag.StringVar(&kubeVersion, "kube-version", "", "Distros to build for.")
+	flag.StringVar(&revision, "revision", "00", "Deb package revision.")
 }
 
 func runCommand(pwd string, command string, cmdArgs ...string) error {
@@ -303,7 +305,12 @@ func getKubeadmDependencies(v version) (string, error) {
 	}
 
 	if sv.GTE(v1110) {
-		deps = append(deps, "cri-tools (>= 1.11.0)")
+		criToolsVersion, err := getCRIToolsVersion(v)
+		if err != nil {
+			return "", err
+		}
+
+		deps = append(deps, fmt.Sprintf("cri-tools (>= %s)", criToolsVersion))
 		return strings.Join(deps, ", "), nil
 	}
 	return strings.Join(deps, ", "), nil
@@ -354,6 +361,28 @@ func getKubeletCNIVersion(v version) (string, error) {
 	return fmt.Sprint("= 0.5.1"), nil
 }
 
+// getCRIToolsVersion assumes v coming in is >= 1.11.0-alpha.0
+func getCRIToolsVersion(v version) (string, error) {
+	sv, err := semver.Make(v.Version)
+	if err != nil {
+		return "", err
+	}
+
+	v1110, err := semver.Make("1.11.0-alpha.0")
+	if err != nil {
+		return "", err
+	}
+	v1121, err := semver.Make("1.12.1-alpha.0")
+	if err != nil {
+		return "", err
+	}
+
+	if sv.GTE(v1110) && sv.LT(v1121) {
+		return "1.11.1", nil
+	}
+	return "1.12.0", nil
+}
+
 func main() {
 	flag.Parse()
 
@@ -364,19 +393,19 @@ func main() {
 			Versions: []version{
 				{
 					GetVersion:          getStableKubeVersion,
-					Revision:            "00",
+					Revision:            revision,
 					Channel:             ChannelStable,
 					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
 					GetVersion:          getLatestKubeVersion,
-					Revision:            "00",
+					Revision:            revision,
 					Channel:             ChannelUnstable,
 					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
 					GetVersion:          getLatestCIVersion,
-					Revision:            "00",
+					Revision:            revision,
 					Channel:             ChannelNightly,
 					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
 				},
@@ -388,19 +417,19 @@ func main() {
 			Versions: []version{
 				{
 					GetVersion:          getStableKubeVersion,
-					Revision:            "00",
+					Revision:            revision,
 					Channel:             ChannelStable,
 					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
 					GetVersion:          getLatestKubeVersion,
-					Revision:            "00",
+					Revision:            revision,
 					Channel:             ChannelUnstable,
 					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
 					GetVersion:          getLatestCIVersion,
-					Revision:            "00",
+					Revision:            revision,
 					Channel:             ChannelNightly,
 					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
 				},
@@ -412,17 +441,17 @@ func main() {
 			Versions: []version{
 				{
 					Version:  cniVersion,
-					Revision: "00",
+					Revision: revision,
 					Channel:  ChannelStable,
 				},
 				{
 					Version:  cniVersion,
-					Revision: "00",
+					Revision: revision,
 					Channel:  ChannelUnstable,
 				},
 				{
 					Version:  cniVersion,
-					Revision: "00",
+					Revision: revision,
 					Channel:  ChannelNightly,
 				},
 			},
@@ -433,19 +462,19 @@ func main() {
 			Versions: []version{
 				{
 					GetVersion:          getStableKubeVersion,
-					Revision:            "00",
+					Revision:            revision,
 					Channel:             ChannelStable,
 					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
 					GetVersion:          getLatestKubeVersion,
-					Revision:            "00",
+					Revision:            revision,
 					Channel:             ChannelUnstable,
 					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
 					GetVersion:          getLatestCIVersion,
-					Revision:            "00",
+					Revision:            revision,
 					Channel:             ChannelNightly,
 					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
 				},
@@ -457,17 +486,17 @@ func main() {
 			Versions: []version{
 				{
 					GetVersion: getCRIToolsLatestVersion,
-					Revision:   "00",
+					Revision:   revision,
 					Channel:    ChannelStable,
 				},
 				{
 					GetVersion: getCRIToolsLatestVersion,
-					Revision:   "00",
+					Revision:   revision,
 					Channel:    ChannelUnstable,
 				},
 				{
 					GetVersion: getCRIToolsLatestVersion,
-					Revision:   "00",
+					Revision:   revision,
 					Channel:    ChannelNightly,
 				},
 			},
@@ -485,7 +514,7 @@ func main() {
 				Versions: []version{
 					{
 						GetVersion:          getSpecifiedVersion,
-						Revision:            "00",
+						Revision:            revision,
 						Channel:             ChannelStable,
 						GetDownloadLinkBase: getReleaseDownloadLinkBase,
 					},
@@ -497,7 +526,7 @@ func main() {
 				Versions: []version{
 					{
 						GetVersion:          getSpecifiedVersion,
-						Revision:            "00",
+						Revision:            revision,
 						Channel:             ChannelStable,
 						GetDownloadLinkBase: getReleaseDownloadLinkBase,
 					},
@@ -509,7 +538,7 @@ func main() {
 				Versions: []version{
 					{
 						Version:  cniVersion,
-						Revision: "00",
+						Revision: revision,
 						Channel:  ChannelStable,
 					},
 				},
@@ -520,7 +549,7 @@ func main() {
 				Versions: []version{
 					{
 						GetVersion:          getSpecifiedVersion,
-						Revision:            "00",
+						Revision:            revision,
 						Channel:             ChannelStable,
 						GetDownloadLinkBase: getReleaseDownloadLinkBase,
 					},
@@ -532,7 +561,7 @@ func main() {
 				Versions: []version{
 					{
 						GetVersion: getCRIToolsLatestVersion,
-						Revision:   "00",
+						Revision:   revision,
 						Channel:    ChannelStable,
 					},
 				},
