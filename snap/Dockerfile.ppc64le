@@ -1,0 +1,15 @@
+FROM ppc64le/ubuntu:xenial
+RUN apt-get update && \
+  apt-get dist-upgrade --yes && \
+  apt-get install --yes \
+  snapcraft curl file make sudo jq squashfs-tools && \
+  apt-get autoclean --yes && \
+  apt-get clean --yes
+
+ADD . /code
+WORKDIR /code
+ENV SNAPCRAFT_SETUP_CORE=1
+ENV KUBE_ARCH=$KUBE_ARCH
+ENV KUBE_VERSION=$KUBE_VERSION
+ENTRYPOINT ["./build-scripts/build"]
+CMD ["$@"]

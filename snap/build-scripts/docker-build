@@ -1,6 +1,8 @@
 #!/bin/bash
 
-docker build -t docker-build .
+set -eux
+
+docker build -f "./Dockerfile.$(uname -m)" -t docker-build .
 docker run --rm -v $PWD/build:/code/build \
        -e KUBE_ARCH=$KUBE_ARCH \
        -e KUBE_VERSION=$KUBE_VERSION \
