@@ -43,7 +43,7 @@ Source5: https://dl.k8s.io/network-plugins/cni-plugins-%{ARCH}-v%{CNI_VERSION}.t
 %if %{KUBE_SEMVER} >= %{semver 1 11 0}
 Source6: kubelet.env
 %endif
-Source7: https://github.com/kubernetes-incubator/cri-tools/releases/download/v%{CRI_TOOLS_VERSION}/crictl-v%{CRI_TOOLS_VERSION}-linux-amd64.tar.gz
+Source7: https://github.com/kubernetes-incubator/cri-tools/releases/download/v%{CRI_TOOLS_VERSION}/crictl-v%{CRI_TOOLS_VERSION}-linux-%{ARCH}.tar.gz
 
 BuildRequires: curl
 Requires: iptables >= 1.4.21
