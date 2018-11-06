@@ -151,7 +151,7 @@ install -p -m 755 -t %{buildroot}%{_bindir}/ cri-tools/crictl
 
 %if %{KUBE_SEMVER} >= %{semver 1 11 0}
 install -m 755 -d %{buildroot}%{_sysconfdir}/sysconfig/
-install -p -m 755 -T kubelet.env %{buildroot}%{_sysconfdir}/sysconfig/kubelet
+install -p -m 644 -T kubelet.env %{buildroot}%{_sysconfdir}/sysconfig/kubelet
 %endif
 
 
