@@ -10,7 +10,7 @@ This tool also uses [dep](https://github.com/golang/dep) to manage Golang
 dependencies. To install dep, follow the instructions in [dep's Github
 page](https://github.com/golang/dep).
 
-**To bulid, run the build script:**
+**To build, run the build script:**
 
 `./build.sh`
 
