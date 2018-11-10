@@ -617,7 +617,7 @@ release::gcs::locally_stage_release_artifacts() {
       gci_path=$gce_path/trusty
     fi
 
-    # Having the configure-vm.sh script and and trusty code from the GCE cluster
+    # Having the configure-vm.sh script and trusty code from the GCE cluster
     # deploy hosted with the release is useful for GKE.
     # Take it if available (Removed in 1.10+)
     [[ -f $gce_path/configure-vm.sh ]] \
