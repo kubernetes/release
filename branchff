@@ -57,6 +57,12 @@ usage=${1:-yes}
 source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/lib/common.sh"
 source $TOOL_LIB_PATH/gitlib.sh
 
+# fail early if important prereqs are not fullfilled
+common::cmd::ensure::envsubst
+common::cmd::ensure::generic git
+common::cmd::ensure::generic curl
+common::cmd::ensure::generic make
+
 # Set positional args
 RELEASE_BRANCH=${POSITIONAL_ARGV[0]}
 MASTER_OBJECT=${POSITIONAL_ARGV[1]:-"origin/master"}

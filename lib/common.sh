@@ -1150,6 +1150,62 @@ common::stepindex () {
   done
 }
 
+###############################################################################
+# Make sure envsubst is installed, otherwise print how a user might install it
+# and bail out
+common::cmd::ensure::envsubst () {
+  common::cmd::ensure::bail 'envsubst' "$(common::join $'\n' \
+    'Installation' \
+    '  Debian/Ubuntu/...'  \
+    '    $ apt install gettext-base'  \
+    '  MacOS'  \
+    '    $ brew install gettext'  \
+    '    $ ln -s /usr/local/Cellar/gettext/*/bin/envsubst /usr/local/bin/'  \
+  )"
+}
+
+###############################################################################
+# Make sure some command is installed, otherwise print how a user might
+# install it and bail out
+# This is for commands which just can be installed via the package manager and
+# don't need any specific actions at install time
+# @param cmd    name of the command to check for
+# @param debPkg name of the debian package that holds this command
+#               defaults to $cmd
+# @param macPkg name of the brew package that holds this command
+#               defaults to $cmd
+common::cmd::ensure::generic () {
+  local cmd="$1"
+  local debPkg="${2:-$cmd}"
+  local macPkg="${3:-$cmd}"
+  common::cmd::ensure::bail "$cmd" "$(common::join $'\n' \
+    'Installation' \
+    '  Debian/Ubuntu/...'  \
+    '    $ apt install '"$debPkg"  \
+    '  MacOS'  \
+    '    $ brew install '"$macPkg"  \
+  )"
+}
+
+##############################################################################
+# Check if a command is available on the system and bail with a message
+# @param cmd name of the command to check for
+# @param msg the message to print before bailing out
+common::cmd::ensure::bail () {
+  local cmd="$1"
+  local msg="$2"
+
+  if ! command -v "$cmd" >/dev/null 2>&1
+  then
+    {
+      echo "${cmd} not found"
+      echo
+      echo "$msg"
+    } >&2
+    common::exit 1
+  fi
+}
+
 ##############################################################################
 # Validate command-line for re-entrancy
 # Capture the original command-line and warn if subsequent runs differ
