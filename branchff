@@ -88,7 +88,7 @@ gitlib::repo_state || common::exit 1
 ###############################################################################
 # MAIN
 ###############################################################################
-BASEDIR="/usr/local/google/$USER"
+BASEDIR="${BASEDIR:-/usr/local/google/$USER}"
 # WORK/BUILD area
 WORKDIR=$BASEDIR/$PROG-$RELEASE_BRANCH
 # Go tools expect the kubernetes src to be under $GOPATH
@@ -118,7 +118,12 @@ if [[ -d $WORKDIR ]]; then
   logrun rm -rf $WORKDIR || common::exit 1 "Exiting..."
 fi
 
-logrun mkdir -p $WORKDIR
+logrun mkdir -p $WORKDIR || {
+  logecho
+  logecho "$FATAL! cannot create the workdir '$WORKDIR'"
+  logecho 'The workdir can be changed by setting $BASEDIR'
+  common::exit 1
+}
 gitlib::sync_repo $K8S_GITHUB_AUTH_URL $TREE_ROOT || common::exit 1 "Exiting..."
 logrun cd $TREE_ROOT
 
