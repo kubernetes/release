@@ -142,10 +142,8 @@ PROG=${0##*/}
 #+ BUGS/TODO
 #+
 ########################################################################
-# Deal with OSX limitations out the gate for anyone that tries this there
-BASE_ROOT=$(dirname $(readlink -e "$BASH_SOURCE" 2>&1)) \
- || BASE_ROOT="$BASH_SOURCE"
-source $BASE_ROOT/lib/common.sh
+source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/lib/common.sh"
+common::bail_on_mac
 source $TOOL_LIB_PATH/gitlib.sh
 source $TOOL_LIB_PATH/releaselib.sh
 

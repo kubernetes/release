@@ -2,7 +2,7 @@
 #
 # releaselib.sh unit tests
 #
-source $(dirname $(readlink -ne $BASH_SOURCE))/common.sh
+source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/common.sh"
 source $TOOL_LIB_PATH/gitlib.sh
 source $TOOL_LIB_PATH/releaselib.sh
 

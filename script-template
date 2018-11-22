@@ -44,7 +44,7 @@ PROG=${0##*/}
 #+
 #-
 ########################################################################
-source $(dirname $(readlink -ne $0))/lib/common.sh
+source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/lib/common.sh"
 
 cat <<EOF_CAT
 #!/usr/bin/env bash
@@ -103,7 +103,10 @@ PROG=\${0##*/}
 # If NO ARGUMENTS should return *usage*, uncomment the following line:
 #usage=\${1:-yes}
 
-source \$(dirname \$(readlink -ne \$BASH_SOURCE))/lib/common.sh
+source "\$( cd "\$( dirname "\${BASH_SOURCE[0]}" )" && pwd )/lib/common.sh"
+
+# If this script is not supported on mac, bail out early
+common::bail_on_mac
 
 # Process Command-line arguments
 # POSITIONAL_ARGV is provided by common::namevalue after arg preprocessing

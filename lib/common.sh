@@ -24,17 +24,24 @@ export PROG
 
 set -o errtrace
 
-# OSX not supported.  Tell them right away
-if [[ $(uname) == "Darwin" ]]; then
-  echo "OSX is not a supported OS for running these tools. Exiting..."
-  exit 1
-fi
+# if OSX id not supported tell them right away
+common::bail_on_mac () {
+  if [[ $(uname) == "Darwin" ]]; then
+    echo "OSX is not a supported OS for running these tools. Exiting..."
+    exit 1
+  fi
+}
+
+readlinkf() {
+  perl -MCwd -e 'print Cwd::abs_path shift' "$1"
+}
+
 
 ##############################################################################
 # COMMON CONSTANTS
 #
-TOOL_LIB_PATH=${TOOL_LIB_PATH:-$(dirname $(readlink -ne $BASH_SOURCE))}
-TOOL_ROOT=${TOOL_ROOT:-$(readlink -ne $TOOL_LIB_PATH/..)}
+TOOL_LIB_PATH=${TOOL_LIB_PATH:-$(dirname $(readlinkf $BASH_SOURCE))}
+TOOL_ROOT=${TOOL_ROOT:-$(readlinkf $TOOL_LIB_PATH/..)}
 PATH=$TOOL_ROOT:$PATH
 # Provide a default EDITOR for those that don't have this set
 : ${EDITOR:="vi"}

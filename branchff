@@ -54,7 +54,7 @@ PROG=${0##*/}
 # If NO ARGUMENTS should return *usage*, uncomment the following line:
 usage=${1:-yes}
 
-source $(dirname $(readlink -ne $BASH_SOURCE))/lib/common.sh
+source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/lib/common.sh"
 source $TOOL_LIB_PATH/gitlib.sh
 
 # Set positional args
