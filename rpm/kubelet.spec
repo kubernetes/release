@@ -53,6 +53,7 @@ Requires: util-linux
 Requires: ethtool
 Requires: iproute
 Requires: ebtables
+Requires: conntrack
 
 
 %description
