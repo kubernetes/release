@@ -24,17 +24,22 @@ export PROG
 
 set -o errtrace
 
-# OSX not supported.  Tell them right away
+declare -A some_var || (echo "Bash version >= 4.0 required" && exit 1)
+
 if [[ $(uname) == "Darwin" ]]; then
-  echo "OSX is not a supported OS for running these tools. Exiting..."
-  exit 1
+  # Support for OSX.
+  READLINK_CMD=greadlink  
+  LC_ALL=C  # To make BSD sed work with double-quoted strings.
+else
+  READLINK_CMD=readlink
 fi
 
 ##############################################################################
 # COMMON CONSTANTS
 #
-TOOL_LIB_PATH=${TOOL_LIB_PATH:-$(dirname $(readlink -ne $BASH_SOURCE))}
-TOOL_ROOT=${TOOL_ROOT:-$(readlink -ne $TOOL_LIB_PATH/..)}
+
+TOOL_LIB_PATH=${TOOL_LIB_PATH:-$(dirname $($READLINK_CMD -ne $BASH_SOURCE))}
+TOOL_ROOT=${TOOL_ROOT:-$($READLINK_CMD -ne $TOOL_LIB_PATH/..)}
 PATH=$TOOL_ROOT:$PATH
 # Provide a default EDITOR for those that don't have this set
 : ${EDITOR:="vi"}

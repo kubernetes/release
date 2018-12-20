@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Copyright 2016 The Kubernetes Authors.
 #
@@ -89,7 +89,13 @@ PROG=${0##*/}
 # If NO ARGUMENTS should return *usage*, uncomment the following line:
 #usage=${1:-yes}
 
-source $(dirname $(readlink -ne $BASH_SOURCE))/lib/common.sh
+if [[ $(uname) == "Darwin" ]]; then
+  READLINK_CMD=greadlink
+else
+  READLINK_CMD=readlink
+fi
+
+source $(dirname $($READLINK_CMD -ne $BASH_SOURCE))/lib/common.sh
 source $TOOL_LIB_PATH/gitlib.sh
 source $TOOL_LIB_PATH/releaselib.sh
 
@@ -122,7 +128,7 @@ if release::was_built_with_bazel $KUBE_ROOT $FLAGS_release_kind; then
   bazel build //:version
   LATEST=$(cat $KUBE_ROOT/bazel-genfiles/version)
 else
-  LATEST=$(tar -xzf $KUBE_ROOT/_output/release-tars/$FLAGS_release_kind.tar.gz $FLAGS_release_kind/version -O)
+  LATEST=$(tar -O -xzf $KUBE_ROOT/_output/release-tars/$FLAGS_release_kind.tar.gz $FLAGS_release_kind/version)
 fi
 
 if [[ "$LATEST" =~ (${VER_REGEX[release]}(\.${VER_REGEX[build]})?(-dirty)?) ]]; then
