@@ -1,3 +1,5 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
 approvers:
 # maintainers
 - ixdy
@@ -24,3 +26,7 @@ approvers:
 - jberkus
 # 1.12 release lead
 - tpepper
+
+labels:
+- sig/release
+- area/release-eng
