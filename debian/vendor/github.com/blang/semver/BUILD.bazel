@@ -9,6 +9,7 @@ go_library(
         "sort.go",
         "sql.go",
     ],
+    importmap = "k8s.io/release/debian/vendor/github.com/blang/semver",
     importpath = "github.com/blang/semver",
     visibility = ["//visibility:public"],
 )
@@ -22,6 +23,6 @@ go_test(
         "sort_test.go",
         "sql_test.go",
     ],
+    embed = [":go_default_library"],
     importpath = "github.com/blang/semver",
-    library = ":go_default_library",
 )

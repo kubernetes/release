@@ -5,19 +5,19 @@ go_library(
     srcs = ["build.go"],
     importpath = "k8s.io/release/debian",
     visibility = ["//visibility:private"],
-    deps = ["//vendor/github.com/blang/semver:go_default_library"],
+    deps = ["//debian/vendor/github.com/blang/semver:go_default_library"],
 )
 
 go_binary(
     name = "debian",
+    embed = [":go_default_library"],
     importpath = "k8s.io/release/debian",
-    library = ":go_default_library",
     visibility = ["//visibility:public"],
 )
 
 go_test(
     name = "go_default_test",
     srcs = ["build_test.go"],
+    embed = [":go_default_library"],
     importpath = "k8s.io/release/debian",
-    library = ":go_default_library",
 )
