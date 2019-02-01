@@ -145,7 +145,7 @@ release::set_build_version () {
     [[ -n $exclude_patterns && ${all_jobs[$i]} =~ $exclude_patterns ]] \
         || secondary_jobs+=(${all_jobs[$i]})
   done
-  
+
   # Update main cache
   # We dedup the $main_job's list of successful runs and just run through that
   # unique list. We then leave the full state of secondaries below so we have
@@ -234,7 +234,7 @@ release::set_build_version () {
     # we make code changes on the HEAD of the branch (version.go).
     # Verify if discovered build_version's SHA1 hash == HEAD if branch
     # Due to resetting $branch above based on branch==master to workaround
-    # inconsistencies in the testgrid config naming conventions, now look 
+    # inconsistencies in the testgrid config naming conventions, now look
     # *specifically* for a release branch with a version in it (non-master).
     if [[ "$branch" =~ release-([0-9]{1,})\. ]]; then
       if [[ $build_sha1 != $branch_head ]]; then
@@ -531,11 +531,11 @@ release::gcs::destination_empty() {
   if $GSUTIL ls $gcs_destination >/dev/null 2>&1 ; then
     logecho "- Destination exists. To remove, run:"
     logecho "  gsutil -m rm -r $gcs_destination"
-    
+
     if ((FLAGS_allow_dup)) ; then
-      logecho "flag --allow-dup set, continue with overwriting"   
+      logecho "flag --allow-dup set, continue with overwriting"
     else
-      logecho "$FAILED"  
+      logecho "$FAILED"
       return 1
     fi
   fi
@@ -631,6 +631,7 @@ release::gcs::locally_stage_release_artifacts() {
       || return 1
     release::gcs::stage_and_hash $gcs_stage $gci_path/configure.sh extra/gce \
       || return 1
+
     # shutdown.sh was introduced starting from v1.11 to make Preemptible COS nodes
     # on GCP not reboot immediately when terminated. Avoid including it in the release
     # bundle if it is not found (for backwards compatibility).
@@ -638,6 +639,24 @@ release::gcs::locally_stage_release_artifacts() {
       release::gcs::stage_and_hash $gcs_stage $gci_path/shutdown.sh extra/gce \
        || return 1
     fi
+
+    # Having the Windows startup scripts from the GCE cluster deploy hosted with
+    # the release is useful for GKE.
+    windows_local_path=$gce_path/windows
+    windows_gcs_path=extra/gce/windows
+    if [[ -d $windows_local_path ]]; then
+      release::gcs::stage_and_hash $gcs_stage $windows_local_path/configure.ps1 $windows_gcs_path \
+        || return 1
+      release::gcs::stage_and_hash $gcs_stage $windows_local_path/common.psm1 $windows_gcs_path \
+        || return 1
+      release::gcs::stage_and_hash $gcs_stage $windows_local_path/k8s-node-setup.psm1 $windows_gcs_path \
+        || return 1
+      release::gcs::stage_and_hash $gcs_stage $windows_local_path/testonly/install-ssh.psm1 $windows_gcs_path \
+        || return 1
+      release::gcs::stage_and_hash $gcs_stage $windows_local_path/testonly/user-profile.psm1 $windows_gcs_path \
+        || return 1
+    fi
+
   fi
 
   # Upload the "naked" binaries to GCS.  This is useful for install scripts that
@@ -1094,7 +1113,7 @@ release::send_announcement () {
 # RELEASE_BUCKET - mock or standard release bucket location
 # BUCKET_TYPE - stage or release
 # WRITE_RELEASE_BUCKETS - array of writable buckets
-# READ_RELEASE_BUCKETS - array of readable buckets for multiple sourcing of 
+# READ_RELEASE_BUCKETS - array of readable buckets for multiple sourcing of
 #                        mock staged builds
 # GCRIO_PATH - GCR path based on mock or --nomock
 # ALL_CONTAINER_REGISTRIES - when running mock (via GCB) this array also
