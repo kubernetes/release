@@ -48,7 +48,7 @@ can be staged and later released using this method.
 
 ### anago
 
-The main driver for creating staged builds and releases.  This is what runs 
+The main driver for creating staged builds and releases.  This is what runs
 inside GCB after a job is submitted using `gcbmgr`.
 
 ### branchff
@@ -107,7 +107,7 @@ a fully deployed and announced release, add `--nomock` to the command line.
 * [anago](https://github.com/kubernetes/release/blob/master/anago) : Release Tool
 * [branchff](https://github.com/kubernetes/release/blob/master/branchff) : Fast-forward branching helper
 * [find_green_build](https://github.com/kubernetes/release/blob/master/find_green_build) : Ask Jenkins for a good build to use
-* [relnotes](https://github.com/kubernetes/release/blob/master/relnotes) : Scrape github for release notes \(See below for more info\)
+* [release-notes](https://github.com/kubernetes/release/blob/master/cmd/release-notes) : Scrape github for release notes \(See below for more info\)
 * [prin](https://github.com/kubernetes/release/blob/master/prin) : What tags/releases is my PR IN?
 * [changelog-update](https://github.com/kubernetes/release/blob/master/changelog-update) : Update CHANGELOG.md version entries by rescanning github for text and label changes
 * [push-build.sh](https://github.com/kubernetes/release/blob/master/push-build.sh) : Push a developer (or CI) build up to GCS
@@ -115,19 +115,23 @@ a fully deployed and announced release, add `--nomock` to the command line.
 
 ## Release Notes Gathering
 
+For more extensive build and usage documentation for the `release-notes` tool, see the [documentation](./cmd/release-notes/README.md).
+
+Once the tool is installed, use `-h` or `--help` to see the command usage:
+
 ```
-# get details on how to use the tool
-$ relnotes -man
-$ cd /kubernetes
-
-# Show release notes from the last release on a branch to HEAD
-$ relnotes
-
-# Show release notes from the last release on a specific branch to branch HEAD
-$ relnotes --branch=release-1.10
-
-# Show release notes between two specific releases
-$ relnotes v1.10.0..v1.10.1 --branch=release-1.10
+$ release-notes -h
+Usage of release-notes:
+  -end-sha string
+        The commit hash to end at
+  -format string
+        The format for notes output (options: markdown, json) (default "markdown")
+  -github-token string
+        A personal GitHub access token (required)
+  -output string
+        The path to the where the release notes will be printed
+  -start-sha string
+        The commit hash to start at
 ```
 
 ## Building Linux Packages

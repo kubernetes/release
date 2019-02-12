@@ -64,10 +64,7 @@
   branch = "master"
   digest = "1:1defde183560d2c395f6d10fe8032dd4642a78765b1c65bede2bd0545cfa3d8d"
   name = "github.com/kolide/kit"
-  packages = [
-    "env",
-    "logutil",
-  ]
+  packages = ["env"]
   pruneopts = ""
   revision = "c155a91098e3c16721433130c82c3525abe4a450"
 
@@ -153,7 +150,6 @@
     "github.com/go-kit/kit/log/level",
     "github.com/google/go-github/github",
     "github.com/kolide/kit/env",
-    "github.com/kolide/kit/logutil",
     "github.com/pkg/errors",
     "github.com/stretchr/testify/require",
     "golang.org/x/oauth2",
