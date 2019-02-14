@@ -1,33 +1,12 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 approvers:
-# maintainers
-- ixdy
-- listx
-- mikedanese
-# sig-release leads
-- jdumars
-- calebamiles
-# 1.10 patch release manager
-- maciekpytel
-# 1.11 patch release manager
-- foxish
-# 1.12 patch release manager
-- feiskyer
-# 1.13 patch release team
-- aleksandra-malinowska
-- tpepper
-# 1.10 release lead (for completeness, but dupe of sig-release leads)
-#- jdumars
-# 1.11 release lead
-- jberkus
-# 1.12 release lead
-- tpepper
-# 1.13 release lead
-- AishSundar
-# 1.14 release lead
-- spiffxp
-
+  - sig-release-leads
+  - release-engineering
+  - branch-manager-role
+  - patch-release-manager-role
+reviewers:
+  - release-team-lead-role
 labels:
-- sig/release
-- area/release-eng
+  - sig/release
+  - area/release-eng
