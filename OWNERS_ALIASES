@@ -1,0 +1,27 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+aliases:
+  sig-release-leads:
+    - calebamiles
+    - justaugustus
+    - tpepper
+  release-engineering:
+    - aleksandra-malinowska
+    - calebamiles
+    - ixdy
+    - mikedanese
+    - tpepper
+  patch-release-manager-role:
+    - foxish # 1.11
+    - feiskyer # 1.12
+    - aleksandra-malinowska # 1.13
+    - tpepper # 1.13
+  branch-manager-role:
+    - calebamiles # 1.11
+    - dougm # 1.13 / 1.12
+    - hoegaarden # 1.14
+  release-team-lead-role:
+    - jberkus # 1.11
+    - tpepper # 1.12
+    - aishsundar # 1.13
+    - spiffxp # 1.14
