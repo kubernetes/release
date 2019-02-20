@@ -22,6 +22,6 @@ go_test(
         "github_test.go",
         "gitlib_test.go",
     ],
+    embed = [":go_default_library"],
     importpath = "k8s.io/release/toolbox/util",
-    library = ":go_default_library",
 )
