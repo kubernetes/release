@@ -170,7 +170,7 @@ mv cni-plugins/bin/ %{buildroot}/opt/cni/
 %{_sysconfdir}/kubernetes/manifests/
 
 %if %{KUBE_SEMVER} >= %{semver 1 11 0}
-%{_sysconfdir}/sysconfig/kubelet
+%config(noreplace) %{_sysconfdir}/sysconfig/kubelet
 %endif
 
 %files -n kubernetes-cni
