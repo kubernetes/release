@@ -281,7 +281,7 @@ gitlib::push_master () {
 
 ##############################################################################
 # Ensure TOOL_ROOT running with a synced repo.
-# 
+#
 gitlib::repo_state () {
   local branch=$(gitlib::current_branch $TOOL_ROOT) || return 1
   local remote=$(git -C $TOOL_ROOT remote -v |\

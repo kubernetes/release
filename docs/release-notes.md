@@ -86,7 +86,7 @@ details on the release are forthcoming.
 and there's a release note label for that if your known issue is covered
 by a PR.
 
-If your known issue requires more detail than can fit in a PR title, see the 
+If your known issue requires more detail than can fit in a PR title, see the
 next FAQ item below.
 
 If your known issue isn't tracked by a PR at all, please contact your area lead and cloud-kubernetes-release@google.com to discuss.

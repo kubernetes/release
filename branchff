@@ -138,7 +138,7 @@ fi
 ##############################################################################
 common::stepheader "CHECK GIT PUSH ACCESS"
 ##############################################################################
-# TODO: capture state of access without forcing us into a prompt I have to 
+# TODO: capture state of access without forcing us into a prompt I have to
 #       expose.
 logecho -n "Checking git push access (verbosely to accept password if needed)"
 logrun -v git push -q --dry-run $K8S_GITHUB_AUTH_URL || common::exit 1 "Exiting..."
