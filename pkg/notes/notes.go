@@ -70,6 +70,10 @@ type ReleaseNote struct {
 	// ActionRequired indicates whether or not the release-note-action-required
 	// label was set on the PR
 	ActionRequired bool `json:"action_required,omitempty"`
+
+	// Tags each note with a release version if specified
+	// If not specified, omitted
+	ReleaseVersion string `json:"release_version,omitempty"`
 }
 
 // githubApiOption is a type which allows for the expression of API configuration
@@ -124,7 +128,8 @@ func ListReleaseNotes(
 	client *github.Client,
 	logger log.Logger,
 	start,
-	end string,
+	end,
+	relVer string,
 	opts ...githubApiOption,
 ) ([]*ReleaseNote, error) {
 	commits, err := ListCommitsWithNotes(client, logger, start, end, opts...)
@@ -139,7 +144,7 @@ func ListReleaseNotes(
 			continue
 		}
 
-		note, err := ReleaseNoteFromCommit(commit, client, opts...)
+		note, err := ReleaseNoteFromCommit(commit, client, relVer, opts...)
 		if err != nil {
 			level.Error(logger).Log(
 				"err", err,
@@ -195,7 +200,7 @@ func NoteTextFromString(s string) (string, error) {
 
 // ReleaseNoteFromCommit produces a full contextualized release note given a
 // GitHub commit API resource.
-func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Client, opts ...githubApiOption) (*ReleaseNote, error) {
+func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Client, relVer string, opts ...githubApiOption) (*ReleaseNote, error) {
 	pr, err := PRFromCommit(client, commit, opts...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error parsing release note from commit %s", commit.GetSHA())
@@ -241,6 +246,7 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 		Feature:        IsFeature,
 		Duplicate:      IsDuplicate,
 		ActionRequired: IsActionRequired(pr),
+		ReleaseVersion: relVer,
 	}, nil
 }
 

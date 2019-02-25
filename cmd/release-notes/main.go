@@ -13,8 +13,8 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/google/go-github/github"
 	"github.com/kolide/kit/env"
+	"github.com/kubernetes/release/pkg/notes"
 	"golang.org/x/oauth2"
-	"k8s.io/release/pkg/notes"
 )
 
 type options struct {
@@ -22,6 +22,7 @@ type options struct {
 	output      string
 	startSHA    string
 	endSHA      string
+	relVer      string
 	format      string
 }
 
@@ -59,6 +60,13 @@ func parseOptions(args []string) (*options, error) {
 			"The commit hash to end at",
 		)
 
+		// flRelVer contains the commit SHA where the release note generation ends.
+		flRelVer = flagset.String(
+			"release-version",
+			env.String("RELEASE_VERSION", ""),
+			"The release version to generate notes for. e.g. `1.14`",
+		)
+
 		// flFormat is the output format to produce the notes in.
 		flFormat = flagset.String(
 			"format",
@@ -92,6 +100,7 @@ func parseOptions(args []string) (*options, error) {
 		output:      *flOutput,
 		startSHA:    *flStartSHA,
 		endSHA:      *flEndSHA,
+		relVer:      *flRelVer,
 		format:      *flFormat,
 	}, nil
 }
@@ -118,7 +127,7 @@ func main() {
 
 	// Fetch a list of fully-contextualized release notes
 	level.Info(logger).Log("msg", "fetching all commits. this might take a while...")
-	releaseNotes, err := notes.ListReleaseNotes(githubClient, logger, opts.startSHA, opts.endSHA, notes.WithContext(ctx))
+	releaseNotes, err := notes.ListReleaseNotes(githubClient, logger, opts.startSHA, opts.endSHA, opts.relVer, notes.WithContext(ctx))
 	if err != nil {
 		level.Error(logger).Log("msg", "error generating release notes", "err", err)
 		os.Exit(1)
