@@ -942,7 +942,7 @@ common::set_cloud_binaries () {
 
   logecho -n "Checking/setting cloud tools: "
 
-  for GSUTIL in $(which gsutil) /opt/google/google-cloud-sdk/bin/gsutil; do
+  for GSUTIL in "$(which gsutil)" /opt/google/google-cloud-sdk/bin/gsutil; do
     [[ -x $GSUTIL ]] && break
   done
 

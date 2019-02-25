@@ -367,6 +367,7 @@ common::logfileinit $MYLOG 10
 # BEGIN script
 common::timestamp begin
 
+common::check_packages jq git bsdmainutils || common::exit 1 "Exiting..."
 gitlib::repo_state || common::exit 1 "Exiting..."
 
 # Ensure some prerequisites
@@ -377,7 +378,6 @@ if ! common::set_cloud_binaries; then
   logecho "https://developers.google.com/cloud/sdk/"
   common::exit 1 "Exiting..."
 fi
-common::check_packages jq || common::exit 1 "Exiting..."
 
 logecho
 
