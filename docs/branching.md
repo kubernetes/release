@@ -43,7 +43,7 @@ The automatically notified contributor then creates a `cherrypick-candidate` PR
 for the emergency change using the `cherry_pick_pull.sh` tool.
 
 ```
-# Create the new release with the emergency change added only to the v1.3.0 
+# Create the new release with the emergency change added only to the v1.3.0
 # tag and branch
 $ anago --official release-1.3.0
 ```

@@ -343,7 +343,7 @@ generate_notes () {
     return 1
   fi
 
-  # Deref all the PRs back to master, paying special attention to 
+  # Deref all the PRs back to master, paying special attention to
   # automated cherrypicks that could have multiple sources
   while read line; do
     if [[ "$line" =~ automated-cherry-pick-of-(#[0-9]+-){1,} ]]; then

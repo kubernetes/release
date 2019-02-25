@@ -44,8 +44,8 @@ PROG=${0##*/}
 #+     [--nomock]                - Enables a real push (--ci only)
 #+     [--federation]            - Enable FEDERATION push
 #+     [--ci]                    - Used when called from Jenkins (for ci runs)
-#+     [--extra-publish-file=]   - Used when need to upload additional version 
-#+                                 file to GCS. The path is relative and is 
+#+     [--extra-publish-file=]   - Used when need to upload additional version
+#+                                 file to GCS. The path is relative and is
 #+                                 append to a GCS path. (--ci only)
 #+     [--bucket=]               - Specify an alternate bucket for pushes
 #+     [--release-type=]         - Override auto-detected release type

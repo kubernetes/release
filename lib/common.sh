@@ -28,7 +28,7 @@ declare -A some_var || (echo "Bash version >= 4.0 required" && exit 1)
 
 if [[ $(uname) == "Darwin" ]]; then
   # Support for OSX.
-  READLINK_CMD=greadlink  
+  READLINK_CMD=greadlink
   LC_ALL=C  # To make BSD sed work with double-quoted strings.
 else
   READLINK_CMD=readlink
