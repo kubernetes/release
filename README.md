@@ -55,7 +55,7 @@ inside GCB after a job is submitted using `gcbmgr`.
 
 The branch fast-forward tool used between after a new branch as been created.
 
-See the [Playbook](ADD LINK) for more details.
+See the [Branch Manager Handbook](https://github.com/kubernetes/sig-release/tree/master/release-team/role-handbooks/branch-manager#branch-fast-forward) for more details.
 
 ## Common Workflows
 
