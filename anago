@@ -1515,9 +1515,6 @@ elif ! ((FLAGS_prebuild)); then
   common::stepindex "push_all_artifacts"
   if ! ((FLAGS_stage)); then
     common::stepindex "announce"
-    if ((FLAGS_gcb)); then
-      common::stepindex "gitlib::update_release_issue"
-    fi
     common::stepindex "update_github_release"
   fi
 fi
@@ -1790,14 +1787,7 @@ if [[ -n "$PARENT_BRANCH" ]]; then
   common::run_stateful "announce --branch"
 else
   common::run_stateful announce
-
-  # For GCB create/update a release tracking issue
-  if ((FLAGS_gcb)); then
-    common::run_stateful "gitlib::update_release_issue $RELEASE_VERSION_PRIME"
-  fi
-
   common::run_stateful update_github_release
-
   common::stepheader "ARCHIVE RELEASE ON GS"
   common::runstep archive_release
 fi
