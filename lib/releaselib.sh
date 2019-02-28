@@ -631,6 +631,7 @@ release::gcs::locally_stage_release_artifacts() {
       || return 1
     release::gcs::stage_and_hash $gcs_stage $gci_path/configure.sh extra/gce \
       || return 1
+
     # shutdown.sh was introduced starting from v1.11 to make Preemptible COS nodes
     # on GCP not reboot immediately when terminated. Avoid including it in the release
     # bundle if it is not found (for backwards compatibility).
@@ -638,6 +639,24 @@ release::gcs::locally_stage_release_artifacts() {
       release::gcs::stage_and_hash $gcs_stage $gci_path/shutdown.sh extra/gce \
        || return 1
     fi
+
+    # Having the Windows startup scripts from the GCE cluster deploy hosted with
+    # the release is useful for GKE.
+    windows_local_path=$gce_path/windows
+    windows_gcs_path=extra/gce/windows
+    if [[ -d $windows_local_path ]]; then
+      release::gcs::stage_and_hash $gcs_stage $windows_local_path/configure.ps1 $windows_gcs_path \
+        || return 1
+      release::gcs::stage_and_hash $gcs_stage $windows_local_path/common.psm1 $windows_gcs_path \
+        || return 1
+      release::gcs::stage_and_hash $gcs_stage $windows_local_path/k8s-node-setup.psm1 $windows_gcs_path \
+        || return 1
+      release::gcs::stage_and_hash $gcs_stage $windows_local_path/testonly/install-ssh.psm1 $windows_gcs_path \
+        || return 1
+      release::gcs::stage_and_hash $gcs_stage $windows_local_path/testonly/user-profile.psm1 $windows_gcs_path \
+        || return 1
+    fi
+
   fi
 
   # Upload the "naked" binaries to GCS.  This is useful for install scripts that
