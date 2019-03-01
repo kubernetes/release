@@ -390,7 +390,7 @@ GCLOUD+=" --project $PROJECT"
 BUCKET="kubernetes-release"
 # disk size must take base image into consideration.
 # The amount specified is not what is "free"
-DISK_SIZE="250"
+DISK_SIZE="300"
 GCP_USER=$($GCLOUD auth list --filter=status:ACTIVE --format="value(account)")
 # This is used as a tag so convert @ to -at- (for yaml tag field
 # where @ is invalid)
