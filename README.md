@@ -1,15 +1,7 @@
 <!-- BEGIN MUNGE: GENERATED_TOC -->
 - [Kubernetes Release](#kubernetes-release)
   - [Intro](#intro)
-  - [Primary Tools](#primary-tools)
-    - [gcbmgr](#gcbmgr)
-    - [anago](#anago)
-    - [branchff](#branchff)
-  - [Common Workflows](#common-workflows)
-    - [Alpha release](#alpha-release)
-    - [Official release](#official-release)
-    - [Release with --nomock](#release-with---nomock)
-  - [All Tools](#all-tools)
+  - [Tools](#tools)
   - [Release Notes Gathering](#release-notes-gathering)
   - [Building Linux Packages](#building-linux-packages)
     - [For Debian](#for-debian)
@@ -27,91 +19,24 @@ There are several scripts and helpers in this repository a release
 manager will find useful when managing all kinds of releases (alpha,
 beta, official, rc) across branches.
 
-## Primary Tools
+## Tools
 
 Most tools in this repo run by default in *mock* mode to allow for ease in
 development and testing.
 
-The tools also include a familiar [\*nix-style man
-page](https://github.com/kubernetes/release/blob/master/anago) as the header of the file, accessed via the command-line via `-man`.
+Tools | Description
+ :---: | --
+[`gcbmgr`](https://github.com/kubernetes/release/blob/master/gcbmgr) | Google Cloud Builder Manager: <br/><br/> This is the main entry point for release managers for producing releases. All release types can be staged and later released using this method.
+[`anago`](https://github.com/kubernetes/release/blob/master/anago) | Release Tool: <br/><br/> The main driver for creating staged builds and releases. This is what runs inside GCB after a job is submitted using `gcbmgr`.
+[`branchff`](https://github.com/kubernetes/release/blob/master/branchff) | Fast-forward branching helper : <br/><br/> A tool used to pull new patches onto the release branch.
+<br/> [`find_green_build`](https://github.com/kubernetes/release/blob/master/find_green_build) <br/><br/> | Asks Jenkins for a good build to use.
+<br/> [`release-notes`](https://github.com/kubernetes/release/blob/master/cmd/release-notes) <br/><br/> | Scrape GitHub for release notes. See [Release Notes Gathering](#release-notes-gathering) for more information.
+<br/> [`prin`](https://github.com/kubernetes/release/blob/master/prin) <br/><br/> | To show release tags of a particular PR or commit.
+<br/> [`changelog-update`](https://github.com/kubernetes/release/blob/master/changelog-update) <br/><br/> | Updates [CHANGELOG.md](https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md) version entries by rescanning github for text and label changes.
+<br/> [`push-build.sh`](https://github.com/kubernetes/release/blob/master/push-build.sh) <br/><br/> | Pushes a developer build or CI Jenkins build up to GCS.
+<br/> [`script-template`](https://github.com/kubernetes/release/blob/master/script-template) <br/><br/> | Generates a script template in the kubernetes/release ecosystem.
 
-Ex.
-```
-$ gcbmgr -man
-```
-
-### gcbmgr
-
-Stage and release via GCB (Google Cloud Builder).  This is the main entry point
-for release managers for producing releases in the cloud.  All release types
-can be staged and later released using this method.
-
-### anago
-
-The main driver for creating staged builds and releases.  This is what runs
-inside GCB after a job is submitted using `gcbmgr`.
-
-### branchff
-
-The branch fast-forward tool used between after a new branch as been created.
-
-See the [Playbook](ADD LINK) for more details.
-
-## Common Workflows
-
-### Alpha release
-
-**Stage it**
-```
-$ gcbmgr stage master
-```
-**Release it**
-(The complete invocation below is output at the end of the staging log)
-```
-$ gcbmgr release master --buildversion=<staged version>
-```
-
-**Announce it**
-(The complete invocation below is output at the end of the release log)
-```
-$ release-notify <release version>
-```
-
-### Official release
-
-**Stage it**
-```
-$ gcbmgr stage release-1.10 --official
-```
-**Release it**
-(The complete invocation below is output at the end of the staging log)
-```
-$ gcbmgr release release-1.10 --buildversion=<staged version>
-```
-
-**Announce it**
-(The complete invocation below is output at the end of the release log)
-```
-$ release-notify <release version>
-```
-
-### Release with --nomock
-
-The above example workflows run *mock* versions of the release.  To produce
-a fully deployed and announced release, add `--nomock` to the command line.
-
-
-## All Tools
-
-* [gcbmgr](https://github.com/kubernetes/release/blob/master/gcbmgr) : GCB manager - find status and initiate builds
-* [anago](https://github.com/kubernetes/release/blob/master/anago) : Release Tool
-* [branchff](https://github.com/kubernetes/release/blob/master/branchff) : Fast-forward branching helper
-* [find_green_build](https://github.com/kubernetes/release/blob/master/find_green_build) : Ask Jenkins for a good build to use
-* [release-notes](https://github.com/kubernetes/release/blob/master/cmd/release-notes) : Scrape github for release notes \(See below for more info\)
-* [prin](https://github.com/kubernetes/release/blob/master/prin) : What tags/releases is my PR IN?
-* [changelog-update](https://github.com/kubernetes/release/blob/master/changelog-update) : Update CHANGELOG.md version entries by rescanning github for text and label changes
-* [push-build.sh](https://github.com/kubernetes/release/blob/master/push-build.sh) : Push a developer (or CI) build up to GCS
-* [script-template](https://github.com/kubernetes/release/blob/master/script-template) : Generate a script template in the kubernetes/release ecosystem
+For information on how to use `gcbmgr`, `anago` and `branchff`, see the [Branch Manager Handbook](https://github.com/kubernetes/sig-release/tree/master/release-team/role-handbooks/branch-manager#branch-manager-handbook)
 
 ## Release Notes Gathering
 
