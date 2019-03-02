@@ -306,21 +306,3 @@ gitlib::repo_state () {
 if ((FLAGS_gcb)); then
   gitlib::git_config_for_gcb || common::exit "Exiting..."
 fi
-
-###############################################################################
-# Search for a matching release tracking issue
-# @param version - RELEASE_VERSION_PRIME
-# @param repo - org/repo
-# returns 1 if none found
-# prints most recent open issue matching
-gitlib::search_release_issue () {
-  local version=$1
-  local repo=$2
-  local issue
-
-  issue=$($GHCURL "$K8S_GITHUB_SEARCHAPI_ROOT&q=Release+$version+Tracking+in:title+type:issue+state:open+repo:$repo" | jq -r '.items[] | (.number | tostring)' |sort -n |tail -1)
-
-  [[ -z $issue ]] && return 1
-
-  echo $issue
-}
