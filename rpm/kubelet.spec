@@ -45,6 +45,7 @@ Source6: kubelet.env
 %endif
 Source7: https://github.com/kubernetes-incubator/cri-tools/releases/download/v%{CRI_TOOLS_VERSION}/crictl-v%{CRI_TOOLS_VERSION}-linux-%{ARCH}.tar.gz
 
+BuildRequires: systemd
 BuildRequires: curl
 Requires: iptables >= 1.4.21
 Requires: kubernetes-cni = %{CNI_VERSION}
@@ -137,17 +138,17 @@ cp -p %SOURCE6 %{_builddir}/
 
 # The setup macro from prep will make install start in the cni-plugins directory, so cd back to the root.
 cd %{_builddir}
+install -m 755 -d %{buildroot}%{_unitdir}
+install -m 755 -d %{buildroot}%{_unitdir}/kubelet.service.d/
 install -m 755 -d %{buildroot}%{_bindir}
-install -m 755 -d %{buildroot}%{_sysconfdir}/systemd/system/
-install -m 755 -d %{buildroot}%{_sysconfdir}/systemd/system/kubelet.service.d/
 install -m 755 -d %{buildroot}%{_sysconfdir}/cni/net.d/
 install -m 755 -d %{buildroot}%{_sysconfdir}/kubernetes/manifests/
 install -m 755 -d %{buildroot}/var/lib/kubelet/
 install -p -m 755 -t %{buildroot}%{_bindir}/ kubelet
 install -p -m 755 -t %{buildroot}%{_bindir}/ kubectl
 install -p -m 755 -t %{buildroot}%{_bindir}/ kubeadm
-install -p -m 644 -t %{buildroot}%{_sysconfdir}/systemd/system/ kubelet.service
-install -p -m 644 -t %{buildroot}%{_sysconfdir}/systemd/system/kubelet.service.d/ 10-kubeadm.conf
+install -p -m 644 -t %{buildroot}%{_unitdir}/ kubelet.service
+install -p -m 644 -t %{buildroot}%{_unitdir}/kubelet.service.d/ 10-kubeadm.conf
 install -p -m 755 -t %{buildroot}%{_bindir}/ cri-tools/crictl
 
 %if %{KUBE_SEMVER} >= %{semver 1 11 0}
@@ -166,7 +167,7 @@ mv cni-plugins/bin/ %{buildroot}/opt/cni/
 
 %files
 %{_bindir}/kubelet
-%{_sysconfdir}/systemd/system/kubelet.service
+%{_unitdir}/kubelet.service
 %{_sysconfdir}/kubernetes/manifests/
 
 %if %{KUBE_SEMVER} >= %{semver 1 11 0}
@@ -181,7 +182,7 @@ mv cni-plugins/bin/ %{buildroot}/opt/cni/
 
 %files -n kubeadm
 %{_bindir}/kubeadm
-%{_sysconfdir}/systemd/system/kubelet.service.d/10-kubeadm.conf
+%{_unitdir}/kubelet.service.d/10-kubeadm.conf
 
 %files -n cri-tools
 %{_bindir}/crictl
