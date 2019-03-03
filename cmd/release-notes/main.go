@@ -13,8 +13,8 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/google/go-github/github"
 	"github.com/kolide/kit/env"
-	"github.com/kubernetes/release/pkg/notes"
 	"golang.org/x/oauth2"
+	"k8s.io/release/pkg/notes"
 )
 
 type options struct {
