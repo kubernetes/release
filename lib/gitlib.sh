@@ -332,3 +332,40 @@ gitlib::create_issue() {
 
   ${GHCURL} "${K8S_GITHUB_API_ROOT}/${repo}/issues" --data "$data"
 }
+
+###############################################################################
+# Post an issue for the publishing bot, to ask them to update their
+# configuration
+gitlib::create_publishing_bot_issue() {
+  local branch="$1"
+  local repo title body assign milestone
+
+  title="Update publishing-bot for ${branch}"
+  repo="k8s-release-robot/sig-release"
+  assign="<!-- no assignments -->"
+  milestone="v${branch#release-}"
+
+  if ((FLAGS_nomock)); then
+    repo="kubernetes/kubernetes"
+    assign="/assign @sttts @nikhita @dims"
+  fi
+
+  body="$(cat <<EOF
+The branch [\`${branch}\`][branch] was just created.
+
+Please update the [publishing-bot's configuration][config] to also publish this
+new branch.
+
+[branch]: https://github.com/kubernetes/kubernetes/tree/${branch}
+[config]: https://github.com/kubernetes/kubernetes/tree/master/staging/publishing
+
+${assign}
+/sig release
+/area release-eng
+/area code-generation
+/milestone ${milestone}
+EOF
+)"
+
+  gitlib::create_issue "$repo" "$title" "$body"
+}

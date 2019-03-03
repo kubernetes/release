@@ -78,6 +78,26 @@ TEST_create_issue() {
     'creating an issue with milestone'
 }
 
+TEST_create_publishing_bot_issue() {
+  echo "Testing gitlib::create_publishing_bot_issue"
+  echo
+
+  # shellcheck disable=SC2034
+  local GHCURL='echo'
+
+  assertEqualContent \
+    <( gitlib::create_publishing_bot_issue 'release-1.14' ) \
+    "${TESTDATA}/gitlib/create_publishing_bot_issue.txt" \
+    "simple, mock issue without special settings something"
+
+  # shellcheck disable=SC2034
+  local FLAGS_nomock=1
+  assertEqualContent \
+    <( gitlib::create_publishing_bot_issue 'release-1.13' ) \
+    "${TESTDATA}/gitlib/create_publishing_bot_issue_nomock.txt" \
+    "for a nomock release, different repo & assignments are used"
+}
+
 assertEqualContent() {
   local actual_file="$1"
   local expected_file="$2"
