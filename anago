@@ -985,6 +985,12 @@ announce () {
   if [[ "$arg" == "--branch" ]]; then
     echo "k8s $RELEASE_BRANCH branch has been created" > $subject_file
     branch_announcement_text > $announcement_file
+
+    # When we create a new branch, we notify the publishing-bot folks by
+    # creating an issue for them
+    gitlib::create_publishing_bot_issue "$RELEASE_BRANCH" || {
+      logecho "$WARNING: Could not create issue for the publishing-bot update"
+    }
   else
     echo "k8s $RELEASE_VERSION_PRIME is live!" > $subject_file
     release_announcement_text > $announcement_file
