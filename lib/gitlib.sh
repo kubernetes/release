@@ -306,3 +306,29 @@ gitlib::repo_state () {
 if ((FLAGS_gcb)); then
   gitlib::git_config_for_gcb || common::exit "Exiting..."
 fi
+
+##############################################################################
+# Publish an issue on github
+gitlib::create_issue() {
+  local repo="${1?expected repo for gitlib::create_issue}"
+  local title="${2?expected title for gitlib::create_issue}"
+  local body="${3?expected body for gitlib::create_issue}"
+  local milestone="${4:-null}"
+  local template data
+
+  # shellcheck disable=SC2016
+  template='{
+    "title": $title,
+    "body": $body,
+    "milestone": $milestone,
+  }'
+
+  data="$( jq \
+    --argjson milestone "$milestone" \
+    --arg     body      "$body" \
+    --arg     title     "$title" \
+    -c -n "$template"
+  )"
+
+  ${GHCURL} "${K8S_GITHUB_API_ROOT}/${repo}/issues" --data "$data"
+}
