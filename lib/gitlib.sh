@@ -362,7 +362,6 @@ new branch.
 ${assign}
 /sig release
 /area release-eng
-/area code-generation
 /milestone ${milestone}
 EOF
 )"
