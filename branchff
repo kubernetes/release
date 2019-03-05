@@ -219,11 +219,18 @@ fi
 ##############################################################################
 common::stepheader "PUSH UPSTREAM"
 ##############################################################################
+rev_origin_release="$( git rev-parse --short "origin/${RELEASE_BRANCH}" )"
+rev_head="$( git rev-parse --short "HEAD" )"
+
 logecho "Go look around in $TREE_ROOT to make sure things look ok:"
 logecho "# Any files left uncommitted?"
 logecho "* git status -s"
 logecho "# What does the commit look like?"
 logecho "* git show"
+logecho "# What are the changes we just pulled in from master?"
+logecho "#   will be available after push at:"
+logecho "#   ${K8S_GITHUB_URL}/compare/${rev_origin_release}...${rev_head}"
+logecho "* git log origin/${RELEASE_BRANCH}..HEAD"
 logecho
 
 if common::askyorn -e "OK to push now"; then
