@@ -24,7 +24,9 @@ GITHUB_TOKEN=${FLAGS_github_token:-$GITHUB_TOKEN}
 [[ -n $GITHUB_TOKEN ]] && GITHUB_TOKEN_FLAG=("-u" "$GITHUB_TOKEN:x-oauth-basic")
 GHCURL="curl -s --fail --retry 10 ${GITHUB_TOKEN_FLAG[*]}"
 JCURL="curl -g -s --fail --retry 10"
-K8S_GITHUB_API_ROOT='https://api.github.com/repos'
+GITHUB_API='https://api.github.com'
+GITHUB_API_GRAPHQL="${GITHUB_API}/graphql"
+K8S_GITHUB_API_ROOT="${GITHUB_API}/repos"
 K8S_GITHUB_API="$K8S_GITHUB_API_ROOT/kubernetes/kubernetes"
 K8S_GITHUB_RAW_ORG='https://raw.githubusercontent.com/kubernetes'
 
@@ -338,16 +340,26 @@ gitlib::create_issue() {
 # configuration
 gitlib::create_publishing_bot_issue() {
   local branch="$1"
-  local repo title body assign milestone
+  local repo title body bot_commands milestone
 
   title="Update publishing-bot for ${branch}"
   repo="k8s-release-robot/sig-release"
-  assign="<!-- no assignments -->"
+  bot_commands=( '<!-- no assignments -->' )
   milestone="v${branch#release-}"
 
   if ((FLAGS_nomock)); then
+    local team_slug='publishing-bot-reviewers'
+    local gh_user_tags=()
+    local team_members
+
     repo="kubernetes/kubernetes"
-    assign="/assign @sttts @nikhita @dims"
+    team_members="$( gitlib::get_team_members 'kubernetes' "$team_slug" )"
+    for m in $team_members ; do gh_user_tags+=( "@${m}" ); done
+    if (( ${#gh_user_tags[@]} > 0 ))
+    then
+      bot_commands=( "/assign ${gh_user_tags[*]}" )
+    fi
+    bot_commands+=( "/cc @kubernetes/${team_slug}" )
   fi
 
   body="$(cat <<EOF
@@ -359,7 +371,7 @@ new branch.
 [branch]: https://github.com/kubernetes/kubernetes/tree/${branch}
 [config]: https://github.com/kubernetes/kubernetes/tree/master/staging/publishing
 
-${assign}
+$( local IFS=$'\n' ; echo "${bot_commands[*]}" )
 /sig release
 /area release-eng
 /milestone ${milestone}
@@ -367,4 +379,46 @@ EOF
 )"
 
   gitlib::create_issue "$repo" "$title" "$body"
+}
+
+###############################################################################
+# Get all the members of an organisation's team
+gitlib::get_team_members() {
+  local org="${1:-kubernetes}"
+  local team="${2:-sig-release}"
+
+  local query query_tmpl query_body resp_transformation
+
+  # shellcheck disable=SC2016
+  query='query ($org:String!, $team:String!) {
+    organization(login: $org) {
+      team(slug: $team) {
+        members(next: 100) {
+          nodes {
+            login
+          }
+        }
+      }
+    }
+  }'
+  # shellcheck disable=SC2016
+  query_tmpl='{
+    "query" : $query,
+    "variables": {
+      "org": $org,
+      "team": $team
+    }
+  }'
+  query_body="$( jq \
+    --arg query "$query" \
+    --arg org   "$org" \
+    --arg team  "$team" \
+    -c -n "$query_tmpl" \
+  )"
+  resp_transformation='(.data.organization.team.members.nodes // {})[].login'
+
+  {
+    $GHCURL "$GITHUB_API_GRAPHQL" -X POST -d "$query_body" \
+      | jq -r "$resp_transformation"
+  } || echo -n ''
 }

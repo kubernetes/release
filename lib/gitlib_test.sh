@@ -92,10 +92,48 @@ TEST_create_publishing_bot_issue() {
 
   # shellcheck disable=SC2034
   local FLAGS_nomock=1
+  # mock gitlib::get_team_members
+  gitlib::get_team_members() {
+    echo 'memberOne'
+    echo 'memberTwo'
+  }
   assertEqualContent \
     <( gitlib::create_publishing_bot_issue 'release-1.13' ) \
     "${TESTDATA}/gitlib/create_publishing_bot_issue_nomock.txt" \
     "for a nomock release, different repo & assignments are used"
+
+  # shellcheck disable=SC2034
+  local FLAGS_nomock=1
+  # mock gitlib::get_team_members
+  gitlib::get_team_members() { :; }
+  assertEqualContent \
+    <( gitlib::create_publishing_bot_issue 'release-1.13' ) \
+    "${TESTDATA}/gitlib/create_publishing_bot_issue_nomock_noassign.txt" \
+    "for a nomock release, different repo is used, but no assignments when team members cannot be found"
+}
+
+TEST_get_team_members() {
+  echo "Testing gitlab::get_team_members"
+  echo
+
+  # shellcheck disable=SC2034
+  local GHCURL='mock_github_api'
+
+  mock_github_api() {
+    echo '{"data": {"organization":{"team":{"members":{"nodes":[{"login":"blipp"},{"login":"blupp"}]}}}}}'
+  }
+  assertEqualContent \
+    <( gitlib::get_team_members 'ignored' 'ignored' ) \
+    <( echo -e "blipp\nblupp" ) \
+    'get_team_members issues a graphql qeury against the github API and pareses the response'
+
+  mock_github_api() {
+    echo 'this is some invalid response'
+  }
+  assertEqualContent \
+    <( gitlib::get_team_members 'ignored' 'ignored' ) \
+    <( echo -n '' ) \
+    'get_team_members can handle invalid responses and reports no members'
 }
 
 assertEqualContent() {
@@ -129,7 +167,10 @@ main() {
 
   for t in "${tests[@]}"
   do
-    $t ; echo
+    # run the tests in a subshell, so that they are isolated
+    # from each other
+    ( $t ; )
+    echo
   done
 }
 
