@@ -20,7 +20,7 @@ type Document struct {
 
 // CreateDocument assembles an organized document from an unorganized set of
 // release notes
-func CreateDocument(notes []*ReleaseNote) (*Document, error) {
+func CreateDocument(notes ReleaseNoteList) (*Document, error) {
 	doc := &Document{
 		NewFeatures:    []string{},
 		ActionRequired: []string{},

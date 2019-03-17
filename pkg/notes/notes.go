@@ -76,6 +76,12 @@ type ReleaseNote struct {
 	ReleaseVersion string `json:"release_version,omitempty"`
 }
 
+// ReleaseNoteList is a map of PR numbers referencing notes.
+// To avoid needless loops, we need to be able to reference things by PR
+// When we have to merge old and new entries, we want to be able to override
+// the old entries with the new ones efficiently.
+type ReleaseNoteList map[int]*ReleaseNote
+
 // githubApiOption is a type which allows for the expression of API configuration
 // via the "functional option" pattern.
 // For more information on this pattern, see the following blog post:
@@ -131,14 +137,14 @@ func ListReleaseNotes(
 	end,
 	relVer string,
 	opts ...githubApiOption,
-) ([]*ReleaseNote, error) {
+) (ReleaseNoteList, error) {
 	commits, err := ListCommitsWithNotes(client, logger, start, end, opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	dedupeCache := map[string]struct{}{}
-	notes := []*ReleaseNote{}
+	notes := make(ReleaseNoteList)
 	for _, commit := range commits {
 		if commit.GetAuthor().GetLogin() != "k8s-ci-robot" {
 			continue
@@ -159,7 +165,7 @@ func ListReleaseNotes(
 		}
 
 		if _, ok := dedupeCache[note.Text]; !ok {
-			notes = append(notes, note)
+			notes[note.PrNumber] = note
 			dedupeCache[note.Text] = struct{}{}
 		}
 	}
