@@ -2,7 +2,7 @@
 
 Release notes are captured during the development cycle from [PR titles (or body
 blocks)](https://github.com/kubernetes/kubernetes/blob/master/.github/PULL_REQUEST_TEMPLATE.md) using [release notes
-labels](https://github.com/kubernetes/community/blob/master/contributors/devel/pull-requests.md#write-release-notes-if-needed) with compliance across master and release- branches using [test-infra/prow](https://github.com/kubernetes/test-infra/tree/master/prow/plugins/releasenote)
+labels](https://github.com/kubernetes/community/blob/master/contributors/guide/release-notes.md) with compliance across master and release- branches using [test-infra/prow](https://github.com/kubernetes/test-infra/tree/master/prow/plugins/releasenote)
 on the main Kubernetes repository (and future repositories later).
 
 Releases are built and published by the anago tool in [this repo](https://github.com/kubernetes/release) with the release notes published in [kubernetes/CHANGELOG-x.y.md files](https://github.com/kubernetes/kubernetes).
