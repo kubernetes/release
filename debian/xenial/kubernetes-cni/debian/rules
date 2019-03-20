@@ -2,7 +2,7 @@
 # -*- makefile -*-
 
 #export DH_VERBOSE=1
-CNI_VERSION = v0.6.0
+CNI_VERSION = v0.7.5
 
 build:
 	echo noop
