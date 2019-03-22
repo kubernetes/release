@@ -23,7 +23,7 @@ const (
 	ChannelUnstable ChannelType = "unstable"
 	ChannelNightly  ChannelType = "nightly"
 
-	cniVersion         = "0.6.0"
+	cniVersion         = "0.7.5"
 	criToolsVersion    = "1.12.0"
 	pre180kubeadmconf  = "pre-1.8/10-kubeadm.conf"
 	pre1110kubeadmconf = "post-1.8/10-kubeadm.conf"

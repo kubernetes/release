@@ -11,10 +11,16 @@
 %define semver() (%1 * 256 * 256 + %2 * 256 + %3)
 %global KUBE_SEMVER %{semver %{KUBE_MAJOR} %{KUBE_MINOR} %{KUBE_PATCH}}
 
+# no support for %elseif (??)
+# https://github.com/rpm-software-management/rpm/issues/311
+%if %{KUBE_SEMVER} >= %{semver 1 11 0}
+%global CNI_VERSION 0.7.5
+%else
 %if %{KUBE_SEMVER} >= %{semver 1 9 0}
 %global CNI_VERSION 0.6.0
 %else
 %global CNI_VERSION 0.5.1
+%endif
 %endif
 
 %if %{KUBE_SEMVER} >= %{semver 1 12 1}
@@ -86,7 +92,7 @@ Release: %{RPM_RELEASE}
 Summary: Command-line utility for administering a Kubernetes cluster.
 Requires: kubelet >= 1.6.0
 Requires: kubectl >= 1.6.0
-Requires: kubernetes-cni >= 0.6.0
+Requires: kubernetes-cni >= 0.7.5
 Requires: cri-tools >= 1.11.0
 
 %description -n kubeadm
@@ -191,6 +197,9 @@ mv cni-plugins/bin/ %{buildroot}/opt/cni/
 
 
 %changelog
+* Tue Mar 20 2019 Lubomir I. Ivanov <lubomirivanov@vmware.com>
+- Bump CNI version to v0.7.5.
+
 * Tue Sep 25 2018 Chuck Ha <chuck@heptio.com> - 1.12.1
 - Bump cri-tools to 1.12.0.
 
