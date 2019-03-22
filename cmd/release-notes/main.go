@@ -14,12 +14,14 @@ import (
 	"github.com/google/go-github/github"
 	"github.com/kolide/kit/env"
 	"golang.org/x/oauth2"
+
 	"k8s.io/release/pkg/notes"
 )
 
 type options struct {
 	githubToken    string
 	output         string
+	branch         string
 	startSHA       string
 	endSHA         string
 	releaseVersion string
@@ -45,6 +47,14 @@ func (o *options) BindFlags() *flag.FlagSet {
 		"output",
 		env.String("OUTPUT", ""),
 		"The path to the where the release notes will be printed",
+	)
+
+	// branch is which branch to scrape.
+	flags.StringVar(
+		&o.branch,
+		"branch",
+		env.String("BRANCH", "branch"),
+		"Select which branch to scrape. Defaults to `master`",
 	)
 
 	// startSHA contains the commit SHA where the release note generation
@@ -93,7 +103,7 @@ func (o *options) GetReleaseNotes() (notes.ReleaseNoteList, error) {
 	// Fetch a list of fully-contextualized release notes
 	level.Info(o.logger).Log("msg", "fetching all commits. this might take a while...")
 
-	releaseNotes, err := notes.ListReleaseNotes(githubClient, o.logger, o.startSHA, o.endSHA, o.releaseVersion, notes.WithContext(ctx))
+	releaseNotes, err := notes.ListReleaseNotes(githubClient, o.logger, o.branch, o.startSHA, o.endSHA, o.releaseVersion, notes.WithContext(ctx))
 	if err != nil {
 		level.Error(o.logger).Log("msg", "error generating release notes", "err", err)
 		return nil, err

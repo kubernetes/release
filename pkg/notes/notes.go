@@ -133,12 +133,13 @@ func WithBranch(branch string) githubApiOption {
 func ListReleaseNotes(
 	client *github.Client,
 	logger log.Logger,
+	branch,
 	start,
 	end,
 	relVer string,
 	opts ...githubApiOption,
 ) (ReleaseNoteList, error) {
-	commits, err := ListCommitsWithNotes(client, logger, start, end, opts...)
+	commits, err := ListCommitsWithNotes(client, logger, branch, start, end, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -258,8 +259,10 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 
 // ListCommits lists all commits starting from a given commit SHA and ending at
 // a given commit SHA.
-func ListCommits(client *github.Client, start, end string, opts ...githubApiOption) ([]*github.RepositoryCommit, error) {
+func ListCommits(client *github.Client, branch, start, end string, opts ...githubApiOption) ([]*github.RepositoryCommit, error) {
 	c := configFromOpts(opts...)
+
+	c.branch = branch
 
 	startCommit, _, err := client.Git.GetCommit(c.ctx, c.org, c.repo, start)
 	if err != nil {
@@ -308,13 +311,14 @@ func ListCommits(client *github.Client, start, end string, opts ...githubApiOpti
 func ListCommitsWithNotes(
 	client *github.Client,
 	logger log.Logger,
+	branch,
 	start,
 	end string,
 	opts ...githubApiOption,
 ) ([]*github.RepositoryCommit, error) {
 	filteredCommits := []*github.RepositoryCommit{}
 
-	commits, err := ListCommits(client, start, end, opts...)
+	commits, err := ListCommits(client, branch, start, end, opts...)
 	if err != nil {
 		return nil, err
 	}
