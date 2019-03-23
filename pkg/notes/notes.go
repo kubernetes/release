@@ -70,7 +70,17 @@ type ReleaseNote struct {
 	// ActionRequired indicates whether or not the release-note-action-required
 	// label was set on the PR
 	ActionRequired bool `json:"action_required,omitempty"`
+
+	// Tags each note with a release version if specified
+	// If not specified, omitted
+	ReleaseVersion string `json:"release_version,omitempty"`
 }
+
+// ReleaseNoteList is a map of PR numbers referencing notes.
+// To avoid needless loops, we need to be able to reference things by PR
+// When we have to merge old and new entries, we want to be able to override
+// the old entries with the new ones efficiently.
+type ReleaseNoteList map[int]*ReleaseNote
 
 // githubApiOption is a type which allows for the expression of API configuration
 // via the "functional option" pattern.
@@ -123,23 +133,25 @@ func WithBranch(branch string) githubApiOption {
 func ListReleaseNotes(
 	client *github.Client,
 	logger log.Logger,
+	branch,
 	start,
-	end string,
+	end,
+	relVer string,
 	opts ...githubApiOption,
-) ([]*ReleaseNote, error) {
-	commits, err := ListCommitsWithNotes(client, logger, start, end, opts...)
+) (ReleaseNoteList, error) {
+	commits, err := ListCommitsWithNotes(client, logger, branch, start, end, opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	dedupeCache := map[string]struct{}{}
-	notes := []*ReleaseNote{}
+	notes := make(ReleaseNoteList)
 	for _, commit := range commits {
 		if commit.GetAuthor().GetLogin() != "k8s-ci-robot" {
 			continue
 		}
 
-		note, err := ReleaseNoteFromCommit(commit, client, opts...)
+		note, err := ReleaseNoteFromCommit(commit, client, relVer, opts...)
 		if err != nil {
 			level.Error(logger).Log(
 				"err", err,
@@ -154,7 +166,7 @@ func ListReleaseNotes(
 		}
 
 		if _, ok := dedupeCache[note.Text]; !ok {
-			notes = append(notes, note)
+			notes[note.PrNumber] = note
 			dedupeCache[note.Text] = struct{}{}
 		}
 	}
@@ -195,7 +207,7 @@ func NoteTextFromString(s string) (string, error) {
 
 // ReleaseNoteFromCommit produces a full contextualized release note given a
 // GitHub commit API resource.
-func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Client, opts ...githubApiOption) (*ReleaseNote, error) {
+func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Client, relVer string, opts ...githubApiOption) (*ReleaseNote, error) {
 	pr, err := PRFromCommit(client, commit, opts...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error parsing release note from commit %s", commit.GetSHA())
@@ -241,13 +253,16 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 		Feature:        IsFeature,
 		Duplicate:      IsDuplicate,
 		ActionRequired: IsActionRequired(pr),
+		ReleaseVersion: relVer,
 	}, nil
 }
 
 // ListCommits lists all commits starting from a given commit SHA and ending at
 // a given commit SHA.
-func ListCommits(client *github.Client, start, end string, opts ...githubApiOption) ([]*github.RepositoryCommit, error) {
+func ListCommits(client *github.Client, branch, start, end string, opts ...githubApiOption) ([]*github.RepositoryCommit, error) {
 	c := configFromOpts(opts...)
+
+	c.branch = branch
 
 	startCommit, _, err := client.Git.GetCommit(c.ctx, c.org, c.repo, start)
 	if err != nil {
@@ -296,13 +311,14 @@ func ListCommits(client *github.Client, start, end string, opts ...githubApiOpti
 func ListCommitsWithNotes(
 	client *github.Client,
 	logger log.Logger,
+	branch,
 	start,
 	end string,
 	opts ...githubApiOption,
 ) ([]*github.RepositoryCommit, error) {
 	filteredCommits := []*github.RepositoryCommit{}
 
-	commits, err := ListCommits(client, start, end, opts...)
+	commits, err := ListCommits(client, branch, start, end, opts...)
 	if err != nil {
 		return nil, err
 	}
