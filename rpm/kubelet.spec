@@ -138,11 +138,11 @@ cp -p %SOURCE4 %{_builddir}/
 cp -p %SOURCE6 %{_builddir}/
 %endif
 %setup -c -D -T -a 5 -n cni-plugins
-%setup -c -a 7 -T -n cri-tools
+%setup -c -D -T -a 7 -n cri-tools
 
 %install
 
-# The setup macro from prep will make install start in the cni-plugins directory, so cd back to the root.
+# The setup macro from prep will make install start in the cri-tools directory, so cd back to the root.
 cd %{_builddir}
 install -m 755 -d %{buildroot}%{_unitdir}
 install -m 755 -d %{buildroot}%{_unitdir}/kubelet.service.d/
