@@ -12,16 +12,15 @@ aliases:
     - mikedanese
     - tpepper
   patch-release-manager-role:
-    - foxish # 1.11
     - feiskyer # 1.12
-    - aleksandra-malinowska # 1.13
-    - tpepper # 1.13
+    - aleksandra-malinowska # 1.13 / 1.14 / 1.15
+    - tpepper # 1.13 / 1.14 / 1.15
   branch-manager-role:
-    - calebamiles # 1.11
-    - dougm # 1.13 / 1.12
+    - dougm # 1.12 / 1.13
     - hoegaarden # 1.14
+    - bubblemelon # 1.15
   release-team-lead-role:
-    - jberkus # 1.11
     - tpepper # 1.12
     - aishsundar # 1.13
     - spiffxp # 1.14
+    - claurence # 1.15
