@@ -54,7 +54,7 @@ Source7: https://github.com/kubernetes-incubator/cri-tools/releases/download/v%{
 BuildRequires: systemd
 BuildRequires: curl
 Requires: iptables >= 1.4.21
-Requires: kubernetes-cni = %{CNI_VERSION}
+Requires: kubernetes-cni >= 0.6.0
 Requires: socat
 Requires: util-linux
 Requires: ethtool
@@ -92,7 +92,7 @@ Release: %{RPM_RELEASE}
 Summary: Command-line utility for administering a Kubernetes cluster.
 Requires: kubelet >= 1.6.0
 Requires: kubectl >= 1.6.0
-Requires: kubernetes-cni >= 0.7.5
+Requires: kubernetes-cni >= 0.6.0
 Requires: cri-tools >= 1.11.0
 
 %description -n kubeadm
@@ -197,7 +197,10 @@ mv cni-plugins/bin/ %{buildroot}/opt/cni/
 
 
 %changelog
-* Tue Mar 20 2019 Lubomir I. Ivanov <lubomirivanov@vmware.com>
+* Tue Mar 28 2019 Lubomir I. Ivanov <lubomirivanov@vmware.com> - 1.14.1
+- Fix dependencies to CNI >= v0.6.0.
+
+* Tue Mar 20 2019 Lubomir I. Ivanov <lubomirivanov@vmware.com> - 1.14.0
 - Bump CNI version to v0.7.5.
 
 * Tue Sep 25 2018 Chuck Ha <chuck@heptio.com> - 1.12.1
