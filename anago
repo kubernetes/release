@@ -1752,13 +1752,15 @@ if ((FLAGS_stage)); then
   logecho
   logecho "To release this staged build, run:"
   logecho
-  logecho "$ gcbmgr release ${EXTRA_FLAGS[*]} $RELEASE_BRANCH" \
-          "--buildversion=$JENKINS_BUILD_VERSION"
+  logecho -n "$ gcbmgr release ${EXTRA_FLAGS[*]} $RELEASE_BRANCH" \
+             "--buildversion=$JENKINS_BUILD_VERSION"
+  logecho
   logecho
   logecho "-OR-"
   logecho
-  logecho "$ anago ${EXTRA_FLAGS[*]} $RELEASE_BRANCH" \
-          "--buildversion=$JENKINS_BUILD_VERSION"
+  logecho -n "$ anago ${EXTRA_FLAGS[*]} $RELEASE_BRANCH" \
+             "--buildversion=$JENKINS_BUILD_VERSION"
+  logecho
   logecho
 
   # Move PROGSTATE
