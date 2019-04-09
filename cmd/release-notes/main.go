@@ -20,6 +20,8 @@ import (
 
 type options struct {
 	githubToken    string
+	githubOrg      string
+	githubRepo     string
 	output         string
 	branch         string
 	startSHA       string
@@ -31,13 +33,29 @@ type options struct {
 
 func (o *options) BindFlags() *flag.FlagSet {
 	flags := flag.NewFlagSet("release-notes", flag.ContinueOnError)
-	// gitHubToken contains a personal GitHub access token. This is used to
+	// githubToken contains a personal GitHub access token. This is used to
 	// scrape the commits of the Kubernetes repo.
 	flags.StringVar(
 		&o.githubToken,
 		"github-token",
 		env.String("GITHUB_TOKEN", ""),
 		"A personal GitHub access token (required)",
+	)
+
+	// githubOrg contains name of github organization that holds the repo to scrape.
+	flags.StringVar(
+		&o.githubOrg,
+		"github-org",
+		env.String("GITHUB_ORG", "kubernetes"),
+		"Name of github organization",
+	)
+
+	// githubRepo contains name of github repository to scrape.
+	flags.StringVar(
+		&o.githubRepo,
+		"github-repo",
+		env.String("GITHUB_REPO", "kubernetes"),
+		"Name of github repository",
 	)
 
 	// output contains the path on the filesystem to where the resultant
@@ -103,7 +121,15 @@ func (o *options) GetReleaseNotes() (notes.ReleaseNoteList, error) {
 	// Fetch a list of fully-contextualized release notes
 	level.Info(o.logger).Log("msg", "fetching all commits. this might take a while...")
 
-	releaseNotes, err := notes.ListReleaseNotes(githubClient, o.logger, o.branch, o.startSHA, o.endSHA, o.releaseVersion, notes.WithContext(ctx))
+	opts := []notes.GithubApiOption{notes.WithContext(ctx)}
+	if o.githubOrg != "" {
+		opts = append(opts, notes.WithOrg(o.githubOrg))
+	}
+	if o.githubRepo != "" {
+		opts = append(opts, notes.WithRepo(o.githubRepo))
+	}
+
+	releaseNotes, err := notes.ListReleaseNotes(githubClient, o.logger, o.branch, o.startSHA, o.endSHA, o.releaseVersion, opts...)
 	if err != nil {
 		level.Error(o.logger).Log("msg", "error generating release notes", "err", err)
 		return nil, err
