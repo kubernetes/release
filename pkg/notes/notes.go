@@ -82,11 +82,11 @@ type ReleaseNote struct {
 // the old entries with the new ones efficiently.
 type ReleaseNoteList map[int]*ReleaseNote
 
-// githubApiOption is a type which allows for the expression of API configuration
+// GithubApiOption is a type which allows for the expression of API configuration
 // via the "functional option" pattern.
 // For more information on this pattern, see the following blog post:
 // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
-type githubApiOption func(*githubApiConfig)
+type GithubApiOption func(*githubApiConfig)
 
 // githubApiConfig is a configuration struct that is used to express optional
 // configuration for GitHub API requests
@@ -98,7 +98,7 @@ type githubApiConfig struct {
 }
 
 // WithContext allows the caller to inject a context into GitHub API requests
-func WithContext(ctx context.Context) githubApiOption {
+func WithContext(ctx context.Context) GithubApiOption {
 	return func(c *githubApiConfig) {
 		c.ctx = ctx
 	}
@@ -106,7 +106,7 @@ func WithContext(ctx context.Context) githubApiOption {
 
 // WithOrg allows the caller to override the GitHub organization for the API
 // request. By default, it is usually "kubernetes".
-func WithOrg(org string) githubApiOption {
+func WithOrg(org string) GithubApiOption {
 	return func(c *githubApiConfig) {
 		c.org = org
 	}
@@ -114,7 +114,7 @@ func WithOrg(org string) githubApiOption {
 
 // WithRepo allows the caller to override the GitHub repo for the API
 // request. By default, it is usually "kubernetes".
-func WithRepo(repo string) githubApiOption {
+func WithRepo(repo string) GithubApiOption {
 	return func(c *githubApiConfig) {
 		c.repo = repo
 	}
@@ -122,7 +122,7 @@ func WithRepo(repo string) githubApiOption {
 
 // WithBranch allows the caller to override the repo branch for the API
 // request. By default, it is usually "master".
-func WithBranch(branch string) githubApiOption {
+func WithBranch(branch string) GithubApiOption {
 	return func(c *githubApiConfig) {
 		c.branch = branch
 	}
@@ -137,7 +137,7 @@ func ListReleaseNotes(
 	start,
 	end,
 	relVer string,
-	opts ...githubApiOption,
+	opts ...GithubApiOption,
 ) (ReleaseNoteList, error) {
 	commits, err := ListCommitsWithNotes(client, logger, branch, start, end, opts...)
 	if err != nil {
@@ -207,7 +207,9 @@ func NoteTextFromString(s string) (string, error) {
 
 // ReleaseNoteFromCommit produces a full contextualized release note given a
 // GitHub commit API resource.
-func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Client, relVer string, opts ...githubApiOption) (*ReleaseNote, error) {
+func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Client, relVer string, opts ...GithubApiOption) (*ReleaseNote, error) {
+	c := configFromOpts(opts...)
+
 	pr, err := PRFromCommit(client, commit, opts...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error parsing release note from commit %s", commit.GetSHA())
@@ -220,7 +222,7 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 
 	author := pr.GetUser().GetLogin()
 	authorUrl := fmt.Sprintf("https://github.com/%s", author)
-	prUrl := fmt.Sprintf("https://github.com/kubernetes/kubernetes/pull/%d", pr.GetNumber())
+	prUrl := fmt.Sprintf("https://github.com/%s/%s/pull/%d", c.org, c.repo, pr.GetNumber())
 	IsFeature := HasString(LabelsWithPrefix(pr, "kind"), "feature")
 	IsDuplicate := false
 	sigsListPretty := prettifySigList(LabelsWithPrefix(pr, "sig"))
@@ -259,7 +261,7 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 
 // ListCommits lists all commits starting from a given commit SHA and ending at
 // a given commit SHA.
-func ListCommits(client *github.Client, branch, start, end string, opts ...githubApiOption) ([]*github.RepositoryCommit, error) {
+func ListCommits(client *github.Client, branch, start, end string, opts ...GithubApiOption) ([]*github.RepositoryCommit, error) {
 	c := configFromOpts(opts...)
 
 	c.branch = branch
@@ -314,7 +316,7 @@ func ListCommitsWithNotes(
 	branch,
 	start,
 	end string,
-	opts ...githubApiOption,
+	opts ...GithubApiOption,
 ) ([]*github.RepositoryCommit, error) {
 	filteredCommits := []*github.RepositoryCommit{}
 
@@ -394,7 +396,7 @@ func ListCommitsWithNotes(
 // PRFromCommit return an API Pull Request struct given a commit struct. This is
 // useful for going from a commit log to the PR (which contains useful info such
 // as labels).
-func PRFromCommit(client *github.Client, commit *github.RepositoryCommit, opts ...githubApiOption) (*github.PullRequest, error) {
+func PRFromCommit(client *github.Client, commit *github.RepositoryCommit, opts ...GithubApiOption) (*github.PullRequest, error) {
 	c := configFromOpts(opts...)
 
 	// Thankfully k8s-merge-robot commits the PR number consistently. If this ever
@@ -456,7 +458,7 @@ func filterCommits(
 	commits []*github.RepositoryCommit,
 	filters []string,
 	include bool,
-	opts ...githubApiOption,
+	opts ...GithubApiOption,
 ) ([]*github.RepositoryCommit, error) {
 	filteredCommits := []*github.RepositoryCommit{}
 	for _, commit := range commits {
@@ -497,7 +499,7 @@ func filterCommits(
 
 // configFromOpts is an internal helper for turning a set of functional options
 // into a populated *githubApiConfig struct with consistent defaults.
-func configFromOpts(opts ...githubApiOption) *githubApiConfig {
+func configFromOpts(opts ...GithubApiOption) *githubApiConfig {
 	c := &githubApiConfig{
 		ctx:    context.Background(),
 		org:    "kubernetes",
