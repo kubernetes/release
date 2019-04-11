@@ -87,3 +87,21 @@ func TestReleaseNoteParsing(t *testing.T) {
 		require.NoError(t, err)
 	}
 }
+
+func TestNoteTextFromString(t *testing.T) {
+	// multi line
+	result, _ := NoteTextFromString("```release-note\r\ntest\r\ntest\r\n```")
+	require.Equal(t, "test\ntest", result)
+
+	// single line
+	result, _ = NoteTextFromString("```release-note\r\ntest\r\n```")
+	require.Equal(t, "test", result)
+
+	// multi line, without carriage return
+	result, _ = NoteTextFromString("```release-note\ntest\ntest\n```")
+	require.Equal(t, "test\ntest", result)
+
+	// single line, without carriage return
+	result, _ = NoteTextFromString("```release-note\ntest\n```")
+	require.Equal(t, "test", result)
+}

@@ -179,10 +179,11 @@ func ListReleaseNotes(
 // This is generally the content inside the ```release-note ``` stanza.
 func NoteTextFromString(s string) (string, error) {
 	exps := []*regexp.Regexp{
-		regexp.MustCompile("```release-note\\r\\n(?P<note>.+)"),
-		regexp.MustCompile("```dev-release-note\\r\\n(?P<note>.+)"),
-		regexp.MustCompile("```\\r\\n(?P<note>.+)\\r\\n```"),
-		regexp.MustCompile("```release-note\n(?P<note>.+)\n```"),
+		// (?s) is needed for '.' to be matching on newlines, by default that's disabled
+		regexp.MustCompile("(?s)```release-note\\r\\n(?P<note>.+)\\r\\n```"),
+		regexp.MustCompile("(?s)```dev-release-note\\r\\n(?P<note>.+)"),
+		regexp.MustCompile("(?s)```\\r\\n(?P<note>.+)\\r\\n```"),
+		regexp.MustCompile("(?s)```release-note\n(?P<note>.+)\n```"),
 	}
 
 	for _, exp := range exps {
@@ -196,7 +197,7 @@ func NoteTextFromString(s string) (string, error) {
 				result[name] = match[i]
 			}
 		}
-		note := strings.TrimRight(result["note"], "\r")
+		note := strings.Replace(result["note"], "\r", "", -1)
 		note = stripActionRequired(note)
 		note = stripStar(note)
 		return note, nil
