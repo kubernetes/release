@@ -71,7 +71,7 @@ func (o *options) BindFlags() *flag.FlagSet {
 	flags.StringVar(
 		&o.branch,
 		"branch",
-		env.String("BRANCH", "branch"),
+		env.String("BRANCH", "master"),
 		"Select which branch to scrape. Defaults to `master`",
 	)
 
