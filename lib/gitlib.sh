@@ -24,7 +24,9 @@ GITHUB_TOKEN=${FLAGS_github_token:-$GITHUB_TOKEN}
 [[ -n $GITHUB_TOKEN ]] && GITHUB_TOKEN_FLAG=("-u" "$GITHUB_TOKEN:x-oauth-basic")
 GHCURL="curl -s --fail --retry 10 ${GITHUB_TOKEN_FLAG[*]}"
 JCURL="curl -g -s --fail --retry 10"
-K8S_GITHUB_API_ROOT='https://api.github.com/repos'
+GITHUB_API='https://api.github.com'
+GITHUB_API_GRAPHQL="${GITHUB_API}/graphql"
+K8S_GITHUB_API_ROOT="${GITHUB_API}/repos"
 K8S_GITHUB_API="$K8S_GITHUB_API_ROOT/kubernetes/kubernetes"
 K8S_GITHUB_RAW_ORG='https://raw.githubusercontent.com/kubernetes'
 
@@ -307,20 +309,116 @@ if ((FLAGS_gcb)); then
   gitlib::git_config_for_gcb || common::exit "Exiting..."
 fi
 
+##############################################################################
+# Publish an issue on github
+gitlib::create_issue() {
+  local repo="${1?expected repo for gitlib::create_issue}"
+  local title="${2?expected title for gitlib::create_issue}"
+  local body="${3?expected body for gitlib::create_issue}"
+  local milestone="${4:-null}"
+  local template data
+
+  # shellcheck disable=SC2016
+  template='{
+    "title": $title,
+    "body": $body,
+    "milestone": $milestone,
+  }'
+
+  data="$( jq \
+    --argjson milestone "$milestone" \
+    --arg     body      "$body" \
+    --arg     title     "$title" \
+    -c -n "$template"
+  )"
+
+  ${GHCURL} "${K8S_GITHUB_API_ROOT}/${repo}/issues" --data "$data"
+}
+
 ###############################################################################
-# Search for a matching release tracking issue
-# @param version - RELEASE_VERSION_PRIME
-# @param repo - org/repo
-# returns 1 if none found
-# prints most recent open issue matching
-gitlib::search_release_issue () {
-  local version=$1
-  local repo=$2
-  local issue
+# Post an issue for the publishing bot, to ask them to update their
+# configuration
+gitlib::create_publishing_bot_issue() {
+  local branch="$1"
+  local repo title body bot_commands milestone
 
-  issue=$($GHCURL "$K8S_GITHUB_SEARCHAPI_ROOT&q=Release+$version+Tracking+in:title+type:issue+state:open+repo:$repo" | jq -r '.items[] | (.number | tostring)' |sort -n |tail -1)
+  title="Update publishing-bot for ${branch}"
+  repo="k8s-release-robot/sig-release"
+  bot_commands=( '<!-- no assignments -->' )
+  milestone="v${branch#release-}"
 
-  [[ -z $issue ]] && return 1
+  if ((FLAGS_nomock)); then
+    local team_slug='publishing-bot-reviewers'
+    local gh_user_tags=()
+    local team_members
 
-  echo $issue
+    repo="kubernetes/kubernetes"
+    team_members="$( gitlib::get_team_members 'kubernetes' "$team_slug" )"
+    for m in $team_members ; do gh_user_tags+=( "@${m}" ); done
+    if (( ${#gh_user_tags[@]} > 0 ))
+    then
+      bot_commands=( "/assign ${gh_user_tags[*]}" )
+    fi
+    bot_commands+=( "/cc @kubernetes/${team_slug}" )
+  fi
+
+  body="$(cat <<EOF
+The branch [\`${branch}\`][branch] was just created.
+
+Please update the [publishing-bot's configuration][config] to also publish this
+new branch.
+
+[branch]: https://github.com/kubernetes/kubernetes/tree/${branch}
+[config]: https://github.com/kubernetes/kubernetes/tree/master/staging/publishing
+
+$( local IFS=$'\n' ; echo "${bot_commands[*]}" )
+/sig release
+/area release-eng
+/milestone ${milestone}
+EOF
+)"
+
+  gitlib::create_issue "$repo" "$title" "$body"
+}
+
+###############################################################################
+# Get all the members of an organisation's team
+gitlib::get_team_members() {
+  local org="${1:-kubernetes}"
+  local team="${2:-sig-release}"
+
+  local query query_tmpl query_body resp_transformation
+
+  # shellcheck disable=SC2016
+  query='query ($org:String!, $team:String!) {
+    organization(login: $org) {
+      team(slug: $team) {
+        members(next: 100) {
+          nodes {
+            login
+          }
+        }
+      }
+    }
+  }'
+  # shellcheck disable=SC2016
+  query_tmpl='{
+    "query" : $query,
+    "variables": {
+      "org": $org,
+      "team": $team
+    }
+  }'
+  query_body="$( jq \
+    --arg query "$query" \
+    --arg org   "$org" \
+    --arg team  "$team" \
+    -c -n "$query_tmpl" \
+  )"
+  resp_transformation='(.data.organization.team.members.nodes // {})[].login'
+
+  {
+    $GHCURL "$GITHUB_API_GRAPHQL" -X POST -d "$query_body" \
+      | jq -r "$resp_transformation"
+  } || echo -n ''
 }

@@ -1,0 +1,10 @@
+sh_test(
+    name = "releaselib",
+    srcs = ["releaselib_test.sh"],
+)
+
+sh_test(
+    name = "gitlib",
+    srcs = ["gitlib_test.sh"],
+    data = glob(["testdata/gitlib/*"]),
+)
