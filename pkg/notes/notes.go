@@ -302,9 +302,7 @@ func ListCommits(client *github.Client, branch, start, end string, opts ...Githu
 		if err != nil {
 			return nil, err
 		}
-		for _, commit := range commitPage {
-			commits = append(commits, commit)
-		}
+		commits = append(commits, commitPage...)
 		clo.ListOptions.Page++
 	}
 

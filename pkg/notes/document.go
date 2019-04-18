@@ -91,7 +91,7 @@ func CreateDocument(notes ReleaseNoteList) (*Document, error) {
 func RenderMarkdown(doc *Document, w io.Writer) error {
 	// we always want to render the document with SIGs in alphabetical order
 	sortedSIGs := []string{}
-	for sig, _ := range doc.SIGs {
+	for sig := range doc.SIGs {
 		sortedSIGs = append(sortedSIGs, sig)
 	}
 	sort.Strings(sortedSIGs)
