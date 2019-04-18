@@ -32,16 +32,11 @@ func CreateDocument(notes ReleaseNoteList) (*Document, error) {
 	}
 
 	for _, note := range notes {
-		categorized := false
-
 		if note.ActionRequired {
-			categorized = true
 			doc.ActionRequired = append(doc.ActionRequired, note.Markdown)
 		} else if note.Feature {
-			categorized = true
 			doc.NewFeatures = append(doc.NewFeatures, note.Markdown)
 		} else if note.Duplicate {
-			categorized = true
 			header := prettifySigList(note.SIGs)
 			existingNotes, ok := doc.Duplicates[header]
 			if ok {
@@ -50,6 +45,8 @@ func CreateDocument(notes ReleaseNoteList) (*Document, error) {
 				doc.Duplicates[header] = []string{note.Markdown}
 			}
 		} else {
+			categorized := false
+
 			for _, sig := range note.SIGs {
 				categorized = true
 				notesForSIG, ok := doc.SIGs[sig]
