@@ -28,6 +28,7 @@ type options struct {
 	endSHA         string
 	releaseVersion string
 	format         string
+	requiredAuthor string
 	logger         log.Logger
 }
 
@@ -107,6 +108,13 @@ func (o *options) BindFlags() *flag.FlagSet {
 		env.String("FORMAT", "markdown"),
 		"The format for notes output (options: markdown, json)",
 	)
+
+	flags.StringVar(
+		&o.requiredAuthor,
+		"requiredAuthor",
+		env.String("REQUIRED_AUTHOR", "k8s-ci-robot"),
+		"Only commits from this GitHub user are considered. Set to empty string to include all users",
+	)
 	return flags
 }
 
@@ -129,7 +137,7 @@ func (o *options) GetReleaseNotes() (notes.ReleaseNoteList, error) {
 		opts = append(opts, notes.WithRepo(o.githubRepo))
 	}
 
-	releaseNotes, err := notes.ListReleaseNotes(githubClient, o.logger, o.branch, o.startSHA, o.endSHA, o.releaseVersion, opts...)
+	releaseNotes, err := notes.ListReleaseNotes(githubClient, o.logger, o.branch, o.startSHA, o.endSHA, o.requiredAuthor, o.releaseVersion, opts...)
 	if err != nil {
 		level.Error(o.logger).Log("msg", "error generating release notes", "err", err)
 		return nil, err

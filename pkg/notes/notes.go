@@ -136,6 +136,7 @@ func ListReleaseNotes(
 	branch,
 	start,
 	end,
+	requiredAuthor,
 	relVer string,
 	opts ...GithubApiOption,
 ) (ReleaseNoteList, error) {
@@ -147,8 +148,11 @@ func ListReleaseNotes(
 	dedupeCache := map[string]struct{}{}
 	notes := make(ReleaseNoteList)
 	for _, commit := range commits {
-		if commit.GetAuthor().GetLogin() != "k8s-ci-robot" {
-			continue
+
+		if requiredAuthor != "" {
+			if commit.GetAuthor().GetLogin() != requiredAuthor {
+				continue
+			}
 		}
 
 		note, err := ReleaseNoteFromCommit(commit, client, relVer, opts...)
