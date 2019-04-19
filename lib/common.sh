@@ -943,11 +943,16 @@ common::set_cloud_binaries () {
   logecho -n "Checking/setting cloud tools: "
 
   for GSUTIL in "$(which gsutil)" /opt/google/google-cloud-sdk/bin/gsutil; do
-    [[ -x $GSUTIL ]] && break
+    if [[ -x $GSUTIL ]]; then
+      break
+    fi
   done
 
-  # gcloud should be in the same place
-  GCLOUD=${GSUTIL/gsutil/gcloud}
+  for GCLOUD in "${GSUTIL/gsutil/gcloud}" "$(which gcloud)"; do
+    if [[ -x $GCLOUD ]]; then
+      break
+    fi
+  done
 
   if [[ -x "$GSUTIL" && -x "$GCLOUD" ]]; then
     logecho -r $OK
