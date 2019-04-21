@@ -409,7 +409,11 @@ func PRFromCommit(client *github.Client, commit *github.RepositoryCommit, opts .
 	exp := regexp.MustCompile(`Merge pull request #(?P<number>\d+)`)
 	match := exp.FindStringSubmatch(*commit.Commit.Message)
 	if len(match) == 0 {
-		return nil, errors.New("no matches found when parsing PR from commit")
+		// If the PR was squash merged, the regexp is different
+		match = regexp.MustCompile(`\(#(?P<number>\d+)\)`).FindStringSubmatch(*commit.Commit.Message)
+		if len(match) != 1 {
+			return nil, errors.New("no matches found when parsing PR from commit")
+		}
 	}
 	result := map[string]string{}
 	for i, name := range exp.SubexpNames() {
