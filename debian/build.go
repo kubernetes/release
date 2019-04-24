@@ -72,6 +72,7 @@ var (
 	allDistros    = stringList{"xenial", "jessie", "precise", "sid", "stretch", "trusty", "utopic", "vivid", "wheezy", "wily", "yakkety"}
 	kubeVersion   = ""
 	revision      = "00"
+	releaseDownloadLinkBase = "https://dl.k8s.io"
 
 	builtins = map[string]interface{}{
 		"date": func() string {
@@ -88,6 +89,7 @@ func init() {
 	flag.Var(&allDistros, "distros", "Distros to build for.")
 	flag.StringVar(&kubeVersion, "kube-version", "", "Distros to build for.")
 	flag.StringVar(&revision, "revision", "00", "Deb package revision.")
+	flag.StringVar(&releaseDownloadLinkBase, "release-download-link-base", "https://dl.k8s.io", "Release download link base.")
 }
 
 func runCommand(pwd string, command string, cmdArgs ...string) error {
@@ -279,7 +281,7 @@ func getCIBuildsDownloadLinkBase(_ version) (string, error) {
 }
 
 func getReleaseDownloadLinkBase(v version) (string, error) {
-	return fmt.Sprintf("https://dl.k8s.io/v%s", v.Version), nil
+	return fmt.Sprintf("%s/v%s", releaseDownloadLinkBase, v.Version), nil
 }
 
 func getKubeadmDependencies(v version) (string, error) {
