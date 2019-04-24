@@ -1,4 +1,4 @@
-FROM golang:1.7
+FROM golang:1.12
 
 RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get update -y \
