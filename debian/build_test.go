@@ -99,7 +99,7 @@ func TestGetKubeadmDependencies(t *testing.T) {
 			deps: []string{
 				"kubelet (>= 1.6.0)",
 				"kubectl (>= 1.6.0)",
-				"kubernetes-cni (= 0.6.0)",
+				"kubernetes-cni (= 0.7.5)",
 				"${misc:Depends}",
 			},
 		},
@@ -111,7 +111,7 @@ func TestGetKubeadmDependencies(t *testing.T) {
 				"kubectl (>= 1.6.0)",
 				"kubernetes-cni (= 0.7.5)",
 				"${misc:Depends}",
-				"cri-tools (>= 1.11.0)",
+				"cri-tools (>= 1.11.1)",
 			},
 		},
 	}
@@ -127,7 +127,7 @@ func TestGetKubeadmDependencies(t *testing.T) {
 				t.Fatalf("Expected %d deps but found %d", len(tc.deps), len(actual))
 			}
 			if !reflect.DeepEqual(actual, tc.deps) {
-				t.Fatalf("e")
+				t.Fatalf("expected %q but got %q", tc.deps, actual)
 			}
 		})
 	}
