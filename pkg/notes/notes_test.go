@@ -105,3 +105,37 @@ func TestNoteTextFromString(t *testing.T) {
 	result, _ = NoteTextFromString("```release-note\ntest\n```")
 	require.Equal(t, "test", result)
 }
+
+func TestGetPRNumberFromCommitMessage(t *testing.T) {
+	testCases := []struct {
+		name             string
+		commitMessage    string
+		expectedPRNumber int
+	}{
+		{
+			name: "Get PR number from merged PR",
+			commitMessage: `Merge pull request #76030 from andrewsykim/e2e-legacyscheme
+
+    test/e2e: replace legacy scheme with client-go scheme`,
+			expectedPRNumber: 76030,
+		},
+		{
+			name:             "Get PR number from squash merged PR",
+			commitMessage:    "Add swapoff to centos so kubelet starts (#504)",
+			expectedPRNumber: 504,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actualPRNumber, err := getPRNumberFromCommitMessage(tc.commitMessage)
+			if err != nil {
+				t.Fatalf("Expected no error to occur but got %v", err)
+			}
+			if actualPRNumber != tc.expectedPRNumber {
+				t.Errorf("Expected PR number to be %d but was %d", tc.expectedPRNumber, actualPRNumber)
+			}
+		})
+	}
+
+}
