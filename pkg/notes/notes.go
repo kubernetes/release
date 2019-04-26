@@ -402,28 +402,10 @@ func ListCommitsWithNotes(
 func PRFromCommit(client *github.Client, commit *github.RepositoryCommit, opts ...GithubApiOption) (*github.PullRequest, error) {
 	c := configFromOpts(opts...)
 
-	// Thankfully k8s-merge-robot commits the PR number consistently. If this ever
-	// stops being true, this definitely won't work anymore.
-	exp := regexp.MustCompile(`Merge pull request #(?P<number>\d+)`)
-	match := exp.FindStringSubmatch(*commit.Commit.Message)
-	if len(match) == 0 {
-		// If the PR was squash merged, the regexp is different
-		match = regexp.MustCompile(`\(#(?P<number>\d+)\)`).FindStringSubmatch(*commit.Commit.Message)
-		if len(match) != 1 {
-			return nil, errors.New("no matches found when parsing PR from commit")
-		}
-	}
-	result := map[string]string{}
-	for i, name := range exp.SubexpNames() {
-		if i != 0 && name != "" {
-			result[name] = match[i]
-		}
-	}
-	number, err := strconv.Atoi(result["number"])
+	number, err := getPRNumberFromCommitMessage(*commit.Commit.Message)
 	if err != nil {
 		return nil, err
 	}
-
 	// Given the PR number that we've now converted to an integer, get the PR from
 	// the API
 	pr, _, err := client.PullRequests.Get(c.ctx, c.org, c.repo, number)
@@ -547,4 +529,29 @@ func HasString(a []string, x string) bool {
 		}
 	}
 	return false
+}
+
+func getPRNumberFromCommitMessage(commitMessage string) (int, error) {
+	// Thankfully k8s-merge-robot commits the PR number consistently. If this ever
+	// stops being true, this definitely won't work anymore.
+	exp := regexp.MustCompile(`Merge pull request #(?P<number>\d+)`)
+	match := exp.FindStringSubmatch(commitMessage)
+	if len(match) == 0 {
+		// If the PR was squash merged, the regexp is different
+		match = regexp.MustCompile(`\(#(?P<number>\d+)\)`).FindStringSubmatch(commitMessage)
+		if len(match) == 0 {
+			return 0, errors.New("no matches found when parsing PR from commit")
+		}
+	}
+	result := map[string]string{}
+	for i, name := range exp.SubexpNames() {
+		if i != 0 && name != "" {
+			result[name] = match[i]
+		}
+	}
+	number, err := strconv.Atoi(result["number"])
+	if err != nil {
+		return 0, err
+	}
+	return number, nil
 }
