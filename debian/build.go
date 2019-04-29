@@ -358,7 +358,7 @@ func getKubeletCNIVersion(v version) (string, error) {
 	}
 
 	if sv.GTE(v190) {
-		return fmt.Sprintf("= %s", cniVersion), nil
+		return fmt.Sprintf(">= %s", cniVersion), nil
 	}
 	return fmt.Sprint("= 0.5.1"), nil
 }
