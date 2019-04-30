@@ -173,7 +173,10 @@ func (o *options) WriteReleaseNotes(releaseNotes notes.ReleaseNoteList) error {
 		byteValue, _ := ioutil.ReadAll(output)
 		existingNotes := make([]*notes.ReleaseNote, 0)
 
-		json.Unmarshal(byteValue, &existingNotes)
+		if err := json.Unmarshal(byteValue, &existingNotes); err != nil {
+			level.Error(o.logger).Log("msg", "error unmarshalling existing notes", "err", err)
+			return err
+		}
 
 		if len(existingNotes) > 0 {
 			output.Truncate(0)
