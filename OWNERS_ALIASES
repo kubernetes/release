@@ -15,6 +15,7 @@ aliases:
     - feiskyer # 1.12
     - aleksandra-malinowska # 1.13 / 1.14 / 1.15
     - tpepper # 1.13 / 1.14 / 1.15
+    - hoegaarden # 1.13 / 1.14 / 1.15
   branch-manager-role:
     - dougm # 1.12 / 1.13
     - hoegaarden # 1.14
