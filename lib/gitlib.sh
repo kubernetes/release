@@ -315,18 +315,15 @@ gitlib::create_issue() {
   local repo="${1?expected repo for gitlib::create_issue}"
   local title="${2?expected title for gitlib::create_issue}"
   local body="${3?expected body for gitlib::create_issue}"
-  local milestone="${4:-null}"
   local template data
 
   # shellcheck disable=SC2016
   template='{
     "title": $title,
     "body": $body,
-    "milestone": $milestone,
   }'
 
   data="$( jq \
-    --argjson milestone "$milestone" \
     --arg     body      "$body" \
     --arg     title     "$title" \
     -c -n "$template"
@@ -340,12 +337,11 @@ gitlib::create_issue() {
 # configuration
 gitlib::create_publishing_bot_issue() {
   local branch="$1"
-  local repo title body bot_commands milestone
+  local repo title body bot_commands
 
   title="Update publishing-bot for ${branch}"
   repo="k8s-release-robot/sig-release"
   bot_commands=( '<!-- no assignments -->' )
-  milestone="v${branch#release-}"
 
   if ((FLAGS_nomock)); then
     local team_slug='publishing-bot-reviewers'
@@ -374,7 +370,6 @@ new branch.
 $( local IFS=$'\n' ; echo "${bot_commands[*]}" )
 /sig release
 /area release-eng
-/milestone ${milestone}
 EOF
 )"
 

@@ -71,11 +71,6 @@ TEST_create_issue() {
     <( gitlib::create_issue "$repo" "$title" "$body" ) \
     "${TESTDATA}/gitlib/create_issue.txt" \
     'creating an issue'
-
-  assertEqualContent \
-    <( gitlib::create_issue "$repo" "$title" "$body" 12345 ) \
-    "${TESTDATA}/gitlib/create_issue_milestone.txt" \
-    'creating an issue with milestone'
 }
 
 TEST_create_publishing_bot_issue() {
