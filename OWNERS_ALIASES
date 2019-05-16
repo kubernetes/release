@@ -9,7 +9,6 @@ aliases:
     - aleksandra-malinowska
     - calebamiles
     - ixdy
-    - mikedanese
     - tpepper
   patch-release-manager-role:
     - feiskyer # 1.12
