@@ -123,11 +123,9 @@ release::set_build_version () {
    master) branch="release-master"
   esac
 
-  # Get the list of 'blocking' jobs rom testgrid config yamls
-  local -a all_jobs=($($GHCURL \
-   $K8S_GITHUB_RAW_ORG/test-infra/master/testgrid/config.yaml \
-   2>/dev/null |\
-   $yq -r '.[] | .[] | select (.name?=="sig-'$branch'-blocking") |.dashboard_tab[].test_group_name' 2>/dev/null))
+  local -a all_jobs=(
+    $(go run $GOPATH/src/k8s.io/release/cmd/blocking-testgrid-tests/main.go "$branch")
+  )
 
   if [[ -z ${all_jobs[*]} ]]; then
     logecho "$FAILED: Curl to testgrid/config/config.yaml"
