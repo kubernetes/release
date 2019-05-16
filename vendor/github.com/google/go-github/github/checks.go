@@ -81,6 +81,9 @@ type CheckSuite struct {
 	App          *App           `json:"app,omitempty"`
 	Repository   *Repository    `json:"repository,omitempty"`
 	PullRequests []*PullRequest `json:"pull_requests,omitempty"`
+
+	// The following fields are only populated by Webhook events.
+	HeadCommit *Commit `json:"head_commit,omitempty"`
 }
 
 func (c CheckRun) String() string {
@@ -352,7 +355,7 @@ type AutoTriggerCheck struct {
 
 // CheckSuitePreferenceOptions set options for check suite preferences for a repository.
 type CheckSuitePreferenceOptions struct {
-	PreferenceList *PreferenceList `json:"auto_trigger_checks,omitempty"` // A list of auto trigger checks that can be set for a check suite in a repository.
+	AutoTriggerChecks []*AutoTriggerCheck `json:"auto_trigger_checks,omitempty"` // A slice of auto trigger checks that can be set for a check suite in a repository.
 }
 
 // CheckSuitePreferenceResults represents the results of the preference set operation.
@@ -361,7 +364,7 @@ type CheckSuitePreferenceResults struct {
 	Repository  *Repository     `json:"repository,omitempty"`
 }
 
-// PreferenceList represents a list of auto trigger checks for  repository
+// PreferenceList represents a list of auto trigger checks for repository
 type PreferenceList struct {
 	AutoTriggerChecks []*AutoTriggerCheck `json:"auto_trigger_checks,omitempty"` // A slice of auto trigger checks that can be set for a check suite in a repository.
 }
