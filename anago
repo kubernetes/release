@@ -944,7 +944,7 @@ Kubernetes team,
 <P>
 Kubernetes' $RELEASE_BRANCH branch has been created.
 <P>
-The release owner will be sending updates on how to interact with this branch shortly.  The <A HREF=https://github.com/kubernetes/community/blob/master/contributors/devel/cherry-picks.md>Cherrypick Guide</A> has some general guidance on how things will proceed.
+The release owner will be sending updates on how to interact with this branch shortly.  The <A HREF=https://git.k8s.io/community/contributors/devel/sig-release/cherry-picks.md>Cherrypick Guide</A> has some general guidance on how things will proceed.
 <P>
 Announced by <A HREF=https://github.com/kubernetes/release>$PROG</A>, the Kubernetes Release Tool
 EOF
