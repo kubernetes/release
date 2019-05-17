@@ -1,7 +1,7 @@
 # To rebuild and publish this container run:
 #   gcloud builds submit --config update_build_container.yaml .
 
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 
 # Install packages
 RUN apt-get -q update && apt-get install -qqy apt-transport-https \

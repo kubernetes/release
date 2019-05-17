@@ -68,8 +68,8 @@ func (ss *stringList) Set(v string) error {
 
 var (
 	architectures = stringList{"amd64", "arm", "arm64", "ppc64le", "s390x"}
-	serverDistros = stringList{"xenial"}
-	allDistros    = stringList{"xenial", "jessie", "precise", "sid", "stretch", "trusty", "utopic", "vivid", "wheezy", "wily", "yakkety"}
+	serverDistros = stringList{"bionic"}
+	allDistros    = stringList{"bionic", "xenial", "jessie", "precise", "sid", "stretch", "trusty", "utopic", "vivid", "wheezy", "wily", "yakkety"}
 	kubeVersion   = ""
 	revision      = "00"
 	releaseDownloadLinkBase = "https://dl.k8s.io"
