@@ -50,11 +50,23 @@ PROG=${0##*/}
 #+
 #+ BUGS/TODO
 #+
-########################################################################
+#######################################################################
 # If NO ARGUMENTS should return *usage*, uncomment the following line:
 usage=${1:-yes}
 
 source $(dirname $(readlink -ne $BASH_SOURCE))/lib/common.sh
+
+# Check prerequisites
+
+PREREQUISITE_TOOLS=("git" "jq" "go" "make")
+for PREREQ in ${PREREQUISITE_TOOLS[@]}; do
+  command -v $PREREQ > /dev/null 2>&1 || common::exit 1 \
+                                         "$PREREQ not installed"
+done;
+
+[[ -w /usr/local ]] || common::exit 1 "/usr/local is not writable."
+[[ $EUID -eq 0 ]]    || common::exit 1 "Please run as root!"
+
 source $TOOL_LIB_PATH/gitlib.sh
 
 # Set positional args
