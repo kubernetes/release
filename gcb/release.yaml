@@ -7,12 +7,15 @@ secrets:
 
 steps:
 - name: gcr.io/cloud-builders/git
+  dir: "go/src/k8s.io"
   args:
   - "clone"
   - "https://github.com/kubernetes/release"
 
 - name: gcr.io/$PROJECT_ID/k8s-cloud-builder
-  dir: release
+  dir: "go/src/k8s.io/release"
+  env:
+  - "GOPATH=/workspace/go"
   secretEnv:
   - GITHUB_TOKEN
   args:

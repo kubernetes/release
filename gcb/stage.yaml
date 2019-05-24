@@ -7,12 +7,15 @@ secrets:
 
 steps:
 - name: gcr.io/cloud-builders/git
+  dir: "go/src/k8s.io"
   args:
   - "clone"
   - "https://github.com/kubernetes/release"
 
 - name: gcr.io/$PROJECT_ID/k8s-cloud-builder
-  dir: release
+  dir: "go/src/k8s.io/release"
+  env:
+  - "GOPATH=/workspace/go"
   secretEnv:
   - GITHUB_TOKEN
   args:
@@ -31,7 +34,9 @@ steps:
   - "--tmpdir=/workspace/tmp"
 
 - name: k8s.gcr.io/kube-cross:local
-  dir: release
+  dir: "go/src/k8s.io/release"
+  env:
+  - "GOPATH=/workspace/go"
   args:
   - "./anago"
   - "${_RELEASE_BRANCH}"
@@ -48,7 +53,9 @@ steps:
   - "--tmpdir=/workspace/tmp"
 
 - name: gcr.io/$PROJECT_ID/k8s-cloud-builder
-  dir: release
+  dir: "go/src/k8s.io/release"
+  env:
+  - "GOPATH=/workspace/go"
   secretEnv:
   - GITHUB_TOKEN
   args:
