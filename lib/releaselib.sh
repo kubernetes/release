@@ -124,7 +124,7 @@ release::set_build_version () {
   esac
 
   local -a all_jobs=(
-    $(go run $GOPATH/src/k8s.io/release/cmd/blocking-testgrid-tests/main.go "$branch")
+    $(common::run_gobin blocking-testgrid-tests "$branch")
   )
 
   if [[ -z ${all_jobs[*]} ]]; then
