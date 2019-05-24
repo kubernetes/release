@@ -149,6 +149,9 @@ source $BASE_ROOT/lib/common.sh
 source $TOOL_LIB_PATH/gitlib.sh
 source $TOOL_LIB_PATH/releaselib.sh
 
+readonly RELEASE_TOOL_REPO="${RELEASE_TOOL_REPO:-https://github.com/kubernetes/release}"
+readonly RELEASE_TOOL_BRANCH="${RELEASE_TOOL_BRANCH:-master}"
+
 ###############################################################################
 # FUNCTIONS
 ###############################################################################
@@ -295,6 +298,8 @@ submit_it () {
   # The usual suspects
   substitutions+=",_RELEASE_BRANCH=$RELEASE_BRANCH,_OFFICIAL=$OFFICIAL,_RC=$RC"
   substitutions+=",_NOMOCK=$NOMOCK,_BUILDVERSION=$BUILDVERSION"
+  substitutions+=",_RELEASE_TOOL_REPO=$RELEASE_TOOL_REPO"
+  substitutions+=",_RELEASE_TOOL_BRANCH=$RELEASE_TOOL_BRANCH"
 
   if ! JOB_DATA=$($GCLOUD builds submit --no-source \
                           --config=$YAML_FILE --async --disk-size=$DISK_SIZE \

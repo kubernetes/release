@@ -10,12 +10,14 @@ steps:
   dir: "go/src/k8s.io"
   args:
   - "clone"
-  - "https://github.com/kubernetes/release"
+  - "--branch=${_RELEASE_TOOL_BRANCH}"
+  - "${_RELEASE_TOOL_REPO}"
 
 - name: gcr.io/$PROJECT_ID/k8s-cloud-builder
   dir: "go/src/k8s.io/release"
   env:
-  - "GOPATH=/workspace/go"
+  - "RELEASE_TOOL_REPO=${_RELEASE_TOOL_REPO}"
+  - "RELEASE_TOOL_BRANCH=${_RELEASE_TOOL_BRANCH}"
   secretEnv:
   - GITHUB_TOKEN
   args:
