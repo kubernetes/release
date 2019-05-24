@@ -13,7 +13,7 @@ steps:
   - "--branch=${_RELEASE_TOOL_BRANCH}"
   - "${_RELEASE_TOOL_REPO}"
 
-- name: gcr.io/$PROJECT_ID/k8s-cloud-builder
+- name: k8s.gcr.io/kube-cross:${_KUBE_CROSS_VERSION}
   dir: "go/src/k8s.io/release"
   env:
   - "GOPATH=/workspace/go"

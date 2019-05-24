@@ -300,6 +300,7 @@ submit_it () {
   substitutions+=",_NOMOCK=$NOMOCK,_BUILDVERSION=$BUILDVERSION"
   substitutions+=",_RELEASE_TOOL_REPO=$RELEASE_TOOL_REPO"
   substitutions+=",_RELEASE_TOOL_BRANCH=$RELEASE_TOOL_BRANCH"
+  substitutions+=",_KUBE_CROSS_VERSION=$KUBE_CROSS_VERSION"
 
   if ! JOB_DATA=$($GCLOUD builds submit --no-source \
                           --config=$YAML_FILE --async --disk-size=$DISK_SIZE \
