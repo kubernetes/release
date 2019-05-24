@@ -17,6 +17,13 @@ steps:
   dir: "go/src/k8s.io/release"
   env:
   - "GOPATH=/workspace/go"
+  - "GOBIN=/workspace/bin"
+  args:
+  - "./compile-release-tools"
+
+- name: gcr.io/$PROJECT_ID/k8s-cloud-builder
+  dir: "go/src/k8s.io/release"
+  env:
   - "RELEASE_TOOL_REPO=${_RELEASE_TOOL_REPO}"
   - "RELEASE_TOOL_BRANCH=${_RELEASE_TOOL_BRANCH}"
   secretEnv:
