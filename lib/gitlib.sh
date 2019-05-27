@@ -285,12 +285,29 @@ gitlib::push_master () {
 # Ensure TOOL_ROOT running with a synced repo.
 #
 gitlib::repo_state () {
-  local branch=$(gitlib::current_branch $TOOL_ROOT) || return 1
-  local remote=$(git -C $TOOL_ROOT remote -v |\
-                 awk '/kubernetes\/release(.git)* \(fetch\)/ {print $1}')
-  local commit=$(git -C $TOOL_ROOT \
-                     ls-remote --heads $remote refs/heads/master | cut -f1)
-  local output=$(git -C $TOOL_ROOT branch --contains $commit $branch 2>&-)
+  local expectedRemote="${RELEASE_TOOL_REPO:-/kubernetes/release}"
+  local expectedBranch="${RELEASE_TOOL_BRANCH:-master}"
+
+  local branch=$(gitlib::current_branch "$TOOL_ROOT") || return 1
+  if [ "${expectedBranch}" != "$branch" ]
+  then
+    logecho "$FAILED checked out branch $branch is not the same as $expectedBranch"
+    return 1
+  fi
+
+  local remotePattern="$(
+    echo "${expectedRemote}" \
+      | awk -F '[:/]' '{ print $(NF-1) "/" $NF }'
+  )"
+  # make sure all '/' in the remote are escaped
+  remotePattern="${expectedRemote//\//\\\/}(.git)* \(fetch\)$"
+
+  local remote=$(
+    git -C "$TOOL_ROOT" remote -v | awk "-vP=${remotePattern}" '$0 ~ P {print $1}'
+  )
+  local commit=$(git -C "$TOOL_ROOT" \
+                     ls-remote --heads "$remote" refs/heads/master | cut -f1)
+  local output=$(git -C "$TOOL_ROOT" branch --contains "$commit" "$branch" 2>&-)
 
   logecho -n "Checking $TOOL_ROOT state: "
   if [[ -n "$output" ]]; then

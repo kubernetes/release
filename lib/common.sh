@@ -1200,6 +1200,26 @@ common::validate_command_line () {
   fi
 }
 
+##############################################################################
+# Run a command line, where the first command is expected to be a go binary
+# from this repo. If the binary cannot be found in the name, a hopefully
+# helpful message on how to install that binary is printed. If the binary
+# cannot be found in the name, a hopefully helpful message on how to install
+# that binary is printed.
+common::run_gobin () {
+  local orgCmd expandedCmd
+  orgCmd="$1"
+  shift
+  expandedCmd="$( command -v "$orgCmd" )"
+
+  if [ -z "$expandedCmd" ]
+  then
+    logecho -r "${FAILED}: ${orgCmd} is not in the \$PATH, you can try to install it via 'go install k8s.io/release/cmd/${orgCmd}'" >&2
+    return 1
+  fi
+  "$expandedCmd" "$@"
+}
+
 # right thing in common::trapclean().
 common::trap common::trapclean ERR SIGINT SIGQUIT SIGTERM SIGHUP
 

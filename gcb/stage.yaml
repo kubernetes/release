@@ -7,12 +7,25 @@ secrets:
 
 steps:
 - name: gcr.io/cloud-builders/git
+  dir: "go/src/k8s.io"
   args:
   - "clone"
-  - "https://github.com/kubernetes/release"
+  - "--branch=${_RELEASE_TOOL_BRANCH}"
+  - "${_RELEASE_TOOL_REPO}"
+
+- name: k8s.gcr.io/kube-cross:${_KUBE_CROSS_VERSION}
+  dir: "go/src/k8s.io/release"
+  env:
+  - "GOPATH=/workspace/go"
+  - "GOBIN=/workspace/bin"
+  args:
+  - "./compile-release-tools"
 
 - name: gcr.io/$PROJECT_ID/k8s-cloud-builder
-  dir: release
+  dir: "go/src/k8s.io/release"
+  env:
+  - "RELEASE_TOOL_REPO=${_RELEASE_TOOL_REPO}"
+  - "RELEASE_TOOL_BRANCH=${_RELEASE_TOOL_BRANCH}"
   secretEnv:
   - GITHUB_TOKEN
   args:
@@ -31,7 +44,10 @@ steps:
   - "--tmpdir=/workspace/tmp"
 
 - name: k8s.gcr.io/kube-cross:local
-  dir: release
+  dir: "go/src/k8s.io/release"
+  env:
+  - "RELEASE_TOOL_REPO=${_RELEASE_TOOL_REPO}"
+  - "RELEASE_TOOL_BRANCH=${_RELEASE_TOOL_BRANCH}"
   args:
   - "./anago"
   - "${_RELEASE_BRANCH}"
@@ -48,7 +64,10 @@ steps:
   - "--tmpdir=/workspace/tmp"
 
 - name: gcr.io/$PROJECT_ID/k8s-cloud-builder
-  dir: release
+  dir: "go/src/k8s.io/release"
+  env:
+  - "RELEASE_TOOL_REPO=${_RELEASE_TOOL_REPO}"
+  - "RELEASE_TOOL_BRANCH=${_RELEASE_TOOL_BRANCH}"
   secretEnv:
   - GITHUB_TOKEN
   args:
