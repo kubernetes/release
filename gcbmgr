@@ -293,14 +293,13 @@ submit_it () {
   substitutions="_OFFICIAL_TAG=$OFFICIAL_TAG,_NOMOCK_TAG=$NOMOCK_TAG,_RC_TAG=$RC_TAG"
   substitutions+=",_BUILD_POINT=$BUILD_POINT,_GCP_USER_TAG=$GCP_USER_TAG"
 
-  [[ $COMMAND == stage ]] && substitutions+=",_BUILD_AT_HEAD=$BUILD_AT_HEAD"
+  [[ $COMMAND == stage ]] && substitutions+=",_BUILD_AT_HEAD=$BUILD_AT_HEAD" && substitutions+=",_KUBE_CROSS_VERSION=$KUBE_CROSS_VERSION"
 
   # The usual suspects
   substitutions+=",_RELEASE_BRANCH=$RELEASE_BRANCH,_OFFICIAL=$OFFICIAL,_RC=$RC"
   substitutions+=",_NOMOCK=$NOMOCK,_BUILDVERSION=$BUILDVERSION"
   substitutions+=",_RELEASE_TOOL_REPO=$RELEASE_TOOL_REPO"
   substitutions+=",_RELEASE_TOOL_BRANCH=$RELEASE_TOOL_BRANCH"
-  substitutions+=",_KUBE_CROSS_VERSION=$KUBE_CROSS_VERSION"
 
   if ! JOB_DATA=$($GCLOUD builds submit --no-source \
                           --config=$YAML_FILE --async --disk-size=$DISK_SIZE \
