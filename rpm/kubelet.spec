@@ -54,7 +54,7 @@ Source7: https://github.com/kubernetes-incubator/cri-tools/releases/download/v%{
 BuildRequires: systemd
 BuildRequires: curl
 Requires: iptables >= 1.4.21
-Requires: kubernetes-cni = %{CNI_VERSION}
+Requires: kubernetes-cni >= %{CNI_VERSION}
 Requires: socat
 Requires: util-linux
 Requires: ethtool
@@ -197,6 +197,9 @@ mv cni-plugins/bin/ %{buildroot}/opt/cni/
 
 
 %changelog
+* Thu May 30 2019 Tim Pepper <tpepper@vmware.com>
+- Change CNI version check to ">="
+
 * Tue Mar 20 2019 Lubomir I. Ivanov <lubomirivanov@vmware.com>
 - Bump CNI version to v0.7.5.
 
