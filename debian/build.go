@@ -68,10 +68,13 @@ func (ss *stringList) Set(v string) error {
 
 var (
 	architectures = stringList{"amd64", "arm", "arm64", "ppc64le", "s390x"}
-	serverDistros = stringList{"bionic"}
-	allDistros    = stringList{"bionic", "xenial", "jessie", "precise", "sid", "stretch", "trusty", "utopic", "vivid", "wheezy", "wily", "yakkety"}
-	kubeVersion   = ""
-	revision      = "00"
+	// distros describes the Debian and Ubuntu versions that binaries will be built for.
+	// Each distro build definition is currently symlinked to the most recent ubuntu build definition in the repo.
+	// Build definitions should be kept up to date across release cycles, removing Debian/Ubuntu versions
+	// that are no longer supported from the perspective of the OS distribution maintainers.
+	distros                 = stringList{"bionic", "xenial", "trusty", "stretch", "jessie", "sid"}
+	kubeVersion             = ""
+	revision                = "00"
 	releaseDownloadLinkBase = "https://dl.k8s.io"
 
 	builtins = map[string]interface{}{
@@ -85,8 +88,7 @@ var (
 
 func init() {
 	flag.Var(&architectures, "arch", "Architectures to build for.")
-	flag.Var(&serverDistros, "server-distros", "Server distros to build for.")
-	flag.Var(&allDistros, "distros", "Distros to build for.")
+	flag.Var(&distros, "distros", "Distros to build for.")
 	flag.StringVar(&kubeVersion, "kube-version", "", "Distros to build for.")
 	flag.StringVar(&revision, "revision", "00", "Deb package revision.")
 	flag.StringVar(&releaseDownloadLinkBase, "release-download-link-base", "https://dl.k8s.io", "Release download link base.")
@@ -391,7 +393,7 @@ func main() {
 	builds := []build{
 		{
 			Package: "kubectl",
-			Distros: allDistros,
+			Distros: distros,
 			Versions: []version{
 				{
 					GetVersion:          getStableKubeVersion,
@@ -415,7 +417,7 @@ func main() {
 		},
 		{
 			Package: "kubelet",
-			Distros: serverDistros,
+			Distros: distros,
 			Versions: []version{
 				{
 					GetVersion:          getStableKubeVersion,
@@ -439,7 +441,7 @@ func main() {
 		},
 		{
 			Package: "kubernetes-cni",
-			Distros: serverDistros,
+			Distros: distros,
 			Versions: []version{
 				{
 					Version:  cniVersion,
@@ -460,7 +462,7 @@ func main() {
 		},
 		{
 			Package: "kubeadm",
-			Distros: serverDistros,
+			Distros: distros,
 			Versions: []version{
 				{
 					GetVersion:          getStableKubeVersion,
@@ -484,7 +486,7 @@ func main() {
 		},
 		{
 			Package: "cri-tools",
-			Distros: serverDistros,
+			Distros: distros,
 			Versions: []version{
 				{
 					GetVersion: getCRIToolsLatestVersion,
@@ -512,7 +514,7 @@ func main() {
 		builds = []build{
 			{
 				Package: "kubectl",
-				Distros: allDistros,
+				Distros: distros,
 				Versions: []version{
 					{
 						GetVersion:          getSpecifiedVersion,
@@ -524,7 +526,7 @@ func main() {
 			},
 			{
 				Package: "kubelet",
-				Distros: serverDistros,
+				Distros: distros,
 				Versions: []version{
 					{
 						GetVersion:          getSpecifiedVersion,
@@ -536,7 +538,7 @@ func main() {
 			},
 			{
 				Package: "kubernetes-cni",
-				Distros: serverDistros,
+				Distros: distros,
 				Versions: []version{
 					{
 						Version:  cniVersion,
@@ -547,7 +549,7 @@ func main() {
 			},
 			{
 				Package: "kubeadm",
-				Distros: serverDistros,
+				Distros: distros,
 				Versions: []version{
 					{
 						GetVersion:          getSpecifiedVersion,
@@ -559,7 +561,7 @@ func main() {
 			},
 			{
 				Package: "cri-tools",
-				Distros: serverDistros,
+				Distros: distros,
 				Versions: []version{
 					{
 						GetVersion: getCRIToolsLatestVersion,
