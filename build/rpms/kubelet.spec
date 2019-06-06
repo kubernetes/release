@@ -11,7 +11,7 @@
 %define semver() (%1 * 256 * 256 + %2 * 256 + %3)
 %global KUBE_SEMVER %{semver %{KUBE_MAJOR} %{KUBE_MINOR} %{KUBE_PATCH}}
 
-%global CNI_VERSION 0.7.5
+%global CNI_VERSION 0.8.3
 %global CRI_TOOLS_VERSION 1.13.0
 
 Name: kubelet
@@ -71,7 +71,7 @@ Release: %{RPM_RELEASE}
 Summary: Command-line utility for administering a Kubernetes cluster.
 Requires: kubelet >= 1.13.0
 Requires: kubectl >= 1.13.0
-Requires: kubernetes-cni >= 0.7.5
+Requires: kubernetes-cni >= 0.8.3
 Requires: cri-tools >= 1.13.0
 
 %description -n kubeadm
@@ -157,6 +157,9 @@ mv cni-plugins/* %{buildroot}/opt/cni/bin/
 
 
 %changelog
+* Wed Nov 13 2019 Stephen Augustus <saugustus@vmware.com> - 1.16.3
+- Bump CNI version to v0.8.3.
+
 * Mon Jun 24 2019 Stephen Augustus <saugustus@vmware.com> - 1.15.1
 - Bump minimum versions of all kubernetes dependencies
 - Remove conditional logic for unsupported versions of Kubernetes
