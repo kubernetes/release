@@ -152,6 +152,7 @@ func (o *options) WriteReleaseNotes(releaseNotes notes.ReleaseNoteList) error {
 	// Open a handle to the file which will contain the release notes output
 	var output *os.File
 	var err error
+	var existingNotes notes.ReleaseNoteList
 
 	if o.output != "" {
 		output, err = os.OpenFile(o.output, os.O_RDWR|os.O_CREATE, 0644)
@@ -171,11 +172,12 @@ func (o *options) WriteReleaseNotes(releaseNotes notes.ReleaseNoteList) error {
 	switch o.format {
 	case "json":
 		byteValue, _ := ioutil.ReadAll(output)
-		existingNotes := make([]*notes.ReleaseNote, 0)
 
-		if err := json.Unmarshal(byteValue, &existingNotes); err != nil {
-			level.Error(o.logger).Log("msg", "error unmarshalling existing notes", "err", err)
-			return err
+		if len(byteValue) > 0 {
+			if err := json.Unmarshal(byteValue, &existingNotes); err != nil {
+				level.Error(o.logger).Log("msg", "error unmarshalling existing notes", "err", err)
+				return err
+			}
 		}
 
 		if len(existingNotes) > 0 {
