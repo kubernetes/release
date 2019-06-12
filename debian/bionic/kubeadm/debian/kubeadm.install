@@ -1,2 +1,2 @@
 usr/bin/kubeadm usr/bin/
-channel/{{ .Channel }}/etc/systemd/system/kubelet.service.d/{{ .KubeadmKubeletConfigFile }} etc/systemd/system/kubelet.service.d/
+channel/{{ .Channel }}/etc/systemd/system/kubelet.service.d/{{ .KubeletConfigFile }} etc/systemd/system/kubelet.service.d/

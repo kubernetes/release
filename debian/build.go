@@ -23,17 +23,18 @@ const (
 	ChannelUnstable ChannelType = "unstable"
 	ChannelNightly  ChannelType = "nightly"
 
-	cniVersion         = "0.7.5"
-	criToolsVersion    = "1.12.0"
-	pre180kubeadmconf  = "pre-1.8/10-kubeadm.conf"
-	pre1110kubeadmconf = "post-1.8/10-kubeadm.conf"
-	latestkubeadmconf  = "post-1.10/10-kubeadm.conf"
+	minimumCNIVersion      = "0.7.5"
+	minimumCRIToolsVersion = "1.12.0"
+	pre180kubeadmconf      = "pre-1.8/10-kubeadm.conf"
+	pre1110kubeadmconf     = "post-1.8/10-kubeadm.conf"
+	kubeadmConf            = "post-1.10/10-kubeadm.conf"
 )
 
 type work struct {
-	src, dst string
-	t        *template.Template
-	info     os.FileInfo
+	src  string
+	dst  string
+	t    *template.Template
+	info os.FileInfo
 }
 
 type build struct {
@@ -43,17 +44,23 @@ type build struct {
 }
 
 type version struct {
-	Version, Revision, DownloadLinkBase string
-	Channel                             ChannelType
-	GetVersion                          func() (string, error)
-	GetDownloadLinkBase                 func(v version) (string, error)
-	KubeadmKubeletConfigFile            string
-	KubeletCNIVersion                   string
+	Version             string
+	Revision            string
+	DownloadLinkBase    string
+	Channel             ChannelType
+	GetVersion          func() (string, error)
+	GetDownloadLinkBase func(v version) (string, error)
+	KubeletConfigFile   string
+	KubeletCNIVersion   string
 }
 
 type cfg struct {
 	version
-	DistroName, Arch, DebArch, Package, Dependencies string
+	DistroName   string
+	Arch         string
+	DebArch      string
+	Package      string
+	Dependencies string
 }
 
 type stringList []string
@@ -266,7 +273,7 @@ func getLatestCIVersion() (string, error) {
 }
 
 func getCRIToolsLatestVersion() (string, error) {
-	return criToolsVersion, nil
+	return minimumCRIToolsVersion, nil
 }
 
 func getLatestKubeCIBuild() (string, error) {
@@ -287,7 +294,7 @@ func getReleaseDownloadLinkBase(v version) (string, error) {
 }
 
 func getKubeadmDependencies(v version) (string, error) {
-	cniVersion, err := getKubeletCNIVersion(v)
+	minimumCNIVersion, err := getKubeletCNIVersion(v)
 	if err != nil {
 		return "", err
 	}
@@ -295,7 +302,7 @@ func getKubeadmDependencies(v version) (string, error) {
 	deps := []string{
 		"kubelet (>= 1.6.0)",
 		"kubectl (>= 1.6.0)",
-		fmt.Sprintf("kubernetes-cni (%s)", cniVersion),
+		fmt.Sprintf("kubernetes-cni (%s)", minimumCNIVersion),
 		"${misc:Depends}",
 	}
 	sv, err := semver.Make(v.Version)
@@ -309,12 +316,12 @@ func getKubeadmDependencies(v version) (string, error) {
 	}
 
 	if sv.GTE(v1110) {
-		criToolsVersion, err := getCRIToolsVersion(v)
+		minimumCRIToolsVersion, err := getCRIToolsVersion(v)
 		if err != nil {
 			return "", err
 		}
 
-		deps = append(deps, fmt.Sprintf("cri-tools (>= %s)", criToolsVersion))
+		deps = append(deps, fmt.Sprintf("cri-tools (>= %s)", minimumCRIToolsVersion))
 		return strings.Join(deps, ", "), nil
 	}
 	return strings.Join(deps, ", "), nil
@@ -322,7 +329,7 @@ func getKubeadmDependencies(v version) (string, error) {
 
 // The version of this file to use changed in 1.8 and 1.11 so use the target build
 // version to figure out which copy of it to include in the deb.
-func getKubeadmKubeletConfigFile(v version) (string, error) {
+func getKubeletConfigFile(v version) (string, error) {
 	sv, err := semver.Make(v.Version)
 	if err != nil {
 		return "", err
@@ -343,7 +350,7 @@ func getKubeadmKubeletConfigFile(v version) (string, error) {
 		}
 		return pre1110kubeadmconf, nil
 	}
-	return latestkubeadmconf, nil
+	return kubeadmConf, nil
 }
 
 // CNI get bumped in 1.9, which is incompatible for kubelet<1.9.
@@ -360,7 +367,7 @@ func getKubeletCNIVersion(v version) (string, error) {
 	}
 
 	if sv.GTE(v190) {
-		return fmt.Sprintf(">= %s", cniVersion), nil
+		return fmt.Sprintf(">= %s", minimumCNIVersion), nil
 	}
 	return fmt.Sprint("= 0.5.1"), nil
 }
@@ -444,17 +451,17 @@ func main() {
 			Distros: distros,
 			Versions: []version{
 				{
-					Version:  cniVersion,
+					Version:  minimumCNIVersion,
 					Revision: revision,
 					Channel:  ChannelStable,
 				},
 				{
-					Version:  cniVersion,
+					Version:  minimumCNIVersion,
 					Revision: revision,
 					Channel:  ChannelUnstable,
 				},
 				{
-					Version:  cniVersion,
+					Version:  minimumCNIVersion,
 					Revision: revision,
 					Channel:  ChannelNightly,
 				},
@@ -541,7 +548,7 @@ func main() {
 				Distros: distros,
 				Versions: []version{
 					{
-						Version:  cniVersion,
+						Version:  minimumCNIVersion,
 						Revision: revision,
 						Channel:  ChannelStable,
 					},
@@ -589,7 +596,7 @@ func main() {
 		}
 
 		var err error
-		c.KubeadmKubeletConfigFile, err = getKubeadmKubeletConfigFile(v)
+		c.KubeletConfigFile, err = getKubeletConfigFile(v)
 		if err != nil {
 			log.Fatalf("error getting kubeadm config: %v", err)
 		}

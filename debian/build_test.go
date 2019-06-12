@@ -73,7 +73,7 @@ func TestGetKubeadmConfig(t *testing.T) {
 		v := version{
 			Version: tc.version,
 		}
-		kubeadmConfig, err := getKubeadmKubeletConfigFile(v)
+		kubeadmConfig, err := getKubeletConfigFile(v)
 
 		if err != nil {
 			if !tc.expectErr {
