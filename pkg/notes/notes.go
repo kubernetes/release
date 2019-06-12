@@ -201,7 +201,9 @@ func NoteTextFromString(s string) (string, error) {
 				result[name] = match[i]
 			}
 		}
-		note := strings.Replace(result["note"], "\r", "", -1)
+
+		note := strings.Replace(result["note"], "#", "&#35;", -1)
+		note = strings.Replace(note, "\r", "", -1)
 		note = stripActionRequired(note)
 		note = stripStar(note)
 		return note, nil

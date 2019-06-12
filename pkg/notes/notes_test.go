@@ -92,6 +92,10 @@ func TestNoteTextFromString(t *testing.T) {
 	// single line, without carriage return
 	result, _ = NoteTextFromString("```release-note\ntest\n```")
 	require.Equal(t, "test", result)
+
+	result, _ = NoteTextFromString("```release-note\n#test\n```")
+	require.Equal(t, "&#35;test", result)
+
 }
 
 func TestGetPRNumberFromCommitMessage(t *testing.T) {
