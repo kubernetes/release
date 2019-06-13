@@ -1,2 +1,4 @@
-usr/bin/kubeadm usr/bin/
-channel/{{ .Channel }}/etc/systemd/system/kubelet.service.d/{{ .KubeletConfigFile }} etc/systemd/system/kubelet.service.d/
+usr/bin/kubeadm usr/bin
+kubeadm.conf usr/lib/modules-load.d
+10-kubeadm.conf etc/systemd/system/kubelet.service.d
+50-kubeadm.conf etc/systemd/system/kubelet.service.d

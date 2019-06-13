@@ -1,2 +1,2 @@
-usr/bin/kubelet usr/bin/
-lib/systemd/system/kubelet.service lib/systemd/system/
+usr/bin/kubelet usr/bin
+kubelet.service lib/systemd/system
