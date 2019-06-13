@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -23,11 +24,10 @@ const (
 	ChannelUnstable ChannelType = "unstable"
 	ChannelNightly  ChannelType = "nightly"
 
-	minimumCNIVersion      = "0.7.5"
-	minimumCRIToolsVersion = "1.12.0"
-	pre180kubeadmconf      = "pre-1.8/10-kubeadm.conf"
-	pre1110kubeadmconf     = "post-1.8/10-kubeadm.conf"
-	kubeadmConf            = "post-1.10/10-kubeadm.conf"
+	minimumKubernetesVersion       = "1.12.0-alpha.0"
+	minimumStableKubernetesVersion = "1.12.0"
+
+	minimumCNIVersion = "0.7.5"
 )
 
 type work struct {
@@ -50,8 +50,6 @@ type version struct {
 	Channel             ChannelType
 	GetVersion          func() (string, error)
 	GetDownloadLinkBase func(v version) (string, error)
-	KubeletConfigFile   string
-	KubeletCNIVersion   string
 }
 
 type cfg struct {
@@ -73,6 +71,8 @@ func (ss *stringList) Set(v string) error {
 	return nil
 }
 
+type dependencies []string
+
 var (
 	architectures = stringList{"amd64", "arm", "arm64", "ppc64le", "s390x"}
 	// distros describes the Debian and Ubuntu versions that binaries will be built for.
@@ -91,6 +91,20 @@ var (
 	}
 
 	keepTmp = flag.Bool("keep-tmp", false, "keep tmp dir after build")
+
+	KubeadmDependencies = strings.Join(
+		dependencies{
+			fmt.Sprintf("kubelet (>= %s)", minimumStableKubernetesVersion),
+			fmt.Sprintf("kubectl (>= %s)", minimumStableKubernetesVersion),
+			fmt.Sprintf("kubernetes-cni (>= %s)", minimumCNIVersion),
+			fmt.Sprintf("cri-tools (>= %s)", minimumStableKubernetesVersion),
+			"${misc:Depends}",
+		}, ",")
+
+	KubeletDependencies = strings.Join(
+		dependencies{
+			fmt.Sprintf("kubernetes-cni (>= %s)", minimumCNIVersion),
+		}, ",")
 )
 
 func init() {
@@ -239,7 +253,7 @@ func walkBuilds(builds []build, f func(pkg, distro, arch string, v version) erro
 	return nil
 }
 
-func fetchVersion(url string) (string, error) {
+func fetchVersionFromURL(url string) (string, error) {
 	res, err := http.Get(url)
 	if err != nil {
 		return "", err
@@ -255,14 +269,14 @@ func fetchVersion(url string) (string, error) {
 }
 
 func getStableKubeVersion() (string, error) {
-	return fetchVersion("https://dl.k8s.io/release/stable.txt")
+	return fetchVersionFromURL("https://dl.k8s.io/release/stable.txt")
 }
 
 func getLatestKubeVersion() (string, error) {
-	return fetchVersion("https://dl.k8s.io/release/latest.txt")
+	return fetchVersionFromURL("https://dl.k8s.io/release/latest.txt")
 }
 
-func getLatestCIVersion() (string, error) {
+func getKubeCIVersion() (string, error) {
 	latestVersion, err := getLatestKubeCIBuild()
 	if err != nil {
 		return "", err
@@ -273,11 +287,26 @@ func getLatestCIVersion() (string, error) {
 }
 
 func getCRIToolsLatestVersion() (string, error) {
-	return minimumCRIToolsVersion, nil
+	kv, err := getStableKubeVersion()
+	if err != nil {
+		return "", err
+	}
+
+	kubeSemver, err := semver.Parse(kv)
+	if err != nil {
+		return "", err
+	}
+
+	criToolsVersion := fmt.Sprintf("%s.%s.0", strconv.FormatUint(kubeSemver.Major, 10), strconv.FormatUint(kubeSemver.Minor, 10))
+	if err != nil {
+		return "", err
+	}
+
+	return criToolsVersion, nil
 }
 
 func getLatestKubeCIBuild() (string, error) {
-	return fetchVersion("https://dl.k8s.io/ci-cross/latest.txt")
+	return fetchVersionFromURL("https://dl.k8s.io/ci-cross/latest.txt")
 }
 
 func getCIBuildsDownloadLinkBase(_ version) (string, error) {
@@ -291,107 +320,6 @@ func getCIBuildsDownloadLinkBase(_ version) (string, error) {
 
 func getReleaseDownloadLinkBase(v version) (string, error) {
 	return fmt.Sprintf("%s/v%s", releaseDownloadLinkBase, v.Version), nil
-}
-
-func getKubeadmDependencies(v version) (string, error) {
-	minimumCNIVersion, err := getKubeletCNIVersion(v)
-	if err != nil {
-		return "", err
-	}
-
-	deps := []string{
-		"kubelet (>= 1.6.0)",
-		"kubectl (>= 1.6.0)",
-		fmt.Sprintf("kubernetes-cni (%s)", minimumCNIVersion),
-		"${misc:Depends}",
-	}
-	sv, err := semver.Make(v.Version)
-	if err != nil {
-		return "", err
-	}
-
-	v1110, err := semver.Make("1.11.0-alpha.0")
-	if err != nil {
-		return "", err
-	}
-
-	if sv.GTE(v1110) {
-		minimumCRIToolsVersion, err := getCRIToolsVersion(v)
-		if err != nil {
-			return "", err
-		}
-
-		deps = append(deps, fmt.Sprintf("cri-tools (>= %s)", minimumCRIToolsVersion))
-		return strings.Join(deps, ", "), nil
-	}
-	return strings.Join(deps, ", "), nil
-}
-
-// The version of this file to use changed in 1.8 and 1.11 so use the target build
-// version to figure out which copy of it to include in the deb.
-func getKubeletConfigFile(v version) (string, error) {
-	sv, err := semver.Make(v.Version)
-	if err != nil {
-		return "", err
-	}
-
-	v180, err := semver.Make("1.8.0-alpha.0")
-	if err != nil {
-		return "", err
-	}
-	v1110, err := semver.Make("1.11.0-alpha.0")
-	if err != nil {
-		return "", err
-	}
-
-	if sv.LT(v1110) {
-		if sv.LT(v180) {
-			return pre180kubeadmconf, nil
-		}
-		return pre1110kubeadmconf, nil
-	}
-	return kubeadmConf, nil
-}
-
-// CNI get bumped in 1.9, which is incompatible for kubelet<1.9.
-// So we need to restrict the CNI version when install kubelet.
-func getKubeletCNIVersion(v version) (string, error) {
-	sv, err := semver.Make(v.Version)
-	if err != nil {
-		return "", err
-	}
-
-	v190, err := semver.Make("1.9.0-alpha.0")
-	if err != nil {
-		return "", err
-	}
-
-	if sv.GTE(v190) {
-		return fmt.Sprintf(">= %s", minimumCNIVersion), nil
-	}
-	return fmt.Sprint("= 0.5.1"), nil
-}
-
-// getCRIToolsVersion assumes v coming in is >= 1.11.0-alpha.0
-func getCRIToolsVersion(v version) (string, error) {
-	sv, err := semver.Make(v.Version)
-	if err != nil {
-		return "", err
-	}
-
-	v1110, err := semver.Make("1.11.0-alpha.0")
-	if err != nil {
-		return "", err
-	}
-	v1121, err := semver.Make("1.12.1-alpha.0")
-	if err != nil {
-		return "", err
-	}
-
-	if sv.GTE(v1110) && sv.LT(v1121) {
-		return "1.11.1", nil
-	}
-	return "1.12.0", nil
 }
 
 func main() {
@@ -415,7 +343,7 @@ func main() {
 					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
-					GetVersion:          getLatestCIVersion,
+					GetVersion:          getKubeCIVersion,
 					Revision:            revision,
 					Channel:             ChannelNightly,
 					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
@@ -439,7 +367,7 @@ func main() {
 					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
-					GetVersion:          getLatestCIVersion,
+					GetVersion:          getKubeCIVersion,
 					Revision:            revision,
 					Channel:             ChannelNightly,
 					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
@@ -484,7 +412,7 @@ func main() {
 					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
-					GetVersion:          getLatestCIVersion,
+					GetVersion:          getKubeCIVersion,
 					Revision:            revision,
 					Channel:             ChannelNightly,
 					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
@@ -596,17 +524,7 @@ func main() {
 		}
 
 		var err error
-		c.KubeletConfigFile, err = getKubeletConfigFile(v)
-		if err != nil {
-			log.Fatalf("error getting kubeadm config: %v", err)
-		}
-
-		c.Dependencies, err = getKubeadmDependencies(v)
-		if err != nil {
-			log.Fatalf("error getting kubeadm dependencies: %v", err)
-		}
-
-		c.KubeletCNIVersion, err = getKubeletCNIVersion(v)
+		c.Dependencies = KubeadmDependencies
 		if err != nil {
 			log.Fatalf("error getting kubelet CNI Version: %v", err)
 		}
