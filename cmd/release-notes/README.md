@@ -10,7 +10,7 @@ The simplest way to install the `release-notes` CLI is via `go get`:
 go get k8s.io/release/cmd/release-notes
 ```
 
-This will install `release-notes` to `$GOPATH/bin/release-notes`. If you're new to Go, `$GOPATH` default to `~/go`, so look for the binary at `~/go/bin/release-notes`.
+This will install `release-notes` to `$(go env GOPATH)/bin/release-notes`.
 
 ## Usage
 
@@ -51,7 +51,7 @@ You can also generate the raw notes data into JSON. You can then use a variety o
 To build the `release-notes` tool, check out this repo to your `$GOPATH`:
 
 ```
-git clone git@github.com:kubernetes/release.git $GOPATH/src/k8s.io/release
+git clone git@github.com:kubernetes/release.git $(go env GOPATH)/src/k8s.io/release
 ```
 
 Run the following from the root of the repository to build the `release-notes` binary:
