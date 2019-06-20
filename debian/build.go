@@ -24,7 +24,7 @@ const (
 	ChannelNightly  ChannelType = "nightly"
 
 	cniVersion         = "0.7.5"
-	criToolsVersion    = "1.12.0"
+	criToolsVersion    = "1.13.0"
 	pre180kubeadmconf  = "pre-1.8/10-kubeadm.conf"
 	pre1110kubeadmconf = "post-1.8/10-kubeadm.conf"
 	latestkubeadmconf  = "post-1.10/10-kubeadm.conf"
@@ -293,8 +293,8 @@ func getKubeadmDependencies(v version) (string, error) {
 	}
 
 	deps := []string{
-		"kubelet (>= 1.6.0)",
-		"kubectl (>= 1.6.0)",
+		"kubelet (>= 1.13.0)",
+		"kubectl (>= 1.13.0)",
 		fmt.Sprintf("kubernetes-cni (%s)", cniVersion),
 		"${misc:Depends}",
 	}
@@ -384,7 +384,7 @@ func getCRIToolsVersion(v version) (string, error) {
 	if sv.GTE(v1110) && sv.LT(v1121) {
 		return "1.11.1", nil
 	}
-	return "1.12.0", nil
+	return criToolsVersion, nil
 }
 
 func main() {
