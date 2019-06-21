@@ -95,16 +95,19 @@ else
   READLINK_CMD=readlink
 fi
 
-source $(dirname $($READLINK_CMD -ne $BASH_SOURCE))/lib/common.sh
-source $TOOL_LIB_PATH/gitlib.sh
-source $TOOL_LIB_PATH/releaselib.sh
+# shellcheck source=./lib/common.sh
+source "$(dirname "$($READLINK_CMD -ne "${BASH_SOURCE[0]}")")"/lib/common.sh
+# shellcheck source=./lib/gitlib.sh
+source "$TOOL_LIB_PATH/gitlib.sh"
+# shellcheck source=./lib/releaselib.sh
+source "$TOOL_LIB_PATH/releaselib.sh"
 
 ##############################################################################
 # Initialize logs
 ##############################################################################
 # Initialize and save up to 10 (rotated logs)
 MYLOG=$TMPDIR/$PROG.log
-common::logfileinit $MYLOG 10
+common::logfileinit "$MYLOG" 10
 
 # BEGIN script
 common::timestamp begin
@@ -117,34 +120,35 @@ RELEASE_BUCKET=${FLAGS_bucket:-"kubernetes-release-dev"}
 [[ $KUBE_GCS_UPDATE_LATEST == "n" ]] && FLAGS_noupdatelatest=1
 
 # Default to kubernetes
-: ${FLAGS_release_kind:="kubernetes"}
+: "${FLAGS_release_kind:="kubernetes"}"
 
 # This will canonicalize the path
 KUBE_ROOT=$(pwd -P)
 
 USE_BAZEL=false
-if release::was_built_with_bazel $KUBE_ROOT $FLAGS_release_kind; then
+if release::was_built_with_bazel "$KUBE_ROOT" $FLAGS_release_kind; then
   USE_BAZEL=true
   bazel build //:version
-  LATEST=$(cat $KUBE_ROOT/bazel-genfiles/version)
+  LATEST=$(cat "$KUBE_ROOT/bazel-genfiles/version")
 else
-  LATEST=$(tar -O -xzf $KUBE_ROOT/_output/release-tars/$FLAGS_release_kind.tar.gz $FLAGS_release_kind/version)
+  LATEST=$(tar -O -xzf "$KUBE_ROOT"/_output/release-tars/$FLAGS_release_kind.tar.gz $FLAGS_release_kind/version)
 fi
-
 if [[ "$LATEST" =~ (${VER_REGEX[release]}(\.${VER_REGEX[build]})?(-dirty)?) ]]; then
+  # Disable shellcheck for dynamically defined variable
+  # shellcheck disable=SC2154
   if ((FLAGS_ci)) && [[ "$LATEST" =~ "dirty" ]]; then
     logecho "Refusing to push dirty build with --ci flag given."
     logecho "CI builds should always be performed from clean commits."
     logecho
     logecho "version output:"
-    logecho $LATEST
+    logecho "$LATEST"
     common::exit 1
   fi
 else
   logecho "Unable to get latest version from build tree!"
   logecho
   logecho "version output:"
-  logecho $LATEST
+  logecho "$LATEST"
   common::exit 1
 fi
 
@@ -155,9 +159,13 @@ fi
 GCS_DEST="devel"
 ((FLAGS_ci)) && GCS_DEST="ci"
 GCS_DEST=${FLAGS_release_type:-$GCS_DEST}
-GCS_DEST+="$FLAGS_gcs_suffix"
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
+GCS_DEST+="${FLAGS_gcs_suffix}"
 GCS_EXTRA_PUBLISH_FILE=${FLAGS_extra_publish_file:-}
 
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 if ((FLAGS_nomock)); then
   logecho
   logecho "$PROG is running a *REAL* push!!"
@@ -185,7 +193,7 @@ GCP_USER=$($GCLOUD auth list --filter=status:ACTIVE \
 [[ -n "$GCP_USER" ]] || common::exit 1 "Unable to set a valid GCP credential!"
 
 logecho -n "Check release bucket $RELEASE_BUCKET: "
-logrun -s release::gcs::check_release_bucket $RELEASE_BUCKET || common::exit 1
+logrun -s release::gcs::check_release_bucket "$RELEASE_BUCKET" || common::exit 1
 
 # These operations can hit bumps and are re-entrant so retry up to 3 times
 max_attempts=3
@@ -195,15 +203,15 @@ common::stepheader COPY RELEASE ARTIFACTS
 attempt=0
 while ((attempt<max_attempts)); do
   if $USE_BAZEL; then
-    release::gcs::bazel_push_build $GCS_DEST $LATEST $KUBE_ROOT/_output \
-                                   $RELEASE_BUCKET && break
+    release::gcs::bazel_push_build "$GCS_DEST" "$LATEST" "$KUBE_ROOT/_output" \
+                                   "$RELEASE_BUCKET" && break
   else
-    release::gcs::locally_stage_release_artifacts $GCS_DEST $LATEST \
-                                                  $KUBE_ROOT/_output \
+    release::gcs::locally_stage_release_artifacts "$GCS_DEST" "$LATEST" \
+                                                  "$KUBE_ROOT/_output" \
                                                   $FLAGS_release_kind
     release::gcs::push_release_artifacts \
-     $KUBE_ROOT/_output/gcs-stage/$LATEST \
-     gs://$RELEASE_BUCKET/$GCS_DEST/$LATEST && break
+     "$KUBE_ROOT/_output/gcs-stage/$LATEST" \
+     gs://"$RELEASE_BUCKET/$GCS_DEST/$LATEST" && break
   fi
   ((attempt++))
 done
@@ -215,8 +223,8 @@ if [[ -n "${FLAGS_docker_registry:-}" ]]; then
   ##############################################################################
   # TODO: support Bazel too
   # Docker tags cannot contain '+'
-  release::docker::release $FLAGS_docker_registry ${LATEST/+/_} \
-    $KUBE_ROOT/_output
+  release::docker::release "$FLAGS_docker_registry" "${LATEST/+/_}" \
+    "$KUBE_ROOT/_output"
 fi
 
 # If not --ci, then we're done here.
@@ -224,12 +232,12 @@ fi
 
 if ! ((FLAGS_noupdatelatest)); then
   ##############################################################################
-  common::stepheader UPLOAD to $RELEASE_BUCKET
+  common::stepheader UPLOAD to "$RELEASE_BUCKET"
   ##############################################################################
   attempt=0
   while ((attempt<max_attempts)); do
-    release::gcs::publish_version $GCS_DEST $LATEST $KUBE_ROOT/_output \
-                                  $RELEASE_BUCKET $GCS_EXTRA_PUBLISH_FILE && break
+    release::gcs::publish_version "$GCS_DEST" "$LATEST" "$KUBE_ROOT/_output" \
+                                  "$RELEASE_BUCKET" "$GCS_EXTRA_PUBLISH_FILE" && break
     ((attempt++))
   done
   ((attempt>=max_attempts)) && common::exit 1 "Exiting..."
@@ -237,13 +245,15 @@ fi
 
 # Leave push-federation-images.sh for now.  Not sure if this makes sense to
 # pull into the release repo.
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 if ((FLAGS_federation)); then
   ############################################################################
   common::stepheader PUSH FEDERATION
   ############################################################################
   logecho -n "Push federation images: "
   # FEDERATION_PUSH_REPO_BASE should be set by the calling job (yaml)
-  logrun -s ${KUBE_ROOT}/federation/develop/push-federation-images.sh
+  logrun -s "${KUBE_ROOT}/federation/develop/push-federation-images.sh"
 fi
 
 # END script
