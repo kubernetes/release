@@ -3,6 +3,7 @@ package notes
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"testing"
 
@@ -76,26 +77,115 @@ func TestReleaseNoteParsing(t *testing.T) {
 	}
 }
 
-func TestNoteTextFromString(t *testing.T) {
-	// multi line
-	result, _ := NoteTextFromString("```release-note\r\ntest\r\ntest\r\n```")
-	require.Equal(t, "test\ntest", result)
+func TestDocumentationFromString(t *testing.T) {
+	const (
+		description1 = "Some description (#123), see :::"
+		url1         = "http://github.com/kubernetes/enhancements/blob/master/keps/sig-cli/kubectl-staging.md"
+		description2 = "Another description"
+		url2         = "http://www.myurl.com/docs"
+	)
+	// multi line without prefix
+	result := DocumentationFromString(
+		fmt.Sprintf("```docs\r\n%s%s\r\n%s%s\r\n```",
+			description1, url1,
+			description2, url2,
+		),
+	)
+	require.Equal(t, 2, len(result))
+	require.Equal(t, description1, result[0].Description)
+	require.Equal(t, url1, result[0].URL)
+	require.Equal(t, description2, result[1].Description)
+	require.Equal(t, url2, result[1].URL)
 
-	// single line
-	result, _ = NoteTextFromString("```release-note\r\ntest\r\n```")
-	require.Equal(t, "test", result)
+	// multi line without carriage return
+	result = DocumentationFromString(
+		fmt.Sprintf("```docs\n%s%s\n%s%s\n```",
+			description1, url1,
+			description2, url2,
+		),
+	)
+	require.Equal(t, 2, len(result))
+	require.Equal(t, description1, result[0].Description)
+	require.Equal(t, url1, result[0].URL)
+	require.Equal(t, DocTypeKEP, result[0].Type)
+	require.Equal(t, description2, result[1].Description)
+	require.Equal(t, url2, result[1].URL)
+	require.Equal(t, DocTypeExternal, result[1].Type)
 
-	// multi line, without carriage return
-	result, _ = NoteTextFromString("```release-note\ntest\ntest\n```")
-	require.Equal(t, "test\ntest", result)
+	// multi line with prefixes
+	result = DocumentationFromString(
+		fmt.Sprintf("```docs\r\n - %s%s\r\n * %s%s\r\n```",
+			description1, url1,
+			description2, url2,
+		),
+	)
+	require.Equal(t, 2, len(result))
+	require.Equal(t, description1, result[0].Description)
+	require.Equal(t, url1, result[0].URL)
+	require.Equal(t, DocTypeKEP, result[0].Type)
+	require.Equal(t, description2, result[1].Description)
+	require.Equal(t, url2, result[1].URL)
+	require.Equal(t, DocTypeExternal, result[1].Type)
 
-	// single line, without carriage return
-	result, _ = NoteTextFromString("```release-note\ntest\n```")
-	require.Equal(t, "test", result)
+	// single line without star/dash prefix
+	result = DocumentationFromString(
+		fmt.Sprintf("```docs\r\n%s%s\r\n```", description1, url1),
+	)
+	require.Equal(t, 1, len(result))
+	require.Equal(t, description1, result[0].Description)
+	require.Equal(t, url1, result[0].URL)
 
-	result, _ = NoteTextFromString("```release-note\n#test\n```")
-	require.Equal(t, "&#35;test", result)
+	// single line with star prefix
+	result = DocumentationFromString(
+		fmt.Sprintf("```docs\r\n * %s%s\r\n```", description1, url1),
+	)
+	require.Equal(t, 1, len(result))
+	require.Equal(t, description1, result[0].Description)
+	require.Equal(t, url1, result[0].URL)
 
+	// single line with dash prefix
+	result = DocumentationFromString(
+		fmt.Sprintf("```docs\r\n - %s%s\r\n```", description1, url1),
+	)
+	require.Equal(t, 1, len(result))
+	require.Equal(t, description1, result[0].Description)
+	require.Equal(t, url1, result[0].URL)
+
+	// single line without carriage return
+	result = DocumentationFromString(
+		fmt.Sprintf("```docs\n%s%s\n```", description1, url1),
+	)
+	require.Equal(t, 1, len(result))
+	require.Equal(t, description1, result[0].Description)
+	require.Equal(t, url1, result[0].URL)
+
+	// single line with empty description
+	result = DocumentationFromString(
+		fmt.Sprintf("```docs\n%s\n```", url1),
+	)
+	require.Equal(t, 1, len(result))
+	require.Equal(t, "", result[0].Description)
+	require.Equal(t, url1, result[0].URL)
+}
+
+func TestClassifyURL(t *testing.T) {
+	// A KEP
+	url, err := url.Parse("http://github.com/kubernetes/enhancements/blob/master/keps/sig-cli/kubectl-staging.md")
+	require.Equal(t, err, nil)
+	result := classifyURL(url)
+	require.Equal(t, result, DocTypeKEP)
+
+	// An official documentation
+	url, err = url.Parse("https://kubernetes.io/docs/concepts/#kubernetes-objects")
+	require.Equal(t, err, nil)
+	result = classifyURL(url)
+	require.Equal(t, result, DocTypeOfficial)
+
+	// An external documentation
+	url, err = url.Parse("https://google.com/")
+	require.Equal(t, err, nil)
+	result = classifyURL(url)
+	require.Equal(t, result, DocTypeExternal)
 }
 
 func TestGetPRNumberFromCommitMessage(t *testing.T) {
