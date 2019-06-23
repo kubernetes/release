@@ -1,12 +1,10 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 approvers:
-  - sig-release-leads
   - release-engineering
   - patch-release-team
 reviewers:
-  - release-team-lead-role
   - branch-managers
+  - build-admins
 labels:
-  - sig/release
   - area/release-eng
