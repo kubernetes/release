@@ -342,8 +342,8 @@ check_prerequisites () {
   # We check for docker here as a word which passes for docker-ce and
   # docker-engine as docker packages are in transiation of deprecating
   # docker-engine
-  common::check_packages jq pandoc docker ${PREREQUISITE_PACKAGES[*]} \
-   || return 1
+  common::check_binaries jq pandoc docker || return 1
+  common::check_packages ${PREREQUISITE_PACKAGES[*]} || return 1
   common::check_pip_packages yq || return 1
 
   security_layer::auth_check 2 || return 1

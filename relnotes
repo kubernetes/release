@@ -511,7 +511,7 @@ common::timestamp begin
 gitlib::github_api_token
 
 # Check for packages
-common::check_packages jq pandoc
+common::check_binaries jq pandoc
 
 # Build LAST_RELEASE dictionary
 gitlib::last_releases

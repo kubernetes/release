@@ -737,6 +737,54 @@ common::check_pip_packages () {
   logecho -r "$OK"
 }
 
+##############################################################################
+# Check whether required binaries are installed
+
+common::check_binaries () {
+  local distro
+  local prereq
+
+  # Make sure a bunch of binaries are installed
+  logecho -n "Checking whether required binaries are available...\n"
+
+  for prereq in $*; do
+    which $prereq > /dev/null || missing+=($prereq)
+  done
+
+  if ((${#missing[@]}>0)); then
+    if ((FLAGS_gcb)); then
+      # Just force Ubuntu
+      distro="Ubuntu"
+    else
+      distro=$(lsb_release -si)
+    fi
+    logecho -r "$FAILED"
+    logecho "PREREQ: Missing prerequisites: ${missing[@]}"
+
+    case $distro in
+      Fedora)
+        logecho "Run the following command(s) to find the package(s) that contain(s) the required prerequisite(s):"
+        for prereq in ${missing[@]}; do
+          logecho "dnf provides $prereq"
+        done
+        return 1
+        ;;
+      Ubuntu|LinuxMint|Debian)
+        logecho "Run the following command(s) to find the package(s) that contain(s) the required prerequisite(s):"
+        for prereq in ${missing[@]}; do
+          logecho "dpkg -S $prereq"
+        done
+        return 1
+        ;;
+      *)
+        logecho "Unsupported distribution. Please consult your distribution's documentation for downloading the missing prerequisite(s)"
+        return 1
+        ;;
+    esac
+    return 1
+  fi
+  logecho -r "$OK"
+}
 
 ###############################################################################
 # Check packages for a K8s release
