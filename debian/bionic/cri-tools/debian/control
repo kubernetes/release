@@ -5,8 +5,8 @@ Maintainer: Kubernetes Authors <kubernetes-dev@googlegroups.com>
 Build-Depends: curl, ca-certificates, debhelper (>= 8.0.0)
 Standards-Version: 3.9.4
 Homepage: https://kubernetes.io
-Vcs-Git: https://github.com/kubernetes-incubator/cri-tools.git
-Vcs-Browser: https://github.com/kubernetes-incubator/cri-tools/
+Vcs-Git: https://github.com/kubernetes-sigs/cri-tools.git
+Vcs-Browser: https://github.com/kubernetes-sigs/cri-tools/
 
 Package: cri-tools
 Architecture: {{ .DebArch }}

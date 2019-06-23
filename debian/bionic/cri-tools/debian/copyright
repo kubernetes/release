@@ -1,6 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: cri-tools
-Source: https://github.com/kubernetes-incubator/cri-tools/
+Source: https://github.com/kubernetes-sigs/cri-tools/
 
 Files: *
 Copyright: 2018 The Kubernetes Authors.
