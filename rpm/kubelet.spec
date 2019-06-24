@@ -49,7 +49,7 @@ Source5: https://dl.k8s.io/network-plugins/cni-plugins-%{ARCH}-v%{CNI_VERSION}.t
 %if %{KUBE_SEMVER} >= %{semver 1 11 0}
 Source6: kubelet.env
 %endif
-Source7: https://github.com/kubernetes-incubator/cri-tools/releases/download/v%{CRI_TOOLS_VERSION}/crictl-v%{CRI_TOOLS_VERSION}-linux-%{ARCH}.tar.gz
+Source7: https://github.com/kubernetes-sigs/cri-tools/releases/download/v%{CRI_TOOLS_VERSION}/crictl-v%{CRI_TOOLS_VERSION}-linux-%{ARCH}.tar.gz
 
 BuildRequires: systemd
 BuildRequires: curl
@@ -197,6 +197,10 @@ mv cni-plugins/bin/ %{buildroot}/opt/cni/
 
 
 %changelog
+* Tue Jun 23 2019 Stephen Augustus <saugustus@vmware.com> - 1.15.1
+- Source cri-tools from https://github.com/kubernetes-sigs/cri-tools
+  instead of https://github.com/kubernetes-incubator/cri-tools
+
 * Thu May 30 2019 Tim Pepper <tpepper@vmware.com>
 - Change CNI version check to ">="
 

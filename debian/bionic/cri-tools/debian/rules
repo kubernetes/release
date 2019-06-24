@@ -9,7 +9,7 @@ build:
 binary:
 	mkdir -p ./bin
 	curl -sSL --fail --retry 5 \
-		"https://github.com/kubernetes-incubator/cri-tools/releases/download/v$(CRI_TOOLS_VERSION)/crictl-v$(CRI_TOOLS_VERSION)-linux-{{ .Arch }}.tar.gz" \
+		"https://github.com/kubernetes-sigs/cri-tools/releases/download/v$(CRI_TOOLS_VERSION)/crictl-v$(CRI_TOOLS_VERSION)-linux-{{ .Arch }}.tar.gz" \
 		| tar -C ./bin -xz
 	dh_testroot
 	dh_auto_install
