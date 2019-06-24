@@ -15,8 +15,10 @@
 package notes
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -39,6 +41,9 @@ type ReleaseNote struct {
 
 	// Markdown is the markdown formatted note
 	Markdown string `json:"markdown"`
+
+	// Docs is additional documentation for the release note
+	Documentation []*Documentation `json:"documentation,omitempty"`
 
 	// Author is the GitHub username of the commit author
 	Author string `json:"author"`
@@ -75,6 +80,25 @@ type ReleaseNote struct {
 	// If not specified, omitted
 	ReleaseVersion string `json:"release_version,omitempty"`
 }
+
+type Documentation struct {
+	// A description about the documentation
+	Description string `json:"description,omitempty"`
+
+	// The url to be linked
+	URL string `json:"url"`
+
+	// Clssifies the link as something special, like a KEP
+	Type DocType `json:"type"`
+}
+
+type DocType string
+
+const (
+	DocTypeExternal DocType = "external"
+	DocTypeKEP      DocType = "KEP"
+	DocTypeOfficial DocType = "official"
+)
 
 // ReleaseNoteList is a map of PR numbers referencing notes.
 // To avoid needless loops, we need to be able to reference things by PR
@@ -184,10 +208,11 @@ func ListReleaseNotes(
 func NoteTextFromString(s string) (string, error) {
 	exps := []*regexp.Regexp{
 		// (?s) is needed for '.' to be matching on newlines, by default that's disabled
-		regexp.MustCompile("(?s)```release-note\\r\\n(?P<note>.+)\\r\\n```"),
-		regexp.MustCompile("(?s)```dev-release-note\\r\\n(?P<note>.+)"),
-		regexp.MustCompile("(?s)```\\r\\n(?P<note>.+)\\r\\n```"),
-		regexp.MustCompile("(?s)```release-note\n(?P<note>.+)\n```"),
+		// we need to match ungreedy 'U', because after the notes a `docs` block can occur
+		regexp.MustCompile("(?sU)```release-note\\r\\n(?P<note>.+)\\r\\n```"),
+		regexp.MustCompile("(?sU)```dev-release-note\\r\\n(?P<note>.+)"),
+		regexp.MustCompile("(?sU)```\\r\\n(?P<note>.+)\\r\\n```"),
+		regexp.MustCompile("(?sU)```release-note\n(?P<note>.+)\n```"),
 	}
 
 	for _, exp := range exps {
@@ -202,14 +227,71 @@ func NoteTextFromString(s string) (string, error) {
 			}
 		}
 
-		note := strings.Replace(result["note"], "#", "&#35;", -1)
-		note = strings.Replace(note, "\r", "", -1)
+		note := strings.ReplaceAll(result["note"], "#", "&#35;")
+		note = strings.ReplaceAll(note, "\r", "")
 		note = stripActionRequired(note)
 		note = stripStar(note)
 		return note, nil
 	}
 
 	return "", errors.New("no matches found when parsing note text from commit string")
+}
+
+func DocumentationFromString(s string) []*Documentation {
+	regex := regexp.MustCompile("(?s)```docs[\\r]?\\n(?P<text>.+)[\\r]?\\n```")
+	match := regex.FindStringSubmatch(s)
+
+	if len(match) < 1 {
+		// Nothing found, but we don't require it
+		return nil
+	}
+
+	result := []*Documentation{}
+	text := match[1]
+	text = stripStar(text)
+	text = stripDash(text)
+
+	scanner := bufio.NewScanner(strings.NewReader(text))
+	for scanner.Scan() {
+		const httpPrefix = "http"
+		s := strings.SplitN(scanner.Text(), httpPrefix, 2)
+		if len(s) != 2 {
+			continue
+		}
+		description := strings.TrimSpace(s[0])
+		urlString := httpPrefix + strings.TrimSpace(s[1])
+
+		// Validate the URL
+		parsedURL, err := url.Parse(urlString)
+		if err != nil {
+			continue
+		}
+
+		result = append(result, &Documentation{
+			Description: description,
+			URL:         urlString,
+			Type:        classifyURL(parsedURL),
+		})
+	}
+
+	return result
+}
+
+// classifyURL returns the correct DocType for the given url
+func classifyURL(url *url.URL) DocType {
+	// Kubernetes Enhancement Proposals (KEPs)
+	if strings.Contains(url.Host, "github.com") &&
+		strings.Contains(url.Path, "/kubernetes/enhancements/") {
+		return DocTypeKEP
+	}
+
+	// Official documentation
+	if strings.Contains(url.Host, "kubernetes.io") &&
+		strings.Contains(url.Path, "/docs/") {
+		return DocTypeOfficial
+	}
+
+	return DocTypeExternal
 }
 
 // ReleaseNoteFromCommit produces a full contextualized release note given a
@@ -222,10 +304,12 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 		return nil, errors.Wrapf(err, "error parsing release note from commit %s", commit.GetSHA())
 	}
 
-	text, err := NoteTextFromString(pr.GetBody())
+	prBody := pr.GetBody()
+	text, err := NoteTextFromString(prBody)
 	if err != nil {
 		return nil, err
 	}
+	documentation := DocumentationFromString(prBody)
 
 	author := pr.GetUser().GetLogin()
 	authorUrl := fmt.Sprintf("https://github.com/%s", author)
@@ -252,6 +336,7 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 		Commit:         commit.GetSHA(),
 		Text:           text,
 		Markdown:       markdown,
+		Documentation:  documentation,
 		Author:         author,
 		AuthorUrl:      authorUrl,
 		PrUrl:          prUrl,
@@ -521,6 +606,11 @@ func stripActionRequired(note string) string {
 
 func stripStar(note string) string {
 	re := regexp.MustCompile(`(?i)\*\s`)
+	return re.ReplaceAllString(note, "")
+}
+
+func stripDash(note string) string {
+	re := regexp.MustCompile(`(?i)\-\s`)
 	return re.ReplaceAllString(note, "")
 }
 
