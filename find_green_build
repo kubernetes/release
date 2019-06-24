@@ -101,7 +101,7 @@ MYLOG=$TMPDIR/$PROG.log
 common::logfileinit $MYLOG 10
 
 gitlib::github_api_token
-common::check_packages jq
+common::check_binaries jq
 common::check_pip_packages yq
 common::set_cloud_binaries
 

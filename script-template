@@ -149,6 +149,7 @@ common::timestamp begin
 # common::askyorn - Ask a simple yes or no question (see common.sh for details)
 # common::stepheader - Bolded, logged bullet points for your output
 # common::exit - Exit cleanly
+# common::check_binaries - Checks for binary prereqs
 # common::check_packages - Check for package prereqs
 # common::disk_space_check - Check disk space
 

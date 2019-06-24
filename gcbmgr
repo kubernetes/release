@@ -372,7 +372,7 @@ common::logfileinit $MYLOG 10
 # BEGIN script
 common::timestamp begin
 
-common::check_packages jq git bsdmainutils || common::exit 1 "Exiting..."
+common::check_binaries jq git column || common::exit 1 "Exiting..."
 gitlib::repo_state || common::exit 1 "Exiting..."
 
 # Ensure some prerequisites
