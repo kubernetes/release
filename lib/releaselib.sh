@@ -953,8 +953,9 @@ release::docker::release () {
       # TODO: Use docker direct when fixed later
       #logrun -r 5 -s docker push "${new_tag_with_arch}" || return 1
       logrun -r 5 -s $GCLOUD docker -- push "${new_tag_with_arch}" || return 1
-      logrun docker rmi $orig_tag ${new_tag_with_arch} || true
-
+      if [[ "${REMOVE_IMAGES_AFTER_RELEASE:-y}" == "y" ]] ; then
+        logrun docker rmi $orig_tag ${new_tag_with_arch} || true
+      fi
     done
   done
 
@@ -972,7 +973,11 @@ release::docker::release () {
       logrun -r 5 -s docker manifest annotate --arch ${arch} ${image}:${version} ${image}-${arch}:${version} || return 1
     done
     logecho "Pushing manifest image ${image}:${version}..."
-    logrun -r 5 -s docker manifest push --purge ${image}:${version} || return 1
+    local purge=""
+    if [[ "${REMOVE_IMAGES_AFTER_RELEASE:-y}" == "y" ]] ; then
+      purge="--purge"
+    fi
+    logrun -r 5 -s docker manifest push ${purge} ${image}:${version} || return 1
   done
 
   # Always reset back to $GCP_USER
