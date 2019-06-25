@@ -258,7 +258,7 @@ func DocumentationFromString(s string) []*Documentation {
 		if len(s) != 2 {
 			continue
 		}
-		description := strings.TrimSpace(s[0])
+		description := strings.TrimRight(strings.TrimSpace(s[0]), " :-")
 		urlString := httpPrefix + strings.TrimSpace(s[1])
 
 		// Validate the URL
