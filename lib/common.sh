@@ -24,7 +24,11 @@ export PROG
 
 set -o errtrace
 
-declare -A some_var || (echo "Bash version >= 4.0 required" && exit 1)
+# shellcheck disable=SC2034
+declare -A some_var >/dev/null 2>&1 || {
+  echo "Bash with support for associative arrays (version >= 4.0) required"
+  exit 1
+}
 
 if [[ $(uname) == "Darwin" ]]; then
   # Support for OSX.
