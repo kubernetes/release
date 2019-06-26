@@ -327,6 +327,7 @@ gitlib::create_issue() {
   local body="${3?expected body for gitlib::create_issue}"
   local milestone="${4:-null}"
   local template data
+  local issue_url
 
   # shellcheck disable=SC2016
   template='{
@@ -342,7 +343,8 @@ gitlib::create_issue() {
     -c -n "$template"
   )"
 
-  ${GHCURL} "${K8S_GITHUB_API_ROOT}/${repo}/issues" --data "$data"
+  issue_url=$(${GHCURL} "${K8S_GITHUB_API_ROOT}/${repo}/issues" --data "$data" | jq '.html_url' 2>&1)
+  logecho "new issue created at: $issue_url"
 }
 
 ###############################################################################
