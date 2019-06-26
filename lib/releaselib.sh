@@ -953,7 +953,7 @@ release::docker::release () {
       # TODO: Use docker direct when fixed later
       #logrun -r 5 -s docker push "${new_tag_with_arch}" || return 1
       logrun -r 5 -s $GCLOUD docker -- push "${new_tag_with_arch}" || return 1
-      if [[ "${REMOVE_IMAGES_AFTER_RELEASE:-y}" == "y" ]] ; then
+      if [[ "${PURGE_IMAGES:-yes}" == "yes" ]] ; then
         logrun docker rmi $orig_tag ${new_tag_with_arch} || true
       fi
     done
@@ -974,7 +974,7 @@ release::docker::release () {
     done
     logecho "Pushing manifest image ${image}:${version}..."
     local purge=""
-    if [[ "${REMOVE_IMAGES_AFTER_RELEASE:-y}" == "y" ]] ; then
+    if [[ "${PURGE_IMAGES:-yes}" == "yes" ]] ; then
       purge="--purge"
     fi
     logrun -r 5 -s docker manifest push ${purge} ${image}:${version} || return 1
