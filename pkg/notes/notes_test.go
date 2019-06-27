@@ -79,10 +79,12 @@ func TestReleaseNoteParsing(t *testing.T) {
 
 func TestDocumentationFromString(t *testing.T) {
 	const (
-		description1 = "Some description (#123), see :::"
-		url1         = "http://github.com/kubernetes/enhancements/blob/master/keps/sig-cli/kubectl-staging.md"
-		description2 = "Another description"
-		url2         = "http://www.myurl.com/docs"
+		description1         = "Some description (#123), see :::"
+		expectedDescription1 = "Some description (#123), see"
+		url1                 = "http://github.com/kubernetes/enhancements/blob/master/keps/sig-cli/kubectl-staging.md"
+		description2         = "Another description -- "
+		expectedDescription2 = "Another description"
+		url2                 = "http://www.myurl.com/docs"
 	)
 	// multi line without prefix
 	result := DocumentationFromString(
@@ -92,9 +94,9 @@ func TestDocumentationFromString(t *testing.T) {
 		),
 	)
 	require.Equal(t, 2, len(result))
-	require.Equal(t, description1, result[0].Description)
+	require.Equal(t, expectedDescription1, result[0].Description)
 	require.Equal(t, url1, result[0].URL)
-	require.Equal(t, description2, result[1].Description)
+	require.Equal(t, expectedDescription2, result[1].Description)
 	require.Equal(t, url2, result[1].URL)
 
 	// multi line without carriage return
@@ -105,10 +107,10 @@ func TestDocumentationFromString(t *testing.T) {
 		),
 	)
 	require.Equal(t, 2, len(result))
-	require.Equal(t, description1, result[0].Description)
+	require.Equal(t, expectedDescription1, result[0].Description)
 	require.Equal(t, url1, result[0].URL)
 	require.Equal(t, DocTypeKEP, result[0].Type)
-	require.Equal(t, description2, result[1].Description)
+	require.Equal(t, expectedDescription2, result[1].Description)
 	require.Equal(t, url2, result[1].URL)
 	require.Equal(t, DocTypeExternal, result[1].Type)
 
@@ -120,10 +122,10 @@ func TestDocumentationFromString(t *testing.T) {
 		),
 	)
 	require.Equal(t, 2, len(result))
-	require.Equal(t, description1, result[0].Description)
+	require.Equal(t, expectedDescription1, result[0].Description)
 	require.Equal(t, url1, result[0].URL)
 	require.Equal(t, DocTypeKEP, result[0].Type)
-	require.Equal(t, description2, result[1].Description)
+	require.Equal(t, expectedDescription2, result[1].Description)
 	require.Equal(t, url2, result[1].URL)
 	require.Equal(t, DocTypeExternal, result[1].Type)
 
@@ -132,7 +134,7 @@ func TestDocumentationFromString(t *testing.T) {
 		fmt.Sprintf("```docs\r\n%s%s\r\n```", description1, url1),
 	)
 	require.Equal(t, 1, len(result))
-	require.Equal(t, description1, result[0].Description)
+	require.Equal(t, expectedDescription1, result[0].Description)
 	require.Equal(t, url1, result[0].URL)
 
 	// single line with star prefix
@@ -140,7 +142,7 @@ func TestDocumentationFromString(t *testing.T) {
 		fmt.Sprintf("```docs\r\n * %s%s\r\n```", description1, url1),
 	)
 	require.Equal(t, 1, len(result))
-	require.Equal(t, description1, result[0].Description)
+	require.Equal(t, expectedDescription1, result[0].Description)
 	require.Equal(t, url1, result[0].URL)
 
 	// single line with dash prefix
@@ -148,7 +150,7 @@ func TestDocumentationFromString(t *testing.T) {
 		fmt.Sprintf("```docs\r\n - %s%s\r\n```", description1, url1),
 	)
 	require.Equal(t, 1, len(result))
-	require.Equal(t, description1, result[0].Description)
+	require.Equal(t, expectedDescription1, result[0].Description)
 	require.Equal(t, url1, result[0].URL)
 
 	// single line without carriage return
@@ -156,7 +158,7 @@ func TestDocumentationFromString(t *testing.T) {
 		fmt.Sprintf("```docs\n%s%s\n```", description1, url1),
 	)
 	require.Equal(t, 1, len(result))
-	require.Equal(t, description1, result[0].Description)
+	require.Equal(t, expectedDescription1, result[0].Description)
 	require.Equal(t, url1, result[0].URL)
 
 	// single line with empty description
