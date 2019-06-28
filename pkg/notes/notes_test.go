@@ -86,88 +86,80 @@ func TestDocumentationFromString(t *testing.T) {
 		expectedDescription2 = "Another description"
 		url2                 = "http://www.myurl.com/docs"
 	)
-	// multi line without prefix
-	result := DocumentationFromString(
-		fmt.Sprintf("```docs\r\n%s%s\r\n%s%s\r\n```",
-			description1, url1,
-			description2, url2,
-		),
-	)
-	require.Equal(t, 2, len(result))
-	require.Equal(t, expectedDescription1, result[0].Description)
-	require.Equal(t, url1, result[0].URL)
-	require.Equal(t, expectedDescription2, result[1].Description)
-	require.Equal(t, url2, result[1].URL)
 
-	// multi line without carriage return
-	result = DocumentationFromString(
-		fmt.Sprintf("```docs\n%s%s\n%s%s\n```",
-			description1, url1,
-			description2, url2,
-		),
-	)
-	require.Equal(t, 2, len(result))
-	require.Equal(t, expectedDescription1, result[0].Description)
-	require.Equal(t, url1, result[0].URL)
-	require.Equal(t, DocTypeKEP, result[0].Type)
-	require.Equal(t, expectedDescription2, result[1].Description)
-	require.Equal(t, url2, result[1].URL)
-	require.Equal(t, DocTypeExternal, result[1].Type)
-
-	// multi line with prefixes
-	result = DocumentationFromString(
-		fmt.Sprintf("```docs\r\n - %s%s\r\n * %s%s\r\n```",
-			description1, url1,
-			description2, url2,
-		),
-	)
-	require.Equal(t, 2, len(result))
-	require.Equal(t, expectedDescription1, result[0].Description)
-	require.Equal(t, url1, result[0].URL)
-	require.Equal(t, DocTypeKEP, result[0].Type)
-	require.Equal(t, expectedDescription2, result[1].Description)
-	require.Equal(t, url2, result[1].URL)
-	require.Equal(t, DocTypeExternal, result[1].Type)
-
-	// single line without star/dash prefix
-	result = DocumentationFromString(
-		fmt.Sprintf("```docs\r\n%s%s\r\n```", description1, url1),
-	)
-	require.Equal(t, 1, len(result))
-	require.Equal(t, expectedDescription1, result[0].Description)
-	require.Equal(t, url1, result[0].URL)
-
-	// single line with star prefix
-	result = DocumentationFromString(
-		fmt.Sprintf("```docs\r\n * %s%s\r\n```", description1, url1),
-	)
-	require.Equal(t, 1, len(result))
-	require.Equal(t, expectedDescription1, result[0].Description)
-	require.Equal(t, url1, result[0].URL)
-
-	// single line with dash prefix
-	result = DocumentationFromString(
-		fmt.Sprintf("```docs\r\n - %s%s\r\n```", description1, url1),
-	)
-	require.Equal(t, 1, len(result))
-	require.Equal(t, expectedDescription1, result[0].Description)
-	require.Equal(t, url1, result[0].URL)
-
-	// single line without carriage return
-	result = DocumentationFromString(
-		fmt.Sprintf("```docs\n%s%s\n```", description1, url1),
-	)
-	require.Equal(t, 1, len(result))
-	require.Equal(t, expectedDescription1, result[0].Description)
-	require.Equal(t, url1, result[0].URL)
-
-	// single line with empty description
-	result = DocumentationFromString(
-		fmt.Sprintf("```docs\n%s\n```", url1),
-	)
-	require.Equal(t, 1, len(result))
-	require.Equal(t, "", result[0].Description)
-	require.Equal(t, url1, result[0].URL)
+	testCases := []struct {
+		input        string
+		expectations []Documentation
+	}{
+		{
+			// multi line without prefix
+			input: fmt.Sprintf("```docs\r\n%s%s\r\n%s%s\r\n```", description1, url1, description2, url2),
+			expectations: []Documentation{
+				{Description: expectedDescription1, URL: url1, Type: DocTypeKEP},
+				{Description: expectedDescription2, URL: url2, Type: DocTypeExternal},
+			},
+		},
+		{
+			// multi line without carriage return
+			input: fmt.Sprintf("```docs\n%s%s\n%s%s\n```", description1, url1, description2, url2),
+			expectations: []Documentation{
+				{Description: expectedDescription1, URL: url1, Type: DocTypeKEP},
+				{Description: expectedDescription2, URL: url2, Type: DocTypeExternal},
+			},
+		},
+		{
+			// multi line with prefixes
+			input: fmt.Sprintf("```docs\r\n - %s%s\r\n * %s%s\r\n```", description1, url1, description2, url2),
+			expectations: []Documentation{
+				{Description: expectedDescription1, URL: url1, Type: DocTypeKEP},
+				{Description: expectedDescription2, URL: url2, Type: DocTypeExternal},
+			},
+		},
+		{
+			// single line without star/dash prefix
+			input: fmt.Sprintf("```docs\r\n%s%s\r\n```", description1, url1),
+			expectations: []Documentation{
+				{Description: expectedDescription1, URL: url1, Type: DocTypeKEP},
+			},
+		},
+		{
+			// single line with star prefix
+			input: fmt.Sprintf("```docs\r\n * %s%s\r\n```", description1, url1),
+			expectations: []Documentation{
+				{Description: expectedDescription1, URL: url1, Type: DocTypeKEP},
+			},
+		},
+		{
+			// single line with dash prefix
+			input: fmt.Sprintf("```docs\r\n - %s%s\r\n```", description1, url1),
+			expectations: []Documentation{
+				{Description: expectedDescription1, URL: url1, Type: DocTypeKEP},
+			},
+		},
+		{
+			// single line without carriage return
+			input: fmt.Sprintf("```docs\n%s%s\n```", description1, url1),
+			expectations: []Documentation{
+				{Description: expectedDescription1, URL: url1, Type: DocTypeKEP},
+			},
+		},
+		{
+			// single line with empty description
+			input: fmt.Sprintf("```docs\n%s\n```", url1),
+			expectations: []Documentation{
+				{Description: "", URL: url1, Type: DocTypeKEP},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		result := DocumentationFromString(tc.input)
+		require.Equal(t, len(tc.expectations), len(result))
+		for i, e := range tc.expectations {
+			require.Equal(t, e.Description, result[i].Description)
+			require.Equal(t, e.URL, result[i].URL)
+			require.Equal(t, e.Type, result[i].Type)
+		}
+	}
 }
 
 func TestClassifyURL(t *testing.T) {
