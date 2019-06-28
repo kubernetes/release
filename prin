@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Copyright 2016 The Kubernetes Authors All rights reserved.
 #
@@ -53,10 +53,17 @@ PROG=${0##*/}
 # If NO ARGUMENTS should return *usage*, uncomment the following line:
 usage=${1:-yes}
 
+if [[ $(uname) == "Darwin" ]]; then
+  READLINK_CMD=greadlink
+  type envsubst >/dev/null 2>&1 || { echo >&2 "'envsubst' is required,so please install it firstly. Aborting."; exit 1; }
+else
+  READLINK_CMD=readlink
+fi
+
 # shellcheck source=./lib/common.sh
-source "$(dirname "$(readlink -ne "${BASH_SOURCE[0]}")")/lib/common.sh"
+source "$(dirname "$(${READLINK_CMD} -ne "${BASH_SOURCE[0]}")")/lib/common.sh"
 # shellcheck source=./lib/gitlib.sh
-source "$TOOL_LIB_PATH/gitlib.sh"
+source "${TOOL_LIB_PATH}/gitlib.sh"
 
 ###############################################################################
 # FUNCTIONS
@@ -137,15 +144,25 @@ gitlib::current_branch >/dev/null || common::exit 1
 # Additional functionality
 common::security_layer
 
-if [[ ${POSITIONAL_ARGV[0]} =~ [0-9]{5,} ]]; then
+if [[ "${POSITIONAL_ARGV[0]}" =~ ^[1-9][0-9]*$ ]]; then
   PR=${POSITIONAL_ARGV[0]}
-  #echo "Converting incoming PR to a commit..."
+  echo "Converting incoming PR to a commit..."
   # Need to include --all for the primary commit too for
   # non-cherrypick commit searches on branches
-  INITIAL_COMMIT=$(git log --grep "Merge pull request #$PR" \
+  INITIAL_COMMIT=$(git log --grep "Merge pull request #$PR " \
                            --all --pretty=format:"%h")
   mapfile -i CP_COMMITS < <(git log --grep "cherry-pick-of-.*#$PR-" \
                         --all --pretty=format:"%h")
+elif [[ "${POSITIONAL_ARGV[0]}" =~ ^[a-zA-Z0-9]*$ ]]; then
+    COMMIT=${POSITIONAL_ARGV[0]}
+    INITIAL_COMMIT=$(git log --pretty=format:"%H - %an, %ar : %s" \
+				|grep "$COMMIT" \
+				|grep "Merge pull request" \
+				|cut -d'-' -f1)
+    mapfile -i CP_COMMITS < <(git log --pretty=format:"%H - %an, %ar : %s" \
+				|grep "$COMMIT" \
+				|grep "cherry-pick-of-" \
+				|cut -d'-' -f1)
 else
   # TODO: Need to validate this is a git hash
   INITIAL_COMMIT=("${POSITIONAL_ARGV[0]}")
