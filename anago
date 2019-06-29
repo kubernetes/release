@@ -178,15 +178,20 @@ PROG=${0##*/}
 usage=${1:-yes}
 
 # Deal with OSX limitations out the gate for anyone that tries this there
-BASE_ROOT=$(dirname $(readlink -e "$BASH_SOURCE" 2>&1)) \
- || BASE_ROOT="$BASH_SOURCE"
-source $BASE_ROOT/lib/common.sh
-source $TOOL_LIB_PATH/gitlib.sh
-source $TOOL_LIB_PATH/releaselib.sh
+BASE_ROOT=$(dirname "$(readlink -e "${BASH_SOURCE[0]}" 2>&1)") \
+ || BASE_ROOT="${BASH_SOURCE[0]}"
+# shellcheck source=./lib/common.sh
+source "$BASE_ROOT/lib/common.sh"
+# shellcheck source=./lib/gitlib.sh
+source "$TOOL_LIB_PATH/gitlib.sh"
+# shellcheck source=./lib/releaselib.sh
+source "$TOOL_LIB_PATH/releaselib.sh"
 
 # Clear or validate run state
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 if ((FLAGS_clean)) && [[ -f $PROGSTATE ]]; then
-  logrun mv $PROGSTATE $PROGSTATE.last
+  logrun mv "$PROGSTATE" "$PROGSTATE.last"
 fi
 common::validate_command_line "$ORIG_CMDLINE" || common::exit 1 "Exiting..."
 
@@ -222,12 +227,14 @@ fi
 common::cleanexit () {
   [[ -t 1 ]] && tput cnorm
 
-  logrun rm -rf $LOCAL_CACHE
+  logrun rm -rf "$LOCAL_CACHE"
 
   # Reset gcloud auth context
   # if GCP_USER is set then we are in a state to reset this
+  # Disable shellcheck for dynamically defined variable
+  # shellcheck disable=SC2154
   if ! ((FLAGS_gcb)) && [[ -n "$GCP_USER" ]]; then
-    logrun $GCLOUD config set account $GCP_USER
+    logrun "$GCLOUD" config set account "$GCP_USER"
   fi
 
   if [[ -d $WORKDIR ]]; then
@@ -240,22 +247,24 @@ common::cleanexit () {
   fi
 
   common::timestamp end
-  exit ${1:-0}
+  exit "${1:-0}"
 }
 
 ###############################################################################
 # Copy logs to WORKDIR
 copy_logs_to_workdir () {
   local f
-  local logfiles=$(ls $LOGFILE{,.[0-9]} 2>/dev/null || true)
+  local logfiles
+  
+  logfiles=$(ls "$LOGFILE{,.[0-9]}" 2>/dev/null || true)
 
   for f in $logfiles; do
-    common::strip_control_characters $f
-    common::sanitize_log $f
+    common::strip_control_characters "$f"
+    common::sanitize_log "$f"
   done
 
   logecho -n "Copying $LOGFILE{,.[0-9]} to $WORKDIR: "
-  logrun -s cp -f $logfiles $WORKDIR
+  logrun -s cp -f "$logfiles" "$WORKDIR"
 }
 
 ###############################################################################
@@ -264,7 +273,7 @@ copy_logs_to_workdir () {
 # @param registries - A space separated list of registries
 #
 ensure_registry_acls () {
-  local registries=($1)
+  local registries=("$1")
   local emptyfile="$TMPDIR/empty-file.$$"
   local gs_path
   local r
@@ -272,7 +281,7 @@ ensure_registry_acls () {
   local artifact_namespace
 
   # Make an empty file to test uploading
-  logrun touch $emptyfile
+  logrun touch "$emptyfile"
 
   # Short of creating a hardcoded map of project-id to registry, translating
   # _ to - seems to be a simple rule to keep this, well, simple.
@@ -286,19 +295,19 @@ ensure_registry_acls () {
 
     gs_path="gs://artifacts.$artifact_namespace.appspot.com/containers"
     logecho -n "Checking write access to registry $r: "
-    if logrun $GSUTIL -q cp $emptyfile $gs_path && \
-       logrun $GSUTIL -q rm $gs_path/${emptyfile##*/}; then
-      logecho $OK
+    if logrun "$GSUTIL" -q cp "$emptyfile" "$gs_path" && \
+       logrun "$GSUTIL" -q rm "$gs_path/${emptyfile##*/}"; then
+      logecho "$OK"
     else
-      logecho $FAILED
+      logecho "$FAILED"
       ((retcode++))
     fi
 
     # Always reset back to $USER
-    ((FLAGS_gcb)) || logrun $GCLOUD config set account $GCP_USER
+    ((FLAGS_gcb)) || logrun "$GCLOUD" config set account "$GCP_USER"
   done
 
-  logrun rm -f $emptyfile
+  logrun rm -f "$emptyfile"
 
   return $retcode
 }
@@ -310,12 +319,12 @@ ensure_gcp_users () {
   local user
   local -a users_to_check
 
-  users_to_check+=($GCP_USER)
+  users_to_check+=("$GCP_USER")
 
   for user in ${users_to_check[*]}; do
     logecho -n "Checking cloud account/auth $user: "
-    if (logrun $GCLOUD config set account $user && \
-        logrun $GCLOUD docker -- version >/dev/null 2>&1); then
+    if (logrun "$GCLOUD" config set account "$user" && \
+        logrun "$GCLOUD" docker -- version >/dev/null 2>&1); then
       logecho -r "$OK"
     else
       logecho -r "$FAILED"
@@ -335,6 +344,8 @@ ensure_gcp_users () {
 # @param package - A space separated list of packages to verify exist
 # return 1 on failure
 #
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 PROGSTEP[check_prerequisites]="CHECK PREREQUISITES"
 check_prerequisites () {
   local rb
@@ -343,7 +354,7 @@ check_prerequisites () {
   # docker-engine as docker packages are in transiation of deprecating
   # docker-engine
   common::check_binaries jq pandoc docker || return 1
-  common::check_packages ${PREREQUISITE_PACKAGES[*]} || return 1
+  common::check_packages "${PREREQUISITE_PACKAGES[*]}" || return 1
   common::check_pip_packages yq || return 1
 
   security_layer::auth_check 2 || return 1
@@ -393,7 +404,7 @@ check_prerequisites () {
 
   # Verify write access to $WRITE_RELEASE_BUCKETS
   for rb in ${WRITE_RELEASE_BUCKETS[*]}; do
-    release::gcs::check_release_bucket $rb || return 1
+    release::gcs::check_release_bucket "$rb" || return 1
   done
 }
 
@@ -422,8 +433,8 @@ rev_openapi_versions () {
       continue
     fi
     # Strip any suffix off incoming RELEASE_VERSION[$label]
-    sed -i -r 's,"version": "'${VER_REGEX[release]}'","version": "'${RELEASE_VERSION[$label]//-*}'",g' $f
-    logrun git add $f
+    sed -i -r 's,"version": "'"${VER_REGEX[release]}"'","version": "'"${RELEASE_VERSION[$label]//-*}"'",g' "$f"
+    logrun git add "$f"
   done
 
   # Only commit if the files have changed.
@@ -436,17 +447,19 @@ rev_openapi_versions () {
 
 ###############################################################################
 # Update $CHANGELOG_FILE on master
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 PROGSTEP[generate_release_notes]="GENERATE RELEASE NOTES"
 generate_release_notes () {
   local release_tars=$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/release-tars
   local action="Update"
 
   logecho -n "Generating release notes: "
-  logrun -s relnotes $RELEASE_VERSION_PRIME --release-tars=$release_tars \
-                     --branch=${PARENT_BRANCH:-$RELEASE_BRANCH} --htmlize-md \
-                     --markdown-file=$RELEASE_NOTES_MD \
-                     --html-file=$RELEASE_NOTES_HTML \
-                     --release-bucket=$RELEASE_BUCKET || return 1
+  logrun -s relnotes "$RELEASE_VERSION_PRIME" --release-tars="$release_tars" \
+                     --branch="${PARENT_BRANCH:-$RELEASE_BRANCH}" --htmlize-md \
+                     --markdown-file="$RELEASE_NOTES_MD" \
+                     --html-file="$RELEASE_NOTES_HTML" \
+                     --release-bucket="$RELEASE_BUCKET" || return 1
 
   logecho -n "Checkout master branch to make changes: "
   logrun -s git checkout master || return 1
@@ -460,7 +473,7 @@ generate_release_notes () {
   logrun -s git rebase origin/master || return 1
 
   if [[ ! -f $CHANGELOG_FILE ]]; then
-    cat<<EOF > $CHANGELOG_FILE
+    cat<<EOF > "$CHANGELOG_FILE"
 <!-- BEGIN MUNGE: GENERATED_TOC -->
 
 <!-- END MUNGE: GENERATED_TOC -->
@@ -469,17 +482,17 @@ generate_release_notes () {
 EOF
     action="Add"
     logecho -n "$CHANGELOG_FILE not found.  Creating: "
-    logrun -s git add $CHANGELOG_FILE
+    logrun -s git add "$CHANGELOG_FILE"
   fi
 
   logecho -n "Insert $RELEASE_VERSION_PRIME notes into $CHANGELOG_FILE: "
   # Pipe to logrun() vs using directly, because quoting.
   sed -i -e 's/<!-- NEW RELEASE NOTES ENTRY -->/&\n/' \
          -e "/<!-- NEW RELEASE NOTES ENTRY -->/r $RELEASE_NOTES_MD" \
-   $CHANGELOG_FILE | logrun -s
+   "$CHANGELOG_FILE" | logrun -s
 
   logecho -n "Update $CHANGELOG_FILE TOC: "
-  logrun -s common::mdtoc $CHANGELOG_FILE || return 1
+  logrun -s common::mdtoc "$CHANGELOG_FILE" || return 1
 
   logecho -n "Committing $CHANGELOG_FILE: "
   logrun -s git commit -am \
@@ -489,11 +502,11 @@ EOF
   # Sync $CHANGELOG_FILE to release-* branch and clear all others
   if [[ "$RELEASE_BRANCH" =~ release- ]]; then
     logecho -n "Checkout $RELEASE_BRANCH branch to make changes: "
-    logrun -s git checkout $RELEASE_BRANCH || return 1
+    logrun -s git checkout "$RELEASE_BRANCH" || return 1
     logecho -n "Remove any previous CHANGELOG-*.md files: "
     logrun -s git rm -f CHANGELOG-*.md || return 1
     logecho -n "Copy master $CHANGELOG_FILE to $RELEASE_BRANCH branch: "
-    logrun -s git checkout master -- $CHANGELOG_FILE || return 1
+    logrun -s git checkout master -- "$CHANGELOG_FILE" || return 1
     logecho -n "Committing $CHANGELOG_FILE: "
     logrun -s git commit -am \
               "Add/Update $CHANGELOG_FILE for $RELEASE_VERSION_PRIME." \
@@ -517,10 +530,12 @@ checkout_object () {
   # for the 2 release versions being built.
   # In that case, if the tag already exists, simply check it out for build
   # purposes.
+  # Disable shellcheck for dynamically defined variable
+  # shellcheck disable=SC2154
   if ((FLAGS_gcb)) && ! ((FLAGS_prebuild)) && \
      git rev-parse "$version" >/dev/null 2>&1; then
     logecho -n "Checking out $version: "
-    logrun -s git checkout $version || return 1
+    logrun -s git checkout "$version" || return 1
     return 0
   fi
 
@@ -545,9 +560,9 @@ checkout_object () {
   # Therefore, while the new branch may be based on a commit earlier than
   # HEAD, all master activity must occur AT HEAD.
   if [[ -n "$PARENT_BRANCH" ]]; then
-    if [[ $RELEASE_VERSION_PRIME == $version ]]; then
+    if [[ $RELEASE_VERSION_PRIME == "$version" ]]; then
       if [[ $tree_object =~ release- ]] && \
-         ! git rev-parse $tree_object >/dev/null 2>&1; then
+         ! git rev-parse "$tree_object" >/dev/null 2>&1; then
         # Only create/reset (-B) and set a branch_point if the *release-*
         # branch doesn't already exist locally
         branch_arg="-b"
@@ -566,7 +581,7 @@ checkout_object () {
 
   # Checkout location
   logecho -n "Checking out $tree_object: "
-  logrun -s git checkout $branch_arg $tree_object $branch_point || return 1
+  logrun -s git checkout $branch_arg "$tree_object" "$branch_point" || return 1
 }
 
 ##############################################################################
@@ -590,27 +605,32 @@ git_tag () {
 
 ##############################################################################
 # Tag/Build a local kube_cross image based on the version in scope
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 PROGSTEP[local_kube_cross]="TAG/BUILD LOCAL KUBE CROSS"
 local_kube_cross () {
   local docker_image="$GCRIO_PATH_PROD/kube-cross"
-  local version="$(cat $TREE_ROOT/build/build-image/cross/VERSION)"
+  local version
   local image="$docker_image:$version"
   local local_image="$docker_image:local"
-
+  
+  version="$(cat "$TREE_ROOT/build/build-image/cross/VERSION")"
   logecho -n "Checking if $image exists locally: "
-  if logrun -s docker pull $image; then
+  if logrun -s docker pull "$image"; then
     logecho -n "Tagging docker image $image as $local_image: "
-    logrun -s docker tag $image $local_image
+    logrun -s docker tag "$image" "$local_image"
   else
     logecho -n "Building docker image $image: "
-    logrun -s docker build --cache-from $docker_image -t $image \
-                           -t $local_image $TREE_ROOT/build/build-image/cross/
+    logrun -s docker build --cache-from "$docker_image" -t "$image" \
+                           -t "$local_image" "$TREE_ROOT/build/build-image/cross/"
   fi
 }
 
 ##############################################################################
 # Prepare sources for building for a given label
 # @param label - The label to process
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 PROGSTEP[prepare_tree]="PREPARE AND TAG TREE"
 prepare_tree () {
   local label=$1
@@ -626,7 +646,7 @@ prepare_tree () {
     return 1
   fi
 
-  checkout_object $label || return 1
+  checkout_object "$label" || return 1
 
   # Now set the branch we're on
   branch=$(gitlib::current_branch)
@@ -637,14 +657,14 @@ prepare_tree () {
   # change or the later rebase in gitlib::push_master() will rewrite the
   # commit associated with the tag and orphan it.
   if [[ -n "$PARENT_BRANCH" && $label == alpha ]]; then
-    git_tag $label $branch || return 1
-    rev_openapi_versions $label || return 1
+    git_tag "$label" "$branch" || return 1
+    rev_openapi_versions "$label" || return 1
     return 0
   fi
 
   # rev openapi-spec version files on branch for beta tags
   case $label in
-    beta*) rev_openapi_versions $label || return 1 ;;
+    beta*) rev_openapi_versions "$label" || return 1 ;;
   esac
 
   # COMMENTING OUT FOR NOW AS THE WAY FORWARD IS NOT CLEAR
@@ -670,14 +690,14 @@ prepare_tree () {
     logecho -n "Remove any previous CHANGELOG-*.md files: "
     logrun -s git rm -f CHANGELOG-*.md || return 1
     logecho -n "Copy master $CHANGELOG_FILE to $branch branch: "
-    logrun -s git checkout master -- $CHANGELOG_FILE || return 1
+    logrun -s git checkout master -- "$CHANGELOG_FILE" || return 1
     logecho -n "Committing deleted CHANGELOG-*.md files: "
     logrun -s git commit -am \
               "Delete extraneous CHANGELOG-*.md files on branch." \
      || return 1
   fi
 
-  git_tag $label $branch
+  git_tag "$label" "$branch"
 }
 
 ##############################################################################
@@ -685,13 +705,15 @@ prepare_tree () {
 # This very low level split of the build required to run exactly 'make cross'
 # only using the kube-cross container image
 # @param label - The label to process
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 PROGSTEP[make_cross]="MAKE CROSS"
 make_cross () {
   local label=$1
   local version=${RELEASE_VERSION[$label]}
   local branch
 
-  checkout_object $label
+  checkout_object "$label"
 
   branch=$(gitlib::current_branch)
 
@@ -706,19 +728,21 @@ make_cross () {
    || return 1
 
   logecho -n "Moving build _output to $BUILD_OUTPUT-$version: "
-  logrun -s mv $BUILD_OUTPUT $BUILD_OUTPUT-$version || return 1
+  logrun -s mv "$BUILD_OUTPUT" "$BUILD_OUTPUT-$version" || return 1
 }
 
 ##############################################################################
 # Build the Kubernetes tree
 # @param label - The label to process
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 PROGSTEP[build_tree]="BUILD TREE"
 build_tree () {
   local label=$1
   local version=${RELEASE_VERSION[$label]}
   local branch
 
-  checkout_object $label
+  checkout_object "$label"
 
   branch=$(gitlib::current_branch)
 
@@ -735,7 +759,7 @@ build_tree () {
     # KUBE_DOCKER_IMAGE_TAG needed here due to references deep in
     # build/lib/release.sh
     logrun -s -v make package-tarballs KUBE_DOCKER_IMAGE_TAG="$version" \
-                                       OUT_DIR=$OUT_DIR-$version || return 1
+                                       OUT_DIR="$OUT_DIR-$version" || return 1
   else
     # TODO: Ideally we update LOCAL_OUTPUT_ROOT in build/common.sh to be
     #       modifiable.  In the meantime just mv the dir after it's done
@@ -744,7 +768,7 @@ build_tree () {
     logrun -s make release KUBE_DOCKER_IMAGE_TAG="$version" || return 1
 
     logecho -n "Moving build _output to $BUILD_OUTPUT-$version: "
-    logrun -s mv $BUILD_OUTPUT $BUILD_OUTPUT-$version || return 1
+    logrun -s mv "$BUILD_OUTPUT" "$BUILD_OUTPUT-$version" || return 1
   fi
 }
 
@@ -762,8 +786,8 @@ binary_artifacts_exist () {
   [[ $base =~ ^gs:// ]] && gsutil="$GSUTIL -q"
 
   logecho -n "Searching for artifacts at $base: "
-  if logrun $gsutil ls $base/gcs-stage/$version/*.tar.gz* >/dev/null 2>&1 && \
-     logrun $gsutil ls $base/release-images/*/*.tar >/dev/null 2>&1; then
+  if logrun "$gsutil" ls "$base/gcs-stage/$version/*.tar.gz*" >/dev/null 2>&1 && \
+     logrun "$gsutil" ls "$base/release-images/*/*.tar" >/dev/null 2>&1; then
     logecho "$FOUND"
   else
     logecho "$NOTFOUND"
@@ -791,7 +815,7 @@ found_staged_location () {
   logecho
   # first look locally
   for version in $release_versions; do
-    if binary_artifacts_exist $k8s_root-$version $version; then
+    if binary_artifacts_exist "$k8s_root-$version" "$version"; then
       STAGED_LOCATION="local"
     else
       STAGED_LOCATION=""
@@ -807,8 +831,8 @@ found_staged_location () {
   if [[ $STAGED_LOCATION == "local" ]]; then
     # Enjoy the local filesystem
     logecho -n "Symlinking $local_root to $WORKDIR/src: "
-    logrun mkdir -p $WORKDIR
-    logrun -s ln -nsf $local_root $WORKDIR/src || return 1
+    logrun mkdir -p "$WORKDIR"
+    logrun -s ln -nsf "$local_root" "$WORKDIR/src" || return 1
     RELEASE_GB="5"
     return 0
   fi
@@ -818,8 +842,8 @@ found_staged_location () {
   for bucket in ${READ_RELEASE_BUCKETS[*]}; do
     logecho -n "Searching for staged src.tar.gz on $bucket: "
 
-    if logrun $GSUTIL -m cp gs://$bucket/stage/$jbv/src.tar.gz \
-                         $tmp_tar_archive; then
+    if logrun "$GSUTIL" -m cp "gs://$bucket/stage/$jbv/src.tar.gz" \
+                         "$tmp_tar_archive"; then
       logecho "$FOUND"
       # Set a global to skip other build steps in workflow
       STAGED_LOCATION="gcs"
@@ -836,7 +860,7 @@ found_staged_location () {
   # Now ensure binary artifacts exist in the same location, or give up
   for version in $release_versions; do
     gs_stage_root="gs://$bucket/stage/$jbv/$version"
-    if ! binary_artifacts_exist $gs_stage_root $version; then
+    if ! binary_artifacts_exist "$gs_stage_root" "$version"; then
       # Ensure these are unset in this case
       unset STAGED_LOCATION STAGED_BUCKET
       return 1
@@ -844,8 +868,8 @@ found_staged_location () {
   done
 
   logecho -n "Extracting $tmp_tar_archive: "
-  logrun -s tar xfz $tmp_tar_archive -C $WORKDIR || return 1
-  logrun rm -f $tmp_tar_archive
+  logrun -s tar xfz "$tmp_tar_archive" -C "$WORKDIR" || return 1
+  logrun rm -f "$tmp_tar_archive"
 
   # Set disk requirements when everything's on GCS
   RELEASE_GB="10"
@@ -866,28 +890,27 @@ copy_staged_from_gcs () {
   local gs_stage_root="gs://$staged_bucket/stage/$jbv/$version"
   local gs_release_root="gs://$release_bucket/release/$version"
   local outdir="$TREE_ROOT/_output-$version"
-  local type
 
   # cp the /stage/ tarballs to /release/ on GCS directly
   logecho -n "Bucket-to-bucket copy $gs_stage_root/gcs-stage artifacts" \
              "to $gs_release_root: "
-  logrun -s $GSUTIL -mq cp -rc $gs_stage_root/gcs-stage/$version/* \
-                               $gs_release_root/ || return 1
+  logrun -s "$GSUTIL" -mq cp -rc "$gs_stage_root/gcs-stage/$version/*" \
+                               "$gs_release_root/" || return 1
 
-  logrun mkdir -p $outdir/gcs-stage/$version
+  logrun mkdir -p "$outdir/gcs-stage/$version"
   logecho -n "Copy staged kubernetes.tar.gz to $outdir/gcs-stage/$version: "
-  logrun -s $GSUTIL -q \
-            cp -c $gs_stage_root/gcs-stage/$version/kubernetes.tar.gz \
-                  $outdir/gcs-stage/$version || return 1
+  logrun -s "$GSUTIL" -q \
+            cp -c "$gs_stage_root/gcs-stage/$version/kubernetes.tar.gz" \
+                  "$outdir/gcs-stage/$version" || return 1
 
   # Copy docker images back to _output trees for later pushing
   # TODO: Can we somehow stage these on GCR.IO using docker or even
   #       the GCS backend to eliminate the VERY EXPENSIVE --12 minutes--
   #       it takes to push these containers from local disk?
-  logrun mkdir -p $outdir/release-images
+  logrun mkdir -p "$outdir/release-images"
   logecho -n "Copy staged docker images to $outdir/release-images: "
-  logrun -s $GSUTIL -mq cp -cr $gs_stage_root/release-images/* \
-                               $outdir/release-images/ || return 1
+  logrun -s "$GSUTIL" -mq cp -cr "$gs_stage_root/release-images/*" \
+                               "$outdir/release-images/" || return 1
 }
 
 ##############################################################################
@@ -899,6 +922,8 @@ copy_staged_from_gcs () {
 # * official pushes both official and beta items - branch and tags
 # * New branch tags a new alpha on master, new beta on new branch and pushes
 #   new branch and tags on both
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 PROGSTEP[push_git_objects]="PUSH GIT OBJECTS"
 push_git_objects () {
   local b
@@ -907,6 +932,8 @@ push_git_objects () {
   # The real deal?
   ((FLAGS_nomock)) && dryrun_flag=""
 
+  # Disable shellcheck for dynamically defined variable
+  # shellcheck disable=SC2154
   ((FLAGS_yes)) \
    || common::askyorn -e "Pausing here. Confirm push$dryrun_flag of tags" \
                          "and bits" \
@@ -916,18 +943,18 @@ push_git_objects () {
   logrun -s git checkout master || return 1
 
   logecho "Pushing$dryrun_flag tags"
-  for b in ${!RELEASE_VERSION[@]}; do
+  for b in "${!RELEASE_VERSION[@]}"; do
     logecho -n "* ${RELEASE_VERSION[$b]}: "
-    logrun -s git push$dryrun_flag origin ${RELEASE_VERSION[$b]} || return 1
+    logrun -s git push$dryrun_flag origin "${RELEASE_VERSION[$b]}" || return 1
   done
 
   if [[ "$RELEASE_BRANCH" =~ release- ]]; then
     logecho -n "Pushing$dryrun_flag $RELEASE_BRANCH branch: "
-    logrun -s git push$dryrun_flag origin $RELEASE_BRANCH || return 1
+    logrun -s git push$dryrun_flag origin "$RELEASE_BRANCH" || return 1
     # Additionally push the parent branch if a branch of branch
     if [[ "$PARENT_BRANCH" =~ release- ]]; then
       logecho -n "Pushing$dryrun_flag $PARENT_BRANCH branch: "
-      logrun -s git push$dryrun_flag origin $PARENT_BRANCH || return 1
+      logrun -s git push$dryrun_flag origin "$PARENT_BRANCH" || return 1
     fi
   fi
 
@@ -961,7 +988,7 @@ Kubernetes $RELEASE_VERSION_PRIME has been built and pushed.
 The release notes have been updated in <A HREF=https://github.com/kubernetes/kubernetes/blob/master/$CHANGELOG_FILE/#${RELEASE_VERSION_PRIME//\./}>$CHANGELOG_FILE</A> with a pointer to it on <A HREF=https://github.com/kubernetes/kubernetes/releases/tag/$RELEASE_VERSION_PRIME>github</A>:
 <P>
 <HR>
-$(cat $RELEASE_NOTES_HTML)
+$(cat "$RELEASE_NOTES_HTML")
 <HR>
 <P><BR>
 Leads, the <A HREF=https://github.com/kubernetes/kubernetes/blob/master/$CHANGELOG_FILE/#${RELEASE_VERSION_PRIME//\./}>$CHANGELOG_FILE</A> has been bootstrapped with $RELEASE_VERSION_PRIME release notes and you may edit now as needed.
@@ -973,6 +1000,8 @@ EOF
 ###############################################################################
 # Construct META for the announcement and send it out
 # @optparam --branch - Default announcement type is 'release' or --branch.
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 PROGSTEP[announce]="ANNOUNCE BRANCH OR RELEASE"
 announce () {
   local arg="$1"
@@ -983,8 +1012,8 @@ announce () {
   logecho "Creating k8s $RELEASE_VERSION_PRIME announcement in $WORKDIR..."
 
   if [[ "$arg" == "--branch" ]]; then
-    echo "k8s $RELEASE_BRANCH branch has been created" > $subject_file
-    branch_announcement_text > $announcement_file
+    echo "k8s $RELEASE_BRANCH branch has been created" > "$subject_file"
+    branch_announcement_text > "$announcement_file"
 
     # When we create a new branch, we notify the publishing-bot folks by
     # creating an issue for them
@@ -992,8 +1021,8 @@ announce () {
       logecho "$WARNING: Could not create issue for the publishing-bot update"
     }
   else
-    echo "k8s $RELEASE_VERSION_PRIME is live!" > $subject_file
-    release_announcement_text > $announcement_file
+    echo "k8s $RELEASE_VERSION_PRIME is live!" > "$subject_file"
+    release_announcement_text > "$announcement_file"
   fi
 
   # Only send from desktop
@@ -1036,6 +1065,8 @@ announce () {
 ###############################################################################
 # Update the releases page on github
 # return 1 on failure
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 PROGSTEP[update_github_release]="UPDATE GITHUB RELEASES PAGE"
 update_github_release () {
   local release_id
@@ -1045,7 +1076,9 @@ update_github_release () {
   local draft="true"
   local tarball="$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/gcs-stage"
         tarball+="/$RELEASE_VERSION_PRIME/kubernetes.tar.gz"
-  local sha_hash=$(common::sha $tarball 512)
+  local sha_hash
+  
+  sha_hash=$(common::sha $tarball 512)
 
   ((FLAGS_official)) && prerelease="false"
   if ((FLAGS_nomock)); then
@@ -1055,8 +1088,8 @@ update_github_release () {
     # non-draft release posts to github create a tag.  We don't want to
     # create any tags on the repo this way.  The tag should already exist
     # as a result of the release process.
-    if ! $GHCURL $K8S_GITHUB_API/git/refs/tags |jq -r '.[] | .ref' |\
-        egrep -q "^refs/tags/$RELEASE_VERSION_PRIME$"; then
+    if ! $GHCURL "$K8S_GITHUB_API/git/refs/tags" | jq -r '.[] | .ref' |\
+        grep -Eq "^refs/tags/$RELEASE_VERSION_PRIME$"; then
       logecho
       logecho "$FATAL: How did we get here?"
       logecho "The $RELEASE_VERSION_PRIME tag doesn't exist yet on github." \
@@ -1066,6 +1099,8 @@ update_github_release () {
     fi
   else
     # Return unless explicitly requested
+    # Disable shellcheck for dynamically defined variable
+    # shellcheck disable=SC2154
     if ! ((FLAGS_github_release_draft)); then
       logecho "Mock run - Skipping.  Use --github-release-draft to force."
       return
@@ -1073,7 +1108,7 @@ update_github_release () {
   fi
 
   # Does the release exist yet?
-  release_id=$($GHCURL $K8S_GITHUB_API/releases/tags/$RELEASE_VERSION_PRIME |\
+  release_id=$($GHCURL "$K8S_GITHUB_API/releases/tags/$RELEASE_VERSION_PRIME" |\
                jq -r '.id')
 
   if [[ -n "$release_id" ]]; then
@@ -1091,15 +1126,17 @@ update_github_release () {
   # post release data
   logecho "$release_verb the $RELEASE_VERSION_PRIME release on github..."
   local changelog_url="$K8S_GITHUB_URL/blob/master/$CHANGELOG_FILE"
-  release_id=$($GHCURL $K8S_GITHUB_API/releases$id_suffix --data \
+  # body in the json object below
+  local body="See [kubernetes-announce@](https://groups.google.com/forum/#!forum/kubernetes-announce) and [$CHANGELOG_FILE]($changelog_url#${RELEASE_VERSION_PRIME//\./}) for details.\n\nSHA512 for kubernetes.tar.gz: $sha_hash\n\nAdditional binary downloads are linked in the [$CHANGELOG_FILE]($changelog_url#downloads-for-${RELEASE_VERSION_PRIME//\./}).",
+  release_id=$($GHCURL "$K8S_GITHUB_API/releases$id_suffix" --data \
    '{
-    "tag_name": "'$RELEASE_VERSION_PRIME'",
-    "target_commitish": "'$RELEASE_BRANCH'",
-    "name": "'$RELEASE_VERSION_PRIME'",
-    "body": "See [kubernetes-announce@](https://groups.google.com/forum/#!forum/kubernetes-announce) and ['$CHANGELOG_FILE']('$changelog_url'#'${RELEASE_VERSION_PRIME//\./}') for details.\n\nSHA512 for `kubernetes.tar.gz`: `'$sha_hash'`\n\nAdditional binary downloads are linked in the ['$CHANGELOG_FILE']('$changelog_url'#downloads-for-'${RELEASE_VERSION_PRIME//\./}').",
+    "tag_name": "'"$RELEASE_VERSION_PRIME"'",
+    "target_commitish": "'"$RELEASE_BRANCH"'",
+    "name": "'"$RELEASE_VERSION_PRIME"'",
+    "body": "'"$body"'",
     "draft": '$draft',
     "prerelease": '$prerelease'
-    }' |jq -r '.id')
+    }' | jq -r '.id')
 
   # verify it was created
   if [[ -z "$release_id" ]]; then
@@ -1111,11 +1148,11 @@ update_github_release () {
   # publish binary
   logecho -n "Uploading binary to github: "
   if $GHCURL -H "Content-Type:application/x-compressed" \
-   --data-binary @$tarball \
+   --data-binary @"$tarball" \
    "${K8S_GITHUB_API/api\./uploads\.}/releases/$release_id/assets?name=${tarball##*/}"; then
-    logecho $OK
+    logecho "$OK"
   else
-    logecho $FAILED
+    logecho "$FAILED"
   fi
 
   if $draft; then
@@ -1128,18 +1165,18 @@ update_github_release () {
     if ((FLAGS_yes)) || \
        common::askyorn -y "Delete draft release (id #$release_id) now"; then
       logecho -n "Deleting the draft release (id #$release_id): "
-      $GHCURL -X DELETE $K8S_GITHUB_API/releases/$release_id
+      $GHCURL -X DELETE "$K8S_GITHUB_API/releases/$release_id"
     fi
 
     # verify it was deleted
-    release_id=$($GHCURL $K8S_GITHUB_API/releases/$release_id | jq -r '.id')
+    release_id=$($GHCURL "$K8S_GITHUB_API/releases/$release_id" | jq -r '.id')
     if [[ -n "$release_id" ]]; then
-      logecho -r $FAILED
+      logecho -r "$FAILED"
       logecho "The draft release (id #$release_id) was NOT deleted." \
               "Deal with it by hand"
       logecho "$K8S_GITHUB_URL/releases/$RELEASE_VERSION_PRIME"
     else
-      logecho -r $OK
+      logecho -r "$OK"
     fi
   fi
 }
@@ -1162,9 +1199,11 @@ branchff_sanity_check () {
   # For master branch alpha builds, ensure we've released the previous .0
   # first
   if [[ -z "$PARENT_BRANCH" && -n ${RELEASE_VERSION[alpha]} ]]; then
-    latest_official=${BASH_REMATCH[1]}.$((${BASH_REMATCH[2]}-1))
+    latest_official=${BASH_REMATCH[1]}.$((BASH_REMATCH[2]-1))
     # The $'\n` construct below is a word boundary.
-    if [[ ! "$($GHCURL $K8S_GITHUB_API/tags |jq -r '.[] .name')" =~ \
+    # Disable shellcheck for regex
+    # shellcheck disable=SC1011,SC2026
+    if [[ ! "$($GHCURL $K8S_GITHUB_API/tags | jq -r '.[] .name')" =~ \
        $'\n'v$latest_official.0$'\n' ]]; then
       logecho
       logecho "$WARNING:" \
@@ -1186,16 +1225,20 @@ branchff_sanity_check () {
 # Calls into Jenkins looking for a build to use for release
 # Sets global PARENT_BRANCH when a new branch is created
 # And global BRANCH_POINT when new branch is created from an existing tag
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 PROGSTEP[get_build_candidate]="SET BUILD CANDIDATE"
 get_build_candidate () {
   local testing_branch
-  local branch_head=$($GHCURL $K8S_GITHUB_API/commits/$RELEASE_BRANCH |\
+  local branch_head
+  
+  branch_head=$($GHCURL "$K8S" "GITHUB_API/commits/$RELEASE_BRANCH" |\
                       jq -r '.sha')
   # Shorten
   branch_head=${branch_head:0:14}
 
   # Are we branching to a new branch?
-  if gitlib::branch_exists $RELEASE_BRANCH; then
+  if gitlib::branch_exists "$RELEASE_BRANCH"; then
     # If the branch is a 3-part branch (ie. release-1.2.3)
     if [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]] && \
        [[ -n ${BASH_REMATCH[4]} ]]; then
@@ -1219,7 +1262,7 @@ get_build_candidate () {
       PARENT_BRANCH=master
       testing_branch=$PARENT_BRANCH
     # if 3 part branch name, check parent exists
-    elif gitlib::branch_exists ${RELEASE_BRANCH%.*}; then
+    elif gitlib::branch_exists "${RELEASE_BRANCH%.*}"; then
       PARENT_BRANCH=${RELEASE_BRANCH%.*}
       # The 'missing' . here between 2 and 3 is intentional. It's part of the
       # optional regex.
@@ -1231,13 +1274,19 @@ get_build_candidate () {
   fi
 
   if [[ -z $BRANCH_POINT ]]; then
+    # Disable shellcheck for dynamically defined variable
+    # shellcheck disable=SC2154
     if [[ -n "$FLAGS_buildversion" ]]; then
       logecho -r "$ATTENTION: Using --buildversion=$FLAGS_buildversion"
       JENKINS_BUILD_VERSION="$FLAGS_buildversion"
     else
       logecho "Asking Jenkins for a good build (this may take some time)..."
+      # Disable shellcheck for assumption about set_build_version argument
+      # shellcheck disable=SC2119
       FLAGS_verbose=1 release::set_build_version \
-       $testing_branch "" "$FLAGS_exclude_suites" "100" || return 1
+        # Disable shellcheck for dynamically defined variable
+        # shellcheck disable=SC2154
+        "$testing_branch" "" "$FLAGS_exclude_suites" "100" || return 1
     fi
 
     # The RELEASE_BRANCH should always match with the JENKINS_BUILD_VERSION
@@ -1250,12 +1299,12 @@ get_build_candidate () {
     fi
 
     # Check state of master branch before continuing
-    branchff_sanity_check $JENKINS_BUILD_VERSION
+    branchff_sanity_check "$JENKINS_BUILD_VERSION"
   else
     # The build version should never be behind HEAD on release existing branches
     if [[ "$RELEASE_BRANCH" =~ release-([0-9]{1,})\. ]]; then
       if [[ $JENKINS_BUILD_VERSION =~ ${VER_REGEX[build]} && \
-            ${BASH_REMATCH[2]} != $branch_head ]]; then
+            ${BASH_REMATCH[2]} != "$branch_head" ]]; then
         logecho
         logecho "$FATAL: The $RELEASE_BRANCH HEAD is ahead of the chosen" \
                 "commit. Releases on release branches must be run from HEAD."
@@ -1269,16 +1318,18 @@ get_build_candidate () {
 # Computes release values and sets the global RELEASE_VERSION[] dict and
 # RELEASE_VERSION_PRIME (the primary release for this session).
 # Also ensures the RELEASE_VERSION_PRIME tag doesn't already exist.
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 PROGSTEP[set_release_values]="SET RELEASE VALUES"
 set_release_values () {
   FLAGS_verbose=1 \
-   release::set_release_version ${BRANCH_POINT:-$JENKINS_BUILD_VERSION} \
-                                $RELEASE_BRANCH \
-                                $PARENT_BRANCH \
+   release::set_release_version "${BRANCH_POINT:-$JENKINS_BUILD_VERSION}" \
+                                "$RELEASE_BRANCH" \
+                                "$PARENT_BRANCH" \
    || return 1
 
   # Check that this tag doesn't exist. Staged builds may be old
-  if [[ "$($GHCURL $K8S_GITHUB_API/tags |jq -r '.[] .name')" =~ \
+  if [[ "$($GHCURL "$K8S_GITHUB_API/tags" | jq -r '.[] .name')" =~ \
         $'\n'$RELEASE_VERSION_PRIME$'\n' ]]; then
      logecho
      logecho "$FATAL: The tag $RELEASE_VERSION_PRIME already exists on github."
@@ -1290,6 +1341,8 @@ set_release_values () {
 
 ##############################################################################
 # Prepare the workspace and sync the tree
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 PROGSTEP[prepare_workspace]="PREPARE WORKSPACE"
 prepare_workspace () {
   local outdir
@@ -1298,18 +1351,18 @@ prepare_workspace () {
     # The case where an existing release tree might have a symlink from a
     # previously failed attempt.  We don't want to fall into the condition
     # below and clean it up
-    logrun rm -f $WORKDIR/src || return 1
+    logrun rm -f "$WORKDIR/src" || return 1
   else
     if [[ -d $TREE_ROOT ]]; then
       logecho "Checking for _output directories..."
-      logrun cd $TREE_ROOT
+      logrun cd "$TREE_ROOT"
       # set -e sillyness - yes that's a ||true there that would otherwise not
       # be needed except for 'set -e' in all its glory
       for outdir in $(ls -1d _output* 2>/dev/null ||true); do
         # This craziness due to
         # https://github.com/kubernetes/kubernetes/issues/23839
         if [[ $outdir != "_output" ]]; then
-          logrun mv $outdir _output
+          logrun mv "$outdir" _output
         fi
         logecho -n "make clean for $outdir: "
         logrun -s make clean || return 1
@@ -1318,14 +1371,16 @@ prepare_workspace () {
       done
     fi
     logecho -n "Removing/recreating $WORKDIR: "
-    logrun cd $TMPDIR
-    logrun -s rm -rf $WORKDIR || return 1
-    logrun mkdir -p $WORKDIR || return 1
+    logrun cd "$TMPDIR"
+    logrun -s rm -rf "$WORKDIR" || return 1
+    logrun mkdir -p "$WORKDIR" || return 1
   fi
 
   # Check if locally staged directory contains all of the RELEASE_VERSIONs for
   # this release type
-  if ((FLAGS_stage)) || ! found_staged_location ${RELEASE_VERSION[@]}; then
+  # Disable shellcheck for dynamically defined variable
+  # shellcheck disable=SC2154
+  if ((FLAGS_stage)) || ! found_staged_location "${RELEASE_VERSION[@]}"; then
     # GCB releases (gcbmgr release) requires a found staged build to use
     if ! ((FLAGS_stage)) && ((FLAGS_gcb)); then
       logecho "$FATAL: Releasing from GCB requires a staged" \
@@ -1333,7 +1388,7 @@ prepare_workspace () {
       return 1
     fi
     # Sync the tree
-    gitlib::sync_repo $K8S_GITHUB_AUTH_URL $TREE_ROOT || return 1
+    gitlib::sync_repo "$K8S_GITHUB_AUTH_URL $TREE_ROOT" || return 1
   fi
 }
 
@@ -1367,39 +1422,43 @@ archive_release () {
   fi
 
   # Remove temporary password file so not to alarm passers-by.
-  logrun find $WORKDIR -type f -name rsyncd.password -delete ||true
+  logrun find "$WORKDIR" -type f -name rsyncd.password -delete ||true
 
   # Best effort
   logecho "Copy $WORKDIR $text to $archive_bucket/$build_dir..."
-  logrun $GSUTIL -mq cp $dash_args $WORKDIR/* $archive_bucket/$build_dir || true
+  logrun "$GSUTIL" -mq cp "$dash_args" "$WORKDIR/*" "$archive_bucket/$build_dir" || true
 
   logecho -n "Ensure PRIVATE ACL on" \
              "$archive_bucket/$build_dir/${LOGFILE##*/}\*: "
-  logrun -s $GSUTIL acl ch -d AllUsers \
+  logrun -s "$GSUTIL" acl ch -d AllUsers \
             "$archive_bucket/$build_dir/${LOGFILE##*/}*" || true
 }
 
 ##############################################################################
 # Stages the completed tar'd up source tree archive on GCS for later use
 # returns 1 on failure
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 PROGSTEP[stage_source_tree]="STAGE SOURCE TREE"
 stage_source_tree () {
   local jbv="$JENKINS_BUILD_VERSION"
 
   logecho -n "Tar up staged source tree: "
-  logrun -s tar cvfz $WORKDIR/src.tar.gz -C $WORKDIR src --exclude="_output-*" \
+  logrun -s tar cvfz "$WORKDIR/src.tar.gz" -C "$WORKDIR" src --exclude="_output-*" \
    || return 1
   logecho -n "Archive fully staged source tree on GCS: "
-  logrun -s $GSUTIL -m cp $WORKDIR/src.tar.gz \
-            gs://$RELEASE_BUCKET/$BUCKET_TYPE/$jbv/src.tar.gz || return 1
+  logrun -s "$GSUTIL" -m cp "$WORKDIR/src.tar.gz" \
+            "gs://$RELEASE_BUCKET/$BUCKET_TYPE/$jbv/src.tar.gz" || return 1
   # Clean up
-  logrun rm -f $WORKDIR/src.tar.gz || return 1
+  logrun rm -f "$WORKDIR/src.tar.gz" || return 1
 }
 
 ##############################################################################
 # Pushes all binary and pointer artifacts up to GCS and GCR
 # @param label - the label index for the version being pushed
 # returns 1 on failure
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 PROGSTEP[push_all_artifacts]="PUSH BINARY RELEASE ARTIFACTS"
 push_all_artifacts () {
   local label=$1
@@ -1409,36 +1468,36 @@ push_all_artifacts () {
   if [[ -z "$STAGED_LOCATION" ]]; then
     # Locally Stage the release artifacts in build directory (gcs-stage)
     common::runstep release::gcs::locally_stage_release_artifacts \
-     $BUCKET_TYPE $version $BUILD_OUTPUT-$version || return 1
+     $BUCKET_TYPE $version "$BUILD_OUTPUT-$version" || return 1
   fi
 
   # The full release stage case
   if ((FLAGS_stage)); then
     # Push gcs-stage to GCS
     common::runstep release::gcs::push_release_artifacts \
-     $BUILD_OUTPUT-$version/gcs-stage/$version \
-     gs://$RELEASE_BUCKET/$BUCKET_TYPE/$jbv/$version/gcs-stage/$version \
+     "$BUILD_OUTPUT-$version/gcs-stage/$version" \
+     "gs://$RELEASE_BUCKET/$BUCKET_TYPE/$jbv/$version/gcs-stage/$version" \
       || return 1
 
     # Push docker release-images to GCS
     common::runstep release::gcs::push_release_artifacts \
-     $BUILD_OUTPUT-${RELEASE_VERSION[$label]}/release-images \
-     gs://$RELEASE_BUCKET/$BUCKET_TYPE/$jbv/$version/release-images || return 1
+     "$BUILD_OUTPUT-${RELEASE_VERSION[$label]}/release-images" \
+     "gs://$RELEASE_BUCKET/$BUCKET_TYPE/$jbv/$version/release-images" || return 1
   else
     if [[ $STAGED_LOCATION == "gcs" ]]; then
-      common::runstep copy_staged_from_gcs $label $STAGED_BUCKET \
-                                           $RELEASE_BUCKET || return 1
+      common::runstep copy_staged_from_gcs "$label" "$STAGED_BUCKET" \
+                                           "$RELEASE_BUCKET" || return 1
     else
       common::runstep release::gcs::push_release_artifacts \
-       $BUILD_OUTPUT-$version/gcs-stage/$version \
-       gs://$RELEASE_BUCKET/$BUCKET_TYPE/$version || return 1
+       "$BUILD_OUTPUT-$version/gcs-stage/$version" \
+       "gs://$RELEASE_BUCKET/$BUCKET_TYPE/$version" || return 1
     fi
 
     common::runstep release::docker::release \
-     $KUBE_DOCKER_REGISTRY $version $BUILD_OUTPUT-$version || return 1
+     "$KUBE_DOCKER_REGISTRY" "$version" "$BUILD_OUTPUT-$version" || return 1
 
     common::runstep release::gcs::publish_version \
-     $BUCKET_TYPE $version $BUILD_OUTPUT-$version $RELEASE_BUCKET || return 1
+     "$BUCKET_TYPE" "$version" "$BUILD_OUTPUT-$version" "$RELEASE_BUCKET" || return 1
   fi
 }
 
@@ -1446,10 +1505,12 @@ push_all_artifacts () {
 # MAIN
 ###############################################################################
 # Default mode is a mocked release workflow
-: ${FLAGS_nomock:=0}
-: ${FLAGS_rc:=0}
-: ${FLAGS_official:=0}
+: "${FLAGS_nomock:=0}"
+: "${FLAGS_rc:=0}"
+: "${FLAGS_official:=0}"
 
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 BASEDIR=${FLAGS_basedir}
 if [[ -z "${BASEDIR}" ]]; then
   # Goobuntu machines have a standard path for "local" disk as the home
@@ -1473,7 +1534,7 @@ if ((FLAGS_stage)); then
 else
   LOGFILE=$TMPDIR/$PROG.log
 fi
-common::logfileinit $LOGFILE 10
+common::logfileinit "$LOGFILE" 10
 # BEGIN script
 common::timestamp begin
 
@@ -1484,7 +1545,7 @@ if ! ((FLAGS_gcb)); then
                    "command-line/desktop.  Use 'gcbmgr'."
   fi
 
-  logecho $HR
+  logecho "$HR"
   logecho "${TPUT[BOLD]}**** Welcome to the Kubernetes Release Tool, Release" \
           "Manager ****"
   logecho
@@ -1497,7 +1558,7 @@ if ! ((FLAGS_gcb)); then
   logecho
   logecho "* https://github.com/kubernetes/release/blob/master/README.md" \
           "for details on how to get started."
-  logecho $HR
+  logecho "$HR"
   logecho
   logecho -n "Press any key to continue..."
   logrun read -n1
@@ -1510,6 +1571,8 @@ common::stepindex "check_prerequisites" "get_build_candidate" \
  "prepare_workspace" "common::disk_space_check"
 common::stepindex "prepare_tree"
 ((FLAGS_gcb)) && common::stepindex "local_kube_cross"
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 if ((FLAGS_buildonly)); then
   ((FLAGS_gcb)) && common::stepindex "make_cross"
   ((FLAGS_gcb)) || common::stepindex "build_tree"
@@ -1530,7 +1593,7 @@ fi
 
 # Show the workflow order and completed steps
 common::stepheader "WORKFLOW STEPS"
-common::stepindex --toc $PROGSTATE
+common::stepindex --toc "$PROGSTATE"
 logecho
 
 # Pre-checks
@@ -1598,30 +1661,30 @@ RELEASE_NOTES_MD=$WORKDIR/src/release-notes.md
 RELEASE_NOTES_HTML=$WORKDIR/src/release-notes.html
 
 # Ensure the WORKDIR exists
-logrun mkdir -p $WORKDIR
+logrun mkdir -p "$WORKDIR"
 
 # Display top pending PRs for branch releases (convenience only)
 if [[ $RELEASE_BRANCH =~ release- ]] &&
-   gitlib::branch_exists $RELEASE_BRANCH; then
+   gitlib::branch_exists "$RELEASE_BRANCH"; then
   common::stepheader "PENDING PRS ON THE $RELEASE_BRANCH BRANCH"
-  gitlib::pending_prs $RELEASE_BRANCH
+  gitlib::pending_prs "$RELEASE_BRANCH"
 fi
 
 # No need to pre-check this for mock or staging runs.  Overwriting OK.
 if ((FLAGS_nomock)) && ! ((FLAGS_stage)); then
   common::stepheader "GCS TARGET CHECK"
   # Ensure GCS destinations are clear before continuing
-  for v in ${RELEASE_VERSION[@]}; do
+  for v in "${RELEASE_VERSION[@]}"; do
     release::gcs::destination_empty \
-     gs://$RELEASE_BUCKET/$BUCKET_TYPE/$v || common::exit 1 "Exiting..."
+     "gs://$RELEASE_BUCKET/$BUCKET_TYPE/$v" || common::exit 1 "Exiting..."
   done
 fi
 
 common::stepheader "SESSION VALUES"
 # Show versions and ask for confirmation to continue
 # Pass in the indexed RELEASE_VERSION dict key by key
-ALL_RELEASE_VERSIONS=($(for key in ${!RELEASE_VERSION[@]}; do
-                         echo RELEASE_VERSION[$key]; done))
+mapfile -t ALL_RELEASE_VERSIONS < <(for key in "${!RELEASE_VERSION[@]}"; do
+                         echo RELEASE_VERSION[$key]; done)
 
 # Depending on the type of operation being performed one of these will be set
 if [[ -n $BRANCH_POINT ]]; then
@@ -1633,7 +1696,7 @@ fi
 
 common::printvars -p WORKDIR WORKDIR TREE_ROOT $DISPLAY_PARENT_BRANCH \
                      $DISPLAY_VERSION \
-                     RELEASE_VERSION_PRIME ${ALL_RELEASE_VERSIONS[@]} \
+                     RELEASE_VERSION_PRIME "${ALL_RELEASE_VERSIONS[@]}" \
                      RELEASE_BRANCH GCRIO_PATH RELEASE_BUCKET BUCKET_TYPE \
                      CHANGELOG_FILE \
                      FLAGS_nomock FLAGS_rc FLAGS_official \
@@ -1665,26 +1728,28 @@ common::run_stateful prepare_workspace
 
 # Store RELEASE_GB key=value in $PROGSTATE
 common::run_stateful --strip-args \
- "common::disk_space_check $BASEDIR $(($RELEASE_GB*${#RELEASE_VERSION[*]}))" \
+ "common::disk_space_check $BASEDIR $((RELEASE_GB*${#RELEASE_VERSION[*]}))" \
  RELEASE_GB
 
 # Everything happens in the TREE_ROOT context
-logrun cd $TREE_ROOT
+logrun cd "$TREE_ROOT"
 
 if ! ((FLAGS_stage)); then
   # Check or store STAGED_LOCATION and STAGED_BUCKET global bools
   # to ensure re-entrant non-stage runs cache this important state
   if ! common::check_state STAGED_LOCATION; then
-     common::check_state -a STAGED_LOCATION STAGED_LOCATION=$STAGED_LOCATION
+     common::check_state -a STAGED_LOCATION STAGED_LOCATION="$STAGED_LOCATION"
   fi
   if ! common::check_state STAGED_BUCKET ; then
-    common::check_state -a STAGED_BUCKET STAGED_BUCKET=$STAGED_BUCKET
+    common::check_state -a STAGED_BUCKET STAGED_BUCKET="$STAGED_BUCKET"
   fi
 fi
 
 if [[ -z $STAGED_LOCATION ]]; then
   # Iterate over session release versions for setup, tagging and building
-  for label in ${!RELEASE_VERSION[@]}; do
+  for label in "${!RELEASE_VERSION[@]}"; do
+    # Disable shellcheck for variable in range bug. See https://github.com/koalaman/shellcheck/wiki/SC2102
+    # shellcheck disable=SC2102
     common::run_stateful "prepare_tree $label" RELEASE_VERSION[$label]
     # This doesn't have to be done per label, but does need to be inserted
     # after an initial prepare_tree(), so just let the statefulness of it
@@ -1695,9 +1760,13 @@ if [[ -z $STAGED_LOCATION ]]; then
     if ! ((FLAGS_prebuild)); then
       if ((FLAGS_gcb)); then
         # Do only make cross in this case
+        # Disable shellcheck for variable in range bug. See https://github.com/koalaman/shellcheck/wiki/SC2102
+        # shellcheck disable=SC2102
         common::run_stateful "make_cross $label" RELEASE_VERSION[$label]
       else
         # Do the full build in this case
+        # Disable shellcheck for variable in range bug. See https://github.com/koalaman/shellcheck/wiki/SC2102
+        # shellcheck disable=SC2102
         common::run_stateful "build_tree $label" RELEASE_VERSION[$label]
       fi
     fi
@@ -1710,14 +1779,16 @@ if [[ -z $STAGED_LOCATION ]]; then
     logecho
     logecho "Finish this session with:"
     logecho
-    logecho "$PROG $(sed -n 's,^CMDLINE: ,,p' $PROGSTATE)"
+    logecho "$PROG $(sed -n 's,^CMDLINE: ,,p' "$PROGSTATE")"
     common::exit 0 "Exiting..."
   fi
 
   # Complete the "build" for the gcb case
   if ((FLAGS_gcb)); then
     if ((FLAGS_stage)); then
-      for label in ${!RELEASE_VERSION[@]}; do
+      for label in "${!RELEASE_VERSION[@]}"; do
+        # Disable shellcheck for variable in range bug. See https://github.com/koalaman/shellcheck/wiki/SC2102
+        # shellcheck disable=SC2102
         common::run_stateful "build_tree $label" RELEASE_VERSION[$label]
       done
     fi
@@ -1728,16 +1799,16 @@ if [[ -z $STAGED_LOCATION ]]; then
 else
   logecho
   # Force complete for these three stages
-  for label in ${!RELEASE_VERSION[@]}; do
-    SKIP_STEPS+=(prepare_tree+$label build_tree+$label)
-    ((FLAGS_gcb)) && SKIP_STEPS+=(local_kube_cross make_cross+$label)
+  for label in "${!RELEASE_VERSION[@]}"; do
+    SKIP_STEPS+=(prepare_tree+"$label" build_tree+"$label")
+    ((FLAGS_gcb)) && SKIP_STEPS+=(local_kube_cross make_cross+"$label")
   done
   SKIP_STEPS+=(generate_release_notes)
   for entry in ${SKIP_STEPS[*]}; do
      # Check and add for re-entrancy
-     if ! common::check_state $entry; then
+     if ! common::check_state "$entry"; then
        logecho "$ATTENTION: Skipping $entry step executed during staging"
-       common::check_state -a $entry
+       common::check_state -a "$entry"
      fi
   done
 fi
@@ -1749,7 +1820,9 @@ else
 fi
 
 # Push for each release version of this session
-for label in ${!RELEASE_VERSION[@]}; do
+for label in "${!RELEASE_VERSION[@]}"; do
+  # Disable shellcheck for variable in range bug. See https://github.com/koalaman/shellcheck/wiki/SC2102
+  # shellcheck disable=SC2102
   common::run_stateful "push_all_artifacts $label" RELEASE_VERSION[$label]
 done
 
@@ -1774,7 +1847,7 @@ if ((FLAGS_stage)); then
 
   # Move PROGSTATE
   logecho -n "Moving $PROGSTATE to $PROGSTATE.last: "
-  logrun -s mv $PROGSTATE $PROGSTATE.last
+  logrun -s mv "$PROGSTATE" "$PROGSTATE.last"
 
   # IF GCB, keep only the last staged build
   # clean up here on success
@@ -1785,8 +1858,8 @@ if ((FLAGS_stage)); then
     if [[ $JENKINS_BUILD_VERSION =~ (v[0-9]+\.[0-9]+\.) ]]; then
       logecho "Cleaning up old staged builds from" \
               "gs://$RELEASE_BUCKET/$BUCKET_TYPE/${BASH_REMATCH[1]}..."
-      $GSUTIL ls -d gs://$RELEASE_BUCKET/$BUCKET_TYPE/${BASH_REMATCH[1]}* |\
-       grep -v $JENKINS_BUILD_VERSION |xargs $GSUTIL -mq rm -r || true
+      $GSUTIL ls -d "gs://$RELEASE_BUCKET/$BUCKET_TYPE/${BASH_REMATCH[1]}*" |\
+       grep -v "$JENKINS_BUILD_VERSION" | xargs "$GSUTIL" -mq rm -r || true
     fi
   fi
 
@@ -1805,7 +1878,7 @@ fi
 
 # Move PROGSTATE
 logecho -n "Moving $PROGSTATE to $PROGSTATE.last: "
-logrun -s mv $PROGSTATE $PROGSTATE.last
+logrun -s mv "$PROGSTATE" "$PROGSTATE.last"
 
 # END script
 common::exit 0
