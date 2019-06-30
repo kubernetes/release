@@ -54,7 +54,7 @@ PROG=${0##*/}
 usage=${1:-yes}
 
 # shellcheck source=./lib/common.sh
-source "$(dirname "$(readlink -ne ${BASH_SOURCE[0]})")/lib/common.sh"
+source "$(dirname "$(readlink -ne "${BASH_SOURCE[0]}")")/lib/common.sh"
 # shellcheck source=./lib/gitlib.sh
 source "$TOOL_LIB_PATH/gitlib.sh"
 
