@@ -69,9 +69,12 @@ PROG=${0##*/}
 # If NO ARGUMENTS should return *usage*, uncomment the following line:
 #usage=${1:-yes}
 
-source $(dirname $(readlink -ne $BASH_SOURCE))/lib/common.sh
-source $TOOL_LIB_PATH/gitlib.sh
-source $TOOL_LIB_PATH/releaselib.sh
+# shellcheck source=./lib/common.sh
+source "$(dirname "$(readlink -ne "${BASH_SOURCE[0]}")")/lib/common.sh"
+# shellcheck source=./lib/gitlib.sh
+source "$TOOL_LIB_PATH/gitlib.sh"
+# shellcheck source=./lib/releaselib.sh
+source "$TOOL_LIB_PATH/releaselib.sh"
 
 # Validate command-line
 common::argc_validate 1 || common::exit 1 "Exiting..."
@@ -82,9 +85,9 @@ common::argc_validate 1 || common::exit 1 "Exiting..."
 # @param exit code
 #
 common::cleanexit () {
-  rm -rf $LOCAL_CACHE
+  rm -rf "$LOCAL_CACHE"
   common::timestamp end
-  exit ${1:-0}
+  exit "${1:-0}"
 }
 
 ###############################################################################
@@ -94,11 +97,13 @@ common::cleanexit () {
 common::timestamp begin
 
 # Force verbose flag
+# ignore shellcheck warning for flag disable
+# shellcheck disable=SC2034
 FLAGS_verbose=1
 
 # Initialize and save up to 10 (rotated logs)
 MYLOG=$TMPDIR/$PROG.log
-common::logfileinit $MYLOG 10
+common::logfileinit "$MYLOG" 10
 
 gitlib::github_api_token
 common::check_binaries jq
@@ -108,26 +113,30 @@ common::set_cloud_binaries
 # Blank for master
 RELEASE_BRANCH=${POSITIONAL_ARGV[0]:-"master"}
 
-if (($FLAGS_official)) && [[ "$RELEASE_BRANCH" == "master" ]]; then
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
+if ((FLAGS_official)) && [[ "$RELEASE_BRANCH" == "master" ]]; then
   common::exit 1 "Can't do official releases on master!"
 fi
 
 # Are we branching to a new branch?
-if gitlib::branch_exists $RELEASE_BRANCH; then
+if gitlib::branch_exists "$RELEASE_BRANCH"; then
   TESTING_BRANCH=$RELEASE_BRANCH
   BRANCH_OFF_MASTER=0
 else
-  (($FLAGS_official)) && \
+  ((FLAGS_official)) && \
    common::exit 1 "Can't do official releases when creating a new branch!"
   TESTING_BRANCH=master
   BRANCH_OFF_MASTER=1
 fi
 
 logecho
-release::set_build_version $TESTING_BRANCH $LOCAL_CACHE \
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
+release::set_build_version $TESTING_BRANCH "$LOCAL_CACHE" \
                            "$FLAGS_exclude_suites" \
-                           ${FLAGS_limit:-"100"} || common::exit 1
-release::set_release_version $JENKINS_BUILD_VERSION $RELEASE_BRANCH \
-                             $BRANCH_OFF_MASTER || common::exit 1
+                           "${FLAGS_limit:-"100"}" || common::exit 1
+release::set_release_version "$JENKINS_BUILD_VERSION" "$RELEASE_BRANCH" \
+                             "$BRANCH_OFF_MASTER" || common::exit 1
 
 common::exit 0
