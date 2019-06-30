@@ -54,7 +54,8 @@ PROG=${0##*/}
 # If NO ARGUMENTS should return *usage*, uncomment the following line:
 usage=${1:-yes}
 
-source $(dirname $(readlink -ne $BASH_SOURCE))/lib/common.sh
+# shellcheck source=./lib/common.sh
+source "$(dirname "$(readlink -ne "${BASH_SOURCE[0]}")")/lib/common.sh"
 
 # Check prerequisites
 
@@ -62,7 +63,8 @@ common::check_binaries git go jq make
 
 [[ -w /usr/local ]] || common::exit 1 "/usr/local is not writable."
 
-source $TOOL_LIB_PATH/gitlib.sh
+# shellcheck source=./lib/gitlib.sh
+source "$TOOL_LIB_PATH/gitlib.sh"
 
 # Set positional args
 RELEASE_BRANCH=${POSITIONAL_ARGV[0]}
@@ -72,7 +74,7 @@ MASTER_OBJECT=${POSITIONAL_ARGV[1]:-"origin/master"}
 [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]] || common::exit 1 "Invalid branch name!"
 
 # Branch Exists
-gitlib::branch_exists $RELEASE_BRANCH \
+gitlib::branch_exists "$RELEASE_BRANCH" \
  || common::exit 1 "$RELEASE_BRANCH doesn't exist.  Exiting..."
 
 ##############################################################################
@@ -80,7 +82,7 @@ gitlib::branch_exists $RELEASE_BRANCH \
 ##############################################################################
 # Initialize and save up to 10 (rotated logs)
 MYLOG=$TMPDIR/$PROG.log
-common::logfileinit $MYLOG 10
+common::logfileinit "$MYLOG" 10
 # BEGIN script
 common::timestamp begin
 
@@ -97,6 +99,8 @@ export GOPATH=$WORKDIR
 # TREE_ROOT is working branch/tree
 TREE_ROOT=$WORKDIR/src/k8s.io/kubernetes
 # The real deal?
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 if ((FLAGS_nomock)); then
   DRYRUN_FLAG=""
 else
@@ -116,12 +120,12 @@ common::stepheader "SYNC A WORKING REPO"
 ##############################################################################
 if [[ -d $WORKDIR ]]; then
   common::askyorn "$WORKDIR exists.  Delete" || common::exit 1 "Exiting..."
-  logrun rm -rf $WORKDIR || common::exit 1 "Exiting..."
+  logrun rm -rf "$WORKDIR" || common::exit 1 "Exiting..."
 fi
 
-logrun mkdir -p $WORKDIR
-gitlib::sync_repo $K8S_GITHUB_AUTH_URL $TREE_ROOT || common::exit 1 "Exiting..."
-logrun cd $TREE_ROOT
+logrun mkdir -p "$WORKDIR"
+gitlib::sync_repo "$K8S_GITHUB_AUTH_URL" "$TREE_ROOT" || common::exit 1 "Exiting..."
+logrun cd "$TREE_ROOT"
 
 # Is the master branch in a reasonable state to fast forward over the branch?
 # When git merges from master to branch, the list of tags is overlaid and
@@ -129,12 +133,12 @@ logrun cd $TREE_ROOT
 # MERGE_BASE: Show common ancestor object/tag
 # MASTER_DESCRIBE: Show the latest tag on origin/master
 # ANCESTOR_DESCRIBE: Show the tag associated with MERGE_BASE
-MERGE_BASE=$(git merge-base origin/master origin/$RELEASE_BRANCH)
-ANCESTOR_DESCRIBE=$(git describe --abbrev=0 --tags $MERGE_BASE)
+MERGE_BASE=$(git merge-base origin/master "origin/$RELEASE_BRANCH")
+ANCESTOR_DESCRIBE=$(git describe --abbrev=0 --tags "$MERGE_BASE")
 MASTER_DESCRIBE=$(git describe --abbrev=0 --tags origin/master)
 # If these are different, there's a newer (than the branch) tag on master
 # and we cannot do a FF
-if [[ ! $MASTER_DESCRIBE == $ANCESTOR_DESCRIBE ]]; then
+if [[ ! $MASTER_DESCRIBE == "$ANCESTOR_DESCRIBE" ]]; then
   logecho
   logecho "$FATAL!  master branch has been tagged to a newer version" \
           "($MASTER_DESCRIBE)." \
@@ -148,13 +152,13 @@ common::stepheader "CHECK GIT PUSH ACCESS"
 # TODO: capture state of access without forcing us into a prompt I have to
 #       expose.
 logecho -n "Checking git push access (verbosely to accept password if needed)"
-logrun -v git push -q --dry-run $K8S_GITHUB_AUTH_URL || common::exit 1 "Exiting..."
+logrun -v git push -q --dry-run "$K8S_GITHUB_AUTH_URL" || common::exit 1 "Exiting..."
 
 ##############################################################################
 common::stepheader "CHECK OUT BRANCH"
 ##############################################################################
 logecho -n "Checking out $RELEASE_BRANCH: "
-logrun -s git checkout -b $RELEASE_BRANCH origin/$RELEASE_BRANCH \
+logrun -s git checkout -b "$RELEASE_BRANCH" "origin/$RELEASE_BRANCH" \
  || common::exit 1 "Exiting..."
 
 ##############################################################################
@@ -164,9 +168,9 @@ logecho -n "Merging $MASTER_OBJECT into $RELEASE_BRANCH branch: "
 # If merge results in conflicts with CHANGELOG* files due to previous version
 # releases occurring between branch and branchff, resolve specifically in favor
 # of the branched (deleted) version of those files.
-if ! logrun -s git merge -X ours $MASTER_OBJECT; then
-  DELETED_FILES=($(git status -s |\
-                   awk '$1 == "DU" && $2 ~ /CHANGELOG-/ {print $2}'))
+if ! logrun -s git merge -X ours "$MASTER_OBJECT"; then
+  mapfile -i DELETED_FILES < <(git status -s |
+                   awk '$1 == "DU" && $2 ~ /CHANGELOG-/ {print $2}')
 
   ((${#DELETED_FILES[*]}==0)) \
    && common::exit "Unable to resolve conflict automatically.  Check $MYLOG"
@@ -174,7 +178,7 @@ if ! logrun -s git merge -X ours $MASTER_OBJECT; then
   logecho "Merge conflict with files deleted on branch (${DELETED_FILES[*]})." \
           "Accepting deletes and continuing..."
   for f in ${DELETED_FILES[*]};do
-    logrun git rm $f
+    logrun git rm "$f"
   done
   logecho -n "Merging $MASTER_OBJECT into $RELEASE_BRANCH branch (try 2): "
   logrun -s git commit -m "Merge remote-tracking branch 'origin/master' into $RELEASE_BRANCH.  Deleting ${DELETED_FILES[*]}" || common::exit 1 "Exiting..."
@@ -212,7 +216,7 @@ for script in ${USEFUL_UPDATES[*]}; do
     continue
   fi
   logecho -n "Running $fullscript: "
-  logrun -s $fullscript
+  logrun -s "$fullscript"
 done
 
 if [[ -n "$(git status -s)" ]]; then
@@ -243,7 +247,7 @@ logecho
 if common::askyorn -e "OK to push now"; then
   # Finally push it upstream
   logecho -n "Pushing$DRYRUN_FLAG $RELEASE_BRANCH branch upstream: "
-  logrun -s git push $DRYRUN_FLAG origin $RELEASE_BRANCH:$RELEASE_BRANCH
+  logrun -s git push "$DRYRUN_FLAG" origin "$RELEASE_BRANCH:$RELEASE_BRANCH"
 fi
 
 logecho
