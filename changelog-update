@@ -50,11 +50,13 @@ PROG=${0##*/}
 # If NO ARGUMENTS should return *usage*, uncomment the following line:
 usage=${1:-yes}
 
-source $(dirname $(readlink -ne $BASH_SOURCE))/lib/common.sh
-source $TOOL_LIB_PATH/gitlib.sh
+# shellcheck source=./lib/common.sh
+source "$(dirname "$(readlink -ne "${BASH_SOURCE[0]}")")/lib/common.sh"
+# shellcheck source=./lib/gitlib.sh
+source "$TOOL_LIB_PATH/gitlib.sh"
 
 # Set positional args
-TAGS=(${POSITIONAL_ARGV[*]})
+TAGS=("${POSITIONAL_ARGV[*]}")
 
 ###############################################################################
 # FUNCTIONS
@@ -67,10 +69,10 @@ TAGS=(${POSITIONAL_ARGV[*]})
 common::cleanexit () {
   tput cnorm
 
-  check_and_clean_branch $WORKBRANCH
+  check_and_clean_branch "$WORKBRANCH"
 
   common::timestamp end
-  exit ${1:-0}
+  exit "${1:-0}"
 }
 
 
@@ -82,7 +84,7 @@ local_branch_exists () {
   local branch=$1
 
   # returns code from command
-  git rev-parse --verify $branch &>/dev/null
+  git rev-parse --verify "$branch" &>/dev/null
 }
 
 ###############################################################################
@@ -91,11 +93,11 @@ local_branch_exists () {
 check_and_clean_branch () {
   local branch=$1
 
-  if local_branch_exists $branch; then
+  if local_branch_exists "$branch"; then
     if common::askyorn -y "Delete the $branch branch"; then
       logecho -n "Deleting branch $branch: "
       logrun git checkout master
-      logrun -s git branch -D $branch
+      logrun -s git branch -D "$branch"
     fi
   fi
 }
@@ -105,12 +107,12 @@ check_and_clean_branch () {
 ##############################################################################
 # Initialize and save up to 10 (rotated logs)
 MYLOG=$TMPDIR/$PROG.log
-common::logfileinit $MYLOG 10
+common::logfileinit "$MYLOG" 10
 # BEGIN script
 common::timestamp begin
 
 # Check that you're in a USER-based github clone
-git remote -v |egrep -q '^origin.*github.com/kubernetes/kubernetes.*push' \
+git remote -v | grep -Eq '^origin.*github.com/kubernetes/kubernetes.*push' \
  && common::exit 1 "Must be in a github.com/<USER>/kubernetes repo."
 
 # Check that the master branch is clean
@@ -129,11 +131,11 @@ WORKBRANCH="update-${TAGS[0]}"
 MARKDOWN_FILE=$TMPDIR/$PROG-md.$$
 
 # Ask and destroy old branch
-check_and_clean_branch $WORKBRANCH
+check_and_clean_branch "$WORKBRANCH"
 
 # Start a new branch
 logecho "Creating and checking out new branch $WORKBRANCH..."
-logrun git checkout -b $WORKBRANCH || common::exit 1
+logrun git checkout -b "$WORKBRANCH" || common::exit 1
 
 for TAG in ${TAGS[*]}; do
   # Check valid TAG
@@ -149,37 +151,37 @@ for TAG in ${TAGS[*]}; do
   fi
 
   # Verify valid and existing tag
-  if ! egrep -q "^# $TAG$" $CHANGELOG_FILE; then
+  if ! grep -Eq "^# $TAG$" "$CHANGELOG_FILE"; then
     logecho "Skipping - $TAG not found in $CHANGELOG_FILE..."
     continue
   fi
 
-  PREVTAG=$(sed -n "/^# $TAG$/,/^# v/p" $CHANGELOG_FILE |\
+  PREVTAG=$(sed -n "/^# $TAG$/,/^# v/p" "$CHANGELOG_FILE" |\
             awk '/^## Change(s|log) since / {print $4}')
 
   logecho -n "Generating new notes for $PREVTAG..$TAG: "
-  logrun -s relnotes --quiet $PREVTAG..$TAG \
-                     --htmlize-md --markdown-file=$MARKDOWN_FILE
+  logrun -s relnotes --quiet "$PREVTAG".."$TAG" \
+                     --htmlize-md --markdown-file="$MARKDOWN_FILE"
 
   # Massage the result
-  sed -n '/^## Change[a-z]* since '$PREVTAG'$/,${
-          /^## Change[a-z]* since '$PREVTAG'$/d;p}' $MARKDOWN_FILE \
-   > $TMPDIR/$PROG-tmp.$$
+  sed -n '/^## Change[a-z]* since '"$PREVTAG"'$/,${
+          /^## Change[a-z]* since '"$PREVTAG"'$/d;p}' "$MARKDOWN_FILE" \
+   > "$TMPDIR/$PROG-tmp.$$"
 
   # Maintain existing spacing layout
   # Strip blank lines at EOF
-  sed -i -e :a -e '/^\n*$/{$d;N;};/\n$/ba' $TMPDIR/$PROG-tmp.$$
-  echo -e '\n\n' >> $TMPDIR/$PROG-tmp.$$
-  logrun mv $TMPDIR/$PROG-tmp.$$ $MARKDOWN_FILE
+  sed -i -e :a -e '/^\n*$/{$d;N;};/\n$/ba' "$TMPDIR/$PROG-tmp.$$"
+  echo -e '\n\n' >> "$TMPDIR/$PROG-tmp.$$"
+  logrun mv "$TMPDIR/$PROG-tmp.$$" "$MARKDOWN_FILE"
 
   # Delete the old entry
-  sed -i '/^## Change[a-z]* since '$PREVTAG'$/,/^# v/{//!d}' $CHANGELOG_FILE
+  sed -i '/^## Change[a-z]* since '"$PREVTAG"'$/,/^# v/{//!d}' "$CHANGELOG_FILE"
   # Insert the new
-  sed -i "/^## Change[a-z]* since $PREVTAG$/r $MARKDOWN_FILE" $CHANGELOG_FILE
+  sed -i "/^## Change[a-z]* since $PREVTAG$/r $MARKDOWN_FILE" "$CHANGELOG_FILE"
 done
 
 logecho -n "Update $CHANGELOG_FILE TOC: "
-common::mdtoc $CHANGELOG_FILE || return 1
+common::mdtoc "$CHANGELOG_FILE" || return 1
 
 if git diff --quiet --exit-code; then
   common::exit 0 "No changes detected.  Nothing to update $PREVTAG..$TAG"
@@ -187,12 +189,12 @@ fi
 
 logecho -n "Committing changes for $PREVTAG..$TAG to $CHANGELOG_FILE: "
 logrun -s git commit --no-verify -m "Updating release notes for ${TAGS[*]}." \
-          $CHANGELOG_FILE
+          "$CHANGELOG_FILE"
 
 if common::askyorn "Push your change upstream"; then
   logecho
   logecho "Pushing your commit upstream: "
-  logrun -s git push origin $WORKBRANCH
+  logrun -s git push origin "$WORKBRANCH"
 else
   logecho
   logecho "Nothing pushed.  Have a look around and push yourself if you like"
@@ -201,7 +203,7 @@ else
   logecho
 fi
 
-logrun rm -f $MARKDOWN_FILE
+logrun rm -f "$MARKDOWN_FILE"
 
 # END script
 common::exit 0
