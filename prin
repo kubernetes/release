@@ -159,7 +159,7 @@ elif [[ "${POSITIONAL_ARGV[0]}" =~ ^[a-zA-Z0-9]*$ ]]; then
 				|grep "$COMMIT" \
 				|grep "Merge pull request" \
 				|cut -d'-' -f1)
-    mapfile -i CP_COMMITS < <(git log --pretty=format:"%H - %an, %ar : %s" \
+   mapfile -t CP_COMMITS < <(git log --pretty=format:"%H - %an, %ar : %s" \
 				|grep "$COMMIT" \
 				|grep "cherry-pick-of-" \
 				|cut -d'-' -f1)
