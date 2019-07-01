@@ -1160,7 +1160,12 @@ common::run_stateful () {
                  *) break ;;
     esac
   done
-  local -a fcall=("$1")
+  # The way common::run_stateful is written, we actually need the shell to
+  # split $1 here. That makes passing multiple args with whitespaces (e.g.
+  # 'some arg') weird or even impossible (didn't test too much), but that's
+  # what we've got for now ...
+  # shellcheck disable=SC2206
+  local -a fcall=($1)
   local function=${fcall[0]}
   local args="${fcall[*]:1}"
   local entry=$function
@@ -1171,7 +1176,7 @@ common::run_stateful () {
 
   # Strip args?  Clear args for the purposes of storing their state and
   # passing to common::stepheader()
-  ((stripargs)) && unset args
+  ((stripargs)) && args=''
 
   # Create the PROGSTATE entry based on function+args
   [[ -n $args ]] && entry+="+$(common::join "%%" "$args")"
