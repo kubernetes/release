@@ -144,7 +144,7 @@ if [[ ${POSITIONAL_ARGV[0]} =~ [0-9]{5,} ]]; then
   # non-cherrypick commit searches on branches
   INITIAL_COMMIT=$(git log --grep "Merge pull request #$PR" \
                            --all --pretty=format:"%h")
-  mapfile -i CP_COMMITS < <(git log --grep "cherry-pick-of-.*#$PR-" \
+  mapfile -t CP_COMMITS < <(git log --grep "cherry-pick-of-.*#$PR-" \
                         --all --pretty=format:"%h")
 else
   # TODO: Need to validate this is a git hash
