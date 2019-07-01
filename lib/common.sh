@@ -588,6 +588,8 @@ common::namevalue () {
 
   for arg in "$@"; do
     case $arg in
+      '') : # ignore empty args
+          ;;
       -*[[:alnum:]]*) # Strip off any leading - or --
           arg=$(printf "%s\n" $arg |sed 's/^-\{1,2\}//')
           # Handle global aliases
