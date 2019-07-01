@@ -1341,3 +1341,4 @@ mkdir -p "$TMPDIR"
 
 # Set some values that depend on $TMPDIR
 PROGSTATE=$TMPDIR/$PROG-runstate
+export LOCAL_CACHE="$TMPDIR/buildresults-cache.$$"
