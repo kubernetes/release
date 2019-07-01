@@ -59,7 +59,7 @@ source "$(dirname "$(readlink -ne "${BASH_SOURCE[0]}")")/lib/common.sh"
 
 # Check prerequisites
 
-common::check_binaries git go jq make
+common::check_binaries git go jq make || common::exit
 
 [[ -w /usr/local ]] || common::exit 1 "/usr/local is not writable."
 
