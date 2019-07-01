@@ -2,9 +2,12 @@
 #
 # gitlib.sh unit tests
 #
-source $(dirname $(readlink -ne $BASH_SOURCE))/common.sh
-source $TOOL_LIB_PATH/gitlib.sh
-source $TOOL_LIB_PATH/releaselib.sh
+# shellcheck source=./lib/common.sh
+source "$(dirname "$(readlink -ne "${BASH_SOURCE[0]}")")/common.sh"
+# shellcheck source=./lib/gitlib.sh
+source "$TOOL_LIB_PATH/gitlib.sh"
+# shellcheck source=./lib/releaselib.sh
+source "$TOOL_LIB_PATH/releaselib.sh"
 
 readonly TESTDATA="$( cd "$(dirname "$0")" && pwd )/testdata"
 
