@@ -37,25 +37,25 @@ release::get_job_cache () {
   local buildnumber
 
   logecho "Getting $job build results from GCS..."
-  mkdir -p ${job_path%/*}
+  mkdir -p "${job_path%/*}"
 
-  $GSUTIL -qm cp $logroot/$job/jobResultsCache.json $tempjson 2>&-
+  $GSUTIL -qm cp "$logroot/$job/jobResultsCache.json" "$tempjson" 2>&-
   # If there's no file up on $logroot, job doesn't exist.  Skip it.
   [[ -s $tempjson ]] || return
 
   # Additional select on .version is b/c we have so many empty versions for now
   # 2 passes.  First pass sorts by buildnumber, Second builds the dictionary.
-  while read version buildnumber; do
-    ((dedup)) && [[ $version == $lastversion ]] && continue
+  while read -r version buildnumber; do
+    ((dedup)) && [[ $version == "$lastversion" ]] && continue
     echo "$version $buildnumber"
     lastversion=$version
-  done < <(jq -r '.[] | select(.result == "SUCCESS") | select(.version != null) | [.version,.buildnumber] | "\(.[0]|rtrimstr("\n")) \(.[1])"' $tempjson |\
+  done < <(jq -r '.[] | select(.result == "SUCCESS") | select(.version != null) | [.version,.buildnumber] | "\(.[0]|rtrimstr("\n")) \(.[1])"' "$tempjson" |\
    LC_ALL=C sort -rn -k2,2) |\
-  while read version buildnumber; do
+  while read -r version buildnumber; do
     [[ -n $buildnumber && -n $version ]] && echo "JOB[$buildnumber]=$version"
-  done > $job_path
+  done > "$job_path"
 
-  rm -f $tempjson
+  rm -f "$tempjson"
 }
 
 ##############################################################################
@@ -89,9 +89,11 @@ release::get_job_cache () {
 release::set_build_version () {
   local branch=$1
   local job_path=${2:-"$TMPDIR/buildresults-cache.$$"}
-  local -a exclude_suites=($3)
+  local -a exclude_suites=("$3")
   local hard_limit=${4:-1000}
-  local exclude_patterns=$(IFS="|"; echo "${exclude_suites[*]}")
+  local exclude_patterns
+  exclude_patterns=$(IFS="|"; echo "${exclude_suites[*]}")
+  
   local build_version
   local build_number
   local cache_build
@@ -100,7 +102,6 @@ release::set_build_version () {
   local run
   local n
   local i
-  local re
   local giveup_build_number=999999
   local job_count=0
   local max_job_length
@@ -109,11 +110,11 @@ release::set_build_version () {
   local retcode=0
   local good_job_count=0
   local first_build_number
-  local branch_head=$($GHCURL $K8S_GITHUB_API/commits/$branch |jq -r '.sha')
+  local branch_head
+  branch_head=$("$GHCURL" "$K8S_GITHUB_API/commits/$branch" |jq -r '.sha')
   # Shorten
   branch_head=${branch_head:0:14}
   # The instructions below for installing yq put it in /usr/local/bin
-  local yq=$(which yq || echo "/usr/local/bin/yq")
   local job_prefix="ci-kubernetes-"
   local -a JOB
   local -a secondary_jobs
@@ -123,9 +124,8 @@ release::set_build_version () {
    master) branch="release-master"
   esac
 
-  local -a all_jobs=(
-    $(common::run_gobin blocking-testgrid-tests "$branch")
-  )
+  local all_jobs
+  makefile -t "$all_jobs" < <(common::run_gobin blocking-testgrid-tests "$branch")
 
   if [[ -z ${all_jobs[*]} ]]; then
     logecho "$FAILED: Curl to testgrid/config/config.yaml"
@@ -141,30 +141,34 @@ release::set_build_version () {
   # Loop through the remainder, excluding anything specified by --exclude_suites
   for ((i=1;i<${#all_jobs[*]};i++)); do
     [[ -n $exclude_patterns && ${all_jobs[$i]} =~ $exclude_patterns ]] \
-        || secondary_jobs+=(${all_jobs[$i]})
+        || secondary_jobs+=("${all_jobs[$i]}")
   done
 
   # Update main cache
   # We dedup the $main_job's list of successful runs and just run through that
   # unique list. We then leave the full state of secondaries below so we have
   # finer granularity at the Jenkin's job level to determine if a build is ok.
-  release::get_job_cache -d $job_path/$main_job &
+  release::get_job_cache -d "$job_path/$main_job" &
 
   # If we're forcing a --build-at-head, we only need to capture the $main_job
   # details.
+  # Disable shellcheck for dynamically defined variable
+  # shellcheck disable=SC2154
   if ! ((FLAGS_build_at_head)); then
     # Update secondary caches limited by main cache last build number
-      for other_job in ${secondary_jobs[@]}; do
-    release::get_job_cache $job_path/$other_job &
+      for other_job in "${secondary_jobs[@]}"; do
+    release::get_job_cache "$job_path/$other_job" &
     done
   fi
 
   # Wait for background fetches.
   wait
 
+  # Disable shellcheck for dynamically defined variable
+  # shellcheck disable=SC2154
   if ((FLAGS_verbose)); then
     # Get the longest line for formatting
-    max_job_length=$(echo ${secondary_jobs[*]/$job_prefix/} |\
+    max_job_length=$(echo "${secondary_jobs[*]/$job_prefix/}" |\
      awk '{for (i=1;i<=NF;++i) {l=length($i);if(l>x) x=l}}END{print x}')
     # Pad it a bit
     ((max_job_length+2))
@@ -172,13 +176,13 @@ release::set_build_version () {
     logecho
     logecho "(*) Primary job (-) Secondary jobs"
     logecho
-    logecho "  $(printf '%-'$max_job_length's' "Job #")" \
+    logecho "  $(printf '%-'"$max_job_length"'s' "Job #")" \
             "Run #   Build # Time/Status"
-    logecho "= $(common::print_n_char = $max_job_length)" \
+    logecho "= $(common::print_n_char = "$max_job_length")" \
             "=====   ======= ==========="
   fi
 
-  while read good_job; do
+  while read -r good_job; do
     ((good_job_count++))
 
     if ((good_job_count>hard_limit)); then
@@ -197,7 +201,7 @@ release::set_build_version () {
       ((good_job_count==1)) && first_build_number=$build_number
       build_sha1=${BASH_REMATCH[9]}
       build_version=${BASH_REMATCH[2]}.$build_number+$build_sha1
-      build_sha1_date=$($GHCURL $K8S_GITHUB_API/commits?sha=$build_sha1 |\
+      build_sha1_date=$("$GHCURL" "$K8S" "$GITHUB_API/commits?sha=$build_sha1" |\
                         jq -r '.[0] | .commit .author .date')
       build_sha1_date=$(date +"%R %m/%d" -d "$build_sha1_date")
 
@@ -235,7 +239,7 @@ release::set_build_version () {
     # inconsistencies in the testgrid config naming conventions, now look
     # *specifically* for a release branch with a version in it (non-master).
     if [[ "$branch" =~ release-([0-9]{1,})\. ]]; then
-      if [[ $build_sha1 != $branch_head ]]; then
+      if [[ $build_sha1 != "$branch_head" ]]; then
         commit_count=$((first_build_number-build_number))
         logecho
         logecho "$ATTENTION: The $branch branch HEAD is ahead of the last" \
@@ -243,6 +247,8 @@ release::set_build_version () {
         logecho
         logecho "If you want to use the head of the branch anyway," \
                 "--buildversion=${build_version/$build_sha1/$branch_head}"
+        # Disable shellcheck for dynamically defined variable
+        # shellcheck disable=SC2154
         if ((FLAGS_allow_stale_build)); then
           logecho
         else
@@ -256,25 +262,25 @@ release::set_build_version () {
 
     if ((FLAGS_verbose)); then
       logecho "* $(printf \
-                   '%-'$max_job_length's %-7s %-7s' \
-                   ${main_job/$job_prefix/} \
-                   \#$main_run \#$build_number) [$build_sha1_date]"
+                   '%-'"$max_job_length"'s %-7s %-7s' \
+                   "${main_job/$job_prefix/}" \
+                   \#"$main_run" \#"$build_number") [$build_sha1_date]"
       logecho "* (--buildversion=$build_version)"
     fi
 
     # Check secondaries to ensure that build number is green across "all"
-    for other_job in ${secondary_jobs[@]}; do
+    for other_job in "${secondary_jobs[@]}"; do
       ((FLAGS_verbose)) \
-       && logecho -n "- $(printf '%-'$max_job_length's ' \
-                                 ${other_job/$job_prefix/})"
+       && logecho -n "- $(printf '%-'"$max_job_length"'s ' \
+                                 "${other_job/$job_prefix/}")"
 
       # Need to kick out when a secondary doesn't exist (anymore)
-      if [[ ! -f $job_path/$other_job ]]; then
+      if [[ ! -f "$job_path/$other_job" ]]; then
         ((FLAGS_verbose)) \
          && logecho -r "Does not exist  SKIPPING"
         ((job_count++)) || true
         continue
-      elif [[ $(wc -l <$job_path/$other_job) -lt 1 ]]; then
+      elif [[ $(wc -l <"$job_path/$other_job") -lt 1 ]]; then
         ((FLAGS_verbose)) \
          && logecho -r "No Good Runs    ${TPUT[YELLOW]}SKIPPING${TPUT[OFF]}"
         ((job_count++)) || true
@@ -282,11 +288,13 @@ release::set_build_version () {
       fi
 
       unset JOB
-      source $job_path/$other_job
+      # will not be able get this path ahead of time for shellcheck
+      # shellcheck disable=SC1090
+      source "$job_path/$other_job"
       last_cache_build=0
       last_run=0
       # We reverse sort the array here so we can descend it
-      for run in $(for n in ${!JOB[*]}; do echo $n; done|sort -rh); do
+      for run in $(for n in ${!JOB[*]}; do echo "$n"; done|sort -rh); do
         if ! [[ ${JOB[$run]} =~ ${VER_REGEX[build]} ]]; then
           run=""
           break
@@ -297,9 +305,11 @@ release::set_build_version () {
         # if last_run-run proves consecutive jobs AND
         # build_number is within a cache_build range, the build was also good
         if ((build_number==cache_build)) || \
-           ((($((last_run-run))==1)) && \
-           (((build_number>cache_build)) && \
-           ((build_number<last_cache_build)))); then
+           ((
+             ((last_run-run==1)) && \
+             ((build_number>cache_build)) && \
+             ((build_number<last_cache_build))
+          )); then
           break
         fi
         last_cache_build=$cache_build
@@ -309,7 +319,7 @@ release::set_build_version () {
 
       if [[ -n $run ]]; then
         ((FLAGS_verbose)) && \
-         logecho "$(printf '%-7s %-7s' \#$run \#$cache_build) $PASSED"
+         logecho "$(printf '%-7s %-7s' \#$run "\#$cache_build") $PASSED"
         ((job_count++)) || true
         continue
       else
@@ -327,7 +337,7 @@ release::set_build_version () {
 
     ((FLAGS_verbose)) && logecho
     ((job_count>=${#secondary_jobs[@]})) && break
-  done < $job_path/$main_job
+  done < "$job_path/$main_job"
 
   if ((job_count==0)); then
     logecho "Unable to find a green set of test results!"
@@ -336,9 +346,9 @@ release::set_build_version () {
     JENKINS_BUILD_VERSION=$build_version
   fi
 
-  ((FLAGS_verbose)) && logecho JENKINS_BUILD_VERSION=$JENKINS_BUILD_VERSION
+  ((FLAGS_verbose)) && logecho JENKINS_BUILD_VERSION="$JENKINS_BUILD_VERSION"
 
-  rm -rf $job_path
+  rm -rf "$job_path"
 
   return $retcode
 }
@@ -387,7 +397,7 @@ release::set_release_version () {
   if [[ "$parent_branch" == master ]]; then
     # This is a new branch, set new alpha and beta versions
     RELEASE_VERSION[alpha]="v${release_branch[major]}"
-    RELEASE_VERSION[alpha]+=".$((${release_branch[minor]}+1)).0-alpha.0"
+    RELEASE_VERSION[alpha]+=".$((release_branch[minor]+1)).0-alpha.0"
     RELEASE_VERSION[beta]="v${release_branch[major]}.${release_branch[minor]}"
     RELEASE_VERSION[beta]+=".0-beta.0"
     RELEASE_VERSION_PRIME=${RELEASE_VERSION[beta]}
@@ -400,10 +410,10 @@ release::set_release_version () {
     # beta1 is the branch-point-minor + 2 + beta.0 to continue the next version
     # on the parent/source branch.
     RELEASE_VERSION[beta0]="v${build_version[major]}.${build_version[minor]}"
-    RELEASE_VERSION[beta0]+=".$((${build_version[patch]}+1))-beta.1"
+    RELEASE_VERSION[beta0]+=".$((build_version[patch]+1))-beta.1"
     RELEASE_VERSION[beta1]="v${build_version[major]}.${build_version[minor]}"
     # Need to increment N+2 here.  N+1-beta.0 exists as an artifact of N.
-    RELEASE_VERSION[beta1]+=".$((${build_version[patch]}+2))-beta.0"
+    RELEASE_VERSION[beta1]+=".$((build_version[patch]+2))-beta.0"
     RELEASE_VERSION_PRIME="${RELEASE_VERSION[beta0]}"
   elif [[ $branch =~ release- ]]; then
     # Build out the RELEASE_VERSION dict
@@ -413,21 +423,22 @@ release::set_release_version () {
     if [[ -n ${build_version[labelid]} ]]; then
       RELEASE_VERSION_PRIME+=".${build_version[patch]}"
     else
-      RELEASE_VERSION_PRIME+=".$((${build_version[patch]}+1))"
+      RELEASE_VERSION_PRIME+=".$((build_version[patch]+1))"
     fi
-
+    # Disable shellcheck for dynamically defined variable
+    # shellcheck disable=SC2154
     if ((FLAGS_official)); then
       RELEASE_VERSION[official]="$RELEASE_VERSION_PRIME"
       # Only primary branches get beta releases
       if [[ $branch =~ ^release-([0-9]{1,})\.([0-9]{1,})$ ]]; then
         RELEASE_VERSION[beta]="v${build_version[major]}.${build_version[minor]}"
-        RELEASE_VERSION[beta]+=".$((${build_version[patch]}+1))-beta.0"
+        RELEASE_VERSION[beta]+=".$((build_version[patch]+1))-beta.0"
       fi
     elif ((FLAGS_rc)) || [[ "${build_version[label]}" == "-rc" ]]; then
       # betas not allowed after release candidates
       RELEASE_VERSION[rc]="$RELEASE_VERSION_PRIME"
       if [[ "${build_version[label]}" == "-rc" ]]; then
-        RELEASE_VERSION[rc]+="-rc.$((${build_version[labelid]}+1))"
+        RELEASE_VERSION[rc]+="-rc.$((build_version[labelid]+1))"
       else
         # Start release candidates at 1 instead of 0
         RELEASE_VERSION[rc]+="-rc.1"
@@ -435,13 +446,13 @@ release::set_release_version () {
       RELEASE_VERSION_PRIME="${RELEASE_VERSION[rc]}"
     else
       RELEASE_VERSION[beta]="$RELEASE_VERSION_PRIME${build_version[label]}"
-      RELEASE_VERSION[beta]+=".$((${build_version[labelid]}+1))"
+      RELEASE_VERSION[beta]+=".$((build_version[labelid]+1))"
       RELEASE_VERSION_PRIME="${RELEASE_VERSION[beta]}"
     fi
   else
     RELEASE_VERSION[alpha]="v${build_version[major]}.${build_version[minor]}"
     RELEASE_VERSION[alpha]+=".${build_version[patch]}${build_version[label]}"
-    RELEASE_VERSION[alpha]+=".$((${build_version[labelid]}+1))"
+    RELEASE_VERSION[alpha]+=".$((build_version[labelid]+1))"
     RELEASE_VERSION_PRIME="${RELEASE_VERSION[alpha]}"
   fi
 
@@ -474,11 +485,11 @@ release::gcs::check_release_bucket() {
   fi
 
   logecho -n "Checking write access to bucket $bucket: "
-  if logrun touch $tempfile && \
-     logrun $GSUTIL cp $tempfile gs://$bucket && \
-     logrun $GSUTIL rm gs://$bucket/${tempfile##*/} && \
-     logrun rm -f $tempfile; then
-    logecho $OK
+  if logrun touch "$tempfile" && \
+     logrun "$GSUTIL" cp "$tempfile" "gs://$bucket" && \
+     logrun "$GSUTIL" rm "gs://$bucket/${tempfile##*/}" && \
+     logrun rm -f "$tempfile"; then
+    logecho "$OK"
   else
     logecho "$FAILED: You do not have access/write permission on $bucket." \
             "Unable to continue."
@@ -508,12 +519,12 @@ release::gcs::stage_and_hash() {
   local srcs=("${args[@]::$split}" )
   local dst="${args[$split]}"
 
-  logrun mkdir -p $gcs_stage/$dst || return 1
+  logrun mkdir -p "$gcs_stage/$dst" || return 1
 
-  for src in ${srcs[@]}; do
-    srcdir=$(dirname $src)
-    srcthing=$(basename $src)
-    tar c -C $srcdir $srcthing | tar x -C $gcs_stage/$dst || return 1
+  for src in "${srcs[@]}"; do
+    srcdir=$(dirname "$src")
+    srcthing=$(basename "$src")
+    tar c -C "$srcdir" "$srcthing" | tar x -C "$gcs_stage/$dst" || return 1
   done
 }
 
@@ -526,10 +537,12 @@ release::gcs::destination_empty() {
   local gcs_destination=$1
 
   logecho -n "Checking whether $gcs_destination already exists: "
-  if $GSUTIL ls $gcs_destination >/dev/null 2>&1 ; then
+  if "$GSUTIL" ls "$gcs_destination" >/dev/null 2>&1 ; then
     logecho "- Destination exists. To remove, run:"
     logecho "  gsutil -m rm -r $gcs_destination"
 
+    # Disable shellcheck for dynamically defined variable
+    # shellcheck disable=SC2154
     if ((FLAGS_allow_dup)) ; then
       logecho "flag --allow-dup set, continue with overwriting"
     else
@@ -553,15 +566,17 @@ release::gcs::push_release_artifacts() {
 
   # No need to check this for mock or stage runs
   # Overwriting is ok
+  # Disable shellcheck for dynamically defined variable
+  # shellcheck disable=SC2154
   if ((FLAGS_nomock)) && ! ((FLAGS_stage)); then
-    release::gcs::destination_empty $dest || return 1
+    release::gcs::destination_empty "$dest" || return 1
   fi
 
   # Copy the main set from staging to destination
   # We explicitly don't set an ACL in the cp call, since doing so will override
   # any default bucket ACLs.
   logecho -n "- Copying artifacts to $dest: "
-  logrun -s $GSUTIL -qm cp -rc $src/* $dest/ || return 1
+  logrun -s "$GSUTIL" -qm cp -rc "$src/*" "$dest/" || return 1
 
   # This small sleep gives the eventually consistent GCS bucket listing a chance
   # to stabilize before the diagnostic listing. There's no way to directly
@@ -570,7 +585,7 @@ release::gcs::push_release_artifacts() {
   sleep 5
 
   logecho -n "- Listing final contents to log file: "
-  logrun -s $GSUTIL ls -lhr "$dest" || return 1
+  logrun -s "$GSUTIL" ls -lhr "$dest" || return 1
 }
 
 ###############################################################################
@@ -597,12 +612,12 @@ release::gcs::locally_stage_release_artifacts() {
 
   logecho "Locally stage release artifacts..."
 
-  logrun rm -rf $gcs_stage || return 1
-  logrun mkdir -p $gcs_stage || return 1
+  logrun rm -rf "$gcs_stage" || return 1
+  logrun mkdir -p "$gcs_stage" || return 1
 
   # Stage everything in release directory
   logecho "- Staging locally to ${gcs_stage##$build_output/}..."
-  release::gcs::stage_and_hash $gcs_stage $release_tars/* . || return 1
+  release::gcs::stage_and_hash "$gcs_stage" "$release_tars/*" . || return 1
 
   if [[ "$release_kind" == "kubernetes" ]]; then
     local gce_path=$release_stage/full/kubernetes/cluster/gce
@@ -621,20 +636,20 @@ release::gcs::locally_stage_release_artifacts() {
     [[ -f $gce_path/configure-vm.sh ]] \
      && configure_vm="$gce_path/configure-vm.sh"
 
-    release::gcs::stage_and_hash $gcs_stage $configure_vm extra/gce \
+    release::gcs::stage_and_hash "$gcs_stage" "$configure_vm extra/gce" \
       || return 1
-    release::gcs::stage_and_hash $gcs_stage $gci_path/node.yaml extra/gce \
+    release::gcs::stage_and_hash "$gcs_stage" "$gci_path/node.yaml" extra/gce \
       || return 1
-    release::gcs::stage_and_hash $gcs_stage $gci_path/master.yaml extra/gce \
+    release::gcs::stage_and_hash "$gcs_stage" "$gci_path/master.yaml" extra/gce \
       || return 1
-    release::gcs::stage_and_hash $gcs_stage $gci_path/configure.sh extra/gce \
+    release::gcs::stage_and_hash "$gcs_stage" "$gci_path/configure.sh" extra/gce \
       || return 1
 
     # shutdown.sh was introduced starting from v1.11 to make Preemptible COS nodes
     # on GCP not reboot immediately when terminated. Avoid including it in the release
     # bundle if it is not found (for backwards compatibility).
     if [[ -f $gci_path/shutdown.sh ]]; then
-      release::gcs::stage_and_hash $gcs_stage $gci_path/shutdown.sh extra/gce \
+      release::gcs::stage_and_hash "$gcs_stage" "$gci_path/shutdown.sh" extra/gce \
        || return 1
     fi
 
@@ -643,15 +658,15 @@ release::gcs::locally_stage_release_artifacts() {
     windows_local_path=$gce_path/windows
     windows_gcs_path=extra/gce/windows
     if [[ -d $windows_local_path ]]; then
-      release::gcs::stage_and_hash $gcs_stage $windows_local_path/configure.ps1 $windows_gcs_path \
+      release::gcs::stage_and_hash "$gcs_stage" "$windows_local_path/configure.ps1" "$windows_gcs_path" \
         || return 1
-      release::gcs::stage_and_hash $gcs_stage $windows_local_path/common.psm1 $windows_gcs_path \
+      release::gcs::stage_and_hash "$gcs_stage" "$windows_local_path/common.psm1" "$windows_gcs_path" \
         || return 1
-      release::gcs::stage_and_hash $gcs_stage $windows_local_path/k8s-node-setup.psm1 $windows_gcs_path \
+      release::gcs::stage_and_hash "$gcs_stage" "$windows_local_path/k8s-node-setup.psm1" "$windows_gcs_path" \
         || return 1
-      release::gcs::stage_and_hash $gcs_stage $windows_local_path/testonly/install-ssh.psm1 $windows_gcs_path \
+      release::gcs::stage_and_hash "$gcs_stage" "$windows_local_path/testonly/install-ssh.psm1" "$windows_gcs_path" \
         || return 1
-      release::gcs::stage_and_hash $gcs_stage $windows_local_path/testonly/user-profile.psm1 $windows_gcs_path \
+      release::gcs::stage_and_hash "$gcs_stage" "$windows_local_path/testonly/user-profile.psm1" "$windows_gcs_path" \
         || return 1
     fi
 
@@ -659,7 +674,9 @@ release::gcs::locally_stage_release_artifacts() {
 
   # Upload the "naked" binaries to GCS.  This is useful for install scripts that
   # download the binaries directly and don't need tars.
-  platforms=($(cd "$release_stage/client"; echo *))
+  mapfile -t platforms < <(
+    cd "$release_stage/client" || return 1
+    echo -- *)
   for platform in "${platforms[@]}"; do
     src="$release_stage/client/$platform/$release_kind/client/bin/*"
     dst="bin/${platform/-//}/"
@@ -667,22 +684,22 @@ release::gcs::locally_stage_release_artifacts() {
     if [[ -d "$release_stage/server/$platform" ]]; then
       src="$release_stage/server/$platform/$release_kind/server/bin/*"
     fi
-    release::gcs::stage_and_hash $gcs_stage "$src" "$dst" || return 1
+    release::gcs::stage_and_hash "$gcs_stage" "$src" "$dst" || return 1
 
     # Upload node binaries if they exist and this isn't a 'server' platform.
     if [[ ! -d "$release_stage/server/$platform" ]]; then
       if [[ -d "$release_stage/node/$platform" ]]; then
         src="$release_stage/node/$platform/$release_kind/node/bin/*"
-        release::gcs::stage_and_hash $gcs_stage "$src" "$dst" || return 1
+        release::gcs::stage_and_hash "$gcs_stage" "$src" "$dst" || return 1
       fi
     fi
   done
 
   logecho "- Hashing files in ${gcs_stage##$build_output/}..."
-  find $gcs_stage -type f | while read path; do
-    common::md5 $path > "$path.md5" || return 1
-    common::sha $path 1 > "$path.sha1" || return 1
-    common::sha $path 512 > "$path.sha512" || return 1
+  find "$gcs_stage" -type f | while read -r path; do
+    common::md5 "$path" > "$path.md5" || return 1
+    common::sha "$path" 1 > "$path.sha1" || return 1
+    common::sha "$path" 512 > "$path.sha512" || return 1
   done
 }
 
@@ -714,7 +731,7 @@ release::gcs::publish_version () {
     [[ "$version" =~ alpha|beta|rc ]] || type="stable"
   fi
 
-  if ! logrun $GSUTIL ls $release_dir; then
+  if ! logrun "$GSUTIL" ls "$release_dir"; then
     logecho "Release files don't exist at $release_dir"
     return 1
   fi
@@ -724,22 +741,22 @@ release::gcs::publish_version () {
     version_minor=${BASH_REMATCH[2]}
   fi
 
-  publish_files=($type
-                 $type-$version_major
-                 $type-$version_major.$version_minor
-                 $extra_publish_file
+  publish_files=("$type"
+                 "$type-$version_major"
+                 "$type-$version_major.$version_minor"
+                 "$extra_publish_file"
                 )
 
   logecho
   logecho "Publish official pointer text files to $bucket..."
 
-  for publish_file in ${publish_files[@]}; do
+  for publish_file in "${publish_files[@]}"; do
     # If there's a version that's above the one we're trying to release, don't
     # do anything, and just try the next one.
-    release::gcs::verify_latest_update $build_type/$publish_file.txt \
-                                    $bucket $version || continue
-    release::gcs::publish $build_type/$publish_file.txt $build_output \
-                          $bucket $version || return 1
+    release::gcs::verify_latest_update "$build_type/$publish_file.txt" \
+                                    "$bucket" "$version" || continue
+    release::gcs::publish "$build_type/$publish_file.txt" "$build_output" \
+                          "$bucket" "$version" || return 1
   done
 }
 
@@ -774,7 +791,7 @@ release::gcs::verify_latest_update () {
   local -r version_prerelease_rev="${BASH_REMATCH[5]}"
   local -r version_commits="${BASH_REMATCH[7]}"
 
-  if gcs_version="$($GSUTIL cat $publish_file_dst 2>/dev/null)"; then
+  if gcs_version="$("$GSUTIL" cat "$publish_file_dst" 2>/dev/null)"; then
     if ! [[ $gcs_version =~ ${VER_REGEX[release]}(.${VER_REGEX[build]})* ]]; then
       logecho -r "$FAILED"
       logecho "* file contains invalid release version," \
@@ -875,22 +892,24 @@ release::gcs::publish () {
   logrun mkdir -p "$release_stage/upload" || return 1
   echo "$version" > "$release_stage/upload/latest" || return 1
 
-  logrun $GSUTIL -m -h "Content-Type:text/plain" \
+  logrun "$GSUTIL" -m -h "Content-Type:text/plain" \
     -h "Cache-Control:private, max-age=0, no-transform" cp \
     "$release_stage/upload/latest" \
     "$publish_file_dst" || return 1
 
+  # Disable shellcheck for dynamically defined variable
+  # shellcheck disable=SC2154
   if ((FLAGS_nomock)) && ! ((FLAGS_private_bucket)); then
     logecho -n "Making uploaded version file public: "
-    logrun -s $GSUTIL acl ch -R -g all:R $publish_file_dst || return 1
+    logrun -s "$GSUTIL" acl ch -R -g all:R "$publish_file_dst" || return 1
 
     # If public, validate public link
     logecho -n "* Validating uploaded version file at $public_link: "
-    contents="$(curl --retry 5 -Ls $public_link)"
+    contents="$(curl --retry 5 -Ls "$public_link")"
   else
     # If not public, validate using gsutil
     logecho -n "* Validating uploaded version file at $publish_file_dst: "
-    contents="$($GSUTIL cat $publish_file_dst)"
+    contents="$($GSUTIL cat "$publish_file_dst")"
   fi
 
   if [[ "$contents" == "$version" ]]; then
@@ -914,12 +933,10 @@ release::docker::release () {
   local version=$2
   local build_output=$3
   local release_images=$build_output/release-images
-  local docker_target
   local arch
   local -a arches
   local tarfile
   local orig_tag
-  local -a new_tags
   local new_tag
   local binary
   local -A manifest_images
@@ -931,14 +948,16 @@ release::docker::release () {
 
   logecho "Send docker containers from release-images to $push_registry..."
 
-  arches=($(cd "$release_images"; echo *))
-  for arch in ${arches[@]}; do
-    for tarfile in $release_images/$arch/*.tar; do
+  mapfile -t arches < <(
+  cd "$release_images" || return 1
+  echo --  *)
+  for arch in "${arches[@]}"; do
+    for tarfile in "$release_images/$arch/"*.tar; do
       # There may be multiple tags; just get the first
-      orig_tag=$(tar xf $tarfile manifest.json -O  | jq -r '.[0].RepoTags[0]')
+      orig_tag=$(tar xf "$tarfile" manifest.json -O  | jq -r '.[0].RepoTags[0]')
       if [[ ! "$orig_tag" =~ ^.+/(.+):.+$ ]]; then
         logecho "$FAILED: malformed tag in $tarfile:"
-        logecho $orig_tag
+        logecho "$orig_tag"
         return 1
       fi
       binary=${BASH_REMATCH[1]}
@@ -947,14 +966,14 @@ release::docker::release () {
       new_tag_with_arch=("$new_tag-$arch:$version")
       manifest_images["${new_tag}"]+=" $arch"
 
-      logrun docker load -qi $tarfile
-      logrun docker tag $orig_tag ${new_tag_with_arch}
-      logecho -n "Pushing ${new_tag_with_arch}: "
+      logrun docker load -qi "$tarfile"
+      logrun docker tag "$orig_tag" "${new_tag_with_arch[0]}"
+      logecho -n "Pushing ${new_tag_with_arch[0]}: "
       # TODO: Use docker direct when fixed later
       #logrun -r 5 -s docker push "${new_tag_with_arch}" || return 1
-      logrun -r 5 -s $GCLOUD docker -- push "${new_tag_with_arch}" || return 1
+      logrun -r 5 -s "$GCLOUD" docker -- push "${new_tag_with_arch[0]}" || return 1
       if [[ "${PURGE_IMAGES:-yes}" == "yes" ]] ; then
-        logrun docker rmi $orig_tag ${new_tag_with_arch} || true
+        logrun docker rmi "$orig_tag" "${new_tag_with_arch[0]}" || true
       fi
     done
   done
@@ -963,26 +982,30 @@ release::docker::release () {
   export DOCKER_CLI_EXPERIMENTAL=enabled
 
   for image in "${!manifest_images[@]}"; do
-    local archs=$(echo "${manifest_images[$image]}" | sed -e 's/^[[:space:]]*//')
-    local manifest=$(echo $archs | sed -e "s~[^ ]*~$image\-&:$version~g")
+    local archs
+    archs=$(sed -e 's/^[[:space:]]*//' <<< "${manifest_images[$image]}")
+    local manifest
+    manifest=$(sed -e "s~[^ ]*~$image\-&:$version~g" <<< "$archs")
     # This command will push a manifest list: "${registry}/${image}-ARCH:${version}" that points to each architecture depending on which platform you're pulling from
     logecho "Creating manifest image ${image}:${version}..."
-    logrun -r 5 -s docker manifest create --amend ${image}:${version} ${manifest} || return 1
+    logrun -r 5 -s docker manifest create --amend "${image}:${version}" "${manifest}" || return 1
     for arch in ${archs}; do
       logecho "Annotating ${image}-${arch}:${version} with --arch ${arch}..."
-      logrun -r 5 -s docker manifest annotate --arch ${arch} ${image}:${version} ${image}-${arch}:${version} || return 1
+      logrun -r 5 -s docker manifest annotate --arch "${arch}" "${image}:${version}" "${image}-${arch}:${version}" || return 1
     done
     logecho "Pushing manifest image ${image}:${version}..."
     local purge=""
     if [[ "${PURGE_IMAGES:-yes}" == "yes" ]] ; then
       purge="--purge"
     fi
-    logrun -r 5 -s docker manifest push ${purge} ${image}:${version} || return 1
+    logrun -r 5 -s docker manifest push "${purge}" "${image}:${version}" || return 1
   done
 
   # Always reset back to $GCP_USER
   # This is set in push-build.sh and anago
-  ((FLAGS_gcb)) || logrun $GCLOUD config set account $GCP_USER
+  # Disable shellcheck for dynamically defined variable
+  # shellcheck disable=SC2154
+  ((FLAGS_gcb)) || logrun "$GCLOUD" config set account "$GCP_USER"
 
   return 0
 }
@@ -998,8 +1021,9 @@ release::docker::release () {
 release::was_built_with_bazel() {
   local kube_root=$1
   local release_kind=$2
-  local most_recent_release_tar=$( (ls -t \
-    $kube_root/{_output,bazel-bin/build}/release-tars/$release_kind.tar.gz \
+  local most_recent_release_tar
+  most_recent_release_tar=$( (ls -t \
+    "$kube_root"/{_output,bazel-bin/build}/"release-tars/$release_kind.tar.gz" \
     2>/dev/null || true) | head -n 1)
 
   [[ $most_recent_release_tar =~ /bazel-bin/ ]]
@@ -1024,18 +1048,18 @@ release::gcs::bazel_push_build() {
   local gcs_stage=$build_output/gcs-stage/$version
   local gcs_destination=gs://$bucket/$build_type/$version
 
-  logrun rm -rf $gcs_stage || return 1
-  logrun mkdir -p $gcs_stage || return 1
+  logrun rm -rf "$gcs_stage" || return 1
+  logrun mkdir -p "$gcs_stage" || return 1
 
   # No need to check this for mock or stage runs
   # Overwriting is ok
   if ((FLAGS_nomock)) && ! ((FLAGS_stage)); then
-    release::gcs::destination_empty $gcs_destination || return 1
+    release::gcs::destination_empty "$gcs_destination" || return 1
   fi
 
   logecho "Publish release artifacts to gs://$bucket using Bazel..."
   logecho "- Hashing and copying public release artifacts to $gcs_destination: "
-  bazel run //:push-build $gcs_stage $gcs_destination || return 1
+  bazel run //:push-build "$gcs_stage" "$gcs_destination" || return 1
 
   # This small sleep gives the eventually consistent GCS bucket listing a chance
   # to stabilize before the diagnostic listing. There's no way to directly
@@ -1044,11 +1068,13 @@ release::gcs::bazel_push_build() {
   sleep 5
 
   logecho -n "- Listing final contents to log file: "
-  logrun -s $GSUTIL ls -lhr "$gcs_destination" || return 1
+  logrun -s "$GSUTIL" ls -lhr "$gcs_destination" || return 1
 }
 
 ###############################################################################
 # Mail out the announcement
+# PROGSTEP is used externally
+# shellcheck disable=SC2034
 PROGSTEP[release::send_announcement]="SEND ANNOUNCEMENT"
 release::send_announcement () {
   local announcement_file="$WORKDIR/announcement.html"
@@ -1061,7 +1087,7 @@ release::send_announcement () {
   # mock runs or in the standard location defined in set_globals().
   local bucket="$RELEASE_BUCKET_GCB"
   ((FLAGS_nomock)) && bucket="$RELEASE_BUCKET"
-  local archive_root="gs://$bucket/archive/anago-$RELEASE_VERSION"
+  local archive_root="gs://$bucket/archive/anago-${RELEASE_VERSION[0]}"
 
   ((FLAGS_nomock)) || mailto=$GCP_USER
   mailto=${FLAGS_mailto:-$mailto}
@@ -1071,7 +1097,7 @@ release::send_announcement () {
     announcement_text="$announcement_file"
   else
     announcement_file="$archive_root/announcement.html"
-    if ! $GSUTIL cp $announcement_file $announcement_text >/dev/null 2>&1; then
+    if ! $GSUTIL cp "$announcement_file" "$announcement_text" >/dev/null 2>&1; then
       logecho "Unable to find an announcement locally or on GCS!"
       return 1
     fi
@@ -1082,13 +1108,15 @@ release::send_announcement () {
     subject=$(<"$subject_file")
   else
     subject_file="$archive_root/announcement-subject.txt"
-    if ! subject="$($GSUTIL cat $subject_file 2>&-)"; then
+    if ! subject="$($GSUTIL cat "$subject_file" 2>&-)"; then
       logecho "Unable to find an announcement subject file locally or on GCS!"
       return 1
     fi
   fi
 
   logecho
+  # Disable shellcheck for dynamically defined variable
+  # shellcheck disable=SC2154
   ((FLAGS_yes)) \
    || common::askyorn -e "Pausing here. Confirm announce to $mailto" \
    || common::exit 1 "Exiting..."
@@ -1105,7 +1133,7 @@ release::send_announcement () {
                    "$announcement_text" || return 1
 
   # Cleanup
-  logrun rm -f $announcement_text
+  logrun rm -f "$announcement_text"
 }
 
 ##############################################################################
@@ -1129,6 +1157,8 @@ release::set_globals () {
   logecho -n "Setting global variables: "
 
   # Default disk requirements per version - Modified in found_staged_location()
+  # RELEASE_GB is used externally
+  # shellcheck disable=SC2034
   RELEASE_GB="75"
 
   if ((FLAGS_gcb)); then
@@ -1140,18 +1170,20 @@ release::set_globals () {
     GCP_USER=$($GCLOUD auth list --filter=status:ACTIVE \
                                  --format="value(account)" 2>/dev/null)
     if [[ -z "$GCP_USER" ]]; then
-      logecho $FAILED
+      logecho "$FAILED"
       logecho "Unable to set a valid GCP credential!"
       return 1
     fi
   fi
 
   RELEASE_BUCKET="kubernetes-release"
-  if [[ $GCP_USER =~ "@google.com" ]]; then
+  if [[ $GCP_USER =~ @google.com ]]; then
     WRITE_RELEASE_BUCKETS=("$RELEASE_BUCKET")
     READ_RELEASE_BUCKETS=("$RELEASE_BUCKET")
   fi
 
+  # BUCKET_TYPE is global
+  # shellcheck disable=SC2034
   if ((FLAGS_stage)); then
     BUCKET_TYPE="stage"
   else
@@ -1181,6 +1213,8 @@ release::set_globals () {
     RELEASE_BUCKET="$RELEASE_BUCKET_USER"
 
     # All the RELEASE_BUCKETS we could possibly write to
+    # WRITE_RELEASE_BUCETS is global
+    # shellcheck disable=SC2034
     WRITE_RELEASE_BUCKETS=("$RELEASE_BUCKET_USER")
     # All the RELEASE_BUCKETS we could possibly read from (for staging)
     READ_RELEASE_BUCKETS+=("$RELEASE_BUCKET_USER")
@@ -1194,12 +1228,14 @@ release::set_globals () {
     # During GCB runs also check access to $GCRIO_PATH_PROD
     # This is not needed for command-line/desktop as --nomock is no
     # longer valid
-    if ((FLAGS_gcb)) && [[ $GCP_USER =~ "@google.com" ]]; then
+    if ((FLAGS_gcb)) && [[ $GCP_USER =~ @google.com ]]; then
       ALL_CONTAINER_REGISTRIES+=("$GCRIO_PATH_PROD")
     fi
 
     # This is passed to logrun() where appropriate when we want to mock
     # specific activities like pushes
+    # LOGRUN_MOCK is global
+    # shellcheck disable=SC2034
     LOGRUN_MOCK="-m"
   fi
 
@@ -1211,5 +1247,5 @@ release::set_globals () {
   export KUBE_RELEASE_RUN_TESTS=n
   export KUBE_SKIP_CONFIRMATIONS=y
 
-  logecho $OK
+  logecho "$OK"
 }
