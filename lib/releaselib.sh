@@ -951,7 +951,7 @@ release::docker::release () {
   cd "$release_images" || return 1
   echo --  *)
   for arch in "${arches[@]}"; do
-    for tarfile in "$release_images/$arch/"*.tar; do
+    for tarfile in "$release_images/$arch"/*.tar; do
       # There may be multiple tags; just get the first
       orig_tag=$(tar xf "$tarfile" manifest.json -O  | jq -r '.[0].RepoTags[0]')
       if [[ ! "$orig_tag" =~ ^.+/(.+):.+$ ]]; then
