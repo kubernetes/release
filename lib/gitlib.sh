@@ -136,6 +136,8 @@ gitlib::github_api_token () {
 ##############################################################################
 # Checks github ACLs
 # returns 1 on failure
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2034,SC2154
 PROGSTEP[gitlib::github_acls]="CHECK GITHUB AUTH"
 gitlib::github_acls () {
 
