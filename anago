@@ -988,7 +988,7 @@ announce () {
 
     # When we create a new branch, we notify the publishing-bot folks by
     # creating an issue for them
-    gitlib::create_publishing_bot_issue "$RELEASE_BRANCH" || {
+    gitlib::create_publishing_bot_issue "$RELEASE_BRANCH" | gitlib::get_issue_url || {
       logecho "$WARNING: Could not create issue for the publishing-bot update"
     }
   else

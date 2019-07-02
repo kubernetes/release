@@ -1,5 +1,20 @@
 #!/usr/bin/env bash
 #
+# Copyright 2019 The Kubernetes Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
 # gitlib.sh unit tests
 #
 source $(dirname $(readlink -ne $BASH_SOURCE))/common.sh
@@ -7,6 +22,9 @@ source $TOOL_LIB_PATH/gitlib.sh
 source $TOOL_LIB_PATH/releaselib.sh
 
 readonly TESTDATA="$( cd "$(dirname "$0")" && pwd )/testdata"
+
+set -e
+set -o pipefail
 
 TEST_ver_regex() {
   echo "Testing VER_REGEX:"
@@ -76,6 +94,26 @@ TEST_create_issue() {
     <( gitlib::create_issue "$repo" "$title" "$body" 12345 ) \
     "${TESTDATA}/gitlib/create_issue_milestone.txt" \
     'creating an issue with milestone'
+}
+
+TEST_get_issue_url() {
+  echo "Testing gitlib::get_issue_url"
+  echo
+
+  assertEqualContent \
+    <( echo '{ }' | gitlib::get_issue_url ) \
+    <( echo '' ) \
+    "should return an empty issue url"
+
+  assertEqualContent \
+    <( echo '{ "html_url" : "some issue url" }' | gitlib::get_issue_url ) \
+    <( echo 'some issue url' ) \
+    "should return the issue's url"
+
+  assertEqualContent \
+    <( echo '{ "borken }' | gitlib::get_issue_url ) \
+    <( echo '' ) \
+    "should not fail on malformed input"
 }
 
 TEST_create_publishing_bot_issue() {
