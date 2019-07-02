@@ -111,7 +111,7 @@ release::set_build_version () {
   local good_job_count=0
   local first_build_number
   local branch_head
-  branch_head=$("$GHCURL" "$K8S_GITHUB_API/commits/$branch" |jq -r '.sha')
+  branch_head=$($GHCURL "$K8S_GITHUB_API/commits/$branch" |jq -r '.sha')
   # Shorten
   branch_head=${branch_head:0:14}
   # The instructions below for installing yq put it in /usr/local/bin
@@ -201,7 +201,7 @@ release::set_build_version () {
       ((good_job_count==1)) && first_build_number=$build_number
       build_sha1=${BASH_REMATCH[9]}
       build_version=${BASH_REMATCH[2]}.$build_number+$build_sha1
-      build_sha1_date=$("$GHCURL" "$K8S" "$GITHUB_API/commits?sha=$build_sha1" |\
+      build_sha1_date=$($GHCURL "$K8S" "$GITHUB_API/commits?sha=$build_sha1" |\
                         jq -r '.[0] | .commit .author .date')
       build_sha1_date=$(date +"%R %m/%d" -d "$build_sha1_date")
 
