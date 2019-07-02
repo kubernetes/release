@@ -42,6 +42,11 @@ TEST_verify_latest_update() {
   published_file="$( mktemp -t 'published.XXXXXXXX')"
   trap 'rm -f "$published_file"' EXIT
 
+  # We want to make sure that we explictly not use gsutils in this test, so
+  # that we do a `cat $file` instead of a `gsutil cat $file` (`gsutil cat` only
+  # supports remote urls, but not local files).
+  export GSUTIL=''
+
   # Fill $data with testing values and expected state
   read -r -d '' data <<'EOF' || true
 ###############################################
@@ -92,13 +97,13 @@ EOF
       echo -n "TEST CASE: "
       case $expected in
         0) echo "$PASSED" ;;
-        *) echo "$FAILED" ;;
+        *) echo "$FAILED" ; return 1 ;;
       esac
     else
       echo -n "TEST CASE: "
       case $expected in
         1) echo "$PASSED" ;;
-        *) echo "$FAILED" ;;
+        *) echo "$FAILED" ; retrun 1 ;;
       esac
     fi
     echo
