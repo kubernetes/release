@@ -16,10 +16,10 @@
 
 # common.sh unit tests
 #
-# shellcheck source=../lib/testing.sh
+# shellcheck source=./lib/testing.sh
 source "$(dirname "$(readlink -ne "${BASH_SOURCE[0]}")")/testing.sh"
 
-# shellcheck source=../lib/common.sh
+# shellcheck source=./lib/common.sh
 source "$(dirname "$(readlink -ne "${BASH_SOURCE[0]}")")/common.sh"
 readonly TESTDATA="$( cd "$(dirname "$0")" && pwd )/testdata"
 
