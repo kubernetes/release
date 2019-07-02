@@ -17,9 +17,13 @@
 #
 # releaselib.sh unit tests
 #
-source $(dirname $(readlink -ne $BASH_SOURCE))/common.sh
-source $TOOL_LIB_PATH/gitlib.sh
-source $TOOL_LIB_PATH/releaselib.sh
+
+# shellcheck source=./lib/common.sh
+source "$(dirname "$(readlink -ne "${BASH_SOURCE[0]}")")/common.sh"
+# shellcheck source=./lib/gitlib.sh
+source "$TOOL_LIB_PATH/gitlib.sh"
+# shellcheck source=./lib/releaselib.sh
+source "$TOOL_LIB_PATH/releaselib.sh"
 
 
 ##############################################################################
@@ -71,15 +75,17 @@ EOF
 
 
 # Test the data
-while read comment type version pub_version expected; do
+# disable shellcheck for comment variable
+# shellcheck disable=SC2034
+while read -r comment type version pub_version expected; do
   # Prepare test
-  echo $pub_version > $published_file
+  echo "$pub_version" > "$published_file"
 
   # $type value passed in simply to trigger > vs. >= condition
   # arg 2 (bucket) not used with optional arg 4 passed in
   # arg 3 (version) is the incoming version to check
   # arg 4 simply points to a local file to set a 'published' version
-  if release::gcs::verify_latest_update $type "" $version $published_file; then
+  if release::gcs::verify_latest_update "$type" "" "$version" "$published_file"; then
     echo -n "TEST CASE: "
     case $expected in
       0) echo "$PASSED" ;;
@@ -93,10 +99,10 @@ while read comment type version pub_version expected; do
     esac
   fi
   echo
-done < <(echo "$data" |egrep '^## ')
+done < <(echo "$data" | grep -E '^## ')
 
 # Garbage collection
-rm -f $published_file
+rm -f "$published_file"
 
 ##############################################################################
 # END TESTING release::gcs::verify_latest_update()
