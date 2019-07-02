@@ -39,6 +39,18 @@ verify: #verify-shellcheck ## Runs verification scripts to ensure correct execut
 verify-shellcheck: ## Runs shellcheck
 	./hack/verify-shellcheck.sh
 
+##@ Tests
+
+.PHONY: test
+test: test-go test-sh ## Runs unit tests to ensure correct execution
+
+.PHONY: test-go 
+test-go: ## Run all golang tests
+	./hack/test-go.sh
+	
+.PHONY: test-sh
+test-sh: ## Runs all shellscript tests
+	./hack/test-sh.sh
 ##@ Helpers
 
 .PHONY: help
