@@ -1281,11 +1281,9 @@ get_build_candidate () {
       JENKINS_BUILD_VERSION="$FLAGS_buildversion"
     else
       logecho "Asking Jenkins for a good build (this may take some time)..."
-      # Disable shellcheck for assumption about set_build_version argument
-      # shellcheck disable=SC2119
+      # Disable shellcheck for assumption about set_build_version argument and dynamically defined variable
+      # shellcheck disable=SC2119,SC2154
       FLAGS_verbose=1 release::set_build_version \
-        # Disable shellcheck for dynamically defined variable
-        # shellcheck disable=SC2154
         "$testing_branch" "" "$FLAGS_exclude_suites" "100" || return 1
     fi
 
