@@ -44,7 +44,8 @@ PROG=${0##*/}
 #+
 #-
 ########################################################################
-source $(dirname $(readlink -ne $0))/lib/common.sh
+# shellcheck source=./lib/common.sh
+source "$(dirname "$(readlink -ne "$0")")/lib/common.sh"
 
 cat <<EOF_CAT
 #!/bin/bash
