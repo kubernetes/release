@@ -23,16 +23,17 @@
 GITHUB_TOKEN=${FLAGS_github_token:-$GITHUB_TOKEN}
 [[ -n $GITHUB_TOKEN ]] && GITHUB_TOKEN_FLAG=("-u" "$GITHUB_TOKEN:x-oauth-basic")
 GHCURL="curl -s --fail --retry 10 ${GITHUB_TOKEN_FLAG[*]}"
-JCURL="curl -g -s --fail --retry 10"
 GITHUB_API='https://api.github.com'
 GITHUB_API_GRAPHQL="${GITHUB_API}/graphql"
 K8S_GITHUB_API_ROOT="${GITHUB_API}/repos"
 K8S_GITHUB_API="$K8S_GITHUB_API_ROOT/kubernetes/kubernetes"
-K8S_GITHUB_RAW_ORG='https://raw.githubusercontent.com/kubernetes'
+export K8S_GITHUB_RAW_ORG='https://raw.githubusercontent.com/kubernetes'
 
 K8S_GITHUB_SEARCHAPI_ROOT='https://api.github.com/search/issues?per_page=100'
-K8S_GITHUB_SEARCHAPI="$K8S_GITHUB_SEARCHAPI_ROOT&q=is:pr%20repo:kubernetes/kubernetes%20"
+export K8S_GITHUB_SEARCHAPI="$K8S_GITHUB_SEARCHAPI_ROOT&q=is:pr%20repo:kubernetes/kubernetes%20"
 K8S_GITHUB_URL='https://github.com/kubernetes/kubernetes'
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
 if ((FLAGS_gcb)); then
   K8S_GITHUB_AUTH_ROOT="https://git@github.com/"
 else
@@ -47,7 +48,7 @@ K8S_GITHUB_AUTH_URL="${K8S_GITHUB_AUTH_ROOT}kubernetes/kubernetes.git"
 # 2=Minor
 # 3=.Patch
 # 4=Patch
-BRANCH_REGEX="master|release-([0-9]{1,})\.([0-9]{1,})(\.([0-9]{1,}))*$"
+export BRANCH_REGEX="master|release-([0-9]{1,})\.([0-9]{1,})(\.([0-9]{1,}))*$"
 # release - 1=Major, 2=Minor, 3=Patch, 4=-(alpha|beta|rc), 5=rev
 # dotzero - 1=Major, 2=Minor
 # build - 1=build number, 2=sha1
@@ -55,7 +56,7 @@ declare -A VER_REGEX=([release]="v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9
                       [dotzero]="v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.0$"
                       [build]="([0-9]{1,})\+([0-9a-f]{5,40})"
                      )
-
+export VER_REGEX
 ###############################################################################
 # FUNCTIONS
 ###############################################################################
@@ -66,14 +67,14 @@ declare -A VER_REGEX=([release]="v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9
 #
 gitlib::ssh_auth () {
   logecho -n "Checking ssh auth to github.com: "
-  if ssh -T ${K8S_GITHUB_AUTH_URL%%:*} 2>&1 |fgrep -wq denied; then
-    logecho $FAILED
+  if ssh -T ${K8S_GITHUB_AUTH_URL%%:*} 2>&1 | grep -Fwq denied; then
+    logecho "$FAILED"
     logecho
     logecho "See https://help.github.com/categories/ssh"
     return 1
   fi
 
-  logecho $OK
+  logecho "$OK"
 }
 
 
@@ -90,10 +91,10 @@ gitlib::is_repo_admin () {
   result=$($GHCURL $K8S_GITHUB_API | jq -r '.permissions.admin')
 
   if [[ $result == "true" ]]; then
-    logecho $OK
+    logecho "$OK"
     return 0
   else
-    logecho $FAILED
+    logecho "$FAILED"
     logecho
     logecho "You must be a repo admin to continue."
     logecho "1. Ensure you are a member - https://github.com/kubernetes/community/blob/master/community-membership.md#requirements"
@@ -131,7 +132,9 @@ gitlib::github_api_token () {
 ##############################################################################
 # Checks github ACLs
 # returns 1 on failure
-PROGSTEP[gitlib::github_acls]="CHECK GITHUB AUTH"
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2154
+export PROGSTEP[gitlib::github_acls]="CHECK GITHUB AUTH"
 gitlib::github_acls () {
 
   gitlib::github_api_token || return 1
@@ -156,7 +159,6 @@ gitlib::git_config_for_gcb () {
 gitlib::last_releases () {
   local release
   local branch_name
-  local latest_branch
   declare -Ag LAST_RELEASE
 
   logecho -n "Setting last releases by branch: "
@@ -189,7 +191,7 @@ gitlib::current_branch () {
 
   [[ -n "$repo_dir" ]] && git_args=("-C" "$repo_dir")
 
-  if ! git ${git_args[*]} rev-parse --abbrev-ref HEAD 2>/dev/null; then
+  if ! git "${git_args[@]}" rev-parse --abbrev-ref HEAD 2>/dev/null; then
     (
     logecho
     logecho "Not a git repository!"
@@ -211,18 +213,20 @@ gitlib::pending_prs () {
   local msg
   local sep
 
+  # Disable shellcheck for dynamically defined variable
+  # shellcheck disable=SC2154
   if ((FLAGS_htmlize_md)); then
     echo "PR | Milestone | User | Date | Commit Message"
     echo "-- | --------- | ---- | ---- | --------------"
     sep="|"
   fi
 
-  while read pr milestone login date msg; do
+  while read -r pr milestone login date msg; do
     # "escape" '*' in commit messages so they don't mess up formatting.
-    msg=$(echo $msg |sed 's, *\* *, * ,g')
+    msg=$(sed 's, *\* *, * ,g' <<< "$msg")
     printf "%-8s $sep %-4s $sep %-10s $sep %-18s $sep %s\n" \
            "#$pr" "$milestone" "@$login" "$(date +"%F %R" -d "$date")" "$msg"
-  done < <($GHCURL $K8S_GITHUB_API/pulls\?state\=open\&base\=$branch |\
+  done < <($GHCURL "$K8S_GITHUB_API/pulls\?state\=open\&base\=$branch" |\
            jq -r \
             '.[] | "\(.number)\t\(.milestone.title)\t\(.user.login)\t\(.updated_at)\t\(.title)"')
 }
@@ -238,19 +242,19 @@ gitlib::sync_repo () {
   logecho -n "Syncing ${repo##*/} to $dest: "
   if [[ -d $dest ]]; then
     (
-    cd $dest
+    cd "$dest" || return 1
     logrun git checkout master
     logrun -s git pull
     ) || return 1
   else
-    logrun -s git clone $repo $dest || return 1
+    logrun -s git clone "$repo" "$dest" || return 1
 
     # for https, update the remotes so we don't have to call the git command-line
     # every time with a token
     (
-    cd $dest
-    git remote set-url origin $(git remote get-url origin |\
-     sed "s,https://git@github.com,https://git:${GITHUB_TOKEN:-$FLAGS_github_token}@github.com,g")
+    cd "$dest" || return 1
+    git remote set-url origin "$(git remote get-url origin | \
+     sed "s,https://git@github.com,https://git:${GITHUB_TOKEN:-$FLAGS_github_token}@github.com,g")"
     )
   fi
 }
@@ -261,14 +265,16 @@ gitlib::sync_repo () {
 gitlib::branch_exists () {
   local branch=$1
 
-  git ls-remote --exit-code $K8S_GITHUB_URL \
-   refs/heads/$branch &>/dev/null
+  git ls-remote --exit-code "$K8S_GITHUB_URL" \
+   "refs/heads/$branch" &>/dev/null
 }
 
 ##############################################################################
 # Fetch, rebase and push master.
 gitlib::push_master () {
   local dryrun_flag=" --dry-run"
+  # Disable shellcheck for dynamically defined variable
+  # shellcheck disable=SC2154
   ((FLAGS_nomock)) && dryrun_flag=""
 
   logecho -n "Checkout master branch to push objects: "
@@ -288,7 +294,9 @@ gitlib::repo_state () {
   local expectedRemote="${RELEASE_TOOL_REPO:-[:/]kubernetes/release}"
   local expectedBranch="${RELEASE_TOOL_BRANCH:-master}"
 
-  local branch=$(gitlib::current_branch "$TOOL_ROOT") || return 1
+  local branch
+  branch=$(gitlib::current_branch "$TOOL_ROOT") || return 1
+  
   if [ "${expectedBranch}" != "$branch" ]
   then
     logecho "$FAILED checked out branch $branch is not the same as $expectedBranch"
@@ -297,14 +305,17 @@ gitlib::repo_state () {
 
   local remotePattern="${expectedRemote}(.git)* \(fetch\)$"
 
-  local remote=$( git -C "$TOOL_ROOT" remote -v | grep -E "$remotePattern" | cut -f1 )
-  local commit=$(git -C "$TOOL_ROOT" \
+  local remote
+  remote=$( git -C "$TOOL_ROOT" remote -v | grep -E "$remotePattern" | cut -f1 )
+  local commit
+  commit=$(git -C "$TOOL_ROOT" \
                      ls-remote --heads "$remote" refs/heads/master | cut -f1)
-  local output=$(git -C "$TOOL_ROOT" branch --contains "$commit" "$branch" 2>&-)
+  local output
+  output=$(git -C "$TOOL_ROOT" branch --contains "$commit" "$branch" 2>&-)
 
   logecho -n "Checking $TOOL_ROOT state: "
   if [[ -n "$output" ]]; then
-    logecho $OK
+    logecho "$OK"
   else
     logecho "$FAILED"
     logecho
