@@ -635,7 +635,7 @@ release::gcs::locally_stage_release_artifacts() {
     [[ -f $gce_path/configure-vm.sh ]] \
      && configure_vm="$gce_path/configure-vm.sh"
 
-    release::gcs::stage_and_hash "$gcs_stage" "$configure_vm extra/gce" \
+    release::gcs::stage_and_hash "$gcs_stage" "$configure_vm" extra/gce \
       || return 1
     release::gcs::stage_and_hash "$gcs_stage" "$gci_path/node.yaml" extra/gce \
       || return 1
@@ -675,7 +675,7 @@ release::gcs::locally_stage_release_artifacts() {
   # download the binaries directly and don't need tars.
   mapfile -t platforms < <(
     cd "$release_stage/client" || return 1
-    echo -- *)
+    find . -type d -mindepth 1 -maxdepth 1 | cut -c 3-)
   for platform in "${platforms[@]}"; do
     src="$release_stage/client/$platform/$release_kind/client/bin/*"
     dst="bin/${platform/-//}/"
@@ -949,7 +949,7 @@ release::docker::release () {
 
   mapfile -t arches < <(
   cd "$release_images" || return 1
-  echo --  *)
+  find . -type d -mindepth 1 -maxdepth 1 | cut -c 3-)
   for arch in "${arches[@]}"; do
     for tarfile in "$release_images/$arch"/*.tar; do
       # There may be multiple tags; just get the first
