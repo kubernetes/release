@@ -16,14 +16,14 @@
 
 # gitlib.sh unit tests
 #
-# shellcheck source=../lib/testing.sh
+# shellcheck source=./lib/testing.sh
 source "$(dirname "$(readlink -ne "${BASH_SOURCE[0]}")")/testing.sh"
 
-# shellcheck source=../lib/common.sh
+# shellcheck source=./lib/common.sh
 source "$(dirname "$(readlink -ne "${BASH_SOURCE[0]}")")/common.sh"
-# shellcheck source=../lib/gitlib.sh
+# shellcheck source=./lib/gitlib.sh
 source "$TOOL_LIB_PATH/gitlib.sh"
-# shellcheck source=../lib/releaselib.sh
+# shellcheck source=./lib/releaselib.sh
 source "$TOOL_LIB_PATH/releaselib.sh"
 
 readonly TESTDATA="$( cd "$(dirname "$0")" && pwd )/testdata"
