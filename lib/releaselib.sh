@@ -575,7 +575,7 @@ release::gcs::push_release_artifacts() {
   # We explicitly don't set an ACL in the cp call, since doing so will override
   # any default bucket ACLs.
   logecho -n "- Copying artifacts to $dest: "
-  logrun -s "$GSUTIL" -qm cp -rc "$src/*" "$dest/" || return 1
+  logrun -s "$GSUTIL" -qm cp -rc "$src"/* "$dest/" || return 1
 
   # This small sleep gives the eventually consistent GCS bucket listing a chance
   # to stabilize before the diagnostic listing. There's no way to directly
@@ -616,7 +616,7 @@ release::gcs::locally_stage_release_artifacts() {
 
   # Stage everything in release directory
   logecho "- Staging locally to ${gcs_stage##$build_output/}..."
-  release::gcs::stage_and_hash "$gcs_stage" "$release_tars/*" . || return 1
+  release::gcs::stage_and_hash "$gcs_stage" "$release_tars"/* . || return 1
 
   if [[ "$release_kind" == "kubernetes" ]]; then
     local gce_path=$release_stage/full/kubernetes/cluster/gce
