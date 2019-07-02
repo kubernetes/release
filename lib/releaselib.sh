@@ -124,8 +124,7 @@ release::set_build_version () {
    master) branch="release-master"
   esac
 
-  local all_jobs
-  mapfile -t "$all_jobs" < <(common::run_gobin blocking-testgrid-tests "$branch")
+  mapfile -t all_jobs < <(common::run_gobin blocking-testgrid-tests "$branch")
 
   if [[ -z ${all_jobs[*]} ]]; then
     logecho "$FAILED: Curl to testgrid/config/config.yaml"
