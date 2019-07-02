@@ -782,7 +782,7 @@ common::check_pip_packages () {
     logecho "PREREQ: Missing prerequisites: ${missing[*]}" \
             "Run the following and try again:"
     logecho
-    for prereq in ${missing[*]}; do
+    for prereq in "${missing[@]}"; do
       logecho "$ sudo pip install $prereq"
     done
     return 1
@@ -884,7 +884,7 @@ common::check_packages () {
     logecho "PREREQ: Missing prerequisites: ${missing[*]}" \
             "Run the following and try again:"
     logecho
-    for prereq in ${missing[*]}; do
+    for prereq in "${missing[@]}"; do
       if [[ -n ${PREREQUISITE_INSTRUCTIONS[$prereq]} ]]; then
         logecho "# See ${PREREQUISITE_INSTRUCTIONS[$prereq]}"
       else

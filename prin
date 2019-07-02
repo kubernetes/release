@@ -79,7 +79,7 @@ show_tags () {
   local pr=$1
   local initial_commit=$2
   shift 2
-  local cp_commits=("$*")
+  local cp_commits=("$@")
   local commit
   local commit_seconds
   local tag_seconds
@@ -172,4 +172,4 @@ fi
 
 security_layer::hosted_map
 
-show_tags "$PR" "${INITIAL_COMMIT[0]}" "${CP_COMMITS[*]}"
+show_tags "$PR" "${INITIAL_COMMIT[0]}" "${CP_COMMITS[@]}"
