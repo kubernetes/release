@@ -1285,7 +1285,7 @@ common::validate_command_line () {
 
   logecho
   if [[ -f $PROGSTATE ]]; then
-    mapfile -i last_args < <(awk '/^CMDLINE: / {for(i=2;i<=NF;++i)print $i}' "$PROGSTATE")
+    mapfile -t last_args < <(awk '/^CMDLINE: / {for(i=2;i<=NF;++i)print $i}' "$PROGSTATE")
     if [[ ${args[*]} != "${last_args[*]}" ]]; then
       logecho "A previous incomplete run using different command-line values" \
               "exists."
