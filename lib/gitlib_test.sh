@@ -162,7 +162,7 @@ TEST_pending_prs() {
   echo "Testing gitlab::pending_prs"
   echo
 
-  local branch='release-1.12'
+  local branch='release-1.15'
   local mockResponse='[{"number":123,"milestone":{"title":"foobar"},"user":{"login":"batman"},"updated_at":"2019-07-03T08:48:34Z","title":"best PR"}]'
   local expectedCallArgs="-s --fail --retry 10 https://api.github.com/repos/kubernetes/kubernetes/pulls?state=open&base=${branch}"
 
