@@ -36,7 +36,7 @@ Tools | Description
 <br/> [`push-build.sh`](https://github.com/kubernetes/release/blob/master/push-build.sh) <br/><br/> | Pushes a developer build or CI Jenkins build up to GCS.
 <br/> [`script-template`](https://github.com/kubernetes/release/blob/master/script-template) <br/><br/> | Generates a script template in the kubernetes/release ecosystem.
 
-For information on how to use `gcbmgr`, `anago` and `branchff`, see the [Branch Manager Handbook](https://github.com/kubernetes/sig-release/tree/master/release-team/role-handbooks/branch-manager#branch-manager-handbook)
+For information on how to use `gcbmgr`, `anago` and `branchff`, see the [Branch Manager Handbook](https://git.k8s.io/sig-release/release-engineering/role-handbooks/branch-manager.md)
 
 ## Release Notes Gathering
 
