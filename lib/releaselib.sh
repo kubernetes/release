@@ -984,10 +984,10 @@ release::docker::release () {
     local archs
     archs=$(sed -e 's/^[[:space:]]*//' <<< "${manifest_images[$image]}")
     local manifest
-    manifest=$(sed -e "s~[^ ]*~$image\-&:$version~g" <<< "$archs")
+    read -r -a manifest <<< "$(sed -e "s~[^ ]*~$image\-&:$version~g" <<< "$archs")"
     # This command will push a manifest list: "${registry}/${image}-ARCH:${version}" that points to each architecture depending on which platform you're pulling from
     logecho "Creating manifest image ${image}:${version}..."
-    logrun -r 5 -s docker manifest create --amend "${image}:${version}" "${manifest}" || return 1
+    logrun -r 5 -s docker manifest create --amend "${image}:${version}" "${manifest[@]}" || return 1
     for arch in ${archs}; do
       logecho "Annotating ${image}-${arch}:${version} with --arch ${arch}..."
       logrun -r 5 -s docker manifest annotate --arch "${arch}" "${image}:${version}" "${image}-${arch}:${version}" || return 1
