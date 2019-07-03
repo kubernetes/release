@@ -28,6 +28,8 @@ source "$TOOL_LIB_PATH/releaselib.sh"
 
 readonly TESTDATA="$( cd "$(dirname "$0")" && pwd )/testdata"
 
+set -e
+
 TEST_ver_regex() {
   echo "Testing VER_REGEX:"
   echo
@@ -154,6 +156,30 @@ TEST_get_team_members() {
     <( gitlib::get_team_members 'ignored' 'ignored' ) \
     <( echo -n '' ) \
     'get_team_members can handle invalid responses and reports no members'
+}
+
+TEST_pending_prs() {
+  echo "Testing gitlab::pendig_prs"
+  echo
+
+  local branch='release-1.12'
+  local mockResponse='[{"number":123,"milestone":{"title":"foobar"},"user":{"login":"batman"},"updated_at":"2019-07-03T08:48:34Z","title":"best PR"}]'
+  local expectedCallArgs="-s --fail --retry 10 https://api.github.com/repos/kubernetes/kubernetes/pulls?state=open&base=${branch}"
+
+  curl() {
+    [ "$expectedCallArgs" != "$*" ] && {
+      echo 'Wrong call args:'
+      echo "  Expected: ${expectedCallArgs}"
+      echo "  Actual:   ${*}"
+      return 42
+    }
+    echo "$mockResponse"
+  }
+
+  assertEqualContent \
+    <( gitlib::pending_prs "$branch" ) \
+    <( echo "#123      foobar  @batman     2019-07-03 08:48    best PR" ) \
+    'calls the github API with the correct settings and parses response correctly'
 }
 
 testMain "$@"

@@ -226,7 +226,7 @@ gitlib::pending_prs () {
     msg=$(sed 's, *\* *, * ,g' <<< "$msg")
     printf "%-8s $sep %-4s $sep %-10s $sep %-18s $sep %s\n" \
            "#$pr" "$milestone" "@$login" "$(date +"%F %R" -d "$date")" "$msg"
-  done < <($GHCURL "$K8S_GITHUB_API/pulls\?state\=open\&base\=$branch" |\
+  done < <($GHCURL "${K8S_GITHUB_API}/pulls?state=open&base=${branch}" |\
            jq -r \
             '.[] | "\(.number)\t\(.milestone.title)\t\(.user.login)\t\(.updated_at)\t\(.title)"')
 }
