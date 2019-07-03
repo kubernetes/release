@@ -159,7 +159,7 @@ TEST_get_team_members() {
 }
 
 TEST_pending_prs() {
-  echo "Testing gitlab::pendig_prs"
+  echo "Testing gitlab::pending_prs"
   echo
 
   local branch='release-1.12'
