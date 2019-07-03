@@ -1232,7 +1232,8 @@ get_build_candidate () {
   local testing_branch
   local branch_head
   
-  branch_head=$($GHCURL "$K8S" "GITHUB_API/commits/$RELEASE_BRANCH" |\
+  # Get the git commit sha of the release branch
+  branch_head=$($GHCURL "$K8S_GITHUB_API/commits/$RELEASE_BRANCH" |\
                       jq -r '.sha')
   # Shorten
   branch_head=${branch_head:0:14}
