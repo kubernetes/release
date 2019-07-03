@@ -21,8 +21,8 @@
 # CONSTANTS
 ###############################################################################
 GITHUB_TOKEN=${FLAGS_github_token:-$GITHUB_TOKEN}
-[[ -n $GITHUB_TOKEN ]] && GITHUB_TOKEN_FLAG=("-u" "$GITHUB_TOKEN:x-oauth-basic")
-GHCURL="curl -s --fail --retry 10 ${GITHUB_TOKEN_FLAG[*]}"
+[[ -n $GITHUB_TOKEN ]] && GITHUB_AUTH_HEADER=("-H" \"Authorization: token "${GITHUB_TOKEN}"\")
+GHCURL="curl -s --fail --retry 10 ${GITHUB_AUTH_HEADER[*]}"
 GITHUB_API='https://api.github.com'
 GITHUB_API_GRAPHQL="${GITHUB_API}/graphql"
 K8S_GITHUB_API_ROOT="${GITHUB_API}/repos"
