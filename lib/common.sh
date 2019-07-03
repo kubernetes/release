@@ -1274,21 +1274,27 @@ common::stepindex () {
 # @param args - The quoted full original command-line args
 # returns 1 on failure
 common::validate_command_line () {
-  local -a args=("$@")
-  local -a last_args
+  # We most probably get only one argument, which holds all orignal args in
+  # that one string, see also $ORIG_CMDLINE
+  # Therefore we stick with that string, normalize it as much as we can and use
+  # that for comparison/checking.
+  local args="$*"
+  local last_args
   local continue=0
 
-  # Ignore state clearing args
-  args=("${args[@]/--clean}")
-  args=("${args[@]/--prebuild}")
-  args=("${args[@]/--buildonly}")
+  args="${args//--prebuild}"
+  args="${args//--clean}"
+  args="${args//--buildonly}"
+  args="$( echo "$args" | tr -s '[:space:]' | sed -e 's/^\s\+//g' -e 's/\s\+$//g' )"
 
   logecho
   if [[ -f $PROGSTATE ]]; then
-    mapfile -t last_args < <(awk '/^CMDLINE: / {for(i=2;i<=NF;++i)print $i}' "$PROGSTATE")
-    if [[ ${args[*]} != "${last_args[*]}" ]]; then
+    last_args="$( awk '/^CMDLINE: /{ $1=""; print $0 }' "$PROGSTATE" | tr -s '[:space:]' | sed -e 's/^\s\+//g' -e 's/\s\+$//g' )"
+    if [[ "${args}" != "${last_args}" ]]; then
       logecho "A previous incomplete run using different command-line values" \
               "exists."
+      logecho -n "  current  (relevant) args: ${args}\n"
+      logecho -n "  previous (relevant) args: ${last_args}\n"
       logecho
       logecho "${TPUT[RED]}Did you mean to --clean" \
               "and start a new session?${TPUT[OFF]}"
@@ -1309,7 +1315,7 @@ common::validate_command_line () {
     logecho "${TPUT[RED]}Use --clean to restart${TPUT[OFF]}"
     logecho
   else
-    echo "CMDLINE: ${args[*]}" > "$PROGSTATE"
+    echo "CMDLINE: ${args}" > "$PROGSTATE"
   fi
 }
 
