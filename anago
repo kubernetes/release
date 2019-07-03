@@ -618,19 +618,24 @@ git_tag () {
 # Tag/Build a local kube_cross image based on the version in scope
 PROGSTEP[local_kube_cross]="TAG/BUILD LOCAL KUBE CROSS"
 local_kube_cross () {
-  local docker_image="$GCRIO_PATH_PROD/kube-cross"
-  local version="$(cat $TREE_ROOT/build/build-image/cross/VERSION)"
-  local image="$docker_image:$version"
-  local local_image="$docker_image:local"
+  local version
+  local image
+  local local_image
+  local docker_image
 
-  logecho -n "Checking if $image exists locally: "
-  if logrun -s docker pull $image; then
-    logecho -n "Tagging docker image $image as $local_image: "
-    logrun -s docker tag $image $local_image
+  docker_image="${GCRIO_PATH_PROD}/kube-cross"
+  version="$(cat "${TREE_ROOT}/build/build-image/cross/VERSION")"
+  image="${docker_image}:${version}"
+  local_image="${docker_image}:local"
+
+  logecho -n "Checking if ${image} exists locally: "
+  if logrun -s docker pull "$image"; then
+    logecho -n "Tagging docker image ${image} as ${local_image}: "
+    logrun -s docker tag "$image" "$local_image"
   else
-    logecho -n "Building docker image $image: "
-    logrun -s docker build --cache-from $docker_image -t $image \
-                           -t $local_image $TREE_ROOT/build/build-image/cross/
+    logecho -n "Building docker image ${image}: "
+    logrun -s docker build --cache-from "$docker_image" -t "$image" \
+                           -t "$local_image" "${TREE_ROOT}/build/build-image/cross/"
   fi
 }
 
