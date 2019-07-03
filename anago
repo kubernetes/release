@@ -564,9 +564,35 @@ checkout_object () {
     [[ $label == "alpha" ]] && tree_object="$commit"
   fi
 
-  # Checkout location
-  logecho -n "Checking out $tree_object: "
-  logrun -s git checkout $branch_arg $tree_object $branch_point || return 1
+  # The above code determines what and how we should check out and where we
+  # should branch off. This information is captured in the variables
+  # `$branch_arg`, `$tree_object`, and `$branch_point`.
+  #
+  # Previously, when we didn't use the `$checkout_args` array to collect all
+  # the arguments to `git checkout ...`, the above mentioned variables were
+  # passed unquoted to the `logrun` function. This had some interesting
+  # consequences:
+  # - empty variables, because they were not quoted, did not make it into the
+  #   function, they basically vanished
+  # - (potential) whitespaces or any characters interpreted by the shell would
+  #   have broken this function
+  #
+  # Now we make sure to
+  # - quote all our arguments
+  # - exlicitely ignore empty variables as arguments, by not adding them to
+  #   the `$checkout_args` array
+  #
+  # This means, `$checkout_args` will look like and result into the following
+  # `git checkout ...` calls:
+  # - ( 'release-1.12' )                             => git checkout 'release-1.12'
+  # - ( '-b' 'release-1.12' '<shaToBanchOffFrom>' )  => git checkout '-b' 'release-1.12' '<shaToBranchOffFrom>'
+  local checkout_args=()
+  [ -n "${branch_arg}" ] && checkout_args+=( "${branch_arg}" )
+  [ -n "${tree_object}" ] && checkout_args+=( "${tree_object}" )
+  [ -n "${branch_point}" ] && checkout_args+=( "${branch_point}" )
+
+  logecho -n "Checking out $tree_object (${checkout_args[*]}): "
+  logrun -s git checkout "${checkout_args[@]}" || return 1
 }
 
 ##############################################################################
