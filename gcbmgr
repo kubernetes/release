@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #
 # Copyright 2017 The Kubernetes Authors All rights reserved.
 #
@@ -143,14 +143,11 @@ PROG=${0##*/}
 #+
 ########################################################################
 # Deal with OSX limitations out the gate for anyone that tries this there
-BASE_ROOT="$(dirname "$(readlink -e "${BASH_SOURCE[0]}" 2>&1)")" \
- || BASE_ROOT="${BASH_SOURCE[0]}"
-# shellcheck source=./lib/common.sh
-source "$BASE_ROOT/lib/common.sh"
-# shellcheck source=./lib/gitlib.sh
-source "$TOOL_LIB_PATH/gitlib.sh"
-# shellcheck source=./lib/releaselib.sh
-source "$TOOL_LIB_PATH/releaselib.sh"
+BASE_ROOT=$(dirname $(readlink -e "$BASH_SOURCE" 2>&1)) \
+ || BASE_ROOT="$BASH_SOURCE"
+source $BASE_ROOT/lib/common.sh
+source $TOOL_LIB_PATH/gitlib.sh
+source $TOOL_LIB_PATH/releaselib.sh
 
 readonly RELEASE_TOOL_REPO="${RELEASE_TOOL_REPO:-https://github.com/kubernetes/release}"
 readonly RELEASE_TOOL_BRANCH="${RELEASE_TOOL_BRANCH:-master}"
@@ -166,7 +163,7 @@ common::cleanexit () {
   [[ -t 1 ]] && tput cnorm
 
   common::timestamp end
-  exit "${1:-0}"
+  exit ${1:-0}
 }
 
 
@@ -174,6 +171,7 @@ list_staged_builds () {
   local bucket
   local i
   local n
+  local minor
   local staging_buckets
 
   # Gather last releases
@@ -181,16 +179,16 @@ list_staged_builds () {
 
   logecho
   logecho "${TPUT[BOLD]}Last published releases by branch:${TPUT[OFF]}"
-  for i in $(for n in ${!LAST_RELEASE[*]}; do echo "$n"; done |sort -h); do
-    logecho "$i": "${LAST_RELEASE[$i]}"
+  for i in $(for n in ${!LAST_RELEASE[*]}; do echo $n; done |sort -h); do
+    logecho $i: ${LAST_RELEASE[$i]}
   done
 
   for bucket in $BUCKET $USER_BUCKET; do
     # Store existing buckets in an array for later use
-    staging_buckets+=("gs://$bucket/stage")
+    staging_buckets+=(gs://$bucket/stage)
     logecho
     logecho "${TPUT[BOLD]}Staged builds on $bucket:${TPUT[OFF]}"
-    gsutil ls -h "gs://$bucket/stage" 2>&-
+    gsutil ls -h gs://$bucket/stage 2>&-
   done
 
   # TODO: Experiment to look at all current versions and then compare
@@ -244,7 +242,7 @@ stream_job_log () {
 
   logecho "Waiting for GCP to initiate stream..."
   logecho
-  $GCLOUD builds log --stream "$build_id"
+  $GCLOUD builds log --stream $build_id
 }
 
 ###############################################################################
@@ -253,36 +251,34 @@ stream_job_log () {
 # @optparam $state - One of WORKING SUCCESS FAILURE CANCELLED
 list_jobs () {
   local state=$1
-  # getting confused about scope of count
-  # shellcheck disable=SC2178
-  local count=3
+  local count=5
   local counter=0
   local id
   local time
   local elapsed
+  local source
   local status
+  local images
   local tags
 
   # force upper-case as a convenience
   state=${state^^}
 
-  # getting confused about type of count
-  # shellcheck disable=SC2128
-  logecho "Last $count $state jobs:"
+  logecho Last $count $state jobs:
   logecho
   {
   echo "TAGS S ID START($(date +%Z))"
   echo "=============== = ===================================== ==============="
   $GCLOUD builds list | sed -n '2,$p' | \
-  while read -r id time elapsed status; do
+  while read id time elapsed source images status; do
     [[ $status != "${state:-$status}" ]] && continue
     ((counter++))
 
-    tags=$($GCLOUD builds describe "$id" --format=json|\
+    tags=$($GCLOUD builds describe $id --format=json|\
            jq -r '.tags[]' 2>&-)
 
     # Convert time to local time
-    time=$(date -d "$time" +%Y-%b-%d+%R:%S)
+    time=$(date -d $time +%Y-%b-%d+%R:%S)
     echo "$tags" "${status:0:1}" "$id" "$time"
     echo
     ((counter>=count)) && break
@@ -306,8 +302,8 @@ submit_it () {
   substitutions+=",_RELEASE_TOOL_BRANCH=$RELEASE_TOOL_BRANCH"
 
   if ! JOB_DATA=$($GCLOUD builds submit --no-source \
-                          --config="$YAML_FILE" --async --disk-size="$DISK_SIZE" \
-                          --substitutions "$substitutions" 2>&1); then
+                          --config=$YAML_FILE --async --disk-size=$DISK_SIZE \
+                          --substitutions $substitutions 2>&1); then
     logecho "$FAILED: Job was not submitted.  Details:"
     logecho "$JOB_DATA"
     exit 1
@@ -316,9 +312,9 @@ submit_it () {
   BUILD_ID=$(echo "$JOB_DATA" |awk 'END{print $1}')
   [[ "$JOB_DATA" =~ Logs\ are\ available\ at\ \[(https.*)\]\. ]] \
    && BUILD_URL=${BASH_REMATCH[1]}
-  logecho "$HR"
+  logecho $HR
   logecho "${COMMAND^^} $BUILD_ID submitted successfully."
-  logecho "$HR"
+  logecho $HR
 
   logecho
   logecho "To view last build:"
@@ -339,8 +335,6 @@ release_it () {
   fi
 
   # Check for mandatory buildversion
-  # Disable shellcheck for dynamically defined variable
-  # shellcheck disable=SC2154
   if [[ -z $FLAGS_buildversion ]]; then
     logecho "--buildversion=<staged build> required for 'release' jobs."
     return 1
@@ -356,7 +350,7 @@ stage_it () {
   fi
 
   # Get kube_cross version
-  KUBE_CROSS_VERSION=$(curl -s "https://raw.githubusercontent.com/kubernetes/kubernetes/$RELEASE_BRANCH/build/build-image/cross/VERSION")
+  KUBE_CROSS_VERSION=$(curl -s https://raw.githubusercontent.com/kubernetes/kubernetes/$RELEASE_BRANCH/build/build-image/cross/VERSION)
 
   [[ -z $KUBE_CROSS_VERSION ]] \
     && common::exit 1 "Unable to set KUBE_CROSS_VERSION.  Exiting..."
@@ -374,11 +368,11 @@ stage_it () {
 ##############################################################################
 # Initialize and save up to 10 (rotated logs)
 MYLOG=$TMPDIR/$PROG.log
-common::logfileinit "$MYLOG" 10
+common::logfileinit $MYLOG 10
 # BEGIN script
 common::timestamp begin
 
-common::check_binaries jq git column || common::exit 1 "Exiting..."
+common::check_packages jq git bsdmainutils || common::exit 1 "Exiting..."
 gitlib::repo_state || common::exit 1 "Exiting..."
 
 # Ensure some prerequisites
@@ -414,8 +408,6 @@ GCP_USER_TAG=${GCP_USER_TAG/@/-at-}
 GCP_USER_TAG=${GCP_USER_TAG/\./-}
 
 # A build cannot be a release candidate and official at the same time
-# Disable shellcheck for dynamically defined variable
-# shellcheck disable=SC2154
 if ((FLAGS_official)) && ((FLAGS_rc)); then
     logecho "A release cannot be an RC and official"
     common::exit 1 "Exiting..."
@@ -429,15 +421,11 @@ elif ((FLAGS_rc)); then
   RC="--$RC_TAG"
 fi
 
-# Disable shellcheck for dynamically defined variable
-# shellcheck disable=SC2154
 if ((FLAGS_build_at_head)); then
   BUILD_POINT="HEAD"
   BUILD_AT_HEAD="--build-at-head"
 fi
 
-# Disable shellcheck for dynamically defined variable
-# shellcheck disable=SC2154
 if ((FLAGS_nomock)); then
   NOMOCK_TAG="nomock"
   NOMOCK="--$NOMOCK_TAG"
@@ -462,13 +450,13 @@ fi
 #       Respond with guidance on how to get on board
 
 case $COMMAND in
-  list) list_jobs "$ARG2"
+  list) list_jobs $ARG2
         common::exit 0
         ;;
   staged) list_staged_builds
         common::exit 0
         ;;
-  stream|tail) stream_job_log "$ARG2"
+  stream|tail) stream_job_log $ARG2
         common::exit 0
         ;;
   stage) YAML_FILE="$TOOL_ROOT/gcb/stage.yaml"

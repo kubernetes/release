@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #
 # Copyright 2016 The Kubernetes Authors All rights reserved.
 #
@@ -53,17 +53,8 @@ PROG=${0##*/}
 # If NO ARGUMENTS should return *usage*, uncomment the following line:
 usage=${1:-yes}
 
-if [[ $(uname) == "Darwin" ]]; then
-  READLINK_CMD=greadlink
-  type envsubst >/dev/null 2>&1 || { echo >&2 "'envsubst' is required,so please install it firstly. Aborting."; exit 1; }
-else
-  READLINK_CMD=readlink
-fi
-
-# shellcheck source=./lib/common.sh
-source "$(dirname "$(${READLINK_CMD} -ne "${BASH_SOURCE[0]}")")/lib/common.sh"
-# shellcheck source=./lib/gitlib.sh
-source "${TOOL_LIB_PATH}/gitlib.sh"
+source $(dirname $(readlink -ne $BASH_SOURCE))/lib/common.sh
+source $TOOL_LIB_PATH/gitlib.sh
 
 ###############################################################################
 # FUNCTIONS
@@ -79,7 +70,7 @@ show_tags () {
   local pr=$1
   local initial_commit=$2
   shift 2
-  local cp_commits=("$@")
+  local cp_commits=($*)
   local commit
   local commit_seconds
   local tag_seconds
@@ -106,11 +97,11 @@ show_tags () {
   fi
 
   # We only care about the initial commit for latency calculation
-  commit_seconds=$(git show -s --format="%ct" "$initial_commit")
+  commit_seconds=$(git show -s --format="%ct" $initial_commit)
 
   for commit in $initial_commit ${cp_commits[*]}; do
-    for tag in $(git tag --contains "$commit"); do
-      tag_seconds=$(git show -s --pretty=format:%ct "$tag" |tail -1)
+    for tag in $(git tag --contains $commit); do
+      tag_seconds=$(git show -s --pretty=format:%ct $tag |tail -1)
 
       # Convert to days with some precision
       days=$(echo "scale=2; ($tag_seconds-$commit_seconds)/86400"|bc)
@@ -130,7 +121,7 @@ show_tags () {
 ###############################################################################
 # Stubbed out
 security_layer::hosted_map () {
-  logecho "Skipping ${FUNCNAME[0]} extensions..."
+  logecho "Skipping $FUNCNAME extensions..."
   return 0
 }
 
@@ -144,32 +135,22 @@ gitlib::current_branch >/dev/null || common::exit 1
 # Additional functionality
 common::security_layer
 
-if [[ "${POSITIONAL_ARGV[0]}" =~ ^[1-9][0-9]*$ ]]; then
+if [[ ${POSITIONAL_ARGV[0]} =~ [0-9]{5,} ]]; then
   PR=${POSITIONAL_ARGV[0]}
-  echo "Converting incoming PR to a commit..."
+  #echo "Converting incoming PR to a commit..."
   # Need to include --all for the primary commit too for
   # non-cherrypick commit searches on branches
-  INITIAL_COMMIT=$(git log --grep "Merge pull request #$PR " \
+  INITIAL_COMMIT=$(git log --grep "Merge pull request #$PR" \
                            --all --pretty=format:"%h")
-  mapfile -t CP_COMMITS < <(git log --grep "cherry-pick-of-.*#$PR-" \
-                        --all --pretty=format:"%h")
-elif [[ "${POSITIONAL_ARGV[0]}" =~ ^[a-zA-Z0-9]*$ ]]; then
-    COMMIT=${POSITIONAL_ARGV[0]}
-    INITIAL_COMMIT=$(git log --pretty=format:"%H - %an, %ar : %s" \
-				|grep "$COMMIT" \
-				|grep "Merge pull request" \
-				|cut -d'-' -f1)
-   mapfile -t CP_COMMITS < <(git log --pretty=format:"%H - %an, %ar : %s" \
-				|grep "$COMMIT" \
-				|grep "cherry-pick-of-" \
-				|cut -d'-' -f1)
+  CP_COMMITS=($(git log --grep "cherry-pick-of-.*#$PR-" \
+                        --all --pretty=format:"%h"))
 else
   # TODO: Need to validate this is a git hash
   INITIAL_COMMIT=("${POSITIONAL_ARGV[0]}")
 fi
 
-[[ -z "${INITIAL_COMMIT[0]}" ]] && common::exit 1 "No commit/pr found in this repo."
+[[ -z "$INITIAL_COMMIT" ]] && common::exit 1 "No commit/pr found in this repo."
 
 security_layer::hosted_map
 
-show_tags "$PR" "${INITIAL_COMMIT[0]}" "${CP_COMMITS[@]}"
+show_tags "$PR" $INITIAL_COMMIT ${CP_COMMITS[*]}

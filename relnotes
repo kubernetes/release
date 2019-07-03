@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #
 # Copyright 2016 The Kubernetes Authors All rights reserved.
 #
@@ -94,15 +94,11 @@ PROG=${0##*/}
 # If NO ARGUMENTS should return *usage*, uncomment the following line:
 #usage=${1-yes}
 
-# shellcheck source=./lib/common.sh
-source "$(dirname "$(readlink -ne "${BASH_SOURCE[0]}")")/lib/common.sh"
-# shellcheck source=./lib/gitlib.sh
-source "$TOOL_LIB_PATH/gitlib.sh"
+source $(dirname $(readlink -ne $BASH_SOURCE))/lib/common.sh
+source $TOOL_LIB_PATH/gitlib.sh
 
 # Validate command-line
 common::argc_validate 1
-# Disable shellcheck for dynamically defined variable
-# shellcheck disable=SC2154
 [[ -n $FLAGS_release_tars && ! -d $FLAGS_release_tars ]] \
  && common::exit 1 "--release-tars=$FLAGS_release_tars doesn't exist!  Exiting..."
 
@@ -122,7 +118,7 @@ extract_pr_title () {
   local pull_json
 
   for pr in $prs; do
-    pull_json="$($GHCURL "$K8S_GITHUB_API/pulls/$pr")"
+    pull_json="$($GHCURL $K8S_GITHUB_API/pulls/$pr)"
     [[ -z "$pull_json" ]] && return 1
     body="$(echo "$pull_json" |jq -r '.body' |tr -d '\r')"
 
@@ -133,8 +129,6 @@ extract_pr_title () {
     #   html, for things like email, group posts, dashboards, and there
     #   is a disconnect between pandoc and github's markdown for lists.
     #   https://github.com/jgm/pandoc/issues/2210
-    # disable shellcheck for regex
-    # shellcheck disable=SC2016
     content=$(echo "$body" |\
               sed -n '/^``` *release-note/,/^```/{/^```/!p;/^```$/q}' |\
               sed -e '/^$/d' -e '2,$s/^\( *\* \)/        \1/g' \
@@ -167,14 +161,14 @@ get_prs_by_label () {
 
   prs_per_page=100
 
-  matching_prs=$($GHCURL "${K8S_GITHUB_SEARCHAPI}label:${label}\&per_page=1")
+  matching_prs="$($GHCURL ${K8S_GITHUB_SEARCHAPI}label:${label}&per_page=1)"
 
-  total="$(echo -n "$matching_prs" | jq -r '.total_count')"
+  total="$(echo -n $matching_prs | jq -r '.total_count')"
   # Calculate number of pages, rounding up
   num_pages=$(((total + prs_per_page - 1) / prs_per_page ))
 
-  for current_page in $(seq 1 "$num_pages"); do
-    mapfile -t < <($GHCURL "${K8S_GITHUB_SEARCHAPI}label:${label}&page=$current_page" | jq -r '.items[] | (.number | tostring)')
+  for current_page in `seq 1 $num_pages`; do
+    prs+=($($GHCURL "${K8S_GITHUB_SEARCHAPI}label:${label}&page=$current_page" | jq -r '.items[] | (.number | tostring)'))
   done
   echo "${prs[@]}"
 }
@@ -197,8 +191,8 @@ create_downloads_table () {
   echo
   echo "filename | sha512 hash"
   echo "-------- | -----------"
-  for file in "$@"; do
-    echo "[${file##*/}]($url_prefix/$release_tag/${file##*/}) | \`$(common::sha "$file" 512)\`"
+  for file in $@; do
+    echo "[${file##*/}]($url_prefix/$release_tag/${file##*/}) | \`$(common::sha $file 512)\`"
   done
   echo
 }
@@ -216,8 +210,6 @@ create_body () {
   local release_bucket=${FLAGS_release_bucket:-"kubernetes-release"}
   local title
 
-  # Disable shellcheck for dynamically defined variable
-  # shellcheck disable=SC2154
   ((FLAGS_preview)) && title="Branch "
   # Show a more useful header if release_tag == HEAD
   if [[ "$release_tag" == "HEAD" ]]; then
@@ -235,12 +227,12 @@ create_body () {
   if [[ -n $release_tars ]]; then
     echo "## Downloads for $title"
     echo
-    create_downloads_table "" "$release_tars/kubernetes{,-src}.tar.gz"
-    create_downloads_table "Client Binaries" "${release_tars}/kubernetes-client*.tar.gz"
-    create_downloads_table "Server Binaries" "${release_tars}/kubernetes-server*.tar.gz"
-    create_downloads_table "Node Binaries" "${release_tars}/kubernetes-node*.tar.gz"
+    create_downloads_table "" $release_tars/kubernetes{,-src}.tar.gz
+    create_downloads_table "Client Binaries" ${release_tars}/kubernetes-client*.tar.gz
+    create_downloads_table "Server Binaries" ${release_tars}/kubernetes-server*.tar.gz
+    create_downloads_table "Node Binaries" ${release_tars}/kubernetes-node*.tar.gz
   fi
-  cat "$PR_NOTES"
+  cat $PR_NOTES
 }
 
 ###############################################################################
@@ -253,8 +245,6 @@ ci_job_status () {
   local off=${TPUT[OFF]}
   local extra_flag
 
-  # Disable shellcheck for dynamically defined variable
-  # shellcheck disable=SC2154
   if ((FLAGS_htmlize_md)); then
     red="<FONT COLOR=RED>"
     green="<FONT COLOR=GREEN>"
@@ -276,16 +266,16 @@ ci_job_status () {
   # State of tree
   echo
   echo "## State of $CURRENT_BRANCH branch"
-  if content=$(find_green_build -v $extra_flag "$CURRENT_BRANCH"); then
+  if content=$(find_green_build -v $extra_flag $CURRENT_BRANCH); then
     echo "${green}GOOD TO GO!$off"
   else
     echo "${red}NOT READY$off"
   fi
   echo
   echo "### Details"
-  echo "\`\`\`"
+  echo '```'
   echo "$content"
-  echo "\`\`\`"
+  echo '```'
 }
 
 ###############################################################################
@@ -297,6 +287,7 @@ generate_notes () {
   local range
   local start_tag
   local release_tag
+  local labels
   local body
   local tempcss=$TMPDIR/$PROG-ca.$$
   local tempfile=$TMPDIR/$PROG-file-1.$$
@@ -308,12 +299,12 @@ generate_notes () {
   local -a notes_action
   local -a prs
 
-  branch_head=$(git rev-parse "refs/remotes/origin/$CURRENT_BRANCH" 2>/dev/null)
+  branch_head=$(git rev-parse refs/remotes/origin/$CURRENT_BRANCH 2>/dev/null)
 
   # If ${LAST_RELEASE[$CURRENT_BRANCH]} is unset attempt to get the last
   # release from the parent branch and then master
-  : "${LAST_RELEASE[$CURRENT_BRANCH]:=${LAST_RELEASE[${CURRENT_BRANCH%.*}]}}"
-  : "${LAST_RELEASE[$CURRENT_BRANCH]:=${LAST_RELEASE[master]}}"
+  : ${LAST_RELEASE[$CURRENT_BRANCH]:=${LAST_RELEASE[${CURRENT_BRANCH%.*}]}}
+  : ${LAST_RELEASE[$CURRENT_BRANCH]:=${LAST_RELEASE[master]}}
 
   # Default
   range="${POSITIONAL_ARGV[0]:-"${LAST_RELEASE[$CURRENT_BRANCH]}..$branch_head"}"
@@ -326,7 +317,7 @@ generate_notes () {
     release_tag=${POSITIONAL_ARGV[0]}
   fi
   # Describe/tag $branch_head if no release_tag set
-  : "${release_tag:=$(git describe "$branch_head")}"
+  : ${release_tag:=$(git describe $branch_head)}
 
   if [[ -z "$start_tag" ]]; then
     common::exit 1 "Unable to set beginning of range automatically." \
@@ -346,7 +337,7 @@ generate_notes () {
   [[ $range =~ \.\.$ ]] && range+=$branch_head
 
   # Validate range
-  if ! git rev-parse "$range" &>/dev/null; then
+  if ! git rev-parse $range &>/dev/null; then
     logecho
     logecho "Invalid tags/range $range !"
     return 1
@@ -354,25 +345,23 @@ generate_notes () {
 
   # Deref all the PRs back to master, paying special attention to
   # automated cherrypicks that could have multiple sources
-  while read -r line; do
+  while read line; do
     if [[ "$line" =~ automated-cherry-pick-of-(#[0-9]+-){1,} ]]; then
-      mapfile -t prs < <(echo "${BASH_REMATCH[0]}" | grep -Eo "#[0-9]*" |tr -d '#')
+      prs+=($(echo "${BASH_REMATCH[0]}" | egrep -o "#[0-9]*" |tr -d '#'))
     else
-      mapfile -t prs < <(echo "$line" | awk '{gsub(/#/,"");print $4 }')
+      prs+=($(echo "$line" | awk '{gsub(/#/,"");print $4 }'))
     fi
-  done < <(git log "$range" --format="%s" --grep="Merge pull")
+  done < <(git log $range --format="%s" --grep="Merge pull")
 
   logecho
 
   echo "Scanning action required PR labels on the $CURRENT_BRANCH branch..."
-  mapfile -t action_prs < <(get_prs_by_label release-note-breaking-change)
-  mapfile -t action_prs < <(get_prs_by_label release-note-action-required)
+  action_prs=($(get_prs_by_label release-note-breaking-change))
+  action_prs+=($(get_prs_by_label release-note-action-required))
   echo "Scanning release-note PR label on the $CURRENT_BRANCH branch..."
-  mapfile -t normal_prs < <(get_prs_by_label release-note)
+  normal_prs=($(get_prs_by_label release-note))
 
   for pr in ${prs[*]}; do
-    # Disable shellcheck for regex matching
-    # shellcheck disable=SC2199,2076
     if [[ " ${action_prs[@]} " =~ " ${pr} " ]]; then
       notes_action+=("$pr")
     elif [[ " ${normal_prs[@]} " =~ " ${pr} " ]]; then
@@ -383,21 +372,19 @@ generate_notes () {
 
   logecho "Generating release notes..."
   # Bootstrap notes for major (new branch) releases
-  # Disable shellcheck for dynamically defined variable
-  # shellcheck disable=SC2154
   if ((FLAGS_full)) || [[ $release_tag =~ ${VER_REGEX[dotzero]} ]]; then
     # Check for draft and use it if available
     logecho "Checking if draft release notes exist for $release_tag..."
     $GHCURL \
-     "$K8S_GITHUB_RAW_ORG/sig-release/master/releases/$CURRENT_BRANCH/release-notes-draft.md" > "$tempfile"
+     $K8S_GITHUB_RAW_ORG/sig-release/master/releases/$CURRENT_BRANCH/release-notes-draft.md > $tempfile
 
     if [[ -s $tempfile ]]; then
       logecho "Draft found - using for release notes..."
-      cat "$tempfile" >> "$PR_NOTES"
-      logrun rm -f "$tempfile"
+      cat $tempfile >> $PR_NOTES
+      logrun rm -f $tempfile
     else
       logecho "No draft found - creating generic template..."
-      cat <<EOF+ >> "$PR_NOTES"
+      cat <<EOF+ >> $PR_NOTES
 ## Major Themes
 
 * TBD
@@ -420,41 +407,41 @@ EOF+
     # Aggregate all previous releases in series
     echo
     echo "### Previous Releases Included in $release_tag"
-    while read -r anchor; do
+    while read anchor; do
       echo "$anchor"
-    done< <(git show "master:$changelog_file" | grep -E "^- \[${release_tag}-") \
-     >> "$PR_NOTES"
+    done< <(git show master:$changelog_file | egrep "^- \[${release_tag}-") \
+     >> $PR_NOTES
   else
-    echo "## Changelog since $start_tag" >> "$PR_NOTES"
-    echo >> "$PR_NOTES"
+    echo "## Changelog since $start_tag" >> $PR_NOTES
+    echo >> $PR_NOTES
 
     if [[ -n "${notes_action[*]}" ]]; then
-      echo "### Action Required" >> "$PR_NOTES"
-      echo >> "$PR_NOTES"
-      extract_pr_title "${notes_action[*]}" >> "$PR_NOTES" \
+      echo "### Action Required" >> $PR_NOTES
+      echo >> $PR_NOTES
+      extract_pr_title "${notes_action[*]}" >> $PR_NOTES \
        || common::exit 1 "$FAILED: github rate limiting."
-      echo >> "$PR_NOTES"
+      echo >> $PR_NOTES
     fi
 
     if [[ -n "${notes_normal[*]}" ]]; then
-      echo "### Other notable changes" >> "$PR_NOTES"
-      echo >> "$PR_NOTES"
-      extract_pr_title "${notes_normal[*]}" >> "$PR_NOTES" \
+      echo "### Other notable changes" >> $PR_NOTES
+      echo >> $PR_NOTES
+      extract_pr_title "${notes_normal[*]}" >> $PR_NOTES \
        || common::exit 1 "$FAILED: github rate limiting."
     fi
 
     if [[ -z "${notes_normal[*]}" && -z "${notes_action[*]}" ]]; then
       logecho
-      logecho "**No notable changes for this release**" >> "$PR_NOTES"
+      logecho "**No notable changes for this release**" >> $PR_NOTES
       logecho
     fi
   fi
 
-  echo >> "$PR_NOTES"
+  echo >> $PR_NOTES
 
   logecho "Preparing layout..."
-  create_body "${FLAGS_release_tars:-""}" "$start_tag" "${release_tag:-HEAD}" \
-   > "$RELEASE_NOTES_MD"
+  create_body ${FLAGS_release_tars:-""} $start_tag ${release_tag:-HEAD} \
+   > $RELEASE_NOTES_MD
 
   if ((FLAGS_preview)); then
     # Pending PRS
@@ -462,8 +449,8 @@ EOF+
     (
     echo "-------"
     echo "## PENDING PRs on the $CURRENT_BRANCH branch"
-    gitlib::pending_prs "$CURRENT_BRANCH"
-    ) >> "$RELEASE_NOTES_MD"
+    gitlib::pending_prs $CURRENT_BRANCH
+    ) >> $RELEASE_NOTES_MD
   fi
 
   if ((FLAGS_htmlize_md)) && [[ ! $release_tag =~ ${VER_REGEX[dotzero]} ]]; then
@@ -472,27 +459,27 @@ EOF+
     sed -i -e "s,#\([0-9]\{5\,\}\),[#\1]($K8S_GITHUB_URL/pull/\1),g" \
         -e "s,\(#v[0-9]\{3\}-\),$K8S_GITHUB_URL/blob/master/$changelog_file\1,g" \
         -e "s,@\([a-zA-Z0-9-]*\),[@\1](https://github.com/\1),g" \
-     "$RELEASE_NOTES_MD"
+     $RELEASE_NOTES_MD
   fi
 
   if ((FLAGS_preview)); then
     # We do this after htmlizing because we don't want to update the
     # issues in the block of this section
     logecho "Adding CI job status (this may take a while)..."
-    ci_job_status >> "$RELEASE_NOTES_MD"
+    ci_job_status >> $RELEASE_NOTES_MD
   fi
 
   if [[ -n "$RELEASE_NOTES_HTML" ]]; then
     echo "<style type=text/css>" \
          "table,th,tr,td {border: 1px solid gray;" \
          "border-collapse: collapse;padding: 5px;}" \
-         "</style>" > "$tempcss"
+         "</style>" > $tempcss
 
-    pandoc -H "$tempcss" --from markdown_github --to html \
-     "$RELEASE_NOTES_MD" > "$RELEASE_NOTES_HTML"
+    pandoc -H $tempcss --from markdown_github --to html \
+     $RELEASE_NOTES_MD > $RELEASE_NOTES_HTML
 
     # Remove temp file
-    logrun rm -f "$tempcss"
+    logrun rm -f $tempcss
   fi
 }
 
@@ -504,20 +491,18 @@ CURRENT_BRANCH=${FLAGS_branch:-$(gitlib::current_branch)} \
 
 PR_NOTES=$TMPDIR/$PROG-$CURRENT_BRANCH-prnotes
 # Initialize new PR_NOTES for session
-true > "$PR_NOTES"
+>$PR_NOTES
 RELEASE_NOTES_MD=$(common::absolute_path \
-                   "${FLAGS_markdown_file:-$TMPDIR/$PROG-$CURRENT_BRANCH.md}")
-# Disable shellcheck for dynamically defined variable
-# shellcheck disable=SC2154
-RELEASE_NOTES_HTML=$(common::absolute_path "$FLAGS_html_file")
-export ANNOUNCEMENT_TEXT=$TMPDIR/$PROG-announcement
+                   ${FLAGS_markdown_file:-$TMPDIR/$PROG-$CURRENT_BRANCH.md})
+RELEASE_NOTES_HTML=$(common::absolute_path $FLAGS_html_file)
+ANNOUNCEMENT_TEXT=$TMPDIR/$PROG-announcement
 
 ###############################################################################
 # MAIN
 ###############################################################################
 # Initialize and save up to 10 (rotated logs)
 MYLOG=$TMPDIR/$PROG.log
-common::logfileinit "$MYLOG" 10
+common::logfileinit $MYLOG 10
 
 # BEGIN script
 common::timestamp begin
@@ -526,7 +511,7 @@ common::timestamp begin
 gitlib::github_api_token
 
 # Check for packages
-common::check_binaries jq pandoc
+common::check_packages jq pandoc
 
 # Build LAST_RELEASE dictionary
 gitlib::last_releases
@@ -534,8 +519,6 @@ gitlib::last_releases
 generate_notes || common::exit 1
 
 logecho
-# Disable shellcheck for dynamically defined variable
-# shellcheck disable=SC2154
 if ((FLAGS_quiet)); then
   logecho -n "Notes written to $RELEASE_NOTES_MD"
   if [[ -f $RELEASE_NOTES_HTML ]]; then
@@ -545,7 +528,7 @@ if ((FLAGS_quiet)); then
   fi
 else
   logecho -r "$HR"
-  cat "$RELEASE_NOTES_MD"
+  cat $RELEASE_NOTES_MD
   logecho -r "$HR"
 fi
 

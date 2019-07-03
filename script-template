@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #
 # Copyright 2016 The Kubernetes Authors All rights reserved.
 #
@@ -44,11 +44,10 @@ PROG=${0##*/}
 #+
 #-
 ########################################################################
-# shellcheck source=./lib/common.sh
-source "$(dirname "$(readlink -ne "$0")")/lib/common.sh"
+source $(dirname $(readlink -ne $0))/lib/common.sh
 
 cat <<EOF_CAT
-#!/usr/bin/env bash
+#!/bin/bash
 #
 # Copyright 2016 The Kubernetes Authors All rights reserved.
 #
@@ -150,7 +149,6 @@ common::timestamp begin
 # common::askyorn - Ask a simple yes or no question (see common.sh for details)
 # common::stepheader - Bolded, logged bullet points for your output
 # common::exit - Exit cleanly
-# common::check_binaries - Checks for binary prereqs
 # common::check_packages - Check for package prereqs
 # common::disk_space_check - Check disk space
 
