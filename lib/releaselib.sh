@@ -200,7 +200,7 @@ release::set_build_version () {
       ((good_job_count==1)) && first_build_number=$build_number
       build_sha1=${BASH_REMATCH[9]}
       build_version=${BASH_REMATCH[2]}.$build_number+$build_sha1
-      build_sha1_date=$($GHCURL "$K8S" "$GITHUB_API/commits?sha=$build_sha1" |\
+      build_sha1_date=$($GHCURL "${K8S_GITHUB_API}/commits?sha=${build_sha1}" |\
                         jq -r '.[0] | .commit .author .date')
       build_sha1_date=$(date +"%R %m/%d" -d "$build_sha1_date")
 
