@@ -21,6 +21,9 @@
 # CONSTANTS
 ###############################################################################
 GITHUB_TOKEN=${FLAGS_github_token:-$GITHUB_TOKEN}
+# for cases where the token is prvided with leading/trailing whitespaces we
+# just trim them here. The assumption is that the token itself will never have
+# whitespaces. If that is not true anymore, this breaks.
 GITHUB_TOKEN="$( echo "$GITHUB_TOKEN" | tr -d '[:space:]' )"
 [[ -n "$GITHUB_TOKEN" ]] && GITHUB_TOKEN_FLAG=("-u" "${GITHUB_TOKEN}:x-oauth-basic")
 GHCURL="curl -s --fail --retry 10 ${GITHUB_TOKEN_FLAG[*]}"
