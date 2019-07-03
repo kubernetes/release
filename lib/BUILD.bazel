@@ -1,9 +1,4 @@
 sh_test(
-    name = "common",
-    srcs = ["common_test.sh"],
-)
-
-sh_test(
     name = "releaselib",
     srcs = ["releaselib_test.sh"],
 )

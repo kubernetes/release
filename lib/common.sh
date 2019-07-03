@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #
 # Copyright 2016 The Kubernetes Authors All rights reserved.
 #
@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 # Provide a default $PROG (for use in most functions that use a $PROG: prefix
-: "${PROG:="common"}"
+: ${PROG:="common"}
 export PROG
 
 ##############################################################################
@@ -24,11 +24,7 @@ export PROG
 
 set -o errtrace
 
-# shellcheck disable=SC2034
-declare -A some_var >/dev/null 2>&1 || {
-  echo "Bash with support for associative arrays (version >= 4.0) required"
-  exit 1
-}
+declare -A some_var || (echo "Bash version >= 4.0 required" && exit 1)
 
 if [[ $(uname) == "Darwin" ]]; then
   # Support for OSX.
@@ -42,11 +38,11 @@ fi
 # COMMON CONSTANTS
 #
 
-TOOL_LIB_PATH=${TOOL_LIB_PATH:-$(dirname "$($READLINK_CMD -ne "${BASH_SOURCE[0]}")")}
-TOOL_ROOT=${TOOL_ROOT:-$($READLINK_CMD -ne "$TOOL_LIB_PATH/..")}
+TOOL_LIB_PATH=${TOOL_LIB_PATH:-$(dirname $($READLINK_CMD -ne $BASH_SOURCE))}
+TOOL_ROOT=${TOOL_ROOT:-$($READLINK_CMD -ne $TOOL_LIB_PATH/..)}
 PATH=$TOOL_ROOT:$PATH
 # Provide a default EDITOR for those that don't have this set
-: "${EDITOR:="vi"}"
+: ${EDITOR:="vi"}
 export PATH TOOL_ROOT TOOL_LIB_PATH EDITOR
 
 # Pretty curses stuff for terminals
@@ -65,7 +61,7 @@ if [[ -t 1 ]]; then
   )
 
   # HR
-  HR="$(for ((i=1;i<=TPUT[COLS];i++)); do echo -en '\u2500'; done)"
+  HR="$(for ((i=1;i<=${TPUT[COLS]};i++)); do echo -en '\u2500'; done)"
 
   # Save original TTY State
   TTY_SAVED_STATE="$(stty -g)"
@@ -74,41 +70,17 @@ else
 fi
 
 # Set some usable highlighted keywords for functions like logrun -s
-# disable shellcheck for highlighted keywords
-# shellcheck disable=SC2034
 YES="${TPUT[GREEN]}YES${TPUT[OFF]}"
-# disable shellcheck for highlighted keywords
-# shellcheck disable=SC2034
 OK="${TPUT[GREEN]}OK${TPUT[OFF]}"
-# disable shellcheck for highlighted keywords
-# shellcheck disable=SC2034
 DONE="${TPUT[GREEN]}DONE${TPUT[OFF]}"
-# disable shellcheck for highlighted keywords
-# shellcheck disable=SC2034
 PASSED="${TPUT[GREEN]}PASSED${TPUT[OFF]}"
-# disable shellcheck for highlighted keywords
-# shellcheck disable=SC2034
 FAILED="${TPUT[RED]}FAILED${TPUT[OFF]}"
-# disable shellcheck for highlighted keywords
-# shellcheck disable=SC2034
 FATAL="${TPUT[RED]}FATAL${TPUT[OFF]}"
-# disable shellcheck for highlighted keywords
-# shellcheck disable=SC2034
 NO="${TPUT[RED]}NO${TPUT[OFF]}"
-# disable shellcheck for highlighted keywords
-# shellcheck disable=SC2034
 WARNING="${TPUT[YELLOW]}WARNING${TPUT[OFF]}"
-# disable shellcheck for highlighted keywords
-# shellcheck disable=SC2034
 ATTENTION="${TPUT[YELLOW]}ATTENTION${TPUT[OFF]}"
-# disable shellcheck for highlighted keywords
-# shellcheck disable=SC2034
 MOCK="${TPUT[YELLOW]}MOCK${TPUT[OFF]}"
-# disable shellcheck for highlighted keywords
-# shellcheck disable=SC2034
 FOUND="${TPUT[GREEN]}FOUND${TPUT[OFF]}"
-# disable shellcheck for highlighted keywords
-# shellcheck disable=SC2034
 NOTFOUND="${TPUT[YELLOW]}NOT FOUND${TPUT[OFF]}"
 
 # Ensure USER is set
@@ -172,7 +144,7 @@ logecho () {
   else
     # Add FUNCNAME to line prefix, but strip it from visible output
     # Useful for viewing log detail
-    echo -e "$*" | fmt -$fmtlen | sed -e "1s,^,$log_prefix,g" # "${sed_pat[@]}"
+    echo -e "$*" | fmt -$fmtlen | sed -e "1s,^,$log_prefix,g" "${sed_pat[@]}"
   fi
   ) | tee -a "$LOGFILE" |sed "s,^$log_prefix,$prefix,g"
 }
@@ -213,10 +185,8 @@ logrun () {
     esac
   done
 
-  for ((try=0; try<=retries; try++)); do
+  for ((try=0; try<=$retries; try++)); do
     if [[ $try -gt 0 ]]; then
-      # Disable shellcheck for dynamically defined variable
-      # shellcheck disable=SC2154
       if ((verbose)) || ((FLAGS_verbose)); then
         # if global FLAGS_verbose, be very verbose
         logecho "Retry #$try..."
@@ -242,7 +212,7 @@ logrun () {
 
       if ((mock)); then
         logecho "($MOCK)"
-        logecho "(CMD): $*"
+        logecho "(CMD): $@"
         return 0
       fi
 
@@ -257,7 +227,7 @@ logrun () {
     else
       if ((mock)); then
         logecho "($MOCK)"
-        logecho "(CMD): $*"
+        logecho "(CMD): $@"
         return 0
       fi
 
@@ -273,14 +243,14 @@ logrun () {
     [[ "$ret" = 0 ]] && break
   done
 
-  [[ -n "$retries" && $try -gt 0 ]] && retry_string=" (retry #$try)"
+  [[ -n "$retries" && $try > 0 ]] && retry_string=" (retry #$try)"
 
   if ((status)); then
     [[ "$ret" = 0 ]] && logecho -r "$OK$retry_string"
     [[ "$ret" != 0 ]] && logecho -r "$FAILED"
   fi
 
-  return "$ret"
+  return $ret
 }
 
 ###############################################################################
@@ -313,20 +283,15 @@ common::timestamp () {
     prefix="$PROG: "
   fi
 
-  # disable shellcheck warning about "|" in case
-  # shellcheck disable=SC1010
   case $action in
   begin)
     # Get time(date) for display and calc.
-    eval "$start_var"="$(date '+%s')"
+    eval $start_var=$(date '+%s')
 
     if [[ $section == "main" ]]; then
       # Print BEGIN message for $PROG.
       echo "${prefix}BEGIN $section on ${HOSTNAME%%.*} $(date)"
     else
-      # bug in shellcheck parsing dates as ranges
-      # see: https://github.com/koalaman/shellcheck/wiki/SC2102
-      # shellcheck disable=SC2102
       echo "$(date +[%Y-%b-%d\ %R:%S\ %Z]) $section"
     fi
 
@@ -342,16 +307,16 @@ common::timestamp () {
     fi
 
     # Get time(date) for display and calc.
-    eval "$end_var"="$(date '+%s')"
+    eval $end_var=$(date '+%s')
 
     elapsed=$(( ${!end_var} - ${!start_var} ))
     d=$(( elapsed / 86400 ))
     h=$(( (elapsed % 86400) / 3600 ))
     m=$(( (elapsed % 3600) / 60 ))
     s=$(( elapsed % 60 ))
-    ((d>0)) && local prettyd="${d}d"
-    ((h>0)) && local prettyh="${h}h"
-    ((m>0)) && local prettym="${m}m"
+    (($d>0)) && local prettyd="${d}d"
+    (($h>0)) && local prettyh="${h}h"
+    (($m>0)) && local prettym="${m}m"
     prettys="${s}s"
     pretty="$prettyd$prettyh$prettym$prettys"
 
@@ -359,9 +324,6 @@ common::timestamp () {
       echo
       echo "${prefix}DONE $section on ${HOSTNAME%%.*} $(date) in $pretty"
     else
-      # bug in shellcheck parsing dates as ranges
-      # see: https://github.com/koalaman/shellcheck/wiki/SC2102
-      # shellcheck disable=SC2102
       echo "$(date +[%Y-%b-%d\ %R:%S\ %Z]) $section in $pretty"
     fi
     ;;
@@ -375,7 +337,7 @@ common::trap () {
   local sig
 
   for sig; do
-    trap '$func' "$sig" "$sig"
+    trap "$func $sig" "$sig"
   done
 }
 
@@ -402,10 +364,8 @@ common::trapclean () {
 common::cleanexit () {
   # Display end common::timestamp when an existing common::timestamp begin
   # was run.
-  # Disable shellcheck for dynamically defined variable
-  # shellcheck disable=SC2154
   [[ -n ${mainstart_seconds} ]] && common::timestamp end
-  exit "${1:-0}"
+  exit ${1:-0}
 }
 
 #############################################################################
@@ -413,11 +373,11 @@ common::cleanexit () {
 # @param Exit code
 # @param message
 common::exit () {
-  local etype="${1:-0}"
+  local etype=${1:-0}
   shift
 
   [[ -n "$1" ]] && (logecho;logecho "$@";logecho)
-  common::cleanexit "$etype"
+  common::cleanexit $etype
 }
 
 #############################################################################
@@ -445,8 +405,8 @@ common::askyorn () {
 
   while [[ $yorn != [yYnN] ]]; do
     logecho -n "$*? ($msg): "
-    read -r yorn
-    : :"${yorn:=$def}"
+    read yorn
+    : ${yorn:=$def}
   done
 
   # Final test to set return code
@@ -475,7 +435,7 @@ common::stepheader () {
 
   logecho
   logecho -r "$HR"
-  logecho "$msg" "$append" "$index"
+  logecho "$msg" "$append" $index
   logecho -r "$HR"
   logecho
 }
@@ -490,25 +450,25 @@ common::rotatelog () {
   # Quiet exit
   [[ ! -f "$file" ]] && return
 
-  cp -p "$file" "$tmpfile"
+  cp -p $file $tmpfile
 
   while ((counter>=0)); do
     if ((counter==num)); then
-      rm -f "$file.$counter"
+      rm -f $file.$counter
     elif ((counter==0)); then
       if [[ -f "$file" ]]; then
         next=$((counter+1))
-        mv "$file" "$file.$next"
+        mv $file $file.$next
       fi
     else
       next=$((counter+1))
-      [[ -f $file.$counter ]] && mv "$file.$counter" "$file.$next"
+      [[ -f $file.$counter ]] && mv $file.$counter $file.$next
     fi
     ((counter==0)) && break
     ((counter--))
   done
 
-  mv "$tmpfile" "$file"
+  mv $tmpfile $file
 }
 
 # --norotate assumes you're passing in a unique LOGFILE.
@@ -528,19 +488,20 @@ common::logfileinit () {
   local num=$2
 
   # Ensure LOG directory exists
-  mkdir -p "$(dirname "$LOGFILE" 2>&-)"
+  mkdir -p $(dirname $LOGFILE 2>&-)
 
   # Initialize Logfile.
   if ! $nr; then
-    common::rotatelog "$LOGFILE" "${num:-3}"
+    common::rotatelog "$LOGFILE" ${num:-3}
   fi
   # Truncate the logfile.
+  > "$LOGFILE"
 
   echo "CMD: $PROG $ORIG_CMDLINE" >> "$LOGFILE"
 
   # with --norotate, remove the list of files that start with $PROG.log
   if $nr; then
-    find . -name "${LOGFILE%.*}.*" | head --lines=-"$num" | xargs rm -f
+    ls -1tr ${LOGFILE%.*}.* |head --lines=-$num |xargs rm -f
   fi
 }
 
@@ -549,25 +510,19 @@ common::logfileinit () {
 # those and display a man page using:
 # pandoc -s -f markdown -t man prog.md |man -l -
 common::manpage () {
-  # Disable shellcheck for dynamically defined variable
-  # shellcheck disable=SC2154
   [[ "$usage" == "yes" ]] && set -- -usage
-  # Disable shellcheck for dynamically defined variable
-  # shellcheck disable=SC2154
   [[ "$man" == "yes" ]] && set -- -man
-  # Disable shellcheck for dynamically defined variable
-  # shellcheck disable=SC2154
   [[ "$comments" == "yes" ]] && set -- -comments
 
   case $1 in
   -*usage|"-?")
-    sed -n '/#+ SYNOPSIS/,/^#+ DESCRIPTION/p' "$0" | sed '/^#+ DESCRIPTION/d' |\
+    sed -n '/#+ SYNOPSIS/,/^#+ DESCRIPTION/p' $0 |sed '/^#+ DESCRIPTION/d' |\
      envsubst | sed -e 's,^#+ ,,g' -e 's,^#+$,,g'
     exit 1
     ;;
   -*man|-h|-*help)
     grep "^#+" "$0" |\
-     sed -e 's,^#+ ,,g' -e 's,^#+$,,g' | envsubst | ${PAGER:-"less"}
+     sed -e 's,^#+ ,,g' -e 's,^#+$,,g' |envsubst |${PAGER:-"less"}
     exit 1
     ;;
   esac
@@ -588,8 +543,6 @@ common::namevalue () {
 
   for arg in "$@"; do
     case $arg in
-      '') : # ignore empty args
-          ;;
       -*[[:alnum:]]*) # Strip off any leading - or --
           arg=$(printf "%s\n" $arg |sed 's/^-\{1,2\}//')
           # Handle global aliases
@@ -598,14 +551,14 @@ common::namevalue () {
             name=${arg%%=*}
             value=${arg#*=}
             # change -'s to _ in name for legal vars in bash
-            eval export FLAGS_"${name//-/_}"=\""$value"\"
+            eval export FLAGS_${name//-/_}=\""$value"\"
           else
             # bool=1
             # change -'s to _ in name for legal vars in bash
-            eval export "FLAGS_${arg//-/_}"=1
+            eval export FLAGS_${arg//-/_}=1
           fi
           ;;
-    *) POSITIONAL_ARGV+=("$arg")
+    *) POSITIONAL_ARGV+=($arg)
        ;;
     esac
   done
@@ -637,26 +590,26 @@ common::printvars () {
   fi
 
   for var in "$@"; do
-    ((pprint)) && var_str=$var
+    (($pprint)) && var_str=$var
 
     # if var is an array, do special tricks
     # bash wizardry courtesy of
     # https://stackoverflow.com/questions/4582137/bash-indirect-array-addressing
     if [[ "$(declare -p $var 2>/dev/null)" =~ ^declare\ -[aA] ]]; then
-      tmp="${var[*]}"
+      tmp="$var[@]"
       quoted=("${!tmp}") # copy the variable
       for key in "${!quoted[@]}"; do
         # shell-quote each element
         quoted[$key]="$(printf %q "${quoted[$key]}")"
       done
-      if ((pprint)); then
+      if (($pprint)); then
         logecho -r "$(printf '%-32s%s\n' "${var_str}:" "${quoted[*]}")"
       else
         printf '%s=%s\n' "$var" "${quoted[*]}"
       fi
     else
-      if ((pprint)); then
-        pprintval=$(eval echo "\$$pprintvar")
+      if (($pprint)); then
+        pprintval=$(eval echo \$$pprintvar)
         logecho -r \
          "$(printf '%-32s%s\n' "${var_str}:" "${!var/$pprintval\//\$$pprintvar/}")"
       else
@@ -709,7 +662,7 @@ common::sha () {
   local file=$1
   local algo=${2:-1}
 
-  which shasum >/dev/null 2>&1 && LANG=C shasum -a"$algo" "$file" | awk '{print $1}'
+  which shasum >/dev/null 2>&1 && LANG=C shasum -a$algo $file | awk '{print $1}'
 }
 
 ###############################################################################
@@ -733,23 +686,17 @@ security_layer::acl_check () {
 # SECURITY_LAYER global defaulted here.  Set to 1 in external source
 common::security_layer () {
   local rcfile=$HOME/.kubernetes-releaserc
-  # see comments above about SECURITY_LAYER
-  # shellcheck disable=SC2034
   SECURITY_LAYER=0
 
   # Quietly attempt to source the include
-  # cannot know path ahead of time for shellcheck
-  # shellcheck disable=SC1090
-  source "$rcfile" >/dev/null 2>&1 || true
+  source $rcfile >/dev/null 2>&1 || true
 
   # If not there attempt to set it from env
   FLAGS_security_layer=${FLAGS_security_layer:-""}
 
   if [[ -n $FLAGS_security_layer ]]; then
     if [[ -r $FLAGS_security_layer ]]; then
-     # cannot know path ahead of time for shellcheck
-     # shellcheck disable=SC1090
-      source "$FLAGS_security_layer" >/dev/null 2>&1
+      source $FLAGS_security_layer >/dev/null 2>&1
     else
       logecho "$FATAL! $FLAGS_security_layer is not readable."
       return 1
@@ -772,17 +719,17 @@ common::check_pip_packages () {
   # Make sure a bunch of packages are available
   logecho -n "Checking required PIP packages: "
 
-  for prereq in "$@"; do
+  for prereq in $*; do
     (pip list --format legacy 2>&- || pip list) |\
-     grep -Fw "$prereq" > /dev/null || missing+=("$prereq")
+     fgrep -w $prereq > /dev/null || missing+=($prereq)
   done
 
   if ((${#missing[@]}>0)); then
     logecho -r "$FAILED"
-    logecho "PREREQ: Missing prerequisites: ${missing[*]}" \
+    logecho "PREREQ: Missing prerequisites: ${missing[@]}" \
             "Run the following and try again:"
     logecho
-    for prereq in "${missing[@]}"; do
+    for prereq in ${missing[@]}; do
       logecho "$ sudo pip install $prereq"
     done
     return 1
@@ -790,56 +737,6 @@ common::check_pip_packages () {
   logecho -r "$OK"
 }
 
-##############################################################################
-# Check whether required binaries are installed
-
-common::check_binaries () {
-  local distro
-  local prereq
-
-  # Make sure a bunch of binaries are installed
-  logecho -n "Checking whether required binaries are available...\n"
-
-  for prereq in "$@"; do
-    which $prereq > /dev/null || missing+=("$prereq")
-  done
-
-  if ((${#missing[@]}>0)); then
-    # Disable shellcheck for dynamically defined variable
-    # shellcheck disable=SC2154
-    if ((FLAGS_gcb)); then
-      # Just force Ubuntu
-      distro="Ubuntu"
-    else
-      distro=$(lsb_release -si)
-    fi
-    logecho -r "$FAILED"
-    logecho "PREREQ: Missing prerequisites: ${missing[*]}"
-
-    case $distro in
-      Fedora)
-        logecho "Run the following command(s) to find the package(s) that contain(s) the required prerequisite(s):"
-        for prereq in "${missing[@]}"; do
-          logecho "dnf provides $prereq"
-        done
-        return 1
-        ;;
-      Ubuntu|LinuxMint|Debian)
-        logecho "Run the following command(s) to find the package(s) that contain(s) the required prerequisite(s):"
-        for prereq in "${missing[@]}"; do
-          logecho "dpkg -S $prereq"
-        done
-        return 1
-        ;;
-      *)
-        logecho "Unsupported distribution. Please consult your distribution's documentation for downloading the missing prerequisite(s)"
-        return 1
-        ;;
-    esac
-    return 1
-  fi
-  logecho -r "$OK"
-}
 
 ###############################################################################
 # Check packages for a K8s release
@@ -863,14 +760,14 @@ common::check_packages () {
   case $distro in
     Fedora)
       packagemgr="dnf"
-      for prereq in "$@"; do
-        rpm --quiet -q $prereq 2>/dev/null || missing+=("$prereq")
+      for prereq in $*; do
+        rpm --quiet -q $prereq 2>/dev/null || missing+=($prereq)
       done
       ;;
     Ubuntu|LinuxMint|Debian)
       packagemgr="apt-get"
-      for prereq in "$@"; do
-        dpkg --get-selections 2>/dev/null | grep -Fqw "$prereq" || missing+=("$prereq")
+      for prereq in $*; do
+        dpkg --get-selections 2>/dev/null | fgrep -qw $prereq || missing+=($prereq)
       done
       ;;
     *)
@@ -881,10 +778,10 @@ common::check_packages () {
 
   if ((${#missing[@]}>0)); then
     logecho -r "$FAILED"
-    logecho "PREREQ: Missing prerequisites: ${missing[*]}" \
+    logecho "PREREQ: Missing prerequisites: ${missing[@]}" \
             "Run the following and try again:"
     logecho
-    for prereq in "${missing[@]}"; do
+    for prereq in ${missing[@]}; do
       if [[ -n ${PREREQUISITE_INSTRUCTIONS[$prereq]} ]]; then
         logecho "# See ${PREREQUISITE_INSTRUCTIONS[$prereq]}"
       else
@@ -912,9 +809,7 @@ PROGSTEP[common::disk_space_check]="DISK SPACE CHECK"
 common::disk_space_check () {
   local disk=$1
   local threshold=$2
-  local avail
-  
-  avail=$(df -BG "$disk" |\
+  local avail=$(df -BG $disk |\
                 sed -nr -e "s|^\S+\s+\S+\s+\S+\s+([0-9]+).*$|\1|p")
 
   logecho -n "Checking for at least $threshold GB on $disk: "
@@ -934,14 +829,15 @@ common::disk_space_check () {
 # @param function - a function name to run and time
 common::runstep () {
   local function=$1
+  local finishtime
   local retcode
 
-  common::timestamp begin "$function" &>/dev/null
+  common::timestamp begin $function &>/dev/null
 
-  "$@"
+  $*
   retcode=$?
 
-  logecho "${TPUT[BOLD]}$(common::timestamp end "$function")${TPUT[OFF]}"
+  logecho "${TPUT[BOLD]}$(common::timestamp end $function)${TPUT[OFF]}"
   return $retcode
 }
 
@@ -955,8 +851,8 @@ common::absolute_path () {
 
   [[ -z "$arg" ]] && return 0
 
-  [[ "$arg" =~ ^/ ]] || arg="$PWD/$arg"
-  logecho "$arg"
+  [[ "$arg" =~ ^/ ]] || dir="$PWD/$arg"
+  logecho $arg
 }
 
 ###############################################################################
@@ -967,7 +863,7 @@ common::strip_control_characters () {
   local file=$1
 
   sed -ri -e "s/\x1B[\[(]([0-9]{1,2}(;[0-9]{1,2})?)?[m|K|B]//g" \
-          -e 's/\o015$//g' "$file"
+          -e 's/\o015$//g' $file
 }
 
 ###############################################################################
@@ -976,7 +872,7 @@ common::strip_control_characters () {
 common::sanitize_log () {
   local file=$1
 
-  sed -i 's/[a-f0-9]\{40\}:x-oauth-basic/__SANITIZED__:x-oauth-basic/g' "$file"
+  sed -i 's/[a-f0-9]\{40\}:x-oauth-basic/__SANITIZED__:x-oauth-basic/g' $file
 }
 
 ###############################################################################
@@ -988,7 +884,7 @@ common::print_n_char () {
   local num=$2
   local sep
 
-  printf -v sep '%s' "$num"
+  printf -v sep '%*s' $num
   echo "${sep// /$char}"
 }
 
@@ -1007,10 +903,8 @@ common::mdtoc () {
 
   declare -A count
 
-  while read -r level heading; do
-    # Disable shellcheck for dynamically defined variable
-    # shellcheck disable=SC2154
-    indent="$(echo "$level" | sed -e "s,^#,,g" -e 's,#,  ,g')"
+  while read level heading; do
+    indent="$(echo $level |sed -e "s,^#,,g" -e 's,#,  ,g')"
     # make a valid anchor
     anchor=${heading,,}
     anchor=${anchor// /-}
@@ -1024,10 +918,7 @@ common::mdtoc () {
       count[$anchor]=0
     fi
     echo "${indent}- [$heading](#$anchor)"
-  done < <(
-    # disable shellcheck for regex
-    # shellcheck disable=SC2016
-    sed -n '/^```$/,/^```$/!p' "$file" | grep -E '^#+ ') > "$tmpfile"
+  done < <(sed -n '/^```$/,/^```$/!p' $file | egrep '^#+ ') > $tmpfile
   # Above, sed a reasonable attempt to exclude comment lines within code blocks
 
   # Insert new TOC
@@ -1037,9 +928,9 @@ common::mdtoc () {
          r $tmpfile
        }
        /^$end_block/!d
-       }" "$file"
+       }" $file
 
-  logrun rm -f "$tmpfile"
+  logrun rm -f $tmpfile
 }
 
 ###############################################################################
@@ -1064,9 +955,9 @@ common::set_cloud_binaries () {
   done
 
   if [[ -x "$GSUTIL" && -x "$GCLOUD" ]]; then
-    logecho -r "$OK"
+    logecho -r $OK
   else
-    logecho -r "$FAILED"
+    logecho -r $FAILED
     return 1
   fi
 
@@ -1089,6 +980,7 @@ common::set_cloud_binaries () {
 # @param file - file to send
 #
 common::sendmail () {
+  local cc_arg
   local html=0
 
   while [[ "$#" -gt 0 ]]; do
@@ -1119,13 +1011,13 @@ Cc: $cc
 Reply-To: $reply_to
 EOF+
   ((html)) && echo "Content-Type: text/html"
-  cat "$file"
+  cat $file
   } |/usr/sbin/sendmail -t
 }
 
 # Stubs for security_layer functions
 security_layer::auth_check () {
-  logecho "Skipping ${FUNCNAME[0]}..."
+  logecho "Skipping $FUNCNAME..."
   return 0
 }
 
@@ -1160,43 +1052,38 @@ common::run_stateful () {
                  *) break ;;
     esac
   done
-  # The way common::run_stateful is written, we actually need the shell to
-  # split $1 here. That makes passing multiple args with whitespaces (e.g.
-  # 'some arg') weird or even impossible (didn't test too much), but that's
-  # what we've got for now ...
-  # shellcheck disable=SC2206
   local -a fcall=($1)
   local function=${fcall[0]}
-  local args="${fcall[*]:1}"
+  local args="${fcall[@]:1}"
   local entry=$function
   shift
-  local nameval=("$@")
+  local nameval=($@)
   local -a setvar
   local c
 
   # Strip args?  Clear args for the purposes of storing their state and
   # passing to common::stepheader()
-  ((stripargs)) && args=''
+  ((stripargs)) && unset args
 
   # Create the PROGSTATE entry based on function+args
-  [[ -n $args ]] && entry+="+$(common::join "%%" "$args")"
+  [[ -n $args ]] && entry+="+$(common::join "%%" $args)"
 
-  common::check_state "$entry" && return 0
+  common::check_state $entry && return 0
 
   common::stepheader "$function" "$args"
-  if ! common::runstep "${fcall[@]}"; then
+  if ! common::runstep ${fcall[@]}; then
     logecho "$FAILED in $function."
     ((nonfatal)) || common::exit 1 "RELEASE INCOMPLETE! Exiting..."
   fi
 
-  if [[ -n "${nameval[*]}" ]]; then
+  if [[ -n "${nameval[@]}" ]]; then
     for ((c=0;c<${#nameval[@]};c++)); do
       # Only add name=value pairs when value !null
       [[ -n "${!nameval[$c]}" ]] && setvar+=("${nameval[$c]}=${!nameval[$c]}")
     done
   fi
 
-  common::check_state -a "$entry" "${setvar[@]}"
+  common::check_state -a $entry ${setvar[@]}
 }
 
 ###############################################################################
@@ -1214,11 +1101,11 @@ common::check_state () {
   esac
   local label=$1
   shift
-  local nv=("$@")
+  local nv=($@)
 
   # initialize if step 1
   if $add; then
-    echo "$label ${nv[*]}" >> "$PROGSTATE"
+    echo "$label ${nv[@]}" >> $PROGSTATE
     return 0
   fi
 
@@ -1226,8 +1113,8 @@ common::check_state () {
   [[ ! -f $PROGSTATE ]] && return 1
 
   # check to see if it's done or not
-  if grep -wq "^$label" "$PROGSTATE"; then
-    eval "$(awk '$1 == "'"$label"'" {$1="";print}' "$PROGSTATE")"
+  if grep -wq "^$label" $PROGSTATE; then
+    eval $(awk '$1 == "'$label'" {$1="";print}' $PROGSTATE)
     return 0
   else
     return 1
@@ -1246,7 +1133,7 @@ common::stepindex () {
   # Print Table Of Contents and return
   if [[ $1 == --toc ]]; then
     for ((c=0; c<${#PROGSTEPS_INDEX[@]}; c++)); do
-      if common::check_state "${PROGSTEPS[$c]}"; then
+      if common::check_state ${PROGSTEPS[$c]}; then
         stepmark="✔"
       else
         stepmark="☐"
@@ -1274,19 +1161,19 @@ common::stepindex () {
 # @param args - The quoted full original command-line args
 # returns 1 on failure
 common::validate_command_line () {
-  local -a args=("$@")
+  local -a args=($@)
   local -a last_args
   local continue=0
 
   # Ignore state clearing args
-  args=("${args[@]/--clean}")
-  args=("${args[@]/--prebuild}")
-  args=("${args[@]/--buildonly}")
+  args=(${args[@]/--clean})
+  args=(${args[@]/--prebuild})
+  args=(${args[@]/--buildonly})
 
   logecho
   if [[ -f $PROGSTATE ]]; then
-    mapfile -t last_args < <(awk '/^CMDLINE: / {for(i=2;i<=NF;++i)print $i}' "$PROGSTATE")
-    if [[ ${args[*]} != "${last_args[*]}" ]]; then
+    last_args=($(awk '/^CMDLINE: / {for(i=2;i<=NF;++i)print $i}' $PROGSTATE))
+    if [[ ${args[*]} != ${last_args[*]} ]]; then
       logecho "A previous incomplete run using different command-line values" \
               "exists."
       logecho
@@ -1309,7 +1196,7 @@ common::validate_command_line () {
     logecho "${TPUT[RED]}Use --clean to restart${TPUT[OFF]}"
     logecho
   else
-    echo "CMDLINE: ${args[*]}" > "$PROGSTATE"
+    echo "CMDLINE: ${args[*]}" > $PROGSTATE
   fi
 }
 
@@ -1344,8 +1231,8 @@ common::manpage "$@"
 
 # Set a TMPDIR
 TMPDIR="${FLAGS_tmpdir:-/tmp}"
-mkdir -p "$TMPDIR"
+mkdir -p $TMPDIR
 
 # Set some values that depend on $TMPDIR
 PROGSTATE=$TMPDIR/$PROG-runstate
-export LOCAL_CACHE="$TMPDIR/buildresults-cache.$$"
+LOCAL_CACHE="$TMPDIR/buildresults-cache.$$"

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #
 # Copyright 2018 The Kubernetes Authors All rights reserved.
 #
@@ -60,43 +60,34 @@ PROG=${0##*/}
 usage=${1:-yes}
 
 # Deal with OSX limitations out the gate for anyone that tries this there
-BASE_ROOT="$(dirname "$(readlink -e "${BASH_SOURCE[0]}" 2>&1)")" \
- || BASE_ROOT="${BASH_SOURCE[0]}"
-# shellcheck source=./lib/common.sh
-source "$BASE_ROOT/lib/common.sh"
-# shellcheck source=./lib/gitlib.sh
-source "$TOOL_LIB_PATH/gitlib.sh"
-# shellcheck source=./lib/releaselib.sh
-source "$TOOL_LIB_PATH/releaselib.sh"
+BASE_ROOT=$(dirname $(readlink -e "$BASH_SOURCE" 2>&1)) \
+ || BASE_ROOT="$BASH_SOURCE"
+source $BASE_ROOT/lib/common.sh
+source $TOOL_LIB_PATH/gitlib.sh
+source $TOOL_LIB_PATH/releaselib.sh
 
 # Validate command-line
 common::argc_validate 1 || common::exit 1 "Exiting..."
 
 # Set positional args
-# disable shellcheck warning for global variable
-# disable shellcheck warning about array/string (bug)
-# see: https://github.com/koalaman/shellcheck/wiki/SC2178
-# shellcheck disable=SC2034,SC2178
 RELEASE_VERSION=${POSITIONAL_ARGV[0]}
 
 ###############################################################################
 # MAIN
 ###############################################################################
 # Default mode is a mocked release workflow
-: "${FLAGS_nomock:=0}"
+: ${FLAGS_nomock:=0}
 
 ##############################################################################
 # Initialize logs
 ##############################################################################
 # Initialize and save up to 10 (rotated logs)
-# Disable shellcheck for dynamically defined variable
-# shellcheck disable=SC2154
 if ((FLAGS_stage)); then
   LOGFILE=$TMPDIR/$PROG-stage.log
 else
   LOGFILE=$TMPDIR/$PROG.log
 fi
-common::logfileinit "$LOGFILE" 10
+common::logfileinit $LOGFILE 10
 
 # BEGIN script
 common::timestamp begin

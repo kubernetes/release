@@ -1,29 +1,10 @@
-#!/usr/bin/env bash
-#
-# Copyright 2019 The Kubernetes Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
+#!/bin/bash
 #
 # releaselib.sh unit tests
 #
-
-# shellcheck source=./lib/common.sh
-source "$(dirname "$(readlink -ne "${BASH_SOURCE[0]}")")/common.sh"
-# shellcheck source=./lib/gitlib.sh
-source "$TOOL_LIB_PATH/gitlib.sh"
-# shellcheck source=./lib/releaselib.sh
-source "$TOOL_LIB_PATH/releaselib.sh"
+source $(dirname $(readlink -ne $BASH_SOURCE))/common.sh
+source $TOOL_LIB_PATH/gitlib.sh
+source $TOOL_LIB_PATH/releaselib.sh
 
 
 ##############################################################################
@@ -75,17 +56,15 @@ EOF
 
 
 # Test the data
-# disable shellcheck for comment variable
-# shellcheck disable=SC2034
-while read -r comment type version pub_version expected; do
+while read comment type version pub_version expected; do
   # Prepare test
-  echo "$pub_version" > "$published_file"
+  echo $pub_version > $published_file
 
   # $type value passed in simply to trigger > vs. >= condition
   # arg 2 (bucket) not used with optional arg 4 passed in
   # arg 3 (version) is the incoming version to check
   # arg 4 simply points to a local file to set a 'published' version
-  if release::gcs::verify_latest_update "$type" "" "$version" "$published_file"; then
+  if release::gcs::verify_latest_update $type "" $version $published_file; then
     echo -n "TEST CASE: "
     case $expected in
       0) echo "$PASSED" ;;
@@ -99,10 +78,10 @@ while read -r comment type version pub_version expected; do
     esac
   fi
   echo
-done < <(echo "$data" | grep -E '^## ')
+done < <(echo "$data" |egrep '^## ')
 
 # Garbage collection
-rm -f "$published_file"
+rm -f $published_file
 
 ##############################################################################
 # END TESTING release::gcs::verify_latest_update()
