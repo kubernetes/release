@@ -21,7 +21,11 @@
 # CONSTANTS
 ###############################################################################
 GITHUB_TOKEN=${FLAGS_github_token:-$GITHUB_TOKEN}
-[[ -n $GITHUB_TOKEN ]] && GITHUB_TOKEN_FLAG=("-u" "$GITHUB_TOKEN:x-oauth-basic")
+# for cases where the token is prvided with leading/trailing whitespaces we
+# just trim them here. The assumption is that the token itself will never have
+# whitespaces. If that is not true anymore, this breaks.
+GITHUB_TOKEN="$( echo "$GITHUB_TOKEN" | tr -d '[:space:]' )"
+[[ -n "$GITHUB_TOKEN" ]] && GITHUB_TOKEN_FLAG=("-u" "${GITHUB_TOKEN}:x-oauth-basic")
 GHCURL="curl -s --fail --retry 10 ${GITHUB_TOKEN_FLAG[*]}"
 GITHUB_API='https://api.github.com'
 GITHUB_API_GRAPHQL="${GITHUB_API}/graphql"
@@ -226,7 +230,7 @@ gitlib::pending_prs () {
     msg=$(sed 's, *\* *, * ,g' <<< "$msg")
     printf "%-8s $sep %-4s $sep %-10s $sep %-18s $sep %s\n" \
            "#$pr" "$milestone" "@$login" "$(date +"%F %R" -d "$date")" "$msg"
-  done < <($GHCURL "$K8S_GITHUB_API/pulls\?state\=open\&base\=$branch" |\
+  done < <($GHCURL "${K8S_GITHUB_API}/pulls?state=open&base=${branch}" |\
            jq -r \
             '.[] | "\(.number)\t\(.milestone.title)\t\(.user.login)\t\(.updated_at)\t\(.title)"')
 }
