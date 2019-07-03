@@ -20,8 +20,13 @@
 ###############################################################################
 # CONSTANTS
 ###############################################################################
+
 GITHUB_TOKEN=${FLAGS_github_token:-$GITHUB_TOKEN}
-[[ -n $GITHUB_TOKEN ]] && GITHUB_TOKEN_FLAG=("-u" "$GITHUB_TOKEN:x-oauth-basic")
+
+# This is a safety measure to trim extraneous leading/trailing whitespace from
+# the OAuth token provided. Otherwise, authentication to GitHub will fail here.
+GITHUB_TOKEN="$( echo "$GITHUB_TOKEN" | tr -d '[:space:]' )"
+[[ -n "$GITHUB_TOKEN" ]] && GITHUB_TOKEN_FLAG=("-u" "${GITHUB_TOKEN}:x-oauth-basic")
 GHCURL="curl -s --fail --retry 10 ${GITHUB_TOKEN_FLAG[*]}"
 JCURL="curl -g -s --fail --retry 10"
 GITHUB_API='https://api.github.com'
@@ -222,7 +227,7 @@ gitlib::pending_prs () {
     msg=$(echo $msg |sed 's, *\* *, * ,g')
     printf "%-8s $sep %-4s $sep %-10s $sep %-18s $sep %s\n" \
            "#$pr" "$milestone" "@$login" "$(date +"%F %R" -d "$date")" "$msg"
-  done < <($GHCURL $K8S_GITHUB_API/pulls\?state\=open\&base\=$branch |\
+  done < <($GHCURL "${K8S_GITHUB_API}/pulls?state=open&base=${branch}" |\
            jq -r \
             '.[] | "\(.number)\t\(.milestone.title)\t\(.user.login)\t\(.updated_at)\t\(.title)"')
 }
