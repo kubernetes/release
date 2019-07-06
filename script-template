@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Copyright 2016 The Kubernetes Authors All rights reserved.
 #
@@ -47,7 +47,7 @@ PROG=${0##*/}
 source $(dirname $(readlink -ne $0))/lib/common.sh
 
 cat <<EOF_CAT
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Copyright 2016 The Kubernetes Authors All rights reserved.
 #

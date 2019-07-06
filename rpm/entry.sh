@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Entrypoint for the build container to create the rpms and yum repodata:
 # Usage: ./entry.sh GOARCH/RPMARCH,GOARCH/RPMARCH,....
 
