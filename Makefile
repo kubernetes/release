@@ -12,9 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-.PHONY: verify
+# If you update this file, please follow
+# https://suva.sh/posts/well-documented-makefiles
+
+.DEFAULT_GOAL:=help
+SHELL:=/usr/bin/env bash
+
+##@ Package
+
+.PHONY: verify-published-debs verify-published-rpms
+
+verify-published-debs: ## Ensure debs have been published
+	./hack/packages/verify-published.sh debs
+
+verify-published-rpms: ## Ensure rpms have been published
+	./hack/packages/verify-published.sh rpms
+
+##@ Verify
+
+.PHONY: verify verify-shellcheck
+
 verify: verify-shellcheck ## Runs verification scripts to ensure correct execution
 
-.PHONY: verify-shellcheck
-verify-shellcheck:
+verify-shellcheck: ## Runs shellcheck
 	./hack/verify-shellcheck.sh
+
+##@ Helpers
+
+.PHONY: help
+
+help:  ## Display this help
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
