@@ -13,57 +13,22 @@ func TestGetKubeadmConfig(t *testing.T) {
 		expectErr    bool
 	}{
 		{
-			"1.6.10",
-			"pre-1.8/10-kubeadm.conf",
-			false,
-		},
-		{
-			"1.7.10",
-			"pre-1.8/10-kubeadm.conf",
-			false,
-		},
-		{
-			"1.7.0-beta.5",
-			"pre-1.8/10-kubeadm.conf",
-			false,
-		},
-		{
-			"1.8.0",
-			"post-1.8/10-kubeadm.conf",
-			false,
-		},
-		{
-			"1.8.0-alpha.0",
-			"post-1.8/10-kubeadm.conf",
-			false,
-		},
-		{
-			"1.8.0-beta.2",
-			"post-1.8/10-kubeadm.conf",
-			false,
-		},
-		{
-			"1.9.0",
-			"post-1.8/10-kubeadm.conf",
-			false,
-		},
-		{
 			"not-a-real-version",
 			"",
 			true,
 		},
 		{
-			"1.10.4",
-			"post-1.8/10-kubeadm.conf",
-			false,
-		},
-		{
-			"1.11.0",
+			"1.12.0",
 			"post-1.10/10-kubeadm.conf",
 			false,
 		},
 		{
-			"1.12.0",
+			"1.13.0",
+			"post-1.10/10-kubeadm.conf",
+			false,
+		},
+		{
+			"1.15.0",
 			"post-1.10/10-kubeadm.conf",
 			false,
 		},
@@ -94,24 +59,25 @@ func TestGetKubeadmDependencies(t *testing.T) {
 		deps    []string
 	}{
 		{
-			name:    "simple test",
-			version: "1.10.0",
+			name:    "minimum supported kubernetes",
+			version: "1.13.0",
 			deps: []string{
-				"kubelet (>= 1.6.0)",
-				"kubectl (>= 1.6.0)",
+				"kubelet (>= 1.13.0)",
+				"kubectl (>= 1.13.0)",
 				"kubernetes-cni (>= 0.7.5)",
 				"${misc:Depends}",
+				"cri-tools (>= 1.13.0)",
 			},
 		},
 		{
-			name:    "newer than 1.11",
-			version: "1.11.0",
+			name:    "latest stable minor kubernetes",
+			version: "1.15.0",
 			deps: []string{
-				"kubelet (>= 1.6.0)",
-				"kubectl (>= 1.6.0)",
+				"kubelet (>= 1.13.0)",
+				"kubectl (>= 1.13.0)",
 				"kubernetes-cni (>= 0.7.5)",
 				"${misc:Depends}",
-				"cri-tools (>= 1.11.1)",
+				"cri-tools (>= 1.13.0)",
 			},
 		},
 	}
