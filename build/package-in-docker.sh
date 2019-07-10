@@ -37,17 +37,22 @@ case "${PACKAGE_TYPE}" in
 "rpms")
   declare -r IMG_NAME="rpm-builder:${BUILD_TAG}"
 ;;
+*)
+  echo >&2 "'${PACKAGE_TYPE}' is an invalid PACKAGE_TYPE, only 'debs' and 'rpms' supported"
+  exit 1
+;;
 esac
 
 docker build -t "${IMG_NAME}" "$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/${PACKAGE_TYPE}"
 echo "Cleaning output directory..."
-rm -rf "${OUTPUT_DIR:?}/*"
+[[ ! -d "${OUTPUT_DIR}" ]] \
+  || find "${OUTPUT_DIR}" -maxdepth 1 -mindepth 1 -print0 | xargs -0 rm -rf --
 mkdir -p "${OUTPUT_DIR}"
 
 
 case "${PACKAGE_TYPE}" in
 "debs")
-  docker run --rm -v "${OUTPUT_DIR}:/src/bin" "${IMG_NAME}" "$@"
+  docker run -ti --rm -v "${OUTPUT_DIR}:/src/bin" "${IMG_NAME}" "$@"
   echo
   echo "----------------------------------------"
   echo
@@ -63,7 +68,7 @@ case "${PACKAGE_TYPE}" in
   ls -alth "${OUTPUT_DIR}"
   echo
   echo "yum repodata written to: "
-  ls -alth "${OUTPUT_DIR}/*/repodata/"
+  find "$OUTPUT_DIR" -type d -name repodata -print0 | xargs -0 ls -alth
 ;;
 esac
 
