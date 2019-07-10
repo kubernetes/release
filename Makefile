@@ -32,7 +32,9 @@ verify-published-rpms: ## Ensure rpms have been published
 
 .PHONY: verify verify-shellcheck
 
-verify: verify-shellcheck ## Runs verification scripts to ensure correct execution
+# TODO: Uncomment verify-shellcheck once we finish shellchecking the repo.
+#       ref: https://github.com/kubernetes/release/issues/726
+verify: #verify-shellcheck ## Runs verification scripts to ensure correct execution
 
 verify-shellcheck: ## Runs shellcheck
 	./hack/verify-shellcheck.sh
