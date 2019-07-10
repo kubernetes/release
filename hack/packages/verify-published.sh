@@ -71,12 +71,12 @@ EOF
 			# Set up Kubernetes packages via yum
 			mkdir -p /etc/yum.repos.d
 			cat <<EOF > /etc/yum.repos.d/kubernetes.repo
-			[kubernetes]
-			name=Kubernetes
-			baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
-			enabled=1
-			gpgcheck=0
-			repo_gpgcheck=0
+[kubernetes]
+name=Kubernetes
+baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=0
+repo_gpgcheck=0
 EOF
 			yum update -y
 
