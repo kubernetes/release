@@ -1,8 +1,8 @@
 # To build and upload a new version of the build container run:
-#   gcloud builds submit --config k8s-container.yaml .
+#   gcloud builds submit --config cloudbuild.yaml .
 
 steps:
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-f', 'Dockerfile.k8s-cloud-builder', '-t', 'gcr.io/$PROJECT_ID/k8s-cloud-builder', '.']
+    args: ['build', '-f', 'Dockerfile', '-t', 'gcr.io/$PROJECT_ID/k8s-cloud-builder', '.']
 
 images: ['gcr.io/$PROJECT_ID/k8s-cloud-builder' ]
