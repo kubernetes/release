@@ -3,6 +3,8 @@
 
 FROM ubuntu:18.04
 
+ARG DEBIAN_FRONTEND=noninteractive
+
 # Install packages
 RUN apt-get -q update && apt-get install -qqy apt-transport-https \
     ca-certificates curl git gnupg2 lsb-release python \
@@ -10,8 +12,8 @@ RUN apt-get -q update && apt-get install -qqy apt-transport-https \
     build-essential jq pandoc gettext-base
 
 # Install Pip packages
-RUN easy_install pip
-RUN pip install yq
+RUN python /usr/lib/python2.7/dist-packages/easy_install.py pip \
+    && pip install --no-cache-dir yq
 
 # Packages required by the make in k8s
 # localtime
@@ -49,3 +51,6 @@ RUN \
 
 ARG DOCKER_VERSION=18.06.0~ce~3-0~ubuntu
 RUN apt-get install -y docker-ce=${DOCKER_VERSION} unzip
+
+# Cleanup a bit
+RUN rm -rf /var/lib/apt/lists/*
