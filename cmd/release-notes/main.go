@@ -26,6 +26,8 @@ type options struct {
 	branch         string
 	startSHA       string
 	endSHA         string
+	startRev       string
+	endRev         string
 	releaseVersion string
 	format         string
 	requiredAuthor string
@@ -91,6 +93,24 @@ func (o *options) BindFlags() *flag.FlagSet {
 		"end-sha",
 		env.String("END_SHA", ""),
 		"The commit hash to end at",
+	)
+
+	// startRev contains any valid git object where the release note generation
+	// begins. Can be used as alternative to start-sha.
+	flags.StringVar(
+		&o.startRev,
+		"start-rev",
+		env.String("START_REV", ""),
+		"The git revision to start at. Can be used as alternative to start-sha.",
+	)
+
+	// endRev contains any valid git object where the release note generation
+	// ends. Can be used as alternative to start-sha.
+	flags.StringVar(
+		&o.endRev,
+		"end-rev",
+		env.String("END_REV", ""),
+		"The git revision to end at. Can be used as alternative to end-sha.",
 	)
 
 	// releaseVersion is the version number you want to tag the notes with.
@@ -239,13 +259,43 @@ func parseOptions(args []string, logger log.Logger) (*options, error) {
 	}
 
 	// The start SHA is required.
-	if opts.startSHA == "" {
-		return nil, errors.New("The starting commit hash must be set via -start-sha or $START_SHA")
+	if opts.startSHA == "" && opts.startRev == "" {
+		return nil, errors.New("The starting commit hash must be set via -start-sha, $START_SHA, -start-rev or $START_REV")
 	}
 
 	// The end SHA is required.
-	if opts.endSHA == "" {
-		return nil, errors.New("The ending commit hash must be set via -end-sha or $END_SHA")
+	if opts.endSHA == "" && opts.endRev == "" {
+		return nil, errors.New("The ending commit hash must be set via -end-sha, $END_SHA, -end-rev or $END_REV")
+	}
+
+	// Check if we have to parse a revision
+	tmpDir := ""
+	if opts.startRev != "" || opts.endRev != "" {
+		level.Info(logger).Log("msg", "cloning repository to discover start or end sha")
+		dir, err := notes.CloneTempRepository(opts.githubOrg, opts.githubRepo)
+		if err != nil {
+			return nil, err
+		}
+		defer os.RemoveAll(dir)
+		tmpDir = dir
+	}
+	if tmpDir != "" {
+		if opts.startRev != "" {
+			sha, err := notes.RevParse(opts.startRev, tmpDir)
+			if err != nil {
+				return nil, err
+			}
+			level.Info(logger).Log("msg", "using found start SHA: "+sha)
+			opts.startSHA = sha
+		}
+		if opts.endRev != "" {
+			sha, err := notes.RevParse(opts.endRev, tmpDir)
+			if err != nil {
+				return nil, err
+			}
+			level.Info(logger).Log("msg", "using found end SHA: "+sha)
+			opts.endSHA = sha
+		}
 	}
 
 	opts.logger = logger
