@@ -1202,10 +1202,8 @@ common::validate_command_line () {
 
 ##############################################################################
 # Run a command line, where the first command is expected to be a go binary
-# from this repo. If the binary cannot be found in the name, a hopefully
-# helpful message on how to install that binary is printed. If the binary
-# cannot be found in the name, a hopefully helpful message on how to install
-# that binary is printed.
+# from this repo. If the binary cannot be found in the $PATH, a hopefully
+# helpful message on how to install that binary is printed.
 common::run_gobin () {
   local orgCmd expandedCmd
   orgCmd="$1"
