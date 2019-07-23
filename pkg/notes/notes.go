@@ -252,7 +252,7 @@ func NoteTextFromString(s string) (string, error) {
 		note := strings.ReplaceAll(result["note"], "#", "&#35;")
 		note = strings.ReplaceAll(note, "\r", "")
 		note = stripActionRequired(note)
-		note = stripStar(note)
+		note = dashify(note)
 		return note, nil
 	}
 
@@ -348,10 +348,13 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 	} else if len(LabelsWithPrefix(pr, "sig")) > 1 {
 		IsDuplicate = true
 	}
-	markdown := fmt.Sprintf("%s ([#%d](%s), [@%s](%s))", text, pr.GetNumber(), prUrl, author, authorUrl)
+
+	indented := strings.ReplaceAll(text, "\n", "\n  ")
+	markdown := fmt.Sprintf("%s ([#%d](%s), [@%s](%s))",
+		indented, pr.GetNumber(), prUrl, author, authorUrl)
 
 	if noteSuffix != "" {
-		markdown = fmt.Sprintf("%s %s", markdown, noteSuffix)
+		markdown = fmt.Sprintf("%s\n\n  %s", markdown, noteSuffix)
 	}
 
 	return &ReleaseNote{
@@ -657,6 +660,10 @@ func stripStar(note string) string {
 func stripDash(note string) string {
 	re := regexp.MustCompile(`(?i)\-\s`)
 	return re.ReplaceAllString(note, "")
+}
+
+func dashify(note string) string {
+	return strings.ReplaceAll(note, "* ", "- ")
 }
 
 func HasString(a []string, x string) bool {
