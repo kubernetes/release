@@ -189,7 +189,29 @@ func ListReleaseNotes(
 			continue
 		}
 
-		if strings.TrimSpace(note.Text) == "NONE" {
+		// exclusionFilters is a list of regular expressions that match notes text that
+		// are deemed to have no content and should NOT be added to release notes.
+		exclusionFilters := []string{
+			"^(?i)(none|n/a)$", // 'none' or 'n/a' case insensitive
+		}
+		excluded := false
+		for _, filter := range exclusionFilters {
+			match, err := regexp.MatchString(filter, strings.ToUpper(strings.TrimSpace(note.Text)))
+			if err != nil {
+				return nil, err
+			}
+			if match {
+				excluded = true
+				level.Debug(logger).Log(
+					"msg", "Excluding notes that are deemed to have no content based on filter, and should NOT be added to release notes.",
+					"sha", commit.GetSHA(),
+					"func", "ListReleaseNotes",
+					"filter", filter,
+				)
+				break
+			}
+		}
+		if excluded {
 			continue
 		}
 
@@ -416,33 +438,46 @@ func ListCommitsWithNotes(
 	}
 
 	for _, commit := range commits {
+
+		level.Debug(logger).Log("msg", "################################################" )
+		level.Debug(logger).Log(
+			"msg", "Processing commit",
+			"func", "ListCommitsWithNotes",
+			"sha", commit.GetSHA(),
+		)
+
 		pr, err := PRFromCommit(client, commit, opts...)
 		if err != nil {
 			if err.Error() == "no matches found when parsing PR from commit" {
+				level.Debug(logger).Log(
+					"msg", fmt.Sprintf("No matches found when parsing PR from commit sha '%s'.", commit.GetSHA()),
+					"func", "ListCommitsWithNotes",
+				)
 				continue
 			}
 		}
+
+		level.Debug(logger).Log(
+			"msg", fmt.Sprintf("Obtaining PR associated with commit sha '%s'.", commit.GetSHA()),
+			"func", "ListCommitsWithNotes",
+			"pr no", pr.GetNumber(),
+			"pr body", pr.GetBody(),
+		)
 
 		// exclusionFilters is a list of regular expressions that match commits that
 		// do NOT contain release notes. Notably, this is all of the variations of
 		// "release note none" that appear in the commit log.
 		exclusionFilters := []string{
-			"```release-note\\r\\nNONE",
-			"```release-note\\r\\n\\s+NONE",
-			"```release-note\\r\\nNONE",
-			"```release-note\\r\\n\"NONE\"",
-			"```release-note\\r\\nNone",
-			"```release-note\\r\\nnone",
-			"```release-note\\r\\nN/A",
-			"```release-note\\r\\n\\r\\n```",
-			"```release-note\\r\\n```",
+			
+			// 'none' or 'n/a' case insensitive with optional trailing whitespace, wrapped in ``` with/without release-note identifier
+			"(?i)```(release-note\\s*)?(none|n/a)?\\s*```",
+
+			// This filter is too aggressive within the PR body and picks up matches unrelated to release notes
+			// 'none' or 'n/a' case insensitive wrapped optionally with whitespace
+			// "(?i)\\s*(none|n/a)\\s*",
+
+			// simple '/release-note-none' tag
 			"/release-note-none",
-			"\\r\\n\\r\\nNONE",
-			"```NONE\\r\\n```",
-			"```release-note \\r\\nNONE\\r\\n```",
-			"NONE\\r\\n```",
-			"\\r\\nNone",
-			"\\r\\nNONE\\r\\n",
 		}
 
 		excluded := false
@@ -454,6 +489,11 @@ func ListCommitsWithNotes(
 			}
 			if match {
 				excluded = true
+				level.Debug(logger).Log(
+					"msg", "Excluding notes for PR based on the exclusion filter.",
+					"func", "ListCommitsWithNotes",
+					"filter", filter,
+				)
 				break
 			}
 		}
@@ -476,6 +516,11 @@ func ListCommitsWithNotes(
 			}
 			if match {
 				filteredCommits = append(filteredCommits, commit)
+				level.Debug(logger).Log(
+					"msg", "Including notes for PR based on the inclusion filter.",
+					"func", "ListCommitsWithNotes",
+					"filter", filter,
+				)
 			}
 		}
 	}
