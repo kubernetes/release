@@ -192,7 +192,7 @@ func ListReleaseNotes(
 		// exclusionFilters is a list of regular expressions that match notes text that
 		// are deemed to have no content and should NOT be added to release notes.
 		exclusionFilters := []string{
-			"^([nN][oO][nN][eE]|[nN]/[aA])$", // 'none' or 'n/a' case insensitive
+			"^(?i)(none|n/a)$", // 'none' or 'n/a' case insensitive
 		}
 		excluded := false
 		for _, filter := range exclusionFilters {
@@ -470,10 +470,11 @@ func ListCommitsWithNotes(
 		exclusionFilters := []string{
 			
 			// 'none' or 'n/a' case insensitive with optional trailing whitespace, wrapped in ``` with/without release-note identifier
-			"```(release-note\\s*)?([nN][oO][nN][eE]|[nN]/[aA])?\\s*```",
+			"(?i)```(release-note\\s*)?(none|n/a)?\\s*```",
 
-			// 'none' case insensitive wrapped optionally with whitespace
-			"\\s*[nN][oO][nN][eE]\\s*",
+			// This filter is too aggressive within the PR body and picks up matches unrelated to release notes
+			// 'none' or 'n/a' case insensitive wrapped optionally with whitespace
+			// "(?i)\\s*(none|n/a)\\s*",
 
 			// simple '/release-note-none' tag
 			"/release-note-none",
