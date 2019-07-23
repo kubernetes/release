@@ -468,26 +468,14 @@ func ListCommitsWithNotes(
 		// do NOT contain release notes. Notably, this is all of the variations of
 		// "release note none" that appear in the commit log.
 		exclusionFilters := []string{
-			// "```release-note\\r\\nNONE",
-			// "```release-note\\r\\n\\s+NONE",
-			// "```release-note\\r\\nNONE",
-			// "```release-note\\r\\n\"NONE\"",
-			// "```release-note\\r\\nNone",
-			// "```release-note\\r\\nnone",
-			// "```release-note\\r\\nN/A",
-			// "```release-note\\r\\n\\r\\n```",
-			// "```release-note\\r\\n```",
-			// "/release-note-none",
-			// "\\r\\n\\r\\nNONE",
-			// "```NONE\\r\\n```",
-			// "```release-note \\r\\nNONE\\r\\n```",
-			// "NONE\\r\\n```",
-			// "\\r\\nNone",
-			// "\\r\\nNONE\\r\\n",
+			
 			// 'none' or 'n/a' case insensitive with optional trailing whitespace, wrapped in ``` with/without release-note identifier
 			"```(release-note\\s*)?([nN][oO][nN][eE]|[nN]/[aA])?\\s*```",
+
 			// 'none' case insensitive wrapped optionally with whitespace
 			"\\s*[nN][oO][nN][eE]\\s*",
+
+			// simple '/release-note-none' tag
 			"/release-note-none",
 		}
 
