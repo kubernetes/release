@@ -23,7 +23,14 @@ source "$(dirname "$(readlink -ne "${BASH_SOURCE[0]}")")/testing.sh"
 source "$(dirname "$(readlink -ne "${BASH_SOURCE[0]}")")/common.sh"
 readonly TESTDATA="$( cd "$(dirname "$0")" && pwd )/testdata"
 
-set -e
+# TODO: We should see to
+#       - move that to the start of the script
+#       - add `set -o nounset`
+#
+#       We can do that when all the things we source do not rely on unset
+#       varaibales and ignoring errors. This will require quite some
+#       refactoring, so this is the best we can do for now.
+set -o errexit
 set -o pipefail
 
 TEST_run_stateful() {

@@ -26,7 +26,15 @@ source "${TOOL_LIB_PATH}/gitlib.sh"
 # shellcheck source=./lib/releaselib.sh
 source "${TOOL_LIB_PATH}/releaselib.sh"
 
-set -e
+# TODO: We should see to
+#       - move that to the start of the script
+#       - add `set -o nounset`
+#
+#       We can do that when all the things we source do not rely on unset
+#       varaibales and ignoring errors. This will require quite some
+#       refactoring, so this is the best we can do for now.
+set -o errexit
+set -o pipefail
 
 TEST_verify_latest_update() {
   ##############################################################################
