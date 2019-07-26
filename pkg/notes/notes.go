@@ -442,7 +442,7 @@ func ListCommitsWithNotes(
 
 	for _, commit := range commits {
 
-		level.Debug(logger).Log("msg", "################################################" )
+		level.Debug(logger).Log("msg", "################################################")
 		level.Debug(logger).Log(
 			"msg", "Processing commit",
 			"func", "ListCommitsWithNotes",
@@ -471,7 +471,7 @@ func ListCommitsWithNotes(
 		// do NOT contain release notes. Notably, this is all of the variations of
 		// "release note none" that appear in the commit log.
 		exclusionFilters := []string{
-			
+
 			// 'none' or 'n/a' case insensitive with optional trailing whitespace, wrapped in ``` with/without release-note identifier
 			"(?i)```(release-note\\s*)?(none|n/a)?\\s*```",
 
@@ -678,13 +678,17 @@ func HasString(a []string, x string) bool {
 func getPRNumberFromCommitMessage(commitMessage string) (int, error) {
 	// Thankfully k8s-merge-robot commits the PR number consistently. If this ever
 	// stops being true, this definitely won't work anymore.
-	exp := regexp.MustCompile(`Merge pull request #(?P<number>\d+)`)
+	exp := regexp.MustCompile(`automated-cherry-pick-of-#(?P<number>\d+)`)
 	match := exp.FindStringSubmatch(commitMessage)
 	if len(match) == 0 {
-		// If the PR was squash merged, the regexp is different
-		match = regexp.MustCompile(`\(#(?P<number>\d+)\)`).FindStringSubmatch(commitMessage)
+		exp = regexp.MustCompile(`Merge pull request #(?P<number>\d+)`)
+		match = exp.FindStringSubmatch(commitMessage)
 		if len(match) == 0 {
-			return 0, errors.New("no matches found when parsing PR from commit")
+			// If the PR was squash merged, the regexp is different
+			match = regexp.MustCompile(`\(#(?P<number>\d+)\)`).FindStringSubmatch(commitMessage)
+			if len(match) == 0 {
+				return 0, errors.New("no matches found when parsing PR from commit")
+			}
 		}
 	}
 	result := map[string]string{}
