@@ -39,10 +39,10 @@ TEST_run_stateful() {
     TPUT[BOLD]='' \
     TPUT[OFF]=''
 
-  assertEqualContent \
+  assert_equal_content \
     <( common::run_stateful --strip-args 'printf %s\n%s arg1 arg2' ) \
     <( echo -e "\n\nprintf\n\n\narg1\narg2" ) \
     "passing command and arguments"
 }
 
-testMain "$@"
+test_main "$@"

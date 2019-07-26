@@ -85,12 +85,12 @@ TEST_create_issue() {
   # shellcheck disable=SC2034
   local GHCURL='echo'
 
-  assertEqualContent \
+  assert_equal_content \
     <( gitlib::create_issue "$repo" "$title" "$body" ) \
     "${TESTDATA}/gitlib/create_issue.txt" \
     'creating an issue'
 
-  assertEqualContent \
+  assert_equal_content \
     <( gitlib::create_issue "$repo" "$title" "$body" 12345 ) \
     "${TESTDATA}/gitlib/create_issue_milestone.txt" \
     'creating an issue with milestone'
@@ -100,17 +100,17 @@ TEST_get_issue_url() {
   echo "Testing gitlib::get_issue_url"
   echo
 
-  assertEqualContent \
+  assert_equal_content \
     <( echo '{ }' | gitlib::get_issue_url ) \
     <( echo '' ) \
     "should return an empty issue url"
 
-  assertEqualContent \
+  assert_equal_content \
     <( echo '{ "html_url" : "some issue url" }' | gitlib::get_issue_url ) \
     <( echo 'some issue url' ) \
     "should return the issue's url"
 
-  assertEqualContent \
+  assert_equal_content \
     <( echo '{ "borken }' | gitlib::get_issue_url ) \
     <( echo '' ) \
     "should not fail on malformed input"
@@ -123,7 +123,7 @@ TEST_create_publishing_bot_issue() {
   # shellcheck disable=SC2034
   local GHCURL='echo'
 
-  assertEqualContent \
+  assert_equal_content \
     <( gitlib::create_publishing_bot_issue 'release-1.14' ) \
     "${TESTDATA}/gitlib/create_publishing_bot_issue.txt" \
     "simple, mock issue without special settings something"
@@ -135,7 +135,7 @@ TEST_create_publishing_bot_issue() {
     echo 'memberOne'
     echo 'memberTwo'
   }
-  assertEqualContent \
+  assert_equal_content \
     <( gitlib::create_publishing_bot_issue 'release-1.13' ) \
     "${TESTDATA}/gitlib/create_publishing_bot_issue_nomock.txt" \
     "for a nomock release, different repo & assignments are used"
@@ -144,7 +144,7 @@ TEST_create_publishing_bot_issue() {
   local FLAGS_nomock=1
   # mock gitlib::get_team_members
   gitlib::get_team_members() { :; }
-  assertEqualContent \
+  assert_equal_content \
     <( gitlib::create_publishing_bot_issue 'release-1.13' ) \
     "${TESTDATA}/gitlib/create_publishing_bot_issue_nomock_noassign.txt" \
     "for a nomock release, different repo is used, but no assignments when team members cannot be found"
@@ -160,7 +160,7 @@ TEST_get_team_members() {
   mock_github_api() {
     echo '{"data": {"organization":{"team":{"members":{"nodes":[{"login":"blipp"},{"login":"blupp"}]}}}}}'
   }
-  assertEqualContent \
+  assert_equal_content \
     <( gitlib::get_team_members 'ignored' 'ignored' ) \
     <( echo -e "blipp\nblupp" ) \
     'get_team_members issues a graphql qeury against the github API and pareses the response'
@@ -168,13 +168,13 @@ TEST_get_team_members() {
   mock_github_api() {
     echo 'this is some invalid response'
   }
-  assertEqualContent \
+  assert_equal_content \
     <( gitlib::get_team_members 'ignored' 'ignored' ) \
     <( echo -n '' ) \
     'get_team_members can handle invalid responses and reports no members'
 }
 
-assertEqualContent() {
+assert_equal_content() {
   local actual_file="$1"
   local expected_file="$2"
   local message="${3:-files do not match content}"
