@@ -774,7 +774,10 @@ release::gcs::verify_latest_update () {
   local -r version_prerelease_rev="${BASH_REMATCH[5]}"
   local -r version_commits="${BASH_REMATCH[7]}"
 
-  if gcs_version="$($GSUTIL cat $publish_file_dst 2>/dev/null)"; then
+  local -a catCmd=( 'cat' "$publish_file_dst" )
+  [ -n "${GSUTIL:-}" ] && catCmd=( "$GSUTIL" "${catCmd[@]}" )
+
+  if gcs_version="$( "${catCmd[@]}" )"; then
     if ! [[ $gcs_version =~ ${VER_REGEX[release]}(.${VER_REGEX[build]})* ]]; then
       logecho -r "$FAILED"
       logecho "* file contains invalid release version," \

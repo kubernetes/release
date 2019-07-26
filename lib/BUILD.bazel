@@ -8,3 +8,8 @@ sh_test(
     srcs = ["gitlib_test.sh"],
     data = glob(["testdata/gitlib/*"]),
 )
+
+sh_test(
+    name = "common",
+    srcs = ["common_test.sh"],
+)

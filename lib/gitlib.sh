@@ -136,6 +136,8 @@ gitlib::github_api_token () {
 ##############################################################################
 # Checks github ACLs
 # returns 1 on failure
+# Disable shellcheck for dynamically defined variable
+# shellcheck disable=SC2034,SC2154
 PROGSTEP[gitlib::github_acls]="CHECK GITHUB AUTH"
 gitlib::github_acls () {
 
@@ -293,7 +295,9 @@ gitlib::repo_state () {
   local expectedRemote="${RELEASE_TOOL_REPO:-[:/]kubernetes/release}"
   local expectedBranch="${RELEASE_TOOL_BRANCH:-master}"
 
-  local branch=$(gitlib::current_branch "$TOOL_ROOT") || return 1
+  local branch
+  branch=$(gitlib::current_branch "$TOOL_ROOT") || return 1
+
   if [ "${expectedBranch}" != "$branch" ]
   then
     logecho "$FAILED checked out branch $branch is not the same as $expectedBranch"
@@ -348,6 +352,15 @@ gitlib::create_issue() {
   )"
 
   ${GHCURL} "${K8S_GITHUB_API_ROOT}/${repo}/issues" --data "$data"
+}
+
+
+###############################################################################
+# Extract the issue url from an issue creation response
+gitlib::get_issue_url() {
+  local url=''
+  url="$( jq -r '.html_url // ""' || echo '' )"
+  echo "$url"
 }
 
 ###############################################################################

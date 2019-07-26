@@ -15,7 +15,7 @@
 # limitations under the License.
 
 
-testMain() {
+test_main() {
   local tests=( "$@" )
   local t
 
@@ -35,7 +35,7 @@ testMain() {
   done
 }
 
-assertEqualContent() {
+assert_equal_content() {
   local actual_file="$1"
   local expected_file="$2"
   local message="${3:-files do not match content}"
