@@ -20,8 +20,14 @@ SHELL:=/usr/bin/env bash
 
 ##@ Package
 
-.PHONY: verify-published-debs verify-published-rpms
+.PHONY: build-debs build-rpms verify-published-debs verify-published-rpms
 
+build-debs: ## Build debs
+	PACKAGE_TYPE="debs" ./build/package-in-docker.sh
+
+build-rpms: ## Build rpms
+	PACKAGE_TYPE="rpms" ./build/package-in-docker.sh
+	
 verify-published-debs: ## Ensure debs have been published
 	./hack/packages/verify-published.sh debs
 
@@ -56,4 +62,17 @@ test-sh: ## Runs all shellscript tests
 .PHONY: help
 
 help:  ## Display this help
-	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+	@awk ' \
+		BEGIN { \
+			FS = ":.*##" ; \
+			col = "\033[36m" ; \
+			nocol = "\033[0m" ; \
+			printf "\nUsage:\n  make %s<target>%s\n", col, nocol \
+		} \
+		/^[a-zA-Z_-]+:.*?##/ { \
+			printf "  %s%-15s%s %s\n", col, $$1, nocol, $$2 \
+		} \
+		/^##@/ { \
+			printf "\n%s%s%s\n", col, substr($$0, 5), nocol \
+		} \
+	' $(MAKEFILE_LIST)
