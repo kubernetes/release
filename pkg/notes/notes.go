@@ -252,6 +252,7 @@ func NoteTextFromString(s string) (string, error) {
 		note := strings.ReplaceAll(result["note"], "#", "&#35;")
 		note = strings.ReplaceAll(note, "\r", "")
 		note = stripActionRequired(note)
+		note = strings.TrimSpace(note)
 		note = dashify(note)
 		note = strings.TrimSpace(note)
 		return note, nil
