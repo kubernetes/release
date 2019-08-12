@@ -421,7 +421,7 @@ gitlib::get_team_members() {
   query='query ($org:String!, $team:String!) {
     organization(login: $org) {
       team(slug: $team) {
-        members(next: 100) {
+        members {
           nodes {
             login
           }
