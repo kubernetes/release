@@ -993,6 +993,37 @@ release::docker::release () {
 
 
 ###############################################################################
+# Get the kubecross image version for a given release branch.
+# @params branches - the release branches we care about
+release::kubecross_version() {
+  local branches=( "$@" )
+  local urlFmt='https://raw.githubusercontent.com/kubernetes/kubernetes/%s/build/build-image/cross/VERSION'
+  local ver url
+
+  for branch in "${branches[@]}"
+  do
+    # shellcheck disable=SC2059
+    # ... because we want to store the printf format string in a variable
+    url="$( printf "$urlFmt" "$branch" )"
+
+    logecho -n "Trying to get kubecross version for ${branch} ..." >&2
+
+    ver="$( curl -sSL --fail "$url" 2>/dev/null )" && {
+      logecho " ${OK}: ${ver}" >&2
+      echo "$ver"
+      return 0
+    }
+
+    logecho " ${FAILED}" >&2
+  done
+
+  # If we didn't return yet, we couldn't find the images version and thus need
+  # to return an error
+  logecho "Unable to find kubecross version in '${branches[*]}'." >&2
+  return 1
+}
+
+###############################################################################
 # Determine whether the release was most recently built with Bazel.
 # This is achieved by looking for the most recent kubernetes.tar.gz tarball
 # in both the dockerized and Bazel output trees.
