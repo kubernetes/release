@@ -1007,24 +1007,29 @@ EOF
 PROGSTEP[announce]="ANNOUNCE BRANCH OR RELEASE"
 announce () {
   local arg="$1"
-  local announcement_file="$WORKDIR/announcement.html"
-  local subject_file="$WORKDIR/announcement-subject.txt"
+  local announcement_file="${WORKDIR}/announcement.html"
+  local subject_file="${WORKDIR}/announcement-subject.txt"
   local nomock_flag=""
+  local pubotRc=0
+  local pubotIssue=''
 
-  logecho "Creating k8s $RELEASE_VERSION_PRIME announcement in $WORKDIR..."
+  logecho "Creating k8s ${RELEASE_VERSION_PRIME} announcement in ${WORKDIR} ..."
 
   if [[ "$arg" == "--branch" ]]; then
-    echo "k8s $RELEASE_BRANCH branch has been created" > $subject_file
-    branch_announcement_text > $announcement_file
+    echo "k8s ${RELEASE_BRANCH} branch has been created" > "$subject_file"
+    branch_announcement_text > "$announcement_file"
 
     # When we create a new branch, we notify the publishing-bot folks by
     # creating an issue for them
-    gitlib::create_publishing_bot_issue "$RELEASE_BRANCH" | gitlib::get_issue_url || {
-      logecho "$WARNING: Could not create issue for the publishing-bot update"
-    }
+    pubotIssue="$( gitlib::create_publishing_bot_issue "$RELEASE_BRANCH" | gitlib::get_issue_url )" || pubotRc=$?
+    if [ "$pubotRc" != '0' ]; then
+      logecho "${WARNING}: Could not create issue for the publishing-bot update"
+    else
+      logecho "${OK}: publishing-bot update issue created: ${pubotIssue}"
+    fi
   else
-    echo "k8s $RELEASE_VERSION_PRIME is live!" > $subject_file
-    release_announcement_text > $announcement_file
+    echo "k8s ${RELEASE_VERSION_PRIME} is live!" > "$subject_file"
+    release_announcement_text > "$announcement_file"
   fi
 
   # Only send from desktop
@@ -1057,7 +1062,7 @@ announce () {
     # so values > 0 are actually truthy
     ((FLAGS_nomock)) && nomock_flag="--nomock"
 
-    logecho "$ release-notify $nomock_flag $RELEASE_VERSION_PRIME"
+    logecho "$ release-notify ${nomock_flag} ${RELEASE_VERSION_PRIME}"
     logecho
   else
     release::send_announcement || return 1
