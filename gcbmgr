@@ -349,11 +349,8 @@ stage_it () {
     return 1
   fi
 
-  # Get kube_cross version
-  KUBE_CROSS_VERSION=$(curl -s https://raw.githubusercontent.com/kubernetes/kubernetes/$RELEASE_BRANCH/build/build-image/cross/VERSION)
-
-  [[ -z $KUBE_CROSS_VERSION ]] \
-    && common::exit 1 "Unable to set KUBE_CROSS_VERSION.  Exiting..."
+  KUBE_CROSS_VERSION="$( release::kubecross_version "$RELEASE_BRANCH" 'master' )" \
+    || common::exit 1 'Exiting...' >&2
 
   # Submit it
   submit_it
