@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+
+set -e
+set -u
+set -o pipefail
+
+readonly STATE_FAILING='FAILING'
+readonly STATE_FALKING='FLAKY'
+readonly STATE_PASSING='PASSING'
+
+readonly BOARDS="${BOARDS:-sig-release-master-blocking sig-release-master-upgrade}"
+readonly STATES="${STATES:-${STATE_FAILING}}"
+readonly BLOCK_WIDTH="${BLOCK_WIDTH:-30}"
+readonly WIDTH="${WIDTH:-3000}"
+readonly HEIGHT="${HEIGHT:-2500}"
+readonly RETRY_COUNT="${RETRY_COUNT:-3}"
+readonly RETRY_SLEEP="${RETRY_SLEEP:-2}"
+
+readonly TESTGRID='https://testgrid.k8s.io'
+readonly RENDER_TRON='https://render-tron.appspot.com/screenshot'
+readonly UPLOAD_URL='https://vgy.me/upload'
+readonly ISSUE_STUB_SUFFIX='issue.'
+
+getTestsByStatus() {
+  local b
+
+  for b in ${BOARDS}
+  do
+    curler --retry 0 "${TESTGRID}/${b}/summary" 2>/dev/null \
+      | jq --arg status "$1" -r '
+        to_entries[]
+          | select(.value.overall_status==$status)
+          | .value.dashboard_name + "#" + .key
+      '
+  done
+}
+
+urlencode() {
+  echo "$1" | jq -sRr @uri
+}
+
+genFileName() {
+  echo "${1//[^a-zA-Z0-9]/_}"
+}
+
+curler() {
+  curl -fqsSL --retry "$RETRY_COUNT" --retry-delay "$RETRY_SLEEP" "$@"
+}
+
+log() {
+  echo "$(getTimestamp) ${*}" >&2
+}
+
+upload() {
+  local fileName="$1"
+  curler "$UPLOAD_URL" -F "file=@${fileName}" -F "title=${fileName}"
+}
+
+screenshot() {
+  local url="$1"
+  local target="$2"
+  local urlEncoded renderTronUrl
+
+  urlEncoded="$( urlencode "${url}" )"
+  renderTronUrl="${RENDER_TRON}/${urlEncoded}?width=${WIDTH}&height=${HEIGHT}"
+
+  curler -o "${target}" "$renderTronUrl"
+}
+
+getIssueStubName() {
+  local dir="$1"
+  local idx="$2"
+  printf '%s/%s%05d' "$dir" "$ISSUE_STUB_SUFFIX" "$idx"
+}
+
+combineIssueStubs() {
+  local dir="$1"
+  find "$dir" -name "${ISSUE_STUB_SUFFIX}*" \
+    | sort -n \
+    | xargs cat
+}
+
+getTimestamp() {
+  date '+%Y-%m-%d %H:%M:%S%z'
+}
+
+commaSep() {
+  echo "$*" \
+    | sed -e 's@^\s\+@@' -e 's@\s\+$@@' -e 's@\s\+@, @g'
+}
+
+getHeaderStub() {
+  echo '### Testgrid dashboards'
+
+  echo "Boards checked for $(commaSep "${STATES}"):"
+
+  for b in $BOARDS
+  do
+    echo "- [${b}](${TESTGRID}/${b})"
+  done
+}
+
+main() {
+  local tests t s b
+  local idx=0
+
+  tmpDir="$( mktemp -d )"
+  trap 'rm -rf -- "$tmpDir"' EXIT
+
+  getHeaderStub > "$( getIssueStubName "${tmpDir}" "${idx}" )"
+
+  for s in ${STATES}
+  do
+    mapfile -t tests <<< "$(getTestsByStatus "$s")"
+    for t in "${tests[@]}"
+    do
+      [ -n "${t}" ] || continue
+
+      idx=$(( idx + 1 ))
+      (
+        local testgridUrl timestamp \
+          fileName imageMeta imageUrl fileBaseName fileSize
+
+        localLog() {
+          log "[${idx}]" "$@"
+        }
+
+        localLog "starting ${t}"
+
+        testgridUrl="${TESTGRID}/${t}&width=${BLOCK_WIDTH}"
+        fileName="${tmpDir}/$( genFileName "${t}" ).jpg"
+        fileBaseName="$(basename "$fileName")"
+
+        # create & download screenshot
+        localLog "screenshoting ${testgridUrl} to ${fileBaseName}"
+        screenshot "${testgridUrl}" "${fileName}"
+        timestamp="$( getTimestamp )"
+
+        read -r fileSize <<< "$(wc -c < "$fileName")"
+        localLog "${fileBaseName}: ${fileSize} bytes"
+
+        # upload
+        localLog "uploading ${fileBaseName}"
+        imageMeta="$(
+          upload "$fileName"
+        )"
+
+        imageUrl="$( echo "${imageMeta}" | jq -r '.image' )"
+
+        # generate issue section
+        localLog "generating markdown stub"
+        printf \
+          '\n<details><summary><tt>%s</tt> %s %s <a href="%s">[testgrid]</a></summary><p>\n\n![%s](%s)\n<!-- %s -->\n</p></details>\n' \
+          "${timestamp}" "${s}" "${t}" "${testgridUrl}" "${t}" "${imageUrl}" "${imageMeta}" \
+          > "$( getIssueStubName "${tmpDir}" "$idx" )"
+
+        localLog "done, image is available at ${imageUrl}"
+      )&
+    done
+  done
+
+  wait
+
+  echo
+
+  echo '<!-- ----[ issue comment ]---- -->'
+  combineIssueStubs "${tmpDir}"
+  echo '<!-- ----[ issue comment ]---- -->'
+}
+
+main "$@"
