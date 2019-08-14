@@ -1,15 +1,80 @@
 #!/usr/bin/env bash
 
-set -e
-set -u
+# Copyright 2019 The Kubernetes Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#+
+#+ Usage: testgridshot <release>
+#+
+#+   <release> can be something like 'master', '1.15', ...
+#+
+#+   This will inspect the testgrid dashboards 'blocking' & 'informing' for the
+#+   specified <release>, create screenshots of failing tests, and print a markdown
+#+   stub on standard out. This stub is intended to be copy & pasted into a issue
+#+   comment for the release cutting GitHub issue.
+#+
+#+ Configuration:
+#+   Configuration can be passed in via the environmnet. The following
+#+   variables are available:
+#+
+#+   BOARDS: [default: "blocking informing"]
+#+     Change which boards you are interested in
+#+
+#+   STATES: [default: "FAILING"]
+#+     Change the tests you want to screenshot
+#+     Available states: FAILING, FLAKY, PASSING
+#+
+#+   BLOCK_WIDTH: [default: 30]
+#+     The width of the individual testgrid red & green block.
+#+     Influences on how many test runs will be shown on the screenshot.
+#+
+#+   WIDTH/HEIGHT: [default: WIDTH=3000/HEIGHT=2500]
+#+     The width and height of the generated screenshot in pixel.
+#+
+#+   RETRY_COUNT: [default: 3]
+#+     Change how often we should retry when talking to (curl'ing) APIs.
+#+
+#+   RETRY_SLEEP: [default: 2]
+#+     Change the amount of time we want to wait between consecutive API call
+#+     retries.
+#+
+#+   Example:
+#+     $ BOARDS='all informing' STATES='FAILING FLAKY' BLOCK_WIDTH=10 ./testgridshot 1.15
+#+         Creates dense screenshots of all the 'sig-release-1.15-{all,informing}'
+#+         boards which are either failing or flaking
+#+
+#+ How it works:
+#+   General flow:
+#+   - Get the dasbhoard URLs we are interested in from testgrid's 'summary'
+#+     endpoint
+#+   - Use 'render-tron.appspot.com' to create screenshots of the testgrid
+#+     boards
+#+   - Upload all the screenshots to 'vgy.me'
+#+   - Print a markdown, which links to the images on 'vgy.me', stub on StdOut
+#+   Remarks:
+#+   - Both 'vgy.me' and 'render-tron.appspot.com' might go away anytime
+#+   - The images are not served by 'vgy.me' directly if used in a GitHub issue,
+#+     but by GitHub's camo service
+#+
+
+set -o errexit
+set -o nounset
 set -o pipefail
 
-readonly STATE_FAILING='FAILING'
-readonly STATE_FALKING='FLAKY'
-readonly STATE_PASSING='PASSING'
-
-readonly BOARDS="${BOARDS:-sig-release-master-blocking sig-release-master-upgrade}"
-readonly STATES="${STATES:-${STATE_FAILING}}"
+readonly BOARDS="${BOARDS:-blocking informing}"
+# Available states: FAILING, FLAKY, PASSING
+readonly STATES="${STATES:-FAILING}"
 readonly BLOCK_WIDTH="${BLOCK_WIDTH:-30}"
 readonly WIDTH="${WIDTH:-3000}"
 readonly HEIGHT="${HEIGHT:-2500}"
@@ -21,13 +86,16 @@ readonly RENDER_TRON='https://render-tron.appspot.com/screenshot'
 readonly UPLOAD_URL='https://vgy.me/upload'
 readonly ISSUE_STUB_SUFFIX='issue.'
 
-getTestsByStatus() {
-  local b
+get_tests_by_status() {
+  local status="$1"
+  shift
 
-  for b in ${BOARDS}
+  local board
+
+  for board in "$@"
   do
-    curler --retry 0 "${TESTGRID}/${b}/summary" 2>/dev/null \
-      | jq --arg status "$1" -r '
+    curl_with_retry --retry 0 "${TESTGRID}/${board}/summary" 2>/dev/null \
+      | jq --arg status "$status" -r '
         to_entries[]
           | select(.value.overall_status==$status)
           | .value.dashboard_name + "#" + .key
@@ -39,122 +107,137 @@ urlencode() {
   echo "$1" | jq -sRr @uri
 }
 
-genFileName() {
+gen_file_name() {
   echo "${1//[^a-zA-Z0-9]/_}"
 }
 
-curler() {
+curl_with_retry() {
   curl -fqsSL --retry "$RETRY_COUNT" --retry-delay "$RETRY_SLEEP" "$@"
 }
 
 log() {
-  echo "$(getTimestamp) ${*}" >&2
+  echo "$(get_timestamp) ${*}" >&2
 }
 
 upload() {
-  local fileName="$1"
-  curler "$UPLOAD_URL" -F "file=@${fileName}" -F "title=${fileName}"
+  local file_name="$1"
+  curl_with_retry "$UPLOAD_URL" -F "file=@${file_name}" -F "title=${file_name}"
 }
 
 screenshot() {
   local url="$1"
   local target="$2"
-  local urlEncoded renderTronUrl
+  local url_encoded rendertron_url
 
-  urlEncoded="$( urlencode "${url}" )"
-  renderTronUrl="${RENDER_TRON}/${urlEncoded}?width=${WIDTH}&height=${HEIGHT}"
+  url_encoded="$( urlencode "${url}" )"
+  rendertron_url="${RENDER_TRON}/${url_encoded}?width=${WIDTH}&height=${HEIGHT}"
 
-  curler -o "${target}" "$renderTronUrl"
+  curl_with_retry -o "${target}" "$rendertron_url"
 }
 
-getIssueStubName() {
+get_issue_stub_name() {
   local dir="$1"
   local idx="$2"
   printf '%s/%s%05d' "$dir" "$ISSUE_STUB_SUFFIX" "$idx"
 }
 
-combineIssueStubs() {
+combine_issue_stubs() {
   local dir="$1"
   find "$dir" -name "${ISSUE_STUB_SUFFIX}*" \
     | sort -n \
     | xargs cat
 }
 
-getTimestamp() {
+get_timestamp() {
   date '+%Y-%m-%d %H:%M:%S%z'
 }
 
-commaSep() {
+comma_sep() {
   echo "$*" \
     | sed -e 's@^\s\+@@' -e 's@\s\+$@@' -e 's@\s\+@, @g'
 }
 
-getHeaderStub() {
+get_header_stub() {
+  local board
+
   echo '### Testgrid dashboards'
 
-  echo "Boards checked for $(commaSep "${STATES}"):"
+  echo "Boards checked for $(comma_sep "${STATES}"):"
 
-  for b in $BOARDS
+  for board in "$@"
   do
-    echo "- [${b}](${TESTGRID}/${b})"
+    printf -- '- [%s](%s)\n' "$board" "${TESTGRID}/${board}"
   done
 }
 
-main() {
-  local tests t s b
+usage() {
+  local usage_marker='^#\\+ ?'
+  # shellcheck disable=SC2016
+  local awk_prog='$0 ~ RE { gsub(RE, ""); print }'
+
+  awk -vRE="$usage_marker" "$awk_prog" <"$0" >&2
+}
+
+shoot() {
+  local target_release="$1"
+  local boards
+  local tests t s
   local idx=0
 
-  tmpDir="$( mktemp -d )"
-  trap 'rm -rf -- "$tmpDir"' EXIT
+  tmp_dir="$( mktemp -d )"
+  trap 'rm -rf -- "$tmp_dir"' EXIT
 
-  getHeaderStub > "$( getIssueStubName "${tmpDir}" "${idx}" )"
+  read -r -a boards <<< "$BOARDS"
+  # prepend all elements with 'sig-release-<release>-' to form the full
+  # testgrid dashborad name
+  boards=( "${boards[@]/#/sig-release-${target_release}-}" )
+
+  get_header_stub "${boards[@]}" > "$( get_issue_stub_name "${tmp_dir}" "${idx}" )"
 
   for s in ${STATES}
   do
-    mapfile -t tests <<< "$(getTestsByStatus "$s")"
+    mapfile -t tests <<< "$(get_tests_by_status "$s" "${boards[@]}")"
     for t in "${tests[@]}"
     do
       [ -n "${t}" ] || continue
 
       idx=$(( idx + 1 ))
       (
-        local testgridUrl timestamp \
-          fileName imageMeta imageUrl fileBaseName fileSize
+        local testgrid_url timestamp \
+          file_name image_meta image_url file_base_name file_size
 
-        localLog() {
+        local_log() {
           log "[${idx}]" "$@"
         }
 
-        localLog "starting ${t}"
+        local_log "starting ${t}"
 
-        testgridUrl="${TESTGRID}/${t}&width=${BLOCK_WIDTH}"
-        fileName="${tmpDir}/$( genFileName "${t}" ).jpg"
-        fileBaseName="$(basename "$fileName")"
+        testgrid_url="${TESTGRID}/${t}&width=${BLOCK_WIDTH}"
+        file_name="${tmp_dir}/$( gen_file_name "${t}" ).jpg"
+        file_base_name="$(basename "$file_name")"
 
         # create & download screenshot
-        localLog "screenshoting ${testgridUrl} to ${fileBaseName}"
-        screenshot "${testgridUrl}" "${fileName}"
-        timestamp="$( getTimestamp )"
+        local_log "screenshoting ${testgrid_url} to ${file_base_name}"
+        screenshot "${testgrid_url}" "${file_name}"
+        timestamp="$( get_timestamp )"
 
-        read -r fileSize <<< "$(wc -c < "$fileName")"
-        localLog "${fileBaseName}: ${fileSize} bytes"
+        read -r file_size <<< "$(wc -c < "$file_name")"
+        local_log "${file_base_name}: ${file_size} bytes"
 
         # upload
-        localLog "uploading ${fileBaseName}"
-        imageMeta="$(
-          upload "$fileName"
-        )"
+        local_log "uploading ${file_base_name}"
+        image_meta="$( upload "$file_name" )"
 
-        imageUrl="$( echo "${imageMeta}" | jq -r '.image' )"
+        image_url="$( echo "${image_meta}" | jq -r '.image' )"
 
         # generate issue section
-        localLog "generating markdown stub"
+        local_log "generating markdown stub"
         printf \
           '\n<details><summary><tt>%s</tt> %s %s <a href="%s">[testgrid]</a></summary><p>\n\n![%s](%s)\n<!-- %s -->\n</p></details>\n' \
-          "${timestamp}" "${s}" "${t}" "${testgridUrl}" "${t}" "${imageUrl}" "${imageMeta}" \
-          > "$( getIssueStubName "${tmpDir}" "$idx" )"
+          "${timestamp}" "${s}" "${t}" "${testgrid_url}" "${t}" "${image_url}" "${image_meta}" \
+          > "$( get_issue_stub_name "${tmp_dir}" "$idx" )"
 
-        localLog "done, image is available at ${imageUrl}"
+        local_log "done, image is available at ${image_url}"
       )&
     done
   done
@@ -164,8 +247,19 @@ main() {
   echo
 
   echo '<!-- ----[ issue comment ]---- -->'
-  combineIssueStubs "${tmpDir}"
+  combine_issue_stubs "${tmp_dir}"
   echo '<!-- ----[ issue comment ]---- -->'
+}
+
+main() {
+  local target_release="${1:-}"
+
+  if [ -z "$target_release" ]; then
+    usage
+    exit
+  fi
+
+  shoot "$target_release"
 }
 
 main "$@"
