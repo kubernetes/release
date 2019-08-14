@@ -11,7 +11,7 @@
 
 # Kubernetes Release
 
-This repo contains the tooling and infrastructure to create Kubernetes releases from the [kubernetes/kubernetes](https://github.com/kubernetes/kubernetes) main repository.
+This repo contains the tooling and infrastructure to create Kubernetes releases from the [kubernetes/kubernetes] main repository.
 
 ## Intro
 
@@ -26,18 +26,23 @@ development and testing.
 
 Tools | Description
  :---: | --
-[`gcbmgr`](https://github.com/kubernetes/release/blob/master/gcbmgr) | Google Cloud Builder Manager: <br/><br/> This is the main entry point for release managers for producing releases. All release types can be staged and later released using this method.
-[`anago`](https://github.com/kubernetes/release/blob/master/anago) | Release Tool: <br/><br/> The main driver for creating staged builds and releases. This is what runs inside GCB after a job is submitted using `gcbmgr`.
-[`branchff`](https://github.com/kubernetes/release/blob/master/branchff) | Fast-forward branching helper : <br/><br/> A tool used to pull new patches onto the release branch.
-<br/> [`find_green_build`](https://github.com/kubernetes/release/blob/master/find_green_build) <br/><br/> | Asks Jenkins for a good build to use.
-<br/> [`release-notes`](https://github.com/kubernetes/release/blob/master/cmd/release-notes) <br/><br/> | Scrape GitHub for release notes. See [Release Notes Gathering](#release-notes-gathering) for more information.
-<br/> [`prin`](https://github.com/kubernetes/release/blob/master/prin) <br/><br/> | To show release tags of a particular PR or commit.
-<br/> [`changelog-update`](https://github.com/kubernetes/release/blob/master/changelog-update) <br/><br/> | Updates [CHANGELOG.md](https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md) version entries by rescanning github for text and label changes.
-<br/> [`push-build.sh`](https://github.com/kubernetes/release/blob/master/push-build.sh) <br/><br/> | Pushes a developer build or CI Jenkins build up to GCS.
-<br/> [`script-template`](https://github.com/kubernetes/release/blob/master/script-template) <br/><br/> | Generates a script template in the kubernetes/release ecosystem.
-[`testgridshot`](https://github.com/kubernetes/release/blob/master/testgridshot) | Screenshots failing testgrid dashboards and creates a markdown stub that can be copied and pasted into a GitHub issue comment.<br/>This makes it easier to create comments like [this](https://github.com/kubernetes/sig-release/issues/756#issuecomment-520721968) as part of the release process.
+[`gcbmgr`](/gcbmgr)                     | Google Cloud Builder Manager:<br/>This is the main entry point for release managers for producing releases. All release types can be staged and later released using this method.
+[`anago`](/anago)                       | Release Tool:<br/>The main driver for creating staged builds and releases. This is what runs inside GCB after a job is submitted using `gcbmgr`.
+[`branchff`](/branchff)                 | Fast-forward branching helper:<br/>A tool used to pull new patches onto the release branch.
+[`find_green_build`](/find_green_build) | Asks Jenkins for a good build to use.
+[`release-notes`](/cmd/release-notes)   | Scrape GitHub for release notes.<br/>See [Release Notes Gathering](#release-notes-gathering) for more information.
+[`prin`](/prin)                         | To show release tags of a particular PR or commit.
+[`changelog-update`](/changelog-update) | Updates [CHANGELOG.md] version entries by rescanning github for text and label changes.
+[`push-build.sh`](/push-build.sh)       | Pushes a developer build or CI Jenkins build up to GCS.
+[`script-template`](/script-template)   | Generates a script template in the kubernetes/release ecosystem.
+[`testgridshot`](/testgridshot)         | Screenshots failing testgrid dashboards and creates a markdown stub that can be copied and pasted into a GitHub issue comment.<br/>This makes it easier to create comments like [this][shot-issue] as part of the release process.
 
-For information on how to use `gcbmgr`, `anago` and `branchff`, see the [Branch Manager Handbook](https://git.k8s.io/sig-release/release-engineering/role-handbooks/branch-manager.md)
+For information on how to use `gcbmgr`, `anago` and `branchff`, see the [Branch Manager Handbook]
+
+[kubernetes/kubernetes]: https://git.k8s.io/kubernetes
+[Branch Manager Handbook]: https://git.k8s.io/sig-release/release-engineering/role-handbooks/branch-manager.md
+[CHANGELOG.md]: https://git.k8s.io/kubernetes/blob/master/CHANGELOG.md
+[shot-issue]: https://github.com/kubernetes/sig-release/issues/756#issuecomment-520721968
 
 ## Release Notes Gathering
 
