@@ -35,6 +35,7 @@ Tools | Description
 <br/> [`changelog-update`](https://github.com/kubernetes/release/blob/master/changelog-update) <br/><br/> | Updates [CHANGELOG.md](https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md) version entries by rescanning github for text and label changes.
 <br/> [`push-build.sh`](https://github.com/kubernetes/release/blob/master/push-build.sh) <br/><br/> | Pushes a developer build or CI Jenkins build up to GCS.
 <br/> [`script-template`](https://github.com/kubernetes/release/blob/master/script-template) <br/><br/> | Generates a script template in the kubernetes/release ecosystem.
+[`testgridshot`](https://github.com/kubernetes/release/blob/master/testgridshot) | Screenshots failing testgrid dashboards and creates a markdown stub that can be copied and pasted into a GitHub issue comment.<br/>This makes it easier to create comments like [this](https://github.com/kubernetes/sig-release/issues/756#issuecomment-520721968) as part of the release process.
 
 For information on how to use `gcbmgr`, `anago` and `branchff`, see the [Branch Manager Handbook](https://git.k8s.io/sig-release/release-engineering/role-handbooks/branch-manager.md)
 
