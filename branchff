@@ -63,8 +63,6 @@ for PREREQ in ${PREREQUISITE_TOOLS[@]}; do
   command -v $PREREQ > /dev/null 2>&1 || common::exit 1 "$PREREQ not installed"
 done;
 
-[[ -w /usr/local ]] || common::exit 1 "/usr/local is not writable."
-
 source $TOOL_LIB_PATH/gitlib.sh
 
 # Set positional args
@@ -92,13 +90,19 @@ gitlib::repo_state || common::exit 1
 ###############################################################################
 # MAIN
 ###############################################################################
-BASEDIR="/usr/local/google/$USER"
+BASEDIR="$(mktemp -d "$TMPDIR/$PROG.XXXXXX")"
 # WORK/BUILD area
 WORKDIR=$BASEDIR/$PROG-$RELEASE_BRANCH
 # Go tools expect the kubernetes src to be under $GOPATH
 export GOPATH=$WORKDIR
 # TREE_ROOT is working branch/tree
 TREE_ROOT=$WORKDIR/src/k8s.io/kubernetes
+
+# Set a trap to cleanup BASEDIR if --cleanup is set.
+if (($FLAGS_cleanup)) ; then
+  trap 'rm -rf "$BASEDIR"' EXIT ERR SIGINT SIGQUIT SIGTERM SIGHUP
+fi
+
 # The real deal?
 if ((FLAGS_nomock)); then
   DRYRUN_FLAG=""
@@ -250,7 +254,12 @@ if common::askyorn -e "OK to push now"; then
 fi
 
 logecho
-logecho "$WORKDIR left intact for reviewing"
+
+if (($FLAGS_cleanup)); then
+  logecho "$BASEDIR has been removed, as the --cleanup flag was provided."
+else
+  logecho "$WORKDIR left intact for reviewing"
+fi
 
 # END script
 common::timestamp end
