@@ -679,12 +679,20 @@ release::gcs::locally_stage_release_artifacts() {
   done
 
   logecho "- Hashing files in ${gcs_stage##$build_output/}..."
-  find $gcs_stage -type f | while read path; do
-    common::sha $path 256 > "$path.sha256" || return 1
-    common::sha $path 512 > "$path.sha512" || return 1
+  find "$gcs_stage" -type f | while read -r path; do
+    for bits in "256" "512"; do
+      sum="$(common::sha "$path" "$bits" "full")" || return 1
+      echo "$sum" > "${path}.sha${bits}"
+    done
+  done
+
+  logecho "- Writing artifact hashes to SHA256SUMS/SHA512SUMS files..."
+  for bits in "256" "512"; do
+    for sha_file in "${gcs_stage}"/*.sha"${bits}"; do
+      cat "$sha_file" >> "${gcs_stage}/SHA${bits}SUMS"
+    done
   done
 }
-
 
 ###############################################################################
 # Publish a new version, (latest or stable,) but only if the
