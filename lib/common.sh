@@ -638,21 +638,6 @@ common::argc_validate () {
   fi
 }
 
-
-###############################################################################
-# Get the md5 hash of a file
-# @param file - The file
-# @print the md5 hash
-common::md5 () {
-  local file=$1
-
-  if which md5 >/dev/null 2>&1; then
-    md5 -q "$1"
-  else
-    md5sum "$file" | awk '{print $1}'
-  fi
-}
-
 ###############################################################################
 # Get the sha1 hash of a file
 # @param file - The file
