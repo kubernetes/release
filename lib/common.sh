@@ -639,13 +639,13 @@ common::argc_validate () {
 }
 
 ###############################################################################
-# Get the sha1 hash of a file
+# Get the SHA hash of a file
 # @param file - The file
-# @param algo - Algorithm 1 (default), 224, 256, 384, 512, 512224, 512256
+# @param algo - Algorithm 1, 224, 256 (default), 384, 512, 512224, 512256
 # @print the sha hash
 common::sha () {
   local file=$1
-  local algo=${2:-1}
+  local algo=${2:-256}
 
   which shasum >/dev/null 2>&1 && LANG=C shasum -a$algo $file | awk '{print $1}'
 }

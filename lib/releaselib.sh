@@ -680,7 +680,7 @@ release::gcs::locally_stage_release_artifacts() {
 
   logecho "- Hashing files in ${gcs_stage##$build_output/}..."
   find $gcs_stage -type f | while read path; do
-    common::sha $path 1 > "$path.sha1" || return 1
+    common::sha $path 256 > "$path.sha256" || return 1
     common::sha $path 512 > "$path.sha512" || return 1
   done
 }
