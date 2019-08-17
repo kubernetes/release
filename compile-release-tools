@@ -25,32 +25,6 @@ setup_env() {
   fi
 }
 
-install_dep() {
-  (
-    go get -d -u github.com/golang/dep
-    cd "${GOPATH}/src/github.com/golang/dep"
-    DEP_LATEST="$(git describe --abbrev=0 --tags)"
-    git checkout "${DEP_LATEST}" >/dev/null 2>&1
-    go install -ldflags="-X main.version=${DEP_LATEST}" ./cmd/dep
-  )
-}
-
-check_deps() {
-  # Make sure our deps are not out-dated
-  dep ensure -update
-  status="$(git status -s)"
-
-  [ -z "${status}" ] || {
-    echo "dependencies are out of date:"
-    # shellcheck disable=SC2001
-    echo "${status}" | sed 's/^/  /g'
-
-    # Should we stop here or should we just go ahead, try to compile and hope
-    # for the best?
-    # exit 1
-  }
-}
-
 compile() {
   local tool="$1"
 
@@ -59,9 +33,9 @@ compile() {
 }
 
 main() {
+  cd "$(dirname "${BASH_SOURCE[0]}")"
+
   setup_env
-  install_dep
-  check_deps
 
   compile k8s.io/release/cmd/blocking-testgrid-tests
 }
