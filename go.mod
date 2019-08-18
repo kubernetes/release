@@ -11,6 +11,7 @@ require (
 	github.com/google/go-github/v27 v27.0.4
 	github.com/kolide/kit v0.0.0-20190123023048-c155a91098e3
 	github.com/pkg/errors v0.8.1
+	github.com/psampaz/go-mod-outdated v0.4.0
 	github.com/stretchr/testify v1.4.0
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 // indirect
 	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7 // indirect

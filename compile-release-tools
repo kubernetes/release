@@ -32,10 +32,22 @@ compile() {
   echo "${tool} compiled & installed"
 }
 
+check_deps() {
+  compile github.com/psampaz/go-mod-outdated
+
+  local gmo_args=( '-update' '-direct' )
+  if [ -n "${FAIL_ON_OUTDATED:-}" ]; then
+    gmo_args+=( '-ci' )
+  fi
+
+  go list -u -m -json all | go-mod-outdated "${gmo_args[@]}"
+}
+
 main() {
   cd "$(dirname "${BASH_SOURCE[0]}")"
 
   setup_env
+  check_deps
 
   compile k8s.io/release/cmd/blocking-testgrid-tests
 }
