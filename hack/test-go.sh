@@ -19,4 +19,5 @@ set -u
 set -o pipefail
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
-go test ./...
+
+GO111MODULE=on go test -v -race -count=1 ./...
