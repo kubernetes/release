@@ -31,7 +31,7 @@ type options struct {
 	releaseVersion string
 	format         string
 	requiredAuthor string
-	debug					 bool
+	debug          bool
 	logger         log.Logger
 }
 
@@ -309,7 +309,7 @@ func parseOptions(args []string, logger log.Logger) (*options, error) {
 
 	// Add appropriate log filtering
 	if opts.debug {
-		logger = level.NewFilter(logger, level.AllowDebug())		
+		logger = level.NewFilter(logger, level.AllowDebug())
 	} else {
 		logger = level.NewFilter(logger, level.AllowInfo())
 	}
