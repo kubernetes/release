@@ -1,1 +1,0 @@
-gcloud builds submit --config k8s-container.yaml .

@@ -50,13 +50,27 @@ verify-shellcheck: ## Runs shellcheck
 .PHONY: test
 test: test-go test-sh ## Runs unit tests to ensure correct execution
 
-.PHONY: test-go 
-test-go: ## Run all golang tests
+.PHONY: test-go
+test-go: ## Runs all golang tests
 	./hack/test-go.sh
-	
+
 .PHONY: test-sh
 test-sh: ## Runs all shellscript tests
 	./hack/test-sh.sh
+
+##@ Images
+
+.PHONY: update-images
+
+images := \
+	godep \
+	k8s-cloud-builder
+
+update-images: $(addprefix image-,$(images)) ## Update all images in ./images/
+image-%:
+	$(eval img := $(subst image-,,$@))
+	gcloud builds submit --config './images/$(img)/cloudbuild.yaml' './images/$(img)'
+
 ##@ Helpers
 
 .PHONY: help
