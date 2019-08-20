@@ -37,14 +37,14 @@ test_main() {
 
 test_scaffold() {
   func_name="${FUNCNAME[1]}"
-  tmpDir="$(mktemp -d "${func_name}.XXXXXX")"
-  trap 'rm -rf -- "$tmpDir"' EXIT
+  tmp_dir="$(mktemp -d "${func_name}.XXXXXX")"
+  trap 'rm -rf -- "$tmp_dir"' EXIT
 
   # override some vars and func to not clutter output
   common::timestamp() { :; }
   # shellcheck disable=SC2034
-  PROGSTATE="${tmpDir}/${func_name}-state.txt" \
-    LOGFILE="${tmpDir}/${func_name}.log" \
+  PROGSTATE="${tmp_dir}/${func_name}-state.txt" \
+    LOGFILE="${tmp_dir}/${func_name}.log" \
     HR='' \
     TPUT[BOLD]='' \
     TPUT[OFF]=''
