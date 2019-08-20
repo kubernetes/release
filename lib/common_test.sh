@@ -34,17 +34,7 @@ set -o errexit
 set -o pipefail
 
 TEST_run_stateful() {
-  tmpDir="$( mktemp -d )"
-  trap 'rm -rf -- "$tmpDir"' EXIT
-
-  # override some vars and func to not clutter output
-  common::timestamp() { :; }
-  # shellcheck disable=SC2034
-  PROGSTATE="${tmpDir}/whats-a-progstate-even.txt" \
-    LOGFILE="${tmpDir}/some-log-file.log" \
-    HR='' \
-    TPUT[BOLD]='' \
-    TPUT[OFF]=''
+  test_scaffold
 
   assert_equal_content \
     <( common::run_stateful --strip-args 'printf %s\n%s arg1 arg2' ) \

@@ -35,6 +35,21 @@ test_main() {
   done
 }
 
+test_scaffold() {
+  func_name="${FUNCNAME[1]}"
+  tmpDir="$(mktemp -d "${func_name}.XXXXXX")"
+  trap 'rm -rf -- "$tmpDir"' EXIT
+
+  # override some vars and func to not clutter output
+  common::timestamp() { :; }
+  # shellcheck disable=SC2034
+  PROGSTATE="${tmpDir}/${func_name}-state.txt" \
+    LOGFILE="${tmpDir}/${func_name}.log" \
+    HR='' \
+    TPUT[BOLD]='' \
+    TPUT[OFF]=''
+}
+
 assert_equal_content() {
   local actual_file="$1"
   local expected_file="$2"
