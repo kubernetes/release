@@ -1,0 +1,1 @@
+This is the first file to test the generation of SHA hashes.

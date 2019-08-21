@@ -638,31 +638,29 @@ common::argc_validate () {
   fi
 }
 
-
 ###############################################################################
-# Get the md5 hash of a file
+# Get the SHA hash of a file
 # @param file - The file
-# @print the md5 hash
-common::md5 () {
-  local file=$1
-
-  if which md5 >/dev/null 2>&1; then
-    md5 -q "$1"
-  else
-    md5sum "$file" | awk '{print $1}'
-  fi
-}
-
-###############################################################################
-# Get the sha1 hash of a file
-# @param file - The file
-# @param algo - Algorithm 1 (default), 224, 256, 384, 512, 512224, 512256
+# @param algo - Algorithm 1, 224, 256 (default), 384, 512, 512224, 512256
+# output_type - Specifies output for the SHA:
+#               hash (default): outputs just the SHA
+#               file: outputs the SHA, two spaces, and the basename of the file
 # @print the sha hash
 common::sha () {
   local file=$1
-  local algo=${2:-1}
+  local algo=${2:-256}
+  local output_type=${3:-hash}
+  local shasum_output
 
-  which shasum >/dev/null 2>&1 && LANG=C shasum -a$algo $file | awk '{print $1}'
+  which shasum >/dev/null 2>&1 || return 1
+
+  shasum_output=$(shasum -a"$algo" "$file")
+
+  if [[ "$output_type" != "full" ]]; then
+    echo "$shasum_output" | awk '{print $1}'
+  else
+    echo "$shasum_output" | sed 's/  .*\//  /'
+  fi
 }
 
 ###############################################################################

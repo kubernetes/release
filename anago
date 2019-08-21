@@ -1079,9 +1079,15 @@ update_github_release () {
   local release_verb="Posting"
   local prerelease="true"
   local draft="true"
-  local tarball="$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/gcs-stage"
-        tarball+="/$RELEASE_VERSION_PRIME/kubernetes.tar.gz"
-  local sha_hash=$(common::sha $tarball 512)
+  local staging_dir="${TREE_ROOT}/_output-${RELEASE_VERSION_PRIME}/gcs-stage/${RELEASE_VERSION_PRIME}"
+  local tarball="${staging_dir}/kubernetes.tar.gz"
+  local sha256_hash
+  local sha512_hash
+  local sha256sums_file="${staging_dir}/SHA256SUMS"
+  local sha512sums_file="${staging_dir}/SHA512SUMS"
+
+  sha256_hash=$(common::sha "$tarball" 256)
+  sha512_hash=$(common::sha "$tarball" 512)
 
   ((FLAGS_official)) && prerelease="false"
   if ((FLAGS_nomock)); then
@@ -1132,7 +1138,7 @@ update_github_release () {
     "tag_name": "'$RELEASE_VERSION_PRIME'",
     "target_commitish": "'$RELEASE_BRANCH'",
     "name": "'$RELEASE_VERSION_PRIME'",
-    "body": "See [kubernetes-announce@](https://groups.google.com/forum/#!forum/kubernetes-announce) and ['$CHANGELOG_FILE']('$changelog_url'#'${RELEASE_VERSION_PRIME//\./}') for details.\n\nSHA512 for `kubernetes.tar.gz`: `'$sha_hash'`\n\nAdditional binary downloads are linked in the ['$CHANGELOG_FILE']('$changelog_url'#downloads-for-'${RELEASE_VERSION_PRIME//\./}').",
+    "body": "See [kubernetes-announce@](https://groups.google.com/forum/#!forum/kubernetes-announce) and ['$CHANGELOG_FILE']('$changelog_url'#'${RELEASE_VERSION_PRIME//\./}') for details.\n\nSHA256 for `kubernetes.tar.gz`: `'${sha256_hash}'`\n\nSHA512 for `kubernetes.tar.gz`: `'${sha512_hash}'`\n\nAdditional binary downloads are linked in the ['$CHANGELOG_FILE']('$changelog_url'#downloads-for-'${RELEASE_VERSION_PRIME//\./}').",
     "draft": '$draft',
     "prerelease": '$prerelease'
     }' |jq -r '.id')
@@ -1144,15 +1150,35 @@ update_github_release () {
     return 1
   fi
 
+  local assets_upload_url="${K8S_GITHUB_API/api\./uploads\.}/releases/${release_id}/assets"
+
   # publish binary
   logecho -n "Uploading binary to github: "
   if $GHCURL -H "Content-Type:application/x-compressed" \
-   --data-binary @$tarball \
-   "${K8S_GITHUB_API/api\./uploads\.}/releases/$release_id/assets?name=${tarball##*/}"; then
-    logecho $OK
+   --data-binary "@$tarball" \
+   "${assets_upload_url}?name=${tarball##*/}"; then
+    logecho "$OK"
   else
-    logecho $FAILED
+    logecho "$FAILED"
   fi
+
+  local file
+
+  # Upload SHA sums to GitHub
+  logecho -n "Uploading SHA sums to github: "
+  for file in "$sha256sums_file" "$sha512sums_file"; do
+    if [[ ! -f $file ]]; then
+      logecho -n "Unable to find $file. Skipping..."
+    else
+      if $GHCURL -H "Content-Type:application/octet-stream" \
+      --data-binary @$file \
+      "${assets_upload_url}?name=${file##*/}"; then
+        logecho "$OK"
+      else
+        logecho "$FAILED"
+      fi
+    fi
+  done
 
   if $draft; then
     logecho

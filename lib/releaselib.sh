@@ -487,11 +487,11 @@ release::gcs::check_release_bucket() {
 }
 
 ###############################################################################
-# Create a unique bucket name for releasing Kube and make sure it exists.
+# Creates a tarball for upload to a GCS staging directory.
 # @param gcs_stage - the staging directory
 # @param source and destination arguments
-# @return 1 if tar fails
-release::gcs::stage_and_hash() {
+# @return 1 if tar directory or tarball creation fails
+release::gcs::prepare_tarball() {
   local gcs_stage=$1
   shift
   local src
@@ -602,7 +602,7 @@ release::gcs::locally_stage_release_artifacts() {
 
   # Stage everything in release directory
   logecho "- Staging locally to ${gcs_stage##$build_output/}..."
-  release::gcs::stage_and_hash $gcs_stage $release_tars/* . || return 1
+  release::gcs::prepare_tarball $gcs_stage $release_tars/* . || return 1
 
   if [[ "$release_kind" == "kubernetes" ]]; then
     local gce_path=$release_stage/full/kubernetes/cluster/gce
@@ -621,20 +621,20 @@ release::gcs::locally_stage_release_artifacts() {
     [[ -f $gce_path/configure-vm.sh ]] \
      && configure_vm="$gce_path/configure-vm.sh"
 
-    release::gcs::stage_and_hash $gcs_stage $configure_vm extra/gce \
+    release::gcs::prepare_tarball $gcs_stage $configure_vm extra/gce \
       || return 1
-    release::gcs::stage_and_hash $gcs_stage $gci_path/node.yaml extra/gce \
+    release::gcs::prepare_tarball $gcs_stage $gci_path/node.yaml extra/gce \
       || return 1
-    release::gcs::stage_and_hash $gcs_stage $gci_path/master.yaml extra/gce \
+    release::gcs::prepare_tarball $gcs_stage $gci_path/master.yaml extra/gce \
       || return 1
-    release::gcs::stage_and_hash $gcs_stage $gci_path/configure.sh extra/gce \
+    release::gcs::prepare_tarball $gcs_stage $gci_path/configure.sh extra/gce \
       || return 1
 
     # shutdown.sh was introduced starting from v1.11 to make Preemptible COS nodes
     # on GCP not reboot immediately when terminated. Avoid including it in the release
     # bundle if it is not found (for backwards compatibility).
     if [[ -f $gci_path/shutdown.sh ]]; then
-      release::gcs::stage_and_hash $gcs_stage $gci_path/shutdown.sh extra/gce \
+      release::gcs::prepare_tarball $gcs_stage $gci_path/shutdown.sh extra/gce \
        || return 1
     fi
 
@@ -643,15 +643,15 @@ release::gcs::locally_stage_release_artifacts() {
     windows_local_path=$gce_path/windows
     windows_gcs_path=extra/gce/windows
     if [[ -d $windows_local_path ]]; then
-      release::gcs::stage_and_hash $gcs_stage $windows_local_path/configure.ps1 $windows_gcs_path \
+      release::gcs::prepare_tarball $gcs_stage $windows_local_path/configure.ps1 $windows_gcs_path \
         || return 1
-      release::gcs::stage_and_hash $gcs_stage $windows_local_path/common.psm1 $windows_gcs_path \
+      release::gcs::prepare_tarball $gcs_stage $windows_local_path/common.psm1 $windows_gcs_path \
         || return 1
-      release::gcs::stage_and_hash $gcs_stage $windows_local_path/k8s-node-setup.psm1 $windows_gcs_path \
+      release::gcs::prepare_tarball $gcs_stage $windows_local_path/k8s-node-setup.psm1 $windows_gcs_path \
         || return 1
-      release::gcs::stage_and_hash $gcs_stage $windows_local_path/testonly/install-ssh.psm1 $windows_gcs_path \
+      release::gcs::prepare_tarball $gcs_stage $windows_local_path/testonly/install-ssh.psm1 $windows_gcs_path \
         || return 1
-      release::gcs::stage_and_hash $gcs_stage $windows_local_path/testonly/user-profile.psm1 $windows_gcs_path \
+      release::gcs::prepare_tarball $gcs_stage $windows_local_path/testonly/user-profile.psm1 $windows_gcs_path \
         || return 1
     fi
 
@@ -667,25 +667,32 @@ release::gcs::locally_stage_release_artifacts() {
     if [[ -d "$release_stage/server/$platform" ]]; then
       src="$release_stage/server/$platform/$release_kind/server/bin/*"
     fi
-    release::gcs::stage_and_hash $gcs_stage "$src" "$dst" || return 1
+    release::gcs::prepare_tarball $gcs_stage "$src" "$dst" || return 1
 
     # Upload node binaries if they exist and this isn't a 'server' platform.
     if [[ ! -d "$release_stage/server/$platform" ]]; then
       if [[ -d "$release_stage/node/$platform" ]]; then
         src="$release_stage/node/$platform/$release_kind/node/bin/*"
-        release::gcs::stage_and_hash $gcs_stage "$src" "$dst" || return 1
+        release::gcs::prepare_tarball $gcs_stage "$src" "$dst" || return 1
       fi
     fi
   done
 
   logecho "- Hashing files in ${gcs_stage##$build_output/}..."
-  find $gcs_stage -type f | while read path; do
-    common::md5 $path > "$path.md5" || return 1
-    common::sha $path 1 > "$path.sha1" || return 1
-    common::sha $path 512 > "$path.sha512" || return 1
+  find "$gcs_stage" -type f | while read -r path; do
+    for bits in "256" "512"; do
+      sum="$(common::sha "$path" "$bits" "full")" || return 1
+      echo "$sum" > "${path}.sha${bits}"
+    done
+  done
+
+  logecho "- Writing artifact hashes to SHA256SUMS/SHA512SUMS files..."
+  for bits in "256" "512"; do
+    for sha_file in "${gcs_stage}"/*.sha"${bits}"; do
+      cat "$sha_file" >> "${gcs_stage}/SHA${bits}SUMS"
+    done
   done
 }
-
 
 ###############################################################################
 # Publish a new version, (latest or stable,) but only if the
