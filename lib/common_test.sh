@@ -68,8 +68,11 @@ TEST_generate_sha() {
   # shellcheck disable=SC2154
   echo -n "This is the second file to test the generation of SHA hashes." > "$testfile2"
 
-  find "$tmp_dir" -type f | while read -r path; do
-    for bits in "256" "512"; do
+  find "$tmp_dir" -type f | sort | while read -r path; do
+    sum="$(common::md5 "${path}")" || return 1
+    echo "$sum" > "${path}.md5"
+
+    for bits in "1" "256" "512"; do
       sum="$(common::sha "${path}" "${bits}" "full")" || return 1
       echo "$sum" > "${path}.sha${bits}"
       echo "$sum" >> "${tmp_dir}/SHA${bits}SUMS"
@@ -77,7 +80,12 @@ TEST_generate_sha() {
   done
 
   for sha_file in "$testfile1" "$testfile2"; do
-    for bits in "256" "512"; do
+    assert_equal_content \
+      "${tmp_dir}/$(basename "${sha_file}").md5" \
+      "${expected_dir}/$(basename "${sha_file}").md5" \
+      "Validated md5 hash for ${sha_file}"
+
+    for bits in "1" "256" "512"; do
       assert_equal_content \
         "${tmp_dir}/$(basename "${sha_file}").sha${bits}" \
         "${expected_dir}/$(basename "${sha_file}").sha${bits}" \
