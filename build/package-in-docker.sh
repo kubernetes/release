@@ -52,7 +52,7 @@ mkdir -p "${OUTPUT_DIR}"
 
 case "${PACKAGE_TYPE}" in
 "debs")
-  docker run -ti --rm -v "${OUTPUT_DIR}:/src/bin" "${IMG_NAME}" "$@"
+  docker run --rm -v "${OUTPUT_DIR}:/src/bin" "${IMG_NAME}" "$@"
   echo
   echo "----------------------------------------"
   echo
@@ -60,7 +60,7 @@ case "${PACKAGE_TYPE}" in
   ls -alth "${OUTPUT_DIR}"
 ;;
 "rpms")
-  docker run -ti --rm -v "${OUTPUT_DIR}:/root/rpmbuild/RPMS/" "${IMG_NAME}" "$@"
+  docker run --rm -v "${OUTPUT_DIR}:/root/rpmbuild/RPMS/" "${IMG_NAME}" "$@"
   echo
   echo "----------------------------------------"
   echo
