@@ -23,10 +23,10 @@ SHELL:=/usr/bin/env bash
 .PHONY: build-debs build-rpms verify-published-debs verify-published-rpms
 
 build-debs: ## Build debs
-	PACKAGE_TYPE="debs" ./build/package-in-docker.sh
+	PACKAGE_TYPE="debs" ./build/package.sh
 
 build-rpms: ## Build rpms
-	PACKAGE_TYPE="rpms" ./build/package-in-docker.sh
+	PACKAGE_TYPE="rpms" ./build/package.sh
 	
 verify-published-debs: ## Ensure debs have been published
 	./hack/packages/verify-published.sh debs
