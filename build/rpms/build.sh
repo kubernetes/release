@@ -23,7 +23,7 @@ set -o pipefail
 declare -a ARCHS
 
 if [ $# -gt 0 ]; then
-  IFS=','; ARCHS=($1); unset IFS;
+  IFS=','; ARCHS=("$1"); unset IFS;
 else
   #GOARCH/RPMARCH
   ARCHS=(
