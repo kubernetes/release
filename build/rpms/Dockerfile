@@ -1,4 +1,4 @@
-FROM fedora:24
+FROM fedora:30
 
 RUN dnf install -y \
       rpm-build \
@@ -8,9 +8,13 @@ RUN dnf install -y \
 
 RUN rpmdev-setuptree
 
-USER root
+RUN useradd builder -u 1000 -m -G users,wheel
 
-ADD build.sh /root/
-COPY . /root/rpmbuild/SPECS
+ADD build.sh /home/builder
+COPY . /home/builder/rpmbuild/SPECS
 
-ENTRYPOINT ["/root/build.sh"]
+RUN chown -R builder:builder /home/builder
+
+USER builder
+
+ENTRYPOINT ["/home/builder/build.sh"]

@@ -21,6 +21,9 @@ set -o xtrace
 
 BUILD_TIME="$(date '+%y%m%d%H%M%S')"
 
+USER_ID=$(id -u)
+GROUP_ID=$(id -g)
+
 DOCKER_OPTS=${DOCKER_OPTS:-""}
 IFS=" " read -r -a DOCKER <<< "docker ${DOCKER_OPTS}"
 detach=false
@@ -76,7 +79,7 @@ case "${PACKAGE_TYPE}" in
   ls -alth "${OUTPUT_DIR}"
 ;;
 "rpms")
-  "${docker_run_cmd[@]}" --rm -v "${OUTPUT_DIR}:/root/rpmbuild/RPMS/" "${IMG_NAME}" "$@"
+  "${docker_run_cmd[@]}" --rm -v "${OUTPUT_DIR}:/home/builder/rpmbuild/RPMS" "${IMG_NAME}" "$@"
   echo
   echo "----------------------------------------"
   echo
@@ -88,7 +91,7 @@ case "${PACKAGE_TYPE}" in
 ;;
 esac
 
-chown -R "${USER}" "${OUTPUT_DIR}"
+chown -R "${USER_ID}":"${GROUP_ID}" "${OUTPUT_DIR}"
 
 if [[ "${PUBLISH}" == "yes" ]]; then
   case "${PACKAGE_TYPE}" in
