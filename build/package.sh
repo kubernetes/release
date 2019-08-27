@@ -21,6 +21,22 @@ set -o xtrace
 
 BUILD_TIME="$(date '+%y%m%d%H%M%S')"
 
+DOCKER_OPTS=${DOCKER_OPTS:-""}
+IFS=" " read -r -a DOCKER <<< "docker ${DOCKER_OPTS}"
+detach=false
+
+# If we have stdin we can run interactive.  This allows things like 'shell.sh'
+# to work.  However, if we run this way and don't have stdin, then it ends up
+# running in a daemon-ish mode.  So if we don't have a stdin, we explicitly
+# attach stderr/stdout but don't bother asking for a tty.
+if [[ -t 0 ]]; then
+  docker_run_opts+=(--interactive --tty)
+elif [[ "${detach}" == false ]]; then
+  docker_run_opts+=("--attach=stdout" "--attach=stderr")
+fi
+
+docker_run_cmd=("${DOCKER[@]}" run "${docker_run_opts[@]}")
+
 declare -r PACKAGE_TYPE="${PACKAGE_TYPE?"PACKAGE_TYPE must be set"}"
 
 declare -r BUILD_TAG="${BUILD_TAG:-$BUILD_TIME}"
@@ -52,7 +68,7 @@ mkdir -p "${OUTPUT_DIR}"
 
 case "${PACKAGE_TYPE}" in
 "debs")
-  docker run -ti --rm -v "${OUTPUT_DIR}:/src/bin" "${IMG_NAME}" "$@"
+  "${docker_run_cmd[@]}" --rm -v "${OUTPUT_DIR}:/src/bin" "${IMG_NAME}" "$@"
   echo
   echo "----------------------------------------"
   echo
@@ -60,7 +76,7 @@ case "${PACKAGE_TYPE}" in
   ls -alth "${OUTPUT_DIR}"
 ;;
 "rpms")
-  docker run -ti --rm -v "${OUTPUT_DIR}:/root/rpmbuild/RPMS/" "${IMG_NAME}" "$@"
+  "${docker_run_cmd[@]}" --rm -v "${OUTPUT_DIR}:/root/rpmbuild/RPMS/" "${IMG_NAME}" "$@"
   echo
   echo "----------------------------------------"
   echo
