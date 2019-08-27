@@ -79,7 +79,7 @@ case "${PACKAGE_TYPE}" in
   ls -alth "${OUTPUT_DIR}"
 ;;
 "rpms")
-  "${docker_run_cmd[@]}" --rm -v "${OUTPUT_DIR}:/root/rpmbuild/RPMS/" "${IMG_NAME}" "$@"
+  "${docker_run_cmd[@]}" --rm -v "${OUTPUT_DIR}:/home/builder/rpmbuild/RPMS" "${IMG_NAME}" "$@"
   echo
   echo "----------------------------------------"
   echo
