@@ -270,7 +270,7 @@ func getCRIToolsLatestVersion() (string, error) {
 }
 
 func getLatestKubeCIBuild() (string, error) {
-	return fetchVersion("https://dl.k8s.io/ci/latest.txt")
+	return fetchVersion("https://dl.k8s.io/ci/k8s-master.txt")
 }
 
 func getCIBuildsDownloadLinkBase(_ version) (string, error) {
