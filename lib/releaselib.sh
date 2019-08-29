@@ -604,7 +604,30 @@ release::gcs::locally_stage_release_artifacts() {
   logecho "- Staging locally to ${gcs_stage##$build_output/}..."
   release::gcs::prepare_tarball $gcs_stage $release_tars/* . || return 1
 
+  # Controls whether we publish md5 / sha1; clear to prevent publishing
+  # Although we would like to encourage users to stop using md5 / sha1,
+  # because all releases are published by the master branch, this broke
+  # anyone that was verifying the sha1 hash, including in CI builds.
+  # kops caught this in e.g. https://prow.k8s.io/view/gcs/kubernetes-jenkins/pr-logs/pull/kops/7462/pull-kops-e2e-kubernetes-aws/1164899358911500292/
+  # Instead we need to stop publishing sha1 and md5 on a release boundary.
+  local publish_old_hashes="1"
+
   if [[ "$release_kind" == "kubernetes" ]]; then
+    if ! [[ $version =~ ${VER_REGEX[release]} ]]; then
+      logecho -r "$FAILED"
+      logecho "* Invalid version format! $version"
+      return 1
+    fi
+
+    local -r version_major="${BASH_REMATCH[1]}"
+    local -r version_minor="${BASH_REMATCH[2]}"
+    local -r version_patch="${BASH_REMATCH[3]}"
+
+    # Don't publish md5 & sha1 as of kubernetes release 1.16
+    if [[ "$version_minor" -ge "16" ]]; then
+      publish_old_hashes=""
+    fi
+
     local gce_path=$release_stage/full/kubernetes/cluster/gce
     local gci_path
 
@@ -680,17 +703,16 @@ release::gcs::locally_stage_release_artifacts() {
 
   logecho "- Hashing files in ${gcs_stage##$build_output/}..."
   find "$gcs_stage" -type f | while read -r path; do
-    for bits in "256" "512"; do
-      sum="$(common::sha "$path" "$bits" "full")" || return 1
-      echo "$sum" > "${path}.sha${bits}"
-    done
-  done
+    if [[ -n "${publish_old_hashes}" ]]; then
+      common::md5 "$path" > "$path.md5" || return 1
+      common::sha "$path" 1 > "$path.sha1" || return 1
+    fi
 
-  logecho "- Writing artifact hashes to SHA256SUMS/SHA512SUMS files..."
-  for bits in "256" "512"; do
-    for sha_file in "${gcs_stage}"/*.sha"${bits}"; do
-      cat "$sha_file" >> "${gcs_stage}/SHA${bits}SUMS"
-    done
+    common::sha "$path" 256 > "$path.sha256" || return 1
+    common::sha "$path" 512 > "$path.sha512" || return 1
+
+    common::sha "$path" 256 "full" >> "${gcs_stage}/SHA256SUMS" || return 1
+    common::sha "$path" 512 "full" >> "${gcs_stage}/SHA512SUMS" || return 1
   done
 }
 
