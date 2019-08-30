@@ -1,5 +1,16 @@
 timeout: 14400s
 
+#### SECURITY NOTICE ####
+# Google Cloud Build (GCB) supports the usage of secrets for build requests.
+# Secrets appear within GCB configs as base64-encoded strings.
+# These secrets are GCP Cloud KMS-encrypted and cannot be decrypted by any human or system
+# outside of GCP Cloud KMS for the GCP project this encrypted resource was created for.
+# Seeing the base64-encoded encrypted blob here is not a security event for the project.
+#
+# More details on using encrypted resources on Google Cloud Build can be found here:
+# https://cloud.google.com/cloud-build/docs/securing-builds/use-encrypted-secrets-credentials
+#
+# (Please do not remove this security notice.)
 secrets:
 - kmsKeyName: projects/kubernetes-release-test/locations/global/keyRings/anago/cryptoKeys/k8s-release-robot
   secretEnv:
