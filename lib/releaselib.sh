@@ -623,8 +623,8 @@ release::gcs::locally_stage_release_artifacts() {
     local -r version_minor="${BASH_REMATCH[2]}"
     local -r version_patch="${BASH_REMATCH[3]}"
 
-    # Don't publish md5 & sha1 as of kubernetes release 1.16
-    if [[ "$version_minor" -ge "16" ]]; then
+    # Don't publish md5 & sha1 as of Kubernetes 1.18
+    if [[ "$version_minor" -ge "18" ]]; then
       publish_old_hashes=""
     fi
 
