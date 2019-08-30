@@ -25,7 +25,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/google/go-github/github"
+	"github.com/google/go-github/v27/github"
 	"github.com/pkg/errors"
 )
 

@@ -18,6 +18,7 @@ steps:
   env:
   - "GOPATH=/workspace/go"
   - "GOBIN=/workspace/bin"
+  - "GO111MODULE=on"
   args:
   - "./compile-release-tools"
 
