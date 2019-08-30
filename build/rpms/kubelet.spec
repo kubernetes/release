@@ -157,18 +157,18 @@ mv cni-plugins/* %{buildroot}/opt/cni/bin/
 
 
 %changelog
-* Thu Jun 24 2019 Stephen Augustus <saugustus@vmware.com> - 1.15.1
+* Mon Jun 24 2019 Stephen Augustus <saugustus@vmware.com> - 1.15.1
 - Bump minimum versions of all kubernetes dependencies
 - Remove conditional logic for unsupported versions of Kubernetes
 
-* Tue Jun 23 2019 Stephen Augustus <saugustus@vmware.com> - 1.15.1
+* Sun Jun 23 2019 Stephen Augustus <saugustus@vmware.com> - 1.15.1
 - Source cri-tools from https://github.com/kubernetes-sigs/cri-tools
   instead of https://github.com/kubernetes-incubator/cri-tools
 
 * Thu May 30 2019 Tim Pepper <tpepper@vmware.com>
 - Change CNI version check to ">="
 
-* Tue Mar 20 2019 Lubomir I. Ivanov <lubomirivanov@vmware.com>
+* Wed Mar 20 2019 Lubomir I. Ivanov <lubomirivanov@vmware.com>
 - Bump CNI version to v0.7.5.
 
 * Tue Sep 25 2018 Chuck Ha <chuck@heptio.com> - 1.12.1
@@ -204,7 +204,7 @@ mv cni-plugins/* %{buildroot}/opt/cni/bin/
 * Fri Jul 14 2017 Jacob Beacham <beacham@google.com> - 1.7.1
 - Bump version of kubelet and kubectl to v1.7.1.
 
-* Mon Jun 30 2017 Mike Danese <mikedanese@google.com> - 1.7.0
+* Fri Jun 30 2017 Mike Danese <mikedanese@google.com> - 1.7.0
 - Bump version of kubelet and kubectl to v1.7.0.
 
 * Fri May 19 2017 Jacob Beacham <beacham@google.com> - 1.6.4
