@@ -20,6 +20,8 @@ set -o pipefail
 
 # TODO: Allow running this script locally. Right now, this can only be used as a docker entrypoint.
 
+BUILD_DIR="/home/builder/workspace"
+
 declare -a ARCHS
 
 if [ $# -gt 0 ]; then
@@ -35,16 +37,17 @@ else
   )
 fi
 
+# TODO: Add support for multiple spec files once we break packages out into separate specs.
 for ARCH in "${ARCHS[@]}"; do
   IFS=/ read -r GOARCH RPMARCH<<< "${ARCH}"; unset IFS;
-  SRC_PATH="/home/builder/rpmbuild/SOURCES/${RPMARCH}"
+  SRC_PATH="${BUILD_DIR}/SOURCES/${RPMARCH}"
   mkdir -p "${SRC_PATH}"
-  cp -r /home/builder/rpmbuild/SPECS/* "${SRC_PATH}"
+  cp -r "${BUILD_DIR}/SPECS"/* "${SRC_PATH}"
   echo "Building RPM's for ${GOARCH}....."
   sed -i "s/\%global ARCH.*/\%global ARCH ${GOARCH}/" "${SRC_PATH}/kubelet.spec"
   # Download sources if not already available
   cd "${SRC_PATH}" && spectool -gf kubelet.spec
   /usr/bin/rpmbuild --target "${RPMARCH}" --define "_sourcedir ${SRC_PATH}" -bb "${SRC_PATH}/kubelet.spec"
-  mkdir -p "/home/builder/rpmbuild/RPMS/${RPMARCH}"
-  createrepo -o "/home/builder/rpmbuild/RPMS/${RPMARCH}/" "/home/builder/rpmbuild/RPMS/${RPMARCH}"
+  mkdir -p "${BUILD_DIR}/RPMS/${RPMARCH}"
+  createrepo -o "${BUILD_DIR}/RPMS/${RPMARCH}/" "${BUILD_DIR}/RPMS/${RPMARCH}"
 done

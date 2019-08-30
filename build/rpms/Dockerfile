@@ -6,15 +6,17 @@ RUN dnf install -y \
       createrepo \
     && dnf clean all
 
-RUN rpmdev-setuptree
-
-RUN useradd builder -u 1000 -m -G users,wheel
-
-ADD build.sh /home/builder
-COPY . /home/builder/rpmbuild/SPECS
-
-RUN chown -R builder:builder /home/builder
+RUN useradd builder -u 9000 -m -s /bin/false
 
 USER builder
 
-ENTRYPOINT ["/home/builder/build.sh"]
+RUN mkdir /home/builder/workspace
+
+WORKDIR /home/builder/workspace
+
+RUN rpmdev-setuptree
+
+ADD --chown=builder:builder build.sh .
+COPY --chown=builder:builder . ./SPECS
+
+ENTRYPOINT ["./build.sh"]
