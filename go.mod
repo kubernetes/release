@@ -10,6 +10,7 @@ require (
 	github.com/kolide/kit v0.0.0-20190123023048-c155a91098e3
 	github.com/pkg/errors v0.8.1
 	github.com/psampaz/go-mod-outdated v0.4.0
+	github.com/spf13/cobra v0.0.5
 	github.com/stretchr/testify v1.4.0
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	google.golang.org/appengine v1.5.0 // indirect
