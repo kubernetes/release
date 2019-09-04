@@ -28,6 +28,10 @@
 #+   Configuration can be passed in via the environmnet. The following
 #+   variables are available:
 #+
+#+   UPLOAD_KEY: [*mandatory*]
+#+     The user key for 'vgy.me'. You need to create an account at 'vgy.me' and a
+#+     user key to be able to upload images.
+#+
 #+   BOARDS: [default: "blocking informing"]
 #+     Change which boards you are interested in
 #+
@@ -50,7 +54,7 @@
 #+     retries.
 #+
 #+   Example:
-#+     $ BOARDS='all informing' STATES='FAILING FLAKY' BLOCK_WIDTH=10 ./testgridshot 1.15
+#+     $ UPLOAD_KEY='<someKey>' BOARDS='all informing' STATES='FAILING FLAKY' BLOCK_WIDTH=10 ./testgridshot 1.15
 #+         Creates dense screenshots of all the 'sig-release-1.15-{all,informing}'
 #+         boards which are either failing or flaking
 #+
@@ -63,7 +67,8 @@
 #+   - Upload all the screenshots to 'vgy.me'
 #+   - Print a markdown, which links to the images on 'vgy.me', stub on StdOut
 #+   Remarks:
-#+   - Both 'vgy.me' and 'render-tron.appspot.com' might go away anytime
+#+   - on 2019-09-03 'vgy.me' disabled anonymous uploads, therefor everyone who
+#+     want's to use that script needs an account at 'vgy.me' currently.
 #+   - The images are not served by 'vgy.me' directly if used in a GitHub issue,
 #+     but by GitHub's camo service
 #+
@@ -85,6 +90,7 @@ readonly TESTGRID='https://testgrid.k8s.io'
 readonly RENDER_TRON='https://render-tron.appspot.com/screenshot'
 readonly UPLOAD_URL='https://vgy.me/upload'
 readonly ISSUE_STUB_SUFFIX='issue.'
+
 
 get_tests_by_status() {
   local status="$1"
@@ -121,7 +127,10 @@ log() {
 
 upload() {
   local file_name="$1"
-  curl_with_retry "$UPLOAD_URL" -F "file=@${file_name}" -F "title=${file_name}"
+  curl_with_retry "$UPLOAD_URL" \
+    -F "userkey=${UPLOAD_KEY}" \
+    -F "file=@${file_name}" \
+    -F "title=${file_name}"
 }
 
 screenshot() {
@@ -259,6 +268,7 @@ main() {
     exit
   fi
 
+  readonly "${UPLOAD_KEY?needs to hold the user key for your account at ${UPLOAD_URL}}"
   shoot "$target_release"
 }
 
