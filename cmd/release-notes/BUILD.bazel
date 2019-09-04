@@ -11,6 +11,7 @@ go_library(
         "@com_github_go_kit_kit//log/level:go_default_library",
         "@com_github_google_go_github//github:go_default_library",
         "@com_github_kolide_kit//env:go_default_library",
+        "@gopkg_in_src_d_go_git_v4//github:go_default_library",
         "@org_golang_x_oauth2//:go_default_library",
     ],
 )

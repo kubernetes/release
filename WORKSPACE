@@ -114,6 +114,12 @@ go_repository(
 )
 
 go_repository(
+    name = "gopkg_in_src_d_go_git_v4",
+    commit = "f9a30199e7083bdda8adad3a4fa2ec42d25c1fdb",
+    importpath = "gopkg.in/src-d/go-git.v4",
+)
+
+go_repository(
     name = "org_golang_google_appengine",
     commit = "150dc57a1b433e64154302bdc40b6bb8aefa313a",
     importpath = "google.golang.org/appengine",
