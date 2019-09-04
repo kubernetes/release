@@ -30,6 +30,8 @@ steps:
   - "GOPATH=/workspace/go"
   - "GOBIN=/workspace/bin"
   - "GO111MODULE=on"
+  - "GOPROXY=https://proxy.golang.org"
+  - "GOSUMDB=sum.golang.org"
   args:
   - "./compile-release-tools"
 
