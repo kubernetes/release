@@ -472,8 +472,10 @@ func ListCommitsWithNotes(
 		// "release note none" that appear in the commit log.
 		exclusionFilters := []string{
 
-			// 'none' or 'n/a' case insensitive with optional trailing whitespace, wrapped in ``` with/without release-note identifier
-			"(?i)```(release-note\\s*)?(none|n/a)?\\s*```",
+			// 'none','n/a','na' case insensitive with optional trailing
+			// whitespace, wrapped in ``` with/without release-note identifier
+			// the 'none','n/a','na' can also optionally be wrapped in quotes ' or "
+			"(?i)```(release-note[s]?\\s*)?('|\")?(none|n/a|na)?('|\")?\\s*```",
 
 			// This filter is too aggressive within the PR body and picks up matches unrelated to release notes
 			// 'none' or 'n/a' case insensitive wrapped optionally with whitespace
