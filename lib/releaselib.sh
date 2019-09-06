@@ -704,8 +704,10 @@ release::gcs::locally_stage_release_artifacts() {
   # Write the release checksum files.
   # We checksum everything except our checksum files, which we do next.
   logecho "- Writing artifact hashes to SHA256SUMS/SHA512SUMS files..."
-  find "${gcs_stage}" -type f -printf '%P\0' | xargs -0 -I {} shasum -a 256 "${gcs_stage}/{}" >> "${gcs_stage}/SHA256SUMS"
-  find "${gcs_stage}" -type f -printf '%P\0' | xargs -0 -I {} shasum -a 512 "${gcs_stage}/{}" >> "${gcs_stage}/SHA512SUMS"
+  find "${gcs_stage}" -type f -printf '%P\0' | xargs -0 -I {} shasum -a 256 "${gcs_stage}/{}" >> SHA256SUMS
+  find "${gcs_stage}" -type f -printf '%P\0' | xargs -0 -I {} shasum -a 512 "${gcs_stage}/{}" >> SHA512SUMS
+  # After all the checksum files are generated, move them into the bucket staging area
+  mv SHA256SUMS SHA512SUMS "$gcs_stage"
 
   logecho "- Hashing files in ${gcs_stage##$build_output/}..."
   find "$gcs_stage" -type f | while read -r path; do
