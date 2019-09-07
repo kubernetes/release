@@ -16,14 +16,18 @@ This will install `release-notes` to `$(go env GOPATH)/bin/release-notes`.
 
 To generate release notes for a commit range, run:
 
-```
+```bash
 $ export GITHUB_TOKEN=a_github_api_token
 $ release-notes \
-  -start-sha d0a17cb4bbdf608559f257a76acfaa9acb054903 \
-  -end-sha   91e7b4fd31fcd3d5f436da26c980becec37ceefe
-level=info msg="fetching all commits. this might take a while..."
-level=info msg="got the commits, performing rendering"
-level=info msg="release notes markdown written to file" path=/var/folders/wp/6fkmvjf11gv18tdprv4g2mk40000gn/T/release-notes-048706664
+  -start-sha 02dc3d713dd7f945a8b6f7ef3e008f3d29c2d549 \
+  -end-sha   23649560c060ad6cd82da8da42302f8f7e38cf1e
+
+level=info timestamp=2019-07-30T04:02:30.9452687Z caller=main.go:139 msg="fetching all commits. this might take a while..."
+level=info timestamp=2019-07-30T04:02:43.8454168Z caller=notes.go:446 msg="[1/1679 - 0.06%]"
+...
+level=info timestamp=2019-07-30T04:09:30.3491553Z caller=notes.go:446 msg="[1679/1679 - 100.00%]"
+level=info timestamp=2019-07-30T04:11:38.8033378Z caller=main.go:159 msg="got the commits, performing rendering"
+level=info timestamp=2019-07-30T04:11:38.8059129Z caller=main.go:228 msg="release notes written to file" path=/tmp/release-notes-509576676 format=markdown
 ```
 
 You can also generate the raw notes data into JSON. You can then use a variety of tools (such as `jq`) to slice and dice the output:
@@ -45,6 +49,42 @@ You can also generate the raw notes data into JSON. You can then use a variety o
   }
 ]
 ```
+
+if you would like to debug a run, use the `-debug` flag:
+
+```bash
+$ export GITHUB_TOKEN=a_github_api_token
+$ release-notes \
+  -start-sha 02dc3d713dd7f945a8b6f7ef3e008f3d29c2d549 \
+  -end-sha   23649560c060ad6cd82da8da42302f8f7e38cf1e \
+  -debug 
+
+level=debug timestamp=2019-07-30T04:02:43.8453116Z caller=notes.go:445 msg=################################################
+level=info timestamp=2019-07-30T04:02:43.8454168Z caller=notes.go:446 msg="[1/1679 - 0.06%]"
+level=debug timestamp=2019-07-30T04:02:43.8454701Z caller=notes.go:447 msg="Processing commit" func=ListCommitsWithNotes sha=23649560c060ad6cd82da8da42302f8f7e38cf1e
+level=debug timestamp=2019-07-30T04:02:44.3711956Z caller=notes.go:464 msg="Obtaining PR associated with commit sha '23649560c060ad6cd82da8da42302f8f7e38cf1e'." func=ListCommitsWithNotes prno=80301 prbody="**What type of PR is this?**\r\n> Uncomment only one ` /kind <>` line, hit enter to put that in a new line, and remove leading whitespaces from that line:\r\n>\r\n> /kind api-change\r\n> /kind bug\r\n\r\n/kind cleanup\r\n\r\n> /kind design\r\n> /kind documentation\r\n> /kind failing-test\r\n> /kind feature\r\n> /kind flake\r\n\r\n**What this PR does / why we need it**:\r\n\r\nBased on the feedback from https://docs.google.com/document/d/1g5Aqa0BncQGRedSJH0TJQWq3mw3VxpJ_ufO1qokJ1LE we have decided to rename the `preferred` policy of the `TopologyManager` to `best-effort`.  The reasoning for this is outlined in the document.\r\n\r\nSince this change is coming before the `TopologyManager` was ever part of a release, this does not introduce a user-facing change.\r\n\r\n**Does this PR introduce a user-facing change?**:\r\n<!--\r\nIf no, just write \"NONE\" in the release-note block below.\r\nIf yes, a release note is required:\r\nEnter your extended release note in the block below. If the PR requires additional action from users switching to the new release, include the string \"action required\".\r\n-->\r\n```release-note\r\nNONE\r\n```"
+level=debug timestamp=2019-07-30T04:02:44.3716249Z caller=notes.go:497 msg="Excluding notes for PR based on the exclusion filter." func=ListCommitsWithNotes filter="(?i)```(release-note\\s*)?('|\")?(none|n/a)?('|\")?\\s*```"
+...
+```
+
+## Options
+
+| Flag | Env Variable | Default Value | Required | Description |
+| --- | --- | --- | --- | --- |
+| **GITHUB REPO OPTIONS** |
+| github-token | GITHUB_TOKEN | | Yes | A personal GitHub access token |
+| github-org | GITHUB_ORG | kubernetes | Yes | Name of GitHub organization |
+| github-repo | GITHUB_REPO | kubernetes | Yes | Name of GitHub repository |
+| requiredAuthor | REQUIRED_AUTHOR | k8s-ci-robot | Yes | Only commits from this GitHub user are considered. Set to empty string to include all users |
+| branch | BRANCH | master | Yes | The GitHub repository branch to scrape |
+| start-sha | START_SHA | | Yes | The commit hash to start processing from (inclusive) |
+| end-sha | END_SHA | | Yes | The commit hash to end processing at (inclusive) |
+| **OUTPUT OPTIONS** |
+| output | OUTPUT | | No | The path where the release notes will be written |
+| format | FORMAT | markdown | Yes | The format for notes output (options: markdown, json) |
+| release-version | RELEASE_VERSION | | No | The release version to tag the notes with |
+| **LOG OPTIONS** |
+| debug | DEBUG | false | No | Enable debug logging (options: true, false) |
 
 ## Building From Source
 

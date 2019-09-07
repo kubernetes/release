@@ -441,9 +441,10 @@ func ListCommitsWithNotes(
 		return nil, err
 	}
 
-	for _, commit := range commits {
+	for i, commit := range commits {
 
 		level.Debug(logger).Log("msg", "################################################")
+		level.Info(logger).Log("msg", fmt.Sprintf("[%d/%d - %0.2f%%]", i+1, len(commits), (float64(i+1)/float64(len(commits)))*100.0 ))
 		level.Debug(logger).Log(
 			"msg", "Processing commit",
 			"func", "ListCommitsWithNotes",

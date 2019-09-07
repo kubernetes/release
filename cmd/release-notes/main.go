@@ -31,6 +31,7 @@ type options struct {
 	releaseVersion string
 	format         string
 	requiredAuthor string
+	debug          bool
 	logger         log.Logger
 }
 
@@ -135,6 +136,14 @@ func (o *options) BindFlags() *flag.FlagSet {
 		env.String("REQUIRED_AUTHOR", "k8s-ci-robot"),
 		"Only commits from this GitHub user are considered. Set to empty string to include all users",
 	)
+
+	flags.BoolVar(
+		&o.debug,
+		"debug",
+		env.Bool("DEBUG", false),
+		"Enable debug logging",
+	)
+
 	return flags
 }
 
@@ -298,6 +307,13 @@ func parseOptions(args []string, logger log.Logger) (*options, error) {
 		}
 	}
 
+	// Add appropriate log filtering
+	if opts.debug {
+		logger = level.NewFilter(logger, level.AllowDebug())
+	} else {
+		logger = level.NewFilter(logger, level.AllowInfo())
+	}
+	logger = log.With(logger, "timestamp", log.DefaultTimestamp, "caller", log.DefaultCaller)
 	opts.logger = logger
 
 	return opts, nil
@@ -310,6 +326,7 @@ func run(logger log.Logger, args []string) error {
 		level.Error(logger).Log("msg", "error parsing options", "err", err)
 		return err
 	}
+	logger = opts.logger
 
 	// get the release notes
 	releaseNotes, err := opts.GetReleaseNotes()
@@ -329,10 +346,8 @@ func run(logger log.Logger, args []string) error {
 func main() {
 	// Use the go-kit structured logger for logging. To learn more about structured
 	// logging see: https://github.com/go-kit/kit/tree/master/log#structured-logging
-	logger := level.NewInjector(
-		log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)),
-		level.DebugValue(),
-	)
+	// https://godoc.org/github.com/go-kit/kit/log/level
+	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 
 	if err := run(logger, os.Args[1:]); err != nil {
 		os.Exit(-1)
