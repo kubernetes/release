@@ -6,6 +6,7 @@ go_library(
         "document.go",
         "git.go",
         "notes.go",
+        "template.go",
     ],
     importpath = "k8s.io/release/pkg/notes",
     visibility = ["//visibility:public"],

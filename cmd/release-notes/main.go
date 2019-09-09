@@ -137,7 +137,7 @@ func (o *options) BindFlags() *flag.FlagSet {
 		&o.format,
 		"format",
 		env.String("FORMAT", "markdown"),
-		"The format for notes output (options: markdown, json)",
+		"The format for notes output (options: markdown, json, template)",
 	)
 
 	flags.StringVar(
@@ -248,6 +248,18 @@ func (o *options) WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history not
 
 		if err := notes.RenderMarkdown(doc, output); err != nil {
 			level.Error(o.logger).Log("msg", "error rendering release note document to markdown", "err", err)
+			return err
+		}
+
+	case "template":
+		tpl, err := notes.CreateFromTemplate(o.logger, releaseNotes)
+		if err != nil {
+			level.Error(o.logger).Log("msg", "error creating release note document", "err", err)
+			return err
+		}
+
+		if err := tpl.RenderTemplate(output); err != nil {
+			level.Error(o.logger).Log("msg", "error rendering release note document to markdown template", "err", err)
 			return err
 		}
 
