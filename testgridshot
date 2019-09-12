@@ -1,0 +1,275 @@
+#!/usr/bin/env bash
+
+# Copyright 2019 The Kubernetes Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#+
+#+ Usage: testgridshot <release>
+#+
+#+   <release> can be something like 'master', '1.15', ...
+#+
+#+   This will inspect the testgrid dashboards 'blocking' & 'informing' for the
+#+   specified <release>, create screenshots of failing tests, and print a markdown
+#+   stub on standard out. This stub is intended to be copy & pasted into a issue
+#+   comment for the release cutting GitHub issue.
+#+
+#+ Configuration:
+#+   Configuration can be passed in via the environmnet. The following
+#+   variables are available:
+#+
+#+   UPLOAD_KEY: [*mandatory*]
+#+     The user key for 'vgy.me'. You need to create an account at 'vgy.me' and a
+#+     user key to be able to upload images.
+#+
+#+   BOARDS: [default: "blocking informing"]
+#+     Change which boards you are interested in
+#+
+#+   STATES: [default: "FAILING"]
+#+     Change the tests you want to screenshot
+#+     Available states: FAILING, FLAKY, PASSING
+#+
+#+   BLOCK_WIDTH: [default: 30]
+#+     The width of the individual testgrid red & green block.
+#+     Influences on how many test runs will be shown on the screenshot.
+#+
+#+   WIDTH/HEIGHT: [default: WIDTH=3000/HEIGHT=2500]
+#+     The width and height of the generated screenshot in pixel.
+#+
+#+   RETRY_COUNT: [default: 3]
+#+     Change how often we should retry when talking to (curl'ing) APIs.
+#+
+#+   RETRY_SLEEP: [default: 2]
+#+     Change the amount of time we want to wait between consecutive API call
+#+     retries.
+#+
+#+   Example:
+#+     $ UPLOAD_KEY='<someKey>' BOARDS='all informing' STATES='FAILING FLAKY' BLOCK_WIDTH=10 ./testgridshot 1.15
+#+         Creates dense screenshots of all the 'sig-release-1.15-{all,informing}'
+#+         boards which are either failing or flaking
+#+
+#+ How it works:
+#+   General flow:
+#+   - Get the dasbhoard URLs we are interested in from testgrid's 'summary'
+#+     endpoint
+#+   - Use 'render-tron.appspot.com' to create screenshots of the testgrid
+#+     boards
+#+   - Upload all the screenshots to 'vgy.me'
+#+   - Print a markdown, which links to the images on 'vgy.me', stub on StdOut
+#+   Remarks:
+#+   - on 2019-09-03 'vgy.me' disabled anonymous uploads, therefor everyone who
+#+     want's to use that script needs an account at 'vgy.me' currently.
+#+   - The images are not served by 'vgy.me' directly if used in a GitHub issue,
+#+     but by GitHub's camo service
+#+
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+readonly BOARDS="${BOARDS:-blocking informing}"
+# Available states: FAILING, FLAKY, PASSING
+readonly STATES="${STATES:-FAILING}"
+readonly BLOCK_WIDTH="${BLOCK_WIDTH:-30}"
+readonly WIDTH="${WIDTH:-3000}"
+readonly HEIGHT="${HEIGHT:-2500}"
+readonly RETRY_COUNT="${RETRY_COUNT:-3}"
+readonly RETRY_SLEEP="${RETRY_SLEEP:-2}"
+
+readonly TESTGRID='https://testgrid.k8s.io'
+readonly RENDER_TRON='https://render-tron.appspot.com/screenshot'
+readonly UPLOAD_URL='https://vgy.me/upload'
+readonly ISSUE_STUB_SUFFIX='issue.'
+
+
+get_tests_by_status() {
+  local status="$1"
+  shift
+
+  local board
+
+  for board in "$@"
+  do
+    curl_with_retry --retry 0 "${TESTGRID}/${board}/summary" 2>/dev/null \
+      | jq --arg status "$status" -r '
+        to_entries[]
+          | select(.value.overall_status==$status)
+          | .value.dashboard_name + "#" + .key
+      '
+  done
+}
+
+urlencode() {
+  echo "$1" | jq -sRr @uri
+}
+
+gen_file_name() {
+  echo "${1//[^a-zA-Z0-9]/_}"
+}
+
+curl_with_retry() {
+  curl -fqsSL --retry "$RETRY_COUNT" --retry-delay "$RETRY_SLEEP" "$@"
+}
+
+log() {
+  echo "$(get_timestamp) ${*}" >&2
+}
+
+upload() {
+  local file_name="$1"
+  curl_with_retry "$UPLOAD_URL" \
+    -F "userkey=${UPLOAD_KEY}" \
+    -F "file=@${file_name}" \
+    -F "title=${file_name}"
+}
+
+screenshot() {
+  local url="$1"
+  local target="$2"
+  local url_encoded rendertron_url
+
+  url_encoded="$( urlencode "${url}" )"
+  rendertron_url="${RENDER_TRON}/${url_encoded}?width=${WIDTH}&height=${HEIGHT}"
+
+  curl_with_retry -o "${target}" "$rendertron_url"
+}
+
+get_issue_stub_name() {
+  local dir="$1"
+  local idx="$2"
+  printf '%s/%s%05d' "$dir" "$ISSUE_STUB_SUFFIX" "$idx"
+}
+
+combine_issue_stubs() {
+  local dir="$1"
+  find "$dir" -name "${ISSUE_STUB_SUFFIX}*" \
+    | sort -n \
+    | xargs cat
+}
+
+get_timestamp() {
+  date '+%Y-%m-%d %H:%M:%S%z'
+}
+
+comma_sep() {
+  echo "$*" \
+    | sed -e 's@^\s\+@@' -e 's@\s\+$@@' -e 's@\s\+@, @g'
+}
+
+get_header_stub() {
+  local board
+
+  echo '### Testgrid dashboards'
+
+  echo "Boards checked for $(comma_sep "${STATES}"):"
+
+  for board in "$@"
+  do
+    printf -- '- [%s](%s)\n' "$board" "${TESTGRID}/${board}"
+  done
+}
+
+usage() {
+  local usage_marker='^#\\+ ?'
+  # shellcheck disable=SC2016
+  local awk_prog='$0 ~ RE { gsub(RE, ""); print }'
+
+  awk -vRE="$usage_marker" "$awk_prog" <"$0" >&2
+}
+
+shoot() {
+  local target_release="$1"
+  local boards
+  local tests t s
+  local idx=0
+
+  tmp_dir="$( mktemp -d )"
+  trap 'rm -rf -- "$tmp_dir"' EXIT
+
+  read -r -a boards <<< "$BOARDS"
+  # prepend all elements with 'sig-release-<release>-' to form the full
+  # testgrid dashborad name
+  boards=( "${boards[@]/#/sig-release-${target_release}-}" )
+
+  get_header_stub "${boards[@]}" > "$( get_issue_stub_name "${tmp_dir}" "${idx}" )"
+
+  for s in ${STATES}
+  do
+    mapfile -t tests <<< "$(get_tests_by_status "$s" "${boards[@]}")"
+    for t in "${tests[@]}"
+    do
+      [ -n "${t}" ] || continue
+
+      idx=$(( idx + 1 ))
+      (
+        local testgrid_url timestamp \
+          file_name image_meta image_url file_base_name file_size
+
+        local_log() {
+          log "[${idx}]" "$@"
+        }
+
+        local_log "starting ${t}"
+
+        testgrid_url="${TESTGRID}/${t}&width=${BLOCK_WIDTH}"
+        file_name="${tmp_dir}/$( gen_file_name "${t}" ).jpg"
+        file_base_name="$(basename "$file_name")"
+
+        # create & download screenshot
+        local_log "screenshoting ${testgrid_url} to ${file_base_name}"
+        screenshot "${testgrid_url}" "${file_name}"
+        timestamp="$( get_timestamp )"
+
+        read -r file_size <<< "$(wc -c < "$file_name")"
+        local_log "${file_base_name}: ${file_size} bytes"
+
+        # upload
+        local_log "uploading ${file_base_name}"
+        image_meta="$( upload "$file_name" )"
+
+        image_url="$( echo "${image_meta}" | jq -r '.image' )"
+
+        # generate issue section
+        local_log "generating markdown stub"
+        printf \
+          '\n<details><summary><tt>%s</tt> %s %s <a href="%s">[testgrid]</a></summary><p>\n\n![%s](%s)\n<!-- %s -->\n</p></details>\n' \
+          "${timestamp}" "${s}" "${t}" "${testgrid_url}" "${t}" "${image_url}" "${image_meta}" \
+          > "$( get_issue_stub_name "${tmp_dir}" "$idx" )"
+
+        local_log "done, image is available at ${image_url}"
+      )&
+    done
+  done
+
+  wait
+
+  echo
+
+  echo '<!-- ----[ issue comment ]---- -->'
+  combine_issue_stubs "${tmp_dir}"
+  echo '<!-- ----[ issue comment ]---- -->'
+}
+
+main() {
+  local target_release="${1:-}"
+
+  if [ -z "$target_release" ]; then
+    usage
+    exit
+  fi
+
+  readonly "${UPLOAD_KEY?needs to hold the user key for your account at ${UPLOAD_URL}}"
+  shoot "$target_release"
+}
+
+main "$@"
