@@ -278,7 +278,6 @@ func parseOptions(args []string, logger log.Logger) (*options, error) {
 	}
 
 	// Check if we have to parse a revision
-	tmpDir := ""
 	if opts.startRev != "" || opts.endRev != "" {
 		level.Info(logger).Log("msg", "cloning repository to discover start or end sha")
 		dir, err := notes.CloneTempRepository(opts.githubOrg, opts.githubRepo)
@@ -286,11 +285,8 @@ func parseOptions(args []string, logger log.Logger) (*options, error) {
 			return nil, err
 		}
 		defer os.RemoveAll(dir)
-		tmpDir = dir
-	}
-	if tmpDir != "" {
 		if opts.startRev != "" {
-			sha, err := notes.RevParse(opts.startRev, tmpDir)
+			sha, err := notes.RevParse(opts.startRev, dir)
 			if err != nil {
 				return nil, err
 			}
@@ -298,7 +294,7 @@ func parseOptions(args []string, logger log.Logger) (*options, error) {
 			opts.startSHA = sha
 		}
 		if opts.endRev != "" {
-			sha, err := notes.RevParse(opts.endRev, tmpDir)
+			sha, err := notes.RevParse(opts.endRev, dir)
 			if err != nil {
 				return nil, err
 			}

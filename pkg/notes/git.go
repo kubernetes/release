@@ -3,6 +3,7 @@ package notes
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
@@ -34,7 +35,8 @@ func CloneTempRepository(owner, name string) (string, error) {
 	}
 
 	_, err = git.PlainClone(dir, false, &git.CloneOptions{
-		URL: fmt.Sprintf("https://github.com/%s/%s", owner, name),
+		URL:      fmt.Sprintf("https://github.com/%s/%s", owner, name),
+		Progress: os.Stdout,
 	})
 	if err != nil {
 		return "", err
