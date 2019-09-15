@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	cloud.google.com/go v0.38.0 // indirect
+	github.com/blang/semver v3.5.1+incompatible
 	github.com/go-kit/kit v0.9.0
 	github.com/google/go-github/v28 v28.1.1
 	github.com/kolide/kit v0.0.0-20190123023048-c155a91098e3

@@ -33,8 +33,14 @@ type options struct {
 	format         string
 	requiredAuthor string
 	debug          bool
+	discoverMode   string
 	logger         log.Logger
 }
+
+const (
+	revisionDiscoveryModeNONE          = "none"
+	revisionDiscoveryModeMinorToLatest = "minor-to-latest"
+)
 
 func (o *options) BindFlags() *flag.FlagSet {
 	flags := flag.NewFlagSet("release-notes", flag.ContinueOnError)
@@ -152,6 +158,15 @@ func (o *options) BindFlags() *flag.FlagSet {
 		"debug",
 		env.Bool("DEBUG", false),
 		"Enable debug logging",
+	)
+
+	flags.StringVar(
+		&o.discoverMode,
+		"discover",
+		env.String("DISCOVER", revisionDiscoveryModeNONE),
+		fmt.Sprintf("The revision discovery mode for automatic revision retrieval (options: %s, %s)",
+			revisionDiscoveryModeNONE,
+			revisionDiscoveryModeMinorToLatest),
 	)
 
 	return flags
@@ -277,6 +292,22 @@ func parseOptions(args []string, logger log.Logger) (*options, error) {
 	// The GitHub Token is required.
 	if opts.githubToken == "" {
 		return nil, errors.New("GitHub token must be set via -github-token or $GITHUB_TOKEN")
+	}
+
+	// Check if we want to automatically discover the revisions
+	if opts.discoverMode == revisionDiscoveryModeMinorToLatest {
+		repo, err := notes.NewKubernetesRepo(opts.repoPath, opts.githubOrg, opts.githubRepo)
+		if err != nil {
+			return nil, err
+		}
+		start, end, err := repo.DiscoverRevs(logger)
+		if err != nil {
+			return nil, err
+		}
+		opts.startSHA = start
+		opts.endSHA = end
+		level.Info(logger).Log("msg", "discovered start SHA "+start)
+		level.Info(logger).Log("msg", "discovered end SHA "+end)
 	}
 
 	// The start SHA is required.
