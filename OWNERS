@@ -3,9 +3,7 @@
 approvers:
   - sig-release-leads
   - release-engineering
-  - patch-release-team
 reviewers:
-  - release-team-lead-role
   - branch-managers
 labels:
   - sig/release
