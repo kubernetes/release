@@ -6,24 +6,29 @@ aliases:
     - justaugustus
     - tpepper
   release-engineering:
-    - aleksandra-malinowska
-    - calebamiles
-    - ixdy
-    - tpepper
-  patch-release-team:
-    - aleksandra-malinowska
-    - feiskyer
-    - hoegaarden
-    - tpepper
+    - aleksandra-malinowska # Patch Release Team
+    - calebamiles # subproject owner
+    - dougm # Patch Release Team
+    - feiskyer # Patch Release Team
+    - hoegaarden # Patch Release Team
+    - idealhack # Patch Release Team
+    - justaugustus # subproject owner
+    - tpepper # subproject owner / Patch Release Team
   branch-managers:
     - bubblemelon
-    - idealhack
+    - justaugustus
   build-admins:
     - aleksandra-malinowska
     - listx
+    - ps882
     - sumitranr
-  release-team-lead-role:
-    - aishsundar # 1.13
-    - spiffxp # 1.14
-    - claurence # 1.15
-    - lachie83 # 1.16
+  release-notes-approvers:
+    - jeefy
+    - marpaia
+    - onyiny-ang
+    - saschagrunert
+  release-notes-reviewers:
+    - jeefy
+    - marpaia
+    - onyiny-ang
+    - saschagrunert
