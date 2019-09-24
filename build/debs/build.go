@@ -23,13 +23,12 @@ const (
 	DistributionUnstable DistributionType = "unstable"
 	DistributionTesting  DistributionType = "testing"
 
-	cniVersion         = "0.7.5"
-	criToolsVersion    = "1.13.0"
-	pre180kubeadmconf  = "pre-1.8/10-kubeadm.conf"
-	pre1110kubeadmconf = "post-1.8/10-kubeadm.conf"
-	latestkubeadmconf  = "post-1.10/10-kubeadm.conf"
+	cniVersion      = "0.7.5"
+	criToolsVersion = "1.13.0"
 
 	packagesRootDir = "packages"
+
+	kubeadmConf = "10-kubeadm.conf"
 )
 
 var latestPackagesDir = fmt.Sprintf("%s/%s", packagesRootDir, "latest")
@@ -319,32 +318,6 @@ func getKubeadmDependencies(v version) (string, error) {
 	return strings.Join(deps, ", "), nil
 }
 
-// The version of this file to use changed in 1.8 and 1.11 so use the target build
-// version to figure out which copy of it to include in the deb.
-func getKubeadmKubeletConfigFile(v version) (string, error) {
-	sv, err := semver.Make(v.Version)
-	if err != nil {
-		return "", err
-	}
-
-	v180, err := semver.Make("1.8.0-alpha.0")
-	if err != nil {
-		return "", err
-	}
-	v1110, err := semver.Make("1.11.0-alpha.0")
-	if err != nil {
-		return "", err
-	}
-
-	if sv.LT(v1110) {
-		if sv.LT(v180) {
-			return pre180kubeadmconf, nil
-		}
-		return pre1110kubeadmconf, nil
-	}
-	return latestkubeadmconf, nil
-}
-
 // CNI get bumped in 1.9, which is incompatible for kubelet<1.9.
 // So we need to restrict the CNI version when install kubelet.
 func getKubeletCNIVersion(v version) (string, error) {
@@ -576,12 +549,9 @@ func main() {
 			c.DebArch = c.Arch
 		}
 
-		var err error
-		c.KubeadmKubeletConfigFile, err = getKubeadmKubeletConfigFile(v)
-		if err != nil {
-			log.Fatalf("error getting kubeadm config: %v", err)
-		}
+		c.KubeadmKubeletConfigFile = kubeadmConf
 
+		var err error
 		c.Dependencies, err = getKubeadmDependencies(v)
 		if err != nil {
 			log.Fatalf("error getting kubeadm dependencies: %v", err)
