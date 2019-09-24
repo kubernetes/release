@@ -1,4 +1,4 @@
-kubelet ({{ .Version }}-{{ .Revision }}) {{ .DistroName }} {{ .Arch }}; urgency=optional
+kubectl ({{ .Version }}-{{ .Revision }}) {{ .Distribution }}; urgency=medium
 
   * https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md
 

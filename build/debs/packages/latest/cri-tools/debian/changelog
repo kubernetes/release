@@ -1,4 +1,4 @@
-cri-tools ({{ .Version }}-{{ .Revision }}) {{ .DistroName }} {{ .Arch }}; urgency=optional
+cri-tools ({{ .Version }}-{{ .Revision }}) {{ .Distribution }}; urgency=medium
 
   * https://github.com/kubernetes-sigs/cri-tools/blob/master/CHANGELOG.md
 

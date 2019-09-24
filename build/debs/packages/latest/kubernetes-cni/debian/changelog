@@ -1,4 +1,4 @@
-kubeadm ({{ .Version }}-{{ .Revision }}) {{ .DistroName }} {{ .Arch }}; urgency=optional
+kubernetes-cni ({{ .Version }}-{{ .Revision }}) {{ .Distribution }}; urgency=medium
 
   * https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md
 

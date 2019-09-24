@@ -16,19 +16,23 @@ import (
 	"github.com/blang/semver"
 )
 
-type ChannelType string
+type DistributionType string
 
 const (
-	ChannelStable   ChannelType = "stable"
-	ChannelUnstable ChannelType = "unstable"
-	ChannelNightly  ChannelType = "nightly"
+	DistributionStable   DistributionType = "stable"
+	DistributionUnstable DistributionType = "unstable"
+	DistributionTesting  DistributionType = "testing"
 
 	cniVersion         = "0.7.5"
 	criToolsVersion    = "1.13.0"
 	pre180kubeadmconf  = "pre-1.8/10-kubeadm.conf"
 	pre1110kubeadmconf = "post-1.8/10-kubeadm.conf"
 	latestkubeadmconf  = "post-1.10/10-kubeadm.conf"
+
+	packagesRootDir = "packages"
 )
+
+var latestPackagesDir = fmt.Sprintf("%s/%s", packagesRootDir, "latest")
 
 type work struct {
 	src, dst string
@@ -38,13 +42,12 @@ type work struct {
 
 type build struct {
 	Package  string
-	Distros  []string
 	Versions []version
 }
 
 type version struct {
 	Version, Revision, DownloadLinkBase string
-	Channel                             ChannelType
+	Distribution                        DistributionType
 	GetVersion                          func() (string, error)
 	GetDownloadLinkBase                 func(v version) (string, error)
 	KubeadmKubeletConfigFile            string
@@ -53,7 +56,10 @@ type version struct {
 
 type cfg struct {
 	version
-	DistroName, Arch, DebArch, Package, Dependencies string
+	Arch         string
+	DebArch      string
+	Package      string
+	Dependencies string
 }
 
 type stringList []string
@@ -67,12 +73,7 @@ func (ss *stringList) Set(v string) error {
 }
 
 var (
-	architectures = stringList{"amd64", "arm", "arm64", "ppc64le", "s390x"}
-	// distros describes the Debian and Ubuntu versions that binaries will be built for.
-	// Each distro build definition is currently symlinked to the most recent ubuntu build definition in the repo.
-	// Build definitions should be kept up to date across release cycles, removing Debian/Ubuntu versions
-	// that are no longer supported from the perspective of the OS distribution maintainers.
-	distros                 = stringList{"bionic", "xenial", "trusty", "stretch", "jessie", "sid"}
+	architectures           = stringList{"amd64", "arm", "arm64", "ppc64le", "s390x"}
 	kubeVersion             = ""
 	revision                = "00"
 	releaseDownloadLinkBase = "https://dl.k8s.io"
@@ -87,11 +88,10 @@ var (
 )
 
 func init() {
-	flag.Var(&architectures, "arch", "Architectures to build for.")
-	flag.Var(&distros, "distros", "Distros to build for.")
-	flag.StringVar(&kubeVersion, "kube-version", "", "Distros to build for.")
-	flag.StringVar(&revision, "revision", "00", "Deb package revision.")
-	flag.StringVar(&releaseDownloadLinkBase, "release-download-link-base", "https://dl.k8s.io", "Release download link base.")
+	flag.Var(&architectures, "arch", "architectures to build for")
+	flag.StringVar(&kubeVersion, "kube-version", "", "Kubernetes versions to build")
+	flag.StringVar(&revision, "revision", "00", "deb package revision.")
+	flag.StringVar(&releaseDownloadLinkBase, "release-download-link-base", "https://dl.k8s.io", "release download link base.")
 }
 
 func runCommand(pwd string, command string, cmdArgs ...string) error {
@@ -111,7 +111,8 @@ func (c cfg) run() error {
 	log.Printf("!!!!!!!!! doing: %#v", c)
 	var w []work
 
-	srcdir := filepath.Join(c.DistroName, c.Package)
+	// TODO: Get package directory for any version once package definitions are broken out
+	srcdir := filepath.Join(latestPackagesDir, c.Package)
 	dstdir, err := ioutil.TempDir(os.TempDir(), "debs")
 	if err != nil {
 		return err
@@ -185,7 +186,7 @@ func (c cfg) run() error {
 		return err
 	}
 
-	dstParts := []string{"bin", string(c.Channel), c.DistroName}
+	dstParts := []string{"bin", string(c.Distribution)}
 
 	dstPath := filepath.Join(dstParts...)
 	os.MkdirAll(dstPath, 0777)
@@ -199,32 +200,30 @@ func (c cfg) run() error {
 	return nil
 }
 
-func walkBuilds(builds []build, f func(pkg, distro, arch string, v version) error) error {
+func walkBuilds(builds []build, f func(pkg, arch string, v version) error) error {
 	for _, a := range architectures {
 		for _, b := range builds {
-			for _, d := range b.Distros {
-				for _, v := range b.Versions {
-					// Populate the version if it doesn't exist
-					if len(v.Version) == 0 && v.GetVersion != nil {
-						var err error
-						v.Version, err = v.GetVersion()
-						if err != nil {
-							return err
-						}
-					}
-
-					// Populate the version if it doesn't exist
-					if len(v.DownloadLinkBase) == 0 && v.GetDownloadLinkBase != nil {
-						var err error
-						v.DownloadLinkBase, err = v.GetDownloadLinkBase(v)
-						if err != nil {
-							return err
-						}
-					}
-
-					if err := f(b.Package, d, a, v); err != nil {
+			for _, v := range b.Versions {
+				// Populate the version if it doesn't exist
+				if len(v.Version) == 0 && v.GetVersion != nil {
+					var err error
+					v.Version, err = v.GetVersion()
+					if err != nil {
 						return err
 					}
+				}
+
+				// Populate the version if it doesn't exist
+				if len(v.DownloadLinkBase) == 0 && v.GetDownloadLinkBase != nil {
+					var err error
+					v.DownloadLinkBase, err = v.GetDownloadLinkBase(v)
+					if err != nil {
+						return err
+					}
+				}
+
+				if err := f(b.Package, a, v); err != nil {
+					return err
 				}
 			}
 		}
@@ -393,115 +392,110 @@ func main() {
 	builds := []build{
 		{
 			Package: "kubectl",
-			Distros: distros,
 			Versions: []version{
 				{
 					GetVersion:          getStableKubeVersion,
 					Revision:            revision,
-					Channel:             ChannelStable,
+					Distribution:        DistributionStable,
 					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
 					GetVersion:          getLatestKubeVersion,
 					Revision:            revision,
-					Channel:             ChannelUnstable,
+					Distribution:        DistributionUnstable,
 					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
 					GetVersion:          getLatestCIVersion,
 					Revision:            revision,
-					Channel:             ChannelNightly,
+					Distribution:        DistributionTesting,
 					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
 				},
 			},
 		},
 		{
 			Package: "kubelet",
-			Distros: distros,
 			Versions: []version{
 				{
 					GetVersion:          getStableKubeVersion,
 					Revision:            revision,
-					Channel:             ChannelStable,
+					Distribution:        DistributionStable,
 					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
 					GetVersion:          getLatestKubeVersion,
 					Revision:            revision,
-					Channel:             ChannelUnstable,
+					Distribution:        DistributionUnstable,
 					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
 					GetVersion:          getLatestCIVersion,
 					Revision:            revision,
-					Channel:             ChannelNightly,
+					Distribution:        DistributionTesting,
 					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
 				},
 			},
 		},
 		{
 			Package: "kubernetes-cni",
-			Distros: distros,
 			Versions: []version{
 				{
-					Version:  cniVersion,
-					Revision: revision,
-					Channel:  ChannelStable,
+					Version:      cniVersion,
+					Revision:     revision,
+					Distribution: DistributionStable,
 				},
 				{
-					Version:  cniVersion,
-					Revision: revision,
-					Channel:  ChannelUnstable,
+					Version:      cniVersion,
+					Revision:     revision,
+					Distribution: DistributionUnstable,
 				},
 				{
-					Version:  cniVersion,
-					Revision: revision,
-					Channel:  ChannelNightly,
+					Version:      cniVersion,
+					Revision:     revision,
+					Distribution: DistributionTesting,
 				},
 			},
 		},
 		{
 			Package: "kubeadm",
-			Distros: distros,
 			Versions: []version{
 				{
 					GetVersion:          getStableKubeVersion,
 					Revision:            revision,
-					Channel:             ChannelStable,
+					Distribution:        DistributionStable,
 					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
 					GetVersion:          getLatestKubeVersion,
 					Revision:            revision,
-					Channel:             ChannelUnstable,
+					Distribution:        DistributionUnstable,
 					GetDownloadLinkBase: getReleaseDownloadLinkBase,
 				},
 				{
 					GetVersion:          getLatestCIVersion,
 					Revision:            revision,
-					Channel:             ChannelNightly,
+					Distribution:        DistributionTesting,
 					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
 				},
 			},
 		},
 		{
 			Package: "cri-tools",
-			Distros: distros,
 			Versions: []version{
 				{
-					GetVersion: getCRIToolsLatestVersion,
-					Revision:   revision,
-					Channel:    ChannelStable,
+					GetVersion:   getCRIToolsLatestVersion,
+					Revision:     revision,
+					Distribution: DistributionStable,
 				},
 				{
-					GetVersion: getCRIToolsLatestVersion,
-					Revision:   revision,
-					Channel:    ChannelUnstable,
+					GetVersion:   getCRIToolsLatestVersion,
+					Revision:     revision,
+					Distribution: DistributionUnstable,
 				},
 				{
-					GetVersion: getCRIToolsLatestVersion,
-					Revision:   revision,
-					Channel:    ChannelNightly,
+					GetVersion:   getCRIToolsLatestVersion,
+					Revision:     revision,
+					Distribution: DistributionTesting,
 				},
 			},
 		},
@@ -514,71 +508,65 @@ func main() {
 		builds = []build{
 			{
 				Package: "kubectl",
-				Distros: distros,
 				Versions: []version{
 					{
 						GetVersion:          getSpecifiedVersion,
 						Revision:            revision,
-						Channel:             ChannelStable,
+						Distribution:        DistributionStable,
 						GetDownloadLinkBase: getReleaseDownloadLinkBase,
 					},
 				},
 			},
 			{
 				Package: "kubelet",
-				Distros: distros,
 				Versions: []version{
 					{
 						GetVersion:          getSpecifiedVersion,
 						Revision:            revision,
-						Channel:             ChannelStable,
+						Distribution:        DistributionStable,
 						GetDownloadLinkBase: getReleaseDownloadLinkBase,
 					},
 				},
 			},
 			{
 				Package: "kubernetes-cni",
-				Distros: distros,
 				Versions: []version{
 					{
-						Version:  cniVersion,
-						Revision: revision,
-						Channel:  ChannelStable,
+						Version:      cniVersion,
+						Revision:     revision,
+						Distribution: DistributionStable,
 					},
 				},
 			},
 			{
 				Package: "kubeadm",
-				Distros: distros,
 				Versions: []version{
 					{
 						GetVersion:          getSpecifiedVersion,
 						Revision:            revision,
-						Channel:             ChannelStable,
+						Distribution:        DistributionStable,
 						GetDownloadLinkBase: getReleaseDownloadLinkBase,
 					},
 				},
 			},
 			{
 				Package: "cri-tools",
-				Distros: distros,
 				Versions: []version{
 					{
-						GetVersion: getCRIToolsLatestVersion,
-						Revision:   revision,
-						Channel:    ChannelStable,
+						GetVersion:   getCRIToolsLatestVersion,
+						Revision:     revision,
+						Distribution: DistributionStable,
 					},
 				},
 			},
 		}
 	}
 
-	if err := walkBuilds(builds, func(pkg, distro, arch string, v version) error {
+	if err := walkBuilds(builds, func(pkg, arch string, v version) error {
 		c := cfg{
-			Package:    pkg,
-			version:    v,
-			DistroName: distro,
-			Arch:       arch,
+			Package: pkg,
+			version: v,
+			Arch:    arch,
 		}
 		if c.Arch == "arm" {
 			c.DebArch = "armhf"
