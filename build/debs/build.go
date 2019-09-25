@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -20,41 +21,54 @@ type DistributionType string
 
 const (
 	DistributionStable   DistributionType = "stable"
-	DistributionUnstable DistributionType = "unstable"
 	DistributionTesting  DistributionType = "testing"
+	DistributionUnstable DistributionType = "unstable"
 
-	cniVersion      = "0.7.5"
-	criToolsVersion = "1.13.0"
+	minimumKubernetesVersion = "1.13.0"
+	minimumCNIVersion        = "0.7.5"
+	pre117CNIVersion         = "0.7.5"
+
+	defaultRevision = "0"
 
 	packagesRootDir = "packages"
 
 	kubeadmConf = "10-kubeadm.conf"
 )
 
-var latestPackagesDir = fmt.Sprintf("%s/%s", packagesRootDir, "latest")
+var (
+	minimumCRIToolsVersion = minimumKubernetesVersion
+	latestPackagesDir      = fmt.Sprintf("%s/%s", packagesRootDir, "latest")
+)
 
 type work struct {
-	src, dst string
-	t        *template.Template
-	info     os.FileInfo
+	src  string
+	dst  string
+	t    *template.Template
+	info os.FileInfo
 }
 
 type build struct {
-	Package  string
-	Versions []version
+	Package     string
+	Definitions []packageDefinition
 }
 
-type version struct {
-	Version, Revision, DownloadLinkBase string
-	Distribution                        DistributionType
-	GetVersion                          func() (string, error)
-	GetDownloadLinkBase                 func(v version) (string, error)
-	KubeadmKubeletConfigFile            string
-	KubeletCNIVersion                   string
+type packageDefinition struct {
+	Name     string
+	Version  string
+	Revision string
+
+	KubernetesVersion string
+	KubeletCNIVersion string
+
+	DownloadLinkBase         string
+	Distribution             DistributionType
+	KubeadmKubeletConfigFile string
+
+	CNIDownloadLink string
 }
 
 type cfg struct {
-	version
+	*packageDefinition
 	Arch         string
 	DebArch      string
 	Package      string
@@ -72,9 +86,11 @@ func (ss *stringList) Set(v string) error {
 }
 
 var (
+	revision    string
+	kubeVersion string
+	cniVersion  string
+
 	architectures           = stringList{"amd64", "arm", "arm64", "ppc64le", "s390x"}
-	kubeVersion             = ""
-	revision                = "00"
 	releaseDownloadLinkBase = "https://dl.k8s.io"
 
 	builtins = map[string]interface{}{
@@ -87,9 +103,11 @@ var (
 )
 
 func init() {
+	// TODO: Add flag support to build stable, testing, or unstable versions
 	flag.Var(&architectures, "arch", "architectures to build for")
-	flag.StringVar(&kubeVersion, "kube-version", "", "Kubernetes versions to build")
-	flag.StringVar(&revision, "revision", "00", "deb package revision.")
+	flag.StringVar(&kubeVersion, "kube-version", "", "Kubernetes version to build")
+	flag.StringVar(&revision, "revision", defaultRevision, "deb package revision.")
+	flag.StringVar(&cniVersion, "cni-version", "", "CNI version to build")
 	flag.StringVar(&releaseDownloadLinkBase, "release-download-link-base", "https://dl.k8s.io", "release download link base.")
 }
 
@@ -120,18 +138,11 @@ func (c cfg) run() error {
 		defer os.RemoveAll(dstdir)
 	}
 
-	// allow base package dir to by a symlink so we can reuse packages
-	// that don't change between distros
-	realSrcdir, err := filepath.EvalSymlinks(srcdir)
-	if err != nil {
-		return err
-	}
-
-	if err := filepath.Walk(realSrcdir, func(srcfile string, f os.FileInfo, err error) error {
+	if err := filepath.Walk(srcdir, func(srcfile string, f os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		dstfile := filepath.Join(dstdir, srcfile[len(realSrcdir):])
+		dstfile := filepath.Join(dstdir, srcfile[len(srcdir):])
 		if dstfile == dstdir {
 			return nil
 		}
@@ -199,29 +210,11 @@ func (c cfg) run() error {
 	return nil
 }
 
-func walkBuilds(builds []build, f func(pkg, arch string, v version) error) error {
+func walkBuilds(builds []build, f func(pkg, arch string, packageDef packageDefinition) error) error {
 	for _, a := range architectures {
 		for _, b := range builds {
-			for _, v := range b.Versions {
-				// Populate the version if it doesn't exist
-				if len(v.Version) == 0 && v.GetVersion != nil {
-					var err error
-					v.Version, err = v.GetVersion()
-					if err != nil {
-						return err
-					}
-				}
-
-				// Populate the version if it doesn't exist
-				if len(v.DownloadLinkBase) == 0 && v.GetDownloadLinkBase != nil {
-					var err error
-					v.DownloadLinkBase, err = v.GetDownloadLinkBase(v)
-					if err != nil {
-						return err
-					}
-				}
-
-				if err := f(b.Package, a, v); err != nil {
+			for _, packageDef := range b.Definitions {
+				if err := f(b.Package, a, packageDef); err != nil {
 					return err
 				}
 			}
@@ -241,177 +234,214 @@ func fetchVersion(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	// Remove a newline and the v prefix from the string
 	return strings.Replace(strings.Replace(string(versionBytes), "v", "", 1), "\n", "", 1), nil
+}
+
+func getPackageVersion(packageDef packageDefinition) (string, error) {
+	log.Printf("package name is %s", packageDef.Name)
+	switch packageDef.Name {
+	case "kubernetes-cni":
+		return getCNIVersion(packageDef)
+	case "cri-tools":
+		return getCRIToolsVersion(packageDef)
+	}
+
+	log.Printf("using Kubernetes version")
+	return packageDef.KubernetesVersion, nil
+}
+
+func getKubernetesVersion(packageDef packageDefinition) (string, error) {
+	if packageDef.KubernetesVersion != "" {
+		return packageDef.KubernetesVersion, nil
+	}
+	switch packageDef.Distribution {
+	case DistributionTesting:
+		return getTestingKubeVersion()
+	case DistributionUnstable:
+		return getUnstableKubeVersion()
+	}
+
+	return getStableKubeVersion()
 }
 
 func getStableKubeVersion() (string, error) {
 	return fetchVersion("https://dl.k8s.io/release/stable.txt")
 }
 
-func getLatestKubeVersion() (string, error) {
+func getTestingKubeVersion() (string, error) {
 	return fetchVersion("https://dl.k8s.io/release/latest.txt")
 }
 
-func getLatestCIVersion() (string, error) {
-	latestVersion, err := getLatestKubeCIBuild()
+func getUnstableKubeVersion() (string, error) {
+	latestCIVersion, err := getLatestKubeCIBuild()
 	if err != nil {
 		return "", err
 	}
 
-	// Replace the "+" with a "-" to make it semver-compliant
-	return strings.Replace(latestVersion, "+", "-", 1), nil
-}
-
-func getCRIToolsLatestVersion() (string, error) {
-	return criToolsVersion, nil
+	return latestCIVersion, nil
 }
 
 func getLatestKubeCIBuild() (string, error) {
 	return fetchVersion("https://dl.k8s.io/ci/k8s-master.txt")
 }
 
-func getCIBuildsDownloadLinkBase(_ version) (string, error) {
-	latestCiVersion, err := getLatestKubeCIBuild()
-	if err != nil {
-		return "", err
+func getDownloadLinkBase(packageDef packageDefinition) (string, error) {
+	switch packageDef.Distribution {
+	case DistributionUnstable:
+		return getCIBuildsDownloadLinkBase(packageDef)
 	}
 
-	return fmt.Sprintf("https://dl.k8s.io/ci/v%s", latestCiVersion), nil
+	return getReleaseDownloadLinkBase(packageDef)
 }
 
-func getReleaseDownloadLinkBase(v version) (string, error) {
-	return fmt.Sprintf("%s/v%s", releaseDownloadLinkBase, v.Version), nil
-}
-
-func getKubeadmDependencies(v version) (string, error) {
-	cniVersion, err := getKubeletCNIVersion(v)
-	if err != nil {
-		return "", err
+func getCIBuildsDownloadLinkBase(packageDef packageDefinition) (string, error) {
+	ciVersion := packageDef.KubernetesVersion
+	if ciVersion == "" {
+		var err error
+		ciVersion, err = getLatestKubeCIBuild()
+		if err != nil {
+			return "", err
+		}
 	}
 
+	return fmt.Sprintf("https://dl.k8s.io/ci/v%s", ciVersion), nil
+}
+
+func getReleaseDownloadLinkBase(packageDef packageDefinition) (string, error) {
+	return fmt.Sprintf("%s/v%s", releaseDownloadLinkBase, packageDef.KubernetesVersion), nil
+}
+
+func getKubeadmDependencies(packageDef packageDefinition) (string, error) {
 	deps := []string{
-		"kubelet (>= 1.13.0)",
-		"kubectl (>= 1.13.0)",
-		fmt.Sprintf("kubernetes-cni (%s)", cniVersion),
+		fmt.Sprintf("kubelet (>= %s)", minimumKubernetesVersion),
+		fmt.Sprintf("kubectl (>= %s)", minimumKubernetesVersion),
+		fmt.Sprintf("kubernetes-cni (>= %s)", minimumCNIVersion),
+		fmt.Sprintf("cri-tools (>= %s)", minimumCRIToolsVersion),
 		"${misc:Depends}",
 	}
-	sv, err := semver.Make(v.Version)
+
+	return strings.Join(deps, ", "), nil
+}
+
+func getCNIVersion(packageDef packageDefinition) (string, error) {
+	log.Printf("using CNI version")
+
+	kubeSemver, err := semver.Make(packageDef.KubernetesVersion)
 	if err != nil {
 		return "", err
 	}
 
-	v1110, err := semver.Make("1.11.0-alpha.0")
+	v117, err := semver.Make("1.17.0-alpha.0")
 	if err != nil {
 		return "", err
 	}
 
-	if sv.GTE(v1110) {
-		criToolsVersion, err := getCRIToolsVersion(v)
+	log.Printf("checking kube version (%s) against %s", kubeSemver.String(), v117.String())
+	if packageDef.Version != "" {
+		if kubeSemver.LT(v117) {
+			return pre117CNIVersion, nil
+		}
+		return packageDef.Version, nil
+	}
+
+	return minimumCNIVersion, nil
+}
+
+func getCRIToolsVersion(packageDef packageDefinition) (string, error) {
+	log.Printf("CRI tools function")
+	kubeSemver, err := semver.Parse(packageDef.KubernetesVersion)
+	if err != nil {
+		return "", err
+	}
+
+	log.Printf("using CRI version")
+	kubeVersionString := kubeSemver.String()
+	kubeVersionParts := strings.Split(kubeVersionString, ".")
+
+	criToolsMajor := kubeVersionParts[0]
+	criToolsMinor := kubeVersionParts[1]
+
+	log.Printf("%v, len: %s", kubeVersionParts, len(kubeVersionParts))
+	// v1.17.0-alpha.0.1809+ff8716f4cf6180
+	if len(kubeVersionParts) >= 4 {
+		criToolsMinorInt, err := strconv.Atoi(criToolsMinor)
 		if err != nil {
 			return "", err
 		}
 
-		deps = append(deps, fmt.Sprintf("cri-tools (>= %s)", criToolsVersion))
-		return strings.Join(deps, ", "), nil
+		log.Printf("CRI minor is %s", criToolsMinor)
+		criToolsMinorInt--
+		criToolsMinor = strconv.Itoa(criToolsMinorInt)
+		log.Printf("CRI minor is %s", criToolsMinor)
 	}
-	return strings.Join(deps, ", "), nil
+
+	return fmt.Sprintf("%s.%s.0", criToolsMajor, criToolsMinor), nil
 }
 
-// CNI get bumped in 1.9, which is incompatible for kubelet<1.9.
-// So we need to restrict the CNI version when install kubelet.
-func getKubeletCNIVersion(v version) (string, error) {
-	sv, err := semver.Make(v.Version)
+func getCNIDownloadLink(packageDef packageDefinition, arch string) (string, error) {
+	sv, err := semver.Parse(packageDef.Version)
 	if err != nil {
 		return "", err
 	}
 
-	v190, err := semver.Make("1.9.0-alpha.0")
+	v075, err := semver.Make(pre117CNIVersion)
 	if err != nil {
 		return "", err
 	}
 
-	if sv.GTE(v190) {
-		return fmt.Sprintf(">= %s", cniVersion), nil
-	}
-	return fmt.Sprint("= 0.5.1"), nil
-}
-
-// getCRIToolsVersion assumes v coming in is >= 1.11.0-alpha.0
-func getCRIToolsVersion(v version) (string, error) {
-	sv, err := semver.Make(v.Version)
-	if err != nil {
-		return "", err
+	if sv.LTE(v075) {
+		return fmt.Sprintf("https://github.com/containernetworking/plugins/releases/download/v%s/cni-plugins-%s-v%s.tgz", packageDef.Version, arch, packageDef.Version), nil
 	}
 
-	v1110, err := semver.Make("1.11.0-alpha.0")
-	if err != nil {
-		return "", err
-	}
-	v1121, err := semver.Make("1.12.1-alpha.0")
-	if err != nil {
-		return "", err
-	}
-
-	if sv.GTE(v1110) && sv.LT(v1121) {
-		return "1.11.1", nil
-	}
-	return criToolsVersion, nil
+	return fmt.Sprintf("https://github.com/containernetworking/plugins/releases/download/v%s/cni-plugins-linux-%s-v%s.tgz", packageDef.Version, arch, packageDef.Version), nil
 }
 
 func main() {
 	flag.Parse()
 
+	// Replace the "+" with a "-" to make it semver-compliant
+	kubeVersion = strings.TrimPrefix(kubeVersion, "v")
+
 	builds := []build{
 		{
 			Package: "kubectl",
-			Versions: []version{
+			Definitions: []packageDefinition{
 				{
-					GetVersion:          getStableKubeVersion,
-					Revision:            revision,
-					Distribution:        DistributionStable,
-					GetDownloadLinkBase: getReleaseDownloadLinkBase,
+					Revision:     revision,
+					Distribution: DistributionStable,
 				},
 				{
-					GetVersion:          getLatestKubeVersion,
-					Revision:            revision,
-					Distribution:        DistributionUnstable,
-					GetDownloadLinkBase: getReleaseDownloadLinkBase,
+					Revision:     revision,
+					Distribution: DistributionTesting,
 				},
 				{
-					GetVersion:          getLatestCIVersion,
-					Revision:            revision,
-					Distribution:        DistributionTesting,
-					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
+					Revision:     revision,
+					Distribution: DistributionUnstable,
 				},
 			},
 		},
 		{
 			Package: "kubelet",
-			Versions: []version{
+			Definitions: []packageDefinition{
 				{
-					GetVersion:          getStableKubeVersion,
-					Revision:            revision,
-					Distribution:        DistributionStable,
-					GetDownloadLinkBase: getReleaseDownloadLinkBase,
+					Revision:     revision,
+					Distribution: DistributionStable,
 				},
 				{
-					GetVersion:          getLatestKubeVersion,
-					Revision:            revision,
-					Distribution:        DistributionUnstable,
-					GetDownloadLinkBase: getReleaseDownloadLinkBase,
+					Revision:     revision,
+					Distribution: DistributionTesting,
 				},
 				{
-					GetVersion:          getLatestCIVersion,
-					Revision:            revision,
-					Distribution:        DistributionTesting,
-					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
+					Revision:     revision,
+					Distribution: DistributionUnstable,
 				},
 			},
 		},
 		{
 			Package: "kubernetes-cni",
-			Versions: []version{
+			Definitions: []packageDefinition{
 				{
 					Version:      cniVersion,
 					Revision:     revision,
@@ -420,127 +450,173 @@ func main() {
 				{
 					Version:      cniVersion,
 					Revision:     revision,
-					Distribution: DistributionUnstable,
+					Distribution: DistributionTesting,
 				},
 				{
 					Version:      cniVersion,
 					Revision:     revision,
-					Distribution: DistributionTesting,
+					Distribution: DistributionUnstable,
 				},
 			},
 		},
 		{
 			Package: "kubeadm",
-			Versions: []version{
+			Definitions: []packageDefinition{
 				{
-					GetVersion:          getStableKubeVersion,
-					Revision:            revision,
-					Distribution:        DistributionStable,
-					GetDownloadLinkBase: getReleaseDownloadLinkBase,
+					Revision:     revision,
+					Distribution: DistributionStable,
 				},
 				{
-					GetVersion:          getLatestKubeVersion,
-					Revision:            revision,
-					Distribution:        DistributionUnstable,
-					GetDownloadLinkBase: getReleaseDownloadLinkBase,
+					Revision:     revision,
+					Distribution: DistributionTesting,
 				},
 				{
-					GetVersion:          getLatestCIVersion,
-					Revision:            revision,
-					Distribution:        DistributionTesting,
-					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
+					Revision:     revision,
+					Distribution: DistributionUnstable,
 				},
 			},
 		},
 		{
 			Package: "cri-tools",
-			Versions: []version{
+			Definitions: []packageDefinition{
 				{
-					GetVersion:   getCRIToolsLatestVersion,
 					Revision:     revision,
 					Distribution: DistributionStable,
 				},
 				{
-					GetVersion:   getCRIToolsLatestVersion,
-					Revision:     revision,
-					Distribution: DistributionUnstable,
-				},
-				{
-					GetVersion:   getCRIToolsLatestVersion,
 					Revision:     revision,
 					Distribution: DistributionTesting,
+				},
+				{
+					Revision:     revision,
+					Distribution: DistributionUnstable,
 				},
 			},
 		},
 	}
 
 	if kubeVersion != "" {
-		getSpecifiedVersion := func() (string, error) {
-			return kubeVersion, nil
-		}
 		builds = []build{
 			{
 				Package: "kubectl",
-				Versions: []version{
+				Definitions: []packageDefinition{
 					{
-						GetVersion:          getSpecifiedVersion,
-						Revision:            revision,
-						Distribution:        DistributionStable,
-						GetDownloadLinkBase: getReleaseDownloadLinkBase,
+						KubernetesVersion: kubeVersion,
+						Revision:          revision,
+						Distribution:      DistributionStable,
 					},
 				},
 			},
 			{
 				Package: "kubelet",
-				Versions: []version{
+				Definitions: []packageDefinition{
 					{
-						GetVersion:          getSpecifiedVersion,
-						Revision:            revision,
-						Distribution:        DistributionStable,
-						GetDownloadLinkBase: getReleaseDownloadLinkBase,
+						KubernetesVersion: kubeVersion,
+						Revision:          revision,
+						Distribution:      DistributionStable,
 					},
 				},
 			},
 			{
 				Package: "kubernetes-cni",
-				Versions: []version{
+				Definitions: []packageDefinition{
 					{
-						Version:      cniVersion,
-						Revision:     revision,
-						Distribution: DistributionStable,
+						Version:           cniVersion,
+						Revision:          revision,
+						KubernetesVersion: kubeVersion,
+						Distribution:      DistributionStable,
 					},
 				},
 			},
 			{
 				Package: "kubeadm",
-				Versions: []version{
+				Definitions: []packageDefinition{
 					{
-						GetVersion:          getSpecifiedVersion,
-						Revision:            revision,
-						Distribution:        DistributionStable,
-						GetDownloadLinkBase: getReleaseDownloadLinkBase,
+						KubernetesVersion: kubeVersion,
+						Revision:          revision,
+						Distribution:      DistributionStable,
 					},
 				},
 			},
 			{
 				Package: "cri-tools",
-				Versions: []version{
+				Definitions: []packageDefinition{
 					{
-						GetVersion:   getCRIToolsLatestVersion,
-						Revision:     revision,
-						Distribution: DistributionStable,
+						KubernetesVersion: kubeVersion,
+						Revision:          revision,
+						Distribution:      DistributionStable,
 					},
 				},
 			},
 		}
 	}
 
-	if err := walkBuilds(builds, func(pkg, arch string, v version) error {
+	if err := walkBuilds(builds, func(pkg, arch string, packageDef packageDefinition) error {
 		c := cfg{
-			Package: pkg,
-			version: v,
-			Arch:    arch,
+			packageDefinition: &packageDef,
+			Package:           pkg,
+			Arch:              arch,
 		}
+
+		c.Name = pkg
+
+		var err error
+
+		// TODO: Allow building packages for a specific distro type
+
+		if c.KubernetesVersion != "" {
+			log.Printf("checking k8s semver")
+			kubeSemver, err := semver.Parse(c.KubernetesVersion)
+			if err != nil {
+				log.Fatalf("could not parse k8s semver: %v", err)
+			}
+
+			kubeVersionString := kubeSemver.String()
+			kubeVersionParts := strings.Split(kubeVersionString, ".")
+
+			log.Printf("%v, len: %s", kubeVersionParts, len(kubeVersionParts))
+			switch {
+			case len(kubeVersionParts) > 4:
+				c.Distribution = DistributionUnstable
+			case len(kubeVersionParts) == 4:
+				c.Distribution = DistributionTesting
+			default:
+				c.Distribution = DistributionStable
+			}
+		}
+
+		c.KubernetesVersion, err = getKubernetesVersion(packageDef)
+		if err != nil {
+			log.Fatalf("error getting Kubernetes version: %v", err)
+		}
+
+		log.Printf("download link base is %s", c.DownloadLinkBase)
+		c.DownloadLinkBase, err = getDownloadLinkBase(packageDef)
+		if err != nil {
+			log.Fatalf("error getting Kubernetes download link base: %v", err)
+		}
+
+		log.Printf("download link base is %s", c.DownloadLinkBase)
+
+		// TODO: Add note about this
+		c.KubernetesVersion = strings.Replace(c.KubernetesVersion, "+", "-", 1)
+
+		c.Version, err = getPackageVersion(packageDef)
+		if err != nil {
+			log.Fatalf("error getting package version: %v", err)
+		}
+
+		log.Printf("package version is %s", c.Version)
+
+		c.KubeletCNIVersion = minimumCNIVersion
+
+		c.Dependencies, err = getKubeadmDependencies(packageDef)
+		if err != nil {
+			log.Fatalf("error getting kubeadm dependencies: %v", err)
+		}
+
+		c.KubeadmKubeletConfigFile = kubeadmConf
+
 		if c.Arch == "arm" {
 			c.DebArch = "armhf"
 		} else if c.Arch == "ppc64le" {
@@ -549,17 +625,9 @@ func main() {
 			c.DebArch = c.Arch
 		}
 
-		c.KubeadmKubeletConfigFile = kubeadmConf
-
-		var err error
-		c.Dependencies, err = getKubeadmDependencies(v)
+		c.CNIDownloadLink, err = getCNIDownloadLink(packageDef, c.Arch)
 		if err != nil {
-			log.Fatalf("error getting kubeadm dependencies: %v", err)
-		}
-
-		c.KubeletCNIVersion, err = getKubeletCNIVersion(v)
-		if err != nil {
-			log.Fatalf("error getting kubelet CNI Version: %v", err)
+			log.Fatalf("error getting CNI download link: %v", err)
 		}
 
 		return c.run()

@@ -1,15 +1,13 @@
 #!/usr/bin/make -f
 # -*- makefile -*-
 
-CRI_TOOLS_VERSION = {{ .Version }}
-
 build:
 	echo noop
 
 binary:
 	mkdir -p ./bin
 	curl -sSL --fail --retry 5 \
-		"https://github.com/kubernetes-sigs/cri-tools/releases/download/v$(CRI_TOOLS_VERSION)/crictl-v$(CRI_TOOLS_VERSION)-linux-{{ .Arch }}.tar.gz" \
+		"https://github.com/kubernetes-sigs/cri-tools/releases/download/v{{ .Version }}/crictl-v{{ .Version }}-linux-{{ .Arch }}.tar.gz" \
 		| tar -C ./bin -xz
 	dh_testroot
 	dh_auto_install
