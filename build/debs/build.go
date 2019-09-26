@@ -1,3 +1,18 @@
+/*
+Copyright 2019 The Kubernetes Authors.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+		http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package main
 
 import (
@@ -264,102 +279,104 @@ func main() {
 		}
 	}
 
-	if err := walkBuilds(builds, func(pkg, arch string, packageDef packageDefinition) error {
-		c := cfg{
-			packageDefinition: &packageDef,
-			Package:           pkg,
-			Arch:              arch,
-		}
-
-		c.Name = pkg
-
-		var err error
-
-		// TODO: Allow building packages for a specific distro type
-
-		if c.KubernetesVersion != "" {
-			log.Printf("checking k8s semver")
-			kubeSemver, err := semver.Parse(c.KubernetesVersion)
-			if err != nil {
-				log.Fatalf("could not parse k8s semver: %v", err)
-			}
-
-			kubeVersionString := kubeSemver.String()
-			kubeVersionParts := strings.Split(kubeVersionString, ".")
-
-			log.Printf("%v, len: %s", kubeVersionParts, len(kubeVersionParts))
-			switch {
-			case len(kubeVersionParts) > 4:
-				c.Distribution = DistributionUnstable
-			case len(kubeVersionParts) == 4:
-				c.Distribution = DistributionTesting
-			default:
-				c.Distribution = DistributionStable
-			}
-		}
-
-		c.KubernetesVersion, err = getKubernetesVersion(packageDef)
-		if err != nil {
-			log.Fatalf("error getting Kubernetes version: %v", err)
-		}
-
-		log.Printf("download link base is %s", c.DownloadLinkBase)
-		c.DownloadLinkBase, err = getDownloadLinkBase(packageDef)
-		if err != nil {
-			log.Fatalf("error getting Kubernetes download link base: %v", err)
-		}
-
-		log.Printf("download link base is %s", c.DownloadLinkBase)
-
-		// TODO: Add note about this
-		c.KubernetesVersion = strings.Replace(c.KubernetesVersion, "+", "-", 1)
-
-		c.Version, err = getPackageVersion(packageDef)
-		if err != nil {
-			log.Fatalf("error getting package version: %v", err)
-		}
-
-		log.Printf("package version is %s", c.Version)
-
-		c.KubeletCNIVersion = minimumCNIVersion
-
-		c.Dependencies, err = getKubeadmDependencies(packageDef)
-		if err != nil {
-			log.Fatalf("error getting kubeadm dependencies: %v", err)
-		}
-
-		c.KubeadmKubeletConfigFile = kubeadmConf
-
-		if c.Arch == "arm" {
-			c.DebArch = "armhf"
-		} else if c.Arch == "ppc64le" {
-			c.DebArch = "ppc64el"
-		} else {
-			c.DebArch = c.Arch
-		}
-
-		c.CNIDownloadLink, err = getCNIDownloadLink(packageDef, c.Arch)
-		if err != nil {
-			log.Fatalf("error getting CNI download link: %v", err)
-		}
-
-		return c.run()
-	}); err != nil {
+	if err := walkBuilds(builds); err != nil {
 		log.Fatalf("err: %v", err)
 	}
 }
 
-func walkBuilds(builds []build, f func(pkg, arch string, packageDef packageDefinition) error) error {
-	for _, a := range architectures {
-		for _, b := range builds {
-			for _, packageDef := range b.Definitions {
-				if err := f(b.Package, a, packageDef); err != nil {
+func walkBuilds(builds []build) error {
+	for _, arch := range architectures {
+		for _, build := range builds {
+			for _, packageDef := range build.Definitions {
+				if err := buildPackage(build.Package, arch, packageDef); err != nil {
 					return err
 				}
 			}
 		}
 	}
 	return nil
+}
+
+func buildPackage(pkg, arch string, packageDef packageDefinition) error {
+	c := cfg{
+		packageDefinition: &packageDef,
+		Package:           pkg,
+		Arch:              arch,
+	}
+
+	c.Name = pkg
+
+	var err error
+
+	// TODO: Allow building packages for a specific distro type
+
+	if c.KubernetesVersion != "" {
+		log.Printf("checking k8s semver")
+		kubeSemver, err := semver.Parse(c.KubernetesVersion)
+		if err != nil {
+			log.Fatalf("could not parse k8s semver: %v", err)
+		}
+
+		kubeVersionString := kubeSemver.String()
+		kubeVersionParts := strings.Split(kubeVersionString, ".")
+
+		log.Printf("%v, len: %s", kubeVersionParts, len(kubeVersionParts))
+		switch {
+		case len(kubeVersionParts) > 4:
+			c.Distribution = DistributionUnstable
+		case len(kubeVersionParts) == 4:
+			c.Distribution = DistributionTesting
+		default:
+			c.Distribution = DistributionStable
+		}
+	}
+
+	c.KubernetesVersion, err = getKubernetesVersion(packageDef)
+	if err != nil {
+		log.Fatalf("error getting Kubernetes version: %v", err)
+	}
+
+	log.Printf("download link base is %s", c.DownloadLinkBase)
+	c.DownloadLinkBase, err = getDownloadLinkBase(packageDef)
+	if err != nil {
+		log.Fatalf("error getting Kubernetes download link base: %v", err)
+	}
+
+	log.Printf("download link base is %s", c.DownloadLinkBase)
+
+	// TODO: Add note about this
+	c.KubernetesVersion = strings.Replace(c.KubernetesVersion, "+", "-", 1)
+
+	c.Version, err = getPackageVersion(packageDef)
+	if err != nil {
+		log.Fatalf("error getting package version: %v", err)
+	}
+
+	log.Printf("package version is %s", c.Version)
+
+	c.KubeletCNIVersion = minimumCNIVersion
+
+	c.Dependencies, err = getKubeadmDependencies(packageDef)
+	if err != nil {
+		log.Fatalf("error getting kubeadm dependencies: %v", err)
+	}
+
+	c.KubeadmKubeletConfigFile = kubeadmConf
+
+	if c.Arch == "arm" {
+		c.DebArch = "armhf"
+	} else if c.Arch == "ppc64le" {
+		c.DebArch = "ppc64el"
+	} else {
+		c.DebArch = c.Arch
+	}
+
+	c.CNIDownloadLink, err = getCNIDownloadLink(packageDef, c.Arch)
+	if err != nil {
+		log.Fatalf("error getting CNI download link: %v", err)
+	}
+
+	return c.run()
 }
 
 func (c cfg) run() error {
