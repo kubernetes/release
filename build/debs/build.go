@@ -16,6 +16,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -30,6 +31,7 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	"github.com/google/go-github/v28/github"
 )
 
 type DistributionType string
@@ -101,9 +103,10 @@ func (ss *stringList) Set(v string) error {
 }
 
 var (
-	revision    string
-	kubeVersion string
-	cniVersion  string
+	revision        string
+	kubeVersion     string
+	cniVersion      string
+	criToolsVersion string
 
 	packages      = stringList{"kubelet", "kubectl", "kubeadm", "kubernetes-cni", "cri-tools"}
 	distributions = stringList{"stable", "testing", "unstable"}
@@ -127,6 +130,7 @@ func init() {
 	flag.StringVar(&kubeVersion, "kube-version", "", "Kubernetes version to build")
 	flag.StringVar(&revision, "revision", defaultRevision, "deb package revision.")
 	flag.StringVar(&cniVersion, "cni-version", "", "CNI version to build")
+	flag.StringVar(&criToolsVersion, "cri-tools-version", "", "CRI tools version to build")
 	flag.StringVar(&releaseDownloadLinkBase, "release-download-link-base", "https://dl.k8s.io", "release download link base.")
 }
 
@@ -165,6 +169,8 @@ func constructBuilds(packages, distributions []string, kubeVersion, revision, cn
 			switch b.Package {
 			case "kubernetes-cni":
 				packageDef.Version = cniVersion
+			case "cri-tools":
+				packageDef.Version = criToolsVersion
 			}
 
 			b.Definitions = append(b.Definitions, *packageDef)
@@ -210,7 +216,7 @@ func buildPackage(pkg, arch string, packageDef packageDefinition) error {
 		kubeVersionString := kubeSemver.String()
 		kubeVersionParts := strings.Split(kubeVersionString, ".")
 
-		log.Printf("%v, len: %s", kubeVersionParts, len(kubeVersionParts))
+		log.Printf("%v, len: %d", kubeVersionParts, len(kubeVersionParts))
 		switch {
 		case len(kubeVersionParts) > 4:
 			c.Distribution = DistributionUnstable
@@ -457,7 +463,10 @@ func getCNIVersion(packageDef packageDefinition) (string, error) {
 }
 
 func getCRIToolsVersion(packageDef packageDefinition) (string, error) {
-	log.Printf("CRI tools function")
+	if packageDef.Version != "" {
+		return packageDef.Version, nil
+	}
+
 	kubeSemver, err := semver.Parse(packageDef.KubernetesVersion)
 	if err != nil {
 		return "", err
@@ -484,7 +493,64 @@ func getCRIToolsVersion(packageDef packageDefinition) (string, error) {
 		log.Printf("CRI minor is %s", criToolsMinor)
 	}
 
-	return fmt.Sprintf("%s.%s.0", criToolsMajor, criToolsMinor), nil
+	criToolsVersion := fmt.Sprintf("%s.%s.0", criToolsMajor, criToolsMinor)
+
+	releases, err := fetchReleases("kubernetes-sigs", "cri-tools", false)
+	if err != nil {
+		log.Fatalf("err: %v", err)
+	}
+
+	var tags []string
+	for _, release := range releases {
+		criToolsReleaseTag := strings.Trim(*release.TagName, "v")
+		criToolsReleaseVersionParts := strings.Split(criToolsReleaseTag, ".")
+		criToolsReleaseMinor := criToolsReleaseVersionParts[1]
+
+		if criToolsReleaseMinor == criToolsMinor {
+			tags = append(tags, criToolsReleaseTag)
+		}
+	}
+
+	for _, tag := range tags {
+		tagSemver, err := semver.Parse(tag)
+		if err != nil {
+			log.Fatalf("could not parse tag semver: %v", err)
+		}
+
+		criToolsSemver, err := semver.Parse(criToolsVersion)
+		if err != nil {
+			log.Fatalf("could not parse CRI tools semver: %v", err)
+		}
+
+		if tagSemver.GTE(criToolsSemver) {
+			criToolsVersion = tag
+		}
+	}
+
+	log.Printf("CRI tools version is %s", criToolsVersion)
+	return criToolsVersion, nil
+}
+
+func fetchReleases(owner, repo string, includePrereleases bool) ([]*github.RepositoryRelease, error) {
+	ghClient := github.NewClient(nil)
+
+	allReleases, _, err := ghClient.Repositories.ListReleases(context.Background(), owner, repo, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var releases []*github.RepositoryRelease
+	for _, release := range allReleases {
+		if *release.Prerelease {
+			if includePrereleases {
+				releases = append(releases, release)
+			}
+		} else {
+			releases = append(releases, release)
+		}
+	}
+
+	return releases, nil
 }
 
 func getDownloadLinkBase(packageDef packageDefinition) (string, error) {
