@@ -37,12 +37,7 @@ WORKDIR /home/builder/workspace
 
 RUN mkdir ./bin
 
-COPY --chown=builder:builder bionic ./bionic
-COPY --chown=builder:builder jessie ./jessie
-COPY --chown=builder:builder sid ./sid
-COPY --chown=builder:builder stretch ./stretch
-COPY --chown=builder:builder trusty ./trusty
-COPY --chown=builder:builder xenial ./xenial
+COPY --chown=builder:builder packages ./packages
 
 COPY --from=builder --chown=builder:builder /workspace/deb-builder .
 
