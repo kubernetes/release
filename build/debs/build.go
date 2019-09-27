@@ -105,7 +105,10 @@ var (
 	kubeVersion string
 	cniVersion  string
 
-	architectures           = stringList{"amd64", "arm", "arm64", "ppc64le", "s390x"}
+	packages      = stringList{"kubelet", "kubectl", "kubeadm", "kubernetes-cni", "cri-tools"}
+	distributions = stringList{"stable", "testing", "unstable"}
+	architectures = stringList{"amd64", "arm", "arm64", "ppc64le", "s390x"}
+
 	releaseDownloadLinkBase = "https://dl.k8s.io"
 
 	builtins = map[string]interface{}{
@@ -118,7 +121,8 @@ var (
 )
 
 func init() {
-	// TODO: Add flag support to build stable, testing, or unstable versions
+	flag.Var(&packages, "packages", "packages to build")
+	flag.Var(&distributions, "distributions", "distributions to build for")
 	flag.Var(&architectures, "arch", "architectures to build for")
 	flag.StringVar(&kubeVersion, "kube-version", "", "Kubernetes version to build")
 	flag.StringVar(&revision, "revision", defaultRevision, "deb package revision.")
@@ -132,156 +136,44 @@ func main() {
 	// Replace the "+" with a "-" to make it semver-compliant
 	kubeVersion = strings.TrimPrefix(kubeVersion, "v")
 
-	builds := []build{
-		{
-			Package: "kubectl",
-			Definitions: []packageDefinition{
-				{
-					Revision:     revision,
-					Distribution: DistributionStable,
-				},
-				{
-					Revision:     revision,
-					Distribution: DistributionTesting,
-				},
-				{
-					Revision:     revision,
-					Distribution: DistributionUnstable,
-				},
-			},
-		},
-		{
-			Package: "kubelet",
-			Definitions: []packageDefinition{
-				{
-					Revision:     revision,
-					Distribution: DistributionStable,
-				},
-				{
-					Revision:     revision,
-					Distribution: DistributionTesting,
-				},
-				{
-					Revision:     revision,
-					Distribution: DistributionUnstable,
-				},
-			},
-		},
-		{
-			Package: "kubernetes-cni",
-			Definitions: []packageDefinition{
-				{
-					Version:      cniVersion,
-					Revision:     revision,
-					Distribution: DistributionStable,
-				},
-				{
-					Version:      cniVersion,
-					Revision:     revision,
-					Distribution: DistributionTesting,
-				},
-				{
-					Version:      cniVersion,
-					Revision:     revision,
-					Distribution: DistributionUnstable,
-				},
-			},
-		},
-		{
-			Package: "kubeadm",
-			Definitions: []packageDefinition{
-				{
-					Revision:     revision,
-					Distribution: DistributionStable,
-				},
-				{
-					Revision:     revision,
-					Distribution: DistributionTesting,
-				},
-				{
-					Revision:     revision,
-					Distribution: DistributionUnstable,
-				},
-			},
-		},
-		{
-			Package: "cri-tools",
-			Definitions: []packageDefinition{
-				{
-					Revision:     revision,
-					Distribution: DistributionStable,
-				},
-				{
-					Revision:     revision,
-					Distribution: DistributionTesting,
-				},
-				{
-					Revision:     revision,
-					Distribution: DistributionUnstable,
-				},
-			},
-		},
-	}
-
-	if kubeVersion != "" {
-		builds = []build{
-			{
-				Package: "kubectl",
-				Definitions: []packageDefinition{
-					{
-						KubernetesVersion: kubeVersion,
-						Revision:          revision,
-						Distribution:      DistributionStable,
-					},
-				},
-			},
-			{
-				Package: "kubelet",
-				Definitions: []packageDefinition{
-					{
-						KubernetesVersion: kubeVersion,
-						Revision:          revision,
-						Distribution:      DistributionStable,
-					},
-				},
-			},
-			{
-				Package: "kubernetes-cni",
-				Definitions: []packageDefinition{
-					{
-						Version:           cniVersion,
-						Revision:          revision,
-						KubernetesVersion: kubeVersion,
-						Distribution:      DistributionStable,
-					},
-				},
-			},
-			{
-				Package: "kubeadm",
-				Definitions: []packageDefinition{
-					{
-						KubernetesVersion: kubeVersion,
-						Revision:          revision,
-						Distribution:      DistributionStable,
-					},
-				},
-			},
-			{
-				Package: "cri-tools",
-				Definitions: []packageDefinition{
-					{
-						KubernetesVersion: kubeVersion,
-						Revision:          revision,
-						Distribution:      DistributionStable,
-					},
-				},
-			},
-		}
+	builds, err := constructBuilds(packages, distributions, kubeVersion, revision, cniVersion)
+	if err != nil {
+		log.Fatalf("err: %v", err)
 	}
 
 	if err := walkBuilds(builds); err != nil {
 		log.Fatalf("err: %v", err)
 	}
+}
+
+func constructBuilds(packages, distributions []string, kubeVersion, revision, cniVersion string) ([]build, error) {
+	var builds []build
+
+	for _, pkg := range packages {
+		b := &build{
+			Package: pkg,
+		}
+
+		for _, distribution := range distributions {
+			packageDef := &packageDefinition{
+				Revision:     revision,
+				Distribution: DistributionType(distribution),
+			}
+
+			packageDef.KubernetesVersion = kubeVersion
+
+			switch b.Package {
+			case "kubernetes-cni":
+				packageDef.Version = cniVersion
+			}
+
+			b.Definitions = append(b.Definitions, *packageDef)
+		}
+
+		builds = append(builds, *b)
+	}
+
+	return builds, nil
 }
 
 func walkBuilds(builds []build) error {
@@ -307,8 +199,6 @@ func buildPackage(pkg, arch string, packageDef packageDefinition) error {
 	c.Name = pkg
 
 	var err error
-
-	// TODO: Allow building packages for a specific distro type
 
 	if c.KubernetesVersion != "" {
 		log.Printf("checking k8s semver")
