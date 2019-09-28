@@ -147,7 +147,7 @@ func (o *options) BindFlags() *flag.FlagSet {
 	return flags
 }
 
-func (o *options) GetReleaseNotes() (notes.ReleaseNoteList, error) {
+func (o *options) GetReleaseNotes() (notes.ReleaseNotes, notes.ReleaseNotesHistory, error) {
 	// Create the GitHub API client
 	ctx := context.Background()
 	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
@@ -166,22 +166,24 @@ func (o *options) GetReleaseNotes() (notes.ReleaseNoteList, error) {
 		opts = append(opts, notes.WithRepo(o.githubRepo))
 	}
 
-	releaseNotes, err := notes.ListReleaseNotes(githubClient, o.logger, o.branch, o.startSHA, o.endSHA, o.requiredAuthor, o.releaseVersion, opts...)
+	releaseNotes, history, err := notes.ListReleaseNotes(
+		githubClient, o.logger, o.branch, o.startSHA, o.endSHA,
+		o.requiredAuthor, o.releaseVersion, opts...)
 	if err != nil {
 		level.Error(o.logger).Log("msg", "error generating release notes", "err", err)
-		return nil, err
+		return nil, nil, err
 	}
 
-	return releaseNotes, nil
+	return releaseNotes, history, nil
 }
 
-func (o *options) WriteReleaseNotes(releaseNotes notes.ReleaseNoteList) error {
+func (o *options) WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNotesHistory) error {
 	level.Info(o.logger).Log("msg", "got the commits, performing rendering")
 
 	// Open a handle to the file which will contain the release notes output
 	var output *os.File
 	var err error
-	var existingNotes notes.ReleaseNoteList
+	var existingNotes notes.ReleaseNotes
 
 	if o.output != "" {
 		output, err = os.OpenFile(o.output, os.O_RDWR|os.O_CREATE, 0644)
@@ -228,7 +230,7 @@ func (o *options) WriteReleaseNotes(releaseNotes notes.ReleaseNoteList) error {
 			os.Exit(1)
 		}
 	case "markdown":
-		doc, err := notes.CreateDocument(releaseNotes)
+		doc, err := notes.CreateDocument(releaseNotes, history)
 		if err != nil {
 			level.Error(o.logger).Log("msg", "error creating release note document", "err", err)
 			return err
@@ -329,12 +331,12 @@ func run(logger log.Logger, args []string) error {
 	logger = opts.logger
 
 	// get the release notes
-	releaseNotes, err := opts.GetReleaseNotes()
+	releaseNotes, history, err := opts.GetReleaseNotes()
 	if err != nil {
 		return err
 	}
 
-	err = opts.WriteReleaseNotes(releaseNotes)
+	err = opts.WriteReleaseNotes(releaseNotes, history)
 	if err != nil {
 		level.Error(logger).Log("msg", "error writing to file", "err", err)
 		return err

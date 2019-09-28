@@ -20,7 +20,7 @@ type Document struct {
 
 // CreateDocument assembles an organized document from an unorganized set of
 // release notes
-func CreateDocument(notes ReleaseNoteList) (*Document, error) {
+func CreateDocument(notes ReleaseNotes, history ReleaseNotesHistory) (*Document, error) {
 	doc := &Document{
 		NewFeatures:    []string{},
 		ActionRequired: []string{},
@@ -31,7 +31,9 @@ func CreateDocument(notes ReleaseNoteList) (*Document, error) {
 		Uncategorized:  []string{},
 	}
 
-	for _, note := range notes {
+	for _, pr := range history {
+		note := notes[pr]
+
 		if note.ActionRequired {
 			doc.ActionRequired = append(doc.ActionRequired, note.Markdown)
 		} else if note.Feature {

@@ -100,11 +100,14 @@ const (
 	DocTypeOfficial DocType = "official"
 )
 
-// ReleaseNoteList is a map of PR numbers referencing notes.
+// ReleaseNotes is a map of PR numbers referencing notes.
 // To avoid needless loops, we need to be able to reference things by PR
 // When we have to merge old and new entries, we want to be able to override
 // the old entries with the new ones efficiently.
-type ReleaseNoteList map[int]*ReleaseNote
+type ReleaseNotes map[int]*ReleaseNote
+
+// ReleaseNotesHistory is the sorted list of PRs in the commit history
+type ReleaseNotesHistory []int
 
 // GithubApiOption is a type which allows for the expression of API configuration
 // via the "functional option" pattern.
@@ -163,14 +166,15 @@ func ListReleaseNotes(
 	requiredAuthor,
 	relVer string,
 	opts ...GithubApiOption,
-) (ReleaseNoteList, error) {
+) (ReleaseNotes, ReleaseNotesHistory, error) {
 	commits, err := ListCommitsWithNotes(client, logger, branch, start, end, opts...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	dedupeCache := map[string]struct{}{}
-	notes := make(ReleaseNoteList)
+	notes := make(ReleaseNotes)
+	history := ReleaseNotesHistory{}
 	for _, commit := range commits {
 
 		if requiredAuthor != "" {
@@ -198,7 +202,7 @@ func ListReleaseNotes(
 		for _, filter := range exclusionFilters {
 			match, err := regexp.MatchString(filter, strings.ToUpper(strings.TrimSpace(note.Text)))
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			if match {
 				excluded = true
@@ -217,11 +221,12 @@ func ListReleaseNotes(
 
 		if _, ok := dedupeCache[note.Text]; !ok {
 			notes[note.PrNumber] = note
+			history = append(history, note.PrNumber)
 			dedupeCache[note.Text] = struct{}{}
 		}
 	}
 
-	return notes, nil
+	return notes, history, nil
 }
 
 // NoteTextFromString returns the text of the release note given a string which
@@ -444,7 +449,7 @@ func ListCommitsWithNotes(
 	for i, commit := range commits {
 
 		level.Debug(logger).Log("msg", "################################################")
-		level.Info(logger).Log("msg", fmt.Sprintf("[%d/%d - %0.2f%%]", i+1, len(commits), (float64(i+1)/float64(len(commits)))*100.0 ))
+		level.Info(logger).Log("msg", fmt.Sprintf("[%d/%d - %0.2f%%]", i+1, len(commits), (float64(i+1)/float64(len(commits)))*100.0))
 		level.Debug(logger).Log(
 			"msg", "Processing commit",
 			"func", "ListCommitsWithNotes",
