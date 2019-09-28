@@ -6,52 +6,6 @@ import (
 	"testing"
 )
 
-func TestGetKubeadmConfig(t *testing.T) {
-	testcases := []struct {
-		version      string
-		expectConfig string
-		expectErr    bool
-	}{
-		{
-			"not-a-real-version",
-			"",
-			true,
-		},
-		{
-			"1.12.0",
-			"post-1.10/10-kubeadm.conf",
-			false,
-		},
-		{
-			"1.13.0",
-			"post-1.10/10-kubeadm.conf",
-			false,
-		},
-		{
-			"1.15.0",
-			"post-1.10/10-kubeadm.conf",
-			false,
-		},
-	}
-
-	for _, tc := range testcases {
-		v := version{
-			Version: tc.version,
-		}
-		kubeadmConfig, err := getKubeadmKubeletConfigFile(v)
-
-		if err != nil {
-			if !tc.expectErr {
-				t.Errorf("getKubeadmConfig(%s) returned unwanted error: %v", tc.version, err)
-			}
-		} else {
-			if kubeadmConfig != tc.expectConfig {
-				t.Errorf("getKubeadmConfig(%s) got %q, wanted %q", tc.version, kubeadmConfig, tc.expectConfig)
-			}
-		}
-	}
-}
-
 func TestGetKubeadmDependencies(t *testing.T) {
 	testcases := []struct {
 		name    string
@@ -65,26 +19,49 @@ func TestGetKubeadmDependencies(t *testing.T) {
 				"kubelet (>= 1.13.0)",
 				"kubectl (>= 1.13.0)",
 				"kubernetes-cni (>= 0.7.5)",
-				"${misc:Depends}",
 				"cri-tools (>= 1.13.0)",
+				"${misc:Depends}",
 			},
 		},
 		{
 			name:    "latest stable minor kubernetes",
-			version: "1.15.0",
+			version: "1.16.0",
 			deps: []string{
 				"kubelet (>= 1.13.0)",
 				"kubectl (>= 1.13.0)",
 				"kubernetes-cni (>= 0.7.5)",
-				"${misc:Depends}",
 				"cri-tools (>= 1.13.0)",
+				"${misc:Depends}",
+			},
+		},
+		{
+			name:    "latest alpha kubernetes",
+			version: "1.17.0-alpha.0",
+			deps: []string{
+				"kubelet (>= 1.13.0)",
+				"kubectl (>= 1.13.0)",
+				"kubernetes-cni (>= 0.7.5)",
+				"cri-tools (>= 1.13.0)",
+				"${misc:Depends}",
+			},
+		},
+		{
+			name:    "next stable minor kubernetes",
+			version: "1.17.0",
+			deps: []string{
+				"kubelet (>= 1.13.0)",
+				"kubectl (>= 1.13.0)",
+				"kubernetes-cni (>= 0.7.5)",
+				"cri-tools (>= 1.13.0)",
+				"${misc:Depends}",
 			},
 		},
 	}
+
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			v := version{Version: tc.version}
-			deps, err := getKubeadmDependencies(v)
+			packageDef := packageDefinition{Version: tc.version}
+			deps, err := getKubeadmDependencies(packageDef)
 			if err != nil {
 				t.Fatalf("did not expect an error: %v", err)
 			}

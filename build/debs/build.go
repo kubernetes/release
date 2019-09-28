@@ -34,12 +34,12 @@ import (
 	"github.com/google/go-github/v28/github"
 )
 
-type DistributionType string
+type ChannelType string
 
 const (
-	DistributionStable   DistributionType = "stable"
-	DistributionTesting  DistributionType = "testing"
-	DistributionUnstable DistributionType = "unstable"
+	ChannelRelease ChannelType = "release"
+	ChannelTesting ChannelType = "testing"
+	ChannelNightly ChannelType = "nightly"
 
 	minimumKubernetesVersion = "1.13.0"
 	minimumCNIVersion        = "0.7.5"
@@ -74,11 +74,11 @@ type packageDefinition struct {
 	Version  string
 	Revision string
 
+	Channel           ChannelType
 	KubernetesVersion string
 	KubeletCNIVersion string
 
 	DownloadLinkBase         string
-	Distribution             DistributionType
 	KubeadmKubeletConfigFile string
 
 	CNIDownloadLink string
@@ -109,7 +109,7 @@ var (
 	criToolsVersion string
 
 	packages      = stringList{"kubelet", "kubectl", "kubeadm", "kubernetes-cni", "cri-tools"}
-	distributions = stringList{"stable", "testing", "unstable"}
+	channels      = stringList{"release", "testing", "nightly"}
 	architectures = stringList{"amd64", "arm", "arm64", "ppc64le", "s390x"}
 
 	releaseDownloadLinkBase = "https://dl.k8s.io"
@@ -125,7 +125,7 @@ var (
 
 func init() {
 	flag.Var(&packages, "packages", "packages to build")
-	flag.Var(&distributions, "distributions", "distributions to build for")
+	flag.Var(&channels, "channels", "channels to build for")
 	flag.Var(&architectures, "arch", "architectures to build for")
 	flag.StringVar(&kubeVersion, "kube-version", "", "Kubernetes version to build")
 	flag.StringVar(&revision, "revision", defaultRevision, "deb package revision.")
@@ -140,7 +140,7 @@ func main() {
 	// Replace the "+" with a "-" to make it semver-compliant
 	kubeVersion = strings.TrimPrefix(kubeVersion, "v")
 
-	builds, err := constructBuilds(packages, distributions, kubeVersion, revision, cniVersion)
+	builds, err := constructBuilds(packages, channels, kubeVersion, revision, cniVersion)
 	if err != nil {
 		log.Fatalf("err: %v", err)
 	}
@@ -150,7 +150,7 @@ func main() {
 	}
 }
 
-func constructBuilds(packages, distributions []string, kubeVersion, revision, cniVersion string) ([]build, error) {
+func constructBuilds(packages, channels []string, kubeVersion, revision, cniVersion string) ([]build, error) {
 	var builds []build
 
 	for _, pkg := range packages {
@@ -158,10 +158,10 @@ func constructBuilds(packages, distributions []string, kubeVersion, revision, cn
 			Package: pkg,
 		}
 
-		for _, distribution := range distributions {
+		for _, channel := range channels {
 			packageDef := &packageDefinition{
-				Revision:     revision,
-				Distribution: DistributionType(distribution),
+				Revision: revision,
+				Channel:  ChannelType(channel),
 			}
 
 			packageDef.KubernetesVersion = kubeVersion
@@ -219,11 +219,11 @@ func buildPackage(pkg, arch string, packageDef packageDefinition) error {
 		log.Printf("%v, len: %d", kubeVersionParts, len(kubeVersionParts))
 		switch {
 		case len(kubeVersionParts) > 4:
-			c.Distribution = DistributionUnstable
+			c.Channel = ChannelNightly
 		case len(kubeVersionParts) == 4:
-			c.Distribution = DistributionTesting
+			c.Channel = ChannelTesting
 		default:
-			c.Distribution = DistributionStable
+			c.Channel = ChannelRelease
 		}
 	}
 
@@ -347,7 +347,7 @@ func (c cfg) run() error {
 		return err
 	}
 
-	dstParts := []string{"bin", string(c.Distribution)}
+	dstParts := []string{"bin", string(c.Channel)}
 
 	dstPath := filepath.Join(dstParts...)
 	os.MkdirAll(dstPath, 0777)
@@ -375,7 +375,7 @@ func runCommand(pwd string, command string, cmdArgs ...string) error {
 }
 
 func getPackageVersion(packageDef packageDefinition) (string, error) {
-	log.Printf("package name is %s", packageDef.Name)
+	log.Printf("Setting version for %s package...", packageDef.Name)
 	switch packageDef.Name {
 	case "kubernetes-cni":
 		return getCNIVersion(packageDef)
@@ -389,36 +389,31 @@ func getPackageVersion(packageDef packageDefinition) (string, error) {
 
 func getKubernetesVersion(packageDef packageDefinition) (string, error) {
 	if packageDef.KubernetesVersion != "" {
+		log.Printf("Using Kubernetes version (%s) for %s package...", packageDef.KubernetesVersion, packageDef.Name)
 		return packageDef.KubernetesVersion, nil
 	}
-	switch packageDef.Distribution {
-	case DistributionTesting:
+	switch packageDef.Channel {
+	case ChannelTesting:
 		return getTestingKubeVersion()
-	case DistributionUnstable:
-		return getUnstableKubeVersion()
+	case ChannelNightly:
+		return getNightlyKubeVersion()
 	}
 
-	return getStableKubeVersion()
+	return getReleaseKubeVersion()
 }
 
-func getStableKubeVersion() (string, error) {
+func getReleaseKubeVersion() (string, error) {
+	log.Print("Retrieving Kubernetes release version...")
 	return fetchVersion("https://dl.k8s.io/release/stable.txt")
 }
 
 func getTestingKubeVersion() (string, error) {
+	log.Print("Retrieving Kubernetes testing version...")
 	return fetchVersion("https://dl.k8s.io/release/latest.txt")
 }
 
-func getUnstableKubeVersion() (string, error) {
-	latestCIVersion, err := getLatestKubeCIBuild()
-	if err != nil {
-		return "", err
-	}
-
-	return latestCIVersion, nil
-}
-
-func getLatestKubeCIBuild() (string, error) {
+func getNightlyKubeVersion() (string, error) {
+	log.Print("Retrieving Kubernetes nightly version...")
 	return fetchVersion("https://dl.k8s.io/ci/k8s-master.txt")
 }
 
@@ -554,8 +549,8 @@ func fetchReleases(owner, repo string, includePrereleases bool) ([]*github.Repos
 }
 
 func getDownloadLinkBase(packageDef packageDefinition) (string, error) {
-	switch packageDef.Distribution {
-	case DistributionUnstable:
+	switch packageDef.Channel {
+	case ChannelNightly:
 		return getCIBuildsDownloadLinkBase(packageDef)
 	}
 
@@ -566,7 +561,7 @@ func getCIBuildsDownloadLinkBase(packageDef packageDefinition) (string, error) {
 	ciVersion := packageDef.KubernetesVersion
 	if ciVersion == "" {
 		var err error
-		ciVersion, err = getLatestKubeCIBuild()
+		ciVersion, err = getNightlyKubeVersion()
 		if err != nil {
 			return "", err
 		}

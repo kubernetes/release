@@ -1,4 +1,4 @@
-kubernetes-cni ({{ .Version }}-{{ .Revision }}) {{ .Distribution }}; urgency=medium
+kubernetes-cni ({{ .Version }}-{{ .Revision }}) {{ .Channel }}; urgency=medium
 
   * https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md
 

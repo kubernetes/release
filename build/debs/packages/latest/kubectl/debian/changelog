@@ -1,4 +1,4 @@
-kubectl ({{ .Version }}-{{ .Revision }}) {{ .Distribution }}; urgency=medium
+kubectl ({{ .Version }}-{{ .Revision }}) {{ .Channel }}; urgency=medium
 
   * https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md
 
