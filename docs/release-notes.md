@@ -102,3 +102,4 @@ release and it will end up in the release notes.
 ## Related
 
 * [Original release notes proposal](https://github.com/kubernetes/kubernetes/blob/master/docs/proposals/release-notes.md)
+* [Behind The Scenes: Kubernetes Release Notes Tips & Tricks - Mike Arpaia, Kolide (KubeCon 2018 Lightning Talk)](https://www.youtube.com/watch?v=n62oPohOyYs)
