@@ -25,7 +25,7 @@
 #+   comment for the release cutting GitHub issue.
 #+
 #+ Configuration:
-#+   Configuration can be passed in via the environmnet. The following
+#+   Configuration can be passed in via the environment. The following
 #+   variables are available:
 #+
 #+   UPLOAD_KEY: [*mandatory*]

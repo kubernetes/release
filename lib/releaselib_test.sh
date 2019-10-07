@@ -50,7 +50,7 @@ TEST_verify_latest_update() {
   published_file="$( mktemp -t 'published.XXXXXXXX')"
   trap 'rm -f "$published_file"' EXIT
 
-  # We want to make sure that we explictly not use gsutils in this test, so
+  # We want to make sure that we explicitly not use gsutils in this test, so
   # that we do a `cat $file` instead of a `gsutil cat $file` (`gsutil cat` only
   # supports remote urls, but not local files).
   export GSUTIL=''
