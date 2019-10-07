@@ -35,7 +35,7 @@ func (k *KubernetesRepo) RevParse(rev string) (string, error) {
 //
 // If a repoPath is given, then the function tries to update the repository.
 //
-// The funciton returns the repository if cloning or updating of the repository
+// The function returns the repository if cloning or updating of the repository
 // was successful, otherwise an error.
 func NewKubernetesRepo(repoPath, owner, name string) (*KubernetesRepo, error) {
 	targetDir := ""
@@ -51,7 +51,7 @@ func NewKubernetesRepo(repoPath, owner, name string) (*KubernetesRepo, error) {
 			targetDir = repoPath
 
 		} else {
-			// Something else bad happended
+			// Something else bad happened
 			return nil, err
 		}
 
