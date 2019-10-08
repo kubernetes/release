@@ -37,6 +37,14 @@ else
   )
 fi
 
+if [[ "${KUBE_USE_LOCAL_ARTIFACTS:-}" == "y" ]]; then
+  LOCAL_OUTPUT_DIRECTORY="$(go env GOPATH)/src/k8s.io/kubernetes/_output/dockerized/bin/linux"
+  echo "Using binaries from ${LOCAL_OUTPUT_DIRECTORY}"
+  sed -i "s|^Source0:.*|Source0: ${LOCAL_OUTPUT_DIRECTORY}/${GOARCH}/kubelet|" "${SRC_PATH}/kubelet.spec"
+  sed -i "s|^Source2:.*|Source2: ${LOCAL_OUTPUT_DIRECTORY}/${GOARCH}/kubectl|" "${SRC_PATH}/kubelet.spec"
+  sed -i "s|^Source3:.*|Source3: ${LOCAL_OUTPUT_DIRECTORY}/${GOARCH}/kubeadm|" "${SRC_PATH}/kubelet.spec"
+fi
+
 # TODO: Add support for multiple spec files once we break packages out into separate specs.
 for ARCH in "${ARCHS[@]}"; do
   IFS=/ read -r GOARCH RPMARCH<<< "${ARCH}"; unset IFS;
