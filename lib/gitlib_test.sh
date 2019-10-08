@@ -14,6 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if [[ -n "${TEST_WORKSPACE:-}" ]]; then
+  PATH=$PATH:$(dirname "$1") # Inside bazel, add jq to path
+  shift
+fi
+
 #
 # gitlib.sh unit tests
 #

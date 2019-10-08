@@ -41,9 +41,13 @@ verify-published-rpms: ## Ensure rpms have been published
 # TODO: Uncomment verify-shellcheck once we finish shellchecking the repo.
 #       ref: https://github.com/kubernetes/release/issues/726
 verify: #verify-shellcheck ## Runs verification scripts to ensure correct execution
+	@echo consider make verify-bazel as well
 
 verify-shellcheck: ## Runs shellcheck
 	./hack/verify-shellcheck.sh
+
+verify-bazel:
+	bazel test //...
 
 ##@ Tests
 
