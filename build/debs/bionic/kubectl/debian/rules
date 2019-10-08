@@ -2,15 +2,20 @@
 # -*- makefile -*-
 
 #export DH_VERBOSE=1
+KUBE_USE_LOCAL_ARTIFACTS?=
 
 build:
 	echo noop
 
 binary:
 	mkdir -p usr/bin
-	curl  --fail -sS -L --retry 5 \
+ifeq ($(KUBE_USE_LOCAL_ARTIFACTS),y)
+	cp $(shell go env GOPATH)/src/k8s.io/kubernetes/_output/dockerized/bin/linux/{{ .Arch }}/kubeadm usr/bin/kubectl
+else
+	curl --fail -sSL --retry 5 \
 		-o usr/bin/kubectl \
 		"{{ .DownloadLinkBase }}/bin/linux/{{ .Arch }}/kubectl"
+endif
 	chmod +x usr/bin/kubectl
 	dh_testroot
 	dh_auto_install
