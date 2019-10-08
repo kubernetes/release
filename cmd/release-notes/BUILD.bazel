@@ -9,9 +9,8 @@ go_library(
         "//pkg/notes:go_default_library",
         "@com_github_go_kit_kit//log:go_default_library",
         "@com_github_go_kit_kit//log/level:go_default_library",
-        "@com_github_google_go_github//github:go_default_library",
+        "@com_github_google_go_github_v27//github:go_default_library",
         "@com_github_kolide_kit//env:go_default_library",
-        "@gopkg_in_src_d_go_git_v4//github:go_default_library",
         "@org_golang_x_oauth2//:go_default_library",
     ],
 )
@@ -19,5 +18,19 @@ go_library(
 go_binary(
     name = "release-notes",
     embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

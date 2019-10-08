@@ -1,25 +1,17 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["build.go"],
-    importpath = "k8s.io/release/build/debs",
+    srcs = ["main.go"],
+    importpath = "k8s.io/release/cmd/blocking-testgrid-tests",
     visibility = ["//visibility:private"],
-    deps = ["@com_github_blang_semver//:go_default_library"],
+    deps = ["@io_k8s_test_infra//testgrid/config:go_default_library"],
 )
 
 go_binary(
-    name = "debian",
+    name = "blocking-testgrid-tests",
     embed = [":go_default_library"],
-    importpath = "k8s.io/release/debian",
     visibility = ["//visibility:public"],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = ["build_test.go"],
-    embed = [":go_default_library"],
-    importpath = "k8s.io/release/debian",
 )
 
 filegroup(
