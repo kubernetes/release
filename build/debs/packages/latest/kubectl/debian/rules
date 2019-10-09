@@ -10,7 +10,7 @@ build:
 binary:
 	mkdir -p usr/bin
 ifeq ($(KUBE_USE_LOCAL_ARTIFACTS),y)
-	cp $(shell go env GOPATH)/src/k8s.io/kubernetes/_output/dockerized/bin/linux/{{ .Arch }}/kubeadm usr/bin/kubectl
+	cp $(shell go env GOPATH)/src/k8s.io/kubernetes/_output/dockerized/bin/linux/{{ .Arch }}/kubectl usr/bin/kubectl
 else
 	curl --fail -sSL --retry 5 \
 		-o usr/bin/kubectl \
