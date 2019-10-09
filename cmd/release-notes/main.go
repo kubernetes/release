@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/google/go-github/v27/github"
+	"github.com/google/go-github/v28/github"
 	"github.com/kolide/kit/env"
 	"golang.org/x/oauth2"
 
