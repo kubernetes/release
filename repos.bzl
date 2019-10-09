@@ -718,14 +718,7 @@ def go_repositories():
         sum = "h1:p6kvQYhOQUpogpCn1p/XI/A9UClYVyNTkYkKIijnl7M=",
         version = "v0.0.0-20190401215819-f1df91a4a813",
     )
-    go_repository(
-        name = "com_github_google_go_github_v27",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable",
-        importpath = "github.com/google/go-github/v27",
-        sum = "h1:oiOZuBmGHvrGM1X9uNUAUlLgp5r1UUO/M/KnbHnLRlQ=",
-        version = "v27.0.6",
-    )
+
     go_repository(
         name = "com_github_google_gofuzz",
         build_file_generation = "on",

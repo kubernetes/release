@@ -12,9 +12,8 @@ go_library(
 )
 
 go_binary(
-    name = "debian",
+    name = "debs",
     embed = [":go_default_library"],
-    importpath = "k8s.io/release/debian",
     visibility = ["//visibility:public"],
 )
 
@@ -22,7 +21,6 @@ go_test(
     name = "go_default_test",
     srcs = ["build_test.go"],
     embed = [":go_default_library"],
-    importpath = "k8s.io/release/debian",
 )
 
 filegroup(

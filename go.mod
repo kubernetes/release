@@ -5,7 +5,6 @@ go 1.12
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/go-kit/kit v0.9.0
-	github.com/google/go-github/v27 v27.0.6
 	github.com/google/go-github/v28 v28.1.1
 	github.com/kolide/kit v0.0.0-20190123023048-c155a91098e3
 	github.com/pkg/errors v0.8.1
