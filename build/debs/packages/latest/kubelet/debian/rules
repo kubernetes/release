@@ -1,0 +1,33 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+#export DH_VERBOSE=1
+KUBE_USE_LOCAL_ARTIFACTS?=
+
+build:
+	echo noop
+
+binary:
+	mkdir -p usr/bin
+ifeq ($(KUBE_USE_LOCAL_ARTIFACTS),y)
+	cp $(shell go env GOPATH)/src/k8s.io/kubernetes/_output/dockerized/bin/linux/{{ .Arch }}/kubelet usr/bin/kubelet
+else
+	curl --fail -sSL --retry 5 \
+		-o usr/bin/kubelet \
+		"{{ .DownloadLinkBase }}/bin/linux/{{ .Arch }}/kubelet"
+endif
+	chmod +x usr/bin/kubelet
+	dh_testroot
+	dh_auto_install
+	dh_shlibdeps
+	dh_install
+	dh_systemd_enable
+	dh_installinit
+	dh_systemd_start
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+%:
+	dh $@ --with systemd
