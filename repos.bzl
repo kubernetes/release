@@ -2086,3 +2086,11 @@ def go_repositories():
         sum = "h1:SRtFyV8Kxc0UP7aCHcijOMQGPxHSmMOPrzulQWolkYE=",
         version = "v4.13.1",
     )
+    go_repository(
+        name = "com_github_google_go_github_v28",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/google/go-github/v28",
+        sum = "h1:kORf5ekX5qwXO2mGzXXOjMe/g6ap8ahVe0sBEulhSxo=",
+        version = "v28.1.1",
+    )
