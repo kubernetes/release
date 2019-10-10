@@ -37,14 +37,6 @@ else
   )
 fi
 
-if [[ "${KUBE_USE_LOCAL_ARTIFACTS:-}" == "y" ]]; then
-  LOCAL_OUTPUT_DIRECTORY="$(go env GOPATH)/src/k8s.io/kubernetes/_output/dockerized/bin/linux"
-  echo "Using binaries from ${LOCAL_OUTPUT_DIRECTORY}"
-  sed -i "s|^Source0:.*|Source0: ${LOCAL_OUTPUT_DIRECTORY}/${GOARCH}/kubelet|" "${SRC_PATH}/kubelet.spec"
-  sed -i "s|^Source2:.*|Source2: ${LOCAL_OUTPUT_DIRECTORY}/${GOARCH}/kubectl|" "${SRC_PATH}/kubelet.spec"
-  sed -i "s|^Source3:.*|Source3: ${LOCAL_OUTPUT_DIRECTORY}/${GOARCH}/kubeadm|" "${SRC_PATH}/kubelet.spec"
-fi
-
 # TODO: Add support for multiple spec files once we break packages out into separate specs.
 for ARCH in "${ARCHS[@]}"; do
   IFS=/ read -r GOARCH RPMARCH<<< "${ARCH}"; unset IFS;
@@ -53,6 +45,18 @@ for ARCH in "${ARCHS[@]}"; do
   cp -r "${BUILD_DIR}/SPECS"/* "${SRC_PATH}"
   echo "Building RPM's for ${GOARCH}....."
   sed -i "s/\%global ARCH.*/\%global ARCH ${GOARCH}/" "${SRC_PATH}/kubelet.spec"
+
+  if [[ "${KUBE_USE_LOCAL_ARTIFACTS:-}" == "y" ]]; then
+    KUBE_ROOT=${KUBE_ROOT:-$(go env GOPATH || echo "")}
+    LOCAL_OUTPUT_DIRECTORY="${KUBE_ROOT}/src/k8s.io/kubernetes/_output/dockerized/bin/linux"
+    cp "${LOCAL_OUTPUT_DIRECTORY}/${GOARCH}/kubelet" "${SRC_PATH}"
+    cp "${LOCAL_OUTPUT_DIRECTORY}/${GOARCH}/kubectl" "${SRC_PATH}"
+    cp "${LOCAL_OUTPUT_DIRECTORY}/${GOARCH}/kubeadm" "${SRC_PATH}"
+    sed -i "s|^Source0:.*|Source0: kubelet|" "${SRC_PATH}/kubelet.spec"
+    sed -i "s|^Source2:.*|Source2: kubectl|" "${SRC_PATH}/kubelet.spec"
+    sed -i "s|^Source3:.*|Source3: kubeadm|" "${SRC_PATH}/kubelet.spec"
+  fi
+
   # Download sources if not already available
   cd "${SRC_PATH}" && spectool -gf kubelet.spec
   /usr/bin/rpmbuild --target "${RPMARCH}" --define "_sourcedir ${SRC_PATH}" -bb "${SRC_PATH}/kubelet.spec"
