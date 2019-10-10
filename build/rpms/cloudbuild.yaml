@@ -6,8 +6,8 @@ steps:
   - name: gcr.io/cloud-builders/docker
     args:
     - build
-    - --tag=gcr.io/$PROJECT_ID/k8s-cloud-builder:$_GIT_TAG
-    - --tag=gcr.io/$PROJECT_ID/k8s-cloud-builder:latest
+    - --tag=gcr.io/$PROJECT_ID/rpm-builder:$_GIT_TAG
+    - --tag=gcr.io/$PROJECT_ID/rpm-builder:latest
     - .
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
@@ -15,5 +15,5 @@ substitutions:
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
 images:
-  - 'gcr.io/$PROJECT_ID/k8s-cloud-builder:$_GIT_TAG'
-  - 'gcr.io/$PROJECT_ID/k8s-cloud-builder:latest'
+  - 'gcr.io/$PROJECT_ID/rpm-builder:$_GIT_TAG'
+  - 'gcr.io/$PROJECT_ID/rpm-builder:latest'
