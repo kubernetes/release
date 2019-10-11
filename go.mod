@@ -14,5 +14,6 @@ require (
 	google.golang.org/appengine v1.5.0 // indirect
 	google.golang.org/genproto v0.0.0-20190502173448-54afdca5d873 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1
+	k8s.io/release/build/debs v0.0.0-20191011003919-ca0d58d1459d
 	k8s.io/test-infra v0.0.0-20190829230513-7ef687d80d22
 )
