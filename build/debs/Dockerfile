@@ -39,6 +39,6 @@ RUN mkdir ./bin
 
 COPY --chown=builder:builder packages ./packages
 
-COPY --from=builder --chown=builder:builder /workspace/deb-builder .
+COPY --from=builder --chown=builder:builder /workspace/debs .
 
-ENTRYPOINT ["./deb-builder"]
+ENTRYPOINT ["./debs"]
