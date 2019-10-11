@@ -2087,3 +2087,11 @@ def go_repositories():
         sum = "h1:kORf5ekX5qwXO2mGzXXOjMe/g6ap8ahVe0sBEulhSxo=",
         version = "v28.1.1",
     )
+    go_repository(
+        name = "io_k8s_release_build_debs",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "k8s.io/release/build/debs",
+        sum = "h1:K3CbJfm9d2H8q8u2jjOsveI2WFv4kF8jauDb+bc2mcY=",
+        version = "v0.0.0-20191011003919-ca0d58d1459d",
+    )
