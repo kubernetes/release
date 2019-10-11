@@ -15,13 +15,13 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update -y \
     && apt-get -yy -q install --no-install-recommends --no-install-suggests --fix-missing \
-      dpkg-dev \
-      build-essential \
-      ca-certificates \
-      curl \
-      debhelper \
-      dh-systemd \
-      fakeroot \
+        dpkg-dev \
+        build-essential \
+        ca-certificates \
+        curl \
+        debhelper \
+        dh-systemd \
+        fakeroot \
     && apt-get upgrade -y \
     && apt-get autoremove -y \
     && apt-get clean \
