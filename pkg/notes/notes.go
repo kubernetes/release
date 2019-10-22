@@ -155,6 +155,11 @@ func WithBranch(branch string) GithubApiOption {
 	}
 }
 
+type Result struct {
+	commit      *github.RepositoryCommit
+	pullRequest *github.PullRequest
+}
+
 // ListReleaseNotes produces a list of fully contextualized release notes
 // starting from a given commit SHA and ending at starting a given commit SHA.
 func ListReleaseNotes(
@@ -167,7 +172,7 @@ func ListReleaseNotes(
 	relVer string,
 	opts ...GithubApiOption,
 ) (ReleaseNotes, ReleaseNotesHistory, error) {
-	commits, err := ListCommitsWithNotes(client, logger, branch, start, end, opts...)
+	results, err := ListCommitsWithNotes(client, logger, branch, start, end, opts...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -175,20 +180,20 @@ func ListReleaseNotes(
 	dedupeCache := map[string]struct{}{}
 	notes := make(ReleaseNotes)
 	history := ReleaseNotesHistory{}
-	for _, commit := range commits {
+	for _, result := range results {
 
 		if requiredAuthor != "" {
-			if commit.GetAuthor().GetLogin() != requiredAuthor {
+			if result.commit.GetAuthor().GetLogin() != requiredAuthor {
 				continue
 			}
 		}
 
-		note, err := ReleaseNoteFromCommit(commit, client, relVer, opts...)
+		note, err := ReleaseNoteFromCommit(result, client, relVer, opts...)
 		if err != nil {
 			level.Error(logger).Log(
 				"err", err,
 				"msg", "error getting the release note from commit while listing release notes",
-				"sha", commit.GetSHA(),
+				"sha", result.commit.GetSHA(),
 			)
 			continue
 		}
@@ -208,7 +213,7 @@ func ListReleaseNotes(
 				excluded = true
 				level.Debug(logger).Log(
 					"msg", "Excluding notes that are deemed to have no content based on filter, and should NOT be added to release notes.",
-					"sha", commit.GetSHA(),
+					"sha", result.commit.GetSHA(),
 					"func", "ListReleaseNotes",
 					"filter", filter,
 				)
@@ -324,13 +329,9 @@ func classifyURL(url *url.URL) DocType {
 
 // ReleaseNoteFromCommit produces a full contextualized release note given a
 // GitHub commit API resource.
-func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Client, relVer string, opts ...GithubApiOption) (*ReleaseNote, error) {
+func ReleaseNoteFromCommit(result *Result, client *github.Client, relVer string, opts ...GithubApiOption) (*ReleaseNote, error) {
 	c := configFromOpts(opts...)
-
-	pr, err := PRFromCommit(client, commit, opts...)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error parsing release note from commit %s", commit.GetSHA())
-	}
+	pr := result.pullRequest
 
 	prBody := pr.GetBody()
 	text, err := NoteTextFromString(prBody)
@@ -364,7 +365,7 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 	}
 
 	return &ReleaseNote{
-		Commit:         commit.GetSHA(),
+		Commit:         result.commit.GetSHA(),
 		Text:           text,
 		Markdown:       markdown,
 		Documentation:  documentation,
@@ -438,9 +439,7 @@ func ListCommitsWithNotes(
 	start,
 	end string,
 	opts ...GithubApiOption,
-) ([]*github.RepositoryCommit, error) {
-	filteredCommits := []*github.RepositoryCommit{}
-
+) (filtered []*Result, err error) {
 	commits, err := ListCommits(client, branch, start, end, opts...)
 	if err != nil {
 		return nil, err
@@ -456,7 +455,7 @@ func ListCommitsWithNotes(
 			"sha", commit.GetSHA(),
 		)
 
-		pr, err := PRFromCommit(client, commit, opts...)
+		prs, err := PRsFromCommit(client, commit, opts...)
 		if err != nil {
 			if err.Error() == "no matches found when parsing PR from commit" {
 				level.Debug(logger).Log(
@@ -467,93 +466,113 @@ func ListCommitsWithNotes(
 			}
 		}
 
-		level.Debug(logger).Log(
-			"msg", fmt.Sprintf("Obtaining PR associated with commit sha '%s'.", commit.GetSHA()),
-			"func", "ListCommitsWithNotes",
-			"pr no", pr.GetNumber(),
-			"pr body", pr.GetBody(),
-		)
+		for _, pr := range prs {
+			level.Debug(logger).Log(
+				"msg", fmt.Sprintf("Obtaining PR associated with commit sha '%s'.", commit.GetSHA()),
+				"func", "ListCommitsWithNotes",
+				"pr no", pr.GetNumber(),
+				"pr body", pr.GetBody(),
+			)
 
-		// exclusionFilters is a list of regular expressions that match commits that
-		// do NOT contain release notes. Notably, this is all of the variations of
-		// "release note none" that appear in the commit log.
-		exclusionFilters := []string{
+			// exclusionFilters is a list of regular expressions that match commits that
+			// do NOT contain release notes. Notably, this is all of the variations of
+			// "release note none" that appear in the commit log.
+			exclusionFilters := []string{
 
-			// 'none','n/a','na' case insensitive with optional trailing
-			// whitespace, wrapped in ``` with/without release-note identifier
-			// the 'none','n/a','na' can also optionally be wrapped in quotes ' or "
-			"(?i)```(release-note[s]?\\s*)?('|\")?(none|n/a|na)?('|\")?\\s*```",
+				// 'none','n/a','na' case insensitive with optional trailing
+				// whitespace, wrapped in ``` with/without release-note identifier
+				// the 'none','n/a','na' can also optionally be wrapped in quotes ' or "
+				"(?i)```(release-note[s]?\\s*)?('|\")?(none|n/a|na)?('|\")?\\s*```",
 
-			// This filter is too aggressive within the PR body and picks up matches unrelated to release notes
-			// 'none' or 'n/a' case insensitive wrapped optionally with whitespace
-			// "(?i)\\s*(none|n/a)\\s*",
+				// This filter is too aggressive within the PR body and picks up matches unrelated to release notes
+				// 'none' or 'n/a' case insensitive wrapped optionally with whitespace
+				// "(?i)\\s*(none|n/a)\\s*",
 
-			// simple '/release-note-none' tag
-			"/release-note-none",
-		}
-
-		excluded := false
-
-		for _, filter := range exclusionFilters {
-			match, err := regexp.MatchString(filter, pr.GetBody())
-			if err != nil {
-				return nil, err
+				// simple '/release-note-none' tag
+				"/release-note-none",
 			}
-			if match {
-				excluded = true
-				level.Debug(logger).Log(
-					"msg", "Excluding notes for PR based on the exclusion filter.",
-					"func", "ListCommitsWithNotes",
-					"filter", filter,
-				)
+
+			excluded := false
+
+			for _, filter := range exclusionFilters {
+				match, err := regexp.MatchString(filter, pr.GetBody())
+				if err != nil {
+					return nil, err
+				}
+				if match {
+					excluded = true
+					level.Debug(logger).Log(
+						"msg", "Excluding notes for PR based on the exclusion filter.",
+						"func", "ListCommitsWithNotes",
+						"filter", filter,
+					)
+					break
+				}
+			}
+
+			if excluded {
+				continue
+			}
+
+			// Similarly, now that the known not-release-notes are filtered out, we can
+			// use some patterns to find actual release notes.
+			inclusionFilters := []string{
+				"release-note",
+				"Does this PR introduce a user-facing change?",
+			}
+
+			matched := false
+			for _, filter := range inclusionFilters {
+				match, err := regexp.MatchString(filter, pr.GetBody())
+				if err != nil {
+					return nil, err
+				}
+				if match {
+					matched = true
+					filtered = append(filtered, &Result{commit: commit, pullRequest: pr})
+					level.Debug(logger).Log(
+						"msg", "Including notes for PR based on the inclusion filter.",
+						"func", "ListCommitsWithNotes",
+						"filter", filter,
+					)
+				}
+			}
+
+			// Do not test further commmits if the first matched
+			if matched {
 				break
 			}
 		}
-
-		if excluded {
-			continue
-		}
-
-		// Similarly, now that the known not-release-notes are filtered out, we can
-		// use some patterns to find actual release notes.
-		inclusionFilters := []string{
-			"release-note",
-			"Does this PR introduce a user-facing change?",
-		}
-
-		for _, filter := range inclusionFilters {
-			match, err := regexp.MatchString(filter, pr.GetBody())
-			if err != nil {
-				return nil, err
-			}
-			if match {
-				filteredCommits = append(filteredCommits, commit)
-				level.Debug(logger).Log(
-					"msg", "Including notes for PR based on the inclusion filter.",
-					"func", "ListCommitsWithNotes",
-					"filter", filter,
-				)
-			}
-		}
 	}
 
-	return filteredCommits, nil
+	return filtered, nil
 }
 
-// PRFromCommit return an API Pull Request struct given a commit struct. This is
+// PRsFromCommit return an API Pull Request struct given a commit struct. This is
 // useful for going from a commit log to the PR (which contains useful info such
 // as labels).
-func PRFromCommit(client *github.Client, commit *github.RepositoryCommit, opts ...GithubApiOption) (*github.PullRequest, error) {
+func PRsFromCommit(client *github.Client, commit *github.RepositoryCommit, opts ...GithubApiOption) (
+	githubPRs []*github.PullRequest, err error,
+) {
 	c := configFromOpts(opts...)
 
-	number, err := getPRNumberFromCommitMessage(*commit.Commit.Message)
+	prs, err := prsForCommit(*commit.Commit.Message)
 	if err != nil {
 		return nil, err
 	}
-	// Given the PR number that we've now converted to an integer, get the PR from
-	// the API
-	pr, _, err := client.PullRequests.Get(c.ctx, c.org, c.repo, number)
-	return pr, err
+
+	for _, pr := range prs {
+		// Given the PR number that we've now converted to an integer, get the PR from
+		// the API
+		res, _, err := client.PullRequests.Get(c.ctx, c.org, c.repo, pr)
+		if err != nil {
+			return nil, err
+		}
+		githubPRs = append(githubPRs, res)
+
+	}
+
+	return githubPRs, err
 }
 
 // LabelsWithPrefix is a helper for fetching all labels on a PR that start with
@@ -579,55 +598,6 @@ func IsActionRequired(pr *github.PullRequest) bool {
 		}
 	}
 	return false
-}
-
-// filterCommits is a helper that allows you to filter a set of commits by
-// applying a set of regular expressions over the commit messages. If include is
-// true, only commits that match at least one expression are returned. If include
-// is false, only commits that match 0 of the expressions are returned.
-func filterCommits(
-	client *github.Client,
-	logger log.Logger,
-	commits []*github.RepositoryCommit,
-	filters []string,
-	include bool,
-	opts ...GithubApiOption,
-) ([]*github.RepositoryCommit, error) {
-	filteredCommits := []*github.RepositoryCommit{}
-	for _, commit := range commits {
-		body := commit.GetCommit().GetMessage()
-		if commit.GetAuthor().GetLogin() == "k8s-merge-robot" {
-			pr, err := PRFromCommit(client, commit, opts...)
-			if err != nil {
-				level.Info(logger).Log(
-					"msg", "error getting PR from k8s-merge-robot commit",
-					"err", err,
-					"sha", commit.GetSHA(),
-				)
-				continue
-			}
-			body = pr.GetBody()
-		}
-
-		skip := false
-		for _, filter := range filters {
-			match, err := regexp.MatchString(filter, body)
-			if err != nil {
-				return nil, err
-			}
-			if match && !include || !match && include {
-				skip = true
-				break
-			}
-		}
-		if skip {
-			continue
-		}
-
-		filteredCommits = append(filteredCommits, commit)
-	}
-
-	return filteredCommits, nil
 }
 
 // configFromOpts is an internal helper for turning a set of functional options
@@ -684,31 +654,52 @@ func HasString(a []string, x string) bool {
 	return false
 }
 
-func getPRNumberFromCommitMessage(commitMessage string) (int, error) {
+func prsForCommit(commitMessage string) (prs []int, err error) {
 	// Thankfully k8s-merge-robot commits the PR number consistently. If this ever
 	// stops being true, this definitely won't work anymore.
-	exp := regexp.MustCompile(`automated-cherry-pick-of-#(?P<number>\d+)`)
-	match := exp.FindStringSubmatch(commitMessage)
-	if len(match) == 0 {
-		exp = regexp.MustCompile(`Merge pull request #(?P<number>\d+)`)
-		match = exp.FindStringSubmatch(commitMessage)
-		if len(match) == 0 {
-			// If the PR was squash merged, the regexp is different
-			match = regexp.MustCompile(`\(#(?P<number>\d+)\)`).FindStringSubmatch(commitMessage)
-			if len(match) == 0 {
-				return 0, errors.New("no matches found when parsing PR from commit")
-			}
-		}
+	regex := regexp.MustCompile(`Merge pull request #(?P<number>\d+)`)
+	pr := prForRegex(regex, commitMessage)
+	if pr != 0 {
+		prs = append(prs, pr)
 	}
+
+	regex = regexp.MustCompile(`automated-cherry-pick-of-#(?P<number>\d+)`)
+	pr = prForRegex(regex, commitMessage)
+	if pr != 0 {
+		prs = append(prs, pr)
+	}
+
+	// If the PR was squash merged, the regexp is different
+	regex = regexp.MustCompile(`\(#(?P<number>\d+)\)`)
+	pr = prForRegex(regex, commitMessage)
+	if pr != 0 {
+		prs = append(prs, pr)
+	}
+
+	if prs == nil {
+		return nil, errors.New("no matches found when parsing PR from commit")
+	}
+
+	return prs, nil
+}
+
+func prForRegex(regex *regexp.Regexp, commitMessage string) int {
 	result := map[string]string{}
-	for i, name := range exp.SubexpNames() {
+	match := regex.FindStringSubmatch(commitMessage)
+
+	if match == nil {
+		return 0
+	}
+
+	for i, name := range regex.SubexpNames() {
 		if i != 0 && name != "" {
 			result[name] = match[i]
 		}
 	}
-	number, err := strconv.Atoi(result["number"])
+
+	pr, err := strconv.Atoi(result["number"])
 	if err != nil {
-		return 0, err
+		return 0
 	}
-	return number, nil
+	return pr
 }
