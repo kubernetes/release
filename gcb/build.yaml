@@ -1,0 +1,59 @@
+# See https://cloud.google.com/cloud-build/docs/build-config
+timeout: 7200s
+steps:
+- name: 'gcr.io/cloud-builders/git'
+  dir: 'go/src/k8s.io'
+  args:
+  - clone
+  - --branch=${_KUBERNETES_BRANCH}
+  - ${_KUBERNETES_REPO}
+
+- name: 'gcr.io/cloud-builders/git'
+  dir: 'go/src/k8s.io'
+  args:
+  - clone
+  - --branch=${_RELEASE_TOOL_BRANCH}
+  - ${_RELEASE_TOOL_REPO}
+
+- name: 'gcr.io/$PROJECT_ID/k8s-cloud-builder'
+  dir: 'go/src/k8s.io/kubernetes'
+  args:
+  - make
+  - clean
+
+- name: 'gcr.io/$PROJECT_ID/k8s-cloud-builder'
+  dir: 'go/src/k8s.io/kubernetes'
+  args:
+  - make
+  - "${_RELEASE_TYPE}"
+
+- name: 'gcr.io/$PROJECT_ID/k8s-cloud-builder'
+  dir: 'go/src/k8s.io/kubernetes'
+  args:
+  - ../release/push-build.sh
+  - --verbose
+  - "${_CI}"
+  - "${_NOMOCK}"
+  - "${_BUCKET}"
+  - "${_REGISTRY}"
+  - "${_ALLOW_DUP}"
+  - "${_EXTRA_PUBLISH_FILE}"
+  - "${_HYPERKUBE}"
+
+options:
+  machineType: 'N1_HIGHCPU_32'
+  substitution_option: 'ALLOW_LOOSE'
+
+substitutions:
+  _KUBERNETES_REPO: 'https://github.com/kubernetes/kubernetes.git'
+  _KUBERNETES_BRANCH: 'master'
+  _RELEASE_TOOL_REPO: 'https://github.com/kubernetes/release.git'
+  _RELEASE_TOOL_BRANCH: 'master'
+  _RELEASE_TYPE: 'release-in-a-container'
+  _CI: ''
+  _NOMOCK: ''
+  _BUCKET: '--bucket=kubernetes-release-dev'
+  _REGISTRY: '--registry=gcr.io/kubernetes-ci-images'
+  _ALLOW_DUP: ''
+  _EXTRA_PUBLISH_FILE: ''
+  _HYPERKUBE: ''

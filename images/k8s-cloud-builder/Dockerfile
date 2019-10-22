@@ -1,7 +1,4 @@
-# To rebuild and publish this container run:
-#   gcloud builds submit --config update_build_container.yaml .
-
-FROM ubuntu:18.04
+FROM k8s.gcr.io/kube-cross:v1.12.12-1
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -44,32 +41,60 @@ RUN apt-get -q update \
 # Install gcloud
 # common::set_cloud_binaries() looks for it in this path
 RUN mkdir /opt/google
-RUN curl -sSL https://sdk.cloud.google.com > /tmp/install.sh && \
-    bash /tmp/install.sh --install-dir=/opt/google --disable-prompts
+RUN apt-get -y update \
+    && apt-get -y install \
+        gcc \
+        python2.7 \
+        python-dev \
+        python-setuptools \
+        wget \
+        ca-certificates \
+        # These are necessary for add-apt-respository
+        software-properties-common \
+    # Install Git >2.0.1
+    && apt-get -y update \
+    && apt-get -y install git \
+    # Setup Google Cloud SDK (latest)
+    && curl -sSL https://sdk.cloud.google.com > /tmp/install.sh \
+    && bash /tmp/install.sh --install-dir=/opt/google --disable-prompts \
+    # install crcmod: https://cloud.google.com/storage/docs/gsutil/addlhelp/CRC32CandInstallingcrcmod
+    && pip install -U crcmod \
+    # Clean up
+    && apt-get -y remove \
+        gcc \
+        python-dev \
+        python-setuptools \
+        wget \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf ~/.config/gcloud
 
+ENV PATH=/opt/google/google-cloud-sdk/bin:$PATH
 
 # Install docker stuff
 #---------------------
 # Based on instructions from:
-# https://docs.docker.com/engine/installation/linux/docker-ce/ubuntu/#uninstall-old-versions
+# https://docs.docker.com/install/linux/docker-ce/debian/
 RUN apt-get -y update \
-    && apt-get install -y \
-        linux-image-extra-virtual \
+    && apt-get -y install \
         apt-transport-https \
         ca-certificates \
         curl \
+        make \
         software-properties-common \
-    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
+    && apt-key fingerprint 0EBFCD88 \
     && add-apt-repository \
-        "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-        $(lsb_release -cs) \
-        stable edge" \
-    && apt-get -y update
-
-ARG DOCKER_VERSION=18.06.0~ce~3-0~ubuntu
-RUN apt-get install -y \
-      docker-ce=${DOCKER_VERSION} \
-      unzip
+      "deb [arch=amd64] https://download.docker.com/linux/debian \
+      $(lsb_release -cs) \
+      stable" \
+    && apt-get -y update \
+    && apt-get -y install \
+        docker-ce \
+        docker-ce-cli \
+        containerd.io \
+        unzip
 
 # Cleanup a bit
 RUN rm -rf /var/lib/apt/lists/*
+
+ENTRYPOINT []
