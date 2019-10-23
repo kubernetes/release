@@ -11,7 +11,6 @@ variants:
     CI: '--ci'
     NOMOCK: '--nomock'
     BUCKET: '--bucket=k8s-staging-release-test'
-    REGISTRY: '--docker-registry=gcr.io/k8s-staging-release-test'
     ALLOW_DUP: '--allow-dup'
   build-ci-old:
     CI: '--ci'
