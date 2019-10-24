@@ -918,8 +918,18 @@ release::gcs::publish () {
     "$publish_file_dst" || return 1
 
   if ((FLAGS_nomock)) && ! ((FLAGS_private_bucket)); then
-    logecho -n "Making uploaded version file public: "
-    logrun -s $GSUTIL acl ch -R -g all:R $publish_file_dst || return 1
+    # New Kubernetes infra buckets, like k8s-staging-release-test, have a
+    # bucket-only ACL policy set, which means attempting to set the ACL on an
+    # object will fail. We should skip this ACL change in those instances, as
+    # new buckets already default to being publicly readable.
+    #
+    # Ref:
+    # - https://cloud.google.com/storage/docs/bucket-policy-only
+    # - https://github.com/kubernetes/release/issues/904
+    if [[ "$bucket" != "k8s-staging-release-test" ]]; then
+      logecho -n "Making uploaded version file public: "
+      logrun -s $GSUTIL acl ch -R -g all:R $publish_file_dst || return 1
+    fi
 
     # If public, validate public link
     logecho -n "* Validating uploaded version file at $public_link: "
