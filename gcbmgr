@@ -456,12 +456,12 @@ case $COMMAND in
   stream|tail) stream_job_log $ARG2
         common::exit 0
         ;;
-  stage) YAML_FILE="$TOOL_ROOT/gcb/stage.yaml"
+  stage) YAML_FILE="$TOOL_ROOT/gcb/stage/cloudbuild.yaml"
          RELEASE_BRANCH="$ARG2"
          stage_it
         ;;
   release) DISK_SIZE="100"
-           YAML_FILE="$TOOL_ROOT/gcb/release.yaml"
+           YAML_FILE="$TOOL_ROOT/gcb/release/cloudbuild.yaml"
            RELEASE_BRANCH="$ARG2"
 
            if ((FLAGS_nomock)); then
