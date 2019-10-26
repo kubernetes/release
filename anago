@@ -277,12 +277,7 @@ ensure_registry_acls () {
   # Short of creating a hardcoded map of project-id to registry, translating
   # _ to - seems to be a simple rule to keep this, well, simple.
   for r in ${registries[*]//_/-}; do
-    # In this context, "google-containers" is still used
-    if [[ "$r" == "$GCRIO_PATH_PROD" ]]; then
-      artifact_namespace="google-containers"
-    else
-      artifact_namespace="${r/gcr.io\//}"
-    fi
+    artifact_namespace="${r/gcr.io\//}"
 
     gs_path="gs://artifacts.$artifact_namespace.appspot.com/containers"
     logecho -n "Checking write access to registry $r: "
