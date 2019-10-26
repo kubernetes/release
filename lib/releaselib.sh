@@ -19,7 +19,12 @@
 ###############################################################################
 
 DEFAULT_PROJECT="k8s-staging-release-test"
+# TODO(prototype): Temporarily setting this to the staging project to test
+#                  the staging flow with --nomock set.
+PROD_PROJECT="k8s-staging-release-test"
+TEST_PROJECT="${TEST_PROJECT:-${PROJECT_ID:-$DEFAULT_PROJECT}}"
 OLD_PROJECT="kubernetes-release-test"
+
 
 ###############################################################################
 # FUNCTIONS
@@ -1249,10 +1254,17 @@ release::set_globals () {
   fi
 
   # The "production" GCR path is now multi-region alias
-  GCRIO_PATH_PROD="k8s.gcr.io"
-  GCRIO_PATH_PROD_PUSH="gcr.io/google-containers"
+  # TODO(prototype): Temporarily setting this to the staging project to test
+  #                  the staging flow with --nomock set.
+  #GCRIO_PATH_PROD="k8s.gcr.io"
+  GCRIO_PATH_PROD="gcr.io/$PROD_PROJECT"
+  # TODO(prototype): Temporarily setting this to the staging project to test
+  #                  the staging flow with --nomock set.
+  # TODO(prototype): Once access has been configured, we should set this to
+  #                  k8s-release-test-prod and test image promotion.
+  GCRIO_PATH_PROD_PUSH="gcr.io/$PROD_PROJECT"
   # The "test" GCR path
-  GCRIO_PATH_TEST="gcr.io/k8s-staging-release-test"
+  GCRIO_PATH_TEST="gcr.io/$TEST_PROJECT"
 
   if ((FLAGS_nomock)); then
     GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_PROD}"
