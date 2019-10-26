@@ -618,7 +618,7 @@ local_kube_cross () {
   local local_image
   local docker_image
 
-  docker_image="${GCRIO_PATH_PROD}/kube-cross"
+  docker_image="${GCRIO_PATH_TEST}/kube-cross"
   version="$(cat "${TREE_ROOT}/build/build-image/cross/VERSION")"
   image="${docker_image}:${version}"
   local_image="${docker_image}:local"

@@ -38,7 +38,7 @@ steps:
   - "--basedir=/workspace"
   - "--tmpdir=/workspace/tmp"
 
-- name: k8s.gcr.io/kube-cross:local
+- name: gcr.io/$PROJECT_ID/kube-cross:local
   dir: "go/src/k8s.io/release"
   env:
   - "RELEASE_TOOL_REPO=${_RELEASE_TOOL_REPO}"
