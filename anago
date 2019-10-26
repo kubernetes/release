@@ -1429,11 +1429,6 @@ archive_release () {
   # Best effort
   logecho "Copy $WORKDIR $text to $archive_bucket/$build_dir..."
   logrun $GSUTIL -mq cp $dash_args $WORKDIR/* $archive_bucket/$build_dir || true
-
-  logecho -n "Ensure PRIVATE ACL on" \
-             "$archive_bucket/$build_dir/${LOGFILE##*/}\*: "
-  logrun -s $GSUTIL acl ch -d AllUsers \
-            "$archive_bucket/$build_dir/${LOGFILE##*/}*" || true
 }
 
 ##############################################################################
