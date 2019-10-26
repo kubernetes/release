@@ -386,14 +386,17 @@ logecho
 # Defaults to "list" operation
 COMMAND=${POSITIONAL_ARGV[0]:-"list"}
 ARG2=${POSITIONAL_ARGV[1]}
-PROJECT="kubernetes-release-test"
+PROJECT="${PROJECT:-$DEFAULT_PROJECT}"
 # Append $PROJECT to GCLOUD
 GCLOUD+=" --project $PROJECT"
-BUCKET="kubernetes-release"
+BUCKET="${BUCKET:-$DEFAULT_BUCKET}"
 # disk size must take base image into consideration.
 # The amount specified is not what is "free"
 DISK_SIZE="300"
 GCP_USER=$($GCLOUD auth list --filter=status:ACTIVE --format="value(account)")
+
+# Lowercase GCP users
+GCP_USER="${GCP_USER,,}"
 # This is used as a tag so convert @ to -at- (for yaml tag field
 # where @ is invalid)
 # First, for @google.com users strip off the @domain.tld
@@ -428,7 +431,6 @@ if ((FLAGS_nomock)); then
   NOMOCK="--$NOMOCK_TAG"
 else
   USER_BUCKET=$BUCKET-$GCP_USER_TAG
-  BUCKET+="-gcb"
 fi
 
 # BUILD_POINT used in yaml tags field and is one of:
