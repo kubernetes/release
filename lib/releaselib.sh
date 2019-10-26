@@ -14,6 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+###############################################################################
+# CONSTANTS
+###############################################################################
+
+DEFAULT_PROJECT="k8s-staging-release-test"
+OLD_PROJECT="kubernetes-release-test"
+
+###############################################################################
+# FUNCTIONS
+###############################################################################
+
 ##############################################################################
 # Pulls Jenkins server job cache from GS and preprocesses it into a
 # dictionary stored in $job_path associating full job and build numbers
@@ -1241,7 +1252,7 @@ release::set_globals () {
   GCRIO_PATH_PROD="k8s.gcr.io"
   GCRIO_PATH_PROD_PUSH="gcr.io/google-containers"
   # The "test" GCR path
-  GCRIO_PATH_TEST="gcr.io/kubernetes-release-test"
+  GCRIO_PATH_TEST="gcr.io/k8s-staging-release-test"
 
   if ((FLAGS_nomock)); then
     GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_PROD}"

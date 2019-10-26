@@ -386,7 +386,7 @@ logecho
 # Defaults to "list" operation
 COMMAND=${POSITIONAL_ARGV[0]:-"list"}
 ARG2=${POSITIONAL_ARGV[1]}
-PROJECT="kubernetes-release-test"
+PROJECT="${PROJECT:-$DEFAULT_PROJECT}"
 # Append $PROJECT to GCLOUD
 GCLOUD+=" --project $PROJECT"
 BUCKET="kubernetes-release"
