@@ -25,6 +25,11 @@ PROD_PROJECT="k8s-staging-release-test"
 TEST_PROJECT="${TEST_PROJECT:-${PROJECT_ID:-$DEFAULT_PROJECT}}"
 OLD_PROJECT="kubernetes-release-test"
 
+DEFAULT_BUCKET="k8s-staging-release-test"
+# TODO(prototype): Temporarily setting this to the staging project to test
+#                  the staging flow with --nomock set.
+PROD_BUCKET="k8s-staging-release-test"
+OLD_BUCKET="kubernetes-release"
 
 ###############################################################################
 # FUNCTIONS
@@ -921,9 +926,11 @@ release::gcs::publish () {
   local publish_file_dst="gs://$bucket/$publish_file"
   local contents
   local public_link="https://storage.googleapis.com/$bucket/$publish_file"
-  if [[ "$bucket" == "kubernetes-release" ]]; then
-    public_link="https://dl.k8s.io/$publish_file"
-  fi
+
+  # TODO(prototype): Uncomment this once dl.k8s.io is cut over to new prod.
+  #if [[ "$bucket" == "$PROD_BUCKET" ]]; then
+  #  public_link="https://dl.k8s.io/$publish_file"
+  #fi
 
   logrun mkdir -p "$release_stage/upload" || return 1
   echo "$version" > "$release_stage/upload/latest" || return 1
@@ -934,19 +941,6 @@ release::gcs::publish () {
     "$publish_file_dst" || return 1
 
   if ((FLAGS_nomock)) && ! ((FLAGS_private_bucket)); then
-    # New Kubernetes infra buckets, like k8s-staging-release-test, have a
-    # bucket-only ACL policy set, which means attempting to set the ACL on an
-    # object will fail. We should skip this ACL change in those instances, as
-    # new buckets already default to being publicly readable.
-    #
-    # Ref:
-    # - https://cloud.google.com/storage/docs/bucket-policy-only
-    # - https://github.com/kubernetes/release/issues/904
-    if [[ "$bucket" != "k8s-staging-release-test" ]]; then
-      logecho -n "Making uploaded version file public: "
-      logrun -s $GSUTIL acl ch -R -g all:R $publish_file_dst || return 1
-    fi
-
     # If public, validate public link
     logecho -n "* Validating uploaded version file at $public_link: "
     contents="$(curl --retry 5 -Ls $public_link)"
@@ -1241,7 +1235,12 @@ release::set_globals () {
     fi
   fi
 
-  RELEASE_BUCKET="kubernetes-release"
+  RELEASE_BUCKET="$PROD_BUCKET"
+
+  # Lowercase GCP users
+  GCP_USER="$(echo "$GCP_USER" | awk '{print tolower($0)}')"
+  gcp_user="$(echo "$gcp_user" | awk '{print tolower($0)}')"
+
   if [[ $GCP_USER =~ "@google.com" ]]; then
     WRITE_RELEASE_BUCKETS=("$RELEASE_BUCKET")
     READ_RELEASE_BUCKETS=("$RELEASE_BUCKET")
@@ -1276,6 +1275,7 @@ release::set_globals () {
     RELEASE_BUCKET_GCB="$RELEASE_BUCKET-${gcb_user%%@google.com}"
     RELEASE_BUCKET_USER="${RELEASE_BUCKET_USER/@/-at-}"
     RELEASE_BUCKET_GCB="${RELEASE_BUCKET_GCB/@/-at-}"
+
     # GCP also doesn't like anything even remotely looking like a domain name
     # in the bucket name so convert . to -
     RELEASE_BUCKET_USER="${RELEASE_BUCKET_USER/\./-}"

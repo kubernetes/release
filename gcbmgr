@@ -389,11 +389,14 @@ ARG2=${POSITIONAL_ARGV[1]}
 PROJECT="${PROJECT:-$DEFAULT_PROJECT}"
 # Append $PROJECT to GCLOUD
 GCLOUD+=" --project $PROJECT"
-BUCKET="kubernetes-release"
+BUCKET="${BUCKET:-$DEFAULT_BUCKET}"
 # disk size must take base image into consideration.
 # The amount specified is not what is "free"
 DISK_SIZE="300"
 GCP_USER=$($GCLOUD auth list --filter=status:ACTIVE --format="value(account)")
+
+# Lowercase GCP users
+GCP_USER="$(echo "$GCP_USER" | awk '{print tolower($0)}')"
 # This is used as a tag so convert @ to -at- (for yaml tag field
 # where @ is invalid)
 # First, for @google.com users strip off the @domain.tld
