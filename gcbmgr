@@ -431,7 +431,6 @@ if ((FLAGS_nomock)); then
   NOMOCK="--$NOMOCK_TAG"
 else
   USER_BUCKET=$BUCKET-$GCP_USER_TAG
-  BUCKET+="-gcb"
 fi
 
 # BUILD_POINT used in yaml tags field and is one of:
