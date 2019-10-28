@@ -1449,7 +1449,7 @@ stage_source_tree () {
   local jbv="$JENKINS_BUILD_VERSION"
 
   logecho -n "Tar up staged source tree: "
-  logrun -s tar cvfz $WORKDIR/src.tar.gz -C $WORKDIR src --exclude="_output-*" \
+  logrun -s tar cvfz $WORKDIR/src.tar.gz --exclude="_output-*" -C $WORKDIR src \
    || return 1
   logecho -n "Archive fully staged source tree on GCS: "
   logrun -s $GSUTIL -m cp $WORKDIR/src.tar.gz \
