@@ -18,19 +18,19 @@
 # CONSTANTS
 ###############################################################################
 
-DEFAULT_PROJECT="k8s-staging-release-test"
+readonly DEFAULT_PROJECT="k8s-staging-release-test"
 # TODO(prototype): Temporarily setting this to the staging project to test
 #                  the staging flow with --nomock set.
-PROD_PROJECT="k8s-staging-release-test"
-TEST_PROJECT="${TEST_PROJECT:-${PROJECT_ID:-$DEFAULT_PROJECT}}"
-OLD_PROJECT="kubernetes-release-test"
+readonly PROD_PROJECT="k8s-staging-release-test"
+readonly TEST_PROJECT="${TEST_PROJECT:-${PROJECT_ID:-$DEFAULT_PROJECT}}"
+readonly OLD_PROJECT="kubernetes-release-test"
 
-DEFAULT_BUCKET="k8s-staging-release-test"
+readonly DEFAULT_BUCKET="k8s-staging-release-test"
 # TODO(prototype): Temporarily setting this to the staging project to test
 #                  the staging flow with --nomock set.
-PROD_BUCKET="k8s-staging-release-test"
-MOCK_BUCKET="k8s-staging-release-test"
-OLD_BUCKET="kubernetes-release"
+readonly PROD_BUCKET="k8s-staging-release-test"
+readonly MOCK_BUCKET="k8s-staging-release-test"
+readonly OLD_BUCKET="kubernetes-release"
 
 ###############################################################################
 # FUNCTIONS
