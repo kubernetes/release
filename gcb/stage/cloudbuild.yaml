@@ -1,4 +1,21 @@
 timeout: 14400s
+
+#### SECURITY NOTICE ####
+# Google Cloud Build (GCB) supports the usage of secrets for build requests.
+# Secrets appear within GCB configs as base64-encoded strings.
+# These secrets are GCP Cloud KMS-encrypted and cannot be decrypted by any human or system
+# outside of GCP Cloud KMS for the GCP project this encrypted resource was created for.
+# Seeing the base64-encoded encrypted blob here is not a security event for the project.
+#
+# More details on using encrypted resources on Google Cloud Build can be found here:
+# https://cloud.google.com/cloud-build/docs/securing-builds/use-encrypted-secrets-credentials
+#
+# (Please do not remove this security notice.)
+secrets:
+- kmsKeyName: projects/k8s-staging-release-test/locations/global/keyRings/release/cryptoKeys/encrypt-0
+  secretEnv:
+    GITHUB_TOKEN: CiQAzX5NM13ZVJOM+E0k629PSa7H5Hkm4mJlPbm7hR8nr67KGAoSUQCmb2uz62tmpa7is9YJx8tlEspVytgq5HAvsd9DWey/oRCsv4VkVBRhnNnlpnmQ8eDPXAaS0GfjrP4KuCgT3mM570N1FH6hTN+u7Yg8uaOxWw==
+
 steps:
 - name: gcr.io/cloud-builders/git
   dir: "go/src/k8s.io"
@@ -63,6 +80,8 @@ steps:
   env:
   - "RELEASE_TOOL_REPO=${_RELEASE_TOOL_REPO}"
   - "RELEASE_TOOL_BRANCH=${_RELEASE_TOOL_BRANCH}"
+  secretEnv:
+  - GITHUB_TOKEN
   args:
   - "./anago"
   - "${_RELEASE_BRANCH}"
