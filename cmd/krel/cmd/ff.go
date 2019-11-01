@@ -220,60 +220,6 @@ func runFf(opts *ffOptions) error {
 		return err
 	}
 
-	// TODO: Check for deleted files
-	// TODO: Do we need hack/install-etcd.sh
-	if err := command.Execute("hack/install-etcd.sh"); err != nil {
-		return err
-	}
-
-	currentPath := os.Getenv("PATH")
-	etcdDir := filepath.Join(gitRoot, "third_party/etcd")
-	newPath := fmt.Sprintf("%s:%s", etcdDir, currentPath)
-	os.Setenv("PATH", newPath)
-	log.Printf("PATH has been set to %s", os.Getenv("PATH"))
-
-	// TODO: Running update scripts fails with go1.13
-	log.Printf("Running hack/update* scripts...")
-	updateScripts := []string{
-		"update-openapi-spec",
-	}
-	/*
-		for _, script := range updateScripts {
-			scriptPath := fmt.Sprintf("hack/%s.sh", script)
-			if _, err := os.Stat(scriptPath); os.IsNotExist(err) {
-				log.Printf("The update script (%s) does not exist. Skipping...", scriptPath)
-				continue
-			}
-
-			scriptCmd := exec.Command(scriptPath)
-			log.Printf("Running %s...", scriptPath)
-			util.Run(scriptCmd)
-		}
-	*/
-
-	status, err := w.Status()
-	if err != nil {
-		return err
-	}
-
-	if !status.IsClean() {
-		log.Printf("Commit changes:")
-		// TODO: Rewrite using go-git
-		if err := command.Execute("git add -A"); err != nil {
-			return err
-		}
-
-		// TODO: Rewrite using go-git
-		if err := command.Execute(
-			"git commit -am",
-			fmt.Sprintf(
-				"'Results of running update scripts: %s'",
-				strings.Join(updateScripts, ",")),
-		); err != nil {
-			return err
-		}
-	}
-
 	releaseRefName := remoteHash.String()
 	releaseRev, err := util.RevParseShort(releaseRefName, gitRoot)
 	if err != nil {
