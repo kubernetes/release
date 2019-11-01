@@ -1080,6 +1080,10 @@ update_github_release () {
   local sha512_hash
   local sha256sums_file="${staging_dir}/SHA256SUMS"
   local sha512sums_file="${staging_dir}/SHA512SUMS"
+  local body_fmt
+  local body
+  local query_tmpl
+  local query_body
 
   sha256_hash=$(common::sha "$tarball" 256)
   sha512_hash=$(common::sha "$tarball" 512)
@@ -1128,15 +1132,37 @@ update_github_release () {
   # post release data
   logecho "$release_verb the $RELEASE_VERSION_PRIME release on github..."
   local changelog_url="$K8S_GITHUB_URL/blob/master/$CHANGELOG_FILE"
-  release_id=$($GHCURL $K8S_GITHUB_API/releases$id_suffix --data \
-   '{
-    "tag_name": "'$RELEASE_VERSION_PRIME'",
-    "target_commitish": "'$RELEASE_BRANCH'",
-    "name": "'$RELEASE_VERSION_PRIME'",
-    "body": "See [kubernetes-announce@](https://groups.google.com/forum/#!forum/kubernetes-announce) and ['$CHANGELOG_FILE']('$changelog_url'#'${RELEASE_VERSION_PRIME//\./}') for details.\n\nSHA256 for `kubernetes.tar.gz`: `'${sha256_hash}'`\n\nSHA512 for `kubernetes.tar.gz`: `'${sha512_hash}'`\n\nAdditional binary downloads are linked in the ['$CHANGELOG_FILE']('$changelog_url'#downloads-for-'${RELEASE_VERSION_PRIME//\./}').",
-    "draft": '$draft',
-    "prerelease": '$prerelease'
-    }' |jq -r '.id')
+  query_tmpl='{
+    "tag_name" : $tag,
+    "target_commitish": $target,
+    "name": $name,
+    "body": $body,
+    "draft": $draft,
+    "prerelease": $prerelease
+  }'
+  body_fmt='See [kubernetes-announce@](https://groups.google.com/forum/#!forum/kubernetes-announce) and [%s](%s) for details.
+
+SHA256 for `kubernetes.tar.gz`: `%s`
+SHA512 for `kubernetes.tar.gz`: `%s`
+
+Additional binary downloads are linked in the [%s](%s).'
+  body="$(
+    printf "$body_fmt" \
+      "$CHANGELOG_FILE" "${changelog_url}#${RELEASE_VERSION_PRIME//\./}" \
+      "$sha256_hash" "$sha512_hash" \
+      "$CHANGELOG_FILE" "${changelog_url}#downloads-for-${RELEASE_VERSION_PRIME//\./}"
+  )"
+  query_body="$( jq \
+    --arg tag "$RELEASE_VERSION_PRIME" \
+    --arg target "$RELEASE_BRANCH" \
+    --arg name "$RELEASE_VERSION_PRIME" \
+    --arg body "$body" \
+    --argjson draft "$draft" \
+    --argjson prerelease "$prerelease" \
+    -c -n "$query_tmpl" \
+  )"
+  release_id=$($GHCURL $K8S_GITHUB_API/releases$id_suffix --data "$query_body" \
+    |jq -r '.id')
 
   # verify it was created
   if [[ -z "$release_id" ]]; then
