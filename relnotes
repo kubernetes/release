@@ -96,6 +96,7 @@ PROG=${0##*/}
 
 source $(dirname $(readlink -ne $BASH_SOURCE))/lib/common.sh
 source $TOOL_LIB_PATH/gitlib.sh
+source $TOOL_LIB_PATH/releaselib.sh
 
 # Validate command-line
 common::argc_validate 1
@@ -181,8 +182,10 @@ create_downloads_table () {
   local heading=$1
   shift
   local url_prefix
-  if [[ "$release_bucket" == "kubernetes-release" ]]; then
-    url_prefix="https://dl.k8s.io"
+  if [[ "$release_bucket" == "$PROD_BUCKET" ]]; then
+    # TODO(prototype): Uncomment this once dl.k8s.io is cut over to new prod.
+    #url_prefix="https://dl.k8s.io"
+    echo ""
   else
     url_prefix="https://storage.googleapis.com/$release_bucket/release"
   fi
@@ -207,7 +210,7 @@ create_body () {
   local release_tars=$1
   local start_tag=$2
   local release_tag=$3
-  local release_bucket=${FLAGS_release_bucket:-"kubernetes-release"}
+  local release_bucket="${FLAGS_release_bucket:-"$PROD_BUCKET"}"
   local title
 
   ((FLAGS_preview)) && title="Branch "

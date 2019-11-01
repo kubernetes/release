@@ -46,7 +46,7 @@ PROG=${0##*/}
 #+ EXAMPLES
 #+
 #+ FILES
-#+     gs://kubernetes-release{,-$USER,-gcb}/archive/<version/announcement.html
+#+     gs://k8s-staging-release-test{,-$USER,-gcb}/archive/<version>/announcement.html
 #+
 #+ SEE ALSO
 #+     common.sh                 - common function definitions

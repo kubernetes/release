@@ -119,7 +119,7 @@ PROG=${0##*/}
 #+                                 build version
 #+     [--gcrio_path=]           - Specify the full GCR path to use.
 #+                                 defaults:
-#+                                 - gcr.io/kubernetes-release-test (mock)
+#+                                 - gcr.io/k8s-staging-release-test (mock)
 #+                                 - k8s.gcr.io for --nomock
 #+     [--basedir=dir]           - Specify an alternate base directory
 #+                                 (default: $HOME/anago)
@@ -277,12 +277,7 @@ ensure_registry_acls () {
   # Short of creating a hardcoded map of project-id to registry, translating
   # _ to - seems to be a simple rule to keep this, well, simple.
   for r in ${registries[*]//_/-}; do
-    # In this context, "google-containers" is still used
-    if [[ "$r" == "$GCRIO_PATH_PROD" ]]; then
-      artifact_namespace="google-containers"
-    else
-      artifact_namespace="${r/gcr.io\//}"
-    fi
+    artifact_namespace="${r/gcr.io\//}"
 
     gs_path="gs://artifacts.$artifact_namespace.appspot.com/containers"
     logecho -n "Checking write access to registry $r: "
@@ -623,7 +618,7 @@ local_kube_cross () {
   local local_image
   local docker_image
 
-  docker_image="${GCRIO_PATH_PROD}/kube-cross"
+  docker_image="${GCRIO_PATH_TEST}/kube-cross"
   version="$(cat "${TREE_ROOT}/build/build-image/cross/VERSION")"
   image="${docker_image}:${version}"
   local_image="${docker_image}:local"
@@ -1434,11 +1429,6 @@ archive_release () {
   # Best effort
   logecho "Copy $WORKDIR $text to $archive_bucket/$build_dir..."
   logrun $GSUTIL -mq cp $dash_args $WORKDIR/* $archive_bucket/$build_dir || true
-
-  logecho -n "Ensure PRIVATE ACL on" \
-             "$archive_bucket/$build_dir/${LOGFILE##*/}\*: "
-  logrun -s $GSUTIL acl ch -d AllUsers \
-            "$archive_bucket/$build_dir/${LOGFILE##*/}*" || true
 }
 
 ##############################################################################
