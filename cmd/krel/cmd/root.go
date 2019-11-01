@@ -30,6 +30,13 @@ var rootCmd = &cobra.Command{
 	Short: "krel",
 }
 
+type rootOptions struct {
+	nomock  bool
+	cleanup bool
+}
+
+var rootOpts = &rootOptions{}
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
@@ -41,8 +48,8 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().BoolVar(&opts.nomock, "nomock", false, "nomock flag")
-	rootCmd.PersistentFlags().BoolVar(&opts.cleanup, "cleanup", false, "cleanup flag")
+	rootCmd.PersistentFlags().BoolVar(&rootOpts.nomock, "nomock", false, "nomock flag")
+	rootCmd.PersistentFlags().BoolVar(&rootOpts.cleanup, "cleanup", false, "cleanup flag")
 }
 
 // initConfig reads in config file and ENV variables if set.
