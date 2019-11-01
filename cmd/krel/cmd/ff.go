@@ -37,15 +37,13 @@ var cfgFile string
 
 const defaultMasterRef string = "HEAD"
 
-type Options struct {
+type ffOptions struct {
 	branch    string
 	masterRef string
 	org       string
-	nomock    bool
-	cleanup   bool
 }
 
-var opts = &Options{}
+var ffOpts = &ffOptions{}
 
 // ffCmd represents the base command when called without any subcommands
 var ffCmd = &cobra.Command{
@@ -57,7 +55,7 @@ var ffCmd = &cobra.Command{
 - Run hack/update-all.sh to ensure compliance of generated files`,
 	Example: "krel ff --branch release-1.16 39d0135e --ref HEAD --cleanup",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := runFf(opts); err != nil {
+		if err := runFf(ffOpts); err != nil {
 			return err
 		}
 
@@ -68,14 +66,14 @@ var ffCmd = &cobra.Command{
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	ffCmd.PersistentFlags().StringVar(&opts.branch, "branch", "", "branch")
-	ffCmd.PersistentFlags().StringVar(&opts.masterRef, "ref", defaultMasterRef, "ref on master")
-	ffCmd.PersistentFlags().StringVar(&opts.org, "org", util.DefaultGithubOrg, "org to run tool against")
+	ffCmd.PersistentFlags().StringVar(&ffOpts.branch, "branch", "", "branch")
+	ffCmd.PersistentFlags().StringVar(&ffOpts.masterRef, "ref", defaultMasterRef, "ref on master")
+	ffCmd.PersistentFlags().StringVar(&ffOpts.org, "org", util.DefaultGithubOrg, "org to run tool against")
 
 	rootCmd.AddCommand(ffCmd)
 }
 
-func runFf(opts *Options) error {
+func runFf(opts *ffOptions) error {
 	// TODO: Add usage/help
 	// TODO: Check prerequisites (git, jq, go, make)
 	// TODO: Set positional args
@@ -89,7 +87,7 @@ func runFf(opts *Options) error {
 
 	log.Printf("Preparing to fast-forward master@%s onto the %s branch...\n", masterRef, branch)
 
-	nomock := opts.nomock
+	nomock := rootOpts.nomock
 	dryRunFlag := "--dry-run"
 	if nomock {
 		// TODO: Set this to empty string once we're ready to turn on the tool
@@ -115,7 +113,7 @@ func runFf(opts *Options) error {
 		return err
 	}
 
-	cleanup := opts.cleanup
+	cleanup := rootOpts.cleanup
 	if cleanup {
 		defer cleanupTmpDir(baseDir)
 	}
