@@ -252,7 +252,7 @@ func runFf(opts *ffOptions) error {
 }
 
 func prepushMessage(gitRoot, remote, branch, githubURL, releaseRev, headRev string) string {
-	message := `Go look around in %s to make sure things look okay before pushing...
+	message := fmt.Sprintf(`Go look around in %s to make sure things look okay before pushing...
 
 Check for files left uncommitted using:
 
@@ -270,7 +270,7 @@ Once the branch fast-forward is complete, the diff will be available after push 
 
 	%s/compare/%s...%s"
 
-`
+`, gitRoot, remote, branch, githubURL, releaseRev, headRev)
 
 	return message
 }
