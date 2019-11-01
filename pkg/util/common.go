@@ -97,3 +97,17 @@ func Ask(question, expectedResponse string, retries int) (string, bool, error) {
 	log.Printf("Expected response was not provided. Retries exceeded.")
 	return answer, false, errors.New("Expected response was not input. Retries exceeded.")
 }
+
+// CommandsAvailable verifies that the specified `commands` are available
+// within the current `$PATH` environment and returns true if so. The function
+// does not check for duplicates nor if the provided slice is empty.
+func CommandsAvailable(commands []string) (ok bool) {
+	ok = true
+	for _, command := range commands {
+		if _, err := exec.LookPath(command); err != nil {
+			log.Printf("Unable to %v", err)
+			ok = false
+		}
+	}
+	return ok
+}
