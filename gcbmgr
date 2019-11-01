@@ -396,7 +396,7 @@ DISK_SIZE="300"
 GCP_USER=$($GCLOUD auth list --filter=status:ACTIVE --format="value(account)")
 
 # Lowercase GCP users
-GCP_USER="$(echo "$GCP_USER" | awk '{print tolower($0)}')"
+GCP_USER="${GCP_USER,,}"
 # This is used as a tag so convert @ to -at- (for yaml tag field
 # where @ is invalid)
 # First, for @google.com users strip off the @domain.tld

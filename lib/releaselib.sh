@@ -1228,7 +1228,7 @@ release::set_globals () {
     fi
 
     # Lowercase GCP user
-    GCP_USER="$(echo "$GCP_USER" | awk '{print tolower($0)}')"
+    GCP_USER="${GCP_USER,,}"
   fi
 
   if ((FLAGS_stage)); then
