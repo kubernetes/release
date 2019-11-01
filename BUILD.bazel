@@ -32,6 +32,7 @@ filegroup(
         "//cmd/krel:all-srcs",
         "//cmd/release-notes:all-srcs",
         "//lib:all-srcs",
+        "//pkg/git:all-srcs",
         "//pkg/notes:all-srcs",
         "//pkg/util:all-srcs",
     ],

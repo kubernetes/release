@@ -15,6 +15,7 @@ import (
 	"github.com/kolide/kit/env"
 	"golang.org/x/oauth2"
 
+	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/notes"
 )
 
@@ -296,11 +297,11 @@ func parseOptions(args []string, logger log.Logger) (*options, error) {
 
 	// Check if we want to automatically discover the revisions
 	if opts.discoverMode == revisionDiscoveryModeMinorToLatest {
-		repo, err := notes.NewKubernetesRepo(opts.repoPath, opts.githubOrg, opts.githubRepo)
+		repo, err := git.CloneOrOpenRepo(opts.repoPath, opts.githubOrg, opts.githubRepo)
 		if err != nil {
 			return nil, err
 		}
-		start, end, err := repo.DiscoverRevs(logger)
+		start, end, err := repo.LatestNonPatchFinalToLatest()
 		if err != nil {
 			return nil, err
 		}
@@ -323,7 +324,7 @@ func parseOptions(args []string, logger log.Logger) (*options, error) {
 	// Check if we have to parse a revision
 	if opts.startRev != "" || opts.endRev != "" {
 		level.Info(logger).Log("msg", "cloning/updating repository to discover start or end sha")
-		repo, err := notes.NewKubernetesRepo(opts.repoPath, opts.githubOrg, opts.githubRepo)
+		repo, err := git.CloneOrOpenRepo(opts.repoPath, opts.githubOrg, opts.githubRepo)
 		if err != nil {
 			return nil, err
 		}
