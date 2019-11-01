@@ -75,10 +75,13 @@ func init() {
 
 func runFf(opts *ffOptions) error {
 	// TODO: Add usage/help
-	// TODO: Check prerequisites (git, jq, go, make)
 	// TODO: Set positional args
 	// TODO: Fail on empty branch
 	// TODO: Fail on GITHUB_TOKEN not set
+
+	if !util.CommandsAvailable([]string{"git", "go", "make", "jq"}) {
+		log.Fatalf("Unable to meet executable dependency requirements")
+	}
 
 	branch := opts.branch
 	masterRef := opts.masterRef
