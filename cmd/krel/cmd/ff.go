@@ -30,6 +30,7 @@ import (
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 
+	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/util"
 )
 
@@ -79,7 +80,7 @@ func runFf(opts *ffOptions) error {
 	// TODO: Fail on empty branch
 	// TODO: Fail on GITHUB_TOKEN not set
 
-	if !util.CommandsAvailable([]string{"git", "go", "make", "jq"}) {
+	if !command.Available("git", "go", "make", "jq") {
 		log.Fatalf("Unable to meet executable dependency requirements")
 	}
 
@@ -188,8 +189,9 @@ func runFf(opts *ffOptions) error {
 
 	// TODO: Rewrite using go-git
 	//       --dry-run appears to be unsupported for git push, so we shell out here.
-	checkPushCmd := exec.Command("git", "push", "-q", "--dry-run", util.KubernetesGitHubAuthURL)
-	util.Run(checkPushCmd)
+	if err := command.Execute("git push -q --dry-run", util.KubernetesGitHubAuthURL); err != nil {
+		return err
+	}
 
 	w, err := repo.Worktree()
 	if err != nil {
@@ -214,13 +216,15 @@ func runFf(opts *ffOptions) error {
 	}
 
 	// TODO: Merge and update
-	mergeCmd := exec.Command("git", "merge", "-X", "ours", remoteMaster)
-	util.Run(mergeCmd)
+	if err := command.Execute("git merge -X ours", remoteMaster); err != nil {
+		return err
+	}
 
 	// TODO: Check for deleted files
 	// TODO: Do we need hack/install-etcd.sh
-	installEtcd := exec.Command("hack/install-etcd.sh")
-	util.Run(installEtcd)
+	if err := command.Execute("hack/install-etcd.sh"); err != nil {
+		return err
+	}
 
 	currentPath := os.Getenv("PATH")
 	etcdDir := filepath.Join(gitRoot, "third_party/etcd")
@@ -255,12 +259,19 @@ func runFf(opts *ffOptions) error {
 	if !status.IsClean() {
 		log.Printf("Commit changes:")
 		// TODO: Rewrite using go-git
-		gitAdd := exec.Command("git", "add", "-A")
-		util.Run(gitAdd)
+		if err := command.Execute("git add -A"); err != nil {
+			return err
+		}
 
 		// TODO: Rewrite using go-git
-		gitCommit := exec.Command("git", "commit", "-am", fmt.Sprintf("Results of running update scripts: %s", strings.Join(updateScripts, ",")))
-		util.Run(gitCommit)
+		if err := command.Execute(
+			"git commit -am",
+			fmt.Sprintf(
+				"'Results of running update scripts: %s'",
+				strings.Join(updateScripts, ",")),
+		); err != nil {
+			return err
+		}
 	}
 
 	releaseRefName := remoteHash.String()
@@ -285,8 +296,10 @@ func runFf(opts *ffOptions) error {
 		log.Printf("Pushing %s %s branch upstream: ", dryRunFlag, branch)
 		//git push $DRYRUN_FLAG origin $RELEASE_BRANCH:$RELEASE_BRANCH
 		// TODO: Need to handle https and ssh auth sanely
-		gitPushCmd := exec.Command("git", "push", dryRunFlag, remote, branch) //fmt.Sprintf("%s:%s", branch, branch))
-		util.Run(gitPushCmd)
+		//fmt.Sprintf("%s:%s", branch, branch))
+		if err := command.Execute("git push", dryRunFlag, remote, branch); err != nil {
+			return err
+		}
 	}
 
 	return nil
