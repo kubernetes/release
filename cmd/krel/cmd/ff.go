@@ -31,6 +31,7 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing"
 
 	"k8s.io/release/pkg/command"
+	kgit "k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/util"
 )
 
@@ -69,7 +70,7 @@ func init() {
 
 	ffCmd.PersistentFlags().StringVar(&ffOpts.branch, "branch", "", "branch")
 	ffCmd.PersistentFlags().StringVar(&ffOpts.masterRef, "ref", defaultMasterRef, "ref on master")
-	ffCmd.PersistentFlags().StringVar(&ffOpts.org, "org", util.DefaultGithubOrg, "org to run tool against")
+	ffCmd.PersistentFlags().StringVar(&ffOpts.org, "org", kgit.DefaultGithubOrg, "org to run tool against")
 
 	rootCmd.AddCommand(ffCmd)
 }
@@ -86,7 +87,7 @@ func runFf(opts *ffOptions) error {
 
 	branch := opts.branch
 	masterRef := opts.masterRef
-	remote := util.DefaultRemote
+	remote := kgit.DefaultRemote
 	remoteMaster := fmt.Sprintf("%s/%s", remote, "master")
 
 	log.Printf("Preparing to fast-forward master@%s onto the %s branch...\n", masterRef, branch)
@@ -99,12 +100,12 @@ func runFf(opts *ffOptions) error {
 		dryRunFlag = "--dry-run"
 	}
 
-	isReleaseBranch := util.IsReleaseBranch(branch)
+	isReleaseBranch := kgit.IsReleaseBranch(branch)
 	if !isReleaseBranch {
 		log.Fatalf("%s is not a release branch\n", branch)
 	}
 
-	branchExists, err := util.BranchExists(branch)
+	branchExists, err := kgit.BranchExists(branch)
 	if err != nil {
 		return err
 	}
@@ -145,7 +146,7 @@ func runFf(opts *ffOptions) error {
 	// TODO: Remove once SyncRepo works
 	gitRoot = "/tmp/ff-465649664/release-1.16/src/k8s.io/kubernetes"
 
-	syncErr := util.SyncRepo(util.KubernetesGitHubAuthURL, gitRoot)
+	syncErr := kgit.SyncRepo(kgit.KubernetesGitHubAuthURL, gitRoot)
 	if syncErr != nil {
 		return syncErr
 	}
@@ -160,7 +161,7 @@ func runFf(opts *ffOptions) error {
 		return repoErr
 	}
 
-	mergeBase, err := util.GetMergeBase("master", branch, repo)
+	mergeBase, err := kgit.GetMergeBase("master", branch, repo)
 	if err != nil {
 		return err
 	}
@@ -189,7 +190,7 @@ func runFf(opts *ffOptions) error {
 
 	// TODO: Rewrite using go-git
 	//       --dry-run appears to be unsupported for git push, so we shell out here.
-	if err := command.Execute("git push -q --dry-run", util.KubernetesGitHubAuthURL); err != nil {
+	if err := command.Execute("git push -q --dry-run", kgit.KubernetesGitHubAuthURL); err != nil {
 		return err
 	}
 
@@ -221,17 +222,17 @@ func runFf(opts *ffOptions) error {
 	}
 
 	releaseRefName := remoteHash.String()
-	releaseRev, err := util.RevParseShort(releaseRefName, gitRoot)
+	releaseRev, err := kgit.RevParseShort(releaseRefName, gitRoot)
 	if err != nil {
 		return err
 	}
 
-	headRev, err := util.RevParseShort("HEAD", gitRoot)
+	headRev, err := kgit.RevParseShort("HEAD", gitRoot)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("%s", prepushMessage(gitRoot, remote, branch, util.KubernetesGitHubURL, releaseRev, headRev))
+	log.Printf("%s", prepushMessage(gitRoot, remote, branch, kgit.KubernetesGitHubURL, releaseRev, headRev))
 
 	_, pushUpstream, err := util.Ask("Are you ready to push the local branch fast-forward changes upstream? Please only answer after you have validated the changes.", "yes", 3)
 	if err != nil {
