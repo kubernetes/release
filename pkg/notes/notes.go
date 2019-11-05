@@ -84,6 +84,9 @@ type ReleaseNote struct {
 	// Indicates whether or not a note is duplicated across SIGs
 	Duplicate bool `json:"duplicate,omitempty"`
 
+	// Indicates whether or not a note is duplicated across Kinds
+	DuplicateKind bool `json:"duplicate_kind,omitempty"`
+
 	// ActionRequired indicates whether or not the release-note-action-required
 	// label was set on the PR
 	ActionRequired bool `json:"action_required,omitempty"`
@@ -314,17 +317,17 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result, relVer string) (*Releas
 	author := pr.GetUser().GetLogin()
 	authorURL := fmt.Sprintf("https://github.com/%s", author)
 	prURL := fmt.Sprintf("https://github.com/%s/%s/pull/%d", g.Org, g.Repo, pr.GetNumber())
-	IsFeature := HasString(LabelsWithPrefix(pr, "kind"), "feature")
-	IsDuplicate := false
-	sigsListPretty := prettifySigList(LabelsWithPrefix(pr, "sig"))
-	noteSuffix := ""
+	isFeature := HasString(LabelsWithPrefix(pr, "kind"), "feature")
+	noteSuffix := prettifySigList(LabelsWithPrefix(pr, "sig"))
 
-	if IsActionRequired(pr) || IsFeature {
-		if sigsListPretty != "" {
-			noteSuffix = fmt.Sprintf("Courtesy of %s", sigsListPretty)
-		}
-	} else if len(LabelsWithPrefix(pr, "sig")) > 1 {
-		IsDuplicate = true
+	isDuplicateSIG := false
+	if len(LabelsWithPrefix(pr, "sig")) > 1 {
+		isDuplicateSIG = true
+	}
+
+	isDuplicateKind := false
+	if len(LabelsWithPrefix(pr, "kind")) > 1 {
+		isDuplicateKind = true
 	}
 
 	indented := strings.ReplaceAll(text, "\n", "\n  ")
@@ -332,7 +335,7 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result, relVer string) (*Releas
 		indented, pr.GetNumber(), prURL, author, authorURL)
 
 	if noteSuffix != "" {
-		markdown = fmt.Sprintf("%s\n\n  %s", markdown, noteSuffix)
+		markdown = fmt.Sprintf("%s [%s]", markdown, noteSuffix)
 	}
 
 	return &ReleaseNote{
@@ -347,8 +350,9 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result, relVer string) (*Releas
 		SIGs:           LabelsWithPrefix(pr, "sig"),
 		Kinds:          LabelsWithPrefix(pr, "kind"),
 		Areas:          LabelsWithPrefix(pr, "area"),
-		Feature:        IsFeature,
-		Duplicate:      IsDuplicate,
+		Feature:        isFeature,
+		Duplicate:      isDuplicateSIG,
+		DuplicateKind:  isDuplicateKind,
 		ActionRequired: IsActionRequired(pr),
 		ReleaseVersion: relVer,
 	}, nil

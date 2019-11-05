@@ -30,79 +30,75 @@ import (
 
 // Document represents the underlying structure of a release notes document.
 type Document struct {
-	NewFeatures    []string            `json:"new_features"`
-	ActionRequired []string            `json:"action_required"`
-	APIChanges     []string            `json:"api_changes"`
-	Duplicates     map[string][]string `json:"duplicate_notes"`
-	SIGs           map[string][]string `json:"sigs"`
-	BugFixes       []string            `json:"bug_fixes"`
-	Uncategorized  []string            `json:"uncategorized"`
+	Kinds         map[string][]string `json:"kinds"`
+	Uncategorized []string            `json:"uncategorized"`
+}
+
+const (
+	KindAPIChange       = "api-change"
+	KindBug             = "bug"
+	KindCleanup         = "cleanup"
+	KindDeprecation     = "deprecation"
+	KindDesign          = "design"
+	KindDocumentation   = "documentation"
+	KindFailingTest     = "failing-test"
+	KindFeature         = "feature"
+	KindFlake           = "flake"
+	KindBugCleanupFlake = "Other (Bug, Cleanup or Flake)"
+)
+
+var kindPriority = []string{
+	KindDeprecation,
+	KindAPIChange,
+	KindFeature,
+	KindDesign,
+	KindDocumentation,
+	KindFailingTest,
+	KindBug,
+	KindCleanup,
+	KindFlake,
+	KindBugCleanupFlake,
+}
+
+var kindMap = map[string]string{
+	KindBug:     KindBugCleanupFlake,
+	KindCleanup: KindBugCleanupFlake,
+	KindFlake:   KindBugCleanupFlake,
 }
 
 // CreateDocument assembles an organized document from an unorganized set of
 // release notes
 func CreateDocument(notes ReleaseNotes, history ReleaseNotesHistory) (*Document, error) {
 	doc := &Document{
-		NewFeatures:    []string{},
-		ActionRequired: []string{},
-		APIChanges:     []string{},
-		Duplicates:     map[string][]string{},
-		SIGs:           map[string][]string{},
-		BugFixes:       []string{},
-		Uncategorized:  []string{},
+		Kinds:         map[string][]string{},
+		Uncategorized: []string{},
 	}
 
 	for _, pr := range history {
 		note := notes[pr]
 
-		if note.ActionRequired {
-			doc.ActionRequired = append(doc.ActionRequired, note.Markdown)
-		} else if note.Feature {
-			doc.NewFeatures = append(doc.NewFeatures, note.Markdown)
-		} else if note.Duplicate {
-			header := prettifySigList(note.SIGs)
-			existingNotes, ok := doc.Duplicates[header]
+		if note.DuplicateKind {
+			kind := mapKind(highestPriorityKind(note.Kinds))
+			existingNotes, ok := doc.Kinds[kind]
 			if ok {
-				doc.Duplicates[header] = append(existingNotes, note.Markdown)
+				doc.Kinds[kind] = append(existingNotes, note.Markdown)
 			} else {
-				doc.Duplicates[header] = []string{note.Markdown}
+				doc.Kinds[kind] = []string{note.Markdown}
 			}
 		} else {
-			categorized := false
-
-			for _, sig := range note.SIGs {
-				categorized = true
-				notesForSIG, ok := doc.SIGs[sig]
-				if ok {
-					doc.SIGs[sig] = append(notesForSIG, note.Markdown)
-				} else {
-					doc.SIGs[sig] = []string{note.Markdown}
-				}
-			}
-			isBug := false
 			for _, kind := range note.Kinds {
-				switch kind {
-				case "bug":
-					// if the PR has kind/bug, we want to make a note of it, but we don't
-					// include it in the Bug Fixes section until we haven't processed all
-					// kinds and determined that it has no other categorization label.
-					isBug = true
-				case "feature":
-					continue
-				case "api-change", "new-api":
-					categorized = true
-					doc.APIChanges = append(doc.APIChanges, note.Markdown)
+				mappedKind := mapKind(kind)
+				notesForKind, ok := doc.Kinds[mappedKind]
+				if ok {
+					doc.Kinds[mappedKind] = append(notesForKind, note.Markdown)
+				} else {
+					doc.Kinds[mappedKind] = []string{note.Markdown}
 				}
 			}
 
-			// if the note has not been categorized so far, we can toss in one of two
-			// buckets
-			if !categorized {
-				if isBug {
-					doc.BugFixes = append(doc.BugFixes, note.Markdown)
-				} else {
-					doc.Uncategorized = append(doc.Uncategorized, note.Markdown)
-				}
+			if len(note.Kinds) == 0 {
+				// the note has not been categorized so far
+				doc.Uncategorized = append(doc.Uncategorized, note.Markdown)
 			}
 		}
 	}
@@ -116,13 +112,6 @@ func RenderMarkdown(doc *Document, bucket, tars, prevTag, newTag string) (string
 	if err := createDownloadsTable(o, bucket, tars, prevTag, newTag); err != nil {
 		return "", err
 	}
-
-	// we always want to render the document with SIGs in alphabetical order
-	sortedSIGs := []string{}
-	for sig := range doc.SIGs {
-		sortedSIGs = append(sortedSIGs, sig)
-	}
-	sort.Strings(sortedSIGs)
 
 	nl := func() {
 		o.WriteRune('\n')
@@ -143,61 +132,16 @@ func RenderMarkdown(doc *Document, bucket, tars, prevTag, newTag string) (string
 		nl()
 	}
 
-	// the "Action Required" section
-	if len(doc.ActionRequired) > 0 {
-		o.WriteString("## Action Required")
+	// each Kind gets a section
+	sortedKinds := sortKinds(doc.Kinds)
+	if len(sortedKinds) > 0 {
+		o.WriteString("## Changes by Kind")
 		nlnl()
-		for _, note := range doc.ActionRequired {
-			writeNote(note)
-		}
-		nlnl()
-	}
-
-	// the "New Feautres" section
-	if len(doc.NewFeatures) > 0 {
-		o.WriteString("## New Features")
-		nlnl()
-		for _, note := range doc.NewFeatures {
-			writeNote(note)
-		}
-		nlnl()
-	}
-
-	// the "API Changes" section
-	if len(doc.APIChanges) > 0 {
-		o.WriteString("### API Changes")
-		nlnl()
-		for _, note := range doc.APIChanges {
-			writeNote(note)
-		}
-		nlnl()
-	}
-
-	// the "Duplicate Notes" section
-	if len(doc.Duplicates) > 0 {
-		o.WriteString("### Notes from Multiple SIGs")
-		nlnl()
-		for header, notes := range doc.Duplicates {
-			o.WriteString("#### ")
-			o.WriteString(header)
+		for _, kind := range sortedKinds {
+			o.WriteString("### ")
+			o.WriteString(prettyKind(kind))
 			nlnl()
-			for _, note := range notes {
-				writeNote(note)
-			}
-			nl()
-		}
-		nl()
-	}
-
-	// each SIG gets a section (in alphabetical order)
-	if len(sortedSIGs) > 0 {
-		o.WriteString("### Notes from Individual SIGs")
-		nlnl()
-		for _, sig := range sortedSIGs {
-			o.WriteString("#### SIG ")
-			o.WriteString(prettySIG(sig))
-			nlnl()
-			for _, note := range doc.SIGs[sig] {
+			for _, note := range doc.Kinds[kind] {
 				writeNote(note)
 			}
 			nl()
@@ -205,20 +149,10 @@ func RenderMarkdown(doc *Document, bucket, tars, prevTag, newTag string) (string
 		nlnl()
 	}
 
-	// the "Bug Fixes" section
-	if len(doc.BugFixes) > 0 {
-		o.WriteString("### Bug Fixes")
-		nlnl()
-		for _, note := range doc.BugFixes {
-			writeNote(note)
-		}
-		nlnl()
-	}
-
-	// we call the uncategorized notes "Other Notable Changes". ideally these
-	// notes would at least have a SIG label.
+	// We call the uncategorized notes "Other Changes". These are changes
+	// without any kind
 	if len(doc.Uncategorized) > 0 {
-		o.WriteString("### Other Notable Changes")
+		o.WriteString("## Other Changes")
 		nlnl()
 		for _, note := range doc.Uncategorized {
 			writeNote(note)
@@ -227,6 +161,30 @@ func RenderMarkdown(doc *Document, bucket, tars, prevTag, newTag string) (string
 	}
 
 	return o.String(), nil
+}
+
+// sortKinds sorts kinds by their priority and returns the result in a string
+// slice
+func sortKinds(kinds map[string][]string) []string {
+	res := []string{}
+	for kind := range kinds {
+		res = append(res, kind)
+	}
+
+	indexOf := func(kind string) int {
+		for i, prioKind := range kindPriority {
+			if kind == prioKind {
+				return i
+			}
+		}
+		return -1
+	}
+
+	sort.Slice(res, func(i, j int) bool {
+		return indexOf(res[i]) < indexOf(res[j])
+	})
+
+	return res
 }
 
 // prettySIG takes a sig name as parsed by the `sig-foo` label and returns a
@@ -260,7 +218,7 @@ func prettifySigList(sigs []string) string {
 	for i, sig := range sigs {
 		if i == 0 {
 			sigList = fmt.Sprintf("SIG %s", prettySIG(sig))
-		} else if i == (len(sigs) - 1) {
+		} else if i == len(sigs)-1 {
 			sigList = fmt.Sprintf("%s, and SIG %s", sigList, prettySIG(sig))
 		} else {
 			sigList = fmt.Sprintf("%s, SIG %s", sigList, prettySIG(sig))
@@ -339,4 +297,34 @@ func createDownloadsTable(w io.Writer, bucket, tars, prevTag, newTag string) err
 
 	fmt.Fprintf(w, "## Changelog since %s\n\n", prevTag)
 	return nil
+}
+
+func highestPriorityKind(kinds []string) string {
+	for _, prioKind := range kindPriority {
+		for _, kind := range kinds {
+			if kind == prioKind {
+				return kind
+			}
+		}
+	}
+
+	// Kind not in priotiy slice, returning the first one
+	return kinds[0]
+}
+
+func mapKind(kind string) string {
+	if newKind, ok := kindMap[kind]; ok {
+		return newKind
+	}
+	return kind
+}
+
+func prettyKind(kind string) string {
+	if kind == KindAPIChange {
+		return "API Change"
+	}
+	if kind == KindBugCleanupFlake {
+		return KindBugCleanupFlake
+	}
+	return strings.Title(kind)
 }
