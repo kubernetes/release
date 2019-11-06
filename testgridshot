@@ -29,8 +29,8 @@
 #+   variables are available:
 #+
 #+   UPLOAD_KEY: [*mandatory*]
-#+     The user key for 'vgy.me'. You need to create an account at 'vgy.me' and a
-#+     user key to be able to upload images.
+#+     The user key for 'vgy.me'. You need to create an account at 'vgy.me'
+#+      (https://vgy.me/auth/register) and a user key to be able to upload images.
 #+
 #+   BOARDS: [default: "blocking informing"]
 #+     Change which boards you are interested in
