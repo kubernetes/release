@@ -72,7 +72,7 @@ func TestReleaseNoteParsing(t *testing.T) {
 		fmt.Println(sha)
 		commit, _, err := client.Repositories.GetCommit(ctx, "kubernetes", "kubernetes", sha)
 		require.NoError(t, err)
-		prs, err := PRsFromCommit(client, commit)
+		prs, err := PRsFromCommit(client, nil, commit)
 		_, err = ReleaseNoteFromCommit(&Result{commit: commit, pullRequest: prs[0]}, client, "0.1")
 		require.NoError(t, err)
 	}
@@ -213,7 +213,7 @@ func TestGetPRNumberFromCommitMessage(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			prs, err := prsForCommit(tc.commitMessage)
+			prs, err := prsNumForCommitFromMessage(tc.commitMessage)
 			if err != nil {
 				t.Fatalf("Expected no error to occur but got %v", err)
 			}

@@ -455,7 +455,7 @@ func ListCommitsWithNotes(
 			"sha", commit.GetSHA(),
 		)
 
-		prs, err := PRsFromCommit(client, commit, opts...)
+		prs, err := PRsFromCommit(client, logger, commit, opts...)
 		if err != nil {
 			if err.Error() == "no matches found when parsing PR from commit" {
 				level.Debug(logger).Log(
@@ -551,27 +551,18 @@ func ListCommitsWithNotes(
 // PRsFromCommit return an API Pull Request struct given a commit struct. This is
 // useful for going from a commit log to the PR (which contains useful info such
 // as labels).
-func PRsFromCommit(client *github.Client, commit *github.RepositoryCommit, opts ...GithubApiOption) (
-	githubPRs []*github.PullRequest, err error,
+func PRsFromCommit(client *github.Client, logger log.Logger, commit *github.RepositoryCommit, opts ...GithubApiOption) (
+	[]*github.PullRequest, error,
 ) {
-	c := configFromOpts(opts...)
-
-	prs, err := prsForCommit(*commit.Commit.Message)
+	githubPRs, err := prsForCommitFromMessage(client, *commit.Commit.Message, opts...)
 	if err != nil {
-		return nil, err
+		level.Debug(logger).Log(
+			"err", err,
+			"msg", "error getting the pr numbers from commit message",
+			"sha", commit.GetSHA(),
+		)
+		return prsForCommitFromSHA(client, *commit.SHA, opts...)
 	}
-
-	for _, pr := range prs {
-		// Given the PR number that we've now converted to an integer, get the PR from
-		// the API
-		res, _, err := client.PullRequests.Get(c.ctx, c.org, c.repo, pr)
-		if err != nil {
-			return nil, err
-		}
-		githubPRs = append(githubPRs, res)
-
-	}
-
 	return githubPRs, err
 }
 
@@ -654,7 +645,62 @@ func HasString(a []string, x string) bool {
 	return false
 }
 
-func prsForCommit(commitMessage string) (prs []int, err error) {
+// prsForCommitFromSHA retrieves the PR numbers for a commit given its sha
+func prsForCommitFromSHA(client *github.Client, sha string, opts ...GithubApiOption) (prs []*github.PullRequest, err error) {
+	c := configFromOpts(opts...)
+
+	plo := &github.PullRequestListOptions{
+		State: "closed",
+		ListOptions: github.ListOptions{
+			Page:    1,
+			PerPage: 100,
+		},
+	}
+	prs, resp, err := client.PullRequests.ListPullRequestsWithCommit(c.ctx, c.org, c.repo, sha, plo)
+	if err != nil {
+		return nil, err
+	}
+
+	plo.ListOptions.Page++
+	for plo.ListOptions.Page <= resp.LastPage {
+		pResult, pResp, err := client.PullRequests.ListPullRequestsWithCommit(c.ctx, c.org, c.repo, sha, plo)
+		if err != nil {
+			return nil, err
+		}
+		prs = append(prs, pResult...)
+		resp = pResp
+		plo.ListOptions.Page++
+	}
+
+	if len(prs) == 0 {
+		return nil, errors.Errorf("no pr found for sha %s", sha)
+	}
+	return prs, nil
+}
+
+func prsForCommitFromMessage(client *github.Client, commitMessage string, opts ...GithubApiOption) (prs []*github.PullRequest, err error) {
+	c := configFromOpts(opts...)
+
+	prsNum, err := prsNumForCommitFromMessage(commitMessage)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, pr := range prsNum {
+		// Given the PR number that we've now converted to an integer, get the PR from
+		// the API
+		res, _, err := client.PullRequests.Get(c.ctx, c.org, c.repo, pr)
+		if err != nil {
+			return nil, err
+		}
+		prs = append(prs, res)
+
+	}
+
+	return prs, err
+}
+
+func prsNumForCommitFromMessage(commitMessage string) (prs []int, err error) {
 	// Thankfully k8s-merge-robot commits the PR number consistently. If this ever
 	// stops being true, this definitely won't work anymore.
 	regex := regexp.MustCompile(`Merge pull request #(?P<number>\d+)`)
