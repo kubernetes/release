@@ -71,22 +71,20 @@ Usage of release-notes:
 
 You can build the deb packages in a Docker container like this:
 ```
-docker build --tag=debian-packager debian
-docker run --volume="$(pwd)/debian:/src" debian-packager
+make build-debs
 ```
 
-The build runs for a while, after it's done you will find the output in `debian/bin`.
+The build runs for a while, after it's done you will find the output in `_output/debs`.
 
 ### For Fedora, CentOS, Red Hat Enterprise Linux
 
 You can build the rpm packages in a Docker container with:
 
 ```
-cd rpm
-./docker-build.sh
+make build-rpms
 ```
 
-Resulting rpms, and a pre-generated yum repository will be generated in rpm/output/x86_64.
+Resulting rpms, and a pre-generated yum repository will be generated in `_output/rpms`.
 
 ## Contributing
 
