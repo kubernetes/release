@@ -1,4 +1,4 @@
-FROM k8s.gcr.io/kube-cross:v1.12.12-1
+FROM k8s.gcr.io/kube-cross:v1.13.4-1
 
 ARG DEBIAN_FRONTEND=noninteractive
 
