@@ -28,9 +28,8 @@
 #+   Configuration can be passed in via the environment. The following
 #+   variables are available:
 #+
-#+   UPLOAD_KEY: [*mandatory*]
-#+     The user key for 'vgy.me'. You need to create an account at 'vgy.me'
-#+      (https://vgy.me/auth/register) and a user key to be able to upload images.
+#+   GITHUB_TOKEN: [*mandatory*]
+#+     This token is used to (pull from and) push the images to the wiki repo.
 #+
 #+   BOARDS: [default: "blocking informing"]
 #+     Change which boards you are interested in
@@ -53,24 +52,26 @@
 #+     Change the amount of time we want to wait between consecutive API call
 #+     retries.
 #+
+#+   WIKI_SLUG: [default: kubernetes/release]
+#+     The wiki of the specified repo will be used to store the images in. This
+#+     needs to be in the form <USER-OR-ORG>/<REPO>.
+#+
 #+   Example:
-#+     $ UPLOAD_KEY='<someKey>' BOARDS='all informing' STATES='FAILING FLAKY' BLOCK_WIDTH=10 ./testgridshot 1.15
+#+     $ GITHUB_TOKEN='xxxx' BOARDS='all informing' STATES='FAILING FLAKY' BLOCK_WIDTH=10 ./testgridshot 1.15
 #+         Creates dense screenshots of all the 'sig-release-1.15-{all,informing}'
 #+         boards which are either failing or flaking
 #+
 #+ How it works:
 #+   General flow:
+#+   - Create a shallow clone of the wiki repo to store the pictures in
 #+   - Get the dasbhoard URLs we are interested in from testgrid's 'summary'
 #+     endpoint
 #+   - Use 'render-tron.appspot.com' to create screenshots of the testgrid
 #+     boards
-#+   - Upload all the screenshots to 'vgy.me'
-#+   - Print a markdown, which links to the images on 'vgy.me', stub on StdOut
-#+   Remarks:
-#+   - on 2019-09-03 'vgy.me' disabled anonymous uploads, therefor everyone who
-#+     want's to use that script needs an account at 'vgy.me' currently.
-#+   - The images are not served by 'vgy.me' directly if used in a GitHub issue,
-#+     but by GitHub's camo service
+#+   - Create a new commit in the wiki repo with all gathered pictures and push
+#+     that upstream
+#+   - Print a markdown stub, which links to the images on the GitHub wiki, on
+#+     StdOut
 #+
 
 set -o errexit
@@ -85,12 +86,14 @@ readonly WIDTH="${WIDTH:-3000}"
 readonly HEIGHT="${HEIGHT:-2500}"
 readonly RETRY_COUNT="${RETRY_COUNT:-3}"
 readonly RETRY_SLEEP="${RETRY_SLEEP:-2}"
+readonly WIKI_SLUG="${WIKI_SLUG:-kubernetes/release}"
 
 readonly TESTGRID='https://testgrid.k8s.io'
 readonly RENDER_TRON='https://render-tron.appspot.com/screenshot'
-readonly UPLOAD_URL='https://vgy.me/upload'
 readonly ISSUE_STUB_SUFFIX='issue.'
-
+readonly WIKI_GIT_URL="https://github.com/${WIKI_SLUG}.wiki.git"
+readonly WIKI_USER_NAME='testgridshot helper'
+readonly WIKI_USER_EMAIL='release-managers+testgridshot@kubernetes.io'
 
 get_tests_by_status() {
   local status="$1"
@@ -125,14 +128,6 @@ log() {
   echo "$(get_timestamp) ${*}" >&2
 }
 
-upload() {
-  local file_name="$1"
-  curl_with_retry "$UPLOAD_URL" \
-    -F "userkey=${UPLOAD_KEY}" \
-    -F "file=@${file_name}" \
-    -F "title=${file_name}"
-}
-
 screenshot() {
   local url="$1"
   local target="$2"
@@ -152,7 +147,7 @@ get_issue_stub_name() {
 
 combine_issue_stubs() {
   local dir="$1"
-  find "$dir" -name "${ISSUE_STUB_SUFFIX}*" \
+  find "$dir" -maxdepth 1 -mindepth 1 -name "${ISSUE_STUB_SUFFIX}*" \
     | sort -n \
     | xargs cat
 }
@@ -187,14 +182,86 @@ usage() {
   awk -vRE="$usage_marker" "$awk_prog" <"$0" >&2
 }
 
+wiki_git_with_creds() {
+  # run all this in a subshell, so we can set up a trap handler without
+  # overriding the other/"outer" trap handler
+  (
+    local cred_helper
+
+    cred_helper="$( mktemp )"
+    trap 'rm -f -- "$cred_helper"' EXIT
+    chmod 0600 "$cred_helper"
+    echo "echo username=${GITHUB_TOKEN}" >> "$cred_helper"
+    echo "echo password=x-oauth-basic"   >> "$cred_helper"
+
+    local git_args=(
+      '-c' "user.email=${WIKI_USER_EMAIL}"
+      '-c' "user.name=${WIKI_USER_NAME} ($USER)"
+      # the cred helper needs to be unset first before we can set up a custom
+      # one ¯\_(ツ)_/¯
+      '-c' "credential.helper="
+      '-c' "credential.helper=/usr/bin/env bash '${cred_helper}'"
+    )
+
+    # overriding $HOME has the effect that git does not (cannot) read user's
+    # git configurations. This is helpful for cases where `url.xxxx.insteadOf`
+    # is set up. NUL is not allowed in filenames, so we can be fairly certain
+    # that nobody will be able to plant a malicious config there.
+    HOME=$'\0' \
+      git "${git_args[@]}" "$@" >/dev/null
+  )
+}
+
+get_wiki_dir() {
+  printf '%s/.wiki' "$1"
+}
+
+wiki_clone() {
+  local wiki_base_dir dest_dir
+
+  wiki_base_dir="$( get_wiki_dir "$1" )"
+
+  wiki_git_with_creds clone --depth=1 --quiet "$WIKI_GIT_URL" "$wiki_base_dir"
+
+  dest_dir="${wiki_base_dir}/testgridshot/$(date '+%Y-%m-%d_%H-%M-%S')_$(openssl rand -hex 4)"
+  mkdir -p "$dest_dir"
+  echo "$dest_dir"
+}
+
+wiki_push() {
+  local wiki_base_dir
+
+  wiki_base_dir="$( get_wiki_dir "$1" )"
+
+  wiki_git_with_creds -C "$wiki_base_dir" add .
+  wiki_git_with_creds -C "$wiki_base_dir" commit --quiet -m "testgridshot by ${USER}"
+  wiki_git_with_creds -C "$wiki_base_dir" push --quiet
+}
+
+get_image_url() {
+  local file_name="$1"
+  local wiki_base_dir
+  local wiki_base_url="https://raw.githubusercontent.com/wiki/${WIKI_SLUG}"
+
+  wiki_base_dir="$( get_wiki_dir "$2" )"
+
+  # Replace the local path to the wiki's repo with the URL to the wiki but keep
+  # the relative path from the wiki's base dir and the file name the same.
+  echo "${file_name/#${wiki_base_dir}/${wiki_base_url}}"
+}
+
 shoot() {
   local target_release="$1"
   local boards
   local tests t s
   local idx=0
+  local wiki_dir
 
   tmp_dir="$( mktemp -d )"
   trap 'rm -rf -- "$tmp_dir"' EXIT
+
+  log "pulling in '${WIKI_GIT_URL}' to store the images in"
+  wiki_dir="$( wiki_clone "$tmp_dir" )"
 
   read -r -a boards <<< "$BOARDS"
   # prepend all elements with 'sig-release-<release>-' to form the full
@@ -212,8 +279,7 @@ shoot() {
 
       idx=$(( idx + 1 ))
       (
-        local testgrid_url timestamp \
-          file_name image_meta image_url file_base_name file_size
+        local testgrid_url timestamp file_name image_url file_base_name file_size issue_stub_name
 
         local_log() {
           log "[${idx}]" "$@"
@@ -222,36 +288,44 @@ shoot() {
         local_log "starting ${t}"
 
         testgrid_url="${TESTGRID}/${t}&width=${BLOCK_WIDTH}"
-        file_name="${tmp_dir}/$( gen_file_name "${t}" ).jpg"
+        file_name="${wiki_dir}/$( gen_file_name "${t}" ).jpg"
         file_base_name="$(basename "$file_name")"
+        issue_stub_name="$( get_issue_stub_name "$tmp_dir" "$idx" )"
 
         # create & download screenshot
         local_log "screenshoting ${testgrid_url} to ${file_base_name}"
         screenshot "${testgrid_url}" "${file_name}"
+
+        # when did we successfully capture that image?
         timestamp="$( get_timestamp )"
+
+        # convert the local file path to the URL the image will be available at
+        image_url="$( get_image_url "$file_name" "$tmp_dir" )"
 
         read -r file_size <<< "$(wc -c < "$file_name")"
         local_log "${file_base_name}: ${file_size} bytes"
 
-        # upload
-        local_log "uploading ${file_base_name}"
-        image_meta="$( upload "$file_name" )"
-
-        image_url="$( echo "${image_meta}" | jq -r '.image' )"
-
         # generate issue section
         local_log "generating markdown stub"
         printf \
-          '\n<details><summary><tt>%s</tt> %s %s <a href="%s">[testgrid]</a></summary><p>\n\n![%s](%s)\n<!-- %s -->\n</p></details>\n' \
-          "${timestamp}" "${s}" "${t}" "${testgrid_url}" "${t}" "${image_url}" "${image_meta}" \
-          > "$( get_issue_stub_name "${tmp_dir}" "$idx" )"
+          '\n<details><summary><tt>%s</tt> %s %s <a href="%s">[testgrid]</a></summary><p>\n\n![%s](%s)\n</p></details>\n' \
+          "${timestamp}" "${s}" "${t}" "${testgrid_url}" "${t}" "${image_url}" \
+          > "$issue_stub_name"
 
-        local_log "done, image is available at ${image_url}"
+        local_log "done, image will be available at ${image_url}"
       )&
     done
   done
 
   wait
+
+  if [[ $idx -lt 1 ]]; then
+    log "no $(comma_sep "${STATES}") tests found"
+    return
+  fi
+
+  log "uploading images to '${WIKI_GIT_URL}'"
+  wiki_push "$tmp_dir"
 
   echo
 
@@ -268,7 +342,9 @@ main() {
     exit
   fi
 
-  readonly "${UPLOAD_KEY?needs to hold the user key for your account at ${UPLOAD_URL}}"
+  : "${GITHUB_TOKEN?must be set, so we can push images to the ${WIKI_SLUG} wiki}"
+  readonly GITHUB_TOKEN
+
   shoot "$target_release"
 }
 
