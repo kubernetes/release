@@ -32,6 +32,5 @@ bit more on that [in the cloud-build docs][gcb_images].
 Image                                     | used in/by
 :---:                                     | --
 [k8s-cloud-builder](./k8s-cloud-builder/) | The "main" image, [`anago`](../anago) runs with on cloud-build (submitted via [`gcbmgr`](../gcbmgr))
-[godep](./godep/)                         | ?
 
 [gcb_images]: https://cloud.google.com/cloud-build/docs/configuring-builds/store-images-artifacts#storing_images_in

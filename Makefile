@@ -67,7 +67,6 @@ test-sh: ## Runs all shellscript tests
 .PHONY: update-images
 
 images := \
-	godep \
 	k8s-cloud-builder
 
 update-images: $(addprefix image-,$(images)) ## Update all images in ./images/
