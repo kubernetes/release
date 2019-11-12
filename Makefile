@@ -18,6 +18,9 @@
 .DEFAULT_GOAL:=help
 SHELL:=/usr/bin/env bash
 
+COLOR:=\\033[36m
+NOCOLOR:=\\033[0m
+
 ##@ Package
 
 .PHONY: build-debs build-rpms verify-published-debs verify-published-rpms
@@ -79,17 +82,17 @@ image-%:
 .PHONY: help
 
 help:  ## Display this help
-	@awk ' \
-		BEGIN { \
-			FS = ":.*##" ; \
-			col = "\033[36m" ; \
-			nocol = "\033[0m" ; \
-			printf "\nUsage:\n  make %s<target>%s\n", col, nocol \
-		} \
-		/^[a-zA-Z_-]+:.*?##/ { \
-			printf "  %s%-15s%s %s\n", col, $$1, nocol, $$2 \
-		} \
-		/^##@/ { \
-			printf "\n%s%s%s\n", col, substr($$0, 5), nocol \
-		} \
-	' $(MAKEFILE_LIST)
+	@awk \
+		-v "col=${COLOR}" -v "nocol=${NOCOLOR}" \
+		' \
+			BEGIN { \
+				FS = ":.*##" ; \
+				printf "\nUsage:\n  make %s<target>%s\n", col, nocol \
+			} \
+			/^[a-zA-Z_-]+:.*?##/ { \
+				printf "  %s%-15s%s %s\n", col, $$1, nocol, $$2 \
+			} \
+			/^##@/ { \
+				printf "\n%s%s%s\n", col, substr($$0, 5), nocol \
+			} \
+		' $(MAKEFILE_LIST)
