@@ -27,7 +27,7 @@ build-debs: ## Build debs
 
 build-rpms: ## Build rpms
 	PACKAGE_TYPE="rpms" ./build/package.sh
-	
+
 verify-published-debs: ## Ensure debs have been published
 	./hack/packages/verify-published.sh debs
 
