@@ -10,8 +10,16 @@ read and observe the [Code of Conduct](https://github.com/cncf/foundation/blob/m
 
 ## Autogenerating Bazel Configs
 
-If you add or modify Go code, make sure to generate the necessary Bazel `BUILD` files:
+If you add or modify Go code, make sure to generate the necessary Bazel (`BUILD.bazel`) files:
 
 ```bash
 ./hack/update-all.sh
+```
+
+## Submitting a Pull Request
+
+Before submitting a pull request, please make sure to verify that all tests are passing:
+
+```bash
+./hack/verify-all.sh
 ```
