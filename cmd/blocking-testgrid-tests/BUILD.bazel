@@ -5,7 +5,10 @@ go_library(
     srcs = ["main.go"],
     importpath = "k8s.io/release/cmd/blocking-testgrid-tests",
     visibility = ["//visibility:private"],
-    deps = ["@io_k8s_test_infra//testgrid/config:go_default_library"],
+    deps = [
+        "@com_github_googlecloudplatform_testgrid//config:go_default_library",
+        "@com_github_googlecloudplatform_testgrid//pb/config:go_default_library",
+    ],
 )
 
 go_binary(
