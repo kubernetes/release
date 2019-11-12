@@ -77,6 +77,23 @@ image-%:
 	$(eval img := $(subst image-,,$@))
 	gcloud builds submit --config './images/$(img)/cloudbuild.yaml' './images/$(img)'
 
+##@ Dependencies
+
+.SILENT: update-deps update-deps-go
+.PHONY:  update-deps update-deps-go
+
+update-deps: update-deps-go ## Update all dependencies for this repo
+	echo -e "${COLOR}Commit/PR the following changes:${NOCOLOR}"
+	git status --short
+
+update-deps-go: GO111MODULE=on
+update-deps-go: ## Update all golang dependencies for this repo
+	go get -u -t ./...
+	go mod tidy
+	go mod verify
+	$(MAKE) test-go
+	./hack/update-all.sh
+
 ##@ Helpers
 
 .PHONY: help
