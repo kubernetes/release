@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package cmd
 
 import (
 	"context"
@@ -29,113 +29,43 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
-	"time"
 
 	"github.com/blang/semver"
 	"github.com/google/go-github/v28/github"
+	"github.com/spf13/cobra"
 )
 
-type ChannelType string
-
-const (
-	ChannelRelease ChannelType = "release"
-	ChannelTesting ChannelType = "testing"
-	ChannelNightly ChannelType = "nightly"
-
-	minimumKubernetesVersion = "1.13.0"
-	minimumCNIVersion        = "0.7.5"
-	pre117CNIVersion         = "0.7.5"
-
-	defaultRevision = "0"
-
-	packagesRootDir = "packages"
-
-	kubeadmConf = "10-kubeadm.conf"
-)
-
-var (
-	minimumCRIToolsVersion = minimumKubernetesVersion
-	latestPackagesDir      = fmt.Sprintf("%s/%s", packagesRootDir, "latest")
-)
-
-type work struct {
-	src  string
-	dst  string
-	t    *template.Template
-	info os.FileInfo
+type debsOptions struct {
+	branch    string
+	masterRef string
+	org       string
 }
 
-type build struct {
-	Package     string
-	Definitions []packageDefinition
+var debsOpts = &debsOptions{}
+
+// debsCmd represents the base command when called without any subcommands
+var debsCmd = &cobra.Command{
+	Use:   "debs --branch <release-branch> [--ref <master-ref>] [--nomock] [--cleanup]",
+	Short: "debs fast forwards a Kubernetes release branch",
+	Long: `debs fast forwards a branch to a specified master object reference
+(defaults to HEAD), and then prepares the branch as a Kubernetes release branch:
+
+- Run hack/update-all.sh to ensure compliance of generated files`,
+	Example: "kubepkg debs --branch release-1.16 39d0135e --ref HEAD --cleanup",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := runDebs(); err != nil {
+			return err
+		}
+
+		return nil
+	},
 }
-
-type packageDefinition struct {
-	Name     string
-	Version  string
-	Revision string
-
-	Channel           ChannelType
-	KubernetesVersion string
-	KubeletCNIVersion string
-
-	DownloadLinkBase         string
-	KubeadmKubeletConfigFile string
-
-	CNIDownloadLink string
-}
-
-type cfg struct {
-	*packageDefinition
-	Arch         string
-	DebArch      string
-	Package      string
-	Dependencies string
-}
-
-type stringList []string
-
-func (ss *stringList) String() string {
-	return strings.Join(*ss, ",")
-}
-func (ss *stringList) Set(v string) error {
-	*ss = strings.Split(v, ",")
-	return nil
-}
-
-var (
-	revision        string
-	kubeVersion     string
-	cniVersion      string
-	criToolsVersion string
-
-	packages      = stringList{"kubelet", "kubectl", "kubeadm", "kubernetes-cni", "cri-tools"}
-	channels      = stringList{"release", "testing", "nightly"}
-	architectures = stringList{"amd64", "arm", "arm64", "ppc64le", "s390x"}
-
-	releaseDownloadLinkBase = "https://dl.k8s.io"
-
-	builtins = map[string]interface{}{
-		"date": func() string {
-			return time.Now().Format(time.RFC1123Z)
-		},
-	}
-
-	keepTmp = flag.Bool("keep-tmp", false, "keep tmp dir after build")
-)
 
 func init() {
-	flag.Var(&packages, "packages", "packages to build")
-	flag.Var(&channels, "channels", "channels to build for")
-	flag.Var(&architectures, "arch", "architectures to build for")
-	flag.StringVar(&kubeVersion, "kube-version", "", "Kubernetes version to build")
-	flag.StringVar(&revision, "revision", defaultRevision, "deb package revision.")
-	flag.StringVar(&cniVersion, "cni-version", "", "CNI version to build")
-	flag.StringVar(&criToolsVersion, "cri-tools-version", "", "CRI tools version to build")
-	flag.StringVar(&releaseDownloadLinkBase, "release-download-link-base", "https://dl.k8s.io", "release download link base.")
+	rootCmd.AddCommand(debsCmd)
 }
 
-func main() {
+func runDebs() error {
 	flag.Parse()
 
 	// Replace the "+" with a "-" to make it semver-compliant
@@ -149,6 +79,9 @@ func main() {
 	if err := walkBuilds(builds); err != nil {
 		log.Fatalf("err: %v", err)
 	}
+
+	// TODO: Fix return values
+	return nil
 }
 
 func constructBuilds(packages, channels []string, kubeVersion, revision, cniVersion string) ([]build, error) {
