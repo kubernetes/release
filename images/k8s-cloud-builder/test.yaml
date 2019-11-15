@@ -1,0 +1,9 @@
+# https://github.com/GoogleContainerTools/container-structure-test
+
+schemaVersion: '2.0.0'
+
+commandTests:
+- name:          python version
+  command:       python
+  args:          [ "--version" ]
+  expectedError: [ "^Python 2\\.7" ]
