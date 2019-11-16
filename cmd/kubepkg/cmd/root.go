@@ -17,15 +17,11 @@ limitations under the License.
 package cmd
 
 import (
-	"flag"
-	"fmt"
 	"log"
-	"os"
-	"strings"
-	"text/template"
-	"time"
 
 	"github.com/spf13/cobra"
+
+	kpkg "k8s.io/release/pkg/kubepkg"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -35,68 +31,21 @@ var rootCmd = &cobra.Command{
 }
 
 type rootOptions struct {
+	revision        string
+	kubeVersion     string
+	cniVersion      string
+	criToolsVersion string
+
+	packages      []string
+	channels      []string
+	architectures []string
+
+	releaseDownloadLinkBase string
 }
 
 var rootOpts = &rootOptions{}
 
-type ChannelType string
-
-const (
-	ChannelRelease ChannelType = "release"
-	ChannelTesting ChannelType = "testing"
-	ChannelNightly ChannelType = "nightly"
-
-	minimumKubernetesVersion = "1.13.0"
-	minimumCNIVersion        = "0.7.5"
-	pre117CNIVersion         = "0.7.5"
-
-	defaultRevision = "0"
-
-	packagesRootDir = "packages"
-
-	kubeadmConf = "10-kubeadm.conf"
-)
-
-var (
-	minimumCRIToolsVersion = minimumKubernetesVersion
-	latestPackagesDir      = fmt.Sprintf("%s/%s", packagesRootDir, "latest")
-)
-
-type work struct {
-	src  string
-	dst  string
-	t    *template.Template
-	info os.FileInfo
-}
-
-type build struct {
-	Package     string
-	Definitions []packageDefinition
-}
-
-type packageDefinition struct {
-	Name     string
-	Version  string
-	Revision string
-
-	Channel           ChannelType
-	KubernetesVersion string
-	KubeletCNIVersion string
-
-	DownloadLinkBase         string
-	KubeadmKubeletConfigFile string
-
-	CNIDownloadLink string
-}
-
-type cfg struct {
-	*packageDefinition
-	Arch         string
-	DebArch      string
-	Package      string
-	Dependencies string
-}
-
+/*
 type stringList []string
 
 func (ss *stringList) String() string {
@@ -106,27 +55,7 @@ func (ss *stringList) Set(v string) error {
 	*ss = strings.Split(v, ",")
 	return nil
 }
-
-var (
-	revision        string
-	kubeVersion     string
-	cniVersion      string
-	criToolsVersion string
-
-	packages      = stringList{"kubelet", "kubectl", "kubeadm", "kubernetes-cni", "cri-tools"}
-	channels      = stringList{"release", "testing", "nightly"}
-	architectures = stringList{"amd64", "arm", "arm64", "ppc64le", "s390x"}
-
-	releaseDownloadLinkBase = "https://dl.k8s.io"
-
-	builtins = map[string]interface{}{
-		"date": func() string {
-			return time.Now().Format(time.RFC1123Z)
-		},
-	}
-
-	keepTmp = flag.Bool("keep-tmp", false, "keep tmp dir after build")
-)
+*/
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
@@ -139,14 +68,54 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().Var(&packages, "packages", "packages to build")
-	rootCmd.PersistentFlags().Var(&channels, "channels", "channels to build for")
-	rootCmd.PersistentFlags().Var(&architectures, "arch", "architectures to build for")
-	rootCmd.PersistentFlags().StringVar(&kubeVersion, "kube-version", "", "Kubernetes version to build")
-	rootCmd.PersistentFlags().StringVar(&revision, "revision", defaultRevision, "deb package revision.")
-	rootCmd.PersistentFlags().StringVar(&cniVersion, "cni-version", "", "CNI version to build")
-	rootCmd.PersistentFlags().StringVar(&criToolsVersion, "cri-tools-version", "", "CRI tools version to build")
-	rootCmd.PersistentFlags().StringVar(&releaseDownloadLinkBase, "release-download-link-base", "https://dl.k8s.io", "release download link base.")
+	rootCmd.PersistentFlags().StringArrayVar(
+		&rootOpts.packages,
+		"packages",
+		kpkg.DefaultPackages,
+		"packages to build",
+	)
+	rootCmd.PersistentFlags().StringArrayVar(
+		&rootOpts.channels,
+		"channels",
+		kpkg.DefaultChannels,
+		"channels to build for",
+	)
+	rootCmd.PersistentFlags().StringArrayVar(
+		&rootOpts.architectures,
+		"arch",
+		kpkg.DefaultArchitectures,
+		"architectures to build for",
+	)
+	rootCmd.PersistentFlags().StringVar(
+		&rootOpts.kubeVersion,
+		"kube-version",
+		"",
+		"Kubernetes version to build",
+	)
+	rootCmd.PersistentFlags().StringVar(
+		&rootOpts.revision,
+		"revision",
+		kpkg.DefaultRevision,
+		"deb package revision.",
+	)
+	rootCmd.PersistentFlags().StringVar(
+		&rootOpts.cniVersion,
+		"cni-version",
+		"",
+		"CNI version to build",
+	)
+	rootCmd.PersistentFlags().StringVar(
+		&rootOpts.criToolsVersion,
+		"cri-tools-version",
+		"",
+		"CRI tools version to build",
+	)
+	rootCmd.PersistentFlags().StringVar(
+		&rootOpts.releaseDownloadLinkBase,
+		"release-download-link-base",
+		kpkg.DefaultReleaseDownloadLinkBase,
+		"release download link base.",
+	)
 }
 
 // initConfig reads in config file and ENV variables if set.

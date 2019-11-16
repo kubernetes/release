@@ -1,16 +1,13 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "debs.go",
-        "root.go",
-    ],
-    importpath = "k8s.io/release/cmd/kubepkg/cmd",
+    srcs = ["kubepkg.go"],
+    importpath = "k8s.io/release/pkg/kubepkg",
     visibility = ["//visibility:public"],
     deps = [
-        "//pkg/kubepkg:go_default_library",
-        "@com_github_spf13_cobra//:go_default_library",
+        "@com_github_blang_semver//:go_default_library",
+        "@com_github_google_go_github//github:go_default_library",
     ],
 )
 
@@ -26,4 +23,10 @@ filegroup(
     srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["kubepkg_test.go"],
+    embed = [":go_default_library"],
 )
