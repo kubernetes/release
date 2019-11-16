@@ -21,52 +21,81 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/config"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
-	"gopkg.in/src-d/go-git.v4/storage/memory"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 )
 
 const (
 	branchRE = `master|release-([0-9]{1,})\.([0-9]{1,})(\.([0-9]{1,}))*$`
 	// TODO: Use "kubernetes" as DefaultGithubOrg when this is ready to turn on
 	DefaultGithubOrg      = "justaugustus"
+	DefaultGithubRepo     = "kubernetes"
 	DefaultGithubAuthRoot = "git@github.com:"
 	DefaultRemote         = "origin"
 )
 
+// TODO: remove these global urls and handle them `Repo` internally
 var (
-	KubernetesGitHubURL     = fmt.Sprintf("https://github.com/%s/kubernetes", DefaultGithubOrg)
-	KubernetesGitHubAuthURL = fmt.Sprintf("%s%s/kubernetes.git", DefaultGithubAuthRoot, DefaultGithubOrg)
+	KubernetesGitHubURL     = fmt.Sprintf("https://github.com/%s/%s", DefaultGithubOrg, DefaultGithubRepo)
+	KubernetesGitHubAuthURL = fmt.Sprintf("%s%s/%s", DefaultGithubAuthRoot, DefaultGithubOrg, DefaultGithubRepo)
 )
 
 // Wrapper type for a Kubernetes repository instance
 type Repo struct {
 	*git.Repository
-	dir string
+	auth transport.AuthMethod
+	dir  string
+}
+
+// CloneOrOpenDefaultGitHubRepoSSH clones the default Kubernets GitHub
+// repository into the path or updates it.
+func CloneOrOpenDefaultGitHubRepoSSH(path string) (*Repo, error) {
+	return CloneOrOpenGitHubRepo(path, DefaultGithubOrg, DefaultGithubRepo, true)
+}
+
+// CloneOrOpenGitHubRepo creates a temp directory containing the provided
+// GitHub repository via the owner and repo. If useSSH is true, then it will
+// clone the repository using the DefaultGithubAuthRoot.
+func CloneOrOpenGitHubRepo(path, owner, repo string, useSSH bool) (*Repo, error) {
+	return CloneOrOpenRepo(
+		path,
+		func() string {
+			slug := fmt.Sprintf("%s/%s", owner, repo)
+			if useSSH {
+				return DefaultGithubAuthRoot + slug
+			}
+			return fmt.Sprintf("https://github.com/%s", slug)
+		}(),
+		useSSH,
+	)
 }
 
 // CloneOrOpenRepo creates a temp directory containing the provided
-// GitHub repository via owner and name.
+// GitHub repository via the url.
 //
 // If a repoPath is given, then the function tries to update the repository.
 //
 // The function returns the repository if cloning or updating of the repository
 // was successful, otherwise an error.
-func CloneOrOpenRepo(repoPath, owner, name string) (*Repo, error) {
+func CloneOrOpenRepo(repoPath, url string, useSSH bool) (*Repo, error) {
+	log.Printf("Using repository path %q", repoPath)
+	log.Printf("Using repository url %q", url)
 	targetDir := ""
 	if repoPath != "" {
 		_, err := os.Stat(repoPath)
 
 		if err == nil {
 			// The file or directory exists, just try to update the repo
-			return updateRepo(repoPath)
+			return updateRepo(repoPath, useSSH)
 
 		} else if os.IsNotExist(err) {
 			// The directory does not exists, we still have to clone it
@@ -87,7 +116,7 @@ func CloneOrOpenRepo(repoPath, owner, name string) (*Repo, error) {
 	}
 
 	r, err := git.PlainClone(targetDir, false, &git.CloneOptions{
-		URL:      fmt.Sprintf("https://github.com/%s/%s", owner, name),
+		URL:      url,
 		Progress: os.Stdout,
 	})
 	if err != nil {
@@ -98,16 +127,29 @@ func CloneOrOpenRepo(repoPath, owner, name string) (*Repo, error) {
 
 // updateRepo tries to open the provided repoPath and fetches the latest
 // changed from the configured remote location
-func updateRepo(repoPath string) (*Repo, error) {
+func updateRepo(repoPath string, useSSH bool) (*Repo, error) {
 	r, err := git.PlainOpen(repoPath)
 	if err != nil {
 		return nil, err
 	}
-	err = r.Fetch(&git.FetchOptions{Progress: os.Stdout})
+
+	var auth transport.AuthMethod
+	if useSSH {
+		auth, err = ssh.NewPublicKeysFromFile("git",
+			filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa"), "")
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = r.Fetch(&git.FetchOptions{
+		Auth:     auth,
+		Progress: os.Stdout,
+	})
 	if err != nil && err != git.NoErrAlreadyUpToDate {
 		return nil, err
 	}
-	return &Repo{Repository: r, dir: repoPath}, nil
+	return &Repo{Repository: r, auth: auth, dir: repoPath}, nil
 }
 
 func (r *Repo) Cleanup() error {
@@ -204,43 +246,33 @@ func (r *Repo) releaseBranchOrMasterRev(major, minor uint64) (rev string, err er
 	return "", err
 }
 
-// Functions used for branch fast-forwards (krel ff).
-// In the future, these may be refactored to better accommodate other tools.
+// HasRemoteBranch takes a branch string and verifies that it exists
+// on the default remote
+func (r *Repo) HasRemoteBranch(branch string) error {
+	log.Printf("Verifying %s branch exists on the remote", branch)
 
-func BranchExists(branch string) (bool, error) {
-	log.Printf("Verifying %s branch exists on the remote...", branch)
-
-	// Create the remote with repository URL
-	rem := git.NewRemote(
-		memory.NewStorage(),
-		&config.RemoteConfig{
-			Name: DefaultRemote,
-			URLs: []string{KubernetesGitHubURL},
-		},
-	)
-
-	log.Print("Fetching tags...")
-
-	// We can then use every Remote functions to retrieve wanted information
-	refs, err := rem.List(&git.ListOptions{})
+	remote, err := r.Remote(DefaultRemote)
 	if err != nil {
-		log.Printf("Could not list references on the remote repository.")
-		return false, err
+		return err
 	}
 
-	// Filters the references list and only keeps branches
+	// We can then use every Remote functions to retrieve wanted information
+	refs, err := remote.List(&git.ListOptions{Auth: r.auth})
+	if err != nil {
+		log.Printf("Could not list references on the remote repository.")
+		return err
+	}
+
 	for _, ref := range refs {
 		if ref.Name().IsBranch() {
 			if ref.Name().Short() == branch {
 				log.Printf("Found branch %s", ref.Name().Short())
-				return true, nil
+				return nil
 			}
 		}
 	}
-
 	log.Printf("Could not find branch %s", branch)
-
-	return false, nil
+	return errors.Errorf("branch %v not found", branch)
 }
 
 func IsReleaseBranch(branch string) bool {
@@ -252,6 +284,8 @@ func IsReleaseBranch(branch string) bool {
 
 	return true
 }
+
+// TODO: continue refactoring below to use `Repo instance`
 
 // TODO: Need to handle https and ssh auth sanely
 func SyncRepo(repoURL, destination string) error {

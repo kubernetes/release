@@ -297,7 +297,12 @@ func parseOptions(args []string, logger log.Logger) (*options, error) {
 
 	// Check if we want to automatically discover the revisions
 	if opts.discoverMode == revisionDiscoveryModeMinorToLatest {
-		repo, err := git.CloneOrOpenRepo(opts.repoPath, opts.githubOrg, opts.githubRepo)
+		repo, err := git.CloneOrOpenGitHubRepo(
+			opts.repoPath,
+			opts.githubOrg,
+			opts.githubRepo,
+			false,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -324,7 +329,12 @@ func parseOptions(args []string, logger log.Logger) (*options, error) {
 	// Check if we have to parse a revision
 	if opts.startRev != "" || opts.endRev != "" {
 		level.Info(logger).Log("msg", "cloning/updating repository to discover start or end sha")
-		repo, err := git.CloneOrOpenRepo(opts.repoPath, opts.githubOrg, opts.githubRepo)
+		repo, err := git.CloneOrOpenGitHubRepo(
+			opts.repoPath,
+			opts.githubOrg,
+			opts.githubRepo,
+			false,
+		)
 		if err != nil {
 			return nil, err
 		}

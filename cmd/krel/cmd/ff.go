@@ -100,17 +100,19 @@ func runFf(opts *ffOptions) error {
 		dryRunFlag = "--dry-run"
 	}
 
+	// TODO: Refactor everything to use this repo instance
+	repo, err := kgit.CloneOrOpenDefaultGitHubRepoSSH(rootOpts.repoPath)
+	if err != nil {
+		return err
+	}
+
 	isReleaseBranch := kgit.IsReleaseBranch(branch)
 	if !isReleaseBranch {
 		log.Fatalf("%s is not a release branch\n", branch)
 	}
 
-	branchExists, err := kgit.BranchExists(branch)
-	if err != nil {
+	if err := repo.HasRemoteBranch(branch); err != nil {
 		return err
-	}
-	if !branchExists {
-		log.Fatalf("the %s branch does not exist\n", branch)
 	}
 
 	baseDir, err := ioutil.TempDir("", "ff-")
@@ -156,12 +158,12 @@ func runFf(opts *ffOptions) error {
 		return chdirErr
 	}
 
-	repo, repoErr := git.PlainOpen(gitRoot)
+	mergebaseRepo, repoErr := git.PlainOpen(gitRoot)
 	if repoErr != nil {
 		return repoErr
 	}
 
-	mergeBase, err := kgit.GetMergeBase("master", branch, repo)
+	mergeBase, err := kgit.GetMergeBase("master", branch, mergebaseRepo)
 	if err != nil {
 		return err
 	}
