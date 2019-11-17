@@ -115,6 +115,10 @@ func runFf(opts *ffOptions) error {
 		return err
 	}
 
+	if err := repo.CheckoutBranch(branch); err != nil {
+		return err
+	}
+
 	baseDir, err := ioutil.TempDir("", "ff-")
 	if err != nil {
 		return err
@@ -122,35 +126,30 @@ func runFf(opts *ffOptions) error {
 
 	cleanup := rootOpts.cleanup
 	if cleanup {
-		defer cleanupTmpDir(baseDir)
+		defer repo.Cleanup()         //nolint: errcheck
+		defer cleanupTmpDir(baseDir) //nolint: errcheck
 	}
 
 	workingDir := filepath.Join(baseDir, branch)
-	log.Printf("%s", workingDir)
+	log.Printf("working directory is %q", workingDir)
 
 	os.Setenv("GOPATH", workingDir)
 	log.Printf("GOPATH: %s", os.Getenv("GOPATH"))
 
-	gitRoot := fmt.Sprintf("%s/src/k8s.io/kubernetes", workingDir)
+	gitRoot := fmt.Sprintf("%s/src/k8s.io", workingDir)
+	if err := os.MkdirAll(gitRoot, 0o755); err != nil {
+		return err
+	}
+	gitRoot = filepath.Join(gitRoot, "kubernetes")
+
+	// link the repo into the working directory
+	if err := os.Symlink(repo.Dir(), gitRoot); err != nil {
+		return err
+	}
 
 	// TODO: nomock?
 	if nomock {
 		log.Printf("nomock mode (from within ff)\n")
-	}
-
-	// TODO: If workingDir exists, prompt user to delete
-	// TODO: Tweak file permissions (dir + user rwx)
-	workingDirErr := os.MkdirAll(workingDir, os.ModePerm)
-	if workingDirErr != nil {
-		return err
-	}
-
-	// TODO: Remove once SyncRepo works
-	gitRoot = "/tmp/ff-465649664/release-1.16/src/k8s.io/kubernetes"
-
-	syncErr := kgit.SyncRepo(kgit.KubernetesGitHubAuthURL, gitRoot)
-	if syncErr != nil {
-		return syncErr
 	}
 
 	chdirErr := os.Chdir(gitRoot)
@@ -158,15 +157,11 @@ func runFf(opts *ffOptions) error {
 		return chdirErr
 	}
 
-	mergebaseRepo, repoErr := git.PlainOpen(gitRoot)
-	if repoErr != nil {
-		return repoErr
-	}
-
-	mergeBase, err := kgit.GetMergeBase("master", branch, mergebaseRepo)
+	mergeBase, err := repo.MergeBase("master", branch)
 	if err != nil {
 		return err
 	}
+	log.Printf("merge base: %s", mergeBase)
 
 	// TODO: Rewrite using go-git
 	comparedCommits := []string{mergeBase, remoteMaster}
@@ -224,12 +219,12 @@ func runFf(opts *ffOptions) error {
 	}
 
 	releaseRefName := remoteHash.String()
-	releaseRev, err := kgit.RevParseShort(releaseRefName, gitRoot)
+	releaseRev, err := repo.RevParseShort(releaseRefName)
 	if err != nil {
 		return err
 	}
 
-	headRev, err := kgit.RevParseShort("HEAD", gitRoot)
+	headRev, err := repo.RevParseShort("HEAD")
 	if err != nil {
 		return err
 	}
