@@ -28,6 +28,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/config"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport"
@@ -54,6 +55,11 @@ type Repo struct {
 	*git.Repository
 	auth transport.AuthMethod
 	dir  string
+}
+
+// Dir returns the directory where the repository is stored on disk
+func (r *Repo) Dir() string {
+	return r.dir
 }
 
 // CloneOrOpenDefaultGitHubRepoSSH clones the default Kubernets GitHub
@@ -145,6 +151,7 @@ func updateRepo(repoPath string, useSSH bool) (*Repo, error) {
 	err = r.Fetch(&git.FetchOptions{
 		Auth:     auth,
 		Progress: os.Stdout,
+		RefSpecs: []config.RefSpec{"refs/*:refs/*"},
 	})
 	if err != nil && err != git.NoErrAlreadyUpToDate {
 		return nil, err
@@ -162,7 +169,7 @@ func (r *Repo) Cleanup() error {
 func (r *Repo) RevParse(rev string) (string, error) {
 	// Prefix all non-tags the default remote "origin"
 	if isVersion, _ := regexp.MatchString(`v\d+\.\d+\.\d+.*`, rev); !isVersion {
-		rev = "origin/" + rev
+		rev = remotify(rev)
 	}
 
 	// Try to resolve the rev
@@ -172,6 +179,17 @@ func (r *Repo) RevParse(rev string) (string, error) {
 	}
 
 	return ref.String(), nil
+}
+
+// RevParseShort parses a git revision and returns a SHA1 on success, otherwise
+// an error.
+func (r *Repo) RevParseShort(rev string) (string, error) {
+	fullRev, err := r.RevParse(rev)
+	if err != nil {
+		return "", err
+	}
+
+	return fullRev[:10], nil
 }
 
 // LatestNonPatchFinalToLatest tries to discover the start (latest v1.xx.0) and
@@ -275,6 +293,19 @@ func (r *Repo) HasRemoteBranch(branch string) error {
 	return errors.Errorf("branch %v not found", branch)
 }
 
+// CheckoutBranch can be used to switch to another branch
+func (r *Repo) CheckoutBranch(name string) error {
+	worktree, err := r.Worktree()
+	if err != nil {
+		return err
+	}
+
+	return worktree.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.NewBranchReferenceName(name),
+		Force:  true,
+	})
+}
+
 func IsReleaseBranch(branch string) bool {
 	re := regexp.MustCompile(branchRE)
 	if !re.MatchString(branch) {
@@ -285,89 +316,9 @@ func IsReleaseBranch(branch string) bool {
 	return true
 }
 
-// TODO: continue refactoring below to use `Repo instance`
-
-// TODO: Need to handle https and ssh auth sanely
-func SyncRepo(repoURL, destination string) error {
-	log.Printf("Syncing %s to %s:", repoURL, destination)
-
-	if _, err := os.Stat(destination); !os.IsNotExist(err) {
-		chdirErr := os.Chdir(destination)
-		if chdirErr != nil {
-			return chdirErr
-		}
-
-		repo, repoErr := git.PlainOpen(destination)
-		if repoErr != nil {
-			return repoErr
-		}
-
-		w, err := repo.Worktree()
-		if err != nil {
-			return err
-		}
-
-		// ... checking out to commit
-		//Info("git checkout %s", commit)
-		err = w.Checkout(&git.CheckoutOptions{
-			Branch: plumbing.NewBranchReferenceName("master"),
-		})
-		if err != nil {
-			return err
-		}
-
-		pullOpts := &git.PullOptions{RemoteName: DefaultRemote}
-		err = w.Pull(pullOpts)
-		if err != nil && err != git.NoErrAlreadyUpToDate {
-			return err
-		}
-
-		return nil
-	}
-
-	cloneOpts := &git.CloneOptions{
-		URL: repoURL,
-	}
-	_, repoErr := git.PlainClone(destination, false, cloneOpts)
-	if repoErr != nil {
-		return repoErr
-	}
-
-	return nil
-}
-
-// RevParse parses a git revision and returns a SHA1 on success, otherwise an
-// error.
-func RevParse(rev, workDir string) (string, error) {
-	repo, err := git.PlainOpen(workDir)
-	if err != nil {
-		return "", err
-	}
-
-	ref, err := repo.ResolveRevision(plumbing.Revision(rev))
-	if err != nil {
-		return "", err
-	}
-
-	return ref.String(), nil
-}
-
-// RevParseShort parses a git revision and returns a SHA1 on success, otherwise an
-// error.
-func RevParseShort(rev, workDir string) (string, error) {
-	fullRev, err := RevParse(rev, workDir)
-	if err != nil {
-		return "", err
-	}
-
-	shortRev := fullRev[:10]
-
-	return shortRev, nil
-}
-
-func GetMergeBase(masterRefShort, releaseRefShort string, repo *git.Repository) (string, error) {
-	masterRef := fmt.Sprintf("%s/%s", DefaultRemote, masterRefShort)
-	releaseRef := fmt.Sprintf("%s/%s", DefaultRemote, releaseRefShort)
+func (r *Repo) MergeBase(masterRefShort, releaseRefShort string) (string, error) {
+	masterRef := remotify(masterRefShort)
+	releaseRef := remotify(releaseRefShort)
 
 	log.Printf("masterRef: %s, releaseRef: %s", masterRef, releaseRef)
 
@@ -376,7 +327,7 @@ func GetMergeBase(masterRefShort, releaseRefShort string, repo *git.Repository) 
 
 	var hashes []*plumbing.Hash
 	for _, rev := range commitRevs {
-		hash, err := repo.ResolveRevision(plumbing.Revision(rev))
+		hash, err := r.ResolveRevision(plumbing.Revision(rev))
 		if err != nil {
 			return "", err
 		}
@@ -385,7 +336,7 @@ func GetMergeBase(masterRefShort, releaseRefShort string, repo *git.Repository) 
 
 	var commits []*object.Commit
 	for _, hash := range hashes {
-		commit, err := repo.CommitObject(*hash)
+		commit, err := r.CommitObject(*hash)
 		if err != nil {
 			return "", err
 		}
@@ -401,10 +352,13 @@ func GetMergeBase(masterRefShort, releaseRefShort string, repo *git.Repository) 
 		return "", errors.Errorf("could not find a merge base between %s and %s", masterRefShort, releaseRefShort)
 	}
 
-	log.Printf("len commits %v\n", len(res))
-
 	mergeBase := res[0].Hash.String()
 	log.Printf("merge base is %s", mergeBase)
 
 	return mergeBase, nil
+}
+
+// remotify returns the name prepended with the default remote
+func remotify(name string) string {
+	return fmt.Sprintf("%s/%s", DefaultRemote, name)
 }
