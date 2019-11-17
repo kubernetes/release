@@ -25,6 +25,8 @@ import (
 	"regexp"
 	"strings"
 
+	"k8s.io/release/pkg/command"
+
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"gopkg.in/src-d/go-git.v4"
@@ -361,4 +363,34 @@ func (r *Repo) MergeBase(masterRefShort, releaseRefShort string) (string, error)
 // remotify returns the name prepended with the default remote
 func remotify(name string) string {
 	return fmt.Sprintf("%s/%s", DefaultRemote, name)
+}
+
+// DescribeTag can be used to retrieve the latest tag for a provided revision
+func (r *Repo) DescribeTag(rev string) (string, error) {
+	// Switch into the repo dir
+	workingDir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	if err := os.Chdir(r.dir); err != nil {
+		return "", err
+	}
+
+	// go git seems to have no implementation for `git describe`
+	// which means that we fallback to a shell command for sake of
+	// simplicity
+	status, err := command.New("git describe --abbrev=0 --tags", rev).RunSilent()
+	if err != nil {
+		return "", err
+	}
+	if !status.Success() {
+		return "", errors.New("git describe command failed")
+	}
+
+	// Restore working directory
+	if err := os.Chdir(workingDir); err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(status.Output()), nil
 }

@@ -17,14 +17,11 @@ limitations under the License.
 package cmd
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/src-d/go-git.v4"
@@ -161,29 +158,23 @@ func runFf(opts *ffOptions) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("merge base: %s", mergeBase)
 
-	// TODO: Rewrite using go-git
-	comparedCommits := []string{mergeBase, remoteMaster}
-	var tags []string
-	for _, commit := range comparedCommits {
-		cmd := exec.Command("git", "describe", "--abbrev=0", "--tags", commit)
-		cmd.Stdin = strings.NewReader("some input")
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		err = cmd.Run()
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("in all caps: %q\n", out.String())
-		tags = append(tags, strings.TrimSuffix(out.String(), "\n"))
+	// Verify the tags
+	masterTag, err := repo.DescribeTag(remoteMaster)
+	if err != nil {
+		return err
 	}
-
-	// TODO: This should return an error if it fails
-	// TODO: Provide more information to debug here
-	if tags[0] != tags[1] {
-		log.Printf("%s did not match %s", tags[0], tags[1])
+	mergeBaseTag, err := repo.DescribeTag(mergeBase)
+	if err != nil {
+		return err
 	}
+	if masterTag != mergeBaseTag {
+		log.Fatalf(
+			"unable to fast forward: tag %q does not match %q",
+			masterTag, mergeBaseTag,
+		)
+	}
+	log.Printf("last tag is: %s", masterTag)
 
 	// TODO: Rewrite using go-git
 	//       --dry-run appears to be unsupported for git push, so we shell out here.
