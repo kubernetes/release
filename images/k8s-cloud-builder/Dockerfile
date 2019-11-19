@@ -13,7 +13,8 @@ RUN apt-get -q update \
     && apt-get -qqy install \
         python3-minimal \
         python3-pip \
-    && update-alternatives --install /usr/bin/python python /usr/bin/python3 90
+    && update-alternatives --install /usr/bin/python python /usr/bin/python3 90 \
+    && update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 90
 
 # For now we do not re-install mercurial, we think we might not need it after all.
 #

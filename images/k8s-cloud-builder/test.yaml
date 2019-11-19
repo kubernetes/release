@@ -12,3 +12,7 @@ commandTests:
   args:           [ "-c", "python2" ]
   expectedError:  [ "command not found" ]
   exitCode:       127
+- name:           pip is running for python3
+  command:        pip
+  args:           [ "--version" ]
+  expectedOutput: [ "^pip.*python 3\\." ]
