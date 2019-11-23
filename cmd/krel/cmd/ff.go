@@ -18,23 +18,14 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
-	"path/filepath"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing"
 
-	"k8s.io/release/pkg/command"
 	kgit "k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/util"
 )
-
-var cfgFile string
-
-const defaultMasterRef string = "HEAD"
 
 type ffOptions struct {
 	branch    string
@@ -52,7 +43,8 @@ var ffCmd = &cobra.Command{
 (defaults to HEAD), and then prepares the branch as a Kubernetes release branch:
 
 - Run hack/update-all.sh to ensure compliance of generated files`,
-	Example: "krel ff --branch release-1.16 39d0135e --ref HEAD --cleanup",
+	Example:      "krel ff --branch release-1.17 --ref HEAD --cleanup",
+	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := runFf(ffOpts); err != nil {
 			return err
@@ -66,95 +58,54 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	ffCmd.PersistentFlags().StringVar(&ffOpts.branch, "branch", "", "branch")
-	ffCmd.PersistentFlags().StringVar(&ffOpts.masterRef, "ref", defaultMasterRef, "ref on master")
+	ffCmd.PersistentFlags().StringVar(&ffOpts.masterRef, "ref", kgit.DefaultMasterRef, "ref on master")
 	ffCmd.PersistentFlags().StringVar(&ffOpts.org, "org", kgit.DefaultGithubOrg, "org to run tool against")
 
 	rootCmd.AddCommand(ffCmd)
 }
 
 func runFf(opts *ffOptions) error {
-	// TODO: Add usage/help
-	// TODO: Set positional args
-	// TODO: Fail on empty branch
-	// TODO: Fail on GITHUB_TOKEN not set
-
-	if !command.Available("git", "go", "make", "jq") {
-		log.Fatalf("Unable to meet executable dependency requirements")
-	}
-
 	branch := opts.branch
-	masterRef := opts.masterRef
-	remote := kgit.DefaultRemote
-	remoteMaster := fmt.Sprintf("%s/%s", remote, "master")
-
-	log.Printf("Preparing to fast-forward master@%s onto the %s branch...\n", masterRef, branch)
-
-	nomock := rootOpts.nomock
-	dryRunFlag := "--dry-run"
-	if nomock {
-		// TODO: Set this to empty string once we're ready to turn on the tool
-		log.Println("Running in no-mock mode!")
-		dryRunFlag = "--dry-run"
+	if branch == "" {
+		return errors.New("Please specify valid release branch")
 	}
+	masterRef := opts.masterRef
+	master := "master"
+	remoteMaster := kgit.Remotify(master)
 
-	// TODO: Refactor everything to use this repo instance
-	repo, err := kgit.CloneOrOpenDefaultGitHubRepoSSH(rootOpts.repoPath)
+	log.Printf("Preparing to fast-forward master@%s onto the %s branch", masterRef, branch)
+	repo, err := kgit.CloneOrOpenDefaultGitHubRepoSSH(rootOpts.repoPath, opts.org)
 	if err != nil {
 		return err
 	}
 
-	isReleaseBranch := kgit.IsReleaseBranch(branch)
-	if !isReleaseBranch {
-		log.Fatalf("%s is not a release branch\n", branch)
+	if !rootOpts.nomock {
+		log.Printf("Using dry mode, which does not modify any remote content")
+		repo.SetDry()
 	}
 
+	log.Printf("Checking if %q is a release branch", branch)
+	if isReleaseBranch := kgit.IsReleaseBranch(branch); !isReleaseBranch {
+		log.Fatalf("%s is not a release branch", branch)
+	}
+
+	log.Printf("Checking if branch is available on the default remote")
 	if err := repo.HasRemoteBranch(branch); err != nil {
 		return err
 	}
 
+	log.Printf("Checking out release branch")
 	if err := repo.CheckoutBranch(branch); err != nil {
-		return err
-	}
-
-	baseDir, err := ioutil.TempDir("", "ff-")
-	if err != nil {
 		return err
 	}
 
 	cleanup := rootOpts.cleanup
 	if cleanup {
-		defer repo.Cleanup()         //nolint: errcheck
-		defer cleanupTmpDir(baseDir) //nolint: errcheck
+		defer repo.Cleanup() //nolint: errcheck
 	}
 
-	workingDir := filepath.Join(baseDir, branch)
-	log.Printf("working directory is %q", workingDir)
-
-	os.Setenv("GOPATH", workingDir)
-	log.Printf("GOPATH: %s", os.Getenv("GOPATH"))
-
-	gitRoot := fmt.Sprintf("%s/src/k8s.io", workingDir)
-	if err := os.MkdirAll(gitRoot, 0o755); err != nil {
-		return err
-	}
-	gitRoot = filepath.Join(gitRoot, "kubernetes")
-
-	// link the repo into the working directory
-	if err := os.Symlink(repo.Dir(), gitRoot); err != nil {
-		return err
-	}
-
-	// TODO: nomock?
-	if nomock {
-		log.Printf("nomock mode (from within ff)\n")
-	}
-
-	chdirErr := os.Chdir(gitRoot)
-	if chdirErr != nil {
-		return chdirErr
-	}
-
-	mergeBase, err := repo.MergeBase("master", branch)
+	log.Printf("Finding merge base between %q and %q", master, branch)
+	mergeBase, err := repo.MergeBase(master, branch)
 	if err != nil {
 		return err
 	}
@@ -170,57 +121,29 @@ func runFf(opts *ffOptions) error {
 	}
 	if masterTag != mergeBaseTag {
 		log.Fatalf(
-			"unable to fast forward: tag %q does not match %q",
+			"Unable to fast forward: tag %q does not match %q",
 			masterTag, mergeBaseTag,
 		)
 	}
-	log.Printf("last tag is: %s", masterTag)
+	log.Printf("Last tag is: %s", masterTag)
 
-	// TODO: Rewrite using go-git
-	//       --dry-run appears to be unsupported for git push, so we shell out here.
-	if err := command.Execute("git push -q --dry-run", kgit.KubernetesGitHubAuthURL); err != nil {
+	releaseRev, err := repo.Head()
+	if err != nil {
+		return err
+	}
+	log.Printf("Latest release branch revision is %s", releaseRev)
+
+	log.Printf("Merging master changes into release branch")
+	if err := repo.Merge(remoteMaster); err != nil {
 		return err
 	}
 
-	w, err := repo.Worktree()
+	headRev, err := repo.Head()
 	if err != nil {
 		return err
 	}
 
-	// ... checking out to commit
-	//Info("git checkout %s", commit)
-	remoteHash, err := repo.ResolveRevision(plumbing.Revision(fmt.Sprintf("%s/%s", remote, branch)))
-	if err != nil {
-		return err
-	}
-
-	err = w.Checkout(&git.CheckoutOptions{
-		Hash:   plumbing.NewHash(remoteHash.String()),
-		Branch: plumbing.NewBranchReferenceName(branch),
-		Create: true,
-	})
-
-	if err != nil {
-		return err
-	}
-
-	// TODO: Merge and update
-	if err := command.Execute("git merge -X ours", remoteMaster); err != nil {
-		return err
-	}
-
-	releaseRefName := remoteHash.String()
-	releaseRev, err := repo.RevParseShort(releaseRefName)
-	if err != nil {
-		return err
-	}
-
-	headRev, err := repo.RevParseShort("HEAD")
-	if err != nil {
-		return err
-	}
-
-	log.Printf("%s", prepushMessage(gitRoot, remote, branch, kgit.KubernetesGitHubURL, releaseRev, headRev))
+	prepushMessage(repo.Dir(), kgit.DefaultRemote, branch, opts.org, releaseRev, headRev)
 
 	_, pushUpstream, err := util.Ask("Are you ready to push the local branch fast-forward changes upstream? Please only answer after you have validated the changes.", "yes", 3)
 	if err != nil {
@@ -228,11 +151,8 @@ func runFf(opts *ffOptions) error {
 	}
 
 	if pushUpstream {
-		log.Printf("Pushing %s %s branch upstream: ", dryRunFlag, branch)
-		//git push $DRYRUN_FLAG origin $RELEASE_BRANCH:$RELEASE_BRANCH
-		// TODO: Need to handle https and ssh auth sanely
-		//fmt.Sprintf("%s:%s", branch, branch))
-		if err := command.Execute("git push", dryRunFlag, remote, branch); err != nil {
+		log.Printf("Pushing %s branch", branch)
+		if err := repo.Push(branch); err != nil {
 			return err
 		}
 	}
@@ -240,8 +160,8 @@ func runFf(opts *ffOptions) error {
 	return nil
 }
 
-func prepushMessage(gitRoot, remote, branch, githubURL, releaseRev, headRev string) string {
-	message := fmt.Sprintf(`Go look around in %s to make sure things look okay before pushing...
+func prepushMessage(gitRoot, remote, branch, org, releaseRev, headRev string) {
+	log.Println(fmt.Sprintf(`Go look around in %s to make sure things look okay before pushing...
 
 Check for files left uncommitted using:
 
@@ -257,9 +177,7 @@ Validate the changes pulled in from master using:
 
 Once the branch fast-forward is complete, the diff will be available after push at:
 
-	%s/compare/%s...%s"
+	https://github.com/%s/%s/compare/%s...%s"
 
-`, gitRoot, remote, branch, githubURL, releaseRev, headRev)
-
-	return message
+`, gitRoot, remote, branch, org, kgit.DefaultGithubRepo, releaseRev, headRev))
 }

@@ -19,8 +19,11 @@ package util
 import (
 	"bufio"
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 /*
@@ -84,4 +87,38 @@ func Ask(question, expectedResponse string, retries int) (string, bool, error) {
 
 	log.Printf("Expected response was not provided. Retries exceeded.")
 	return answer, false, errors.New("Expected response was not input. Retries exceeded.")
+}
+
+// FakeGOPATH creates a temp directory, links the base directory into it and
+// sets the GOPATH environment variable to it.
+func FakeGOPATH(srcDir string) (string, error) {
+	log.Printf("Linking repository into temp dir")
+	baseDir, err := ioutil.TempDir("", "ff-")
+	if err != nil {
+		return "", err
+	}
+
+	log.Printf("New working directory is %q", baseDir)
+
+	os.Setenv("GOPATH", baseDir)
+	log.Printf("GOPATH: %s", os.Getenv("GOPATH"))
+
+	gitRoot := fmt.Sprintf("%s/src/k8s.io", baseDir)
+	if err := os.MkdirAll(gitRoot, 0o755); err != nil {
+		return "", err
+	}
+	gitRoot = filepath.Join(gitRoot, "kubernetes")
+
+	// link the repo into the working directory
+	log.Printf("Creating symlink from %q to %q", srcDir, gitRoot)
+	if err := os.Symlink(srcDir, gitRoot); err != nil {
+		return "", err
+	}
+
+	log.Printf("Changing working directory to %s", gitRoot)
+	if err := os.Chdir(gitRoot); err != nil {
+		return "", err
+	}
+
+	return gitRoot, nil
 }
