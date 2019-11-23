@@ -9,6 +9,11 @@ steps:
     - --tag=gcr.io/$PROJECT_ID/k8s-cloud-builder:$_GIT_TAG
     - --tag=gcr.io/$PROJECT_ID/k8s-cloud-builder:latest
     - .
+  - name: gcr.io/gcp-runtimes/container-structure-test
+    args:
+    - test
+    - --image=gcr.io/$PROJECT_ID/k8s-cloud-builder:latest
+    - --config=test.yaml
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
   # can be used as a substitution

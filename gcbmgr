@@ -188,7 +188,7 @@ list_staged_builds () {
     staging_buckets+=(gs://$bucket/stage)
     logecho
     logecho "${TPUT[BOLD]}Staged builds on $bucket:${TPUT[OFF]}"
-    gsutil ls -h gs://$bucket/stage 2>&-
+    gsutil ls -h gs://$bucket/stage 2>/dev/null
   done
 
   # TODO: Experiment to look at all current versions and then compare
@@ -275,7 +275,7 @@ list_jobs () {
     ((counter++))
 
     tags=$($GCLOUD builds describe $id --format=json|\
-           jq -r '.tags[]' 2>&-)
+           jq -r '.tags[]' 2>/dev/null)
 
     # Convert time to local time
     time=$(date -d $time +%Y-%b-%d+%R:%S)

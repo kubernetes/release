@@ -309,7 +309,7 @@ gitlib::repo_state () {
   local remote=$( git -C "$TOOL_ROOT" remote -v | grep -E "$remotePattern" -m 1 | cut -f1 )
   local commit=$(git -C "$TOOL_ROOT" \
                      ls-remote --heads "$remote" refs/heads/master | cut -f1)
-  local output=$(git -C "$TOOL_ROOT" branch --contains "$commit" "$branch" 2>&-)
+  local output=$(git -C "$TOOL_ROOT" branch --contains "$commit" "$branch" 2>/dev/null)
 
   logecho -n "Checking $TOOL_ROOT state: "
   if [[ -n "$output" ]]; then

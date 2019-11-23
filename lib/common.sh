@@ -488,7 +488,7 @@ common::logfileinit () {
   local num=$2
 
   # Ensure LOG directory exists
-  mkdir -p $(dirname $LOGFILE 2>&-)
+  mkdir -p $(dirname $LOGFILE 2>/dev/null)
 
   # Initialize Logfile.
   if ! $nr; then
@@ -732,7 +732,7 @@ common::check_pip_packages () {
   logecho -n "Checking required PIP packages: "
 
   for prereq in $*; do
-    (pip list --format legacy 2>&- || pip list) |\
+    (pip list --format legacy 2>/dev/null || pip list) |\
      fgrep -w $prereq > /dev/null || missing+=($prereq)
   done
 

@@ -2,6 +2,28 @@ FROM k8s.gcr.io/kube-cross:v1.13.4-1
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+# We want to get rid of python2, we want only python3
+#
+# Right now, the image chain looks like this:
+#  k8s-cloud-builder <- k8s.gcr.io/kube-cross:v1.13.4-1 <- golang:1.13.4 <- buildpack-deps:buster-scm <- debian:buster
+# python2 comes in with buildpack-deps:buster-scm, because that image installs
+# mercurial which in turn has a hard dependency on python2
+RUN apt-get -q update \
+    && apt-get -qqy purge ".*python2.*" \
+    && apt-get -qqy install \
+        python3-minimal \
+        python3-pip \
+    && update-alternatives --install /usr/bin/python python /usr/bin/python3 90 \
+    && update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 90
+
+# For now we do not re-install mercurial, we think we might not need it after all.
+#
+# # For that to work, we for now need to install mercurial via pip as opposed to
+# # apt/dpkg. As soon as debian has a mercurial package that has no hard
+# # dependency on python2, we can switch back to using the distributor's package
+# # again.
+# RUN pip3 install --no-cache-dir mercurial
+
 # Install packages
 RUN apt-get -q update \
     && apt-get install -qqy \
@@ -15,15 +37,11 @@ RUN apt-get -q update \
         jq \
         lsb-release \
         pandoc \
-        python \
-        python-dev \
-        python-setuptools \
         software-properties-common \
         wget
 
 # Install Pip packages
-RUN python /usr/lib/python2.7/dist-packages/easy_install.py pip \
-    && pip install --no-cache-dir yq
+RUN pip3 install --no-cache-dir yq
 
 # Packages required by the make in k8s
 # localtime
@@ -44,9 +62,6 @@ RUN mkdir /opt/google
 RUN apt-get -y update \
     && apt-get -y install \
         gcc \
-        python2.7 \
-        python-dev \
-        python-setuptools \
         wget \
         ca-certificates \
         # These are necessary for add-apt-respository
@@ -58,12 +73,10 @@ RUN apt-get -y update \
     && curl -sSL https://sdk.cloud.google.com > /tmp/install.sh \
     && bash /tmp/install.sh --install-dir=/opt/google --disable-prompts \
     # install crcmod: https://cloud.google.com/storage/docs/gsutil/addlhelp/CRC32CandInstallingcrcmod
-    && pip install -U crcmod \
+    && pip3 install --no-cache-dir -U crcmod \
     # Clean up
     && apt-get -y remove \
         gcc \
-        python-dev \
-        python-setuptools \
         wget \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf ~/.config/gcloud

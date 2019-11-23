@@ -1,0 +1,18 @@
+# https://github.com/GoogleContainerTools/container-structure-test
+
+schemaVersion: '2.0.0'
+
+commandTests:
+- name:           python version is 3
+  command:        python
+  args:           [ "--version" ]
+  expectedOutput: [ "^Python 3\\." ]
+- name:           no python2 is installed
+  command:        bash
+  args:           [ "-c", "python2" ]
+  expectedError:  [ "command not found" ]
+  exitCode:       127
+- name:           pip is running for python3
+  command:        pip
+  args:           [ "--version" ]
+  expectedOutput: [ "^pip.*python 3\\." ]

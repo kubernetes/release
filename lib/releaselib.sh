@@ -39,7 +39,7 @@ release::get_job_cache () {
   logecho "Getting $job build results from GCS..."
   mkdir -p ${job_path%/*}
 
-  $GSUTIL -qm cp $logroot/$job/jobResultsCache.json $tempjson 2>&-
+  $GSUTIL -qm cp $logroot/$job/jobResultsCache.json $tempjson 2>/dev/null
   # If there's no file up on $logroot, job doesn't exist.  Skip it.
   [[ -s $tempjson ]] || return
 
@@ -1161,7 +1161,7 @@ release::send_announcement () {
     subject=$(<"$subject_file")
   else
     subject_file="$archive_root/announcement-subject.txt"
-    if ! subject="$($GSUTIL cat $subject_file 2>&-)"; then
+    if ! subject="$($GSUTIL cat $subject_file 2>/dev/null)"; then
       logecho "Unable to find an announcement subject file locally or on GCS!"
       return 1
     fi
