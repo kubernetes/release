@@ -38,25 +38,21 @@ import (
 )
 
 const (
-	branchRE = `master|release-([0-9]{1,})\.([0-9]{1,})(\.([0-9]{1,}))*$`
-	// TODO: Use "kubernetes" as DefaultGithubOrg when this is ready to turn on
-	DefaultGithubOrg      = "justaugustus"
-	DefaultGithubRepo     = "kubernetes"
-	DefaultGithubAuthRoot = "git@github.com:"
-	DefaultRemote         = "origin"
-)
+	DefaultGithubOrg  = "kubernetes"
+	DefaultGithubRepo = "kubernetes"
+	DefaultRemote     = "origin"
+	DefaultMasterRef  = "HEAD"
 
-// TODO: remove these global urls and handle them `Repo` internally
-var (
-	KubernetesGitHubURL     = fmt.Sprintf("https://github.com/%s/%s", DefaultGithubOrg, DefaultGithubRepo)
-	KubernetesGitHubAuthURL = fmt.Sprintf("%s%s/%s", DefaultGithubAuthRoot, DefaultGithubOrg, DefaultGithubRepo)
+	branchRE              = `master|release-([0-9]{1,})\.([0-9]{1,})(\.([0-9]{1,}))*$`
+	defaultGithubAuthRoot = "git@github.com:"
 )
 
 // Wrapper type for a Kubernetes repository instance
 type Repo struct {
-	*git.Repository
-	auth transport.AuthMethod
-	dir  string
+	inner  *git.Repository
+	auth   transport.AuthMethod
+	dir    string
+	dryRun bool
 }
 
 // Dir returns the directory where the repository is stored on disk
@@ -64,22 +60,28 @@ func (r *Repo) Dir() string {
 	return r.dir
 }
 
+// Set the repo into dry run mode, which does not modify any remote locations
+// at all.
+func (r *Repo) SetDry() {
+	r.dryRun = true
+}
+
 // CloneOrOpenDefaultGitHubRepoSSH clones the default Kubernets GitHub
 // repository into the path or updates it.
-func CloneOrOpenDefaultGitHubRepoSSH(path string) (*Repo, error) {
-	return CloneOrOpenGitHubRepo(path, DefaultGithubOrg, DefaultGithubRepo, true)
+func CloneOrOpenDefaultGitHubRepoSSH(path, owner string) (*Repo, error) {
+	return CloneOrOpenGitHubRepo(path, owner, DefaultGithubRepo, true)
 }
 
 // CloneOrOpenGitHubRepo creates a temp directory containing the provided
 // GitHub repository via the owner and repo. If useSSH is true, then it will
-// clone the repository using the DefaultGithubAuthRoot.
+// clone the repository using the defaultGithubAuthRoot.
 func CloneOrOpenGitHubRepo(path, owner, repo string, useSSH bool) (*Repo, error) {
 	return CloneOrOpenRepo(
 		path,
 		func() string {
 			slug := fmt.Sprintf("%s/%s", owner, repo)
 			if useSSH {
-				return DefaultGithubAuthRoot + slug
+				return defaultGithubAuthRoot + slug
 			}
 			return fmt.Sprintf("https://github.com/%s", slug)
 		}(),
@@ -95,10 +97,15 @@ func CloneOrOpenGitHubRepo(path, owner, repo string, useSSH bool) (*Repo, error)
 // The function returns the repository if cloning or updating of the repository
 // was successful, otherwise an error.
 func CloneOrOpenRepo(repoPath, url string, useSSH bool) (*Repo, error) {
-	log.Printf("Using repository path %q", repoPath)
+	// We still need the plain git executable for some methods
+	if !command.Available("git") {
+		return nil, errors.New("git is needed to support all repository features")
+	}
+
 	log.Printf("Using repository url %q", url)
 	targetDir := ""
 	if repoPath != "" {
+		log.Printf("Using existing repository path %q", repoPath)
 		_, err := os.Stat(repoPath)
 
 		if err == nil {
@@ -130,7 +137,7 @@ func CloneOrOpenRepo(repoPath, url string, useSSH bool) (*Repo, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Repo{Repository: r, dir: targetDir}, nil
+	return &Repo{inner: r, dir: targetDir}, nil
 }
 
 // updateRepo tries to open the provided repoPath and fetches the latest
@@ -152,13 +159,14 @@ func updateRepo(repoPath string, useSSH bool) (*Repo, error) {
 
 	err = r.Fetch(&git.FetchOptions{
 		Auth:     auth,
+		Force:    true,
 		Progress: os.Stdout,
 		RefSpecs: []config.RefSpec{"refs/*:refs/*"},
 	})
 	if err != nil && err != git.NoErrAlreadyUpToDate {
 		return nil, err
 	}
-	return &Repo{Repository: r, auth: auth, dir: repoPath}, nil
+	return &Repo{inner: r, auth: auth, dir: repoPath}, nil
 }
 
 func (r *Repo) Cleanup() error {
@@ -171,11 +179,11 @@ func (r *Repo) Cleanup() error {
 func (r *Repo) RevParse(rev string) (string, error) {
 	// Prefix all non-tags the default remote "origin"
 	if isVersion, _ := regexp.MatchString(`v\d+\.\d+\.\d+.*`, rev); !isVersion {
-		rev = remotify(rev)
+		rev = Remotify(rev)
 	}
 
 	// Try to resolve the rev
-	ref, err := r.ResolveRevision(plumbing.Revision(rev))
+	ref, err := r.inner.ResolveRevision(plumbing.Revision(rev))
 	if err != nil {
 		return "", err
 	}
@@ -222,7 +230,7 @@ func (r *Repo) LatestNonPatchFinalToLatest() (start, end string, err error) {
 func (r *Repo) latestNonPatchFinalVersion() (semver.Version, error) {
 	latestFinalTag := semver.Version{}
 
-	tags, err := r.Tags()
+	tags, err := r.inner.Tags()
 	if err != nil {
 		return latestFinalTag, err
 	}
@@ -271,7 +279,7 @@ func (r *Repo) releaseBranchOrMasterRev(major, minor uint64) (rev string, err er
 func (r *Repo) HasRemoteBranch(branch string) error {
 	log.Printf("Verifying %s branch exists on the remote", branch)
 
-	remote, err := r.Remote(DefaultRemote)
+	remote, err := r.inner.Remote(DefaultRemote)
 	if err != nil {
 		return err
 	}
@@ -297,7 +305,7 @@ func (r *Repo) HasRemoteBranch(branch string) error {
 
 // CheckoutBranch can be used to switch to another branch
 func (r *Repo) CheckoutBranch(name string) error {
-	worktree, err := r.Worktree()
+	worktree, err := r.inner.Worktree()
 	if err != nil {
 		return err
 	}
@@ -318,9 +326,9 @@ func IsReleaseBranch(branch string) bool {
 	return true
 }
 
-func (r *Repo) MergeBase(masterRefShort, releaseRefShort string) (string, error) {
-	masterRef := remotify(masterRefShort)
-	releaseRef := remotify(releaseRefShort)
+func (r *Repo) MergeBase(from, to string) (string, error) {
+	masterRef := Remotify(from)
+	releaseRef := Remotify(to)
 
 	log.Printf("masterRef: %s, releaseRef: %s", masterRef, releaseRef)
 
@@ -329,7 +337,7 @@ func (r *Repo) MergeBase(masterRefShort, releaseRefShort string) (string, error)
 
 	var hashes []*plumbing.Hash
 	for _, rev := range commitRevs {
-		hash, err := r.ResolveRevision(plumbing.Revision(rev))
+		hash, err := r.inner.ResolveRevision(plumbing.Revision(rev))
 		if err != nil {
 			return "", err
 		}
@@ -338,7 +346,7 @@ func (r *Repo) MergeBase(masterRefShort, releaseRefShort string) (string, error)
 
 	var commits []*object.Commit
 	for _, hash := range hashes {
-		commit, err := r.CommitObject(*hash)
+		commit, err := r.inner.CommitObject(*hash)
 		if err != nil {
 			return "", err
 		}
@@ -351,7 +359,7 @@ func (r *Repo) MergeBase(masterRefShort, releaseRefShort string) (string, error)
 	}
 
 	if len(res) == 0 {
-		return "", errors.Errorf("could not find a merge base between %s and %s", masterRefShort, releaseRefShort)
+		return "", errors.Errorf("could not find a merge base between %s and %s", from, to)
 	}
 
 	mergeBase := res[0].Hash.String()
@@ -360,19 +368,28 @@ func (r *Repo) MergeBase(masterRefShort, releaseRefShort string) (string, error)
 	return mergeBase, nil
 }
 
-// remotify returns the name prepended with the default remote
-func remotify(name string) string {
+// Remotify returns the name prepended with the default remote
+func Remotify(name string) string {
 	return fmt.Sprintf("%s/%s", DefaultRemote, name)
 }
 
-// DescribeTag can be used to retrieve the latest tag for a provided revision
-func (r *Repo) DescribeTag(rev string) (string, error) {
-	// Switch into the repo dir
-	workingDir, err := os.Getwd()
+// switchToRepoDir changes into the repo dir and returning the old one for
+// restoring it
+func (r *Repo) switchToRepoDir() (string, error) {
+	oldWd, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
 	if err := os.Chdir(r.dir); err != nil {
+		return "", err
+	}
+	return oldWd, nil
+}
+
+// DescribeTag can be used to retrieve the latest tag for a provided revision
+func (r *Repo) DescribeTag(rev string) (string, error) {
+	oldWd, err := r.switchToRepoDir()
+	if err != nil {
 		return "", err
 	}
 
@@ -388,9 +405,61 @@ func (r *Repo) DescribeTag(rev string) (string, error) {
 	}
 
 	// Restore working directory
-	if err := os.Chdir(workingDir); err != nil {
+	if err := os.Chdir(oldWd); err != nil {
 		return "", err
 	}
 
 	return strings.TrimSpace(status.Output()), nil
+}
+
+// Merge does a git merge into the current branch from the provided one
+func (r *Repo) Merge(from string) error {
+	oldWd, err := r.switchToRepoDir()
+	if err != nil {
+		return err
+	}
+
+	status, err := command.New("git merge -X ours", from).Run()
+	if err != nil {
+		return err
+	}
+	if !status.Success() {
+		return errors.New("git merge command failed")
+	}
+
+	return os.Chdir(oldWd)
+}
+
+// Push does push the specified branch to the default remote, but only if the
+// repository is not in dry run mode
+func (r *Repo) Push(remoteBranch string) error {
+	oldWd, err := r.switchToRepoDir()
+	if err != nil {
+		return err
+	}
+
+	dryRunFlag := ""
+	if r.dryRun {
+		log.Println("Won't push due to dry run repository")
+		dryRunFlag = "--dry-run"
+	}
+
+	status, err := command.New("git push", dryRunFlag, DefaultRemote, remoteBranch).Run()
+	if err != nil {
+		return err
+	}
+	if !status.Success() {
+		return errors.New("git push command failed")
+	}
+
+	return os.Chdir(oldWd)
+}
+
+// Head retrieves the current repository HEAD as a string
+func (r *Repo) Head() (string, error) {
+	ref, err := r.inner.Head()
+	if err != nil {
+		return "", err
+	}
+	return ref.Hash().String(), nil
 }
