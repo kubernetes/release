@@ -17,10 +17,15 @@ limitations under the License.
 package notes
 
 import (
+	"crypto/sha512"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Document represents the underlying structure of a release notes document.
@@ -106,7 +111,11 @@ func CreateDocument(notes ReleaseNotes, history ReleaseNotesHistory) (*Document,
 
 // RenderMarkdown accepts a Document and writes a version of that document to
 // supplied io.Writer in markdown format.
-func RenderMarkdown(doc *Document, w io.Writer) error {
+func RenderMarkdown(w io.Writer, doc *Document, bucket, tars, prevTag, newTag string) error {
+	if err := createDownloadsTable(w, bucket, tars, prevTag, newTag); err != nil {
+		return err
+	}
+
 	// we always want to render the document with SIGs in alphabetical order
 	sortedSIGs := []string{}
 	for sig := range doc.SIGs {
@@ -158,7 +167,7 @@ func RenderMarkdown(doc *Document, w io.Writer) error {
 
 	// the "API Changes" section
 	if len(doc.APIChanges) > 0 {
-		write("## API Changes\n\n")
+		write("### API Changes\n\n")
 		for _, note := range doc.APIChanges {
 			writeNote(note)
 		}
@@ -167,9 +176,9 @@ func RenderMarkdown(doc *Document, w io.Writer) error {
 
 	// the "Duplicate Notes" section
 	if len(doc.Duplicates) > 0 {
-		write("## Notes From Multiple SIGs\n\n")
+		write("### Notes from Multiple SIGs\n\n")
 		for header, notes := range doc.Duplicates {
-			write(fmt.Sprintf("### %s\n\n", header))
+			write(fmt.Sprintf("#### %s\n\n", header))
 			for _, note := range notes {
 				writeNote(note)
 			}
@@ -180,9 +189,9 @@ func RenderMarkdown(doc *Document, w io.Writer) error {
 
 	// each SIG gets a section (in alphabetical order)
 	if len(sortedSIGs) > 0 {
-		write("## Notes from Individual SIGs\n\n")
+		write("### Notes from Individual SIGs\n\n")
 		for _, sig := range sortedSIGs {
-			write("### SIG " + prettySIG(sig) + "\n\n")
+			write("#### SIG " + prettySIG(sig) + "\n\n")
 			for _, note := range doc.SIGs[sig] {
 				writeNote(note)
 			}
@@ -193,7 +202,7 @@ func RenderMarkdown(doc *Document, w io.Writer) error {
 
 	// the "Bug Fixes" section
 	if len(doc.BugFixes) > 0 {
-		write("## Bug Fixes\n\n")
+		write("### Bug Fixes\n\n")
 		for _, note := range doc.BugFixes {
 			writeNote(note)
 		}
@@ -203,7 +212,7 @@ func RenderMarkdown(doc *Document, w io.Writer) error {
 	// we call the uncategorized notes "Other Notable Changes". ideally these
 	// notes would at least have a SIG label.
 	if len(doc.Uncategorized) > 0 {
-		write("## Other Notable Changes\n\n")
+		write("### Other Notable Changes\n\n")
 		for _, note := range doc.Uncategorized {
 			writeNote(note)
 		}
@@ -252,4 +261,75 @@ func prettifySigList(sigs []string) string {
 	}
 
 	return sigList
+}
+
+// createDownloadsTable creates the markdown table with the links to the tarballs.
+// The function does nothing if the `tars` variable is empty.
+func createDownloadsTable(w io.Writer, bucket, tars, prevTag, newTag string) error {
+	// Do not add the table if not explicitely requested
+	if tars == "" {
+		return nil
+	}
+	if prevTag == "" || newTag == "" {
+		return errors.New("release tags not specified")
+	}
+
+	fmt.Fprintf(w, "# %s\n\n", newTag)
+	fmt.Fprintf(w, "[Documentation](https://docs.k8s.io)\n\n")
+
+	fmt.Fprintf(w, "## Downloads for %s\n\n", newTag)
+
+	urlPrefix := fmt.Sprintf("https://storage.googleapis.com/%s/release", bucket)
+	if bucket == "kubernetes-release" {
+		urlPrefix = "https://dl.k8s.io"
+	}
+
+	for _, item := range []struct {
+		heading  string
+		patterns []string
+	}{
+		{"", []string{"kubernetes.tar.gz", "kubernetes-src.tar.gz"}},
+		{"Client Binaries", []string{"kubernetes-client*.tar.gz"}},
+		{"Server Binaries", []string{"kubernetes-server*.tar.gz"}},
+		{"Node Binaries", []string{"kubernetes-node*.tar.gz"}},
+	} {
+		if item.heading != "" {
+			fmt.Fprintf(w, "### %s\n\n", item.heading)
+		}
+		fmt.Fprintln(w, "filename | sha512 hash")
+		fmt.Fprintln(w, "-------- | -----------")
+
+		for _, pattern := range item.patterns {
+			pattern := filepath.Join(tars, pattern)
+
+			matches, err := filepath.Glob(pattern)
+			if err != nil {
+				return err
+			}
+
+			for _, file := range matches {
+				f, err := os.Open(file)
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+
+				h := sha512.New()
+				if _, err := io.Copy(h, f); err != nil {
+					return err
+				}
+
+				fileName := filepath.Base(file)
+				fmt.Fprintf(w,
+					"[%s](%s/%s/%s) | `%x`\n",
+					fileName, urlPrefix, newTag, fileName, h.Sum(nil),
+				)
+			}
+		}
+
+		fmt.Fprintln(w, "")
+	}
+
+	fmt.Fprintf(w, "## Changelog since %s\n\n", prevTag)
+	return nil
 }

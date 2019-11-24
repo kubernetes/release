@@ -50,6 +50,8 @@ type options struct {
 	requiredAuthor string
 	debug          bool
 	discoverMode   string
+	releaseBucket  string
+	releaseTars    string
 }
 
 const (
@@ -185,6 +187,20 @@ func (o *options) BindFlags() *flag.FlagSet {
 			revisionDiscoveryModeMinorToLatest),
 	)
 
+	flags.StringVar(
+		&o.releaseBucket,
+		"release-bucket",
+		envDefault("RELEASE_BUCKET", "kubernetes-release"),
+		"Specify gs bucket to point to in generated notes",
+	)
+
+	flags.StringVar(
+		&o.releaseTars,
+		"release-tars",
+		envDefault("RELEASE_TARS", ""),
+		"Directory of tars to sha512 sum for display",
+	)
+
 	return flags
 }
 
@@ -292,7 +308,9 @@ func (o *options) WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history not
 			return err
 		}
 
-		if err := notes.RenderMarkdown(doc, output); err != nil {
+		if err := notes.RenderMarkdown(
+			output, doc, o.releaseBucket, o.releaseTars, o.startRev, o.endRev,
+		); err != nil {
 			logrus.Errorf("rendering release note document to markdown: %v", err)
 			return err
 		}
@@ -407,8 +425,7 @@ func run(args []string) error {
 		return err
 	}
 
-	err = opts.WriteReleaseNotes(releaseNotes, history)
-	if err != nil {
+	if err := opts.WriteReleaseNotes(releaseNotes, history); err != nil {
 		logrus.Errorf("writing to file: %v", err)
 		return err
 	}
