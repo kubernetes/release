@@ -191,8 +191,8 @@ func (r *Repo) RevParse(rev string) (string, error) {
 	return ref.String(), nil
 }
 
-// RevParseShort parses a git revision and returns a SHA1 on success, otherwise
-// an error.
+// RevParseShort parses a git revision and returns a SHA1 trimmed to the length
+// 10 on success, otherwise an error.
 func (r *Repo) RevParseShort(rev string) (string, error) {
 	fullRev, err := r.RevParse(rev)
 	if err != nil {
@@ -319,7 +319,7 @@ func (r *Repo) CheckoutBranch(name string) error {
 func IsReleaseBranch(branch string) bool {
 	re := regexp.MustCompile(branchRE)
 	if !re.MatchString(branch) {
-		log.Fatalf("%s is not a release branch\n", branch)
+		log.Printf("%s is not a release branch", branch)
 		return false
 	}
 
@@ -373,30 +373,14 @@ func Remotify(name string) string {
 	return fmt.Sprintf("%s/%s", DefaultRemote, name)
 }
 
-// switchToRepoDir changes into the repo dir and returning the old one for
-// restoring it
-func (r *Repo) switchToRepoDir() (string, error) {
-	oldWd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-	if err := os.Chdir(r.dir); err != nil {
-		return "", err
-	}
-	return oldWd, nil
-}
-
 // DescribeTag can be used to retrieve the latest tag for a provided revision
 func (r *Repo) DescribeTag(rev string) (string, error) {
-	oldWd, err := r.switchToRepoDir()
-	if err != nil {
-		return "", err
-	}
-
 	// go git seems to have no implementation for `git describe`
 	// which means that we fallback to a shell command for sake of
 	// simplicity
-	status, err := command.New("git describe --abbrev=0 --tags", rev).RunSilent()
+	status, err := command.NewWithWorkDir(
+		r.Dir(), "git describe --abbrev=0 --tags", rev,
+	).RunSilent()
 	if err != nil {
 		return "", err
 	}
@@ -404,55 +388,28 @@ func (r *Repo) DescribeTag(rev string) (string, error) {
 		return "", errors.New("git describe command failed")
 	}
 
-	// Restore working directory
-	if err := os.Chdir(oldWd); err != nil {
-		return "", err
-	}
-
 	return strings.TrimSpace(status.Output()), nil
 }
 
 // Merge does a git merge into the current branch from the provided one
 func (r *Repo) Merge(from string) error {
-	oldWd, err := r.switchToRepoDir()
-	if err != nil {
-		return err
-	}
-
-	status, err := command.New("git merge -X ours", from).Run()
-	if err != nil {
-		return err
-	}
-	if !status.Success() {
-		return errors.New("git merge command failed")
-	}
-
-	return os.Chdir(oldWd)
+	return command.NewWithWorkDir(
+		r.Dir(), "git merge -X ours", from,
+	).RunSuccess()
 }
 
 // Push does push the specified branch to the default remote, but only if the
 // repository is not in dry run mode
 func (r *Repo) Push(remoteBranch string) error {
-	oldWd, err := r.switchToRepoDir()
-	if err != nil {
-		return err
-	}
-
 	dryRunFlag := ""
 	if r.dryRun {
 		log.Println("Won't push due to dry run repository")
 		dryRunFlag = "--dry-run"
 	}
 
-	status, err := command.New("git push", dryRunFlag, DefaultRemote, remoteBranch).Run()
-	if err != nil {
-		return err
-	}
-	if !status.Success() {
-		return errors.New("git push command failed")
-	}
-
-	return os.Chdir(oldWd)
+	return command.NewWithWorkDir(
+		r.Dir(), "git push", dryRunFlag, DefaultRemote, remoteBranch,
+	).RunSuccess()
 }
 
 // Head retrieves the current repository HEAD as a string
