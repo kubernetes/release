@@ -28,16 +28,17 @@
 #+   Configuration can be passed in via the environment. The following
 #+   variables are available:
 #+
-#+   UPLOAD_KEY: [*mandatory*]
-#+     The user key for 'vgy.me'. You need to create an account at 'vgy.me'
-#+      (https://vgy.me/auth/register) and a user key to be able to upload images.
-#+
 #+   BOARDS: [default: "blocking informing"]
 #+     Change which boards you are interested in
 #+
 #+   STATES: [default: "FAILING"]
 #+     Change the tests you want to screenshot
 #+     Available states: FAILING, FLAKY, PASSING
+#+
+#+   BUCKET: [default: "kubernetes-release-gcb"]
+#+     The name of the bucket to upload the images to.
+#+     `gsutil` is used for the upload, thus it must be installed and configured correctly.
+#+     The files will be put into '/testgridshot/<some timestamped unique directory>/...'
 #+
 #+   BLOCK_WIDTH: [default: 30]
 #+     The width of the individual testgrid red & green block.
@@ -54,7 +55,7 @@
 #+     retries.
 #+
 #+   Example:
-#+     $ UPLOAD_KEY='<someKey>' BOARDS='all informing' STATES='FAILING FLAKY' BLOCK_WIDTH=10 ./testgridshot 1.15
+#+     $ BUCKET='kubeimages' BOARDS='all informing' STATES='FAILING FLAKY' BLOCK_WIDTH=10 ./testgridshot 1.15
 #+         Creates dense screenshots of all the 'sig-release-1.15-{all,informing}'
 #+         boards which are either failing or flaking
 #+
@@ -64,13 +65,8 @@
 #+     endpoint
 #+   - Use 'render-tron.appspot.com' to create screenshots of the testgrid
 #+     boards
-#+   - Upload all the screenshots to 'vgy.me'
-#+   - Print a markdown, which links to the images on 'vgy.me', stub on StdOut
-#+   Remarks:
-#+   - on 2019-09-03 'vgy.me' disabled anonymous uploads, therefor everyone who
-#+     want's to use that script needs an account at 'vgy.me' currently.
-#+   - The images are not served by 'vgy.me' directly if used in a GitHub issue,
-#+     but by GitHub's camo service
+#+   - Upload all the screenshots to a google storage bucket and make them public
+#+   - Print a markdown stub which links to the images in the bucket on StdOut
 #+
 
 set -o errexit
@@ -80,6 +76,7 @@ set -o pipefail
 readonly BOARDS="${BOARDS:-blocking informing}"
 # Available states: FAILING, FLAKY, PASSING
 readonly STATES="${STATES:-FAILING}"
+readonly BUCKET="${BUCKET:-kubernetes-release-gcb}"
 readonly BLOCK_WIDTH="${BLOCK_WIDTH:-30}"
 readonly WIDTH="${WIDTH:-3000}"
 readonly HEIGHT="${HEIGHT:-2500}"
@@ -88,8 +85,8 @@ readonly RETRY_SLEEP="${RETRY_SLEEP:-2}"
 
 readonly TESTGRID='https://testgrid.k8s.io'
 readonly RENDER_TRON='https://render-tron.appspot.com/screenshot'
-readonly UPLOAD_URL='https://vgy.me/upload'
 readonly ISSUE_STUB_SUFFIX='issue.'
+readonly IMG_PATH="testgridshot/$(date -u '+%Y-%m-%d_%H-%M-%S')_$(openssl rand -hex 4)"
 
 
 get_tests_by_status() {
@@ -125,14 +122,6 @@ log() {
   echo "$(get_timestamp) ${*}" >&2
 }
 
-upload() {
-  local file_name="$1"
-  curl_with_retry "$UPLOAD_URL" \
-    -F "userkey=${UPLOAD_KEY}" \
-    -F "file=@${file_name}" \
-    -F "title=${file_name}"
-}
-
 screenshot() {
   local url="$1"
   local target="$2"
@@ -152,7 +141,7 @@ get_issue_stub_name() {
 
 combine_issue_stubs() {
   local dir="$1"
-  find "$dir" -name "${ISSUE_STUB_SUFFIX}*" \
+  find "$dir" -mindepth 1 -maxdepth 1 -name "${ISSUE_STUB_SUFFIX}*" \
     | sort -n \
     | xargs cat
 }
@@ -179,6 +168,16 @@ get_header_stub() {
   done
 }
 
+upload_and_publish_images() {
+  local local_path="${1}"
+  local bucket_path="gs://${BUCKET}/${IMG_PATH}/"
+
+  # https://cloud.google.com/storage/docs/access-control/lists#predefined-acl
+  local canned_acl='public-read'
+
+  gsutil -m -q cp -a "$canned_acl" -r "${local_path}/." "${bucket_path}"
+}
+
 usage() {
   local usage_marker='^#\\+ ?'
   # shellcheck disable=SC2016
@@ -196,6 +195,10 @@ shoot() {
   tmp_dir="$( mktemp -d )"
   trap 'rm -rf -- "$tmp_dir"' EXIT
 
+  # that's where we locally stage the images
+  local img_dir="${tmp_dir}/images"
+  mkdir -p "${img_dir}"
+
   read -r -a boards <<< "$BOARDS"
   # prepend all elements with 'sig-release-<release>-' to form the full
   # testgrid dashborad name
@@ -212,8 +215,7 @@ shoot() {
 
       idx=$(( idx + 1 ))
       (
-        local testgrid_url timestamp \
-          file_name image_meta image_url file_base_name file_size
+        local testgrid_url timestamp file_name image_url file_base_name file_size
 
         local_log() {
           log "[${idx}]" "$@"
@@ -222,8 +224,8 @@ shoot() {
         local_log "starting ${t}"
 
         testgrid_url="${TESTGRID}/${t}&width=${BLOCK_WIDTH}"
-        file_name="${tmp_dir}/$( gen_file_name "${t}" ).jpg"
-        file_base_name="$(basename "$file_name")"
+        file_base_name="$( gen_file_name "${t}" ).jpg"
+        file_name="${img_dir}/${file_base_name}"
 
         # create & download screenshot
         local_log "screenshoting ${testgrid_url} to ${file_base_name}"
@@ -233,25 +235,25 @@ shoot() {
         read -r file_size <<< "$(wc -c < "$file_name")"
         local_log "${file_base_name}: ${file_size} bytes"
 
-        # upload
-        local_log "uploading ${file_base_name}"
-        image_meta="$( upload "$file_name" )"
-
-        image_url="$( echo "${image_meta}" | jq -r '.image' )"
+        image_url="https://storage.googleapis.com/${BUCKET}/${IMG_PATH}/${file_base_name}"
 
         # generate issue section
         local_log "generating markdown stub"
         printf \
-          '\n<details><summary><tt>%s</tt> %s %s <a href="%s">[testgrid]</a></summary><p>\n\n![%s](%s)\n<!-- %s -->\n</p></details>\n' \
-          "${timestamp}" "${s}" "${t}" "${testgrid_url}" "${t}" "${image_url}" "${image_meta}" \
+          '\n<details><summary><tt>%s</tt> %s %s <a href="%s">[testgrid]</a></summary><p>\n\n![%s](%s)\n</p></details>\n' \
+          "${timestamp}" "${s}" "${t}" "${testgrid_url}" "${t}" "${image_url}" \
           > "$( get_issue_stub_name "${tmp_dir}" "$idx" )"
 
-        local_log "done, image is available at ${image_url}"
+        local_log "done, image will be available at ${image_url}"
       )&
     done
   done
 
   wait
+
+  log "Starting upload to '$BUCKET'"
+  upload_and_publish_images "$img_dir"
+  log "Upload finished successfully"
 
   echo
 
@@ -268,7 +270,6 @@ main() {
     exit
   fi
 
-  readonly "${UPLOAD_KEY?needs to hold the user key for your account at ${UPLOAD_URL}}"
   shoot "$target_release"
 }
 
