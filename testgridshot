@@ -156,9 +156,10 @@ comma_sep() {
 }
 
 get_header_stub() {
+  local release="$1" ; shift
   local board
 
-  echo '### Testgrid dashboards'
+  echo "### Testgrid dashboards for ${release}"
 
   echo "Boards checked for $(comma_sep "${STATES}"):"
 
@@ -204,7 +205,7 @@ shoot() {
   # testgrid dashborad name
   boards=( "${boards[@]/#/sig-release-${target_release}-}" )
 
-  get_header_stub "${boards[@]}" > "$( get_issue_stub_name "${tmp_dir}" "${idx}" )"
+  get_header_stub "$target_release" "${boards[@]}" > "$( get_issue_stub_name "${tmp_dir}" "${idx}" )"
 
   for s in ${STATES}
   do
