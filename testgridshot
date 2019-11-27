@@ -38,7 +38,7 @@
 #+   BUCKET: [default: "kubernetes-release-gcb"]
 #+     The name of the bucket to upload the images to.
 #+     `gsutil` is used for the upload, thus it must be installed and configured correctly.
-#+     The files will be put into '/testgridshot/<some timestamped unique directory>/...'
+#+     The files will be put into '/testgridshot/<release>/<datetime>_<rand>/...'
 #+
 #+   BLOCK_WIDTH: [default: 30]
 #+     The width of the individual testgrid red & green block.
@@ -86,7 +86,6 @@ readonly RETRY_SLEEP="${RETRY_SLEEP:-2}"
 readonly TESTGRID='https://testgrid.k8s.io'
 readonly RENDER_TRON='https://render-tron.appspot.com/screenshot'
 readonly ISSUE_STUB_SUFFIX='issue.'
-readonly IMG_PATH="testgridshot/$(date -u '+%Y-%m-%d_%H-%M-%S')_$(openssl rand -hex 4)"
 readonly SHRUG='‾\_(ツ)_/‾'
 
 
@@ -172,7 +171,8 @@ get_header_stub() {
 
 upload_and_publish_images() {
   local local_path="${1}"
-  local bucket_path="gs://${BUCKET}/${IMG_PATH}/"
+  local img_bucket_dir="${2}"
+  local bucket_path="gs://${BUCKET}/${img_bucket_dir}/"
 
   # https://cloud.google.com/storage/docs/access-control/lists#predefined-acl
   local canned_acl='public-read'
@@ -193,6 +193,7 @@ shoot() {
   local boards
   local tests t s
   local idx=0
+  local img_bucket_dir
 
   tmp_dir="$( mktemp -d )"
   trap 'rm -rf -- "$tmp_dir"' EXIT
@@ -200,6 +201,8 @@ shoot() {
   # that's where we locally stage the images
   local img_dir="${tmp_dir}/images"
   mkdir -p "${img_dir}"
+
+  img_bucket_dir="testgridshot/${target_release}/$(date -u '+%Y-%m-%d_%H-%M-%S')_$(openssl rand -hex 4)"
 
   read -r -a boards <<< "$BOARDS"
   # prepend all elements with 'sig-release-<release>-' to form the full
@@ -237,7 +240,7 @@ shoot() {
         read -r file_size <<< "$(wc -c < "$file_name")"
         local_log "${file_base_name}: ${file_size} bytes"
 
-        image_url="https://storage.googleapis.com/${BUCKET}/${IMG_PATH}/${file_base_name}"
+        image_url="https://storage.googleapis.com/${BUCKET}/${img_bucket_dir}/${file_base_name}"
 
         # generate issue section
         local_log "generating markdown stub"
@@ -259,7 +262,7 @@ shoot() {
   fi
 
   log "Starting upload to '$BUCKET'"
-  upload_and_publish_images "$img_dir"
+  upload_and_publish_images "$img_dir" "$img_bucket_dir"
   log "Upload finished successfully"
 
   echo
