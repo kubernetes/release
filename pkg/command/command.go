@@ -40,16 +40,30 @@ type Status struct {
 	output   string
 }
 
-// New creates a new command from provided string, which contains a whitespace
-// sepearated shell command
+// New creates a new command from the provided arguments.
 func New(cmd ...string) *Command {
+	return NewWithWorkDir("", cmd...)
+}
+
+// New creates a new command from the provided workDir and the command
+// arguments.
+func NewWithWorkDir(workDir string, cmd ...string) *Command {
 	args := strings.Fields(strings.Join(cmd, " "))
-	if len(args) == 0 {
-		return &Command{exec.Command(cmd[0])}
-	} else if len(args) > 1 {
-		return &Command{exec.Command(args[0], args[1:]...)}
+
+	command := func() *Command {
+		if len(args) == 0 {
+			return &Command{exec.Command(cmd[0])}
+		} else if len(args) > 1 {
+			return &Command{exec.Command(args[0], args[1:]...)}
+		}
+		return &Command{exec.Command(args[0])}
+	}()
+
+	if workDir != "" {
+		command.cmd.Dir = workDir
 	}
-	return &Command{exec.Command(args[0])}
+
+	return command
 }
 
 // Run starts the command and waits for it to finish. It returns an error if
@@ -60,10 +74,37 @@ func (c *Command) Run() (res *Status, err error) {
 }
 
 // Run starts the command and waits for it to finish. It returns an error if
+// the command execution was not successful.
+func (c *Command) RunSuccess() (err error) {
+	res, err := c.run(true)
+	if err != nil {
+		return err
+	}
+	if !res.Success() {
+		return errors.Errorf("command %v did not succeed", c.cmd)
+	}
+	return nil
+}
+
+// Run starts the command and waits for it to finish. It returns an error if
 // the command execution was not possible at all, otherwise the Status.
 // This method does not print the output of the command during its execution.
 func (c *Command) RunSilent() (res *Status, err error) {
 	return c.run(false)
+}
+
+// Run starts the command and waits for it to finish. It returns an error if
+// the command execution was not successful.
+// This method does not print the output of the command during its execution.
+func (c *Command) RunSilentSuccess() (err error) {
+	res, err := c.run(false)
+	if err != nil {
+		return err
+	}
+	if !res.Success() {
+		return errors.Errorf("command %v did not succeed", c.cmd)
+	}
+	return nil
 }
 
 // run is the internal run method
@@ -140,7 +181,7 @@ func (s *Status) Output() string {
 	return s.output
 }
 
-// Execute is a convinience function which creates a new Command, excutes it
+// Execute is a convenience function which creates a new Command, executes it
 // and evaluates its status.
 func Execute(cmd ...string) error {
 	status, err := New(cmd...).Run()

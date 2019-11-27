@@ -13,6 +13,18 @@ func TestSuccess(t *testing.T) {
 	require.Zero(t, res.ExitCode())
 }
 
+func TestSuccessWithWorkingDir(t *testing.T) {
+	res, err := NewWithWorkDir("/", "ls -1").Run()
+	require.Nil(t, err)
+	require.True(t, res.Success())
+	require.Zero(t, res.ExitCode())
+}
+
+func TestFailureWithWrongWorkingDir(t *testing.T) {
+	_, err := NewWithWorkDir("/should/not/exist", "ls -1").Run()
+	require.NotNil(t, err)
+}
+
 func TestSuccessSilent(t *testing.T) {
 	res, err := New("echo hi").RunSilent()
 	require.Nil(t, err)
@@ -85,4 +97,20 @@ func TestAvailableSuccessEmptyCommands(t *testing.T) {
 func TestAvailableFailure(t *testing.T) {
 	res := Available("echo", "this-command-should-not-exist")
 	require.False(t, res)
+}
+
+func TestSuccessRunSuccess(t *testing.T) {
+	require.Nil(t, New("echo hi").RunSuccess())
+}
+
+func TestFailureRunSuccess(t *testing.T) {
+	require.NotNil(t, New("cat /not/available").RunSuccess())
+}
+
+func TestSuccessRunSilentSuccess(t *testing.T) {
+	require.Nil(t, New("echo hi").RunSilentSuccess())
+}
+
+func TestFailureRunSuccessSilent(t *testing.T) {
+	require.NotNil(t, New("cat /not/available").RunSilentSuccess())
 }
