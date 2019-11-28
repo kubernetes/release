@@ -20,5 +20,6 @@ package hack
 
 // Add tools that hack scripts depend on here, to ensure they are vendored.
 import (
+	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "k8s.io/release/build/debs"
 )
