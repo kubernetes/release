@@ -47,7 +47,6 @@ linters-settings:
   errcheck:
     check-type-assertions: true
     check-blank: true
-    exclude: .errcheck-excludes
   gocritic:
     enabled-checks:
       # Diagnostic

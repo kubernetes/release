@@ -88,7 +88,7 @@ func TestReleaseNoteParsing(t *testing.T) {
 		fmt.Println(sha)
 		commit, _, err := client.Repositories.GetCommit(ctx, "kubernetes", "kubernetes", sha)
 		require.NoError(t, err)
-		prs, err := PRsFromCommit(client, nil, commit)
+		prs, err := PRsFromCommit(client, commit)
 		require.NoError(t, err)
 		_, err = ReleaseNoteFromCommit(&Result{commit: commit, pullRequest: prs[0]}, client, "0.1")
 		require.NoError(t, err)
