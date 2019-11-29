@@ -6,42 +6,42 @@ linters:
   disable-all: true
   enable:
     - bodyclose
+    - deadcode
     - depguard
     - dogsled
     - dupl
     - goconst
+    - gocritic
     - gocyclo
     - godox
     - gofmt
     - goimports
+    - golint
     - gosimple
     - govet
+    - ineffassign
     - interfacer
+    - maligned
     - misspell
     - nakedret
+    - prealloc
+    - staticcheck
     - structcheck
+    - stylecheck
     - typecheck
     - unconvert
+    - unparam
+    - unused
     - varcheck
-    # - deadcode
+    - whitespace
     # - errcheck
     # - funlen
     # - gochecknoglobals
     # - gochecknoinits
     # - gocognit
-    # - gocritic
-    # - golint
     # - gosec
-    # - ineffassign
     # - lll
-    # - maligned
-    # - prealloc
     # - scopelint
-    # - staticcheck
-    # - stylecheck
-    # - unparam
-    # - unused
-    # - whitespace
     # - wsl
 linters-settings:
   errcheck:
@@ -68,7 +68,7 @@ linters-settings:
       - offBy1
       - sloppyReassign
       - weakCond
-      # - octalLiteral
+      - octalLiteral
 
       # Performance
       - appendCombine
@@ -90,7 +90,6 @@ linters-settings:
       - emptyFallthrough
       - emptyStringTest
       - hexLiteral
-      - ifElseChain
       - methodExprCall
       - regexpMust
       - singleCaseSwitch
@@ -106,6 +105,7 @@ linters-settings:
       - valSwap
       - wrapperFunc
       - yodaStyleExpr
+      # - ifElseChain
 
       # Opinionated
       - builtinShadow

@@ -65,14 +65,14 @@ func readConfFromURL(ctx context.Context, url string) (*config.Configuration, er
 	ctx, cancel := context.WithTimeout(ctx, DownloadTimeout)
 	defer cancel()
 
-	if err := downloadFile(ctx, tmpFile.Name(), TestgridConfigURL); err != nil {
+	if err := downloadFile(ctx, tmpFile.Name(), url); err != nil {
 		return nil, err
 	}
 
 	return config.ReadPath(tmpFile.Name())
 }
 
-func downloadFile(ctx context.Context, filepath string, url string) error {
+func downloadFile(ctx context.Context, filePath, url string) error {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return err
@@ -86,7 +86,7 @@ func downloadFile(ctx context.Context, filepath string, url string) error {
 	}
 	defer res.Body.Close()
 
-	out, err := os.Create(filepath)
+	out, err := os.Create(filePath)
 	if err != nil {
 		return err
 	}

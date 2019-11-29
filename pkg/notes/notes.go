@@ -48,11 +48,11 @@ type ReleaseNote struct {
 	// Author is the GitHub username of the commit author
 	Author string `json:"author"`
 
-	// AuthorUrl is the GitHub URL of the commit author
-	AuthorUrl string `json:"author_url"`
+	// AuthorURL is the GitHub URL of the commit author
+	AuthorURL string `json:"author_url"`
 
-	// PrUrl is a URL to the PR
-	PrUrl string `json:"pr_url"`
+	// PrURL is a URL to the PR
+	PrURL string `json:"pr_url"`
 
 	// PrNumber is the number of the PR
 	PrNumber int `json:"pr_number"`
@@ -109,15 +109,15 @@ type ReleaseNotes map[int]*ReleaseNote
 // ReleaseNotesHistory is the sorted list of PRs in the commit history
 type ReleaseNotesHistory []int
 
-// GithubApiOption is a type which allows for the expression of API configuration
+// GitHubAPIOption is a type which allows for the expression of API configuration
 // via the "functional option" pattern.
 // For more information on this pattern, see the following blog post:
 // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
-type GithubApiOption func(*githubApiConfig)
+type GitHubAPIOption func(*githubAPIConfig)
 
-// githubApiConfig is a configuration struct that is used to express optional
+// githubAPIConfig is a configuration struct that is used to express optional
 // configuration for GitHub API requests
-type githubApiConfig struct {
+type githubAPIConfig struct {
 	ctx    context.Context
 	org    string
 	repo   string
@@ -125,32 +125,32 @@ type githubApiConfig struct {
 }
 
 // WithContext allows the caller to inject a context into GitHub API requests
-func WithContext(ctx context.Context) GithubApiOption {
-	return func(c *githubApiConfig) {
+func WithContext(ctx context.Context) GitHubAPIOption {
+	return func(c *githubAPIConfig) {
 		c.ctx = ctx
 	}
 }
 
 // WithOrg allows the caller to override the GitHub organization for the API
 // request. By default, it is usually "kubernetes".
-func WithOrg(org string) GithubApiOption {
-	return func(c *githubApiConfig) {
+func WithOrg(org string) GitHubAPIOption {
+	return func(c *githubAPIConfig) {
 		c.org = org
 	}
 }
 
 // WithRepo allows the caller to override the GitHub repo for the API
 // request. By default, it is usually "kubernetes".
-func WithRepo(repo string) GithubApiOption {
-	return func(c *githubApiConfig) {
+func WithRepo(repo string) GitHubAPIOption {
+	return func(c *githubAPIConfig) {
 		c.repo = repo
 	}
 }
 
 // WithBranch allows the caller to override the repo branch for the API
 // request. By default, it is usually "master".
-func WithBranch(branch string) GithubApiOption {
-	return func(c *githubApiConfig) {
+func WithBranch(branch string) GitHubAPIOption {
+	return func(c *githubAPIConfig) {
 		c.branch = branch
 	}
 }
@@ -170,7 +170,7 @@ func ListReleaseNotes(
 	end,
 	requiredAuthor,
 	relVer string,
-	opts ...GithubApiOption,
+	opts ...GitHubAPIOption,
 ) (ReleaseNotes, ReleaseNotesHistory, error) {
 	results, err := ListCommitsWithNotes(client, logger, branch, start, end, opts...)
 	if err != nil {
@@ -181,7 +181,6 @@ func ListReleaseNotes(
 	notes := make(ReleaseNotes)
 	history := ReleaseNotesHistory{}
 	for _, result := range results {
-
 		if requiredAuthor != "" {
 			if result.commit.GetAuthor().GetLogin() != requiredAuthor {
 				continue
@@ -311,16 +310,16 @@ func DocumentationFromString(s string) []*Documentation {
 }
 
 // classifyURL returns the correct DocType for the given url
-func classifyURL(url *url.URL) DocType {
+func classifyURL(u *url.URL) DocType {
 	// Kubernetes Enhancement Proposals (KEPs)
-	if strings.Contains(url.Host, "github.com") &&
-		strings.Contains(url.Path, "/kubernetes/enhancements/") {
+	if strings.Contains(u.Host, "github.com") &&
+		strings.Contains(u.Path, "/kubernetes/enhancements/") {
 		return DocTypeKEP
 	}
 
 	// Official documentation
-	if strings.Contains(url.Host, "kubernetes.io") &&
-		strings.Contains(url.Path, "/docs/") {
+	if strings.Contains(u.Host, "kubernetes.io") &&
+		strings.Contains(u.Path, "/docs/") {
 		return DocTypeOfficial
 	}
 
@@ -329,7 +328,7 @@ func classifyURL(url *url.URL) DocType {
 
 // ReleaseNoteFromCommit produces a full contextualized release note given a
 // GitHub commit API resource.
-func ReleaseNoteFromCommit(result *Result, client *github.Client, relVer string, opts ...GithubApiOption) (*ReleaseNote, error) {
+func ReleaseNoteFromCommit(result *Result, client *github.Client, relVer string, opts ...GitHubAPIOption) (*ReleaseNote, error) {
 	c := configFromOpts(opts...)
 	pr := result.pullRequest
 
@@ -341,8 +340,8 @@ func ReleaseNoteFromCommit(result *Result, client *github.Client, relVer string,
 	documentation := DocumentationFromString(prBody)
 
 	author := pr.GetUser().GetLogin()
-	authorUrl := fmt.Sprintf("https://github.com/%s", author)
-	prUrl := fmt.Sprintf("https://github.com/%s/%s/pull/%d", c.org, c.repo, pr.GetNumber())
+	authorURL := fmt.Sprintf("https://github.com/%s", author)
+	prURL := fmt.Sprintf("https://github.com/%s/%s/pull/%d", c.org, c.repo, pr.GetNumber())
 	IsFeature := HasString(LabelsWithPrefix(pr, "kind"), "feature")
 	IsDuplicate := false
 	sigsListPretty := prettifySigList(LabelsWithPrefix(pr, "sig"))
@@ -358,7 +357,7 @@ func ReleaseNoteFromCommit(result *Result, client *github.Client, relVer string,
 
 	indented := strings.ReplaceAll(text, "\n", "\n  ")
 	markdown := fmt.Sprintf("%s ([#%d](%s), [@%s](%s))",
-		indented, pr.GetNumber(), prUrl, author, authorUrl)
+		indented, pr.GetNumber(), prURL, author, authorURL)
 
 	if noteSuffix != "" {
 		markdown = fmt.Sprintf("%s\n\n  %s", markdown, noteSuffix)
@@ -370,8 +369,8 @@ func ReleaseNoteFromCommit(result *Result, client *github.Client, relVer string,
 		Markdown:       markdown,
 		Documentation:  documentation,
 		Author:         author,
-		AuthorUrl:      authorUrl,
-		PrUrl:          prUrl,
+		AuthorURL:      authorURL,
+		PrURL:          prURL,
 		PrNumber:       pr.GetNumber(),
 		SIGs:           LabelsWithPrefix(pr, "sig"),
 		Kinds:          LabelsWithPrefix(pr, "kind"),
@@ -385,7 +384,7 @@ func ReleaseNoteFromCommit(result *Result, client *github.Client, relVer string,
 
 // ListCommits lists all commits starting from a given commit SHA and ending at
 // a given commit SHA.
-func ListCommits(client *github.Client, branch, start, end string, opts ...GithubApiOption) ([]*github.RepositoryCommit, error) {
+func ListCommits(client *github.Client, branch, start, end string, opts ...GitHubAPIOption) ([]*github.RepositoryCommit, error) {
 	c := configFromOpts(opts...)
 
 	c.branch = branch
@@ -438,7 +437,7 @@ func ListCommitsWithNotes(
 	branch,
 	start,
 	end string,
-	opts ...GithubApiOption,
+	opts ...GitHubAPIOption,
 ) (filtered []*Result, err error) {
 	commits, err := ListCommits(client, branch, start, end, opts...)
 	if err != nil {
@@ -446,7 +445,6 @@ func ListCommitsWithNotes(
 	}
 
 	for i, commit := range commits {
-
 		level.Debug(logger).Log("msg", "################################################")
 		level.Info(logger).Log("msg", fmt.Sprintf("[%d/%d - %0.2f%%]", i+1, len(commits), (float64(i+1)/float64(len(commits)))*100.0))
 		level.Debug(logger).Log(
@@ -551,7 +549,7 @@ func ListCommitsWithNotes(
 // PRsFromCommit return an API Pull Request struct given a commit struct. This is
 // useful for going from a commit log to the PR (which contains useful info such
 // as labels).
-func PRsFromCommit(client *github.Client, logger log.Logger, commit *github.RepositoryCommit, opts ...GithubApiOption) (
+func PRsFromCommit(client *github.Client, logger log.Logger, commit *github.RepositoryCommit, opts ...GitHubAPIOption) (
 	[]*github.PullRequest, error,
 ) {
 	githubPRs, err := prsForCommitFromMessage(client, *commit.Commit.Message, opts...)
@@ -592,9 +590,9 @@ func IsActionRequired(pr *github.PullRequest) bool {
 }
 
 // configFromOpts is an internal helper for turning a set of functional options
-// into a populated *githubApiConfig struct with consistent defaults.
-func configFromOpts(opts ...GithubApiOption) *githubApiConfig {
-	c := &githubApiConfig{
+// into a populated *githubAPIConfig struct with consistent defaults.
+func configFromOpts(opts ...GitHubAPIOption) *githubAPIConfig {
+	c := &githubAPIConfig{
 		ctx:    context.Background(),
 		org:    "kubernetes",
 		repo:   "kubernetes",
@@ -646,7 +644,7 @@ func HasString(a []string, x string) bool {
 }
 
 // prsForCommitFromSHA retrieves the PR numbers for a commit given its sha
-func prsForCommitFromSHA(client *github.Client, sha string, opts ...GithubApiOption) (prs []*github.PullRequest, err error) {
+func prsForCommitFromSHA(client *github.Client, sha string, opts ...GitHubAPIOption) (prs []*github.PullRequest, err error) {
 	c := configFromOpts(opts...)
 
 	plo := &github.PullRequestListOptions{
@@ -678,7 +676,7 @@ func prsForCommitFromSHA(client *github.Client, sha string, opts ...GithubApiOpt
 	return prs, nil
 }
 
-func prsForCommitFromMessage(client *github.Client, commitMessage string, opts ...GithubApiOption) (prs []*github.PullRequest, err error) {
+func prsForCommitFromMessage(client *github.Client, commitMessage string, opts ...GitHubAPIOption) (prs []*github.PullRequest, err error) {
 	c := configFromOpts(opts...)
 
 	prsNum, err := prsNumForCommitFromMessage(commitMessage)
@@ -694,7 +692,6 @@ func prsForCommitFromMessage(client *github.Client, commitMessage string, opts .
 			return nil, err
 		}
 		prs = append(prs, res)
-
 	}
 
 	return prs, err
