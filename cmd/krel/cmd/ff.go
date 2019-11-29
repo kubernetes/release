@@ -120,10 +120,12 @@ func runFf(opts *ffOptions) error {
 		return err
 	}
 	if masterTag != mergeBaseTag {
-		log.Fatalf(
+		err := errors.Errorf(
 			"Unable to fast forward: tag %q does not match %q",
 			masterTag, mergeBaseTag,
 		)
+		log.Print(err)
+		return err
 	}
 	log.Printf("Last tag is: %s", masterTag)
 

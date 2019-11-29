@@ -40,18 +40,18 @@ push --bucket=kubernetes-release-$USER
                            - Do a developer push to kubernetes-release-$USER`
 
 type pushBuildOptions struct {
-	allowDup         bool
 	bucket           string
-	ci               bool
 	dockerRegistry   string
 	extraPublishFile string
-	federation       bool
 	gcsSuffix        string
-	noUpdateLatest   bool
-	privateBucket    bool
 	releaseKind      string
 	releaseType      string
 	versionSuffix    string
+	allowDup         bool
+	ci               bool
+	federation       bool
+	noUpdateLatest   bool
+	privateBucket    bool
 }
 
 var pushBuildOpts = &pushBuildOptions{}

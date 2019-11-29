@@ -184,7 +184,7 @@ func (o *options) GetReleaseNotes() (notes.ReleaseNotes, notes.ReleaseNotesHisto
 	// Fetch a list of fully-contextualized release notes
 	level.Info(o.logger).Log("msg", "fetching all commits. this might take a while...")
 
-	opts := []notes.GithubApiOption{notes.WithContext(ctx)}
+	opts := []notes.GitHubAPIOption{notes.WithContext(ctx)}
 	if o.githubOrg != "" {
 		opts = append(opts, notes.WithOrg(o.githubOrg))
 	}
@@ -318,12 +318,12 @@ func parseOptions(args []string, logger log.Logger) (*options, error) {
 
 	// The start SHA is required.
 	if opts.startSHA == "" && opts.startRev == "" {
-		return nil, errors.New("The starting commit hash must be set via -start-sha, $START_SHA, -start-rev or $START_REV")
+		return nil, errors.New("the starting commit hash must be set via -start-sha, $START_SHA, -start-rev or $START_REV")
 	}
 
 	// The end SHA is required.
 	if opts.endSHA == "" && opts.endRev == "" {
-		return nil, errors.New("The ending commit hash must be set via -end-sha, $END_SHA, -end-rev or $END_REV")
+		return nil, errors.New("the ending commit hash must be set via -end-sha, $END_SHA, -end-rev or $END_REV")
 	}
 
 	// Check if we have to parse a revision

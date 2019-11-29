@@ -61,9 +61,8 @@ common::askyorn () {
 }
 */
 
-func Ask(question, expectedResponse string, retries int) (string, bool, error) {
+func Ask(question, expectedResponse string, retries int) (answer string, success bool, err error) {
 	attempts := 1
-	answer := ""
 
 	if retries < 0 {
 		log.Printf("Retries was set to a number less than zero (%d). Please specify a positive number of retries or zero, if you want to ask unconditionally.", retries)
@@ -86,7 +85,7 @@ func Ask(question, expectedResponse string, retries int) (string, bool, error) {
 	}
 
 	log.Printf("Expected response was not provided. Retries exceeded.")
-	return answer, false, errors.New("Expected response was not input. Retries exceeded.")
+	return answer, false, errors.New("expected response was not input. Retries exceeded")
 }
 
 // FakeGOPATH creates a temp directory, links the base directory into it and

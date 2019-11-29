@@ -111,16 +111,13 @@ func CloneOrOpenRepo(repoPath, url string, useSSH bool) (*Repo, error) {
 		if err == nil {
 			// The file or directory exists, just try to update the repo
 			return updateRepo(repoPath, useSSH)
-
 		} else if os.IsNotExist(err) {
 			// The directory does not exists, we still have to clone it
 			targetDir = repoPath
-
 		} else {
 			// Something else bad happened
 			return nil, err
 		}
-
 	} else {
 		// No repoPath given, use a random temp dir instead
 		t, err := ioutil.TempDir("", "k8s-")
@@ -335,7 +332,7 @@ func (r *Repo) MergeBase(from, to string) (string, error) {
 	commitRevs := []string{masterRef, releaseRef}
 	var res []*object.Commit
 
-	var hashes []*plumbing.Hash
+	hashes := []*plumbing.Hash{}
 	for _, rev := range commitRevs {
 		hash, err := r.inner.ResolveRevision(plumbing.Revision(rev))
 		if err != nil {
@@ -344,7 +341,7 @@ func (r *Repo) MergeBase(from, to string) (string, error) {
 		hashes = append(hashes, hash)
 	}
 
-	var commits []*object.Commit
+	commits := []*object.Commit{}
 	for _, hash := range hashes {
 		commit, err := r.inner.CommitObject(*hash)
 		if err != nil {

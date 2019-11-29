@@ -108,7 +108,7 @@ func (c *Command) RunSilentSuccess() (err error) {
 }
 
 // run is the internal run method
-func (c *Command) run(print bool) (res *Status, err error) {
+func (c *Command) run(printOutput bool) (res *Status, err error) {
 	log.Printf("Running command: %v", c.cmd)
 	outBuffer := bytes.Buffer{}
 
@@ -121,7 +121,7 @@ func (c *Command) run(print bool) (res *Status, err error) {
 	}
 
 	var writer io.Writer
-	if print {
+	if printOutput {
 		writer = io.MultiWriter(os.Stdout, &outBuffer)
 	} else {
 		writer = io.MultiWriter(&outBuffer)

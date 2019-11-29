@@ -73,6 +73,7 @@ func TestReleaseNoteParsing(t *testing.T) {
 		commit, _, err := client.Repositories.GetCommit(ctx, "kubernetes", "kubernetes", sha)
 		require.NoError(t, err)
 		prs, err := PRsFromCommit(client, nil, commit)
+		require.NoError(t, err)
 		_, err = ReleaseNoteFromCommit(&Result{commit: commit, pullRequest: prs[0]}, client, "0.1")
 		require.NoError(t, err)
 	}
@@ -173,21 +174,21 @@ func TestDocumentationFromString(t *testing.T) {
 
 func TestClassifyURL(t *testing.T) {
 	// A KEP
-	url, err := url.Parse("http://github.com/kubernetes/enhancements/blob/master/keps/sig-cli/kubectl-staging.md")
+	u, err := url.Parse("http://github.com/kubernetes/enhancements/blob/master/keps/sig-cli/kubectl-staging.md")
 	require.Equal(t, err, nil)
-	result := classifyURL(url)
+	result := classifyURL(u)
 	require.Equal(t, result, DocTypeKEP)
 
 	// An official documentation
-	url, err = url.Parse("https://kubernetes.io/docs/concepts/#kubernetes-objects")
+	u, err = url.Parse("https://kubernetes.io/docs/concepts/#kubernetes-objects")
 	require.Equal(t, err, nil)
-	result = classifyURL(url)
+	result = classifyURL(u)
 	require.Equal(t, result, DocTypeOfficial)
 
 	// An external documentation
-	url, err = url.Parse("https://google.com/")
+	u, err = url.Parse("https://google.com/")
 	require.Equal(t, err, nil)
-	result = classifyURL(url)
+	result = classifyURL(u)
 	require.Equal(t, result, DocTypeExternal)
 }
 
@@ -222,5 +223,4 @@ func TestGetPRNumberFromCommitMessage(t *testing.T) {
 			}
 		})
 	}
-
 }
