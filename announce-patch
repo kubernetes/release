@@ -66,6 +66,15 @@ readonly BASE_ROOT="$(dirname "$(readlink -e "${BASH_SOURCE[0]}" 2>&1)")"
 # shellcheck source=./lib/common.sh
 source "${BASE_ROOT}/lib/common.sh"
 
+# For some reason, using $FLAG_xxx seems to replace ' ' with '\n'. Sendgrid
+# does not really like names with newlines in it and treats them as two
+# spearate recipients.
+# Newlines do not make too much sense for other variables, so we globally
+# replace newlines with spaces.
+replace_nl() {
+  tr -s $'\n' ' '
+}
+
 flag_or_env_or_default() {
   local -r flag_name="${1//-/_}"
   local -r default="${2:-}"
@@ -74,17 +83,17 @@ flag_or_env_or_default() {
   local -r env_var_name="${flag_name^^}"
 
   if [ -n "${!flag_var_name:-}" ] ; then
-    echo "${!flag_var_name}"
+    echo  -n "${!flag_var_name}" | replace_nl
     return
   fi
 
   if [ -n "${!env_var_name:-}" ] ; then
-    echo "${!env_var_name}"
+    echo -n "${!env_var_name}" | replace_nl
     return
   fi
 
   if [ -n "$default" ] ; then
-    echo "$default"
+    echo -n "$default" | replace_nl
     return
   fi
 
