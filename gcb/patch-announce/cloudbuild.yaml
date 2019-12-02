@@ -1,0 +1,52 @@
+timeout: 1200s
+
+steps:
+- id: clone-k8s
+  waitFor: [ '-' ]
+  name: gcr.io/cloud-builders/git
+  dir: "go/src/k8s.io"
+  args:
+  - "clone"
+  - "${_K8S_GIT_URL}"
+  - "--branch=${_K8S_GIT_BRANCH}"
+- id: clone-release
+  waitFor: [ '-' ]
+  name: gcr.io/cloud-builders/git
+  dir: "go/src/k8s.io"
+  args:
+  - "clone"
+  - "${_RELEASE_GIT_URL}"
+  - "--branch=${_RELEASE_GIT_BRANCH}"
+
+- id: prepare-and-send
+  name: "gcr.io/${PROJECT_ID}/k8s-cloud-builder"
+  env:
+  - "GITHUB_TOKEN=${_GITHUB_TOKEN}"
+  - "SENDGRID_API_KEY=${_SENDGRID_API_KEY}"
+  - "REL_MGR_NAME=${_REL_MGR_NAME}"
+  - "REL_MGR_EMAIL=${_REL_MGR_EMAIL}"
+  - "REL_MGR_SLACK=${_REL_MGR_SLACK}"
+  - "FROM_NAME=${_FROM_NAME}"
+  - "FROM_EMAIL=${_FROM_EMAIL}"
+  - "FREEZE_DATE=${_FREEZE_DATE}"
+  - "CUT_DATE=${_CUT_DATE}"
+  - "RUN_TYPE=${_RUN_TYPE}"
+  args:
+  - go/src/k8s.io/release/patch-release/announce
+
+substitutions:
+  _K8S_GIT_URL:        https://github.com/kubernetes/kubernetes
+  _RELEASE_GIT_URL:    https://github.com/kubernetes/release
+  _RELEASE_GIT_BRANCH: master
+
+  _K8S_GIT_BRANCH:     null
+  _GITHUB_TOKEN:       null
+  _SENDGRID_API_KEY:   null
+  _REL_MGR_NAME:       'Kubernetes Release Managers'
+  _REL_MGR_EMAIL:      'release-managers@kubernetes.io'
+  _REL_MGR_SLACK:      'sig-release'
+  _FROM_NAME:          null
+  _FROM_EMAIL:         null
+  _FREEZE_DATE:        null
+  _CUT_DATE:           null
+  _RUN_TYPE:           'mock'

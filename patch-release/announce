@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+#
+# Copyright 2019 The Kubernetes Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+set -e
+set -u
+set -o pipefail
+
+tmpDir="$( mktemp -d )"
+trap 'rm -rf -- "$tmpDir"' EXIT
+
+BUILD_BASE="$(pwd)"
+RELEASE_DIR="${BUILD_BASE}/go/src/k8s.io/release"
+K8S_DIR="${BUILD_BASE}/go/src/k8s.io/kubernetes"
+
+export GOPATH="${BUILD_BASE}/go"
+export PATH="${PATH}:${GOPATH}/bin"
+
+cd "${RELEASE_DIR}"
+go install k8s.io/release/cmd/blocking-testgrid-tests
+
+cd "${K8S_DIR}"
+
+md="${tmpDir}/relnotes.md"
+bash ../release/relnotes \
+  --htmlize-md \
+  --preview \
+  --markdown-file="${md}" \
+  >/dev/null
+
+# v1.13.10-beta.0-16-g48844ef5e7 -> v1.13.10
+UPCOMING_VERSION="$( git describe | cut -d- -f1 )"
+# prepend the day of week
+FREEZE_DATE="$(date -d "$FREEZE_DATE" '+%A'), ${FREEZE_DATE}"
+CUT_DATE="$(date -d "$CUT_DATE" '+%A'), ${CUT_DATE}"
+EMAIL_SUBJECT="Kubernetes ${UPCOMING_VERSION} cut planned for ${CUT_DATE}"
+
+# All vars used in the intro template (via envsubst) need to be exported.
+export UPCOMING_VERSION FREEZE_DATE CUT_DATE EMAIL_SUBJECT
+
+# by default, send the mail to yourself
+recipients="$(
+  jq -n \
+    --arg name "$FROM_NAME" --arg email "$FROM_EMAIL" \
+    '[{ "to": [{name:$name, email:$email}] }]'
+)"
+
+# if we run with nomock mode, actually send to the mailinglists
+if [ "${RUN_TYPE}" = 'nomock' ]
+then
+  echo >&2 'Running with --nomock, setting recipients to the k8s google groups'
+  recipients='[{
+    "to": [
+      {
+        "name": "Kubernetes developer/contributor discussion",
+        "email": "kubernetes-dev@googlegroups.com"
+      },{
+        "name": "kubernetes-dev-announce",
+        "email": "kubernetes-dev-announce@googlegroups.com"
+      }
+    ]
+  }]'
+fi
+
+buildEmailMd() {
+  cat "${RELEASE_DIR}/patch-release/mail-head.md.tmpl" | envsubst
+  echo '' ; echo '----' ; echo ''
+  cat "$md"
+}
+
+emailBody="$(
+  buildEmailMd \
+    | pandoc \
+        -s \
+        --metadata pagetitle="$EMAIL_SUBJECT" \
+        --columns=100000 \
+        -f gfm /dev/stdin \
+        -H "${RELEASE_DIR}/patch-release/mail-style.css" \
+        -t html5 -o -
+)"
+
+# shellcheck disable=SC2016
+# ... because that's the template we will use with jq.
+sendgridPayloadTmpl='{
+  "personalizations": $recipients,
+  "from": {"email": $fromEmail, "name": $fromName},
+  "subject": $subject,
+  "content": [
+    {"type": "text/html", "value": env.emailBody}
+  ]
+}'
+
+# Safe that in a file, in case it gets big
+sendgridPayload="${tmpDir}/sendgridPayload.json"
+
+# 'emailBody' needs to be in the env when we run jq with the
+# 'sendgridPayloadTmpl' template
+emailBody="$emailBody" \
+  jq -n \
+    --argjson recipients "$recipients" \
+    --arg fromName "$FROM_NAME" \
+    --arg fromEmail "$FROM_EMAIL" \
+    --arg subject "$EMAIL_SUBJECT" \
+    "$sendgridPayloadTmpl" \
+  > "$sendgridPayload"
+
+
+echo >&2 "Curling the sendgrid API with '$sendgridPayload'"
+curl --silent --show-error --fail \
+  --url https://api.sendgrid.com/v3/mail/send \
+  --header "Authorization: Bearer ${SENDGRID_API_KEY}" \
+  --header 'Content-Type: application/json' \
+  --data "@${sendgridPayload}"
