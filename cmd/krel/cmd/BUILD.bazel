@@ -4,12 +4,14 @@ go_library(
     name = "go_default_library",
     srcs = [
         "ff.go",
+        "install_tools.go",
         "push.go",
         "root.go",
     ],
     importpath = "k8s.io/release/cmd/krel/cmd",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/command:go_default_library",
         "//pkg/git:go_default_library",
         "//pkg/util:go_default_library",
         "@com_github_pkg_errors//:go_default_library",

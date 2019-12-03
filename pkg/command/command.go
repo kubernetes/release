@@ -48,7 +48,14 @@ func New(cmd ...string) *Command {
 // New creates a new command from the provided workDir and the command
 // arguments.
 func NewWithWorkDir(workDir string, cmd ...string) *Command {
-	args := strings.Fields(strings.Join(cmd, " "))
+	joined := strings.Join(cmd, " ")
+	args := strings.Fields(joined)
+
+	// Pipes will be handled in a dedicated sub shell to avoid handling
+	// all the readers and writers of the pipes
+	if strings.Contains(joined, "|") {
+		args = []string{"sh", "-c", joined}
+	}
 
 	command := func() *Command {
 		if len(args) == 0 {
@@ -184,14 +191,15 @@ func (s *Status) Output() string {
 // Execute is a convenience function which creates a new Command, executes it
 // and evaluates its status.
 func Execute(cmd ...string) error {
-	status, err := New(cmd...).Run()
+	c := New(cmd...)
+	status, err := c.Run()
 	if err != nil {
 		return errors.Wrapf(err, "command %q is not executable", cmd)
 	}
 	if !status.Success() {
 		return errors.Errorf(
 			"command %q did not exit successful (%d)",
-			cmd, status.ExitCode(),
+			c.cmd, status.ExitCode(),
 		)
 	}
 	return nil

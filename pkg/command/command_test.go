@@ -20,6 +20,20 @@ func TestSuccessWithWorkingDir(t *testing.T) {
 	require.Zero(t, res.ExitCode())
 }
 
+func TestSuccessWithPipe(t *testing.T) {
+	res, err := New("echo hi | cat").Run()
+	require.Nil(t, err)
+	require.True(t, res.Success())
+	require.Zero(t, res.ExitCode())
+}
+
+func TestFailureWithPipe(t *testing.T) {
+	res, err := New("echo hi | not-existing").Run()
+	require.Nil(t, err)
+	require.False(t, res.Success())
+	require.Contains(t, res.Output(), "not found")
+}
+
 func TestFailureWithWrongWorkingDir(t *testing.T) {
 	_, err := NewWithWorkDir("/should/not/exist", "ls -1").Run()
 	require.NotNil(t, err)
