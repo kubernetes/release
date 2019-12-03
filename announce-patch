@@ -51,6 +51,8 @@ PROG=${0##*/}
 #+     --from-name               - The sender's name.
 #+     --from-email              - The sender's email address. Will also be used as a
 #+                                 receiver when not in nomock mode.
+#+     [--tail]                  - Stays attached to the cloud build process and streams
+#+                                 in the logs
 #+     [--k8s-git-url]           - The git URL to clone kubernetes/kubernetes from.
 #+     [--release-git-url]       - The git URL to clone kubernetes/release from.
 #+     [--release-git-branch]    - The branch of kubernetes/release to use.
@@ -110,6 +112,10 @@ main() {
   fi
 
   local subst=()
+  local opts=(
+    '--no-source'
+    "--config=${BASE_ROOT}/gcb/patch-announce/cloudbuild.yaml"
+  )
 
   # mandatory flags
   subst+=( "_K8S_GIT_BRANCH=${branch_name}" )
@@ -131,9 +137,14 @@ main() {
     subst+=( "_RUN_TYPE=nomock" )
   fi
 
-  gcloud builds submit --no-source \
-    --async \
-    --config "${BASE_ROOT}/gcb/patch-announce/cloudbuild.yaml" \
+  # shellcheck disable=2154
+  # ... because that is set by magick when sourcing common.sh
+  if ! ((FLAGS_tail)) ; then
+    opts+=( '--async' )
+  fi
+
+  gcloud builds submit \
+    "${opts[@]}" \
     --substitutions "$( common::join ',' "${subst[@]}" )"
 }
 
