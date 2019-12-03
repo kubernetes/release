@@ -35,18 +35,31 @@ steps:
   - go/src/k8s.io/release/patch-release/announce
 
 substitutions:
-  _K8S_GIT_URL:        https://github.com/kubernetes/kubernetes
-  _RELEASE_GIT_URL:    https://github.com/kubernetes/release
-  _RELEASE_GIT_BRANCH: master
-
+  # The branch of k/kubernetes to check out, the branch to announce a patch release for (e.g.: release-1.15)
   _K8S_GIT_BRANCH:     null
+  # A github token, used to collect the changelog
   _GITHUB_TOKEN:       null
+  # API key for sendgrid to send out mails
   _SENDGRID_API_KEY:   null
-  _REL_MGR_NAME:       'Kubernetes Release Managers'
-  _REL_MGR_EMAIL:      'release-managers@kubernetes.io'
-  _REL_MGR_SLACK:      'sig-release'
-  _FROM_NAME:          null
-  _FROM_EMAIL:         null
+  # Date of CP freeze, ISO 8601 (e.g.: 2019-12-06)
   _FREEZE_DATE:        null
+  # Date of planned cut, ISO 8601 (e.g.: 2019-12-11)
   _CUT_DATE:           null
+  # The mail sender's name. Will also be used as a receipient in mock mode. (e.g.: "Jane Doe")
+  _FROM_NAME:          null
+  # The mail sender's email. Will also be used as a receipient in mock mode. (e.g.: jane.doe@example.org")
+  _FROM_EMAIL:         null
+  # For the real run, set to 'nomock' (e.g.: "mock" or "nomock")
   _RUN_TYPE:           'mock'
+  # git-clone'able URL for k/kubernetes
+  _K8S_GIT_URL:        https://github.com/kubernetes/kubernetes
+  # git-clone'able URL for k/release
+  _RELEASE_GIT_URL:    https://github.com/kubernetes/release
+  # The branch of k/release to check out
+  _RELEASE_GIT_BRANCH: master
+  # For the email message: the name of the group to contact
+  _REL_MGR_NAME:       'Kubernetes Release Managers'
+  # For the email message: the email of the group to contact
+  _REL_MGR_EMAIL:      'release-managers@kubernetes.io'
+  # For the email message: the slack channel of the group to contact
+  _REL_MGR_SLACK:      'sig-release'
