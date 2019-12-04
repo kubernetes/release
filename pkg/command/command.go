@@ -22,6 +22,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"syscall"
 
@@ -30,13 +31,20 @@ import (
 
 // A generic command abstraction
 type Command struct {
-	cmd *exec.Cmd
+	cmds []*command
+}
+
+// The internal command representation
+type command struct {
+	*exec.Cmd
+	pipeWriter *io.PipeWriter
 }
 
 // A generic command exit status
 type Status struct {
 	exitCode syscall.WaitStatus
-	output   string
+	stdOut   string
+	stdErr   string
 }
 
 // New creates a new command from the provided arguments.
@@ -47,13 +55,33 @@ func New(cmd string, args ...string) *Command {
 // NewWithWorkDir creates a new command from the provided workDir and the command
 // arguments.
 func NewWithWorkDir(workDir, cmd string, args ...string) *Command {
-	command := &Command{exec.Command(cmd, args...)}
-
-	if workDir != "" {
-		command.cmd.Dir = workDir
+	return &Command{
+		cmds: []*command{{
+			Cmd:        cmdWithDir(workDir, cmd, args...),
+			pipeWriter: nil,
+		}},
 	}
+}
 
-	return command
+func cmdWithDir(dir, cmd string, args ...string) *exec.Cmd {
+	c := exec.Command(cmd, args...)
+	c.Dir = dir
+	return c
+}
+
+// Pipe creates a new command where the previous should be piped to
+func (c *Command) Pipe(cmd string, args ...string) *Command {
+	pipeCmd := cmdWithDir(c.cmds[0].Dir, cmd, args...)
+
+	reader, writer := io.Pipe()
+	c.cmds[len(c.cmds)-1].Stdout = writer
+	pipeCmd.Stdin = reader
+
+	c.cmds = append(c.cmds, &command{
+		Cmd:        pipeCmd,
+		pipeWriter: writer,
+	})
+	return c
 }
 
 // Run starts the command and waits for it to finish. It returns an error if
@@ -71,9 +99,18 @@ func (c *Command) RunSuccess() (err error) {
 		return err
 	}
 	if !res.Success() {
-		return errors.Errorf("command %v did not succeed", c.cmd)
+		return errors.Errorf("command %v did not succeed", c.String())
 	}
 	return nil
+}
+
+// String returns a string representation of the full command
+func (c *Command) String() string {
+	str := []string{}
+	for _, x := range c.cmds {
+		str = append(str, x.String())
+	}
+	return strings.Join(str, " | ")
 }
 
 // Run starts the command and waits for it to finish. It returns an error if
@@ -92,68 +129,86 @@ func (c *Command) RunSilentSuccess() (err error) {
 		return err
 	}
 	if !res.Success() {
-		return errors.Errorf("command %v did not succeed", c.cmd)
+		return errors.Errorf("command %v did not succeed", c.String())
 	}
 	return nil
 }
 
 // run is the internal run method
 func (c *Command) run(printOutput bool) (res *Status, err error) {
-	log.Printf("Running command: %v", c.cmd)
-	outBuffer := bytes.Buffer{}
+	log.Printf("Running command: %v", c.String())
+	var runErr error
+	stdOutBuffer := &bytes.Buffer{}
+	stdErrBuffer := &bytes.Buffer{}
+	status := &Status{}
+	waitGroup := sync.WaitGroup{}
 
-	var stdout, stderr io.ReadCloser
-	if stdout, err = c.cmd.StdoutPipe(); err != nil {
-		return nil, err
-	}
-	if stderr, err = c.cmd.StderrPipe(); err != nil {
-		return nil, err
-	}
+	for i, cmd := range c.cmds {
+		// Last command handling
+		if i+1 == len(c.cmds) {
+			stdout, err := cmd.StdoutPipe()
+			if err != nil {
+				return nil, err
+			}
+			stderr, err := cmd.StderrPipe()
+			if err != nil {
+				return nil, err
+			}
 
-	var writer io.Writer
-	if printOutput {
-		writer = io.MultiWriter(os.Stdout, &outBuffer)
-	} else {
-		writer = io.MultiWriter(&outBuffer)
-	}
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if _, err := io.Copy(writer, stdout); err != nil {
-			log.Println("unable to copy command stdout")
+			var stdOutWriter, stdErrWriter io.Writer
+			if printOutput {
+				stdOutWriter = io.MultiWriter(os.Stdout, stdOutBuffer)
+				stdErrWriter = io.MultiWriter(os.Stderr, stdErrBuffer)
+			} else {
+				stdOutWriter = io.MultiWriter(stdOutBuffer)
+				stdErrWriter = io.MultiWriter(stdErrBuffer)
+			}
+			waitGroup.Add(1)
+			go func() {
+				defer waitGroup.Done()
+				if _, err := io.Copy(stdOutWriter, stdout); err != nil {
+					log.Println("unable to copy command stdout")
+				}
+				if _, err := io.Copy(stdErrWriter, stderr); err != nil {
+					log.Println("unable to copy command stderr")
+				}
+			}()
 		}
-		if _, err := io.Copy(writer, stderr); err != nil {
-			log.Println("unable to copy command stderr")
+
+		if err := cmd.Start(); err != nil {
+			return nil, err
 		}
-	}()
 
-	status, err := c.runStatus()
-	wg.Wait()
+		if i > 0 {
+			if err := c.cmds[i-1].Wait(); err != nil {
+				return nil, err
+			}
+		}
 
-	if err != nil {
-		return nil, err
+		if cmd.pipeWriter != nil {
+			if err := cmd.pipeWriter.Close(); err != nil {
+				return nil, err
+			}
+		}
+
+		// Wait for last command in the pipe to finish
+		if i+1 == len(c.cmds) {
+			runErr = cmd.Wait()
+			waitGroup.Wait()
+		}
 	}
 
-	return &Status{exitCode: status, output: outBuffer.String()}, nil
-}
+	status.stdOut = stdOutBuffer.String()
+	status.stdErr = stdErrBuffer.String()
 
-// runStatus returns the syscall wait status for the command by running it
-func (c *Command) runStatus() (syscall.WaitStatus, error) {
-	err := c.cmd.Run()
-
-	if err == nil {
-		return 0, nil
-	}
-
-	if exitErr, ok := err.(*exec.ExitError); ok {
-		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
+	if exitErr, ok := runErr.(*exec.ExitError); ok {
+		if exitCode, ok := exitErr.Sys().(syscall.WaitStatus); ok {
+			status.exitCode = exitCode
 			return status, nil
 		}
 	}
 
-	return 0, err
+	return status, runErr
 }
 
 // Success returns if a Status was successful
@@ -166,9 +221,14 @@ func (s *Status) ExitCode() int {
 	return s.exitCode.ExitStatus()
 }
 
-// Output returns the combined stdout and stderr of the command status
+// Output returns stdout of the command status
 func (s *Status) Output() string {
-	return s.output
+	return s.stdOut
+}
+
+// Error returns the stderr of the command status
+func (s *Status) Error() string {
+	return s.stdErr
 }
 
 // Execute is a convenience function which creates a new Command, executes it

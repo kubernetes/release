@@ -13,6 +13,35 @@ func TestSuccess(t *testing.T) {
 	require.Zero(t, res.ExitCode())
 }
 
+func TestSuccessPipe(t *testing.T) {
+	res, err := New("echo", "-n", "hi").
+		Pipe("cat").
+		Pipe("cat").
+		Run()
+	require.Nil(t, err)
+	require.True(t, res.Success())
+	require.Zero(t, res.ExitCode())
+	require.Equal(t, "hi", res.Output())
+}
+
+func TestFailurePipeWrongCommand(t *testing.T) {
+	res, err := New("echo", "-n", "hi").
+		Pipe("wrong").
+		Run()
+	require.NotNil(t, err)
+	require.Nil(t, res)
+}
+
+func TestFailurePipeWrongArgument(t *testing.T) {
+	res, err := New("echo", "-n", "hi").
+		Pipe("cat", "--wrong").
+		Run()
+	require.Nil(t, err)
+	require.False(t, res.Success())
+	require.Empty(t, res.Output())
+	require.Contains(t, res.Error(), "unrecognized option")
+}
+
 func TestSuccessWithWorkingDir(t *testing.T) {
 	res, err := NewWithWorkDir("/", "ls", "-1").Run()
 	require.Nil(t, err)
@@ -53,6 +82,13 @@ func TestSuccessOutput(t *testing.T) {
 	res, err := New("echo", "-n", "hello world").Run()
 	require.Nil(t, err)
 	require.Equal(t, "hello world", res.Output())
+}
+
+func TestSuccessError(t *testing.T) {
+	res, err := New("cat", "/not/valid").Run()
+	require.Nil(t, err)
+	require.Empty(t, res.Output())
+	require.Contains(t, res.Error(), "No such file")
 }
 
 func TestSuccessOutputSeparated(t *testing.T) {
