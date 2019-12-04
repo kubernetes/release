@@ -45,6 +45,7 @@ const (
 
 	branchRE              = `master|release-([0-9]{1,})\.([0-9]{1,})(\.([0-9]{1,}))*$`
 	defaultGithubAuthRoot = "git@github.com:"
+	gitExecutable         = "git"
 )
 
 // Wrapper type for a Kubernetes repository instance
@@ -98,7 +99,7 @@ func CloneOrOpenGitHubRepo(path, owner, repo string, useSSH bool) (*Repo, error)
 // was successful, otherwise an error.
 func CloneOrOpenRepo(repoPath, url string, useSSH bool) (*Repo, error) {
 	// We still need the plain git executable for some methods
-	if !command.Available("git") {
+	if !command.Available(gitExecutable) {
 		return nil, errors.New("git is needed to support all repository features")
 	}
 
@@ -147,7 +148,7 @@ func updateRepo(repoPath string, useSSH bool) (*Repo, error) {
 
 	var auth transport.AuthMethod
 	if useSSH {
-		auth, err = ssh.NewPublicKeysFromFile("git",
+		auth, err = ssh.NewPublicKeysFromFile(gitExecutable,
 			filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa"), "")
 		if err != nil {
 			return nil, err
@@ -376,7 +377,7 @@ func (r *Repo) DescribeTag(rev string) (string, error) {
 	// which means that we fallback to a shell command for sake of
 	// simplicity
 	status, err := command.NewWithWorkDir(
-		r.Dir(), "git describe --abbrev=0 --tags", rev,
+		r.Dir(), gitExecutable, "describe", "--abbrev=0", "--tags", rev,
 	).RunSilent()
 	if err != nil {
 		return "", err
@@ -391,22 +392,21 @@ func (r *Repo) DescribeTag(rev string) (string, error) {
 // Merge does a git merge into the current branch from the provided one
 func (r *Repo) Merge(from string) error {
 	return command.NewWithWorkDir(
-		r.Dir(), "git merge -X ours", from,
+		r.Dir(), gitExecutable, "merge", "-X", "ours", from,
 	).RunSuccess()
 }
 
 // Push does push the specified branch to the default remote, but only if the
 // repository is not in dry run mode
 func (r *Repo) Push(remoteBranch string) error {
-	dryRunFlag := ""
+	args := []string{"push"}
 	if r.dryRun {
 		log.Println("Won't push due to dry run repository")
-		dryRunFlag = "--dry-run"
+		args = append(args, "--dry-run")
 	}
+	args = append(args, DefaultRemote, remoteBranch)
 
-	return command.NewWithWorkDir(
-		r.Dir(), "git push", dryRunFlag, DefaultRemote, remoteBranch,
-	).RunSuccess()
+	return command.NewWithWorkDir(r.Dir(), gitExecutable, args...).RunSuccess()
 }
 
 // Head retrieves the current repository HEAD as a string
