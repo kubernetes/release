@@ -10,9 +10,9 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 git_repository(
     name = "io_k8s_repo_infra",
-    commit = "e7bd7a7c8b3f900d5344bf5909c60f890f9719aa",
+    commit = "28d05af9a236141616b47645af81c23c3437e118",
     remote = "https://github.com/kubernetes/repo-infra.git",
-    shallow_since = "1571503417 -0700",
+    shallow_since = "1575420778 -0800",
 )
 
 load("@io_k8s_repo_infra//:load.bzl", "repositories")
