@@ -22,7 +22,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"strings"
 	"sync"
 	"syscall"
 
@@ -41,23 +40,14 @@ type Status struct {
 }
 
 // New creates a new command from the provided arguments.
-func New(cmd ...string) *Command {
-	return NewWithWorkDir("", cmd...)
+func New(cmd string, args ...string) *Command {
+	return NewWithWorkDir("", cmd, args...)
 }
 
-// New creates a new command from the provided workDir and the command
+// NewWithWorkDir creates a new command from the provided workDir and the command
 // arguments.
-func NewWithWorkDir(workDir string, cmd ...string) *Command {
-	args := strings.Fields(strings.Join(cmd, " "))
-
-	command := func() *Command {
-		if len(args) == 0 {
-			return &Command{exec.Command(cmd[0])}
-		} else if len(args) > 1 {
-			return &Command{exec.Command(args[0], args[1:]...)}
-		}
-		return &Command{exec.Command(args[0])}
-	}()
+func NewWithWorkDir(workDir, cmd string, args ...string) *Command {
+	command := &Command{exec.Command(cmd, args...)}
 
 	if workDir != "" {
 		command.cmd.Dir = workDir
@@ -183,8 +173,8 @@ func (s *Status) Output() string {
 
 // Execute is a convenience function which creates a new Command, executes it
 // and evaluates its status.
-func Execute(cmd ...string) error {
-	status, err := New(cmd...).Run()
+func Execute(cmd string, args ...string) error {
+	status, err := New(cmd, args...).Run()
 	if err != nil {
 		return errors.Wrapf(err, "command %q is not executable", cmd)
 	}

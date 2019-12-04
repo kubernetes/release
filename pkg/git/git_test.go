@@ -105,7 +105,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	// Create a test branch and a test commit on top
 	branchName := "first-branch"
 	require.Nil(t, command.NewWithWorkDir(
-		cloneTempDir, "git checkout -b", branchName,
+		cloneTempDir, "git", "checkout", "-b", branchName,
 	).RunSuccess())
 
 	const branchTestFileName = "branch-test-file"
