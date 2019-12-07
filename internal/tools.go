@@ -20,4 +20,7 @@ limitations under the License.
 
 package internal
 
-import _ "github.com/psampaz/go-mod-outdated"
+import (
+	_ "github.com/maxbrunsfeld/counterfeiter/v6"
+	_ "github.com/psampaz/go-mod-outdated"
+)

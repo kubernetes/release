@@ -164,7 +164,7 @@ type Result struct {
 // ListReleaseNotes produces a list of fully contextualized release notes
 // starting from a given commit SHA and ending at starting a given commit SHA.
 func ListReleaseNotes(
-	client *github.Client,
+	client Client,
 	branch,
 	start,
 	end,
@@ -326,7 +326,7 @@ func classifyURL(u *url.URL) DocType {
 
 // ReleaseNoteFromCommit produces a full contextualized release note given a
 // GitHub commit API resource.
-func ReleaseNoteFromCommit(result *Result, client *github.Client, relVer string, opts ...GitHubAPIOption) (*ReleaseNote, error) {
+func ReleaseNoteFromCommit(result *Result, client Client, relVer string, opts ...GitHubAPIOption) (*ReleaseNote, error) {
 	c := configFromOpts(opts...)
 	pr := result.pullRequest
 
@@ -382,17 +382,17 @@ func ReleaseNoteFromCommit(result *Result, client *github.Client, relVer string,
 
 // ListCommits lists all commits starting from a given commit SHA and ending at
 // a given commit SHA.
-func ListCommits(client *github.Client, branch, start, end string, opts ...GitHubAPIOption) ([]*github.RepositoryCommit, error) {
+func ListCommits(client Client, branch, start, end string, opts ...GitHubAPIOption) ([]*github.RepositoryCommit, error) {
 	c := configFromOpts(opts...)
 
 	c.branch = branch
 
-	startCommit, _, err := client.Git.GetCommit(c.ctx, c.org, c.repo, start)
+	startCommit, _, err := client.GetCommit(c.ctx, c.org, c.repo, start)
 	if err != nil {
 		return nil, err
 	}
 
-	endCommit, _, err := client.Git.GetCommit(c.ctx, c.org, c.repo, end)
+	endCommit, _, err := client.GetCommit(c.ctx, c.org, c.repo, end)
 	if err != nil {
 		return nil, err
 	}
@@ -407,14 +407,14 @@ func ListCommits(client *github.Client, branch, start, end string, opts ...GitHu
 		},
 	}
 
-	commits, resp, err := client.Repositories.ListCommits(c.ctx, c.org, c.repo, clo)
+	commits, resp, err := client.ListCommits(c.ctx, c.org, c.repo, clo)
 	if err != nil {
 		return nil, err
 	}
 	clo.ListOptions.Page++
 
 	for clo.ListOptions.Page <= resp.LastPage {
-		commitPage, _, err := client.Repositories.ListCommits(c.ctx, c.org, c.repo, clo)
+		commitPage, _, err := client.ListCommits(c.ctx, c.org, c.repo, clo)
 		if err != nil {
 			return nil, err
 		}
@@ -430,7 +430,7 @@ func ListCommits(client *github.Client, branch, start, end string, opts ...GitHu
 // to ListCommits except that only commits with tagged release notes are
 // returned.
 func ListCommitsWithNotes(
-	client *github.Client,
+	client Client,
 	branch,
 	start,
 	end string,
@@ -540,7 +540,7 @@ func ListCommitsWithNotes(
 // PRsFromCommit return an API Pull Request struct given a commit struct. This is
 // useful for going from a commit log to the PR (which contains useful info such
 // as labels).
-func PRsFromCommit(client *github.Client, commit *github.RepositoryCommit, opts ...GitHubAPIOption) (
+func PRsFromCommit(client Client, commit *github.RepositoryCommit, opts ...GitHubAPIOption) (
 	[]*github.PullRequest, error,
 ) {
 	githubPRs, err := prsForCommitFromMessage(client, *commit.Commit.Message, opts...)
@@ -634,7 +634,7 @@ func HasString(a []string, x string) bool {
 }
 
 // prsForCommitFromSHA retrieves the PR numbers for a commit given its sha
-func prsForCommitFromSHA(client *github.Client, sha string, opts ...GitHubAPIOption) (prs []*github.PullRequest, err error) {
+func prsForCommitFromSHA(client Client, sha string, opts ...GitHubAPIOption) (prs []*github.PullRequest, err error) {
 	c := configFromOpts(opts...)
 
 	plo := &github.PullRequestListOptions{
@@ -644,14 +644,14 @@ func prsForCommitFromSHA(client *github.Client, sha string, opts ...GitHubAPIOpt
 			PerPage: 100,
 		},
 	}
-	prs, resp, err := client.PullRequests.ListPullRequestsWithCommit(c.ctx, c.org, c.repo, sha, plo)
+	prs, resp, err := client.ListPullRequestsWithCommit(c.ctx, c.org, c.repo, sha, plo)
 	if err != nil {
 		return nil, err
 	}
 
 	plo.ListOptions.Page++
 	for plo.ListOptions.Page <= resp.LastPage {
-		pResult, pResp, err := client.PullRequests.ListPullRequestsWithCommit(c.ctx, c.org, c.repo, sha, plo)
+		pResult, pResp, err := client.ListPullRequestsWithCommit(c.ctx, c.org, c.repo, sha, plo)
 		if err != nil {
 			return nil, err
 		}
@@ -666,7 +666,7 @@ func prsForCommitFromSHA(client *github.Client, sha string, opts ...GitHubAPIOpt
 	return prs, nil
 }
 
-func prsForCommitFromMessage(client *github.Client, commitMessage string, opts ...GitHubAPIOption) (prs []*github.PullRequest, err error) {
+func prsForCommitFromMessage(client Client, commitMessage string, opts ...GitHubAPIOption) (prs []*github.PullRequest, err error) {
 	c := configFromOpts(opts...)
 
 	prsNum, err := prsNumForCommitFromMessage(commitMessage)
@@ -677,7 +677,7 @@ func prsForCommitFromMessage(client *github.Client, commitMessage string, opts .
 	for _, pr := range prsNum {
 		// Given the PR number that we've now converted to an integer, get the PR from
 		// the API
-		res, _, err := client.PullRequests.Get(c.ctx, c.org, c.repo, pr)
+		res, _, err := client.GetPullRequest(c.ctx, c.org, c.repo, pr)
 		if err != nil {
 			return nil, err
 		}

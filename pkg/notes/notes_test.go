@@ -28,7 +28,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func githubClient(t *testing.T) *github.Client {
+func githubClient(t *testing.T) Client {
 	token, tokenSet := os.LookupEnv("GITHUB_TOKEN")
 	if !tokenSet {
 		t.Skip("GITHUB_TOKEN is not set")
@@ -38,7 +38,7 @@ func githubClient(t *testing.T) *github.Client {
 	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	))
-	return github.NewClient(httpClient)
+	return WrapGithubClient(github.NewClient(httpClient))
 }
 
 func TestConfigFromOpts(t *testing.T) {
@@ -86,7 +86,7 @@ func TestReleaseNoteParsing(t *testing.T) {
 
 	for _, sha := range commitsWithNote {
 		fmt.Println(sha)
-		commit, _, err := client.Repositories.GetCommit(ctx, "kubernetes", "kubernetes", sha)
+		commit, _, err := client.GetRepoCommit(ctx, "kubernetes", "kubernetes", sha)
 		require.NoError(t, err)
 		prs, err := PRsFromCommit(client, commit)
 		require.NoError(t, err)

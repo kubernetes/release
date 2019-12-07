@@ -247,8 +247,9 @@ func GetReleaseNotes() (notes.ReleaseNotes, notes.ReleaseNotesHistory, error) {
 		apiOptions = append(apiOptions, notes.WithRepo(opts.githubRepo))
 	}
 
+	notesClient := notes.WrapGithubClient(githubClient)
 	releaseNotes, history, err := notes.ListReleaseNotes(
-		githubClient, opts.branch, opts.startSHA, opts.endSHA,
+		notesClient, opts.branch, opts.startSHA, opts.endSHA,
 		opts.requiredAuthor, opts.releaseVersion, apiOptions...)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "listing release notes")

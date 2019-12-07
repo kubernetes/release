@@ -8,6 +8,7 @@ require (
 	github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d // indirect
 	github.com/golangci/golangci-lint v1.21.0
 	github.com/google/go-github/v28 v28.1.1
+	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.2
 	github.com/pkg/errors v0.8.1
 	github.com/psampaz/go-mod-outdated v0.4.0
 	github.com/sirupsen/logrus v1.4.2
