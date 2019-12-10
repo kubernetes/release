@@ -175,8 +175,12 @@ func (r *Repo) Cleanup() error {
 // RevParse parses a git revision and returns a SHA1 on success, otherwise an
 // error.
 func (r *Repo) RevParse(rev string) (string, error) {
-	// Prefix all non-tags the default remote "origin"
-	if isVersion, _ := regexp.MatchString(`v\d+\.\d+\.\d+.*`, rev); !isVersion {
+	matched, err := regexp.MatchString(`v\d+\.\d+\.\d+.*`, rev)
+	if err != nil {
+		return "", err
+	}
+	if !matched {
+		// Prefix all non-tags the default remote "origin"
 		rev = Remotify(rev)
 	}
 
@@ -234,7 +238,7 @@ func (r *Repo) latestNonPatchFinalVersion() (semver.Version, error) {
 	}
 
 	found := false
-	_ = tags.ForEach(func(t *plumbing.Reference) error {
+	_ = tags.ForEach(func(t *plumbing.Reference) error { // nolint: errcheck
 		tag := strings.TrimPrefix(t.Name().Short(), "v")
 		ver, err := semver.Make(tag)
 
