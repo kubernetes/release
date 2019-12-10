@@ -10,6 +10,7 @@ linters:
     - depguard
     - dogsled
     - dupl
+    - errcheck
     - goconst
     - gocritic
     - gocyclo
@@ -34,7 +35,6 @@ linters:
     - unused
     - varcheck
     - whitespace
-    # - errcheck
     # - funlen
     # - gochecknoglobals
     # - gochecknoinits
@@ -47,6 +47,7 @@ linters-settings:
   errcheck:
     check-type-assertions: true
     check-blank: true
+    exclude: .errcheck-excludes
   gocritic:
     enabled-checks:
       # Diagnostic

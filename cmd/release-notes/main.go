@@ -244,7 +244,10 @@ func (o *options) WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history not
 	// Contextualized release notes can be printed in a variety of formats
 	switch o.format {
 	case "json":
-		byteValue, _ := ioutil.ReadAll(output)
+		byteValue, err := ioutil.ReadAll(output)
+		if err != nil {
+			return err
+		}
 
 		if len(byteValue) > 0 {
 			if err := json.Unmarshal(byteValue, &existingNotes); err != nil {
@@ -254,8 +257,12 @@ func (o *options) WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history not
 		}
 
 		if len(existingNotes) > 0 {
-			output.Truncate(0)
-			output.Seek(0, 0)
+			if err := output.Truncate(0); err != nil {
+				return err
+			}
+			if _, err := output.Seek(0, 0); err != nil {
+				return err
+			}
 
 			for i := 0; i < len(existingNotes); i++ {
 				_, ok := releaseNotes[existingNotes[i].PrNumber]

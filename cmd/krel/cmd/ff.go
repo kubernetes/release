@@ -101,7 +101,7 @@ func runFf(opts *ffOptions) error {
 
 	cleanup := rootOpts.cleanup
 	if cleanup {
-		defer repo.Cleanup() //nolint: errcheck
+		defer repo.Cleanup() // nolint: errcheck
 	}
 
 	log.Printf("Finding merge base between %q and %q", master, branch)
