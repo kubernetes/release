@@ -16,3 +16,54 @@ commandTests:
   command:        pip
   args:           [ "--version" ]
   expectedOutput: [ "^pip.*python 3\\." ]
+- name:           bash is 4+
+  command:        bash
+  args:           [ '--version' ]
+  expectedOutput: [ "version [45]\\." ]
+- name:           google sdk is in the $PATH
+  command:        bash
+  args:
+  - -c
+  - |
+    echo "$PATH" | tr : '\n' | grep '^/opt/google/google-cloud-sdk/bin$'
+- name:           crcmod python module is installed
+  command:        bash
+  args:
+  - -c
+  - |
+    pip list | grep '^crcmod\b'
+
+- name:    commands are available
+  command: /test.sh
+  args:
+  - envsubst
+  - gcloud
+  - go
+  - gsutil
+  - yq
+  setup:
+  -
+    - bash
+    - -c
+    - |
+      cat <<'EOF' >/test.sh
+      #!/usr/bin/env bash
+      set -e
+      set -u
+      set -o pipefail
+
+      exitCode=0
+      for cmd in "$@"
+      do
+        if command -v "$cmd" >/dev/null 2>&1
+        then
+          echo -n .
+        else
+          exitCode=1
+          >&2 echo "${cmd} NOT available."
+        fi
+      done
+      exit $exitCode
+      EOF
+
+      chmod +x /test.sh
