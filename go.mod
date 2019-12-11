@@ -3,7 +3,7 @@ module k8s.io/release
 go 1.13
 
 require (
-	cloud.google.com/go v0.38.0 // indirect
+	cloud.google.com/go v0.38.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/golangci/golangci-lint v1.21.0
 	github.com/google/go-github/v28 v28.1.1

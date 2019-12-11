@@ -17,13 +17,17 @@ limitations under the License.
 package util
 
 import (
+	"archive/tar"
 	"bufio"
+	"compress/gzip"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 /*
@@ -103,7 +107,7 @@ func FakeGOPATH(srcDir string) (string, error) {
 	log.Printf("GOPATH: %s", os.Getenv("GOPATH"))
 
 	gitRoot := fmt.Sprintf("%s/src/k8s.io", baseDir)
-	if err := os.MkdirAll(gitRoot, 0o755); err != nil {
+	if err := os.MkdirAll(gitRoot, os.FileMode(int(0755))); err != nil {
 		return "", err
 	}
 	gitRoot = filepath.Join(gitRoot, "kubernetes")
@@ -120,4 +124,48 @@ func FakeGOPATH(srcDir string) (string, error) {
 	}
 
 	return gitRoot, nil
+}
+
+// UntarAndRead opens a tarball and reads contents of a file inside.
+func UntarAndRead(tarPath, filePath string) (string, error) {
+	file, err := os.Open(tarPath)
+	if err != nil {
+		return "", err
+	}
+
+	archive, err := gzip.NewReader(file)
+	if err != nil {
+		return "", err
+	}
+	tr := tar.NewReader(archive)
+
+	for {
+		h, err := tr.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+
+		if h.Name == filePath {
+			file, err := ioutil.ReadAll(tr)
+			return strings.TrimSuffix(string(file), "\n"), err
+		}
+	}
+
+	return "", errors.New("unable to find file in tarball")
+}
+
+// MoreRecent determines if file at path a was modified more recently than file at path b.
+func MoreRecent(a, b string) (bool, error) {
+	// TODO: default to existing file if only one exists?
+	fileA, err := os.Stat(a)
+	if err != nil {
+		return false, err
+	}
+
+	fileB, err := os.Stat(b)
+	if err != nil {
+		return false, err
+	}
+
+	return (fileA.ModTime().Unix() > fileB.ModTime().Unix()), nil
 }

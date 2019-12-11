@@ -17,9 +17,15 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"log"
+	"os"
+	"os/user"
 
+	"cloud.google.com/go/storage"
 	"github.com/spf13/cobra"
+
+	"k8s.io/release/pkg/release"
 )
 
 const description = `
@@ -125,15 +131,15 @@ func init() {
 	)
 	pushBuildCmd.PersistentFlags().StringVar(
 		&pushBuildOpts.releaseKind,
-		"release-kind",
-		"devel",
-		"Specify an alternate bucket for pushes (normally 'devel' or 'ci')",
-	)
-	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.releaseType,
 		"release-type",
 		"kubernetes",
 		"Kind of release to push to GCS. Supported values are kubernetes (default) or federation",
+	)
+	pushBuildCmd.PersistentFlags().StringVar(
+		&pushBuildOpts.releaseType,
+		"release-kind",
+		"devel",
+		"Specify an alternate bucket for pushes (normally 'devel' or 'ci')",
 	)
 	pushBuildCmd.PersistentFlags().StringVar(
 		&pushBuildOpts.versionSuffix,
@@ -147,5 +153,89 @@ func init() {
 
 func runPushBuild(opts *pushBuildOptions) error {
 	log.Println("unimplemented")
+
+	var latest string
+	releaseKind := opts.releaseKind
+
+	// Check if latest build uses bazel
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	isBazel, err := release.BuiltWithBazel(dir, releaseKind)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if isBazel {
+		log.Println("Using Bazel build version.")
+		version, err := release.ReadBazelVersion(dir)
+		if err != nil {
+			log.Fatal(err)
+		}
+		latest = version
+	} else {
+		log.Println("Using Dockerized build version.")
+		version, err := release.ReadDockerizedVersion(dir, releaseKind)
+		if err != nil {
+			log.Fatal(err)
+		}
+		latest = version
+	}
+
+	log.Println("Found build version: " + latest)
+
+	valid, err := release.IsValidReleaseBuild(latest)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if !valid {
+		log.Fatal("build version is not valid for release")
+	}
+
+	if opts.ci && release.IsDirtyBuild(latest) {
+		log.Fatal(`Refusing to push dirty build with --ci flag given.\n
+			CI builds should always be performed from clean commits.`)
+	}
+
+	if opts.versionSuffix != "" {
+		latest += "-" + opts.versionSuffix
+	}
+
+	gcsDest := opts.releaseType
+
+	// TODO: is this how we want to handle gcs dest args?
+	if opts.ci {
+		gcsDest = "ci"
+	}
+
+	gcsDest += opts.gcsSuffix
+
+	releaseBucket := opts.bucket
+	if !rootOpts.nomock {
+		u, err := user.Current()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		releaseBucket += "-" + u.Username
+	}
+
+	client, err := storage.NewClient(context.Background())
+	if err != nil {
+		log.Fatalf("error fetching gcloud credentials %s... try running \"gcloud auth application-default login\"", err)
+	}
+
+	bucket := client.Bucket(releaseBucket)
+	if bucket == nil {
+		log.Fatalf("unable to identify specified bucket for artifacts: %s", releaseBucket)
+	}
+
+	// Check if bucket exists.
+	if _, err = bucket.Attrs(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+
 	return nil
 }
