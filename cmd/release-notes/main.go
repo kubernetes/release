@@ -168,7 +168,7 @@ func (o *options) BindFlags() *flag.FlagSet {
 		"Only commits from this GitHub user are considered. Set to empty string to include all users",
 	)
 
-	debug, _ := strconv.ParseBool(envDefault("DEBUG", "false"))
+	debug, _ := strconv.ParseBool(envDefault("DEBUG", "false")) // nolint: errcheck
 	flags.BoolVar(
 		&o.debug,
 		"debug",

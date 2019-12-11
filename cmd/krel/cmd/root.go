@@ -17,21 +17,22 @@ limitations under the License.
 package cmd
 
 import (
-	"log"
-
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "krel",
-	Short: "krel",
+	Use:     "krel",
+	Short:   "krel",
+	PreRunE: initLogging,
 }
 
 type rootOptions struct {
 	nomock   bool
 	cleanup  bool
 	repoPath string
+	logLevel string
 }
 
 var rootOpts = &rootOptions{}
@@ -40,7 +41,7 @@ var rootOpts = &rootOptions{}
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 }
 
@@ -50,8 +51,20 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&rootOpts.nomock, "nomock", false, "nomock flag")
 	rootCmd.PersistentFlags().BoolVar(&rootOpts.cleanup, "cleanup", false, "cleanup flag")
 	rootCmd.PersistentFlags().StringVar(&rootOpts.repoPath, "repo", "", "the local path to the repository to be used")
+	rootCmd.PersistentFlags().StringVar(&rootOpts.logLevel, "log-level", "info", "the logging verbosity, either 'panic', 'fatal', 'error', 'warn', 'warning', 'info', 'debug' or 'trace'")
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+}
+
+func initLogging(*cobra.Command, []string) error {
+	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
+	lvl, err := logrus.ParseLevel(rootOpts.logLevel)
+	if err != nil {
+		return err
+	}
+	logrus.SetLevel(lvl)
+	logrus.Debugf("Using log level %q", lvl)
+	return nil
 }
