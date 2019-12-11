@@ -1145,6 +1145,12 @@ release::send_announcement () {
   ((FLAGS_nomock)) || mailto=$GCP_USER
   mailto=${FLAGS_mailto:-$mailto}
 
+  if ((FLAGS_print)); then
+    echo "You can find the Announcement file here: $archive_root/announcement.html"
+    echo "To copy to your local machine use: $GSUTIL cp $archive_root/announcement.html ."
+    return 0
+  fi
+
   # Announcement file is stored normally in WORKDIR, else check GCS.
   if [[ -f "$announcement_file" ]]; then
     announcement_text="$announcement_file"
