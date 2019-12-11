@@ -81,17 +81,13 @@ func TestListCommits(t *testing.T) {
 		"happy path": {
 			opts:   []notes.GitHubAPIOption{notes.WithBranch("branch-from-opts-is-ignored")},
 			branch: "the-branch", start: "the-start", end: "the-end",
-			getCommitReturns: getCommitReturnsList{
-				always: {
-					c: &github.Commit{Committer: &github.CommitAuthor{Date: zeroTime}},
-				},
-			},
-			listCommitsReturns: listCommitsReturnsList{
-				always: {
-					rc: []*github.RepositoryCommit{{}, {}}, // we create 2 commits per page
-					r:  response(200, 100),
-				},
-			},
+			getCommitReturns: getCommitReturnsList{always: {
+				c: &github.Commit{Committer: &github.CommitAuthor{Date: zeroTime}},
+			}},
+			listCommitsReturns: listCommitsReturnsList{always: {
+				rc: []*github.RepositoryCommit{{}, {}}, // we create 2 commits per page
+				r:  response(200, 100),
+			}},
 			getCommitArgValidator: func(t *testing.T, callCount int, ctx context.Context, org, repo, rev string) {
 				checkOrgRepo(t, "kubernetes", "kubernetes", org, repo)
 				if a, e := rev, "the-start"; callCount == 0 && a != e {
@@ -116,26 +112,20 @@ func TestListCommits(t *testing.T) {
 			expectedCommitCount:             200,
 		},
 		"returns no results, no further pages": {
-			getCommitReturns: getCommitReturnsList{
-				always: {
-					c: &github.Commit{Committer: &github.CommitAuthor{Date: zeroTime}},
-				},
-			},
-			listCommitsReturns: listCommitsReturnsList{
-				always: {
-					rc: []*github.RepositoryCommit{}, // we create 2 commits per page
-					r:  response(200, 0),
-				},
-			},
+			getCommitReturns: getCommitReturnsList{always: {
+				c: &github.Commit{Committer: &github.CommitAuthor{Date: zeroTime}},
+			}},
+			listCommitsReturns: listCommitsReturnsList{always: {
+				rc: []*github.RepositoryCommit{}, // we create 2 commits per page
+				r:  response(200, 0),
+			}},
 			expectedGetCommitCallCount:      2,
 			expectedListCommitsMaxCallCount: 1,
 		},
 		"http error on GetCommit(...)": {
-			getCommitReturns: getCommitReturnsList{
-				always: {
-					e: fmt.Errorf("some err on GetCommit"),
-				},
-			},
+			getCommitReturns: getCommitReturnsList{always: {
+				e: fmt.Errorf("some err on GetCommit"),
+			}},
 			expectedGetCommitCallCount: 1,
 			expectedErrMsg:             "some err on GetCommit",
 		},
@@ -152,26 +142,20 @@ func TestListCommits(t *testing.T) {
 			expectedErrMsg:             "some err on 2nd GetCommit",
 		},
 		"http error on ListCommit(...)": {
-			getCommitReturns: getCommitReturnsList{
-				always: {
-					c: &github.Commit{Committer: &github.CommitAuthor{Date: zeroTime}},
-				},
-			},
-			listCommitsReturns: listCommitsReturnsList{
-				always: {
-					e: fmt.Errorf("some err on ListCommits"),
-				},
-			},
+			getCommitReturns: getCommitReturnsList{always: {
+				c: &github.Commit{Committer: &github.CommitAuthor{Date: zeroTime}},
+			}},
+			listCommitsReturns: listCommitsReturnsList{always: {
+				e: fmt.Errorf("some err on ListCommits"),
+			}},
 			expectedGetCommitCallCount:      2,
 			expectedListCommitsMaxCallCount: 1,
 			expectedErrMsg:                  "some err on ListCommits",
 		},
 		`http error on "random" ListCommit(...)`: { // random in this case means 3 ;)
-			getCommitReturns: getCommitReturnsList{
-				always: {
-					c: &github.Commit{Committer: &github.CommitAuthor{Date: zeroTime}},
-				},
-			},
+			getCommitReturns: getCommitReturnsList{always: {
+				c: &github.Commit{Committer: &github.CommitAuthor{Date: zeroTime}},
+			}},
 			listCommitsReturns: listCommitsReturnsList{
 				always: {
 					rc: []*github.RepositoryCommit{{}, {}}, // we create 2 commits per page
