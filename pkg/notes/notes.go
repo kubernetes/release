@@ -433,7 +433,12 @@ func (g *Gatherer) ListCommits(branch, start, end string) ([]*github.RepositoryC
 		return nil, err
 	}
 
-	t := throttler.New(maxParallelRequests, resp.LastPage-1)
+	remainingPages := resp.LastPage - 1
+	if remainingPages < 1 {
+		return allCommits.List(), nil
+	}
+
+	t := throttler.New(maxParallelRequests, remainingPages)
 	for page := 2; page <= resp.LastPage; page++ {
 		clo := clo
 		clo.ListOptions.Page = page

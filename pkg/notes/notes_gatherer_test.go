@@ -70,9 +70,10 @@ func TestListCommits(t *testing.T) {
 		// expectedGetCommitCallCount is the number of calls to the `GetCommit`
 		// method we expect
 		expectedGetCommitCallCount int
-		// expectedListCommitsMinCallCount is the number of calls to the `ListCommits`
-		// method call we expect at least
+		// expectedListCommitsMinCallCount, expectedListCommitsMaxCallCount is the number
+		// of calls to the `ListCommits` method call we expect at least or at most
 		expectedListCommitsMinCallCount int
+		expectedListCommitsMaxCallCount int
 		// expectedCommitCount is the number of commits we expect the `ListCommits`
 		// method should return
 		expectedCommitCount int
@@ -111,7 +112,23 @@ func TestListCommits(t *testing.T) {
 			},
 			expectedGetCommitCallCount:      2,
 			expectedListCommitsMinCallCount: 100,
+			expectedListCommitsMaxCallCount: 100,
 			expectedCommitCount:             200,
+		},
+		"returns no results, no further pages": {
+			getCommitReturns: getCommitReturnsList{
+				always: {
+					c: &github.Commit{Committer: &github.CommitAuthor{Date: zeroTime}},
+				},
+			},
+			listCommitsReturns: listCommitsReturnsList{
+				always: {
+					rc: []*github.RepositoryCommit{}, // we create 2 commits per page
+					r:  response(200, 0),
+				},
+			},
+			expectedGetCommitCallCount:      2,
+			expectedListCommitsMaxCallCount: 1,
 		},
 		"http error on GetCommit(...)": {
 			getCommitReturns: getCommitReturnsList{
@@ -146,7 +163,7 @@ func TestListCommits(t *testing.T) {
 				},
 			},
 			expectedGetCommitCallCount:      2,
-			expectedListCommitsMinCallCount: 1,
+			expectedListCommitsMaxCallCount: 1,
 			expectedErrMsg:                  "some err on ListCommits",
 		},
 		`http error on "random" ListCommit(...)`: { // random in this case means 3 ;)
@@ -166,6 +183,7 @@ func TestListCommits(t *testing.T) {
 			},
 			expectedGetCommitCallCount:      2,
 			expectedListCommitsMinCallCount: 3,
+			expectedListCommitsMaxCallCount: 21, // This depends on how much requests we actually allow in parrallel
 			expectedErrMsg:                  "some err on a random ListCommits call",
 		},
 	}
@@ -206,8 +224,8 @@ func TestListCommits(t *testing.T) {
 				t.Errorf("Expected GetCommits(...) to be called %d times, got called %d times", e, a)
 			}
 
-			if a, e := client.ListCommitsCallCount(), tc.expectedListCommitsMinCallCount; a < e {
-				t.Errorf("Expected ListCommits(...) to be called at least %d times, got called %d times", e, a)
+			if min, max, a := tc.expectedListCommitsMinCallCount, tc.expectedListCommitsMaxCallCount, client.ListCommitsCallCount(); a < min || a > max {
+				t.Errorf("Expected ListCommits(...) to be called between %d and %d times, got called %d times", min, max, a)
 			}
 
 			if a, e := len(commits), tc.expectedCommitCount; a != e {
