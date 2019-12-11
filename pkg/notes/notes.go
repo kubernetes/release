@@ -25,10 +25,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"github.com/google/go-github/v28/github"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // ReleaseNote is the type that represents the total sum of all the information
@@ -166,7 +165,6 @@ type Result struct {
 // starting from a given commit SHA and ending at starting a given commit SHA.
 func ListReleaseNotes(
 	client *github.Client,
-	logger log.Logger,
 	branch,
 	start,
 	end,
@@ -174,7 +172,7 @@ func ListReleaseNotes(
 	relVer string,
 	opts ...GitHubAPIOption,
 ) (ReleaseNotes, ReleaseNotesHistory, error) {
-	results, err := ListCommitsWithNotes(client, logger, branch, start, end, opts...)
+	results, err := ListCommitsWithNotes(client, branch, start, end, opts...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -191,11 +189,10 @@ func ListReleaseNotes(
 
 		note, err := ReleaseNoteFromCommit(result, client, relVer, opts...)
 		if err != nil {
-			level.Error(logger).Log(
-				"err", err,
-				"msg", "error getting the release note from commit while listing release notes",
-				"sha", result.commit.GetSHA(),
-			)
+			logrus.
+				WithField("err", err).
+				WithField("sha", result.commit.GetSHA()).
+				Error("getting the release note from commit while listing release notes")
 			continue
 		}
 
@@ -212,12 +209,11 @@ func ListReleaseNotes(
 			}
 			if match {
 				excluded = true
-				level.Debug(logger).Log(
-					"msg", "Excluding notes that are deemed to have no content based on filter, and should NOT be added to release notes.",
-					"sha", result.commit.GetSHA(),
-					"func", "ListReleaseNotes",
-					"filter", filter,
-				)
+				logrus.
+					WithField("sha", result.commit.GetSHA()).
+					WithField("func", "ListReleaseNotes").
+					WithField("filter", filter).
+					Debug("Excluding notes that are deemed to have no content based on filter, and should NOT be added to release notes.")
 				break
 			}
 		}
@@ -435,7 +431,6 @@ func ListCommits(client *github.Client, branch, start, end string, opts ...GitHu
 // returned.
 func ListCommitsWithNotes(
 	client *github.Client,
-	logger log.Logger,
 	branch,
 	start,
 	end string,
@@ -447,32 +442,28 @@ func ListCommitsWithNotes(
 	}
 
 	for i, commit := range commits {
-		level.Debug(logger).Log("msg", "################################################")
-		level.Info(logger).Log("msg", fmt.Sprintf("[%d/%d - %0.2f%%]", i+1, len(commits), (float64(i+1)/float64(len(commits)))*100.0))
-		level.Debug(logger).Log(
-			"msg", "Processing commit",
-			"func", "ListCommitsWithNotes",
-			"sha", commit.GetSHA(),
+		logrus.Infof(
+			"[%d/%d - %0.2f%%]: %s",
+			i+1, len(commits), (float64(i+1)/float64(len(commits)))*100.0,
+			commit.GetSHA(),
 		)
 
-		prs, err := PRsFromCommit(client, logger, commit, opts...)
+		prs, err := PRsFromCommit(client, commit, opts...)
 		if err != nil {
 			if err.Error() == "no matches found when parsing PR from commit" {
-				level.Debug(logger).Log(
-					"msg", fmt.Sprintf("No matches found when parsing PR from commit sha '%s'.", commit.GetSHA()),
-					"func", "ListCommitsWithNotes",
-				)
+				logrus.
+					WithField("func", "ListCommitsWithNotes").
+					Debugf("No matches found when parsing PR from commit sha %q", commit.GetSHA())
 				continue
 			}
 		}
 
 		for _, pr := range prs {
-			level.Debug(logger).Log(
-				"msg", fmt.Sprintf("Obtaining PR associated with commit sha '%s'.", commit.GetSHA()),
-				"func", "ListCommitsWithNotes",
-				"pr no", pr.GetNumber(),
-				"pr body", pr.GetBody(),
-			)
+			logrus.
+				WithField("func", "ListCommitsWithNotes").
+				WithField("pr no", pr.GetNumber()).
+				WithField("pr body", pr.GetBody()).
+				Debugf("Obtaining PR associated with commit sha %q", commit.GetSHA())
 
 			// exclusionFilters is a list of regular expressions that match commits that
 			// do NOT contain release notes. Notably, this is all of the variations of
@@ -501,11 +492,10 @@ func ListCommitsWithNotes(
 				}
 				if match {
 					excluded = true
-					level.Debug(logger).Log(
-						"msg", "Excluding notes for PR based on the exclusion filter.",
-						"func", "ListCommitsWithNotes",
-						"filter", filter,
-					)
+					logrus.
+						WithField("func", "ListCommitsWithNotes").
+						WithField("filter", filter).
+						Debug("Excluding notes for PR based on the exclusion filter.")
 					break
 				}
 			}
@@ -530,11 +520,10 @@ func ListCommitsWithNotes(
 				if match {
 					matched = true
 					filtered = append(filtered, &Result{commit: commit, pullRequest: pr})
-					level.Debug(logger).Log(
-						"msg", "Including notes for PR based on the inclusion filter.",
-						"func", "ListCommitsWithNotes",
-						"filter", filter,
-					)
+					logrus.
+						WithField("func", "ListCommitsWithNotes").
+						WithField("filter", filter).
+						Debug("Including notes for PR based on the inclusion filter.")
 				}
 			}
 
@@ -551,16 +540,15 @@ func ListCommitsWithNotes(
 // PRsFromCommit return an API Pull Request struct given a commit struct. This is
 // useful for going from a commit log to the PR (which contains useful info such
 // as labels).
-func PRsFromCommit(client *github.Client, logger log.Logger, commit *github.RepositoryCommit, opts ...GitHubAPIOption) (
+func PRsFromCommit(client *github.Client, commit *github.RepositoryCommit, opts ...GitHubAPIOption) (
 	[]*github.PullRequest, error,
 ) {
 	githubPRs, err := prsForCommitFromMessage(client, *commit.Commit.Message, opts...)
 	if err != nil {
-		level.Debug(logger).Log(
-			"err", err,
-			"msg", "error getting the pr numbers from commit message",
-			"sha", commit.GetSHA(),
-		)
+		logrus.
+			WithField("err", err).
+			WithField("sha", commit.GetSHA()).
+			Debug("getting the pr numbers from commit message")
 		return prsForCommitFromSHA(client, *commit.SHA, opts...)
 	}
 	return githubPRs, err

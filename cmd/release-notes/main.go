@@ -24,11 +24,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"github.com/google/go-github/v28/github"
-	"github.com/kolide/kit/env"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
 	"k8s.io/release/pkg/git"
@@ -51,7 +50,6 @@ type options struct {
 	requiredAuthor string
 	debug          bool
 	discoverMode   string
-	logger         log.Logger
 }
 
 const (
@@ -66,7 +64,7 @@ func (o *options) BindFlags() *flag.FlagSet {
 	flags.StringVar(
 		&o.githubToken,
 		"github-token",
-		env.String("GITHUB_TOKEN", ""),
+		envDefault("GITHUB_TOKEN", ""),
 		"A personal GitHub access token (required)",
 	)
 
@@ -74,7 +72,7 @@ func (o *options) BindFlags() *flag.FlagSet {
 	flags.StringVar(
 		&o.githubOrg,
 		"github-org",
-		env.String("GITHUB_ORG", "kubernetes"),
+		envDefault("GITHUB_ORG", "kubernetes"),
 		"Name of github organization",
 	)
 
@@ -82,7 +80,7 @@ func (o *options) BindFlags() *flag.FlagSet {
 	flags.StringVar(
 		&o.githubRepo,
 		"github-repo",
-		env.String("GITHUB_REPO", "kubernetes"),
+		envDefault("GITHUB_REPO", "kubernetes"),
 		"Name of github repository",
 	)
 
@@ -91,7 +89,7 @@ func (o *options) BindFlags() *flag.FlagSet {
 	flags.StringVar(
 		&o.output,
 		"output",
-		env.String("OUTPUT", ""),
+		envDefault("OUTPUT", ""),
 		"The path to the where the release notes will be printed",
 	)
 
@@ -99,7 +97,7 @@ func (o *options) BindFlags() *flag.FlagSet {
 	flags.StringVar(
 		&o.branch,
 		"branch",
-		env.String("BRANCH", "master"),
+		envDefault("BRANCH", "master"),
 		"Select which branch to scrape. Defaults to `master`",
 	)
 
@@ -108,7 +106,7 @@ func (o *options) BindFlags() *flag.FlagSet {
 	flags.StringVar(
 		&o.startSHA,
 		"start-sha",
-		env.String("START_SHA", ""),
+		envDefault("START_SHA", ""),
 		"The commit hash to start at",
 	)
 
@@ -116,7 +114,7 @@ func (o *options) BindFlags() *flag.FlagSet {
 	flags.StringVar(
 		&o.endSHA,
 		"end-sha",
-		env.String("END_SHA", ""),
+		envDefault("END_SHA", ""),
 		"The commit hash to end at",
 	)
 
@@ -125,7 +123,7 @@ func (o *options) BindFlags() *flag.FlagSet {
 	flags.StringVar(
 		&o.startRev,
 		"start-rev",
-		env.String("START_REV", ""),
+		envDefault("START_REV", ""),
 		"The git revision to start at. Can be used as alternative to start-sha.",
 	)
 
@@ -134,7 +132,7 @@ func (o *options) BindFlags() *flag.FlagSet {
 	flags.StringVar(
 		&o.endRev,
 		"end-rev",
-		env.String("END_REV", ""),
+		envDefault("END_REV", ""),
 		"The git revision to end at. Can be used as alternative to end-sha.",
 	)
 
@@ -143,7 +141,7 @@ func (o *options) BindFlags() *flag.FlagSet {
 	flags.StringVar(
 		&o.repoPath,
 		"repo-path",
-		env.String("REPO_PATH", ""),
+		envDefault("REPO_PATH", ""),
 		"Path to a the local Kubernetes repository",
 	)
 
@@ -151,7 +149,7 @@ func (o *options) BindFlags() *flag.FlagSet {
 	flags.StringVar(
 		&o.releaseVersion,
 		"release-version",
-		env.String("RELEASE_VERSION", ""),
+		envDefault("RELEASE_VERSION", ""),
 		"Which release version to tag the entries as.",
 	)
 
@@ -159,34 +157,43 @@ func (o *options) BindFlags() *flag.FlagSet {
 	flags.StringVar(
 		&o.format,
 		"format",
-		env.String("FORMAT", "markdown"),
+		envDefault("FORMAT", "markdown"),
 		"The format for notes output (options: markdown, json)",
 	)
 
 	flags.StringVar(
 		&o.requiredAuthor,
 		"requiredAuthor",
-		env.String("REQUIRED_AUTHOR", "k8s-ci-robot"),
+		envDefault("REQUIRED_AUTHOR", "k8s-ci-robot"),
 		"Only commits from this GitHub user are considered. Set to empty string to include all users",
 	)
 
+	debug, _ := strconv.ParseBool(envDefault("DEBUG", "false"))
 	flags.BoolVar(
 		&o.debug,
 		"debug",
-		env.Bool("DEBUG", false),
+		debug,
 		"Enable debug logging",
 	)
 
 	flags.StringVar(
 		&o.discoverMode,
 		"discover",
-		env.String("DISCOVER", revisionDiscoveryModeNONE),
+		envDefault("DISCOVER", revisionDiscoveryModeNONE),
 		fmt.Sprintf("The revision discovery mode for automatic revision retrieval (options: %s, %s)",
 			revisionDiscoveryModeNONE,
 			revisionDiscoveryModeMinorToLatest),
 	)
 
 	return flags
+}
+
+func envDefault(key, def string) string {
+	value, ok := os.LookupEnv(key)
+	if !ok {
+		return def
+	}
+	return value
 }
 
 func (o *options) GetReleaseNotes() (notes.ReleaseNotes, notes.ReleaseNotesHistory, error) {
@@ -198,7 +205,7 @@ func (o *options) GetReleaseNotes() (notes.ReleaseNotes, notes.ReleaseNotesHisto
 	githubClient := github.NewClient(httpClient)
 
 	// Fetch a list of fully-contextualized release notes
-	level.Info(o.logger).Log("msg", "fetching all commits. this might take a while...")
+	logrus.Info("fetching all commits. this might take a while...")
 
 	opts := []notes.GitHubAPIOption{notes.WithContext(ctx)}
 	if o.githubOrg != "" {
@@ -209,10 +216,10 @@ func (o *options) GetReleaseNotes() (notes.ReleaseNotes, notes.ReleaseNotesHisto
 	}
 
 	releaseNotes, history, err := notes.ListReleaseNotes(
-		githubClient, o.logger, o.branch, o.startSHA, o.endSHA,
+		githubClient, o.branch, o.startSHA, o.endSHA,
 		o.requiredAuthor, o.releaseVersion, opts...)
 	if err != nil {
-		level.Error(o.logger).Log("msg", "error generating release notes", "err", err)
+		logrus.Errorf("generating release notes: %v", err)
 		return nil, nil, err
 	}
 
@@ -220,7 +227,7 @@ func (o *options) GetReleaseNotes() (notes.ReleaseNotes, notes.ReleaseNotesHisto
 }
 
 func (o *options) WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNotesHistory) error {
-	level.Info(o.logger).Log("msg", "got the commits, performing rendering")
+	logrus.Info("got the commits, performing rendering")
 
 	// Open a handle to the file which will contain the release notes output
 	var output *os.File
@@ -230,13 +237,13 @@ func (o *options) WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history not
 	if o.output != "" {
 		output, err = os.OpenFile(o.output, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
-			level.Error(o.logger).Log("msg", "error opening the supplied output file", "err", err)
+			logrus.Errorf("opening the supplied output file: %v", err)
 			return err
 		}
 	} else {
 		output, err = ioutil.TempFile("", "release-notes-")
 		if err != nil {
-			level.Error(o.logger).Log("msg", "error creating a temporary file to write the release notes to", "err", err)
+			logrus.Errorf("creating a temporary file to write the release notes to: %v", err)
 			return err
 		}
 	}
@@ -251,7 +258,7 @@ func (o *options) WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history not
 
 		if len(byteValue) > 0 {
 			if err := json.Unmarshal(byteValue, &existingNotes); err != nil {
-				level.Error(o.logger).Log("msg", "error unmarshalling existing notes", "err", err)
+				logrus.Errorf("unmarshalling existing notes: %v", err)
 				return err
 			}
 		}
@@ -275,36 +282,35 @@ func (o *options) WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history not
 		enc := json.NewEncoder(output)
 		enc.SetIndent("", "  ")
 		if err := enc.Encode(releaseNotes); err != nil {
-			level.Error(o.logger).Log("msg", "error encoding JSON output", "err", err)
+			logrus.Errorf("encoding JSON output: %v", err)
 			os.Exit(1)
 		}
 	case "markdown":
 		doc, err := notes.CreateDocument(releaseNotes, history)
 		if err != nil {
-			level.Error(o.logger).Log("msg", "error creating release note document", "err", err)
+			logrus.Errorf("creating release note document: %v", err)
 			return err
 		}
 
 		if err := notes.RenderMarkdown(doc, output); err != nil {
-			level.Error(o.logger).Log("msg", "error rendering release note document to markdown", "err", err)
+			logrus.Errorf("rendering release note document to markdown: %v", err)
 			return err
 		}
 
 	default:
 		errString := fmt.Sprintf("%q is an unsupported format", o.format)
-		level.Error(o.logger).Log("msg", errString)
+		logrus.Error(errString)
 		return errors.New(errString)
 	}
 
-	level.Info(o.logger).Log(
-		"msg", "release notes written to file",
-		"path", output.Name(),
-		"format", o.format,
-	)
+	logrus.
+		WithField("path", output.Name()).
+		WithField("format", o.format).
+		Info("release notes written to file")
 	return nil
 }
 
-func parseOptions(args []string, logger log.Logger) (*options, error) {
+func parseOptions(args []string) (*options, error) {
 	opts := &options{}
 	flags := opts.BindFlags()
 
@@ -335,8 +341,8 @@ func parseOptions(args []string, logger log.Logger) (*options, error) {
 		}
 		opts.startSHA = start
 		opts.endSHA = end
-		level.Info(logger).Log("msg", "discovered start SHA "+start)
-		level.Info(logger).Log("msg", "discovered end SHA "+end)
+		logrus.Infof("discovered start SHA %s", start)
+		logrus.Infof("discovered end SHA %s", end)
 	}
 
 	// The start SHA is required.
@@ -351,7 +357,7 @@ func parseOptions(args []string, logger log.Logger) (*options, error) {
 
 	// Check if we have to parse a revision
 	if opts.startRev != "" || opts.endRev != "" {
-		level.Info(logger).Log("msg", "cloning/updating repository to discover start or end sha")
+		logrus.Info("cloning/updating repository to discover start or end sha")
 		repo, err := git.CloneOrOpenGitHubRepo(
 			opts.repoPath,
 			opts.githubOrg,
@@ -366,7 +372,7 @@ func parseOptions(args []string, logger log.Logger) (*options, error) {
 			if err != nil {
 				return nil, err
 			}
-			level.Info(logger).Log("msg", "using found start SHA: "+sha)
+			logrus.Infof("using found start SHA: %s", sha)
 			opts.startSHA = sha
 		}
 		if opts.endRev != "" {
@@ -374,31 +380,26 @@ func parseOptions(args []string, logger log.Logger) (*options, error) {
 			if err != nil {
 				return nil, err
 			}
-			level.Info(logger).Log("msg", "using found end SHA: "+sha)
+			logrus.Infof("using found end SHA: %s", sha)
 			opts.endSHA = sha
 		}
 	}
 
 	// Add appropriate log filtering
 	if opts.debug {
-		logger = level.NewFilter(logger, level.AllowDebug())
-	} else {
-		logger = level.NewFilter(logger, level.AllowInfo())
+		logrus.SetLevel(logrus.DebugLevel)
 	}
-	logger = log.With(logger, "timestamp", log.DefaultTimestamp, "caller", log.DefaultCaller)
-	opts.logger = logger
 
 	return opts, nil
 }
 
-func run(logger log.Logger, args []string) error {
+func run(args []string) error {
 	// Parse the CLI options and enforce required defaults
-	opts, err := parseOptions(args, logger)
+	opts, err := parseOptions(args)
 	if err != nil {
-		level.Error(logger).Log("msg", "error parsing options", "err", err)
+		logrus.Errorf("parsing options: %v", err)
 		return err
 	}
-	logger = opts.logger
 
 	// get the release notes
 	releaseNotes, history, err := opts.GetReleaseNotes()
@@ -408,7 +409,7 @@ func run(logger log.Logger, args []string) error {
 
 	err = opts.WriteReleaseNotes(releaseNotes, history)
 	if err != nil {
-		level.Error(logger).Log("msg", "error writing to file", "err", err)
+		logrus.Errorf("writing to file: %v", err)
 		return err
 	}
 
@@ -416,12 +417,8 @@ func run(logger log.Logger, args []string) error {
 }
 
 func main() {
-	// Use the go-kit structured logger for logging. To learn more about structured
-	// logging see: https://github.com/go-kit/kit/tree/master/log#structured-logging
-	// https://godoc.org/github.com/go-kit/kit/log/level
-	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-
-	if err := run(logger, os.Args[1:]); err != nil {
+	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
+	if err := run(os.Args[1:]); err != nil {
 		os.Exit(-1)
 	}
 }

@@ -39,8 +39,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/go-kit/kit",
-        sum = "h1:wDJmvq38kDhkVxi50ni9ykkdUr1PKgqKOoi01fa0Mdk=",
-        version = "v0.9.0",
+        sum = "h1:Wz+5lgoB0kkuqLEc6NVmwRknTKP6dTGbSqvhZtBI/j0=",
+        version = "v0.8.0",
     )
 
     go_repository(
@@ -77,15 +77,6 @@ def go_repositories():
         importpath = "github.com/google/go-querystring",
         sum = "h1:Xkwi/a1rcvNg1PPYe5vI8GbeBY/jrVuDX5ASuANWTrk=",
         version = "v1.0.0",
-    )
-
-    go_repository(
-        name = "com_github_kolide_kit",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable",
-        importpath = "github.com/kolide/kit",
-        sum = "h1:Ii9fpYpVTsnibfXFHctbDJ78azLTz5Qiph4o6zpIj4o=",
-        version = "v0.0.0-20190123023048-c155a91098e3",
     )
 
     go_repository(
@@ -611,8 +602,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/go-sql-driver/mysql",
-        sum = "h1:g24URVg0OFbNUTx9qqY1IRZ9D9z3iPyi5zKhQZpNwpA=",
-        version = "v1.4.1",
+        sum = "h1:cRYCw9putX9pmpNdGkE/rWrY6gNGqZvdgGT1RPl6K18=",
+        version = "v0.0.0-20160411075031-7ebe0a500653",
     )
     go_repository(
         name = "com_github_go_stack_stack",
@@ -975,14 +966,7 @@ def go_repositories():
         sum = "h1:pmfjZENx5imkbgOkpRUYLnmbU7UEFbjtDA2hxJ1ichM=",
         version = "v0.0.0-20180206201540-c2b33e8439af",
     )
-    go_repository(
-        name = "com_github_jmoiron_sqlx",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable",
-        importpath = "github.com/jmoiron/sqlx",
-        sum = "h1:eR1qlND4ShQ9W/Q56oy9c/Jj6hpqS5heEruKQVbJGNo=",
-        version = "v0.0.0-20180406164412-2aeb6a910c2b",
-    )
+
     go_repository(
         name = "com_github_joho_godotenv",
         build_file_generation = "on",
@@ -1188,8 +1172,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/mattn/go-sqlite3",
-        sum = "h1:jbhqpg7tQe4SupckyijYiy0mJJ/pRyHvXf7JdWK860o=",
-        version = "v1.10.0",
+        sum = "h1:LeyN6zuPxHQrv7ZGHbo2Ymtj+BfpbG02+5iAgKds/zU=",
+        version = "v0.0.0-20160514122348-38ee283dabf1",
     )
     go_repository(
         name = "com_github_mattn_go_zglob",
@@ -1279,6 +1263,7 @@ def go_repositories():
         sum = "h1:EGfNDEx6MqHz8B3uNV6QAib1UR2Lm97sHi3ocA6ESJ4=",
         version = "v1.3.1",
     )
+
     go_repository(
         name = "com_github_olekukonko_tablewriter",
         build_file_generation = "on",
@@ -1303,14 +1288,7 @@ def go_repositories():
         sum = "h1:XPnZz8VVBHjVsy1vzJmRwIcSwiUO+JFfrv/xGiigmME=",
         version = "v1.7.0",
     )
-    go_repository(
-        name = "com_github_opencensus_integrations_ocsql",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable",
-        importpath = "github.com/opencensus-integrations/ocsql",
-        sum = "h1:+J5BmLX1kNWCH9/5wJdleej2oRyJrhVEt+FAjq1VqaI=",
-        version = "v0.1.1",
-    )
+
     go_repository(
         name = "com_github_opencontainers_go_digest",
         build_file_generation = "on",
