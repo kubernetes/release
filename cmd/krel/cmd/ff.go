@@ -18,13 +18,13 @@ package cmd
 
 import (
 	"fmt"
-	"log"
-
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 
 	kgit "k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/util"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 type ffOptions struct {
@@ -43,14 +43,12 @@ var ffCmd = &cobra.Command{
 (defaults to HEAD), and then prepares the branch as a Kubernetes release branch:
 
 - Run hack/update-all.sh to ensure compliance of generated files`,
-	Example:      "krel ff --branch release-1.17 --ref HEAD --cleanup",
-	SilenceUsage: true,
+	Example:       "krel ff --branch release-1.17 --ref HEAD --cleanup",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	PreRunE:       initLogging,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := runFf(ffOpts); err != nil {
-			return err
-		}
-
-		return nil
+		return runFf(ffOpts)
 	},
 }
 
@@ -73,28 +71,28 @@ func runFf(opts *ffOptions) error {
 	master := "master"
 	remoteMaster := kgit.Remotify(master)
 
-	log.Printf("Preparing to fast-forward master@%s onto the %s branch", masterRef, branch)
+	logrus.Infof("Preparing to fast-forward master@%s onto the %s branch", masterRef, branch)
 	repo, err := kgit.CloneOrOpenDefaultGitHubRepoSSH(rootOpts.repoPath, opts.org)
 	if err != nil {
 		return err
 	}
 
 	if !rootOpts.nomock {
-		log.Printf("Using dry mode, which does not modify any remote content")
+		logrus.Info("Using dry mode, which does not modify any remote content")
 		repo.SetDry()
 	}
 
-	log.Printf("Checking if %q is a release branch", branch)
+	logrus.Infof("Checking if %q is a release branch", branch)
 	if isReleaseBranch := kgit.IsReleaseBranch(branch); !isReleaseBranch {
-		log.Fatalf("%s is not a release branch", branch)
+		return errors.Errorf("%s is not a release branch", branch)
 	}
 
-	log.Printf("Checking if branch is available on the default remote")
+	logrus.Info("Checking if branch is available on the default remote")
 	if err := repo.HasRemoteBranch(branch); err != nil {
 		return err
 	}
 
-	log.Printf("Checking out release branch")
+	logrus.Info("Checking out release branch")
 	if err := repo.CheckoutBranch(branch); err != nil {
 		return err
 	}
@@ -104,7 +102,7 @@ func runFf(opts *ffOptions) error {
 		defer repo.Cleanup() // nolint: errcheck
 	}
 
-	log.Printf("Finding merge base between %q and %q", master, branch)
+	logrus.Infof("Finding merge base between %q and %q", master, branch)
 	mergeBase, err := repo.MergeBase(master, branch)
 	if err != nil {
 		return err
@@ -120,22 +118,20 @@ func runFf(opts *ffOptions) error {
 		return err
 	}
 	if masterTag != mergeBaseTag {
-		err := errors.Errorf(
+		return errors.Errorf(
 			"Unable to fast forward: tag %q does not match %q",
 			masterTag, mergeBaseTag,
 		)
-		log.Print(err)
-		return err
 	}
-	log.Printf("Last tag is: %s", masterTag)
+	logrus.Infof("Last tag is: %s", masterTag)
 
 	releaseRev, err := repo.Head()
 	if err != nil {
 		return err
 	}
-	log.Printf("Latest release branch revision is %s", releaseRev)
+	logrus.Infof("Latest release branch revision is %s", releaseRev)
 
-	log.Printf("Merging master changes into release branch")
+	logrus.Info("Merging master changes into release branch")
 	if err := repo.Merge(remoteMaster); err != nil {
 		return err
 	}
@@ -153,7 +149,7 @@ func runFf(opts *ffOptions) error {
 	}
 
 	if pushUpstream {
-		log.Printf("Pushing %s branch", branch)
+		logrus.Infof("Pushing %s branch", branch)
 		if err := repo.Push(branch); err != nil {
 			return err
 		}
@@ -163,7 +159,7 @@ func runFf(opts *ffOptions) error {
 }
 
 func prepushMessage(gitRoot, remote, branch, org, releaseRev, headRev string) {
-	log.Println(fmt.Sprintf(`Go look around in %s to make sure things look okay before pushing...
+	fmt.Printf(`Go look around in %s to make sure things look okay before pushing...
 
 Check for files left uncommitted using:
 
@@ -181,5 +177,5 @@ Once the branch fast-forward is complete, the diff will be available after push 
 
 	https://github.com/%s/%s/compare/%s...%s"
 
-`, gitRoot, remote, branch, org, kgit.DefaultGithubRepo, releaseRev, headRev))
+`, gitRoot, remote, branch, org, kgit.DefaultGithubRepo, releaseRev, headRev)
 }

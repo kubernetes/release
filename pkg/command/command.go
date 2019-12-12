@@ -19,7 +19,6 @@ package command
 import (
 	"bytes"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -27,6 +26,7 @@ import (
 	"syscall"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // A generic command abstraction
@@ -136,7 +136,7 @@ func (c *Command) RunSilentSuccess() (err error) {
 
 // run is the internal run method
 func (c *Command) run(printOutput bool) (res *Status, err error) {
-	log.Printf("Running command: %v", c.String())
+	logrus.Debugf("Running command: %v", c.String())
 	var runErr error
 	stdOutBuffer := &bytes.Buffer{}
 	stdErrBuffer := &bytes.Buffer{}
@@ -167,10 +167,10 @@ func (c *Command) run(printOutput bool) (res *Status, err error) {
 			go func() {
 				defer waitGroup.Done()
 				if _, err := io.Copy(stdOutWriter, stdout); err != nil {
-					log.Println("unable to copy command stdout")
+					logrus.Warn("unable to copy command stdout")
 				}
 				if _, err := io.Copy(stdErrWriter, stderr); err != nil {
-					log.Println("unable to copy command stderr")
+					logrus.Warn("unable to copy command stderr")
 				}
 			}()
 		}
@@ -254,7 +254,7 @@ func Available(commands ...string) (ok bool) {
 	ok = true
 	for _, command := range commands {
 		if _, err := exec.LookPath(command); err != nil {
-			log.Printf("Unable to %v", err)
+			logrus.Warnf("Unable to %v", err)
 			ok = false
 		}
 	}

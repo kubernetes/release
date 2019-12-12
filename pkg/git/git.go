@@ -19,7 +19,6 @@ package git
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -29,6 +28,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/config"
 	"gopkg.in/src-d/go-git.v4/plumbing"
@@ -103,10 +103,10 @@ func CloneOrOpenRepo(repoPath, url string, useSSH bool) (*Repo, error) {
 		return nil, errors.New("git is needed to support all repository features")
 	}
 
-	log.Printf("Using repository url %q", url)
+	logrus.Debugf("Using repository url %q", url)
 	targetDir := ""
 	if repoPath != "" {
-		log.Printf("Using existing repository path %q", repoPath)
+		logrus.Debugf("Using existing repository path %q", repoPath)
 		_, err := os.Stat(repoPath)
 
 		if err == nil {
@@ -168,7 +168,7 @@ func updateRepo(repoPath string, useSSH bool) (*Repo, error) {
 }
 
 func (r *Repo) Cleanup() error {
-	log.Printf("Deleting %s...", r.dir)
+	logrus.Debugf("Deleting %s", r.dir)
 	return os.RemoveAll(r.dir)
 }
 
@@ -213,7 +213,7 @@ func (r *Repo) LatestNonPatchFinalToLatest() (start, end string, err error) {
 		return "", "", err
 	}
 	versionTag := "v" + version.String()
-	log.Printf("latest non patch version %s", versionTag)
+	logrus.Infof("latest non patch version %s", versionTag)
 	start, err = r.RevParse(versionTag)
 	if err != nil {
 		return "", "", err
@@ -263,13 +263,13 @@ func (r *Repo) releaseBranchOrMasterRev(major, minor uint64) (rev string, err er
 	relBranch := fmt.Sprintf("release-%d.%d", major, minor)
 	rev, err = r.RevParse(relBranch)
 	if err == nil {
-		log.Printf("found release branch %s", relBranch)
+		logrus.Infof("found release branch %s", relBranch)
 		return rev, nil
 	}
 
 	rev, err = r.RevParse("master")
 	if err == nil {
-		log.Println("no release branch found, using master")
+		logrus.Infof("no release branch found, using master")
 		return rev, nil
 	}
 
@@ -279,7 +279,7 @@ func (r *Repo) releaseBranchOrMasterRev(major, minor uint64) (rev string, err er
 // HasRemoteBranch takes a branch string and verifies that it exists
 // on the default remote
 func (r *Repo) HasRemoteBranch(branch string) error {
-	log.Printf("Verifying %s branch exists on the remote", branch)
+	logrus.Infof("Verifying %s branch exists on the remote", branch)
 
 	remote, err := r.inner.Remote(DefaultRemote)
 	if err != nil {
@@ -289,19 +289,18 @@ func (r *Repo) HasRemoteBranch(branch string) error {
 	// We can then use every Remote functions to retrieve wanted information
 	refs, err := remote.List(&git.ListOptions{Auth: r.auth})
 	if err != nil {
-		log.Printf("Could not list references on the remote repository.")
+		logrus.Warn("Could not list references on the remote repository.")
 		return err
 	}
 
 	for _, ref := range refs {
 		if ref.Name().IsBranch() {
 			if ref.Name().Short() == branch {
-				log.Printf("Found branch %s", ref.Name().Short())
+				logrus.Infof("Found branch %s", ref.Name().Short())
 				return nil
 			}
 		}
 	}
-	log.Printf("Could not find branch %s", branch)
 	return errors.Errorf("branch %v not found", branch)
 }
 
@@ -321,7 +320,7 @@ func (r *Repo) CheckoutBranch(name string) error {
 func IsReleaseBranch(branch string) bool {
 	re := regexp.MustCompile(branchRE)
 	if !re.MatchString(branch) {
-		log.Printf("%s is not a release branch", branch)
+		logrus.Warnf("%s is not a release branch", branch)
 		return false
 	}
 
@@ -332,7 +331,7 @@ func (r *Repo) MergeBase(from, to string) (string, error) {
 	masterRef := Remotify(from)
 	releaseRef := Remotify(to)
 
-	log.Printf("masterRef: %s, releaseRef: %s", masterRef, releaseRef)
+	logrus.Debugf("masterRef: %s, releaseRef: %s", masterRef, releaseRef)
 
 	commitRevs := []string{masterRef, releaseRef}
 	var res []*object.Commit
@@ -365,7 +364,7 @@ func (r *Repo) MergeBase(from, to string) (string, error) {
 	}
 
 	mergeBase := res[0].Hash.String()
-	log.Printf("merge base is %s", mergeBase)
+	logrus.Infof("merge base is %s", mergeBase)
 
 	return mergeBase, nil
 }
@@ -405,7 +404,7 @@ func (r *Repo) Merge(from string) error {
 func (r *Repo) Push(remoteBranch string) error {
 	args := []string{"push"}
 	if r.dryRun {
-		log.Println("Won't push due to dry run repository")
+		logrus.Infof("Won't push due to dry run repository")
 		args = append(args, "--dry-run")
 	}
 	args = append(args, DefaultRemote, remoteBranch)
