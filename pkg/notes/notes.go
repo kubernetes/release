@@ -400,7 +400,7 @@ func (g *Gatherer) ListCommits(branch, start, end string) ([]*github.RepositoryC
 		return nil, err
 	}
 
-	clo := &github.CommitsListOptions{
+	clo := github.CommitsListOptions{
 		SHA:   c.branch,
 		Since: *startCommit.Committer.Date,
 		Until: *endCommit.Committer.Date,
@@ -410,19 +410,19 @@ func (g *Gatherer) ListCommits(branch, start, end string) ([]*github.RepositoryC
 		},
 	}
 
-	commits, resp, err := g.Client.ListCommits(c.ctx, c.org, c.repo, clo)
+	commits, resp, err := g.Client.ListCommits(c.ctx, c.org, c.repo, &clo)
 	if err != nil {
 		return nil, err
 	}
-	clo.ListOptions.Page++
 
-	for clo.ListOptions.Page <= resp.LastPage {
-		commitPage, _, err := g.Client.ListCommits(c.ctx, c.org, c.repo, clo)
+	for page := 2; page <= resp.LastPage; page += 1 {
+		clo := clo
+		clo.ListOptions.Page = page
+		commitPage, _, err := g.Client.ListCommits(c.ctx, c.org, c.repo, &clo)
 		if err != nil {
 			return nil, err
 		}
 		commits = append(commits, commitPage...)
-		clo.ListOptions.Page++
 	}
 
 	return commits, nil

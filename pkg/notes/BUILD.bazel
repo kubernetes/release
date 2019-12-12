@@ -20,10 +20,12 @@ go_test(
     name = "go_default_test",
     srcs = [
         "document_test.go",
+        "notes_gatherer_test.go",
         "notes_test.go",
     ],
     embed = [":go_default_library"],
     deps = [
+        "//pkg/notes/notesfakes:go_default_library",
         "@com_github_google_go_github_v28//github:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
         "@org_golang_x_oauth2//:go_default_library",
@@ -39,7 +41,10 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [":package-srcs"],
+    srcs = [
+        ":package-srcs",
+        "//pkg/notes/notesfakes:all-srcs",
+    ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )
