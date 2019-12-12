@@ -18,11 +18,12 @@ package cmd
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/user"
 
 	"cloud.google.com/go/storage"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"k8s.io/release/pkg/release"
@@ -44,6 +45,14 @@ push --nomock --federation --ci
                            - Do a (non-mocked) CI push with federation
 push --bucket=kubernetes-release-$USER
                            - Do a developer push to kubernetes-release-$USER`
+
+const (
+	errInvalidVersion = "invalid build version"
+	errDirtyWithCI    = "dirty build with ci"
+	errUnknownUser    = "unable to determine current user"
+	errConnectGCP     = "unable to authenticate to GCP"
+	errUnknownBucket  = "specified release bucket is unknown"
+)
 
 type pushBuildOptions struct {
 	bucket           string
@@ -131,13 +140,13 @@ func init() {
 	)
 	pushBuildCmd.PersistentFlags().StringVar(
 		&pushBuildOpts.releaseKind,
-		"release-type",
+		"release-kind",
 		"kubernetes",
 		"Kind of release to push to GCS. Supported values are kubernetes (default) or federation",
 	)
 	pushBuildCmd.PersistentFlags().StringVar(
 		&pushBuildOpts.releaseType,
-		"release-kind",
+		"release-type",
 		"devel",
 		"Specify an alternate bucket for pushes (normally 'devel' or 'ci')",
 	)
@@ -152,51 +161,56 @@ func init() {
 }
 
 func runPushBuild(opts *pushBuildOptions) error {
-	log.Println("unimplemented")
-
 	var latest string
 	releaseKind := opts.releaseKind
 
 	// Check if latest build uses bazel
 	dir, err := os.Getwd()
 	if err != nil {
-		log.Fatal(err)
+		logrus.Errorf("Unable to get working directory: %v", err)
+		return err
 	}
 
 	isBazel, err := release.BuiltWithBazel(dir, releaseKind)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Errorf("Unable to identify if release built with Bazel: %v", err)
+		return err
 	}
 
 	if isBazel {
-		log.Println("Using Bazel build version.")
+		logrus.Info("Using Bazel build version")
 		version, err := release.ReadBazelVersion(dir)
 		if err != nil {
-			log.Fatal(err)
+			logrus.Errorf("Unable to read Bazel build version", err)
+			return err
 		}
 		latest = version
 	} else {
-		log.Println("Using Dockerized build version.")
+		logrus.Info("Using Dockerized build version")
 		version, err := release.ReadDockerizedVersion(dir, releaseKind)
 		if err != nil {
-			log.Fatal(err)
+			logrus.Errorf("Unable to read Dockerized build version: %v", err)
+			return err
 		}
 		latest = version
 	}
 
-	log.Println("Found build version: " + latest)
+	logrus.Info("Found build version: " + latest)
 
 	valid, err := release.IsValidReleaseBuild(latest)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Errorf("Unable to determine is release build version is valid: %v", err)
+		return err
 	}
 	if !valid {
-		log.Fatal("build version is not valid for release")
+		logrus.Error("Build version is not valid for release")
+		return errors.New(errInvalidVersion)
 	}
 
 	if opts.ci && release.IsDirtyBuild(latest) {
-		log.Fatal(`Refusing to push dirty build with --ci flag given.\n
-			CI builds should always be performed from clean commits.`)
+		logrus.Error(`Refusing to push dirty build with --ci flag given.\n
+			CI builds should always be performed from clean commits`)
+		return errors.New(errDirtyWithCI)
 	}
 
 	if opts.versionSuffix != "" {
@@ -216,7 +230,8 @@ func runPushBuild(opts *pushBuildOptions) error {
 	if !rootOpts.nomock {
 		u, err := user.Current()
 		if err != nil {
-			log.Fatal(err)
+			logrus.Error("Unable to identify current user")
+			return errors.New(errUnknownUser)
 		}
 
 		releaseBucket += "-" + u.Username
@@ -224,17 +239,20 @@ func runPushBuild(opts *pushBuildOptions) error {
 
 	client, err := storage.NewClient(context.Background())
 	if err != nil {
-		log.Fatalf("error fetching gcloud credentials %s... try running \"gcloud auth application-default login\"", err)
+		logrus.Error("error fetching gcloud credentials %s... try running \"gcloud auth application-default login\"", err)
+		return errors.New(errConnectGCP)
 	}
 
 	bucket := client.Bucket(releaseBucket)
 	if bucket == nil {
-		log.Fatalf("unable to identify specified bucket for artifacts: %s", releaseBucket)
+		logrus.Errorf("unable to identify specified bucket for artifacts: %s", releaseBucket)
+		return errors.New(errUnknownBucket)
 	}
 
 	// Check if bucket exists.
 	if _, err = bucket.Attrs(context.Background()); err != nil {
-		log.Fatal(err)
+		logrus.Error("Unable to find release artifact bucket")
+		return err
 	}
 
 	return nil
