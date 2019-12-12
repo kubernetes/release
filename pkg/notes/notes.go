@@ -238,10 +238,10 @@ func NoteTextFromString(s string) (string, error) {
 	exps := []*regexp.Regexp{
 		// (?s) is needed for '.' to be matching on newlines, by default that's disabled
 		// we need to match ungreedy 'U', because after the notes a `docs` block can occur
-		regexp.MustCompile("(?sU)```release-note\\r\\n(?P<note>.+)\\r\\n```"),
-		regexp.MustCompile("(?sU)```dev-release-note\\r\\n(?P<note>.+)"),
+		regexp.MustCompile("(?sU)```release-note[s]?\\r\\n(?P<note>.+)\\r\\n```"),
+		regexp.MustCompile("(?sU)```dev-release-note[s]?\\r\\n(?P<note>.+)"),
 		regexp.MustCompile("(?sU)```\\r\\n(?P<note>.+)\\r\\n```"),
-		regexp.MustCompile("(?sU)```release-note\n(?P<note>.+)\n```"),
+		regexp.MustCompile("(?sU)```release-note[s]?\n(?P<note>.+)\n```"),
 	}
 
 	for _, exp := range exps {
