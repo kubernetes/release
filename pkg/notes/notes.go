@@ -183,7 +183,12 @@ func (g *Gatherer) ListReleaseNotes(
 	requiredAuthor,
 	relVer string,
 ) (ReleaseNotes, ReleaseNotesHistory, error) {
-	results, err := g.ListCommitsWithNotes(branch, start, end)
+	commits, err := g.ListCommits(branch, start, end)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	results, err := g.ListCommitsWithNotes(commits)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -482,16 +487,9 @@ func (l *commitList) List() []*github.RepositoryCommit {
 // given commit SHA and ending at a given commit SHA. This function is similar
 // to ListCommits except that only commits with tagged release notes are
 // returned.
-func (g *Gatherer) ListCommitsWithNotes(
-	branch,
-	start,
-	end string,
-) (filtered []*Result, err error) {
-	commits, err := g.ListCommits(branch, start, end)
-	if err != nil {
-		return nil, err
-	}
-
+//TODO: This name does not make sense anymore
+//TODO: Why is that method exported?
+func (g *Gatherer) ListCommitsWithNotes(commits []*github.RepositoryCommit) (filtered []*Result, err error) {
 	for i, commit := range commits {
 		logrus.Infof(
 			"[%d/%d - %0.2f%%]: %s",
@@ -501,12 +499,13 @@ func (g *Gatherer) ListCommitsWithNotes(
 
 		prs, err := g.PRsFromCommit(commit)
 		if err != nil {
-			if err.Error() == "no matches found when parsing PR from commit" {
+			if err == errNoPRIDFoundInCommitMessage || err == errNoPRFoundForCommitSHA {
 				logrus.
 					WithField("func", "ListCommitsWithNotes").
 					Debugf("No matches found when parsing PR from commit sha %q", commit.GetSHA())
 				continue
 			}
+			return nil, err
 		}
 
 		for _, pr := range prs {
@@ -578,12 +577,13 @@ func (g *Gatherer) ListCommitsWithNotes(
 				}
 			}
 
-			// Do not test further commmits if the first matched
+			//TODO is this really intentional?
+			// Do not test further PRs for this commmit if the first matched
 			if matched {
 				break
 			}
-		}
-	}
+		} // for range prs
+	} // for range commits
 
 	return filtered, nil
 }
@@ -712,7 +712,7 @@ func (g *Gatherer) prsForCommitFromSHA(sha string) (prs []*github.PullRequest, e
 	}
 
 	if len(prs) == 0 {
-		return nil, errors.Errorf("no pr found for sha %s", sha)
+		return nil, errNoPRFoundForCommitSHA
 	}
 	return prs, nil
 }
@@ -761,7 +761,7 @@ func prsNumForCommitFromMessage(commitMessage string) (prs []int, err error) {
 	}
 
 	if prs == nil {
-		return nil, errors.New("no matches found when parsing PR from commit")
+		return nil, errNoPRIDFoundInCommitMessage
 	}
 
 	return prs, nil
@@ -787,3 +787,6 @@ func prForRegex(regex *regexp.Regexp, commitMessage string) int {
 	}
 	return pr
 }
+
+var errNoPRIDFoundInCommitMessage = errors.New("No PR IDs found in the commit message")
+var errNoPRFoundForCommitSHA = errors.New("No PR found for this commit")

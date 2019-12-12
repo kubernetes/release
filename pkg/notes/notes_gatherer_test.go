@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -204,9 +205,7 @@ func TestListCommits(t *testing.T) {
 
 			checkErrMsg(t, err, tc.expectedErrMsg)
 
-			if a, e := client.GetCommitCallCount(), tc.expectedGetCommitCallCount; a != e {
-				t.Errorf("Expected GetCommits(...) to be called %d times, got called %d times", e, a)
-			}
+			checkCallCount(t, "GetCommits(...)", tc.expectedGetCommitCallCount, client.GetCommitCallCount())
 
 			if min, max, a := tc.expectedListCommitsMinCallCount, tc.expectedListCommitsMaxCallCount, client.ListCommitsCallCount(); a < min || a > max {
 				t.Errorf("Expected ListCommits(...) to be called between %d and %d times, got called %d times", min, max, a)
@@ -229,6 +228,243 @@ func TestListCommits(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestListCommitsWithNotes(t *testing.T) {
+	type getPullRequestStub func(context.Context, string, string, int) (*github.PullRequest, *github.Response, error)
+	type listPullRequestsWithCommitStub func(context.Context, string, string, string, *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error)
+
+	tests := map[string]struct {
+		// listPullRequestsWithCommitStubber is a function that needs to return
+		// another function which can be used as a stand-in for the
+		// ListPullRequestsWithCommit method on the Client.
+		// It can be used to check the arguments ListPullRequestsWithCommit is
+		// called with and to inject faked return data.
+		listPullRequestsWithCommitStubber func(*testing.T) listPullRequestsWithCommitStub
+		// getPullRequestStubber is a function that needs to return another
+		// function which can be used as a stand-in for the GetPullRequest method
+		// on the Client.
+		// It can be used to check the arguments GetPullRequest is
+		// called with and to inject faked return data.
+		getPullRequestStubber func(*testing.T) getPullRequestStub
+
+		// commitList is the list of commits the ListCommitsWithNotes is acting on
+		commitList []*github.RepositoryCommit
+
+		// expectedErrMsg is the error message the method is expected to return
+		expectedErrMsg string
+		// expectedListPullRequestsWithCommitCallCount is the expected call count
+		// of the method ListPullRequestsWithCommit
+		expectedListPullRequestsWithCommitCallCount int
+		// expectedGetPullRequestCallCount is the expected call count of the method
+		// GetPullRequest
+		expectedGetPullRequestCallCount int
+
+		// resultChecker is a function which gets called with the result of
+		// ListCommitsWithNotes, giving users the option to validate the returned
+		// data
+		resultsChecker func(*testing.T, []*notes.Result)
+	}{
+		"empty commit list": {
+			// Does not call anything
+		},
+		"when no PR number can be parsed from the commit message, we try to get a PR by SHA": {
+			commitList: []*github.RepositoryCommit{
+				repoCommit("some-random-sha", "some-random-commit-msg"),
+			},
+			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {
+				return func(_ context.Context, org, repo, sha string, _ *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+					checkOrgRepo(t, "kubernetes", "kubernetes", org, repo)
+					if e, a := "some-random-sha", sha; e != a {
+						t.Errorf("Expected ListPullRequestsWithCommit(...) to be called for SHA '%s', have been called for '%s'", e, a)
+					}
+					return nil, &github.Response{}, nil
+				}
+			},
+			expectedListPullRequestsWithCommitCallCount: 1,
+		},
+		"when commit messages hold PR numbers, we use those and don't query to get a list of PRs for a SHA": {
+			commitList: []*github.RepositoryCommit{
+				repoCommit("123", "there is the message Merge pull request #123 somewhere in the middle"),
+				repoCommit("124", "some automated-cherry-pick-of-#124 can be found too"),
+				repoCommit("125", "and lastly in parens (#125) yeah"),
+				repoCommit("126", `all three together
+					some Merge pull request #126 and
+					another automated-cherry-pick-of-#127 with
+					a thing (#128) in parens`),
+			},
+			getPullRequestStubber: func(t *testing.T) getPullRequestStub {
+				toBeSeenPRs := &toBeSeenInts{toBeSeen: map[int]bool{123: false, 124: false, 125: false, 126: false, 127: false, 128: false}}
+
+				return func(_ context.Context, org, repo string, prID int) (*github.PullRequest, *github.Response, error) {
+					checkOrgRepo(t, "kubernetes", "kubernetes", org, repo)
+					if err := toBeSeenPRs.Seen(prID); err != nil {
+						t.Errorf("In GetPullRequest: %w", err)
+					}
+					return nil, nil, nil
+				}
+			},
+			expectedGetPullRequestCallCount: 6,
+		},
+		"when GetPullRequest(...) returns an error": {
+			commitList: []*github.RepositoryCommit{repoCommit("some-sha", "some #123 thing")},
+			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {
+				return func(_ context.Context, _, _, _ string, _ *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+					return nil, nil, fmt.Errorf("some-error-from-get-pull-request")
+				}
+			},
+			expectedListPullRequestsWithCommitCallCount: 1,
+			expectedErrMsg: "some-error-from-get-pull-request",
+		},
+		"when ListPullRequestsWithCommit(...) returns an error": {
+			commitList: []*github.RepositoryCommit{repoCommit("some-sha", "some-msg")},
+			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {
+				return func(_ context.Context, _, _, _ string, _ *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+					return nil, nil, fmt.Errorf("some-error-from-list-pull-requests-with-commit")
+				}
+			},
+			expectedListPullRequestsWithCommitCallCount: 1,
+			expectedErrMsg: "some-error-from-list-pull-requests-with-commit",
+		},
+		"when we get PRs they get filtered based on the content of the PR body": {
+			commitList: manyRepoCommits(20),
+			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {
+				prsPerCall := [][]*github.PullRequest{
+					// explicitly excluded
+					{pullRequest(1, "something ```release-note N/a``` something")},
+					{pullRequest(2, "something ```release-note Na``` something")},
+					{pullRequest(3, "something ```release-note None ``` something")},
+					{pullRequest(4, "something ```release-note 'None' ``` something")},
+					{pullRequest(5, "something /release-note-none something")},
+					// explicitly included
+					{pullRequest(6, "something release-note something")},
+					{pullRequest(7, "something Does this PR introduce a user-facing change something")},
+					// multiple PRs
+					{ // first does no match, second one matches, rest is ignored
+						pullRequest(8, ""),
+						pullRequest(9, " Does this PR introduce a user-facing change"),
+						pullRequest(10, "does-not-matter--is-not-considered"),
+					},
+					// some other strange things
+					{pullRequest(11, "Does this PR introduce a user-facing chang")}, // matches despite the missing 'e'
+					{pullRequest(12, "release-note /release-note-none")},            // excluded, the exclusion filters take precedence
+					{pullRequest(13, "```release-note NAAAAAAAAAA```")},             // included, does not match the N/A filter, but the 'release-note' check
+					{pullRequest(14, "```release-note none something ```")},         // included, does not match the N/A filter, but the 'release-note' check
+					{pullRequest(15, "release-noteNOOOO")},                          // included
+				}
+				callCount := -1
+
+				return func(_ context.Context, _, _, _ string, _ *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+					callCount += 1
+					if a, e := callCount+1, len(prsPerCall); a > e {
+						return nil, &github.Response{}, nil
+					}
+					return prsPerCall[callCount], &github.Response{}, nil
+				}
+			},
+			expectedListPullRequestsWithCommitCallCount: 20,
+			resultsChecker: func(t *testing.T, results []*notes.Result) {
+				// there is not much we can check on the Result, as all the fields are
+				// unexported
+				expectedResultSize := 7
+				if e, a := expectedResultSize, len(results); e != a {
+					t.Errorf("Expected the result to be of size %d, got %d", e, a)
+				}
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			tc := tc
+			t.Parallel()
+
+			client := &notesfakes.FakeClient{}
+
+			gatherer := &notes.Gatherer{
+				Client: client,
+			}
+
+			if stubber := tc.listPullRequestsWithCommitStubber; stubber != nil {
+				client.ListPullRequestsWithCommitStub = stubber(t)
+			}
+			if stubber := tc.getPullRequestStubber; stubber != nil {
+				client.GetPullRequestStub = stubber(t)
+			}
+
+			results, err := gatherer.ListCommitsWithNotes(tc.commitList)
+
+			checkErrMsg(t, err, tc.expectedErrMsg)
+
+			if checker := tc.resultsChecker; checker != nil {
+				checker(t, results)
+			}
+
+			checkCallCount(t, "ListPullRequestsWithCommit(...)",
+				tc.expectedListPullRequestsWithCommitCallCount, client.ListPullRequestsWithCommitCallCount(),
+			)
+			checkCallCount(t, "GetPullRequest(...)",
+				tc.expectedGetPullRequestCallCount, client.GetPullRequestCallCount(),
+			)
+		})
+	}
+}
+
+func pullRequest(id int, msg string) *github.PullRequest {
+	return &github.PullRequest{
+		Body:   strPtr(msg),
+		Number: intPtr(id),
+	}
+}
+
+func manyRepoCommits(nr int) []*github.RepositoryCommit {
+	cs := make([]*github.RepositoryCommit, nr)
+
+	for i := 1; i <= nr; i += 1 {
+		cs[i-1] = repoCommit(fmt.Sprintf("commit-%d", i), fmt.Sprintf("commit-msg-%d", i))
+	}
+
+	return cs
+}
+
+func repoCommit(sha, commitMsg string) *github.RepositoryCommit {
+	return &github.RepositoryCommit{
+		SHA: strPtr(sha),
+		Commit: &github.Commit{
+			Message: strPtr(commitMsg),
+		},
+	}
+}
+
+type toBeSeenInts struct {
+	sync.Mutex
+	toBeSeen map[int]bool
+}
+
+func (s *toBeSeenInts) Seen(what int) error {
+	s.Lock()
+	defer s.Unlock()
+
+	seen, ok := s.toBeSeen[what]
+	if !ok {
+		return fmt.Errorf("Expected not to get a request for %d", what)
+	}
+	if seen {
+		return fmt.Errorf("Element %d has already been toBeSeen", what)
+	}
+	s.toBeSeen[what] = true
+	return nil
+}
+
+func intPtr(i int) *int       { return &i }
+func strPtr(s string) *string { return &s }
+
+func checkCallCount(t *testing.T, what string, expected, actual int) {
+	t.Helper()
+
+	if expected != actual {
+		t.Errorf("Expected %s to be called %d times, got called %d times", what, expected, actual)
 	}
 }
 
