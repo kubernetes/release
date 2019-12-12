@@ -483,6 +483,46 @@ func (l *commitList) List() []*github.RepositoryCommit {
 	return l.list
 }
 
+// noteExclusionFilters is a list of regular expressions that match commits
+// that do NOT contain release notes. Notably, this is all of the variations of
+// "release note none" that appear in the commit log.
+var noteExclusionFilters = []*regexp.Regexp{
+	// 'none','n/a','na' case insensitive with optional trailing
+	// whitespace, wrapped in ``` with/without release-note identifier
+	// the 'none','n/a','na' can also optionally be wrapped in quotes ' or "
+	regexp.MustCompile("(?i)```(release-note[s]?\\s*)?('|\")?(none|n/a|na)?('|\")?\\s*```"),
+
+	// This filter is too aggressive within the PR body and picks up matches unrelated to release notes
+	// 'none' or 'n/a' case insensitive wrapped optionally with whitespace
+	// regexp.MustCompile("(?i)\\s*(none|n/a)\\s*"),
+
+	// simple '/release-note-none' tag
+	regexp.MustCompile("/release-note-none"),
+}
+
+// Similarly, now that the known not-release-notes are filtered out, we can
+// use some patterns to find actual release notes.
+var noteInclusionFilters = []*regexp.Regexp{
+	regexp.MustCompile("release-note"),
+	regexp.MustCompile("Does this PR introduce a user-facing change?"),
+}
+
+func matchesFilter(msg string, filters []*regexp.Regexp) *regexp.Regexp {
+	for _, filter := range filters {
+		if filter.MatchString(msg) {
+			return filter
+		}
+	}
+	return nil
+}
+
+func matchesExcludeFilter(msg string) *regexp.Regexp {
+	return matchesFilter(msg, noteExclusionFilters)
+}
+func matchesIncludeFilter(msg string) *regexp.Regexp {
+	return matchesFilter(msg, noteInclusionFilters)
+}
+
 // ListCommitsWithNotes list commits that have release notes starting from a
 // given commit SHA and ending at a given commit SHA. This function is similar
 // to ListCommits except that only commits with tagged release notes are
@@ -509,79 +549,35 @@ func (g *Gatherer) ListCommitsWithNotes(commits []*github.RepositoryCommit) (fil
 		}
 
 		for _, pr := range prs {
+			prBody := pr.GetBody()
+
 			logrus.
 				WithField("func", "ListCommitsWithNotes").
 				WithField("pr no", pr.GetNumber()).
 				WithField("pr body", pr.GetBody()).
 				Debugf("Obtaining PR associated with commit sha %q", commit.GetSHA())
 
-			// exclusionFilters is a list of regular expressions that match commits that
-			// do NOT contain release notes. Notably, this is all of the variations of
-			// "release note none" that appear in the commit log.
-			exclusionFilters := []string{
-
-				// 'none','n/a','na' case insensitive with optional trailing
-				// whitespace, wrapped in ``` with/without release-note identifier
-				// the 'none','n/a','na' can also optionally be wrapped in quotes ' or "
-				"(?i)```(release-note[s]?\\s*)?('|\")?(none|n/a|na)?('|\")?\\s*```",
-
-				// This filter is too aggressive within the PR body and picks up matches unrelated to release notes
-				// 'none' or 'n/a' case insensitive wrapped optionally with whitespace
-				// "(?i)\\s*(none|n/a)\\s*",
-
-				// simple '/release-note-none' tag
-				"/release-note-none",
-			}
-
-			excluded := false
-
-			for _, filter := range exclusionFilters {
-				match, err := regexp.MatchString(filter, pr.GetBody())
-				if err != nil {
-					return nil, err
-				}
-				if match {
-					excluded = true
-					logrus.
-						WithField("func", "ListCommitsWithNotes").
-						WithField("filter", filter).
-						Debug("Excluding notes for PR based on the exclusion filter.")
-					break
-				}
-			}
-
-			if excluded {
+			if re := matchesExcludeFilter(prBody); re != nil {
+				logrus.
+					WithField("func", "ListCommitsWithNotes").
+					WithField("filter", re.String()).
+					Debug("Excluding notes for PR based on the exclusion filter.")
+				// try next PR
 				continue
 			}
 
-			// Similarly, now that the known not-release-notes are filtered out, we can
-			// use some patterns to find actual release notes.
-			inclusionFilters := []string{
-				"release-note",
-				"Does this PR introduce a user-facing change?",
-			}
+			if re := matchesIncludeFilter(prBody); re != nil {
+				filtered = append(filtered, &Result{commit: commit, pullRequest: pr})
+				logrus.
+					WithField("func", "ListCommitsWithNotes").
+					WithField("filter", re.String()).
+					Debug("Including notes for PR based on the inclusion filter.")
 
-			matched := false
-			for _, filter := range inclusionFilters {
-				match, err := regexp.MatchString(filter, pr.GetBody())
-				if err != nil {
-					return nil, err
-				}
-				if match {
-					matched = true
-					filtered = append(filtered, &Result{commit: commit, pullRequest: pr})
-					logrus.
-						WithField("func", "ListCommitsWithNotes").
-						WithField("filter", filter).
-						Debug("Including notes for PR based on the inclusion filter.")
-				}
-			}
-
-			//TODO is this really intentional?
-			// Do not test further PRs for this commmit if the first matched
-			if matched {
+				//TODO is this really intentional?
+				// Do not test further PRs for this commmit as soon as one PR matched
 				break
 			}
+
 		} // for range prs
 	} // for range commits
 
