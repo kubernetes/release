@@ -19,12 +19,12 @@ package cmd
 import (
 	"fmt"
 
-	kgit "k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/util"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	kgit "k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/util"
 )
 
 type ffOptions struct {

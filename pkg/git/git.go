@@ -24,8 +24,6 @@ import (
 	"regexp"
 	"strings"
 
-	"k8s.io/release/pkg/command"
-
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -35,6 +33,8 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
+
+	"k8s.io/release/pkg/command"
 )
 
 const (
