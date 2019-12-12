@@ -2641,3 +2641,11 @@ def go_repositories():
         sum = "h1:1Jwdf9jSfDl9NVmt8ndHqbTZ7XCCPbh1jI3hkDBHVYA=",
         version = "v1.2.0",
     )
+    go_repository(
+        name = "com_github_nozzle_throttler",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/nozzle/throttler",
+        sum = "h1:Up6+btDp321ZG5/zdSLo48H9Iaq0UQGthrhWC6pCxzE=",
+        version = "v0.0.0-20180817012639-2ea982251481",
+    )

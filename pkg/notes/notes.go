@@ -24,10 +24,18 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/google/go-github/v28/github"
+	"github.com/nozzle/throttler"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	// maxParallelRequests is the maximum parallel requests we shall make to the
+	// GitHub API
+	maxParallelRequests = 20
 )
 
 // ReleaseNote is the type that represents the total sum of all the information
@@ -400,6 +408,16 @@ func (g *Gatherer) ListCommits(branch, start, end string) ([]*github.RepositoryC
 		return nil, err
 	}
 
+	allCommits := &commitList{}
+
+	worker := func(cl *commitList, clo *github.CommitsListOptions) (*github.Response, error) {
+		c, resp, err := g.Client.ListCommits(c.ctx, c.org, c.repo, clo)
+		if err == nil {
+			cl.Add(c)
+		}
+		return resp, err
+	}
+
 	clo := github.CommitsListOptions{
 		SHA:   c.branch,
 		Since: *startCommit.Committer.Date,
@@ -410,22 +428,49 @@ func (g *Gatherer) ListCommits(branch, start, end string) ([]*github.RepositoryC
 		},
 	}
 
-	commits, resp, err := g.Client.ListCommits(c.ctx, c.org, c.repo, &clo)
+	resp, err := worker(allCommits, &clo)
 	if err != nil {
 		return nil, err
 	}
 
-	for page := 2; page <= resp.LastPage; page += 1 {
+	t := throttler.New(maxParallelRequests, resp.LastPage-1)
+	for page := 2; page <= resp.LastPage; page++ {
 		clo := clo
 		clo.ListOptions.Page = page
-		commitPage, _, err := g.Client.ListCommits(c.ctx, c.org, c.repo, &clo)
-		if err != nil {
-			return nil, err
+
+		go func() {
+			_, err := worker(allCommits, &clo)
+			t.Done(err)
+		}()
+
+		// abort all, if we got one error
+		if t.Throttle() > 0 {
+			break
 		}
-		commits = append(commits, commitPage...)
 	}
 
-	return commits, nil
+	if err := t.Err(); err != nil {
+		return nil, err
+	}
+
+	return allCommits.List(), nil
+}
+
+type commitList struct {
+	sync.RWMutex
+	list []*github.RepositoryCommit
+}
+
+func (l *commitList) Add(c []*github.RepositoryCommit) {
+	l.Lock()
+	defer l.Unlock()
+	l.list = append(l.list, c...)
+}
+
+func (l *commitList) List() []*github.RepositoryCommit {
+	l.RLock()
+	defer l.RUnlock()
+	return l.list
 }
 
 // ListCommitsWithNotes list commits that have release notes starting from a
