@@ -46,14 +46,6 @@ push --nomock --federation --ci
 push --bucket=kubernetes-release-$USER
                            - Do a developer push to kubernetes-release-$USER`
 
-const (
-	errInvalidVersion = "invalid build version"
-	errDirtyWithCI    = "dirty build with ci"
-	errUnknownUser    = "unable to determine current user"
-	errConnectGCP     = "unable to authenticate to GCP"
-	errUnknownBucket  = "specified release bucket is unknown"
-)
-
 type pushBuildOptions struct {
 	bucket           string
 	dockerRegistry   string
@@ -167,50 +159,43 @@ func runPushBuild(opts *pushBuildOptions) error {
 	// Check if latest build uses bazel
 	dir, err := os.Getwd()
 	if err != nil {
-		logrus.Errorf("Unable to get working directory: %v", err)
-		return err
+		return errors.Wrapf(err, "Unable to get working directory: %v")
 	}
 
 	isBazel, err := release.BuiltWithBazel(dir, releaseKind)
 	if err != nil {
-		logrus.Errorf("Unable to identify if release built with Bazel: %v", err)
-		return err
+		return errors.Wrapf(err, "Unable to identify if release built with Bazel: %v")
 	}
 
 	if isBazel {
 		logrus.Info("Using Bazel build version")
 		version, err := release.ReadBazelVersion(dir)
 		if err != nil {
-			logrus.Errorf("Unable to read Bazel build version", err)
-			return err
+			return errors.Wrapf(err, "Unable to read Bazel build version: %v")
 		}
 		latest = version
 	} else {
 		logrus.Info("Using Dockerized build version")
 		version, err := release.ReadDockerizedVersion(dir, releaseKind)
 		if err != nil {
-			logrus.Errorf("Unable to read Dockerized build version: %v", err)
-			return err
+			return errors.Wrapf(err, "Unable to read Dockerized build version: %v")
 		}
 		latest = version
 	}
 
-	logrus.Info("Found build version: " + latest)
+	logrus.Infof("Found build version: %s", latest)
 
 	valid, err := release.IsValidReleaseBuild(latest)
 	if err != nil {
-		logrus.Errorf("Unable to determine is release build version is valid: %v", err)
-		return err
+		return errors.Wrapf(err, "Unable to determine if release build version is valid: %v")
 	}
 	if !valid {
-		logrus.Error("Build version is not valid for release")
-		return errors.New(errInvalidVersion)
+		return errors.Errorf("Build version %s is not valid for release", latest)
 	}
 
 	if opts.ci && release.IsDirtyBuild(latest) {
-		logrus.Error(`Refusing to push dirty build with --ci flag given.\n
+		return errors.New(`Refusing to push dirty build with --ci flag given.\n
 			CI builds should always be performed from clean commits`)
-		return errors.New(errDirtyWithCI)
 	}
 
 	if opts.versionSuffix != "" {
@@ -230,8 +215,7 @@ func runPushBuild(opts *pushBuildOptions) error {
 	if !rootOpts.nomock {
 		u, err := user.Current()
 		if err != nil {
-			logrus.Error("Unable to identify current user")
-			return errors.New(errUnknownUser)
+			return errors.Wrapf(err, "Unable to identify current user: %v")
 		}
 
 		releaseBucket += "-" + u.Username
@@ -239,20 +223,17 @@ func runPushBuild(opts *pushBuildOptions) error {
 
 	client, err := storage.NewClient(context.Background())
 	if err != nil {
-		logrus.Error("error fetching gcloud credentials %s... try running \"gcloud auth application-default login\"", err)
-		return errors.New(errConnectGCP)
+		return errors.Wrapf(err, "error fetching gcloud credentials %v... try running \"gcloud auth application-default login\"")
 	}
 
 	bucket := client.Bucket(releaseBucket)
 	if bucket == nil {
-		logrus.Errorf("unable to identify specified bucket for artifacts: %s", releaseBucket)
-		return errors.New(errUnknownBucket)
+		return errors.Errorf("unable to identify specified bucket for artifacts: %s", releaseBucket)
 	}
 
 	// Check if bucket exists.
 	if _, err = bucket.Attrs(context.Background()); err != nil {
-		logrus.Error("Unable to find release artifact bucket")
-		return err
+		return errors.Wrapf(err, "Unable to find release artifact bucket: %v")
 	}
 
 	return nil
