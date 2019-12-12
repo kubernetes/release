@@ -159,26 +159,26 @@ func runPushBuild(opts *pushBuildOptions) error {
 	// Check if latest build uses bazel
 	dir, err := os.Getwd()
 	if err != nil {
-		return errors.Wrapf(err, "Unable to get working directory: %v")
+		return errors.Wrap(err, "Unable to get working directory")
 	}
 
 	isBazel, err := release.BuiltWithBazel(dir, releaseKind)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to identify if release built with Bazel: %v")
+		return errors.Wrap(err, "Unable to identify if release built with Bazel")
 	}
 
 	if isBazel {
 		logrus.Info("Using Bazel build version")
 		version, err := release.ReadBazelVersion(dir)
 		if err != nil {
-			return errors.Wrapf(err, "Unable to read Bazel build version: %v")
+			return errors.Wrap(err, "Unable to read Bazel build version")
 		}
 		latest = version
 	} else {
 		logrus.Info("Using Dockerized build version")
 		version, err := release.ReadDockerizedVersion(dir, releaseKind)
 		if err != nil {
-			return errors.Wrapf(err, "Unable to read Dockerized build version: %v")
+			return errors.Wrap(err, "Unable to read Dockerized build version")
 		}
 		latest = version
 	}
@@ -187,7 +187,7 @@ func runPushBuild(opts *pushBuildOptions) error {
 
 	valid, err := release.IsValidReleaseBuild(latest)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to determine if release build version is valid: %v")
+		return errors.Wrap(err, "Unable to determine if release build version is valid")
 	}
 	if !valid {
 		return errors.Errorf("Build version %s is not valid for release", latest)
@@ -215,7 +215,7 @@ func runPushBuild(opts *pushBuildOptions) error {
 	if !rootOpts.nomock {
 		u, err := user.Current()
 		if err != nil {
-			return errors.Wrapf(err, "Unable to identify current user: %v")
+			return errors.Wrap(err, "Unable to identify current user")
 		}
 
 		releaseBucket += "-" + u.Username
@@ -223,7 +223,7 @@ func runPushBuild(opts *pushBuildOptions) error {
 
 	client, err := storage.NewClient(context.Background())
 	if err != nil {
-		return errors.Wrapf(err, "error fetching gcloud credentials %v... try running \"gcloud auth application-default login\"")
+		return errors.Wrap(err, "error fetching gcloud credentials... try running \"gcloud auth application-default login\"")
 	}
 
 	bucket := client.Bucket(releaseBucket)
@@ -233,7 +233,7 @@ func runPushBuild(opts *pushBuildOptions) error {
 
 	// Check if bucket exists.
 	if _, err = bucket.Attrs(context.Background()); err != nil {
-		return errors.Wrapf(err, "Unable to find release artifact bucket: %v")
+		return errors.Wrap(err, "Unable to find release artifact bucket")
 	}
 
 	return nil
