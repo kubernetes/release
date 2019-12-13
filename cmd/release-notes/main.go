@@ -19,15 +19,16 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strconv"
+	"path/filepath"
+	"strings"
 
 	"github.com/google/go-github/v28/github"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 
 	"k8s.io/release/pkg/git"
@@ -54,33 +55,43 @@ type options struct {
 	releaseTars    string
 }
 
+var opts = &options{}
+
 const (
 	revisionDiscoveryModeNONE          = "none"
 	revisionDiscoveryModeMinorToLatest = "minor-to-latest"
 )
 
-func (o *options) BindFlags() *flag.FlagSet {
-	flags := flag.NewFlagSet("release-notes", flag.ContinueOnError)
+var cmd = &cobra.Command{
+	Short:         "release-notes - The Kubernetes Release Notes Generator",
+	Use:           "release-notes",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	PreRunE:       validateOptions,
+	RunE:          run,
+}
+
+func init() {
 	// githubToken contains a personal GitHub access token. This is used to
 	// scrape the commits of the Kubernetes repo.
-	flags.StringVar(
-		&o.githubToken,
+	cmd.PersistentFlags().StringVar(
+		&opts.githubToken,
 		"github-token",
 		envDefault("GITHUB_TOKEN", ""),
 		"A personal GitHub access token (required)",
 	)
 
 	// githubOrg contains name of github organization that holds the repo to scrape.
-	flags.StringVar(
-		&o.githubOrg,
+	cmd.PersistentFlags().StringVar(
+		&opts.githubOrg,
 		"github-org",
 		envDefault("GITHUB_ORG", "kubernetes"),
 		"Name of github organization",
 	)
 
 	// githubRepo contains name of github repository to scrape.
-	flags.StringVar(
-		&o.githubRepo,
+	cmd.PersistentFlags().StringVar(
+		&opts.githubRepo,
 		"github-repo",
 		envDefault("GITHUB_REPO", "kubernetes"),
 		"Name of github repository",
@@ -88,16 +99,16 @@ func (o *options) BindFlags() *flag.FlagSet {
 
 	// output contains the path on the filesystem to where the resultant
 	// release notes should be printed.
-	flags.StringVar(
-		&o.output,
+	cmd.PersistentFlags().StringVar(
+		&opts.output,
 		"output",
 		envDefault("OUTPUT", ""),
 		"The path to the where the release notes will be printed",
 	)
 
 	// branch is which branch to scrape.
-	flags.StringVar(
-		&o.branch,
+	cmd.PersistentFlags().StringVar(
+		&opts.branch,
 		"branch",
 		envDefault("BRANCH", "master"),
 		"Select which branch to scrape. Defaults to `master`",
@@ -105,16 +116,16 @@ func (o *options) BindFlags() *flag.FlagSet {
 
 	// startSHA contains the commit SHA where the release note generation
 	// begins.
-	flags.StringVar(
-		&o.startSHA,
+	cmd.PersistentFlags().StringVar(
+		&opts.startSHA,
 		"start-sha",
 		envDefault("START_SHA", ""),
 		"The commit hash to start at",
 	)
 
 	// endSHA contains the commit SHA where the release note generation ends.
-	flags.StringVar(
-		&o.endSHA,
+	cmd.PersistentFlags().StringVar(
+		&opts.endSHA,
 		"end-sha",
 		envDefault("END_SHA", ""),
 		"The commit hash to end at",
@@ -122,8 +133,8 @@ func (o *options) BindFlags() *flag.FlagSet {
 
 	// startRev contains any valid git object where the release note generation
 	// begins. Can be used as alternative to start-sha.
-	flags.StringVar(
-		&o.startRev,
+	cmd.PersistentFlags().StringVar(
+		&opts.startRev,
 		"start-rev",
 		envDefault("START_REV", ""),
 		"The git revision to start at. Can be used as alternative to start-sha.",
@@ -131,8 +142,8 @@ func (o *options) BindFlags() *flag.FlagSet {
 
 	// endRev contains any valid git object where the release note generation
 	// ends. Can be used as alternative to start-sha.
-	flags.StringVar(
-		&o.endRev,
+	cmd.PersistentFlags().StringVar(
+		&opts.endRev,
 		"end-rev",
 		envDefault("END_REV", ""),
 		"The git revision to end at. Can be used as alternative to end-sha.",
@@ -140,68 +151,68 @@ func (o *options) BindFlags() *flag.FlagSet {
 
 	// repoPath contains the path to a local Kubernetes repository to avoid the
 	// delay during git clone
-	flags.StringVar(
-		&o.repoPath,
+	cmd.PersistentFlags().StringVar(
+		&opts.repoPath,
 		"repo-path",
-		envDefault("REPO_PATH", ""),
-		"Path to a the local Kubernetes repository",
+		envDefault("REPO_PATH", filepath.Join(os.TempDir(), "k8s-repo")),
+		"Path to a local Kubernetes repository, used only for tag discovery.",
 	)
 
 	// releaseVersion is the version number you want to tag the notes with.
-	flags.StringVar(
-		&o.releaseVersion,
+	cmd.PersistentFlags().StringVar(
+		&opts.releaseVersion,
 		"release-version",
 		envDefault("RELEASE_VERSION", ""),
 		"Which release version to tag the entries as.",
 	)
 
 	// format is the output format to produce the notes in.
-	flags.StringVar(
-		&o.format,
+	cmd.PersistentFlags().StringVar(
+		&opts.format,
 		"format",
 		envDefault("FORMAT", "markdown"),
 		"The format for notes output (options: markdown, json)",
 	)
 
-	flags.StringVar(
-		&o.requiredAuthor,
+	cmd.PersistentFlags().StringVar(
+		&opts.requiredAuthor,
 		"requiredAuthor",
 		envDefault("REQUIRED_AUTHOR", "k8s-ci-robot"),
 		"Only commits from this GitHub user are considered. Set to empty string to include all users",
 	)
 
-	debug, _ := strconv.ParseBool(envDefault("DEBUG", "false")) // nolint: errcheck
-	flags.BoolVar(
-		&o.debug,
+	cmd.PersistentFlags().BoolVar(
+		&opts.debug,
 		"debug",
-		debug,
+		isEnvSet("DEBUG"),
 		"Enable debug logging",
 	)
 
-	flags.StringVar(
-		&o.discoverMode,
+	cmd.PersistentFlags().StringVar(
+		&opts.discoverMode,
 		"discover",
 		envDefault("DISCOVER", revisionDiscoveryModeNONE),
-		fmt.Sprintf("The revision discovery mode for automatic revision retrieval (options: %s, %s)",
-			revisionDiscoveryModeNONE,
-			revisionDiscoveryModeMinorToLatest),
+		fmt.Sprintf("The revision discovery mode for automatic revision retrieval (options: %s)",
+			strings.Join([]string{
+				revisionDiscoveryModeNONE,
+				revisionDiscoveryModeMinorToLatest,
+			}, ", "),
+		),
 	)
 
-	flags.StringVar(
-		&o.releaseBucket,
+	cmd.PersistentFlags().StringVar(
+		&opts.releaseBucket,
 		"release-bucket",
 		envDefault("RELEASE_BUCKET", "kubernetes-release"),
 		"Specify gs bucket to point to in generated notes",
 	)
 
-	flags.StringVar(
-		&o.releaseTars,
+	cmd.PersistentFlags().StringVar(
+		&opts.releaseTars,
 		"release-tars",
 		envDefault("RELEASE_TARS", ""),
 		"Directory of tars to sha512 sum for display",
 	)
-
-	return flags
 }
 
 func envDefault(key, def string) string {
@@ -212,60 +223,61 @@ func envDefault(key, def string) string {
 	return value
 }
 
-func (o *options) GetReleaseNotes() (notes.ReleaseNotes, notes.ReleaseNotesHistory, error) {
+func isEnvSet(key string) bool {
+	_, ok := os.LookupEnv(key)
+	return ok
+}
+
+func GetReleaseNotes() (notes.ReleaseNotes, notes.ReleaseNotesHistory, error) {
 	// Create the GitHub API client
 	ctx := context.Background()
 	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: o.githubToken},
+		&oauth2.Token{AccessToken: opts.githubToken},
 	))
 	githubClient := github.NewClient(httpClient)
 
 	// Fetch a list of fully-contextualized release notes
-	logrus.Info("fetching all commits. this might take a while...")
+	logrus.Info("fetching all commits. This might take a while...")
 
-	opts := []notes.GitHubAPIOption{notes.WithContext(ctx)}
-	if o.githubOrg != "" {
-		opts = append(opts, notes.WithOrg(o.githubOrg))
+	apiOptions := []notes.GitHubAPIOption{notes.WithContext(ctx)}
+	if opts.githubOrg != "" {
+		apiOptions = append(apiOptions, notes.WithOrg(opts.githubOrg))
 	}
-	if o.githubRepo != "" {
-		opts = append(opts, notes.WithRepo(o.githubRepo))
+	if opts.githubRepo != "" {
+		apiOptions = append(apiOptions, notes.WithRepo(opts.githubRepo))
 	}
 
 	releaseNotes, history, err := notes.ListReleaseNotes(
-		githubClient, o.branch, o.startSHA, o.endSHA,
-		o.requiredAuthor, o.releaseVersion, opts...)
+		githubClient, opts.branch, opts.startSHA, opts.endSHA,
+		opts.requiredAuthor, opts.releaseVersion, apiOptions...)
 	if err != nil {
-		logrus.Errorf("generating release notes: %v", err)
-		return nil, nil, err
+		return nil, nil, errors.Wrapf(err, "listing release notes")
 	}
 
 	return releaseNotes, history, nil
 }
 
-func (o *options) WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNotesHistory) error {
+func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNotesHistory) (err error) {
 	logrus.Info("got the commits, performing rendering")
 
 	// Open a handle to the file which will contain the release notes output
 	var output *os.File
-	var err error
 	var existingNotes notes.ReleaseNotes
 
-	if o.output != "" {
-		output, err = os.OpenFile(o.output, os.O_RDWR|os.O_CREATE, 0644)
+	if opts.output != "" {
+		output, err = os.OpenFile(opts.output, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
-			logrus.Errorf("opening the supplied output file: %v", err)
-			return err
+			return errors.Wrapf(err, "opening the supplied output file")
 		}
 	} else {
 		output, err = ioutil.TempFile("", "release-notes-")
 		if err != nil {
-			logrus.Errorf("creating a temporary file to write the release notes to: %v", err)
-			return err
+			return errors.Wrapf(err, "creating a temporary file to write the release notes to")
 		}
 	}
 
 	// Contextualized release notes can be printed in a variety of formats
-	switch o.format {
+	switch opts.format {
 	case "json":
 		byteValue, err := ioutil.ReadAll(output)
 		if err != nil {
@@ -274,8 +286,7 @@ func (o *options) WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history not
 
 		if len(byteValue) > 0 {
 			if err := json.Unmarshal(byteValue, &existingNotes); err != nil {
-				logrus.Errorf("unmarshalling existing notes: %v", err)
-				return err
+				return errors.Wrapf(err, "unmarshalling existing notes")
 			}
 		}
 
@@ -298,48 +309,36 @@ func (o *options) WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history not
 		enc := json.NewEncoder(output)
 		enc.SetIndent("", "  ")
 		if err := enc.Encode(releaseNotes); err != nil {
-			logrus.Errorf("encoding JSON output: %v", err)
-			os.Exit(1)
+			return errors.Wrapf(err, "encoding JSON output")
 		}
 	case "markdown":
 		doc, err := notes.CreateDocument(releaseNotes, history)
 		if err != nil {
-			logrus.Errorf("creating release note document: %v", err)
-			return err
+			return errors.Wrapf(err, "creating release note document")
 		}
 
 		if err := notes.RenderMarkdown(
-			output, doc, o.releaseBucket, o.releaseTars, o.startRev, o.endRev,
+			output, doc, opts.releaseBucket,
+			opts.releaseTars, opts.startRev, opts.endRev,
 		); err != nil {
-			logrus.Errorf("rendering release note document to markdown: %v", err)
-			return err
+			return errors.Wrapf(err, "rendering release note document to markdown")
 		}
 
 	default:
-		errString := fmt.Sprintf("%q is an unsupported format", o.format)
-		logrus.Error(errString)
-		return errors.New(errString)
+		return errors.Errorf("%q is an unsupported format", opts.format)
 	}
 
 	logrus.
 		WithField("path", output.Name()).
-		WithField("format", o.format).
+		WithField("format", opts.format).
 		Info("release notes written to file")
 	return nil
 }
 
-func parseOptions(args []string) (*options, error) {
-	opts := &options{}
-	flags := opts.BindFlags()
-
-	// Parse the args.
-	if err := flags.Parse(args); err != nil {
-		return nil, err
-	}
-
+func validateOptions(*cobra.Command, []string) error {
 	// The GitHub Token is required.
 	if opts.githubToken == "" {
-		return nil, errors.New("GitHub token must be set via -github-token or $GITHUB_TOKEN")
+		return errors.New("GitHub token must be set via -github-token or $GITHUB_TOKEN")
 	}
 
 	// Check if we want to automatically discover the revisions
@@ -351,11 +350,11 @@ func parseOptions(args []string) (*options, error) {
 			false,
 		)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		start, end, err := repo.LatestNonPatchFinalToLatest()
 		if err != nil {
-			return nil, err
+			return err
 		}
 		opts.startSHA = start
 		opts.endSHA = end
@@ -365,12 +364,12 @@ func parseOptions(args []string) (*options, error) {
 
 	// The start SHA is required.
 	if opts.startSHA == "" && opts.startRev == "" {
-		return nil, errors.New("the starting commit hash must be set via -start-sha, $START_SHA, -start-rev or $START_REV")
+		return errors.New("the starting commit hash must be set via -start-sha, $START_SHA, -start-rev or $START_REV")
 	}
 
 	// The end SHA is required.
 	if opts.endSHA == "" && opts.endRev == "" {
-		return nil, errors.New("the ending commit hash must be set via -end-sha, $END_SHA, -end-rev or $END_REV")
+		return errors.New("the ending commit hash must be set via -end-sha, $END_SHA, -end-rev or $END_REV")
 	}
 
 	// Check if we have to parse a revision
@@ -383,12 +382,12 @@ func parseOptions(args []string) (*options, error) {
 			false,
 		)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if opts.startRev != "" {
 			sha, err := repo.RevParse(opts.startRev)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			logrus.Infof("using found start SHA: %s", sha)
 			opts.startSHA = sha
@@ -396,7 +395,7 @@ func parseOptions(args []string) (*options, error) {
 		if opts.endRev != "" {
 			sha, err := repo.RevParse(opts.endRev)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			logrus.Infof("using found end SHA: %s", sha)
 			opts.endSHA = sha
@@ -408,34 +407,21 @@ func parseOptions(args []string) (*options, error) {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	return opts, nil
+	return nil
 }
 
-func run(args []string) error {
-	// Parse the CLI options and enforce required defaults
-	opts, err := parseOptions(args)
+func run(*cobra.Command, []string) error {
+	releaseNotes, history, err := GetReleaseNotes()
 	if err != nil {
-		logrus.Errorf("parsing options: %v", err)
-		return err
+		return errors.Wrapf(err, "retrieving release notes")
 	}
 
-	// get the release notes
-	releaseNotes, history, err := opts.GetReleaseNotes()
-	if err != nil {
-		return err
-	}
-
-	if err := opts.WriteReleaseNotes(releaseNotes, history); err != nil {
-		logrus.Errorf("writing to file: %v", err)
-		return err
-	}
-
-	return nil
+	return WriteReleaseNotes(releaseNotes, history)
 }
 
 func main() {
 	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
-	if err := run(os.Args[1:]); err != nil {
-		os.Exit(-1)
+	if err := cmd.Execute(); err != nil {
+		logrus.Fatal(err)
 	}
 }

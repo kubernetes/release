@@ -79,6 +79,12 @@ level=debug timestamp=2019-07-30T04:02:44.3716249Z caller=notes.go:497 msg="Excl
 | branch | BRANCH | master | Yes | The GitHub repository branch to scrape |
 | start-sha | START_SHA | | Yes | The commit hash to start processing from (inclusive) |
 | end-sha | END_SHA | | Yes | The commit hash to end processing at (inclusive) |
+| repo-path | REPO_PATH | /tmp/k8s-repo | No | Path to a local Kubernetes repository, used only for tag discovery |
+| start-rev | START_REV | | No | The git revision to start at. Can be used as alternative to start-sha |
+| env-rev | END_REV | | No | The git revision to end at. Can be used as alternative to end-sha |
+| discover | DISCOVER | none | No | The revision discovery mode for automatic revision retrieval (options: none, minor-to-latest) |
+| release-bucket | RELEASE_BUCKET | kubernetes-release | No | Specify gs bucket to point to in generated notes (default "kubernetes-release") |
+| release-tars | RELEASE_TARS | | No | Directory of tars to sha512 sum for display |
 | **OUTPUT OPTIONS** |
 | output | OUTPUT | | No | The path where the release notes will be written |
 | format | FORMAT | markdown | Yes | The format for notes output (options: markdown, json) |
