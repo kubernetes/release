@@ -27,7 +27,6 @@ import (
 
 const (
 	versionReleaseRE  = `v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[a-zA-Z0-9]+)*\.*(0|[1-9][0-9]*)?`
-	versionDotZeroRE  = `v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.0$`
 	versionBuildRE    = `([0-9]{1,})\+([0-9a-f]{5,40})`
 	versionDirtyRE    = `(-dirty)`
 	dockerBuildPath   = "_output/release-tars"

@@ -47,6 +47,11 @@ linters-settings:
   errcheck:
     check-type-assertions: true
     check-blank: true
+  godox:
+    keywords:
+      - BUG
+      - FIXME
+      - HACK
   gocritic:
     enabled-checks:
       # Diagnostic

@@ -199,6 +199,7 @@ func runPushBuild(opts *pushBuildOptions) error {
 	}
 
 	if opts.versionSuffix != "" {
+		// TODO: what should we do with `latest` afterwards?
 		latest += "-" + opts.versionSuffix
 	}
 
@@ -209,7 +210,7 @@ func runPushBuild(opts *pushBuildOptions) error {
 		gcsDest = "ci"
 	}
 
-	gcsDest += opts.gcsSuffix
+	gcsDest += opts.gcsSuffix // nolint: ineffassign
 
 	releaseBucket := opts.bucket
 	if !rootOpts.nomock {
