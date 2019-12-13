@@ -55,7 +55,7 @@ func TestFailurePipeWrongArgument(t *testing.T) {
 	require.Nil(t, err)
 	require.False(t, res.Success())
 	require.Empty(t, res.Output())
-	require.Contains(t, res.Error(), "unrecognized option")
+	require.NotEmpty(t, res.Error())
 }
 
 func TestSuccessWithWorkingDir(t *testing.T) {
