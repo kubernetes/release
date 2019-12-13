@@ -530,58 +530,114 @@ func matchesIncludeFilter(msg string) *regexp.Regexp {
 //TODO: This name does not make sense anymore
 //TODO: Why is that method exported?
 func (g *Gatherer) ListCommitsWithNotes(commits []*github.RepositoryCommit) (filtered []*Result, err error) {
+	allResults := &resultList{}
+
+	nrOfCommits := len(commits)
+
+	// A note about prallelism:
+	//
+	// We make 2 different requests to GitHub further down the stack:
+	// - If we find PR numbers in a commit message, we do one API call per found
+	//   number. The assumption is, that this is mostly just one (or just a couple
+	//   of) PRs. The calls to the API do run in serial right now.
+	// - If we don't find a PR number in the commit message, we ask the API if
+	//   GitHub knows about PRs that are connected to that specific commit. The
+	//   assumption again is that this is either one or just a couple of PRs. The
+	//   results probably fit into one GitHub result page. If not, and we need to
+	//   query multiple times (paging), we currently also do that in serial.
+	//
+	// In case we parallelize the above mentioned API calls and the volume of
+	// them is bigger than expected, we might go well above the
+	// `maxParallelRequests` of parallel requests. In that case we probably
+	// should introduce the throttler as a global concept (on the Gatherer or so)
+	// and use that throttler for all API calls.
+	t := throttler.New(maxParallelRequests, nrOfCommits)
+
 	for i, commit := range commits {
 		logrus.Infof(
-			"[%d/%d - %0.2f%%]: %s",
-			i+1, len(commits), (float64(i+1)/float64(len(commits)))*100.0,
+			"starting to process commit %d of %d (%0.2f%%): %s",
+			i+1, nrOfCommits, (float64(i+1)/float64(nrOfCommits))*100.0,
 			commit.GetSHA(),
 		)
 
-		prs, err := g.PRsFromCommit(commit)
-		if err != nil {
-			if err == errNoPRIDFoundInCommitMessage || err == errNoPRFoundForCommitSHA {
-				logrus.
-					WithField("func", "ListCommitsWithNotes").
-					Debugf("No matches found when parsing PR from commit sha %q", commit.GetSHA())
-				continue
-			}
-			return nil, err
+		go func(commit *github.RepositoryCommit) {
+			err := g.notesForCommit(allResults, commit)
+			t.Done(err)
+		}(commit)
+
+		if t.Throttle() > 0 {
+			break
 		}
-
-		for _, pr := range prs {
-			prBody := pr.GetBody()
-
-			logrus.
-				WithField("func", "ListCommitsWithNotes").
-				WithField("pr no", pr.GetNumber()).
-				WithField("pr body", pr.GetBody()).
-				Debugf("Obtaining PR associated with commit sha %q", commit.GetSHA())
-
-			if re := matchesExcludeFilter(prBody); re != nil {
-				logrus.
-					WithField("func", "ListCommitsWithNotes").
-					WithField("filter", re.String()).
-					Debug("Excluding notes for PR based on the exclusion filter.")
-				// try next PR
-				continue
-			}
-
-			if re := matchesIncludeFilter(prBody); re != nil {
-				filtered = append(filtered, &Result{commit: commit, pullRequest: pr})
-				logrus.
-					WithField("func", "ListCommitsWithNotes").
-					WithField("filter", re.String()).
-					Debug("Including notes for PR based on the inclusion filter.")
-
-				//TODO is this really intentional?
-				// Do not test further PRs for this commmit as soon as one PR matched
-				break
-			}
-
-		} // for range prs
 	} // for range commits
 
-	return filtered, nil
+	if err := t.Err(); err != nil {
+		return nil, err
+	}
+
+	return allResults.List(), nil
+}
+
+func (g *Gatherer) notesForCommit(results *resultList, commit *github.RepositoryCommit) error {
+	prs, err := g.PRsFromCommit(commit)
+	if err != nil {
+		if err == errNoPRIDFoundInCommitMessage || err == errNoPRFoundForCommitSHA {
+			logrus.
+				WithField("func", "ListCommitsWithNotes").
+				Debugf("No matches found when parsing PR from commit sha %q", commit.GetSHA())
+			return nil
+		}
+		return err
+	}
+
+	for _, pr := range prs {
+		prBody := pr.GetBody()
+
+		logrus.
+			WithField("func", "ListCommitsWithNotes").
+			WithField("pr no", pr.GetNumber()).
+			WithField("pr body", pr.GetBody()).
+			Debugf("Obtaining PR associated with commit sha %q", commit.GetSHA())
+
+		if re := matchesExcludeFilter(prBody); re != nil {
+			logrus.
+				WithField("func", "ListCommitsWithNotes").
+				WithField("filter", re.String()).
+				Debug("Excluding notes for PR based on the exclusion filter.")
+			// try next PR
+			continue
+		}
+
+		if re := matchesIncludeFilter(prBody); re != nil {
+			results.Add(&Result{commit: commit, pullRequest: pr})
+			logrus.
+				WithField("func", "ListCommitsWithNotes").
+				WithField("filter", re.String()).
+				Debug("Including notes for PR based on the inclusion filter.")
+
+			//TODO is this really intentional?
+			// Do not test further PRs for this commmit as soon as one PR matched
+			return nil
+		}
+	}
+
+	return nil
+}
+
+type resultList struct {
+	sync.RWMutex
+	list []*Result
+}
+
+func (l *resultList) Add(r *Result) {
+	l.Lock()
+	defer l.Unlock()
+	l.list = append(l.list, r)
+}
+
+func (l *resultList) List() []*Result {
+	l.RLock()
+	defer l.RUnlock()
+	return l.list
 }
 
 // PRsFromCommit return an API Pull Request struct given a commit struct. This is
