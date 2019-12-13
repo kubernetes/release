@@ -26,7 +26,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/sirupsen/logrus"
 )
@@ -107,7 +106,7 @@ func FakeGOPATH(srcDir string) (string, error) {
 	logrus.Debugf("GOPATH: %s", os.Getenv("GOPATH"))
 
 	gitRoot := fmt.Sprintf("%s/src/k8s.io", baseDir)
-	if err := os.MkdirAll(gitRoot, os.FileMode(int(0755))); err != nil {
+	if err := os.MkdirAll(gitRoot, 0o755); err != nil {
 		return "", err
 	}
 	gitRoot = filepath.Join(gitRoot, "kubernetes")
@@ -126,16 +125,16 @@ func FakeGOPATH(srcDir string) (string, error) {
 	return gitRoot, nil
 }
 
-// UntarAndRead opens a tarball and reads contents of a file inside.
-func UntarAndRead(tarPath, filePath string) (string, error) {
+// ReadFileFromGzippedTar opens a tarball and reads contents of a file inside.
+func ReadFileFromGzippedTar(tarPath, filePath string) (io.Reader, error) {
 	file, err := os.Open(tarPath)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	archive, err := gzip.NewReader(file)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	tr := tar.NewReader(archive)
 
@@ -146,26 +145,35 @@ func UntarAndRead(tarPath, filePath string) (string, error) {
 		}
 
 		if h.Name == filePath {
-			file, err := ioutil.ReadAll(tr)
-			return strings.TrimSuffix(string(file), "\n"), err
+			return tr, nil
 		}
 	}
 
-	return "", errors.New("unable to find file in tarball")
+	return nil, errors.New("unable to find file in tarball")
 }
 
-// MoreRecent determines if file at path a was modified more recently than file at path b.
+// MoreRecent determines if file at path a was modified more recently than file
+// at path b. If one file does not exist, the other will be treated as most
+// recent. If both files do not exist or an error occurs, an error is returned.
 func MoreRecent(a, b string) (bool, error) {
-	// TODO: default to existing file if only one exists?
-	fileA, err := os.Stat(a)
-	if err != nil {
-		return false, err
+	fileA, errA := os.Stat(a)
+	if errA != nil && !os.IsNotExist(errA) {
+		return false, errA
 	}
 
-	fileB, err := os.Stat(b)
-	if err != nil {
-		return false, err
+	fileB, errB := os.Stat(b)
+	if errB != nil && !os.IsNotExist(errB) {
+		return false, errB
 	}
 
-	return (fileA.ModTime().Unix() > fileB.ModTime().Unix()), nil
+	switch {
+	case os.IsNotExist(errA) && os.IsNotExist(errB):
+		return false, errors.New("neither file exists")
+	case os.IsNotExist(errA):
+		return false, nil
+	case os.IsNotExist(errB):
+		return true, nil
+	}
+
+	return (fileA.ModTime().Unix() >= fileB.ModTime().Unix()), nil
 }

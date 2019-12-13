@@ -18,6 +18,7 @@ package release
 
 import (
 	"io/ioutil"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -29,30 +30,38 @@ const (
 	versionDotZeroRE  = `v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.0$`
 	versionBuildRE    = `([0-9]{1,})\+([0-9a-f]{5,40})`
 	versionDirtyRE    = `(-dirty)`
-	dockerBuildPath   = "/_output/release-tars/"
-	bazelBuildPath    = "/bazel-bin/build/release-tars/"
-	bazelVersionPath  = "/bazel-genfiles/version"
-	dockerVersionPath = "/version"
+	dockerBuildPath   = "_output/release-tars"
+	bazelBuildPath    = "bazel-bin/build/release-tars"
+	bazelVersionPath  = "bazel-genfiles/version"
+	dockerVersionPath = "version"
 	tarballExtension  = ".tar.gz"
 )
 
 // BuiltWithBazel determines whether the most recent release was built with Bazel.
-func BuiltWithBazel(path string, releaseKind string) (bool, error) {
-	bazelBuild := path + bazelBuildPath + releaseKind + tarballExtension
-	dockerBuild := path + dockerBuildPath + releaseKind + tarballExtension
+func BuiltWithBazel(path, releaseKind string) (bool, error) {
+	tar := releaseKind + tarballExtension
+	bazelBuild := filepath.Join(path, bazelBuildPath, tar)
+	dockerBuild := filepath.Join(path, dockerBuildPath, tar)
 	return util.MoreRecent(bazelBuild, dockerBuild)
 }
 
 // ReadBazelVersion reads the version from a Bazel build.
 func ReadBazelVersion(path string) (string, error) {
-	version, err := ioutil.ReadFile(path + bazelVersionPath)
+	version, err := ioutil.ReadFile(filepath.Join(path, bazelVersionPath))
 	return string(version), err
 }
 
 // ReadDockerizedVersion reads the version from a Dockerized
 func ReadDockerizedVersion(path, releaseKind string) (string, error) {
-	dockerTarball := path + dockerBuildPath + releaseKind + tarballExtension
-	return util.UntarAndRead(dockerTarball, releaseKind+dockerVersionPath)
+	tar := releaseKind + tarballExtension
+	dockerTarball := filepath.Join(path, dockerBuildPath, tar)
+	versionFile := filepath.Join(releaseKind, dockerVersionPath)
+	reader, err := util.ReadFileFromGzippedTar(dockerTarball, versionFile)
+	if err != nil {
+		return "", err
+	}
+	file, err := ioutil.ReadAll(reader)
+	return strings.TrimSuffix(string(file), "\n"), err
 }
 
 // IsValidReleaseBuild checks if build version is valid for release.
