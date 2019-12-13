@@ -295,11 +295,11 @@ func TestListCommitsWithNotes(t *testing.T) {
 					a thing (#128) in parens`),
 			},
 			getPullRequestStubber: func(t *testing.T) getPullRequestStub {
-				toBeSeenPRs := &toBeSeenInts{toBeSeen: map[int]bool{123: false, 124: false, 125: false, 126: false, 127: false, 128: false}}
+				seenPRs := newIntsRecorder(123, 124, 125, 126, 127, 128)
 
 				return func(_ context.Context, org, repo string, prID int) (*github.PullRequest, *github.Response, error) {
 					checkOrgRepo(t, "kubernetes", "kubernetes", org, repo)
-					if err := toBeSeenPRs.Seen(prID); err != nil {
+					if err := seenPRs.Mark(prID); err != nil {
 						t.Errorf("In GetPullRequest: %w", err)
 					}
 					return nil, nil, nil
@@ -437,23 +437,39 @@ func repoCommit(sha, commitMsg string) *github.RepositoryCommit {
 	}
 }
 
-type toBeSeenInts struct {
-	sync.Mutex
-	toBeSeen map[int]bool
+// newIntsRecorder gives you an intsRecorder which you can use to keep track of
+// elements you have already seen. You need to preload it with the elements you
+// expect, it will return an error if you try to makr an element as seen which
+// is not in the list of preloaded elements or that you have already marked.
+// intsRecorder is goroutine safe, so you can use it to e.g. check if
+// concurrent gofuncs don't run for the same thing.
+func newIntsRecorder(ints ...int) *intsRecorder {
+	l := make(map[int]bool, len(ints))
+
+	for _, i := range ints {
+		l[i] = false
+	}
+
+	return &intsRecorder{seen: l}
 }
 
-func (s *toBeSeenInts) Seen(what int) error {
+type intsRecorder struct {
+	sync.Mutex
+	seen map[int]bool
+}
+
+func (s *intsRecorder) Mark(what int) error {
 	s.Lock()
 	defer s.Unlock()
 
-	seen, ok := s.toBeSeen[what]
+	seen, ok := s.seen[what]
 	if !ok {
-		return fmt.Errorf("Expected not to get a request for %d", what)
+		return fmt.Errorf("Expected not to get a request to mark %d as seen", what)
 	}
 	if seen {
-		return fmt.Errorf("Element %d has already been toBeSeen", what)
+		return fmt.Errorf("Expected to mark %d as seen only once", what)
 	}
-	s.toBeSeen[what] = true
+	s.seen[what] = true
 	return nil
 }
 
