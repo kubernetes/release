@@ -19,16 +19,25 @@ package notes_test
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/google/go-github/v28/github"
+	"github.com/sirupsen/logrus"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/notesfakes"
 )
+
+func TestMain(m *testing.M) {
+	// logrus, shut up
+	logrus.SetOutput(ioutil.Discard)
+	os.Exit(m.Run())
+}
 
 func TestListCommits(t *testing.T) {
 	const always = -1
