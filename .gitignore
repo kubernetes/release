@@ -122,3 +122,6 @@ kubernetes.tar.gz
 
 # vendored go modules
 /vendor
+
+# git merge conflict originals
+*.orig
