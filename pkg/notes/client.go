@@ -1,0 +1,68 @@
+/*
+Copyright 2019 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package notes
+
+import (
+	"context"
+
+	"github.com/google/go-github/v28/github"
+)
+
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
+// Client is used to talk to GitHub and query the repo/commit information
+// needed to assemble the release notes
+//counterfeiter:generate . Client
+type Client interface {
+	GetCommit(ctx context.Context, owner string, repo string, sha string) (*github.Commit, *github.Response, error)
+	ListCommits(ctx context.Context, owner, repo string, opt *github.CommitsListOptions) ([]*github.RepositoryCommit, *github.Response, error)
+	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opt *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error)
+	GetPullRequest(ctx context.Context, owner string, repo string, number int) (*github.PullRequest, *github.Response, error)
+
+	// TODO: get rid of that method, currently only used in some test case
+	GetRepoCommit(ctx context.Context, owner, repo, sha string) (*github.RepositoryCommit, *github.Response, error)
+}
+
+func WrapGithubClient(ghc *github.Client) Client {
+	return &githubNotesClient{ghc: ghc}
+}
+
+type githubNotesClient struct {
+	ghc *github.Client
+}
+
+var _ Client = &githubNotesClient{}
+
+func (c *githubNotesClient) GetCommit(ctx context.Context, owner string, repo string, sha string) (*github.Commit, *github.Response, error) {
+	return c.ghc.Git.GetCommit(ctx, owner, repo, sha)
+}
+
+func (c *githubNotesClient) ListCommits(ctx context.Context, owner, repo string, opt *github.CommitsListOptions) ([]*github.RepositoryCommit, *github.Response, error) {
+	return c.ghc.Repositories.ListCommits(ctx, owner, repo, opt)
+}
+
+func (c *githubNotesClient) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opt *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+	return c.ghc.PullRequests.ListPullRequestsWithCommit(ctx, owner, repo, sha, opt)
+}
+
+func (c *githubNotesClient) GetPullRequest(ctx context.Context, owner string, repo string, number int) (*github.PullRequest, *github.Response, error) {
+	return c.ghc.PullRequests.Get(ctx, owner, repo, number)
+}
+
+func (c *githubNotesClient) GetRepoCommit(ctx context.Context, owner, repo, sha string) (*github.RepositoryCommit, *github.Response, error) {
+	return c.ghc.Repositories.GetCommit(ctx, owner, repo, sha)
+}

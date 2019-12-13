@@ -1,0 +1,26 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = ["fake_client.go"],
+    importpath = "k8s.io/release/pkg/notes/notesfakes",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/notes:go_default_library",
+        "@com_github_google_go_github_v28//github:go_default_library",
+    ],
+)
