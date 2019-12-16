@@ -57,8 +57,6 @@ func TestListCommits(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		// opts is the GithubAPIOptions to use when making API calls
-		opts []notes.GitHubAPIOption
 		// branch, start, end are the args to call the `ListCommits` method with
 		branch, start, end string
 
@@ -90,7 +88,6 @@ func TestListCommits(t *testing.T) {
 		expectedCommitCount int
 	}{
 		"happy path": {
-			opts:   []notes.GitHubAPIOption{notes.WithBranch("branch-from-opts-is-ignored")},
 			branch: "the-branch", start: "the-start", end: "the-end",
 			getCommitReturns: getCommitReturnsList{always: {
 				c: &github.Commit{Committer: &github.CommitAuthor{Date: zeroTime}},
@@ -206,9 +203,10 @@ func TestListCommits(t *testing.T) {
 				}
 			}
 
-			gatherer := notes.Gatherer{
+			gatherer := &notes.Gatherer{
 				Client: client,
-				Opts:   tc.opts,
+				Org:    "kubernetes",
+				Repo:   "kubernetes",
 			}
 
 			commits, err := gatherer.ListCommits(tc.branch, tc.start, tc.end)
@@ -394,6 +392,8 @@ func TestListCommitsWithNotes(t *testing.T) {
 
 			gatherer := &notes.Gatherer{
 				Client: client,
+				Org:    "kubernetes",
+				Repo:   "kubernetes",
 			}
 
 			if stubber := tc.listPullRequestsWithCommitStubber; stubber != nil {

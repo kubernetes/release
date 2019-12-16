@@ -87,7 +87,7 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.githubOrg,
 		"github-org",
-		util.EnvDefault("GITHUB_ORG", "kubernetes"),
+		util.EnvDefault("GITHUB_ORG", notes.DefaultOrg),
 		"Name of github organization",
 	)
 
@@ -95,7 +95,7 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.githubRepo,
 		"github-repo",
-		util.EnvDefault("GITHUB_REPO", "kubernetes"),
+		util.EnvDefault("GITHUB_REPO", notes.DefaultRepo),
 		"Name of github repository",
 	)
 
@@ -229,17 +229,11 @@ func GetReleaseNotes() (notes.ReleaseNotes, notes.ReleaseNotesHistory, error) {
 	// Fetch a list of fully-contextualized release notes
 	logrus.Info("fetching all commits. This might take a while...")
 
-	apiOptions := []notes.GitHubAPIOption{notes.WithContext(ctx)}
-	if opts.githubOrg != "" {
-		apiOptions = append(apiOptions, notes.WithOrg(opts.githubOrg))
-	}
-	if opts.githubRepo != "" {
-		apiOptions = append(apiOptions, notes.WithRepo(opts.githubRepo))
-	}
-
 	gatherer := &notes.Gatherer{
-		Client: notes.WrapGithubClient(githubClient),
-		Opts:   apiOptions,
+		Client:  notes.WrapGithubClient(githubClient),
+		Context: ctx,
+		Org:     opts.githubOrg,
+		Repo:    opts.githubRepo,
 	}
 	releaseNotes, history, err := gatherer.ListReleaseNotes(
 		opts.branch, opts.startSHA, opts.endSHA,

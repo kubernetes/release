@@ -33,6 +33,9 @@ import (
 )
 
 const (
+	DefaultOrg  = "kubernetes"
+	DefaultRepo = "kubernetes"
+
 	// maxParallelRequests is the maximum parallel requests we shall make to the
 	// GitHub API
 	maxParallelRequests = 10
@@ -118,60 +121,16 @@ type ReleaseNotes map[int]*ReleaseNote
 // ReleaseNotesHistory is the sorted list of PRs in the commit history
 type ReleaseNotesHistory []int
 
-// GitHubAPIOption is a type which allows for the expression of API configuration
-// via the "functional option" pattern.
-// For more information on this pattern, see the following blog post:
-// https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
-type GitHubAPIOption func(*githubAPIConfig)
-
-// githubAPIConfig is a configuration struct that is used to express optional
-// configuration for GitHub API requests
-type githubAPIConfig struct {
-	ctx    context.Context
-	org    string
-	repo   string
-	branch string
-}
-
-// WithContext allows the caller to inject a context into GitHub API requests
-func WithContext(ctx context.Context) GitHubAPIOption {
-	return func(c *githubAPIConfig) {
-		c.ctx = ctx
-	}
-}
-
-// WithOrg allows the caller to override the GitHub organization for the API
-// request. By default, it is usually "kubernetes".
-func WithOrg(org string) GitHubAPIOption {
-	return func(c *githubAPIConfig) {
-		c.org = org
-	}
-}
-
-// WithRepo allows the caller to override the GitHub repo for the API
-// request. By default, it is usually "kubernetes".
-func WithRepo(repo string) GitHubAPIOption {
-	return func(c *githubAPIConfig) {
-		c.repo = repo
-	}
-}
-
-// WithBranch allows the caller to override the repo branch for the API
-// request. By default, it is usually "master".
-func WithBranch(branch string) GitHubAPIOption {
-	return func(c *githubAPIConfig) {
-		c.branch = branch
-	}
-}
-
 type Result struct {
 	commit      *github.RepositoryCommit
 	pullRequest *github.PullRequest
 }
 
 type Gatherer struct {
-	Client Client
-	Opts   []GitHubAPIOption
+	Client  Client
+	Context context.Context
+	Org     string
+	Repo    string
 }
 
 // ListReleaseNotes produces a list of fully contextualized release notes
@@ -203,7 +162,7 @@ func (g *Gatherer) ListReleaseNotes(
 			}
 		}
 
-		note, err := ReleaseNoteFromCommit(result, relVer, g.Opts...)
+		note, err := g.ReleaseNoteFromCommit(result, relVer)
 		if err != nil {
 			logrus.
 				WithField("err", err).
@@ -342,8 +301,7 @@ func classifyURL(u *url.URL) DocType {
 
 // ReleaseNoteFromCommit produces a full contextualized release note given a
 // GitHub commit API resource.
-func ReleaseNoteFromCommit(result *Result, relVer string, opts ...GitHubAPIOption) (*ReleaseNote, error) {
-	c := configFromOpts(opts...)
+func (g *Gatherer) ReleaseNoteFromCommit(result *Result, relVer string) (*ReleaseNote, error) {
 	pr := result.pullRequest
 
 	prBody := pr.GetBody()
@@ -355,7 +313,7 @@ func ReleaseNoteFromCommit(result *Result, relVer string, opts ...GitHubAPIOptio
 
 	author := pr.GetUser().GetLogin()
 	authorURL := fmt.Sprintf("https://github.com/%s", author)
-	prURL := fmt.Sprintf("https://github.com/%s/%s/pull/%d", c.org, c.repo, pr.GetNumber())
+	prURL := fmt.Sprintf("https://github.com/%s/%s/pull/%d", g.Org, g.Repo, pr.GetNumber())
 	IsFeature := HasString(LabelsWithPrefix(pr, "kind"), "feature")
 	IsDuplicate := false
 	sigsListPretty := prettifySigList(LabelsWithPrefix(pr, "sig"))
@@ -399,16 +357,12 @@ func ReleaseNoteFromCommit(result *Result, relVer string, opts ...GitHubAPIOptio
 // ListCommits lists all commits starting from a given commit SHA and ending at
 // a given commit SHA.
 func (g *Gatherer) ListCommits(branch, start, end string) ([]*github.RepositoryCommit, error) {
-	c := configFromOpts(g.Opts...)
-
-	c.branch = branch
-
-	startCommit, _, err := g.Client.GetCommit(c.ctx, c.org, c.repo, start)
+	startCommit, _, err := g.Client.GetCommit(g.Context, g.Org, g.Repo, start)
 	if err != nil {
 		return nil, err
 	}
 
-	endCommit, _, err := g.Client.GetCommit(c.ctx, c.org, c.repo, end)
+	endCommit, _, err := g.Client.GetCommit(g.Context, g.Org, g.Repo, end)
 	if err != nil {
 		return nil, err
 	}
@@ -416,7 +370,7 @@ func (g *Gatherer) ListCommits(branch, start, end string) ([]*github.RepositoryC
 	allCommits := &commitList{}
 
 	worker := func(clo *github.CommitsListOptions) ([]*github.RepositoryCommit, *github.Response, error) {
-		commits, resp, err := g.Client.ListCommits(c.ctx, c.org, c.repo, clo)
+		commits, resp, err := g.Client.ListCommits(g.Context, g.Org, g.Repo, clo)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -424,7 +378,7 @@ func (g *Gatherer) ListCommits(branch, start, end string) ([]*github.RepositoryC
 	}
 
 	clo := github.CommitsListOptions{
-		SHA:   c.branch,
+		SHA:   branch,
 		Since: *startCommit.Committer.Date,
 		Until: *endCommit.Committer.Date,
 		ListOptions: github.ListOptions{
@@ -689,23 +643,6 @@ func IsActionRequired(pr *github.PullRequest) bool {
 	return false
 }
 
-// configFromOpts is an internal helper for turning a set of functional options
-// into a populated *githubAPIConfig struct with consistent defaults.
-func configFromOpts(opts ...GitHubAPIOption) *githubAPIConfig {
-	c := &githubAPIConfig{
-		ctx:    context.Background(),
-		org:    "kubernetes",
-		repo:   "kubernetes",
-		branch: "master",
-	}
-
-	for _, opt := range opts {
-		opt(c)
-	}
-
-	return c
-}
-
 func stripActionRequired(note string) string {
 	expressions := []string{
 		`(?i)\[action required\]\s`,
@@ -745,8 +682,6 @@ func HasString(a []string, x string) bool {
 
 // prsForCommitFromSHA retrieves the PR numbers for a commit given its sha
 func (g *Gatherer) prsForCommitFromSHA(sha string) (prs []*github.PullRequest, err error) {
-	c := configFromOpts(g.Opts...)
-
 	plo := &github.PullRequestListOptions{
 		State: "closed",
 		ListOptions: github.ListOptions{
@@ -754,14 +689,14 @@ func (g *Gatherer) prsForCommitFromSHA(sha string) (prs []*github.PullRequest, e
 			PerPage: 100,
 		},
 	}
-	prs, resp, err := g.Client.ListPullRequestsWithCommit(c.ctx, c.org, c.repo, sha, plo)
+	prs, resp, err := g.Client.ListPullRequestsWithCommit(g.Context, g.Org, g.Repo, sha, plo)
 	if err != nil {
 		return nil, err
 	}
 
 	plo.ListOptions.Page++
 	for plo.ListOptions.Page <= resp.LastPage {
-		pResult, pResp, err := g.Client.ListPullRequestsWithCommit(c.ctx, c.org, c.repo, sha, plo)
+		pResult, pResp, err := g.Client.ListPullRequestsWithCommit(g.Context, g.Org, g.Repo, sha, plo)
 		if err != nil {
 			return nil, err
 		}
@@ -777,8 +712,6 @@ func (g *Gatherer) prsForCommitFromSHA(sha string) (prs []*github.PullRequest, e
 }
 
 func (g *Gatherer) prsForCommitFromMessage(commitMessage string) (prs []*github.PullRequest, err error) {
-	c := configFromOpts(g.Opts...)
-
 	prsNum, err := prsNumForCommitFromMessage(commitMessage)
 	if err != nil {
 		return nil, err
@@ -787,7 +720,7 @@ func (g *Gatherer) prsForCommitFromMessage(commitMessage string) (prs []*github.
 	for _, pr := range prsNum {
 		// Given the PR number that we've now converted to an integer, get the PR from
 		// the API
-		res, _, err := g.Client.GetPullRequest(c.ctx, c.org, c.repo, pr)
+		res, _, err := g.Client.GetPullRequest(g.Context, g.Org, g.Repo, pr)
 		if err != nil {
 			return nil, err
 		}
