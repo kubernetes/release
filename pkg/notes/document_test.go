@@ -17,10 +17,10 @@ limitations under the License.
 package notes
 
 import (
-	"bytes"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -44,7 +44,6 @@ func TestPrettySIG(t *testing.T) {
 
 func TestCreateDownloadsTable(t *testing.T) {
 	// Given
-	output := &bytes.Buffer{}
 	dir, err := ioutil.TempDir("", "")
 	require.Nil(t, err)
 	defer os.RemoveAll(dir)
@@ -80,8 +79,10 @@ func TestCreateDownloadsTable(t *testing.T) {
 	}
 
 	// When
-	require.Nil(t, createDownloadsTable(output, "kubernetes-release", dir,
-		"v1.16.0", "v1.16.1"))
+	output := &strings.Builder{}
+	require.Nil(t, createDownloadsTable(
+		output, "kubernetes-release", dir, "v1.16.0", "v1.16.1",
+	))
 
 	// Then
 	require.Equal(t, output.String(), `# v1.16.1
