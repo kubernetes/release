@@ -415,12 +415,12 @@ func (g *Gatherer) ListCommits(branch, start, end string) ([]*github.RepositoryC
 
 	allCommits := &commitList{}
 
-	worker := func(cl *commitList, clo *github.CommitsListOptions) (*github.Response, error) {
-		c, resp, err := g.Client.ListCommits(c.ctx, c.org, c.repo, clo)
-		if err == nil {
-			cl.Add(c)
+	worker := func(clo *github.CommitsListOptions) ([]*github.RepositoryCommit, *github.Response, error) {
+		commits, resp, err := g.Client.ListCommits(c.ctx, c.org, c.repo, clo)
+		if err != nil {
+			return nil, nil, err
 		}
-		return resp, err
+		return commits, resp, err
 	}
 
 	clo := github.CommitsListOptions{
@@ -433,10 +433,11 @@ func (g *Gatherer) ListCommits(branch, start, end string) ([]*github.RepositoryC
 		},
 	}
 
-	resp, err := worker(allCommits, &clo)
+	commits, resp, err := worker(&clo)
 	if err != nil {
 		return nil, err
 	}
+	allCommits.Add(commits)
 
 	remainingPages := resp.LastPage - 1
 	if remainingPages < 1 {
@@ -449,7 +450,10 @@ func (g *Gatherer) ListCommits(branch, start, end string) ([]*github.RepositoryC
 		clo.ListOptions.Page = page
 
 		go func() {
-			_, err := worker(allCommits, &clo)
+			commits, _, err := worker(&clo)
+			if err == nil {
+				allCommits.Add(commits)
+			}
 			t.Done(err)
 		}()
 
@@ -561,7 +565,10 @@ func (g *Gatherer) ListCommitsWithNotes(commits []*github.RepositoryCommit) (fil
 		)
 
 		go func(commit *github.RepositoryCommit) {
-			err := g.notesForCommit(allResults, commit)
+			res, err := g.notesForCommit(commit)
+			if err == nil && res != nil {
+				allResults.Add(res)
+			}
 			t.Done(err)
 		}(commit)
 
@@ -577,16 +584,16 @@ func (g *Gatherer) ListCommitsWithNotes(commits []*github.RepositoryCommit) (fil
 	return allResults.List(), nil
 }
 
-func (g *Gatherer) notesForCommit(results *resultList, commit *github.RepositoryCommit) error {
+func (g *Gatherer) notesForCommit(commit *github.RepositoryCommit) (*Result, error) {
 	prs, err := g.PRsFromCommit(commit)
 	if err != nil {
 		if err == errNoPRIDFoundInCommitMessage || err == errNoPRFoundForCommitSHA {
 			logrus.
 				WithField("func", "ListCommitsWithNotes").
 				Debugf("No matches found when parsing PR from commit sha %q", commit.GetSHA())
-			return nil
+			return nil, nil
 		}
-		return err
+		return nil, err
 	}
 
 	for _, pr := range prs {
@@ -608,7 +615,7 @@ func (g *Gatherer) notesForCommit(results *resultList, commit *github.Repository
 		}
 
 		if re := matchesIncludeFilter(prBody); re != nil {
-			results.Add(&Result{commit: commit, pullRequest: pr})
+			res := &Result{commit: commit, pullRequest: pr}
 			logrus.
 				WithField("func", "ListCommitsWithNotes").
 				WithField("filter", re.String()).
@@ -616,11 +623,11 @@ func (g *Gatherer) notesForCommit(results *resultList, commit *github.Repository
 
 			//TODO is this really intentional?
 			// Do not test further PRs for this commmit as soon as one PR matched
-			return nil
+			return res, nil
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
 type resultList struct {
