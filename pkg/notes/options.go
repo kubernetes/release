@@ -23,24 +23,25 @@ import (
 )
 
 type Options struct {
-	GithubToken    string
-	GithubOrg      string
-	GithubRepo     string
-	Output         string
-	Branch         string
-	StartSHA       string
-	EndSHA         string
-	StartRev       string
-	EndRev         string
-	RepoPath       string
-	ReleaseVersion string
-	Format         string
-	RequiredAuthor string
-	Debug          bool
-	DiscoverMode   string
-	ReleaseBucket  string
-	ReleaseTars    string
-	gitCloneFn     func(string, string, string, bool) (*git.Repo, error)
+	GithubToken     string
+	GithubOrg       string
+	GithubRepo      string
+	Output          string
+	Branch          string
+	StartSHA        string
+	EndSHA          string
+	StartRev        string
+	EndRev          string
+	RepoPath        string
+	ReleaseVersion  string
+	Format          string
+	RequiredAuthor  string
+	Debug           bool
+	DiscoverMode    string
+	ReleaseBucket   string
+	ReleaseTars     string
+	TableOfContents bool
+	gitCloneFn      func(string, string, string, bool) (*git.Repo, error)
 }
 
 type RevisionDiscoveryMode string

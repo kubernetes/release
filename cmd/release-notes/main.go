@@ -206,6 +206,13 @@ func init() {
 		util.EnvDefault("RELEASE_TARS", ""),
 		"Directory of tars to sha512 sum for display",
 	)
+
+	cmd.PersistentFlags().BoolVar(
+		&opts.TableOfContents,
+		"toc",
+		util.IsEnvSet("TOC"),
+		"Enable the rendering of the table of contents",
+	)
 }
 
 func GetReleaseNotes() (notes.ReleaseNotes, notes.ReleaseNotesHistory, error) {
@@ -302,6 +309,15 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 		if err != nil {
 			return errors.Wrapf(err, "rendering release note document to markdown")
 		}
+
+		if opts.TableOfContents {
+			toc, err := notes.GenerateTOC(markdown)
+			if err != nil {
+				return errors.Wrap(err, "generating table of contents")
+			}
+			markdown = toc + "\n" + markdown
+		}
+
 		if _, err := output.WriteString(markdown); err != nil {
 			return errors.Wrapf(err, "writing output file")
 		}
