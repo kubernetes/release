@@ -54,6 +54,12 @@
 #+     Change the amount of time we want to wait between consecutive API call
 #+     retries.
 #+
+#+   LOCAL_IMG_DIR: [default: '']
+#+     Set this to a local path to skip the upload to the GCS bucket and
+#+     instead move the resulting files to the specified local path.
+#+     The directory specified must not exist yet or testgridshot will fail
+#+     to ensure we don't override files unintentionally.
+#+
 #+   Example:
 #+     $ BUCKET='kubeimages' BOARDS='all informing' STATES='FAILING FLAKY' BLOCK_WIDTH=10 ./testgridshot 1.15
 #+         Creates dense screenshots of all the 'sig-release-1.15-{all,informing}'
@@ -82,10 +88,11 @@ readonly WIDTH="${WIDTH:-3000}"
 readonly HEIGHT="${HEIGHT:-2500}"
 readonly RETRY_COUNT="${RETRY_COUNT:-3}"
 readonly RETRY_SLEEP="${RETRY_SLEEP:-2}"
+readonly LOCAL_IMG_DIR="${LOCAL_IMG_DIR:-}"
 
 readonly TESTGRID='https://testgrid.k8s.io'
 readonly RENDER_TRON='https://render-tron.appspot.com/screenshot'
-readonly ISSUE_STUB_SUFFIX='issue.'
+readonly ISSUE_STUB_SUFFIX='issue_comment_part.'
 readonly SHRUG='‾\_(ツ)_/‾'
 
 
@@ -207,6 +214,13 @@ shoot() {
   local idx=0
   local img_bucket_dir
   local pids=()
+  local comment
+
+  if [ -n "$LOCAL_IMG_DIR" ] && [ -e "$LOCAL_IMG_DIR" ]
+  then
+    log "Directory '${LOCAL_IMG_DIR}' must be empty"
+    return 1
+  fi
 
   tmp_dir="$( mktemp -d )"
   trap 'rm -rf -- "$tmp_dir"' EXIT
@@ -276,14 +290,22 @@ shoot() {
     return
   fi
 
-  log "Starting upload to '$BUCKET'"
-  upload_and_publish_images "$img_dir" "$img_bucket_dir"
-  log "Upload finished successfully"
+  comment="$( combine_issue_stubs "${tmp_dir}" | tee "${tmp_dir}/issue_comment.txt" )"
+
+  if [ -n "$LOCAL_IMG_DIR" ]
+  then
+    log "Skipping upload, moving results to '$LOCAL_IMG_DIR'"
+    mv "${tmp_dir}" "${LOCAL_IMG_DIR}"
+  else
+    log "Starting upload to '$BUCKET'"
+    upload_and_publish_images "$img_dir" "$img_bucket_dir"
+    log "Upload finished successfully"
+  fi
 
   echo
 
   echo '<!-- ----[ issue comment ]---- -->'
-  combine_issue_stubs "${tmp_dir}"
+  echo "$comment"
   echo '<!-- ----[ issue comment ]---- -->'
 }
 
