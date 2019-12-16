@@ -24,6 +24,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -362,10 +363,10 @@ func TestListCommitsWithNotes(t *testing.T) {
 					{pullRequest(14, "```release-note none something ```")},         // included, does not match the N/A filter, but the 'release-note' check
 					{pullRequest(15, "release-noteNOOOO")},                          // included
 				}
-				callCount := -1
+				var callCount int64 = -1
 
 				return func(_ context.Context, _, _, _ string, _ *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
-					callCount += 1
+					callCount := int(atomic.AddInt64(&callCount, 1))
 					if a, e := callCount+1, len(prsPerCall); a > e {
 						return nil, &github.Response{}, nil
 					}
