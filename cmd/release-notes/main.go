@@ -178,10 +178,22 @@ func init() {
 
 	cmd.PersistentFlags().StringVar(
 		&opts.requiredAuthor,
+		"required-author",
+		util.EnvDefault("REQUIRED_AUTHOR", "k8s-ci-robot"),
+		"Only commits from this GitHub user are considered. Set to empty string to include all users",
+	)
+
+	cmd.PersistentFlags().StringVar(
+		&opts.requiredAuthor,
 		"requiredAuthor",
 		util.EnvDefault("REQUIRED_AUTHOR", "k8s-ci-robot"),
 		"Only commits from this GitHub user are considered. Set to empty string to include all users",
 	)
+	if cmd.PersistentFlags().MarkDeprecated("requiredAuthor", "use '--required-author' instead") != nil {
+		//TODO: remove 'requiredAuthor' after 2020-02-01 -- ¯\_(ツ)_/¯
+		// we are in init, can't do much here
+		panic("Unknown flag 'requiredAuthor'")
+	}
 
 	cmd.PersistentFlags().BoolVar(
 		&opts.debug,
