@@ -379,8 +379,8 @@ func (g *Gatherer) ListCommits(branch, start, end string) ([]*github.RepositoryC
 
 	clo := github.CommitsListOptions{
 		SHA:   branch,
-		Since: *startCommit.Committer.Date,
-		Until: *endCommit.Committer.Date,
+		Since: startCommit.GetCommitter().GetDate(),
+		Until: endCommit.GetCommitter().GetDate(),
 		ListOptions: github.ListOptions{
 			Page:    1,
 			PerPage: 100,
