@@ -93,7 +93,6 @@ readonly LOCAL_IMG_DIR="${LOCAL_IMG_DIR:-}"
 readonly TESTGRID='https://testgrid.k8s.io'
 readonly RENDER_TRON='https://render-tron.appspot.com/screenshot'
 readonly ISSUE_STUB_SUFFIX='issue_comment_part.'
-readonly SHRUG='‾\_(ツ)_/‾'
 
 
 get_tests_by_status() {
@@ -286,8 +285,10 @@ shoot() {
   wait_for_all "${pids[@]}"
 
   if [ "$idx" -lt 1 ]; then
-    log "No screenshots captured for ${target_release} ... ${SHRUG}"
-    return
+    {
+      echo
+      echo "**NO $(comma_sep "${STATES}") TESTS**"
+    } > "$( get_issue_stub_name "${tmp_dir}" $((idx + 1)) )"
   fi
 
   comment="$( combine_issue_stubs "${tmp_dir}" | tee "${tmp_dir}/issue_comment.txt" )"
