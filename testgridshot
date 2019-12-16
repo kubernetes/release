@@ -94,15 +94,20 @@ get_tests_by_status() {
   shift
 
   local board
+  local summary
 
   for board in "$@"
   do
-    curl_with_retry --retry 0 "${TESTGRID}/${board}/summary" 2>/dev/null \
-      | jq --arg status "$status" -r '
-        to_entries[]
-          | select(.value.overall_status==$status)
-          | .value.dashboard_name + "#" + .key
-      '
+    summary="$( curl_with_retry --retry 0 "${TESTGRID}/${board}/summary" 2>/dev/null )" || {
+      log "Could not get summary for board '${board}'"
+      return 1
+    }
+
+    jq --arg status "$status" -r '
+      to_entries[]
+        | select(.value.overall_status==$status)
+        | .value.dashboard_name + "#" + .key
+    ' <<< "$summary"
   done
 }
 
@@ -188,12 +193,20 @@ usage() {
   awk -vRE="$usage_marker" "$awk_prog" <"$0" >&2
 }
 
+wait_for_all() {
+  for pid in "$@"
+  do
+    wait "$pid"
+  done
+}
+
 shoot() {
   local target_release="$1"
   local boards
-  local tests t s
+  local tests t s raw_tests
   local idx=0
   local img_bucket_dir
+  local pids=()
 
   tmp_dir="$( mktemp -d )"
   trap 'rm -rf -- "$tmp_dir"' EXIT
@@ -213,7 +226,8 @@ shoot() {
 
   for s in ${STATES}
   do
-    mapfile -t tests <<< "$(get_tests_by_status "$s" "${boards[@]}")"
+    raw_tests="$( get_tests_by_status "$s" "${boards[@]}" )"
+    mapfile -t tests <<< "$raw_tests"
     for t in "${tests[@]}"
     do
       [ -n "${t}" ] || continue
@@ -251,10 +265,11 @@ shoot() {
 
         local_log "done, image will be available at ${image_url}"
       )&
+      pids+=( $! )
     done
   done
 
-  wait
+  wait_for_all "${pids[@]}"
 
   if [ "$idx" -lt 1 ]; then
     log "No screenshots captured for ${target_release} ... ${SHRUG}"
