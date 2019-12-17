@@ -24,6 +24,7 @@ PROG=${0##*/}
 #+ SYNOPSIS
 #+     $PROG  <version> [--nomock] [--mailto=<user>,...]
 #+                     [--security_layer=/path/to/pointer/to/script]
+#+                     [--print]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
@@ -40,6 +41,8 @@ PROG=${0##*/}
 #+                                 source/include:
 #+                                 FLAGS_security_layer=/path/to/script
 #+     [--mailto=]               - Useful for sending to self in --nomock mode
+#+     [--print]                 - Don't send a mail, instead print the announcement email's
+#+                                 body & subject to StdOut and show their locations on GCS
 #+     [--help | -man]           - display man page for this script
 #+     [--usage | -?]            - display in-line usage
 #+

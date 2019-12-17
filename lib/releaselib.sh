@@ -1167,6 +1167,21 @@ release::send_announcement () {
     fi
   fi
 
+  if ((FLAGS_print)); then
+    echo "***** Start of Subject ******"
+    logecho "$subject"
+    echo "***** End of Subject ******"
+    echo "***** Start of Announcement ******"
+    cat "$announcement_text"
+    echo "***** End of Announcement ******"
+    echo "***********"
+    echo "You can find the Subject file here: $archive_root/announcement-subject.txt"
+    echo "You can find the Announcement file here: $archive_root/announcement.html"
+    echo "***********"
+    logrun rm -f $announcement_text
+    return 0
+  fi
+
   logecho
   ((FLAGS_yes)) \
    || common::askyorn -e "Pausing here. Confirm announce to $mailto" \
