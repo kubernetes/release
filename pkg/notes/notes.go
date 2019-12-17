@@ -35,7 +35,7 @@ import (
 const (
 	// maxParallelRequests is the maximum parallel requests we shall make to the
 	// GitHub API
-	maxParallelRequests = 20
+	maxParallelRequests = 10
 )
 
 // ReleaseNote is the type that represents the total sum of all the information
