@@ -22,6 +22,16 @@ aliases:
     - listx
     - ps882
     - sumitranr
+  krel-approvers:
+    - hasheddan
+    - hoegaarden
+    - justaugustus
+    - saschagrunert
+  krel-reviewers:
+    - hasheddan
+    - hoegaarden
+    - justaugustus
+    - saschagrunert
   release-notes-approvers:
     - jeefy
     - marpaia
