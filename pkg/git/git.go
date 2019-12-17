@@ -46,6 +46,7 @@ const (
 	branchRE              = `master|release-([0-9]{1,})\.([0-9]{1,})(\.([0-9]{1,}))*$`
 	defaultGithubAuthRoot = "git@github.com:"
 	gitExecutable         = "git"
+	tagPrefix             = "v"
 )
 
 // Wrapper type for a Kubernetes repository instance
@@ -212,7 +213,7 @@ func (r *Repo) LatestNonPatchFinalToLatest() (start, end string, err error) {
 	if err != nil {
 		return "", "", err
 	}
-	versionTag := "v" + version.String()
+	versionTag := addTagPrefix(version.String())
 	logrus.Infof("latest non patch version %s", versionTag)
 	start, err = r.RevParse(versionTag)
 	if err != nil {
@@ -239,7 +240,7 @@ func (r *Repo) latestNonPatchFinalVersion() (semver.Version, error) {
 
 	found := false
 	_ = tags.ForEach(func(t *plumbing.Reference) error { // nolint: errcheck
-		tag := strings.TrimPrefix(t.Name().Short(), "v")
+		tag := trimTagPrefix(t.Name().Short())
 		ver, err := semver.Make(tag)
 
 		if err == nil {
@@ -386,7 +387,7 @@ func (r *Repo) DescribeTag(rev string) (string, error) {
 		return "", err
 	}
 	if !status.Success() {
-		return "", errors.New("git describe command failed")
+		return "", errors.Errorf("git describe command failed: %s", status.Error())
 	}
 
 	return strings.TrimSpace(status.Output()), nil
@@ -419,4 +420,81 @@ func (r *Repo) Head() (string, error) {
 		return "", err
 	}
 	return ref.Hash().String(), nil
+}
+
+// LatestPatchToPatch tries to discover the start (latest v1.x.[x-1]) and
+// end (latest v1.x.x) revision inside the repository for the specified release
+// branch.
+func (r *Repo) LatestPatchToPatch(branch string) (start, end string, err error) {
+	latestTag, err := r.latestTagForBranch(branch)
+	if err != nil {
+		return "", "", err
+	}
+
+	if len(latestTag.Pre) > 0 {
+		return "", "", errors.Errorf(
+			"found pre-release %v as latest tag on branch %s",
+			latestTag, branch,
+		)
+	}
+
+	if latestTag.Patch == 0 {
+		return "", "", errors.Errorf(
+			"found non-patch version %v as latest tag on branch %s",
+			latestTag, branch,
+		)
+	}
+
+	prevTag := semver.Version{
+		Major: latestTag.Major,
+		Minor: latestTag.Minor,
+		Patch: latestTag.Patch - 1,
+	}
+
+	logrus.Infof("Parsing latest tag %s%v", tagPrefix, latestTag)
+	end, err = r.RevParse(addTagPrefix(latestTag.String()))
+	if err != nil {
+		return "", "", errors.Wrapf(err, "parsing version %v", latestTag)
+	}
+
+	logrus.Infof("Parsing previous tag %s%v", tagPrefix, prevTag)
+	start, err = r.RevParse(addTagPrefix(prevTag.String()))
+	if err != nil {
+		return "", "", errors.Wrapf(err, "parsing previous version %v", prevTag)
+	}
+
+	return start, end, nil
+}
+
+// latestTagForBranch returns the latest available semver tag for a given branch
+func (r *Repo) latestTagForBranch(branch string) (*semver.Version, error) {
+	status, err := command.NewWithWorkDir(
+		r.Dir(), gitExecutable, "rev-list", branch, "--tags", "--max-count=1",
+	).RunSilent()
+	if err != nil {
+		return nil, err
+	}
+	if !status.Success() {
+		return nil, errors.Errorf("git rev-list command failed: %s", status.Error())
+	}
+
+	rev, err := r.DescribeTag(strings.TrimSpace(status.Output()))
+	if err != nil {
+		return nil, err
+	}
+
+	tag, err := semver.Make(trimTagPrefix(rev))
+	if err != nil {
+		return nil, err
+	}
+
+	return &tag, nil
+}
+
+func addTagPrefix(tag string) string {
+	return tagPrefix + tag
+}
+
+func trimTagPrefix(tag string) string {
+	return strings.TrimPrefix(tag, tagPrefix)
 }

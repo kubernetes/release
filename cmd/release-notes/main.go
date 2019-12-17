@@ -60,6 +60,7 @@ var opts = &options{}
 const (
 	revisionDiscoveryModeNONE          = "none"
 	revisionDiscoveryModeMinorToLatest = "minor-to-latest"
+	revisionDiscoveryModePatchToPatch  = "patch-to-patch"
 )
 
 var cmd = &cobra.Command{
@@ -196,6 +197,7 @@ func init() {
 			strings.Join([]string{
 				revisionDiscoveryModeNONE,
 				revisionDiscoveryModeMinorToLatest,
+				revisionDiscoveryModePatchToPatch,
 			}, ", "),
 		),
 	)
@@ -347,7 +349,7 @@ func validateOptions(*cobra.Command, []string) error {
 	}
 
 	// Check if we want to automatically discover the revisions
-	if opts.discoverMode == revisionDiscoveryModeMinorToLatest {
+	if opts.discoverMode != revisionDiscoveryModeNONE {
 		repo, err := git.CloneOrOpenGitHubRepo(
 			opts.repoPath,
 			opts.githubOrg,
@@ -357,10 +359,20 @@ func validateOptions(*cobra.Command, []string) error {
 		if err != nil {
 			return err
 		}
-		start, end, err := repo.LatestNonPatchFinalToLatest()
-		if err != nil {
-			return err
+
+		var start, end string
+		if opts.discoverMode == revisionDiscoveryModeMinorToLatest {
+			start, end, err = repo.LatestNonPatchFinalToLatest()
+			if err != nil {
+				return err
+			}
+		} else if opts.discoverMode == revisionDiscoveryModePatchToPatch {
+			start, end, err = repo.LatestPatchToPatch(opts.branch)
+			if err != nil {
+				return err
+			}
 		}
+
 		opts.startSHA = start
 		opts.endSHA = end
 		logrus.Infof("discovered start SHA %s", start)
