@@ -10,6 +10,7 @@ go_library(
     importpath = "k8s.io/release/pkg/notes",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/notes/internal:go_default_library",
         "@com_github_google_go_github_v28//github:go_default_library",
         "@com_github_nozzle_throttler//:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
@@ -45,6 +46,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//pkg/notes/internal:all-srcs",
         "//pkg/notes/notesfakes:all-srcs",
     ],
     tags = ["automanaged"],

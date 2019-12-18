@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/google/go-github/v28/github"
+	"k8s.io/release/pkg/notes/internal"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
@@ -48,21 +49,46 @@ type githubNotesClient struct {
 var _ Client = &githubNotesClient{}
 
 func (c *githubNotesClient) GetCommit(ctx context.Context, owner string, repo string, sha string) (*github.Commit, *github.Response, error) {
-	return c.ghc.Git.GetCommit(ctx, owner, repo, sha)
+	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
+		commit, resp, err := c.ghc.Git.GetCommit(ctx, owner, repo, sha)
+		if !shouldRetry(err) {
+			return commit, resp, err
+		}
+	}
 }
 
 func (c *githubNotesClient) ListCommits(ctx context.Context, owner, repo string, opt *github.CommitsListOptions) ([]*github.RepositoryCommit, *github.Response, error) {
-	return c.ghc.Repositories.ListCommits(ctx, owner, repo, opt)
+	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
+		commits, resp, err := c.ghc.Repositories.ListCommits(ctx, owner, repo, opt)
+		if !shouldRetry(err) {
+			return commits, resp, err
+		}
+	}
 }
 
 func (c *githubNotesClient) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opt *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
-	return c.ghc.PullRequests.ListPullRequestsWithCommit(ctx, owner, repo, sha, opt)
+	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
+		prs, resp, err := c.ghc.PullRequests.ListPullRequestsWithCommit(ctx, owner, repo, sha, opt)
+		if !shouldRetry(err) {
+			return prs, resp, err
+		}
+	}
 }
 
 func (c *githubNotesClient) GetPullRequest(ctx context.Context, owner string, repo string, number int) (*github.PullRequest, *github.Response, error) {
-	return c.ghc.PullRequests.Get(ctx, owner, repo, number)
+	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
+		pr, resp, err := c.ghc.PullRequests.Get(ctx, owner, repo, number)
+		if !shouldRetry(err) {
+			return pr, resp, err
+		}
+	}
 }
 
 func (c *githubNotesClient) GetRepoCommit(ctx context.Context, owner, repo, sha string) (*github.RepositoryCommit, *github.Response, error) {
-	return c.ghc.Repositories.GetCommit(ctx, owner, repo, sha)
+	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
+		commit, resp, err := c.ghc.Repositories.GetCommit(ctx, owner, repo, sha)
+		if !shouldRetry(err) {
+			return commit, resp, err
+		}
+	}
 }
