@@ -33,6 +33,7 @@ import (
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/notes"
+	"k8s.io/release/pkg/util"
 )
 
 type options struct {
@@ -78,7 +79,7 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.githubToken,
 		"github-token",
-		envDefault("GITHUB_TOKEN", ""),
+		util.EnvDefault("GITHUB_TOKEN", ""),
 		"A personal GitHub access token (required)",
 	)
 
@@ -86,7 +87,7 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.githubOrg,
 		"github-org",
-		envDefault("GITHUB_ORG", "kubernetes"),
+		util.EnvDefault("GITHUB_ORG", "kubernetes"),
 		"Name of github organization",
 	)
 
@@ -94,7 +95,7 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.githubRepo,
 		"github-repo",
-		envDefault("GITHUB_REPO", "kubernetes"),
+		util.EnvDefault("GITHUB_REPO", "kubernetes"),
 		"Name of github repository",
 	)
 
@@ -103,7 +104,7 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.output,
 		"output",
-		envDefault("OUTPUT", ""),
+		util.EnvDefault("OUTPUT", ""),
 		"The path to the where the release notes will be printed",
 	)
 
@@ -111,7 +112,7 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.branch,
 		"branch",
-		envDefault("BRANCH", "master"),
+		util.EnvDefault("BRANCH", "master"),
 		"Select which branch to scrape. Defaults to `master`",
 	)
 
@@ -120,7 +121,7 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.startSHA,
 		"start-sha",
-		envDefault("START_SHA", ""),
+		util.EnvDefault("START_SHA", ""),
 		"The commit hash to start at",
 	)
 
@@ -128,7 +129,7 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.endSHA,
 		"end-sha",
-		envDefault("END_SHA", ""),
+		util.EnvDefault("END_SHA", ""),
 		"The commit hash to end at",
 	)
 
@@ -137,7 +138,7 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.startRev,
 		"start-rev",
-		envDefault("START_REV", ""),
+		util.EnvDefault("START_REV", ""),
 		"The git revision to start at. Can be used as alternative to start-sha.",
 	)
 
@@ -146,7 +147,7 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.endRev,
 		"end-rev",
-		envDefault("END_REV", ""),
+		util.EnvDefault("END_REV", ""),
 		"The git revision to end at. Can be used as alternative to end-sha.",
 	)
 
@@ -155,7 +156,7 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.repoPath,
 		"repo-path",
-		envDefault("REPO_PATH", filepath.Join(os.TempDir(), "k8s-repo")),
+		util.EnvDefault("REPO_PATH", filepath.Join(os.TempDir(), "k8s-repo")),
 		"Path to a local Kubernetes repository, used only for tag discovery.",
 	)
 
@@ -163,7 +164,7 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.releaseVersion,
 		"release-version",
-		envDefault("RELEASE_VERSION", ""),
+		util.EnvDefault("RELEASE_VERSION", ""),
 		"Which release version to tag the entries as.",
 	)
 
@@ -171,28 +172,28 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.format,
 		"format",
-		envDefault("FORMAT", "markdown"),
+		util.EnvDefault("FORMAT", "markdown"),
 		"The format for notes output (options: markdown, json)",
 	)
 
 	cmd.PersistentFlags().StringVar(
 		&opts.requiredAuthor,
 		"requiredAuthor",
-		envDefault("REQUIRED_AUTHOR", "k8s-ci-robot"),
+		util.EnvDefault("REQUIRED_AUTHOR", "k8s-ci-robot"),
 		"Only commits from this GitHub user are considered. Set to empty string to include all users",
 	)
 
 	cmd.PersistentFlags().BoolVar(
 		&opts.debug,
 		"debug",
-		isEnvSet("DEBUG"),
+		util.IsEnvSet("DEBUG"),
 		"Enable debug logging",
 	)
 
 	cmd.PersistentFlags().StringVar(
 		&opts.discoverMode,
 		"discover",
-		envDefault("DISCOVER", revisionDiscoveryModeNONE),
+		util.EnvDefault("DISCOVER", revisionDiscoveryModeNONE),
 		fmt.Sprintf("The revision discovery mode for automatic revision retrieval (options: %s)",
 			strings.Join([]string{
 				revisionDiscoveryModeNONE,
@@ -205,29 +206,16 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.releaseBucket,
 		"release-bucket",
-		envDefault("RELEASE_BUCKET", "kubernetes-release"),
+		util.EnvDefault("RELEASE_BUCKET", "kubernetes-release"),
 		"Specify gs bucket to point to in generated notes",
 	)
 
 	cmd.PersistentFlags().StringVar(
 		&opts.releaseTars,
 		"release-tars",
-		envDefault("RELEASE_TARS", ""),
+		util.EnvDefault("RELEASE_TARS", ""),
 		"Directory of tars to sha512 sum for display",
 	)
-}
-
-func envDefault(key, def string) string {
-	value, ok := os.LookupEnv(key)
-	if !ok {
-		return def
-	}
-	return value
-}
-
-func isEnvSet(key string) bool {
-	_, ok := os.LookupEnv(key)
-	return ok
 }
 
 func GetReleaseNotes() (notes.ReleaseNotes, notes.ReleaseNotesHistory, error) {
