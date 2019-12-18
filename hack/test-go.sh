@@ -14,10 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
-set -u
-set -o pipefail
+set -euo pipefail
+
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
-GO111MODULE=on go test -v -race -count=1 ./...
+GO111MODULE=on go test -v -count=1 -cover -coverprofile coverage.out ./...
+go tool cover -html coverage.out -o coverage.html

@@ -125,3 +125,6 @@ kubernetes.tar.gz
 
 # git merge conflict originals
 *.orig
+
+# go coverage files
+coverage.*
