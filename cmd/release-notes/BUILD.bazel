@@ -6,7 +6,6 @@ go_library(
     importpath = "k8s.io/release/cmd/release-notes",
     visibility = ["//visibility:private"],
     deps = [
-        "//pkg/git:go_default_library",
         "//pkg/notes:go_default_library",
         "//pkg/util:go_default_library",
         "@com_github_google_go_github_v28//github:go_default_library",
