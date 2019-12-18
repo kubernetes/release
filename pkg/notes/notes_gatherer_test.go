@@ -24,6 +24,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -56,8 +57,6 @@ func TestListCommits(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		// opts is the GithubAPIOptions to use when making API calls
-		opts []notes.GitHubAPIOption
 		// branch, start, end are the args to call the `ListCommits` method with
 		branch, start, end string
 
@@ -89,7 +88,6 @@ func TestListCommits(t *testing.T) {
 		expectedCommitCount int
 	}{
 		"happy path": {
-			opts:   []notes.GitHubAPIOption{notes.WithBranch("branch-from-opts-is-ignored")},
 			branch: "the-branch", start: "the-start", end: "the-end",
 			getCommitReturns: getCommitReturnsList{always: {
 				c: &github.Commit{Committer: &github.CommitAuthor{Date: zeroTime}},
@@ -205,9 +203,10 @@ func TestListCommits(t *testing.T) {
 				}
 			}
 
-			gatherer := notes.Gatherer{
+			gatherer := &notes.Gatherer{
 				Client: client,
-				Opts:   tc.opts,
+				Org:    "kubernetes",
+				Repo:   "kubernetes",
 			}
 
 			commits, err := gatherer.ListCommits(tc.branch, tc.start, tc.end)
@@ -362,10 +361,10 @@ func TestListCommitsWithNotes(t *testing.T) {
 					{pullRequest(14, "```release-note none something ```")},         // included, does not match the N/A filter, but the 'release-note' check
 					{pullRequest(15, "release-noteNOOOO")},                          // included
 				}
-				callCount := -1
+				var callCount int64 = -1
 
 				return func(_ context.Context, _, _, _ string, _ *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
-					callCount += 1
+					callCount := int(atomic.AddInt64(&callCount, 1))
 					if a, e := callCount+1, len(prsPerCall); a > e {
 						return nil, &github.Response{}, nil
 					}
@@ -393,6 +392,8 @@ func TestListCommitsWithNotes(t *testing.T) {
 
 			gatherer := &notes.Gatherer{
 				Client: client,
+				Org:    "kubernetes",
+				Repo:   "kubernetes",
 			}
 
 			if stubber := tc.listPullRequestsWithCommitStubber; stubber != nil {
