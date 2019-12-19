@@ -49,6 +49,7 @@ const (
 	RevisionDiscoveryModeNONE          = "none"
 	RevisionDiscoveryModeMinorToLatest = "minor-to-latest"
 	RevisionDiscoveryModePatchToPatch  = "patch-to-patch"
+	RevisionDiscoveryModeMinorToMinor  = "minor-to-minor"
 )
 
 // NewOptions creates a new Options instance with the default values
@@ -83,14 +84,13 @@ func (o *Options) ValidateAndFinish() error {
 		var start, end string
 		if o.DiscoverMode == RevisionDiscoveryModeMinorToLatest {
 			start, end, err = repo.LatestNonPatchFinalToLatest()
-			if err != nil {
-				return err
-			}
 		} else if o.DiscoverMode == RevisionDiscoveryModePatchToPatch {
 			start, end, err = repo.LatestPatchToPatch(o.Branch)
-			if err != nil {
-				return err
-			}
+		} else if o.DiscoverMode == RevisionDiscoveryModeMinorToMinor {
+			start, end, err = repo.LatestNonPatchFinalToMinor()
+		}
+		if err != nil {
+			return err
 		}
 
 		o.StartSHA = start
