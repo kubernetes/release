@@ -187,6 +187,7 @@ func init() {
 				notes.RevisionDiscoveryModeNONE,
 				notes.RevisionDiscoveryModeMinorToLatest,
 				notes.RevisionDiscoveryModePatchToPatch,
+				notes.RevisionDiscoveryModeMinorToMinor,
 			}, ", "),
 		),
 	)

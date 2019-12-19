@@ -16,7 +16,18 @@ limitations under the License.
 
 package cmd
 
-import "github.com/spf13/cobra"
+import (
+	"context"
+
+	"github.com/google/go-github/v28/github"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"golang.org/x/oauth2"
+
+	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/notes"
+)
 
 // changelogCmd represents the subcommand for `krel changelog`
 var changelogCmd = &cobra.Command{
@@ -49,11 +60,98 @@ the golang based 'release-notes' tool:
 	},
 }
 
+type changelogOptions struct {
+	branch string
+	bucket string
+	tars   string
+	token  string
+}
+
+var changelogOpts = &changelogOptions{}
+
+const master = "master"
+
 func init() {
 	cobra.OnInitialize(initConfig)
+
+	const (
+		tarsFlag  = "tars"
+		tokenFlag = "token"
+	)
+	changelogCmd.PersistentFlags().StringVar(&changelogOpts.branch, "branch", master, "The target release branch. Leave it default for non-patch releases.")
+	changelogCmd.PersistentFlags().StringVar(&changelogOpts.bucket, "bucket", "kubernetes-release", "Specify gs bucket to point to in generated notes")
+	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tars, tarsFlag, "", "Directory of tars to sha512 sum for display")
+	changelogCmd.PersistentFlags().StringVarP(&changelogOpts.token, tokenFlag, "t", "", "GitHub token for release notes retrieval")
+
+	if err := changelogCmd.MarkPersistentFlagRequired(tokenFlag); err != nil {
+		logrus.Fatal(err)
+	}
+	if err := changelogCmd.MarkPersistentFlagRequired(tarsFlag); err != nil {
+		logrus.Fatal(err)
+	}
+
 	rootCmd.AddCommand(changelogCmd)
 }
 
-func runChangelog() error {
+func runChangelog() (err error) {
+	branch := master
+	revisionDiscoveryMode := notes.RevisionDiscoveryModeMinorToMinor
+
+	if changelogOpts.branch != branch {
+		if !git.IsReleaseBranch(changelogOpts.branch) {
+			return errors.Wrapf(err, "Branch %q is no release branch", changelogOpts.branch)
+		}
+		branch = changelogOpts.branch
+		revisionDiscoveryMode = notes.RevisionDiscoveryModePatchToPatch
+	}
+	logrus.Infof("Using branch %q", branch)
+	logrus.Infof("Using discovery mode %q", revisionDiscoveryMode)
+
+	notesOptions := notes.NewOptions()
+	notesOptions.Branch = branch
+	notesOptions.DiscoverMode = revisionDiscoveryMode
+	notesOptions.GithubOrg = git.DefaultGithubOrg
+	notesOptions.GithubRepo = git.DefaultGithubRepo
+	notesOptions.GithubToken = changelogOpts.token
+	notesOptions.RepoPath = rootOpts.repoPath
+	notesOptions.ReleaseBucket = changelogOpts.bucket
+	notesOptions.ReleaseTars = changelogOpts.tars
+	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
+	if err := notesOptions.ValidateAndFinish(); err != nil {
+		return err
+	}
+
+	// Create the GitHub API client
+	ctx := context.Background()
+	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: changelogOpts.token},
+	))
+	githubClient := github.NewClient(httpClient)
+
+	// Fetch a list of fully-contextualized release notes
+	logrus.Info("fetching all commits. This might take a while...")
+
+	gatherer := &notes.Gatherer{
+		Client:  notes.WrapGithubClient(githubClient),
+		Context: ctx,
+		Org:     git.DefaultGithubOrg,
+		Repo:    git.DefaultGithubRepo,
+	}
+	releaseNotes, history, err := gatherer.ListReleaseNotes(
+		branch, notesOptions.StartSHA, notesOptions.EndSHA, "", "",
+	)
+	if err != nil {
+		return errors.Wrapf(err, "listing release notes")
+	}
+
+	// Create the markdown
+	doc, err := notes.CreateDocument(releaseNotes, history)
+	if err != nil {
+		return errors.Wrapf(err, "creating release note document")
+	}
+
+	// TODO: mangle the documents into the target files
+	logrus.Infof("doc: %v", doc)
+
 	return nil
 }

@@ -209,10 +209,11 @@ func (r *Repo) RevParseShort(rev string) (string, error) {
 // end (release-1.xx or master) revision inside the repository
 func (r *Repo) LatestNonPatchFinalToLatest() (start, end string, err error) {
 	// Find the last non patch version tag, then resolve its revision
-	version, err := r.latestNonPatchFinalVersion()
+	versions, err := r.latestNonPatchFinalVersions()
 	if err != nil {
 		return "", "", err
 	}
+	version := versions[0]
 	versionTag := addTagPrefix(version.String())
 	logrus.Infof("latest non patch version %s", versionTag)
 	start, err = r.RevParse(versionTag)
@@ -230,15 +231,43 @@ func (r *Repo) LatestNonPatchFinalToLatest() (start, end string, err error) {
 	return start, end, nil
 }
 
-func (r *Repo) latestNonPatchFinalVersion() (semver.Version, error) {
-	latestFinalTag := semver.Version{}
+func (r *Repo) LatestNonPatchFinalToMinor() (start, end string, err error) {
+	// Find the last non patch version tag, then resolve its revision
+	versions, err := r.latestNonPatchFinalVersions()
+	if err != nil {
+		return "", "", err
+	}
+	if len(versions) < 2 {
+		return "", "", errors.New("unable to find two latest non patch versions")
+	}
+
+	latestVersion := versions[0]
+	latestVersionTag := addTagPrefix(latestVersion.String())
+	logrus.Infof("latest non patch version %s", latestVersionTag)
+	end, err = r.RevParse(latestVersionTag)
+	if err != nil {
+		return "", "", err
+	}
+
+	previousVersion := versions[1]
+	previousVersionTag := addTagPrefix(previousVersion.String())
+	logrus.Infof("previous non patch version %s", previousVersionTag)
+	start, err = r.RevParse(previousVersionTag)
+	if err != nil {
+		return "", "", err
+	}
+
+	return start, end, nil
+}
+
+func (r *Repo) latestNonPatchFinalVersions() ([]semver.Version, error) {
+	latestVersions := []semver.Version{}
 
 	tags, err := r.inner.Tags()
 	if err != nil {
-		return latestFinalTag, err
+		return nil, err
 	}
 
-	found := false
 	_ = tags.ForEach(func(t *plumbing.Reference) error { // nolint: errcheck
 		tag := trimTagPrefix(t.Name().Short())
 		ver, err := semver.Make(tag)
@@ -246,18 +275,17 @@ func (r *Repo) latestNonPatchFinalVersion() (semver.Version, error) {
 		if err == nil {
 			// We're searching for the latest, non patch final tag
 			if ver.Patch == 0 && len(ver.Pre) == 0 {
-				if ver.GT(latestFinalTag) {
-					latestFinalTag = ver
-					found = true
+				if len(latestVersions) == 0 || ver.GT(latestVersions[0]) {
+					latestVersions = append([]semver.Version{ver}, latestVersions...)
 				}
 			}
 		}
 		return nil
 	})
-	if !found {
-		return latestFinalTag, fmt.Errorf("unable to find latest non patch release")
+	if len(latestVersions) == 0 {
+		return nil, fmt.Errorf("unable to find latest non patch release")
 	}
-	return latestFinalTag, nil
+	return latestVersions, nil
 }
 
 func (r *Repo) releaseBranchOrMasterRev(major, minor uint64) (rev string, err error) {
@@ -431,11 +459,9 @@ func (r *Repo) LatestPatchToPatch(branch string) (start, end string, err error) 
 		return "", "", err
 	}
 
-	if len(latestTag.Pre) > 0 {
-		return "", "", errors.Errorf(
-			"found pre-release %v as latest tag on branch %s",
-			latestTag, branch,
-		)
+	if len(latestTag.Pre) > 0 && latestTag.Patch > 0 {
+		latestTag.Patch--
+		latestTag.Pre = nil
 	}
 
 	if latestTag.Patch == 0 {
