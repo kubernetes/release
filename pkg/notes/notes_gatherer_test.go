@@ -175,7 +175,7 @@ func TestListCommits(t *testing.T) {
 			},
 			expectedGetCommitCallCount:      2,
 			expectedListCommitsMinCallCount: 3,
-			expectedListCommitsMaxCallCount: 21, // This depends on how much requests we actually allow in parrallel
+			expectedListCommitsMaxCallCount: 21, // This depends on how much requests we actually allow in parallel
 			expectedErrMsg:                  "some err on a random ListCommits call",
 		},
 	}
