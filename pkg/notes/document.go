@@ -266,7 +266,7 @@ func prettifySigList(sigs []string) string {
 // createDownloadsTable creates the markdown table with the links to the tarballs.
 // The function does nothing if the `tars` variable is empty.
 func createDownloadsTable(w io.Writer, bucket, tars, prevTag, newTag string) error {
-	// Do not add the table if not explicitely requested
+	// Do not add the table if not explicitly requested
 	if tars == "" {
 		return nil
 	}
