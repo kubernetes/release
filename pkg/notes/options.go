@@ -81,22 +81,25 @@ func (o *Options) ValidateAndFinish() error {
 			return err
 		}
 
-		var start, end string
+		var result *git.DiscoverResult
 		if o.DiscoverMode == RevisionDiscoveryModeMinorToLatest {
-			start, end, err = repo.LatestNonPatchFinalToLatest()
+			result, err = repo.LatestNonPatchFinalToLatest()
 		} else if o.DiscoverMode == RevisionDiscoveryModePatchToPatch {
-			start, end, err = repo.LatestPatchToPatch(o.Branch)
+			result, err = repo.LatestPatchToPatch(o.Branch)
 		} else if o.DiscoverMode == RevisionDiscoveryModeMinorToMinor {
-			start, end, err = repo.LatestNonPatchFinalToMinor()
+			result, err = repo.LatestNonPatchFinalToMinor()
 		}
 		if err != nil {
 			return err
 		}
 
-		o.StartSHA = start
-		o.EndSHA = end
-		logrus.Infof("discovered start SHA %s", start)
-		logrus.Infof("discovered end SHA %s", end)
+		o.StartSHA = result.StartSHA()
+		o.StartRev = result.StartRev()
+		o.EndSHA = result.EndSHA()
+		o.EndRev = result.EndRev()
+
+		logrus.Infof("discovered start %s (%s)", o.StartRev, o.StartSHA)
+		logrus.Infof("discovered end %s (%s)", o.EndRev, o.EndSHA)
 	}
 
 	// The start SHA is required.

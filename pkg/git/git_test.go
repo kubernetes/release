@@ -386,18 +386,17 @@ func TestSuccessLatestPatchToPatch(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	start, end, err := testRepo.sut.LatestPatchToPatch(testRepo.branchName)
+	result, err := testRepo.sut.LatestPatchToPatch(testRepo.branchName)
 	require.Nil(t, err)
-	require.Equal(t, start, testRepo.firstBranchCommit)
-	require.Equal(t, end, testRepo.secondBranchCommit)
+	require.Equal(t, result.StartSHA(), testRepo.firstBranchCommit)
+	require.Equal(t, result.EndSHA(), testRepo.secondBranchCommit)
 }
 
 func TestFailureLatestPatchToPatchWrongBranch(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	start, end, err := testRepo.sut.LatestPatchToPatch("wrong-branch")
+	result, err := testRepo.sut.LatestPatchToPatch("wrong-branch")
 	require.NotNil(t, err)
-	require.Empty(t, start)
-	require.Empty(t, end)
+	require.Nil(t, result)
 }
