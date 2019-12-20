@@ -31,8 +31,6 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 )
 
-const master = "master"
-
 type testRepo struct {
 	sut                *Repo
 	dir                string
@@ -240,7 +238,7 @@ func TestSuccessHasRemoteBranch(t *testing.T) {
 	defer testRepo.cleanup(t)
 
 	require.Nil(t, testRepo.sut.HasRemoteBranch(testRepo.branchName))
-	require.Nil(t, testRepo.sut.HasRemoteBranch(master))
+	require.Nil(t, testRepo.sut.HasRemoteBranch(Master))
 }
 
 func TestFailureHasRemoteBranch(t *testing.T) {
@@ -264,7 +262,7 @@ func TestSuccessMerge(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	err := testRepo.sut.Merge(master)
+	err := testRepo.sut.Merge(Master)
 	require.Nil(t, err)
 }
 
@@ -280,7 +278,7 @@ func TestSuccessMergeBase(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	mergeBase, err := testRepo.sut.MergeBase(master, testRepo.branchName)
+	mergeBase, err := testRepo.sut.MergeBase(Master, testRepo.branchName)
 	require.Nil(t, err)
 	require.Equal(t, mergeBase, testRepo.firstCommit)
 }
@@ -289,7 +287,7 @@ func TestSuccessRevParse(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	masterRev, err := testRepo.sut.RevParse(master)
+	masterRev, err := testRepo.sut.RevParse(Master)
 	require.Nil(t, err)
 	require.Equal(t, masterRev, testRepo.firstCommit)
 
@@ -314,7 +312,7 @@ func TestSuccessRevParseShort(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	masterRev, err := testRepo.sut.RevParseShort(master)
+	masterRev, err := testRepo.sut.RevParseShort(Master)
 	require.Nil(t, err)
 	require.Equal(t, masterRev, testRepo.firstCommit[:10])
 
@@ -339,7 +337,7 @@ func TestSuccessPush(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	err := testRepo.sut.Push(master)
+	err := testRepo.sut.Push(Master)
 	require.Nil(t, err)
 }
 
@@ -352,8 +350,8 @@ func TestFailurePush(t *testing.T) {
 }
 
 func TestSuccessRemotify(t *testing.T) {
-	newRemote := Remotify(master)
-	require.Equal(t, newRemote, DefaultRemote+"/"+master)
+	newRemote := Remotify(Master)
+	require.Equal(t, newRemote, DefaultRemote+"/"+Master)
 }
 
 func TestSuccessIsReleaseBranch(t *testing.T) {
@@ -368,7 +366,7 @@ func TestSuccessLatestTagForBranch(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	version, err := testRepo.sut.latestTagForBranch(master)
+	version, err := testRepo.sut.latestTagForBranch(Master)
 	require.Nil(t, err)
 	require.Equal(t, addTagPrefix(version.String()), testRepo.firstTagName)
 }
@@ -389,7 +387,9 @@ func TestSuccessLatestPatchToPatch(t *testing.T) {
 	result, err := testRepo.sut.LatestPatchToPatch(testRepo.branchName)
 	require.Nil(t, err)
 	require.Equal(t, result.StartSHA(), testRepo.firstBranchCommit)
+	require.Equal(t, result.StartRev(), testRepo.secondTagName)
 	require.Equal(t, result.EndSHA(), testRepo.secondBranchCommit)
+	require.Equal(t, result.EndRev(), testRepo.thirdTagName)
 }
 
 func TestFailureLatestPatchToPatchWrongBranch(t *testing.T) {
@@ -398,5 +398,65 @@ func TestFailureLatestPatchToPatchWrongBranch(t *testing.T) {
 
 	result, err := testRepo.sut.LatestPatchToPatch("wrong-branch")
 	require.NotNil(t, err)
-	require.Nil(t, result)
+	require.Equal(t, DiscoverResult{}, result)
+}
+
+func TestSuccessDry(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	testRepo.sut.SetDry()
+
+	err := testRepo.sut.Push(Master)
+	require.Nil(t, err)
+}
+
+func TestSuccessLatestNonPatchFinalToLatest(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	result, err := testRepo.sut.LatestNonPatchFinalToLatest()
+	require.Nil(t, err)
+	require.Equal(t, result.StartSHA(), testRepo.firstCommit)
+	require.Equal(t, result.StartRev(), testRepo.firstTagName)
+	require.Equal(t, result.EndSHA(), testRepo.firstCommit)
+	require.Equal(t, result.EndRev(), Master)
+}
+
+func TestFailureLatestNonPatchFinalToLatestNoLatestTag(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	require.Nil(t, command.NewWithWorkDir(
+		testRepo.sut.Dir(), "git", "tag", "-d", testRepo.firstTagName,
+	).RunSuccess())
+
+	result, err := testRepo.sut.LatestNonPatchFinalToLatest()
+	require.NotNil(t, err)
+	require.Equal(t, DiscoverResult{}, result)
+}
+
+func TestSuccessLatestNonPatchFinalToMinor(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	nextMinorTag := "v0.2.0"
+	require.Nil(t, command.NewWithWorkDir(
+		testRepo.sut.Dir(), "git", "tag", nextMinorTag,
+	).RunSuccess())
+
+	result, err := testRepo.sut.LatestNonPatchFinalToMinor()
+	require.Nil(t, err)
+	require.Equal(t, result.StartSHA(), testRepo.firstCommit)
+	require.Equal(t, result.StartRev(), testRepo.firstTagName)
+	require.Equal(t, result.EndRev(), nextMinorTag)
+}
+
+func TestFailureLatestNonPatchFinalToMinor(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	result, err := testRepo.sut.LatestNonPatchFinalToMinor()
+	require.NotNil(t, err)
+	require.Equal(t, DiscoverResult{}, result)
 }

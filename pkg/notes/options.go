@@ -81,7 +81,7 @@ func (o *Options) ValidateAndFinish() error {
 			return err
 		}
 
-		var result *git.DiscoverResult
+		var result git.DiscoverResult
 		if o.DiscoverMode == RevisionDiscoveryModeMinorToLatest {
 			result, err = repo.LatestNonPatchFinalToLatest()
 		} else if o.DiscoverMode == RevisionDiscoveryModePatchToPatch {
