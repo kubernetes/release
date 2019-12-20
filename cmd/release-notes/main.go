@@ -320,7 +320,7 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 		}
 
 		if _, err := output.WriteString(markdown); err != nil {
-			return errors.Wrapf(err, "writing output file")
+			return errors.Wrap(err, "writing output file")
 		}
 
 	default:

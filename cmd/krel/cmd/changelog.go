@@ -17,8 +17,15 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
 
+	"github.com/blang/semver"
 	"github.com/google/go-github/v28/github"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -27,6 +34,7 @@ import (
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/notes"
+	"k8s.io/release/pkg/util"
 )
 
 // changelogCmd represents the subcommand for `krel changelog`
@@ -61,13 +69,19 @@ the golang based 'release-notes' tool:
 }
 
 type changelogOptions struct {
-	branch string
-	bucket string
-	tars   string
-	token  string
+	branch    string
+	bucket    string
+	tars      string
+	token     string
+	outputDir string
 }
 
 var changelogOpts = &changelogOptions{}
+
+const (
+	tocStart = "<!-- BEGIN MUNGE: GENERATED_TOC -->"
+	tocEnd   = "<!-- END MUNGE: GENERATED_TOC -->"
+)
 
 func init() {
 	cobra.OnInitialize(initConfig)
@@ -80,6 +94,7 @@ func init() {
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.bucket, "bucket", "kubernetes-release", "Specify gs bucket to point to in generated notes")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tars, tarsFlag, "", "Directory of tars to sha512 sum for display")
 	changelogCmd.PersistentFlags().StringVarP(&changelogOpts.token, tokenFlag, "t", "", "GitHub token for release notes retrieval")
+	changelogCmd.PersistentFlags().StringVarP(&changelogOpts.outputDir, "output", "o", os.TempDir(), "Output directory for the generated files")
 
 	if err := changelogCmd.MarkPersistentFlagRequired(tokenFlag); err != nil {
 		logrus.Fatal(err)
@@ -92,21 +107,43 @@ func init() {
 }
 
 func runChangelog() (err error) {
-	branch := git.Master
+	// TODO: remote lookup of 'final release notes draft',
+	// including error handling if not found
+
+	markdown, version, err := createReleaseNotes()
+	if err != nil {
+		return err
+	}
+	toc, err := notes.GenerateTOC(markdown)
+	if err != nil {
+		return err
+	}
+
+	if err := writeMarkdown(toc, markdown, version); err != nil {
+		return err
+	}
+
+	// TODO: HTML output
+	// TODO: Pushing changes
+	return nil
+}
+
+func createReleaseNotes() (markdown, version string, err error) {
 	revisionDiscoveryMode := notes.RevisionDiscoveryModeMinorToMinor
 
-	if changelogOpts.branch != branch {
+	if changelogOpts.branch != git.Master {
 		if !git.IsReleaseBranch(changelogOpts.branch) {
-			return errors.Wrapf(err, "Branch %q is no release branch", changelogOpts.branch)
+			return "", "", errors.Wrapf(
+				err, "Branch %q is no release branch", changelogOpts.branch,
+			)
 		}
-		branch = changelogOpts.branch
 		revisionDiscoveryMode = notes.RevisionDiscoveryModePatchToPatch
 	}
-	logrus.Infof("Using branch %q", branch)
+	logrus.Infof("Using branch %q", changelogOpts.branch)
 	logrus.Infof("Using discovery mode %q", revisionDiscoveryMode)
 
 	notesOptions := notes.NewOptions()
-	notesOptions.Branch = branch
+	notesOptions.Branch = changelogOpts.branch
 	notesOptions.DiscoverMode = revisionDiscoveryMode
 	notesOptions.GithubOrg = git.DefaultGithubOrg
 	notesOptions.GithubRepo = git.DefaultGithubRepo
@@ -116,7 +153,7 @@ func runChangelog() (err error) {
 	notesOptions.ReleaseTars = changelogOpts.tars
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
 	if err := notesOptions.ValidateAndFinish(); err != nil {
-		return err
+		return "", "", err
 	}
 
 	// Create the GitHub API client
@@ -126,9 +163,6 @@ func runChangelog() (err error) {
 	))
 	githubClient := github.NewClient(httpClient)
 
-	// Fetch a list of fully-contextualized release notes
-	logrus.Info("fetching all commits. This might take a while...")
-
 	gatherer := &notes.Gatherer{
 		Client:  notes.WrapGithubClient(githubClient),
 		Context: ctx,
@@ -136,21 +170,92 @@ func runChangelog() (err error) {
 		Repo:    git.DefaultGithubRepo,
 	}
 	releaseNotes, history, err := gatherer.ListReleaseNotes(
-		branch, notesOptions.StartSHA, notesOptions.EndSHA, "", "",
+		changelogOpts.branch,
+		notesOptions.StartSHA,
+		notesOptions.EndSHA,
+		"", "",
 	)
 	if err != nil {
-		return errors.Wrapf(err, "listing release notes")
+		return "", "", errors.Wrapf(err, "listing release notes")
 	}
 
 	// Create the markdown
 	doc, err := notes.CreateDocument(releaseNotes, history)
 	if err != nil {
-		return errors.Wrapf(err, "creating release note document")
+		return "", "", errors.Wrapf(err, "creating release note document")
 	}
 
-	//nolint
-	// TODO: mangle the documents into the target files
-	logrus.Infof("doc: %v", doc)
+	markdown, err = notes.RenderMarkdown(
+		doc, changelogOpts.bucket, changelogOpts.tars,
+		notesOptions.StartRev, notesOptions.EndRev,
+	)
+	if err != nil {
+		return "", "", errors.Wrapf(
+			err, "rendering release notes to markdown",
+		)
+	}
 
-	return nil
+	return markdown, util.TrimTagPrefix(notesOptions.StartRev), nil
+}
+
+func writeMarkdown(toc, markdown, version string) error {
+	changelogPath, err := changelogFilename(version)
+	if err != nil {
+		return err
+	}
+
+	writeFile := func(t, m string) error {
+		return ioutil.WriteFile(
+			changelogPath, []byte(strings.Join(
+				[]string{addTocMarkers(t), strings.TrimSpace(m)}, "\n",
+			)), 0o644,
+		)
+	}
+
+	// No changelog exists, simply write the content to a new one
+	if _, err := os.Stat(changelogPath); os.IsNotExist(err) {
+		logrus.Infof("Changelog %q does not exist, creating it", changelogPath)
+		return writeFile(toc, markdown)
+	}
+
+	// Changelog seems to exist, prepend the notes and re-generate the TOC
+	logrus.Infof("Adding new content to changelog file %q ", changelogPath)
+	content, err := ioutil.ReadFile(changelogPath)
+	if err != nil {
+		return err
+	}
+
+	tocEndIndex := bytes.Index(content, []byte(tocEnd))
+	if tocEndIndex < 0 {
+		return errors.Errorf(
+			"unable to find table of contents end marker `%s` in %q",
+			tocEnd, changelogPath,
+		)
+	}
+
+	mergedMarkdown := fmt.Sprintf(
+		"%s\n%s",
+		strings.TrimSpace(markdown),
+		string(content[(len(tocEnd)+tocEndIndex):]),
+	)
+	mergedTOC, err := notes.GenerateTOC(mergedMarkdown)
+	if err != nil {
+		return err
+	}
+	return writeFile(mergedTOC, mergedMarkdown)
+}
+
+func changelogFilename(version string) (string, error) {
+	v, err := semver.Parse(version)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(
+		changelogOpts.outputDir,
+		fmt.Sprintf("CHANGELOG-%d.%d.md", v.Major, v.Minor),
+	), nil
+}
+
+func addTocMarkers(toc string) string {
+	return fmt.Sprintf("%s\n\n%s\n%s\n", tocStart, toc, tocEnd)
 }
