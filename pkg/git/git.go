@@ -42,12 +42,38 @@ const (
 	DefaultGithubRepo = "kubernetes"
 	DefaultRemote     = "origin"
 	DefaultMasterRef  = "HEAD"
+	Master            = "master"
 
 	branchRE              = `master|release-([0-9]{1,})\.([0-9]{1,})(\.([0-9]{1,}))*$`
 	defaultGithubAuthRoot = "git@github.com:"
 	gitExecutable         = "git"
 	tagPrefix             = "v"
 )
+
+// DiscoverResult is the result of a revision discovery
+type DiscoverResult struct {
+	startSHA, startRev, endSHA, endRev string
+}
+
+// StartSHA returns the start SHA for the DiscoverResult
+func (d *DiscoverResult) StartSHA() string {
+	return d.startSHA
+}
+
+// StartRev returns the start revision for the DiscoverResult
+func (d *DiscoverResult) StartRev() string {
+	return d.startRev
+}
+
+// EndSHA returns the end SHA for the DiscoverResult
+func (d *DiscoverResult) EndSHA() string {
+	return d.endSHA
+}
+
+// EndRev returns the end revision for the DiscoverResult
+func (d *DiscoverResult) EndRev() string {
+	return d.endRev
+}
 
 // Wrapper type for a Kubernetes repository instance
 type Repo struct {
@@ -206,57 +232,67 @@ func (r *Repo) RevParseShort(rev string) (string, error) {
 
 // LatestNonPatchFinalToLatest tries to discover the start (latest v1.xx.0) and
 // end (release-1.xx or master) revision inside the repository
-func (r *Repo) LatestNonPatchFinalToLatest() (start, end string, err error) {
+func (r *Repo) LatestNonPatchFinalToLatest() (DiscoverResult, error) {
 	// Find the last non patch version tag, then resolve its revision
 	versions, err := r.latestNonPatchFinalVersions()
 	if err != nil {
-		return "", "", err
+		return DiscoverResult{}, err
 	}
 	version := versions[0]
 	versionTag := addTagPrefix(version.String())
-	logrus.Infof("latest non patch version %s", versionTag)
-	start, err = r.RevParse(versionTag)
+	logrus.Debugf("latest non patch version %s", versionTag)
+	start, err := r.RevParse(versionTag)
 	if err != nil {
-		return "", "", err
+		return DiscoverResult{}, err
 	}
 
 	// If a release branch exists for the next version, we use it. Otherwise we
 	// fallback to the master branch.
-	end, err = r.releaseBranchOrMasterRev(version.Major, version.Minor+1)
+	end, branch, err := r.releaseBranchOrMasterRev(version.Major, version.Minor+1)
 	if err != nil {
-		return "", "", err
+		return DiscoverResult{}, err
 	}
 
-	return start, end, nil
+	return DiscoverResult{
+		startSHA: start,
+		startRev: versionTag,
+		endSHA:   end,
+		endRev:   branch,
+	}, nil
 }
 
-func (r *Repo) LatestNonPatchFinalToMinor() (start, end string, err error) {
+func (r *Repo) LatestNonPatchFinalToMinor() (DiscoverResult, error) {
 	// Find the last non patch version tag, then resolve its revision
 	versions, err := r.latestNonPatchFinalVersions()
 	if err != nil {
-		return "", "", err
+		return DiscoverResult{}, err
 	}
 	if len(versions) < 2 {
-		return "", "", errors.New("unable to find two latest non patch versions")
+		return DiscoverResult{}, errors.New("unable to find two latest non patch versions")
 	}
 
 	latestVersion := versions[0]
 	latestVersionTag := addTagPrefix(latestVersion.String())
-	logrus.Infof("latest non patch version %s", latestVersionTag)
-	end, err = r.RevParse(latestVersionTag)
+	logrus.Debugf("latest non patch version %s", latestVersionTag)
+	end, err := r.RevParse(latestVersionTag)
 	if err != nil {
-		return "", "", err
+		return DiscoverResult{}, err
 	}
 
 	previousVersion := versions[1]
 	previousVersionTag := addTagPrefix(previousVersion.String())
-	logrus.Infof("previous non patch version %s", previousVersionTag)
-	start, err = r.RevParse(previousVersionTag)
+	logrus.Debugf("previous non patch version %s", previousVersionTag)
+	start, err := r.RevParse(previousVersionTag)
 	if err != nil {
-		return "", "", err
+		return DiscoverResult{}, err
 	}
 
-	return start, end, nil
+	return DiscoverResult{
+		startSHA: start,
+		startRev: previousVersionTag,
+		endSHA:   end,
+		endRev:   latestVersionTag,
+	}, nil
 }
 
 func (r *Repo) latestNonPatchFinalVersions() ([]semver.Version, error) {
@@ -287,21 +323,21 @@ func (r *Repo) latestNonPatchFinalVersions() ([]semver.Version, error) {
 	return latestVersions, nil
 }
 
-func (r *Repo) releaseBranchOrMasterRev(major, minor uint64) (rev string, err error) {
+func (r *Repo) releaseBranchOrMasterRev(major, minor uint64) (sha, rev string, err error) {
 	relBranch := fmt.Sprintf("release-%d.%d", major, minor)
-	rev, err = r.RevParse(relBranch)
+	sha, err = r.RevParse(relBranch)
 	if err == nil {
-		logrus.Infof("found release branch %s", relBranch)
-		return rev, nil
+		logrus.Debugf("found release branch %s", relBranch)
+		return sha, relBranch, nil
 	}
 
-	rev, err = r.RevParse("master")
+	sha, err = r.RevParse(Master)
 	if err == nil {
-		logrus.Infof("no release branch found, using master")
-		return rev, nil
+		logrus.Debug("no release branch found, using master")
+		return sha, Master, nil
 	}
 
-	return "", err
+	return "", "", err
 }
 
 // HasRemoteBranch takes a branch string and verifies that it exists
@@ -452,10 +488,10 @@ func (r *Repo) Head() (string, error) {
 // LatestPatchToPatch tries to discover the start (latest v1.x.[x-1]) and
 // end (latest v1.x.x) revision inside the repository for the specified release
 // branch.
-func (r *Repo) LatestPatchToPatch(branch string) (start, end string, err error) {
+func (r *Repo) LatestPatchToPatch(branch string) (DiscoverResult, error) {
 	latestTag, err := r.latestTagForBranch(branch)
 	if err != nil {
-		return "", "", err
+		return DiscoverResult{}, err
 	}
 
 	if len(latestTag.Pre) > 0 && latestTag.Patch > 0 {
@@ -464,7 +500,7 @@ func (r *Repo) LatestPatchToPatch(branch string) (start, end string, err error) 
 	}
 
 	if latestTag.Patch == 0 {
-		return "", "", errors.Errorf(
+		return DiscoverResult{}, errors.Errorf(
 			"found non-patch version %v as latest tag on branch %s",
 			latestTag, branch,
 		)
@@ -476,19 +512,26 @@ func (r *Repo) LatestPatchToPatch(branch string) (start, end string, err error) 
 		Patch: latestTag.Patch - 1,
 	}
 
-	logrus.Infof("Parsing latest tag %s%v", tagPrefix, latestTag)
-	end, err = r.RevParse(addTagPrefix(latestTag.String()))
+	logrus.Debugf("parsing latest tag %s%v", tagPrefix, latestTag)
+	latestVersionTag := addTagPrefix(latestTag.String())
+	end, err := r.RevParse(latestVersionTag)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "parsing version %v", latestTag)
+		return DiscoverResult{}, errors.Wrapf(err, "parsing version %v", latestTag)
 	}
 
-	logrus.Infof("Parsing previous tag %s%v", tagPrefix, prevTag)
-	start, err = r.RevParse(addTagPrefix(prevTag.String()))
+	logrus.Debugf("parsing previous tag %s%v", tagPrefix, prevTag)
+	previousVersionTag := addTagPrefix(prevTag.String())
+	start, err := r.RevParse(previousVersionTag)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "parsing previous version %v", prevTag)
+		return DiscoverResult{}, errors.Wrapf(err, "parsing previous version %v", prevTag)
 	}
 
-	return start, end, nil
+	return DiscoverResult{
+		startSHA: start,
+		startRev: previousVersionTag,
+		endSHA:   end,
+		endRev:   latestVersionTag,
+	}, nil
 }
 
 // latestTagForBranch returns the latest available semver tag for a given branch

@@ -69,8 +69,6 @@ type changelogOptions struct {
 
 var changelogOpts = &changelogOptions{}
 
-const master = "master"
-
 func init() {
 	cobra.OnInitialize(initConfig)
 
@@ -78,7 +76,7 @@ func init() {
 		tarsFlag  = "tars"
 		tokenFlag = "token"
 	)
-	changelogCmd.PersistentFlags().StringVar(&changelogOpts.branch, "branch", master, "The target release branch. Leave it default for non-patch releases.")
+	changelogCmd.PersistentFlags().StringVar(&changelogOpts.branch, "branch", git.Master, "The target release branch. Leave it default for non-patch releases.")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.bucket, "bucket", "kubernetes-release", "Specify gs bucket to point to in generated notes")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tars, tarsFlag, "", "Directory of tars to sha512 sum for display")
 	changelogCmd.PersistentFlags().StringVarP(&changelogOpts.token, tokenFlag, "t", "", "GitHub token for release notes retrieval")
@@ -94,7 +92,7 @@ func init() {
 }
 
 func runChangelog() (err error) {
-	branch := master
+	branch := git.Master
 	revisionDiscoveryMode := notes.RevisionDiscoveryModeMinorToMinor
 
 	if changelogOpts.branch != branch {

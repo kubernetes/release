@@ -31,6 +31,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 
+	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/util"
 )
@@ -88,7 +89,7 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.Branch,
 		"branch",
-		util.EnvDefault("BRANCH", "master"),
+		util.EnvDefault("BRANCH", git.Master),
 		"Select which branch to scrape. Defaults to `master`",
 	)
 

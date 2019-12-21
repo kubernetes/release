@@ -68,8 +68,7 @@ func runFf(opts *ffOptions) error {
 		return errors.New("Please specify valid release branch")
 	}
 	masterRef := opts.masterRef
-	master := "master"
-	remoteMaster := kgit.Remotify(master)
+	remoteMaster := kgit.Remotify(kgit.Master)
 
 	logrus.Infof("Preparing to fast-forward master@%s onto the %s branch", masterRef, branch)
 	repo, err := kgit.CloneOrOpenDefaultGitHubRepoSSH(rootOpts.repoPath, opts.org)
@@ -102,8 +101,8 @@ func runFf(opts *ffOptions) error {
 		defer repo.Cleanup() // nolint: errcheck
 	}
 
-	logrus.Infof("Finding merge base between %q and %q", master, branch)
-	mergeBase, err := repo.MergeBase(master, branch)
+	logrus.Infof("Finding merge base between %q and %q", kgit.Master, branch)
+	mergeBase, err := repo.MergeBase(kgit.Master, branch)
 	if err != nil {
 		return err
 	}
