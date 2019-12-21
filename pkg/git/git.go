@@ -129,14 +129,13 @@ func CloneOrOpenRepo(repoPath, url string, useSSH bool) (*Repo, error) {
 		targetDir = t
 	}
 
-	r, err := git.PlainClone(targetDir, false, &git.CloneOptions{
+	if _, err := git.PlainClone(targetDir, false, &git.CloneOptions{
 		URL:      url,
 		Progress: os.Stdout,
-	})
-	if err != nil {
+	}); err != nil {
 		return nil, err
 	}
-	return &Repo{inner: r, dir: targetDir}, nil
+	return updateRepo(targetDir, useSSH)
 }
 
 // updateRepo tries to open the provided repoPath and fetches the latest
