@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+#
+# Copyright 2019 The Kubernetes Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+PROG=${0##*/}
+
+#+ NAME
+#+     $PROG - generate and send the patch release announcement mail
+#+
+#+ SYNOPSIS
+#+     $PROG --github-token=[gh-token] --sendgrid-api-key=[sendgrid-key] \
+#+       --freeze-date=[freeze-date] --cut-date=[cut-date] \
+#+       --from-name=[sender-name] --from-email=[sender-email] \
+#+       [release-branch]
+#+
+#+ DESCRIPTION
+#+     This tool generates the patch release announcement and posts it to
+#+     the 'kubernetes-dev@googlegroups.com' & 'kubernetes-dev-announce@googlegroups.com'
+#+     lists.
+#+
+#+     The mails hold the freeze date, cut date, a preview of the changelog and a
+#+     list of open cherry-pick PRs.
+#+
+#+     The mail is sent out via sendgrid, GCB does not allow to send mail directly.
+#+
+#+ OPTIONS
+#+     release-branch            - The branch we want to cut from, e.g.: 'release-1.15'.
+#+     --nomock                  - By default the mail will be sent to the mail address
+#+                                 that is set as the sender (--from-email). When this
+#+                                 flag is set, we send it to the kubernetes mailing
+#+                                 lists.
+#+     --github-token            - The github token that will be used for generating the
+#+                                 changelog.
+#+     --sendgrid-api-key        - The API key for sendgrid to send out the email.
+#+     --freeze-date             - The date we will freeze the branch and will not accept
+#+                                 cherry-picks anymore.
+#+     --cut-date                - The date we will cut and publish the release.
+#+     --from-name               - The sender's name.
+#+     --from-email              - The sender's email address. Will also be used as a
+#+                                 receiver when not in nomock mode.
+#+     [--tail]                  - Stays attached to the cloud build process and streams
+#+                                 in the logs
+#+     [--k8s-git-url]           - The git URL to clone kubernetes/kubernetes from.
+#+     [--release-git-url]       - The git URL to clone kubernetes/release from.
+#+     [--release-git-branch]    - The branch of kubernetes/release to use.
+#+
+
+set -e
+# set -u
+set -o pipefail
+
+readonly PROG="${0##*/}"
+
+readonly BASE_ROOT="$(dirname "$(readlink -e "${BASH_SOURCE[0]}" 2>&1)")"
+# shellcheck source=./lib/common.sh
+source "${BASE_ROOT}/lib/common.sh"
+
+# For some reason, using $FLAG_xxx seems to replace ' ' with '\n'. Sendgrid
+# does not really like names with newlines in it and treats them as two
+# spearate recipients.
+# Newlines do not make too much sense for other variables, so we globally
+# replace newlines with spaces.
+replace_nl() {
+  tr -s $'\n' ' '
+}
+
+flag_or_env_or_default() {
+  local -r flag_name="${1//-/_}"
+  local -r default="${2:-}"
+
+  local -r flag_var_name="FLAGS_${flag_name}"
+  local -r env_var_name="${flag_name^^}"
+
+  if [ -n "${!flag_var_name:-}" ] ; then
+    echo  -n "${!flag_var_name}" | replace_nl
+    return
+  fi
+
+  if [ -n "${!env_var_name:-}" ] ; then
+    echo -n "${!env_var_name}" | replace_nl
+    return
+  fi
+
+  if [ -n "$default" ] ; then
+    echo -n "$default" | replace_nl
+    return
+  fi
+
+  >&2 echo "${FATAL} flag --${flag_name//_/-} or setting '\$${env_var_name}' is mandatory"
+  return 1
+}
+
+main() {
+  local branch_name="${POSITIONAL_ARGV[0]}"
+
+  if [ -z "$branch_name" ] ; then
+    common::manpage -help
+    return 1
+  fi
+
+  local subst=()
+  local opts=(
+    '--no-source'
+    "--config=${BASE_ROOT}/gcb/patch-announce/cloudbuild.yaml"
+  )
+
+  # mandatory flags
+  subst+=( "_K8S_GIT_BRANCH=${branch_name}" )
+  subst+=( "_GITHUB_TOKEN=$( flag_or_env_or_default 'github_token' )" )
+  subst+=( "_SENDGRID_API_KEY=$( flag_or_env_or_default 'sendgrid_api_key' )" )
+  subst+=( "_FREEZE_DATE=$( flag_or_env_or_default 'freeze_date' )" )
+  subst+=( "_CUT_DATE=$( flag_or_env_or_default 'cut_date' )" )
+  subst+=( "_FROM_NAME=$( flag_or_env_or_default 'from_name' )" )
+  subst+=( "_FROM_EMAIL=$( flag_or_env_or_default 'from_email' )" )
+
+  # optional flags
+  subst+=( "_K8S_GIT_URL=$( flag_or_env_or_default 'k8s_git_url' 'https://github.com/kubernetes/kubernetes' )" )
+  subst+=( "_RELEASE_GIT_URL=$( flag_or_env_or_default 'release_git_url' 'https://github.com/kubernetes/release' )" )
+  subst+=( "_RELEASE_GIT_BRANCH=$( flag_or_env_or_default 'release_git_branch' 'master' )" )
+
+  # shellcheck disable=2154
+  # ... because that is set by magick when sourcing common.sh
+  if ((FLAGS_nomock)) ; then
+    subst+=( "_RUN_TYPE=nomock" )
+  fi
+
+  # shellcheck disable=2154
+  # ... because that is set by magick when sourcing common.sh
+  if ! ((FLAGS_tail)) ; then
+    opts+=( '--async' )
+  fi
+
+  gcloud builds submit \
+    "${opts[@]}" \
+    --substitutions "$( common::join ',' "${subst[@]}" )"
+}
+
+main "$@"

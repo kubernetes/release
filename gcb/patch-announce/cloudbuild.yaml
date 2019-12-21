@@ -1,0 +1,65 @@
+timeout: 1200s
+
+steps:
+- id: clone-k8s
+  waitFor: [ '-' ]
+  name: gcr.io/cloud-builders/git
+  dir: "go/src/k8s.io"
+  args:
+  - "clone"
+  - "${_K8S_GIT_URL}"
+  - "--branch=${_K8S_GIT_BRANCH}"
+- id: clone-release
+  waitFor: [ '-' ]
+  name: gcr.io/cloud-builders/git
+  dir: "go/src/k8s.io"
+  args:
+  - "clone"
+  - "${_RELEASE_GIT_URL}"
+  - "--branch=${_RELEASE_GIT_BRANCH}"
+
+- id: prepare-and-send
+  name: "gcr.io/${PROJECT_ID}/k8s-cloud-builder"
+  env:
+  - "GITHUB_TOKEN=${_GITHUB_TOKEN}"
+  - "SENDGRID_API_KEY=${_SENDGRID_API_KEY}"
+  - "REL_MGR_NAME=${_REL_MGR_NAME}"
+  - "REL_MGR_EMAIL=${_REL_MGR_EMAIL}"
+  - "REL_MGR_SLACK=${_REL_MGR_SLACK}"
+  - "FROM_NAME=${_FROM_NAME}"
+  - "FROM_EMAIL=${_FROM_EMAIL}"
+  - "FREEZE_DATE=${_FREEZE_DATE}"
+  - "CUT_DATE=${_CUT_DATE}"
+  - "RUN_TYPE=${_RUN_TYPE}"
+  args:
+  - go/src/k8s.io/release/patch-release/announce
+
+substitutions:
+  # The branch of k/kubernetes to check out, the branch to announce a patch release for (e.g.: release-1.15)
+  _K8S_GIT_BRANCH:     null
+  # A github token, used to collect the changelog
+  _GITHUB_TOKEN:       null
+  # API key for sendgrid to send out mails
+  _SENDGRID_API_KEY:   null
+  # Date of CP freeze, ISO 8601 (e.g.: 2019-12-06)
+  _FREEZE_DATE:        null
+  # Date of planned cut, ISO 8601 (e.g.: 2019-12-11)
+  _CUT_DATE:           null
+  # The mail sender's name. Will also be used as a receipient in mock mode. (e.g.: "Jane Doe")
+  _FROM_NAME:          null
+  # The mail sender's email. Will also be used as a receipient in mock mode. (e.g.: jane.doe@example.org")
+  _FROM_EMAIL:         null
+  # For the real run, set to 'nomock' (e.g.: "mock" or "nomock")
+  _RUN_TYPE:           'mock'
+  # git-clone'able URL for k/kubernetes
+  _K8S_GIT_URL:        https://github.com/kubernetes/kubernetes
+  # git-clone'able URL for k/release
+  _RELEASE_GIT_URL:    https://github.com/kubernetes/release
+  # The branch of k/release to check out
+  _RELEASE_GIT_BRANCH: master
+  # For the email message: the name of the group to contact
+  _REL_MGR_NAME:       'Kubernetes Release Managers'
+  # For the email message: the email of the group to contact
+  _REL_MGR_EMAIL:      'release-managers@kubernetes.io'
+  # For the email message: the slack channel of the group to contact
+  _REL_MGR_SLACK:      'sig-release'
