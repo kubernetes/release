@@ -295,11 +295,14 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 			return errors.Wrapf(err, "creating release note document")
 		}
 
-		if err := notes.RenderMarkdown(
-			output, doc, opts.ReleaseBucket,
-			opts.ReleaseTars, opts.StartRev, opts.EndRev,
-		); err != nil {
+		markdown, err := notes.RenderMarkdown(
+			doc, opts.ReleaseBucket, opts.ReleaseTars, opts.StartRev, opts.EndRev,
+		)
+		if err != nil {
 			return errors.Wrapf(err, "rendering release note document to markdown")
+		}
+		if _, err := output.WriteString(markdown); err != nil {
+			return errors.Wrapf(err, "writing output file")
 		}
 
 	default:
