@@ -39,7 +39,7 @@ func TestMoreRecent(t *testing.T) {
 	require.Nil(t, ioutil.WriteFile(
 		testFileOne,
 		[]byte("file-one-contents"),
-		0644,
+		0o644,
 	))
 
 	time.Sleep(1 * time.Second)
@@ -48,7 +48,7 @@ func TestMoreRecent(t *testing.T) {
 	require.Nil(t, ioutil.WriteFile(
 		testFileTwo,
 		[]byte("file-two-contents"),
-		0644,
+		0o644,
 	))
 
 	notFile := filepath.Join(baseTmpDir, "noexist.txt")
@@ -152,7 +152,7 @@ func TestReadFileFromGzippedTar(t *testing.T) {
 	require.Nil(t, ioutil.WriteFile(
 		testTarPath,
 		b.Bytes(),
-		0644,
+		0o644,
 	))
 
 	defer cleanupTmp(t, baseTmpDir)
