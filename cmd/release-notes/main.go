@@ -244,7 +244,7 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 	var existingNotes notes.ReleaseNotes
 
 	if opts.Output != "" {
-		output, err = os.OpenFile(opts.Output, os.O_RDWR|os.O_CREATE, 0644)
+		output, err = os.OpenFile(opts.Output, os.O_RDWR|os.O_CREATE, 0o644)
 		if err != nil {
 			return errors.Wrapf(err, "opening the supplied output file")
 		}

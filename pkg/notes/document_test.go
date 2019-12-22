@@ -74,7 +74,7 @@ func TestCreateDownloadsTable(t *testing.T) {
 		"kubernetes.tar.gz",
 	} {
 		require.Nil(t, ioutil.WriteFile(
-			filepath.Join(dir, file), []byte{1, 2, 3}, 0o0644,
+			filepath.Join(dir, file), []byte{1, 2, 3}, 0o644,
 		))
 	}
 
