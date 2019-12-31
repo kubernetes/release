@@ -204,6 +204,7 @@ func runPushBuild(opts *pushBuildOptions) error {
 
 	gcsDest := opts.releaseType
 
+	//nolint
 	// TODO: is this how we want to handle gcs dest args?
 	if opts.ci {
 		gcsDest = "ci"

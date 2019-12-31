@@ -167,6 +167,7 @@ func init() {
 		"Only commits from this GitHub user are considered. Set to empty string to include all users",
 	)
 	if cmd.PersistentFlags().MarkDeprecated("requiredAuthor", "use '--required-author' instead") != nil {
+		//nolint
 		//TODO: remove 'requiredAuthor' after 2020-02-01 -- ¯\_(ツ)_/¯
 		// we are in init, can't do much here
 		panic("Unknown flag 'requiredAuthor'")
