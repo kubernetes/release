@@ -525,7 +525,7 @@ func checkErrMsg(t *testing.T, err error, expectedMsg string) {
 	}
 }
 
-func response(statusCode int, lastPage int) *github.Response {
+func response(statusCode, lastPage int) *github.Response {
 	res := &github.Response{
 		LastPage: lastPage,
 		Response: &http.Response{
