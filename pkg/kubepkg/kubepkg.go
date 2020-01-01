@@ -108,7 +108,7 @@ type cfg struct {
 }
 
 func ConstructBuilds(packages, channels []string, kubeVersion, revision, cniVersion, criToolsVersion string) ([]Build, error) {
-	var builds []Build
+	builds := []Build{}
 
 	for _, pkg := range packages {
 		b := &Build{
@@ -197,7 +197,8 @@ func buildPackage(pkg, arch string, packageDef PackageDefinition) error {
 
 	log.Printf("download link base is %s", c.DownloadLinkBase)
 
-	// TODO: Add note about this
+	// For cases where a CI build version of Kubernetes is retrieved, replace instances
+	// of "+" with "-", so that we build with a valid Debian package version.
 	c.KubernetesVersion = strings.Replace(c.KubernetesVersion, "+", "-", 1)
 
 	c.Version, err = getPackageVersion(packageDef)
@@ -236,6 +237,7 @@ func (c cfg) run() error {
 	log.Printf("!!!!!!!!! doing: %#v", c)
 	var w []work
 
+	// nolint
 	// TODO: Get package directory for any version once package definitions are broken out
 	srcdir := filepath.Join(latestPackagesDir, c.Package)
 	dstdir, err := ioutil.TempDir(os.TempDir(), "debs")
@@ -255,7 +257,7 @@ func (c cfg) run() error {
 			return nil
 		}
 		if f.IsDir() {
-			log.Printf(dstfile)
+			log.Print(dstfile)
 			return os.Mkdir(dstfile, f.Mode())
 		}
 		t, err := template.
@@ -307,7 +309,9 @@ func (c cfg) run() error {
 	dstParts := []string{"bin", string(c.Channel)}
 
 	dstPath := filepath.Join(dstParts...)
-	os.MkdirAll(dstPath, 0777)
+	if mkdirErr := os.MkdirAll(dstPath, 0o777); mkdirErr != nil {
+		return err
+	}
 
 	fileName := fmt.Sprintf("%s_%s-%s_%s.deb", c.Package, c.Version, c.Revision, c.DebArch)
 	err = runCommand("", "mv", filepath.Join("/tmp", fileName), dstPath)
@@ -318,9 +322,9 @@ func (c cfg) run() error {
 	return nil
 }
 
-func runCommand(pwd string, command string, cmdArgs ...string) error {
+func runCommand(pwd, command string, cmdArgs ...string) error {
 	cmd := exec.Command(command, cmdArgs...)
-	if len(pwd) != 0 {
+	if pwd == "" {
 		cmd.Dir = pwd
 	}
 	cmd.Stdout = os.Stdout
@@ -506,8 +510,7 @@ func fetchReleases(owner, repo string, includePrereleases bool) ([]*github.Repos
 }
 
 func getDownloadLinkBase(packageDef PackageDefinition) (string, error) {
-	switch packageDef.Channel {
-	case ChannelNightly:
+	if packageDef.Channel == ChannelNightly {
 		return getCIBuildsDownloadLinkBase(packageDef)
 	}
 

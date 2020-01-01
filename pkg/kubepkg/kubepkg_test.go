@@ -92,5 +92,4 @@ func TestGetKubeadmDependencies(t *testing.T) {
 			}
 		})
 	}
-
 }

@@ -28,6 +28,8 @@ import (
 type debsOptions struct {
 }
 
+//nolint
+// TODO: Determine if we need debOpts
 var debsOpts = &debsOptions{}
 
 // debsCmd represents the base command when called without any subcommands
@@ -63,6 +65,5 @@ func runDebs() error {
 		log.Fatalf("err: %v", err)
 	}
 
-	// TODO: Fix return values
 	return nil
 }
