@@ -79,7 +79,7 @@ func TestGetKubeadmDependencies(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			packageDef := kpkg.PackageDefinition{Version: tc.version}
-			deps, err := kpkg.GetKubeadmDependencies(packageDef)
+			deps, err := kpkg.GetKubeadmDependencies(&packageDef)
 			if err != nil {
 				t.Fatalf("did not expect an error: %v", err)
 			}

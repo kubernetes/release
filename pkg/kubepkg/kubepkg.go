@@ -33,6 +33,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/google/go-github/github"
+	"github.com/pkg/errors"
 )
 
 type ChannelType string
@@ -81,7 +82,7 @@ type work struct {
 
 type Build struct {
 	Package     string
-	Definitions []PackageDefinition
+	Definitions []*PackageDefinition
 }
 
 type PackageDefinition struct {
@@ -130,7 +131,7 @@ func ConstructBuilds(packages, channels []string, kubeVersion, revision, cniVers
 				packageDef.Version = criToolsVersion
 			}
 
-			b.Definitions = append(b.Definitions, *packageDef)
+			b.Definitions = append(b.Definitions, packageDef)
 		}
 
 		builds = append(builds, *b)
@@ -152,9 +153,13 @@ func WalkBuilds(builds []Build, architectures []string) error {
 	return nil
 }
 
-func buildPackage(pkg, arch string, packageDef PackageDefinition) error {
+func buildPackage(pkg, arch string, packageDef *PackageDefinition) error {
+	if packageDef == nil {
+		return errors.New("package definition cannot be nil")
+	}
+
 	c := cfg{
-		PackageDefinition: &packageDef,
+		PackageDefinition: packageDef,
 		Package:           pkg,
 		Arch:              arch,
 	}
@@ -335,7 +340,11 @@ func runCommand(pwd, command string, cmdArgs ...string) error {
 	return nil
 }
 
-func getPackageVersion(packageDef PackageDefinition) (string, error) {
+func getPackageVersion(packageDef *PackageDefinition) (string, error) {
+	if packageDef == nil {
+		return "", errors.New("package definition cannot be nil")
+	}
+
 	log.Printf("Setting version for %s package...", packageDef.Name)
 	switch packageDef.Name {
 	case "kubernetes-cni":
@@ -348,7 +357,11 @@ func getPackageVersion(packageDef PackageDefinition) (string, error) {
 	return packageDef.KubernetesVersion, nil
 }
 
-func getKubernetesVersion(packageDef PackageDefinition) (string, error) {
+func getKubernetesVersion(packageDef *PackageDefinition) (string, error) {
+	if packageDef == nil {
+		return "", errors.New("package definition cannot be nil")
+	}
+
 	if packageDef.KubernetesVersion != "" {
 		log.Printf("Using Kubernetes version (%s) for %s package...", packageDef.KubernetesVersion, packageDef.Name)
 		return packageDef.KubernetesVersion, nil
@@ -394,7 +407,11 @@ func fetchVersion(url string) (string, error) {
 	return strings.Replace(strings.Replace(string(versionBytes), "v", "", 1), "\n", "", 1), nil
 }
 
-func getCNIVersion(packageDef PackageDefinition) (string, error) {
+func getCNIVersion(packageDef *PackageDefinition) (string, error) {
+	if packageDef == nil {
+		return "", errors.New("package definition cannot be nil")
+	}
+
 	log.Printf("using CNI version")
 
 	kubeSemver, err := semver.Make(packageDef.KubernetesVersion)
@@ -418,7 +435,11 @@ func getCNIVersion(packageDef PackageDefinition) (string, error) {
 	return minimumCNIVersion, nil
 }
 
-func getCRIToolsVersion(packageDef PackageDefinition) (string, error) {
+func getCRIToolsVersion(packageDef *PackageDefinition) (string, error) {
+	if packageDef == nil {
+		return "", errors.New("package definition cannot be nil")
+	}
+
 	if packageDef.Version != "" {
 		return packageDef.Version, nil
 	}
@@ -509,7 +530,11 @@ func fetchReleases(owner, repo string, includePrereleases bool) ([]*github.Repos
 	return releases, nil
 }
 
-func getDownloadLinkBase(packageDef PackageDefinition) (string, error) {
+func getDownloadLinkBase(packageDef *PackageDefinition) (string, error) {
+	if packageDef == nil {
+		return "", errors.New("package definition cannot be nil")
+	}
+
 	if packageDef.Channel == ChannelNightly {
 		return getCIBuildsDownloadLinkBase(packageDef)
 	}
@@ -517,7 +542,11 @@ func getDownloadLinkBase(packageDef PackageDefinition) (string, error) {
 	return getDefaultReleaseDownloadLinkBase(packageDef)
 }
 
-func getCIBuildsDownloadLinkBase(packageDef PackageDefinition) (string, error) {
+func getCIBuildsDownloadLinkBase(packageDef *PackageDefinition) (string, error) {
+	if packageDef == nil {
+		return "", errors.New("package definition cannot be nil")
+	}
+
 	ciVersion := packageDef.KubernetesVersion
 	if ciVersion == "" {
 		var err error
@@ -530,11 +559,19 @@ func getCIBuildsDownloadLinkBase(packageDef PackageDefinition) (string, error) {
 	return fmt.Sprintf("https://dl.k8s.io/ci/v%s", ciVersion), nil
 }
 
-func getDefaultReleaseDownloadLinkBase(packageDef PackageDefinition) (string, error) {
+func getDefaultReleaseDownloadLinkBase(packageDef *PackageDefinition) (string, error) {
+	if packageDef == nil {
+		return "", errors.New("package definition cannot be nil")
+	}
+
 	return fmt.Sprintf("%s/v%s", DefaultReleaseDownloadLinkBase, packageDef.KubernetesVersion), nil
 }
 
-func GetKubeadmDependencies(packageDef PackageDefinition) (string, error) {
+func GetKubeadmDependencies(packageDef *PackageDefinition) (string, error) {
+	if packageDef == nil {
+		return "", errors.New("package definition cannot be nil")
+	}
+
 	deps := []string{
 		fmt.Sprintf("kubelet (>= %s)", minimumKubernetesVersion),
 		fmt.Sprintf("kubectl (>= %s)", minimumKubernetesVersion),
@@ -546,7 +583,11 @@ func GetKubeadmDependencies(packageDef PackageDefinition) (string, error) {
 	return strings.Join(deps, ", "), nil
 }
 
-func getCNIDownloadLink(packageDef PackageDefinition, arch string) (string, error) {
+func getCNIDownloadLink(packageDef *PackageDefinition, arch string) (string, error) {
+	if packageDef == nil {
+		return "", errors.New("package definition cannot be nil")
+	}
+
 	sv, err := semver.Parse(packageDef.Version)
 	if err != nil {
 		return "", err
