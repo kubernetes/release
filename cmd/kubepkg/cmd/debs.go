@@ -17,9 +17,9 @@ limitations under the License.
 package cmd
 
 import (
-	"log"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	kpkg "k8s.io/release/pkg/kubepkg"
@@ -58,11 +58,11 @@ func runDebs() error {
 
 	builds, err := kpkg.ConstructBuilds(ro.packages, ro.channels, ro.kubeVersion, ro.revision, ro.cniVersion, ro.criToolsVersion)
 	if err != nil {
-		log.Fatalf("err: %v", err)
+		logrus.Fatalf("err: %v", err)
 	}
 
 	if err := kpkg.WalkBuilds(builds, ro.architectures); err != nil {
-		log.Fatalf("err: %v", err)
+		logrus.Fatalf("err: %v", err)
 	}
 
 	return nil

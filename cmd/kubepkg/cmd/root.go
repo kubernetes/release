@@ -17,8 +17,7 @@ limitations under the License.
 package cmd
 
 import (
-	"log"
-
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	kpkg "k8s.io/release/pkg/kubepkg"
@@ -26,8 +25,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "kubepkg",
-	Short: "kubepkg",
+	Use:     "kubepkg",
+	Short:   "kubepkg",
+	PreRunE: initLogging,
 }
 
 type rootOptions struct {
@@ -41,27 +41,17 @@ type rootOptions struct {
 	architectures []string
 
 	releaseDownloadLinkBase string
+
+	logLevel string
 }
 
 var rootOpts = &rootOptions{}
-
-/*
-type stringList []string
-
-func (ss *stringList) String() string {
-	return strings.Join(*ss, ",")
-}
-func (ss *stringList) Set(v string) error {
-	*ss = strings.Split(v, ",")
-	return nil
-}
-*/
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 }
 
@@ -116,8 +106,25 @@ func init() {
 		kpkg.DefaultReleaseDownloadLinkBase,
 		"release download link base.",
 	)
+	rootCmd.PersistentFlags().StringVar(
+		&rootOpts.logLevel,
+		"log-level",
+		"info",
+		"the logging verbosity, either 'panic', 'fatal', 'error', 'warn', 'warning', 'info', 'debug' or 'trace'",
+	)
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+}
+
+func initLogging(*cobra.Command, []string) error {
+	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
+	lvl, err := logrus.ParseLevel(rootOpts.logLevel)
+	if err != nil {
+		return err
+	}
+	logrus.SetLevel(lvl)
+	logrus.Debugf("Using log level %q", lvl)
+	return nil
 }

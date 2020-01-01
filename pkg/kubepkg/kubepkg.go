@@ -21,7 +21,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -34,6 +33,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type ChannelType string
@@ -169,16 +169,16 @@ func buildPackage(pkg, arch string, packageDef *PackageDefinition) error {
 	var err error
 
 	if c.KubernetesVersion != "" {
-		log.Printf("checking k8s semver")
+		logrus.Infof("checking k8s semver")
 		kubeSemver, err := semver.Parse(c.KubernetesVersion)
 		if err != nil {
-			log.Fatalf("could not parse k8s semver: %v", err)
+			logrus.Fatalf("could not parse k8s semver: %v", err)
 		}
 
 		kubeVersionString := kubeSemver.String()
 		kubeVersionParts := strings.Split(kubeVersionString, ".")
 
-		log.Printf("%v, len: %d", kubeVersionParts, len(kubeVersionParts))
+		logrus.Infof("%v, len: %d", kubeVersionParts, len(kubeVersionParts))
 		switch {
 		case len(kubeVersionParts) > 4:
 			c.Channel = ChannelNightly
@@ -191,16 +191,16 @@ func buildPackage(pkg, arch string, packageDef *PackageDefinition) error {
 
 	c.KubernetesVersion, err = getKubernetesVersion(packageDef)
 	if err != nil {
-		log.Fatalf("error getting Kubernetes version: %v", err)
+		logrus.Fatalf("error getting Kubernetes version: %v", err)
 	}
 
-	log.Printf("download link base is %s", c.DownloadLinkBase)
+	logrus.Infof("download link base is %s", c.DownloadLinkBase)
 	c.DownloadLinkBase, err = getDownloadLinkBase(packageDef)
 	if err != nil {
-		log.Fatalf("error getting Kubernetes download link base: %v", err)
+		logrus.Fatalf("error getting Kubernetes download link base: %v", err)
 	}
 
-	log.Printf("download link base is %s", c.DownloadLinkBase)
+	logrus.Infof("download link base is %s", c.DownloadLinkBase)
 
 	// For cases where a CI build version of Kubernetes is retrieved, replace instances
 	// of "+" with "-", so that we build with a valid Debian package version.
@@ -208,16 +208,16 @@ func buildPackage(pkg, arch string, packageDef *PackageDefinition) error {
 
 	c.Version, err = getPackageVersion(packageDef)
 	if err != nil {
-		log.Fatalf("error getting package version: %v", err)
+		logrus.Fatalf("error getting package version: %v", err)
 	}
 
-	log.Printf("package version is %s", c.Version)
+	logrus.Infof("package version is %s", c.Version)
 
 	c.KubeletCNIVersion = minimumCNIVersion
 
 	c.Dependencies, err = GetKubeadmDependencies(packageDef)
 	if err != nil {
-		log.Fatalf("error getting kubeadm dependencies: %v", err)
+		logrus.Fatalf("error getting kubeadm dependencies: %v", err)
 	}
 
 	c.KubeadmKubeletConfigFile = kubeadmConf
@@ -232,14 +232,14 @@ func buildPackage(pkg, arch string, packageDef *PackageDefinition) error {
 
 	c.CNIDownloadLink, err = getCNIDownloadLink(packageDef, c.Arch)
 	if err != nil {
-		log.Fatalf("error getting CNI download link: %v", err)
+		logrus.Fatalf("error getting CNI download link: %v", err)
 	}
 
 	return c.run()
 }
 
 func (c cfg) run() error {
-	log.Printf("!!!!!!!!! doing: %#v", c)
+	logrus.Infof("!!!!!!!!! doing: %#v", c)
 	var w []work
 
 	// nolint
@@ -262,7 +262,7 @@ func (c cfg) run() error {
 			return nil
 		}
 		if f.IsDir() {
-			log.Print(dstfile)
+			logrus.Info(dstfile)
 			return os.Mkdir(dstfile, f.Mode())
 		}
 		t, err := template.
@@ -286,7 +286,7 @@ func (c cfg) run() error {
 	}
 
 	for _, w := range w {
-		log.Printf("w: %#v", w)
+		logrus.Infof("w: %#v", w)
 		if err := func() error {
 			f, err := os.OpenFile(w.dst, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0)
 			if err != nil {
@@ -345,7 +345,7 @@ func getPackageVersion(packageDef *PackageDefinition) (string, error) {
 		return "", errors.New("package definition cannot be nil")
 	}
 
-	log.Printf("Setting version for %s package...", packageDef.Name)
+	logrus.Infof("Setting version for %s package...", packageDef.Name)
 	switch packageDef.Name {
 	case "kubernetes-cni":
 		return getCNIVersion(packageDef)
@@ -353,7 +353,7 @@ func getPackageVersion(packageDef *PackageDefinition) (string, error) {
 		return getCRIToolsVersion(packageDef)
 	}
 
-	log.Printf("using Kubernetes version")
+	logrus.Infof("using Kubernetes version")
 	return packageDef.KubernetesVersion, nil
 }
 
@@ -363,7 +363,7 @@ func getKubernetesVersion(packageDef *PackageDefinition) (string, error) {
 	}
 
 	if packageDef.KubernetesVersion != "" {
-		log.Printf("Using Kubernetes version (%s) for %s package...", packageDef.KubernetesVersion, packageDef.Name)
+		logrus.Infof("Using Kubernetes version (%s) for %s package...", packageDef.KubernetesVersion, packageDef.Name)
 		return packageDef.KubernetesVersion, nil
 	}
 	switch packageDef.Channel {
@@ -377,17 +377,17 @@ func getKubernetesVersion(packageDef *PackageDefinition) (string, error) {
 }
 
 func getReleaseKubeVersion() (string, error) {
-	log.Print("Retrieving Kubernetes release version...")
+	logrus.Info("Retrieving Kubernetes release version...")
 	return fetchVersion("https://dl.k8s.io/release/stable.txt")
 }
 
 func getTestingKubeVersion() (string, error) {
-	log.Print("Retrieving Kubernetes testing version...")
+	logrus.Info("Retrieving Kubernetes testing version...")
 	return fetchVersion("https://dl.k8s.io/release/latest.txt")
 }
 
 func getNightlyKubeVersion() (string, error) {
-	log.Print("Retrieving Kubernetes nightly version...")
+	logrus.Info("Retrieving Kubernetes nightly version...")
 	return fetchVersion("https://dl.k8s.io/ci/k8s-master.txt")
 }
 
@@ -412,7 +412,7 @@ func getCNIVersion(packageDef *PackageDefinition) (string, error) {
 		return "", errors.New("package definition cannot be nil")
 	}
 
-	log.Printf("using CNI version")
+	logrus.Infof("using CNI version")
 
 	kubeSemver, err := semver.Make(packageDef.KubernetesVersion)
 	if err != nil {
@@ -424,7 +424,7 @@ func getCNIVersion(packageDef *PackageDefinition) (string, error) {
 		return "", err
 	}
 
-	log.Printf("checking kube version (%s) against %s", kubeSemver.String(), v117.String())
+	logrus.Infof("checking kube version (%s) against %s", kubeSemver.String(), v117.String())
 	if packageDef.Version != "" {
 		if kubeSemver.LT(v117) {
 			return pre117CNIVersion, nil
@@ -449,14 +449,14 @@ func getCRIToolsVersion(packageDef *PackageDefinition) (string, error) {
 		return "", err
 	}
 
-	log.Printf("using CRI version")
+	logrus.Infof("using CRI version")
 	kubeVersionString := kubeSemver.String()
 	kubeVersionParts := strings.Split(kubeVersionString, ".")
 
 	criToolsMajor := kubeVersionParts[0]
 	criToolsMinor := kubeVersionParts[1]
 
-	log.Printf("%v, len: %v", kubeVersionParts, len(kubeVersionParts))
+	logrus.Infof("%v, len: %v", kubeVersionParts, len(kubeVersionParts))
 	// v1.17.0-alpha.0.1809+ff8716f4cf6180
 	if len(kubeVersionParts) >= 4 {
 		criToolsMinorInt, err := strconv.Atoi(criToolsMinor)
@@ -464,17 +464,17 @@ func getCRIToolsVersion(packageDef *PackageDefinition) (string, error) {
 			return "", err
 		}
 
-		log.Printf("CRI minor is %s", criToolsMinor)
+		logrus.Infof("CRI minor is %s", criToolsMinor)
 		criToolsMinorInt--
 		criToolsMinor = strconv.Itoa(criToolsMinorInt)
-		log.Printf("CRI minor is %s", criToolsMinor)
+		logrus.Infof("CRI minor is %s", criToolsMinor)
 	}
 
 	criToolsVersion := fmt.Sprintf("%s.%s.0", criToolsMajor, criToolsMinor)
 
 	releases, err := fetchReleases("kubernetes-sigs", "cri-tools", false)
 	if err != nil {
-		log.Fatalf("err: %v", err)
+		logrus.Fatalf("err: %v", err)
 	}
 
 	var tags []string
@@ -491,12 +491,12 @@ func getCRIToolsVersion(packageDef *PackageDefinition) (string, error) {
 	for _, tag := range tags {
 		tagSemver, err := semver.Parse(tag)
 		if err != nil {
-			log.Fatalf("could not parse tag semver: %v", err)
+			logrus.Fatalf("could not parse tag semver: %v", err)
 		}
 
 		criToolsSemver, err := semver.Parse(criToolsVersion)
 		if err != nil {
-			log.Fatalf("could not parse CRI tools semver: %v", err)
+			logrus.Fatalf("could not parse CRI tools semver: %v", err)
 		}
 
 		if tagSemver.GTE(criToolsSemver) {
@@ -504,7 +504,7 @@ func getCRIToolsVersion(packageDef *PackageDefinition) (string, error) {
 		}
 	}
 
-	log.Printf("CRI tools version is %s", criToolsVersion)
+	logrus.Infof("CRI tools version is %s", criToolsVersion)
 	return criToolsVersion, nil
 }
 
