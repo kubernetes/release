@@ -202,14 +202,19 @@ func runPushBuild(opts *pushBuildOptions) error {
 		latest += "-" + opts.versionSuffix
 	}
 
+	logrus.Infof("Latest version is %s", latest)
+
 	gcsDest := opts.releaseType
 
+	//nolint
 	// TODO: is this how we want to handle gcs dest args?
 	if opts.ci {
 		gcsDest = "ci"
 	}
 
 	gcsDest += opts.gcsSuffix
+
+	logrus.Infof("GCS destination is %s", gcsDest)
 
 	releaseBucket := opts.bucket
 	if !rootOpts.nomock {

@@ -121,7 +121,7 @@ type FakeClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClient) GetCommit(arg1 context.Context, arg2 string, arg3 string, arg4 string) (*github.Commit, *github.Response, error) {
+func (fake *FakeClient) GetCommit(arg1 context.Context, arg2, arg3, arg4 string) (*github.Commit, *github.Response, error) {
 	fake.getCommitMutex.Lock()
 	ret, specificReturn := fake.getCommitReturnsOnCall[len(fake.getCommitArgsForCall)]
 	fake.getCommitArgsForCall = append(fake.getCommitArgsForCall, struct {
@@ -190,7 +190,7 @@ func (fake *FakeClient) GetCommitReturnsOnCall(i int, result1 *github.Commit, re
 	}{result1, result2, result3}
 }
 
-func (fake *FakeClient) GetPullRequest(arg1 context.Context, arg2 string, arg3 string, arg4 int) (*github.PullRequest, *github.Response, error) {
+func (fake *FakeClient) GetPullRequest(arg1 context.Context, arg2, arg3 string, arg4 int) (*github.PullRequest, *github.Response, error) {
 	fake.getPullRequestMutex.Lock()
 	ret, specificReturn := fake.getPullRequestReturnsOnCall[len(fake.getPullRequestArgsForCall)]
 	fake.getPullRequestArgsForCall = append(fake.getPullRequestArgsForCall, struct {
@@ -259,7 +259,7 @@ func (fake *FakeClient) GetPullRequestReturnsOnCall(i int, result1 *github.PullR
 	}{result1, result2, result3}
 }
 
-func (fake *FakeClient) GetRepoCommit(arg1 context.Context, arg2 string, arg3 string, arg4 string) (*github.RepositoryCommit, *github.Response, error) {
+func (fake *FakeClient) GetRepoCommit(arg1 context.Context, arg2, arg3, arg4 string) (*github.RepositoryCommit, *github.Response, error) {
 	fake.getRepoCommitMutex.Lock()
 	ret, specificReturn := fake.getRepoCommitReturnsOnCall[len(fake.getRepoCommitArgsForCall)]
 	fake.getRepoCommitArgsForCall = append(fake.getRepoCommitArgsForCall, struct {
@@ -328,7 +328,7 @@ func (fake *FakeClient) GetRepoCommitReturnsOnCall(i int, result1 *github.Reposi
 	}{result1, result2, result3}
 }
 
-func (fake *FakeClient) ListCommits(arg1 context.Context, arg2 string, arg3 string, arg4 *github.CommitsListOptions) ([]*github.RepositoryCommit, *github.Response, error) {
+func (fake *FakeClient) ListCommits(arg1 context.Context, arg2, arg3 string, arg4 *github.CommitsListOptions) ([]*github.RepositoryCommit, *github.Response, error) {
 	fake.listCommitsMutex.Lock()
 	ret, specificReturn := fake.listCommitsReturnsOnCall[len(fake.listCommitsArgsForCall)]
 	fake.listCommitsArgsForCall = append(fake.listCommitsArgsForCall, struct {
@@ -397,7 +397,7 @@ func (fake *FakeClient) ListCommitsReturnsOnCall(i int, result1 []*github.Reposi
 	}{result1, result2, result3}
 }
 
-func (fake *FakeClient) ListPullRequestsWithCommit(arg1 context.Context, arg2 string, arg3 string, arg4 string, arg5 *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+func (fake *FakeClient) ListPullRequestsWithCommit(arg1 context.Context, arg2, arg3, arg4 string, arg5 *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
 	fake.listPullRequestsWithCommitMutex.Lock()
 	ret, specificReturn := fake.listPullRequestsWithCommitReturnsOnCall[len(fake.listPullRequestsWithCommitArgsForCall)]
 	fake.listPullRequestsWithCommitArgsForCall = append(fake.listPullRequestsWithCommitArgsForCall, struct {

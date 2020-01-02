@@ -148,6 +148,7 @@ func runChangelog() (err error) {
 		return errors.Wrapf(err, "creating release note document")
 	}
 
+	//nolint
 	// TODO: mangle the documents into the target files
 	logrus.Infof("doc: %v", doc)
 

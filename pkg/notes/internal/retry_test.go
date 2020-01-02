@@ -109,12 +109,10 @@ func sleepChecker(t *testing.T, expectedSleep time.Duration) func(time.Duration)
 		if d != expectedSleep {
 			t.Errorf("Expected the sleeper to be called with a duration %s, got called with %s", expectedSleep, d)
 		}
-		return
 	}
 }
 
 func nilSleeper(_ time.Duration) {
-	return
 }
 
 func durPtr(d time.Duration) *time.Duration {

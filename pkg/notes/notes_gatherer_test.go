@@ -431,7 +431,7 @@ func pullRequest(id int, msg string) *github.PullRequest {
 func manyRepoCommits(nr int) []*github.RepositoryCommit {
 	cs := make([]*github.RepositoryCommit, nr)
 
-	for i := 1; i <= nr; i += 1 {
+	for i := 1; i <= nr; i++ {
 		cs[i-1] = repoCommit(fmt.Sprintf("commit-%d", i), fmt.Sprintf("commit-msg-%d", i))
 	}
 
@@ -525,7 +525,7 @@ func checkErrMsg(t *testing.T, err error, expectedMsg string) {
 	}
 }
 
-func response(statusCode int, lastPage int) *github.Response {
+func response(statusCode, lastPage int) *github.Response {
 	res := &github.Response{
 		LastPage: lastPage,
 		Response: &http.Response{
