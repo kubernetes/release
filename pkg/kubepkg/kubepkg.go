@@ -23,7 +23,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -34,6 +33,8 @@ import (
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"k8s.io/release/pkg/command"
 )
 
 type ChannelType string
@@ -306,9 +307,12 @@ func (c cfg) run() error {
 		}
 	}
 
-	err = runCommand(dstdir, "dpkg-buildpackage", "-us", "-uc", "-b", "-a"+c.DebArch)
-	if err != nil {
-		return err
+	dpkgStatus, dpkgErr := command.NewWithWorkDir(dstdir, "dpkg-buildpackage", "-us", "-uc", "-b", "-a"+c.DebArch).Run()
+	if dpkgErr != nil {
+		return dpkgErr
+	}
+	if !dpkgStatus.Success() {
+		return errors.Errorf("dpkg-buildpackage command failed: %s", dpkgStatus.Error())
 	}
 
 	dstParts := []string{"bin", string(c.Channel)}
@@ -319,24 +323,14 @@ func (c cfg) run() error {
 	}
 
 	fileName := fmt.Sprintf("%s_%s-%s_%s.deb", c.Package, c.Version, c.Revision, c.DebArch)
-	err = runCommand("", "mv", filepath.Join("/tmp", fileName), dstPath)
-	if err != nil {
-		return err
+	mvStatus, mvErr := command.New("mv", filepath.Join("/tmp", fileName), dstPath).Run()
+	if mvErr != nil {
+		return mvErr
+	}
+	if !mvStatus.Success() {
+		return errors.Errorf("mv command failed: %s", mvStatus.Error())
 	}
 
-	return nil
-}
-
-func runCommand(pwd, command string, cmdArgs ...string) error {
-	cmd := exec.Command(command, cmdArgs...)
-	if pwd == "" {
-		cmd.Dir = pwd
-	}
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
 	return nil
 }
 
