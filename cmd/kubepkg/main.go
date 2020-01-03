@@ -1,5 +1,3 @@
-// +build tools
-
 /*
 Copyright 2019 The Kubernetes Authors.
 
@@ -16,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package hack
+package main
 
-// Add tools that hack scripts depend on here, to ensure they are vendored.
-import (
-	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
-)
+import "k8s.io/release/cmd/kubepkg/cmd"
+
+func main() {
+	cmd.Execute()
+}

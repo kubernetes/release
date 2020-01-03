@@ -35,6 +35,7 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 
 	"k8s.io/release/pkg/command"
+	"k8s.io/release/pkg/util"
 )
 
 const (
@@ -47,7 +48,6 @@ const (
 	branchRE              = `master|release-([0-9]{1,})\.([0-9]{1,})(\.([0-9]{1,}))*$`
 	defaultGithubAuthRoot = "git@github.com:"
 	gitExecutable         = "git"
-	tagPrefix             = "v"
 )
 
 // DiscoverResult is the result of a revision discovery
@@ -239,7 +239,7 @@ func (r *Repo) LatestNonPatchFinalToLatest() (DiscoverResult, error) {
 		return DiscoverResult{}, err
 	}
 	version := versions[0]
-	versionTag := addTagPrefix(version.String())
+	versionTag := util.AddTagPrefix(version.String())
 	logrus.Debugf("latest non patch version %s", versionTag)
 	start, err := r.RevParse(versionTag)
 	if err != nil {
@@ -272,7 +272,7 @@ func (r *Repo) LatestNonPatchFinalToMinor() (DiscoverResult, error) {
 	}
 
 	latestVersion := versions[0]
-	latestVersionTag := addTagPrefix(latestVersion.String())
+	latestVersionTag := util.AddTagPrefix(latestVersion.String())
 	logrus.Debugf("latest non patch version %s", latestVersionTag)
 	end, err := r.RevParse(latestVersionTag)
 	if err != nil {
@@ -280,7 +280,7 @@ func (r *Repo) LatestNonPatchFinalToMinor() (DiscoverResult, error) {
 	}
 
 	previousVersion := versions[1]
-	previousVersionTag := addTagPrefix(previousVersion.String())
+	previousVersionTag := util.AddTagPrefix(previousVersion.String())
 	logrus.Debugf("previous non patch version %s", previousVersionTag)
 	start, err := r.RevParse(previousVersionTag)
 	if err != nil {
@@ -304,7 +304,7 @@ func (r *Repo) latestNonPatchFinalVersions() ([]semver.Version, error) {
 	}
 
 	_ = tags.ForEach(func(t *plumbing.Reference) error { // nolint: errcheck
-		tag := trimTagPrefix(t.Name().Short())
+		tag := util.TrimTagPrefix(t.Name().Short())
 		ver, err := semver.Make(tag)
 
 		if err == nil {
@@ -512,15 +512,15 @@ func (r *Repo) LatestPatchToPatch(branch string) (DiscoverResult, error) {
 		Patch: latestTag.Patch - 1,
 	}
 
-	logrus.Debugf("parsing latest tag %s%v", tagPrefix, latestTag)
-	latestVersionTag := addTagPrefix(latestTag.String())
+	logrus.Debugf("parsing latest tag %s%v", util.TagPrefix, latestTag)
+	latestVersionTag := util.AddTagPrefix(latestTag.String())
 	end, err := r.RevParse(latestVersionTag)
 	if err != nil {
 		return DiscoverResult{}, errors.Wrapf(err, "parsing version %v", latestTag)
 	}
 
-	logrus.Debugf("parsing previous tag %s%v", tagPrefix, prevTag)
-	previousVersionTag := addTagPrefix(prevTag.String())
+	logrus.Debugf("parsing previous tag %s%v", util.TagPrefix, prevTag)
+	previousVersionTag := util.AddTagPrefix(prevTag.String())
 	start, err := r.RevParse(previousVersionTag)
 	if err != nil {
 		return DiscoverResult{}, errors.Wrapf(err, "parsing previous version %v", prevTag)
@@ -551,18 +551,10 @@ func (r *Repo) latestTagForBranch(branch string) (*semver.Version, error) {
 		return nil, err
 	}
 
-	tag, err := semver.Make(trimTagPrefix(rev))
+	tag, err := semver.Make(util.TrimTagPrefix(rev))
 	if err != nil {
 		return nil, err
 	}
 
 	return &tag, nil
-}
-
-func addTagPrefix(tag string) string {
-	return tagPrefix + tag
-}
-
-func trimTagPrefix(tag string) string {
-	return strings.TrimPrefix(tag, tagPrefix)
 }
