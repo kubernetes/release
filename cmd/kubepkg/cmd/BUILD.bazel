@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "debs.go",
         "root.go",
+        "rpms.go",
     ],
     importpath = "k8s.io/release/cmd/kubepkg/cmd",
     visibility = ["//visibility:public"],

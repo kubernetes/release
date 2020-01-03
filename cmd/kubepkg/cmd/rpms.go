@@ -23,22 +23,22 @@ import (
 	"k8s.io/release/pkg/util"
 )
 
-type debsOptions struct {
+type rpmsOptions struct {
 }
 
 //nolint
-// TODO: Determine if we need debsOpts
-var debsOpts = &debsOptions{}
+// TODO: Determine if we need rpmsOpts
+var rpmsOpts = &rpmsOptions{}
 
-// debsCmd represents the base command when called without any subcommands
-var debsCmd = &cobra.Command{
-	Use:           "debs [--arch <architectures>] [--channels <channels>]",
-	Short:         "debs creates Debian-based packages for Kubernetes components",
-	Example:       "kubepkg debs --arch amd64 --channels nightly",
+// rpmsCmd represents the base command when called without any subcommands
+var rpmsCmd = &cobra.Command{
+	Use:           "rpms [--arch <architectures>] [--channels <channels>]",
+	Short:         "rpms creates RPMs for Kubernetes components",
+	Example:       "kubepkg rpms --arch amd64 --channels nightly",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := runDebs(); err != nil {
+		if err := runRpms(); err != nil {
 			return err
 		}
 
@@ -47,10 +47,10 @@ var debsCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(debsCmd)
+	rootCmd.AddCommand(rpmsCmd)
 }
 
-func runDebs() error {
+func runRpms() error {
 	ro := rootOpts
 
 	// Replace the "+" with a "-" to make it semver-compliant
