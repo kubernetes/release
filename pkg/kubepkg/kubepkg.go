@@ -320,7 +320,16 @@ func (c cfg) run() error {
 
 	logrus.Infof("Running dpkg-buildpackage for %s (%s/%s)", c.Package, c.Arch, c.DebArch)
 
-	dpkgStatus, dpkgErr := command.NewWithWorkDir(dstdir, "dpkg-buildpackage", "-us", "-uc", "-b", "-a"+c.DebArch).Run()
+	dpkgStatus, dpkgErr := command.NewWithWorkDir(
+		dstdir,
+		"dpkg-buildpackage",
+		"--unsigned-source",
+		"--unsigned-changes",
+		"--build=binary",
+		"--host-arch",
+		c.DebArch,
+	).Run()
+
 	if dpkgErr != nil {
 		return dpkgErr
 	}
