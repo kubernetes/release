@@ -23,12 +23,13 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/release/pkg/command"
-
 	"github.com/stretchr/testify/require"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/config"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
+
+	"k8s.io/release/pkg/command"
+	"k8s.io/release/pkg/util"
 )
 
 type testRepo struct {
@@ -368,7 +369,7 @@ func TestSuccessLatestTagForBranch(t *testing.T) {
 
 	version, err := testRepo.sut.latestTagForBranch(Master)
 	require.Nil(t, err)
-	require.Equal(t, addTagPrefix(version.String()), testRepo.firstTagName)
+	require.Equal(t, util.AddTagPrefix(version.String()), testRepo.firstTagName)
 }
 
 func TestFailureLatestTagForBranchInvalidBranch(t *testing.T) {

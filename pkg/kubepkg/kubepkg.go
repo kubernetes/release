@@ -35,6 +35,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/command"
+	"k8s.io/release/pkg/util"
 )
 
 type ChannelType string
@@ -180,7 +181,7 @@ func buildPackage(pkg, arch string, packageDef *PackageDefinition) error {
 		logrus.Infof("Checking if user-supplied Kubernetes version (%s) is valid semver...", c.KubernetesVersion)
 		kubeSemver, err := semver.Parse(c.KubernetesVersion)
 		if err != nil {
-			logrus.Fatalf("User-supplied Kubernetes version is not valid semver: %v", err)
+			return errors.Wrap(err, "user-supplied Kubernetes version is not valid semver")
 		}
 
 		kubeVersionString := kubeSemver.String()
@@ -204,12 +205,12 @@ func buildPackage(pkg, arch string, packageDef *PackageDefinition) error {
 
 	c.KubernetesVersion, err = getKubernetesVersion(packageDef)
 	if err != nil {
-		logrus.Fatalf("Error getting Kubernetes version: %v", err)
+		return errors.Wrap(err, "getting Kubernetes version")
 	}
 
 	c.DownloadLinkBase, err = getDownloadLinkBase(packageDef)
 	if err != nil {
-		logrus.Fatalf("Error getting Kubernetes download link base: %v", err)
+		return errors.Wrap(err, "getting Kubernetes download link base")
 	}
 
 	logrus.Infof("Kubernetes download link base: %s", c.DownloadLinkBase)
@@ -220,7 +221,7 @@ func buildPackage(pkg, arch string, packageDef *PackageDefinition) error {
 
 	c.Version, err = getPackageVersion(packageDef)
 	if err != nil {
-		logrus.Fatalf("Error getting package version: %v", err)
+		return errors.Wrap(err, "getting package version")
 	}
 
 	logrus.Infof("%s package version: %s", c.Name, c.Version)
@@ -229,7 +230,7 @@ func buildPackage(pkg, arch string, packageDef *PackageDefinition) error {
 
 	c.Dependencies, err = GetKubeadmDependencies(packageDef)
 	if err != nil {
-		logrus.Fatalf("Error getting kubeadm dependencies: %v", err)
+		return errors.Wrap(err, "getting kubeadm dependencies")
 	}
 
 	c.KubeadmKubeletConfigFile = kubeadmConf
@@ -244,7 +245,7 @@ func buildPackage(pkg, arch string, packageDef *PackageDefinition) error {
 
 	c.CNIDownloadLink, err = getCNIDownloadLink(packageDef, c.Arch)
 	if err != nil {
-		logrus.Fatalf("Error getting CNI download link: %v", err)
+		return errors.Wrap(err, "getting CNI download link")
 	}
 
 	logrus.Infof("Building %s package for %s/%s architecture...", c.Package, c.Arch, c.DebArch)
@@ -492,12 +493,12 @@ func getCRIToolsVersion(packageDef *PackageDefinition) (string, error) {
 
 	releases, err := fetchReleases("kubernetes-sigs", "cri-tools", false)
 	if err != nil {
-		logrus.Fatalf("err: %v", err)
+		return "", err
 	}
 
 	var tags []string
 	for _, release := range releases {
-		criToolsReleaseTag := strings.Trim(*release.TagName, "v")
+		criToolsReleaseTag := util.TrimTagPrefix(*release.TagName)
 		criToolsReleaseVersionParts := strings.Split(criToolsReleaseTag, ".")
 		criToolsReleaseMinor := criToolsReleaseVersionParts[1]
 
@@ -509,12 +510,12 @@ func getCRIToolsVersion(packageDef *PackageDefinition) (string, error) {
 	for _, tag := range tags {
 		tagSemver, err := semver.Parse(tag)
 		if err != nil {
-			logrus.Fatalf("Could not parse tag semver: %v", err)
+			return "", errors.Wrap(err, "could not parse tag semver")
 		}
 
 		criToolsSemver, err := semver.Parse(criToolsVersion)
 		if err != nil {
-			logrus.Fatalf("Could not parse CRI tools semver: %v", err)
+			return "", errors.Wrap(err, "could not parse CRI tools semver")
 		}
 
 		if tagSemver.GTE(criToolsSemver) {

@@ -17,12 +17,10 @@ limitations under the License.
 package cmd
 
 import (
-	"strings"
-
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	kpkg "k8s.io/release/pkg/kubepkg"
+	"k8s.io/release/pkg/util"
 )
 
 type debsOptions struct {
@@ -34,9 +32,11 @@ var debsOpts = &debsOptions{}
 
 // debsCmd represents the base command when called without any subcommands
 var debsCmd = &cobra.Command{
-	Use:     "debs [--arch <architectures>] [--channels <channels>]",
-	Short:   "debs creates Debiam-based packages for Kubernetes components",
-	Example: "kubepkg debs --arch amd64 --channels nightly",
+	Use:           "debs [--arch <architectures>] [--channels <channels>]",
+	Short:         "debs creates Debiam-based packages for Kubernetes components",
+	Example:       "kubepkg debs --arch amd64 --channels nightly",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := runDebs(); err != nil {
 			return err
@@ -54,16 +54,12 @@ func runDebs() error {
 	ro := rootOpts
 
 	// Replace the "+" with a "-" to make it semver-compliant
-	ro.kubeVersion = strings.TrimPrefix(ro.kubeVersion, "v")
+	ro.kubeVersion = util.TrimTagPrefix(ro.kubeVersion)
 
 	builds, err := kpkg.ConstructBuilds(ro.packages, ro.channels, ro.kubeVersion, ro.revision, ro.cniVersion, ro.criToolsVersion)
 	if err != nil {
-		logrus.Fatalf("err: %v", err)
+		return err
 	}
 
-	if err := kpkg.WalkBuilds(builds, ro.architectures); err != nil {
-		logrus.Fatalf("err: %v", err)
-	}
-
-	return nil
+	return kpkg.WalkBuilds(builds, ro.architectures)
 }

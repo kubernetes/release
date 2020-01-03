@@ -26,8 +26,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	TagPrefix = "v"
 )
 
 /*
@@ -176,4 +181,12 @@ func MoreRecent(a, b string) (bool, error) {
 	}
 
 	return (fileA.ModTime().Unix() >= fileB.ModTime().Unix()), nil
+}
+
+func AddTagPrefix(tag string) string {
+	return TagPrefix + tag
+}
+
+func TrimTagPrefix(tag string) string {
+	return strings.TrimPrefix(tag, TagPrefix)
 }
