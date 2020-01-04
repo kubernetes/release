@@ -56,7 +56,7 @@ func runRpms() error {
 	// Replace the "+" with a "-" to make it semver-compliant
 	ro.kubeVersion = util.TrimTagPrefix(ro.kubeVersion)
 
-	builds, err := kpkg.ConstructBuilds(ro.packages, ro.channels, ro.kubeVersion, ro.revision, ro.cniVersion, ro.criToolsVersion)
+	builds, err := kpkg.ConstructBuilds("rpm", ro.packages, ro.channels, ro.kubeVersion, ro.revision, ro.cniVersion, ro.criToolsVersion)
 	if err != nil {
 		return err
 	}

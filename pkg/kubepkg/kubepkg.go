@@ -38,9 +38,16 @@ import (
 	"k8s.io/release/pkg/util"
 )
 
-type ChannelType string
+type (
+	BuildType   string
+	ChannelType string
+)
 
 const (
+	BuildDeb BuildType = "deb"
+	BuildRpm BuildType = "rpm"
+	BuildAll BuildType = "all"
+
 	ChannelRelease ChannelType = "release"
 	ChannelTesting ChannelType = "testing"
 	ChannelNightly ChannelType = "nightly"
@@ -83,6 +90,7 @@ type work struct {
 }
 
 type Build struct {
+	Type        BuildType
 	Package     string
 	Definitions []*PackageDefinition
 }
@@ -104,19 +112,21 @@ type PackageDefinition struct {
 
 type cfg struct {
 	*PackageDefinition
+	Type         BuildType
 	Arch         string
 	DebArch      string
 	Package      string
 	Dependencies string
 }
 
-func ConstructBuilds(packages, channels []string, kubeVersion, revision, cniVersion, criToolsVersion string) ([]Build, error) {
+func ConstructBuilds(buildType BuildType, packages, channels []string, kubeVersion, revision, cniVersion, criToolsVersion string) ([]Build, error) {
 	logrus.Infof("Constructing builds...")
 
 	builds := []Build{}
 
 	for _, pkg := range packages {
 		b := &Build{
+			Type:    buildType,
 			Package: pkg,
 		}
 
@@ -151,7 +161,7 @@ func WalkBuilds(builds []Build, architectures []string) error {
 	for _, arch := range architectures {
 		for _, build := range builds {
 			for _, packageDef := range build.Definitions {
-				if err := buildPackage(build.Package, arch, packageDef); err != nil {
+				if err := buildPackage(build.Type, build.Package, arch, packageDef); err != nil {
 					return err
 				}
 			}
@@ -162,13 +172,14 @@ func WalkBuilds(builds []Build, architectures []string) error {
 	return nil
 }
 
-func buildPackage(pkg, arch string, packageDef *PackageDefinition) error {
+func buildPackage(buildType BuildType, pkg, arch string, packageDef *PackageDefinition) error {
 	if packageDef == nil {
 		return errors.New("package definition cannot be nil")
 	}
 
 	c := cfg{
 		PackageDefinition: packageDef,
+		Type:              buildType,
 		Package:           pkg,
 		Arch:              arch,
 	}
@@ -318,42 +329,50 @@ func (c cfg) run() error {
 		}
 	}
 
-	logrus.Infof("Running dpkg-buildpackage for %s (%s/%s)", c.Package, c.Arch, c.DebArch)
+	//nolint:godox
+	// TODO: Move OS-specific logic into their own files
+	switch c.Type {
+	case BuildDeb:
+		logrus.Infof("Running dpkg-buildpackage for %s (%s/%s)", c.Package, c.Arch, c.DebArch)
 
-	dpkgStatus, dpkgErr := command.NewWithWorkDir(
-		dstdir,
-		"dpkg-buildpackage",
-		"--unsigned-source",
-		"--unsigned-changes",
-		"--build=binary",
-		"--host-arch",
-		c.DebArch,
-	).Run()
+		dpkgStatus, dpkgErr := command.NewWithWorkDir(
+			dstdir,
+			"dpkg-buildpackage",
+			"--unsigned-source",
+			"--unsigned-changes",
+			"--build=binary",
+			"--host-arch",
+			c.DebArch,
+		).Run()
 
-	if dpkgErr != nil {
-		return dpkgErr
+		if dpkgErr != nil {
+			return dpkgErr
+		}
+		if !dpkgStatus.Success() {
+			return errors.Errorf("dpkg-buildpackage command failed: %s", dpkgStatus.Error())
+		}
+
+		fileName := fmt.Sprintf("%s_%s-%s_%s.deb", c.Package, c.Version, c.Revision, c.DebArch)
+		dstParts := []string{"bin", string(c.Channel), fileName}
+
+		dstPath := filepath.Join(dstParts...)
+		if mkdirErr := os.MkdirAll(dstPath, 0o777); mkdirErr != nil {
+			return err
+		}
+
+		mvStatus, mvErr := command.New("mv", filepath.Join("/tmp", fileName), dstPath).Run()
+		if mvErr != nil {
+			return mvErr
+		}
+		if !mvStatus.Success() {
+			return errors.Errorf("mv command failed: %s", mvStatus.Error())
+		}
+
+		logrus.Infof("Successfully built %s", dstPath)
+	case BuildRpm:
+		logrus.Fatal("Building rpms via kubepkg is not currently supported")
 	}
-	if !dpkgStatus.Success() {
-		return errors.Errorf("dpkg-buildpackage command failed: %s", dpkgStatus.Error())
-	}
 
-	fileName := fmt.Sprintf("%s_%s-%s_%s.deb", c.Package, c.Version, c.Revision, c.DebArch)
-	dstParts := []string{"bin", string(c.Channel), fileName}
-
-	dstPath := filepath.Join(dstParts...)
-	if mkdirErr := os.MkdirAll(dstPath, 0o777); mkdirErr != nil {
-		return err
-	}
-
-	mvStatus, mvErr := command.New("mv", filepath.Join("/tmp", fileName), dstPath).Run()
-	if mvErr != nil {
-		return mvErr
-	}
-	if !mvStatus.Success() {
-		return errors.Errorf("mv command failed: %s", mvStatus.Error())
-	}
-
-	logrus.Infof("Successfully built %s", dstPath)
 	return nil
 }
 
