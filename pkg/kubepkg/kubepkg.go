@@ -26,7 +26,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/blang/semver"
@@ -81,13 +80,6 @@ var (
 
 	keepTmp = flag.Bool("keep-tmp", false, "keep tmp dir after build")
 )
-
-type work struct {
-	src  string
-	dst  string
-	t    *template.Template
-	info os.FileInfo
-}
 
 type Build struct {
 	Type        BuildType
@@ -264,8 +256,6 @@ func buildPackage(buildType BuildType, pkg, arch string, packageDef *PackageDefi
 }
 
 func (c cfg) run() error {
-	var w []work
-
 	// nolint
 	// TODO: Get package directory for any version once package definitions are broken out
 	srcdir := filepath.Join(latestPackagesDir, c.Package)
@@ -278,56 +268,7 @@ func (c cfg) run() error {
 		defer os.RemoveAll(dstdir)
 	}
 
-	if err := filepath.Walk(srcdir, func(srcfile string, f os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		dstfile := filepath.Join(dstdir, srcfile[len(srcdir):])
-		if dstfile == dstdir {
-			return nil
-		}
-		if f.IsDir() {
-			return os.Mkdir(dstfile, f.Mode())
-		}
-		t, err := template.
-			New("").
-			Funcs(builtins).
-			Option("missingkey=error").
-			ParseFiles(srcfile)
-		if err != nil {
-			return err
-		}
-		w = append(w, work{
-			src:  srcfile,
-			dst:  dstfile,
-			t:    t.Templates()[0],
-			info: f,
-		})
-
-		return nil
-	}); err != nil {
-		return err
-	}
-
-	for _, w := range w {
-		if err := func() error {
-			f, err := os.OpenFile(w.dst, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-
-			if err := w.t.Execute(f, c); err != nil {
-				return err
-			}
-			if err := os.Chmod(w.dst, w.info.Mode()); err != nil {
-				return err
-			}
-			return nil
-		}(); err != nil {
-			return err
-		}
-	}
+	_, err = buildTemplate(c, srcdir, dstdir)
 
 	//nolint:godox
 	// TODO: Move OS-specific logic into their own files

@@ -2,7 +2,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = ["kubepkg.go"],
+    srcs = [
+        "kubepkg.go",
+        "template.go",
+    ],
     importpath = "k8s.io/release/pkg/kubepkg",
     visibility = ["//visibility:public"],
     deps = [
