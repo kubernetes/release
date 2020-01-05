@@ -10,11 +10,11 @@ build:
 binary:
 	mkdir -p usr/bin
 ifeq ($(KUBE_USE_LOCAL_ARTIFACTS),y)
-	cp $(shell go env GOPATH)/src/k8s.io/kubernetes/_output/dockerized/bin/linux/{{ .Arch }}/kubelet usr/bin/kubelet
+	cp $(shell go env GOPATH)/src/k8s.io/kubernetes/_output/dockerized/bin/linux/{{ .GoArch }}/kubelet usr/bin/kubelet
 else
 	curl --fail -sSL --retry 5 \
 		-o usr/bin/kubelet \
-		"{{ .DownloadLinkBase }}/bin/linux/{{ .Arch }}/kubelet"
+		"{{ .DownloadLinkBase }}/bin/linux/{{ .GoArch }}/kubelet"
 endif
 	chmod +x usr/bin/kubelet
 	dh_testroot

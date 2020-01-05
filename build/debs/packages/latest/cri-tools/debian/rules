@@ -7,7 +7,7 @@ build:
 binary:
 	mkdir -p ./bin
 	curl -sSL --fail --retry 5 \
-		"https://github.com/kubernetes-sigs/cri-tools/releases/download/v{{ .Version }}/crictl-v{{ .Version }}-linux-{{ .Arch }}.tar.gz" \
+		"https://github.com/kubernetes-sigs/cri-tools/releases/download/v{{ .Version }}/crictl-v{{ .Version }}-linux-{{ .GoArch }}.tar.gz" \
 		| tar -C ./bin -xz
 	dh_testroot
 	dh_auto_install

@@ -9,7 +9,7 @@ Vcs-Git: https://github.com/kubernetes/kubernetes.git
 Vcs-Browser: https://github.com/kubernetes/kubernetes
 
 Package: kubernetes-cni
-Architecture: {{ .DebArch }}
+Architecture: {{ .BuildArch }}
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Kubernetes CNI
  The binaries required to provision container networking

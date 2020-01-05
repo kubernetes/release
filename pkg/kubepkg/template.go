@@ -31,10 +31,10 @@ type work struct {
 	info os.FileInfo
 }
 
-func buildTemplate(c cfg, srcdir, dstdir string) ([]work, error) {
+func buildTemplate(bc *buildConfig, srcdir, dstdir string) ([]work, error) {
 	var w []work
 
-	switch c.Type {
+	switch bc.Type {
 	case BuildDeb:
 		if err := filepath.Walk(srcdir, func(srcfile string, f os.FileInfo, err error) error {
 			if err != nil {
@@ -75,7 +75,7 @@ func buildTemplate(c cfg, srcdir, dstdir string) ([]work, error) {
 				}
 				defer f.Close()
 
-				if err := w.t.Execute(f, c); err != nil {
+				if err := w.t.Execute(f, bc); err != nil {
 					return err
 				}
 				if err := os.Chmod(w.dst, w.info.Mode()); err != nil {

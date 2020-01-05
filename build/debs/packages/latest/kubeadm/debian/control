@@ -9,7 +9,7 @@ Vcs-Git: https://github.com/kubernetes/kubernetes.git
 Vcs-Browser: https://github.com/kubernetes/kubernetes
 
 Package: kubeadm
-Architecture: {{ .DebArch }}
+Architecture: {{ .BuildArch }}
 Depends: {{ .Dependencies }}
 Description: Kubernetes Cluster Bootstrapping Tool
  The Kubernetes command line tool for bootstrapping a Kubernetes cluster.

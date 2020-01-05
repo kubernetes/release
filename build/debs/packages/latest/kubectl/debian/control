@@ -9,7 +9,7 @@ Vcs-Git: https://github.com/kubernetes/kubernetes.git
 Vcs-Browser: https://github.com/kubernetes/kubernetes
 
 Package: kubectl
-Architecture: {{ .DebArch }}
+Architecture: {{ .BuildArch }}
 Depends: ${misc:Depends}
 Description: Kubernetes Command Line Tool
  The Kubernetes command line tool for interacting with the Kubernetes API.

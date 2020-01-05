@@ -66,6 +66,29 @@ var (
 	minimumCRIToolsVersion = minimumKubernetesVersion
 	latestPackagesDir      = fmt.Sprintf("%s/%s", packagesRootDir, "latest")
 
+	buildArchMap = map[string]map[BuildType]string{
+		"amd64": {
+			"deb": "amd64",
+			"rpm": "x86_64",
+		},
+		"arm": {
+			"deb": "armhf",
+			"rpm": "armhfp",
+		},
+		"arm64": {
+			"deb": "arm64",
+			"rpm": "aarch64",
+		},
+		"ppc64le": {
+			"deb": "ppc64el",
+			"rpm": "ppc64le",
+		},
+		"s390x": {
+			"deb": "s390x",
+			"rpm": "s390x",
+		},
+	}
+
 	DefaultPackages      = []string{"kubelet", "kubectl", "kubeadm", "kubernetes-cni", "cri-tools"}
 	DefaultChannels      = []string{"release", "testing", "nightly"}
 	DefaultArchitectures = []string{"amd64", "arm", "arm64", "ppc64le", "s390x"}
@@ -102,11 +125,11 @@ type PackageDefinition struct {
 	CNIDownloadLink string
 }
 
-type cfg struct {
+type buildConfig struct {
 	*PackageDefinition
 	Type         BuildType
-	Arch         string
-	DebArch      string
+	GoArch       string
+	BuildArch    string
 	Package      string
 	Dependencies string
 }
@@ -169,20 +192,20 @@ func buildPackage(buildType BuildType, pkg, arch string, packageDef *PackageDefi
 		return errors.New("package definition cannot be nil")
 	}
 
-	c := cfg{
+	bc := &buildConfig{
 		PackageDefinition: packageDef,
 		Type:              buildType,
 		Package:           pkg,
-		Arch:              arch,
+		GoArch:            arch,
 	}
 
-	c.Name = pkg
+	bc.Name = pkg
 
 	var err error
 
-	if c.KubernetesVersion != "" {
-		logrus.Infof("Checking if user-supplied Kubernetes version (%s) is valid semver...", c.KubernetesVersion)
-		kubeSemver, err := semver.Parse(c.KubernetesVersion)
+	if bc.KubernetesVersion != "" {
+		logrus.Infof("Checking if user-supplied Kubernetes version (%s) is valid semver...", bc.KubernetesVersion)
+		kubeSemver, err := semver.Parse(bc.KubernetesVersion)
 		if err != nil {
 			return errors.Wrap(err, "user-supplied Kubernetes version is not valid semver")
 		}
@@ -194,71 +217,65 @@ func buildPackage(buildType BuildType, pkg, arch string, packageDef *PackageDefi
 		case len(kubeVersionParts) > 4:
 			logrus.Info("User-supplied Kubernetes version is a CI version")
 			logrus.Info("Setting channel to nightly")
-			c.Channel = ChannelNightly
+			bc.Channel = ChannelNightly
 		case len(kubeVersionParts) == 4:
 			logrus.Info("User-supplied Kubernetes version is a pre-release version")
 			logrus.Info("Setting channel to testing")
-			c.Channel = ChannelTesting
+			bc.Channel = ChannelTesting
 		default:
 			logrus.Info("User-supplied Kubernetes version is a release version")
 			logrus.Info("Setting channel to release")
-			c.Channel = ChannelRelease
+			bc.Channel = ChannelRelease
 		}
 	}
 
-	c.KubernetesVersion, err = getKubernetesVersion(packageDef)
+	bc.KubernetesVersion, err = getKubernetesVersion(packageDef)
 	if err != nil {
 		return errors.Wrap(err, "getting Kubernetes version")
 	}
 
-	c.DownloadLinkBase, err = getDownloadLinkBase(packageDef)
+	bc.DownloadLinkBase, err = getDownloadLinkBase(packageDef)
 	if err != nil {
 		return errors.Wrap(err, "getting Kubernetes download link base")
 	}
 
-	logrus.Infof("Kubernetes download link base: %s", c.DownloadLinkBase)
+	logrus.Infof("Kubernetes download link base: %s", bc.DownloadLinkBase)
 
 	// For cases where a CI build version of Kubernetes is retrieved, replace instances
 	// of "+" with "-", so that we build with a valid Debian package version.
-	c.KubernetesVersion = strings.Replace(c.KubernetesVersion, "+", "-", 1)
+	bc.KubernetesVersion = strings.Replace(bc.KubernetesVersion, "+", "-", 1)
 
-	c.Version, err = getPackageVersion(packageDef)
+	bc.Version, err = getPackageVersion(packageDef)
 	if err != nil {
 		return errors.Wrap(err, "getting package version")
 	}
 
-	logrus.Infof("%s package version: %s", c.Name, c.Version)
+	logrus.Infof("%s package version: %s", bc.Name, bc.Version)
 
-	c.KubeletCNIVersion = minimumCNIVersion
+	bc.KubeletCNIVersion = minimumCNIVersion
 
-	c.Dependencies, err = GetKubeadmDependencies(packageDef)
+	bc.Dependencies, err = GetKubeadmDependencies(packageDef)
 	if err != nil {
 		return errors.Wrap(err, "getting kubeadm dependencies")
 	}
 
-	c.KubeadmKubeletConfigFile = kubeadmConf
+	bc.KubeadmKubeletConfigFile = kubeadmConf
 
-	if c.Arch == "arm" {
-		c.DebArch = "armhf"
-	} else if c.Arch == "ppc64le" {
-		c.DebArch = "ppc64el"
-	} else {
-		c.DebArch = c.Arch
-	}
+	bc.BuildArch = getBuildArch(bc.GoArch, bc.Type)
 
-	c.CNIDownloadLink, err = getCNIDownloadLink(packageDef, c.Arch)
+	bc.CNIDownloadLink, err = getCNIDownloadLink(packageDef, bc.BuildArch)
 	if err != nil {
 		return errors.Wrap(err, "getting CNI download link")
 	}
 
-	logrus.Infof("Building %s package for %s/%s architecture...", c.Package, c.Arch, c.DebArch)
-	return c.run()
+	logrus.Infof("Building %s package for %s/%s architecture...", bc.Package, bc.GoArch, bc.BuildArch)
+	return bc.run()
 }
 
-func (c cfg) run() error {
+func (bc *buildConfig) run() error {
 	// nolint
 	// TODO: Get package directory for any version once package definitions are broken out
-	srcdir := filepath.Join(latestPackagesDir, c.Package)
+	srcdir := filepath.Join(latestPackagesDir, bc.Package)
 	dstdir, err := ioutil.TempDir(os.TempDir(), "debs")
 	if err != nil {
 		return err
@@ -268,13 +285,16 @@ func (c cfg) run() error {
 		defer os.RemoveAll(dstdir)
 	}
 
-	_, err = buildTemplate(c, srcdir, dstdir)
+	_, err = buildTemplate(bc, srcdir, dstdir)
+	if err != nil {
+		return err
+	}
 
 	//nolint:godox
 	// TODO: Move OS-specific logic into their own files
-	switch c.Type {
+	switch bc.Type {
 	case BuildDeb:
-		logrus.Infof("Running dpkg-buildpackage for %s (%s/%s)", c.Package, c.Arch, c.DebArch)
+		logrus.Infof("Running dpkg-buildpackage for %s (%s/%s)", bc.Package, bc.GoArch, bc.BuildArch)
 
 		dpkgStatus, dpkgErr := command.NewWithWorkDir(
 			dstdir,
@@ -283,7 +303,7 @@ func (c cfg) run() error {
 			"--unsigned-changes",
 			"--build=binary",
 			"--host-arch",
-			c.DebArch,
+			bc.BuildArch,
 		).Run()
 
 		if dpkgErr != nil {
@@ -293,8 +313,8 @@ func (c cfg) run() error {
 			return errors.Errorf("dpkg-buildpackage command failed: %s", dpkgStatus.Error())
 		}
 
-		fileName := fmt.Sprintf("%s_%s-%s_%s.deb", c.Package, c.Version, c.Revision, c.DebArch)
-		dstParts := []string{"bin", string(c.Channel), fileName}
+		fileName := fmt.Sprintf("%s_%s-%s_%s.deb", bc.Package, bc.Version, bc.Revision, bc.BuildArch)
+		dstParts := []string{"bin", string(bc.Channel), fileName}
 
 		dstPath := filepath.Join(dstParts...)
 		if mkdirErr := os.MkdirAll(dstPath, 0o777); mkdirErr != nil {
@@ -569,6 +589,10 @@ func GetKubeadmDependencies(packageDef *PackageDefinition) (string, error) {
 	}
 
 	return strings.Join(deps, ", "), nil
+}
+
+func getBuildArch(goArch string, buildType BuildType) string {
+	return buildArchMap[goArch][buildType]
 }
 
 func getCNIDownloadLink(packageDef *PackageDefinition, arch string) (string, error) {
