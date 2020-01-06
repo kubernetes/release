@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -88,9 +89,9 @@ var (
 		},
 	}
 
-	DefaultPackages      = []string{"kubelet", "kubectl", "kubeadm", "kubernetes-cni", "cri-tools"}
-	DefaultChannels      = []string{"release", "testing", "nightly"}
-	DefaultArchitectures = []string{"amd64", "arm", "arm64", "ppc64le", "s390x"}
+	SupportedPackages      = []string{"kubelet", "kubectl", "kubeadm", "kubernetes-cni", "cri-tools"}
+	SupportedChannels      = []string{"release", "testing", "nightly"}
+	SupportedArchitectures = []string{"amd64", "arm", "arm64", "ppc64le", "s390x"}
 
 	DefaultReleaseDownloadLinkBase = "https://dl.k8s.io"
 
@@ -640,4 +641,42 @@ func getCNIDownloadLink(packageDef *PackageDefinition, arch string) (string, err
 	}
 
 	return fmt.Sprintf("https://github.com/containernetworking/plugins/releases/download/v%s/cni-plugins-linux-%s-v%s.tgz", packageDef.Version, arch, packageDef.Version), nil
+}
+
+//nolint:godox
+// TODO: kubepkg is failing validations when multiple options are selected
+//       It seems like StringArrayVar is treating the multiple comma-separated values as a single value.
+//
+// Example:
+// $ time kubepkg debs --arch amd64,arm
+// <snip>
+// INFO[0000] Adding 'amd64,arm' (type: string) to not supported
+// INFO[0000] The following options are not supported: [amd64,arm]
+// FATA[0000] architectures selections are not supported
+func IsSupported(input, expected []string) bool {
+	notSupported := []string{}
+
+	supported := false
+	for _, i := range input {
+		supported = false
+		for _, j := range expected {
+			if i == j {
+				supported = true
+				logrus.Infof("Breaking out of %s check", i)
+				break
+			}
+		}
+
+		if !supported {
+			logrus.Infof("Adding '%s' (type: %v) to not supported", i, reflect.TypeOf(i))
+			notSupported = append(notSupported, i)
+		}
+	}
+
+	if len(notSupported) > 0 {
+		logrus.Infof("The following options are not supported: %v", notSupported)
+		return false
+	}
+
+	return true
 }

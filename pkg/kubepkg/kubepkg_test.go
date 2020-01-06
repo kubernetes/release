@@ -501,3 +501,67 @@ func TestGetCNIDownloadLinkFailure(t *testing.T) {
 	_, err := getCNIDownloadLink(nil, "amd64")
 	a.Error(err)
 }
+
+func TestIsSupportedSuccess(t *testing.T) {
+	testcases := []struct {
+		name     string
+		input    []string
+		check    []string
+		expected bool
+	}{
+		{
+			name: "single input",
+			input: []string{
+				"kubelet",
+			},
+			check:    SupportedPackages,
+			expected: true,
+		},
+		{
+			name: "multiple inputs",
+			input: []string{
+				"release",
+				"testing",
+			},
+			check:    SupportedChannels,
+			expected: true,
+		},
+		{
+			name:     "no inputs",
+			input:    []string{},
+			check:    SupportedArchitectures,
+			expected: true,
+		},
+	}
+
+	for _, tc := range testcases {
+		actual := IsSupported(tc.input, tc.check)
+
+		assert.Equal(t, tc.expected, actual)
+	}
+}
+
+func TestIsSupportedFailure(t *testing.T) {
+	testcases := []struct {
+		name     string
+		input    []string
+		check    []string
+		expected bool
+	}{
+		{
+			name: "some supported, some unsupported",
+			input: []string{
+				"fakearch",
+				"amd64",
+			},
+			check:    SupportedArchitectures,
+			expected: true,
+		},
+	}
+
+	for _, tc := range testcases {
+		actual := IsSupported(tc.input, tc.check)
+
+		assert.NotEqual(t, tc.expected, actual)
+	}
+}

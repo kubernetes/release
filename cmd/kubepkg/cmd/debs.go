@@ -53,6 +53,11 @@ func init() {
 func runDebs() error {
 	ro := rootOpts
 
+	validateErr := validateOptions(ro)
+	if validateErr != nil {
+		return validateErr
+	}
+
 	// Replace the "+" with a "-" to make it semver-compliant
 	ro.kubeVersion = util.TrimTagPrefix(ro.kubeVersion)
 

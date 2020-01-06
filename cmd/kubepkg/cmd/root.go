@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -64,19 +65,19 @@ func init() {
 	rootCmd.PersistentFlags().StringArrayVar(
 		&rootOpts.packages,
 		"packages",
-		kpkg.DefaultPackages,
+		kpkg.SupportedPackages,
 		"packages to build",
 	)
 	rootCmd.PersistentFlags().StringArrayVar(
 		&rootOpts.channels,
 		"channels",
-		kpkg.DefaultChannels,
+		kpkg.SupportedChannels,
 		"channels to build for",
 	)
 	rootCmd.PersistentFlags().StringArrayVar(
 		&rootOpts.architectures,
 		"arch",
-		kpkg.DefaultArchitectures,
+		kpkg.SupportedArchitectures,
 		"architectures to build for",
 	)
 	rootCmd.PersistentFlags().StringVar(
@@ -141,5 +142,19 @@ func initLogging(*cobra.Command, []string) error {
 	}
 	logrus.SetLevel(lvl)
 	logrus.Debugf("Using log level %q", lvl)
+	return nil
+}
+
+func validateOptions(ro *rootOptions) error {
+	if ok := kpkg.IsSupported(ro.packages, kpkg.SupportedPackages); !ok {
+		return errors.New("package selections are not supported")
+	}
+	if ok := kpkg.IsSupported(ro.channels, kpkg.SupportedChannels); !ok {
+		return errors.New("channel selections are not supported")
+	}
+	if ok := kpkg.IsSupported(ro.architectures, kpkg.SupportedArchitectures); !ok {
+		return errors.New("architectures selections are not supported")
+	}
+
 	return nil
 }
