@@ -56,10 +56,10 @@ func runDebs() error {
 	// Replace the "+" with a "-" to make it semver-compliant
 	ro.kubeVersion = util.TrimTagPrefix(ro.kubeVersion)
 
-	builds, err := kpkg.ConstructBuilds("deb", ro.packages, ro.channels, ro.kubeVersion, ro.revision, ro.cniVersion, ro.criToolsVersion)
+	builds, err := kpkg.ConstructBuilds("deb", ro.packages, ro.channels, ro.kubeVersion, ro.revision, ro.cniVersion, ro.criToolsVersion, ro.templateDir)
 	if err != nil {
 		return err
 	}
 
-	return kpkg.WalkBuilds(builds, ro.architectures)
+	return kpkg.WalkBuilds(builds, ro.architectures, ro.specOnly)
 }

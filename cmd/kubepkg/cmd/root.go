@@ -42,6 +42,9 @@ type rootOptions struct {
 
 	releaseDownloadLinkBase string
 
+	templateDir string
+	specOnly    bool
+
 	logLevel string
 }
 
@@ -104,7 +107,19 @@ func init() {
 		&rootOpts.releaseDownloadLinkBase,
 		"release-download-link-base",
 		kpkg.DefaultReleaseDownloadLinkBase,
-		"release download link base.",
+		"release download link base",
+	)
+	rootCmd.PersistentFlags().StringVar(
+		&rootOpts.templateDir,
+		"template-dir",
+		kpkg.LatestTemplateDir,
+		"template directory",
+	)
+	rootCmd.PersistentFlags().BoolVar(
+		&rootOpts.specOnly,
+		"spec-only",
+		false,
+		"only create specs instead of building packages",
 	)
 	rootCmd.PersistentFlags().StringVar(
 		&rootOpts.logLevel,

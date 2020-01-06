@@ -18,7 +18,6 @@ package kubepkg
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -64,7 +63,7 @@ const (
 
 var (
 	minimumCRIToolsVersion = minimumKubernetesVersion
-	latestTemplateDir      = fmt.Sprintf("%s/%s", templateRootDir, "latest")
+	LatestTemplateDir      = fmt.Sprintf("%s/%s", templateRootDir, "latest")
 
 	buildArchMap = map[string]map[BuildType]string{
 		"amd64": {
@@ -100,14 +99,13 @@ var (
 			return time.Now().Format(time.RFC1123Z)
 		},
 	}
-
-	keepTmp = flag.Bool("keep-tmp", false, "keep tmp dir after build")
 )
 
 type Build struct {
 	Type        BuildType
 	Package     string
 	Definitions []*PackageDefinition
+	TemplateDir string
 }
 
 type PackageDefinition struct {
@@ -132,17 +130,30 @@ type buildConfig struct {
 	BuildArch    string
 	Package      string
 	Dependencies string
+
+	TemplateDir string
+	workspace   string
+	specOnly    bool
 }
 
-func ConstructBuilds(buildType BuildType, packages, channels []string, kubeVersion, revision, cniVersion, criToolsVersion string) ([]Build, error) {
+func ConstructBuilds(buildType BuildType, packages, channels []string, kubeVersion, revision, cniVersion, criToolsVersion, templateDir string) ([]Build, error) {
 	logrus.Infof("Constructing builds...")
 
 	builds := []Build{}
 
 	for _, pkg := range packages {
+		// nolint
+		// TODO: Get package directory for any version once package definitions are broken out
+		packageTemplateDir := filepath.Join(templateDir, pkg)
+		_, err := os.Stat(packageTemplateDir)
+		if err != nil {
+			return nil, err
+		}
+
 		b := &Build{
-			Type:    buildType,
-			Package: pkg,
+			Type:        buildType,
+			Package:     pkg,
+			TemplateDir: packageTemplateDir,
 		}
 
 		for _, channel := range channels {
@@ -170,13 +181,23 @@ func ConstructBuilds(buildType BuildType, packages, channels []string, kubeVersi
 	return builds, nil
 }
 
-func WalkBuilds(builds []Build, architectures []string) error {
+func WalkBuilds(builds []Build, architectures []string, specOnly bool) error {
 	logrus.Infof("Walking builds...")
+
+	tmpDir, err := ioutil.TempDir(os.TempDir(), "kubepkg")
+	if err != nil {
+		return err
+	}
+
+	_, err = os.Stat(tmpDir)
+	if err != nil {
+		return err
+	}
 
 	for _, arch := range architectures {
 		for _, build := range builds {
 			for _, packageDef := range build.Definitions {
-				if err := buildPackage(build.Type, build.Package, arch, packageDef); err != nil {
+				if err := buildPackage(build, packageDef, arch, tmpDir, specOnly); err != nil {
 					return err
 				}
 			}
@@ -187,19 +208,22 @@ func WalkBuilds(builds []Build, architectures []string) error {
 	return nil
 }
 
-func buildPackage(buildType BuildType, pkg, arch string, packageDef *PackageDefinition) error {
+func buildPackage(build Build, packageDef *PackageDefinition, arch, tmpDir string, specOnly bool) error {
 	if packageDef == nil {
 		return errors.New("package definition cannot be nil")
 	}
 
 	bc := &buildConfig{
 		PackageDefinition: packageDef,
-		Type:              buildType,
-		Package:           pkg,
+		Type:              build.Type,
+		Package:           build.Package,
 		GoArch:            arch,
+		TemplateDir:       build.TemplateDir,
+		workspace:         tmpDir,
+		specOnly:          specOnly,
 	}
 
-	bc.Name = pkg
+	bc.Name = build.Package
 
 	var err error
 
@@ -273,21 +297,33 @@ func buildPackage(buildType BuildType, pkg, arch string, packageDef *PackageDefi
 }
 
 func (bc *buildConfig) run() error {
-	// nolint
-	// TODO: Get package directory for any version once package definitions are broken out
-	srcdir := filepath.Join(latestTemplateDir, bc.Package)
-	dstdir, err := ioutil.TempDir(os.TempDir(), "debs")
+	workspaceInfo, err := os.Stat(bc.workspace)
 	if err != nil {
 		return err
 	}
 
-	if !*keepTmp {
-		defer os.RemoveAll(dstdir)
-	}
+	specDir := filepath.Join(bc.workspace, string(bc.Channel), bc.Package)
+	specDirWithArch := filepath.Join(specDir, bc.GoArch)
 
-	_, err = buildTemplate(bc, srcdir, dstdir)
+	err = os.MkdirAll(specDirWithArch, workspaceInfo.Mode())
 	if err != nil {
 		return err
+	}
+
+	//nolint:godox
+	// TODO: keepTmp/cleanup needs to defined in kubepkg root
+	if !bc.specOnly {
+		defer os.RemoveAll(specDirWithArch)
+	}
+
+	_, err = buildSpecs(bc, specDirWithArch)
+	if err != nil {
+		return err
+	}
+
+	if bc.specOnly {
+		logrus.Info("spec-only mode was selected")
+		return nil
 	}
 
 	//nolint:godox
@@ -297,7 +333,7 @@ func (bc *buildConfig) run() error {
 		logrus.Infof("Running dpkg-buildpackage for %s (%s/%s)", bc.Package, bc.GoArch, bc.BuildArch)
 
 		dpkgStatus, dpkgErr := command.NewWithWorkDir(
-			dstdir,
+			specDirWithArch,
 			"dpkg-buildpackage",
 			"--unsigned-source",
 			"--unsigned-changes",
@@ -321,7 +357,7 @@ func (bc *buildConfig) run() error {
 			return err
 		}
 
-		mvStatus, mvErr := command.New("mv", filepath.Join("/tmp", fileName), dstPath).Run()
+		mvStatus, mvErr := command.New("mv", filepath.Join(specDir, fileName), dstPath).Run()
 		if mvErr != nil {
 			return mvErr
 		}

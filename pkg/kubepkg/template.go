@@ -31,33 +31,33 @@ type work struct {
 	info os.FileInfo
 }
 
-func buildTemplate(bc *buildConfig, srcdir, dstdir string) ([]work, error) {
+func buildSpecs(bc *buildConfig, specDir string) ([]work, error) {
 	var w []work
 
 	switch bc.Type {
 	case BuildDeb:
-		if err := filepath.Walk(srcdir, func(srcfile string, f os.FileInfo, err error) error {
+		if err := filepath.Walk(bc.TemplateDir, func(templateFile string, f os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
-			dstfile := filepath.Join(dstdir, srcfile[len(srcdir):])
-			if dstfile == dstdir {
+			specFile := filepath.Join(specDir, templateFile[len(bc.TemplateDir):])
+			if specFile == specDir {
 				return nil
 			}
 			if f.IsDir() {
-				return os.Mkdir(dstfile, f.Mode())
+				return os.Mkdir(specFile, f.Mode())
 			}
 			t, err := template.
 				New("").
 				Funcs(builtins).
 				Option("missingkey=error").
-				ParseFiles(srcfile)
+				ParseFiles(templateFile)
 			if err != nil {
 				return err
 			}
 			w = append(w, work{
-				src:  srcfile,
-				dst:  dstfile,
+				src:  templateFile,
+				dst:  specFile,
 				t:    t.Templates()[0],
 				info: f,
 			})
