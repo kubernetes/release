@@ -57,14 +57,14 @@ const (
 
 	DefaultRevision = "0"
 
-	packagesRootDir = "packages"
+	templateRootDir = "templates"
 
 	kubeadmConf = "10-kubeadm.conf"
 )
 
 var (
 	minimumCRIToolsVersion = minimumKubernetesVersion
-	latestPackagesDir      = fmt.Sprintf("%s/%s", packagesRootDir, "latest")
+	latestTemplateDir      = fmt.Sprintf("%s/%s", templateRootDir, "latest")
 
 	buildArchMap = map[string]map[BuildType]string{
 		"amd64": {
@@ -275,7 +275,7 @@ func buildPackage(buildType BuildType, pkg, arch string, packageDef *PackageDefi
 func (bc *buildConfig) run() error {
 	// nolint
 	// TODO: Get package directory for any version once package definitions are broken out
-	srcdir := filepath.Join(latestPackagesDir, bc.Package)
+	srcdir := filepath.Join(latestTemplateDir, bc.Package)
 	dstdir, err := ioutil.TempDir(os.TempDir(), "debs")
 	if err != nil {
 		return err
