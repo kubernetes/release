@@ -1,11 +1,11 @@
 Name: kubernetes-cni
-Version: %{CNI_VERSION}
-Release: %{RPM_RELEASE}
+Version: {{ .Version }}
+Release: {{ .Revision }}
 Summary: Binaries required to provision kubernetes container networking
 
 License: ASL 2.0
 URL: https://kubernetes.io
-Source0: https://dl.k8s.io/network-plugins/cni-plugins-%{ARCH}-v%{CNI_VERSION}.tgz
+Source0: {{ .CNIDownloadLink }}
 
 BuildRequires: systemd
 BuildRequires: curl

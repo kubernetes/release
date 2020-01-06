@@ -283,7 +283,7 @@ func buildPackage(build Build, packageDef *PackageDefinition, arch, tmpDir strin
 
 	bc.BuildArch = getBuildArch(bc.GoArch, bc.Type)
 
-	bc.CNIDownloadLink, err = getCNIDownloadLink(packageDef, bc.BuildArch)
+	bc.CNIDownloadLink, err = getCNIDownloadLink(packageDef, bc.GoArch)
 	if err != nil {
 		return errors.Wrap(err, "getting CNI download link")
 	}

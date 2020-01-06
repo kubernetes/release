@@ -1,13 +1,14 @@
 Name: kubeadm
-Version: %{KUBE_VERSION}
-Release: %{RPM_RELEASE}
+Version: {{ .Version }}
+Release: {{ .Revision }}
 Summary: Command-line utility for administering a Kubernetes cluster.
 
 License: ASL 2.0
 URL: https://kubernetes.io
-Source0: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/%{ARCH}/kubeadm
+Source0: {{ .DownloadLinkBase }}/bin/linux/{{ .GoArch }}/kubeadm
 Source1: 10-kubeadm.conf
 
+# TODO: Need to templatize dependencies
 BuildRequires: systemd
 BuildRequires: curl
 Requires: kubelet >= 1.13.0

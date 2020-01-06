@@ -20,8 +20,6 @@ import (
 	"os"
 	"path/filepath"
 	"text/template"
-
-	"github.com/sirupsen/logrus"
 )
 
 type work struct {
@@ -34,60 +32,55 @@ type work struct {
 func buildSpecs(bc *buildConfig, specDir string) ([]work, error) {
 	var w []work
 
-	switch bc.Type {
-	case BuildDeb:
-		if err := filepath.Walk(bc.TemplateDir, func(templateFile string, f os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			specFile := filepath.Join(specDir, templateFile[len(bc.TemplateDir):])
-			if specFile == specDir {
-				return nil
-			}
-			if f.IsDir() {
-				return os.Mkdir(specFile, f.Mode())
-			}
-			t, err := template.
-				New("").
-				Funcs(builtins).
-				Option("missingkey=error").
-				ParseFiles(templateFile)
-			if err != nil {
-				return err
-			}
-			w = append(w, work{
-				src:  templateFile,
-				dst:  specFile,
-				t:    t.Templates()[0],
-				info: f,
-			})
-
+	if err := filepath.Walk(bc.TemplateDir, func(templateFile string, f os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		specFile := filepath.Join(specDir, templateFile[len(bc.TemplateDir):])
+		if specFile == specDir {
 			return nil
-		}); err != nil {
+		}
+		if f.IsDir() {
+			return os.Mkdir(specFile, f.Mode())
+		}
+		t, err := template.
+			New("").
+			Funcs(builtins).
+			Option("missingkey=error").
+			ParseFiles(templateFile)
+		if err != nil {
+			return err
+		}
+		w = append(w, work{
+			src:  templateFile,
+			dst:  specFile,
+			t:    t.Templates()[0],
+			info: f,
+		})
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	for _, w := range w {
+		if err := func() error {
+			f, err := os.OpenFile(w.dst, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+
+			if err := w.t.Execute(f, bc); err != nil {
+				return err
+			}
+			if err := os.Chmod(w.dst, w.info.Mode()); err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
 			return nil, err
 		}
-
-		for _, w := range w {
-			if err := func() error {
-				f, err := os.OpenFile(w.dst, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0)
-				if err != nil {
-					return err
-				}
-				defer f.Close()
-
-				if err := w.t.Execute(f, bc); err != nil {
-					return err
-				}
-				if err := os.Chmod(w.dst, w.info.Mode()); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return nil, err
-			}
-		}
-	case BuildRpm:
-		logrus.Fatal("Templating rpm specs via kubepkg is not currently supported")
 	}
 
 	return w, nil

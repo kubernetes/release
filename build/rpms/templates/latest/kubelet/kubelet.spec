@@ -1,16 +1,16 @@
 Name: kubelet
-Version: %{KUBE_VERSION}
-Release: %{RPM_RELEASE}
+Version: {{ .Version }}
+Release: {{ .Revision }}
 Summary: Container cluster management
 
 License: ASL 2.0
 URL: https://kubernetes.io
-Source0: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/%{ARCH}/kubelet
+Source0: {{ .DownloadLinkBase }}/bin/linux/{{ .GoArch }}/kubelet
 
 BuildRequires: systemd
 BuildRequires: curl
 Requires: iptables >= 1.4.21
-Requires: kubernetes-cni >= %{CNI_VERSION}
+Requires: kubernetes-cni >= {{ .KubeletCNIVersion }}
 Requires: socat
 Requires: util-linux
 Requires: ethtool
