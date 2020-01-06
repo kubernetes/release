@@ -189,11 +189,6 @@ func WalkBuilds(builds []Build, architectures []string, specOnly bool) error {
 		return err
 	}
 
-	_, err = os.Stat(tmpDir)
-	if err != nil {
-		return err
-	}
-
 	for _, arch := range architectures {
 		for _, build := range builds {
 			for _, packageDef := range build.Definitions {
@@ -332,7 +327,7 @@ func (bc *buildConfig) run() error {
 	case BuildDeb:
 		logrus.Infof("Running dpkg-buildpackage for %s (%s/%s)", bc.Package, bc.GoArch, bc.BuildArch)
 
-		dpkgStatus, dpkgErr := command.NewWithWorkDir(
+		dpkgErr := command.NewWithWorkDir(
 			specDirWithArch,
 			"dpkg-buildpackage",
 			"--unsigned-source",
@@ -340,13 +335,10 @@ func (bc *buildConfig) run() error {
 			"--build=binary",
 			"--host-arch",
 			bc.BuildArch,
-		).Run()
+		).RunSuccess()
 
 		if dpkgErr != nil {
 			return dpkgErr
-		}
-		if !dpkgStatus.Success() {
-			return errors.Errorf("dpkg-buildpackage command failed: %s", dpkgStatus.Error())
 		}
 
 		fileName := fmt.Sprintf("%s_%s-%s_%s.deb", bc.Package, bc.Version, bc.Revision, bc.BuildArch)
@@ -357,12 +349,9 @@ func (bc *buildConfig) run() error {
 			return err
 		}
 
-		mvStatus, mvErr := command.New("mv", filepath.Join(specDir, fileName), dstPath).Run()
+		mvErr := command.New("mv", filepath.Join(specDir, fileName), dstPath).RunSuccess()
 		if mvErr != nil {
 			return mvErr
-		}
-		if !mvStatus.Success() {
-			return errors.Errorf("mv command failed: %s", mvStatus.Error())
 		}
 
 		logrus.Infof("Successfully built %s", dstPath)
