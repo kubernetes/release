@@ -114,9 +114,10 @@ type PackageDefinition struct {
 	Version  string
 	Revision string
 
-	Channel           ChannelType
+	Channel ChannelType
+
 	KubernetesVersion string
-	KubeletCNIVersion string
+	Dependencies      map[string]string
 
 	DownloadLinkBase         string
 	KubeadmKubeletConfigFile string
@@ -126,11 +127,10 @@ type PackageDefinition struct {
 
 type buildConfig struct {
 	*PackageDefinition
-	Type         BuildType
-	GoArch       string
-	BuildArch    string
-	Package      string
-	Dependencies string
+	Type      BuildType
+	GoArch    string
+	BuildArch string
+	Package   string
 
 	TemplateDir string
 	workspace   string
@@ -272,11 +272,9 @@ func buildPackage(build Build, packageDef *PackageDefinition, arch, tmpDir strin
 
 	logrus.Infof("%s package version: %s", bc.Name, bc.Version)
 
-	bc.KubeletCNIVersion = minimumCNIVersion
-
-	bc.Dependencies, err = GetKubeadmDependencies(packageDef)
+	bc.Dependencies, err = getDependencies(packageDef)
 	if err != nil {
-		return errors.Wrap(err, "getting kubeadm dependencies")
+		return errors.Wrap(err, "getting dependencies")
 	}
 
 	bc.KubeadmKubeletConfigFile = kubeadmConf
@@ -601,20 +599,24 @@ func getDefaultReleaseDownloadLinkBase(packageDef *PackageDefinition) (string, e
 	return fmt.Sprintf("%s/v%s", DefaultReleaseDownloadLinkBase, packageDef.KubernetesVersion), nil
 }
 
-func GetKubeadmDependencies(packageDef *PackageDefinition) (string, error) {
+func getDependencies(packageDef *PackageDefinition) (map[string]string, error) {
 	if packageDef == nil {
-		return "", errors.New("package definition cannot be nil")
+		return nil, errors.New("package definition cannot be nil")
 	}
 
-	deps := []string{
-		fmt.Sprintf("kubelet (>= %s)", minimumKubernetesVersion),
-		fmt.Sprintf("kubectl (>= %s)", minimumKubernetesVersion),
-		fmt.Sprintf("kubernetes-cni (>= %s)", minimumCNIVersion),
-		fmt.Sprintf("cri-tools (>= %s)", minimumCRIToolsVersion),
-		"${misc:Depends}",
+	deps := make(map[string]string)
+
+	switch packageDef.Name {
+	case "kubelet":
+		deps["kubernetes-cni"] = minimumCNIVersion
+	case "kubeadm":
+		deps["kubelet"] = minimumKubernetesVersion
+		deps["kubectl"] = minimumKubernetesVersion
+		deps["kubernetes-cni"] = minimumCNIVersion
+		deps["cri-tools"] = minimumCRIToolsVersion
 	}
 
-	return strings.Join(deps, ", "), nil
+	return deps, nil
 }
 
 func getBuildArch(goArch string, buildType BuildType) string {

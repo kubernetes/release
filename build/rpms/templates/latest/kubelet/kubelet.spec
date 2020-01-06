@@ -10,7 +10,7 @@ Source0: {{ .DownloadLinkBase }}/bin/linux/{{ .GoArch }}/kubelet
 BuildRequires: systemd
 BuildRequires: curl
 Requires: iptables >= 1.4.21
-Requires: kubernetes-cni >= {{ .KubeletCNIVersion }}
+Requires: kubernetes-cni >= {{ index .Dependencies "kubernetes-cni" }}
 Requires: socat
 Requires: util-linux
 Requires: ethtool

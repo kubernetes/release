@@ -17,7 +17,6 @@ limitations under the License.
 package kubepkg
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -382,64 +381,35 @@ func TestGetDefaultReleaseDownloadLinkBaseFailure(t *testing.T) {
 	a.Error(err)
 }
 
-func TestGetKubeadmDependenciesSuccess(t *testing.T) {
+func TestGetDependenciesSuccess(t *testing.T) {
 	testcases := []struct {
-		name    string
-		version string
-		deps    []string
+		name        string
+		packageName string
+		expected    map[string]string
 	}{
 		{
-			name:    "minimum supported kubernetes",
-			version: "1.15.0",
-			deps: []string{
-				"kubelet (>= 1.13.0)",
-				"kubectl (>= 1.13.0)",
-				"kubernetes-cni (>= 0.7.5)",
-				"cri-tools (>= 1.13.0)",
-				"${misc:Depends}",
+			name:        "get kubelet deps",
+			packageName: "kubelet",
+			expected: map[string]string{
+				"kubernetes-cni": "0.7.5",
 			},
 		},
 		{
-			name:    "latest stable minor kubernetes",
-			version: "1.17.0",
-			deps: []string{
-				"kubelet (>= 1.13.0)",
-				"kubectl (>= 1.13.0)",
-				"kubernetes-cni (>= 0.7.5)",
-				"cri-tools (>= 1.13.0)",
-				"${misc:Depends}",
-			},
-		},
-		{
-			name:    "latest alpha kubernetes",
-			version: "1.18.0-alpha.1",
-			deps: []string{
-				"kubelet (>= 1.13.0)",
-				"kubectl (>= 1.13.0)",
-				"kubernetes-cni (>= 0.7.5)",
-				"cri-tools (>= 1.13.0)",
-				"${misc:Depends}",
-			},
-		},
-		{
-			name:    "next stable minor kubernetes",
-			version: "1.18.0",
-			deps: []string{
-				"kubelet (>= 1.13.0)",
-				"kubectl (>= 1.13.0)",
-				"kubernetes-cni (>= 0.7.5)",
-				"cri-tools (>= 1.13.0)",
-				"${misc:Depends}",
+			name:        "get kubeadm deps",
+			packageName: "kubeadm",
+			expected: map[string]string{
+				"kubelet":        "1.13.0",
+				"kubectl":        "1.13.0",
+				"kubernetes-cni": "0.7.5",
+				"cri-tools":      "1.13.0",
 			},
 		},
 	}
 
 	for _, tc := range testcases {
-		expected := strings.Join(tc.deps, ", ")
-
-		actual, err := GetKubeadmDependencies(
+		actual, err := getDependencies(
 			&PackageDefinition{
-				Version: tc.version,
+				Name: tc.packageName,
 			},
 		)
 
@@ -447,14 +417,14 @@ func TestGetKubeadmDependenciesSuccess(t *testing.T) {
 			t.Fatalf("did not expect an error: %v", err)
 		}
 
-		assert.Equal(t, expected, actual)
+		assert.Equal(t, tc.expected, actual)
 	}
 }
 
-func TestGetKubeadmDependenciesFailure(t *testing.T) {
+func TestGetDependenciesFailure(t *testing.T) {
 	a := assert.New(t)
 
-	_, err := GetKubeadmDependencies(nil)
+	_, err := getDependencies(nil)
 	a.Error(err)
 }
 

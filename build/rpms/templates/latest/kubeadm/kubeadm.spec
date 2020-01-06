@@ -11,10 +11,10 @@ Source1: 10-kubeadm.conf
 # TODO: Need to templatize dependencies
 BuildRequires: systemd
 BuildRequires: curl
-Requires: kubelet >= 1.13.0
-Requires: kubectl >= 1.13.0
-Requires: kubernetes-cni >= 0.7.5
-Requires: cri-tools >= 1.13.0
+Requires: kubelet >= {{ index .Dependencies "kubelet" }}
+Requires: kubectl >= {{ index .Dependencies "kubectl" }}
+Requires: kubernetes-cni >= {{ index .Dependencies "kubernetes-cni" }}
+Requires: cri-tools >= {{ index .Dependencies "cri-tools" }}
 
 %description
 Command-line utility for administering a Kubernetes cluster.

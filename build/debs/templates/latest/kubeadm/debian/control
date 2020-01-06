@@ -10,6 +10,6 @@ Vcs-Browser: https://github.com/kubernetes/kubernetes
 
 Package: kubeadm
 Architecture: {{ .BuildArch }}
-Depends: {{ .Dependencies }}
+Depends: kubelet (>= {{ index .Dependencies "kubelet" }}), kubectl (>= {{ index .Dependencies "kubectl" }}), kubernetes-cni (>= {{ index .Dependencies "kubernetes-cni" }}), cri-tools (>= {{ index .Dependencies "cri-tools" }}), ${misc:Depends}
 Description: Kubernetes Cluster Bootstrapping Tool
  The Kubernetes command line tool for bootstrapping a Kubernetes cluster.
