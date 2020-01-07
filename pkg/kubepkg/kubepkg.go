@@ -209,8 +209,11 @@ func buildPackage(build Build, packageDef *PackageDefinition, arch, tmpDir strin
 		return errors.New("package definition cannot be nil")
 	}
 
+	pd := &PackageDefinition{}
+	*pd = *packageDef
+
 	bc := &buildConfig{
-		PackageDefinition: packageDef,
+		PackageDefinition: pd,
 		Type:              build.Type,
 		Package:           build.Package,
 		GoArch:            arch,
@@ -249,12 +252,12 @@ func buildPackage(build Build, packageDef *PackageDefinition, arch, tmpDir strin
 		}
 	}
 
-	bc.KubernetesVersion, err = getKubernetesVersion(packageDef)
+	bc.KubernetesVersion, err = getKubernetesVersion(pd)
 	if err != nil {
 		return errors.Wrap(err, "getting Kubernetes version")
 	}
 
-	bc.DownloadLinkBase, err = getDownloadLinkBase(packageDef)
+	bc.DownloadLinkBase, err = getDownloadLinkBase(pd)
 	if err != nil {
 		return errors.Wrap(err, "getting Kubernetes download link base")
 	}
@@ -265,14 +268,14 @@ func buildPackage(build Build, packageDef *PackageDefinition, arch, tmpDir strin
 	// of "+" with "-", so that we build with a valid Debian package version.
 	bc.KubernetesVersion = strings.Replace(bc.KubernetesVersion, "+", "-", 1)
 
-	bc.Version, err = getPackageVersion(packageDef)
+	bc.Version, err = getPackageVersion(pd)
 	if err != nil {
 		return errors.Wrap(err, "getting package version")
 	}
 
 	logrus.Infof("%s package version: %s", bc.Name, bc.Version)
 
-	bc.Dependencies, err = getDependencies(packageDef)
+	bc.Dependencies, err = getDependencies(pd)
 	if err != nil {
 		return errors.Wrap(err, "getting dependencies")
 	}
@@ -281,7 +284,7 @@ func buildPackage(build Build, packageDef *PackageDefinition, arch, tmpDir strin
 
 	bc.BuildArch = getBuildArch(bc.GoArch, bc.Type)
 
-	bc.CNIDownloadLink, err = getCNIDownloadLink(packageDef, bc.GoArch)
+	bc.CNIDownloadLink, err = getCNIDownloadLink(pd, bc.GoArch)
 	if err != nil {
 		return errors.Wrap(err, "getting CNI download link")
 	}
