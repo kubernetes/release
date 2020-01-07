@@ -7,6 +7,7 @@ go_library(
         "document.go",
         "notes.go",
         "options.go",
+        "toc.go",
     ],
     importpath = "k8s.io/release/pkg/notes",
     visibility = ["//visibility:public"],
@@ -27,6 +28,7 @@ go_test(
         "notes_gatherer_test.go",
         "notes_test.go",
         "options_test.go",
+        "toc_test.go",
     ],
     embed = [":go_default_library"],
     deps = [
