@@ -124,7 +124,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	})
 	require.Nil(t, err)
 
-	firstTagName := "v0.1.0"
+	firstTagName := "v1.17.0"
 	firstTagRef, err := cloneRepo.CreateTag(firstTagName, firstCommit,
 		&git.CreateTagOptions{
 			Tagger:  author,
@@ -134,7 +134,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, err)
 
 	// Create a test branch and a test commit on top
-	branchName := "first-branch"
+	branchName := "release-1.17"
 	require.Nil(t, command.NewWithWorkDir(
 		cloneTempDir, "git", "checkout", "-b", branchName,
 	).RunSuccess())
@@ -278,6 +278,9 @@ func TestValidateAndFinishFailureClone(t *testing.T) {
 	options.gitCloneFn = func(string, string, string, bool) (*kgit.Repo, error) {
 		return nil, errors.New("error")
 	}
+	options.StartSHA = ""
+	options.EndSHA = ""
+
 	require.NotNil(t, options.ValidateAndFinish())
 }
 
@@ -294,6 +297,8 @@ func TestValidateAndFinishFailureStartRevNotExisting(t *testing.T) {
 	defer options.testRepo.cleanup(t)
 
 	options.StartRev = "invalid"
+	options.StartSHA = ""
+
 	require.NotNil(t, options.ValidateAndFinish())
 }
 
@@ -310,33 +315,38 @@ func TestValidateAndFinishFailureEndRevNotExisting(t *testing.T) {
 	defer options.testRepo.cleanup(t)
 
 	options.EndRev = "invalid"
+	options.EndSHA = ""
+
 	require.NotNil(t, options.ValidateAndFinish())
 }
 
-func TestValidateAndFinishSuccessDiscoveryModeMinorToLatest(t *testing.T) {
+func TestValidateAndFinishSuccessDiscoveryModeMergeBaseToLatest(t *testing.T) {
 	options := newTestOptions(t)
 	defer options.testRepo.cleanup(t)
 
-	options.DiscoverMode = RevisionDiscoveryModeMinorToLatest
+	require.Nil(t, command.NewWithWorkDir(options.testRepo.sut.Dir(),
+		"git", "checkout", "-b", options.testRepo.firstTagName).RunSuccess())
+
+	options.DiscoverMode = RevisionDiscoveryModeMergeBaseToLatest
 	require.Nil(t, options.ValidateAndFinish())
 }
 
-func TestValidateAndFinishFailureDiscoveryModeMinorToLatestNoTag(t *testing.T) {
+func TestValidateAndFinishFailureDiscoveryModeMergeBaseToLatestNoTag(t *testing.T) {
 	options := newTestOptions(t)
 	defer options.testRepo.cleanup(t)
 
 	require.Nil(t, command.NewWithWorkDir(options.testRepo.sut.Dir(),
 		"git", "tag", "-d", options.testRepo.firstTagName).RunSuccess())
 
-	options.DiscoverMode = RevisionDiscoveryModeMinorToLatest
+	options.DiscoverMode = RevisionDiscoveryModeMergeBaseToLatest
 	require.NotNil(t, options.ValidateAndFinish())
 }
 
-func TestValidateAndFinishFailureDiscoveryModeMinorToLatestClone(t *testing.T) {
+func TestValidateAndFinishFailureDiscoveryModeMergeBaseToLatestClone(t *testing.T) {
 	options := newTestOptions(t)
 	defer options.testRepo.cleanup(t)
 
-	options.DiscoverMode = RevisionDiscoveryModeMinorToLatest
+	options.DiscoverMode = RevisionDiscoveryModeMergeBaseToLatest
 	options.gitCloneFn = func(string, string, string, bool) (*kgit.Repo, error) {
 		return nil, errors.New("error")
 	}
