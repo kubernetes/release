@@ -1,4 +1,4 @@
-Source: kubeadm
+Source: kubectl
 Section: misc
 Priority: optional
 Maintainer: Kubernetes Authors <kubernetes-dev+release@googlegroups.com>
@@ -8,8 +8,8 @@ Homepage: https://kubernetes.io
 Vcs-Git: https://github.com/kubernetes/kubernetes.git
 Vcs-Browser: https://github.com/kubernetes/kubernetes
 
-Package: kubeadm
-Architecture: {{ .DebArch }}
-Depends: {{ .Dependencies }}
-Description: Kubernetes Cluster Bootstrapping Tool
- The Kubernetes command line tool for bootstrapping a Kubernetes cluster.
+Package: kubectl
+Architecture: {{ .BuildArch }}
+Depends: ${misc:Depends}
+Description: Kubernetes Command Line Tool
+ The Kubernetes command line tool for interacting with the Kubernetes API.

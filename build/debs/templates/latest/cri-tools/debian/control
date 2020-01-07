@@ -9,7 +9,7 @@ Vcs-Git: https://github.com/kubernetes-sigs/cri-tools.git
 Vcs-Browser: https://github.com/kubernetes-sigs/cri-tools/
 
 Package: cri-tools
-Architecture: {{ .DebArch }}
+Architecture: {{ .BuildArch }}
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Container Runtime Interface Tools
  Binaries that interact with the container runtime through the container runtime interface

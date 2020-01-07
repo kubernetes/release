@@ -10,21 +10,24 @@ build:
 binary:
 	mkdir -p usr/bin
 ifeq ($(KUBE_USE_LOCAL_ARTIFACTS),y)
-	cp $(shell go env GOPATH)/src/k8s.io/kubernetes/_output/dockerized/bin/linux/{{ .Arch }}/kubectl usr/bin/kubectl
+	cp $(shell go env GOPATH)/src/k8s.io/kubernetes/_output/dockerized/bin/linux/{{ .GoArch }}/kubelet usr/bin/kubelet
 else
 	curl --fail -sSL --retry 5 \
-		-o usr/bin/kubectl \
-		"{{ .DownloadLinkBase }}/bin/linux/{{ .Arch }}/kubectl"
+		-o usr/bin/kubelet \
+		"{{ .DownloadLinkBase }}/bin/linux/{{ .GoArch }}/kubelet"
 endif
-	chmod +x usr/bin/kubectl
+	chmod +x usr/bin/kubelet
 	dh_testroot
 	dh_auto_install
 	dh_shlibdeps
 	dh_install
+	dh_systemd_enable
+	dh_installinit
+	dh_systemd_start
 	dh_installdeb
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
 
 %:
-	dh $@
+	dh $@ --with systemd

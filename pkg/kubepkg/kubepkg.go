@@ -18,15 +18,14 @@ package kubepkg
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/blang/semver"
@@ -38,9 +37,16 @@ import (
 	"k8s.io/release/pkg/util"
 )
 
-type ChannelType string
+type (
+	BuildType   string
+	ChannelType string
+)
 
 const (
+	BuildDeb BuildType = "deb"
+	BuildRpm BuildType = "rpm"
+	BuildAll BuildType = "all"
+
 	ChannelRelease ChannelType = "release"
 	ChannelTesting ChannelType = "testing"
 	ChannelNightly ChannelType = "nightly"
@@ -51,18 +57,41 @@ const (
 
 	DefaultRevision = "0"
 
-	packagesRootDir = "packages"
+	templateRootDir = "templates"
 
 	kubeadmConf = "10-kubeadm.conf"
 )
 
 var (
 	minimumCRIToolsVersion = minimumKubernetesVersion
-	latestPackagesDir      = fmt.Sprintf("%s/%s", packagesRootDir, "latest")
+	LatestTemplateDir      = fmt.Sprintf("%s/%s", templateRootDir, "latest")
 
-	DefaultPackages      = []string{"kubelet", "kubectl", "kubeadm", "kubernetes-cni", "cri-tools"}
-	DefaultChannels      = []string{"release", "testing", "nightly"}
-	DefaultArchitectures = []string{"amd64", "arm", "arm64", "ppc64le", "s390x"}
+	buildArchMap = map[string]map[BuildType]string{
+		"amd64": {
+			"deb": "amd64",
+			"rpm": "x86_64",
+		},
+		"arm": {
+			"deb": "armhf",
+			"rpm": "armhfp",
+		},
+		"arm64": {
+			"deb": "arm64",
+			"rpm": "aarch64",
+		},
+		"ppc64le": {
+			"deb": "ppc64el",
+			"rpm": "ppc64le",
+		},
+		"s390x": {
+			"deb": "s390x",
+			"rpm": "s390x",
+		},
+	}
+
+	SupportedPackages      = []string{"kubelet", "kubectl", "kubeadm", "kubernetes-cni", "cri-tools"}
+	SupportedChannels      = []string{"release", "testing", "nightly"}
+	SupportedArchitectures = []string{"amd64", "arm", "arm64", "ppc64le", "s390x"}
 
 	DefaultReleaseDownloadLinkBase = "https://dl.k8s.io"
 
@@ -71,20 +100,13 @@ var (
 			return time.Now().Format(time.RFC1123Z)
 		},
 	}
-
-	keepTmp = flag.Bool("keep-tmp", false, "keep tmp dir after build")
 )
 
-type work struct {
-	src  string
-	dst  string
-	t    *template.Template
-	info os.FileInfo
-}
-
 type Build struct {
+	Type        BuildType
 	Package     string
 	Definitions []*PackageDefinition
+	TemplateDir string
 }
 
 type PackageDefinition struct {
@@ -92,9 +114,10 @@ type PackageDefinition struct {
 	Version  string
 	Revision string
 
-	Channel           ChannelType
+	Channel ChannelType
+
 	KubernetesVersion string
-	KubeletCNIVersion string
+	Dependencies      map[string]string
 
 	DownloadLinkBase         string
 	KubeadmKubeletConfigFile string
@@ -102,22 +125,36 @@ type PackageDefinition struct {
 	CNIDownloadLink string
 }
 
-type cfg struct {
+type buildConfig struct {
 	*PackageDefinition
-	Arch         string
-	DebArch      string
-	Package      string
-	Dependencies string
+	Type      BuildType
+	GoArch    string
+	BuildArch string
+	Package   string
+
+	TemplateDir string
+	workspace   string
+	specOnly    bool
 }
 
-func ConstructBuilds(packages, channels []string, kubeVersion, revision, cniVersion, criToolsVersion string) ([]Build, error) {
+func ConstructBuilds(buildType BuildType, packages, channels []string, kubeVersion, revision, cniVersion, criToolsVersion, templateDir string) ([]Build, error) {
 	logrus.Infof("Constructing builds...")
 
 	builds := []Build{}
 
 	for _, pkg := range packages {
+		// nolint
+		// TODO: Get package directory for any version once package definitions are broken out
+		packageTemplateDir := filepath.Join(templateDir, pkg)
+		_, err := os.Stat(packageTemplateDir)
+		if err != nil {
+			return nil, err
+		}
+
 		b := &Build{
-			Package: pkg,
+			Type:        buildType,
+			Package:     pkg,
+			TemplateDir: packageTemplateDir,
 		}
 
 		for _, channel := range channels {
@@ -145,13 +182,18 @@ func ConstructBuilds(packages, channels []string, kubeVersion, revision, cniVers
 	return builds, nil
 }
 
-func WalkBuilds(builds []Build, architectures []string) error {
+func WalkBuilds(builds []Build, architectures []string, specOnly bool) error {
 	logrus.Infof("Walking builds...")
+
+	tmpDir, err := ioutil.TempDir(os.TempDir(), "kubepkg")
+	if err != nil {
+		return err
+	}
 
 	for _, arch := range architectures {
 		for _, build := range builds {
 			for _, packageDef := range build.Definitions {
-				if err := buildPackage(build.Package, arch, packageDef); err != nil {
+				if err := buildPackage(build, packageDef, arch, tmpDir, specOnly); err != nil {
 					return err
 				}
 			}
@@ -162,24 +204,31 @@ func WalkBuilds(builds []Build, architectures []string) error {
 	return nil
 }
 
-func buildPackage(pkg, arch string, packageDef *PackageDefinition) error {
+func buildPackage(build Build, packageDef *PackageDefinition, arch, tmpDir string, specOnly bool) error {
 	if packageDef == nil {
 		return errors.New("package definition cannot be nil")
 	}
 
-	c := cfg{
-		PackageDefinition: packageDef,
-		Package:           pkg,
-		Arch:              arch,
+	pd := &PackageDefinition{}
+	*pd = *packageDef
+
+	bc := &buildConfig{
+		PackageDefinition: pd,
+		Type:              build.Type,
+		Package:           build.Package,
+		GoArch:            arch,
+		TemplateDir:       build.TemplateDir,
+		workspace:         tmpDir,
+		specOnly:          specOnly,
 	}
 
-	c.Name = pkg
+	bc.Name = build.Package
 
 	var err error
 
-	if c.KubernetesVersion != "" {
-		logrus.Infof("Checking if user-supplied Kubernetes version (%s) is valid semver...", c.KubernetesVersion)
-		kubeSemver, err := semver.Parse(c.KubernetesVersion)
+	if bc.KubernetesVersion != "" {
+		logrus.Infof("Checking if user-supplied Kubernetes version (%s) is valid semver...", bc.KubernetesVersion)
+		kubeSemver, err := semver.Parse(bc.KubernetesVersion)
 		if err != nil {
 			return errors.Wrap(err, "user-supplied Kubernetes version is not valid semver")
 		}
@@ -191,169 +240,127 @@ func buildPackage(pkg, arch string, packageDef *PackageDefinition) error {
 		case len(kubeVersionParts) > 4:
 			logrus.Info("User-supplied Kubernetes version is a CI version")
 			logrus.Info("Setting channel to nightly")
-			c.Channel = ChannelNightly
+			bc.Channel = ChannelNightly
 		case len(kubeVersionParts) == 4:
 			logrus.Info("User-supplied Kubernetes version is a pre-release version")
 			logrus.Info("Setting channel to testing")
-			c.Channel = ChannelTesting
+			bc.Channel = ChannelTesting
 		default:
 			logrus.Info("User-supplied Kubernetes version is a release version")
 			logrus.Info("Setting channel to release")
-			c.Channel = ChannelRelease
+			bc.Channel = ChannelRelease
 		}
 	}
 
-	c.KubernetesVersion, err = getKubernetesVersion(packageDef)
+	bc.KubernetesVersion, err = getKubernetesVersion(pd)
 	if err != nil {
 		return errors.Wrap(err, "getting Kubernetes version")
 	}
 
-	c.DownloadLinkBase, err = getDownloadLinkBase(packageDef)
+	bc.DownloadLinkBase, err = getDownloadLinkBase(pd)
 	if err != nil {
 		return errors.Wrap(err, "getting Kubernetes download link base")
 	}
 
-	logrus.Infof("Kubernetes download link base: %s", c.DownloadLinkBase)
+	logrus.Infof("Kubernetes download link base: %s", bc.DownloadLinkBase)
 
 	// For cases where a CI build version of Kubernetes is retrieved, replace instances
 	// of "+" with "-", so that we build with a valid Debian package version.
-	c.KubernetesVersion = strings.Replace(c.KubernetesVersion, "+", "-", 1)
+	bc.KubernetesVersion = strings.Replace(bc.KubernetesVersion, "+", "-", 1)
 
-	c.Version, err = getPackageVersion(packageDef)
+	bc.Version, err = getPackageVersion(pd)
 	if err != nil {
 		return errors.Wrap(err, "getting package version")
 	}
 
-	logrus.Infof("%s package version: %s", c.Name, c.Version)
+	logrus.Infof("%s package version: %s", bc.Name, bc.Version)
 
-	c.KubeletCNIVersion = minimumCNIVersion
-
-	c.Dependencies, err = GetKubeadmDependencies(packageDef)
+	bc.Dependencies, err = getDependencies(pd)
 	if err != nil {
-		return errors.Wrap(err, "getting kubeadm dependencies")
+		return errors.Wrap(err, "getting dependencies")
 	}
 
-	c.KubeadmKubeletConfigFile = kubeadmConf
+	bc.KubeadmKubeletConfigFile = kubeadmConf
 
-	if c.Arch == "arm" {
-		c.DebArch = "armhf"
-	} else if c.Arch == "ppc64le" {
-		c.DebArch = "ppc64el"
-	} else {
-		c.DebArch = c.Arch
-	}
+	bc.BuildArch = getBuildArch(bc.GoArch, bc.Type)
 
-	c.CNIDownloadLink, err = getCNIDownloadLink(packageDef, c.Arch)
+	bc.CNIDownloadLink, err = getCNIDownloadLink(pd, bc.GoArch)
 	if err != nil {
 		return errors.Wrap(err, "getting CNI download link")
 	}
 
-	logrus.Infof("Building %s package for %s/%s architecture...", c.Package, c.Arch, c.DebArch)
-	return c.run()
+	logrus.Infof("Building %s package for %s/%s architecture...", bc.Package, bc.GoArch, bc.BuildArch)
+	return bc.run()
 }
 
-func (c cfg) run() error {
-	var w []work
-
-	// nolint
-	// TODO: Get package directory for any version once package definitions are broken out
-	srcdir := filepath.Join(latestPackagesDir, c.Package)
-	dstdir, err := ioutil.TempDir(os.TempDir(), "debs")
+func (bc *buildConfig) run() error {
+	workspaceInfo, err := os.Stat(bc.workspace)
 	if err != nil {
 		return err
 	}
 
-	if !*keepTmp {
-		defer os.RemoveAll(dstdir)
+	specDir := filepath.Join(bc.workspace, string(bc.Channel), bc.Package)
+	specDirWithArch := filepath.Join(specDir, bc.GoArch)
+
+	err = os.MkdirAll(specDirWithArch, workspaceInfo.Mode())
+	if err != nil {
+		return err
 	}
 
-	if err := filepath.Walk(srcdir, func(srcfile string, f os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		dstfile := filepath.Join(dstdir, srcfile[len(srcdir):])
-		if dstfile == dstdir {
-			return nil
-		}
-		if f.IsDir() {
-			return os.Mkdir(dstfile, f.Mode())
-		}
-		t, err := template.
-			New("").
-			Funcs(builtins).
-			Option("missingkey=error").
-			ParseFiles(srcfile)
-		if err != nil {
-			return err
-		}
-		w = append(w, work{
-			src:  srcfile,
-			dst:  dstfile,
-			t:    t.Templates()[0],
-			info: f,
-		})
+	//nolint:godox
+	// TODO: keepTmp/cleanup needs to defined in kubepkg root
+	if !bc.specOnly {
+		defer os.RemoveAll(specDirWithArch)
+	}
 
+	_, err = buildSpecs(bc, specDirWithArch)
+	if err != nil {
+		return err
+	}
+
+	if bc.specOnly {
+		logrus.Info("spec-only mode was selected")
 		return nil
-	}); err != nil {
-		return err
 	}
 
-	for _, w := range w {
-		if err := func() error {
-			f, err := os.OpenFile(w.dst, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
+	//nolint:godox
+	// TODO: Move OS-specific logic into their own files
+	switch bc.Type {
+	case BuildDeb:
+		logrus.Infof("Running dpkg-buildpackage for %s (%s/%s)", bc.Package, bc.GoArch, bc.BuildArch)
 
-			if err := w.t.Execute(f, c); err != nil {
-				return err
-			}
-			if err := os.Chmod(w.dst, w.info.Mode()); err != nil {
-				return err
-			}
-			return nil
-		}(); err != nil {
+		dpkgErr := command.NewWithWorkDir(
+			specDirWithArch,
+			"dpkg-buildpackage",
+			"--unsigned-source",
+			"--unsigned-changes",
+			"--build=binary",
+			"--host-arch",
+			bc.BuildArch,
+		).RunSuccess()
+
+		if dpkgErr != nil {
+			return dpkgErr
+		}
+
+		fileName := fmt.Sprintf("%s_%s-%s_%s.deb", bc.Package, bc.Version, bc.Revision, bc.BuildArch)
+		dstParts := []string{"bin", string(bc.Channel), fileName}
+
+		dstPath := filepath.Join(dstParts...)
+		if mkdirErr := os.MkdirAll(dstPath, 0o777); mkdirErr != nil {
 			return err
 		}
+
+		mvErr := command.New("mv", filepath.Join(specDir, fileName), dstPath).RunSuccess()
+		if mvErr != nil {
+			return mvErr
+		}
+
+		logrus.Infof("Successfully built %s", dstPath)
+	case BuildRpm:
+		logrus.Fatal("Building rpms via kubepkg is not currently supported")
 	}
 
-	logrus.Infof("Running dpkg-buildpackage for %s (%s/%s)", c.Package, c.Arch, c.DebArch)
-
-	dpkgStatus, dpkgErr := command.NewWithWorkDir(
-		dstdir,
-		"dpkg-buildpackage",
-		"--unsigned-source",
-		"--unsigned-changes",
-		"--build=binary",
-		"--host-arch",
-		c.DebArch,
-	).Run()
-
-	if dpkgErr != nil {
-		return dpkgErr
-	}
-	if !dpkgStatus.Success() {
-		return errors.Errorf("dpkg-buildpackage command failed: %s", dpkgStatus.Error())
-	}
-
-	fileName := fmt.Sprintf("%s_%s-%s_%s.deb", c.Package, c.Version, c.Revision, c.DebArch)
-	dstParts := []string{"bin", string(c.Channel), fileName}
-
-	dstPath := filepath.Join(dstParts...)
-	if mkdirErr := os.MkdirAll(dstPath, 0o777); mkdirErr != nil {
-		return err
-	}
-
-	mvStatus, mvErr := command.New("mv", filepath.Join("/tmp", fileName), dstPath).Run()
-	if mvErr != nil {
-		return mvErr
-	}
-	if !mvStatus.Success() {
-		return errors.Errorf("mv command failed: %s", mvStatus.Error())
-	}
-
-	logrus.Infof("Successfully built %s", dstPath)
 	return nil
 }
 
@@ -595,20 +602,28 @@ func getDefaultReleaseDownloadLinkBase(packageDef *PackageDefinition) (string, e
 	return fmt.Sprintf("%s/v%s", DefaultReleaseDownloadLinkBase, packageDef.KubernetesVersion), nil
 }
 
-func GetKubeadmDependencies(packageDef *PackageDefinition) (string, error) {
+func getDependencies(packageDef *PackageDefinition) (map[string]string, error) {
 	if packageDef == nil {
-		return "", errors.New("package definition cannot be nil")
+		return nil, errors.New("package definition cannot be nil")
 	}
 
-	deps := []string{
-		fmt.Sprintf("kubelet (>= %s)", minimumKubernetesVersion),
-		fmt.Sprintf("kubectl (>= %s)", minimumKubernetesVersion),
-		fmt.Sprintf("kubernetes-cni (>= %s)", minimumCNIVersion),
-		fmt.Sprintf("cri-tools (>= %s)", minimumCRIToolsVersion),
-		"${misc:Depends}",
+	deps := make(map[string]string)
+
+	switch packageDef.Name {
+	case "kubelet":
+		deps["kubernetes-cni"] = minimumCNIVersion
+	case "kubeadm":
+		deps["kubelet"] = minimumKubernetesVersion
+		deps["kubectl"] = minimumKubernetesVersion
+		deps["kubernetes-cni"] = minimumCNIVersion
+		deps["cri-tools"] = minimumCRIToolsVersion
 	}
 
-	return strings.Join(deps, ", "), nil
+	return deps, nil
+}
+
+func getBuildArch(goArch string, buildType BuildType) string {
+	return buildArchMap[goArch][buildType]
 }
 
 func getCNIDownloadLink(packageDef *PackageDefinition, arch string) (string, error) {
@@ -631,4 +646,42 @@ func getCNIDownloadLink(packageDef *PackageDefinition, arch string) (string, err
 	}
 
 	return fmt.Sprintf("https://github.com/containernetworking/plugins/releases/download/v%s/cni-plugins-linux-%s-v%s.tgz", packageDef.Version, arch, packageDef.Version), nil
+}
+
+//nolint:godox
+// TODO: kubepkg is failing validations when multiple options are selected
+//       It seems like StringArrayVar is treating the multiple comma-separated values as a single value.
+//
+// Example:
+// $ time kubepkg debs --arch amd64,arm
+// <snip>
+// INFO[0000] Adding 'amd64,arm' (type: string) to not supported
+// INFO[0000] The following options are not supported: [amd64,arm]
+// FATA[0000] architectures selections are not supported
+func IsSupported(input, expected []string) bool {
+	notSupported := []string{}
+
+	supported := false
+	for _, i := range input {
+		supported = false
+		for _, j := range expected {
+			if i == j {
+				supported = true
+				logrus.Infof("Breaking out of %s check", i)
+				break
+			}
+		}
+
+		if !supported {
+			logrus.Infof("Adding '%s' (type: %v) to not supported", i, reflect.TypeOf(i))
+			notSupported = append(notSupported, i)
+		}
+	}
+
+	if len(notSupported) > 0 {
+		logrus.Infof("The following options are not supported: %v", notSupported)
+		return false
+	}
+
+	return true
 }
