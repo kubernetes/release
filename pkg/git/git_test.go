@@ -136,7 +136,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	secondTagRef, err := cloneRepo.CreateTag(secondTagName, firstBranchCommit,
 		&git.CreateTagOptions{
 			Tagger:  author,
-			Message: firstTagName,
+			Message: secondTagName,
 		},
 	)
 	require.Nil(t, err)
@@ -160,7 +160,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	thirdTagRef, err := cloneRepo.CreateTag(thirdTagName, secondBranchCommit,
 		&git.CreateTagOptions{
 			Tagger:  author,
-			Message: firstTagName,
+			Message: thirdTagName,
 		},
 	)
 	require.Nil(t, err)
@@ -385,12 +385,16 @@ func TestSuccessLatestPatchToPatch(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
+	nextMinorTag := "v1.17.1"
+	require.Nil(t, command.NewWithWorkDir(
+		testRepo.sut.Dir(), "git", "tag", nextMinorTag,
+	).RunSuccess())
+
 	result, err := testRepo.sut.LatestPatchToPatch(testRepo.branchName)
 	require.Nil(t, err)
-	require.Equal(t, result.StartSHA(), testRepo.firstBranchCommit)
-	require.Equal(t, result.StartRev(), testRepo.secondTagName)
-	require.Equal(t, result.EndSHA(), testRepo.secondBranchCommit)
-	require.Equal(t, result.EndRev(), testRepo.thirdTagName)
+	require.Equal(t, result.StartSHA(), testRepo.firstCommit)
+	require.Equal(t, result.StartRev(), testRepo.firstTagName)
+	require.Equal(t, result.EndRev(), nextMinorTag)
 }
 
 func TestFailureLatestPatchToPatchWrongBranch(t *testing.T) {
@@ -460,4 +464,35 @@ func TestFailureLatestNonPatchFinalToMinor(t *testing.T) {
 	result, err := testRepo.sut.LatestNonPatchFinalToMinor()
 	require.NotNil(t, err)
 	require.Equal(t, DiscoverResult{}, result)
+}
+
+func TestTagsForBranchMaster(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	result, err := testRepo.sut.tagsForBranch(Master)
+	require.Nil(t, err)
+	require.Equal(t, result, []string{testRepo.firstTagName})
+}
+
+func TestTagsForBranchOnBranch(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	result, err := testRepo.sut.tagsForBranch(testRepo.branchName)
+	require.Nil(t, err)
+	require.Equal(t, result, []string{
+		testRepo.firstTagName,
+		testRepo.thirdTagName,
+		testRepo.secondTagName,
+	})
+}
+
+func TestTagsForBranchFailureWrongBranch(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	result, err := testRepo.sut.tagsForBranch("wrong-branch")
+	require.NotNil(t, err)
+	require.Nil(t, result)
 }

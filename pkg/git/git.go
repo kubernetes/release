@@ -541,25 +541,60 @@ func (r *Repo) LatestPatchToPatch(branch string) (DiscoverResult, error) {
 
 // latestTagForBranch returns the latest available semver tag for a given branch
 func (r *Repo) latestTagForBranch(branch string) (*semver.Version, error) {
-	status, err := command.NewWithWorkDir(
-		r.Dir(), gitExecutable, "rev-list", branch, "--tags", "--max-count=1",
-	).RunSilent()
+	tags, err := r.tagsForBranch(branch)
 	if err != nil {
 		return nil, err
 	}
-	if !status.Success() {
-		return nil, errors.Errorf("git rev-list command failed: %s", status.Error())
+	if len(tags) == 0 {
+		return nil, errors.New("no tags found on branch")
 	}
 
-	rev, err := r.DescribeTag(strings.TrimSpace(status.Output()))
-	if err != nil {
-		return nil, err
-	}
-
-	tag, err := semver.Make(util.TrimTagPrefix(rev))
+	tag, err := semver.Make(util.TrimTagPrefix(tags[0]))
 	if err != nil {
 		return nil, err
 	}
 
 	return &tag, nil
+}
+
+// PreviousTag tries to find the previous tag for a provided branch and errors
+// on any failure
+func (r *Repo) PreviousTag(tag, branch string) (string, error) {
+	tags, err := r.tagsForBranch(branch)
+	if err != nil {
+		return "", err
+	}
+
+	idx := 0
+	for i, t := range tags {
+		if t == tag {
+			idx = i
+			break
+		}
+	}
+	if len(tags) < idx+1 {
+		return "", errors.New("unable to find previous tag")
+	}
+
+	return tags[idx+1], nil
+}
+
+// tagsForBranch returns a list of tags for the provided branch sorted by
+// creation date
+func (r *Repo) tagsForBranch(branch string) ([]string, error) {
+	if err := r.CheckoutBranch(branch); err != nil {
+		return nil, err
+	}
+
+	status, err := command.NewWithWorkDir(
+		r.Dir(), gitExecutable, "tag", "--sort=-creatordate", "--merged",
+	).RunSilent()
+	if err != nil {
+		return nil, err
+	}
+	if !status.Success() {
+		return nil, errors.Errorf("git tag command failed: %s", status.Error())
+	}
+
+	return strings.Fields(status.Output()), nil
 }

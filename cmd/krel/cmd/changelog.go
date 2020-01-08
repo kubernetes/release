@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -71,7 +72,7 @@ the golang based 'release-notes' tool:
 }
 
 type changelogOptions struct {
-	branch    string
+	tag       string
 	bucket    string
 	tars      string
 	token     string
@@ -89,16 +90,17 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	const (
+		tagFlag   = "tag"
 		tarsFlag  = "tars"
 		tokenFlag = "token"
 	)
-	changelogCmd.PersistentFlags().StringVar(&changelogOpts.branch, "branch", git.Master, "The target release branch. Leave it default for non-patch releases.")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.bucket, "bucket", "kubernetes-release", "Specify gs bucket to point to in generated notes")
+	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tag, tagFlag, "", "The version tag of the release, for example v1.17.0-rc.1")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tars, tarsFlag, "", "Directory of tars to sha512 sum for display")
 	changelogCmd.PersistentFlags().StringVarP(&changelogOpts.token, tokenFlag, "t", "", "GitHub token for release notes retrieval")
 	changelogCmd.PersistentFlags().StringVarP(&changelogOpts.outputDir, "output", "o", os.TempDir(), "Output directory for the generated files")
 
-	if err := changelogCmd.MarkPersistentFlagRequired(tokenFlag); err != nil {
+	if err := changelogCmd.MarkPersistentFlagRequired(tagFlag); err != nil {
 		logrus.Fatal(err)
 	}
 	if err := changelogCmd.MarkPersistentFlagRequired(tarsFlag); err != nil {
@@ -109,23 +111,55 @@ func init() {
 }
 
 func runChangelog() (err error) {
-	// TODO: remote lookup of 'final release notes draft',
-	// including error handling if not found
-
-	markdown, version, err := createReleaseNotes()
+	tag, err := semver.Make(util.TrimTagPrefix(changelogOpts.tag))
 	if err != nil {
 		return err
 	}
+	branch := fmt.Sprintf("release-%d.%d", tag.Major, tag.Minor)
+	logrus.Infof("Using release branch %s", branch)
+
+	repo, err := git.CloneOrOpenDefaultGitHubRepoSSH(rootOpts.repoPath, git.DefaultGithubOrg)
+	if err != nil {
+		return err
+	}
+
+	var markdown string
+
+	if tag.Patch == 0 {
+		if len(tag.Pre) == 0 {
+			// New final minor versions should have remote release notes
+			markdown, err = lookupRemoteReleaseNotes(branch)
+		} else {
+			// New minor alphas, betas and rc get generated notes
+			start, e := repo.PreviousTag(changelogOpts.tag, branch)
+			if e != nil {
+				return e
+			}
+			logrus.Infof("Found previous tag %s", start)
+			markdown, err = generateReleaseNotes(branch, start, changelogOpts.tag)
+		}
+	} else {
+		// A patch version, let’s just use the previous patch
+		start := util.AddTagPrefix(semver.Version{
+			Major: tag.Major, Minor: tag.Minor, Patch: tag.Patch - 1,
+		}.String())
+
+		markdown, err = generateReleaseNotes(branch, start, changelogOpts.tag)
+	}
+	if err != nil {
+		return err
+	}
+
 	toc, err := notes.GenerateTOC(markdown)
 	if err != nil {
 		return err
 	}
 
-	if err := writeMarkdown(toc, markdown, version); err != nil {
+	if err := writeMarkdown(toc, markdown, tag); err != nil {
 		return err
 	}
 
-	if err := writeHTML(version, markdown); err != nil {
+	if err := writeHTML(tag, markdown); err != nil {
 		return err
 	}
 
@@ -133,23 +167,13 @@ func runChangelog() (err error) {
 	return nil
 }
 
-func createReleaseNotes() (markdown, version string, err error) {
-	revisionDiscoveryMode := notes.RevisionDiscoveryModeMinorToMinor
-
-	if changelogOpts.branch != git.Master {
-		if !git.IsReleaseBranch(changelogOpts.branch) {
-			return "", "", errors.Wrapf(
-				err, "Branch %q is no release branch", changelogOpts.branch,
-			)
-		}
-		revisionDiscoveryMode = notes.RevisionDiscoveryModePatchToPatch
-	}
-	logrus.Infof("Using branch %q", changelogOpts.branch)
-	logrus.Infof("Using discovery mode %q", revisionDiscoveryMode)
+func generateReleaseNotes(branch, startRev, endRev string) (string, error) {
+	logrus.Info("Generating release notes")
 
 	notesOptions := notes.NewOptions()
-	notesOptions.Branch = changelogOpts.branch
-	notesOptions.DiscoverMode = revisionDiscoveryMode
+	notesOptions.Branch = branch
+	notesOptions.StartRev = startRev
+	notesOptions.EndRev = endRev
 	notesOptions.GithubOrg = git.DefaultGithubOrg
 	notesOptions.GithubRepo = git.DefaultGithubRepo
 	notesOptions.GithubToken = changelogOpts.token
@@ -157,8 +181,9 @@ func createReleaseNotes() (markdown, version string, err error) {
 	notesOptions.ReleaseBucket = changelogOpts.bucket
 	notesOptions.ReleaseTars = changelogOpts.tars
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
+
 	if err := notesOptions.ValidateAndFinish(); err != nil {
-		return "", "", err
+		return "", err
 	}
 
 	// Create the GitHub API client
@@ -175,40 +200,33 @@ func createReleaseNotes() (markdown, version string, err error) {
 		Repo:    git.DefaultGithubRepo,
 	}
 	releaseNotes, history, err := gatherer.ListReleaseNotes(
-		changelogOpts.branch,
-		notesOptions.StartSHA,
-		notesOptions.EndSHA,
-		"", "",
+		branch, notesOptions.StartSHA, notesOptions.EndSHA, "", "",
 	)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "listing release notes")
+		return "", errors.Wrapf(err, "listing release notes")
 	}
 
 	// Create the markdown
 	doc, err := notes.CreateDocument(releaseNotes, history)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "creating release note document")
+		return "", errors.Wrapf(err, "creating release note document")
 	}
 
-	markdown, err = notes.RenderMarkdown(
+	markdown, err := notes.RenderMarkdown(
 		doc, changelogOpts.bucket, changelogOpts.tars,
 		notesOptions.StartRev, notesOptions.EndRev,
 	)
 	if err != nil {
-		return "", "", errors.Wrapf(
+		return "", errors.Wrapf(
 			err, "rendering release notes to markdown",
 		)
 	}
 
-	return markdown, util.TrimTagPrefix(notesOptions.StartRev), nil
+	return markdown, nil
 }
 
-func writeMarkdown(toc, markdown, version string) error {
-	changelogPath, err := changelogFilename(version)
-	if err != nil {
-		return err
-	}
-
+func writeMarkdown(toc, markdown string, tag semver.Version) error {
+	changelogPath := changelogFilename(tag, "md")
 	writeFile := func(t, m string) error {
 		return ioutil.WriteFile(
 			changelogPath, []byte(strings.Join(
@@ -250,15 +268,11 @@ func writeMarkdown(toc, markdown, version string) error {
 	return writeFile(mergedTOC, mergedMarkdown)
 }
 
-func changelogFilename(version string) (string, error) {
-	v, err := semver.Parse(version)
-	if err != nil {
-		return "", err
-	}
+func changelogFilename(tag semver.Version, ext string) string {
 	return filepath.Join(
 		changelogOpts.outputDir,
-		fmt.Sprintf("CHANGELOG-%d.%d.md", v.Major, v.Minor),
-	), nil
+		fmt.Sprintf("CHANGELOG-%d.%d.%s", tag.Major, tag.Minor, ext),
+	)
 }
 
 func addTocMarkers(toc string) string {
@@ -287,7 +301,7 @@ const htmlTemplate = `<!DOCTYPE html>
   </body>
 </html>`
 
-func writeHTML(title, markdown string) error {
+func writeHTML(tag semver.Version, markdown string) error {
 	content := blackfriday.Run([]byte(markdown))
 
 	t, err := template.New("html").Parse(htmlTemplate)
@@ -298,14 +312,41 @@ func writeHTML(title, markdown string) error {
 	output := bytes.Buffer{}
 	if err := t.Execute(&output, struct {
 		Title, Content string
-	}{title, string(content)}); err != nil {
+	}{util.AddTagPrefix(tag.String()), string(content)}); err != nil {
 		return err
 	}
 
-	outputPath := filepath.Join(
-		changelogOpts.outputDir,
-		fmt.Sprintf("%s.html", title),
-	)
+	outputPath := changelogFilename(tag, "html")
 	logrus.Infof("Writing single HTML to %s", outputPath)
 	return ioutil.WriteFile(outputPath, output.Bytes(), 0o644)
+}
+
+func lookupRemoteReleaseNotes(branch string) (string, error) {
+	logrus.Info("Assuming new minor release")
+
+	remote := fmt.Sprintf(
+		"https://raw.githubusercontent.com/kubernetes/sig-release/master/"+
+			"releases/%s/release-notes-draft.md", branch,
+	)
+	resp, err := http.Get(remote)
+	if err != nil {
+		return "", errors.Wrapf(err,
+			"fetching release notes from remote: %s", remote,
+		)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.Errorf(
+			"remote release notes not found at: %s", remote,
+		)
+	}
+	logrus.Info("Found release notes")
+
+	content, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(content), nil
 }
