@@ -133,3 +133,5 @@ linters-settings:
       - typeUnparen
       - unnamedResult
       - unnecessaryBlock
+  gocyclo:
+    min-complexity: 31

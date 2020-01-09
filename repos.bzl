@@ -2045,3 +2045,11 @@ def go_repositories():
         sum = "h1:QtHYUjIdgXTtJVdYQhWIQZZoXa32aF3O9BNX2up2plE=",
         version = "v0.0.0-20190816221834-a9f1d8a9c101",
     )
+    go_repository(
+        name = "com_github_bazelbuild_rules_go",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/bazelbuild/rules_go",
+        sum = "h1:GRtyhztX3PNl4lhPhhn+eORpNfrFvygcVCQKgMv8lG8=",
+        version = "v0.22.1",
+    )

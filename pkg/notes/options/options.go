@@ -19,14 +19,19 @@ package options
 import (
 	"context"
 	"os"
+	"strings"
+
+	"io/ioutil"
 
 	"github.com/google/go-github/v29/github"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/notes/client"
+	"k8s.io/release/pkg/notes/internal"
 )
 
 type Options struct {
@@ -138,12 +143,12 @@ func (o *Options) ValidateAndFinish() (err error) {
 
 	// The start SHA or rev is required.
 	if o.StartSHA == "" && o.StartRev == "" {
-		return errors.New("the starting commit hash must be set via -start-sha, $START_SHA, -start-rev or $START_REV")
+		return errors.New("the starting commit hash must be set via --start-sha, $START_SHA, --start-rev or $START_REV")
 	}
 
 	// The end SHA or rev is required.
 	if o.EndSHA == "" && o.EndRev == "" {
-		return errors.New("the ending commit hash must be set via -end-sha, $END_SHA, -end-rev or $END_REV")
+		return errors.New("the ending commit hash must be set via --end-sha, $END_SHA, --end-rev or $END_REV")
 	}
 
 	// Check if we have to parse a revision
@@ -178,7 +183,43 @@ func (o *Options) ValidateAndFinish() (err error) {
 		}
 	}
 
+	// Set the format
+	format, err := o.template()
+	if err != nil {
+		return err
+	}
+	o.Format = format
+
 	return nil
+}
+
+func (o *Options) template() (string, error) {
+	if format := o.Format; format == "markdown" || format == "go-template:default" || format == "" {
+		return "go-template:" + internal.DefaultReleaseNotesTemplate, nil
+	}
+
+	// Assume a user-supplied template of the form
+	// "go-template:/path/to/file.txt". Try to read the template file in order
+	// to fail early before calls to GitHub.
+
+	f := strings.Split(o.Format, ":")
+	if len(f) != 2 {
+		return "", errors.Errorf("bad format option given: %q", o.Format)
+	}
+	templatePath := f[1]
+
+	b, err := ioutil.ReadFile(templatePath)
+	if err != nil {
+		return "", errors.Wrap(err, "reading template")
+	}
+	if len(b) == 0 {
+		return "", errors.Errorf("template %q must be non-empty", templatePath)
+	}
+
+	// TODO: We have no idea whether the template is valid. The user should
+	// know that the template will not work before we start doing not
+	// generation.
+	return "go-template:" + string(b), nil
 }
 
 func (o *Options) repo() (repo *git.Repo, err error) {
