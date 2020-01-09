@@ -36,11 +36,11 @@ type Options struct {
 	ReleaseVersion  string
 	Format          string
 	RequiredAuthor  string
-	Debug           bool
 	DiscoverMode    string
 	ReleaseBucket   string
 	ReleaseTars     string
 	TableOfContents bool
+	Debug           bool
 	gitCloneFn      func(string, string, string, bool) (*git.Repo, error)
 }
 

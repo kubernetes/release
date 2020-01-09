@@ -2,6 +2,11 @@
 run:
   concurrency: 6
   deadline: 5m
+issues:
+  exclude-rules:
+    - path: fake_client\.go
+      linters:
+        - gocritic
 linters:
   disable-all: true
   enable:
@@ -44,6 +49,11 @@ linters:
     # - scopelint
     # - wsl
 linters-settings:
+  godox:
+    keywords:
+      - BUG
+      - FIXME
+      - HACK
   errcheck:
     check-type-assertions: true
     check-blank: true

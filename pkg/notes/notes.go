@@ -485,7 +485,6 @@ func matchesIncludeFilter(msg string) *regexp.Regexp {
 // given commit SHA and ending at a given commit SHA. This function is similar
 // to ListCommits except that only commits with tagged release notes are
 // returned.
-//nolint
 //TODO: This name does not make sense anymore
 //TODO: Why is that method exported?
 func (g *Gatherer) ListCommitsWithNotes(commits []*github.RepositoryCommit) (filtered []*Result, err error) {
@@ -576,7 +575,7 @@ func (g *Gatherer) notesForCommit(commit *github.RepositoryCommit) (*Result, err
 				WithField("filter", re.String()).
 				Debug("Including notes for PR based on the inclusion filter.")
 
-			//TODO is this really intentional?
+			// TODO is this really intentional?
 			// Do not test further PRs for this commmit as soon as one PR matched
 			return res, nil
 		}

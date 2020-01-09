@@ -494,6 +494,7 @@ func checkCallCount(t *testing.T, what string, expected, actual int) {
 	}
 }
 
+// nolint: unparam
 func checkOrgRepo(t *testing.T, expectedOrg, expectedRepo, actualOrg, actualRepo string) {
 	t.Helper()
 
