@@ -1,0 +1,32 @@
+---
+# https://github.com/GoogleContainerTools/container-structure-test
+schemaVersion: '2.0.0'
+
+commandTests:
+  - name: commands are available
+    command: /test.sh
+    args:
+      - gcc
+    setup:
+      -
+        - bash
+        - -c
+        - |
+          cat <<'EOF' >/test.sh
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          exitCode=0
+          for cmd in "$@"
+          do
+            if command -v "$cmd" >/dev/null 2>&1; then
+              echo -n .
+            else
+              exitCode=1
+              echo >&2 "${cmd} NOT available."
+            fi
+          done
+          exit $exitCode
+          EOF
+
+          chmod +x /test.sh
