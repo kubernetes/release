@@ -18,6 +18,9 @@
 .DEFAULT_GOAL:=help
 SHELL:=/usr/bin/env bash
 
+COLOR:=\\033[36m
+NOCOLOR:=\\033[0m
+
 ##@ Package
 
 .PHONY: build-debs build-rpms verify-published-debs verify-published-rpms
@@ -27,7 +30,7 @@ build-debs: ## Build debs
 
 build-rpms: ## Build rpms
 	PACKAGE_TYPE="rpms" ./build/package.sh
-	
+
 verify-published-debs: ## Ensure debs have been published
 	./hack/packages/verify-published.sh debs
 
@@ -74,22 +77,39 @@ image-%:
 	$(eval img := $(subst image-,,$@))
 	gcloud builds submit --config './images/$(img)/cloudbuild.yaml' './images/$(img)'
 
+##@ Dependencies
+
+.SILENT: update-deps update-deps-go
+.PHONY:  update-deps update-deps-go
+
+update-deps: update-deps-go ## Update all dependencies for this repo
+	echo -e "${COLOR}Commit/PR the following changes:${NOCOLOR}"
+	git status --short
+
+update-deps-go: GO111MODULE=on
+update-deps-go: ## Update all golang dependencies for this repo
+	go get -u -t ./...
+	go mod tidy
+	go mod verify
+	$(MAKE) test-go
+	./hack/update-all.sh
+
 ##@ Helpers
 
 .PHONY: help
 
 help:  ## Display this help
-	@awk ' \
-		BEGIN { \
-			FS = ":.*##" ; \
-			col = "\033[36m" ; \
-			nocol = "\033[0m" ; \
-			printf "\nUsage:\n  make %s<target>%s\n", col, nocol \
-		} \
-		/^[a-zA-Z_-]+:.*?##/ { \
-			printf "  %s%-15s%s %s\n", col, $$1, nocol, $$2 \
-		} \
-		/^##@/ { \
-			printf "\n%s%s%s\n", col, substr($$0, 5), nocol \
-		} \
-	' $(MAKEFILE_LIST)
+	@awk \
+		-v "col=${COLOR}" -v "nocol=${NOCOLOR}" \
+		' \
+			BEGIN { \
+				FS = ":.*##" ; \
+				printf "\nUsage:\n  make %s<target>%s\n", col, nocol \
+			} \
+			/^[a-zA-Z_-]+:.*?##/ { \
+				printf "  %s%-15s%s %s\n", col, $$1, nocol, $$2 \
+			} \
+			/^##@/ { \
+				printf "\n%s%s%s\n", col, substr($$0, 5), nocol \
+			} \
+		' $(MAKEFILE_LIST)
