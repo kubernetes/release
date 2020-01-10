@@ -79,7 +79,6 @@ func TestGetPackageVersionFailure(t *testing.T) {
 	a.Error(err)
 }
 
-//nolint:godox
 // TODO: Figure out how we want to test success of this function.
 //       When channel type is provided, we return a func() (string, error), instead of (string, error).
 //       Additionally, those functions have variable output depending on when we run the test cases.

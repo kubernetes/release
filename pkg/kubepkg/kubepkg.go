@@ -143,7 +143,6 @@ func ConstructBuilds(buildType BuildType, packages, channels []string, kubeVersi
 	builds := []Build{}
 
 	for _, pkg := range packages {
-		// nolint
 		// TODO: Get package directory for any version once package definitions are broken out
 		packageTemplateDir := filepath.Join(templateDir, pkg)
 		_, err := os.Stat(packageTemplateDir)
@@ -307,7 +306,6 @@ func (bc *buildConfig) run() error {
 		return err
 	}
 
-	//nolint:godox
 	// TODO: keepTmp/cleanup needs to defined in kubepkg root
 	if !bc.specOnly {
 		defer os.RemoveAll(specDirWithArch)
@@ -323,7 +321,6 @@ func (bc *buildConfig) run() error {
 		return nil
 	}
 
-	//nolint:godox
 	// TODO: Move OS-specific logic into their own files
 	switch bc.Type {
 	case BuildDeb:
@@ -648,7 +645,6 @@ func getCNIDownloadLink(packageDef *PackageDefinition, arch string) (string, err
 	return fmt.Sprintf("https://github.com/containernetworking/plugins/releases/download/v%s/cni-plugins-linux-%s-v%s.tgz", packageDef.Version, arch, packageDef.Version), nil
 }
 
-//nolint:godox
 // TODO: kubepkg is failing validations when multiple options are selected
 //       It seems like StringArrayVar is treating the multiple comma-separated values as a single value.
 //

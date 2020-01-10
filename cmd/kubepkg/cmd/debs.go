@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package cmd // nolint: dupl
 
 import (
 	"github.com/spf13/cobra"
@@ -26,9 +26,8 @@ import (
 type debsOptions struct {
 }
 
-//nolint
 // TODO: Determine if we need debsOpts
-var debsOpts = &debsOptions{}
+var debsOpts = &debsOptions{} // nolint: deadcode,varcheck,unused
 
 // debsCmd represents the base command when called without any subcommands
 var debsCmd = &cobra.Command{

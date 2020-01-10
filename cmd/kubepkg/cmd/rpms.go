@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package cmd // nolint: dupl
 
 import (
 	"github.com/spf13/cobra"
@@ -26,9 +26,8 @@ import (
 type rpmsOptions struct {
 }
 
-//nolint
 // TODO: Determine if we need rpmsOpts
-var rpmsOpts = &rpmsOptions{}
+var rpmsOpts = &rpmsOptions{} // nolint: deadcode,varcheck,unused
 
 // rpmsCmd represents the base command when called without any subcommands
 var rpmsCmd = &cobra.Command{
