@@ -12,6 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+FROM golang:1.13.6 AS builder
+
+ENV GO111MODULE=on
+
+WORKDIR /workspace
+
+COPY . .
+
+RUN go build -o . ./cmd/kubepkg/...
+
+
 FROM fedora:30
 
 RUN dnf install -y \
@@ -30,7 +41,7 @@ WORKDIR /home/builder/workspace
 
 RUN rpmdev-setuptree
 
-ADD --chown=builder:builder build.sh .
-COPY --chown=builder:builder . ./SPECS
+COPY --chown=builder:builder ./cmd/kubepkg/templates ./templates
+COPY --from=builder --chown=builder:builder /workspace/kubepkg .
 
-ENTRYPOINT ["./build.sh"]
+ENTRYPOINT ["./kubepkg", "rpms"]

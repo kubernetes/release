@@ -3,17 +3,21 @@ timeout: 1200s
 options:
   substitution_option: ALLOW_LOOSE
 steps:
-  - name: golang:1.13
-    args: ['go', 'build', '-o', 'debs', '.']
-    env:
-    - CGO_ENABLED=0
-    - GOOS=linux
-    - GOARCH=amd64
   - name: gcr.io/cloud-builders/docker
     args:
     - build
-    - --tag=gcr.io/$PROJECT_ID/deb-builder:$_GIT_TAG
-    - --tag=gcr.io/$PROJECT_ID/deb-builder:latest
+    - -f
+    - ./Dockerfile-kubepkg
+    - --tag=gcr.io/$PROJECT_ID/kubepkg:$_GIT_TAG
+    - --tag=gcr.io/$PROJECT_ID/kubepkg:latest
+    - .
+  - name: gcr.io/cloud-builders/docker
+    args:
+    - build
+    - -f
+    - ./Dockerfile-kubepkg-rpm
+    - --tag=gcr.io/$PROJECT_ID/kubepkg-rpm:$_GIT_TAG
+    - --tag=gcr.io/$PROJECT_ID/kubepkg-rpm:latest
     - .
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
@@ -21,5 +25,7 @@ substitutions:
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
 images:
-  - 'gcr.io/$PROJECT_ID/deb-builder:$_GIT_TAG'
-  - 'gcr.io/$PROJECT_ID/deb-builder:latest'
+  - 'gcr.io/$PROJECT_ID/kubepkg:$_GIT_TAG'
+  - 'gcr.io/$PROJECT_ID/kubepkg:latest'
+  - 'gcr.io/$PROJECT_ID/kubepkg-rpm:$_GIT_TAG'
+  - 'gcr.io/$PROJECT_ID/kubepkg-rpm:latest'
