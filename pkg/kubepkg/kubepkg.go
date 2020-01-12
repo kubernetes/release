@@ -144,7 +144,7 @@ func ConstructBuilds(buildType BuildType, packages, channels []string, kubeVersi
 
 	for _, pkg := range packages {
 		// TODO: Get package directory for any version once package definitions are broken out
-		packageTemplateDir := filepath.Join(templateDir, pkg)
+		packageTemplateDir := filepath.Join(templateDir, string(buildType), pkg)
 		_, err := os.Stat(packageTemplateDir)
 		if err != nil {
 			return nil, err
@@ -317,7 +317,7 @@ func (bc *buildConfig) run() error {
 	}
 
 	if bc.specOnly {
-		logrus.Info("spec-only mode was selected")
+		logrus.Info("Spec-only mode was selected; kubepkg will now exit without building packages")
 		return nil
 	}
 
@@ -355,7 +355,7 @@ func (bc *buildConfig) run() error {
 
 		logrus.Infof("Successfully built %s", dstPath)
 	case BuildRpm:
-		logrus.Fatal("Building rpms via kubepkg is not currently supported")
+		logrus.Info("Building rpms via kubepkg is not currently supported")
 	}
 
 	return nil
@@ -663,7 +663,6 @@ func IsSupported(input, expected []string) bool {
 		for _, j := range expected {
 			if i == j {
 				supported = true
-				logrus.Infof("Breaking out of %s check", i)
 				break
 			}
 		}

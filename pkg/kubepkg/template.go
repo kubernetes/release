@@ -20,6 +20,8 @@ import (
 	"os"
 	"path/filepath"
 	"text/template"
+
+	"github.com/sirupsen/logrus"
 )
 
 type work struct {
@@ -83,5 +85,6 @@ func buildSpecs(bc *buildConfig, specDir string) ([]work, error) {
 		}
 	}
 
+	logrus.Info("Package specs have successfully been built")
 	return w, nil
 }
