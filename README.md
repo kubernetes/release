@@ -4,8 +4,6 @@
   - [Tools](#tools)
   - [Release Notes Gathering](#release-notes-gathering)
   - [Building Linux Packages](#building-linux-packages)
-    - [For Debian](#for-debian)
-    - [For Fedora, CentOS, Red Hat Enterprise Linux](#for-fedora-centos-red-hat-enterprise-linux)
   - [Contributing](#contributing)
 <!-- END MUNGE: GENERATED_TOC -->
 
@@ -66,24 +64,7 @@ Usage of release-notes:
 
 ## Building Linux Packages
 
-### For Debian
-
-You can build the deb packages in a Docker container like this:
-```
-make build-debs
-```
-
-The build runs for a while, after it's done you will find the output in `_output/debs`.
-
-### For Fedora, CentOS, Red Hat Enterprise Linux
-
-You can build the rpm packages in a Docker container with:
-
-```
-make build-rpms
-```
-
-Resulting rpms, and a pre-generated yum repository will be generated in `_output/rpms`.
+See the [`kubepkg`](/cmd/kubepkg/README.md) documentation for instructions on how to build debs and rpms.
 
 ## Contributing
 
