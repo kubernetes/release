@@ -102,7 +102,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	})
 	require.Nil(t, err)
 
-	firstTagName := "v0.1.0"
+	firstTagName := "v1.17.0"
 	firstTagRef, err := cloneRepo.CreateTag(firstTagName, firstCommit,
 		&git.CreateTagOptions{
 			Tagger:  author,
@@ -112,7 +112,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, err)
 
 	// Create a test branch and a test commit on top
-	branchName := "first-branch"
+	branchName := "release-1.17"
 	require.Nil(t, command.NewWithWorkDir(
 		cloneTempDir, "git", "checkout", "-b", branchName,
 	).RunSuccess())
@@ -412,11 +412,11 @@ func TestSuccessDry(t *testing.T) {
 	require.Nil(t, err)
 }
 
-func TestSuccessLatestNonPatchFinalToLatest(t *testing.T) {
+func TestSuccessLatestReleaseBranchMergeBaseToLatest(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	result, err := testRepo.sut.LatestNonPatchFinalToLatest()
+	result, err := testRepo.sut.LatestReleaseBranchMergeBaseToLatest()
 	require.Nil(t, err)
 	require.Equal(t, result.StartSHA(), testRepo.firstCommit)
 	require.Equal(t, result.StartRev(), testRepo.firstTagName)
@@ -424,7 +424,7 @@ func TestSuccessLatestNonPatchFinalToLatest(t *testing.T) {
 	require.Equal(t, result.EndRev(), Master)
 }
 
-func TestFailureLatestNonPatchFinalToLatestNoLatestTag(t *testing.T) {
+func TestFailureLatestReleaseBranchMergeBaseToLatestNoLatestTag(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
@@ -432,7 +432,7 @@ func TestFailureLatestNonPatchFinalToLatestNoLatestTag(t *testing.T) {
 		testRepo.sut.Dir(), "git", "tag", "-d", testRepo.firstTagName,
 	).RunSuccess())
 
-	result, err := testRepo.sut.LatestNonPatchFinalToLatest()
+	result, err := testRepo.sut.LatestReleaseBranchMergeBaseToLatest()
 	require.NotNil(t, err)
 	require.Equal(t, DiscoverResult{}, result)
 }
@@ -441,7 +441,7 @@ func TestSuccessLatestNonPatchFinalToMinor(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	nextMinorTag := "v0.2.0"
+	nextMinorTag := "v1.18.0"
 	require.Nil(t, command.NewWithWorkDir(
 		testRepo.sut.Dir(), "git", "tag", nextMinorTag,
 	).RunSuccess())

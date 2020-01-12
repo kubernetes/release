@@ -230,9 +230,10 @@ func (r *Repo) RevParseShort(rev string) (string, error) {
 	return fullRev[:10], nil
 }
 
-// LatestNonPatchFinalToLatest tries to discover the start (latest v1.xx.0) and
-// end (release-1.xx or master) revision inside the repository
-func (r *Repo) LatestNonPatchFinalToLatest() (DiscoverResult, error) {
+// LatestReleaseBranchMergeBaseToLatest tries to discover the start (latest
+// v1.x.0 merge base) and end (release-1.(x+1) or master) revision inside the
+// repository.
+func (r *Repo) LatestReleaseBranchMergeBaseToLatest() (DiscoverResult, error) {
 	// Find the last non patch version tag, then resolve its revision
 	versions, err := r.latestNonPatchFinalVersions()
 	if err != nil {
@@ -241,7 +242,11 @@ func (r *Repo) LatestNonPatchFinalToLatest() (DiscoverResult, error) {
 	version := versions[0]
 	versionTag := util.AddTagPrefix(version.String())
 	logrus.Debugf("latest non patch version %s", versionTag)
-	start, err := r.RevParse(versionTag)
+
+	base, err := r.MergeBase(
+		Master,
+		fmt.Sprintf("release-%d.%d", version.Major, version.Minor),
+	)
 	if err != nil {
 		return DiscoverResult{}, err
 	}
@@ -254,7 +259,7 @@ func (r *Repo) LatestNonPatchFinalToLatest() (DiscoverResult, error) {
 	}
 
 	return DiscoverResult{
-		startSHA: start,
+		startSHA: base,
 		startRev: versionTag,
 		endSHA:   end,
 		endRev:   branch,

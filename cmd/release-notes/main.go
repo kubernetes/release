@@ -186,7 +186,7 @@ func init() {
 		fmt.Sprintf("The revision discovery mode for automatic revision retrieval (options: %s)",
 			strings.Join([]string{
 				notes.RevisionDiscoveryModeNONE,
-				notes.RevisionDiscoveryModeMinorToLatest,
+				notes.RevisionDiscoveryModeMergeBaseToLatest,
 				notes.RevisionDiscoveryModePatchToPatch,
 				notes.RevisionDiscoveryModeMinorToMinor,
 			}, ", "),
