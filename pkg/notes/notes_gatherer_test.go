@@ -30,6 +30,7 @@ import (
 
 	"github.com/google/go-github/v28/github"
 	"github.com/sirupsen/logrus"
+	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/notesfakes"
 )
@@ -97,7 +98,7 @@ func TestListCommits(t *testing.T) {
 				r:  response(200, 100),
 			}},
 			getCommitArgValidator: func(t *testing.T, callCount int, ctx context.Context, org, repo, rev string) {
-				checkOrgRepo(t, "kubernetes", "kubernetes", org, repo)
+				checkOrgRepo(t, org, repo)
 				if a, e := rev, "the-start"; callCount == 0 && a != e {
 					t.Errorf("Expected to be called with revision '%s' on first call, got: '%s'", e, a)
 				}
@@ -106,7 +107,7 @@ func TestListCommits(t *testing.T) {
 				}
 			},
 			listCommitsArgValidator: func(t *testing.T, callCount int, ctx context.Context, org, repo string, clo *github.CommitsListOptions) {
-				checkOrgRepo(t, "kubernetes", "kubernetes", org, repo)
+				checkOrgRepo(t, org, repo)
 				if page, min, max := clo.ListOptions.Page, 1, 100; page < min || page > max {
 					t.Errorf("Expected page number to be between %d and %d, got: %d", min, max, page)
 				}
@@ -283,7 +284,7 @@ func TestListCommitsWithNotes(t *testing.T) {
 			},
 			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {
 				return func(_ context.Context, org, repo, sha string, _ *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
-					checkOrgRepo(t, "kubernetes", "kubernetes", org, repo)
+					checkOrgRepo(t, org, repo)
 					if e, a := "some-random-sha", sha; e != a {
 						t.Errorf("Expected ListPullRequestsWithCommit(...) to be called for SHA '%s', have been called for '%s'", e, a)
 					}
@@ -306,7 +307,7 @@ func TestListCommitsWithNotes(t *testing.T) {
 				seenPRs := newIntsRecorder(123, 124, 125, 126, 127, 128)
 
 				return func(_ context.Context, org, repo string, prID int) (*github.PullRequest, *github.Response, error) {
-					checkOrgRepo(t, "kubernetes", "kubernetes", org, repo)
+					checkOrgRepo(t, org, repo)
 					if err := seenPRs.Mark(prID); err != nil {
 						t.Errorf("In GetPullRequest: %w", err)
 					}
@@ -494,15 +495,14 @@ func checkCallCount(t *testing.T, what string, expected, actual int) {
 	}
 }
 
-// nolint: unparam
-func checkOrgRepo(t *testing.T, expectedOrg, expectedRepo, actualOrg, actualRepo string) {
+func checkOrgRepo(t *testing.T, org, repo string) {
 	t.Helper()
 
-	if a, e := actualOrg, expectedOrg; e != a {
-		t.Errorf("Expected to be called with '%s' as an org, got: %s", e, a)
+	if org != git.DefaultGithubOrg {
+		t.Errorf("Expected to be called with '%s' as an org, got: %s", git.DefaultGithubOrg, org)
 	}
-	if a, e := actualRepo, expectedRepo; e != a {
-		t.Errorf("Expected to be called with '%s' as a repo, got: %s", e, a)
+	if repo != git.DefaultGithubRepo {
+		t.Errorf("Expected to be called with '%s' as a repo, got: %s", git.DefaultGithubRepo, repo)
 	}
 }
 
