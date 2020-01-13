@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
@@ -386,6 +387,14 @@ func (r *Repo) CheckoutBranch(name string) error {
 	})
 }
 
+// Checkout can be used to checkout any revision inside the repository
+func (r *Repo) Checkout(rev string, args ...string) error {
+	cmdArgs := append([]string{"checkout", rev}, args...)
+	return command.
+		NewWithWorkDir(r.Dir(), gitExecutable, cmdArgs...).
+		RunSilentSuccess()
+}
+
 func IsReleaseBranch(branch string) bool {
 	re := regexp.MustCompile(branchRE)
 	if !re.MatchString(branch) {
@@ -597,4 +606,36 @@ func (r *Repo) tagsForBranch(branch string) ([]string, error) {
 	}
 
 	return strings.Fields(status.Output()), nil
+}
+
+// Add adds a file to the staging area of the repo
+func (r *Repo) Add(filename string) error {
+	worktree, err := r.inner.Worktree()
+	if err != nil {
+		return err
+	}
+	_, err = worktree.Add(filename)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Commit commits the current repository state
+func (r *Repo) Commit(msg string) error {
+	worktree, err := r.inner.Worktree()
+	if err != nil {
+		return err
+	}
+	_, err = worktree.Commit(msg, &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "Anago GCB",
+			Email: "nobody@k8s.io",
+			When:  time.Now(),
+		},
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
