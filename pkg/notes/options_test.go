@@ -357,6 +357,11 @@ func TestValidateAndFinishSuccessDiscoveryModePatchToPatch(t *testing.T) {
 	options := newTestOptions(t)
 	defer options.testRepo.cleanup(t)
 
+	nextMinorTag := "v1.17.1"
+	require.Nil(t, command.NewWithWorkDir(
+		options.testRepo.sut.Dir(), "git", "tag", nextMinorTag,
+	).RunSuccess())
+
 	options.Branch = options.testRepo.branchName
 	options.DiscoverMode = RevisionDiscoveryModePatchToPatch
 	require.Nil(t, options.ValidateAndFinish())
