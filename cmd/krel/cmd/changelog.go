@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	"github.com/blang/semver"
 	"github.com/google/go-github/v28/github"
@@ -31,6 +32,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
+	"gopkg.in/russross/blackfriday.v2"
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/notes"
@@ -123,8 +125,11 @@ func runChangelog() (err error) {
 		return err
 	}
 
-	// TODO: HTML output
-	// TODO: Pushing changes
+	if err := writeHTML(version, markdown); err != nil {
+		return err
+	}
+
+	// TODO: Push changes into repo
 	return nil
 }
 
@@ -258,4 +263,49 @@ func changelogFilename(version string) (string, error) {
 
 func addTocMarkers(toc string) string {
 	return fmt.Sprintf("%s\n\n%s\n%s\n", tocStart, toc, tocEnd)
+}
+
+const htmlTemplate = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{{ .Title }}</title>
+    <style type="text/css">
+      table,
+      th,
+      tr,
+      td {
+        border: 1px solid gray;
+        border-collapse: collapse;
+        padding: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    {{ .Content }}
+  </body>
+</html>`
+
+func writeHTML(title, markdown string) error {
+	content := blackfriday.Run([]byte(markdown))
+
+	t, err := template.New("html").Parse(htmlTemplate)
+	if err != nil {
+		return err
+	}
+
+	output := bytes.Buffer{}
+	if err := t.Execute(&output, struct {
+		Title, Content string
+	}{title, string(content)}); err != nil {
+		return err
+	}
+
+	outputPath := filepath.Join(
+		changelogOpts.outputDir,
+		fmt.Sprintf("%s.html", title),
+	)
+	logrus.Infof("Writing single HTML to %s", outputPath)
+	return ioutil.WriteFile(outputPath, output.Bytes(), 0o644)
 }

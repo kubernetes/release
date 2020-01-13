@@ -13,9 +13,11 @@ require (
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481
 	github.com/pkg/errors v0.8.1
 	github.com/psampaz/go-mod-outdated v0.5.0
+	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5
 	github.com/stretchr/testify v1.4.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	gopkg.in/russross/blackfriday.v2 v2.0.0
 	gopkg.in/src-d/go-git.v4 v4.13.1
 )
