@@ -617,7 +617,7 @@ prepare_tree () {
     logecho -n "Copy master $CHANGELOG_FILE to $branch branch: "
     logrun -s git checkout master -- $CHANGELOG_FILE || return 1
     logecho -n "Committing deleted CHANGELOG-*.md files: "
-    logrun -s git commit -am "Delete extraneous CHANGELOG-*.md files on branch."
+    logrun -s git commit -am "Delete extraneous CHANGELOG-*.md files on branch." || return 1
   fi
 
   # Ensure a common name for label in case we're using the special beta indexes
@@ -626,7 +626,7 @@ prepare_tree () {
   # Tagging
   commit_string="Kubernetes $label_common release ${RELEASE_VERSION[$label]}"
   logecho -n "Tagging $commit_string on $branch: "
-  logrun -s git tag -a -m "$commit_string" "${RELEASE_VERSION[$label]}"
+  logrun -s git tag -a -m "$commit_string" "${RELEASE_VERSION[$label]}" || return 1
 }
 
 ##############################################################################
