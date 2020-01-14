@@ -398,43 +398,6 @@ check_prerequisites () {
 }
 
 ###############################################################################
-# Updates openapi-spec version files
-# Uses the RELEASE_VERSION global dict
-# @param label - label index to RELEASE_VERSION
-rev_openapi_versions () {
-  local label=$1
-  local -a swagger_files=("api/openapi-spec/swagger.json"
-                          "federation/apis/openapi-spec/swagger.json")
-  local f
-
-  #########################################################################
-  # NOTE: To avoid a significant time sink from running update-all.sh as
-  #       well as avoiding running the master-only doc stub creator
-  #       update-generated-docs.sh, we simply and quickly modify the files that
-  #       are dependent on a $version_file change
-  #       If/when the great update-all.sh revolution occurs and this runs in
-  #       under a minute, we can probably run that instead.
-  #########################################################################
-  for f in ${swagger_files[*]}; do
-    # Handle the recent move of federation out of k/k
-    if [[ ! -f $f ]]; then
-      logecho "Skipping $f..."
-      continue
-    fi
-    # Strip any suffix off incoming RELEASE_VERSION[$label]
-    sed -i -r 's,"version": "'${VER_REGEX[release]}'","version": "'${RELEASE_VERSION[$label]//-*}'",g' $f
-    logrun git add $f
-  done
-
-  # Only commit if the files have changed.
-  if [[ -n "$(git status -s)" ]]; then
-    logecho -n "Committing openapi-spec versioned files: "
-    logrun -s git commit -am \
-                "Kubernetes version ${RELEASE_VERSION[$label]} openapi-spec file updates"
-  fi
-}
-
-###############################################################################
 # Update $CHANGELOG_FILE on master
 PROGSTEP[generate_release_notes]="GENERATE RELEASE NOTES"
 generate_release_notes () {
@@ -596,25 +559,6 @@ checkout_object () {
 }
 
 ##############################################################################
-# Commit a tag with a comment to the current HEAD of a branch
-# @param label - The label to process
-# @param branch - The branch to process
-git_tag () {
-  local label=$1
-  local branch=$2
-  local commit_string
-  local label_common="$label"
-
-  # Ensure a common name for label in case we're using the special beta indexes
-  [[ "$label" =~ ^beta ]] && label_common="beta"
-
-  # Tagging
-  commit_string="Kubernetes $label_common release ${RELEASE_VERSION[$label]}"
-  logecho -n "Tagging $commit_string on $branch: "
-  logrun -s git tag -a -m "$commit_string" "${RELEASE_VERSION[$label]}"
-}
-
-##############################################################################
 # Tag/Build a local kube_cross image based on the version in scope
 PROGSTEP[local_kube_cross]="TAG/BUILD LOCAL KUBE CROSS"
 local_kube_cross () {
@@ -641,14 +585,14 @@ local_kube_cross () {
 
 ##############################################################################
 # Prepare sources for building for a given label
-# @param label - The label to process
+# @param label - The label to process (eg: "beta" or "official")
 PROGSTEP[prepare_tree]="PREPARE AND TAG TREE"
 prepare_tree () {
   local label=$1
   local label_common="$label"
   local branch
+  local commit_string
 
-  # Check for tag first
   if git rev-parse "${RELEASE_VERSION[$label]}" >/dev/null 2>&1; then
     logecho "The ${RELEASE_VERSION[$label]} tag already exists!"
     logecho "Possible reasons for this:"
@@ -662,53 +606,27 @@ prepare_tree () {
   # Now set the branch we're on
   branch=$(gitlib::current_branch)
 
-  # If this is a new branch, rev openapi-spec version files
-  # Because this modifies files on master and there's a good chance the
-  # master has moved ahead by now, the tag has to occur before this file
-  # change or the later rebase in gitlib::push_master() will rewrite the
-  # commit associated with the tag and orphan it.
-  if [[ -n "$PARENT_BRANCH" && $label == alpha ]]; then
-    git_tag $label $branch || return 1
-    rev_openapi_versions $label || return 1
-    return 0
-  fi
-
-  # rev openapi-spec version files on branch for beta tags
-  case $label in
-    beta*) rev_openapi_versions $label || return 1 ;;
-  esac
-
-  # COMMENTING OUT FOR NOW AS THE WAY FORWARD IS NOT CLEAR
-  # generate docs on new branches (from master) only
-  # If the entirety of this session is based on a branch from master
-  # (PARENT_BRANCH), and this iteration of prepare_tree() is operating on
-  # the NON-master branch itself, versionize the docs
-  #if [[ "$PARENT_BRANCH" == "master" && "$branch" != "master" ]]; then
-  #  logecho -n "Generating docs for ${RELEASE_VERSION[$label]}: "
-  #  logrun -s $TREE_ROOT/hack/generate-docs.sh || return 1
-  #  logecho -n "Committing: "
-  #  logrun -s git commit -am \
-  #            "Generating docs for ${RELEASE_VERSION[$label]} on $branch."
-  #fi
-
-  # Clear all CHANGELOG-N.NN.md files on the branch.
-  # This replaces the above commented out change to the branch.
-  # Some unique change is required on the branch to allow it to be git
-  # describe'd as something other than the current tag on master
-  # If/when the generate-docs.sh issue is sorted out, this will become
-  # optional, though probably still useful anyway.
+  # Clear all CHANGELOG-N.NN.md files on the branch and insert the
+  # generated one, if # $PARENT_BRANCH==master, which seems to be in the
+  # weeks between branch creation the first official release of the branch.
+  # TODO: can this condition on whether the branch is "beta" or "rc" and be
+  # more simply readable to a maintainer?
   if [[ "$PARENT_BRANCH" == "master" && "$branch" != "master" ]]; then
     logecho -n "Remove any previous CHANGELOG-*.md files: "
     logrun -s git rm -f CHANGELOG-*.md || return 1
     logecho -n "Copy master $CHANGELOG_FILE to $branch branch: "
     logrun -s git checkout master -- $CHANGELOG_FILE || return 1
     logecho -n "Committing deleted CHANGELOG-*.md files: "
-    logrun -s git commit -am \
-              "Delete extraneous CHANGELOG-*.md files on branch." \
-     || return 1
+    logrun -s git commit -am "Delete extraneous CHANGELOG-*.md files on branch." || return 1
   fi
 
-  git_tag $label $branch
+  # Ensure a common name for label in case we're using the special beta indexes
+  [[ "$label" =~ ^beta ]] && label_common="beta"
+
+  # Tagging
+  commit_string="Kubernetes $label_common release ${RELEASE_VERSION[$label]}"
+  logecho -n "Tagging $commit_string on $branch: "
+  logrun -s git tag -a -m "$commit_string" "${RELEASE_VERSION[$label]}" || return 1
 }
 
 ##############################################################################
