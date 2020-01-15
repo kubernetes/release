@@ -41,6 +41,12 @@ commandTests:
   - go
   - gsutil
   - yq
+  # for multiarch support / cross building
+  - gcc
+  - arm-linux-gnueabihf-gcc
+  - aarch64-linux-gnu-gcc
+  - powerpc64le-linux-gnu-gcc
+  - s390x-linux-gnu-gcc
   setup:
   -
     - bash

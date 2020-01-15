@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM k8s.gcr.io/kube-cross:v1.13.4-1
 
+##------------------------------------------------------------
+# global ARGs & ENVs
 ARG DEBIAN_FRONTEND=noninteractive
+
+##------------------------------------------------------------
+FROM k8s.gcr.io/kube-cross:v1.13.4-1
 
 RUN apt-get -q update
 
@@ -90,8 +94,6 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
 
 # Cleanup a bit
 RUN apt-get -qqy remove \
-        gcc \
-        'cpp.*' \
         wget \
     && rm -rf -- \
         /var/lib/apt/lists/* \
