@@ -2,6 +2,7 @@
 timeout: 7200s
 steps:
 - name: 'gcr.io/cloud-builders/git'
+  id: pull-k8s
   dir: 'go/src/k8s.io'
   args:
   - clone
@@ -9,6 +10,7 @@ steps:
   - ${_KUBERNETES_REPO}
 
 - name: 'gcr.io/cloud-builders/git'
+  id: pull-release
   dir: 'go/src/k8s.io'
   args:
   - clone
@@ -16,18 +18,21 @@ steps:
   - ${_RELEASE_TOOL_REPO}
 
 - name: 'gcr.io/$PROJECT_ID/k8s-cloud-builder'
+  id: prepare
   dir: 'go/src/k8s.io/kubernetes'
   args:
   - make
   - clean
 
 - name: 'gcr.io/$PROJECT_ID/k8s-cloud-builder'
+  id: build
   dir: 'go/src/k8s.io/kubernetes'
   args:
   - make
   - "${_RELEASE_TYPE}"
 
 - name: 'gcr.io/$PROJECT_ID/k8s-cloud-builder'
+  id: push-build
   dir: 'go/src/k8s.io/kubernetes'
   args:
   - ../release/push-build.sh
