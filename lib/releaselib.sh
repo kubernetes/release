@@ -357,6 +357,7 @@ release::set_release_version () {
   local label
   declare -A release_branch build_version
   declare -Ag RELEASE_VERSION
+  declare -ag ORDERED_RELEASE_KEYS
 
   if ! [[ $branch =~ $BRANCH_REGEX ]]; then
     logecho "Invalid branch format! $branch"
@@ -450,6 +451,40 @@ release::set_release_version () {
       logecho "RELEASE_VERSION[$label]=${RELEASE_VERSION[$label]}"
     done
     logecho "RELEASE_VERSION_PRIME=$RELEASE_VERSION_PRIME"
+  fi
+
+  # To ensure we're executing releases in the correct order, we append the keys
+  # of the RELEASE_VERSION associative array in the order that we explicitly
+  # prefer: official, rc, beta, alpha
+  #
+  # In anago, we will then iterate over the keys in the ORDERED_RELEASE_KEYS
+  # array and where necessary use these elements to access the underlying values
+  # of the RELEASE_VERSION associative array.
+  #
+  # Example:
+  #
+  # for release_type in "${ORDERED_RELEASE_KEYS[@]}"; do
+  #  echo "Doing the $release stuff (${RELEASE_VERSION[$release_type]})"
+  # done
+  #
+  #
+  # More on manipulating associative arrays:
+  # https://www.gnu.org/savannah-checkouts/gnu/bash/manual/bash.html#Arrays
+
+  if [[ ${RELEASE_VERSION[official]} ]]; then
+    ORDERED_RELEASE_KEYS+=("official")
+  fi
+
+  if [[ ${RELEASE_VERSION[rc]} ]]; then
+    ORDERED_RELEASE_KEYS+=("rc")
+  fi
+
+  if [[ ${RELEASE_VERSION[beta]} ]]; then
+    ORDERED_RELEASE_KEYS+=("beta")
+  fi
+
+  if [[ ${RELEASE_VERSION[alpha]} ]]; then
+    ORDERED_RELEASE_KEYS+=("alpha")
   fi
 
   return 0
