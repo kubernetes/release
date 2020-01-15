@@ -8,6 +8,7 @@ steps:
   - clone
   - --branch=${_KUBERNETES_BRANCH}
   - ${_KUBERNETES_REPO}
+  waitFor: [ '-' ]
 
 - name: 'gcr.io/cloud-builders/git'
   id: pull-release
@@ -16,6 +17,7 @@ steps:
   - clone
   - --branch=${_RELEASE_TOOL_BRANCH}
   - ${_RELEASE_TOOL_REPO}
+  waitFor: [ '-' ]
 
 - name: 'gcr.io/$PROJECT_ID/k8s-cloud-builder'
   id: prepare
