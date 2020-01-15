@@ -865,9 +865,9 @@ push_git_objects () {
   logrun -s git checkout master || return 1
 
   logecho "Pushing$dryrun_flag tags"
-  for b in ${!RELEASE_VERSION[@]}; do
-    logecho -n "* ${RELEASE_VERSION[$b]}: "
-    logrun -s git push$dryrun_flag origin ${RELEASE_VERSION[$b]} || return 1
+  for release_type in "${ORDERED_RELEASE_KEYS[@]}"; do
+    logecho -n "Pushing ${RELEASE_VERSION[$release_type]} tag: "
+    logrun -s git push$dryrun_flag origin ${RELEASE_VERSION[$release_type]} || return 1
   done
 
   if [[ "$RELEASE_BRANCH" =~ release- ]]; then
@@ -1684,7 +1684,7 @@ fi
 
 if [[ -z $STAGED_LOCATION ]]; then
   # Iterate over session release versions for setup, tagging and building
-  for label in ${!RELEASE_VERSION[@]}; do
+  for label in "${ORDERED_RELEASE_KEYS[@]}"; do
     common::run_stateful "prepare_tree $label" RELEASE_VERSION[$label]
     # This doesn't have to be done per label, but does need to be inserted
     # after an initial prepare_tree(), so just let the statefulness of it
@@ -1717,7 +1717,7 @@ if [[ -z $STAGED_LOCATION ]]; then
   # Complete the "build" for the gcb case
   if ((FLAGS_gcb)); then
     if ((FLAGS_stage)); then
-      for label in ${!RELEASE_VERSION[@]}; do
+      for label in "${ORDERED_RELEASE_KEYS[@]}"; do
         common::run_stateful "build_tree $label" RELEASE_VERSION[$label]
       done
     fi
@@ -1728,7 +1728,7 @@ if [[ -z $STAGED_LOCATION ]]; then
 else
   logecho
   # Force complete for these three stages
-  for label in ${!RELEASE_VERSION[@]}; do
+  for label in "${ORDERED_RELEASE_KEYS[@]}"; do
     SKIP_STEPS+=(prepare_tree+$label build_tree+$label)
     ((FLAGS_gcb)) && SKIP_STEPS+=(local_kube_cross make_cross+$label)
   done
@@ -1749,7 +1749,7 @@ else
 fi
 
 # Push for each release version of this session
-for label in ${!RELEASE_VERSION[@]}; do
+for label in "${ORDERED_RELEASE_KEYS[@]}"; do
   common::run_stateful "push_all_artifacts $label" RELEASE_VERSION[$label]
 done
 
