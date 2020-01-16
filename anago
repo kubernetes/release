@@ -620,6 +620,8 @@ prepare_tree () {
     logrun -s git commit -am "Delete extraneous CHANGELOG-*.md files on branch." || return 1
   fi
 
+  # This appears to be a bug fix for some historical bug.  Unclear if/why
+  # this would ever result in label != label_common.
   # Ensure a common name for label in case we're using the special beta indexes
   [[ "$label" =~ ^beta ]] && label_common="beta"
 
