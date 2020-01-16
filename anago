@@ -625,6 +625,12 @@ prepare_tree () {
   # Ensure a common name for label in case we're using the special beta indexes
   [[ "$label" =~ ^beta ]] && label_common="beta"
 
+  # Ensure any beta tag is on a unique commit by making a commit here:
+  if [[ "$label_common" == "beta" ]]; then
+    logecho "Making a unique commit for tag ${RELEASE_VERSION[$label]}"
+    logrun git commit --allow-empty -m "k/release issue #1020 workaround: ${RELEASE_VERSION[$label]}" || return 1
+  fi
+
   # Tagging
   commit_string="Kubernetes $label_common release ${RELEASE_VERSION[$label]}"
   logecho -n "Tagging $commit_string on $branch: "
