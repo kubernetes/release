@@ -128,13 +128,13 @@ func TestFetchVersionSuccess(t *testing.T) {
 	}{
 		{
 			name:     "Release URL",
-			url:      "https://dl.k8s.io/release/stable-1.14.txt",
-			expected: "1.14.10",
+			url:      "https://dl.k8s.io/release/stable-1.13.txt",
+			expected: "1.13.12",
 		},
 		{
 			name:     "CI URL",
 			url:      "https://dl.k8s.io/ci/latest-1.14.txt",
-			expected: "1.14.11-beta.1",
+			expected: "1.14.11-beta.1.2+c8b135d0b49c44",
 		},
 	}
 
