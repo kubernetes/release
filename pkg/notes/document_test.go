@@ -136,3 +136,20 @@ filename | sha512 hash
 
 `)
 }
+
+func TestSortKinds(t *testing.T) {
+	input := map[string][]string{
+		"cleanup":                       nil,
+		"api-change":                    nil,
+		"deprecation":                   nil,
+		"documentation":                 nil,
+		"Other (Bug, Cleanup or Flake)": nil,
+		"failing-test":                  nil,
+		"design":                        nil,
+		"flake":                         nil,
+		"bug":                           nil,
+		"feature":                       nil,
+	}
+	res := sortKinds(input)
+	require.Equal(t, res, kindPriority)
+}
