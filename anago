@@ -620,8 +620,16 @@ prepare_tree () {
     logrun -s git commit -am "Delete extraneous CHANGELOG-*.md files on branch." || return 1
   fi
 
+  # This appears to be a bug fix for some historical bug.  Unclear if/why
+  # this would ever result in label != label_common.
   # Ensure a common name for label in case we're using the special beta indexes
   [[ "$label" =~ ^beta ]] && label_common="beta"
+
+  # Ensure any beta tag is on a unique commit by making a commit here:
+  if [[ "$label_common" == "beta" ]]; then
+    logecho "Making a unique commit for tag ${RELEASE_VERSION[$label]}"
+    logrun git commit --allow-empty -m "k/release issue #1020 workaround: ${RELEASE_VERSION[$label]}" || return 1
+  fi
 
   # Tagging
   commit_string="Kubernetes $label_common release ${RELEASE_VERSION[$label]}"
@@ -787,6 +795,7 @@ found_staged_location () {
     gs_stage_root="gs://$bucket/stage/$jbv/$version"
     if ! binary_artifacts_exist $gs_stage_root $version; then
       # Ensure these are unset in this case
+      logecho "unsetting STAGED_LOCATION STAGED_BUCKET"
       unset STAGED_LOCATION STAGED_BUCKET
       return 1
     fi
@@ -936,6 +945,7 @@ announce () {
   if [[ "$arg" == "--branch" ]]; then
     echo "k8s ${RELEASE_BRANCH} branch has been created" > "$subject_file"
     branch_announcement_text > "$announcement_file"
+    logecho "k8s ${RELEASE_BRANCH} branch creation announcement created."
 
     # When we create a new branch, we notify the publishing-bot folks by
     # creating an issue for them
@@ -948,6 +958,7 @@ announce () {
   else
     echo "k8s ${RELEASE_VERSION_PRIME} is live!" > "$subject_file"
     release_announcement_text > "$announcement_file"
+    logecho "k8s ${RELEASE_VERSION_PRIME} release announcement created."
   fi
 
   # Only send from desktop
@@ -1683,6 +1694,7 @@ if ! ((FLAGS_stage)); then
 fi
 
 if [[ -z $STAGED_LOCATION ]]; then
+  logecho "STAGED_LOCATION:=$STAGED_LOCATION, beginning prebuild"
   # Iterate over session release versions for setup, tagging and building
   for label in "${ORDERED_RELEASE_KEYS[@]}"; do
     common::run_stateful "prepare_tree $label" RELEASE_VERSION[$label]
@@ -1726,7 +1738,7 @@ if [[ -z $STAGED_LOCATION ]]; then
   # No release notes for X.Y.Z-beta.0 releases
   [[ -z "$PARENT_BRANCH" ]] && common::run_stateful generate_release_notes
 else
-  logecho
+  logecho "STAGED_LOCATION undefined, attempting completion"
   # Force complete for these three stages
   for label in "${ORDERED_RELEASE_KEYS[@]}"; do
     SKIP_STEPS+=(prepare_tree+$label build_tree+$label)
