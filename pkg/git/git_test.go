@@ -45,6 +45,7 @@ type testRepo struct {
 	secondTagName      string
 	thirdTagCommit     string
 	thirdTagName       string
+	testFileName       string
 }
 
 // newTestRepo creates a test repo with the following structure:
@@ -198,6 +199,7 @@ func newTestRepo(t *testing.T) *testRepo {
 		secondTagCommit:    secondTagRef.Hash().String(),
 		thirdTagName:       thirdTagName,
 		thirdTagCommit:     thirdTagRef.Hash().String(),
+		testFileName:       testFileName,
 	}
 }
 
@@ -495,4 +497,83 @@ func TestTagsForBranchFailureWrongBranch(t *testing.T) {
 	result, err := testRepo.sut.tagsForBranch("wrong-branch")
 	require.NotNil(t, err)
 	require.Nil(t, result)
+}
+
+func TestCheckoutSuccess(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	require.Nil(t, ioutil.WriteFile(
+		filepath.Join(testRepo.sut.Dir(), testRepo.testFileName),
+		[]byte("hello world"),
+		0o644,
+	))
+	res, err := command.NewWithWorkDir(
+		testRepo.sut.Dir(), "git", "diff", "--name-only").Run()
+	require.Nil(t, err)
+	require.True(t, res.Success())
+	require.Contains(t, res.Output(), testRepo.testFileName)
+
+	err = testRepo.sut.Checkout(Master, testRepo.testFileName)
+	require.Nil(t, err)
+
+	res, err = command.NewWithWorkDir(
+		testRepo.sut.Dir(), "git", "diff", "--name-only").Run()
+	require.Nil(t, err)
+	require.True(t, res.Success())
+	require.Empty(t, res.Output())
+}
+
+func TestCheckoutFailureWrongRevision(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	err := testRepo.sut.Checkout("wrong")
+	require.NotNil(t, err)
+	require.Contains(t, err.Error(), "checkout wrong did not succeed")
+}
+
+func TestAddSuccess(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	f, err := ioutil.TempFile(testRepo.sut.Dir(), "test")
+	require.Nil(t, err)
+	require.Nil(t, f.Close())
+
+	filename := filepath.Base(f.Name())
+	err = testRepo.sut.Add(filename)
+	require.Nil(t, err)
+
+	res, err := command.NewWithWorkDir(
+		testRepo.sut.Dir(), "git", "diff", "--cached", "--name-only").Run()
+	require.Nil(t, err)
+	require.True(t, res.Success())
+	require.Contains(t, res.Output(), filename)
+}
+
+func TestAddFailureWrongPath(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	err := testRepo.sut.Add("wrong")
+	require.NotNil(t, err)
+	require.Contains(t, err.Error(), "entry not found")
+}
+
+func TestCommitSuccess(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	commitMessage := "My commit message for this test"
+	err := testRepo.sut.Commit(commitMessage)
+	require.Nil(t, err)
+
+	res, err := command.NewWithWorkDir(
+		testRepo.sut.Dir(), "git", "log", "-1",
+	).Run()
+	require.Nil(t, err)
+	require.True(t, res.Success())
+	require.Contains(t, res.Output(), "Author: Anago GCB <nobody@k8s.io>")
+	require.Contains(t, res.Output(), commitMessage)
 }

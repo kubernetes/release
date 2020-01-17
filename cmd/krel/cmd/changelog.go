@@ -43,25 +43,26 @@ import (
 // changelogCmd represents the subcommand for `krel changelog`
 var changelogCmd = &cobra.Command{
 	Use:   "changelog",
-	Short: "changelog maintains the lifecycle of CHANGELOG-x.y.md files",
+	Short: "changelog maintains the lifecycle of CHANGELOG-x.y.{md,html} files",
 	Long: `krel changelog
 
 The 'changelog' subcommand of 'krel' does the following things by utilizing
 the golang based 'release-notes' tool:
 
-1. Generate the release notes for either the patch or the new minor release
-   a) Createa a new CHANGELOG-x.y.md file if we're working on a minor release
+1. Generate the release notes for either a patch or a new minor release. Minor
+   releases can be alpha, beta or rc’s, too.
+   a) Create a new CHANGELOG-x.y.md file if not existing.
    b) Correctly prepend the generated notes to the existing CHANGELOG-x.y.md
-      file if it’s a patch release. This also includes the table of contents.
+      file if already existing. This also includes the modification of the
+	  table of contents.
 
-2. Push the modified CHANGELOG-x.y.md into the master branch of
-   kubernetes/kubernetes
-   a) Push the release notes to the 'release-x.y' branch as well if it’s a
-      patch release
+2. Convert the markdown release notes into a HTML equivalent on purpose of
+   sending it by mail to the announce list. The HTML file will be dropped into
+   the current working directly as 'CHANGELOG-x.y.html'. Sending the
+   announcement is done by another subcommand of 'krel', not "changelog'.
 
-3. Convert the markdown release notes into a HTML equivalent on purpose of
-   sending it by mail to the announce list. Sending the announcement is done
-   by another subcommand of 'krel', not "changelog'.
+3. Push the modified CHANGELOG-x.y.md into the master branch as well as the
+   corresponding release-branch of kubernetes/kubernetes.
 `,
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -72,11 +73,10 @@ the golang based 'release-notes' tool:
 }
 
 type changelogOptions struct {
-	tag       string
-	bucket    string
-	tars      string
-	token     string
-	outputDir string
+	tag    string
+	bucket string
+	tars   string
+	token  string
 }
 
 var changelogOpts = &changelogOptions{}
@@ -98,7 +98,6 @@ func init() {
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tag, tagFlag, "", "The version tag of the release, for example v1.17.0-rc.1")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tars, tarsFlag, "", "Directory of tars to sha512 sum for display")
 	changelogCmd.PersistentFlags().StringVarP(&changelogOpts.token, tokenFlag, "t", "", "GitHub token for release notes retrieval")
-	changelogCmd.PersistentFlags().StringVarP(&changelogOpts.outputDir, "output", "o", os.TempDir(), "Output directory for the generated files")
 
 	if err := changelogCmd.MarkPersistentFlagRequired(tagFlag); err != nil {
 		logrus.Fatal(err)
@@ -118,13 +117,17 @@ func runChangelog() (err error) {
 	branch := fmt.Sprintf("release-%d.%d", tag.Major, tag.Minor)
 	logrus.Infof("Using release branch %s", branch)
 
+	logrus.Infof("Using local repository path %s", rootOpts.repoPath)
 	repo, err := git.CloneOrOpenDefaultGitHubRepoSSH(rootOpts.repoPath, git.DefaultGithubOrg)
 	if err != nil {
 		return err
 	}
+	if !rootOpts.nomock {
+		logrus.Info("Using dry mode, which does not modify any remote content")
+		repo.SetDry()
+	}
 
 	var markdown string
-
 	if tag.Patch == 0 {
 		if len(tag.Pre) == 0 {
 			// New final minor versions should have remote release notes
@@ -150,12 +153,17 @@ func runChangelog() (err error) {
 		return err
 	}
 
+	logrus.Info("Generating TOC")
 	toc, err := notes.GenerateTOC(markdown)
 	if err != nil {
 		return err
 	}
 
-	if err := writeMarkdown(toc, markdown, tag); err != nil {
+	if err := repo.CheckoutBranch(git.Master); err != nil {
+		return errors.Wrap(err, "checking out master branch")
+	}
+
+	if err := writeMarkdown(repo, toc, markdown, tag); err != nil {
 		return err
 	}
 
@@ -163,8 +171,7 @@ func runChangelog() (err error) {
 		return err
 	}
 
-	// TODO: Push changes into repo
-	return nil
+	return pushChanges(repo, branch, tag)
 }
 
 func generateReleaseNotes(branch, startRev, endRev string) (string, error) {
@@ -225,8 +232,8 @@ func generateReleaseNotes(branch, startRev, endRev string) (string, error) {
 	return markdown, nil
 }
 
-func writeMarkdown(toc, markdown string, tag semver.Version) error {
-	changelogPath := changelogFilename(tag, "md")
+func writeMarkdown(repo *git.Repo, toc, markdown string, tag semver.Version) error {
+	changelogPath := markdownChangelogFilename(repo, tag)
 	writeFile := func(t, m string) error {
 		return ioutil.WriteFile(
 			changelogPath, []byte(strings.Join(
@@ -242,7 +249,7 @@ func writeMarkdown(toc, markdown string, tag semver.Version) error {
 	}
 
 	// Changelog seems to exist, prepend the notes and re-generate the TOC
-	logrus.Infof("Adding new content to changelog file %q ", changelogPath)
+	logrus.Infof("Adding new content to changelog file %s ", changelogPath)
 	content, err := ioutil.ReadFile(changelogPath)
 	if err != nil {
 		return err
@@ -268,11 +275,16 @@ func writeMarkdown(toc, markdown string, tag semver.Version) error {
 	return writeFile(mergedTOC, mergedMarkdown)
 }
 
+func htmlChangelogFilename(tag semver.Version) string {
+	return changelogFilename(tag, "html")
+}
+
+func markdownChangelogFilename(repo *git.Repo, tag semver.Version) string {
+	return filepath.Join(repo.Dir(), changelogFilename(tag, "md"))
+}
+
 func changelogFilename(tag semver.Version, ext string) string {
-	return filepath.Join(
-		changelogOpts.outputDir,
-		fmt.Sprintf("CHANGELOG-%d.%d.%s", tag.Major, tag.Minor, ext),
-	)
+	return fmt.Sprintf("CHANGELOG-%d.%d.%s", tag.Major, tag.Minor, ext)
 }
 
 func addTocMarkers(toc string) string {
@@ -316,9 +328,12 @@ func writeHTML(tag semver.Version, markdown string) error {
 		return err
 	}
 
-	outputPath := changelogFilename(tag, "html")
-	logrus.Infof("Writing single HTML to %s", outputPath)
-	return ioutil.WriteFile(outputPath, output.Bytes(), 0o644)
+	absOutputPath, err := filepath.Abs(htmlChangelogFilename(tag))
+	if err != nil {
+		return err
+	}
+	logrus.Infof("Writing single HTML to %s", absOutputPath)
+	return ioutil.WriteFile(absOutputPath, output.Bytes(), 0o644)
 }
 
 func lookupRemoteReleaseNotes(branch string) (string, error) {
@@ -349,4 +364,47 @@ func lookupRemoteReleaseNotes(branch string) (string, error) {
 	}
 
 	return string(content), nil
+}
+
+func pushChanges(repo *git.Repo, branch string, tag semver.Version) error {
+	// Master branch modifications
+	filename := filepath.Base(markdownChangelogFilename(repo, tag))
+	logrus.Infof("Adding %s to repository", filename)
+	if err := repo.Add(filename); err != nil {
+		return errors.Wrapf(err, "trying to add file %s to repository", filename)
+	}
+
+	logrus.Info("Committing changes to master branch in repository")
+	if err := repo.Commit(fmt.Sprintf(
+		"Add %s for %s", filename, util.AddTagPrefix(tag.String()),
+	)); err != nil {
+		return errors.Wrap(err, "committing changes into repository")
+	}
+
+	if err := repo.Push(git.Master); err != nil {
+		return errors.Wrap(err, "pushing changes to the remote master")
+	}
+
+	// Release branch modifications
+	if err := repo.CheckoutBranch(branch); err != nil {
+		return errors.Wrapf(err, "checking out release branch %s", branch)
+	}
+
+	logrus.Info("Checking out changelog from master branch")
+	if err := repo.Checkout(git.Master, filename); err != nil {
+		return errors.Wrap(err, "checking out master branch changelog")
+	}
+
+	logrus.Info("Committing changes to release branch in repository")
+	if err := repo.Commit(fmt.Sprintf(
+		"Update %s for %s", filename, util.AddTagPrefix(tag.String()),
+	)); err != nil {
+		return errors.Wrap(err, "committing changes into repository")
+	}
+
+	if err := repo.Push(branch); err != nil {
+		return errors.Wrap(err, "pushing changes to the remote release branch")
+	}
+
+	return nil
 }
