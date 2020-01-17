@@ -1,5 +1,5 @@
 build --verbose_failures
-test --test_output=errors
+test --test_timeout=1800 --verbose_failures --test_output=errors --test_verbose_timeout_warnings
 
 # Note needs an instance name
 # https://github.com/bazelbuild/bazel-toolchains/blob/master/bazelrc/bazel-0.27.0.bazelrc
