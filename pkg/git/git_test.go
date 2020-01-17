@@ -577,3 +577,22 @@ func TestCommitSuccess(t *testing.T) {
 	require.Contains(t, res.Output(), "Author: Anago GCB <nobody@k8s.io>")
 	require.Contains(t, res.Output(), commitMessage)
 }
+
+func TestCurrentBranchDefault(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	branch, err := testRepo.sut.CurrentBranch()
+	require.Nil(t, err)
+	require.Equal(t, testRepo.branchName, branch)
+}
+
+func TestCurrentBranchMaster(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+	require.Nil(t, testRepo.sut.CheckoutBranch(Master))
+
+	branch, err := testRepo.sut.CurrentBranch()
+	require.Nil(t, err)
+	require.Equal(t, Master, branch)
+}
