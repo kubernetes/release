@@ -128,3 +128,7 @@ kubernetes.tar.gz
 
 # go coverage files
 coverage.*
+
+# test files
+tmp
+CHANGELOG-*.html
