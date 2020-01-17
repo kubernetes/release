@@ -1213,6 +1213,7 @@ get_build_candidate () {
 
   # Are we branching to a new branch?
   if gitlib::branch_exists $RELEASE_BRANCH; then
+    logecho "RELEASE_BRANCH==$RELEASE_BRANCH already exists"
     # If the branch is a 3-part branch (ie. release-1.2.3)
     if [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]] && \
        [[ -n ${BASH_REMATCH[4]} ]]; then
@@ -1225,6 +1226,7 @@ get_build_candidate () {
     fi
     testing_branch=$RELEASE_BRANCH
   else
+    logecho "RELEASE_BRANCH==$RELEASE_BRANCH does not yet exist"
     [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]]
 
     # Not a 3-part branch
@@ -1247,10 +1249,15 @@ get_build_candidate () {
     fi
   fi
 
+  logecho "PARENT_BRANCH set to $PARENT_BRANCH"
+  logecho "BRANCH_POINT set to $BRANCH_POINT"
+  logecho "testing_branch set to $testing_branch"
+
   if [[ -z $BRANCH_POINT ]]; then
     if [[ -n "$FLAGS_buildversion" ]]; then
       logecho -r "$ATTENTION: Using --buildversion=$FLAGS_buildversion"
       JENKINS_BUILD_VERSION="$FLAGS_buildversion"
+      logecho "JENKINS_BUILD_VERSION set to $JENKINS_BUILD_VERSION"
     else
       logecho "Asking Jenkins for a good build (this may take some time)..."
       FLAGS_verbose=1 release::set_build_version \
