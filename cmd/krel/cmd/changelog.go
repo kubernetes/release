@@ -159,6 +159,17 @@ func runChangelog() (err error) {
 		return err
 	}
 
+	// Restore the currently checked out branch
+	currentBranch, err := repo.CurrentBranch()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := repo.CheckoutBranch(currentBranch); err != nil {
+			logrus.Errorf("unable to restore branch %s: %v", currentBranch, err)
+		}
+	}()
+
 	if err := repo.CheckoutBranch(git.Master); err != nil {
 		return errors.Wrap(err, "checking out master branch")
 	}

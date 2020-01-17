@@ -639,3 +639,30 @@ func (r *Repo) Commit(msg string) error {
 	}
 	return nil
 }
+
+// CurrentBranch returns the current branch of the repository or an error in
+// case of any failure
+func (r *Repo) CurrentBranch() (branch string, err error) {
+	branches, err := r.inner.Branches()
+	if err != nil {
+		return "", err
+	}
+
+	head, err := r.inner.Head()
+	if err != nil {
+		return "", err
+	}
+
+	if err := branches.ForEach(func(ref *plumbing.Reference) error {
+		if ref.Hash() == head.Hash() {
+			branch = ref.Name().Short()
+			return nil
+		}
+
+		return nil
+	}); err != nil {
+		return "", err
+	}
+
+	return branch, nil
+}
