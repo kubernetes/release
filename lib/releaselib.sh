@@ -118,6 +118,8 @@ release::set_build_version () {
   local -a JOB
   local -a secondary_jobs
 
+  logecho "set_build_version args: $@"
+
   # Deal with somewhat inconsistent naming in config.yaml
   case $branch in
    master) branch="release-master"
@@ -162,21 +164,19 @@ release::set_build_version () {
   # Wait for background fetches.
   wait
 
-  if ((FLAGS_verbose)); then
-    # Get the longest line for formatting
-    max_job_length=$(echo ${secondary_jobs[*]/$job_prefix/} |\
+  # Get the longest line for formatting
+  max_job_length=$(echo ${secondary_jobs[*]/$job_prefix/} |\
      awk '{for (i=1;i<=NF;++i) {l=length($i);if(l>x) x=l}}END{print x}')
-    # Pad it a bit
-    ((max_job_length+2))
+  # Pad it a bit
+  ((max_job_length+2))
 
-    logecho
-    logecho "(*) Primary job (-) Secondary jobs"
-    logecho
-    logecho "  $(printf '%-'$max_job_length's' "Job #")" \
-            "Run #   Build # Time/Status"
-    logecho "= $(common::print_n_char = $max_job_length)" \
-            "=====   ======= ==========="
-  fi
+  logecho
+  logecho "(*) Primary job (-) Secondary jobs"
+  logecho
+  logecho "  $(printf '%-'$max_job_length's' "Job #")" \
+          "Run #   Build # Time/Status"
+  logecho "= $(common::print_n_char = $max_job_length)" \
+          "=====   ======= ==========="
 
   while read good_job; do
     ((good_job_count++))
@@ -254,29 +254,24 @@ release::set_build_version () {
     # Deal with far-behind secondary builds and just skip forward
     ((build_number>giveup_build_number)) && continue
 
-    if ((FLAGS_verbose)); then
-      logecho "* $(printf \
+    logecho "* $(printf \
                    '%-'$max_job_length's %-7s %-7s' \
                    ${main_job/$job_prefix/} \
                    \#$main_run \#$build_number) [$build_sha1_date]"
-      logecho "* (--buildversion=$build_version)"
-    fi
+    logecho "* (--buildversion=$build_version)"
 
     # Check secondaries to ensure that build number is green across "all"
     for other_job in ${secondary_jobs[@]}; do
-      ((FLAGS_verbose)) \
-       && logecho -n "- $(printf '%-'$max_job_length's ' \
+      logecho -n "- $(printf '%-'$max_job_length's ' \
                                  ${other_job/$job_prefix/})"
 
       # Need to kick out when a secondary doesn't exist (anymore)
       if [[ ! -f $job_path/$other_job ]]; then
-        ((FLAGS_verbose)) \
-         && logecho -r "Does not exist  SKIPPING"
+        logecho -r "Does not exist  SKIPPING"
         ((job_count++)) || true
         continue
       elif [[ $(wc -l <$job_path/$other_job) -lt 1 ]]; then
-        ((FLAGS_verbose)) \
-         && logecho -r "No Good Runs    ${TPUT[YELLOW]}SKIPPING${TPUT[OFF]}"
+        logecho -r "No Good Runs    ${TPUT[YELLOW]}SKIPPING${TPUT[OFF]}"
         ((job_count++)) || true
         continue
       fi
@@ -308,13 +303,11 @@ release::set_build_version () {
       done
 
       if [[ -n $run ]]; then
-        ((FLAGS_verbose)) && \
-         logecho "$(printf '%-7s %-7s' \#$run \#$cache_build) $PASSED"
+        logecho "$(printf '%-7s %-7s' \#$run \#$cache_build) $PASSED"
         ((job_count++)) || true
         continue
       else
-        ((FLAGS_verbose)) && \
-         logecho "$(printf '%-7s %-7s' -- --)" \
+        logecho "$(printf '%-7s %-7s' -- --)" \
                     "${TPUT[RED]}FAILED${TPUT[OFF]}"
         giveup_build_number=$build_number
         job_count=0
@@ -325,7 +318,7 @@ release::set_build_version () {
       fi
     done
 
-    ((FLAGS_verbose)) && logecho
+    logecho
     ((job_count>=${#secondary_jobs[@]})) && break
   done < $job_path/$main_job
 
@@ -336,7 +329,7 @@ release::set_build_version () {
     JENKINS_BUILD_VERSION=$build_version
   fi
 
-  ((FLAGS_verbose)) && logecho JENKINS_BUILD_VERSION=$JENKINS_BUILD_VERSION
+  logecho "JENKINS_BUILD_VERSION=$JENKINS_BUILD_VERSION"
 
   rm -rf $job_path
 
@@ -358,6 +351,8 @@ release::set_release_version () {
   declare -A release_branch build_version
   declare -Ag RELEASE_VERSION
   declare -ag ORDERED_RELEASE_KEYS
+
+  logecho "set_release_version args: $@"
 
   if ! [[ $branch =~ $BRANCH_REGEX ]]; then
     logecho "Invalid branch format! $branch"
@@ -446,12 +441,10 @@ release::set_release_version () {
     RELEASE_VERSION_PRIME="${RELEASE_VERSION[alpha]}"
   fi
 
-  if ((FLAGS_verbose)); then
-    for label in ${!RELEASE_VERSION[*]}; do
+  for label in ${!RELEASE_VERSION[@]}; do
       logecho "RELEASE_VERSION[$label]=${RELEASE_VERSION[$label]}"
-    done
-    logecho "RELEASE_VERSION_PRIME=$RELEASE_VERSION_PRIME"
-  fi
+  done
+  logecho "RELEASE_VERSION_PRIME=$RELEASE_VERSION_PRIME"
 
   # To ensure we're executing releases in the correct order, we append the keys
   # of the RELEASE_VERSION associative array in the order that we explicitly
@@ -486,6 +479,9 @@ release::set_release_version () {
   if [[ ${RELEASE_VERSION[alpha]} ]]; then
     ORDERED_RELEASE_KEYS+=("alpha")
   fi
+  for key in ${!ORDERED_RELEASE_KEYS[@]}; do
+      logecho "ORDERED_RELEASE_KEYS[$key]=${ORDERED_RELEASE_KEYS[$key]}"
+  done
 
   return 0
 }
