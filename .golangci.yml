@@ -23,6 +23,7 @@ linters:
     - gofmt
     - goimports
     - golint
+    - goprintffuncname
     - gosimple
     - govet
     - ineffassign
@@ -31,6 +32,7 @@ linters:
     - misspell
     - nakedret
     - prealloc
+    - rowserrcheck
     - staticcheck
     - structcheck
     - stylecheck
@@ -44,6 +46,7 @@ linters:
     # - gochecknoglobals
     # - gochecknoinits
     # - gocognit
+    # - gomnd
     # - gosec
     # - lll
     # - scopelint
