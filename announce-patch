@@ -37,26 +37,32 @@ PROG=${0##*/}
 #+     The mail is sent out via sendgrid, GCB does not allow to send mail directly.
 #+
 #+ OPTIONS
-#+     release-branch            - The branch we want to cut from, e.g.: 'release-1.15'.
-#+     --nomock                  - By default the mail will be sent to the mail address
-#+                                 that is set as the sender (--from-email). When this
-#+                                 flag is set, we send it to the kubernetes mailing
-#+                                 lists.
-#+     --github-token            - The github token that will be used for generating the
-#+                                 changelog.
-#+     --sendgrid-api-key        - The API key for sendgrid to send out the email.
-#+     --freeze-date             - The date we will freeze the branch and will not accept
-#+                                 cherry-picks anymore.
-#+     --cut-date                - The date we will cut and publish the release.
-#+     --from-name               - The sender's name.
-#+     --from-email              - The sender's email address. Will also be used as a
-#+                                 receiver when not in nomock mode.
-#+     [--tail]                  - Stays attached to the cloud build process and streams
-#+                                 in the logs
-#+     [--k8s-git-url]           - The git URL to clone kubernetes/kubernetes from.
-#+     [--release-git-url]       - The git URL to clone kubernetes/release from.
-#+     [--release-git-branch]    - The branch of kubernetes/release to use.
+#+     release-branch          - The branch we want to cut from, e.g.: 'release-1.15'.
+#+     --nomock                - By default the mail will be sent to the mail address
+#+                               that is set as the sender (--from-email). When this
+#+                               flag is set, we send it to the kubernetes mailing
+#+                               lists.
+#+     --freeze-date           - The date we will freeze the branch and will not accept
+#+                               cherry-picks anymore.
+#+     --cut-date              - The date we will cut and publish the release.
+#+     --from-name             - The sender's name.
+#+     --from-email            - The sender's email address. Will also be used as a
+#+                               receiver when not in nomock mode.
+#+     [--tail]                - Stays attached to the cloud build process and streams
+#+                               in the logs
+#+     [--k8s-git-url]         - The git URL to clone kubernetes/kubernetes from.
+#+     [--release-git-url]     - The git URL to clone kubernetes/release from.
+#+     [--release-git-branch]  - The branch of kubernetes/release to use.
 #+
+#+ ENVIRONMENT
+#+     The GCP project can be changed by setting the PROJECT environment
+#+     variable. It defaults to 'kubernetes-release-test'.
+#+
+#+     All command line flags can also be provided by setting an environment
+#+     variable, e.g. instead of using `--freeze-date` flag you can also use
+#+     the environment variable `FREEZE_DATE`. This works for all flags but not
+#+     for the release-branch argument, this one must explicitly specified as a
+#+     command line argument.
 
 set -e
 # set -u
@@ -71,7 +77,7 @@ source "${BASE_ROOT}/lib/common.sh"
 
 # For some reason, using $FLAG_xxx seems to replace ' ' with '\n'. Sendgrid
 # does not really like names with newlines in it and treats them as two
-# spearate recipients.
+# separate recipients.
 # Newlines do not make too much sense for other variables, so we globally
 # replace newlines with spaces.
 replace_nl() {
