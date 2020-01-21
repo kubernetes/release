@@ -109,10 +109,10 @@ get_tests_by_status() {
       return 1
     }
 
-    jq --arg status "$status" -r '
+    jq --arg status "$status" --arg board "$board" -r '
       to_entries[]
         | select(.value.overall_status==$status)
-        | .value.dashboard_name + "#" + .key
+        | $board + "#" + .key
     ' <<< "$summary"
   done
 }
