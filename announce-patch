@@ -21,7 +21,7 @@ PROG=${0##*/}
 #+     $PROG - generate and send the patch release announcement mail
 #+
 #+ SYNOPSIS
-#+     $PROG --github-token=[gh-token] --sendgrid-api-key=[sendgrid-key] \
+#+     $PROG \
 #+       --freeze-date=[freeze-date] --cut-date=[cut-date] \
 #+       --from-name=[sender-name] --from-email=[sender-email] \
 #+       [release-branch]
@@ -119,8 +119,6 @@ main() {
 
   # mandatory flags
   subst+=( "_K8S_GIT_BRANCH=${branch_name}" )
-  subst+=( "_GITHUB_TOKEN=$( flag_or_env_or_default 'github_token' )" )
-  subst+=( "_SENDGRID_API_KEY=$( flag_or_env_or_default 'sendgrid_api_key' )" )
   subst+=( "_FREEZE_DATE=$( flag_or_env_or_default 'freeze_date' )" )
   subst+=( "_CUT_DATE=$( flag_or_env_or_default 'cut_date' )" )
   subst+=( "_FROM_NAME=$( flag_or_env_or_default 'from_name' )" )

@@ -1,5 +1,25 @@
 timeout: 1200s
 
+#### SECURITY NOTICE ####
+# Google Cloud Build (GCB) supports the usage of secrets for build requests.
+# Secrets appear within GCB configs as base64-encoded strings.
+# These secrets are GCP Cloud KMS-encrypted and cannot be decrypted by any human or system
+# outside of GCP Cloud KMS for the GCP project this encrypted resource was created for.
+# Seeing the base64-encoded encrypted blob here is not a security event for the project.
+#
+# More details on using encrypted resources on Google Cloud Build can be found here:
+# https://cloud.google.com/cloud-build/docs/securing-builds/use-encrypted-secrets-credentials
+#
+# (Please do not remove this security notice.)
+secrets:
+- kmsKeyName: projects/kubernetes-release-test/locations/global/keyRings/anago/cryptoKeys/k8s-release-robot
+  secretEnv:
+    GITHUB_TOKEN: CiQAveh8wGJqpEkcVluO3tBntlehynOxiOPDD9u1XCONx3vuozoSUgCMoh/IJuNkqhcDTP2om2tyOStft8myMSrvnGd7NvTo+H+fI0EkLMNzkVOHxl/C0piktBm74uN70QVE+e4TTa9wwA//qpiSm/UuqYmEYeMIpyY=
+# TODO: move to the kubernetes-release-test
+- kmsKeyName: projects/cf-london-servces-k8s/locations/global/keyRings/hhorl-k8s-release/cryptoKeys/sendgrid
+  secretEnv:
+    SENDGRID_API_KEY: CiQAkn5y0WUR0kZIqj1v4UW2McFdlceel2zptSa468+Ir/gDeh0SbwDMTYRJdFtqt2x2hGPN7oOoMs2lCLFoY+oh4Mb1b/nQehooMYQuNwupxOpnwE+d/GbEFhwtMg9wbA5zhOMYPe0OLsSAXvt4w/IC1Z701Ev3CMdT6ZjicillZoBlFYhVlFPQLWcm8jtobdQcDj91eg==
+
 steps:
 - id: clone-k8s
   waitFor: [ '-' ]
@@ -21,8 +41,6 @@ steps:
 - id: prepare-and-send
   name: "gcr.io/${PROJECT_ID}/k8s-cloud-builder"
   env:
-  - "GITHUB_TOKEN=${_GITHUB_TOKEN}"
-  - "SENDGRID_API_KEY=${_SENDGRID_API_KEY}"
   - "REL_MGR_NAME=${_REL_MGR_NAME}"
   - "REL_MGR_EMAIL=${_REL_MGR_EMAIL}"
   - "REL_MGR_SLACK=${_REL_MGR_SLACK}"
@@ -31,16 +49,15 @@ steps:
   - "FREEZE_DATE=${_FREEZE_DATE}"
   - "CUT_DATE=${_CUT_DATE}"
   - "RUN_TYPE=${_RUN_TYPE}"
+  secretEnv:
+  - GITHUB_TOKEN
+  - SENDGRID_API_KEY
   args:
   - go/src/k8s.io/release/patch-release/announce
 
 substitutions:
   # The branch of k/kubernetes to check out, the branch to announce a patch release for (e.g.: release-1.15)
   _K8S_GIT_BRANCH:     null
-  # A github token, used to collect the changelog
-  _GITHUB_TOKEN:       null
-  # API key for sendgrid to send out mails
-  _SENDGRID_API_KEY:   null
   # Date of CP freeze, ISO 8601 (e.g.: 2019-12-06)
   _FREEZE_DATE:        null
   # Date of planned cut, ISO 8601 (e.g.: 2019-12-11)
