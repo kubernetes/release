@@ -4,12 +4,14 @@ options:
   substitution_option: ALLOW_LOOSE
 steps:
   - name: gcr.io/cloud-builders/docker
+    id: build
     args:
     - build
-    - --tag=gcr.io/$PROJECT_ID/k8s-cloud-builder:$_GIT_TAG
+    - --tag=gcr.io/$PROJECT_ID/k8s-cloud-builder:${_GIT_TAG}
     - --tag=gcr.io/$PROJECT_ID/k8s-cloud-builder:latest
     - .
   - name: gcr.io/gcp-runtimes/container-structure-test
+    id: test
     args:
     - test
     - --image=gcr.io/$PROJECT_ID/k8s-cloud-builder:latest
@@ -20,5 +22,5 @@ substitutions:
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
 images:
-  - 'gcr.io/$PROJECT_ID/k8s-cloud-builder:$_GIT_TAG'
+  - 'gcr.io/$PROJECT_ID/k8s-cloud-builder:${_GIT_TAG}'
   - 'gcr.io/$PROJECT_ID/k8s-cloud-builder:latest'
