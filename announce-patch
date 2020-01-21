@@ -63,6 +63,7 @@ set -e
 set -o pipefail
 
 readonly PROG="${0##*/}"
+readonly PROJECT="${PROJECT:-kubernetes-release-test}"
 
 readonly BASE_ROOT="$(dirname "$(readlink -e "${BASH_SOURCE[0]}" 2>&1)")"
 # shellcheck source=./lib/common.sh
@@ -141,7 +142,7 @@ main() {
     opts+=( '--async' )
   fi
 
-  gcloud builds submit \
+  gcloud "--project=${PROJECT}" builds submit \
     "${opts[@]}" \
     --substitutions "$( common::join ',' "${subst[@]}" )"
 }
