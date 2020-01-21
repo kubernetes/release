@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-PROG=${0##*/}
-
 #+ NAME
 #+     $PROG - generate and send the patch release announcement mail
 #+
