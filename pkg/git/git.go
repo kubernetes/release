@@ -32,6 +32,7 @@ import (
 	"gopkg.in/src-d/go-git.v4/config"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
+	"gopkg.in/src-d/go-git.v4/plumbing/storer"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 
@@ -78,10 +79,32 @@ func (d *DiscoverResult) EndRev() string {
 
 // Wrapper type for a Kubernetes repository instance
 type Repo struct {
-	inner  *git.Repository
-	auth   transport.AuthMethod
-	dir    string
-	dryRun bool
+	inner    Repository
+	worktree Worktree
+	auth     transport.AuthMethod
+	dir      string
+	dryRun   bool
+}
+
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
+// Repository is the main interface to the git.Repository functionality
+//counterfeiter:generate . Repository
+type Repository interface {
+	CommitObject(plumbing.Hash) (*object.Commit, error)
+	Branches() (storer.ReferenceIter, error)
+	Head() (*plumbing.Reference, error)
+	Remote(string) (*git.Remote, error)
+	ResolveRevision(plumbing.Revision) (*plumbing.Hash, error)
+	Tags() (storer.ReferenceIter, error)
+}
+
+// Worktree is the main interface to the git.Worktree functionality
+//counterfeiter:generate . Worktree
+type Worktree interface {
+	Add(string) (plumbing.Hash, error)
+	Commit(string, *git.CommitOptions) (plumbing.Hash, error)
+	Checkout(*git.CheckoutOptions) error
 }
 
 // Dir returns the directory where the repository is stored on disk
@@ -93,6 +116,16 @@ func (r *Repo) Dir() string {
 // at all.
 func (r *Repo) SetDry() {
 	r.dryRun = true
+}
+
+// SetWorktree can be used to manually set the repository worktree
+func (r *Repo) SetWorktree(worktree Worktree) {
+	r.worktree = worktree
+}
+
+// SetInnerRepo can be used to manually set the inner repository
+func (r *Repo) SetInnerRepo(repo Repository) {
+	r.inner = repo
 }
 
 // CloneOrOpenDefaultGitHubRepoSSH clones the default Kubernets GitHub
@@ -191,7 +224,16 @@ func updateRepo(repoPath string, useSSH bool) (*Repo, error) {
 	if err != nil && err != git.NoErrAlreadyUpToDate {
 		return nil, err
 	}
-	return &Repo{inner: r, auth: auth, dir: repoPath}, nil
+	worktree, err := r.Worktree()
+	if err != nil {
+		return nil, err
+	}
+	return &Repo{
+		inner:    r,
+		worktree: worktree,
+		auth:     auth,
+		dir:      repoPath,
+	}, nil
 }
 
 func (r *Repo) Cleanup() error {
@@ -376,12 +418,7 @@ func (r *Repo) HasRemoteBranch(branch string) error {
 
 // CheckoutBranch can be used to switch to another branch
 func (r *Repo) CheckoutBranch(name string) error {
-	worktree, err := r.inner.Worktree()
-	if err != nil {
-		return err
-	}
-
-	return worktree.Checkout(&git.CheckoutOptions{
+	return r.worktree.Checkout(&git.CheckoutOptions{
 		Branch: plumbing.NewBranchReferenceName(name),
 		Force:  true,
 	})
@@ -503,7 +540,7 @@ func (r *Repo) Head() (string, error) {
 // end (latest v1.x.x) revision inside the repository for the specified release
 // branch.
 func (r *Repo) LatestPatchToPatch(branch string) (DiscoverResult, error) {
-	latestTag, err := r.latestTagForBranch(branch)
+	latestTag, err := r.LatestTagForBranch(branch)
 	if err != nil {
 		return DiscoverResult{}, err
 	}
@@ -548,9 +585,9 @@ func (r *Repo) LatestPatchToPatch(branch string) (DiscoverResult, error) {
 	}, nil
 }
 
-// latestTagForBranch returns the latest available semver tag for a given branch
-func (r *Repo) latestTagForBranch(branch string) (*semver.Version, error) {
-	tags, err := r.tagsForBranch(branch)
+// LatestTagForBranch returns the latest available semver tag for a given branch
+func (r *Repo) LatestTagForBranch(branch string) (*semver.Version, error) {
+	tags, err := r.TagsForBranch(branch)
 	if err != nil {
 		return nil, err
 	}
@@ -569,7 +606,7 @@ func (r *Repo) latestTagForBranch(branch string) (*semver.Version, error) {
 // PreviousTag tries to find the previous tag for a provided branch and errors
 // on any failure
 func (r *Repo) PreviousTag(tag, branch string) (string, error) {
-	tags, err := r.tagsForBranch(branch)
+	tags, err := r.TagsForBranch(branch)
 	if err != nil {
 		return "", err
 	}
@@ -588,9 +625,9 @@ func (r *Repo) PreviousTag(tag, branch string) (string, error) {
 	return tags[idx+1], nil
 }
 
-// tagsForBranch returns a list of tags for the provided branch sorted by
+// TagsForBranch returns a list of tags for the provided branch sorted by
 // creation date
-func (r *Repo) tagsForBranch(branch string) ([]string, error) {
+func (r *Repo) TagsForBranch(branch string) ([]string, error) {
 	if err := r.CheckoutBranch(branch); err != nil {
 		return nil, err
 	}
@@ -610,12 +647,7 @@ func (r *Repo) tagsForBranch(branch string) ([]string, error) {
 
 // Add adds a file to the staging area of the repo
 func (r *Repo) Add(filename string) error {
-	worktree, err := r.inner.Worktree()
-	if err != nil {
-		return err
-	}
-	_, err = worktree.Add(filename)
-	if err != nil {
+	if _, err := r.worktree.Add(filename); err != nil {
 		return err
 	}
 	return nil
@@ -623,18 +655,13 @@ func (r *Repo) Add(filename string) error {
 
 // Commit commits the current repository state
 func (r *Repo) Commit(msg string) error {
-	worktree, err := r.inner.Worktree()
-	if err != nil {
-		return err
-	}
-	_, err = worktree.Commit(msg, &git.CommitOptions{
+	if _, err := r.worktree.Commit(msg, &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "Anago GCB",
 			Email: "nobody@k8s.io",
 			When:  time.Now(),
 		},
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 	return nil
