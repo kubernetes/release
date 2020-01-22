@@ -61,7 +61,7 @@ the golang based 'release-notes' tool:
    the current working directly as 'CHANGELOG-x.y.html'. Sending the
    announcement is done by another subcommand of 'krel', not "changelog'.
 
-3. Push the modified CHANGELOG-x.y.md into the master branch as well as the
+3. Commit the modified CHANGELOG-x.y.md into the master branch as well as the
    corresponding release-branch of kubernetes/kubernetes.
 `,
 	SilenceUsage:  true,
@@ -122,10 +122,6 @@ func runChangelog() (err error) {
 	if err != nil {
 		return err
 	}
-	if !rootOpts.nomock {
-		logrus.Info("Using dry mode, which does not modify any remote content")
-		repo.SetDry()
-	}
 
 	var markdown string
 	if tag.Patch == 0 {
@@ -182,7 +178,7 @@ func runChangelog() (err error) {
 		return err
 	}
 
-	return pushChanges(repo, branch, tag)
+	return commitChanges(repo, branch, tag)
 }
 
 func generateReleaseNotes(branch, startRev, endRev string) (string, error) {
@@ -377,7 +373,7 @@ func lookupRemoteReleaseNotes(branch string) (string, error) {
 	return string(content), nil
 }
 
-func pushChanges(repo *git.Repo, branch string, tag semver.Version) error {
+func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
 	// Master branch modifications
 	filename := filepath.Base(markdownChangelogFilename(repo, tag))
 	logrus.Infof("Adding %s to repository", filename)
@@ -390,10 +386,6 @@ func pushChanges(repo *git.Repo, branch string, tag semver.Version) error {
 		"Add %s for %s", filename, util.AddTagPrefix(tag.String()),
 	)); err != nil {
 		return errors.Wrap(err, "committing changes into repository")
-	}
-
-	if err := repo.Push(git.Master); err != nil {
-		return errors.Wrap(err, "pushing changes to the remote master")
 	}
 
 	// Release branch modifications
@@ -411,10 +403,6 @@ func pushChanges(repo *git.Repo, branch string, tag semver.Version) error {
 		"Update %s for %s", filename, util.AddTagPrefix(tag.String()),
 	)); err != nil {
 		return errors.Wrap(err, "committing changes into repository")
-	}
-
-	if err := repo.Push(branch); err != nil {
-		return errors.Wrap(err, "pushing changes to the remote release branch")
 	}
 
 	return nil
