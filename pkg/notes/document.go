@@ -322,8 +322,9 @@ func mapKind(kind string) string {
 func prettyKind(kind string) string {
 	if kind == KindAPIChange {
 		return "API Change"
-	}
-	if kind == KindBugCleanupFlake {
+	} else if kind == KindFailingTest {
+		return "Failing Test"
+	} else if kind == KindBugCleanupFlake {
 		return KindBugCleanupFlake
 	}
 	return strings.Title(kind)
