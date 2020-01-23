@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "changelog.go",
         "ff.go",
+        "patch-announce.go",
         "push.go",
         "root.go",
         "version.go",
@@ -16,6 +17,7 @@ go_library(
         "//pkg/log:go_default_library",
         "//pkg/notes:go_default_library",
         "//pkg/notes/options:go_default_library",
+        "//pkg/patch:go_default_library",
         "//pkg/release:go_default_library",
         "//pkg/util:go_default_library",
         "//pkg/version:go_default_library",
@@ -26,6 +28,16 @@ go_library(
         "@com_google_cloud_go//storage:go_default_library",
         "@in_gopkg_russross_blackfriday_v2//:go_default_library",
     ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "changelog_test.go",
+        "root_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = ["@com_github_stretchr_testify//require:go_default_library"],
 )
 
 filegroup(
@@ -40,14 +52,4 @@ filegroup(
     srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = [
-        "changelog_test.go",
-        "root_test.go",
-    ],
-    embed = [":go_default_library"],
-    deps = ["@com_github_stretchr_testify//require:go_default_library"],
 )

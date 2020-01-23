@@ -37,6 +37,7 @@ filegroup(
         "//pkg/kubepkg:all-srcs",
         "//pkg/log:all-srcs",
         "//pkg/notes:all-srcs",
+        "//pkg/patch:all-srcs",
         "//pkg/release:all-srcs",
         "//pkg/util:all-srcs",
         "//pkg/version:all-srcs",
