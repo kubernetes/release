@@ -28,9 +28,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:     "krel",
-	Short:   "krel",
-	PreRunE: initLogging,
+	Use:               "krel",
+	Short:             "krel",
+	PersistentPreRunE: initLogging,
 }
 
 type rootOptions struct {
