@@ -167,10 +167,11 @@ func (g *Gatherer) ListReleaseNotes(
 
 		note, err := g.ReleaseNoteFromCommit(result, relVer)
 		if err != nil {
-			logrus.
-				WithField("err", err).
-				WithField("sha", result.commit.GetSHA()).
-				Error("getting the release note from commit while listing release notes")
+			logrus.Errorf(
+				"getting the release note from commit %s (PR #%d): %v",
+				result.commit.GetSHA(),
+				result.pullRequest.GetNumber(),
+				err)
 			continue
 		}
 
