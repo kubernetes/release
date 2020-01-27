@@ -97,7 +97,6 @@ func init() {
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.bucket, "bucket", "kubernetes-release", "Specify gs bucket to point to in generated notes")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tag, tagFlag, "", "The version tag of the release, for example v1.17.0-rc.1")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tars, tarsFlag, "", "Directory of tars to sha512 sum for display")
-	changelogCmd.PersistentFlags().StringVarP(&changelogOpts.token, tokenFlag, "t", "", "GitHub token for release notes retrieval")
 
 	if err := changelogCmd.MarkPersistentFlagRequired(tagFlag); err != nil {
 		logrus.Fatal(err)
@@ -110,6 +109,12 @@ func init() {
 }
 
 func runChangelog() (err error) {
+	token, ok := os.LookupEnv("GITHUB_TOKEN")
+	if !ok {
+		return errors.New("environment variable `GITHUB_TOKEN` is not set but needed for release notes generation")
+	}
+	changelogOpts.token = token
+
 	tag, err := semver.Make(util.TrimTagPrefix(changelogOpts.tag))
 	if err != nil {
 		return err
