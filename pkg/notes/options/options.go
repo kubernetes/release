@@ -14,12 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package notes
+package options
 
 import (
+	"context"
+	"os"
+
+	"github.com/google/go-github/v28/github"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/oauth2"
+
 	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/notes/client"
 )
 
 type Options struct {
@@ -41,6 +48,8 @@ type Options struct {
 	ReleaseTars     string
 	TableOfContents bool
 	Debug           bool
+	RecordDir       string
+	ReplayDir       string
 	gitCloneFn      func(string, string, string, bool) (*git.Repo, error)
 }
 
@@ -53,10 +62,12 @@ const (
 	RevisionDiscoveryModeMinorToMinor      = "minor-to-minor"
 )
 
-// NewOptions creates a new Options instance with the default values
-func NewOptions() *Options {
+// New creates a new Options instance with the default values
+func New() *Options {
 	return &Options{
 		DiscoverMode: RevisionDiscoveryModeNONE,
+		GithubOrg:    git.DefaultGithubOrg,
+		GithubRepo:   git.DefaultGithubRepo,
 		gitCloneFn:   git.CloneOrOpenGitHubRepo,
 	}
 }
@@ -68,6 +79,16 @@ func (o *Options) ValidateAndFinish() error {
 	// Add appropriate log filtering
 	if o.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
+	}
+
+	if o.ReplayDir != "" && o.RecordDir != "" {
+		return errors.New("please do not use record and replay together")
+	}
+
+	// Recover for replay if needed
+	if o.ReplayDir != "" {
+		logrus.Info("using replay mode")
+		return nil
 	}
 
 	// The GitHub Token is required.
@@ -151,5 +172,37 @@ func (o *Options) ValidateAndFinish() error {
 		}
 	}
 
+	// Create the record dir
+	if o.RecordDir != "" {
+		logrus.Info("using record mode")
+		if err := os.MkdirAll(o.RecordDir, 0o755); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+// Client returns a Client to be used by the Gatherer. Depending on
+// the provided options this is either a real client talking to the GitHub API,
+// a Client which in addition records the responses from Github and stores them
+// on disk, or a Client that replays those pre-recorded responses and does not
+// talk to the GitHub API at all.
+func (o *Options) Client() client.Client {
+	if o.ReplayDir != "" {
+		return client.NewReplayer(o.ReplayDir)
+	}
+
+	// Create a real GitHub API client
+	ctx := context.Background()
+	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: o.GithubToken},
+	))
+	c := client.New(github.NewClient(httpClient))
+
+	if o.RecordDir != "" {
+		return client.NewRecorder(c, o.RecordDir)
+	}
+
+	return c
 }

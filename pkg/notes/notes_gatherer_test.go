@@ -32,7 +32,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/notes"
-	"k8s.io/release/pkg/notes/notesfakes"
+	"k8s.io/release/pkg/notes/client/clientfakes"
 )
 
 func TestMain(m *testing.M) {
@@ -186,7 +186,7 @@ func TestListCommits(t *testing.T) {
 			tc := tc
 			t.Parallel()
 
-			client := &notesfakes.FakeClient{}
+			client := &clientfakes.FakeClient{}
 
 			for i, returns := range tc.getCommitReturns {
 				if i == always {
@@ -204,12 +204,7 @@ func TestListCommits(t *testing.T) {
 				}
 			}
 
-			gatherer := &notes.Gatherer{
-				Client: client,
-				Org:    "kubernetes",
-				Repo:   "kubernetes",
-			}
-
+			gatherer := notes.NewGathererWithClient(context.Background(), client)
 			commits, err := gatherer.ListCommits(tc.branch, tc.start, tc.end)
 
 			checkErrMsg(t, err, tc.expectedErrMsg)
@@ -389,14 +384,9 @@ func TestListCommitsWithNotes(t *testing.T) {
 			tc := tc
 			t.Parallel()
 
-			client := &notesfakes.FakeClient{}
+			client := &clientfakes.FakeClient{}
 
-			gatherer := &notes.Gatherer{
-				Client: client,
-				Org:    "kubernetes",
-				Repo:   "kubernetes",
-			}
-
+			gatherer := notes.NewGathererWithClient(context.Background(), client)
 			if stubber := tc.listPullRequestsWithCommitStubber; stubber != nil {
 				client.ListPullRequestsWithCommitStub = stubber(t)
 			}

@@ -26,9 +26,11 @@ import (
 	"github.com/google/go-github/v28/github"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
+
+	"k8s.io/release/pkg/notes/client"
 )
 
-func githubClient(t *testing.T) (Client, context.Context) {
+func githubClient(t *testing.T) (client.Client, context.Context) {
 	token, tokenSet := os.LookupEnv("GITHUB_TOKEN")
 	if !tokenSet {
 		t.Skip("GITHUB_TOKEN is not set")
@@ -38,7 +40,8 @@ func githubClient(t *testing.T) (Client, context.Context) {
 	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	))
-	return WrapGithubClient(github.NewClient(httpClient)), ctx
+	c := client.New(github.NewClient(httpClient))
+	return c, ctx
 }
 
 func TestStripActionRequired(t *testing.T) {
@@ -64,19 +67,16 @@ func TestStripStar(t *testing.T) {
 }
 
 func TestReleaseNoteParsing(t *testing.T) {
-	client, ctx := githubClient(t)
+	c, ctx := githubClient(t)
 	commitsWithNote := []string{
 		"973dcd0c1a2555a6726aed8248ca816c9771253f",
 		"27e5971c11cfcda703a39ed670a565f0f3564713",
 	}
-	gatherer := &Gatherer{
-		Client:  client,
-		Context: ctx,
-	}
+	gatherer := NewGathererWithClient(ctx, c)
 
 	for _, sha := range commitsWithNote {
 		fmt.Println(sha)
-		commit, _, err := client.GetRepoCommit(ctx, "kubernetes", "kubernetes", sha)
+		commit, _, err := c.GetRepoCommit(ctx, "kubernetes", "kubernetes", sha)
 		require.NoError(t, err)
 		prs, err := gatherer.PRsFromCommit(commit)
 		require.NoError(t, err)

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package notes
+package client
 
 import (
 	"context"
@@ -38,19 +38,19 @@ type Client interface {
 	GetRepoCommit(ctx context.Context, owner, repo, sha string) (*github.RepositoryCommit, *github.Response, error)
 }
 
-func WrapGithubClient(ghc *github.Client) Client {
-	return &githubNotesClient{ghc: ghc}
+func New(ghc *github.Client) Client {
+	return &githubNotesClient{ghc}
 }
 
 type githubNotesClient struct {
-	ghc *github.Client
+	*github.Client
 }
 
 var _ Client = &githubNotesClient{}
 
 func (c *githubNotesClient) GetCommit(ctx context.Context, owner, repo, sha string) (*github.Commit, *github.Response, error) {
 	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
-		commit, resp, err := c.ghc.Git.GetCommit(ctx, owner, repo, sha)
+		commit, resp, err := c.Git.GetCommit(ctx, owner, repo, sha)
 		if !shouldRetry(err) {
 			return commit, resp, err
 		}
@@ -59,7 +59,7 @@ func (c *githubNotesClient) GetCommit(ctx context.Context, owner, repo, sha stri
 
 func (c *githubNotesClient) ListCommits(ctx context.Context, owner, repo string, opt *github.CommitsListOptions) ([]*github.RepositoryCommit, *github.Response, error) {
 	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
-		commits, resp, err := c.ghc.Repositories.ListCommits(ctx, owner, repo, opt)
+		commits, resp, err := c.Repositories.ListCommits(ctx, owner, repo, opt)
 		if !shouldRetry(err) {
 			return commits, resp, err
 		}
@@ -68,7 +68,7 @@ func (c *githubNotesClient) ListCommits(ctx context.Context, owner, repo string,
 
 func (c *githubNotesClient) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opt *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
 	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
-		prs, resp, err := c.ghc.PullRequests.ListPullRequestsWithCommit(ctx, owner, repo, sha, opt)
+		prs, resp, err := c.PullRequests.ListPullRequestsWithCommit(ctx, owner, repo, sha, opt)
 		if !shouldRetry(err) {
 			return prs, resp, err
 		}
@@ -77,7 +77,7 @@ func (c *githubNotesClient) ListPullRequestsWithCommit(ctx context.Context, owne
 
 func (c *githubNotesClient) GetPullRequest(ctx context.Context, owner, repo string, number int) (*github.PullRequest, *github.Response, error) {
 	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
-		pr, resp, err := c.ghc.PullRequests.Get(ctx, owner, repo, number)
+		pr, resp, err := c.PullRequests.Get(ctx, owner, repo, number)
 		if !shouldRetry(err) {
 			return pr, resp, err
 		}
@@ -86,7 +86,7 @@ func (c *githubNotesClient) GetPullRequest(ctx context.Context, owner, repo stri
 
 func (c *githubNotesClient) GetRepoCommit(ctx context.Context, owner, repo, sha string) (*github.RepositoryCommit, *github.Response, error) {
 	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
-		commit, resp, err := c.ghc.Repositories.GetCommit(ctx, owner, repo, sha)
+		commit, resp, err := c.Repositories.GetCommit(ctx, owner, repo, sha)
 		if !shouldRetry(err) {
 			return commit, resp, err
 		}

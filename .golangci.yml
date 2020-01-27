@@ -7,6 +7,7 @@ issues:
     - path: fake_client\.go
       linters:
         - gocritic
+        - dupl
 linters:
   disable-all: true
   enable:

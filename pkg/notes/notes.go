@@ -30,6 +30,9 @@ import (
 	"github.com/nozzle/throttler"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"k8s.io/release/pkg/notes/client"
+	"k8s.io/release/pkg/notes/options"
 )
 
 const (
@@ -130,22 +133,33 @@ type Result struct {
 }
 
 type Gatherer struct {
-	Client  Client
-	Context context.Context
-	Org     string
-	Repo    string
+	client  client.Client
+	context context.Context
+	options *options.Options
+}
+
+// NewGatherer creates a new notes gatherer
+func NewGatherer(ctx context.Context, opts *options.Options) *Gatherer {
+	return &Gatherer{
+		client:  opts.Client(),
+		context: ctx,
+		options: opts,
+	}
+}
+
+// NewGathererWithClient creates a new notes gatherer with a specific client
+func NewGathererWithClient(ctx context.Context, c client.Client) *Gatherer {
+	return &Gatherer{
+		client:  c,
+		context: ctx,
+		options: options.New(),
+	}
 }
 
 // ListReleaseNotes produces a list of fully contextualized release notes
 // starting from a given commit SHA and ending at starting a given commit SHA.
-func (g *Gatherer) ListReleaseNotes(
-	branch,
-	start,
-	end,
-	requiredAuthor,
-	relVer string,
-) (ReleaseNotes, ReleaseNotesHistory, error) {
-	commits, err := g.ListCommits(branch, start, end)
+func (g *Gatherer) ListReleaseNotes() (ReleaseNotes, ReleaseNotesHistory, error) {
+	commits, err := g.ListCommits(g.options.Branch, g.options.StartSHA, g.options.EndSHA)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -159,13 +173,13 @@ func (g *Gatherer) ListReleaseNotes(
 	notes := make(ReleaseNotes)
 	history := ReleaseNotesHistory{}
 	for _, result := range results {
-		if requiredAuthor != "" {
-			if result.commit.GetAuthor().GetLogin() != requiredAuthor {
+		if g.options.RequiredAuthor != "" {
+			if result.commit.GetAuthor().GetLogin() != g.options.RequiredAuthor {
 				continue
 			}
 		}
 
-		note, err := g.ReleaseNoteFromCommit(result, relVer)
+		note, err := g.ReleaseNoteFromCommit(result, g.options.ReleaseVersion)
 		if err != nil {
 			logrus.Errorf(
 				"getting the release note from commit %s (PR #%d): %v",
@@ -317,7 +331,10 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result, relVer string) (*Releas
 
 	author := pr.GetUser().GetLogin()
 	authorURL := fmt.Sprintf("https://github.com/%s", author)
-	prURL := fmt.Sprintf("https://github.com/%s/%s/pull/%d", g.Org, g.Repo, pr.GetNumber())
+	prURL := fmt.Sprintf(
+		"https://github.com/%s/%s/pull/%d",
+		g.options.GithubOrg, g.options.GithubRepo, pr.GetNumber(),
+	)
 	isFeature := HasString(LabelsWithPrefix(pr, "kind"), "feature")
 	noteSuffix := prettifySigList(LabelsWithPrefix(pr, "sig"))
 
@@ -362,12 +379,12 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result, relVer string) (*Releas
 // ListCommits lists all commits starting from a given commit SHA and ending at
 // a given commit SHA.
 func (g *Gatherer) ListCommits(branch, start, end string) ([]*github.RepositoryCommit, error) {
-	startCommit, _, err := g.Client.GetCommit(g.Context, g.Org, g.Repo, start)
+	startCommit, _, err := g.client.GetCommit(g.context, g.options.GithubOrg, g.options.GithubRepo, start)
 	if err != nil {
 		return nil, err
 	}
 
-	endCommit, _, err := g.Client.GetCommit(g.Context, g.Org, g.Repo, end)
+	endCommit, _, err := g.client.GetCommit(g.context, g.options.GithubOrg, g.options.GithubRepo, end)
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +392,7 @@ func (g *Gatherer) ListCommits(branch, start, end string) ([]*github.RepositoryC
 	allCommits := &commitList{}
 
 	worker := func(clo *github.CommitsListOptions) ([]*github.RepositoryCommit, *github.Response, error) {
-		commits, resp, err := g.Client.ListCommits(g.Context, g.Org, g.Repo, clo)
+		commits, resp, err := g.client.ListCommits(g.context, g.options.GithubOrg, g.options.GithubRepo, clo)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -694,14 +711,14 @@ func (g *Gatherer) prsForCommitFromSHA(sha string) (prs []*github.PullRequest, e
 			PerPage: 100,
 		},
 	}
-	prs, resp, err := g.Client.ListPullRequestsWithCommit(g.Context, g.Org, g.Repo, sha, plo)
+	prs, resp, err := g.client.ListPullRequestsWithCommit(g.context, g.options.GithubOrg, g.options.GithubRepo, sha, plo)
 	if err != nil {
 		return nil, err
 	}
 
 	plo.ListOptions.Page++
 	for plo.ListOptions.Page <= resp.LastPage {
-		pResult, pResp, err := g.Client.ListPullRequestsWithCommit(g.Context, g.Org, g.Repo, sha, plo)
+		pResult, pResp, err := g.client.ListPullRequestsWithCommit(g.context, g.options.GithubOrg, g.options.GithubRepo, sha, plo)
 		if err != nil {
 			return nil, err
 		}
@@ -713,6 +730,7 @@ func (g *Gatherer) prsForCommitFromSHA(sha string) (prs []*github.PullRequest, e
 	if len(prs) == 0 {
 		return nil, errNoPRFoundForCommitSHA
 	}
+
 	return prs, nil
 }
 
@@ -725,7 +743,7 @@ func (g *Gatherer) prsForCommitFromMessage(commitMessage string) (prs []*github.
 	for _, pr := range prsNum {
 		// Given the PR number that we've now converted to an integer, get the PR from
 		// the API
-		res, _, err := g.Client.GetPullRequest(g.Context, g.Org, g.Repo, pr)
+		res, _, err := g.client.GetPullRequest(g.context, g.options.GithubOrg, g.options.GithubRepo, pr)
 		if err != nil {
 			return nil, err
 		}
