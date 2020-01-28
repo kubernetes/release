@@ -200,7 +200,7 @@ func newTestRepo(t *testing.T) *testRepo {
 		secondTagCommit:    secondTagRef.Hash().String(),
 		thirdTagName:       thirdTagName,
 		thirdTagCommit:     thirdTagRef.Hash().String(),
-		testFileName:       testFileName,
+		testFileName:       filepath.Join(sut.Dir(), testFileName),
 	}
 }
 
@@ -505,7 +505,7 @@ func TestCheckoutSuccess(t *testing.T) {
 	defer testRepo.cleanup(t)
 
 	require.Nil(t, ioutil.WriteFile(
-		filepath.Join(testRepo.sut.Dir(), testRepo.testFileName),
+		testRepo.testFileName,
 		[]byte("hello world"),
 		0o644,
 	))
@@ -513,7 +513,7 @@ func TestCheckoutSuccess(t *testing.T) {
 		testRepo.sut.Dir(), "git", "diff", "--name-only").Run()
 	require.Nil(t, err)
 	require.True(t, res.Success())
-	require.Contains(t, res.Output(), testRepo.testFileName)
+	require.Contains(t, res.Output(), filepath.Base(testRepo.testFileName))
 
 	err = testRepo.sut.Checkout(git.Master, testRepo.testFileName)
 	require.Nil(t, err)
@@ -596,4 +596,42 @@ func TestCurrentBranchMaster(t *testing.T) {
 	branch, err := testRepo.sut.CurrentBranch()
 	require.Nil(t, err)
 	require.Equal(t, git.Master, branch)
+}
+
+func TestRmSuccessForce(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+	require.Nil(t, ioutil.WriteFile(testRepo.testFileName,
+		[]byte("test"), 0o755),
+	)
+
+	require.Nil(t, testRepo.sut.Rm(true, testRepo.testFileName))
+
+	_, err := os.Stat(testRepo.testFileName)
+	require.True(t, os.IsNotExist(err))
+}
+
+func TestRmFailureForce(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+	require.NotNil(t, testRepo.sut.Rm(true, "invalid"))
+}
+
+func TestRmSuccess(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	require.Nil(t, testRepo.sut.Rm(true, testRepo.testFileName))
+
+	_, err := os.Stat(testRepo.testFileName)
+	require.True(t, os.IsNotExist(err))
+}
+
+func TestRmFailureModified(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+	require.Nil(t, ioutil.WriteFile(testRepo.testFileName,
+		[]byte("test"), 0o755),
+	)
+	require.NotNil(t, testRepo.sut.Rm(false, testRepo.testFileName))
 }

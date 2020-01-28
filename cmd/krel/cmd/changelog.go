@@ -62,7 +62,9 @@ the golang based 'release-notes' tool:
    announcement is done by another subcommand of 'krel', not "changelog'.
 
 3. Commit the modified CHANGELOG-x.y.md into the master branch as well as the
-   corresponding release-branch of kubernetes/kubernetes.
+   corresponding release-branch of kubernetes/kubernetes. The release branch
+   will be pruned from all other CHANGELOG-*.md files which do not belong to
+   this release branch.
 `,
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -401,6 +403,11 @@ func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
 	// Release branch modifications
 	if err := repo.CheckoutBranch(branch); err != nil {
 		return errors.Wrapf(err, "checking out release branch %s", branch)
+	}
+
+	// Remove all other changelog files
+	if err := repo.Rm(true, "CHANGELOG-*.md"); err != nil {
+		return errors.Wrap(err, "unable to remove CHANGELOG-*.md files")
 	}
 
 	logrus.Info("Checking out changelog from master branch")
