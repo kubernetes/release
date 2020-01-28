@@ -73,10 +73,11 @@ the golang based 'release-notes' tool:
 }
 
 type changelogOptions struct {
-	tag    string
-	bucket string
-	tars   string
-	token  string
+	tag      string
+	bucket   string
+	tars     string
+	token    string
+	htmlFile string
 }
 
 var changelogOpts = &changelogOptions{}
@@ -96,7 +97,8 @@ func init() {
 	)
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.bucket, "bucket", "kubernetes-release", "Specify gs bucket to point to in generated notes")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tag, tagFlag, "", "The version tag of the release, for example v1.17.0-rc.1")
-	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tars, tarsFlag, "", "Directory of tars to sha512 sum for display")
+	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tars, tarsFlag, "", "Directory of tars to SHA512 sum for display")
+	changelogCmd.PersistentFlags().StringVar(&changelogOpts.htmlFile, "html-file", "", "The target html file to be written. If empty, then it will be CHANGELOG-x.y.html in the current path.")
 
 	if err := changelogCmd.MarkPersistentFlagRequired(tagFlag); err != nil {
 		logrus.Fatal(err)
@@ -288,6 +290,9 @@ func writeMarkdown(repo *git.Repo, toc, markdown string, tag semver.Version) err
 }
 
 func htmlChangelogFilename(tag semver.Version) string {
+	if changelogOpts.htmlFile != "" {
+		return changelogOpts.htmlFile
+	}
 	return changelogFilename(tag, "html")
 }
 
