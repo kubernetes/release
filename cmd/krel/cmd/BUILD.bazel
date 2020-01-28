@@ -12,6 +12,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/git:go_default_library",
+        "//pkg/log:go_default_library",
         "//pkg/notes:go_default_library",
         "//pkg/release:go_default_library",
         "//pkg/util:go_default_library",
