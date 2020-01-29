@@ -693,3 +693,16 @@ func (r *Repo) CurrentBranch() (branch string, err error) {
 
 	return branch, nil
 }
+
+// Rm removes files from the repository
+func (r *Repo) Rm(force bool, files ...string) error {
+	args := []string{"rm"}
+	if force {
+		args = append(args, "-f")
+	}
+	args = append(args, files...)
+
+	return command.
+		NewWithWorkDir(r.Dir(), gitExecutable, args...).
+		RunSilentSuccess()
+}
