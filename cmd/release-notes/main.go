@@ -32,6 +32,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/log"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/util"
 )
@@ -344,6 +345,7 @@ func run(*cobra.Command, []string) error {
 
 func main() {
 	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
+	logrus.AddHook(log.NewFilenameHook())
 	if err := cmd.Execute(); err != nil {
 		logrus.Fatal(err)
 	}

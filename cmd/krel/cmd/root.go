@@ -22,6 +22,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	"k8s.io/release/pkg/log"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -68,6 +70,7 @@ func initLogging(*cobra.Command, []string) error {
 		return err
 	}
 	logrus.SetLevel(lvl)
+	logrus.AddHook(log.NewFilenameHook())
 	logrus.Debugf("Using log level %q", lvl)
 	return nil
 }
