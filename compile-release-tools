@@ -18,7 +18,16 @@ set -e
 set -u
 set -o pipefail
 
+RELEASE_TOOLS=(
+  blocking-testgrid-tests
+  krel
+  kubepkg
+  release-notes
+)
+
 setup_env() {
+  echo "Setting up environment..."
+
   if [ -n "${GOBIN:-}" ]
   then
     export PATH="${PATH}:${GOBIN}"
@@ -28,11 +37,15 @@ setup_env() {
 compile() {
   local tool="$1"
 
+  echo "Compiling $tool..."
+
   go install "${tool}"
   echo "${tool} compiled & installed"
 }
 
 check_deps() {
+  echo "Checking dependencies..."
+
   compile github.com/psampaz/go-mod-outdated
 
   local gmo_args=( '-update' '-direct' )
@@ -49,7 +62,16 @@ main() {
   setup_env
   check_deps
 
-  compile k8s.io/release/cmd/blocking-testgrid-tests
+  if [ $# -gt 0 ]; then
+    for tool in "$@"; do
+      compile "k8s.io/release/cmd/${tool}"
+    done
+  else
+    for tool in "${RELEASE_TOOLS[@]}"; do
+      echo "Compiling default release tools..."
+      compile "k8s.io/release/cmd/${tool}"
+    done
+  fi
 }
 
 main "$@"
