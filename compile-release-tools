@@ -20,7 +20,6 @@ set -o pipefail
 
 RELEASE_TOOLS=(
   blocking-testgrid-tests
-  krel
   kubepkg
   release-notes
 )
@@ -56,6 +55,25 @@ check_deps() {
   go list -u -m -json all | go-mod-outdated "${gmo_args[@]}"
 }
 
+compile_krel() {
+  local git_tree_state
+  local pkg
+
+  git_tree_state=clean
+  pkg=k8s.io/release/pkg/version
+
+  if git status --porcelain --untracked-files=no; then
+    git_tree_state=dirty
+  fi
+
+  go build -ldflags "-s -w \
+    -X $pkg.buildDate=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+    -X $pkg.gitCommit=$(git rev-parse HEAD) \
+    -X $pkg.gitTreeState=$git_tree_state \
+    -X $pkg.gitVersion=$(git describe --abbrev=0)" \
+    -o "$GOBIN"/krel ./cmd/krel
+}
+
 main() {
   cd "$(dirname "${BASH_SOURCE[0]}")"
 
@@ -71,6 +89,7 @@ main() {
       echo "Compiling default release tools..."
       compile "k8s.io/release/cmd/${tool}"
     done
+    compile_krel
   fi
 }
 
