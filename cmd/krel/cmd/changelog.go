@@ -169,12 +169,12 @@ func runChangelog() (err error) {
 		return err
 	}
 	defer func() {
-		if err := repo.CheckoutBranch(currentBranch); err != nil {
+		if err := repo.Checkout(currentBranch); err != nil {
 			logrus.Errorf("unable to restore branch %s: %v", currentBranch, err)
 		}
 	}()
 
-	if err := repo.CheckoutBranch(git.Master); err != nil {
+	if err := repo.Checkout(git.Master); err != nil {
 		return errors.Wrap(err, "checking out master branch")
 	}
 
@@ -386,7 +386,7 @@ func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
 	}
 
 	// Release branch modifications
-	if err := repo.CheckoutBranch(branch); err != nil {
+	if err := repo.Checkout(branch); err != nil {
 		return errors.Wrapf(err, "checking out release branch %s", branch)
 	}
 

@@ -92,7 +92,7 @@ func runFf(opts *ffOptions) error {
 	}
 
 	logrus.Info("Checking out release branch")
-	if err := repo.CheckoutBranch(branch); err != nil {
+	if err := repo.Checkout(branch); err != nil {
 		return err
 	}
 

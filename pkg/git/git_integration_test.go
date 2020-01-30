@@ -591,7 +591,7 @@ func TestCurrentBranchDefault(t *testing.T) {
 func TestCurrentBranchMaster(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
-	require.Nil(t, testRepo.sut.CheckoutBranch(git.Master))
+	require.Nil(t, testRepo.sut.Checkout(git.Master))
 
 	branch, err := testRepo.sut.CurrentBranch()
 	require.Nil(t, err)

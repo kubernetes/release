@@ -29,7 +29,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/config"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"gopkg.in/src-d/go-git.v4/plumbing/storer"
@@ -199,7 +198,7 @@ func CloneOrOpenRepo(repoPath, url string, useSSH bool) (*Repo, error) {
 }
 
 // updateRepo tries to open the provided repoPath and fetches the latest
-// changed from the configured remote location
+// changes from the configured remote location
 func updateRepo(repoPath string, useSSH bool) (*Repo, error) {
 	r, err := git.PlainOpen(repoPath)
 	if err != nil {
@@ -215,15 +214,13 @@ func updateRepo(repoPath string, useSSH bool) (*Repo, error) {
 		}
 	}
 
-	err = r.Fetch(&git.FetchOptions{
-		Auth:     auth,
-		Force:    true,
-		Progress: os.Stdout,
-		RefSpecs: []config.RefSpec{"refs/*:refs/*"},
-	})
-	if err != nil && err != git.NoErrAlreadyUpToDate {
-		return nil, err
+	// Update the repo
+	if err := command.NewWithWorkDir(
+		repoPath, gitExecutable, "pull", "--rebase",
+	).RunSilentSuccess(); err != nil {
+		return nil, errors.Wrap(err, "unable to pull from remote")
 	}
+
 	worktree, err := r.Worktree()
 	if err != nil {
 		return nil, err
@@ -414,14 +411,6 @@ func (r *Repo) HasRemoteBranch(branch string) error {
 		}
 	}
 	return errors.Errorf("branch %v not found", branch)
-}
-
-// CheckoutBranch can be used to switch to another branch
-func (r *Repo) CheckoutBranch(name string) error {
-	return r.worktree.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.NewBranchReferenceName(name),
-		Force:  true,
-	})
 }
 
 // Checkout can be used to checkout any revision inside the repository
@@ -628,7 +617,7 @@ func (r *Repo) PreviousTag(tag, branch string) (string, error) {
 // TagsForBranch returns a list of tags for the provided branch sorted by
 // creation date
 func (r *Repo) TagsForBranch(branch string) ([]string, error) {
-	if err := r.CheckoutBranch(branch); err != nil {
+	if err := r.Checkout(branch); err != nil {
 		return nil, err
 	}
 
