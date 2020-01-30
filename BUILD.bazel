@@ -30,6 +30,7 @@ filegroup(
         "//cmd/blocking-testgrid-tests:all-srcs",
         "//cmd/krel:all-srcs",
         "//cmd/kubepkg:all-srcs",
+        "//cmd/patch-announce:all-srcs",
         "//cmd/release-notes:all-srcs",
         "//lib:all-srcs",
         "//pkg/command:all-srcs",

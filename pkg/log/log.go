@@ -28,6 +28,18 @@ const (
 	logTraceSep = "."
 )
 
+func SetupGlobalLogger(level string) error {
+	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
+	lvl, err := logrus.ParseLevel(level)
+	if err != nil {
+		return err
+	}
+	logrus.SetLevel(lvl)
+	logrus.AddHook(NewFilenameHook())
+	logrus.Debugf("Using log level %q", lvl)
+	return nil
+}
+
 // AddTracePath adds a path element to the logrus entry's field 'trace'. This
 // is meant to be done everytime you hand off a logger/entry to a different
 // component to have a clear trace how we ended up here. When logs are emitted

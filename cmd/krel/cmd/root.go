@@ -64,13 +64,5 @@ func initConfig() {
 }
 
 func initLogging(*cobra.Command, []string) error {
-	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
-	lvl, err := logrus.ParseLevel(rootOpts.logLevel)
-	if err != nil {
-		return err
-	}
-	logrus.SetLevel(lvl)
-	logrus.AddHook(log.NewFilenameHook())
-	logrus.Debugf("Using log level %q", lvl)
-	return nil
+	return log.SetupGlobalLogger(rootOpts.logLevel)
 }
