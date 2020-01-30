@@ -302,7 +302,7 @@ submit_it () {
   substitutions+=",_RELEASE_TOOL_BRANCH=$RELEASE_TOOL_BRANCH"
 
   if ! JOB_DATA=$($GCLOUD builds submit --no-source \
-                          --config=$YAML_FILE --async --disk-size=$DISK_SIZE \
+                          --config=$YAML_FILE $ASYNC --disk-size=$DISK_SIZE \
                           --substitutions $substitutions 2>&1); then
     logecho "$FAILED: Job was not submitted.  Details:"
     logecho "$JOB_DATA"
@@ -403,6 +403,12 @@ GCP_USER_TAG=${GCP_USER_TAG/@/-at-}
 # GCP also doesn't like anything even remotely looking like a domain name
 # in the bucket name so convert . to -
 GCP_USER_TAG=${GCP_USER_TAG/\./-}
+
+if ((FLAGS_attended)); then
+  ASYNC=""
+else
+  ASYNC="--async"
+fi
 
 # A build cannot be a release candidate and official at the same time
 if ((FLAGS_official)) && ((FLAGS_rc)); then
