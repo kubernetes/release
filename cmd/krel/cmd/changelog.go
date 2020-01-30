@@ -74,11 +74,13 @@ the golang based 'release-notes' tool:
 }
 
 type changelogOptions struct {
-	tag      string
-	bucket   string
-	tars     string
-	token    string
-	htmlFile string
+	tag       string
+	bucket    string
+	tars      string
+	token     string
+	htmlFile  string
+	recordDir string
+	replayDir string
 }
 
 var changelogOpts = &changelogOptions{}
@@ -98,13 +100,12 @@ func init() {
 	)
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.bucket, "bucket", "kubernetes-release", "Specify gs bucket to point to in generated notes")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tag, tagFlag, "", "The version tag of the release, for example v1.17.0-rc.1")
-	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tars, tarsFlag, "", "Directory of tars to SHA512 sum for display")
+	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tars, tarsFlag, ".", "Directory of tars to SHA512 sum for display")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.htmlFile, "html-file", "", "The target html file to be written. If empty, then it will be CHANGELOG-x.y.html in the current path.")
+	changelogCmd.PersistentFlags().StringVar(&changelogOpts.recordDir, "record", "", "Record the API into a directory")
+	changelogCmd.PersistentFlags().StringVar(&changelogOpts.replayDir, "replay", "", "Replay a previously recorded API from a directory")
 
 	if err := changelogCmd.MarkPersistentFlagRequired(tagFlag); err != nil {
-		logrus.Fatal(err)
-	}
-	if err := changelogCmd.MarkPersistentFlagRequired(tarsFlag); err != nil {
 		logrus.Fatal(err)
 	}
 
@@ -113,8 +114,8 @@ func init() {
 
 func runChangelog() (err error) {
 	token, ok := os.LookupEnv("GITHUB_TOKEN")
-	if !ok {
-		return errors.New("environment variable `GITHUB_TOKEN` is not set but needed for release notes generation")
+	if !ok && changelogOpts.replayDir == "" {
+		return errors.New("neither environment variable `GITHUB_TOKEN` nor `--replay` is set")
 	}
 	changelogOpts.token = token
 
@@ -203,6 +204,8 @@ func generateReleaseNotes(branch, startRev, endRev string) (string, error) {
 	notesOptions.ReleaseBucket = changelogOpts.bucket
 	notesOptions.ReleaseTars = changelogOpts.tars
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
+	notesOptions.RecordDir = changelogOpts.recordDir
+	notesOptions.ReplayDir = changelogOpts.replayDir
 
 	if err := notesOptions.ValidateAndFinish(); err != nil {
 		return "", err
