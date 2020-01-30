@@ -39,6 +39,7 @@ filegroup(
         "//pkg/notes:all-srcs",
         "//pkg/release:all-srcs",
         "//pkg/util:all-srcs",
+        "//pkg/version:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
