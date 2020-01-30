@@ -71,7 +71,7 @@ compile_krel() {
     -X $pkg.gitCommit=$(git rev-parse HEAD) \
     -X $pkg.gitTreeState=$git_tree_state \
     -X $pkg.gitVersion=$(git describe --abbrev=0)" \
-    -o "$GOBIN"/krel ./cmd/krel
+    -o "$GOPATH"/bin/krel ./cmd/krel
 }
 
 main() {
