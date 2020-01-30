@@ -28,15 +28,14 @@ import (
 	"text/template"
 
 	"github.com/blang/semver"
-	"github.com/google/go-github/v28/github"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"golang.org/x/oauth2"
 	"gopkg.in/russross/blackfriday.v2"
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/notes"
+	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/util"
 )
 
@@ -193,7 +192,7 @@ func runChangelog() (err error) {
 func generateReleaseNotes(branch, startRev, endRev string) (string, error) {
 	logrus.Info("Generating release notes")
 
-	notesOptions := notes.NewOptions()
+	notesOptions := options.New()
 	notesOptions.Branch = branch
 	notesOptions.StartRev = startRev
 	notesOptions.EndRev = endRev
@@ -209,22 +208,8 @@ func generateReleaseNotes(branch, startRev, endRev string) (string, error) {
 		return "", err
 	}
 
-	// Create the GitHub API client
-	ctx := context.Background()
-	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: changelogOpts.token},
-	))
-	githubClient := github.NewClient(httpClient)
-
-	gatherer := &notes.Gatherer{
-		Client:  notes.WrapGithubClient(githubClient),
-		Context: ctx,
-		Org:     git.DefaultGithubOrg,
-		Repo:    git.DefaultGithubRepo,
-	}
-	releaseNotes, history, err := gatherer.ListReleaseNotes(
-		branch, notesOptions.StartSHA, notesOptions.EndSHA, "", "",
-	)
+	gatherer := notes.NewGatherer(context.Background(), notesOptions)
+	releaseNotes, history, err := gatherer.ListReleaseNotes()
 	if err != nil {
 		return "", errors.Wrapf(err, "listing release notes")
 	}

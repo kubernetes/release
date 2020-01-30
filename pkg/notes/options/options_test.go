@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package notes
+package options
 
 import (
 	"errors"
@@ -228,8 +228,8 @@ func (r *testRepo) cleanup(t *testing.T) {
 	require.Nil(t, os.RemoveAll(r.sut.Dir()))
 }
 
-func TestNewOptions(t *testing.T) {
-	require.NotNil(t, NewOptions())
+func TestNew(t *testing.T) {
+	require.NotNil(t, New())
 }
 
 func TestValidateAndFinishSuccess(t *testing.T) {

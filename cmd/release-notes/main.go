@@ -25,20 +25,19 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/google/go-github/v28/github"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"golang.org/x/oauth2"
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/log"
 	"k8s.io/release/pkg/notes"
+	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/util"
 )
 
 var (
-	opts = notes.NewOptions()
+	opts = options.New()
 	cmd  = &cobra.Command{
 		Short:         "release-notes - The Kubernetes Release Notes Generator",
 		Use:           "release-notes",
@@ -183,13 +182,13 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.DiscoverMode,
 		"discover",
-		util.EnvDefault("DISCOVER", notes.RevisionDiscoveryModeNONE),
+		util.EnvDefault("DISCOVER", options.RevisionDiscoveryModeNONE),
 		fmt.Sprintf("The revision discovery mode for automatic revision retrieval (options: %s)",
 			strings.Join([]string{
-				notes.RevisionDiscoveryModeNONE,
-				notes.RevisionDiscoveryModeMergeBaseToLatest,
-				notes.RevisionDiscoveryModePatchToPatch,
-				notes.RevisionDiscoveryModeMinorToMinor,
+				options.RevisionDiscoveryModeNONE,
+				options.RevisionDiscoveryModeMergeBaseToLatest,
+				options.RevisionDiscoveryModePatchToPatch,
+				options.RevisionDiscoveryModeMinorToMinor,
 			}, ", "),
 		),
 	)
@@ -214,29 +213,27 @@ func init() {
 		util.IsEnvSet("TOC"),
 		"Enable the rendering of the table of contents",
 	)
+
+	cmd.PersistentFlags().StringVar(
+		&opts.RecordDir,
+		"record",
+		util.EnvDefault("RECORD", ""),
+		"Record the API into a directory",
+	)
+
+	cmd.PersistentFlags().StringVar(
+		&opts.ReplayDir,
+		"replay",
+		util.EnvDefault("REPLAY", ""),
+		"Replay a previously recorded API from a directory",
+	)
 }
 
 func GetReleaseNotes() (notes.ReleaseNotes, notes.ReleaseNotesHistory, error) {
-	// Create the GitHub API client
-	ctx := context.Background()
-	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: opts.GithubToken},
-	))
-	githubClient := github.NewClient(httpClient)
-
-	// Fetch a list of fully-contextualized release notes
 	logrus.Info("fetching all commits. This might take a while...")
 
-	gatherer := &notes.Gatherer{
-		Client:  notes.WrapGithubClient(githubClient),
-		Context: ctx,
-		Org:     opts.GithubOrg,
-		Repo:    opts.GithubRepo,
-	}
-	releaseNotes, history, err := gatherer.ListReleaseNotes(
-		opts.Branch, opts.StartSHA, opts.EndSHA,
-		opts.RequiredAuthor, opts.ReleaseVersion,
-	)
+	gatherer := notes.NewGatherer(context.Background(), opts)
+	releaseNotes, history, err := gatherer.ListReleaseNotes()
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "listing release notes")
 	}
