@@ -98,7 +98,7 @@ func (c *Command) RunSuccess() (err error) {
 		return err
 	}
 	if !res.Success() {
-		return errors.Errorf("command %v did not succeed", c.String())
+		return errors.Errorf("command %v did not succeed: %v", c.String(), res.Error())
 	}
 	return nil
 }
@@ -128,7 +128,7 @@ func (c *Command) RunSilentSuccess() (err error) {
 		return err
 	}
 	if !res.Success() {
-		return errors.Errorf("command %v did not succeed", c.String())
+		return errors.Errorf("command %v did not succeed: %v", c.String(), res.Error())
 	}
 	return nil
 }
