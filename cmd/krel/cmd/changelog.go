@@ -127,7 +127,7 @@ func runChangelog() (err error) {
 	logrus.Infof("Using release branch %s", branch)
 
 	logrus.Infof("Using local repository path %s", rootOpts.repoPath)
-	repo, err := git.CloneOrOpenDefaultGitHubRepoSSH(rootOpts.repoPath, git.DefaultGithubOrg)
+	repo, err := git.OpenRepo(rootOpts.repoPath)
 	if err != nil {
 		return err
 	}
@@ -206,6 +206,7 @@ func generateReleaseNotes(branch, startRev, endRev string) (string, error) {
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
 	notesOptions.RecordDir = changelogOpts.recordDir
 	notesOptions.ReplayDir = changelogOpts.replayDir
+	notesOptions.Pull = false
 
 	if err := notesOptions.ValidateAndFinish(); err != nil {
 		return "", err
