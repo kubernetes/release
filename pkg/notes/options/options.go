@@ -145,7 +145,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 		if err != nil {
 			return err
 		}
-		if o.StartRev != "" {
+		if o.StartRev != "" && o.StartSHA == "" {
 			sha, err := repo.RevParse(o.StartRev)
 			if err != nil {
 				return err
@@ -153,7 +153,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 			logrus.Infof("using found start SHA: %s", sha)
 			o.StartSHA = sha
 		}
-		if o.EndRev != "" {
+		if o.EndRev != "" && o.EndSHA == "" {
 			sha, err := repo.RevParse(o.EndRev)
 			if err != nil {
 				return err
