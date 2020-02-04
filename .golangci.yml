@@ -40,9 +40,7 @@ linters:
     - typecheck
     - unconvert
     - unparam
-    # TODO: re-enable if https://github.com/golangci/golangci-lint/issues/827
-    #       is closed
-    # - unused
+    - unused
     - varcheck
     - whitespace
     # - funlen

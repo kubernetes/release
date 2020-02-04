@@ -1373,8 +1373,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/golangci/golangci-lint",
-        sum = "h1:z2VTUe99YJDyZlL5mU3818G4nrZyKv0lTVqd214V7sw=",
-        version = "v1.23.1",
+        sum = "h1:wkACDEoy+b0CVqnSK8BbWrVkN2tsVLUA1+SIkGSm4o0=",
+        version = "v1.23.3",
     )
     go_repository(
         name = "com_github_golangci_ineffassign",
