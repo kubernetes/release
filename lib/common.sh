@@ -901,51 +901,6 @@ common::print_n_char () {
 }
 
 ###############################################################################
-# Generate a (github) markdown TOC between BEGIN/END tags
-# @param file The file to update in place
-#
-common::mdtoc () {
-  local file=$1
-  local indent
-  local anchor
-  local heading
-  local begin_block="<!-- BEGIN MUNGE: GENERATED_TOC -->"
-  local end_block="<!-- END MUNGE: GENERATED_TOC -->"
-  local tmpfile=$TMPDIR/$PROG-cm.$$
-
-  declare -A count
-
-  while read level heading; do
-    indent="$(echo $level |sed -e "s,^#,,g" -e 's,#,  ,g')"
-    # make a valid anchor
-    anchor=${heading,,}
-    anchor=${anchor// /-}
-    anchor=${anchor//[\.\?\*\,\/\[\]:=\<\>’()]/}
-    # Keep track of dups and identify
-    if [[ -n ${count[$anchor]} ]]; then
-      ((count[$anchor]++)) ||true
-      anchor+="-${count[$anchor]}"
-    else
-      # initialize value
-      count[$anchor]=0
-    fi
-    echo "${indent}- [$heading](#$anchor)"
-  done < <(sed -n '/^```$/,/^```$/!p' $file | egrep '^#+ ') > $tmpfile
-  # Above, sed a reasonable attempt to exclude comment lines within code blocks
-
-  # Insert new TOC
-  sed -ri "/^$begin_block/,/^$end_block/{
-       /^$begin_block/{
-         n
-         r $tmpfile
-       }
-       /^$end_block/!d
-       }" $file
-
-  logrun rm -f $tmpfile
-}
-
-###############################################################################
 # Set the global GSUTIL and GCLOUD binaries
 # Returns:
 #   0 if both GSUTIL and GCLOUD are set to executables

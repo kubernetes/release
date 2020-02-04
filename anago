@@ -405,66 +405,14 @@ check_prerequisites () {
 PROGSTEP[generate_release_notes]="GENERATE RELEASE NOTES"
 generate_release_notes () {
   local release_tars=$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/release-tars
-  local action="Update"
 
-  logecho -n "Generating release notes: "
-  logrun -s relnotes $RELEASE_VERSION_PRIME --release-tars=$release_tars \
-                     --branch=${PARENT_BRANCH:-$RELEASE_BRANCH} --htmlize-md \
-                     --markdown-file=$RELEASE_NOTES_MD \
-                     --html-file=$RELEASE_NOTES_HTML \
-                     --release-bucket=$RELEASE_BUCKET || return 1
-
-  logecho -n "Checkout master branch to make changes: "
-  logrun -s git checkout master || return 1
-
-  # The fetch and rebase before editing $CHANGELOG_FILE
-  # avoids merge conflicts if another release cut
-  # completed while we were building this one.
-  logecho -n "Fetch origin/master to get latest $CHANGELOG_FILE: "
-  logrun -s git fetch origin master || return 1
-  logecho -n "Rebase on origin/master before editing $CHANGELOG_FILE: "
-  logrun -s git rebase origin/master || return 1
-
-  if [[ ! -f $CHANGELOG_FILE ]]; then
-    cat<<EOF > $CHANGELOG_FILE
-<!-- BEGIN MUNGE: GENERATED_TOC -->
-
-<!-- END MUNGE: GENERATED_TOC -->
-
-<!-- NEW RELEASE NOTES ENTRY -->
-EOF
-    action="Add"
-    logecho -n "$CHANGELOG_FILE not found.  Creating: "
-    logrun -s git add $CHANGELOG_FILE
-  fi
-
-  logecho -n "Insert $RELEASE_VERSION_PRIME notes into $CHANGELOG_FILE: "
-  # Pipe to logrun() vs using directly, because quoting.
-  sed -i -e 's/<!-- NEW RELEASE NOTES ENTRY -->/&\n/' \
-         -e "/<!-- NEW RELEASE NOTES ENTRY -->/r $RELEASE_NOTES_MD" \
-   $CHANGELOG_FILE | logrun -s
-
-  logecho -n "Update $CHANGELOG_FILE TOC: "
-  logrun -s common::mdtoc $CHANGELOG_FILE || return 1
-
-  logecho -n "Committing $CHANGELOG_FILE: "
-  logrun -s git commit -am \
-            "$action $CHANGELOG_FILE for $RELEASE_VERSION_PRIME." \
-   || return 1
-
-  # Sync $CHANGELOG_FILE to release-* branch and clear all others
-  if [[ "$RELEASE_BRANCH" =~ release- ]]; then
-    logecho -n "Checkout $RELEASE_BRANCH branch to make changes: "
-    logrun -s git checkout $RELEASE_BRANCH || return 1
-    logecho -n "Remove any previous CHANGELOG-*.md files: "
-    logrun -s git rm -f CHANGELOG-*.md || return 1
-    logecho -n "Copy master $CHANGELOG_FILE to $RELEASE_BRANCH branch: "
-    logrun -s git checkout master -- $CHANGELOG_FILE || return 1
-    logecho -n "Committing $CHANGELOG_FILE: "
-    logrun -s git commit -am \
-              "Add/Update $CHANGELOG_FILE for $RELEASE_VERSION_PRIME." \
-     || return 1
-  fi
+  logrun krel changelog \
+    --repo "$TREE_ROOT" \
+    --tars "$release_tars" \
+    --tag "$RELEASE_VERSION_PRIME" \
+    --html-file "$RELEASE_NOTES_HTML" \
+    --bucket="$RELEASE_BUCKET" \
+    || return 1
 }
 
 ##############################################################################
@@ -1618,7 +1566,6 @@ TREE_ROOT=$WORKDIR/src/k8s.io/kubernetes
 # Same as Makefile variable name
 OUT_DIR="_output"
 BUILD_OUTPUT=$TREE_ROOT/$OUT_DIR
-RELEASE_NOTES_MD=$WORKDIR/src/release-notes.md
 RELEASE_NOTES_HTML=$WORKDIR/src/release-notes.html
 
 # Ensure the WORKDIR exists
