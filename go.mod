@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go v0.44.3
 	github.com/GoogleCloudPlatform/testgrid v0.0.1-alpha.4
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/golangci/golangci-lint v1.23.1
+	github.com/golangci/golangci-lint v1.23.3
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v28 v28.1.1
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.2
