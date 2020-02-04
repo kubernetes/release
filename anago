@@ -397,7 +397,7 @@ check_prerequisites () {
   done
 
   logecho -n "Checking the availability of krel: "
-  logrun -s krel version || return 1
+  logrun -v -s krel version || return 1
 }
 
 ###############################################################################
@@ -406,7 +406,7 @@ PROGSTEP[generate_release_notes]="GENERATE RELEASE NOTES"
 generate_release_notes () {
   local release_tars=$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/release-tars
 
-  logrun krel changelog \
+  logrun -v krel changelog \
     --repo "$TREE_ROOT" \
     --tars "$release_tars" \
     --tag "$RELEASE_VERSION_PRIME" \
@@ -1433,8 +1433,18 @@ if [[ -z "${BASEDIR}" ]]; then
   BASEDIR="$HOME/anago"
 fi
 
+BINDIR="$BASEDIR/bin"
+
+if [[ -z "$BINDIR" ]]; then
+  logrun -v mkdir -p "$BINDIR"
+fi
+
 # make sure we have the compiled bins in the path
-export PATH="${PATH}:${BASEDIR}/bin"
+export PATH="$PATH:$BINDIR"
+logecho "PATH: $PATH"
+
+# List binaries
+logrun -v ls -al "$BINDIR"
 
 ##############################################################################
 # Initialize logs
@@ -1559,7 +1569,9 @@ else
 fi
 
 # Go tools expect the kubernetes src to be under $GOPATH
-export GOPATH=$WORKDIR
+export GOPATH="$WORKDIR"
+logecho "GOPATH: $GOPATH"
+
 # TOOL_ROOT is release/
 # TREE_ROOT is working branch/tree
 TREE_ROOT=$WORKDIR/src/k8s.io/kubernetes
