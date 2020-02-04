@@ -32,14 +32,13 @@ var (
 )
 
 type Info struct {
-	GitVersion    string `json:"gitVersion,omitempty"`
-	GitCommit     string `json:"gitCommit,omitempty"`
-	GitTreeState  string `json:"gitTreeState,omitempty"`
-	BuildDate     string `json:"buildDate,omitempty"`
-	GoVersion     string `json:"goVersion,omitempty"`
-	AwsSdkVersion string `json:"awsSdkVersion,omitempty"`
-	Compiler      string `json:"compiler,omitempty"`
-	Platform      string `json:"platform,omitempty"`
+	GitVersion   string `json:"gitVersion,omitempty"`
+	GitCommit    string `json:"gitCommit,omitempty"`
+	GitTreeState string `json:"gitTreeState,omitempty"`
+	BuildDate    string `json:"buildDate,omitempty"`
+	GoVersion    string `json:"goVersion,omitempty"`
+	Compiler     string `json:"compiler,omitempty"`
+	Platform     string `json:"platform,omitempty"`
 }
 
 func Get() *Info {
