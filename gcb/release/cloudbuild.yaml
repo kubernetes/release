@@ -24,6 +24,17 @@ steps:
   - "--branch=${_RELEASE_TOOL_BRANCH}"
   - "${_RELEASE_TOOL_REPO}"
 
+- name: k8s.gcr.io/kube-cross:${_KUBE_CROSS_VERSION}
+  dir: "go/src/k8s.io/release"
+  env:
+  - "GOPATH=/workspace/go"
+  - "GOBIN=/workspace/bin"
+  - "GO111MODULE=on"
+  - "GOPROXY=https://proxy.golang.org"
+  - "GOSUMDB=sum.golang.org"
+  args:
+  - "./compile-release-tools"
+
 - name: gcr.io/$PROJECT_ID/k8s-cloud-builder
   dir: "go/src/k8s.io/release"
   env:

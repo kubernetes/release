@@ -21,16 +21,21 @@ set -o pipefail
 RELEASE_TOOLS=(
   blocking-testgrid-tests
   kubepkg
-  release-notes
+  krel
 )
 
 setup_env() {
   echo "Setting up environment..."
 
-  if [ -n "${GOBIN:-}" ]
-  then
-    export PATH="${PATH}:${GOBIN}"
+  if [[ -z "${RELEASE_TOOL_BIN:-}" ]]; then
+    if [ -n "${GOBIN:-}" ]; then
+      export RELEASE_TOOL_BIN="${GOBIN}"
+    else
+      export RELEASE_TOOL_BIN="${GOPATH}/bin"
+    fi
   fi
+
+  export PATH="${PATH}:${RELEASE_TOOL_BIN}"
 }
 
 compile() {
@@ -55,23 +60,27 @@ check_deps() {
   go list -u -m -json all | go-mod-outdated "${gmo_args[@]}"
 }
 
-compile_krel() {
+compile_with_flags() {
   local git_tree_state
   local pkg
+  local tool="$1"
 
-  git_tree_state=clean
+  git_tree_state=dirty
   pkg=k8s.io/release/pkg/version
 
-  if git status --porcelain --untracked-files=no; then
-    git_tree_state=dirty
+  if git_status=$(git status --porcelain --untracked=no 2>/dev/null) && [[ -z "${git_status}" ]]; then
+    git_tree_state=clean
   fi
 
-  go build -ldflags "-s -w \
+  go build -v -ldflags "-s -w \
     -X $pkg.buildDate=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
     -X $pkg.gitCommit=$(git rev-parse HEAD) \
     -X $pkg.gitTreeState=$git_tree_state \
     -X $pkg.gitVersion=$(git describe --abbrev=0)" \
-    -o "$GOPATH"/bin/krel ./cmd/krel
+    -o "$RELEASE_TOOL_BIN/$tool" "./cmd/$tool" \
+    || return 1
+
+  echo "$tool was successfully compiled and installed to $RELEASE_TOOL_BIN/$tool"
 }
 
 main() {
@@ -82,14 +91,13 @@ main() {
 
   if [ $# -gt 0 ]; then
     for tool in "$@"; do
-      compile "k8s.io/release/cmd/${tool}"
+      compile_with_flags "${tool}"
     done
   else
     for tool in "${RELEASE_TOOLS[@]}"; do
       echo "Compiling default release tools..."
-      compile "k8s.io/release/cmd/${tool}"
+      compile_with_flags "${tool}"
     done
-    compile_krel
   fi
 }
 
