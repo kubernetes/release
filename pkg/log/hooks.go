@@ -50,7 +50,7 @@ func NewFilenameHook() *FileNameHook {
 // Levels returns the levels for which the hook is activated. This contains
 // currently only the DebugLevel
 func (f *FileNameHook) Levels() []logrus.Level {
-	return logrus.AllLevels
+	return []logrus.Level{logrus.DebugLevel}
 }
 
 // Fire executes the hook for every logrus entry
