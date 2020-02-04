@@ -395,6 +395,9 @@ check_prerequisites () {
   for rb in ${WRITE_RELEASE_BUCKETS[*]}; do
     release::gcs::check_release_bucket $rb || return 1
   done
+
+  logecho -n "Checking the availability of krel: "
+  logrun -s krel version || return 1
 }
 
 ###############################################################################
