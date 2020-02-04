@@ -233,6 +233,26 @@ func updateRepo(repoPath string, useSSH bool) (*Repo, error) {
 	}, nil
 }
 
+// OpenRepo tries to open the provided repoPath
+func OpenRepo(repoPath string) (*Repo, error) {
+	r, err := git.PlainOpen(repoPath)
+	if err != nil {
+		return nil, err
+	}
+
+	worktree, err := r.Worktree()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Repo{
+		inner:    r,
+		worktree: worktree,
+		auth:     nil,
+		dir:      repoPath,
+	}, nil
+}
+
 func (r *Repo) Cleanup() error {
 	logrus.Debugf("Deleting %s", r.dir)
 	return os.RemoveAll(r.dir)

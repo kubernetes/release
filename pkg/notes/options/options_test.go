@@ -61,6 +61,7 @@ func newTestOptions(t *testing.T) *testOptions {
 			DiscoverMode: RevisionDiscoveryModeNONE,
 			StartSHA:     "0",
 			EndSHA:       "0",
+			Pull:         true,
 			gitCloneFn: func(string, string, string, bool) (*kgit.Repo, error) {
 				return testRepo.sut, nil
 			},

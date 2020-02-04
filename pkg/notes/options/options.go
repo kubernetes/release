@@ -48,6 +48,7 @@ type Options struct {
 	ReleaseTars     string
 	TableOfContents bool
 	Debug           bool
+	Pull            bool
 	RecordDir       string
 	ReplayDir       string
 	gitCloneFn      func(string, string, string, bool) (*git.Repo, error)
@@ -68,6 +69,7 @@ func New() *Options {
 		DiscoverMode: RevisionDiscoveryModeNONE,
 		GithubOrg:    git.DefaultGithubOrg,
 		GithubRepo:   git.DefaultGithubRepo,
+		Pull:         true,
 		gitCloneFn:   git.CloneOrOpenGitHubRepo,
 	}
 }
@@ -75,7 +77,7 @@ func New() *Options {
 // ValidateAndFinish checks if the options are set in a consistent way and
 // adapts them if necessary. It returns an error if options are set to invalid
 // values.
-func (o *Options) ValidateAndFinish() error {
+func (o *Options) ValidateAndFinish() (err error) {
 	// Add appropriate log filtering
 	if o.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
@@ -98,12 +100,7 @@ func (o *Options) ValidateAndFinish() error {
 
 	// Check if we want to automatically discover the revisions
 	if o.DiscoverMode != RevisionDiscoveryModeNONE {
-		repo, err := o.gitCloneFn(
-			o.RepoPath,
-			o.GithubOrg,
-			o.GithubRepo,
-			false,
-		)
+		repo, err := o.repo()
 		if err != nil {
 			return err
 		}
@@ -144,13 +141,7 @@ func (o *Options) ValidateAndFinish() error {
 
 	// Check if we have to parse a revision
 	if (o.StartRev != "" && o.StartSHA == "") || (o.EndRev != "" && o.EndSHA == "") {
-		logrus.Info("cloning/updating repository to discover start or end sha")
-		repo, err := o.gitCloneFn(
-			o.RepoPath,
-			o.GithubOrg,
-			o.GithubRepo,
-			false,
-		)
+		repo, err := o.repo()
 		if err != nil {
 			return err
 		}
@@ -181,6 +172,25 @@ func (o *Options) ValidateAndFinish() error {
 	}
 
 	return nil
+}
+
+func (o *Options) repo() (repo *git.Repo, err error) {
+	if o.Pull {
+		logrus.Infof("cloning/updating repository %s/%s", o.GithubOrg, o.GithubRepo)
+		repo, err = o.gitCloneFn(
+			o.RepoPath,
+			o.GithubOrg,
+			o.GithubRepo,
+			false,
+		)
+	} else {
+		logrus.Infof("re-using local repo %s", o.RepoPath)
+		repo, err = git.OpenRepo(o.RepoPath)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return repo, nil
 }
 
 // Client returns a Client to be used by the Gatherer. Depending on

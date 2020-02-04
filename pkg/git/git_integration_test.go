@@ -635,3 +635,18 @@ func TestRmFailureModified(t *testing.T) {
 	)
 	require.NotNil(t, testRepo.sut.Rm(false, testRepo.testFileName))
 }
+
+func TestOpenRepoSuccess(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	repo, err := git.OpenRepo(testRepo.sut.Dir())
+	require.Nil(t, err)
+	require.Equal(t, testRepo.sut.Dir(), repo.Dir())
+}
+
+func TestOpenRepoFailure(t *testing.T) {
+	repo, err := git.OpenRepo("invalid")
+	require.NotNil(t, err)
+	require.Nil(t, repo)
+}
