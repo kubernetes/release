@@ -408,6 +408,7 @@ generate_release_notes () {
 
   logrun -v krel changelog \
     --repo "$TREE_ROOT" \
+    --branch="${PARENT_BRANCH:-$RELEASE_BRANCH}" \
     --tars "$release_tars" \
     --tag "$RELEASE_VERSION_PRIME" \
     --html-file "$RELEASE_NOTES_HTML" \

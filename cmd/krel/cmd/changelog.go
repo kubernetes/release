@@ -75,6 +75,7 @@ the golang based 'release-notes' tool:
 
 type changelogOptions struct {
 	tag       string
+	branch    string
 	bucket    string
 	tars      string
 	token     string
@@ -100,6 +101,7 @@ func init() {
 	)
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.bucket, "bucket", "kubernetes-release", "Specify gs bucket to point to in generated notes")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tag, tagFlag, "", "The version tag of the release, for example v1.17.0-rc.1")
+	changelogCmd.PersistentFlags().StringVar(&changelogOpts.branch, "branch", "", "The branch to be used. Will be automatically inherited by the tag if not set.")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tars, tarsFlag, ".", "Directory of tars to SHA512 sum for display")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.htmlFile, "html-file", "", "The target html file to be written. If empty, then it will be CHANGELOG-x.y.html in the current path.")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.recordDir, "record", "", "Record the API into a directory")
@@ -123,7 +125,10 @@ func runChangelog() (err error) {
 	if err != nil {
 		return err
 	}
-	branch := fmt.Sprintf("release-%d.%d", tag.Major, tag.Minor)
+	branch := changelogOpts.branch
+	if changelogOpts.branch == "" {
+		branch = fmt.Sprintf("release-%d.%d", tag.Major, tag.Minor)
+	}
 	logrus.Infof("Using release branch %s", branch)
 
 	logrus.Infof("Using local repository path %s", rootOpts.repoPath)
@@ -132,6 +137,12 @@ func runChangelog() (err error) {
 		return err
 	}
 
+	head, err := repo.RevParse("HEAD")
+	if err != nil {
+		return err
+	}
+	logrus.Infof("Found HEAD commit %s", head)
+
 	var markdown string
 	if tag.Patch == 0 {
 		if len(tag.Pre) == 0 {
@@ -139,12 +150,14 @@ func runChangelog() (err error) {
 			markdown, err = lookupRemoteReleaseNotes(branch)
 		} else {
 			// New minor alphas, betas and rc get generated notes
-			start, e := repo.PreviousTag(changelogOpts.tag, branch)
+			start, e := repo.LatestTagForBranch(branch)
 			if e != nil {
 				return e
 			}
-			logrus.Infof("Found previous tag %s", start)
-			markdown, err = generateReleaseNotes(branch, start, changelogOpts.tag)
+			startTag := util.AddTagPrefix(start.String())
+
+			logrus.Infof("Found latest tag %s", start)
+			markdown, err = generateReleaseNotes(branch, startTag, head, changelogOpts.tag)
 		}
 	} else {
 		// A patch version, let’s just use the previous patch
@@ -152,7 +165,7 @@ func runChangelog() (err error) {
 			Major: tag.Major, Minor: tag.Minor, Patch: tag.Patch - 1,
 		}.String())
 
-		markdown, err = generateReleaseNotes(branch, start, changelogOpts.tag)
+		markdown, err = generateReleaseNotes(branch, start, head, changelogOpts.tag)
 	}
 	if err != nil {
 		return err
@@ -190,13 +203,14 @@ func runChangelog() (err error) {
 	return commitChanges(repo, branch, tag)
 }
 
-func generateReleaseNotes(branch, startRev, endRev string) (string, error) {
+func generateReleaseNotes(branch, startRev, endRev, tag string) (string, error) {
 	logrus.Info("Generating release notes")
 
 	notesOptions := options.New()
 	notesOptions.Branch = branch
 	notesOptions.StartRev = startRev
-	notesOptions.EndRev = endRev
+	notesOptions.EndSHA = endRev
+	notesOptions.EndRev = tag
 	notesOptions.GithubOrg = git.DefaultGithubOrg
 	notesOptions.GithubRepo = git.DefaultGithubRepo
 	notesOptions.GithubToken = changelogOpts.token
@@ -389,26 +403,28 @@ func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
 		return errors.Wrap(err, "committing changes into repository")
 	}
 
-	// Release branch modifications
-	if err := repo.Checkout(branch); err != nil {
-		return errors.Wrapf(err, "checking out release branch %s", branch)
-	}
+	if branch != git.Master {
+		// Release branch modifications
+		if err := repo.Checkout(branch); err != nil {
+			return errors.Wrapf(err, "checking out release branch %s", branch)
+		}
 
-	// Remove all other changelog files
-	if err := repo.Rm(true, "CHANGELOG-*.md"); err != nil {
-		return errors.Wrap(err, "unable to remove CHANGELOG-*.md files")
-	}
+		// Remove all other changelog files
+		if err := repo.Rm(true, "CHANGELOG-*.md"); err != nil {
+			return errors.Wrap(err, "unable to remove CHANGELOG-*.md files")
+		}
 
-	logrus.Info("Checking out changelog from master branch")
-	if err := repo.Checkout(git.Master, filename); err != nil {
-		return errors.Wrap(err, "checking out master branch changelog")
-	}
+		logrus.Info("Checking out changelog from master branch")
+		if err := repo.Checkout(git.Master, filename); err != nil {
+			return errors.Wrap(err, "checking out master branch changelog")
+		}
 
-	logrus.Info("Committing changes to release branch in repository")
-	if err := repo.Commit(fmt.Sprintf(
-		"Update %s for %s", filename, util.AddTagPrefix(tag.String()),
-	)); err != nil {
-		return errors.Wrap(err, "committing changes into repository")
+		logrus.Info("Committing changes to release branch in repository")
+		if err := repo.Commit(fmt.Sprintf(
+			"Update %s for %s", filename, util.AddTagPrefix(tag.String()),
+		)); err != nil {
+			return errors.Wrap(err, "committing changes into repository")
+		}
 	}
 
 	return nil
