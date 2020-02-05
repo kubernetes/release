@@ -44,7 +44,6 @@ var versionCmd = &cobra.Command{
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
 	versionCmd.PersistentFlags().BoolVarP(&versionOpts.json, "json", "j", false,
 		"print JSON instead of text")
 	rootCmd.AddCommand(versionCmd)

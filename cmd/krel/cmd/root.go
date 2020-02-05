@@ -28,9 +28,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:     "krel",
-	Short:   "krel",
-	PreRunE: initLogging,
+	Use:               "krel",
+	Short:             "krel",
+	PersistentPreRunE: initLogging,
 }
 
 type rootOptions struct {
@@ -51,26 +51,12 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
 	rootCmd.PersistentFlags().BoolVar(&rootOpts.nomock, "nomock", false, "nomock flag")
 	rootCmd.PersistentFlags().BoolVar(&rootOpts.cleanup, "cleanup", false, "cleanup flag")
 	rootCmd.PersistentFlags().StringVar(&rootOpts.repoPath, "repo", filepath.Join(os.TempDir(), "k8s"), "the local path to the repository to be used")
 	rootCmd.PersistentFlags().StringVar(&rootOpts.logLevel, "log-level", "info", "the logging verbosity, either 'panic', 'fatal', 'error', 'warn', 'warning', 'info', 'debug' or 'trace'")
 }
 
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-}
-
 func initLogging(*cobra.Command, []string) error {
-	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
-	lvl, err := logrus.ParseLevel(rootOpts.logLevel)
-	if err != nil {
-		return err
-	}
-	logrus.SetLevel(lvl)
-	logrus.AddHook(log.NewFilenameHook())
-	logrus.Debugf("Using log level %q", lvl)
-	return nil
+	return log.SetupGlobalLogger(rootOpts.logLevel)
 }

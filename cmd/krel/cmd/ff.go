@@ -53,8 +53,6 @@ var ffCmd = &cobra.Command{
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
 	ffCmd.PersistentFlags().StringVar(&ffOpts.branch, "branch", "", "branch")
 	ffCmd.PersistentFlags().StringVar(&ffOpts.masterRef, "ref", kgit.DefaultMasterRef, "ref on master")
 	ffCmd.PersistentFlags().StringVar(&ffOpts.org, "org", kgit.DefaultGithubOrg, "org to run tool against")

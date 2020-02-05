@@ -1,0 +1,35 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "fake_cmd.go",
+        "fake_formatter.go",
+        "fake_mail_sender.go",
+        "fake_release_noter.go",
+        "fake_sendgrid_client.go",
+        "fake_workspace.go",
+    ],
+    importpath = "k8s.io/release/pkg/patch/internal/internalfakes",
+    visibility = ["//pkg/patch:__subpackages__"],
+    deps = [
+        "//pkg/patch:go_default_library",
+        "//pkg/patch/internal:go_default_library",
+        "@com_github_sendgrid_rest//:go_default_library",
+        "@com_github_sendgrid_sendgrid_go//helpers/mail:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

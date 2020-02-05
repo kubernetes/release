@@ -614,8 +614,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/spf13/afero",
-        sum = "h1:m8/z1t7/fwjysjQRYbP0RD+bUIF/8tJwPdEZsI83ACI=",
-        version = "v1.1.2",
+        sum = "h1:5jhuqJyZCZf2JRofRvN/nIFgIWNzPa3/Vz8mYylgbWc=",
+        version = "v1.2.2",
     )
     go_repository(
         name = "com_github_spf13_cast",
@@ -2015,4 +2015,28 @@ def go_repositories():
         importpath = "go.uber.org/zap",
         sum = "h1:ORx85nbTijNz8ljznvCMR1ZBIPKFn3jQrag10X2AsuM=",
         version = "v1.10.0",
+    )
+    go_repository(
+        name = "com_github_sendgrid_rest",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/sendgrid/rest",
+        sum = "h1:HDib/5xzQREPq34lN3YMhQtMkdXxS/qLp5G3k9a5++4=",
+        version = "v2.4.1+incompatible",
+    )
+    go_repository(
+        name = "com_github_sendgrid_sendgrid_go",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/sendgrid/sendgrid-go",
+        sum = "h1:kosbgHyNVYVaqECDYvFVLVD9nvThweBd6xp7vaCT3GI=",
+        version = "v3.5.0+incompatible",
+    )
+    go_repository(
+        name = "io_k8s_utils",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "k8s.io/utils",
+        sum = "h1:KCcLuc/HD1RogJgEbZi9ObRuLv1bgiRCfAbidLKrUpg=",
+        version = "v0.0.0-20200117235808-5f6fbceb4c31",
     )

@@ -92,8 +92,6 @@ const (
 )
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
 	const (
 		tagFlag   = "tag"
 		tarsFlag  = "tars"
