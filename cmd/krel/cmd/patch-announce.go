@@ -41,8 +41,6 @@ func patchAnnounceCommand() *cobra.Command {
 		Args:          cobra.MaximumNArgs(0), // no additional/positional args allowed
 	}
 
-	cobra.OnInitialize(initConfig) // ?
-
 	// setup local flags
 	cmd.PersistentFlags().StringVarP(&opts.SenderName, "sender-name", "n", "", "email sender's name")
 	cmd.PersistentFlags().StringVarP(&opts.SenderEmail, "sender-email", "e", "", "email sender's address")
