@@ -38,6 +38,7 @@ RUN apt-get -qqy purge ".*python2.*" \
 # Install packages
 RUN apt-get install -qqy \
         apt-transport-https \
+        bsdmainutils \
         ca-certificates \
         curl \
         gettext-base \

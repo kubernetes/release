@@ -71,6 +71,23 @@ image-%:
 	$(eval img := $(subst image-,,$@))
 	gcloud builds submit --config './images/$(img)/cloudbuild.yaml' './images/$(img)'
 
+RUNTIME ?= docker
+LOCALIMAGE_NAME := k8s-cloud-builder
+
+.PHONY: local-image-build
+local-image-build: ## Build a local image to use the tools of this repository on non Debian/Ubuntu/Fedora distributions
+	$(RUNTIME) build \
+		-f images/k8s-cloud-builder/Dockerfile \
+		-t $(LOCALIMAGE_NAME)
+
+.PHONY: local-image-run
+local-image-run: ## Run a locally build image to use the tools of this repository on non Debian/Ubuntu/Fedora distributions
+	$(RUNTIME) run -it \
+		-v $$HOME/.config/gcloud:/root/.config/gcloud \
+		-v $(shell pwd):/go/src/k8s.io/release \
+		-w /go/src/k8s.io/release \
+		$(LOCALIMAGE_NAME) bash
+
 ##@ Dependencies
 
 .SILENT: update-deps update-deps-go
