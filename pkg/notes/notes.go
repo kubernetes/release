@@ -336,7 +336,7 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result, relVer string) (*Releas
 		g.options.GithubOrg, g.options.GithubRepo, pr.GetNumber(),
 	)
 	isFeature := HasString(LabelsWithPrefix(pr, "kind"), "feature")
-	noteSuffix := prettifySigList(LabelsWithPrefix(pr, "sig"))
+	noteSuffix := prettifySIGList(LabelsWithPrefix(pr, "sig"))
 
 	isDuplicateSIG := false
 	if len(LabelsWithPrefix(pr, "sig")) > 1 {
