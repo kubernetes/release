@@ -164,7 +164,7 @@ func (g *Gatherer) ListReleaseNotes() (ReleaseNotes, ReleaseNotesHistory, error)
 		return nil, nil, err
 	}
 
-	results, err := g.ListCommitsWithNotes(commits)
+	results, err := g.gatherNotes(commits)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -503,13 +503,10 @@ func matchesIncludeFilter(msg string) *regexp.Regexp {
 	return matchesFilter(msg, noteInclusionFilters)
 }
 
-// ListCommitsWithNotes list commits that have release notes starting from a
-// given commit SHA and ending at a given commit SHA. This function is similar
-// to ListCommits except that only commits with tagged release notes are
-// returned.
-//TODO: This name does not make sense anymore
-//TODO: Why is that method exported?
-func (g *Gatherer) ListCommitsWithNotes(commits []*github.RepositoryCommit) (filtered []*Result, err error) {
+// gatherNotes list commits that have release notes starting from a given
+// commit SHA and ending at a given commit SHA. This function is similar to
+// ListCommits except that only commits with tagged release notes are returned.
+func (g *Gatherer) gatherNotes(commits []*github.RepositoryCommit) (filtered []*Result, err error) {
 	allResults := &resultList{}
 
 	nrOfCommits := len(commits)
@@ -565,7 +562,7 @@ func (g *Gatherer) notesForCommit(commit *github.RepositoryCommit) (*Result, err
 	if err != nil {
 		if err == errNoPRIDFoundInCommitMessage || err == errNoPRFoundForCommitSHA {
 			logrus.
-				WithField("func", "ListCommitsWithNotes").
+				WithField("func", "listCommitsWithNotes").
 				Debugf("No matches found when parsing PR from commit sha %q", commit.GetSHA())
 			return nil, nil
 		}
@@ -576,14 +573,14 @@ func (g *Gatherer) notesForCommit(commit *github.RepositoryCommit) (*Result, err
 		prBody := pr.GetBody()
 
 		logrus.
-			WithField("func", "ListCommitsWithNotes").
+			WithField("func", "listCommitsWithNotes").
 			WithField("pr no", pr.GetNumber()).
 			WithField("pr body", pr.GetBody()).
 			Debugf("Obtaining PR associated with commit sha %q", commit.GetSHA())
 
 		if re := matchesExcludeFilter(prBody); re != nil {
 			logrus.
-				WithField("func", "ListCommitsWithNotes").
+				WithField("func", "listCommitsWithNotes").
 				WithField("filter", re.String()).
 				Debug("Excluding notes for PR based on the exclusion filter.")
 			// try next PR
@@ -593,7 +590,7 @@ func (g *Gatherer) notesForCommit(commit *github.RepositoryCommit) (*Result, err
 		if re := matchesIncludeFilter(prBody); re != nil {
 			res := &Result{commit: commit, pullRequest: pr}
 			logrus.
-				WithField("func", "ListCommitsWithNotes").
+				WithField("func", "listCommitsWithNotes").
 				WithField("filter", re.String()).
 				Debug("Including notes for PR based on the inclusion filter.")
 

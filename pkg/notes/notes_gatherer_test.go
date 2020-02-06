@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package notes_test
+package notes
 
 import (
 	"context"
@@ -31,7 +31,6 @@ import (
 	"github.com/google/go-github/v28/github"
 	"github.com/sirupsen/logrus"
 	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/client/clientfakes"
 )
 
@@ -204,7 +203,7 @@ func TestListCommits(t *testing.T) {
 				}
 			}
 
-			gatherer := notes.NewGathererWithClient(context.Background(), client)
+			gatherer := NewGathererWithClient(context.Background(), client)
 			commits, err := gatherer.ListCommits(tc.branch, tc.start, tc.end)
 
 			checkErrMsg(t, err, tc.expectedErrMsg)
@@ -235,7 +234,7 @@ func TestListCommits(t *testing.T) {
 	}
 }
 
-func TestListCommitsWithNotes(t *testing.T) {
+func TestGatherNotes(t *testing.T) {
 	type getPullRequestStub func(context.Context, string, string, int) (*github.PullRequest, *github.Response, error)
 	type listPullRequestsWithCommitStub func(context.Context, string, string, string, *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error)
 
@@ -253,7 +252,7 @@ func TestListCommitsWithNotes(t *testing.T) {
 		// called with and to inject faked return data.
 		getPullRequestStubber func(*testing.T) getPullRequestStub
 
-		// commitList is the list of commits the ListCommitsWithNotes is acting on
+		// commitList is the list of commits the gatherNotes is acting on
 		commitList []*github.RepositoryCommit
 
 		// expectedErrMsg is the error message the method is expected to return
@@ -266,9 +265,9 @@ func TestListCommitsWithNotes(t *testing.T) {
 		expectedGetPullRequestCallCount int
 
 		// resultChecker is a function which gets called with the result of
-		// ListCommitsWithNotes, giving users the option to validate the returned
+		// gatherNotes, giving users the option to validate the returned
 		// data
-		resultsChecker func(*testing.T, []*notes.Result)
+		resultsChecker func(*testing.T, []*Result)
 	}{
 		"empty commit list": {
 			// Does not call anything
@@ -368,7 +367,7 @@ func TestListCommitsWithNotes(t *testing.T) {
 				}
 			},
 			expectedListPullRequestsWithCommitCallCount: 20,
-			resultsChecker: func(t *testing.T, results []*notes.Result) {
+			resultsChecker: func(t *testing.T, results []*Result) {
 				// there is not much we can check on the Result, as all the fields are
 				// unexported
 				expectedResultSize := 7
@@ -386,7 +385,7 @@ func TestListCommitsWithNotes(t *testing.T) {
 
 			client := &clientfakes.FakeClient{}
 
-			gatherer := notes.NewGathererWithClient(context.Background(), client)
+			gatherer := NewGathererWithClient(context.Background(), client)
 			if stubber := tc.listPullRequestsWithCommitStubber; stubber != nil {
 				client.ListPullRequestsWithCommitStub = stubber(t)
 			}
@@ -394,7 +393,7 @@ func TestListCommitsWithNotes(t *testing.T) {
 				client.GetPullRequestStub = stubber(t)
 			}
 
-			results, err := gatherer.ListCommitsWithNotes(tc.commitList)
+			results, err := gatherer.gatherNotes(tc.commitList)
 
 			checkErrMsg(t, err, tc.expectedErrMsg)
 
