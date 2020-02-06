@@ -198,7 +198,9 @@ func WalkBuilds(builds []Build, architectures []string, specOnly bool) error {
 			}
 		}
 	}
-
+	if specOnly {
+		logrus.Infof("Package specs have been saved in %v", tmpDir)
+	}
 	logrus.Infof("Successfully walked builds")
 	return nil
 }
