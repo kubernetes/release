@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -87,8 +88,9 @@ type changelogOptions struct {
 var changelogOpts = &changelogOptions{}
 
 const (
-	tocStart = "<!-- BEGIN MUNGE: GENERATED_TOC -->"
-	tocEnd   = "<!-- END MUNGE: GENERATED_TOC -->"
+	tocStart         = "<!-- BEGIN MUNGE: GENERATED_TOC -->"
+	tocEnd           = "<!-- END MUNGE: GENERATED_TOC -->"
+	repoChangelogDir = "CHANGELOG"
 )
 
 func init() {
@@ -250,7 +252,7 @@ func generateReleaseNotes(branch, startRev, endRev, tag string) (string, error) 
 }
 
 func writeMarkdown(repo *git.Repo, toc, markdown string, tag semver.Version) error {
-	changelogPath := markdownChangelogFilename(repo, tag)
+	changelogPath := filepath.Join(repo.Dir(), markdownChangelogFilename(tag))
 	writeFile := func(t, m string) error {
 		return ioutil.WriteFile(
 			changelogPath, []byte(strings.Join(
@@ -262,6 +264,9 @@ func writeMarkdown(repo *git.Repo, toc, markdown string, tag semver.Version) err
 	// No changelog exists, simply write the content to a new one
 	if _, err := os.Stat(changelogPath); os.IsNotExist(err) {
 		logrus.Infof("Changelog %q does not exist, creating it", changelogPath)
+		if err := adaptChangelogReadmeFile(repo, tag); err != nil {
+			return errors.Wrap(err, "changelog readme adaption failed")
+		}
 		return writeFile(toc, markdown)
 	}
 
@@ -299,8 +304,8 @@ func htmlChangelogFilename(tag semver.Version) string {
 	return changelogFilename(tag, "html")
 }
 
-func markdownChangelogFilename(repo *git.Repo, tag semver.Version) string {
-	return filepath.Join(repo.Dir(), changelogFilename(tag, "md"))
+func markdownChangelogFilename(tag semver.Version) string {
+	return filepath.Join(repoChangelogDir, changelogFilename(tag, "md"))
 }
 
 func changelogFilename(tag semver.Version, ext string) string {
@@ -388,7 +393,7 @@ func lookupRemoteReleaseNotes(branch string) (string, error) {
 
 func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
 	// Master branch modifications
-	filename := filepath.Base(markdownChangelogFilename(repo, tag))
+	filename := markdownChangelogFilename(tag)
 	logrus.Infof("Adding %s to repository", filename)
 	if err := repo.Add(filename); err != nil {
 		return errors.Wrapf(err, "trying to add file %s to repository", filename)
@@ -408,7 +413,7 @@ func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
 		}
 
 		// Remove all other changelog files
-		if err := repo.Rm(true, "CHANGELOG-*.md"); err != nil {
+		if err := repo.Rm(true, repoChangelogDir+"/CHANGELOG-*.md"); err != nil {
 			return errors.Wrap(err, "unable to remove CHANGELOG-*.md files")
 		}
 
@@ -425,5 +430,38 @@ func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
 		}
 	}
 
+	return nil
+}
+
+func adaptChangelogReadmeFile(repo *git.Repo, tag semver.Version) error {
+	targetFile := filepath.Join(repo.Dir(), repoChangelogDir, "README.md")
+	readme, err := ioutil.ReadFile(targetFile)
+	if err != nil {
+		return errors.Wrap(err, "unable to read changelog README.md")
+	}
+
+	cf := filepath.Base(markdownChangelogFilename(tag))
+	const listPrefix = "- "
+
+	changelogEntry := fmt.Sprintf("%s[%s](./%s)", listPrefix, cf, cf)
+	scanner := bufio.NewScanner(bytes.NewReader(readme))
+
+	res := []string{}
+	inserted := false
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !inserted && strings.HasPrefix(line, listPrefix) {
+			res = append(res, changelogEntry)
+			inserted = true
+		}
+		res = append(res, line)
+	}
+
+	const nl = "\n"
+	if err := ioutil.WriteFile(
+		targetFile, []byte(strings.Join(res, nl)+nl), 0o644); err != nil {
+		return errors.Wrap(err, "unable to write changelog README.md")
+	}
 	return nil
 }
