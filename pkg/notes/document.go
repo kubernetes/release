@@ -141,6 +141,8 @@ func RenderMarkdown(doc *Document, bucket, tars, prevTag, newTag string) (string
 			o.WriteString("### ")
 			o.WriteString(prettyKind(kind))
 			nlnl()
+
+			sort.Strings(doc.Kinds[kind])
 			for _, note := range doc.Kinds[kind] {
 				writeNote(note)
 			}
