@@ -44,15 +44,6 @@ def go_repositories():
     )
 
     go_repository(
-        name = "com_github_google_go_github",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable",
-        importpath = "github.com/google/go-github",
-        sum = "h1:N0LgJ1j65A7kfXrZnUDaYCs/Sf4rEjNlfyDHW9dolSY=",
-        version = "v17.0.0+incompatible",
-    )
-
-    go_repository(
         name = "com_github_google_go_querystring",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
@@ -925,14 +916,6 @@ def go_repositories():
         importpath = "gopkg.in/src-d/go-git.v4",
         sum = "h1:SRtFyV8Kxc0UP7aCHcijOMQGPxHSmMOPrzulQWolkYE=",
         version = "v4.13.1",
-    )
-    go_repository(
-        name = "com_github_google_go_github_v28",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable",
-        importpath = "github.com/google/go-github/v28",
-        sum = "h1:kORf5ekX5qwXO2mGzXXOjMe/g6ap8ahVe0sBEulhSxo=",
-        version = "v28.1.1",
     )
 
     go_repository(
@@ -2039,4 +2022,12 @@ def go_repositories():
         importpath = "k8s.io/utils",
         sum = "h1:KCcLuc/HD1RogJgEbZi9ObRuLv1bgiRCfAbidLKrUpg=",
         version = "v0.0.0-20200117235808-5f6fbceb4c31",
+    )
+    go_repository(
+        name = "com_github_google_go_github_v29",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/google/go-github/v29",
+        sum = "h1:opYN6Wc7DOz7Ku3Oh4l7prmkOMwEcQxpFtxdU8N8Pts=",
+        version = "v29.0.2",
     )
