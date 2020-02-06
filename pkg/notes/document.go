@@ -160,7 +160,7 @@ func RenderMarkdown(doc *Document, bucket, tars, prevTag, newTag string) (string
 		nlnl()
 	}
 
-	return o.String(), nil
+	return strings.TrimSpace(o.String()), nil
 }
 
 // sortKinds sorts kinds by their priority and returns the result in a string
