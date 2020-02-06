@@ -281,9 +281,7 @@ func writeMarkdown(repo *git.Repo, toc, markdown string, tag semver.Version) err
 	}
 
 	mergedMarkdown := fmt.Sprintf(
-		"%s\n%s",
-		strings.TrimSpace(markdown),
-		string(content[(len(tocEnd)+tocEndIndex):]),
+		"%s\n%s", markdown, string(content[(len(tocEnd)+tocEndIndex):]),
 	)
 	mergedTOC, err := notes.GenerateTOC(mergedMarkdown)
 	if err != nil {
