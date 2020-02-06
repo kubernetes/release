@@ -208,7 +208,7 @@ func prettySIG(sig string) string {
 	return strings.Join(parts, " ")
 }
 
-func prettifySigList(sigs []string) string {
+func prettifySIGList(sigs []string) string {
 	sigList := ""
 
 	// sort the list so that any group of SIGs with the same content gives us the
@@ -219,9 +219,9 @@ func prettifySigList(sigs []string) string {
 		if i == 0 {
 			sigList = fmt.Sprintf("SIG %s", prettySIG(sig))
 		} else if i == len(sigs)-1 {
-			sigList = fmt.Sprintf("%s, and SIG %s", sigList, prettySIG(sig))
+			sigList = fmt.Sprintf("%s and %s", sigList, prettySIG(sig))
 		} else {
-			sigList = fmt.Sprintf("%s, SIG %s", sigList, prettySIG(sig))
+			sigList = fmt.Sprintf("%s, %s", sigList, prettySIG(sig))
 		}
 	}
 
