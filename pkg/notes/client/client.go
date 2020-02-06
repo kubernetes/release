@@ -19,7 +19,7 @@ package client
 import (
 	"context"
 
-	"github.com/google/go-github/v28/github"
+	"github.com/google/go-github/v29/github"
 	"k8s.io/release/pkg/notes/internal"
 )
 

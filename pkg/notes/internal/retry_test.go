@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v28/github"
+	"github.com/google/go-github/v29/github"
 	"github.com/sirupsen/logrus"
 	"k8s.io/release/pkg/notes/internal"
 )
