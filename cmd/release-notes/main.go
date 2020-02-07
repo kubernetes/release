@@ -301,8 +301,8 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 			return errors.Wrapf(err, "creating release note document")
 		}
 
-		markdown, err := notes.RenderMarkdown(
-			doc, opts.ReleaseBucket, opts.ReleaseTars, opts.StartRev, opts.EndRev,
+		markdown, err := doc.RenderMarkdown(
+			opts.ReleaseBucket, opts.ReleaseTars, opts.StartRev, opts.EndRev,
 		)
 		if err != nil {
 			return errors.Wrapf(err, "rendering release note document to markdown")
