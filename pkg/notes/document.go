@@ -30,8 +30,9 @@ import (
 
 // Document represents the underlying structure of a release notes document.
 type Document struct {
-	Kinds         map[string][]string `json:"kinds"`
-	Uncategorized []string            `json:"uncategorized"`
+	ActionRequired []string            `json:"action_required"`
+	Kinds          map[string][]string `json:"kinds"`
+	Uncategorized  []string            `json:"uncategorized"`
 }
 
 const (
@@ -85,6 +86,8 @@ func CreateDocument(notes ReleaseNotes, history ReleaseNotesHistory) (*Document,
 			} else {
 				doc.Kinds[kind] = []string{note.Markdown}
 			}
+		} else if note.ActionRequired {
+			doc.ActionRequired = append(doc.ActionRequired, note.Markdown)
 		} else {
 			for _, kind := range note.Kinds {
 				mappedKind := mapKind(kind)
@@ -102,6 +105,7 @@ func CreateDocument(notes ReleaseNotes, history ReleaseNotesHistory) (*Document,
 			}
 		}
 	}
+	sort.Strings(doc.ActionRequired)
 	return doc, nil
 }
 
@@ -130,6 +134,18 @@ func RenderMarkdown(doc *Document, bucket, tars, prevTag, newTag string) (string
 		}
 		o.WriteString(s)
 		nl()
+	}
+
+	// notes with action required get their own section
+	if len(doc.ActionRequired) > 0 {
+		o.WriteString("## Urgent Upgrade Notes")
+		nlnl()
+		o.WriteString("### (No, really, you MUST read this before you upgrade)")
+		nlnl()
+		for _, note := range doc.ActionRequired {
+			writeNote(note)
+			nl()
+		}
 	}
 
 	// each Kind gets a section
