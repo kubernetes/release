@@ -122,10 +122,10 @@ RELEASE_BUCKET=${FLAGS_bucket:-"kubernetes-release-dev"}
 # This will canonicalize the path
 KUBE_ROOT=$(pwd -P)
 
+# TODO: this should really just read the version from the release tarball always
 USE_BAZEL=false
 if release::was_built_with_bazel $KUBE_ROOT $FLAGS_release_kind; then
   USE_BAZEL=true
-  bazel build //:version
   LATEST=$(cat $KUBE_ROOT/bazel-genfiles/version)
 else
   LATEST=$(tar -O -xzf $KUBE_ROOT/_output/release-tars/$FLAGS_release_kind.tar.gz $FLAGS_release_kind/version)
