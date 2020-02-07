@@ -243,7 +243,7 @@ ci_job_status () {
   local red=${TPUT[RED]}
   local green=${TPUT[GREEN]}
   local off=${TPUT[OFF]}
-  local extra_flag
+  local url="https://dl.k8s.io/ci/latest"
 
   if ((FLAGS_htmlize_md)); then
     red="<FONT COLOR=RED>"
@@ -251,22 +251,15 @@ ci_job_status () {
     off="</FONT>"
   fi
 
-  # If working on a release branch assume --official for the
-  # purpose of displaying find_green_build output
   if [[ $CURRENT_BRANCH =~ release- ]]; then
-    extra_flag="--official"
-  else
-    # For master branch, limit the analysis to 30 primary ci jobs.
-    # This is necessary due to the recently expanded blocking test list for
-    # master.  The expanded test list is often unable to find a complete
-    # passing set and find_green_build runs unbounded for hours.
-    extra_flag="--limit=30"
+    url="$url-${CURRENT_BRANCH/release-/}"
   fi
+  url="$url.txt"
 
   # State of tree
   echo
   echo "## State of $CURRENT_BRANCH branch"
-  if content=$(find_green_build -v $extra_flag $CURRENT_BRANCH); then
+  if content=$(curl -Ls "$url"); then
     echo "${green}GOOD TO GO!$off"
   else
     echo "${red}NOT READY$off"

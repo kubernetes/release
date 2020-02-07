@@ -48,7 +48,7 @@ PROG=${0##*/}
 #+     the start time of the job.  The tags provide lots of useful info:
 #+
 #+     * Who - $USER or GCP USER
-#+     * Source commit - HEAD, (result of) find_green_build or --buildversion
+#+     * Source commit - HEAD, empty or --buildversion
 #+     * Branch
 #+     * Type - STAGE or RELEASE
 #+     * Flags - --official --nomock and --rc
@@ -132,7 +132,6 @@ PROG=${0##*/}
 #+
 #+ FILES
 #+     anago                    - Main release tool
-#+     find_green_build         - Test analysis tool
 #+
 #+ SEE ALSO
 #+     lib/common.sh            - base function definitions
@@ -444,13 +443,13 @@ fi
 # BUILD_POINT used in yaml tags field and is one of:
 # * HEAD (from --build-at-head)
 # * Value of FLAGS_buildversion
-# * Defaulting to searching for a build using find_green_build
+# * Defaulting to searching for a build on dl.k8s.io
 #
 if [[ -n $FLAGS_buildversion ]]; then
   BUILD_POINT="${FLAGS_buildversion/+/-}"
   BUILDVERSION="--buildversion=$FLAGS_buildversion"
 else
-  BUILD_POINT=${BUILD_POINT:-"find_green_build"}
+  BUILD_POINT=${BUILD_POINT:-"$(curl -Ls https://dl.k8s.io/ci/latest.txt)"}
 fi
 
 # TODO: Add a check here that user is allowed to submit jobs to $PROJECT
