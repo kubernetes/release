@@ -356,6 +356,9 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result, relVer string) (*Releas
 		markdown = fmt.Sprintf("%s [%s]", markdown, noteSuffix)
 	}
 
+	// Uppercase the first character of the markdown to make it look uniform
+	markdown = strings.ToUpper(string(markdown[0])) + markdown[1:]
+
 	return &ReleaseNote{
 		Commit:         result.commit.GetSHA(),
 		Text:           text,
