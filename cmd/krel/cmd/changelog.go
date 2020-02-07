@@ -236,8 +236,8 @@ func generateReleaseNotes(branch, startRev, endRev, tag string) (string, error) 
 		return "", errors.Wrapf(err, "creating release note document")
 	}
 
-	markdown, err := notes.RenderMarkdown(
-		doc, changelogOpts.bucket, changelogOpts.tars,
+	markdown, err := doc.RenderMarkdown(
+		changelogOpts.bucket, changelogOpts.tars,
 		notesOptions.StartRev, notesOptions.EndRev,
 	)
 	if err != nil {

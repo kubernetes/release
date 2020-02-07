@@ -111,7 +111,7 @@ func CreateDocument(notes ReleaseNotes, history ReleaseNotesHistory) (*Document,
 
 // RenderMarkdown accepts a Document and writes a version of that document to
 // supplied io.Writer in markdown format.
-func RenderMarkdown(doc *Document, bucket, tars, prevTag, newTag string) (string, error) {
+func (d *Document) RenderMarkdown(bucket, tars, prevTag, newTag string) (string, error) {
 	o := &strings.Builder{}
 	if err := createDownloadsTable(o, bucket, tars, prevTag, newTag); err != nil {
 		return "", err
@@ -137,19 +137,19 @@ func RenderMarkdown(doc *Document, bucket, tars, prevTag, newTag string) (string
 	}
 
 	// notes with action required get their own section
-	if len(doc.ActionRequired) > 0 {
+	if len(d.ActionRequired) > 0 {
 		o.WriteString("## Urgent Upgrade Notes")
 		nlnl()
 		o.WriteString("### (No, really, you MUST read this before you upgrade)")
 		nlnl()
-		for _, note := range doc.ActionRequired {
+		for _, note := range d.ActionRequired {
 			writeNote(note)
 			nl()
 		}
 	}
 
 	// each Kind gets a section
-	sortedKinds := sortKinds(doc.Kinds)
+	sortedKinds := sortKinds(d.Kinds)
 	if len(sortedKinds) > 0 {
 		o.WriteString("## Changes by Kind")
 		nlnl()
@@ -158,8 +158,8 @@ func RenderMarkdown(doc *Document, bucket, tars, prevTag, newTag string) (string
 			o.WriteString(prettyKind(kind))
 			nlnl()
 
-			sort.Strings(doc.Kinds[kind])
-			for _, note := range doc.Kinds[kind] {
+			sort.Strings(d.Kinds[kind])
+			for _, note := range d.Kinds[kind] {
 				writeNote(note)
 			}
 			nl()
@@ -169,10 +169,10 @@ func RenderMarkdown(doc *Document, bucket, tars, prevTag, newTag string) (string
 
 	// We call the uncategorized notes "Other Changes". These are changes
 	// without any kind
-	if len(doc.Uncategorized) > 0 {
+	if len(d.Uncategorized) > 0 {
 		o.WriteString("## Other Changes")
 		nlnl()
-		for _, note := range doc.Uncategorized {
+		for _, note := range d.Uncategorized {
 			writeNote(note)
 		}
 		nlnl()
