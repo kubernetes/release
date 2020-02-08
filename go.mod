@@ -8,6 +8,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/golangci/golangci-lint v1.23.3
 	github.com/google/go-github/v29 v29.0.2
+	github.com/google/uuid v1.1.1
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.2
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481
 	github.com/pkg/errors v0.8.1
@@ -22,4 +23,5 @@ require (
 	gopkg.in/russross/blackfriday.v2 v2.0.0
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	k8s.io/utils v0.0.0-20200117235808-5f6fbceb4c31
+	sigs.k8s.io/yaml v1.1.0
 )
