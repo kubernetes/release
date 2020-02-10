@@ -142,8 +142,13 @@ func runSingleJob(o Options, jobName, uploaded, version string, subs map[string]
 	}
 
 	if o.ScratchBucket != "" {
-		args = append(args, "--gcs-log-dir", o.ScratchBucket+gcsLogsDir)
-		args = append(args, "--gcs-source-staging-dir", o.ScratchBucket+gcsSourceDir)
+		args = append(
+			args,
+			"--gcs-log-dir",
+			o.ScratchBucket+gcsLogsDir,
+			"--gcs-source-staging-dir",
+			o.ScratchBucket+gcsSourceDir,
+		)
 	}
 
 	if uploaded != "" {
@@ -159,7 +164,7 @@ func runSingleJob(o Options, jobName, uploaded, version string, subs map[string]
 	cmd := exec.Command("gcloud", args...)
 
 	if o.LogDir != "" {
-		p := path.Join(o.LogDir, strings.Replace(jobName, "/", "-", -1)+".log")
+		p := path.Join(o.LogDir, strings.ReplaceAll(jobName, "/", "-")+".log")
 		f, err := os.Create(p)
 
 		if err != nil {
