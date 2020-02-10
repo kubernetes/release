@@ -111,7 +111,7 @@ func (o *Options) uploadBuildDir(targetBucket string) (string, error) {
 	return uploaded, nil
 }
 
-func getExtraSubs(o Options) map[string]string {
+func getExtraSubs(o *Options) map[string]string {
 	envs := strings.Split(o.EnvPassthrough, ",")
 	subs := map[string]string{}
 	for _, e := range envs {
@@ -123,7 +123,7 @@ func getExtraSubs(o Options) map[string]string {
 	return subs
 }
 
-func runSingleJob(o Options, jobName, uploaded, version string, subs map[string]string) error {
+func runSingleJob(o *Options, jobName, uploaded, version string, subs map[string]string) error {
 	s := make([]string, 0, len(subs)+1)
 	for k, v := range subs {
 		s = append(s, fmt.Sprintf("_%s=%s", k, v))
@@ -189,7 +189,7 @@ func runSingleJob(o Options, jobName, uploaded, version string, subs map[string]
 
 type variants map[string]map[string]string
 
-func getVariants(o Options) (variants, error) {
+func getVariants(o *Options) (variants, error) {
 	content, err := ioutil.ReadFile(path.Join(o.ConfigDir, "variants.yaml"))
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -216,7 +216,7 @@ func getVariants(o Options) (variants, error) {
 	return v.Variants, nil
 }
 
-func RunBuildJobs(o Options) []error {
+func RunBuildJobs(o *Options) []error {
 	var uploaded string
 	if o.ScratchBucket != "" {
 		if !o.NoSource {

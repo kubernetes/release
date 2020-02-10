@@ -90,7 +90,7 @@ func main() {
 		log.Fatalf("Failed to chdir to build directory (%s): %v", o.BuildDir, err)
 	}
 
-	errors := build.RunBuildJobs(o)
+	errors := build.RunBuildJobs(&o)
 	if len(errors) != 0 {
 		log.Fatalf("Failed to run some build jobs: %v", errors)
 	}
