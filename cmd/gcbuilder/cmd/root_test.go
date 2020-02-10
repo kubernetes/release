@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,10 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package cmd
 
-import "k8s.io/release/cmd/gcbuilder/cmd"
+import (
+	"testing"
 
-func main() {
-	cmd.Execute()
+	"github.com/stretchr/testify/require"
+)
+
+func TestRootCommand(t *testing.T) {
+	err := rootCmd.Execute()
+	require.Nil(t, err)
 }
