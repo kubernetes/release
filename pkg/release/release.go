@@ -72,3 +72,9 @@ func IsValidReleaseBuild(build string) (bool, error) {
 func IsDirtyBuild(build string) bool {
 	return strings.Contains(build, "dirty")
 }
+
+// GetKubecrossVersion returns the current kube-cross container version.
+func GetKubecrossVersion() string {
+	// TODO: Remove hardcoded version
+	return "v1.13.6-1"
+}

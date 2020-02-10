@@ -123,7 +123,7 @@ func getExtraSubs(o *Options) map[string]string {
 	return subs
 }
 
-func runSingleJob(o *Options, jobName, uploaded, version string, subs map[string]string) error {
+func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string]string) error {
 	s := make([]string, 0, len(subs)+1)
 	for k, v := range subs {
 		s = append(s, fmt.Sprintf("_%s=%s", k, v))
@@ -246,7 +246,7 @@ func RunBuildJobs(o *Options) []error {
 	}
 	if len(vs) == 0 {
 		log.Println("No variants.yaml, starting single build job...")
-		if err := runSingleJob(o, "build", uploaded, tag, getExtraSubs(o)); err != nil {
+		if err := RunSingleJob(o, "build", uploaded, tag, getExtraSubs(o)); err != nil {
 			return []error{err}
 		}
 		return nil
@@ -262,7 +262,7 @@ func RunBuildJobs(o *Options) []error {
 		go func(job string, vc map[string]string) {
 			defer w.Done()
 			log.Printf("Starting job %q...\n", job)
-			if err := runSingleJob(o, job, uploaded, tag, mergeMaps(extraSubs, vc)); err != nil {
+			if err := RunSingleJob(o, job, uploaded, tag, mergeMaps(extraSubs, vc)); err != nil {
 				errors = append(errors, fmt.Errorf("job %q failed: %v", job, err))
 				log.Printf("Job %q failed: %v\n", job, err)
 			} else {
