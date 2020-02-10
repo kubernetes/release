@@ -33,6 +33,8 @@ import (
 var rootCmd = &cobra.Command{
 	Use:               "gcbuilder",
 	Short:             "gcbuilder",
+	SilenceUsage:      true,
+	SilenceErrors:     true,
 	PersistentPreRunE: initLogging,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return run()
@@ -75,7 +77,10 @@ func init() {
 // TODO: Clean up error handling
 func run() error {
 	if buildOpts.ConfigDir == "" {
-		logrus.Fatal("expected a config directory to be provided")
+		logrus.Info("expected a config directory to be provided")
+		// TODO: Should return error
+		//nolint:gocritic
+		return nil // errors.New("expected a config directory to be provided")
 	}
 
 	if bazelWorkspace := os.Getenv("BUILD_WORKSPACE_DIRECTORY"); bazelWorkspace != "" {
@@ -113,9 +118,9 @@ func run() error {
 		logrus.Fatalf("Failed to chdir to build directory (%s): %v", buildOpts.BuildDir, err)
 	}
 
-	errors := build.RunBuildJobs(buildOpts)
-	if len(errors) != 0 {
-		logrus.Fatalf("Failed to run some build jobs: %v", errors)
+	buildErrors := build.RunBuildJobs(buildOpts)
+	if len(buildErrors) != 0 {
+		logrus.Fatalf("Failed to run some build jobs: %v", buildErrors)
 	}
 	logrus.Info("Finished.")
 
