@@ -327,7 +327,7 @@ generate_notes () {
   range="$start_tag..$release_tag"
 
   if [[ $release_tag =~ ${VER_REGEX[release]} ]]; then
-    changelog_file="CHANGELOG-${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.md"
+    changelog_file="CHANGELOG/CHANGELOG-${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.md"
   else
     logecho "Unable to set CHANGELOG file!"
     return 1
