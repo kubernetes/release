@@ -111,7 +111,7 @@ func FakeGOPATH(srcDir string) (string, error) {
 	logrus.Debugf("GOPATH: %s", os.Getenv("GOPATH"))
 
 	gitRoot := fmt.Sprintf("%s/src/k8s.io", baseDir)
-	if err := os.MkdirAll(gitRoot, 0o755); err != nil {
+	if err := os.MkdirAll(gitRoot, os.FileMode(0755)); err != nil {
 		return "", err
 	}
 	gitRoot = filepath.Join(gitRoot, "kubernetes")
