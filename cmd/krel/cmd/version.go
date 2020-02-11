@@ -37,7 +37,6 @@ var versionCmd = &cobra.Command{
 	Short:         "output version information",
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	PreRunE:       initLogging,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runVersion(versionOpts)
 	},

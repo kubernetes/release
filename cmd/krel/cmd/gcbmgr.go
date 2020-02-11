@@ -62,7 +62,6 @@ var gcbmgrCmd = &cobra.Command{
 	Short:         "Run gcbmgr",
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	PreRunE:       initLogging,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runGcbmgr()
 	},
