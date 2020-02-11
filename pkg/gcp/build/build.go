@@ -19,7 +19,6 @@ package build
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -28,6 +27,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/yaml"
 )
@@ -72,16 +73,19 @@ func (o *Options) ValidateConfigDir() error {
 	configDir := o.ConfigDir
 	dirInfo, err := os.Stat(o.ConfigDir)
 	if os.IsNotExist(err) {
-		log.Fatalf("Config directory (%s) does not exist", configDir)
+		logrus.Infof("Config directory (%s) does not exist", configDir)
+		return err
 	}
 
 	if !dirInfo.IsDir() {
-		log.Fatalf("Config directory (%s) is not actually a directory", configDir)
+		logrus.Infof("Config directory (%s) is not actually a directory", configDir)
+		return err
 	}
 
 	_, err = os.Stat(o.CloudbuildFile)
 	if os.IsNotExist(err) {
-		log.Fatalf("%s does not exist", o.CloudbuildFile)
+		logrus.Infof("%s does not exist", o.CloudbuildFile)
+		return err
 	}
 
 	return nil
@@ -90,22 +94,22 @@ func (o *Options) ValidateConfigDir() error {
 func (o *Options) uploadBuildDir(targetBucket string) (string, error) {
 	f, err := ioutil.TempFile("", "")
 	if err != nil {
-		return "", fmt.Errorf("failed to create temp file: %v", err)
+		return "", errors.Wrapf(err, "failed to create temp file")
 	}
 	name := f.Name()
 	_ = f.Close()
 	defer os.Remove(name)
 
-	log.Printf("Creating source tarball at %s...\n", name)
+	logrus.Infof("Creating source tarball at %s...", name)
 	if err := runCmd("tar", "--exclude", ".git", "-czf", name, "."); err != nil {
-		return "", fmt.Errorf("failed to tar files: %s", err)
+		return "", errors.Wrapf(err, "failed to tar files")
 	}
 
 	u := uuid.New()
 	uploaded := fmt.Sprintf("%s/%s.tgz", targetBucket, u.String())
-	log.Printf("Uploading %s to %s...\n", name, uploaded)
+	logrus.Infof("Uploading %s to %s...", name, uploaded)
 	if err := runCmd("gsutil", "cp", name, uploaded); err != nil {
-		return "", fmt.Errorf("failed to upload files: %s", err)
+		return "", errors.Wrapf(err, "failed to upload files")
 	}
 
 	return uploaded, nil
@@ -168,7 +172,7 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 		f, err := os.Create(p)
 
 		if err != nil {
-			return fmt.Errorf("couldn't create %s: %v", p, err)
+			return errors.Wrapf(err, "couldn't create %s", p)
 		}
 
 		defer f.Close()
@@ -181,7 +185,7 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 	}
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("error running %s: %v", cmd.Args, err)
+		return errors.Wrapf(err, "error running %s", cmd.Args)
 	}
 
 	return nil
@@ -193,10 +197,10 @@ func getVariants(o *Options) (variants, error) {
 	content, err := ioutil.ReadFile(path.Join(o.ConfigDir, "variants.yaml"))
 	if err != nil {
 		if !os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to load variants.yaml: %v", err)
+			return nil, errors.Wrapf(err, "failed to load variants.yaml")
 		}
 		if o.Variant != "" {
-			return nil, fmt.Errorf("no variants.yaml found, but a build variant (%q) was specified", o.Variant)
+			return nil, errors.Errorf("no variants.yaml found, but a build variant (%q) was specified", o.Variant)
 		}
 		return nil, nil
 	}
@@ -204,12 +208,12 @@ func getVariants(o *Options) (variants, error) {
 		Variants variants `json:"variants"`
 	}{}
 	if err := yaml.UnmarshalStrict(content, &v); err != nil {
-		return nil, fmt.Errorf("failed to read variants.yaml: %v", err)
+		return nil, errors.Wrapf(err, "failed to read variants.yaml")
 	}
 	if o.Variant != "" {
 		va, ok := v.Variants[o.Variant]
 		if !ok {
-			return nil, fmt.Errorf("requested variant %q, which is not present in variants.yaml", o.Variant)
+			return nil, errors.Errorf("requested variant %q, which is not present in variants.yaml", o.Variant)
 		}
 		return variants{o.Variant: va}, nil
 	}
@@ -223,21 +227,21 @@ func RunBuildJobs(o *Options) []error {
 			var err error
 			uploaded, err = o.uploadBuildDir(o.ScratchBucket + gcsSourceDir)
 			if err != nil {
-				return []error{fmt.Errorf("failed to upload source: %v", err)}
+				return []error{errors.Wrapf(err, "failed to upload source")}
 			}
 		}
 	} else {
-		log.Println("Skipping advance upload and relying on gcloud...")
+		logrus.Info("Skipping advance upload and relying on gcloud...")
 	}
 
-	log.Println("Running build jobs...")
+	logrus.Info("Running build jobs...")
 	tag, err := getVersion()
 	if err != nil {
-		return []error{fmt.Errorf("failed to get current tag: %v", err)}
+		return []error{errors.Wrapf(err, "failed to get current tag")}
 	}
 
 	if !o.AllowDirty && strings.HasSuffix(tag, "-dirty") {
-		return []error{fmt.Errorf("the working copy is dirty")}
+		return []error{errors.New("the working copy is dirty")}
 	}
 
 	vs, err := getVariants(o)
@@ -245,33 +249,33 @@ func RunBuildJobs(o *Options) []error {
 		return []error{err}
 	}
 	if len(vs) == 0 {
-		log.Println("No variants.yaml, starting single build job...")
+		logrus.Info("No variants.yaml, starting single build job...")
 		if err := RunSingleJob(o, "build", uploaded, tag, getExtraSubs(o)); err != nil {
 			return []error{err}
 		}
 		return nil
 	}
 
-	log.Printf("Found variants.yaml, starting %d build jobs...\n", len(vs))
+	logrus.Infof("Found variants.yaml, starting %d build jobs...", len(vs))
 
 	w := sync.WaitGroup{}
 	w.Add(len(vs))
-	var errors []error
+	var jobErrors []error
 	extraSubs := getExtraSubs(o)
 	for k, v := range vs {
 		go func(job string, vc map[string]string) {
 			defer w.Done()
-			log.Printf("Starting job %q...\n", job)
+			logrus.Infof("Starting job %q...", job)
 			if err := RunSingleJob(o, job, uploaded, tag, mergeMaps(extraSubs, vc)); err != nil {
-				errors = append(errors, fmt.Errorf("job %q failed: %v", job, err))
-				log.Printf("Job %q failed: %v\n", job, err)
+				logrus.Infof("Job %q failed: %v", job, err)
+				jobErrors = append(jobErrors, errors.Wrapf(err, "job %q failed", job))
 			} else {
-				log.Printf("Job %q completed.\n", job)
+				logrus.Infof("Job %q completed", job)
 			}
 		}(k, v)
 	}
 	w.Wait()
-	return errors
+	return jobErrors
 }
 
 func mergeMaps(maps ...map[string]string) map[string]string {
