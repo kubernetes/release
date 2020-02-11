@@ -51,15 +51,6 @@ var (
 )
 
 func init() {
-	// githubToken contains a personal GitHub access token. This is used to
-	// scrape the commits of the Kubernetes repo.
-	cmd.PersistentFlags().StringVar(
-		&opts.GithubToken,
-		"github-token",
-		util.EnvDefault("GITHUB_TOKEN", ""),
-		"A personal GitHub access token (required)",
-	)
-
 	// githubOrg contains name of github organization that holds the repo to scrape.
 	cmd.PersistentFlags().StringVar(
 		&opts.GithubOrg,

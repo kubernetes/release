@@ -78,7 +78,6 @@ type changelogOptions struct {
 	branch    string
 	bucket    string
 	tars      string
-	token     string
 	htmlFile  string
 	recordDir string
 	replayDir string
@@ -92,20 +91,15 @@ const (
 )
 
 func init() {
-	const (
-		tagFlag   = "tag"
-		tarsFlag  = "tars"
-		tokenFlag = "token"
-	)
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.bucket, "bucket", "kubernetes-release", "Specify gs bucket to point to in generated notes")
-	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tag, tagFlag, "", "The version tag of the release, for example v1.17.0-rc.1")
+	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tag, "tag", "", "The version tag of the release, for example v1.17.0-rc.1")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.branch, "branch", "", "The branch to be used. Will be automatically inherited by the tag if not set.")
-	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tars, tarsFlag, ".", "Directory of tars to SHA512 sum for display")
+	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tars, "tars", ".", "Directory of tars to SHA512 sum for display")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.htmlFile, "html-file", "", "The target html file to be written. If empty, then it will be CHANGELOG-x.y.html in the current path.")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.recordDir, "record", "", "Record the API into a directory")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.replayDir, "replay", "", "Replay a previously recorded API from a directory")
 
-	if err := changelogCmd.MarkPersistentFlagRequired(tagFlag); err != nil {
+	if err := changelogCmd.MarkPersistentFlagRequired("tag"); err != nil {
 		logrus.Fatal(err)
 	}
 
@@ -113,12 +107,6 @@ func init() {
 }
 
 func runChangelog() (err error) {
-	token, ok := os.LookupEnv("GITHUB_TOKEN")
-	if !ok && changelogOpts.replayDir == "" {
-		return errors.New("neither environment variable `GITHUB_TOKEN` nor `--replay` is set")
-	}
-	changelogOpts.token = token
-
 	tag, err := semver.Make(util.TrimTagPrefix(changelogOpts.tag))
 	if err != nil {
 		return err
@@ -211,7 +199,6 @@ func generateReleaseNotes(branch, startRev, endRev, tag string) (string, error) 
 	notesOptions.EndRev = tag
 	notesOptions.GithubOrg = git.DefaultGithubOrg
 	notesOptions.GithubRepo = git.DefaultGithubRepo
-	notesOptions.GithubToken = changelogOpts.token
 	notesOptions.RepoPath = rootOpts.repoPath
 	notesOptions.ReleaseBucket = changelogOpts.bucket
 	notesOptions.ReleaseTars = changelogOpts.tars
