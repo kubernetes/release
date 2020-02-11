@@ -243,7 +243,7 @@ func writeMarkdown(repo *git.Repo, toc, markdown string, tag semver.Version) err
 		return ioutil.WriteFile(
 			changelogPath, []byte(strings.Join(
 				[]string{addTocMarkers(t), strings.TrimSpace(m)}, "\n",
-			)), 0o644,
+			)), os.FileMode(0644),
 		)
 	}
 
@@ -342,7 +342,7 @@ func writeHTML(tag semver.Version, markdown string) error {
 		return err
 	}
 	logrus.Infof("Writing single HTML to %s", absOutputPath)
-	return ioutil.WriteFile(absOutputPath, output.Bytes(), 0o644)
+	return ioutil.WriteFile(absOutputPath, output.Bytes(), os.FileMode(0644))
 }
 
 func lookupRemoteReleaseNotes(branch string) (string, error) {
@@ -444,7 +444,7 @@ func adaptChangelogReadmeFile(repo *git.Repo, tag semver.Version) error {
 
 	const nl = "\n"
 	if err := ioutil.WriteFile(
-		targetFile, []byte(strings.Join(res, nl)+nl), 0o644); err != nil {
+		targetFile, []byte(strings.Join(res, nl)+nl), os.FileMode(0644)); err != nil {
 		return errors.Wrap(err, "unable to write changelog README.md")
 	}
 	return nil

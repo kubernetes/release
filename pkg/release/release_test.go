@@ -51,13 +51,13 @@ func TestBuiltWithBazel(t *testing.T) {
 	require.Nil(t, ioutil.WriteFile(
 		baseBazelFile,
 		[]byte("test"),
-		0o644,
+		os.FileMode(0644),
 	))
 	bazelFile := filepath.Join(bazelTmpDir, "bazel-bin/build/release-tars/kubernetes.tar.gz")
 	require.Nil(t, ioutil.WriteFile(
 		bazelFile,
 		[]byte("test"),
-		0o644,
+		os.FileMode(0644),
 	))
 
 	time.Sleep(1 * time.Second)
@@ -66,13 +66,13 @@ func TestBuiltWithBazel(t *testing.T) {
 	require.Nil(t, ioutil.WriteFile(
 		baseDockerFile,
 		[]byte("test"),
-		0o644,
+		os.FileMode(0644),
 	))
 	dockerFile := filepath.Join(dockerTmpDir, "_output/release-tars/1.1.1.tar.gz")
 	require.Nil(t, ioutil.WriteFile(
 		dockerFile,
 		[]byte("test"),
-		0o644,
+		os.FileMode(0644),
 	))
 
 	defer cleanupTmps(t, baseTmpDir, bazelTmpDir, dockerTmpDir)
@@ -143,7 +143,7 @@ func TestReadBazelVersion(t *testing.T) {
 	require.Nil(t, ioutil.WriteFile(
 		bazelVersionFile,
 		[]byte(version),
-		0o644,
+		os.FileMode(0644),
 	))
 
 	defer cleanupTmps(t, baseTmpDir)
@@ -206,7 +206,7 @@ func TestReadDockerVersion(t *testing.T) {
 	require.Nil(t, ioutil.WriteFile(
 		filepath.Join(baseTmpDir, dockerBuildPath, "kubernetes.tar.gz"),
 		b.Bytes(),
-		0o644,
+		os.FileMode(0644),
 	))
 
 	defer cleanupTmps(t, baseTmpDir)

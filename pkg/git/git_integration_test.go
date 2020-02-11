@@ -86,7 +86,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, ioutil.WriteFile(
 		filepath.Join(cloneTempDir, testFileName),
 		[]byte("test-content"),
-		0o644,
+		os.FileMode(0644),
 	))
 
 	worktree, err := cloneRepo.Worktree()
@@ -123,7 +123,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, ioutil.WriteFile(
 		filepath.Join(cloneTempDir, branchTestFileName),
 		[]byte("test-content"),
-		0o644,
+		os.FileMode(0644),
 	))
 	_, err = worktree.Add(branchTestFileName)
 	require.Nil(t, err)
@@ -147,7 +147,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, ioutil.WriteFile(
 		filepath.Join(cloneTempDir, secondBranchTestFileName),
 		[]byte("test-content"),
-		0o644,
+		os.FileMode(0644),
 	))
 	_, err = worktree.Add(secondBranchTestFileName)
 	require.Nil(t, err)
@@ -507,7 +507,7 @@ func TestCheckoutSuccess(t *testing.T) {
 	require.Nil(t, ioutil.WriteFile(
 		testRepo.testFileName,
 		[]byte("hello world"),
-		0o644,
+		os.FileMode(0644),
 	))
 	res, err := command.NewWithWorkDir(
 		testRepo.sut.Dir(), "git", "diff", "--name-only").Run()
@@ -602,7 +602,7 @@ func TestRmSuccessForce(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 	require.Nil(t, ioutil.WriteFile(testRepo.testFileName,
-		[]byte("test"), 0o755),
+		[]byte("test"), os.FileMode(0755)),
 	)
 
 	require.Nil(t, testRepo.sut.Rm(true, testRepo.testFileName))
@@ -631,7 +631,7 @@ func TestRmFailureModified(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 	require.Nil(t, ioutil.WriteFile(testRepo.testFileName,
-		[]byte("test"), 0o755),
+		[]byte("test"), os.FileMode(0755)),
 	)
 	require.NotNil(t, testRepo.sut.Rm(false, testRepo.testFileName))
 }

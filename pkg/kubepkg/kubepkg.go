@@ -346,7 +346,7 @@ func (bc *buildConfig) run() error {
 		dstParts := []string{"bin", string(bc.Channel), fileName}
 
 		dstPath := filepath.Join(dstParts...)
-		if mkdirErr := os.MkdirAll(dstPath, 0o777); mkdirErr != nil {
+		if mkdirErr := os.MkdirAll(dstPath, os.FileMode(0777)); mkdirErr != nil {
 			return err
 		}
 
