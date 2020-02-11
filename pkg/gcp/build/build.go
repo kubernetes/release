@@ -49,6 +49,7 @@ type Options struct {
 	Project        string
 	AllowDirty     bool
 	NoSource       bool
+	Async          bool
 	DiskSize       string
 	Variant        string
 	EnvPassthrough string
@@ -145,6 +146,10 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 
 	if o.Project != "" {
 		args = append(args, "--project", o.Project)
+	}
+
+	if o.Async {
+		args = append(args, "--async")
 	}
 
 	if o.ScratchBucket != "" {

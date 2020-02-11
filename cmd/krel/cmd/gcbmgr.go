@@ -34,6 +34,7 @@ import (
 type gcbmgrOptions struct {
 	stage        bool
 	release      bool
+	stream       bool
 	branch       string
 	releaseType  string
 	buildVersion string
@@ -105,11 +106,18 @@ func init() {
 		"Build version",
 	)
 
+	// gcloud options
 	gcbmgrCmd.PersistentFlags().StringVar(
 		&buildOpts.Project,
 		"project",
 		defaultProject,
 		"Branch to run the specified GCB run against",
+	)
+	gcbmgrCmd.PersistentFlags().BoolVar(
+		&gcbmgrOpts.stream,
+		"stream",
+		false,
+		"If specified, GCB will run synchronously, tailing its' logs to stdout",
 	)
 
 	rootCmd.AddCommand(gcbmgrCmd)
@@ -121,6 +129,12 @@ func runGcbmgr() error {
 
 	buildOpts.NoSource = true
 	buildOpts.DiskSize = defaultDiskSize
+
+	if gcbmgrOpts.stream {
+		buildOpts.Async = false
+	} else {
+		buildOpts.Async = true
+	}
 
 	if gcbmgrOpts.stage && gcbmgrOpts.release {
 		logrus.Fatal("Cannot specify both the 'stage' and 'release' flag. Please resubmit with only one of those flags selected.")
