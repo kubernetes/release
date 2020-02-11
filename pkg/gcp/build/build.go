@@ -31,6 +31,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"k8s.io/release/pkg/command"
 	"sigs.k8s.io/yaml"
 )
 
@@ -53,13 +54,6 @@ type Options struct {
 	DiskSize       string
 	Variant        string
 	EnvPassthrough string
-}
-
-func runCmd(command string, args ...string) error {
-	cmd := exec.Command(command, args...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	return cmd.Run()
 }
 
 func getVersion() (string, error) {
@@ -104,14 +98,28 @@ func (o *Options) uploadBuildDir(targetBucket string) (string, error) {
 	defer os.Remove(name)
 
 	logrus.Infof("Creating source tarball at %s...", name)
-	if err := runCmd("tar", "--exclude", ".git", "-czf", name, "."); err != nil {
+	tarCmdErr := command.Execute(
+		"tar",
+		"--exclude",
+		".git",
+		"-czf",
+		name,
+		".",
+	)
+	if tarCmdErr != nil {
 		return "", errors.Wrapf(err, "failed to tar files")
 	}
 
 	u := uuid.New()
 	uploaded := fmt.Sprintf("%s/%s.tgz", targetBucket, u.String())
 	logrus.Infof("Uploading %s to %s...", name, uploaded)
-	if err := runCmd("gsutil", "cp", name, uploaded); err != nil {
+	cpErr := command.Execute(
+		"gsutil",
+		"cp",
+		name,
+		uploaded,
+	)
+	if cpErr != nil {
 		return "", errors.Wrapf(err, "failed to upload files")
 	}
 
