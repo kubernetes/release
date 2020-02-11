@@ -27,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/stretchr/testify/require"
 )
 
@@ -205,4 +206,26 @@ func TestReadFileFromGzippedTar(t *testing.T) {
 
 func cleanupTmp(t *testing.T, dir string) {
 	require.Nil(t, os.RemoveAll(dir))
+}
+
+func TestTagStringToSemver(t *testing.T) {
+	// Success
+	version, err := TagStringToSemver("v1.2.3")
+	require.Nil(t, err)
+	require.Equal(t, version, semver.Version{Major: 1, Minor: 2, Patch: 3})
+
+	// No Major.Minor.Patch elements found
+	version, err = TagStringToSemver("invalid")
+	require.NotNil(t, err)
+	require.Equal(t, version, semver.Version{})
+
+	// Version string empty
+	version, err = TagStringToSemver("")
+	require.NotNil(t, err)
+	require.Equal(t, version, semver.Version{})
+}
+
+func TestSemverToTagString(t *testing.T) {
+	version := semver.Version{Major: 1, Minor: 2, Patch: 3}
+	require.Equal(t, SemverToTagString(version), "v1.2.3")
 }

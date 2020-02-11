@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/stretchr/testify/require"
 	gogit "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/config"
@@ -372,7 +373,7 @@ func TestSuccessLatestTagForBranch(t *testing.T) {
 
 	version, err := testRepo.sut.LatestTagForBranch(git.Master)
 	require.Nil(t, err)
-	require.Equal(t, util.AddTagPrefix(version.String()), testRepo.firstTagName)
+	require.Equal(t, util.SemverToTagString(version), testRepo.firstTagName)
 }
 
 func TestFailureLatestTagForBranchInvalidBranch(t *testing.T) {
@@ -381,7 +382,7 @@ func TestFailureLatestTagForBranchInvalidBranch(t *testing.T) {
 
 	version, err := testRepo.sut.LatestTagForBranch("wrong-branch")
 	require.NotNil(t, err)
-	require.Nil(t, version)
+	require.Equal(t, version, semver.Version{})
 }
 
 func TestSuccessLatestPatchToPatch(t *testing.T) {
