@@ -28,6 +28,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
 )
 
@@ -189,4 +190,12 @@ func AddTagPrefix(tag string) string {
 
 func TrimTagPrefix(tag string) string {
 	return strings.TrimPrefix(tag, TagPrefix)
+}
+
+func TagStringToSemver(tag string) (semver.Version, error) {
+	return semver.Make(TrimTagPrefix(tag))
+}
+
+func SemverToTagString(tag semver.Version) string {
+	return AddTagPrefix(tag.String())
 }

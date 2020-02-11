@@ -40,11 +40,13 @@ import (
 )
 
 const (
-	DefaultGithubOrg  = "kubernetes"
-	DefaultGithubRepo = "kubernetes"
-	DefaultRemote     = "origin"
-	DefaultMasterRef  = "HEAD"
-	Master            = "master"
+	DefaultGithubOrg     = "kubernetes"
+	DefaultGithubRepo    = "kubernetes"
+	DefaultGithubURL     = "https://github.com"
+	DefaultGithubRepoURL = DefaultGithubURL + "/" + DefaultGithubOrg + "/" + DefaultGithubRepo
+	DefaultRemote        = "origin"
+	DefaultMasterRef     = "HEAD"
+	Master               = "master"
 
 	branchRE              = `master|release-([0-9]{1,})\.([0-9]{1,})(\.([0-9]{1,}))*$`
 	defaultGithubAuthRoot = "git@github.com:"
@@ -144,7 +146,7 @@ func CloneOrOpenGitHubRepo(path, owner, repo string, useSSH bool) (*Repo, error)
 			if useSSH {
 				return defaultGithubAuthRoot + slug
 			}
-			return fmt.Sprintf("https://github.com/%s", slug)
+			return fmt.Sprintf("%s/%s", DefaultGithubURL, slug)
 		}(),
 		useSSH,
 	)
@@ -300,7 +302,7 @@ func (r *Repo) LatestReleaseBranchMergeBaseToLatest() (DiscoverResult, error) {
 		return DiscoverResult{}, err
 	}
 	version := versions[0]
-	versionTag := util.AddTagPrefix(version.String())
+	versionTag := util.SemverToTagString(version)
 	logrus.Debugf("latest non patch version %s", versionTag)
 
 	base, err := r.MergeBase(
@@ -337,7 +339,7 @@ func (r *Repo) LatestNonPatchFinalToMinor() (DiscoverResult, error) {
 	}
 
 	latestVersion := versions[0]
-	latestVersionTag := util.AddTagPrefix(latestVersion.String())
+	latestVersionTag := util.SemverToTagString(latestVersion)
 	logrus.Debugf("latest non patch version %s", latestVersionTag)
 	end, err := r.RevParse(latestVersionTag)
 	if err != nil {
@@ -345,7 +347,7 @@ func (r *Repo) LatestNonPatchFinalToMinor() (DiscoverResult, error) {
 	}
 
 	previousVersion := versions[1]
-	previousVersionTag := util.AddTagPrefix(previousVersion.String())
+	previousVersionTag := util.SemverToTagString(previousVersion)
 	logrus.Debugf("previous non patch version %s", previousVersionTag)
 	start, err := r.RevParse(previousVersionTag)
 	if err != nil {
@@ -573,14 +575,14 @@ func (r *Repo) LatestPatchToPatch(branch string) (DiscoverResult, error) {
 	}
 
 	logrus.Debugf("parsing latest tag %s%v", util.TagPrefix, latestTag)
-	latestVersionTag := util.AddTagPrefix(latestTag.String())
+	latestVersionTag := util.SemverToTagString(latestTag)
 	end, err := r.RevParse(latestVersionTag)
 	if err != nil {
 		return DiscoverResult{}, errors.Wrapf(err, "parsing version %v", latestTag)
 	}
 
 	logrus.Debugf("parsing previous tag %s%v", util.TagPrefix, prevTag)
-	previousVersionTag := util.AddTagPrefix(prevTag.String())
+	previousVersionTag := util.SemverToTagString(prevTag)
 	start, err := r.RevParse(previousVersionTag)
 	if err != nil {
 		return DiscoverResult{}, errors.Wrapf(err, "parsing previous version %v", prevTag)
@@ -595,21 +597,21 @@ func (r *Repo) LatestPatchToPatch(branch string) (DiscoverResult, error) {
 }
 
 // LatestTagForBranch returns the latest available semver tag for a given branch
-func (r *Repo) LatestTagForBranch(branch string) (*semver.Version, error) {
+func (r *Repo) LatestTagForBranch(branch string) (tag semver.Version, err error) {
 	tags, err := r.TagsForBranch(branch)
 	if err != nil {
-		return nil, err
+		return tag, err
 	}
 	if len(tags) == 0 {
-		return nil, errors.New("no tags found on branch")
+		return tag, errors.New("no tags found on branch")
 	}
 
-	tag, err := semver.Make(util.TrimTagPrefix(tags[0]))
+	tag, err = util.TagStringToSemver(tags[0])
 	if err != nil {
-		return nil, err
+		return tag, err
 	}
 
-	return &tag, nil
+	return tag, nil
 }
 
 // PreviousTag tries to find the previous tag for a provided branch and errors

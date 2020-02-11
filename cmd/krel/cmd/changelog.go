@@ -59,7 +59,7 @@ the golang based 'release-notes' tool:
 2. Convert the markdown release notes into a HTML equivalent on purpose of
    sending it by mail to the announce list. The HTML file will be dropped into
    the current working directly as 'CHANGELOG-x.y.html'. Sending the
-   announcement is done by another subcommand of 'krel', not "changelog'.
+   announcement is done by another subcommand of 'krel', not 'changelog'.
 
 3. Commit the modified CHANGELOG-x.y.md into the master branch as well as the
    corresponding release-branch of kubernetes/kubernetes. The release branch
@@ -108,7 +108,7 @@ func init() {
 }
 
 func runChangelog() (err error) {
-	tag, err := semver.Make(util.TrimTagPrefix(changelogOpts.tag))
+	tag, err := util.TagStringToSemver(changelogOpts.tag)
 	if err != nil {
 		return err
 	}
@@ -141,16 +141,16 @@ func runChangelog() (err error) {
 			if e != nil {
 				return e
 			}
-			startTag := util.AddTagPrefix(start.String())
+			startTag := util.SemverToTagString(start)
 
 			logrus.Infof("Found latest tag %s", start)
 			markdown, err = generateReleaseNotes(branch, startTag, head)
 		}
 	} else {
 		// A patch version, let’s just use the previous patch
-		start := util.AddTagPrefix(semver.Version{
+		start := util.SemverToTagString(semver.Version{
 			Major: tag.Major, Minor: tag.Minor, Patch: tag.Patch - 1,
-		}.String())
+		})
 
 		markdown, err = generateReleaseNotes(branch, start, head)
 	}
@@ -333,7 +333,7 @@ func writeHTML(tag semver.Version, markdown string) error {
 	output := bytes.Buffer{}
 	if err := t.Execute(&output, struct {
 		Title, Content string
-	}{util.AddTagPrefix(tag.String()), string(content)}); err != nil {
+	}{util.SemverToTagString(tag), string(content)}); err != nil {
 		return err
 	}
 
@@ -385,7 +385,7 @@ func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
 
 	logrus.Info("Committing changes to master branch in repository")
 	if err := repo.Commit(fmt.Sprintf(
-		"Add %s for %s", filename, util.AddTagPrefix(tag.String()),
+		"Add %s for %s", filename, util.SemverToTagString(tag),
 	)); err != nil {
 		return errors.Wrap(err, "committing changes into repository")
 	}
@@ -408,7 +408,7 @@ func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
 
 		logrus.Info("Committing changes to release branch in repository")
 		if err := repo.Commit(fmt.Sprintf(
-			"Update %s for %s", filename, util.AddTagPrefix(tag.String()),
+			"Update %s for %s", filename, util.SemverToTagString(tag),
 		)); err != nil {
 			return errors.Wrap(err, "committing changes into repository")
 		}
