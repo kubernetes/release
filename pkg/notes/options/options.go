@@ -30,7 +30,6 @@ import (
 )
 
 type Options struct {
-	GithubToken     string
 	GithubOrg       string
 	GithubRepo      string
 	Output          string
@@ -51,6 +50,7 @@ type Options struct {
 	Pull            bool
 	RecordDir       string
 	ReplayDir       string
+	githubToken     string
 	gitCloneFn      func(string, string, string, bool) (*git.Repo, error)
 }
 
@@ -61,6 +61,7 @@ const (
 	RevisionDiscoveryModeMergeBaseToLatest = "mergebase-to-latest"
 	RevisionDiscoveryModePatchToPatch      = "patch-to-patch"
 	RevisionDiscoveryModeMinorToMinor      = "minor-to-minor"
+	tokenKey                               = "GITHUB_TOKEN"
 )
 
 // New creates a new Options instance with the default values
@@ -93,9 +94,15 @@ func (o *Options) ValidateAndFinish() (err error) {
 		return nil
 	}
 
-	// The GitHub Token is required.
-	if o.GithubToken == "" {
-		return errors.New("GitHub token must be set via -github-token or $GITHUB_TOKEN")
+	// The GitHub Token is required if replay is not specified
+	token, ok := os.LookupEnv(tokenKey)
+	if ok {
+		o.githubToken = token
+	} else if o.ReplayDir == "" {
+		return errors.Errorf(
+			"neither environment variable `%s` nor `replay` option is set",
+			tokenKey,
+		)
 	}
 
 	// Check if we want to automatically discover the revisions
@@ -206,7 +213,7 @@ func (o *Options) Client() client.Client {
 	// Create a real GitHub API client
 	ctx := context.Background()
 	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: o.GithubToken},
+		&oauth2.Token{AccessToken: o.githubToken},
 	))
 	c := client.New(github.NewClient(httpClient))
 

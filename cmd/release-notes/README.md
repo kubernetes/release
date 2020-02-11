@@ -72,7 +72,7 @@ level=debug timestamp=2019-07-30T04:02:44.3716249Z caller=notes.go:497 msg="Excl
 | Flag                    | Env Variable    | Default Value      | Required | Description                                                                                                                       |
 | ----------------------- | --------------- | ------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | **GITHUB REPO OPTIONS** |
-| github-token            | GITHUB_TOKEN    |                    | Yes      | A personal GitHub access token                                                                                                    |
+|                         | GITHUB_TOKEN    |                    | Yes      | A personal GitHub access token                                                                                                    |
 | github-org              | GITHUB_ORG      | kubernetes         | Yes      | Name of GitHub organization                                                                                                       |
 | github-repo             | GITHUB_REPO     | kubernetes         | Yes      | Name of GitHub repository                                                                                                         |
 | required-author         | REQUIRED_AUTHOR | k8s-ci-robot       | Yes      | Only commits from this GitHub user are considered. Set to empty string to include all users                                       |

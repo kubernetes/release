@@ -55,9 +55,9 @@ type testRepo struct {
 
 func newTestOptions(t *testing.T) *testOptions {
 	testRepo := newTestRepo(t)
+	require.Nil(t, os.Setenv(tokenKey, "token"))
 	return &testOptions{
 		Options: &Options{
-			GithubToken:  "token",
 			DiscoverMode: RevisionDiscoveryModeNONE,
 			StartSHA:     "0",
 			EndSHA:       "0",
