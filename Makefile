@@ -59,6 +59,26 @@ test-go: ## Runs all golang tests
 test-sh: ## Runs all shellscript tests
 	./hack/test-sh.sh
 
+##@ Tools
+
+RELEASE_TOOLS ?=
+
+.PHONY: release-tools
+
+release-tools: ## Compiles a set of release tools, specified by $RELEASE_TOOLS
+	./compile-release-tools $(RELEASE_TOOLS)
+
+##@ GCB Jobs
+
+.PHONY: stage-ci
+
+stage-ci: ## Compiles/installs krel and submits a MOCK streamed stage build to GCB (used for Prow)
+	RELEASE_TOOLS="krel" $(MAKE) release-tools
+	krel gcbmgr --stage \
+		--branch master \
+		--build-version=$$(curl -Ls https://dl.k8s.io/ci/latest.txt) \
+		--stream
+
 ##@ Images
 
 .PHONY: update-images
