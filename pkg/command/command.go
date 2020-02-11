@@ -107,7 +107,15 @@ func (c *Command) RunSuccess() (err error) {
 func (c *Command) String() string {
 	str := []string{}
 	for _, x := range c.cmds {
-		str = append(str, x.String())
+		// Note: the following logic can be replaced with x.String(), which was
+		// implemented in go1.13
+		b := new(strings.Builder)
+		b.WriteString(x.Path)
+		for _, a := range x.Args[1:] {
+			b.WriteByte(' ')
+			b.WriteString(a)
+		}
+		str = append(str, b.String())
 	}
 	return strings.Join(str, " | ")
 }
