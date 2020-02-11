@@ -155,7 +155,7 @@ func runChangelog() (err error) {
 			startTag := util.AddTagPrefix(start.String())
 
 			logrus.Infof("Found latest tag %s", start)
-			markdown, err = generateReleaseNotes(branch, startTag, head, changelogOpts.tag)
+			markdown, err = generateReleaseNotes(branch, startTag, head)
 		}
 	} else {
 		// A patch version, let’s just use the previous patch
@@ -163,7 +163,7 @@ func runChangelog() (err error) {
 			Major: tag.Major, Minor: tag.Minor, Patch: tag.Patch - 1,
 		}.String())
 
-		markdown, err = generateReleaseNotes(branch, start, head, changelogOpts.tag)
+		markdown, err = generateReleaseNotes(branch, start, head)
 	}
 	if err != nil {
 		return err
@@ -201,14 +201,14 @@ func runChangelog() (err error) {
 	return commitChanges(repo, branch, tag)
 }
 
-func generateReleaseNotes(branch, startRev, endRev, tag string) (string, error) {
+func generateReleaseNotes(branch, startRev, endRev string) (string, error) {
 	logrus.Info("Generating release notes")
 
 	notesOptions := options.New()
 	notesOptions.Branch = branch
 	notesOptions.StartRev = startRev
 	notesOptions.EndSHA = endRev
-	notesOptions.EndRev = tag
+	notesOptions.EndRev = changelogOpts.tag
 	notesOptions.GithubOrg = git.DefaultGithubOrg
 	notesOptions.GithubRepo = git.DefaultGithubRepo
 	notesOptions.GithubToken = changelogOpts.token
