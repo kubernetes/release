@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-
-# Copyright 2019 The Kubernetes Authors.
+# Copyright 2017 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -euo pipefail
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o xtrace
 
-REPO_ROOT=$(git rev-parse --show-toplevel)
-cd "${REPO_ROOT}"
-
-GO111MODULE=on go test -v -count=1 -cover -coverprofile coverage.out ./...
-go tool cover -html coverage.out -o coverage.html
+cd "$(git rev-parse --show-toplevel)"
+bazel run @io_k8s_repo_infra//hack:update-gofmt
+bazel run @io_k8s_repo_infra//hack:update-deps
