@@ -14,7 +14,7 @@ go_library(
     importpath = "k8s.io/release/cmd/krel/cmd",
     visibility = ["//visibility:public"],
     deps = [
-        "//pkg/command:go_default_library",
+        "//pkg/gcp/auth:go_default_library",
         "//pkg/gcp/build:go_default_library",
         "//pkg/git:go_default_library",
         "//pkg/log:go_default_library",

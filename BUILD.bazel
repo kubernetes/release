@@ -35,6 +35,7 @@ filegroup(
         "//cmd/release-notes:all-srcs",
         "//lib:all-srcs",
         "//pkg/command:all-srcs",
+        "//pkg/gcp/auth:all-srcs",
         "//pkg/gcp/build:all-srcs",
         "//pkg/git:all-srcs",
         "//pkg/kubepkg:all-srcs",

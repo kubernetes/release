@@ -26,7 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/command"
+	"k8s.io/release/pkg/gcp/auth"
 	"k8s.io/release/pkg/gcp/build"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
@@ -140,9 +140,7 @@ func runGcbmgr() error {
 		logrus.Fatal("Cannot specify both the 'stage' and 'release' flag. Please resubmit with only one of those flags selected.")
 	}
 
-	gcbSubs := map[string]string{}
-	var gcbSubsErr error
-	gcbSubs, gcbSubsErr = setGCBSubstitutions(gcbSubs)
+	gcbSubs, gcbSubsErr := setGCBSubstitutions()
 	if gcbSubs == nil || gcbSubsErr != nil {
 		return gcbSubsErr
 	}
@@ -221,10 +219,8 @@ func submitRelease() error {
 	return nil // build.RunSingleJob(buildOpts, jobName, uploaded, version, subs)
 }
 
-func setGCBSubstitutions(gcbSubs map[string]string) (map[string]string, error) {
-	if gcbSubs == nil {
-		return nil, errors.New("GCB substitutions map must be initialized (non-nil) prior to populating")
-	}
+func setGCBSubstitutions() (map[string]string, error) {
+	gcbSubs := map[string]string{}
 
 	releaseToolRepo := os.Getenv("RELEASE_TOOL_REPO")
 	if releaseToolRepo == "" {
@@ -239,27 +235,11 @@ func setGCBSubstitutions(gcbSubs map[string]string) (map[string]string, error) {
 	gcbSubs["RELEASE_TOOL_REPO"] = releaseToolRepo
 	gcbSubs["RELEASE_TOOL_BRANCH"] = releaseToolBranch
 
-	authListCmd := command.New(
-		"gcloud",
-		"auth",
-		"list",
-		"--filter=status:ACTIVE",
-		"--format=value(account)",
-		"--verbosity=debug",
-	)
-	authListStatus, authListErr := authListCmd.RunSilent()
-	if authListErr != nil {
-		return nil, errors.Wrapf(authListErr, "'gcloud auth list' was not successful")
-	}
-	if !authListStatus.Success() {
-		return nil, errors.Errorf("'gcloud auth list' was not successful: %s", authListStatus.Error())
+	gcpUser, gcpUserErr := auth.GetCurrentGCPUser()
+	if gcpUserErr != nil {
+		return gcbSubs, gcpUserErr
 	}
 
-	gcpUser := authListStatus.Output()
-	gcpUser = strings.TrimSuffix(gcpUser, "\n")
-	gcpUser = strings.ReplaceAll(gcpUser, "@", "-at-")
-	gcpUser = strings.ReplaceAll(gcpUser, ".", "-")
-	gcpUser = strings.ToLower(gcpUser)
 	gcbSubs["GCP_USER_TAG"] = gcpUser
 
 	// TODO: The naming for these env vars is clumsy/confusing, but we're bound by anago right now.
@@ -302,7 +282,7 @@ func setGCBSubstitutions(gcbSubs map[string]string) (map[string]string, error) {
 	if gcbmgrOpts.branch != "" {
 		gcbSubs["RELEASE_BRANCH"] = gcbmgrOpts.branch
 	} else {
-		return nil, errors.New("Release branch must be set to continue")
+		return gcbSubs, errors.New("Release branch must be set to continue")
 	}
 
 	// TODO: Ensure release.GetKubecrossVersion() isn't hardcoded.
