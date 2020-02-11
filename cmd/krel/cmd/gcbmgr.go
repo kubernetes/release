@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/gcp/build"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
@@ -50,8 +51,7 @@ const (
 	defaultReleaseToolRepo   = "https://github.com/kubernetes/release"
 	defaultReleaseToolBranch = "master"
 	defaultProject           = "kubernetes-release-test"
-	//nolint
-	defaultDiskSize = "300"
+	defaultDiskSize          = "300"
 
 	bucketPrefix = "kubernetes-release-"
 )
@@ -140,8 +140,10 @@ func runGcbmgr() error {
 		logrus.Fatal("Cannot specify both the 'stage' and 'release' flag. Please resubmit with only one of those flags selected.")
 	}
 
-	gcbSubs, gcbSubsErr := setGCBSubstitutions()
-	if gcbSubsErr != nil {
+	gcbSubs := map[string]string{}
+	var gcbSubsErr error
+	gcbSubs, gcbSubsErr = setGCBSubstitutions(gcbSubs)
+	if gcbSubs == nil || gcbSubsErr != nil {
 		return gcbSubsErr
 	}
 
@@ -182,6 +184,11 @@ func runGcbmgr() error {
 		return err
 	}
 
+	logrus.Info("Listing GCB substitutions prior to build submission...")
+	for k, v := range gcbSubs {
+		logrus.Infof("%s: %s", k, v)
+	}
+
 	switch {
 	case gcbmgrOpts.stage:
 		return submitStage(toolRoot, gcbSubs)
@@ -214,8 +221,10 @@ func submitRelease() error {
 	return nil // build.RunSingleJob(buildOpts, jobName, uploaded, version, subs)
 }
 
-func setGCBSubstitutions() (map[string]string, error) {
-	gcbSubs := make(map[string]string)
+func setGCBSubstitutions(gcbSubs map[string]string) (map[string]string, error) {
+	if gcbSubs == nil {
+		return nil, errors.New("GCB substitutions map must be initialized (non-nil) prior to populating")
+	}
 
 	releaseToolRepo := os.Getenv("RELEASE_TOOL_REPO")
 	if releaseToolRepo == "" {
@@ -230,24 +239,27 @@ func setGCBSubstitutions() (map[string]string, error) {
 	gcbSubs["RELEASE_TOOL_REPO"] = releaseToolRepo
 	gcbSubs["RELEASE_TOOL_BRANCH"] = releaseToolBranch
 
-	// TODO: Need to find out if command.Execute supports capturing the command output
-	gcpUser := "FAKEUSER"
-	//nolint
-	/*
-		gcpUser := command.Execute(
-			"gcloud",
-			"auth",
-			"list",
-			"--filter=status:ACTIVE",
-			`--format="value(account)"`,
-		)
-		if gcpUser != nil {
-			return nil, gcpUserErr
-		}
-	*/
+	authListCmd := command.New(
+		"gcloud",
+		"auth",
+		"list",
+		"--filter=status:ACTIVE",
+		"--format=value(account)",
+		"--verbosity=debug",
+	)
+	authListStatus, authListErr := authListCmd.RunSilent()
+	if authListErr != nil {
+		return nil, errors.Wrapf(authListErr, "'gcloud auth list' was not successful")
+	}
+	if !authListStatus.Success() {
+		return nil, errors.Errorf("'gcloud auth list' was not successful: %s", authListStatus.Error())
+	}
 
+	gcpUser := authListStatus.Output()
+	gcpUser = strings.TrimSuffix(gcpUser, "\n")
 	gcpUser = strings.ReplaceAll(gcpUser, "@", "-at-")
 	gcpUser = strings.ReplaceAll(gcpUser, ".", "-")
+	gcpUser = strings.ToLower(gcpUser)
 	gcbSubs["GCP_USER_TAG"] = gcpUser
 
 	// TODO: The naming for these env vars is clumsy/confusing, but we're bound by anago right now.
