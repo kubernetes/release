@@ -68,7 +68,6 @@ the golang based 'release-notes' tool:
 `,
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	PreRunE:       initLogging,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runChangelog()
 	},

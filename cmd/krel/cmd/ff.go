@@ -46,7 +46,6 @@ var ffCmd = &cobra.Command{
 	Example:       "krel ff --branch release-1.17 --ref HEAD --cleanup",
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	PreRunE:       initLogging,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runFf(ffOpts)
 	},
