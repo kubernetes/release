@@ -120,6 +120,7 @@ func runGcbmgr() error {
 	logrus.Infof("Build options: %v", *buildOpts)
 
 	buildOpts.NoSource = true
+	buildOpts.DiskSize = defaultDiskSize
 
 	if gcbmgrOpts.stage && gcbmgrOpts.release {
 		logrus.Fatal("Cannot specify both the 'stage' and 'release' flag. Please resubmit with only one of those flags selected.")
@@ -189,8 +190,12 @@ func submitStage(toolRoot string, substitutions map[string]string) error {
 	return build.RunSingleJob(buildOpts, jobName, uploaded, version, substitutions)
 }
 
+// TODO: Populate logic once we're happy with the flow for the submitStage() function.
 func submitRelease() error {
 	logrus.Infof("Submitting a release to GCB")
+
+	buildOpts.DiskSize = "100"
+
 	//nolint:gocritic
 	return nil // build.RunSingleJob(buildOpts, jobName, uploaded, version, subs)
 }

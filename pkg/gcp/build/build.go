@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -48,6 +49,7 @@ type Options struct {
 	Project        string
 	AllowDirty     bool
 	NoSource       bool
+	DiskSize       string
 	Variant        string
 	EnvPassthrough string
 }
@@ -163,6 +165,22 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 		} else {
 			args = append(args, ".")
 		}
+	}
+
+	if o.DiskSize != "" {
+		diskSizeInt, intErr := strconv.Atoi(o.DiskSize)
+		if intErr != nil {
+			return intErr
+		}
+
+		if diskSizeInt > 1000 {
+			return errors.New("Selected disk size must be no greater than 1000 GB")
+		} else if diskSizeInt <= 0 {
+			return errors.New("Selected disk size must be greater than 0 GB")
+		}
+
+		diskSizeArg := fmt.Sprintf("--disk-size=%s", o.DiskSize)
+		args = append(args, diskSizeArg)
 	}
 
 	cmd := exec.Command("gcloud", args...)
