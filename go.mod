@@ -3,6 +3,7 @@ module k8s.io/release
 go 1.13
 
 require (
+	github.com/GoogleCloudPlatform/testgrid v0.0.1
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/go-kit/kit v0.9.0
 	github.com/golangci/golangci-lint v1.23.6
