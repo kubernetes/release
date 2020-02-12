@@ -577,14 +577,33 @@ prepare_tree () {
   # Ensure a common name for label in case we're using the special beta indexes
   [[ "$label" =~ ^beta ]] && label_common="beta"
 
-  # Ensure all release types are tagged on a unique commit
-  # Instead of only creating a release commit when we tag a beta, we should do it unconditionally.
-  # This removes any ambiguity about when an empty commit is or isn't added.
+  # For release branches, we create an empty release commit to avoid potential
+  # ambiguous 'git describe' logic between the official release, 'x.y.z' and the
+  # next beta of that release branch, 'x.y.(z+1)-beta.0'.
   #
-  # ref: kubernetes/release#1020, kubernetes/release#1030
-  logecho "Creating an empty release commit for tag ${RELEASE_VERSION[$label]}"
-  logrun git commit --allow-empty -m "Release commit for Kubernetes ${RELEASE_VERSION[$label]}" \
-    || return 1
+  # We avoid doing this empty release commit on 'master', as:
+  #   - there is a potential for branch conflicts as upstream/master moves ahead
+  #   - we're checking out a git ref, as opposed to a branch, which means the tag
+  #     will detached from 'upstream/master'
+  #
+  # A side-effect of the tag being detached from 'master' is the primary build job
+  # (ci-kubernetes-build) will build as the previous alpha, instead of the assumed
+  # tag. This causes the next anago run against 'master' to fail due to an old
+  # build version.
+  #
+  # Example: 'v1.18.0-alpha.2.663+df908c3aad70be' 
+  #          (should instead be 'v1.18.0-alpha.3.<commits-since-tag>+<commit-ish>') 
+  #
+  # ref:
+  #   - https://github.com/kubernetes/release/issues/1020
+  #   - https://github.com/kubernetes/release/pull/1030
+  #   - https://github.com/kubernetes/release/issues/1080
+  #   - https://github.com/kubernetes/kubernetes/pull/88074
+  if [[ "$branch" =~ ^release- ]]; then
+    logecho "Creating an empty release commit for tag ${RELEASE_VERSION[$label]}"
+    logrun git commit --allow-empty -m "Release commit for Kubernetes ${RELEASE_VERSION[$label]}" \
+      || return 1
+  fi
 
   # Tagging
   commit_string="Kubernetes $label_common release ${RELEASE_VERSION[$label]}"
