@@ -44,7 +44,13 @@ import (
 var changelogCmd = &cobra.Command{
 	Use:   "changelog",
 	Short: "changelog maintains the lifecycle of CHANGELOG-x.y.{md,html} files",
-	Long: `krel changelog
+	Long: fmt.Sprintf(`krel changelog
+
+To let this tool work, please point '--repo' to a local copy of the target k/k
+repository. This local checkout will be modified during the run of 'krel
+changelog' and should contain all changes from the remote location. Beside this,
+a valid %s=<TOKEN> environment variable has to be exported to let the generation
+of the release notes work.
 
 The 'changelog' subcommand of 'krel' does the following things by utilizing
 the golang based 'release-notes' tool:
@@ -65,7 +71,7 @@ the golang based 'release-notes' tool:
    corresponding release-branch of kubernetes/kubernetes. The release branch
    will be pruned from all other CHANGELOG-*.md files which do not belong to
    this release branch.
-`,
+`, options.GitHubToken),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -121,7 +127,9 @@ func runChangelog() (err error) {
 	logrus.Infof("Using local repository path %s", rootOpts.repoPath)
 	repo, err := git.OpenRepo(rootOpts.repoPath)
 	if err != nil {
-		return err
+		return errors.Wrapf(err,
+			"unable to open expected k/k repository %q", rootOpts.repoPath,
+		)
 	}
 
 	head, err := repo.RevParse("HEAD")

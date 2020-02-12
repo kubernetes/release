@@ -61,7 +61,7 @@ const (
 	RevisionDiscoveryModeMergeBaseToLatest = "mergebase-to-latest"
 	RevisionDiscoveryModePatchToPatch      = "patch-to-patch"
 	RevisionDiscoveryModeMinorToMinor      = "minor-to-minor"
-	TokenKey                               = "GITHUB_TOKEN"
+	GitHubToken                            = "GITHUB_TOKEN"
 )
 
 // New creates a new Options instance with the default values
@@ -95,13 +95,13 @@ func (o *Options) ValidateAndFinish() (err error) {
 	}
 
 	// The GitHub Token is required if replay is not specified
-	token, ok := os.LookupEnv(TokenKey)
+	token, ok := os.LookupEnv(GitHubToken)
 	if ok {
 		o.githubToken = token
 	} else if o.ReplayDir == "" {
 		return errors.Errorf(
 			"neither environment variable `%s` nor `replay` option is set",
-			TokenKey,
+			GitHubToken,
 		)
 	}
 

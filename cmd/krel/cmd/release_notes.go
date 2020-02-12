@@ -57,7 +57,7 @@ The 'release-notes' subcommand of krel has been developed to:
 
 To use the tool, please set the %v environment variable which needs write
 permissions to your fork of k/sig-release and k-sigs/release-notes.`,
-		options.TokenKey),
+		options.GitHubToken),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
