@@ -112,7 +112,8 @@ common::timestamp begin
 ###############################################################################
 # MAIN
 ###############################################################################
-RELEASE_BUCKET=${FLAGS_bucket:-"kubernetes-release-dev"}
+RELEASE_BUCKET="${FLAGS_bucket:-"$CI_BUCKET"}"
+
 # Compatibility with incoming global args
 [[ $KUBE_GCS_UPDATE_LATEST == "n" ]] && FLAGS_noupdatelatest=1
 

@@ -14,6 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+###############################################################################
+# CONSTANTS
+###############################################################################
+
+readonly DEFAULT_PROJECT="kubernetes-release-test"
+readonly PROD_PROJECT="kubernetes-release"
+readonly TEST_PROJECT="${TEST_PROJECT:-${PROJECT_ID:-$DEFAULT_PROJECT}}"
+
+readonly DEFAULT_BUCKET="kubernetes-release-gcb"
+readonly PROD_BUCKET="kubernetes-release"
+readonly TEST_BUCKET="kubernetes-release-gcb"
+readonly CI_BUCKET="kubernetes-release-dev"
+
+###############################################################################
+# FUNCTIONS
+###############################################################################
+
 ##############################################################################
 # Pulls Jenkins server job cache from GS and preprocesses it into a
 # dictionary stored in $job_path associating full job and build numbers
@@ -936,7 +953,8 @@ release::gcs::publish () {
   local publish_file_dst="gs://$bucket/$publish_file"
   local contents
   local public_link="https://storage.googleapis.com/$bucket/$publish_file"
-  if [[ "$bucket" == "kubernetes-release" ]]; then
+
+  if [[ "$bucket" == "$PROD_BUCKET" ]]; then
     public_link="https://dl.k8s.io/$publish_file"
   fi
 
@@ -1248,20 +1266,12 @@ release::send_announcement () {
 #                            contains k8s.gcr.io so we can check access in mock
 #                            mode before an actual release occurs
 release::set_globals () {
-  # Define the placeholder/"role" user for GCB
-  local gcb_user="gcb@google.com"
-
   logecho -n "Setting global variables: "
 
   # Default disk requirements per version - Modified in found_staged_location()
   RELEASE_GB="75"
 
-  if ((FLAGS_gcb)); then
-    # a placeholder that satisfies @google.com conditional below
-    GCP_USER="$gcb_user"
-  else
-    # Nothing should work without this.  The entire release workflow depends
-    # on it whether running from the desktop or GCB
+  if ! ((FLAGS_gcb)); then
     GCP_USER=$($GCLOUD auth list --filter=status:ACTIVE \
                                  --format="value(account)" 2>/dev/null)
     if [[ -z "$GCP_USER" ]]; then
@@ -1269,12 +1279,9 @@ release::set_globals () {
       logecho "Unable to set a valid GCP credential!"
       return 1
     fi
-  fi
 
-  RELEASE_BUCKET="kubernetes-release"
-  if [[ $GCP_USER =~ "@google.com" ]]; then
-    WRITE_RELEASE_BUCKETS=("$RELEASE_BUCKET")
-    READ_RELEASE_BUCKETS=("$RELEASE_BUCKET")
+    # Lowercase GCP user
+    GCP_USER="${GCP_USER,,}"
   fi
 
   if ((FLAGS_stage)); then
@@ -1283,50 +1290,46 @@ release::set_globals () {
     BUCKET_TYPE="release"
   fi
 
-  # The "production" GCR path is now multi-region alias
   GCRIO_PATH_PROD="k8s.gcr.io"
   GCRIO_PATH_PROD_PUSH="gcr.io/google-containers"
   # The "test" GCR path
-  GCRIO_PATH_TEST="gcr.io/kubernetes-release-test"
+  GCRIO_PATH_TEST="gcr.io/$TEST_PROJECT"
+
+  GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_TEST}"
+  ALL_CONTAINER_REGISTRIES=("$GCRIO_PATH")
 
   if ((FLAGS_nomock)); then
+    RELEASE_BUCKET="$PROD_BUCKET"
+
     GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_PROD}"
-    ALL_CONTAINER_REGISTRIES=("$GCRIO_PATH")
+  elif ((FLAGS_gcb)); then
+    RELEASE_BUCKET="$TEST_BUCKET"
+
+    # This is passed to logrun() where appropriate when we want to mock
+    # specific activities like pushes
+    LOGRUN_MOCK="-m"
   else
     # GCS buckets cannot contain @ or "google", so for those users, just use
-    # the "$USER" portion of $GCP_USER/$gcb_user
+    # the "$USER" portion of $GCP_USER
     RELEASE_BUCKET_USER="$RELEASE_BUCKET-${GCP_USER%%@google.com}"
-    RELEASE_BUCKET_GCB="$RELEASE_BUCKET-${gcb_user%%@google.com}"
     RELEASE_BUCKET_USER="${RELEASE_BUCKET_USER/@/-at-}"
-    RELEASE_BUCKET_GCB="${RELEASE_BUCKET_GCB/@/-at-}"
+
     # GCP also doesn't like anything even remotely looking like a domain name
     # in the bucket name so convert . to -
     RELEASE_BUCKET_USER="${RELEASE_BUCKET_USER/\./-}"
-    RELEASE_BUCKET_GCB="${RELEASE_BUCKET_GCB/\./-}"
     RELEASE_BUCKET="$RELEASE_BUCKET_USER"
 
-    # All the RELEASE_BUCKETS we could possibly write to
-    WRITE_RELEASE_BUCKETS=("$RELEASE_BUCKET_USER")
-    # All the RELEASE_BUCKETS we could possibly read from (for staging)
-    READ_RELEASE_BUCKETS+=("$RELEASE_BUCKET_USER")
-    # If a regular user is running mocks, also look in the GCB mock bucket for
-    # releases
-    ((FLAGS_gcb)) || READ_RELEASE_BUCKETS+=("$RELEASE_BUCKET_GCB")
-
-    # Set GCR values
-    GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_TEST}"
-    ALL_CONTAINER_REGISTRIES=("$GCRIO_PATH")
-    # During GCB runs also check access to $GCRIO_PATH_PROD
-    # This is not needed for command-line/desktop as --nomock is no
-    # longer valid
-    if ((FLAGS_gcb)) && [[ $GCP_USER =~ "@google.com" ]]; then
-      ALL_CONTAINER_REGISTRIES+=("$GCRIO_PATH_PROD")
-    fi
+    READ_RELEASE_BUCKETS=("$TEST_BUCKET")
 
     # This is passed to logrun() where appropriate when we want to mock
     # specific activities like pushes
     LOGRUN_MOCK="-m"
   fi
+
+  WRITE_RELEASE_BUCKETS=("$RELEASE_BUCKET")
+  READ_RELEASE_BUCKETS+=("$RELEASE_BUCKET")
+
+  ALL_CONTAINER_REGISTRIES=("$GCRIO_PATH")
 
   # TODO:
   # These KUBE_ globals extend beyond the scope of the new release refactored
