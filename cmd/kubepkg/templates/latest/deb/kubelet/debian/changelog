@@ -1,6 +1,6 @@
 kubelet ({{ .Version }}-{{ .Revision }}) {{ .Channel }}; urgency=medium
 
-  * https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md
+  * https://git.k8s.io/kubernetes/CHANGELOG/README.md
 
  -- Kubernetes Authors <kubernetes-dev@googlegroups.com>  {{ date }}
 
