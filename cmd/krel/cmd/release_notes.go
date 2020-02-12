@@ -95,6 +95,7 @@ func runReleaseNotes() (err error) {
 		if err != nil {
 			return errors.Wrapf(err, "unable to find latest minor tag")
 		}
+		releaseNotesOpts.tag = tag
 	} else {
 		tag = releaseNotesOpts.tag
 	}
