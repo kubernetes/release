@@ -1,0 +1,5 @@
+run:
+  skip-dirs:
+    - cmd
+    - debian
+    - pkg
