@@ -27,4 +27,4 @@ docker build -t "${IMG_NAME}" "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 docker run --rm -v "${PWD}/bin:/src/bin" "${IMG_NAME}" $@
 
 gsutil -m cp -nrc bin "${DEB_RELEASE_BUCKET}/${BUILD_TAG}"
-gsutil -m cp <(printf "${BUILD_TAG}") "${DEB_RELEASE_BUCKET}/latest"
+printf "%s" "${BUILD_TAG}" | gsutil cp - "${DEB_RELEASE_BUCKET}/latest"
