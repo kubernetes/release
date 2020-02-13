@@ -42,8 +42,13 @@ type command struct {
 // A generic command exit status
 type Status struct {
 	exitCode syscall.WaitStatus
-	stdOut   string
-	stdErr   string
+	*Stream
+}
+
+// Stream combines standard output and error
+type Stream struct {
+	stdOut string
+	stdErr string
 }
 
 // New creates a new command from the provided arguments.
@@ -90,17 +95,24 @@ func (c *Command) Run() (res *Status, err error) {
 	return c.run(true)
 }
 
-// Run starts the command and waits for it to finish. It returns an error if
-// the command execution was not successful.
-func (c *Command) RunSuccess() (err error) {
+// RunSuccessOutput starts the command and waits for it to finish. It returns
+// an error if the command execution was not successful, otherwise its output.
+func (c *Command) RunSuccessOutput() (output *Stream, err error) {
 	res, err := c.run(true)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if !res.Success() {
-		return errors.Errorf("command %v did not succeed: %v", c.String(), res.Error())
+		return nil, errors.Errorf("command %v did not succeed: %v", c.String(), res.Error())
 	}
-	return nil
+	return res.Stream, nil
+}
+
+// RunSuccess starts the command and waits for it to finish. It returns an
+// error if the command execution was not successful.
+func (c *Command) RunSuccess() error {
+	_, err := c.RunSuccessOutput() // nolint: errcheck
+	return err
 }
 
 // String returns a string representation of the full command
@@ -127,18 +139,27 @@ func (c *Command) RunSilent() (res *Status, err error) {
 	return c.run(false)
 }
 
-// Run starts the command and waits for it to finish. It returns an error if
-// the command execution was not successful.
-// This method does not print the output of the command during its execution.
-func (c *Command) RunSilentSuccess() (err error) {
+// RunSilentSuccessOutput starts the command and waits for it to finish. It
+// returns an error if the command execution was not successful, otherwise its
+// output. This method does not print the output of the command during its
+// execution.
+func (c *Command) RunSilentSuccessOutput() (output *Stream, err error) {
 	res, err := c.run(false)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if !res.Success() {
-		return errors.Errorf("command %v did not succeed: %v", c.String(), res.Error())
+		return nil, errors.Errorf("command %v did not succeed: %v", c.String(), res.Error())
 	}
-	return nil
+	return res.Stream, nil
+}
+
+// RunSilentSuccess starts the command and waits for it to finish. It returns
+// an error if the command execution was not successful. This method does not
+// print the output of the command during its execution.
+func (c *Command) RunSilentSuccess() error {
+	_, err := c.RunSilentSuccessOutput() // nolint: errcheck
+	return err
 }
 
 // run is the internal run method
@@ -147,7 +168,7 @@ func (c *Command) run(printOutput bool) (res *Status, err error) {
 	var runErr error
 	stdOutBuffer := &bytes.Buffer{}
 	stdErrBuffer := &bytes.Buffer{}
-	status := &Status{}
+	status := &Status{Stream: &Stream{}}
 
 	type done struct {
 		stdout error
@@ -236,12 +257,12 @@ func (s *Status) ExitCode() int {
 }
 
 // Output returns stdout of the command status
-func (s *Status) Output() string {
+func (s *Stream) Output() string {
 	return s.stdOut
 }
 
 // Error returns the stderr of the command status
-func (s *Status) Error() string {
+func (s *Stream) Error() string {
 	return s.stdErr
 }
 

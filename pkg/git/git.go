@@ -505,17 +505,14 @@ func (r *Repo) DescribeTag(rev string) (string, error) {
 	// go git seems to have no implementation for `git describe`
 	// which means that we fallback to a shell command for sake of
 	// simplicity
-	status, err := command.NewWithWorkDir(
+	result, err := command.NewWithWorkDir(
 		r.Dir(), gitExecutable, "describe", "--abbrev=0", "--tags", rev,
-	).RunSilent()
+	).RunSilentSuccessOutput()
 	if err != nil {
 		return "", err
 	}
-	if !status.Success() {
-		return "", errors.Errorf("git describe command failed: %s", status.Error())
-	}
 
-	return strings.TrimSpace(status.Output()), nil
+	return strings.TrimSpace(result.Output()), nil
 }
 
 // Merge does a git merge into the current branch from the provided one
@@ -645,12 +642,9 @@ func (r *Repo) TagsForBranch(branch string) ([]string, error) {
 
 	status, err := command.NewWithWorkDir(
 		r.Dir(), gitExecutable, "tag", "--sort=-creatordate", "--merged",
-	).RunSilent()
+	).RunSilentSuccessOutput()
 	if err != nil {
 		return nil, err
-	}
-	if !status.Success() {
-		return nil, errors.Errorf("git tag command failed: %s", status.Error())
 	}
 
 	return strings.Fields(status.Output()), nil

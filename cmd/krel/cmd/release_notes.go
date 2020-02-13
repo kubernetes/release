@@ -131,16 +131,10 @@ func tryToFindLatestMinorTag() (string, error) {
 	).
 		Pipe("grep", "-Eo", "v[0-9].[0-9]+.0-.*.[0-9]$").
 		Pipe("tail", "-1").
-		RunSilent()
+		RunSilentSuccessOutput()
 
 	if err != nil {
-		return "", errors.Wrapf(err, "git ls-remote command failed")
-	}
-
-	if !status.Success() {
-		return "", errors.Errorf(
-			"git ls-remote command not successful: %v", status.Error(),
-		)
+		return "", err
 	}
 
 	return strings.TrimSpace(status.Output()), nil
