@@ -167,3 +167,27 @@ func TestSuccessRunSilentSuccess(t *testing.T) {
 func TestFailureRunSuccessSilent(t *testing.T) {
 	require.NotNil(t, New("cat", "/not/available").RunSilentSuccess())
 }
+
+func TestSuccessRunSuccessOutput(t *testing.T) {
+	res, err := New("echo", "-n", "hi").RunSuccessOutput()
+	require.Nil(t, err)
+	require.Equal(t, "hi", res.Output())
+}
+
+func TestFailureRunSuccessOutput(t *testing.T) {
+	res, err := New("cat", "/not/available").RunSuccessOutput()
+	require.NotNil(t, err)
+	require.Nil(t, res)
+}
+
+func TestSuccessRunSilentSuccessOutput(t *testing.T) {
+	res, err := New("echo", "-n", "hi").RunSilentSuccessOutput()
+	require.Nil(t, err)
+	require.Equal(t, "hi", res.Output())
+}
+
+func TestFailureRunSilentSuccessOutput(t *testing.T) {
+	res, err := New("cat", "/not/available").RunSilentSuccessOutput()
+	require.NotNil(t, err)
+	require.Nil(t, res)
+}

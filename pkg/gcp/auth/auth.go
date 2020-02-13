@@ -25,20 +25,16 @@ import (
 )
 
 func GetCurrentGCPUser() (string, error) {
-	authListCmd := command.New(
+	authListStatus, authListErr := command.New(
 		"gcloud",
 		"auth",
 		"list",
 		"--filter=status:ACTIVE",
 		"--format=value(account)",
 		"--verbosity=debug",
-	)
-	authListStatus, authListErr := authListCmd.RunSilent()
+	).RunSilentSuccessOutput()
 	if authListErr != nil {
-		return "", errors.Wrapf(authListErr, "'gcloud auth list' was not successful")
-	}
-	if !authListStatus.Success() {
-		return "", errors.Errorf("'gcloud auth list' was not successful: %s", authListStatus.Error())
+		return "", authListErr
 	}
 
 	gcpUser := authListStatus.Output()
