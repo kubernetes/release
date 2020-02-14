@@ -872,13 +872,13 @@ push_git_objects () {
 # generate the announcement text to be mailed and published
 branch_announcement_text () {
   cat <<EOF
-Kubernetes team,
+Kubernetes Community,
 <P>
 Kubernetes' $RELEASE_BRANCH branch has been created.
 <P>
 The release owner will be sending updates on how to interact with this branch shortly.  The <A HREF=https://git.k8s.io/community/contributors/devel/sig-release/cherry-picks.md>Cherrypick Guide</A> has some general guidance on how things will proceed.
 <P>
-Announced by <A HREF=https://github.com/kubernetes/release>$PROG</A>, the Kubernetes Release Tool
+Announced by your <A HREF=https://git.k8s.io/sig-release/release-managers.md>Kubernetes Release Managers</A>.
 EOF
 }
 
@@ -886,19 +886,19 @@ EOF
 # generate the announcement text to be mailed and published
 release_announcement_text () {
   cat <<EOF
-Kubernetes team,
+Kubernetes Community,
 <P>
 Kubernetes $RELEASE_VERSION_PRIME has been built and pushed.
 <P>
-The release notes have been updated in <A HREF=https://github.com/kubernetes/kubernetes/blob/master/$CHANGELOG_FILEPATH/#${RELEASE_VERSION_PRIME//\./}>$CHANGELOG_FILEPATH</A> with a pointer to it on <A HREF=https://github.com/kubernetes/kubernetes/releases/tag/$RELEASE_VERSION_PRIME>github</A>:
+The release notes have been updated in <A HREF=https://git.k8s.io/kubernetes/$CHANGELOG_FILEPATH/#${RELEASE_VERSION_PRIME//\./}>$CHANGELOG_FILE</A>, with a pointer to them on <A HREF=https://github.com/kubernetes/kubernetes/releases/tag/$RELEASE_VERSION_PRIME>github</A>:
 <P>
 <HR>
 $(cat $RELEASE_NOTES_HTML)
 <HR>
 <P><BR>
-Leads, the <A HREF=https://github.com/kubernetes/kubernetes/blob/master/$CHANGELOG_FILEPATH/#${RELEASE_VERSION_PRIME//\./}>$CHANGELOG_FILEPATH</A> has been bootstrapped with $RELEASE_VERSION_PRIME release notes and you may edit now as needed.
-<P><BR>
-Published by <A HREF=https://github.com/kubernetes/release>$PROG</A>, the Kubernetes Release Tool
+Contributors, the <A HREF=https://git.k8s.io/kubernetes/$CHANGELOG_FILEPATH/#${RELEASE_VERSION_PRIME//\./}>$CHANGELOG_FILE</A> has been bootstrapped with $RELEASE_VERSION_PRIME release notes and you may edit now as needed.
+<P><BR><BR>
+Published by your <A HREF=https://git.k8s.io/sig-release/release-managers.md>Kubernetes Release Managers</A>.
 EOF
 }
 
@@ -917,9 +917,9 @@ announce () {
   logecho "Creating k8s ${RELEASE_VERSION_PRIME} announcement in ${WORKDIR} ..."
 
   if [[ "$arg" == "--branch" ]]; then
-    echo "k8s ${RELEASE_BRANCH} branch has been created" > "$subject_file"
+    echo "Kubernetes ${RELEASE_BRANCH} branch has been created" > "$subject_file"
     branch_announcement_text > "$announcement_file"
-    logecho "k8s ${RELEASE_BRANCH} branch creation announcement created."
+    logecho "Kubernetes ${RELEASE_BRANCH} branch creation announcement created."
 
     # When we create a new branch, we notify the publishing-bot folks by
     # creating an issue for them
@@ -930,9 +930,9 @@ announce () {
       logecho "${OK}: publishing-bot update issue created: ${pubotIssue}"
     fi
   else
-    echo "k8s ${RELEASE_VERSION_PRIME} is live!" > "$subject_file"
+    echo "Kubernetes ${RELEASE_VERSION_PRIME} is live!" > "$subject_file"
     release_announcement_text > "$announcement_file"
-    logecho "k8s ${RELEASE_VERSION_PRIME} release announcement created."
+    logecho "Kubernetes ${RELEASE_VERSION_PRIME} release announcement created."
   fi
 
   # Only send from desktop
