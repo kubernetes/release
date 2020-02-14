@@ -56,7 +56,7 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&buildOpts.ConfigDir, "config-dir", "", "Configuration directory")
+	rootCmd.PersistentFlags().StringVar(&buildOpts.ConfigDir, "config-dir", ".", "Configuration directory")
 	rootCmd.PersistentFlags().StringVar(&buildOpts.BuildDir, "build-dir", "", "If provided, this directory will be uploaded as the source for the Google Cloud Build run.")
 	rootCmd.PersistentFlags().StringVar(&buildOpts.CloudbuildFile, "gcb-config", build.DefaultCloudbuildFile, "If provided, this will be used as the name of the Google Cloud Build config file.")
 	rootCmd.PersistentFlags().StringVar(&buildOpts.LogDir, "log-dir", "", "If provided, build logs will be sent to files in this directory instead of to stdout/stderr.")

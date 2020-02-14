@@ -23,6 +23,6 @@ import (
 )
 
 func TestRootCommand(t *testing.T) {
-	err := rootCmd.Execute()
+	err := rootCmd.Usage()
 	require.Nil(t, err)
 }
