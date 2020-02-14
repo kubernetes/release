@@ -314,14 +314,24 @@ func setGCBSubstitutions() (map[string]string, error) {
 	buildVersion = fmt.Sprintf("--buildversion=%s", buildVersion)
 	gcbSubs["BUILDVERSION"] = buildVersion
 
-	if gcbmgrOpts.branch != "" {
-		gcbSubs["RELEASE_BRANCH"] = gcbmgrOpts.branch
+	branch := gcbmgrOpts.branch
+
+	if branch != "" {
+		gcbSubs["RELEASE_BRANCH"] = branch
 	} else {
 		return gcbSubs, errors.New("Release branch must be set to continue")
 	}
 
-	// TODO: Ensure release.GetKubecrossVersion() isn't hardcoded.
-	gcbSubs["KUBE_CROSS_VERSION"] = release.GetKubecrossVersion()
+	kubecrossBranches := []string{
+		branch,
+		"master",
+	}
+
+	kubecrossVersion, kubecrossVersionErr := release.GetKubecrossVersion(kubecrossBranches...)
+	if kubecrossVersionErr != nil {
+		return gcbSubs, kubecrossVersionErr
+	}
+	gcbSubs["KUBE_CROSS_VERSION"] = kubecrossVersion
 
 	return gcbSubs, nil
 }
