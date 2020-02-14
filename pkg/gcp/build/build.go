@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -38,6 +39,8 @@ import (
 const (
 	gcsSourceDir = "/source"
 	gcsLogsDir   = "/logs"
+
+	DefaultCloudbuildFile = "cloudbuild.yaml"
 )
 
 // TODO: Pull some of these options in cmd/gcbuilder, so they don't have to be public.
@@ -54,6 +57,49 @@ type Options struct {
 	DiskSize       string
 	Variant        string
 	EnvPassthrough string
+}
+
+func PrepareBuilds(o *Options) error {
+	if o.ConfigDir == "" {
+		return errors.New("expected a config directory to be provided")
+	}
+
+	if bazelWorkspace := os.Getenv("BUILD_WORKSPACE_DIRECTORY"); bazelWorkspace != "" {
+		if err := os.Chdir(bazelWorkspace); err != nil {
+			return errors.Wrapf(err, "failed to chdir to bazel workspace (%s)", bazelWorkspace)
+		}
+	}
+
+	if o.BuildDir == "" {
+		o.BuildDir = o.ConfigDir
+	}
+
+	logrus.Infof("Build directory: %s\n", o.BuildDir)
+
+	// Canonicalize the config directory to be an absolute path.
+	// As we're about to cd into the build directory, we need a consistent way to reference the config files
+	// when the config directory is not the same as the build directory.
+	absConfigDir, absErr := filepath.Abs(o.ConfigDir)
+	if absErr != nil {
+		return errors.Wrapf(absErr, "could not resolve absolute path for config directory")
+	}
+
+	o.ConfigDir = absConfigDir
+	o.CloudbuildFile = path.Join(o.ConfigDir, o.CloudbuildFile)
+
+	configDirErr := o.ValidateConfigDir()
+	if configDirErr != nil {
+		return errors.Wrapf(configDirErr, "could not validate config directory")
+	}
+
+	logrus.Infof("Config directory: %s\n", o.ConfigDir)
+
+	logrus.Infof("cd-ing to build directory: %s\n", o.BuildDir)
+	if err := os.Chdir(o.BuildDir); err != nil {
+		return errors.Wrapf(err, "failed to chdir to build directory (%s)", o.BuildDir)
+	}
+
+	return nil
 }
 
 func getVersion() (string, error) {
