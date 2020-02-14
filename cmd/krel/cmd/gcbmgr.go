@@ -131,6 +131,12 @@ func init() {
 		false,
 		"If specified, GCB will run synchronously, tailing its' logs to stdout",
 	)
+	gcbmgrCmd.PersistentFlags().StringVar(
+		&buildOpts.CloudbuildFile,
+		"gcb-config",
+		build.DefaultCloudbuildFile,
+		"If provided, this will be used as the name of the Google Cloud Build config file.",
+	)
 
 	rootCmd.AddCommand(gcbmgrCmd)
 }
@@ -215,43 +221,30 @@ func runGcbmgr() error {
 		logrus.Infof("%s: %s", k, v)
 	}
 
+	var jobType string
 	switch {
+	case gcbmgrOpts.stage && gcbmgrOpts.release:
+		return errors.New("The '--stage' and '--release' flags cannot be used together")
 	case gcbmgrOpts.stage:
-		return submitStage(toolRoot, gcbSubs)
+		jobType = "stage"
 	case gcbmgrOpts.release:
-		return submitRelease(toolRoot, gcbSubs)
+		jobType = "release"
+		buildOpts.DiskSize = "100"
 	default:
 		return listJobs()
 	}
-}
 
-// TODO: We may consider pushing stage and release into the runGcbmgr() function
-//       Seems to be a bit of duplication without a lot of benefit.
-func submitStage(toolRoot string, substitutions map[string]string) error {
-	logrus.Infof("Submitting a stage to GCB")
-
-	// TODO: Fail if the file doesn't exist
-	buildOpts.CloudbuildFile = filepath.Join(toolRoot, "gcb/stage/cloudbuild.yaml")
+	buildOpts.ConfigDir = filepath.Join(toolRoot, "gcb", jobType)
+	prepareBuildErr := build.PrepareBuilds(buildOpts)
+	if prepareBuildErr != nil {
+		return prepareBuildErr
+	}
 
 	// TODO: Need actual values
 	var jobName, uploaded string
 	version := "FAKEVERSION"
 
-	return build.RunSingleJob(buildOpts, jobName, uploaded, version, substitutions)
-}
-
-func submitRelease(toolRoot string, substitutions map[string]string) error {
-	logrus.Infof("Submitting a release to GCB")
-
-	// TODO: Fail if the file doesn't exist
-	buildOpts.CloudbuildFile = filepath.Join(toolRoot, "gcb/stage/cloudbuild.yaml")
-	buildOpts.DiskSize = "100"
-
-	// TODO: Need actual values
-	var jobName, uploaded string
-	version := "FAKEVERSION"
-
-	return build.RunSingleJob(buildOpts, jobName, uploaded, version, substitutions)
+	return build.RunSingleJob(buildOpts, jobName, uploaded, version, gcbSubs)
 }
 
 func setGCBSubstitutions() (map[string]string, error) {
