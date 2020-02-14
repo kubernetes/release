@@ -401,7 +401,7 @@ check_prerequisites () {
 }
 
 ###############################################################################
-# Update $CHANGELOG_FILE on master
+# Update $CHANGELOG_FILEPATH on master
 PROGSTEP[generate_release_notes]="GENERATE RELEASE NOTES"
 generate_release_notes () {
   local release_tars=$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/release-tars
@@ -565,9 +565,9 @@ prepare_tree () {
   # more simply readable to a maintainer?
   if [[ "$PARENT_BRANCH" == "master" && "$branch" != "master" ]]; then
     logecho -n "Remove any previous CHANGELOG-*.md files: "
-    logrun -s git rm -f CHANGELOG-*.md || return 1
-    logecho -n "Copy master $CHANGELOG_FILE to $branch branch: "
-    logrun -s git checkout master -- $CHANGELOG_FILE || return 1
+    logrun -s git rm -f "$CHANGELOG_DIR"/CHANGELOG-*.md || return 1
+    logecho -n "Copy master $CHANGELOG_FILEPATH to $branch branch: "
+    logrun -s git checkout master -- $CHANGELOG_FILEPATH || return 1
     logecho -n "Committing deleted CHANGELOG-*.md files: "
     logrun -s git commit -am "Delete extraneous CHANGELOG-*.md files on branch." || return 1
   fi
@@ -864,7 +864,7 @@ push_git_objects () {
   fi
 
   # For files created on master with new branches and
-  # for $CHANGELOG_FILE, update the master
+  # for $CHANGELOG_FILEPATH, update the master
   gitlib::push_master
 }
 
@@ -890,13 +890,13 @@ Kubernetes team,
 <P>
 Kubernetes $RELEASE_VERSION_PRIME has been built and pushed.
 <P>
-The release notes have been updated in <A HREF=https://github.com/kubernetes/kubernetes/blob/master/$CHANGELOG_FILE/#${RELEASE_VERSION_PRIME//\./}>$CHANGELOG_FILE</A> with a pointer to it on <A HREF=https://github.com/kubernetes/kubernetes/releases/tag/$RELEASE_VERSION_PRIME>github</A>:
+The release notes have been updated in <A HREF=https://github.com/kubernetes/kubernetes/blob/master/$CHANGELOG_FILEPATH/#${RELEASE_VERSION_PRIME//\./}>$CHANGELOG_FILEPATH</A> with a pointer to it on <A HREF=https://github.com/kubernetes/kubernetes/releases/tag/$RELEASE_VERSION_PRIME>github</A>:
 <P>
 <HR>
 $(cat $RELEASE_NOTES_HTML)
 <HR>
 <P><BR>
-Leads, the <A HREF=https://github.com/kubernetes/kubernetes/blob/master/$CHANGELOG_FILE/#${RELEASE_VERSION_PRIME//\./}>$CHANGELOG_FILE</A> has been bootstrapped with $RELEASE_VERSION_PRIME release notes and you may edit now as needed.
+Leads, the <A HREF=https://github.com/kubernetes/kubernetes/blob/master/$CHANGELOG_FILEPATH/#${RELEASE_VERSION_PRIME//\./}>$CHANGELOG_FILEPATH</A> has been bootstrapped with $RELEASE_VERSION_PRIME release notes and you may edit now as needed.
 <P><BR>
 Published by <A HREF=https://github.com/kubernetes/release>$PROG</A>, the Kubernetes Release Tool
 EOF
@@ -1039,7 +1039,7 @@ update_github_release () {
 
   # post release data
   logecho "$release_verb the $RELEASE_VERSION_PRIME release on github..."
-  local changelog_url="$K8S_GITHUB_URL/blob/master/$CHANGELOG_FILE"
+  local changelog_url="$K8S_GITHUB_URL/blob/master/$CHANGELOG_FILEPATH"
   query_tmpl='{
     "tag_name" : $tag,
     "target_commitish": $target,
@@ -1056,9 +1056,9 @@ SHA512 for `kubernetes.tar.gz`: `%s`
 Additional binary downloads are linked in the [%s](%s).'
   body="$(
     printf "$body_fmt" \
-      "$CHANGELOG_FILE" "${changelog_url}#${RELEASE_VERSION_PRIME//\./}" \
+      "$CHANGELOG_FILEPATH" "${changelog_url}#${RELEASE_VERSION_PRIME//\./}" \
       "$sha256_hash" "$sha512_hash" \
-      "$CHANGELOG_FILE" "${changelog_url}#downloads-for-${RELEASE_VERSION_PRIME//\./}"
+      "$CHANGELOG_FILEPATH" "${changelog_url}#downloads-for-${RELEASE_VERSION_PRIME//\./}"
   )"
   query_body="$( jq \
     --arg tag "$RELEASE_VERSION_PRIME" \
@@ -1583,7 +1583,8 @@ else
 fi
 
 if [[ $RELEASE_VERSION_PRIME =~ ${VER_REGEX[release]} ]]; then
-  CHANGELOG_FILE="CHANGELOG/CHANGELOG-${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.md"
+  CHANGELOG_FILE="CHANGELOG-${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.md"
+  CHANGELOG_FILEPATH="$CHANGELOG_DIR/$CHANGELOG_FILE"
 else
   common::exit 1 "Unable to set CHANGELOG file!"
 fi
@@ -1638,7 +1639,7 @@ common::printvars -p WORKDIR WORKDIR TREE_ROOT $DISPLAY_PARENT_BRANCH \
                      $DISPLAY_VERSION \
                      RELEASE_VERSION_PRIME ${ALL_RELEASE_VERSIONS[@]} \
                      RELEASE_BRANCH GCRIO_PATH RELEASE_BUCKET BUCKET_TYPE \
-                     CHANGELOG_FILE \
+                     CHANGELOG_FILEPATH \
                      FLAGS_nomock FLAGS_rc FLAGS_official \
                      LOGFILE
 

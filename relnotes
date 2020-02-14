@@ -294,6 +294,7 @@ generate_notes () {
   local tempfile=$TMPDIR/$PROG-file-1.$$
   local anchor
   local changelog_file
+  local changelog_filepath
   local -a normal_prs
   local -a action_prs
   local -a notes_normal
@@ -328,7 +329,8 @@ generate_notes () {
   range="$start_tag..$release_tag"
 
   if [[ $release_tag =~ ${VER_REGEX[release]} ]]; then
-    changelog_file="CHANGELOG/CHANGELOG-${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.md"
+    changelog_file="CHANGELOG-${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.md"
+    changelog_filepath="$CHANGELOG_DIR/$changelog_file"
   else
     logecho "Unable to set CHANGELOG file!"
     return 1
@@ -410,7 +412,7 @@ EOF+
     echo "### Previous Releases Included in $release_tag"
     while read anchor; do
       echo "$anchor"
-    done< <(git show master:$changelog_file | egrep "^- \[${release_tag}-") \
+    done< <(git show master:$changelog_filepath | egrep "^- \[${release_tag}-") \
      >> $PR_NOTES
   else
     echo "## Changelog since $start_tag" >> $PR_NOTES
@@ -458,7 +460,7 @@ EOF+
     # Make users and PRs linkable
     # Also, expand anchors (needed for email announce())
     sed -i -e "s,#\([0-9]\{5\,\}\),[#\1]($K8S_GITHUB_URL/pull/\1),g" \
-        -e "s,\(#v[0-9]\{3\}-\),$K8S_GITHUB_URL/blob/master/$changelog_file\1,g" \
+        -e "s,\(#v[0-9]\{3\}-\),$K8S_GITHUB_URL/blob/master/$changelog_filepath\1,g" \
         -e "s,@\([a-zA-Z0-9-]*\),[@\1](https://github.com/\1),g" \
      $RELEASE_NOTES_MD
   fi

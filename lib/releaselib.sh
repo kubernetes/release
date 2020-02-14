@@ -27,6 +27,10 @@ readonly PROD_BUCKET="kubernetes-release"
 readonly TEST_BUCKET="kubernetes-release-gcb"
 readonly CI_BUCKET="kubernetes-release-dev"
 
+# Set a globally usable variable for the changelog directory since we've been
+# piecemeal search/replace-ing this and missing some cases.
+readonly CHANGELOG_DIR="CHANGELOG"
+
 ###############################################################################
 # FUNCTIONS
 ###############################################################################
