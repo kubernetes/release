@@ -150,6 +150,8 @@ func runGcbmgr() error {
 		return errors.New("binaries required to run gcbmgr are not present; cannot continue")
 	}
 
+	// TODO: Add gitlib::repo_state check
+
 	logrus.Infof("Running gcbmgr with the following options: %v", *gcbmgrOpts)
 	logrus.Infof("Build options: %v", *buildOpts)
 
@@ -217,12 +219,14 @@ func runGcbmgr() error {
 	case gcbmgrOpts.stage:
 		return submitStage(toolRoot, gcbSubs)
 	case gcbmgrOpts.release:
-		return submitRelease()
+		return submitRelease(toolRoot, gcbSubs)
 	default:
 		return listJobs()
 	}
 }
 
+// TODO: We may consider pushing stage and release into the runGcbmgr() function
+//       Seems to be a bit of duplication without a lot of benefit.
 func submitStage(toolRoot string, substitutions map[string]string) error {
 	logrus.Infof("Submitting a stage to GCB")
 
@@ -236,14 +240,18 @@ func submitStage(toolRoot string, substitutions map[string]string) error {
 	return build.RunSingleJob(buildOpts, jobName, uploaded, version, substitutions)
 }
 
-// TODO: Populate logic once we're happy with the flow for the submitStage() function.
-func submitRelease() error {
+func submitRelease(toolRoot string, substitutions map[string]string) error {
 	logrus.Infof("Submitting a release to GCB")
 
+	// TODO: Fail if the file doesn't exist
+	buildOpts.CloudbuildFile = filepath.Join(toolRoot, "gcb/stage/cloudbuild.yaml")
 	buildOpts.DiskSize = "100"
 
-	//nolint:gocritic
-	return nil // build.RunSingleJob(buildOpts, jobName, uploaded, version, subs)
+	// TODO: Need actual values
+	var jobName, uploaded string
+	version := "FAKEVERSION"
+
+	return build.RunSingleJob(buildOpts, jobName, uploaded, version, substitutions)
 }
 
 func setGCBSubstitutions() (map[string]string, error) {
