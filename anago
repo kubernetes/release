@@ -1039,7 +1039,7 @@ update_github_release () {
 
   # post release data
   logecho "$release_verb the $RELEASE_VERSION_PRIME release on github..."
-  local changelog_url="$K8S_GITHUB_URL/blob/master/$CHANGELOG_FILEPATH"
+  local changelog_url="$K8S_GITHUB_URL/blob/$RELEASE_VERSION_PRIME/$CHANGELOG_FILEPATH"
   query_tmpl='{
     "tag_name" : $tag,
     "target_commitish": $target,
