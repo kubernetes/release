@@ -261,6 +261,11 @@ func (s *Stream) Output() string {
 	return s.stdOut
 }
 
+// Output returns stdout of the command status with the newline trimmed
+func (s *Stream) OutputTrimNL() string {
+	return strings.TrimSuffix(s.stdOut, "\n")
+}
+
 // Error returns the stderr of the command status
 func (s *Stream) Error() string {
 	return s.stdErr

@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/gcp/auth"
 	"k8s.io/release/pkg/gcp/build"
 	"k8s.io/release/pkg/release"
@@ -44,6 +45,18 @@ type gcbmgrOptions struct {
 var (
 	gcbmgrOpts = &gcbmgrOptions{}
 	buildOpts  = &build.Options{}
+
+	requiredPackages = []string{
+		"jq",
+		"git",
+		"bsdmainutils",
+	}
+
+	// TODO: Do we really need this if we use the Google Cloud SDK instead?
+	requiredCommands = []string{
+		"gsutil",
+		"gcloud",
+	}
 )
 
 const (
@@ -123,6 +136,20 @@ func init() {
 }
 
 func runGcbmgr() error {
+	logrus.Info("Checking for required packages...")
+	pkgAvailable, pkgAvailableErr := util.PackagesAvailable(requiredPackages...)
+	if pkgAvailableErr != nil {
+		return pkgAvailableErr
+	}
+	if !pkgAvailable {
+		return errors.New("packages required to run gcbmgr are not present; cannot continue")
+	}
+
+	logrus.Info("Checking for required commands...")
+	if cmdAvailable := command.Available(requiredCommands...); !cmdAvailable {
+		return errors.New("binaries required to run gcbmgr are not present; cannot continue")
+	}
+
 	logrus.Infof("Running gcbmgr with the following options: %v", *gcbmgrOpts)
 	logrus.Infof("Build options: %v", *buildOpts)
 
@@ -146,7 +173,7 @@ func runGcbmgr() error {
 
 	if rootOpts.nomock {
 		_, nomockSubmit, askErr := util.Ask(
-			"Really submit a --nomock release job against the $RELEASE_BRANCH branch",
+			"Really submit a --nomock release job against the $RELEASE_BRANCH branch?",
 			"yes",
 			3,
 		)
@@ -199,6 +226,7 @@ func runGcbmgr() error {
 func submitStage(toolRoot string, substitutions map[string]string) error {
 	logrus.Infof("Submitting a stage to GCB")
 
+	// TODO: Fail if the file doesn't exist
 	buildOpts.CloudbuildFile = filepath.Join(toolRoot, "gcb/stage/cloudbuild.yaml")
 
 	// TODO: Need actual values

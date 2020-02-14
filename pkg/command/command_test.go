@@ -101,6 +101,12 @@ func TestSuccessOutput(t *testing.T) {
 	require.Equal(t, "hello world", res.Output())
 }
 
+func TestSuccessOutputTrimNL(t *testing.T) {
+	res, err := New("echo", "-n", "hello world\n").Run()
+	require.Nil(t, err)
+	require.Equal(t, "hello world", res.OutputTrimNL())
+}
+
 func TestSuccessError(t *testing.T) {
 	res, err := New("cat", "/not/valid").Run()
 	require.Nil(t, err)

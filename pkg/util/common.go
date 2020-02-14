@@ -30,11 +30,101 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
+
+	"k8s.io/release/pkg/command"
 )
 
 const (
 	TagPrefix = "v"
 )
+
+// PackagesAvailable takes a slice of packages and determines if they are installed
+// on the host OS. Replaces common::check_packages.
+func PackagesAvailable(packages ...string) (bool, error) {
+	hostOS, osErr := getOS()
+	if osErr != nil {
+		return false, osErr
+	}
+
+	var pkgMgr string
+	missingPkgs := []string{}
+
+	ok := true
+	switch hostOS {
+	case "Ubuntu", "Debian", "LinuxMint":
+		pkgMgr = "apt"
+
+		for _, pkg := range packages {
+			checkCmd := command.New(
+				"dpkg",
+				"-l",
+				pkg,
+			)
+
+			logrus.Infof("Checking %s", pkg)
+			checkCmdStatus, checkCmdErr := checkCmd.RunSilent()
+			if checkCmdErr != nil {
+				return false, checkCmdErr
+			}
+
+			if !checkCmdStatus.Success() {
+				logrus.Infof("Adding %s to missing packages", pkg)
+				missingPkgs = append(missingPkgs, pkg)
+				ok = false
+			}
+		}
+	case "Fedora":
+		pkgMgr = "dnf"
+
+		for _, pkg := range packages {
+			checkCmd := command.New(
+				"rpm",
+				"--quiet",
+				"-q",
+				pkg,
+			)
+
+			checkCmdStatus, checkCmdErr := checkCmd.RunSilent()
+			if checkCmdErr != nil {
+				return false, checkCmdErr
+			}
+
+			if !checkCmdStatus.Success() {
+				missingPkgs = append(missingPkgs, pkg)
+				ok = false
+			}
+		}
+	}
+
+	installInstructionsPrefix := fmt.Sprintf("Install using '%s install '", pkgMgr)
+
+	if len(missingPkgs) > 0 {
+		missingPkgsString := strings.Join(missingPkgs, ",")
+
+		logrus.Warnf("The following packages are not installed: %s", missingPkgsString)
+
+		for _, pkg := range missingPkgs {
+			installInstructions := fmt.Sprintf("%s%s", installInstructionsPrefix, pkg)
+
+			logrus.Infof("Install %s with: %s", pkg, installInstructions)
+		}
+	}
+
+	return ok, nil
+}
+
+func getOS() (string, error) {
+	get := command.New("lsb_release", "-si")
+	getStream, getErr := get.RunSilentSuccessOutput()
+	if getErr != nil {
+		return "", getErr
+	}
+
+	osOutput := getStream.OutputTrimNL()
+	logrus.Infof("Host OS is %s", osOutput)
+
+	return osOutput, nil
+}
 
 /*
 #############################################################################

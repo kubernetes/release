@@ -28,8 +28,85 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestPackagesAvailableSuccess(t *testing.T) {
+	testcases := []struct {
+		name     string
+		packages []string
+	}{
+		{
+			name: "single package",
+			packages: []string{
+				"bash",
+			},
+		},
+		{
+			name: "multiple packages",
+			packages: []string{
+				"bash",
+				"curl",
+				"grep",
+			},
+		},
+		{
+			name:     "no packages",
+			packages: []string{},
+		},
+	}
+
+	for _, tc := range testcases {
+		actual, err := PackagesAvailable(tc.packages...)
+
+		if err != nil {
+			t.Fatalf("did not expect an error: %v", err)
+		}
+
+		assert.True(t, actual)
+	}
+}
+
+func TestPackagesAvailableFailure(t *testing.T) {
+	testcases := []struct {
+		name     string
+		packages []string
+	}{
+		{
+			name: "single unavailable package",
+			packages: []string{
+				"fakepackagefoo",
+			},
+		},
+		{
+			name: "multiple unavailable packages",
+			packages: []string{
+				"fakepackagefoo",
+				"fakepackagebar",
+				"fakepackagebaz",
+			},
+		},
+		{
+			name: "available and unavailable packages",
+			packages: []string{
+				"bash",
+				"fakepackagefoo",
+				"fakepackagebar",
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		actual, err := PackagesAvailable(tc.packages...)
+
+		if err != nil {
+			t.Fatalf("did not expect an error: %v", err)
+		}
+
+		assert.False(t, actual)
+	}
+}
 
 func TestMoreRecent(t *testing.T) {
 	baseTmpDir, err := ioutil.TempDir("", "")
