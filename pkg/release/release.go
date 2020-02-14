@@ -31,6 +31,13 @@ import (
 )
 
 const (
+	// gcbmgr/anago defaults
+	DefaultReleaseToolRepo   = "https://github.com/kubernetes/release"
+	DefaultReleaseToolBranch = "master"
+	DefaultProject           = "kubernetes-release-test"
+	DefaultDiskSize          = "300"
+	BucketPrefix             = "kubernetes-release-"
+
 	versionReleaseRE  = `v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[a-zA-Z0-9]+)*\.*(0|[1-9][0-9]*)?`
 	versionBuildRE    = `([0-9]{1,})\+([0-9a-f]{5,40})`
 	versionDirtyRE    = `(-dirty)`

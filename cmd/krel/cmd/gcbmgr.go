@@ -59,16 +59,6 @@ var (
 	}
 )
 
-const (
-	// TODO: This should maybe be in pkg/release
-	defaultReleaseToolRepo   = "https://github.com/kubernetes/release"
-	defaultReleaseToolBranch = "master"
-	defaultProject           = "kubernetes-release-test"
-	defaultDiskSize          = "300"
-
-	bucketPrefix = "kubernetes-release-"
-)
-
 // gcbmgrCmd is the command when calling `krel version`
 var gcbmgrCmd = &cobra.Command{
 	Use:           "gcbmgr",
@@ -122,7 +112,7 @@ func init() {
 	gcbmgrCmd.PersistentFlags().StringVar(
 		&buildOpts.Project,
 		"project",
-		defaultProject,
+		release.DefaultProject,
 		"Branch to run the specified GCB run against",
 	)
 	gcbmgrCmd.PersistentFlags().BoolVar(
@@ -162,7 +152,7 @@ func runGcbmgr() error {
 	logrus.Infof("Build options: %v", *buildOpts)
 
 	buildOpts.NoSource = true
-	buildOpts.DiskSize = defaultDiskSize
+	buildOpts.DiskSize = release.DefaultDiskSize
 
 	if gcbmgrOpts.stream {
 		buildOpts.Async = false
@@ -197,6 +187,8 @@ func runGcbmgr() error {
 		// TODO: Remove once cloudbuild.yaml doesn't strictly require vars to be set.
 		gcbSubs["NOMOCK_TAG"] = ""
 		gcbSubs["NOMOCK"] = ""
+
+		bucketPrefix := release.BucketPrefix
 
 		userBucket := fmt.Sprintf("%s%s", bucketPrefix, gcbSubs["GCP_USER_TAG"])
 		userBucketSetErr := os.Setenv("USER_BUCKET", userBucket)
@@ -252,12 +244,12 @@ func setGCBSubstitutions() (map[string]string, error) {
 
 	releaseToolRepo := os.Getenv("RELEASE_TOOL_REPO")
 	if releaseToolRepo == "" {
-		releaseToolRepo = defaultReleaseToolRepo
+		releaseToolRepo = release.DefaultReleaseToolRepo
 	}
 
 	releaseToolBranch := os.Getenv("RELEASE_TOOL_BRANCH")
 	if releaseToolBranch == "" {
-		releaseToolBranch = defaultReleaseToolBranch
+		releaseToolBranch = release.DefaultReleaseToolBranch
 	}
 
 	gcbSubs["RELEASE_TOOL_REPO"] = releaseToolRepo
