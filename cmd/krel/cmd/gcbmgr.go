@@ -215,8 +215,6 @@ func runGcbmgr() error {
 
 	var jobType string
 	switch {
-	case gcbmgrOpts.stage && gcbmgrOpts.release:
-		return errors.New("The '--stage' and '--release' flags cannot be used together")
 	case gcbmgrOpts.stage:
 		jobType = "stage"
 	case gcbmgrOpts.release:
