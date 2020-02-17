@@ -17,15 +17,27 @@ limitations under the License.
 package release
 
 import (
+	"fmt"
 	"io/ioutil"
+	"net/http"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/util"
 )
 
 const (
+	// gcbmgr/anago defaults
+	DefaultReleaseToolRepo   = "https://github.com/kubernetes/release"
+	DefaultReleaseToolBranch = "master"
+	DefaultProject           = "kubernetes-release-test"
+	DefaultDiskSize          = "300"
+	BucketPrefix             = "kubernetes-release-"
+
 	versionReleaseRE  = `v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[a-zA-Z0-9]+)*\.*(0|[1-9][0-9]*)?`
 	versionBuildRE    = `([0-9]{1,})\+([0-9a-f]{5,40})`
 	versionDirtyRE    = `(-dirty)`
@@ -60,7 +72,7 @@ func ReadDockerizedVersion(path, releaseKind string) (string, error) {
 		return "", err
 	}
 	file, err := ioutil.ReadAll(reader)
-	return strings.TrimSuffix(string(file), "\n"), err
+	return strings.TrimSpace(string(file)), err
 }
 
 // IsValidReleaseBuild checks if build version is valid for release.
@@ -74,7 +86,33 @@ func IsDirtyBuild(build string) bool {
 }
 
 // GetKubecrossVersion returns the current kube-cross container version.
-func GetKubecrossVersion() string {
-	// TODO: Remove hardcoded version
-	return "v1.13.6-1"
+// Replaces release::kubecross_version
+func GetKubecrossVersion(branches ...string) (string, error) {
+	var version string
+
+	for _, branch := range branches {
+		logrus.Infof("Trying to get the kube-cross version for %s...", branch)
+
+		versionURL := fmt.Sprintf("https://raw.githubusercontent.com/kubernetes/kubernetes/%s/build/build-image/cross/VERSION", branch)
+
+		resp, httpErr := http.Get(versionURL)
+		if httpErr != nil {
+			return "", errors.Wrapf(httpErr, "an error occurred GET-ing %s", versionURL)
+		}
+
+		defer resp.Body.Close()
+		body, ioErr := ioutil.ReadAll(resp.Body)
+		if ioErr != nil {
+			return "", errors.Wrapf(ioErr, "could not handle the response body for %s", versionURL)
+		}
+
+		version = strings.TrimSpace(string(body))
+
+		if version != "" {
+			logrus.Infof("Found the following kube-cross version: %s", version)
+			return version, nil
+		}
+	}
+
+	return "", errors.New("kube-cross version should not be empty; cannot continue")
 }

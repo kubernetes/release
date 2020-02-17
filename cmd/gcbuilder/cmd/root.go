@@ -17,9 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"os"
-	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -59,9 +56,9 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&buildOpts.ConfigDir, "config-dir", "", "Configuration directory")
+	rootCmd.PersistentFlags().StringVar(&buildOpts.ConfigDir, "config-dir", ".", "Configuration directory")
 	rootCmd.PersistentFlags().StringVar(&buildOpts.BuildDir, "build-dir", "", "If provided, this directory will be uploaded as the source for the Google Cloud Build run.")
-	rootCmd.PersistentFlags().StringVar(&buildOpts.CloudbuildFile, "gcb-config", "cloudbuild.yaml", "If provided, this will be used as the name of the Google Cloud Build config file.")
+	rootCmd.PersistentFlags().StringVar(&buildOpts.CloudbuildFile, "gcb-config", build.DefaultCloudbuildFile, "If provided, this will be used as the name of the Google Cloud Build config file.")
 	rootCmd.PersistentFlags().StringVar(&buildOpts.LogDir, "log-dir", "", "If provided, build logs will be sent to files in this directory instead of to stdout/stderr.")
 	rootCmd.PersistentFlags().StringVar(&buildOpts.ScratchBucket, "scratch-bucket", "", "The complete GCS path for Cloud Build to store scratch files (sources, logs).")
 	rootCmd.PersistentFlags().StringVar(&buildOpts.Project, "project", "", "If specified, use a non-default GCP project.")
@@ -74,48 +71,10 @@ func init() {
 	buildOpts.ConfigDir = strings.TrimSuffix(buildOpts.ConfigDir, "/")
 }
 
-// TODO: Clean up error handling
 func run() error {
-	if buildOpts.ConfigDir == "" {
-		logrus.Info("expected a config directory to be provided")
-		// TODO: Should return error
-		//nolint:gocritic
-		return nil // errors.New("expected a config directory to be provided")
-	}
-
-	if bazelWorkspace := os.Getenv("BUILD_WORKSPACE_DIRECTORY"); bazelWorkspace != "" {
-		if err := os.Chdir(bazelWorkspace); err != nil {
-			logrus.Fatalf("Failed to chdir to bazel workspace (%s): %v", bazelWorkspace, err)
-		}
-	}
-
-	if buildOpts.BuildDir == "" {
-		buildOpts.BuildDir = buildOpts.ConfigDir
-	}
-
-	logrus.Infof("Build directory: %s\n", buildOpts.BuildDir)
-
-	// Canonicalize the config directory to be an absolute path.
-	// As we're about to cd into the build directory, we need a consistent way to reference the config files
-	// when the config directory is not the same as the build directory.
-	absConfigDir, absErr := filepath.Abs(buildOpts.ConfigDir)
-	if absErr != nil {
-		logrus.Fatalf("Could not resolve absolute path for config directory: %v", absErr)
-	}
-
-	buildOpts.ConfigDir = absConfigDir
-	buildOpts.CloudbuildFile = path.Join(buildOpts.ConfigDir, buildOpts.CloudbuildFile)
-
-	configDirErr := buildOpts.ValidateConfigDir()
-	if configDirErr != nil {
-		logrus.Fatalf("Could not validate config directory: %v", configDirErr)
-	}
-
-	logrus.Infof("Config directory: %s\n", buildOpts.ConfigDir)
-
-	logrus.Infof("cd-ing to build directory: %s\n", buildOpts.BuildDir)
-	if err := os.Chdir(buildOpts.BuildDir); err != nil {
-		logrus.Fatalf("Failed to chdir to build directory (%s): %v", buildOpts.BuildDir, err)
+	prepareBuildErr := build.PrepareBuilds(buildOpts)
+	if prepareBuildErr != nil {
+		return prepareBuildErr
 	}
 
 	buildErrors := build.RunBuildJobs(buildOpts)

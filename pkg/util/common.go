@@ -30,11 +30,109 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
+
+	"k8s.io/release/pkg/command"
 )
 
 const (
 	TagPrefix = "v"
 )
+
+// PackagesAvailable takes a slice of packages and determines if they are installed
+// on the host OS. Replaces common::check_packages.
+func PackagesAvailable(packages ...string) (bool, error) {
+	hostOS, osErr := getOS()
+	if osErr != nil {
+		return false, osErr
+	}
+
+	var pkgMgr string
+	missingPkgs := []string{}
+
+	ok := true
+	switch hostOS {
+	case "Ubuntu", "Debian", "LinuxMint":
+		pkgMgr = "apt"
+		logrus.Infof("Assuming %s as the host OS package manager", pkgMgr)
+
+		for _, pkg := range packages {
+			checkCmd := command.New(
+				"dpkg",
+				"-l",
+				pkg,
+			)
+
+			logrus.Infof("Checking if %s has been installed via %s...", pkg, pkgMgr)
+			checkCmdStatus, checkCmdErr := checkCmd.RunSilent()
+			if checkCmdErr != nil {
+				return false, checkCmdErr
+			}
+
+			if !checkCmdStatus.Success() {
+				logrus.Infof("Adding %s to missing packages", pkg)
+				missingPkgs = append(missingPkgs, pkg)
+				ok = false
+			}
+		}
+	case "Fedora":
+		pkgMgr = "dnf"
+		logrus.Infof("Assuming %s as the host OS package manager", pkgMgr)
+
+		for _, pkg := range packages {
+			checkCmd := command.New(
+				"rpm",
+				"--quiet",
+				"-q",
+				pkg,
+			)
+
+			logrus.Infof("Checking if %s has been installed via %s...", pkg, pkgMgr)
+			checkCmdStatus, checkCmdErr := checkCmd.RunSilent()
+			if checkCmdErr != nil {
+				return false, checkCmdErr
+			}
+
+			if !checkCmdStatus.Success() {
+				missingPkgs = append(missingPkgs, pkg)
+				ok = false
+			}
+		}
+	default:
+		ok = false
+		return ok, errors.New("cannot continue; running tool on an unsupported OS")
+	}
+
+	installInstructionsPrefix := fmt.Sprintf("sudo %s install ", pkgMgr)
+
+	if len(missingPkgs) > 0 {
+		missingPkgsString := strings.Join(missingPkgs, ",")
+
+		logrus.Warnf("The following packages are not installed via %s: %s", pkgMgr, missingPkgsString)
+
+		for _, pkg := range missingPkgs {
+			installInstructions := fmt.Sprintf("'%s%s'", installInstructionsPrefix, pkg)
+
+			logrus.Infof("Install %s with: %s", pkg, installInstructions)
+		}
+	}
+
+	return ok, nil
+}
+
+func getOS() (string, error) {
+	logrus.Info("Checking host OS...")
+
+	get := command.New("lsb_release", "-si")
+	getStream, getErr := get.RunSilentSuccessOutput()
+	if getErr != nil {
+		return "", getErr
+	}
+
+	osOutput := getStream.OutputTrimNL()
+	logrus.Infof("Host OS is %s", osOutput)
+
+	return osOutput, nil
+}
 
 /*
 #############################################################################

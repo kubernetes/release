@@ -39,21 +39,29 @@ type gcbmgrOptions struct {
 	branch       string
 	releaseType  string
 	buildVersion string
+	gcpUser      string
 }
 
 var (
 	gcbmgrOpts = &gcbmgrOptions{}
 	buildOpts  = &build.Options{}
-)
 
-const (
-	// TODO: This should maybe be in pkg/release
-	defaultReleaseToolRepo   = "https://github.com/kubernetes/release"
-	defaultReleaseToolBranch = "master"
-	defaultProject           = "kubernetes-release-test"
-	defaultDiskSize          = "300"
+	// TODO: Commenting these packages/commands out since they fail in CI.
+	//       These can be fixed by changing the CI test image to one that includes the packages.
+	//nolint:gocritic
+	/*
+		requiredPackages = []string{
+			"jq",
+			"git",
+			"bsdmainutils",
+		}
 
-	bucketPrefix = "kubernetes-release-"
+		// TODO: Do we really need this if we use the Google Cloud SDK instead?
+		requiredCommands = []string{
+			"gsutil",
+			"gcloud",
+		}
+	*/
 )
 
 // gcbmgrCmd is the command when calling `krel version`
@@ -109,7 +117,7 @@ func init() {
 	gcbmgrCmd.PersistentFlags().StringVar(
 		&buildOpts.Project,
 		"project",
-		defaultProject,
+		release.DefaultProject,
 		"Branch to run the specified GCB run against",
 	)
 	gcbmgrCmd.PersistentFlags().BoolVar(
@@ -118,16 +126,49 @@ func init() {
 		false,
 		"If specified, GCB will run synchronously, tailing its' logs to stdout",
 	)
+	gcbmgrCmd.PersistentFlags().StringVar(
+		&buildOpts.CloudbuildFile,
+		"gcb-config",
+		build.DefaultCloudbuildFile,
+		"If provided, this will be used as the name of the Google Cloud Build config file.",
+	)
+	gcbmgrCmd.PersistentFlags().StringVar(
+		&gcbmgrOpts.gcpUser,
+		"gcp-user",
+		"",
+		"If provided, this will be used as the GCP_USER_TAG.",
+	)
 
 	rootCmd.AddCommand(gcbmgrCmd)
 }
 
 func runGcbmgr() error {
+	// TODO: Commenting these checks out since they fail in CI.
+	//       These can be fixed by changing the CI test image to one that includes the packages.
+	//nolint:gocritic
+	/*
+		logrus.Info("Checking for required packages...")
+		pkgAvailable, pkgAvailableErr := util.PackagesAvailable(requiredPackages...)
+		if pkgAvailableErr != nil {
+			return pkgAvailableErr
+		}
+		if !pkgAvailable {
+			return errors.New("packages required to run gcbmgr are not present; cannot continue")
+		}
+
+		logrus.Info("Checking for required commands...")
+		if cmdAvailable := command.Available(requiredCommands...); !cmdAvailable {
+			return errors.New("binaries required to run gcbmgr are not present; cannot continue")
+		}
+	*/
+
+	// TODO: Add gitlib::repo_state check
+
 	logrus.Infof("Running gcbmgr with the following options: %v", *gcbmgrOpts)
 	logrus.Infof("Build options: %v", *buildOpts)
 
 	buildOpts.NoSource = true
-	buildOpts.DiskSize = defaultDiskSize
+	buildOpts.DiskSize = release.DefaultDiskSize
 
 	if gcbmgrOpts.stream {
 		buildOpts.Async = false
@@ -136,17 +177,18 @@ func runGcbmgr() error {
 	}
 
 	if gcbmgrOpts.stage && gcbmgrOpts.release {
-		logrus.Fatal("Cannot specify both the 'stage' and 'release' flag. Please resubmit with only one of those flags selected.")
+		return errors.New("cannot specify both the 'stage' and 'release' flag; resubmit with only one build type selected")
 	}
 
-	gcbSubs, gcbSubsErr := setGCBSubstitutions()
+	gcbSubs, gcbSubsErr := setGCBSubstitutions(gcbmgrOpts)
 	if gcbSubs == nil || gcbSubsErr != nil {
 		return gcbSubsErr
 	}
 
 	if rootOpts.nomock {
+		// TODO: Consider a '--yes' flag so we can mock this
 		_, nomockSubmit, askErr := util.Ask(
-			"Really submit a --nomock release job against the $RELEASE_BRANCH branch",
+			"Really submit a --nomock release job against the $RELEASE_BRANCH branch?",
 			"yes",
 			3,
 		)
@@ -162,6 +204,8 @@ func runGcbmgr() error {
 		// TODO: Remove once cloudbuild.yaml doesn't strictly require vars to be set.
 		gcbSubs["NOMOCK_TAG"] = ""
 		gcbSubs["NOMOCK"] = ""
+
+		bucketPrefix := release.BucketPrefix
 
 		userBucket := fmt.Sprintf("%s%s", bucketPrefix, gcbSubs["GCP_USER_TAG"])
 		userBucketSetErr := os.Setenv("USER_BUCKET", userBucket)
@@ -186,63 +230,66 @@ func runGcbmgr() error {
 		logrus.Infof("%s: %s", k, v)
 	}
 
+	var jobType string
 	switch {
+	// TODO: Consider a '--validate' flag to validate the GCB config without submitting
 	case gcbmgrOpts.stage:
-		return submitStage(toolRoot, gcbSubs)
+		jobType = "stage"
 	case gcbmgrOpts.release:
-		return submitRelease()
+		jobType = "release"
+		buildOpts.DiskSize = "100"
 	default:
 		return listJobs()
 	}
-}
 
-func submitStage(toolRoot string, substitutions map[string]string) error {
-	logrus.Infof("Submitting a stage to GCB")
-
-	buildOpts.CloudbuildFile = filepath.Join(toolRoot, "gcb/stage/cloudbuild.yaml")
+	buildOpts.ConfigDir = filepath.Join(toolRoot, "gcb", jobType)
+	prepareBuildErr := build.PrepareBuilds(buildOpts)
+	if prepareBuildErr != nil {
+		return prepareBuildErr
+	}
 
 	// TODO: Need actual values
 	var jobName, uploaded string
 	version := "FAKEVERSION"
 
-	return build.RunSingleJob(buildOpts, jobName, uploaded, version, substitutions)
+	return build.RunSingleJob(buildOpts, jobName, uploaded, version, gcbSubs)
 }
 
-// TODO: Populate logic once we're happy with the flow for the submitStage() function.
-func submitRelease() error {
-	logrus.Infof("Submitting a release to GCB")
-
-	buildOpts.DiskSize = "100"
-
-	//nolint:gocritic
-	return nil // build.RunSingleJob(buildOpts, jobName, uploaded, version, subs)
-}
-
-func setGCBSubstitutions() (map[string]string, error) {
+func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 	gcbSubs := map[string]string{}
 
 	releaseToolRepo := os.Getenv("RELEASE_TOOL_REPO")
 	if releaseToolRepo == "" {
-		releaseToolRepo = defaultReleaseToolRepo
+		releaseToolRepo = release.DefaultReleaseToolRepo
 	}
 
 	releaseToolBranch := os.Getenv("RELEASE_TOOL_BRANCH")
 	if releaseToolBranch == "" {
-		releaseToolBranch = defaultReleaseToolBranch
+		releaseToolBranch = release.DefaultReleaseToolBranch
 	}
 
 	gcbSubs["RELEASE_TOOL_REPO"] = releaseToolRepo
 	gcbSubs["RELEASE_TOOL_BRANCH"] = releaseToolBranch
 
-	gcpUser, gcpUserErr := auth.GetCurrentGCPUser()
-	if gcpUserErr != nil {
-		return gcbSubs, gcpUserErr
+	gcpUser := o.gcpUser
+	if gcpUser == "" {
+		var gcpUserErr error
+		gcpUser, gcpUserErr = auth.GetCurrentGCPUser()
+		if gcpUserErr != nil {
+			return gcbSubs, gcpUserErr
+		}
+	} else {
+		// TODO: Consider removing this once the 'gcloud auth' is testable in CI
+		gcpUser = strings.TrimSpace(gcpUser)
+		gcpUser = strings.ReplaceAll(gcpUser, "@", "-at-")
+		gcpUser = strings.ReplaceAll(gcpUser, ".", "-")
+		gcpUser = strings.ToLower(gcpUser)
 	}
 
 	gcbSubs["GCP_USER_TAG"] = gcpUser
 
 	// TODO: The naming for these env vars is clumsy/confusing, but we're bound by anago right now.
-	releaseType := gcbmgrOpts.releaseType
+	releaseType := o.releaseType
 	switch releaseType {
 	case "official":
 		gcbSubs["OFFICIAL_TAG"] = releaseType
@@ -269,23 +316,33 @@ func setGCBSubstitutions() (map[string]string, error) {
 	// TODO: Remove once we remove support for --built-at-head.
 	gcbSubs["BUILD_AT_HEAD"] = ""
 
-	buildpoint := gcbmgrOpts.buildVersion
+	buildpoint := o.buildVersion
 	buildpoint = strings.ReplaceAll(buildpoint, "+", "-")
 	gcbSubs["BUILD_POINT"] = buildpoint
 
 	// TODO: Add conditionals for find_green_build
-	buildVersion := gcbmgrOpts.buildVersion
+	buildVersion := o.buildVersion
 	buildVersion = fmt.Sprintf("--buildversion=%s", buildVersion)
 	gcbSubs["BUILDVERSION"] = buildVersion
 
-	if gcbmgrOpts.branch != "" {
-		gcbSubs["RELEASE_BRANCH"] = gcbmgrOpts.branch
+	branch := o.branch
+
+	if branch != "" {
+		gcbSubs["RELEASE_BRANCH"] = branch
 	} else {
 		return gcbSubs, errors.New("Release branch must be set to continue")
 	}
 
-	// TODO: Ensure release.GetKubecrossVersion() isn't hardcoded.
-	gcbSubs["KUBE_CROSS_VERSION"] = release.GetKubecrossVersion()
+	kubecrossBranches := []string{
+		branch,
+		"master",
+	}
+
+	kubecrossVersion, kubecrossVersionErr := release.GetKubecrossVersion(kubecrossBranches...)
+	if kubecrossVersionErr != nil {
+		return gcbSubs, kubecrossVersionErr
+	}
+	gcbSubs["KUBE_CROSS_VERSION"] = kubecrossVersion
 
 	return gcbSubs, nil
 }

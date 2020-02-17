@@ -43,7 +43,7 @@ func GetCurrentGCPUser() (string, error) {
 		return "", errors.New("the GCP user name should not be empty")
 	}
 
-	gcpUser = strings.TrimSuffix(gcpUser, "\n")
+	gcpUser = strings.TrimSpace(gcpUser)
 	gcpUser = strings.ReplaceAll(gcpUser, "@", "-at-")
 	gcpUser = strings.ReplaceAll(gcpUser, ".", "-")
 	gcpUser = strings.ToLower(gcpUser)
