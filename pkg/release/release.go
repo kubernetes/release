@@ -46,6 +46,29 @@ const (
 	bazelVersionPath  = "bazel-genfiles/version"
 	dockerVersionPath = "version"
 	tarballExtension  = ".tar.gz"
+
+	// GCSStagePath is the directory where release artifacts are staged before
+	// push to GCS.
+	GCSStagePath = "gcs-stage"
+
+	// ReleaseStagePath is the directory where releases are staged.
+	ReleaseStagePath = "release-stage"
+
+	// GCEPath is the directory where GCE scripts are created.
+	GCEPath = "release-stage/full/kubernetes/cluster/gce"
+
+	// GCIPath is the path for the container optimized OS for GCP.
+	GCIPath = "release-stage/full/kubernetes/cluster/gce/gci"
+
+	// ReleaseTarsPath is the directory where release artifacts are created.
+	ReleaseTarsPath = "release-tars"
+
+	// WindowsLocalPath is the directory where Windows GCE scripts are created.
+	WindowsLocalPath = "release-stage/full/kubernetes/cluster/gce/windows"
+
+	// WindowsGCSPath is the directory where Windoes GCE scripts are staged
+	// before push to GCS.
+	WindowsGCSPath = "gcs-stage/extra/gce/windows"
 )
 
 // BuiltWithBazel determines whether the most recent release was built with Bazel.
@@ -62,7 +85,7 @@ func ReadBazelVersion(path string) (string, error) {
 	return string(version), err
 }
 
-// ReadDockerizedVersion reads the version from a Dockerized
+// ReadDockerizedVersion reads the version from a Dockerized build.
 func ReadDockerizedVersion(path, releaseKind string) (string, error) {
 	tar := releaseKind + tarballExtension
 	dockerTarball := filepath.Join(path, dockerBuildPath, tar)
