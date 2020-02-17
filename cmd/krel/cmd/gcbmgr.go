@@ -64,7 +64,7 @@ var (
 	*/
 )
 
-// gcbmgrCmd is the command when calling `krel version`
+// gcbmgrCmd is a krel subcommand which invokes runGcbmgr()
 var gcbmgrCmd = &cobra.Command{
 	Use:           "gcbmgr",
 	Short:         "Run gcbmgr",
@@ -142,6 +142,7 @@ func init() {
 	rootCmd.AddCommand(gcbmgrCmd)
 }
 
+// runGcbmgr is the function invoked by 'krel gcbmgr', responsible for submitting release jobs to GCB
 func runGcbmgr() error {
 	// TODO: Commenting these checks out since they fail in CI.
 	//       These can be fixed by changing the CI test image to one that includes the packages.
@@ -167,17 +168,17 @@ func runGcbmgr() error {
 	logrus.Infof("Running gcbmgr with the following options: %v", *gcbmgrOpts)
 	logrus.Infof("Build options: %v", *buildOpts)
 
+	if gcbmgrOpts.stage && gcbmgrOpts.release {
+		return errors.New("cannot specify both the 'stage' and 'release' flag; resubmit with only one build type selected")
+	}
+
 	buildOpts.NoSource = true
 	buildOpts.DiskSize = release.DefaultDiskSize
 
+	buildOpts.Async = true
+
 	if gcbmgrOpts.stream {
 		buildOpts.Async = false
-	} else {
-		buildOpts.Async = true
-	}
-
-	if gcbmgrOpts.stage && gcbmgrOpts.release {
-		return errors.New("cannot specify both the 'stage' and 'release' flag; resubmit with only one build type selected")
 	}
 
 	gcbSubs, gcbSubsErr := setGCBSubstitutions(gcbmgrOpts)
@@ -255,6 +256,7 @@ func runGcbmgr() error {
 	return build.RunSingleJob(buildOpts, jobName, uploaded, version, gcbSubs)
 }
 
+// setGCBSubstitutions takes a set of gcbmgrOptions and returns a map of GCB substitutions
 func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 	gcbSubs := map[string]string{}
 
@@ -280,10 +282,7 @@ func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 		}
 	} else {
 		// TODO: Consider removing this once the 'gcloud auth' is testable in CI
-		gcpUser = strings.TrimSpace(gcpUser)
-		gcpUser = strings.ReplaceAll(gcpUser, "@", "-at-")
-		gcpUser = strings.ReplaceAll(gcpUser, ".", "-")
-		gcpUser = strings.ToLower(gcpUser)
+		gcpUser = auth.NormalizeGCPUser(gcpUser)
 	}
 
 	gcbSubs["GCP_USER_TAG"] = gcpUser
@@ -326,12 +325,11 @@ func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 	gcbSubs["BUILDVERSION"] = buildVersion
 
 	branch := o.branch
-
-	if branch != "" {
-		gcbSubs["RELEASE_BRANCH"] = branch
-	} else {
+	if branch == "" {
 		return gcbSubs, errors.New("Release branch must be set to continue")
 	}
+
+	gcbSubs["RELEASE_BRANCH"] = branch
 
 	kubecrossBranches := []string{
 		branch,
@@ -347,6 +345,7 @@ func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 	return gcbSubs, nil
 }
 
+// listJobs lists recent GCB jobs run in the specified project
 func listJobs() error {
 	logrus.Info("Listing GCB jobs is not currently supported.")
 
