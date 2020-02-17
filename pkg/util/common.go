@@ -53,6 +53,7 @@ func PackagesAvailable(packages ...string) (bool, error) {
 	switch hostOS {
 	case "Ubuntu", "Debian", "LinuxMint":
 		pkgMgr = "apt"
+		logrus.Infof("Assuming %s as the host OS package manager", pkgMgr)
 
 		for _, pkg := range packages {
 			checkCmd := command.New(
@@ -61,7 +62,7 @@ func PackagesAvailable(packages ...string) (bool, error) {
 				pkg,
 			)
 
-			logrus.Infof("Checking %s", pkg)
+			logrus.Infof("Checking if %s has been installed via %s...", pkg, pkgMgr)
 			checkCmdStatus, checkCmdErr := checkCmd.RunSilent()
 			if checkCmdErr != nil {
 				return false, checkCmdErr
@@ -75,6 +76,7 @@ func PackagesAvailable(packages ...string) (bool, error) {
 		}
 	case "Fedora":
 		pkgMgr = "dnf"
+		logrus.Infof("Assuming %s as the host OS package manager", pkgMgr)
 
 		for _, pkg := range packages {
 			checkCmd := command.New(
@@ -84,6 +86,7 @@ func PackagesAvailable(packages ...string) (bool, error) {
 				pkg,
 			)
 
+			logrus.Infof("Checking if %s has been installed via %s...", pkg, pkgMgr)
 			checkCmdStatus, checkCmdErr := checkCmd.RunSilent()
 			if checkCmdErr != nil {
 				return false, checkCmdErr
@@ -96,15 +99,15 @@ func PackagesAvailable(packages ...string) (bool, error) {
 		}
 	}
 
-	installInstructionsPrefix := fmt.Sprintf("Install using '%s install '", pkgMgr)
+	installInstructionsPrefix := fmt.Sprintf("sudo %s install ", pkgMgr)
 
 	if len(missingPkgs) > 0 {
 		missingPkgsString := strings.Join(missingPkgs, ",")
 
-		logrus.Warnf("The following packages are not installed: %s", missingPkgsString)
+		logrus.Warnf("The following packages are not installed via %s: %s", pkgMgr, missingPkgsString)
 
 		for _, pkg := range missingPkgs {
-			installInstructions := fmt.Sprintf("%s%s", installInstructionsPrefix, pkg)
+			installInstructions := fmt.Sprintf("'%s%s'", installInstructionsPrefix, pkg)
 
 			logrus.Infof("Install %s with: %s", pkg, installInstructions)
 		}
@@ -114,6 +117,8 @@ func PackagesAvailable(packages ...string) (bool, error) {
 }
 
 func getOS() (string, error) {
+	logrus.Info("Checking host OS...")
+
 	get := command.New("lsb_release", "-si")
 	getStream, getErr := get.RunSilentSuccessOutput()
 	if getErr != nil {
