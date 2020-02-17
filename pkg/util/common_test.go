@@ -20,14 +20,15 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 	"time"
 
 	"github.com/blang/semver"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -200,7 +201,7 @@ func TestMoreRecent(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			more, err := MoreRecent(tc.args.a, tc.args.b)
-			require.Equal(t, tc.want.err, err)
+			require.IsType(t, tc.want.err, err)
 			require.Equal(t, tc.want.r, more)
 		})
 	}
@@ -271,12 +272,279 @@ func TestReadFileFromGzippedTar(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			r, err := ReadFileFromGzippedTar(tc.args.tarPath, tc.args.filePath)
-			require.Equal(t, tc.want.err, err)
+			require.IsType(t, tc.want.err, err)
 			if tc.want.err == nil {
 				file, err := ioutil.ReadAll(r)
 				require.Nil(t, err)
 				require.Equal(t, tc.want.fileContents, string(file))
 			}
+		})
+	}
+}
+
+func TestCopyFile(t *testing.T) {
+	srcDir, err := ioutil.TempDir("", "src")
+	require.Nil(t, err)
+	dstDir, err := ioutil.TempDir("", "dst")
+	require.Nil(t, err)
+
+	// Create test file.
+	srcFileOnePath := filepath.Join(srcDir, "testone.txt")
+	require.Nil(t, ioutil.WriteFile(
+		srcFileOnePath,
+		[]byte("file-one-contents"),
+		os.FileMode(0644),
+	))
+
+	dstFileOnePath := filepath.Join(dstDir, "testone.txt")
+
+	defer cleanupTmp(t, srcDir)
+	defer cleanupTmp(t, dstDir)
+
+	type args struct {
+		src      string
+		dst      string
+		required bool
+	}
+	type want struct {
+		err error
+	}
+	cases := map[string]struct {
+		args args
+		want want
+	}{
+		"CopyFileSuccess": {
+			args: args{
+				src:      srcFileOnePath,
+				dst:      dstFileOnePath,
+				required: true,
+			},
+			want: want{
+				err: nil,
+			},
+		},
+		"CopyFileNotExistNotIgnore": {
+			args: args{
+				src:      "path/does/not/exit",
+				dst:      dstFileOnePath,
+				required: true,
+			},
+			want: want{
+				err: &os.PathError{
+					Op:   "stat",
+					Path: "path/does/not/exit",
+					Err:  syscall.ENOENT,
+				},
+			},
+		},
+		"CopyFileNotExistIgnore": {
+			args: args{
+				src:      "path/does/not/exit",
+				dst:      dstFileOnePath,
+				required: false,
+			},
+			want: want{
+				err: nil,
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			copyErr := CopyFileLocal(tc.args.src, tc.args.dst, tc.args.required)
+			require.IsType(t, tc.want.err, copyErr)
+			if copyErr == nil {
+				_, err := os.Stat(filepath.Join(tc.args.dst))
+				if err != nil && tc.args.required {
+					t.Fatal("file does not exist in destination")
+				}
+			}
+		})
+	}
+}
+
+func TestCopyDirContentLocal(t *testing.T) {
+	srcDir, err := ioutil.TempDir("", "src")
+	require.Nil(t, err)
+	dstDir, err := ioutil.TempDir("", "dst")
+	require.Nil(t, err)
+
+	// Create test file.
+	srcFileOnePath := filepath.Join(srcDir, "testone.txt")
+	require.Nil(t, ioutil.WriteFile(
+		srcFileOnePath,
+		[]byte("file-one-contents"),
+		os.FileMode(0644),
+	))
+
+	srcFileTwoPath := filepath.Join(srcDir, "testtwo.txt")
+	require.Nil(t, ioutil.WriteFile(
+		srcFileTwoPath,
+		[]byte("file-two-contents"),
+		os.FileMode(0644),
+	))
+
+	defer cleanupTmp(t, srcDir)
+	defer cleanupTmp(t, dstDir)
+
+	type args struct {
+		src string
+		dst string
+	}
+	type want struct {
+		err error
+	}
+	cases := map[string]struct {
+		args args
+		want want
+	}{
+		"CopyDirContentsSuccess": {
+			args: args{
+				src: srcDir,
+				dst: dstDir,
+			},
+			want: want{
+				err: nil,
+			},
+		},
+		"CopyDirContentsSuccessDstNotExist": {
+			args: args{
+				src: srcDir,
+				dst: filepath.Join(dstDir, "path/not/exist"),
+			},
+			want: want{
+				err: nil,
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			copyErr := CopyDirContentsLocal(tc.args.src, tc.args.dst)
+			require.Equal(t, tc.want.err, copyErr)
+		})
+	}
+}
+
+func TestRemoveAndReplaceDir(t *testing.T) {
+	dir, err := ioutil.TempDir("", "rm")
+	require.Nil(t, err)
+
+	// Create test file.
+	fileOnePath := filepath.Join(dir, "testone.txt")
+	require.Nil(t, ioutil.WriteFile(
+		fileOnePath,
+		[]byte("file-one-contents"),
+		os.FileMode(0644),
+	))
+
+	fileTwoPath := filepath.Join(dir, "testtwo.txt")
+	require.Nil(t, ioutil.WriteFile(
+		fileTwoPath,
+		[]byte("file-two-contents"),
+		os.FileMode(0644),
+	))
+
+	defer cleanupTmp(t, dir)
+
+	type args struct {
+		dir string
+	}
+	type want struct {
+		err error
+	}
+	cases := map[string]struct {
+		args args
+		want want
+	}{
+		"RemoveAndReplaceSuccess": {
+			args: args{
+				dir: dir,
+			},
+			want: want{
+				err: nil,
+			},
+		},
+		"RemoveAndReplaceNotExist": {
+			args: args{
+				dir: filepath.Join(dir, "not/exit"),
+			},
+			want: want{
+				err: nil,
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			err := RemoveAndReplaceDir(tc.args.dir)
+			require.Equal(t, tc.want.err, err)
+		})
+	}
+}
+
+func TestExist(t *testing.T) {
+	dir, err := ioutil.TempDir("", "rm")
+	require.Nil(t, err)
+
+	// Create test file.
+	fileOnePath := filepath.Join(dir, "testone.txt")
+	require.Nil(t, ioutil.WriteFile(
+		fileOnePath,
+		[]byte("file-one-contents"),
+		os.FileMode(0644),
+	))
+
+	defer cleanupTmp(t, dir)
+
+	type args struct {
+		dir string
+	}
+	type want struct {
+		exist bool
+	}
+	cases := map[string]struct {
+		args args
+		want want
+	}{
+		"DirExists": {
+			args: args{
+				dir: dir,
+			},
+			want: want{
+				exist: true,
+			},
+		},
+		"FileExists": {
+			args: args{
+				dir: fileOnePath,
+			},
+			want: want{
+				exist: true,
+			},
+		},
+		"DirNotExists": {
+			args: args{
+				dir: filepath.Join(dir, "path/not/exit"),
+			},
+			want: want{
+				exist: false,
+			},
+		},
+		"FileNotExists": {
+			args: args{
+				dir: filepath.Join(dir, "notexist.txt"),
+			},
+			want: want{
+				exist: false,
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			exist := Exists(tc.args.dir)
+			require.Equal(t, tc.want.exist, exist)
 		})
 	}
 }

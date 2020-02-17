@@ -20,7 +20,6 @@ import (
 	"archive/tar"
 	"bufio"
 	"compress/gzip"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -29,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/command"
@@ -296,4 +296,94 @@ func TagStringToSemver(tag string) (semver.Version, error) {
 
 func SemverToTagString(tag semver.Version) string {
 	return AddTagPrefix(tag.String())
+}
+
+// CopyFileLocal copies a local file from one local location to another.
+func CopyFileLocal(src, dst string, required bool) error {
+	srcStat, err := os.Stat(src)
+	if err != nil && required {
+		return err
+	}
+	if os.IsNotExist(err) && !required {
+		return nil
+	}
+
+	if !srcStat.Mode().IsRegular() {
+		return errors.New("cannot copy non-regular file: IsRegular reports whether m describes a regular file. That is, it tests that no mode type bits are set")
+	}
+
+	source, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer source.Close()
+
+	destination, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destination.Close()
+	_, err = io.Copy(destination, source)
+	return err
+}
+
+// CopyDirContentsLocal copies local directory contents from one local location
+// to another.
+func CopyDirContentsLocal(src, dst string) error {
+	// If initial destination does not exist create it.
+	if _, err := os.Stat(dst); err != nil {
+		if err := os.MkdirAll(dst, os.FileMode(0755)); err != nil {
+			return errors.Wrapf(err, "Unable to create directory at path %s", dst)
+		}
+	}
+	files, err := ioutil.ReadDir(src)
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		srcPath := filepath.Join(src, file.Name())
+		dstPath := filepath.Join(dst, file.Name())
+
+		fileInfo, err := os.Stat(srcPath)
+		if err != nil {
+			return err
+		}
+
+		switch fileInfo.Mode() & os.ModeType {
+		case os.ModeDir:
+			if !Exists(dstPath) {
+				if err := os.MkdirAll(dstPath, os.FileMode(0755)); err != nil {
+					return err
+				}
+			}
+			if err := CopyDirContentsLocal(srcPath, dstPath); err != nil {
+				return err
+			}
+		default:
+			if err := CopyFileLocal(srcPath, dstPath, false); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// RemoveAndReplaceDir removes a directory and its contents then recreates it.
+func RemoveAndReplaceDir(path string) error {
+	if err := os.RemoveAll(path); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(path, os.FileMode(0755)); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Exists indicates whether a file exists.
+func Exists(path string) bool {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return false
+	}
+
+	return true
 }
