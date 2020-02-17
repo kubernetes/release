@@ -261,9 +261,10 @@ func (s *Stream) Output() string {
 	return s.stdOut
 }
 
-// Output returns stdout of the command status with the newline trimmed
+// OutputTrimNL returns stdout of the command status with newlines trimmed
+// Use only when output is expected to be a single "word", like a version string.
 func (s *Stream) OutputTrimNL() string {
-	return strings.TrimSuffix(s.stdOut, "\n")
+	return strings.TrimSpace(s.stdOut)
 }
 
 // Error returns the stderr of the command status

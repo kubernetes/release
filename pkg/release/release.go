@@ -72,7 +72,7 @@ func ReadDockerizedVersion(path, releaseKind string) (string, error) {
 		return "", err
 	}
 	file, err := ioutil.ReadAll(reader)
-	return strings.TrimSuffix(string(file), "\n"), err
+	return strings.TrimSpace(string(file)), err
 }
 
 // IsValidReleaseBuild checks if build version is valid for release.
@@ -106,7 +106,7 @@ func GetKubecrossVersion(branches ...string) (string, error) {
 			return "", errors.Wrapf(ioErr, "could not handle the response body for %s", versionURL)
 		}
 
-		version = strings.TrimSuffix(string(body), "\n")
+		version = strings.TrimSpace(string(body))
 
 		if version != "" {
 			logrus.Infof("Found the following kube-cross version: %s", version)

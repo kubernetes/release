@@ -280,7 +280,7 @@ func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 		}
 	} else {
 		// TODO: Consider removing this once the 'gcloud auth' is testable in CI
-		gcpUser = strings.TrimSuffix(gcpUser, "\n")
+		gcpUser = strings.TrimSpace(gcpUser)
 		gcpUser = strings.ReplaceAll(gcpUser, "@", "-at-")
 		gcpUser = strings.ReplaceAll(gcpUser, ".", "-")
 		gcpUser = strings.ToLower(gcpUser)
