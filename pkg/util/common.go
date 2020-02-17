@@ -97,6 +97,9 @@ func PackagesAvailable(packages ...string) (bool, error) {
 				ok = false
 			}
 		}
+	default:
+		ok = false
+		return ok, errors.New("cannot continue; running tool on an unsupported OS")
 	}
 
 	installInstructionsPrefix := fmt.Sprintf("sudo %s install ", pkgMgr)
