@@ -164,7 +164,7 @@ func runGcbmgr() error {
 		logrus.Fatal("Cannot specify both the 'stage' and 'release' flag. Please resubmit with only one of those flags selected.")
 	}
 
-	gcbSubs, gcbSubsErr := setGCBSubstitutions()
+	gcbSubs, gcbSubsErr := setGCBSubstitutions(gcbmgrOpts)
 	if gcbSubs == nil || gcbSubsErr != nil {
 		return gcbSubsErr
 	}
@@ -237,7 +237,7 @@ func runGcbmgr() error {
 	return build.RunSingleJob(buildOpts, jobName, uploaded, version, gcbSubs)
 }
 
-func setGCBSubstitutions() (map[string]string, error) {
+func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 	gcbSubs := map[string]string{}
 
 	releaseToolRepo := os.Getenv("RELEASE_TOOL_REPO")
@@ -261,7 +261,7 @@ func setGCBSubstitutions() (map[string]string, error) {
 	gcbSubs["GCP_USER_TAG"] = gcpUser
 
 	// TODO: The naming for these env vars is clumsy/confusing, but we're bound by anago right now.
-	releaseType := gcbmgrOpts.releaseType
+	releaseType := o.releaseType
 	switch releaseType {
 	case "official":
 		gcbSubs["OFFICIAL_TAG"] = releaseType
@@ -288,16 +288,16 @@ func setGCBSubstitutions() (map[string]string, error) {
 	// TODO: Remove once we remove support for --built-at-head.
 	gcbSubs["BUILD_AT_HEAD"] = ""
 
-	buildpoint := gcbmgrOpts.buildVersion
+	buildpoint := o.buildVersion
 	buildpoint = strings.ReplaceAll(buildpoint, "+", "-")
 	gcbSubs["BUILD_POINT"] = buildpoint
 
 	// TODO: Add conditionals for find_green_build
-	buildVersion := gcbmgrOpts.buildVersion
+	buildVersion := o.buildVersion
 	buildVersion = fmt.Sprintf("--buildversion=%s", buildVersion)
 	gcbSubs["BUILDVERSION"] = buildVersion
 
-	branch := gcbmgrOpts.branch
+	branch := o.branch
 
 	if branch != "" {
 		gcbSubs["RELEASE_BRANCH"] = branch
