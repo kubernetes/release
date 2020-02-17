@@ -35,14 +35,16 @@ func TestRunGcbmgrSuccess(t *testing.T) {
 		{
 			name: "list only",
 			gcbmgrOpts: gcbmgrOptions{
-				branch: "master",
+				branch:  "master",
+				gcpUser: "test-user",
 			},
 		},
 		{
 			name: "stream the job",
 			gcbmgrOpts: gcbmgrOptions{
-				branch: "master",
-				stream: true,
+				branch:  "master",
+				stream:  true,
+				gcpUser: "test-user",
 			},
 		},
 	}
@@ -66,7 +68,8 @@ func TestRunGcbmgrFailure(t *testing.T) {
 		{
 			name: "no release branch",
 			gcbmgrOpts: gcbmgrOptions{
-				branch: "",
+				branch:  "",
+				gcpUser: "test-user",
 			},
 		},
 		{
@@ -74,6 +77,7 @@ func TestRunGcbmgrFailure(t *testing.T) {
 			gcbmgrOpts: gcbmgrOptions{
 				stage:   true,
 				release: true,
+				gcpUser: "test-user",
 			},
 		},
 	}
@@ -99,6 +103,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			gcbmgrOpts: gcbmgrOptions{
 				branch:      "master",
 				releaseType: "prerelease",
+				gcpUser:     "test-user",
 			},
 			expected: map[string]string{
 				"BUILDVERSION":        "--buildversion=",
@@ -118,6 +123,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			gcbmgrOpts: gcbmgrOptions{
 				branch:      "release-1.14",
 				releaseType: "rc",
+				gcpUser:     "test-user",
 			},
 			expected: map[string]string{
 				"BUILDVERSION":        "--buildversion=",
@@ -137,6 +143,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			gcbmgrOpts: gcbmgrOptions{
 				branch:      "release-1.15",
 				releaseType: "official",
+				gcpUser:     "test-user",
 			},
 			expected: map[string]string{
 				"BUILDVERSION":        "--buildversion=",
@@ -178,7 +185,8 @@ func TestSetGCBSubstitutionsFailure(t *testing.T) {
 		{
 			name: "no release branch",
 			gcbmgrOpts: gcbmgrOptions{
-				branch: "",
+				branch:  "",
+				gcpUser: "test-user",
 			},
 		},
 	}
