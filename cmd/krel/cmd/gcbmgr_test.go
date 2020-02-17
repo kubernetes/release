@@ -17,10 +17,76 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"k8s.io/release/pkg/gcp/build"
 )
+
+func TestRunGcbmgrSuccess(t *testing.T) {
+	testcases := []struct {
+		name       string
+		gcbmgrOpts gcbmgrOptions
+		buildOpts  build.Options
+		expected   map[string]string
+	}{
+		{
+			name: "list only",
+			gcbmgrOpts: gcbmgrOptions{
+				branch: "master",
+			},
+		},
+		{
+			name: "stream the job",
+			gcbmgrOpts: gcbmgrOptions{
+				branch: "master",
+				stream: true,
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Logf("Test case: %s", tc.name)
+
+		gcbmgrOpts = &tc.gcbmgrOpts
+
+		err := runGcbmgr()
+		assert.Nil(t, err)
+	}
+}
+
+func TestRunGcbmgrFailure(t *testing.T) {
+	testcases := []struct {
+		name       string
+		gcbmgrOpts gcbmgrOptions
+		expected   map[string]string
+	}{
+		{
+			name: "no release branch",
+			gcbmgrOpts: gcbmgrOptions{
+				branch: "",
+			},
+		},
+		{
+			name: "specify stage and release",
+			gcbmgrOpts: gcbmgrOptions{
+				stage:   true,
+				release: true,
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		fmt.Printf("Test case: %s", tc.name)
+
+		gcbmgrOpts = &tc.gcbmgrOpts
+
+		err := runGcbmgr()
+		assert.Error(t, err)
+	}
+}
 
 func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 	testcases := []struct {
@@ -88,6 +154,8 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		t.Logf("Test case: %s", tc.name)
+
 		opts := tc.gcbmgrOpts
 
 		subs, err := setGCBSubstitutions(&opts)
@@ -116,6 +184,8 @@ func TestSetGCBSubstitutionsFailure(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		t.Logf("Test case: %s", tc.name)
+
 		opts := tc.gcbmgrOpts
 
 		_, err := setGCBSubstitutions(&opts)

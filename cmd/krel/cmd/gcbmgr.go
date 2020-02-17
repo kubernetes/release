@@ -161,7 +161,7 @@ func runGcbmgr() error {
 	}
 
 	if gcbmgrOpts.stage && gcbmgrOpts.release {
-		logrus.Fatal("Cannot specify both the 'stage' and 'release' flag. Please resubmit with only one of those flags selected.")
+		return errors.New("cannot specify both the 'stage' and 'release' flag; resubmit with only one build type selected")
 	}
 
 	gcbSubs, gcbSubsErr := setGCBSubstitutions(gcbmgrOpts)
@@ -170,6 +170,7 @@ func runGcbmgr() error {
 	}
 
 	if rootOpts.nomock {
+		// TODO: Consider a '--yes' flag so we can mock this
 		_, nomockSubmit, askErr := util.Ask(
 			"Really submit a --nomock release job against the $RELEASE_BRANCH branch?",
 			"yes",
@@ -215,6 +216,7 @@ func runGcbmgr() error {
 
 	var jobType string
 	switch {
+	// TODO: Consider a '--validate' flag to validate the GCB config without submitting
 	case gcbmgrOpts.stage:
 		jobType = "stage"
 	case gcbmgrOpts.release:
