@@ -535,6 +535,19 @@ func (r *Repo) Push(remoteBranch string) error {
 	return command.NewWithWorkDir(r.Dir(), gitExecutable, args...).RunSuccess()
 }
 
+// PushToRemote push the current branch to a spcified remote, but only if the
+// repository is not in dry run mode
+func (r *Repo) PushToRemote(remote, remoteBranch string) error {
+	args := []string{"push"}
+	if r.dryRun {
+		logrus.Infof("Won't push due to dry run repository")
+		args = append(args, "--dry-run")
+	}
+	args = append(args, remote, remoteBranch)
+
+	return command.NewWithWorkDir(r.Dir(), gitExecutable, args...).RunSuccess()
+}
+
 // Head retrieves the current repository HEAD as a string
 func (r *Repo) Head() (string, error) {
 	ref, err := r.inner.Head()
@@ -706,6 +719,16 @@ func (r *Repo) Rm(force bool, files ...string) error {
 		args = append(args, "-f")
 	}
 	args = append(args, files...)
+
+	return command.
+		NewWithWorkDir(r.Dir(), gitExecutable, args...).
+		RunSilentSuccess()
+}
+
+// AddRemote adds a new remote to the current working tree
+func (r *Repo) AddRemote(name, owner, repo string) error {
+	args := []string{"remote", "add"}
+	args = append(args, name, fmt.Sprintf("%s%s/%s.git", defaultGithubAuthRoot, owner, repo))
 
 	return command.
 		NewWithWorkDir(r.Dir(), gitExecutable, args...).
