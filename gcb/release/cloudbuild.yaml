@@ -38,8 +38,9 @@ steps:
 - name: gcr.io/$PROJECT_ID/k8s-cloud-builder
   dir: "go/src/k8s.io/release"
   env:
-  - "RELEASE_TOOL_REPO=${_RELEASE_TOOL_REPO}"
-  - "RELEASE_TOOL_BRANCH=${_RELEASE_TOOL_BRANCH}"
+  - "TOOL_ORG=${_TOOL_ORG}"
+  - "TOOL_REPO=${_TOOL_REPO}"
+  - "TOOL_BRANCH=${_TOOL_BRANCH}"
   secretEnv:
   - GITHUB_TOKEN
   args:
