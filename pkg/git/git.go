@@ -512,7 +512,7 @@ func (r *Repo) DescribeTag(rev string) (string, error) {
 		return "", err
 	}
 
-	return strings.TrimSpace(result.Output()), nil
+	return result.OutputTrimNL(), nil
 }
 
 // Merge does a git merge into the current branch from the provided one
