@@ -292,8 +292,10 @@ gitlib::push_master () {
 # Ensure TOOL_ROOT running with a synced repo.
 #
 gitlib::repo_state () {
-  local expectedRemote="${RELEASE_TOOL_REPO:-[:/]kubernetes/release}"
-  local expectedBranch="${RELEASE_TOOL_BRANCH:-master}"
+  local expectedOrg="${TOOL_ORG:-kubernetes}"
+  local expectedRepo="${TOOL_REPO:-release}"
+  local expectedRemote="[:/]${expectedOrg}/${expectedRepo}"
+  local expectedBranch="${TOOL_BRANCH:-master}"
 
   local branch
   branch=$(gitlib::current_branch "$TOOL_ROOT") || return 1
