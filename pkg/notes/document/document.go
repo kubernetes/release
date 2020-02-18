@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package notes
+package document
 
 import (
 	"crypto/sha512"
@@ -26,29 +26,34 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"k8s.io/release/pkg/notes"
 )
 
 // Document represents the underlying structure of a release notes document.
 type Document struct {
-	ActionRequired []string            `json:"action_required"`
-	Kinds          map[string][]string `json:"kinds"`
-	Uncategorized  []string            `json:"uncategorized"`
+	NotesWithActionRequired Notes       `json:"action_required"`
+	NotesUncategorized      Notes       `json:"uncategorized"`
+	NotesByKind             NotesByKind `json:"kinds"`
 }
 
+type Kind string
+type NotesByKind map[Kind]Notes
+type Notes []string
+
 const (
-	KindAPIChange       = "api-change"
-	KindBug             = "bug"
-	KindCleanup         = "cleanup"
-	KindDeprecation     = "deprecation"
-	KindDesign          = "design"
-	KindDocumentation   = "documentation"
-	KindFailingTest     = "failing-test"
-	KindFeature         = "feature"
-	KindFlake           = "flake"
-	KindBugCleanupFlake = "Other (Bug, Cleanup or Flake)"
+	KindAPIChange       Kind = "api-change"
+	KindBug             Kind = "bug"
+	KindCleanup         Kind = "cleanup"
+	KindDeprecation     Kind = "deprecation"
+	KindDesign          Kind = "design"
+	KindDocumentation   Kind = "documentation"
+	KindFailingTest     Kind = "failing-test"
+	KindFeature         Kind = "feature"
+	KindFlake           Kind = "flake"
+	KindBugCleanupFlake Kind = "Other (Bug, Cleanup or Flake)"
 )
 
-var kindPriority = []string{
+var kindPriority = []Kind{
 	KindDeprecation,
 	KindAPIChange,
 	KindFeature,
@@ -61,7 +66,7 @@ var kindPriority = []string{
 	KindBugCleanupFlake,
 }
 
-var kindMap = map[string]string{
+var kindMap = map[Kind]Kind{
 	KindBug:     KindBugCleanupFlake,
 	KindCleanup: KindBugCleanupFlake,
 	KindFlake:   KindBugCleanupFlake,
@@ -69,43 +74,46 @@ var kindMap = map[string]string{
 
 // CreateDocument assembles an organized document from an unorganized set of
 // release notes
-func CreateDocument(notes ReleaseNotes, history ReleaseNotesHistory) (*Document, error) {
+func CreateDocument(releaseNotes notes.ReleaseNotes, history notes.ReleaseNotesHistory) (*Document, error) {
 	doc := &Document{
-		Kinds:         map[string][]string{},
-		Uncategorized: []string{},
+		NotesWithActionRequired: Notes{},
+		NotesUncategorized:      Notes{},
+		NotesByKind:             NotesByKind{},
 	}
 
 	for _, pr := range history {
-		note := notes[pr]
+		note := releaseNotes[pr]
 
 		if note.DuplicateKind {
 			kind := mapKind(highestPriorityKind(note.Kinds))
-			existingNotes, ok := doc.Kinds[kind]
+			existingNotes, ok := doc.NotesByKind[kind]
 			if ok {
-				doc.Kinds[kind] = append(existingNotes, note.Markdown)
+				doc.NotesByKind[kind] = append(existingNotes, note.Markdown)
 			} else {
-				doc.Kinds[kind] = []string{note.Markdown}
+				doc.NotesByKind[kind] = []string{note.Markdown}
 			}
 		} else if note.ActionRequired {
-			doc.ActionRequired = append(doc.ActionRequired, note.Markdown)
+			doc.NotesWithActionRequired = append(doc.NotesWithActionRequired, note.Markdown)
 		} else {
 			for _, kind := range note.Kinds {
-				mappedKind := mapKind(kind)
-				notesForKind, ok := doc.Kinds[mappedKind]
+				mappedKind := mapKind(Kind(kind))
+				notesForKind, ok := doc.NotesByKind[mappedKind]
 				if ok {
-					doc.Kinds[mappedKind] = append(notesForKind, note.Markdown)
+					doc.NotesByKind[mappedKind] = append(notesForKind, note.Markdown)
 				} else {
-					doc.Kinds[mappedKind] = []string{note.Markdown}
+					doc.NotesByKind[mappedKind] = []string{note.Markdown}
 				}
 			}
 
 			if len(note.Kinds) == 0 {
 				// the note has not been categorized so far
-				doc.Uncategorized = append(doc.Uncategorized, note.Markdown)
+				doc.NotesUncategorized = append(doc.NotesUncategorized, note.Markdown)
 			}
 		}
 	}
-	sort.Strings(doc.ActionRequired)
+
+	sort.Strings(doc.NotesUncategorized)
+	sort.Strings(doc.NotesWithActionRequired)
 	return doc, nil
 }
 
@@ -137,19 +145,19 @@ func (d *Document) RenderMarkdown(bucket, tars, prevTag, newTag string) (string,
 	}
 
 	// notes with action required get their own section
-	if len(d.ActionRequired) > 0 {
+	if len(d.NotesWithActionRequired) > 0 {
 		o.WriteString("## Urgent Upgrade Notes")
 		nlnl()
 		o.WriteString("### (No, really, you MUST read this before you upgrade)")
 		nlnl()
-		for _, note := range d.ActionRequired {
+		for _, note := range d.NotesWithActionRequired {
 			writeNote(note)
 			nl()
 		}
 	}
 
 	// each Kind gets a section
-	sortedKinds := sortKinds(d.Kinds)
+	sortedKinds := sortKinds(d.NotesByKind)
 	if len(sortedKinds) > 0 {
 		o.WriteString("## Changes by Kind")
 		nlnl()
@@ -158,8 +166,8 @@ func (d *Document) RenderMarkdown(bucket, tars, prevTag, newTag string) (string,
 			o.WriteString(prettyKind(kind))
 			nlnl()
 
-			sort.Strings(d.Kinds[kind])
-			for _, note := range d.Kinds[kind] {
+			sort.Strings(d.NotesByKind[kind])
+			for _, note := range d.NotesByKind[kind] {
 				writeNote(note)
 			}
 			nl()
@@ -169,10 +177,10 @@ func (d *Document) RenderMarkdown(bucket, tars, prevTag, newTag string) (string,
 
 	// We call the uncategorized notes "Other Changes". These are changes
 	// without any kind
-	if len(d.Uncategorized) > 0 {
+	if len(d.NotesUncategorized) > 0 {
 		o.WriteString("## Other Changes")
 		nlnl()
-		for _, note := range d.Uncategorized {
+		for _, note := range d.NotesUncategorized {
 			writeNote(note)
 		}
 		nlnl()
@@ -183,13 +191,13 @@ func (d *Document) RenderMarkdown(bucket, tars, prevTag, newTag string) (string,
 
 // sortKinds sorts kinds by their priority and returns the result in a string
 // slice
-func sortKinds(kinds map[string][]string) []string {
-	res := []string{}
-	for kind := range kinds {
+func sortKinds(notesByKind NotesByKind) []Kind {
+	res := []Kind{}
+	for kind := range notesByKind {
 		res = append(res, kind)
 	}
 
-	indexOf := func(kind string) int {
+	indexOf := func(kind Kind) int {
 		for i, prioKind := range kindPriority {
 			if kind == prioKind {
 				return i
@@ -203,47 +211,6 @@ func sortKinds(kinds map[string][]string) []string {
 	})
 
 	return res
-}
-
-// prettySIG takes a sig name as parsed by the `sig-foo` label and returns a
-// "pretty" version of it that can be printed in documents
-func prettySIG(sig string) string {
-	parts := strings.Split(sig, "-")
-	for i, part := range parts {
-		switch part {
-		case "vsphere":
-			parts[i] = "vSphere"
-		case "vmware":
-			parts[i] = "VMWare"
-		case "openstack":
-			parts[i] = "OpenStack"
-		case "api", "aws", "cli", "gcp":
-			parts[i] = strings.ToUpper(part)
-		default:
-			parts[i] = strings.Title(part)
-		}
-	}
-	return strings.Join(parts, " ")
-}
-
-func prettifySIGList(sigs []string) string {
-	sigList := ""
-
-	// sort the list so that any group of SIGs with the same content gives us the
-	// same result
-	sort.Strings(sigs)
-
-	for i, sig := range sigs {
-		if i == 0 {
-			sigList = fmt.Sprintf("SIG %s", prettySIG(sig))
-		} else if i == len(sigs)-1 {
-			sigList = fmt.Sprintf("%s and %s", sigList, prettySIG(sig))
-		} else {
-			sigList = fmt.Sprintf("%s, %s", sigList, prettySIG(sig))
-		}
-	}
-
-	return sigList
 }
 
 // createDownloadsTable creates the markdown table with the links to the tarballs.
@@ -317,33 +284,34 @@ func createDownloadsTable(w io.Writer, bucket, tars, prevTag, newTag string) err
 	return nil
 }
 
-func highestPriorityKind(kinds []string) string {
+func highestPriorityKind(kinds []string) Kind {
 	for _, prioKind := range kindPriority {
-		for _, kind := range kinds {
+		for _, k := range kinds {
+			kind := Kind(k)
 			if kind == prioKind {
 				return kind
 			}
 		}
 	}
 
-	// Kind not in priotiy slice, returning the first one
-	return kinds[0]
+	// Kind not in priority slice, returning the first one
+	return Kind(kinds[0])
 }
 
-func mapKind(kind string) string {
+func mapKind(kind Kind) Kind {
 	if newKind, ok := kindMap[kind]; ok {
 		return newKind
 	}
 	return kind
 }
 
-func prettyKind(kind string) string {
+func prettyKind(kind Kind) string {
 	if kind == KindAPIChange {
 		return "API Change"
 	} else if kind == KindFailingTest {
 		return "Failing Test"
 	} else if kind == KindBugCleanupFlake {
-		return KindBugCleanupFlake
+		return string(KindBugCleanupFlake)
 	}
-	return strings.Title(kind)
+	return strings.Title(string(kind))
 }

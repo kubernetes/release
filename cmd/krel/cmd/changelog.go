@@ -36,6 +36,7 @@ import (
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/notes"
+	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/util"
 )
@@ -227,7 +228,7 @@ func generateReleaseNotes(branch, startRev, endRev string) (string, error) {
 	}
 
 	// Create the markdown
-	doc, err := notes.CreateDocument(releaseNotes, history)
+	doc, err := document.CreateDocument(releaseNotes, history)
 	if err != nil {
 		return "", errors.Wrapf(err, "creating release note document")
 	}

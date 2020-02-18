@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package notes
+package document
 
 import (
 	"io/ioutil"
@@ -25,22 +25,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 )
-
-func TestPrettySIG(t *testing.T) {
-	cases := map[string]string{
-		"scheduling":        "Scheduling",
-		"cluster-lifecycle": "Cluster Lifecycle",
-		"cli":               "CLI",
-		"aws":               "AWS",
-		"api-machinery":     "API Machinery",
-		"vsphere":           "vSphere",
-		"openstack":         "OpenStack",
-	}
-
-	for input, expected := range cases {
-		require.Equal(t, expected, (prettySIG(input)))
-	}
-}
 
 func TestCreateDownloadsTable(t *testing.T) {
 	// Given
@@ -138,7 +122,7 @@ filename | sha512 hash
 }
 
 func TestSortKinds(t *testing.T) {
-	input := map[string][]string{
+	input := NotesByKind{
 		"cleanup":                       nil,
 		"api-change":                    nil,
 		"deprecation":                   nil,
