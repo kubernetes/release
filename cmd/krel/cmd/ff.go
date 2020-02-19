@@ -28,9 +28,10 @@ import (
 )
 
 type ffOptions struct {
-	branch    string
-	masterRef string
-	org       string
+	branch         string
+	masterRef      string
+	org            string
+	nonInteractive bool
 }
 
 var ffOpts = &ffOptions{}
@@ -70,7 +71,7 @@ func runFf(opts *ffOptions) error {
 	logrus.Infof("Preparing to fast-forward master@%s onto the %s branch", masterRef, branch)
 	repo, err := kgit.CloneOrOpenDefaultGitHubRepoSSH(rootOpts.repoPath, opts.org)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "unable to open/clone repo: %v", rootOpts.repoPath)
 	}
 
 	if !rootOpts.nomock {
@@ -113,13 +114,15 @@ func runFf(opts *ffOptions) error {
 	if err != nil {
 		return err
 	}
+	logrus.Infof("Merge base tag is: %s", mergeBaseTag)
+
 	if masterTag != mergeBaseTag {
 		return errors.Errorf(
 			"Unable to fast forward: tag %q does not match %q",
 			masterTag, mergeBaseTag,
 		)
 	}
-	logrus.Infof("Last tag is: %s", masterTag)
+	logrus.Infof("Latest master tag is equal merge base tag")
 
 	releaseRev, err := repo.Head()
 	if err != nil {
@@ -139,9 +142,14 @@ func runFf(opts *ffOptions) error {
 
 	prepushMessage(repo.Dir(), kgit.DefaultRemote, branch, opts.org, releaseRev, headRev)
 
-	_, pushUpstream, err := util.Ask("Are you ready to push the local branch fast-forward changes upstream? Please only answer after you have validated the changes.", "yes", 3)
-	if err != nil {
-		return err
+	pushUpstream := false
+	if opts.nonInteractive {
+		pushUpstream = true
+	} else {
+		_, pushUpstream, err = util.Ask("Are you ready to push the local branch fast-forward changes upstream? Please only answer after you have validated the changes.", "yes", 3)
+		if err != nil {
+			return err
+		}
 	}
 
 	if pushUpstream {

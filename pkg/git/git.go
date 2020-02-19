@@ -418,7 +418,7 @@ func (r *Repo) HasRemoteBranch(branch string) error {
 	}
 
 	// We can then use every Remote functions to retrieve wanted information
-	refs, err := remote.List(&git.ListOptions{Auth: r.auth})
+	refs, err := remote.List(&git.ListOptions{})
 	if err != nil {
 		logrus.Warn("Could not list references on the remote repository.")
 		return err
