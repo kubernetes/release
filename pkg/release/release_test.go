@@ -26,8 +26,85 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestGetDefaultToolRepoURLSuccess(t *testing.T) {
+	testcases := []struct {
+		name     string
+		useSSH   bool
+		expected string
+	}{
+		{
+			name:     "default HTTPS",
+			expected: "https://github.com/kubernetes/release",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Logf("Test case: %s", tc.name)
+
+		actual, err := GetDefaultToolRepoURL()
+		assert.Equal(t, tc.expected, actual)
+		assert.Nil(t, err)
+	}
+}
+
+func TestGetToolRepoURLSuccess(t *testing.T) {
+	testcases := []struct {
+		name     string
+		org      string
+		repo     string
+		useSSH   bool
+		expected string
+	}{
+		{
+			name:     "default HTTPS",
+			expected: "https://github.com/kubernetes/release",
+		},
+		{
+			name:     "ssh with custom org",
+			org:      "fake-org",
+			useSSH:   true,
+			expected: "git@github.com:fake-org/release",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Logf("Test case: %s", tc.name)
+
+		actual, err := GetToolRepoURL(tc.org, tc.repo, tc.useSSH)
+		assert.Equal(t, tc.expected, actual)
+		assert.Nil(t, err)
+	}
+}
+
+func TestGetToolBranchSuccess(t *testing.T) {
+	testcases := []struct {
+		name     string
+		branch   string
+		expected string
+	}{
+		{
+			name:     "default branch",
+			expected: "master",
+		},
+		{
+			name:     "custom branch",
+			branch:   "tool-branch",
+			expected: "tool-branch",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Logf("Test case: %s", tc.name)
+		os.Setenv("TOOL_BRANCH", tc.branch)
+
+		actual := GetToolBranch()
+		assert.Equal(t, tc.expected, actual)
+	}
+}
 
 func TestBuiltWithBazel(t *testing.T) {
 	baseTmpDir, err := ioutil.TempDir("", "")

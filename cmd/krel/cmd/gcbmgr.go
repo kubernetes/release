@@ -260,18 +260,14 @@ func runGcbmgr() error {
 func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 	gcbSubs := map[string]string{}
 
-	releaseToolRepo := os.Getenv("RELEASE_TOOL_REPO")
-	if releaseToolRepo == "" {
-		releaseToolRepo = release.DefaultReleaseToolRepo
-	}
+	toolOrg := release.GetToolOrg()
+	gcbSubs["TOOL_ORG"] = toolOrg
 
-	releaseToolBranch := os.Getenv("RELEASE_TOOL_BRANCH")
-	if releaseToolBranch == "" {
-		releaseToolBranch = release.DefaultReleaseToolBranch
-	}
+	toolRepo := release.GetToolRepo()
+	gcbSubs["TOOL_REPO"] = toolRepo
 
-	gcbSubs["RELEASE_TOOL_REPO"] = releaseToolRepo
-	gcbSubs["RELEASE_TOOL_BRANCH"] = releaseToolBranch
+	toolBranch := release.GetToolBranch()
+	gcbSubs["TOOL_BRANCH"] = toolBranch
 
 	gcpUser := o.gcpUser
 	if gcpUser == "" {

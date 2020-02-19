@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -27,16 +28,17 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/util"
 )
 
 const (
 	// gcbmgr/anago defaults
-	DefaultReleaseToolRepo   = "https://github.com/kubernetes/release"
-	DefaultReleaseToolBranch = "master"
-	DefaultProject           = "kubernetes-release-test"
-	DefaultDiskSize          = "300"
-	BucketPrefix             = "kubernetes-release-"
+	DefaultToolRepo   = "release"
+	DefaultToolBranch = "master"
+	DefaultProject    = "kubernetes-release-test"
+	DefaultDiskSize   = "300"
+	BucketPrefix      = "kubernetes-release-"
 
 	versionReleaseRE  = `v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[a-zA-Z0-9]+)*\.*(0|[1-9][0-9]*)?`
 	versionBuildRE    = `([0-9]{1,})\+([0-9a-f]{5,40})`
@@ -70,6 +72,65 @@ const (
 	// before push to GCS.
 	WindowsGCSPath = "gcs-stage/extra/gce/windows"
 )
+
+var (
+	DefaultToolOrg = git.DefaultGithubOrg
+)
+
+// GetDefaultKubernetesRepoURL returns the default HTTPS repo URL for Release Engineering tools.
+// Expected: https://github.com/kubernetes/release
+func GetDefaultToolRepoURL() (string, error) {
+	return GetToolRepoURL(DefaultToolOrg, DefaultToolRepo, false)
+}
+
+// GetKubernetesRepoURL takes a GitHub org and repo, and useSSH as a boolean and
+// returns a repo URL for Release Engineering tools.
+// Expected result is one of the following:
+// - https://github.com/<org>/release
+// - git@github.com:<org>/release
+func GetToolRepoURL(org, repo string, useSSH bool) (string, error) {
+	if org == "" {
+		org = GetToolOrg()
+	}
+	if repo == "" {
+		repo = GetToolRepo()
+	}
+
+	return git.GetRepoURL(org, repo, useSSH)
+}
+
+// GetToolOrg checks if the 'TOOL_ORG' environment variable is set.
+// If 'TOOL_ORG' is non-empty, it returns the value. Otherwise, it returns DefaultToolOrg.
+func GetToolOrg() string {
+	toolOrg := os.Getenv("TOOL_ORG")
+	if toolOrg == "" {
+		toolOrg = DefaultToolOrg
+	}
+
+	return toolOrg
+}
+
+// GetToolRepo checks if the 'TOOL_REPO' environment variable is set.
+// If 'TOOL_REPO' is non-empty, it returns the value. Otherwise, it returns DefaultToolRepo.
+func GetToolRepo() string {
+	toolRepo := os.Getenv("TOOL_REPO")
+	if toolRepo == "" {
+		toolRepo = DefaultToolRepo
+	}
+
+	return toolRepo
+}
+
+// GetToolBranch checks if the 'TOOL_BRANCH' environment variable is set.
+// If 'TOOL_BRANCH' is non-empty, it returns the value. Otherwise, it returns DefaultToolBranch.
+func GetToolBranch() string {
+	toolBranch := os.Getenv("TOOL_BRANCH")
+	if toolBranch == "" {
+		toolBranch = DefaultToolBranch
+	}
+
+	return toolBranch
+}
 
 // BuiltWithBazel determines whether the most recent release was built with Bazel.
 func BuiltWithBazel(path, releaseKind string) (bool, error) {
