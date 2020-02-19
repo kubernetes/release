@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -32,8 +31,6 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"gopkg.in/src-d/go-git.v4/plumbing/storer"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/util"
@@ -82,7 +79,6 @@ func (d *DiscoverResult) EndRev() string {
 type Repo struct {
 	inner    Repository
 	worktree Worktree
-	auth     transport.AuthMethod
 	dir      string
 	dryRun   bool
 }
@@ -148,7 +144,6 @@ func CloneOrOpenGitHubRepo(path, owner, repo string, useSSH bool) (*Repo, error)
 			}
 			return fmt.Sprintf("%s/%s", DefaultGithubURL, slug)
 		}(),
-		useSSH,
 	)
 }
 
@@ -159,7 +154,7 @@ func CloneOrOpenGitHubRepo(path, owner, repo string, useSSH bool) (*Repo, error)
 //
 // The function returns the repository if cloning or updating of the repository
 // was successful, otherwise an error.
-func CloneOrOpenRepo(repoPath, url string, useSSH bool) (*Repo, error) {
+func CloneOrOpenRepo(repoPath, url string) (*Repo, error) {
 	// We still need the plain git executable for some methods
 	if !command.Available(gitExecutable) {
 		return nil, errors.New("git is needed to support all repository features")
@@ -173,7 +168,7 @@ func CloneOrOpenRepo(repoPath, url string, useSSH bool) (*Repo, error) {
 
 		if err == nil {
 			// The file or directory exists, just try to update the repo
-			return updateRepo(repoPath, useSSH)
+			return updateRepo(repoPath)
 		} else if os.IsNotExist(err) {
 			// The directory does not exists, we still have to clone it
 			targetDir = repoPath
@@ -196,24 +191,15 @@ func CloneOrOpenRepo(repoPath, url string, useSSH bool) (*Repo, error) {
 	}); err != nil {
 		return nil, err
 	}
-	return updateRepo(targetDir, useSSH)
+	return updateRepo(targetDir)
 }
 
 // updateRepo tries to open the provided repoPath and fetches the latest
 // changes from the configured remote location
-func updateRepo(repoPath string, useSSH bool) (*Repo, error) {
+func updateRepo(repoPath string) (*Repo, error) {
 	r, err := git.PlainOpen(repoPath)
 	if err != nil {
 		return nil, err
-	}
-
-	var auth transport.AuthMethod
-	if useSSH {
-		auth, err = ssh.NewPublicKeysFromFile(gitExecutable,
-			filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa"), "")
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	// Update the repo
@@ -230,7 +216,6 @@ func updateRepo(repoPath string, useSSH bool) (*Repo, error) {
 	return &Repo{
 		inner:    r,
 		worktree: worktree,
-		auth:     auth,
 		dir:      repoPath,
 	}, nil
 }
@@ -250,7 +235,6 @@ func OpenRepo(repoPath string) (*Repo, error) {
 	return &Repo{
 		inner:    r,
 		worktree: worktree,
-		auth:     nil,
 		dir:      repoPath,
 	}, nil
 }

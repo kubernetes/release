@@ -97,7 +97,7 @@ func newSUT(t *testing.T) *sut {
 	repoDir := filepath.Join(tempDir, fmt.Sprintf("test-%d", now))
 	require.Nil(t, command.New("cp", "-r", baseDir, repoDir).RunSuccess())
 
-	repo, err := git.CloneOrOpenRepo(repoDir, url, false)
+	repo, err := git.CloneOrOpenRepo(repoDir, url)
 	require.Nil(t, err)
 
 	// Adapt the settings
