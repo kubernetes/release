@@ -19,12 +19,14 @@ package release
 import (
 	"fmt"
 	"io/ioutil"
-	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -133,23 +135,23 @@ func GetToolBranch() string {
 }
 
 // BuiltWithBazel determines whether the most recent release was built with Bazel.
-func BuiltWithBazel(path, releaseKind string) (bool, error) {
+func BuiltWithBazel(workDir, releaseKind string) (bool, error) {
 	tar := releaseKind + tarballExtension
-	bazelBuild := filepath.Join(path, bazelBuildPath, tar)
-	dockerBuild := filepath.Join(path, dockerBuildPath, tar)
+	bazelBuild := filepath.Join(workDir, bazelBuildPath, tar)
+	dockerBuild := filepath.Join(workDir, dockerBuildPath, tar)
 	return util.MoreRecent(bazelBuild, dockerBuild)
 }
 
 // ReadBazelVersion reads the version from a Bazel build.
-func ReadBazelVersion(path string) (string, error) {
-	version, err := ioutil.ReadFile(filepath.Join(path, bazelVersionPath))
+func ReadBazelVersion(workDir string) (string, error) {
+	version, err := ioutil.ReadFile(filepath.Join(workDir, bazelVersionPath))
 	return string(version), err
 }
 
 // ReadDockerizedVersion reads the version from a Dockerized build.
-func ReadDockerizedVersion(path, releaseKind string) (string, error) {
+func ReadDockerizedVersion(workDir, releaseKind string) (string, error) {
 	tar := releaseKind + tarballExtension
-	dockerTarball := filepath.Join(path, dockerBuildPath, tar)
+	dockerTarball := filepath.Join(workDir, dockerBuildPath, tar)
 	versionFile := filepath.Join(releaseKind, dockerVersionPath)
 	reader, err := util.ReadFileFromGzippedTar(dockerTarball, versionFile)
 	if err != nil {
@@ -169,28 +171,80 @@ func IsDirtyBuild(build string) bool {
 	return strings.Contains(build, "dirty")
 }
 
+// TODO: Consider collapsing some of these functions.
+//       Keeping them as-is for now as kubepkg is dependent on them.
+func GetStableReleaseKubeVersion() (string, error) {
+	logrus.Info("Retrieving Kubernetes release version...")
+	return GetKubeVersion("https://dl.k8s.io/release/stable.txt")
+}
+
+func GetStablePrereleaseKubeVersion() (string, error) {
+	logrus.Info("Retrieving Kubernetes testing version...")
+	return GetKubeVersion("https://dl.k8s.io/release/latest.txt")
+}
+
+func GetLatestCIKubeVersion() (string, error) {
+	logrus.Info("Retrieving Kubernetes latest build version...")
+	return GetKubeVersion("https://dl.k8s.io/ci/latest.txt")
+}
+
+func GetCIKubeVersion(branch string) (string, error) {
+	logrus.Infof("Retrieving Kubernetes build version on the '%s' branch...", branch)
+	// TODO: We may need to check if the branch exists first to handle the branch cut scenario
+	versionMarker := "latest"
+	if branch != "master" {
+		version := strings.TrimPrefix(branch, "release-")
+
+		versionMarker = fmt.Sprintf("%s-%s", versionMarker, version)
+	}
+
+	versionMarkerFile := fmt.Sprintf("%s.txt", versionMarker)
+	logrus.Infof("Version marker file: %s", versionMarkerFile)
+
+	u, parseErr := url.Parse("https://dl.k8s.io/ci")
+	if parseErr != nil {
+		return "", errors.Wrap(parseErr, "failed to parse URL base")
+	}
+
+	u.Path = path.Join(u.Path, versionMarkerFile)
+	markerURL := u.String()
+
+	return GetKubeVersion(markerURL)
+}
+
+func GetKubeVersion(markerURL string) (string, error) {
+	logrus.Infof("Retrieving Kubernetes build version from %s...", markerURL)
+	version, httpErr := util.GetURLResponse(markerURL, true)
+	if httpErr != nil {
+		return "", httpErr
+	}
+
+	// Remove the 'v' prefix from the string to make the version SemVer compliant
+	version = strings.TrimPrefix(version, "v")
+
+	sem, semverErr := semver.Parse(version)
+	if semverErr != nil {
+		return "", semverErr
+	}
+
+	version = sem.String()
+
+	logrus.Infof("Retrieved Kubernetes version: %s", version)
+	return version, nil
+}
+
 // GetKubecrossVersion returns the current kube-cross container version.
 // Replaces release::kubecross_version
 func GetKubecrossVersion(branches ...string) (string, error) {
-	var version string
-
 	for _, branch := range branches {
 		logrus.Infof("Trying to get the kube-cross version for %s...", branch)
 
 		versionURL := fmt.Sprintf("https://raw.githubusercontent.com/kubernetes/kubernetes/%s/build/build-image/cross/VERSION", branch)
 
-		resp, httpErr := http.Get(versionURL)
+		version, httpErr := util.GetURLResponse(versionURL, true)
 		if httpErr != nil {
-			return "", errors.Wrapf(httpErr, "an error occurred GET-ing %s", versionURL)
+			return "", httpErr
 		}
-
-		defer resp.Body.Close()
-		body, ioErr := ioutil.ReadAll(resp.Body)
-		if ioErr != nil {
-			return "", errors.Wrapf(ioErr, "could not handle the response body for %s", versionURL)
-		}
-
-		version = strings.TrimSpace(string(body))
 
 		if version != "" {
 			logrus.Infof("Found the following kube-cross version: %s", version)

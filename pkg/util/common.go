@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -37,6 +38,26 @@ import (
 const (
 	TagPrefix = "v"
 )
+
+func GetURLResponse(url string, trim bool) (string, error) {
+	resp, httpErr := http.Get(url)
+	if httpErr != nil {
+		return "", errors.Wrapf(httpErr, "an error occurred GET-ing %s", url)
+	}
+
+	defer resp.Body.Close()
+	respBytes, ioErr := ioutil.ReadAll(resp.Body)
+	if ioErr != nil {
+		return "", errors.Wrapf(ioErr, "could not handle the response body for %s", url)
+	}
+
+	respString := string(respBytes)
+	if trim {
+		respString = strings.TrimSpace(respString)
+	}
+
+	return respString, nil
+}
 
 // PackagesAvailable takes a slice of packages and determines if they are installed
 // on the host OS. Replaces common::check_packages.

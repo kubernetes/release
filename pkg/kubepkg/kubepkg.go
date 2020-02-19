@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -34,6 +33,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/command"
+	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
 )
 
@@ -391,46 +391,12 @@ func getKubernetesVersion(packageDef *PackageDefinition) (string, error) {
 	}
 	switch packageDef.Channel {
 	case ChannelTesting:
-		return getTestingKubeVersion()
+		return release.GetStablePrereleaseKubeVersion()
 	case ChannelNightly:
-		return getNightlyKubeVersion()
+		return release.GetLatestCIKubeVersion()
 	}
 
-	return getReleaseKubeVersion()
-}
-
-func getReleaseKubeVersion() (string, error) {
-	logrus.Info("Retrieving Kubernetes release version...")
-	return fetchVersion("https://dl.k8s.io/release/stable.txt")
-}
-
-func getTestingKubeVersion() (string, error) {
-	logrus.Info("Retrieving Kubernetes testing version...")
-	return fetchVersion("https://dl.k8s.io/release/latest.txt")
-}
-
-func getNightlyKubeVersion() (string, error) {
-	logrus.Info("Retrieving Kubernetes nightly version...")
-	return fetchVersion("https://dl.k8s.io/ci/k8s-master.txt")
-}
-
-func fetchVersion(url string) (string, error) {
-	res, err := http.Get(url)
-	if err != nil {
-		return "", err
-	}
-
-	versionBytes, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
-	if err != nil {
-		return "", err
-	}
-
-	// Remove a newline and the v prefix from the string
-	version := strings.Replace(strings.Replace(string(versionBytes), "v", "", 1), "\n", "", 1)
-
-	logrus.Infof("Retrieved Kubernetes version: %s", version)
-	return version, nil
+	return release.GetStableReleaseKubeVersion()
 }
 
 func getCNIVersion(packageDef *PackageDefinition) (string, error) {
@@ -584,7 +550,7 @@ func getCIBuildsDownloadLinkBase(packageDef *PackageDefinition) (string, error) 
 	ciVersion := packageDef.KubernetesVersion
 	if ciVersion == "" {
 		var err error
-		ciVersion, err = getNightlyKubeVersion()
+		ciVersion, err = release.GetLatestCIKubeVersion()
 		if err != nil {
 			return "", err
 		}
