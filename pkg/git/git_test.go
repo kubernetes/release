@@ -19,6 +19,7 @@ package git_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/git/gitfakes"
@@ -39,4 +40,86 @@ func TestCommit(t *testing.T) {
 	repo, _, worktreeMock := newSUT()
 	require.Nil(t, repo.Commit("msg"))
 	require.Equal(t, worktreeMock.CommitCallCount(), 1)
+}
+
+func TestGetDefaultKubernetesRepoURLSuccess(t *testing.T) {
+	testcases := []struct {
+		name     string
+		org      string
+		useSSH   bool
+		expected string
+	}{
+		{
+			name:     "default HTTPS",
+			expected: "https://github.com/kubernetes/kubernetes",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Logf("Test case: %s", tc.name)
+
+		actual, err := git.GetDefaultKubernetesRepoURL()
+		assert.Equal(t, tc.expected, actual)
+		assert.Nil(t, err)
+	}
+}
+
+func TestGetKubernetesRepoURLSuccess(t *testing.T) {
+	testcases := []struct {
+		name     string
+		org      string
+		useSSH   bool
+		expected string
+	}{
+		{
+			name:     "default HTTPS",
+			expected: "https://github.com/kubernetes/kubernetes",
+		},
+		{
+			name:     "ssh with custom org",
+			org:      "fake-org",
+			useSSH:   true,
+			expected: "git@github.com:fake-org/kubernetes",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Logf("Test case: %s", tc.name)
+
+		actual, err := git.GetKubernetesRepoURL(tc.org, tc.useSSH)
+		assert.Equal(t, tc.expected, actual)
+		assert.Nil(t, err)
+	}
+}
+
+func TestGetRepoURLSuccess(t *testing.T) {
+	testcases := []struct {
+		name     string
+		org      string
+		repo     string
+		useSSH   bool
+		expected string
+	}{
+		{
+			name:     "default Kubernetes HTTPS",
+			org:      "kubernetes",
+			repo:     "kubernetes",
+			expected: "https://github.com/kubernetes/kubernetes",
+		},
+		{
+			name:     "ssh with custom org",
+			org:      "fake-org",
+			repo:     "repofoo",
+			useSSH:   true,
+			expected: "git@github.com:fake-org/repofoo",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Logf("Test case: %s", tc.name)
+
+		actual, err := git.GetRepoURL(tc.org, tc.repo, tc.useSSH)
+		assert.Equal(t, tc.expected, actual)
+		assert.Nil(t, err)
+	}
 }
