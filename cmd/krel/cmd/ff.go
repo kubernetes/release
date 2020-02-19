@@ -28,8 +28,9 @@ import (
 )
 
 type ffOptions struct {
-	branch    string
-	masterRef string
+	branch         string
+	masterRef      string
+	nonInteractive bool
 }
 
 var ffOpts = &ffOptions{}
@@ -46,7 +47,7 @@ var ffCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runFf(ffOpts)
+		return runFf(ffOpts, rootOpts)
 	},
 }
 
@@ -57,10 +58,10 @@ func init() {
 	rootCmd.AddCommand(ffCmd)
 }
 
-func runFf(opts *ffOptions) error {
+func runFf(opts *ffOptions, rootOpts *rootOptions) error {
 	branch := opts.branch
 	if branch == "" {
-		return errors.New("Please specify valid release branch")
+		return errors.New("please specify valid release branch")
 	}
 	masterRef := opts.masterRef
 	remoteMaster := kgit.Remotify(kgit.Master)
@@ -111,13 +112,15 @@ func runFf(opts *ffOptions) error {
 	if err != nil {
 		return err
 	}
+	logrus.Infof("Merge base tag is: %s", mergeBaseTag)
+
 	if masterTag != mergeBaseTag {
 		return errors.Errorf(
-			"Unable to fast forward: tag %q does not match %q",
+			"unable to fast forward: tag %q does not match %q",
 			masterTag, mergeBaseTag,
 		)
 	}
-	logrus.Infof("Last tag is: %s", masterTag)
+	logrus.Infof("Verified that the latest master tag is the same as the merge base tag")
 
 	releaseRev, err := repo.Head()
 	if err != nil {
@@ -137,9 +140,14 @@ func runFf(opts *ffOptions) error {
 
 	prepushMessage(repo.Dir(), kgit.DefaultRemote, branch, kgit.DefaultGithubOrg, releaseRev, headRev)
 
-	_, pushUpstream, err := util.Ask("Are you ready to push the local branch fast-forward changes upstream? Please only answer after you have validated the changes.", "yes", 3)
-	if err != nil {
-		return err
+	pushUpstream := false
+	if opts.nonInteractive {
+		pushUpstream = true
+	} else {
+		_, pushUpstream, err = util.Ask("Are you ready to push the local branch fast-forward changes upstream? Please only answer after you have validated the changes.", "yes", 3)
+		if err != nil {
+			return err
+		}
 	}
 
 	if pushUpstream {
