@@ -16,3 +16,7 @@ FROM launcher.gcr.io/google/bazel:2.0.0
 RUN apt-get update && \
     apt-get install -y build-essential && \
     rm -rf /var/lib/apt/lists/*
+
+# Some tests require a working git executable, so we configure a pseudo-user
+RUN git config --global user.name releng-ci-user && \
+    git config --global user.email nobody@k8s.io
