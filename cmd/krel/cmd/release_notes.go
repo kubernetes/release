@@ -125,9 +125,14 @@ func runReleaseNotes() (err error) {
 // tryToFindLatestMinorTag looks-up the default k/k remote to find the latest
 // non final version
 func tryToFindLatestMinorTag() (string, error) {
+	url, err := git.GetDefaultKubernetesRepoURL()
+	if err != nil {
+		return "", err
+	}
+
 	status, err := command.New(
 		"git", "ls-remote", "--sort=v:refname",
-		"--tags", git.DefaultGithubRepoURL,
+		"--tags", url,
 	).
 		Pipe("grep", "-Eo", "v[0-9].[0-9]+.0-.*.[0-9]$").
 		Pipe("tail", "-1").

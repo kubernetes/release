@@ -19,7 +19,9 @@ package git
 import (
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -42,8 +44,7 @@ import (
 const (
 	DefaultGithubOrg     = "kubernetes"
 	DefaultGithubRepo    = "kubernetes"
-	DefaultGithubURL     = "https://github.com"
-	DefaultGithubRepoURL = DefaultGithubURL + "/" + DefaultGithubOrg + "/" + DefaultGithubRepo
+	DefaultGithubURLBase = "https://github.com"
 	DefaultRemote        = "origin"
 	DefaultMasterRef     = "HEAD"
 	Master               = "master"
@@ -52,6 +53,54 @@ const (
 	defaultGithubAuthRoot = "git@github.com:"
 	gitExecutable         = "git"
 )
+
+// GetDefaultKubernetesRepoURL returns the default HTTPS repo URL for Kubernetes.
+// Expected: https://github.com/kubernetes/kubernetes
+func GetDefaultKubernetesRepoURL() (string, error) {
+	return GetKubernetesRepoURL(DefaultGithubOrg, false)
+}
+
+// GetKubernetesRepoURL takes a GitHub org and repo, and useSSH as a boolean and
+// returns a repo URL for Kubernetes.
+// Expected result is one of the following:
+// - https://github.com/<org>/kubernetes
+// - git@github.com:<org>/kubernetes
+func GetKubernetesRepoURL(org string, useSSH bool) (string, error) {
+	if org == "" {
+		org = DefaultGithubOrg
+	}
+
+	return GetRepoURL(org, DefaultGithubRepo, useSSH)
+}
+
+// GetRepoURL takes a GitHub org and repo, and useSSH as a boolean and
+// returns a repo URL for the specified repo.
+// Expected result is one of the following:
+// - https://github.com/<org>/<repo>
+// - git@github.com:<org>/<repo>
+func GetRepoURL(org, repo string, useSSH bool) (string, error) {
+	slug := fmt.Sprintf("%s/%s", org, repo)
+
+	var urlBase string
+	var repoURL string
+	if useSSH {
+		urlBase = defaultGithubAuthRoot
+		repoURL = fmt.Sprintf("%s%s", urlBase, slug)
+	} else {
+		urlBase = DefaultGithubURLBase
+
+		u, err := url.Parse(urlBase)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to parse URL base")
+		}
+
+		u.Path = path.Join(u.Path, slug)
+
+		repoURL = u.String()
+	}
+
+	return repoURL, nil
+}
 
 // DiscoverResult is the result of a revision discovery
 type DiscoverResult struct {
@@ -129,27 +178,22 @@ func (r *Repo) SetInnerRepo(repo Repository) {
 	r.inner = repo
 }
 
-// CloneOrOpenDefaultGitHubRepoSSH clones the default Kubernets GitHub
+// CloneOrOpenDefaultGitHubRepoSSH clones the default Kubernetes GitHub
 // repository into the path or updates it.
-func CloneOrOpenDefaultGitHubRepoSSH(path, owner string) (*Repo, error) {
-	return CloneOrOpenGitHubRepo(path, owner, DefaultGithubRepo, true)
+func CloneOrOpenDefaultGitHubRepoSSH(repoPath, owner string) (*Repo, error) {
+	return CloneOrOpenGitHubRepo(repoPath, owner, DefaultGithubRepo, true)
 }
 
 // CloneOrOpenGitHubRepo creates a temp directory containing the provided
 // GitHub repository via the owner and repo. If useSSH is true, then it will
 // clone the repository using the defaultGithubAuthRoot.
-func CloneOrOpenGitHubRepo(path, owner, repo string, useSSH bool) (*Repo, error) {
-	return CloneOrOpenRepo(
-		path,
-		func() string {
-			slug := fmt.Sprintf("%s/%s", owner, repo)
-			if useSSH {
-				return defaultGithubAuthRoot + slug
-			}
-			return fmt.Sprintf("%s/%s", DefaultGithubURL, slug)
-		}(),
-		useSSH,
-	)
+func CloneOrOpenGitHubRepo(repoPath, owner, repo string, useSSH bool) (*Repo, error) {
+	repoURL, err := GetRepoURL(owner, repo, useSSH)
+	if err != nil {
+		return nil, err
+	}
+
+	return CloneOrOpenRepo(repoPath, repoURL, useSSH)
 }
 
 // CloneOrOpenRepo creates a temp directory containing the provided
@@ -159,13 +203,13 @@ func CloneOrOpenGitHubRepo(path, owner, repo string, useSSH bool) (*Repo, error)
 //
 // The function returns the repository if cloning or updating of the repository
 // was successful, otherwise an error.
-func CloneOrOpenRepo(repoPath, url string, useSSH bool) (*Repo, error) {
+func CloneOrOpenRepo(repoPath, repoURL string, useSSH bool) (*Repo, error) {
 	// We still need the plain git executable for some methods
 	if !command.Available(gitExecutable) {
 		return nil, errors.New("git is needed to support all repository features")
 	}
 
-	logrus.Debugf("Using repository url %q", url)
+	logrus.Debugf("Using repository url %q", repoURL)
 	targetDir := ""
 	if repoPath != "" {
 		logrus.Debugf("Using existing repository path %q", repoPath)
@@ -191,7 +235,7 @@ func CloneOrOpenRepo(repoPath, url string, useSSH bool) (*Repo, error) {
 	}
 
 	if _, err := git.PlainClone(targetDir, false, &git.CloneOptions{
-		URL:      url,
+		URL:      repoURL,
 		Progress: os.Stdout,
 	}); err != nil {
 		return nil, err
