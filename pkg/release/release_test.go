@@ -403,24 +403,33 @@ func TestIsDirtyBuild(t *testing.T) {
 
 func TestGetKubeVersionSuccess(t *testing.T) {
 	testcases := []struct {
-		name     string
-		url      string
-		expected string
+		name      string
+		url       string
+		expected  string
+		useSemver bool
 	}{
 		{
-			name:     "Release URL",
-			url:      "https://dl.k8s.io/release/stable-1.13.txt",
-			expected: "1.13.12",
+			name:      "Release URL (semver)",
+			url:       "https://dl.k8s.io/release/stable-1.13.txt",
+			expected:  "1.13.12",
+			useSemver: true,
 		},
 		{
-			name:     "CI URL",
-			url:      "https://dl.k8s.io/ci/latest-1.14.txt",
-			expected: "1.14.11-beta.1.2+c8b135d0b49c44",
+			name:      "CI URL (semver)",
+			url:       "https://dl.k8s.io/ci/latest-1.14.txt",
+			expected:  "1.14.11-beta.1.2+c8b135d0b49c44",
+			useSemver: true,
+		},
+		{
+			name:      "CI URL (non-semver)",
+			url:       "https://dl.k8s.io/ci/latest-1.14.txt",
+			expected:  "v1.14.11-beta.1.2+c8b135d0b49c44",
+			useSemver: false,
 		},
 	}
 
 	for _, tc := range testcases {
-		actual, err := GetKubeVersion(tc.url)
+		actual, err := GetKubeVersion(tc.url, tc.useSemver)
 
 		if err != nil {
 			t.Fatalf("did not expect an error: %v", err)
@@ -432,8 +441,9 @@ func TestGetKubeVersionSuccess(t *testing.T) {
 
 func TestGetKubeVersionFailure(t *testing.T) {
 	testcases := []struct {
-		name string
-		url  string
+		name      string
+		url       string
+		useSemver bool
 	}{
 		{
 			name: "Empty URL string",
@@ -446,7 +456,7 @@ func TestGetKubeVersionFailure(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		_, err := GetKubeVersion(tc.url)
+		_, err := GetKubeVersion(tc.url, tc.useSemver)
 
 		require.Error(t, err)
 	}
