@@ -529,6 +529,10 @@ func (r *Repo) MergeBase(from, to string) (string, error) {
 
 // Remotify returns the name prepended with the default remote
 func Remotify(name string) string {
+	split := strings.Split(name, "/")
+	if len(split) > 1 {
+		return name
+	}
 	return fmt.Sprintf("%s/%s", DefaultRemote, name)
 }
 

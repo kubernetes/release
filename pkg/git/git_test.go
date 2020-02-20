@@ -123,3 +123,15 @@ func TestGetRepoURLSuccess(t *testing.T) {
 		assert.Nil(t, err)
 	}
 }
+
+func TestRemotify(t *testing.T) {
+	testcases := []struct{ provided, expected string }{
+		{provided: git.Master, expected: git.DefaultRemote + "/" + git.Master},
+		{provided: "origin/ref", expected: "origin/ref"},
+		{provided: "base/another_ref", expected: "base/another_ref"},
+	}
+
+	for _, tc := range testcases {
+		require.Equal(t, git.Remotify(tc.provided), tc.expected)
+	}
+}
