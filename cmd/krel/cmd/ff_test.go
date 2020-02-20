@@ -136,7 +136,7 @@ func (s *sut) getRootOptions() *rootOptions {
 
 func (s *sut) getFfOptions() *ffOptions {
 	return &ffOptions{
-		masterRef:      git.DefaultMasterRef,
+		masterRef:      git.Remotify(git.Master),
 		nonInteractive: true,
 	}
 }
