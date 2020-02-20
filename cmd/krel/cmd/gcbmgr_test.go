@@ -110,9 +110,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				gcpUser:     "test-user",
 			},
 			expected: map[string]string{
-				"BUILDVERSION":   "--buildversion=",
 				"BUILD_AT_HEAD":  "",
-				"BUILD_POINT":    "",
 				"OFFICIAL":       "",
 				"OFFICIAL_TAG":   "",
 				"RC":             "",
@@ -131,9 +129,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				gcpUser:     "test-user",
 			},
 			expected: map[string]string{
-				"BUILDVERSION":   "--buildversion=",
 				"BUILD_AT_HEAD":  "",
-				"BUILD_POINT":    "",
 				"OFFICIAL":       "",
 				"OFFICIAL_TAG":   "",
 				"RC":             "--rc",
@@ -152,9 +148,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				gcpUser:     "test-user",
 			},
 			expected: map[string]string{
-				"BUILDVERSION":   "--buildversion=",
 				"BUILD_AT_HEAD":  "",
-				"BUILD_POINT":    "",
 				"OFFICIAL":       "--official",
 				"OFFICIAL_TAG":   "official",
 				"RC":             "",
@@ -176,9 +170,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			toolRepo:   "best-tools",
 			toolBranch: "tool-branch",
 			expected: map[string]string{
-				"BUILDVERSION":   "--buildversion=",
 				"BUILD_AT_HEAD":  "",
-				"BUILD_POINT":    "",
 				"OFFICIAL":       "--official",
 				"OFFICIAL_TAG":   "official",
 				"RC":             "",
@@ -239,7 +231,7 @@ func dropDynamicSubstitutions(orig map[string]string) (result map[string]string)
 	result = orig
 
 	for k := range result {
-		if k == "GCP_USER_TAG" || k == "KUBE_CROSS_VERSION" {
+		if k == "BUILDVERSION" || k == "BUILD_POINT" || k == "GCP_USER_TAG" || k == "KUBE_CROSS_VERSION" {
 			delete(result, k)
 		}
 	}

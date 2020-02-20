@@ -109,7 +109,7 @@ func init() {
 	gcbmgrCmd.PersistentFlags().StringVar(
 		&gcbmgrOpts.buildVersion,
 		"build-version",
-		"FAKE+BUILD+POINT",
+		"",
 		"Build version",
 	)
 
@@ -308,24 +308,32 @@ func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 		gcbSubs["RC"] = ""
 	}
 
-	// TODO: Remove once we remove support for --built-at-head.
-	gcbSubs["BUILD_AT_HEAD"] = ""
-
-	buildpoint := o.buildVersion
-	buildpoint = strings.ReplaceAll(buildpoint, "+", "-")
-	gcbSubs["BUILD_POINT"] = buildpoint
-
-	// TODO: Add conditionals for find_green_build
-	buildVersion := o.buildVersion
-	buildVersion = fmt.Sprintf("--buildversion=%s", buildVersion)
-	gcbSubs["BUILDVERSION"] = buildVersion
-
 	branch := o.branch
 	if branch == "" {
 		return gcbSubs, errors.New("Release branch must be set to continue")
 	}
 
 	gcbSubs["RELEASE_BRANCH"] = branch
+
+	// TODO: Remove once we remove support for --built-at-head.
+	gcbSubs["BUILD_AT_HEAD"] = ""
+
+	buildVersion := o.buildVersion
+	if buildVersion == "" {
+		var versionErr error
+		buildVersion, versionErr = release.GetCIKubeVersion(o.branch)
+		if versionErr != nil {
+			return gcbSubs, versionErr
+		}
+	}
+
+	buildpoint := buildVersion
+	buildpoint = strings.ReplaceAll(buildpoint, "+", "-")
+	gcbSubs["BUILD_POINT"] = buildpoint
+
+	// TODO: Add conditionals for find_green_build
+	buildVersion = fmt.Sprintf("--buildversion=%s", buildVersion)
+	gcbSubs["BUILDVERSION"] = buildVersion
 
 	kubecrossBranches := []string{
 		branch,
