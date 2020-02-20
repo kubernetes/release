@@ -30,7 +30,6 @@ import (
 type ffOptions struct {
 	branch    string
 	masterRef string
-	org       string
 }
 
 var ffOpts = &ffOptions{}
@@ -54,7 +53,6 @@ var ffCmd = &cobra.Command{
 func init() {
 	ffCmd.PersistentFlags().StringVar(&ffOpts.branch, "branch", "", "branch")
 	ffCmd.PersistentFlags().StringVar(&ffOpts.masterRef, "ref", kgit.DefaultMasterRef, "ref on master")
-	ffCmd.PersistentFlags().StringVar(&ffOpts.org, "org", kgit.DefaultGithubOrg, "org to run tool against")
 
 	rootCmd.AddCommand(ffCmd)
 }
@@ -68,7 +66,7 @@ func runFf(opts *ffOptions) error {
 	remoteMaster := kgit.Remotify(kgit.Master)
 
 	logrus.Infof("Preparing to fast-forward master@%s onto the %s branch", masterRef, branch)
-	repo, err := kgit.CloneOrOpenDefaultGitHubRepoSSH(rootOpts.repoPath, opts.org)
+	repo, err := kgit.CloneOrOpenDefaultGitHubRepoSSH(rootOpts.repoPath)
 	if err != nil {
 		return err
 	}
@@ -137,7 +135,7 @@ func runFf(opts *ffOptions) error {
 		return err
 	}
 
-	prepushMessage(repo.Dir(), kgit.DefaultRemote, branch, opts.org, releaseRev, headRev)
+	prepushMessage(repo.Dir(), kgit.DefaultRemote, branch, kgit.DefaultGithubOrg, releaseRev, headRev)
 
 	_, pushUpstream, err := util.Ask("Are you ready to push the local branch fast-forward changes upstream? Please only answer after you have validated the changes.", "yes", 3)
 	if err != nil {
