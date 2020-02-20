@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -96,6 +97,9 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 	testcases := []struct {
 		name       string
 		gcbmgrOpts gcbmgrOptions
+		toolOrg    string
+		toolRepo   string
+		toolBranch string
 		expected   map[string]string
 	}{
 		{
@@ -106,16 +110,15 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				gcpUser:     "test-user",
 			},
 			expected: map[string]string{
-				"BUILDVERSION":        "--buildversion=",
-				"BUILD_AT_HEAD":       "",
-				"BUILD_POINT":         "",
-				"OFFICIAL":            "",
-				"OFFICIAL_TAG":        "",
-				"RC":                  "",
-				"RC_TAG":              "",
-				"RELEASE_BRANCH":      "master",
-				"RELEASE_TOOL_BRANCH": "master",
-				"RELEASE_TOOL_REPO":   "https://github.com/kubernetes/release",
+				"BUILD_AT_HEAD":  "",
+				"OFFICIAL":       "",
+				"OFFICIAL_TAG":   "",
+				"RC":             "",
+				"RC_TAG":         "",
+				"RELEASE_BRANCH": "master",
+				"TOOL_ORG":       "kubernetes",
+				"TOOL_REPO":      "release",
+				"TOOL_BRANCH":    "master",
 			},
 		},
 		{
@@ -126,16 +129,15 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				gcpUser:     "test-user",
 			},
 			expected: map[string]string{
-				"BUILDVERSION":        "--buildversion=",
-				"BUILD_AT_HEAD":       "",
-				"BUILD_POINT":         "",
-				"OFFICIAL":            "",
-				"OFFICIAL_TAG":        "",
-				"RC":                  "--rc",
-				"RC_TAG":              "rc",
-				"RELEASE_BRANCH":      "release-1.14",
-				"RELEASE_TOOL_BRANCH": "master",
-				"RELEASE_TOOL_REPO":   "https://github.com/kubernetes/release",
+				"BUILD_AT_HEAD":  "",
+				"OFFICIAL":       "",
+				"OFFICIAL_TAG":   "",
+				"RC":             "--rc",
+				"RC_TAG":         "rc",
+				"RELEASE_BRANCH": "release-1.14",
+				"TOOL_ORG":       "kubernetes",
+				"TOOL_REPO":      "release",
+				"TOOL_BRANCH":    "master",
 			},
 		},
 		{
@@ -146,16 +148,37 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				gcpUser:     "test-user",
 			},
 			expected: map[string]string{
-				"BUILDVERSION":        "--buildversion=",
-				"BUILD_AT_HEAD":       "",
-				"BUILD_POINT":         "",
-				"OFFICIAL":            "--official",
-				"OFFICIAL_TAG":        "official",
-				"RC":                  "",
-				"RC_TAG":              "",
-				"RELEASE_BRANCH":      "release-1.15",
-				"RELEASE_TOOL_BRANCH": "master",
-				"RELEASE_TOOL_REPO":   "https://github.com/kubernetes/release",
+				"BUILD_AT_HEAD":  "",
+				"OFFICIAL":       "--official",
+				"OFFICIAL_TAG":   "official",
+				"RC":             "",
+				"RC_TAG":         "",
+				"RELEASE_BRANCH": "release-1.15",
+				"TOOL_ORG":       "kubernetes",
+				"TOOL_REPO":      "release",
+				"TOOL_BRANCH":    "master",
+			},
+		},
+		{
+			name: "release-1.16 official with custom tool org, repo, and branch",
+			gcbmgrOpts: gcbmgrOptions{
+				branch:      "release-1.16",
+				releaseType: "official",
+				gcpUser:     "test-user",
+			},
+			toolOrg:    "honk",
+			toolRepo:   "best-tools",
+			toolBranch: "tool-branch",
+			expected: map[string]string{
+				"BUILD_AT_HEAD":  "",
+				"OFFICIAL":       "--official",
+				"OFFICIAL_TAG":   "official",
+				"RC":             "",
+				"RC_TAG":         "",
+				"RELEASE_BRANCH": "release-1.16",
+				"TOOL_ORG":       "honk",
+				"TOOL_REPO":      "best-tools",
+				"TOOL_BRANCH":    "tool-branch",
 			},
 		},
 	}
@@ -164,6 +187,9 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		t.Logf("Test case: %s", tc.name)
 
 		opts := tc.gcbmgrOpts
+		os.Setenv("TOOL_ORG", tc.toolOrg)
+		os.Setenv("TOOL_REPO", tc.toolRepo)
+		os.Setenv("TOOL_BRANCH", tc.toolBranch)
 
 		subs, err := setGCBSubstitutions(&opts)
 		actual := dropDynamicSubstitutions(subs)
@@ -205,7 +231,7 @@ func dropDynamicSubstitutions(orig map[string]string) (result map[string]string)
 	result = orig
 
 	for k := range result {
-		if k == "GCP_USER_TAG" || k == "KUBE_CROSS_VERSION" {
+		if k == "BUILDVERSION" || k == "BUILD_POINT" || k == "GCP_USER_TAG" || k == "KUBE_CROSS_VERSION" {
 			delete(result, k)
 		}
 	}

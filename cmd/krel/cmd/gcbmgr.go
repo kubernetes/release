@@ -109,7 +109,7 @@ func init() {
 	gcbmgrCmd.PersistentFlags().StringVar(
 		&gcbmgrOpts.buildVersion,
 		"build-version",
-		"FAKE+BUILD+POINT",
+		"",
 		"Build version",
 	)
 
@@ -260,18 +260,14 @@ func runGcbmgr() error {
 func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 	gcbSubs := map[string]string{}
 
-	releaseToolRepo := os.Getenv("RELEASE_TOOL_REPO")
-	if releaseToolRepo == "" {
-		releaseToolRepo = release.DefaultReleaseToolRepo
-	}
+	toolOrg := release.GetToolOrg()
+	gcbSubs["TOOL_ORG"] = toolOrg
 
-	releaseToolBranch := os.Getenv("RELEASE_TOOL_BRANCH")
-	if releaseToolBranch == "" {
-		releaseToolBranch = release.DefaultReleaseToolBranch
-	}
+	toolRepo := release.GetToolRepo()
+	gcbSubs["TOOL_REPO"] = toolRepo
 
-	gcbSubs["RELEASE_TOOL_REPO"] = releaseToolRepo
-	gcbSubs["RELEASE_TOOL_BRANCH"] = releaseToolBranch
+	toolBranch := release.GetToolBranch()
+	gcbSubs["TOOL_BRANCH"] = toolBranch
 
 	gcpUser := o.gcpUser
 	if gcpUser == "" {
@@ -312,24 +308,32 @@ func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 		gcbSubs["RC"] = ""
 	}
 
-	// TODO: Remove once we remove support for --built-at-head.
-	gcbSubs["BUILD_AT_HEAD"] = ""
-
-	buildpoint := o.buildVersion
-	buildpoint = strings.ReplaceAll(buildpoint, "+", "-")
-	gcbSubs["BUILD_POINT"] = buildpoint
-
-	// TODO: Add conditionals for find_green_build
-	buildVersion := o.buildVersion
-	buildVersion = fmt.Sprintf("--buildversion=%s", buildVersion)
-	gcbSubs["BUILDVERSION"] = buildVersion
-
 	branch := o.branch
 	if branch == "" {
 		return gcbSubs, errors.New("Release branch must be set to continue")
 	}
 
 	gcbSubs["RELEASE_BRANCH"] = branch
+
+	// TODO: Remove once we remove support for --built-at-head.
+	gcbSubs["BUILD_AT_HEAD"] = ""
+
+	buildVersion := o.buildVersion
+	if buildVersion == "" {
+		var versionErr error
+		buildVersion, versionErr = release.GetCIKubeVersion(o.branch, false)
+		if versionErr != nil {
+			return gcbSubs, versionErr
+		}
+	}
+
+	buildpoint := buildVersion
+	buildpoint = strings.ReplaceAll(buildpoint, "+", "-")
+	gcbSubs["BUILD_POINT"] = buildpoint
+
+	// TODO: Add conditionals for find_green_build
+	buildVersion = fmt.Sprintf("--buildversion=%s", buildVersion)
+	gcbSubs["BUILDVERSION"] = buildVersion
 
 	kubecrossBranches := []string{
 		branch,

@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestGetPackageVersionSuccess(t *testing.T) {
@@ -118,57 +117,6 @@ func TestGetKubernetesVersionFailure(t *testing.T) {
 
 	_, err := getKubernetesVersion(nil)
 	a.Error(err)
-}
-
-func TestFetchVersionSuccess(t *testing.T) {
-	testcases := []struct {
-		name     string
-		url      string
-		expected string
-	}{
-		{
-			name:     "Release URL",
-			url:      "https://dl.k8s.io/release/stable-1.13.txt",
-			expected: "1.13.12",
-		},
-		{
-			name:     "CI URL",
-			url:      "https://dl.k8s.io/ci/latest-1.14.txt",
-			expected: "1.14.11-beta.1.2+c8b135d0b49c44",
-		},
-	}
-
-	for _, tc := range testcases {
-		actual, err := fetchVersion(tc.url)
-
-		if err != nil {
-			t.Fatalf("did not expect an error: %v", err)
-		}
-
-		assert.Equal(t, tc.expected, actual)
-	}
-}
-
-func TestFetchVersionFailure(t *testing.T) {
-	testcases := []struct {
-		name string
-		url  string
-	}{
-		{
-			name: "Empty URL string",
-			url:  "",
-		},
-		{
-			name: "Bad URL",
-			url:  "https://fake.url",
-		},
-	}
-
-	for _, tc := range testcases {
-		_, err := fetchVersion(tc.url)
-
-		require.Error(t, err)
-	}
 }
 
 func TestGetCNIVersionSuccess(t *testing.T) {

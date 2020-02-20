@@ -26,8 +26,85 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestGetDefaultToolRepoURLSuccess(t *testing.T) {
+	testcases := []struct {
+		name     string
+		useSSH   bool
+		expected string
+	}{
+		{
+			name:     "default HTTPS",
+			expected: "https://github.com/kubernetes/release",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Logf("Test case: %s", tc.name)
+
+		actual, err := GetDefaultToolRepoURL()
+		assert.Equal(t, tc.expected, actual)
+		assert.Nil(t, err)
+	}
+}
+
+func TestGetToolRepoURLSuccess(t *testing.T) {
+	testcases := []struct {
+		name     string
+		org      string
+		repo     string
+		useSSH   bool
+		expected string
+	}{
+		{
+			name:     "default HTTPS",
+			expected: "https://github.com/kubernetes/release",
+		},
+		{
+			name:     "ssh with custom org",
+			org:      "fake-org",
+			useSSH:   true,
+			expected: "git@github.com:fake-org/release",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Logf("Test case: %s", tc.name)
+
+		actual, err := GetToolRepoURL(tc.org, tc.repo, tc.useSSH)
+		assert.Equal(t, tc.expected, actual)
+		assert.Nil(t, err)
+	}
+}
+
+func TestGetToolBranchSuccess(t *testing.T) {
+	testcases := []struct {
+		name     string
+		branch   string
+		expected string
+	}{
+		{
+			name:     "default branch",
+			expected: "master",
+		},
+		{
+			name:     "custom branch",
+			branch:   "tool-branch",
+			expected: "tool-branch",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Logf("Test case: %s", tc.name)
+		os.Setenv("TOOL_BRANCH", tc.branch)
+
+		actual := GetToolBranch()
+		assert.Equal(t, tc.expected, actual)
+	}
+}
 
 func TestBuiltWithBazel(t *testing.T) {
 	baseTmpDir, err := ioutil.TempDir("", "")
@@ -321,6 +398,67 @@ func TestIsDirtyBuild(t *testing.T) {
 			res := IsDirtyBuild(tc.build)
 			require.Equal(t, tc.want, res)
 		})
+	}
+}
+
+func TestGetKubeVersionSuccess(t *testing.T) {
+	testcases := []struct {
+		name      string
+		url       string
+		expected  string
+		useSemver bool
+	}{
+		{
+			name:      "Release URL (semver)",
+			url:       "https://dl.k8s.io/release/stable-1.13.txt",
+			expected:  "1.13.12",
+			useSemver: true,
+		},
+		{
+			name:      "CI URL (semver)",
+			url:       "https://dl.k8s.io/ci/latest-1.14.txt",
+			expected:  "1.14.11-beta.1.2+c8b135d0b49c44",
+			useSemver: true,
+		},
+		{
+			name:      "CI URL (non-semver)",
+			url:       "https://dl.k8s.io/ci/latest-1.14.txt",
+			expected:  "v1.14.11-beta.1.2+c8b135d0b49c44",
+			useSemver: false,
+		},
+	}
+
+	for _, tc := range testcases {
+		actual, err := GetKubeVersion(tc.url, tc.useSemver)
+
+		if err != nil {
+			t.Fatalf("did not expect an error: %v", err)
+		}
+
+		assert.Equal(t, tc.expected, actual)
+	}
+}
+
+func TestGetKubeVersionFailure(t *testing.T) {
+	testcases := []struct {
+		name      string
+		url       string
+		useSemver bool
+	}{
+		{
+			name: "Empty URL string",
+			url:  "",
+		},
+		{
+			name: "Bad URL",
+			url:  "https://fake.url",
+		},
+	}
+
+	for _, tc := range testcases {
+		_, err := GetKubeVersion(tc.url, tc.useSemver)
+
+		require.Error(t, err)
 	}
 }
 
