@@ -179,9 +179,12 @@ func (r *Repo) SetInnerRepo(repo Repository) {
 }
 
 // CloneOrOpenDefaultGitHubRepoSSH clones the default Kubernetes GitHub
-// repository into the path or updates it.
-func CloneOrOpenDefaultGitHubRepoSSH(repoPath, owner string) (*Repo, error) {
-	return CloneOrOpenGitHubRepo(repoPath, owner, DefaultGithubRepo, true)
+// repository via SSH if the repoPath is empty, otherwise updates it at the
+// expected repoPath.
+func CloneOrOpenDefaultGitHubRepoSSH(repoPath string) (*Repo, error) {
+	return CloneOrOpenGitHubRepo(
+		repoPath, DefaultGithubOrg, DefaultGithubRepo, true,
+	)
 }
 
 // CloneOrOpenGitHubRepo creates a temp directory containing the provided
