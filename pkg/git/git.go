@@ -22,7 +22,6 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -34,8 +33,6 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"gopkg.in/src-d/go-git.v4/plumbing/storer"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/util"
@@ -131,7 +128,6 @@ func (d *DiscoverResult) EndRev() string {
 type Repo struct {
 	inner    Repository
 	worktree Worktree
-	auth     transport.AuthMethod
 	dir      string
 	dryRun   bool
 }
@@ -220,19 +216,19 @@ func CloneOrOpenRepo(repoPath, repoURL string, useSSH bool) (*Repo, error) {
 
 		if err == nil {
 			// The file or directory exists, just try to update the repo
-			return updateRepo(repoPath, useSSH)
+			return updateRepo(repoPath)
 		} else if os.IsNotExist(err) {
 			// The directory does not exists, we still have to clone it
 			targetDir = repoPath
 		} else {
 			// Something else bad happened
-			return nil, err
+			return nil, errors.Wrap(err, "unable to update repo")
 		}
 	} else {
 		// No repoPath given, use a random temp dir instead
 		t, err := ioutil.TempDir("", "k8s-")
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "unable to create temp dir")
 		}
 		targetDir = t
 	}
@@ -241,26 +237,17 @@ func CloneOrOpenRepo(repoPath, repoURL string, useSSH bool) (*Repo, error) {
 		URL:      repoURL,
 		Progress: os.Stdout,
 	}); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unable to clone repo")
 	}
-	return updateRepo(targetDir, useSSH)
+	return updateRepo(targetDir)
 }
 
 // updateRepo tries to open the provided repoPath and fetches the latest
 // changes from the configured remote location
-func updateRepo(repoPath string, useSSH bool) (*Repo, error) {
+func updateRepo(repoPath string) (*Repo, error) {
 	r, err := git.PlainOpen(repoPath)
 	if err != nil {
-		return nil, err
-	}
-
-	var auth transport.AuthMethod
-	if useSSH {
-		auth, err = ssh.NewPublicKeysFromFile(gitExecutable,
-			filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa"), "")
-		if err != nil {
-			return nil, err
-		}
+		return nil, errors.Wrap(err, "unable to open repo")
 	}
 
 	// Update the repo
@@ -272,12 +259,11 @@ func updateRepo(repoPath string, useSSH bool) (*Repo, error) {
 
 	worktree, err := r.Worktree()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unable to get repository worktree")
 	}
 	return &Repo{
 		inner:    r,
 		worktree: worktree,
-		auth:     auth,
 		dir:      repoPath,
 	}, nil
 }
@@ -297,7 +283,6 @@ func OpenRepo(repoPath string) (*Repo, error) {
 	return &Repo{
 		inner:    r,
 		worktree: worktree,
-		auth:     nil,
 		dir:      repoPath,
 	}, nil
 }
@@ -465,7 +450,7 @@ func (r *Repo) HasRemoteBranch(branch string) error {
 	}
 
 	// We can then use every Remote functions to retrieve wanted information
-	refs, err := remote.List(&git.ListOptions{Auth: r.auth})
+	refs, err := remote.List(&git.ListOptions{})
 	if err != nil {
 		logrus.Warn("Could not list references on the remote repository.")
 		return err
