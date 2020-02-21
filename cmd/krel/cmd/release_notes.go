@@ -103,13 +103,13 @@ func init() {
 		&releaseNotesOpts.draftOrg,
 		"draft-org",
 		"",
-		"a Github organization ownwer of the fork of k/sig-release where the Release Notes Draft PR will be created",
+		"a Github organization owner of the fork of k/sig-release where the Release Notes Draft PR will be created",
 	)
 
 	releaseNotesCmd.PersistentFlags().StringVar(
 		&releaseNotesOpts.draftRepo,
 		"draft-repo",
-		"",
+		git.DefaultGithubReleaseRepo,
 		"the name of the fork of k/sig-release, the Release Notes Draft PR will be created from this repository",
 	)
 
