@@ -179,5 +179,5 @@ Once the branch fast-forward is complete, the diff will be available after push 
 
 	https://github.com/%s/%s/compare/%s...%s"
 
-`, gitRoot, remote, branch, org, kgit.DefaultGithubRepo, releaseRev, headRev)
+`, gitRoot, remote, branch, org, kgit.DefaultGithubRepo, releaseRev[0:11], headRev[0:11])
 }
