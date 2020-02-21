@@ -200,12 +200,12 @@ func Ask(question, expectedResponse string, retries int) (answer string, success
 	attempts := 1
 
 	if retries < 0 {
-		fmt.Printf("Retries was set to a number less than zero (%d). Please specify a positive number of retries or zero, if you want to ask unconditionally.", retries)
+		fmt.Printf("Retries was set to a number less than zero (%d). Please specify a positive number of retries or zero, if you want to ask unconditionally.\n", retries)
 	}
 
 	for attempts <= retries {
 		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Printf("%s (%d/%d) ", question, attempts, retries)
+		fmt.Printf("%s (%d/%d) \n", question, attempts, retries)
 
 		scanner.Scan()
 		answer = scanner.Text()
@@ -214,7 +214,7 @@ func Ask(question, expectedResponse string, retries int) (answer string, success
 			return answer, true, nil
 		}
 
-		fmt.Printf("Expected '%s', but got '%s'", expectedResponse, answer)
+		fmt.Printf("Expected '%s', but got '%s'\n", expectedResponse, answer)
 
 		attempts++
 	}
