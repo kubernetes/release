@@ -651,3 +651,43 @@ func TestOpenRepoFailure(t *testing.T) {
 	require.NotNil(t, err)
 	require.Nil(t, repo)
 }
+
+func TestAddRemoteSuccess(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	err := testRepo.sut.AddRemote("remote", "owner", "repo")
+	require.Nil(t, err)
+}
+
+func TestAddRemoteFailureAlreadyExisting(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	err := testRepo.sut.AddRemote(git.DefaultRemote, "owner", "repo")
+	require.NotNil(t, err)
+}
+
+func TestPushToRemoteSuccessRemoteMaster(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	err := testRepo.sut.PushToRemote(git.DefaultRemote, git.Remotify(git.Master))
+	require.Nil(t, err)
+}
+
+func TestPushToRemoteSuccessBranchTracked(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	err := testRepo.sut.PushToRemote(git.DefaultRemote, testRepo.branchName)
+	require.Nil(t, err)
+}
+
+func TestPushToRemoteFailureBranchNotExisting(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	err := testRepo.sut.PushToRemote(git.DefaultRemote, "some-branch")
+	require.NotNil(t, err)
+}
