@@ -243,10 +243,25 @@ func createDraftPR(tag string, result *releaseNotesResult) error {
 		return errors.Wrap(err, "cloning k/sig-release")
 	}
 
-	// add the user's fork as a remote
-	err = sigReleaseRepo.AddRemote("userfork", releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo)
+	// test if the fork remote is already existing
+	const remote = "userfork"
+	url, err := git.GetRepoURL(
+		releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo, true,
+	)
 	if err != nil {
-		return errors.Wrap(err, "adding users fork as remote repository")
+		return errors.Wrap(err, "unable to get repository URL")
+	}
+	if sigReleaseRepo.HasRemote(remote, url) {
+		logrus.Infof(
+			"Using already existing remote %v (%v) in repository",
+			remote, url,
+		)
+	} else {
+		// add the user's fork as a remote
+		err = sigReleaseRepo.AddRemote(remote, releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo)
+		if err != nil {
+			return errors.Wrap(err, "adding users fork as remote repository")
+		}
 	}
 
 	// verify the branch doesn't already exist on the user's fork
@@ -282,7 +297,7 @@ func createDraftPR(tag string, result *releaseNotesResult) error {
 
 	// push to fork
 	logrus.Infof("Pushing release notes draft to %s/%s", releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo)
-	err = sigReleaseRepo.PushToRemote("userfork", branchname)
+	err = sigReleaseRepo.PushToRemote(remote, branchname)
 	if err != nil {
 		return errors.Wrapf(err, "pushing changes to %s/%s", releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo)
 	}

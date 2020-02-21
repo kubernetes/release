@@ -612,6 +612,45 @@ func TestRmSuccessForce(t *testing.T) {
 	require.True(t, os.IsNotExist(err))
 }
 
+func TestHasRemoteSuccess(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	err := testRepo.sut.AddRemote("test", "owner", "repo")
+	require.Nil(t, err)
+
+	remotes, err := testRepo.sut.Remotes()
+	require.Nil(t, err)
+
+	require.Len(t, remotes, 2)
+
+	// The origin remote
+	require.Equal(t, git.DefaultRemote, remotes[0].Name())
+	require.Len(t, remotes[0].URLs(), 1)
+	require.Equal(t, testRepo.dir, remotes[0].URLs()[0])
+
+	// Or via the API
+	require.True(t, testRepo.sut.HasRemote("origin", testRepo.dir))
+
+	// The added test remote
+	require.Equal(t, "test", remotes[1].Name())
+	require.Len(t, remotes[1].URLs(), 1)
+
+	url, err := git.GetRepoURL("owner", "repo", true)
+	require.Nil(t, err)
+	require.Equal(t, url, remotes[1].URLs()[0])
+
+	// Or via the API
+	require.True(t, testRepo.sut.HasRemote("test", url))
+}
+
+func TestHasRemoteFailure(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	require.False(t, testRepo.sut.HasRemote("name", "some-url.com"))
+}
+
 func TestRmFailureForce(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
