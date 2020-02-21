@@ -20,6 +20,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/blang/semver"
@@ -32,6 +35,11 @@ import (
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/util"
+)
+
+const (
+	// draftFilename filename for the release notes draft
+	draftFilename = "release-notes-draft.md"
 )
 
 // releaseNotesCmd represents the subcommand for `krel release-notes`
@@ -66,7 +74,13 @@ permissions to your fork of k/sig-release and k-sigs/release-notes.`,
 }
 
 type releaseNotesOptions struct {
-	tag string
+	tag                string
+	draftOrg           string
+	draftRepo          string
+	createDraftPR      bool
+	outputDir          string
+	sigreleaseForkPath string
+	Format             string
 }
 
 type releaseNotesResult struct {
@@ -83,6 +97,49 @@ func init() {
 		"t",
 		"",
 		"version tag for the notes",
+	)
+
+	releaseNotesCmd.PersistentFlags().StringVar(
+		&releaseNotesOpts.draftOrg,
+		"draft-org",
+		"",
+		"a Github organization ownwer of the fork of k/sig-release where the Release Notes Draft PR will be created",
+	)
+
+	releaseNotesCmd.PersistentFlags().StringVar(
+		&releaseNotesOpts.draftRepo,
+		"draft-repo",
+		"",
+		"the name of the fork of k/sig-release, the Release Notes Draft PR will be created from this repository",
+	)
+
+	releaseNotesCmd.PersistentFlags().BoolVar(
+		&releaseNotesOpts.createDraftPR,
+		"create-draft-pr",
+		false,
+		"create the Release Notes Draft PR. --draft-org and --draft-repo must be set along with this option",
+	)
+
+	releaseNotesCmd.PersistentFlags().StringVarP(
+		&releaseNotesOpts.outputDir,
+		"output-dir",
+		"o",
+		".",
+		"output a copy of the release notes to this directory",
+	)
+
+	releaseNotesCmd.PersistentFlags().StringVar(
+		&releaseNotesOpts.Format,
+		"format",
+		util.EnvDefault("FORMAT", "markdown"),
+		"The format for notes output (options: markdown, json)",
+	)
+
+	releaseNotesCmd.PersistentFlags().StringVar(
+		&releaseNotesOpts.sigreleaseForkPath,
+		"sigrelease-fork-path",
+		filepath.Join(os.TempDir(), "k8s-sigrelease"),
+		"output a copy of the release notes to this directory",
 	)
 
 	rootCmd.AddCommand(releaseNotesCmd)
@@ -113,12 +170,124 @@ func runReleaseNotes() (err error) {
 	logrus.Infof("Using start tag %v", start)
 	logrus.Infof("Using end tag %v", tag)
 
-	_, err = releaseNotesFrom(start)
+	if releaseNotesOpts.createDraftPR {
+		if err = validateDraftPROptions(); err != nil {
+			return errors.Wrap(err, "validating PR command line options")
+		}
+	}
+
+	result, err := releaseNotesFrom(start)
 	if err != nil {
 		return errors.Wrapf(err, "generating release notes")
 	}
 
-	//TODO: implement PR creation for k-sigs/release-notes and k/sig-release
+	// Create RN draft PR
+	if releaseNotesOpts.createDraftPR {
+		if err := createDraftPR(tag, result); err != nil {
+			return errors.Wrap(err, "failed to create release notes draft PR")
+		}
+		return nil
+	}
+
+	switch releaseNotesOpts.Format {
+	case "json":
+		err = ioutil.WriteFile(filepath.Join(releaseNotesOpts.outputDir, "release-notes.json"), []byte(result.json), 0644)
+		if err != nil {
+			return errors.Wrap(err, "writing release notes JSON file")
+		}
+	case "markdown":
+		err = ioutil.WriteFile(filepath.Join(releaseNotesOpts.outputDir, "release-notes.md"), []byte(result.json), 0644)
+		if err != nil {
+			return errors.Wrap(err, "writing release notes markdown file")
+		}
+	default:
+		return errors.Errorf("%q is an unsupported format", releaseNotesOpts.Format)
+	}
+
+	// TODO: implement PR creation for k-sigs/release-notes
+	return nil
+}
+
+// validateDraftPROptions checks if we have all needed parameters to create the Release Notes PR
+func validateDraftPROptions() error {
+	if releaseNotesOpts.createDraftPR {
+		// Check if --draft-org is set
+		if releaseNotesOpts.draftOrg == "" {
+			logrus.Warn("cannot generate the Release Notes draft PR without --draft-org")
+		}
+
+		// Check if --draft-repo is set
+		if releaseNotesOpts.draftRepo == "" {
+			logrus.Warn("cannot generate the Release Notes draft PR without --draft-repo")
+		}
+
+		if releaseNotesOpts.draftOrg == "" || releaseNotesOpts.draftRepo == "" {
+			return errors.New("To generate the release notes draft you must define both --draft-org and --draft-repo")
+		}
+	}
+	return nil
+}
+
+// createDraftPR pushes the release notes draft to the users fork
+func createDraftPR(tag string, result *releaseNotesResult) error {
+	s, err := util.TagStringToSemver(tag)
+	if err != nil {
+		return errors.Wrapf(err, "no valid tag: %v", tag)
+	}
+
+	branchname := "release-notes-draft-" + tag
+
+	// checkout kubernetes/sig-release
+	sigReleaseRepo, err := git.CloneOrOpenGitHubRepo(releaseNotesOpts.sigreleaseForkPath, git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, true)
+	if err != nil {
+		return errors.Wrap(err, "cloning k/sig-release")
+	}
+
+	// add the user's fork as a remote
+	err = sigReleaseRepo.AddRemote("userfork", releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo)
+	if err != nil {
+		return errors.Wrap(err, "adding users fork as remote repository")
+	}
+
+	// verify the branch doesn't already exist on the user's fork
+	err = sigReleaseRepo.HasRemoteBranch(branchname)
+	if err == nil {
+		return errors.Errorf("remote repo already has a branch named %s", branchname)
+	}
+
+	// checkout the new branch
+	err = sigReleaseRepo.Checkout("-b", branchname)
+	if err != nil {
+		return errors.Wrapf(err, "creating new branch %s", branchname)
+	}
+
+	// generate the notes
+	targetdir := filepath.Join(sigReleaseRepo.Dir(), "releases", fmt.Sprintf("release-%d.%d", s.Major, s.Minor))
+	logrus.Debugf("Release notes markdown will be written to %s", targetdir)
+	err = ioutil.WriteFile(filepath.Join(targetdir, draftFilename), []byte(result.markdown), 0644)
+	if err != nil {
+		return errors.Wrapf(err, "writing release notes draft")
+	}
+
+	// commit the results
+	err = sigReleaseRepo.Add(filepath.Join("releases", fmt.Sprintf("release-%d.%d", s.Major, s.Minor), draftFilename))
+	if err != nil {
+		return errors.Wrap(err, "adding release notes draft to staging area")
+	}
+
+	err = sigReleaseRepo.Commit("Release Notes draft for k/k " + tag)
+	if err != nil {
+		return errors.Wrapf(err, "Error creating commit in %s/%s", releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo)
+	}
+
+	// push to fork
+	logrus.Infof("Pushing release notes draft to %s/%s", releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo)
+	err = sigReleaseRepo.PushToRemote("userfork", branchname)
+	if err != nil {
+		return errors.Wrapf(err, "pushing changes to %s/%s", releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo)
+	}
+
+	// TODO: Call github API and create PR against k/sig-release
 	return nil
 }
 

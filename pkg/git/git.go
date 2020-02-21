@@ -39,12 +39,13 @@ import (
 )
 
 const (
-	DefaultGithubOrg     = "kubernetes"
-	DefaultGithubRepo    = "kubernetes"
-	DefaultGithubURLBase = "https://github.com"
-	DefaultRemote        = "origin"
-	DefaultMasterRef     = "HEAD"
-	Master               = "master"
+	DefaultGithubOrg         = "kubernetes"
+	DefaultGithubRepo        = "kubernetes"
+	DefaultGithubReleaseRepo = "sig-release"
+	DefaultGithubURLBase     = "https://github.com"
+	DefaultRemote            = "origin"
+	DefaultMasterRef         = "HEAD"
+	Master                   = "master"
 
 	branchRE              = `master|release-([0-9]{1,})\.([0-9]{1,})(\.([0-9]{1,}))*$`
 	defaultGithubAuthRoot = "git@github.com:"
@@ -746,4 +747,27 @@ func (r *Repo) Rm(force bool, files ...string) error {
 	return command.
 		NewWithWorkDir(r.Dir(), gitExecutable, args...).
 		RunSilentSuccess()
+}
+
+// AddRemote adds a new remote to the current working tree
+func (r *Repo) AddRemote(name, owner, repo string) error {
+	args := []string{"remote", "add"}
+	args = append(args, name, fmt.Sprintf("%s%s/%s.git", defaultGithubAuthRoot, owner, repo))
+
+	return command.
+		NewWithWorkDir(r.Dir(), gitExecutable, args...).
+		RunSilentSuccess()
+}
+
+// PushToRemote push the current branch to a spcified remote, but only if the
+// repository is not in dry run mode
+func (r *Repo) PushToRemote(remote, remoteBranch string) error {
+	args := []string{"push"}
+	if r.dryRun {
+		logrus.Infof("Won't push due to dry run repository")
+		args = append(args, "--dry-run")
+	}
+	args = append(args, remote, remoteBranch)
+
+	return command.NewWithWorkDir(r.Dir(), gitExecutable, args...).RunSuccess()
 }
