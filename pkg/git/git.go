@@ -125,6 +125,22 @@ func (d *DiscoverResult) EndRev() string {
 	return d.endRev
 }
 
+// Remote is a representation of a git remote location
+type Remote struct {
+	name string
+	urls []string
+}
+
+// Name returns the name of the remote
+func (r *Remote) Name() string {
+	return r.name
+}
+
+// URLs returns all available URLs of the remote
+func (r *Remote) URLs() []string {
+	return r.urls
+}
+
 // Wrapper type for a Kubernetes repository instance
 type Repo struct {
 	inner    Repository
@@ -142,6 +158,7 @@ type Repository interface {
 	Branches() (storer.ReferenceIter, error)
 	Head() (*plumbing.Reference, error)
 	Remote(string) (*git.Remote, error)
+	Remotes() ([]*git.Remote, error)
 	ResolveRevision(plumbing.Revision) (*plumbing.Hash, error)
 	Tags() (storer.ReferenceIter, error)
 }
@@ -749,11 +766,51 @@ func (r *Repo) Rm(force bool, files ...string) error {
 		RunSilentSuccess()
 }
 
+// Remotes lists the currently available remotes for the repository
+func (r *Repo) Remotes() (res []*Remote, err error) {
+	remotes, err := r.inner.Remotes()
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list remotes")
+	}
+
+	for _, remote := range remotes {
+		config := remote.Config()
+		res = append(res, &Remote{name: config.Name, urls: config.URLs})
+	}
+
+	return res, nil
+}
+
+// HasRemote checks if the provided remote `name` is available and matches the
+// expected `url`
+func (r *Repo) HasRemote(name, expectedURL string) bool {
+	remotes, err := r.Remotes()
+	if err != nil {
+		logrus.Warnf("Unable to get repository remotes: %v", err)
+		return false
+	}
+
+	for _, remote := range remotes {
+		if remote.Name() == name {
+			for _, url := range remote.URLs() {
+				if url == expectedURL {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
+
 // AddRemote adds a new remote to the current working tree
 func (r *Repo) AddRemote(name, owner, repo string) error {
-	args := []string{"remote", "add"}
-	args = append(args, name, fmt.Sprintf("%s%s/%s.git", defaultGithubAuthRoot, owner, repo))
+	repoURL, err := GetRepoURL(owner, repo, true)
+	if err != nil {
+		return errors.Wrap(err, "unable to get remote URL")
+	}
 
+	args := []string{"remote", "add", name, repoURL}
 	return command.
 		NewWithWorkDir(r.Dir(), gitExecutable, args...).
 		RunSilentSuccess()
