@@ -198,9 +198,18 @@ func CloneOrOpenDefaultGitHubRepoSSH(repoPath string) (*Repo, error) {
 	)
 }
 
-// CloneOrOpenGitHubRepo creates a temp directory containing the provided
-// GitHub repository via the owner and repo. If useSSH is true, then it will
-// clone the repository using the defaultGithubAuthRoot.
+// CleanCloneGitHubRepo creates a guaranteed fresh checkout of a given repository. The returned *Repo has a Cleanup()
+// method that should be used to delete the repository on-disk afterwards.
+func CleanCloneGitHubRepo(owner, repo string, useSSH bool) (*Repo, error) {
+	repoURL := GetRepoURL(owner, repo, useSSH)
+	// The use of a blank string for the repo path triggers special behaviour in CloneOrOpenRepo that causes a true
+	// temporary directory with a random name to be created.
+	return CloneOrOpenRepo("", repoURL, useSSH)
+}
+
+// CloneOrOpenGitHubRepo works with a repository in the given directory, or creates one if the directory is empty. The
+// repo uses the provided GitHub repository via the owner and repo. If useSSH is true, then it will clone the
+// repository using the defaultGithubAuthRoot.
 func CloneOrOpenGitHubRepo(repoPath, owner, repo string, useSSH bool) (*Repo, error) {
 	repoURL := GetRepoURL(owner, repo, useSSH)
 	return CloneOrOpenRepo(repoPath, repoURL, useSSH)
@@ -843,7 +852,7 @@ func (r *Repo) AddRemote(name, owner, repo string) error {
 // PushToRemote push the current branch to a spcified remote, but only if the
 // repository is not in dry run mode
 func (r *Repo) PushToRemote(remote, remoteBranch string) error {
-	args := []string{"push"}
+	args := []string{"push", "--set-upstream"}
 	if r.dryRun {
 		logrus.Infof("Won't push due to dry run repository")
 		args = append(args, "--dry-run")

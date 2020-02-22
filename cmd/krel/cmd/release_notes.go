@@ -87,17 +87,15 @@ permissions to your fork of k/sig-release and k-sigs/release-notes.`,
 }
 
 type releaseNotesOptions struct {
-	tag                    string
-	draftOrg               string
-	draftRepo              string
-	createDraftPR          bool
-	createWebsitePR        bool
-	outputDir              string
-	sigreleaseForkPath     string
-	kubernetessigsForkPath string
-	Format                 string
-	websiteOrg             string
-	websiteRepo            string
+	tag             string
+	draftOrg        string
+	draftRepo       string
+	createDraftPR   bool
+	createWebsitePR bool
+	outputDir       string
+	Format          string
+	websiteOrg      string
+	websiteRepo     string
 }
 
 type releaseNotesResult struct {
@@ -171,20 +169,6 @@ func init() {
 		"format",
 		util.EnvDefault("FORMAT", "markdown"),
 		"The format for notes output (options: markdown, json)",
-	)
-
-	releaseNotesCmd.PersistentFlags().StringVar(
-		&releaseNotesOpts.kubernetessigsForkPath,
-		"kubernetes-sigs-fork-path",
-		filepath.Join(os.TempDir(), "k8s-sigs"),
-		"fork kubernetes-sigs/release-notes and output a copy of the json release notes to this directory",
-	)
-
-	releaseNotesCmd.PersistentFlags().StringVar(
-		&releaseNotesOpts.sigreleaseForkPath,
-		"sigrelease-fork-path",
-		filepath.Join(os.TempDir(), "k8s-sigrelease"),
-		"fork k/sig-release and output a copy of the release notes draft to this directory",
 	)
 
 	rootCmd.AddCommand(releaseNotesCmd)
@@ -328,7 +312,7 @@ func validateWebsitePROptions() error {
 }
 
 // createDraftPR pushes the release notes draft to the users fork
-func createDraftPR(tag string, result *releaseNotesResult) error {
+func createDraftPR(tag string, result *releaseNotesResult) (err error) {
 	s, err := util.TagStringToSemver(tag)
 	if err != nil {
 		return errors.Wrapf(err, "no valid tag: %v", tag)
@@ -338,13 +322,17 @@ func createDraftPR(tag string, result *releaseNotesResult) error {
 
 	// Prepare the fork of k/sig-release
 	sigReleaseRepo, err := prepareFork(
-		branchname, releaseNotesOpts.sigreleaseForkPath,
+		branchname,
 		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
 		releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo,
 	)
 	if err != nil {
 		return errors.Wrap(err, "preparing local fork of kubernetes/sig-release")
 	}
+
+	defer func() {
+		err = sigReleaseRepo.Cleanup()
+	}()
 
 	// generate the notes
 	targetdir := filepath.Join(sigReleaseRepo.Dir(), "releases", fmt.Sprintf("release-%d.%d", s.Major, s.Minor))
@@ -375,19 +363,19 @@ func createDraftPR(tag string, result *releaseNotesResult) error {
 }
 
 // prepareFork Prepare a branch a repo
-func prepareFork(branchName, repoPath, upstreamOrg, upstreamRepo, myOrg, myRepo string) (repo *git.Repo, err error) {
+func prepareFork(branchName, upstreamOrg, upstreamRepo, myOrg, myRepo string) (repo *git.Repo, err error) {
 	// checkout the upstream repository
 	logrus.Infof("cloning/updating repository %s/%s", upstreamOrg, upstreamRepo)
 
-	repo, err = git.CloneOrOpenGitHubRepo(
-		repoPath, upstreamOrg, upstreamRepo, true,
+	repo, err = git.CleanCloneGitHubRepo(
+		upstreamOrg, upstreamRepo, false,
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cloning %s/%s", upstreamOrg, upstreamRepo)
 	}
 
 	// test if the fork remote is already existing
-	url := git.GetRepoURL(myOrg, myRepo, true)
+	url := git.GetRepoURL(myOrg, myRepo, false)
 	if repo.HasRemote(userForkName, url) {
 		logrus.Infof(
 			"Using already existing remote %v (%v) in repository",
@@ -401,14 +389,8 @@ func prepareFork(branchName, repoPath, upstreamOrg, upstreamRepo, myOrg, myRepo 
 		}
 	}
 
-	// verify the branch doesn't already exist on the user's fork
-	err = repo.HasRemoteBranch(branchName)
-	if err == nil {
-		return nil, errors.Errorf("remote repo already has a branch named %s", branchName)
-	}
-
 	// checkout the new branch
-	err = repo.Checkout("-b", branchName)
+	err = repo.Checkout("-B", branchName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating new branch %s", branchName)
 	}
@@ -483,8 +465,8 @@ func processJSONOutput(repoPath string) error {
 }
 
 // createWebsitePR creates the JSON version of the release notes and pushes them to a user fork
-func createWebsitePR(tag string, result *releaseNotesResult) error {
-	_, err := util.TagStringToSemver(tag)
+func createWebsitePR(tag string, result *releaseNotesResult) (err error) {
+	_, err = util.TagStringToSemver(tag)
 	if err != nil {
 		return errors.Wrapf(err, "no valid tag: %v", tag)
 	}
@@ -494,12 +476,15 @@ func createWebsitePR(tag string, result *releaseNotesResult) error {
 
 	// checkout kubernetes-sigs/release-notes
 	k8sSigsRepo, err := prepareFork(
-		branchname, releaseNotesOpts.kubernetessigsForkPath, defaultKubernetesSigsOrg,
+		branchname, defaultKubernetesSigsOrg,
 		defaultKubernetesSigsRepo, releaseNotesOpts.websiteOrg, releaseNotesOpts.websiteRepo,
 	)
 	if err != nil {
 		return errors.Wrap(err, "preparing local fork branch")
 	}
+	defer func() {
+		err = k8sSigsRepo.Cleanup()
+	}()
 
 	// add a reference to the new json file in assets.ts
 	if err := addReferenceToAssetsFile(k8sSigsRepo.Dir(), jsonNotesFilename); err != nil {
