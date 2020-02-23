@@ -199,7 +199,7 @@ Validate the changes pulled in from master using:
 
 Once the branch fast-forward is complete, the diff will be available after push at:
 
-	https://github.com/%s/%s/compare/%s...%s"
+	https://github.com/%s/%s/compare/%s...%s
 
 `, gitRoot, remote, branch, org, kgit.DefaultGithubRepo, releaseRev[0:11], headRev[0:11])
 }
