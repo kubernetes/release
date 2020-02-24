@@ -20,6 +20,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -115,8 +116,6 @@ func TestBuiltWithBazel(t *testing.T) {
 	dockerTmpDir, err := ioutil.TempDir("", "docker")
 	require.Nil(t, err)
 
-	release := "kubernetes"
-
 	// Build directories.
 	require.Nil(t, os.MkdirAll(filepath.Join(baseTmpDir, bazelBuildPath), os.ModePerm))
 	require.Nil(t, os.MkdirAll(filepath.Join(baseTmpDir, dockerBuildPath), os.ModePerm))
@@ -145,7 +144,7 @@ func TestBuiltWithBazel(t *testing.T) {
 		[]byte("test"),
 		os.FileMode(0644),
 	))
-	dockerFile := filepath.Join(dockerTmpDir, "_output/release-tars/1.1.1.tar.gz")
+	dockerFile := filepath.Join(dockerTmpDir, "_output/release-tars/kubernetes.tar.gz")
 	require.Nil(t, ioutil.WriteFile(
 		dockerFile,
 		[]byte("test"),
@@ -155,8 +154,7 @@ func TestBuiltWithBazel(t *testing.T) {
 	defer cleanupTmps(t, baseTmpDir, bazelTmpDir, dockerTmpDir)
 
 	type args struct {
-		path    string
-		release string
+		path string
 	}
 	type want struct {
 		r   bool
@@ -168,8 +166,7 @@ func TestBuiltWithBazel(t *testing.T) {
 	}{
 		"DockerMoreRecent": {
 			args: args{
-				path:    baseTmpDir,
-				release: release,
+				path: baseTmpDir,
 			},
 			want: want{
 				r:   false,
@@ -178,8 +175,7 @@ func TestBuiltWithBazel(t *testing.T) {
 		},
 		"DockerOnly": {
 			args: args{
-				path:    baseTmpDir,
-				release: release,
+				path: dockerTmpDir,
 			},
 			want: want{
 				r:   false,
@@ -188,8 +184,7 @@ func TestBuiltWithBazel(t *testing.T) {
 		},
 		"BazelOnly": {
 			args: args{
-				path:    bazelTmpDir,
-				release: release,
+				path: bazelTmpDir,
 			},
 			want: want{
 				r:   true,
@@ -200,7 +195,7 @@ func TestBuiltWithBazel(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			res, err := BuiltWithBazel(tc.args.path, tc.args.release)
+			res, err := BuiltWithBazel(tc.args.path)
 			require.Equal(t, tc.want.err, err)
 			require.Equal(t, tc.want.r, res)
 		})
@@ -258,28 +253,35 @@ func TestReadBazelVersion(t *testing.T) {
 }
 
 func TestReadDockerVersion(t *testing.T) {
-	baseTmpDir, err := ioutil.TempDir("", "")
+	baseTmpDir, err := ioutil.TempDir("", "ahhh")
 	require.Nil(t, err)
 
 	release := "kubernetes"
 	version := "1.1.1"
+	versionBytes := []byte("1.1.1\n")
 
 	// Build directories.
-	require.Nil(t, os.MkdirAll(filepath.Join(baseTmpDir, dockerBuildPath), os.ModePerm))
+	require.Nil(t, os.MkdirAll(filepath.Join(baseTmpDir, dockerBuildPath, release), os.ModePerm))
 
 	var b bytes.Buffer
+
+	// Create version file
+	err = ioutil.WriteFile(filepath.Join(baseTmpDir, dockerBuildPath, dockerVersionPath), versionBytes, os.FileMode(0644))
+	require.Nil(t, err)
 
 	// Create a zip archive.
 	gz := gzip.NewWriter(&b)
 	tw := tar.NewWriter(gz)
 	require.Nil(t, tw.WriteHeader(&tar.Header{
-		Name: filepath.Join(release, dockerVersionPath),
-		Size: int64(len(version)),
+		Name: dockerVersionPath,
+		Size: int64(len(versionBytes)),
 	}))
-	_, err = tw.Write([]byte(version))
+	versionFile, err := os.Open(filepath.Join(baseTmpDir, dockerBuildPath, dockerVersionPath))
 	require.Nil(t, err)
-	require.Nil(t, gz.Close())
+	_, err = io.Copy(tw, versionFile)
+	require.Nil(t, err)
 	require.Nil(t, tw.Close())
+	require.Nil(t, gz.Close())
 	require.Nil(t, ioutil.WriteFile(
 		filepath.Join(baseTmpDir, dockerBuildPath, "kubernetes.tar.gz"),
 		b.Bytes(),
@@ -289,8 +291,7 @@ func TestReadDockerVersion(t *testing.T) {
 	defer cleanupTmps(t, baseTmpDir)
 
 	type args struct {
-		path        string
-		releaseKind string
+		path string
 	}
 	type want struct {
 		r    string
@@ -302,18 +303,16 @@ func TestReadDockerVersion(t *testing.T) {
 	}{
 		"ReadVersion": {
 			args: args{
-				path:        baseTmpDir,
-				releaseKind: release,
+				path: baseTmpDir,
 			},
 			want: want{
 				r:    version,
 				rErr: false,
 			},
 		},
-		"NoVersionFile": {
+		"ReadVersionError": {
 			args: args{
-				path:        baseTmpDir,
-				releaseKind: "notarelease",
+				path: "notadir",
 			},
 			want: want{
 				rErr: true,
@@ -323,7 +322,7 @@ func TestReadDockerVersion(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			res, err := ReadDockerizedVersion(tc.args.path, tc.args.releaseKind)
+			res, err := ReadDockerizedVersion(tc.args.path)
 			require.Equal(t, tc.want.rErr, err != nil)
 			require.Equal(t, tc.want.r, res)
 		})

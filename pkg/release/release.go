@@ -48,8 +48,8 @@ const (
 	dockerBuildPath   = "_output/release-tars"
 	bazelBuildPath    = "bazel-bin/build/release-tars"
 	bazelVersionPath  = "bazel-genfiles/version"
-	dockerVersionPath = "version"
-	tarballExtension  = ".tar.gz"
+	dockerVersionPath = "kubernetes/version"
+	kubernetesTar     = "kubernetes.tar.gz"
 
 	// GCSStagePath is the directory where release artifacts are staged before
 	// push to GCS.
@@ -134,11 +134,10 @@ func GetToolBranch() string {
 	return toolBranch
 }
 
-// BuiltWithBazel determines whether the most recent release was built with Bazel.
-func BuiltWithBazel(workDir, releaseKind string) (bool, error) {
-	tar := releaseKind + tarballExtension
-	bazelBuild := filepath.Join(workDir, bazelBuildPath, tar)
-	dockerBuild := filepath.Join(workDir, dockerBuildPath, tar)
+// BuiltWithBazel determines whether the most recent Kubernetes release was built with Bazel.
+func BuiltWithBazel(workDir string) (bool, error) {
+	bazelBuild := filepath.Join(workDir, bazelBuildPath, kubernetesTar)
+	dockerBuild := filepath.Join(workDir, dockerBuildPath, kubernetesTar)
 	return util.MoreRecent(bazelBuild, dockerBuild)
 }
 
@@ -148,12 +147,10 @@ func ReadBazelVersion(workDir string) (string, error) {
 	return string(version), err
 }
 
-// ReadDockerizedVersion reads the version from a Dockerized build.
-func ReadDockerizedVersion(workDir, releaseKind string) (string, error) {
-	tar := releaseKind + tarballExtension
-	dockerTarball := filepath.Join(workDir, dockerBuildPath, tar)
-	versionFile := filepath.Join(releaseKind, dockerVersionPath)
-	reader, err := util.ReadFileFromGzippedTar(dockerTarball, versionFile)
+// ReadDockerizedVersion reads the version from a Dockerized Kubernetes build.
+func ReadDockerizedVersion(workDir string) (string, error) {
+	dockerTarball := filepath.Join(workDir, dockerBuildPath, kubernetesTar)
+	reader, err := util.ReadFileFromGzippedTar(dockerTarball, dockerVersionPath)
 	if err != nil {
 		return "", err
 	}
