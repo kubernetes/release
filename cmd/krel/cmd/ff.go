@@ -114,8 +114,7 @@ func runFf(opts *ffOptions, rootOpts *rootOptions) error {
 		return errors.Wrapf(err, "checking out branch %s", branch)
 	}
 
-	cleanup := rootOpts.cleanup
-	if cleanup {
+	if rootOpts.cleanup {
 		defer repo.Cleanup() // nolint: errcheck
 	}
 
@@ -160,7 +159,7 @@ func runFf(opts *ffOptions, rootOpts *rootOptions) error {
 		return err
 	}
 
-	prepushMessage(repo.Dir(), kgit.DefaultRemote, branch, kgit.DefaultGithubOrg, releaseRev, headRev)
+	prepushMessage(repo.Dir(), branch, opts.masterRef, releaseRev, headRev)
 
 	pushUpstream := false
 	if opts.nonInteractive {
@@ -182,7 +181,7 @@ func runFf(opts *ffOptions, rootOpts *rootOptions) error {
 	return nil
 }
 
-func prepushMessage(gitRoot, remote, branch, org, releaseRev, headRev string) {
+func prepushMessage(gitRoot, branch, ref, releaseRev, headRev string) {
 	fmt.Printf(`Go look around in %s to make sure things look okay before pushing…
 
 Check for files left uncommitted using:
@@ -195,11 +194,19 @@ Validate the fast-forward commit using:
 
 Validate the changes pulled in from master using:
 
-	git log %s/%s..HEAD
+	git log %s..%s
 
 Once the branch fast-forward is complete, the diff will be available after push at:
 
 	https://github.com/%s/%s/compare/%s...%s
 
-`, gitRoot, remote, branch, org, kgit.DefaultGithubRepo, releaseRev[0:11], headRev[0:11])
+`,
+		gitRoot,
+		kgit.Remotify(branch),
+		ref,
+		kgit.DefaultGithubOrg,
+		kgit.DefaultGithubRepo,
+		releaseRev[:11],
+		headRev[:11],
+	)
 }
