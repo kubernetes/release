@@ -23,6 +23,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -772,6 +773,11 @@ func (r *Repo) Remotes() (res []*Remote, err error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list remotes")
 	}
+
+	// Sort the remotes by their name which is not always the case
+	sort.Slice(remotes, func(i, j int) bool {
+		return remotes[i].Config().Name < remotes[j].Config().Name
+	})
 
 	for _, remote := range remotes {
 		config := remote.Config()
