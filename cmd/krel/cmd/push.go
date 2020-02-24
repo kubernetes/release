@@ -217,7 +217,7 @@ func runPushBuild(opts *pushBuildOptions) error {
 		return errors.Wrap(err, "Unable to get working directory")
 	}
 
-	isBazel, err := release.BuiltWithBazel(dir, release.DefaultReleaseKind)
+	isBazel, err := release.BuiltWithBazel(dir)
 	if err != nil {
 		return errors.Wrap(err, "Unable to identify if release built with Bazel")
 	}
@@ -231,7 +231,7 @@ func runPushBuild(opts *pushBuildOptions) error {
 		latest = version
 	} else {
 		logrus.Info("Using Dockerized build version")
-		version, err := release.ReadDockerizedVersion(dir, release.DefaultReleaseKind)
+		version, err := release.ReadDockerizedVersion(dir)
 		if err != nil {
 			return errors.Wrap(err, "Unable to read Dockerized build version")
 		}
