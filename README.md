@@ -26,7 +26,6 @@ Tools | Description
  :---: | --
 [`gcbmgr`](/gcbmgr)                     | Google Cloud Builder Manager:<br/>This is the main entry point for release managers for producing releases. All release types can be staged and later released using this method.
 [`anago`](/anago)                       | Release Tool:<br/>The main driver for creating staged builds and releases. This is what runs inside GCB after a job is submitted using `gcbmgr`.
-[`branchff`](/branchff)                 | Fast-forward branching helper:<br/>A tool used to pull new patches onto the release branch.
 [`find_green_build`](/find_green_build) | Asks Jenkins for a good build to use.
 [`release-notes`](/cmd/release-notes)   | Scrape GitHub for release notes.<br/>See [Release Notes Gathering](#release-notes-gathering) for more information.
 [`prin`](/prin)                         | To show release tags of a particular PR or commit.
@@ -34,7 +33,7 @@ Tools | Description
 [`script-template`](/script-template)   | Generates a script template in the kubernetes/release ecosystem.
 [`testgridshot`](/testgridshot)         | Screenshots failing testgrid dashboards and creates a markdown stub that can be copied and pasted into a GitHub issue comment.<br/>This makes it easier to create comments like [this][shot-issue] as part of the release process.
 
-For information on how to use `gcbmgr`, `anago` and `branchff`, see the [Branch Manager Handbook]
+For information on how to use `gcbmgr` and `anago`, see the [Branch Manager Handbook]
 
 [kubernetes/kubernetes]: https://git.k8s.io/kubernetes
 [Branch Manager Handbook]: https://git.k8s.io/sig-release/release-engineering/role-handbooks/branch-manager.md
