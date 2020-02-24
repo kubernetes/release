@@ -38,13 +38,9 @@ Developer pushes simply run as they do pushing to devel/ on GCS.
 In --ci mode, 'push' runs in mock mode by default. Use --nomock to do
 a real push.
 
-Federation values are just passed through as exported global vars still
-due to the fact that we're still leveraging the existing federation
-interface in kubernetes proper.
-
 push                       - Do a developer push
 push --nomock --ci
-                           - Do a (non-mocked) CI push with federation
+                           - Do a (non-mocked) CI push
 push --bucket=kubernetes-release-$USER
                            - Do a developer push to kubernetes-release-$USER`
 
@@ -54,7 +50,6 @@ type pushBuildOptions struct {
 	dockerRegistry   string
 	extraPublishFile string
 	gcsSuffix        string
-	releaseKind      string
 	releaseType      string
 	versionSuffix    string
 	allowDup         bool
@@ -66,7 +61,7 @@ type pushBuildOptions struct {
 var pushBuildOpts = &pushBuildOptions{}
 
 var pushBuildCmd = &cobra.Command{
-	Use:           "push [--federation] [--noupdatelatest] [--ci] [--bucket=<GS bucket>] [--private-bucket]",
+	Use:           "push [--noupdatelatest] [--ci] [--bucket=<GS bucket>] [--private-bucket]",
 	Short:         "push kubernetes release artifacts to GCS",
 	Example:       description,
 	SilenceUsage:  true,
@@ -198,12 +193,6 @@ func init() {
 		"Specify a suffix to append to the upload destination on GCS",
 	)
 	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.releaseKind,
-		"release-kind",
-		"kubernetes",
-		"Kind of release to push to GCS. Supported values are kubernetes (default) or federation",
-	)
-	pushBuildCmd.PersistentFlags().StringVar(
 		&pushBuildOpts.releaseType,
 		"release-type",
 		"devel",
@@ -221,7 +210,6 @@ func init() {
 
 func runPushBuild(opts *pushBuildOptions) error {
 	var latest string
-	releaseKind := opts.releaseKind
 
 	// Check if latest build uses bazel
 	dir, err := os.Getwd()
@@ -229,7 +217,7 @@ func runPushBuild(opts *pushBuildOptions) error {
 		return errors.Wrap(err, "Unable to get working directory")
 	}
 
-	isBazel, err := release.BuiltWithBazel(dir, releaseKind)
+	isBazel, err := release.BuiltWithBazel(dir, release.DefaultReleaseKind)
 	if err != nil {
 		return errors.Wrap(err, "Unable to identify if release built with Bazel")
 	}
@@ -243,7 +231,7 @@ func runPushBuild(opts *pushBuildOptions) error {
 		latest = version
 	} else {
 		logrus.Info("Using Dockerized build version")
-		version, err := release.ReadDockerizedVersion(dir, releaseKind)
+		version, err := release.ReadDockerizedVersion(dir, release.DefaultReleaseKind)
 		if err != nil {
 			return errors.Wrap(err, "Unable to read Dockerized build version")
 		}
