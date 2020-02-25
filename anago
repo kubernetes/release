@@ -407,7 +407,6 @@ generate_release_notes () {
   local release_tars=$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/release-tars
 
   logrun -v krel changelog \
-    --repo "$TREE_ROOT" \
     --branch="${PARENT_BRANCH:-$RELEASE_BRANCH}" \
     --tars "$release_tars" \
     --tag "$RELEASE_VERSION_PRIME" \
