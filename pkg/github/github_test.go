@@ -1,0 +1,166 @@
+/*
+Copyright 2020 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package github_test
+
+import (
+	"errors"
+	"testing"
+
+	gogithub "github.com/google/go-github/v29/github"
+	"github.com/stretchr/testify/require"
+
+	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/github"
+	"k8s.io/release/pkg/github/githubfakes"
+)
+
+func newSUT() (*github.GitHub, *githubfakes.FakeClient) {
+	client := &githubfakes.FakeClient{}
+	sut := github.New()
+	sut.SetClient(client)
+
+	return sut, client
+}
+
+func TestLatestGitHubTagsPerBranchSuccessEmptyResult(t *testing.T) {
+	// Given
+	sut, _ := newSUT()
+
+	// When
+	res, err := sut.LatestGitHubTagsPerBranch()
+
+	// Then
+	require.Nil(t, err)
+	require.Empty(t, res)
+}
+
+func TestLatestGitHubTagsPerBranchSuccessAlphaAfterMinor(t *testing.T) {
+	// Given
+	var (
+		tag1 = "v1.18.0-alpha.2"
+		tag2 = "v1.18.0"
+	)
+	sut, client := newSUT()
+	client.ListTagsReturns([]*gogithub.RepositoryTag{
+		{Name: &tag1},
+		{Name: &tag2},
+	}, nil, nil)
+
+	// When
+	res, err := sut.LatestGitHubTagsPerBranch()
+
+	// Then
+	require.Nil(t, err)
+	require.Len(t, res, 2)
+	require.Equal(t, tag1, res[git.Master])
+	require.Equal(t, tag2, res["release-1.18"])
+}
+
+func TestLatestGitHubTagsPerBranchSuccessMultipleForSameBranch(t *testing.T) {
+	// Given
+	var (
+		tag1 = "v1.18.0-beta.0"
+		tag2 = "v1.18.0-alpha.3"
+		tag3 = "v1.15.2"
+		tag4 = "v1.18.0-alpha.2"
+		tag5 = "v1.16.3"
+		tag6 = "v1.18.0-alpha.1"
+		tag7 = "v1.13.0"
+		tag8 = "v1.18.0-alpha.2"
+	)
+	sut, client := newSUT()
+	client.ListTagsReturns([]*gogithub.RepositoryTag{
+		{Name: &tag1},
+		{Name: &tag2},
+		{Name: &tag3},
+		{Name: &tag4},
+		{Name: &tag5},
+		{Name: &tag6},
+		{Name: &tag7},
+		{Name: &tag8},
+	}, nil, nil)
+
+	// When
+	res, err := sut.LatestGitHubTagsPerBranch()
+
+	// Then
+	require.Nil(t, err)
+	require.Len(t, res, 5)
+	require.Equal(t, tag2, res[git.Master])
+	require.Equal(t, tag1, res["release-1.18"])
+	require.Empty(t, res["release-1.17"])
+	require.Equal(t, tag5, res["release-1.16"])
+	require.Equal(t, tag3, res["release-1.15"])
+	require.Empty(t, res["release-1.14"])
+	require.Equal(t, tag7, res["release-1.13"])
+}
+
+func TestLatestGitHubTagsPerBranchSuccessPatchReleases(t *testing.T) {
+	// Given
+	var (
+		tag1 = "v1.17.1"
+		tag2 = "v1.16.2"
+		tag3 = "v1.15.3"
+	)
+	sut, client := newSUT()
+	client.ListTagsReturns([]*gogithub.RepositoryTag{
+		{Name: &tag1},
+		{Name: &tag2},
+		{Name: &tag3},
+	}, nil, nil)
+
+	// When
+	res, err := sut.LatestGitHubTagsPerBranch()
+
+	// Then
+	require.Nil(t, err)
+	require.Len(t, res, 4)
+	require.Equal(t, tag1, res[git.Master])
+	require.Equal(t, tag1, res["release-1.17"])
+	require.Equal(t, tag2, res["release-1.16"])
+	require.Equal(t, tag3, res["release-1.15"])
+	require.Empty(t, res["release-1.18"])
+}
+
+func TestLatestGitHubTagsPerBranchFailedOnList(t *testing.T) {
+	// Given
+	sut, client := newSUT()
+	client.ListTagsReturns(nil, nil, errors.New("error"))
+
+	// When
+	res, err := sut.LatestGitHubTagsPerBranch()
+
+	// Then
+	require.NotNil(t, err)
+	require.Nil(t, res)
+}
+
+func TestLatestGitHubTagsPerBranchFailedNonSemverTag(t *testing.T) {
+	// Given
+	var tag1 = "not a semver tag"
+	sut, client := newSUT()
+	client.ListTagsReturns([]*gogithub.RepositoryTag{
+		{Name: &tag1},
+	}, nil, nil)
+
+	// When
+	res, err := sut.LatestGitHubTagsPerBranch()
+
+	// Then
+	require.NotNil(t, err)
+	require.Nil(t, res)
+}
