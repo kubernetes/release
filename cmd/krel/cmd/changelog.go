@@ -118,8 +118,10 @@ func runChangelog() (err error) {
 	if err != nil {
 		return err
 	}
+
+	// Automatically set the branch to a release branch if not provided
 	branch := changelogOpts.branch
-	if changelogOpts.branch == "" {
+	if branch == "" {
 		branch = fmt.Sprintf("release-%d.%d", tag.Major, tag.Minor)
 	}
 	logrus.Infof("Using release branch %s", branch)
@@ -131,12 +133,16 @@ func runChangelog() (err error) {
 			"unable to open expected k/k repository %q", rootOpts.repoPath,
 		)
 	}
-
-	head, err := repo.RevParse("HEAD")
-	if err != nil {
-		return err
+	if currentBranch, err := repo.CurrentBranch(); err == nil {
+		logrus.Infof("We're currently on branch: %s", currentBranch)
 	}
-	logrus.Infof("Found HEAD commit %s", head)
+
+	remoteBranch := git.Remotify(branch)
+	head, err := repo.RevParse(remoteBranch)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get latest branch commit")
+	}
+	logrus.Infof("Found latest %s commit %s", remoteBranch, head)
 
 	var markdown string
 	if tag.Patch == 0 {
@@ -145,14 +151,19 @@ func runChangelog() (err error) {
 			markdown, err = lookupRemoteReleaseNotes(branch)
 		} else {
 			// New minor alphas, betas and rc get generated notes
-			start, e := repo.LatestTagForBranch(branch)
-			if e != nil {
-				return e
+			latestTags, tErr := git.LatestGitHubTagsPerBranch()
+			if tErr != nil {
+				return errors.Wrap(tErr, "unable to get latest GitHub tags")
 			}
-			startTag := util.SemverToTagString(start)
 
-			logrus.Infof("Found latest tag %s", start)
-			markdown, err = generateReleaseNotes(branch, startTag, head)
+			if startTag, ok := latestTags[branch]; ok {
+				logrus.Infof("Found start tag %s", startTag)
+				markdown, err = generateReleaseNotes(branch, startTag, head)
+			} else {
+				return errors.Errorf(
+					"no latest tag available for branch %s", branch,
+				)
+			}
 		}
 	} else {
 		// A patch version, let’s just use the previous patch
