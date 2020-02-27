@@ -24,6 +24,7 @@ development and testing.
 
 Tools | Description
  :---: | --
+[`krel`](/cmd/krel)                     | Kubernetes Release Toolbox<br/>This is the new golang based tool for managing releases
 [`gcbmgr`](/gcbmgr)                     | Google Cloud Builder Manager:<br/>This is the main entry point for release managers for producing releases. All release types can be staged and later released using this method.
 [`anago`](/anago)                       | Release Tool:<br/>The main driver for creating staged builds and releases. This is what runs inside GCB after a job is submitted using `gcbmgr`.
 [`branchff`](/branchff)                 | Fast-forward branching helper:<br/>A tool used to pull new patches onto the release branch.

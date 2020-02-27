@@ -43,7 +43,7 @@ import (
 // changelogCmd represents the subcommand for `krel changelog`
 var changelogCmd = &cobra.Command{
 	Use:   "changelog",
-	Short: "changelog maintains the lifecycle of CHANGELOG-x.y.{md,html} files",
+	Short: "Automate the lifecycle of CHANGELOG-x.y.{md,html} files in a k/k repository",
 	Long: fmt.Sprintf(`krel changelog
 
 To let this tool work, please point '--repo' to a local copy of the target k/k

@@ -45,7 +45,7 @@ const (
 // releaseNotesCmd represents the subcommand for `krel release-notes`
 var releaseNotesCmd = &cobra.Command{
 	Use:   "release-notes",
-	Short: "release-notes is the tool of choice for the Release Notes subteam of SIG Release",
+	Short: "The subcommand of choice for the Release Notes subteam of SIG Release",
 	Long: fmt.Sprintf(`krel release-notes
 
 The 'release-notes' subcommand of krel has been developed to:

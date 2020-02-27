@@ -38,7 +38,7 @@ var ffOpts = &ffOptions{}
 // ffCmd represents the base command when called without any subcommands
 var ffCmd = &cobra.Command{
 	Use:   "ff --branch <release-branch> [--ref <master-ref>] [--nomock] [--cleanup]",
-	Short: "ff fast forwards a Kubernetes release branch",
+	Short: "Fast forward a Kubernetes release branch",
 	Long: fmt.Sprintf(`ff fast forwards a branch to a specified git object (defaults to %s).
 
 krel ff pre-checks that the local branch to be forwarded is an actual
