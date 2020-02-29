@@ -28,8 +28,17 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:               "krel",
-	Short:             "krel",
+	Use: "krel",
+	Long: `krel - The Kubernetes Release toolbox
+
+krel is the new golang based tool for managing releases. Target of krel is to
+provide a toolkit for managing the different steps needed for creating
+Kubernetes Releases. This includes manually executed tasks, like the generation
+of the release notes during the release cycle, as well as automated tasks like
+pushing the Kubernetes release artifacts to the Google Cloud Storage.
+
+Each subcommand should contain its own self describing help output which
+clarifies its purpose.`,
 	PersistentPreRunE: initLogging,
 }
 

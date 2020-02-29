@@ -62,7 +62,7 @@ var pushBuildOpts = &pushBuildOptions{}
 
 var pushBuildCmd = &cobra.Command{
 	Use:           "push [--noupdatelatest] [--ci] [--bucket=<GS bucket>] [--private-bucket]",
-	Short:         "push kubernetes release artifacts to GCS",
+	Short:         "Push Kubernetes release artifacts to Google Cloud Storage (GCS)",
 	Example:       description,
 	SilenceUsage:  true,
 	SilenceErrors: true,
