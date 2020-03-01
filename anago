@@ -1138,10 +1138,10 @@ Additional binary downloads are linked in the [%s](%s).'
 ##############################################################################
 # When creating new alphas on the master branch, make sure that X.Y-1.0
 # has been created first or warn.
-# This is to ensure that branchff can continue to be used as needed.  User
+# This is to ensure that `krel ff` can continue to be used as needed.  User
 # can override here.
 # @param buildver - Incoming JENKINS_BUILD_VERSION
-branchff_sanity_check () {
+fastforward_check () {
   local buildver=$1
   local latest_official
 
@@ -1248,7 +1248,7 @@ get_build_candidate () {
     fi
 
     # Check state of master branch before continuing
-    branchff_sanity_check $JENKINS_BUILD_VERSION
+    fastforward_check $JENKINS_BUILD_VERSION
   else
     # The build version should never be behind HEAD on release existing branches
     if [[ "$RELEASE_BRANCH" =~ release-([0-9]{1,})\. ]]; then
