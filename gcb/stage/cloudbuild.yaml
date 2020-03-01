@@ -24,7 +24,7 @@ steps:
   - "--branch=${_TOOL_BRANCH}"
   - "https://github.com/${_TOOL_ORG}/${_TOOL_REPO}"
 
-- name: k8s.gcr.io/kube-cross:${_KUBE_CROSS_VERSION}
+- name: us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:${_KUBE_CROSS_VERSION}
   dir: "go/src/k8s.io/release"
   env:
   - "GOPATH=/workspace/go"
@@ -35,7 +35,7 @@ steps:
   args:
   - "./compile-release-tools"
 
-- name: gcr.io/$PROJECT_ID/k8s-cloud-builder
+- name: gcr.io/k8s-staging-release-test/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
   dir: "go/src/k8s.io/release"
   env:
   - "TOOL_ORG=${_TOOL_ORG}"
@@ -58,7 +58,7 @@ steps:
   - "--basedir=/workspace"
   - "--tmpdir=/workspace/tmp"
 
-- name: k8s.gcr.io/kube-cross:local
+- name: us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:local
   dir: "go/src/k8s.io/release"
   env:
   - "TOOL_ORG=${_TOOL_ORG}"
@@ -79,7 +79,7 @@ steps:
   - "--basedir=/workspace"
   - "--tmpdir=/workspace/tmp"
 
-- name: gcr.io/$PROJECT_ID/k8s-cloud-builder
+- name: gcr.io/k8s-staging-release-test/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
   dir: "go/src/k8s.io/release"
   env:
   - "TOOL_ORG=${_TOOL_ORG}"
