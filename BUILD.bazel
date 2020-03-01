@@ -38,6 +38,7 @@ filegroup(
         "//pkg/gcp/auth:all-srcs",
         "//pkg/gcp/build:all-srcs",
         "//pkg/git:all-srcs",
+        "//pkg/github:all-srcs",
         "//pkg/kubepkg:all-srcs",
         "//pkg/log:all-srcs",
         "//pkg/notes:all-srcs",

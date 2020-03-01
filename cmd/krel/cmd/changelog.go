@@ -35,6 +35,7 @@ import (
 	"gopkg.in/russross/blackfriday.v2"
 
 	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
@@ -152,7 +153,7 @@ func runChangelog() (err error) {
 			markdown, err = lookupRemoteReleaseNotes(branch)
 		} else {
 			// New minor alphas, betas and rc get generated notes
-			latestTags, tErr := git.LatestGitHubTagsPerBranch()
+			latestTags, tErr := github.New().LatestGitHubTagsPerBranch()
 			if tErr != nil {
 				return errors.Wrap(tErr, "unable to get latest GitHub tags")
 			}
