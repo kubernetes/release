@@ -27,6 +27,10 @@ readonly PROD_BUCKET="kubernetes-release"
 readonly TEST_BUCKET="kubernetes-release-gcb"
 readonly CI_BUCKET="kubernetes-release-dev"
 
+readonly KUBE_CROSS_REGISTRY="us.gcr.io/k8s-artifacts-prod/build-image"
+readonly KUBE_CROSS_IMAGE="${KUBE_CROSS_REGISTRY}/kube-cross"
+readonly KUBE_CROSS_CONFIG_LOCATION="build/build-image/cross"
+
 # Set a globally usable variable for the changelog directory since we've been
 # piecemeal search/replace-ing this and missing some cases.
 readonly CHANGELOG_DIR="CHANGELOG"

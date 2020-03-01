@@ -519,8 +519,8 @@ local_kube_cross () {
   local local_image
   local docker_image
 
-  docker_image="${GCRIO_PATH_PROD}/kube-cross"
-  version="$(cat "${TREE_ROOT}/build/build-image/cross/VERSION")"
+  docker_image="${KUBE_CROSS_IMAGE}"
+  version="$(cat "${TREE_ROOT}/${KUBE_CROSS_CONFIG_LOCATION}/VERSION")"
   image="${docker_image}:${version}"
   local_image="${docker_image}:local"
 
@@ -531,7 +531,7 @@ local_kube_cross () {
   else
     logecho -n "Building docker image ${image}: "
     logrun -s docker build --cache-from "$docker_image" -t "$image" \
-                           -t "$local_image" "${TREE_ROOT}/build/build-image/cross/"
+                           -t "$local_image" "${TREE_ROOT}/${KUBE_CROSS_CONFIG_LOCATION}/"
   fi
 }
 
