@@ -32,6 +32,7 @@ import (
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/log"
 	"k8s.io/release/pkg/notes"
+	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/util"
 )
@@ -275,7 +276,7 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 			return errors.Wrapf(err, "encoding JSON output")
 		}
 	case "markdown":
-		doc, err := notes.CreateDocument(releaseNotes, history)
+		doc, err := document.CreateDocument(releaseNotes, history)
 		if err != nil {
 			return errors.Wrapf(err, "creating release note document")
 		}

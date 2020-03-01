@@ -21,6 +21,7 @@ go_library(
         "//pkg/git:go_default_library",
         "//pkg/log:go_default_library",
         "//pkg/notes:go_default_library",
+        "//pkg/notes/document:go_default_library",
         "//pkg/notes/options:go_default_library",
         "//pkg/patch:go_default_library",
         "//pkg/release:go_default_library",

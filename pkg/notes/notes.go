@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -801,6 +802,47 @@ func prForRegex(regex *regexp.Regexp, commitMessage string) int {
 		return 0
 	}
 	return pr
+}
+
+// prettySIG takes a sig name as parsed by the `sig-foo` label and returns a
+// "pretty" version of it that can be printed in documents
+func prettySIG(sig string) string {
+	parts := strings.Split(sig, "-")
+	for i, part := range parts {
+		switch part {
+		case "vsphere":
+			parts[i] = "vSphere"
+		case "vmware":
+			parts[i] = "VMWare"
+		case "openstack":
+			parts[i] = "OpenStack"
+		case "api", "aws", "cli", "gcp":
+			parts[i] = strings.ToUpper(part)
+		default:
+			parts[i] = strings.Title(part)
+		}
+	}
+	return strings.Join(parts, " ")
+}
+
+func prettifySIGList(sigs []string) string {
+	sigList := ""
+
+	// sort the list so that any group of SIGs with the same content gives us the
+	// same result
+	sort.Strings(sigs)
+
+	for i, sig := range sigs {
+		if i == 0 {
+			sigList = fmt.Sprintf("SIG %s", prettySIG(sig))
+		} else if i == len(sigs)-1 {
+			sigList = fmt.Sprintf("%s and %s", sigList, prettySIG(sig))
+		} else {
+			sigList = fmt.Sprintf("%s, %s", sigList, prettySIG(sig))
+		}
+	}
+
+	return sigList
 }
 
 var errNoPRIDFoundInCommitMessage = errors.New("No PR IDs found in the commit message")

@@ -33,6 +33,7 @@ import (
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/notes"
+	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/util"
 )
@@ -350,7 +351,7 @@ func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
 		return nil, errors.Wrapf(err, "listing release notes")
 	}
 
-	doc, err := notes.CreateDocument(releaseNotes, history)
+	doc, err := document.CreateDocument(releaseNotes, history)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating release note document")
 	}
