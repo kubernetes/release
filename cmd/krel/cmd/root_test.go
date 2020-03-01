@@ -24,5 +24,5 @@ import (
 
 func TestRootCommand(t *testing.T) {
 	err := rootCmd.Execute()
-	require.Nil(t, err)
+	require.Error(t, err)
 }
