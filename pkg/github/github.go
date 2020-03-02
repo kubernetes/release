@@ -43,6 +43,10 @@ type Client interface {
 	ListTags(
 		context.Context, string, string, *github.ListOptions,
 	) ([]*github.RepositoryTag, *github.Response, error)
+
+	ListReleases(
+		context.Context, string, string, *github.ListOptions,
+	) ([]*github.RepositoryRelease, *github.Response, error)
 }
 
 // New creates a new default GitHub client
@@ -54,6 +58,12 @@ func (g *githubClient) ListTags(
 	ctx context.Context, owner, repo string, opt *github.ListOptions,
 ) ([]*github.RepositoryTag, *github.Response, error) {
 	return g.Client.Repositories.ListTags(ctx, owner, repo, opt)
+}
+
+func (g *githubClient) ListReleases(
+	ctx context.Context, owner, repo string, opt *github.ListOptions,
+) ([]*github.RepositoryRelease, *github.Response, error) {
+	return g.Client.Repositories.ListReleases(ctx, owner, repo, opt)
 }
 
 // SetClient can be used to manually set the internal GitHub client
@@ -79,7 +89,7 @@ func (g *GitHub) LatestGitHubTagsPerBranch() (TagsPerBranch, error) {
 		context.Background(), git.DefaultGithubOrg, git.DefaultGithubRepo, nil,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to retrieve GitHub releases")
+		return nil, errors.Wrap(err, "unable to retrieve GitHub tags")
 	}
 
 	releases := make(TagsPerBranch)
@@ -116,4 +126,29 @@ func (t TagsPerBranch) addIfNotExisting(branch, tag string) {
 	if _, ok := t[branch]; !ok {
 		t[branch] = tag
 	}
+}
+
+// Releases returns a list of GitHub releases for the provided `owner` and
+// `repo`. If `includePrereleases` is `true`, then the resulting slice will
+// also contain pre/drafted releases.
+func (g *GitHub) Releases(owner, repo string, includePrereleases bool) ([]*github.RepositoryRelease, error) {
+	allReleases, _, err := g.client.ListReleases(
+		context.Background(), owner, repo, nil,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to retrieve GitHub releases")
+	}
+
+	releases := []*github.RepositoryRelease{}
+	for _, release := range allReleases {
+		if release.GetPrerelease() {
+			if includePrereleases {
+				releases = append(releases, release)
+			}
+		} else {
+			releases = append(releases, release)
+		}
+	}
+
+	return releases, nil
 }

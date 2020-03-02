@@ -26,6 +26,24 @@ import (
 )
 
 type FakeClient struct {
+	ListReleasesStub        func(context.Context, string, string, *githuba.ListOptions) ([]*githuba.RepositoryRelease, *githuba.Response, error)
+	listReleasesMutex       sync.RWMutex
+	listReleasesArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 *githuba.ListOptions
+	}
+	listReleasesReturns struct {
+		result1 []*githuba.RepositoryRelease
+		result2 *githuba.Response
+		result3 error
+	}
+	listReleasesReturnsOnCall map[int]struct {
+		result1 []*githuba.RepositoryRelease
+		result2 *githuba.Response
+		result3 error
+	}
 	ListTagsStub        func(context.Context, string, string, *githuba.ListOptions) ([]*githuba.RepositoryTag, *githuba.Response, error)
 	listTagsMutex       sync.RWMutex
 	listTagsArgsForCall []struct {
@@ -46,6 +64,75 @@ type FakeClient struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeClient) ListReleases(arg1 context.Context, arg2 string, arg3 string, arg4 *githuba.ListOptions) ([]*githuba.RepositoryRelease, *githuba.Response, error) {
+	fake.listReleasesMutex.Lock()
+	ret, specificReturn := fake.listReleasesReturnsOnCall[len(fake.listReleasesArgsForCall)]
+	fake.listReleasesArgsForCall = append(fake.listReleasesArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 *githuba.ListOptions
+	}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("ListReleases", []interface{}{arg1, arg2, arg3, arg4})
+	fake.listReleasesMutex.Unlock()
+	if fake.ListReleasesStub != nil {
+		return fake.ListReleasesStub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2, ret.result3
+	}
+	fakeReturns := fake.listReleasesReturns
+	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
+}
+
+func (fake *FakeClient) ListReleasesCallCount() int {
+	fake.listReleasesMutex.RLock()
+	defer fake.listReleasesMutex.RUnlock()
+	return len(fake.listReleasesArgsForCall)
+}
+
+func (fake *FakeClient) ListReleasesCalls(stub func(context.Context, string, string, *githuba.ListOptions) ([]*githuba.RepositoryRelease, *githuba.Response, error)) {
+	fake.listReleasesMutex.Lock()
+	defer fake.listReleasesMutex.Unlock()
+	fake.ListReleasesStub = stub
+}
+
+func (fake *FakeClient) ListReleasesArgsForCall(i int) (context.Context, string, string, *githuba.ListOptions) {
+	fake.listReleasesMutex.RLock()
+	defer fake.listReleasesMutex.RUnlock()
+	argsForCall := fake.listReleasesArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+}
+
+func (fake *FakeClient) ListReleasesReturns(result1 []*githuba.RepositoryRelease, result2 *githuba.Response, result3 error) {
+	fake.listReleasesMutex.Lock()
+	defer fake.listReleasesMutex.Unlock()
+	fake.ListReleasesStub = nil
+	fake.listReleasesReturns = struct {
+		result1 []*githuba.RepositoryRelease
+		result2 *githuba.Response
+		result3 error
+	}{result1, result2, result3}
+}
+
+func (fake *FakeClient) ListReleasesReturnsOnCall(i int, result1 []*githuba.RepositoryRelease, result2 *githuba.Response, result3 error) {
+	fake.listReleasesMutex.Lock()
+	defer fake.listReleasesMutex.Unlock()
+	fake.ListReleasesStub = nil
+	if fake.listReleasesReturnsOnCall == nil {
+		fake.listReleasesReturnsOnCall = make(map[int]struct {
+			result1 []*githuba.RepositoryRelease
+			result2 *githuba.Response
+			result3 error
+		})
+	}
+	fake.listReleasesReturnsOnCall[i] = struct {
+		result1 []*githuba.RepositoryRelease
+		result2 *githuba.Response
+		result3 error
+	}{result1, result2, result3}
 }
 
 func (fake *FakeClient) ListTags(arg1 context.Context, arg2 string, arg3 string, arg4 *githuba.ListOptions) ([]*githuba.RepositoryTag, *githuba.Response, error) {
@@ -120,6 +207,8 @@ func (fake *FakeClient) ListTagsReturnsOnCall(i int, result1 []*githuba.Reposito
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.listReleasesMutex.RLock()
+	defer fake.listReleasesMutex.RUnlock()
 	fake.listTagsMutex.RLock()
 	defer fake.listTagsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

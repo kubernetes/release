@@ -17,7 +17,6 @@ limitations under the License.
 package kubepkg
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -28,11 +27,11 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/google/go-github/v29/github"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/command"
+	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
 )
@@ -474,7 +473,7 @@ func getCRIToolsVersion(packageDef *PackageDefinition) (string, error) {
 
 	criToolsVersion := fmt.Sprintf("%s.%s.0", criToolsMajor, criToolsMinor)
 
-	releases, err := fetchReleases("kubernetes-sigs", "cri-tools", false)
+	releases, err := github.New().Releases("kubernetes-sigs", "cri-tools", false)
 	if err != nil {
 		return "", err
 	}
@@ -508,28 +507,6 @@ func getCRIToolsVersion(packageDef *PackageDefinition) (string, error) {
 
 	logrus.Infof("Setting CRI tools version to %s", criToolsVersion)
 	return criToolsVersion, nil
-}
-
-func fetchReleases(owner, repo string, includePrereleases bool) ([]*github.RepositoryRelease, error) {
-	ghClient := github.NewClient(nil)
-
-	allReleases, _, err := ghClient.Repositories.ListReleases(context.Background(), owner, repo, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var releases []*github.RepositoryRelease
-	for _, release := range allReleases {
-		if *release.Prerelease {
-			if includePrereleases {
-				releases = append(releases, release)
-			}
-		} else {
-			releases = append(releases, release)
-		}
-	}
-
-	return releases, nil
 }
 
 func getDownloadLinkBase(packageDef *PackageDefinition) (string, error) {
