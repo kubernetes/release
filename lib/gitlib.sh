@@ -280,10 +280,12 @@ gitlib::push_master () {
 
   logecho -n "Checkout master branch to push objects: "
   logrun -s git checkout master || return 1
+  logrun -v git status -s || return 1
+  logrun -v git show || return 1
 
   logecho -n "Rebase master branch: "
-  logrun git fetch origin || return 1
-  logrun -s git rebase origin/master || return 1
+  logrun -v git fetch origin || return 1
+  logrun -s -v git rebase origin/master || return 1
   logecho -n "Pushing$dryrun_flag master branch: "
   logrun -s git push$dryrun_flag origin master || return 1
 }

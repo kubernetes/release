@@ -309,6 +309,10 @@ func htmlChangelogFilename(tag semver.Version) string {
 	return changelogFilename(tag, "html")
 }
 
+func markdownChangelogReadme() string {
+	return filepath.Join(repoChangelogDir, "README.md")
+}
+
 func markdownChangelogFilename(tag semver.Version) string {
 	return filepath.Join(repoChangelogDir, changelogFilename(tag, "md"))
 }
@@ -398,15 +402,24 @@ func lookupRemoteReleaseNotes(branch string) (string, error) {
 
 func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
 	// Master branch modifications
-	filename := markdownChangelogFilename(tag)
-	logrus.Infof("Adding %s to repository", filename)
-	if err := repo.Add(filename); err != nil {
-		return errors.Wrapf(err, "trying to add file %s to repository", filename)
+	releaseChangelog := markdownChangelogFilename(tag)
+	changelogReadme := markdownChangelogReadme()
+
+	changelogFiles := []string{
+		releaseChangelog,
+		changelogReadme,
+	}
+
+	for _, filename := range changelogFiles {
+		logrus.Infof("Adding %s to repository", filename)
+		if err := repo.Add(filename); err != nil {
+			return errors.Wrapf(err, "trying to add file %s to repository", filename)
+		}
 	}
 
 	logrus.Info("Committing changes to master branch in repository")
 	if err := repo.Commit(fmt.Sprintf(
-		"Add %s for %s", filename, util.SemverToTagString(tag),
+		"CHANGELOG: Update directory for %s release", util.SemverToTagString(tag),
 	)); err != nil {
 		return errors.Wrap(err, "committing changes into repository")
 	}
@@ -423,13 +436,13 @@ func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
 		}
 
 		logrus.Info("Checking out changelog from master branch")
-		if err := repo.Checkout(git.Master, filename); err != nil {
-			return errors.Wrap(err, "checking out master branch changelog")
+		if err := repo.Checkout(git.Master, releaseChangelog); err != nil {
+			return errors.Wrap(err, "unable to check out master branch changelog")
 		}
 
 		logrus.Info("Committing changes to release branch in repository")
 		if err := repo.Commit(fmt.Sprintf(
-			"Update %s for %s", filename, util.SemverToTagString(tag),
+			"Update %s for %s", releaseChangelog, util.SemverToTagString(tag),
 		)); err != nil {
 			return errors.Wrap(err, "committing changes into repository")
 		}

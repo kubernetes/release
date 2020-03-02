@@ -405,6 +405,8 @@ check_prerequisites () {
 PROGSTEP[generate_release_notes]="GENERATE RELEASE NOTES"
 generate_release_notes () {
   local release_tars=$TREE_ROOT/_output-$RELEASE_VERSION_PRIME/release-tars
+  local git_status_output
+  local repo_state
 
   logrun -v krel changelog \
     --repo "$TREE_ROOT" \
@@ -414,6 +416,16 @@ generate_release_notes () {
     --html-file "$RELEASE_NOTES_HTML" \
     --bucket="$RELEASE_BUCKET" \
     || return 1
+
+  git_status_output=$(git status -s)
+  repo_state=$([[ -z $git_status_output ]] || echo "dirty")
+
+  if [[ $repo_state == "dirty" ]]; then
+    logecho "Repo state was dirty after generating release notes. Cannot continue."
+    logecho "'git status -s' output:"
+    logecho "$git_status_output"
+    return 1
+  fi
 }
 
 ##############################################################################
