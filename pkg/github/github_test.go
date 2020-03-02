@@ -164,3 +164,86 @@ func TestLatestGitHubTagsPerBranchFailedNonSemverTag(t *testing.T) {
 	require.NotNil(t, err)
 	require.Nil(t, res)
 }
+
+func TestReleasesSuccessEmpty(t *testing.T) {
+	// Given
+	sut, client := newSUT()
+	client.ListReleasesReturns([]*gogithub.RepositoryRelease{}, nil, nil)
+
+	// When
+	res, err := sut.Releases("", "", false)
+
+	// Then
+	require.Nil(t, err)
+	require.Empty(t, res)
+}
+
+func TestReleasesSuccessNoPreReleases(t *testing.T) {
+	// Given
+	var (
+		tag1  = "v1.18.0"
+		tag2  = "v1.17.0"
+		tag3  = "v1.16.0"
+		tag4  = "v1.15.0"
+		aTrue = true
+	)
+	sut, client := newSUT()
+	client.ListReleasesReturns([]*gogithub.RepositoryRelease{
+		{TagName: &tag1},
+		{TagName: &tag2},
+		{TagName: &tag3, Prerelease: &aTrue},
+		{TagName: &tag4},
+	}, nil, nil)
+
+	// When
+	res, err := sut.Releases("", "", false)
+
+	// Then
+	require.Nil(t, err)
+	require.Len(t, res, 3)
+	require.Equal(t, tag1, res[0].GetTagName())
+	require.Equal(t, tag2, res[1].GetTagName())
+	require.Equal(t, tag4, res[2].GetTagName())
+}
+
+func TestReleasesSuccessWithPreReleases(t *testing.T) {
+	// Given
+	var (
+		tag1  = "v1.18.0"
+		tag2  = "v1.17.0"
+		tag3  = "v1.16.0"
+		tag4  = "v1.15.0"
+		aTrue = true
+	)
+	sut, client := newSUT()
+	client.ListReleasesReturns([]*gogithub.RepositoryRelease{
+		{TagName: &tag1},
+		{TagName: &tag2, Prerelease: &aTrue},
+		{TagName: &tag3, Prerelease: &aTrue},
+		{TagName: &tag4},
+	}, nil, nil)
+
+	// When
+	res, err := sut.Releases("", "", true)
+
+	// Then
+	require.Nil(t, err)
+	require.Len(t, res, 4)
+	require.Equal(t, tag1, res[0].GetTagName())
+	require.Equal(t, tag2, res[1].GetTagName())
+	require.Equal(t, tag3, res[2].GetTagName())
+	require.Equal(t, tag4, res[3].GetTagName())
+}
+
+func TestReleasesFailed(t *testing.T) {
+	// Given
+	sut, client := newSUT()
+	client.ListReleasesReturns(nil, nil, errors.New("error"))
+
+	// When
+	res, err := sut.Releases("", "", false)
+
+	// Then
+	require.NotNil(t, err)
+	require.Nil(t, res, nil)
+}
