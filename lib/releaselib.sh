@@ -18,15 +18,15 @@
 # CONSTANTS
 ###############################################################################
 
-# TODO(vdf): Need to reference K8s Infra projects here
-readonly DEFAULT_PROJECT="kubernetes-release-test"
-readonly PROD_PROJECT="kubernetes-release"
-readonly TEST_PROJECT="kubernetes-release-test"
+readonly DEFAULT_PROJECT="k8s-staging-kubernetes"
+# TODO(prototype): Need to reference test prod project here
+readonly PROD_PROJECT="k8s-staging-kubernetes"
+readonly TEST_PROJECT="k8s-staging-kubernetes"
 
-# TODO(vdf): Need to reference K8s Infra buckets here
-readonly DEFAULT_BUCKET="kubernetes-release-gcb"
-readonly PROD_BUCKET="kubernetes-release"
-readonly TEST_BUCKET="kubernetes-release-gcb"
+readonly DEFAULT_BUCKET="k8s-staging-kubernetes"
+# TODO(prototype): Need to reference test prod project here
+readonly PROD_BUCKET="k8s-staging-kubernetes"
+readonly TEST_BUCKET="k8s-staging-kubernetes"
 readonly CI_BUCKET="kubernetes-release-dev"
 
 readonly GCRIO_PATH_PROD="k8s.gcr.io"

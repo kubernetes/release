@@ -34,11 +34,10 @@ import (
 
 const (
 	// gcbmgr/anago defaults
-	DefaultToolRepo   = "release"
-	DefaultToolBranch = git.Master
-	DefaultToolOrg    = git.DefaultGithubOrg
-	// TODO(vdf): Need to reference K8s Infra project here
-	DefaultKubernetesStagingProject = "kubernetes-release-test"
+	DefaultToolRepo                 = "release"
+	DefaultToolBranch               = git.Master
+	DefaultToolOrg                  = git.DefaultGithubOrg
+	DefaultKubernetesStagingProject = "k8s-staging-kubernetes"
 	DefaultRelengStagingProject     = "k8s-staging-releng"
 	DefaultDiskSize                 = "300"
 	BucketPrefix                    = "kubernetes-release-"

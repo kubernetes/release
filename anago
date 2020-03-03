@@ -108,7 +108,7 @@ PROG=${0##*/}
 #+     [--buildversion=ver]      - Set the build version (required)
 #+     [--gcrio_path=]           - Specify the full GCR path to use.
 #+                                 defaults:
-#+                                 - gcr.io/kubernetes-release-test (mock)
+#+                                 - gcr.io/k8s-staging-kubernetes (mock)
 #+                                 - k8s.gcr.io for --nomock
 #+     [--basedir=dir]           - Specify an alternate base directory
 #+                                 (default: $HOME/anago)

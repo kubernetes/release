@@ -75,7 +75,7 @@ func TestRunGcbmgrList(t *testing.T) {
 				Version:  mockVersion("v1.17.0"),
 			},
 			listJobOpts: fakeListJobs{
-				expectedProject:  "kubernetes-release-test",
+				expectedProject:  release.DefaultKubernetesStagingProject,
 				expectedLastJobs: int64(5),
 				err:              nil,
 			},
@@ -91,7 +91,7 @@ func TestRunGcbmgrList(t *testing.T) {
 				Version:  mockVersion("v1.17.0"),
 			},
 			listJobOpts: fakeListJobs{
-				expectedProject:  "kubernetes-release-test",
+				expectedProject:  release.DefaultKubernetesStagingProject,
 				expectedLastJobs: int64(10),
 				err:              errors.New("Generic Error"),
 			},
