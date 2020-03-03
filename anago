@@ -259,12 +259,11 @@ copy_logs_to_workdir () {
 }
 
 ###############################################################################
-# Ensures all registries that will be used during both mock and --nomock
-# runs allow write access so we don't fall over later
-# @param registries - A space separated list of registries
+# Ensures we have write access to a specified registry
+# @param registry - A registry to check the ACLs for
 #
 ensure_registry_acls () {
-  local registries=($1)
+  local registry="$1"
   local emptyfile="$TMPDIR/empty-file.$$"
   local gs_path
   local r
@@ -276,27 +275,29 @@ ensure_registry_acls () {
 
   # Short of creating a hardcoded map of project-id to registry, translating
   # _ to - seems to be a simple rule to keep this, well, simple.
-  for r in ${registries[*]//_/-}; do
-    # In this context, "google-containers" is still used
-    if [[ "$r" == "$GCRIO_PATH_PROD" ]]; then
-      artifact_namespace="google-containers"
-    else
-      artifact_namespace="${r/gcr.io\//}"
-    fi
+  r=${registry//_/-}
 
-    gs_path="gs://artifacts.$artifact_namespace.appspot.com/containers"
-    logecho -n "Checking write access to registry $r: "
-    if logrun $GSUTIL -q cp $emptyfile $gs_path && \
-       logrun $GSUTIL -q rm $gs_path/${emptyfile##*/}; then
-      logecho $OK
-    else
-      logecho $FAILED
-      ((retcode++))
-    fi
+  # When we are no-mock mode we need to perform an image promotion, so it's
+  # unnecessary to check for write access to the production container registry.
+  if ((FLAGS_nomock)); then
+    logecho "Skipping registry ACL check on $GCRIO_PATH_PROD in no-mock mode"
+    return 0
+  else
+    artifact_namespace="${r/gcr.io\//}"
+  fi
 
-    # Always reset back to $USER
-    ((FLAGS_gcb)) || logrun $GCLOUD config set account $GCP_USER
-  done
+  gs_path="gs://artifacts.$artifact_namespace.appspot.com/containers"
+  logecho -n "Checking write access to registry $r: "
+  if logrun $GSUTIL -q cp $emptyfile $gs_path && \
+      logrun $GSUTIL -q rm $gs_path/${emptyfile##*/}; then
+    logecho $OK
+  else
+    logecho $FAILED
+    ((retcode++))
+  fi
+
+  # Always reset back to $USER
+  ((FLAGS_gcb)) || logrun $GCLOUD config set account $GCP_USER
 
   logrun rm -f $emptyfile
 
@@ -378,7 +379,7 @@ check_prerequisites () {
 
   # Verify write access to all container registries that might be used
   # to ensure both mock and --nomock runs will work.
-  ensure_registry_acls "${ALL_CONTAINER_REGISTRIES[*]}" || return 1
+  ensure_registry_acls "$GCRIO_PATH" || return 1
 
   logecho -n "Checking cloud project state: "
   GCLOUD_PROJECT=$($GCLOUD config get-value project 2>/dev/null)
