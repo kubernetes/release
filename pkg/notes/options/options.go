@@ -112,33 +112,9 @@ func (o *Options) ValidateAndFinish() (err error) {
 
 	// Check if we want to automatically discover the revisions
 	if o.DiscoverMode != RevisionDiscoveryModeNONE {
-		repo, err := o.repo()
-		if err != nil {
+		if err := o.resolveDiscoverMode(); err != nil {
 			return err
 		}
-
-		var result git.DiscoverResult
-		if o.DiscoverMode == RevisionDiscoveryModeMergeBaseToLatest {
-			result, err = repo.LatestReleaseBranchMergeBaseToLatest()
-		} else if o.DiscoverMode == RevisionDiscoveryModePatchToPatch {
-			result, err = repo.LatestPatchToPatch(o.Branch)
-		} else if o.DiscoverMode == RevisionDiscoveryModeMinorToMinor {
-			result, err = repo.LatestNonPatchFinalToMinor()
-		}
-		if err != nil {
-			return err
-		}
-
-		o.StartSHA = result.StartSHA()
-		o.StartRev = result.StartRev()
-		o.EndSHA = result.EndSHA()
-		o.EndRev = result.EndRev()
-
-		logrus.Infof("discovered start SHA %s", o.StartSHA)
-		logrus.Infof("discovered end SHA %s", o.EndSHA)
-
-		logrus.Infof("using start revision %s", o.StartRev)
-		logrus.Infof("using end revision %s", o.EndRev)
 	}
 
 	// The start SHA or rev is required.
@@ -189,6 +165,38 @@ func (o *Options) ValidateAndFinish() (err error) {
 		return err
 	}
 	o.Format = format
+
+	return nil
+}
+
+func (o *Options) resolveDiscoverMode() error {
+	repo, err := o.repo()
+	if err != nil {
+		return err
+	}
+
+	var result git.DiscoverResult
+	if o.DiscoverMode == RevisionDiscoveryModeMergeBaseToLatest {
+		result, err = repo.LatestReleaseBranchMergeBaseToLatest()
+	} else if o.DiscoverMode == RevisionDiscoveryModePatchToPatch {
+		result, err = repo.LatestPatchToPatch(o.Branch)
+	} else if o.DiscoverMode == RevisionDiscoveryModeMinorToMinor {
+		result, err = repo.LatestNonPatchFinalToMinor()
+	}
+	if err != nil {
+		return err
+	}
+
+	o.StartSHA = result.StartSHA()
+	o.StartRev = result.StartRev()
+	o.EndSHA = result.EndSHA()
+	o.EndRev = result.EndRev()
+
+	logrus.Infof("discovered start SHA %s", o.StartSHA)
+	logrus.Infof("discovered end SHA %s", o.EndSHA)
+
+	logrus.Infof("using start revision %s", o.StartRev)
+	logrus.Infof("using end revision %s", o.EndRev)
 
 	return nil
 }
