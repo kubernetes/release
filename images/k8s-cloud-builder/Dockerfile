@@ -46,6 +46,10 @@ RUN apt-get install -qqy \
         gnupg2 \
         grep \
         jq \
+        libassuan-dev \
+        libbtrfs-dev \
+        libdevmapper-dev \
+        libgpgme-dev \
         lsb-release \
         make \
         net-tools \
@@ -92,6 +96,14 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
     && apt-get -y update \
     && apt-get -qqy install \
         docker-ce-cli
+
+ARG SKOPEO_VERSION=v0.1.41
+RUN git clone https://github.com/containers/skopeo $GOPATH/src/github.com/containers/skopeo
+RUN cd $GOPATH/src/github.com/containers/skopeo \
+    && git checkout ${SKOPEO_VERSION} \
+    && make binary-local \
+    && cp skopeo /usr/local/bin \
+    && rm -rf $GOPATH/src/github.com/containers/skopeo
 
 # Cleanup a bit
 RUN apt-get -qqy remove \
