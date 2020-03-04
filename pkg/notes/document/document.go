@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"text/template"
 
 	"github.com/pkg/errors"
 	"k8s.io/release/pkg/notes"
@@ -31,9 +32,93 @@ import (
 
 // Document represents the underlying structure of a release notes document.
 type Document struct {
-	NotesWithActionRequired Notes       `json:"action_required"`
-	NotesUncategorized      Notes       `json:"uncategorized"`
-	NotesByKind             NotesByKind `json:"kinds"`
+	NotesWithActionRequired Notes         `json:"action_required"`
+	NotesUncategorized      Notes         `json:"uncategorized"`
+	NotesByKind             NotesByKind   `json:"kinds"`
+	Downloads               *FileMetadata `json:"downloads"`
+	CurrentRevision         string        `json:"release_tag"`
+	PreviousRevision        string
+}
+
+// FileMetadata contains metadata about files associated with the release.
+type FileMetadata struct {
+	// Files containing source code.
+	Source []File
+
+	// Client binaries.
+	Client []File
+
+	// Server binaries.
+	Server []File
+
+	// TODO: What is this?
+	Node []File
+}
+
+// FetchMetadata generates file metadata from files in `dir`
+func (f *FileMetadata) FetchMetadata(dir, urlPrefix, tag string) (*FileMetadata, error) {
+	if dir == "" {
+		return nil, nil
+	}
+	if tag == "" {
+		return nil, errors.New("release tags not specified")
+	}
+	if urlPrefix == "" {
+		return nil, errors.New("url prefix not specified")
+	}
+
+	fm := new(FileMetadata)
+	m := map[*[]File][]string{
+		&fm.Source: {"kubernetes.tar.gz", "kubernetes-src.tar.gz"},
+		&fm.Client: {"kubernetes-client*.tar.gz"},
+		&fm.Server: {"kubernetes-server*.tar.gz"},
+		&fm.Node:   {"kubernetes-node*.tar.gz"},
+	}
+	for fileType, patterns := range m {
+		fileMetadata, err := f.newFile(dir, patterns, urlPrefix, tag)
+		if err != nil {
+			return nil, errors.Wrap(err, "fetching file metadata")
+		}
+		*fileType = append(*fileType, fileMetadata...)
+	}
+
+	return fm, nil
+}
+
+func (f *FileMetadata) newFile(dir string, patterns []string, urlPrefix, tag string) ([]File, error) {
+	var files []File
+	for _, pattern := range patterns {
+		matches, err := filepath.Glob(filepath.Join(dir, pattern))
+		if err != nil {
+			return nil, err
+		}
+
+		for _, filePath := range matches {
+			f, err := os.Open(filePath)
+			if err != nil {
+				return nil, err
+			}
+			defer f.Close()
+
+			h := sha512.New()
+			if _, err := io.Copy(h, f); err != nil {
+				return nil, err
+			}
+
+			fileName := filepath.Base(filePath)
+			files = append(files, File{
+				Checksum: fmt.Sprintf("%x", h.Sum(nil)),
+				Name:     fileName,
+				URL:      fmt.Sprintf("%s/%s/%s", urlPrefix, tag, fileName),
+			})
+		}
+	}
+	return files, nil
+}
+
+// A File is a downloadable file.
+type File struct {
+	Checksum, Name, URL string
 }
 
 type Kind string
@@ -115,6 +200,34 @@ func CreateDocument(releaseNotes notes.ReleaseNotes, history notes.ReleaseNotesH
 	sort.Strings(doc.NotesUncategorized)
 	sort.Strings(doc.NotesWithActionRequired)
 	return doc, nil
+}
+
+// RenderMarkdownTemplate renders a document using the Go template in `goTemplate`.
+func (d *Document) RenderMarkdownTemplate(bucket, fileDir, goTemplate string) (string, error) {
+	urlPrefix := fmt.Sprintf("https://storage.googleapis.com/%s/release", bucket)
+	if bucket == "kubernetes-release" {
+		urlPrefix = "https://dl.k8s.io"
+	}
+
+	fm := new(FileMetadata)
+	fileMetadata, err := fm.FetchMetadata(fileDir, urlPrefix, d.CurrentRevision)
+	if err != nil {
+		return "", errors.Wrap(err, "fetching downloads metadata")
+	}
+	d.Downloads = fileMetadata
+
+	tmpl, err := template.New("markdown").
+		Funcs(template.FuncMap{"prettyKind": prettyKind}).
+		Parse(goTemplate)
+	if err != nil {
+		return "", errors.Wrap(err, "parsing template")
+	}
+
+	var s strings.Builder
+	if err := tmpl.Execute(&s, d); err != nil {
+		return "", errors.Wrapf(err, "rendering with template")
+	}
+	return s.String(), nil
 }
 
 // RenderMarkdown accepts a Document and writes a version of that document to

@@ -87,7 +87,7 @@ level=debug timestamp=2019-07-30T04:02:44.3716249Z caller=notes.go:497 msg="Excl
 | release-tars            | RELEASE_TARS    |                    | No       | Directory of tars to sha512 sum for display                                                                                       |
 | **OUTPUT OPTIONS**      |
 | output                  | OUTPUT          |                    | No       | The path where the release notes will be written                                                                                  |
-| format                  | FORMAT          | markdown           | Yes      | The format for notes output (options: markdown, json)                                                                             |
+| format                  | FORMAT          | markdown           | Yes      | The format for notes output (options: markdown, json, go-template:path/to/template.file)                                                                             |
 | release-version         | RELEASE_VERSION |                    | No       | The release version to tag the notes with                                                                                         |
 | **LOG OPTIONS**         |
 | debug                   | DEBUG           | false              | No       | Enable debug logging (options: true, false)                                                                                       |
@@ -125,6 +125,10 @@ cp ./bazel-bin/cmd/release-notes/darwin_amd64_stripped/release-notes /usr/local/
 
 Check out the rendering of 1.11's release notes [here](https://gist.github.com/marpaia/acfdb889f362195bb683e9e09ce196bc).
 
-### Why formats are supported?
+### What formats are supported?
 
-Right now the tool can output release notes in Markdown and JSON.
+Right now the tool can output release notes in Markdown and JSON. The tool
+also supports arbitrary formats using go-templates. The template has access
+to fields in the `Document` struct. For an example, see the default markdown
+template (`pkg/notes/internal/template.go`) used to render the stock format.
+

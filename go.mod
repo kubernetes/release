@@ -5,10 +5,12 @@ go 1.13
 require (
 	cloud.google.com/go v0.44.3
 	github.com/GoogleCloudPlatform/testgrid v0.0.1-alpha.4
+	github.com/bazelbuild/rules_go v0.22.1
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/golangci/golangci-lint v1.23.3
 	github.com/google/go-github/v29 v29.0.3
 	github.com/google/uuid v1.1.1
+	github.com/kr/pretty v0.1.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.2
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481
 	github.com/pkg/errors v0.9.1

@@ -141,8 +141,10 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.Format,
 		"format",
-		util.EnvDefault("FORMAT", "markdown"),
-		"The format for notes output (options: markdown, json)",
+		util.EnvDefault("FORMAT", "go-template:default"),
+		fmt.Sprintf("The format for notes output (options: %s)",
+			strings.Join([]string{"markdown", "json", "go-template:default"}, ", "),
+		),
 	)
 
 	cmd.PersistentFlags().StringVar(
@@ -241,8 +243,8 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 	}
 
 	// Contextualized release notes can be printed in a variety of formats
-	switch opts.Format {
-	case "json":
+	switch format := opts.Format; {
+	case format == "json":
 		byteValue, err := ioutil.ReadAll(output)
 		if err != nil {
 			return err
@@ -275,15 +277,20 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 		if err := enc.Encode(releaseNotes); err != nil {
 			return errors.Wrapf(err, "encoding JSON output")
 		}
-	case "markdown":
+	case strings.Contains(format, "go-template"):
+		goTemplate := strings.Split(format, ":")[1]
+
 		doc, err := document.CreateDocument(releaseNotes, history)
 		if err != nil {
 			return errors.Wrapf(err, "creating release note document")
 		}
 
-		markdown, err := doc.RenderMarkdown(
-			opts.ReleaseBucket, opts.ReleaseTars, opts.StartRev, opts.EndRev,
-		)
+		// TODO: Not sure these options are guaranteed to be set but we need
+		// them in rendering. Perhaps these should be set in CreateDocument()?
+		doc.PreviousRevision = opts.StartRev
+		doc.CurrentRevision = opts.EndRev
+
+		markdown, err := doc.RenderMarkdownTemplate(opts.ReleaseBucket, opts.ReleaseTars, goTemplate)
 		if err != nil {
 			return errors.Wrapf(err, "rendering release note document to markdown")
 		}
