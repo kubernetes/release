@@ -280,7 +280,8 @@ ensure_registry_acls () {
   # When we are no-mock mode we need to perform an image promotion, so it's
   # unnecessary to check for write access to the production container registry.
   if ((FLAGS_nomock)); then
-    logecho "Skipping registry ACL check on $GCRIO_PATH_PROD in no-mock mode"
+    logecho -n "Skipping container registry ACL check on $GCRIO_PATH_PROD in no-mock mode: "
+    logecho $OK
     return 0
   else
     artifact_namespace="${r/gcr.io\//}"
@@ -1445,8 +1446,18 @@ push_all_artifacts () {
        gs://$RELEASE_BUCKET/$BUCKET_TYPE/$version || return 1
     fi
 
-    common::runstep release::docker::release \
-     $KUBE_DOCKER_REGISTRY $version $BUILD_OUTPUT-$version || return 1
+    # When we are no-mock mode we need to perform an image promotion, so
+    # instead of pushing to the production container registry, we validate
+    # that the manifest is populated on the remote registry.
+    if ! ((FLAGS_nomock)); then
+      common::runstep release::docker::release \
+      $KUBE_DOCKER_REGISTRY $version $BUILD_OUTPUT-$version || return 1
+    fi
+
+    # TODO(vdf): Add image manifest validation logic
+    #            Maybe consider adding this to release::docker::release
+    #            and renaming that function.
+    logecho "Validating image manifests (# TODO(vdf): currently a no-op)..." || return 1
 
     common::runstep release::gcs::publish_version \
      $BUCKET_TYPE $version $BUILD_OUTPUT-$version $RELEASE_BUCKET || return 1
