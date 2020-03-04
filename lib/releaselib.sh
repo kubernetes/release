@@ -19,13 +19,13 @@
 ###############################################################################
 
 readonly DEFAULT_PROJECT="k8s-staging-kubernetes"
-# TODO(prototype): Need to reference test prod project here
-readonly PROD_PROJECT="k8s-staging-kubernetes"
+# TODO(prototype): Need to reference official prod project here
+readonly PROD_PROJECT="k8s-release-test-prod"
 readonly TEST_PROJECT="k8s-staging-kubernetes"
 
 readonly DEFAULT_BUCKET="k8s-staging-kubernetes"
-# TODO(prototype): Need to reference test prod project here
-readonly PROD_BUCKET="k8s-staging-kubernetes"
+# TODO(prototype): Need to reference official prod bucket here
+readonly PROD_BUCKET="k8s-release-test-prod"
 readonly TEST_BUCKET="k8s-staging-kubernetes"
 readonly CI_BUCKET="kubernetes-release-dev"
 
