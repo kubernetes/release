@@ -1,0 +1,41 @@
+{
+ "Result": {
+  "sha": "c97fe5036ef3df2967d086711e6c0c405941e14b",
+  "author": {
+   "date": "2019-10-12T04:42:37Z",
+   "name": "Kubernetes Prow Robot",
+   "email": "k8s-ci-robot@users.noreply.github.com"
+  },
+  "committer": {
+   "date": "2019-10-12T04:42:37Z",
+   "name": "GitHub",
+   "email": "noreply@github.com"
+  },
+  "message": "Merge pull request #83789 from sttts/sttts-crd-int-or-string-panic-fix-1.16\n\n1.16: apiextensions: fix panic with x-kuberentes-int-or-string in CRDs",
+  "tree": {
+   "sha": "f8822983ef3bb99f9b7c2ded3b690f677ec6c196"
+  },
+  "parents": [
+   {
+    "sha": "4a8405575c56fdb97782f787272547f5cc1d4d28",
+    "html_url": "https://github.com/kubernetes/kubernetes/commit/4a8405575c56fdb97782f787272547f5cc1d4d28",
+    "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/4a8405575c56fdb97782f787272547f5cc1d4d28"
+   },
+   {
+    "sha": "7b20e0af9bfb56372ec3d5ec474dee1cfb623e4b",
+    "html_url": "https://github.com/kubernetes/kubernetes/commit/7b20e0af9bfb56372ec3d5ec474dee1cfb623e4b",
+    "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/7b20e0af9bfb56372ec3d5ec474dee1cfb623e4b"
+   }
+  ],
+  "html_url": "https://github.com/kubernetes/kubernetes/commit/c97fe5036ef3df2967d086711e6c0c405941e14b",
+  "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/c97fe5036ef3df2967d086711e6c0c405941e14b",
+  "verification": {
+   "verified": true,
+   "reason": "valid",
+   "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJdoVm9CRBK7hj4Ov3rIwAAdHIIAJwZDbknl0ZlnQupPRgKxeVw\nQ3EgkG4c3BN9lnM1jtyKRpYZWNhZMExxEr+oH2p7QIr499rOKFg6IhdBPsDTFnEO\nDwdzs0sIbGqXK/kSCp34+B9SvLs3uQcyAihTcQtMn+qoBbvXZaa7/eTF/7peeCO9\nwycd5/qRwsxtr8EVFD/tDQ21upkgIGq1m1qWZ9iHSP0BzBY1cRAgnftNfDOPF2J7\nkJ0SAz72Qq1YKi3FOX+NzaZFLGJZdJMbjbt+BZzdnBd4v2tW/7RgSvmcqUJib3aq\nxKSnp4R6BXBi8vNI+JY4z/9k89D6MB9z+R9fDuY6eEf6GlADoy/3Ik7Ex5vYluY=\n=EQgT\n-----END PGP SIGNATURE-----\n",
+   "payload": "tree f8822983ef3bb99f9b7c2ded3b690f677ec6c196\nparent 4a8405575c56fdb97782f787272547f5cc1d4d28\nparent 7b20e0af9bfb56372ec3d5ec474dee1cfb623e4b\nauthor Kubernetes Prow Robot \u003ck8s-ci-robot@users.noreply.github.com\u003e 1570855357 -0700\ncommitter GitHub \u003cnoreply@github.com\u003e 1570855357 -0700\n\nMerge pull request #83789 from sttts/sttts-crd-int-or-string-panic-fix-1.16\n\n1.16: apiextensions: fix panic with x-kuberentes-int-or-string in CRDs"
+  },
+  "node_id": "MDY6Q29tbWl0MjA1ODA0OTg6Yzk3ZmU1MDM2ZWYzZGYyOTY3ZDA4NjcxMWU2YzBjNDA1OTQxZTE0Yg=="
+ },
+ "LastPage": 0
+}

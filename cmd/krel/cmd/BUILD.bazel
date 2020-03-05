@@ -40,11 +40,14 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = [
+        "changelog_data_test.go",
         "changelog_test.go",
         "ff_test.go",
         "gcbmgr_test.go",
         "root_test.go",
+        "sut_test.go",
     ],
+    data = glob(["testdata/**"]),
     embed = [":go_default_library"],
     deps = [
         "//pkg/command:go_default_library",

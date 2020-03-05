@@ -1,0 +1,41 @@
+{
+ "Result": {
+  "sha": "a67238eed67315169b4ff97c73860002c39ea428",
+  "author": {
+   "date": "2020-02-06T10:27:33Z",
+   "name": "Kubernetes Prow Robot",
+   "email": "k8s-ci-robot@users.noreply.github.com"
+  },
+  "committer": {
+   "date": "2020-02-06T10:27:33Z",
+   "name": "GitHub",
+   "email": "noreply@github.com"
+  },
+  "message": "Merge pull request #87007 from wojtek-t/cleanup_manual_conversions\n\nCleanup manual conversions",
+  "tree": {
+   "sha": "69712676373286b0c4274d9d026010412836e8e4"
+  },
+  "parents": [
+   {
+    "sha": "641321c94c3e0943a57230596164e2e8f2eb2c52",
+    "html_url": "https://github.com/kubernetes/kubernetes/commit/641321c94c3e0943a57230596164e2e8f2eb2c52",
+    "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/641321c94c3e0943a57230596164e2e8f2eb2c52"
+   },
+   {
+    "sha": "1fc80c57eeaa61d915b0e8a3f3d7c88fc8f67fb0",
+    "html_url": "https://github.com/kubernetes/kubernetes/commit/1fc80c57eeaa61d915b0e8a3f3d7c88fc8f67fb0",
+    "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/1fc80c57eeaa61d915b0e8a3f3d7c88fc8f67fb0"
+   }
+  ],
+  "html_url": "https://github.com/kubernetes/kubernetes/commit/a67238eed67315169b4ff97c73860002c39ea428",
+  "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/a67238eed67315169b4ff97c73860002c39ea428",
+  "verification": {
+   "verified": true,
+   "reason": "valid",
+   "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJeO+oVCRBK7hj4Ov3rIwAAdHIIAIumS9nb70cfEg8vFY4asCp+\nxc1/M5LZWSNrKpwP+jXigxDddfD/juuToHHK/xvJDgX+YYmkjozPrEf/mswGceFd\nRewKaAQ7G5rvW1vP2fY6Zp+pvZJvVqZa9hsyapjBEwLaI5j1UhKy5Zdv7rVzIOJ1\nNuA0MsfWM4s75tFhMLoaWlB+Rh0VKo2LpE3i5uYwjVVz3h89rQoz1Weqa8+bcgda\nd+lbOlsKw4U5PbHv0I3vsa3ZtNdz9y/Uv4+ikQwGKWJq8Km0AAfDamSsof/jVhYP\nI2I7ydgC8yAr1M1+MuBlC5XP2MNIxSpPuR6gRAu1KG4U9m89fkKsWhR+RGBjOqk=\n=kQdK\n-----END PGP SIGNATURE-----\n",
+   "payload": "tree 69712676373286b0c4274d9d026010412836e8e4\nparent 641321c94c3e0943a57230596164e2e8f2eb2c52\nparent 1fc80c57eeaa61d915b0e8a3f3d7c88fc8f67fb0\nauthor Kubernetes Prow Robot \u003ck8s-ci-robot@users.noreply.github.com\u003e 1580984853 -0800\ncommitter GitHub \u003cnoreply@github.com\u003e 1580984853 -0800\n\nMerge pull request #87007 from wojtek-t/cleanup_manual_conversions\n\nCleanup manual conversions"
+  },
+  "node_id": "MDY6Q29tbWl0MjA1ODA0OTg6YTY3MjM4ZWVkNjczMTUxNjliNGZmOTdjNzM4NjAwMDJjMzllYTQyOA=="
+ },
+ "LastPage": 0
+}

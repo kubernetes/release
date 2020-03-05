@@ -1,0 +1,41 @@
+{
+ "Result": {
+  "sha": "a7b4459cd1cf89420e2370ae5d067fc5ad6629ba",
+  "author": {
+   "date": "2020-01-21T09:30:09Z",
+   "name": "Kubernetes Prow Robot",
+   "email": "k8s-ci-robot@users.noreply.github.com"
+  },
+  "committer": {
+   "date": "2020-01-21T09:30:09Z",
+   "name": "GitHub",
+   "email": "noreply@github.com"
+  },
+  "message": "Merge pull request #87379 from hase1128/add-comment-to-several-verify-scripts_3\n\nAdd comments in several hack/verify-*.sh(g-r)",
+  "tree": {
+   "sha": "a11e6a6d0c6517eaf8c33ac1d3a5e0c1382036e3"
+  },
+  "parents": [
+   {
+    "sha": "12203f3fd90f2b02b1853291895f019ec4efd530",
+    "html_url": "https://github.com/kubernetes/kubernetes/commit/12203f3fd90f2b02b1853291895f019ec4efd530",
+    "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/12203f3fd90f2b02b1853291895f019ec4efd530"
+   },
+   {
+    "sha": "c8df27c2b1b4dc5e7cc7cbe95787115eca295de5",
+    "html_url": "https://github.com/kubernetes/kubernetes/commit/c8df27c2b1b4dc5e7cc7cbe95787115eca295de5",
+    "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/c8df27c2b1b4dc5e7cc7cbe95787115eca295de5"
+   }
+  ],
+  "html_url": "https://github.com/kubernetes/kubernetes/commit/a7b4459cd1cf89420e2370ae5d067fc5ad6629ba",
+  "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/a7b4459cd1cf89420e2370ae5d067fc5ad6629ba",
+  "verification": {
+   "verified": true,
+   "reason": "valid",
+   "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJeJsShCRBK7hj4Ov3rIwAAdHIIAJADa9jBHT187pmkU/B3NzSk\nGHKvyyYMrjpbH2ZBQBplNiQhKF+f9BwtEG9dnWfxyAx7epKICQJcU2qTvQ9GTLPu\nM7IXYqZGgBPV3k2d3jXBZ9M9qbng7uElJMvpCCtHYR7gIu4cc9ABCgDXVwl42k0d\ntzNg0W2CmWWOVAJN4t/MSZMIJD6bs1PtyxrQnn9PBPo3h5RhWnmzs6K0QzrMnIbS\nG8rmLU5C0isT4RNsGpWYSgz59HWpPfibnvjqjbypuU/L15TcPRlEkKvNLA7KS1jL\nzdX2h6N0r8/7OL7zQ/K1uUQq7lhTKFlt4go8BImXp4eXNyi4mw+VW0dP79QBX/g=\n=2kl5\n-----END PGP SIGNATURE-----\n",
+   "payload": "tree a11e6a6d0c6517eaf8c33ac1d3a5e0c1382036e3\nparent 12203f3fd90f2b02b1853291895f019ec4efd530\nparent c8df27c2b1b4dc5e7cc7cbe95787115eca295de5\nauthor Kubernetes Prow Robot \u003ck8s-ci-robot@users.noreply.github.com\u003e 1579599009 -0800\ncommitter GitHub \u003cnoreply@github.com\u003e 1579599009 -0800\n\nMerge pull request #87379 from hase1128/add-comment-to-several-verify-scripts_3\n\nAdd comments in several hack/verify-*.sh(g-r)"
+  },
+  "node_id": "MDY6Q29tbWl0MjA1ODA0OTg6YTdiNDQ1OWNkMWNmODk0MjBlMjM3MGFlNWQwNjdmYzVhZDY2MjliYQ=="
+ },
+ "LastPage": 0
+}

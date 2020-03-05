@@ -77,7 +77,7 @@ the golang based 'release-notes' tool:
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runChangelog()
+		return runChangelog(changelogOpts, rootOpts)
 	},
 }
 
@@ -115,14 +115,14 @@ func init() {
 	rootCmd.AddCommand(changelogCmd)
 }
 
-func runChangelog() (err error) {
-	tag, err := util.TagStringToSemver(changelogOpts.tag)
+func runChangelog(opts *changelogOptions, rootOpts *rootOptions) error {
+	tag, err := util.TagStringToSemver(opts.tag)
 	if err != nil {
 		return err
 	}
 
 	// Automatically set the branch to a release branch if not provided
-	branch := changelogOpts.branch
+	branch := opts.branch
 	if branch == "" {
 		branch = fmt.Sprintf("release-%d.%d", tag.Major, tag.Minor)
 	}
@@ -160,7 +160,7 @@ func runChangelog() (err error) {
 
 			if startTag, ok := latestTags[branch]; ok {
 				logrus.Infof("Found start tag %s", startTag)
-				markdown, err = generateReleaseNotes(branch, startTag, head)
+				markdown, err = generateReleaseNotes(opts, branch, startTag, head)
 			} else {
 				return errors.Errorf(
 					"no latest tag available for branch %s", branch,
@@ -173,7 +173,7 @@ func runChangelog() (err error) {
 			Major: tag.Major, Minor: tag.Minor, Patch: tag.Patch - 1,
 		})
 
-		markdown, err = generateReleaseNotes(branch, start, head)
+		markdown, err = generateReleaseNotes(opts, branch, start, head)
 	}
 	if err != nil {
 		return err
@@ -204,29 +204,29 @@ func runChangelog() (err error) {
 		return err
 	}
 
-	if err := writeHTML(tag, markdown); err != nil {
+	if err := writeHTML(opts, tag, markdown); err != nil {
 		return err
 	}
 
 	return commitChanges(repo, branch, tag)
 }
 
-func generateReleaseNotes(branch, startRev, endRev string) (string, error) {
+func generateReleaseNotes(opts *changelogOptions, branch, startRev, endRev string) (string, error) {
 	logrus.Info("Generating release notes")
 
 	notesOptions := options.New()
 	notesOptions.Branch = branch
 	notesOptions.StartRev = startRev
 	notesOptions.EndSHA = endRev
-	notesOptions.EndRev = changelogOpts.tag
+	notesOptions.EndRev = opts.tag
 	notesOptions.GithubOrg = git.DefaultGithubOrg
 	notesOptions.GithubRepo = git.DefaultGithubRepo
 	notesOptions.RepoPath = rootOpts.repoPath
-	notesOptions.ReleaseBucket = changelogOpts.bucket
-	notesOptions.ReleaseTars = changelogOpts.tars
+	notesOptions.ReleaseBucket = opts.bucket
+	notesOptions.ReleaseTars = opts.tars
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
-	notesOptions.RecordDir = changelogOpts.recordDir
-	notesOptions.ReplayDir = changelogOpts.replayDir
+	notesOptions.RecordDir = opts.recordDir
+	notesOptions.ReplayDir = opts.replayDir
 	notesOptions.Pull = false
 
 	if err := notesOptions.ValidateAndFinish(); err != nil {
@@ -246,8 +246,7 @@ func generateReleaseNotes(branch, startRev, endRev string) (string, error) {
 	}
 
 	markdown, err := doc.RenderMarkdown(
-		changelogOpts.bucket, changelogOpts.tars,
-		notesOptions.StartRev, notesOptions.EndRev,
+		opts.bucket, opts.tars, notesOptions.StartRev, notesOptions.EndRev,
 	)
 	if err != nil {
 		return "", errors.Wrapf(
@@ -302,9 +301,9 @@ func writeMarkdown(repo *git.Repo, toc, markdown string, tag semver.Version) err
 	return writeFile(mergedTOC, mergedMarkdown)
 }
 
-func htmlChangelogFilename(tag semver.Version) string {
-	if changelogOpts.htmlFile != "" {
-		return changelogOpts.htmlFile
+func htmlChangelogFilename(opts *changelogOptions, tag semver.Version) string {
+	if opts.htmlFile != "" {
+		return opts.htmlFile
 	}
 	return changelogFilename(tag, "html")
 }
@@ -347,7 +346,7 @@ const htmlTemplate = `<!DOCTYPE html>
   </body>
 </html>`
 
-func writeHTML(tag semver.Version, markdown string) error {
+func writeHTML(opts *changelogOptions, tag semver.Version, markdown string) error {
 	content := blackfriday.Run([]byte(markdown))
 
 	t, err := template.New("html").Parse(htmlTemplate)
@@ -362,7 +361,7 @@ func writeHTML(tag semver.Version, markdown string) error {
 		return err
 	}
 
-	absOutputPath, err := filepath.Abs(htmlChangelogFilename(tag))
+	absOutputPath, err := filepath.Abs(htmlChangelogFilename(opts, tag))
 	if err != nil {
 		return err
 	}

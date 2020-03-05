@@ -534,6 +534,14 @@ func (g *Gatherer) gatherNotes(commits []*github.RepositoryCommit) (filtered []*
 	// and use that throttler for all API calls.
 	t := throttler.New(maxParallelRequests, nrOfCommits)
 
+	notesForCommit := func(commit *github.RepositoryCommit) {
+		res, err := g.notesForCommit(commit)
+		if err == nil && res != nil {
+			allResults.Add(res)
+		}
+		t.Done(err)
+	}
+
 	for i, commit := range commits {
 		logrus.Infof(
 			"starting to process commit %d of %d (%0.2f%%): %s",
@@ -541,13 +549,12 @@ func (g *Gatherer) gatherNotes(commits []*github.RepositoryCommit) (filtered []*
 			commit.GetSHA(),
 		)
 
-		go func(commit *github.RepositoryCommit) {
-			res, err := g.notesForCommit(commit)
-			if err == nil && res != nil {
-				allResults.Add(res)
-			}
-			t.Done(err)
-		}(commit)
+		if g.options.ReplayDir == "" {
+			go notesForCommit(commit)
+		} else {
+			// Ensure the same order like recorded
+			notesForCommit(commit)
+		}
 
 		if t.Throttle() > 0 {
 			break

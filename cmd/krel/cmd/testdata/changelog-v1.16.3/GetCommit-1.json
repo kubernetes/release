@@ -1,0 +1,41 @@
+{
+ "Result": {
+  "sha": "b3cbbae08ec52a7fc73d334838e18d17e8512749",
+  "author": {
+   "date": "2019-11-10T22:43:36Z",
+   "name": "Kubernetes Prow Robot",
+   "email": "k8s-ci-robot@users.noreply.github.com"
+  },
+  "committer": {
+   "date": "2019-11-10T22:43:36Z",
+   "name": "GitHub",
+   "email": "noreply@github.com"
+  },
+  "message": "Merge pull request #85025 from neolit123/automated-cherry-pick-of-#85024-origin-release-1.16\n\nAutomated cherry pick of #85024: kubeadm: fix skipped etcd upgrade on secondary cp nodes",
+  "tree": {
+   "sha": "dc008923bc36540bf9655bdb0472b278cc0aefce"
+  },
+  "parents": [
+   {
+    "sha": "c3f2a6524ed89bd9b3ded6f491f0d823b11523ae",
+    "html_url": "https://github.com/kubernetes/kubernetes/commit/c3f2a6524ed89bd9b3ded6f491f0d823b11523ae",
+    "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/c3f2a6524ed89bd9b3ded6f491f0d823b11523ae"
+   },
+   {
+    "sha": "b2906cf092532086c91f71bceb57ba523d61a6ad",
+    "html_url": "https://github.com/kubernetes/kubernetes/commit/b2906cf092532086c91f71bceb57ba523d61a6ad",
+    "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/b2906cf092532086c91f71bceb57ba523d61a6ad"
+   }
+  ],
+  "html_url": "https://github.com/kubernetes/kubernetes/commit/b3cbbae08ec52a7fc73d334838e18d17e8512749",
+  "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/b3cbbae08ec52a7fc73d334838e18d17e8512749",
+  "verification": {
+   "verified": true,
+   "reason": "valid",
+   "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJdyJKYCRBK7hj4Ov3rIwAAdHIIACrug7aV7mGnDVWbkpZyum9u\njLLYXqKk2qwKtLoPthA8h1bYcXecOArC+dVK24mTTrBPTAo66/D8PKQMxt9k8ggr\nfwO3R24sdIhx+Hv9+0p8u3BXiXeOpZIGIU6h7/6cuVJ5Xmb6zkNorq3nSwbJd1SA\nAK4OPo2dS0EBqWF9LEDagbjeOQh9zOYrf9FYdm71uecYHaXelqGm/UeXyNEx3HW8\n8kqho4tYlOe9s8TVd3dAvppRCSiJkSKyosJlJRvTLaWvqsGs3N5XIgX6NFGBoYIm\nboErLyGEkzDvmw9pEAT4WUomyXR1nxA4lEV4SSSY/dE/0X48Dc3ee+n/gEwWYn8=\n=Gjz8\n-----END PGP SIGNATURE-----\n",
+   "payload": "tree dc008923bc36540bf9655bdb0472b278cc0aefce\nparent c3f2a6524ed89bd9b3ded6f491f0d823b11523ae\nparent b2906cf092532086c91f71bceb57ba523d61a6ad\nauthor Kubernetes Prow Robot \u003ck8s-ci-robot@users.noreply.github.com\u003e 1573425816 -0800\ncommitter GitHub \u003cnoreply@github.com\u003e 1573425816 -0800\n\nMerge pull request #85025 from neolit123/automated-cherry-pick-of-#85024-origin-release-1.16\n\nAutomated cherry pick of #85024: kubeadm: fix skipped etcd upgrade on secondary cp nodes"
+  },
+  "node_id": "MDY6Q29tbWl0MjA1ODA0OTg6YjNjYmJhZTA4ZWM1MmE3ZmM3M2QzMzQ4MzhlMThkMTdlODUxMjc0OQ=="
+ },
+ "LastPage": 0
+}
