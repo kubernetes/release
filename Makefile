@@ -43,6 +43,9 @@ verify: #verify-shellcheck ## Runs verification scripts to ensure correct execut
 verify-shellcheck: ## Runs shellcheck
 	./hack/verify-shellcheck.sh
 
+verify-golangci-lint: ## Runs all golang linters
+	./hack/verify-golangci-lint.sh
+
 verify-bazel:
 	bazel test //...
 
