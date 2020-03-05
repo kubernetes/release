@@ -29,7 +29,6 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -65,7 +64,7 @@ func TestPackagesAvailableSuccess(t *testing.T) {
 			t.Fatalf("did not expect an error: %v", err)
 		}
 
-		assert.True(t, actual)
+		require.True(t, actual)
 	}
 }
 
@@ -105,7 +104,7 @@ func TestPackagesAvailableFailure(t *testing.T) {
 			t.Fatalf("did not expect an error: %v", err)
 		}
 
-		assert.False(t, actual)
+		require.False(t, actual)
 	}
 }
 
@@ -573,4 +572,14 @@ func TestTagStringToSemver(t *testing.T) {
 func TestSemverToTagString(t *testing.T) {
 	version := semver.Version{Major: 1, Minor: 2, Patch: 3}
 	require.Equal(t, SemverToTagString(version), "v1.2.3")
+}
+
+func TestAddTagPrefix(t *testing.T) {
+	require.Equal(t, "v0.0.0", AddTagPrefix("0.0.0"))
+	require.Equal(t, "v1.0.0", AddTagPrefix("v1.0.0"))
+}
+
+func TestTrimTagPrefix(t *testing.T) {
+	require.Equal(t, "0.0.0", TrimTagPrefix("0.0.0"))
+	require.Equal(t, "1.0.0", TrimTagPrefix("1.0.0"))
 }

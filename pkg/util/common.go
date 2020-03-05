@@ -310,6 +310,9 @@ func MoreRecent(a, b string) (bool, error) {
 }
 
 func AddTagPrefix(tag string) string {
+	if strings.HasPrefix(tag, TagPrefix) {
+		return tag
+	}
 	return TagPrefix + tag
 }
 
