@@ -33,77 +33,39 @@ import (
 )
 
 func TestPackagesAvailableSuccess(t *testing.T) {
-	testcases := []struct {
-		name     string
-		packages []string
-	}{
-		{
-			name: "single package",
-			packages: []string{
-				"bash",
-			},
-		},
-		{
-			name: "multiple packages",
-			packages: []string{
-				"bash",
-				"curl",
-				"grep",
-			},
-		},
-		{
-			name:     "no packages",
-			packages: []string{},
-		},
+	testcases := [][]string{
+		{"bash"},
+		{"bash", "curl", "grep"},
+		{},
 	}
 
-	for _, tc := range testcases {
-		actual, err := PackagesAvailable(tc.packages...)
-
-		if err != nil {
-			t.Fatalf("did not expect an error: %v", err)
-		}
-
-		require.True(t, actual)
+	for _, packages := range testcases {
+		available, err := PackagesAvailable(packages...)
+		require.Nil(t, err)
+		require.True(t, available)
 	}
 }
 
 func TestPackagesAvailableFailure(t *testing.T) {
-	testcases := []struct {
-		name     string
-		packages []string
-	}{
+	testcases := [][]string{
 		{
-			name: "single unavailable package",
-			packages: []string{
-				"fakepackagefoo",
-			},
+			"fakepackagefoo",
 		},
 		{
-			name: "multiple unavailable packages",
-			packages: []string{
-				"fakepackagefoo",
-				"fakepackagebar",
-				"fakepackagebaz",
-			},
+			"fakepackagefoo",
+			"fakepackagebar",
+			"fakepackagebaz",
 		},
 		{
-			name: "available and unavailable packages",
-			packages: []string{
-				"bash",
-				"fakepackagefoo",
-				"fakepackagebar",
-			},
+			"bash",
+			"fakepackagefoo",
+			"fakepackagebar",
 		},
 	}
 
-	for _, tc := range testcases {
-		actual, err := PackagesAvailable(tc.packages...)
-
-		if err != nil {
-			t.Fatalf("did not expect an error: %v", err)
-		}
-
+	for _, packages := range testcases {
+		actual, err := PackagesAvailable(packages...)
+		require.Nil(t, err)
 		require.False(t, actual)
 	}
 }

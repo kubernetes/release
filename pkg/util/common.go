@@ -68,97 +68,95 @@ func GetURLResponse(url string, trim bool) (string, error) {
 // PackagesAvailable takes a slice of packages and determines if they are installed
 // on the host OS. Replaces common::check_packages.
 func PackagesAvailable(packages ...string) (bool, error) {
-	hostOS, osErr := getOS()
-	if osErr != nil {
-		return false, osErr
+	type packageVerifier struct {
+		cmd  string
+		args []string
 	}
+	type packageChecker struct {
+		manager  string
+		verifier *packageVerifier
+	}
+	var checker *packageChecker
 
-	var pkgMgr string
+	for _, x := range []struct {
+		possiblePackageManagers []string
+		verifierCmd             string
+		verifierArgs            []string
+	}{
+		{ // Debian, Ubuntu and similar
+			[]string{"apt"},
+			"dpkg",
+			[]string{"-l"},
+		},
+		{ // Fedora, openSUSE and similar
+			[]string{"dnf", "yum", "zypper"},
+			"rpm",
+			[]string{"--quiet", "-q"},
+		},
+		{ // ArchLinux and similar
+			[]string{"yay", "pacaur", "pacman"},
+			"pacman",
+			[]string{"-Qs"},
+		},
+	} {
+		// Find a working package verifier
+		if !command.Available(x.verifierCmd) {
+			logrus.Debugf("Skipping not available package verifier %s",
+				x.verifierCmd)
+			continue
+		}
+
+		// Find a working package manager
+		packageManager := ""
+		for _, mgr := range x.possiblePackageManagers {
+			if command.Available(mgr) {
+				packageManager = mgr
+				break
+			}
+			logrus.Debugf("Skipping not available package manager %s", mgr)
+		}
+		if packageManager == "" {
+			return false, errors.Errorf(
+				"unable to find working package manager for verifier `%s`",
+				x.verifierCmd,
+			)
+		}
+
+		checker = &packageChecker{
+			manager:  packageManager,
+			verifier: &packageVerifier{x.verifierCmd, x.verifierArgs},
+		}
+		break
+	}
+	if checker == nil {
+		return false, errors.New("unable to find working package manager")
+	}
+	logrus.Infof("Assuming %q as package manager", checker.manager)
+
 	missingPkgs := []string{}
+	for _, pkg := range packages {
+		logrus.Infof("Checking if %q has been installed", pkg)
 
-	ok := true
-	switch hostOS {
-	case "Ubuntu", "Debian", "LinuxMint":
-		pkgMgr = "apt"
-		logrus.Infof("Assuming %s as the host OS package manager", pkgMgr)
-
-		for _, pkg := range packages {
-			checkCmd := command.New(
-				"dpkg",
-				"-l",
-				pkg,
-			)
-
-			logrus.Infof("Checking if %s has been installed via %s...", pkg, pkgMgr)
-			checkCmdStatus, checkCmdErr := checkCmd.RunSilent()
-			if checkCmdErr != nil {
-				return false, checkCmdErr
-			}
-
-			if !checkCmdStatus.Success() {
-				logrus.Infof("Adding %s to missing packages", pkg)
-				missingPkgs = append(missingPkgs, pkg)
-				ok = false
-			}
+		args := append(checker.verifier.args, pkg)
+		if err := command.New(checker.verifier.cmd, args...).
+			RunSilentSuccess(); err != nil {
+			logrus.Infof("Adding %s to missing packages", pkg)
+			missingPkgs = append(missingPkgs, pkg)
 		}
-	case "Fedora":
-		pkgMgr = "dnf"
-		logrus.Infof("Assuming %s as the host OS package manager", pkgMgr)
-
-		for _, pkg := range packages {
-			checkCmd := command.New(
-				"rpm",
-				"--quiet",
-				"-q",
-				pkg,
-			)
-
-			logrus.Infof("Checking if %s has been installed via %s...", pkg, pkgMgr)
-			checkCmdStatus, checkCmdErr := checkCmd.RunSilent()
-			if checkCmdErr != nil {
-				return false, checkCmdErr
-			}
-
-			if !checkCmdStatus.Success() {
-				missingPkgs = append(missingPkgs, pkg)
-				ok = false
-			}
-		}
-	default:
-		ok = false
-		return ok, errors.New("cannot continue; running tool on an unsupported OS")
 	}
-
-	installInstructionsPrefix := fmt.Sprintf("sudo %s install ", pkgMgr)
 
 	if len(missingPkgs) > 0 {
-		missingPkgsString := strings.Join(missingPkgs, ",")
+		logrus.Warnf("The following packages are not installed via %s: %s",
+			checker.manager, strings.Join(missingPkgs, ", "))
 
-		logrus.Warnf("The following packages are not installed via %s: %s", pkgMgr, missingPkgsString)
-
-		for _, pkg := range missingPkgs {
-			installInstructions := fmt.Sprintf("'%s%s'", installInstructionsPrefix, pkg)
-
-			logrus.Infof("Install %s with: %s", pkg, installInstructions)
-		}
+		// TODO: `install` might not be the install command for every package
+		// manager
+		logrus.Infof("Install them with: sudo %s install %s",
+			checker.manager, strings.Join(missingPkgs, " "))
+		return false, nil
 	}
 
-	return ok, nil
-}
-
-func getOS() (string, error) {
-	logrus.Info("Checking host OS...")
-
-	get := command.New("lsb_release", "-si")
-	getStream, getErr := get.RunSilentSuccessOutput()
-	if getErr != nil {
-		return "", getErr
-	}
-
-	osOutput := getStream.OutputTrimNL()
-	logrus.Infof("Host OS is %s", osOutput)
-
-	return osOutput, nil
+	return true, nil
 }
 
 /*
