@@ -39,6 +39,7 @@ filegroup(
         "//pkg/gcp/build:all-srcs",
         "//pkg/git:all-srcs",
         "//pkg/github:all-srcs",
+        "//pkg/http:all-srcs",
         "//pkg/kubepkg:all-srcs",
         "//pkg/log:all-srcs",
         "//pkg/notes:all-srcs",

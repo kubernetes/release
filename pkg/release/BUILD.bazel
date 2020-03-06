@@ -7,6 +7,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/git:go_default_library",
+        "//pkg/http:go_default_library",
         "//pkg/util:go_default_library",
         "@com_github_blang_semver//:go_default_library",
         "@com_github_pkg_errors//:go_default_library",

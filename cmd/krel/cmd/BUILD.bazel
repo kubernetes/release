@@ -20,6 +20,7 @@ go_library(
         "//pkg/gcp/build:go_default_library",
         "//pkg/git:go_default_library",
         "//pkg/github:go_default_library",
+        "//pkg/http:go_default_library",
         "//pkg/log:go_default_library",
         "//pkg/notes:go_default_library",
         "//pkg/notes/document:go_default_library",
