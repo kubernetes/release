@@ -56,7 +56,9 @@ type FileMetadata struct {
 	Node []File
 }
 
-// fetchMetadata generates file metadata from files in `dir`
+// fetchMetadata generates file metadata for k8s binaries in `dir`. Returns nil
+// if `dir` is not given or when there are no matching well known k8s binaries
+// in `dir`.
 func fetchMetadata(dir, urlPrefix, tag string) (*FileMetadata, error) {
 	if dir == "" {
 		return nil, nil
@@ -75,19 +77,24 @@ func fetchMetadata(dir, urlPrefix, tag string) (*FileMetadata, error) {
 		&fm.Server: {"kubernetes-server*.tar.gz"},
 		&fm.Node:   {"kubernetes-node*.tar.gz"},
 	}
-	f := &FileMetadata{}
+
+	var fileCount int
 	for fileType, patterns := range m {
-		fileMetadata, err := f.newFile(dir, patterns, urlPrefix, tag)
+		fileMetadata, err := fileInfo(dir, patterns, urlPrefix, tag)
 		if err != nil {
 			return nil, errors.Wrap(err, "fetching file metadata")
 		}
 		*fileType = append(*fileType, fileMetadata...)
+		fileCount += len(fileMetadata)
 	}
 
+	if fileCount == 0 {
+		return nil, nil
+	}
 	return fm, nil
 }
 
-func (f *FileMetadata) newFile(dir string, patterns []string, urlPrefix, tag string) ([]File, error) {
+func fileInfo(dir string, patterns []string, urlPrefix, tag string) ([]File, error) {
 	var files []File
 	for _, pattern := range patterns {
 		matches, err := filepath.Glob(filepath.Join(dir, pattern))
@@ -332,6 +339,15 @@ func CreateDownloadsTable(w io.Writer, bucket, tars, prevTag, newTag string) err
 
 	urlPrefix := release.URLPrefixForBucket(bucket)
 	fileMetadata, err := fetchMetadata(tars, urlPrefix, newTag)
+	if fileMetadata == nil {
+		// If directory is empty, doesn't contain matching files, or is not
+		// given we will have a nil value. This is not an error in every
+		// context. Return early so we do not modify markdown. This will be
+		// removed once issue #1019 lands.
+		fmt.Fprintf(w, "# %s\n\n", newTag)
+		fmt.Fprintf(w, "## Changelog since %s\n\n", prevTag)
+		return nil
+	}
 
 	if err != nil {
 		return errors.Wrap(err, "fetching downloads metadata")
