@@ -19,10 +19,6 @@ package cmd
 const patchReleaseExpectedTOC = `<!-- BEGIN MUNGE: GENERATED_TOC -->
 
 - [v1.16.3](#v1163)
-  - [Downloads for v1.16.3](#downloads-for-v1163)
-    - [Client Binaries](#client-binaries)
-    - [Server Binaries](#server-binaries)
-    - [Node Binaries](#node-binaries)
   - [Changelog since v1.16.2](#changelog-since-v1162)
   - [Changes by Kind](#changes-by-kind)`
 
@@ -62,10 +58,6 @@ const patchReleaseExpectedContent = `## Changes by Kind
 const alphaReleaseExpectedTOC = `<!-- BEGIN MUNGE: GENERATED_TOC -->
 
 - \[v1.18.0-alpha.3\]\(\#v1180-alpha3\)
-  - \[Downloads for v1.18.0-alpha.3\]\(\#downloads-for-v1180-alpha3\)
-    - \[Client Binaries\]\(\#client-binaries\)
-    - \[Server Binaries\]\(\#server-binaries\)
-    - \[Node Binaries\]\(\#node-binaries\)
   - \[Changelog since v.*\]\(\#changelog-since-.*\)
   - \[Changes by Kind\]\(\#changes-by-kind\)
     - \[Deprecation\]\(\#deprecation\)
