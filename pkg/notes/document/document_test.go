@@ -22,9 +22,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"text/template"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/kr/pretty"
+	"github.com/kylelemons/godebug/diff"
 	"github.com/stretchr/testify/require"
 
 	"k8s.io/release/pkg/notes/internal"
@@ -287,4 +289,77 @@ func TestSortKinds(t *testing.T) {
 	}
 	res := sortKinds(input)
 	require.Equal(t, res, kindPriority)
+}
+
+func TestNoteCollection(t *testing.T) {
+	tests := []struct {
+		name       string
+		collection NoteCollection
+		wantOutput string
+	}{
+		{
+			"render collection with higher priority kind appearing first",
+			NoteCollection{
+				NoteCategory{
+					Kind:  KindDeprecation,
+					Notes: []string{"change 1"},
+				},
+				NoteCategory{
+					Kind:  KindAPIChange,
+					Notes: []string{"change 2"},
+				},
+			},
+			"\n# Deprecation\n  * change 1\n# API Change\n  * change 2",
+		},
+		{
+			"render collection with lower priority kind appearing first",
+			NoteCollection{
+				NoteCategory{
+					Kind:  KindAPIChange,
+					Notes: []string{"change 2"},
+				},
+				NoteCategory{
+					Kind:  KindDeprecation,
+					Notes: []string{"change 1"},
+				},
+			},
+			"\n# Deprecation\n  * change 1\n# API Change\n  * change 2",
+		},
+		{
+			"render with equal priority kinds",
+			NoteCollection{
+				NoteCategory{
+					Kind:  KindDeprecation,
+					Notes: []string{"change 1"},
+				},
+				NoteCategory{
+					Kind:  KindDeprecation,
+					Notes: []string{"change 2"},
+				},
+			},
+			"\n# Deprecation\n  * change 1\n# Deprecation\n  * change 2",
+		},
+	}
+
+	const goTemplate = `
+{{- range . }}
+# {{ .Kind | prettyKind}}
+{{range $note := .Notes}}  * {{$note}}{{end -}}
+{{end -}}
+`
+
+	tmpl, err := template.New("markdown").
+		Funcs(template.FuncMap{"prettyKind": prettyKind}).
+		Parse(goTemplate)
+	require.NoError(t, err, "parsing template")
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got strings.Builder
+			require.NoError(t, tt.collection.Sort(kindPriority))
+			require.NoError(t, tmpl.Execute(&got, tt.collection), "rendering template")
+
+			require.Empty(t, diff.Diff(tt.wantOutput, got.String()))
+		})
+	}
 }

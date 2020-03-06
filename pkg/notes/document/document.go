@@ -40,6 +40,52 @@ type Document struct {
 	PreviousRevision        string
 }
 
+// REVIEWER: This really should be just `Notes` but I want to get some feedback
+// on this idea before doing more refactoring along those lines. This container
+// is useful for several reasons:
+// (1) Its a single container to pass to the template which keesp the template simple.
+// (2) We can sort it easily before rendering.
+// (3) Because we use NoteCategory and a collection rendering in the template is simpler:
+//
+// {{range .NoteCollection}}
+// 	### {{.Kind | prettyKind}}
+//		{{- range $note := .Notes}} - $note {{-end}}
+// {{end}}
+//
+// Of course this assumes the note collection is sorted already which we'll do before rendering.
+
+// NoteCollection is a collection of note categories and implements sorted.Interface
+type NoteCollection []NoteCategory
+
+// Sort sorts selection by sorted by priority order.
+func (n *NoteCollection) Sort(kindPriority []Kind) error {
+	// MAYBE? Implement sorted.Interface instead?
+	if len(kindPriority) == 0 {
+		return errors.New("invalid argument kindPriority cannot be nil")
+	}
+
+	indexOf := func(kind Kind) int {
+		for i, prioKind := range kindPriority {
+			if kind == prioKind {
+				return i
+			}
+		}
+		return -1
+	}
+
+	noteSlice := (*n)
+	sort.Slice(noteSlice, func(i, j int) bool {
+		return indexOf(noteSlice[i].Kind) < indexOf(noteSlice[j].Kind)
+	})
+	return nil
+}
+
+// NoteCategory is a collection for a given kind.
+type NoteCategory struct {
+	Kind  Kind
+	Notes Notes
+}
+
 // FileMetadata contains metadata about files associated with the release.
 type FileMetadata struct {
 	// Files containing source code.

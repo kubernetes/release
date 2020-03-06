@@ -2053,3 +2053,11 @@ def go_repositories():
         sum = "h1:GRtyhztX3PNl4lhPhhn+eORpNfrFvygcVCQKgMv8lG8=",
         version = "v0.22.1",
     )
+    go_repository(
+        name = "com_github_kylelemons_godebug",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/kylelemons/godebug",
+        sum = "h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=",
+        version = "v1.1.0",
+    )
