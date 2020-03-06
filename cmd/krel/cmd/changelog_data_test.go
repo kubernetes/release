@@ -120,3 +120,64 @@ const alphaReleaseExpectedContent = `## Changes by Kind
 - Shared informers are now more reliable in the face of network disruption. ([#86015](https://github.com/kubernetes/kubernetes/pull/86015), [@squeed](https://github.com/squeed)) [SIG API Machinery]
 - The CSR signing cert/key pairs will be reloaded from disk like the kube-apiserver cert/key pairs ([#86816](https://github.com/kubernetes/kubernetes/pull/86816), [@deads2k](https://github.com/deads2k)) [SIG API Machinery, Apps and Auth]
 - To reduce chances of throttling, VM cache is set to nil when Azure node provisioning state is deleting ([#87635](https://github.com/kubernetes/kubernetes/pull/87635), [@feiskyer](https://github.com/feiskyer)) [SIG Cloud Provider]`
+
+const minorReleaseExpectedTOC = `<!-- BEGIN MUNGE: GENERATED_TOC -->
+
+- [Kubernetes v1.17.0 Release Notes](#kubernetes-v1170-release-notes)
+  - [What’s New (Major Themes)](#what’s-new-major-themes)
+    - [Cloud Provider Labels reach General Availability](#cloud-provider-labels-reach-general-availability)
+    - [Volume Snapshot Moves to Beta](#volume-snapshot-moves-to-beta)
+    - [CSI Migration Beta](#csi-migration-beta)
+  - [Known Issues](#known-issues)
+  - [Urgent Upgrade Notes](#urgent-upgrade-notes)
+    - [(No, really, you MUST read this before you upgrade)](#no-really-you-must-read-this-before-you-upgrade)
+      - [Cluster Lifecycle](#cluster-lifecycle)
+      - [Network](#network)
+      - [Scheduling](#scheduling)
+      - [Storage](#storage)
+      - [Windows](#windows)
+    - [Deprecations and Removals](#deprecations-and-removals)
+    - [Metrics Changes](#metrics-changes)
+      - [Added metrics](#added-metrics)
+      - [Deprecated/changed metrics](#deprecated/changed-metrics)
+    - [Notable Features](#notable-features)
+      - [Stable](#stable)
+      - [Beta](#beta)
+      - [CLI Improvements](#cli-improvements)
+    - [API Changes](#api-changes)
+    - [Other notable changes](#other-notable-changes)
+      - [API Machinery](#api-machinery)
+      - [Apps](#apps)
+      - [Auth](#auth)
+      - [CLI](#cli)
+      - [Cloud Provider](#cloud-provider)
+      - [Cluster Lifecycle](#cluster-lifecycle-1)
+      - [Instrumentation](#instrumentation)
+      - [Network](#network-1)
+      - [Node](#node)
+      - [Release](#release)
+      - [Scheduling](#scheduling-1)
+      - [Storage](#storage-1)
+      - [Windows](#windows-1)
+      - [Dependencies](#dependencies)
+      - [Detailed go Dependency Changes](#detailed-go-dependency-changes)
+        - [Added](#added)
+        - [Changed](#changed)
+        - [Removed](#removed)`
+
+const minorReleaseExpectedContent = `# Kubernetes v1.17.0 Release Notes
+A complete changelog for the release notes is now hosted in a customizable format at [relnotes.k8s.io](https://relnotes.k8s.io). Check it out and please give us your feedback!
+
+## What’s New (Major Themes)
+
+### Cloud Provider Labels reach General Availability
+
+Added as a beta feature way back in v1.2, v1.17 sees the general availability of cloud provider labels.
+
+### Volume Snapshot Moves to Beta
+
+The Kubernetes Volume Snapshot feature is now beta in Kubernetes v1.17. It was introduced as alpha in Kubernetes v1.12, with a second alpha with breaking changes in Kubernetes v1.13.
+
+### CSI Migration Beta
+
+The Kubernetes in-tree storage plugin to Container Storage Interface (CSI) migration infrastructure is now beta in Kubernetes v1.17. CSI migration was introduced as alpha in Kubernetes v1.14.`
