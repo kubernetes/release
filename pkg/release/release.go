@@ -73,6 +73,12 @@ const (
 	// WindowsGCSPath is the directory where Windoes GCE scripts are staged
 	// before push to GCS.
 	WindowsGCSPath = "gcs-stage/extra/gce/windows"
+
+	// ProductionBucket is the default bucket for Kubernetes releases
+	ProductionBucket = "kubernetes-release"
+
+	// ProductionBucketURL is the url for the ProductionBucket
+	ProductionBucketURL = "https://dl.k8s.io"
 )
 
 var (
@@ -256,4 +262,13 @@ func GetKubecrossVersion(branches ...string) (string, error) {
 	}
 
 	return "", errors.New("kube-cross version should not be empty; cannot continue")
+}
+
+// URLPrefixForBucket returns the URL prefix for the provided bucket string
+func URLPrefixForBucket(bucket string) string {
+	urlPrefix := fmt.Sprintf("https://storage.googleapis.com/%s/release", bucket)
+	if bucket == ProductionBucket {
+		urlPrefix = ProductionBucketURL
+	}
+	return urlPrefix
 }

@@ -34,6 +34,7 @@ import (
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
+	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
 )
 
@@ -178,7 +179,7 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.ReleaseBucket,
 		"release-bucket",
-		util.EnvDefault("RELEASE_BUCKET", "kubernetes-release"),
+		util.EnvDefault("RELEASE_BUCKET", release.ProductionBucket),
 		"Specify gs bucket to point to in generated notes",
 	)
 

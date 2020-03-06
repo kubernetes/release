@@ -26,7 +26,9 @@ import (
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/kr/pretty"
 	"github.com/stretchr/testify/require"
+
 	"k8s.io/release/pkg/notes/internal"
+	"k8s.io/release/pkg/release"
 )
 
 func TestFileMetadata(t *testing.T) {
@@ -65,8 +67,7 @@ func TestFileMetadata(t *testing.T) {
 		))
 	}
 
-	fm := FileMetadata{}
-	metadata, err := fm.FetchMetadata(dir, "http://test.com", "test-release")
+	metadata, err := fetchMetadata(dir, "http://test.com", "test-release")
 	require.Nil(t, err)
 
 	expected := &FileMetadata{
@@ -168,7 +169,7 @@ func TestRenderMarkdownTemplate(t *testing.T) {
 	require.Nil(t, err, "Reading golden file %q", goldenFile)
 	expected := string(b)
 
-	got, err := doc.RenderMarkdownTemplate("kubernetes-release", dir, internal.DefaultReleaseNotesTemplate)
+	got, err := doc.RenderMarkdownTemplate(release.ProductionBucket, dir, internal.DefaultReleaseNotesTemplate)
 	require.Nil(t, err, "Rendering document")
 
 	// Then
@@ -213,12 +214,12 @@ func TestCreateDownloadsTable(t *testing.T) {
 
 	// When
 	output := &strings.Builder{}
-	require.Nil(t, createDownloadsTable(
-		output, "kubernetes-release", dir, "v1.16.0", "v1.16.1",
+	require.Nil(t, CreateDownloadsTable(
+		output, release.ProductionBucket, dir, "v1.16.0", "v1.16.1",
 	))
 
 	// Then
-	require.Equal(t, output.String(), `# v1.16.1
+	require.Equal(t, `# v1.16.1
 
 [Documentation](https://docs.k8s.io)
 
@@ -267,7 +268,7 @@ filename | sha512 hash
 
 ## Changelog since v1.16.0
 
-`)
+`, output.String())
 }
 
 func TestSortKinds(t *testing.T) {

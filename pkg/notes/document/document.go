@@ -28,6 +28,7 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/release/pkg/notes"
+	"k8s.io/release/pkg/release"
 )
 
 // Document represents the underlying structure of a release notes document.
@@ -45,18 +46,18 @@ type FileMetadata struct {
 	// Files containing source code.
 	Source []File
 
-	// Client binaries.
+	// Client binaries
 	Client []File
 
-	// Server binaries.
+	// Server binaries
 	Server []File
 
-	// TODO: What is this?
+	// Node binaries
 	Node []File
 }
 
-// FetchMetadata generates file metadata from files in `dir`
-func (f *FileMetadata) FetchMetadata(dir, urlPrefix, tag string) (*FileMetadata, error) {
+// fetchMetadata generates file metadata from files in `dir`
+func fetchMetadata(dir, urlPrefix, tag string) (*FileMetadata, error) {
 	if dir == "" {
 		return nil, nil
 	}
@@ -74,6 +75,7 @@ func (f *FileMetadata) FetchMetadata(dir, urlPrefix, tag string) (*FileMetadata,
 		&fm.Server: {"kubernetes-server*.tar.gz"},
 		&fm.Node:   {"kubernetes-node*.tar.gz"},
 	}
+	f := &FileMetadata{}
 	for fileType, patterns := range m {
 		fileMetadata, err := f.newFile(dir, patterns, urlPrefix, tag)
 		if err != nil {
@@ -204,13 +206,8 @@ func CreateDocument(releaseNotes notes.ReleaseNotes, history notes.ReleaseNotesH
 
 // RenderMarkdownTemplate renders a document using the Go template in `goTemplate`.
 func (d *Document) RenderMarkdownTemplate(bucket, fileDir, goTemplate string) (string, error) {
-	urlPrefix := fmt.Sprintf("https://storage.googleapis.com/%s/release", bucket)
-	if bucket == "kubernetes-release" {
-		urlPrefix = "https://dl.k8s.io"
-	}
-
-	fm := new(FileMetadata)
-	fileMetadata, err := fm.FetchMetadata(fileDir, urlPrefix, d.CurrentRevision)
+	urlPrefix := release.URLPrefixForBucket(bucket)
+	fileMetadata, err := fetchMetadata(fileDir, urlPrefix, d.CurrentRevision)
 	if err != nil {
 		return "", errors.Wrap(err, "fetching downloads metadata")
 	}
@@ -234,7 +231,7 @@ func (d *Document) RenderMarkdownTemplate(bucket, fileDir, goTemplate string) (s
 // supplied io.Writer in markdown format.
 func (d *Document) RenderMarkdown(bucket, tars, prevTag, newTag string) (string, error) {
 	o := &strings.Builder{}
-	if err := createDownloadsTable(o, bucket, tars, prevTag, newTag); err != nil {
+	if err := CreateDownloadsTable(o, bucket, tars, prevTag, newTag); err != nil {
 		return "", err
 	}
 
@@ -326,15 +323,18 @@ func sortKinds(notesByKind NotesByKind) []Kind {
 	return res
 }
 
-// createDownloadsTable creates the markdown table with the links to the tarballs.
+// CreateDownloadsTable creates the markdown table with the links to the tarballs.
 // The function does nothing if the `tars` variable is empty.
-func createDownloadsTable(w io.Writer, bucket, tars, prevTag, newTag string) error {
-	// Do not add the table if not explicitly requested
-	if tars == "" {
-		return nil
-	}
+func CreateDownloadsTable(w io.Writer, bucket, tars, prevTag, newTag string) error {
 	if prevTag == "" || newTag == "" {
 		return errors.New("release tags not specified")
+	}
+
+	urlPrefix := release.URLPrefixForBucket(bucket)
+	fileMetadata, err := fetchMetadata(tars, urlPrefix, newTag)
+
+	if err != nil {
+		return errors.Wrap(err, "fetching downloads metadata")
 	}
 
 	fmt.Fprintf(w, "# %s\n\n", newTag)
@@ -342,54 +342,27 @@ func createDownloadsTable(w io.Writer, bucket, tars, prevTag, newTag string) err
 
 	fmt.Fprintf(w, "## Downloads for %s\n\n", newTag)
 
-	urlPrefix := fmt.Sprintf("https://storage.googleapis.com/%s/release", bucket)
-	if bucket == "kubernetes-release" {
-		urlPrefix = "https://dl.k8s.io"
+	// Sort the files by their headers
+	headers := [4]string{
+		"", "Client Binaries", "Server Binaries", "Node Binaries",
+	}
+	files := map[string][]File{
+		headers[0]: fileMetadata.Source,
+		headers[1]: fileMetadata.Client,
+		headers[2]: fileMetadata.Server,
+		headers[3]: fileMetadata.Node,
 	}
 
-	for _, item := range []struct {
-		heading  string
-		patterns []string
-	}{
-		{"", []string{"kubernetes.tar.gz", "kubernetes-src.tar.gz"}},
-		{"Client Binaries", []string{"kubernetes-client*.tar.gz"}},
-		{"Server Binaries", []string{"kubernetes-server*.tar.gz"}},
-		{"Node Binaries", []string{"kubernetes-node*.tar.gz"}},
-	} {
-		if item.heading != "" {
-			fmt.Fprintf(w, "### %s\n\n", item.heading)
+	for _, header := range headers {
+		if header != "" {
+			fmt.Fprintf(w, "### %s\n\n", header)
 		}
 		fmt.Fprintln(w, "filename | sha512 hash")
 		fmt.Fprintln(w, "-------- | -----------")
 
-		for _, pattern := range item.patterns {
-			pattern := filepath.Join(tars, pattern)
-
-			matches, err := filepath.Glob(pattern)
-			if err != nil {
-				return err
-			}
-
-			for _, file := range matches {
-				f, err := os.Open(file)
-				if err != nil {
-					return err
-				}
-				defer f.Close()
-
-				h := sha512.New()
-				if _, err := io.Copy(h, f); err != nil {
-					return err
-				}
-
-				fileName := filepath.Base(file)
-				fmt.Fprintf(w,
-					"[%s](%s/%s/%s) | `%x`\n",
-					fileName, urlPrefix, newTag, fileName, h.Sum(nil),
-				)
-			}
+		for _, f := range files[header] {
+			fmt.Fprintf(w, "[%s](%s) | `%s`\n", f.Name, f.URL, f.Checksum)
 		}
-
 		fmt.Fprintln(w, "")
 	}
 
