@@ -115,6 +115,8 @@ const alphaReleaseExpectedContent = `## Changes by Kind
 
 const minorReleaseExpectedTOC = `<!-- BEGIN MUNGE: GENERATED_TOC -->
 
+- [v1.17.0](#v1170)
+  - [Changelog since v1.16.0](#changelog-since-v1160)
 - [Kubernetes v1.17.0 Release Notes](#kubernetes-v1170-release-notes)
   - [What’s New (Major Themes)](#what’s-new-major-themes)
     - [Cloud Provider Labels reach General Availability](#cloud-provider-labels-reach-general-availability)
