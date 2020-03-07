@@ -142,9 +142,14 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.Format,
 		"format",
-		util.EnvDefault("FORMAT", "go-template:default"),
+		util.EnvDefault("FORMAT", options.FormatSpecDefaultGoTemplate),
 		fmt.Sprintf("The format for notes output (options: %s)",
-			strings.Join([]string{"markdown", "json", "go-template:default"}, ", "),
+			strings.Join([]string{
+				options.FormatSpecNone,
+				options.FormatSpecMarkdown, //nolint:golint,deprecated // This option internally corresponds to options.FormatSpecGoTemplateDefault
+				options.FormatSpecJSON,
+				options.FormatSpecDefaultGoTemplate,
+			}, ", "),
 		),
 	)
 
@@ -281,9 +286,7 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 		if err := enc.Encode(releaseNotes); err != nil {
 			return errors.Wrapf(err, "encoding JSON output")
 		}
-	case strings.Contains(format, "go-template"):
-		goTemplate := strings.Split(format, ":")[1]
-
+	case strings.HasPrefix(format, "go-template:"):
 		doc, err := document.CreateDocument(releaseNotes, history)
 		if err != nil {
 			return errors.Wrapf(err, "creating release note document")
@@ -294,9 +297,9 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 		doc.PreviousRevision = opts.StartRev
 		doc.CurrentRevision = opts.EndRev
 
-		markdown, err := doc.RenderMarkdownTemplate(opts.ReleaseBucket, opts.ReleaseTars, goTemplate)
+		markdown, err := doc.RenderMarkdownTemplate(opts.ReleaseBucket, opts.ReleaseTars, opts.Format)
 		if err != nil {
-			return errors.Wrapf(err, "rendering release note document to markdown")
+			return errors.Wrapf(err, "rendering release note document with template")
 		}
 
 		if opts.TableOfContents {

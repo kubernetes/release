@@ -31,9 +31,9 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 
 	"k8s.io/release/pkg/command"
-	kgit "k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/notes/internal"
+
+	kgit "k8s.io/release/pkg/git"
 )
 
 type testOptions struct {
@@ -54,19 +54,6 @@ type testRepo struct {
 	secondTagName      string
 	thirdTagCommit     string
 	thirdTagName       string
-}
-
-func newTestTemplate(t *testing.T, fileName, contents string) string {
-	d, err := ioutil.TempDir("", "templates")
-	require.Nil(t, err)
-
-	p := filepath.Join(d, fileName)
-	require.Nil(t, ioutil.WriteFile(
-		p,
-		[]byte(contents),
-		0o644,
-	))
-	return p
 }
 
 func newTestOptions(t *testing.T) *testOptions {
@@ -396,37 +383,21 @@ func TestValidateAndFinishSuccessDefaultTemplate(t *testing.T) {
 	options := newTestOptions(t)
 	defer options.testRepo.cleanup(t)
 
-	options.Format = "markdown"
+	// Given
+	options.Format = FormatSpecMarkdown
+
+	// When
 	require.Nil(t, options.ValidateAndFinish())
 
-	defaultTemplate := "go-template:" + internal.DefaultReleaseNotesTemplate
-	require.Equal(t, options.Format, defaultTemplate)
+	// Then
+	require.Equal(t, options.Format, FormatSpecDefaultGoTemplate)
 
-	options.Format = ""
+	// Given
+	options.Format = FormatSpecNone
+
+	// When
 	require.Nil(t, options.ValidateAndFinish())
-	require.Equal(t, options.Format, defaultTemplate)
-}
 
-func TestValidateAndFinishSuccessUserTemplate(t *testing.T) {
-	options := newTestOptions(t)
-	defer options.testRepo.cleanup(t)
-
-	options.Format = "go-template:" + newTestTemplate(t, "valid_template.md", "pretend this is a valid go template string.")
-	require.Nil(t, options.ValidateAndFinish())
-}
-
-func TestValidateAndFinishFailureTemplatePathEmptyFile(t *testing.T) {
-	options := newTestOptions(t)
-	defer options.testRepo.cleanup(t)
-
-	options.Format = "go-template:" + newTestTemplate(t, "empty_template.md", "")
-	require.NotNil(t, options.ValidateAndFinish())
-}
-
-func TestValidateAndFinishFailureTemplatePathNotExisting(t *testing.T) {
-	options := newTestOptions(t)
-	defer options.testRepo.cleanup(t)
-
-	options.Format = "go-template:/does/not/exist/template.md"
-	require.NotNil(t, options.ValidateAndFinish())
+	// Then
+	require.Equal(t, options.Format, FormatSpecDefaultGoTemplate)
 }

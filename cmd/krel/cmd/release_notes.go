@@ -361,6 +361,7 @@ func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
 	}
 
 	// Create the markdown
+	//nolint:golint,deprecated // RenderMarkdown is soft deprecated and will be removed in #1019. Use RenderMarkdownTemplate
 	markdown, err := doc.RenderMarkdown(
 		"", "", notesOptions.StartRev, notesOptions.EndRev,
 	)

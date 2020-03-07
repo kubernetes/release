@@ -20,6 +20,7 @@ import (
 	"crypto/sha512"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -28,6 +29,7 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/release/pkg/notes"
+	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/release"
 )
 
@@ -42,7 +44,7 @@ type Document struct {
 
 // FileMetadata contains metadata about files associated with the release.
 type FileMetadata struct {
-	// Files containing source code.
+	// Files containing source code
 	Source []File
 
 	// Client binaries
@@ -79,12 +81,12 @@ func fetchMetadata(dir, urlPrefix, tag string) (*FileMetadata, error) {
 
 	var fileCount int
 	for fileType, patterns := range m {
-		fileMetadata, err := fileInfo(dir, patterns, urlPrefix, tag)
+		fInfo, err := fileInfo(dir, patterns, urlPrefix, tag)
 		if err != nil {
-			return nil, errors.Wrap(err, "fetching file metadata")
+			return nil, errors.Wrap(err, "fetching file info")
 		}
-		*fileType = append(*fileType, fileMetadata...)
-		fileCount += len(fileMetadata)
+		*fileType = append(*fileType, fInfo...)
+		fileCount += len(fInfo)
 	}
 
 	if fileCount == 0 {
@@ -93,6 +95,7 @@ func fetchMetadata(dir, urlPrefix, tag string) (*FileMetadata, error) {
 	return fm, nil
 }
 
+// fileInfo fetches file metadata for files in `dir` matching `patterns`
 func fileInfo(dir string, patterns []string, urlPrefix, tag string) ([]File, error) {
 	var files []File
 	for _, pattern := range patterns {
@@ -218,15 +221,22 @@ func CreateDocument(releaseNotes notes.ReleaseNotes, history notes.ReleaseNotesH
 	return doc, nil
 }
 
-// RenderMarkdownTemplate renders a document using the Go template in `goTemplate`.
-func (d *Document) RenderMarkdownTemplate(bucket, fileDir, goTemplate string) (string, error) {
+// RenderMarkdownTemplate renders a document using the golang template in
+// `templateSpec`. If `templateSpec` is set to `options.FormatDefaultGoTemplate`
+// render using the default template (markdown format).
+func (d *Document) RenderMarkdownTemplate(bucket, fileDir, templateSpec string) (string, error) {
 	urlPrefix := release.URLPrefixForBucket(bucket)
+
 	fileMetadata, err := fetchMetadata(fileDir, urlPrefix, d.CurrentRevision)
 	if err != nil {
 		return "", errors.Wrap(err, "fetching downloads metadata")
 	}
 	d.Downloads = fileMetadata
 
+	goTemplate, err := d.template(templateSpec)
+	if err != nil {
+		return "", errors.Wrap(err, "fetching template")
+	}
 	tmpl, err := template.New("markdown").
 		Funcs(template.FuncMap{"prettyKind": prettyKind}).
 		Parse(goTemplate)
@@ -241,8 +251,34 @@ func (d *Document) RenderMarkdownTemplate(bucket, fileDir, goTemplate string) (s
 	return s.String(), nil
 }
 
+// template returns either the default template or a template from file. The
+// `templateSpec` must be in the format of
+// `go-template:{default|path/to/template.ext}`
+func (d *Document) template(templateSpec string) (string, error) {
+	if templateSpec == options.FormatSpecDefaultGoTemplate {
+		return defaultReleaseNotesTemplate, nil
+	}
+
+	if !strings.HasPrefix(templateSpec, "go-template:") {
+		return "", errors.Errorf("bad template format: expected format %q, got %q", "go-template:path/to/file.txt", templateSpec)
+	}
+	templatePath := strings.TrimPrefix(templateSpec, "go-template:")
+
+	b, err := ioutil.ReadFile(templatePath)
+	if err != nil {
+		return "", errors.Wrap(err, "reading template")
+	}
+	if len(b) == 0 {
+		return "", errors.Errorf("template %q must be non-empty", templatePath)
+	}
+
+	return string(b), nil
+}
+
 // RenderMarkdown accepts a Document and writes a version of that document to
 // supplied io.Writer in markdown format.
+//
+// Deprecated: Prefer using the golang template instead of markdown. Will be removed in #1019
 func (d *Document) RenderMarkdown(bucket, tars, prevTag, newTag string) (string, error) {
 	o := &strings.Builder{}
 	if err := CreateDownloadsTable(o, bucket, tars, prevTag, newTag); err != nil {

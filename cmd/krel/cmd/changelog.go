@@ -262,6 +262,7 @@ func generateReleaseNotes(opts *changelogOptions, branch, startRev, endRev strin
 		return "", errors.Wrapf(err, "creating release note document")
 	}
 
+	//nolint:golint,deprecated // RenderMarkdown is soft deprecated and will be removed in #1019. Use RenderMarkdownTemplate
 	markdown, err := doc.RenderMarkdown(
 		opts.bucket, opts.tars, notesOptions.StartRev, notesOptions.EndRev,
 	)

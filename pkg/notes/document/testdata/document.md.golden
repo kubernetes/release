@@ -63,34 +63,23 @@ filename | sha512 hash
 
 ### Other (Bug, Cleanup or Flake)
  - This should definitely get you promoted.
- 
 ### Uncategorized
  - Someone somewhere did the world a great justice.
- 
 ### API Change
  - This might make people sad...or happy.
- 
 ### Bug
  - This will likely get you promoted.
- 
 ### Cleanup
  - This usually does not get you promoted but it should.
- 
 ### Deprecation
  - Delorted.
- 
 ### Design
  - Change the world.
- 
 ### Documentation
  - There was  a library in Alexandria, Egypt once.
- 
 ### Failing Test
  - Please run presubmit test!
- 
 ### Feature
  - This will get you promoted.
- 
 ### Flake
  - This *should* get you promoted.
- 
