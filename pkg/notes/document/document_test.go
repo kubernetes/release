@@ -144,7 +144,6 @@ func TestRenderMarkdownTemplate(t *testing.T) {
 
 	doc := Document{
 		NotesWithActionRequired: []string{"If an API changes and no one documented it, did it really happen?"},
-		NotesUncategorized:      []string{"Someone somewhere did the world a great justice."},
 		NotesByKind: NotesByKind{
 			KindAPIChange:       []string{"This might make people sad...or happy."},
 			KindBug:             []string{"This will likely get you promoted."},
@@ -156,6 +155,7 @@ func TestRenderMarkdownTemplate(t *testing.T) {
 			KindFeature:         []string{"This will get you promoted."},
 			KindFlake:           []string{"This *should* get you promoted."},
 			KindBugCleanupFlake: []string{"This should definitely get you promoted."},
+			KindUncategorized:   []string{"Someone somewhere did the world a great justice."},
 		},
 		PreviousRevision: "v1.16.0",
 		CurrentRevision:  "v1.16.1",
@@ -283,6 +283,7 @@ func TestSortKinds(t *testing.T) {
 		"flake":                         nil,
 		"bug":                           nil,
 		"feature":                       nil,
+		"Uncategorized":                 nil,
 	}
 	res := sortKinds(input)
 	require.Equal(t, res, kindPriority)
