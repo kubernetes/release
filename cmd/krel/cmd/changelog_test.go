@@ -39,7 +39,7 @@ func TestChangelogNoArgumentsOrFlags(t *testing.T) {
 	require.NotNil(t, err)
 }
 
-func TestNewPatchRelease(t *testing.T) {
+func TestNewPatchRelease(t *testing.T) { // nolint: dupl
 	// Given
 	s := newSUT(t)
 	defer s.cleanup(t)
@@ -108,4 +108,47 @@ func TestNewAlphaRelease(t *testing.T) {
 	require.Nil(t, err)
 	require.Regexp(t, alphaReleaseExpectedTOC, string(changelog))
 	require.Contains(t, string(changelog), alphaReleaseExpectedContent)
+}
+
+func TestNewMinorRelease(t *testing.T) { // nolint: dupl
+	// Given
+	s := newSUT(t)
+	defer s.cleanup(t)
+
+	ro := s.getRootOptions()
+	ro.nomock = true
+
+	releaseBranch := "release-1.17"
+	co := s.getChangelogOptions("v1.17.0")
+	co.branch = releaseBranch
+
+	// When
+	require.Nil(t, runChangelog(co, ro))
+
+	// Then
+	// Verify local results
+	require.FileExists(t, "CHANGELOG-1.17.html")
+	for _, x := range []struct {
+		branch        string
+		commitMessage string
+	}{
+		{releaseBranch, "Update CHANGELOG/CHANGELOG-1.17.md for v1.17.0"},
+		{git.Master, "Update directory for v1.17.0 release"},
+	} {
+		// Switch to the test branch
+		require.Nil(t, s.repo.Checkout(x.branch))
+
+		// Verify commit message
+		lastCommit := s.lastCommit(t, x.branch)
+		require.Contains(t, lastCommit, "Anago GCB <nobody@k8s.io>")
+		require.Contains(t, lastCommit, x.commitMessage)
+
+		// Verify changelog contents
+		changelog, err := ioutil.ReadFile(
+			filepath.Join(s.repo.Dir(), repoChangelogDir, "CHANGELOG-1.17.md"),
+		)
+		require.Nil(t, err)
+		require.Contains(t, string(changelog), minorReleaseExpectedTOC)
+		require.Contains(t, string(changelog), minorReleaseExpectedContent)
+	}
 }
