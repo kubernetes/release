@@ -315,8 +315,10 @@ func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 
 	gcbSubs["RELEASE_BRANCH"] = branch
 
-	// TODO: Remove once we remove support for --built-at-head.
-	gcbSubs["BUILD_AT_HEAD"] = ""
+	if o.stage {
+		// TODO: Remove once we remove support for --built-at-head.
+		gcbSubs["BUILD_AT_HEAD"] = ""
+	}
 
 	buildVersion := o.buildVersion
 	if buildVersion == "" {

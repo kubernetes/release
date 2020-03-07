@@ -21,7 +21,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"k8s.io/release/pkg/gcp/build"
 )
@@ -56,7 +56,7 @@ func TestRunGcbmgrSuccess(t *testing.T) {
 		gcbmgrOpts = &tc.gcbmgrOpts
 
 		err := runGcbmgr()
-		assert.Nil(t, err)
+		require.Nil(t, err)
 	}
 }
 
@@ -89,7 +89,7 @@ func TestRunGcbmgrFailure(t *testing.T) {
 		gcbmgrOpts = &tc.gcbmgrOpts
 
 		err := runGcbmgr()
-		assert.Error(t, err)
+		require.Error(t, err)
 	}
 }
 
@@ -103,8 +103,9 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		expected   map[string]string
 	}{
 		{
-			name: "master prerelease",
+			name: "master prerelease - stage",
 			gcbmgrOpts: gcbmgrOptions{
+				stage:       true,
 				branch:      "master",
 				releaseType: "prerelease",
 				gcpUser:     "test-user",
@@ -122,8 +123,28 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			},
 		},
 		{
+			name: "master prerelease - release",
+			gcbmgrOpts: gcbmgrOptions{
+				release:     true,
+				branch:      "master",
+				releaseType: "prerelease",
+				gcpUser:     "test-user",
+			},
+			expected: map[string]string{
+				"OFFICIAL":       "",
+				"OFFICIAL_TAG":   "",
+				"RC":             "",
+				"RC_TAG":         "",
+				"RELEASE_BRANCH": "master",
+				"TOOL_ORG":       "kubernetes",
+				"TOOL_REPO":      "release",
+				"TOOL_BRANCH":    "master",
+			},
+		},
+		{
 			name: "release-1.14 RC",
 			gcbmgrOpts: gcbmgrOptions{
+				stage:       true,
 				branch:      "release-1.14",
 				releaseType: "rc",
 				gcpUser:     "test-user",
@@ -143,6 +164,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		{
 			name: "release-1.15 official",
 			gcbmgrOpts: gcbmgrOptions{
+				stage:       true,
 				branch:      "release-1.15",
 				releaseType: "official",
 				gcpUser:     "test-user",
@@ -162,6 +184,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		{
 			name: "release-1.16 official with custom tool org, repo, and branch",
 			gcbmgrOpts: gcbmgrOptions{
+				stage:       true,
 				branch:      "release-1.16",
 				releaseType: "official",
 				gcpUser:     "test-user",
@@ -198,7 +221,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			t.Fatalf("did not expect an error: %v", err)
 		}
 
-		assert.Equal(t, tc.expected, actual)
+		require.Equal(t, tc.expected, actual)
 	}
 }
 
@@ -223,7 +246,7 @@ func TestSetGCBSubstitutionsFailure(t *testing.T) {
 		opts := tc.gcbmgrOpts
 
 		_, err := setGCBSubstitutions(&opts)
-		assert.Error(t, err)
+		require.Error(t, err)
 	}
 }
 
