@@ -34,7 +34,6 @@ import (
 // Document represents the underlying structure of a release notes document.
 type Document struct {
 	NotesWithActionRequired Notes         `json:"action_required"`
-	NotesUncategorized      Notes         `json:"uncategorized"`
 	NotesByKind             NotesByKind   `json:"kinds"`
 	Downloads               *FileMetadata `json:"downloads"`
 	CurrentRevision         string        `json:"release_tag"`
@@ -135,16 +134,18 @@ type NotesByKind map[Kind]Notes
 type Notes []string
 
 const (
-	KindAPIChange       Kind = "api-change"
-	KindBug             Kind = "bug"
-	KindCleanup         Kind = "cleanup"
-	KindDeprecation     Kind = "deprecation"
-	KindDesign          Kind = "design"
-	KindDocumentation   Kind = "documentation"
-	KindFailingTest     Kind = "failing-test"
-	KindFeature         Kind = "feature"
-	KindFlake           Kind = "flake"
+	KindAPIChange     Kind = "api-change"
+	KindBug           Kind = "bug"
+	KindCleanup       Kind = "cleanup"
+	KindDeprecation   Kind = "deprecation"
+	KindDesign        Kind = "design"
+	KindDocumentation Kind = "documentation"
+	KindFailingTest   Kind = "failing-test"
+	KindFeature       Kind = "feature"
+	KindFlake         Kind = "flake"
+	// TODO: These should be same case as the others. Probably fix up prettyKind()??
 	KindBugCleanupFlake Kind = "Other (Bug, Cleanup or Flake)"
+	KindUncategorized   Kind = "Uncategorized"
 )
 
 var kindPriority = []Kind{
@@ -158,6 +159,7 @@ var kindPriority = []Kind{
 	KindCleanup,
 	KindFlake,
 	KindBugCleanupFlake,
+	KindUncategorized,
 }
 
 var kindMap = map[Kind]Kind{
@@ -171,7 +173,6 @@ var kindMap = map[Kind]Kind{
 func CreateDocument(releaseNotes notes.ReleaseNotes, history notes.ReleaseNotesHistory) (*Document, error) {
 	doc := &Document{
 		NotesWithActionRequired: Notes{},
-		NotesUncategorized:      Notes{},
 		NotesByKind:             NotesByKind{},
 	}
 
@@ -201,12 +202,18 @@ func CreateDocument(releaseNotes notes.ReleaseNotes, history notes.ReleaseNotesH
 
 			if len(note.Kinds) == 0 {
 				// the note has not been categorized so far
-				doc.NotesUncategorized = append(doc.NotesUncategorized, note.Markdown)
+				kind := KindUncategorized
+				if existingNotes, ok := doc.NotesByKind[kind]; ok {
+					if ok {
+						doc.NotesByKind[kind] = append(existingNotes, note.Markdown)
+					} else {
+						doc.NotesByKind[kind] = []string{note.Markdown}
+					}
+				}
 			}
 		}
 	}
 
-	sort.Strings(doc.NotesUncategorized)
 	sort.Strings(doc.NotesWithActionRequired)
 	return doc, nil
 }
@@ -288,17 +295,6 @@ func (d *Document) RenderMarkdown(bucket, tars, prevTag, newTag string) (string,
 				writeNote(note)
 			}
 			nl()
-		}
-		nlnl()
-	}
-
-	// We call the uncategorized notes "Other Changes". These are changes
-	// without any kind
-	if len(d.NotesUncategorized) > 0 {
-		o.WriteString("## Other Changes")
-		nlnl()
-		for _, note := range d.NotesUncategorized {
-			writeNote(note)
 		}
 		nlnl()
 	}
