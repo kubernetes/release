@@ -28,6 +28,7 @@ import (
 
 	"k8s.io/release/pkg/gcp/auth"
 	"k8s.io/release/pkg/gcp/build"
+	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
 )
@@ -251,7 +252,11 @@ func runGcbmgr() error {
 
 	// TODO: Need actual values
 	var jobName, uploaded string
-	version := "FAKEVERSION"
+
+	version, err := git.GetTag()
+	if err != nil {
+		return err
+	}
 
 	return build.RunSingleJob(buildOpts, jobName, uploaded, version, gcbSubs)
 }
