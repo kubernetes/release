@@ -12,9 +12,9 @@ timeout: 14400s
 #
 # (Please do not remove this security notice.)
 secrets:
-- kmsKeyName: projects/kubernetes-release-test/locations/global/keyRings/anago/cryptoKeys/k8s-release-robot
+- kmsKeyName: projects/k8s-releng-prod/locations/global/keyRings/release/cryptoKeys/encrypt-0
   secretEnv:
-    GITHUB_TOKEN: CiQAveh8wGJqpEkcVluO3tBntlehynOxiOPDD9u1XCONx3vuozoSUgCMoh/IJuNkqhcDTP2om2tyOStft8myMSrvnGd7NvTo+H+fI0EkLMNzkVOHxl/C0piktBm74uN70QVE+e4TTa9wwA//qpiSm/UuqYmEYeMIpyY=
+    GITHUB_TOKEN: CiQAIkWjMKxKm2TA5DQNxwDfoAvnT/MQvfwlaxFUiFfyCmplqHESUQBLz1D+nejo8OWfiQF2DW+1QJXcb/XCWb9uPtBvcBdR9a9MwadgS2P85IseuBmqYVgSDvgdEVP3Zj9MXaHj60towEGlaRonA2uNYAgxRWhD6Q==
 
 steps:
 - name: gcr.io/cloud-builders/git
