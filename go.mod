@@ -10,6 +10,10 @@ require (
 	github.com/golangci/golangci-lint v1.23.3
 	github.com/google/go-github/v29 v29.0.3
 	github.com/google/uuid v1.1.1
+<<<<<<< HEAD
+=======
+	github.com/kr/pretty v0.1.0
+>>>>>>> This is a follow up to the mentioned PR#1008.
 	github.com/kylelemons/godebug v1.1.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.2
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481

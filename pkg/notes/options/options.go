@@ -69,6 +69,15 @@ const (
 	FormatSpecMarkdown = "markdown"
 )
 
+const (
+	FormatSpecNone              = ""
+	FormatSpecJSON              = "json"
+	FormatSpecDefaultGoTemplate = "go-template:default"
+
+	// Deprecated: This option is internaly translated to `FormatSpecDefaultGoTemplate`
+	FormatSpecMarkdown = "markdown"
+)
+
 // New creates a new Options instance with the default values
 func New() *Options {
 	return &Options{

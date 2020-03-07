@@ -174,7 +174,6 @@ func TestRenderMarkdownTemplateGoldenFile(t *testing.T) {
 				// Write out the default template to simulate reading an actual template.
 				p := filepath.Join(dir, strings.Split(tc.templateSpec, ":")[1])
 				templateSpec = fmt.Sprintf("go-template:%s", p)
-
 				require.NoError(t, ioutil.WriteFile(p, []byte(defaultReleaseNotesTemplate), 0664))
 			}
 
