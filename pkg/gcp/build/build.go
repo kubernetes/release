@@ -26,13 +26,13 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/command"
+	"k8s.io/release/pkg/git"
 	"sigs.k8s.io/yaml"
 )
 
@@ -100,16 +100,6 @@ func PrepareBuilds(o *Options) error {
 	}
 
 	return nil
-}
-
-func getVersion() (string, error) {
-	cmd := exec.Command("git", "describe", "--tags", "--always", "--dirty")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	t := time.Now().Format("20060102")
-	return fmt.Sprintf("v%s-%s", t, strings.TrimSpace(string(output))), nil
 }
 
 func (o *Options) ValidateConfigDir() error {
@@ -312,9 +302,9 @@ func RunBuildJobs(o *Options) []error {
 	}
 
 	logrus.Info("Running build jobs...")
-	tag, err := getVersion()
+	tag, err := git.GetTag()
 	if err != nil {
-		return []error{errors.Wrapf(err, "failed to get current tag")}
+		return []error{err}
 	}
 
 	if !o.AllowDirty && strings.HasSuffix(tag, "-dirty") {
