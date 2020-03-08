@@ -82,4 +82,8 @@ filename | sha512 hash
 ### Other (Bug, Cleanup or Flake)
  - This should definitely get you promoted.
 ### Uncategorized
+<<<<<<< HEAD
  - Someone somewhere did the world a great justice.
+=======
+ - Someone somewhere did the world a great justice.
+>>>>>>> Support sorted kinds for template rendering.
