@@ -2,15 +2,15 @@ variants:
   build-ci:
     CI: '--ci'
     NOMOCK: '--nomock'
-    BUCKET: '--bucket=k8s-staging-release-test'
-    REGISTRY: '--docker-registry=gcr.io/k8s-staging-release-test'
+    BUCKET: '--bucket=k8s-staging-releng'
+    REGISTRY: '--docker-registry=gcr.io/k8s-staging-releng'
     ALLOW_DUP: '--allow-dup'
     EXTRA_PUBLISH_FILE: '--extra-publish-file=k8s-master'
     HYPERKUBE: '--hyperkube'
   build-ci-fast:
     CI: '--ci'
     NOMOCK: '--nomock'
-    BUCKET: '--bucket=k8s-staging-release-test'
+    BUCKET: '--bucket=k8s-staging-releng'
     ALLOW_DUP: '--allow-dup'
   build-ci-old:
     CI: '--ci'
