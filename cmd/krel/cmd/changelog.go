@@ -149,8 +149,20 @@ func runChangelog(opts *changelogOptions, rootOpts *rootOptions) error {
 	var markdown string
 	if tag.Patch == 0 {
 		if len(tag.Pre) == 0 {
+			// Still create the downloads table
+			downloadsTable := &bytes.Buffer{}
+			previousTag := util.SemverToTagString(semver.Version{
+				Major: tag.Major, Minor: tag.Minor - 1, Patch: 0,
+			})
+			if err := document.CreateDownloadsTable(
+				downloadsTable, opts.bucket, opts.tars, previousTag, opts.tag,
+			); err != nil {
+				return errors.Wrapf(err, "unable to create downloads table")
+			}
+
 			// New final minor versions should have remote release notes
 			markdown, err = lookupRemoteReleaseNotes(branch)
+			markdown = downloadsTable.String() + markdown
 		} else {
 			// New minor alphas, betas and rc get generated notes
 			latestTags, tErr := github.New().LatestGitHubTagsPerBranch()
