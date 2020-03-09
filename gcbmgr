@@ -332,34 +332,13 @@ submit_it () {
 }
 
 release_it () {
-  if [[ -z $RELEASE_BRANCH ]]; then
-    logecho "Branch not set.  Can't continue"
-    return 1
-  fi
-
-  KUBE_CROSS_VERSION="$( release::kubecross_version "$RELEASE_BRANCH" 'master' )" \
-    || common::exit 1 'Exiting...' >&2
-
-  # Check for mandatory buildversion
-  if [[ -z $FLAGS_buildversion ]]; then
-    logecho "--buildversion=<staged build> required for 'release' jobs."
-    return 1
-  fi
-
-  submit_it
+  logecho "The shell-based gcbmgr tool has been deprecated."
+  logecho "Please review https://git.k8s.io/release/docs/krel/gcbmgr.md for instructions on how to use 'krel gcbmgr'."
 }
 
 stage_it () {
-  if [[ -z $RELEASE_BRANCH ]]; then
-    logecho "Branch not set.  Can't continue"
-    return 1
-  fi
-
-  KUBE_CROSS_VERSION="$( release::kubecross_version "$RELEASE_BRANCH" 'master' )" \
-    || common::exit 1 'Exiting...' >&2
-
-  # Submit it
-  submit_it
+  logecho "The shell-based gcbmgr tool has been deprecated."
+  logecho "Please review https://git.k8s.io/release/docs/krel/gcbmgr.md for instructions on how to use 'krel gcbmgr'."
 }
 
 
