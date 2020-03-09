@@ -22,7 +22,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -36,6 +35,7 @@ import (
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
+	"k8s.io/release/pkg/http"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
@@ -388,27 +388,14 @@ func lookupRemoteReleaseNotes(branch string) (string, error) {
 		"https://raw.githubusercontent.com/kubernetes/sig-release/master/"+
 			"releases/%s/release-notes-draft.md", branch,
 	)
-	resp, err := http.Get(remote)
+	response, err := http.GetURLResponse(remote, false)
 	if err != nil {
 		return "", errors.Wrapf(err,
 			"fetching release notes from remote: %s", remote,
 		)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", errors.Errorf(
-			"remote release notes not found at: %s", remote,
-		)
-	}
 	logrus.Info("Found release notes")
-
-	content, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	return string(content), nil
+	return response, nil
 }
 
 func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {

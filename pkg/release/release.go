@@ -31,6 +31,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/http"
 	"k8s.io/release/pkg/util"
 )
 
@@ -217,7 +218,7 @@ func GetCIKubeVersion(branch string, useSemver bool) (string, error) {
 
 func GetKubeVersion(markerURL string, useSemver bool) (string, error) {
 	logrus.Infof("Retrieving Kubernetes build version from %s...", markerURL)
-	version, httpErr := util.GetURLResponse(markerURL, true)
+	version, httpErr := http.GetURLResponse(markerURL, true)
 	if httpErr != nil {
 		return "", httpErr
 	}
@@ -246,7 +247,7 @@ func GetKubecrossVersion(branches ...string) (string, error) {
 
 		versionURL := fmt.Sprintf("https://raw.githubusercontent.com/kubernetes/kubernetes/%s/build/build-image/cross/VERSION", branch)
 
-		version, httpErr := util.GetURLResponse(versionURL, true)
+		version, httpErr := http.GetURLResponse(versionURL, true)
 		if httpErr != nil {
 			if i < len(branches)-1 {
 				logrus.Infof("Error retrieving the kube-cross version for the '%s': %v", branch, httpErr)
