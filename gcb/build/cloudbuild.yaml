@@ -15,8 +15,8 @@ steps:
   dir: 'go/src/k8s.io'
   args:
   - clone
-  - --branch=${_RELEASE_TOOL_BRANCH}
-  - ${_RELEASE_TOOL_REPO}
+  - --branch=${_TOOL_BRANCH}
+  - ${_TOOL_REPO}
   waitFor: [ '-' ]
 
 - name: 'gcr.io/k8s-staging-releng/k8s-cloud-builder:v1.13.8-1'
@@ -54,8 +54,8 @@ options:
 substitutions:
   _KUBERNETES_REPO: 'https://github.com/kubernetes/kubernetes.git'
   _KUBERNETES_BRANCH: 'master'
-  _RELEASE_TOOL_REPO: 'https://github.com/kubernetes/release.git'
-  _RELEASE_TOOL_BRANCH: 'master'
+  _TOOL_REPO: 'https://github.com/kubernetes/release.git'
+  _TOOL_BRANCH: 'master'
   _RELEASE_TYPE: 'release-in-a-container'
   _CI: ''
   _NOMOCK: ''
