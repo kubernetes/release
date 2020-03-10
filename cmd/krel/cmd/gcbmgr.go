@@ -328,7 +328,9 @@ func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 	buildVersion := o.buildVersion
 	if buildVersion == "" {
 		var versionErr error
-		buildVersion, versionErr = release.GetCIKubeVersion(o.branch, false)
+		buildVersion, versionErr = release.GetKubeVersionForBranch(
+			release.VersionTypeCILatest, o.branch,
+		)
 		if versionErr != nil {
 			return gcbSubs, versionErr
 		}

@@ -505,6 +505,8 @@ func (r *Repo) Checkout(rev string, args ...string) error {
 		RunSilentSuccess()
 }
 
+// IsReleaseBranch returns true if the provided branch is a Kubernetes release
+// branch
 func IsReleaseBranch(branch string) bool {
 	re := regexp.MustCompile(branchRE)
 	if !re.MatchString(branch) {
