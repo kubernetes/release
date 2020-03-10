@@ -59,8 +59,6 @@ const (
 	templateRootDir = "templates"
 
 	kubeadmConf = "10-kubeadm.conf"
-
-	useSemver = true
 )
 
 var (
@@ -392,12 +390,12 @@ func getKubernetesVersion(packageDef *PackageDefinition) (string, error) {
 	}
 	switch packageDef.Channel {
 	case ChannelTesting:
-		return release.GetStablePrereleaseKubeVersion(useSemver)
+		return release.GetKubeVersion(release.VersionTypeStablePreRelease)
 	case ChannelNightly:
-		return release.GetLatestCIKubeVersion(useSemver)
+		return release.GetKubeVersion(release.VersionTypeCILatest)
 	}
 
-	return release.GetStableReleaseKubeVersion(useSemver)
+	return release.GetKubeVersion(release.VersionTypeStable)
 }
 
 func getCNIVersion(packageDef *PackageDefinition) (string, error) {
@@ -529,13 +527,13 @@ func getCIBuildsDownloadLinkBase(packageDef *PackageDefinition) (string, error) 
 	ciVersion := packageDef.KubernetesVersion
 	if ciVersion == "" {
 		var err error
-		ciVersion, err = release.GetLatestCIKubeVersion(useSemver)
+		ciVersion, err = release.GetKubeVersion(release.VersionTypeCILatest)
 		if err != nil {
 			return "", err
 		}
 	}
 
-	return fmt.Sprintf("https://dl.k8s.io/ci/v%s", ciVersion), nil
+	return fmt.Sprintf("https://dl.k8s.io/ci/%s", util.AddTagPrefix(ciVersion)), nil
 }
 
 func getDefaultReleaseDownloadLinkBase(packageDef *PackageDefinition) (string, error) {

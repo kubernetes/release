@@ -19,14 +19,11 @@ package release
 import (
 	"fmt"
 	"io/ioutil"
-	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -173,70 +170,6 @@ func IsValidReleaseBuild(build string) (bool, error) {
 // IsDirtyBuild checks if build version is dirty.
 func IsDirtyBuild(build string) bool {
 	return strings.Contains(build, "dirty")
-}
-
-// TODO: Consider collapsing some of these functions.
-//       Keeping them as-is for now as kubepkg is dependent on them.
-func GetStableReleaseKubeVersion(useSemver bool) (string, error) {
-	logrus.Info("Retrieving Kubernetes release version...")
-	return GetKubeVersion("https://dl.k8s.io/release/stable.txt", useSemver)
-}
-
-func GetStablePrereleaseKubeVersion(useSemver bool) (string, error) {
-	logrus.Info("Retrieving Kubernetes testing version...")
-	return GetKubeVersion("https://dl.k8s.io/release/latest.txt", useSemver)
-}
-
-func GetLatestCIKubeVersion(useSemver bool) (string, error) {
-	logrus.Info("Retrieving Kubernetes latest build version...")
-	return GetKubeVersion("https://dl.k8s.io/ci/latest.txt", useSemver)
-}
-
-func GetCIKubeVersion(branch string, useSemver bool) (string, error) {
-	logrus.Infof("Retrieving Kubernetes build version on the '%s' branch...", branch)
-	// TODO: We may need to check if the branch exists first to handle the branch cut scenario
-	versionMarker := "latest"
-	if branch != "master" {
-		version := strings.TrimPrefix(branch, "release-")
-
-		versionMarker = fmt.Sprintf("%s-%s", versionMarker, version)
-	}
-
-	versionMarkerFile := fmt.Sprintf("%s.txt", versionMarker)
-	logrus.Infof("Version marker file: %s", versionMarkerFile)
-
-	u, parseErr := url.Parse("https://dl.k8s.io/ci")
-	if parseErr != nil {
-		return "", errors.Wrap(parseErr, "failed to parse URL base")
-	}
-
-	u.Path = path.Join(u.Path, versionMarkerFile)
-	markerURL := u.String()
-
-	return GetKubeVersion(markerURL, useSemver)
-}
-
-func GetKubeVersion(markerURL string, useSemver bool) (string, error) {
-	logrus.Infof("Retrieving Kubernetes build version from %s...", markerURL)
-	version, httpErr := http.GetURLResponse(markerURL, true)
-	if httpErr != nil {
-		return "", httpErr
-	}
-
-	if useSemver {
-		// Remove the 'v' prefix from the string to make the version SemVer compliant
-		version = strings.TrimPrefix(version, "v")
-
-		sem, semverErr := semver.Parse(version)
-		if semverErr != nil {
-			return "", semverErr
-		}
-
-		version = sem.String()
-	}
-
-	logrus.Infof("Retrieved Kubernetes version: %s", version)
-	return version, nil
 }
 
 // GetKubecrossVersion returns the current kube-cross container version.
