@@ -10,6 +10,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/log:go_default_library",
+        "//pkg/mail:go_default_library",
         "//pkg/patch/internal:go_default_library",
     ],
 )
@@ -20,7 +21,7 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/patch/internal/internalfakes:go_default_library",
-        "//pkg/patch/internal/testing:go_default_library",
+        "//pkg/testing:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
     ],
 )

@@ -2,10 +2,14 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["testing.go"],
-    importpath = "k8s.io/release/pkg/patch/internal/testing",
-    visibility = ["//pkg/patch:__subpackages__"],
-    deps = ["@com_github_stretchr_testify//require:go_default_library"],
+    srcs = ["fake_sendgrid_client.go"],
+    importpath = "k8s.io/release/pkg/mail/mailfakes",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/mail:go_default_library",
+        "@com_github_sendgrid_rest//:go_default_library",
+        "@com_github_sendgrid_sendgrid_go//helpers/mail:go_default_library",
+    ],
 )
 
 filegroup(

@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"k8s.io/release/pkg/log"
+	"k8s.io/release/pkg/mail"
 	"k8s.io/release/pkg/patch/internal"
 )
 
@@ -239,9 +240,9 @@ func (a *Announcer) formatAsHTML(title string, parts ...string) (string, error) 
 	return html, nil
 }
 
-func (a *Announcer) sendMail(mail, subject string) error {
+func (a *Announcer) sendMail(content, subject string) error {
 	if a.MailSender == nil {
-		ms := &internal.MailSender{
+		ms := &mail.Sender{
 			APIKey: a.Opts.SendgridAPIKey,
 		}
 		ms.SetLogger(a.Logger(), "mail-sender")
@@ -263,7 +264,7 @@ func (a *Announcer) sendMail(mail, subject string) error {
 	}
 
 	a.Logger().Debug("calling the mail sender")
-	return a.MailSender.Send(mail, subject)
+	return a.MailSender.Send(content, subject)
 }
 
 func (a *Announcer) getReleaseNotes() (string, error) {

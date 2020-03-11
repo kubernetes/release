@@ -190,7 +190,7 @@ func GetKubecrossVersion(branches ...string) (string, error) {
 
 // URLPrefixForBucket returns the URL prefix for the provided bucket string
 func URLPrefixForBucket(bucket string) string {
-	urlPrefix := fmt.Sprintf("https://storage.googleapis.com/%s/release", bucket)
+	urlPrefix := fmt.Sprintf("https://storage.googleapis.com/%s", bucket)
 	if bucket == ProductionBucket {
 		urlPrefix = ProductionBucketURL
 	}

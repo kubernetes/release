@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package internal_test
+package mail_test
 
 import (
 	"fmt"
@@ -22,9 +22,9 @@ import (
 
 	"github.com/sendgrid/rest"
 	"github.com/stretchr/testify/require"
-	"k8s.io/release/pkg/patch/internal"
-	"k8s.io/release/pkg/patch/internal/internalfakes"
-	it "k8s.io/release/pkg/patch/internal/testing"
+	"k8s.io/release/pkg/mail"
+	"k8s.io/release/pkg/mail/mailfakes"
+	it "k8s.io/release/pkg/testing"
 )
 
 func TestMailSender(t *testing.T) {
@@ -35,9 +35,9 @@ func TestMailSender(t *testing.T) {
 	it.Run(t, "Send", testSend)
 
 	it.Run(t, "main", func(t *testing.T) {
-		m := &internal.MailSender{
-			SendgridClientCreator: func(_ string) internal.SendgridClient {
-				c := &internalfakes.FakeSendgridClient{}
+		m := &mail.Sender{
+			SendgridClientCreator: func(_ string) mail.SendgridClient {
+				c := &mailfakes.FakeSendgridClient{}
 				c.SendReturns(&rest.Response{
 					Body:       "some API response",
 					StatusCode: 202,
@@ -84,14 +84,14 @@ func testSend(t *testing.T) {
 		tc := tc
 
 		it.Run(t, name, func(t *testing.T) {
-			m := &internal.MailSender{
+			m := &mail.Sender{
 				APIKey: tc.apiKey,
 			}
 
-			sgClient := &internalfakes.FakeSendgridClient{}
+			sgClient := &mailfakes.FakeSendgridClient{}
 			sgClient.SendReturns(tc.sendgridSendResponse, tc.sendgridSendErr)
 
-			m.SendgridClientCreator = func(apiKey string) internal.SendgridClient {
+			m.SendgridClientCreator = func(apiKey string) mail.SendgridClient {
 				require.Equal(t, tc.expectedSendgridAPIKey, apiKey, "SendgridClient#creator arg")
 				return sgClient
 			}
@@ -101,9 +101,9 @@ func testSend(t *testing.T) {
 
 			require.Equal(t, 1, sgClient.SendCallCount(), "SendgridClient#Send call count")
 
-			mail := sgClient.SendArgsForCall(0)
-			require.Equalf(t, tc.subject, mail.Subject, "the mail's subject")
-			require.Equalf(t, tc.message, mail.Content[0].Value, "the mail's body")
+			email := sgClient.SendArgsForCall(0)
+			require.Equalf(t, tc.subject, email.Subject, "the mail's subject")
+			require.Equalf(t, tc.message, email.Content[0].Value, "the mail's body")
 		})
 	}
 }
@@ -132,7 +132,7 @@ func testSender(t *testing.T) {
 	for name, tc := range tests {
 		tc := tc
 		it.Run(t, name, func(t *testing.T) {
-			m := &internal.MailSender{}
+			m := &mail.Sender{}
 			err := m.SetSender(tc.senderName, tc.senderEmail)
 			it.CheckErr(t, err, tc.expectedErr)
 		})
@@ -173,7 +173,7 @@ func testRecipient(t *testing.T) {
 		it.Run(t, name, func(t *testing.T) {
 			for _, args := range tc.recipientArgs {
 				it.Run(t, "", func(t *testing.T) {
-					m := &internal.MailSender{}
+					m := &mail.Sender{}
 					err := m.SetRecipients(args...)
 					it.CheckErr(t, err, tc.expectedErr)
 				})

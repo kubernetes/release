@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package internal
+package mail
 
 import (
 	"fmt"
@@ -25,7 +25,16 @@ import (
 	"k8s.io/release/pkg/log"
 )
 
-type MailSender struct {
+// GoogleGroup is a simple google group representation
+type GoogleGroup string
+
+const (
+	KubernetesAnnounceGoogleGroup     GoogleGroup = "kubernetes-announce"
+	KubernetesDevGoogleGroup          GoogleGroup = "kubernetes-dev"
+	KubernetesAnnounceTestGoogleGroup GoogleGroup = "kubernetes-announce-test"
+)
+
+type Sender struct {
 	log.Mixin
 
 	SendgridClientCreator SendgridClientCreator
@@ -55,7 +64,7 @@ var defaultSendgridClientCreator = func(apiKey string) SendgridClient {
 	return sendgrid.NewSendClient(apiKey)
 }
 
-func (m *MailSender) Send(body, subject string) error {
+func (m *Sender) Send(body, subject string) error {
 	html := mail.NewContent("text/html", body)
 
 	p := mail.NewPersonalization()
@@ -95,7 +104,7 @@ func (e *SendError) Error() string {
 	return fmt.Sprintf("got code %d while sending: Body: %q, Header: %q", e.code, e.resBody, e.resHeaders)
 }
 
-func (m *MailSender) SetSender(name, email string) error {
+func (m *Sender) SetSender(name, email string) error {
 	if email == "" {
 		return fmt.Errorf("email must not be empty")
 	}
@@ -104,7 +113,7 @@ func (m *MailSender) SetSender(name, email string) error {
 	return nil
 }
 
-func (m *MailSender) SetRecipients(recipientArgs ...string) error {
+func (m *Sender) SetRecipients(recipientArgs ...string) error {
 	l := len(recipientArgs)
 
 	if l%2 != 0 {
@@ -126,4 +135,13 @@ func (m *MailSender) SetRecipients(recipientArgs ...string) error {
 	m.Logger().WithField("recipients", m.sender).Debugf("recipients set")
 
 	return nil
+}
+
+// SetGoogleGroupRecipient can be used to set multiple Google Groups as recipient
+func (m *Sender) SetGoogleGroupRecipients(groups ...GoogleGroup) error {
+	args := []string{}
+	for _, group := range groups {
+		args = append(args, string(group), fmt.Sprintf("%s@googlegroups.com", group))
+	}
+	return m.SetRecipients(args...)
 }

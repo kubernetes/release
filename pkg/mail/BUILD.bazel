@@ -2,34 +2,26 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "exec.go",
-        "formatter.go",
-        "release_notes.go",
-        "workspace.go",
-    ],
-    importpath = "k8s.io/release/pkg/patch/internal",
-    visibility = ["//pkg/patch:__subpackages__"],
+    srcs = ["mail.go"],
+    importpath = "k8s.io/release/pkg/mail",
+    visibility = ["//visibility:public"],
     deps = [
         "//pkg/log:go_default_library",
-        "@io_k8s_utils//exec:go_default_library",
+        "@com_github_sendgrid_rest//:go_default_library",
+        "@com_github_sendgrid_sendgrid_go//:go_default_library",
+        "@com_github_sendgrid_sendgrid_go//helpers/mail:go_default_library",
     ],
 )
 
 go_test(
     name = "go_default_test",
-    srcs = [
-        "formatter_test.go",
-        "release_notes_test.go",
-        "workspace_test.go",
-    ],
+    srcs = ["mail_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//pkg/github:go_default_library",
-        "//pkg/patch/internal/internalfakes:go_default_library",
+        "//pkg/mail/mailfakes:go_default_library",
         "//pkg/testing:go_default_library",
+        "@com_github_sendgrid_rest//:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
-        "@io_k8s_utils//exec:go_default_library",
     ],
 )
 
@@ -44,7 +36,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//pkg/patch/internal/internalfakes:all-srcs",
+        "//pkg/mail/mailfakes:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

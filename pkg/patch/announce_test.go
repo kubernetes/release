@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"k8s.io/release/pkg/patch"
 	"k8s.io/release/pkg/patch/internal/internalfakes"
-	it "k8s.io/release/pkg/patch/internal/testing"
+	it "k8s.io/release/pkg/testing"
 )
 
 type opts = patch.AnnounceOptions
