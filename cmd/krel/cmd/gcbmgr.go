@@ -327,6 +327,10 @@ func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 
 	buildVersion := o.buildVersion
 	if buildVersion == "" {
+		if o.release {
+			return gcbSubs, errors.New("Build version must be specified when sending a release GCB run")
+		}
+
 		var versionErr error
 		buildVersion, versionErr = release.GetKubeVersionForBranch(
 			release.VersionTypeCILatest, o.branch,
