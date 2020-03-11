@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/gcp/auth"
 	"k8s.io/release/pkg/gcp/build"
 	"k8s.io/release/pkg/git"
@@ -48,22 +49,17 @@ var (
 	gcbmgrOpts = &gcbmgrOptions{}
 	buildOpts  = &build.Options{}
 
-	// TODO: Commenting these packages/commands out since they fail in CI.
-	//       These can be fixed by changing the CI test image to one that includes the packages.
-	//nolint:gocritic
-	/*
-		requiredPackages = []string{
-			"jq",
-			"git",
-			"bsdmainutils",
-		}
+	requiredPackages = []string{
+		"bsdmainutils",
+	}
 
-		// TODO: Do we really need this if we use the Google Cloud SDK instead?
-		requiredCommands = []string{
-			"gsutil",
-			"gcloud",
-		}
-	*/
+	// TODO: Do we really need this if we use the Google Cloud SDK instead?
+	requiredCommands = []string{
+		"gcloud",
+		"git",
+		"gsutil",
+		"jq",
+	}
 )
 
 // gcbmgrCmd is a krel subcommand which invokes runGcbmgr()
@@ -151,26 +147,22 @@ func init() {
 	rootCmd.AddCommand(gcbmgrCmd)
 }
 
-// runGcbmgr is the function invoked by 'krel gcbmgr', responsible for submitting release jobs to GCB
+// runGcbmgr is the function invoked by 'krel gcbmgr', responsible for
+// submitting release jobs to GCB
 func runGcbmgr() error {
-	// TODO: Commenting these checks out since they fail in CI.
-	//       These can be fixed by changing the CI test image to one that includes the packages.
-	//nolint:gocritic
-	/*
-		logrus.Info("Checking for required packages...")
-		pkgAvailable, pkgAvailableErr := util.PackagesAvailable(requiredPackages...)
-		if pkgAvailableErr != nil {
-			return pkgAvailableErr
-		}
-		if !pkgAvailable {
-			return errors.New("packages required to run gcbmgr are not present; cannot continue")
-		}
+	logrus.Info("Checking for required packages")
+	ok, err := util.PackagesAvailable(requiredPackages...)
+	if err != nil {
+		return errors.Wrap(err, "unable to verify if packages are available")
+	}
+	if !ok {
+		return errors.New("packages required to run gcbmgr are not present")
+	}
 
-		logrus.Info("Checking for required commands...")
-		if cmdAvailable := command.Available(requiredCommands...); !cmdAvailable {
-			return errors.New("binaries required to run gcbmgr are not present; cannot continue")
-		}
-	*/
+	logrus.Info("Checking for required commands")
+	if cmdAvailable := command.Available(requiredCommands...); !cmdAvailable {
+		return errors.New("binaries required to run gcbmgr are not present")
+	}
 
 	// TODO: Add gitlib::repo_state check
 
