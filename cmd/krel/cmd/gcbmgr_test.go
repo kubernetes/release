@@ -125,10 +125,11 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		{
 			name: "master prerelease - release",
 			gcbmgrOpts: gcbmgrOptions{
-				release:     true,
-				branch:      "master",
-				releaseType: "prerelease",
-				gcpUser:     "test-user",
+				release:      true,
+				branch:       "master",
+				releaseType:  "prerelease",
+				buildVersion: "v1.33.7",
+				gcpUser:      "test-user",
 			},
 			expected: map[string]string{
 				"OFFICIAL":       "",
@@ -234,6 +235,14 @@ func TestSetGCBSubstitutionsFailure(t *testing.T) {
 		{
 			name: "no release branch",
 			gcbmgrOpts: gcbmgrOptions{
+				branch:  "",
+				gcpUser: "test-user",
+			},
+		},
+		{
+			name: "no build version",
+			gcbmgrOpts: gcbmgrOptions{
+				release: true,
 				branch:  "",
 				gcpUser: "test-user",
 			},
