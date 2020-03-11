@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -32,6 +33,14 @@ func (s *sut) getChangelogOptions(tag string) *changelogOptions {
 		tars:      ".",
 		branch:    git.Master,
 	}
+}
+
+func fileContains(t *testing.T, file, contains string) {
+	require.FileExists(t, file)
+	content, err := ioutil.ReadFile(file)
+	require.Nil(t, err)
+	require.Contains(t, string(content), contains)
+	require.Nil(t, os.RemoveAll(file))
 }
 
 func TestChangelogNoArgumentsOrFlags(t *testing.T) {
@@ -56,7 +65,7 @@ func TestNewPatchRelease(t *testing.T) { // nolint: dupl
 
 	// Then
 	// Verify local results
-	require.FileExists(t, "CHANGELOG-1.16.html")
+	fileContains(t, "CHANGELOG-1.16.html", patchReleaseExpectedHTML)
 	for _, x := range []struct {
 		branch        string
 		commitMessage string
@@ -94,7 +103,7 @@ func TestNewAlphaRelease(t *testing.T) {
 
 	// Then
 	// Verify local results
-	require.FileExists(t, "CHANGELOG-1.18.html")
+	fileContains(t, "CHANGELOG-1.18.html", alphaReleaseExpectedHTML)
 
 	// Verify commit message
 	lastCommit := s.lastCommit(t, git.Master)
@@ -127,7 +136,7 @@ func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 
 	// Then
 	// Verify local results
-	require.FileExists(t, "CHANGELOG-1.17.html")
+	fileContains(t, "CHANGELOG-1.17.html", minorReleaseExpectedHTML)
 	for _, x := range []struct {
 		branch        string
 		commitMessage string

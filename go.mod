@@ -20,8 +20,8 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.6
 	github.com/stretchr/testify v1.5.1
+	github.com/yuin/goldmark v1.1.25
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	gopkg.in/russross/blackfriday.v2 v2.0.0
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	k8s.io/utils v0.0.0-20200229041039-0a110f9eb7ab
 	sigs.k8s.io/yaml v1.2.0

@@ -31,7 +31,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"gopkg.in/russross/blackfriday.v2"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
@@ -359,7 +360,11 @@ const htmlTemplate = `<!DOCTYPE html>
 </html>`
 
 func writeHTML(opts *changelogOptions, tag semver.Version, markdown string) error {
-	content := blackfriday.Run([]byte(markdown))
+	md := goldmark.New(goldmark.WithExtensions(extension.GFM))
+	content := &bytes.Buffer{}
+	if err := md.Convert([]byte(markdown), content); err != nil {
+		return errors.Wrap(err, "unable to render HTML from markdown")
+	}
 
 	t, err := template.New("html").Parse(htmlTemplate)
 	if err != nil {
@@ -369,7 +374,7 @@ func writeHTML(opts *changelogOptions, tag semver.Version, markdown string) erro
 	output := bytes.Buffer{}
 	if err := t.Execute(&output, struct {
 		Title, Content string
-	}{util.SemverToTagString(tag), string(content)}); err != nil {
+	}{util.SemverToTagString(tag), content.String()}); err != nil {
 		return err
 	}
 

@@ -965,14 +965,7 @@ def go_repositories():
         sum = "h1:PdmoCO6wvbs+7yrJyMORt4/BmY5IYyJwS/kOiWx8mHo=",
         version = "v1.0.0",
     )
-    go_repository(
-        name = "in_gopkg_russross_blackfriday_v2",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable",
-        importpath = "gopkg.in/russross/blackfriday.v2",
-        sum = "h1:+FlnIV8DSQnT7NZ43hcVKcdJdzZoeCmJj4Ql8gq5keA=",
-        version = "v2.0.0",
-    )
+
     go_repository(
         name = "cc_mvdan_interfacer",
         build_file_generation = "on",
@@ -2052,4 +2045,12 @@ def go_repositories():
         importpath = "github.com/bazelbuild/rules_go",
         sum = "h1:GRtyhztX3PNl4lhPhhn+eORpNfrFvygcVCQKgMv8lG8=",
         version = "v0.22.1",
+    )
+    go_repository(
+        name = "com_github_yuin_goldmark",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/yuin/goldmark",
+        sum = "h1:isv+Q6HQAmmL2Ofcmg8QauBmDPlUUnSoNhEcC940Rds=",
+        version = "v1.1.25",
     )
