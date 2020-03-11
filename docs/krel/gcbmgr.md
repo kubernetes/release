@@ -32,6 +32,7 @@ From this root of this repo:
 ./compile-release-tools krel
 ```
 
+<!-- TODO(vdf): Need to reference K8s Infra projects in usage examples -->
 ## Usage
 
 `krel gcbmgr [flags]`
@@ -43,7 +44,7 @@ Flags:
       --gcb-config string      If provided, this will be used as the name of the Google Cloud Build config file. (default "cloudbuild.yaml")
       --gcp-user string        If provided, this will be used as the GCP_USER_TAG.
   -h, --help                   help for gcbmgr
-      --project string         Branch to run the specified GCB run against (default "kubernetes-release-test")
+      --project string         GCP project to run GCB in (default "kubernetes-release-test")
       --release                Submit a release run to GCB
       --stage                  Submit a stage run to GCB
       --stream                 If specified, GCB will run synchronously, tailing its' logs to stdout
@@ -75,8 +76,7 @@ Global Flags:
   TOOL_BRANCH=great-new-feature-branch \
   krel gcbmgr --stage \
     --branch release-x.y \
-    --project kubernetes-release-test \
-    --build-version $(curl -Ls https://dl.k8s.io/ci/latest-x.y.txt)
+    --project kubernetes-release-test
   ```
 
 ## Alpha
@@ -86,8 +86,7 @@ Global Flags:
 ```shell
 krel gcbmgr --stage \
   --branch master \
-  --project kubernetes-release-test \
-  --build-version $(curl -Ls https://dl.k8s.io/ci/latest.txt)
+  --project kubernetes-release-test
 ```
 
 ### Alpha Release
@@ -108,8 +107,7 @@ krel gcbmgr --release \
 ```shell
 krel gcbmgr --stage \
   --branch release-x.y \
-  --project kubernetes-release-test \
-  --build-version $(curl -Ls https://dl.k8s.io/ci/latest.txt)
+  --project kubernetes-release-test
 ```
 
 #### Post-branch cut (`x.y.0-beta.1` and beyond)
@@ -117,8 +115,7 @@ krel gcbmgr --stage \
 ```shell
 krel gcbmgr --stage \
   --branch release-x.y \
-  --project kubernetes-release-test \
-  --build-version $(curl -Ls https://dl.k8s.io/ci/latest-x.y.txt)
+  --project kubernetes-release-test
 ```
 
 ### Beta Release
@@ -138,8 +135,7 @@ krel gcbmgr --release \
 krel gcbmgr --stage \
   --type rc \
   --branch release-x.y \
-  --project kubernetes-release-test \
-  --build-version $(curl -Ls https://dl.k8s.io/ci/latest.txt)
+  --project kubernetes-release-test
 ```
 
 ### Release Candidate (RC) Release
@@ -160,8 +156,7 @@ krel gcbmgr --release \
 krel gcbmgr --stage \
   --type official \
   --branch release-x.y \
-  --project kubernetes-release-test \
-  --build-version $(curl -Ls https://dl.k8s.io/ci/latest.txt)
+  --project kubernetes-release-test
 ```
 
 ### Official Release

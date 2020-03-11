@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/release/pkg/log"
 	"k8s.io/release/pkg/patch"
+	"k8s.io/release/pkg/release"
 )
 
 type opts struct {
@@ -48,7 +49,6 @@ const (
 	defaultK8sBranch      = "master"
 	defaultReleaseRepoURL = "https://github.com/kubernetes/release"
 	defaultReleaseBranch  = "master"
-	defaultGCPorjectID    = "kubernetes-release-test"
 	defaultLogLevel       = "info"
 
 	// separator which hopefully never appears in any of our keys/values.
@@ -77,7 +77,7 @@ func getCommand() *cobra.Command {
 	cmd.Flags().StringVarP(&opts.FreezeDate, "freeze-date", "f", "", "date when no CPs are allowed anymore")
 	cmd.Flags().StringVarP(&opts.CutDate, "cut-date", "c", "", "date when the patch release is planned to be cut")
 	cmd.Flags().StringVarP(&opts.BuildConfigPath, "config", "C", "", "file path to the patch-announce cloudbuild.yaml")
-	cmd.Flags().StringVarP(&opts.ProjectID, "project-id", "p", defaultGCPorjectID, "Google Project ID")
+	cmd.Flags().StringVarP(&opts.ProjectID, "project-id", "p", release.DefaultRelengStagingProject, "Google Project ID")
 	cmd.Flags().StringVarP(&opts.K8sRepoURL, "kubernetes-repo-url", "r", defaultK8sRepoURL, `git URL for the kubernetes repo ("k/k")`)
 	cmd.Flags().StringVarP(&opts.K8sBranch, "kubernetes-branch", "b", defaultK8sBranch, `branch to checkout for the kubernetes repo ("k/k")`)
 	cmd.Flags().StringVarP(&opts.ReleaseRepoURL, "release-repo-url", "R", defaultReleaseRepoURL, `git URL for the release repo ("k/release)`)
@@ -109,6 +109,7 @@ func getCommand() *cobra.Command {
 		return nil
 	}
 
+	// TODO: Refactor to use pkg/gcp/build
 	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		exeName := "gcloud"
 		exe, err := exec.LookPath(exeName)
