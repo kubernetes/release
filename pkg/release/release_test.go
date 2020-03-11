@@ -22,6 +22,7 @@ import (
 	"compress/gzip"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -404,4 +405,33 @@ func cleanupTmps(t *testing.T, dir ...string) {
 	for _, each := range dir {
 		require.Nil(t, os.RemoveAll(each))
 	}
+}
+
+func TestURLPrefixForBucket(t *testing.T) {
+	for _, bucket := range []string{"bucket", "", ProductionBucket} {
+		res := URLPrefixForBucket(bucket)
+		parsed, err := url.Parse(res)
+		require.Nil(t, err)
+		require.NotNil(t, parsed)
+	}
+}
+
+func TestGetKubecrossVersionSuccess(t *testing.T) {
+	_, err := GetKubecrossVersion("release-1.15")
+	require.Nil(t, err)
+}
+
+func TestGetKubecrossVersionSuccessOneNotExisting(t *testing.T) {
+	_, err := GetKubecrossVersion("not-existing", "release-1.15")
+	require.Nil(t, err)
+}
+
+func TestGetKubecrossVersionFailureNotExisting(t *testing.T) {
+	_, err := GetKubecrossVersion("not-existing")
+	require.NotNil(t, err)
+}
+
+func TestGetKubecrossVersionFailureEmpty(t *testing.T) {
+	_, err := GetKubecrossVersion()
+	require.NotNil(t, err)
 }

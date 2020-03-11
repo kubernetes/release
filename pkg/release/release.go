@@ -35,7 +35,8 @@ import (
 const (
 	// gcbmgr/anago defaults
 	DefaultToolRepo   = "release"
-	DefaultToolBranch = "master"
+	DefaultToolBranch = git.Master
+	DefaultToolOrg    = git.DefaultGithubOrg
 	DefaultProject    = "kubernetes-release-test"
 	DefaultDiskSize   = "300"
 	BucketPrefix      = "kubernetes-release-"
@@ -77,10 +78,6 @@ const (
 
 	// ProductionBucketURL is the url for the ProductionBucket
 	ProductionBucketURL = "https://dl.k8s.io"
-)
-
-var (
-	DefaultToolOrg = git.DefaultGithubOrg
 )
 
 // GetDefaultKubernetesRepoURL returns the default HTTPS repo URL for Release Engineering tools.
