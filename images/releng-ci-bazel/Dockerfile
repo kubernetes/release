@@ -13,8 +13,19 @@
 # limitations under the License.
 
 FROM launcher.gcr.io/google/bazel:2.0.0
+
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \
+    tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+
+RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+    apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+
 RUN apt-get update && \
-    apt-get install -y build-essential && \
+    apt-get install -y \
+        bsdmainutils \
+        build-essential \
+        google-cloud-sdk \
+        jq && \
     rm -rf /var/lib/apt/lists/*
 
 # Some tests require a working git executable, so we configure a pseudo-user
