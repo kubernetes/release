@@ -228,7 +228,7 @@ func buildPackage(build Build, packageDef *PackageDefinition, arch, tmpDir strin
 
 	if bc.KubernetesVersion != "" {
 		logrus.Infof("Checking if user-supplied Kubernetes version (%s) is valid semver...", bc.KubernetesVersion)
-		kubeSemver, err := semver.Parse(bc.KubernetesVersion)
+		kubeSemver, err := util.TagStringToSemver(bc.KubernetesVersion)
 		if err != nil {
 			return errors.Wrap(err, "user-supplied Kubernetes version is not valid semver")
 		}
@@ -375,7 +375,10 @@ func getPackageVersion(packageDef *PackageDefinition) (string, error) {
 		return getCRIToolsVersion(packageDef)
 	}
 
-	logrus.Infof("Using Kubernetes version for %s package", packageDef.Name)
+	logrus.Infof(
+		"Using Kubernetes version %s for %s package",
+		packageDef.KubernetesVersion, packageDef.Name,
+	)
 	return packageDef.KubernetesVersion, nil
 }
 
@@ -405,7 +408,7 @@ func getCNIVersion(packageDef *PackageDefinition) (string, error) {
 
 	logrus.Infof("Getting CNI version...")
 
-	kubeSemver, err := semver.Make(packageDef.KubernetesVersion)
+	kubeSemver, err := util.TagStringToSemver(packageDef.KubernetesVersion)
 	if err != nil {
 		return "", err
 	}
@@ -439,7 +442,7 @@ func getCRIToolsVersion(packageDef *PackageDefinition) (string, error) {
 		return packageDef.Version, nil
 	}
 
-	kubeSemver, err := semver.Parse(packageDef.KubernetesVersion)
+	kubeSemver, err := util.TagStringToSemver(packageDef.KubernetesVersion)
 	if err != nil {
 		return "", err
 	}
@@ -541,7 +544,11 @@ func getDefaultReleaseDownloadLinkBase(packageDef *PackageDefinition) (string, e
 		return "", errors.New("package definition cannot be nil")
 	}
 
-	return fmt.Sprintf("%s/v%s", DefaultReleaseDownloadLinkBase, packageDef.KubernetesVersion), nil
+	return fmt.Sprintf(
+		"%s/%s",
+		DefaultReleaseDownloadLinkBase,
+		util.AddTagPrefix(packageDef.KubernetesVersion),
+	), nil
 }
 
 func getDependencies(packageDef *PackageDefinition) (map[string]string, error) {
@@ -573,7 +580,7 @@ func getCNIDownloadLink(packageDef *PackageDefinition, arch string) (string, err
 		return "", errors.New("package definition cannot be nil")
 	}
 
-	sv, err := semver.Parse(packageDef.Version)
+	sv, err := util.TagStringToSemver(packageDef.Version)
 	if err != nil {
 		return "", err
 	}
