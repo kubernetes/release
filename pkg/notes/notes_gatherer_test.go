@@ -31,7 +31,7 @@ import (
 	"github.com/google/go-github/v29/github"
 	"github.com/sirupsen/logrus"
 	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/notes/client/clientfakes"
+	"k8s.io/release/pkg/github/githubfakes"
 )
 
 func TestMain(m *testing.M) {
@@ -185,7 +185,7 @@ func TestListCommits(t *testing.T) {
 			tc := tc
 			t.Parallel()
 
-			client := &clientfakes.FakeClient{}
+			client := &githubfakes.FakeClient{}
 
 			for i, returns := range tc.getCommitReturns {
 				if i == always {
@@ -383,7 +383,7 @@ func TestGatherNotes(t *testing.T) {
 			tc := tc
 			t.Parallel()
 
-			client := &clientfakes.FakeClient{}
+			client := &githubfakes.FakeClient{}
 
 			gatherer := NewGathererWithClient(context.Background(), client)
 			if stubber := tc.listPullRequestsWithCommitStubber; stubber != nil {

@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/google/go-github/v29/github"
@@ -28,6 +29,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/github/internal"
 	"k8s.io/release/pkg/util"
 )
 
@@ -48,13 +50,33 @@ type githubClient struct {
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //counterfeiter:generate . Client
 type Client interface {
-	ListTags(
-		context.Context, string, string, *github.ListOptions,
-	) ([]*github.RepositoryTag, *github.Response, error)
+	GetCommit(
+		context.Context, string, string, string,
+	) (*github.Commit, *github.Response, error)
+
+	GetPullRequest(
+		context.Context, string, string, int,
+	) (*github.PullRequest, *github.Response, error)
+
+	GetRepoCommit(
+		context.Context, string, string, string,
+	) (*github.RepositoryCommit, *github.Response, error)
+
+	ListCommits(
+		context.Context, string, string, *github.CommitsListOptions,
+	) ([]*github.RepositoryCommit, *github.Response, error)
+
+	ListPullRequestsWithCommit(
+		context.Context, string, string, string, *github.PullRequestListOptions,
+	) ([]*github.PullRequest, *github.Response, error)
 
 	ListReleases(
 		context.Context, string, string, *github.ListOptions,
 	) ([]*github.RepositoryRelease, *github.Response, error)
+
+	ListTags(
+		context.Context, string, string, *github.ListOptions,
+	) ([]*github.RepositoryTag, *github.Response, error)
 }
 
 // New creates a new default GitHub client. Tokens set via the $GITHUB_TOKEN
@@ -76,21 +98,105 @@ func New() *GitHub {
 	return &GitHub{&githubClient{github.NewClient(client)}}
 }
 
-func (g *githubClient) ListTags(
-	ctx context.Context, owner, repo string, opt *github.ListOptions,
-) ([]*github.RepositoryTag, *github.Response, error) {
-	return g.Client.Repositories.ListTags(ctx, owner, repo, opt)
+// NewWithToken can be used to specify a GITHUB_TOKEN before retrieving the
+// client to enforce authenticated GitHub requests
+func NewWithToken(token string) (*GitHub, error) {
+	if err := os.Setenv(TokenEnvKey, token); err != nil {
+		return nil, errors.Wrapf(err, "unable to export %s", TokenEnvKey)
+	}
+	return New(), nil
+}
+
+func (g *githubClient) GetCommit(
+	ctx context.Context, owner, repo, sha string,
+) (*github.Commit, *github.Response, error) {
+	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
+		commit, resp, err := g.Git.GetCommit(ctx, owner, repo, sha)
+		if !shouldRetry(err) {
+			return commit, resp, err
+		}
+	}
+}
+
+func (g *githubClient) GetPullRequest(
+	ctx context.Context, owner, repo string, number int,
+) (*github.PullRequest, *github.Response, error) {
+	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
+		pr, resp, err := g.PullRequests.Get(ctx, owner, repo, number)
+		if !shouldRetry(err) {
+			return pr, resp, err
+		}
+	}
+}
+
+func (g *githubClient) GetRepoCommit(
+	ctx context.Context, owner, repo, sha string,
+) (*github.RepositoryCommit, *github.Response, error) {
+	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
+		commit, resp, err := g.Repositories.GetCommit(ctx, owner, repo, sha)
+		if !shouldRetry(err) {
+			return commit, resp, err
+		}
+	}
+}
+
+func (g *githubClient) ListCommits(
+	ctx context.Context, owner, repo string, opt *github.CommitsListOptions,
+) ([]*github.RepositoryCommit, *github.Response, error) {
+	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
+		commits, resp, err := g.Repositories.ListCommits(ctx, owner, repo, opt)
+		if !shouldRetry(err) {
+			return commits, resp, err
+		}
+	}
+}
+
+func (g *githubClient) ListPullRequestsWithCommit(
+	ctx context.Context, owner, repo, sha string,
+	opt *github.PullRequestListOptions,
+) ([]*github.PullRequest, *github.Response, error) {
+	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
+		prs, resp, err := g.PullRequests.ListPullRequestsWithCommit(
+			ctx, owner, repo, sha, opt,
+		)
+		if !shouldRetry(err) {
+			return prs, resp, err
+		}
+	}
 }
 
 func (g *githubClient) ListReleases(
 	ctx context.Context, owner, repo string, opt *github.ListOptions,
 ) ([]*github.RepositoryRelease, *github.Response, error) {
-	return g.Client.Repositories.ListReleases(ctx, owner, repo, opt)
+	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
+		releases, resp, err := g.Repositories.ListReleases(
+			ctx, owner, repo, opt,
+		)
+		if !shouldRetry(err) {
+			return releases, resp, err
+		}
+	}
+}
+
+func (g *githubClient) ListTags(
+	ctx context.Context, owner, repo string, opt *github.ListOptions,
+) ([]*github.RepositoryTag, *github.Response, error) {
+	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
+		tags, resp, err := g.Repositories.ListTags(ctx, owner, repo, opt)
+		if !shouldRetry(err) {
+			return tags, resp, err
+		}
+	}
 }
 
 // SetClient can be used to manually set the internal GitHub client
 func (g *GitHub) SetClient(client Client) {
 	g.client = client
+}
+
+// Client can be used to retrieve the Client type
+func (g *GitHub) Client() Client {
+	return g.client
 }
 
 // TagsPerBranch is an abstraction over a simple branch to latest tag association

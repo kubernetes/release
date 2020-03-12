@@ -346,7 +346,10 @@ func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
 	}
 
 	// Fetch the notes
-	gatherer := notes.NewGatherer(context.Background(), notesOptions)
+	gatherer, err := notes.NewGatherer(context.Background(), notesOptions)
+	if err != nil {
+		return nil, errors.Wrapf(err, "retrieving notes gatherer")
+	}
 	releaseNotes, history, err := gatherer.ListReleaseNotes()
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing release notes")

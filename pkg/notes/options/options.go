@@ -17,21 +17,16 @@ limitations under the License.
 package options
 
 import (
-	"context"
 	"os"
 	"strings"
 
 	"io/ioutil"
 
-	gogithub "github.com/google/go-github/v29/github"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/oauth2"
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/notes/client"
 	"k8s.io/release/pkg/notes/internal"
 )
 
@@ -254,22 +249,20 @@ func (o *Options) repo() (repo *git.Repo, err error) {
 // a Client which in addition records the responses from Github and stores them
 // on disk, or a Client that replays those pre-recorded responses and does not
 // talk to the GitHub API at all.
-func (o *Options) Client() client.Client {
+func (o *Options) Client() (github.Client, error) {
 	if o.ReplayDir != "" {
-		return client.NewReplayer(o.ReplayDir)
+		return github.NewReplayer(o.ReplayDir), nil
 	}
 
 	// Create a real GitHub API client
-	// TODO: refactor on top of our internal github package
-	ctx := context.Background()
-	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: o.githubToken},
-	))
-	c := client.New(gogithub.NewClient(httpClient))
-
-	if o.RecordDir != "" {
-		return client.NewRecorder(c, o.RecordDir)
+	gh, err := github.NewWithToken(o.githubToken)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create GitHub client")
 	}
 
-	return c
+	if o.RecordDir != "" {
+		return github.NewRecorder(gh.Client(), o.RecordDir), nil
+	}
+
+	return gh.Client(), nil
 }
