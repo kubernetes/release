@@ -19,6 +19,7 @@ package cmd
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/log"
 	"k8s.io/release/pkg/patch"
 	"k8s.io/release/pkg/util"
@@ -50,7 +51,7 @@ func patchAnnounceCommand() *cobra.Command {
 
 	// TODO: figure out, how we can read env vars and also be able to set the flags to required in a cobra-native way
 	cmd.PersistentFlags().StringVarP(&opts.SendgridAPIKey, "sendgrid-api-key", "s", util.EnvDefault("SENDGRID_API_KEY", ""), "API key for sendgrid")
-	cmd.PersistentFlags().StringVarP(&opts.GithubToken, "github-token", "g", util.EnvDefault("GITHUB_TOKEN", ""), "a GitHub token, used r/o for generating the release notes")
+	cmd.PersistentFlags().StringVarP(&opts.GithubToken, "github-token", "g", util.EnvDefault(github.TokenEnvKey, ""), "a GitHub token, used r/o for generating the release notes")
 
 	cmd.PreRunE = func(cmd *cobra.Command, _ []string) error {
 		// TODO: make github-token & sendgrid-api-key required too

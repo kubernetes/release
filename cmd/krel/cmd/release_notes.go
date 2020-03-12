@@ -32,6 +32,7 @@ import (
 
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
@@ -66,7 +67,7 @@ The 'release-notes' subcommand of krel has been developed to:
 
 To use the tool, please set the %v environment variable which needs write
 permissions to your fork of k/sig-release and k-sigs/release-notes.`,
-		options.GitHubToken),
+		github.TokenEnvKey),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

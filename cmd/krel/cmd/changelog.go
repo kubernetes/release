@@ -74,7 +74,7 @@ the golang based 'release-notes' tool:
    corresponding release-branch of kubernetes/kubernetes. The release branch
    will be pruned from all other CHANGELOG-*.md files which do not belong to
    this release branch.
-`, options.GitHubToken),
+`, github.TokenEnvKey),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

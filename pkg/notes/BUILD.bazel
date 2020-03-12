@@ -28,6 +28,7 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/git:go_default_library",
+        "//pkg/github:go_default_library",
         "//pkg/notes/client:go_default_library",
         "//pkg/notes/client/clientfakes:go_default_library",
         "@com_github_google_go_github_v29//github:go_default_library",

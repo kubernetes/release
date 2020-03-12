@@ -19,13 +19,21 @@ package github
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/google/go-github/v29/github"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/oauth2"
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/util"
+)
+
+const (
+	// TokenEnvKey is the default GitHub token environemt variable key
+	TokenEnvKey = "GITHUB_TOKEN"
 )
 
 // GitHub is a wrapper around GitHub related functionality
@@ -49,9 +57,23 @@ type Client interface {
 	) ([]*github.RepositoryRelease, *github.Response, error)
 }
 
-// New creates a new default GitHub client
+// New creates a new default GitHub client. Tokens set via the $GITHUB_TOKEN
+// environment variable will result in an authenticated client.
+// If the $GITHUB_TOKEN is not set, then the client will do unauthenticated
+// GitHub requests.
 func New() *GitHub {
-	return &GitHub{&githubClient{github.NewClient(nil)}}
+	ctx := context.Background()
+	token := util.EnvDefault(TokenEnvKey, "")
+	client := http.DefaultClient
+	state := "unauthenticated"
+	if token != "" {
+		state = strings.TrimPrefix(state, "un")
+		client = oauth2.NewClient(ctx, oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: token},
+		))
+	}
+	logrus.Debugf("Using %s GitHub client", state)
+	return &GitHub{&githubClient{github.NewClient(client)}}
 }
 
 func (g *githubClient) ListTags(
