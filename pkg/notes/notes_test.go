@@ -27,13 +27,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 
+	kgithub "k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/notes/client"
 )
 
 func githubClient(t *testing.T) (client.Client, context.Context) {
-	token, tokenSet := os.LookupEnv("GITHUB_TOKEN")
+	token, tokenSet := os.LookupEnv(kgithub.TokenEnvKey)
 	if !tokenSet {
-		t.Skip("GITHUB_TOKEN is not set")
+		t.Skipf("%s is not set", kgithub.TokenEnvKey)
 	}
 
 	ctx := context.Background()

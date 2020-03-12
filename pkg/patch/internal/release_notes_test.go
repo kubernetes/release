@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/patch/internal"
 	"k8s.io/release/pkg/patch/internal/internalfakes"
 	it "k8s.io/release/pkg/patch/internal/testing"
@@ -89,7 +90,7 @@ func TestReleaseNoter(t *testing.T) {
 			it.CheckErrSub(t, err, tc.expectedErr)
 			require.Equal(t, tc.expectedOutput, output, "output")
 			require.Equal(t, tc.k8sDir, command.SetDirArgsForCall(0), "Command#SetDir arg")
-			require.Contains(t, command.SetEnvArgsForCall(0), "GITHUB_TOKEN="+tc.githubToken)
+			require.Contains(t, command.SetEnvArgsForCall(0), github.TokenEnvKey+"="+tc.githubToken)
 		})
 	}
 }

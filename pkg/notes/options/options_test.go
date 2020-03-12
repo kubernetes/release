@@ -29,8 +29,10 @@ import (
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/config"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
+
 	"k8s.io/release/pkg/command"
 	kgit "k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/notes/internal"
 )
 
@@ -69,7 +71,7 @@ func newTestTemplate(t *testing.T, fileName, contents string) string {
 
 func newTestOptions(t *testing.T) *testOptions {
 	testRepo := newTestRepo(t)
-	require.Nil(t, os.Setenv(GitHubToken, "token"))
+	require.Nil(t, os.Setenv(github.TokenEnvKey, "token"))
 	return &testOptions{
 		Options: &Options{
 			DiscoverMode: RevisionDiscoveryModeNONE,

@@ -23,13 +23,14 @@ import (
 
 	"io/ioutil"
 
-	"github.com/google/go-github/v29/github"
+	gogithub "github.com/google/go-github/v29/github"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
 	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/notes/client"
 	"k8s.io/release/pkg/notes/internal"
 )
@@ -66,7 +67,6 @@ const (
 	RevisionDiscoveryModeMergeBaseToLatest = "mergebase-to-latest"
 	RevisionDiscoveryModePatchToPatch      = "patch-to-patch"
 	RevisionDiscoveryModeMinorToMinor      = "minor-to-minor"
-	GitHubToken                            = "GITHUB_TOKEN"
 )
 
 // New creates a new Options instance with the default values
@@ -100,13 +100,13 @@ func (o *Options) ValidateAndFinish() (err error) {
 	}
 
 	// The GitHub Token is required if replay is not specified
-	token, ok := os.LookupEnv(GitHubToken)
+	token, ok := os.LookupEnv(github.TokenEnvKey)
 	if ok {
 		o.githubToken = token
 	} else if o.ReplayDir == "" {
 		return errors.Errorf(
 			"neither environment variable `%s` nor `replay` option is set",
-			GitHubToken,
+			github.TokenEnvKey,
 		)
 	}
 
@@ -260,11 +260,12 @@ func (o *Options) Client() client.Client {
 	}
 
 	// Create a real GitHub API client
+	// TODO: refactor on top of our internal github package
 	ctx := context.Background()
 	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: o.githubToken},
 	))
-	c := client.New(github.NewClient(httpClient))
+	c := client.New(gogithub.NewClient(httpClient))
 
 	if o.RecordDir != "" {
 		return client.NewRecorder(c, o.RecordDir)

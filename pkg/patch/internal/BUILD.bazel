@@ -30,6 +30,7 @@ go_test(
     ],
     embed = [":go_default_library"],
     deps = [
+        "//pkg/github:go_default_library",
         "//pkg/patch/internal/internalfakes:go_default_library",
         "//pkg/patch/internal/testing:go_default_library",
         "@com_github_sendgrid_rest//:go_default_library",
