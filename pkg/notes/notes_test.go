@@ -23,26 +23,19 @@ import (
 	"os"
 	"testing"
 
-	"github.com/google/go-github/v29/github"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/oauth2"
 
 	kgithub "k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/notes/client"
 )
 
-func githubClient(t *testing.T) (client.Client, context.Context) {
-	token, tokenSet := os.LookupEnv(kgithub.TokenEnvKey)
+func githubClient(t *testing.T) (kgithub.Client, context.Context) {
+	_, tokenSet := os.LookupEnv(kgithub.TokenEnvKey)
 	if !tokenSet {
 		t.Skipf("%s is not set", kgithub.TokenEnvKey)
 	}
 
-	ctx := context.Background()
-	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	))
-	c := client.New(github.NewClient(httpClient))
-	return c, ctx
+	c := kgithub.New()
+	return c.Client(), context.Background()
 }
 
 func TestStripActionRequired(t *testing.T) {

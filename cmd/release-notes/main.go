@@ -215,7 +215,10 @@ func init() {
 func GetReleaseNotes() (notes.ReleaseNotes, notes.ReleaseNotesHistory, error) {
 	logrus.Info("fetching all commits. This might take a while...")
 
-	gatherer := notes.NewGatherer(context.Background(), opts)
+	gatherer, err := notes.NewGatherer(context.Background(), opts)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "retrieving notes gatherer")
+	}
 	releaseNotes, history, err := gatherer.ListReleaseNotes()
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "listing release notes")

@@ -2,11 +2,16 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = ["github.go"],
+    srcs = [
+        "github.go",
+        "record.go",
+        "replay.go",
+    ],
     importpath = "k8s.io/release/pkg/github",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/git:go_default_library",
+        "//pkg/github/internal:go_default_library",
         "//pkg/util:go_default_library",
         "@com_github_google_go_github_v29//github:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
@@ -39,6 +44,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/github/githubfakes:all-srcs",
+        "//pkg/github/internal:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

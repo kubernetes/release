@@ -246,7 +246,11 @@ func generateReleaseNotes(opts *changelogOptions, branch, startRev, endRev strin
 		return "", err
 	}
 
-	gatherer := notes.NewGatherer(context.Background(), notesOptions)
+	gatherer, err := notes.NewGatherer(context.Background(), notesOptions)
+	if err != nil {
+		return "", errors.Wrapf(err, "retrieving notes gatherer")
+	}
+
 	releaseNotes, history, err := gatherer.ListReleaseNotes()
 	if err != nil {
 		return "", errors.Wrapf(err, "listing release notes")
