@@ -28,7 +28,7 @@ const defaultReleaseNotesTemplate = `
 {{if .Downloads}}
 ## Downloads for {{$CurrentRevision}}
 
-{{- with .Downloads.Source}}
+{{- with .Downloads.Source }}
 
 ### Source Code
 
@@ -37,7 +37,7 @@ filename | sha512 hash
 {{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
 {{end}}
 
-{{- with .Downloads.Client}}
+{{- with .Downloads.Client -}}
 ### Client binaries
 
 filename | sha512 hash
@@ -45,7 +45,7 @@ filename | sha512 hash
 {{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
 {{end}}
 
-{{- with .Downloads.Server}}
+{{- with .Downloads.Server -}}
 ### Server binaries
 
 filename | sha512 hash
@@ -53,14 +53,14 @@ filename | sha512 hash
 {{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
 {{end}}
 
-{{- with .Downloads.Node}}
+{{- with .Downloads.Node -}}
 ### Node binaries
 
 filename | sha512 hash
 -------- | -----------
 {{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
 {{end -}}
-{{end}}
+{{- end -}}
 # Changelog since {{$PreviousRevision}}
 
 {{with .NotesWithActionRequired -}}
@@ -73,10 +73,10 @@ filename | sha512 hash
 
 {{- with .Notes -}}
 ## Changes by Kind
-{{ range .}}
+{{- range .}}
+
 ### {{.Kind | prettyKind}}
-{{range $note := .NoteEntries }} - {{$note}}{{end}}
-{{- end}}
-{{- end}}
-{{- /* This removes any extra line at the end. */ -}}
+{{range $note := .NoteEntries }} - {{$note}}{{end -}}
+{{end}}
+{{- end -}}
 `

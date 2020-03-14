@@ -1,40 +1,33 @@
 # Release notes for v1.16.1
 
 [Documentation](https://docs.k8s.io/docs/home)
-
 # Changelog since v1.16.0
 
 ## Urgent Upgrade Notes 
 
 ### (No, really, you MUST read this before you upgrade)
 
- - If an API changes and no one documented it, did it really happen?
+ - Action required note.
  
 ## Changes by Kind
 
-### API Change
- - This might make people sad...or happy.
-### Bug
- - This will likely get you promoted.
-### Cleanup
- - This usually does not get you promoted but it should.
 ### Deprecation
- - Delorted.
-### Design
- - Change the world.
-### Documentation
- - There was  a library in Alexandria, Egypt once.
-### Failing Test
- - Please run presubmit test!
+ - Deprecation #1 - This note is duplicated across SIGs
+
 ### Feature
- - This will get you promoted.
-### Flake
- - This *should* get you promoted.
+ - A feature
+
+### Design
+ - Design change.
+
+### Documentation
+ - Update docs
+
+### Failing Test
+ - Fix a failing test.
+
 ### Other (Bug, Cleanup or Flake)
- - This should definitely get you promoted.
+ - Bugfix - Clean up - Fix a flakey test.
+
 ### Uncategorized
-<<<<<<< HEAD
- - Someone somewhere did the world a great justice.
-=======
- - Someone somewhere did the world a great justice.
->>>>>>> Support sorted kinds for template rendering.
+ - Uncategorized note

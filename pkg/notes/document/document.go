@@ -158,10 +158,12 @@ func (n *NoteCollection) Sort(kindPriority []Kind) {
 	})
 }
 
+// TODO: These should probably go into the notes package.
 type Kind string
 type NotesByKind map[Kind]Notes
 type Notes []string
 
+// TODO: These should probably go into the notes package.
 const (
 	KindAPIChange     Kind = "api-change"
 	KindBug           Kind = "bug"
@@ -406,8 +408,8 @@ func CreateDownloadsTable(w io.Writer, bucket, tars, prevTag, newTag string) err
 	if fileMetadata == nil {
 		// If directory is empty, doesn't contain matching files, or is not
 		// given we will have a nil value. This is not an error in every
-		// context. Return early so we do not modify markdown. This will be
-		// removed once issue #1019 lands.
+		// context. Return early so we do not modify markdown.
+		// This will be remoted once changelogs use templates (issue #1019).
 		fmt.Fprintf(w, "# %s\n\n", newTag)
 		fmt.Fprintf(w, "## Changelog since %s\n\n", prevTag)
 		return nil

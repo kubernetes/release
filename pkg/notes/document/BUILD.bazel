@@ -22,9 +22,9 @@ go_test(
     data = [":testdata"],
     embed = [":go_default_library"],
     deps = [
+        "//pkg/notes:go_default_library",
         "//pkg/notes/options:go_default_library",
         "//pkg/release:go_default_library",
-        "@com_github_kylelemons_godebug//diff:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
         "@io_bazel_rules_go//go/tools/bazel:go_default_library",
     ],
