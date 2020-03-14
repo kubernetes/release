@@ -35,10 +35,10 @@ import (
 
 // Document represents the underlying structure of a release notes document.
 type Document struct {
-	NotesWithActionRequired Notes         `json:"action_required"`
-	NotesByKind             NotesByKind   `json:"kinds"`
-	Downloads               *FileMetadata `json:"downloads"`
-	CurrentRevision         string        `json:"release_tag"`
+	NotesWithActionRequired Notes          `json:"action_required"`
+	Notes                   NoteCollection `json:"notes"`
+	Downloads               *FileMetadata  `json:"downloads"`
+	CurrentRevision         string         `json:"release_tag"`
 	PreviousRevision        string
 }
 
@@ -132,6 +132,32 @@ type File struct {
 	Checksum, Name, URL string
 }
 
+// NoteCategory contains notes of the same `Kind` (i.e category).
+type NoteCategory struct {
+	Kind        Kind
+	NoteEntries *Notes
+}
+
+// NoteCollection is a collection of note categories.
+type NoteCollection []NoteCategory
+
+// Sort sorts the collection by priority order.
+func (n *NoteCollection) Sort(kindPriority []Kind) {
+	indexOf := func(kind Kind) int {
+		for i, prioKind := range kindPriority {
+			if kind == prioKind {
+				return i
+			}
+		}
+		return -1
+	}
+
+	noteSlice := (*n)
+	sort.Slice(noteSlice, func(i, j int) bool {
+		return indexOf(noteSlice[i].Kind) < indexOf(noteSlice[j].Kind)
+	})
+}
+
 type Kind string
 type NotesByKind map[Kind]Notes
 type Notes []string
@@ -176,47 +202,52 @@ var kindMap = map[Kind]Kind{
 func CreateDocument(releaseNotes notes.ReleaseNotes, history notes.ReleaseNotesHistory) (*Document, error) {
 	doc := &Document{
 		NotesWithActionRequired: Notes{},
-		NotesByKind:             NotesByKind{},
+		Notes:                   NoteCollection{},
 	}
 
+	kindCategory := make(map[Kind]NoteCategory)
 	for _, pr := range history {
 		note := releaseNotes[pr]
 
+		// TODO: Refactor the logic here and add testing.
 		if note.DuplicateKind {
 			kind := mapKind(highestPriorityKind(note.Kinds))
-			existingNotes, ok := doc.NotesByKind[kind]
-			if ok {
-				doc.NotesByKind[kind] = append(existingNotes, note.Markdown)
+			if existing, ok := kindCategory[kind]; ok {
+				*existing.NoteEntries = append(*existing.NoteEntries, note.Markdown)
 			} else {
-				doc.NotesByKind[kind] = []string{note.Markdown}
+				kindCategory[kind] = NoteCategory{Kind: kind, NoteEntries: &Notes{note.Markdown}}
 			}
 		} else if note.ActionRequired {
 			doc.NotesWithActionRequired = append(doc.NotesWithActionRequired, note.Markdown)
 		} else {
 			for _, kind := range note.Kinds {
 				mappedKind := mapKind(Kind(kind))
-				notesForKind, ok := doc.NotesByKind[mappedKind]
-				if ok {
-					doc.NotesByKind[mappedKind] = append(notesForKind, note.Markdown)
+
+				if existing, ok := kindCategory[mappedKind]; ok {
+					*existing.NoteEntries = append(*existing.NoteEntries, note.Markdown)
 				} else {
-					doc.NotesByKind[mappedKind] = []string{note.Markdown}
+					kindCategory[mappedKind] = NoteCategory{Kind: mappedKind, NoteEntries: &Notes{note.Markdown}}
 				}
 			}
 
 			if len(note.Kinds) == 0 {
 				// the note has not been categorized so far
 				kind := KindUncategorized
-				if existingNotes, ok := doc.NotesByKind[kind]; ok {
-					if ok {
-						doc.NotesByKind[kind] = append(existingNotes, note.Markdown)
-					} else {
-						doc.NotesByKind[kind] = []string{note.Markdown}
-					}
+				if existing, ok := kindCategory[kind]; ok {
+					*existing.NoteEntries = append(*existing.NoteEntries, note.Markdown)
+				} else {
+					kindCategory[kind] = NoteCategory{Kind: kind, NoteEntries: &Notes{note.Markdown}}
 				}
 			}
 		}
 	}
 
+	for _, category := range kindCategory {
+		doc.Notes = append(doc.Notes, category)
+		sort.Strings(*category.NoteEntries)
+	}
+
+	doc.Notes.Sort(kindPriority)
 	sort.Strings(doc.NotesWithActionRequired)
 	return doc, nil
 }
@@ -317,17 +348,18 @@ func (d *Document) RenderMarkdown(bucket, tars, prevTag, newTag string) (string,
 	}
 
 	// each Kind gets a section
-	sortedKinds := sortKinds(d.NotesByKind)
-	if len(sortedKinds) > 0 {
+	if len(d.Notes) > 0 {
 		o.WriteString("## Changes by Kind")
 		nlnl()
-		for _, kind := range sortedKinds {
+
+		d.Notes.Sort(kindPriority)
+		for _, category := range d.Notes {
 			o.WriteString("### ")
-			o.WriteString(prettyKind(kind))
+			o.WriteString(prettyKind(category.Kind))
 			nlnl()
 
-			sort.Strings(d.NotesByKind[kind])
-			for _, note := range d.NotesByKind[kind] {
+			sort.Strings(*category.NoteEntries)
+			for _, note := range *category.NoteEntries {
 				writeNote(note)
 			}
 			nl()

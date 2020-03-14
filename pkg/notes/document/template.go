@@ -71,11 +71,11 @@ filename | sha512 hash
 {{range .}} {{println "-" .}} {{end}}
 {{end}}
 
-{{- with .NotesByKind -}}
+{{- with .Notes -}}
 ## Changes by Kind
-{{ range $kind, $notes := .}}
-### {{$kind | prettyKind}}
-{{range $j, $note := $notes}} - {{$note}}{{end}}
+{{ range .}}
+### {{.Kind | prettyKind}}
+{{range $note := .NoteEntries }} - {{$note}}{{end}}
 {{- end}}
 {{- end}}
 {{- /* This removes any extra line at the end. */ -}}
