@@ -14,23 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package internal
+package document
 
-// DefaultReleaseNotesTemplate is the text template for the default release notes.
+// defaultReleaseNotesTemplate is the text template for the default release notes.
 // k8s/release/cmd/release-notes uses text/template to render markdown
 // templates.
-const DefaultReleaseNotesTemplate = `
+const defaultReleaseNotesTemplate = `
 {{- $CurrentRevision := .CurrentRevision -}}
 {{- $PreviousRevision := .PreviousRevision -}}
 # Release notes for {{$CurrentRevision}}
 
 [Documentation](https://docs.k8s.io/docs/home)
-
-{{- with .Downloads}}
-
+{{if .Downloads}}
 ## Downloads for {{$CurrentRevision}}
 
-{{- with .Source}}
+{{- with .Downloads.Source}}
 
 ### Source Code
 
@@ -39,7 +37,7 @@ filename | sha512 hash
 {{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
 {{end}}
 
-{{- with .Client}}
+{{- with .Downloads.Client}}
 ### Client binaries
 
 filename | sha512 hash
@@ -47,7 +45,7 @@ filename | sha512 hash
 {{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
 {{end}}
 
-{{- with .Server}}
+{{- with .Downloads.Server}}
 ### Server binaries
 
 filename | sha512 hash
@@ -55,15 +53,14 @@ filename | sha512 hash
 {{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
 {{end}}
 
-{{- with .Node}}
+{{- with .Downloads.Node}}
 ### Node binaries
 
 filename | sha512 hash
 -------- | -----------
 {{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
-{{end}}
 {{end -}}
-
+{{end}}
 # Changelog since {{$PreviousRevision}}
 
 {{with .NotesWithActionRequired -}}
@@ -74,11 +71,12 @@ filename | sha512 hash
 {{range .}} {{println "-" .}} {{end}}
 {{end}}
 
-{{- with .NotesByKind -}}
+{{- with .Notes -}}
 ## Changes by Kind
-{{ range $kind, $notes := .}}
-### {{$kind | prettyKind}}
-{{range $note := $notes}} {{println "-" $note}} {{end -}}
-{{end -}}
-{{end -}}
+{{ range .}}
+### {{.Kind | prettyKind}}
+{{range $note := .NoteEntries }} - {{$note}}{{end}}
+{{- end}}
+{{- end}}
+{{- /* This removes any extra line at the end. */ -}}
 `

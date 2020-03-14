@@ -69,28 +69,28 @@ level=debug timestamp=2019-07-30T04:02:44.3716249Z caller=notes.go:497 msg="Excl
 
 ## Options
 
-| Flag                    | Env Variable    | Default Value      | Required | Description                                                                                                                       |
-| ----------------------- | --------------- | ------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Flag                    | Env Variable    | Default Value       | Required | Description                                                                                                                       |
+| ----------------------- | --------------- | ------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | **GITHUB REPO OPTIONS** |
-|                         | GITHUB_TOKEN    |                    | Yes      | A personal GitHub access token                                                                                                    |
-| github-org              | GITHUB_ORG      | kubernetes         | Yes      | Name of GitHub organization                                                                                                       |
-| github-repo             | GITHUB_REPO     | kubernetes         | Yes      | Name of GitHub repository                                                                                                         |
-| required-author         | REQUIRED_AUTHOR | k8s-ci-robot       | Yes      | Only commits from this GitHub user are considered. Set to empty string to include all users                                       |
-| branch                  | BRANCH          | master             | Yes      | The GitHub repository branch to scrape                                                                                            |
-| start-sha               | START_SHA       |                    | Yes      | The commit hash to start processing from (inclusive)                                                                              |
-| end-sha                 | END_SHA         |                    | Yes      | The commit hash to end processing at (inclusive)                                                                                  |
-| repo-path               | REPO_PATH       | /tmp/k8s-repo      | No       | Path to a local Kubernetes repository, used only for tag discovery                                                                |
-| start-rev               | START_REV       |                    | No       | The git revision to start at. Can be used as alternative to start-sha                                                             |
-| env-rev                 | END_REV         |                    | No       | The git revision to end at. Can be used as alternative to end-sha                                                                 |
-| discover                | DISCOVER        | none               | No       | The revision discovery mode for automatic revision retrieval (options: none, mergebase-to-latest, patch-to-patch, minor-to-minor) |
-| release-bucket          | RELEASE_BUCKET  | kubernetes-release | No       | Specify gs bucket to point to in generated notes (default "kubernetes-release")                                                   |
-| release-tars            | RELEASE_TARS    |                    | No       | Directory of tars to sha512 sum for display                                                                                       |
+|                         | GITHUB_TOKEN    |                     | Yes      | A personal GitHub access token                                                                                                    |
+| github-org              | GITHUB_ORG      | kubernetes          | Yes      | Name of GitHub organization                                                                                                       |
+| github-repo             | GITHUB_REPO     | kubernetes          | Yes      | Name of GitHub repository                                                                                                         |
+| required-author         | REQUIRED_AUTHOR | k8s-ci-robot        | Yes      | Only commits from this GitHub user are considered. Set to empty string to include all users                                       |
+| branch                  | BRANCH          | master              | Yes      | The GitHub repository branch to scrape                                                                                            |
+| start-sha               | START_SHA       |                     | Yes      | The commit hash to start processing from (inclusive)                                                                              |
+| end-sha                 | END_SHA         |                     | Yes      | The commit hash to end processing at (inclusive)                                                                                  |
+| repo-path               | REPO_PATH       | /tmp/k8s-repo       | No       | Path to a local Kubernetes repository, used only for tag discovery                                                                |
+| start-rev               | START_REV       |                     | No       | The git revision to start at. Can be used as alternative to start-sha                                                             |
+| env-rev                 | END_REV         |                     | No       | The git revision to end at. Can be used as alternative to end-sha                                                                 |
+| discover                | DISCOVER        | none                | No       | The revision discovery mode for automatic revision retrieval (options: none, mergebase-to-latest, patch-to-patch, minor-to-minor) |
+| release-bucket          | RELEASE_BUCKET  | kubernetes-release  | No       | Specify gs bucket to point to in generated notes (default "kubernetes-release")                                                   |
+| release-tars            | RELEASE_TARS    |                     | No       | Directory of tars to sha512 sum for display                                                                                       |
 | **OUTPUT OPTIONS**      |
-| output                  | OUTPUT          |                    | No       | The path where the release notes will be written                                                                                  |
-| format                  | FORMAT          | markdown           | Yes      | The format for notes output (options: markdown, json, go-template:path/to/template.file)                                                                             |
-| release-version         | RELEASE_VERSION |                    | No       | The release version to tag the notes with                                                                                         |
+| output                  | OUTPUT          |                     | No       | The path where the release notes will be written                                                                                  |
+| format                  | FORMAT          | go-template:default | Yes      | The format for notes output (options: json, go-template:path/to/template.file)                                                    |
+| release-version         | RELEASE_VERSION |                     | No       | The release version to tag the notes with                                                                                         |
 | **LOG OPTIONS**         |
-| debug                   | DEBUG           | false              | No       | Enable debug logging (options: true, false)                                                                                       |
+| debug                   | DEBUG           | false               | No       | Enable debug logging (options: true, false)                                                                                       |
 
 ## Building From Source
 

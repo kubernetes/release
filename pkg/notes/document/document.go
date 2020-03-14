@@ -20,6 +20,7 @@ import (
 	"crypto/sha512"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -28,21 +29,22 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/release/pkg/notes"
+	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/release"
 )
 
 // Document represents the underlying structure of a release notes document.
 type Document struct {
-	NotesWithActionRequired Notes         `json:"action_required"`
-	NotesByKind             NotesByKind   `json:"kinds"`
-	Downloads               *FileMetadata `json:"downloads"`
-	CurrentRevision         string        `json:"release_tag"`
+	NotesWithActionRequired Notes          `json:"action_required"`
+	Notes                   NoteCollection `json:"notes"`
+	Downloads               *FileMetadata  `json:"downloads"`
+	CurrentRevision         string         `json:"release_tag"`
 	PreviousRevision        string
 }
 
 // FileMetadata contains metadata about files associated with the release.
 type FileMetadata struct {
-	// Files containing source code.
+	// Files containing source code
 	Source []File
 
 	// Client binaries
@@ -79,12 +81,12 @@ func fetchMetadata(dir, urlPrefix, tag string) (*FileMetadata, error) {
 
 	var fileCount int
 	for fileType, patterns := range m {
-		fileMetadata, err := fileInfo(dir, patterns, urlPrefix, tag)
+		fInfo, err := fileInfo(dir, patterns, urlPrefix, tag)
 		if err != nil {
-			return nil, errors.Wrap(err, "fetching file metadata")
+			return nil, errors.Wrap(err, "fetching file info")
 		}
-		*fileType = append(*fileType, fileMetadata...)
-		fileCount += len(fileMetadata)
+		*fileType = append(*fileType, fInfo...)
+		fileCount += len(fInfo)
 	}
 
 	if fileCount == 0 {
@@ -93,6 +95,7 @@ func fetchMetadata(dir, urlPrefix, tag string) (*FileMetadata, error) {
 	return fm, nil
 }
 
+// fileInfo fetches file metadata for files in `dir` matching `patterns`
 func fileInfo(dir string, patterns []string, urlPrefix, tag string) ([]File, error) {
 	var files []File
 	for _, pattern := range patterns {
@@ -127,6 +130,32 @@ func fileInfo(dir string, patterns []string, urlPrefix, tag string) ([]File, err
 // A File is a downloadable file.
 type File struct {
 	Checksum, Name, URL string
+}
+
+// NoteCategory contains notes of the same `Kind` (i.e category).
+type NoteCategory struct {
+	Kind        Kind
+	NoteEntries *Notes
+}
+
+// NoteCollection is a collection of note categories.
+type NoteCollection []NoteCategory
+
+// Sort sorts the collection by priority order.
+func (n *NoteCollection) Sort(kindPriority []Kind) {
+	indexOf := func(kind Kind) int {
+		for i, prioKind := range kindPriority {
+			if kind == prioKind {
+				return i
+			}
+		}
+		return -1
+	}
+
+	noteSlice := (*n)
+	sort.Slice(noteSlice, func(i, j int) bool {
+		return indexOf(noteSlice[i].Kind) < indexOf(noteSlice[j].Kind)
+	})
 }
 
 type Kind string
@@ -173,60 +202,72 @@ var kindMap = map[Kind]Kind{
 func CreateDocument(releaseNotes notes.ReleaseNotes, history notes.ReleaseNotesHistory) (*Document, error) {
 	doc := &Document{
 		NotesWithActionRequired: Notes{},
-		NotesByKind:             NotesByKind{},
+		Notes:                   NoteCollection{},
 	}
 
+	kindCategory := make(map[Kind]NoteCategory)
 	for _, pr := range history {
 		note := releaseNotes[pr]
 
+		// TODO: Refactor the logic here and add testing.
 		if note.DuplicateKind {
 			kind := mapKind(highestPriorityKind(note.Kinds))
-			existingNotes, ok := doc.NotesByKind[kind]
-			if ok {
-				doc.NotesByKind[kind] = append(existingNotes, note.Markdown)
+			if existing, ok := kindCategory[kind]; ok {
+				*existing.NoteEntries = append(*existing.NoteEntries, note.Markdown)
 			} else {
-				doc.NotesByKind[kind] = []string{note.Markdown}
+				kindCategory[kind] = NoteCategory{Kind: kind, NoteEntries: &Notes{note.Markdown}}
 			}
 		} else if note.ActionRequired {
 			doc.NotesWithActionRequired = append(doc.NotesWithActionRequired, note.Markdown)
 		} else {
 			for _, kind := range note.Kinds {
 				mappedKind := mapKind(Kind(kind))
-				notesForKind, ok := doc.NotesByKind[mappedKind]
-				if ok {
-					doc.NotesByKind[mappedKind] = append(notesForKind, note.Markdown)
+
+				if existing, ok := kindCategory[mappedKind]; ok {
+					*existing.NoteEntries = append(*existing.NoteEntries, note.Markdown)
 				} else {
-					doc.NotesByKind[mappedKind] = []string{note.Markdown}
+					kindCategory[mappedKind] = NoteCategory{Kind: mappedKind, NoteEntries: &Notes{note.Markdown}}
 				}
 			}
 
 			if len(note.Kinds) == 0 {
 				// the note has not been categorized so far
 				kind := KindUncategorized
-				if existingNotes, ok := doc.NotesByKind[kind]; ok {
-					if ok {
-						doc.NotesByKind[kind] = append(existingNotes, note.Markdown)
-					} else {
-						doc.NotesByKind[kind] = []string{note.Markdown}
-					}
+				if existing, ok := kindCategory[kind]; ok {
+					*existing.NoteEntries = append(*existing.NoteEntries, note.Markdown)
+				} else {
+					kindCategory[kind] = NoteCategory{Kind: kind, NoteEntries: &Notes{note.Markdown}}
 				}
 			}
 		}
 	}
 
+	for _, category := range kindCategory {
+		doc.Notes = append(doc.Notes, category)
+		sort.Strings(*category.NoteEntries)
+	}
+
+	doc.Notes.Sort(kindPriority)
 	sort.Strings(doc.NotesWithActionRequired)
 	return doc, nil
 }
 
-// RenderMarkdownTemplate renders a document using the Go template in `goTemplate`.
-func (d *Document) RenderMarkdownTemplate(bucket, fileDir, goTemplate string) (string, error) {
+// RenderMarkdownTemplate renders a document using the golang template in
+// `templateSpec`. If `templateSpec` is set to `options.FormatDefaultGoTemplate`
+// render using the default template (markdown format).
+func (d *Document) RenderMarkdownTemplate(bucket, fileDir, templateSpec string) (string, error) {
 	urlPrefix := release.URLPrefixForBucket(bucket)
+
 	fileMetadata, err := fetchMetadata(fileDir, urlPrefix, d.CurrentRevision)
 	if err != nil {
 		return "", errors.Wrap(err, "fetching downloads metadata")
 	}
 	d.Downloads = fileMetadata
 
+	goTemplate, err := d.template(templateSpec)
+	if err != nil {
+		return "", errors.Wrap(err, "fetching template")
+	}
 	tmpl, err := template.New("markdown").
 		Funcs(template.FuncMap{"prettyKind": prettyKind}).
 		Parse(goTemplate)
@@ -241,8 +282,34 @@ func (d *Document) RenderMarkdownTemplate(bucket, fileDir, goTemplate string) (s
 	return s.String(), nil
 }
 
+// template returns either the default template or a template from file. The
+// `templateSpec` must be in the format of
+// `go-template:{default|path/to/template.ext}`
+func (d *Document) template(templateSpec string) (string, error) {
+	if templateSpec == options.FormatSpecDefaultGoTemplate {
+		return defaultReleaseNotesTemplate, nil
+	}
+
+	if !strings.HasPrefix(templateSpec, "go-template:") {
+		return "", errors.Errorf("bad template format: expected format %q, got %q", "go-template:path/to/file.txt", templateSpec)
+	}
+	templatePath := strings.TrimPrefix(templateSpec, "go-template:")
+
+	b, err := ioutil.ReadFile(templatePath)
+	if err != nil {
+		return "", errors.Wrap(err, "reading template")
+	}
+	if len(b) == 0 {
+		return "", errors.Errorf("template %q must be non-empty", templatePath)
+	}
+
+	return string(b), nil
+}
+
 // RenderMarkdown accepts a Document and writes a version of that document to
 // supplied io.Writer in markdown format.
+//
+// Deprecated: Prefer using the golang template instead of markdown. Will be removed in #1019
 func (d *Document) RenderMarkdown(bucket, tars, prevTag, newTag string) (string, error) {
 	o := &strings.Builder{}
 	if err := CreateDownloadsTable(o, bucket, tars, prevTag, newTag); err != nil {
@@ -281,17 +348,18 @@ func (d *Document) RenderMarkdown(bucket, tars, prevTag, newTag string) (string,
 	}
 
 	// each Kind gets a section
-	sortedKinds := sortKinds(d.NotesByKind)
-	if len(sortedKinds) > 0 {
+	if len(d.Notes) > 0 {
 		o.WriteString("## Changes by Kind")
 		nlnl()
-		for _, kind := range sortedKinds {
+
+		d.Notes.Sort(kindPriority)
+		for _, category := range d.Notes {
 			o.WriteString("### ")
-			o.WriteString(prettyKind(kind))
+			o.WriteString(prettyKind(category.Kind))
 			nlnl()
 
-			sort.Strings(d.NotesByKind[kind])
-			for _, note := range d.NotesByKind[kind] {
+			sort.Strings(*category.NoteEntries)
+			for _, note := range *category.NoteEntries {
 				writeNote(note)
 			}
 			nl()
