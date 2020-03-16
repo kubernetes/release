@@ -7272,7 +7272,7 @@
      "name": "GitHub",
      "email": "noreply@github.com"
     },
-    "message": "Merge pull request #87529 from cheftako/master\n\nAdded relevent approvers and reviewers for gci.",
+    "message": "Merge pull request #87529 from cheftako/master\n\nAdded relevant approvers and reviewers for gci.",
     "tree": {
      "sha": "a4570a3866b2ca807b96f383d06b1a25ab618bd6"
     },
@@ -7281,7 +7281,7 @@
      "verified": true,
      "reason": "valid",
      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJeLJuuCRBK7hj4Ov3rIwAAdHIIAFidsqM54e9AyN3ZMi55ANqI\nh7GsK6GL8AgagvBILZnqu666mUhhHeubiVUM+UtcX0A0WtnxJPOU6b8uND6Mi/jO\nEk+0KqbhiRMtM0g0+F1CLif+PCSzbBXDXrpFftI2nEqZq+QpLl1rpZBXc/AaxwNn\nmXT737l3E3sIUP1/CHBMmsMpbk5MEyj4YdanpZ2AJyUj73LelrSC9F2BpxLLImfW\nmTlpd+Kvqn25HZEmpS2YHOv8FKuhCyx0Bf/Er+BHpOlZ2jquJ5ItQYFsSrRLEDB2\nUgA4odDklkE3Os2Kign0OGke7COPS96HjyCxoZn5UbFyxutm+Cpdf/02Qx9tdy4=\n=W+o8\n-----END PGP SIGNATURE-----\n",
-     "payload": "tree a4570a3866b2ca807b96f383d06b1a25ab618bd6\nparent 089d3e63e517cb7f4b764a4cd6bbb48a1d5e4b15\nparent b2f32367710436f6d2d1a1bd42cf8cbe0db239c9\nauthor Kubernetes Prow Robot \u003ck8s-ci-robot@users.noreply.github.com\u003e 1579981742 -0800\ncommitter GitHub \u003cnoreply@github.com\u003e 1579981742 -0800\n\nMerge pull request #87529 from cheftako/master\n\nAdded relevent approvers and reviewers for gci."
+     "payload": "tree a4570a3866b2ca807b96f383d06b1a25ab618bd6\nparent 089d3e63e517cb7f4b764a4cd6bbb48a1d5e4b15\nparent b2f32367710436f6d2d1a1bd42cf8cbe0db239c9\nauthor Kubernetes Prow Robot \u003ck8s-ci-robot@users.noreply.github.com\u003e 1579981742 -0800\ncommitter GitHub \u003cnoreply@github.com\u003e 1579981742 -0800\n\nMerge pull request #87529 from cheftako/master\n\nAdded relevant approvers and reviewers for gci."
     },
     "comment_count": 0
    },

@@ -678,7 +678,7 @@
      "name": "GitHub",
      "email": "noreply@github.com"
     },
-    "message": "Merge pull request #87781 from caesarxuchao/fix-webhook-image-bugs\n\nOnly set admission review reponse patch type if the patch is not empty",
+    "message": "Merge pull request #87781 from caesarxuchao/fix-webhook-image-bugs\n\nOnly set admission review response patch type if the patch is not empty",
     "tree": {
      "sha": "35eefed6ac161477c392923cb2437978fe7cfc84"
     },
@@ -687,7 +687,7 @@
      "verified": true,
      "reason": "valid",
      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJeOoYHCRBK7hj4Ov3rIwAAdHIIAGPNPFxuInrKl4615DEbqzxL\nAwdXIeKD6EH2Uu9iZoKRfRujUpgMfJDvGBMQdcWzbZnc5f98FHYiuuqGqgEiKpGg\niZEZ5/OTiJ7zXSGA585VcV1JV2p6uR9czqgwmT/RB0HoQK6nrBuV5B3F45+JxzDV\npPAxrj85tSm01j/2qkT8pakGXvDhzzFwzldmQdE0+OVepBXPRmvlg/VN9aHz8vR9\no6uFhU1xkT/YbI31RHgQ9/j0C6OKypa12PDghbelEdd1Y0eG3z7RDRsbmsPOHNZA\nKN2mxQLrN5YNah6JhapSrOHm5Kt9X+vJAvBAX/dHWRTiF8TgtWowFUDlZXOfhfs=\n=LsxS\n-----END PGP SIGNATURE-----\n",
-     "payload": "tree 35eefed6ac161477c392923cb2437978fe7cfc84\nparent 46011891055050ad0ace070b1044abb11ac3f197\nparent 6acc75b4185170eb01be266519faf65e329312e3\nauthor Kubernetes Prow Robot \u003ck8s-ci-robot@users.noreply.github.com\u003e 1580893703 -0800\ncommitter GitHub \u003cnoreply@github.com\u003e 1580893703 -0800\n\nMerge pull request #87781 from caesarxuchao/fix-webhook-image-bugs\n\nOnly set admission review reponse patch type if the patch is not empty"
+     "payload": "tree 35eefed6ac161477c392923cb2437978fe7cfc84\nparent 46011891055050ad0ace070b1044abb11ac3f197\nparent 6acc75b4185170eb01be266519faf65e329312e3\nauthor Kubernetes Prow Robot \u003ck8s-ci-robot@users.noreply.github.com\u003e 1580893703 -0800\ncommitter GitHub \u003cnoreply@github.com\u003e 1580893703 -0800\n\nMerge pull request #87781 from caesarxuchao/fix-webhook-image-bugs\n\nOnly set admission review response patch type if the patch is not empty"
     },
     "comment_count": 0
    },
@@ -1981,7 +1981,7 @@
      "name": "Chao Xu",
      "email": "xuchao@google.com"
     },
-    "message": "Only set admission review reponse patch type if the patch is not empty",
+    "message": "Only set admission review response patch type if the patch is not empty",
     "tree": {
      "sha": "03fd987e601a1ca62fbcefb18f0d7c598399af9c"
     },
@@ -4345,7 +4345,7 @@
      "name": "Davanum Srinivas",
      "email": "davanum@gmail.com"
     },
-    "message": "Enable selinux tags in make targets\n\nIn 24d105995dbd0cb8a67213f5edc8132fdad136cb, a fix was made in bazel\nbased builds to ensure that we add `selinux` tag when we build all\nbinaries especially the `kubelet`. We need to do the same for in our\nhack scripts so things like `make release` will work properly as well.\n\nSome scripts use `GOFLAGS=-tags=providerless` for example, So we should\nsupport the tags to be specified in GOFLAGS as well. We parse out the\ntags from there and ensure selinux is added to the list of tags we used\nfor building the binaries. Note that we add our own `-tags` with the\nfull set of tags and since we specify our parameter at the end, ours\nfull list takes precendence",
+    "message": "Enable selinux tags in make targets\n\nIn 24d105995dbd0cb8a67213f5edc8132fdad136cb, a fix was made in bazel\nbased builds to ensure that we add `selinux` tag when we build all\nbinaries especially the `kubelet`. We need to do the same for in our\nhack scripts so things like `make release` will work properly as well.\n\nSome scripts use `GOFLAGS=-tags=providerless` for example, So we should\nsupport the tags to be specified in GOFLAGS as well. We parse out the\ntags from there and ensure selinux is added to the list of tags we used\nfor building the binaries. Note that we add our own `-tags` with the\nfull set of tags and since we specify our parameter at the end, ours\nfull list takes precedence",
     "tree": {
      "sha": "36e7a12bf30727d423f5ef7884851d2e95fff5eb"
     },
@@ -4354,7 +4354,7 @@
      "verified": true,
      "reason": "valid",
      "signature": "-----BEGIN PGP SIGNATURE-----\n\niF0EABECAB0WIQSmfl/YgOsInyMXeWeA2Dp5YQO/WQUCXjSS1AAKCRCA2Dp5YQO/\nWRJAAJ9dSFoG9zTTkDZ2TnJf6Mea+lIEigCdGNfV+d/+m/GIalIOLYNz7i75GRE=\n=dg/c\n-----END PGP SIGNATURE-----",
-     "payload": "tree 36e7a12bf30727d423f5ef7884851d2e95fff5eb\nparent b32725b80bf63a4556a31fa19b26e85a28f48a27\nauthor Davanum Srinivas \u003cdavanum@gmail.com\u003e 1580319968 -0500\ncommitter Davanum Srinivas \u003cdavanum@gmail.com\u003e 1580503724 -0500\n\nEnable selinux tags in make targets\n\nIn 24d105995dbd0cb8a67213f5edc8132fdad136cb, a fix was made in bazel\nbased builds to ensure that we add `selinux` tag when we build all\nbinaries especially the `kubelet`. We need to do the same for in our\nhack scripts so things like `make release` will work properly as well.\n\nSome scripts use `GOFLAGS=-tags=providerless` for example, So we should\nsupport the tags to be specified in GOFLAGS as well. We parse out the\ntags from there and ensure selinux is added to the list of tags we used\nfor building the binaries. Note that we add our own `-tags` with the\nfull set of tags and since we specify our parameter at the end, ours\nfull list takes precendence\n"
+     "payload": "tree 36e7a12bf30727d423f5ef7884851d2e95fff5eb\nparent b32725b80bf63a4556a31fa19b26e85a28f48a27\nauthor Davanum Srinivas \u003cdavanum@gmail.com\u003e 1580319968 -0500\ncommitter Davanum Srinivas \u003cdavanum@gmail.com\u003e 1580503724 -0500\n\nEnable selinux tags in make targets\n\nIn 24d105995dbd0cb8a67213f5edc8132fdad136cb, a fix was made in bazel\nbased builds to ensure that we add `selinux` tag when we build all\nbinaries especially the `kubelet`. We need to do the same for in our\nhack scripts so things like `make release` will work properly as well.\n\nSome scripts use `GOFLAGS=-tags=providerless` for example, So we should\nsupport the tags to be specified in GOFLAGS as well. We parse out the\ntags from there and ensure selinux is added to the list of tags we used\nfor building the binaries. Note that we add our own `-tags` with the\nfull set of tags and since we specify our parameter at the end, ours\nfull list takes precedence\n"
     },
     "comment_count": 0
    },

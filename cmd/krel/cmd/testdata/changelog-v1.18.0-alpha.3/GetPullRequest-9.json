@@ -4,7 +4,7 @@
   "number": 87781,
   "state": "closed",
   "locked": false,
-  "title": "Only set admission review reponse patch type if the patch is not empty",
+  "title": "Only set admission review response patch type if the patch is not empty",
   "body": "Otherwise it fails the webhook call [here](https://github.com/kubernetes/kubernetes/blob/845b23232125caeb67eb30659ff482404a3d3735/staging/src/k8s.io/apiserver/pkg/admission/plugin/webhook/request/admissionreview.go#L68).\r\n\r\n/kind bug\r\n/sig api-machinery\r\n/release-note-none\r\n/assign @jennybuckley ",
   "created_at": "2020-02-03T19:01:55Z",
   "updated_at": "2020-02-05T09:08:29Z",
