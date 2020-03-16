@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -160,4 +161,56 @@ func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 		require.Contains(t, string(changelog), minorReleaseExpectedTOC)
 		require.Contains(t, string(changelog), minorReleaseExpectedContent)
 	}
+}
+
+func TestNewRCRelease(t *testing.T) {
+	// Given
+	s := newSUT(t)
+	defer s.cleanup(t)
+
+	ro := s.getRootOptions()
+	ro.nomock = true
+
+	releaseBranch := "release-1.16"
+	co := s.getChangelogOptions("v1.16.0-rc.1")
+	co.branch = releaseBranch
+
+	// Prepare repo
+	changelogIter := func(callback func(string)) {
+		for i := 0; i < 6; i++ {
+			callback(filepath.Join(
+				repoChangelogDir, fmt.Sprintf("CHANGELOG-1.1%d.md", i),
+			))
+		}
+	}
+
+	require.Nil(t, s.repo.Checkout(releaseBranch))
+	changelogIter(func(filename string) {
+		require.Nil(t,
+			ioutil.WriteFile(
+				filepath.Join(s.repo.Dir(), filename),
+				[]byte("Some content"),
+				0644,
+			),
+		)
+		require.Nil(t, s.repo.Add(filename))
+	})
+	require.Nil(t, s.repo.Commit("Adding other changelog files"))
+	require.Nil(t, s.repo.Checkout(git.Master))
+
+	// When
+	require.Nil(t, runChangelog(co, ro))
+
+	// Then
+	// Verify local results
+	require.Nil(t, s.repo.Checkout(releaseBranch))
+	changelogIter(func(filename string) {
+		_, err := os.Stat(filename)
+		require.True(t, os.IsNotExist(err))
+	})
+	changelog, err := ioutil.ReadFile(
+		filepath.Join(s.repo.Dir(), repoChangelogDir, "CHANGELOG-1.16.md"),
+	)
+	require.Nil(t, err)
+	require.Contains(t, string(changelog), rcReleaseExpectedTOC)
 }

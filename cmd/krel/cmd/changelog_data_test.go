@@ -1222,3 +1222,7 @@ are trying to monitor for whether iptables updates are failing, the
 
   </body>
 </html>`
+
+const rcReleaseExpectedTOC = `<!-- BEGIN MUNGE: GENERATED_TOC -->
+
+- [v1.16.0-rc.1](#v1160-rc1)`

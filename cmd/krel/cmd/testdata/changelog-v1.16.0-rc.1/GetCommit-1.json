@@ -1,0 +1,34 @@
+{
+ "Result": {
+  "sha": "92e71139aa16398e5c1aa4195cdec98891cc44fc",
+  "author": {
+   "date": "2020-03-12T22:26:18Z",
+   "name": "Anago GCB",
+   "email": "nobody@k8s.io"
+  },
+  "committer": {
+   "date": "2020-03-12T22:26:18Z",
+   "name": "Anago GCB",
+   "email": "nobody@k8s.io"
+  },
+  "message": "Update CHANGELOG/CHANGELOG-1.16.md for v1.16.8",
+  "tree": {
+   "sha": "33dc2cd3cbb3f6609a51dc39b33c916586f08aac"
+  },
+  "parents": [
+   {
+    "sha": "571bdcf8e28cf7959bfb4c7ea82a8b2a73729625",
+    "html_url": "https://github.com/kubernetes/kubernetes/commit/571bdcf8e28cf7959bfb4c7ea82a8b2a73729625",
+    "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/571bdcf8e28cf7959bfb4c7ea82a8b2a73729625"
+   }
+  ],
+  "html_url": "https://github.com/kubernetes/kubernetes/commit/92e71139aa16398e5c1aa4195cdec98891cc44fc",
+  "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/92e71139aa16398e5c1aa4195cdec98891cc44fc",
+  "verification": {
+   "verified": false,
+   "reason": "unsigned"
+  },
+  "node_id": "MDY6Q29tbWl0MjA1ODA0OTg6OTJlNzExMzlhYTE2Mzk4ZTVjMWFhNDE5NWNkZWM5ODg5MWNjNDRmYw=="
+ },
+ "LastPage": 0
+}
