@@ -119,7 +119,7 @@ func init() {
 func runChangelog(opts *changelogOptions, rootOpts *rootOptions) error {
 	tag, err := util.TagStringToSemver(opts.tag)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "unable to parse tag %s", opts.tag)
 	}
 
 	// Automatically set the branch to a release branch if not provided
@@ -438,9 +438,11 @@ func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
 			return errors.Wrapf(err, "checking out release branch %s", branch)
 		}
 
-		// Remove all other changelog files
-		if err := repo.Rm(true, repoChangelogDir+"/CHANGELOG-*.md"); err != nil {
-			return errors.Wrap(err, "unable to remove CHANGELOG-*.md files")
+		// Remove all other changelog files if we’re on the first RC
+		if len(tag.Pre) > 1 && tag.Pre[0].String() == "rc" && tag.Pre[1].String() == "1" {
+			if err := repo.Rm(true, repoChangelogDir+"/CHANGELOG-*.md"); err != nil {
+				return errors.Wrap(err, "unable to remove CHANGELOG-*.md files")
+			}
 		}
 
 		logrus.Info("Checking out changelog from master branch")

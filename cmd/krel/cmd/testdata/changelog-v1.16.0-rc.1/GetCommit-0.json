@@ -1,0 +1,34 @@
+{
+ "Result": {
+  "sha": "571bdcf8e28cf7959bfb4c7ea82a8b2a73729625",
+  "author": {
+   "date": "2020-03-12T20:51:36Z",
+   "name": "Anago GCB",
+   "email": "nobody@k8s.io"
+  },
+  "committer": {
+   "date": "2020-03-12T20:51:36Z",
+   "name": "Anago GCB",
+   "email": "nobody@k8s.io"
+  },
+  "message": "Release commit for Kubernetes v1.16.9-beta.0",
+  "tree": {
+   "sha": "fb22510b1c2105e736af8e9242cbc65ec5dea885"
+  },
+  "parents": [
+   {
+    "sha": "ec6eb119b81be488b030e849b9e64fda4caaf33c",
+    "html_url": "https://github.com/kubernetes/kubernetes/commit/ec6eb119b81be488b030e849b9e64fda4caaf33c",
+    "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/ec6eb119b81be488b030e849b9e64fda4caaf33c"
+   }
+  ],
+  "html_url": "https://github.com/kubernetes/kubernetes/commit/571bdcf8e28cf7959bfb4c7ea82a8b2a73729625",
+  "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/571bdcf8e28cf7959bfb4c7ea82a8b2a73729625",
+  "verification": {
+   "verified": false,
+   "reason": "unsigned"
+  },
+  "node_id": "MDY6Q29tbWl0MjA1ODA0OTg6NTcxYmRjZjhlMjhjZjc5NTliZmI0YzdlYTgyYThiMmE3MzcyOTYyNQ=="
+ },
+ "LastPage": 0
+}
