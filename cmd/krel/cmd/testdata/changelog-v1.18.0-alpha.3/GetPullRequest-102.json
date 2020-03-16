@@ -4,7 +4,7 @@
   "number": 87529,
   "state": "closed",
   "locked": false,
-  "title": "Added relevent approvers and reviewers for gci.",
+  "title": "Added relevant approvers and reviewers for gci.",
   "body": "**What type of PR is this?**\r\n/kind cleanup\r\n\r\n**What this PR does / why we need it**:\r\nAdding new approver and reviewers for the gci scripts.\r\n\r\n**Which issue(s) this PR fixes**:\r\nFixes # N/A\r\n\r\n**Special notes for your reviewer**:\r\n\r\n\r\n```release-note\r\nNONE\r\n```\r\n",
   "created_at": "2020-01-24T17:33:48Z",
   "updated_at": "2020-01-25T19:49:04Z",
