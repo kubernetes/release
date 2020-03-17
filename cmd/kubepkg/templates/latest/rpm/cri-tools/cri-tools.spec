@@ -19,7 +19,7 @@ Command-line utility for interacting with a container runtime.
 # TODO: Do we need these?
 #%autosetup
 #%build
-#%configure
+#%%configure
 #%make_build
 
 %install

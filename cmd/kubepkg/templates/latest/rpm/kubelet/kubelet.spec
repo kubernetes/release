@@ -27,7 +27,7 @@ cp -p %SOURCE0 %{_builddir}/
 # TODO: Do we need these?
 #%autosetup
 #%build
-#%configure
+#%%configure
 #%make_build
 
 %install

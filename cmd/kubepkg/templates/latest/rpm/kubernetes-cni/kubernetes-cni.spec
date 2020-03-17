@@ -20,7 +20,7 @@ Binaries required to provision container networking.
 # TODO: Do we need these?
 #%autosetup
 #%build
-#%configure
+#%%configure
 #%make_build
 
 %install
