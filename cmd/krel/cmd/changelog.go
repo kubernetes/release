@@ -232,8 +232,6 @@ func generateReleaseNotes(opts *changelogOptions, branch, startRev, endRev strin
 	notesOptions.StartRev = startRev
 	notesOptions.EndSHA = endRev
 	notesOptions.EndRev = opts.tag
-	notesOptions.GithubOrg = git.DefaultGithubOrg
-	notesOptions.GithubRepo = git.DefaultGithubRepo
 	notesOptions.RepoPath = rootOpts.repoPath
 	notesOptions.ReleaseBucket = opts.bucket
 	notesOptions.ReleaseTars = opts.tars

@@ -38,9 +38,15 @@ import (
 	"k8s.io/release/pkg/util"
 )
 
+type releaseNotesOptions struct {
+	outputFile      string
+	tableOfContents bool
+}
+
 var (
-	opts = options.New()
-	cmd  = &cobra.Command{
+	releaseNotesOpts = &releaseNotesOptions{}
+	opts             = options.New()
+	cmd              = &cobra.Command{
 		Short:         "release-notes - The Kubernetes Release Notes Generator",
 		Use:           "release-notes",
 		SilenceUsage:  true,
@@ -72,7 +78,7 @@ func init() {
 	// output contains the path on the filesystem to where the resultant
 	// release notes should be printed.
 	cmd.PersistentFlags().StringVar(
-		&opts.Output,
+		&releaseNotesOpts.outputFile,
 		"output",
 		util.EnvDefault("OUTPUT", ""),
 		"The path to the where the release notes will be printed",
@@ -196,7 +202,7 @@ func init() {
 	)
 
 	cmd.PersistentFlags().BoolVar(
-		&opts.TableOfContents,
+		&releaseNotesOpts.tableOfContents,
 		"toc",
 		util.IsEnvSet("TOC"),
 		"Enable the rendering of the table of contents",
@@ -239,8 +245,8 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 	var output *os.File
 	var existingNotes notes.ReleaseNotes
 
-	if opts.Output != "" {
-		output, err = os.OpenFile(opts.Output, os.O_RDWR|os.O_CREATE, os.FileMode(0644))
+	if releaseNotesOpts.outputFile != "" {
+		output, err = os.OpenFile(releaseNotesOpts.outputFile, os.O_RDWR|os.O_CREATE, os.FileMode(0644))
 		if err != nil {
 			return errors.Wrapf(err, "opening the supplied output file")
 		}
@@ -302,7 +308,7 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 			return errors.Wrapf(err, "rendering release note document with template")
 		}
 
-		if opts.TableOfContents {
+		if releaseNotesOpts.tableOfContents {
 			toc, err := notes.GenerateTOC(markdown)
 			if err != nil {
 				return errors.Wrap(err, "generating table of contents")
