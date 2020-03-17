@@ -17,11 +17,14 @@ limitations under the License.
 package cmd
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -42,6 +45,14 @@ import (
 const (
 	// draftFilename filename for the release notes draft
 	draftFilename = "release-notes-draft.md"
+	// defaultKubernetesSigsOrg GitHub org owner of the release-notes repo
+	defaultKubernetesSigsOrg = "kubernetes-sigs"
+	// defaultKubernetesSigsRepo relnotes.k8s.io repository name
+	defaultKubernetesSigsRepo = "release-notes"
+	// userForkName The name we will give to the user's remote when adding it to repos
+	userForkName = "userfork"
+	// assetsFilePath Path to the assets.ts file
+	assetsFilePath = "src/environments/assets.ts"
 )
 
 // releaseNotesCmd represents the subcommand for `krel release-notes`
@@ -76,13 +87,17 @@ permissions to your fork of k/sig-release and k-sigs/release-notes.`,
 }
 
 type releaseNotesOptions struct {
-	tag                string
-	draftOrg           string
-	draftRepo          string
-	createDraftPR      bool
-	outputDir          string
-	sigreleaseForkPath string
-	Format             string
+	tag                    string
+	draftOrg               string
+	draftRepo              string
+	createDraftPR          bool
+	createWebsitePR        bool
+	outputDir              string
+	sigreleaseForkPath     string
+	kubernetessigsForkPath string
+	Format                 string
+	websiteOrg             string
+	websiteRepo            string
 }
 
 type releaseNotesResult struct {
@@ -122,6 +137,27 @@ func init() {
 		"create the Release Notes Draft PR. --draft-org and --draft-repo must be set along with this option",
 	)
 
+	releaseNotesCmd.PersistentFlags().StringVar(
+		&releaseNotesOpts.websiteOrg,
+		"website-org",
+		"",
+		"a Github organization owner of the fork of kuberntets-sigs/release-notes where the Website PR will be created",
+	)
+
+	releaseNotesCmd.PersistentFlags().StringVar(
+		&releaseNotesOpts.websiteRepo,
+		"website-repo",
+		"release-notes",
+		"the name of the fork of kuberntets-sigs/release-notes, the Release Notes Draft PR will be created from this repository",
+	)
+
+	releaseNotesCmd.PersistentFlags().BoolVar(
+		&releaseNotesOpts.createWebsitePR,
+		"create-website-pr",
+		false,
+		"generate the Releas Notes to a local fork of relnotes.k8s.io and create a PR.  --draft-org and --draft-repo must be set along with this option",
+	)
+
 	releaseNotesCmd.PersistentFlags().StringVarP(
 		&releaseNotesOpts.outputDir,
 		"output-dir",
@@ -138,10 +174,17 @@ func init() {
 	)
 
 	releaseNotesCmd.PersistentFlags().StringVar(
+		&releaseNotesOpts.kubernetessigsForkPath,
+		"kubernetes-sigs-fork-path",
+		filepath.Join(os.TempDir(), "k8s-sigs"),
+		"fork kubernetes-sigs/release-notes and output a copy of the json release notes to this directory",
+	)
+
+	releaseNotesCmd.PersistentFlags().StringVar(
 		&releaseNotesOpts.sigreleaseForkPath,
 		"sigrelease-fork-path",
 		filepath.Join(os.TempDir(), "k8s-sigrelease"),
-		"output a copy of the release notes to this directory",
+		"fork k/sig-release and output a copy of the release notes draft to this directory",
 	)
 
 	rootCmd.AddCommand(releaseNotesCmd)
@@ -169,26 +212,55 @@ func runReleaseNotes() (err error) {
 		Patch: 0,
 		Pre:   []semver.PRVersion{{VersionStr: "rc.1"}},
 	})
-	logrus.Infof("Using start tag %v", start)
-	logrus.Infof("Using end tag %v", tag)
 
-	if releaseNotesOpts.createDraftPR {
-		if err = validateDraftPROptions(); err != nil {
+	var result *releaseNotesResult
+
+	// Create the PR for relnotes.k8s.io
+	if releaseNotesOpts.createWebsitePR {
+		// Check cmd line options
+		if err = validateWebsitePROptions(); err != nil {
 			return errors.Wrap(err, "validating PR command line options")
 		}
+
+		// Generate the release notes for ust the current tag
+		result, err = releaseNotesFor(tag)
+		if err != nil {
+			return errors.Wrapf(err, "generating release notes")
+		}
+
+		// Run the website PR process
+		if err := createWebsitePR(tag, result); err != nil {
+			return errors.Wrapf(err, "generating releasenotes for tag %s", tag)
+		}
+		return nil
 	}
 
-	result, err := releaseNotesFrom(start)
-	if err != nil {
-		return errors.Wrapf(err, "generating release notes")
-	}
-
-	// Create RN draft PR
+	// Create the PR for the Release Notes Draft in k/sig-release
 	if releaseNotesOpts.createDraftPR {
+		// Check cmd line options
+		if releaseNotesOpts.createDraftPR {
+			if err = validateDraftPROptions(); err != nil {
+				return errors.Wrap(err, "validating PR command line options")
+			}
+		}
+
+		// Generate the notes for the current version
+		result, err = releaseNotesFrom(start)
+		if err != nil {
+			return errors.Wrapf(err, "while generating the release notes for tag %s", start)
+		}
+
+		// Create the Draft PR Process
 		if err := createDraftPR(tag, result); err != nil {
 			return errors.Wrap(err, "failed to create release notes draft PR")
 		}
 		return nil
+	}
+
+	// Otherwise, generate the release notes to a file
+	result, err = releaseNotesFrom(start)
+	if err != nil {
+		return errors.Wrap(err, "generating release notes to file")
 	}
 
 	switch releaseNotesOpts.Format {
@@ -206,25 +278,50 @@ func runReleaseNotes() (err error) {
 		return errors.Errorf("%q is an unsupported format", releaseNotesOpts.Format)
 	}
 
-	// TODO: implement PR creation for k-sigs/release-notes
 	return nil
 }
 
 // validateDraftPROptions checks if we have all needed parameters to create the Release Notes PR
 func validateDraftPROptions() error {
 	if releaseNotesOpts.createDraftPR {
+		// Check if --create-website-pr is set
+		if releaseNotesOpts.createWebsitePR {
+			return errors.New("Cannot create release notes draft if --create-website-pr is set")
+		}
+
 		// Check if --draft-org is set
 		if releaseNotesOpts.draftOrg == "" {
-			logrus.Warn("cannot generate the Release Notes draft PR without --draft-org")
+			logrus.Warn("cannot generate the Release Notes PR without --draft-org")
 		}
 
 		// Check if --draft-repo is set
 		if releaseNotesOpts.draftRepo == "" {
-			logrus.Warn("cannot generate the Release Notes draft PR without --draft-repo")
+			logrus.Warn("cannot generate the Release Notes PR without --draft-repo")
 		}
 
 		if releaseNotesOpts.draftOrg == "" || releaseNotesOpts.draftRepo == "" {
-			return errors.New("To generate the release notes draft you must define both --draft-org and --draft-repo")
+			return errors.New("To generate the release notes PR you must define both --draft-org and --draft-repo")
+		}
+	}
+
+	return nil
+}
+
+// validateWebsitePROptions checks if we have all needed parameters to create the Release Notes PR
+func validateWebsitePROptions() error {
+	if releaseNotesOpts.createWebsitePR {
+		// Check if --website-org is set
+		if releaseNotesOpts.websiteOrg == "" {
+			logrus.Warn("cannot generate the Website PR without --website-org")
+		}
+
+		// Check if --website-repo is set
+		if releaseNotesOpts.websiteRepo == "" {
+			logrus.Warn("cannot generate the Website PR without --website-repo")
+		}
+
+		if releaseNotesOpts.websiteOrg == "" || releaseNotesOpts.websiteRepo == "" {
+			return errors.New("To generate the website PR you must define both --website-org and --website-repo")
 		}
 	}
 	return nil
@@ -239,73 +336,238 @@ func createDraftPR(tag string, result *releaseNotesResult) error {
 
 	branchname := "release-notes-draft-" + tag
 
-	// checkout kubernetes/sig-release
-	sigReleaseRepo, err := git.CloneOrOpenGitHubRepo(releaseNotesOpts.sigreleaseForkPath, git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, true)
-	if err != nil {
-		return errors.Wrap(err, "cloning k/sig-release")
-	}
-
-	// test if the fork remote is already existing
-	const remote = "userfork"
-	url, err := git.GetRepoURL(
-		releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo, true,
+	// Prepare the fork of k/sig-release
+	sigReleaseRepo, err := prepareFork(
+		branchname, releaseNotesOpts.sigreleaseForkPath,
+		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
+		releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo,
 	)
 	if err != nil {
-		return errors.Wrap(err, "unable to get repository URL")
-	}
-	if sigReleaseRepo.HasRemote(remote, url) {
-		logrus.Infof(
-			"Using already existing remote %v (%v) in repository",
-			remote, url,
-		)
-	} else {
-		// add the user's fork as a remote
-		err = sigReleaseRepo.AddRemote(remote, releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo)
-		if err != nil {
-			return errors.Wrap(err, "adding users fork as remote repository")
-		}
-	}
-
-	// verify the branch doesn't already exist on the user's fork
-	err = sigReleaseRepo.HasRemoteBranch(branchname)
-	if err == nil {
-		return errors.Errorf("remote repo already has a branch named %s", branchname)
-	}
-
-	// checkout the new branch
-	err = sigReleaseRepo.Checkout("-b", branchname)
-	if err != nil {
-		return errors.Wrapf(err, "creating new branch %s", branchname)
+		return errors.Wrap(err, "preparing local fork of kubernetes/sig-release")
 	}
 
 	// generate the notes
 	targetdir := filepath.Join(sigReleaseRepo.Dir(), "releases", fmt.Sprintf("release-%d.%d", s.Major, s.Minor))
-	logrus.Debugf("Release notes markdown will be written to %s", targetdir)
+	logrus.Debugf("release notes markdown will be written to %v", targetdir)
 	err = ioutil.WriteFile(filepath.Join(targetdir, draftFilename), []byte(result.markdown), 0644)
 	if err != nil {
 		return errors.Wrapf(err, "writing release notes draft")
 	}
 
-	// commit the results
-	err = sigReleaseRepo.Add(filepath.Join("releases", fmt.Sprintf("release-%d.%d", s.Major, s.Minor), draftFilename))
-	if err != nil {
+	// add the updated file
+	if err := sigReleaseRepo.Add(filepath.Join("releases", fmt.Sprintf("release-%d.%d", s.Major, s.Minor), draftFilename)); err != nil {
 		return errors.Wrap(err, "adding release notes draft to staging area")
 	}
 
-	err = sigReleaseRepo.Commit("Release Notes draft for k/k " + tag)
-	if err != nil {
-		return errors.Wrapf(err, "Error creating commit in %s/%s", releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo)
+	// commit the changes
+	if err := sigReleaseRepo.UserCommit("Release Notes draft for k/k " + tag); err != nil {
+		return errors.Wrapf(err, "creating commit in %v/%v", releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo)
 	}
 
-	// push to fork
-	logrus.Infof("Pushing release notes draft to %s/%s", releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo)
-	err = sigReleaseRepo.PushToRemote(remote, branchname)
-	if err != nil {
-		return errors.Wrapf(err, "pushing changes to %s/%s", releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo)
+	// push to the user's remote
+	logrus.Infof("Pushing modified release notes draft to %v/%v", releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo)
+	if err := sigReleaseRepo.PushToRemote(userForkName, branchname); err != nil {
+		return errors.Wrapf(err, "pushing %v to remote", userForkName)
 	}
 
 	// TODO: Call github API and create PR against k/sig-release
 	return nil
+}
+
+// prepareFork Prepare a branch a repo
+func prepareFork(branchName, repoPath, upstreamOrg, upstreamRepo, myOrg, myRepo string) (repo *git.Repo, err error) {
+	// checkout the upstream repository
+	logrus.Infof("cloning/updating repository %s/%s", upstreamOrg, upstreamRepo)
+
+	repo, err = git.CloneOrOpenGitHubRepo(
+		repoPath, upstreamOrg, upstreamRepo, true,
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cloning %s/%s", upstreamOrg, upstreamRepo)
+	}
+
+	// test if the fork remote is already existing
+	url, err := git.GetRepoURL(
+		myOrg, myRepo, true,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get repository URL")
+	}
+	if repo.HasRemote(userForkName, url) {
+		logrus.Infof(
+			"Using already existing remote %v (%v) in repository",
+			userForkName, url,
+		)
+	} else {
+		// add the user's fork as a remote
+		err = repo.AddRemote(userForkName, myOrg, myRepo)
+		if err != nil {
+			return nil, errors.Wrap(err, "adding user's fork as remote repository")
+		}
+	}
+
+	// verify the branch doesn't already exist on the user's fork
+	err = repo.HasRemoteBranch(branchName)
+	if err == nil {
+		return nil, errors.Errorf("remote repo already has a branch named %s", branchName)
+	}
+
+	// checkout the new branch
+	err = repo.Checkout("-b", branchName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating new branch %s", branchName)
+	}
+
+	return repo, nil
+}
+
+// addReferenceToAssetsFile adds a new entry in the assets.ts file in repoPath to include newJsonFile
+func addReferenceToAssetsFile(repoPath, newJSONFile string) error {
+	// Full  filesystem path to the assets.ts file
+	assetsFullPath := filepath.Join(repoPath, assetsFilePath)
+
+	file, err := os.Open(assetsFullPath)
+	if err != nil {
+		return errors.Wrap(err, "opening assets.ts to check for current version")
+	}
+	defer file.Close()
+
+	logrus.Infof("Writing json reference to %s in %s", newJSONFile, assetsFullPath)
+
+	scanner := bufio.NewScanner(file)
+	var assetsBuffer bytes.Buffer
+	assetsFileWasModified := false
+	for scanner.Scan() {
+		// Check if the assets file already has the json notes referenced:
+		if strings.Contains(scanner.Text(), fmt.Sprintf("assets/%s", newJSONFile)) {
+			return errors.New(fmt.Sprintf("assets.ts already has a reference to %s ", newJSONFile))
+		}
+
+		assetsBuffer.WriteString(scanner.Text())
+
+		// Add the current version right after the array export
+		if strings.Contains(scanner.Text(), "export const assets =") {
+			assetsBuffer.WriteString(fmt.Sprintf("  'assets/%s',\n", newJSONFile))
+			assetsFileWasModified = true
+		}
+	}
+
+	// Return an error if the array decalra
+	if !assetsFileWasModified {
+		return errors.New("unable to modify assets file, could not find assets array declaration")
+	}
+
+	// write the modified assets.ts file
+	if err := ioutil.WriteFile(assetsFullPath, assetsBuffer.Bytes(), 0644); err != nil {
+		return errors.Wrap(err, "writing assets.ts file")
+	}
+
+	return nil
+}
+
+// processJSONOutput Runs NPM prettier inside repoPath to format the JSON output
+func processJSONOutput(repoPath string) error {
+	npmpath, err := exec.LookPath("npm")
+	if err != nil {
+		return errors.Wrap(err, "while looking for npm in your path")
+	}
+
+	// run npm install
+	logrus.Info("Installing npm modules, this can take a while")
+	if err := command.NewWithWorkDir(repoPath, npmpath, "install").RunSuccess(); err != nil {
+		return errors.Wrap(err, "running npm install in kubernetes-sigs/release-notes")
+	}
+
+	// run npm prettier
+	logrus.Info("Running npm prettier...")
+	if err := command.NewWithWorkDir(repoPath, npmpath, "run", "prettier").RunSuccess(); err != nil {
+		return errors.Wrap(err, "running npm prettier in kubernetes-sigs/release-notes")
+	}
+
+	return nil
+}
+
+// createWebsitePR creates the JSON version of the release notes and pushes them to a user fork
+func createWebsitePR(tag string, result *releaseNotesResult) error {
+	_, err := util.TagStringToSemver(tag)
+	if err != nil {
+		return errors.Wrapf(err, "no valid tag: %v", tag)
+	}
+
+	jsonNotesFilename := fmt.Sprintf("release-notes-%s.json", tag[1:])
+	branchname := "release-notes-json-" + tag
+
+	// checkout kubernetes-sigs/release-notes
+	k8sSigsRepo, err := prepareFork(
+		branchname, releaseNotesOpts.kubernetessigsForkPath, defaultKubernetesSigsOrg,
+		defaultKubernetesSigsRepo, releaseNotesOpts.websiteOrg, releaseNotesOpts.websiteRepo,
+	)
+	if err != nil {
+		return errors.Wrap(err, "preparing local fork branch")
+	}
+
+	// add a reference to the new json file in assets.ts
+	if err := addReferenceToAssetsFile(k8sSigsRepo.Dir(), jsonNotesFilename); err != nil {
+		return errors.Wrapf(err, "adding %s to assets file", jsonNotesFilename)
+	}
+
+	// generate the notes
+	jsonNotesPath := filepath.Join("src", "assets", jsonNotesFilename)
+	logrus.Debugf("Release notes json file will be written to %s", filepath.Join(k8sSigsRepo.Dir(), jsonNotesPath))
+	err = ioutil.WriteFile(filepath.Join(k8sSigsRepo.Dir(), jsonNotesPath), []byte(result.json), 0644)
+	if err != nil {
+		return errors.Wrapf(err, "writing release notes json file")
+	}
+
+	// Run NPM prettier
+	if err := processJSONOutput(k8sSigsRepo.Dir()); err != nil {
+		return errors.Wrap(err, "while formatting release notes JSON files")
+	}
+
+	// add the modified files & commit the results
+	if err := k8sSigsRepo.Add(jsonNotesPath); err != nil {
+		return errors.Wrap(err, "adding release notes draft to staging area")
+	}
+
+	if err := k8sSigsRepo.Add(filepath.FromSlash(assetsFilePath)); err != nil {
+		return errors.Wrap(err, "adding release notes draft to staging area")
+	}
+
+	if err := k8sSigsRepo.UserCommit(fmt.Sprintf("Patch relnotes.k8s.io with release %s", tag)); err != nil {
+		return errors.Wrapf(err, "Error creating commit in %s/%s", releaseNotesOpts.websiteOrg, releaseNotesOpts.websiteRepo)
+	}
+
+	// push to the user's fork
+	logrus.Infof("Pushing website changes to %s/%s", releaseNotesOpts.websiteOrg, releaseNotesOpts.websiteRepo)
+	if err := k8sSigsRepo.PushToRemote(userForkName, branchname); err != nil {
+		return errors.Wrapf(err, "pushing %v to %v/%v", userForkName, releaseNotesOpts.websiteOrg, releaseNotesOpts.websiteRepo)
+	}
+
+	// TODO: Call github API and create PR against k/sig-release
+	return nil
+}
+
+// tryToFindPreviuousTag gets a release tag and returns the one before it
+func tryToFindPreviuousTag(tag string) (string, error) {
+	url, err := git.GetDefaultKubernetesRepoURL()
+	if err != nil {
+		return "", err
+	}
+
+	status, err := command.New(
+		"git", "ls-remote", "--sort=v:refname",
+		"--tags", url,
+	).
+		Pipe("grep", "-Eo", "v[0-9].[0-9]+.[0-9]+[-a-z0-9\\.]*$").
+		Pipe("grep", "-B1", tag).
+		Pipe("head", "-1").
+		RunSilentSuccessOutput()
+
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(status.Output()), nil
 }
 
 // tryToFindLatestMinorTag looks-up the default k/k remote to find the latest
@@ -331,6 +593,66 @@ func tryToFindLatestMinorTag() (string, error) {
 	return strings.TrimSpace(status.Output()), nil
 }
 
+// releaseNotesFor generate the release notes for a specific tag
+func releaseNotesFor(tag string) (*releaseNotesResult, error) {
+	logrus.Infof("Generating release notes for tag %s", tag)
+
+	// TODO: Change this logic to get the tag from git.PreviousTag
+	startTag, err := tryToFindPreviuousTag(tag)
+	if err != nil {
+		return nil, errors.Wrap(err, "trying to get previous tag")
+	}
+
+	notesOptions := options.New()
+	notesOptions.Branch = git.Master
+	notesOptions.RepoPath = rootOpts.repoPath
+	notesOptions.StartRev = startTag
+	notesOptions.EndRev = tag
+	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
+
+	if err := notesOptions.ValidateAndFinish(); err != nil {
+		return nil, err
+	}
+
+	logrus.Infof("Using start tag %v", startTag)
+	logrus.Infof("Using end tag %v", tag)
+
+	// Fetch the notes
+	gatherer, err := notes.NewGatherer(context.Background(), notesOptions)
+	if err != nil {
+		return nil, errors.Wrapf(err, "retrieving notes gatherer")
+	}
+	releaseNotes, history, err := gatherer.ListReleaseNotes()
+	if err != nil {
+		return nil, errors.Wrapf(err, "listing release notes")
+	}
+
+	doc, err := document.CreateDocument(releaseNotes, history)
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating release note document")
+	}
+
+	// This has to be reworked
+	// Adding nolint since this option was already implemented
+	//nolint:golint,deprecated
+	markdown, err := doc.RenderMarkdown(
+		"", "", notesOptions.StartRev, notesOptions.EndRev,
+	)
+	if err != nil {
+		return nil, errors.Wrapf(
+			err, "rendering release notes to markdown",
+		)
+	}
+
+	// Create the JSON
+	j, err := json.Marshal(releaseNotes)
+	if err != nil {
+		return nil, errors.Wrapf(err, "generating release notes JSON")
+	}
+
+	return &releaseNotesResult{markdown: markdown, json: string(j)}, nil
+}
+
 func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
 	logrus.Info("Generating release notes")
 
@@ -344,6 +666,9 @@ func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
 	if err := notesOptions.ValidateAndFinish(); err != nil {
 		return nil, err
 	}
+
+	logrus.Infof("Using start tag %v", startTag)
+	logrus.Infof("Using end tag %v", releaseNotesOpts.tag)
 
 	// Fetch the notes
 	gatherer, err := notes.NewGatherer(context.Background(), notesOptions)
@@ -361,7 +686,7 @@ func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
 	}
 
 	// Create the markdown
-	//nolint:golint,deprecated // RenderMarkdown is soft deprecated and will be removed in #1019. Use RenderMarkdownTemplate
+	//nolint:golint,deprecated
 	markdown, err := doc.RenderMarkdown(
 		"", "", notesOptions.StartRev, notesOptions.EndRev,
 	)

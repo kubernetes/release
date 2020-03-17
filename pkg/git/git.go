@@ -731,15 +731,49 @@ func (r *Repo) Add(filename string) error {
 	return nil
 }
 
+// UserCommit makes a commit using the local user's config
+func (r *Repo) UserCommit(msg string) error {
+	// amend the latest commit
+	userName, err := command.New("git", "config", "--get", "user.name").RunSuccessOutput()
+	if err != nil {
+		return errors.Wrap(err, "while trying to get the user's name")
+	}
+
+	userEmail, err := command.New("git", "config", "--get", "user.email").RunSuccessOutput()
+	if err != nil {
+		return errors.Wrap(err, "while trying to get the user's name")
+	}
+
+	if err := r.CommitWithOptions(msg, &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  userName.OutputTrimNL(),
+			Email: userEmail.OutputTrimNL(),
+			When:  time.Now(),
+		},
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Commit commits the current repository state
 func (r *Repo) Commit(msg string) error {
-	if _, err := r.worktree.Commit(msg, &git.CommitOptions{
+	if err := r.CommitWithOptions(msg, &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "Anago GCB",
 			Email: "nobody@k8s.io",
 			When:  time.Now(),
 		},
 	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// CommitWithOptions commits the current repository state
+func (r *Repo) CommitWithOptions(msg string, options *git.CommitOptions) error {
+	if _, err := r.worktree.Commit(msg, options); err != nil {
 		return err
 	}
 	return nil
