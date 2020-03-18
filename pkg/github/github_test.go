@@ -38,7 +38,8 @@ func newSUT() (*github.GitHub, *githubfakes.FakeClient) {
 
 func TestLatestGitHubTagsPerBranchSuccessEmptyResult(t *testing.T) {
 	// Given
-	sut, _ := newSUT()
+	sut, client := newSUT()
+	client.ListTagsReturns(nil, &gogithub.Response{NextPage: 0}, nil)
 
 	// When
 	res, err := sut.LatestGitHubTagsPerBranch()
@@ -58,7 +59,31 @@ func TestLatestGitHubTagsPerBranchSuccessAlphaAfterMinor(t *testing.T) {
 	client.ListTagsReturns([]*gogithub.RepositoryTag{
 		{Name: &tag1},
 		{Name: &tag2},
-	}, nil, nil)
+	}, &gogithub.Response{NextPage: 0}, nil)
+
+	// When
+	res, err := sut.LatestGitHubTagsPerBranch()
+
+	// Then
+	require.Nil(t, err)
+	require.Len(t, res, 2)
+	require.Equal(t, tag1, res[git.Master])
+	require.Equal(t, tag2, res["release-1.18"])
+}
+
+func TestLatestGitHubTagsPerBranchMultiplePages(t *testing.T) {
+	// Given
+	var (
+		tag1 = "v1.18.0-alpha.2"
+		tag2 = "v1.18.0"
+	)
+	sut, client := newSUT()
+	client.ListTagsReturnsOnCall(0, []*gogithub.RepositoryTag{
+		{Name: &tag1},
+	}, &gogithub.Response{NextPage: 1}, nil)
+	client.ListTagsReturnsOnCall(1, []*gogithub.RepositoryTag{
+		{Name: &tag2},
+	}, &gogithub.Response{NextPage: 0}, nil)
 
 	// When
 	res, err := sut.LatestGitHubTagsPerBranch()
@@ -92,7 +117,7 @@ func TestLatestGitHubTagsPerBranchSuccessMultipleForSameBranch(t *testing.T) {
 		{Name: &tag6},
 		{Name: &tag7},
 		{Name: &tag8},
-	}, nil, nil)
+	}, &gogithub.Response{NextPage: 0}, nil)
 
 	// When
 	res, err := sut.LatestGitHubTagsPerBranch()
@@ -121,7 +146,7 @@ func TestLatestGitHubTagsPerBranchSuccessPatchReleases(t *testing.T) {
 		{Name: &tag1},
 		{Name: &tag2},
 		{Name: &tag3},
-	}, nil, nil)
+	}, &gogithub.Response{NextPage: 0}, nil)
 
 	// When
 	res, err := sut.LatestGitHubTagsPerBranch()
@@ -149,20 +174,20 @@ func TestLatestGitHubTagsPerBranchFailedOnList(t *testing.T) {
 	require.Nil(t, res)
 }
 
-func TestLatestGitHubTagsPerBranchFailedNonSemverTag(t *testing.T) {
+func TestLatestGitHubTagsPerBranchSkippedNonSemverTag(t *testing.T) {
 	// Given
 	var tag1 = "not a semver tag"
 	sut, client := newSUT()
 	client.ListTagsReturns([]*gogithub.RepositoryTag{
 		{Name: &tag1},
-	}, nil, nil)
+	}, &gogithub.Response{NextPage: 0}, nil)
 
 	// When
 	res, err := sut.LatestGitHubTagsPerBranch()
 
 	// Then
-	require.NotNil(t, err)
-	require.Nil(t, res)
+	require.Nil(t, err)
+	require.Empty(t, res)
 }
 
 func TestReleasesSuccessEmpty(t *testing.T) {
