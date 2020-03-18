@@ -213,11 +213,22 @@ type TagsPerBranch map[string]string
 // - x.y.0-beta.z releases are only associated with their release-x.y branch
 // - x.y.0 final releases are associated with the master and the release-x.y branch
 func (g *GitHub) LatestGitHubTagsPerBranch() (TagsPerBranch, error) {
-	allTags, _, err := g.client.ListTags(
-		context.Background(), git.DefaultGithubOrg, git.DefaultGithubRepo, nil,
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to retrieve GitHub tags")
+	// List tags for all pages
+	allTags := []*github.RepositoryTag{}
+	opts := &github.ListOptions{PerPage: 100}
+	for {
+		tags, resp, err := g.client.ListTags(
+			context.Background(), git.DefaultGithubOrg, git.DefaultGithubRepo,
+			opts,
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to retrieve GitHub tags")
+		}
+		allTags = append(allTags, tags...)
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
 	}
 
 	releases := make(TagsPerBranch)
@@ -230,10 +241,12 @@ func (g *GitHub) LatestGitHubTagsPerBranch() (TagsPerBranch, error) {
 			continue
 		}
 
-		// This should always succeed
+		// We skip non-semver tags because k/k contains tags like `v0.5` which
+		// are not valid
 		semverTag, err := util.TagStringToSemver(tag)
 		if err != nil {
-			return nil, errors.Wrapf(err, "tag %s is not a vaild semver", tag)
+			logrus.Debugf("Skipping tag %s because it is not valid semver", tag)
+			continue
 		}
 
 		// Latest vx.x.0 release are on both master and release branch
