@@ -36,6 +36,11 @@ func TestGetPackageVersionSuccess(t *testing.T) {
 			expected:    "1.17.0",
 		},
 		{
+			name:        "Kubernetes version prefixed",
+			kubeVersion: "v1.17.0",
+			expected:    "1.17.0",
+		},
+		{
 			name:     "Kubernetes version not supplied",
 			expected: "",
 		},

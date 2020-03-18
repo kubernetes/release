@@ -379,7 +379,7 @@ func getPackageVersion(packageDef *PackageDefinition) (string, error) {
 		"Using Kubernetes version %s for %s package",
 		packageDef.KubernetesVersion, packageDef.Name,
 	)
-	return packageDef.KubernetesVersion, nil
+	return util.TrimTagPrefix(packageDef.KubernetesVersion), nil
 }
 
 func getKubernetesVersion(packageDef *PackageDefinition) (string, error) {
