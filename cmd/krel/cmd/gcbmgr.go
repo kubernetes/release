@@ -190,7 +190,7 @@ func runGcbmgr() error {
 	if rootOpts.nomock {
 		// TODO: Consider a '--yes' flag so we can mock this
 		_, nomockSubmit, askErr := util.Ask(
-			"Really submit a --nomock release job against the $RELEASE_BRANCH branch?",
+			fmt.Sprintf("Really submit a --nomock release job against the %s branch?", gcbmgrOpts.branch),
 			"yes",
 			3,
 		)
