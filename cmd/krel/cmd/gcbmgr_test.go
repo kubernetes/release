@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"testing"
@@ -26,27 +27,54 @@ import (
 	"k8s.io/release/pkg/gcp/build"
 )
 
-func TestRunGcbmgrSuccess(t *testing.T) {
+type fakeListJobs struct {
+	expectedProject  string
+	expectedLastJobs int64
+	t                *testing.T
+	err              error
+}
+
+func (f *fakeListJobs) ListJobs(project string, lastJobs int64) error {
+	require.Equal(f.t, project, f.expectedProject)
+	require.Equal(f.t, lastJobs, f.expectedLastJobs)
+	return f.err
+}
+
+func TestRunGcbmgrList(t *testing.T) {
 	testcases := []struct {
-		name       string
-		gcbmgrOpts gcbmgrOptions
-		buildOpts  build.Options
-		expected   map[string]string
+		name        string
+		gcbmgrOpts  gcbmgrOptions
+		buildOpts   build.Options
+		listJobOpts fakeListJobs
+		expectedErr bool
 	}{
 		{
 			name: "list only",
 			gcbmgrOpts: gcbmgrOptions{
-				branch:  "master",
-				gcpUser: "test-user",
+				branch:   "master",
+				gcpUser:  "test-user",
+				lastJobs: 5,
 			},
+			listJobOpts: fakeListJobs{
+				expectedProject:  "kubernetes-release-test",
+				expectedLastJobs: int64(5),
+				err:              nil,
+			},
+			expectedErr: false,
 		},
 		{
-			name: "stream the job",
+			name: "error on list jobs",
 			gcbmgrOpts: gcbmgrOptions{
-				branch:  "master",
-				stream:  true,
-				gcpUser: "test-user",
+				branch:   "master",
+				gcpUser:  "test-user",
+				lastJobs: 10,
 			},
+			listJobOpts: fakeListJobs{
+				expectedProject:  "kubernetes-release-test",
+				expectedLastJobs: int64(10),
+				err:              errors.New("Generic Error"),
+			},
+			expectedErr: true,
 		},
 	}
 
@@ -55,8 +83,16 @@ func TestRunGcbmgrSuccess(t *testing.T) {
 
 		gcbmgrOpts = &tc.gcbmgrOpts
 
+		f := &tc.listJobOpts
+		f.t = t
+		buildListJobs = f.ListJobs
+
 		err := runGcbmgr()
-		require.Nil(t, err)
+		if tc.expectedErr {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
 	}
 }
 
