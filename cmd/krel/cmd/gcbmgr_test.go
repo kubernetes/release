@@ -60,6 +60,114 @@ func TestRunGcbmgrSuccess(t *testing.T) {
 	}
 }
 
+type fakePrepareBuilds struct {
+	err error
+}
+
+func (f *fakePrepareBuilds) PrepareBuilds(buildOpts *build.Options) error {
+	return f.err
+}
+
+type fakeRunSingleJob struct {
+	expectedGCBSubs map[string]string
+	t               *testing.T
+	err             error
+}
+
+func (f *fakeRunSingleJob) RunSingleJob(o *build.Options, jobName, uploaded, version string, subs map[string]string) error {
+	for key, value := range subs {
+		// not checking all key like BUILD_POINT / BUILDVERSION / KUBE_CROSS_VERSION
+		_, exist := f.expectedGCBSubs[key]
+		if exist {
+			require.Equal(f.t, f.expectedGCBSubs[key], value)
+		}
+	}
+	return f.err
+}
+
+func TestRunGcbmgrStage(t *testing.T) {
+	testcases := []struct {
+		name                  string
+		gcbmgrOpts            gcbmgrOptions
+		rootOpts              rootOptions
+		fakeRunSingleJobOpts  fakeRunSingleJob
+		fakePrepareBuildsOpts fakePrepareBuilds
+		expected              map[string]string
+	}{
+		{
+			name: "stage mock success",
+			gcbmgrOpts: gcbmgrOptions{
+				branch:  "master",
+				gcpUser: "test-user",
+				stage:   true,
+			},
+			rootOpts: rootOptions{
+				nomock: false,
+			},
+			fakeRunSingleJobOpts: fakeRunSingleJob{
+				expectedGCBSubs: map[string]string{
+					"BUILD_AT_HEAD":  "",
+					"GCP_USER_TAG":   "test-user",
+					"NOMOCK":         "",
+					"NOMOCK_TAG":     "",
+					"RELEASE_BRANCH": "master",
+					"TOOL_BRANCH":    "master",
+					"TOOL_ORG":       "kubernetes",
+					"TOOL_REPO":      "release",
+				},
+				err: nil,
+			},
+			fakePrepareBuildsOpts: fakePrepareBuilds{
+				err: nil,
+			},
+		},
+		{
+			name: "stage nomock success",
+			gcbmgrOpts: gcbmgrOptions{
+				branch:         "master",
+				gcpUser:        "test-user",
+				stage:          true,
+				nonInteractive: true,
+			},
+			rootOpts: rootOptions{
+				nomock: true,
+			},
+			fakeRunSingleJobOpts: fakeRunSingleJob{
+				expectedGCBSubs: map[string]string{
+					"BUILD_AT_HEAD":  "",
+					"GCP_USER_TAG":   "test-user",
+					"NOMOCK":         "--nomock",
+					"NOMOCK_TAG":     "nomock",
+					"RELEASE_BRANCH": "master",
+					"TOOL_BRANCH":    "master",
+					"TOOL_ORG":       "kubernetes",
+					"TOOL_REPO":      "release",
+				},
+				err: nil,
+			},
+			fakePrepareBuildsOpts: fakePrepareBuilds{
+				err: nil,
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Logf("Test case: %s", tc.name)
+
+		gcbmgrOpts = &tc.gcbmgrOpts
+		rootOpts = &tc.rootOpts
+
+		f := &tc.fakePrepareBuildsOpts
+		f2 := &tc.fakeRunSingleJobOpts
+		f2.t = t
+		buildPrepareBuilds = f.PrepareBuilds
+		buildRunSingleJob = f2.RunSingleJob
+
+		err := runGcbmgr()
+		require.Nil(t, err)
+	}
+}
+
 func TestRunGcbmgrFailure(t *testing.T) {
 	testcases := []struct {
 		name       string
@@ -103,7 +211,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		expected   map[string]string
 	}{
 		{
-			name: "master prerelease - stage",
+			name: "master prerelease - stage mock",
 			gcbmgrOpts: gcbmgrOptions{
 				stage:       true,
 				branch:      "master",
@@ -123,7 +231,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			},
 		},
 		{
-			name: "master prerelease - release",
+			name: "master prerelease - release mock",
 			gcbmgrOpts: gcbmgrOptions{
 				release:      true,
 				branch:       "master",
@@ -143,7 +251,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			},
 		},
 		{
-			name: "release-1.14 RC",
+			name: "release-1.14 RC mock",
 			gcbmgrOpts: gcbmgrOptions{
 				stage:       true,
 				branch:      "release-1.14",
@@ -163,7 +271,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			},
 		},
 		{
-			name: "release-1.15 official",
+			name: "release-1.15 official mock",
 			gcbmgrOpts: gcbmgrOptions{
 				stage:       true,
 				branch:      "release-1.15",
@@ -183,7 +291,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			},
 		},
 		{
-			name: "release-1.16 official with custom tool org, repo, and branch",
+			name: "release-1.16 official with custom tool org, repo, and branch mock",
 			gcbmgrOpts: gcbmgrOptions{
 				stage:       true,
 				branch:      "release-1.16",

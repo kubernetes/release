@@ -41,12 +41,16 @@ type gcbmgrOptions struct {
 	releaseType  string
 	buildVersion string
 	gcpUser      string
+
+	nonInteractive bool
 }
 
 var (
 	gcbmgrOpts = &gcbmgrOptions{}
 	buildOpts  = &build.Options{}
 
+	buildPrepareBuilds = build.PrepareBuilds
+	buildRunSingleJob  = build.RunSingleJob
 	// TODO: Commenting these packages/commands out since they fail in CI.
 	//       These can be fixed by changing the CI test image to one that includes the packages.
 	//nolint:gocritic
@@ -188,14 +192,19 @@ func runGcbmgr() error {
 	}
 
 	if rootOpts.nomock {
-		// TODO: Consider a '--yes' flag so we can mock this
-		_, nomockSubmit, askErr := util.Ask(
-			fmt.Sprintf("Really submit a --nomock release job against the %s branch?", gcbmgrOpts.branch),
-			"yes",
-			3,
-		)
-		if askErr != nil {
-			return askErr
+		nomockSubmit := false
+		if gcbmgrOpts.nonInteractive {
+			nomockSubmit = true
+		} else {
+			var askErr error
+			_, nomockSubmit, askErr = util.Ask(
+				fmt.Sprintf("Really submit a --nomock release job against the %s branch?", gcbmgrOpts.branch),
+				"yes",
+				3,
+			)
+			if askErr != nil {
+				return askErr
+			}
 		}
 
 		if nomockSubmit {
@@ -245,7 +254,7 @@ func runGcbmgr() error {
 	}
 
 	buildOpts.ConfigDir = filepath.Join(toolRoot, "gcb", jobType)
-	prepareBuildErr := build.PrepareBuilds(buildOpts)
+	prepareBuildErr := buildPrepareBuilds(buildOpts)
 	if prepareBuildErr != nil {
 		return prepareBuildErr
 	}
@@ -258,7 +267,7 @@ func runGcbmgr() error {
 		return err
 	}
 
-	return build.RunSingleJob(buildOpts, jobName, uploaded, version, gcbSubs)
+	return buildRunSingleJob(buildOpts, jobName, uploaded, version, gcbSubs)
 }
 
 // setGCBSubstitutions takes a set of gcbmgrOptions and returns a map of GCB substitutions
