@@ -23,12 +23,10 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"text/template"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"github.com/kylelemons/godebug/diff"
 	"github.com/stretchr/testify/require"
-
+	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/release"
 )
@@ -108,94 +106,7 @@ func TestFileMetadata(t *testing.T) {
 	require.Equal(t, metadata, expected)
 }
 
-func TestRenderMarkdownTemplateGoldenFile(t *testing.T) {
-	tests := []struct {
-		name           string
-		templateSpec   string
-		userTemplate   bool
-		hasDownloads   bool
-		wantGoldenFile string
-	}{
-		{
-			"render default template and downloads",
-			options.FormatSpecDefaultGoTemplate,
-			false,
-			true,
-			"document.md.golden",
-		},
-		{
-			"render default template and no downloads",
-			options.FormatSpecDefaultGoTemplate,
-			true,
-			false,
-			"document_without_downloads.md.golden",
-		},
-		{
-			"render user-specified template and downloads",
-			"go-template:user-template.tmpl",
-			true,
-			true,
-			"document.md.golden",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			// Given
-			dir, err := ioutil.TempDir("", "")
-			require.NoError(t, err, "Creating tmpDir")
-			defer os.RemoveAll(dir)
-
-			if tc.hasDownloads {
-				setupTestDir(t, dir)
-			}
-
-			doc := Document{
-				NotesWithActionRequired: []string{"If an API changes and no one documented it, did it really happen?"},
-				Notes: NoteCollection{
-					NoteCategory{Kind: KindAPIChange, NoteEntries: &Notes{"This might make people sad...or happy."}},
-					NoteCategory{Kind: KindBug, NoteEntries: &Notes{"This will likely get you promoted."}},
-					NoteCategory{Kind: KindCleanup, NoteEntries: &Notes{"This usually does not get you promoted but it should."}},
-					NoteCategory{Kind: KindDeprecation, NoteEntries: &Notes{"Delorted."}},
-					NoteCategory{Kind: KindDesign, NoteEntries: &Notes{"Change the world."}},
-					NoteCategory{Kind: KindDocumentation, NoteEntries: &Notes{"There was  a library in Alexandria, Egypt once."}},
-					NoteCategory{Kind: KindFailingTest, NoteEntries: &Notes{"Please run presubmit test!"}},
-					NoteCategory{Kind: KindFeature, NoteEntries: &Notes{"This will get you promoted."}},
-					NoteCategory{Kind: KindFlake, NoteEntries: &Notes{"This *should* get you promoted."}},
-					NoteCategory{Kind: KindOther, NoteEntries: &Notes{"This should definitely get you promoted."}},
-					NoteCategory{Kind: KindUncategorized, NoteEntries: &Notes{"Someone somewhere did the world a great justice."}},
-				},
-				PreviousRevision: "v1.16.0",
-				CurrentRevision:  "v1.16.1",
-			}
-
-			templateSpec := tc.templateSpec
-			if tc.userTemplate {
-				// Write out the default template to simulate reading an actual template.
-				p := filepath.Join(dir, strings.Split(tc.templateSpec, ":")[1])
-				templateSpec = fmt.Sprintf("go-template:%s", p)
-
-				require.NoError(t, ioutil.WriteFile(p, []byte(defaultReleaseNotesTemplate), 0664))
-			}
-
-			goldenFile, err := bazel.Runfile(filepath.Join("testdata", tc.wantGoldenFile))
-			require.NoError(t, err, "Locating runfiles are you using bazel test?")
-
-			b, err := ioutil.ReadFile(goldenFile)
-			require.NoError(t, err, "Reading golden file %q", goldenFile)
-			expected := string(b)
-
-			// When
-			got, err := doc.RenderMarkdownTemplate(release.ProductionBucket, dir, templateSpec)
-			require.NoError(t, err, "Unexpected error rendering document")
-
-			// Then
-			require.Empty(t, diff.Diff(expected, got), "Unexpected diff")
-		})
-	}
-}
-
-func TestRenderMarkdownTemplateFailure(t *testing.T) {
+func TestDocument_RenderMarkdownTemplateFailure(t *testing.T) {
 	tests := []struct {
 		name             string
 		templateSpec     string
@@ -312,25 +223,6 @@ filename | sha512 hash
 `, output.String())
 }
 
-func TestSortKinds(t *testing.T) {
-	input := NotesByKind{
-		"cleanup":                  nil,
-		"api-change":               nil,
-		"deprecation":              nil,
-		"documentation":            nil,
-		"Other (Cleanup or Flake)": nil,
-		"failing-test":             nil,
-		"design":                   nil,
-		"flake":                    nil,
-		"bug":                      nil,
-		"regression":               nil,
-		"feature":                  nil,
-		"Uncategorized":            nil,
-	}
-	res := sortKinds(input)
-	require.Equal(t, res, kindPriority)
-}
-
 // setupTestDir adds basic test files to a given directory.
 func setupTestDir(t *testing.T, dir string) {
 	for _, file := range []string{
@@ -364,75 +256,297 @@ func setupTestDir(t *testing.T, dir string) {
 	}
 }
 
-func TestNoteCollection(t *testing.T) {
+func TestCreateDocument(t *testing.T) {
+	type args struct {
+		releaseNotes notes.ReleaseNotes
+		history      notes.ReleaseNotesHistory
+	}
 	tests := []struct {
-		name       string
-		collection NoteCollection
-		wantOutput string
+		name string
+		args args
+		want *Document
 	}{
 		{
-			"render collection with higher priority kind appearing first",
-			NoteCollection{
-				NoteCategory{
-					Kind:        KindDeprecation,
-					NoteEntries: &Notes{"change 1"},
+			"notes with no kinds are uncategorized",
+			args{
+				notes.ReleaseNotes{
+					0: makeReleaseNote("", "No one gave me a kind"),
 				},
-				NoteCategory{
-					Kind:        KindAPIChange,
-					NoteEntries: &Notes{"change 2"},
+				notes.ReleaseNotesHistory{0},
+			},
+			&Document{
+				NotesWithActionRequired: Notes{},
+				Notes: NoteCollection{
+					NoteCategory{
+						Kind:        KindUncategorized,
+						NoteEntries: &Notes{"No one gave me a kind"},
+					},
 				},
 			},
-			"\n# Deprecation\n  * change 1\n# API Change\n  * change 2",
 		},
 		{
-			"render collection with lower priority kind appearing first",
-			NoteCollection{
-				NoteCategory{
-					Kind:        KindAPIChange,
-					NoteEntries: &Notes{"change 2"},
+			"notes of same kind are lexicographically sorted.",
+			args{
+				notes.ReleaseNotes{
+					0: makeReleaseNote(KindDeprecation, "C"),
+					1: makeReleaseNote(KindDeprecation, "B"),
+					2: makeReleaseNote(KindDeprecation, "A"),
 				},
-				NoteCategory{
-					Kind:        KindDeprecation,
-					NoteEntries: &Notes{"change 1"},
+				notes.ReleaseNotesHistory{0, 1, 2},
+			},
+			&Document{
+				NotesWithActionRequired: Notes{},
+				Notes: NoteCollection{
+					NoteCategory{
+						Kind:        KindDeprecation,
+						NoteEntries: &Notes{"A", "B", "C"},
+					},
 				},
 			},
-			"\n# Deprecation\n  * change 1\n# API Change\n  * change 2",
 		},
 		{
-			"render with equal priority kinds",
-			NoteCollection{
-				NoteCategory{
-					Kind:        KindDeprecation,
-					NoteEntries: &Notes{"change 1"},
+			"notes are sorted by kind priority",
+			args{
+				notes.ReleaseNotes{
+					0: makeReleaseNote(KindFeature, "C"),
+					1: makeReleaseNote(KindAPIChange, "B"),
+					2: makeReleaseNote(KindDeprecation, "A"),
 				},
-				NoteCategory{
-					Kind:        KindDeprecation,
-					NoteEntries: &Notes{"change 2"},
+				notes.ReleaseNotesHistory{0, 1, 2},
+			},
+			&Document{
+				NotesWithActionRequired: Notes{},
+				Notes: NoteCollection{
+					NoteCategory{
+						Kind:        KindDeprecation,
+						NoteEntries: &Notes{"A"},
+					},
+					NoteCategory{
+						Kind:        KindAPIChange,
+						NoteEntries: &Notes{"B"},
+					},
+					NoteCategory{
+						Kind:        KindFeature,
+						NoteEntries: &Notes{"C"},
+					},
 				},
 			},
-			"\n# Deprecation\n  * change 1\n# Deprecation\n  * change 2",
+		},
+		{
+			"strip unwanted prefixes",
+			args{
+				notes.ReleaseNotes{
+					0: makeReleaseNote(KindBug, "- single dash"),
+					1: makeReleaseNote(KindBug, "-- double dash"),
+					2: makeReleaseNote(KindBug, "* single star"),
+					3: makeReleaseNote(KindBug, "** double star"),
+					4: makeReleaseNote(KindBug, "- --someflag"),
+				},
+				notes.ReleaseNotesHistory{0, 1, 2, 3, 4},
+			},
+			&Document{
+				NotesWithActionRequired: Notes{},
+				Notes: NoteCollection{
+					NoteCategory{
+						Kind: KindBug,
+						NoteEntries: &Notes{
+							"--someflag",
+							"double dash",
+							"double star",
+							"single dash",
+							"single star",
+						},
+					},
+				},
+			},
+		},
+		{
+			"highest kind for duplicate note",
+			args{
+				notes.ReleaseNotes{
+					0: &notes.ReleaseNote{
+						Markdown:       "A duplicate note gets the highest priority kind found",
+						Kinds:          []string{string(KindAPIChange), string(KindDeprecation)},
+						DuplicateKind:  true,
+						ActionRequired: false,
+					}},
+				notes.ReleaseNotesHistory{0},
+			},
+			&Document{
+				NotesWithActionRequired: Notes{},
+				Notes: NoteCollection{
+					NoteCategory{
+						Kind:        KindDeprecation,
+						NoteEntries: &Notes{"A duplicate note gets the highest priority kind found"},
+					},
+				},
+			},
+		},
+		{
+			"notes with action required get their own category",
+			args{
+				notes.ReleaseNotes{
+					0: &notes.ReleaseNote{
+						Markdown:       "This note should not appear as a regular note.",
+						Kinds:          []string{string(KindDeprecation)},
+						DuplicateKind:  true,
+						ActionRequired: false,
+					}},
+				notes.ReleaseNotesHistory{0},
+			},
+			&Document{
+				NotesWithActionRequired: Notes{},
+				Notes: NoteCollection{
+					NoteCategory{
+						Kind:        KindDeprecation,
+						NoteEntries: &Notes{"This note should not appear as a regular note."},
+					},
+				},
+			},
+		},
+		{
+			"notes mapping to a single kind",
+			args{
+				notes.ReleaseNotes{
+					0: makeReleaseNote(KindCleanup, "PR#1"),
+					1: makeReleaseNote(KindFlake, "PR#2"),
+				},
+				notes.ReleaseNotesHistory{0, 1},
+			},
+			&Document{
+				NotesWithActionRequired: Notes{},
+				Notes: NoteCollection{
+					NoteCategory{
+						Kind:        KindOther,
+						NoteEntries: &Notes{"PR#1", "PR#2"},
+					},
+				},
+			},
 		},
 	}
-
-	const goTemplate = `
-{{- range . }}
-# {{ .Kind | prettyKind}}
-{{range $note := .NoteEntries}}  * {{$note}}{{end -}}
-{{end -}}
-`
-
-	tmpl, err := template.New("markdown").
-		Funcs(template.FuncMap{"prettyKind": prettyKind}).
-		Parse(goTemplate)
-	require.NoError(t, err, "parsing template")
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var got strings.Builder
-			tt.collection.Sort(kindPriority)
-			require.NoError(t, tmpl.Execute(&got, tt.collection), "rendering template")
-
-			require.Equal(t, tt.wantOutput, got.String())
+			got, err := CreateDocument(tt.args.releaseNotes, tt.args.history)
+			require.NoError(t, err)
+			require.Equal(t, got, tt.want, "Unexpected return.")
 		})
 	}
+}
+
+func TestDocument_RenderMarkdownTemplate(t *testing.T) {
+	tests := []struct {
+		name           string
+		templateSpec   string
+		userTemplate   bool
+		hasDownloads   bool
+		wantGoldenFile string
+	}{
+		{
+			"render default template and downloads",
+			options.FormatSpecDefaultGoTemplate,
+			false,
+			true,
+			"document.md.golden",
+		},
+		{
+			"render default template and no downloads",
+			options.FormatSpecDefaultGoTemplate,
+			false,
+			false,
+			"document_without_downloads.md.golden",
+		},
+		{
+			"render user-specified template and downloads",
+			"go-template:user-template.tmpl",
+			true,
+			true,
+			"document.md.golden",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given
+			testNotes := notes.ReleaseNotes{
+				0:  makeReleaseNote(KindDeprecation, "Deprecation #1."),
+				1:  makeReleaseNote(KindBug, "Bugfix."),
+				2:  makeReleaseNote(KindCleanup, "Clean up."),
+				3:  makeReleaseNote(KindDesign, "Design change."),
+				4:  makeReleaseNote(KindDocumentation, "Update docs."),
+				5:  makeReleaseNote(KindFailingTest, "Fix a failing test."),
+				6:  makeReleaseNote(KindFeature, "A feature."),
+				7:  makeReleaseNote(KindFlake, "Fix a flakey test."),
+				8:  makeReleaseNote("", "Uncategorized note."),
+				9:  makeReleaseNote(KindBug, "- This note was prepended with a dash (-) initially."),
+				10: makeReleaseNote(KindBug, "* This note was prepended with a star (*) initially."),
+			}
+			duplicate := makeReleaseNote(KindDeprecation, "This note is duplicated across SIGs.")
+			duplicate.Kinds = append(duplicate.Kinds, string(KindBug))
+			duplicate.DuplicateKind = true
+
+			actionNeeded := makeReleaseNote(KindAPIChange, "Action required note.")
+			actionNeeded.ActionRequired = true
+			testNotes[11] = duplicate
+			testNotes[12] = actionNeeded
+
+			doc, err := CreateDocument(testNotes, makeReleaseNoteHistory(testNotes))
+			require.NoError(t, err, "Creating test document.")
+			doc.PreviousRevision = "v1.16.0"
+			doc.CurrentRevision = "v1.16.1"
+
+			templateSpec := tt.templateSpec
+			var dir string
+			if tt.hasDownloads || tt.userTemplate {
+				dir, err = ioutil.TempDir("", "")
+				require.NoError(t, err, "Creating tmpDir")
+				defer os.RemoveAll(dir)
+
+				setupTestDir(t, dir)
+
+				// This helps exercise reading a user template from disk.
+				if tt.userTemplate {
+					// Write out the default template to simulate reading an actual template.
+					p := filepath.Join(dir, strings.Split(tt.templateSpec, ":")[1])
+					templateSpec = fmt.Sprintf("go-template:%s", p)
+
+					require.NoError(
+						t,
+						ioutil.WriteFile(p, []byte(defaultReleaseNotesTemplate), 0664),
+						"Writing user specified template.")
+				}
+			}
+
+			// When
+			got, err := doc.RenderMarkdownTemplate(release.ProductionBucket, dir, templateSpec)
+
+			// Then
+			require.NoError(t, err, "Unexpected error.")
+			expected := readFile(t, filepath.Join("testdata", tt.wantGoldenFile))
+			require.Equal(t, expected, got)
+		})
+	}
+}
+
+func makeReleaseNote(kind Kind, markdown string) *notes.ReleaseNote {
+	n := &notes.ReleaseNote{Markdown: markdown}
+	if kind != "" {
+		n.Kinds = []string{string(kind)}
+	}
+	return n
+}
+
+func makeReleaseNoteHistory(n notes.ReleaseNotes) notes.ReleaseNotesHistory {
+	var r notes.ReleaseNotesHistory
+	for i := 0; i < len(n); i++ {
+		r = append(r, i)
+	}
+	return r
+}
+
+func readFile(t *testing.T, path string) string {
+	goldenFile, err := bazel.Runfile(path)
+	require.NoError(t, err, "Locating runfiles are you using bazel test?")
+
+	b, err := ioutil.ReadFile(goldenFile)
+	require.NoError(t, err, "Reading file %q", path)
+	return string(b)
 }
