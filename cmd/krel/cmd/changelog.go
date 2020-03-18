@@ -110,7 +110,7 @@ func init() {
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.replayDir, "replay", "", "Replay a previously recorded API from a directory")
 
 	if err := changelogCmd.MarkPersistentFlagRequired("tag"); err != nil {
-		logrus.Fatal(err)
+		logrus.Fatalf("unable to %v", err)
 	}
 
 	rootCmd.AddCommand(changelogCmd)
@@ -119,7 +119,7 @@ func init() {
 func runChangelog(opts *changelogOptions, rootOpts *rootOptions) error {
 	tag, err := util.TagStringToSemver(opts.tag)
 	if err != nil {
-		return errors.Wrapf(err, "unable to parse tag %s", opts.tag)
+		return errors.Wrapf(err, "parse tag %s", opts.tag)
 	}
 
 	// Automatically set the branch to a release branch if not provided
@@ -133,7 +133,7 @@ func runChangelog(opts *changelogOptions, rootOpts *rootOptions) error {
 	repo, err := git.OpenRepo(rootOpts.repoPath)
 	if err != nil {
 		return errors.Wrapf(err,
-			"unable to open expected k/k repository %q", rootOpts.repoPath,
+			"open expected k/k repository %q", rootOpts.repoPath,
 		)
 	}
 	if currentBranch, err := repo.CurrentBranch(); err == nil {
@@ -143,7 +143,7 @@ func runChangelog(opts *changelogOptions, rootOpts *rootOptions) error {
 	remoteBranch := git.Remotify(branch)
 	head, err := repo.RevParse(remoteBranch)
 	if err != nil {
-		return errors.Wrapf(err, "unable to get latest branch commit")
+		return errors.Wrapf(err, "get latest branch commit")
 	}
 	logrus.Infof("Found latest %s commit %s", remoteBranch, head)
 
@@ -158,7 +158,7 @@ func runChangelog(opts *changelogOptions, rootOpts *rootOptions) error {
 			if err := document.CreateDownloadsTable(
 				downloadsTable, opts.bucket, opts.tars, previousTag, opts.tag,
 			); err != nil {
-				return errors.Wrapf(err, "unable to create downloads table")
+				return errors.Wrapf(err, "create downloads table")
 			}
 
 			// New final minor versions should have remote release notes
@@ -168,7 +168,7 @@ func runChangelog(opts *changelogOptions, rootOpts *rootOptions) error {
 			// New minor alphas, betas and rc get generated notes
 			latestTags, tErr := github.New().LatestGitHubTagsPerBranch()
 			if tErr != nil {
-				return errors.Wrap(tErr, "unable to get latest GitHub tags")
+				return errors.Wrap(tErr, "get latest GitHub tags")
 			}
 
 			if startTag, ok := latestTags[branch]; ok {
@@ -205,22 +205,26 @@ func runChangelog(opts *changelogOptions, rootOpts *rootOptions) error {
 	}
 	defer func() {
 		if err := repo.Checkout(currentBranch); err != nil {
-			logrus.Errorf("unable to restore branch %s: %v", currentBranch, err)
+			logrus.Errorf("restore branch %s: %v", currentBranch, err)
 		}
 	}()
 
+	logrus.Infof("Checking out %s branch", git.Master)
 	if err := repo.Checkout(git.Master); err != nil {
 		return errors.Wrap(err, "checking out master branch")
 	}
 
+	logrus.Info("Writing markdown")
 	if err := writeMarkdown(repo, toc, markdown, tag); err != nil {
 		return err
 	}
 
+	logrus.Info("Writing HTML")
 	if err := writeHTML(opts, tag, markdown); err != nil {
 		return err
 	}
 
+	logrus.Info("Committing changes")
 	return commitChanges(repo, branch, tag)
 }
 
@@ -304,7 +308,7 @@ func writeMarkdown(repo *git.Repo, toc, markdown string, tag semver.Version) err
 	tocEndIndex := bytes.Index(content, []byte(tocEnd))
 	if tocEndIndex < 0 {
 		return errors.Errorf(
-			"unable to find table of contents end marker `%s` in %q",
+			"find table of contents end marker `%s` in %q",
 			tocEnd, changelogPath,
 		)
 	}
@@ -368,7 +372,7 @@ func writeHTML(opts *changelogOptions, tag semver.Version, markdown string) erro
 	md := goldmark.New(goldmark.WithExtensions(extension.GFM))
 	content := &bytes.Buffer{}
 	if err := md.Convert([]byte(markdown), content); err != nil {
-		return errors.Wrap(err, "unable to render HTML from markdown")
+		return errors.Wrap(err, "render HTML from markdown")
 	}
 
 	t, err := template.New("html").Parse(htmlTemplate)
@@ -387,7 +391,7 @@ func writeHTML(opts *changelogOptions, tag semver.Version, markdown string) erro
 	if err != nil {
 		return err
 	}
-	logrus.Infof("Writing single HTML to %s", absOutputPath)
+	logrus.Infof("Writing HTML file to %s", absOutputPath)
 	return ioutil.WriteFile(absOutputPath, output.Bytes(), os.FileMode(0644))
 }
 
@@ -433,6 +437,7 @@ func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
 	}
 
 	if branch != git.Master {
+		logrus.Infof("Checking out %s branch", branch)
 		// Release branch modifications
 		if err := repo.Checkout(branch); err != nil {
 			return errors.Wrapf(err, "checking out release branch %s", branch)
@@ -440,14 +445,16 @@ func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
 
 		// Remove all other changelog files if we’re on the first RC
 		if len(tag.Pre) > 1 && tag.Pre[0].String() == "rc" && tag.Pre[1].String() == "1" {
-			if err := repo.Rm(true, repoChangelogDir+"/CHANGELOG-*.md"); err != nil {
-				return errors.Wrap(err, "unable to remove CHANGELOG-*.md files")
+			pattern := filepath.Join(repoChangelogDir, "CHANGELOG-*.md")
+			logrus.Infof("Removing unnecessary %s files", pattern)
+			if err := repo.Rm(true, pattern); err != nil {
+				return errors.Wrapf(err, "removing %s files", pattern)
 			}
 		}
 
 		logrus.Info("Checking out changelog from master branch")
 		if err := repo.Checkout(git.Master, releaseChangelog); err != nil {
-			return errors.Wrap(err, "unable to check out master branch changelog")
+			return errors.Wrap(err, "check out master branch changelog")
 		}
 
 		logrus.Info("Committing changes to release branch in repository")
@@ -465,7 +472,7 @@ func adaptChangelogReadmeFile(repo *git.Repo, tag semver.Version) error {
 	targetFile := filepath.Join(repo.Dir(), repoChangelogDir, "README.md")
 	readme, err := ioutil.ReadFile(targetFile)
 	if err != nil {
-		return errors.Wrap(err, "unable to read changelog README.md")
+		return errors.Wrap(err, "read changelog README.md")
 	}
 
 	cf := filepath.Base(markdownChangelogFilename(tag))
@@ -489,7 +496,7 @@ func adaptChangelogReadmeFile(repo *git.Repo, tag semver.Version) error {
 	const nl = "\n"
 	if err := ioutil.WriteFile(
 		targetFile, []byte(strings.Join(res, nl)+nl), os.FileMode(0644)); err != nil {
-		return errors.Wrap(err, "unable to write changelog README.md")
+		return errors.Wrap(err, "write changelog README.md")
 	}
 	return nil
 }
