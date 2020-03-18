@@ -36,6 +36,11 @@ import (
 	"k8s.io/release/pkg/notes/options"
 )
 
+var (
+	errNoPRIDFoundInCommitMessage = errors.New("no PR IDs found in the commit message")
+	errNoPRFoundForCommitSHA      = errors.New("no PR found for this commit")
+)
+
 const (
 	DefaultOrg  = "kubernetes"
 	DefaultRepo = "kubernetes"
@@ -164,7 +169,7 @@ func NewGathererWithClient(ctx context.Context, c github.Client) *Gatherer {
 // ListReleaseNotes produces a list of fully contextualized release notes
 // starting from a given commit SHA and ending at starting a given commit SHA.
 func (g *Gatherer) ListReleaseNotes() (ReleaseNotes, ReleaseNotesHistory, error) {
-	commits, err := g.ListCommits(g.options.Branch, g.options.StartSHA, g.options.EndSHA)
+	commits, err := g.listCommits(g.options.Branch, g.options.StartSHA, g.options.EndSHA)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -340,16 +345,16 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result, relVer string) (*Releas
 		"https://github.com/%s/%s/pull/%d",
 		g.options.GithubOrg, g.options.GithubRepo, pr.GetNumber(),
 	)
-	isFeature := HasString(LabelsWithPrefix(pr, "kind"), "feature")
-	noteSuffix := prettifySIGList(LabelsWithPrefix(pr, "sig"))
+	isFeature := hasString(labelsWithPrefix(pr, "kind"), "feature")
+	noteSuffix := prettifySIGList(labelsWithPrefix(pr, "sig"))
 
 	isDuplicateSIG := false
-	if len(LabelsWithPrefix(pr, "sig")) > 1 {
+	if len(labelsWithPrefix(pr, "sig")) > 1 {
 		isDuplicateSIG = true
 	}
 
 	isDuplicateKind := false
-	if len(LabelsWithPrefix(pr, "kind")) > 1 {
+	if len(labelsWithPrefix(pr, "kind")) > 1 {
 		isDuplicateKind = true
 	}
 
@@ -373,28 +378,28 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result, relVer string) (*Releas
 		AuthorURL:      authorURL,
 		PrURL:          prURL,
 		PrNumber:       pr.GetNumber(),
-		SIGs:           LabelsWithPrefix(pr, "sig"),
-		Kinds:          LabelsWithPrefix(pr, "kind"),
-		Areas:          LabelsWithPrefix(pr, "area"),
+		SIGs:           labelsWithPrefix(pr, "sig"),
+		Kinds:          labelsWithPrefix(pr, "kind"),
+		Areas:          labelsWithPrefix(pr, "area"),
 		Feature:        isFeature,
 		Duplicate:      isDuplicateSIG,
 		DuplicateKind:  isDuplicateKind,
-		ActionRequired: IsActionRequired(pr),
+		ActionRequired: isActionRequired(pr),
 		ReleaseVersion: relVer,
 	}, nil
 }
 
-// ListCommits lists all commits starting from a given commit SHA and ending at
+// listCommits lists all commits starting from a given commit SHA and ending at
 // a given commit SHA.
-func (g *Gatherer) ListCommits(branch, start, end string) ([]*gogithub.RepositoryCommit, error) {
+func (g *Gatherer) listCommits(branch, start, end string) ([]*gogithub.RepositoryCommit, error) {
 	startCommit, _, err := g.client.GetCommit(g.context, g.options.GithubOrg, g.options.GithubRepo, start)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "retrieve start commit")
 	}
 
 	endCommit, _, err := g.client.GetCommit(g.context, g.options.GithubOrg, g.options.GithubRepo, end)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "retrieve end commit")
 	}
 
 	allCommits := &commitList{}
@@ -513,7 +518,7 @@ func matchesIncludeFilter(msg string) *regexp.Regexp {
 
 // gatherNotes list commits that have release notes starting from a given
 // commit SHA and ending at a given commit SHA. This function is similar to
-// ListCommits except that only commits with tagged release notes are returned.
+// listCommits except that only commits with tagged release notes are returned.
 func (g *Gatherer) gatherNotes(commits []*gogithub.RepositoryCommit) (filtered []*Result, err error) {
 	allResults := &resultList{}
 
@@ -573,7 +578,7 @@ func (g *Gatherer) gatherNotes(commits []*gogithub.RepositoryCommit) (filtered [
 }
 
 func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, error) {
-	prs, err := g.PRsFromCommit(commit)
+	prs, err := g.prsFromCommit(commit)
 	if err != nil {
 		if err == errNoPRIDFoundInCommitMessage || err == errNoPRFoundForCommitSHA {
 			logrus.
@@ -635,10 +640,10 @@ func (l *resultList) List() []*Result {
 	return l.list
 }
 
-// PRsFromCommit return an API Pull Request struct given a commit struct. This is
+// prsFromCommit return an API Pull Request struct given a commit struct. This is
 // useful for going from a commit log to the PR (which contains useful info such
 // as labels).
-func (g *Gatherer) PRsFromCommit(commit *gogithub.RepositoryCommit) (
+func (g *Gatherer) prsFromCommit(commit *gogithub.RepositoryCommit) (
 	[]*gogithub.PullRequest, error,
 ) {
 	githubPRs, err := g.prsForCommitFromMessage(*commit.Commit.Message)
@@ -652,11 +657,11 @@ func (g *Gatherer) PRsFromCommit(commit *gogithub.RepositoryCommit) (
 	return githubPRs, err
 }
 
-// LabelsWithPrefix is a helper for fetching all labels on a PR that start with
+// labelsWithPrefix is a helper for fetching all labels on a PR that start with
 // a given string. This pattern is used often in the k/k repo and we can take
 // advantage of this to contextualize release note generation with the kind, sig,
 // area, etc labels.
-func LabelsWithPrefix(pr *gogithub.PullRequest, prefix string) []string {
+func labelsWithPrefix(pr *gogithub.PullRequest, prefix string) []string {
 	labels := []string{}
 	for _, label := range pr.Labels {
 		if strings.HasPrefix(*label.Name, prefix) {
@@ -666,9 +671,9 @@ func LabelsWithPrefix(pr *gogithub.PullRequest, prefix string) []string {
 	return labels
 }
 
-// IsActionRequired indicates whether or not the release-note-action-required
+// isActionRequired indicates whether or not the release-note-action-required
 // label was set on the PR.
-func IsActionRequired(pr *gogithub.PullRequest) bool {
+func isActionRequired(pr *gogithub.PullRequest) bool {
 	for _, label := range pr.Labels {
 		if *label.Name == "release-note-action-required" {
 			return true
@@ -705,7 +710,7 @@ func dashify(note string) string {
 	return strings.ReplaceAll(note, "* ", "- ")
 }
 
-func HasString(a []string, x string) bool {
+func hasString(a []string, x string) bool {
 	for _, n := range a {
 		if x == n {
 			return true
@@ -855,6 +860,3 @@ func prettifySIGList(sigs []string) string {
 
 	return sigList
 }
-
-var errNoPRIDFoundInCommitMessage = errors.New("No PR IDs found in the commit message")
-var errNoPRFoundForCommitSHA = errors.New("No PR found for this commit")
