@@ -118,8 +118,8 @@ func init() {
 	gcbmgrCmd.PersistentFlags().StringVar(
 		&buildOpts.Project,
 		"project",
-		release.DefaultProject,
-		"Branch to run the specified GCB run against",
+		release.DefaultKubernetesStagingProject,
+		"GCP project to run GCB in",
 	)
 	gcbmgrCmd.PersistentFlags().BoolVar(
 		&gcbmgrOpts.stream,

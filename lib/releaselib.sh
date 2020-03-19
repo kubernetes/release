@@ -18,14 +18,21 @@
 # CONSTANTS
 ###############################################################################
 
+# TODO(vdf): Need to reference K8s Infra projects here
 readonly DEFAULT_PROJECT="kubernetes-release-test"
 readonly PROD_PROJECT="kubernetes-release"
-readonly TEST_PROJECT="${TEST_PROJECT:-${PROJECT_ID:-$DEFAULT_PROJECT}}"
+readonly TEST_PROJECT="kubernetes-release-test"
 
+# TODO(vdf): Need to reference K8s Infra buckets here
 readonly DEFAULT_BUCKET="kubernetes-release-gcb"
 readonly PROD_BUCKET="kubernetes-release"
 readonly TEST_BUCKET="kubernetes-release-gcb"
 readonly CI_BUCKET="kubernetes-release-dev"
+
+# TODO(vdf): Need to reference K8s Infra registries here
+readonly GCRIO_PATH_PROD="k8s.gcr.io"
+readonly GCRIO_PATH_PROD_PUSH="gcr.io/google-containers"
+readonly GCRIO_PATH_TEST="gcr.io/$TEST_PROJECT"
 
 readonly KUBE_CROSS_REGISTRY="us.gcr.io/k8s-artifacts-prod/build-image"
 readonly KUBE_CROSS_IMAGE="${KUBE_CROSS_REGISTRY}/kube-cross"
@@ -1297,11 +1304,6 @@ release::set_globals () {
   else
     BUCKET_TYPE="release"
   fi
-
-  GCRIO_PATH_PROD="k8s.gcr.io"
-  GCRIO_PATH_PROD_PUSH="gcr.io/google-containers"
-  # The "test" GCR path
-  GCRIO_PATH_TEST="gcr.io/$TEST_PROJECT"
 
   GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_TEST}"
   ALL_CONTAINER_REGISTRIES=("$GCRIO_PATH")

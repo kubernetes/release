@@ -35,7 +35,7 @@
 #+     Change the tests you want to screenshot
 #+     Available states: FAILING, FLAKY, PASSING
 #+
-#+   BUCKET: [default: "kubernetes-release-gcb"]
+#+   BUCKET: [default: "k8s-staging-releng"]
 #+     The name of the bucket to upload the images to.
 #+     `gsutil` is used for the upload, thus it must be installed and configured correctly.
 #+     The files will be put into '/testgridshot/<release>/<datetime>_<rand>/...'
@@ -82,7 +82,7 @@ set -o pipefail
 readonly BOARDS="${BOARDS:-blocking informing}"
 # Available states: FAILING, FLAKY, PASSING
 readonly STATES="${STATES:-FAILING}"
-readonly BUCKET="${BUCKET:-kubernetes-release-gcb}"
+readonly BUCKET="${BUCKET:-k8s-staging-releng}"
 readonly BLOCK_WIDTH="${BLOCK_WIDTH:-30}"
 readonly WIDTH="${WIDTH:-3000}"
 readonly HEIGHT="${HEIGHT:-2500}"
