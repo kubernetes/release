@@ -20,16 +20,28 @@ IMAGE=kube-cross
 
 TAG?=kubernetes-$(shell git describe --tags --match='v*' --abbrev=14)
 KUBE_CROSS_VERSION=$(shell cat VERSION)
+# TODO: Support multi-arch kube-cross images
+#       ref:
+#       - https://github.com/kubernetes/release/pull/1140/commits/e96924f58d9ce2bb73045fbba13f259b4345c0d9#r395056830
+#       - https://github.com/kubernetes/kubernetes/issues/78964
+#       - https://github.com/kubernetes/kubernetes/issues/75114
+ARCH=amd64
 
 all: build push
 
 build:
 	docker build \
-		-t $(STAGING_REGISTRY)/$(IMAGE):$(TAG) \
-		-t $(STAGING_REGISTRY)/$(IMAGE):$(KUBE_CROSS_VERSION) \
-		-t $(PROD_REGISTRY)/$(IMAGE):$(KUBE_CROSS_VERSION) \
+		-t $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(TAG) \
+		-t $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION) \
+		-t $(PROD_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION) \
 		.
 
 push:
-	docker push $(STAGING_REGISTRY)/$(IMAGE):$(TAG)
-	docker push $(STAGING_REGISTRY)/$(IMAGE):$(KUBE_CROSS_VERSION)
+	docker push $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(TAG)
+	docker push $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION)
+	docker manifest create --amend $(STAGING_REGISTRY)/$(IMAGE):$(KUBE_CROSS_VERSION) \
+		$(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION)
+	docker manifest annotate $(STAGING_REGISTRY)/$(IMAGE):$(KUBE_CROSS_VERSION) \
+		$(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION) \
+		--arch $(ARCH)
+	docker manifest push -p $(STAGING_REGISTRY)/$(IMAGE):$(KUBE_CROSS_VERSION)
