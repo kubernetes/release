@@ -22,6 +22,18 @@ aliases:
     - listx
     - ps882
     - sumitranr
+  build-image-approvers:
+    - BenTheElder
+    - cblecker
+    - dims
+    - justaugustus
+    - listx
+  build-image-reviewers:
+    - BenTheElder
+    - cblecker
+    - dims
+    - justaugustus
+    - listx
   krel-approvers:
     - hasheddan
     - hoegaarden
