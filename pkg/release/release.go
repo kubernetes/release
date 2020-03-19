@@ -19,7 +19,6 @@ package release
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -105,34 +104,19 @@ func GetToolRepoURL(org, repo string, useSSH bool) (string, error) {
 // GetToolOrg checks if the 'TOOL_ORG' environment variable is set.
 // If 'TOOL_ORG' is non-empty, it returns the value. Otherwise, it returns DefaultToolOrg.
 func GetToolOrg() string {
-	toolOrg := os.Getenv("TOOL_ORG")
-	if toolOrg == "" {
-		toolOrg = DefaultToolOrg
-	}
-
-	return toolOrg
+	return util.EnvDefault("TOOL_ORG", DefaultToolOrg)
 }
 
 // GetToolRepo checks if the 'TOOL_REPO' environment variable is set.
 // If 'TOOL_REPO' is non-empty, it returns the value. Otherwise, it returns DefaultToolRepo.
 func GetToolRepo() string {
-	toolRepo := os.Getenv("TOOL_REPO")
-	if toolRepo == "" {
-		toolRepo = DefaultToolRepo
-	}
-
-	return toolRepo
+	return util.EnvDefault("TOOL_REPO", DefaultToolRepo)
 }
 
 // GetToolBranch checks if the 'TOOL_BRANCH' environment variable is set.
 // If 'TOOL_BRANCH' is non-empty, it returns the value. Otherwise, it returns DefaultToolBranch.
 func GetToolBranch() string {
-	toolBranch := os.Getenv("TOOL_BRANCH")
-	if toolBranch == "" {
-		toolBranch = DefaultToolBranch
-	}
-
-	return toolBranch
+	return util.EnvDefault("TOOL_BRANCH", DefaultToolBranch)
 }
 
 // BuiltWithBazel determines whether the most recent Kubernetes release was built with Bazel.
