@@ -101,7 +101,7 @@ func TestGetToolBranchSuccess(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
-		os.Setenv("TOOL_BRANCH", tc.branch)
+		require.Nil(t, os.Setenv("TOOL_BRANCH", tc.branch))
 
 		actual := GetToolBranch()
 		assert.Equal(t, tc.expected, actual)
