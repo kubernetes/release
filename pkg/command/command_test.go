@@ -17,6 +17,9 @@ limitations under the License.
 package command
 
 import (
+	"bytes"
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -196,4 +199,104 @@ func TestFailureRunSilentSuccessOutput(t *testing.T) {
 	res, err := New("cat", "/not/available").RunSilentSuccessOutput()
 	require.NotNil(t, err)
 	require.Nil(t, res)
+}
+
+func TestSuccessLogWriter(t *testing.T) {
+	f, err := ioutil.TempFile("", "log")
+	require.Nil(t, err)
+	defer func() { require.Nil(t, os.Remove(f.Name())) }()
+
+	res, err := New("echo", "Hello World").AddWriter(f).RunSuccessOutput()
+	require.Nil(t, err)
+
+	content, err := ioutil.ReadFile(f.Name())
+	require.Nil(t, err)
+	require.Equal(t, res.Output(), string(content))
+}
+
+func TestSuccessLogWriterMultiple(t *testing.T) {
+	f, err := ioutil.TempFile("", "log")
+	require.Nil(t, err)
+	defer func() { require.Nil(t, os.Remove(f.Name())) }()
+	b := &bytes.Buffer{}
+
+	res, err := New("echo", "Hello World").
+		AddWriter(f).
+		AddWriter(b).
+		RunSuccessOutput()
+	require.Nil(t, err)
+
+	content, err := ioutil.ReadFile(f.Name())
+	require.Nil(t, err)
+	require.Equal(t, res.Output(), string(content))
+	require.Equal(t, res.Output(), b.String())
+}
+
+func TestSuccessLogWriterSilent(t *testing.T) {
+	f, err := ioutil.TempFile("", "log")
+	require.Nil(t, err)
+	defer func() { require.Nil(t, os.Remove(f.Name())) }()
+
+	err = New("echo", "Hello World").AddWriter(f).RunSilentSuccess()
+	require.Nil(t, err)
+
+	content, err := ioutil.ReadFile(f.Name())
+	require.Nil(t, err)
+	require.Empty(t, content)
+}
+
+func TestSuccessLogWriterStdErr(t *testing.T) {
+	f, err := ioutil.TempFile("", "log")
+	require.Nil(t, err)
+	defer func() { require.Nil(t, os.Remove(f.Name())) }()
+
+	res, err := New("bash", "-c", ">&2 echo error").
+		AddWriter(f).RunSuccessOutput()
+	require.Nil(t, err)
+
+	content, err := ioutil.ReadFile(f.Name())
+	require.Nil(t, err)
+	require.Equal(t, res.Error(), string(content))
+}
+
+func TestSuccessLogWriterStdErrAndStdOut(t *testing.T) {
+	f, err := ioutil.TempFile("", "log")
+	require.Nil(t, err)
+	defer func() { require.Nil(t, os.Remove(f.Name())) }()
+
+	res, err := New("bash", "-c", ">&2 echo stderr; echo stdout").
+		AddWriter(f).RunSuccessOutput()
+	require.Nil(t, err)
+
+	content, err := ioutil.ReadFile(f.Name())
+	require.Nil(t, err)
+	require.Equal(t, res.Output()+res.Error(), string(content))
+}
+
+func TestSuccessLogWriterStdErrAndStdOutOnlyStdErr(t *testing.T) {
+	f, err := ioutil.TempFile("", "log")
+	require.Nil(t, err)
+	defer func() { require.Nil(t, os.Remove(f.Name())) }()
+
+	res, err := New("bash", "-c", ">&2 echo stderr; echo stdout").
+		AddErrorWriter(f).RunSuccessOutput()
+	require.Nil(t, err)
+
+	content, err := ioutil.ReadFile(f.Name())
+	require.Nil(t, err)
+	require.Equal(t, res.Error(), string(content))
+}
+
+func TestSuccessLogWriterStdErrAndStdOutOnlyStdOut(t *testing.T) {
+	f, err := ioutil.TempFile("", "log")
+	require.Nil(t, err)
+	defer func() { require.Nil(t, os.Remove(f.Name())) }()
+
+	res, err := New("bash", "-c", ">&2 echo stderr; echo stdout").
+		AddOutputWriter(f).RunSuccessOutput()
+	require.Nil(t, err)
+
+	content, err := ioutil.ReadFile(f.Name())
+	require.Nil(t, err)
+	require.Equal(t, res.Output(), string(content))
 }
