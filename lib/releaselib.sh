@@ -32,7 +32,7 @@ readonly CI_BUCKET="kubernetes-release-dev"
 # TODO(vdf): Need to reference K8s Infra registries here
 readonly GCRIO_PATH_PROD="k8s.gcr.io"
 readonly GCRIO_PATH_PROD_PUSH="gcr.io/google-containers"
-readonly GCRIO_PATH_TEST="gcr.io/$TEST_PROJECT"
+readonly GCRIO_PATH_TEST="gcr.io/k8s-staging-kubernetes"
 
 readonly KUBE_CROSS_REGISTRY="us.gcr.io/k8s-artifacts-prod/build-image"
 readonly KUBE_CROSS_IMAGE="${KUBE_CROSS_REGISTRY}/kube-cross"
