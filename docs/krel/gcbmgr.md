@@ -26,11 +26,7 @@
 
 ## Installation
 
-From this root of this repo:
-
-```shell
-./compile-release-tools krel
-```
+Simply [install krel](README.md#installation).
 
 <!-- TODO(vdf): Need to reference K8s Infra projects in usage examples -->
 ## Usage
