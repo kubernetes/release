@@ -26,29 +26,88 @@ import (
 	"k8s.io/release/pkg/github"
 )
 
+// Options is the global options structure which can be used to build release
+// notes generator options
 type Options struct {
-	GithubOrg       string
-	GithubRepo      string
-	Output          string
-	Branch          string
-	StartSHA        string
-	EndSHA          string
-	StartRev        string
-	EndRev          string
-	RepoPath        string
-	ReleaseVersion  string
-	Format          string
-	RequiredAuthor  string
-	DiscoverMode    string
-	ReleaseBucket   string
-	ReleaseTars     string
-	TableOfContents bool
-	Debug           bool
-	Pull            bool
-	RecordDir       string
-	ReplayDir       string
-	githubToken     string
-	gitCloneFn      func(string, string, string, bool) (*git.Repo, error)
+	// GithubOrg specifies the GitHub organization from which will be
+	// cloned/pulled if Pull is true.
+	GithubOrg string
+
+	// GithubRepo specifies the GitHub repository from which will be
+	// cloned/pulled if Pull is true.
+	GithubRepo string
+
+	// RepoPath specifies the git repository location for doing an update if
+	// Pull is true.
+	RepoPath string
+
+	// Branch will be used for discovering the latest patch version if
+	// DiscoverMode is RevisionDiscoveryModePatchToPatch.
+	Branch string
+
+	// StartSHA can be used to set the release notes start revision to an
+	// exact git SHA. Should not be used together with StartRev.
+	StartSHA string
+
+	// EndSHA can be used to set the release notes end revision to an
+	// exact git SHA. Should not be used together with EndRev.
+	EndSHA string
+
+	// StartRev can be used to set the release notes start revision to any
+	// valid git revision. Should not be used together with StartSHA.
+	StartRev string
+
+	// EndRev can be used to set the release notes end revision to any
+	// valid git revision. Should not be used together with EndSHA.
+	EndRev string
+
+	// ReleaseVersion is the version of the release. This option is just passed
+	// through into the resulting ReleaseNote struct for identifying releases
+	// on JSON output.
+	ReleaseVersion string
+
+	// Format specifies the format of the release notes. Can be either
+	// FormatSpecNone, FormatSpecJSON, or FormatSpecDefaultGoTemplate
+	Format string
+
+	// RequiredAuthor can be used to filter the release notes by the commit
+	// author
+	RequiredAuthor string
+
+	// DiscoverMode can be used to automatically discover StartSHA and EndSHA.
+	// Can be either RevisionDiscoveryModeNONE (default),
+	// RevisionDiscoveryModeMergeBaseToLatest,
+	// RevisionDiscoveryModePatchToPatch, or RevisionDiscoveryModeMinorToMinor.
+	// Should not be used together with StartRev, EndRev, StartSHA or EndSHA.
+	DiscoverMode string
+
+	// ReleaseTars specifies the directory where the release tarballs are
+	// located.
+	ReleaseTars string
+
+	// ReleaseBucket specifies the Google Cloud bucket where the ReleaseTars
+	// are linked to. This option is used for generating the links inside the
+	// release downloads table.
+	ReleaseBucket string
+
+	// If true, then the release notes generator will pull in latest changes
+	// from the default git remote
+	Pull bool
+
+	// If true, then the release notes generator will print messages in debug
+	// log level
+	Debug bool
+
+	// RecordDir specifies the directory for API call recordings. Cannot be
+	// used together with ReplayDir.
+	RecordDir string
+
+	// ReplayDir specifies the directory for replaying a previously recorded
+	// API. Cannot be used together with RecordDir.
+	ReplayDir string
+
+	githubToken string
+	gitCloneFn  func(string, string, string, bool) (*git.Repo, error)
 }
 
 type RevisionDiscoveryMode string
@@ -65,7 +124,7 @@ const (
 	FormatSpecJSON              = "json"
 	FormatSpecDefaultGoTemplate = "go-template:default"
 
-	// Deprecated: This option is internaly translated to `FormatSpecDefaultGoTemplate`
+	// Deprecated: This option is internally translated to `FormatSpecDefaultGoTemplate`
 	FormatSpecMarkdown = "markdown"
 )
 
