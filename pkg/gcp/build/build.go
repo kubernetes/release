@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -232,7 +231,7 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 		args = append(args, diskSizeArg)
 	}
 
-	cmd := exec.Command("gcloud", args...)
+	cmd := command.New("gcloud", args...)
 
 	if o.LogDir != "" {
 		p := path.Join(o.LogDir, strings.ReplaceAll(jobName, "/", "-")+".log")
@@ -243,16 +242,11 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 		}
 
 		defer f.Close()
-
-		cmd.Stdout = f
-		cmd.Stderr = f
-	} else {
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		cmd.AddWriter(f)
 	}
 
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "error running %s", cmd.Args)
+	if err := cmd.RunSuccess(); err != nil {
+		return errors.Wrapf(err, "error running %s", cmd.String())
 	}
 
 	return nil
