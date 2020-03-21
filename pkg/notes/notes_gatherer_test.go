@@ -204,7 +204,7 @@ func TestListCommits(t *testing.T) {
 			}
 
 			gatherer := NewGathererWithClient(context.Background(), client)
-			commits, err := gatherer.ListCommits(tc.branch, tc.start, tc.end)
+			commits, err := gatherer.listCommits(tc.branch, tc.start, tc.end)
 
 			checkErrMsg(t, err, tc.expectedErrMsg)
 
