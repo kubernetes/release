@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	cloud.google.com/go v0.44.3
-	github.com/GoogleCloudPlatform/testgrid v0.0.1-alpha.4
+	github.com/GoogleCloudPlatform/testgrid v0.0.7
 	github.com/bazelbuild/rules_go v0.22.1
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/golangci/golangci-lint v1.23.3
