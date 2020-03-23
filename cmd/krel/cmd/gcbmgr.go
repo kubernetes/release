@@ -95,7 +95,7 @@ func init() {
 	gcbmgrCmd.PersistentFlags().StringVar(
 		&gcbmgrOpts.branch,
 		"branch",
-		"",
+		git.Master,
 		"Branch to run the specified GCB run against",
 	)
 
@@ -321,12 +321,7 @@ func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 		gcbSubs["RC"] = ""
 	}
 
-	branch := o.branch
-	if branch == "" {
-		return gcbSubs, errors.New("Release branch must be set to continue")
-	}
-
-	gcbSubs["RELEASE_BRANCH"] = branch
+	gcbSubs["RELEASE_BRANCH"] = o.branch
 
 	if o.stage {
 		// TODO: Remove once we remove support for --built-at-head.
@@ -357,8 +352,8 @@ func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 	gcbSubs["BUILDVERSION"] = buildVersion
 
 	kubecrossBranches := []string{
-		branch,
-		"master",
+		o.branch,
+		git.Master,
 	}
 
 	kubecrossVersion, kubecrossVersionErr := release.GetKubecrossVersion(kubecrossBranches...)
