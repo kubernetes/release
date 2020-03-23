@@ -41,6 +41,7 @@ type gcbmgrOptions struct {
 	releaseType  string
 	buildVersion string
 	gcpUser      string
+	lastJobs     int64
 }
 
 var (
@@ -138,6 +139,13 @@ func init() {
 		"gcp-user",
 		"",
 		"If provided, this will be used as the GCP_USER_TAG.",
+	)
+
+	gcbmgrCmd.PersistentFlags().Int64Var(
+		&gcbmgrOpts.lastJobs,
+		"list-jobs",
+		5,
+		"List the last x build jobs in the project. Default to 5.",
 	)
 
 	rootCmd.AddCommand(gcbmgrCmd)
@@ -241,7 +249,7 @@ func runGcbmgr() error {
 		jobType = "release"
 		buildOpts.DiskSize = "100"
 	default:
-		return listJobs()
+		return listJobs(buildOpts.Project, gcbmgrOpts.lastJobs)
 	}
 
 	buildOpts.ConfigDir = filepath.Join(toolRoot, "gcb", jobType)
@@ -362,11 +370,11 @@ func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 	return gcbSubs, nil
 }
 
-// listJobs lists recent GCB jobs run in the specified project
-func listJobs() error {
-	logrus.Info("Listing GCB jobs is not currently supported.")
+var buildListJobs = build.ListJobs
 
-	// TODO: Add job listing logic
-	// logrus.Info("Listing recent GCB jobs...")
-	return nil
+// listJobs lists recent GCB jobs run in the specified project
+func listJobs(project string, lastJobs int64) error {
+	logrus.Infof("Listing last %d GCB jobs:", lastJobs)
+
+	return buildListJobs(project, lastJobs)
 }

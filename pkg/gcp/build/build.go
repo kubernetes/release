@@ -27,8 +27,12 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/net/context"
+	"google.golang.org/api/cloudbuild/v1"
+	"google.golang.org/api/option"
 
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/git"
@@ -347,4 +351,29 @@ func mergeMaps(maps ...map[string]string) map[string]string {
 		}
 	}
 	return out
+}
+
+func ListJobs(project string, lastJobs int64) error {
+	ctx := context.Background()
+	opts := option.WithCredentialsFile("")
+
+	service, err := cloudbuild.NewService(ctx, opts)
+	if err != nil {
+		return errors.Wrap(err, "failed to fetching gcloud credentials... try running \"gcloud auth application-default login\"")
+	}
+
+	req, err := service.Projects.Builds.List(project).PageSize(lastJobs).Do()
+	if err != nil {
+		return errors.Wrap(err, "failed to listing the builds")
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Start Time", "Finish Time", "Status", "Console Logs"})
+
+	for _, build := range req.Builds {
+		table.Append([]string{strings.TrimSpace(build.StartTime), strings.TrimSpace(build.FinishTime), strings.TrimSpace(build.Status), strings.TrimSpace(build.LogUrl)})
+	}
+	table.Render()
+
+	return nil
 }
