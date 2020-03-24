@@ -35,7 +35,7 @@ Simply [install krel](README.md#installation).
 
 ```
 Flags:
-      --branch string          Branch to run the specified GCB run against
+      --branch string          Branch to run the specified GCB run against (default "master")
       --build-version string   Build version
       --gcb-config string      If provided, this will be used as the name of the Google Cloud Build config file. (default "cloudbuild.yaml")
       --gcp-user string        If provided, this will be used as the GCP_USER_TAG.
@@ -56,6 +56,8 @@ Global Flags:
 ## Important notes
 
 - Default executions of `krel gcbmgr` run in mock mode. To run an actual stage or release, you **MUST** provide the `--nomock` flag.
+- Note that the default `--branch` is set to `master`, which means that it needs
+  to be set to the release branch if necessary.
 - Always execute the release process in the following order:
   - mock stage: `krel gcbmgr --stage`
   - mock release: `krel gcbmgr --release`
@@ -81,7 +83,6 @@ Global Flags:
 
 ```shell
 krel gcbmgr --stage \
-  --branch master \
   --project kubernetes-release-test
 ```
 
@@ -89,7 +90,6 @@ krel gcbmgr --stage \
 
 ```shell
 krel gcbmgr --release \
-  --branch master \
   --project kubernetes-release-test \
   --build-version <build-version>
 ```
