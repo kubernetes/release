@@ -185,10 +185,7 @@ upload_and_publish_images() {
   local img_bucket_dir="${2}"
   local bucket_path="gs://${BUCKET}/${img_bucket_dir}/"
 
-  # https://cloud.google.com/storage/docs/access-control/lists#predefined-acl
-  local canned_acl='public-read'
-
-  gsutil -m -q cp -a "$canned_acl" -r "${local_path}/." "${bucket_path}"
+  gsutil -m -q cp -r "${local_path}/." "${bucket_path}"
 }
 
 usage() {
