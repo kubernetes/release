@@ -204,40 +204,33 @@ func TestBuiltWithBazel(t *testing.T) {
 }
 
 func TestReadBazelVersion(t *testing.T) {
-	baseTmpDir, err := ioutil.TempDir("", "")
-	require.Nil(t, err)
-
-	version := "1.1.1"
-
-	// Build directories.
-	require.Nil(t, os.MkdirAll(filepath.Join(baseTmpDir, "bazel-genfiles"), os.ModePerm))
-
-	bazelVersionFile := filepath.Join(baseTmpDir, bazelVersionPath)
-	require.Nil(t, ioutil.WriteFile(
-		bazelVersionFile,
-		[]byte(version),
-		os.FileMode(0644),
-	))
-
-	defer cleanupTmps(t, baseTmpDir)
+	const version = "1.1.1"
 
 	type want struct {
 		r    string
 		rErr bool
 	}
+
 	cases := map[string]struct {
-		path string
-		want want
+		outdir string
+		want   want
 	}{
+		"ReadLegacyVersion": {
+			outdir: "bazel-genfiles",
+			want: want{
+				r:    version,
+				rErr: false,
+			},
+		},
 		"ReadVersion": {
-			path: baseTmpDir,
+			outdir: "bazel-bin",
 			want: want{
 				r:    version,
 				rErr: false,
 			},
 		},
 		"ReadVersionError": {
-			path: "notadir",
+			outdir: "bazel-random",
 			want: want{
 				rErr: true,
 			},
@@ -246,7 +239,23 @@ func TestReadBazelVersion(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			res, err := ReadBazelVersion(tc.path)
+			baseTmpDir, err := ioutil.TempDir("", "")
+			if err != nil {
+				t.Fatalf("unable to create temp dir: %v", err)
+			}
+			defer cleanupTmps(t, baseTmpDir)
+
+			// Build directories.
+			require.Nil(t, os.MkdirAll(filepath.Join(baseTmpDir, tc.outdir), os.ModePerm))
+
+			bazelVersionFile := filepath.Join(baseTmpDir, tc.outdir, "version")
+			require.Nil(t, ioutil.WriteFile(
+				bazelVersionFile,
+				[]byte(version),
+				os.FileMode(0644),
+			))
+
+			res, err := ReadBazelVersion(baseTmpDir)
 			require.Equal(t, tc.want.rErr, err != nil)
 			require.Equal(t, tc.want.r, res)
 		})
