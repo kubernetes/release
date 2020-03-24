@@ -19,21 +19,21 @@ steps:
   - ${_TOOL_REPO}
   waitFor: [ '-' ]
 
-- name: 'gcr.io/k8s-staging-releng/k8s-cloud-builder:v1.13.8-1'
+- name: 'gcr.io/k8s-staging-releng/k8s-cloud-builder:v1.13.9-2'
   id: prepare
   dir: 'go/src/k8s.io/kubernetes'
   args:
   - make
   - clean
 
-- name: 'gcr.io/k8s-staging-releng/k8s-cloud-builder:v1.13.8-1'
+- name: 'gcr.io/k8s-staging-releng/k8s-cloud-builder:v1.13.9-2'
   id: build
   dir: 'go/src/k8s.io/kubernetes'
   args:
   - make
   - "${_RELEASE_TYPE}"
 
-- name: 'gcr.io/k8s-staging-releng/k8s-cloud-builder:v1.13.8-1'
+- name: 'gcr.io/k8s-staging-releng/k8s-cloud-builder:v1.13.9-2'
   id: push-build
   dir: 'go/src/k8s.io/kubernetes'
   args:
