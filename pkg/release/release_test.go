@@ -47,9 +47,8 @@ func TestGetDefaultToolRepoURLSuccess(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
 
-		actual, err := GetDefaultToolRepoURL()
+		actual := GetDefaultToolRepoURL()
 		assert.Equal(t, tc.expected, actual)
-		assert.Nil(t, err)
 	}
 }
 
@@ -76,9 +75,8 @@ func TestGetToolRepoURLSuccess(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
 
-		actual, err := GetToolRepoURL(tc.org, tc.repo, tc.useSSH)
+		actual := GetToolRepoURL(tc.org, tc.repo, tc.useSSH)
 		assert.Equal(t, tc.expected, actual)
-		assert.Nil(t, err)
 	}
 }
 

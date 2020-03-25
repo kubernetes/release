@@ -21,7 +21,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
-	"path"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -43,7 +43,6 @@ const (
 	DefaultGithubOrg         = "kubernetes"
 	DefaultGithubRepo        = "kubernetes"
 	DefaultGithubReleaseRepo = "sig-release"
-	DefaultGithubURLBase     = "https://github.com"
 	DefaultRemote            = "origin"
 	DefaultMasterRef         = "HEAD"
 	Master                   = "master"
@@ -66,7 +65,7 @@ func GetTag() (string, error) {
 
 // GetDefaultKubernetesRepoURL returns the default HTTPS repo URL for Kubernetes.
 // Expected: https://github.com/kubernetes/kubernetes
-func GetDefaultKubernetesRepoURL() (string, error) {
+func GetDefaultKubernetesRepoURL() string {
 	return GetKubernetesRepoURL(DefaultGithubOrg, false)
 }
 
@@ -75,7 +74,7 @@ func GetDefaultKubernetesRepoURL() (string, error) {
 // Expected result is one of the following:
 // - https://github.com/<org>/kubernetes
 // - git@github.com:<org>/kubernetes
-func GetKubernetesRepoURL(org string, useSSH bool) (string, error) {
+func GetKubernetesRepoURL(org string, useSSH bool) string {
 	if org == "" {
 		org = DefaultGithubOrg
 	}
@@ -88,28 +87,20 @@ func GetKubernetesRepoURL(org string, useSSH bool) (string, error) {
 // Expected result is one of the following:
 // - https://github.com/<org>/<repo>
 // - git@github.com:<org>/<repo>
-func GetRepoURL(org, repo string, useSSH bool) (string, error) {
-	slug := fmt.Sprintf("%s/%s", org, repo)
+func GetRepoURL(org, repo string, useSSH bool) (repoURL string) {
+	slug := filepath.Join(org, repo)
 
-	var urlBase string
-	var repoURL string
 	if useSSH {
-		urlBase = defaultGithubAuthRoot
-		repoURL = fmt.Sprintf("%s%s", urlBase, slug)
+		repoURL = fmt.Sprintf("%s%s", defaultGithubAuthRoot, slug)
 	} else {
-		urlBase = DefaultGithubURLBase
-
-		u, err := url.Parse(urlBase)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to parse URL base")
-		}
-
-		u.Path = path.Join(u.Path, slug)
-
-		repoURL = u.String()
+		repoURL = (&url.URL{
+			Scheme: "https",
+			Host:   "github.com",
+			Path:   slug,
+		}).String()
 	}
 
-	return repoURL, nil
+	return repoURL
 }
 
 // DiscoverResult is the result of a revision discovery
@@ -217,11 +208,7 @@ func CloneOrOpenDefaultGitHubRepoSSH(repoPath string) (*Repo, error) {
 // GitHub repository via the owner and repo. If useSSH is true, then it will
 // clone the repository using the defaultGithubAuthRoot.
 func CloneOrOpenGitHubRepo(repoPath, owner, repo string, useSSH bool) (*Repo, error) {
-	repoURL, err := GetRepoURL(owner, repo, useSSH)
-	if err != nil {
-		return nil, err
-	}
-
+	repoURL := GetRepoURL(owner, repo, useSSH)
 	return CloneOrOpenRepo(repoPath, repoURL, useSSH)
 }
 
@@ -863,11 +850,7 @@ func (r *Repo) HasRemote(name, expectedURL string) bool {
 
 // AddRemote adds a new remote to the current working tree
 func (r *Repo) AddRemote(name, owner, repo string) error {
-	repoURL, err := GetRepoURL(owner, repo, true)
-	if err != nil {
-		return errors.Wrap(err, "unable to get remote URL")
-	}
-
+	repoURL := GetRepoURL(owner, repo, true)
 	args := []string{"remote", "add", name, repoURL}
 	return command.
 		NewWithWorkDir(r.Dir(), gitExecutable, args...).

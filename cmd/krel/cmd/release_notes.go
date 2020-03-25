@@ -387,12 +387,7 @@ func prepareFork(branchName, repoPath, upstreamOrg, upstreamRepo, myOrg, myRepo 
 	}
 
 	// test if the fork remote is already existing
-	url, err := git.GetRepoURL(
-		myOrg, myRepo, true,
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get repository URL")
-	}
+	url := git.GetRepoURL(myOrg, myRepo, true)
 	if repo.HasRemote(userForkName, url) {
 		logrus.Infof(
 			"Using already existing remote %v (%v) in repository",
@@ -549,11 +544,7 @@ func createWebsitePR(tag string, result *releaseNotesResult) error {
 
 // tryToFindPreviuousTag gets a release tag and returns the one before it
 func tryToFindPreviuousTag(tag string) (string, error) {
-	url, err := git.GetDefaultKubernetesRepoURL()
-	if err != nil {
-		return "", err
-	}
-
+	url := git.GetDefaultKubernetesRepoURL()
 	status, err := command.New(
 		"git", "ls-remote", "--sort=v:refname",
 		"--tags", url,
@@ -573,11 +564,7 @@ func tryToFindPreviuousTag(tag string) (string, error) {
 // tryToFindLatestMinorTag looks-up the default k/k remote to find the latest
 // non final version
 func tryToFindLatestMinorTag() (string, error) {
-	url, err := git.GetDefaultKubernetesRepoURL()
-	if err != nil {
-		return "", err
-	}
-
+	url := git.GetDefaultKubernetesRepoURL()
 	status, err := command.New(
 		"git", "ls-remote", "--sort=v:refname",
 		"--tags", url,

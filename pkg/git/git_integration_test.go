@@ -636,8 +636,7 @@ func TestHasRemoteSuccess(t *testing.T) {
 	require.Equal(t, "test", remotes[1].Name())
 	require.Len(t, remotes[1].URLs(), 1)
 
-	url, err := git.GetRepoURL("owner", "repo", true)
-	require.Nil(t, err)
+	url := git.GetRepoURL("owner", "repo", true)
 	require.Equal(t, url, remotes[1].URLs()[0])
 
 	// Or via the API
