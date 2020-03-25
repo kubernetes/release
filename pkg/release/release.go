@@ -84,7 +84,7 @@ const (
 
 // GetDefaultKubernetesRepoURL returns the default HTTPS repo URL for Release Engineering tools.
 // Expected: https://github.com/kubernetes/release
-func GetDefaultToolRepoURL() (string, error) {
+func GetDefaultToolRepoURL() string {
 	return GetToolRepoURL(DefaultToolOrg, DefaultToolRepo, false)
 }
 
@@ -93,7 +93,7 @@ func GetDefaultToolRepoURL() (string, error) {
 // Expected result is one of the following:
 // - https://github.com/<org>/release
 // - git@github.com:<org>/release
-func GetToolRepoURL(org, repo string, useSSH bool) (string, error) {
+func GetToolRepoURL(org, repo string, useSSH bool) string {
 	if org == "" {
 		org = GetToolOrg()
 	}

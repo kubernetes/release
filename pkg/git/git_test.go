@@ -58,9 +58,8 @@ func TestGetDefaultKubernetesRepoURLSuccess(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
 
-		actual, err := git.GetDefaultKubernetesRepoURL()
+		actual := git.GetDefaultKubernetesRepoURL()
 		assert.Equal(t, tc.expected, actual)
-		assert.Nil(t, err)
 	}
 }
 
@@ -86,9 +85,8 @@ func TestGetKubernetesRepoURLSuccess(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
 
-		actual, err := git.GetKubernetesRepoURL(tc.org, tc.useSSH)
+		actual := git.GetKubernetesRepoURL(tc.org, tc.useSSH)
 		assert.Equal(t, tc.expected, actual)
-		assert.Nil(t, err)
 	}
 }
 
@@ -118,9 +116,8 @@ func TestGetRepoURLSuccess(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
 
-		actual, err := git.GetRepoURL(tc.org, tc.repo, tc.useSSH)
+		actual := git.GetRepoURL(tc.org, tc.repo, tc.useSSH)
 		assert.Equal(t, tc.expected, actual)
-		assert.Nil(t, err)
 	}
 }
 
