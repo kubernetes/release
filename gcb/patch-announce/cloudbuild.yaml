@@ -39,7 +39,7 @@ steps:
   - "--branch=${_RELEASE_GIT_BRANCH}"
 
 - id: prepare-and-send
-  name: "gcr.io/k8s-staging-releng/k8s-cloud-builder:v1.13.8-1"
+  name: "gcr.io/k8s-staging-releng/k8s-cloud-builder:v1.13.9-2"
   env:
   - "SENDER_NAME=${_SENDER_NAME}"
   - "SENDER_EMAIL=${_SENDER_EMAIL}"

@@ -18,7 +18,7 @@
 ARG DEBIAN_FRONTEND=noninteractive
 
 ##------------------------------------------------------------
-FROM us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v1.13.8-1
+FROM us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v1.13.9-2
 
 RUN apt-get -q update
 
