@@ -127,7 +127,14 @@ KUBE_ROOT=$(pwd -P)
 USE_BAZEL=false
 if release::was_built_with_bazel $KUBE_ROOT $FLAGS_release_kind; then
   USE_BAZEL=true
-  LATEST=$(cat $KUBE_ROOT/bazel-genfiles/version)
+  # The check for version in bazel-genfiles can be removed once everyone is off
+  # of versions before 0.25.0.
+  # https://github.com/bazelbuild/bazel/issues/8651
+  if [[ -r  "$KUBE_ROOT/bazel-genfiles/version" ]]; then
+    LATEST=$(cat $KUBE_ROOT/bazel-genfiles/version)
+  else
+    LATEST=$(cat $KUBE_ROOT/bazel-bin/version)
+  fi
 else
   LATEST=$(tar -O -xzf $KUBE_ROOT/_output/release-tars/$FLAGS_release_kind.tar.gz $FLAGS_release_kind/version)
 fi

@@ -19,6 +19,7 @@ package release
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -47,7 +48,7 @@ const (
 	versionDirtyRE    = `(-dirty)`
 	dockerBuildPath   = "_output/release-tars"
 	bazelBuildPath    = "bazel-bin/build/release-tars"
-	bazelVersionPath  = "bazel-genfiles/version"
+	bazelVersionPath  = "bazel-bin/version"
 	dockerVersionPath = "kubernetes/version"
 	kubernetesTar     = "kubernetes.tar.gz"
 
@@ -131,6 +132,12 @@ func BuiltWithBazel(workDir string) (bool, error) {
 // ReadBazelVersion reads the version from a Bazel build.
 func ReadBazelVersion(workDir string) (string, error) {
 	version, err := ioutil.ReadFile(filepath.Join(workDir, bazelVersionPath))
+	if os.IsNotExist(err) {
+		// The check for version in bazel-genfiles can be removed once everyone is
+		// off of versions before 0.25.0.
+		// https://github.com/bazelbuild/bazel/issues/8651
+		version, err = ioutil.ReadFile(filepath.Join(workDir, "bazel-genfiles/version"))
+	}
 	return string(version), err
 }
 
