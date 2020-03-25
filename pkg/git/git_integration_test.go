@@ -560,7 +560,7 @@ func TestAddFailureWrongPath(t *testing.T) {
 
 	err := testRepo.sut.Add("wrong")
 	require.NotNil(t, err)
-	require.Contains(t, err.Error(), "entry not found")
+	require.Contains(t, err.Error(), "adding file wrong to repository")
 }
 
 func TestCommitSuccess(t *testing.T) {
