@@ -19,7 +19,6 @@ package git_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/git/gitfakes"
@@ -59,7 +58,7 @@ func TestGetDefaultKubernetesRepoURLSuccess(t *testing.T) {
 		t.Logf("Test case: %s", tc.name)
 
 		actual := git.GetDefaultKubernetesRepoURL()
-		assert.Equal(t, tc.expected, actual)
+		require.Equal(t, tc.expected, actual)
 	}
 }
 
@@ -86,7 +85,7 @@ func TestGetKubernetesRepoURLSuccess(t *testing.T) {
 		t.Logf("Test case: %s", tc.name)
 
 		actual := git.GetKubernetesRepoURL(tc.org, tc.useSSH)
-		assert.Equal(t, tc.expected, actual)
+		require.Equal(t, tc.expected, actual)
 	}
 }
 
@@ -117,7 +116,7 @@ func TestGetRepoURLSuccess(t *testing.T) {
 		t.Logf("Test case: %s", tc.name)
 
 		actual := git.GetRepoURL(tc.org, tc.repo, tc.useSSH)
-		assert.Equal(t, tc.expected, actual)
+		require.Equal(t, tc.expected, actual)
 	}
 }
 
