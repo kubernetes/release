@@ -712,10 +712,12 @@ func (r *Repo) TagsForBranch(branch string) (res []string, err error) {
 
 // Add adds a file to the staging area of the repo
 func (r *Repo) Add(filename string) error {
-	if _, err := r.worktree.Add(filename); err != nil {
-		return err
-	}
-	return nil
+	return errors.Wrapf(
+		command.NewWithWorkDir(
+			r.Dir(), gitExecutable, "add", filename,
+		).RunSilentSuccess(),
+		"adding file %s to repository", filename,
+	)
 }
 
 // UserCommit makes a commit using the local user's config
