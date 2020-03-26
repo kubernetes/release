@@ -171,7 +171,7 @@ const alphaReleaseExpectedContent = `## Changes by Kind
 - The CSR signing cert/key pairs will be reloaded from disk like the kube-apiserver cert/key pairs ([#86816](https://github.com/kubernetes/kubernetes/pull/86816), [@deads2k](https://github.com/deads2k)) [SIG API Machinery, Apps and Auth]
 - To reduce chances of throttling, VM cache is set to nil when Azure node provisioning state is deleting ([#87635](https://github.com/kubernetes/kubernetes/pull/87635), [@feiskyer](https://github.com/feiskyer)) [SIG Cloud Provider]`
 
-const alphaReleaseExpectedHTML = `<!DOCTYPE html>
+const alphaReleaseExpectedHTMLHead = `<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
@@ -190,7 +190,9 @@ const alphaReleaseExpectedHTML = `<!DOCTYPE html>
   </head>
   <body>
     <h1>v1.18.0-alpha.3</h1>
-<h2>Changelog since v1.19.0-alpha.0</h2>
+<h2>Changelog since `
+
+const alphaReleaseExpectedHTMLBottom = `
 <h2>Changes by Kind</h2>
 <h3>Deprecation</h3>
 <ul>

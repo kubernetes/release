@@ -41,7 +41,6 @@ func fileContains(t *testing.T, file, contains string) {
 	content, err := ioutil.ReadFile(file)
 	require.Nil(t, err)
 	require.Contains(t, string(content), contains)
-	require.Nil(t, os.RemoveAll(file))
 }
 
 func TestChangelogNoArgumentsOrFlags(t *testing.T) {
@@ -67,6 +66,7 @@ func TestNewPatchRelease(t *testing.T) { // nolint: dupl
 	// Then
 	// Verify local results
 	fileContains(t, "CHANGELOG-1.16.html", patchReleaseExpectedHTML)
+	require.Nil(t, os.RemoveAll("CHANGELOG-1.16.html"))
 	for _, x := range []struct {
 		branch        string
 		commitMessage string
@@ -104,7 +104,9 @@ func TestNewAlphaRelease(t *testing.T) {
 
 	// Then
 	// Verify local results
-	fileContains(t, "CHANGELOG-1.18.html", alphaReleaseExpectedHTML)
+	fileContains(t, "CHANGELOG-1.18.html", alphaReleaseExpectedHTMLHead)
+	fileContains(t, "CHANGELOG-1.18.html", alphaReleaseExpectedHTMLBottom)
+	require.Nil(t, os.RemoveAll("CHANGELOG-1.18.html"))
 
 	// Verify commit message
 	lastCommit := s.lastCommit(t, git.Master)
@@ -138,6 +140,7 @@ func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 	// Then
 	// Verify local results
 	fileContains(t, "CHANGELOG-1.17.html", minorReleaseExpectedHTML)
+	require.Nil(t, os.RemoveAll("CHANGELOG-1.17.html"))
 	for _, x := range []struct {
 		branch        string
 		commitMessage string
