@@ -1336,7 +1336,7 @@ prepare_workspace () {
   # Check if locally staged directory contains all of the RELEASE_VERSIONs for
   # this release type
   if ((FLAGS_stage)) || ! found_staged_location ${RELEASE_VERSION[@]}; then
-    # GCB releases (gcbmgr release) requires a found staged build to use
+    # GCB releases (krel gcbmgr --release) requires a found staged build to use
     if ! ((FLAGS_stage)) && ((FLAGS_gcb)); then
       logecho "$FATAL: Releasing from GCB requires a staged" \
               "--buildversion=<buildversion>"
@@ -1495,7 +1495,7 @@ common::timestamp begin
 if ! ((FLAGS_gcb)); then
   if ((FLAGS_nomock)); then
     common::exit 1 "$FATAL: --nomock is no longer available on the" \
-                   "command-line/desktop.  Use 'gcbmgr'."
+                   "command-line/desktop.  Use 'krel gcbmgr'."
   fi
 
   logecho $HR
@@ -1773,18 +1773,12 @@ done
 # if --stage, we're done
 if ((FLAGS_stage)); then
   ((FLAGS_nomock)) && EXTRA_FLAGS+=("--nomock")
-  ((FLAGS_official)) && EXTRA_FLAGS+=("--official")
-  ((FLAGS_rc)) && EXTRA_FLAGS+=("--rc")
+  ((FLAGS_official)) && EXTRA_FLAGS+=("--type official")
+  ((FLAGS_rc)) && EXTRA_FLAGS+=("--type rc")
   logecho
   logecho "To release this staged build, run:"
   logecho
-  logecho -n "$ gcbmgr release ${EXTRA_FLAGS[*]} $RELEASE_BRANCH" \
-             "--buildversion=$JENKINS_BUILD_VERSION"
-  logecho
-  logecho
-  logecho "-OR-"
-  logecho
-  logecho -n "$ anago ${EXTRA_FLAGS[*]} $RELEASE_BRANCH" \
+  logecho -n "$ krel gcbmgr --release ${EXTRA_FLAGS[*]} $RELEASE_BRANCH" \
              "--buildversion=$JENKINS_BUILD_VERSION"
   logecho
   logecho
