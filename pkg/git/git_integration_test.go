@@ -221,20 +221,30 @@ func TestSuccessCloneOrOpen(t *testing.T) {
 	require.Nil(t, secondRepo.Cleanup())
 }
 
-func TestSuccessDescribeTag(t *testing.T) {
+func TestSuccessDescribeTags(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	tag, err := testRepo.sut.DescribeTag(testRepo.firstTagCommit)
+	tag, err := testRepo.sut.Describe(
+		git.NewDescribeOptions().
+			WithRevision(testRepo.firstTagCommit).
+			WithAbbrev(0).
+			WithTags(),
+	)
 	require.Nil(t, err)
 	require.Equal(t, tag, testRepo.firstTagName)
 }
 
-func TestFailureDescribeTag(t *testing.T) {
+func TestFailureDescribeTags(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	_, err := testRepo.sut.DescribeTag("wrong")
+	_, err := testRepo.sut.Describe(
+		git.NewDescribeOptions().
+			WithRevision("wrong").
+			WithAbbrev(0).
+			WithTags(),
+	)
 	require.NotNil(t, err)
 }
 

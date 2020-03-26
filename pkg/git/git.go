@@ -52,17 +52,6 @@ const (
 	gitExecutable         = "git"
 )
 
-func GetTag() (string, error) {
-	tag, err := command.New(
-		"git", "describe", "--tags", "--always", "--dirty",
-	).RunSilentSuccessOutput()
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get current tag")
-	}
-	t := time.Now().Format("20060102")
-	return fmt.Sprintf("v%s-%s", t, tag.OutputTrimNL()), nil
-}
-
 // GetDefaultKubernetesRepoURL returns the default HTTPS repo URL for Kubernetes.
 // Expected: https://github.com/kubernetes/kubernetes
 func GetDefaultKubernetesRepoURL() string {
@@ -553,21 +542,6 @@ func Remotify(name string) string {
 		return name
 	}
 	return fmt.Sprintf("%s/%s", DefaultRemote, name)
-}
-
-// DescribeTag can be used to retrieve the latest tag for a provided revision
-func (r *Repo) DescribeTag(rev string) (string, error) {
-	// go git seems to have no implementation for `git describe`
-	// which means that we fallback to a shell command for sake of
-	// simplicity
-	result, err := command.NewWithWorkDir(
-		r.Dir(), gitExecutable, "describe", "--abbrev=0", "--tags", rev,
-	).RunSilentSuccessOutput()
-	if err != nil {
-		return "", err
-	}
-
-	return result.OutputTrimNL(), nil
 }
 
 // Merge does a git merge into the current branch from the provided one
