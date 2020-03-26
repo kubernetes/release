@@ -596,6 +596,7 @@ func releaseNotesFor(tag string) (*releaseNotesResult, error) {
 	notesOptions.StartRev = startTag
 	notesOptions.EndRev = tag
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
+	notesOptions.ReleaseVersion = util.TrimTagPrefix(tag)
 
 	if err := notesOptions.ValidateAndFinish(); err != nil {
 		return nil, err
@@ -649,6 +650,7 @@ func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
 	notesOptions.StartRev = startTag
 	notesOptions.EndRev = releaseNotesOpts.tag
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
+	notesOptions.ReleaseVersion = util.TrimTagPrefix(releaseNotesOpts.tag)
 
 	if err := notesOptions.ValidateAndFinish(); err != nil {
 		return nil, err
