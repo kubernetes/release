@@ -253,9 +253,9 @@ func runGcbmgr() error {
 	// TODO: Need actual values
 	var jobName, uploaded string
 
-	version, err := git.GetTag()
+	version, err := release.GetTag()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "getting current tag")
 	}
 
 	return build.RunSingleJob(buildOpts, jobName, uploaded, version, gcbSubs)

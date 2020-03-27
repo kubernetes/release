@@ -125,11 +125,22 @@ func runFf(opts *ffOptions, rootOpts *rootOptions) error {
 	}
 
 	// Verify the tags
-	masterTag, err := repo.DescribeTag(kgit.Remotify(kgit.Master))
+	masterTag, err := repo.Describe(
+		kgit.NewDescribeOptions().
+			WithRevision(kgit.Remotify(kgit.Master)).
+			WithAbbrev(0).
+			WithTags(),
+	)
+
 	if err != nil {
 		return err
 	}
-	mergeBaseTag, err := repo.DescribeTag(mergeBase)
+	mergeBaseTag, err := repo.Describe(
+		kgit.NewDescribeOptions().
+			WithRevision(mergeBase).
+			WithAbbrev(0).
+			WithTags(),
+	)
 	if err != nil {
 		return err
 	}

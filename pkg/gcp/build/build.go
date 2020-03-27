@@ -35,7 +35,7 @@ import (
 	"google.golang.org/api/option"
 
 	"k8s.io/release/pkg/command"
-	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/yaml"
 )
 
@@ -300,7 +300,7 @@ func RunBuildJobs(o *Options) []error {
 	}
 
 	logrus.Info("Running build jobs...")
-	tag, err := git.GetTag()
+	tag, err := release.GetTag()
 	if err != nil {
 		return []error{err}
 	}

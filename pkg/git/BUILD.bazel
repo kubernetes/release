@@ -2,7 +2,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = ["git.go"],
+    srcs = [
+        "describe.go",
+        "git.go",
+    ],
     importpath = "k8s.io/release/pkg/git",
     visibility = ["//visibility:public"],
     deps = [
@@ -38,6 +41,7 @@ filegroup(
 go_test(
     name = "go_default_test",
     srcs = [
+        "describe_test.go",
         "git_integration_test.go",
         "git_test.go",
     ],
