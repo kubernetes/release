@@ -123,6 +123,11 @@ type Remote struct {
 	urls []string
 }
 
+// NewRemote creates a new remote for the provided name and URLs
+func NewRemote(name string, urls []string) *Remote {
+	return &Remote{name, urls}
+}
+
 // Name returns the name of the remote
 func (r *Remote) Name() string {
 	return r.name
@@ -276,7 +281,9 @@ func updateRepo(repoPath string) (*Repo, error) {
 
 // OpenRepo tries to open the provided repoPath
 func OpenRepo(repoPath string) (*Repo, error) {
-	r, err := git.PlainOpen(repoPath)
+	r, err := git.PlainOpenWithOptions(
+		repoPath, &git.PlainOpenOptions{DetectDotGit: true},
+	)
 	if err != nil {
 		return nil, err
 	}

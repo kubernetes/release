@@ -34,19 +34,28 @@ import (
 	"k8s.io/release/pkg/util"
 )
 
-type gcbmgrOptions struct {
-	stage        bool
-	release      bool
-	stream       bool
-	branch       string
-	releaseType  string
-	buildVersion string
-	gcpUser      string
-	lastJobs     int64
+type GcbmgrOptions struct {
+	Stage        bool
+	Release      bool
+	Stream       bool
+	Branch       string
+	ReleaseType  string
+	BuildVersion string
+	GcpUser      string
+	LastJobs     int64
+	Repo         Repository
+}
+
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+//counterfeiter:generate . Repository
+type Repository interface {
+	Open() error
+	CheckState(string, string, string) error
+	GetTag() (string, error)
 }
 
 var (
-	gcbmgrOpts = &gcbmgrOptions{}
+	GcbmgrOpts = &GcbmgrOptions{}
 	buildOpts  = &build.Options{}
 
 	requiredPackages = []string{
@@ -62,34 +71,34 @@ var (
 	}
 )
 
-// gcbmgrCmd is a krel subcommand which invokes runGcbmgr()
+// gcbmgrCmd is a krel subcommand which invokes RunGcbmgr()
 var gcbmgrCmd = &cobra.Command{
 	Use:           "gcbmgr",
 	Short:         "Run gcbmgr",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runGcbmgr()
+		return RunGcbmgr()
 	},
 }
 
 func init() {
 	// Submit types
 	gcbmgrCmd.PersistentFlags().BoolVar(
-		&gcbmgrOpts.stage,
+		&GcbmgrOpts.Stage,
 		"stage",
 		false,
 		"Submit a stage run to GCB",
 	)
 	gcbmgrCmd.PersistentFlags().BoolVar(
-		&gcbmgrOpts.release,
+		&GcbmgrOpts.Release,
 		"release",
 		false,
 		"Submit a release run to GCB",
 	)
 
 	gcbmgrCmd.PersistentFlags().StringVar(
-		&gcbmgrOpts.branch,
+		&GcbmgrOpts.Branch,
 		"branch",
 		git.Master,
 		"Branch to run the specified GCB run against",
@@ -97,7 +106,7 @@ func init() {
 
 	// Release types
 	gcbmgrCmd.PersistentFlags().StringVar(
-		&gcbmgrOpts.releaseType,
+		&GcbmgrOpts.ReleaseType,
 		"type",
 		"prerelease",
 		"Release type (must be one of: 'prerelease', 'rc', 'official')",
@@ -105,7 +114,7 @@ func init() {
 
 	// TODO: Remove default once find_green_build logic exists
 	gcbmgrCmd.PersistentFlags().StringVar(
-		&gcbmgrOpts.buildVersion,
+		&GcbmgrOpts.BuildVersion,
 		"build-version",
 		"",
 		"Build version",
@@ -119,7 +128,7 @@ func init() {
 		"GCP project to run GCB in",
 	)
 	gcbmgrCmd.PersistentFlags().BoolVar(
-		&gcbmgrOpts.stream,
+		&GcbmgrOpts.Stream,
 		"stream",
 		false,
 		"If specified, GCB will run synchronously, tailing its' logs to stdout",
@@ -131,25 +140,26 @@ func init() {
 		"If provided, this will be used as the name of the Google Cloud Build config file.",
 	)
 	gcbmgrCmd.PersistentFlags().StringVar(
-		&gcbmgrOpts.gcpUser,
+		&GcbmgrOpts.GcpUser,
 		"gcp-user",
 		"",
 		"If provided, this will be used as the GCP_USER_TAG.",
 	)
 
 	gcbmgrCmd.PersistentFlags().Int64Var(
-		&gcbmgrOpts.lastJobs,
+		&GcbmgrOpts.LastJobs,
 		"list-jobs",
 		5,
 		"List the last x build jobs in the project. Default to 5.",
 	)
 
+	GcbmgrOpts.Repo = release.NewRepo()
 	rootCmd.AddCommand(gcbmgrCmd)
 }
 
-// runGcbmgr is the function invoked by 'krel gcbmgr', responsible for
+// RunGcbmgr is the function invoked by 'krel gcbmgr', responsible for
 // submitting release jobs to GCB
-func runGcbmgr() error {
+func RunGcbmgr() error {
 	logrus.Info("Checking for required packages")
 	ok, err := util.PackagesAvailable(requiredPackages...)
 	if err != nil {
@@ -164,12 +174,22 @@ func runGcbmgr() error {
 		return errors.New("binaries required to run gcbmgr are not present")
 	}
 
-	// TODO: Add gitlib::repo_state check
+	toolOrg := release.GetToolOrg()
+	toolRepo := release.GetToolRepo()
+	toolBranch := release.GetToolBranch()
 
-	logrus.Infof("Running gcbmgr with the following options: %v", *gcbmgrOpts)
+	if err := GcbmgrOpts.Repo.Open(); err != nil {
+		return errors.Wrap(err, "open release repo")
+	}
+
+	if err := GcbmgrOpts.Repo.CheckState(toolOrg, toolRepo, toolBranch); err != nil {
+		return errors.Wrap(err, "verifying repository state")
+	}
+
+	logrus.Infof("Running gcbmgr with the following options: %v", *GcbmgrOpts)
 	logrus.Infof("Build options: %v", *buildOpts)
 
-	if gcbmgrOpts.stage && gcbmgrOpts.release {
+	if GcbmgrOpts.Stage && GcbmgrOpts.Release {
 		return errors.New("cannot specify both the 'stage' and 'release' flag; resubmit with only one build type selected")
 	}
 
@@ -178,11 +198,11 @@ func runGcbmgr() error {
 
 	buildOpts.Async = true
 
-	if gcbmgrOpts.stream {
+	if GcbmgrOpts.Stream {
 		buildOpts.Async = false
 	}
 
-	gcbSubs, gcbSubsErr := setGCBSubstitutions(gcbmgrOpts)
+	gcbSubs, gcbSubsErr := SetGCBSubstitutions(GcbmgrOpts, toolOrg, toolRepo, toolBranch)
 	if gcbSubs == nil || gcbSubsErr != nil {
 		return gcbSubsErr
 	}
@@ -190,7 +210,7 @@ func runGcbmgr() error {
 	if rootOpts.nomock {
 		// TODO: Consider a '--yes' flag so we can mock this
 		_, nomockSubmit, askErr := util.Ask(
-			fmt.Sprintf("Really submit a --nomock release job against the %s branch?", gcbmgrOpts.branch),
+			fmt.Sprintf("Really submit a --nomock release job against the %s branch?", GcbmgrOpts.Branch),
 			"yes",
 			3,
 		)
@@ -235,13 +255,13 @@ func runGcbmgr() error {
 	var jobType string
 	switch {
 	// TODO: Consider a '--validate' flag to validate the GCB config without submitting
-	case gcbmgrOpts.stage:
+	case GcbmgrOpts.Stage:
 		jobType = "stage"
-	case gcbmgrOpts.release:
+	case GcbmgrOpts.Release:
 		jobType = "release"
 		buildOpts.DiskSize = "100"
 	default:
-		return listJobs(buildOpts.Project, gcbmgrOpts.lastJobs)
+		return listJobs(buildOpts.Project, GcbmgrOpts.LastJobs)
 	}
 
 	buildOpts.ConfigDir = filepath.Join(toolRoot, "gcb", jobType)
@@ -253,7 +273,7 @@ func runGcbmgr() error {
 	// TODO: Need actual values
 	var jobName, uploaded string
 
-	version, err := release.GetTag()
+	version, err := GcbmgrOpts.Repo.GetTag()
 	if err != nil {
 		return errors.Wrap(err, "getting current tag")
 	}
@@ -261,20 +281,15 @@ func runGcbmgr() error {
 	return build.RunSingleJob(buildOpts, jobName, uploaded, version, gcbSubs)
 }
 
-// setGCBSubstitutions takes a set of gcbmgrOptions and returns a map of GCB substitutions
-func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
+// SetGCBSubstitutions takes a set of GcbmgrOptions and returns a map of GCB substitutions
+func SetGCBSubstitutions(o *GcbmgrOptions, toolOrg, toolRepo, toolBranch string) (map[string]string, error) {
 	gcbSubs := map[string]string{}
 
-	toolOrg := release.GetToolOrg()
 	gcbSubs["TOOL_ORG"] = toolOrg
-
-	toolRepo := release.GetToolRepo()
 	gcbSubs["TOOL_REPO"] = toolRepo
-
-	toolBranch := release.GetToolBranch()
 	gcbSubs["TOOL_BRANCH"] = toolBranch
 
-	gcpUser := o.gcpUser
+	gcpUser := o.GcpUser
 	if gcpUser == "" {
 		var gcpUserErr error
 		gcpUser, gcpUserErr = auth.GetCurrentGCPUser()
@@ -289,7 +304,7 @@ func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 	gcbSubs["GCP_USER_TAG"] = gcpUser
 
 	// TODO: The naming for these env vars is clumsy/confusing, but we're bound by anago right now.
-	releaseType := o.releaseType
+	releaseType := o.ReleaseType
 	switch releaseType {
 	case "official":
 		gcbSubs["OFFICIAL_TAG"] = releaseType
@@ -313,22 +328,22 @@ func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 		gcbSubs["RC"] = ""
 	}
 
-	gcbSubs["RELEASE_BRANCH"] = o.branch
+	gcbSubs["RELEASE_BRANCH"] = o.Branch
 
-	if o.stage {
+	if o.Stage {
 		// TODO: Remove once we remove support for --built-at-head.
 		gcbSubs["BUILD_AT_HEAD"] = ""
 	}
 
-	buildVersion := o.buildVersion
+	buildVersion := o.BuildVersion
 	if buildVersion == "" {
-		if o.release {
+		if o.Release {
 			return gcbSubs, errors.New("Build version must be specified when sending a release GCB run")
 		}
 
 		var versionErr error
 		buildVersion, versionErr = release.GetKubeVersionForBranch(
-			release.VersionTypeCILatest, o.branch,
+			release.VersionTypeCILatest, o.Branch,
 		)
 		if versionErr != nil {
 			return gcbSubs, versionErr
@@ -344,7 +359,7 @@ func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 	gcbSubs["BUILDVERSION"] = buildVersion
 
 	kubecrossBranches := []string{
-		o.branch,
+		o.Branch,
 		git.Master,
 	}
 
@@ -357,11 +372,11 @@ func setGCBSubstitutions(o *gcbmgrOptions) (map[string]string, error) {
 	return gcbSubs, nil
 }
 
-var buildListJobs = build.ListJobs
+var BuildListJobs = build.ListJobs
 
 // listJobs lists recent GCB jobs run in the specified project
 func listJobs(project string, lastJobs int64) error {
 	logrus.Infof("Listing last %d GCB jobs:", lastJobs)
 
-	return buildListJobs(project, lastJobs)
+	return BuildListJobs(project, lastJobs)
 }

@@ -300,7 +300,13 @@ func RunBuildJobs(o *Options) []error {
 	}
 
 	logrus.Info("Running build jobs...")
-	tag, err := release.GetTag()
+	repo := release.NewRepo()
+	err := repo.Open()
+	if err != nil {
+		return []error{err}
+	}
+
+	tag, err := repo.GetTag()
 	if err != nil {
 		return []error{err}
 	}

@@ -52,6 +52,7 @@ go_test(
     data = glob(["testdata/**"]),
     embed = [":go_default_library"],
     deps = [
+        "//cmd/krel/cmd/cmdfakes:go_default_library",
         "//pkg/command:go_default_library",
         "//pkg/gcp/build:go_default_library",
         "//pkg/git:go_default_library",
@@ -69,7 +70,10 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [":package-srcs"],
+    srcs = [
+        ":package-srcs",
+        "//cmd/krel/cmd/cmdfakes:all-srcs",
+    ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -196,23 +195,4 @@ func URLPrefixForBucket(bucket string) string {
 		urlPrefix = ProductionBucketURL
 	}
 	return urlPrefix
-}
-
-// GetTag returns the tag from the current working directory
-func GetTag() (string, error) {
-	repo, err := git.OpenRepo(".")
-	if err != nil {
-		return "", errors.Wrap(err, "opening current repository")
-	}
-	describeOutput, err := repo.Describe(
-		git.NewDescribeOptions().
-			WithAlways().
-			WithDirty().
-			WithTags(),
-	)
-	if err != nil {
-		return "", err
-	}
-	t := time.Now().Format("20060102")
-	return fmt.Sprintf("v%s-%s", t, describeOutput), nil
 }
