@@ -1,4 +1,5 @@
 # krel changelog
+
 Automate the lifecycle of CHANGELOG-x.y.{md,html} files in a k/k repository
 
 - [Summary](#summary)
@@ -7,17 +8,18 @@ Automate the lifecycle of CHANGELOG-x.y.{md,html} files in a k/k repository
 - [Important notes](#important-notes)
 
 ## Summary
+
 The `changelog` subcommand of `krel` does the following things by utilizing
 the golang based `release-notes` tool:
 
 1. Generate the release notes for either a patch or a new minor release. Minor
    releases can be alpha, beta or rc’s, too.
-   
+
    a) Create a new `CHANGELOG-x.y.md` file if not existing.
 
    b) Correctly prepend the generated notes to the existing `CHANGELOG-x.y.md`
-      file if already existing. This also includes the modification of the
-	  table of contents.
+   file if already existing. This also includes the modification of the
+   table of contents.
 
 2. Convert the markdown release notes into a HTML equivalent on purpose of
    sending it by mail to the announce list. The HTML file will be dropped into
@@ -26,7 +28,7 @@ the golang based `release-notes` tool:
 
 3. Commit the modified CHANGELOG-x.y.md` into the master branch as well as the
    corresponding release-branch of kubernetes/kubernetes. The release branch
-   will be pruned from all other CHANGELOG-*.md files which do not belong to
+   will be pruned from all other CHANGELOG-\*.md files which do not belong to
    this release branch.
 
 ## Installation
@@ -34,10 +36,13 @@ the golang based `release-notes` tool:
 Simply [install krel](README.md#installation).
 
 ## Usage
+
 ```
 krel changelog [flags]
 ```
+
 ### Command Line Flags
+
 ```
 Flags:
       --branch string      The branch to be used. Will be automatically inherited by the tag if not set.
@@ -49,5 +54,3 @@ Flags:
       --tag string         The version tag of the release, for example v1.17.0-rc.1
       --tars string        Directory of tars to SHA512 sum for display (default ".")
 ```
-
-
