@@ -1,4 +1,5 @@
 # krel push
+
 Push Kubernetes release artifacts to Google Cloud Storage (GCS)
 
 - [Summary](#summary)
@@ -7,13 +8,14 @@ Push Kubernetes release artifacts to Google Cloud Storage (GCS)
 - [Important notes](#important-notes)
 
 ## Summary
+
 Used for pushing developer builds and Jenkins' continuous builds.
 
 ## Installation
 
 Simply [install krel](README.md#installation).
 
-## Usage 
+## Usage
 
 ```
   krel push [--noupdatelatest] [--ci] [--bucket=<GS bucket>] [--private-bucket] [flags]
@@ -23,6 +25,7 @@ Developer pushes simply run as they do pushing to devel/ on GCS.
 In `--ci` mode, 'push' runs in mock mode by default. Use `--nomock` to do a real push.
 
 ### Command line flags
+
 ```
       --allow-dup                   Do not exit error if the build already exists on the gcs path
       --bucket string               Specify an alternate bucket for pushes (normally 'devel' or 'ci') (default "devel")
@@ -37,18 +40,19 @@ In `--ci` mode, 'push' runs in mock mode by default. Use `--nomock` to do a real
       --release-type string         Specify an alternate bucket for pushes (normally 'devel' or 'ci') (default "devel")
       --version-suffix string       Append suffix to version name if set
 ```
+
 ### Examples
 
-Do a developer push: 
+Do a developer push:
 
-```krel push```
+`krel push`
 
 Do a (non-mocked) CI push:
 
-```krel push --nomock --ci```
+`krel push --nomock --ci`
 
-Do a developer push to kubernetes-release-$USER
+Do a developer push to kubernetes-release-\$USER
 
-```push --bucket=kubernetes-release-$USER```
+`push --bucket=kubernetes-release-$USER`
 
 ## Important Notes

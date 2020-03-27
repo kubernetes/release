@@ -29,6 +29,7 @@
 Simply [install krel](README.md#installation).
 
 <!-- TODO(vdf): Need to reference K8s Infra projects in usage examples -->
+
 ## Usage
 
 `krel gcbmgr [flags]`
@@ -65,7 +66,7 @@ Global Flags:
   - nomock release: `krel gcbmgr --release --nomock`
 - For release jobs, you **MUST** specify the build version that is output as a result of a successful staging run.
 - The following environment variables can be used to test the staging/release process against a contributor's fork: `TOOL_ORG`, `TOOL_REPO`, `TOOL_BRANCH`
-  
+
   Example:
 
   ```shell

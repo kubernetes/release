@@ -1,4 +1,5 @@
 # krel patch-anounce
+
 Send out patch release announcement emails
 
 - [Summary](#summary)
@@ -6,19 +7,22 @@ Send out patch release announcement emails
 - [Usage](#usage)
 - [Important notes](#important-notes)
 
-
 ## Summary
+
 The `krel patch-announce` subcommand sends out email messages to notify developers about a release. To send the email messages, it needs a Sendgrid API Key and an GitHub token
 
 ## Installation
+
 Tu run the `patch-announce` subcommand, [install krel](README.md#installation). You will need a Sendgrid token to be able to send messages and a GitHub token to generate the release notes.
 
 ## Usage
+
 ```
   krel patch-announce [flags]
 ```
 
 ### Command line flags
+
 ```
   -c, --cut-date string           date when the patch release is planned to be cut
   -f, --freeze-date string        date when no CPs are allowed anymore
@@ -37,5 +41,3 @@ Currently, `patch-announce` will notify the following addresses:
 | --------- | -------------- |
 | Kubernetes developer/contributor discussion | kubernetes-dev@googlegroups.com |
 | kubernetes-dev-announce | kubernetes-dev-announce@googlegroups.com |
-
-
