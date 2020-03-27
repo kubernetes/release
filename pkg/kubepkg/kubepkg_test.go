@@ -19,7 +19,7 @@ package kubepkg
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetPackageVersionSuccess(t *testing.T) {
@@ -72,15 +72,13 @@ func TestGetPackageVersionSuccess(t *testing.T) {
 			t.Fatalf("did not expect an error: %v", err)
 		}
 
-		assert.Equal(t, tc.expected, actual)
+		require.Equal(t, tc.expected, actual)
 	}
 }
 
 func TestGetPackageVersionFailure(t *testing.T) {
-	a := assert.New(t)
-
 	_, err := getPackageVersion(nil)
-	a.Error(err)
+	require.NotNil(t, err)
 }
 
 // TODO: Figure out how we want to test success of this function.
@@ -113,15 +111,13 @@ func TestGetKubernetesVersionSuccess(t *testing.T) {
 			t.Fatalf("did not expect an error: %v", err)
 		}
 
-		assert.Equal(t, tc.expected, actual)
+		require.Equal(t, tc.expected, actual)
 	}
 }
 
 func TestGetKubernetesVersionFailure(t *testing.T) {
-	a := assert.New(t)
-
 	_, err := getKubernetesVersion(nil)
-	a.Error(err)
+	require.NotNil(t, err)
 }
 
 func TestGetCNIVersionSuccess(t *testing.T) {
@@ -162,15 +158,13 @@ func TestGetCNIVersionSuccess(t *testing.T) {
 			t.Fatalf("did not expect an error: %v", err)
 		}
 
-		assert.Equal(t, tc.expected, actual)
+		require.Equal(t, tc.expected, actual)
 	}
 }
 
 func TestGetCNIVersionFailure(t *testing.T) {
-	a := assert.New(t)
-
 	_, err := getCNIVersion(nil)
-	a.Error(err)
+	require.NotNil(t, err)
 }
 
 func TestGetCRIToolsVersionSuccess(t *testing.T) {
@@ -204,15 +198,13 @@ func TestGetCRIToolsVersionSuccess(t *testing.T) {
 			t.Fatalf("did not expect an error: %v", err)
 		}
 
-		assert.Equal(t, tc.expected, actual)
+		require.Equal(t, tc.expected, actual)
 	}
 }
 
 func TestGetCRIToolsVersionFailure(t *testing.T) {
-	a := assert.New(t)
-
 	_, err := getCRIToolsVersion(nil)
-	a.Error(err)
+	require.NotNil(t, err)
 }
 
 func TestGetDownloadLinkBaseSuccess(t *testing.T) {
@@ -247,15 +239,13 @@ func TestGetDownloadLinkBaseSuccess(t *testing.T) {
 			t.Fatalf("did not expect an error: %v", err)
 		}
 
-		assert.Equal(t, tc.expected, actual)
+		require.Equal(t, tc.expected, actual)
 	}
 }
 
 func TestGetDownloadLinkBaseFailure(t *testing.T) {
-	a := assert.New(t)
-
 	_, err := getDownloadLinkBase(nil)
-	a.Error(err)
+	require.NotNil(t, err)
 }
 
 func TestGetCIBuildsDownloadLinkBaseSuccess(t *testing.T) {
@@ -282,15 +272,13 @@ func TestGetCIBuildsDownloadLinkBaseSuccess(t *testing.T) {
 			t.Fatalf("did not expect an error: %v", err)
 		}
 
-		assert.Equal(t, tc.expected, actual)
+		require.Equal(t, tc.expected, actual)
 	}
 }
 
 func TestGetCIBuildsDownloadLinkBaseFailure(t *testing.T) {
-	a := assert.New(t)
-
 	_, err := getCIBuildsDownloadLinkBase(nil)
-	a.Error(err)
+	require.NotNil(t, err)
 }
 
 func TestGetDefaultReleaseDownloadLinkBaseSuccess(t *testing.T) {
@@ -322,15 +310,13 @@ func TestGetDefaultReleaseDownloadLinkBaseSuccess(t *testing.T) {
 			t.Fatalf("did not expect an error: %v", err)
 		}
 
-		assert.Equal(t, tc.expected, actual)
+		require.Equal(t, tc.expected, actual)
 	}
 }
 
 func TestGetDefaultReleaseDownloadLinkBaseFailure(t *testing.T) {
-	a := assert.New(t)
-
 	_, err := getDefaultReleaseDownloadLinkBase(nil)
-	a.Error(err)
+	require.NotNil(t, err)
 }
 
 func TestGetDependenciesSuccess(t *testing.T) {
@@ -369,15 +355,13 @@ func TestGetDependenciesSuccess(t *testing.T) {
 			t.Fatalf("did not expect an error: %v", err)
 		}
 
-		assert.Equal(t, tc.expected, actual)
+		require.Equal(t, tc.expected, actual)
 	}
 }
 
 func TestGetDependenciesFailure(t *testing.T) {
-	a := assert.New(t)
-
 	_, err := getDependencies(nil)
-	a.Error(err)
+	require.NotNil(t, err)
 }
 
 func TestGetCNIDownloadLinkSuccess(t *testing.T) {
@@ -413,15 +397,13 @@ func TestGetCNIDownloadLinkSuccess(t *testing.T) {
 			t.Fatalf("did not expect an error: %v", err)
 		}
 
-		assert.Equal(t, tc.expected, actual)
+		require.Equal(t, tc.expected, actual)
 	}
 }
 
 func TestGetCNIDownloadLinkFailure(t *testing.T) {
-	a := assert.New(t)
-
 	_, err := getCNIDownloadLink(nil, "amd64")
-	a.Error(err)
+	require.NotNil(t, err)
 }
 
 func TestIsSupportedSuccess(t *testing.T) {
@@ -459,7 +441,7 @@ func TestIsSupportedSuccess(t *testing.T) {
 	for _, tc := range testcases {
 		actual := IsSupported(tc.input, tc.check)
 
-		assert.Equal(t, tc.expected, actual)
+		require.Equal(t, tc.expected, actual)
 	}
 }
 
@@ -484,6 +466,6 @@ func TestIsSupportedFailure(t *testing.T) {
 	for _, tc := range testcases {
 		actual := IsSupported(tc.input, tc.check)
 
-		assert.NotEqual(t, tc.expected, actual)
+		require.NotEqual(t, tc.expected, actual)
 	}
 }

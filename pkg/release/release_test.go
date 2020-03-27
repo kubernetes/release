@@ -28,7 +28,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -48,7 +47,7 @@ func TestGetDefaultToolRepoURLSuccess(t *testing.T) {
 		t.Logf("Test case: %s", tc.name)
 
 		actual := GetDefaultToolRepoURL()
-		assert.Equal(t, tc.expected, actual)
+		require.Equal(t, tc.expected, actual)
 	}
 }
 
@@ -76,7 +75,7 @@ func TestGetToolRepoURLSuccess(t *testing.T) {
 		t.Logf("Test case: %s", tc.name)
 
 		actual := GetToolRepoURL(tc.org, tc.repo, tc.useSSH)
-		assert.Equal(t, tc.expected, actual)
+		require.Equal(t, tc.expected, actual)
 	}
 }
 
@@ -102,7 +101,7 @@ func TestGetToolBranchSuccess(t *testing.T) {
 		require.Nil(t, os.Setenv("TOOL_BRANCH", tc.branch))
 
 		actual := GetToolBranch()
-		assert.Equal(t, tc.expected, actual)
+		require.Equal(t, tc.expected, actual)
 	}
 }
 

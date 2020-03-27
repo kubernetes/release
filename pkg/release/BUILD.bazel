@@ -42,7 +42,6 @@ go_test(
         "//pkg/http:go_default_library",
         "//pkg/util:go_default_library",
         "@com_github_blang_semver//:go_default_library",
-        "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
     ],
 )
