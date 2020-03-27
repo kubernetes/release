@@ -31,7 +31,7 @@ bit more on that [in the cloud-build docs][gcb_images].
 
 | Image                                     | used in/by                                                                                           |
 | ----------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| [k8s-cloud-builder](./k8s-cloud-builder/) | The "main" image, [`anago`](../anago) runs with on cloud-build (submitted via [`gcbmgr`](../gcbmgr)) |
+| [k8s-cloud-builder](./k8s-cloud-builder/) | The "main" image, [`anago`](../anago) runs with on cloud-build (submitted via [`krel gcbmgr`](../docs/krel)) |
 | [releng-ci-bazel](./releng-ci-bazel)      | The bazel image used for CI testing                                                                  |
 
 [gcb_images]: https://cloud.google.com/cloud-build/docs/configuring-builds/store-images-artifacts#storing_images_in
