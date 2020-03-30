@@ -14,16 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package cmd_test
 
 import (
 	"errors"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"k8s.io/release/cmd/krel/cmd"
+	"k8s.io/release/cmd/krel/cmd/cmdfakes"
 	"k8s.io/release/pkg/gcp/build"
 )
 
@@ -41,19 +42,25 @@ func (f *fakeListJobs) ListJobs(project string, lastJobs int64) error {
 }
 
 func TestRunGcbmgrList(t *testing.T) {
+	mock := &cmdfakes.FakeRepository{}
+	mock.OpenReturns(nil)
+	mock.CheckStateReturns(nil)
+	mock.GetTagReturns("v1.0.0-20201010", nil)
+
 	testcases := []struct {
 		name        string
-		gcbmgrOpts  gcbmgrOptions
+		gcbmgrOpts  cmd.GcbmgrOptions
 		buildOpts   build.Options
 		listJobOpts fakeListJobs
 		expectedErr bool
 	}{
 		{
 			name: "list only",
-			gcbmgrOpts: gcbmgrOptions{
-				branch:   "master",
-				gcpUser:  "test-user",
-				lastJobs: 5,
+			gcbmgrOpts: cmd.GcbmgrOptions{
+				Branch:   "master",
+				GcpUser:  "test-user",
+				LastJobs: 5,
+				Repo:     mock,
 			},
 			listJobOpts: fakeListJobs{
 				expectedProject:  "kubernetes-release-test",
@@ -64,10 +71,11 @@ func TestRunGcbmgrList(t *testing.T) {
 		},
 		{
 			name: "error on list jobs",
-			gcbmgrOpts: gcbmgrOptions{
-				branch:   "master",
-				gcpUser:  "test-user",
-				lastJobs: 10,
+			gcbmgrOpts: cmd.GcbmgrOptions{
+				Branch:   "master",
+				GcpUser:  "test-user",
+				LastJobs: 10,
+				Repo:     mock,
 			},
 			listJobOpts: fakeListJobs{
 				expectedProject:  "kubernetes-release-test",
@@ -81,13 +89,13 @@ func TestRunGcbmgrList(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
 
-		gcbmgrOpts = &tc.gcbmgrOpts
+		cmd.GcbmgrOpts = &tc.gcbmgrOpts
 
 		f := &tc.listJobOpts
 		f.t = t
-		buildListJobs = f.ListJobs
+		cmd.BuildListJobs = f.ListJobs
 
-		err := runGcbmgr()
+		err := cmd.RunGcbmgr()
 		if tc.expectedErr {
 			require.NotNil(t, err)
 		} else {
@@ -97,24 +105,31 @@ func TestRunGcbmgrList(t *testing.T) {
 }
 
 func TestRunGcbmgrFailure(t *testing.T) {
+	mock := &cmdfakes.FakeRepository{}
+	mock.OpenReturns(nil)
+	mock.CheckStateReturns(nil)
+	mock.GetTagReturns("v1.0.0-20201010", nil)
+
 	testcases := []struct {
 		name       string
-		gcbmgrOpts gcbmgrOptions
+		gcbmgrOpts cmd.GcbmgrOptions
 		expected   map[string]string
 	}{
 		{
 			name: "no release branch",
-			gcbmgrOpts: gcbmgrOptions{
-				branch:  "",
-				gcpUser: "test-user",
+			gcbmgrOpts: cmd.GcbmgrOptions{
+				Branch:  "",
+				GcpUser: "test-user",
+				Repo:    mock,
 			},
 		},
 		{
 			name: "specify stage and release",
-			gcbmgrOpts: gcbmgrOptions{
-				stage:   true,
-				release: true,
-				gcpUser: "test-user",
+			gcbmgrOpts: cmd.GcbmgrOptions{
+				Stage:   true,
+				Release: true,
+				GcpUser: "test-user",
+				Repo:    mock,
 			},
 		},
 	}
@@ -122,17 +137,22 @@ func TestRunGcbmgrFailure(t *testing.T) {
 	for _, tc := range testcases {
 		fmt.Printf("Test case: %s", tc.name)
 
-		gcbmgrOpts = &tc.gcbmgrOpts
+		cmd.GcbmgrOpts = &tc.gcbmgrOpts
 
-		err := runGcbmgr()
+		err := cmd.RunGcbmgr()
 		require.Error(t, err)
 	}
 }
 
 func TestSetGCBSubstitutionsSuccess(t *testing.T) {
+	mock := &cmdfakes.FakeRepository{}
+	mock.OpenReturns(nil)
+	mock.CheckStateReturns(nil)
+	mock.GetTagReturns("v1.0.0-20201010", nil)
+
 	testcases := []struct {
 		name       string
-		gcbmgrOpts gcbmgrOptions
+		gcbmgrOpts cmd.GcbmgrOptions
 		toolOrg    string
 		toolRepo   string
 		toolBranch string
@@ -140,11 +160,12 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 	}{
 		{
 			name: "master prerelease - stage",
-			gcbmgrOpts: gcbmgrOptions{
-				stage:       true,
-				branch:      "master",
-				releaseType: "prerelease",
-				gcpUser:     "test-user",
+			gcbmgrOpts: cmd.GcbmgrOptions{
+				Stage:       true,
+				Branch:      "master",
+				ReleaseType: "prerelease",
+				GcpUser:     "test-user",
+				Repo:        mock,
 			},
 			expected: map[string]string{
 				"BUILD_AT_HEAD":  "",
@@ -153,19 +174,20 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"RC":             "",
 				"RC_TAG":         "",
 				"RELEASE_BRANCH": "master",
-				"TOOL_ORG":       "kubernetes",
-				"TOOL_REPO":      "release",
-				"TOOL_BRANCH":    "master",
+				"TOOL_ORG":       "",
+				"TOOL_REPO":      "",
+				"TOOL_BRANCH":    "",
 			},
 		},
 		{
 			name: "master prerelease - release",
-			gcbmgrOpts: gcbmgrOptions{
-				release:      true,
-				branch:       "master",
-				releaseType:  "prerelease",
-				buildVersion: "v1.33.7",
-				gcpUser:      "test-user",
+			gcbmgrOpts: cmd.GcbmgrOptions{
+				Release:      true,
+				Branch:       "master",
+				ReleaseType:  "prerelease",
+				BuildVersion: "v1.33.7",
+				GcpUser:      "test-user",
+				Repo:         mock,
 			},
 			expected: map[string]string{
 				"OFFICIAL":       "",
@@ -173,18 +195,19 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"RC":             "",
 				"RC_TAG":         "",
 				"RELEASE_BRANCH": "master",
-				"TOOL_ORG":       "kubernetes",
-				"TOOL_REPO":      "release",
-				"TOOL_BRANCH":    "master",
+				"TOOL_ORG":       "",
+				"TOOL_REPO":      "",
+				"TOOL_BRANCH":    "",
 			},
 		},
 		{
 			name: "release-1.14 RC",
-			gcbmgrOpts: gcbmgrOptions{
-				stage:       true,
-				branch:      "release-1.14",
-				releaseType: "rc",
-				gcpUser:     "test-user",
+			gcbmgrOpts: cmd.GcbmgrOptions{
+				Stage:       true,
+				Branch:      "release-1.14",
+				ReleaseType: "rc",
+				GcpUser:     "test-user",
+				Repo:        mock,
 			},
 			expected: map[string]string{
 				"BUILD_AT_HEAD":  "",
@@ -193,18 +216,19 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"RC":             "--rc",
 				"RC_TAG":         "rc",
 				"RELEASE_BRANCH": "release-1.14",
-				"TOOL_ORG":       "kubernetes",
-				"TOOL_REPO":      "release",
-				"TOOL_BRANCH":    "master",
+				"TOOL_ORG":       "",
+				"TOOL_REPO":      "",
+				"TOOL_BRANCH":    "",
 			},
 		},
 		{
 			name: "release-1.15 official",
-			gcbmgrOpts: gcbmgrOptions{
-				stage:       true,
-				branch:      "release-1.15",
-				releaseType: "official",
-				gcpUser:     "test-user",
+			gcbmgrOpts: cmd.GcbmgrOptions{
+				Stage:       true,
+				Branch:      "release-1.15",
+				ReleaseType: "official",
+				GcpUser:     "test-user",
+				Repo:        mock,
 			},
 			expected: map[string]string{
 				"BUILD_AT_HEAD":  "",
@@ -213,18 +237,19 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"RC":             "",
 				"RC_TAG":         "",
 				"RELEASE_BRANCH": "release-1.15",
-				"TOOL_ORG":       "kubernetes",
-				"TOOL_REPO":      "release",
-				"TOOL_BRANCH":    "master",
+				"TOOL_ORG":       "",
+				"TOOL_REPO":      "",
+				"TOOL_BRANCH":    "",
 			},
 		},
 		{
 			name: "release-1.16 official with custom tool org, repo, and branch",
-			gcbmgrOpts: gcbmgrOptions{
-				stage:       true,
-				branch:      "release-1.16",
-				releaseType: "official",
-				gcpUser:     "test-user",
+			gcbmgrOpts: cmd.GcbmgrOptions{
+				Stage:       true,
+				Branch:      "release-1.16",
+				ReleaseType: "official",
+				GcpUser:     "test-user",
+				Repo:        mock,
 			},
 			toolOrg:    "honk",
 			toolRepo:   "best-tools",
@@ -247,11 +272,9 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		t.Logf("Test case: %s", tc.name)
 
 		opts := tc.gcbmgrOpts
-		os.Setenv("TOOL_ORG", tc.toolOrg)
-		os.Setenv("TOOL_REPO", tc.toolRepo)
-		os.Setenv("TOOL_BRANCH", tc.toolBranch)
-
-		subs, err := setGCBSubstitutions(&opts)
+		subs, err := cmd.SetGCBSubstitutions(
+			&opts, tc.toolOrg, tc.toolRepo, tc.toolBranch,
+		)
 		actual := dropDynamicSubstitutions(subs)
 
 		if err != nil {
@@ -263,24 +286,31 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 }
 
 func TestSetGCBSubstitutionsFailure(t *testing.T) {
+	mock := &cmdfakes.FakeRepository{}
+	mock.OpenReturns(nil)
+	mock.CheckStateReturns(nil)
+	mock.GetTagReturns("v1.0.0-20201010", nil)
+
 	testcases := []struct {
 		name       string
-		gcbmgrOpts gcbmgrOptions
+		gcbmgrOpts cmd.GcbmgrOptions
 		expected   map[string]string
 	}{
 		{
 			name: "no release branch",
-			gcbmgrOpts: gcbmgrOptions{
-				branch:  "",
-				gcpUser: "test-user",
+			gcbmgrOpts: cmd.GcbmgrOptions{
+				Branch:  "",
+				GcpUser: "test-user",
+				Repo:    mock,
 			},
 		},
 		{
 			name: "no build version",
-			gcbmgrOpts: gcbmgrOptions{
-				release: true,
-				branch:  "",
-				gcpUser: "test-user",
+			gcbmgrOpts: cmd.GcbmgrOptions{
+				Release: true,
+				Branch:  "",
+				GcpUser: "test-user",
+				Repo:    mock,
 			},
 		},
 	}
@@ -290,7 +320,7 @@ func TestSetGCBSubstitutionsFailure(t *testing.T) {
 
 		opts := tc.gcbmgrOpts
 
-		_, err := setGCBSubstitutions(&opts)
+		_, err := cmd.SetGCBSubstitutions(&opts, "", "", "")
 		require.Error(t, err)
 	}
 }
