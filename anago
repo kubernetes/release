@@ -1779,7 +1779,7 @@ if ((FLAGS_stage)); then
   logecho "To release this staged build, run:"
   logecho
   logecho -n "$ krel gcbmgr --release ${EXTRA_FLAGS[*]} $RELEASE_BRANCH" \
-             "--buildversion=$JENKINS_BUILD_VERSION"
+             "--build-version=$JENKINS_BUILD_VERSION"
   logecho
   logecho
 
