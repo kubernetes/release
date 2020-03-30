@@ -55,7 +55,7 @@ type Repository interface {
 }
 
 var (
-	GcbmgrOpts = &GcbmgrOptions{}
+	gcbmgrOpts = &GcbmgrOptions{}
 	buildOpts  = &build.Options{}
 
 	requiredPackages = []string{
@@ -78,27 +78,27 @@ var gcbmgrCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return RunGcbmgr()
+		return RunGcbmgr(gcbmgrOpts)
 	},
 }
 
 func init() {
 	// Submit types
 	gcbmgrCmd.PersistentFlags().BoolVar(
-		&GcbmgrOpts.Stage,
+		&gcbmgrOpts.Stage,
 		"stage",
 		false,
 		"Submit a stage run to GCB",
 	)
 	gcbmgrCmd.PersistentFlags().BoolVar(
-		&GcbmgrOpts.Release,
+		&gcbmgrOpts.Release,
 		"release",
 		false,
 		"Submit a release run to GCB",
 	)
 
 	gcbmgrCmd.PersistentFlags().StringVar(
-		&GcbmgrOpts.Branch,
+		&gcbmgrOpts.Branch,
 		"branch",
 		git.Master,
 		"Branch to run the specified GCB run against",
@@ -106,7 +106,7 @@ func init() {
 
 	// Release types
 	gcbmgrCmd.PersistentFlags().StringVar(
-		&GcbmgrOpts.ReleaseType,
+		&gcbmgrOpts.ReleaseType,
 		"type",
 		"prerelease",
 		"Release type (must be one of: 'prerelease', 'rc', 'official')",
@@ -114,7 +114,7 @@ func init() {
 
 	// TODO: Remove default once find_green_build logic exists
 	gcbmgrCmd.PersistentFlags().StringVar(
-		&GcbmgrOpts.BuildVersion,
+		&gcbmgrOpts.BuildVersion,
 		"build-version",
 		"",
 		"Build version",
@@ -128,7 +128,7 @@ func init() {
 		"GCP project to run GCB in",
 	)
 	gcbmgrCmd.PersistentFlags().BoolVar(
-		&GcbmgrOpts.Stream,
+		&gcbmgrOpts.Stream,
 		"stream",
 		false,
 		"If specified, GCB will run synchronously, tailing its' logs to stdout",
@@ -140,26 +140,26 @@ func init() {
 		"If provided, this will be used as the name of the Google Cloud Build config file.",
 	)
 	gcbmgrCmd.PersistentFlags().StringVar(
-		&GcbmgrOpts.GcpUser,
+		&gcbmgrOpts.GcpUser,
 		"gcp-user",
 		"",
 		"If provided, this will be used as the GCP_USER_TAG.",
 	)
 
 	gcbmgrCmd.PersistentFlags().Int64Var(
-		&GcbmgrOpts.LastJobs,
+		&gcbmgrOpts.LastJobs,
 		"list-jobs",
 		5,
 		"List the last x build jobs in the project. Default to 5.",
 	)
 
-	GcbmgrOpts.Repo = release.NewRepo()
+	gcbmgrOpts.Repo = release.NewRepo()
 	rootCmd.AddCommand(gcbmgrCmd)
 }
 
 // RunGcbmgr is the function invoked by 'krel gcbmgr', responsible for
 // submitting release jobs to GCB
-func RunGcbmgr() error {
+func RunGcbmgr(opts *GcbmgrOptions) error {
 	logrus.Info("Checking for required packages")
 	ok, err := util.PackagesAvailable(requiredPackages...)
 	if err != nil {
@@ -178,18 +178,18 @@ func RunGcbmgr() error {
 	toolRepo := release.GetToolRepo()
 	toolBranch := release.GetToolBranch()
 
-	if err := GcbmgrOpts.Repo.Open(); err != nil {
+	if err := opts.Repo.Open(); err != nil {
 		return errors.Wrap(err, "open release repo")
 	}
 
-	if err := GcbmgrOpts.Repo.CheckState(toolOrg, toolRepo, toolBranch); err != nil {
+	if err := opts.Repo.CheckState(toolOrg, toolRepo, toolBranch); err != nil {
 		return errors.Wrap(err, "verifying repository state")
 	}
 
-	logrus.Infof("Running gcbmgr with the following options: %v", *GcbmgrOpts)
+	logrus.Infof("Running gcbmgr with the following options: %+v", opts)
 	logrus.Infof("Build options: %v", *buildOpts)
 
-	if GcbmgrOpts.Stage && GcbmgrOpts.Release {
+	if opts.Stage && opts.Release {
 		return errors.New("cannot specify both the 'stage' and 'release' flag; resubmit with only one build type selected")
 	}
 
@@ -198,11 +198,11 @@ func RunGcbmgr() error {
 
 	buildOpts.Async = true
 
-	if GcbmgrOpts.Stream {
+	if opts.Stream {
 		buildOpts.Async = false
 	}
 
-	gcbSubs, gcbSubsErr := SetGCBSubstitutions(GcbmgrOpts, toolOrg, toolRepo, toolBranch)
+	gcbSubs, gcbSubsErr := SetGCBSubstitutions(opts, toolOrg, toolRepo, toolBranch)
 	if gcbSubs == nil || gcbSubsErr != nil {
 		return gcbSubsErr
 	}
@@ -210,7 +210,7 @@ func RunGcbmgr() error {
 	if rootOpts.nomock {
 		// TODO: Consider a '--yes' flag so we can mock this
 		_, nomockSubmit, askErr := util.Ask(
-			fmt.Sprintf("Really submit a --nomock release job against the %s branch?", GcbmgrOpts.Branch),
+			fmt.Sprintf("Really submit a --nomock release job against the %s branch?", opts.Branch),
 			"yes",
 			3,
 		)
@@ -255,13 +255,13 @@ func RunGcbmgr() error {
 	var jobType string
 	switch {
 	// TODO: Consider a '--validate' flag to validate the GCB config without submitting
-	case GcbmgrOpts.Stage:
+	case opts.Stage:
 		jobType = "stage"
-	case GcbmgrOpts.Release:
+	case opts.Release:
 		jobType = "release"
 		buildOpts.DiskSize = "100"
 	default:
-		return listJobs(buildOpts.Project, GcbmgrOpts.LastJobs)
+		return listJobs(buildOpts.Project, opts.LastJobs)
 	}
 
 	buildOpts.ConfigDir = filepath.Join(toolRoot, "gcb", jobType)
@@ -273,7 +273,7 @@ func RunGcbmgr() error {
 	// TODO: Need actual values
 	var jobName, uploaded string
 
-	version, err := GcbmgrOpts.Repo.GetTag()
+	version, err := opts.Repo.GetTag()
 	if err != nil {
 		return errors.Wrap(err, "getting current tag")
 	}

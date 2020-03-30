@@ -28,6 +28,14 @@ import (
 	"k8s.io/release/pkg/gcp/build"
 )
 
+func mockRepo() cmd.Repository {
+	mock := &cmdfakes.FakeRepository{}
+	mock.OpenReturns(nil)
+	mock.CheckStateReturns(nil)
+	mock.GetTagReturns("v1.0.0-20201010", nil)
+	return mock
+}
+
 type fakeListJobs struct {
 	expectedProject  string
 	expectedLastJobs int64
@@ -42,25 +50,20 @@ func (f *fakeListJobs) ListJobs(project string, lastJobs int64) error {
 }
 
 func TestRunGcbmgrList(t *testing.T) {
-	mock := &cmdfakes.FakeRepository{}
-	mock.OpenReturns(nil)
-	mock.CheckStateReturns(nil)
-	mock.GetTagReturns("v1.0.0-20201010", nil)
-
 	testcases := []struct {
 		name        string
-		gcbmgrOpts  cmd.GcbmgrOptions
+		gcbmgrOpts  *cmd.GcbmgrOptions
 		buildOpts   build.Options
 		listJobOpts fakeListJobs
 		expectedErr bool
 	}{
 		{
 			name: "list only",
-			gcbmgrOpts: cmd.GcbmgrOptions{
+			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Branch:   "master",
 				GcpUser:  "test-user",
 				LastJobs: 5,
-				Repo:     mock,
+				Repo:     mockRepo(),
 			},
 			listJobOpts: fakeListJobs{
 				expectedProject:  "kubernetes-release-test",
@@ -71,11 +74,11 @@ func TestRunGcbmgrList(t *testing.T) {
 		},
 		{
 			name: "error on list jobs",
-			gcbmgrOpts: cmd.GcbmgrOptions{
+			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Branch:   "master",
 				GcpUser:  "test-user",
 				LastJobs: 10,
-				Repo:     mock,
+				Repo:     mockRepo(),
 			},
 			listJobOpts: fakeListJobs{
 				expectedProject:  "kubernetes-release-test",
@@ -88,14 +91,11 @@ func TestRunGcbmgrList(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
-
-		cmd.GcbmgrOpts = &tc.gcbmgrOpts
-
 		f := &tc.listJobOpts
 		f.t = t
 		cmd.BuildListJobs = f.ListJobs
 
-		err := cmd.RunGcbmgr()
+		err := cmd.RunGcbmgr(tc.gcbmgrOpts)
 		if tc.expectedErr {
 			require.NotNil(t, err)
 		} else {
@@ -105,54 +105,41 @@ func TestRunGcbmgrList(t *testing.T) {
 }
 
 func TestRunGcbmgrFailure(t *testing.T) {
-	mock := &cmdfakes.FakeRepository{}
-	mock.OpenReturns(nil)
-	mock.CheckStateReturns(nil)
-	mock.GetTagReturns("v1.0.0-20201010", nil)
-
 	testcases := []struct {
 		name       string
-		gcbmgrOpts cmd.GcbmgrOptions
+		gcbmgrOpts *cmd.GcbmgrOptions
 		expected   map[string]string
 	}{
 		{
 			name: "no release branch",
-			gcbmgrOpts: cmd.GcbmgrOptions{
+			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Branch:  "",
 				GcpUser: "test-user",
-				Repo:    mock,
+				Repo:    mockRepo(),
 			},
 		},
 		{
 			name: "specify stage and release",
-			gcbmgrOpts: cmd.GcbmgrOptions{
+			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Stage:   true,
 				Release: true,
 				GcpUser: "test-user",
-				Repo:    mock,
+				Repo:    mockRepo(),
 			},
 		},
 	}
 
 	for _, tc := range testcases {
 		fmt.Printf("Test case: %s", tc.name)
-
-		cmd.GcbmgrOpts = &tc.gcbmgrOpts
-
-		err := cmd.RunGcbmgr()
+		err := cmd.RunGcbmgr(tc.gcbmgrOpts)
 		require.Error(t, err)
 	}
 }
 
 func TestSetGCBSubstitutionsSuccess(t *testing.T) {
-	mock := &cmdfakes.FakeRepository{}
-	mock.OpenReturns(nil)
-	mock.CheckStateReturns(nil)
-	mock.GetTagReturns("v1.0.0-20201010", nil)
-
 	testcases := []struct {
 		name       string
-		gcbmgrOpts cmd.GcbmgrOptions
+		gcbmgrOpts *cmd.GcbmgrOptions
 		toolOrg    string
 		toolRepo   string
 		toolBranch string
@@ -160,12 +147,12 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 	}{
 		{
 			name: "master prerelease - stage",
-			gcbmgrOpts: cmd.GcbmgrOptions{
+			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Stage:       true,
 				Branch:      "master",
 				ReleaseType: "prerelease",
 				GcpUser:     "test-user",
-				Repo:        mock,
+				Repo:        mockRepo(),
 			},
 			expected: map[string]string{
 				"BUILD_AT_HEAD":  "",
@@ -181,13 +168,13 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "master prerelease - release",
-			gcbmgrOpts: cmd.GcbmgrOptions{
+			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Release:      true,
 				Branch:       "master",
 				ReleaseType:  "prerelease",
 				BuildVersion: "v1.33.7",
 				GcpUser:      "test-user",
-				Repo:         mock,
+				Repo:         mockRepo(),
 			},
 			expected: map[string]string{
 				"OFFICIAL":       "",
@@ -202,12 +189,12 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.14 RC",
-			gcbmgrOpts: cmd.GcbmgrOptions{
+			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Stage:       true,
 				Branch:      "release-1.14",
 				ReleaseType: "rc",
 				GcpUser:     "test-user",
-				Repo:        mock,
+				Repo:        mockRepo(),
 			},
 			expected: map[string]string{
 				"BUILD_AT_HEAD":  "",
@@ -223,12 +210,12 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.15 official",
-			gcbmgrOpts: cmd.GcbmgrOptions{
+			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Stage:       true,
 				Branch:      "release-1.15",
 				ReleaseType: "official",
 				GcpUser:     "test-user",
-				Repo:        mock,
+				Repo:        mockRepo(),
 			},
 			expected: map[string]string{
 				"BUILD_AT_HEAD":  "",
@@ -244,12 +231,12 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.16 official with custom tool org, repo, and branch",
-			gcbmgrOpts: cmd.GcbmgrOptions{
+			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Stage:       true,
 				Branch:      "release-1.16",
 				ReleaseType: "official",
 				GcpUser:     "test-user",
-				Repo:        mock,
+				Repo:        mockRepo(),
 			},
 			toolOrg:    "honk",
 			toolRepo:   "best-tools",
@@ -271,56 +258,44 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
 
-		opts := tc.gcbmgrOpts
 		subs, err := cmd.SetGCBSubstitutions(
-			&opts, tc.toolOrg, tc.toolRepo, tc.toolBranch,
+			tc.gcbmgrOpts, tc.toolOrg, tc.toolRepo, tc.toolBranch,
 		)
+		require.Nil(t, err)
+
 		actual := dropDynamicSubstitutions(subs)
-
-		if err != nil {
-			t.Fatalf("did not expect an error: %v", err)
-		}
-
 		require.Equal(t, tc.expected, actual)
 	}
 }
 
 func TestSetGCBSubstitutionsFailure(t *testing.T) {
-	mock := &cmdfakes.FakeRepository{}
-	mock.OpenReturns(nil)
-	mock.CheckStateReturns(nil)
-	mock.GetTagReturns("v1.0.0-20201010", nil)
-
 	testcases := []struct {
 		name       string
-		gcbmgrOpts cmd.GcbmgrOptions
+		gcbmgrOpts *cmd.GcbmgrOptions
 		expected   map[string]string
 	}{
 		{
 			name: "no release branch",
-			gcbmgrOpts: cmd.GcbmgrOptions{
+			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Branch:  "",
 				GcpUser: "test-user",
-				Repo:    mock,
+				Repo:    mockRepo(),
 			},
 		},
 		{
 			name: "no build version",
-			gcbmgrOpts: cmd.GcbmgrOptions{
+			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Release: true,
 				Branch:  "",
 				GcpUser: "test-user",
-				Repo:    mock,
+				Repo:    mockRepo(),
 			},
 		},
 	}
 
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
-
-		opts := tc.gcbmgrOpts
-
-		_, err := cmd.SetGCBSubstitutions(&opts, "", "", "")
+		_, err := cmd.SetGCBSubstitutions(tc.gcbmgrOpts, "", "", "")
 		require.Error(t, err)
 	}
 }
