@@ -1454,10 +1454,8 @@ push_all_artifacts () {
       $KUBE_DOCKER_REGISTRY $version $BUILD_OUTPUT-$version || return 1
     fi
 
-    # TODO(vdf): Add image manifest validation logic
-    #            Maybe consider adding this to release::docker::release
-    #            and renaming that function.
-    logecho "Validating image manifests (# TODO(vdf): currently a no-op)..." || return 1
+    common::runstep release::docker::validate_remote_manifests \
+      $KUBE_DOCKER_REGISTRY $version $BUILD_OUTPUT-$version || return 1
 
     common::runstep release::gcs::publish_version \
      $BUCKET_TYPE $version $BUILD_OUTPUT-$version $RELEASE_BUCKET || return 1

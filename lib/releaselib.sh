@@ -31,6 +31,8 @@ readonly CI_BUCKET="kubernetes-release-dev"
 
 # TODO(vdf): Need to reference K8s Infra registries here
 readonly GCRIO_PATH_PROD="k8s.gcr.io"
+# TODO(vdf): Remove all GCRIO_PATH_PROD_PUSH logic once the k8s.gcr.io vanity
+#            domain flip (VDF) is successful
 readonly GCRIO_PATH_PROD_PUSH="gcr.io/google-containers"
 readonly GCRIO_PATH_TEST="gcr.io/k8s-staging-kubernetes"
 
@@ -650,7 +652,6 @@ release::gcs::locally_stage_release_artifacts() {
   # --release-kind used by push-build.sh
   local release_kind=${4:-"kubernetes"}
   local platform
-  local platforms
   local release_stage=$build_output/release-stage
   local release_tars=$build_output/release-tars
   local gcs_stage=$build_output/gcs-stage/$version
@@ -745,7 +746,7 @@ release::gcs::locally_stage_release_artifacts() {
 
   # Upload the "naked" binaries to GCS.  This is useful for install scripts that
   # download the binaries directly and don't need tars.
-  platforms=($(cd "$release_stage/client"; echo *))
+  mapfile -t platforms < <(find "${release_stage}/client" -maxdepth 1 -mindepth 1 -type f -exec basename {} \;)
   for platform in "${platforms[@]}"; do
     src="$release_stage/client/$platform/$release_kind/client/bin/*"
     dst="bin/${platform/-//}/"
@@ -1020,21 +1021,22 @@ release::gcs::publish () {
 # @param build_output - build output directory
 # @return 1 on failure
 release::docker::release () {
-  local registry=$1
-  local push_registry=$registry
-  local version=$2
-  local build_output=$3
-  local release_images=$build_output/release-images
-  local docker_target
+  local registry="$1"
+  local push_registry="$registry"
+  local version="$2"
+  local build_output="$3"
+  local release_images="$build_output/release-images"
   local arch
-  local -a arches
   local tarfile
   local orig_tag
-  local -a new_tags
   local new_tag
   local binary
   local -A manifest_images
 
+  common::argc_validate 3
+
+  # TODO(vdf): Remove all GCRIO_PATH_PROD_PUSH logic once the k8s.gcr.io vanity
+  #            domain flip (VDF) is successful
   if [[ "$registry" == "$GCRIO_PATH_PROD" ]]; then
     # Switch to the push alias if using the $GCRIO_PATH_PROD alias
     push_registry="$GCRIO_PATH_PROD_PUSH"
@@ -1042,8 +1044,8 @@ release::docker::release () {
 
   logecho "Send docker containers from release-images to $push_registry..."
 
-  arches=($(cd "$release_images"; echo *))
-  for arch in ${arches[@]}; do
+  mapfile -t arches < <(find "${release_images}" -maxdepth 1 -mindepth 1 -type d -exec basename {} \;)
+  for arch in "${arches[@]}"; do
     for tarfile in $release_images/$arch/*.tar; do
       # There may be multiple tags; just get the first
       orig_tag=$(tar xf $tarfile manifest.json -O  | jq -r '.[0].RepoTags[0]')
@@ -1099,6 +1101,89 @@ release::docker::release () {
   return 0
 }
 
+# TODO(vdf): Consider collapsing this into release::docker::release and renaming
+#            that function AFTER the k8s.gcr.io Vanity Domain Flip (VDF).
+###############################################################################
+# Validates that image manifests have been pushed to a specified remote registry.
+# Uses 'skopeo inspect'.
+#
+# @param registry - docker registry
+# @param version - version tag
+# @param build_output - build output directory
+# @return 1 on failure
+release::docker::validate_remote_manifests () {
+  local registry="$1"
+  local push_registry="$registry"
+  local version="$2"
+  local build_output="$3"
+  local release_images="$build_output/release-images"
+  local arch
+  local tarfile
+  local orig_tag
+  local new_tag
+  local binary
+  local -A manifest_images
+
+  common::argc_validate 3
+
+  # TODO(vdf): Remove all GCRIO_PATH_PROD_PUSH logic once the k8s.gcr.io vanity
+  #            domain flip (VDF) is successful
+  if [[ "$registry" == "$GCRIO_PATH_PROD" ]]; then
+    # Switch to the push alias if using the $GCRIO_PATH_PROD alias
+    push_registry="$GCRIO_PATH_PROD_PUSH"
+  fi
+
+  logecho "Validating image manifests in $push_registry..."
+
+  mapfile -t arches < <(find "${release_images}" -maxdepth 1 -mindepth 1 -type d -exec basename {} \;)
+  for arch in "${arches[@]}"; do
+    for tarfile in $release_images/$arch/*.tar; do
+      # There may be multiple tags; just get the first
+      orig_tag=$(tar xf $tarfile manifest.json -O  | jq -r '.[0].RepoTags[0]')
+      if [[ ! "$orig_tag" =~ ^.+/(.+):.+$ ]]; then
+        logecho "$FAILED: malformed tag in $tarfile:"
+        logecho $orig_tag
+        return 1
+      fi
+      binary=${BASH_REMATCH[1]}
+
+      new_tag="$push_registry/${binary/-$arch/}"
+      manifest_images["${new_tag}"]+=" $arch"
+    done
+  done
+
+  for image in "${!manifest_images[@]}"; do
+    local archs
+    local manifest
+    local digest
+
+    logecho "Validating manifest list exists for ${image}:${version}..."
+
+    archs=$(echo "${manifest_images[$image]}" | sed -e 's/^[[:space:]]*//')
+
+    if ! manifest=$(skopeo inspect "docker://${image}:${version}" --raw); then
+      logecho "Could not find manifest list for ${image}:${version}"
+      return 1
+    fi
+
+    for arch in ${archs}; do
+      logecho "Checking image digest for ${image} on ${arch} architecture..."
+
+      digest=$(echo -n "${manifest}" \
+        | jq --arg a "${arch}" -r '.manifests[] | select(.platform.architecture==$a)' \
+        | jq -r '.digest')
+
+      if [[ -n "$digest" ]]; then
+        logecho "Digest for ${image} on ${arch}: ${digest}"
+      else
+        logecho "Could not find the image digest for ${image} on ${arch}. Exiting..."
+        return 1
+      fi
+    done
+  done
+
+  return 0
+}
 
 ###############################################################################
 # Get the kubecross image version for a given release branch.
