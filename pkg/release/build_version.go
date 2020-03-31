@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,46 +14,33 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package release
 
 import (
-	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/testgrid"
 )
 
-const usageFmt = `usage: %[1]s [release]
-	e.g. %[1]s release-1.14
-`
+func SetBuildVersion(
+	branch string,
+) error {
+	logrus.Infof("Setting build version for branch %q", branch)
 
-// TODO: deprecate this binary if releaselib.sh::set_build_version has been
-// 		 ported to the `release` package
-func main() {
-	// Disable logrus logging
-	logrus.SetOutput(ioutil.Discard)
-
-	if len(os.Args) != 2 {
-		fmt.Fprintf(os.Stderr, usageFmt, filepath.Base(os.Args[0]))
-		os.Exit(1)
-	}
-
-	branch := os.Args[1]
-	if branch == "master" {
+	if branch == git.Master {
 		branch = "release-master"
+		logrus.Infof("Changing %s branch to %q", git.Master, branch)
 	}
 
-	tests, err := testgrid.New().BlockingTests(branch)
+	allJobs, err := testgrid.New().BlockingTests(branch)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return errors.Wrap(err, "getting all test jobs")
 	}
+	logrus.Infof("Got testgrid jobs for branch %q: %v", branch, allJobs)
 
-	for _, t := range tests {
-		fmt.Println(t)
-	}
+	// TODO: continue port from releaselib.sh::set_build_version
+
+	return errors.New("unimplemented")
 }
