@@ -746,7 +746,7 @@ release::gcs::locally_stage_release_artifacts() {
 
   # Upload the "naked" binaries to GCS.  This is useful for install scripts that
   # download the binaries directly and don't need tars.
-  mapfile -t platforms < <(find "${release_stage}/client" -maxdepth 1 -mindepth 1 -type f -exec basename {} \;)
+  mapfile -t platforms < <(find "${release_stage}/client" -maxdepth 1 -mindepth 1 -exec basename {} \;)
   for platform in "${platforms[@]}"; do
     src="$release_stage/client/$platform/$release_kind/client/bin/*"
     dst="bin/${platform/-//}/"
