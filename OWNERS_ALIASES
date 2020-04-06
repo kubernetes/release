@@ -6,7 +6,6 @@ aliases:
     - justaugustus
     - tpepper
   release-engineering:
-    - aleksandra-malinowska # Patch Release Team
     - calebamiles # subproject owner
     - dougm # Patch Release Team
     - feiskyer # Patch Release Team
@@ -16,6 +15,7 @@ aliases:
     - tpepper # subproject owner / Patch Release Team
   branch-managers:
     - cpanato
+    - hasheddan
     - saschagrunert
   build-admins:
     - aleksandra-malinowska
@@ -46,11 +46,8 @@ aliases:
     - saschagrunert
   release-notes-approvers:
     - jeefy
-    - marpaia
-    - onyiny-ang
     - saschagrunert
   release-notes-reviewers:
     - jeefy
-    - marpaia
-    - onyiny-ang
+    - puerco
     - saschagrunert
