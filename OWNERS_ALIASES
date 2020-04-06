@@ -15,6 +15,7 @@ aliases:
     - tpepper # subproject owner / Patch Release Team
   branch-managers:
     - cpanato
+    - hasheddan
     - saschagrunert
   build-admins:
     - aleksandra-malinowska
