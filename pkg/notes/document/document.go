@@ -172,9 +172,10 @@ const (
 	KindFailingTest   Kind = "failing-test"
 	KindFeature       Kind = "feature"
 	KindFlake         Kind = "flake"
+	KindRegression    Kind = "regression"
 	// TODO: These should be same case as the others. Probably fix up prettyKind()??
-	KindBugCleanupFlake Kind = "Other (Bug, Cleanup or Flake)"
-	KindUncategorized   Kind = "Uncategorized"
+	KindOther         Kind = "Other (Cleanup or Flake)"
+	KindUncategorized Kind = "Uncategorized"
 )
 
 var kindPriority = []Kind{
@@ -185,16 +186,17 @@ var kindPriority = []Kind{
 	KindDocumentation,
 	KindFailingTest,
 	KindBug,
+	KindRegression,
 	KindCleanup,
 	KindFlake,
-	KindBugCleanupFlake,
+	KindOther,
 	KindUncategorized,
 }
 
 var kindMap = map[Kind]Kind{
-	KindBug:     KindBugCleanupFlake,
-	KindCleanup: KindBugCleanupFlake,
-	KindFlake:   KindBugCleanupFlake,
+	KindRegression: KindBug,
+	KindCleanup:    KindOther,
+	KindFlake:      KindOther,
 }
 
 // CreateDocument assembles an organized document from an unorganized set of
@@ -476,8 +478,10 @@ func prettyKind(kind Kind) string {
 		return "API Change"
 	} else if kind == KindFailingTest {
 		return "Failing Test"
-	} else if kind == KindBugCleanupFlake {
-		return string(KindBugCleanupFlake)
+	} else if kind == KindBug {
+		return "Bug or Regression"
+	} else if kind == KindOther {
+		return string(KindOther)
 	}
 	return strings.Title(string(kind))
 }

@@ -162,7 +162,7 @@ func TestRenderMarkdownTemplateGoldenFile(t *testing.T) {
 					NoteCategory{Kind: KindFailingTest, NoteEntries: &Notes{"Please run presubmit test!"}},
 					NoteCategory{Kind: KindFeature, NoteEntries: &Notes{"This will get you promoted."}},
 					NoteCategory{Kind: KindFlake, NoteEntries: &Notes{"This *should* get you promoted."}},
-					NoteCategory{Kind: KindBugCleanupFlake, NoteEntries: &Notes{"This should definitely get you promoted."}},
+					NoteCategory{Kind: KindOther, NoteEntries: &Notes{"This should definitely get you promoted."}},
 					NoteCategory{Kind: KindUncategorized, NoteEntries: &Notes{"Someone somewhere did the world a great justice."}},
 				},
 				PreviousRevision: "v1.16.0",
@@ -314,17 +314,18 @@ filename | sha512 hash
 
 func TestSortKinds(t *testing.T) {
 	input := NotesByKind{
-		"cleanup":                       nil,
-		"api-change":                    nil,
-		"deprecation":                   nil,
-		"documentation":                 nil,
-		"Other (Bug, Cleanup or Flake)": nil,
-		"failing-test":                  nil,
-		"design":                        nil,
-		"flake":                         nil,
-		"bug":                           nil,
-		"feature":                       nil,
-		"Uncategorized":                 nil,
+		"cleanup":                  nil,
+		"api-change":               nil,
+		"deprecation":              nil,
+		"documentation":            nil,
+		"Other (Cleanup or Flake)": nil,
+		"failing-test":             nil,
+		"design":                   nil,
+		"flake":                    nil,
+		"bug":                      nil,
+		"regression":               nil,
+		"feature":                  nil,
+		"Uncategorized":            nil,
 	}
 	res := sortKinds(input)
 	require.Equal(t, res, kindPriority)
