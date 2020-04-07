@@ -20,6 +20,7 @@ https://git.k8s.io/community/contributors/devel/sig-release/release.md#issuepr-k
 > /kind failing-test
 > /kind feature
 > /kind flake
+> /kind regression
 
 #### What this PR does / why we need it:
 
