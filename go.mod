@@ -3,7 +3,8 @@ module k8s.io/release
 go 1.13
 
 require (
-	cloud.google.com/go v0.44.3
+	cloud.google.com/go v0.56.0 // indirect
+	cloud.google.com/go/storage v1.6.0
 	github.com/GoogleCloudPlatform/testgrid v0.0.7
 	github.com/bazelbuild/rules_go v0.22.1
 	github.com/blang/semver v3.5.1+incompatible
@@ -22,7 +23,7 @@ require (
 	github.com/spf13/cobra v0.0.6
 	github.com/stretchr/testify v1.5.1
 	github.com/yuin/goldmark v1.1.25
-	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
+	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	google.golang.org/api v0.20.0
 	gopkg.in/src-d/go-git.v4 v4.13.1
