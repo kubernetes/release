@@ -9,6 +9,7 @@
 - [Installation](#installation)
 - [Usage](#usage)
 - [Important notes](#important-notes)
+- [List Jobs](#list-jobs)
 - [Alpha](#alpha)
   - [Alpha Stage](#alpha-stage)
   - [Alpha Release](#alpha-release)
@@ -40,7 +41,8 @@ Flags:
       --build-version string   Build version
       --gcb-config string      If provided, this will be used as the name of the Google Cloud Build config file. (default "cloudbuild.yaml")
       --gcp-user string        If provided, this will be used as the GCP_USER_TAG.
-  -h, --help                   help for gcbmgr
+  -h, --help                   Help for gcbmgr
+      --list-jobs int          List the last x build jobs in the project. Default to 5.
       --project string         GCP project to run GCB in (default "kubernetes-release-test")
       --release                Submit a release run to GCB
       --stage                  Submit a stage run to GCB
@@ -48,10 +50,10 @@ Flags:
       --type string            Release type (must be one of: 'prerelease', 'rc', 'official') (default "prerelease")
 
 Global Flags:
-      --cleanup            cleanup flag
-      --log-level string   the logging verbosity, either 'panic', 'fatal', 'error', 'warn', 'warning', 'info', 'debug' or 'trace' (default "info")
+      --cleanup            Cleanup flag
+      --log-level string   The logging verbosity, either 'panic', 'fatal', 'error', 'warn', 'warning', 'info', 'debug' or 'trace' (default "info")
       --nomock             nomock flag
-      --repo string        the local path to the repository to be used (default "/tmp/k8s")
+      --repo string        The local path to the repository to be used (default "/tmp/k8s")
 ```
 
 ## Important notes
@@ -77,6 +79,13 @@ Global Flags:
     --branch release-x.y \
     --project kubernetes-release-test
   ```
+
+## List Jobs
+
+```shell
+krel gcbmgr \
+  --list-jobs 10
+```
 
 ## Alpha
 
