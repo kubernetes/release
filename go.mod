@@ -8,7 +8,7 @@ require (
 	github.com/bazelbuild/rules_go v0.22.1
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/golang/protobuf v1.3.2
-	github.com/golangci/golangci-lint v1.23.3
+	github.com/golangci/golangci-lint v1.24.0
 	github.com/google/go-github/v29 v29.0.3
 	github.com/google/uuid v1.1.1
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.2
