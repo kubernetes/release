@@ -376,7 +376,11 @@ var BuildListJobs = build.ListJobs
 
 // listJobs lists recent GCB jobs run in the specified project
 func listJobs(project string, lastJobs int64) error {
-	logrus.Infof("Listing last %d GCB jobs:", lastJobs)
+	if lastJobs < 0 {
+		logrus.Infof("--list-jobs was set to a negative number, defaulting to 5")
+		lastJobs = 5
+	}
 
+	logrus.Infof("Listing last %d GCB jobs:", lastJobs)
 	return BuildListJobs(project, lastJobs)
 }
