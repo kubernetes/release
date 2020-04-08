@@ -18,7 +18,7 @@ require (
 	github.com/psampaz/go-mod-outdated v0.5.0
 	github.com/sendgrid/rest v2.4.1+incompatible
 	github.com/sendgrid/sendgrid-go v3.5.0+incompatible
-	github.com/sirupsen/logrus v1.4.2
+	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v0.0.7
 	github.com/stretchr/testify v1.5.1
 	github.com/yuin/goldmark v1.1.25
