@@ -32,7 +32,7 @@ const patchReleaseExpectedContent = `## Changes by Kind
 
 - Removed dependency on test/e2e/common from test/e2e/storage/testsuites ([#83776](https://github.com/kubernetes/kubernetes/pull/83776), [@avalluri](https://github.com/avalluri)) [SIG Testing]
 
-### Other (Bug, Cleanup or Flake)
+### Bug or Regression
 
 - Add data cache flushing during unmount device for GCE-PD driver in Windows Server. ([#83591](https://github.com/kubernetes/kubernetes/pull/83591), [@jingxu97](https://github.com/jingxu97)) [SIG Storage and Windows]
 - Adds a metric apiserver_request_error_total to kube-apiserver. This metric tallies the number of request_errors encountered by verb, group, version, resource, subresource, scope, component, and code. ([#83427](https://github.com/kubernetes/kubernetes/pull/83427), [@logicalhan](https://github.com/logicalhan)) [SIG API Machinery and Instrumentation]
@@ -84,7 +84,7 @@ const patchReleaseExpectedHTML = `<!DOCTYPE html>
 <ul>
 <li>Removed dependency on test/e2e/common from test/e2e/storage/testsuites (<a href="https://github.com/kubernetes/kubernetes/pull/83776">#83776</a>, <a href="https://github.com/avalluri">@avalluri</a>) [SIG Testing]</li>
 </ul>
-<h3>Other (Bug, Cleanup or Flake)</h3>
+<h3>Bug or Regression</h3>
 <ul>
 <li>Add data cache flushing during unmount device for GCE-PD driver in Windows Server. (<a href="https://github.com/kubernetes/kubernetes/pull/83591">#83591</a>, <a href="https://github.com/jingxu97">@jingxu97</a>) [SIG Storage and Windows]</li>
 <li>Adds a metric apiserver_request_error_total to kube-apiserver. This metric tallies the number of request_errors encountered by verb, group, version, resource, subresource, scope, component, and code. (<a href="https://github.com/kubernetes/kubernetes/pull/83427">#83427</a>, <a href="https://github.com/logicalhan">@logicalhan</a>) [SIG API Machinery and Instrumentation]</li>
@@ -113,6 +113,7 @@ const patchReleaseExpectedHTML = `<!DOCTYPE html>
 
   </body>
 </html>`
+
 const alphaReleaseExpectedTOC = `<!-- BEGIN MUNGE: GENERATED_TOC -->
 
 - \[v1.18.0-alpha.3\]\(\#v1180-alpha3\)
@@ -121,7 +122,8 @@ const alphaReleaseExpectedTOC = `<!-- BEGIN MUNGE: GENERATED_TOC -->
     - \[Deprecation\]\(\#deprecation\)
     - \[API Change\]\(\#api-change\)
     - \[Feature\]\(\#feature\)
-    - \[Other \(Bug, Cleanup or Flake\)\]\(\#other-bug-cleanup-or-flake\)`
+    - \[Bug or Regression\]\(\#bug-or-regression\)
+    - \[Other \(Cleanup or Flake\)\]\(\#other-cleanup-or-flake\)`
 
 const alphaReleaseExpectedContent = `## Changes by Kind
 
@@ -154,22 +156,26 @@ const alphaReleaseExpectedContent = `## Changes by Kind
 - The kubectl --dry-run flag now accepts the values 'client', 'server', and 'none', to support client-side and server-side dry-run strategies. The boolean and unset values for the --dry-run flag are deprecated and a value will be required in a future version. ([#87580](https://github.com/kubernetes/kubernetes/pull/87580), [@julianvmodesto](https://github.com/julianvmodesto)) [SIG CLI]
 - Update CNI version to v0.8.5 ([#78819](https://github.com/kubernetes/kubernetes/pull/78819), [@justaugustus](https://github.com/justaugustus)) [SIG API Machinery, Cluster Lifecycle, Network, Release and Testing]
 
-### Other (Bug, Cleanup or Flake)
+### Bug or Regression
 
 - "kubectl describe statefulsets.apps" prints garbage for rolling update partition ([#85846](https://github.com/kubernetes/kubernetes/pull/85846), [@phil9909](https://github.com/phil9909)) [SIG CLI]
-- Update cri-tools to v1.17.0 ([#86305](https://github.com/kubernetes/kubernetes/pull/86305), [@saschagrunert](https://github.com/saschagrunert)) [SIG Cluster Lifecycle and Release]
 - Fix regression in statefulset conversion which prevented applying a statefulset multiple times. ([#87706](https://github.com/kubernetes/kubernetes/pull/87706), [@liggitt](https://github.com/liggitt)) [SIG Apps and Testing]
 - Fix the masters rolling upgrade causing thundering herd of LISTs on etcd leading to control plane unavailability. ([#86430](https://github.com/kubernetes/kubernetes/pull/86430), [@wojtek-t](https://github.com/wojtek-t)) [SIG API Machinery, Node and Testing]
 - Fixed two scheduler metrics (pending_pods and schedule_attempts_total) not being recorded ([#87692](https://github.com/kubernetes/kubernetes/pull/87692), [@everpeace](https://github.com/everpeace)) [SIG Scheduling]
 - For volumes that allow attaches across multiple nodes, attach and detach operations across different nodes are now executed in parallel. ([#87258](https://github.com/kubernetes/kubernetes/pull/87258), [@verult](https://github.com/verult)) [SIG Apps, Node and Storage]
 - Kubeadm: apply further improvements to the tentative support for concurrent etcd member join. Fixes a bug where multiple members can receive the same hostname. Increase the etcd client dial timeout and retry timeout for add/remove/... operations. ([#87505](https://github.com/kubernetes/kubernetes/pull/87505), [@neolit123](https://github.com/neolit123)) [SIG Cluster Lifecycle]
-- Kubeadm: remove the deprecated CoreDNS feature-gate. It was set to "true" since v1.11 when the feature went GA. In v1.13 it was marked as deprecated and hidden from the CLI. ([#87400](https://github.com/kubernetes/kubernetes/pull/87400), [@neolit123](https://github.com/neolit123)) [SIG Cluster Lifecycle]
-- Removed the 'client' label from apiserver_request_total. ([#87669](https://github.com/kubernetes/kubernetes/pull/87669), [@logicalhan](https://github.com/logicalhan)) [SIG API Machinery and Instrumentation]
 - Resolved a performance issue in the node authorizer index maintenance. ([#87693](https://github.com/kubernetes/kubernetes/pull/87693), [@liggitt](https://github.com/liggitt)) [SIG Auth]
 - Reverted a kubectl azure auth module change where oidc claim spn: prefix was omitted resulting a breaking behavior with existing Azure AD OIDC enabled api-server ([#87507](https://github.com/kubernetes/kubernetes/pull/87507), [@weinong](https://github.com/weinong)) [SIG API Machinery, Auth and Cloud Provider]
 - Shared informers are now more reliable in the face of network disruption. ([#86015](https://github.com/kubernetes/kubernetes/pull/86015), [@squeed](https://github.com/squeed)) [SIG API Machinery]
-- The CSR signing cert/key pairs will be reloaded from disk like the kube-apiserver cert/key pairs ([#86816](https://github.com/kubernetes/kubernetes/pull/86816), [@deads2k](https://github.com/deads2k)) [SIG API Machinery, Apps and Auth]
-- To reduce chances of throttling, VM cache is set to nil when Azure node provisioning state is deleting ([#87635](https://github.com/kubernetes/kubernetes/pull/87635), [@feiskyer](https://github.com/feiskyer)) [SIG Cloud Provider]`
+- To reduce chances of throttling, VM cache is set to nil when Azure node provisioning state is deleting ([#87635](https://github.com/kubernetes/kubernetes/pull/87635), [@feiskyer](https://github.com/feiskyer)) [SIG Cloud Provider]
+- ` + "`" + `kubectl diff` + "`" + ` now returns 1 only on diff finding changes, and >1 on kubectl errors. The "exit status code 1" message as also been muted. ([#87437](https://github.com/kubernetes/kubernetes/pull/87437), [@apelisse](https://github.com/apelisse)) [SIG CLI and Testing]
+
+### Other (Cleanup or Flake)
+
+- Update cri-tools to v1.17.0 ([#86305](https://github.com/kubernetes/kubernetes/pull/86305), [@saschagrunert](https://github.com/saschagrunert)) [SIG Cluster Lifecycle and Release]
+- Kubeadm: remove the deprecated CoreDNS feature-gate. It was set to "true" since v1.11 when the feature went GA. In v1.13 it was marked as deprecated and hidden from the CLI. ([#87400](https://github.com/kubernetes/kubernetes/pull/87400), [@neolit123](https://github.com/neolit123)) [SIG Cluster Lifecycle]
+- Removed the 'client' label from apiserver_request_total. ([#87669](https://github.com/kubernetes/kubernetes/pull/87669), [@logicalhan](https://github.com/logicalhan)) [SIG API Machinery and Instrumentation]
+- The CSR signing cert/key pairs will be reloaded from disk like the kube-apiserver cert/key pairs ([#86816](https://github.com/kubernetes/kubernetes/pull/86816), [@deads2k](https://github.com/deads2k)) [SIG API Machinery, Apps and Auth]`
 
 const alphaReleaseExpectedHTMLHead = `<!DOCTYPE html>
 <html>
@@ -243,24 +249,27 @@ const alphaReleaseExpectedHTMLBottom = `
 <p>Update CNI version to v0.8.5 (<a href="https://github.com/kubernetes/kubernetes/pull/78819">#78819</a>, <a href="https://github.com/justaugustus">@justaugustus</a>) [SIG API Machinery, Cluster Lifecycle, Network, Release and Testing]</p>
 </li>
 </ul>
-<h3>Other (Bug, Cleanup or Flake)</h3>
+<h3>Bug or Regression</h3>
 <ul>
 <li>&quot;kubectl describe statefulsets.apps&quot; prints garbage for rolling update partition (<a href="https://github.com/kubernetes/kubernetes/pull/85846">#85846</a>, <a href="https://github.com/phil9909">@phil9909</a>) [SIG CLI]</li>
-<li>Update cri-tools to v1.17.0 (<a href="https://github.com/kubernetes/kubernetes/pull/86305">#86305</a>, <a href="https://github.com/saschagrunert">@saschagrunert</a>) [SIG Cluster Lifecycle and Release]</li>
 <li>Fix regression in statefulset conversion which prevented applying a statefulset multiple times. (<a href="https://github.com/kubernetes/kubernetes/pull/87706">#87706</a>, <a href="https://github.com/liggitt">@liggitt</a>) [SIG Apps and Testing]</li>
 <li>Fix the masters rolling upgrade causing thundering herd of LISTs on etcd leading to control plane unavailability. (<a href="https://github.com/kubernetes/kubernetes/pull/86430">#86430</a>, <a href="https://github.com/wojtek-t">@wojtek-t</a>) [SIG API Machinery, Node and Testing]</li>
 <li>Fixed two scheduler metrics (pending_pods and schedule_attempts_total) not being recorded (<a href="https://github.com/kubernetes/kubernetes/pull/87692">#87692</a>, <a href="https://github.com/everpeace">@everpeace</a>) [SIG Scheduling]</li>
 <li>For volumes that allow attaches across multiple nodes, attach and detach operations across different nodes are now executed in parallel. (<a href="https://github.com/kubernetes/kubernetes/pull/87258">#87258</a>, <a href="https://github.com/verult">@verult</a>) [SIG Apps, Node and Storage]</li>
 <li>Kubeadm: apply further improvements to the tentative support for concurrent etcd member join. Fixes a bug where multiple members can receive the same hostname. Increase the etcd client dial timeout and retry timeout for add/remove/... operations. (<a href="https://github.com/kubernetes/kubernetes/pull/87505">#87505</a>, <a href="https://github.com/neolit123">@neolit123</a>) [SIG Cluster Lifecycle]</li>
-<li>Kubeadm: remove the deprecated CoreDNS feature-gate. It was set to &quot;true&quot; since v1.11 when the feature went GA. In v1.13 it was marked as deprecated and hidden from the CLI. (<a href="https://github.com/kubernetes/kubernetes/pull/87400">#87400</a>, <a href="https://github.com/neolit123">@neolit123</a>) [SIG Cluster Lifecycle]</li>
-<li>Removed the 'client' label from apiserver_request_total. (<a href="https://github.com/kubernetes/kubernetes/pull/87669">#87669</a>, <a href="https://github.com/logicalhan">@logicalhan</a>) [SIG API Machinery and Instrumentation]</li>
 <li>Resolved a performance issue in the node authorizer index maintenance. (<a href="https://github.com/kubernetes/kubernetes/pull/87693">#87693</a>, <a href="https://github.com/liggitt">@liggitt</a>) [SIG Auth]</li>
 <li>Reverted a kubectl azure auth module change where oidc claim spn: prefix was omitted resulting a breaking behavior with existing Azure AD OIDC enabled api-server (<a href="https://github.com/kubernetes/kubernetes/pull/87507">#87507</a>, <a href="https://github.com/weinong">@weinong</a>) [SIG API Machinery, Auth and Cloud Provider]</li>
 <li>Shared informers are now more reliable in the face of network disruption. (<a href="https://github.com/kubernetes/kubernetes/pull/86015">#86015</a>, <a href="https://github.com/squeed">@squeed</a>) [SIG API Machinery]</li>
-<li>The CSR signing cert/key pairs will be reloaded from disk like the kube-apiserver cert/key pairs (<a href="https://github.com/kubernetes/kubernetes/pull/86816">#86816</a>, <a href="https://github.com/deads2k">@deads2k</a>) [SIG API Machinery, Apps and Auth]</li>
 <li>To reduce chances of throttling, VM cache is set to nil when Azure node provisioning state is deleting (<a href="https://github.com/kubernetes/kubernetes/pull/87635">#87635</a>, <a href="https://github.com/feiskyer">@feiskyer</a>) [SIG Cloud Provider]</li>
-<li><code>(*&quot;k8s.io/client-go/rest&quot;.Request).{Do,DoRaw,Stream,Watch}</code> now require callers to pass a <code>context.Context</code> as an argument. The context is used for timeout and cancellation signaling and to pass supplementary information to round trippers in the wrapped transport chain. If you don't need any of this functionality, it is sufficient to pass a context created with <code>context.Background()</code> to these functions. The <code>(*&quot;k8s.io/client-go/rest&quot;.Request).Context</code> method is removed now that all methods that execute a request accept a context directly. (<a href="https://github.com/kubernetes/kubernetes/pull/87597">#87597</a>, <a href="https://github.com/mikedanese">@mikedanese</a>) [SIG API Machinery, Apps, Auth, Autoscaling, CLI, Cloud Provider, Cluster Lifecycle, Instrumentation, Network, Node, Scheduling, Storage and Testing]</li>
 <li><code>kubectl diff</code> now returns 1 only on diff finding changes, and &gt;1 on kubectl errors. The &quot;exit status code 1&quot; message as also been muted. (<a href="https://github.com/kubernetes/kubernetes/pull/87437">#87437</a>, <a href="https://github.com/apelisse">@apelisse</a>) [SIG CLI and Testing]</li>
+</ul>
+<h3>Other (Cleanup or Flake)</h3>
+<ul>
+<li>Update cri-tools to v1.17.0 (<a href="https://github.com/kubernetes/kubernetes/pull/86305">#86305</a>, <a href="https://github.com/saschagrunert">@saschagrunert</a>) [SIG Cluster Lifecycle and Release]</li>
+<li>Kubeadm: remove the deprecated CoreDNS feature-gate. It was set to &quot;true&quot; since v1.11 when the feature went GA. In v1.13 it was marked as deprecated and hidden from the CLI. (<a href="https://github.com/kubernetes/kubernetes/pull/87400">#87400</a>, <a href="https://github.com/neolit123">@neolit123</a>) [SIG Cluster Lifecycle]</li>
+<li>Removed the 'client' label from apiserver_request_total. (<a href="https://github.com/kubernetes/kubernetes/pull/87669">#87669</a>, <a href="https://github.com/logicalhan">@logicalhan</a>) [SIG API Machinery and Instrumentation]</li>
+<li>The CSR signing cert/key pairs will be reloaded from disk like the kube-apiserver cert/key pairs (<a href="https://github.com/kubernetes/kubernetes/pull/86816">#86816</a>, <a href="https://github.com/deads2k">@deads2k</a>) [SIG API Machinery, Apps and Auth]</li>
+<li><code>(*&quot;k8s.io/client-go/rest&quot;.Request).{Do,DoRaw,Stream,Watch}</code> now require callers to pass a <code>context.Context</code> as an argument. The context is used for timeout and cancellation signaling and to pass supplementary information to round trippers in the wrapped transport chain. If you don't need any of this functionality, it is sufficient to pass a context created with <code>context.Background()</code> to these functions. The <code>(*&quot;k8s.io/client-go/rest&quot;.Request).Context</code> method is removed now that all methods that execute a request accept a context directly. (<a href="https://github.com/kubernetes/kubernetes/pull/87597">#87597</a>, <a href="https://github.com/mikedanese">@mikedanese</a>) [SIG API Machinery, Apps, Auth, Autoscaling, CLI, Cloud Provider, Cluster Lifecycle, Instrumentation, Network, Node, Scheduling, Storage and Testing]</li>
 </ul>
 
   </body>

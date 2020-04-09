@@ -14,7 +14,7 @@
 
 ### API Change
  - This might make people sad...or happy.
-### Bug
+### Bug or Regression
  - This will likely get you promoted.
 ### Cleanup
  - This usually does not get you promoted but it should.
@@ -30,7 +30,7 @@
  - This will get you promoted.
 ### Flake
  - This *should* get you promoted.
-### Other (Bug, Cleanup or Flake)
+### Other (Cleanup or Flake)
  - This should definitely get you promoted.
 ### Uncategorized
  - Someone somewhere did the world a great justice.
