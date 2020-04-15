@@ -581,8 +581,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/spf13/cobra",
-        sum = "h1:breEStsVwemnKh2/s6gMvSdMEkwW0sK8vGStnlVBMCs=",
-        version = "v0.0.6",
+        sum = "h1:FfTH+vuMXOas8jmfb5/M7dzEYx7LpcLb7a0LPe34uOU=",
+        version = "v0.0.7",
     )
     go_repository(
         name = "com_github_spf13_jwalterweatherman",

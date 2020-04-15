@@ -19,7 +19,7 @@ require (
 	github.com/sendgrid/rest v2.4.1+incompatible
 	github.com/sendgrid/sendgrid-go v3.5.0+incompatible
 	github.com/sirupsen/logrus v1.4.2
-	github.com/spf13/cobra v0.0.6
+	github.com/spf13/cobra v0.0.7
 	github.com/stretchr/testify v1.5.1
 	github.com/yuin/goldmark v1.1.25
 	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
