@@ -767,8 +767,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "google.golang.org/api",
-        sum = "h1:jz2KixHX7EcCPiQrySzPdnYT7DbINAypCqKZ1Z7GM40=",
-        version = "v0.20.0",
+        sum = "h1:zS+Q/CJJnVlXpXQVIz+lH0ZT2lBuT2ac7XD8Y/3w6hY=",
+        version = "v0.21.0",
     )
     go_repository(
         name = "org_golang_google_genproto",
