@@ -921,8 +921,8 @@ def go_repositories():
         build_file_generation = "off",
         build_file_proto_mode = "package",
         importpath = "github.com/GoogleCloudPlatform/testgrid",
-        sum = "h1:tKM75ScxinVqDkguwG5AnsQZn9XCNpxAdEey1OfJgiE=",
-        version = "v0.0.7",
+        sum = "h1:UBYR7CmCLwOoWJMHXVlDMurCTzZLKww/WslxsbAvFX4=",
+        version = "v0.0.10",
     )
     go_repository(
         name = "com_google_cloud_go_datastore",
