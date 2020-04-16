@@ -188,10 +188,10 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			},
 		},
 		{
-			name: "release-1.14 RC",
+			name: "release-1.15 RC",
 			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Stage:       true,
-				Branch:      "release-1.14",
+				Branch:      "release-1.15",
 				ReleaseType: "rc",
 				GcpUser:     "test-user",
 				Repo:        mockRepo(),
@@ -202,7 +202,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"OFFICIAL_TAG":   "",
 				"RC":             "--rc",
 				"RC_TAG":         "rc",
-				"RELEASE_BRANCH": "release-1.14",
+				"RELEASE_BRANCH": "release-1.15",
 				"TOOL_ORG":       "",
 				"TOOL_REPO":      "",
 				"TOOL_BRANCH":    "",
