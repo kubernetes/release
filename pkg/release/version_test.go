@@ -73,13 +73,13 @@ func TestGetKubeVersionForBranchSuccess(t *testing.T) {
 		},
 		{
 			versionType: VersionTypeCILatest,
-			branch:      "release-1.14",
-			expected:    "v1.14.11-beta.1.2+c8b135d0b49c44",
+			branch:      "release-1.15",
+			expected:    "v1.15.12-beta.0.33+5f400ccfa32aff",
 		},
 		{
 			versionType: VersionTypeStablePreRelease,
-			branch:      "release-1.14",
-			expected:    "v1.14.11-beta.0",
+			branch:      "release-1.15",
+			expected:    "v1.15.12-beta.0",
 		},
 	}
 
@@ -124,8 +124,8 @@ func TestURL(t *testing.T) {
 		},
 		{
 			versionType: VersionTypeCILatest,
-			version:     "1.14",
-			expected:    "https://dl.k8s.io/ci/latest-1.14.txt",
+			version:     "1.15",
+			expected:    "https://dl.k8s.io/ci/latest-1.15.txt",
 		},
 		{
 			versionType: VersionTypeCILatest,
