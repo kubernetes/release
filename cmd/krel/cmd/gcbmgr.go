@@ -342,7 +342,7 @@ func SetGCBSubstitutions(o *GcbmgrOptions, toolOrg, toolRepo, toolBranch string)
 		}
 
 		var versionErr error
-		buildVersion, versionErr = release.GetKubeVersionForBranch(
+		buildVersion, versionErr = release.NewVersion().GetKubeVersionForBranch(
 			release.VersionTypeCILatest, o.Branch,
 		)
 		if versionErr != nil {

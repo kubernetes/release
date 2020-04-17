@@ -393,12 +393,12 @@ func getKubernetesVersion(packageDef *PackageDefinition) (string, error) {
 	}
 	switch packageDef.Channel {
 	case ChannelTesting:
-		return release.GetKubeVersion(release.VersionTypeStablePreRelease)
+		return release.NewVersion().GetKubeVersion(release.VersionTypeStablePreRelease)
 	case ChannelNightly:
-		return release.GetKubeVersion(release.VersionTypeCILatest)
+		return release.NewVersion().GetKubeVersion(release.VersionTypeCILatest)
 	}
 
-	return release.GetKubeVersion(release.VersionTypeStable)
+	return release.NewVersion().GetKubeVersion(release.VersionTypeStable)
 }
 
 func getCNIVersion(packageDef *PackageDefinition) (string, error) {
@@ -530,7 +530,7 @@ func getCIBuildsDownloadLinkBase(packageDef *PackageDefinition) (string, error) 
 	ciVersion := packageDef.KubernetesVersion
 	if ciVersion == "" {
 		var err error
-		ciVersion, err = release.GetKubeVersion(release.VersionTypeCILatest)
+		ciVersion, err = release.NewVersion().GetKubeVersion(release.VersionTypeCILatest)
 		if err != nil {
 			return "", err
 		}

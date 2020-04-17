@@ -2,7 +2,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["fake_repository.go"],
+    srcs = [
+        "fake_repository.go",
+        "fake_version_client.go",
+    ],
     importpath = "k8s.io/release/pkg/release/releasefakes",
     visibility = ["//visibility:public"],
     deps = [

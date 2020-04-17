@@ -14,42 +14,62 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package release
+package release_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/blang/semver"
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/http"
+	"k8s.io/release/pkg/release"
+	"k8s.io/release/pkg/release/releasefakes"
 	"k8s.io/release/pkg/util"
 )
 
+func newVersionSUT() (*release.Version, *releasefakes.FakeVersionClient) {
+	client := &releasefakes.FakeVersionClient{}
+	sut := release.NewVersion()
+	sut.SetClient(client)
+
+	return sut, client
+}
+
 func TestGetKubeVersionSuccess(t *testing.T) {
 	testcases := []struct {
-		versionType VersionType
+		behavior    func(*releasefakes.FakeVersionClient)
+		versionType release.VersionType
 		assertion   func(semver.Version)
 	}{
 		{
-			// for example: v1.17.3
-			versionType: VersionTypeStable,
+			behavior: func(mock *releasefakes.FakeVersionClient) {
+				mock.GetURLResponseReturns("v1.17.3", nil)
+			},
+			versionType: release.VersionTypeStable,
 			assertion:   func(s semver.Version) { require.Empty(t, s.Pre) },
 		},
 		{
-			// for example: v1.19.0-alpha.0.721+f8ff8f44206ff4
-			versionType: VersionTypeCILatest,
+			behavior: func(mock *releasefakes.FakeVersionClient) {
+				mock.GetURLResponseReturns("v1.19.0-alpha.0.721+f8ff8f44206ff4", nil)
+			},
+			versionType: release.VersionTypeCILatest,
 			assertion:   func(s semver.Version) { require.Len(t, s.Pre, 3) },
 		},
 		{
-			// for example: v1.19.0-alpha.0
-			versionType: VersionTypeStablePreRelease,
+			behavior: func(mock *releasefakes.FakeVersionClient) {
+				mock.GetURLResponseReturns("v1.19.0-alpha.0", nil)
+			},
+			versionType: release.VersionTypeStablePreRelease,
 			assertion:   func(s semver.Version) { require.Len(t, s.Pre, 2) },
 		},
 	}
 
 	for _, tc := range testcases {
-		tag, err := GetKubeVersion(tc.versionType)
+		sut, client := newVersionSUT()
+		tc.behavior(client)
+
+		tag, err := sut.GetKubeVersion(tc.versionType)
 		require.Nil(t, err)
 
 		s, err := util.TagStringToSemver(tag)
@@ -62,29 +82,33 @@ func TestGetKubeVersionSuccess(t *testing.T) {
 
 func TestGetKubeVersionForBranchSuccess(t *testing.T) {
 	testcases := []struct {
-		versionType VersionType
+		versionType release.VersionType
 		branch      string
 		expected    string
 	}{
 		{
-			versionType: VersionTypeStable,
+			versionType: release.VersionTypeStable,
 			branch:      "release-1.13",
 			expected:    "v1.13.12",
 		},
 		{
-			versionType: VersionTypeCILatest,
+			versionType: release.VersionTypeCILatest,
 			branch:      "release-1.15",
 			expected:    "v1.15.12-beta.0.33+5f400ccfa32aff",
 		},
 		{
-			versionType: VersionTypeStablePreRelease,
+			versionType: release.VersionTypeStablePreRelease,
 			branch:      "release-1.15",
 			expected:    "v1.15.12-beta.0",
 		},
 	}
 
 	for _, tc := range testcases {
-		actual, err := GetKubeVersionForBranch(tc.versionType, tc.branch)
+		sut, client := newVersionSUT()
+		client.GetURLResponseReturns(tc.expected, nil)
+
+		actual, err := sut.GetKubeVersionForBranch(tc.versionType, tc.branch)
+
 		require.Nil(t, err, string(tc.versionType))
 		require.Equal(t, tc.expected, actual)
 	}
@@ -92,62 +116,65 @@ func TestGetKubeVersionForBranchSuccess(t *testing.T) {
 
 func TestGetKubeVersionForBranchFailure(t *testing.T) {
 	testcases := []struct {
-		versionType VersionType
+		behavior    func(*releasefakes.FakeVersionClient)
+		versionType release.VersionType
 		branch      string
 	}{
 		{
-			versionType: VersionTypeStable,
+			behavior: func(mock *releasefakes.FakeVersionClient) {
+				mock.GetURLResponseReturns("", errors.New(""))
+			},
+			versionType: release.VersionTypeStable,
 			branch:      "wrong-branch",
 		},
 	}
 
 	for _, tc := range testcases {
-		_, err := GetKubeVersionForBranch(tc.versionType, tc.branch)
+		sut, client := newVersionSUT()
+		tc.behavior(client)
+
+		_, err := sut.GetKubeVersionForBranch(tc.versionType, tc.branch)
 		require.NotNil(t, err, string(tc.versionType))
 	}
 }
 
 func TestURL(t *testing.T) {
 	testcases := []struct {
-		versionType VersionType
+		versionType release.VersionType
 		version     string
 		expected    string
 	}{
 		{
-			versionType: VersionTypeStable,
+			versionType: release.VersionTypeStable,
 			version:     "1.13",
 			expected:    "https://dl.k8s.io/release/stable-1.13.txt",
 		},
 		{
-			versionType: VersionTypeStable,
+			versionType: release.VersionTypeStable,
 			expected:    "https://dl.k8s.io/release/stable.txt",
 		},
 		{
-			versionType: VersionTypeCILatest,
+			versionType: release.VersionTypeCILatest,
 			version:     "1.15",
 			expected:    "https://dl.k8s.io/ci/latest-1.15.txt",
 		},
 		{
-			versionType: VersionTypeCILatest,
+			versionType: release.VersionTypeCILatest,
 			expected:    "https://dl.k8s.io/ci/latest.txt",
 		},
 		{
-			versionType: VersionTypeStablePreRelease,
+			versionType: release.VersionTypeStablePreRelease,
 			version:     "1.15",
 			expected:    "https://dl.k8s.io/release/latest-1.15.txt",
 		},
 		{
-			versionType: VersionTypeStablePreRelease,
+			versionType: release.VersionTypeStablePreRelease,
 			expected:    "https://dl.k8s.io/release/latest.txt",
 		},
 	}
 
 	for _, tc := range testcases {
-		url := tc.versionType.url(tc.version)
+		url := tc.versionType.URL(tc.version)
 		require.Equal(t, tc.expected, url)
-
-		response, err := http.GetURLResponse(url, true)
-		require.Nil(t, err)
-		require.NotEmpty(t, response)
 	}
 }
