@@ -629,6 +629,42 @@ func (r *Repo) LatestPatchToPatch(branch string) (DiscoverResult, error) {
 	}, nil
 }
 
+// LatestPatchToLatest tries to discover the start (latest v1.x.x]) and
+// end (release-1.x or master) revision inside the repository for the specified release
+// branch.
+func (r *Repo) LatestPatchToLatest(branch string) (DiscoverResult, error) {
+	latestTag, err := r.LatestTagForBranch(branch)
+	if err != nil {
+		return DiscoverResult{}, err
+	}
+
+	if len(latestTag.Pre) > 0 && latestTag.Patch > 0 {
+		latestTag.Patch--
+		latestTag.Pre = nil
+	}
+
+	logrus.Debugf("parsing latest tag %s%v", util.TagPrefix, latestTag)
+	latestVersionTag := util.SemverToTagString(latestTag)
+	start, err := r.RevParse(latestVersionTag)
+	if err != nil {
+		return DiscoverResult{}, errors.Wrapf(err, "parsing version %v", latestTag)
+	}
+
+	// If a release branch exists for the latest version, we use it. Otherwise we
+	// fallback to the master branch.
+	end, branch, err := r.releaseBranchOrMasterRev(latestTag.Major, latestTag.Minor)
+	if err != nil {
+		return DiscoverResult{}, errors.Wrapf(err, "getting release branch for %v", latestTag)
+	}
+
+	return DiscoverResult{
+		startSHA: start,
+		startRev: latestVersionTag,
+		endSHA:   end,
+		endRev:   branch,
+	}, nil
+}
+
 // LatestTagForBranch returns the latest available semver tag for a given branch
 func (r *Repo) LatestTagForBranch(branch string) (tag semver.Version, err error) {
 	tags, err := r.TagsForBranch(branch)

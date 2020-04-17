@@ -116,6 +116,7 @@ const (
 	RevisionDiscoveryModeNONE              = "none"
 	RevisionDiscoveryModeMergeBaseToLatest = "mergebase-to-latest"
 	RevisionDiscoveryModePatchToPatch      = "patch-to-patch"
+	RevisionDiscoveryModePatchToLatest     = "patch-to-latest"
 	RevisionDiscoveryModeMinorToMinor      = "minor-to-minor"
 )
 
@@ -238,6 +239,8 @@ func (o *Options) resolveDiscoverMode() error {
 		result, err = repo.LatestReleaseBranchMergeBaseToLatest()
 	} else if o.DiscoverMode == RevisionDiscoveryModePatchToPatch {
 		result, err = repo.LatestPatchToPatch(o.Branch)
+	} else if o.DiscoverMode == RevisionDiscoveryModePatchToLatest {
+		result, err = repo.LatestPatchToLatest(o.Branch)
 	} else if o.DiscoverMode == RevisionDiscoveryModeMinorToMinor {
 		result, err = repo.LatestNonPatchFinalToMinor()
 	}
