@@ -44,6 +44,7 @@ type GcbmgrOptions struct {
 	GcpUser      string
 	LastJobs     int64
 	Repo         Repository
+	Version      Version
 }
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
@@ -54,12 +55,18 @@ type Repository interface {
 	GetTag() (string, error)
 }
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+//counterfeiter:generate . Version
+type Version interface {
+	GetKubeVersionForBranch(release.VersionType, string) (string, error)
+}
+
 var (
 	gcbmgrOpts = &GcbmgrOptions{}
 	buildOpts  = &build.Options{}
 
 	requiredPackages = []string{
-		"bsdmainutils",
+		// "bsdmainutils",
 	}
 
 	// TODO: Do we really need this if we use the Google Cloud SDK instead?
@@ -154,6 +161,7 @@ func init() {
 	)
 
 	gcbmgrOpts.Repo = release.NewRepo()
+	gcbmgrOpts.Version = release.NewVersion()
 	rootCmd.AddCommand(gcbmgrCmd)
 }
 
@@ -342,7 +350,7 @@ func SetGCBSubstitutions(o *GcbmgrOptions, toolOrg, toolRepo, toolBranch string)
 		}
 
 		var versionErr error
-		buildVersion, versionErr = release.NewVersion().GetKubeVersionForBranch(
+		buildVersion, versionErr = o.Version.GetKubeVersionForBranch(
 			release.VersionTypeCILatest, o.Branch,
 		)
 		if versionErr != nil {
