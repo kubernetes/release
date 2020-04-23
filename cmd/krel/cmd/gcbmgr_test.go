@@ -36,6 +36,12 @@ func mockRepo() cmd.Repository {
 	return mock
 }
 
+func mockVersion() cmd.Version {
+	mock := &cmdfakes.FakeVersion{}
+	mock.GetKubeVersionForBranchReturns("v1.17.0", nil)
+	return mock
+}
+
 type fakeListJobs struct {
 	expectedProject  string
 	expectedLastJobs int64
@@ -64,6 +70,7 @@ func TestRunGcbmgrList(t *testing.T) {
 				GcpUser:  "test-user",
 				LastJobs: 5,
 				Repo:     mockRepo(),
+				Version:  mockVersion(),
 			},
 			listJobOpts: fakeListJobs{
 				expectedProject:  "kubernetes-release-test",
@@ -79,6 +86,7 @@ func TestRunGcbmgrList(t *testing.T) {
 				GcpUser:  "test-user",
 				LastJobs: 10,
 				Repo:     mockRepo(),
+				Version:  mockVersion(),
 			},
 			listJobOpts: fakeListJobs{
 				expectedProject:  "kubernetes-release-test",
@@ -89,6 +97,8 @@ func TestRunGcbmgrList(t *testing.T) {
 		},
 	}
 
+	// Restore the previous state
+	defer func() { cmd.BuildListJobs = build.ListJobs }()
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
 		f := &tc.listJobOpts
@@ -116,6 +126,7 @@ func TestRunGcbmgrFailure(t *testing.T) {
 				Branch:  "",
 				GcpUser: "test-user",
 				Repo:    mockRepo(),
+				Version: mockVersion(),
 			},
 		},
 		{
@@ -125,12 +136,13 @@ func TestRunGcbmgrFailure(t *testing.T) {
 				Release: true,
 				GcpUser: "test-user",
 				Repo:    mockRepo(),
+				Version: mockVersion(),
 			},
 		},
 	}
 
 	for _, tc := range testcases {
-		fmt.Printf("Test case: %s", tc.name)
+		fmt.Printf("Test case: %s\n", tc.name)
 		err := cmd.RunGcbmgr(tc.gcbmgrOpts)
 		require.Error(t, err)
 	}
@@ -153,6 +165,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				ReleaseType: "prerelease",
 				GcpUser:     "test-user",
 				Repo:        mockRepo(),
+				Version:     mockVersion(),
 			},
 			expected: map[string]string{
 				"BUILD_AT_HEAD":  "",
@@ -175,6 +188,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				BuildVersion: "v1.33.7",
 				GcpUser:      "test-user",
 				Repo:         mockRepo(),
+				Version:      mockVersion(),
 			},
 			expected: map[string]string{
 				"OFFICIAL":       "",
@@ -195,6 +209,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				ReleaseType: "rc",
 				GcpUser:     "test-user",
 				Repo:        mockRepo(),
+				Version:     mockVersion(),
 			},
 			expected: map[string]string{
 				"BUILD_AT_HEAD":  "",
@@ -216,6 +231,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				ReleaseType: "official",
 				GcpUser:     "test-user",
 				Repo:        mockRepo(),
+				Version:     mockVersion(),
 			},
 			expected: map[string]string{
 				"BUILD_AT_HEAD":  "",
@@ -237,6 +253,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				ReleaseType: "official",
 				GcpUser:     "test-user",
 				Repo:        mockRepo(),
+				Version:     mockVersion(),
 			},
 			toolOrg:    "honk",
 			toolRepo:   "best-tools",
@@ -280,6 +297,11 @@ func TestSetGCBSubstitutionsFailure(t *testing.T) {
 				Branch:  "",
 				GcpUser: "test-user",
 				Repo:    mockRepo(),
+				Version: func() cmd.Version {
+					m := &cmdfakes.FakeVersion{}
+					m.GetKubeVersionForBranchReturns("", errors.New(""))
+					return m
+				}(),
 			},
 		},
 		{
@@ -289,6 +311,7 @@ func TestSetGCBSubstitutionsFailure(t *testing.T) {
 				Branch:  "",
 				GcpUser: "test-user",
 				Repo:    mockRepo(),
+				Version: mockVersion(),
 			},
 		},
 	}
