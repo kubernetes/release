@@ -40,6 +40,7 @@ type testRepo struct {
 	firstCommit        string
 	firstBranchCommit  string
 	secondBranchCommit string
+	thirdBranchCommit  string
 	branchName         string
 	firstTagCommit     string
 	firstTagName       string
@@ -52,6 +53,11 @@ type testRepo struct {
 
 // newTestRepo creates a test repo with the following structure:
 //
+// * commit `thirdBranchCommit` (HEAD -> `branchName`, origin/`branchName`)
+// | Author: John Doe <john@doe.org>
+// |
+// |     Fourth commit
+// |
 // * commit `secondBranchCommit` (tag: `thirdTagName`, HEAD -> `branchName`, origin/`branchName`)
 // | Author: John Doe <john@doe.org>
 // |
@@ -159,13 +165,28 @@ func newTestRepo(t *testing.T) *testRepo {
 	})
 	require.Nil(t, err)
 
-	thirdTagName := "v0.1.2"
+	thirdTagName := "v1.17.1"
 	thirdTagRef, err := cloneRepo.CreateTag(thirdTagName, secondBranchCommit,
 		&gogit.CreateTagOptions{
 			Tagger:  author,
 			Message: thirdTagName,
 		},
 	)
+	require.Nil(t, err)
+
+	const thirdBranchTestFileName = "branch-test-file-3"
+	require.Nil(t, ioutil.WriteFile(
+		filepath.Join(cloneTempDir, thirdBranchTestFileName),
+		[]byte("test-content"),
+		os.FileMode(0644),
+	))
+	_, err = worktree.Add(thirdBranchTestFileName)
+	require.Nil(t, err)
+
+	thirdBranchCommit, err := worktree.Commit("Fourth commit", &gogit.CommitOptions{
+		Author: author,
+		All:    true,
+	})
 	require.Nil(t, err)
 
 	// Push the test content into the bare repo
@@ -194,6 +215,7 @@ func newTestRepo(t *testing.T) *testRepo {
 		firstCommit:        firstCommit.String(),
 		firstBranchCommit:  firstBranchCommit.String(),
 		secondBranchCommit: secondBranchCommit.String(),
+		thirdBranchCommit:  thirdBranchCommit.String(),
 		branchName:         branchName,
 		firstTagName:       firstTagName,
 		firstTagCommit:     firstTagRef.Hash().String(),
@@ -270,7 +292,7 @@ func TestSuccessHead(t *testing.T) {
 
 	head, err := testRepo.sut.Head()
 	require.Nil(t, err)
-	require.Equal(t, head, testRepo.secondBranchCommit)
+	require.Equal(t, head, testRepo.thirdBranchCommit)
 }
 
 func TestSuccessMerge(t *testing.T) {
@@ -308,7 +330,7 @@ func TestSuccessRevParse(t *testing.T) {
 
 	branchRev, err := testRepo.sut.RevParse(testRepo.branchName)
 	require.Nil(t, err)
-	require.Equal(t, branchRev, testRepo.secondBranchCommit)
+	require.Equal(t, branchRev, testRepo.thirdBranchCommit)
 
 	tagRev, err := testRepo.sut.RevParse(testRepo.firstTagName)
 	require.Nil(t, err)
@@ -333,7 +355,7 @@ func TestSuccessRevParseShort(t *testing.T) {
 
 	branchRev, err := testRepo.sut.RevParseShort(testRepo.branchName)
 	require.Nil(t, err)
-	require.Equal(t, branchRev, testRepo.secondBranchCommit[:10])
+	require.Equal(t, branchRev, testRepo.thirdBranchCommit[:10])
 
 	tagRev, err := testRepo.sut.RevParseShort(testRepo.firstTagName)
 	require.Nil(t, err)
@@ -386,6 +408,15 @@ func TestSuccessLatestTagForBranch(t *testing.T) {
 	require.Equal(t, util.SemverToTagString(version), testRepo.firstTagName)
 }
 
+func TestSuccessLatestTagForBranchRelease(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	version, err := testRepo.sut.LatestTagForBranch("release-1.17")
+	require.Nil(t, err)
+	require.Equal(t, util.SemverToTagString(version), testRepo.thirdTagName)
+}
+
 func TestFailureLatestTagForBranchInvalidBranch(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
@@ -399,15 +430,28 @@ func TestSuccessLatestPatchToPatch(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	nextMinorTag := "v1.17.1"
+	// This test case gets commits from v1.17.0 to v1.17.1
+	result, err := testRepo.sut.LatestPatchToPatch(testRepo.branchName)
+	require.Nil(t, err)
+	require.Equal(t, result.StartSHA(), testRepo.firstCommit)
+	require.Equal(t, result.StartRev(), testRepo.firstTagName)
+	require.Equal(t, result.EndRev(), testRepo.thirdTagName)
+}
+
+func TestSuccessLatestPatchToPatchNewTag(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	// This test case gets commits from v1.17.1 to a new v1.17.2
+	nextMinorTag := "v1.17.2"
 	require.Nil(t, command.NewWithWorkDir(
 		testRepo.sut.Dir(), "git", "tag", nextMinorTag,
 	).RunSuccess())
 
 	result, err := testRepo.sut.LatestPatchToPatch(testRepo.branchName)
 	require.Nil(t, err)
-	require.Equal(t, result.StartSHA(), testRepo.firstCommit)
-	require.Equal(t, result.StartRev(), testRepo.firstTagName)
+	require.Equal(t, result.StartSHA(), testRepo.secondBranchCommit)
+	require.Equal(t, result.StartRev(), testRepo.thirdTagName)
 	require.Equal(t, result.EndRev(), nextMinorTag)
 }
 
@@ -418,6 +462,18 @@ func TestFailureLatestPatchToPatchWrongBranch(t *testing.T) {
 	result, err := testRepo.sut.LatestPatchToPatch("wrong-branch")
 	require.NotNil(t, err)
 	require.Equal(t, git.DiscoverResult{}, result)
+}
+
+func TestSuccessLatestPatchToLatest(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	// This test case gets commits from v1.17.1 to head of release-1.17
+	result, err := testRepo.sut.LatestPatchToLatest(testRepo.branchName)
+	require.Nil(t, err)
+	require.Equal(t, result.StartSHA(), testRepo.secondBranchCommit)
+	require.Equal(t, result.StartRev(), testRepo.thirdTagName)
+	require.Equal(t, result.EndSHA(), testRepo.thirdBranchCommit)
 }
 
 func TestSuccessDry(t *testing.T) {
@@ -496,8 +552,8 @@ func TestTagsForBranchOnBranch(t *testing.T) {
 	result, err := testRepo.sut.TagsForBranch(testRepo.branchName)
 	require.Nil(t, err)
 	require.Equal(t, result, []string{
-		testRepo.firstTagName,
 		testRepo.thirdTagName,
+		testRepo.firstTagName,
 		testRepo.secondTagName,
 	})
 }

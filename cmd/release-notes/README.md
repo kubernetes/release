@@ -82,7 +82,7 @@ level=debug timestamp=2019-07-30T04:02:44.3716249Z caller=notes.go:497 msg="Excl
 | repo-path               | REPO_PATH       | /tmp/k8s-repo       | No       | Path to a local Kubernetes repository, used only for tag discovery                                                                |
 | start-rev               | START_REV       |                     | No       | The git revision to start at. Can be used as alternative to start-sha                                                             |
 | env-rev                 | END_REV         |                     | No       | The git revision to end at. Can be used as alternative to end-sha                                                                 |
-| discover                | DISCOVER        | none                | No       | The revision discovery mode for automatic revision retrieval (options: none, mergebase-to-latest, patch-to-patch, minor-to-minor) |
+| discover                | DISCOVER        | none                | No       | The revision discovery mode for automatic revision retrieval (options: none, mergebase-to-latest, patch-to-patch, patch-to-latest, minor-to-minor) |
 | release-bucket          | RELEASE_BUCKET  | kubernetes-release  | No       | Specify gs bucket to point to in generated notes (default "kubernetes-release")                                                   |
 | release-tars            | RELEASE_TARS    |                     | No       | Directory of tars to sha512 sum for display                                                                                       |
 | **OUTPUT OPTIONS**      |
