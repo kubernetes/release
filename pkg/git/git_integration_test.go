@@ -750,8 +750,17 @@ func TestOpenRepoSuccess(t *testing.T) {
 	require.Equal(t, testRepo.sut.Dir(), repo.Dir())
 }
 
+func TestOpenRepoSuccessSearchGitDot(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	repo, err := git.OpenRepo(filepath.Join(testRepo.sut.Dir(), "not-existing"))
+	require.Nil(t, err)
+	require.Equal(t, testRepo.sut.Dir(), repo.Dir())
+}
+
 func TestOpenRepoFailure(t *testing.T) {
-	repo, err := git.OpenRepo("invalid")
+	repo, err := git.OpenRepo("/invalid")
 	require.NotNil(t, err)
 	require.Nil(t, repo)
 }

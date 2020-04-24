@@ -214,11 +214,6 @@ func CloneOrOpenGitHubRepo(repoPath, owner, repo string, useSSH bool) (*Repo, er
 // The function returns the repository if cloning or updating of the repository
 // was successful, otherwise an error.
 func CloneOrOpenRepo(repoPath, repoURL string, useSSH bool) (*Repo, error) {
-	// We still need the plain git executable for some methods
-	if !command.Available(gitExecutable) {
-		return nil, errors.New("git is needed to support all repository features")
-	}
-
 	logrus.Debugf("Using repository url %q", repoURL)
 	targetDir := ""
 	if repoPath != "" {
@@ -256,47 +251,45 @@ func CloneOrOpenRepo(repoPath, repoURL string, useSSH bool) (*Repo, error) {
 // updateRepo tries to open the provided repoPath and fetches the latest
 // changes from the configured remote location
 func updateRepo(repoPath string) (*Repo, error) {
-	r, err := git.PlainOpen(repoPath)
+	r, err := OpenRepo(repoPath)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to open repo")
+		return nil, err
 	}
 
 	// Update the repo
 	if err := command.NewWithWorkDir(
-		repoPath, gitExecutable, "pull", "--rebase",
+		r.Dir(), gitExecutable, "pull", "--rebase",
 	).RunSilentSuccess(); err != nil {
 		return nil, errors.Wrap(err, "unable to pull from remote")
 	}
 
-	worktree, err := r.Worktree()
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get repository worktree")
-	}
-	return &Repo{
-		inner:    r,
-		worktree: worktree,
-		dir:      repoPath,
-	}, nil
+	return r, nil
 }
 
 // OpenRepo tries to open the provided repoPath
 func OpenRepo(repoPath string) (*Repo, error) {
+	if !command.Available(gitExecutable) {
+		return nil, errors.Errorf(
+			"%s executable is not available in $PATH", gitExecutable,
+		)
+	}
+
 	r, err := git.PlainOpenWithOptions(
 		repoPath, &git.PlainOpenOptions{DetectDotGit: true},
 	)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "opening repo")
 	}
 
 	worktree, err := r.Worktree()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getting repository worktree")
 	}
 
 	return &Repo{
 		inner:    r,
 		worktree: worktree,
-		dir:      repoPath,
+		dir:      worktree.Filesystem.Root(),
 	}, nil
 }
 

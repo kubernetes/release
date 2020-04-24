@@ -2,12 +2,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["auth.go"],
-    importpath = "k8s.io/release/pkg/gcp/auth",
+    srcs = ["gcp.go"],
+    importpath = "k8s.io/release/pkg/gcp",
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/command:go_default_library",
-        "//pkg/gcp:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
     ],
 )
@@ -21,7 +20,11 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [":package-srcs"],
+    srcs = [
+        ":package-srcs",
+        "//pkg/gcp/auth:all-srcs",
+        "//pkg/gcp/build:all-srcs",
+    ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

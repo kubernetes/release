@@ -35,6 +35,7 @@ import (
 	"google.golang.org/api/option"
 
 	"k8s.io/release/pkg/command"
+	"k8s.io/release/pkg/gcp"
 	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/yaml"
 )
@@ -138,7 +139,7 @@ func (o *Options) uploadBuildDir(targetBucket string) (string, error) {
 
 	logrus.Infof("Creating source tarball at %s...", name)
 	tarCmdErr := command.Execute(
-		"tar",
+		gcp.TarExecutable,
 		"--exclude",
 		".git",
 		"-czf",
@@ -153,7 +154,7 @@ func (o *Options) uploadBuildDir(targetBucket string) (string, error) {
 	uploaded := fmt.Sprintf("%s/%s.tgz", targetBucket, u.String())
 	logrus.Infof("Uploading %s to %s...", name, uploaded)
 	cpErr := command.Execute(
-		"gsutil",
+		gcp.GSUtilExecutable,
 		"cp",
 		name,
 		uploaded,
@@ -235,7 +236,7 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 		args = append(args, diskSizeArg)
 	}
 
-	cmd := command.New("gcloud", args...)
+	cmd := command.New(gcp.GCloudExecutable, args...)
 
 	if o.LogDir != "" {
 		p := path.Join(o.LogDir, strings.ReplaceAll(jobName, "/", "-")+".log")

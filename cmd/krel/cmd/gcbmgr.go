@@ -26,7 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/command"
+	"k8s.io/release/pkg/gcp"
 	"k8s.io/release/pkg/gcp/auth"
 	"k8s.io/release/pkg/gcp/build"
 	"k8s.io/release/pkg/git"
@@ -64,18 +64,6 @@ type Version interface {
 var (
 	gcbmgrOpts = &GcbmgrOptions{}
 	buildOpts  = &build.Options{}
-
-	requiredPackages = []string{
-		// "bsdmainutils",
-	}
-
-	// TODO: Do we really need this if we use the Google Cloud SDK instead?
-	requiredCommands = []string{
-		"gcloud",
-		"git",
-		"gsutil",
-		"jq",
-	}
 )
 
 // gcbmgrCmd is a krel subcommand which invokes RunGcbmgr()
@@ -168,23 +156,13 @@ func init() {
 // RunGcbmgr is the function invoked by 'krel gcbmgr', responsible for
 // submitting release jobs to GCB
 func RunGcbmgr(opts *GcbmgrOptions) error {
-	logrus.Info("Checking for required packages")
-	ok, err := util.PackagesAvailable(requiredPackages...)
-	if err != nil {
-		return errors.Wrap(err, "unable to verify if packages are available")
-	}
-	if !ok {
-		return errors.New("packages required to run gcbmgr are not present")
-	}
-
-	logrus.Info("Checking for required commands")
-	if cmdAvailable := command.Available(requiredCommands...); !cmdAvailable {
-		return errors.New("binaries required to run gcbmgr are not present")
-	}
-
 	toolOrg := release.GetToolOrg()
 	toolRepo := release.GetToolRepo()
 	toolBranch := release.GetToolBranch()
+
+	if err := gcp.PreCheck(); err != nil {
+		return errors.Wrap(err, "pre-checking for GCP package")
+	}
 
 	if err := opts.Repo.Open(); err != nil {
 		return errors.Wrap(err, "open release repo")
