@@ -888,3 +888,16 @@ func (r *Repo) PushToRemote(remote, remoteBranch string) error {
 
 	return command.NewWithWorkDir(r.Dir(), gitExecutable, args...).RunSuccess()
 }
+
+// LsRemote can be used to run `git ls-remote` with the provided args on the
+// repository
+func (r *Repo) LsRemote(args ...string) (string, error) {
+	cmdArgs := append([]string{"ls-remote"}, args...)
+	res, err := command.NewWithWorkDir(
+		r.Dir(), gitExecutable, cmdArgs...,
+	).RunSuccessOutput()
+	if err != nil {
+		return "", errors.Wrap(err, "running git ls-remote")
+	}
+	return res.OutputTrimNL(), nil
+}

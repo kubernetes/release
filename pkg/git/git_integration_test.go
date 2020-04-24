@@ -795,3 +795,23 @@ func TestPushToRemoteFailureBranchNotExisting(t *testing.T) {
 	err := testRepo.sut.PushToRemote(git.DefaultRemote, "some-branch")
 	require.NotNil(t, err)
 }
+
+func TestLSRemoteSuccess(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	res, err := testRepo.sut.LsRemote()
+	require.Nil(t, err)
+	require.Contains(t, res, testRepo.firstCommit)
+	require.Contains(t, res, testRepo.secondBranchCommit)
+	require.Contains(t, res, testRepo.thirdBranchCommit)
+}
+
+func TestLSRemoteFailure(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	res, err := testRepo.sut.LsRemote("invalid")
+	require.NotNil(t, err)
+	require.Empty(t, res)
+}
