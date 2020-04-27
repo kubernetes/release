@@ -45,6 +45,8 @@ type Repository interface {
 	Describe(opts *git.DescribeOptions) (string, error)
 	CurrentBranch() (branch string, err error)
 	Remotes() (res []*git.Remote, err error)
+	LsRemote(...string) (string, error)
+	Branch(...string) (string, error)
 }
 
 // Open assumes the current working directory as repository root and tries to
@@ -92,9 +94,9 @@ func (r *Repo) CheckState(expOrg, expRepo, expBranch string) error {
 		return errors.Wrap(err, "retrieving current branch")
 	}
 	if branch != expBranch {
-		return errors.Errorf("branch %s expected but got %s", expBranch, branch)
+		return errors.Errorf("branch %q expected but got %q", expBranch, branch)
 	}
-	logrus.Infof("Found matching branch %s", expBranch)
+	logrus.Infof("Found matching branch %q", expBranch)
 
 	// Verify the remote
 	remotes, err := r.repo.Remotes()
@@ -115,19 +117,37 @@ func (r *Repo) CheckState(expOrg, expRepo, expBranch string) error {
 	}
 	if foundRemote == nil {
 		return errors.Errorf(
-			"unable to find remote matching organization %s and repository %s",
+			"unable to find remote matching organization %q and repository %q",
 			expOrg, expRepo,
 		)
 	}
 	logrus.Infof(
-		"Found matching organization %s and repository %s in remote: %s (%s)",
+		"Found matching organization %q and repository %q in remote: %s (%s)",
 		expOrg,
 		expRepo,
 		foundRemote.Name(),
 		strings.Join(foundRemote.URLs(), ", "),
 	)
 
-	// TODO: verify if the branch contains the remote commit via "ls-remote" if
-	// the logic in the git package is implemented (follow-up)
+	logrus.Info("Verifying remote HEAD commit")
+	lsRemoteOut, err := r.repo.LsRemote(
+		"--heads", foundRemote.Name(), "refs/heads/master",
+	)
+	if err != nil {
+		return errors.Wrap(err, "getting remote HEAD")
+	}
+	fields := strings.Fields(lsRemoteOut)
+	if len(fields) < 1 {
+		return errors.Errorf("unexpected output: %s", lsRemoteOut)
+	}
+	commit := fields[0]
+	logrus.Infof("Got remote commit: %s", commit)
+
+	logrus.Info("Verifying that remote commit is available locally")
+	if _, err := r.repo.Branch("--contains", commit, branch); err != nil {
+		return errors.Wrapf(err, "checking %s is locally available", commit)
+	}
+	logrus.Info("Repository is up-to-date")
+
 	return nil
 }

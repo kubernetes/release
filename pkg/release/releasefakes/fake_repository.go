@@ -25,6 +25,19 @@ import (
 )
 
 type FakeRepository struct {
+	BranchStub        func(...string) (string, error)
+	branchMutex       sync.RWMutex
+	branchArgsForCall []struct {
+		arg1 []string
+	}
+	branchReturns struct {
+		result1 string
+		result2 error
+	}
+	branchReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
 	CurrentBranchStub        func() (string, error)
 	currentBranchMutex       sync.RWMutex
 	currentBranchArgsForCall []struct {
@@ -50,6 +63,19 @@ type FakeRepository struct {
 		result1 string
 		result2 error
 	}
+	LsRemoteStub        func(...string) (string, error)
+	lsRemoteMutex       sync.RWMutex
+	lsRemoteArgsForCall []struct {
+		arg1 []string
+	}
+	lsRemoteReturns struct {
+		result1 string
+		result2 error
+	}
+	lsRemoteReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
 	RemotesStub        func() ([]*git.Remote, error)
 	remotesMutex       sync.RWMutex
 	remotesArgsForCall []struct {
@@ -64,6 +90,69 @@ type FakeRepository struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeRepository) Branch(arg1 ...string) (string, error) {
+	fake.branchMutex.Lock()
+	ret, specificReturn := fake.branchReturnsOnCall[len(fake.branchArgsForCall)]
+	fake.branchArgsForCall = append(fake.branchArgsForCall, struct {
+		arg1 []string
+	}{arg1})
+	fake.recordInvocation("Branch", []interface{}{arg1})
+	fake.branchMutex.Unlock()
+	if fake.BranchStub != nil {
+		return fake.BranchStub(arg1...)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.branchReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRepository) BranchCallCount() int {
+	fake.branchMutex.RLock()
+	defer fake.branchMutex.RUnlock()
+	return len(fake.branchArgsForCall)
+}
+
+func (fake *FakeRepository) BranchCalls(stub func(...string) (string, error)) {
+	fake.branchMutex.Lock()
+	defer fake.branchMutex.Unlock()
+	fake.BranchStub = stub
+}
+
+func (fake *FakeRepository) BranchArgsForCall(i int) []string {
+	fake.branchMutex.RLock()
+	defer fake.branchMutex.RUnlock()
+	argsForCall := fake.branchArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeRepository) BranchReturns(result1 string, result2 error) {
+	fake.branchMutex.Lock()
+	defer fake.branchMutex.Unlock()
+	fake.BranchStub = nil
+	fake.branchReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepository) BranchReturnsOnCall(i int, result1 string, result2 error) {
+	fake.branchMutex.Lock()
+	defer fake.branchMutex.Unlock()
+	fake.BranchStub = nil
+	if fake.branchReturnsOnCall == nil {
+		fake.branchReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.branchReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeRepository) CurrentBranch() (string, error) {
@@ -184,6 +273,69 @@ func (fake *FakeRepository) DescribeReturnsOnCall(i int, result1 string, result2
 	}{result1, result2}
 }
 
+func (fake *FakeRepository) LsRemote(arg1 ...string) (string, error) {
+	fake.lsRemoteMutex.Lock()
+	ret, specificReturn := fake.lsRemoteReturnsOnCall[len(fake.lsRemoteArgsForCall)]
+	fake.lsRemoteArgsForCall = append(fake.lsRemoteArgsForCall, struct {
+		arg1 []string
+	}{arg1})
+	fake.recordInvocation("LsRemote", []interface{}{arg1})
+	fake.lsRemoteMutex.Unlock()
+	if fake.LsRemoteStub != nil {
+		return fake.LsRemoteStub(arg1...)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.lsRemoteReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRepository) LsRemoteCallCount() int {
+	fake.lsRemoteMutex.RLock()
+	defer fake.lsRemoteMutex.RUnlock()
+	return len(fake.lsRemoteArgsForCall)
+}
+
+func (fake *FakeRepository) LsRemoteCalls(stub func(...string) (string, error)) {
+	fake.lsRemoteMutex.Lock()
+	defer fake.lsRemoteMutex.Unlock()
+	fake.LsRemoteStub = stub
+}
+
+func (fake *FakeRepository) LsRemoteArgsForCall(i int) []string {
+	fake.lsRemoteMutex.RLock()
+	defer fake.lsRemoteMutex.RUnlock()
+	argsForCall := fake.lsRemoteArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeRepository) LsRemoteReturns(result1 string, result2 error) {
+	fake.lsRemoteMutex.Lock()
+	defer fake.lsRemoteMutex.Unlock()
+	fake.LsRemoteStub = nil
+	fake.lsRemoteReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepository) LsRemoteReturnsOnCall(i int, result1 string, result2 error) {
+	fake.lsRemoteMutex.Lock()
+	defer fake.lsRemoteMutex.Unlock()
+	fake.LsRemoteStub = nil
+	if fake.lsRemoteReturnsOnCall == nil {
+		fake.lsRemoteReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.lsRemoteReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRepository) Remotes() ([]*git.Remote, error) {
 	fake.remotesMutex.Lock()
 	ret, specificReturn := fake.remotesReturnsOnCall[len(fake.remotesArgsForCall)]
@@ -242,10 +394,14 @@ func (fake *FakeRepository) RemotesReturnsOnCall(i int, result1 []*git.Remote, r
 func (fake *FakeRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.branchMutex.RLock()
+	defer fake.branchMutex.RUnlock()
 	fake.currentBranchMutex.RLock()
 	defer fake.currentBranchMutex.RUnlock()
 	fake.describeMutex.RLock()
 	defer fake.describeMutex.RUnlock()
+	fake.lsRemoteMutex.RLock()
+	defer fake.lsRemoteMutex.RUnlock()
 	fake.remotesMutex.RLock()
 	defer fake.remotesMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

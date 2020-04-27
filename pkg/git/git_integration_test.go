@@ -815,3 +815,21 @@ func TestLSRemoteFailure(t *testing.T) {
 	require.NotNil(t, err)
 	require.Empty(t, res)
 }
+
+func TestBranchSuccess(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	res, err := testRepo.sut.Branch()
+	require.Nil(t, err)
+	require.Contains(t, res, testRepo.branchName)
+}
+
+func TestBranchFailure(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	res, err := testRepo.sut.Branch("--invalid")
+	require.NotNil(t, err)
+	require.Empty(t, res)
+}
