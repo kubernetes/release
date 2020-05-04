@@ -38,8 +38,13 @@ RUN for platform in ${KUBE_CROSSPLATFORMS}; do GOOS=${platform%/*} GOARCH=${plat
 
 # Install g++, then download and install protoc for generating protobuf output
 RUN apt-get update \
-  && apt-get install -y rsync jq apt-utils file patch unzip \
-  && apt-get clean && rm -rf /var/lib/apt/lists/*
+  && apt-get install -y \
+      apt-utils \
+      file \
+      jq \
+      patch \
+      rsync \
+      unzip
 
 # Use dynamic cgo linking for architectures other than amd64 for the server platforms
 # To install crossbuild essential for other architectures add the following repository.
@@ -47,8 +52,7 @@ RUN echo "deb http://archive.ubuntu.com/ubuntu xenial main universe" > /etc/apt/
   && apt-key adv --no-tty --keyserver keyserver.ubuntu.com --recv-keys 40976EAF437D05B5 3B4FE6ACC0B21F32 \
   && apt-get update \
   && apt-get install -y build-essential \
-  && for platform in ${KUBE_DYNAMIC_CROSSPLATFORMS}; do apt-get install -y crossbuild-essential-${platform}; done \
-  && apt-get clean && rm -rf /var/lib/apt/lists/*
+  && for platform in ${KUBE_DYNAMIC_CROSSPLATFORMS}; do apt-get install -y crossbuild-essential-${platform}; done
 
 RUN PROTOBUF_VERSION=3.0.2; ZIPNAME="protoc-${PROTOBUF_VERSION}-linux-x86_64.zip"; \
   mkdir /tmp/protoc && cd /tmp/protoc \
@@ -77,3 +81,6 @@ RUN export ETCD_VERSION=v3.2.24; \
   && cd /usr/local/src/etcd \
   && curl -fsSL https://github.com/coreos/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz | tar -xz \
   && ln -s ../src/etcd/etcd-${ETCD_VERSION}-linux-amd64/etcd /usr/local/bin/
+
+RUN apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
