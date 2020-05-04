@@ -11,7 +11,6 @@ filename | sha512 hash
 [kubernetes.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes.tar.gz) | 27864cc5219a951a7a6e52b8c8dddf6981d098da1658d96258c870b2c88dfbcb51841aea172a28bafa6a79731165584677066045c959ed0f9929688d04defc29
 [kubernetes-src.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-src.tar.gz) | 27864cc5219a951a7a6e52b8c8dddf6981d098da1658d96258c870b2c88dfbcb51841aea172a28bafa6a79731165584677066045c959ed0f9929688d04defc29
 
-
 ### Client binaries
 
 filename | sha512 hash
@@ -27,7 +26,6 @@ filename | sha512 hash
 [kubernetes-client-windows-386.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-client-windows-386.tar.gz) | 27864cc5219a951a7a6e52b8c8dddf6981d098da1658d96258c870b2c88dfbcb51841aea172a28bafa6a79731165584677066045c959ed0f9929688d04defc29
 [kubernetes-client-windows-amd64.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-client-windows-amd64.tar.gz) | 27864cc5219a951a7a6e52b8c8dddf6981d098da1658d96258c870b2c88dfbcb51841aea172a28bafa6a79731165584677066045c959ed0f9929688d04defc29
 
-
 ### Server binaries
 
 filename | sha512 hash
@@ -37,7 +35,6 @@ filename | sha512 hash
 [kubernetes-server-linux-arm64.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-server-linux-arm64.tar.gz) | 27864cc5219a951a7a6e52b8c8dddf6981d098da1658d96258c870b2c88dfbcb51841aea172a28bafa6a79731165584677066045c959ed0f9929688d04defc29
 [kubernetes-server-linux-ppc64le.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-server-linux-ppc64le.tar.gz) | 27864cc5219a951a7a6e52b8c8dddf6981d098da1658d96258c870b2c88dfbcb51841aea172a28bafa6a79731165584677066045c959ed0f9929688d04defc29
 [kubernetes-server-linux-s390x.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-server-linux-s390x.tar.gz) | 27864cc5219a951a7a6e52b8c8dddf6981d098da1658d96258c870b2c88dfbcb51841aea172a28bafa6a79731165584677066045c959ed0f9929688d04defc29
-
 
 ### Node binaries
 
@@ -50,36 +47,40 @@ filename | sha512 hash
 [kubernetes-node-linux-s390x.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-node-linux-s390x.tar.gz) | 27864cc5219a951a7a6e52b8c8dddf6981d098da1658d96258c870b2c88dfbcb51841aea172a28bafa6a79731165584677066045c959ed0f9929688d04defc29
 [kubernetes-node-windows-amd64.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-node-windows-amd64.tar.gz) | 27864cc5219a951a7a6e52b8c8dddf6981d098da1658d96258c870b2c88dfbcb51841aea172a28bafa6a79731165584677066045c959ed0f9929688d04defc29
 
-
 # Changelog since v1.16.0
 
 ## Urgent Upgrade Notes 
 
 ### (No, really, you MUST read this before you upgrade)
 
- - If an API changes and no one documented it, did it really happen?
+ - Action required note.
  
 ## Changes by Kind
 
-### API Change
- - This might make people sad...or happy.
-### Bug or Regression
- - This will likely get you promoted.
-### Cleanup
- - This usually does not get you promoted but it should.
 ### Deprecation
- - Delorted.
-### Design
- - Change the world.
-### Documentation
- - There was  a library in Alexandria, Egypt once.
-### Failing Test
- - Please run presubmit test!
+ - Deprecation #1.
+ - This note is duplicated across SIGs.
+
 ### Feature
- - This will get you promoted.
-### Flake
- - This *should* get you promoted.
+ - A feature.
+
+### Design
+ - Design change.
+
+### Documentation
+ - Update docs.
+
+### Failing Test
+ - Fix a failing test.
+
+### Bug or Regression
+ - Bugfix.
+ - This note was prepended with a dash (-) initially.
+ - This note was prepended with a star (*) initially.
+
 ### Other (Cleanup or Flake)
- - This should definitely get you promoted.
+ - Clean up.
+ - Fix a flakey test.
+
 ### Uncategorized
- - Someone somewhere did the world a great justice.
+ - Uncategorized note.

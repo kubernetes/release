@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"text/template"
@@ -158,10 +159,12 @@ func (n *NoteCollection) Sort(kindPriority []Kind) {
 	})
 }
 
+// TODO: These should probably go into the notes package.
 type Kind string
 type NotesByKind map[Kind]Notes
 type Notes []string
 
+// TODO: These should probably go into the notes package.
 const (
 	KindAPIChange     Kind = "api-change"
 	KindBug           Kind = "bug"
@@ -173,7 +176,6 @@ const (
 	KindFeature       Kind = "feature"
 	KindFlake         Kind = "flake"
 	KindRegression    Kind = "regression"
-	// TODO: These should be same case as the others. Probably fix up prettyKind()??
 	KindOther         Kind = "Other (Cleanup or Flake)"
 	KindUncategorized Kind = "Uncategorized"
 )
@@ -207,6 +209,13 @@ func CreateDocument(releaseNotes notes.ReleaseNotes, history notes.ReleaseNotesH
 		Notes:                   NoteCollection{},
 	}
 
+	stripRE := regexp.MustCompile(`^([-\*]+\s+)`)
+	// processNote encapsulates the pre-processing that might happen on a note
+	// text before it gets bulleted during rendering.
+	processNote := func(s string) string {
+		return stripRE.ReplaceAllLiteralString(s, "")
+	}
+
 	kindCategory := make(map[Kind]NoteCategory)
 	for _, pr := range history {
 		note := releaseNotes[pr]
@@ -215,20 +224,20 @@ func CreateDocument(releaseNotes notes.ReleaseNotes, history notes.ReleaseNotesH
 		if note.DuplicateKind {
 			kind := mapKind(highestPriorityKind(note.Kinds))
 			if existing, ok := kindCategory[kind]; ok {
-				*existing.NoteEntries = append(*existing.NoteEntries, note.Markdown)
+				*existing.NoteEntries = append(*existing.NoteEntries, processNote(note.Markdown))
 			} else {
-				kindCategory[kind] = NoteCategory{Kind: kind, NoteEntries: &Notes{note.Markdown}}
+				kindCategory[kind] = NoteCategory{Kind: kind, NoteEntries: &Notes{processNote(note.Markdown)}}
 			}
 		} else if note.ActionRequired {
-			doc.NotesWithActionRequired = append(doc.NotesWithActionRequired, note.Markdown)
+			doc.NotesWithActionRequired = append(doc.NotesWithActionRequired, processNote(note.Markdown))
 		} else {
 			for _, kind := range note.Kinds {
 				mappedKind := mapKind(Kind(kind))
 
 				if existing, ok := kindCategory[mappedKind]; ok {
-					*existing.NoteEntries = append(*existing.NoteEntries, note.Markdown)
+					*existing.NoteEntries = append(*existing.NoteEntries, processNote(note.Markdown))
 				} else {
-					kindCategory[mappedKind] = NoteCategory{Kind: mappedKind, NoteEntries: &Notes{note.Markdown}}
+					kindCategory[mappedKind] = NoteCategory{Kind: mappedKind, NoteEntries: &Notes{processNote(note.Markdown)}}
 				}
 			}
 
@@ -236,17 +245,17 @@ func CreateDocument(releaseNotes notes.ReleaseNotes, history notes.ReleaseNotesH
 				// the note has not been categorized so far
 				kind := KindUncategorized
 				if existing, ok := kindCategory[kind]; ok {
-					*existing.NoteEntries = append(*existing.NoteEntries, note.Markdown)
+					*existing.NoteEntries = append(*existing.NoteEntries, processNote(note.Markdown))
 				} else {
-					kindCategory[kind] = NoteCategory{Kind: kind, NoteEntries: &Notes{note.Markdown}}
+					kindCategory[kind] = NoteCategory{Kind: kind, NoteEntries: &Notes{processNote(note.Markdown)}}
 				}
 			}
 		}
 	}
 
 	for _, category := range kindCategory {
-		doc.Notes = append(doc.Notes, category)
 		sort.Strings(*category.NoteEntries)
+		doc.Notes = append(doc.Notes, category)
 	}
 
 	doc.Notes.Sort(kindPriority)
@@ -281,7 +290,7 @@ func (d *Document) RenderMarkdownTemplate(bucket, fileDir, templateSpec string) 
 	if err := tmpl.Execute(&s, d); err != nil {
 		return "", errors.Wrapf(err, "rendering with template")
 	}
-	return s.String(), nil
+	return strings.TrimSpace(s.String()), nil
 }
 
 // template returns either the default template or a template from file. The
@@ -372,30 +381,6 @@ func (d *Document) RenderMarkdown(bucket, tars, prevTag, newTag string) (string,
 	return strings.TrimSpace(o.String()), nil
 }
 
-// sortKinds sorts kinds by their priority and returns the result in a string
-// slice
-func sortKinds(notesByKind NotesByKind) []Kind {
-	res := []Kind{}
-	for kind := range notesByKind {
-		res = append(res, kind)
-	}
-
-	indexOf := func(kind Kind) int {
-		for i, prioKind := range kindPriority {
-			if kind == prioKind {
-				return i
-			}
-		}
-		return -1
-	}
-
-	sort.Slice(res, func(i, j int) bool {
-		return indexOf(res[i]) < indexOf(res[j])
-	})
-
-	return res
-}
-
 // CreateDownloadsTable creates the markdown table with the links to the tarballs.
 // The function does nothing if the `tars` variable is empty.
 func CreateDownloadsTable(w io.Writer, bucket, tars, prevTag, newTag string) error {
@@ -408,8 +393,7 @@ func CreateDownloadsTable(w io.Writer, bucket, tars, prevTag, newTag string) err
 	if fileMetadata == nil {
 		// If directory is empty, doesn't contain matching files, or is not
 		// given we will have a nil value. This is not an error in every
-		// context. Return early so we do not modify markdown. This will be
-		// removed once issue #1019 lands.
+		// context. Return early so we do not modify markdown.
 		fmt.Fprintf(w, "# %s\n\n", newTag)
 		fmt.Fprintf(w, "## Changelog since %s\n\n", prevTag)
 		return nil

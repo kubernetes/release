@@ -172,10 +172,10 @@ const alphaReleaseExpectedContent = `## Changes by Kind
 
 ### Other (Cleanup or Flake)
 
-- Update cri-tools to v1.17.0 ([#86305](https://github.com/kubernetes/kubernetes/pull/86305), [@saschagrunert](https://github.com/saschagrunert)) [SIG Cluster Lifecycle and Release]
 - Kubeadm: remove the deprecated CoreDNS feature-gate. It was set to "true" since v1.11 when the feature went GA. In v1.13 it was marked as deprecated and hidden from the CLI. ([#87400](https://github.com/kubernetes/kubernetes/pull/87400), [@neolit123](https://github.com/neolit123)) [SIG Cluster Lifecycle]
 - Removed the 'client' label from apiserver_request_total. ([#87669](https://github.com/kubernetes/kubernetes/pull/87669), [@logicalhan](https://github.com/logicalhan)) [SIG API Machinery and Instrumentation]
-- The CSR signing cert/key pairs will be reloaded from disk like the kube-apiserver cert/key pairs ([#86816](https://github.com/kubernetes/kubernetes/pull/86816), [@deads2k](https://github.com/deads2k)) [SIG API Machinery, Apps and Auth]`
+- The CSR signing cert/key pairs will be reloaded from disk like the kube-apiserver cert/key pairs ([#86816](https://github.com/kubernetes/kubernetes/pull/86816), [@deads2k](https://github.com/deads2k)) [SIG API Machinery, Apps and Auth]
+- Update cri-tools to v1.17.0 ([#86305](https://github.com/kubernetes/kubernetes/pull/86305), [@saschagrunert](https://github.com/saschagrunert)) [SIG Cluster Lifecycle and Release]`
 
 const alphaReleaseExpectedHTMLHead = `<!DOCTYPE html>
 <html>
@@ -265,10 +265,10 @@ const alphaReleaseExpectedHTMLBottom = `
 </ul>
 <h3>Other (Cleanup or Flake)</h3>
 <ul>
-<li>Update cri-tools to v1.17.0 (<a href="https://github.com/kubernetes/kubernetes/pull/86305">#86305</a>, <a href="https://github.com/saschagrunert">@saschagrunert</a>) [SIG Cluster Lifecycle and Release]</li>
 <li>Kubeadm: remove the deprecated CoreDNS feature-gate. It was set to &quot;true&quot; since v1.11 when the feature went GA. In v1.13 it was marked as deprecated and hidden from the CLI. (<a href="https://github.com/kubernetes/kubernetes/pull/87400">#87400</a>, <a href="https://github.com/neolit123">@neolit123</a>) [SIG Cluster Lifecycle]</li>
 <li>Removed the 'client' label from apiserver_request_total. (<a href="https://github.com/kubernetes/kubernetes/pull/87669">#87669</a>, <a href="https://github.com/logicalhan">@logicalhan</a>) [SIG API Machinery and Instrumentation]</li>
 <li>The CSR signing cert/key pairs will be reloaded from disk like the kube-apiserver cert/key pairs (<a href="https://github.com/kubernetes/kubernetes/pull/86816">#86816</a>, <a href="https://github.com/deads2k">@deads2k</a>) [SIG API Machinery, Apps and Auth]</li>
+<li>Update cri-tools to v1.17.0 (<a href="https://github.com/kubernetes/kubernetes/pull/86305">#86305</a>, <a href="https://github.com/saschagrunert">@saschagrunert</a>) [SIG Cluster Lifecycle and Release]</li>
 <li><code>(*&quot;k8s.io/client-go/rest&quot;.Request).{Do,DoRaw,Stream,Watch}</code> now require callers to pass a <code>context.Context</code> as an argument. The context is used for timeout and cancellation signaling and to pass supplementary information to round trippers in the wrapped transport chain. If you don't need any of this functionality, it is sufficient to pass a context created with <code>context.Background()</code> to these functions. The <code>(*&quot;k8s.io/client-go/rest&quot;.Request).Context</code> method is removed now that all methods that execute a request accept a context directly. (<a href="https://github.com/kubernetes/kubernetes/pull/87597">#87597</a>, <a href="https://github.com/mikedanese">@mikedanese</a>) [SIG API Machinery, Apps, Auth, Autoscaling, CLI, Cloud Provider, Cluster Lifecycle, Instrumentation, Network, Node, Scheduling, Storage and Testing]</li>
 </ul>
 
