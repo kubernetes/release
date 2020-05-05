@@ -1,0 +1,22 @@
+variants:
+  go1.14:
+    CONFIG: 'go1.14'
+    GO_VERSION: '1.14.2'
+    KUBE_CROSS_VERSION: 'v1.14.2-2'
+    PROTOBUF_VERSION: '3.0.2'
+    ETCD_VERSION: 'v3.2.24'
+    SKOPEO_VERSION: 'v0.1.41'
+  go1.13:
+    CONFIG: 'go1.13'
+    GO_VERSION: '1.13.9'
+    KUBE_CROSS_VERSION: 'v1.13.9-3'
+    PROTOBUF_VERSION: '3.0.2'
+    ETCD_VERSION: 'v3.2.24'
+    SKOPEO_VERSION: 'v0.1.41'
+  go1.12:
+    CONFIG: 'go1.12'
+    GO_VERSION: '1.12.17'
+    KUBE_CROSS_VERSION: 'v1.12.17-2'
+    PROTOBUF_VERSION: '3.0.2'
+    ETCD_VERSION: 'v3.2.24'
+    SKOPEO_VERSION: 'v0.1.41'

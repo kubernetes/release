@@ -19,7 +19,15 @@ PROD_REGISTRY?=us.gcr.io/k8s-artifacts-prod/build-image
 IMAGE=kube-cross
 
 TAG?=$(shell git describe --tags --always --dirty)
-VERSION=$(shell cat VERSION)
+CONFIG?=go1.14
+KUBE_CROSS_VERSION?=v1.14.2-2
+
+# Build args
+GO_VERSION?=1.14.2
+PROTOBUF_VERSION?=3.0.2
+ETCD_VERSION?=v3.2.24
+SKOPEO_VERSION?=v0.1.41
+
 # TODO: Support multi-arch kube-cross images
 #       ref:
 #       - https://github.com/kubernetes/release/pull/1140/commits/e96924f58d9ce2bb73045fbba13f259b4345c0d9#r395056830
@@ -31,17 +39,21 @@ all: build push
 
 build:
 	docker build \
-		-t $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(TAG) \
-		-t $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(VERSION) \
-		-t $(PROD_REGISTRY)/$(IMAGE)-$(ARCH):$(VERSION) \
+		-t $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
+		-t $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION) \
+		-t $(PROD_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION) \
+		--build-arg=GO_VERSION=$(GO_VERSION) \
+		--build-arg=PROTOBUF_VERSION=$(PROTOBUF_VERSION) \
+		--build-arg=ETCD_VERSION=$(ETCD_VERSION) \
+		--build-arg=SKOPEO_VERSION=$(SKOPEO_VERSION) \
 		.
 
 push:
-	docker push $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(TAG)
-	docker push $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(VERSION)
-	docker manifest create --amend $(STAGING_REGISTRY)/$(IMAGE):$(VERSION) \
-		$(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(VERSION)
-	docker manifest annotate $(STAGING_REGISTRY)/$(IMAGE):$(VERSION) \
-		$(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(VERSION) \
+	docker push $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(TAG)-$(CONFIG)
+	docker push $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION)
+	docker manifest create --amend $(STAGING_REGISTRY)/$(IMAGE):$(KUBE_CROSS_VERSION) \
+		$(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION)
+	docker manifest annotate $(STAGING_REGISTRY)/$(IMAGE):$(KUBE_CROSS_VERSION) \
+		$(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION) \
 		--arch $(ARCH)
-	docker manifest push -p $(STAGING_REGISTRY)/$(IMAGE):$(VERSION)
+	docker manifest push -p $(STAGING_REGISTRY)/$(IMAGE):$(KUBE_CROSS_VERSION)

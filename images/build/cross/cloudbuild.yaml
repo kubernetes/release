@@ -9,6 +9,12 @@ steps:
     - DOCKER_CLI_EXPERIMENTAL=enabled
     - TAG=$_GIT_TAG
     - PULL_BASE_REF=$_PULL_BASE_REF
+    - CONFIG=$_CONFIG
+    - GO_VERSION=$_GO_VERSION
+    - KUBE_CROSS_VERSION=$_KUBE_CROSS_VERSION
+    - PROTOBUF_VERSION=$_PROTOBUF_VERSION
+    - ETCD_VERSION=$_ETCD_VERSION
+    - SKOPEO_VERSION=$_SKOPEO_VERSION
     args:
     - all
 substitutions:
@@ -16,3 +22,12 @@ substitutions:
   # can be used as a substitution
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
+  _CONFIG: 'go1.14'
+  _GO_VERSION: '1.14.2'
+  _KUBE_CROSS_VERSION: 'v1.14.2-2'
+  _PROTOBUF_VERSION: '3.0.2'
+  _ETCD_VERSION: 'v3.2.24'
+  _SKOPEO_VERSION: 'v0.1.41'
+images:
+  - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_KUBE_CROSS_VERSION'
+  - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_GIT_TAG-$_CONFIG'
