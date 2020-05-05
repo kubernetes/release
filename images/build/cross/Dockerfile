@@ -15,7 +15,8 @@
 # This file creates a standard build environment for building cross
 # platform go binary for the architecture kubernetes cares about.
 
-FROM golang:1.14.2
+ARG GO_VERSION
+FROM golang:${GO_VERSION}
 
 ##------------------------------------------------------------
 # global ARGs & ENVs
@@ -79,8 +80,9 @@ RUN echo "deb http://archive.ubuntu.com/ubuntu xenial main universe" > /etc/apt/
   && apt-get install -y build-essential \
   && for platform in ${KUBE_DYNAMIC_CROSSPLATFORMS}; do apt-get install -y crossbuild-essential-${platform}; done
 
-RUN PROTOBUF_VERSION=3.0.2; ZIPNAME="protoc-${PROTOBUF_VERSION}-linux-x86_64.zip"; \
-  mkdir /tmp/protoc && cd /tmp/protoc \
+ARG PROTOBUF_VERSION=3.0.2
+ENV ZIPNAME="protoc-${PROTOBUF_VERSION}-linux-x86_64.zip"
+RUN mkdir /tmp/protoc && cd /tmp/protoc \
   && wget "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/${ZIPNAME}" \
   && unzip "${ZIPNAME}" \
   && chmod -R +rX /tmp/protoc \
@@ -101,8 +103,8 @@ RUN go get golang.org/x/tools/cmd/cover \
     && go clean -cache
 
 # Download and symlink etcd. We need this for our integration tests.
-RUN export ETCD_VERSION=v3.2.24; \
-  mkdir -p /usr/local/src/etcd \
+ARG ETCD_VERSION=v3.2.24
+RUN mkdir -p /usr/local/src/etcd \
   && cd /usr/local/src/etcd \
   && curl -fsSL https://github.com/coreos/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz | tar -xz \
   && ln -s ../src/etcd/etcd-${ETCD_VERSION}-linux-amd64/etcd /usr/local/bin/
