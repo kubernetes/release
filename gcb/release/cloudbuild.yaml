@@ -35,7 +35,7 @@ steps:
   args:
   - "./compile-release-tools"
 
-- name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
+- name: us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:${_KUBE_CROSS_VERSION}
   dir: "go/src/k8s.io/release"
   env:
   - "TOOL_ORG=${_TOOL_ORG}"
