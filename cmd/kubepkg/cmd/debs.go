@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd // nolint: dupl
+package cmd
 
 import (
 	"github.com/spf13/cobra"
 
 	kpkg "k8s.io/release/pkg/kubepkg"
-	"k8s.io/release/pkg/util"
 )
 
 type debsOptions struct {
@@ -36,12 +35,11 @@ var debsCmd = &cobra.Command{
 	Example:       "kubepkg debs --arch amd64 --channels nightly",
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := runDebs(); err != nil {
-			return err
-		}
-
-		return nil
+	PreRunE: func(*cobra.Command, []string) error {
+		return rootOpts.validate()
+	},
+	RunE: func(*cobra.Command, []string) error {
+		return runDebs(rootOpts)
 	},
 }
 
@@ -49,21 +47,10 @@ func init() {
 	rootCmd.AddCommand(debsCmd)
 }
 
-func runDebs() error {
-	ro := rootOpts
-
-	validateErr := validateOptions(ro)
-	if validateErr != nil {
-		return validateErr
-	}
-
-	// Replace the "+" with a "-" to make it semver-compliant
-	ro.kubeVersion = util.TrimTagPrefix(ro.kubeVersion)
-
+func runDebs(ro *rootOptions) error {
 	builds, err := kpkg.ConstructBuilds("deb", ro.packages, ro.channels, ro.kubeVersion, ro.revision, ro.cniVersion, ro.criToolsVersion, ro.templateDir)
 	if err != nil {
 		return err
 	}
-
 	return kpkg.WalkBuilds(builds, ro.architectures, ro.specOnly)
 }

@@ -23,6 +23,7 @@ import (
 
 	kpkg "k8s.io/release/pkg/kubepkg"
 	"k8s.io/release/pkg/log"
+	"k8s.io/release/pkg/util"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -139,16 +140,19 @@ func initLogging(*cobra.Command, []string) error {
 	return log.SetupGlobalLogger(rootOpts.logLevel)
 }
 
-func validateOptions(ro *rootOptions) error {
-	if ok := kpkg.IsSupported(ro.packages, kpkg.SupportedPackages); !ok {
+func (r *rootOptions) validate() error {
+	if ok := kpkg.IsSupported(r.packages, kpkg.SupportedPackages); !ok {
 		return errors.New("package selections are not supported")
 	}
-	if ok := kpkg.IsSupported(ro.channels, kpkg.SupportedChannels); !ok {
+	if ok := kpkg.IsSupported(r.channels, kpkg.SupportedChannels); !ok {
 		return errors.New("channel selections are not supported")
 	}
-	if ok := kpkg.IsSupported(ro.architectures, kpkg.SupportedArchitectures); !ok {
+	if ok := kpkg.IsSupported(r.architectures, kpkg.SupportedArchitectures); !ok {
 		return errors.New("architectures selections are not supported")
 	}
+
+	// Replace the "+" with a "-" to make it semver-compliant
+	r.kubeVersion = util.TrimTagPrefix(r.kubeVersion)
 
 	return nil
 }
