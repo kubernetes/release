@@ -144,9 +144,8 @@ func ConstructBuilds(buildType BuildType, packages, channels []string, kubeVersi
 	for _, pkg := range packages {
 		// TODO: Get package directory for any version once package definitions are broken out
 		packageTemplateDir := filepath.Join(templateDir, string(buildType), pkg)
-		_, err := os.Stat(packageTemplateDir)
-		if err != nil {
-			return nil, err
+		if _, err := os.Stat(packageTemplateDir); err != nil {
+			return nil, errors.Wrap(err, "finding package template dir")
 		}
 
 		b := &Build{
@@ -305,8 +304,7 @@ func (bc *buildConfig) run() error {
 	specDir := filepath.Join(bc.workspace, string(bc.Channel), bc.Package)
 	specDirWithArch := filepath.Join(specDir, bc.GoArch)
 
-	err = os.MkdirAll(specDirWithArch, workspaceInfo.Mode())
-	if err != nil {
+	if err := os.MkdirAll(specDirWithArch, workspaceInfo.Mode()); err != nil {
 		return err
 	}
 
@@ -315,8 +313,7 @@ func (bc *buildConfig) run() error {
 		defer os.RemoveAll(specDirWithArch)
 	}
 
-	_, err = buildSpecs(bc, specDirWithArch)
-	if err != nil {
+	if _, err := buildSpecs(bc, specDirWithArch); err != nil {
 		return err
 	}
 
@@ -349,7 +346,7 @@ func (bc *buildConfig) run() error {
 
 		dstPath := filepath.Join(dstParts...)
 		if mkdirErr := os.MkdirAll(dstPath, os.FileMode(0777)); mkdirErr != nil {
-			return err
+			return mkdirErr
 		}
 
 		mvErr := command.New("mv", filepath.Join(specDir, fileName), dstPath).RunSuccess()
