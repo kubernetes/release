@@ -5,7 +5,7 @@ The subcommand of choice for the Release Notes subteam of SIG Release
 - [Summary](#summary)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Important notes](#important-notes)
+- [Important notes and issues](#important-notes-and-issues)
 
 ## Summary
 
@@ -20,7 +20,7 @@ This subcommand can be used to generate the release notes draft for the current 
 
 After [installing krel](README.md#installation), you will need to [get a GitHub token](https://github.com/settings/tokens) to run the release-notes subcommand.
 
-If you want to generate the JSON patches for relnotes.k8s.io you will need to have [npm](https://www.npmjs.com/) installed to run the JSON formatter.
+If you want to generate the JSON patches for relnotes.k8s.io you will need to have [npm](https://www.npmjs.com/) and a recent version of [node.js](https://nodejs.org/) installed to run the JSON formatter.
 
 ## Usage
 
@@ -74,8 +74,14 @@ The subcommand can also generate the notes and modify the necessary files to upd
 krel release-notes --tag v1.18.0-alpha.1 --website-org=kubefriend --create-website-pr
 ```
 
-## Important notes
+## Important notes and issues
 
-The /tmp defaults shown in the flags above are for Linux. Other platform will default to Go's `os.TempDir()` (for example, on a the Mac the actual path will be under `/var/folders/…` ).
+- The /tmp defaults shown in the flags above are for Linux. Other platform will default to Go's `os.TempDir()` (for example, on a the Mac the actual path will be under `/var/folders/…` ).
 
-The release-notes subcommand will eventually create the PR for you. This is still under development though.
+- The `release-notes` subcommand will eventually create the PR for you. This is still under development though.
+
+- If krel is interrupted while cloning, it might leave the repository at an unusable state. We recommend deleting any incomplete repositories before running krel again.
+
+- Make sure [git `author.email`](https://help.github.com/en/github/setting-up-and-managing-your-github-user-account/setting-your-commit-email-address) matches the address you used to sign the CNCF's CLA.
+
+- If krel was run without forking `kubernetes/sig-release` and `kubernetes-sigs/release-notes`, the commit will be created but pushing to your fork will fail.
