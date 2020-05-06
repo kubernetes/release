@@ -121,9 +121,10 @@ const (
 )
 
 const (
-	FormatSpecNone              = ""
-	FormatSpecJSON              = "json"
-	FormatSpecDefaultGoTemplate = "go-template:default"
+	FormatSpecNone                    = ""
+	FormatSpecJSON                    = "json"
+	FormatSpecDefaultGoTemplate       = "go-template:default"
+	FormatSpecDefaultGoTemplateInline = "go-template:inline:"
 
 	// Deprecated: This option is internally translated to `FormatSpecDefaultGoTemplate`
 	FormatSpecMarkdown = "markdown"
