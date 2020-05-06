@@ -22,12 +22,12 @@ substitutions:
   # can be used as a substitution
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
-  _CONFIG: 'go1.14'
-  _GO_VERSION: '1.14.2'
-  _KUBE_CROSS_VERSION: 'v1.14.2-2'
-  _PROTOBUF_VERSION: '3.0.2'
-  _ETCD_VERSION: 'v3.2.24'
-  _SKOPEO_VERSION: 'v0.1.41'
+  _CONFIG: 'go0.0'
+  _GO_VERSION: '0.0.0'
+  _KUBE_CROSS_VERSION: 'v0.0.0-0'
+  _PROTOBUF_VERSION: '0.0.0'
+  _ETCD_VERSION: 'v0.0.0'
+  _SKOPEO_VERSION: 'v0.0.0'
 images:
   - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_KUBE_CROSS_VERSION'
   - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_GIT_TAG-$_CONFIG'
