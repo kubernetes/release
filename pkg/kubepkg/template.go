@@ -17,10 +17,13 @@ limitations under the License.
 package kubepkg
 
 import (
+	"bytes"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"text/template"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,9 +34,7 @@ type work struct {
 	info os.FileInfo
 }
 
-func buildSpecs(bc *buildConfig, specDir string) ([]work, error) {
-	var w []work
-
+func buildSpecs(bc *buildConfig, specDir string) (workItems []work, err error) {
 	if err := filepath.Walk(bc.TemplateDir, func(templateFile string, f os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -53,7 +54,7 @@ func buildSpecs(bc *buildConfig, specDir string) ([]work, error) {
 		if err != nil {
 			return err
 		}
-		w = append(w, work{
+		workItems = append(workItems, work{
 			src:  templateFile,
 			dst:  specFile,
 			t:    t.Templates()[0],
@@ -65,26 +66,20 @@ func buildSpecs(bc *buildConfig, specDir string) ([]work, error) {
 		return nil, err
 	}
 
-	for _, w := range w {
-		if err := func() error {
-			f, err := os.OpenFile(w.dst, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
+	for _, item := range workItems {
+		buf := bytes.Buffer{}
+		if err := item.t.Execute(&buf, bc); err != nil {
+			return nil, errors.Wrapf(err, "executing template for %s", item.src)
+		}
 
-			if err := w.t.Execute(f, bc); err != nil {
-				return err
-			}
-			if err := os.Chmod(w.dst, w.info.Mode()); err != nil {
-				return err
-			}
-			return nil
-		}(); err != nil {
-			return nil, err
+		if err := ioutil.WriteFile(
+			item.dst, buf.Bytes(), item.info.Mode(),
+		); err != nil {
+			return nil, errors.Wrapf(err, "writing file %s", item.dst)
 		}
 	}
 
 	logrus.Info("Package specs have successfully been built")
-	return w, nil
+
+	return workItems, nil
 }
