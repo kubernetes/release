@@ -22,13 +22,14 @@ import (
 	"github.com/spf13/cobra"
 
 	kpkg "k8s.io/release/pkg/kubepkg"
+	"k8s.io/release/pkg/log"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:     "kubepkg",
-	Short:   "kubepkg",
-	PreRunE: initLogging,
+	Use:               "kubepkg",
+	Short:             "kubepkg",
+	PersistentPreRunE: initLogging,
 }
 
 type rootOptions struct {
@@ -135,14 +136,7 @@ func initConfig() {
 }
 
 func initLogging(*cobra.Command, []string) error {
-	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
-	lvl, err := logrus.ParseLevel(rootOpts.logLevel)
-	if err != nil {
-		return err
-	}
-	logrus.SetLevel(lvl)
-	logrus.Debugf("Using log level %q", lvl)
-	return nil
+	return log.SetupGlobalLogger(rootOpts.logLevel)
 }
 
 func validateOptions(ro *rootOptions) error {
