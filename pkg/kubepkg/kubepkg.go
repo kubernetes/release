@@ -180,13 +180,12 @@ func ConstructBuilds(buildType BuildType, packages, channels []string, kubeVersi
 	return builds, nil
 }
 
-func WalkBuilds(builds []Build, architectures []string, specOnly bool) error {
+func WalkBuilds(builds []Build, architectures []string, specOnly bool) (err error) {
 	logrus.Infof("Walking builds...")
 
-	var err error
 	workingDir := os.Getenv("KUBEPKG_WORKING_DIR")
 	if workingDir == "" {
-		workingDir, err = ioutil.TempDir(os.TempDir(), "kubepkg")
+		workingDir, err = ioutil.TempDir("", "kubepkg")
 		if err != nil {
 			return err
 		}
@@ -202,7 +201,7 @@ func WalkBuilds(builds []Build, architectures []string, specOnly bool) error {
 		}
 	}
 	if specOnly {
-		logrus.Infof("Package specs have been saved in %v", workingDir)
+		logrus.Infof("Package specs have been saved in %s", workingDir)
 	}
 	logrus.Infof("Successfully walked builds")
 	return nil
