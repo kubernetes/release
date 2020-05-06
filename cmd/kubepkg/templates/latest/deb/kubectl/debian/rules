@@ -2,15 +2,15 @@
 # -*- makefile -*-
 
 #export DH_VERBOSE=1
-KUBE_USE_LOCAL_ARTIFACTS?=
+KUBE_LOCAL_ARTIFACTS?=
 
 build:
 	echo noop
 
 binary:
 	mkdir -p usr/bin
-ifeq ($(KUBE_USE_LOCAL_ARTIFACTS),y)
-	cp $(shell go env GOPATH)/src/k8s.io/kubernetes/_output/dockerized/bin/linux/{{ .GoArch }}/kubectl usr/bin/kubectl
+ifneq ($(KUBE_LOCAL_ARTIFACTS),)
+	cp $(KUBE_LOCAL_ARTIFACTS)/bin/linux/{{ .GoArch }}/kubectl usr/bin/kubectl
 else
 	curl --fail -sSL --retry 5 \
 		-o usr/bin/kubectl \
