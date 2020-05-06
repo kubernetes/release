@@ -63,7 +63,7 @@ const (
 
 var (
 	minimumCRIToolsVersion = minimumKubernetesVersion
-	LatestTemplateDir      = fmt.Sprintf("%s/%s", templateRootDir, "latest")
+	LatestTemplateDir      = filepath.Join(templateRootDir, "latest")
 
 	buildArchMap = map[string]map[BuildType]string{
 		"amd64": {
