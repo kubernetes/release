@@ -892,12 +892,25 @@ func (r *Repo) PushToRemote(remote, remoteBranch string) error {
 // LsRemote can be used to run `git ls-remote` with the provided args on the
 // repository
 func (r *Repo) LsRemote(args ...string) (string, error) {
-	cmdArgs := append([]string{"ls-remote"}, args...)
+	return r.runGitCmd("ls-remote", args...)
+}
+
+// Branch can be used to run `git branch` with the provided args on the
+// repository
+func (r *Repo) Branch(args ...string) (string, error) {
+	return r.runGitCmd("branch", args...)
+}
+
+// runGitCmd runs the provided command in the repository root and appends the
+// args. The command will run silently and return the captured output or an
+// error in case of any failure.
+func (r *Repo) runGitCmd(cmd string, args ...string) (string, error) {
+	cmdArgs := append([]string{cmd}, args...)
 	res, err := command.NewWithWorkDir(
 		r.Dir(), gitExecutable, cmdArgs...,
-	).RunSuccessOutput()
+	).RunSilentSuccessOutput()
 	if err != nil {
-		return "", errors.Wrap(err, "running git ls-remote")
+		return "", errors.Wrapf(err, "running git %s", cmd)
 	}
 	return res.OutputTrimNL(), nil
 }
