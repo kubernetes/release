@@ -40,9 +40,7 @@ Before running `krel release-notes` export your GitHub token to \$GITHUB_TOKEN:
       --draft-repo string                  the name of the fork of k/sig-release, the Release Notes Draft PR will be created from this repository (default "sig-release")
       --format string                      The format for notes output (options: markdown, json) (default "markdown")
   -h, --help                               help for release-notes
-      --kubernetes-sigs-fork-path string   fork kubernetes-sigs/release-notes and output a copy of the json release notes to this directory (default "/tmp/k8s-sigs")
   -o, --output-dir string                  output a copy of the release notes to this directory (default ".")
-      --sigrelease-fork-path string        fork k/sig-release and output a copy of the release notes draft to this directory (default "/tmp/k8s-sigrelease")
   -t, --tag string                         version tag for the notes
       --website-org string                 a Github organization owner of the fork of kuberntets-sigs/release-notes where the Website PR will be created
       --website-repo string                the name of the fork of kuberntets-sigs/release-notes, the Release Notes Draft PR will be created from this repository (default "release-notes")
