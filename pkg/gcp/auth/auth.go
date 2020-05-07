@@ -22,11 +22,12 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/release/pkg/command"
+	"k8s.io/release/pkg/gcp"
 )
 
 func GetCurrentGCPUser() (string, error) {
 	authListStatus, authListErr := command.New(
-		"gcloud",
+		gcp.GCloudExecutable,
 		"auth",
 		"list",
 		"--filter=status:ACTIVE",
