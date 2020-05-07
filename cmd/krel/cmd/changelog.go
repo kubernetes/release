@@ -95,9 +95,90 @@ type changelogOptions struct {
 var changelogOpts = &changelogOptions{}
 
 const (
-	tocStart         = "<!-- BEGIN MUNGE: GENERATED_TOC -->"
-	tocEnd           = "<!-- END MUNGE: GENERATED_TOC -->"
-	repoChangelogDir = "CHANGELOG"
+	tocStart             = "<!-- BEGIN MUNGE: GENERATED_TOC -->"
+	tocEnd               = "<!-- END MUNGE: GENERATED_TOC -->"
+	repoChangelogDir     = "CHANGELOG"
+	releaseNotesTemplate = `
+{{- $CurrentRevision := .CurrentRevision -}}
+{{- $PreviousRevision := .PreviousRevision -}}
+# {{$CurrentRevision}}
+
+{{if .Downloads}}
+## Downloads for {{$CurrentRevision}}
+
+{{- with .Downloads.Source }}
+
+### Source Code
+
+filename | sha512 hash
+-------- | -----------
+{{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
+{{end}}
+
+{{- with .Downloads.Client -}}
+### Client binaries
+
+filename | sha512 hash
+-------- | -----------
+{{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
+{{end}}
+
+{{- with .Downloads.Server -}}
+### Server binaries
+
+filename | sha512 hash
+-------- | -----------
+{{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
+{{end}}
+
+{{- with .Downloads.Node -}}
+### Node binaries
+
+filename | sha512 hash
+-------- | -----------
+{{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
+{{end -}}
+{{- end -}}
+## Changelog since {{$PreviousRevision}}
+
+{{with .NotesWithActionRequired -}}
+## Urgent Upgrade Notes
+
+### (No, really, you MUST read this before you upgrade)
+
+{{range .}} {{println "-" .}} {{end}}
+{{end}}
+
+{{- if .Notes -}}
+## Changes by Kind
+{{ range .Notes}}
+### {{.Kind | prettyKind}}
+{{range $note := .NoteEntries }}{{println " -" $note}}{{end}}
+{{- end -}}
+{{- end -}}
+`
+
+	htmlTemplate = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{{ .Title }}</title>
+    <style type="text/css">
+      table,
+      th,
+      tr,
+      td {
+        border: 1px solid gray;
+        border-collapse: collapse;
+        padding: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    {{ .Content }}
+  </body>
+</html>`
 )
 
 func init() {
@@ -233,9 +314,7 @@ func generateReleaseNotes(opts *changelogOptions, branch, startRev, endRev strin
 
 	notesOptions := options.New()
 	notesOptions.Branch = branch
-	notesOptions.StartRev = startRev
 	notesOptions.EndSHA = endRev
-	notesOptions.EndRev = opts.tag
 	notesOptions.RepoPath = rootOpts.repoPath
 	notesOptions.ReleaseBucket = opts.bucket
 	notesOptions.ReleaseTars = opts.tars
@@ -263,10 +342,12 @@ func generateReleaseNotes(opts *changelogOptions, branch, startRev, endRev strin
 	if err != nil {
 		return "", errors.Wrapf(err, "creating release note document")
 	}
+	doc.PreviousRevision = startRev
+	doc.CurrentRevision = opts.tag
 
-	//nolint:golint,deprecated // RenderMarkdown is soft deprecated and will be removed in #1019. Use RenderMarkdownTemplate
-	markdown, err := doc.RenderMarkdown(
-		opts.bucket, opts.tars, notesOptions.StartRev, notesOptions.EndRev,
+	markdown, err := doc.RenderMarkdownTemplate(
+		opts.bucket, opts.tars,
+		options.FormatSpecDefaultGoTemplateInline+releaseNotesTemplate,
 	)
 	if err != nil {
 		return "", errors.Wrapf(
@@ -343,28 +424,6 @@ func changelogFilename(tag semver.Version, ext string) string {
 func addTocMarkers(toc string) string {
 	return fmt.Sprintf("%s\n\n%s\n%s\n", tocStart, toc, tocEnd)
 }
-
-const htmlTemplate = `<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>{{ .Title }}</title>
-    <style type="text/css">
-      table,
-      th,
-      tr,
-      td {
-        border: 1px solid gray;
-        border-collapse: collapse;
-        padding: 5px;
-      }
-    </style>
-  </head>
-  <body>
-    {{ .Content }}
-  </body>
-</html>`
 
 func writeHTML(opts *changelogOptions, tag semver.Version, markdown string) error {
 	md := goldmark.New(goldmark.WithExtensions(extension.GFM))

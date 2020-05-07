@@ -293,9 +293,10 @@ func (d *Document) RenderMarkdownTemplate(bucket, fileDir, templateSpec string) 
 	return strings.TrimSpace(s.String()), nil
 }
 
-// template returns either the default template or a template from file. The
-// `templateSpec` must be in the format of
-// `go-template:{default|path/to/template.ext}`
+// template returns either the default template, a template from file or an
+// inline string template. The `templateSpec` must be in the format of
+// `go-template:{default|path/to/template.ext}` or
+// `go-template:inline:string`
 func (d *Document) template(templateSpec string) (string, error) {
 	if templateSpec == options.FormatSpecDefaultGoTemplate {
 		return defaultReleaseNotesTemplate, nil
@@ -304,14 +305,18 @@ func (d *Document) template(templateSpec string) (string, error) {
 	if !strings.HasPrefix(templateSpec, "go-template:") {
 		return "", errors.Errorf("bad template format: expected format %q, got %q", "go-template:path/to/file.txt", templateSpec)
 	}
-	templatePath := strings.TrimPrefix(templateSpec, "go-template:")
+	templatePathOrOnline := strings.TrimPrefix(templateSpec, "go-template:")
 
-	b, err := ioutil.ReadFile(templatePath)
+	if strings.HasPrefix(templatePathOrOnline, "inline:") {
+		return strings.TrimPrefix(templatePathOrOnline, "inline:"), nil
+	}
+
+	b, err := ioutil.ReadFile(templatePathOrOnline)
 	if err != nil {
 		return "", errors.Wrap(err, "reading template")
 	}
 	if len(b) == 0 {
-		return "", errors.Errorf("template %q must be non-empty", templatePath)
+		return "", errors.Errorf("template %q must be non-empty", templatePathOrOnline)
 	}
 
 	return string(b), nil
