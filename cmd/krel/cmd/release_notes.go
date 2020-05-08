@@ -19,7 +19,6 @@ package cmd
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -592,16 +591,14 @@ func releaseNotesJSON(tag string) (string, error) {
 	logrus.Infof("Using end tag %v", tag)
 
 	// Fetch the notes
-	gatherer, err := notes.NewGatherer(context.Background(), notesOptions)
+	releaseNotes, history, err := notes.GatherReleaseNotes(notesOptions)
 	if err != nil {
-		return "", errors.Wrapf(err, "retrieving notes gatherer")
-	}
-	releaseNotes, history, err := gatherer.ListReleaseNotes()
-	if err != nil {
-		return "", errors.Wrapf(err, "listing release notes")
+		return "", errors.Wrapf(err, "gathering release notes")
 	}
 
-	doc, err := document.CreateDocument(releaseNotes, history)
+	doc, err := document.New(
+		releaseNotes, history, notesOptions.StartRev, notesOptions.EndRev,
+	)
 	if err != nil {
 		return "", errors.Wrapf(err, "creating release note document")
 	}
@@ -636,16 +633,14 @@ func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
 	logrus.Infof("Using end tag %v", releaseNotesOpts.tag)
 
 	// Fetch the notes
-	gatherer, err := notes.NewGatherer(context.Background(), notesOptions)
+	releaseNotes, history, err := notes.GatherReleaseNotes(notesOptions)
 	if err != nil {
-		return nil, errors.Wrapf(err, "retrieving notes gatherer")
-	}
-	releaseNotes, history, err := gatherer.ListReleaseNotes()
-	if err != nil {
-		return nil, errors.Wrapf(err, "listing release notes")
+		return nil, errors.Wrapf(err, "gathering release notes")
 	}
 
-	doc, err := document.CreateDocument(releaseNotes, history)
+	doc, err := document.New(
+		releaseNotes, history, notesOptions.StartRev, notesOptions.EndRev,
+	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating release note document")
 	}

@@ -201,12 +201,35 @@ var kindMap = map[Kind]Kind{
 	KindFlake:      KindOther,
 }
 
-// CreateDocument assembles an organized document from an unorganized set of
-// release notes
-func CreateDocument(releaseNotes notes.ReleaseNotes, history notes.ReleaseNotesHistory) (*Document, error) {
+// GatherReleaseNotesDocument creates a new gatherer and collects the release
+// notes into a fresh document
+func GatherReleaseNotesDocument(
+	opts *options.Options, previousRev, currentRev string,
+) (*Document, error) {
+	releaseNotes, history, err := notes.GatherReleaseNotes(opts)
+	if err != nil {
+		return nil, errors.Wrapf(err, "gathering release notes")
+	}
+
+	doc, err := New(releaseNotes, history, previousRev, currentRev)
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating release note document")
+	}
+
+	return doc, nil
+}
+
+// New assembles an organized document from an unorganized set of release notes
+func New(
+	releaseNotes notes.ReleaseNotes,
+	history notes.ReleaseNotesHistory,
+	previousRev, currentRev string,
+) (*Document, error) {
 	doc := &Document{
 		NotesWithActionRequired: Notes{},
 		Notes:                   NoteCollection{},
+		CurrentRevision:         currentRev,
+		PreviousRevision:        previousRev,
 	}
 
 	stripRE := regexp.MustCompile(`^([-\*]+\s+)`)
