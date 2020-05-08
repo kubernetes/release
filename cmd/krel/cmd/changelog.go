@@ -19,7 +19,6 @@ package cmd
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -327,23 +326,12 @@ func generateReleaseNotes(opts *changelogOptions, branch, startRev, endRev strin
 		return "", err
 	}
 
-	gatherer, err := notes.NewGatherer(context.Background(), notesOptions)
+	doc, err := document.GatherReleaseNotesDocument(
+		notesOptions, startRev, opts.tag,
+	)
 	if err != nil {
-		return "", errors.Wrapf(err, "retrieving notes gatherer")
+		return "", err
 	}
-
-	releaseNotes, history, err := gatherer.ListReleaseNotes()
-	if err != nil {
-		return "", errors.Wrapf(err, "listing release notes")
-	}
-
-	// Create the markdown
-	doc, err := document.CreateDocument(releaseNotes, history)
-	if err != nil {
-		return "", errors.Wrapf(err, "creating release note document")
-	}
-	doc.PreviousRevision = startRev
-	doc.CurrentRevision = opts.tag
 
 	markdown, err := doc.RenderMarkdownTemplate(
 		opts.bucket, opts.tars,

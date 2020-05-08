@@ -166,6 +166,24 @@ func NewGathererWithClient(ctx context.Context, c github.Client) *Gatherer {
 	}
 }
 
+// GatherReleaseNotes creates a new gatherer and collects the release notes
+// afterwards
+func GatherReleaseNotes(opts *options.Options) (ReleaseNotes, ReleaseNotesHistory, error) {
+	logrus.Info("Gathering release notes")
+	gatherer, err := NewGatherer(context.Background(), opts)
+
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "retrieving notes gatherer")
+	}
+
+	releaseNotes, history, err := gatherer.ListReleaseNotes()
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "listing release notes")
+	}
+
+	return releaseNotes, history, nil
+}
+
 // ListReleaseNotes produces a list of fully contextualized release notes
 // starting from a given commit SHA and ending at starting a given commit SHA.
 func (g *Gatherer) ListReleaseNotes() (ReleaseNotes, ReleaseNotesHistory, error) {

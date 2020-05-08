@@ -256,7 +256,7 @@ func setupTestDir(t *testing.T, dir string) {
 	}
 }
 
-func TestCreateDocument(t *testing.T) {
+func TestNew(t *testing.T) {
 	type args struct {
 		releaseNotes notes.ReleaseNotes
 		history      notes.ReleaseNotesHistory
@@ -426,7 +426,7 @@ func TestCreateDocument(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CreateDocument(tt.args.releaseNotes, tt.args.history)
+			got, err := New(tt.args.releaseNotes, tt.args.history, "", "")
 			require.NoError(t, err)
 			require.Equal(t, got, tt.want, "Unexpected return.")
 		})
@@ -488,10 +488,8 @@ func TestDocument_RenderMarkdownTemplate(t *testing.T) {
 			testNotes[11] = duplicate
 			testNotes[12] = actionNeeded
 
-			doc, err := CreateDocument(testNotes, makeReleaseNoteHistory(testNotes))
+			doc, err := New(testNotes, makeReleaseNoteHistory(testNotes), "v1.16.0", "v1.16.1")
 			require.NoError(t, err, "Creating test document.")
-			doc.PreviousRevision = "v1.16.0"
-			doc.CurrentRevision = "v1.16.1"
 
 			templateSpec := tt.templateSpec
 			var dir string
