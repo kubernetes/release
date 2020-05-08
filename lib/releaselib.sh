@@ -163,16 +163,12 @@ release::set_build_version () {
     $(common::run_gobin blocking-testgrid-tests "$branch")
   )
 
-  if [[ -z ${all_jobs[*]} ]]; then
-    logecho "$FAILED: Curl to testgrid/config/config.yaml"
-  fi
-
-  local main_job="${all_jobs[0]}"
-
   if [[ -z "${all_jobs[*]}" ]]; then
     logecho "No sig-$branch-blocking list found in the testgrid config.yaml!"
     return 1
   fi
+
+  local main_job="${all_jobs[0]}"
 
   # Loop through the remainder, excluding anything specified by --exclude_suites
   for ((i=1;i<${#all_jobs[*]};i++)); do
