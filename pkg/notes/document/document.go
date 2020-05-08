@@ -302,10 +302,10 @@ func (d *Document) template(templateSpec string) (string, error) {
 		return defaultReleaseNotesTemplate, nil
 	}
 
-	if !strings.HasPrefix(templateSpec, "go-template:") {
+	if !strings.HasPrefix(templateSpec, options.GoTemplatePrefix) {
 		return "", errors.Errorf("bad template format: expected format %q, got %q", "go-template:path/to/file.txt", templateSpec)
 	}
-	templatePathOrOnline := strings.TrimPrefix(templateSpec, "go-template:")
+	templatePathOrOnline := strings.TrimPrefix(templateSpec, options.GoTemplatePrefix)
 
 	if strings.HasPrefix(templatePathOrOnline, "inline:") {
 		return strings.TrimPrefix(templatePathOrOnline, "inline:"), nil
