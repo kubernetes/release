@@ -384,7 +384,7 @@ func TestValidateAndFinishSuccessDefaultTemplate(t *testing.T) {
 	defer options.testRepo.cleanup(t)
 
 	// Given
-	options.Format = FormatSpecMarkdown
+	options.Format = FormatSpecNone
 
 	// When
 	require.Nil(t, options.ValidateAndFinish())

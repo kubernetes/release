@@ -121,13 +121,11 @@ const (
 )
 
 const (
-	FormatSpecNone                    = ""
-	FormatSpecJSON                    = "json"
-	FormatSpecDefaultGoTemplate       = "go-template:default"
-	FormatSpecDefaultGoTemplateInline = "go-template:inline:"
-
-	// Deprecated: This option is internally translated to `FormatSpecDefaultGoTemplate`
-	FormatSpecMarkdown = "markdown"
+	FormatSpecNone              = ""
+	FormatSpecJSON              = "json"
+	FormatSpecDefaultGoTemplate = GoTemplatePrefix + "default"
+	FormatSpecGoTemplateInline  = GoTemplatePrefix + "inline:"
+	GoTemplatePrefix            = "go-template:"
 )
 
 // New creates a new Options instance with the default values
@@ -221,8 +219,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 	}
 
 	// Set the format
-	// TODO: Remove "markdown" after some time as it is deprecated in PR#1008
-	if o.Format == FormatSpecMarkdown || o.Format == FormatSpecNone {
+	if o.Format == FormatSpecNone {
 		o.Format = FormatSpecDefaultGoTemplate
 	}
 

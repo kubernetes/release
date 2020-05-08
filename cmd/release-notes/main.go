@@ -152,9 +152,9 @@ func init() {
 		fmt.Sprintf("The format for notes output (options: %s)",
 			strings.Join([]string{
 				options.FormatSpecNone,
-				options.FormatSpecMarkdown, //nolint:golint,deprecated // This option internally corresponds to options.FormatSpecGoTemplateDefault
 				options.FormatSpecJSON,
 				options.FormatSpecDefaultGoTemplate,
+				options.FormatSpecGoTemplateInline,
 			}, ", "),
 		),
 	)
@@ -292,7 +292,7 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 		if err := enc.Encode(releaseNotes); err != nil {
 			return errors.Wrapf(err, "encoding JSON output")
 		}
-	case strings.HasPrefix(format, "go-template:"):
+	case strings.HasPrefix(format, options.GoTemplatePrefix):
 		doc, err := document.CreateDocument(releaseNotes, history)
 		if err != nil {
 			return errors.Wrapf(err, "creating release note document")
