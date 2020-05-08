@@ -723,4 +723,14 @@ func (fake *FakeClient) CreatePullRequest(
 	return fakeReturns.result1, fakeReturns.result2
 }
 
+func (fake *FakeClient) CreatePullRequestReturns(result1 *githuba.PullRequest, result2 error) {
+	fake.createPullRequestMutex.Lock()
+	defer fake.createPullRequestMutex.Unlock()
+	fake.CreatePullRequestStub = nil
+	fake.createPullRequestReturns = struct {
+		result1 *githuba.PullRequest
+		result2 error
+	}{result1, result2}
+}
+
 var _ github.Client = new(FakeClient)

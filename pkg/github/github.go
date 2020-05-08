@@ -193,14 +193,9 @@ func (g *githubClient) ListTags(
 	}
 }
 
-// CreatePullRequest Creates a new pull request in owner/repo:baseBranch to merge changes from headBranchName
-// which is a string containing a branch in the same repository or a user:branch pair
 func (g *githubClient) CreatePullRequest(
 	ctx context.Context, owner, repo, baseBranchName, headBranchName, title, body string,
 ) (*github.PullRequest, error) {
-
-	// headBranchName := fmt.Sprintf("%s:%s", owner, sourceBranch)
-
 	newPullRequest := &github.NewPullRequest{
 		Title:               &title,
 		Head:                &headBranchName,
@@ -214,8 +209,7 @@ func (g *githubClient) CreatePullRequest(
 		return pr, err
 	}
 
-	// sugar.Infof("PR created: %s\n", pr.GetHTMLURL())
-	logrus.Infof("Succesfully created PR #%d", pr.GetNumber())
+	logrus.Infof("Successfully created PR #%d", pr.GetNumber())
 	return pr, nil
 }
 
@@ -322,4 +316,18 @@ func (g *GitHub) Releases(owner, repo string, includePrereleases bool) ([]*githu
 	}
 
 	return releases, nil
+}
+
+// CreatePullRequest Creates a new pull request in owner/repo:baseBranch to merge changes from headBranchName
+// which is a string containing a branch in the same repository or a user:branch pair
+func (g *GitHub) CreatePullRequest(
+	owner, repo, baseBranchName, headBranchName, title, body string,
+) (*github.PullRequest, error) {
+	// Use the client to create a new PR
+	pr, err := g.Client().CreatePullRequest(context.Background(), owner, repo, baseBranchName, headBranchName, title, body)
+	if err != nil {
+		return pr, err
+	}
+
+	return pr, nil
 }

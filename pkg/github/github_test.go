@@ -272,3 +272,18 @@ func TestReleasesFailed(t *testing.T) {
 	require.NotNil(t, err)
 	require.Nil(t, res, nil)
 }
+
+func TestCreatePullRequest(t *testing.T) {
+	// Given
+	sut, client := newSUT()
+	fakeID := int64(1234)
+	client.CreatePullRequestReturns(&gogithub.PullRequest{ID: &fakeID}, nil)
+
+	// When
+	pr, err := sut.CreatePullRequest("kubernetes-fake-org", "kubernetes-fake-repo", "master", "user:head-branch", "PR Title", "PR Body")
+
+	// Then
+	require.Nil(t, err)
+	require.NotNil(t, pr, nil)
+	require.Equal(t, fakeID, pr.GetID())
+}
