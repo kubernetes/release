@@ -153,6 +153,26 @@ type FakeClient struct {
 		result2 *githuba.Response
 		result3 error
 	}
+	CreatePullRequestStub        func(context.Context, string, string, string, string, string, string) (*githuba.PullRequest, error)
+	createPullRequestMutex       sync.RWMutex
+	createPullRequestArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 string
+		arg5 string
+		arg6 string
+		arg7 string
+	}
+	createPullRequestReturns struct {
+		result1 *githuba.PullRequest
+		result2 error
+	}
+	createPullRequestReturnsOnCall map[int]struct {
+		result1 *githuba.PullRequest
+		result2 error
+	}
+
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -675,6 +695,32 @@ func (fake *FakeClient) recordInvocation(key string, args []interface{}) {
 		fake.invocations[key] = [][]interface{}{}
 	}
 	fake.invocations[key] = append(fake.invocations[key], args)
+}
+
+func (fake *FakeClient) CreatePullRequest(
+	arg1 context.Context, arg2, arg3, arg4, arg5, arg6, arg7 string,
+) (*githuba.PullRequest, error) {
+	fake.createPullRequestMutex.Lock()
+	ret, specificReturn := fake.createPullRequestReturnsOnCall[len(fake.createPullRequestArgsForCall)]
+	fake.createPullRequestArgsForCall = append(fake.createPullRequestArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 string
+		arg5 string
+		arg6 string
+		arg7 string
+	}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
+	fake.recordInvocation("CreatePullRequest", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
+	fake.createPullRequestMutex.Unlock()
+	if fake.CreatePullRequestStub != nil {
+		return fake.CreatePullRequestStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.createPullRequestReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 var _ github.Client = new(FakeClient)

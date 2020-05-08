@@ -77,6 +77,10 @@ type Client interface {
 	ListTags(
 		context.Context, string, string, *github.ListOptions,
 	) ([]*github.RepositoryTag, *github.Response, error)
+
+	CreatePullRequest(
+		context.Context, string, string, string, string, string, string,
+	) (*github.PullRequest, error)
 }
 
 // New creates a new default GitHub client. Tokens set via the $GITHUB_TOKEN
@@ -187,6 +191,32 @@ func (g *githubClient) ListTags(
 			return tags, resp, err
 		}
 	}
+}
+
+// CreatePullRequest Creates a new pull request in owner/repo:baseBranch to merge changes from headBranchName
+// which is a string containing a branch in the same repository or a user:branch pair
+func (g *githubClient) CreatePullRequest(
+	ctx context.Context, owner, repo, baseBranchName, headBranchName, title, body string,
+) (*github.PullRequest, error) {
+
+	// headBranchName := fmt.Sprintf("%s:%s", owner, sourceBranch)
+
+	newPullRequest := &github.NewPullRequest{
+		Title:               &title,
+		Head:                &headBranchName,
+		Base:                &baseBranchName,
+		Body:                &body,
+		MaintainerCanModify: github.Bool(true),
+	}
+
+	pr, _, err := g.PullRequests.Create(ctx, owner, repo, newPullRequest)
+	if err != nil {
+		return pr, err
+	}
+
+	// sugar.Infof("PR created: %s\n", pr.GetHTMLURL())
+	logrus.Infof("Succesfully created PR #%d", pr.GetNumber())
+	return pr, nil
 }
 
 // SetClient can be used to manually set the internal GitHub client
