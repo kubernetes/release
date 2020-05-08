@@ -207,13 +207,13 @@ func runReleaseNotes() (err error) {
 		}
 
 		// Generate the release notes for ust the current tag
-		result, err = releaseNotesFor(tag)
+		jsonStr, err := releaseNotesJSON(tag)
 		if err != nil {
 			return errors.Wrapf(err, "generating release notes")
 		}
 
 		// Run the website PR process
-		if err := createWebsitePR(tag, result); err != nil {
+		if err := createWebsitePR(tag, jsonStr); err != nil {
 			return errors.Wrapf(err, "generating releasenotes for tag %s", tag)
 		}
 		return nil
@@ -465,7 +465,7 @@ func processJSONOutput(repoPath string) error {
 }
 
 // createWebsitePR creates the JSON version of the release notes and pushes them to a user fork
-func createWebsitePR(tag string, result *releaseNotesResult) (err error) {
+func createWebsitePR(tag, jsonStr string) (err error) {
 	_, err = util.TagStringToSemver(tag)
 	if err != nil {
 		return errors.Wrapf(err, "no valid tag: %v", tag)
@@ -494,7 +494,7 @@ func createWebsitePR(tag string, result *releaseNotesResult) (err error) {
 	// generate the notes
 	jsonNotesPath := filepath.Join("src", "assets", jsonNotesFilename)
 	logrus.Debugf("Release notes json file will be written to %s", filepath.Join(k8sSigsRepo.Dir(), jsonNotesPath))
-	err = ioutil.WriteFile(filepath.Join(k8sSigsRepo.Dir(), jsonNotesPath), []byte(result.json), 0644)
+	err = ioutil.WriteFile(filepath.Join(k8sSigsRepo.Dir(), jsonNotesPath), []byte(jsonStr), 0644)
 	if err != nil {
 		return errors.Wrapf(err, "writing release notes json file")
 	}
@@ -565,14 +565,15 @@ func tryToFindLatestMinorTag() (string, error) {
 	return strings.TrimSpace(status.Output()), nil
 }
 
-// releaseNotesFor generate the release notes for a specific tag
-func releaseNotesFor(tag string) (*releaseNotesResult, error) {
+// releaseNotesJSON generate the release notes for a specific tag and returns
+// them as JSON blob
+func releaseNotesJSON(tag string) (string, error) {
 	logrus.Infof("Generating release notes for tag %s", tag)
 
 	// TODO: Change this logic to get the tag from git.PreviousTag
 	startTag, err := tryToFindPreviuousTag(tag)
 	if err != nil {
-		return nil, errors.Wrap(err, "trying to get previous tag")
+		return "", errors.Wrap(err, "trying to get previous tag")
 	}
 
 	notesOptions := options.New()
@@ -584,7 +585,7 @@ func releaseNotesFor(tag string) (*releaseNotesResult, error) {
 	notesOptions.ReleaseVersion = util.TrimTagPrefix(tag)
 
 	if err := notesOptions.ValidateAndFinish(); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	logrus.Infof("Using start tag %v", startTag)
@@ -593,37 +594,27 @@ func releaseNotesFor(tag string) (*releaseNotesResult, error) {
 	// Fetch the notes
 	gatherer, err := notes.NewGatherer(context.Background(), notesOptions)
 	if err != nil {
-		return nil, errors.Wrapf(err, "retrieving notes gatherer")
+		return "", errors.Wrapf(err, "retrieving notes gatherer")
 	}
 	releaseNotes, history, err := gatherer.ListReleaseNotes()
 	if err != nil {
-		return nil, errors.Wrapf(err, "listing release notes")
+		return "", errors.Wrapf(err, "listing release notes")
 	}
 
 	doc, err := document.CreateDocument(releaseNotes, history)
 	if err != nil {
-		return nil, errors.Wrapf(err, "creating release note document")
+		return "", errors.Wrapf(err, "creating release note document")
 	}
-
-	// This has to be reworked
-	// Adding nolint since this option was already implemented
-	//nolint:golint,deprecated
-	markdown, err := doc.RenderMarkdown(
-		"", "", notesOptions.StartRev, notesOptions.EndRev,
-	)
-	if err != nil {
-		return nil, errors.Wrapf(
-			err, "rendering release notes to markdown",
-		)
-	}
+	doc.PreviousRevision = startTag
+	doc.CurrentRevision = tag
 
 	// Create the JSON
 	j, err := json.Marshal(releaseNotes)
 	if err != nil {
-		return nil, errors.Wrapf(err, "generating release notes JSON")
+		return "", errors.Wrapf(err, "generating release notes JSON")
 	}
 
-	return &releaseNotesResult{markdown: markdown, json: string(j)}, nil
+	return string(j), nil
 }
 
 func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
@@ -658,11 +649,12 @@ func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating release note document")
 	}
+	doc.PreviousRevision = startTag
+	doc.CurrentRevision = releaseNotesOpts.tag
 
 	// Create the markdown
-	//nolint:golint,deprecated
-	markdown, err := doc.RenderMarkdown(
-		"", "", notesOptions.StartRev, notesOptions.EndRev,
+	markdown, err := doc.RenderMarkdownTemplate(
+		"", "", options.FormatSpecDefaultGoTemplate,
 	)
 	if err != nil {
 		return nil, errors.Wrapf(
