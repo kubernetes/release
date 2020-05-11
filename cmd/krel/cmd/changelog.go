@@ -314,6 +314,7 @@ func generateReleaseNotes(opts *changelogOptions, branch, startRev, endRev strin
 
 	notesOptions := options.New()
 	notesOptions.Branch = branch
+	notesOptions.StartRev = startRev
 	notesOptions.EndSHA = endRev
 	notesOptions.RepoPath = rootOpts.repoPath
 	notesOptions.ReleaseBucket = opts.bucket
@@ -324,7 +325,7 @@ func generateReleaseNotes(opts *changelogOptions, branch, startRev, endRev strin
 	notesOptions.Pull = false
 
 	if err := notesOptions.ValidateAndFinish(); err != nil {
-		return "", err
+		return "", errors.Wrap(err, "validating notes options")
 	}
 
 	gatherer, err := notes.NewGatherer(context.Background(), notesOptions)
