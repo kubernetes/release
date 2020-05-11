@@ -195,7 +195,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 		if o.StartRev != "" && o.StartSHA == "" {
 			sha, err := repo.RevParse(o.StartRev)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "resolving %s", o.StartRev)
 			}
 			logrus.Infof("using found start SHA: %s", sha)
 			o.StartSHA = sha
@@ -203,7 +203,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 		if o.EndRev != "" && o.EndSHA == "" {
 			sha, err := repo.RevParse(o.EndRev)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "resolving %s", o.EndRev)
 			}
 			logrus.Infof("using found end SHA: %s", sha)
 			o.EndSHA = sha
