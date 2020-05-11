@@ -22,9 +22,9 @@ import (
 )
 
 const (
-	GCloudExecutable = "tar"
+	GCloudExecutable = "gcloud"
 	GSUtilExecutable = "gsutil"
-	TarExecutable    = "gcloud"
+	TarExecutable    = "tar"
 )
 
 // PreCheck checks if all requirements are fulfilled to run this package and
