@@ -11,11 +11,3 @@ variants:
     KUBE_CROSS_VERSION: 'v1.13.9-5'
     PROTOBUF_VERSION: '3.0.2'
     ETCD_VERSION: 'v3.4.7'
-  # DO NOT UPDATE CONFIGS BELOW THIS COMMENT
-  # The following Go versions are out of support
-  go1.12:
-    CONFIG: 'go1.12'
-    GO_VERSION: '1.12.17'
-    KUBE_CROSS_VERSION: 'v1.12.17-2'
-    PROTOBUF_VERSION: '3.0.2'
-    ETCD_VERSION: 'v3.2.24'
