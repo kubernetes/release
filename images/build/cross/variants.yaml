@@ -5,14 +5,12 @@ variants:
     KUBE_CROSS_VERSION: 'v1.14.2-4'
     PROTOBUF_VERSION: '3.0.2'
     ETCD_VERSION: 'v3.4.7'
-    SKOPEO_VERSION: 'v0.2.0'
   go1.13:
     CONFIG: 'go1.13'
     GO_VERSION: '1.13.9'
     KUBE_CROSS_VERSION: 'v1.13.9-5'
     PROTOBUF_VERSION: '3.0.2'
     ETCD_VERSION: 'v3.4.7'
-    SKOPEO_VERSION: 'v0.2.0'
   # DO NOT UPDATE CONFIGS BELOW THIS COMMENT
   # The following Go versions are out of support
   go1.12:
@@ -21,4 +19,3 @@ variants:
     KUBE_CROSS_VERSION: 'v1.12.17-2'
     PROTOBUF_VERSION: '3.0.2'
     ETCD_VERSION: 'v3.2.24'
-    SKOPEO_VERSION: 'v0.1.41'
