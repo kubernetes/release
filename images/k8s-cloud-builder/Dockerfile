@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v1.12.17-1
+ARG KUBE_CROSS_VERSION
+FROM us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:${KUBE_CROSS_VERSION}
 
 ##------------------------------------------------------------
 # global ARGs & ENVs
@@ -89,7 +90,7 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
     && apt-get -qqy install \
         docker-ce-cli
 
-ARG SKOPEO_VERSION=v0.1.41
+ARG SKOPEO_VERSION=v0.2.0
 RUN git clone https://github.com/containers/skopeo $GOPATH/src/github.com/containers/skopeo
 RUN cd $GOPATH/src/github.com/containers/skopeo \
     && git checkout ${SKOPEO_VERSION} \

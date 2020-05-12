@@ -7,20 +7,27 @@ steps:
     id: build
     args:
     - build
-    - --tag=gcr.io/$PROJECT_ID/k8s-cloud-builder:${_GIT_TAG}
-    - --tag=gcr.io/$PROJECT_ID/k8s-cloud-builder:latest
+    - --tag=gcr.io/$PROJECT_ID/k8s-cloud-builder:${_GIT_TAG}-${_CONFIG}
+    - --tag=gcr.io/$PROJECT_ID/k8s-cloud-builder:latest-${_CONFIG}
+    - --tag=gcr.io/$PROJECT_ID/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
+    - --build-arg=KUBE_CROSS_VERSION=${_KUBE_CROSS_VERSION}
+    - --build-arg=SKOPEO_VERSION=${_SKOPEO_VERSION}
     - .
   - name: gcr.io/gcp-runtimes/container-structure-test
     id: test
     args:
     - test
-    - --image=gcr.io/$PROJECT_ID/k8s-cloud-builder:latest
+    - --image=gcr.io/$PROJECT_ID/k8s-cloud-builder:${_GIT_TAG}-${_CONFIG}
     - --config=test.yaml
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
   # can be used as a substitution
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
+  _CONFIG: 'cross0.0'
+  _KUBE_CROSS_VERSION: 'v0.0.0-0'
+  _SKOPEO_VERSION: 'v0.0.0'
 images:
-  - 'gcr.io/$PROJECT_ID/k8s-cloud-builder:${_GIT_TAG}'
-  - 'gcr.io/$PROJECT_ID/k8s-cloud-builder:latest'
+  - 'gcr.io/$PROJECT_ID/k8s-cloud-builder:${_GIT_TAG}-${_CONFIG}'
+  - 'gcr.io/$PROJECT_ID/k8s-cloud-builder:latest-${_CONFIG}'
+  - 'gcr.io/$PROJECT_ID/k8s-cloud-builder:${_KUBE_CROSS_VERSION}'
