@@ -20,13 +20,12 @@ IMAGE=kube-cross
 
 TAG?=$(shell git describe --tags --always --dirty)
 CONFIG?=go1.14
-KUBE_CROSS_VERSION?=v1.14.2-3
+KUBE_CROSS_VERSION?=v1.14.2-4
 
 # Build args
 GO_VERSION?=1.14.2
-PROTOBUF_VERSION?=3.11.4
+PROTOBUF_VERSION?=3.0.2
 ETCD_VERSION?=v3.4.7
-SKOPEO_VERSION?=v0.2.0
 
 # TODO: Support multi-arch kube-cross images
 #       ref:
@@ -45,7 +44,6 @@ build:
 		--build-arg=GO_VERSION=$(GO_VERSION) \
 		--build-arg=PROTOBUF_VERSION=$(PROTOBUF_VERSION) \
 		--build-arg=ETCD_VERSION=$(ETCD_VERSION) \
-		--build-arg=SKOPEO_VERSION=$(SKOPEO_VERSION) \
 		.
 
 push:

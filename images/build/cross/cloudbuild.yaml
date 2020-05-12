@@ -14,7 +14,6 @@ steps:
     - KUBE_CROSS_VERSION=$_KUBE_CROSS_VERSION
     - PROTOBUF_VERSION=$_PROTOBUF_VERSION
     - ETCD_VERSION=$_ETCD_VERSION
-    - SKOPEO_VERSION=$_SKOPEO_VERSION
     args:
     - all
 substitutions:
@@ -27,7 +26,6 @@ substitutions:
   _KUBE_CROSS_VERSION: 'v0.0.0-0'
   _PROTOBUF_VERSION: '0.0.0'
   _ETCD_VERSION: 'v0.0.0'
-  _SKOPEO_VERSION: 'v0.0.0'
 images:
   - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_KUBE_CROSS_VERSION'
   - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_GIT_TAG-$_CONFIG'
