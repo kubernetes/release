@@ -82,9 +82,9 @@ ENV PATH="${GOOGLE_DIR}/google-cloud-sdk/bin:${PATH}"
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
     && apt-key fingerprint 0EBFCD88 \
     && add-apt-repository \
-        "deb [arch=amd64] https://download.docker.com/linux/debian \
-        $(lsb_release -cs) \
-        stable" \
+      "deb [arch=amd64] https://download.docker.com/linux/debian \
+      $(lsb_release -cs) \
+      stable" \
     && apt-get -y update \
     && apt-get -qqy install \
         docker-ce-cli
@@ -99,7 +99,7 @@ RUN cd $GOPATH/src/github.com/containers/skopeo \
 
 # Cleanup a bit
 RUN apt-get -qqy remove \
-        wget \
+      wget \
     && apt-get clean \
     && rm -rf -- \
         /var/lib/apt/lists/* \
