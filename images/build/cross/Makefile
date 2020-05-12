@@ -20,11 +20,11 @@ IMAGE=kube-cross
 
 TAG?=$(shell git describe --tags --always --dirty)
 CONFIG?=go1.14
-KUBE_CROSS_VERSION?=v1.14.2-3
+KUBE_CROSS_VERSION?=v1.14.2-4
 
 # Build args
 GO_VERSION?=1.14.2
-PROTOBUF_VERSION?=3.11.4
+PROTOBUF_VERSION?=3.0.2
 ETCD_VERSION?=v3.4.7
 SKOPEO_VERSION?=v0.2.0
 

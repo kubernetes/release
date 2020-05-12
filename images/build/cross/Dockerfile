@@ -85,7 +85,7 @@ RUN go get golang.org/x/tools/cmd/cover \
     && go clean -cache
 
 # Download and symlink etcd. We need this for our integration tests.
-ARG ETCD_VERSION=v3.2.24
+ARG ETCD_VERSION=v3.4.7
 RUN mkdir -p /usr/local/src/etcd \
   && cd /usr/local/src/etcd \
   && curl -fsSL https://github.com/coreos/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz | tar -xz \
