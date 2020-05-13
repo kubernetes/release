@@ -101,6 +101,18 @@ var (
 	}
 )
 
+type Client struct {
+	version *release.Version
+	github  *github.GitHub
+}
+
+func New() *Client {
+	return &Client{
+		version: release.NewVersion(),
+		github:  github.New(),
+	}
+}
+
 type Build struct {
 	Type        BuildType
 	Package     string
@@ -136,7 +148,11 @@ type buildConfig struct {
 	specOnly    bool
 }
 
-func ConstructBuilds(buildType BuildType, packages, channels []string, kubeVersion, revision, cniVersion, criToolsVersion, templateDir string) ([]Build, error) {
+func (c *Client) ConstructBuilds(
+	buildType BuildType,
+	packages, channels []string,
+	kubeVersion, revision, cniVersion, criToolsVersion, templateDir string,
+) ([]Build, error) {
 	logrus.Infof("Constructing builds...")
 
 	builds := []Build{}
@@ -179,7 +195,7 @@ func ConstructBuilds(buildType BuildType, packages, channels []string, kubeVersi
 	return builds, nil
 }
 
-func WalkBuilds(builds []Build, architectures []string, specOnly bool) (err error) {
+func (c *Client) WalkBuilds(builds []Build, architectures []string, specOnly bool) (err error) {
 	logrus.Infof("Walking builds...")
 
 	workingDir := os.Getenv("KUBEPKG_WORKING_DIR")
@@ -193,7 +209,7 @@ func WalkBuilds(builds []Build, architectures []string, specOnly bool) (err erro
 	for _, arch := range architectures {
 		for _, build := range builds {
 			for _, packageDef := range build.Definitions {
-				if err := buildPackage(build, packageDef, arch, workingDir, specOnly); err != nil {
+				if err := c.buildPackage(build, packageDef, arch, workingDir, specOnly); err != nil {
 					return err
 				}
 			}
@@ -206,7 +222,7 @@ func WalkBuilds(builds []Build, architectures []string, specOnly bool) (err erro
 	return nil
 }
 
-func buildPackage(build Build, packageDef *PackageDefinition, arch, tmpDir string, specOnly bool) error {
+func (c *Client) buildPackage(build Build, packageDef *PackageDefinition, arch, tmpDir string, specOnly bool) error {
 	if packageDef == nil {
 		return errors.New("package definition cannot be nil")
 	}
@@ -254,12 +270,12 @@ func buildPackage(build Build, packageDef *PackageDefinition, arch, tmpDir strin
 		}
 	}
 
-	bc.KubernetesVersion, err = getKubernetesVersion(pd)
+	bc.KubernetesVersion, err = c.getKubernetesVersion(pd)
 	if err != nil {
 		return errors.Wrap(err, "getting Kubernetes version")
 	}
 
-	bc.DownloadLinkBase, err = getDownloadLinkBase(pd)
+	bc.DownloadLinkBase, err = c.getDownloadLinkBase(pd)
 	if err != nil {
 		return errors.Wrap(err, "getting Kubernetes download link base")
 	}
@@ -270,7 +286,7 @@ func buildPackage(build Build, packageDef *PackageDefinition, arch, tmpDir strin
 	// of "+" with "-", so that we build with a valid Debian package version.
 	bc.KubernetesVersion = strings.Replace(bc.KubernetesVersion, "+", "-", 1)
 
-	bc.Version, err = getPackageVersion(pd)
+	bc.Version, err = c.getPackageVersion(pd)
 	if err != nil {
 		return errors.Wrap(err, "getting package version")
 	}
@@ -362,7 +378,7 @@ func (bc *buildConfig) run() error {
 	return nil
 }
 
-func getPackageVersion(packageDef *PackageDefinition) (string, error) {
+func (c *Client) getPackageVersion(packageDef *PackageDefinition) (string, error) {
 	if packageDef == nil {
 		return "", errors.New("package definition cannot be nil")
 	}
@@ -372,7 +388,7 @@ func getPackageVersion(packageDef *PackageDefinition) (string, error) {
 	case "kubernetes-cni":
 		return getCNIVersion(packageDef)
 	case "cri-tools":
-		return getCRIToolsVersion(packageDef)
+		return c.getCRIToolsVersion(packageDef)
 	}
 
 	logrus.Infof(
@@ -382,7 +398,7 @@ func getPackageVersion(packageDef *PackageDefinition) (string, error) {
 	return util.TrimTagPrefix(packageDef.KubernetesVersion), nil
 }
 
-func getKubernetesVersion(packageDef *PackageDefinition) (string, error) {
+func (c *Client) getKubernetesVersion(packageDef *PackageDefinition) (string, error) {
 	if packageDef == nil {
 		return "", errors.New("package definition cannot be nil")
 	}
@@ -393,12 +409,12 @@ func getKubernetesVersion(packageDef *PackageDefinition) (string, error) {
 	}
 	switch packageDef.Channel {
 	case ChannelTesting:
-		return release.NewVersion().GetKubeVersion(release.VersionTypeStablePreRelease)
+		return c.version.GetKubeVersion(release.VersionTypeStablePreRelease)
 	case ChannelNightly:
-		return release.NewVersion().GetKubeVersion(release.VersionTypeCILatest)
+		return c.version.GetKubeVersion(release.VersionTypeCILatest)
 	}
 
-	return release.NewVersion().GetKubeVersion(release.VersionTypeStable)
+	return c.version.GetKubeVersion(release.VersionTypeStable)
 }
 
 func getCNIVersion(packageDef *PackageDefinition) (string, error) {
@@ -433,7 +449,7 @@ func getCNIVersion(packageDef *PackageDefinition) (string, error) {
 	return minimumCNIVersion, nil
 }
 
-func getCRIToolsVersion(packageDef *PackageDefinition) (string, error) {
+func (c *Client) getCRIToolsVersion(packageDef *PackageDefinition) (string, error) {
 	if packageDef == nil {
 		return "", errors.New("package definition cannot be nil")
 	}
@@ -474,7 +490,7 @@ func getCRIToolsVersion(packageDef *PackageDefinition) (string, error) {
 
 	criToolsVersion := fmt.Sprintf("%s.%s.0", criToolsMajor, criToolsMinor)
 
-	releases, err := github.New().Releases("kubernetes-sigs", "cri-tools", false)
+	releases, err := c.github.Releases("kubernetes-sigs", "cri-tools", false)
 	if err != nil {
 		return "", err
 	}
@@ -510,19 +526,19 @@ func getCRIToolsVersion(packageDef *PackageDefinition) (string, error) {
 	return criToolsVersion, nil
 }
 
-func getDownloadLinkBase(packageDef *PackageDefinition) (string, error) {
+func (c *Client) getDownloadLinkBase(packageDef *PackageDefinition) (string, error) {
 	if packageDef == nil {
 		return "", errors.New("package definition cannot be nil")
 	}
 
 	if packageDef.Channel == ChannelNightly {
-		return getCIBuildsDownloadLinkBase(packageDef)
+		return c.getCIBuildsDownloadLinkBase(packageDef)
 	}
 
 	return getDefaultReleaseDownloadLinkBase(packageDef)
 }
 
-func getCIBuildsDownloadLinkBase(packageDef *PackageDefinition) (string, error) {
+func (c *Client) getCIBuildsDownloadLinkBase(packageDef *PackageDefinition) (string, error) {
 	if packageDef == nil {
 		return "", errors.New("package definition cannot be nil")
 	}
@@ -530,7 +546,7 @@ func getCIBuildsDownloadLinkBase(packageDef *PackageDefinition) (string, error) 
 	ciVersion := packageDef.KubernetesVersion
 	if ciVersion == "" {
 		var err error
-		ciVersion, err = release.NewVersion().GetKubeVersion(release.VersionTypeCILatest)
+		ciVersion, err = c.version.GetKubeVersion(release.VersionTypeCILatest)
 		if err != nil {
 			return "", err
 		}
