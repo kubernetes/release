@@ -151,8 +151,8 @@ type Repo struct {
 // Repository is the main interface to the git.Repository functionality
 //counterfeiter:generate . Repository
 type Repository interface {
-	CommitObject(plumbing.Hash) (*object.Commit, error)
 	Branches() (storer.ReferenceIter, error)
+	CommitObject(plumbing.Hash) (*object.Commit, error)
 	Head() (*plumbing.Reference, error)
 	Remote(string) (*git.Remote, error)
 	Remotes() ([]*git.Remote, error)
@@ -166,6 +166,7 @@ type Worktree interface {
 	Add(string) (plumbing.Hash, error)
 	Commit(string, *git.CommitOptions) (plumbing.Hash, error)
 	Checkout(*git.CheckoutOptions) error
+	Status() (git.Status, error)
 }
 
 // Dir returns the directory where the repository is stored on disk
@@ -915,4 +916,14 @@ func (r *Repo) runGitCmd(cmd string, args ...string) (string, error) {
 		return "", errors.Wrapf(err, "running git %s", cmd)
 	}
 	return res.OutputTrimNL(), nil
+}
+
+// IsDirty returns true if the worktree status is not clean. It can also error
+// if the worktree status is not retrievable.
+func (r *Repo) IsDirty() (bool, error) {
+	status, err := r.worktree.Status()
+	if err != nil {
+		return false, errors.Wrap(err, "retrieving worktree status")
+	}
+	return !status.IsClean(), nil
 }

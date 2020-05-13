@@ -19,12 +19,14 @@ package git_test
 import (
 	"testing"
 
+	gogit "github.com/go-git/go-git/v5"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/git/gitfakes"
 )
 
-func newSUT() (*git.Repo, *gitfakes.FakeRepository, *gitfakes.FakeWorktree) {
+func newSUT() (*git.Repo, *gitfakes.FakeWorktree) {
 	repoMock := &gitfakes.FakeRepository{}
 	worktreeMock := &gitfakes.FakeWorktree{}
 
@@ -32,11 +34,11 @@ func newSUT() (*git.Repo, *gitfakes.FakeRepository, *gitfakes.FakeWorktree) {
 	repo.SetWorktree(worktreeMock)
 	repo.SetInnerRepo(repoMock)
 
-	return repo, repoMock, worktreeMock
+	return repo, worktreeMock
 }
 
 func TestCommit(t *testing.T) {
-	repo, _, worktreeMock := newSUT()
+	repo, worktreeMock := newSUT()
 	require.Nil(t, repo.Commit("msg"))
 	require.Equal(t, worktreeMock.CommitCallCount(), 1)
 }
@@ -130,4 +132,37 @@ func TestRemotify(t *testing.T) {
 	for _, tc := range testcases {
 		require.Equal(t, git.Remotify(tc.provided), tc.expected)
 	}
+}
+
+func TestIsDirtyMockSuccess(t *testing.T) {
+	repo, _ := newSUT()
+
+	dirty, err := repo.IsDirty()
+
+	require.Nil(t, err)
+	require.False(t, dirty)
+}
+
+func TestIsDirtyMockSuccessDirty(t *testing.T) {
+	repo, worktreeMock := newSUT()
+	worktreeMock.StatusReturns(gogit.Status{
+		"file": &gogit.FileStatus{
+			Worktree: gogit.Modified,
+		},
+	}, nil)
+
+	dirty, err := repo.IsDirty()
+
+	require.Nil(t, err)
+	require.True(t, dirty)
+}
+
+func TestIsDirtyMockFailureWorktreeStatus(t *testing.T) {
+	repo, worktreeMock := newSUT()
+	worktreeMock.StatusReturns(gogit.Status{}, errors.New(""))
+
+	dirty, err := repo.IsDirty()
+
+	require.NotNil(t, err)
+	require.False(t, dirty)
 }

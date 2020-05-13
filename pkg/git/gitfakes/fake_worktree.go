@@ -64,6 +64,18 @@ type FakeWorktree struct {
 		result1 plumbing.Hash
 		result2 error
 	}
+	StatusStub        func() (gita.Status, error)
+	statusMutex       sync.RWMutex
+	statusArgsForCall []struct {
+	}
+	statusReturns struct {
+		result1 gita.Status
+		result2 error
+	}
+	statusReturnsOnCall map[int]struct {
+		result1 gita.Status
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -255,6 +267,61 @@ func (fake *FakeWorktree) CommitReturnsOnCall(i int, result1 plumbing.Hash, resu
 	}{result1, result2}
 }
 
+func (fake *FakeWorktree) Status() (gita.Status, error) {
+	fake.statusMutex.Lock()
+	ret, specificReturn := fake.statusReturnsOnCall[len(fake.statusArgsForCall)]
+	fake.statusArgsForCall = append(fake.statusArgsForCall, struct {
+	}{})
+	fake.recordInvocation("Status", []interface{}{})
+	fake.statusMutex.Unlock()
+	if fake.StatusStub != nil {
+		return fake.StatusStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.statusReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeWorktree) StatusCallCount() int {
+	fake.statusMutex.RLock()
+	defer fake.statusMutex.RUnlock()
+	return len(fake.statusArgsForCall)
+}
+
+func (fake *FakeWorktree) StatusCalls(stub func() (gita.Status, error)) {
+	fake.statusMutex.Lock()
+	defer fake.statusMutex.Unlock()
+	fake.StatusStub = stub
+}
+
+func (fake *FakeWorktree) StatusReturns(result1 gita.Status, result2 error) {
+	fake.statusMutex.Lock()
+	defer fake.statusMutex.Unlock()
+	fake.StatusStub = nil
+	fake.statusReturns = struct {
+		result1 gita.Status
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeWorktree) StatusReturnsOnCall(i int, result1 gita.Status, result2 error) {
+	fake.statusMutex.Lock()
+	defer fake.statusMutex.Unlock()
+	fake.StatusStub = nil
+	if fake.statusReturnsOnCall == nil {
+		fake.statusReturnsOnCall = make(map[int]struct {
+			result1 gita.Status
+			result2 error
+		})
+	}
+	fake.statusReturnsOnCall[i] = struct {
+		result1 gita.Status
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeWorktree) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -264,6 +331,8 @@ func (fake *FakeWorktree) Invocations() map[string][][]interface{} {
 	defer fake.checkoutMutex.RUnlock()
 	fake.commitMutex.RLock()
 	defer fake.commitMutex.RUnlock()
+	fake.statusMutex.RLock()
+	defer fake.statusMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
