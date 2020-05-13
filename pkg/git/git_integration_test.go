@@ -842,3 +842,26 @@ func TestBranchFailure(t *testing.T) {
 	require.NotNil(t, err)
 	require.Empty(t, res)
 }
+
+func TestIsDirtySuccess(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	dirty, err := testRepo.sut.IsDirty()
+	require.Nil(t, err)
+	require.False(t, dirty)
+}
+
+func TestIsDirtyFailure(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	require.Nil(t, ioutil.WriteFile(
+		filepath.Join(testRepo.sut.Dir(), "any-file"),
+		[]byte("test"), os.FileMode(0755)),
+	)
+
+	dirty, err := testRepo.sut.IsDirty()
+	require.Nil(t, err)
+	require.True(t, dirty)
+}

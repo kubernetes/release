@@ -25,19 +25,6 @@ import (
 )
 
 type FakeRepository struct {
-	BranchStub        func(...string) (string, error)
-	branchMutex       sync.RWMutex
-	branchArgsForCall []struct {
-		arg1 []string
-	}
-	branchReturns struct {
-		result1 string
-		result2 error
-	}
-	branchReturnsOnCall map[int]struct {
-		result1 string
-		result2 error
-	}
 	CurrentBranchStub        func() (string, error)
 	currentBranchMutex       sync.RWMutex
 	currentBranchArgsForCall []struct {
@@ -61,6 +48,30 @@ type FakeRepository struct {
 	}
 	describeReturnsOnCall map[int]struct {
 		result1 string
+		result2 error
+	}
+	HeadStub        func() (string, error)
+	headMutex       sync.RWMutex
+	headArgsForCall []struct {
+	}
+	headReturns struct {
+		result1 string
+		result2 error
+	}
+	headReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
+	IsDirtyStub        func() (bool, error)
+	isDirtyMutex       sync.RWMutex
+	isDirtyArgsForCall []struct {
+	}
+	isDirtyReturns struct {
+		result1 bool
+		result2 error
+	}
+	isDirtyReturnsOnCall map[int]struct {
+		result1 bool
 		result2 error
 	}
 	LsRemoteStub        func(...string) (string, error)
@@ -90,69 +101,6 @@ type FakeRepository struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
-}
-
-func (fake *FakeRepository) Branch(arg1 ...string) (string, error) {
-	fake.branchMutex.Lock()
-	ret, specificReturn := fake.branchReturnsOnCall[len(fake.branchArgsForCall)]
-	fake.branchArgsForCall = append(fake.branchArgsForCall, struct {
-		arg1 []string
-	}{arg1})
-	fake.recordInvocation("Branch", []interface{}{arg1})
-	fake.branchMutex.Unlock()
-	if fake.BranchStub != nil {
-		return fake.BranchStub(arg1...)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	fakeReturns := fake.branchReturns
-	return fakeReturns.result1, fakeReturns.result2
-}
-
-func (fake *FakeRepository) BranchCallCount() int {
-	fake.branchMutex.RLock()
-	defer fake.branchMutex.RUnlock()
-	return len(fake.branchArgsForCall)
-}
-
-func (fake *FakeRepository) BranchCalls(stub func(...string) (string, error)) {
-	fake.branchMutex.Lock()
-	defer fake.branchMutex.Unlock()
-	fake.BranchStub = stub
-}
-
-func (fake *FakeRepository) BranchArgsForCall(i int) []string {
-	fake.branchMutex.RLock()
-	defer fake.branchMutex.RUnlock()
-	argsForCall := fake.branchArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeRepository) BranchReturns(result1 string, result2 error) {
-	fake.branchMutex.Lock()
-	defer fake.branchMutex.Unlock()
-	fake.BranchStub = nil
-	fake.branchReturns = struct {
-		result1 string
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeRepository) BranchReturnsOnCall(i int, result1 string, result2 error) {
-	fake.branchMutex.Lock()
-	defer fake.branchMutex.Unlock()
-	fake.BranchStub = nil
-	if fake.branchReturnsOnCall == nil {
-		fake.branchReturnsOnCall = make(map[int]struct {
-			result1 string
-			result2 error
-		})
-	}
-	fake.branchReturnsOnCall[i] = struct {
-		result1 string
-		result2 error
-	}{result1, result2}
 }
 
 func (fake *FakeRepository) CurrentBranch() (string, error) {
@@ -269,6 +217,116 @@ func (fake *FakeRepository) DescribeReturnsOnCall(i int, result1 string, result2
 	}
 	fake.describeReturnsOnCall[i] = struct {
 		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepository) Head() (string, error) {
+	fake.headMutex.Lock()
+	ret, specificReturn := fake.headReturnsOnCall[len(fake.headArgsForCall)]
+	fake.headArgsForCall = append(fake.headArgsForCall, struct {
+	}{})
+	fake.recordInvocation("Head", []interface{}{})
+	fake.headMutex.Unlock()
+	if fake.HeadStub != nil {
+		return fake.HeadStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.headReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRepository) HeadCallCount() int {
+	fake.headMutex.RLock()
+	defer fake.headMutex.RUnlock()
+	return len(fake.headArgsForCall)
+}
+
+func (fake *FakeRepository) HeadCalls(stub func() (string, error)) {
+	fake.headMutex.Lock()
+	defer fake.headMutex.Unlock()
+	fake.HeadStub = stub
+}
+
+func (fake *FakeRepository) HeadReturns(result1 string, result2 error) {
+	fake.headMutex.Lock()
+	defer fake.headMutex.Unlock()
+	fake.HeadStub = nil
+	fake.headReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepository) HeadReturnsOnCall(i int, result1 string, result2 error) {
+	fake.headMutex.Lock()
+	defer fake.headMutex.Unlock()
+	fake.HeadStub = nil
+	if fake.headReturnsOnCall == nil {
+		fake.headReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.headReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepository) IsDirty() (bool, error) {
+	fake.isDirtyMutex.Lock()
+	ret, specificReturn := fake.isDirtyReturnsOnCall[len(fake.isDirtyArgsForCall)]
+	fake.isDirtyArgsForCall = append(fake.isDirtyArgsForCall, struct {
+	}{})
+	fake.recordInvocation("IsDirty", []interface{}{})
+	fake.isDirtyMutex.Unlock()
+	if fake.IsDirtyStub != nil {
+		return fake.IsDirtyStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.isDirtyReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRepository) IsDirtyCallCount() int {
+	fake.isDirtyMutex.RLock()
+	defer fake.isDirtyMutex.RUnlock()
+	return len(fake.isDirtyArgsForCall)
+}
+
+func (fake *FakeRepository) IsDirtyCalls(stub func() (bool, error)) {
+	fake.isDirtyMutex.Lock()
+	defer fake.isDirtyMutex.Unlock()
+	fake.IsDirtyStub = stub
+}
+
+func (fake *FakeRepository) IsDirtyReturns(result1 bool, result2 error) {
+	fake.isDirtyMutex.Lock()
+	defer fake.isDirtyMutex.Unlock()
+	fake.IsDirtyStub = nil
+	fake.isDirtyReturns = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepository) IsDirtyReturnsOnCall(i int, result1 bool, result2 error) {
+	fake.isDirtyMutex.Lock()
+	defer fake.isDirtyMutex.Unlock()
+	fake.IsDirtyStub = nil
+	if fake.isDirtyReturnsOnCall == nil {
+		fake.isDirtyReturnsOnCall = make(map[int]struct {
+			result1 bool
+			result2 error
+		})
+	}
+	fake.isDirtyReturnsOnCall[i] = struct {
+		result1 bool
 		result2 error
 	}{result1, result2}
 }
@@ -394,12 +452,14 @@ func (fake *FakeRepository) RemotesReturnsOnCall(i int, result1 []*git.Remote, r
 func (fake *FakeRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.branchMutex.RLock()
-	defer fake.branchMutex.RUnlock()
 	fake.currentBranchMutex.RLock()
 	defer fake.currentBranchMutex.RUnlock()
 	fake.describeMutex.RLock()
 	defer fake.describeMutex.RUnlock()
+	fake.headMutex.RLock()
+	defer fake.headMutex.RUnlock()
+	fake.isDirtyMutex.RLock()
+	defer fake.isDirtyMutex.RUnlock()
 	fake.lsRemoteMutex.RLock()
 	defer fake.lsRemoteMutex.RUnlock()
 	fake.remotesMutex.RLock()
