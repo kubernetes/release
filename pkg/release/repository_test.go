@@ -22,8 +22,8 @@ import (
 	"os"
 	"testing"
 
+	gogit "github.com/go-git/go-git/v5"
 	"github.com/stretchr/testify/require"
-	gogit "gopkg.in/src-d/go-git.v4"
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"

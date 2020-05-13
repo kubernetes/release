@@ -7,6 +7,7 @@ require (
 	github.com/GoogleCloudPlatform/testgrid v0.0.10
 	github.com/bazelbuild/rules_go v0.22.1
 	github.com/blang/semver v3.5.1+incompatible
+	github.com/go-git/go-git/v5 v5.0.0
 	github.com/golang/protobuf v1.3.2
 	github.com/golangci/golangci-lint v1.23.3
 	github.com/google/go-github/v29 v29.0.3
@@ -25,7 +26,6 @@ require (
 	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	google.golang.org/api v0.21.0
-	gopkg.in/src-d/go-git.v4 v4.13.1
 	k8s.io/utils v0.0.0-20200229041039-0a110f9eb7ab
 	sigs.k8s.io/yaml v1.2.0
 )

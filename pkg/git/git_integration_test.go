@@ -24,10 +24,10 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	gogit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/require"
-	gogit "gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/config"
-	"gopkg.in/src-d/go-git.v4/plumbing/object"
 
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/git"
