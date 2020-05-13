@@ -24,11 +24,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/config"
-	"gopkg.in/src-d/go-git.v4/plumbing/object"
 
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/github"

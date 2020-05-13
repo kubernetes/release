@@ -20,8 +20,8 @@ package gitfakes
 import (
 	"sync"
 
-	gita "gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing"
+	gita "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"k8s.io/release/pkg/git"
 )
 
