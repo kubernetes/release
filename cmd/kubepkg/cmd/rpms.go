@@ -19,14 +19,8 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	kpkg "k8s.io/release/pkg/kubepkg"
+	"k8s.io/release/pkg/kubepkg"
 )
-
-type rpmsOptions struct {
-}
-
-// TODO: Determine if we need rpmsOpts
-var rpmsOpts = &rpmsOptions{} // nolint: deadcode,varcheck,unused
 
 // rpmsCmd represents the base command when called without any subcommands
 var rpmsCmd = &cobra.Command{
@@ -39,18 +33,10 @@ var rpmsCmd = &cobra.Command{
 		return rootOpts.validate()
 	},
 	RunE: func(*cobra.Command, []string) error {
-		return runRpms(rootOpts)
+		return run(rootOpts, kubepkg.BuildRpm)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(rpmsCmd)
-}
-
-func runRpms(ro *rootOptions) error {
-	builds, err := kpkg.ConstructBuilds("rpm", ro.packages, ro.channels, ro.kubeVersion, ro.revision, ro.cniVersion, ro.criToolsVersion, ro.templateDir)
-	if err != nil {
-		return err
-	}
-	return kpkg.WalkBuilds(builds, ro.architectures, ro.specOnly)
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"k8s.io/release/pkg/kubepkg"
 	kpkg "k8s.io/release/pkg/kubepkg"
 	"k8s.io/release/pkg/log"
 	"k8s.io/release/pkg/util"
@@ -155,4 +156,16 @@ func (r *rootOptions) validate() error {
 	r.kubeVersion = util.TrimTagPrefix(r.kubeVersion)
 
 	return nil
+}
+
+func run(ro *rootOptions, buildType kubepkg.BuildType) error {
+	client := kubepkg.New()
+	builds, err := client.ConstructBuilds(
+		buildType, ro.packages, ro.channels, ro.kubeVersion, ro.revision,
+		ro.cniVersion, ro.criToolsVersion, ro.templateDir,
+	)
+	if err != nil {
+		return errors.Wrap(err, "running kubepkg")
+	}
+	return client.WalkBuilds(builds, ro.architectures, ro.specOnly)
 }

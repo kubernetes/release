@@ -37,5 +37,9 @@ go_test(
     name = "go_default_test",
     srcs = ["kubepkg_test.go"],
     embed = [":go_default_library"],
-    deps = ["@com_github_stretchr_testify//require:go_default_library"],
+    deps = [
+        "//pkg/github/githubfakes:go_default_library",
+        "//pkg/release/releasefakes:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
+    ],
 )

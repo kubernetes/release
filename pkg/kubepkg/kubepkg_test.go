@@ -20,7 +20,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"k8s.io/release/pkg/github/githubfakes"
+	"k8s.io/release/pkg/release/releasefakes"
 )
+
+func newSUT() *Client {
+	sut := New()
+
+	githubMock := &githubfakes.FakeClient{}
+	sut.github.SetClient(githubMock)
+
+	versionMock := &releasefakes.FakeVersionClient{}
+	sut.version.SetClient(versionMock)
+
+	return sut
+}
 
 func TestGetPackageVersionSuccess(t *testing.T) {
 	testcases := []struct {
@@ -59,8 +74,9 @@ func TestGetPackageVersionSuccess(t *testing.T) {
 		},
 	}
 
+	sut := newSUT()
 	for _, tc := range testcases {
-		actual, err := getPackageVersion(
+		actual, err := sut.getPackageVersion(
 			&PackageDefinition{
 				Name:              tc.packageName,
 				Version:           tc.version,
@@ -68,16 +84,14 @@ func TestGetPackageVersionSuccess(t *testing.T) {
 			},
 		)
 
-		if err != nil {
-			t.Fatalf("did not expect an error: %v", err)
-		}
-
+		require.Nil(t, err)
 		require.Equal(t, tc.expected, actual)
 	}
 }
 
 func TestGetPackageVersionFailure(t *testing.T) {
-	_, err := getPackageVersion(nil)
+	sut := newSUT()
+	_, err := sut.getPackageVersion(nil)
 	require.NotNil(t, err)
 }
 
@@ -99,24 +113,23 @@ func TestGetKubernetesVersionSuccess(t *testing.T) {
 		},
 	}
 
+	sut := newSUT()
 	for _, tc := range testcases {
-		actual, err := getKubernetesVersion(
+		actual, err := sut.getKubernetesVersion(
 			&PackageDefinition{
 				Version:           tc.version,
 				KubernetesVersion: tc.kubeVersion,
 			},
 		)
 
-		if err != nil {
-			t.Fatalf("did not expect an error: %v", err)
-		}
-
+		require.Nil(t, err)
 		require.Equal(t, tc.expected, actual)
 	}
 }
 
 func TestGetKubernetesVersionFailure(t *testing.T) {
-	_, err := getKubernetesVersion(nil)
+	sut := newSUT()
+	_, err := sut.getKubernetesVersion(nil)
 	require.NotNil(t, err)
 }
 
@@ -154,10 +167,7 @@ func TestGetCNIVersionSuccess(t *testing.T) {
 			},
 		)
 
-		if err != nil {
-			t.Fatalf("did not expect an error: %v", err)
-		}
-
+		require.Nil(t, err)
 		require.Equal(t, tc.expected, actual)
 	}
 }
@@ -186,24 +196,23 @@ func TestGetCRIToolsVersionSuccess(t *testing.T) {
 		},
 	}
 
+	sut := newSUT()
 	for _, tc := range testcases {
-		actual, err := getCRIToolsVersion(
+		actual, err := sut.getCRIToolsVersion(
 			&PackageDefinition{
 				Version:           tc.version,
 				KubernetesVersion: tc.kubeVersion,
 			},
 		)
 
-		if err != nil {
-			t.Fatalf("did not expect an error: %v", err)
-		}
-
+		require.Nil(t, err)
 		require.Equal(t, tc.expected, actual)
 	}
 }
 
 func TestGetCRIToolsVersionFailure(t *testing.T) {
-	_, err := getCRIToolsVersion(nil)
+	sut := newSUT()
+	_, err := sut.getCRIToolsVersion(nil)
 	require.NotNil(t, err)
 }
 
@@ -227,24 +236,23 @@ func TestGetDownloadLinkBaseSuccess(t *testing.T) {
 		},
 	}
 
+	sut := newSUT()
 	for _, tc := range testcases {
-		actual, err := getDownloadLinkBase(
+		actual, err := sut.getDownloadLinkBase(
 			&PackageDefinition{
 				KubernetesVersion: tc.kubeVersion,
 				Channel:           tc.channel,
 			},
 		)
 
-		if err != nil {
-			t.Fatalf("did not expect an error: %v", err)
-		}
-
+		require.Nil(t, err)
 		require.Equal(t, tc.expected, actual)
 	}
 }
 
 func TestGetDownloadLinkBaseFailure(t *testing.T) {
-	_, err := getDownloadLinkBase(nil)
+	sut := newSUT()
+	_, err := sut.getDownloadLinkBase(nil)
 	require.NotNil(t, err)
 }
 
@@ -261,23 +269,22 @@ func TestGetCIBuildsDownloadLinkBaseSuccess(t *testing.T) {
 		},
 	}
 
+	sut := newSUT()
 	for _, tc := range testcases {
-		actual, err := getCIBuildsDownloadLinkBase(
+		actual, err := sut.getCIBuildsDownloadLinkBase(
 			&PackageDefinition{
 				KubernetesVersion: tc.kubeVersion,
 			},
 		)
 
-		if err != nil {
-			t.Fatalf("did not expect an error: %v", err)
-		}
-
+		require.Nil(t, err)
 		require.Equal(t, tc.expected, actual)
 	}
 }
 
 func TestGetCIBuildsDownloadLinkBaseFailure(t *testing.T) {
-	_, err := getCIBuildsDownloadLinkBase(nil)
+	sut := newSUT()
+	_, err := sut.getCIBuildsDownloadLinkBase(nil)
 	require.NotNil(t, err)
 }
 
@@ -306,10 +313,7 @@ func TestGetDefaultReleaseDownloadLinkBaseSuccess(t *testing.T) {
 			},
 		)
 
-		if err != nil {
-			t.Fatalf("did not expect an error: %v", err)
-		}
-
+		require.Nil(t, err)
 		require.Equal(t, tc.expected, actual)
 	}
 }
@@ -351,10 +355,7 @@ func TestGetDependenciesSuccess(t *testing.T) {
 			},
 		)
 
-		if err != nil {
-			t.Fatalf("did not expect an error: %v", err)
-		}
-
+		require.Nil(t, err)
 		require.Equal(t, tc.expected, actual)
 	}
 }
@@ -393,10 +394,7 @@ func TestGetCNIDownloadLinkSuccess(t *testing.T) {
 			tc.arch,
 		)
 
-		if err != nil {
-			t.Fatalf("did not expect an error: %v", err)
-		}
-
+		require.Nil(t, err)
 		require.Equal(t, tc.expected, actual)
 	}
 }

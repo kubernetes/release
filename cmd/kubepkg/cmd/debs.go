@@ -19,14 +19,8 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	kpkg "k8s.io/release/pkg/kubepkg"
+	"k8s.io/release/pkg/kubepkg"
 )
-
-type debsOptions struct {
-}
-
-// TODO: Determine if we need debsOpts
-var debsOpts = &debsOptions{} // nolint: deadcode,varcheck,unused
 
 // debsCmd represents the base command when called without any subcommands
 var debsCmd = &cobra.Command{
@@ -39,18 +33,10 @@ var debsCmd = &cobra.Command{
 		return rootOpts.validate()
 	},
 	RunE: func(*cobra.Command, []string) error {
-		return runDebs(rootOpts)
+		return run(rootOpts, kubepkg.BuildDeb)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(debsCmd)
-}
-
-func runDebs(ro *rootOptions) error {
-	builds, err := kpkg.ConstructBuilds("deb", ro.packages, ro.channels, ro.kubeVersion, ro.revision, ro.cniVersion, ro.criToolsVersion, ro.templateDir)
-	if err != nil {
-		return err
-	}
-	return kpkg.WalkBuilds(builds, ro.architectures, ro.specOnly)
 }
