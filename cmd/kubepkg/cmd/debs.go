@@ -19,7 +19,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/kubepkg"
+	"k8s.io/release/pkg/kubepkg/options"
 )
 
 // debsCmd represents the base command when called without any subcommands
@@ -30,10 +30,11 @@ var debsCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	PreRunE: func(*cobra.Command, []string) error {
-		return rootOpts.validate()
+		return opts.Validate()
 	},
 	RunE: func(*cobra.Command, []string) error {
-		return run(rootOpts, kubepkg.BuildDeb)
+		opts = opts.WithBuildType(options.BuildDeb)
+		return run(opts)
 	},
 }
 
