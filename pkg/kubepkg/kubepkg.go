@@ -21,7 +21,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -32,20 +31,14 @@ import (
 
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/github"
+	"k8s.io/release/pkg/kubepkg/options"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
 )
 
-type (
-	BuildType   string
-	ChannelType string
-)
+type ChannelType string
 
 const (
-	BuildDeb BuildType = "deb"
-	BuildRpm BuildType = "rpm"
-	BuildAll BuildType = "all"
-
 	ChannelRelease ChannelType = "release"
 	ChannelTesting ChannelType = "testing"
 	ChannelNightly ChannelType = "nightly"
@@ -54,18 +47,13 @@ const (
 	minimumCNIVersion        = "0.7.5"
 	pre117CNIVersion         = "0.7.5"
 
-	DefaultRevision = "0"
-
-	templateRootDir = "templates"
-
 	kubeadmConf = "10-kubeadm.conf"
 )
 
 var (
 	minimumCRIToolsVersion = minimumKubernetesVersion
-	LatestTemplateDir      = filepath.Join(templateRootDir, "latest")
 
-	buildArchMap = map[string]map[BuildType]string{
+	buildArchMap = map[string]map[options.BuildType]string{
 		"amd64": {
 			"deb": "amd64",
 			"rpm": "x86_64",
@@ -88,12 +76,6 @@ var (
 		},
 	}
 
-	SupportedPackages      = []string{"kubelet", "kubectl", "kubeadm", "kubernetes-cni", "cri-tools"}
-	SupportedChannels      = []string{"release", "testing", "nightly"}
-	SupportedArchitectures = []string{"amd64", "arm", "arm64", "ppc64le", "s390x"}
-
-	DefaultReleaseDownloadLinkBase = "https://dl.k8s.io"
-
 	builtins = map[string]interface{}{
 		"date": func() string {
 			return time.Now().Format(time.RFC1123Z)
@@ -102,19 +84,21 @@ var (
 )
 
 type Client struct {
+	options *options.Options
 	version *release.Version
 	github  *github.GitHub
 }
 
-func New() *Client {
+func New(o *options.Options) *Client {
 	return &Client{
+		options: o,
 		version: release.NewVersion(),
 		github:  github.New(),
 	}
 }
 
 type Build struct {
-	Type        BuildType
+	Type        options.BuildType
 	Package     string
 	Definitions []*PackageDefinition
 	TemplateDir string
@@ -138,7 +122,7 @@ type PackageDefinition struct {
 
 type buildConfig struct {
 	*PackageDefinition
-	Type      BuildType
+	Type      options.BuildType
 	GoArch    string
 	BuildArch string
 	Package   string
@@ -148,41 +132,37 @@ type buildConfig struct {
 	specOnly    bool
 }
 
-func (c *Client) ConstructBuilds(
-	buildType BuildType,
-	packages, channels []string,
-	kubeVersion, revision, cniVersion, criToolsVersion, templateDir string,
-) ([]Build, error) {
+func (c *Client) ConstructBuilds() ([]Build, error) {
 	logrus.Infof("Constructing builds...")
 
 	builds := []Build{}
 
-	for _, pkg := range packages {
+	for _, pkg := range c.options.Packages() {
 		// TODO: Get package directory for any version once package definitions are broken out
-		packageTemplateDir := filepath.Join(templateDir, string(buildType), pkg)
+		packageTemplateDir := filepath.Join(c.options.TemplateDir(), string(c.options.BuildType()), pkg)
 		if _, err := os.Stat(packageTemplateDir); err != nil {
 			return nil, errors.Wrap(err, "finding package template dir")
 		}
 
 		b := &Build{
-			Type:        buildType,
+			Type:        c.options.BuildType(),
 			Package:     pkg,
 			TemplateDir: packageTemplateDir,
 		}
 
-		for _, channel := range channels {
+		for _, channel := range c.options.Channels() {
 			packageDef := &PackageDefinition{
-				Revision: revision,
+				Revision: c.options.Revision(),
 				Channel:  ChannelType(channel),
 			}
 
-			packageDef.KubernetesVersion = kubeVersion
+			packageDef.KubernetesVersion = c.options.KubeVersion()
 
 			switch b.Package {
 			case "kubernetes-cni":
-				packageDef.Version = cniVersion
+				packageDef.Version = c.options.CNIVersion()
 			case "cri-tools":
-				packageDef.Version = criToolsVersion
+				packageDef.Version = c.options.CRIToolsVersion()
 			}
 
 			b.Definitions = append(b.Definitions, packageDef)
@@ -195,7 +175,7 @@ func (c *Client) ConstructBuilds(
 	return builds, nil
 }
 
-func (c *Client) WalkBuilds(builds []Build, architectures []string, specOnly bool) (err error) {
+func (c *Client) WalkBuilds(builds []Build) (err error) {
 	logrus.Infof("Walking builds...")
 
 	workingDir := os.Getenv("KUBEPKG_WORKING_DIR")
@@ -206,23 +186,23 @@ func (c *Client) WalkBuilds(builds []Build, architectures []string, specOnly boo
 		}
 	}
 
-	for _, arch := range architectures {
+	for _, arch := range c.options.Architectures() {
 		for _, build := range builds {
 			for _, packageDef := range build.Definitions {
-				if err := c.buildPackage(build, packageDef, arch, workingDir, specOnly); err != nil {
+				if err := c.buildPackage(build, packageDef, arch, workingDir); err != nil {
 					return err
 				}
 			}
 		}
 	}
-	if specOnly {
+	if c.options.SpecOnly() {
 		logrus.Infof("Package specs have been saved in %s", workingDir)
 	}
 	logrus.Infof("Successfully walked builds")
 	return nil
 }
 
-func (c *Client) buildPackage(build Build, packageDef *PackageDefinition, arch, tmpDir string, specOnly bool) error {
+func (c *Client) buildPackage(build Build, packageDef *PackageDefinition, arch, tmpDir string) error {
 	if packageDef == nil {
 		return errors.New("package definition cannot be nil")
 	}
@@ -237,7 +217,7 @@ func (c *Client) buildPackage(build Build, packageDef *PackageDefinition, arch, 
 		GoArch:            arch,
 		TemplateDir:       build.TemplateDir,
 		workspace:         tmpDir,
-		specOnly:          specOnly,
+		specOnly:          c.options.SpecOnly(),
 	}
 
 	bc.Name = build.Package
@@ -340,7 +320,7 @@ func (bc *buildConfig) run() error {
 
 	// TODO: Move OS-specific logic into their own files
 	switch bc.Type {
-	case BuildDeb:
+	case options.BuildDeb:
 		logrus.Infof("Running dpkg-buildpackage for %s (%s/%s)", bc.Package, bc.GoArch, bc.BuildArch)
 
 		dpkgErr := command.NewWithWorkDir(
@@ -371,7 +351,7 @@ func (bc *buildConfig) run() error {
 		}
 
 		logrus.Infof("Successfully built %s", dstPath)
-	case BuildRpm:
+	case options.BuildRpm:
 		logrus.Info("Building rpms via kubepkg is not currently supported")
 	}
 
@@ -562,7 +542,7 @@ func getDefaultReleaseDownloadLinkBase(packageDef *PackageDefinition) (string, e
 
 	return fmt.Sprintf(
 		"%s/%s",
-		DefaultReleaseDownloadLinkBase,
+		options.DefaultReleaseDownloadLinkBase,
 		util.AddTagPrefix(packageDef.KubernetesVersion),
 	), nil
 }
@@ -587,7 +567,7 @@ func getDependencies(packageDef *PackageDefinition) (map[string]string, error) {
 	return deps, nil
 }
 
-func getBuildArch(goArch string, buildType BuildType) string {
+func getBuildArch(goArch string, buildType options.BuildType) string {
 	return buildArchMap[goArch][buildType]
 }
 
@@ -611,40 +591,4 @@ func getCNIDownloadLink(packageDef *PackageDefinition, arch string) (string, err
 	}
 
 	return fmt.Sprintf("https://github.com/containernetworking/plugins/releases/download/v%s/cni-plugins-linux-%s-v%s.tgz", packageDef.Version, arch, packageDef.Version), nil
-}
-
-// TODO: kubepkg is failing validations when multiple options are selected
-//       It seems like StringArrayVar is treating the multiple comma-separated values as a single value.
-//
-// Example:
-// $ time kubepkg debs --arch amd64,arm
-// <snip>
-// INFO[0000] Adding 'amd64,arm' (type: string) to not supported
-// INFO[0000] The following options are not supported: [amd64,arm]
-// FATA[0000] architectures selections are not supported
-func IsSupported(input, expected []string) bool {
-	notSupported := []string{}
-
-	supported := false
-	for _, i := range input {
-		supported = false
-		for _, j := range expected {
-			if i == j {
-				supported = true
-				break
-			}
-		}
-
-		if !supported {
-			logrus.Infof("Adding '%s' (type: %v) to not supported", i, reflect.TypeOf(i))
-			notSupported = append(notSupported, i)
-		}
-	}
-
-	if len(notSupported) > 0 {
-		logrus.Infof("The following options are not supported: %v", notSupported)
-		return false
-	}
-
-	return true
 }

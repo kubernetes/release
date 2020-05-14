@@ -11,6 +11,7 @@ go_library(
     deps = [
         "//pkg/command:go_default_library",
         "//pkg/github:go_default_library",
+        "//pkg/kubepkg/options:go_default_library",
         "//pkg/release:go_default_library",
         "//pkg/util:go_default_library",
         "@com_github_blang_semver//:go_default_library",
@@ -28,7 +29,10 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [":package-srcs"],
+    srcs = [
+        ":package-srcs",
+        "//pkg/kubepkg/options:all-srcs",
+    ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )
@@ -39,6 +43,7 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//pkg/github/githubfakes:go_default_library",
+        "//pkg/kubepkg/options:go_default_library",
         "//pkg/release/releasefakes:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
     ],

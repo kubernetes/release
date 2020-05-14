@@ -22,9 +22,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/release/pkg/kubepkg"
-	kpkg "k8s.io/release/pkg/kubepkg"
+	"k8s.io/release/pkg/kubepkg/options"
 	"k8s.io/release/pkg/log"
-	"k8s.io/release/pkg/util"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -34,25 +33,10 @@ var rootCmd = &cobra.Command{
 	PersistentPreRunE: initLogging,
 }
 
-type rootOptions struct {
-	revision        string
-	kubeVersion     string
-	cniVersion      string
-	criToolsVersion string
-
-	packages      []string
-	channels      []string
-	architectures []string
-
-	releaseDownloadLinkBase string
-
-	templateDir string
-	specOnly    bool
-
+var (
+	opts     *options.Options = options.New()
 	logLevel string
-}
-
-var rootOpts = &rootOptions{}
+)
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
@@ -63,109 +47,114 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
+	packages := []string{}
 	rootCmd.PersistentFlags().StringArrayVar(
-		&rootOpts.packages,
+		&packages,
 		"packages",
-		kpkg.SupportedPackages,
+		opts.Packages(),
 		"packages to build",
 	)
+
+	channels := []string{}
 	rootCmd.PersistentFlags().StringArrayVar(
-		&rootOpts.channels,
+		&channels,
 		"channels",
-		kpkg.SupportedChannels,
+		opts.Channels(),
 		"channels to build for",
 	)
+
+	architectures := []string{}
 	rootCmd.PersistentFlags().StringArrayVar(
-		&rootOpts.architectures,
+		&architectures,
 		"arch",
-		kpkg.SupportedArchitectures,
+		opts.Architectures(),
 		"architectures to build for",
 	)
+
+	kubeVersion := ""
 	rootCmd.PersistentFlags().StringVar(
-		&rootOpts.kubeVersion,
+		&kubeVersion,
 		"kube-version",
-		"",
+		opts.KubeVersion(),
 		"Kubernetes version to build",
 	)
+
+	revision := ""
 	rootCmd.PersistentFlags().StringVar(
-		&rootOpts.revision,
+		&revision,
 		"revision",
-		kpkg.DefaultRevision,
+		opts.Revision(),
 		"deb package revision.",
 	)
+
+	cniVersion := ""
 	rootCmd.PersistentFlags().StringVar(
-		&rootOpts.cniVersion,
+		&cniVersion,
 		"cni-version",
-		"",
+		opts.CNIVersion(),
 		"CNI version to build",
 	)
+
+	criToolsVersion := ""
 	rootCmd.PersistentFlags().StringVar(
-		&rootOpts.criToolsVersion,
+		&criToolsVersion,
 		"cri-tools-version",
-		"",
+		opts.CRIToolsVersion(),
 		"CRI tools version to build",
 	)
+
+	releaseDownloadLinkBase := ""
 	rootCmd.PersistentFlags().StringVar(
-		&rootOpts.releaseDownloadLinkBase,
+		&releaseDownloadLinkBase,
 		"release-download-link-base",
-		kpkg.DefaultReleaseDownloadLinkBase,
+		opts.ReleaseDownloadLinkBase(),
 		"release download link base",
 	)
+
+	templateDir := ""
 	rootCmd.PersistentFlags().StringVar(
-		&rootOpts.templateDir,
+		&templateDir,
 		"template-dir",
-		kpkg.LatestTemplateDir,
+		opts.TemplateDir(),
 		"template directory",
 	)
+
+	specOnly := false
 	rootCmd.PersistentFlags().BoolVar(
-		&rootOpts.specOnly,
+		&specOnly,
 		"spec-only",
-		false,
+		opts.SpecOnly(),
 		"only create specs instead of building packages",
 	)
+
 	rootCmd.PersistentFlags().StringVar(
-		&rootOpts.logLevel,
+		&logLevel,
 		"log-level",
 		"info",
 		"the logging verbosity, either 'panic', 'fatal', 'error', 'warn', 'warning', 'info', 'debug' or 'trace'",
 	)
-}
 
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
+	opts = opts.WithPackages(packages...).
+		WithChannels(channels...).
+		WithArchitectures(architectures...).
+		WithKubeVersion(kubeVersion).
+		WithRevision(revision).
+		WithCNIVersion(cniVersion).
+		WithCRIToolsVersion(criToolsVersion).
+		WithReleaseDownloadLinkBase(releaseDownloadLinkBase).
+		WithTemplateDir(templateDir).
+		WithSpecOnly(specOnly)
 }
 
 func initLogging(*cobra.Command, []string) error {
-	return log.SetupGlobalLogger(rootOpts.logLevel)
+	return log.SetupGlobalLogger(logLevel)
 }
 
-func (r *rootOptions) validate() error {
-	if ok := kpkg.IsSupported(r.packages, kpkg.SupportedPackages); !ok {
-		return errors.New("package selections are not supported")
-	}
-	if ok := kpkg.IsSupported(r.channels, kpkg.SupportedChannels); !ok {
-		return errors.New("channel selections are not supported")
-	}
-	if ok := kpkg.IsSupported(r.architectures, kpkg.SupportedArchitectures); !ok {
-		return errors.New("architectures selections are not supported")
-	}
-
-	// Replace the "+" with a "-" to make it semver-compliant
-	r.kubeVersion = util.TrimTagPrefix(r.kubeVersion)
-
-	return nil
-}
-
-func run(ro *rootOptions, buildType kubepkg.BuildType) error {
-	client := kubepkg.New()
-	builds, err := client.ConstructBuilds(
-		buildType, ro.packages, ro.channels, ro.kubeVersion, ro.revision,
-		ro.cniVersion, ro.criToolsVersion, ro.templateDir,
-	)
+func run(opts *options.Options) error {
+	client := kubepkg.New(opts)
+	builds, err := client.ConstructBuilds()
 	if err != nil {
 		return errors.Wrap(err, "running kubepkg")
 	}
-	return client.WalkBuilds(builds, ro.architectures, ro.specOnly)
+	return client.WalkBuilds(builds)
 }
