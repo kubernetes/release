@@ -303,35 +303,8 @@ func SetGCBSubstitutions(o *GcbmgrOptions, toolOrg, toolRepo, toolBranch string)
 
 	gcbSubs["GCP_USER_TAG"] = gcpUser
 
-	releaseType := o.ReleaseType
-	gcbSubs["TYPE"] = releaseType
-	gcbSubs["TYPE_TAG"] = releaseType
-
-	// TODO: The naming for these env vars is clumsy/confusing, but we're bound by anago right now.
-	switch releaseType {
-	case ReleaseTypeOfficial:
-		gcbSubs["OFFICIAL_TAG"] = releaseType
-		gcbSubs["OFFICIAL"] = fmt.Sprintf("--%s", releaseType)
-
-		// TODO: Remove once cloudbuild.yaml doesn't strictly require vars to be set.
-		gcbSubs["RC_TAG"] = ""
-		gcbSubs["RC"] = ""
-
-	case ReleaseTypeRC:
-		gcbSubs["RC_TAG"] = releaseType
-		gcbSubs["RC"] = fmt.Sprintf("--%s", releaseType)
-
-		// TODO: Remove once cloudbuild.yaml doesn't strictly require vars to be set.
-		gcbSubs["OFFICIAL_TAG"] = ""
-		gcbSubs["OFFICIAL"] = ""
-
-	case ReleaseTypeAlpha, ReleaseTypeBeta:
-		// TODO: Remove once cloudbuild.yaml doesn't strictly require vars to be set.
-		gcbSubs["OFFICIAL_TAG"] = ""
-		gcbSubs["OFFICIAL"] = ""
-		gcbSubs["RC_TAG"] = ""
-		gcbSubs["RC"] = ""
-	}
+	gcbSubs["TYPE"] = o.ReleaseType
+	gcbSubs["TYPE_TAG"] = o.ReleaseType
 
 	gcbSubs["RELEASE_BRANCH"] = o.Branch
 

@@ -50,9 +50,7 @@ steps:
   - "--prebuild"
   - "${_BUILD_AT_HEAD}"
   - "${_NOMOCK}"
-  - "${_OFFICIAL}"
   - "${_BUILDVERSION}"
-  - "${_RC}"
   - "--yes"
   - "--gcb"
   - "--basedir=/workspace"
@@ -72,9 +70,7 @@ steps:
   - "--buildonly"
   - "${_BUILD_AT_HEAD}"
   - "${_NOMOCK}"
-  - "${_OFFICIAL}"
   - "${_BUILDVERSION}"
-  - "${_RC}"
   - "--yes"
   - "--gcb"
   - "--basedir=/workspace"
@@ -95,9 +91,7 @@ steps:
   - "--stage"
   - "${_BUILD_AT_HEAD}"
   - "${_NOMOCK}"
-  - "${_OFFICIAL}"
   - "${_BUILDVERSION}"
-  - "${_RC}"
   - "--yes"
   - "--gcb"
   - "--basedir=/workspace"
@@ -109,8 +103,6 @@ tags:
 - ${_RELEASE_BRANCH}
 - ${_BUILD_POINT}
 - ${_NOMOCK_TAG}
-- ${_OFFICIAL_TAG}
-- ${_RC_TAG}
 - STAGE
 - ${_GIT_TAG}
 - ${_TYPE_TAG}

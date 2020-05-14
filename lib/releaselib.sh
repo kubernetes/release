@@ -442,14 +442,14 @@ release::set_release_version () {
       RELEASE_VERSION_PRIME+=".$((${build_version[patch]}+1))"
     fi
 
-    if ((FLAGS_official)) || [[ "$FLAGS_type" == "official" ]]; then
+    if [[ "$FLAGS_type" == official ]]; then
       RELEASE_VERSION[official]="$RELEASE_VERSION_PRIME"
       # Only primary branches get rc releases
       if [[ $branch =~ ^release-([0-9]{1,})\.([0-9]{1,})$ ]]; then
         RELEASE_VERSION[rc]="v${build_version[major]}.${build_version[minor]}"
         RELEASE_VERSION[rc]+=".$((${build_version[patch]}+1))-rc.0"
       fi
-    elif ((FLAGS_rc)) || [[ "${build_version[label]}" == "-rc" ]] || [[ "$FLAGS_type" == "rc" ]]; then
+    elif [[ "${build_version[label]}" == "-rc" ]] || [[ "$FLAGS_type" == rc ]]; then
       # betas not allowed after release candidates
       RELEASE_VERSION[rc]="$RELEASE_VERSION_PRIME"
       if [[ "${build_version[label]}" == "-rc" ]]; then

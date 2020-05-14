@@ -47,9 +47,7 @@ steps:
   - "./anago"
   - "${_RELEASE_BRANCH}"
   - "${_NOMOCK}"
-  - "${_OFFICIAL}"
   - "${_BUILDVERSION}"
-  - "${_RC}"
   - "--yes"
   - "--gcb"
   - "--basedir=/workspace"
@@ -61,8 +59,6 @@ tags:
 - ${_RELEASE_BRANCH}
 - ${_BUILD_POINT}
 - ${_NOMOCK_TAG}
-- ${_OFFICIAL_TAG}
-- ${_RC_TAG}
 - RELEASE
 - ${_GIT_TAG}
 - ${_TYPE_TAG}

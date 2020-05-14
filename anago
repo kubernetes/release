@@ -22,7 +22,8 @@ PROG=${0##*/}
 #+     $PROG - Kubernetes Release Tool
 #+
 #+ SYNOPSIS
-#+     $PROG  <branch> [--yes] [--nomock] [--rc] [--official]
+#+     $PROG  <branch> [--yes] [--nomock]
+#+            [--type=[alpha|beta|rc|official]]
 #+            [--clean] [--stage] [--github-release-draft]
 #+            [--buildversion=<jenkins build version>]
 #+            [--gcrio_path=<full gcr.io path>]
@@ -33,7 +34,6 @@ PROG=${0##*/}
 #+            [--prebuild] [--buildonly]
 #+            [--mailto=<email1>,<email2>] [--gcb]
 #+            [--tmpdir=</alt/tmp>]
-#+            [--type=[alpha|beta|rc|official]]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
@@ -42,8 +42,6 @@ PROG=${0##*/}
 #+
 #+     Driven by the named source <branch> and an optional [--type] flag, $PROG
 #+     determines what needs to be released and calculates the version.
-#+     The [--official] and [--rc] flags are both DEPRECATED in favor of the
-#+     [--type] flag.
 #+
 #+     [--buildversion=] will override the automatic check for a build version
 #+     Mostly used for testing as a way to re-use a known good build version.
@@ -114,10 +112,6 @@ PROG=${0##*/}
 #+     [--nomock]                - Complete an actual release with upstream
 #+                                 pushes
 #+     [--clean]                 - Force clean of previous session
-#+     [--rc]                    - Release candidates on release branches only
-#+                                 (Deprecated, use --type=rc instead)
-#+     [--official]              - Official releases on release branches only
-#+                                 (Deprecated, use --type=official instead)
 #+     [--buildversion=ver]      - Override Jenkins check and set a specific
 #+                                 build version
 #+     [--gcrio_path=]           - Specify the full GCR path to use.
@@ -204,17 +198,6 @@ RELEASE_BRANCH=${POSITIONAL_ARGV[0]}
 # Check branch format
 [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]] \
  || common::exit 1 "Invalid branch name!"
-
-# Check arg conflicts
-if ((FLAGS_rc)) || ((FLAGS_official)); then
-  if [[ "$RELEASE_BRANCH" == "master" ]]; then
-    common::exit 1 "Can't do release candidate or official releases on master!"
-  fi
-fi
-
-if ((FLAGS_rc)) && ((FLAGS_official)); then
-  common::exit 1 "Can't do release candidate and official release!"
-fi
 
 ###############################################################################
 # FUNCTIONS
@@ -1013,8 +996,7 @@ update_github_release () {
   sha256_hash=$(common::sha "$tarball" 256)
   sha512_hash=$(common::sha "$tarball" 512)
 
-  ((FLAGS_official)) && prerelease="false"
-  [[ "$FLAGS_type" == "official" ]] && prerelease="false"
+  [[ "$FLAGS_type" == official ]] && prerelease="false"
 
   if ((FLAGS_nomock)); then
     draft="false"
@@ -1210,7 +1192,7 @@ get_build_candidate () {
     # If the branch is a 3-part branch (ie. release-1.2.3)
     if [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]] && \
        [[ -n ${BASH_REMATCH[4]} ]]; then
-      ((FLAGS_official)) \
+      [[ "$FLAGS_type" == official ]] \
        || common::exit 1 "--official required on 3-part branches!"
 
       # The 'missing' . here between 2 and 3 is intentional. It's part of the
@@ -1224,7 +1206,7 @@ get_build_candidate () {
 
     # Not a 3-part branch
     if [[ -z "${BASH_REMATCH[4]}" ]]; then
-      if ((FLAGS_official)); then
+      if [[ "$FLAGS_type" == official ]]; then
         common::exit 1 "Can't do official releases when creating a new branch!"
       fi
 
@@ -1467,8 +1449,6 @@ push_all_artifacts () {
 ###############################################################################
 # Default mode is a mocked release workflow
 : ${FLAGS_nomock:=0}
-: ${FLAGS_rc:=0}
-: ${FLAGS_official:=0}
 : ${FLAGS_type:="alpha"}
 
 BASEDIR=${FLAGS_basedir}
@@ -1663,7 +1643,7 @@ common::printvars -p WORKDIR WORKDIR TREE_ROOT $DISPLAY_PARENT_BRANCH \
                      RELEASE_VERSION_PRIME ${ALL_RELEASE_VERSIONS[@]} \
                      RELEASE_BRANCH GCRIO_PATH RELEASE_BUCKET BUCKET_TYPE \
                      CHANGELOG_FILEPATH \
-                     FLAGS_nomock FLAGS_rc FLAGS_official FLAGS_type \
+                     FLAGS_nomock FLAGS_type \
                      LOGFILE
 
 if [[ -n "$PARENT_BRANCH" ]]; then
@@ -1784,9 +1764,7 @@ done
 # if --stage, we're done
 if ((FLAGS_stage)); then
   ((FLAGS_nomock)) && EXTRA_FLAGS+=("--nomock")
-  ((FLAGS_official)) && EXTRA_FLAGS+=("--type official")
-  ((FLAGS_rc)) && EXTRA_FLAGS+=("--type rc")
-  [[ "$FLAGS_type" == "beta" ]] && EXTRA_FLAGS+=("--type beta")
+  EXTRA_FLAGS+=("--type $FLAGS_type")
   logecho
   logecho "To release this staged build, run:"
   logecho
