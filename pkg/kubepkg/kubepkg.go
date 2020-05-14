@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	gogithub "github.com/google/go-github/v29/github"
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/kubepkg/options"
@@ -44,8 +45,8 @@ const (
 	ChannelNightly ChannelType = "nightly"
 
 	minimumKubernetesVersion = "1.13.0"
-	minimumCNIVersion        = "0.7.5"
-	pre117CNIVersion         = "0.7.5"
+	MinimumCNIVersion        = "0.7.5"
+	Pre117CNIVersion         = "0.7.5"
 
 	kubeadmConf = "10-kubeadm.conf"
 )
@@ -85,16 +86,45 @@ var (
 
 type Client struct {
 	options *options.Options
-	version *release.Version
-	github  *github.GitHub
+	impl    Impl
 }
 
 func New(o *options.Options) *Client {
 	return &Client{
 		options: o,
-		version: release.NewVersion(),
-		github:  github.New(),
+		impl:    &impl{},
 	}
+}
+
+func (c *Client) SetImpl(impl Impl) {
+	c.impl = impl
+}
+
+type impl struct{}
+
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+//counterfeiter:generate . Impl
+type Impl interface {
+	RunSuccessWithWorkDir(workDir, cmd string, args ...string) error
+	RunSuccess(workDir, cmd string, args ...string) error
+	Releases(owner, repo string, includePrereleases bool) ([]*gogithub.RepositoryRelease, error)
+	GetKubeVersion(versionType release.VersionType) (string, error)
+}
+
+func (i *impl) RunSuccessWithWorkDir(workDir, cmd string, args ...string) error {
+	return command.NewWithWorkDir(workDir, cmd, args...).RunSuccess()
+}
+
+func (i *impl) RunSuccess(workDir, cmd string, args ...string) error {
+	return command.New(cmd, args...).RunSuccess()
+}
+
+func (i *impl) Releases(owner, repo string, includePrereleases bool) ([]*gogithub.RepositoryRelease, error) {
+	return github.New().Releases(owner, repo, includePrereleases)
+}
+
+func (i *impl) GetKubeVersion(versionType release.VersionType) (string, error) {
+	return release.NewVersion().GetKubeVersion(versionType)
 }
 
 type Build struct {
@@ -250,12 +280,12 @@ func (c *Client) buildPackage(build Build, packageDef *PackageDefinition, arch, 
 		}
 	}
 
-	bc.KubernetesVersion, err = c.getKubernetesVersion(pd)
+	bc.KubernetesVersion, err = c.GetKubernetesVersion(pd)
 	if err != nil {
 		return errors.Wrap(err, "getting Kubernetes version")
 	}
 
-	bc.DownloadLinkBase, err = c.getDownloadLinkBase(pd)
+	bc.DownloadLinkBase, err = c.GetDownloadLinkBase(pd)
 	if err != nil {
 		return errors.Wrap(err, "getting Kubernetes download link base")
 	}
@@ -266,14 +296,14 @@ func (c *Client) buildPackage(build Build, packageDef *PackageDefinition, arch, 
 	// of "+" with "-", so that we build with a valid Debian package version.
 	bc.KubernetesVersion = strings.Replace(bc.KubernetesVersion, "+", "-", 1)
 
-	bc.Version, err = c.getPackageVersion(pd)
+	bc.Version, err = c.GetPackageVersion(pd)
 	if err != nil {
 		return errors.Wrap(err, "getting package version")
 	}
 
 	logrus.Infof("%s package version: %s", bc.Name, bc.Version)
 
-	bc.Dependencies, err = getDependencies(pd)
+	bc.Dependencies, err = GetDependencies(pd)
 	if err != nil {
 		return errors.Wrap(err, "getting dependencies")
 	}
@@ -282,16 +312,16 @@ func (c *Client) buildPackage(build Build, packageDef *PackageDefinition, arch, 
 
 	bc.BuildArch = getBuildArch(bc.GoArch, bc.Type)
 
-	bc.CNIDownloadLink, err = getCNIDownloadLink(pd, bc.GoArch)
+	bc.CNIDownloadLink, err = GetCNIDownloadLink(pd, bc.GoArch)
 	if err != nil {
 		return errors.Wrap(err, "getting CNI download link")
 	}
 
 	logrus.Infof("Building %s package for %s/%s architecture...", bc.Package, bc.GoArch, bc.BuildArch)
-	return bc.run()
+	return c.run(bc)
 }
 
-func (bc *buildConfig) run() error {
+func (c *Client) run(bc *buildConfig) error {
 	workspaceInfo, err := os.Stat(bc.workspace)
 	if err != nil {
 		return err
@@ -323,7 +353,7 @@ func (bc *buildConfig) run() error {
 	case options.BuildDeb:
 		logrus.Infof("Running dpkg-buildpackage for %s (%s/%s)", bc.Package, bc.GoArch, bc.BuildArch)
 
-		dpkgErr := command.NewWithWorkDir(
+		if err := c.impl.RunSuccessWithWorkDir(
 			specDirWithArch,
 			"dpkg-buildpackage",
 			"--unsigned-source",
@@ -331,23 +361,22 @@ func (bc *buildConfig) run() error {
 			"--build=binary",
 			"--host-arch",
 			bc.BuildArch,
-		).RunSuccess()
-
-		if dpkgErr != nil {
-			return dpkgErr
+		); err != nil {
+			return errors.Wrap(err, "running debian package build")
 		}
 
 		fileName := fmt.Sprintf("%s_%s-%s_%s.deb", bc.Package, bc.Version, bc.Revision, bc.BuildArch)
 		dstParts := []string{"bin", string(bc.Channel), fileName}
 
 		dstPath := filepath.Join(dstParts...)
-		if mkdirErr := os.MkdirAll(dstPath, os.FileMode(0777)); mkdirErr != nil {
-			return mkdirErr
+		if err := os.MkdirAll(dstPath, os.FileMode(0777)); err != nil {
+			return err
 		}
 
-		mvErr := command.New("mv", filepath.Join(specDir, fileName), dstPath).RunSuccess()
-		if mvErr != nil {
-			return mvErr
+		if err := c.impl.RunSuccess(
+			"mv", filepath.Join(specDir, fileName), dstPath,
+		); err != nil {
+			return err
 		}
 
 		logrus.Infof("Successfully built %s", dstPath)
@@ -358,7 +387,7 @@ func (bc *buildConfig) run() error {
 	return nil
 }
 
-func (c *Client) getPackageVersion(packageDef *PackageDefinition) (string, error) {
+func (c *Client) GetPackageVersion(packageDef *PackageDefinition) (string, error) {
 	if packageDef == nil {
 		return "", errors.New("package definition cannot be nil")
 	}
@@ -366,9 +395,9 @@ func (c *Client) getPackageVersion(packageDef *PackageDefinition) (string, error
 	logrus.Infof("Setting version for %s package...", packageDef.Name)
 	switch packageDef.Name {
 	case "kubernetes-cni":
-		return getCNIVersion(packageDef)
+		return GetCNIVersion(packageDef)
 	case "cri-tools":
-		return c.getCRIToolsVersion(packageDef)
+		return c.GetCRIToolsVersion(packageDef)
 	}
 
 	logrus.Infof(
@@ -378,7 +407,7 @@ func (c *Client) getPackageVersion(packageDef *PackageDefinition) (string, error
 	return util.TrimTagPrefix(packageDef.KubernetesVersion), nil
 }
 
-func (c *Client) getKubernetesVersion(packageDef *PackageDefinition) (string, error) {
+func (c *Client) GetKubernetesVersion(packageDef *PackageDefinition) (string, error) {
 	if packageDef == nil {
 		return "", errors.New("package definition cannot be nil")
 	}
@@ -389,15 +418,15 @@ func (c *Client) getKubernetesVersion(packageDef *PackageDefinition) (string, er
 	}
 	switch packageDef.Channel {
 	case ChannelTesting:
-		return c.version.GetKubeVersion(release.VersionTypeStablePreRelease)
+		return c.impl.GetKubeVersion(release.VersionTypeStablePreRelease)
 	case ChannelNightly:
-		return c.version.GetKubeVersion(release.VersionTypeCILatest)
+		return c.impl.GetKubeVersion(release.VersionTypeCILatest)
 	}
 
-	return c.version.GetKubeVersion(release.VersionTypeStable)
+	return c.impl.GetKubeVersion(release.VersionTypeStable)
 }
 
-func getCNIVersion(packageDef *PackageDefinition) (string, error) {
+func GetCNIVersion(packageDef *PackageDefinition) (string, error) {
 	if packageDef == nil {
 		return "", errors.New("package definition cannot be nil")
 	}
@@ -416,20 +445,20 @@ func getCNIVersion(packageDef *PackageDefinition) (string, error) {
 
 	if packageDef.Version != "" {
 		if kubeSemver.LT(v117) {
-			logrus.Infof("Kubernetes version earlier than 1.17 must use CNI version <= %s", pre117CNIVersion)
-			logrus.Infof("Setting CNI version to %s", pre117CNIVersion)
-			return pre117CNIVersion, nil
+			logrus.Infof("Kubernetes version earlier than 1.17 must use CNI version <= %s", Pre117CNIVersion)
+			logrus.Infof("Setting CNI version to %s", Pre117CNIVersion)
+			return Pre117CNIVersion, nil
 		}
 
 		logrus.Infof("Setting CNI version to %s", packageDef.Version)
 		return packageDef.Version, nil
 	}
 
-	logrus.Infof("Setting CNI version to %s", minimumCNIVersion)
-	return minimumCNIVersion, nil
+	logrus.Infof("Setting CNI version to %s", MinimumCNIVersion)
+	return MinimumCNIVersion, nil
 }
 
-func (c *Client) getCRIToolsVersion(packageDef *PackageDefinition) (string, error) {
+func (c *Client) GetCRIToolsVersion(packageDef *PackageDefinition) (string, error) {
 	if packageDef == nil {
 		return "", errors.New("package definition cannot be nil")
 	}
@@ -470,7 +499,7 @@ func (c *Client) getCRIToolsVersion(packageDef *PackageDefinition) (string, erro
 
 	criToolsVersion := fmt.Sprintf("%s.%s.0", criToolsMajor, criToolsMinor)
 
-	releases, err := c.github.Releases("kubernetes-sigs", "cri-tools", false)
+	releases, err := c.impl.Releases("kubernetes-sigs", "cri-tools", false)
 	if err != nil {
 		return "", err
 	}
@@ -506,19 +535,19 @@ func (c *Client) getCRIToolsVersion(packageDef *PackageDefinition) (string, erro
 	return criToolsVersion, nil
 }
 
-func (c *Client) getDownloadLinkBase(packageDef *PackageDefinition) (string, error) {
+func (c *Client) GetDownloadLinkBase(packageDef *PackageDefinition) (string, error) {
 	if packageDef == nil {
 		return "", errors.New("package definition cannot be nil")
 	}
 
 	if packageDef.Channel == ChannelNightly {
-		return c.getCIBuildsDownloadLinkBase(packageDef)
+		return c.GetCIBuildsDownloadLinkBase(packageDef)
 	}
 
-	return getDefaultReleaseDownloadLinkBase(packageDef)
+	return GetDefaultReleaseDownloadLinkBase(packageDef)
 }
 
-func (c *Client) getCIBuildsDownloadLinkBase(packageDef *PackageDefinition) (string, error) {
+func (c *Client) GetCIBuildsDownloadLinkBase(packageDef *PackageDefinition) (string, error) {
 	if packageDef == nil {
 		return "", errors.New("package definition cannot be nil")
 	}
@@ -526,7 +555,7 @@ func (c *Client) getCIBuildsDownloadLinkBase(packageDef *PackageDefinition) (str
 	ciVersion := packageDef.KubernetesVersion
 	if ciVersion == "" {
 		var err error
-		ciVersion, err = c.version.GetKubeVersion(release.VersionTypeCILatest)
+		ciVersion, err = c.impl.GetKubeVersion(release.VersionTypeCILatest)
 		if err != nil {
 			return "", err
 		}
@@ -535,7 +564,7 @@ func (c *Client) getCIBuildsDownloadLinkBase(packageDef *PackageDefinition) (str
 	return fmt.Sprintf("https://dl.k8s.io/ci/%s", util.AddTagPrefix(ciVersion)), nil
 }
 
-func getDefaultReleaseDownloadLinkBase(packageDef *PackageDefinition) (string, error) {
+func GetDefaultReleaseDownloadLinkBase(packageDef *PackageDefinition) (string, error) {
 	if packageDef == nil {
 		return "", errors.New("package definition cannot be nil")
 	}
@@ -547,7 +576,7 @@ func getDefaultReleaseDownloadLinkBase(packageDef *PackageDefinition) (string, e
 	), nil
 }
 
-func getDependencies(packageDef *PackageDefinition) (map[string]string, error) {
+func GetDependencies(packageDef *PackageDefinition) (map[string]string, error) {
 	if packageDef == nil {
 		return nil, errors.New("package definition cannot be nil")
 	}
@@ -556,11 +585,11 @@ func getDependencies(packageDef *PackageDefinition) (map[string]string, error) {
 
 	switch packageDef.Name {
 	case "kubelet":
-		deps["kubernetes-cni"] = minimumCNIVersion
+		deps["kubernetes-cni"] = MinimumCNIVersion
 	case "kubeadm":
 		deps["kubelet"] = minimumKubernetesVersion
 		deps["kubectl"] = minimumKubernetesVersion
-		deps["kubernetes-cni"] = minimumCNIVersion
+		deps["kubernetes-cni"] = MinimumCNIVersion
 		deps["cri-tools"] = minimumCRIToolsVersion
 	}
 
@@ -571,7 +600,7 @@ func getBuildArch(goArch string, buildType options.BuildType) string {
 	return buildArchMap[goArch][buildType]
 }
 
-func getCNIDownloadLink(packageDef *PackageDefinition, arch string) (string, error) {
+func GetCNIDownloadLink(packageDef *PackageDefinition, arch string) (string, error) {
 	if packageDef == nil {
 		return "", errors.New("package definition cannot be nil")
 	}
@@ -581,7 +610,7 @@ func getCNIDownloadLink(packageDef *PackageDefinition, arch string) (string, err
 		return "", err
 	}
 
-	v075, err := semver.Make(pre117CNIVersion)
+	v075, err := semver.Make(Pre117CNIVersion)
 	if err != nil {
 		return "", err
 	}
