@@ -158,11 +158,11 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		expected   map[string]string
 	}{
 		{
-			name: "master prerelease - stage",
+			name: "master alpha - stage",
 			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Stage:       true,
 				Branch:      "master",
-				ReleaseType: "prerelease",
+				ReleaseType: cmd.ReleaseTypeAlpha,
 				GcpUser:     "test-user",
 				Repo:        mockRepo(),
 				Version:     mockVersion(),
@@ -177,14 +177,16 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"TOOL_ORG":       "",
 				"TOOL_REPO":      "",
 				"TOOL_BRANCH":    "",
+				"TYPE":           cmd.ReleaseTypeAlpha,
+				"TYPE_TAG":       cmd.ReleaseTypeAlpha,
 			},
 		},
 		{
-			name: "master prerelease - release",
+			name: "master beta - release",
 			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Release:      true,
 				Branch:       "master",
-				ReleaseType:  "prerelease",
+				ReleaseType:  cmd.ReleaseTypeBeta,
 				BuildVersion: "v1.33.7",
 				GcpUser:      "test-user",
 				Repo:         mockRepo(),
@@ -199,6 +201,8 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"TOOL_ORG":       "",
 				"TOOL_REPO":      "",
 				"TOOL_BRANCH":    "",
+				"TYPE":           cmd.ReleaseTypeBeta,
+				"TYPE_TAG":       cmd.ReleaseTypeBeta,
 			},
 		},
 		{
@@ -206,7 +210,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Stage:       true,
 				Branch:      "release-1.15",
-				ReleaseType: "rc",
+				ReleaseType: cmd.ReleaseTypeRC,
 				GcpUser:     "test-user",
 				Repo:        mockRepo(),
 				Version:     mockVersion(),
@@ -221,6 +225,8 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"TOOL_ORG":       "",
 				"TOOL_REPO":      "",
 				"TOOL_BRANCH":    "",
+				"TYPE":           cmd.ReleaseTypeRC,
+				"TYPE_TAG":       cmd.ReleaseTypeRC,
 			},
 		},
 		{
@@ -228,7 +234,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Stage:       true,
 				Branch:      "release-1.15",
-				ReleaseType: "official",
+				ReleaseType: cmd.ReleaseTypeOfficial,
 				GcpUser:     "test-user",
 				Repo:        mockRepo(),
 				Version:     mockVersion(),
@@ -243,6 +249,8 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"TOOL_ORG":       "",
 				"TOOL_REPO":      "",
 				"TOOL_BRANCH":    "",
+				"TYPE":           cmd.ReleaseTypeOfficial,
+				"TYPE_TAG":       cmd.ReleaseTypeOfficial,
 			},
 		},
 		{
@@ -250,7 +258,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Stage:       true,
 				Branch:      "release-1.16",
-				ReleaseType: "official",
+				ReleaseType: cmd.ReleaseTypeOfficial,
 				GcpUser:     "test-user",
 				Repo:        mockRepo(),
 				Version:     mockVersion(),
@@ -268,6 +276,8 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"TOOL_ORG":       "honk",
 				"TOOL_REPO":      "best-tools",
 				"TOOL_BRANCH":    "tool-branch",
+				"TYPE":           cmd.ReleaseTypeOfficial,
+				"TYPE_TAG":       cmd.ReleaseTypeOfficial,
 			},
 		},
 	}

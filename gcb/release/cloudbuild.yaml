@@ -54,6 +54,7 @@ steps:
   - "--gcb"
   - "--basedir=/workspace"
   - "--tmpdir=/workspace/tmp"
+  - "--type=${_TYPE}"
 
 tags:
 - ${_GCP_USER_TAG}
@@ -64,6 +65,7 @@ tags:
 - ${_RC_TAG}
 - RELEASE
 - ${_GIT_TAG}
+- ${_TYPE_TAG}
 
 options:
   machineType: N1_HIGHCPU_32

@@ -392,8 +392,8 @@ release::set_release_version () {
   release_branch[major]=${BASH_REMATCH[1]}
   release_branch[minor]=${BASH_REMATCH[2]}
 
-  # if branch == master, version is an alpha
-  # if branch == release, version is a beta
+  # if branch == master, version is an alpha or beta
+  # if branch == release, version is a rc
   # if branch == release+1, version is an alpha
   if ! [[ $version =~ ${VER_REGEX[release]} ]]; then
     logecho "Invalid version format! $version"
@@ -418,19 +418,19 @@ release::set_release_version () {
     RELEASE_VERSION[beta]+=".0-beta.0"
     RELEASE_VERSION_PRIME=${RELEASE_VERSION[beta]}
   elif [[ "$parent_branch" =~ release- ]]; then
-    # When we do branched branches we end up with two betas so deal with it
-    # by creating a couple of beta indexes.
-    # beta0 is the branch-point-minor + 1 + beta.1 because
-    # branch-point-minor +1 +beta.0 already exists. This tag lands on the new
+    # When we do branched branches we end up with two rcs so deal with it
+    # by creating a couple of rc indexes.
+    # rc0 is the branch-point-minor + 1 + rc.1 because
+    # branch-point-minor +1 +rc.0 already exists. This tag lands on the new
     # branch.
-    # beta1 is the branch-point-minor + 2 + beta.0 to continue the next version
+    # rc1 is the branch-point-minor + 2 + rc.0 to continue the next version
     # on the parent/source branch.
-    RELEASE_VERSION[beta0]="v${build_version[major]}.${build_version[minor]}"
-    RELEASE_VERSION[beta0]+=".$((${build_version[patch]}+1))-beta.1"
-    RELEASE_VERSION[beta1]="v${build_version[major]}.${build_version[minor]}"
-    # Need to increment N+2 here.  N+1-beta.0 exists as an artifact of N.
-    RELEASE_VERSION[beta1]+=".$((${build_version[patch]}+2))-beta.0"
-    RELEASE_VERSION_PRIME="${RELEASE_VERSION[beta0]}"
+    RELEASE_VERSION[rc0]="v${build_version[major]}.${build_version[minor]}"
+    RELEASE_VERSION[rc0]+=".$((${build_version[patch]}+1))-rc.1"
+    RELEASE_VERSION[rc1]="v${build_version[major]}.${build_version[minor]}"
+    # Need to increment N+2 here.  N+1-rc.0 exists as an artifact of N.
+    RELEASE_VERSION[rc1]+=".$((${build_version[patch]}+2))-rc.0"
+    RELEASE_VERSION_PRIME="${RELEASE_VERSION[rc0]}"
   elif [[ $branch =~ release- ]]; then
     # Build out the RELEASE_VERSION dict
     RELEASE_VERSION_PRIME="v${build_version[major]}.${build_version[minor]}"
@@ -442,14 +442,14 @@ release::set_release_version () {
       RELEASE_VERSION_PRIME+=".$((${build_version[patch]}+1))"
     fi
 
-    if ((FLAGS_official)); then
+    if ((FLAGS_official)) || [[ "$FLAGS_type" == "official" ]]; then
       RELEASE_VERSION[official]="$RELEASE_VERSION_PRIME"
-      # Only primary branches get beta releases
+      # Only primary branches get rc releases
       if [[ $branch =~ ^release-([0-9]{1,})\.([0-9]{1,})$ ]]; then
-        RELEASE_VERSION[beta]="v${build_version[major]}.${build_version[minor]}"
-        RELEASE_VERSION[beta]+=".$((${build_version[patch]}+1))-beta.0"
+        RELEASE_VERSION[rc]="v${build_version[major]}.${build_version[minor]}"
+        RELEASE_VERSION[rc]+=".$((${build_version[patch]}+1))-rc.0"
       fi
-    elif ((FLAGS_rc)) || [[ "${build_version[label]}" == "-rc" ]]; then
+    elif ((FLAGS_rc)) || [[ "${build_version[label]}" == "-rc" ]] || [[ "$FLAGS_type" == "rc" ]]; then
       # betas not allowed after release candidates
       RELEASE_VERSION[rc]="$RELEASE_VERSION_PRIME"
       if [[ "${build_version[label]}" == "-rc" ]]; then
@@ -459,11 +459,12 @@ release::set_release_version () {
         RELEASE_VERSION[rc]+="-rc.1"
       fi
       RELEASE_VERSION_PRIME="${RELEASE_VERSION[rc]}"
-    else
-      RELEASE_VERSION[beta]="$RELEASE_VERSION_PRIME${build_version[label]}"
-      RELEASE_VERSION[beta]+=".$((${build_version[labelid]}+1))"
-      RELEASE_VERSION_PRIME="${RELEASE_VERSION[beta]}"
     fi
+  elif [[ "$FLAGS_type" == "beta" ]]; then
+    RELEASE_VERSION[beta]="v${build_version[major]}.${build_version[minor]}"
+    RELEASE_VERSION[beta]+=".${build_version[patch]}${build_version[label]}"
+    RELEASE_VERSION[beta]+=".$((${build_version[labelid]}+1))"
+    RELEASE_VERSION_PRIME="${RELEASE_VERSION[beta]}"
   else
     RELEASE_VERSION[alpha]="v${build_version[major]}.${build_version[minor]}"
     RELEASE_VERSION[alpha]+=".${build_version[patch]}${build_version[label]}"

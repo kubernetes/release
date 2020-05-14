@@ -33,15 +33,17 @@ PROG=${0##*/}
 #+            [--prebuild] [--buildonly]
 #+            [--mailto=<email1>,<email2>] [--gcb]
 #+            [--tmpdir=</alt/tmp>]
+#+            [--type=[alpha|beta|rc|official]]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
 #+ DESCRIPTION
 #+     $PROG produces Kubernetes releases.
 #+
-#+     Driven by the named source <branch> and an optional [--rc] or
-#+     [--official] flag, $PROG determines what needs to be released
-#+     and calculates the version.
+#+     Driven by the named source <branch> and an optional [--type] flag, $PROG
+#+     determines what needs to be released and calculates the version.
+#+     The [--official] and [--rc] flags are both DEPRECATED in favor of the
+#+     [--type] flag.
 #+
 #+     [--buildversion=] will override the automatic check for a build version
 #+     Mostly used for testing as a way to re-use a known good build version.
@@ -74,20 +76,19 @@ PROG=${0##*/}
 #+
 #+     Simply specify the <branch> you want to release from and follow the
 #+     prompts.  <branch> is one of master, release-1.2, etc. and the release
-#+     is based on the <branch> value and the [--official] flag:
+#+     is based on the <branch> value and the [--type] flag:
 #+
 #+     WARNING: --build-at-head bypasses any test analysis and builds directly
 #+     at the HEAD Of the named branch.  Mostly for testing.
 #+
 #+     Branch     RC  Official    Type
 #+     ------     --  --------    ----
-#+     master                     alpha
-#+     master                     alpha
+#+     master                     alpha             if --type=alpha
+#+     master                     beta              if --type=beta
 #+     master     X               N/A
 #+     master            X        N/A
-#+     release-*                  beta
-#+     release-*  X               release candidate
-#+     release-*         X        official
+#+     release-*  X               release candidate if --type=rc
+#+     release-*         X        official          if --type=official
 #+
 #+     NOTE: <branch> can exist already or not.  If the branch doesn't exist,
 #+           it will be branched from master as part of the run.
@@ -114,7 +115,9 @@ PROG=${0##*/}
 #+                                 pushes
 #+     [--clean]                 - Force clean of previous session
 #+     [--rc]                    - Release candidates on release branches only
+#+                                 (Deprecated, use --type=rc instead)
 #+     [--official]              - Official releases on release branches only
+#+                                 (Deprecated, use --type=official instead)
 #+     [--buildversion=ver]      - Override Jenkins check and set a specific
 #+                                 build version
 #+     [--gcrio_path=]           - Specify the full GCR path to use.
@@ -144,6 +147,8 @@ PROG=${0##*/}
 #+                                 to allow switch to build container
 #+     [--buildonly]             - Used during GCB to halt after building
 #+                                 to allow switch to release container
+#+     [--type]                  - The release type to be built, must be one of:
+#+                                 'alpha', 'beta', 'rc' or 'official'
 #+     [--help | -man]           - display man page for this script
 #+     [--usage | -?]            - display in-line usage
 #+
@@ -151,11 +156,11 @@ PROG=${0##*/}
 #+     $PROG --yes master        - Do a mock alpha release from master
 #+                                 and don't stop/prompt
 #+     $PROG release-1.1         - Do a mock beta release from release-1.1
-#+     $PROG --rc release-1.1
+#+     $PROG --type=rc release-1.1
 #+                               - Do a mock release candidate from release-1.1
-#+     $PROG --official release-1.1
+#+     $PROG --type=official release-1.1
 #+                               - Do a mock official release from release-1.1
-#+     $PROG --nomock --official release-1.1
+#+     $PROG --nomock --type=official release-1.1
 #+                               - Do an official release from release-1.1
 #+     $PROG release-1.8 --stage --build-at-head
 #+                               - Stage a HEAD build locally and on GCS
@@ -488,7 +493,7 @@ checkout_object () {
       tree_object=$PARENT_BRANCH
     fi
   else
-    [[ $label == "alpha" ]] && tree_object="$commit"
+    [[ $label == "alpha" || $label == "beta" ]] && tree_object="$commit"
   fi
 
   # The above code determines what and how we should check out and where we
@@ -603,8 +608,8 @@ prepare_tree () {
   # tag. This causes the next anago run against 'master' to fail due to an old
   # build version.
   #
-  # Example: 'v1.18.0-alpha.2.663+df908c3aad70be' 
-  #          (should instead be 'v1.18.0-alpha.3.<commits-since-tag>+<commit-ish>') 
+  # Example: 'v1.18.0-alpha.2.663+df908c3aad70be'
+  #          (should instead be 'v1.18.0-alpha.3.<commits-since-tag>+<commit-ish>')
   #
   # ref:
   #   - https://github.com/kubernetes/release/issues/1020
@@ -838,10 +843,10 @@ copy_staged_from_gcs () {
 # Push git objects to github
 # NOTES:
 # * alpha is alone, pushes tags only
-# * beta is alone, pushes branch and tags
+# * beta is alone, pushes tags only
 # * rc is alone, pushes branch and tags
 # * official pushes both official and beta items - branch and tags
-# * New branch tags a new alpha on master, new beta on new branch and pushes
+# * New branch tags a new alpha or beta on master and pushes
 #   new branch and tags on both
 PROGSTEP[push_git_objects]="PUSH GIT OBJECTS"
 push_git_objects () {
@@ -1009,6 +1014,8 @@ update_github_release () {
   sha512_hash=$(common::sha "$tarball" 512)
 
   ((FLAGS_official)) && prerelease="false"
+  [[ "$FLAGS_type" == "official" ]] && prerelease="false"
+
   if ((FLAGS_nomock)); then
     draft="false"
 
@@ -1462,6 +1469,7 @@ push_all_artifacts () {
 : ${FLAGS_nomock:=0}
 : ${FLAGS_rc:=0}
 : ${FLAGS_official:=0}
+: ${FLAGS_type:="alpha"}
 
 BASEDIR=${FLAGS_basedir}
 if [[ -z "${BASEDIR}" ]]; then
@@ -1655,7 +1663,7 @@ common::printvars -p WORKDIR WORKDIR TREE_ROOT $DISPLAY_PARENT_BRANCH \
                      RELEASE_VERSION_PRIME ${ALL_RELEASE_VERSIONS[@]} \
                      RELEASE_BRANCH GCRIO_PATH RELEASE_BUCKET BUCKET_TYPE \
                      CHANGELOG_FILEPATH \
-                     FLAGS_nomock FLAGS_rc FLAGS_official \
+                     FLAGS_nomock FLAGS_rc FLAGS_official FLAGS_type \
                      LOGFILE
 
 if [[ -n "$PARENT_BRANCH" ]]; then
@@ -1778,6 +1786,7 @@ if ((FLAGS_stage)); then
   ((FLAGS_nomock)) && EXTRA_FLAGS+=("--nomock")
   ((FLAGS_official)) && EXTRA_FLAGS+=("--type official")
   ((FLAGS_rc)) && EXTRA_FLAGS+=("--type rc")
+  [[ "$FLAGS_type" == "beta" ]] && EXTRA_FLAGS+=("--type beta")
   logecho
   logecho "To release this staged build, run:"
   logecho

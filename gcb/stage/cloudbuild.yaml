@@ -57,6 +57,7 @@ steps:
   - "--gcb"
   - "--basedir=/workspace"
   - "--tmpdir=/workspace/tmp"
+  - "--type=${_TYPE}"
 
 - name: us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:local
   dir: "go/src/k8s.io/release"
@@ -78,6 +79,7 @@ steps:
   - "--gcb"
   - "--basedir=/workspace"
   - "--tmpdir=/workspace/tmp"
+  - "--type=${_TYPE}"
 
 - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
   dir: "go/src/k8s.io/release"
@@ -100,6 +102,7 @@ steps:
   - "--gcb"
   - "--basedir=/workspace"
   - "--tmpdir=/workspace/tmp"
+  - "--type=${_TYPE}"
 
 tags:
 - ${_GCP_USER_TAG}
@@ -110,6 +113,7 @@ tags:
 - ${_RC_TAG}
 - STAGE
 - ${_GIT_TAG}
+- ${_TYPE_TAG}
 
 options:
   machineType: N1_HIGHCPU_32
