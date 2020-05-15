@@ -40,7 +40,7 @@ PROG=${0##*/}
 #+ DESCRIPTION
 #+     $PROG produces Kubernetes releases.
 #+
-#+     Driven by the named source <branch> and an optional [--type] flag, $PROG
+#+     Driven by the named source <branch> and an [--type] flag, $PROG
 #+     determines what needs to be released and calculates the version.
 #+
 #+     [--buildversion=] will override the automatic check for a build version
@@ -191,6 +191,10 @@ common::validate_command_line "$ORIG_CMDLINE" || common::exit 1 "Exiting..."
 
 # Validate command-line
 common::argc_validate 1 || common::exit 1 "Exiting..."
+
+if [[ ! $FLAGS_type =~ ^(alpha|beta|rc|official)$ ]]; then
+    common::exit 1 "--type must be either 'alpha', 'beta', 'rc' or 'official'"
+fi
 
 # Set positional args
 RELEASE_BRANCH=${POSITIONAL_ARGV[0]}
@@ -828,8 +832,8 @@ copy_staged_from_gcs () {
 # * alpha is alone, pushes tags only
 # * beta is alone, pushes tags only
 # * rc is alone, pushes branch and tags
-# * official pushes both official and beta items - branch and tags
-# * New branch tags a new alpha or beta on master and pushes
+# * official pushes both official and RC items - branch and tags
+# * New branch tags a new alpha on master, new RC on new branch and pushes
 #   new branch and tags on both
 PROGSTEP[push_git_objects]="PUSH GIT OBJECTS"
 push_git_objects () {
