@@ -2055,8 +2055,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/saschagrunert/go-modiff",
-        sum = "h1:aflhqbK3VOm/FYzQ9Vfz/nxXmSeT9EhooNOotJykfNE=",
-        version = "v1.0.3",
+        sum = "h1:p4CshQrtXNs0Z+AIjlWTa2tv+u+cJxCXYmGiKgjKrZw=",
+        version = "v1.1.0",
     )
     go_repository(
         name = "com_github_urfave_cli_v2",

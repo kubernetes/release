@@ -24,7 +24,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/notes/notesfakes"
 )
 
 func (s *sut) getChangelogOptions(tag string) *changelogOptions {
@@ -44,7 +46,7 @@ func fileContains(t *testing.T, file, contains string) {
 }
 
 func TestChangelogNoArgumentsOrFlags(t *testing.T) {
-	err := runChangelog(changelogOpts, rootOpts)
+	err := newChangelog().run(changelogOpts, rootOpts)
 	require.NotNil(t, err)
 }
 
@@ -59,9 +61,14 @@ func TestNewPatchRelease(t *testing.T) { // nolint: dupl
 	releaseBranch := "release-1.16"
 	co := s.getChangelogOptions("v1.16.3")
 	co.branch = releaseBranch
+	co.dependencies = true
 
 	// When
-	require.Nil(t, runChangelog(co, ro))
+	cl := newChangelog()
+	mock := &notesfakes.FakeMoDiff{}
+	mock.RunReturns(patchReleaseDeps, nil)
+	cl.dependencies.SetMoDiff(mock)
+	require.Nil(t, cl.run(co, ro))
 
 	// Then
 	// Verify local results
@@ -89,6 +96,7 @@ func TestNewPatchRelease(t *testing.T) { // nolint: dupl
 		require.Nil(t, err)
 		require.Contains(t, string(changelog), patchReleaseExpectedTOC)
 		require.Contains(t, string(changelog), patchReleaseExpectedContent)
+		require.Contains(t, string(changelog), patchReleaseDeps)
 	}
 }
 
@@ -99,8 +107,10 @@ func TestNewAlphaRelease(t *testing.T) {
 	ro := s.getRootOptions()
 	ro.nomock = true
 
+	co := s.getChangelogOptions("v1.18.0-alpha.3")
+
 	// When
-	require.Nil(t, runChangelog(s.getChangelogOptions("v1.18.0-alpha.3"), ro))
+	require.Nil(t, newChangelog().run(co, ro))
 
 	// Then
 	// Verify local results
@@ -135,7 +145,7 @@ func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 	co.branch = releaseBranch
 
 	// When
-	require.Nil(t, runChangelog(co, ro))
+	require.Nil(t, newChangelog().run(co, ro))
 
 	// Then
 	// Verify local results
@@ -202,7 +212,7 @@ func TestNewRCRelease(t *testing.T) {
 	require.Nil(t, s.repo.Checkout(git.Master))
 
 	// When
-	require.Nil(t, runChangelog(co, ro))
+	require.Nil(t, newChangelog().run(co, ro))
 
 	// Then
 	// Verify local results

@@ -17,7 +17,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/pkg/errors v0.9.1
 	github.com/psampaz/go-mod-outdated v0.5.0
-	github.com/saschagrunert/go-modiff v1.0.3
+	github.com/saschagrunert/go-modiff v1.1.0
 	github.com/sendgrid/rest v2.4.1+incompatible
 	github.com/sendgrid/sendgrid-go v3.5.0+incompatible
 	github.com/sirupsen/logrus v1.6.0

@@ -26,9 +26,9 @@ import (
 	"k8s.io/release/pkg/notes/notesfakes"
 )
 
-const expected = `# Dependencies
+const expected = `## Dependencies
 
-## Added
+### Added
 - github.com/ajstarks/svgo: [644b8db](https://github.com/ajstarks/svgo/tree/644b8db)
 - github.com/census-instrumentation/opencensus-proto: [v0.2.1](https://github.com/census-instrumentation/opencensus-proto/tree/v0.2.1)
 - github.com/cilium/ebpf: [95b36a5](https://github.com/cilium/ebpf/tree/95b36a5)
@@ -42,7 +42,7 @@ const expected = `# Dependencies
 - sigs.k8s.io/apiserver-network-proxy/konnectivity-client: v0.0.7
 - sigs.k8s.io/structured-merge-diff/v3: v3.0.0
 
-## Changed
+### Changed
 - github.com/Microsoft/go-winio: [v0.4.11 → v0.4.14](https://github.com/Microsoft/go-winio/compare/v0.4.11...v0.4.14)
 - github.com/aws/aws-sdk-go: [v1.16.26 → v1.28.2](https://github.com/aws/aws-sdk-go/compare/v1.16.26...v1.28.2)
 - github.com/checkpoint-restore/go-criu: [bdb7599 → 17b0214](https://github.com/checkpoint-restore/go-criu/compare/bdb7599...17b0214)
@@ -68,7 +68,7 @@ const expected = `# Dependencies
 - k8s.io/utils: e782cd3 → a9aa75a
 - sigs.k8s.io/yaml: v1.1.0 → v1.2.0
 
-## Removed
+### Removed
 - sigs.k8s.io/structured-merge-diff: b1b620d
 `
 

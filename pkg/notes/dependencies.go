@@ -55,7 +55,7 @@ func (d *Dependencies) SetMoDiff(moDiff MoDiff) {
 func (d *Dependencies) Changes(from, to string) (string, error) {
 	config := modiff.NewConfig(
 		strings.TrimPrefix(git.GetDefaultKubernetesRepoURL(), "https://"),
-		from, to, true,
+		from, to, true, 2,
 	)
 
 	res, err := d.moDiff.Run(config)
