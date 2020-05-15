@@ -77,23 +77,25 @@ the golang based 'release-notes' tool:
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runChangelog(changelogOpts, rootOpts)
+		return newChangelog().run(changelogOpts, rootOpts)
 	},
 }
 
 type changelogOptions struct {
-	tag       string
-	branch    string
-	bucket    string
-	tars      string
-	htmlFile  string
-	recordDir string
-	replayDir string
+	tag          string
+	branch       string
+	bucket       string
+	tars         string
+	htmlFile     string
+	recordDir    string
+	replayDir    string
+	dependencies bool
 }
 
 var changelogOpts = &changelogOptions{}
 
 const (
+	nl                   = "\n"
 	tocStart             = "<!-- BEGIN MUNGE: GENERATED_TOC -->"
 	tocEnd               = "<!-- END MUNGE: GENERATED_TOC -->"
 	repoChangelogDir     = "CHANGELOG"
@@ -180,6 +182,16 @@ filename | sha512 hash
 </html>`
 )
 
+type Changelog struct {
+	dependencies *notes.Dependencies
+}
+
+func newChangelog() *Changelog {
+	return &Changelog{
+		dependencies: notes.NewDependencies(),
+	}
+}
+
 func init() {
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.bucket, "bucket", "kubernetes-release", "Specify gs bucket to point to in generated notes")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.tag, "tag", "", "The version tag of the release, for example v1.17.0-rc.1")
@@ -188,6 +200,7 @@ func init() {
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.htmlFile, "html-file", "", "The target html file to be written. If empty, then it will be CHANGELOG-x.y.html in the current path.")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.recordDir, "record", "", "Record the API into a directory")
 	changelogCmd.PersistentFlags().StringVar(&changelogOpts.replayDir, "replay", "", "Replay a previously recorded API from a directory")
+	changelogCmd.PersistentFlags().BoolVar(&changelogOpts.dependencies, "dependencies", true, "Add dependency report")
 
 	if err := changelogCmd.MarkPersistentFlagRequired("tag"); err != nil {
 		logrus.Fatalf("unable to %v", err)
@@ -196,7 +209,7 @@ func init() {
 	rootCmd.AddCommand(changelogCmd)
 }
 
-func runChangelog(opts *changelogOptions, rootOpts *rootOptions) error {
+func (c *Changelog) run(opts *changelogOptions, rootOpts *rootOptions) error {
 	tag, err := util.TagStringToSemver(opts.tag)
 	if err != nil {
 		return errors.Wrapf(err, "parse tag %s", opts.tag)
@@ -227,16 +240,20 @@ func runChangelog(opts *changelogOptions, rootOpts *rootOptions) error {
 	}
 	logrus.Infof("Found latest %s commit %s", remoteBranch, head)
 
-	var markdown string
+	var markdown, startRev, endRev string
 	if tag.Patch == 0 {
 		if len(tag.Pre) == 0 {
 			// Still create the downloads table
 			downloadsTable := &bytes.Buffer{}
-			previousTag := util.SemverToTagString(semver.Version{
+			startTag := util.SemverToTagString(semver.Version{
 				Major: tag.Major, Minor: tag.Minor - 1, Patch: 0,
 			})
+
+			startRev = startTag
+			endRev = opts.tag
+
 			if err := document.CreateDownloadsTable(
-				downloadsTable, opts.bucket, opts.tars, previousTag, opts.tag,
+				downloadsTable, opts.bucket, opts.tars, startRev, endRev,
 			); err != nil {
 				return errors.Wrapf(err, "create downloads table")
 			}
@@ -245,7 +262,7 @@ func runChangelog(opts *changelogOptions, rootOpts *rootOptions) error {
 			markdown, err = lookupRemoteReleaseNotes(branch)
 			markdown = downloadsTable.String() + markdown
 		} else {
-			// New minor alphas, betas and rc get generated notes
+			// New minor alpha, beta and rc releases get generated notes
 			latestTags, tErr := github.New().LatestGitHubTagsPerBranch()
 			if tErr != nil {
 				return errors.Wrap(tErr, "get latest GitHub tags")
@@ -253,7 +270,13 @@ func runChangelog(opts *changelogOptions, rootOpts *rootOptions) error {
 
 			if startTag, ok := latestTags[branch]; ok {
 				logrus.Infof("Found start tag %s", startTag)
-				markdown, err = generateReleaseNotes(opts, branch, startTag, head)
+
+				// The end tag does not yet exist which means that we stick to
+				// the current HEAD as end revision.
+				startRev = startTag
+				endRev = head
+
+				markdown, err = generateReleaseNotes(opts, branch, startRev, endRev)
 			} else {
 				return errors.Errorf(
 					"no latest tag available for branch %s", branch,
@@ -262,11 +285,14 @@ func runChangelog(opts *changelogOptions, rootOpts *rootOptions) error {
 		}
 	} else {
 		// A patch version, let’s just use the previous patch
-		start := util.SemverToTagString(semver.Version{
+		startTag := util.SemverToTagString(semver.Version{
 			Major: tag.Major, Minor: tag.Minor, Patch: tag.Patch - 1,
 		})
 
-		markdown, err = generateReleaseNotes(opts, branch, start, head)
+		startRev = startTag
+		endRev = head
+
+		markdown, err = generateReleaseNotes(opts, branch, startTag, endRev)
 	}
 	if err != nil {
 		return err
@@ -276,6 +302,15 @@ func runChangelog(opts *changelogOptions, rootOpts *rootOptions) error {
 	toc, err := notes.GenerateTOC(markdown)
 	if err != nil {
 		return err
+	}
+
+	if opts.dependencies {
+		logrus.Info("Generating dependency changes")
+		deps, err := c.dependencies.Changes(startRev, endRev)
+		if err != nil {
+			return err
+		}
+		markdown += strings.Repeat(nl, 2) + deps
 	}
 
 	// Restore the currently checked out branch
@@ -539,7 +574,6 @@ func adaptChangelogReadmeFile(repo *git.Repo, tag semver.Version) error {
 		res = append(res, line)
 	}
 
-	const nl = "\n"
 	if err := ioutil.WriteFile(
 		targetFile, []byte(strings.Join(res, nl)+nl), os.FileMode(0644)); err != nil {
 		return errors.Wrap(err, "write changelog README.md")

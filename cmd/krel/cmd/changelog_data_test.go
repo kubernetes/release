@@ -50,8 +50,115 @@ const patchReleaseExpectedContent = `## Changes by Kind
  - Switched intstr.Type to sized integer to follow API guidelines and improve compatibility with proto libraries ([#83956](https://github.com/kubernetes/kubernetes/pull/83956), [@liggitt](https://github.com/liggitt)) [SIG API Machinery]
  - Update Cluster Autoscaler version to 1.16.2 (CA release docs: https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.16.2) ([#84038](https://github.com/kubernetes/kubernetes/pull/84038), [@losipiuk](https://github.com/losipiuk)) [SIG Cluster Lifecycle]
  - Update to use go1.12.12 ([#84064](https://github.com/kubernetes/kubernetes/pull/84064), [@cblecker](https://github.com/cblecker)) [SIG Release and Testing]
- - Upgrade to etcd client 3.3.17 to fix bug where etcd client does not parse IPv6 addresses correctly when members are joining, and to fix bug where failover on multi-member etcd cluster fails certificate check on DNS mismatch ([#83968](https://github.com/kubernetes/kubernetes/pull/83968), [@jpbetz](https://github.com/jpbetz)) [SIG API Machinery and Cloud Provider]
-`
+ - Upgrade to etcd client 3.3.17 to fix bug where etcd client does not parse IPv6 addresses correctly when members are joining, and to fix bug where failover on multi-member etcd cluster fails certificate check on DNS mismatch ([#83968](https://github.com/kubernetes/kubernetes/pull/83968), [@jpbetz](https://github.com/jpbetz)) [SIG API Machinery and Cloud Provider]`
+
+const patchReleaseDeps = `## Dependencies
+
+### Added
+- github.com/OpenPeeDeeP/depguard: [v1.0.1](https://github.com/OpenPeeDeeP/depguard/tree/v1.0.1)
+- github.com/StackExchange/wmi: [5d04971](https://github.com/StackExchange/wmi/tree/5d04971)
+- github.com/anmitsu/go-shlex: [648efa6](https://github.com/anmitsu/go-shlex/tree/648efa6)
+- github.com/bazelbuild/rules_go: [6dae44d](https://github.com/bazelbuild/rules_go/tree/6dae44d)
+- github.com/bradfitz/go-smtpd: [deb6d62](https://github.com/bradfitz/go-smtpd/tree/deb6d62)
+- github.com/gliderlabs/ssh: [v0.1.1](https://github.com/gliderlabs/ssh/tree/v0.1.1)
+- github.com/go-critic/go-critic: [1df3008](https://github.com/go-critic/go-critic/tree/1df3008)
+- github.com/go-lintpack/lintpack: [v0.5.2](https://github.com/go-lintpack/lintpack/tree/v0.5.2)
+- github.com/go-ole/go-ole: [v1.2.1](https://github.com/go-ole/go-ole/tree/v1.2.1)
+- github.com/go-toolsmith/astcast: [v1.0.0](https://github.com/go-toolsmith/astcast/tree/v1.0.0)
+- github.com/go-toolsmith/astcopy: [v1.0.0](https://github.com/go-toolsmith/astcopy/tree/v1.0.0)
+- github.com/go-toolsmith/astequal: [v1.0.0](https://github.com/go-toolsmith/astequal/tree/v1.0.0)
+- github.com/go-toolsmith/astfmt: [v1.0.0](https://github.com/go-toolsmith/astfmt/tree/v1.0.0)
+- github.com/go-toolsmith/astinfo: [9809ff7](https://github.com/go-toolsmith/astinfo/tree/9809ff7)
+- github.com/go-toolsmith/astp: [v1.0.0](https://github.com/go-toolsmith/astp/tree/v1.0.0)
+- github.com/go-toolsmith/pkgload: [v1.0.0](https://github.com/go-toolsmith/pkgload/tree/v1.0.0)
+- github.com/go-toolsmith/strparse: [v1.0.0](https://github.com/go-toolsmith/strparse/tree/v1.0.0)
+- github.com/go-toolsmith/typep: [v1.0.0](https://github.com/go-toolsmith/typep/tree/v1.0.0)
+- github.com/gobwas/glob: [v0.2.3](https://github.com/gobwas/glob/tree/v0.2.3)
+- github.com/golangci/check: [cfe4005](https://github.com/golangci/check/tree/cfe4005)
+- github.com/golangci/dupl: [3e9179a](https://github.com/golangci/dupl/tree/3e9179a)
+- github.com/golangci/errcheck: [ef45e06](https://github.com/golangci/errcheck/tree/ef45e06)
+- github.com/golangci/go-misc: [927a3d8](https://github.com/golangci/go-misc/tree/927a3d8)
+- github.com/golangci/go-tools: [e32c541](https://github.com/golangci/go-tools/tree/e32c541)
+- github.com/golangci/goconst: [041c5f2](https://github.com/golangci/goconst/tree/041c5f2)
+- github.com/golangci/gocyclo: [2becd97](https://github.com/golangci/gocyclo/tree/2becd97)
+- github.com/golangci/gofmt: [0b8337e](https://github.com/golangci/gofmt/tree/0b8337e)
+- github.com/golangci/golangci-lint: [v1.18.0](https://github.com/golangci/golangci-lint/tree/v1.18.0)
+- github.com/golangci/gosec: [66fb7fc](https://github.com/golangci/gosec/tree/66fb7fc)
+- github.com/golangci/ineffassign: [42439a7](https://github.com/golangci/ineffassign/tree/42439a7)
+- github.com/golangci/lint-1: [ee948d0](https://github.com/golangci/lint-1/tree/ee948d0)
+- github.com/golangci/maligned: [b1d8939](https://github.com/golangci/maligned/tree/b1d8939)
+- github.com/golangci/misspell: [950f5d1](https://github.com/golangci/misspell/tree/950f5d1)
+- github.com/golangci/prealloc: [215b22d](https://github.com/golangci/prealloc/tree/215b22d)
+- github.com/golangci/revgrep: [d9c87f5](https://github.com/golangci/revgrep/tree/d9c87f5)
+- github.com/golangci/unconvert: [28b1c44](https://github.com/golangci/unconvert/tree/28b1c44)
+- github.com/google/go-github: [v17.0.0+incompatible](https://github.com/google/go-github/tree/v17.0.0)
+- github.com/google/go-querystring: [v1.0.0](https://github.com/google/go-querystring/tree/v1.0.0)
+- github.com/gostaticanalysis/analysisutil: [v0.0.3](https://github.com/gostaticanalysis/analysisutil/tree/v0.0.3)
+- github.com/jellevandenhooff/dkim: [f50fe3d](https://github.com/jellevandenhooff/dkim/tree/f50fe3d)
+- github.com/klauspost/compress: [v1.4.1](https://github.com/klauspost/compress/tree/v1.4.1)
+- github.com/logrusorgru/aurora: [a7b3b31](https://github.com/logrusorgru/aurora/tree/a7b3b31)
+- github.com/mattn/goveralls: [v0.0.2](https://github.com/mattn/goveralls/tree/v0.0.2)
+- github.com/mitchellh/go-ps: [4fdf99a](https://github.com/mitchellh/go-ps/tree/4fdf99a)
+- github.com/mozilla/tls-observatory: [8791a20](https://github.com/mozilla/tls-observatory/tree/8791a20)
+- github.com/nbutton23/zxcvbn-go: [eafdab6](https://github.com/nbutton23/zxcvbn-go/tree/eafdab6)
+- github.com/quasilyte/go-consistent: [c6f3937](https://github.com/quasilyte/go-consistent/tree/c6f3937)
+- github.com/ryanuber/go-glob: [256dc44](https://github.com/ryanuber/go-glob/tree/256dc44)
+- github.com/shirou/gopsutil: [c95755e](https://github.com/shirou/gopsutil/tree/c95755e)
+- github.com/shirou/w32: [bb4de01](https://github.com/shirou/w32/tree/bb4de01)
+- github.com/shurcooL/go-goon: [37c2f52](https://github.com/shurcooL/go-goon/tree/37c2f52)
+- github.com/shurcooL/go: [9e1955d](https://github.com/shurcooL/go/tree/9e1955d)
+- github.com/sourcegraph/go-diff: [v0.5.1](https://github.com/sourcegraph/go-diff/tree/v0.5.1)
+- github.com/tarm/serial: [98f6abe](https://github.com/tarm/serial/tree/98f6abe)
+- github.com/timakin/bodyclose: [87058b9](https://github.com/timakin/bodyclose/tree/87058b9)
+- github.com/ultraware/funlen: [v0.0.2](https://github.com/ultraware/funlen/tree/v0.0.2)
+- github.com/valyala/bytebufferpool: [v1.0.0](https://github.com/valyala/bytebufferpool/tree/v1.0.0)
+- github.com/valyala/fasthttp: [v1.2.0](https://github.com/valyala/fasthttp/tree/v1.2.0)
+- github.com/valyala/quicktemplate: [v1.1.1](https://github.com/valyala/quicktemplate/tree/v1.1.1)
+- github.com/valyala/tcplisten: [ceec8f9](https://github.com/valyala/tcplisten/tree/ceec8f9)
+- go.etcd.io/bbolt: v1.3.3
+- go4.org: 417644f
+- golang.org/x/build: 2835ba2
+- golang.org/x/perf: 6e6d33e
+- golang.org/x/xerrors: a985d34
+- grpc.go4.org: 11d0a25
+- mvdan.cc/interfacer: c200402
+- mvdan.cc/lint: adc824a
+- mvdan.cc/unparam: fbb5962
+- sourcegraph.com/sqs/pbtypes: d3ebe8f
+
+### Changed
+- github.com/bazelbuild/bazel-gazelle: [c728ce9 → 70208cb](https://github.com/bazelbuild/bazel-gazelle/compare/c728ce9...70208cb)
+- github.com/bazelbuild/buildtools: [80c7f0d → 69366ca](https://github.com/bazelbuild/buildtools/compare/80c7f0d...69366ca)
+- github.com/coreos/bbolt: [v1.3.1-coreos.6 → v1.3.3](https://github.com/coreos/bbolt/compare/v1.3.1-coreos.6...v1.3.3)
+- github.com/coreos/etcd: [v3.3.15+incompatible → v3.3.17+incompatible](https://github.com/coreos/etcd/compare/v3.3.15...v3.3.17)
+- github.com/coreos/go-systemd: [39ca1b0 → c6f51f8](https://github.com/coreos/go-systemd/compare/39ca1b0...c6f51f8)
+- github.com/go-openapi/jsonpointer: [v0.19.2 → v0.19.3](https://github.com/go-openapi/jsonpointer/compare/v0.19.2...v0.19.3)
+- github.com/go-openapi/swag: [v0.19.2 → v0.19.5](https://github.com/go-openapi/swag/compare/v0.19.2...v0.19.5)
+- github.com/gregjones/httpcache: [787624d → 9cad4c3](https://github.com/gregjones/httpcache/compare/787624d...9cad4c3)
+- github.com/heketi/heketi: [v9.0.0+incompatible → c2e2a4a](https://github.com/heketi/heketi/compare/v9.0.0...c2e2a4a)
+- github.com/mailru/easyjson: [94de47d → b2ccc51](https://github.com/mailru/easyjson/compare/94de47d...b2ccc51)
+- github.com/mattn/go-isatty: [v0.0.3 → v0.0.9](https://github.com/mattn/go-isatty/compare/v0.0.3...v0.0.9)
+- github.com/pkg/errors: [v0.8.0 → v0.8.1](https://github.com/pkg/errors/compare/v0.8.0...v0.8.1)
+- github.com/spf13/pflag: [v1.0.3 → v1.0.5](https://github.com/spf13/pflag/compare/v1.0.3...v1.0.5)
+- golang.org/x/crypto: e84da03 → bac4c82
+- golang.org/x/lint: 8f45f77 → 959b441
+- golang.org/x/net: cdfb69a → 13f9640
+- golang.org/x/oauth2: 9f33145 → 0f29369
+- golang.org/x/sync: 42b3178 → cd5d95a
+- golang.org/x/sys: 3b52091 → fde4db3
+- golang.org/x/text: e6919f6 → v0.3.2
+- golang.org/x/time: f51c127 → 9d24e82
+- golang.org/x/tools: 6e04913 → 65e3620
+- gopkg.in/inf.v0: v0.9.0 → v0.9.1
+- gopkg.in/yaml.v2: v2.2.4 → v2.2.8
+- k8s.io/klog: v0.4.0 → v1.0.0
+- k8s.io/kube-openapi: 743ec37 → 594e756
+- k8s.io/repo-infra: 00fe14e → v0.0.1-alpha.1
+- sigs.k8s.io/structured-merge-diff: 6149e45 → v1.0.2
+
+### Removed
+- github.com/heketi/rest: [aa6a652](https://github.com/heketi/rest/tree/aa6a652)
+- github.com/heketi/utils: [435bc5b](https://github.com/heketi/utils/tree/435bc5b)`
 
 const patchReleaseExpectedHTML = `<!DOCTYPE html>
 <html>
@@ -104,6 +211,116 @@ const patchReleaseExpectedHTML = `<!DOCTYPE html>
 <li>Update Cluster Autoscaler version to 1.16.2 (CA release docs: <a href="https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.16.2">https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.16.2</a>) (<a href="https://github.com/kubernetes/kubernetes/pull/84038">#84038</a>, <a href="https://github.com/losipiuk">@losipiuk</a>) [SIG Cluster Lifecycle]</li>
 <li>Update to use go1.12.12 (<a href="https://github.com/kubernetes/kubernetes/pull/84064">#84064</a>, <a href="https://github.com/cblecker">@cblecker</a>) [SIG Release and Testing]</li>
 <li>Upgrade to etcd client 3.3.17 to fix bug where etcd client does not parse IPv6 addresses correctly when members are joining, and to fix bug where failover on multi-member etcd cluster fails certificate check on DNS mismatch (<a href="https://github.com/kubernetes/kubernetes/pull/83968">#83968</a>, <a href="https://github.com/jpbetz">@jpbetz</a>) [SIG API Machinery and Cloud Provider]</li>
+</ul>
+<h2>Dependencies</h2>
+<h3>Added</h3>
+<ul>
+<li>github.com/OpenPeeDeeP/depguard: <a href="https://github.com/OpenPeeDeeP/depguard/tree/v1.0.1">v1.0.1</a></li>
+<li>github.com/StackExchange/wmi: <a href="https://github.com/StackExchange/wmi/tree/5d04971">5d04971</a></li>
+<li>github.com/anmitsu/go-shlex: <a href="https://github.com/anmitsu/go-shlex/tree/648efa6">648efa6</a></li>
+<li>github.com/bazelbuild/rules_go: <a href="https://github.com/bazelbuild/rules_go/tree/6dae44d">6dae44d</a></li>
+<li>github.com/bradfitz/go-smtpd: <a href="https://github.com/bradfitz/go-smtpd/tree/deb6d62">deb6d62</a></li>
+<li>github.com/gliderlabs/ssh: <a href="https://github.com/gliderlabs/ssh/tree/v0.1.1">v0.1.1</a></li>
+<li>github.com/go-critic/go-critic: <a href="https://github.com/go-critic/go-critic/tree/1df3008">1df3008</a></li>
+<li>github.com/go-lintpack/lintpack: <a href="https://github.com/go-lintpack/lintpack/tree/v0.5.2">v0.5.2</a></li>
+<li>github.com/go-ole/go-ole: <a href="https://github.com/go-ole/go-ole/tree/v1.2.1">v1.2.1</a></li>
+<li>github.com/go-toolsmith/astcast: <a href="https://github.com/go-toolsmith/astcast/tree/v1.0.0">v1.0.0</a></li>
+<li>github.com/go-toolsmith/astcopy: <a href="https://github.com/go-toolsmith/astcopy/tree/v1.0.0">v1.0.0</a></li>
+<li>github.com/go-toolsmith/astequal: <a href="https://github.com/go-toolsmith/astequal/tree/v1.0.0">v1.0.0</a></li>
+<li>github.com/go-toolsmith/astfmt: <a href="https://github.com/go-toolsmith/astfmt/tree/v1.0.0">v1.0.0</a></li>
+<li>github.com/go-toolsmith/astinfo: <a href="https://github.com/go-toolsmith/astinfo/tree/9809ff7">9809ff7</a></li>
+<li>github.com/go-toolsmith/astp: <a href="https://github.com/go-toolsmith/astp/tree/v1.0.0">v1.0.0</a></li>
+<li>github.com/go-toolsmith/pkgload: <a href="https://github.com/go-toolsmith/pkgload/tree/v1.0.0">v1.0.0</a></li>
+<li>github.com/go-toolsmith/strparse: <a href="https://github.com/go-toolsmith/strparse/tree/v1.0.0">v1.0.0</a></li>
+<li>github.com/go-toolsmith/typep: <a href="https://github.com/go-toolsmith/typep/tree/v1.0.0">v1.0.0</a></li>
+<li>github.com/gobwas/glob: <a href="https://github.com/gobwas/glob/tree/v0.2.3">v0.2.3</a></li>
+<li>github.com/golangci/check: <a href="https://github.com/golangci/check/tree/cfe4005">cfe4005</a></li>
+<li>github.com/golangci/dupl: <a href="https://github.com/golangci/dupl/tree/3e9179a">3e9179a</a></li>
+<li>github.com/golangci/errcheck: <a href="https://github.com/golangci/errcheck/tree/ef45e06">ef45e06</a></li>
+<li>github.com/golangci/go-misc: <a href="https://github.com/golangci/go-misc/tree/927a3d8">927a3d8</a></li>
+<li>github.com/golangci/go-tools: <a href="https://github.com/golangci/go-tools/tree/e32c541">e32c541</a></li>
+<li>github.com/golangci/goconst: <a href="https://github.com/golangci/goconst/tree/041c5f2">041c5f2</a></li>
+<li>github.com/golangci/gocyclo: <a href="https://github.com/golangci/gocyclo/tree/2becd97">2becd97</a></li>
+<li>github.com/golangci/gofmt: <a href="https://github.com/golangci/gofmt/tree/0b8337e">0b8337e</a></li>
+<li>github.com/golangci/golangci-lint: <a href="https://github.com/golangci/golangci-lint/tree/v1.18.0">v1.18.0</a></li>
+<li>github.com/golangci/gosec: <a href="https://github.com/golangci/gosec/tree/66fb7fc">66fb7fc</a></li>
+<li>github.com/golangci/ineffassign: <a href="https://github.com/golangci/ineffassign/tree/42439a7">42439a7</a></li>
+<li>github.com/golangci/lint-1: <a href="https://github.com/golangci/lint-1/tree/ee948d0">ee948d0</a></li>
+<li>github.com/golangci/maligned: <a href="https://github.com/golangci/maligned/tree/b1d8939">b1d8939</a></li>
+<li>github.com/golangci/misspell: <a href="https://github.com/golangci/misspell/tree/950f5d1">950f5d1</a></li>
+<li>github.com/golangci/prealloc: <a href="https://github.com/golangci/prealloc/tree/215b22d">215b22d</a></li>
+<li>github.com/golangci/revgrep: <a href="https://github.com/golangci/revgrep/tree/d9c87f5">d9c87f5</a></li>
+<li>github.com/golangci/unconvert: <a href="https://github.com/golangci/unconvert/tree/28b1c44">28b1c44</a></li>
+<li>github.com/google/go-github: <a href="https://github.com/google/go-github/tree/v17.0.0">v17.0.0+incompatible</a></li>
+<li>github.com/google/go-querystring: <a href="https://github.com/google/go-querystring/tree/v1.0.0">v1.0.0</a></li>
+<li>github.com/gostaticanalysis/analysisutil: <a href="https://github.com/gostaticanalysis/analysisutil/tree/v0.0.3">v0.0.3</a></li>
+<li>github.com/jellevandenhooff/dkim: <a href="https://github.com/jellevandenhooff/dkim/tree/f50fe3d">f50fe3d</a></li>
+<li>github.com/klauspost/compress: <a href="https://github.com/klauspost/compress/tree/v1.4.1">v1.4.1</a></li>
+<li>github.com/logrusorgru/aurora: <a href="https://github.com/logrusorgru/aurora/tree/a7b3b31">a7b3b31</a></li>
+<li>github.com/mattn/goveralls: <a href="https://github.com/mattn/goveralls/tree/v0.0.2">v0.0.2</a></li>
+<li>github.com/mitchellh/go-ps: <a href="https://github.com/mitchellh/go-ps/tree/4fdf99a">4fdf99a</a></li>
+<li>github.com/mozilla/tls-observatory: <a href="https://github.com/mozilla/tls-observatory/tree/8791a20">8791a20</a></li>
+<li>github.com/nbutton23/zxcvbn-go: <a href="https://github.com/nbutton23/zxcvbn-go/tree/eafdab6">eafdab6</a></li>
+<li>github.com/quasilyte/go-consistent: <a href="https://github.com/quasilyte/go-consistent/tree/c6f3937">c6f3937</a></li>
+<li>github.com/ryanuber/go-glob: <a href="https://github.com/ryanuber/go-glob/tree/256dc44">256dc44</a></li>
+<li>github.com/shirou/gopsutil: <a href="https://github.com/shirou/gopsutil/tree/c95755e">c95755e</a></li>
+<li>github.com/shirou/w32: <a href="https://github.com/shirou/w32/tree/bb4de01">bb4de01</a></li>
+<li>github.com/shurcooL/go-goon: <a href="https://github.com/shurcooL/go-goon/tree/37c2f52">37c2f52</a></li>
+<li>github.com/shurcooL/go: <a href="https://github.com/shurcooL/go/tree/9e1955d">9e1955d</a></li>
+<li>github.com/sourcegraph/go-diff: <a href="https://github.com/sourcegraph/go-diff/tree/v0.5.1">v0.5.1</a></li>
+<li>github.com/tarm/serial: <a href="https://github.com/tarm/serial/tree/98f6abe">98f6abe</a></li>
+<li>github.com/timakin/bodyclose: <a href="https://github.com/timakin/bodyclose/tree/87058b9">87058b9</a></li>
+<li>github.com/ultraware/funlen: <a href="https://github.com/ultraware/funlen/tree/v0.0.2">v0.0.2</a></li>
+<li>github.com/valyala/bytebufferpool: <a href="https://github.com/valyala/bytebufferpool/tree/v1.0.0">v1.0.0</a></li>
+<li>github.com/valyala/fasthttp: <a href="https://github.com/valyala/fasthttp/tree/v1.2.0">v1.2.0</a></li>
+<li>github.com/valyala/quicktemplate: <a href="https://github.com/valyala/quicktemplate/tree/v1.1.1">v1.1.1</a></li>
+<li>github.com/valyala/tcplisten: <a href="https://github.com/valyala/tcplisten/tree/ceec8f9">ceec8f9</a></li>
+<li>go.etcd.io/bbolt: v1.3.3</li>
+<li>go4.org: 417644f</li>
+<li>golang.org/x/build: 2835ba2</li>
+<li>golang.org/x/perf: 6e6d33e</li>
+<li>golang.org/x/xerrors: a985d34</li>
+<li>grpc.go4.org: 11d0a25</li>
+<li>mvdan.cc/interfacer: c200402</li>
+<li>mvdan.cc/lint: adc824a</li>
+<li>mvdan.cc/unparam: fbb5962</li>
+<li>sourcegraph.com/sqs/pbtypes: d3ebe8f</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>github.com/bazelbuild/bazel-gazelle: <a href="https://github.com/bazelbuild/bazel-gazelle/compare/c728ce9...70208cb">c728ce9 → 70208cb</a></li>
+<li>github.com/bazelbuild/buildtools: <a href="https://github.com/bazelbuild/buildtools/compare/80c7f0d...69366ca">80c7f0d → 69366ca</a></li>
+<li>github.com/coreos/bbolt: <a href="https://github.com/coreos/bbolt/compare/v1.3.1-coreos.6...v1.3.3">v1.3.1-coreos.6 → v1.3.3</a></li>
+<li>github.com/coreos/etcd: <a href="https://github.com/coreos/etcd/compare/v3.3.15...v3.3.17">v3.3.15+incompatible → v3.3.17+incompatible</a></li>
+<li>github.com/coreos/go-systemd: <a href="https://github.com/coreos/go-systemd/compare/39ca1b0...c6f51f8">39ca1b0 → c6f51f8</a></li>
+<li>github.com/go-openapi/jsonpointer: <a href="https://github.com/go-openapi/jsonpointer/compare/v0.19.2...v0.19.3">v0.19.2 → v0.19.3</a></li>
+<li>github.com/go-openapi/swag: <a href="https://github.com/go-openapi/swag/compare/v0.19.2...v0.19.5">v0.19.2 → v0.19.5</a></li>
+<li>github.com/gregjones/httpcache: <a href="https://github.com/gregjones/httpcache/compare/787624d...9cad4c3">787624d → 9cad4c3</a></li>
+<li>github.com/heketi/heketi: <a href="https://github.com/heketi/heketi/compare/v9.0.0...c2e2a4a">v9.0.0+incompatible → c2e2a4a</a></li>
+<li>github.com/mailru/easyjson: <a href="https://github.com/mailru/easyjson/compare/94de47d...b2ccc51">94de47d → b2ccc51</a></li>
+<li>github.com/mattn/go-isatty: <a href="https://github.com/mattn/go-isatty/compare/v0.0.3...v0.0.9">v0.0.3 → v0.0.9</a></li>
+<li>github.com/pkg/errors: <a href="https://github.com/pkg/errors/compare/v0.8.0...v0.8.1">v0.8.0 → v0.8.1</a></li>
+<li>github.com/spf13/pflag: <a href="https://github.com/spf13/pflag/compare/v1.0.3...v1.0.5">v1.0.3 → v1.0.5</a></li>
+<li>golang.org/x/crypto: e84da03 → bac4c82</li>
+<li>golang.org/x/lint: 8f45f77 → 959b441</li>
+<li>golang.org/x/net: cdfb69a → 13f9640</li>
+<li>golang.org/x/oauth2: 9f33145 → 0f29369</li>
+<li>golang.org/x/sync: 42b3178 → cd5d95a</li>
+<li>golang.org/x/sys: 3b52091 → fde4db3</li>
+<li>golang.org/x/text: e6919f6 → v0.3.2</li>
+<li>golang.org/x/time: f51c127 → 9d24e82</li>
+<li>golang.org/x/tools: 6e04913 → 65e3620</li>
+<li>gopkg.in/inf.v0: v0.9.0 → v0.9.1</li>
+<li>gopkg.in/yaml.v2: v2.2.4 → v2.2.8</li>
+<li>k8s.io/klog: v0.4.0 → v1.0.0</li>
+<li>k8s.io/kube-openapi: 743ec37 → 594e756</li>
+<li>k8s.io/repo-infra: 00fe14e → v0.0.1-alpha.1</li>
+<li>sigs.k8s.io/structured-merge-diff: 6149e45 → v1.0.2</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>github.com/heketi/rest: <a href="https://github.com/heketi/rest/tree/aa6a652">aa6a652</a></li>
+<li>github.com/heketi/utils: <a href="https://github.com/heketi/utils/tree/435bc5b">435bc5b</a></li>
 </ul>
 
   </body>
