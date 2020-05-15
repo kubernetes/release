@@ -418,7 +418,7 @@ release::set_release_version () {
     RELEASE_VERSION[beta]+=".0-beta.0"
     RELEASE_VERSION_PRIME=${RELEASE_VERSION[beta]}
   elif [[ "$parent_branch" =~ release- ]]; then
-    # When we do branched branches we end up with two rcs so deal with it
+    # When we do branched branches we end up with two RCs so deal with it
     # by creating a couple of rc indexes.
     # rc0 is the branch-point-minor + 1 + rc.1 because
     # branch-point-minor +1 +rc.0 already exists. This tag lands on the new
