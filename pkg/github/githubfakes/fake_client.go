@@ -80,6 +80,23 @@ type FakeClient struct {
 		result2 *githuba.Response
 		result3 error
 	}
+	getRepositoryMutex       sync.RWMutex
+	GetRepositoryStub        func(context.Context, string, string) (*githuba.Repository, *githuba.Response, error)
+	getRepositoryArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+	}
+	getRepositoryReturns struct {
+		result1 *githuba.Repository
+		result2 *githuba.Response
+		result3 error
+	}
+	getRepositoryReturnsOnCall map[int]struct {
+		result1 *githuba.Repository
+		result2 *githuba.Response
+		result3 error
+	}
 	ListCommitsStub        func(context.Context, string, string, *githuba.CommitsListOptions) ([]*githuba.RepositoryCommit, *githuba.Response, error)
 	listCommitsMutex       sync.RWMutex
 	listCommitsArgsForCall []struct {
@@ -731,6 +748,39 @@ func (fake *FakeClient) CreatePullRequestReturns(result1 *githuba.PullRequest, r
 		result1 *githuba.PullRequest
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeClient) GetRepository(
+	arg1 context.Context, arg2, arg3 string,
+) (*githuba.Repository, *githuba.Response, error) {
+	fake.getRepositoryMutex.Lock()
+	ret, specificReturn := fake.getRepositoryReturnsOnCall[len(fake.createPullRequestArgsForCall)]
+	fake.getRepositoryArgsForCall = append(fake.getRepositoryArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("GetRepository", []interface{}{arg1, arg2, arg3})
+	fake.getRepositoryMutex.Unlock()
+	if fake.GetRepositoryStub != nil {
+		return fake.GetRepositoryStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2, ret.result3
+	}
+	fakeReturns := fake.getRepositoryReturns
+	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
+}
+
+func (fake *FakeClient) GetRespositoryReturns(result1 *githuba.Repository, result2 *githuba.Response, result3 error) {
+	fake.getRepositoryMutex.Lock()
+	defer fake.getRepositoryMutex.Unlock()
+	fake.GetRepositoryStub = nil
+	fake.getRepositoryReturns = struct {
+		result1 *githuba.Repository
+		result2 *githuba.Response
+		result3 error
+	}{result1, result2, result3}
 }
 
 var _ github.Client = new(FakeClient)
