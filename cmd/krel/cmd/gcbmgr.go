@@ -170,6 +170,10 @@ func init() {
 // RunGcbmgr is the function invoked by 'krel gcbmgr', responsible for
 // submitting release jobs to GCB
 func RunGcbmgr(opts *GcbmgrOptions) error {
+	if err := opts.Validate(); err != nil {
+		return errors.Wrap(err, "validating gcbmgr options")
+	}
+
 	toolOrg := release.GetToolOrg()
 	toolRepo := release.GetToolRepo()
 	toolBranch := release.GetToolBranch()
@@ -188,10 +192,6 @@ func RunGcbmgr(opts *GcbmgrOptions) error {
 
 	logrus.Infof("Running gcbmgr with the following options: %+v", opts)
 	logrus.Infof("Build options: %v", *buildOpts)
-
-	if opts.Stage && opts.Release {
-		return errors.New("cannot specify both the 'stage' and 'release' flag; resubmit with only one build type selected")
-	}
 
 	buildOpts.NoSource = true
 	buildOpts.DiskSize = release.DefaultDiskSize
@@ -361,4 +361,22 @@ func listJobs(project string, lastJobs int64) error {
 
 	logrus.Infof("Listing last %d GCB jobs:", lastJobs)
 	return BuildListJobs(project, lastJobs)
+}
+
+func (o *GcbmgrOptions) Validate() error {
+	if o.Stage && o.Release {
+		return errors.New("cannot specify both the 'stage' and 'release' flag; resubmit with only one build type selected")
+	}
+
+	if o.Branch == git.Master {
+		if o.ReleaseType == ReleaseTypeRC || o.ReleaseType == ReleaseTypeOfficial {
+			return errors.New("cannot cut a release candidate or an official release from master")
+		}
+	} else {
+		if o.ReleaseType == ReleaseTypeAlpha || o.ReleaseType == ReleaseTypeBeta {
+			return errors.New("cannot cut an alpha or beta release from a release branch")
+		}
+	}
+
+	return nil
 }
