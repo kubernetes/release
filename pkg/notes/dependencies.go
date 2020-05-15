@@ -53,9 +53,15 @@ func (d *Dependencies) SetMoDiff(moDiff MoDiff) {
 // Changes collects the dependency change report as markdown between
 // both provided revisions. The function errors if anything went wrong.
 func (d *Dependencies) Changes(from, to string) (string, error) {
+	return d.ChangesForURL(git.GetDefaultKubernetesRepoURL(), from, to)
+}
+
+// Changes collects the dependency change report as markdown between
+// both provided revisions for the specified repository URL. The function
+// errors if anything went wrong.
+func (d *Dependencies) ChangesForURL(url, from, to string) (string, error) {
 	config := modiff.NewConfig(
-		strings.TrimPrefix(git.GetDefaultKubernetesRepoURL(), "https://"),
-		from, to, true, 2,
+		strings.TrimPrefix(url, "https://"), from, to, true, 2,
 	)
 
 	res, err := d.moDiff.Run(config)
