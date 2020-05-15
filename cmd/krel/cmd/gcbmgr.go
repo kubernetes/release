@@ -47,6 +47,13 @@ type GcbmgrOptions struct {
 	Version      Version
 }
 
+const (
+	ReleaseTypeAlpha    = "alpha"
+	ReleaseTypeBeta     = "beta"
+	ReleaseTypeRC       = "rc"
+	ReleaseTypeOfficial = "official"
+)
+
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //counterfeiter:generate . Repository
 type Repository interface {
@@ -103,8 +110,15 @@ func init() {
 	gcbmgrCmd.PersistentFlags().StringVar(
 		&gcbmgrOpts.ReleaseType,
 		"type",
-		"prerelease",
-		"Release type (must be one of: 'prerelease', 'rc', 'official')",
+		ReleaseTypeAlpha,
+		fmt.Sprintf("Release type, must be one of: '%s'",
+			strings.Join([]string{
+				ReleaseTypeAlpha,
+				ReleaseTypeBeta,
+				ReleaseTypeRC,
+				ReleaseTypeOfficial,
+			}, "', '"),
+		),
 	)
 
 	// TODO: Remove default once find_green_build logic exists
@@ -161,7 +175,7 @@ func RunGcbmgr(opts *GcbmgrOptions) error {
 	toolBranch := release.GetToolBranch()
 
 	if err := gcp.PreCheck(); err != nil {
-		return errors.Wrap(err, "pre-checking for GCP package")
+		return errors.Wrap(err, "pre-checking for GCP package usage")
 	}
 
 	if err := opts.Repo.Open(); err != nil {
@@ -289,30 +303,8 @@ func SetGCBSubstitutions(o *GcbmgrOptions, toolOrg, toolRepo, toolBranch string)
 
 	gcbSubs["GCP_USER_TAG"] = gcpUser
 
-	// TODO: The naming for these env vars is clumsy/confusing, but we're bound by anago right now.
-	releaseType := o.ReleaseType
-	switch releaseType {
-	case "official":
-		gcbSubs["OFFICIAL_TAG"] = releaseType
-		gcbSubs["OFFICIAL"] = fmt.Sprintf("--%s", releaseType)
-
-		// TODO: Remove once cloudbuild.yaml doesn't strictly require vars to be set.
-		gcbSubs["RC_TAG"] = ""
-		gcbSubs["RC"] = ""
-	case "rc":
-		gcbSubs["RC_TAG"] = releaseType
-		gcbSubs["RC"] = fmt.Sprintf("--%s", releaseType)
-
-		// TODO: Remove once cloudbuild.yaml doesn't strictly require vars to be set.
-		gcbSubs["OFFICIAL_TAG"] = ""
-		gcbSubs["OFFICIAL"] = ""
-	case "prerelease":
-		// TODO: Remove once cloudbuild.yaml doesn't strictly require vars to be set.
-		gcbSubs["OFFICIAL_TAG"] = ""
-		gcbSubs["OFFICIAL"] = ""
-		gcbSubs["RC_TAG"] = ""
-		gcbSubs["RC"] = ""
-	}
+	gcbSubs["TYPE"] = o.ReleaseType
+	gcbSubs["TYPE_TAG"] = o.ReleaseType
 
 	gcbSubs["RELEASE_BRANCH"] = o.Branch
 

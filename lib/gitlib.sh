@@ -169,8 +169,8 @@ gitlib::last_releases () {
   logecho -n "Setting last releases by branch: "
   for release in $($GHCURL $K8S_GITHUB_API/releases|\
                    jq -r '.[] | select(.draft==false) | .tag_name'); do
-    # Alpha releases only on master branch
-    if [[ $release =~ -alpha ]]; then
+    # Alpha and beta releases only on master branch
+    if [[ $release =~ -alpha ]] || [[ $release =~ -beta ]]; then
       LAST_RELEASE[master]=${LAST_RELEASE[master]:-$release}
     elif [[ $release =~ v([0-9]+\.[0-9]+)\.([0-9]+(-.+)?) ]]; then
       # Latest vx.x.0 release goes on both master and release branch.
