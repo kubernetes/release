@@ -18,6 +18,7 @@ package github_test
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	gogithub "github.com/google/go-github/v29/github"
@@ -286,4 +287,102 @@ func TestCreatePullRequest(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, pr, nil)
 	require.Equal(t, fakeID, pr.GetID())
+}
+
+func TestGetRespository(t *testing.T) {
+	// Given
+	sut, client := newSUT()
+	fakeRepositoryID := int64(54596517) // k/release
+	kubernetesUserID := int64(13629408)
+	kubernetesLogin := "kubernetes"
+	repoName := "release"
+	client.GetRespositoryReturns(&gogithub.Repository{
+		ID:   &fakeRepositoryID,
+		Name: &repoName,
+		Owner: &gogithub.User{
+			Login: &kubernetesLogin,
+			ID:    &kubernetesUserID,
+		},
+	}, &gogithub.Response{NextPage: 0}, nil)
+
+	// When
+	repo, err := sut.GetRepository("kubernetes", "release")
+
+	// Then
+	require.Nil(t, err)
+	require.NotNil(t, repo, nil)
+	require.Equal(t, fakeRepositoryID, repo.GetID())
+	require.Equal(t, kubernetesUserID, repo.GetOwner().GetID())
+	require.Equal(t, kubernetesLogin, repo.GetOwner().GetLogin())
+	require.Equal(t, repoName, repo.GetName())
+}
+
+func TestRepoIsForkOf(t *testing.T) {
+	// Given
+	sut, client := newSUT()
+
+	forkOwner := "fork"
+	parentOwner := "kubernetes"
+	repoName := "forkedRepo"
+
+	parentFullName := fmt.Sprintf("%s/%s", parentOwner, repoName)
+
+	trueVal := true
+
+	client.GetRespositoryReturns(&gogithub.Repository{
+		Name: &repoName,
+		Fork: &trueVal,
+		Owner: &gogithub.User{
+			Login: &forkOwner,
+		},
+		Parent: &gogithub.Repository{
+			Name: &repoName,
+			Owner: &gogithub.User{
+				Login: &parentOwner,
+			},
+			FullName: &parentFullName,
+		},
+	}, &gogithub.Response{NextPage: 0}, nil)
+
+	// When
+	result, err := sut.RepoIsForkOf("fork", repoName, "kubernetes", repoName)
+
+	// Then
+	require.Nil(t, err)
+	require.Equal(t, result, true)
+}
+
+func TestRepoIsNotForkOf(t *testing.T) {
+	// Given
+	sut, client := newSUT()
+
+	forkOwner := "fork"
+	parentOwner := "borg"
+	repoName := "notForkedRepo"
+
+	parentFullName := fmt.Sprintf("%s/%s", parentOwner, repoName)
+
+	trueVal := true
+
+	client.GetRespositoryReturns(&gogithub.Repository{
+		Name: &repoName,
+		Fork: &trueVal,
+		Owner: &gogithub.User{
+			Login: &forkOwner,
+		},
+		Parent: &gogithub.Repository{
+			Name: &repoName,
+			Owner: &gogithub.User{
+				Login: &parentOwner,
+			},
+			FullName: &parentFullName,
+		},
+	}, &gogithub.Response{NextPage: 0}, nil)
+
+	// When
+	result, err := sut.RepoIsForkOf("fork", repoName, "kubernetes", repoName)
+
+	// Then
+	require.Nil(t, err)
+	require.Equal(t, result, false)
 }
