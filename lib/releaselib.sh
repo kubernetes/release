@@ -411,26 +411,12 @@ release::set_release_version () {
   # Other labels such as alpha, beta, and rc are set as needed
   # Index ordering is important here as it's how they are processed
   if [[ "$parent_branch" == master ]]; then
-    # This is a new branch, set new alpha and beta versions
+    # This is a new branch, set new alpha and RC versions
     RELEASE_VERSION[alpha]="v${release_branch[major]}"
     RELEASE_VERSION[alpha]+=".$((${release_branch[minor]}+1)).0-alpha.0"
-    RELEASE_VERSION[beta]="v${release_branch[major]}.${release_branch[minor]}"
-    RELEASE_VERSION[beta]+=".0-beta.0"
-    RELEASE_VERSION_PRIME=${RELEASE_VERSION[beta]}
-  elif [[ "$parent_branch" =~ release- ]]; then
-    # When we do branched branches we end up with two RCs so deal with it
-    # by creating a couple of rc indexes.
-    # rc0 is the branch-point-minor + 1 + rc.1 because
-    # branch-point-minor +1 +rc.0 already exists. This tag lands on the new
-    # branch.
-    # rc1 is the branch-point-minor + 2 + rc.0 to continue the next version
-    # on the parent/source branch.
-    RELEASE_VERSION[rc0]="v${build_version[major]}.${build_version[minor]}"
-    RELEASE_VERSION[rc0]+=".$((${build_version[patch]}+1))-rc.1"
-    RELEASE_VERSION[rc1]="v${build_version[major]}.${build_version[minor]}"
-    # Need to increment N+2 here.  N+1-rc.0 exists as an artifact of N.
-    RELEASE_VERSION[rc1]+=".$((${build_version[patch]}+2))-rc.0"
-    RELEASE_VERSION_PRIME="${RELEASE_VERSION[rc0]}"
+    RELEASE_VERSION[rc]="v${release_branch[major]}.${release_branch[minor]}"
+    RELEASE_VERSION[rc]+=".0-rc.0"
+    RELEASE_VERSION_PRIME=${RELEASE_VERSION[rc]}
   elif [[ $branch =~ release- ]]; then
     # Build out the RELEASE_VERSION dict
     RELEASE_VERSION_PRIME="v${build_version[major]}.${build_version[minor]}"
@@ -442,34 +428,55 @@ release::set_release_version () {
       RELEASE_VERSION_PRIME+=".$((${build_version[patch]}+1))"
     fi
 
-    if [[ "$FLAGS_type" == official ]]; then
+    if [[ "$FLAGS_type" == "official" ]]; then
       RELEASE_VERSION[official]="$RELEASE_VERSION_PRIME"
       # Only primary branches get rc releases
       if [[ $branch =~ ^release-([0-9]{1,})\.([0-9]{1,})$ ]]; then
         RELEASE_VERSION[rc]="v${build_version[major]}.${build_version[minor]}"
         RELEASE_VERSION[rc]+=".$((${build_version[patch]}+1))-rc.0"
       fi
-    elif [[ "${build_version[label]}" == "-rc" ]] || [[ "$FLAGS_type" == rc ]]; then
-      # betas not allowed after release candidates
+    elif [[ "$FLAGS_type" == "rc" ]]; then
       RELEASE_VERSION[rc]="$RELEASE_VERSION_PRIME"
-      if [[ "${build_version[label]}" == "-rc" ]]; then
-        RELEASE_VERSION[rc]+="-rc.$((${build_version[labelid]}+1))"
-      else
-        # Start release candidates at 1 instead of 0
-        RELEASE_VERSION[rc]+="-rc.1"
-      fi
+      RELEASE_VERSION[rc]+="-rc.$((${build_version[labelid]}+1))"
       RELEASE_VERSION_PRIME="${RELEASE_VERSION[rc]}"
     fi
   elif [[ "$FLAGS_type" == "beta" ]]; then
     RELEASE_VERSION[beta]="v${build_version[major]}.${build_version[minor]}"
-    RELEASE_VERSION[beta]+=".${build_version[patch]}${build_version[label]}"
-    RELEASE_VERSION[beta]+=".$((${build_version[labelid]}+1))"
+    RELEASE_VERSION[beta]+=".${build_version[patch]}"
+
+    # Enable building beta releases on the master branch.
+    # If the last build version was an alpha (x.y.z-alpha.N), set the build
+    # label to 'beta' and release version to x.y.z-beta.0.
+    #
+    # Otherwise, we'll assume this is the next x.y beta, so just increment the
+    # beta version e.g., x.y.z-beta.1 --> x.y.z-beta.2
+    if [[ "${build_version[label]}" == "-alpha" ]]; then
+      build_version[label]="-beta"
+      RELEASE_VERSION[beta]+="${build_version[label]}"
+      RELEASE_VERSION[beta]+=".0"
+    else
+      RELEASE_VERSION[beta]+="${build_version[label]}"
+      RELEASE_VERSION[beta]+=".$((${build_version[labelid]}+1))"
+    fi
+
     RELEASE_VERSION_PRIME="${RELEASE_VERSION[beta]}"
   else
-    RELEASE_VERSION[alpha]="v${build_version[major]}.${build_version[minor]}"
-    RELEASE_VERSION[alpha]+=".${build_version[patch]}${build_version[label]}"
-    RELEASE_VERSION[alpha]+=".$((${build_version[labelid]}+1))"
-    RELEASE_VERSION_PRIME="${RELEASE_VERSION[alpha]}"
+    # In this code branch, we're implicitly supposed to be at an alpha release.
+    # Here, we verify that we're not attempting to cut an alpha release after a
+    # beta in the x.y release series.
+    #
+    # Concretely:
+    # We should not be able to cut x.y.z-alpha.N after x.y.z-beta.M
+    if [[ "${build_version[label]}" != "-alpha" ]]; then
+      logecho "$FAILED: Cannot cut an alpha tag after a non-alpha release - ${version}." \
+              "Please specify an allowed release type ('beta') to continue."
+      return 1
+    else
+      RELEASE_VERSION[alpha]="v${build_version[major]}.${build_version[minor]}"
+      RELEASE_VERSION[alpha]+=".${build_version[patch]}${build_version[label]}"
+      RELEASE_VERSION[alpha]+=".$((${build_version[labelid]}+1))"
+      RELEASE_VERSION_PRIME="${RELEASE_VERSION[alpha]}"
+    fi
   fi
 
   for label in ${!RELEASE_VERSION[@]}; do
