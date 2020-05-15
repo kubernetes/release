@@ -26,6 +26,7 @@ import (
 	"k8s.io/release/cmd/krel/cmd"
 	"k8s.io/release/cmd/krel/cmd/cmdfakes"
 	"k8s.io/release/pkg/gcp/build"
+	"k8s.io/release/pkg/git"
 )
 
 func mockRepo() cmd.Repository {
@@ -309,6 +310,105 @@ func TestSetGCBSubstitutionsFailure(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
 		_, err := cmd.SetGCBSubstitutions(tc.gcbmgrOpts, "", "", "")
+		require.Error(t, err)
+	}
+}
+
+func TestValidateSuccess(t *testing.T) {
+	testcases := []struct {
+		name       string
+		gcbmgrOpts *cmd.GcbmgrOptions
+	}{
+		{
+			name: "master alpha - stage",
+			gcbmgrOpts: &cmd.GcbmgrOptions{
+				Stage:       true,
+				Branch:      "master",
+				ReleaseType: cmd.ReleaseTypeAlpha,
+			},
+		},
+		{
+			name: "master beta - release",
+			gcbmgrOpts: &cmd.GcbmgrOptions{
+				Release:      true,
+				Branch:       "master",
+				ReleaseType:  cmd.ReleaseTypeBeta,
+				BuildVersion: "v1.33.7",
+			},
+		},
+		{
+			name: "release-1.15 RC",
+			gcbmgrOpts: &cmd.GcbmgrOptions{
+				Stage:       true,
+				Branch:      "release-1.15",
+				ReleaseType: cmd.ReleaseTypeRC,
+			},
+		},
+		{
+			name: "release-1.15 official",
+			gcbmgrOpts: &cmd.GcbmgrOptions{
+				Stage:       true,
+				Branch:      "release-1.15",
+				ReleaseType: cmd.ReleaseTypeOfficial,
+			},
+		},
+		{
+			name: "release-1.16 official with custom tool org, repo, and branch",
+			gcbmgrOpts: &cmd.GcbmgrOptions{
+				Stage:       true,
+				Branch:      "release-1.16",
+				ReleaseType: cmd.ReleaseTypeOfficial,
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Logf("Test case: %s", tc.name)
+
+		err := tc.gcbmgrOpts.Validate()
+		require.Nil(t, err)
+	}
+}
+
+func TestValidateFailure(t *testing.T) {
+	testcases := []struct {
+		name       string
+		gcbmgrOpts *cmd.GcbmgrOptions
+	}{
+		{
+			name: "RC on master",
+			gcbmgrOpts: &cmd.GcbmgrOptions{
+				Branch:      git.Master,
+				ReleaseType: cmd.ReleaseTypeRC,
+			},
+		},
+		{
+			name: "official release on master",
+			gcbmgrOpts: &cmd.GcbmgrOptions{
+				Branch:      git.Master,
+				ReleaseType: cmd.ReleaseTypeOfficial,
+			},
+		},
+		{
+			name: "alpha on release branch",
+			gcbmgrOpts: &cmd.GcbmgrOptions{
+				Branch:      "release-1.16",
+				ReleaseType: cmd.ReleaseTypeAlpha,
+			},
+		},
+		{
+			name: "beta on release branch",
+			gcbmgrOpts: &cmd.GcbmgrOptions{
+				Branch:      "release-1.19",
+				ReleaseType: cmd.ReleaseTypeBeta,
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Logf("Test case: %s", tc.name)
+
+		err := tc.gcbmgrOpts.Validate()
 		require.Error(t, err)
 	}
 }
