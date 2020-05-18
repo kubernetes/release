@@ -95,7 +95,6 @@ type changelogOptions struct {
 var changelogOpts = &changelogOptions{}
 
 const (
-	nl                   = "\n"
 	tocStart             = "<!-- BEGIN MUNGE: GENERATED_TOC -->"
 	tocEnd               = "<!-- END MUNGE: GENERATED_TOC -->"
 	repoChangelogDir     = "CHANGELOG"

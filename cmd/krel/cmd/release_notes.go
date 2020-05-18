@@ -91,6 +91,7 @@ type releaseNotesOptions struct {
 	draftRepo       string
 	createDraftPR   bool
 	createWebsitePR bool
+	dependencies    bool
 	outputDir       string
 	Format          string
 	websiteOrg      string
@@ -167,7 +168,14 @@ func init() {
 		&releaseNotesOpts.Format,
 		"format",
 		util.EnvDefault("FORMAT", "markdown"),
-		"The format for notes output (options: markdown, json)",
+		"the format for notes output (options: markdown, json)",
+	)
+
+	releaseNotesCmd.PersistentFlags().BoolVar(
+		&releaseNotesOpts.dependencies,
+		"dependencies",
+		true,
+		"add dependency report",
 	)
 
 	rootCmd.AddCommand(releaseNotesCmd)
@@ -655,6 +663,18 @@ func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
 		return nil, errors.Wrapf(
 			err, "rendering release notes to markdown",
 		)
+	}
+
+	// Add the dependency report if necessary
+	if releaseNotesOpts.dependencies {
+		logrus.Info("Generating dependency changes")
+		deps, err := notes.NewDependencies().Changes(
+			notesOptions.StartRev, notesOptions.EndRev,
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "creating dependency report")
+		}
+		markdown += strings.Repeat(nl, 2) + deps
 	}
 
 	// Create the JSON

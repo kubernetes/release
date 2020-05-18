@@ -36,6 +36,7 @@ Before running `krel release-notes` export your GitHub token to \$GITHUB_TOKEN:
 ```
       --create-draft-pr                    create the Release Notes Draft PR. --draft-org and --draft-repo must be set along with this option
       --create-website-pr                  generate the Releas Notes to a local fork of relnotes.k8s.io and create a PR.  --draft-org and --draft-repo must be set along with this option
+      --dependencies                       add dependency report (default true)
       --draft-org string                   a Github organization owner of the fork of k/sig-release where the Release Notes Draft PR will be created
       --draft-repo string                  the name of the fork of k/sig-release, the Release Notes Draft PR will be created from this repository (default "sig-release")
       --format string                      The format for notes output (options: markdown, json) (default "markdown")
