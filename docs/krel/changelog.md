@@ -47,6 +47,7 @@ krel changelog [flags]
 Flags:
       --branch string      The branch to be used. Will be automatically inherited by the tag if not set.
       --bucket string      Specify gs bucket to point to in generated notes (default "kubernetes-release")
+      --dependencies       Add dependency report (default true)
   -h, --help               help for changelog
       --html-file string   The target html file to be written. If empty, then it will be CHANGELOG-x.y.html in the current path.
       --record string      Record the API into a directory
