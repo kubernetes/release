@@ -284,6 +284,11 @@ func OpenRepo(repoPath string) (*Repo, error) {
 		)
 	}
 
+	if strings.HasPrefix(repoPath, "~/") {
+		repoPath = os.Getenv("HOME") + repoPath[1:]
+		logrus.Warnf("Normalizing repository to: %s", repoPath)
+	}
+
 	r, err := git.PlainOpenWithOptions(
 		repoPath, &git.PlainOpenOptions{DetectDotGit: true},
 	)
