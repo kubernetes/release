@@ -14,29 +14,148 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubepkg
+package kubepkg_test
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/github/githubfakes"
+	"k8s.io/release/pkg/kubepkg"
+	"k8s.io/release/pkg/kubepkg/kubepkgfakes"
 	"k8s.io/release/pkg/kubepkg/options"
-	"k8s.io/release/pkg/release/releasefakes"
 )
 
-func newSUT() *Client {
-	opts := options.New()
-	sut := New(opts)
+var err = errors.New("")
 
-	githubMock := &githubfakes.FakeClient{}
-	sut.github.SetClient(githubMock)
+func newSUT(opts *options.Options) (*kubepkg.Client, *kubepkgfakes.FakeImpl) {
+	if opts == nil {
+		opts = options.New()
+	}
 
-	versionMock := &releasefakes.FakeVersionClient{}
-	sut.version.SetClient(versionMock)
+	sut := kubepkg.New(opts)
 
-	return sut
+	implMock := &kubepkgfakes.FakeImpl{}
+	sut.SetImpl(implMock)
+
+	return sut, implMock
+}
+
+func sutWithTemplateDir(
+	t *testing.T, opts *options.Options, buildType options.BuildType,
+) (sut *kubepkg.Client, cleanup func(), mock *kubepkgfakes.FakeImpl) {
+	tempDir, err := ioutil.TempDir("", "kubepkg-test-")
+	require.Nil(t, err)
+	cleanup = func() { require.Nil(t, os.RemoveAll(tempDir)) }
+
+	if opts == nil {
+		opts = options.New()
+	}
+	opts = opts.
+		WithTemplateDir(tempDir).
+		WithBuildType(buildType).
+		WithKubeVersion("v1.18.0")
+	sut, mock = newSUT(opts)
+
+	for _, dir := range opts.Packages() {
+		pkgPath := filepath.Join(tempDir, string(buildType), dir)
+		require.Nil(t, os.MkdirAll(pkgPath, 0755))
+	}
+	return sut, cleanup, mock
+}
+
+func TestConstructBuilds(t *testing.T) {
+	sut, cleanup, _ := sutWithTemplateDir(t, nil, options.BuildRpm)
+	defer cleanup()
+
+	builds, err := sut.ConstructBuilds()
+	require.Nil(t, err)
+	require.NotEmpty(t, builds)
+	require.Len(t, builds, 5)
+	require.Len(t, builds[0].Definitions, 3)
+	require.Equal(t, "kubelet", builds[0].Package)
+	require.Equal(t, options.BuildRpm, builds[0].Type)
+}
+
+func TestWalkBuildsSuccessWithoutArchitectures(t *testing.T) {
+	opts := options.New().WithArchitectures().WithSpecOnly(true)
+	sut, cleanup, _ := sutWithTemplateDir(t, opts, options.BuildRpm)
+	defer cleanup()
+
+	builds, err := sut.ConstructBuilds()
+	require.Nil(t, err)
+
+	err = sut.WalkBuilds(builds)
+	require.Nil(t, err)
+}
+
+func TestWalkBuildsSuccessRPM(t *testing.T) {
+	sut, cleanup, _ := sutWithTemplateDir(t, nil, options.BuildRpm)
+	defer cleanup()
+
+	builds, err := sut.ConstructBuilds()
+	require.Nil(t, err)
+
+	err = sut.WalkBuilds(builds)
+	require.Nil(t, err)
+}
+
+func TestWalkBuildsSuccessRPMSpecOnly(t *testing.T) {
+	opts := options.New().WithSpecOnly(true)
+	sut, cleanup, _ := sutWithTemplateDir(t, opts, options.BuildRpm)
+	defer cleanup()
+
+	builds, err := sut.ConstructBuilds()
+	require.Nil(t, err)
+
+	err = sut.WalkBuilds(builds)
+	require.Nil(t, err)
+}
+
+func TestWalkBuildsSuccessDeb(t *testing.T) {
+	sut, cleanup, _ := sutWithTemplateDir(t, nil, options.BuildDeb)
+	defer cleanup()
+
+	builds, err := sut.ConstructBuilds()
+	require.Nil(t, err)
+
+	err = sut.WalkBuilds(builds)
+	require.Nil(t, err)
+}
+
+func TestWalkBuildsFailureDebMvFailed(t *testing.T) {
+	sut, cleanup, mock := sutWithTemplateDir(t, nil, options.BuildDeb)
+	mock.RunSuccessReturns(err)
+	defer cleanup()
+
+	builds, err := sut.ConstructBuilds()
+	require.Nil(t, err)
+
+	err = sut.WalkBuilds(builds)
+	require.NotNil(t, err)
+}
+
+func TestWalkBuildsFailureDebDPKGFailed(t *testing.T) {
+	sut, cleanup, mock := sutWithTemplateDir(t, nil, options.BuildDeb)
+	mock.RunSuccessWithWorkDirReturns(err)
+	defer cleanup()
+
+	builds, err := sut.ConstructBuilds()
+	require.Nil(t, err)
+
+	err = sut.WalkBuilds(builds)
+	require.NotNil(t, err)
+}
+
+func TestConstructBuildsFailedInvalidTemplateDir(t *testing.T) {
+	sut, _ := newSUT(nil)
+	builds, err := sut.ConstructBuilds()
+	require.NotNil(t, err)
+	require.Nil(t, builds)
 }
 
 func TestGetPackageVersionSuccess(t *testing.T) {
@@ -76,10 +195,10 @@ func TestGetPackageVersionSuccess(t *testing.T) {
 		},
 	}
 
-	sut := newSUT()
+	sut, _ := newSUT(nil)
 	for _, tc := range testcases {
-		actual, err := sut.getPackageVersion(
-			&PackageDefinition{
+		actual, err := sut.GetPackageVersion(
+			&kubepkg.PackageDefinition{
 				Name:              tc.packageName,
 				Version:           tc.version,
 				KubernetesVersion: tc.kubeVersion,
@@ -92,8 +211,8 @@ func TestGetPackageVersionSuccess(t *testing.T) {
 }
 
 func TestGetPackageVersionFailure(t *testing.T) {
-	sut := newSUT()
-	_, err := sut.getPackageVersion(nil)
+	sut, _ := newSUT(nil)
+	_, err := sut.GetPackageVersion(nil)
 	require.NotNil(t, err)
 }
 
@@ -105,7 +224,7 @@ func TestGetKubernetesVersionSuccess(t *testing.T) {
 		name        string
 		version     string
 		kubeVersion string
-		channel     ChannelType
+		channel     kubepkg.ChannelType
 		expected    string
 	}{
 		{
@@ -115,10 +234,10 @@ func TestGetKubernetesVersionSuccess(t *testing.T) {
 		},
 	}
 
-	sut := newSUT()
+	sut, _ := newSUT(nil)
 	for _, tc := range testcases {
-		actual, err := sut.getKubernetesVersion(
-			&PackageDefinition{
+		actual, err := sut.GetKubernetesVersion(
+			&kubepkg.PackageDefinition{
 				Version:           tc.version,
 				KubernetesVersion: tc.kubeVersion,
 			},
@@ -130,8 +249,8 @@ func TestGetKubernetesVersionSuccess(t *testing.T) {
 }
 
 func TestGetKubernetesVersionFailure(t *testing.T) {
-	sut := newSUT()
-	_, err := sut.getKubernetesVersion(nil)
+	sut, _ := newSUT(nil)
+	_, err := sut.GetKubernetesVersion(nil)
 	require.NotNil(t, err)
 }
 
@@ -146,7 +265,7 @@ func TestGetCNIVersionSuccess(t *testing.T) {
 			name:        "CNI version supplied, Kubernetes version < 1.17",
 			version:     "0.8.3",
 			kubeVersion: "1.16.0",
-			expected:    pre117CNIVersion,
+			expected:    kubepkg.Pre117CNIVersion,
 		},
 		{
 			name:        "CNI version supplied, Kubernetes version >= 1.17",
@@ -157,13 +276,13 @@ func TestGetCNIVersionSuccess(t *testing.T) {
 		{
 			name:        "CNI version not supplied",
 			kubeVersion: "1.17.0",
-			expected:    minimumCNIVersion,
+			expected:    kubepkg.MinimumCNIVersion,
 		},
 	}
 
 	for _, tc := range testcases {
-		actual, err := getCNIVersion(
-			&PackageDefinition{
+		actual, err := kubepkg.GetCNIVersion(
+			&kubepkg.PackageDefinition{
 				Version:           tc.version,
 				KubernetesVersion: tc.kubeVersion,
 			},
@@ -175,7 +294,7 @@ func TestGetCNIVersionSuccess(t *testing.T) {
 }
 
 func TestGetCNIVersionFailure(t *testing.T) {
-	_, err := getCNIVersion(nil)
+	_, err := kubepkg.GetCNIVersion(nil)
 	require.NotNil(t, err)
 }
 
@@ -198,10 +317,10 @@ func TestGetCRIToolsVersionSuccess(t *testing.T) {
 		},
 	}
 
-	sut := newSUT()
+	sut, _ := newSUT(nil)
 	for _, tc := range testcases {
-		actual, err := sut.getCRIToolsVersion(
-			&PackageDefinition{
+		actual, err := sut.GetCRIToolsVersion(
+			&kubepkg.PackageDefinition{
 				Version:           tc.version,
 				KubernetesVersion: tc.kubeVersion,
 			},
@@ -213,8 +332,8 @@ func TestGetCRIToolsVersionSuccess(t *testing.T) {
 }
 
 func TestGetCRIToolsVersionFailure(t *testing.T) {
-	sut := newSUT()
-	_, err := sut.getCRIToolsVersion(nil)
+	sut, _ := newSUT(nil)
+	_, err := sut.GetCRIToolsVersion(nil)
 	require.NotNil(t, err)
 }
 
@@ -222,13 +341,13 @@ func TestGetDownloadLinkBaseSuccess(t *testing.T) {
 	testcases := []struct {
 		name        string
 		kubeVersion string
-		channel     ChannelType
+		channel     kubepkg.ChannelType
 		expected    string
 	}{
 		{
 			name:        "CI version",
 			kubeVersion: "1.18.0-alpha.1.277+2099c00290d262",
-			channel:     ChannelNightly,
+			channel:     kubepkg.ChannelNightly,
 			expected:    "https://dl.k8s.io/ci/v1.18.0-alpha.1.277+2099c00290d262",
 		},
 		{
@@ -238,10 +357,10 @@ func TestGetDownloadLinkBaseSuccess(t *testing.T) {
 		},
 	}
 
-	sut := newSUT()
+	sut, _ := newSUT(nil)
 	for _, tc := range testcases {
-		actual, err := sut.getDownloadLinkBase(
-			&PackageDefinition{
+		actual, err := sut.GetDownloadLinkBase(
+			&kubepkg.PackageDefinition{
 				KubernetesVersion: tc.kubeVersion,
 				Channel:           tc.channel,
 			},
@@ -253,8 +372,8 @@ func TestGetDownloadLinkBaseSuccess(t *testing.T) {
 }
 
 func TestGetDownloadLinkBaseFailure(t *testing.T) {
-	sut := newSUT()
-	_, err := sut.getDownloadLinkBase(nil)
+	sut, _ := newSUT(nil)
+	_, err := sut.GetDownloadLinkBase(nil)
 	require.NotNil(t, err)
 }
 
@@ -271,10 +390,10 @@ func TestGetCIBuildsDownloadLinkBaseSuccess(t *testing.T) {
 		},
 	}
 
-	sut := newSUT()
+	sut, _ := newSUT(nil)
 	for _, tc := range testcases {
-		actual, err := sut.getCIBuildsDownloadLinkBase(
-			&PackageDefinition{
+		actual, err := sut.GetCIBuildsDownloadLinkBase(
+			&kubepkg.PackageDefinition{
 				KubernetesVersion: tc.kubeVersion,
 			},
 		)
@@ -285,8 +404,8 @@ func TestGetCIBuildsDownloadLinkBaseSuccess(t *testing.T) {
 }
 
 func TestGetCIBuildsDownloadLinkBaseFailure(t *testing.T) {
-	sut := newSUT()
-	_, err := sut.getCIBuildsDownloadLinkBase(nil)
+	sut, _ := newSUT(nil)
+	_, err := sut.GetCIBuildsDownloadLinkBase(nil)
 	require.NotNil(t, err)
 }
 
@@ -309,8 +428,8 @@ func TestGetDefaultReleaseDownloadLinkBaseSuccess(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		actual, err := getDefaultReleaseDownloadLinkBase(
-			&PackageDefinition{
+		actual, err := kubepkg.GetDefaultReleaseDownloadLinkBase(
+			&kubepkg.PackageDefinition{
 				KubernetesVersion: tc.kubeVersion,
 			},
 		)
@@ -321,7 +440,7 @@ func TestGetDefaultReleaseDownloadLinkBaseSuccess(t *testing.T) {
 }
 
 func TestGetDefaultReleaseDownloadLinkBaseFailure(t *testing.T) {
-	_, err := getDefaultReleaseDownloadLinkBase(nil)
+	_, err := kubepkg.GetDefaultReleaseDownloadLinkBase(nil)
 	require.NotNil(t, err)
 }
 
@@ -351,8 +470,8 @@ func TestGetDependenciesSuccess(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		actual, err := getDependencies(
-			&PackageDefinition{
+		actual, err := kubepkg.GetDependencies(
+			&kubepkg.PackageDefinition{
 				Name: tc.packageName,
 			},
 		)
@@ -363,7 +482,7 @@ func TestGetDependenciesSuccess(t *testing.T) {
 }
 
 func TestGetDependenciesFailure(t *testing.T) {
-	_, err := getDependencies(nil)
+	_, err := kubepkg.GetDependencies(nil)
 	require.NotNil(t, err)
 }
 
@@ -389,8 +508,8 @@ func TestGetCNIDownloadLinkSuccess(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		actual, err := getCNIDownloadLink(
-			&PackageDefinition{
+		actual, err := kubepkg.GetCNIDownloadLink(
+			&kubepkg.PackageDefinition{
 				Version: tc.version,
 			},
 			tc.arch,
@@ -402,6 +521,6 @@ func TestGetCNIDownloadLinkSuccess(t *testing.T) {
 }
 
 func TestGetCNIDownloadLinkFailure(t *testing.T) {
-	_, err := getCNIDownloadLink(nil, "amd64")
+	_, err := kubepkg.GetCNIDownloadLink(nil, "amd64")
 	require.NotNil(t, err)
 }
