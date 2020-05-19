@@ -26,10 +26,10 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	gogithub "github.com/google/go-github/v29/github"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	gogithub "github.com/google/go-github/v29/github"
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/kubepkg/options"
