@@ -859,11 +859,11 @@ push_git_objects () {
 
   if [[ "$RELEASE_BRANCH" =~ release- ]]; then
     logecho -n "Pushing$dryrun_flag $RELEASE_BRANCH branch: "
-    logrun -v -s git push$dryrun_flag origin $RELEASE_BRANCH || return 1
+    logrun -s git push$dryrun_flag origin $RELEASE_BRANCH || return 1
     # Additionally push the parent branch if a branch of branch
     if [[ "$PARENT_BRANCH" =~ release- ]]; then
       logecho -n "Pushing$dryrun_flag $PARENT_BRANCH branch: "
-      logrun -v -s git push$dryrun_flag origin $PARENT_BRANCH || return 1
+      logrun -s git push$dryrun_flag origin $PARENT_BRANCH || return 1
     fi
   fi
 
