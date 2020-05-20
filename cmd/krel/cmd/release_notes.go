@@ -269,7 +269,7 @@ func runReleaseNotes() (err error) {
 			return errors.Wrap(err, "writing release notes JSON file")
 		}
 	case "markdown":
-		err = ioutil.WriteFile(filepath.Join(releaseNotesOpts.outputDir, "release-notes.md"), []byte(result.json), 0644)
+		err = ioutil.WriteFile(filepath.Join(releaseNotesOpts.outputDir, "release-notes.md"), []byte(result.markdown), 0644)
 		if err != nil {
 			return errors.Wrap(err, "writing release notes markdown file")
 		}
