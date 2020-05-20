@@ -48,6 +48,10 @@ const (
 	defaultKubernetesSigsOrg = "kubernetes-sigs"
 	// defaultKubernetesSigsRepo relnotes.k8s.io repository name
 	defaultKubernetesSigsRepo = "release-notes"
+	// defaultKubernetesSigReleaseOrg org owner of the sig-release repo
+	defaultKubernetesSigReleaseOrg = "kubernetes"
+	// defaultKubernetesSigReleaseRepo name of the sig-release repository
+	defaultKubernetesSigReleaseRepo = "sig-release"
 	// userForkName The name we will give to the user's remote when adding it to repos
 	userForkName = "userfork"
 	// assetsFilePath Path to the assets.ts file
@@ -213,6 +217,11 @@ func runReleaseNotes() (err error) {
 			return errors.Wrap(err, "validating PR command line options")
 		}
 
+		// Verify the repository
+		if err = validateWebsitePRRepository(); err != nil {
+			return errors.Wrapf(err, "while checking %s/%s fork", defaultKubernetesSigsOrg, defaultKubernetesSigsRepo)
+		}
+
 		// Generate the release notes for ust the current tag
 		jsonStr, err := releaseNotesJSON(tag)
 		if err != nil {
@@ -221,18 +230,22 @@ func runReleaseNotes() (err error) {
 
 		// Run the website PR process
 		if err := createWebsitePR(tag, jsonStr); err != nil {
-			return errors.Wrapf(err, "generating releasenotes for tag %s", tag)
+			return errors.Wrapf(err, "generating release notes for tag %s", tag)
 		}
 		return nil
 	}
 
 	// Create the PR for the Release Notes Draft in k/sig-release
 	if releaseNotesOpts.createDraftPR {
+
 		// Check cmd line options
-		if releaseNotesOpts.createDraftPR {
-			if err = validateDraftPROptions(); err != nil {
-				return errors.Wrap(err, "validating PR command line options")
-			}
+		if err = validateDraftPROptions(); err != nil {
+			return errors.Wrap(err, "validating PR command line options")
+		}
+
+		// Verify the repository
+		if err = validateDraftPRRepository(); err != nil {
+			return errors.Wrapf(err, "while checking %s/%s fork", defaultKubernetesSigReleaseOrg, defaultKubernetesSigReleaseRepo)
 		}
 
 		// Generate the notes for the current version
@@ -272,9 +285,69 @@ func runReleaseNotes() (err error) {
 	return nil
 }
 
+// validateDraftPRRepository checks if a repo is fit to create a PR
+func validateDraftPRRepository() error {
+	gh := github.New()
+
+	isrepo, err := gh.RepoIsForkOf(
+		releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo, defaultKubernetesSigReleaseOrg, defaultKubernetesSigReleaseRepo,
+	)
+	if err != nil {
+		return errors.Wrapf(
+			err, "while checking if repository is a fork of %s/%s",
+			defaultKubernetesSigReleaseOrg, defaultKubernetesSigReleaseRepo,
+		)
+	}
+
+	if !isrepo {
+		return errors.New(
+			fmt.Sprintf(
+				"Cannot create PR, %s/%s is not a fork of %s/%s",
+				releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo,
+				defaultKubernetesSigReleaseOrg, defaultKubernetesSigReleaseRepo,
+			),
+		)
+	}
+
+	return nil
+}
+
+// validateWebsitePRRepository checks if a repo is fit to create a PR
+func validateWebsitePRRepository() error {
+	gh := github.New()
+
+	isrepo, err := gh.RepoIsForkOf(
+		releaseNotesOpts.websiteOrg, releaseNotesOpts.websiteRepo,
+		defaultKubernetesSigsOrg, defaultKubernetesSigsRepo,
+	)
+	if err != nil {
+		return errors.Wrapf(
+			err, "while checking if repository is a fork of %s/%s",
+			defaultKubernetesSigsOrg, defaultKubernetesSigsRepo,
+		)
+	}
+
+	if !isrepo {
+		return errors.New(
+			fmt.Sprintf(
+				"Cannot create PR, %s/%s is not a fork of %s/%s",
+				releaseNotesOpts.websiteOrg, releaseNotesOpts.websiteRepo,
+				defaultKubernetesSigsOrg, defaultKubernetesSigsRepo,
+			),
+		)
+	}
+
+	return nil
+}
+
 // validateDraftPROptions checks if we have all needed parameters to create the Release Notes PR
 func validateDraftPROptions() error {
 	if releaseNotesOpts.createDraftPR {
+		token, isset := os.LookupEnv("GITHUB_TOKEN")
+		if !isset || token == "" {
+			return errors.New("Cannot create release notes draft if GITHUB_TOKEN is not set")
+		}
+
 		// Check if --create-website-pr is set
 		if releaseNotesOpts.createWebsitePR {
 			return errors.New("Cannot create release notes draft if --create-website-pr is set")
@@ -301,6 +374,15 @@ func validateDraftPROptions() error {
 // validateWebsitePROptions checks if we have all needed parameters to create the Release Notes PR
 func validateWebsitePROptions() error {
 	if releaseNotesOpts.createWebsitePR {
+		token, isset := os.LookupEnv("GITHUB_TOKEN")
+		if !isset || token == "" {
+			return errors.New("Cannot create release notes json file if GITHUB_TOKEN is not set")
+		}
+
+		if releaseNotesOpts.createDraftPR {
+			return errors.New("Cannot creare Website PR if --create-draft-pr is defined")
+		}
+
 		// Check if --website-org is set
 		if releaseNotesOpts.websiteOrg == "" {
 			logrus.Warn("cannot generate the Website PR without --website-org")
@@ -530,7 +612,29 @@ func createWebsitePR(tag, jsonStr string) (err error) {
 		return errors.Wrapf(err, "pushing %v to %v/%v", userForkName, releaseNotesOpts.websiteOrg, releaseNotesOpts.websiteRepo)
 	}
 
-	// TODO: Call github API and create PR against k/sig-release
+	// Create a PR against k/sig-release using the github API
+	gh := github.New()
+
+	// Create the pull request
+	logrus.Debugf(
+		"PR params: org: %s, repo: %s, headBranch: %s baseBranch: %s",
+		defaultKubernetesSigsOrg, defaultKubernetesSigsRepo, "master",
+		fmt.Sprintf("%s:%s", releaseNotesOpts.websiteOrg, branchname),
+	)
+	pr, err := gh.CreatePullRequest(
+		defaultKubernetesSigsOrg, defaultKubernetesSigsRepo, "master",
+		fmt.Sprintf("%s:%s", releaseNotesOpts.websiteOrg, branchname),
+		fmt.Sprintf("Patch relnotes.k8s.io to release %s", tag),
+		fmt.Sprintf("Automated patch to update relnotes.k8s.io to k/k version `%s` ", tag),
+	)
+
+	if err != nil {
+		logrus.Warnf("An error ocurred while creating the pull request for %s", tag)
+		logrus.Warn("While the PR failed, the release notes where generated and submitted to your fork")
+		return errors.Wrap(err, "creating the pull request")
+	}
+
+	logrus.Infof("Successfully created PR #%d", pr.GetNumber())
 	return nil
 }
 
