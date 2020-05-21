@@ -266,7 +266,7 @@ func runReleaseNotes() (err error) {
 	case "json":
 		err = ioutil.WriteFile(filepath.Join(releaseNotesOpts.outputDir, "release-notes.json"), []byte(result.json), 0644)
 		if err != nil {
-			return errors.Wrap(err, "writing release notes JSON file")
+			return errors.Wrap(err, "generating release notes in json")
 		}
 	case "markdown":
 		err = ioutil.WriteFile(filepath.Join(releaseNotesOpts.outputDir, "release-notes.md"), []byte(result.markdown), 0644)
@@ -666,25 +666,6 @@ func createWebsitePR(tag, jsonStr string) (err error) {
 	return nil
 }
 
-// tryToFindPreviuousTag gets a release tag and returns the one before it
-func tryToFindPreviuousTag(tag string) (string, error) {
-	url := git.GetDefaultKubernetesRepoURL()
-	status, err := command.New(
-		"git", "ls-remote", "--sort=v:refname",
-		"--tags", url,
-	).
-		Pipe("grep", "-Eo", "v[0-9].[0-9]+.[0-9]+[-a-z0-9\\.]*$").
-		Pipe("grep", "-B1", tag).
-		Pipe("head", "-1").
-		RunSilentSuccessOutput()
-
-	if err != nil {
-		return "", err
-	}
-
-	return strings.TrimSpace(status.Output()), nil
-}
-
 // tryToFindLatestMinorTag looks-up the default k/k remote to find the latest
 // non final version
 func tryToFindLatestMinorTag() (string, error) {
@@ -709,14 +690,52 @@ func tryToFindLatestMinorTag() (string, error) {
 func releaseNotesJSON(tag string) (string, error) {
 	logrus.Infof("Generating release notes for tag %s", tag)
 
-	// TODO: Change this logic to get the tag from git.PreviousTag
-	startTag, err := tryToFindPreviuousTag(tag)
+	tagVersion, err := util.TagStringToSemver(tag)
 	if err != nil {
-		return "", errors.Wrap(err, "trying to get previous tag")
+		return "", errors.Wrap(err, "parsing semver from tag string")
 	}
 
+	branchName := git.Master
+	releaseBranch := fmt.Sprintf("release-%d.%d", tagVersion.Major, tagVersion.Minor)
+
+	// Ensure we have a valid branch
+	if !git.IsReleaseBranch(branchName) {
+		return "", errors.New("Could not determine a release branch for tag")
+	}
+
+	// Preclone the repo to be able to read branches and tags
+	logrus.Infof("Cloning %s/%s", git.DefaultGithubOrg, git.DefaultGithubRepo)
+	repo, err := git.CloneOrOpenDefaultGitHubRepoSSH(rootOpts.repoPath)
+	if err != nil {
+		return "", errors.Wrap(err, "cloning default github repo")
+	}
+
+	// Chech if release branch already exists
+	_, err = repo.RevParse(releaseBranch)
+	if err == nil {
+		logrus.Infof("Working on branch %s instead of master", releaseBranch)
+		branchName = releaseBranch
+	} else {
+		logrus.Infof("Release branch %s does not exist, working on master", releaseBranch)
+	}
+
+	// If it's a patch release, we deduce the startTag manually:
+	var startTag string
+	if tagVersion.Patch > 0 {
+		logrus.Debugf("Working on branch %s instead of master", tag)
+		startTag = fmt.Sprintf("v%d.%d.%d", tagVersion.Major, tagVersion.Minor, tagVersion.Patch-1)
+	} else {
+		startTag, err = repo.PreviousTag(tag, branchName)
+		if err != nil {
+			return startTag, errors.Wrap(err, "getting previous tag from branch")
+		}
+	}
+
+	logrus.Infof("Using start tag %v", startTag)
+	logrus.Infof("Using end tag %v", tag)
+
 	notesOptions := options.New()
-	notesOptions.Branch = git.Master
+	notesOptions.Branch = branchName
 	notesOptions.RepoPath = rootOpts.repoPath
 	notesOptions.StartRev = startTag
 	notesOptions.EndRev = tag
@@ -726,9 +745,6 @@ func releaseNotesJSON(tag string) (string, error) {
 	if err := notesOptions.ValidateAndFinish(); err != nil {
 		return "", err
 	}
-
-	logrus.Infof("Using start tag %v", startTag)
-	logrus.Infof("Using end tag %v", tag)
 
 	// Fetch the notes
 	releaseNotes, history, err := notes.GatherReleaseNotes(notesOptions)
