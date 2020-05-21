@@ -153,7 +153,8 @@ filename | sha512 hash
 ## Changes by Kind
 {{ range .Notes}}
 ### {{.Kind | prettyKind}}
-{{range $note := .NoteEntries }}{{println " -" $note}}{{end}}
+
+{{range $note := .NoteEntries }}{{println "-" $note}}{{end}}
 {{- end -}}
 {{- end -}}
 `

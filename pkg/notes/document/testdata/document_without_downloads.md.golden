@@ -7,34 +7,42 @@
 
 ### (No, really, you MUST read this before you upgrade)
 
- - Action required note.
+- Action required note.
  
 ## Changes by Kind
 
 ### Deprecation
- - Deprecation #1.
- - This note is duplicated across SIGs.
+
+- Deprecation #1.
+- This note is duplicated across SIGs.
 
 ### Feature
- - A feature.
+
+- A feature.
 
 ### Design
- - Design change.
+
+- Design change.
 
 ### Documentation
- - Update docs.
+
+- Update docs.
 
 ### Failing Test
- - Fix a failing test.
+
+- Fix a failing test.
 
 ### Bug or Regression
- - Bugfix.
- - This note was prepended with a dash (-) initially.
- - This note was prepended with a star (*) initially.
+
+- Bugfix.
+- This note was prepended with a dash (-) initially.
+- This note was prepended with a star (*) initially.
 
 ### Other (Cleanup or Flake)
- - Clean up.
- - Fix a flakey test.
+
+- Clean up.
+- Fix a flakey test.
 
 ### Uncategorized
- - Uncategorized note.
+
+- Uncategorized note.
