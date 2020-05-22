@@ -44,3 +44,8 @@ func PreCheck() error {
 
 	return nil
 }
+
+// GSUtil can be used to run a gsutil command
+func GSUtil(args ...string) error {
+	return command.Execute(GSUtilExecutable, args...)
+}
