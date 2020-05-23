@@ -97,6 +97,24 @@ type FakeClient struct {
 		result2 *githuba.Response
 		result3 error
 	}
+	listBranchesMutex       sync.RWMutex
+	ListBranchesStub        func(context.Context, string, string, *githuba.BranchListOptions) ([]*githuba.Branch, *githuba.Response, error)
+	listBranchesArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 *githuba.BranchListOptions
+	}
+	listBranchesReturns struct {
+		result1 []*githuba.Branch
+		result2 *githuba.Response
+		result3 error
+	}
+	listBranchesReturnsOnCall map[int]struct {
+		result1 []*githuba.Branch
+		result2 *githuba.Response
+		result3 error
+	}
 	ListCommitsStub        func(context.Context, string, string, *githuba.CommitsListOptions) ([]*githuba.RepositoryCommit, *githuba.Response, error)
 	listCommitsMutex       sync.RWMutex
 	listCommitsArgsForCall []struct {
@@ -778,6 +796,40 @@ func (fake *FakeClient) GetRespositoryReturns(result1 *githuba.Repository, resul
 	fake.GetRepositoryStub = nil
 	fake.getRepositoryReturns = struct {
 		result1 *githuba.Repository
+		result2 *githuba.Response
+		result3 error
+	}{result1, result2, result3}
+}
+
+func (fake *FakeClient) ListBranches(
+	arg1 context.Context, arg2, arg3 string, arg4 *githuba.BranchListOptions,
+) ([]*githuba.Branch, *githuba.Response, error) {
+	fake.listBranchesMutex.Lock()
+	ret, specificReturn := fake.listBranchesReturnsOnCall[len(fake.createPullRequestArgsForCall)]
+	fake.listBranchesArgsForCall = append(fake.listBranchesArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 *githuba.BranchListOptions
+	}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("ListBranches", []interface{}{arg1, arg2, arg3, arg4})
+	fake.listBranchesMutex.Unlock()
+	if fake.ListBranchesStub != nil {
+		return fake.ListBranchesStub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2, ret.result3
+	}
+	fakeReturns := fake.listBranchesReturns
+	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
+}
+
+func (fake *FakeClient) ListBranchesReturns(result1 []*githuba.Branch, result2 *githuba.Response, result3 error) {
+	fake.listBranchesMutex.Lock()
+	defer fake.listBranchesMutex.Unlock()
+	fake.ListBranchesStub = nil
+	fake.listBranchesReturns = struct {
+		result1 []*githuba.Branch
 		result2 *githuba.Response
 		result3 error
 	}{result1, result2, result3}
