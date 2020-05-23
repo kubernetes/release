@@ -10,7 +10,7 @@ build:
 binary:
 	mkdir -p ./bin
 	curl -sSL --fail --retry 5 \
-		"https://dl.k8s.io/network-plugins/cni-plugins-{{ .Arch }}-$(CNI_VERSION).tgz" \
+		"https://storage.googleapis.com/k8s-artifacts-cni/release/$(CNI_VERSION)/cni-plugins-linux-{{ .Arch }}-$(CNI_VERSION).tgz" \
 		| tar -C ./bin -xz
 	dh_testroot
 	dh_auto_install

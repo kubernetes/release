@@ -26,7 +26,7 @@ Source1: kubelet.service
 Source2: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/%{ARCH}/kubectl
 Source3: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/%{ARCH}/kubeadm
 Source4: 10-kubeadm.conf
-Source5: https://dl.k8s.io/network-plugins/cni-plugins-%{ARCH}-v%{CNI_VERSION}.tgz
+Source5: https://storage.googleapis.com/k8s-artifacts-cni/release/v%{CNI_VERSION}/cni-plugins-linux-%{ARCH}-v%{CNI_VERSION}.tgz
 Source6: kubelet.env
 Source7: https://storage.googleapis.com/k8s-artifacts-cri-tools/release/v%{CRI_TOOLS_VERSION}/crictl-v%{CRI_TOOLS_VERSION}-linux-%{ARCH}.tar.gz
 
@@ -130,7 +130,7 @@ install -m 755 -d %{buildroot}%{_sysconfdir}/sysconfig/
 install -p -m 644 -T kubelet.env %{buildroot}%{_sysconfdir}/sysconfig/kubelet
 
 install -m 755 -d %{buildroot}/opt/cni/bin
-# bin directory from cni-plugins-%{ARCH}-%{CNI_VERSION}.tgz with a list of cni plugins (among other things)
+# bin directory from cni-plugins-linux-%{ARCH}-%{CNI_VERSION}.tgz with a list of cni plugins (among other things)
 mv cni-plugins/* %{buildroot}/opt/cni/bin/
 
 %files
@@ -160,6 +160,10 @@ mv cni-plugins/* %{buildroot}/opt/cni/bin/
 * Fri May 29 2020 Stephen Augustus <saugustus@vmware.com> - 1.18.4
 - Source cri-tools from https://storage.googleapis.com/k8s-artifacts-cri-tools/release
   instead of https://github.com/kubernetes-sigs/cri-tools
+
+* Fri May 22 2020 Stephen Augustus <saugustus@vmware.com> - 1.18.4
+- Source CNI plugins from https://storage.googleapis.com/k8s-artifacts-cni/release
+  instead of https://dl.k8s.io/network-plugins
 
 * Thu Jun 24 2019 Stephen Augustus <saugustus@vmware.com> - 1.15.1
 - Bump minimum versions of all kubernetes dependencies
