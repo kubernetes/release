@@ -1,2 +1,3 @@
 usr/bin/kubelet usr/bin/
 lib/systemd/system/kubelet.service lib/systemd/system/
+bin/ opt/cni
