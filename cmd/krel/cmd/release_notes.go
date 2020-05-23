@@ -396,6 +396,27 @@ func validateWebsitePROptions() error {
 	return nil
 }
 
+// checkForBranch checks if a branch exists in the given repo
+func checkForBranch(githubOrg, githubRepo, branchname string) error {
+	gh := github.New()
+	logrus.Infof("Verifying branch %s does not exist in repository", branchname)
+	branches, err := gh.ListBranches(githubOrg, githubRepo)
+	if err != nil {
+		return errors.Wrap(err, "while listing repository branches")
+	}
+
+	for _, branch := range branches {
+		if branch.GetName() == branchname {
+			return errors.New(fmt.Sprintf(
+				"A branch named %s already exists in %s/%s",
+				branchname, githubOrg, githubRepo,
+			))
+		}
+	}
+
+	return nil
+}
+
 // createDraftPR pushes the release notes draft to the users fork
 func createDraftPR(tag string, result *releaseNotesResult) (err error) {
 	s, err := util.TagStringToSemver(tag)
@@ -404,6 +425,11 @@ func createDraftPR(tag string, result *releaseNotesResult) (err error) {
 	}
 
 	branchname := "release-notes-draft-" + tag
+	if err := checkForBranch(
+		releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo, branchname,
+	); err != nil {
+		return errors.Wrap(err, "while checking if branch can be created")
+	}
 
 	// Prepare the fork of k/sig-release
 	sigReleaseRepo, err := prepareFork(
@@ -444,7 +470,6 @@ func createDraftPR(tag string, result *releaseNotesResult) (err error) {
 	}
 
 	// Create a PR against k/sig-release using the github API
-	gh := github.New()
 
 	// TODO: Maybe read and parse the PR template from sig-release?
 	prBody := fmt.Sprintln(
@@ -463,6 +488,8 @@ func createDraftPR(tag string, result *releaseNotesResult) (err error) {
 		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, "master",
 		fmt.Sprintf("%s:%s", releaseNotesOpts.draftOrg, branchname),
 	)
+
+	gh := github.New()
 	pr, err := gh.CreatePullRequest(
 		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, "master",
 		fmt.Sprintf("%s:%s", releaseNotesOpts.draftOrg, branchname),
@@ -590,6 +617,11 @@ func createWebsitePR(tag, jsonStr string) (err error) {
 
 	jsonNotesFilename := fmt.Sprintf("release-notes-%s.json", tag[1:])
 	branchname := "release-notes-json-" + tag
+	if err := checkForBranch(
+		releaseNotesOpts.websiteOrg, releaseNotesOpts.websiteRepo, branchname,
+	); err != nil {
+		return errors.Wrap(err, "while checking if branch can be created")
+	}
 
 	// checkout kubernetes-sigs/release-notes
 	k8sSigsRepo, err := prepareFork(

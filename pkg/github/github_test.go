@@ -386,3 +386,34 @@ func TestRepoIsNotForkOf(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, result, false)
 }
+
+func TestListBranches(t *testing.T) {
+	// Given
+	sut, client := newSUT()
+
+	branch0 := "master"
+	branch1 := "myfork"
+	branch2 := "feature-branch"
+
+	branches := []*gogithub.Branch{
+		{
+			Name: &branch0,
+		},
+		{
+			Name: &branch1,
+		},
+		{
+			Name: &branch2,
+		},
+	}
+
+	client.ListBranchesReturns(branches, &gogithub.Response{NextPage: 0}, nil)
+
+	// When
+	result, err := sut.ListBranches("kubernetes", "kubernotia")
+
+	// Then
+	require.Nil(t, err)
+	require.Len(t, result, 3)
+	require.Equal(t, result[1].GetName(), branch1)
+}

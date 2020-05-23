@@ -156,6 +156,21 @@ func (c *githubNotesReplayClient) GetRepository(
 	return repository, record.response(), nil
 }
 
+func (c *githubNotesReplayClient) ListBranches(
+	ctx context.Context, owner, repo string, opts *github.BranchListOptions,
+) ([]*github.Branch, *github.Response, error) {
+	data, err := c.readRecordedData(gitHubAPIListBranches)
+	if err != nil {
+		return nil, nil, err
+	}
+	branches := make([]*github.Branch, 0)
+	record := apiRecord{Result: branches}
+	if err := json.Unmarshal(data, &record); err != nil {
+		return nil, nil, err
+	}
+	return branches, record.response(), nil
+}
+
 func (c *githubNotesReplayClient) readRecordedData(api gitHubAPI) ([]byte, error) {
 	c.replayMutex.Lock()
 	defer c.replayMutex.Unlock()

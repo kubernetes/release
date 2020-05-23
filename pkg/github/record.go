@@ -41,6 +41,7 @@ const (
 	gitHubAPIListReleases               gitHubAPI = "ListReleases"
 	gitHubAPIListTags                   gitHubAPI = "ListTags"
 	gitHubAPIGetRepository              gitHubAPI = "GetRepository"
+	gitHubAPIListBranches               gitHubAPI = "ListBranches"
 )
 
 type apiRecord struct {
@@ -167,6 +168,21 @@ func (c *githubNotesRecordClient) GetRepository(
 	}
 
 	return repository, resp, nil
+}
+
+func (c *githubNotesRecordClient) ListBranches(
+	ctx context.Context, owner, repo string, opts *github.BranchListOptions,
+) ([]*github.Branch, *github.Response, error) {
+	branches, resp, err := c.client.ListBranches(ctx, owner, repo, opts)
+	if err != nil {
+		return branches, resp, err
+	}
+
+	if err := c.recordAPICall(gitHubAPIListBranches, branches, resp); err != nil {
+		return nil, nil, err
+	}
+
+	return branches, resp, nil
 }
 
 // recordAPICall records a single GitHub API call into a JSON file by ensuring

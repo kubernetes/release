@@ -78,6 +78,10 @@ type Client interface {
 		context.Context, string, string, *github.ListOptions,
 	) ([]*github.RepositoryTag, *github.Response, error)
 
+	ListBranches(
+		context.Context, string, string, *github.BranchListOptions,
+	) ([]*github.Branch, *github.Response, error)
+
 	CreatePullRequest(
 		context.Context, string, string, string, string, string, string,
 	) (*github.PullRequest, error)
@@ -195,6 +199,17 @@ func (g *githubClient) ListTags(
 			return tags, resp, err
 		}
 	}
+}
+
+func (g *githubClient) ListBranches(
+	ctx context.Context, owner, repo string, opt *github.BranchListOptions,
+) ([]*github.Branch, *github.Response, error) {
+	branches, response, err := g.Repositories.ListBranches(ctx, owner, repo, opt)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "fetching brnaches from repo")
+	}
+
+	return branches, response, nil
 }
 
 func (g *githubClient) CreatePullRequest(
@@ -357,6 +372,18 @@ func (g *GitHub) GetRepository(
 	}
 
 	return repository, nil
+}
+
+// ListBranches gets a repository using the current client
+func (g *GitHub) ListBranches(
+	owner, repo string,
+) ([]*github.Branch, error) {
+	branches, _, err := g.Client().ListBranches(context.Background(), owner, repo, &github.BranchListOptions{})
+	if err != nil {
+		return branches, errors.Wrap(err, "getting branches from client")
+	}
+
+	return branches, nil
 }
 
 // RepoIsForkOf Function that checks if a repository is a fork of another
