@@ -19,8 +19,10 @@ package github
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/go-github/v29/github"
@@ -73,6 +75,14 @@ type Client interface {
 	ListReleases(
 		context.Context, string, string, *github.ListOptions,
 	) ([]*github.RepositoryRelease, *github.Response, error)
+
+	GetReleaseByTag(
+		context.Context, string, string, string,
+	) (*github.RepositoryRelease, *github.Response, error)
+
+	DownloadReleaseAsset(
+		context.Context, string, string, int64,
+	) (io.ReadCloser, string, error)
 
 	ListTags(
 		context.Context, string, string, *github.ListOptions,
@@ -186,6 +196,30 @@ func (g *githubClient) ListReleases(
 		)
 		if !shouldRetry(err) {
 			return releases, resp, err
+		}
+	}
+}
+
+func (g *githubClient) GetReleaseByTag(
+	ctx context.Context, owner, repo, tag string,
+) (*github.RepositoryRelease, *github.Response, error) {
+	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
+		release, resp, err := g.Repositories.GetReleaseByTag(ctx, owner, repo, tag)
+		if !shouldRetry(err) {
+			return release, resp, err
+		}
+	}
+}
+
+func (g *githubClient) DownloadReleaseAsset(
+	ctx context.Context, owner, repo string, assetID int64,
+) (io.ReadCloser, string, error) {
+	// TODO: Should we be getting this http client from somewhere else?
+	httpClient := http.DefaultClient
+	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
+		assetBody, redirectURL, err := g.Repositories.DownloadReleaseAsset(ctx, owner, repo, assetID, httpClient)
+		if !shouldRetry(err) {
+			return assetBody, redirectURL, err
 		}
 	}
 }
@@ -346,6 +380,62 @@ func (g *GitHub) Releases(owner, repo string, includePrereleases bool) ([]*githu
 	}
 
 	return releases, nil
+}
+
+// TODO: Support multiple tags
+func (g *GitHub) DownloadReleaseAssets(owner, repo, tag, outputDir string) error {
+	var releases []*github.RepositoryRelease
+	var err error
+
+	if tag != "" {
+		release, _, err := g.client.GetReleaseByTag(context.Background(), owner, repo, tag)
+		if err != nil {
+			return err
+		}
+
+		releases = append(releases, release)
+	} else {
+		releases, err = g.Releases(owner, repo, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, release := range releases {
+		releaseTag := release.GetTagName()
+		logrus.Infof("Download assets for %s/%s@%s", owner, repo, releaseTag)
+
+		releaseDir := filepath.Join(outputDir, releaseTag)
+		if err := os.MkdirAll(releaseDir, os.FileMode(0777)); err != nil {
+			return err
+		}
+
+		logrus.Infof("Writing assets to %s", releaseDir)
+
+		assets := release.Assets
+		for _, asset := range assets {
+			logrus.Infof("GitHub asset ID: %v, download URL: %s", *asset.ID, *asset.BrowserDownloadURL)
+			assetBody, _, err := g.client.DownloadReleaseAsset(context.Background(), owner, repo, *asset.ID)
+			if err != nil {
+				return err
+			}
+
+			filename := *asset.Name
+			absFile := filepath.Join(releaseDir, filename)
+			defer assetBody.Close()
+			assetFile, err := os.Create(absFile)
+			if err != nil {
+				return err
+			}
+
+			defer assetFile.Close()
+			if _, err := io.Copy(assetFile, assetBody); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // CreatePullRequest Creates a new pull request in owner/repo:baseBranch to merge changes from headBranchName

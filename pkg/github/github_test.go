@@ -289,14 +289,14 @@ func TestCreatePullRequest(t *testing.T) {
 	require.Equal(t, fakeID, pr.GetID())
 }
 
-func TestGetRespository(t *testing.T) {
+func TestGetRepository(t *testing.T) {
 	// Given
 	sut, client := newSUT()
 	fakeRepositoryID := int64(54596517) // k/release
 	kubernetesUserID := int64(13629408)
 	kubernetesLogin := "kubernetes"
 	repoName := "release"
-	client.GetRespositoryReturns(&gogithub.Repository{
+	client.GetRepositoryReturns(&gogithub.Repository{
 		ID:   &fakeRepositoryID,
 		Name: &repoName,
 		Owner: &gogithub.User{
@@ -329,7 +329,7 @@ func TestRepoIsForkOf(t *testing.T) {
 
 	trueVal := true
 
-	client.GetRespositoryReturns(&gogithub.Repository{
+	client.GetRepositoryReturns(&gogithub.Repository{
 		Name: &repoName,
 		Fork: &trueVal,
 		Owner: &gogithub.User{
@@ -364,7 +364,7 @@ func TestRepoIsNotForkOf(t *testing.T) {
 
 	trueVal := true
 
-	client.GetRespositoryReturns(&gogithub.Repository{
+	client.GetRepositoryReturns(&gogithub.Repository{
 		Name: &repoName,
 		Fork: &trueVal,
 		Owner: &gogithub.User{

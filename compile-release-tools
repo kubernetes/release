@@ -20,6 +20,7 @@ set -o pipefail
 
 RELEASE_TOOLS=(
   blocking-testgrid-tests
+  gh2gcs
   kubepkg
   krel
 )
