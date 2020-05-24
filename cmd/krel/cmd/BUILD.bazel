@@ -4,6 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "anago.go",
+        "announce.go",
         "changelog.go",
         "ff.go",
         "gcbmgr.go",
@@ -24,6 +25,7 @@ go_library(
         "//pkg/github:go_default_library",
         "//pkg/http:go_default_library",
         "//pkg/log:go_default_library",
+        "//pkg/mail:go_default_library",
         "//pkg/notes:go_default_library",
         "//pkg/notes/document:go_default_library",
         "//pkg/notes/options:go_default_library",

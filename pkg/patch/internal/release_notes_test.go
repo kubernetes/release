@@ -26,7 +26,7 @@ import (
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/patch/internal"
 	"k8s.io/release/pkg/patch/internal/internalfakes"
-	it "k8s.io/release/pkg/patch/internal/testing"
+	it "k8s.io/release/pkg/testing"
 	"k8s.io/utils/exec"
 )
 

@@ -7,7 +7,6 @@ go_library(
         "fake_formatter.go",
         "fake_mail_sender.go",
         "fake_release_noter.go",
-        "fake_sendgrid_client.go",
         "fake_workspace.go",
     ],
     importpath = "k8s.io/release/pkg/patch/internal/internalfakes",
@@ -15,8 +14,6 @@ go_library(
     deps = [
         "//pkg/patch:go_default_library",
         "//pkg/patch/internal:go_default_library",
-        "@com_github_sendgrid_rest//:go_default_library",
-        "@com_github_sendgrid_sendgrid_go//helpers/mail:go_default_library",
     ],
 )
 
