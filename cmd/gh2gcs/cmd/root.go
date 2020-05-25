@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"k8s.io/release/pkg/gh2gcs"
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/log"
 )
@@ -40,12 +41,14 @@ var rootCmd = &cobra.Command{
 }
 
 type options struct {
-	org         string
-	repo        string
-	tag         string
-	gcsEndpoint string
-	outputDir   string
-	logLevel    string
+	org                string
+	repo               string
+	tag                string
+	includePrereleases bool
+	bucket             string
+	releaseDir         string
+	outputDir          string
+	logLevel           string
 }
 
 var opts = &options{}
@@ -64,6 +67,7 @@ func init() {
 		"org",
 		// TODO: Remove test value
 		"containernetworking",
+		// TODO: Improve usage text
 		"org",
 	)
 
@@ -72,30 +76,51 @@ func init() {
 		"repo",
 		// TODO: Remove test value
 		"plugins",
+		// TODO: Improve usage text
 		"repo",
 	)
 
+	// TODO: This should be a string array to accept multiple tags
 	rootCmd.PersistentFlags().StringVar(
 		&opts.tag,
 		"tag",
-		// TODO: Remove test value
 		"",
+		// TODO: Improve usage text
 		"tag",
 	)
 
+	rootCmd.PersistentFlags().BoolVar(
+		&opts.includePrereleases,
+		"include-prereleases",
+		false,
+		// TODO: Improve usage text
+		"include-prereleases",
+	)
+
 	rootCmd.PersistentFlags().StringVar(
-		&opts.gcsEndpoint,
-		"gcs-endpoint",
+		&opts.bucket,
+		"bucket",
 		// TODO: Remove test value
-		"k8s-staging-release-test/augustus/cni",
-		"org",
+		"k8s-staging-release-test",
+		// TODO: Improve usage text
+		"bucket",
+	)
+
+	rootCmd.PersistentFlags().StringVar(
+		&opts.releaseDir,
+		"release-dir",
+		// TODO: Remove test value
+		"augustus/release",
+		// TODO: Improve usage text
+		"release-dir",
 	)
 
 	rootCmd.PersistentFlags().StringVar(
 		&opts.outputDir,
 		"output-dir",
 		"",
-		"org",
+		// TODO: Improve usage text
+		"output-dir",
 	)
 
 	rootCmd.PersistentFlags().StringVar(
@@ -124,12 +149,35 @@ func run(opts *options) error {
 	gh := github.New()
 
 	// TODO: Support downloading releases via yaml config
-	// TODO: Support single release or multi-release scenarios
-	if err := gh.DownloadReleaseAssets(opts.org, opts.repo, opts.tag, opts.outputDir); err != nil {
-		return err
+	uploadConfig := &gh2gcs.Config{}
+	releaseConfig := &gh2gcs.ReleaseConfig{
+		Org:  opts.org,
+		Name: opts.repo,
+		Tags: []string{},
 	}
 
-	// TODO: Add GCS upload logic
+	if opts.tag != "" {
+		releaseConfig.Tags = append(releaseConfig.Tags, opts.tag)
+	} else {
+		releaseTags, err := gh.GetReleaseTags(opts.org, opts.repo, opts.includePrereleases)
+		if err != nil {
+			return err
+		}
+
+		releaseConfig.Tags = releaseTags
+	}
+
+	uploadConfig.ReleaseConfigs = append(uploadConfig.ReleaseConfigs, *releaseConfig)
+
+	for _, rc := range uploadConfig.ReleaseConfigs {
+		if err := gh2gcs.DownloadReleases(&rc, gh, opts.outputDir); err != nil {
+			return err
+		}
+
+		if err := gh2gcs.UploadToGCS(&rc, gh, opts.outputDir); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

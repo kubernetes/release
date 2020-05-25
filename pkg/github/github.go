@@ -382,30 +382,44 @@ func (g *GitHub) Releases(owner, repo string, includePrereleases bool) ([]*githu
 	return releases, nil
 }
 
-// TODO: Support multiple tags
-func (g *GitHub) DownloadReleaseAssets(owner, repo, tag, outputDir string) error {
+// GetReleaseTags returns a list of GitHub release tags for the provided
+// `owner` and `repo`. If `includePrereleases` is `true`, then the resulting
+// slice will also contain pre/drafted releases.
+func (g *GitHub) GetReleaseTags(owner, repo string, includePrereleases bool) ([]string, error) {
+	releases, err := g.Releases(owner, repo, includePrereleases)
+	if err != nil {
+		return nil, err
+	}
+
+	releaseTags := []string{}
+	for _, release := range releases {
+		releaseTags = append(releaseTags, *release.TagName)
+	}
+
+	return releaseTags, nil
+}
+
+func (g *GitHub) DownloadReleaseAssets(owner, repo string, releaseTags []string, outputDir string) error {
 	var releases []*github.RepositoryRelease
-	var err error
 
-	if tag != "" {
-		release, _, err := g.client.GetReleaseByTag(context.Background(), owner, repo, tag)
-		if err != nil {
-			return err
+	if len(releaseTags) > 0 {
+		for _, tag := range releaseTags {
+			release, _, err := g.client.GetReleaseByTag(context.Background(), owner, repo, tag)
+			if err != nil {
+				return err
+			}
+
+			releases = append(releases, release)
 		}
-
-		releases = append(releases, release)
 	} else {
-		releases, err = g.Releases(owner, repo, false)
-		if err != nil {
-			return err
-		}
+		return errors.New("no release tags were populated")
 	}
 
 	for _, release := range releases {
 		releaseTag := release.GetTagName()
 		logrus.Infof("Download assets for %s/%s@%s", owner, repo, releaseTag)
 
-		releaseDir := filepath.Join(outputDir, releaseTag)
+		releaseDir := filepath.Join(outputDir, owner, repo, releaseTag)
 		if err := os.MkdirAll(releaseDir, os.FileMode(0777)); err != nil {
 			return err
 		}

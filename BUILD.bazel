@@ -37,6 +37,7 @@ filegroup(
         "//lib:all-srcs",
         "//pkg/command:all-srcs",
         "//pkg/gcp:all-srcs",
+        "//pkg/gh2gcs:all-srcs",
         "//pkg/git:all-srcs",
         "//pkg/github:all-srcs",
         "//pkg/http:all-srcs",
