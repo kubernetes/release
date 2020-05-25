@@ -8,12 +8,6 @@ go_library(
     deps = ["//cmd/gh2gcs/cmd:go_default_library"],
 )
 
-go_binary(
-    name = "kubepkg",
-    embed = [":go_default_library"],
-    visibility = ["//visibility:public"],
-)
-
 filegroup(
     name = "package-srcs",
     srcs = glob(["**"]),
@@ -28,5 +22,11 @@ filegroup(
         "//cmd/gh2gcs/cmd:all-srcs",
     ],
     tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
+
+go_binary(
+    name = "gh2gcs",
+    embed = [":go_default_library"],
     visibility = ["//visibility:public"],
 )

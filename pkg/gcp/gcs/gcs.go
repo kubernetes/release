@@ -32,6 +32,7 @@ var (
 	recursiveFlag  = "-r"
 )
 
+// CopyToGCS copies a local directory to the specified GCS path
 func CopyToGCS(src, gcsPath string, recursive, concurrent bool) error {
 	gcsPath = normalizeGCSPath(gcsPath)
 
@@ -39,6 +40,7 @@ func CopyToGCS(src, gcsPath string, recursive, concurrent bool) error {
 	return bucketCopy(src, gcsPath, recursive, concurrent)
 }
 
+// CopyToLocal copies a GCS path to the specified local directory
 func CopyToLocal(gcsPath, dst string, recursive, concurrent bool) error {
 	gcsPath = normalizeGCSPath(gcsPath)
 

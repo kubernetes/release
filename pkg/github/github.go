@@ -360,6 +360,7 @@ func (t TagsPerBranch) addIfNotExisting(branch, tag string) {
 // Releases returns a list of GitHub releases for the provided `owner` and
 // `repo`. If `includePrereleases` is `true`, then the resulting slice will
 // also contain pre/drafted releases.
+// TODO: Create a more descriptive method name and update references
 func (g *GitHub) Releases(owner, repo string, includePrereleases bool) ([]*github.RepositoryRelease, error) {
 	allReleases, _, err := g.client.ListReleases(
 		context.Background(), owner, repo, nil,
@@ -388,7 +389,7 @@ func (g *GitHub) Releases(owner, repo string, includePrereleases bool) ([]*githu
 func (g *GitHub) GetReleaseTags(owner, repo string, includePrereleases bool) ([]string, error) {
 	releases, err := g.Releases(owner, repo, includePrereleases)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getting releases")
 	}
 
 	releaseTags := []string{}
@@ -399,6 +400,8 @@ func (g *GitHub) GetReleaseTags(owner, repo string, includePrereleases bool) ([]
 	return releaseTags, nil
 }
 
+// DownloadReleaseAssets downloads a set of GitHub release assets to an
+// `outputDir`. Assets to download are derived from the `releaseTags`.
 func (g *GitHub) DownloadReleaseAssets(owner, repo string, releaseTags []string, outputDir string) error {
 	var releases []*github.RepositoryRelease
 
@@ -406,7 +409,7 @@ func (g *GitHub) DownloadReleaseAssets(owner, repo string, releaseTags []string,
 		for _, tag := range releaseTags {
 			release, _, err := g.client.GetReleaseByTag(context.Background(), owner, repo, tag)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "getting release tags")
 			}
 
 			releases = append(releases, release)
@@ -420,18 +423,22 @@ func (g *GitHub) DownloadReleaseAssets(owner, repo string, releaseTags []string,
 		logrus.Infof("Download assets for %s/%s@%s", owner, repo, releaseTag)
 
 		releaseDir := filepath.Join(outputDir, owner, repo, releaseTag)
-		if err := os.MkdirAll(releaseDir, os.FileMode(0777)); err != nil {
-			return err
+		if err := os.MkdirAll(releaseDir, os.FileMode(0o777)); err != nil {
+			return errors.Wrap(err, "creating output directory for release assets")
 		}
 
 		logrus.Infof("Writing assets to %s", releaseDir)
 
 		assets := release.Assets
 		for _, asset := range assets {
+			if asset.GetID() == 0 {
+				return errors.New("asset ID should never be zero")
+			}
+
 			logrus.Infof("GitHub asset ID: %v, download URL: %s", *asset.ID, *asset.BrowserDownloadURL)
 			assetBody, _, err := g.client.DownloadReleaseAsset(context.Background(), owner, repo, *asset.ID)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "downloading release assets")
 			}
 
 			filename := *asset.Name
@@ -439,12 +446,12 @@ func (g *GitHub) DownloadReleaseAssets(owner, repo string, releaseTags []string,
 			defer assetBody.Close()
 			assetFile, err := os.Create(absFile)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "creating release asset file")
 			}
 
 			defer assetFile.Close()
 			if _, err := io.Copy(assetFile, assetBody); err != nil {
-				return err
+				return errors.Wrap(err, "copying release asset to file")
 			}
 		}
 	}

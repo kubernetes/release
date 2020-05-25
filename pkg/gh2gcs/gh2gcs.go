@@ -23,10 +23,14 @@ import (
 	"k8s.io/release/pkg/github"
 )
 
+// Config contains a slice of `ReleaseConfig` to be used when unmarshalling a
+// yaml config containing multiple repository configs.
 type Config struct {
 	ReleaseConfigs []ReleaseConfig
 }
 
+// ReleaseConfig contains source (GitHub) and destination (GCS) information
+// to perform a copy/upload operation using gh2gcs.
 type ReleaseConfig struct {
 	Org        string
 	Repo       string
@@ -35,6 +39,8 @@ type ReleaseConfig struct {
 	ReleaseDir string
 }
 
+// DownloadReleases downloads release assets to a local directory
+// Assets to download are derived from the tags specified in `ReleaseConfig`.
 func DownloadReleases(releaseCfg *ReleaseConfig, ghClient *github.GitHub, outputDir string) error {
 	tags := releaseCfg.Tags
 	if err := ghClient.DownloadReleaseAssets(releaseCfg.Org, releaseCfg.Repo, tags, outputDir); err != nil {
@@ -44,6 +50,8 @@ func DownloadReleases(releaseCfg *ReleaseConfig, ghClient *github.GitHub, output
 	return nil
 }
 
+// Upload copies a set of release assets from local directory to GCS
+// Assets to upload are derived from the tags specified in `ReleaseConfig`.
 func Upload(releaseCfg *ReleaseConfig, ghClient *github.GitHub, outputDir string) error {
 	uploadBase := filepath.Join(outputDir, releaseCfg.Org, releaseCfg.Repo)
 	gcsPath := filepath.Join(releaseCfg.GCSBucket, releaseCfg.ReleaseDir)

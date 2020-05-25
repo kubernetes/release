@@ -31,9 +31,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:               "gh2gcs --org kubernetes --repo release [--tag v0.0.0]",
+	Use:               "gh2gcs --org kubernetes --repo release --bucket <bucket> --release-dir <release-dir> [--tag v0.0.0] [--include-prereleases] [--output-dir <temp-dir>]",
 	Short:             "gh2gcs uploads GitHub releases to Google Cloud Storage",
-	Example:           "gh2gcs --org kubernetes --repo release --tag v0.0.0",
+	Example:           "gh2gcs --org kubernetes --repo release --bucket k8s-staging-release-test --release-dir release --tag v0.0.0",
 	SilenceUsage:      true,
 	SilenceErrors:     true,
 	PersistentPreRunE: initLogging,
@@ -69,8 +69,7 @@ func init() {
 		"org",
 		// TODO: Remove test value
 		"containernetworking",
-		// TODO: Improve usage text
-		"org",
+		"GitHub org/user",
 	)
 
 	rootCmd.PersistentFlags().StringVar(
@@ -78,8 +77,7 @@ func init() {
 		"repo",
 		// TODO: Remove test value
 		"plugins",
-		// TODO: Improve usage text
-		"repo",
+		"GitHub repo",
 	)
 
 	// TODO: This should be a string array to accept multiple tags
@@ -87,16 +85,15 @@ func init() {
 		&opts.tag,
 		"tag",
 		"",
-		// TODO: Improve usage text
-		"tag",
+		"release tag to upload to GCS",
 	)
 
 	rootCmd.PersistentFlags().BoolVar(
 		&opts.includePrereleases,
 		"include-prereleases",
+		// TODO: Need to wire this
 		false,
-		// TODO: Improve usage text
-		"include-prereleases",
+		"specifies whether prerelease assets should be uploaded to GCS",
 	)
 
 	rootCmd.PersistentFlags().StringVar(
@@ -104,8 +101,7 @@ func init() {
 		"bucket",
 		// TODO: Remove test value
 		"k8s-staging-release-test",
-		// TODO: Improve usage text
-		"bucket",
+		"GCS bucket to upload to",
 	)
 
 	rootCmd.PersistentFlags().StringVar(
@@ -113,16 +109,14 @@ func init() {
 		"release-dir",
 		// TODO: Remove test value
 		"augustus/release",
-		// TODO: Improve usage text
-		"release-dir",
+		"directory to upload to within the specified GCS bucket",
 	)
 
 	rootCmd.PersistentFlags().StringVar(
 		&opts.outputDir,
 		"output-dir",
 		"",
-		// TODO: Improve usage text
-		"output-dir",
+		"local directory for releases to be downloaded to",
 	)
 
 	rootCmd.PersistentFlags().StringVar(
@@ -138,17 +132,12 @@ func initLogging(*cobra.Command, []string) error {
 }
 
 func run(opts *options) error {
-	if err := gcp.PreCheck(); err != nil {
-		return errors.Wrap(err, "pre-checking for GCP package usage")
+	if err := opts.SetAndValidate(); err != nil {
+		return errors.Wrap(err, "validating gh2gcs options")
 	}
 
-	if opts.outputDir == "" {
-		tmpDir, err := ioutil.TempDir("", "gh2gcs")
-		if err != nil {
-			return err
-		}
-
-		opts.outputDir = tmpDir
+	if err := gcp.PreCheck(); err != nil {
+		return errors.Wrap(err, "pre-checking for GCP package usage")
 	}
 
 	// Create a real GitHub API client
@@ -169,7 +158,7 @@ func run(opts *options) error {
 	} else {
 		releaseTags, err := gh.GetReleaseTags(opts.org, opts.repo, opts.includePrereleases)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "getting release tags")
 		}
 
 		releaseConfig.Tags = releaseTags
@@ -179,19 +168,30 @@ func run(opts *options) error {
 
 	for _, rc := range uploadConfig.ReleaseConfigs {
 		if err := gh2gcs.DownloadReleases(&rc, gh, opts.outputDir); err != nil {
-			return err
+			return errors.Wrap(err, "downloading release assets")
 		}
 
 		if err := gh2gcs.Upload(&rc, gh, opts.outputDir); err != nil {
-			return err
+			return errors.Wrap(err, "uploading release assets to GCS")
 		}
 	}
 
 	return nil
 }
 
-// Validate verifies if all set options are valid
-func (o *options) Validate() error {
-	// TODO: Add validation logic for options
+// SetAndValidate sets some default options and verifies if options are valid
+func (o *options) SetAndValidate() error {
+	logrus.Info("Validating gh2gcs options...")
+
+	// TODO: Temp dir should cleanup after itself
+	if o.outputDir == "" {
+		tmpDir, err := ioutil.TempDir("", "gh2gcs")
+		if err != nil {
+			return errors.Wrap(err, "creating temp directory")
+		}
+
+		o.outputDir = tmpDir
+	}
+
 	return nil
 }
