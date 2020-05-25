@@ -24,6 +24,7 @@ filegroup(
         ":package-srcs",
         "//pkg/gcp/auth:all-srcs",
         "//pkg/gcp/build:all-srcs",
+        "//pkg/gcp/gcs:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

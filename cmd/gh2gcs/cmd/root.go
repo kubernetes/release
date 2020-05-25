@@ -19,9 +19,11 @@ package cmd
 import (
 	"io/ioutil"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"k8s.io/release/pkg/gcp"
 	"k8s.io/release/pkg/gh2gcs"
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/log"
@@ -136,6 +138,10 @@ func initLogging(*cobra.Command, []string) error {
 }
 
 func run(opts *options) error {
+	if err := gcp.PreCheck(); err != nil {
+		return errors.Wrap(err, "pre-checking for GCP package usage")
+	}
+
 	if opts.outputDir == "" {
 		tmpDir, err := ioutil.TempDir("", "gh2gcs")
 		if err != nil {
@@ -151,9 +157,11 @@ func run(opts *options) error {
 	// TODO: Support downloading releases via yaml config
 	uploadConfig := &gh2gcs.Config{}
 	releaseConfig := &gh2gcs.ReleaseConfig{
-		Org:  opts.org,
-		Name: opts.repo,
-		Tags: []string{},
+		Org:        opts.org,
+		Repo:       opts.repo,
+		Tags:       []string{},
+		GCSBucket:  opts.bucket,
+		ReleaseDir: opts.releaseDir,
 	}
 
 	if opts.tag != "" {
@@ -174,7 +182,7 @@ func run(opts *options) error {
 			return err
 		}
 
-		if err := gh2gcs.UploadToGCS(&rc, gh, opts.outputDir); err != nil {
+		if err := gh2gcs.Upload(&rc, gh, opts.outputDir); err != nil {
 			return err
 		}
 	}

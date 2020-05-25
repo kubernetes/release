@@ -17,8 +17,9 @@ limitations under the License.
 package gh2gcs
 
 import (
-	"github.com/sirupsen/logrus"
+	"path/filepath"
 
+	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/github"
 )
 
@@ -28,7 +29,7 @@ type Config struct {
 
 type ReleaseConfig struct {
 	Org        string
-	Name       string
+	Repo       string
 	Tags       []string
 	GCSBucket  string
 	ReleaseDir string
@@ -36,15 +37,24 @@ type ReleaseConfig struct {
 
 func DownloadReleases(releaseCfg *ReleaseConfig, ghClient *github.GitHub, outputDir string) error {
 	tags := releaseCfg.Tags
-	if err := ghClient.DownloadReleaseAssets(releaseCfg.Org, releaseCfg.Name, tags, outputDir); err != nil {
+	if err := ghClient.DownloadReleaseAssets(releaseCfg.Org, releaseCfg.Repo, tags, outputDir); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// TODO: Add GCS upload logic
-func UploadToGCS(releaseCfg *ReleaseConfig, ghClient *github.GitHub, outputDir string) error {
-	logrus.Info("Uploading to GCS...")
+func Upload(releaseCfg *ReleaseConfig, ghClient *github.GitHub, outputDir string) error {
+	uploadBase := filepath.Join(outputDir, releaseCfg.Org, releaseCfg.Repo)
+	gcsPath := filepath.Join(releaseCfg.GCSBucket, releaseCfg.ReleaseDir)
+
+	tags := releaseCfg.Tags
+	for _, tag := range tags {
+		srcDir := filepath.Join(uploadBase, tag)
+		if err := gcs.CopyToGCS(srcDir, gcsPath, true, true); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
