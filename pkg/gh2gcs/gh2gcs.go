@@ -35,11 +35,19 @@ type Config struct {
 // ReleaseConfig contains source (GitHub) and destination (GCS) information
 // to perform a copy/upload operation using gh2gcs.
 type ReleaseConfig struct {
-	Org        string
-	Repo       string
-	Tags       []string
-	GCSBucket  string
-	ReleaseDir string
+	Org            string
+	Repo           string
+	Tags           []string
+	GCSBucket      string
+	ReleaseDir     string
+	GCSCopyOptions *gcs.Options
+}
+
+var DefaultGCSCopyOptions = &gcs.Options{
+	Concurrent:   true,
+	Recursive:    true,
+	NoClobber:    true,
+	AllowMissing: true,
 }
 
 // DownloadReleases downloads release assets to a local directory
@@ -70,7 +78,7 @@ func Upload(releaseCfg *ReleaseConfig, ghClient *github.GitHub, outputDir string
 	tags := releaseCfg.Tags
 	for _, tag := range tags {
 		srcDir := filepath.Join(uploadBase, tag)
-		if err := gcs.CopyToGCS(srcDir, gcsPath, true, true); err != nil {
+		if err := gcs.CopyToGCS(srcDir, gcsPath, releaseCfg.GCSCopyOptions); err != nil {
 			return err
 		}
 	}

@@ -145,12 +145,15 @@ func run(opts *options) error {
 	// TODO: Support downloading releases via yaml config
 	uploadConfig := &gh2gcs.Config{}
 	releaseConfig := &gh2gcs.ReleaseConfig{
-		Org:        opts.org,
-		Repo:       opts.repo,
-		Tags:       []string{},
-		GCSBucket:  opts.bucket,
-		ReleaseDir: opts.releaseDir,
+		Org:            opts.org,
+		Repo:           opts.repo,
+		Tags:           []string{},
+		GCSBucket:      opts.bucket,
+		ReleaseDir:     opts.releaseDir,
+		GCSCopyOptions: gh2gcs.DefaultGCSCopyOptions,
 	}
+
+	// TODO: Expose certain GCSCopyOptions for user configuration
 
 	if len(opts.tags) > 0 {
 		releaseConfig.Tags = opts.tags

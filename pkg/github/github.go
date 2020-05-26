@@ -422,6 +422,12 @@ func (g *GitHub) DownloadReleaseAssets(owner, repo string, releaseTags []string,
 		releaseTag := release.GetTagName()
 		logrus.Infof("Download assets for %s/%s@%s", owner, repo, releaseTag)
 
+		assets := release.Assets
+		if len(assets) == 0 {
+			logrus.Infof("Skipping download for %s/%s@%s as no release assets were found", owner, repo, releaseTag)
+			continue
+		}
+
 		releaseDir := filepath.Join(outputDir, owner, repo, releaseTag)
 		if err := os.MkdirAll(releaseDir, os.FileMode(0o777)); err != nil {
 			return errors.Wrap(err, "creating output directory for release assets")
@@ -429,7 +435,6 @@ func (g *GitHub) DownloadReleaseAssets(owner, repo string, releaseTags []string,
 
 		logrus.Infof("Writing assets to %s", releaseDir)
 
-		assets := release.Assets
 		for _, asset := range assets {
 			if asset.GetID() == 0 {
 				return errors.New("asset ID should never be zero")
