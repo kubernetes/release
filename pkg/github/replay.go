@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"path/filepath"
 	"sync"
@@ -118,6 +119,20 @@ func (c *githubNotesReplayClient) ListReleases(
 		return nil, nil, err
 	}
 	return result, record.response(), nil
+}
+
+// TODO: Complete logic
+func (c *githubNotesReplayClient) GetReleaseByTag(
+	ctx context.Context, owner, repo, tag string,
+) (*github.RepositoryRelease, *github.Response, error) {
+	return nil, nil, nil
+}
+
+// TODO: Complete logic
+func (c *githubNotesReplayClient) DownloadReleaseAsset(
+	context.Context, string, string, int64,
+) (io.ReadCloser, string, error) {
+	return nil, "", nil
 }
 
 func (c *githubNotesReplayClient) ListTags(
