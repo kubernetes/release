@@ -31,9 +31,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:               "gh2gcs --org kubernetes --repo release --bucket <bucket> --release-dir <release-dir> [--tag v0.0.0] [--include-prereleases] [--output-dir <temp-dir>]",
+	Use:               "gh2gcs --org kubernetes --repo release --bucket <bucket> --release-dir <release-dir> [--tags v0.0.0] [--include-prereleases] [--output-dir <temp-dir>]",
 	Short:             "gh2gcs uploads GitHub releases to Google Cloud Storage",
-	Example:           "gh2gcs --org kubernetes --repo release --bucket k8s-staging-release-test --release-dir release --tag v0.0.0",
+	Example:           "gh2gcs --org kubernetes --repo release --bucket k8s-staging-release-test --release-dir release --tags v0.0.0,v0.0.1",
 	SilenceUsage:      true,
 	SilenceErrors:     true,
 	PersistentPreRunE: initLogging,
@@ -45,7 +45,7 @@ var rootCmd = &cobra.Command{
 type options struct {
 	org                string
 	repo               string
-	tag                string
+	tags               []string
 	includePrereleases bool
 	bucket             string
 	releaseDir         string
@@ -80,12 +80,11 @@ func init() {
 		"GitHub repo",
 	)
 
-	// TODO: This should be a string array to accept multiple tags
-	rootCmd.PersistentFlags().StringVar(
-		&opts.tag,
-		"tag",
-		"",
-		"release tag to upload to GCS",
+	rootCmd.PersistentFlags().StringSliceVar(
+		&opts.tags,
+		"tags",
+		[]string{},
+		"release tags to upload to GCS",
 	)
 
 	rootCmd.PersistentFlags().BoolVar(
@@ -153,8 +152,8 @@ func run(opts *options) error {
 		ReleaseDir: opts.releaseDir,
 	}
 
-	if opts.tag != "" {
-		releaseConfig.Tags = append(releaseConfig.Tags, opts.tag)
+	if len(opts.tags) > 0 {
+		releaseConfig.Tags = opts.tags
 	} else {
 		releaseTags, err := gh.GetReleaseTags(opts.org, opts.repo, opts.includePrereleases)
 		if err != nil {

@@ -18,6 +18,9 @@ package gh2gcs
 
 import (
 	"path/filepath"
+	"strings"
+
+	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/github"
@@ -43,6 +46,14 @@ type ReleaseConfig struct {
 // Assets to download are derived from the tags specified in `ReleaseConfig`.
 func DownloadReleases(releaseCfg *ReleaseConfig, ghClient *github.GitHub, outputDir string) error {
 	tags := releaseCfg.Tags
+	tagsString := strings.Join(tags, ", ")
+
+	logrus.Infof(
+		"Downloading assets for the following %s/%s release tags: %s",
+		releaseCfg.Org,
+		releaseCfg.Repo,
+		tagsString,
+	)
 	if err := ghClient.DownloadReleaseAssets(releaseCfg.Org, releaseCfg.Repo, tags, outputDir); err != nil {
 		return err
 	}
