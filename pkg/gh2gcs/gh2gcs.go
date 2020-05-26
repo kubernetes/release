@@ -35,12 +35,13 @@ type Config struct {
 // ReleaseConfig contains source (GitHub) and destination (GCS) information
 // to perform a copy/upload operation using gh2gcs.
 type ReleaseConfig struct {
-	Org            string
-	Repo           string
-	Tags           []string
-	GCSBucket      string
-	ReleaseDir     string
-	GCSCopyOptions *gcs.Options
+	Org                string
+	Repo               string
+	Tags               []string
+	IncludePrereleases bool
+	GCSBucket          string
+	ReleaseDir         string
+	GCSCopyOptions     *gcs.Options
 }
 
 var DefaultGCSCopyOptions = &gcs.Options{

@@ -55,6 +55,23 @@ type options struct {
 
 var opts = &options{}
 
+var (
+	orgFlag                = "org"
+	repoFlag               = "repo"
+	tagsFlag               = "tags"
+	includePrereleasesFlag = "include-prereleases"
+	bucketFlag             = "bucket"
+	releaseDirFlag         = "release-dir"
+	outputDirFlag          = "output-dir"
+
+	requiredFlags = []string{
+		orgFlag,
+		repoFlag,
+		bucketFlag,
+		releaseDirFlag,
+	}
+)
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
@@ -66,54 +83,49 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().StringVar(
 		&opts.org,
-		"org",
-		// TODO: Remove test value
-		"containernetworking",
+		orgFlag,
+		"",
 		"GitHub org/user",
 	)
 
 	rootCmd.PersistentFlags().StringVar(
 		&opts.repo,
-		"repo",
-		// TODO: Remove test value
-		"plugins",
+		repoFlag,
+		"",
 		"GitHub repo",
 	)
 
 	rootCmd.PersistentFlags().StringSliceVar(
 		&opts.tags,
-		"tags",
+		tagsFlag,
 		[]string{},
 		"release tags to upload to GCS",
 	)
 
 	rootCmd.PersistentFlags().BoolVar(
 		&opts.includePrereleases,
-		"include-prereleases",
-		// TODO: Need to wire this
+		includePrereleasesFlag,
 		false,
 		"specifies whether prerelease assets should be uploaded to GCS",
 	)
 
 	rootCmd.PersistentFlags().StringVar(
 		&opts.bucket,
-		"bucket",
-		// TODO: Remove test value
-		"k8s-staging-release-test",
+		bucketFlag,
+		"",
 		"GCS bucket to upload to",
 	)
 
 	rootCmd.PersistentFlags().StringVar(
 		&opts.releaseDir,
-		"release-dir",
-		// TODO: Remove test value
-		"augustus/release",
+		releaseDirFlag,
+		"",
 		"directory to upload to within the specified GCS bucket",
 	)
 
 	rootCmd.PersistentFlags().StringVar(
 		&opts.outputDir,
-		"output-dir",
+		outputDirFlag,
 		"",
 		"local directory for releases to be downloaded to",
 	)
@@ -124,6 +136,12 @@ func init() {
 		"info",
 		"the logging verbosity, either 'panic', 'fatal', 'error', 'warn', 'warning', 'info', 'debug' or 'trace'",
 	)
+
+	for _, flag := range requiredFlags {
+		if err := rootCmd.MarkPersistentFlagRequired(flag); err != nil {
+			logrus.Fatal(err)
+		}
+	}
 }
 
 func initLogging(*cobra.Command, []string) error {
@@ -145,12 +163,13 @@ func run(opts *options) error {
 	// TODO: Support downloading releases via yaml config
 	uploadConfig := &gh2gcs.Config{}
 	releaseConfig := &gh2gcs.ReleaseConfig{
-		Org:            opts.org,
-		Repo:           opts.repo,
-		Tags:           []string{},
-		GCSBucket:      opts.bucket,
-		ReleaseDir:     opts.releaseDir,
-		GCSCopyOptions: gh2gcs.DefaultGCSCopyOptions,
+		Org:                opts.org,
+		Repo:               opts.repo,
+		Tags:               []string{},
+		IncludePrereleases: opts.includePrereleases,
+		GCSBucket:          opts.bucket,
+		ReleaseDir:         opts.releaseDir,
+		GCSCopyOptions:     gh2gcs.DefaultGCSCopyOptions,
 	}
 
 	// TODO: Expose certain GCSCopyOptions for user configuration
