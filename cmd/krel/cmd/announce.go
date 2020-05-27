@@ -35,6 +35,7 @@ const (
 	nameFlag             = "name"
 	emailFlag            = "email"
 	tagFlag              = "tag"
+	printOnlyFlag        = "print-only"
 )
 
 // announceCmd represents the subcommand for `krel announce`
@@ -57,7 +58,10 @@ https://app.sendgrid.com/settings/api_keys
 
 Beside this, the flags for a valid sender name (--%s,-n), sender email
 address (--%s,-e) and a valid Kubernetes tag (--%s,-t) have to be set
-as well.`,
+as well.
+
+If --%s,-p is given, then krel announce will only print the email content
+without doing anything else.`,
 		mail.KubernetesAnnounceGoogleGroup,
 		mail.KubernetesDevGoogleGroup,
 		mail.KubernetesAnnounceTestGoogleGroup,
@@ -66,6 +70,7 @@ as well.`,
 		nameFlag,
 		emailFlag,
 		tagFlag,
+		printOnlyFlag,
 	),
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -79,6 +84,7 @@ type announceOptions struct {
 	name           string
 	email          string
 	tag            string
+	printOnly      bool
 }
 
 var announceOpts = &announceOptions{}
@@ -129,16 +135,18 @@ func init() {
 		logrus.Fatal(err)
 	}
 
+	announceCmd.PersistentFlags().BoolVarP(
+		&announceOpts.printOnly,
+		printOnlyFlag,
+		"p",
+		false,
+		"print the mail contents without sending it",
+	)
+
 	rootCmd.AddCommand(announceCmd)
 }
 
 func runAnnounce(opts *announceOptions, rootOpts *rootOptions) error {
-	if opts.sendgridAPIKey == "" {
-		return errors.Errorf(
-			"Neither --sendgrid-api-key,-s nor $%s is set", sendgridAPIKeyEnvKey,
-		)
-	}
-
 	logrus.Info("Retrieving release announcement from Google Cloud Bucket")
 
 	tag := util.AddTagPrefix(opts.tag)
@@ -152,6 +160,18 @@ func runAnnounce(opts *announceOptions, rootOpts *rootOptions) error {
 	if err != nil {
 		return errors.Wrapf(err,
 			"unable to retrieve release announcement form url: %s", u,
+		)
+	}
+
+	if opts.printOnly {
+		logrus.Infof("The email content is:")
+		fmt.Print(content)
+		return nil
+	}
+
+	if opts.sendgridAPIKey == "" {
+		return errors.Errorf(
+			"Neither --sendgrid-api-key,-s nor $%s is set", sendgridAPIKeyEnvKey,
 		)
 	}
 
