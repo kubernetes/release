@@ -17,8 +17,11 @@ limitations under the License.
 package mail
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 
+	"github.com/pkg/errors"
 	"github.com/sendgrid/rest"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
@@ -100,6 +103,50 @@ type SendError struct {
 
 func (e *SendError) Error() string {
 	return fmt.Sprintf("got code %d while sending: Body: %q, Header: %q", e.code, e.resBody, e.resHeaders)
+}
+
+func (m *Sender) SetDefaultSender() error {
+	// Retrieve the mail
+	request := sendgrid.GetRequest(m.APIKey, "/v3/user/email", "")
+	response, err := sendgrid.API(request)
+	if err != nil {
+		return errors.Wrap(err, "getting user email")
+	}
+	if response.StatusCode != http.StatusOK {
+		return errors.Errorf("unable to get users email: %s", response.Body)
+	}
+	type email struct {
+		Email string `json:"email"`
+	}
+	emailResponse := &email{}
+	if err := json.Unmarshal([]byte(response.Body), emailResponse); err != nil {
+		return errors.Wrap(err, "decoding JSON response")
+	}
+	logrus.Infof("Using sender address: %s", emailResponse.Email)
+
+	// Retrieve first and last name
+	request = sendgrid.GetRequest(m.APIKey, "/v3/user/profile", "")
+	response, err = sendgrid.API(request)
+	if err != nil {
+		return errors.Wrap(err, "getting user profile")
+	}
+	if response.StatusCode != http.StatusOK {
+		return errors.Errorf("unable to get users profile: %s", response.Body)
+	}
+	type profile struct {
+		FirstName string `json:"first_name"`
+		LastName  string `json:"last_name"`
+	}
+	pr := profile{}
+	if err := json.Unmarshal([]byte(response.Body), &pr); err != nil {
+		return errors.Wrap(err, "decoding JSON response")
+	}
+
+	name := fmt.Sprintf("%s %s", pr.FirstName, pr.LastName)
+	logrus.Infof("Using sender name: %s", name)
+
+	m.sender = mail.NewEmail(name, emailResponse.Email)
+	return nil
 }
 
 func (m *Sender) SetSender(name, email string) error {

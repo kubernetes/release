@@ -6,6 +6,7 @@ go_library(
     importpath = "k8s.io/release/pkg/mail",
     visibility = ["//visibility:public"],
     deps = [
+        "@com_github_pkg_errors//:go_default_library",
         "@com_github_sendgrid_rest//:go_default_library",
         "@com_github_sendgrid_sendgrid_go//:go_default_library",
         "@com_github_sendgrid_sendgrid_go//helpers/mail:go_default_library",
