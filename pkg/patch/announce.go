@@ -198,7 +198,6 @@ func (a *Announcer) getUpcomingVer() (string, error) {
 		w := &internal.Workspace{
 			K8sRepoPath: a.Opts.K8sRepoPath,
 		}
-		w.SetLogger(a.Logger(), "workspace")
 		a.Workspace = w
 		a.Logger().Debug("new workspace created")
 	}
@@ -227,7 +226,6 @@ func (a *Announcer) formatAsHTML(title string, parts ...string) (string, error) 
 		f := &internal.Formatter{
 			Style: MailStyle,
 		}
-		f.SetLogger(a.Logger(), "formatter")
 		a.Formatter = f
 		a.Logger().Debug("new formatter instance created")
 	}
@@ -245,7 +243,6 @@ func (a *Announcer) sendMail(content, subject string) error {
 		ms := &mail.Sender{
 			APIKey: a.Opts.SendgridAPIKey,
 		}
-		ms.SetLogger(a.Logger(), "mail-sender")
 		a.MailSender = ms
 		a.Logger().Debug("new instance of mail sender created")
 	}
@@ -274,7 +271,6 @@ func (a *Announcer) getReleaseNotes() (string, error) {
 			ReleaseToolsDir: a.Opts.ReleaseRepoPath,
 			GithubToken:     a.Opts.GithubToken,
 		}
-		rn.SetLogger(a.Logger(), "release-noter")
 		a.ReleaseNoter = rn
 		a.Logger().Debug("new instance of release-noter created")
 	}
