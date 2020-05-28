@@ -22,7 +22,7 @@ import (
 	"github.com/sendgrid/rest"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
-	"k8s.io/release/pkg/log"
+	"github.com/sirupsen/logrus"
 )
 
 // GoogleGroup is a simple google group representation
@@ -35,8 +35,6 @@ const (
 )
 
 type Sender struct {
-	log.Mixin
-
 	SendgridClientCreator SendgridClientCreator
 	APIKey                string
 
@@ -76,7 +74,7 @@ func (m *Sender) Send(body, subject string) error {
 		AddPersonalizations(p)
 	msg.Subject = subject
 
-	m.Logger().WithField("message", msg).Trace("message prepared")
+	logrus.WithField("message", msg).Trace("message prepared")
 
 	client := m.SendgridClientCreator.create(m.APIKey)
 	res, err := client.Send(msg)
@@ -90,7 +88,7 @@ func (m *Sender) Send(body, subject string) error {
 		return &SendError{code: res.StatusCode, resBody: res.Body, resHeaders: fmt.Sprintf("%#v", res.Headers)}
 	}
 
-	m.Logger().Debug("mail successfully sent")
+	logrus.Debug("mail successfully sent")
 	return nil
 }
 
@@ -109,7 +107,7 @@ func (m *Sender) SetSender(name, email string) error {
 		return fmt.Errorf("email must not be empty")
 	}
 	m.sender = mail.NewEmail(name, email)
-	m.Logger().WithField("sender", m.sender).Debugf("sender set")
+	logrus.WithField("sender", m.sender).Debugf("sender set")
 	return nil
 }
 
@@ -132,7 +130,7 @@ func (m *Sender) SetRecipients(recipientArgs ...string) error {
 	}
 
 	m.recipients = recipients
-	m.Logger().WithField("recipients", m.sender).Debugf("recipients set")
+	logrus.WithField("recipients", m.sender).Debugf("recipients set")
 
 	return nil
 }
