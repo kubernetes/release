@@ -240,9 +240,7 @@ func (a *Announcer) formatAsHTML(title string, parts ...string) (string, error) 
 
 func (a *Announcer) sendMail(content, subject string) error {
 	if a.MailSender == nil {
-		ms := &mail.Sender{
-			APIKey: a.Opts.SendgridAPIKey,
-		}
+		ms := mail.NewSender(a.Opts.SendgridAPIKey)
 		a.MailSender = ms
 		a.Logger().Debug("new instance of mail sender created")
 	}

@@ -2,7 +2,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["fake_sendgrid_client.go"],
+    srcs = [
+        "fake_apiclient.go",
+        "fake_send_client.go",
+    ],
     importpath = "k8s.io/release/pkg/mail/mailfakes",
     visibility = ["//visibility:public"],
     deps = [

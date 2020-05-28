@@ -25,7 +25,7 @@ import (
 	"k8s.io/release/pkg/mail"
 )
 
-type FakeSendgridClient struct {
+type FakeSendClient struct {
 	SendStub        func(*maila.SGMailV3) (*rest.Response, error)
 	sendMutex       sync.RWMutex
 	sendArgsForCall []struct {
@@ -43,7 +43,7 @@ type FakeSendgridClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeSendgridClient) Send(arg1 *maila.SGMailV3) (*rest.Response, error) {
+func (fake *FakeSendClient) Send(arg1 *maila.SGMailV3) (*rest.Response, error) {
 	fake.sendMutex.Lock()
 	ret, specificReturn := fake.sendReturnsOnCall[len(fake.sendArgsForCall)]
 	fake.sendArgsForCall = append(fake.sendArgsForCall, struct {
@@ -61,26 +61,26 @@ func (fake *FakeSendgridClient) Send(arg1 *maila.SGMailV3) (*rest.Response, erro
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeSendgridClient) SendCallCount() int {
+func (fake *FakeSendClient) SendCallCount() int {
 	fake.sendMutex.RLock()
 	defer fake.sendMutex.RUnlock()
 	return len(fake.sendArgsForCall)
 }
 
-func (fake *FakeSendgridClient) SendCalls(stub func(*maila.SGMailV3) (*rest.Response, error)) {
+func (fake *FakeSendClient) SendCalls(stub func(*maila.SGMailV3) (*rest.Response, error)) {
 	fake.sendMutex.Lock()
 	defer fake.sendMutex.Unlock()
 	fake.SendStub = stub
 }
 
-func (fake *FakeSendgridClient) SendArgsForCall(i int) *maila.SGMailV3 {
+func (fake *FakeSendClient) SendArgsForCall(i int) *maila.SGMailV3 {
 	fake.sendMutex.RLock()
 	defer fake.sendMutex.RUnlock()
 	argsForCall := fake.sendArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeSendgridClient) SendReturns(result1 *rest.Response, result2 error) {
+func (fake *FakeSendClient) SendReturns(result1 *rest.Response, result2 error) {
 	fake.sendMutex.Lock()
 	defer fake.sendMutex.Unlock()
 	fake.SendStub = nil
@@ -90,7 +90,7 @@ func (fake *FakeSendgridClient) SendReturns(result1 *rest.Response, result2 erro
 	}{result1, result2}
 }
 
-func (fake *FakeSendgridClient) SendReturnsOnCall(i int, result1 *rest.Response, result2 error) {
+func (fake *FakeSendClient) SendReturnsOnCall(i int, result1 *rest.Response, result2 error) {
 	fake.sendMutex.Lock()
 	defer fake.sendMutex.Unlock()
 	fake.SendStub = nil
@@ -106,7 +106,7 @@ func (fake *FakeSendgridClient) SendReturnsOnCall(i int, result1 *rest.Response,
 	}{result1, result2}
 }
 
-func (fake *FakeSendgridClient) Invocations() map[string][][]interface{} {
+func (fake *FakeSendClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.sendMutex.RLock()
@@ -118,7 +118,7 @@ func (fake *FakeSendgridClient) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeSendgridClient) recordInvocation(key string, args []interface{}) {
+func (fake *FakeSendClient) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -130,4 +130,4 @@ func (fake *FakeSendgridClient) recordInvocation(key string, args []interface{})
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ mail.SendgridClient = new(FakeSendgridClient)
+var _ mail.SendClient = new(FakeSendClient)
