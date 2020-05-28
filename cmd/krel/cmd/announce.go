@@ -56,9 +56,11 @@ registering a sendgrid.com account and adding the key here:
 
 https://app.sendgrid.com/settings/api_keys
 
-Beside this, the flags for a valid sender name (--%s,-n), sender email
-address (--%s,-e) and a valid Kubernetes tag (--%s,-t) have to be set
-as well.
+Beside this, if the flags for a valid sender name (--%s,-n) and sender email
+address (--%s,-e) are not set, then it tries to retrieve those values directly
+from the Sendgrid API.
+
+Setting a valid Kubernetes tag (--%s,-t) is always necessary.
 
 If --%s,-p is given, then krel announce will only print the email content
 without doing anything else.`,
@@ -108,9 +110,6 @@ func init() {
 		"",
 		"mail sender name",
 	)
-	if err := announceCmd.MarkPersistentFlagRequired(nameFlag); err != nil {
-		logrus.Fatal(err)
-	}
 
 	announceCmd.PersistentFlags().StringVarP(
 		&announceOpts.email,
@@ -119,9 +118,6 @@ func init() {
 		"",
 		"email address",
 	)
-	if err := announceCmd.MarkPersistentFlagRequired(emailFlag); err != nil {
-		logrus.Fatal(err)
-	}
 
 	announceCmd.PersistentFlags().StringVarP(
 		&announceOpts.tag,
@@ -178,8 +174,15 @@ func runAnnounce(opts *announceOptions, rootOpts *rootOptions) error {
 	logrus.Info("Preparing mail sender")
 	m := mail.Sender{APIKey: opts.sendgridAPIKey}
 
-	if err := m.SetSender(opts.name, opts.email); err != nil {
-		return errors.Wrap(err, "unable to set mail sender")
+	if opts.name != "" && opts.email != "" {
+		if err := m.SetSender(opts.name, opts.email); err != nil {
+			return errors.Wrap(err, "unable to set mail sender")
+		}
+	} else {
+		logrus.Info("Retrieving default sender from sendgrid API")
+		if err := m.SetDefaultSender(); err != nil {
+			return errors.Wrap(err, "setting default sender")
+		}
 	}
 
 	groups := []mail.GoogleGroup{mail.KubernetesAnnounceTestGoogleGroup}
