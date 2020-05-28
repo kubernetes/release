@@ -172,7 +172,7 @@ func runAnnounce(opts *announceOptions, rootOpts *rootOptions) error {
 	}
 
 	logrus.Info("Preparing mail sender")
-	m := mail.Sender{APIKey: opts.sendgridAPIKey}
+	m := mail.NewSender(opts.sendgridAPIKey)
 
 	if opts.name != "" && opts.email != "" {
 		if err := m.SetSender(opts.name, opts.email); err != nil {

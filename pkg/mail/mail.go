@@ -38,49 +38,63 @@ const (
 )
 
 type Sender struct {
-	SendgridClientCreator SendgridClientCreator
-	APIKey                string
-
+	apiKey     string
+	sendClient SendClient
+	apiClient  APIClient
 	sender     *mail.Email
 	recipients []*mail.Email
 }
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+func NewSender(apiKey string) *Sender {
+	return &Sender{
+		apiKey:     apiKey,
+		sendClient: sendgrid.NewSendClient(apiKey),
+		apiClient:  &sendgridAPIClient{},
+	}
+}
 
-//counterfeiter:generate . SendgridClient
-type SendgridClient interface {
+// SetSendClient can be used to set the sendgrid sender client
+func (s *Sender) SetSendClient(client SendClient) {
+	s.sendClient = client
+}
+
+// SetSendClient can be used to set the sendgrid API client
+func (s *Sender) SetAPIClient(client APIClient) {
+	s.apiClient = client
+}
+
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+//counterfeiter:generate . SendClient
+type SendClient interface {
 	Send(*mail.SGMailV3) (*rest.Response, error)
 }
 
-type SendgridClientCreator func(apiKey string) SendgridClient
-
-func (c SendgridClientCreator) create(apiKey string) SendgridClient {
-	if c == nil {
-		c = defaultSendgridClientCreator
-	}
-	return c(apiKey)
+//counterfeiter:generate . APIClient
+type APIClient interface {
+	API(rest.Request) (*rest.Response, error)
 }
 
-var defaultSendgridClientCreator = func(apiKey string) SendgridClient {
-	return sendgrid.NewSendClient(apiKey)
+type sendgridAPIClient struct{}
+
+func (s *sendgridAPIClient) API(request rest.Request) (*rest.Response, error) {
+	return sendgrid.API(request)
 }
 
-func (m *Sender) Send(body, subject string) error {
+func (s *Sender) Send(body, subject string) error {
 	html := mail.NewContent("text/html", body)
 
 	p := mail.NewPersonalization()
-	p.AddTos(m.recipients...)
+	p.AddTos(s.recipients...)
 
 	msg := mail.NewV3Mail().
-		SetFrom(m.sender).
+		SetFrom(s.sender).
 		AddContent(html).
 		AddPersonalizations(p)
 	msg.Subject = subject
 
 	logrus.WithField("message", msg).Trace("message prepared")
 
-	client := m.SendgridClientCreator.create(m.APIKey)
-	res, err := client.Send(msg)
+	res, err := s.sendClient.Send(msg)
 	if err != nil {
 		return err
 	}
@@ -101,14 +115,14 @@ type SendError struct {
 	resHeaders string
 }
 
-func (e *SendError) Error() string {
-	return fmt.Sprintf("got code %d while sending: Body: %q, Header: %q", e.code, e.resBody, e.resHeaders)
+func (s *SendError) Error() string {
+	return fmt.Sprintf("got code %d while sending: Body: %q, Header: %q", s.code, s.resBody, s.resHeaders)
 }
 
-func (m *Sender) SetDefaultSender() error {
+func (s *Sender) SetDefaultSender() error {
 	// Retrieve the mail
-	request := sendgrid.GetRequest(m.APIKey, "/v3/user/email", "")
-	response, err := sendgrid.API(request)
+	request := sendgrid.GetRequest(s.apiKey, "/v3/user/email", "")
+	response, err := s.apiClient.API(request)
 	if err != nil {
 		return errors.Wrap(err, "getting user email")
 	}
@@ -125,8 +139,8 @@ func (m *Sender) SetDefaultSender() error {
 	logrus.Infof("Using sender address: %s", emailResponse.Email)
 
 	// Retrieve first and last name
-	request = sendgrid.GetRequest(m.APIKey, "/v3/user/profile", "")
-	response, err = sendgrid.API(request)
+	request = sendgrid.GetRequest(s.apiKey, "/v3/user/profile", "")
+	response, err = s.apiClient.API(request)
 	if err != nil {
 		return errors.Wrap(err, "getting user profile")
 	}
@@ -145,20 +159,20 @@ func (m *Sender) SetDefaultSender() error {
 	name := fmt.Sprintf("%s %s", pr.FirstName, pr.LastName)
 	logrus.Infof("Using sender name: %s", name)
 
-	m.sender = mail.NewEmail(name, emailResponse.Email)
+	s.sender = mail.NewEmail(name, emailResponse.Email)
 	return nil
 }
 
-func (m *Sender) SetSender(name, email string) error {
+func (s *Sender) SetSender(name, email string) error {
 	if email == "" {
 		return fmt.Errorf("email must not be empty")
 	}
-	m.sender = mail.NewEmail(name, email)
-	logrus.WithField("sender", m.sender).Debugf("sender set")
+	s.sender = mail.NewEmail(name, email)
+	logrus.WithField("sender", s.sender).Debugf("sender set")
 	return nil
 }
 
-func (m *Sender) SetRecipients(recipientArgs ...string) error {
+func (s *Sender) SetRecipients(recipientArgs ...string) error {
 	l := len(recipientArgs)
 
 	if l%2 != 0 {
@@ -176,17 +190,17 @@ func (m *Sender) SetRecipients(recipientArgs ...string) error {
 		recipients[i] = mail.NewEmail(name, email)
 	}
 
-	m.recipients = recipients
-	logrus.WithField("recipients", m.sender).Debugf("recipients set")
+	s.recipients = recipients
+	logrus.WithField("recipients", s.sender).Debugf("recipients set")
 
 	return nil
 }
 
 // SetGoogleGroupRecipient can be used to set multiple Google Groups as recipient
-func (m *Sender) SetGoogleGroupRecipients(groups ...GoogleGroup) error {
+func (s *Sender) SetGoogleGroupRecipients(groups ...GoogleGroup) error {
 	args := []string{}
 	for _, group := range groups {
 		args = append(args, string(group), fmt.Sprintf("%s@googlegroups.com", group))
 	}
-	return m.SetRecipients(args...)
+	return s.SetRecipients(args...)
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package mail_test
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -27,6 +28,98 @@ import (
 	it "k8s.io/release/pkg/testing"
 )
 
+func TestSetDefaultSender(t *testing.T) {
+	for _, tc := range []struct {
+		description string
+		prep        func(*mailfakes.FakeAPIClient)
+		expect      func(error, string)
+	}{
+		{
+			description: "Should succeed",
+			prep: func(c *mailfakes.FakeAPIClient) {
+				c.APIReturnsOnCall(0, &rest.Response{
+					StatusCode: 200,
+					Body:       `{"email": "me@mail.com"}`,
+				}, nil)
+				c.APIReturnsOnCall(1, &rest.Response{
+					StatusCode: 200,
+					Body:       `{"first_name": "Firstname", "last_name": "Lastname"}`,
+				}, nil)
+			},
+			expect: func(err error, desc string) { require.Nil(t, err, desc) },
+		},
+		{
+			description: "Should fail with wrong JSON in second response",
+			prep: func(c *mailfakes.FakeAPIClient) {
+				c.APIReturnsOnCall(0, &rest.Response{
+					StatusCode: 200,
+					Body:       `{"email": "me@mail.com"}`,
+				}, nil)
+				c.APIReturnsOnCall(1, &rest.Response{
+					StatusCode: 200,
+					Body:       "wrong-json",
+				}, nil)
+			},
+			expect: func(err error, desc string) { require.NotNil(t, err, desc) },
+		},
+		{
+			description: "Should fail with wrong status code in second response",
+			prep: func(c *mailfakes.FakeAPIClient) {
+				c.APIReturnsOnCall(0, &rest.Response{
+					StatusCode: 200,
+					Body:       `{"email": "me@mail.com"}`,
+				}, nil)
+				c.APIReturnsOnCall(1, &rest.Response{StatusCode: 400}, nil)
+			},
+			expect: func(err error, desc string) { require.NotNil(t, err, desc) },
+		},
+		{
+			description: "Should fail with failing second response",
+			prep: func(c *mailfakes.FakeAPIClient) {
+				c.APIReturnsOnCall(0, &rest.Response{
+					StatusCode: 200,
+					Body:       `{"email": "me@mail.com"}`,
+				}, nil)
+				c.APIReturnsOnCall(1, nil, errors.New(""))
+			},
+			expect: func(err error, desc string) { require.NotNil(t, err, desc) },
+		},
+		{
+			description: "Should fail with wrong JSON in first response",
+			prep: func(c *mailfakes.FakeAPIClient) {
+				c.APIReturnsOnCall(0, &rest.Response{
+					StatusCode: 200,
+					Body:       "wrong-json",
+				}, nil)
+			},
+			expect: func(err error, desc string) { require.NotNil(t, err, desc) },
+		},
+		{
+			description: "Should fail with wrong status code in first response",
+			prep: func(c *mailfakes.FakeAPIClient) {
+				c.APIReturnsOnCall(0, &rest.Response{StatusCode: 400}, nil)
+			},
+			expect: func(err error, desc string) { require.NotNil(t, err, desc) },
+		},
+		{
+			description: "Should fail with failing first response",
+			prep: func(c *mailfakes.FakeAPIClient) {
+				c.APIReturnsOnCall(0, nil, errors.New(""))
+			},
+			expect: func(err error, desc string) { require.NotNil(t, err, desc) },
+		},
+	} {
+		m := mail.NewSender("")
+		c := &mailfakes.FakeAPIClient{}
+		tc.prep(c)
+		m.SetAPIClient(c)
+
+		err := m.SetDefaultSender()
+
+		tc.expect(err, tc.description)
+	}
+}
+
 func TestMailSender(t *testing.T) {
 	t.Parallel()
 
@@ -35,16 +128,13 @@ func TestMailSender(t *testing.T) {
 	it.Run(t, "Send", testSend)
 
 	it.Run(t, "main", func(t *testing.T) {
-		m := &mail.Sender{
-			SendgridClientCreator: func(_ string) mail.SendgridClient {
-				c := &mailfakes.FakeSendgridClient{}
-				c.SendReturns(&rest.Response{
-					Body:       "some API response",
-					StatusCode: 202,
-				}, nil)
-				return c
-			},
-		}
+		m := mail.NewSender("")
+		c := &mailfakes.FakeSendClient{}
+		c.SendReturns(&rest.Response{
+			Body:       "some API response",
+			StatusCode: 202,
+		}, nil)
+		m.SetSendClient(c)
 		require.NoError(t, m.SetSender("Jane Doe", "djane@example.org"))
 		require.NoError(t, m.SetRecipients("Max Mustermann", "mmustermann@example.org"))
 		require.NoError(t, m.Send("some content", "some subject"))
@@ -84,17 +174,13 @@ func testSend(t *testing.T) {
 		tc := tc
 
 		it.Run(t, name, func(t *testing.T) {
-			m := &mail.Sender{
-				APIKey: tc.apiKey,
-			}
+			m := mail.NewSender(tc.apiKey)
 
-			sgClient := &mailfakes.FakeSendgridClient{}
+			sgClient := &mailfakes.FakeSendClient{}
 			sgClient.SendReturns(tc.sendgridSendResponse, tc.sendgridSendErr)
 
-			m.SendgridClientCreator = func(apiKey string) mail.SendgridClient {
-				require.Equal(t, tc.expectedSendgridAPIKey, apiKey, "SendgridClient#creator arg")
-				return sgClient
-			}
+			m.SetSendClient(sgClient)
+			require.Equal(t, tc.expectedSendgridAPIKey, tc.apiKey, "SendgridClient#creator arg")
 
 			err := m.Send(tc.message, tc.subject)
 			it.CheckErrSub(t, err, tc.expectedErr)
