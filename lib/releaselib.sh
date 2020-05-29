@@ -1357,7 +1357,7 @@ release::send_announcement () {
 
 ##############################################################################
 # Sets major global variables
-# Used only in anago and release-notify
+# Used only in anago
 # RELEASE_GB - space requirements per build
 # GCP_USER - The user that drives the entire release
 # RELEASE_BUCKET - mock or standard release bucket location

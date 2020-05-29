@@ -939,41 +939,36 @@ announce () {
     logecho "Kubernetes ${RELEASE_VERSION_PRIME} release announcement created."
   fi
 
-  # Only send from desktop
-  if ((FLAGS_gcb)); then
-    logecho "$WARNING: Email cannot be sent from GCB.  Execute the following" \
-            "after a completed release to send email notification:"
-    logecho
+  logecho "$WARNING: Emails cannot be sent from GCB.  Execute the following" \
+          "after a completed release to send email notification:"
+  logecho
 
-    # for an explanation of this construct look at
-    #
-    # http://tldp.org/LDP/abs/html/testconstructs.html
-    #
-    # or for the tl;dr check out
-    #
-    # https://www.tldp.org/LDP/abs/html/dblparens.html
-    #
-    # what we're doing here is setting nomock_flag="--nomock"
-    # if FLAGS_nomock evaluates to true...it's concise and consistent
-    # with the rest of anago but replicate the pattern at your peril
-    # definitely understand what's happening when you do
-    #
-    # myVar="OG"; ((0)) && myVar="changed"; echo $myVar
-    #
-    # vs
-    #
-    # myVar="OG"; ((1)) && myVar="changed"; echo $myVar
-    # note also that the values for FLAGS_x are either 0 (not set)
-    # or 1 (set) so that this works. This is not Ruby or similar
-    # where "--some-flag" would be truthy but it is BASH
-    # so values > 0 are actually truthy
-    ((FLAGS_nomock)) && nomock_flag="--nomock"
+  # for an explanation of this construct look at
+  #
+  # http://tldp.org/LDP/abs/html/testconstructs.html
+  #
+  # or for the tl;dr check out
+  #
+  # https://www.tldp.org/LDP/abs/html/dblparens.html
+  #
+  # what we're doing here is setting nomock_flag="--nomock"
+  # if FLAGS_nomock evaluates to true...it's concise and consistent
+  # with the rest of anago but replicate the pattern at your peril
+  # definitely understand what's happening when you do
+  #
+  # myVar="OG"; ((0)) && myVar="changed"; echo $myVar
+  #
+  # vs
+  #
+  # myVar="OG"; ((1)) && myVar="changed"; echo $myVar
+  # note also that the values for FLAGS_x are either 0 (not set)
+  # or 1 (set) so that this works. This is not Ruby or similar
+  # where "--some-flag" would be truthy but it is BASH
+  # so values > 0 are actually truthy
+  ((FLAGS_nomock)) && nomock_flag="--nomock"
 
-    logecho "$ release-notify ${nomock_flag} ${RELEASE_VERSION_PRIME}"
-    logecho
-  else
-    release::send_announcement || return 1
-  fi
+  logecho "$ krel announce ${nomock_flag} --tag ${RELEASE_VERSION_PRIME}"
+  logecho
 }
 
 ###############################################################################
