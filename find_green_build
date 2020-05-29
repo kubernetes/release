@@ -61,7 +61,6 @@ PROG=${0##*/}
 #+ SEE ALSO
 #+     common.sh                 - base function definitions
 #+     anago                     - release tool
-#+     relnotes                  - release notes generator
 #+
 #+ BUGS/TODO
 #+

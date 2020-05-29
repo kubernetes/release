@@ -1916,8 +1916,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "k8s.io/utils",
-        sum = "h1:Ly1Oxdu5p5ZFmiVT71LFgeZETvMfZ1iBIGeOenT2JeM=",
-        version = "v0.0.0-20200414100711-2df71ebbae66",
+        sum = "h1:I3f2hcBrepGRXI1z4sukzAb8w1R4eqbsHrAsx06LGYM=",
+        version = "v0.0.0-20200229041039-0a110f9eb7ab",
     )
     go_repository(
         name = "com_github_google_go_github_v29",
@@ -2065,22 +2065,4 @@ def go_repositories():
         importpath = "github.com/urfave/cli/v2",
         sum = "h1:JTTnM6wKzdA0Jqodd966MVj4vWbbquZykeX1sKbe2C4=",
         version = "v2.2.0",
-    )
-
-    go_repository(
-        name = "com_github_go_logr_logr",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable",
-        importpath = "github.com/go-logr/logr",
-        sum = "h1:M1Tv3VzNlEHg6uyACnRdtrploV2P7wZqH8BoQMtz0cg=",
-        version = "v0.1.0",
-    )
-
-    go_repository(
-        name = "io_k8s_klog_v2",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable",
-        importpath = "k8s.io/klog/v2",
-        sum = "h1:Foj74zO6RbjjP4hBEKjnYtjjAhGg4jNynUdYF6fJrok=",
-        version = "v2.0.0",
     )
