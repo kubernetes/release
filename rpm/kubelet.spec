@@ -28,7 +28,7 @@ Source3: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/%{ARCH}/kubeadm
 Source4: 10-kubeadm.conf
 Source5: https://dl.k8s.io/network-plugins/cni-plugins-%{ARCH}-v%{CNI_VERSION}.tgz
 Source6: kubelet.env
-Source7: https://github.com/kubernetes-sigs/cri-tools/releases/download/v%{CRI_TOOLS_VERSION}/crictl-v%{CRI_TOOLS_VERSION}-linux-%{ARCH}.tar.gz
+Source7: https://storage.googleapis.com/k8s-artifacts-cri-tools/release/v%{CRI_TOOLS_VERSION}/crictl-v%{CRI_TOOLS_VERSION}-linux-%{ARCH}.tar.gz
 
 BuildRequires: systemd
 BuildRequires: curl
@@ -157,6 +157,10 @@ mv cni-plugins/* %{buildroot}/opt/cni/bin/
 
 
 %changelog
+* Fri May 29 2020 Stephen Augustus <saugustus@vmware.com> - 1.18.4
+- Source cri-tools from https://storage.googleapis.com/k8s-artifacts-cri-tools/release
+  instead of https://github.com/kubernetes-sigs/cri-tools
+
 * Thu Jun 24 2019 Stephen Augustus <saugustus@vmware.com> - 1.15.1
 - Bump minimum versions of all kubernetes dependencies
 - Remove conditional logic for unsupported versions of Kubernetes
