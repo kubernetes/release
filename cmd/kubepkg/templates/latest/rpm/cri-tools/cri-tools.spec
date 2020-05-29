@@ -5,7 +5,7 @@ Summary: Command-line utility for interacting with a container runtime.
 
 License: ASL 2.0
 URL: https://kubernetes.io
-Source0: https://github.com/kubernetes-sigs/cri-tools/releases/download/v{{ .Version }}/crictl-v{{ .Version }}-linux-{{ .GoArch }}.tar.gz
+Source0: https://storage.googleapis.com/k8s-artifacts-cri-tools/release/v{{ .Version }}/crictl-v{{ .Version }}-linux-{{ .GoArch }}.tar.gz
 
 BuildRequires: systemd
 BuildRequires: curl
