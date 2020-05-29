@@ -170,12 +170,11 @@ func runAnago() error {
 		common::stepindex "check_prerequisites" "get_build_candidate" \
 		 "prepare_workspace" "common::disk_space_check"
 		common::stepindex "prepare_tree"
-		((FLAGS_gcb)) && common::stepindex "local_kube_cross"
+		 common::stepindex "local_kube_cross"
 		if ((FLAGS_buildonly)); then
-			((FLAGS_gcb)) && common::stepindex "make_cross"
-			((FLAGS_gcb)) || common::stepindex "build_tree"
+			common::stepindex "make_cross"
 		elif ! ((FLAGS_prebuild)); then
-			((FLAGS_gcb)) && common::stepindex "make_cross"
+			common::stepindex "make_cross"
 			common::stepindex "build_tree" "generate_release_notes"
 			if ((FLAGS_stage)); then
 				common::stepindex "stage_source_tree"
@@ -194,15 +193,6 @@ func runAnago() error {
 		common::stepindex --toc $PROGSTATE
 		logecho
 
-		# Pre-checks
-		if ! ((FLAGS_gcb)); then
-			# Check tool repo
-			gitlib::repo_state || common::exit 1
-
-			# Additional functionality
-			common::security_layer
-		fi
-
 		# Set cloud binaries
 		if ! ((FLAGS_buildonly)) && ! common::set_cloud_binaries; then
 			logecho "Releasing Kubernetes requires gsutil and gcloud. Please download,"
@@ -217,11 +207,6 @@ func runAnago() error {
 		release::set_globals
 
 		((FLAGS_stage)) || common::run_stateful gitlib::github_acls
-
-		# Simple check to validate who can do actual releases
-		if ((FLAGS_nomock)) && ! ((FLAGS_gcb)); then
-			security_layer::acl_check || common::exit 1 "Exiting..."
-		fi
 
 		common::run_stateful "check_prerequisites"
 
@@ -353,17 +338,11 @@ func runAnago() error {
 				# This doesn't have to be done per label, but does need to be inserted
 				# after an initial prepare_tree(), so just let the statefulness of it
 				# ignore a second iteration/call.
-				((FLAGS_gcb)) \
-				 && common::run_stateful local_kube_cross
+				common::run_stateful local_kube_cross
 				# --prebuild for GCB, skip actual builds. Do everything else
 				if ! ((FLAGS_prebuild)); then
-					if ((FLAGS_gcb)); then
-						# Do only make cross in this case
-						common::run_stateful "make_cross $label" RELEASE_VERSION[$label]
-					else
-						# Do the full build in this case
-						common::run_stateful "build_tree $label" RELEASE_VERSION[$label]
-					fi
+					# Do only make cross in this case
+					common::run_stateful "make_cross $label" RELEASE_VERSION[$label]
 				fi
 			done
 
@@ -379,12 +358,10 @@ func runAnago() error {
 			fi
 
 			# Complete the "build" for the gcb case
-			if ((FLAGS_gcb)); then
-				if ((FLAGS_stage)); then
-					for label in "${ORDERED_RELEASE_KEYS[@]}"; do
-						common::run_stateful "build_tree $label" RELEASE_VERSION[$label]
-					done
-				fi
+			if ((FLAGS_stage)); then
+				for label in "${ORDERED_RELEASE_KEYS[@]}"; do
+					common::run_stateful "build_tree $label" RELEASE_VERSION[$label]
+				done
 			fi
 
 			# No release notes for X.Y.Z-beta.0 releases
@@ -394,7 +371,7 @@ func runAnago() error {
 			# Force complete for these three stages
 			for label in "${ORDERED_RELEASE_KEYS[@]}"; do
 				SKIP_STEPS+=(prepare_tree+$label build_tree+$label)
-				((FLAGS_gcb)) && SKIP_STEPS+=(local_kube_cross make_cross+$label)
+				SKIP_STEPS+=(local_kube_cross make_cross+$label)
 			done
 			SKIP_STEPS+=(generate_release_notes)
 			for entry in ${SKIP_STEPS[*]}; do
@@ -440,18 +417,15 @@ func runAnago() error {
 			logecho -n "Moving $PROGSTATE to $PROGSTATE.last: "
 			logrun -s mv $PROGSTATE $PROGSTATE.last
 
-			# IF GCB, keep only the last staged build
+			# Keep only the last staged build
 			# clean up here on success
-			# Debatable if this should only happen on GCB
-			if ((FLAGS_gcb)); then
-				# Delete everything that's not this build in the vX.Y. namespace
-				# || true to catch non-zero exit when list is empty
-				if [[ $JENKINS_BUILD_VERSION =~ (v[0-9]+\.[0-9]+\.) ]]; then
-					logecho "Cleaning up old staged builds from" \
-									"gs://$RELEASE_BUCKET/$BUCKET_TYPE/${BASH_REMATCH[1]}..."
-					$GSUTIL ls -d gs://$RELEASE_BUCKET/$BUCKET_TYPE/${BASH_REMATCH[1]}* |\
-					 grep -v $JENKINS_BUILD_VERSION |xargs $GSUTIL -mq rm -r || true
-				fi
+			# Delete everything that's not this build in the vX.Y. namespace
+			# || true to catch non-zero exit when list is empty
+			if [[ $JENKINS_BUILD_VERSION =~ (v[0-9]+\.[0-9]+\.) ]]; then
+				logecho "Cleaning up old staged builds from" \
+								"gs://$RELEASE_BUCKET/$BUCKET_TYPE/${BASH_REMATCH[1]}..."
+				$GSUTIL ls -d gs://$RELEASE_BUCKET/$BUCKET_TYPE/${BASH_REMATCH[1]}* |\
+					grep -v $JENKINS_BUILD_VERSION |xargs $GSUTIL -mq rm -r || true
 			fi
 
 			common::exit 0
