@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"io/ioutil"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -77,6 +78,11 @@ var (
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		logrus.Fatal(err)
+	}
+
+	if !rootCmd.Flags().Changed(outputDirFlag) {
+		logrus.Infof("Cleaning temporary directory %s", opts.outputDir)
+		os.RemoveAll(opts.outputDir)
 	}
 }
 
@@ -204,7 +210,6 @@ func run(opts *options) error {
 func (o *options) SetAndValidate() error {
 	logrus.Info("Validating gh2gcs options...")
 
-	// TODO: Temp dir should cleanup after itself
 	if o.outputDir == "" {
 		tmpDir, err := ioutil.TempDir("", "gh2gcs")
 		if err != nil {
