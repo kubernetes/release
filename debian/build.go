@@ -39,7 +39,8 @@ const (
 	ChannelUnstable ChannelType = "unstable"
 	ChannelNightly  ChannelType = "nightly"
 
-	cniVersion         = "0.7.5"
+	currentCNIVersion  = "0.8.6"
+	minimumCNIVersion  = "0.8.6"
 	criToolsVersion    = "1.13.0"
 	pre180kubeadmconf  = "pre-1.8/10-kubeadm.conf"
 	pre1110kubeadmconf = "post-1.8/10-kubeadm.conf"
@@ -63,8 +64,8 @@ type version struct {
 	Channel                             ChannelType
 	GetVersion                          func() (string, error)
 	GetDownloadLinkBase                 func(v version) (string, error)
+	CNIVersion                          string
 	KubeadmKubeletConfigFile            string
-	KubeletCNIVersion                   string
 }
 
 type cfg struct {
@@ -303,15 +304,9 @@ func getReleaseDownloadLinkBase(v version) (string, error) {
 }
 
 func getKubeadmDependencies(v version) (string, error) {
-	cniVersion, err := getKubeletCNIVersion(v)
-	if err != nil {
-		return "", err
-	}
-
 	deps := []string{
 		"kubelet (>= 1.13.0)",
 		"kubectl (>= 1.13.0)",
-		fmt.Sprintf("kubernetes-cni (%s)", cniVersion),
 		"${misc:Depends}",
 	}
 	sv, err := semver.Make(v.Version)
@@ -362,23 +357,17 @@ func getKubeadmKubeletConfigFile(v version) (string, error) {
 	return latestkubeadmconf, nil
 }
 
-// CNI get bumped in 1.9, which is incompatible for kubelet<1.9.
-// So we need to restrict the CNI version when install kubelet.
-func getKubeletCNIVersion(v version) (string, error) {
+func getCNIVersion(v version) (string, error) {
 	sv, err := semver.Make(v.Version)
 	if err != nil {
 		return "", err
 	}
 
-	v190, err := semver.Make("1.9.0-alpha.0")
-	if err != nil {
-		return "", err
+	if int(sv.Minor) == 16 {
+		return minimumCNIVersion, nil
 	}
 
-	if sv.GTE(v190) {
-		return fmt.Sprintf(">= %s", cniVersion), nil
-	}
-	return fmt.Sprint("= 0.5.1"), nil
+	return currentCNIVersion, nil
 }
 
 // getCRIToolsVersion assumes v coming in is >= 1.11.0-alpha.0
@@ -452,27 +441,6 @@ func main() {
 					Revision:            revision,
 					Channel:             ChannelNightly,
 					GetDownloadLinkBase: getCIBuildsDownloadLinkBase,
-				},
-			},
-		},
-		{
-			Package: "kubernetes-cni",
-			Distros: distros,
-			Versions: []version{
-				{
-					Version:  cniVersion,
-					Revision: revision,
-					Channel:  ChannelStable,
-				},
-				{
-					Version:  cniVersion,
-					Revision: revision,
-					Channel:  ChannelUnstable,
-				},
-				{
-					Version:  cniVersion,
-					Revision: revision,
-					Channel:  ChannelNightly,
 				},
 			},
 		},
@@ -553,17 +521,6 @@ func main() {
 				},
 			},
 			{
-				Package: "kubernetes-cni",
-				Distros: distros,
-				Versions: []version{
-					{
-						Version:  cniVersion,
-						Revision: revision,
-						Channel:  ChannelStable,
-					},
-				},
-			},
-			{
 				Package: "kubeadm",
 				Distros: distros,
 				Versions: []version{
@@ -615,7 +572,7 @@ func main() {
 			log.Fatalf("error getting kubeadm dependencies: %v", err)
 		}
 
-		c.KubeletCNIVersion, err = getKubeletCNIVersion(v)
+		c.CNIVersion, err = getCNIVersion(v)
 		if err != nil {
 			log.Fatalf("error getting kubelet CNI Version: %v", err)
 		}

@@ -11,7 +11,7 @@
 %define semver() (%1 * 256 * 256 + %2 * 256 + %3)
 %global KUBE_SEMVER %{semver %{KUBE_MAJOR} %{KUBE_MINOR} %{KUBE_PATCH}}
 
-%global CNI_VERSION 0.7.5
+%global CNI_VERSION 0.8.6
 %global CRI_TOOLS_VERSION 1.13.0
 
 Name: kubelet
@@ -26,34 +26,25 @@ Source1: kubelet.service
 Source2: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/%{ARCH}/kubectl
 Source3: https://dl.k8s.io/v%{KUBE_VERSION}/bin/linux/%{ARCH}/kubeadm
 Source4: 10-kubeadm.conf
-Source5: https://dl.k8s.io/network-plugins/cni-plugins-%{ARCH}-v%{CNI_VERSION}.tgz
+Source5: https://storage.googleapis.com/k8s-artifacts-cni/release/v%{CNI_VERSION}/cni-plugins-linux-%{ARCH}-v%{CNI_VERSION}.tgz
 Source6: kubelet.env
 Source7: https://storage.googleapis.com/k8s-artifacts-cri-tools/release/v%{CRI_TOOLS_VERSION}/crictl-v%{CRI_TOOLS_VERSION}-linux-%{ARCH}.tar.gz
 
 BuildRequires: systemd
 BuildRequires: curl
 Requires: iptables >= 1.4.21
-Requires: kubernetes-cni >= %{CNI_VERSION}
 Requires: socat
 Requires: util-linux
 Requires: ethtool
 Requires: iproute
 Requires: ebtables
 Requires: conntrack
+Obsoletes: kubernetes-cni
+Conflicts: kubernetes-cni
 
 
 %description
 The node agent of Kubernetes, the container cluster manager.
-
-%package -n kubernetes-cni
-
-Version: %{CNI_VERSION}
-Release: %{RPM_RELEASE}
-Summary: Binaries required to provision kubernetes container networking
-Requires: kubelet
-
-%description -n kubernetes-cni
-Binaries required to provision container networking.
 
 %package -n kubectl
 
@@ -71,7 +62,6 @@ Release: %{RPM_RELEASE}
 Summary: Command-line utility for administering a Kubernetes cluster.
 Requires: kubelet >= 1.13.0
 Requires: kubectl >= 1.13.0
-Requires: kubernetes-cni >= 0.7.5
 Requires: cri-tools >= 1.13.0
 
 %description -n kubeadm
@@ -130,18 +120,16 @@ install -m 755 -d %{buildroot}%{_sysconfdir}/sysconfig/
 install -p -m 644 -T kubelet.env %{buildroot}%{_sysconfdir}/sysconfig/kubelet
 
 install -m 755 -d %{buildroot}/opt/cni/bin
-# bin directory from cni-plugins-%{ARCH}-%{CNI_VERSION}.tgz with a list of cni plugins (among other things)
+# bin directory from cni-plugins-linux-%{ARCH}-%{CNI_VERSION}.tgz with a list of cni plugins (among other things)
 mv cni-plugins/* %{buildroot}/opt/cni/bin/
 
 %files
 %{_bindir}/kubelet
 %{_unitdir}/kubelet.service
 %{_sysconfdir}/kubernetes/manifests/
+/opt/cni
 
 %config(noreplace) %{_sysconfdir}/sysconfig/kubelet
-
-%files -n kubernetes-cni
-/opt/cni
 
 %files -n kubectl
 %{_bindir}/kubectl
@@ -161,18 +149,25 @@ mv cni-plugins/* %{buildroot}/opt/cni/bin/
 - Source cri-tools from https://storage.googleapis.com/k8s-artifacts-cri-tools/release
   instead of https://github.com/kubernetes-sigs/cri-tools
 
-* Thu Jun 24 2019 Stephen Augustus <saugustus@vmware.com> - 1.15.1
+* Fri May 22 2020 Stephen Augustus <saugustus@vmware.com> - 1.18.4
+- Bundle CNI plugins (v0.8.6) in kubelet package
+
+* Fri May 22 2020 Stephen Augustus <saugustus@vmware.com> - 1.18.4
+- Source CNI plugins from https://storage.googleapis.com/k8s-artifacts-cni/release
+  instead of https://dl.k8s.io/network-plugins
+
+* Mon Jun 24 2019 Stephen Augustus <saugustus@vmware.com> - 1.15.1
 - Bump minimum versions of all kubernetes dependencies
 - Remove conditional logic for unsupported versions of Kubernetes
 
-* Tue Jun 23 2019 Stephen Augustus <saugustus@vmware.com> - 1.15.1
+* Sun Jun 23 2019 Stephen Augustus <saugustus@vmware.com> - 1.15.1
 - Source cri-tools from https://github.com/kubernetes-sigs/cri-tools
   instead of https://github.com/kubernetes-incubator/cri-tools
 
 * Thu May 30 2019 Tim Pepper <tpepper@vmware.com>
 - Change CNI version check to ">="
 
-* Tue Mar 20 2019 Lubomir I. Ivanov <lubomirivanov@vmware.com>
+* Wed Mar 20 2019 Lubomir I. Ivanov <lubomirivanov@vmware.com>
 - Bump CNI version to v0.7.5.
 
 * Tue Sep 25 2018 Chuck Ha <chuck@heptio.com> - 1.12.1
