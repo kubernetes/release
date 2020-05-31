@@ -198,16 +198,6 @@ func (o *Options) Validate() error {
 	return nil
 }
 
-// TODO: kubepkg is failing validations when multiple options are selected
-//       It seems like StringArrayVar is treating the multiple comma-separated
-//       values as a single value.
-//
-// Example:
-// $ time kubepkg debs --arch amd64,arm
-// <snip>
-// INFO[0000] Adding 'amd64,arm' (type: string) to not supported
-// INFO[0000] The following options are not supported: [amd64,arm]
-// FATA[0000] architectures selections are not supported
 func isSupported(input, expected []string) bool {
 	notSupported := []string{}
 

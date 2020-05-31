@@ -48,7 +48,7 @@ func Execute() {
 
 func init() {
 	packages := []string{}
-	rootCmd.PersistentFlags().StringArrayVar(
+	rootCmd.PersistentFlags().StringSliceVar(
 		&packages,
 		"packages",
 		opts.Packages(),
@@ -56,7 +56,7 @@ func init() {
 	)
 
 	channels := []string{}
-	rootCmd.PersistentFlags().StringArrayVar(
+	rootCmd.PersistentFlags().StringSliceVar(
 		&channels,
 		"channels",
 		opts.Channels(),
@@ -64,7 +64,7 @@ func init() {
 	)
 
 	architectures := []string{}
-	rootCmd.PersistentFlags().StringArrayVar(
+	rootCmd.PersistentFlags().StringSliceVar(
 		&architectures,
 		"arch",
 		opts.Architectures(),
