@@ -6,23 +6,26 @@ Summary: Container cluster management
 License: ASL 2.0
 URL: https://kubernetes.io
 Source0: {{ .DownloadLinkBase }}/bin/linux/{{ .GoArch }}/kubelet
+Source1: {{ .CNIDownloadLink }}
 
 BuildRequires: systemd
 BuildRequires: curl
 Requires: iptables >= 1.4.21
-Requires: kubernetes-cni >= {{ index .Dependencies "kubernetes-cni" }}
 Requires: socat
 Requires: util-linux
 Requires: ethtool
 Requires: iproute
 Requires: ebtables
 Requires: conntrack
+Obsoletes: kubernetes-cni
+Conflicts: kubernetes-cni
 
 %description
 The node agent of Kubernetes, the container cluster manager.
 
 %prep
 cp -p %SOURCE0 %{_builddir}/
+%setup -c -D -T -a 5 -n cni-plugins
 
 # TODO: Do we need these?
 #%autosetup
@@ -43,6 +46,9 @@ install -p -m 755 -t %{buildroot}%{_bindir}/ kubelet
 install -p -m 644 -t %{buildroot}%{_unitdir}/ kubelet.service
 install -m 755 -d %{buildroot}%{_sysconfdir}/sysconfig/
 install -p -m 644 -T kubelet.env %{buildroot}%{_sysconfdir}/sysconfig/kubelet
+install -m 755 -d %{buildroot}%{_sysconfdir}/cni/net.d/
+install -m 755 -d %{buildroot}/opt/cni/bin
+mv cni-plugins/* %{buildroot}/opt/cni/bin/
 
 # TODO: Do we need this?
 #%make_install
@@ -50,6 +56,8 @@ install -p -m 644 -T kubelet.env %{buildroot}%{_sysconfdir}/sysconfig/kubelet
 %files
 %{_bindir}/kubelet
 %{_unitdir}/kubelet.service
+%{_sysconfdir}/kubernetes/manifests/
+/opt/cni
 
 %config(noreplace) %{_sysconfdir}/sysconfig/kubelet
 
@@ -59,6 +67,9 @@ install -p -m 644 -T kubelet.env %{buildroot}%{_sysconfdir}/sysconfig/kubelet
 
 
 %changelog
+* Fri May 22 2020 Stephen Augustus <saugustus@vmware.com> - 1.18.4
+- Bundle CNI plugins (v0.8.6) in kubelet package
+
 * Sat Jan  4 2020 Stephen Augustus <saugustus@vmware.com> - 1.18.0
 - Move kubeadm into separate spec file
 - Move kubectl into separate spec file

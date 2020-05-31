@@ -45,8 +45,8 @@ const (
 	ChannelNightly ChannelType = "nightly"
 
 	minimumKubernetesVersion = "1.13.0"
-	MinimumCNIVersion        = "0.7.5"
-	Pre117CNIVersion         = "0.7.5"
+	CurrentCNIVersion        = "0.8.6"
+	MinimumCNIVersion        = "0.8.6"
 
 	kubeadmConf = "10-kubeadm.conf"
 )
@@ -147,6 +147,7 @@ type PackageDefinition struct {
 	DownloadLinkBase         string
 	KubeadmKubeletConfigFile string
 
+	CNIVersion      string
 	CNIDownloadLink string
 }
 
@@ -189,8 +190,8 @@ func (c *Client) ConstructBuilds() ([]Build, error) {
 			packageDef.KubernetesVersion = c.options.KubeVersion()
 
 			switch b.Package {
-			case "kubernetes-cni":
-				packageDef.Version = c.options.CNIVersion()
+			case "kubelet":
+				packageDef.CNIVersion = c.options.CNIVersion()
 			case "cri-tools":
 				packageDef.Version = c.options.CRIToolsVersion()
 			}
@@ -312,7 +313,12 @@ func (c *Client) buildPackage(build Build, packageDef *PackageDefinition, arch, 
 
 	bc.BuildArch = getBuildArch(bc.GoArch, bc.Type)
 
-	bc.CNIDownloadLink, err = GetCNIDownloadLink(pd, bc.GoArch)
+	bc.CNIVersion, err = GetCNIVersion(pd)
+	if err != nil {
+		return errors.Wrap(err, "getting CNI version")
+	}
+
+	bc.CNIDownloadLink, err = GetCNIDownloadLink(pd.Version, bc.GoArch)
 	if err != nil {
 		return errors.Wrap(err, "getting CNI download link")
 	}
@@ -393,10 +399,7 @@ func (c *Client) GetPackageVersion(packageDef *PackageDefinition) (string, error
 	}
 
 	logrus.Infof("Setting version for %s package...", packageDef.Name)
-	switch packageDef.Name {
-	case "kubernetes-cni":
-		return GetCNIVersion(packageDef)
-	case "cri-tools":
+	if packageDef.Name == "cri-tools" {
 		return c.GetCRIToolsVersion(packageDef)
 	}
 
@@ -431,27 +434,24 @@ func GetCNIVersion(packageDef *PackageDefinition) (string, error) {
 		return "", errors.New("package definition cannot be nil")
 	}
 
+	// TODO: Ensure version is not less than MinimumCNIVersion
 	logrus.Infof("Getting CNI version...")
-
-	kubeSemver, err := util.TagStringToSemver(packageDef.KubernetesVersion)
-	if err != nil {
-		return "", err
-	}
-
-	v117, err := semver.Make("1.17.0-alpha.0")
-	if err != nil {
-		return "", err
-	}
-
-	if packageDef.Version != "" {
-		if kubeSemver.LT(v117) {
-			logrus.Infof("Kubernetes version earlier than 1.17 must use CNI version <= %s", Pre117CNIVersion)
-			logrus.Infof("Setting CNI version to %s", Pre117CNIVersion)
-			return Pre117CNIVersion, nil
+	if packageDef.CNIVersion != "" {
+		cniSemVer, err := util.TagStringToSemver(packageDef.CNIVersion)
+		if err != nil {
+			return "", errors.Wrap(err, "parsing CNI version")
+		}
+		minCNISemVer, err := util.TagStringToSemver(MinimumCNIVersion)
+		if err != nil {
+			return "", errors.Wrap(err, "parsing CNI version")
 		}
 
-		logrus.Infof("Setting CNI version to %s", packageDef.Version)
-		return packageDef.Version, nil
+		if cniSemVer.LT(minCNISemVer) {
+			return "", errors.Errorf("specified CNI version (%s) cannot be lower than %s", packageDef.CNIVersion, MinimumCNIVersion)
+		}
+
+		logrus.Infof("Setting CNI version to %s", packageDef.CNIVersion)
+		return packageDef.CNIVersion, nil
 	}
 
 	logrus.Infof("Setting CNI version to %s", MinimumCNIVersion)
@@ -583,13 +583,9 @@ func GetDependencies(packageDef *PackageDefinition) (map[string]string, error) {
 
 	deps := make(map[string]string)
 
-	switch packageDef.Name {
-	case "kubelet":
-		deps["kubernetes-cni"] = MinimumCNIVersion
-	case "kubeadm":
+	if packageDef.Name == "kubeadm" {
 		deps["kubelet"] = minimumKubernetesVersion
 		deps["kubectl"] = minimumKubernetesVersion
-		deps["kubernetes-cni"] = MinimumCNIVersion
 		deps["cri-tools"] = minimumCRIToolsVersion
 	}
 
@@ -600,24 +596,10 @@ func getBuildArch(goArch string, buildType options.BuildType) string {
 	return buildArchMap[goArch][buildType]
 }
 
-func GetCNIDownloadLink(packageDef *PackageDefinition, arch string) (string, error) {
-	if packageDef == nil {
-		return "", errors.New("package definition cannot be nil")
+func GetCNIDownloadLink(version, arch string) (string, error) {
+	if _, err := util.TagStringToSemver(version); err != nil {
+		return "", errors.Wrap(err, "parsing CNI version")
 	}
 
-	sv, err := util.TagStringToSemver(packageDef.Version)
-	if err != nil {
-		return "", err
-	}
-
-	v075, err := semver.Make(Pre117CNIVersion)
-	if err != nil {
-		return "", err
-	}
-
-	if sv.LTE(v075) {
-		return fmt.Sprintf("https://github.com/containernetworking/plugins/releases/download/v%s/cni-plugins-%s-v%s.tgz", packageDef.Version, arch, packageDef.Version), nil
-	}
-
-	return fmt.Sprintf("https://github.com/containernetworking/plugins/releases/download/v%s/cni-plugins-linux-%s-v%s.tgz", packageDef.Version, arch, packageDef.Version), nil
+	return fmt.Sprintf("https://storage.googleapis.com/k8s-artifacts-cni/release/v%s/cni-plugins-linux-%s-v%s.tgz", version, arch, version), nil
 }
