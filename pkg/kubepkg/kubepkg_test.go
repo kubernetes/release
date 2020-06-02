@@ -75,7 +75,7 @@ func TestConstructBuilds(t *testing.T) {
 	builds, err := sut.ConstructBuilds()
 	require.Nil(t, err)
 	require.NotEmpty(t, builds)
-	require.Len(t, builds, 5)
+	require.Len(t, builds, 4)
 	require.Len(t, builds[0].Definitions, 3)
 	require.Equal(t, "kubelet", builds[0].Package)
 	require.Equal(t, options.BuildRpm, builds[0].Type)
@@ -181,13 +181,6 @@ func TestGetPackageVersionSuccess(t *testing.T) {
 			expected: "",
 		},
 		{
-			name:        "CNI version",
-			packageName: "kubernetes-cni",
-			version:     "0.8.3",
-			kubeVersion: "1.17.0",
-			expected:    "0.8.3",
-		},
-		{
 			name:        "CRI tools version",
 			packageName: "cri-tools",
 			kubeVersion: "1.17.0",
@@ -257,21 +250,15 @@ func TestGetKubernetesVersionFailure(t *testing.T) {
 func TestGetCNIVersionSuccess(t *testing.T) {
 	testcases := []struct {
 		name        string
-		version     string
+		cniVersion  string
 		kubeVersion string
 		expected    string
 	}{
 		{
-			name:        "CNI version supplied, Kubernetes version < 1.17",
-			version:     "0.8.3",
-			kubeVersion: "1.16.0",
-			expected:    kubepkg.Pre117CNIVersion,
-		},
-		{
-			name:        "CNI version supplied, Kubernetes version >= 1.17",
-			version:     "0.8.3",
+			name:        "CNI version supplied",
+			cniVersion:  "0.8.7",
 			kubeVersion: "1.17.0",
-			expected:    "0.8.3",
+			expected:    "0.8.7",
 		},
 		{
 			name:        "CNI version not supplied",
@@ -283,7 +270,7 @@ func TestGetCNIVersionSuccess(t *testing.T) {
 	for _, tc := range testcases {
 		actual, err := kubepkg.GetCNIVersion(
 			&kubepkg.PackageDefinition{
-				Version:           tc.version,
+				CNIVersion:        tc.cniVersion,
 				KubernetesVersion: tc.kubeVersion,
 			},
 		)
@@ -294,8 +281,28 @@ func TestGetCNIVersionSuccess(t *testing.T) {
 }
 
 func TestGetCNIVersionFailure(t *testing.T) {
-	_, err := kubepkg.GetCNIVersion(nil)
-	require.NotNil(t, err)
+	testcases := []struct {
+		name       string
+		packageDef *kubepkg.PackageDefinition
+	}{
+		{
+			name:       "package definition is nil",
+			packageDef: nil,
+		},
+		{
+			name: "CNI version supplied less than minimum allowed CNI version",
+			packageDef: &kubepkg.PackageDefinition{
+				CNIVersion:        "0.8.3",
+				KubernetesVersion: "1.17.0",
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		_, err := kubepkg.GetCNIVersion(tc.packageDef)
+
+		require.NotNil(t, err)
+	}
 }
 
 func TestGetCRIToolsVersionSuccess(t *testing.T) {
@@ -451,20 +458,12 @@ func TestGetDependenciesSuccess(t *testing.T) {
 		expected    map[string]string
 	}{
 		{
-			name:        "get kubelet deps",
-			packageName: "kubelet",
-			expected: map[string]string{
-				"kubernetes-cni": "0.7.5",
-			},
-		},
-		{
 			name:        "get kubeadm deps",
 			packageName: "kubeadm",
 			expected: map[string]string{
-				"kubelet":        "1.13.0",
-				"kubectl":        "1.13.0",
-				"kubernetes-cni": "0.7.5",
-				"cri-tools":      "1.13.0",
+				"kubelet":   "1.13.0",
+				"kubectl":   "1.13.0",
+				"cri-tools": "1.13.0",
 			},
 		},
 	}
@@ -494,26 +493,15 @@ func TestGetCNIDownloadLinkSuccess(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "CNI <= 0.7.5",
-			version:  "0.7.5",
+			name:     "minimum CNI version",
+			version:  "0.8.6",
 			arch:     "amd64",
-			expected: "https://github.com/containernetworking/plugins/releases/download/v0.7.5/cni-plugins-amd64-v0.7.5.tgz",
-		},
-		{
-			name:     "CNI > 0.8.3",
-			version:  "0.8.3",
-			arch:     "amd64",
-			expected: "https://github.com/containernetworking/plugins/releases/download/v0.8.3/cni-plugins-linux-amd64-v0.8.3.tgz",
+			expected: "https://storage.googleapis.com/k8s-artifacts-cni/release/v0.8.6/cni-plugins-linux-amd64-v0.8.6.tgz",
 		},
 	}
 
 	for _, tc := range testcases {
-		actual, err := kubepkg.GetCNIDownloadLink(
-			&kubepkg.PackageDefinition{
-				Version: tc.version,
-			},
-			tc.arch,
-		)
+		actual, err := kubepkg.GetCNIDownloadLink(tc.version, tc.arch)
 
 		require.Nil(t, err)
 		require.Equal(t, tc.expected, actual)
@@ -521,6 +509,6 @@ func TestGetCNIDownloadLinkSuccess(t *testing.T) {
 }
 
 func TestGetCNIDownloadLinkFailure(t *testing.T) {
-	_, err := kubepkg.GetCNIDownloadLink(nil, "amd64")
+	_, err := kubepkg.GetCNIDownloadLink("badversion", "amd64")
 	require.NotNil(t, err)
 }
