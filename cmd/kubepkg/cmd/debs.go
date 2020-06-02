@@ -33,8 +33,7 @@ var debsCmd = &cobra.Command{
 		return opts.Validate()
 	},
 	RunE: func(*cobra.Command, []string) error {
-		opts = opts.WithBuildType(options.BuildDeb)
-		return run(opts)
+		return run(options.BuildDeb)
 	},
 }
 

@@ -33,8 +33,7 @@ var rpmsCmd = &cobra.Command{
 		return opts.Validate()
 	},
 	RunE: func(*cobra.Command, []string) error {
-		opts = opts.WithBuildType(options.BuildRpm)
-		return run(opts)
+		return run(options.BuildRpm)
 	},
 }
 
