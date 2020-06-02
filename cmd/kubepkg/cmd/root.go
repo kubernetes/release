@@ -34,8 +34,18 @@ var rootCmd = &cobra.Command{
 }
 
 var (
-	opts     *options.Options = options.New()
-	logLevel string
+	opts                    *options.Options = options.New()
+	logLevel                string
+	kubeVersion             string
+	packages                []string
+	channels                []string
+	architectures           []string
+	revision                string
+	cniVersion              string
+	criToolsVersion         string
+	releaseDownloadLinkBase string
+	templateDir             string
+	specOnly                bool
 )
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -47,7 +57,6 @@ func Execute() {
 }
 
 func init() {
-	packages := []string{}
 	rootCmd.PersistentFlags().StringSliceVar(
 		&packages,
 		"packages",
@@ -55,7 +64,6 @@ func init() {
 		"packages to build",
 	)
 
-	channels := []string{}
 	rootCmd.PersistentFlags().StringSliceVar(
 		&channels,
 		"channels",
@@ -63,7 +71,6 @@ func init() {
 		"channels to build for",
 	)
 
-	architectures := []string{}
 	rootCmd.PersistentFlags().StringSliceVar(
 		&architectures,
 		"arch",
@@ -71,15 +78,13 @@ func init() {
 		"architectures to build for",
 	)
 
-	kubeVersion := ""
 	rootCmd.PersistentFlags().StringVar(
 		&kubeVersion,
 		"kube-version",
-		opts.KubeVersion(),
+		"",
 		"Kubernetes version to build",
 	)
 
-	revision := ""
 	rootCmd.PersistentFlags().StringVar(
 		&revision,
 		"revision",
@@ -87,7 +92,6 @@ func init() {
 		"deb package revision.",
 	)
 
-	cniVersion := ""
 	rootCmd.PersistentFlags().StringVar(
 		&cniVersion,
 		"cni-version",
@@ -95,7 +99,6 @@ func init() {
 		"CNI version to build",
 	)
 
-	criToolsVersion := ""
 	rootCmd.PersistentFlags().StringVar(
 		&criToolsVersion,
 		"cri-tools-version",
@@ -103,7 +106,6 @@ func init() {
 		"CRI tools version to build",
 	)
 
-	releaseDownloadLinkBase := ""
 	rootCmd.PersistentFlags().StringVar(
 		&releaseDownloadLinkBase,
 		"release-download-link-base",
@@ -111,7 +113,6 @@ func init() {
 		"release download link base",
 	)
 
-	templateDir := ""
 	rootCmd.PersistentFlags().StringVar(
 		&templateDir,
 		"template-dir",
@@ -119,7 +120,6 @@ func init() {
 		"template directory",
 	)
 
-	specOnly := false
 	rootCmd.PersistentFlags().BoolVar(
 		&specOnly,
 		"spec-only",
@@ -133,8 +133,14 @@ func init() {
 		"info",
 		"the logging verbosity, either 'panic', 'fatal', 'error', 'warn', 'warning', 'info', 'debug' or 'trace'",
 	)
+}
 
-	opts = opts.WithPackages(packages...).
+func initLogging(*cobra.Command, []string) error {
+	return log.SetupGlobalLogger(logLevel)
+}
+
+func run(buildType options.BuildType) error {
+	opts := opts.WithPackages(packages...).
 		WithChannels(channels...).
 		WithArchitectures(architectures...).
 		WithKubeVersion(kubeVersion).
@@ -143,14 +149,10 @@ func init() {
 		WithCRIToolsVersion(criToolsVersion).
 		WithReleaseDownloadLinkBase(releaseDownloadLinkBase).
 		WithTemplateDir(templateDir).
-		WithSpecOnly(specOnly)
-}
+		WithSpecOnly(specOnly).
+		WithBuildType(buildType)
+	logrus.Debugf("Using options: %+v", opts)
 
-func initLogging(*cobra.Command, []string) error {
-	return log.SetupGlobalLogger(logLevel)
-}
-
-func run(opts *options.Options) error {
 	client := kubepkg.New(opts)
 	builds, err := client.ConstructBuilds()
 	if err != nil {
