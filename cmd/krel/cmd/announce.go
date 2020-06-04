@@ -30,7 +30,6 @@ import (
 )
 
 const (
-	sendgridAPIKeyFlag   = "sendgrid-api-key"
 	sendgridAPIKeyEnvKey = "SENDGRID_API_KEY"
 	nameFlag             = "name"
 	emailFlag            = "email"
@@ -50,8 +49,7 @@ krel announce can be used to announce already built Kubernetes releases to the
 If --nomock=true (the default), then the mail will be sent only to a test
 Google Group %q.
 
-It is necessary to either set a valid --%s,-s or export the
-$%s environment variable. An API key can be created by
+It is necessary to export the $%s environment variable. An API key can be created by
 registering a sendgrid.com account and adding the key here:
 
 https://app.sendgrid.com/settings/api_keys
@@ -67,7 +65,6 @@ without doing anything else.`,
 		mail.KubernetesAnnounceGoogleGroup,
 		mail.KubernetesDevGoogleGroup,
 		mail.KubernetesAnnounceTestGoogleGroup,
-		sendgridAPIKeyFlag,
 		sendgridAPIKeyEnvKey,
 		nameFlag,
 		emailFlag,
@@ -92,16 +89,7 @@ type announceOptions struct {
 var announceOpts = &announceOptions{}
 
 func init() {
-	announceCmd.PersistentFlags().StringVarP(
-		&announceOpts.sendgridAPIKey,
-		sendgridAPIKeyFlag,
-		"s",
-		util.EnvDefault(sendgridAPIKeyEnvKey, ""),
-		fmt.Sprintf(
-			"API key for sendgrid, can be set via %s too",
-			sendgridAPIKeyEnvKey,
-		),
-	)
+	announceOpts.sendgridAPIKey = util.EnvDefault(sendgridAPIKeyEnvKey, "")
 
 	announceCmd.PersistentFlags().StringVarP(
 		&announceOpts.name,
@@ -167,7 +155,7 @@ func runAnnounce(opts *announceOptions, rootOpts *rootOptions) error {
 
 	if opts.sendgridAPIKey == "" {
 		return errors.Errorf(
-			"Neither --sendgrid-api-key,-s nor $%s is set", sendgridAPIKeyEnvKey,
+			"$%s is not set", sendgridAPIKeyEnvKey,
 		)
 	}
 
