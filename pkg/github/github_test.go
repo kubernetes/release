@@ -125,9 +125,9 @@ func TestLatestGitHubTagsPerBranchSuccessMultipleForSameBranch(t *testing.T) {
 
 	// Then
 	require.Nil(t, err)
-	require.Len(t, res, 5)
-	require.Equal(t, tag2, res[git.Master])
-	require.Equal(t, tag1, res["release-1.18"])
+	require.Len(t, res, 4)
+	require.Equal(t, tag1, res[git.Master])
+	require.Empty(t, res["release-1.18"])
 	require.Empty(t, res["release-1.17"])
 	require.Equal(t, tag5, res["release-1.16"])
 	require.Equal(t, tag3, res["release-1.15"])
