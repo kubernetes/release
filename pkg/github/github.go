@@ -323,8 +323,8 @@ func (g *GitHub) LatestGitHubTagsPerBranch() (TagsPerBranch, error) {
 	for _, t := range allTags {
 		tag := t.GetName()
 
-		// Alpha releases are only available on the master branch
-		if strings.Contains(tag, "alpha") {
+		// alpha and beta releases are only available on the master branch
+		if strings.Contains(tag, "beta") || strings.Contains(tag, "alpha") {
 			releases.addIfNotExisting(git.Master, tag)
 			continue
 		}
