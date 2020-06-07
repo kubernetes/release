@@ -34,6 +34,7 @@ filegroup(
         "//cmd/kubepkg:all-srcs",
         "//cmd/release-notes:all-srcs",
         "//lib:all-srcs",
+        "//packages/deb:all-srcs",
         "//pkg/announce:all-srcs",
         "//pkg/command:all-srcs",
         "//pkg/gcp:all-srcs",
