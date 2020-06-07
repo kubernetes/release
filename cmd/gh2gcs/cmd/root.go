@@ -32,7 +32,7 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:               "gh2gcs --org kubernetes --repo release --bucket <bucket> --release-dir <release-dir> [--tags v0.0.0] [--include-prereleases] [--output-dir <temp-dir>]",
+	Use:               "gh2gcs --org kubernetes --repo release --bucket <bucket> --release-dir <release-dir> [--tags v0.0.0] [--include-prereleases] [--output-dir <temp-dir>] [--download-only]",
 	Short:             "gh2gcs uploads GitHub releases to Google Cloud Storage",
 	Example:           "gh2gcs --org kubernetes --repo release --bucket k8s-staging-release-test --release-dir release --tags v0.0.0,v0.0.1",
 	SilenceUsage:      true,
@@ -44,14 +44,15 @@ var rootCmd = &cobra.Command{
 }
 
 type options struct {
+	downloadOnly       bool
+	includePrereleases bool
 	org                string
 	repo               string
-	tags               []string
-	includePrereleases bool
 	bucket             string
 	releaseDir         string
 	outputDir          string
 	logLevel           string
+	tags               []string
 }
 
 var opts = &options{}
@@ -64,6 +65,7 @@ var (
 	bucketFlag             = "bucket"
 	releaseDirFlag         = "release-dir"
 	outputDirFlag          = "output-dir"
+	downloadOnlyFlag       = "download-only"
 
 	requiredFlags = []string{
 		orgFlag,
@@ -136,6 +138,13 @@ func init() {
 		"local directory for releases to be downloaded to",
 	)
 
+	rootCmd.PersistentFlags().BoolVar(
+		&opts.downloadOnly,
+		downloadOnlyFlag,
+		false,
+		"only download the releases, do not push them to GCS. Requires the output-dir flag to also be set",
+	)
+
 	rootCmd.PersistentFlags().StringVar(
 		&opts.logLevel,
 		"log-level",
@@ -197,9 +206,12 @@ func run(opts *options) error {
 		if err := gh2gcs.DownloadReleases(&rc, gh, opts.outputDir); err != nil {
 			return errors.Wrap(err, "downloading release assets")
 		}
+		logrus.Infof("Files downloaded to %s folder", opts.outputDir)
 
-		if err := gh2gcs.Upload(&rc, gh, opts.outputDir); err != nil {
-			return errors.Wrap(err, "uploading release assets to GCS")
+		if !opts.downloadOnly {
+			if err := gh2gcs.Upload(&rc, gh, opts.outputDir); err != nil {
+				return errors.Wrap(err, "uploading release assets to GCS")
+			}
 		}
 	}
 
@@ -211,6 +223,10 @@ func (o *options) SetAndValidate() error {
 	logrus.Info("Validating gh2gcs options...")
 
 	if o.outputDir == "" {
+		if opts.downloadOnly {
+			return errors.Errorf("when %s flag is set you need to specify the %s", downloadOnlyFlag, outputDirFlag)
+		}
+
 		tmpDir, err := ioutil.TempDir("", "gh2gcs")
 		if err != nil {
 			return errors.Wrap(err, "creating temp directory")
