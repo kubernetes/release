@@ -23,6 +23,7 @@ RELEASE_TOOLS=(
   gh2gcs
   kubepkg
   krel
+  schedule-builder
 )
 
 setup_env() {
