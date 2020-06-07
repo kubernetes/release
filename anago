@@ -32,7 +32,7 @@ PROG=${0##*/}
 #+            [--exclude-suites="<suite> ..."]
 #+            [--build-at-head]
 #+            [--prebuild] [--buildonly]
-#+            [--mailto=<email1>,<email2>] [--gcb]
+#+            [--mailto=<email1>,<email2>]
 #+            [--tmpdir=</alt/tmp>]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
@@ -135,7 +135,6 @@ PROG=${0##*/}
 #+                                 Users are prompted to remove draft releases,
 #+                                 but the action to create them in the first
 #+                                 place should be explicit.
-#+     [--gcb]                   - Running from GCB
 #+     [--tmpdir=]               - Set an alternate temp dir
 #+     [--prebuild]              - Used during GCB to halt before building
 #+                                 to allow switch to build container
@@ -175,6 +174,10 @@ PROG=${0##*/}
 ########################################################################
 # If NO ARGUMENTS should return usage, uncomment the following line:
 usage=${1:-yes}
+
+# gitlib.sh and common.sh will still use the FLAGS_gcb because they're called
+# by other, manually executed scripts, too
+export FLAGS_gcb=1
 
 # Deal with OSX limitations out the gate for anyone that tries this there
 BASE_ROOT=$(dirname $(readlink -e "$BASH_SOURCE" 2>&1)) \
@@ -216,19 +219,9 @@ common::cleanexit () {
 
   logrun rm -rf $LOCAL_CACHE
 
-  # Reset gcloud auth context
-  # if GCP_USER is set then we are in a state to reset this
-  if ! ((FLAGS_gcb)) && [[ -n "$GCP_USER" ]]; then
-    logrun $GCLOUD config set account $GCP_USER
-  fi
-
   if [[ -d $WORKDIR ]]; then
-    if ((FLAGS_gcb)); then
-      # Just copy the logs and files up. A completed release copies everything
-      archive_release --files-only
-    else
-      copy_logs_to_workdir
-    fi
+    # Just copy the logs and files up. A completed release copies everything
+    archive_release --files-only
   fi
 
   common::timestamp end
@@ -285,9 +278,6 @@ ensure_registry_acls () {
       logecho $FAILED
       ((retcode++))
     fi
-
-    # Always reset back to $USER
-    ((FLAGS_gcb)) || logrun $GCLOUD config set account $GCP_USER
   done
 
   logrun rm -f $emptyfile
@@ -364,10 +354,6 @@ check_prerequisites () {
   fi
   logecho -r "$OK"
 
-  if ! ((FLAGS_gcb)); then
-    ensure_gcp_users || return 1
-  fi
-
   # Verify write access to all container registries that might be used
   # to ensure both mock and --nomock runs will work.
   ensure_registry_acls "${ALL_CONTAINER_REGISTRIES[*]}" || return 1
@@ -436,7 +422,7 @@ checkout_object () {
   # for the 2 release versions being built.
   # In that case, if the tag already exists, simply check it out for build
   # purposes.
-  if ((FLAGS_gcb)) && ! ((FLAGS_prebuild)) && \
+  if ! ((FLAGS_prebuild)) && \
      git rev-parse "$version" >/dev/null 2>&1; then
     logecho -n "Checking out $version: "
     logrun -s git checkout $version || return 1
@@ -664,23 +650,12 @@ build_tree () {
   # push those releases.
   logecho -n "Building Kubernetes $version on $branch: "
 
-  if ((FLAGS_gcb)); then
-    # make_cross done separately
-    # OUT_DIR works in this context.  Woohoo!
-    # KUBE_DOCKER_IMAGE_TAG needed here due to references deep in
-    # build/lib/release.sh
-    logrun -s -v make package-tarballs KUBE_DOCKER_IMAGE_TAG="$version" \
-                                       OUT_DIR=$OUT_DIR-$version || return 1
-  else
-    # TODO: Ideally we update LOCAL_OUTPUT_ROOT in build/common.sh to be
-    #       modifiable.  In the meantime just mv the dir after it's done
-    # Not until https://github.com/kubernetes/kubernetes/issues/23839
-    #logrun -s make release OUT_DIR=$BUILD_OUTPUT-${RELEASE_VERSION[$label]}
-    logrun -s make release KUBE_DOCKER_IMAGE_TAG="$version" || return 1
-
-    logecho -n "Moving build _output to $BUILD_OUTPUT-$version: "
-    logrun -s mv $BUILD_OUTPUT $BUILD_OUTPUT-$version || return 1
-  fi
+  # make_cross done separately
+  # OUT_DIR works in this context.  Woohoo!
+  # KUBE_DOCKER_IMAGE_TAG needed here due to references deep in
+  # build/lib/release.sh
+  logrun -s -v make package-tarballs KUBE_DOCKER_IMAGE_TAG="$version" \
+                                     OUT_DIR=$OUT_DIR-$version || return 1
 }
 
 ##############################################################################
@@ -1325,7 +1300,7 @@ prepare_workspace () {
   # this release type
   if ((FLAGS_stage)) || ! found_staged_location ${RELEASE_VERSION[@]}; then
     # GCB releases (krel gcbmgr --release) requires a found staged build to use
-    if ! ((FLAGS_stage)) && ((FLAGS_gcb)); then
+    if ! ((FLAGS_stage)); then
       logecho "$FATAL: Releasing from GCB requires a staged" \
               "--buildversion=<buildversion>"
       return 1
@@ -1481,44 +1456,16 @@ common::logfileinit $LOGFILE 10
 # BEGIN script
 common::timestamp begin
 
-# Point release managers to GCB as the preferred method
-if ! ((FLAGS_gcb)); then
-  if ((FLAGS_nomock)); then
-    common::exit 1 "$FATAL: --nomock is no longer available on the" \
-                   "command-line/desktop.  Use 'krel gcbmgr'."
-  fi
-
-  logecho $HR
-  logecho "${TPUT[BOLD]}**** Welcome to the Kubernetes Release Tool, Release" \
-          "Manager ****"
-  logecho
-  logecho "***************** $PROG has moved to the cloud! *******************${TPUT[OFF]}"
-  logecho
-  logecho "* Kubernetes releases have been moved off the desktop"
-  logecho
-  logecho "* Desktop $PROG has not been disabled, but running via GCB is the" \
-          "preferred method.  Usage is similar to $PROG."
-  logecho
-  logecho "* https://github.com/kubernetes/release/blob/master/README.md" \
-          "for details on how to get started."
-  logecho $HR
-  logecho
-  logecho -n "Press any key to continue..."
-  logrun read -n1
-  logecho
-fi
-
 # Order workflow based on conditions
 ((FLAGS_stage)) || common::stepindex "gitlib::github_acls"
 common::stepindex "check_prerequisites" "get_build_candidate" \
  "prepare_workspace" "common::disk_space_check"
 common::stepindex "prepare_tree"
-((FLAGS_gcb)) && common::stepindex "local_kube_cross"
+common::stepindex "local_kube_cross"
 if ((FLAGS_buildonly)); then
-  ((FLAGS_gcb)) && common::stepindex "make_cross"
-  ((FLAGS_gcb)) || common::stepindex "build_tree"
+  common::stepindex "make_cross"
 elif ! ((FLAGS_prebuild)); then
-  ((FLAGS_gcb)) && common::stepindex "make_cross"
+  common::stepindex "make_cross"
   common::stepindex "build_tree" "generate_release_notes"
   if ((FLAGS_stage)); then
     common::stepindex "stage_source_tree"
@@ -1537,15 +1484,6 @@ common::stepheader "WORKFLOW STEPS"
 common::stepindex --toc $PROGSTATE
 logecho
 
-# Pre-checks
-if ! ((FLAGS_gcb)); then
-  # Check tool repo
-  gitlib::repo_state || common::exit 1
-
-  # Additional functionality
-  common::security_layer
-fi
-
 # Set cloud binaries
 if ! ((FLAGS_buildonly)) && ! common::set_cloud_binaries; then
   logecho "Releasing Kubernetes requires gsutil and gcloud. Please download,"
@@ -1560,11 +1498,6 @@ fi
 release::set_globals
 
 ((FLAGS_stage)) || common::run_stateful gitlib::github_acls
-
-# Simple check to validate who can do actual releases
-if ((FLAGS_nomock)) && ! ((FLAGS_gcb)); then
-  security_layer::acl_check || common::exit 1 "Exiting..."
-fi
 
 common::run_stateful "check_prerequisites"
 
@@ -1696,17 +1629,11 @@ if [[ -z $STAGED_LOCATION ]]; then
     # This doesn't have to be done per label, but does need to be inserted
     # after an initial prepare_tree(), so just let the statefulness of it
     # ignore a second iteration/call.
-    ((FLAGS_gcb)) \
-     && common::run_stateful local_kube_cross
+    common::run_stateful local_kube_cross
     # --prebuild for GCB, skip actual builds. Do everything else
     if ! ((FLAGS_prebuild)); then
-      if ((FLAGS_gcb)); then
-        # Do only make cross in this case
-        common::run_stateful "make_cross $label" RELEASE_VERSION[$label]
-      else
-        # Do the full build in this case
-        common::run_stateful "build_tree $label" RELEASE_VERSION[$label]
-      fi
+      # Do only make cross in this case
+      common::run_stateful "make_cross $label" RELEASE_VERSION[$label]
     fi
   done
 
@@ -1722,12 +1649,10 @@ if [[ -z $STAGED_LOCATION ]]; then
   fi
 
   # Complete the "build" for the gcb case
-  if ((FLAGS_gcb)); then
-    if ((FLAGS_stage)); then
-      for label in "${ORDERED_RELEASE_KEYS[@]}"; do
-        common::run_stateful "build_tree $label" RELEASE_VERSION[$label]
-      done
-    fi
+  if ((FLAGS_stage)); then
+    for label in "${ORDERED_RELEASE_KEYS[@]}"; do
+      common::run_stateful "build_tree $label" RELEASE_VERSION[$label]
+    done
   fi
 
   # No release notes for X.Y.Z-beta.0 releases
@@ -1737,7 +1662,7 @@ else
   # Force complete for these three stages
   for label in "${ORDERED_RELEASE_KEYS[@]}"; do
     SKIP_STEPS+=(prepare_tree+$label build_tree+$label)
-    ((FLAGS_gcb)) && SKIP_STEPS+=(local_kube_cross make_cross+$label)
+    SKIP_STEPS+=(local_kube_cross make_cross+$label)
   done
   SKIP_STEPS+=(generate_release_notes)
   for entry in ${SKIP_STEPS[*]}; do
@@ -1776,18 +1701,15 @@ if ((FLAGS_stage)); then
   logecho -n "Moving $PROGSTATE to $PROGSTATE.last: "
   logrun -s mv $PROGSTATE $PROGSTATE.last
 
-  # IF GCB, keep only the last staged build
+  # Keep only the last staged build
   # clean up here on success
-  # Debatable if this should only happen on GCB
-  if ((FLAGS_gcb)); then
-    # Delete everything that's not this build in the vX.Y. namespace
-    # || true to catch non-zero exit when list is empty
-    if [[ $JENKINS_BUILD_VERSION =~ (v[0-9]+\.[0-9]+\.) ]]; then
-      logecho "Cleaning up old staged builds from" \
-              "gs://$RELEASE_BUCKET/$BUCKET_TYPE/${BASH_REMATCH[1]}..."
-      $GSUTIL ls -d gs://$RELEASE_BUCKET/$BUCKET_TYPE/${BASH_REMATCH[1]}* |\
-       grep -v $JENKINS_BUILD_VERSION |xargs $GSUTIL -mq rm -r || true
-    fi
+  # Delete everything that's not this build in the vX.Y. namespace
+  # || true to catch non-zero exit when list is empty
+  if [[ $JENKINS_BUILD_VERSION =~ (v[0-9]+\.[0-9]+\.) ]]; then
+    logecho "Cleaning up old staged builds from" \
+            "gs://$RELEASE_BUCKET/$BUCKET_TYPE/${BASH_REMATCH[1]}..."
+    $GSUTIL ls -d gs://$RELEASE_BUCKET/$BUCKET_TYPE/${BASH_REMATCH[1]}* |\
+     grep -v $JENKINS_BUILD_VERSION |xargs $GSUTIL -mq rm -r || true
   fi
 
   common::exit 0

@@ -49,7 +49,6 @@ steps:
   - "${_NOMOCK}"
   - "${_BUILDVERSION}"
   - "--yes"
-  - "--gcb"
   - "--basedir=/workspace"
   - "--tmpdir=/workspace/tmp"
   - "--type=${_TYPE}"
