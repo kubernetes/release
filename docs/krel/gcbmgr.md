@@ -15,8 +15,6 @@
   - [Alpha Release](#alpha-release)
 - [Beta](#beta)
   - [Beta Stage](#beta-stage)
-    - [Branch cut (`x.y.0-beta.0`)](#branch-cut-xy0-beta0)
-    - [Post-branch cut (`x.y.0-beta.1` and beyond)](#post-branch-cut-xy0-beta1-and-beyond)
   - [Beta Release](#beta-release)
 - [Release Candidate](#release-candidate)
   - [Release Candidate (RC) Stage](#release-candidate-rc-stage)
@@ -37,23 +35,23 @@ Simply [install krel](README.md#installation).
 
 ```
 Flags:
-      --branch string          Branch to run the specified GCB run against (default "master")
-      --build-version string   Build version
-      --gcb-config string      If provided, this will be used as the name of the Google Cloud Build config file. (default "cloudbuild.yaml")
-      --gcp-user string        If provided, this will be used as the GCP_USER_TAG.
-  -h, --help                   Help for gcbmgr
-      --list-jobs int          List the last x build jobs in the project. Default to 5.
+      --branch string          branch to run the specified GCB run against (default "master")
+      --build-version string   build version
+      --gcb-config string      if specified, this will be used as the name of the Google Cloud Build config file (default "cloudbuild.yaml")
+      --gcp-user string        if specified, this will be used as the GCP_USER_TAG
+  -h, --help                   help for gcbmgr
+      --list-jobs int          list the last N build jobs in the project (default 5)
       --project string         GCP project to run GCB in (default "kubernetes-release-test")
-      --release                Submit a release run to GCB
-      --stage                  Submit a stage run to GCB
-      --stream                 If specified, GCB will run synchronously, tailing its' logs to stdout
-      --type string            Release type (must be one of: 'prerelease', 'rc', 'official') (default "prerelease")
+      --release                submit a release run to GCB
+      --stage                  submit a stage run to GCB
+      --stream                 if specified, GCB will run synchronously, tailing its logs to stdout
+      --type string            release type, must be one of: 'alpha', 'beta', 'rc', 'official' (default "alpha")
 
 Global Flags:
-      --cleanup            Cleanup flag
-      --log-level string   The logging verbosity, either 'panic', 'fatal', 'error', 'warn', 'warning', 'info', 'debug' or 'trace' (default "info")
+      --cleanup            cleanup flag
+      --log-level string   the logging verbosity, either 'panic', 'fatal', 'error', 'warn', 'warning', 'info', 'debug' or 'trace' (default "info")
       --nomock             nomock flag
-      --repo string        The local path to the repository to be used (default "/tmp/k8s")
+      --repo string        the local path to the repository to be used (default "/tmp/k8s")
 ```
 
 ## Important notes
@@ -76,6 +74,7 @@ Global Flags:
   TOOL_REPO=release \
   TOOL_BRANCH=great-new-feature-branch \
   krel gcbmgr --stage \
+    --type beta \
     --branch release-x.y \
     --project kubernetes-release-test
   ```
@@ -93,6 +92,7 @@ krel gcbmgr \
 
 ```shell
 krel gcbmgr --stage \
+  --type alpha \
   --project kubernetes-release-test
 ```
 
@@ -100,6 +100,7 @@ krel gcbmgr --stage \
 
 ```shell
 krel gcbmgr --release \
+  --type alpha \
   --project kubernetes-release-test \
   --build-version <build-version>
 ```
@@ -108,19 +109,9 @@ krel gcbmgr --release \
 
 ### Beta Stage
 
-#### Branch cut (`x.y.0-beta.0`)
-
 ```shell
 krel gcbmgr --stage \
-  --branch release-x.y \
-  --project kubernetes-release-test
-```
-
-#### Post-branch cut (`x.y.0-beta.1` and beyond)
-
-```shell
-krel gcbmgr --stage \
-  --branch release-x.y \
+  --type beta \
   --project kubernetes-release-test
 ```
 
@@ -128,7 +119,7 @@ krel gcbmgr --stage \
 
 ```shell
 krel gcbmgr --release \
-  --branch release-x.y \
+  --type beta \
   --project kubernetes-release-test \
   --build-version <build-version>
 ```

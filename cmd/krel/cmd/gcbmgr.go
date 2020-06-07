@@ -90,20 +90,20 @@ func init() {
 		&gcbmgrOpts.Stage,
 		"stage",
 		false,
-		"Submit a stage run to GCB",
+		"submit a stage run to GCB",
 	)
 	gcbmgrCmd.PersistentFlags().BoolVar(
 		&gcbmgrOpts.Release,
 		"release",
 		false,
-		"Submit a release run to GCB",
+		"submit a release run to GCB",
 	)
 
 	gcbmgrCmd.PersistentFlags().StringVar(
 		&gcbmgrOpts.Branch,
 		"branch",
 		git.Master,
-		"Branch to run the specified GCB run against",
+		"branch to run the specified GCB run against",
 	)
 
 	// Release types
@@ -111,7 +111,7 @@ func init() {
 		&gcbmgrOpts.ReleaseType,
 		"type",
 		ReleaseTypeAlpha,
-		fmt.Sprintf("Release type, must be one of: '%s'",
+		fmt.Sprintf("release type, must be one of: '%s'",
 			strings.Join([]string{
 				ReleaseTypeAlpha,
 				ReleaseTypeBeta,
@@ -126,7 +126,7 @@ func init() {
 		&gcbmgrOpts.BuildVersion,
 		"build-version",
 		"",
-		"Build version",
+		"build version",
 	)
 
 	// gcloud options
@@ -140,26 +140,26 @@ func init() {
 		&gcbmgrOpts.Stream,
 		"stream",
 		false,
-		"If specified, GCB will run synchronously, tailing its' logs to stdout",
+		"if specified, GCB will run synchronously, tailing its logs to stdout",
 	)
 	gcbmgrCmd.PersistentFlags().StringVar(
 		&buildOpts.CloudbuildFile,
 		"gcb-config",
 		build.DefaultCloudbuildFile,
-		"If provided, this will be used as the name of the Google Cloud Build config file.",
+		"if specified, this will be used as the name of the Google Cloud Build config file",
 	)
 	gcbmgrCmd.PersistentFlags().StringVar(
 		&gcbmgrOpts.GcpUser,
 		"gcp-user",
 		"",
-		"If provided, this will be used as the GCP_USER_TAG.",
+		"if specified, this will be used as the GCP_USER_TAG",
 	)
 
 	gcbmgrCmd.PersistentFlags().Int64Var(
 		&gcbmgrOpts.LastJobs,
 		"list-jobs",
 		5,
-		"List the last x build jobs in the project. Default to 5.",
+		"list the last N build jobs in the project",
 	)
 
 	gcbmgrOpts.Repo = release.NewRepo()
