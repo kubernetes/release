@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+//nolint
+// This file is intended for legacy support and should not be linted
 package main
 
 import (
