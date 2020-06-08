@@ -1,27 +1,37 @@
 # gazelle:repository_macro repos.bzl%go_repositories
 workspace(name = "io_k8s_release")
 
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 
 ################################################################################
 # Go Build Definitions
 ################################################################################
 
-git_repository(
+http_archive(
     name = "io_k8s_repo_infra",
-    commit = "28d05af9a236141616b47645af81c23c3437e118",
-    remote = "https://github.com/kubernetes/repo-infra.git",
-    shallow_since = "1575420778 -0800",
+    sha256 = "b1e51445409a02b1b9a5a0bff31560c7096c07656d1f1546489f32879f4bf7ac",
+    strip_prefix = "repo-infra-2e8f2d47a547eac83d5c17a4cd417f178ebede82",
+    urls = [
+        "https://github.com/kubernetes/repo-infra/archive/2e8f2d4.tar.gz",
+    ],
 )
 
-load("@io_k8s_repo_infra//:load.bzl", "repositories")
+load("@io_k8s_repo_infra//:load.bzl", repo_infra_repositories = "repositories")
 
-repositories()
+repo_infra_repositories()
 
-load("@io_k8s_repo_infra//:repos.bzl", "configure")
+load(
+    "@io_k8s_repo_infra//:repos.bzl",
+    repo_infra_configure = "configure",
+    repo_infra_go_repositories = "go_repositories",
+)
 
-configure()
+repo_infra_configure(
+    go_version = "1.13.9",
+    minimum_bazel_version = "2.2.0",
+)
+
+repo_infra_go_repositories()
 
 load("//:repos.bzl", "go_repositories")
 
