@@ -206,7 +206,7 @@ func run(opts *options) error {
 		if err := gh2gcs.DownloadReleases(&rc, gh, opts.outputDir); err != nil {
 			return errors.Wrap(err, "downloading release assets")
 		}
-		logrus.Infof("Files downloaded to %s folder", opts.outputDir)
+		logrus.Infof("Files downloaded to %s directory", opts.outputDir)
 
 		if !opts.downloadOnly {
 			if err := gh2gcs.Upload(&rc, gh, opts.outputDir); err != nil {
