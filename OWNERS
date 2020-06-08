@@ -2,9 +2,10 @@
 
 approvers:
   - sig-release-leads
-  - release-engineering
+  - release-engineering-approvers
 reviewers:
-  - branch-managers
+  - release-engineering-approvers
+  - release-engineering-reviewers
 labels:
   - sig/release
   - area/release-eng
