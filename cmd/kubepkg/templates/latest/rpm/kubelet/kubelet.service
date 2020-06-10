@@ -3,6 +3,7 @@ Description=kubelet: The Kubernetes Node Agent
 Documentation=https://kubernetes.io/docs/
 Wants=network-online.target
 After=network-online.target
+ConditionPathExists=/var/lib/kubelet/config.yaml
 
 [Service]
 ExecStart=/usr/bin/kubelet
