@@ -52,6 +52,10 @@ const (
 	userForkName = "userfork"
 	// assetsFilePath Path to the assets.ts file
 	assetsFilePath = "src/environments/assets.ts"
+	// websiteBranchPrefix name of the website branch in the user's fork
+	websiteBranchPrefix = "release-notes-json-"
+	// draftBranchPrefix name of the draft branch in the user's fork
+	draftBranchPrefix = "release-notes-draft-"
 )
 
 // releaseNotesCmd represents the subcommand for `krel release-notes`
@@ -80,21 +84,28 @@ permissions to your fork of k/sig-release and k-sigs/release-notes.`,
 		github.TokenEnvKey),
 	SilenceUsage:  true,
 	SilenceErrors: true,
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		// If none of the operation modes is defined, show the usage help and exit
+		if !releaseNotesOpts.createDraftPR && !releaseNotesOpts.createWebsitePR {
+			if err := cmd.Help(); err != nil {
+				return err
+			}
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Run the PR creation function
 		return runReleaseNotes()
 	},
 }
 
 type releaseNotesOptions struct {
 	tag             string
-	draftOrg        string
+	githubOrg       string
 	draftRepo       string
 	createDraftPR   bool
 	createWebsitePR bool
 	dependencies    bool
-	outputDir       string
-	Format          string
-	websiteOrg      string
 	websiteRepo     string
 }
 
@@ -115,60 +126,38 @@ func init() {
 	)
 
 	releaseNotesCmd.PersistentFlags().StringVar(
-		&releaseNotesOpts.draftOrg,
-		"draft-org",
+		&releaseNotesOpts.githubOrg,
+		"org",
 		"",
-		"a Github organization owner of the fork of k/sig-release where the Release Notes Draft PR will be created",
-	)
-
-	releaseNotesCmd.PersistentFlags().StringVar(
-		&releaseNotesOpts.draftRepo,
-		"draft-repo",
-		git.DefaultGithubReleaseRepo,
-		"the name of the fork of k/sig-release, the Release Notes Draft PR will be created from this repository",
+		"a Github organization hosting the forks of k/sig-release or ksigs/release-notes",
 	)
 
 	releaseNotesCmd.PersistentFlags().BoolVar(
 		&releaseNotesOpts.createDraftPR,
 		"create-draft-pr",
 		false,
-		"create the Release Notes Draft PR. --draft-org and --draft-repo must be set along with this option",
-	)
-
-	releaseNotesCmd.PersistentFlags().StringVar(
-		&releaseNotesOpts.websiteOrg,
-		"website-org",
-		"",
-		"a Github organization owner of the fork of kuberntets-sigs/release-notes where the Website PR will be created",
-	)
-
-	releaseNotesCmd.PersistentFlags().StringVar(
-		&releaseNotesOpts.websiteRepo,
-		"website-repo",
-		"release-notes",
-		"the name of the fork of kuberntets-sigs/release-notes, the Release Notes Draft PR will be created from this repository",
+		"update the Release Notes draft and create a PR in k/sig-release",
 	)
 
 	releaseNotesCmd.PersistentFlags().BoolVar(
 		&releaseNotesOpts.createWebsitePR,
 		"create-website-pr",
 		false,
-		"generate the Releas Notes to a local fork of relnotes.k8s.io and create a PR.  --draft-org and --draft-repo must be set along with this option",
-	)
-
-	releaseNotesCmd.PersistentFlags().StringVarP(
-		&releaseNotesOpts.outputDir,
-		"output-dir",
-		"o",
-		".",
-		"output a copy of the release notes to this directory",
+		"patch the relnotes.k8s.io sources and generate a PR with the changes",
 	)
 
 	releaseNotesCmd.PersistentFlags().StringVar(
-		&releaseNotesOpts.Format,
-		"format",
-		util.EnvDefault("FORMAT", "markdown"),
-		"the format for notes output (options: markdown, json)",
+		&releaseNotesOpts.websiteRepo,
+		"website-repo",
+		"release-notes",
+		"ksigs/release-notes fork used when creating the website PR",
+	)
+
+	releaseNotesCmd.PersistentFlags().StringVar(
+		&releaseNotesOpts.draftRepo,
+		"draft-repo",
+		git.DefaultGithubReleaseRepo,
+		"k/sig-release fork used when creating the draft PR",
 	)
 
 	releaseNotesCmd.PersistentFlags().BoolVar(
@@ -193,10 +182,105 @@ func runReleaseNotes() (err error) {
 		tag = releaseNotesOpts.tag
 	}
 
+	// First, validate cmdline options
+	if err := releaseNotesOpts.Validate(); err != nil {
+		return errors.Wrap(err, "validating command line options")
+	}
+
+	// before running the generators, verify that the repositories are ready
+	if releaseNotesOpts.createWebsitePR {
+		if err = verifyFork(
+			websiteBranchPrefix+tag,
+			releaseNotesOpts.githubOrg, releaseNotesOpts.websiteRepo,
+			defaultKubernetesSigsOrg, defaultKubernetesSigsRepo,
+		); err != nil {
+			return errors.Wrapf(err, "while checking %s/%s fork", defaultKubernetesSigsOrg, defaultKubernetesSigsRepo)
+		}
+	}
+
+	if releaseNotesOpts.createDraftPR {
+		if err = verifyFork(
+			draftBranchPrefix+tag,
+			releaseNotesOpts.githubOrg, releaseNotesOpts.draftRepo,
+			git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
+		); err != nil {
+			return errors.Wrapf(err, "while checking %s/%s fork", defaultKubernetesSigsOrg, defaultKubernetesSigsRepo)
+		}
+	}
+
+	// Create the PR for relnotes.k8s.io
+	if releaseNotesOpts.createWebsitePR {
+		// Run the website PR process
+		if err := createWebsitePR(tag); err != nil {
+			return errors.Wrap(err, "creating website PR")
+		}
+	}
+
+	// Create the PR for the Release Notes Draft in k/sig-release
+	if releaseNotesOpts.createDraftPR {
+		// Create the Draft PR Process
+		if err := createDraftPR(tag); err != nil {
+			return errors.Wrap(err, "creating Draft PR")
+		}
+	}
+
+	if releaseNotesOpts.createDraftPR || releaseNotesOpts.createWebsitePR {
+		logrus.Info("Release notes generation complete!")
+	}
+
+	return nil
+}
+
+// verifyFork does a pre-check of a fork to see if we can create a PR from it
+func verifyFork(branchName, forkOwner, forkRepo, parentOwner, parentRepo string) error {
+	logrus.Infof("Checking if a PR can be created from %s/%s", forkOwner, forkRepo)
+	gh := github.New()
+
+	// Check th PR
+	isrepo, err := gh.RepoIsForkOf(
+		forkOwner, forkRepo, parentOwner, parentRepo,
+	)
+	if err != nil {
+		return errors.Wrapf(
+			err, "while checking if repository is a fork of %s/%s",
+			parentOwner, parentRepo,
+		)
+	}
+
+	if !isrepo {
+		return errors.Errorf(
+			"cannot create PR, %s/%s is not a fork of %s/%s",
+			forkOwner, forkRepo, parentOwner, parentRepo,
+		)
+	}
+
+	// verify the branch does not previously exist
+	branchExists, err := gh.BranchExists(
+		forkOwner, forkRepo, branchName,
+	)
+	if err != nil {
+		return errors.Wrap(err, "while checking if branch can be created")
+	}
+
+	if branchExists {
+		return errors.Errorf(
+			"a branch named %s already exists in %s/%s",
+			branchName, forkOwner, forkRepo,
+		)
+	}
+	return nil
+}
+
+// createDraftPR pushes the release notes draft to the users fork
+func createDraftPR(tag string) (err error) {
 	s, err := util.TagStringToSemver(tag)
 	if err != nil {
 		return errors.Wrapf(err, "no valid tag: %v", tag)
 	}
+
+	// Release notes are built from the first RC in the previous
+	// minor to encompass all changes received after Code Thaw,
+	// the point where the last minor was forked.
 	start := util.SemverToTagString(semver.Version{
 		Major: s.Major,
 		Minor: s.Minor - 1,
@@ -204,88 +288,11 @@ func runReleaseNotes() (err error) {
 		Pre:   []semver.PRVersion{{VersionStr: "rc.1"}},
 	})
 
-	var result *releaseNotesResult
-
-	// Create the PR for relnotes.k8s.io
-	if releaseNotesOpts.createWebsitePR {
-		// Check cmd line options
-		if err = validateWebsitePROptions(); err != nil {
-			return errors.Wrap(err, "validating PR command line options")
-		}
-
-		// Verify the repository
-		if err = validateWebsitePRRepository(); err != nil {
-			return errors.Wrapf(err, "while checking %s/%s fork", defaultKubernetesSigsOrg, defaultKubernetesSigsRepo)
-		}
-
-		// Generate the release notes for ust the current tag
-		jsonStr, err := releaseNotesJSON(tag)
-		if err != nil {
-			return errors.Wrapf(err, "generating release notes")
-		}
-
-		// Run the website PR process
-		if err := createWebsitePR(tag, jsonStr); err != nil {
-			return errors.Wrapf(err, "generating release notes for tag %s", tag)
-		}
-		return nil
-	}
-
-	// Create the PR for the Release Notes Draft in k/sig-release
-	if releaseNotesOpts.createDraftPR {
-		// Check cmd line options
-		if err = validateDraftPROptions(); err != nil {
-			return errors.Wrap(err, "validating PR command line options")
-		}
-
-		// Verify the repository
-		if err = validateDraftPRRepository(); err != nil {
-			return errors.Wrapf(err, "while checking %s/%s fork", git.DefaultGithubOrg, git.DefaultGithubReleaseRepo)
-		}
-
-		// Generate the notes for the current version
-		result, err = releaseNotesFrom(start)
-		if err != nil {
-			return errors.Wrapf(err, "while generating the release notes for tag %s", start)
-		}
-
-		// Create the Draft PR Process
-		if err := createDraftPR(tag, result); err != nil {
-			return errors.Wrap(err, "failed to create release notes draft PR")
-		}
-		return nil
-	}
-
-	// Otherwise, generate the release notes to a file
-	result, err = releaseNotesFrom(start)
-	if err != nil {
-		return errors.Wrap(err, "generating release notes to file")
-	}
-
-	switch releaseNotesOpts.Format {
-	case "json":
-		err = ioutil.WriteFile(filepath.Join(releaseNotesOpts.outputDir, "release-notes.json"), []byte(result.json), 0644)
-		if err != nil {
-			return errors.Wrap(err, "generating release notes in json")
-		}
-	case "markdown":
-		err = ioutil.WriteFile(filepath.Join(releaseNotesOpts.outputDir, "release-notes.md"), []byte(result.markdown), 0644)
-		if err != nil {
-			return errors.Wrap(err, "writing release notes markdown file")
-		}
-	default:
-		return errors.Errorf("%q is an unsupported format", releaseNotesOpts.Format)
-	}
-
-	return nil
-}
-
-// validateDraftPRRepository checks if a repo is fit to create a PR
-func validateDraftPRRepository() error {
 	gh := github.New()
 
+	// Verify the repository
 	isrepo, err := gh.RepoIsForkOf(
-		releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo,
+		releaseNotesOpts.githubOrg, releaseNotesOpts.draftRepo,
 		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
 	)
 	if err != nil {
@@ -299,143 +306,25 @@ func validateDraftPRRepository() error {
 		return errors.New(
 			fmt.Sprintf(
 				"Cannot create PR, %s/%s is not a fork of %s/%s",
-				releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo,
+				releaseNotesOpts.githubOrg, releaseNotesOpts.draftRepo,
 				git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
 			),
 		)
 	}
 
-	return nil
-}
-
-// validateWebsitePRRepository checks if a repo is fit to create a PR
-func validateWebsitePRRepository() error {
-	gh := github.New()
-
-	isrepo, err := gh.RepoIsForkOf(
-		releaseNotesOpts.websiteOrg, releaseNotesOpts.websiteRepo,
-		defaultKubernetesSigsOrg, defaultKubernetesSigsRepo,
-	)
+	// Generate the notes for the current version
+	result, err := releaseNotesFrom(start)
 	if err != nil {
-		return errors.Wrapf(
-			err, "while checking if repository is a fork of %s/%s",
-			defaultKubernetesSigsOrg, defaultKubernetesSigsRepo,
-		)
+		return errors.Wrapf(err, "while generating the release notes for tag %s", start)
 	}
 
-	if !isrepo {
-		return errors.New(
-			fmt.Sprintf(
-				"Cannot create PR, %s/%s is not a fork of %s/%s",
-				releaseNotesOpts.websiteOrg, releaseNotesOpts.websiteRepo,
-				defaultKubernetesSigsOrg, defaultKubernetesSigsRepo,
-			),
-		)
-	}
-
-	return nil
-}
-
-// validateDraftPROptions checks if we have all needed parameters to create the Release Notes PR
-func validateDraftPROptions() error {
-	if releaseNotesOpts.createDraftPR {
-		token, isset := os.LookupEnv(github.TokenEnvKey)
-		if !isset || token == "" {
-			return errors.New("Cannot create release notes draft if GitHub token is not set")
-		}
-
-		// Check if --create-website-pr is set
-		if releaseNotesOpts.createWebsitePR {
-			return errors.New("Cannot create release notes draft if --create-website-pr is set")
-		}
-
-		// Check if --draft-org is set
-		if releaseNotesOpts.draftOrg == "" {
-			logrus.Warn("cannot generate the Release Notes PR without --draft-org")
-		}
-
-		// Check if --draft-repo is set
-		if releaseNotesOpts.draftRepo == "" {
-			logrus.Warn("cannot generate the Release Notes PR without --draft-repo")
-		}
-
-		if releaseNotesOpts.draftOrg == "" || releaseNotesOpts.draftRepo == "" {
-			return errors.New("To generate the release notes PR you must define both --draft-org and --draft-repo")
-		}
-	}
-
-	return nil
-}
-
-// validateWebsitePROptions checks if we have all needed parameters to create the Release Notes PR
-func validateWebsitePROptions() error {
-	if releaseNotesOpts.createWebsitePR {
-		token, isset := os.LookupEnv(github.TokenEnvKey)
-		if !isset || token == "" {
-			return errors.New("Cannot create release notes json file if GitHub token is not set")
-		}
-
-		if releaseNotesOpts.createDraftPR {
-			return errors.New("Cannot creare Website PR if --create-draft-pr is defined")
-		}
-
-		// Check if --website-org is set
-		if releaseNotesOpts.websiteOrg == "" {
-			logrus.Warn("cannot generate the Website PR without --website-org")
-		}
-
-		// Check if --website-repo is set
-		if releaseNotesOpts.websiteRepo == "" {
-			logrus.Warn("cannot generate the Website PR without --website-repo")
-		}
-
-		if releaseNotesOpts.websiteOrg == "" || releaseNotesOpts.websiteRepo == "" {
-			return errors.New("To generate the website PR you must define both --website-org and --website-repo")
-		}
-	}
-	return nil
-}
-
-// checkForBranch checks if a branch exists in the given repo
-func checkForBranch(githubOrg, githubRepo, branchname string) error {
-	gh := github.New()
-	logrus.Infof("Verifying branch %s does not exist in repository", branchname)
-	branches, err := gh.ListBranches(githubOrg, githubRepo)
-	if err != nil {
-		return errors.Wrap(err, "while listing repository branches")
-	}
-
-	for _, branch := range branches {
-		if branch.GetName() == branchname {
-			return errors.New(fmt.Sprintf(
-				"A branch named %s already exists in %s/%s",
-				branchname, githubOrg, githubRepo,
-			))
-		}
-	}
-
-	return nil
-}
-
-// createDraftPR pushes the release notes draft to the users fork
-func createDraftPR(tag string, result *releaseNotesResult) (err error) {
-	s, err := util.TagStringToSemver(tag)
-	if err != nil {
-		return errors.Wrapf(err, "no valid tag: %v", tag)
-	}
-
-	branchname := "release-notes-draft-" + tag
-	if err := checkForBranch(
-		releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo, branchname,
-	); err != nil {
-		return errors.Wrap(err, "while checking if branch can be created")
-	}
+	branchname := draftBranchPrefix + tag
 
 	// Prepare the fork of k/sig-release
 	sigReleaseRepo, err := prepareFork(
 		branchname,
 		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
-		releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo,
+		releaseNotesOpts.githubOrg, releaseNotesOpts.draftRepo,
 	)
 	if err != nil {
 		return errors.Wrap(err, "preparing local fork of kubernetes/sig-release")
@@ -460,39 +349,36 @@ func createDraftPR(tag string, result *releaseNotesResult) (err error) {
 
 	// commit the changes
 	if err := sigReleaseRepo.UserCommit("Release Notes draft for k/k " + tag); err != nil {
-		return errors.Wrapf(err, "creating commit in %v/%v", releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo)
+		return errors.Wrapf(err, "creating commit in %v/%v", releaseNotesOpts.githubOrg, releaseNotesOpts.draftRepo)
 	}
 
 	// push to the user's remote
-	logrus.Infof("Pushing modified release notes draft to %v/%v", releaseNotesOpts.draftOrg, releaseNotesOpts.draftRepo)
+	logrus.Infof("Pushing modified release notes draft to %v/%v", releaseNotesOpts.githubOrg, releaseNotesOpts.draftRepo)
 	if err := sigReleaseRepo.PushToRemote(userForkName, branchname); err != nil {
 		return errors.Wrapf(err, "pushing %v to remote", userForkName)
 	}
 
 	// Create a PR against k/sig-release using the github API
-
 	// TODO: Maybe read and parse the PR template from sig-release?
-	prBody := fmt.Sprintln(
-		"**What type of PR is this?**",
-		"/kind documentation",
-		"**What this PR does / why we need it**:",
-		fmt.Sprintf("This PR updates the release notes draft to k/k %s", tag),
-		"**Which issue(s) this PR fixes**:",
-		"**Special notes for your reviewer**:",
-		"This is an automated PR generated from `krel The Kubernetes Release Toolbox`",
-	)
+	prBody := "**What type of PR is this?**\n"
+	prBody += "/kind documentation\n\n"
+	prBody += "**What this PR does / why we need it**:\n"
+	prBody += fmt.Sprintf("This PR updates the Release Notes Draft to k/k %s\n\n", tag)
+	prBody += "**Which issue(s) this PR fixes**:\n\n"
+	prBody += "**Special notes for your reviewer**:\n"
+	prBody += "This is an automated PR generated from `krel The Kubernetes Release Toolbox`\n\n"
 
 	// Create the pull request
 	logrus.Debugf(
 		"PR params: org: %s, repo: %s, headBranch: %s baseBranch: %s",
 		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, "master",
-		fmt.Sprintf("%s:%s", releaseNotesOpts.draftOrg, branchname),
+		fmt.Sprintf("%s:%s", releaseNotesOpts.githubOrg, branchname),
 	)
 
-	gh := github.New()
+	// Create the PR
 	pr, err := gh.CreatePullRequest(
 		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, "master",
-		fmt.Sprintf("%s:%s", releaseNotesOpts.draftOrg, branchname),
+		fmt.Sprintf("%s:%s", releaseNotesOpts.githubOrg, branchname),
 		fmt.Sprintf("Update release notes draft to version %s", tag), prBody,
 	)
 
@@ -558,10 +444,13 @@ func addReferenceToAssetsFile(repoPath, newJSONFile string) error {
 	scanner := bufio.NewScanner(file)
 	var assetsBuffer bytes.Buffer
 	assetsFileWasModified := false
+	fileIsReferenced := false
 	for scanner.Scan() {
 		// Check if the assets file already has the json notes referenced:
 		if strings.Contains(scanner.Text(), fmt.Sprintf("assets/%s", newJSONFile)) {
-			return errors.New(fmt.Sprintf("assets.ts already has a reference to %s ", newJSONFile))
+			logrus.Warnf("File %s is already referenced in assets.ts", newJSONFile)
+			fileIsReferenced = true
+			break
 		}
 
 		assetsBuffer.WriteString(scanner.Text())
@@ -571,6 +460,11 @@ func addReferenceToAssetsFile(repoPath, newJSONFile string) error {
 			assetsBuffer.WriteString(fmt.Sprintf("  'assets/%s',\n", newJSONFile))
 			assetsFileWasModified = true
 		}
+	}
+
+	if fileIsReferenced {
+		logrus.Infof("Not modifying assets.ts since it already has a reference to %s", newJSONFile)
+		return nil
 	}
 
 	// Return an error if the array decalra
@@ -609,24 +503,25 @@ func processJSONOutput(repoPath string) error {
 }
 
 // createWebsitePR creates the JSON version of the release notes and pushes them to a user fork
-func createWebsitePR(tag, jsonStr string) (err error) {
+func createWebsitePR(tag string) (err error) {
 	_, err = util.TagStringToSemver(tag)
 	if err != nil {
 		return errors.Wrapf(err, "no valid tag: %v", tag)
 	}
 
-	jsonNotesFilename := fmt.Sprintf("release-notes-%s.json", tag[1:])
-	branchname := "release-notes-json-" + tag
-	if err := checkForBranch(
-		releaseNotesOpts.websiteOrg, releaseNotesOpts.websiteRepo, branchname,
-	); err != nil {
-		return errors.Wrap(err, "while checking if branch can be created")
+	// Generate the release notes for ust the current tag
+	jsonStr, err := releaseNotesJSON(tag)
+	if err != nil {
+		return errors.Wrapf(err, "generating release notes in JSON format")
 	}
+
+	jsonNotesFilename := fmt.Sprintf("release-notes-%s.json", tag[1:])
+	branchname := websiteBranchPrefix + tag
 
 	// checkout kubernetes-sigs/release-notes
 	k8sSigsRepo, err := prepareFork(
 		branchname, defaultKubernetesSigsOrg,
-		defaultKubernetesSigsRepo, releaseNotesOpts.websiteOrg, releaseNotesOpts.websiteRepo,
+		defaultKubernetesSigsRepo, releaseNotesOpts.githubOrg, releaseNotesOpts.websiteRepo,
 	)
 	if err != nil {
 		return errors.Wrap(err, "preparing local fork branch")
@@ -663,27 +558,27 @@ func createWebsitePR(tag, jsonStr string) (err error) {
 	}
 
 	if err := k8sSigsRepo.UserCommit(fmt.Sprintf("Patch relnotes.k8s.io with release %s", tag)); err != nil {
-		return errors.Wrapf(err, "Error creating commit in %s/%s", releaseNotesOpts.websiteOrg, releaseNotesOpts.websiteRepo)
+		return errors.Wrapf(err, "Error creating commit in %s/%s", releaseNotesOpts.githubOrg, releaseNotesOpts.websiteRepo)
 	}
 
 	// push to the user's fork
-	logrus.Infof("Pushing website changes to %s/%s", releaseNotesOpts.websiteOrg, releaseNotesOpts.websiteRepo)
+	logrus.Infof("Pushing website changes to %s/%s", releaseNotesOpts.githubOrg, releaseNotesOpts.websiteRepo)
 	if err := k8sSigsRepo.PushToRemote(userForkName, branchname); err != nil {
-		return errors.Wrapf(err, "pushing %v to %v/%v", userForkName, releaseNotesOpts.websiteOrg, releaseNotesOpts.websiteRepo)
+		return errors.Wrapf(err, "pushing %v to %v/%v", userForkName, releaseNotesOpts.githubOrg, releaseNotesOpts.websiteRepo)
 	}
 
-	// Create a PR against k/sig-release using the github API
+	// Create a PR against k-sigs/release-notes using the github API
 	gh := github.New()
 
-	// Create the pull request
 	logrus.Debugf(
 		"PR params: org: %s, repo: %s, headBranch: %s baseBranch: %s",
 		defaultKubernetesSigsOrg, defaultKubernetesSigsRepo, "master",
-		fmt.Sprintf("%s:%s", releaseNotesOpts.websiteOrg, branchname),
+		fmt.Sprintf("%s:%s", releaseNotesOpts.githubOrg, branchname),
 	)
+
 	pr, err := gh.CreatePullRequest(
 		defaultKubernetesSigsOrg, defaultKubernetesSigsRepo, "master",
-		fmt.Sprintf("%s:%s", releaseNotesOpts.websiteOrg, branchname),
+		fmt.Sprintf("%s:%s", releaseNotesOpts.githubOrg, branchname),
 		fmt.Sprintf("Patch relnotes.k8s.io to release %s", tag),
 		fmt.Sprintf("Automated patch to update relnotes.k8s.io to k/k version `%s` ", tag),
 	)
@@ -864,4 +759,28 @@ func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
 	}
 
 	return &releaseNotesResult{markdown: markdown, json: string(j)}, nil
+}
+
+// Validate checks if passed cmdline options are sane
+func (o *releaseNotesOptions) Validate() error {
+	// Check that we have a GitHub token set
+	token, isset := os.LookupEnv(github.TokenEnvKey)
+	if !isset || token == "" {
+		return errors.New("Cannot generate release notes if GitHub token is not set")
+	}
+
+	// If a tag is defined, see if it is a valid semver tag
+	_, err := util.TagStringToSemver(releaseNotesOpts.tag)
+	if err != nil {
+		return errors.Wrapf(err, "no valid tag: %v", releaseNotesOpts.tag)
+	}
+
+	// Options for PR creation
+	if releaseNotesOpts.createDraftPR || releaseNotesOpts.createWebsitePR {
+		if releaseNotesOpts.githubOrg == "" {
+			return errors.New("cannot generate the Release Notes PR without --org")
+		}
+	}
+
+	return nil
 }

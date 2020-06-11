@@ -519,10 +519,30 @@ func (g *GitHub) RepoIsForkOf(
 
 	// Check if the parent repo matches the owner/repo string
 	if repository.GetParent().GetFullName() == fmt.Sprintf("%s/%s", parentOwner, parentRepo) {
-		logrus.Infof("%s/%s is a fork of %s/%s", forkOwner, forkRepo, parentOwner, parentRepo)
+		logrus.Debugf("%s/%s is a fork of %s/%s", forkOwner, forkRepo, parentOwner, parentRepo)
 		return true, nil
 	}
 
 	logrus.Infof("%s/%s is not a fork of %s/%s", forkOwner, forkRepo, parentOwner, parentRepo)
+	return false, nil
+}
+
+// BranchExists checks if a branch exists in a given repo
+func (g *GitHub) BranchExists(
+	owner, repo, branchname string,
+) (isBranch bool, err error) {
+	branches, err := g.ListBranches(owner, repo)
+	if err != nil {
+		return false, errors.Wrap(err, "while listing repository branches")
+	}
+
+	for _, branch := range branches {
+		if branch.GetName() == branchname {
+			logrus.Debugf("Branch %s already exists in %s/%s", branchname, owner, repo)
+			return true, nil
+		}
+	}
+
+	logrus.Debugf("Repository %s/%s does not have a branch named %s", owner, repo, branchname)
 	return false, nil
 }
