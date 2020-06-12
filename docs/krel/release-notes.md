@@ -10,11 +10,15 @@ The subcommand of choice for the Release Notes subteam of SIG Release
 ## Summary
 
 The `release-notes` subcommand of krel is used to generate the release notes
-draft of a kubernetes version. The subcommand can be used to generate release notes
-files for a specific tag or a range of tags. It can output the notes files to Markdown or JSON formats.
+when a new Kubernetes version is cut. The subcommand can be used to generate
+release notes pull requests to update the Release Notes Draft and the 
+Kubernetes Release Notes Website.
 
-This subcommand can be used to generate the release notes draft for the current development version of kubernetes and the JSON version that power relnotes.k8s.io.
-`krel release-notes` will create a branch in a user's fork of the corresponding repositories, commit and push the changes. Filing the final PRs to the kubernetes org repositories is in development and will soon be ready.
+This subcommand can be used to generate the release notes draft for the
+current development version of kubernetes and the JSON version that power
+relnotes.k8s.io. `krel release-notes` will create a branch in a user's fork of
+the corresponding repositories. It will commit and push the changes and, finally,
+it will file pull requests on your behalf to the proper kubernetes org repositories.
 
 ## Installation
 
@@ -34,55 +38,79 @@ Before running `krel release-notes` export your GitHub token to \$GITHUB_TOKEN:
 ### Command line flags
 
 ```
-      --create-draft-pr                    create the Release Notes Draft PR. --draft-org and --draft-repo must be set along with this option
-      --create-website-pr                  generate the Releas Notes to a local fork of relnotes.k8s.io and create a PR.  --draft-org and --draft-repo must be set along with this option
-      --dependencies                       add dependency report (default true)
-      --draft-org string                   a Github organization owner of the fork of k/sig-release where the Release Notes Draft PR will be created
-      --draft-repo string                  the name of the fork of k/sig-release, the Release Notes Draft PR will be created from this repository (default "sig-release")
-      --format string                      The format for notes output (options: markdown, json) (default "markdown")
-  -h, --help                               help for release-notes
-  -o, --output-dir string                  output a copy of the release notes to this directory (default ".")
-  -t, --tag string                         version tag for the notes
-      --website-org string                 a Github organization owner of the fork of kuberntets-sigs/release-notes where the Website PR will be created
-      --website-repo string                the name of the fork of kuberntets-sigs/release-notes, the Release Notes Draft PR will be created from this repository (default "release-notes")
+      --create-draft-pr       update the Release Notes draft and create a PR in k/sig-release
+      --create-website-pr     patch the relnotes.k8s.io sources and generate a PR with the changes
+      --dependencies          add dependency report (default true)
+      --draft-repo string     k/sig-release fork used when creating the draft PR (default "sig-release")
+  -h, --help                  help for release-notes
+      --org string            a Github organization hosting the forks of k/sig-release or ksigs/release-notes
+  -t, --tag string            version tag for the notes
+      --website-repo string   ksigs/release-notes fork used when creating the website PR (default "release-notes")
 ```
 
 ### Examples
 
-`krel release-notes` has three main modes of operation:
+`krel release-notes` has two main modes of operation:
 
-#### Ouput the Releas Notes to a single file
+#### Update the Release Notes markdown draft
 
-The following command will generate the release notes for the 1.18 branch up to beta.2 in /var/www/html/
+This invocation will generate the Release Notes Draft [published in sig-release](https://github.com/kubernetes/sig-release/blob/master/releases/release-1.19/release-notes-draft.md).
+It will generate the draft for the current branch, starting from the first RC of the previous
+minor Kubernets release. For example, if you are generating the draft for `v1.19.0-beta.1`, `krel`
+will generate the release notes draft starting from `v1.18.0-rc.1`.
+
+The draft will be written into your fork of
+[kubernetes/sig-release](https://github.com/kubernetes/sig-release). `krel release-notes` will
+clone k/sig-release, create a branch, write the draft markdown and then push the new branch
+back to your fork in GitHub. Finally __it will create a pull request__ on your behalf.
+
+To update the Release Notes Draft, run `krel release-notes` with `--create-draft-pr` and set 
+`--org` to your GitHub user (the organization that owns your fork o k/sig-release):
 
 ```bash
-krel release-notes -o /var/www/html/ --format markdown --tag v1.18.0-beta.2
+krel release-notes --create-draft-pr --org=kubefriend --tag v1.19.0-beta.1 
 ```
 
-#### Generate the current markdown draft
-
-This invocation will generate the release notes draft [published in sig-release](https://github.com/kubernetes/sig-release/blob/master/releases/release-1.18/release-notes-draft.md). It will generate the draft for the v1.18 branch up to rc.1. The draft will be written in my local fork of kubernetes/sig-release. `krel release-notes` will clone k/sig-release, create a branch, write the draft and then push the changes back to github, in `kubefriend/sig-release`.
-
-```bash
-krel release-notes --create-draft-pr --tag v1.18.0-rc.1 --draft-org=kubefriend
-```
+The `--tag` flag is optional, it will default to the latest minor version if it is not defined.
+If, for any reason, your fork of k/sig-release is not named _sig-release_ you can set the name
+of your repository with `--draft-repo`.
 
 #### Update the relnotes.k8s.io website
 
-The subcommand can also generate the notes and modify the necessary files to update the [release notes website](https://relnotes.k8s.io/). This invocation will clone the [release-notes repo](https://github.com/kubernetes-sigs/release-notes) and add my fork as a remote (kubefriend/release-notes). It will then create a feature branch to commit the notes up to v1.18 alpha.1 and update the website files. Finally it will push the changes to my GitHub repo:
+The subcommand can also generate the notes and modify the necessary files to update th
+[release notes website](https://relnotes.k8s.io/). This invocation will clone the
+[release-notes repo](https://github.com/kubernetes-sigs/release-notes) and add your fork as
+a remote (kubefriend/release-notes). It will then create a feature branch to commit the notes
+up to the tag you have defined and update the website files. If successful, it will push the
+changes to your GitHub repository (defined by the `--org` flag) and create a pull request:
 
 ```bash
-krel release-notes --tag v1.18.0-alpha.1 --website-org=kubefriend --create-website-pr
+krel release-notes --create-website-pr --org=kubefriend --tag v1.19.0-beta.1 
 ```
+
+As with `--create-draft-pr`, `--tag` is optional and will default to the latest release.
+You can override the name of your fork of kubernetes-sigs/release-notes with
+`--org` and `--website-repo`.
+
+### Usage notes
+
+You can run `--create-draft-pr` and `--create-website-pr` in the same invocation of krel.
+Note that `krel` will use the same GitHub organization (`--org`) to get the forks of
+k-sigs/relese-notes and  k/sig release when doing so.
 
 ## Important notes and issues
 
-- The /tmp defaults shown in the flags above are for Linux. Other platform will default to Go's `os.TempDir()` (for example, on a the Mac the actual path will be under `/var/folders/…` ).
+- Make sure [git `author.email`](https://help.github.com/en/github/setting-up-and-managing-your-github-user-account/setting-your-commit-email-address)
+matches the address you used to sign the CNCF's CLA. Otherwise the
+PR tests will fail.
 
-- The `release-notes` subcommand will eventually create the PR for you. This is still under development though.
+- ~~If krel is interrupted while cloning, it might leave the repository at an unusable state. We recommend deleting any incomplete repositories before running krel again~~ (Fixed in #[1126](https://github.com/kubernetes/release/pull/1126))
 
-- If krel is interrupted while cloning, it might leave the repository at an unusable state. We recommend deleting any incomplete repositories before running krel again.
+- ~~If krel was run without forking `kubernetes/sig-release` and `kubernetes-sigs/release-notes`, the commit will be created but pushing to your fork will fail~~ (Fixed in #[1287](https://github.com/kubernetes/release/pull/1287))
 
-- Make sure [git `author.email`](https://help.github.com/en/github/setting-up-and-managing-your-github-user-account/setting-your-commit-email-address) matches the address you used to sign the CNCF's CLA.
+- ~~The `release-notes` subcommand will eventually create the PR for you~~ (Implemented in #[1304](https://github.com/kubernetes/release/pull/1304))
 
-- If krel was run without forking `kubernetes/sig-release` and `kubernetes-sigs/release-notes`, the commit will be created but pushing to your fork will fail.
+- ~~The /tmp defaults shown in the flags above are for Linux. Other platform will
+default to Go's `os.TempDir()` (for example, on a the Mac the actual path will be
+under `/var/folders/…` )~~ (Deprecated in #[1350](https://github.com/kubernetes/release/pull/1350))
+
