@@ -75,8 +75,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/stretchr/testify",
-        sum = "h1:nOGnQDM7FYENwehXlg/kFVnos3rEvtKTjRvOWSzb6H4=",
-        version = "v1.5.1",
+        sum = "h1:hDPOHmpOpP40lSULcqw7IrRb/u7w6RpDC9399XyoNd0=",
+        version = "v1.6.1",
     )
 
     go_repository(
@@ -93,8 +93,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "golang.org/x/net",
-        sum = "h1:GuSPYbZzB5/dcLNCwLQLsg3obCJtX9IJhpXkvY7kzk0=",
-        version = "v0.0.0-20200301022130-244492dfa37a",
+        sum = "h1:pNX+40auqi2JqRfOP1akLGtYcn15TUbkhwuCO3foqqM=",
+        version = "v0.0.0-20200602114024-627f9648deb9",
     )
 
     go_repository(
@@ -792,8 +792,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "golang.org/x/sys",
-        sum = "h1:uYVVQ9WP/Ds2ROhcaGPeIdVq0RIXVLwsHlnvJ+cT1So=",
-        version = "v0.0.0-20200302150141-5c8b2ff67527",
+        sum = "h1:xhmwyvizuTgC2qz7ZlMluP20uW+C3Rm0FD/WLDX8884=",
+        version = "v0.0.0-20200323222414-85ca7c5b95cd",
     )
     go_repository(
         name = "org_golang_x_text",
@@ -1900,16 +1900,16 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/sendgrid/rest",
-        sum = "h1:HDib/5xzQREPq34lN3YMhQtMkdXxS/qLp5G3k9a5++4=",
-        version = "v2.4.1+incompatible",
+        sum = "h1:a2tyRVS0S5kcY6fVq5ihxOTJiGTQROrqf7SkKbmpYzs=",
+        version = "v2.6.0+incompatible",
     )
     go_repository(
         name = "com_github_sendgrid_sendgrid_go",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/sendgrid/sendgrid-go",
-        sum = "h1:kosbgHyNVYVaqECDYvFVLVD9nvThweBd6xp7vaCT3GI=",
-        version = "v3.5.0+incompatible",
+        sum = "h1:ZSvuHv7JuLnC9iaDubK7iNCfmR4vt8tcbuzsAYQUumo=",
+        version = "v3.6.0+incompatible",
     )
     go_repository(
         name = "io_k8s_utils",
@@ -1950,16 +1950,16 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/bazelbuild/rules_go",
-        sum = "h1:aBphnU/7PK1QqMDQAwHJH/YzOMt4SYc5kAxpmRHwW/s=",
-        version = "v0.23.1",
+        sum = "h1:GwELJrl4o0n8y2LnzXeS5JK62ewmATf6OMr5TzTITn8=",
+        version = "v0.23.3",
     )
     go_repository(
         name = "com_github_yuin_goldmark",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/yuin/goldmark",
-        sum = "h1:j4d4Lw3zqZelDhBksEo3BnWg9xhXRQGJPPSL6OApZjI=",
-        version = "v1.1.30",
+        sum = "h1:5tjfNdR2ki3yYQ842+eX2sQHeiwpKJ0RnHO4IYOc4V8=",
+        version = "v1.1.32",
     )
 
     go_repository(
@@ -2031,8 +2031,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/go-git/go-git/v5",
-        sum = "h1:k5RWPm4iJwYtfWoxIJy4wJX9ON7ihPeZZYC1fLYDnpg=",
-        version = "v5.0.0",
+        sum = "h1:HxJn9g/E7eYvKW3Fm7Jt4ee8LXfPOm/H1cdDu8vEssk=",
+        version = "v5.1.0",
     )
     go_repository(
         name = "com_github_niemeyer_pretty",
@@ -2065,4 +2065,20 @@ def go_repositories():
         importpath = "github.com/urfave/cli/v2",
         sum = "h1:JTTnM6wKzdA0Jqodd966MVj4vWbbquZykeX1sKbe2C4=",
         version = "v2.2.0",
+    )
+    go_repository(
+        name = "com_github_imdario_mergo",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/imdario/mergo",
+        sum = "h1:UauaLniWCFHWd+Jp9oCEkTBj8VO/9DKg3PV3VCNMDIg=",
+        version = "v0.3.9",
+    )
+    go_repository(
+        name = "in_gopkg_yaml_v3",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "gopkg.in/yaml.v3",
+        sum = "h1:dUUwHk2QECo/6vqA44rthZ8ie2QXMNeKRTHCNY2nXvo=",
+        version = "v3.0.0-20200313102051-9f266ea9e77c",
     )
