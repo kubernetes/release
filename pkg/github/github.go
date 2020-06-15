@@ -30,6 +30,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
+	errorUtils "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github/internal"
 	"k8s.io/release/pkg/util"
@@ -418,36 +419,53 @@ func (g *GitHub) DownloadReleaseAssets(owner, repo string, releaseTags []string,
 		return errors.New("no release tags were populated")
 	}
 
-	for _, release := range releases {
-		releaseTag := release.GetTagName()
-		logrus.Infof("Download assets for %s/%s@%s", owner, repo, releaseTag)
+	funcs := []func() error{}
+	for i := range releases {
+		release := releases[i]
+		funcs = append(funcs, func() error {
+			releaseTag := release.GetTagName()
+			logrus.Infof("Download assets for %s/%s@%s", owner, repo, releaseTag)
 
-		assets := release.Assets
-		if len(assets) == 0 {
-			logrus.Infof("Skipping download for %s/%s@%s as no release assets were found", owner, repo, releaseTag)
-			continue
-		}
+			assets := release.Assets
+			if len(assets) == 0 {
+				logrus.Infof("Skipping download for %s/%s@%s as no release assets were found", owner, repo, releaseTag)
+				return nil
+			}
 
-		releaseDir := filepath.Join(outputDir, owner, repo, releaseTag)
-		if err := os.MkdirAll(releaseDir, os.FileMode(0o777)); err != nil {
-			return errors.Wrap(err, "creating output directory for release assets")
-		}
+			releaseDir := filepath.Join(outputDir, owner, repo, releaseTag)
+			if err := os.MkdirAll(releaseDir, os.FileMode(0o775)); err != nil {
+				return errors.Wrap(err, "creating output directory for release assets")
+			}
 
-		logrus.Infof("Writing assets to %s", releaseDir)
+			logrus.Infof("Writing assets to %s", releaseDir)
+			err := g.downloadAssetsParallel(assets, owner, repo, releaseDir)
+			if err != nil {
+				return err
+			}
 
-		for _, asset := range assets {
+			return nil
+		})
+	}
+
+	return errorUtils.AggregateGoroutines(funcs...)
+}
+
+func (g *GitHub) downloadAssetsParallel(assets []github.ReleaseAsset, owner, repo, releaseDir string) error {
+	funcs := []func() error{}
+	for i := range assets {
+		asset := assets[i]
+		funcs = append(funcs, func() error {
 			if asset.GetID() == 0 {
 				return errors.New("asset ID should never be zero")
 			}
 
 			logrus.Infof("GitHub asset ID: %v, download URL: %s", *asset.ID, *asset.BrowserDownloadURL)
-			assetBody, _, err := g.client.DownloadReleaseAsset(context.Background(), owner, repo, *asset.ID)
+			assetBody, _, err := g.client.DownloadReleaseAsset(context.Background(), owner, repo, asset.GetID())
 			if err != nil {
 				return errors.Wrap(err, "downloading release assets")
 			}
 
-			filename := *asset.Name
-			absFile := filepath.Join(releaseDir, filename)
+			absFile := filepath.Join(releaseDir, asset.GetName())
 			defer assetBody.Close()
 			assetFile, err := os.Create(absFile)
 			if err != nil {
@@ -458,10 +476,12 @@ func (g *GitHub) DownloadReleaseAssets(owner, repo string, releaseTags []string,
 			if _, err := io.Copy(assetFile, assetBody); err != nil {
 				return errors.Wrap(err, "copying release asset to file")
 			}
-		}
+
+			return nil
+		})
 	}
 
-	return nil
+	return errorUtils.AggregateGoroutines(funcs...)
 }
 
 // CreatePullRequest Creates a new pull request in owner/repo:baseBranch to merge changes from headBranchName

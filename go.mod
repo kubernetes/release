@@ -27,6 +27,7 @@ require (
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	google.golang.org/api v0.21.0
+	k8s.io/apimachinery v0.18.3
 	sigs.k8s.io/yaml v1.2.0
 )
 
