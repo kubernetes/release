@@ -1,8 +1,12 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = ["root.go"],
+    srcs = [
+        "markdown.go",
+        "model.go",
+        "root.go",
+    ],
     importpath = "k8s.io/release/cmd/schedule-builder/cmd",
     visibility = ["//visibility:public"],
     deps = [
@@ -27,4 +31,15 @@ filegroup(
     srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "markdown_test.go",
+        "root_test.go",
+    ],
+    data = glob(["testdata/**"]),
+    embed = [":go_default_library"],
+    deps = ["@com_github_stretchr_testify//require:go_default_library"],
 )

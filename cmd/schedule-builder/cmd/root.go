@@ -17,11 +17,8 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"io/ioutil"
-	"strings"
 
-	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -29,28 +26,6 @@ import (
 	"k8s.io/release/pkg/log"
 	"sigs.k8s.io/yaml"
 )
-
-// PatchSchedule main struct to hold the schedules
-type PatchSchedule struct {
-	Schedules []Schedule `yaml:"schedules"`
-}
-
-// PreviousPatches struct to define the old pacth schedules
-type PreviousPatches struct {
-	Release            string `yaml:"release"`
-	CherryPickDeadline string `yaml:"cherryPickDeadline"`
-	TargetDate         string `yaml:"targetDate"`
-}
-
-// Schedule struct to define the release schedule for a specific version
-type Schedule struct {
-	Release            string            `yaml:"release"`
-	Next               string            `yaml:"next"`
-	CherryPickDeadline string            `yaml:"cherryPickDeadline"`
-	TargetDate         string            `yaml:"targetDate"`
-	EndOfLifeDate      string            `yaml:"endOfLifeDate"`
-	PreviousPatches    []PreviousPatches `yaml:"previousPatches"`
-}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -144,33 +119,7 @@ func run(opts *options) error {
 
 	logrus.Info("Generating the markdown output...")
 
-	output := []string{}
-	output = append(output, "### Timeline\n")
-	for _, releaseSchedule := range patchSchedule.Schedules {
-		output = append(output, fmt.Sprintf("### %s\n", releaseSchedule.Release),
-			fmt.Sprintf("Next patch release is **%s**\n", releaseSchedule.Next),
-			fmt.Sprintf("End of Life for **%s** is **%s**\n", releaseSchedule.Release, releaseSchedule.EndOfLifeDate))
-
-		tableString := &strings.Builder{}
-		table := tablewriter.NewWriter(tableString)
-		table.SetAutoWrapText(false)
-		table.SetHeader([]string{"Patch Release", "Cherry Pick Deadline", "Target Date"})
-		table.Append([]string{strings.TrimSpace(releaseSchedule.Next), strings.TrimSpace(releaseSchedule.CherryPickDeadline), strings.TrimSpace(releaseSchedule.TargetDate)})
-
-		for _, previous := range releaseSchedule.PreviousPatches {
-			table.Append([]string{strings.TrimSpace(previous.Release), strings.TrimSpace(previous.CherryPickDeadline), strings.TrimSpace(previous.TargetDate)})
-		}
-		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
-		table.SetCenterSeparator("|")
-		table.Render()
-
-		output = append(output, tableString.String())
-	}
-
-	scheduleOut := strings.Join(output, "\n")
-
-	logrus.Info("Schedule parsed")
-	println(scheduleOut)
+	scheduleOut := parseSchedule(patchSchedule)
 
 	if opts.outputFile != "" {
 		logrus.Infof("Saving schedule to a file %s.", opts.outputFile)
