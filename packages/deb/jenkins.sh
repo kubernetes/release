@@ -24,7 +24,7 @@ declare -r IMG_NAME="debian-builder:${BUILD_TAG}"
 declare -r DEB_RELEASE_BUCKET="gs://kubernetes-release-dev/debian"
 
 docker build -t "${IMG_NAME}" "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-docker run --rm -v "${PWD}/bin:/src/bin" "${IMG_NAME}" $@
+docker run -it --rm -v "${PWD}/bin:/src/bin" "${IMG_NAME}" $@
 
 gsutil -m cp -nrc bin "${DEB_RELEASE_BUCKET}/${BUILD_TAG}"
 printf "%s" "${BUILD_TAG}" | gsutil cp - "${DEB_RELEASE_BUCKET}/latest"
