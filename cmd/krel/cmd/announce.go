@@ -43,11 +43,12 @@ var announceCmd = &cobra.Command{
 	Short: "Announce Kubernetes releases",
 	Long: fmt.Sprintf(`krel announce
 
-krel announce can be used to announce already built Kubernetes releases to the
-%q and %q Google Group.
+krel announce can be used to mail an announcement of an already
+built Kubernetes release to the %q and %q Google Groups.
 
-If --nomock=true (the default), then the mail will be sent only to a test
-Google Group %q.
+By default the mail will be sent only to a test Google Group %q,
+ie: the announcement run will only be a mock run.  To do an
+official announcement, use the --nomock flag.
 
 It is necessary to export the $%s environment variable. An API key can be created by
 registering a sendgrid.com account and adding the key here:
