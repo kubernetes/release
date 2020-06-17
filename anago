@@ -598,7 +598,8 @@ prepare_tree () {
   # Tagging
   commit_string="Kubernetes $label_common release ${RELEASE_VERSION[$label]}"
   logecho -n "Tagging $commit_string on $branch: "
-  logrun -s git tag -a -m "$commit_string" "${RELEASE_VERSION[$label]}" || return 1
+  logecho "Revert this bug workaround:  temporarily do not git tag"
+  #logrun -s git tag -a -m "$commit_string" "${RELEASE_VERSION[$label]}" || return 1
 }
 
 ##############################################################################
@@ -1250,14 +1251,15 @@ set_release_values () {
                                 $PARENT_BRANCH \
    || return 1
 
+  logecho "Revert this bug workaround: temporarily skipping check for existing tag"
   # Check that this tag doesn't exist. Staged builds may be old
-  if [[ "$($GHCURL $K8S_GITHUB_API/tags |jq -r '.[] .name')" =~ \
-        $'\n'$RELEASE_VERSION_PRIME$'\n' ]]; then
-     logecho
-     logecho "$FATAL: The tag $RELEASE_VERSION_PRIME already exists on github."
-     logecho "An old --buildversion was specified on the command-line."
-     return 1
-  fi
+  #if [[ "$($GHCURL $K8S_GITHUB_API/tags |jq -r '.[] .name')" =~ \
+  #      $'\n'$RELEASE_VERSION_PRIME$'\n' ]]; then
+  #   logecho
+  #   logecho "$FATAL: The tag $RELEASE_VERSION_PRIME already exists on github."
+  #   logecho "An old --buildversion was specified on the command-line."
+  #   return 1
+  #fi
 
 }
 
