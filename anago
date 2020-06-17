@@ -1472,8 +1472,7 @@ elif ! ((FLAGS_prebuild)); then
   if ((FLAGS_stage)); then
     common::stepindex "stage_source_tree"
   else
-    logecho "Revert this bug workaround:  temporarily not calling push_git_objects"
-    #common::stepindex "push_git_objects"
+    common::stepindex "push_git_objects"
   fi
   common::stepindex "push_all_artifacts"
   if ! ((FLAGS_stage)); then
