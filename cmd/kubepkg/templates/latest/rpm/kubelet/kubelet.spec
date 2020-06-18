@@ -17,7 +17,6 @@ Requires: ethtool
 Requires: iproute
 Requires: ebtables
 Requires: conntrack
-Obsoletes: kubernetes-cni
 Conflicts: kubernetes-cni
 
 %description
@@ -67,6 +66,10 @@ mv cni-plugins/* %{buildroot}/opt/cni/bin/
 
 
 %changelog
+* Thu Jun 18 2020 Sascha Grunert <sgrunert@suse.com.com> - 1.18.4
+- Do not Obsolete with kubernetes-cni package to unbreak previous
+  releases
+
 * Fri May 22 2020 Stephen Augustus <saugustus@vmware.com> - 1.18.4
 - Bundle CNI plugins (v0.8.6) in kubelet package
 

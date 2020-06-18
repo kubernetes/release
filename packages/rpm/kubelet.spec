@@ -39,7 +39,6 @@ Requires: ethtool
 Requires: iproute
 Requires: ebtables
 Requires: conntrack
-Obsoletes: kubernetes-cni
 Conflicts: kubernetes-cni
 
 
@@ -145,6 +144,10 @@ mv cni-plugins/* %{buildroot}/opt/cni/bin/
 
 
 %changelog
+* Thu Jun 18 2020 Sascha Grunert <sgrunert@suse.com.com> - 1.18.4
+- Do not Obsolete with kubernetes-cni package to unbreak previous
+  releases
+
 * Fri May 29 2020 Stephen Augustus <saugustus@vmware.com> - 1.18.4
 - Source cri-tools from https://storage.googleapis.com/k8s-artifacts-cri-tools/release
   instead of https://github.com/kubernetes-sigs/cri-tools
