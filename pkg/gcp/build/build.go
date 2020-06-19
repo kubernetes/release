@@ -384,3 +384,20 @@ func ListJobs(project string, lastJobs int64) error {
 
 	return nil
 }
+
+func GetJobsByTag(project, tagsFilter string) ([]*cloudbuild.Build, error) {
+	ctx := context.Background()
+	opts := option.WithCredentialsFile("")
+
+	service, err := cloudbuild.NewService(ctx, opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to fetching gcloud credentials... try running \"gcloud auth application-default login\"")
+	}
+
+	req, err := service.Projects.Builds.List(project).Filter(tagsFilter).PageSize(50).Do()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to listing the builds")
+	}
+
+	return req.Builds, nil
+}
