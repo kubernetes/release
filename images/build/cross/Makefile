@@ -25,7 +25,7 @@ KUBE_CROSS_VERSION?=v1.14.4-1
 # Build args
 GO_VERSION?=1.14.4
 PROTOBUF_VERSION?=3.0.2
-ETCD_VERSION?=v3.4.7
+ETCD_VERSION?=v3.4.9
 
 # TODO: Support multi-arch kube-cross images
 #       ref:
