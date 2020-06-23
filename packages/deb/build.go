@@ -306,9 +306,15 @@ func getReleaseDownloadLinkBase(v version) (string, error) {
 }
 
 func getKubeadmDependencies(v version) (string, error) {
+	cniVersion, err := getCNIVersion(v)
+	if err != nil {
+		return "", err
+	}
+
 	deps := []string{
 		"kubelet (>= 1.13.0)",
 		"kubectl (>= 1.13.0)",
+		fmt.Sprintf("kubernetes-cni (>= %s)", cniVersion),
 		"${misc:Depends}",
 	}
 	sv, err := semver.Make(v.Version)
@@ -447,6 +453,27 @@ func main() {
 			},
 		},
 		{
+			Package: "kubernetes-cni",
+			Distros: distros,
+			Versions: []version{
+				{
+					Version:  currentCNIVersion,
+					Revision: revision,
+					Channel:  ChannelStable,
+				},
+				{
+					Version:  currentCNIVersion,
+					Revision: revision,
+					Channel:  ChannelUnstable,
+				},
+				{
+					Version:  currentCNIVersion,
+					Revision: revision,
+					Channel:  ChannelNightly,
+				},
+			},
+		},
+		{
 			Package: "kubeadm",
 			Distros: distros,
 			Versions: []version{
@@ -519,6 +546,17 @@ func main() {
 						Revision:            revision,
 						Channel:             ChannelStable,
 						GetDownloadLinkBase: getReleaseDownloadLinkBase,
+					},
+				},
+			},
+			{
+				Package: "kubernetes-cni",
+				Distros: distros,
+				Versions: []version{
+					{
+						Version:  currentCNIVersion,
+						Revision: revision,
+						Channel:  ChannelStable,
 					},
 				},
 			},
