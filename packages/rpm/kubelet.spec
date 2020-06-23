@@ -33,18 +33,27 @@ Source7: https://storage.googleapis.com/k8s-artifacts-cri-tools/release/v%{CRI_T
 BuildRequires: systemd
 BuildRequires: curl
 Requires: iptables >= 1.4.21
+Requires: kubernetes-cni >= %{CNI_VERSION}
 Requires: socat
 Requires: util-linux
 Requires: ethtool
 Requires: iproute
 Requires: ebtables
 Requires: conntrack
-Obsoletes: kubernetes-cni
-Conflicts: kubernetes-cni
 
 
 %description
 The node agent of Kubernetes, the container cluster manager.
+
+%package -n kubernetes-cni
+
+Version: %{CNI_VERSION}
+Release: %{RPM_RELEASE}
+Summary: Binaries required to provision kubernetes container networking
+Requires: kubelet
+
+%description -n kubernetes-cni
+Binaries required to provision container networking.
 
 %package -n kubectl
 
@@ -62,6 +71,7 @@ Release: %{RPM_RELEASE}
 Summary: Command-line utility for administering a Kubernetes cluster.
 Requires: kubelet >= 1.13.0
 Requires: kubectl >= 1.13.0
+Requires: kubernetes-cni >= 0.8.6
 Requires: cri-tools >= 1.13.0
 
 %description -n kubeadm
@@ -127,9 +137,11 @@ mv cni-plugins/* %{buildroot}/opt/cni/bin/
 %{_bindir}/kubelet
 %{_unitdir}/kubelet.service
 %{_sysconfdir}/kubernetes/manifests/
-/opt/cni
 
 %config(noreplace) %{_sysconfdir}/sysconfig/kubelet
+
+%files -n kubernetes-cni
+/opt/cni
 
 %files -n kubectl
 %{_bindir}/kubectl
@@ -145,6 +157,9 @@ mv cni-plugins/* %{buildroot}/opt/cni/bin/
 
 
 %changelog
+* Mon Jun 22 2020 Stephen Augustus <saugustus@vmware.com> - 1.18.4
+- Unbundle CNI plugins (v0.8.6) from kubelet package and release as kubernetes-cni
+
 * Fri May 29 2020 Stephen Augustus <saugustus@vmware.com> - 1.18.4
 - Source cri-tools from https://storage.googleapis.com/k8s-artifacts-cri-tools/release
   instead of https://github.com/kubernetes-sigs/cri-tools

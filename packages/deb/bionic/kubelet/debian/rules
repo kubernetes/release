@@ -12,10 +12,6 @@ binary:
 		-o usr/bin/kubelet \
 		"{{ .DownloadLinkBase }}/bin/linux/{{ .Arch }}/kubelet"
 	chmod +x usr/bin/kubelet
-	mkdir -p ./bin
-	curl -sSL --fail --retry 5 \
-		"https://storage.googleapis.com/k8s-artifacts-cni/release/v{{ .CNIVersion }}/cni-plugins-linux-{{ .Arch }}-v{{ .CNIVersion }}.tgz" \
-		| tar -C ./bin -xz
 	dh_testroot
 	dh_auto_install
 	dh_shlibdeps

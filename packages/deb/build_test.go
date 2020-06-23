@@ -82,6 +82,7 @@ func TestGetKubeadmDependencies(t *testing.T) {
 			deps: []string{
 				"kubelet (>= 1.13.0)",
 				"kubectl (>= 1.13.0)",
+				"kubernetes-cni (>= 0.8.6)",
 				"${misc:Depends}",
 				"cri-tools (>= 1.13.0)",
 			},
@@ -92,6 +93,7 @@ func TestGetKubeadmDependencies(t *testing.T) {
 			deps: []string{
 				"kubelet (>= 1.13.0)",
 				"kubectl (>= 1.13.0)",
+				"kubernetes-cni (>= 0.8.6)",
 				"${misc:Depends}",
 				"cri-tools (>= 1.13.0)",
 			},
