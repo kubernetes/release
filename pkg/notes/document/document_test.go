@@ -275,11 +275,11 @@ func TestNew(t *testing.T) {
 				notes.ReleaseNotesHistory{0},
 			},
 			&Document{
-				NotesWithActionRequired: Notes{},
+				NotesWithActionRequired: notes.Notes{},
 				Notes: NoteCollection{
 					NoteCategory{
-						Kind:        KindUncategorized,
-						NoteEntries: &Notes{"No one gave me a kind"},
+						Kind:        notes.KindUncategorized,
+						NoteEntries: &notes.Notes{"No one gave me a kind"},
 					},
 				},
 			},
@@ -288,18 +288,18 @@ func TestNew(t *testing.T) {
 			"notes of same kind are lexicographically sorted.",
 			args{
 				notes.ReleaseNotes{
-					0: makeReleaseNote(KindDeprecation, "C"),
-					1: makeReleaseNote(KindDeprecation, "B"),
-					2: makeReleaseNote(KindDeprecation, "A"),
+					0: makeReleaseNote(notes.KindDeprecation, "C"),
+					1: makeReleaseNote(notes.KindDeprecation, "B"),
+					2: makeReleaseNote(notes.KindDeprecation, "A"),
 				},
 				notes.ReleaseNotesHistory{0, 1, 2},
 			},
 			&Document{
-				NotesWithActionRequired: Notes{},
+				NotesWithActionRequired: notes.Notes{},
 				Notes: NoteCollection{
 					NoteCategory{
-						Kind:        KindDeprecation,
-						NoteEntries: &Notes{"A", "B", "C"},
+						Kind:        notes.KindDeprecation,
+						NoteEntries: &notes.Notes{"A", "B", "C"},
 					},
 				},
 			},
@@ -308,26 +308,26 @@ func TestNew(t *testing.T) {
 			"notes are sorted by kind priority",
 			args{
 				notes.ReleaseNotes{
-					0: makeReleaseNote(KindFeature, "C"),
-					1: makeReleaseNote(KindAPIChange, "B"),
-					2: makeReleaseNote(KindDeprecation, "A"),
+					0: makeReleaseNote(notes.KindFeature, "C"),
+					1: makeReleaseNote(notes.KindAPIChange, "B"),
+					2: makeReleaseNote(notes.KindDeprecation, "A"),
 				},
 				notes.ReleaseNotesHistory{0, 1, 2},
 			},
 			&Document{
-				NotesWithActionRequired: Notes{},
+				NotesWithActionRequired: notes.Notes{},
 				Notes: NoteCollection{
 					NoteCategory{
-						Kind:        KindDeprecation,
-						NoteEntries: &Notes{"A"},
+						Kind:        notes.KindDeprecation,
+						NoteEntries: &notes.Notes{"A"},
 					},
 					NoteCategory{
-						Kind:        KindAPIChange,
-						NoteEntries: &Notes{"B"},
+						Kind:        notes.KindAPIChange,
+						NoteEntries: &notes.Notes{"B"},
 					},
 					NoteCategory{
-						Kind:        KindFeature,
-						NoteEntries: &Notes{"C"},
+						Kind:        notes.KindFeature,
+						NoteEntries: &notes.Notes{"C"},
 					},
 				},
 			},
@@ -336,20 +336,20 @@ func TestNew(t *testing.T) {
 			"strip unwanted prefixes",
 			args{
 				notes.ReleaseNotes{
-					0: makeReleaseNote(KindBug, "- single dash"),
-					1: makeReleaseNote(KindBug, "-- double dash"),
-					2: makeReleaseNote(KindBug, "* single star"),
-					3: makeReleaseNote(KindBug, "** double star"),
-					4: makeReleaseNote(KindBug, "- --someflag"),
+					0: makeReleaseNote(notes.KindBug, "- single dash"),
+					1: makeReleaseNote(notes.KindBug, "-- double dash"),
+					2: makeReleaseNote(notes.KindBug, "* single star"),
+					3: makeReleaseNote(notes.KindBug, "** double star"),
+					4: makeReleaseNote(notes.KindBug, "- --someflag"),
 				},
 				notes.ReleaseNotesHistory{0, 1, 2, 3, 4},
 			},
 			&Document{
-				NotesWithActionRequired: Notes{},
+				NotesWithActionRequired: notes.Notes{},
 				Notes: NoteCollection{
 					NoteCategory{
-						Kind: KindBug,
-						NoteEntries: &Notes{
+						Kind: notes.KindBug,
+						NoteEntries: &notes.Notes{
 							"--someflag",
 							"double dash",
 							"double star",
@@ -366,18 +366,18 @@ func TestNew(t *testing.T) {
 				notes.ReleaseNotes{
 					0: &notes.ReleaseNote{
 						Markdown:       "A duplicate note gets the highest priority kind found",
-						Kinds:          []string{string(KindAPIChange), string(KindDeprecation)},
+						Kinds:          []string{string(notes.KindAPIChange), string(notes.KindDeprecation)},
 						DuplicateKind:  true,
 						ActionRequired: false,
 					}},
 				notes.ReleaseNotesHistory{0},
 			},
 			&Document{
-				NotesWithActionRequired: Notes{},
+				NotesWithActionRequired: notes.Notes{},
 				Notes: NoteCollection{
 					NoteCategory{
-						Kind:        KindDeprecation,
-						NoteEntries: &Notes{"A duplicate note gets the highest priority kind found"},
+						Kind:        notes.KindDeprecation,
+						NoteEntries: &notes.Notes{"A duplicate note gets the highest priority kind found"},
 					},
 				},
 			},
@@ -388,18 +388,18 @@ func TestNew(t *testing.T) {
 				notes.ReleaseNotes{
 					0: &notes.ReleaseNote{
 						Markdown:       "This note should not appear as a regular note.",
-						Kinds:          []string{string(KindDeprecation)},
+						Kinds:          []string{string(notes.KindDeprecation)},
 						DuplicateKind:  true,
 						ActionRequired: false,
 					}},
 				notes.ReleaseNotesHistory{0},
 			},
 			&Document{
-				NotesWithActionRequired: Notes{},
+				NotesWithActionRequired: notes.Notes{},
 				Notes: NoteCollection{
 					NoteCategory{
-						Kind:        KindDeprecation,
-						NoteEntries: &Notes{"This note should not appear as a regular note."},
+						Kind:        notes.KindDeprecation,
+						NoteEntries: &notes.Notes{"This note should not appear as a regular note."},
 					},
 				},
 			},
@@ -408,17 +408,17 @@ func TestNew(t *testing.T) {
 			"notes mapping to a single kind",
 			args{
 				notes.ReleaseNotes{
-					0: makeReleaseNote(KindCleanup, "PR#1"),
-					1: makeReleaseNote(KindFlake, "PR#2"),
+					0: makeReleaseNote(notes.KindCleanup, "PR#1"),
+					1: makeReleaseNote(notes.KindFlake, "PR#2"),
 				},
 				notes.ReleaseNotesHistory{0, 1},
 			},
 			&Document{
-				NotesWithActionRequired: Notes{},
+				NotesWithActionRequired: notes.Notes{},
 				Notes: NoteCollection{
 					NoteCategory{
-						Kind:        KindOther,
-						NoteEntries: &Notes{"PR#1", "PR#2"},
+						Kind:        notes.KindOther,
+						NoteEntries: &notes.Notes{"PR#1", "PR#2"},
 					},
 				},
 			},
@@ -467,23 +467,23 @@ func TestDocument_RenderMarkdownTemplate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Given
 			testNotes := notes.ReleaseNotes{
-				0:  makeReleaseNote(KindDeprecation, "Deprecation #1."),
-				1:  makeReleaseNote(KindBug, "Bugfix."),
-				2:  makeReleaseNote(KindCleanup, "Clean up."),
-				3:  makeReleaseNote(KindDesign, "Design change."),
-				4:  makeReleaseNote(KindDocumentation, "Update docs."),
-				5:  makeReleaseNote(KindFailingTest, "Fix a failing test."),
-				6:  makeReleaseNote(KindFeature, "A feature."),
-				7:  makeReleaseNote(KindFlake, "Fix a flakey test."),
+				0:  makeReleaseNote(notes.KindDeprecation, "Deprecation #1."),
+				1:  makeReleaseNote(notes.KindBug, "Bugfix."),
+				2:  makeReleaseNote(notes.KindCleanup, "Clean up."),
+				3:  makeReleaseNote(notes.KindDesign, "Design change."),
+				4:  makeReleaseNote(notes.KindDocumentation, "Update docs."),
+				5:  makeReleaseNote(notes.KindFailingTest, "Fix a failing test."),
+				6:  makeReleaseNote(notes.KindFeature, "A feature."),
+				7:  makeReleaseNote(notes.KindFlake, "Fix a flakey test."),
 				8:  makeReleaseNote("", "Uncategorized note."),
-				9:  makeReleaseNote(KindBug, "- This note was prepended with a dash (-) initially."),
-				10: makeReleaseNote(KindBug, "* This note was prepended with a star (*) initially."),
+				9:  makeReleaseNote(notes.KindBug, "- This note was prepended with a dash (-) initially."),
+				10: makeReleaseNote(notes.KindBug, "* This note was prepended with a star (*) initially."),
 			}
-			duplicate := makeReleaseNote(KindDeprecation, "This note is duplicated across SIGs.")
-			duplicate.Kinds = append(duplicate.Kinds, string(KindBug))
+			duplicate := makeReleaseNote(notes.KindDeprecation, "This note is duplicated across SIGs.")
+			duplicate.Kinds = append(duplicate.Kinds, string(notes.KindBug))
 			duplicate.DuplicateKind = true
 
-			actionNeeded := makeReleaseNote(KindAPIChange, "Action required note.")
+			actionNeeded := makeReleaseNote(notes.KindAPIChange, "Action required note.")
 			actionNeeded.ActionRequired = true
 			testNotes[11] = duplicate
 			testNotes[12] = actionNeeded
@@ -524,7 +524,7 @@ func TestDocument_RenderMarkdownTemplate(t *testing.T) {
 	}
 }
 
-func makeReleaseNote(kind Kind, markdown string) *notes.ReleaseNote {
+func makeReleaseNote(kind notes.Kind, markdown string) *notes.ReleaseNote {
 	n := &notes.ReleaseNote{Markdown: markdown}
 	if kind != "" {
 		n.Kinds = []string{string(kind)}
