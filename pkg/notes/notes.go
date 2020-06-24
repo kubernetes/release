@@ -50,6 +50,24 @@ const (
 	maxParallelRequests = 10
 )
 
+type Notes []string
+type Kind string
+
+const (
+	KindAPIChange     Kind = "api-change"
+	KindBug           Kind = "bug"
+	KindCleanup       Kind = "cleanup"
+	KindDeprecation   Kind = "deprecation"
+	KindDesign        Kind = "design"
+	KindDocumentation Kind = "documentation"
+	KindFailingTest   Kind = "failing-test"
+	KindFeature       Kind = "feature"
+	KindFlake         Kind = "flake"
+	KindRegression    Kind = "regression"
+	KindOther         Kind = "Other (Cleanup or Flake)"
+	KindUncategorized Kind = "Uncategorized"
+)
+
 // ReleaseNote is the type that represents the total sum of all the information
 // we've gathered about a single release note.
 type ReleaseNote struct {
