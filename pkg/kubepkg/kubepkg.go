@@ -372,17 +372,25 @@ func (c *Client) run(bc *buildConfig) error {
 		}
 
 		fileName := fmt.Sprintf("%s_%s-%s_%s.deb", bc.Package, bc.Version, bc.Revision, bc.BuildArch)
-		dstParts := []string{"bin", string(bc.Channel), fileName}
 
-		dstPath := filepath.Join(dstParts...)
-		if err := os.MkdirAll(dstPath, os.FileMode(0777)); err != nil {
-			return err
+		dstPath := filepath.Join("bin", string(bc.Channel), fileName)
+		logrus.Infof("Using package destination path %s", dstPath)
+
+		if err := os.MkdirAll(
+			filepath.Dir(dstPath), os.FileMode(0o777),
+		); err != nil {
+			return errors.Wrapf(err, "creating %s", filepath.Dir(dstPath))
 		}
 
-		if err := c.impl.RunSuccess(
-			"mv", filepath.Join(specDir, fileName), dstPath,
-		); err != nil {
-			return err
+		srcPath := filepath.Join(specDir, fileName)
+		input, err := ioutil.ReadFile(srcPath)
+		if err != nil {
+			return errors.Wrapf(err, "reading %s", srcPath)
+		}
+
+		err = ioutil.WriteFile(dstPath, input, 0o644)
+		if err != nil {
+			return errors.Wrapf(err, "writing file to %s", dstPath)
 		}
 
 		logrus.Infof("Successfully built %s", dstPath)
