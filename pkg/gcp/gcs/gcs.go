@@ -36,16 +36,16 @@ var (
 
 type Options struct {
 	// gsutil options
-	Concurrent bool
-	Recursive  bool
-	NoClobber  bool
+	Concurrent *bool
+	Recursive  *bool
+	NoClobber  *bool
 
 	// local options
 	// AllowMissing allows a copy operation to be skipped if the source or
 	// destination does not exist. This is useful for scenarios where copy
 	// operations happen in a loop/channel, so a single "failure" does not block
 	// the entire operation.
-	AllowMissing bool
+	AllowMissing *bool
 }
 
 // CopyToGCS copies a local directory to the specified GCS path
@@ -57,7 +57,7 @@ func CopyToGCS(src, gcsPath string, opts *Options) error {
 	if err != nil {
 		logrus.Info("unable to get local source directory info")
 
-		if opts.AllowMissing {
+		if *opts.AllowMissing {
 			logrus.Infof("Source directory (%s) does not exist. Skipping GCS upload.", src)
 			return nil
 		}
@@ -79,17 +79,17 @@ func CopyToLocal(gcsPath, dst string, opts *Options) error {
 func bucketCopy(src, dst string, opts *Options) error {
 	args := []string{}
 
-	if opts.Concurrent {
+	if *opts.Concurrent {
 		logrus.Debug("Setting GCS copy to run concurrently")
 		args = append(args, concurrentFlag)
 	}
 
 	args = append(args, "cp")
-	if opts.Recursive {
+	if *opts.Recursive {
 		logrus.Debug("Setting GCS copy to run recursively")
 		args = append(args, recursiveFlag)
 	}
-	if opts.NoClobber {
+	if *opts.NoClobber {
 		logrus.Debug("Setting GCS copy to not clobber existing files")
 		args = append(args, noClobberFlag)
 	}
