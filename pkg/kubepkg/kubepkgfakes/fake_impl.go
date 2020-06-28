@@ -18,6 +18,7 @@ limitations under the License.
 package kubepkgfakes
 
 import (
+	"os"
 	"sync"
 
 	"github.com/google/go-github/v29/github"
@@ -39,6 +40,19 @@ type FakeImpl struct {
 		result1 string
 		result2 error
 	}
+	ReadFileStub        func(string) ([]byte, error)
+	readFileMutex       sync.RWMutex
+	readFileArgsForCall []struct {
+		arg1 string
+	}
+	readFileReturns struct {
+		result1 []byte
+		result2 error
+	}
+	readFileReturnsOnCall map[int]struct {
+		result1 []byte
+		result2 error
+	}
 	ReleasesStub        func(string, string, bool) ([]*github.RepositoryRelease, error)
 	releasesMutex       sync.RWMutex
 	releasesArgsForCall []struct {
@@ -54,19 +68,6 @@ type FakeImpl struct {
 		result1 []*github.RepositoryRelease
 		result2 error
 	}
-	RunSuccessStub        func(string, string, ...string) error
-	runSuccessMutex       sync.RWMutex
-	runSuccessArgsForCall []struct {
-		arg1 string
-		arg2 string
-		arg3 []string
-	}
-	runSuccessReturns struct {
-		result1 error
-	}
-	runSuccessReturnsOnCall map[int]struct {
-		result1 error
-	}
 	RunSuccessWithWorkDirStub        func(string, string, ...string) error
 	runSuccessWithWorkDirMutex       sync.RWMutex
 	runSuccessWithWorkDirArgsForCall []struct {
@@ -78,6 +79,19 @@ type FakeImpl struct {
 		result1 error
 	}
 	runSuccessWithWorkDirReturnsOnCall map[int]struct {
+		result1 error
+	}
+	WriteFileStub        func(string, []byte, os.FileMode) error
+	writeFileMutex       sync.RWMutex
+	writeFileArgsForCall []struct {
+		arg1 string
+		arg2 []byte
+		arg3 os.FileMode
+	}
+	writeFileReturns struct {
+		result1 error
+	}
+	writeFileReturnsOnCall map[int]struct {
 		result1 error
 	}
 	invocations      map[string][][]interface{}
@@ -147,6 +161,69 @@ func (fake *FakeImpl) GetKubeVersionReturnsOnCall(i int, result1 string, result2
 	}{result1, result2}
 }
 
+func (fake *FakeImpl) ReadFile(arg1 string) ([]byte, error) {
+	fake.readFileMutex.Lock()
+	ret, specificReturn := fake.readFileReturnsOnCall[len(fake.readFileArgsForCall)]
+	fake.readFileArgsForCall = append(fake.readFileArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("ReadFile", []interface{}{arg1})
+	fake.readFileMutex.Unlock()
+	if fake.ReadFileStub != nil {
+		return fake.ReadFileStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.readFileReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeImpl) ReadFileCallCount() int {
+	fake.readFileMutex.RLock()
+	defer fake.readFileMutex.RUnlock()
+	return len(fake.readFileArgsForCall)
+}
+
+func (fake *FakeImpl) ReadFileCalls(stub func(string) ([]byte, error)) {
+	fake.readFileMutex.Lock()
+	defer fake.readFileMutex.Unlock()
+	fake.ReadFileStub = stub
+}
+
+func (fake *FakeImpl) ReadFileArgsForCall(i int) string {
+	fake.readFileMutex.RLock()
+	defer fake.readFileMutex.RUnlock()
+	argsForCall := fake.readFileArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeImpl) ReadFileReturns(result1 []byte, result2 error) {
+	fake.readFileMutex.Lock()
+	defer fake.readFileMutex.Unlock()
+	fake.ReadFileStub = nil
+	fake.readFileReturns = struct {
+		result1 []byte
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImpl) ReadFileReturnsOnCall(i int, result1 []byte, result2 error) {
+	fake.readFileMutex.Lock()
+	defer fake.readFileMutex.Unlock()
+	fake.ReadFileStub = nil
+	if fake.readFileReturnsOnCall == nil {
+		fake.readFileReturnsOnCall = make(map[int]struct {
+			result1 []byte
+			result2 error
+		})
+	}
+	fake.readFileReturnsOnCall[i] = struct {
+		result1 []byte
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeImpl) Releases(arg1 string, arg2 string, arg3 bool) ([]*github.RepositoryRelease, error) {
 	fake.releasesMutex.Lock()
 	ret, specificReturn := fake.releasesReturnsOnCall[len(fake.releasesArgsForCall)]
@@ -212,68 +289,6 @@ func (fake *FakeImpl) ReleasesReturnsOnCall(i int, result1 []*github.RepositoryR
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) RunSuccess(arg1 string, arg2 string, arg3 ...string) error {
-	fake.runSuccessMutex.Lock()
-	ret, specificReturn := fake.runSuccessReturnsOnCall[len(fake.runSuccessArgsForCall)]
-	fake.runSuccessArgsForCall = append(fake.runSuccessArgsForCall, struct {
-		arg1 string
-		arg2 string
-		arg3 []string
-	}{arg1, arg2, arg3})
-	fake.recordInvocation("RunSuccess", []interface{}{arg1, arg2, arg3})
-	fake.runSuccessMutex.Unlock()
-	if fake.RunSuccessStub != nil {
-		return fake.RunSuccessStub(arg1, arg2, arg3...)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	fakeReturns := fake.runSuccessReturns
-	return fakeReturns.result1
-}
-
-func (fake *FakeImpl) RunSuccessCallCount() int {
-	fake.runSuccessMutex.RLock()
-	defer fake.runSuccessMutex.RUnlock()
-	return len(fake.runSuccessArgsForCall)
-}
-
-func (fake *FakeImpl) RunSuccessCalls(stub func(string, string, ...string) error) {
-	fake.runSuccessMutex.Lock()
-	defer fake.runSuccessMutex.Unlock()
-	fake.RunSuccessStub = stub
-}
-
-func (fake *FakeImpl) RunSuccessArgsForCall(i int) (string, string, []string) {
-	fake.runSuccessMutex.RLock()
-	defer fake.runSuccessMutex.RUnlock()
-	argsForCall := fake.runSuccessArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
-}
-
-func (fake *FakeImpl) RunSuccessReturns(result1 error) {
-	fake.runSuccessMutex.Lock()
-	defer fake.runSuccessMutex.Unlock()
-	fake.RunSuccessStub = nil
-	fake.runSuccessReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeImpl) RunSuccessReturnsOnCall(i int, result1 error) {
-	fake.runSuccessMutex.Lock()
-	defer fake.runSuccessMutex.Unlock()
-	fake.RunSuccessStub = nil
-	if fake.runSuccessReturnsOnCall == nil {
-		fake.runSuccessReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.runSuccessReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
 func (fake *FakeImpl) RunSuccessWithWorkDir(arg1 string, arg2 string, arg3 ...string) error {
 	fake.runSuccessWithWorkDirMutex.Lock()
 	ret, specificReturn := fake.runSuccessWithWorkDirReturnsOnCall[len(fake.runSuccessWithWorkDirArgsForCall)]
@@ -336,17 +351,86 @@ func (fake *FakeImpl) RunSuccessWithWorkDirReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeImpl) WriteFile(arg1 string, arg2 []byte, arg3 os.FileMode) error {
+	var arg2Copy []byte
+	if arg2 != nil {
+		arg2Copy = make([]byte, len(arg2))
+		copy(arg2Copy, arg2)
+	}
+	fake.writeFileMutex.Lock()
+	ret, specificReturn := fake.writeFileReturnsOnCall[len(fake.writeFileArgsForCall)]
+	fake.writeFileArgsForCall = append(fake.writeFileArgsForCall, struct {
+		arg1 string
+		arg2 []byte
+		arg3 os.FileMode
+	}{arg1, arg2Copy, arg3})
+	fake.recordInvocation("WriteFile", []interface{}{arg1, arg2Copy, arg3})
+	fake.writeFileMutex.Unlock()
+	if fake.WriteFileStub != nil {
+		return fake.WriteFileStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.writeFileReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeImpl) WriteFileCallCount() int {
+	fake.writeFileMutex.RLock()
+	defer fake.writeFileMutex.RUnlock()
+	return len(fake.writeFileArgsForCall)
+}
+
+func (fake *FakeImpl) WriteFileCalls(stub func(string, []byte, os.FileMode) error) {
+	fake.writeFileMutex.Lock()
+	defer fake.writeFileMutex.Unlock()
+	fake.WriteFileStub = stub
+}
+
+func (fake *FakeImpl) WriteFileArgsForCall(i int) (string, []byte, os.FileMode) {
+	fake.writeFileMutex.RLock()
+	defer fake.writeFileMutex.RUnlock()
+	argsForCall := fake.writeFileArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeImpl) WriteFileReturns(result1 error) {
+	fake.writeFileMutex.Lock()
+	defer fake.writeFileMutex.Unlock()
+	fake.WriteFileStub = nil
+	fake.writeFileReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeImpl) WriteFileReturnsOnCall(i int, result1 error) {
+	fake.writeFileMutex.Lock()
+	defer fake.writeFileMutex.Unlock()
+	fake.WriteFileStub = nil
+	if fake.writeFileReturnsOnCall == nil {
+		fake.writeFileReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.writeFileReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.getKubeVersionMutex.RLock()
 	defer fake.getKubeVersionMutex.RUnlock()
+	fake.readFileMutex.RLock()
+	defer fake.readFileMutex.RUnlock()
 	fake.releasesMutex.RLock()
 	defer fake.releasesMutex.RUnlock()
-	fake.runSuccessMutex.RLock()
-	defer fake.runSuccessMutex.RUnlock()
 	fake.runSuccessWithWorkDirMutex.RLock()
 	defer fake.runSuccessWithWorkDirMutex.RUnlock()
+	fake.writeFileMutex.RLock()
+	defer fake.writeFileMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

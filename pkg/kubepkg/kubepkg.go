@@ -106,17 +106,14 @@ type impl struct{}
 //counterfeiter:generate . Impl
 type Impl interface {
 	RunSuccessWithWorkDir(workDir, cmd string, args ...string) error
-	RunSuccess(workDir, cmd string, args ...string) error
 	Releases(owner, repo string, includePrereleases bool) ([]*gogithub.RepositoryRelease, error)
 	GetKubeVersion(versionType release.VersionType) (string, error)
+	ReadFile(string) ([]byte, error)
+	WriteFile(string, []byte, os.FileMode) error
 }
 
 func (i *impl) RunSuccessWithWorkDir(workDir, cmd string, args ...string) error {
 	return command.NewWithWorkDir(workDir, cmd, args...).RunSuccess()
-}
-
-func (i *impl) RunSuccess(workDir, cmd string, args ...string) error {
-	return command.New(cmd, args...).RunSuccess()
 }
 
 func (i *impl) Releases(owner, repo string, includePrereleases bool) ([]*gogithub.RepositoryRelease, error) {
@@ -125,6 +122,14 @@ func (i *impl) Releases(owner, repo string, includePrereleases bool) ([]*gogithu
 
 func (i *impl) GetKubeVersion(versionType release.VersionType) (string, error) {
 	return release.NewVersion().GetKubeVersion(versionType)
+}
+
+func (i *impl) ReadFile(filename string) ([]byte, error) {
+	return ioutil.ReadFile(filename)
+}
+
+func (i *impl) WriteFile(filename string, data []byte, perm os.FileMode) error {
+	return ioutil.WriteFile(filename, data, perm)
 }
 
 type Build struct {
@@ -371,18 +376,30 @@ func (c *Client) run(bc *buildConfig) error {
 			return errors.Wrap(err, "running debian package build")
 		}
 
-		fileName := fmt.Sprintf("%s_%s-%s_%s.deb", bc.Package, bc.Version, bc.Revision, bc.BuildArch)
-		dstParts := []string{"bin", string(bc.Channel), fileName}
+		fileName := fmt.Sprintf(
+			"%s_%s-%s_%s.deb",
+			bc.Package,
+			bc.Version,
+			bc.Revision,
+			bc.BuildArch,
+		)
 
-		dstPath := filepath.Join(dstParts...)
-		if err := os.MkdirAll(dstPath, os.FileMode(0777)); err != nil {
-			return err
+		dstPath := filepath.Join("bin", string(bc.Channel), fileName)
+		logrus.Infof("Using package destination path %s", dstPath)
+
+		if err := os.MkdirAll(filepath.Dir(dstPath), os.FileMode(0o777)); err != nil {
+			return errors.Wrapf(err, "creating %s", filepath.Dir(dstPath))
 		}
 
-		if err := c.impl.RunSuccess(
-			"mv", filepath.Join(specDir, fileName), dstPath,
-		); err != nil {
-			return err
+		srcPath := filepath.Join(specDir, fileName)
+		input, err := c.impl.ReadFile(srcPath)
+		if err != nil {
+			return errors.Wrapf(err, "reading %s", srcPath)
+		}
+
+		err = c.impl.WriteFile(dstPath, input, os.FileMode(0o644))
+		if err != nil {
+			return errors.Wrapf(err, "writing file to %s", dstPath)
 		}
 
 		logrus.Infof("Successfully built %s", dstPath)
@@ -587,6 +604,7 @@ func GetDependencies(packageDef *PackageDefinition) (map[string]string, error) {
 		deps["kubelet"] = minimumKubernetesVersion
 		deps["kubectl"] = minimumKubernetesVersion
 		deps["cri-tools"] = minimumCRIToolsVersion
+		deps["kubernetes-cni"] = MinimumCNIVersion // deb based kubeadm still requires kubernetes-cni
 	}
 
 	return deps, nil

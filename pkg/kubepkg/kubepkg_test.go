@@ -127,9 +127,21 @@ func TestWalkBuildsSuccessDeb(t *testing.T) {
 	require.Nil(t, err)
 }
 
-func TestWalkBuildsFailureDebMvFailed(t *testing.T) {
+func TestWalkBuildsFailureReadFileFailed(t *testing.T) {
 	sut, cleanup, mock := sutWithTemplateDir(t, nil, options.BuildDeb)
-	mock.RunSuccessReturns(err)
+	mock.ReadFileReturns(nil, err)
+	defer cleanup()
+
+	builds, err := sut.ConstructBuilds()
+	require.Nil(t, err)
+
+	err = sut.WalkBuilds(builds)
+	require.NotNil(t, err)
+}
+
+func TestWalkBuildsFailureWriteFileFailed(t *testing.T) {
+	sut, cleanup, mock := sutWithTemplateDir(t, nil, options.BuildDeb)
+	mock.WriteFileReturns(err)
 	defer cleanup()
 
 	builds, err := sut.ConstructBuilds()
@@ -461,9 +473,10 @@ func TestGetDependenciesSuccess(t *testing.T) {
 			name:        "get kubeadm deps",
 			packageName: "kubeadm",
 			expected: map[string]string{
-				"kubelet":   "1.13.0",
-				"kubectl":   "1.13.0",
-				"cri-tools": "1.13.0",
+				"kubelet":        "1.13.0",
+				"kubectl":        "1.13.0",
+				"cri-tools":      "1.13.0",
+				"kubernetes-cni": "0.8.6",
 			},
 		},
 	}
