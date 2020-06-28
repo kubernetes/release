@@ -59,7 +59,7 @@ const (
 
 var (
 	supportedPackages = []string{
-		"kubelet", "kubectl", "kubeadm", "cri-tools",
+		"kubelet", "kubectl", "kubeadm", "kubernetes-cni", "cri-tools",
 	}
 	supportedChannels = []string{
 		"release", "testing", "nightly",

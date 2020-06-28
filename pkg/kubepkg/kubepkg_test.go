@@ -75,7 +75,7 @@ func TestConstructBuilds(t *testing.T) {
 	builds, err := sut.ConstructBuilds()
 	require.Nil(t, err)
 	require.NotEmpty(t, builds)
-	require.Len(t, builds, 4)
+	require.Len(t, builds, 5)
 	require.Len(t, builds[0].Definitions, 3)
 	require.Equal(t, "kubelet", builds[0].Package)
 	require.Equal(t, options.BuildRpm, builds[0].Type)
@@ -191,6 +191,13 @@ func TestGetPackageVersionSuccess(t *testing.T) {
 		{
 			name:     "Kubernetes version not supplied",
 			expected: "",
+		},
+		{
+			name:        "CNI version",
+			packageName: "kubernetes-cni",
+			version:     "0.8.6",
+			kubeVersion: "1.17.0",
+			expected:    "0.8.6",
 		},
 		{
 			name:        "CRI tools version",
@@ -470,13 +477,20 @@ func TestGetDependenciesSuccess(t *testing.T) {
 		expected    map[string]string
 	}{
 		{
+			name:        "get kubelet deps",
+			packageName: "kubelet",
+			expected: map[string]string{
+				"kubernetes-cni": "0.8.6",
+			},
+		},
+		{
 			name:        "get kubeadm deps",
 			packageName: "kubeadm",
 			expected: map[string]string{
 				"kubelet":        "1.13.0",
 				"kubectl":        "1.13.0",
-				"cri-tools":      "1.13.0",
 				"kubernetes-cni": "0.8.6",
+				"cri-tools":      "1.13.0",
 			},
 		},
 	}
