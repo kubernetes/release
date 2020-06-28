@@ -197,6 +197,8 @@ func (c *Client) ConstructBuilds() ([]Build, error) {
 			switch b.Package {
 			case "kubelet":
 				packageDef.CNIVersion = c.options.CNIVersion()
+			case "kubernetes-cni":
+				packageDef.Version = c.options.CNIVersion()
 			case "cri-tools":
 				packageDef.Version = c.options.CRIToolsVersion()
 			}
@@ -416,7 +418,10 @@ func (c *Client) GetPackageVersion(packageDef *PackageDefinition) (string, error
 	}
 
 	logrus.Infof("Setting version for %s package...", packageDef.Name)
-	if packageDef.Name == "cri-tools" {
+	switch packageDef.Name {
+	case "kubernetes-cni":
+		return GetCNIVersion(packageDef)
+	case "cri-tools":
 		return c.GetCRIToolsVersion(packageDef)
 	}
 
@@ -600,11 +605,14 @@ func GetDependencies(packageDef *PackageDefinition) (map[string]string, error) {
 
 	deps := make(map[string]string)
 
-	if packageDef.Name == "kubeadm" {
+	switch packageDef.Name {
+	case "kubelet":
+		deps["kubernetes-cni"] = MinimumCNIVersion
+	case "kubeadm":
 		deps["kubelet"] = minimumKubernetesVersion
 		deps["kubectl"] = minimumKubernetesVersion
-		deps["cri-tools"] = minimumCRIToolsVersion
 		deps["kubernetes-cni"] = MinimumCNIVersion // deb based kubeadm still requires kubernetes-cni
+		deps["cri-tools"] = minimumCRIToolsVersion
 	}
 
 	return deps, nil
