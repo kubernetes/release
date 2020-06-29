@@ -445,7 +445,7 @@ func (c *Client) GetKubernetesVersion(packageDef *PackageDefinition) (string, er
 	case ChannelTesting:
 		return c.impl.GetKubeVersion(release.VersionTypeStablePreRelease)
 	case ChannelNightly:
-		return c.impl.GetKubeVersion(release.VersionTypeCILatest)
+		return c.impl.GetKubeVersion(release.VersionTypeCILatestCross)
 	}
 
 	return c.impl.GetKubeVersion(release.VersionTypeStable)
@@ -577,7 +577,7 @@ func (c *Client) GetCIBuildsDownloadLinkBase(packageDef *PackageDefinition) (str
 	ciVersion := packageDef.KubernetesVersion
 	if ciVersion == "" {
 		var err error
-		ciVersion, err = c.impl.GetKubeVersion(release.VersionTypeCILatest)
+		ciVersion, err = c.impl.GetKubeVersion(release.VersionTypeCILatestCross)
 		if err != nil {
 			return "", err
 		}
