@@ -24,31 +24,33 @@ import (
 
 	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/github"
+	"k8s.io/utils/pointer"
 )
 
 // Config contains a slice of `ReleaseConfig` to be used when unmarshalling a
 // yaml config containing multiple repository configs.
 type Config struct {
-	ReleaseConfigs []ReleaseConfig
+	ReleaseConfigs []ReleaseConfig `yaml:"releaseConfigs"`
 }
 
 // ReleaseConfig contains source (GitHub) and destination (GCS) information
 // to perform a copy/upload operation using gh2gcs.
 type ReleaseConfig struct {
-	Org                string
-	Repo               string
-	Tags               []string
-	IncludePrereleases bool
-	GCSBucket          string
-	ReleaseDir         string
-	GCSCopyOptions     *gcs.Options
+	Org                string       `yaml:"org"`
+	Repo               string       `yaml:"repo"`
+	Tags               []string     `yaml:"tags"`
+	IncludePrereleases bool         `yaml:"includePrereleases"`
+	GCSBucket          string       `yaml:"gcsBucket"`
+	ReleaseDir         string       `yaml:"releaseDir"`
+	GCSCopyOptions     *gcs.Options `yaml:"gcsCopyOptions"`
 }
 
+// DefaultGCSCopyOptions have the default options for the GCS copy action
 var DefaultGCSCopyOptions = &gcs.Options{
-	Concurrent:   true,
-	Recursive:    true,
-	NoClobber:    true,
-	AllowMissing: true,
+	Concurrent:   pointer.BoolPtr(true),
+	Recursive:    pointer.BoolPtr(true),
+	NoClobber:    pointer.BoolPtr(true),
+	AllowMissing: pointer.BoolPtr(true),
 }
 
 // DownloadReleases downloads release assets to a local directory
@@ -85,4 +87,30 @@ func Upload(releaseCfg *ReleaseConfig, ghClient *github.GitHub, outputDir string
 	}
 
 	return nil
+}
+
+// CheckGCSCopyOptions checks if the user set any config or we need to set the default config
+func CheckGCSCopyOptions(copyOptions *gcs.Options) *gcs.Options {
+	// set the GCS Copy options to default values
+	if copyOptions == nil {
+		return DefaultGCSCopyOptions
+	}
+
+	if copyOptions.AllowMissing == nil {
+		copyOptions.AllowMissing = pointer.BoolPtr(true)
+	}
+
+	if copyOptions.Concurrent == nil {
+		copyOptions.Concurrent = pointer.BoolPtr(true)
+	}
+
+	if copyOptions.NoClobber == nil {
+		copyOptions.NoClobber = pointer.BoolPtr(true)
+	}
+
+	if copyOptions.Recursive == nil {
+		copyOptions.Recursive = pointer.BoolPtr(true)
+	}
+
+	return copyOptions
 }

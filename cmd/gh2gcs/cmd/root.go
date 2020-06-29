@@ -19,10 +19,13 @@ package cmd
 import (
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"gopkg.in/yaml.v2"
 
 	"k8s.io/release/pkg/gcp"
 	"k8s.io/release/pkg/gh2gcs"
@@ -32,12 +35,15 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:               "gh2gcs --org kubernetes --repo release --bucket <bucket> --release-dir <release-dir> [--tags v0.0.0] [--include-prereleases] [--output-dir <temp-dir>] [--download-only]",
+	Use:               "gh2gcs --org kubernetes --repo release --bucket <bucket> --release-dir <release-dir> [--tags v0.0.0] [--include-prereleases] [--output-dir <temp-dir>] [--download-only] [--config <config-file>]",
 	Short:             "gh2gcs uploads GitHub releases to Google Cloud Storage",
 	Example:           "gh2gcs --org kubernetes --repo release --bucket k8s-staging-release-test --release-dir release --tags v0.0.0,v0.0.1",
 	SilenceUsage:      true,
 	SilenceErrors:     true,
 	PersistentPreRunE: initLogging,
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		return checkRequiredFlags(cmd.Flags())
+	},
 	RunE: func(*cobra.Command, []string) error {
 		return run(opts)
 	},
@@ -53,6 +59,7 @@ type options struct {
 	outputDir          string
 	logLevel           string
 	tags               []string
+	configFilePath     string
 }
 
 var opts = &options{}
@@ -61,12 +68,14 @@ var (
 	orgFlag                = "org"
 	repoFlag               = "repo"
 	tagsFlag               = "tags"
+	configFlag             = "config"
 	includePrereleasesFlag = "include-prereleases"
 	bucketFlag             = "bucket"
 	releaseDirFlag         = "release-dir"
 	outputDirFlag          = "output-dir"
 	downloadOnlyFlag       = "download-only"
 
+	// requiredFlags only if the config flag is not set
 	requiredFlags = []string{
 		orgFlag,
 		repoFlag,
@@ -152,15 +161,37 @@ func init() {
 		"the logging verbosity, either 'panic', 'fatal', 'error', 'warn', 'warning', 'info', 'debug' or 'trace'",
 	)
 
-	for _, flag := range requiredFlags {
-		if err := rootCmd.MarkPersistentFlagRequired(flag); err != nil {
-			logrus.Fatal(err)
-		}
-	}
+	rootCmd.PersistentFlags().StringVar(
+		&opts.configFilePath,
+		configFlag,
+		"",
+		"config file to set all the branch/repositories the user wants to",
+	)
 }
 
 func initLogging(*cobra.Command, []string) error {
 	return log.SetupGlobalLogger(opts.logLevel)
+}
+
+func checkRequiredFlags(flags *pflag.FlagSet) error {
+	if flags.Lookup(configFlag).Changed {
+		return nil
+	}
+
+	checkRequiredFlags := []string{}
+	flags.VisitAll(func(flag *pflag.Flag) {
+		for _, requiredflag := range requiredFlags {
+			if requiredflag == flag.Name && !flag.Changed {
+				checkRequiredFlags = append(checkRequiredFlags, requiredflag)
+			}
+		}
+	})
+
+	if len(checkRequiredFlags) != 0 {
+		return errors.New("Required flag(s) `" + strings.Join(checkRequiredFlags, ", ") + "` not set")
+	}
+
+	return nil
 }
 
 func run(opts *options) error {
@@ -172,44 +203,56 @@ func run(opts *options) error {
 		return errors.Wrap(err, "pre-checking for GCP package usage")
 	}
 
+	releaseConfigs := &gh2gcs.Config{}
+	if opts.configFilePath != "" {
+		logrus.Infof("Reading the config file %s...", opts.configFilePath)
+		data, err := ioutil.ReadFile(opts.configFilePath)
+		if err != nil {
+			return errors.Wrap(err, "failed to read the file")
+		}
+
+		logrus.Info("Parsing the config...")
+		err = yaml.UnmarshalStrict(data, &releaseConfigs)
+		if err != nil {
+			return errors.Wrap(err, "failed to decode the file")
+		}
+
+		for i, releaseConfig := range releaseConfigs.ReleaseConfigs {
+			releaseConfigs.ReleaseConfigs[i].GCSCopyOptions = gh2gcs.CheckGCSCopyOptions(releaseConfig.GCSCopyOptions)
+		}
+	} else {
+		// TODO: Expose certain GCSCopyOptions for user configuration
+		releaseConfigs.ReleaseConfigs = append(releaseConfigs.ReleaseConfigs, gh2gcs.ReleaseConfig{
+			Org:                opts.org,
+			Repo:               opts.repo,
+			Tags:               opts.tags,
+			IncludePrereleases: opts.includePrereleases,
+			GCSBucket:          opts.bucket,
+			ReleaseDir:         opts.releaseDir,
+			GCSCopyOptions:     gh2gcs.DefaultGCSCopyOptions,
+		})
+	}
+
 	// Create a real GitHub API client
 	gh := github.New()
 
-	// TODO: Support downloading releases via yaml config
-	uploadConfig := &gh2gcs.Config{}
-	releaseConfig := &gh2gcs.ReleaseConfig{
-		Org:                opts.org,
-		Repo:               opts.repo,
-		Tags:               []string{},
-		IncludePrereleases: opts.includePrereleases,
-		GCSBucket:          opts.bucket,
-		ReleaseDir:         opts.releaseDir,
-		GCSCopyOptions:     gh2gcs.DefaultGCSCopyOptions,
-	}
+	for _, releaseConfig := range releaseConfigs.ReleaseConfigs {
+		if len(releaseConfig.Tags) == 0 {
+			releaseTags, err := gh.GetReleaseTags(releaseConfig.Org, releaseConfig.Repo, releaseConfig.IncludePrereleases)
+			if err != nil {
+				return errors.Wrap(err, "getting release tags")
+			}
 
-	// TODO: Expose certain GCSCopyOptions for user configuration
-
-	if len(opts.tags) > 0 {
-		releaseConfig.Tags = opts.tags
-	} else {
-		releaseTags, err := gh.GetReleaseTags(opts.org, opts.repo, opts.includePrereleases)
-		if err != nil {
-			return errors.Wrap(err, "getting release tags")
+			releaseConfig.Tags = releaseTags
 		}
 
-		releaseConfig.Tags = releaseTags
-	}
-
-	uploadConfig.ReleaseConfigs = append(uploadConfig.ReleaseConfigs, *releaseConfig)
-
-	for _, rc := range uploadConfig.ReleaseConfigs {
-		if err := gh2gcs.DownloadReleases(&rc, gh, opts.outputDir); err != nil {
+		if err := gh2gcs.DownloadReleases(&releaseConfig, gh, opts.outputDir); err != nil {
 			return errors.Wrap(err, "downloading release assets")
 		}
 		logrus.Infof("Files downloaded to %s directory", opts.outputDir)
 
 		if !opts.downloadOnly {
-			if err := gh2gcs.Upload(&rc, gh, opts.outputDir); err != nil {
+			if err := gh2gcs.Upload(&releaseConfig, gh, opts.outputDir); err != nil {
 				return errors.Wrap(err, "uploading release assets to GCS")
 			}
 		}
