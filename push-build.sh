@@ -174,6 +174,10 @@ GCS_DEST=${FLAGS_release_type:-$GCS_DEST}
 GCS_DEST+="$FLAGS_gcs_suffix"
 GCS_EXTRA_VERSION_MARKERS_STRING="${FLAGS_extra_version_markers:${FLAGS_extra_publish_file:-}}"
 
+PREVIOUS_IFS=$IFS
+IFS=',' read -ra GCS_EXTRA_VERSION_MARKERS <<< "$GCS_EXTRA_VERSION_MARKERS_STRING"
+IFS=$PREVIOUS_IFS
+
 if ((FLAGS_nomock)); then
   logecho
   logecho "$PROG is running a *REAL* push!!"
@@ -245,7 +249,7 @@ if ! ((FLAGS_noupdatelatest)); then
   attempt=0
   while ((attempt<max_attempts)); do
     release::gcs::publish_version $GCS_DEST $LATEST $KUBE_ROOT/_output \
-                                  $RELEASE_BUCKET $GCS_EXTRA_VERSION_MARKERS_STRING && break
+                                  $RELEASE_BUCKET $GCS_EXTRA_VERSION_MARKERS && break
     ((attempt++))
   done
   ((attempt>=max_attempts)) && common::exit 1 "Exiting..."

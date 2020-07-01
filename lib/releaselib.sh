@@ -803,7 +803,7 @@ release::gcs::publish_version () {
   local version=$2
   local build_output=$3
   local bucket=$4
-  local extra_publish_file=$5
+  local extra_version_markers=$5
   local release_dir="gs://$bucket/$build_type/$version"
   local version_major
   local version_minor
@@ -829,8 +829,11 @@ release::gcs::publish_version () {
   publish_files=($type
                  $type-$version_major
                  $type-$version_major.$version_minor
-                 $extra_publish_file
                 )
+
+  for marker in "${extra_version_markers[@]}"; do
+    publish_files+=("$marker")
+  done
 
   logecho
   logecho "Publish official pointer text files to $bucket..."
