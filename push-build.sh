@@ -41,29 +41,37 @@ PROG=${0##*/}
 #+     interface in kubernetes proper.
 #+
 #+ OPTIONS
-#+     [--nomock]                - Enables a real push (--ci only)
-#+     [--federation]            - Enable FEDERATION push
-#+     [--ci]                    - Used when called from Jenkins (for ci runs)
-#+     [--extra-publish-file=]   - Used when need to upload additional version
-#+                                 file to GCS. The path is relative and is
-#+                                 append to a GCS path. (--ci only)
-#+     [--bucket=]               - Specify an alternate bucket for pushes
-#+     [--release-type=]         - Override auto-detected release type
-#+                                 (normally devel or ci)
-#+     [--release-kind=]         - Kind of release to push to GCS. Supported
-#+                                 values are kubernetes(default) or federation.
-#+     [--gcs-suffix=]           - Specify a suffix to append to the upload
-#+                                 destination on GCS.
-#+     [--docker-registry=]      - If set, push docker images to specified
-#+                                 registry/project
-#+     [--version-suffix=]       - Append suffix to version name if set.
-#+     [--noupdatelatest]        - Do not update the latest file
-#+     [--private-bucket]        - Do not mark published bits on GCS as
-#+                                 publicly readable.
-#+     [--allow-dup]             - Do not exit error if the build already
-#+                                 exists on the gcs path.
-#+     [--help | -man]           - display man page for this script
-#+     [--usage | -?]            - display in-line usage
+#+     [--nomock]                  - Enables a real push (--ci only)
+#+     [--federation]              - Enable FEDERATION push
+#+     [--ci]                      - Used when called from Jenkins (for ci
+#+                                   runs)
+#+     [--extra-publish-file=]     - [DEPRECATED - use --extra-version-markers
+#+                                   instead] Used when need to upload
+#+                                   additional version file to GCS. The path
+#+                                   is relative and is append to a GCS path.
+#+                                   (--ci only)
+#+     [--extra-version-markers=]  - Used when need to upload additional
+#+                                   version markers to GCS. The path is
+#+                                   relative and is append to a GCS path.
+#+                                   (--ci only)
+#+     [--bucket=]                 - Specify an alternate bucket for pushes
+#+     [--release-type=]           - Override auto-detected release type
+#+                                   (normally devel or ci)
+#+     [--release-kind=]           - Kind of release to push to GCS. Supported
+#+                                   values are kubernetes(default) or
+#+                                   federation.
+#+     [--gcs-suffix=]             - Specify a suffix to append to the upload
+#+                                   destination on GCS.
+#+     [--docker-registry=]        - If set, push docker images to specified
+#+                                   registry/project
+#+     [--version-suffix=]         - Append suffix to version name if set.
+#+     [--noupdatelatest]          - Do not update the latest file
+#+     [--private-bucket]          - Do not mark published bits on GCS as
+#+                                   publicly readable.
+#+     [--allow-dup]               - Do not exit error if the build already
+#+                                   exists on the gcs path.
+#+     [--help | -man]             - display man page for this script
+#+     [--usage | -?]              - display in-line usage
 #+
 #+ EXAMPLES
 #+     $PROG                     - Do a developer push
@@ -164,7 +172,11 @@ GCS_DEST="devel"
 ((FLAGS_ci)) && GCS_DEST="ci"
 GCS_DEST=${FLAGS_release_type:-$GCS_DEST}
 GCS_DEST+="$FLAGS_gcs_suffix"
-GCS_EXTRA_PUBLISH_FILE=${FLAGS_extra_publish_file:-}
+GCS_EXTRA_VERSION_MARKERS_STRING="${FLAGS_extra_version_markers:${FLAGS_extra_publish_file:-}}"
+
+PREVIOUS_IFS=$IFS
+IFS=',' read -ra GCS_EXTRA_VERSION_MARKERS <<< "$GCS_EXTRA_VERSION_MARKERS_STRING"
+IFS=$PREVIOUS_IFS
 
 if ((FLAGS_nomock)); then
   logecho
@@ -237,7 +249,7 @@ if ! ((FLAGS_noupdatelatest)); then
   attempt=0
   while ((attempt<max_attempts)); do
     release::gcs::publish_version $GCS_DEST $LATEST $KUBE_ROOT/_output \
-                                  $RELEASE_BUCKET $GCS_EXTRA_PUBLISH_FILE && break
+                                  $RELEASE_BUCKET $GCS_EXTRA_VERSION_MARKERS && break
     ((attempt++))
   done
   ((attempt>=max_attempts)) && common::exit 1 "Exiting..."

@@ -44,7 +44,7 @@ steps:
   - "${_BUCKET}"
   - "${_REGISTRY}"
   - "${_ALLOW_DUP}"
-  - "${_EXTRA_PUBLISH_FILE}"
+  - "${_EXTRA_VERSION_MARKERS}"
   - "${_HYPERKUBE}"
 
 options:
@@ -62,5 +62,5 @@ substitutions:
   _BUCKET: ''
   _REGISTRY: ''
   _ALLOW_DUP: ''
-  _EXTRA_PUBLISH_FILE: ''
+  _EXTRA_VERSION_MARKERS: ''
   _HYPERKUBE: ''
