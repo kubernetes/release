@@ -45,6 +45,7 @@ PROG=${0##*/}
 #+     [--federation]              - Enable FEDERATION push
 #+     [--ci]                      - Used when called from Jenkins (for ci
 #+                                   runs)
+#+     [--cross]                   - Specifies a cross build
 #+     [--extra-publish-file=]     - [DEPRECATED - use --extra-version-markers
 #+                                   instead] Used when need to upload
 #+                                   additional version file to GCS. The path
@@ -218,12 +219,19 @@ while ((attempt<max_attempts)); do
     release::gcs::bazel_push_build $GCS_DEST $LATEST $KUBE_ROOT/_output \
                                    $RELEASE_BUCKET && break
   else
-    release::gcs::locally_stage_release_artifacts $GCS_DEST $LATEST \
+    release::gcs::locally_stage_release_artifacts $LATEST \
                                                   $KUBE_ROOT/_output \
                                                   $FLAGS_release_kind
+
+    if ((FLAGS_cross)); then
+      BUILD_DEST="$GCS_DEST/cross"
+    else
+      BUILD_DEST="$GCS_DEST"
+    fi
+
     release::gcs::push_release_artifacts \
      $KUBE_ROOT/_output/gcs-stage/$LATEST \
-     gs://$RELEASE_BUCKET/$GCS_DEST/$LATEST && break
+     gs://$RELEASE_BUCKET/$BUILD_DEST/$LATEST && break
   fi
   ((attempt++))
 done
