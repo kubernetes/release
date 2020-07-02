@@ -644,17 +644,15 @@ release::gcs::push_release_artifacts() {
 
 ###############################################################################
 # Locally stage the release artifacts to staging directory
-# @param build_type - One of 'release' or 'ci'
 # @param version - The version
 # @param build_output - build output directory
 # @optparam release_kind - defaults to kubernetes
 # @return 1 on failure
 release::gcs::locally_stage_release_artifacts() {
-  local build_type=$1
-  local version=$2
-  local build_output=$3
+  local version=$1
+  local build_output=$2
   # --release-kind used by push-build.sh
-  local release_kind=${4:-"kubernetes"}
+  local release_kind=${3:-"kubernetes"}
   local platform
   local release_stage=$build_output/release-stage
   local release_tars=$build_output/release-tars
