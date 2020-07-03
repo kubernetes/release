@@ -45,7 +45,7 @@ PROG=${0##*/}
 #+     [--federation]              - Enable FEDERATION push
 #+     [--ci]                      - Used when called from Jenkins (for ci
 #+                                   runs)
-#+     [--cross]                   - Specifies a cross build
+#+     [--fast]                    - Specifies a fast build (linux amd64 only)
 #+     [--extra-publish-file=]     - [DEPRECATED - use --extra-version-markers
 #+                                   instead] Used when need to upload
 #+                                   additional version file to GCS. The path
@@ -223,8 +223,8 @@ while ((attempt<max_attempts)); do
                                                   $KUBE_ROOT/_output \
                                                   $FLAGS_release_kind
 
-    if ((FLAGS_cross)); then
-      BUILD_DEST="$GCS_DEST/cross"
+    if ((FLAGS_fast)); then
+      BUILD_DEST="$GCS_DEST/fast"
     else
       BUILD_DEST="$GCS_DEST"
     fi

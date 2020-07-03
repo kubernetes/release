@@ -824,11 +824,11 @@ release::gcs::publish_version () {
     version_minor=${BASH_REMATCH[2]}
   fi
 
-  if ((FLAGS_cross)); then
+  if ((FLAGS_fast)); then
     publish_files=(
-      "$type-cross"
-      "$type-$version_major-cross"
-      "$type-$version_major.$version_minor-cross"
+      "$type-fast"
+      "$type-$version_major-fast"
+      "$type-$version_major.$version_minor-fast"
     )
   else
     publish_files=(
