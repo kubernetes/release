@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -346,6 +347,30 @@ func SetGCBSubstitutions(o *GcbmgrOptions, toolOrg, toolRepo, toolBranch string)
 		return gcbSubs, kubecrossVersionErr
 	}
 	gcbSubs["KUBE_CROSS_VERSION"] = kubecrossVersion
+
+	v, err := util.TagStringToSemver(buildpoint)
+	if err != nil {
+		return gcbSubs, errors.Errorf("Failed to parse the buildVersion %s", buildpoint)
+	}
+
+	gcbSubs["MAJOR_VERSION_TAG"] = strconv.FormatUint(v.Major, 10)
+	gcbSubs["MINOR_VERSION_TAG"] = strconv.FormatUint(v.Minor, 10)
+
+	patch := fmt.Sprintf("%d", v.Patch)
+	if o.ReleaseType != ReleaseTypeOfficial && len(v.Pre) > 0 {
+		// if the release we will build is the same in the current build point then we increment
+		// otherwise we are building the next type so set to 0
+		if v.Pre[0].String() == o.ReleaseType {
+			patch = fmt.Sprintf("%d-%s.%d", v.Patch, o.ReleaseType, v.Pre[1].VersionNum+1)
+		} else if o.ReleaseType == ReleaseTypeRC && v.Pre[0].String() != ReleaseTypeRC {
+			// Now if is RC we are building and is the first time we set to 1 since the 0 is bypassed
+			patch = fmt.Sprintf("%d-%s.1", v.Patch, o.ReleaseType)
+		} else {
+			patch = fmt.Sprintf("%d-%s.0", v.Patch, o.ReleaseType)
+		}
+	}
+	gcbSubs["PATCH_VERSION_TAG"] = patch
+	gcbSubs["KUBERNETES_VERSION_TAG"] = fmt.Sprintf("%d.%d.%s", v.Major, v.Minor, patch)
 
 	return gcbSubs, nil
 }

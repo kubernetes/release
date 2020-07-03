@@ -103,6 +103,10 @@ tags:
 - STAGE
 - ${_GIT_TAG}
 - ${_TYPE_TAG}
+- ${_MAJOR_VERSION_TAG}
+- ${_MINOR_VERSION_TAG}
+- ${_PATCH_VERSION_TAG}
+- ${_KUBERNETES_VERSION_TAG}
 
 options:
   machineType: N1_HIGHCPU_32
