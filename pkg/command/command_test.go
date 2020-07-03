@@ -308,3 +308,20 @@ func TestSuccessLogWriterStdErrAndStdOutOnlyStdOut(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, res.Output(), string(content))
 }
+
+func TestCommandsSuccess(t *testing.T) {
+	res, err := New("echo", "1").Verbose().
+		Add("echo", "2").Add("echo", "3").Run()
+	require.Nil(t, err)
+	require.True(t, res.Success())
+	require.Zero(t, res.ExitCode())
+	require.Contains(t, res.Output(), "1")
+	require.Contains(t, res.Output(), "2")
+	require.Contains(t, res.Output(), "3")
+}
+
+func TestCommandsFailure(t *testing.T) {
+	res, err := New("echo", "1").Add("wrong").Add("echo", "3").Run()
+	require.NotNil(t, err)
+	require.Nil(t, res)
+}
