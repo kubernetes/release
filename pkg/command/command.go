@@ -18,6 +18,7 @@ package command
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -32,6 +33,7 @@ import (
 type Command struct {
 	cmds                         []*command
 	stdErrWriters, stdOutWriters []io.Writer
+	verbose                      bool
 }
 
 // The internal command representation
@@ -67,6 +69,7 @@ func NewWithWorkDir(workDir, cmd string, args ...string) *Command {
 		}},
 		stdErrWriters: []io.Writer{},
 		stdOutWriters: []io.Writer{},
+		verbose:       false,
 	}
 }
 
@@ -88,6 +91,12 @@ func (c *Command) Pipe(cmd string, args ...string) *Command {
 		Cmd:        pipeCmd,
 		pipeWriter: writer,
 	})
+	return c
+}
+
+// Verbose enables verbose output aka printing the command before executing it.
+func (c *Command) Verbose() *Command {
+	c.verbose = true
 	return c
 }
 
@@ -202,6 +211,7 @@ func (c *Command) run(printOutput bool) (res *Status, err error) {
 	}
 	doneChan := make(chan done, 1)
 
+	var stdOutWriter io.Writer
 	for i, cmd := range c.cmds {
 		// Last command handling
 		if i+1 == len(c.cmds) {
@@ -214,7 +224,7 @@ func (c *Command) run(printOutput bool) (res *Status, err error) {
 				return nil, err
 			}
 
-			var stdOutWriter, stdErrWriter io.Writer
+			var stdErrWriter io.Writer
 			if printOutput {
 				stdOutWriter = io.MultiWriter(append(
 					[]io.Writer{os.Stdout, stdOutBuffer}, c.stdOutWriters...,
@@ -231,6 +241,10 @@ func (c *Command) run(printOutput bool) (res *Status, err error) {
 				_, stderrErr := io.Copy(stdErrWriter, stderr)
 				doneChan <- done{stdoutErr, stderrErr}
 			}()
+		}
+
+		if c.verbose {
+			fmt.Fprintf(stdOutWriter, "+ %s\n", c.String())
 		}
 
 		if err := cmd.Start(); err != nil {
