@@ -824,10 +824,19 @@ release::gcs::publish_version () {
     version_minor=${BASH_REMATCH[2]}
   fi
 
-  publish_files=($type
-                 $type-$version_major
-                 $type-$version_major.$version_minor
-                )
+  if ((FLAGS_cross)); then
+    publish_files=(
+      "$type-cross"
+      "$type-$version_major-cross"
+      "$type-$version_major.$version_minor-cross"
+    )
+  else
+    publish_files=(
+      "$type"
+      "$type-$version_major"
+      "$type-$version_major.$version_minor"
+    )
+  fi
 
   for marker in "${extra_version_markers[@]}"; do
     publish_files+=("$marker")
