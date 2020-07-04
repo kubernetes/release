@@ -54,6 +54,9 @@ type Stream struct {
 	stdErr string
 }
 
+// Commands is an abstraction over multiple Command structures
+type Commands []*Command
+
 // New creates a new command from the provided arguments.
 func New(cmd string, args ...string) *Command {
 	return NewWithWorkDir("", cmd, args...)
@@ -98,6 +101,14 @@ func (c *Command) Pipe(cmd string, args ...string) *Command {
 func (c *Command) Verbose() *Command {
 	c.verbose = true
 	return c
+}
+
+// Add a command with the same working directory as well as verbosity mode.
+// Returns a new Commands instance.
+func (c *Command) Add(cmd string, args ...string) Commands {
+	addCmd := NewWithWorkDir(c.cmds[0].Dir, cmd, args...)
+	addCmd.verbose = c.verbose
+	return Commands{c, addCmd}
 }
 
 // AddWriter can be used to add an additional output (stdout) and error
@@ -344,4 +355,26 @@ func Available(commands ...string) (ok bool) {
 		}
 	}
 	return ok
+}
+
+// Add adds another command with the same working directory as well as
+// verbosity mode to the Commands.
+func (c Commands) Add(cmd string, args ...string) Commands {
+	addCmd := NewWithWorkDir(c[0].cmds[0].Dir, cmd, args...)
+	addCmd.verbose = c[0].verbose
+	return append(c, addCmd)
+}
+
+// Run executes all commands sequentially and abort if any of those fails.
+func (c Commands) Run() (*Status, error) {
+	res := &Status{Stream: &Stream{}}
+	for _, cmd := range c {
+		output, err := cmd.RunSuccessOutput()
+		if err != nil {
+			return nil, errors.Wrapf(err, "running command %q", cmd.String())
+		}
+		res.stdOut += "\n" + output.stdOut
+		res.stdErr += "\n" + output.stdErr
+	}
+	return res, nil
 }
