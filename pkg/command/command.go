@@ -103,6 +103,12 @@ func (c *Command) Verbose() *Command {
 	return c
 }
 
+// isVerbose returns true if the command is in verbose mode, either set locally
+// or global
+func (c *Command) isVerbose() bool {
+	return GetGlobalVerbose() || c.verbose
+}
+
 // Add a command with the same working directory as well as verbosity mode.
 // Returns a new Commands instance.
 func (c *Command) Add(cmd string, args ...string) Commands {
@@ -254,7 +260,7 @@ func (c *Command) run(printOutput bool) (res *Status, err error) {
 			}()
 		}
 
-		if c.verbose {
+		if c.isVerbose() {
 			fmt.Fprintf(stdOutWriter, "+ %s\n", c.String())
 		}
 
