@@ -22,24 +22,22 @@ import (
 )
 
 type FakeGcpClient struct {
-	CopyJobCacheStub        func(string) (string, error)
+	CopyJobCacheStub        func(string) string
 	copyJobCacheMutex       sync.RWMutex
 	copyJobCacheArgsForCall []struct {
 		arg1 string
 	}
 	copyJobCacheReturns struct {
 		result1 string
-		result2 error
 	}
 	copyJobCacheReturnsOnCall map[int]struct {
 		result1 string
-		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeGcpClient) CopyJobCache(arg1 string) (string, error) {
+func (fake *FakeGcpClient) CopyJobCache(arg1 string) string {
 	fake.copyJobCacheMutex.Lock()
 	ret, specificReturn := fake.copyJobCacheReturnsOnCall[len(fake.copyJobCacheArgsForCall)]
 	fake.copyJobCacheArgsForCall = append(fake.copyJobCacheArgsForCall, struct {
@@ -51,10 +49,10 @@ func (fake *FakeGcpClient) CopyJobCache(arg1 string) (string, error) {
 		return fake.CopyJobCacheStub(arg1)
 	}
 	if specificReturn {
-		return ret.result1, ret.result2
+		return ret.result1
 	}
 	fakeReturns := fake.copyJobCacheReturns
-	return fakeReturns.result1, fakeReturns.result2
+	return fakeReturns.result1
 }
 
 func (fake *FakeGcpClient) CopyJobCacheCallCount() int {
@@ -63,7 +61,7 @@ func (fake *FakeGcpClient) CopyJobCacheCallCount() int {
 	return len(fake.copyJobCacheArgsForCall)
 }
 
-func (fake *FakeGcpClient) CopyJobCacheCalls(stub func(string) (string, error)) {
+func (fake *FakeGcpClient) CopyJobCacheCalls(stub func(string) string) {
 	fake.copyJobCacheMutex.Lock()
 	defer fake.copyJobCacheMutex.Unlock()
 	fake.CopyJobCacheStub = stub
@@ -76,30 +74,27 @@ func (fake *FakeGcpClient) CopyJobCacheArgsForCall(i int) string {
 	return argsForCall.arg1
 }
 
-func (fake *FakeGcpClient) CopyJobCacheReturns(result1 string, result2 error) {
+func (fake *FakeGcpClient) CopyJobCacheReturns(result1 string) {
 	fake.copyJobCacheMutex.Lock()
 	defer fake.copyJobCacheMutex.Unlock()
 	fake.CopyJobCacheStub = nil
 	fake.copyJobCacheReturns = struct {
 		result1 string
-		result2 error
-	}{result1, result2}
+	}{result1}
 }
 
-func (fake *FakeGcpClient) CopyJobCacheReturnsOnCall(i int, result1 string, result2 error) {
+func (fake *FakeGcpClient) CopyJobCacheReturnsOnCall(i int, result1 string) {
 	fake.copyJobCacheMutex.Lock()
 	defer fake.copyJobCacheMutex.Unlock()
 	fake.CopyJobCacheStub = nil
 	if fake.copyJobCacheReturnsOnCall == nil {
 		fake.copyJobCacheReturnsOnCall = make(map[int]struct {
 			result1 string
-			result2 error
 		})
 	}
 	fake.copyJobCacheReturnsOnCall[i] = struct {
 		result1 string
-		result2 error
-	}{result1, result2}
+	}{result1}
 }
 
 func (fake *FakeGcpClient) Invocations() map[string][][]interface{} {

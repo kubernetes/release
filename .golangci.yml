@@ -5,10 +5,10 @@ run:
 issues:
   exclude-rules:
     # counterfeiter fakes are usually named 'fake_<something>.go'
-    # TODO: figure out why golangci-lint does not treat counterfeiter files as generated files
     - path: fake_.*\.go
       linters:
         - gocritic
+        - golint
         - dupl
 linters:
   disable-all: true

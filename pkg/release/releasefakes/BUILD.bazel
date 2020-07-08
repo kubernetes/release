@@ -4,7 +4,10 @@ go_library(
     name = "go_default_library",
     srcs = [
         "fake_gcp_client.go",
+        "fake_http_client.go",
+        "fake_job_cache_client.go",
         "fake_repository.go",
+        "fake_test_grid_client.go",
         "fake_version_client.go",
     ],
     importpath = "k8s.io/release/pkg/release/releasefakes",
