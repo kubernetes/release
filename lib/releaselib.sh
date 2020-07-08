@@ -181,14 +181,10 @@ release::set_build_version () {
   # finer granularity at the Jenkin's job level to determine if a build is ok.
   release::get_job_cache -d $job_path/$main_job &
 
-  # If we're forcing a --build-at-head, we only need to capture the $main_job
-  # details.
-  if ! ((FLAGS_build_at_head)); then
-    # Update secondary caches limited by main cache last build number
-      for other_job in ${secondary_jobs[@]}; do
+  # Update secondary caches limited by main cache last build number
+  for other_job in ${secondary_jobs[@]}; do
     release::get_job_cache $job_path/$other_job &
-    done
-  fi
+  done
 
   # Wait for background fetches.
   wait
@@ -230,20 +226,6 @@ release::set_build_version () {
                         jq -r '.[0] | .commit .author .date')
       build_sha1_date=$(date +"%R %m/%d" -d "$build_sha1_date")
 
-      # See anago for --build-at-head
-      # This method requires a call to release::get_job_cache() to initially
-      # set $build_version, however it is less fragile than ls-remote and
-      # sorting
-      if ((FLAGS_build_at_head)); then
-        build_version=${build_version/$build_sha1/$branch_head}
-        # Force job_count so we don't fail
-        job_count=1
-        logecho
-        logecho "Forced --build-at-head specified." \
-                "Setting build_version=$build_version"
-        logecho
-        break
-      fi
     elif [[ $good_job =~ JOB\[([0-9]+)\]=(${VER_REGEX[release]}) ]]; then
       logecho
       logecho "$ATTENTION: Newly tagged versions exclude git hash." \

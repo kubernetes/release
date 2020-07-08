@@ -24,7 +24,7 @@ PROG=${0##*/}
 #+ SYNOPSIS
 #+     $PROG  [--official] [<release branch>]
 #+            [--github-token=<token>] [--exclude-suites="<suite> ..."]
-#+            [--build-at-head] [--allow-stale-build] [--limit=N]
+#+            [--allow-stale-build] [--limit=N]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
 #+
@@ -46,7 +46,6 @@ PROG=${0##*/}
 #+     [--allow-stale-build] - Keep going even if the build is behind HEAD.
 #+                             This should only be used to display CI status.
 #+                             Branch cuts can't actually use stale builds.
-#+     [--build-at-head]     - (From anago) Just quickly return the HEAD build.
 #+     [--limit=]            - Limit the primary check to a count of N
 #+                             (Default: 100)
 #+     [--help | -man]       - display man page for this script
