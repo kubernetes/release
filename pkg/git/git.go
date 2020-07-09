@@ -36,6 +36,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/command"
+	"k8s.io/release/pkg/release/regex"
 	"k8s.io/release/pkg/util"
 )
 
@@ -47,7 +48,6 @@ const (
 	DefaultMasterRef         = "HEAD"
 	Master                   = "master"
 
-	branchRE              = `master|release-([0-9]{1,})\.([0-9]{1,})(\.([0-9]{1,}))*$`
 	defaultGithubAuthRoot = "git@github.com:"
 	gitExecutable         = "git"
 )
@@ -499,8 +499,7 @@ func (r *Repo) Checkout(rev string, args ...string) error {
 // IsReleaseBranch returns true if the provided branch is a Kubernetes release
 // branch
 func IsReleaseBranch(branch string) bool {
-	re := regexp.MustCompile(branchRE)
-	if !re.MatchString(branch) {
+	if !regex.BranchRegex.MatchString(branch) {
 		logrus.Warnf("%s is not a release branch", branch)
 		return false
 	}

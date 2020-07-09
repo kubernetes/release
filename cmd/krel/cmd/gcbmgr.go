@@ -48,13 +48,6 @@ type GcbmgrOptions struct {
 	Version      Version
 }
 
-const (
-	ReleaseTypeAlpha    = "alpha"
-	ReleaseTypeBeta     = "beta"
-	ReleaseTypeRC       = "rc"
-	ReleaseTypeOfficial = "official"
-)
-
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //counterfeiter:generate . Repository
 type Repository interface {
@@ -111,13 +104,13 @@ func init() {
 	gcbmgrCmd.PersistentFlags().StringVar(
 		&gcbmgrOpts.ReleaseType,
 		"type",
-		ReleaseTypeAlpha,
+		release.ReleaseTypeAlpha,
 		fmt.Sprintf("release type, must be one of: '%s'",
 			strings.Join([]string{
-				ReleaseTypeAlpha,
-				ReleaseTypeBeta,
-				ReleaseTypeRC,
-				ReleaseTypeOfficial,
+				release.ReleaseTypeAlpha,
+				release.ReleaseTypeBeta,
+				release.ReleaseTypeRC,
+				release.ReleaseTypeOfficial,
 			}, "', '"),
 		),
 	)
@@ -357,12 +350,12 @@ func SetGCBSubstitutions(o *GcbmgrOptions, toolOrg, toolRepo, toolBranch string)
 	gcbSubs["MINOR_VERSION_TAG"] = strconv.FormatUint(v.Minor, 10)
 
 	patch := fmt.Sprintf("%d", v.Patch)
-	if o.ReleaseType != ReleaseTypeOfficial && len(v.Pre) > 0 {
+	if o.ReleaseType != release.ReleaseTypeOfficial && len(v.Pre) > 0 {
 		// if the release we will build is the same in the current build point then we increment
 		// otherwise we are building the next type so set to 0
 		if v.Pre[0].String() == o.ReleaseType {
 			patch = fmt.Sprintf("%d-%s.%d", v.Patch, o.ReleaseType, v.Pre[1].VersionNum+1)
-		} else if o.ReleaseType == ReleaseTypeRC && v.Pre[0].String() != ReleaseTypeRC {
+		} else if o.ReleaseType == release.ReleaseTypeRC && v.Pre[0].String() != release.ReleaseTypeRC {
 			// Now if is RC we are building and is the first time we set to 1 since the 0 is bypassed
 			patch = fmt.Sprintf("%d-%s.1", v.Patch, o.ReleaseType)
 		} else {
@@ -394,11 +387,11 @@ func (o *GcbmgrOptions) Validate() error {
 	}
 
 	if o.Branch == git.Master {
-		if o.ReleaseType == ReleaseTypeRC || o.ReleaseType == ReleaseTypeOfficial {
+		if o.ReleaseType == release.ReleaseTypeRC || o.ReleaseType == release.ReleaseTypeOfficial {
 			return errors.New("cannot cut a release candidate or an official release from master")
 		}
 	} else {
-		if o.ReleaseType == ReleaseTypeAlpha || o.ReleaseType == ReleaseTypeBeta {
+		if o.ReleaseType == release.ReleaseTypeAlpha || o.ReleaseType == release.ReleaseTypeBeta {
 			return errors.New("cannot cut an alpha or beta release from a release branch")
 		}
 	}
