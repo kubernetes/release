@@ -829,16 +829,16 @@ push_git_objects () {
   logecho "Pushing$dryrun_flag tags"
   for release_type in "${ORDERED_RELEASE_KEYS[@]}"; do
     logecho -n "Pushing ${RELEASE_VERSION[$release_type]} tag: "
-    logrun -v -s git push -v $dryrun_flag origin ${RELEASE_VERSION[$release_type]} || return 1
+    logrun -v -s git push $dryrun_flag origin ${RELEASE_VERSION[$release_type]} || return 1
   done
 
   if [[ "$RELEASE_BRANCH" =~ release- ]]; then
     logecho -n "Pushing$dryrun_flag $RELEASE_BRANCH branch: "
-    logrun -v -s git push -v $dryrun_flag origin $RELEASE_BRANCH || return 1
+    logrun -v -s git push $dryrun_flag origin $RELEASE_BRANCH || return 1
     # Additionally push the parent branch if a branch of branch
     if [[ "$PARENT_BRANCH" =~ release- ]]; then
       logecho -n "Pushing$dryrun_flag $PARENT_BRANCH branch: "
-      logrun -v -s git push -v $dryrun_flag origin $PARENT_BRANCH || return 1
+      logrun -v -s git push $dryrun_flag origin $PARENT_BRANCH || return 1
     fi
   fi
 
