@@ -415,7 +415,7 @@ release::set_release_version () {
     RELEASE_VERSION[alpha]="v${release_branch[major]}"
     RELEASE_VERSION[alpha]+=".$((${release_branch[minor]}+1)).0-alpha.0"
     RELEASE_VERSION[rc]="v${release_branch[major]}.${release_branch[minor]}"
-    RELEASE_VERSION[rc]+=".0-rc.0"
+    RELEASE_VERSION[rc]+=".0-rc.1"
     RELEASE_VERSION_PRIME=${RELEASE_VERSION[rc]}
   elif [[ $branch =~ release- ]]; then
     # Build out the RELEASE_VERSION dict
