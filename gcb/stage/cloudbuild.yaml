@@ -14,7 +14,7 @@ timeout: 14400s
 secrets:
 - kmsKeyName: projects/k8s-releng-prod/locations/global/keyRings/release/cryptoKeys/encrypt-0
   secretEnv:
-    GITHUB_TOKEN: CiQAIkWjMKxKm2TA5DQNxwDfoAvnT/MQvfwlaxFUiFfyCmplqHESUQBLz1D+nejo8OWfiQF2DW+1QJXcb/XCWb9uPtBvcBdR9a9MwadgS2P85IseuBmqYVgSDvgdEVP3Zj9MXaHj60towEGlaRonA2uNYAgxRWhD6Q==
+    GITHUB_TOKEN: CiQAIkWjMB659KuB36h8tR5fqD9YIx4iKLXa17pQYX1VLT5l9NESUQBLz1D+hD+CItqy80b5PmXndFhroLJASf9gY8XOVYdhRnDSW2jWT1h7GmETVd345pNTqW4mjaukKspWxOzba10GgGAjEuy2OoAT6yyplbFfNA==
 
 steps:
 - name: gcr.io/cloud-builders/git
