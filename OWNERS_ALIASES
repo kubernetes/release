@@ -2,8 +2,9 @@
 
 aliases:
   sig-release-leads:
-    - calebamiles
+    - alejandrox1
     - justaugustus
+    - saschagrunert
     - tpepper
   release-engineering-approvers:
     - calebamiles # subproject owner
