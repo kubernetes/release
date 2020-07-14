@@ -99,23 +99,24 @@ func runFf(opts *ffOptions, rootOpts *rootOptions) error {
 		return err
 	}
 
-	// Restore the currently checked out branch afterwards
-	currentBranch, err := repo.CurrentBranch()
-	if err != nil {
-		return errors.Wrap(err, "unable to retrieve current branch")
-	}
-	defer func() {
-		if err := repo.Checkout(currentBranch); err != nil {
-			logrus.Errorf("unable to restore branch %s: %v", currentBranch, err)
+	if rootOpts.cleanup {
+		defer repo.Cleanup() // nolint: errcheck
+	} else {
+		// Restore the currently checked out branch afterwards
+		currentBranch, err := repo.CurrentBranch()
+		if err != nil {
+			return errors.Wrap(err, "unable to retrieve current branch")
 		}
-	}()
+		defer func() {
+			if err := repo.Checkout(currentBranch); err != nil {
+				logrus.Errorf("unable to restore branch %s: %v", currentBranch, err)
+			}
+		}()
+	}
+
 	logrus.Info("Checking out release branch")
 	if err := repo.Checkout(branch); err != nil {
 		return errors.Wrapf(err, "checking out branch %s", branch)
-	}
-
-	if rootOpts.cleanup {
-		defer repo.Cleanup() // nolint: errcheck
 	}
 
 	logrus.Infof("Finding merge base between %q and %q", kgit.Master, branch)
