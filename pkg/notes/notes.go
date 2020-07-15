@@ -228,7 +228,7 @@ func (g *Gatherer) ListReleaseNotes() (ReleaseNotes, ReleaseNotesHistory, error)
 		note, err := g.ReleaseNoteFromCommit(result, g.options.ReleaseVersion)
 		if err != nil {
 			logrus.Errorf(
-				"getting the release note from commit %s (PR #%d): %v",
+				"Getting the release note from commit %s (PR #%d): %v",
 				result.commit.GetSHA(),
 				result.pullRequest.GetNumber(),
 				err)
@@ -563,7 +563,7 @@ func (g *Gatherer) gatherNotes(commits []*gogithub.RepositoryCommit) (filtered [
 
 	for i, commit := range commits {
 		logrus.Infof(
-			"starting to process commit %d of %d (%0.2f%%): %s",
+			"Starting to process commit %d of %d (%0.2f%%): %s",
 			i+1, nrOfCommits, (float64(i+1)/float64(nrOfCommits))*100.0,
 			commit.GetSHA(),
 		)
@@ -591,9 +591,10 @@ func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, e
 	prs, err := g.prsFromCommit(commit)
 	if err != nil {
 		if err == errNoPRIDFoundInCommitMessage || err == errNoPRFoundForCommitSHA {
-			logrus.
-				WithField("func", "listCommitsWithNotes").
-				Debugf("No matches found when parsing PR from commit sha %q", commit.GetSHA())
+			logrus.Infof(
+				"No matches found when parsing PR from commit SHA %s",
+				commit.GetSHA(),
+			)
 			return nil, nil
 		}
 		return nil, err
@@ -602,15 +603,13 @@ func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, e
 	for _, pr := range prs {
 		prBody := pr.GetBody()
 
-		logrus.
-			WithField("func", "listCommitsWithNotes").
-			WithField("pr no", pr.GetNumber()).
-			WithField("pr body", pr.GetBody()).
-			Debugf("Obtaining PR associated with commit sha %q", commit.GetSHA())
+		logrus.Infof(
+			"Got PR #%d for commit: %s", pr.GetNumber(), commit.GetSHA(),
+		)
 
 		if MatchesExcludeFilter(prBody) {
-			logrus.Debugf(
-				"Excluding note for PR #%d based on the exclusion filter",
+			logrus.Infof(
+				"Skipping PR #%d because it contains no release note",
 				pr.GetNumber(),
 			)
 			continue
@@ -618,10 +617,7 @@ func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, e
 
 		if MatchesIncludeFilter(prBody) {
 			res := &Result{commit: commit, pullRequest: pr}
-			logrus.Debugf(
-				"Including notes for PR #%d based on the inclusion filter",
-				pr.GetNumber(),
-			)
+			logrus.Infof("PR #%d seems to contain a release note", pr.GetNumber())
 			// Do not test further PRs for this commit as soon as one PR matched
 			return res, nil
 		}
@@ -655,10 +651,7 @@ func (g *Gatherer) prsFromCommit(commit *gogithub.RepositoryCommit) (
 ) {
 	githubPRs, err := g.prsForCommitFromMessage(*commit.Commit.Message)
 	if err != nil {
-		logrus.
-			WithField("err", err).
-			WithField("sha", commit.GetSHA()).
-			Debug("getting the pr numbers from commit message")
+		logrus.Infof("No PR found for commit %s: %v", commit.GetSHA(), err)
 		return g.prsForCommitFromSHA(*commit.SHA)
 	}
 	return githubPRs, err
