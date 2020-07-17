@@ -65,7 +65,7 @@ dependencies:
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
   - name: "k8s.gcr.io/kube-cross"
-    version: v1.15.1-1
+    version: v1.15.1-2
     refPaths:
     - path: images/build/cross/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
@@ -74,7 +74,7 @@ dependencies:
     version: go1.15
     refPaths:
     - path: images/build/cross/Makefile
-      match: CONFIG\?=go\d+.\d+
+      match: CONFIG \?= go\d+.\d+
     - path: images/build/cross/variants.yaml
       match: go\d+.\d+
 

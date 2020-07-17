@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-.PHONY:	build push
+# set default shell
+SHELL=/bin/bash -o pipefail
 
-STAGING_REGISTRY?=gcr.io/k8s-staging-build-image
-PROD_REGISTRY?=k8s.gcr.io/build-image
-IMAGE=kube-cross
+REGISTRY ?= gcr.io/k8s-staging-build-image
+IMGNAME = kube-cross
+IMAGE = $(REGISTRY)/$(IMGNAME)
 
-TAG?=$(shell git describe --tags --always --dirty)
-CONFIG?=go1.15
-KUBE_CROSS_VERSION?=v1.15.1-1
+TAG ?= $(shell git describe --tags --always --dirty)
+IMAGE_VERSION ?= v1.15.1-2
+CONFIG ?= go1.15
 
 # Build args
 GO_VERSION?=1.15.1
@@ -32,28 +33,43 @@ ETCD_VERSION?=v3.4.13
 #       - https://github.com/kubernetes/release/pull/1140/commits/e96924f58d9ce2bb73045fbba13f259b4345c0d9#r395056830
 #       - https://github.com/kubernetes/kubernetes/issues/78964
 #       - https://github.com/kubernetes/kubernetes/issues/75114
-ARCH=amd64
+PLATFORMS ?= linux/amd64 #linux/arm linux/arm64 linux/ppc64le linux/s390x
 
-all: build push
+# build with buildx
+.PHONY: container
+container: init-docker-buildx
+	echo "Building kube-cross for the following platforms: $(PLATFORMS)"
+	# https://github.com/docker/buildx/issues/59
+	$(foreach PLATFORM,$(PLATFORMS), \
+		echo "Starting build for $(PLATFORM) platform"; \
+		docker buildx build \
+			--load \
+			--progress plain \
+			--platform $(PLATFORM) \
+			--tag $(IMAGE)-$(PLATFORM):$(IMAGE_VERSION) \
+			--tag $(IMAGE)-$(PLATFORM):$(TAG)-$(CONFIG) \
+			--tag $(IMAGE)-$(PLATFORM):latest-$(CONFIG) \
+			--build-arg=GO_VERSION=$(GO_VERSION) \
+			--build-arg=PROTOBUF_VERSION=$(PROTOBUF_VERSION) \
+			--build-arg=ETCD_VERSION=$(ETCD_VERSION) \
+			.;)
 
-build:
-	docker build \
-		-t $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
-		-t $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):latest-$(CONFIG) \
-		-t $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION) \
-		-t $(PROD_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION) \
-		--build-arg=GO_VERSION=$(GO_VERSION) \
-		--build-arg=PROTOBUF_VERSION=$(PROTOBUF_VERSION) \
-		--build-arg=ETCD_VERSION=$(ETCD_VERSION) \
-		.
+.PHONY: push
+push: container
+	$(foreach PLATFORM,$(PLATFORMS), \
+		docker push $(IMAGE)-$(PLATFORM):$(IMAGE_VERSION);)
+	$(foreach PLATFORM,$(PLATFORMS), \
+		docker push $(IMAGE)-$(PLATFORM):$(TAG)-$(CONFIG);)
+	$(foreach PLATFORM,$(PLATFORMS), \
+		docker push $(IMAGE)-$(PLATFORM):latest-$(CONFIG);)
 
-push:
-	docker push $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(TAG)-$(CONFIG)
-	docker push $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):latest-$(CONFIG)
-	docker push $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION)
-	docker manifest create --amend $(STAGING_REGISTRY)/$(IMAGE):$(KUBE_CROSS_VERSION) \
-		$(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION)
-	docker manifest annotate $(STAGING_REGISTRY)/$(IMAGE):$(KUBE_CROSS_VERSION) \
-		$(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION) \
-		--arch $(ARCH)
-	docker manifest push -p $(STAGING_REGISTRY)/$(IMAGE):$(KUBE_CROSS_VERSION)
+.PHONY: manifest
+manifest: push
+	docker manifest create --amend $(IMAGE):$(IMAGE_VERSION) $(shell echo $(PLATFORMS) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(IMAGE_VERSION)~g")
+	@for arch in $(PLATFORMS); do docker manifest annotate --arch "$${arch##*/}" ${IMAGE}:${IMAGE_VERSION} ${IMAGE}-$${arch}:${IMAGE_VERSION}; done
+	docker manifest push --purge $(IMAGE):$(IMAGE_VERSION)
+
+# enable buildx
+.PHONY: init-docker-buildx
+init-docker-buildx:
+	./../../../hack/init-buildx.sh

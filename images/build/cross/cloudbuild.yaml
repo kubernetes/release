@@ -6,18 +6,24 @@ options:
 
 steps:
   - name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v20200824-5d057db'
-    entrypoint: bash
+    entrypoint: 'bash'
+    dir: ./images/build/cross
     env:
-    - DOCKER_CLI_EXPERIMENTAL=enabled
     - TAG=$_GIT_TAG
     - PULL_BASE_REF=$_PULL_BASE_REF
     - CONFIG=$_CONFIG
     - GO_VERSION=$_GO_VERSION
-    - KUBE_CROSS_VERSION=$_KUBE_CROSS_VERSION
+    - IMAGE_VERSION=$_IMAGE_VERSION
     - PROTOBUF_VERSION=$_PROTOBUF_VERSION
     - ETCD_VERSION=$_ETCD_VERSION
+    # default cloudbuild has HOME=/builder/home and docker buildx is in /root/.docker/cli-plugins/docker-buildx
+    # set the home to /root explicitly to if using docker buildx
+    - HOME=/root
     args:
-    - all
+    - -c
+    - |
+      gcloud auth configure-docker \
+      && make manifest
 
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
@@ -26,7 +32,7 @@ substitutions:
   _PULL_BASE_REF: 'dev'
   _CONFIG: 'go0.0'
   _GO_VERSION: '0.0.0'
-  _KUBE_CROSS_VERSION: 'v0.0.0-0'
+  _IMAGE_VERSION: 'v0.0.0-0'
   _PROTOBUF_VERSION: '0.0.0'
   _ETCD_VERSION: 'v0.0.0'
 
@@ -35,11 +41,11 @@ tags:
 - ${_PULL_BASE_REF}
 - ${_CONFIG}
 - ${_GO_VERSION}
-- ${_KUBE_CROSS_VERSION}
+- ${_IMAGE_VERSION}
 - ${_PROTOBUF_VERSION}
 - ${_ETCD_VERSION}
 
 images:
-  - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_KUBE_CROSS_VERSION'
+  - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_IMAGE_VERSION'
   - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_GIT_TAG-$_CONFIG'
   - 'gcr.io/$PROJECT_ID/kube-cross-amd64:latest-$_CONFIG'

@@ -2,12 +2,12 @@ variants:
   canary:
     CONFIG: 'canary'
     GO_VERSION: '1.15.1'
-    KUBE_CROSS_VERSION: 'v1.15.1-canary-1'
+    IMAGE_VERSION: 'v1.15.1-canary-2'
     PROTOBUF_VERSION: '3.0.2'
     ETCD_VERSION: 'v3.4.13'
   go1.15:
     CONFIG: 'go1.15'
     GO_VERSION: '1.15.1'
-    KUBE_CROSS_VERSION: 'v1.15.1-1'
+    IMAGE_VERSION: 'v1.15.1-2'
     PROTOBUF_VERSION: '3.0.2'
     ETCD_VERSION: 'v3.4.13'
