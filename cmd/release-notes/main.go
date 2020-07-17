@@ -151,10 +151,10 @@ func init() {
 		util.EnvDefault("FORMAT", options.FormatSpecDefaultGoTemplate),
 		fmt.Sprintf("The format for notes output (options: %s)",
 			strings.Join([]string{
-				options.FormatSpecNone,
 				options.FormatSpecJSON,
 				options.FormatSpecDefaultGoTemplate,
-				options.FormatSpecGoTemplateInline,
+				options.FormatSpecGoTemplateInline + "<template>",
+				options.GoTemplatePrefix + "<file.template>",
 			}, ", "),
 		),
 	)
