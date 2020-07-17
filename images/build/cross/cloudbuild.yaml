@@ -1,7 +1,9 @@
 # See https://cloud.google.com/cloud-build/docs/build-config
 timeout: 1200s
+
 options:
   substitution_option: ALLOW_LOOSE
+
 steps:
   - name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v20200713-e9b3d9d'
     entrypoint: make
@@ -16,6 +18,7 @@ steps:
     - ETCD_VERSION=$_ETCD_VERSION
     args:
     - all
+
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
   # can be used as a substitution
@@ -26,6 +29,16 @@ substitutions:
   _KUBE_CROSS_VERSION: 'v0.0.0-0'
   _PROTOBUF_VERSION: '0.0.0'
   _ETCD_VERSION: 'v0.0.0'
+
+tags:
+- ${_GIT_TAG}
+- ${_PULL_BASE_REF}
+- ${_CONFIG}
+- ${_GO_VERSION}
+- ${_KUBE_CROSS_VERSION}
+- ${_PROTOBUF_VERSION}
+- ${_ETCD_VERSION}
+
 images:
   - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_KUBE_CROSS_VERSION'
   - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_GIT_TAG-$_CONFIG'
