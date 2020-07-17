@@ -503,8 +503,8 @@ func processJSONOutput(repoPath string) error {
 }
 
 // createWebsitePR creates the JSON version of the release notes and pushes them to a user fork
-func createWebsitePR(tag string) (err error) {
-	_, err = util.TagStringToSemver(tag)
+func createWebsitePR(tag string) error {
+	_, err := util.TagStringToSemver(tag)
 	if err != nil {
 		return errors.Wrapf(err, "no valid tag: %v", tag)
 	}
