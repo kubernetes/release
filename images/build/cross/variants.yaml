@@ -1,8 +1,8 @@
 variants:
   go1.14:
     CONFIG: 'go1.14'
-    GO_VERSION: '1.14.5'
-    KUBE_CROSS_VERSION: 'v1.14.5-2'
+    GO_VERSION: '1.14.6'
+    KUBE_CROSS_VERSION: 'v1.14.6-1'
     PROTOBUF_VERSION: '3.0.2'
     ETCD_VERSION: 'v3.4.9'
   go1.13:
