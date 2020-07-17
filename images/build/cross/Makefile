@@ -39,6 +39,7 @@ all: build push
 build:
 	docker build \
 		-t $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
+		-t $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):latest-$(CONFIG) \
 		-t $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION) \
 		-t $(PROD_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION) \
 		--build-arg=GO_VERSION=$(GO_VERSION) \
@@ -48,6 +49,7 @@ build:
 
 push:
 	docker push $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(TAG)-$(CONFIG)
+	docker push $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):latest-$(CONFIG)
 	docker push $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION)
 	docker manifest create --amend $(STAGING_REGISTRY)/$(IMAGE):$(KUBE_CROSS_VERSION) \
 		$(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION)

@@ -29,3 +29,4 @@ substitutions:
 images:
   - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_KUBE_CROSS_VERSION'
   - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_GIT_TAG-$_CONFIG'
+  - 'gcr.io/$PROJECT_ID/kube-cross-amd64:latest-$_CONFIG'
