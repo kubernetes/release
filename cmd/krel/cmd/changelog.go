@@ -371,7 +371,7 @@ func generateReleaseNotes(opts *changelogOptions, branch, startRev, endRev strin
 
 	markdown, err := doc.RenderMarkdownTemplate(
 		opts.bucket, opts.tars,
-		options.FormatSpecGoTemplateInline+releaseNotesTemplate,
+		options.GoTemplateInline+releaseNotesTemplate,
 	)
 	if err != nil {
 		return "", errors.Wrapf(

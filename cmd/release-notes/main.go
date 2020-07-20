@@ -148,12 +148,24 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.Format,
 		"format",
-		util.EnvDefault("FORMAT", options.FormatSpecDefaultGoTemplate),
+		util.EnvDefault("FORMAT", options.FormatMarkdown),
 		fmt.Sprintf("The format for notes output (options: %s)",
 			strings.Join([]string{
-				options.FormatSpecJSON,
-				options.FormatSpecDefaultGoTemplate,
-				options.FormatSpecGoTemplateInline + "<template>",
+				options.FormatJSON,
+				options.FormatMarkdown,
+			}, ", "),
+		),
+	)
+
+	// go-template is the go template to be used when the format is markdown
+	cmd.PersistentFlags().StringVar(
+		&opts.GoTemplate,
+		"go-template",
+		util.EnvDefault("GO_TEMPLATE", options.GoTemplateDefault),
+		fmt.Sprintf("The go template to be used if --format=markdown (options: %s)",
+			strings.Join([]string{
+				options.GoTemplateDefault,
+				options.GoTemplateInline + "<template>",
 				options.GoTemplatePrefix + "<file.template>",
 			}, ", "),
 		),
@@ -250,8 +262,7 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 	}
 
 	// Contextualized release notes can be printed in a variety of formats
-	switch format := opts.Format; {
-	case format == "json":
+	if opts.Format == options.FormatJSON {
 		byteValue, err := ioutil.ReadAll(output)
 		if err != nil {
 			return err
@@ -284,7 +295,7 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 		if err := enc.Encode(releaseNotes); err != nil {
 			return errors.Wrapf(err, "encoding JSON output")
 		}
-	case strings.HasPrefix(format, options.GoTemplatePrefix):
+	} else {
 		doc, err := document.New(releaseNotes, history, opts.StartRev, opts.EndRev)
 		if err != nil {
 			return errors.Wrapf(err, "creating release note document")
@@ -318,9 +329,6 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 		if _, err := output.WriteString(markdown); err != nil {
 			return errors.Wrap(err, "writing output file")
 		}
-
-	default:
-		return errors.Errorf("%q is an unsupported format", opts.Format)
 	}
 
 	logrus.

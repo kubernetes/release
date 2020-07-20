@@ -266,8 +266,8 @@ func New(
 }
 
 // RenderMarkdownTemplate renders a document using the golang template in
-// `templateSpec`. If `templateSpec` is set to `options.FormatDefaultGoTemplate`
-// render using the default template (markdown format).
+// `templateSpec`. If `templateSpec` is set to `options.GoTemplateDefault`,
+// then it renders in the default template markdown format.
 func (d *Document) RenderMarkdownTemplate(bucket, fileDir, templateSpec string) (string, error) {
 	urlPrefix := release.URLPrefixForBucket(bucket)
 
@@ -300,19 +300,27 @@ func (d *Document) RenderMarkdownTemplate(bucket, fileDir, templateSpec string) 
 // `go-template:{default|path/to/template.ext}` or
 // `go-template:inline:string`
 func (d *Document) template(templateSpec string) (string, error) {
-	if templateSpec == options.FormatSpecDefaultGoTemplate {
+	if templateSpec == options.GoTemplateDefault {
 		return defaultReleaseNotesTemplate, nil
 	}
 
 	if !strings.HasPrefix(templateSpec, options.GoTemplatePrefix) {
-		return "", errors.Errorf("bad template format: expected format %q, got %q", "go-template:path/to/file.txt", templateSpec)
+		return "", errors.Errorf(
+			"bad template format: expected %q, %q or %q. Got: %q",
+			options.GoTemplateDefault,
+			options.GoTemplatePrefix+"<file.template>",
+			options.GoTemplateInline+"<template>",
+			templateSpec,
+		)
 	}
 	templatePathOrOnline := strings.TrimPrefix(templateSpec, options.GoTemplatePrefix)
 
-	if strings.HasPrefix(templatePathOrOnline, "inline:") {
-		return strings.TrimPrefix(templatePathOrOnline, "inline:"), nil
+	// Check for inline template
+	if strings.HasPrefix(templatePathOrOnline, options.GoTemplatePrefixInline) {
+		return strings.TrimPrefix(templatePathOrOnline, options.GoTemplatePrefixInline), nil
 	}
 
+	// Assume file-based template
 	b, err := ioutil.ReadFile(templatePathOrOnline)
 	if err != nil {
 		return "", errors.Wrap(err, "reading template")

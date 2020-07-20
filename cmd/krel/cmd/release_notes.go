@@ -732,7 +732,7 @@ func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
 
 	// Create the markdown
 	markdown, err := doc.RenderMarkdownTemplate(
-		"", "", options.FormatSpecDefaultGoTemplate,
+		"", "", options.GoTemplateDefault,
 	)
 	if err != nil {
 		return nil, errors.Wrapf(
