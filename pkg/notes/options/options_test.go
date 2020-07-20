@@ -64,6 +64,8 @@ func newTestOptions(t *testing.T) *testOptions {
 			DiscoverMode: RevisionDiscoveryModeNONE,
 			StartSHA:     "0",
 			EndSHA:       "0",
+			Format:       FormatMarkdown,
+			GoTemplate:   GoTemplateDefault,
 			Pull:         true,
 			gitCloneFn: func(string, string, string, bool) (*kgit.Repo, error) {
 				return testRepo.sut, nil
@@ -379,25 +381,24 @@ func TestValidateAndFinishFailureDiscoveryModePatchToPatchNoBranch(t *testing.T)
 	require.NotNil(t, options.ValidateAndFinish())
 }
 
-func TestValidateAndFinishSuccessDefaultTemplate(t *testing.T) {
+func TestValidateAndFinishFailureFormat(t *testing.T) {
 	options := newTestOptions(t)
 	defer options.testRepo.cleanup(t)
 
 	// Given
-	options.Format = FormatSpecNone
+	options.Format = "wrong"
 
 	// When
-	require.Nil(t, options.ValidateAndFinish())
+	require.NotNil(t, options.ValidateAndFinish())
+}
 
-	// Then
-	require.Equal(t, options.Format, FormatSpecDefaultGoTemplate)
+func TestValidateAndFinishFailureGoTemplate(t *testing.T) {
+	options := newTestOptions(t)
+	defer options.testRepo.cleanup(t)
 
 	// Given
-	options.Format = FormatSpecNone
+	options.GoTemplate = "wrong"
 
 	// When
-	require.Nil(t, options.ValidateAndFinish())
-
-	// Then
-	require.Equal(t, options.Format, FormatSpecDefaultGoTemplate)
+	require.NotNil(t, options.ValidateAndFinish())
 }

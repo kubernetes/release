@@ -443,14 +443,14 @@ func TestDocument_RenderMarkdownTemplate(t *testing.T) {
 	}{
 		{
 			"render default template and downloads",
-			options.FormatSpecDefaultGoTemplate,
+			options.GoTemplateDefault,
 			false,
 			true,
 			"document.md.golden",
 		},
 		{
 			"render default template and no downloads",
-			options.FormatSpecDefaultGoTemplate,
+			options.GoTemplateDefault,
 			false,
 			false,
 			"document_without_downloads.md.golden",
