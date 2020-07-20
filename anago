@@ -256,7 +256,7 @@ ensure_registry_acls () {
   local artifact_namespace
 
   # Make an empty file to test uploading
-  logrun touch $emptyfile
+  logrun -v touch $emptyfile
 
   # Short of creating a hardcoded map of project-id to registry, translating
   # _ to - seems to be a simple rule to keep this, well, simple.
@@ -272,17 +272,17 @@ ensure_registry_acls () {
     artifact_namespace="${r/gcr.io\//}"
   fi
 
-  gs_path="gs://artifacts.$artifact_namespace.appspot.com/containers"
+  gs_path="gs://artifacts.$artifact_namespace.appspot.com/containers/"
   logecho -n "Checking write access to registry $r: "
-  if logrun $GSUTIL -q cp $emptyfile $gs_path && \
-      logrun $GSUTIL -q rm $gs_path/${emptyfile##*/}; then
+  if logrun -v $GSUTIL cp $emptyfile $gs_path && \
+      logrun -v $GSUTIL rm $gs_path/${emptyfile##*/}; then
     logecho $OK
   else
     logecho $FAILED
     ((retcode++))
   fi
 
-  logrun rm -f $emptyfile
+  logrun -v rm -f $emptyfile
 
   return $retcode
 }
@@ -358,7 +358,8 @@ check_prerequisites () {
 
   # Verify write access to all container registries that might be used
   # to ensure both mock and --nomock runs will work.
-  ensure_registry_acls "$GCRIO_PATH" || return 1
+  # TEMPORARILY DISABLE ACL CHECK FOR VDF
+  #ensure_registry_acls "$GCRIO_PATH" || return 1
 
   logecho -n "Checking cloud project state: "
   GCLOUD_PROJECT=$($GCLOUD config get-value project 2>/dev/null)
