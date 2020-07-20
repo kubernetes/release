@@ -524,8 +524,8 @@ func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
 			return errors.Wrapf(err, "checking out release branch %s", branch)
 		}
 
-		// Remove all other changelog files if we’re on the first RC
-		if len(tag.Pre) > 1 && tag.Pre[0].String() == "rc" && tag.Pre[1].String() == "1" {
+		// Remove all other changelog files if we’re on the the first official release
+		if tag.Patch == 0 && len(tag.Pre) == 0 {
 			pattern := filepath.Join(repoChangelogDir, "CHANGELOG-*.md")
 			logrus.Infof("Removing unnecessary %s files", pattern)
 			if err := repo.Rm(true, pattern); err != nil {
