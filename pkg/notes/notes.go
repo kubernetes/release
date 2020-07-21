@@ -142,14 +142,48 @@ const (
 	DocTypeOfficial DocType = "official"
 )
 
+// ReleaseNotes is the main struct for collecting release notes
+type ReleaseNotes struct {
+	byPR    ReleaseNotesByPR
+	history ReleaseNotesHistory
+}
+
+// NewReleaseNotes can be used to create a new empty ReleaseNotes struct
+func NewReleaseNotes() *ReleaseNotes {
+	return &ReleaseNotes{
+		byPR: make(ReleaseNotesByPR),
+	}
+}
+
 // ReleaseNotes is a map of PR numbers referencing notes.
 // To avoid needless loops, we need to be able to reference things by PR
 // When we have to merge old and new entries, we want to be able to override
 // the old entries with the new ones efficiently.
-type ReleaseNotes map[int]*ReleaseNote
+type ReleaseNotesByPR map[int]*ReleaseNote
 
 // ReleaseNotesHistory is the sorted list of PRs in the commit history
 type ReleaseNotesHistory []int
+
+// History returns the ReleaseNotesHistory for the ReleaseNotes
+func (r *ReleaseNotes) History() ReleaseNotesHistory {
+	return r.history
+}
+
+// ByPR returns the ReleaseNotesByPR for the ReleaseNotes
+func (r *ReleaseNotes) ByPR() ReleaseNotesByPR {
+	return r.byPR
+}
+
+// Get returns the ReleaseNote for the provided prNumber
+func (r *ReleaseNotes) Get(prNumber int) *ReleaseNote {
+	return r.byPR[prNumber]
+}
+
+// Set can be used to set a release note for the provided prNumber
+func (r *ReleaseNotes) Set(prNumber int, note *ReleaseNote) {
+	r.byPR[prNumber] = note
+	r.history = append(r.history, prNumber)
+}
 
 type Result struct {
 	commit      *gogithub.RepositoryCommit
@@ -186,38 +220,37 @@ func NewGathererWithClient(ctx context.Context, c github.Client) *Gatherer {
 
 // GatherReleaseNotes creates a new gatherer and collects the release notes
 // afterwards
-func GatherReleaseNotes(opts *options.Options) (ReleaseNotes, ReleaseNotesHistory, error) {
+func GatherReleaseNotes(opts *options.Options) (*ReleaseNotes, error) {
 	logrus.Info("Gathering release notes")
 	gatherer, err := NewGatherer(context.Background(), opts)
 
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "retrieving notes gatherer")
+		return nil, errors.Wrapf(err, "retrieving notes gatherer")
 	}
 
-	releaseNotes, history, err := gatherer.ListReleaseNotes()
+	releaseNotes, err := gatherer.ListReleaseNotes()
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "listing release notes")
+		return nil, errors.Wrapf(err, "listing release notes")
 	}
 
-	return releaseNotes, history, nil
+	return releaseNotes, nil
 }
 
 // ListReleaseNotes produces a list of fully contextualized release notes
 // starting from a given commit SHA and ending at starting a given commit SHA.
-func (g *Gatherer) ListReleaseNotes() (ReleaseNotes, ReleaseNotesHistory, error) {
+func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 	commits, err := g.listCommits(g.options.Branch, g.options.StartSHA, g.options.EndSHA)
 	if err != nil {
-		return nil, nil, err
+		return nil, errors.Wrap(err, "listing commits")
 	}
 
 	results, err := g.gatherNotes(commits)
 	if err != nil {
-		return nil, nil, err
+		return nil, errors.Wrap(err, "gatherin notes")
 	}
 
 	dedupeCache := map[string]struct{}{}
-	notes := make(ReleaseNotes)
-	history := ReleaseNotesHistory{}
+	notes := NewReleaseNotes()
 	for _, result := range results {
 		if g.options.RequiredAuthor != "" {
 			if result.commit.GetAuthor().GetLogin() != g.options.RequiredAuthor {
@@ -236,13 +269,12 @@ func (g *Gatherer) ListReleaseNotes() (ReleaseNotes, ReleaseNotesHistory, error)
 		}
 
 		if _, ok := dedupeCache[note.Text]; !ok {
-			notes[note.PrNumber] = note
-			history = append(history, note.PrNumber)
+			notes.Set(note.PrNumber, note)
 			dedupeCache[note.Text] = struct{}{}
 		}
 	}
 
-	return notes, history, nil
+	return notes, nil
 }
 
 // NoteTextFromString returns the text of the release note given a string which
