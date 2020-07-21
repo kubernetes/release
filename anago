@@ -1558,14 +1558,15 @@ if [[ $RELEASE_BRANCH =~ release- ]] &&
 fi
 
 # No need to pre-check this for mock or staging runs.  Overwriting OK.
-if ((FLAGS_nomock)) && ! ((FLAGS_stage)); then
-  common::stepheader "GCS TARGET CHECK"
-  # Ensure GCS destinations are clear before continuing
-  for v in ${RELEASE_VERSION[@]}; do
-    release::gcs::destination_empty \
-     gs://$RELEASE_BUCKET/$BUCKET_TYPE/$v || common::exit 1 "Exiting..."
-  done
-fi
+logecho "Revert this bug workaround:  temporarily not calling push_git_objects"
+# if ((FLAGS_nomock)) && ! ((FLAGS_stage)); then
+#   common::stepheader "GCS TARGET CHECK"
+#   # Ensure GCS destinations are clear before continuing
+#   for v in ${RELEASE_VERSION[@]}; do
+#     release::gcs::destination_empty \
+#      gs://$RELEASE_BUCKET/$BUCKET_TYPE/$v || common::exit 1 "Exiting..."
+#   done
+# fi
 
 common::stepheader "SESSION VALUES"
 # Show versions and ask for confirmation to continue
