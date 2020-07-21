@@ -1407,9 +1407,10 @@ push_all_artifacts () {
       common::runstep copy_staged_from_gcs $label $STAGED_BUCKET \
                                            $RELEASE_BUCKET || return 1
     else
-      common::runstep release::gcs::push_release_artifacts \
-       $BUILD_OUTPUT-$version/gcs-stage/$version \
-       gs://$RELEASE_BUCKET/$BUCKET_TYPE/$version || return 1
+      logecho "HACK: Skipping GCS push"
+#      common::runstep release::gcs::push_release_artifacts \
+#       $BUILD_OUTPUT-$version/gcs-stage/$version \
+#       gs://$RELEASE_BUCKET/$BUCKET_TYPE/$version || return 1
     fi
 
     # When we are no-mock mode we need to perform an image promotion, so
@@ -1475,14 +1476,15 @@ common::stepindex "local_kube_cross"
 if ((FLAGS_buildonly)); then
   common::stepindex "make_cross"
 elif ! ((FLAGS_prebuild)); then
-  common::stepindex "make_cross"
-  common::stepindex "build_tree" "generate_release_notes"
-  if ((FLAGS_stage)); then
-    common::stepindex "stage_source_tree"
-  else
-    logecho "Revert this bug workaround:  temporarily not calling push_git_objects"
-    # common::stepindex "push_git_objects"
-  fi
+  logecho "HACK: Skipping buildy bits"
+#  common::stepindex "make_cross"
+#  common::stepindex "build_tree" "generate_release_notes"
+#  if ((FLAGS_stage)); then
+#    common::stepindex "stage_source_tree"
+#  else
+#    logecho "Revert this bug workaround:  temporarily not calling push_git_objects"
+#    # common::stepindex "push_git_objects"
+#  fi
   common::stepindex "push_all_artifacts"
   if ! ((FLAGS_stage)); then
     common::stepindex "announce"
@@ -1558,14 +1560,15 @@ if [[ $RELEASE_BRANCH =~ release- ]] &&
 fi
 
 # No need to pre-check this for mock or staging runs.  Overwriting OK.
-if ((FLAGS_nomock)) && ! ((FLAGS_stage)); then
-  common::stepheader "GCS TARGET CHECK"
-  # Ensure GCS destinations are clear before continuing
-  for v in ${RELEASE_VERSION[@]}; do
-    release::gcs::destination_empty \
-     gs://$RELEASE_BUCKET/$BUCKET_TYPE/$v || common::exit 1 "Exiting..."
-  done
-fi
+logecho "HACK: skipping GCS TARGET CHECK"
+#if ((FLAGS_nomock)) && ! ((FLAGS_stage)); then
+#  common::stepheader "GCS TARGET CHECK"
+#  # Ensure GCS destinations are clear before continuing
+#  for v in ${RELEASE_VERSION[@]}; do
+#    release::gcs::destination_empty \
+#     gs://$RELEASE_BUCKET/$BUCKET_TYPE/$v || common::exit 1 "Exiting..."
+#  done
+#fi
 
 common::stepheader "SESSION VALUES"
 # Show versions and ask for confirmation to continue
