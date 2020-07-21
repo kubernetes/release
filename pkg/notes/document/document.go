@@ -185,12 +185,12 @@ var kindMap = map[notes.Kind]notes.Kind{
 func GatherReleaseNotesDocument(
 	opts *options.Options, previousRev, currentRev string,
 ) (*Document, error) {
-	releaseNotes, history, err := notes.GatherReleaseNotes(opts)
+	releaseNotes, err := notes.GatherReleaseNotes(opts)
 	if err != nil {
 		return nil, errors.Wrapf(err, "gathering release notes")
 	}
 
-	doc, err := New(releaseNotes, history, previousRev, currentRev)
+	doc, err := New(releaseNotes, previousRev, currentRev)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating release note document")
 	}
@@ -200,8 +200,7 @@ func GatherReleaseNotesDocument(
 
 // New assembles an organized document from an unorganized set of release notes
 func New(
-	releaseNotes notes.ReleaseNotes,
-	history notes.ReleaseNotesHistory,
+	releaseNotes *notes.ReleaseNotes,
 	previousRev, currentRev string,
 ) (*Document, error) {
 	doc := &Document{
@@ -219,8 +218,8 @@ func New(
 	}
 
 	kindCategory := make(map[notes.Kind]NoteCategory)
-	for _, pr := range history {
-		note := releaseNotes[pr]
+	for _, pr := range releaseNotes.History() {
+		note := releaseNotes.Get(pr)
 
 		// TODO: Refactor the logic here and add testing.
 		if note.DuplicateKind {

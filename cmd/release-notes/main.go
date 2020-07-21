@@ -242,12 +242,14 @@ func init() {
 	)
 }
 
-func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNotesHistory) (err error) {
-	logrus.Info("got the commits, performing rendering")
+func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
+	logrus.Info("Got the commits, performing rendering")
 
-	// Open a handle to the file which will contain the release notes output
-	var output *os.File
-	var existingNotes notes.ReleaseNotes
+	var (
+		// Open a handle to the file which will contain the release notes output
+		output        *os.File
+		existingNotes notes.ReleaseNotesByPR
+	)
 
 	if releaseNotesOpts.outputFile != "" {
 		output, err = os.OpenFile(releaseNotesOpts.outputFile, os.O_RDWR|os.O_CREATE, os.FileMode(0644))
@@ -283,20 +285,20 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 			}
 
 			for i := 0; i < len(existingNotes); i++ {
-				_, ok := releaseNotes[existingNotes[i].PrNumber]
-				if !ok {
-					releaseNotes[existingNotes[i].PrNumber] = existingNotes[i]
+				pr := existingNotes[i].PrNumber
+				if releaseNotes.Get(pr) == nil {
+					releaseNotes.Set(pr, existingNotes[i])
 				}
 			}
 		}
 
 		enc := json.NewEncoder(output)
 		enc.SetIndent("", "  ")
-		if err := enc.Encode(releaseNotes); err != nil {
+		if err := enc.Encode(releaseNotes.ByPR()); err != nil {
 			return errors.Wrapf(err, "encoding JSON output")
 		}
 	} else {
-		doc, err := document.New(releaseNotes, history, opts.StartRev, opts.EndRev)
+		doc, err := document.New(releaseNotes, opts.StartRev, opts.EndRev)
 		if err != nil {
 			return errors.Wrapf(err, "creating release note document")
 		}
@@ -339,12 +341,12 @@ func WriteReleaseNotes(releaseNotes notes.ReleaseNotes, history notes.ReleaseNot
 }
 
 func run(*cobra.Command, []string) error {
-	releaseNotes, history, err := notes.GatherReleaseNotes(opts)
+	releaseNotes, err := notes.GatherReleaseNotes(opts)
 	if err != nil {
 		return errors.Wrapf(err, "gathering release notes")
 	}
 
-	return WriteReleaseNotes(releaseNotes, history)
+	return WriteReleaseNotes(releaseNotes)
 }
 
 func main() {

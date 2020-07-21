@@ -674,13 +674,13 @@ func releaseNotesJSON(tag string) (string, error) {
 	}
 
 	// Fetch the notes
-	releaseNotes, history, err := notes.GatherReleaseNotes(notesOptions)
+	releaseNotes, err := notes.GatherReleaseNotes(notesOptions)
 	if err != nil {
 		return "", errors.Wrapf(err, "gathering release notes")
 	}
 
 	doc, err := document.New(
-		releaseNotes, history, notesOptions.StartRev, notesOptions.EndRev,
+		releaseNotes, notesOptions.StartRev, notesOptions.EndRev,
 	)
 	if err != nil {
 		return "", errors.Wrapf(err, "creating release note document")
@@ -689,7 +689,7 @@ func releaseNotesJSON(tag string) (string, error) {
 	doc.CurrentRevision = tag
 
 	// Create the JSON
-	j, err := json.Marshal(releaseNotes)
+	j, err := json.Marshal(releaseNotes.ByPR())
 	if err != nil {
 		return "", errors.Wrapf(err, "generating release notes JSON")
 	}
@@ -716,13 +716,13 @@ func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
 	logrus.Infof("Using end tag %v", releaseNotesOpts.tag)
 
 	// Fetch the notes
-	releaseNotes, history, err := notes.GatherReleaseNotes(notesOptions)
+	releaseNotes, err := notes.GatherReleaseNotes(notesOptions)
 	if err != nil {
 		return nil, errors.Wrapf(err, "gathering release notes")
 	}
 
 	doc, err := document.New(
-		releaseNotes, history, notesOptions.StartRev, notesOptions.EndRev,
+		releaseNotes, notesOptions.StartRev, notesOptions.EndRev,
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating release note document")
@@ -753,7 +753,7 @@ func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
 	}
 
 	// Create the JSON
-	j, err := json.Marshal(releaseNotes)
+	j, err := json.Marshal(releaseNotes.ByPR())
 	if err != nil {
 		return nil, errors.Wrapf(err, "generating release notes JSON")
 	}
