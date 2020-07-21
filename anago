@@ -244,12 +244,11 @@ copy_logs_to_workdir () {
 }
 
 ###############################################################################
-# Ensures all registries that will be used during both mock and --nomock
-# runs allow write access so we don't fall over later
-# @param registries - A space separated list of registries
+# Ensures we have write access to a specified registry
+# @param registry - A registry to check the ACLs for
 #
 ensure_registry_acls () {
-  local registries=($1)
+  local registry="$1"
   local emptyfile="$TMPDIR/empty-file.$$"
   local gs_path
   local r
@@ -257,30 +256,33 @@ ensure_registry_acls () {
   local artifact_namespace
 
   # Make an empty file to test uploading
-  logrun touch $emptyfile
+  logrun -v touch $emptyfile
 
   # Short of creating a hardcoded map of project-id to registry, translating
   # _ to - seems to be a simple rule to keep this, well, simple.
-  for r in ${registries[*]//_/-}; do
-    # In this context, "google-containers" is still used
-    if [[ "$r" == "$GCRIO_PATH_PROD" ]]; then
-      artifact_namespace="google-containers"
-    else
-      artifact_namespace="${r/gcr.io\//}"
-    fi
+  r=${registry//_/-}
 
-    gs_path="gs://artifacts.$artifact_namespace.appspot.com/containers"
-    logecho -n "Checking write access to registry $r: "
-    if logrun $GSUTIL -q cp $emptyfile $gs_path && \
-       logrun $GSUTIL -q rm $gs_path/${emptyfile##*/}; then
-      logecho $OK
-    else
-      logecho $FAILED
-      ((retcode++))
-    fi
-  done
+  # When we are no-mock mode we need to perform an image promotion, so it's
+  # unnecessary to check for write access to the production container registry.
+  if ((FLAGS_nomock)); then
+    logecho -n "Skipping container registry ACL check on $GCRIO_PATH_PROD in no-mock mode: "
+    logecho $OK
+    return 0
+  else
+    artifact_namespace="${r/gcr.io\//}"
+  fi
 
-  logrun rm -f $emptyfile
+  gs_path="gs://artifacts.$artifact_namespace.appspot.com/containers/"
+  logecho -n "Checking write access to registry $r: "
+  if logrun -v $GSUTIL cp $emptyfile $gs_path && \
+      logrun -v $GSUTIL rm $gs_path/${emptyfile##*/}; then
+    logecho $OK
+  else
+    logecho $FAILED
+    ((retcode++))
+  fi
+
+  logrun -v rm -f $emptyfile
 
   return $retcode
 }
@@ -356,7 +358,8 @@ check_prerequisites () {
 
   # Verify write access to all container registries that might be used
   # to ensure both mock and --nomock runs will work.
-  ensure_registry_acls "${ALL_CONTAINER_REGISTRIES[*]}" || return 1
+  # TEMPORARILY DISABLE ACL CHECK FOR VDF
+  #ensure_registry_acls "$GCRIO_PATH" || return 1
 
   logecho -n "Checking cloud project state: "
   GCLOUD_PROJECT=$($GCLOUD config get-value project 2>/dev/null)
@@ -1407,8 +1410,13 @@ push_all_artifacts () {
        gs://$RELEASE_BUCKET/$BUCKET_TYPE/$version || return 1
     fi
 
-    common::runstep release::docker::release \
+    # When we are no-mock mode we need to perform an image promotion, so
+    # instead of pushing to the production container registry, we validate
+    # that the manifest is populated on the remote registry.
+    if ! ((FLAGS_nomock)); then
+      common::runstep release::docker::release \
       $KUBE_DOCKER_REGISTRY $version $BUILD_OUTPUT-$version || return 1
+    fi
 
     common::runstep release::docker::validate_remote_manifests \
       $KUBE_DOCKER_REGISTRY $version $BUILD_OUTPUT-$version || return 1

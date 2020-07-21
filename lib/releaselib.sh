@@ -34,7 +34,7 @@ readonly GCRIO_PATH_PROD="k8s.gcr.io"
 # TODO(vdf): Remove all GCRIO_PATH_PROD_PUSH logic once the k8s.gcr.io vanity
 #            domain flip (VDF) is successful
 readonly GCRIO_PATH_PROD_PUSH="gcr.io/google-containers"
-readonly GCRIO_PATH_TEST="gcr.io/$TEST_PROJECT"
+readonly GCRIO_PATH_TEST="gcr.io/k8s-staging-kubernetes"
 
 readonly KUBE_CROSS_REGISTRY="us.gcr.io/k8s-artifacts-prod/build-image"
 readonly KUBE_CROSS_IMAGE="${KUBE_CROSS_REGISTRY}/kube-cross"
@@ -1300,9 +1300,6 @@ release::gcs::bazel_push_build() {
 # READ_RELEASE_BUCKETS - array of readable buckets for multiple sourcing of
 #                        mock staged builds
 # GCRIO_PATH - GCR path based on mock or --nomock
-# ALL_CONTAINER_REGISTRIES - when running mock (via GCB) this array also
-#                            contains k8s.gcr.io so we can check access in mock
-#                            mode before an actual release occurs
 release::set_globals () {
   logecho -n "Setting global variables: "
 
@@ -1329,7 +1326,6 @@ release::set_globals () {
   fi
 
   GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_TEST}"
-  ALL_CONTAINER_REGISTRIES=("$GCRIO_PATH")
 
   if ((FLAGS_nomock)); then
     RELEASE_BUCKET="$PROD_BUCKET"
@@ -1361,8 +1357,6 @@ release::set_globals () {
 
   WRITE_RELEASE_BUCKETS=("$RELEASE_BUCKET")
   READ_RELEASE_BUCKETS+=("$RELEASE_BUCKET")
-
-  ALL_CONTAINER_REGISTRIES=("$GCRIO_PATH")
 
   # TODO:
   # These KUBE_ globals extend beyond the scope of the new release refactored
