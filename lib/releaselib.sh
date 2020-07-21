@@ -29,11 +29,10 @@ readonly PROD_BUCKET="kubernetes-release"
 readonly TEST_BUCKET="kubernetes-release-gcb"
 readonly CI_BUCKET="kubernetes-release-dev"
 
-# TODO(vdf): Need to reference K8s Infra registries here
 readonly GCRIO_PATH_PROD="k8s.gcr.io"
-# TODO(vdf): Remove all GCRIO_PATH_PROD_PUSH logic once the k8s.gcr.io vanity
-#            domain flip (VDF) is successful
-readonly GCRIO_PATH_PROD_PUSH="gcr.io/google-containers"
+readonly GCRIO_PATH_PROD_GEO_ASIA="asia.gcr.io/k8s-artifacts-prod"
+readonly GCRIO_PATH_PROD_GEO_EU="eu.gcr.io/k8s-artifacts-prod"
+readonly GCRIO_PATH_PROD_GEO_US="us.gcr.io/k8s-artifacts-prod"
 readonly GCRIO_PATH_TEST="gcr.io/k8s-staging-kubernetes"
 
 readonly KUBE_CROSS_REGISTRY="us.gcr.io/k8s-artifacts-prod/build-image"
@@ -1049,13 +1048,6 @@ release::docker::release () {
 
   common::argc_validate 3
 
-  # TODO(vdf): Remove all GCRIO_PATH_PROD_PUSH logic once the k8s.gcr.io vanity
-  #            domain flip (VDF) is successful
-  if [[ "$registry" == "$GCRIO_PATH_PROD" ]]; then
-    # Switch to the push alias if using the $GCRIO_PATH_PROD alias
-    push_registry="$GCRIO_PATH_PROD_PUSH"
-  fi
-
   logecho "Send docker containers from release-images to $push_registry..."
 
   mapfile -t arches < <(find "${release_images}" -maxdepth 1 -mindepth 1 -type d -exec basename {} \;)
@@ -1127,7 +1119,7 @@ release::docker::release () {
 # @return 1 on failure
 release::docker::validate_remote_manifests () {
   local registry="$1"
-  local push_registry="$registry"
+  local target_registry="$registry"
   local version="$2"
   local build_output="$3"
   local release_images="$build_output/release-images"
@@ -1140,14 +1132,12 @@ release::docker::validate_remote_manifests () {
 
   common::argc_validate 3
 
-  # TODO(vdf): Remove all GCRIO_PATH_PROD_PUSH logic once the k8s.gcr.io vanity
-  #            domain flip (VDF) is successful
   if [[ "$registry" == "$GCRIO_PATH_PROD" ]]; then
-    # Switch to the push alias if using the $GCRIO_PATH_PROD alias
-    push_registry="$GCRIO_PATH_PROD_PUSH"
+    # Validate images against one of the geographical endpoints for k8s.gcr.io
+    target_registry="$GCRIO_PATH_PROD_GEO_US"
   fi
 
-  logecho "Validating image manifests in $push_registry..."
+  logecho "Validating image manifests in $target_registry..."
 
   mapfile -t arches < <(find "${release_images}" -maxdepth 1 -mindepth 1 -type d -exec basename {} \;)
   for arch in "${arches[@]}"; do
@@ -1161,7 +1151,7 @@ release::docker::validate_remote_manifests () {
       fi
       binary=${BASH_REMATCH[1]}
 
-      new_tag="$push_registry/${binary/-$arch/}"
+      new_tag="$target_registry/${binary/-$arch/}"
       manifest_images["${new_tag}"]+=" $arch"
     done
   done
