@@ -277,10 +277,10 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 	return notes, nil
 }
 
-// NoteTextFromString returns the text of the release note given a string which
+// noteTextFromString returns the text of the release note given a string which
 // may contain the commit message, the PR description, etc.
 // This is generally the content inside the ```release-note ``` stanza.
-func NoteTextFromString(s string) (string, error) {
+func noteTextFromString(s string) (string, error) {
 	exps := []*regexp.Regexp{
 		// (?s) is needed for '.' to be matching on newlines, by default that's disabled
 		// we need to match ungreedy 'U', because after the notes a `docs` block can occur
@@ -306,6 +306,7 @@ func NoteTextFromString(s string) (string, error) {
 		note = strings.ReplaceAll(note, "\r", "")
 		note = stripActionRequired(note)
 		note = dashify(note)
+		note = unlist(note)
 		note = strings.TrimSpace(note)
 		return note, nil
 	}
@@ -376,7 +377,7 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result, relVer string) (*Releas
 	pr := result.pullRequest
 
 	prBody := pr.GetBody()
-	text, err := NoteTextFromString(prBody)
+	text, err := noteTextFromString(prBody)
 	if err != nil {
 		return nil, err
 	}
@@ -738,8 +739,47 @@ func stripDash(note string) string {
 	return re.ReplaceAllString(note, "")
 }
 
+const listPrefix = "- "
+
 func dashify(note string) string {
-	return strings.ReplaceAll(note, "* ", "- ")
+	return strings.ReplaceAll(note, "* ", listPrefix)
+}
+
+// unlist transforms a single markdown list entry to a flat note entry
+func unlist(note string) string {
+	if !strings.HasPrefix(note, listPrefix) {
+		return note
+	}
+
+	res := strings.Builder{}
+	scanner := bufio.NewScanner(strings.NewReader(note))
+	firstLine := true
+	trim := true
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Per default strip the two dashes from the list
+		prefix := "  "
+
+		if strings.HasPrefix(line, listPrefix) {
+			if firstLine {
+				// First list item, strip the prefix
+				prefix = listPrefix
+				firstLine = false
+			} else {
+				// Another list item? Treat it as sublist and do not trim any
+				// more.
+				trim = false
+			}
+		}
+
+		if trim {
+			line = strings.TrimPrefix(line, prefix)
+		}
+
+		res.WriteString(line + "\n")
+	}
+	return res.String()
 }
 
 func hasString(a []string, x string) bool {
