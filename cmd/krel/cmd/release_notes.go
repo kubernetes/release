@@ -336,7 +336,7 @@ func createDraftPR(tag string) (err error) {
 
 	// generate the notes
 	targetdir := filepath.Join(sigReleaseRepo.Dir(), "releases", fmt.Sprintf("release-%d.%d", s.Major, s.Minor))
-	logrus.Debugf("release notes markdown will be written to %v", targetdir)
+	logrus.Debugf("Release notes markdown will be written to %v", targetdir)
 	err = ioutil.WriteFile(filepath.Join(targetdir, draftFilename), []byte(result.markdown), 0644)
 	if err != nil {
 		return errors.Wrapf(err, "writing release notes draft")
@@ -395,7 +395,7 @@ func createDraftPR(tag string) (err error) {
 // prepareFork Prepare a branch a repo
 func prepareFork(branchName, upstreamOrg, upstreamRepo, myOrg, myRepo string) (repo *git.Repo, err error) {
 	// checkout the upstream repository
-	logrus.Infof("cloning/updating repository %s/%s", upstreamOrg, upstreamRepo)
+	logrus.Infof("Cloning/updating repository %s/%s", upstreamOrg, upstreamRepo)
 
 	repo, err = git.CleanCloneGitHubRepo(
 		upstreamOrg, upstreamRepo, false,

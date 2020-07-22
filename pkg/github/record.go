@@ -215,7 +215,7 @@ func (c *githubNotesRecordClient) recordAPICall(
 	if result == nil {
 		return errors.New("no result to record")
 	}
-	logrus.Debugf("recording API call %s to %s", api, c.recordDir)
+	logrus.Debugf("Recording API call %s to %s", api, c.recordDir)
 
 	c.recordMutex.Lock()
 	defer c.recordMutex.Unlock()

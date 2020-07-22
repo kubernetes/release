@@ -55,7 +55,7 @@ func CopyToGCS(src, gcsPath string, opts *Options) error {
 
 	_, err := os.Stat(src)
 	if err != nil {
-		logrus.Info("unable to get local source directory info")
+		logrus.Info("Unable to get local source directory info")
 
 		if *opts.AllowMissing {
 			logrus.Infof("Source directory (%s) does not exist. Skipping GCS upload.", src)

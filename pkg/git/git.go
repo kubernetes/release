@@ -356,7 +356,7 @@ func (r *Repo) LatestReleaseBranchMergeBaseToLatest() (DiscoverResult, error) {
 	}
 	version := versions[0]
 	versionTag := util.SemverToTagString(version)
-	logrus.Debugf("latest non patch version %s", versionTag)
+	logrus.Debugf("Latest non patch version %s", versionTag)
 
 	base, err := r.MergeBase(
 		Master,
@@ -393,7 +393,7 @@ func (r *Repo) LatestNonPatchFinalToMinor() (DiscoverResult, error) {
 
 	latestVersion := versions[0]
 	latestVersionTag := util.SemverToTagString(latestVersion)
-	logrus.Debugf("latest non patch version %s", latestVersionTag)
+	logrus.Debugf("Latest non patch version %s", latestVersionTag)
 	end, err := r.RevParse(latestVersionTag)
 	if err != nil {
 		return DiscoverResult{}, err
@@ -401,7 +401,7 @@ func (r *Repo) LatestNonPatchFinalToMinor() (DiscoverResult, error) {
 
 	previousVersion := versions[1]
 	previousVersionTag := util.SemverToTagString(previousVersion)
-	logrus.Debugf("previous non patch version %s", previousVersionTag)
+	logrus.Debugf("Previous non patch version %s", previousVersionTag)
 	start, err := r.RevParse(previousVersionTag)
 	if err != nil {
 		return DiscoverResult{}, err
@@ -447,13 +447,13 @@ func (r *Repo) releaseBranchOrMasterRev(major, minor uint64) (sha, rev string, e
 	relBranch := fmt.Sprintf("release-%d.%d", major, minor)
 	sha, err = r.RevParse(relBranch)
 	if err == nil {
-		logrus.Debugf("found release branch %s", relBranch)
+		logrus.Debugf("Found release branch %s", relBranch)
 		return sha, relBranch, nil
 	}
 
 	sha, err = r.RevParse(Master)
 	if err == nil {
-		logrus.Debug("no release branch found, using master")
+		logrus.Debug("No release branch found, using master")
 		return sha, Master, nil
 	}
 
@@ -512,7 +512,7 @@ func (r *Repo) MergeBase(from, to string) (string, error) {
 	masterRef := Remotify(from)
 	releaseRef := Remotify(to)
 
-	logrus.Debugf("masterRef: %s, releaseRef: %s", masterRef, releaseRef)
+	logrus.Debugf("MasterRef: %s, releaseRef: %s", masterRef, releaseRef)
 
 	commitRevs := []string{masterRef, releaseRef}
 	var res []*object.Commit
@@ -545,7 +545,7 @@ func (r *Repo) MergeBase(from, to string) (string, error) {
 	}
 
 	mergeBase := res[0].Hash.String()
-	logrus.Infof("merge base is %s", mergeBase)
+	logrus.Infof("Merge base is %s", mergeBase)
 
 	return mergeBase, nil
 }
@@ -615,14 +615,14 @@ func (r *Repo) LatestPatchToPatch(branch string) (DiscoverResult, error) {
 		Patch: latestTag.Patch - 1,
 	}
 
-	logrus.Debugf("parsing latest tag %s%v", util.TagPrefix, latestTag)
+	logrus.Debugf("Parsing latest tag %s%v", util.TagPrefix, latestTag)
 	latestVersionTag := util.SemverToTagString(latestTag)
 	end, err := r.RevParse(latestVersionTag)
 	if err != nil {
 		return DiscoverResult{}, errors.Wrapf(err, "parsing version %v", latestTag)
 	}
 
-	logrus.Debugf("parsing previous tag %s%v", util.TagPrefix, prevTag)
+	logrus.Debugf("Parsing previous tag %s%v", util.TagPrefix, prevTag)
 	previousVersionTag := util.SemverToTagString(prevTag)
 	start, err := r.RevParse(previousVersionTag)
 	if err != nil {
@@ -651,7 +651,7 @@ func (r *Repo) LatestPatchToLatest(branch string) (DiscoverResult, error) {
 		latestTag.Pre = nil
 	}
 
-	logrus.Debugf("parsing latest tag %s%v", util.TagPrefix, latestTag)
+	logrus.Debugf("Parsing latest tag %s%v", util.TagPrefix, latestTag)
 	latestVersionTag := util.SemverToTagString(latestTag)
 	start, err := r.RevParse(latestVersionTag)
 	if err != nil {
