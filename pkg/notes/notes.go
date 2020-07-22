@@ -243,10 +243,11 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "listing commits")
 	}
+	logrus.Infof("Got %d commits", len(commits))
 
 	results, err := g.gatherNotes(commits)
 	if err != nil {
-		return nil, errors.Wrap(err, "gatherin notes")
+		return nil, errors.Wrap(err, "gathering notes")
 	}
 
 	dedupeCache := map[string]struct{}{}

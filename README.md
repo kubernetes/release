@@ -47,17 +47,32 @@ Once the tool is installed, use `-h` or `--help` to see the command usage:
 
 ```
 $ release-notes -h
-Usage of release-notes:
-  -end-sha string
-        The commit hash to end at
-  -format string
-        The format for notes output (options: markdown, json) (default "markdown")
-  -github-token string
-        A personal GitHub access token (required)
-  -output string
-        The path to the where the release notes will be printed
-  -start-sha string
-        The commit hash to start at
+release-notes - The Kubernetes Release Notes Generator
+
+Usage:
+  release-notes [flags]
+
+Flags:
+      --branch master            Select which branch to scrape. Defaults to master (default "master")
+      --debug                    Enable debug logging
+      --dependencies             Add dependency report (default true)
+      --discover string          The revision discovery mode for automatic revision retrieval (options: none, mergebase-to-latest, patch-to-patch, minor-to-minor) (default "none")
+      --end-rev string           The git revision to end at.
+      --format string            The format for notes output (options: json, markdown) (default "markdown")
+      --github-org string        Name of github organization (default "kubernetes")
+      --github-repo string       Name of github repository (default "kubernetes")
+      --go-template string       The go template to be used if --format=markdown (options: go-template:default, go-template:inline:<template>, go-template:<file.template>) (default "go-template:default")
+  -h, --help                     help for release-notes
+      --output string            The path to the where the release notes will be printed
+      --record string            Record the API into a directory
+      --release-bucket string    Specify gs bucket to point to in generated notes (default "kubernetes-release")
+      --release-tars string      Directory of tars to sha512 sum for display
+      --release-version string   Which release version to tag the entries as.
+      --replay string            Replay a previously recorded API from a directory
+      --repo-path string         Path to a local Kubernetes repository, used only for tag discovery. (default "/tmp/k8s-repo")
+      --required-author string   Only commits from this GitHub user are considered. Set to empty string to include all users (default "k8s-ci-robot")
+      --start-rev string         The git revision to start at.
+      --toc                      Enable the rendering of the table of contents
 ```
 
 ## Building Linux Packages

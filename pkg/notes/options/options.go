@@ -300,7 +300,10 @@ func (o *Options) resolveDiscoverMode() error {
 
 func (o *Options) repo() (repo *git.Repo, err error) {
 	if o.Pull {
-		logrus.Infof("Cloning/updating repository %s/%s", o.GithubOrg, o.GithubRepo)
+		logrus.Infof(
+			"Cloning/updating repository %s/%s in %s",
+			o.GithubOrg, o.GithubRepo, o.RepoPath,
+		)
 		repo, err = o.gitCloneFn(
 			o.RepoPath,
 			o.GithubOrg,

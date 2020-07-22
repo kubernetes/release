@@ -92,39 +92,22 @@ func init() {
 		"Select which branch to scrape. Defaults to `master`",
 	)
 
-	// startSHA contains the commit SHA where the release note generation
-	// begins.
-	cmd.PersistentFlags().StringVar(
-		&opts.StartSHA,
-		"start-sha",
-		util.EnvDefault("START_SHA", ""),
-		"The commit hash to start at",
-	)
-
-	// endSHA contains the commit SHA where the release note generation ends.
-	cmd.PersistentFlags().StringVar(
-		&opts.EndSHA,
-		"end-sha",
-		util.EnvDefault("END_SHA", ""),
-		"The commit hash to end at",
-	)
-
 	// startRev contains any valid git object where the release note generation
-	// begins. Can be used as alternative to start-sha.
+	// begins.
 	cmd.PersistentFlags().StringVar(
 		&opts.StartRev,
 		"start-rev",
 		util.EnvDefault("START_REV", ""),
-		"The git revision to start at. Can be used as alternative to start-sha.",
+		"The git revision to start at.",
 	)
 
 	// endRev contains any valid git object where the release note generation
-	// ends. Can be used as alternative to start-sha.
+	// ends.
 	cmd.PersistentFlags().StringVar(
 		&opts.EndRev,
 		"end-rev",
 		util.EnvDefault("END_REV", ""),
-		"The git revision to end at. Can be used as alternative to end-sha.",
+		"The git revision to end at.",
 	)
 
 	// repoPath contains the path to a local Kubernetes repository to avoid the
@@ -243,7 +226,10 @@ func init() {
 }
 
 func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
-	logrus.Info("Got the commits, performing rendering")
+	logrus.Infof(
+		"Got %d release notes, performing rendering",
+		len(releaseNotes.History()),
+	)
 
 	var (
 		// Open a handle to the file which will contain the release notes output
