@@ -224,6 +224,7 @@ func TestGetPRNumberFromCommitMessage(t *testing.T) {
 		})
 	}
 }
+
 func TestPrettySIG(t *testing.T) {
 	cases := map[string]string{
 		"scheduling":        "Scheduling",
@@ -237,5 +238,57 @@ func TestPrettySIG(t *testing.T) {
 
 	for input, expected := range cases {
 		require.Equal(t, expected, (prettySIG(input)))
+	}
+}
+
+func TestNoteTextFromString(t *testing.T) {
+	noteBlock := func(note string) string {
+		return "```release-note\n" + note + "\n```"
+	}
+	for _, tc := range []struct {
+		input  string
+		expect func(string, error)
+	}{
+		{
+			noteBlock("test"),
+			func(res string, err error) {
+				require.Nil(t, err)
+				require.Equal(t, "test", res)
+			},
+		},
+		{
+			noteBlock("test\ntest\ntest"),
+			func(res string, err error) {
+				require.Nil(t, err)
+				require.Equal(t, "test\ntest\ntest", res)
+			},
+		},
+		{
+			noteBlock("Action Required: test"),
+			func(res string, err error) {
+				require.Nil(t, err)
+				require.Equal(t, "test", res)
+			},
+		},
+		{
+			noteBlock(
+				"- item\n  item\n  item",
+			),
+			func(res string, err error) {
+				require.Nil(t, err)
+				require.Equal(t, "item\nitem\nitem", res)
+			},
+		},
+		{
+			noteBlock(
+				"- item\n  item\n- item\n  item",
+			),
+			func(res string, err error) {
+				require.Nil(t, err)
+				require.Equal(t, "item\nitem\n- item\n  item", res)
+			},
+		},
+	} {
+		tc.expect(noteTextFromString(tc.input))
 	}
 }
