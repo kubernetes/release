@@ -98,7 +98,7 @@ func PrepareBuilds(o *Options) error {
 
 	logrus.Infof("Config directory: %s\n", o.ConfigDir)
 
-	logrus.Infof("cd-ing to build directory: %s\n", o.BuildDir)
+	logrus.Infof("Changing to build directory: %s\n", o.BuildDir)
 	if err := os.Chdir(o.BuildDir); err != nil {
 		return errors.Wrapf(err, "failed to chdir to build directory (%s)", o.BuildDir)
 	}

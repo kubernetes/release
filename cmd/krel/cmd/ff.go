@@ -109,7 +109,7 @@ func runFf(opts *ffOptions, rootOpts *rootOptions) error {
 		}
 		defer func() {
 			if err := repo.Checkout(currentBranch); err != nil {
-				logrus.Errorf("unable to restore branch %s: %v", currentBranch, err)
+				logrus.Errorf("Unable to restore branch %s: %v", currentBranch, err)
 			}
 		}()
 	}

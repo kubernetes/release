@@ -92,7 +92,7 @@ func (s *Sender) Send(body, subject string) error {
 		AddPersonalizations(p)
 	msg.Subject = subject
 
-	logrus.WithField("message", msg).Trace("message prepared")
+	logrus.WithField("message", msg).Trace("Message prepared")
 
 	res, err := s.sendClient.Send(msg)
 	if err != nil {
@@ -105,7 +105,7 @@ func (s *Sender) Send(body, subject string) error {
 		return &SendError{code: res.StatusCode, resBody: res.Body, resHeaders: fmt.Sprintf("%#v", res.Headers)}
 	}
 
-	logrus.Debug("mail successfully sent")
+	logrus.Debug("Mail successfully sent")
 	return nil
 }
 
@@ -168,7 +168,7 @@ func (s *Sender) SetSender(name, email string) error {
 		return fmt.Errorf("email must not be empty")
 	}
 	s.sender = mail.NewEmail(name, email)
-	logrus.WithField("sender", s.sender).Debugf("sender set")
+	logrus.WithField("sender", s.sender).Debugf("Sender set")
 	return nil
 }
 
@@ -191,7 +191,7 @@ func (s *Sender) SetRecipients(recipientArgs ...string) error {
 	}
 
 	s.recipients = recipients
-	logrus.WithField("recipients", s.sender).Debugf("recipients set")
+	logrus.WithField("recipients", s.sender).Debugf("Recipients set")
 
 	return nil
 }

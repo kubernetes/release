@@ -203,7 +203,7 @@ func init() {
 	changelogCmd.PersistentFlags().BoolVar(&changelogOpts.dependencies, "dependencies", true, "Add dependency report")
 
 	if err := changelogCmd.MarkPersistentFlagRequired("tag"); err != nil {
-		logrus.Fatalf("unable to %v", err)
+		logrus.Fatalf("Unable to %v", err)
 	}
 
 	rootCmd.AddCommand(changelogCmd)
@@ -320,7 +320,7 @@ func (c *Changelog) run(opts *changelogOptions, rootOpts *rootOptions) error {
 	}
 	defer func() {
 		if err := repo.Checkout(currentBranch); err != nil {
-			logrus.Errorf("restore branch %s: %v", currentBranch, err)
+			logrus.Errorf("Restore branch %s: %v", currentBranch, err)
 		}
 	}()
 
