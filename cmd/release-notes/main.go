@@ -243,7 +243,10 @@ func init() {
 }
 
 func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
-	logrus.Info("Got the commits, performing rendering")
+	logrus.Infof(
+		"Got %d release notes, performing rendering",
+		len(releaseNotes.History()),
+	)
 
 	var (
 		// Open a handle to the file which will contain the release notes output
@@ -252,7 +255,7 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 	)
 
 	if releaseNotesOpts.outputFile != "" {
-		output, err = os.OpenFile(releaseNotesOpts.outputFile, os.O_RDWR|os.O_CREATE, os.FileMode(0644))
+		output, err = os.OpenFile(releaseNotesOpts.outputFile, os.O_RDWR|os.O_CREATE, os.FileMode(0o644))
 		if err != nil {
 			return errors.Wrapf(err, "opening the supplied output file")
 		}
@@ -333,10 +336,7 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 		}
 	}
 
-	logrus.
-		WithField("path", output.Name()).
-		WithField("format", opts.Format).
-		Info("release notes written to file")
+	logrus.Infof("Release notes written to file: %s", output.Name())
 	return nil
 }
 
