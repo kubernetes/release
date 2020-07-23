@@ -43,22 +43,7 @@ For information on how to use `krel` and `anago`, see the [Branch Manager Handbo
 
 For more extensive build and usage documentation for the `release-notes` tool, see the [documentation](./cmd/release-notes/README.md).
 
-Once the tool is installed, use `-h` or `--help` to see the command usage:
-
-```
-$ release-notes -h
-Usage of release-notes:
-  -end-sha string
-        The commit hash to end at
-  -format string
-        The format for notes output (options: markdown, json) (default "markdown")
-  -github-token string
-        A personal GitHub access token (required)
-  -output string
-        The path to the where the release notes will be printed
-  -start-sha string
-        The commit hash to start at
-```
+Once the tool is installed, use `release-notes -h/--help`.
 
 ## Building Linux Packages
 
