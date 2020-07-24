@@ -1,12 +1,6 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 approvers:
-- amwat
-- BenTheElder
-- MushuEE
-- spiffxp
+- build-admins
 reviewers:
-- amwat
-- BenTheElder
-- MushuEE
-- spiffxp
+- build-admins
