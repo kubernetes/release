@@ -748,18 +748,22 @@ func (r *Repo) Add(filename string) error {
 	)
 }
 
-// UserCommit makes a commit using the local user's config
+// UserCommit makes a commit using the local user's config as well as adding
+// the Signed-off-by line to the commit message
 func (r *Repo) UserCommit(msg string) error {
-	// amend the latest commit
-	userName, err := command.New("git", "config", "--get", "user.name").RunSuccessOutput()
+	// Retrieve username and mail
+	userName, err := command.New("git", "config", "--get", "user.name").RunSilentSuccessOutput()
 	if err != nil {
-		return errors.Wrap(err, "while trying to get the user's name")
+		return errors.Wrap(err, "get the user's name")
 	}
 
-	userEmail, err := command.New("git", "config", "--get", "user.email").RunSuccessOutput()
+	userEmail, err := command.New("git", "config", "--get", "user.email").RunSilentSuccessOutput()
 	if err != nil {
-		return errors.Wrap(err, "while trying to get the user's name")
+		return errors.Wrap(err, "get the user's email")
 	}
+
+	// Add signed-off-by line
+	msg += fmt.Sprintf("\n\nSigned-off-by: %s <%s>", userName, userEmail)
 
 	if err := r.CommitWithOptions(msg, &git.CommitOptions{
 		Author: &object.Signature{
@@ -768,7 +772,7 @@ func (r *Repo) UserCommit(msg string) error {
 			When:  time.Now(),
 		},
 	}); err != nil {
-		return err
+		return errors.Wrap(err, "commit changes")
 	}
 
 	return nil
