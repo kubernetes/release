@@ -93,7 +93,7 @@ The entire build process takes several hours. Once you are ready to begin, the d
 `rapture` can be executed as follows:
 
 ```shell
-./hack/k8s-rapture.sh <version> # <version> should be the Kubernetes version we are building the debs/rpms for e.g., `1.20.0`
+./hack/rapture/k8s-rapture.sh <version> # <version> should be the Kubernetes version we are building the debs/rpms for e.g., `1.20.0`
 ```
 
 #### Notes
@@ -160,11 +160,11 @@ If any of these tests are broken, the [Release Managers Google Group][release-ma
 
 If there is continued test failure on this dashboard without intervention from the Release Managers, escalate to the current [Release Team][release-team] and [test-infra on-call][test-infra-oncall].
 
-[branch-manager-handbook]: /release-engineering/role-handbooks/branch-manager.md
+[branch-manager-handbook]: https://github.com/kubernetes/sig-release/tree/master/release-engineering/role-handbooks/branch-manager.md
 [kubeadm-install]: https://kubernetes.io/docs/setup/independent/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl
 [kubernetes/release]: https://git.k8s.io/release
-[kubernetes-build-admins]: /release-managers.md#build-admins
-[rapture]: https://cs.corp.google.com/piper///depot/google3/experimental/users/mehdy/kubernetes/k8s-rapture.sh
+[kubernetes-build-admins]:  https://github.com/kubernetes/sig-release/tree/master/release-managers.md#build-admins
+[rapture]: k8s-rapture.sh
 [rapture-readme]: https://g3doc.corp.google.com/cloud/kubernetes/g3doc/release/rapture.md?cl=head
 [release-engineering-dashboard]: https://testgrid.k8s.io/sig-release-misc
 [release-management-slack]: https://kubernetes.slack.com/messages/CJH2GBF7Y
