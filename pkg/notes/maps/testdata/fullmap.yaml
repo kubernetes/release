@@ -1,0 +1,50 @@
+---
+pr: 123
+commit: 1a89038915fe77d73bf7c9cfa8f2ce123a464c82
+release-note:  
+  text: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
+  author: kubernetes-ci-robot
+  areas:
+    - testarea
+  kinds:
+    - documentation
+  sigs:
+    - api-machinery
+  feature: true
+  action_required: false
+  release_version: v1.18.4
+  documentation:
+    - description: Test documentation
+      url: https://wkdkjdjkdkfj
+      type: kep
+datafields:
+  cve:
+    id: CVE-2019-1010260
+    description: Really bad SSRF in KCM
+    published: 2020-10-05
+    score: 5.2
+    linkedPRs:
+    - 9876
+    - 9875
+---
+pr: 123
+release-note:
+  author: kubernetes-ci-robot
+---
+pr: 123
+datafields:
+  classifier-score:
+    # Hypothetical ML score
+    qa-score: 0.35635 # ← would need to fix this one
+    suggested-kinds:
+      - kind/bug
+---
+# Demo of linked PRs, joined for whatever use
+pr: 123
+datafields:
+  linkedPRs:
+    - 123
+    - 234
+    - 345
+
+
