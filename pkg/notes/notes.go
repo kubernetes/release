@@ -60,13 +60,14 @@ type (
 
 // CVEData Information of a linked CVE vulnerability
 type CVEData struct {
-	ID          string  `json:"id"`
-	Title       string  `json:"title"`
-	Published   string  `json:"published"`
-	Score       float32 `json:"score"`
-	Rating      string  `json:"rating"`
-	LinkedPRs   []int   `json:"linkedPRs"`
-	Description string  `json:"description"`
+	ID            string  `json:"id"`          // CVE ID, eg CVE-2019-1010260
+	Title         string  `json:"title"`       // Title of the vulnerability
+	Description   string  `json:"description"` // Description text of the vulnerability
+	TrackingIssue string  `json:"issue"`       // Link to the vulnerability tracking issue
+	CVSSVector    string  `json:"vector"`      // Full CVSS vector string, CVSS:3.1/AV:N/AC:H/PR:H/UI:R/S:U/C:H/I:H/A:H
+	CVSSScore     float32 `json:"score"`       // Numeric CVSS score (eg 6.2)
+	CVSSRating    string  `json:"rating"`      // Severity bucket (eg Medium)
+	LinkedPRs     []int   `json:"linkedPRs"`   // List of linked PRs (to remove them from the release notes doc)
 }
 
 const (
