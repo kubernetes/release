@@ -107,6 +107,7 @@ type releaseNotesOptions struct {
 	createWebsitePR bool
 	dependencies    bool
 	websiteRepo     string
+	mapProviders    []string
 }
 
 type releaseNotesResult struct {
@@ -165,6 +166,14 @@ func init() {
 		"dependencies",
 		true,
 		"add dependency report",
+	)
+
+	releaseNotesCmd.PersistentFlags().StringSliceVarP(
+		&releaseNotesOpts.mapProviders,
+		"maps-from",
+		"m",
+		[]string{},
+		"specify a location to recursively look for release notes *.y[a]ml file mappings",
 	)
 
 	rootCmd.AddCommand(releaseNotesCmd)
@@ -668,6 +677,7 @@ func releaseNotesJSON(tag string) (string, error) {
 	notesOptions.EndRev = tag
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
 	notesOptions.ReleaseVersion = util.TrimTagPrefix(tag)
+	notesOptions.MapProviderStrings = releaseNotesOpts.mapProviders
 
 	if err := notesOptions.ValidateAndFinish(); err != nil {
 		return "", err
@@ -707,6 +717,7 @@ func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
 	notesOptions.EndRev = releaseNotesOpts.tag
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
 	notesOptions.ReleaseVersion = util.TrimTagPrefix(releaseNotesOpts.tag)
+	notesOptions.MapProviderStrings = releaseNotesOpts.mapProviders
 
 	if err := notesOptions.ValidateAndFinish(); err != nil {
 		return nil, err
