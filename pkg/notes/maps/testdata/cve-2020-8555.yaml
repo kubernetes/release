@@ -1,0 +1,21 @@
+---
+pr: 89796 
+releasenote:
+  author: kubernetes/product-security-committee
+  text: Implement changes to mitigate CVE-2020-8555
+datafields:
+  cve:
+    id: CVE-2019-1010260
+    title: "CVE-2020-8555: Half-Blind SSRF in kube-controller-manager"
+    published: 2020-05-28
+    score: 5.2
+    rating: CVSS:3.0/AV:N/AC:H/PR:L/UI:N/S:C/C:H/I:N/A:N
+    linkedPRs:
+    - 89794
+    - 89796
+    - 89837
+    - 89838
+    - 89839
+    description:
+        There exists a Server Side Request Forgery (SSRF) vulnerability in kube-controller-manager that allows certain authorized users to leak up to 500 bytes of arbitrary information from unprotected endpoints within the master's host network (such as link-local or loopback services).
+        An attacker with permissions to create a pod with certain built-in Volume types (GlusterFS, Quobyte, StorageOS, ScaleIO) or permissions to create a StorageClass can cause kube-controller-manager to make GET requests or POST requests without an attacker controlled request body from the master's host network.

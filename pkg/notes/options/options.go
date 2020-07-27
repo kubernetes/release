@@ -114,6 +114,9 @@ type Options struct {
 
 	githubToken string
 	gitCloneFn  func(string, string, string, bool) (*git.Repo, error)
+
+	// MapProviders list of release notes map providers to query during generations
+	MapProviderStrings []string
 }
 
 type RevisionDiscoveryMode string

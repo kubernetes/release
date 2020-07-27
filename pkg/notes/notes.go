@@ -53,6 +53,17 @@ const (
 type Notes []string
 type Kind string
 
+// CVEData Information of a linked CVE vulnerability
+type CVEData struct {
+	ID          string  `json:"id"`
+	Title       string  `json:"title"`
+	Published   string  `json:"published"`
+	Score       float32 `json:"score"`
+	Rating      string  `json:"rating"`
+	LinkedPRs   []int   `json:"linkedPRs"`
+	Description string  `json:"description"`
+}
+
 const (
 	KindAPIChange     Kind = "api-change"
 	KindBug           Kind = "bug"
@@ -121,6 +132,9 @@ type ReleaseNote struct {
 	// Tags each note with a release version if specified
 	// If not specified, omitted
 	ReleaseVersion string `json:"release_version,omitempty"`
+
+	// DataFields a key indexed map of data fields
+	DataFields map[string]ReleaseNotesDataField `json:"data_fields,omitempty"`
 }
 
 type Documentation struct {
@@ -191,9 +205,10 @@ type Result struct {
 }
 
 type Gatherer struct {
-	client  github.Client
-	context context.Context
-	options *options.Options
+	client       github.Client
+	context      context.Context
+	options      *options.Options
+	MapProviders []*MapProvider
 }
 
 // NewGatherer creates a new notes gatherer
@@ -239,6 +254,16 @@ func GatherReleaseNotes(opts *options.Options) (*ReleaseNotes, error) {
 // ListReleaseNotes produces a list of fully contextualized release notes
 // starting from a given commit SHA and ending at starting a given commit SHA.
 func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
+	// Load map providers
+	mapProviders := []MapProvider{}
+	for _, initString := range g.options.MapProviderStrings {
+		provider, err := NewProviderFromInitString(initString)
+		if err != nil {
+			return nil, errors.Wrap(err, "while getting release notes map providers")
+		}
+		mapProviders = append(mapProviders, provider)
+	}
+
 	commits, err := g.listCommits(g.options.Branch, g.options.StartSHA, g.options.EndSHA)
 	if err != nil {
 		return nil, errors.Wrap(err, "listing commits")
@@ -268,6 +293,19 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 			continue
 		}
 
+		// Query our map providers for additional data for the release note
+		for _, provider := range mapProviders {
+			noteMaps, err := provider.GetMapsForPR(result.pullRequest.GetNumber())
+			if err != nil {
+				return nil, errors.Wrap(err, "Error while looking up note map")
+			}
+
+			for _, noteMap := range noteMaps {
+				if err := note.ApplyMap(noteMap); err != nil {
+					return nil, errors.Wrapf(err, "applying notemap for PR #%d", result.pullRequest.GetNumber())
+				}
+			}
+		}
 		if _, ok := dedupeCache[note.Text]; !ok {
 			notes.Set(note.PrNumber, note)
 			dedupeCache[note.Text] = struct{}{}
@@ -381,6 +419,7 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result, relVer string) (*Releas
 	if err != nil {
 		return nil, err
 	}
+
 	documentation := DocumentationFromString(prBody)
 
 	author := pr.GetUser().GetLogin()
@@ -402,6 +441,7 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result, relVer string) (*Releas
 		isDuplicateKind = true
 	}
 
+	// TODO: Spin this to sep function
 	indented := strings.ReplaceAll(text, "\n", "\n  ")
 	markdown := fmt.Sprintf("%s ([#%d](%s), [@%s](%s))",
 		indented, pr.GetNumber(), prURL, author, authorURL)
@@ -931,4 +971,69 @@ func prettifySIGList(sigs []string) string {
 	}
 
 	return sigList
+}
+
+// ApplyMap Modifies the content of the release using information from
+//  a ReleaseNotesMap
+func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap) error {
+	logrus.Infof("Applying map to note from PR %d", rn.PrNumber)
+	reRenderMarkdown := false
+	if noteMap.ReleaseNote.Author != nil {
+		rn.Author = *noteMap.ReleaseNote.Author
+		rn.AuthorURL = "https://github.com/" + *noteMap.ReleaseNote.Author
+		reRenderMarkdown = true
+	}
+
+	if noteMap.ReleaseNote.Text != nil {
+		rn.Text = *noteMap.ReleaseNote.Text
+		reRenderMarkdown = true
+	}
+
+	if noteMap.ReleaseNote.Documentation != nil {
+		rn.Documentation = *noteMap.ReleaseNote.Documentation
+	}
+
+	if noteMap.ReleaseNote.Areas != nil {
+		rn.Areas = *noteMap.ReleaseNote.Areas
+	}
+
+	if noteMap.ReleaseNote.Kinds != nil {
+		rn.Kinds = *noteMap.ReleaseNote.Kinds
+	}
+
+	if noteMap.ReleaseNote.SIGs != nil {
+		rn.SIGs = *noteMap.ReleaseNote.SIGs
+	}
+
+	if noteMap.ReleaseNote.Feature != nil {
+		rn.Feature = *noteMap.ReleaseNote.Feature
+	}
+
+	if noteMap.ReleaseNote.ActionRequired != nil {
+		rn.ActionRequired = *noteMap.ReleaseNote.ActionRequired
+	}
+
+	if noteMap.ReleaseNote.ReleaseVersion != nil {
+		rn.ReleaseVersion = *noteMap.ReleaseNote.ReleaseVersion
+	}
+
+	// If there are datafields, add them
+	if len(noteMap.DataFields) > 0 {
+		rn.DataFields = make(map[string]ReleaseNotesDataField)
+	}
+	for key, df := range noteMap.DataFields {
+		rn.DataFields[key] = df
+	}
+
+	// If parts of the markup where modified, change them
+	// TODO: Spin this to sep function
+	if reRenderMarkdown {
+		indented := strings.ReplaceAll(rn.Text, "\n", "\n  ")
+		markdown := fmt.Sprintf("%s ([#%d](%s), [@%s](%s))",
+			indented, rn.PrNumber, rn.PrURL, rn.Author, rn.AuthorURL)
+		// Uppercase the first character of the markdown to make it look uniform
+		rn.Markdown = strings.ToUpper(string(markdown[0])) + markdown[1:]
+		logrus.Warn(rn.Markdown)
+	}
+	return nil
 }

@@ -28,7 +28,8 @@ import (
 )
 
 var (
-	gcsPrefix      = "gs://"
+	// GcsPrefix url prefix for google cloud storage buckets
+	GcsPrefix      = "gs://"
 	concurrentFlag = "-m"
 	recursiveFlag  = "-r"
 	noClobberFlag  = "-n"
@@ -105,8 +106,8 @@ func bucketCopy(src, dst string, opts *Options) error {
 }
 
 func normalizeGCSPath(gcsPath string) string {
-	gcsPath = strings.TrimPrefix(gcsPath, gcsPrefix)
-	gcsPath = gcsPrefix + gcsPath
+	gcsPath = strings.TrimPrefix(gcsPath, GcsPrefix)
+	gcsPath = GcsPrefix + gcsPath
 
 	return gcsPath
 }
