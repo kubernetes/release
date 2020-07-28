@@ -100,7 +100,7 @@ The entire build process takes several hours. Once you are ready to begin, the d
 
 - There are several points during the process where you will be prompted to answer “y/N” or your password.
 - There will be a warning about trusty. This can be ignored.
-- The Rpm signing process can not be done in parralel, but all other steps maybe be.
+- The RPM signing process can not be done in parallel, but all other steps maybe be.
 
 ### Validating packages
 
