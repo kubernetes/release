@@ -801,7 +801,7 @@ release::gcs::publish_version () {
   local build_output=$3
   local bucket=$4
   local extra_version_markers=$5
-  local release_dir="gs://$bucket/$build_type/$version"
+  local release_dir
   local version_major
   local version_minor
   local publish_file
@@ -811,6 +811,14 @@ release::gcs::publish_version () {
   # For release/ targets, type could be 'stable'
   if [[ "$build_type" == release ]]; then
     [[ "$version" =~ alpha|beta|rc ]] || type="stable"
+  fi
+
+  # Ensure we check for "fast" (linux/amd64-only) build artifacts in the /fast
+  # subdirectory instead of the "root" of the build directory
+  if ((FLAGS_fast)); then
+    release_dir="gs://$bucket/$build_type/fast/$version"
+  else
+    release_dir="gs://$bucket/$build_type/$version"
   fi
 
   if ! logrun $GSUTIL ls $release_dir; then
