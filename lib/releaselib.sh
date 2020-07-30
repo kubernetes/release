@@ -816,8 +816,6 @@ release::gcs::publish_version () {
   if ((FLAGS_fast)); then
     publish_files=(
       "$type-fast"
-      "$type-$version_major-fast"
-      "$type-$version_major.$version_minor-fast"
     )
   else
     publish_files=(
