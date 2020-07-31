@@ -857,10 +857,11 @@ EOF
 ###############################################################################
 # generate the announcement text to be mailed and published
 release_announcement_text () {
+  local GOLANG_VERSION=$(go version | cut -d' ' -f 3)
   cat <<EOF
 Kubernetes Community,
 <P>
-Kubernetes $RELEASE_VERSION_PRIME has been built and pushed.
+Kubernetes $RELEASE_VERSION_PRIME has been built and pushed using Golang version $GOLANG_VERSION.
 <P>
 The release notes have been updated in <A HREF=https://git.k8s.io/kubernetes/$CHANGELOG_FILEPATH/#${RELEASE_VERSION_PRIME//\./}>$CHANGELOG_FILE</A>, with a pointer to them on <A HREF=https://github.com/kubernetes/kubernetes/releases/tag/$RELEASE_VERSION_PRIME>github</A>:
 <P>
