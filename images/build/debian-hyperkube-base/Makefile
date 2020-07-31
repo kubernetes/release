@@ -72,7 +72,7 @@ build: cni-tars/$(CNI_TARBALL)
 
 ifneq ($(ARCH),amd64)
 	# Register /usr/bin/qemu-ARCH-static as the handler for non-x86 binaries in the kernel
-	$(SUDO) ../../third_party/multiarch/qemu-user-static/register/register.sh --reset
+	$(SUDO) ../../../third_party/multiarch/qemu-user-static/register/register.sh --reset
 endif
 	docker build --pull -t $(IMAGE)-$(ARCH):$(TAG) $(TEMP_DIR)
 	rm -rf $(TEMP_DIR)
