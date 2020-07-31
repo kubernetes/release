@@ -14,27 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package log
+package command
 
 import (
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
-	"k8s.io/release/pkg/command"
+	"sync/atomic"
 )
 
-func SetupGlobalLogger(level string) error {
-	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
-	lvl, err := logrus.ParseLevel(level)
-	if err != nil {
-		return errors.Wrapf(err, "setting log level to %s", level)
+// atomicInt is the global variable for storing the globally set verbosity
+// level. It should never be used directly to avoid data races.
+var atomicInt int32
+
+// SetGlobalVerbose sets the global command verbosity to the specified value
+func SetGlobalVerbose(to bool) {
+	var i int32 = 0
+	if to {
+		i = 1
 	}
-	logrus.SetLevel(lvl)
-	if lvl >= logrus.DebugLevel {
-		logrus.Debug("Setting commands globally into verbose mode")
-		command.SetGlobalVerbose(true)
-	}
-	logrus.AddHook(NewFilenameHook())
-	logrus.Debugf("Using log level %q", lvl)
-	return nil
+	atomic.StoreInt32(&atomicInt, i)
+}
+
+// GetGlobalVerbose returns the globally set command verbosity
+func GetGlobalVerbose() bool {
+	return atomic.LoadInt32(&atomicInt) != 0
 }

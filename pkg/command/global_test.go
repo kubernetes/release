@@ -14,27 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package log
+package command
 
 import (
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	"testing"
 
-	"k8s.io/release/pkg/command"
+	"github.com/stretchr/testify/require"
 )
 
-func SetupGlobalLogger(level string) error {
-	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
-	lvl, err := logrus.ParseLevel(level)
-	if err != nil {
-		return errors.Wrapf(err, "setting log level to %s", level)
-	}
-	logrus.SetLevel(lvl)
-	if lvl >= logrus.DebugLevel {
-		logrus.Debug("Setting commands globally into verbose mode")
-		command.SetGlobalVerbose(true)
-	}
-	logrus.AddHook(NewFilenameHook())
-	logrus.Debugf("Using log level %q", lvl)
-	return nil
+func TestSetGlobalVerboseSuccess(t *testing.T) {
+	require.False(t, GetGlobalVerbose())
+	SetGlobalVerbose(true)
+	require.True(t, GetGlobalVerbose())
 }
