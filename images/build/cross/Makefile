@@ -15,7 +15,7 @@
 .PHONY:	build push
 
 STAGING_REGISTRY?=gcr.io/k8s-staging-build-image
-PROD_REGISTRY?=us.gcr.io/k8s-artifacts-prod/build-image
+PROD_REGISTRY?=k8s.gcr.io/build-image
 IMAGE=kube-cross
 
 TAG?=$(shell git describe --tags --always --dirty)

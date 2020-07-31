@@ -24,7 +24,7 @@ steps:
   - "--branch=${_TOOL_BRANCH}"
   - "https://github.com/${_TOOL_ORG}/${_TOOL_REPO}"
 
-- name: us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:${_KUBE_CROSS_VERSION}
+- name: k8s.gcr.io/build-image/kube-cross:${_KUBE_CROSS_VERSION}
   dir: "go/src/k8s.io/release"
   env:
   - "GOPATH=/workspace/go"
@@ -56,7 +56,7 @@ steps:
   - "--tmpdir=/workspace/tmp"
   - "--type=${_TYPE}"
 
-- name: us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:local
+- name: k8s.gcr.io/build-image/kube-cross:local
   dir: "go/src/k8s.io/release"
   env:
   - "TOOL_ORG=${_TOOL_ORG}"
