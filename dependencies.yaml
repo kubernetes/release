@@ -12,6 +12,8 @@ dependencies:
   - name: "cni"
     version: 0.8.6
     refPaths:
+    - path: build/debian-hyperkube-base/Makefile
+      match: CNI_VERSION\?=
     - path: build/workspace.bzl
       match: CNI_VERSION =
     - path: cluster/gce/gci/configure.sh
@@ -129,6 +131,12 @@ dependencies:
     - path: cluster/images/etcd/Makefile
       match: BASEIMAGE\?\=k8s\.gcr\.io\/build-image\/debian-base-s390x:v\d+\.\d+\.\d+
 
+  - name: "k8s.gcr.io/debian-hyperkube-base"
+    version: 1.1.1
+    refPaths:
+    - path: build/debian-hyperkube-base/Makefile
+      match: TAG\?=
+
   - name: "k8s.gcr.io/debian-iptables"
     version: 12.1.0
     refPaths:
@@ -140,6 +148,8 @@ dependencies:
     refPaths:
     - path: build/common.sh
       match: debian_iptables_version=
+    - path: build/debian-hyperkube-base/Makefile
+      match: BASEIMAGE\?\=\$\(BASE_REGISTRY\)\/debian-iptables-\$\(ARCH\):v\d+\.\d+\.\d+
     - path: build/workspace.bzl
       match: tag =
     - path: test/utils/image/manifest.go
