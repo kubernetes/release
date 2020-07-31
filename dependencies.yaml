@@ -23,23 +23,6 @@ dependencies:
     - path: test/e2e_node/remote/utils.go
       match: cniVersion[\t\n\f\r ]*=
 
-  # CoreDNS
-  - name: "coredns-kube-up"
-    version: 1.7.0
-    refPaths:
-    - path: cluster/addons/dns/coredns/coredns.yaml.base
-      match: k8s.gcr.io/coredns
-    - path: cluster/addons/dns/coredns/coredns.yaml.in
-      match: k8s.gcr.io/coredns
-    - path: cluster/addons/dns/coredns/coredns.yaml.sed
-      match: k8s.gcr.io/coredns
-
-  - name: "coredns-kubeadm"
-    version: 1.7.0
-    refPaths:
-    - path: cmd/kubeadm/app/constants/constants.go
-      match: CoreDNSVersion =
-
   # CRI Tools
   - name: "crictl"
     version: 1.18.0
@@ -76,13 +59,6 @@ dependencies:
     - path: test/e2e/framework/nodes_util.go
       match: const etcdImage
 
-  - name: "etcd-image"
-    version: 3.4.9
-    refPaths:
-    - path: cluster/images/etcd/Makefile
-      match: BUNDLED_ETCD_VERSIONS\?|LATEST_ETCD_VERSION\?
-    - path: cluster/images/etcd/migrate/options.go
-
   # Golang
   - name: "golang"
     version: 1.15.0-rc.1
@@ -96,13 +72,6 @@ dependencies:
     refPaths:
     - path: test/images/Makefile
       match: GOLANG_VERSION=\d+.\d+(alpha|beta|rc)\d+
-
-  - name: "k8s.gcr.io/kube-cross: dependents"
-    version: v1.15.0-rc.1-1
-    refPaths:
-    - path: build/build-image/cross/VERSION
-    - path: test/images/sample-apiserver/Dockerfile
-      match: k8s\.gcr\.io\/build-image\/kube-cross:v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
   # Base images
   - name: "k8s.gcr.io/debian-base"
@@ -154,75 +123,3 @@ dependencies:
       match: tag =
     - path: test/utils/image/manifest.go
       match: configs\[DebianIptables\] = Config{buildImageRegistry, "debian-iptables", "v\d+\.\d+.\d+"}
-
-  - name: "k8s.gcr.io/go-runner"
-    version: 0.1.1
-    refPaths:
-    - path: build/go-runner/Makefile
-      match: TAG \?=
-
-  - name: "k8s.gcr.io/go-runner: dependents"
-    version: 0.1.1
-    refPaths:
-    - path: build/common.sh
-      match: go_runner_version=
-    - path: build/workspace.bzl
-      match: tag =
-
-  - name: "k8s.gcr.io/pause"
-    version: 3.3
-    refPaths:
-    - path: build/pause/Makefile
-      match: TAG =
-
-  - name: "k8s.gcr.io/pause: dependents"
-    version: 3.2
-    refPaths:
-    - path: cmd/kubeadm/app/constants/constants_unix.go
-      match: PauseVersion\s+=
-    - path: cmd/kubeadm/app/util/template_test.go
-      match: validTmpl\s+=
-    - path: cmd/kubeadm/app/util/template_test.go
-      match: validTmplOut\s+=
-    - path: cmd/kubeadm/app/util/template_test.go
-      match: doNothing\s+=
-    - path: cmd/kubelet/app/options/container_runtime.go
-      match: defaultPodSandboxImageVersion\s+=
-    - path: hack/testdata/pod-with-precision.json
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: pkg/kubelet/dockershim/docker_sandbox.go
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: staging/src/k8s.io/kubectl/testdata/set/multi-resource-yaml.yaml
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: staging/src/k8s.io/kubectl/testdata/set/namespaced-resource.yaml
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: test/cmd/core.sh
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: test/fixtures/pkg/kubectl/cmd/set/multi-resource-yaml.yaml
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: test/fixtures/pkg/kubectl/cmd/set/namespaced-resource.yaml
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: test/integration/benchmark-controller.json
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: test/integration/scheduler_perf/config/pod-default.yaml
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: test/integration/scheduler_perf/config/pod-with-node-affinity.yaml
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: test/integration/scheduler_perf/config/pod-with-pod-affinity.yaml
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: test/integration/scheduler_perf/config/pod-with-pod-anti-affinity.yaml
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: test/integration/scheduler_perf/config/pod-with-preferred-pod-affinity.yaml
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: test/integration/scheduler_perf/config/pod-with-preferred-pod-anti-affinity.yaml
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: test/integration/scheduler_perf/config/pod-with-preferred-topology-spreading.yaml
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: test/integration/scheduler_perf/config/pod-with-secret-volume.yaml
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: test/integration/scheduler_perf/config/pod-with-topology-spreading.yaml
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: test/utils/runners.go
-      match: k8s.gcr.io\/pause:\d+\.\d+
-    - path: test/utils/image/manifest.go
-      match: configs\[Pause\] = Config{gcRegistry, "pause", "\d+\.\d+"}
