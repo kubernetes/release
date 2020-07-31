@@ -3,6 +3,7 @@
 test_suite(
     name = "verify-all",
     tests = [
+        "//hack:verify-ext-deps",
         "@io_k8s_repo_infra//hack:verify-bazel",
         "@io_k8s_repo_infra//hack:verify-boilerplate",
         "@io_k8s_repo_infra//hack:verify-deps",
@@ -34,6 +35,8 @@ filegroup(
         "//cmd/kubepkg:all-srcs",
         "//cmd/release-notes:all-srcs",
         "//cmd/schedule-builder:all-srcs",
+        "//cmd/verifydependencies:all-srcs",
+        "//hack:all-srcs",
         "//lib:all-srcs",
         "//packages/deb:all-srcs",
         "//pkg/announce:all-srcs",
