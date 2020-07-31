@@ -23,7 +23,7 @@ TAG?=v1.1.1
 ARCH?=amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 
-BASE_REGISTRY?=us.gcr.io/k8s-artifacts-prod/build-image
+BASE_REGISTRY?=k8s.gcr.io/build-image
 BASEIMAGE?=$(BASE_REGISTRY)/debian-iptables-$(ARCH):v12.1.0
 CNI_VERSION?=v0.8.6
 
