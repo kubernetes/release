@@ -17,6 +17,10 @@ limitations under the License.
 package git_test
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
+	"os/exec"
 	"testing"
 
 	gogit "github.com/go-git/go-git/v5"
@@ -62,6 +66,71 @@ func TestGetDefaultKubernetesRepoURLSuccess(t *testing.T) {
 		actual := git.GetDefaultKubernetesRepoURL()
 		require.Equal(t, tc.expected, actual)
 	}
+}
+
+// createTestRepository creates a test repo, cd into it and returns the path
+func createTestRepository() (repoPath string, err error) {
+	repoPath, err = ioutil.TempDir(os.TempDir(), "sigrelease-test-repo-*")
+	if err != nil {
+		return "", errors.Wrap(err, "creating a directory for test repository")
+	}
+	if err := os.Chdir(repoPath); err != nil {
+		return "", errors.Wrap(err, "cd'ing into test repository")
+	}
+	out, err := exec.Command("git", "init").Output()
+	if err != nil {
+		return "", errors.Wrapf(err, "initializing test repository: %s", out)
+	}
+	return repoPath, nil
+}
+
+func TestGetUserName(t *testing.T) {
+	const fakeUserName = "SIG Release Test User"
+	currentDir, err := os.Getwd()
+	require.Nil(t, err, "error reading the current directory")
+	defer os.Chdir(currentDir) // nolint: errcheck
+
+	// Create an empty repo and configure the users name to test
+	repoPath, err := createTestRepository()
+	require.Nil(t, err, "getting a test repo")
+
+	// Call git to configure the user's name:
+	_, err = exec.Command("git", "config", "user.name", fakeUserName).Output()
+	require.Nil(t, err, fmt.Sprintf("configuring fake user email in %s", repoPath))
+
+	testRepo, err := git.OpenRepo(repoPath)
+	require.Nil(t, err, fmt.Sprintf("opening test repo in %s", repoPath))
+	defer testRepo.Cleanup() // nolint: errcheck
+
+	actual, err := git.GetUserName()
+	require.Nil(t, err)
+	require.Equal(t, fakeUserName, actual)
+	require.NotEqual(t, fakeUserName, "")
+}
+
+func TestGetUserEmail(t *testing.T) {
+	const fakeUserEmail = "kubernetes-test@example.com"
+	currentDir, err := os.Getwd() // nolint: errcheck
+	require.Nil(t, err, "error reading the current directory")
+	defer os.Chdir(currentDir) // nolint: errcheck
+
+	// Create an empty repo and configure the users name to test
+	repoPath, err := createTestRepository()
+	require.Nil(t, err, "getting a test repo")
+
+	// Call git to configure the user's name:
+	_, err = exec.Command("git", "config", "user.email", fakeUserEmail).Output()
+	require.Nil(t, err, fmt.Sprintf("configuring fake user email in %s", repoPath))
+
+	testRepo, err := git.OpenRepo(repoPath)
+	require.Nil(t, err, fmt.Sprintf("opening test repo in %s", repoPath))
+	defer testRepo.Cleanup() // nolint: errcheck
+
+	// Do the actual call
+	actual, err := git.GetUserEmail()
+	require.Nil(t, err)
+	require.Equal(t, fakeUserEmail, actual)
+	require.NotEqual(t, fakeUserEmail, "")
 }
 
 func TestGetKubernetesRepoURLSuccess(t *testing.T) {
