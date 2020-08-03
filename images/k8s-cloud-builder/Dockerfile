@@ -13,7 +13,7 @@
 # limitations under the License.
 
 ARG KUBE_CROSS_VERSION
-FROM us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:${KUBE_CROSS_VERSION}
+FROM k8s.gcr.io/build-image/kube-cross:${KUBE_CROSS_VERSION}
 
 ##------------------------------------------------------------
 # global ARGs & ENVs

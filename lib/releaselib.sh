@@ -33,9 +33,10 @@ readonly GCRIO_PATH_PROD="k8s.gcr.io"
 readonly GCRIO_PATH_PROD_GEO_ASIA="asia.gcr.io/k8s-artifacts-prod"
 readonly GCRIO_PATH_PROD_GEO_EU="eu.gcr.io/k8s-artifacts-prod"
 readonly GCRIO_PATH_PROD_GEO_US="us.gcr.io/k8s-artifacts-prod"
-readonly GCRIO_PATH_TEST="gcr.io/k8s-staging-kubernetes"
+readonly GCRIO_PATH_STAGING="gcr.io/k8s-staging-kubernetes"
+readonly GCRIO_PATH_MOCK="${GCRIO_PATH_STAGING}/mock"
 
-readonly KUBE_CROSS_REGISTRY="us.gcr.io/k8s-artifacts-prod/build-image"
+readonly KUBE_CROSS_REGISTRY="${GCRIO_PATH_PROD}/build-image"
 readonly KUBE_CROSS_IMAGE="${KUBE_CROSS_REGISTRY}/kube-cross"
 readonly KUBE_CROSS_CONFIG_LOCATION="build/build-image/cross"
 
@@ -1303,7 +1304,11 @@ release::set_globals () {
     BUCKET_TYPE="release"
   fi
 
-  GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_TEST}"
+  if ((FLAGS_nomock)); then
+    GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_STAGING}"
+  else
+    GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_MOCK}"
+  fi
 
   if ((FLAGS_nomock)); then
     RELEASE_BUCKET="$PROD_BUCKET"
