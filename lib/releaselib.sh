@@ -1304,7 +1304,11 @@ release::set_globals () {
     BUCKET_TYPE="release"
   fi
 
-  GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_STAGING}"
+  if ((FLAGS_nomock)); then
+    GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_STAGING}"
+  else
+    GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_MOCK}"
+  fi
 
   if ((FLAGS_nomock)); then
     RELEASE_BUCKET="$PROD_BUCKET"
