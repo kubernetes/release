@@ -1314,8 +1314,6 @@ release::set_globals () {
 
   if ((FLAGS_nomock)); then
     RELEASE_BUCKET="$PROD_BUCKET"
-
-    GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_PROD}"
   elif ((FLAGS_gcb)); then
     RELEASE_BUCKET="$TEST_BUCKET"
 
