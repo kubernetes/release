@@ -72,7 +72,7 @@ dependencies:
       match: BASEIMAGE\?\=\$\(BASE_REGISTRY\)\/debian-base-\$\(ARCH\)
 
   - name: "k8s.gcr.io/debian-hyperkube-base"
-    version: 1.1.1
+    version: 1.1.2
     refPaths:
     - path: images/build/debian-hyperkube-base/Makefile
       match: TAG\?=
@@ -84,7 +84,7 @@ dependencies:
       match: TAG\?=
 
   - name: "k8s.gcr.io/debian-iptables: dependents"
-    version: 12.1.0
+    version: 12.1.1
     refPaths:
     - path: images/build/debian-hyperkube-base/Makefile
       match: BASEIMAGE\?\=\$\(BASE_REGISTRY\)\/debian-iptables-\$\(ARCH\):v\d+\.\d+\.\d+
