@@ -30,9 +30,6 @@ readonly TEST_BUCKET="kubernetes-release-gcb"
 readonly CI_BUCKET="kubernetes-release-dev"
 
 readonly GCRIO_PATH_PROD="k8s.gcr.io"
-readonly GCRIO_PATH_PROD_GEO_ASIA="asia.gcr.io/k8s-artifacts-prod"
-readonly GCRIO_PATH_PROD_GEO_EU="eu.gcr.io/k8s-artifacts-prod"
-readonly GCRIO_PATH_PROD_GEO_US="us.gcr.io/k8s-artifacts-prod"
 readonly GCRIO_PATH_STAGING="gcr.io/k8s-staging-kubernetes"
 readonly GCRIO_PATH_MOCK="${GCRIO_PATH_STAGING}/mock"
 
@@ -1121,9 +1118,11 @@ release::docker::validate_remote_manifests () {
 
   common::argc_validate 3
 
-  if [[ "$registry" == "$GCRIO_PATH_PROD" ]]; then
-    # Validate images against one of the geographical endpoints for k8s.gcr.io
-    target_registry="$GCRIO_PATH_PROD_GEO_US"
+  # In an official release, we want to ensure that container images have been
+  # promoted from staging to production, so we do the image manifest validation
+  # against production instead of staging.
+  if [[ "$registry" == "$GCRIO_PATH_STAGING" ]]; then
+    target_registry="$GCRIO_PATH_PROD"
   fi
 
   logecho "Validating image manifests in $target_registry..."
@@ -1312,8 +1311,6 @@ release::set_globals () {
 
   if ((FLAGS_nomock)); then
     RELEASE_BUCKET="$PROD_BUCKET"
-
-    GCRIO_PATH="${FLAGS_gcrio_path:-$GCRIO_PATH_PROD}"
   elif ((FLAGS_gcb)); then
     RELEASE_BUCKET="$TEST_BUCKET"
 
