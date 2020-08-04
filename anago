@@ -1677,14 +1677,16 @@ fi
 
 if ((FLAGS_stage)); then
   common::run_stateful stage_source_tree
-else
-  common::run_stateful push_git_objects
 fi
 
 # Push for each release version of this session
 for label in "${ORDERED_RELEASE_KEYS[@]}"; do
   common::run_stateful "push_all_artifacts $label" RELEASE_VERSION[$label]
 done
+
+if ! ((FLAGS_stage)); then
+  common::run_stateful push_git_objects
+fi
 
 # if --stage, we're done
 if ((FLAGS_stage)); then
