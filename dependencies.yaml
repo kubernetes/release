@@ -66,7 +66,7 @@ dependencies:
       match: TAG \?=
 
   - name: "k8s.gcr.io/debian-base: dependents"
-    version: 2.1.0
+    version: 2.1.2
     refPaths:
     - path: images/build/debian-iptables/Makefile
       match: BASEIMAGE\?\=\$\(BASE_REGISTRY\)\/debian-base-\$\(ARCH\)
@@ -78,7 +78,7 @@ dependencies:
       match: TAG\?=
 
   - name: "k8s.gcr.io/debian-iptables"
-    version: 12.1.0
+    version: 12.1.1
     refPaths:
     - path: images/build/debian-iptables/Makefile
       match: TAG\?=
