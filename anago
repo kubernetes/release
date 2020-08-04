@@ -1403,6 +1403,17 @@ push_all_artifacts () {
        gs://$RELEASE_BUCKET/$BUCKET_TYPE/$version || return 1
     fi
 
+    # Validate container image manifests for each release version
+    # Ideally image validation would exist outside of this function, but
+    # because it depends on tags derived from the source tree, this is the
+    # easiest place to put this logic for now.
+    #
+    # TODO: Consider splitting this out when we refactor anago in Go
+    common::runstep release::docker::validate_remote_manifests \
+      "$KUBE_DOCKER_REGISTRY" \
+      "$version" \
+      "$BUILD_OUTPUT-$version" || return 1
+
     common::runstep release::gcs::publish_version \
      $BUCKET_TYPE $version $BUILD_OUTPUT-$version $RELEASE_BUCKET || return 1
   fi
@@ -1661,16 +1672,6 @@ else
        logecho "$ATTENTION: Skipping $entry step executed during staging"
        common::check_state -a $entry
      fi
-  done
-fi
-
-# Validate container image manifests for each release version of this session
-if ! ((FLAGS_stage)); then
-  for label in "${ORDERED_RELEASE_KEYS[@]}"; do
-    common::run_stateful release::docker::validate_remote_manifests \
-      "$KUBE_DOCKER_REGISTRY" \
-      "${RELEASE_VERSION[$label]}" \
-      "$BUILD_OUTPUT-${RELEASE_VERSION[$label]}"
   done
 fi
 
