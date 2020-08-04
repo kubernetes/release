@@ -30,9 +30,6 @@ readonly TEST_BUCKET="kubernetes-release-gcb"
 readonly CI_BUCKET="kubernetes-release-dev"
 
 readonly GCRIO_PATH_PROD="k8s.gcr.io"
-readonly GCRIO_PATH_PROD_GEO_ASIA="asia.gcr.io/k8s-artifacts-prod"
-readonly GCRIO_PATH_PROD_GEO_EU="eu.gcr.io/k8s-artifacts-prod"
-readonly GCRIO_PATH_PROD_GEO_US="us.gcr.io/k8s-artifacts-prod"
 readonly GCRIO_PATH_STAGING="gcr.io/k8s-staging-kubernetes"
 readonly GCRIO_PATH_MOCK="${GCRIO_PATH_STAGING}/mock"
 
