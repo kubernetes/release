@@ -14,7 +14,7 @@ Kubernetes Releases. This includes manually executed tasks like generating the R
 
 ## Installation
 
-Compile krel by running the `compile-release-tools` run from the root of this repo:
+Compile krel by running the `compile-release-tools` script from the root of this repo:
 
 ```shell
 ./compile-release-tools krel
