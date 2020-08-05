@@ -752,23 +752,25 @@ func (r *Repo) Add(filename string) error {
 // the Signed-off-by line to the commit message
 func (r *Repo) UserCommit(msg string) error {
 	// Retrieve username and mail
-	userName, err := command.New("git", "config", "--get", "user.name").RunSilentSuccessOutput()
+	userNameOutput, err := command.New("git", "config", "--get", "user.name").RunSilentSuccessOutput()
 	if err != nil {
 		return errors.Wrap(err, "get the user's name")
 	}
+	userName := userNameOutput.OutputTrimNL()
 
-	userEmail, err := command.New("git", "config", "--get", "user.email").RunSilentSuccessOutput()
+	userEmailOutput, err := command.New("git", "config", "--get", "user.email").RunSilentSuccessOutput()
 	if err != nil {
 		return errors.Wrap(err, "get the user's email")
 	}
+	userEmail := userEmailOutput.OutputTrimNL()
 
 	// Add signed-off-by line
 	msg += fmt.Sprintf("\n\nSigned-off-by: %s <%s>", userName, userEmail)
 
 	if err := r.CommitWithOptions(msg, &git.CommitOptions{
 		Author: &object.Signature{
-			Name:  userName.OutputTrimNL(),
-			Email: userEmail.OutputTrimNL(),
+			Name:  userName,
+			Email: userEmail,
 			When:  time.Now(),
 		},
 	}); err != nil {
