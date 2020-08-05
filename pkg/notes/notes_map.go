@@ -75,40 +75,41 @@ func ParseReleaseNotesMap(mapPath string) (*[]ReleaseNotesMap, error) {
 	return &notemaps, nil
 }
 
-// ReleaseNotesMap Represents
+// ReleaseNotesMap holds the changes that will be applied to the notes
+// the struct has double annotation because of this: https://play.golang.org/p/C7QM1varozy
 type ReleaseNotesMap struct {
 	// Pull request where the note was published
 	PR int `json:"pr"`
 	// SHA of the notes commit
-	Commit      string `json:"commit"`
+	Commit      string `json:"commit,omitempty" yaml:"commit,omitempty"`
 	ReleaseNote struct {
 		// Text is the actual content of the release note
-		Text *string `json:"text,omitempty"`
+		Text *string `json:"text,omitempty" yaml:"text,omitempty"`
 
 		// Docs is additional documentation for the release note
-		Documentation *[]*Documentation `json:"documentation,omitempty"`
+		Documentation *[]*Documentation `json:"documentation,omitempty" yaml:"documentation,omitempty"`
 
 		// Author is the GitHub username of the commit author
-		Author *string `json:"author,omitempty"`
+		Author *string `json:"author,omitempty" yaml:"author,omitempty"`
 
 		// Areas is a list of the labels beginning with area/
-		Areas *[]string `json:"areas,omitempty"`
+		Areas *[]string `json:"areas,omitempty" yaml:"areas,omitempty"`
 
 		// Kinds is a list of the labels beginning with kind/
-		Kinds *[]string `json:"kinds,omitempty"`
+		Kinds *[]string `json:"kinds,omitempty" yaml:"kinds,omitempty"`
 
 		// SIGs is a list of the labels beginning with sig/
-		SIGs *[]string `json:"sigs,omitempty"`
+		SIGs *[]string `json:"sigs,omitempty" yaml:"sigs,omitempty"`
 
 		// Indicates whether or not a note will appear as a new feature
-		Feature *bool `json:"feature,omitempty"`
+		Feature *bool `json:"feature,omitempty" yaml:"feature,omitempty"`
 
 		// ActionRequired indicates whether or not the release-note-action-required
 		// label was set on the PR
-		ActionRequired *bool `json:"action_required,omitempty"`
+		ActionRequired *bool `json:"action_required,omitempty" yaml:"action_required,omitempty"`
 	} `json:"releasenote"`
 
-	DataFields map[string]ReleaseNotesDataField `json:"datafields"`
+	DataFields map[string]ReleaseNotesDataField `json:"datafields,omitempty" yaml:"datafields,omitempty"`
 }
 
 // ReleaseNotesDataField extra data added to a release note
