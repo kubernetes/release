@@ -32,23 +32,16 @@ import (
 	"k8s.io/release/pkg/gcp"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/http"
+	"k8s.io/release/pkg/release/regex"
 	"k8s.io/release/pkg/testgrid"
 	"k8s.io/release/pkg/util"
 )
 
 const (
-	releaseRegexStr = `v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[a-zA-Z0-9]+)*\.*(0|[1-9][0-9]*)?`
-	buildRegexStr   = `([0-9]{1,})\+([0-9a-f]{5,40})`
 	jobPrefix       = "ci-kubernetes-"
 	gitHubCommitAPI = "https://api.github.com/repos/kubernetes/kubernetes/commits?sha="
 	jobLimit        = 100
 	jenkinsLogRoot  = "gs://kubernetes-jenkins/logs/"
-)
-
-var (
-	releaseAndBuildRegex = regexp.MustCompile(
-		fmt.Sprintf("%s.%s", releaseRegexStr, buildRegexStr),
-	)
 )
 
 //counterfeiter:generate . httpClient
@@ -207,7 +200,7 @@ func (b *BuildVersionClient) SetBuildVersion(
 			return "", errors.Errorf("job count limit of %d exceeded", jobLimit)
 		}
 
-		matches := releaseAndBuildRegex.FindStringSubmatch(version)
+		matches := regex.ReleaseAndBuildRegex.FindStringSubmatch(version)
 		if matches == nil || len(matches) < 8 {
 			return "", errors.Errorf("Invalid build version: %v", version)
 		}
@@ -253,7 +246,7 @@ func (b *BuildVersionClient) SetBuildVersion(
 					status = BuildStatusFailed
 
 					for j, secVersion := range secondaryJobCache.Versions {
-						matches := releaseAndBuildRegex.FindStringSubmatch(secVersion)
+						matches := regex.ReleaseAndBuildRegex.FindStringSubmatch(secVersion)
 						if matches == nil || len(matches) < 8 {
 							logrus.Errorf(
 								"Invalid build version %s for job %s",
