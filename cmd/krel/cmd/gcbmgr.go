@@ -56,7 +56,6 @@ type Repository interface {
 	GetTag() (string, error)
 }
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //counterfeiter:generate . Version
 type Version interface {
 	GetKubeVersionForBranch(release.VersionType, string) (string, error)

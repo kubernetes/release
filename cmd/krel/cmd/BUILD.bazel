@@ -7,6 +7,7 @@ go_library(
         "announce.go",
         "changelog.go",
         "ff.go",
+        "find_green_build.go",
         "gcbmgr.go",
         "gcbmgr_history.go",
         "push.go",
@@ -50,6 +51,7 @@ go_test(
         "changelog_data_test.go",
         "changelog_test.go",
         "ff_test.go",
+        "find_green_build_test.go",
         "gcbmgr_test.go",
         "root_test.go",
         "set_release_version_test.go",
@@ -65,6 +67,7 @@ go_test(
         "//pkg/notes/notesfakes:go_default_library",
         "//pkg/release:go_default_library",
         "//pkg/util:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
     ],
 )
