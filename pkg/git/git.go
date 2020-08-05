@@ -747,18 +747,37 @@ func (r *Repo) Add(filename string) error {
 	)
 }
 
+// GetUserName Reads the local user's name from the git configuration
+func GetUserName() (string, error) {
+	// Retrieve username from git
+	userName, err := command.New(gitExecutable, "config", "--get", "user.name").RunSilentSuccessOutput()
+	if err != nil {
+		return "", errors.Wrap(err, "reading the user name from git")
+	}
+	return userName.OutputTrimNL(), nil
+}
+
+// GetUserEmail reads the user's name from git
+func GetUserEmail() (string, error) {
+	userEmail, err := command.New(gitExecutable, "config", "--get", "user.email").RunSilentSuccessOutput()
+	if err != nil {
+		return "", errors.Wrap(err, "reading the user's email from git")
+	}
+	return userEmail.OutputTrimNL(), nil
+}
+
 // UserCommit makes a commit using the local user's config as well as adding
 // the Signed-off-by line to the commit message
 func (r *Repo) UserCommit(msg string) error {
 	// Retrieve username and mail
-	userName, err := command.New("git", "config", "--get", "user.name").RunSilentSuccessOutput()
+	userName, err := GetUserName()
 	if err != nil {
-		return errors.Wrap(err, "get the user's name")
+		return errors.Wrap(err, "getting the user's name")
 	}
 
-	userEmail, err := command.New("git", "config", "--get", "user.email").RunSilentSuccessOutput()
+	userEmail, err := GetUserEmail()
 	if err != nil {
-		return errors.Wrap(err, "get the user's email")
+		return errors.Wrap(err, "getting the user's email")
 	}
 
 	// Add signed-off-by line
@@ -766,8 +785,8 @@ func (r *Repo) UserCommit(msg string) error {
 
 	if err := r.CommitWithOptions(msg, &git.CommitOptions{
 		Author: &object.Signature{
-			Name:  userName.OutputTrimNL(),
-			Email: userEmail.OutputTrimNL(),
+			Name:  userName,
+			Email: userEmail,
 			When:  time.Now(),
 		},
 	}); err != nil {
