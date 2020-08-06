@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
@@ -92,14 +93,14 @@ func TestGetJobCacheFailureWrongJson(t *testing.T) {
 
 func newBuildVersionClientSUT() (
 	*release.BuildVersionClient,
-	*releasefakes.FakeHttpClient,
+	*releasefakes.FakeGithubClient,
 	*releasefakes.FakeJobCacheClient,
 	*releasefakes.FakeTestGridClient,
 ) {
 	sut := release.NewBuildVersionClient()
 
-	httpClient := &releasefakes.FakeHttpClient{}
-	sut.SetHTTPClient(httpClient)
+	githubClient := &releasefakes.FakeGithubClient{}
+	sut.SetGithubClient(githubClient)
 
 	jobCacheClient := &releasefakes.FakeJobCacheClient{}
 	sut.SetJobCacheClient(jobCacheClient)
@@ -107,7 +108,7 @@ func newBuildVersionClientSUT() (
 	testGridClient := &releasefakes.FakeTestGridClient{}
 	sut.SetTestGridClient(testGridClient)
 
-	return sut, httpClient, jobCacheClient, testGridClient
+	return sut, githubClient, jobCacheClient, testGridClient
 }
 
 func TestSetBuildVersionSuccess(t *testing.T) {
@@ -150,7 +151,7 @@ func TestSetBuildVersionFailureSecondBuildVersionNotAvailable(t *testing.T) {
 	require.Empty(t, version)
 }
 
-func TestSetBuildVersionFailureBuildDateResponseParseFailed(t *testing.T) {
+func TestSetBuildVersionFailureGetCommitDate(t *testing.T) {
 	const testVersion = "v1.18.4-rc.0.3+3ff09514d162b0"
 	sut, hcMock, jcMock, tgMock := newBuildVersionClientSUT()
 	jcMock.GetJobCacheReturns(&release.JobCache{
@@ -159,23 +160,7 @@ func TestSetBuildVersionFailureBuildDateResponseParseFailed(t *testing.T) {
 		Versions:     []string{testVersion, testVersion},
 	}, nil)
 	tgMock.BlockingTestsReturns([]string{"1", "2", "3"}, nil)
-	hcMock.GetURLResponseReturns("wrong", nil)
-
-	version, err := sut.SetBuildVersion(git.Master, "", nil)
-	require.NotNil(t, err)
-	require.Empty(t, version)
-}
-
-func TestSetBuildVersionFailureGettingBuildDateFailed(t *testing.T) {
-	const testVersion = "v1.18.4-rc.0.3+3ff09514d162b0"
-	sut, hcMock, jcMock, tgMock := newBuildVersionClientSUT()
-	jcMock.GetJobCacheReturns(&release.JobCache{
-		Name:         "kubernetes-ci-build",
-		BuildNumbers: []string{"10", "11"},
-		Versions:     []string{testVersion, testVersion},
-	}, nil)
-	tgMock.BlockingTestsReturns([]string{"1", "2", "3"}, nil)
-	hcMock.GetURLResponseReturns("", errors.New(""))
+	hcMock.GetCommitDateReturns(time.Time{}, errors.New(""))
 
 	version, err := sut.SetBuildVersion(git.Master, "", []string{"3"})
 	require.NotNil(t, err)
