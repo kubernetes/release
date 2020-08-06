@@ -76,11 +76,11 @@ func DownloadReleases(releaseCfg *ReleaseConfig, ghClient *github.GitHub, output
 // Assets to upload are derived from the tags specified in `ReleaseConfig`.
 func Upload(releaseCfg *ReleaseConfig, ghClient *github.GitHub, outputDir string) error {
 	uploadBase := filepath.Join(outputDir, releaseCfg.Org, releaseCfg.Repo)
-	gcsPath := filepath.Join(releaseCfg.GCSBucket, releaseCfg.ReleaseDir)
 
 	tags := releaseCfg.Tags
 	for _, tag := range tags {
 		srcDir := filepath.Join(uploadBase, tag)
+		gcsPath := filepath.Join(releaseCfg.GCSBucket, releaseCfg.ReleaseDir, tag)
 		if err := gcs.CopyToGCS(srcDir, gcsPath, releaseCfg.GCSCopyOptions); err != nil {
 			return err
 		}
