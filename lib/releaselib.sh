@@ -828,6 +828,9 @@ release::gcs::publish_version () {
   done
 
   logecho
+  logecho "Publish version markers: ${publish_files[*]}"
+
+  logecho
   logecho "Publish official pointer text files to $bucket..."
 
   for publish_file in ${publish_files[@]}; do
