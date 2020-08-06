@@ -18,12 +18,14 @@ package release
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -31,28 +33,36 @@ import (
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/gcp"
 	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/http"
+	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/release/regex"
 	"k8s.io/release/pkg/testgrid"
 	"k8s.io/release/pkg/util"
 )
 
 const (
-	jobPrefix       = "ci-kubernetes-"
-	gitHubCommitAPI = "https://api.github.com/repos/kubernetes/kubernetes/commits?sha="
-	jobLimit        = 100
-	jenkinsLogRoot  = "gs://kubernetes-jenkins/logs/"
+	jobPrefix      = "ci-kubernetes-"
+	jobLimit       = 100
+	jenkinsLogRoot = "gs://kubernetes-jenkins/logs/"
 )
 
-//counterfeiter:generate . httpClient
-type httpClient interface {
-	GetURLResponse(string, bool) (string, error)
+//counterfeiter:generate . githubClient
+type githubClient interface {
+	GetCommitDate(string) (time.Time, error)
 }
 
-type defaultHTTPClient struct{}
+type defaultGithubClient struct{}
 
-func (*defaultHTTPClient) GetURLResponse(url string, trim bool) (string, error) {
-	return http.GetURLResponse(url, trim)
+func (*defaultGithubClient) GetCommitDate(sha string) (date time.Time, err error) {
+	commit, _, err := github.New().Client().GetRepoCommit(
+		context.Background(),
+		git.DefaultGithubOrg,
+		git.DefaultGithubRepo,
+		sha,
+	)
+	if err != nil {
+		return date, err
+	}
+	return commit.GetCommit().GetAuthor().GetDate(), err
 }
 
 //counterfeiter:generate . jobCacheClient
@@ -79,7 +89,7 @@ func (*defaultTestGridClient) BlockingTests(branch string) (tests []string, err 
 
 type BuildVersionClient struct {
 	jobCacheClient jobCacheClient
-	httpClient     httpClient
+	githubClient   githubClient
 	testGridClient testGridClient
 }
 
@@ -87,14 +97,14 @@ type BuildVersionClient struct {
 func NewBuildVersionClient() *BuildVersionClient {
 	return &BuildVersionClient{
 		jobCacheClient: &defaultJobCacheClient{},
-		httpClient:     &defaultHTTPClient{},
+		githubClient:   &defaultGithubClient{},
 		testGridClient: &defaultTestGridClient{},
 	}
 }
 
-// SetHTTPClient can be used to set the HTTP client
-func (b *BuildVersionClient) SetHTTPClient(client httpClient) {
-	b.httpClient = client
+// SetGithubClient can be used to set the github client
+func (b *BuildVersionClient) SetGithubClient(client githubClient) {
+	b.githubClient = client
 }
 
 // SetJobCacheClient can be used to set the job cache client
@@ -202,26 +212,16 @@ func (b *BuildVersionClient) SetBuildVersion(
 
 		matches := regex.ReleaseAndBuildRegex.FindStringSubmatch(version)
 		if matches == nil || len(matches) < 8 {
-			return "", errors.Errorf("Invalid build version: %v", version)
+			return "", errors.Errorf("invalid build version: %v", version)
 		}
 
 		buildRun := matches[6]
 		buildSHA := matches[7]
 
-		// TODO(saschagrunert): refactor on top of a new github package API
-		dateResponse, err := b.httpClient.GetURLResponse(
-			gitHubCommitAPI+buildSHA, true,
-		)
+		date, err := b.githubClient.GetCommitDate(buildSHA)
 		if err != nil {
-			return "", errors.Wrap(err, "getting build date")
+			return "", errors.Wrapf(err, "retrieve repository commit %s", buildSHA)
 		}
-		dateRes, err := command.New("echo", dateResponse).
-			Pipe("jq", "-r", ".[0] | .commit.author.date").
-			RunSilentSuccessOutput()
-		if err != nil {
-			return "", errors.Wrap(err, "filtering date response")
-		}
-		date := dateRes.OutputTrimNL()
 
 		fmt.Fprint(&sb, "(*) Primary job (-) Secondary jobs\n\n")
 		fmt.Fprintf(tw,
