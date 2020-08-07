@@ -12,5 +12,32 @@ steps:
       - REGISTRY=gcr.io/$PROJECT_ID
       - IMAGE=gcr.io/$PROJECT_ID/debian-base
       - BUILD_IMAGE=debian-build
+      - TAG=$_GIT_TAG
+      - PULL_BASE_REF=$_PULL_BASE_REF
+      - IMAGE_VERSION=$_IMAGE_VERSION
+      - CONFIG=$_CONFIG
+      - OS_CODENAME=$_OS_CODENAME
     args:
       - all-push
+
+substitutions:
+  # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
+  # can be used as a substitution
+  _GIT_TAG: '12345'
+  _PULL_BASE_REF: 'dev'
+  _IMAGE_VERSION: 'v0.0.0'
+  _CONFIG: 'v0'
+  _OS_CODENAME: 'codename'
+
+tags:
+- ${_GIT_TAG}
+- ${_PULL_BASE_REF}
+- ${_IMAGE_VERSION}
+- ${_CONFIG}
+- ${_OS_CODENAME}
+
+images:
+  - 'gcr.io/$PROJECT_ID/debian-base-amd64:$_IMAGE_VERSION'
+  - 'gcr.io/$PROJECT_ID/debian-base-amd64:$_GIT_TAG-$_CONFIG'
+  - 'gcr.io/$PROJECT_ID/debian-base-amd64:latest-$_CONFIG'
+  - 'gcr.io/$PROJECT_ID/debian-base-amd64:latest-$_OS_CODENAME'
