@@ -6,6 +6,6 @@ variants:
     OS_CODENAME: 'buster'
   v11:
     CONFIG: 'v11'
-    IMAGE_VERSION: 'v11.0.2'
+    IMAGE_VERSION: 'v11.0.3'
     DEBIAN_BASE_VERSION: 'v1.0.0'
     OS_CODENAME: 'stretch'
