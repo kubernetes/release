@@ -19,7 +19,7 @@ IMAGE ?= $(REGISTRY)/debian-base
 BUILD_IMAGE ?= debian-build
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= v2.1.2
+IMAGE_VERSION ?= v2.1.3
 CONFIG ?= v2
 OS_CODENAME ?= buster
 
