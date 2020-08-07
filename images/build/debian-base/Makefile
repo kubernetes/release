@@ -18,7 +18,10 @@ REGISTRY ?= gcr.io/k8s-staging-build-image
 IMAGE ?= $(REGISTRY)/debian-base
 BUILD_IMAGE ?= debian-build
 
-TAG ?= v2.1.2
+TAG ?= $(shell git describe --tags --always --dirty)
+IMAGE_VERSION ?= v2.1.2
+CONFIG ?= v2
+OS_CODENAME ?= buster
 
 TAR_FILE ?= rootfs.tar
 ARCH?=amd64
@@ -33,22 +36,22 @@ SUDO=$(if $(filter 0,$(shell id -u)),,sudo)
 export DOCKER_CLI_EXPERIMENTAL := enabled
 
 ifeq ($(ARCH),amd64)
-	BASEIMAGE?=debian:buster-slim
+	BASEIMAGE?=debian:$(OS_CODENAME)-slim
 endif
 ifeq ($(ARCH),arm)
-	BASEIMAGE?=arm32v7/debian:buster-slim
+	BASEIMAGE?=arm32v7/debian:$(OS_CODENAME)-slim
 	QEMUARCH=arm
 endif
 ifeq ($(ARCH),arm64)
-	BASEIMAGE?=arm64v8/debian:buster-slim
+	BASEIMAGE?=arm64v8/debian:$(OS_CODENAME)-slim
 	QEMUARCH=aarch64
 endif
 ifeq ($(ARCH),ppc64le)
-	BASEIMAGE?=ppc64le/debian:buster-slim
+	BASEIMAGE?=ppc64le/debian:$(OS_CODENAME)-slim
 	QEMUARCH=ppc64le
 endif
 ifeq ($(ARCH),s390x)
-	BASEIMAGE?=s390x/debian:buster-slim
+	BASEIMAGE?=s390x/debian:$(OS_CODENAME)-slim
 	QEMUARCH=s390x
 endif
 
@@ -65,41 +68,49 @@ all-push-images: $(addprefix sub-push-image-,$(ALL_ARCH))
 all-push: all-push-images push-manifest
 
 push-manifest:
-	docker manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
-	@for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${IMAGE}:${TAG} ${IMAGE}-$${arch}:${TAG}; done
-	docker manifest push --purge ${IMAGE}:${TAG}
+	docker manifest create --amend $(IMAGE):$(IMAGE_VERSION) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(IMAGE_VERSION)~g")
+	@for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${IMAGE}:${IMAGE_VERSION} ${IMAGE}-$${arch}:${IMAGE_VERSION}; done
+	docker manifest push --purge ${IMAGE}:${IMAGE_VERSION}
 
 build: clean
-	cp ./* $(TEMP_DIR)
-	cat Dockerfile.build \
+	cp -r ./$(CONFIG) $(TEMP_DIR)/
+	cat $(CONFIG)/Dockerfile.build \
 		| sed "s|BASEIMAGE|$(BASEIMAGE)|g" \
 		| sed "s|ARCH|$(QEMUARCH)|g" \
-		> $(TEMP_DIR)/Dockerfile.build
+		> $(TEMP_DIR)/$(CONFIG)/Dockerfile.build
 
 ifeq ($(ARCH),amd64)
 	# When building "normally" for amd64, remove the whole line, it has no part in the amd64 image
-	sed "/CROSS_BUILD_/d" $(TEMP_DIR)/Dockerfile.build > $(TEMP_DIR)/Dockerfile.build.tmp
+	sed "/CROSS_BUILD_/d" $(TEMP_DIR)/$(CONFIG)/Dockerfile.build > $(TEMP_DIR)/$(CONFIG)/Dockerfile.build.tmp
 else
 	# When cross-building, only the placeholder "CROSS_BUILD_" should be removed
 	# Register /usr/bin/qemu-ARCH-static as the handler for non-x86 binaries in the kernel
 	$(SUDO) ../../../third_party/multiarch/qemu-user-static/register/register.sh --reset
-	curl -sSL https://github.com/multiarch/qemu-user-static/releases/download/$(QEMUVERSION)/x86_64_qemu-$(QEMUARCH)-static.tar.gz | tar -xz -C $(TEMP_DIR)
+	curl -sSL https://github.com/multiarch/qemu-user-static/releases/download/$(QEMUVERSION)/x86_64_qemu-$(QEMUARCH)-static.tar.gz | tar -xz -C $(TEMP_DIR)/$(CONFIG)
 	# Ensure we don't get surprised by umask settings
-	chmod 0755 $(TEMP_DIR)/qemu-$(QEMUARCH)-static
-	sed "s/CROSS_BUILD_//g" $(TEMP_DIR)/Dockerfile.build > $(TEMP_DIR)/Dockerfile.build.tmp
+	chmod 0755 $(TEMP_DIR)/$(CONFIG)/qemu-$(QEMUARCH)-static
+	sed "s/CROSS_BUILD_//g" $(TEMP_DIR)/$(CONFIG)/Dockerfile.build > $(TEMP_DIR)/$(CONFIG)/Dockerfile.build.tmp
 endif
-	mv $(TEMP_DIR)/Dockerfile.build.tmp $(TEMP_DIR)/Dockerfile.build
+	mv $(TEMP_DIR)/$(CONFIG)/Dockerfile.build.tmp $(TEMP_DIR)/$(CONFIG)/Dockerfile.build
 
-	docker build --pull -t $(BUILD_IMAGE) -f $(TEMP_DIR)/Dockerfile.build $(TEMP_DIR)
+	docker build --pull -t $(BUILD_IMAGE) -f $(TEMP_DIR)/$(CONFIG)/Dockerfile.build $(TEMP_DIR)/$(CONFIG)
 	docker create --name $(BUILD_IMAGE) $(BUILD_IMAGE)
-	docker export $(BUILD_IMAGE) > $(TEMP_DIR)/$(TAR_FILE)
-	docker build -t $(IMAGE)-$(ARCH):$(TAG) $(TEMP_DIR)
+	docker export $(BUILD_IMAGE) > $(TEMP_DIR)/$(CONFIG)/$(TAR_FILE)
+	docker build \
+		-t $(IMAGE)-$(ARCH):$(IMAGE_VERSION) \
+		-t $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
+		-t $(IMAGE)-$(ARCH):latest-$(CONFIG) \
+		-t $(IMAGE)-$(ARCH):latest-$(OS_CODENAME) \
+		$(TEMP_DIR)/$(CONFIG)
 	rm -rf $(TEMP_DIR)
 
 push: build
-	docker push $(IMAGE)-$(ARCH):$(TAG)
+	docker push $(IMAGE)-$(ARCH):$(IMAGE_VERSION)
+	docker push $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG)
+	docker push $(IMAGE)-$(ARCH):latest-$(CONFIG)
+	docker push $(IMAGE)-$(ARCH):latest-$(OS_CODENAME)
 
 clean:
-	docker rmi -f $(IMAGE)-$(ARCH):$(TAG) || true
+	docker rmi -f $(IMAGE)-$(ARCH):$(IMAGE_VERSION) || true
 	docker rmi -f $(BUILD_IMAGE)   || true
 	docker rm  -f $(BUILD_IMAGE)   || true

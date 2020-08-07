@@ -1,0 +1,6 @@
+variants:
+  v12:
+    CONFIG: 'v12'
+    IMAGE_VERSION: 'v12.1.1'
+    DEBIAN_BASE_VERSION: 'v2.1.2'
+    OS_CODENAME: 'buster'

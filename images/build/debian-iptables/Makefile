@@ -16,13 +16,19 @@
 
 REGISTRY?="gcr.io/k8s-staging-build-image"
 IMAGE=$(REGISTRY)/debian-iptables
-TAG?=v12.1.1
+
+TAG ?= $(shell git describe --tags --always --dirty)
+IMAGE_VERSION ?= v12.1.1
+CONFIG ?= v2
+DEBIAN_BASE_VERSION ?= v2.1.2
+OS_CODENAME ?= buster
+
 ARCH?=amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 TEMP_DIR:=$(shell mktemp -d)
 
 BASE_REGISTRY?=k8s.gcr.io/build-image
-BASEIMAGE?=$(BASE_REGISTRY)/debian-base-$(ARCH):v2.1.2
+BASEIMAGE?=$(BASE_REGISTRY)/debian-base-$(ARCH):$(DEBIAN_BASE_VERSION)
 
 # This option is for running docker manifest command
 export DOCKER_CLI_EXPERIMENTAL := enabled
@@ -30,18 +36,27 @@ export DOCKER_CLI_EXPERIMENTAL := enabled
 SUDO=$(if $(filter 0,$(shell id -u)),,sudo)
 
 build:
-	cp ./* $(TEMP_DIR)
-	cd $(TEMP_DIR) && sed -i "s|BASEIMAGE|$(BASEIMAGE)|g" Dockerfile
+	cp -r ./$(CONFIG) $(TEMP_DIR)/
+	cd $(TEMP_DIR)/$(CONFIG) && sed -i "s|BASEIMAGE|$(BASEIMAGE)|g" Dockerfile
 
 ifneq ($(ARCH),amd64)
 	# Register /usr/bin/qemu-ARCH-static as the handler for non-x86 binaries in the kernel
 	$(SUDO) ../../../third_party/multiarch/qemu-user-static/register/register.sh --reset
 endif
 
-	docker build --pull -t $(IMAGE)-$(ARCH):$(TAG) $(TEMP_DIR)
+	docker build \
+		--pull \
+		-t $(IMAGE)-$(ARCH):$(IMAGE_VERSION) \
+		-t $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
+		-t $(IMAGE)-$(ARCH):latest-$(CONFIG) \
+		-t $(IMAGE)-$(ARCH):latest-$(OS_CODENAME) \
+		$(TEMP_DIR)/$(CONFIG)
 
 push: build
-	docker push $(IMAGE)-$(ARCH):$(TAG)
+	docker push $(IMAGE)-$(ARCH):$(IMAGE_VERSION)
+	docker push $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG)
+	docker push $(IMAGE)-$(ARCH):latest-$(CONFIG)
+	docker push $(IMAGE)-$(ARCH):latest-$(OS_CODENAME)
 
 sub-build-%:
 	$(MAKE) ARCH=$* build
@@ -56,8 +71,8 @@ all-push-images: $(addprefix sub-push-image-,$(ALL_ARCH))
 all-push: all-push-images push-manifest
 
 push-manifest:
-	docker manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
-	@for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${IMAGE}:${TAG} ${IMAGE}-$${arch}:${TAG}; done
-	docker manifest push --purge ${IMAGE}:${TAG}
+	docker manifest create --amend $(IMAGE):$(IMAGE_VERSION) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(IMAGE_VERSION)~g")
+	@for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${IMAGE}:${IMAGE_VERSION} ${IMAGE}-$${arch}:${IMAGE_VERSION}; done
+	docker manifest push --purge ${IMAGE}:${IMAGE_VERSION}
 
 all: all-push
