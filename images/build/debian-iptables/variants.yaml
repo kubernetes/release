@@ -4,3 +4,8 @@ variants:
     IMAGE_VERSION: 'v12.1.1'
     DEBIAN_BASE_VERSION: 'v2.1.2'
     OS_CODENAME: 'buster'
+  v11:
+    CONFIG: 'v11'
+    IMAGE_VERSION: 'v11.0.2'
+    DEBIAN_BASE_VERSION: 'v1.0.0'
+    OS_CODENAME: 'stretch'
