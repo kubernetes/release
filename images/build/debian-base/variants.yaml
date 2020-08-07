@@ -5,5 +5,5 @@ variants:
     OS_CODENAME: 'buster'
   v1:
     CONFIG: 'v1'
-    IMAGE_VERSION: 'v1.0.0'
+    IMAGE_VERSION: 'v1.0.1'
     OS_CODENAME: 'stretch'
