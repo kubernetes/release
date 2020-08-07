@@ -18,9 +18,9 @@ REGISTRY?="gcr.io/k8s-staging-build-image"
 IMAGE=$(REGISTRY)/debian-iptables
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= v12.1.1
+IMAGE_VERSION ?= v12.1.2
 CONFIG ?= v2
-DEBIAN_BASE_VERSION ?= v2.1.2
+DEBIAN_BASE_VERSION ?= v2.1.3
 OS_CODENAME ?= buster
 
 ARCH?=amd64
