@@ -1,7 +1,7 @@
 variants:
   v2:
     CONFIG: 'v2'
-    IMAGE_VERSION: 'v2.1.2'
+    IMAGE_VERSION: 'v2.1.3'
     OS_CODENAME: 'buster'
   v1:
     CONFIG: 'v1'
