@@ -173,7 +173,7 @@ GCS_DEST="devel"
 ((FLAGS_ci)) && GCS_DEST="ci"
 GCS_DEST=${FLAGS_release_type:-$GCS_DEST}
 GCS_DEST+="$FLAGS_gcs_suffix"
-GCS_EXTRA_VERSION_MARKERS_STRING="${FLAGS_extra_version_markers:${FLAGS_extra_publish_file:-}}"
+GCS_EXTRA_VERSION_MARKERS_STRING="${FLAGS_extra_version_markers:-${FLAGS_extra_publish_file:-}}"
 
 logecho
 logecho "Extra version markers string: $GCS_EXTRA_VERSION_MARKERS_STRING"
