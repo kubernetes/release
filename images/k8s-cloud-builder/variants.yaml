@@ -1,8 +1,4 @@
 variants:
-  canary:
-    CONFIG: 'canary'
-    KUBE_CROSS_VERSION: 'v1.15.0-rc.2-canary-1'
-    SKOPEO_VERSION: 'v0.2.0'
   cross1.15:
     CONFIG: 'cross1.15'
     KUBE_CROSS_VERSION: 'v1.15.0-rc.2-1'
