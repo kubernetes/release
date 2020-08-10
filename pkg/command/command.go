@@ -18,7 +18,6 @@ package command
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -216,7 +215,6 @@ func (c *Command) RunSilentSuccess() error {
 
 // run is the internal run method
 func (c *Command) run(printOutput bool) (res *Status, err error) {
-	logrus.Debugf("Running command: %v", c.String())
 	var runErr error
 	stdOutBuffer := &bytes.Buffer{}
 	stdErrBuffer := &bytes.Buffer{}
@@ -261,7 +259,7 @@ func (c *Command) run(printOutput bool) (res *Status, err error) {
 		}
 
 		if c.isVerbose() {
-			fmt.Fprintf(stdOutWriter, "+ %s\n", c.String())
+			logrus.Infof("+ %s", c.String())
 		}
 
 		if err := cmd.Start(); err != nil {

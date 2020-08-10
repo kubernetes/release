@@ -64,7 +64,6 @@ func TestFailurePipeWrongArgument(t *testing.T) {
 func TestSuccessVerbose(t *testing.T) {
 	res, err := New("echo", "hi").Verbose().Run()
 	require.Nil(t, err)
-	require.Contains(t, res.stdOut, "echo hi")
 	require.True(t, res.Success())
 	require.Zero(t, res.ExitCode())
 }
