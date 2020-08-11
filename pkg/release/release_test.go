@@ -20,6 +20,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/url"
@@ -442,4 +443,78 @@ func TestGetKubecrossVersionFailureNotExisting(t *testing.T) {
 func TestGetKubecrossVersionFailureEmpty(t *testing.T) {
 	_, err := GetKubecrossVersion()
 	require.NotNil(t, err)
+}
+
+func writeTestManifests(t *testing.T) (mockPath string) {
+	tmpDir, err := ioutil.TempDir("", "")
+	require.Nil(t, err)
+
+	// Sample manifests
+	var mockManifests = map[string]string{
+		"amd64": `[{"Config":"3da02591bd93f4db77a2ee5fb83f28315bb034657447168cfa1ce6161a446873.json","RepoTags":["k8s.gcr.io/kube-apiserver-amd64:v1.19.0-rc.4","gcr.io/k8s-staging-kubernetes/kube-apiserver-amd64:v1.19.0-rc.4"],"Layers":["513643face35501b7b23d0c580bc9abea0d881b2ecc50cb9cb28f4ae58419552/layer.tar","b3b0bad90dd3a6fc642439a93726fcf3028505d1be034327a6d86fe357c3ea50/layer.tar","fcd29bdb829b1c4cf3bbdec0f44a5475d5b9877f225d39c3c22fa1902326261c/layer.tar"]}]`,
+		"arm64": `[{"Config":"c47b48fe11f383c6e4f30fea7dbf507329d326e94524f8989328d3028a6bf5f5.json","RepoTags":["k8s.gcr.io/kube-apiserver-arm64:v1.19.0-rc.4","gcr.io/k8s-staging-kubernetes/kube-apiserver-arm64:v1.19.0-rc.4"],"Layers":["b3b0bad90dd3a6fc642439a93726fcf3028505d1be034327a6d86fe357c3ea50/layer.tar","db36fea64d6ee6553972b5fbae343c5fcd7cba44445db22e2ba5471045595372/layer.tar"]}]`,
+	}
+
+	// Prepare test environment
+	for arch, manifest := range mockManifests {
+		// Create the mock image directory
+		require.Nil(t, os.MkdirAll(filepath.Join(tmpDir, ImagesPath, arch), os.ModePerm))
+
+		// Create the fake image tar
+		var b bytes.Buffer
+		tw := tar.NewWriter(&b)
+		require.Nil(t, tw.WriteHeader(&tar.Header{
+			Name: "manifest.json",
+			Size: int64(len(manifest)),
+		}))
+		_, err = fmt.Fprint(tw, manifest)
+		require.Nil(t, err)
+		require.Nil(t, tw.Close())
+
+		require.Nil(t, ioutil.WriteFile(
+			filepath.Join(filepath.Join(tmpDir, ImagesPath, arch), "kube-apiserver.tar"),
+			b.Bytes(),
+			os.FileMode(0o644),
+		), "Failed writing mock tarfile")
+	}
+	return tmpDir
+}
+
+func TestGetImageTags(t *testing.T) {
+	mockDir := writeTestManifests(t)
+	require.NotEmpty(t, mockDir)
+	defer cleanupTmps(t, mockDir)
+
+	// Now, call the release lib and try to extract the tags
+	tagList, err := GetImageTags(mockDir)
+	require.Nil(t, err)
+
+	for arch, tags := range tagList {
+		require.Equal(t, fmt.Sprintf("k8s.gcr.io/kube-apiserver-%s:v1.19.0-rc.4", arch), tags[0])
+		require.Equal(t, fmt.Sprintf("gcr.io/k8s-staging-kubernetes/kube-apiserver-%s:v1.19.0-rc.4", arch), tags[1])
+	}
+}
+
+func TestGetTarManifest(t *testing.T) {
+	mockDir := writeTestManifests(t)
+	require.NotEmpty(t, mockDir)
+	defer cleanupTmps(t, mockDir)
+
+	// Read the mock manifests and check we are reporting the data
+	finfos, err := ioutil.ReadDir(filepath.Join(mockDir, ImagesPath))
+	require.Nil(t, err, "reading mock monifests directory")
+	for _, finfo := range finfos {
+		manifest, err := GetTarManifest(filepath.Join(mockDir, ImagesPath, finfo.Name(), "kube-apiserver.tar"))
+		require.Nil(t, err)
+		switch finfo.Name() {
+		case "amd64":
+			require.Equal(t, "3da02591bd93f4db77a2ee5fb83f28315bb034657447168cfa1ce6161a446873.json", manifest.Config)
+			require.Equal(t, 3, len(manifest.Layers), "checking number of layers read")
+		case "arm64":
+			require.Equal(t, "c47b48fe11f383c6e4f30fea7dbf507329d326e94524f8989328d3028a6bf5f5.json", manifest.Config)
+			require.Equal(t, 2, len(manifest.Layers), "checking number of layers read")
+		}
+		require.Equal(t, fmt.Sprintf("k8s.gcr.io/kube-apiserver-%s:v1.19.0-rc.4", finfo.Name()), manifest.RepoTags[0])
+		require.Equal(t, fmt.Sprintf("gcr.io/k8s-staging-kubernetes/kube-apiserver-%s:v1.19.0-rc.4", finfo.Name()), manifest.RepoTags[1])
+	}
 }

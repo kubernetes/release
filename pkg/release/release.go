@@ -24,6 +24,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/containers/image/docker/tarfile"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -51,6 +53,9 @@ const (
 	bazelVersionPath  = "bazel-bin/version"
 	dockerVersionPath = "kubernetes/version"
 	kubernetesTar     = "kubernetes.tar.gz"
+
+	// Directory
+	ImagesPath = "release-images"
 
 	// GCSStagePath is the directory where release artifacts are staged before
 	// push to GCS.
@@ -195,4 +200,63 @@ func URLPrefixForBucket(bucket string) string {
 		urlPrefix = ProductionBucketURL
 	}
 	return urlPrefix
+}
+
+// GetImageTags Takes a workdir and returns the release images from the manifests
+func GetImageTags(workDir string) (imagesList map[string][]string, err error) {
+	// Our image list will be lists of tags indexed by arch
+	imagesList = make(map[string][]string)
+
+	// Images are held inside a subdir of the workdir
+	imagesDir := filepath.Join(workDir, ImagesPath)
+	if !util.Exists(imagesDir) {
+		return nil, errors.Errorf("images directory %s does not exist", imagesDir)
+	}
+
+	archDirs, err := ioutil.ReadDir(imagesDir)
+	if err != nil {
+		return nil, errors.Wrap(err, "reading images dir")
+	}
+
+	for _, archDir := range archDirs {
+		imagesList[archDir.Name()] = make([]string, 0)
+		tarFiles, err := ioutil.ReadDir(filepath.Join(imagesDir, archDir.Name()))
+		if err != nil {
+			return nil, errors.Wrapf(err, "listing tar files for %s", archDir.Name())
+		}
+		for _, tarFile := range tarFiles {
+			tarmanifest, err := GetTarManifest(filepath.Join(imagesDir, archDir.Name(), tarFile.Name()))
+			if err != nil {
+				return nil, errors.Wrapf(
+					err, "while getting the manifest from %s/%s",
+					archDir.Name(), tarFile.Name(),
+				)
+			}
+			imagesList[archDir.Name()] = append(imagesList[archDir.Name()], tarmanifest.RepoTags...)
+		}
+	}
+	return imagesList, nil
+}
+
+// GetTarManifest return the image tar manifest
+func GetTarManifest(tarPath string) (*tarfile.ManifestItem, error) {
+	imageSource, err := tarfile.NewSourceFromFile(tarPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating image source from tar file")
+	}
+
+	defer func() {
+		if err := imageSource.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+
+	tarManifest, err := imageSource.LoadTarManifest()
+	if err != nil {
+		return nil, errors.Wrap(err, "reading the tar manifest")
+	}
+	if len(tarManifest) == 0 {
+		return nil, errors.New("could not find a tar manifest in the specified tar file")
+	}
+	return &tarManifest[0], nil
 }

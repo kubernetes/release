@@ -8,6 +8,8 @@ require (
 	github.com/GoogleCloudPlatform/testgrid v0.0.22
 	github.com/bazelbuild/rules_go v0.24.2
 	github.com/blang/semver v3.5.1+incompatible
+	github.com/containers/image v3.0.2+incompatible
+	github.com/containers/image/v5 v5.6.0
 	github.com/go-git/go-git/v5 v5.1.0
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-github/v29 v29.0.3
@@ -15,6 +17,8 @@ require (
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.3
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481
 	github.com/olekukonko/tablewriter v0.0.4
+	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6
 	github.com/pkg/errors v0.9.1
 	github.com/psampaz/go-mod-outdated v0.6.0
 	github.com/saschagrunert/go-modiff v1.2.0
