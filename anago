@@ -31,7 +31,6 @@ PROG=${0##*/}
 #+            [--security_layer=/path/to/pointer/to/script]
 #+            [--exclude-suites="<suite> ..."]
 #+            [--prebuild] [--buildonly]
-#+            [--mailto=<email1>,<email2>]
 #+            [--tmpdir=</alt/tmp>]
 #+     $PROG  [--helpshort|--usage|-?]
 #+     $PROG  [--help|-man]
@@ -122,8 +121,6 @@ PROG=${0##*/}
 #+                                 Default: $HOME/.kubernetes-releaserc
 #+     [--exclude-suites=]       - Space separated list of CI suites regex to
 #+                                 exclude from go/nogo criteria
-#+     [--mailto=]               - Comma-separated list of addresses to send
-#+                                 announcement email to. Overrides default list.
 #+     [--github-release-draft]  - Force a github release draft for mock runs.
 #+                                 The draft placeholder if left behind can
 #+                                 cause issues with the real release.
