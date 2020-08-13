@@ -1548,15 +1548,17 @@ if [[ $RELEASE_BRANCH =~ release- ]] &&
   gitlib::pending_prs $RELEASE_BRANCH
 fi
 
+# TODO(hack): Temporarily comment out the GCS target check to allow an override
+#             of nomock artifacts for 1.18.7 and 1.17.10 releases.
 # No need to pre-check this for mock or staging runs.  Overwriting OK.
-if ((FLAGS_nomock)) && ! ((FLAGS_stage)); then
-  common::stepheader "GCS TARGET CHECK"
-  # Ensure GCS destinations are clear before continuing
-  for v in ${RELEASE_VERSION[@]}; do
-    release::gcs::destination_empty \
-     gs://$RELEASE_BUCKET/$BUCKET_TYPE/$v || common::exit 1 "Exiting..."
-  done
-fi
+#if ((FLAGS_nomock)) && ! ((FLAGS_stage)); then
+#  common::stepheader "GCS TARGET CHECK"
+#  # Ensure GCS destinations are clear before continuing
+#  for v in ${RELEASE_VERSION[@]}; do
+#    release::gcs::destination_empty \
+#     gs://$RELEASE_BUCKET/$BUCKET_TYPE/$v || common::exit 1 "Exiting..."
+#  done
+#fi
 
 common::stepheader "SESSION VALUES"
 # Show versions and ask for confirmation to continue
