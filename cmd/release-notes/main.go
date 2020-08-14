@@ -62,16 +62,16 @@ func init() {
 	// githubOrg contains name of github organization that holds the repo to scrape.
 	cmd.PersistentFlags().StringVar(
 		&opts.GithubOrg,
-		"github-org",
-		util.EnvDefault("GITHUB_ORG", notes.DefaultOrg),
+		"org",
+		util.EnvDefault("ORG", notes.DefaultOrg),
 		"Name of github organization",
 	)
 
 	// githubRepo contains name of github repository to scrape.
 	cmd.PersistentFlags().StringVar(
 		&opts.GithubRepo,
-		"github-repo",
-		util.EnvDefault("GITHUB_REPO", notes.DefaultRepo),
+		"repo",
+		util.EnvDefault("REPO", notes.DefaultRepo),
 		"Name of github repository",
 	)
 

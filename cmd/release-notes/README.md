@@ -73,8 +73,8 @@ level=debug timestamp=2019-07-30T04:02:44.3716249Z caller=notes.go:497 msg="Excl
 | ----------------------- | --------------- | ------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | **GITHUB REPO OPTIONS** |
 |                         | GITHUB_TOKEN    |                     | Yes      | A personal GitHub access token                                                                                                    |
-| github-org              | GITHUB_ORG      | kubernetes          | Yes      | Name of GitHub organization                                                                                                       |
-| github-repo             | GITHUB_REPO     | kubernetes          | Yes      | Name of GitHub repository                                                                                                         |
+| org                     | ORG             | kubernetes          | Yes      | Name of GitHub organization                                                                                                       |
+| repo                    | REPO            | kubernetes          | Yes      | Name of GitHub repository                                                                                                         |
 | required-author         | REQUIRED_AUTHOR | k8s-ci-robot        | Yes      | Only commits from this GitHub user are considered. Set to empty string to include all users                                       |
 | branch                  | BRANCH          | master              | Yes      | The GitHub repository branch to scrape                                                                                            |
 | start-sha               | START_SHA       |                     | Yes      | The commit hash to start processing from (inclusive)                                                                              |
