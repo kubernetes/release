@@ -15,11 +15,13 @@
 # set default shell
 SHELL=/bin/bash -o pipefail
 
-TAG ?= v0.1.1
-REGISTRY ?= k8s.gcr.io
-
+REGISTRY ?= gcr.io/k8s-staging-build-image
 IMGNAME = go-runner
 IMAGE = $(REGISTRY)/$(IMGNAME)
+
+TAG ?= $(shell git describe --tags --always --dirty)
+IMAGE_VERSION ?= v0.1.1
+CONFIG ?= buster
 
 PLATFORMS = linux/amd64 linux/arm64 linux/arm linux/ppc64le linux/s390x
 
@@ -48,18 +50,24 @@ container: init-docker-buildx
 		--load \
 		--progress plain \
 		--platform $(PLATFORM) \
-		--tag $(IMAGE)-$(PLATFORM):$(TAG) .;)
+		--tag $(IMAGE)-$(PLATFORM):$(IMAGE_VERSION) \
+		--tag $(IMAGE)-$(PLATFORM):$(TAG)-$(CONFIG) \
+		--tag $(IMAGE)-$(PLATFORM):latest-$(CONFIG) .;)
 
 .PHONY: push
 push: container
 	$(foreach PLATFORM,$(PLATFORMS), \
-		docker push $(IMAGE)-$(PLATFORM):$(TAG);)
+		docker push $(IMAGE)-$(PLATFORM):$(IMAGE_VERSION);)
+	$(foreach PLATFORM,$(PLATFORMS), \
+		docker push $(IMAGE)-$(PLATFORM):$(TAG)-$(CONFIG);)
+	$(foreach PLATFORM,$(PLATFORMS), \
+		docker push $(IMAGE)-$(PLATFORM):latest-$(CONFIG);)
 
 .PHONY: manifest
 manifest: push
-	docker manifest create --amend $(IMAGE):$(TAG) $(shell echo $(PLATFORMS) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
-	@for arch in $(PLATFORMS); do docker manifest annotate --arch "$${arch##*/}" ${IMAGE}:${TAG} ${IMAGE}-$${arch}:${TAG}; done
-	docker manifest push --purge $(IMAGE):$(TAG)
+	docker manifest create --amend $(IMAGE):$(IMAGE_VERSION) $(shell echo $(PLATFORMS) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(IMAGE_VERSION)~g")
+	@for arch in $(PLATFORMS); do docker manifest annotate --arch "$${arch##*/}" ${IMAGE}:${IMAGE_VERSION} ${IMAGE}-$${arch}:${IMAGE_VERSION}; done
+	docker manifest push --purge $(IMAGE):$(IMAGE_VERSION)
 
 .PHONY: init-docker-buildx
 init-docker-buildx:

@@ -1,0 +1,4 @@
+variants:
+  v0:
+    CONFIG: 'buster'
+    IMAGE_VERSION: 'v0.1.1'

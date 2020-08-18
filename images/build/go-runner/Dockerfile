@@ -22,7 +22,8 @@ ARG goproxy=https://proxy.golang.org
 ENV GOPROXY=$goproxy
 
 # Copy the sources
-COPY ./ ./
+COPY ./go-runner.go ./
+COPY ./go.* ./
 
 # Cache the go build
 RUN go build .

@@ -15,8 +15,31 @@ steps:
     - DOCKER_CLI_EXPERIMENTAL=enabled
     - REGISTRY=gcr.io/$PROJECT_ID
     - HOME=/root
+    - TAG=$_GIT_TAG
+    - PULL_BASE_REF=$_PULL_BASE_REF
+    - IMAGE_VERSION=$_IMAGE_VERSION
+    - CONFIG=$_CONFIG
     args:
     - '-c'
     - |
       gcloud auth configure-docker \
       && make manifest
+
+substitutions:
+  # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
+  # can be used as a substitution
+  _GIT_TAG: '12345'
+  _PULL_BASE_REF: 'dev'
+  _IMAGE_VERSION: 'codename-v0.0.0'
+  _CONFIG: 'codename'
+
+tags:
+- ${_GIT_TAG}
+- ${_PULL_BASE_REF}
+- ${_IMAGE_VERSION}
+- ${_CONFIG}
+
+images:
+  - 'gcr.io/$PROJECT_ID/go-runner-linux/amd64:$_IMAGE_VERSION'
+  - 'gcr.io/$PROJECT_ID/go-runner-linux/amd64:$_GIT_TAG-$_CONFIG'
+  - 'gcr.io/$PROJECT_ID/go-runner-linux/amd64:latest-$_CONFIG'
