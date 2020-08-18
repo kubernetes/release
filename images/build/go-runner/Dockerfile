@@ -13,8 +13,9 @@
 # limitations under the License.
 
 # Build the manager binary
+ARG GO_VERSION
 ARG DISTROLESS_IMAGE
-FROM golang:1.13 as builder
+FROM golang:${GO_VERSION} as builder
 WORKDIR /workspace
 
 # Run this with docker build --build_arg goproxy=$(go env GOPROXY) to override the goproxy

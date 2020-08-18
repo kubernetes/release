@@ -22,6 +22,9 @@ IMAGE = $(REGISTRY)/$(IMGNAME)
 TAG ?= $(shell git describe --tags --always --dirty)
 IMAGE_VERSION ?= buster-v1.0.0
 CONFIG ?= buster
+
+# Build args
+GO_VERSION ?= 1.13.15
 DISTROLESS_IMAGE ?= static-debian10
 
 PLATFORMS = linux/amd64 linux/arm64 linux/arm linux/ppc64le linux/s390x
@@ -54,6 +57,7 @@ container: init-docker-buildx
 		--tag $(IMAGE)-$(PLATFORM):$(IMAGE_VERSION) \
 		--tag $(IMAGE)-$(PLATFORM):$(TAG)-$(CONFIG) \
 		--tag $(IMAGE)-$(PLATFORM):latest-$(CONFIG) \
+		--build-arg=GO_VERSION=$(GO_VERSION) \
 		--build-arg=DISTROLESS_IMAGE=$(DISTROLESS_IMAGE) .;)
 
 .PHONY: push
