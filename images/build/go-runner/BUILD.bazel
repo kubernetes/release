@@ -3,9 +3,9 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["go-runner.go"],
-    importpath = "k8s.io/kubernetes/build/go-runner",
+    importpath = "k8s.io/release/images/build/go-runner",
     visibility = ["//visibility:private"],
-    deps = ["//vendor/github.com/pkg/errors:go_default_library"],
+    deps = ["@com_github_pkg_errors//:go_default_library"],
 )
 
 go_binary(

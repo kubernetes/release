@@ -1,4 +1,4 @@
-module k8s.io/kubernetes/build/go-runner
+module k8s.io/release/images/build/go-runner
 
 go 1.15
 
