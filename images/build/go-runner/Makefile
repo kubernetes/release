@@ -20,8 +20,9 @@ IMGNAME = go-runner
 IMAGE = $(REGISTRY)/$(IMGNAME)
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= v0.1.1
+IMAGE_VERSION ?= buster-v1.0.0
 CONFIG ?= buster
+DISTROLESS_IMAGE ?= static-debian10
 
 PLATFORMS = linux/amd64 linux/arm64 linux/arm linux/ppc64le linux/s390x
 
@@ -52,7 +53,8 @@ container: init-docker-buildx
 		--platform $(PLATFORM) \
 		--tag $(IMAGE)-$(PLATFORM):$(IMAGE_VERSION) \
 		--tag $(IMAGE)-$(PLATFORM):$(TAG)-$(CONFIG) \
-		--tag $(IMAGE)-$(PLATFORM):latest-$(CONFIG) .;)
+		--tag $(IMAGE)-$(PLATFORM):latest-$(CONFIG) \
+		--build-arg=DISTROLESS_IMAGE=$(DISTROLESS_IMAGE) .;)
 
 .PHONY: push
 push: container

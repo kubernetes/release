@@ -19,6 +19,7 @@ steps:
     - PULL_BASE_REF=$_PULL_BASE_REF
     - IMAGE_VERSION=$_IMAGE_VERSION
     - CONFIG=$_CONFIG
+    - DISTROLESS_IMAGE=$_DISTROLESS_IMAGE
     args:
     - '-c'
     - |
@@ -32,12 +33,14 @@ substitutions:
   _PULL_BASE_REF: 'dev'
   _IMAGE_VERSION: 'codename-v0.0.0'
   _CONFIG: 'codename'
+  _DISTROLESS_IMAGE: 'static-debian00'
 
 tags:
 - ${_GIT_TAG}
 - ${_PULL_BASE_REF}
 - ${_IMAGE_VERSION}
 - ${_CONFIG}
+- ${_DISTROLESS_IMAGE}
 
 images:
   - 'gcr.io/$PROJECT_ID/go-runner-linux/amd64:$_IMAGE_VERSION'

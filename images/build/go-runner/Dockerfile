@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # Build the manager binary
+ARG DISTROLESS_IMAGE
 FROM golang:1.13 as builder
 WORKDIR /workspace
 
@@ -38,7 +39,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} \
     -o go-runner ${package}
 
 # Production image
-FROM gcr.io/distroless/static:latest
+FROM gcr.io/distroless/${DISTROLESS_IMAGE}:latest
 LABEL maintainers="Kubernetes Authors"
 LABEL description="go based runner for distroless scenarios"
 WORKDIR /
