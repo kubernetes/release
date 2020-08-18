@@ -20,11 +20,11 @@ IMGNAME = go-runner
 IMAGE = $(REGISTRY)/$(IMGNAME)
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= buster-v1.0.1
+IMAGE_VERSION ?= buster-v2.0.0
 CONFIG ?= buster
 
 # Build args
-GO_VERSION ?= 1.13.15
+GO_VERSION ?= 1.15
 DISTROLESS_IMAGE ?= static-debian10
 
 PLATFORMS ?= linux/amd64 linux/arm64 linux/arm linux/ppc64le linux/s390x
