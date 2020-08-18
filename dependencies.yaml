@@ -98,3 +98,9 @@ dependencies:
     refPaths:
     - path: images/build/debian-hyperkube-base/Makefile
       match: BASEIMAGE\?\=\$\(BASE_REGISTRY\)\/debian-iptables-\$\(ARCH\):v\d+\.\d+\.\d+
+
+  - name: "k8s.gcr.io/go-runner"
+    version: 0.1.1
+    refPaths:
+    - path: images/build/go-runner/Makefile
+      match: TAG \?=
