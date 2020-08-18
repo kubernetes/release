@@ -16,7 +16,6 @@ steps:
       - IMAGE_VERSION=$_IMAGE_VERSION
       - CONFIG=$_CONFIG
       - DEBIAN_BASE_VERSION=$_DEBIAN_BASE_VERSION
-      - OS_CODENAME=$_OS_CODENAME
     args:
       - all-push
 
@@ -26,9 +25,8 @@ substitutions:
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
   _IMAGE_VERSION: 'v0.0.0'
-  _CONFIG: 'v0'
+  _CONFIG: 'codename'
   _DEBIAN_BASE_VERSION: 'v0.0.0'
-  _OS_CODENAME: 'codename'
 
 tags:
 - ${_GIT_TAG}
@@ -36,10 +34,8 @@ tags:
 - ${_IMAGE_VERSION}
 - ${_CONFIG}
 - ${_DEBIAN_BASE_VERSION}
-- ${_OS_CODENAME}
 
 images:
   - 'gcr.io/$PROJECT_ID/debian-iptables-amd64:$_IMAGE_VERSION'
   - 'gcr.io/$PROJECT_ID/debian-iptables-amd64:$_GIT_TAG-$_CONFIG'
   - 'gcr.io/$PROJECT_ID/debian-iptables-amd64:latest-$_CONFIG'
-  - 'gcr.io/$PROJECT_ID/debian-iptables-amd64:latest-$_OS_CODENAME'
