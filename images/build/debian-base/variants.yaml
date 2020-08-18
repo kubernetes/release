@@ -1,9 +1,7 @@
 variants:
-  v2:
-    CONFIG: 'v2'
-    IMAGE_VERSION: 'v2.1.3'
-    OS_CODENAME: 'buster'
-  v1:
-    CONFIG: 'v1'
-    IMAGE_VERSION: 'v1.1.0'
-    OS_CODENAME: 'stretch'
+  buster:
+    CONFIG: 'buster'
+    IMAGE_VERSION: 'buster-v1.1.3'
+  stretch:
+    CONFIG: 'stretch'
+    IMAGE_VERSION: 'stretch-v1.1.0'

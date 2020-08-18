@@ -19,9 +19,8 @@ IMAGE ?= $(REGISTRY)/debian-base
 BUILD_IMAGE ?= debian-build
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= v2.1.3
-CONFIG ?= v2
-OS_CODENAME ?= buster
+IMAGE_VERSION ?= buster-v1.1.3
+CONFIG ?= buster
 
 TAR_FILE ?= rootfs.tar
 ARCH?=amd64
@@ -36,22 +35,22 @@ SUDO=$(if $(filter 0,$(shell id -u)),,sudo)
 export DOCKER_CLI_EXPERIMENTAL := enabled
 
 ifeq ($(ARCH),amd64)
-	BASEIMAGE?=debian:$(OS_CODENAME)-slim
+	BASEIMAGE?=debian:$(CONFIG)-slim
 endif
 ifeq ($(ARCH),arm)
-	BASEIMAGE?=arm32v7/debian:$(OS_CODENAME)-slim
+	BASEIMAGE?=arm32v7/debian:$(CONFIG)-slim
 	QEMUARCH=arm
 endif
 ifeq ($(ARCH),arm64)
-	BASEIMAGE?=arm64v8/debian:$(OS_CODENAME)-slim
+	BASEIMAGE?=arm64v8/debian:$(CONFIG)-slim
 	QEMUARCH=aarch64
 endif
 ifeq ($(ARCH),ppc64le)
-	BASEIMAGE?=ppc64le/debian:$(OS_CODENAME)-slim
+	BASEIMAGE?=ppc64le/debian:$(CONFIG)-slim
 	QEMUARCH=ppc64le
 endif
 ifeq ($(ARCH),s390x)
-	BASEIMAGE?=s390x/debian:$(OS_CODENAME)-slim
+	BASEIMAGE?=s390x/debian:$(CONFIG)-slim
 	QEMUARCH=s390x
 endif
 
@@ -100,7 +99,6 @@ endif
 		-t $(IMAGE)-$(ARCH):$(IMAGE_VERSION) \
 		-t $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
 		-t $(IMAGE)-$(ARCH):latest-$(CONFIG) \
-		-t $(IMAGE)-$(ARCH):latest-$(OS_CODENAME) \
 		$(TEMP_DIR)/$(CONFIG)
 	rm -rf $(TEMP_DIR)
 
@@ -108,7 +106,6 @@ push: build
 	docker push $(IMAGE)-$(ARCH):$(IMAGE_VERSION)
 	docker push $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG)
 	docker push $(IMAGE)-$(ARCH):latest-$(CONFIG)
-	docker push $(IMAGE)-$(ARCH):latest-$(OS_CODENAME)
 
 clean:
 	docker rmi -f $(IMAGE)-$(ARCH):$(IMAGE_VERSION) || true
