@@ -18,14 +18,25 @@ ARG DISTROLESS_IMAGE
 FROM golang:${GO_VERSION} as builder
 WORKDIR /workspace
 
-# Run this with docker build --build_arg goproxy=$(go env GOPROXY) to override the goproxy
-ARG goproxy=https://proxy.golang.org
-# Run this with docker build --build_arg package=./controlplane/kubeadm or --build_arg package=./bootstrap/kubeadm
-ENV GOPROXY=$goproxy
-
 # Copy the sources
 COPY ./go-runner.go ./
 COPY ./go.* ./
+
+# Allow fallback to 'direct' for GOPROXY
+#
+# The GOPROXY environment variable now supports skipping proxies that return
+# errors. Proxy URLs may now be separated with either commas (,) or pipe
+# characters (|). If a proxy URL is followed by a comma, the go command will
+# only try the next proxy in the list after a 404 or 410 HTTP response. If a
+# proxy URL is followed by a pipe character, the go command will try the next
+# proxy in the list after any error. Note that the default value of GOPROXY
+# remains https://proxy.golang.org,direct, which does not fall back to direct
+# in case of errors.
+#
+# ref: https://golang.org/doc/go1.15#go-command
+ENV GOPROXY="https://proxy.golang.org|direct"
+
+RUN go env
 
 # Cache the go build
 RUN go build .
