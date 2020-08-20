@@ -82,6 +82,12 @@ init-docker-buildx:
 ifneq ($(shell docker buildx 2>&1 >/dev/null; echo $?),)
 	$(error "buildx not vailable. Docker 19.03 or higher is required")
 endif
-	docker run --rm --privileged linuxkit/binfmt:4ea3b9b0938cbd19834c096aa31ff475cc75d281
-	docker buildx create --name multiarch-go-runner --use || true
+	# Ensure qemu is in binfmt_misc
+	# NOTE: Please always pin this to a digest for predictability/auditability
+	# Last updated: 08/21/2020
+	docker run --rm --privileged multiarch/qemu-user-static@sha256:96c2efd64db20bc326788773f6fa7cecef71b9d2c3de4c7d95a9910f38295c42 --reset -p yes
+
+	# Ensure we use a builder that can leverage it (the default on linux will not)
+	docker buildx rm multiarch-go-runner || true
+	docker buildx create --name multiarch-go-runner --use
 	docker buildx inspect --bootstrap
