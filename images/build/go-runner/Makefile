@@ -48,8 +48,10 @@ clean:
 
 .PHONY: container
 container: init-docker-buildx
+	echo "Building go-runner for the following platforms: $(PLATFORMS)"
 	# https://github.com/docker/buildx/issues/59
 	$(foreach PLATFORM,$(PLATFORMS), \
+		echo "Starting build for $(PLATFORM) platform"; \
 		DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build \
 		--load \
 		--progress plain \
