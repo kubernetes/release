@@ -5,7 +5,6 @@ go_library(
     srcs = ["go-runner.go"],
     importpath = "k8s.io/release/images/build/go-runner",
     visibility = ["//visibility:private"],
-    deps = ["@com_github_pkg_errors//:go_default_library"],
 )
 
 go_binary(
