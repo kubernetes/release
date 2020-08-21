@@ -100,7 +100,7 @@ dependencies:
       match: BASEIMAGE\?\=\$\(BASE_REGISTRY\)\/debian-iptables-\$\(ARCH\):v\d+\.\d+\.\d+
 
   - name: "k8s.gcr.io/go-runner"
-    version: buster-v1.0.0
+    version: buster-v1.0.1
     refPaths:
     - path: images/build/go-runner/Makefile
       match: IMAGE_VERSION\ \?=\ [a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)

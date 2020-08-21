@@ -20,7 +20,7 @@ IMGNAME = go-runner
 IMAGE = $(REGISTRY)/$(IMGNAME)
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= buster-v1.0.0
+IMAGE_VERSION ?= buster-v1.0.1
 CONFIG ?= buster
 
 # Build args
