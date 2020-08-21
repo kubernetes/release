@@ -20,14 +20,14 @@ IMGNAME = go-runner
 IMAGE = $(REGISTRY)/$(IMGNAME)
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= buster-v1.0.1
+IMAGE_VERSION ?= buster-v2.0.0
 CONFIG ?= buster
 
 # Build args
-GO_VERSION ?= 1.13.15
+GO_VERSION ?= 1.15
 DISTROLESS_IMAGE ?= static-debian10
 
-PLATFORMS = linux/amd64 linux/arm64 linux/arm linux/ppc64le linux/s390x
+PLATFORMS ?= linux/amd64 linux/arm64 linux/arm linux/ppc64le linux/s390x
 
 HOST_GOOS ?= $(shell go env GOOS)
 HOST_GOARCH ?= $(shell go env GOARCH)
@@ -48,8 +48,10 @@ clean:
 
 .PHONY: container
 container: init-docker-buildx
+	echo "Building go-runner for the following platforms: $(PLATFORMS)"
 	# https://github.com/docker/buildx/issues/59
 	$(foreach PLATFORM,$(PLATFORMS), \
+		echo "Starting build for $(PLATFORM) platform"; \
 		DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build \
 		--load \
 		--progress plain \
@@ -80,6 +82,12 @@ init-docker-buildx:
 ifneq ($(shell docker buildx 2>&1 >/dev/null; echo $?),)
 	$(error "buildx not vailable. Docker 19.03 or higher is required")
 endif
-	docker run --rm --privileged linuxkit/binfmt:4ea3b9b0938cbd19834c096aa31ff475cc75d281
-	docker buildx create --name multiarch-go-runner --use || true
+	# Ensure qemu is in binfmt_misc
+	# NOTE: Please always pin this to a digest for predictability/auditability
+	# Last updated: 08/21/2020
+	docker run --rm --privileged multiarch/qemu-user-static@sha256:c772ee1965aa0be9915ee1b018a0dd92ea361b4fa1bcab5bbc033517749b2af4 --reset -p yes
+
+	# Ensure we use a builder that can leverage it (the default on linux will not)
+	docker buildx rm multiarch-go-runner || true
+	docker buildx create --name multiarch-go-runner --use
 	docker buildx inspect --bootstrap
