@@ -27,9 +27,6 @@ ENV GOPROXY=$goproxy
 COPY ./go-runner.go ./
 COPY ./go.* ./
 
-# Cache the go build
-RUN go build .
-
 # Build
 ARG package=.
 ARG ARCH
