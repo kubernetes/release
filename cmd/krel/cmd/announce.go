@@ -17,108 +17,41 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-
-	"k8s.io/release/pkg/http"
-	"k8s.io/release/pkg/mail"
-	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/util"
 )
 
 const (
-	sendgridAPIKeyEnvKey = "SENDGRID_API_KEY"
-	nameFlag             = "name"
-	emailFlag            = "email"
-	tagFlag              = "tag"
-	printOnlyFlag        = "print-only"
+	tagFlag       = "tag"
+	printOnlyFlag = "print-only"
 )
 
-// announceCmd represents the subcommand for `krel announce`
-var announceCmd = &cobra.Command{
-	Use:   "announce",
-	Short: "Announce Kubernetes releases",
-	Long: fmt.Sprintf(`krel announce
-
-krel announce can be used to mail an announcement of an already
-built Kubernetes release to the %q and %q Google Groups.
-
-By default the mail will be sent only to a test Google Group %q,
-ie: the announcement run will only be a mock run.  To do an
-official announcement, use the --nomock flag.
-
-It is necessary to export the $%s environment variable. An API key can be created by
-registering a sendgrid.com account and adding the key here:
-
-https://app.sendgrid.com/settings/api_keys
-
-Beside this, if the flags for a valid sender name (--%s,-n) and sender email
-address (--%s,-e) are not set, then it tries to retrieve those values directly
-from the Sendgrid API.
-
-Setting a valid Kubernetes tag (--%s,-t) is always necessary.
-
-If --%s,-p is given, then krel announce will only print the email content
-without doing anything else.`,
-		mail.KubernetesAnnounceGoogleGroup,
-		mail.KubernetesDevGoogleGroup,
-		mail.KubernetesAnnounceTestGoogleGroup,
-		sendgridAPIKeyEnvKey,
-		nameFlag,
-		emailFlag,
-		tagFlag,
-		printOnlyFlag,
-	),
-	SilenceUsage:  true,
-	SilenceErrors: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runAnnounce(announceOpts, rootOpts)
-	},
-}
-
 type announceOptions struct {
-	sendgridAPIKey string
-	name           string
-	email          string
-	tag            string
-	printOnly      bool
+	tag       string
+	printOnly bool
 }
 
 var announceOpts = &announceOptions{}
 
+// announceCmd represents the subcommand for `krel announce`
+var announceCmd = &cobra.Command{
+	Use:           "announce",
+	Short:         "Build and announce Kubernetes releases",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
+	},
+}
+
 func init() {
-	announceOpts.sendgridAPIKey = util.EnvDefault(sendgridAPIKeyEnvKey, "")
-
-	announceCmd.PersistentFlags().StringVarP(
-		&announceOpts.name,
-		nameFlag,
-		"n",
-		"",
-		"mail sender name",
-	)
-
-	announceCmd.PersistentFlags().StringVarP(
-		&announceOpts.email,
-		emailFlag,
-		"e",
-		"",
-		"email address",
-	)
-
 	announceCmd.PersistentFlags().StringVarP(
 		&announceOpts.tag,
 		tagFlag,
 		"t",
 		"",
 		"built tag to be announced, will be used for fetching the "+
-			"announcement from the google cloud bucket",
+			"announcement from the google cloud bucket and to create the annoucements file",
 	)
-	if err := announceCmd.MarkPersistentFlagRequired(tagFlag); err != nil {
-		logrus.Fatal(err)
-	}
 
 	announceCmd.PersistentFlags().BoolVarP(
 		&announceOpts.printOnly,
@@ -129,69 +62,4 @@ func init() {
 	)
 
 	rootCmd.AddCommand(announceCmd)
-}
-
-func runAnnounce(opts *announceOptions, rootOpts *rootOptions) error {
-	logrus.Info("Retrieving release announcement from Google Cloud Bucket")
-
-	tag := util.AddTagPrefix(opts.tag)
-	u := fmt.Sprintf(
-		"%s/archive/anago-%s/announcement.html",
-		release.URLPrefixForBucket(release.ProductionBucket), tag,
-	)
-	logrus.Infof("Using announcement remote URL: %s", u)
-
-	content, err := http.GetURLResponse(u, false)
-	if err != nil {
-		return errors.Wrapf(err,
-			"unable to retrieve release announcement form url: %s", u,
-		)
-	}
-
-	if opts.printOnly {
-		logrus.Infof("The email content is:")
-		fmt.Print(content)
-		return nil
-	}
-
-	if opts.sendgridAPIKey == "" {
-		return errors.Errorf(
-			"$%s is not set", sendgridAPIKeyEnvKey,
-		)
-	}
-
-	logrus.Info("Preparing mail sender")
-	m := mail.NewSender(opts.sendgridAPIKey)
-
-	if opts.name != "" && opts.email != "" {
-		if err := m.SetSender(opts.name, opts.email); err != nil {
-			return errors.Wrap(err, "unable to set mail sender")
-		}
-	} else {
-		logrus.Info("Retrieving default sender from sendgrid API")
-		if err := m.SetDefaultSender(); err != nil {
-			return errors.Wrap(err, "setting default sender")
-		}
-	}
-
-	groups := []mail.GoogleGroup{mail.KubernetesAnnounceTestGoogleGroup}
-	if rootOpts.nomock {
-		groups = []mail.GoogleGroup{
-			mail.KubernetesAnnounceGoogleGroup,
-			mail.KubernetesDevGoogleGroup,
-		}
-	}
-	logrus.Infof("Using Google Groups as announcement target: %v", groups)
-
-	if err := m.SetGoogleGroupRecipients(groups...); err != nil {
-		return errors.Wrap(err, "unable to set mail recipients")
-	}
-
-	logrus.Info("Sending mail")
-	subject := fmt.Sprintf("Kubernetes %s is live!", tag)
-	if err := m.Send(content, subject); err != nil {
-		return errors.Wrap(err, "unable to send mail")
-	}
-
-	return nil
 }

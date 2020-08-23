@@ -5,6 +5,8 @@ go_library(
     srcs = [
         "anago.go",
         "announce.go",
+        "announce_build.go",
+        "announce_send.go",
         "changelog.go",
         "ff.go",
         "gcbmgr.go",
