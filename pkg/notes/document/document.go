@@ -43,6 +43,7 @@ type Document struct {
 	CurrentRevision         string         `json:"release_tag"`
 	PreviousRevision        string
 	CVEList                 []notes.CVEData
+	MajorThemes             []notes.MajorTheme
 }
 
 // FileMetadata contains metadata about files associated with the release.

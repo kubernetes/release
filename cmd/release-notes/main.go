@@ -241,6 +241,13 @@ func init() {
 		[]string{},
 		"specify a location to recursively look for release notes *.y[a]ml file mappings",
 	)
+
+	cmd.PersistentFlags().StringVar(
+		&opts.MajorThemes,
+		"themes-from",
+		"",
+		"read major themes from this directory",
+	)
 }
 
 func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
@@ -305,6 +312,13 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 		doc, err := document.New(releaseNotes, opts.StartRev, opts.EndRev)
 		if err != nil {
 			return errors.Wrapf(err, "creating release note document")
+		}
+
+		if opts.MajorThemes != "" {
+			doc.MajorThemes, err = notes.ReadMajorThemes(opts.MajorThemes)
+			if err != nil {
+				return errors.Wrap(err, "Unable to read major themes")
+			}
 		}
 
 		markdown, err := doc.RenderMarkdownTemplate(opts.ReleaseBucket, opts.ReleaseTars, opts.GoTemplate)

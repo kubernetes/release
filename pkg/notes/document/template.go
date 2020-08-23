@@ -62,7 +62,13 @@ filename | sha512 hash
 {{end -}}
 {{- end -}}
 # Changelog since {{$PreviousRevision}}
+{{with .MajorThemes -}}
+## What’s New (Major Themes)
 
+{{range .}}
+### {{.Title}}
+{{.Description}}
+{{end}}{{end}}
 {{with .NotesWithActionRequired -}}
 ## Urgent Upgrade Notes 
 
