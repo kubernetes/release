@@ -1,8 +1,8 @@
 [Unit]
 Description=kubelet: The Kubernetes Node Agent
 Documentation=https://kubernetes.io/docs/
-Wants=network-online.target
-After=network-online.target
+After=network-online.target local-fs.target remote-fs.target time-sync.target
+Wants=network-online.target local-fs.target remote-fs.target time-sync.target
 
 [Service]
 ExecStart=/usr/bin/kubelet
