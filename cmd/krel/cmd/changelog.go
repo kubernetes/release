@@ -250,10 +250,10 @@ func (c *Changelog) run(opts *changelogOptions, rootOpts *rootOptions) error {
 			})
 
 			startRev = startTag
-			endRev = opts.tag
+			endRev = head
 
 			if err := document.CreateDownloadsTable(
-				downloadsTable, opts.bucket, opts.tars, startRev, endRev,
+				downloadsTable, opts.bucket, opts.tars, startRev, opts.tag,
 			); err != nil {
 				return errors.Wrapf(err, "create downloads table")
 			}
@@ -489,7 +489,7 @@ func lookupRemoteReleaseNotes(branch string) (string, error) {
 			"fetching release notes from remote: %s", remote,
 		)
 	}
-	logrus.Info("Found release notes")
+	logrus.Infof("Found remote release notes on: %s", remote)
 	return response, nil
 }
 
