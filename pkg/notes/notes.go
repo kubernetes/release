@@ -567,7 +567,7 @@ var noteExclusionFilters = []*regexp.Regexp{
 	// 'none','n/a','na' case insensitive with optional trailing
 	// whitespace, wrapped in ``` with/without release-note identifier
 	// the 'none','n/a','na' can also optionally be wrapped in quotes ' or "
-	regexp.MustCompile("(?i)```(release-note[s]?\\s*)?('|\")?(none|n/a|na)?('|\")?\\s*```"),
+	regexp.MustCompile("(?i)```release-note[s]?\\s*('|\")?(none|n/a|na)?('|\")?\\s*```"),
 
 	// simple '/release-note-none' tag
 	regexp.MustCompile("/release-note-none"),
