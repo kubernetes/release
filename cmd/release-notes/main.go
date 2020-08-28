@@ -321,14 +321,18 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 
 		const nl = "\n"
 		if releaseNotesOpts.dependencies {
-			url := git.GetRepoURL(opts.GithubOrg, opts.GithubRepo, false)
-			deps, err := notes.NewDependencies().ChangesForURL(
-				url, opts.StartSHA, opts.EndSHA,
-			)
-			if err != nil {
-				return errors.Wrap(err, "generating dependency report")
+			if opts.StartSHA == opts.EndSHA {
+				logrus.Info("Skipping dependency report because start and end SHA are the same")
+			} else {
+				url := git.GetRepoURL(opts.GithubOrg, opts.GithubRepo, false)
+				deps, err := notes.NewDependencies().ChangesForURL(
+					url, opts.StartSHA, opts.EndSHA,
+				)
+				if err != nil {
+					return errors.Wrap(err, "generating dependency report")
+				}
+				markdown += strings.Repeat(nl, 2) + deps
 			}
-			markdown += strings.Repeat(nl, 2) + deps
 		}
 
 		if releaseNotesOpts.tableOfContents {
