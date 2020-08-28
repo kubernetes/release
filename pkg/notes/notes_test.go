@@ -292,3 +292,55 @@ func TestNoteTextFromString(t *testing.T) {
 		tc.expect(noteTextFromString(tc.input))
 	}
 }
+
+func TestMatchesExcludeFilter(t *testing.T) {
+	for _, tc := range []struct {
+		input         string
+		shouldExclude bool
+	}{
+		{
+			input:         "some test input",
+			shouldExclude: false,
+		},
+		{
+			input:         "```release-note\nnone\n```",
+			shouldExclude: true,
+		},
+		{
+			input:         "```release-note\nn/a\n```",
+			shouldExclude: true,
+		},
+		{
+			input:         "```release-note\nNA\n```",
+			shouldExclude: true,
+		},
+		{
+			input:         "```release-note\nthis none should\n```",
+			shouldExclude: false,
+		},
+		{
+			input: `@kubernetes/sig-auth-pr-reviews 
+/milestone v1.19
+/priority important-longterm
+/kind cleanup
+/kind deprecation
+
+xref: #81126
+xref: #81152
+xref: https://github.com/kubernetes/website/pull/19630
+
+` + "```" + `release-note
+Action Required: Support for basic authentication via the --basic-auth-file flag has been removed.  Users should migrate to --token-auth-file for similar functionality.
+` + "```" + `
+
+` + "```" + `docs
+Removed "Static Password File" section from https://kubernetes.io/docs/reference/access-authn-authz/authentication/#static-password-file
+https://github.com/kubernetes/website/pull/19630
+` + "```",
+			shouldExclude: false,
+		},
+	} {
+		res := MatchesExcludeFilter(tc.input)
+		require.Equal(t, tc.shouldExclude, res)
+	}
+}
