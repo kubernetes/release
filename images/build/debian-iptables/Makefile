@@ -18,11 +18,9 @@ REGISTRY?="gcr.io/k8s-staging-build-image"
 IMAGE=$(REGISTRY)/debian-iptables
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= buster-v1.1.2
+IMAGE_VERSION ?= buster-v1.2.0
 CONFIG ?= buster
-# TODO(debian-base): Need to update to new version format ('codename-v0.0.0')
-#                    on next image bump
-DEBIAN_BASE_VERSION ?= v2.1.3
+DEBIAN_BASE_VERSION ?= buster-v1.1.4
 
 ARCH?=amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
