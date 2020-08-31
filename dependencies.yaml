@@ -68,7 +68,7 @@ dependencies:
 
   # Base images
   - name: "k8s.gcr.io/debian-base"
-    version: buster-v1.1.3
+    version: buster-v1.1.4
     refPaths:
     - path: images/build/debian-base/Makefile
       match: IMAGE_VERSION\ \?=\ [a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)

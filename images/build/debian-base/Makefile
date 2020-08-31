@@ -19,7 +19,7 @@ IMAGE ?= $(REGISTRY)/debian-base
 BUILD_IMAGE ?= debian-build
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= buster-v1.1.3
+IMAGE_VERSION ?= buster-v1.1.4
 CONFIG ?= buster
 
 TAR_FILE ?= rootfs.tar
