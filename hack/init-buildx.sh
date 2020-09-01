@@ -34,6 +34,21 @@ current_builder="$(docker buildx inspect)"
 
 # We can skip setup if the current builder already has multi-arch
 # AND if it isn't the "docker" driver, which doesn't work
+#
+# From https://docs.docker.com/buildx/working-with-buildx/#build-with-buildx:
+# "You can run Buildx in different configurations that are exposed through a
+# driver concept. Currently, Docker supports a “docker” driver that uses the
+# BuildKit library bundled into the docker daemon binary, and a
+# “docker-container” driver that automatically launches BuildKit inside a
+# Docker container.
+#
+# The user experience of using Buildx is very similar across drivers.
+# However, there are some features that are not currently supported by the
+# “docker” driver, because the BuildKit library which is bundled into docker
+# daemon uses a different storage component. In contrast, all images built with
+# the “docker” driver are automatically added to the “docker images” view by
+# default, whereas when using other drivers, the method for outputting an image
+# needs to be selected with --output."
 if ! grep -q "^Driver: docker$"  <<<"${current_builder}" \
   && grep -q "linux/amd64" <<<"${current_builder}" \
   && grep -q "linux/arm" <<<"${current_builder}" \
