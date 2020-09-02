@@ -10,8 +10,8 @@ dependencies:
   #    match: https://github.com/kubernetes/repo-infra/archive/v\d+.\d+.\d+.tar.gz
 
   # CNI plugins
-  - name: "cni"
-    version: 0.8.6
+  - name: "CNI plugins"
+    version: 0.8.7
     refPaths:
     - path: images/build/debian-hyperkube-base/Makefile
       match: CNI_VERSION\?=
@@ -19,10 +19,18 @@ dependencies:
       match: currentCNIVersion\s+= "\d+\.\d+.\d+"
     - path: packages/rpm/kubelet.spec
       match: \%global CNI_VERSION \d+\.\d+.\d+
+    - path: pkg/kubepkg/kubepkg.go
+      match: CurrentCNIVersion\s+= "\d+\.\d+.\d+"
+
+  - name: "CNI plugins: minimum version"
+    version: 0.8.6
+    refPaths:
+    - path: packages/deb/build.go
+      match: minimumCNIVersion\s+= "\d+\.\d+.\d+"
     - path: packages/rpm/kubelet.spec
       match: kubernetes-cni >= \d+\.\d+.\d+
     - path: pkg/kubepkg/kubepkg.go
-      match: CurrentCNIVersion\s+= "\d+\.\d+.\d+"
+      match: MinimumCNIVersion\s+= "\d+\.\d+.\d+"
 
   # CRI Tools
   # TODO(deps): Not active yet

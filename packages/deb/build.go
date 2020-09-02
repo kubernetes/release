@@ -41,7 +41,7 @@ const (
 	ChannelUnstable ChannelType = "unstable"
 	ChannelNightly  ChannelType = "nightly"
 
-	currentCNIVersion  = "0.8.6"
+	currentCNIVersion  = "0.8.7"
 	minimumCNIVersion  = "0.8.6"
 	criToolsVersion    = "1.13.0"
 	pre180kubeadmconf  = "pre-1.8/10-kubeadm.conf"
@@ -371,7 +371,7 @@ func getCNIVersion(v version) (string, error) {
 		return "", err
 	}
 
-	if int(sv.Minor) == 16 {
+	if int(sv.Minor) <= 16 {
 		return minimumCNIVersion, nil
 	}
 
