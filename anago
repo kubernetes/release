@@ -29,7 +29,6 @@ PROG=${0##*/}
 #+            [--gcrio_path=<full gcr.io path>]
 #+            [--basedir=<alt base work dir>]
 #+            [--security_layer=/path/to/pointer/to/script]
-#+            [--exclude-suites="<suite> ..."]
 #+            [--prebuild] [--buildonly]
 #+            [--tmpdir=</alt/tmp>]
 #+     $PROG  [--helpshort|--usage|-?]
@@ -41,8 +40,7 @@ PROG=${0##*/}
 #+     Driven by the named source <branch> and an [--type] flag, $PROG
 #+     determines what needs to be released and calculates the version.
 #+
-#+     [--buildversion=] will override the automatic check for a build version
-#+     Mostly used for testing as a way to re-use a known good build version.
+#+     [--buildversion=] sets the always-required build version.
 #+
 #+     What is going to be done is presented to the user and asks for
 #+     confirmation before continuing.
@@ -107,8 +105,7 @@ PROG=${0##*/}
 #+     [--nomock]                - Complete an actual release with upstream
 #+                                 pushes
 #+     [--clean]                 - Force clean of previous session
-#+     [--buildversion=ver]      - Override Jenkins check and set a specific
-#+                                 build version
+#+     [--buildversion=ver]      - Set the build version (required)
 #+     [--gcrio_path=]           - Specify the full GCR path to use.
 #+                                 defaults:
 #+                                 - gcr.io/kubernetes-release-test (mock)
@@ -119,8 +116,6 @@ PROG=${0##*/}
 #+                                 source/include:
 #+                                 FLAGS_security_layer=/path/to/script
 #+                                 Default: $HOME/.kubernetes-releaserc
-#+     [--exclude-suites=]       - Space separated list of CI suites regex to
-#+                                 exclude from go/nogo criteria
 #+     [--github-release-draft]  - Force a github release draft for mock runs.
 #+                                 The draft placeholder if left behind can
 #+                                 cause issues with the real release.
@@ -165,6 +160,11 @@ usage=${1:-yes}
 # gitlib.sh and common.sh will still use the FLAGS_gcb because they're called
 # by other, manually executed scripts, too
 export FLAGS_gcb=1
+
+if [[ -z "$FLAGS_buildversion" ]]; then
+    common::exit 1 "--buildversion must be set"
+fi
+logecho -r "$ATTENTION: Using --buildversion=$FLAGS_buildversion"
 
 # Deal with OSX limitations out the gate for anyone that tries this there
 BASE_ROOT=$(dirname $(readlink -e "$BASH_SOURCE" 2>&1)) \
@@ -1194,15 +1194,8 @@ get_build_candidate () {
   logecho "testing_branch set to $testing_branch"
 
   if [[ -z $BRANCH_POINT ]]; then
-    if [[ -n "$FLAGS_buildversion" ]]; then
-      logecho -r "$ATTENTION: Using --buildversion=$FLAGS_buildversion"
-      JENKINS_BUILD_VERSION="$FLAGS_buildversion"
-      logecho "JENKINS_BUILD_VERSION set to $JENKINS_BUILD_VERSION"
-    else
-      logecho "Asking Jenkins for a good build (this may take some time)..."
-      FLAGS_verbose=1 release::set_build_version \
-       $testing_branch "" "$FLAGS_exclude_suites" "100" || return 1
-    fi
+    JENKINS_BUILD_VERSION="$FLAGS_buildversion"
+    logecho "JENKINS_BUILD_VERSION set to $JENKINS_BUILD_VERSION"
 
     # The RELEASE_BRANCH should always match with the JENKINS_BUILD_VERSION
     if [[ $RELEASE_BRANCH =~ release- ]] && \
