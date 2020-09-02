@@ -17,9 +17,3 @@ variants:
     KUBE_CROSS_VERSION: 'v1.14.7-1'
     PROTOBUF_VERSION: '3.0.2'
     ETCD_VERSION: 'v3.4.9'
-  go1.13:
-    CONFIG: 'go1.13'
-    GO_VERSION: '1.13.15'
-    KUBE_CROSS_VERSION: 'v1.13.15-1'
-    PROTOBUF_VERSION: '3.0.2'
-    ETCD_VERSION: 'v3.4.9'
