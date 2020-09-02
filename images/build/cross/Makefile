@@ -19,11 +19,11 @@ PROD_REGISTRY?=k8s.gcr.io/build-image
 IMAGE=kube-cross
 
 TAG?=$(shell git describe --tags --always --dirty)
-CONFIG?=go1.14
-KUBE_CROSS_VERSION?=v1.14.6-1
+CONFIG?=go1.15
+KUBE_CROSS_VERSION?=v1.15.1-1
 
 # Build args
-GO_VERSION?=1.14.6
+GO_VERSION?=1.15.1
 PROTOBUF_VERSION?=3.0.2
 ETCD_VERSION?=v3.4.13
 

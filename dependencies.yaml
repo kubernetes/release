@@ -45,8 +45,10 @@ dependencies:
 
   # Golang
   - name: "golang"
-    version: 1.15
+    version: 1.15.1
     refPaths:
+    - path: images/build/cross/Makefile
+      match: GO_VERSION\?=\d+.\d+(alpha|beta|rc)?\.?(\d+)?
     - path: images/build/cross/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
     - path: images/build/go-runner/Makefile
@@ -55,10 +57,18 @@ dependencies:
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
   - name: "k8s.gcr.io/kube-cross"
-    version: v1.15.0-1
+    version: v1.15.1-1
     refPaths:
     - path: images/build/cross/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
+
+  - name: "k8s.gcr.io/kube-cross: config variant"
+    version: go1.15
+    refPaths:
+    - path: images/build/cross/Makefile
+      match: CONFIG\?=go\d+.\d+
+    - path: images/build/cross/variants.yaml
+      match: go\d+.\d+
 
   - name: "k8s.gcr.io/kube-cross: dependents"
     version: v1.15.0-1
@@ -104,7 +114,7 @@ dependencies:
       match: BASEIMAGE\?\=\$\(BASE_REGISTRY\)\/debian-iptables-\$\(ARCH\):v\d+\.\d+\.\d+
 
   - name: "k8s.gcr.io/go-runner"
-    version: buster-v2.0.0
+    version: buster-v2.0.1
     refPaths:
     - path: images/build/go-runner/Makefile
       match: IMAGE_VERSION\ \?=\ [a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
