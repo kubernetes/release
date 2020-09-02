@@ -11,7 +11,7 @@
 %define semver() (%1 * 256 * 256 + %2 * 256 + %3)
 %global KUBE_SEMVER %{semver %{KUBE_MAJOR} %{KUBE_MINOR} %{KUBE_PATCH}}
 
-%global CNI_VERSION 0.8.6
+%global CNI_VERSION 0.8.7
 %global CRI_TOOLS_VERSION 1.13.0
 
 Name: kubelet
@@ -157,6 +157,9 @@ mv cni-plugins/* %{buildroot}/opt/cni/bin/
 
 
 %changelog
+* Wed Sep 2 2020 Stephen Augustus <saugustus@vmware.com> - 1.19.1
+- Update CNI plugins to v0.8.7
+
 * Mon Jun 22 2020 Stephen Augustus <saugustus@vmware.com> - 1.18.4
 - Unbundle CNI plugins (v0.8.6) from kubelet package and release as kubernetes-cni
 
