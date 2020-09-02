@@ -315,7 +315,6 @@ check_prerequisites () {
   # docker-engine
   common::check_packages jq pandoc docker ${PREREQUISITE_PACKAGES[*]} \
    || return 1
-  common::check_pip_packages yq || return 1
 
   security_layer::auth_check 2 || return 1
 
