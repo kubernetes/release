@@ -36,7 +36,7 @@ dependencies:
 
   # etcd
   - name: "etcd"
-    version: 3.4.9
+    version: 3.4.13
     refPaths:
     - path: images/build/cross/Makefile
       match: ETCD_VERSION\?=v\d+\.\d+.\d+
