@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -38,30 +39,72 @@ End of Life for **X.Y** is **NOW**
 `
 
 func TestParseSchedule(t *testing.T) {
-	patchSchedule := PatchSchedule{
-		Schedules: []Schedule{
-			{
-				Release:            "X.Y",
-				Next:               "X.Y.ZZZ",
-				CherryPickDeadline: "2020-06-12",
-				TargetDate:         "2020-06-17",
-				EndOfLifeDate:      "NOW",
-				PreviousPatches: []PreviousPatches{
+	testcases := []struct {
+		name     string
+		schedule PatchSchedule
+	}{
+		{
+			name: "next patch is not in previous patch list",
+			schedule: PatchSchedule{
+				Schedules: []Schedule{
 					{
-						Release:            "X.Y.XXX",
-						CherryPickDeadline: "2020-05-15",
-						TargetDate:         "2020-05-20",
+						Release:            "X.Y",
+						Next:               "X.Y.ZZZ",
+						CherryPickDeadline: "2020-06-12",
+						TargetDate:         "2020-06-17",
+						EndOfLifeDate:      "NOW",
+						PreviousPatches: []PreviousPatches{
+							{
+								Release:            "X.Y.XXX",
+								CherryPickDeadline: "2020-05-15",
+								TargetDate:         "2020-05-20",
+							},
+							{
+								Release:            "X.Y.YYY",
+								CherryPickDeadline: "2020-04-13",
+								TargetDate:         "2020-04-16",
+							},
+						},
 					},
+				},
+			},
+		},
+		{
+			name: "next patch is in previous patch list",
+			schedule: PatchSchedule{
+				Schedules: []Schedule{
 					{
-						Release:            "X.Y.YYY",
-						CherryPickDeadline: "2020-04-13",
-						TargetDate:         "2020-04-16",
+						Release:            "X.Y",
+						Next:               "X.Y.ZZZ",
+						CherryPickDeadline: "2020-06-12",
+						TargetDate:         "2020-06-17",
+						EndOfLifeDate:      "NOW",
+						PreviousPatches: []PreviousPatches{
+							{
+								Release:            "X.Y.ZZZ",
+								CherryPickDeadline: "2020-06-12",
+								TargetDate:         "2020-06-17",
+							},
+							{
+								Release:            "X.Y.XXX",
+								CherryPickDeadline: "2020-05-15",
+								TargetDate:         "2020-05-20",
+							},
+							{
+								Release:            "X.Y.YYY",
+								CherryPickDeadline: "2020-04-13",
+								TargetDate:         "2020-04-16",
+							},
+						},
 					},
 				},
 			},
 		},
 	}
 
-	out := parseSchedule(patchSchedule)
-	require.Equal(t, out, expectedPatchSchedule)
+	for _, tc := range testcases {
+		fmt.Printf("Test case: %s\n", tc.name)
+		out := parseSchedule(tc.schedule)
+		require.Equal(t, out, expectedPatchSchedule)
+	}
 }

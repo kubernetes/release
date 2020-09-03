@@ -36,7 +36,11 @@ func parseSchedule(patchSchedule PatchSchedule) string {
 		table := tablewriter.NewWriter(tableString)
 		table.SetAutoWrapText(false)
 		table.SetHeader([]string{"Patch Release", "Cherry Pick Deadline", "Target Date"})
-		table.Append([]string{strings.TrimSpace(releaseSchedule.Next), strings.TrimSpace(releaseSchedule.CherryPickDeadline), strings.TrimSpace(releaseSchedule.TargetDate)})
+
+		// Check if the next patch release is in the Previous Patch list, if yes dont read in the output
+		if !patchReleaseInPreviousList(releaseSchedule.Next, releaseSchedule.PreviousPatches) {
+			table.Append([]string{strings.TrimSpace(releaseSchedule.Next), strings.TrimSpace(releaseSchedule.CherryPickDeadline), strings.TrimSpace(releaseSchedule.TargetDate)})
+		}
 
 		for _, previous := range releaseSchedule.PreviousPatches {
 			table.Append([]string{strings.TrimSpace(previous.Release), strings.TrimSpace(previous.CherryPickDeadline), strings.TrimSpace(previous.TargetDate)})
@@ -54,4 +58,13 @@ func parseSchedule(patchSchedule PatchSchedule) string {
 	println(scheduleOut)
 
 	return scheduleOut
+}
+
+func patchReleaseInPreviousList(a string, previousPatches []PreviousPatches) bool {
+	for _, b := range previousPatches {
+		if b.Release == a {
+			return true
+		}
+	}
+	return false
 }
