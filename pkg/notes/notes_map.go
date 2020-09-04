@@ -106,10 +106,6 @@ type ReleaseNotesMap struct {
 		// ActionRequired indicates whether or not the release-note-action-required
 		// label was set on the PR
 		ActionRequired *bool `json:"action_required,omitempty"`
-
-		// Tags each note with a release version if specified
-		// If not specified, omitted
-		ReleaseVersion *string `json:"release_version,omitempty"`
 	} `json:"releasenote"`
 
 	DataFields map[string]ReleaseNotesDataField `json:"datafields"`

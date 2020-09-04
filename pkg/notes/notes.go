@@ -129,10 +129,6 @@ type ReleaseNote struct {
 	// label was set on the PR
 	ActionRequired bool `json:"action_required,omitempty"`
 
-	// Tags each note with a release version if specified
-	// If not specified, omitted
-	ReleaseVersion string `json:"release_version,omitempty"`
-
 	// DataFields a key indexed map of data fields
 	DataFields map[string]ReleaseNotesDataField `json:"data_fields,omitempty"`
 }
@@ -283,7 +279,7 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 			}
 		}
 
-		note, err := g.ReleaseNoteFromCommit(result, g.options.ReleaseVersion)
+		note, err := g.ReleaseNoteFromCommit(result)
 		if err != nil {
 			logrus.Errorf(
 				"Getting the release note from commit %s (PR #%d): %v",
@@ -411,7 +407,7 @@ func classifyURL(u *url.URL) DocType {
 
 // ReleaseNoteFromCommit produces a full contextualized release note given a
 // GitHub commit API resource.
-func (g *Gatherer) ReleaseNoteFromCommit(result *Result, relVer string) (*ReleaseNote, error) {
+func (g *Gatherer) ReleaseNoteFromCommit(result *Result) (*ReleaseNote, error) {
 	pr := result.pullRequest
 
 	prBody := pr.GetBody()
@@ -469,7 +465,6 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result, relVer string) (*Releas
 		Duplicate:      isDuplicateSIG,
 		DuplicateKind:  isDuplicateKind,
 		ActionRequired: isActionRequired(pr),
-		ReleaseVersion: relVer,
 	}, nil
 }
 
@@ -1011,10 +1006,6 @@ func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap) error {
 
 	if noteMap.ReleaseNote.ActionRequired != nil {
 		rn.ActionRequired = *noteMap.ReleaseNote.ActionRequired
-	}
-
-	if noteMap.ReleaseNote.ReleaseVersion != nil {
-		rn.ReleaseVersion = *noteMap.ReleaseNote.ReleaseVersion
 	}
 
 	// If there are datafields, add them

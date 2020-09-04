@@ -136,14 +136,6 @@ func init() {
 		"Path to a local Kubernetes repository, used only for tag discovery.",
 	)
 
-	// releaseVersion is the version number you want to tag the notes with.
-	cmd.PersistentFlags().StringVar(
-		&opts.ReleaseVersion,
-		"release-version",
-		util.EnvDefault("RELEASE_VERSION", ""),
-		"Which release version to tag the entries as.",
-	)
-
 	// format is the output format to produce the notes in.
 	cmd.PersistentFlags().StringVar(
 		&opts.Format,

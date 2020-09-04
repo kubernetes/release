@@ -74,7 +74,7 @@ func TestReleaseNoteParsing(t *testing.T) {
 		require.NoError(t, err)
 		prs, err := gatherer.prsFromCommit(commit)
 		require.NoError(t, err)
-		_, err = gatherer.ReleaseNoteFromCommit(&Result{commit: commit, pullRequest: prs[0]}, "0.1")
+		_, err = gatherer.ReleaseNoteFromCommit(&Result{commit: commit, pullRequest: prs[0]})
 		require.NoError(t, err)
 	}
 }
