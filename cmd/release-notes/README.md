@@ -89,7 +89,6 @@ level=debug timestamp=2019-07-30T04:02:44.3716249Z caller=notes.go:497 msg="Excl
 | output                  | OUTPUT          |                     | No       | The path where the release notes will be written                                                                                  |
 | format                  | FORMAT          | markdown            | No       | The format for notes output (options: json, markdown)                                                                             |
 | go-template             | GO_TEMPLATE     | go-template:default | No       | The go template if `--format=markdown` (options: go-template:default, go-template:inline:<template-string> go-template:<file.template>) |
-| release-version         | RELEASE_VERSION |                     | No       | The release version to tag the notes with                                                                                         |
 | dependencies            |                 | true                | No       | Add dependency report                                                                                                             |
 | **LOG OPTIONS**         |
 | debug                   | DEBUG           | false               | No       | Enable debug logging (options: true, false)                                                                                       |

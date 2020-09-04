@@ -676,7 +676,6 @@ func releaseNotesJSON(tag string) (string, error) {
 	notesOptions.StartRev = startTag
 	notesOptions.EndRev = tag
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
-	notesOptions.ReleaseVersion = util.TrimTagPrefix(tag)
 	notesOptions.MapProviderStrings = releaseNotesOpts.mapProviders
 
 	if err := notesOptions.ValidateAndFinish(); err != nil {
@@ -716,7 +715,6 @@ func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
 	notesOptions.StartRev = startTag
 	notesOptions.EndRev = releaseNotesOpts.tag
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
-	notesOptions.ReleaseVersion = util.TrimTagPrefix(releaseNotesOpts.tag)
 	notesOptions.MapProviderStrings = releaseNotesOpts.mapProviders
 
 	if err := notesOptions.ValidateAndFinish(); err != nil {
