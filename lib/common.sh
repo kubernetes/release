@@ -721,36 +721,6 @@ common::security_layer () {
 }
 
 ###############################################################################
-# Check PIP packages
-# @param package - A space separated list of PIP packages to verify exist
-#
-common::check_pip_packages () {
-  local prereq
-  local -a missing=()
-
-  # Make sure a bunch of packages are available
-  logecho -n "Checking required PIP packages: "
-
-  for prereq in $*; do
-    (pip list --format legacy 2>/dev/null || pip list) |\
-     fgrep -w $prereq > /dev/null || missing+=($prereq)
-  done
-
-  if ((${#missing[@]}>0)); then
-    logecho -r "$FAILED"
-    logecho "PREREQ: Missing prerequisites: ${missing[@]}" \
-            "Run the following and try again:"
-    logecho
-    for prereq in ${missing[@]}; do
-      logecho "$ sudo pip install $prereq"
-    done
-    return 1
-  fi
-  logecho -r "$OK"
-}
-
-
-###############################################################################
 # Check packages for a K8s release
 # @param package - A space separated list of packages to verify exist
 #
@@ -885,19 +855,6 @@ common::sanitize_log () {
   local file=$1
 
   sed -i 's/[a-f0-9]\{40\}:x-oauth-basic/__SANITIZED__:x-oauth-basic/g' $file
-}
-
-###############################################################################
-# Print a number of characters (with no newline)
-# @param char single character
-# @param num number to print
-common::print_n_char () {
-  local char=$1
-  local num=$2
-  local sep
-
-  printf -v sep '%*s' $num
-  echo "${sep// /$char}"
 }
 
 ###############################################################################
@@ -1165,24 +1122,6 @@ common::validate_command_line () {
   else
     echo "CMDLINE: ${args[*]}" > $PROGSTATE
   fi
-}
-
-##############################################################################
-# Run a command line, where the first command is expected to be a go binary
-# from this repo. If the binary cannot be found in the $PATH, a hopefully
-# helpful message on how to install that binary is printed.
-common::run_gobin () {
-  local orgCmd expandedCmd
-  orgCmd="$1"
-  shift
-  expandedCmd="$( command -v "$orgCmd" )"
-
-  if [ -z "$expandedCmd" ]
-  then
-    logecho -r "${FAILED}: ${orgCmd} is not in the \$PATH, you can try to install it via 'go install k8s.io/release/cmd/${orgCmd}'" >&2
-    return 1
-  fi
-  "$expandedCmd" "$@"
 }
 
 # right thing in common::trapclean().

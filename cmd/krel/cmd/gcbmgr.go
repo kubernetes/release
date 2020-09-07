@@ -115,12 +115,15 @@ func init() {
 		),
 	)
 
-	// TODO: Remove default once find_green_build logic exists
 	gcbmgrCmd.PersistentFlags().StringVar(
 		&gcbmgrOpts.BuildVersion,
 		"build-version",
 		"",
-		"build version",
+		fmt.Sprintf("the jenkins build version to be used. "+
+			"Can be empty for `stage` releases, where it gets automatically "+
+			"inferred by %q and the provided target branch.",
+			release.VersionTypeCILatest,
+		),
 	)
 
 	// gcloud options
@@ -326,7 +329,6 @@ func SetGCBSubstitutions(o *GcbmgrOptions, toolOrg, toolRepo, toolBranch string)
 	buildpoint = strings.ReplaceAll(buildpoint, "+", "-")
 	gcbSubs["BUILD_POINT"] = buildpoint
 
-	// TODO: Add conditionals for find_green_build
 	buildVersion = fmt.Sprintf("--buildversion=%s", buildVersion)
 	gcbSubs["BUILDVERSION"] = buildVersion
 

@@ -27,7 +27,6 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//cmd/blocking-testgrid-tests:all-srcs",
         "//cmd/gcbuilder:all-srcs",
         "//cmd/gh2gcs:all-srcs",
         "//cmd/krel:all-srcs",
