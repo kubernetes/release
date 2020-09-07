@@ -113,25 +113,9 @@ func SetReleaseVersion(
 	releaseType, version, branch, parentBranch string,
 ) (*Versions, error) {
 	logrus.Infof(
-		"Setting release version for %s (branch: %s, parent branch: %s)",
+		"Setting release version for %s (branch: %q, parent branch: %q)",
 		version, branch, parentBranch,
 	)
-
-	branchMatch := regex.BranchRegex.FindStringSubmatch(branch)
-	if len(branchMatch) < 3 {
-		return nil, errors.Errorf("invalid formatted branch %s", branch)
-	}
-	branchMajor, err := strconv.Atoi(branchMatch[1])
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing branch major version to int")
-	}
-	branchMinor, err := strconv.Atoi(branchMatch[2])
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing branch minor version to int")
-	}
-	releaseBranch := struct{ major, minor int }{
-		major: branchMajor, minor: branchMinor,
-	}
 
 	// if branch == master, version is an alpha or beta
 	// if branch == release, version is a rc
@@ -177,6 +161,26 @@ func SetReleaseVersion(
 	// Index ordering is important here as it's how they are processed
 	releaseVersions := &Versions{}
 	if parentBranch == git.Master {
+		branchMatch := regex.BranchRegex.FindStringSubmatch(branch)
+		if len(branchMatch) < 3 {
+			return nil, errors.Errorf("invalid formatted branch %s", branch)
+		}
+		branchMajor, err := strconv.Atoi(branchMatch[1])
+		if err != nil {
+			return nil, errors.Wrapf(
+				err, "parsing branch major version %q to int", branchMatch[1],
+			)
+		}
+		branchMinor, err := strconv.Atoi(branchMatch[2])
+		if err != nil {
+			return nil, errors.Wrapf(
+				err, "parsing branch minor version %q to int", branchMatch[2],
+			)
+		}
+		releaseBranch := struct{ major, minor int }{
+			major: branchMajor, minor: branchMinor,
+		}
+
 		// This is a new branch, set new alpha and RC versions
 		releaseVersions.alpha = fmt.Sprintf("v%d.%d.0-alpha.0",
 			releaseBranch.major, releaseBranch.minor+1)
@@ -218,57 +222,57 @@ func SetReleaseVersion(
 				"%s-rc.%d", releaseVersions.prime, labelID,
 			)
 			releaseVersions.prime = releaseVersions.rc
-		} else if releaseType == ReleaseTypeBeta {
-			releaseVersions.beta = fmt.Sprintf(
-				"v%d.%d.%d",
-				buildVersion.major,
-				buildVersion.minor,
-				buildVersion.patch,
-			)
-
-			// Enable building beta releases on the master branch.
-			// If the last build version was an alpha (x.y.z-alpha.N), set the
-			// build
-			// label to 'beta' and release version to x.y.z-beta.0.
-			//
-			// Otherwise, we'll assume this is the next x.y beta, so just
-			// increment the
-			// beta version e.g., x.y.z-beta.1 --> x.y.z-beta.2
-			if buildVersion.label == "-alpha" {
-				buildVersion.label = "-beta"
-				releaseVersions.beta += fmt.Sprintf("%s.0", buildVersion.label)
-			} else {
-				releaseVersions.beta += fmt.Sprintf(
-					"%s.%d", buildVersion.label, labelID,
-				)
-			}
-
-			releaseVersions.prime = releaseVersions.beta
-		} else {
-			// In this code branch, we're implicitly supposed to be at an alpha
-			// release. Here, we verify that we're not attempting to cut an
-			// alpha release after a beta in the x.y release series.
-			//
-			// Concretely:
-			// We should not be able to cut x.y.z-alpha.N after x.y.z-beta.M
-			if buildVersion.label != "-alpha" {
-				return nil, errors.Errorf(
-					"cannot cut an alpha tag after a non-alpha release %s. %s",
-					version,
-					"please specify an allowed release type ('beta')",
-				)
-			}
-
-			releaseVersions.alpha = fmt.Sprintf(
-				"v%d.%d.%d%s.%d",
-				buildVersion.major,
-				buildVersion.minor,
-				buildVersion.patch,
-				buildVersion.label,
-				labelID,
-			)
-			releaseVersions.prime = releaseVersions.alpha
 		}
+	} else if releaseType == ReleaseTypeBeta {
+		releaseVersions.beta = fmt.Sprintf(
+			"v%d.%d.%d",
+			buildVersion.major,
+			buildVersion.minor,
+			buildVersion.patch,
+		)
+
+		// Enable building beta releases on the master branch.
+		// If the last build version was an alpha (x.y.z-alpha.N), set the
+		// build
+		// label to 'beta' and release version to x.y.z-beta.0.
+		//
+		// Otherwise, we'll assume this is the next x.y beta, so just
+		// increment the
+		// beta version e.g., x.y.z-beta.1 --> x.y.z-beta.2
+		if buildVersion.label == "-alpha" {
+			buildVersion.label = "-beta"
+			releaseVersions.beta += fmt.Sprintf("%s.0", buildVersion.label)
+		} else {
+			releaseVersions.beta += fmt.Sprintf(
+				"%s.%d", buildVersion.label, *labelID,
+			)
+		}
+
+		releaseVersions.prime = releaseVersions.beta
+	} else {
+		// In this code branch, we're implicitly supposed to be at an alpha
+		// release. Here, we verify that we're not attempting to cut an
+		// alpha release after a beta in the x.y release series.
+		//
+		// Concretely:
+		// We should not be able to cut x.y.z-alpha.N after x.y.z-beta.M
+		if buildVersion.label != "-alpha" {
+			return nil, errors.Errorf(
+				"cannot cut an alpha tag after a non-alpha release %s. %s",
+				version,
+				"please specify an allowed release type ('beta')",
+			)
+		}
+
+		releaseVersions.alpha = fmt.Sprintf(
+			"v%d.%d.%d%s.%d",
+			buildVersion.major,
+			buildVersion.minor,
+			buildVersion.patch,
+			buildVersion.label,
+			*labelID,
+		)
+		releaseVersions.prime = releaseVersions.alpha
 	}
 
 	logrus.Infof("Found release versions: %+v", releaseVersions.String())
