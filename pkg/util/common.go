@@ -24,8 +24,10 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
@@ -37,6 +39,30 @@ import (
 const (
 	TagPrefix = "v"
 )
+
+// UserInputError a custom error to handle more user input info
+type UserInputError struct {
+	ErrorString string
+	isCtrlC     bool
+}
+
+// Error return the error string
+func (e UserInputError) Error() string {
+	return e.ErrorString
+}
+
+// IsCtrlC return true if the user has hit Ctrl+C
+func (e UserInputError) IsCtrlC() bool {
+	return e.isCtrlC
+}
+
+// NewUserInputError creates a new UserInputError
+func NewUserInputError(message string, ctrlC bool) UserInputError {
+	return UserInputError{
+		ErrorString: message,
+		isCtrlC:     ctrlC,
+	}
+}
 
 // PackagesAvailable takes a slice of packages and determines if they are installed
 // on the host OS. Replaces common::check_packages.
@@ -167,6 +193,64 @@ common::askyorn () {
 }
 */
 
+// readInput prints a question and then reads an answer from the user
+//
+// If the user presses Ctrl+C instead of answering, this funtcion will
+// return an error crafted with UserInputError. This error can be queried
+// to find out if the user canceled the input using its method IsCtrlC:
+//
+//     if err.(util.UserInputError).IsCtrlC() {}
+//
+// Note that in case of cancelling input, the user will still have to press
+// enter to finish the scan.
+func readInput(question string) (string, error) {
+	fmt.Print(question)
+
+	// Trap Ctrl+C if a user wishes to cancel the input
+	inputChannel := make(chan string, 1)
+	signalChannel := make(chan os.Signal, 1)
+	signal.Notify(signalChannel, syscall.SIGINT, syscall.SIGTERM)
+	defer func() {
+		signal.Stop(signalChannel)
+		close(signalChannel)
+	}()
+	go func() {
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Scan()
+		response := scanner.Text()
+		inputChannel <- response
+		close(inputChannel)
+	}()
+
+	select {
+	case <-signalChannel:
+		return "", NewUserInputError("Input canceled", true)
+	case response := <-inputChannel:
+		return response, nil
+	}
+}
+
+// Ask asks the user a question, expecting a known response expectedResponse
+//
+// You may specify a single response as a string or a series
+// of valid/invalid responses with an optional default.
+//
+// To specify the valid responses, either pass a string or craft a series
+// of answers using the following format:
+//
+//      "|successAnswers|nonSuccessAnswers|defaultAnswer"
+//
+// The successAnswers and nonSuccessAnswers can be either a string or a
+// series os responses like:
+//
+//       "|opt1a:opt1b|opt2a:opt2b|defaultAnswer"
+//
+// This example will accept opt1a and opt1b as successful answers, opt2a and
+// opt2b as unsuccessful answers and in case of an empty answer, it will
+// return "defaultAnswer" as success.
+//
+// To consider the default as a success, simply list them with the rest of the
+// non successfule answers.
 func Ask(question, expectedResponse string, retries int) (answer string, success bool, err error) {
 	attempts := 1
 
@@ -174,15 +258,72 @@ func Ask(question, expectedResponse string, retries int) (answer string, success
 		fmt.Printf("Retries was set to a number less than zero (%d). Please specify a positive number of retries or zero, if you want to ask unconditionally.\n", retries)
 	}
 
+	const (
+		partsSeparator string = "|"
+		optsSeparator  string = ":"
+	)
+
+	successAnswers := make([]string, 0)
+	nonSuccessAnswers := make([]string, 0)
+	defaultAnswer := ""
+
+	// Check out if string has several options
+	if strings.Contains(expectedResponse, partsSeparator) {
+		parts := strings.Split(expectedResponse, partsSeparator)
+		if len(parts) > 3 {
+			return "", false, errors.New("answer spec malformed")
+		}
+		// The first part has the answers to consider a success
+		if strings.Contains(expectedResponse, parts[0]) {
+			successAnswers = strings.Split(parts[0], optsSeparator)
+		}
+		// If there is a seconf part, its non success, but expected responses
+		if len(parts) >= 2 {
+			if strings.Contains(parts[1], optsSeparator) {
+				nonSuccessAnswers = strings.Split(parts[1], optsSeparator)
+			} else {
+				nonSuccessAnswers = append(nonSuccessAnswers, parts[1])
+			}
+		}
+		// If we have a fourth part, its the default answer
+		if len(parts) == 3 {
+			defaultAnswer = parts[2]
+		}
+	}
+
 	for attempts <= retries {
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Printf("%s (%d/%d) \n", question, attempts, retries)
+		// Read the input from the user
+		answer, err = readInput(fmt.Sprintf("%s (%d/%d) \n", question, attempts, retries))
+		if err != nil {
+			return answer, false, err
+		}
 
-		scanner.Scan()
-		answer = scanner.Text()
+		// if we have multiple options, use those and ignore the expected string
+		if len(successAnswers) > 0 {
+			// check the right answers
+			for _, testResponse := range successAnswers {
+				if answer == testResponse {
+					return answer, true, nil
+				}
+			}
 
-		if answer == expectedResponse {
+			// if we have wrong, but accepted answers, try those
+			for _, testResponse := range nonSuccessAnswers {
+				if answer == testResponse {
+					return answer, false, nil
+				}
+
+				// If answer is the default, and it is a nonSuccess, return it
+				if answer == "" && defaultAnswer == testResponse {
+					return defaultAnswer, false, nil
+				}
+			}
+		} else if answer == expectedResponse {
 			return answer, true, nil
+		}
+
+		if answer == "" && defaultAnswer != "" {
+			return defaultAnswer, true, nil
 		}
 
 		fmt.Printf("Expected '%s', but got '%s'\n", expectedResponse, answer)
@@ -190,7 +331,7 @@ func Ask(question, expectedResponse string, retries int) (answer string, success
 		attempts++
 	}
 
-	return answer, false, errors.New("expected response was not input. Retries exceeded")
+	return answer, false, NewUserInputError("expected response was not input. Retries exceeded", false)
 }
 
 // FakeGOPATH creates a temp directory, links the base directory into it and
@@ -387,4 +528,22 @@ func Exists(path string) bool {
 	}
 
 	return true
+}
+
+// WrapText wraps a text
+func WrapText(originalText string, lineSize int) (wrappedText string) {
+	words := strings.Fields(strings.TrimSpace(originalText))
+	wrappedText = words[0]
+	spaceLeft := lineSize - len(wrappedText)
+	for _, word := range words[1:] {
+		if len(word)+1 > spaceLeft {
+			wrappedText += "\n" + word
+			spaceLeft = lineSize - len(word)
+		} else {
+			wrappedText += " " + word
+			spaceLeft -= 1 + len(word)
+		}
+	}
+
+	return wrappedText
 }

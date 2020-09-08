@@ -545,3 +545,26 @@ func TestTrimTagPrefix(t *testing.T) {
 	require.Equal(t, "0.0.0", TrimTagPrefix("0.0.0"))
 	require.Equal(t, "1.0.0", TrimTagPrefix("1.0.0"))
 }
+
+func TestWrapText(t *testing.T) {
+	//nolint
+	longText := `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut molestie accumsan orci, id congue nibh sollicitudin in. Nulla condimentum arcu eu est hendrerit tempus. Nunc risus nibh, aliquam in ultrices fringilla, aliquet ac purus. Aenean non nibh magna. Nunc lacinia suscipit malesuada. Vivamus porta a leo vel ornare. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Morbi pellentesque orci magna, sed semper nulla fringilla at. Nam elementum ipsum maximus lectus tempor faucibus. Donec eu enim nulla. Integer egestas venenatis tristique. Curabitur id purus sem. Vivamus nec mollis lorem.`
+	wrappedText := "Lorem ipsum dolor sit amet, consectetur\n"
+	wrappedText += "adipiscing elit. Ut molestie accumsan\n"
+	wrappedText += "orci, id congue nibh sollicitudin in.\n"
+	wrappedText += "Nulla condimentum arcu eu est hendrerit\n"
+	wrappedText += "tempus. Nunc risus nibh, aliquam in\n"
+	wrappedText += "ultrices fringilla, aliquet ac purus.\n"
+	wrappedText += "Aenean non nibh magna. Nunc lacinia\n"
+	wrappedText += "suscipit malesuada. Vivamus porta a leo\n"
+	wrappedText += "vel ornare. Orci varius natoque\n"
+	wrappedText += "penatibus et magnis dis parturient\n"
+	wrappedText += "montes, nascetur ridiculus mus. Morbi\n" //nolint
+	wrappedText += "pellentesque orci magna, sed semper\n"
+	wrappedText += "nulla fringilla at. Nam elementum ipsum\n"
+	wrappedText += "maximus lectus tempor faucibus. Donec eu\n"
+	wrappedText += "enim nulla. Integer egestas venenatis\n"
+	wrappedText += "tristique. Curabitur id purus sem.\n"
+	wrappedText += "Vivamus nec mollis lorem."
+	require.Equal(t, WrapText(longText, 40), wrappedText)
+}
