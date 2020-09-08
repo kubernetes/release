@@ -26,7 +26,7 @@ To run this tool you can just do, assuming you have cloned both `SIG-Release` an
 ```
 
 ```bash
-$ schedule-builder --schedule-path ../sig-release/releases/schedule.yaml
+$ schedule-builder --config-path ../sig-release/releases/schedule.yaml
 ```
 
 The output will be something similiar to this
@@ -87,5 +87,5 @@ End of Life for **1.16** is **TBD**
 Also can save the schedule in a file, to do that, you can set the `--output-file` flag together with the filename.
 
 ```
-$ schedule-builder --schedule-path ../sig-release/releases/schedule.yaml --output-file my-schedule.md
+$ schedule-builder --config-path ../sig-release/releases/schedule.yaml --output-file my-schedule.md
 ```
