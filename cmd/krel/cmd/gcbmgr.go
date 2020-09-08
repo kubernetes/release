@@ -119,7 +119,7 @@ func init() {
 		&gcbmgrOpts.BuildVersion,
 		"build-version",
 		"",
-		fmt.Sprintf("the jenkins build version to be used. "+
+		fmt.Sprintf("the build version to be used. "+
 			"Can be empty for `stage` releases, where it gets automatically "+
 			"inferred by %q and the provided target branch.",
 			release.VersionTypeCILatest,

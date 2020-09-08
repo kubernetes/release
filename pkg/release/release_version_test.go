@@ -85,14 +85,14 @@ func TestSetReleaseVersion(t *testing.T) {
 			// new beta from beta
 			releaseType:  release.ReleaseTypeBeta,
 			version:      "v1.18.4-beta.1.2+3ff09514d162b0",
-			branch:       "release-1.18",
-			parentBranch: "release-1.18",
+			branch:       git.Master,
+			parentBranch: "",
 			expect: func(res *release.Versions, err error) {
 				require.Nil(t, err)
-				require.Equal(t, "v1.18.4-beta.2", res.Prime())
+				require.Equal(t, "v1.18.4-beta.1", res.Prime())
 				require.Empty(t, res.Official())
 				require.Empty(t, res.RC())
-				require.Equal(t, "v1.18.4-beta.2", res.Beta())
+				require.Equal(t, "v1.18.4-beta.1", res.Beta())
 				require.Empty(t, res.Alpha())
 				require.Len(t, res.Slice(), 1)
 			},
@@ -101,8 +101,8 @@ func TestSetReleaseVersion(t *testing.T) {
 			// new beta from alpha
 			releaseType:  release.ReleaseTypeBeta,
 			version:      "v1.18.0-alpha.1.2+3ff09514d162b0",
-			branch:       "release-1.18",
-			parentBranch: "release-1.18",
+			branch:       git.Master,
+			parentBranch: "",
 			expect: func(res *release.Versions, err error) {
 				require.Nil(t, err)
 				require.Equal(t, "v1.18.0-beta.0", res.Prime())
@@ -117,15 +117,15 @@ func TestSetReleaseVersion(t *testing.T) {
 			// new alpha
 			releaseType:  release.ReleaseTypeAlpha,
 			version:      "v1.18.4-alpha.1.2+3ff09514d162b0",
-			branch:       "release-1.18",
-			parentBranch: "release-1.18",
+			branch:       git.Master,
+			parentBranch: "",
 			expect: func(res *release.Versions, err error) {
 				require.Nil(t, err)
-				require.Equal(t, "v1.18.4-alpha.2", res.Prime())
+				require.Equal(t, "v1.18.4-alpha.1", res.Prime())
 				require.Empty(t, res.Official())
 				require.Empty(t, res.RC())
 				require.Empty(t, res.Beta())
-				require.Equal(t, "v1.18.4-alpha.2", res.Alpha())
+				require.Equal(t, "v1.18.4-alpha.1", res.Alpha())
 				require.Len(t, res.Slice(), 1)
 			},
 		},
@@ -133,8 +133,8 @@ func TestSetReleaseVersion(t *testing.T) {
 			// new alpha after beta
 			releaseType:  release.ReleaseTypeAlpha,
 			version:      "v1.18.4-beta.1.2+3ff09514d162b0",
-			branch:       "release-1.18",
-			parentBranch: "release-1.18",
+			branch:       git.Master,
+			parentBranch: "",
 			expect: func(res *release.Versions, err error) {
 				require.NotNil(t, err)
 				require.Nil(t, res)

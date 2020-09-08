@@ -1227,11 +1227,11 @@ get_build_candidate () {
 # Also ensures the RELEASE_VERSION_PRIME tag doesn't already exist.
 PROGSTEP[set_release_values]="SET RELEASE VALUES"
 set_release_values () {
-  FLAGS_verbose=1 \
-   release::set_release_version ${BRANCH_POINT:-$JENKINS_BUILD_VERSION} \
-                                $RELEASE_BRANCH \
-                                $PARENT_BRANCH \
-   || return 1
+  eval "$(krel set-release-version \
+    --release-type "$FLAGS_type" \
+    --build-version "${BRANCH_POINT:-$JENKINS_BUILD_VERSION}" \
+    --branch "$RELEASE_BRANCH" \
+    --parent-branch "$PARENT_BRANCH")" || return 1
 
   # Check that this tag doesn't exist. Staged builds may be old
   if [[ "$($GHCURL $K8S_GITHUB_API/tags |jq -r '.[] .name')" =~ \
