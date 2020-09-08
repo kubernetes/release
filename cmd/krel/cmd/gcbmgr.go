@@ -96,7 +96,7 @@ func init() {
 	gcbmgrCmd.PersistentFlags().StringVar(
 		&gcbmgrOpts.Branch,
 		"branch",
-		git.Master,
+		git.DefaultBranch,
 		"branch to run the specified GCB run against",
 	)
 
@@ -334,7 +334,7 @@ func SetGCBSubstitutions(o *GcbmgrOptions, toolOrg, toolRepo, toolBranch string)
 
 	kubecrossBranches := []string{
 		o.Branch,
-		git.Master,
+		git.DefaultBranch,
 	}
 
 	kubecrossVersion, kubecrossVersionErr := release.GetKubecrossVersion(kubecrossBranches...)
@@ -388,9 +388,9 @@ func (o *GcbmgrOptions) Validate() error {
 		return errors.New("cannot specify both the 'stage' and 'release' flag; resubmit with only one build type selected")
 	}
 
-	if o.Branch == git.Master {
+	if o.Branch == git.DefaultBranch {
 		if o.ReleaseType == release.ReleaseTypeRC || o.ReleaseType == release.ReleaseTypeOfficial {
-			return errors.New("cannot cut a release candidate or an official release from master")
+			return errors.Errorf("cannot cut a release candidate or an official release from %s", git.DefaultBranch)
 		}
 	} else {
 		if o.ReleaseType == release.ReleaseTypeAlpha || o.ReleaseType == release.ReleaseTypeBeta {

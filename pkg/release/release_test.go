@@ -29,6 +29,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"k8s.io/release/pkg/git"
 )
 
 func TestGetDefaultToolRepoURLSuccess(t *testing.T) {
@@ -87,7 +89,7 @@ func TestGetToolBranchSuccess(t *testing.T) {
 	}{
 		{
 			name:     "default branch",
-			expected: "master",
+			expected: git.DefaultBranch,
 		},
 		{
 			name:     "custom branch",

@@ -88,8 +88,8 @@ func init() {
 	cmd.PersistentFlags().StringVar(
 		&opts.Branch,
 		"branch",
-		util.EnvDefault("BRANCH", git.Master),
-		"Select which branch to scrape. Defaults to `master`",
+		util.EnvDefault("BRANCH", git.DefaultBranch),
+		fmt.Sprintf("Select which branch to scrape. Defaults to `%s`", git.DefaultBranch),
 	)
 
 	// startSHA contains the commit SHA where the release note generation

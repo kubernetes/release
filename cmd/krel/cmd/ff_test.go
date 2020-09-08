@@ -26,7 +26,7 @@ import (
 
 func (s *sut) getFfOptions() *ffOptions {
 	return &ffOptions{
-		masterRef:      git.Remotify(git.Master),
+		mainRef:        git.Remotify(git.DefaultBranch),
 		nonInteractive: true,
 	}
 }

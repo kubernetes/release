@@ -34,7 +34,7 @@ func (s *sut) getChangelogOptions(tag string) *changelogOptions {
 		replayDir: filepath.Join(testDataDir, "changelog-"+tag),
 		tag:       tag,
 		tars:      ".",
-		branch:    git.Master,
+		branch:    git.DefaultBranch,
 	}
 }
 
@@ -79,7 +79,7 @@ func TestNewPatchRelease(t *testing.T) { // nolint: dupl
 		commitMessage string
 	}{
 		{releaseBranch, "Update CHANGELOG/CHANGELOG-1.16.md for v1.16.3"},
-		{git.Master, "Update directory for v1.16.3 release"},
+		{git.DefaultBranch, "Update directory for v1.16.3 release"},
 	} {
 		// Switch to the test branch
 		require.Nil(t, s.repo.Checkout(x.branch))
@@ -119,7 +119,7 @@ func TestNewAlphaRelease(t *testing.T) {
 	require.Nil(t, os.RemoveAll("CHANGELOG-1.18.html"))
 
 	// Verify commit message
-	lastCommit := s.lastCommit(t, git.Master)
+	lastCommit := s.lastCommit(t, git.DefaultBranch)
 	require.Contains(t, lastCommit, "Anago GCB <nobody@k8s.io>")
 	require.Contains(t, lastCommit, "Update directory for v1.18.0-alpha.3 release")
 
@@ -165,7 +165,7 @@ func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 		require.Nil(t, s.repo.Add(filename))
 	})
 	require.Nil(t, s.repo.Commit("Adding other changelog files"))
-	require.Nil(t, s.repo.Checkout(git.Master))
+	require.Nil(t, s.repo.Checkout(git.DefaultBranch))
 
 	// When
 	require.Nil(t, newChangelog().run(co, ro))
@@ -185,7 +185,7 @@ func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 		commitMessage string
 	}{
 		{releaseBranch, "Update CHANGELOG/CHANGELOG-1.17.md for v1.17.0"},
-		{git.Master, "Update directory for v1.17.0 release"},
+		{git.DefaultBranch, "Update directory for v1.17.0 release"},
 	} {
 		// Switch to the test branch
 		require.Nil(t, s.repo.Checkout(x.branch))

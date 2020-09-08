@@ -66,8 +66,8 @@ var releaseNotesCmd = &cobra.Command{
 
 The 'release-notes' subcommand of krel has been developed to:
 
-1. Generate the release notes for the provided tag for commits on the master
-   branch. We always use the master branch because a release branch
+1. Generate the release notes for the provided tag for commits on the main
+   branch. We always use the main branch because a release branch
    gets fast-forwarded until we hit the first release candidate (rc). This is
    also the reason why we select the first 'v1.xx.0-rc.1' as start tag for
    the notes generation.
@@ -380,13 +380,13 @@ func createDraftPR(tag string) (err error) {
 	// Create the pull request
 	logrus.Debugf(
 		"PR params: org: %s, repo: %s, headBranch: %s baseBranch: %s",
-		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, "master",
+		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, git.DefaultBranch,
 		fmt.Sprintf("%s:%s", releaseNotesOpts.githubOrg, branchname),
 	)
 
 	// Create the PR
 	pr, err := gh.CreatePullRequest(
-		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, "master",
+		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, git.DefaultBranch,
 		fmt.Sprintf("%s:%s", releaseNotesOpts.githubOrg, branchname),
 		fmt.Sprintf("Update release notes draft to version %s", tag), prBody,
 	)
@@ -581,12 +581,12 @@ func createWebsitePR(tag string) error {
 
 	logrus.Debugf(
 		"PR params: org: %s, repo: %s, headBranch: %s baseBranch: %s",
-		defaultKubernetesSigsOrg, defaultKubernetesSigsRepo, "master",
+		defaultKubernetesSigsOrg, defaultKubernetesSigsRepo, git.DefaultBranch,
 		fmt.Sprintf("%s:%s", releaseNotesOpts.githubOrg, branchname),
 	)
 
 	pr, err := gh.CreatePullRequest(
-		defaultKubernetesSigsOrg, defaultKubernetesSigsRepo, "master",
+		defaultKubernetesSigsOrg, defaultKubernetesSigsRepo, git.DefaultBranch,
 		fmt.Sprintf("%s:%s", releaseNotesOpts.githubOrg, branchname),
 		fmt.Sprintf("Patch relnotes.k8s.io to release %s", tag),
 		fmt.Sprintf("Automated patch to update relnotes.k8s.io to k/k version `%s` ", tag),
@@ -631,7 +631,7 @@ func releaseNotesJSON(tag string) (string, error) {
 		return "", errors.Wrap(err, "parsing semver from tag string")
 	}
 
-	branchName := git.Master
+	branchName := git.DefaultBranch
 	releaseBranch := fmt.Sprintf("release-%d.%d", tagVersion.Major, tagVersion.Minor)
 
 	// Ensure we have a valid branch
@@ -649,16 +649,16 @@ func releaseNotesJSON(tag string) (string, error) {
 	// Chech if release branch already exists
 	_, err = repo.RevParse(releaseBranch)
 	if err == nil {
-		logrus.Infof("Working on branch %s instead of master", releaseBranch)
+		logrus.Infof("Working on branch %s instead of %s", releaseBranch, git.DefaultBranch)
 		branchName = releaseBranch
 	} else {
-		logrus.Infof("Release branch %s does not exist, working on master", releaseBranch)
+		logrus.Infof("Release branch %s does not exist, working on %s", releaseBranch, git.DefaultBranch)
 	}
 
 	// If it's a patch release, we deduce the startTag manually:
 	var startTag string
 	if tagVersion.Patch > 0 {
-		logrus.Debugf("Working on branch %s instead of master", tag)
+		logrus.Debugf("Working on branch %s instead of %s", tag, git.DefaultBranch)
 		startTag = fmt.Sprintf("v%d.%d.%d", tagVersion.Major, tagVersion.Minor, tagVersion.Patch-1)
 	} else {
 		startTag, err = repo.PreviousTag(tag, branchName)
@@ -710,7 +710,7 @@ func releaseNotesFrom(startTag string) (*releaseNotesResult, error) {
 	logrus.Info("Generating release notes")
 
 	notesOptions := options.New()
-	notesOptions.Branch = git.Master
+	notesOptions.Branch = git.DefaultBranch
 	notesOptions.RepoPath = rootOpts.repoPath
 	notesOptions.StartRev = startTag
 	notesOptions.EndRev = releaseNotesOpts.tag

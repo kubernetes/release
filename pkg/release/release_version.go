@@ -117,7 +117,7 @@ func SetReleaseVersion(
 		version, branch, parentBranch,
 	)
 
-	// if branch == master, version is an alpha or beta
+	// if branch == git.DefaultBranch, version is an alpha or beta
 	// if branch == release, version is a rc
 	// if branch == release+1, version is an alpha
 	versionMatch := regex.ReleaseRegex.FindStringSubmatch(version)
@@ -160,7 +160,7 @@ func SetReleaseVersion(
 	// session/type Other labels such as alpha, beta, and rc are set as needed
 	// Index ordering is important here as it's how they are processed
 	releaseVersions := &Versions{}
-	if parentBranch == git.Master {
+	if parentBranch == git.DefaultBranch {
 		branchMatch := regex.BranchRegex.FindStringSubmatch(branch)
 		if len(branchMatch) < 3 {
 			return nil, errors.Errorf("invalid formatted branch %s", branch)
@@ -231,7 +231,7 @@ func SetReleaseVersion(
 			buildVersion.patch,
 		)
 
-		// Enable building beta releases on the master branch.
+		// Enable building beta releases on the main branch.
 		// If the last build version was an alpha (x.y.z-alpha.N), set the
 		// build
 		// label to 'beta' and release version to x.y.z-beta.0.

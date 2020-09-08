@@ -45,8 +45,8 @@ const (
 	DefaultGithubRepo        = "kubernetes"
 	DefaultGithubReleaseRepo = "sig-release"
 	DefaultRemote            = "origin"
-	DefaultMasterRef         = "HEAD"
-	Master                   = "master"
+	DefaultRef               = "HEAD"
+	DefaultBranch            = "master"
 
 	defaultGithubAuthRoot = "git@github.com:"
 	gitExecutable         = "git"
@@ -346,7 +346,7 @@ func (r *Repo) RevParseShort(rev string) (string, error) {
 }
 
 // LatestReleaseBranchMergeBaseToLatest tries to discover the start (latest
-// v1.x.0 merge base) and end (release-1.(x+1) or master) revision inside the
+// v1.x.0 merge base) and end (release-1.(x+1) or DefaultBranch) revision inside the
 // repository.
 func (r *Repo) LatestReleaseBranchMergeBaseToLatest() (DiscoverResult, error) {
 	// Find the last non patch version tag, then resolve its revision
@@ -359,7 +359,7 @@ func (r *Repo) LatestReleaseBranchMergeBaseToLatest() (DiscoverResult, error) {
 	logrus.Debugf("Latest non patch version %s", versionTag)
 
 	base, err := r.MergeBase(
-		Master,
+		DefaultBranch,
 		fmt.Sprintf("release-%d.%d", version.Major, version.Minor),
 	)
 	if err != nil {
@@ -367,8 +367,8 @@ func (r *Repo) LatestReleaseBranchMergeBaseToLatest() (DiscoverResult, error) {
 	}
 
 	// If a release branch exists for the next version, we use it. Otherwise we
-	// fallback to the master branch.
-	end, branch, err := r.releaseBranchOrMasterRev(version.Major, version.Minor+1)
+	// fallback to the DefaultBranch.
+	end, branch, err := r.releaseBranchOrMainRef(version.Major, version.Minor+1)
 	if err != nil {
 		return DiscoverResult{}, err
 	}
@@ -443,7 +443,7 @@ func (r *Repo) latestNonPatchFinalVersions() ([]semver.Version, error) {
 	return latestVersions, nil
 }
 
-func (r *Repo) releaseBranchOrMasterRev(major, minor uint64) (sha, rev string, err error) {
+func (r *Repo) releaseBranchOrMainRef(major, minor uint64) (sha, rev string, err error) {
 	relBranch := fmt.Sprintf("release-%d.%d", major, minor)
 	sha, err = r.RevParse(relBranch)
 	if err == nil {
@@ -451,10 +451,10 @@ func (r *Repo) releaseBranchOrMasterRev(major, minor uint64) (sha, rev string, e
 		return sha, relBranch, nil
 	}
 
-	sha, err = r.RevParse(Master)
+	sha, err = r.RevParse(DefaultBranch)
 	if err == nil {
-		logrus.Debug("No release branch found, using master")
-		return sha, Master, nil
+		logrus.Debugf("No release branch found, using %s", DefaultBranch)
+		return sha, DefaultBranch, nil
 	}
 
 	return "", "", err
@@ -508,12 +508,12 @@ func IsReleaseBranch(branch string) bool {
 }
 
 func (r *Repo) MergeBase(from, to string) (string, error) {
-	masterRef := Remotify(from)
+	mainRef := Remotify(from)
 	releaseRef := Remotify(to)
 
-	logrus.Debugf("MasterRef: %s, releaseRef: %s", masterRef, releaseRef)
+	logrus.Debugf("MainRef: %s, releaseRef: %s", mainRef, releaseRef)
 
-	commitRevs := []string{masterRef, releaseRef}
+	commitRevs := []string{mainRef, releaseRef}
 	var res []*object.Commit
 
 	hashes := []*plumbing.Hash{}
@@ -637,7 +637,7 @@ func (r *Repo) LatestPatchToPatch(branch string) (DiscoverResult, error) {
 }
 
 // LatestPatchToLatest tries to discover the start (latest v1.x.x]) and
-// end (release-1.x or master) revision inside the repository for the specified release
+// end (release-1.x or DefaultBranch) revision inside the repository for the specified release
 // branch.
 func (r *Repo) LatestPatchToLatest(branch string) (DiscoverResult, error) {
 	latestTag, err := r.LatestTagForBranch(branch)
@@ -658,8 +658,8 @@ func (r *Repo) LatestPatchToLatest(branch string) (DiscoverResult, error) {
 	}
 
 	// If a release branch exists for the latest version, we use it. Otherwise we
-	// fallback to the master branch.
-	end, branch, err := r.releaseBranchOrMasterRev(latestTag.Major, latestTag.Minor)
+	// fallback to the DefaultBranch.
+	end, branch, err := r.releaseBranchOrMainRef(latestTag.Major, latestTag.Minor)
 	if err != nil {
 		return DiscoverResult{}, errors.Wrapf(err, "getting release branch for %v", latestTag)
 	}

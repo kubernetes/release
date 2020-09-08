@@ -52,7 +52,7 @@ func TestBlockingTestsSuccess(t *testing.T) {
 	client.GetURLResponseReturns(string(httpRes), nil)
 
 	// When
-	res, err := sut.BlockingTests(git.Master)
+	res, err := sut.BlockingTests(git.DefaultBranch)
 
 	// Then
 	require.Nil(t, err)

@@ -89,7 +89,7 @@ func newSUT(t *testing.T) *sut {
 	)
 	require.Nil(t,
 		command.NewWithWorkDir(baseDir,
-			"git", "checkout", "master",
+			"git", "checkout", git.DefaultBranch,
 		).RunSuccess(),
 	)
 	require.Nil(t,

@@ -69,7 +69,7 @@ the golang based 'release-notes' tool:
    the current working directly as 'CHANGELOG-x.y.html'. Sending the
    announcement is done by another subcommand of 'krel', not 'changelog'.
 
-3. Commit the modified CHANGELOG-x.y.md into the master branch as well as the
+3. Commit the modified CHANGELOG-x.y.md into the main branch as well as the
    corresponding release-branch of kubernetes/kubernetes. The release branch
    will be pruned from all other CHANGELOG-*.md files which do not belong to
    this release branch.
@@ -324,9 +324,9 @@ func (c *Changelog) run(opts *changelogOptions, rootOpts *rootOptions) error {
 		}
 	}()
 
-	logrus.Infof("Checking out %s branch", git.Master)
-	if err := repo.Checkout(git.Master); err != nil {
-		return errors.Wrap(err, "checking out master branch")
+	logrus.Infof("Checking out %s branch", git.DefaultBranch)
+	if err := repo.Checkout(git.DefaultBranch); err != nil {
+		return errors.Wrap(err, "checking out main branch")
 	}
 
 	logrus.Info("Writing markdown")
@@ -480,8 +480,8 @@ func lookupRemoteReleaseNotes(branch string) (string, error) {
 	logrus.Info("Assuming new minor release")
 
 	remote := fmt.Sprintf(
-		"https://raw.githubusercontent.com/kubernetes/sig-release/master/"+
-			"releases/%s/release-notes-draft.md", branch,
+		"https://raw.githubusercontent.com/kubernetes/sig-release/%s/"+
+			"releases/%s/release-notes-draft.md", git.DefaultBranch, branch,
 	)
 	response, err := http.GetURLResponse(remote, false)
 	if err != nil {
@@ -494,7 +494,7 @@ func lookupRemoteReleaseNotes(branch string) (string, error) {
 }
 
 func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
-	// Master branch modifications
+	// main branch modifications
 	releaseChangelog := markdownChangelogFilename(tag)
 	changelogReadme := markdownChangelogReadme()
 
@@ -510,14 +510,14 @@ func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
 		}
 	}
 
-	logrus.Info("Committing changes to master branch in repository")
+	logrus.Info("Committing changes to main branch in repository")
 	if err := repo.Commit(fmt.Sprintf(
 		"CHANGELOG: Update directory for %s release", util.SemverToTagString(tag),
 	)); err != nil {
 		return errors.Wrap(err, "committing changes into repository")
 	}
 
-	if branch != git.Master {
+	if branch != git.DefaultBranch {
 		logrus.Infof("Checking out %s branch", branch)
 		// Release branch modifications
 		if err := repo.Checkout(branch); err != nil {
@@ -533,9 +533,9 @@ func commitChanges(repo *git.Repo, branch string, tag semver.Version) error {
 			}
 		}
 
-		logrus.Info("Checking out changelog from master branch")
-		if err := repo.Checkout(git.Master, releaseChangelog); err != nil {
-			return errors.Wrap(err, "check out master branch changelog")
+		logrus.Info("Checking out changelog from main branch")
+		if err := repo.Checkout(git.DefaultBranch, releaseChangelog); err != nil {
+			return errors.Wrap(err, "check out main branch changelog")
 		}
 
 		logrus.Info("Committing changes to release branch in repository")

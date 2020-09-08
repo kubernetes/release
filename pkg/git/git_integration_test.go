@@ -275,7 +275,7 @@ func TestSuccessHasRemoteBranch(t *testing.T) {
 	defer testRepo.cleanup(t)
 
 	require.Nil(t, testRepo.sut.HasRemoteBranch(testRepo.branchName))
-	require.Nil(t, testRepo.sut.HasRemoteBranch(git.Master))
+	require.Nil(t, testRepo.sut.HasRemoteBranch(git.DefaultBranch))
 }
 
 func TestFailureHasRemoteBranch(t *testing.T) {
@@ -299,7 +299,7 @@ func TestSuccessMerge(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	err := testRepo.sut.Merge(git.Master)
+	err := testRepo.sut.Merge(git.DefaultBranch)
 	require.Nil(t, err)
 }
 
@@ -315,7 +315,7 @@ func TestSuccessMergeBase(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	mergeBase, err := testRepo.sut.MergeBase(git.Master, testRepo.branchName)
+	mergeBase, err := testRepo.sut.MergeBase(git.DefaultBranch, testRepo.branchName)
 	require.Nil(t, err)
 	require.Equal(t, mergeBase, testRepo.firstCommit)
 }
@@ -324,9 +324,9 @@ func TestSuccessRevParse(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	masterRev, err := testRepo.sut.RevParse(git.Master)
+	mainRev, err := testRepo.sut.RevParse(git.DefaultBranch)
 	require.Nil(t, err)
-	require.Equal(t, masterRev, testRepo.firstCommit)
+	require.Equal(t, mainRev, testRepo.firstCommit)
 
 	branchRev, err := testRepo.sut.RevParse(testRepo.branchName)
 	require.Nil(t, err)
@@ -349,9 +349,9 @@ func TestSuccessRevParseShort(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	masterRev, err := testRepo.sut.RevParseShort(git.Master)
+	mainRev, err := testRepo.sut.RevParseShort(git.DefaultBranch)
 	require.Nil(t, err)
-	require.Equal(t, masterRev, testRepo.firstCommit[:10])
+	require.Equal(t, mainRev, testRepo.firstCommit[:10])
 
 	branchRev, err := testRepo.sut.RevParseShort(testRepo.branchName)
 	require.Nil(t, err)
@@ -374,7 +374,7 @@ func TestSuccessPush(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	err := testRepo.sut.Push(git.Master)
+	err := testRepo.sut.Push(git.DefaultBranch)
 	require.Nil(t, err)
 }
 
@@ -387,8 +387,8 @@ func TestFailurePush(t *testing.T) {
 }
 
 func TestSuccessRemotify(t *testing.T) {
-	newRemote := git.Remotify(git.Master)
-	require.Equal(t, newRemote, git.DefaultRemote+"/"+git.Master)
+	newRemote := git.Remotify(git.DefaultBranch)
+	require.Equal(t, newRemote, git.DefaultRemote+"/"+git.DefaultBranch)
 }
 
 func TestSuccessIsReleaseBranch(t *testing.T) {
@@ -403,7 +403,7 @@ func TestSuccessLatestTagForBranch(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	version, err := testRepo.sut.LatestTagForBranch(git.Master)
+	version, err := testRepo.sut.LatestTagForBranch(git.DefaultBranch)
 	require.Nil(t, err)
 	require.Equal(t, util.SemverToTagString(version), testRepo.firstTagName)
 }
@@ -482,7 +482,7 @@ func TestSuccessDry(t *testing.T) {
 
 	testRepo.sut.SetDry()
 
-	err := testRepo.sut.Push(git.Master)
+	err := testRepo.sut.Push(git.DefaultBranch)
 	require.Nil(t, err)
 }
 
@@ -495,7 +495,7 @@ func TestSuccessLatestReleaseBranchMergeBaseToLatest(t *testing.T) {
 	require.Equal(t, result.StartSHA(), testRepo.firstCommit)
 	require.Equal(t, result.StartRev(), testRepo.firstTagName)
 	require.Equal(t, result.EndSHA(), testRepo.firstCommit)
-	require.Equal(t, result.EndRev(), git.Master)
+	require.Equal(t, result.EndRev(), git.DefaultBranch)
 }
 
 func TestFailureLatestReleaseBranchMergeBaseToLatestNoLatestTag(t *testing.T) {
@@ -536,11 +536,11 @@ func TestFailureLatestNonPatchFinalToMinor(t *testing.T) {
 	require.Equal(t, git.DiscoverResult{}, result)
 }
 
-func TestTagsForBranchMaster(t *testing.T) {
+func TestTagsForBranchMain(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	result, err := testRepo.sut.TagsForBranch(git.Master)
+	result, err := testRepo.sut.TagsForBranch(git.DefaultBranch)
 	require.Nil(t, err)
 	require.Equal(t, result, []string{testRepo.firstTagName})
 }
@@ -582,7 +582,7 @@ func TestCheckoutSuccess(t *testing.T) {
 	require.True(t, res.Success())
 	require.Contains(t, res.Output(), filepath.Base(testRepo.testFileName))
 
-	err = testRepo.sut.Checkout(git.Master, testRepo.testFileName)
+	err = testRepo.sut.Checkout(git.DefaultBranch, testRepo.testFileName)
 	require.Nil(t, err)
 
 	res, err = command.NewWithWorkDir(
@@ -655,14 +655,14 @@ func TestCurrentBranchDefault(t *testing.T) {
 	require.Equal(t, testRepo.branchName, branch)
 }
 
-func TestCurrentBranchMaster(t *testing.T) {
+func TestCurrentBranchMain(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
-	require.Nil(t, testRepo.sut.Checkout(git.Master))
+	require.Nil(t, testRepo.sut.Checkout(git.DefaultBranch))
 
 	branch, err := testRepo.sut.CurrentBranch()
 	require.Nil(t, err)
-	require.Equal(t, git.Master, branch)
+	require.Equal(t, git.DefaultBranch, branch)
 }
 
 func TestRmSuccessForce(t *testing.T) {
@@ -781,11 +781,11 @@ func TestAddRemoteFailureAlreadyExisting(t *testing.T) {
 	require.NotNil(t, err)
 }
 
-func TestPushToRemoteSuccessRemoteMaster(t *testing.T) {
+func TestPushToRemoteSuccessRemoteMain(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	err := testRepo.sut.PushToRemote(git.DefaultRemote, git.Remotify(git.Master))
+	err := testRepo.sut.PushToRemote(git.DefaultRemote, git.Remotify(git.DefaultBranch))
 	require.Nil(t, err)
 }
 
