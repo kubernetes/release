@@ -89,10 +89,10 @@ func TestSetReleaseVersion(t *testing.T) {
 			parentBranch: "",
 			expect: func(res *release.Versions, err error) {
 				require.Nil(t, err)
-				require.Equal(t, "v1.18.4-beta.1", res.Prime())
+				require.Equal(t, "v1.18.4-beta.2", res.Prime())
 				require.Empty(t, res.Official())
 				require.Empty(t, res.RC())
-				require.Equal(t, "v1.18.4-beta.1", res.Beta())
+				require.Equal(t, "v1.18.4-beta.2", res.Beta())
 				require.Empty(t, res.Alpha())
 				require.Len(t, res.Slice(), 1)
 			},
@@ -121,11 +121,27 @@ func TestSetReleaseVersion(t *testing.T) {
 			parentBranch: "",
 			expect: func(res *release.Versions, err error) {
 				require.Nil(t, err)
-				require.Equal(t, "v1.18.4-alpha.1", res.Prime())
+				require.Equal(t, "v1.18.4-alpha.2", res.Prime())
 				require.Empty(t, res.Official())
 				require.Empty(t, res.RC())
 				require.Empty(t, res.Beta())
-				require.Equal(t, "v1.18.4-alpha.1", res.Alpha())
+				require.Equal(t, "v1.18.4-alpha.2", res.Alpha())
+				require.Len(t, res.Slice(), 1)
+			},
+		},
+		{
+			// new alpha
+			releaseType:  release.ReleaseTypeAlpha,
+			version:      "v1.20.0-alpha.2.1273+4e9bdd481e2400",
+			branch:       git.DefaultBranch,
+			parentBranch: "",
+			expect: func(res *release.Versions, err error) {
+				require.Nil(t, err)
+				require.Equal(t, "v1.20.0-alpha.3", res.Prime())
+				require.Empty(t, res.Official())
+				require.Empty(t, res.RC())
+				require.Empty(t, res.Beta())
+				require.Equal(t, "v1.20.0-alpha.3", res.Alpha())
 				require.Len(t, res.Slice(), 1)
 			},
 		},
