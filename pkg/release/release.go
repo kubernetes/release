@@ -35,7 +35,7 @@ import (
 const (
 	// gcbmgr/anago defaults
 	DefaultToolRepo   = "release"
-	DefaultToolBranch = git.Master
+	DefaultToolBranch = git.DefaultBranch
 	DefaultToolOrg    = git.DefaultGithubOrg
 	// TODO(vdf): Need to reference K8s Infra project here
 	DefaultKubernetesStagingProject = "kubernetes-release-test"

@@ -300,9 +300,9 @@ type TagsPerBranch map[string]string
 // parameter here.
 //
 // Releases are associated in the following way:
-// - x.y.0-alpha.z releases are only associated with the master branch
+// - x.y.0-alpha.z releases are only associated with the main branch
 // - x.y.0-beta.z releases are only associated with their release-x.y branch
-// - x.y.0 final releases are associated with the master and the release-x.y branch
+// - x.y.0 final releases are associated with the main branch and the release-x.y branch
 func (g *GitHub) LatestGitHubTagsPerBranch() (TagsPerBranch, error) {
 	// List tags for all pages
 	allTags := []*github.RepositoryTag{}
@@ -326,9 +326,9 @@ func (g *GitHub) LatestGitHubTagsPerBranch() (TagsPerBranch, error) {
 	for _, t := range allTags {
 		tag := t.GetName()
 
-		// alpha and beta releases are only available on the master branch
+		// alpha and beta releases are only available on the main branch
 		if strings.Contains(tag, "beta") || strings.Contains(tag, "alpha") {
-			releases.addIfNotExisting(git.Master, tag)
+			releases.addIfNotExisting(git.DefaultBranch, tag)
 			continue
 		}
 
@@ -340,9 +340,9 @@ func (g *GitHub) LatestGitHubTagsPerBranch() (TagsPerBranch, error) {
 			continue
 		}
 
-		// Latest vx.x.0 release are on both master and release branch
+		// Latest vx.x.0 release are on both main and release branch
 		if len(semverTag.Pre) == 0 {
-			releases.addIfNotExisting(git.Master, tag)
+			releases.addIfNotExisting(git.DefaultBranch, tag)
 		}
 
 		branch := fmt.Sprintf("release-%d.%d", semverTag.Major, semverTag.Minor)

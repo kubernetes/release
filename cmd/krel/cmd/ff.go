@@ -29,7 +29,7 @@ import (
 
 type ffOptions struct {
 	branch         string
-	masterRef      string
+	mainRef        string
 	nonInteractive bool
 }
 
@@ -37,7 +37,7 @@ var ffOpts = &ffOptions{}
 
 // ffCmd represents the base command when called without any subcommands
 var ffCmd = &cobra.Command{
-	Use:   "ff --branch <release-branch> [--ref <master-ref>] [--nomock] [--cleanup]",
+	Use:   "ff --branch <release-branch> [--ref <main-ref>] [--nomock] [--cleanup]",
 	Short: "Fast forward a Kubernetes release branch",
 	Long: fmt.Sprintf(`ff fast forwards a branch to a specified git object (defaults to %s).
 
@@ -46,14 +46,14 @@ krel ff pre-checks that the local branch to be forwarded is an actual
 case, krel ff will fail.
 
 After that preflight-check, the release branch will be checked out and krel
-verifies that the latest merge base tag is the same for the master and the
+verifies that the latest merge base tag is the same for the main and the
 release branch. This means that only the latest release branch can be fast
 forwarded.
 
 krel merges the provided ref into the release branch and asks for a final
 confirmation if the push should really happen. The push will only be executed
 as real push if the '--nomock' flag is specified.
-`, kgit.Remotify(kgit.Master)),
+`, kgit.Remotify(kgit.DefaultBranch)),
 	Example:       "krel ff --branch release-1.17 --ref origin/master --cleanup",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -67,7 +67,7 @@ Please only answer after you have validated the changes.`
 
 func init() {
 	ffCmd.PersistentFlags().StringVar(&ffOpts.branch, "branch", "", "branch")
-	ffCmd.PersistentFlags().StringVar(&ffOpts.masterRef, "ref", kgit.Remotify(kgit.Master), "ref on master")
+	ffCmd.PersistentFlags().StringVar(&ffOpts.mainRef, "ref", kgit.Remotify(kgit.DefaultBranch), "ref on the main branch")
 
 	rootCmd.AddCommand(ffCmd)
 }
@@ -78,7 +78,7 @@ func runFf(opts *ffOptions, rootOpts *rootOptions) error {
 		return errors.New("please specify valid release branch")
 	}
 
-	logrus.Infof("Preparing to fast-forward %s onto the %s branch", opts.masterRef, branch)
+	logrus.Infof("Preparing to fast-forward %s onto the %s branch", opts.mainRef, branch)
 	repo, err := kgit.CloneOrOpenDefaultGitHubRepoSSH(rootOpts.repoPath)
 	if err != nil {
 		return err
@@ -119,16 +119,16 @@ func runFf(opts *ffOptions, rootOpts *rootOptions) error {
 		return errors.Wrapf(err, "checking out branch %s", branch)
 	}
 
-	logrus.Infof("Finding merge base between %q and %q", kgit.Master, branch)
-	mergeBase, err := repo.MergeBase(kgit.Master, branch)
+	logrus.Infof("Finding merge base between %q and %q", kgit.DefaultBranch, branch)
+	mergeBase, err := repo.MergeBase(kgit.DefaultBranch, branch)
 	if err != nil {
 		return err
 	}
 
 	// Verify the tags
-	masterTag, err := repo.Describe(
+	mainTag, err := repo.Describe(
 		kgit.NewDescribeOptions().
-			WithRevision(kgit.Remotify(kgit.Master)).
+			WithRevision(kgit.Remotify(kgit.DefaultBranch)).
 			WithAbbrev(0).
 			WithTags(),
 	)
@@ -147,13 +147,13 @@ func runFf(opts *ffOptions, rootOpts *rootOptions) error {
 	}
 	logrus.Infof("Merge base tag is: %s", mergeBaseTag)
 
-	if masterTag != mergeBaseTag {
+	if mainTag != mergeBaseTag {
 		return errors.Errorf(
 			"unable to fast forward: tag %q does not match %q",
-			masterTag, mergeBaseTag,
+			mainTag, mergeBaseTag,
 		)
 	}
-	logrus.Infof("Verified that the latest master tag is the same as the merge base tag")
+	logrus.Infof("Verified that the latest tag on the main branch is the same as the merge base tag")
 
 	releaseRev, err := repo.Head()
 	if err != nil {
@@ -161,8 +161,8 @@ func runFf(opts *ffOptions, rootOpts *rootOptions) error {
 	}
 	logrus.Infof("Latest release branch revision is %s", releaseRev)
 
-	logrus.Info("Merging master changes into release branch")
-	if err := repo.Merge(opts.masterRef); err != nil {
+	logrus.Info("Merging main branch changes into release branch")
+	if err := repo.Merge(opts.mainRef); err != nil {
 		return err
 	}
 
@@ -171,7 +171,7 @@ func runFf(opts *ffOptions, rootOpts *rootOptions) error {
 		return err
 	}
 
-	prepushMessage(repo.Dir(), branch, opts.masterRef, releaseRev, headRev)
+	prepushMessage(repo.Dir(), branch, opts.mainRef, releaseRev, headRev)
 
 	pushUpstream := false
 	if opts.nonInteractive {
@@ -204,7 +204,7 @@ Validate the fast-forward commit using:
 
 	git show
 
-Validate the changes pulled in from master using:
+Validate the changes pulled in from main branch using:
 
 	git log %s..%s
 

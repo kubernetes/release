@@ -68,7 +68,7 @@ func TestRunGcbmgrList(t *testing.T) {
 		{
 			name: "list only",
 			gcbmgrOpts: &cmd.GcbmgrOptions{
-				Branch:   "master",
+				Branch:   git.DefaultBranch,
 				GcpUser:  "test-user",
 				LastJobs: 5,
 				Repo:     mockRepo(),
@@ -84,7 +84,7 @@ func TestRunGcbmgrList(t *testing.T) {
 		{
 			name: "error on list jobs",
 			gcbmgrOpts: &cmd.GcbmgrOptions{
-				Branch:   "master",
+				Branch:   git.DefaultBranch,
 				GcpUser:  "test-user",
 				LastJobs: 10,
 				Repo:     mockRepo(),
@@ -160,10 +160,10 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		expected   map[string]string
 	}{
 		{
-			name: "master alpha - stage",
+			name: "main branch alpha - stage",
 			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Stage:       true,
-				Branch:      "master",
+				Branch:      git.DefaultBranch,
 				ReleaseType: release.ReleaseTypeAlpha,
 				GcpUser:     "test-user",
 				Repo:        mockRepo(),
@@ -171,7 +171,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			},
 			expected: map[string]string{
 				"BUILD_AT_HEAD":          "",
-				"RELEASE_BRANCH":         "master",
+				"RELEASE_BRANCH":         git.DefaultBranch,
 				"TOOL_ORG":               "",
 				"TOOL_REPO":              "",
 				"TOOL_BRANCH":            "",
@@ -184,10 +184,10 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			},
 		},
 		{
-			name: "master beta - release",
+			name: "main branch beta - release",
 			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Release:      true,
-				Branch:       "master",
+				Branch:       git.DefaultBranch,
 				ReleaseType:  release.ReleaseTypeBeta,
 				BuildVersion: "v1.33.7",
 				GcpUser:      "test-user",
@@ -195,7 +195,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				Version:      mockVersion("v1.33.7"),
 			},
 			expected: map[string]string{
-				"RELEASE_BRANCH":         "master",
+				"RELEASE_BRANCH":         git.DefaultBranch,
 				"TOOL_ORG":               "",
 				"TOOL_REPO":              "",
 				"TOOL_BRANCH":            "",
@@ -416,18 +416,18 @@ func TestValidateSuccess(t *testing.T) {
 		gcbmgrOpts *cmd.GcbmgrOptions
 	}{
 		{
-			name: "master alpha - stage",
+			name: "main branch alpha - stage",
 			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Stage:       true,
-				Branch:      "master",
+				Branch:      git.DefaultBranch,
 				ReleaseType: release.ReleaseTypeAlpha,
 			},
 		},
 		{
-			name: "master beta - release",
+			name: "main branch beta - release",
 			gcbmgrOpts: &cmd.GcbmgrOptions{
 				Release:      true,
-				Branch:       "master",
+				Branch:       git.DefaultBranch,
 				ReleaseType:  release.ReleaseTypeBeta,
 				BuildVersion: "v1.33.7",
 			},
@@ -472,16 +472,16 @@ func TestValidateFailure(t *testing.T) {
 		gcbmgrOpts *cmd.GcbmgrOptions
 	}{
 		{
-			name: "RC on master",
+			name: "RC on main branch",
 			gcbmgrOpts: &cmd.GcbmgrOptions{
-				Branch:      git.Master,
+				Branch:      git.DefaultBranch,
 				ReleaseType: release.ReleaseTypeRC,
 			},
 		},
 		{
-			name: "official release on master",
+			name: "official release on main branch",
 			gcbmgrOpts: &cmd.GcbmgrOptions{
-				Branch:      git.Master,
+				Branch:      git.DefaultBranch,
 				ReleaseType: release.ReleaseTypeOfficial,
 			},
 		},

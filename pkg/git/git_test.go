@@ -193,7 +193,7 @@ func TestGetRepoURLSuccess(t *testing.T) {
 
 func TestRemotify(t *testing.T) {
 	testcases := []struct{ provided, expected string }{
-		{provided: git.Master, expected: git.DefaultRemote + "/" + git.Master},
+		{provided: git.DefaultBranch, expected: git.DefaultRemote + "/" + git.DefaultBranch},
 		{provided: "origin/ref", expected: "origin/ref"},
 		{provided: "base/another_ref", expected: "base/another_ref"},
 	}

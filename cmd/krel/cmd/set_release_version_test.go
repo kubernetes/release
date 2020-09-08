@@ -72,7 +72,7 @@ export RELEASE_VERSION_PRIME=v1.19.1-rc.1
 			},
 			opts: &setReleaseVersionOptions{
 				buildVersion: "v1.19.1-rc.0.34+5f5b46a6e8ad56",
-				branch:       git.Master,
+				branch:       git.DefaultBranch,
 			},
 			shouldErr: true,
 		},
@@ -82,7 +82,7 @@ export RELEASE_VERSION_PRIME=v1.19.1-rc.1
 			},
 			opts: &setReleaseVersionOptions{
 				buildVersion: "v1.20.0-alpha.0.1273+4e9bdd481e2400",
-				branch:       git.Master,
+				branch:       git.DefaultBranch,
 			},
 			shouldErr: false,
 			expected: `declare -Ag RELEASE_VERSION
@@ -98,7 +98,7 @@ export RELEASE_VERSION_PRIME=v1.20.0-alpha.0
 			},
 			opts: &setReleaseVersionOptions{
 				buildVersion: "v1.20.0-alpha.0.1273+4e9bdd481e2400",
-				branch:       git.Master,
+				branch:       git.DefaultBranch,
 			},
 			shouldErr: false,
 			expected: `declare -Ag RELEASE_VERSION
@@ -115,7 +115,7 @@ export RELEASE_VERSION_PRIME=v1.20.0-beta.0
 			opts: &setReleaseVersionOptions{
 				buildVersion: "v1.20.0-alpha.0.1273+4e9bdd481e2400",
 				branch:       "release-1.20",
-				parentBranch: git.Master,
+				parentBranch: git.DefaultBranch,
 			},
 			shouldErr: false,
 			expected: `declare -Ag RELEASE_VERSION
