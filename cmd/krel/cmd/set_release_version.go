@@ -40,7 +40,7 @@ the command might be removed in future releases again if anago is end of life.
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		res, err := runSetReleaseVersion(setReleaseVersionOpts)
+		res, err := runSetReleaseVersion(setReleaseVersionOpts, anagoOpts)
 		if err != nil {
 			return err
 		}
@@ -50,7 +50,6 @@ the command might be removed in future releases again if anago is end of life.
 }
 
 type setReleaseVersionOptions struct {
-	releaseType  string
 	buildVersion string
 	branch       string
 	parentBranch string
@@ -59,20 +58,6 @@ type setReleaseVersionOptions struct {
 var setReleaseVersionOpts = &setReleaseVersionOptions{}
 
 func init() {
-	setReleaseVersionCmd.PersistentFlags().StringVar(
-		&setReleaseVersionOpts.releaseType,
-		"release-type",
-		"",
-		fmt.Sprintf("release type, must be one of: '%s'",
-			strings.Join([]string{
-				release.ReleaseTypeAlpha,
-				release.ReleaseTypeBeta,
-				release.ReleaseTypeRC,
-				release.ReleaseTypeOfficial,
-			}, "', '"),
-		),
-	)
-
 	setReleaseVersionCmd.PersistentFlags().StringVar(
 		&setReleaseVersionOpts.buildVersion,
 		"build-version",
@@ -95,7 +80,6 @@ func init() {
 	)
 
 	for _, f := range []string{
-		"release-type",
 		"build-version",
 		"branch",
 		"parent-branch",
@@ -105,12 +89,15 @@ func init() {
 		}
 	}
 
-	rootCmd.AddCommand(setReleaseVersionCmd)
+	anagoCmd.AddCommand(setReleaseVersionCmd)
 }
 
-func runSetReleaseVersion(opts *setReleaseVersionOptions) (string, error) {
+func runSetReleaseVersion(opts *setReleaseVersionOptions, anagoOpts *release.Options) (string, error) {
 	releaseVersion, err := release.SetReleaseVersion(
-		opts.releaseType, opts.buildVersion, opts.branch, opts.parentBranch,
+		anagoOpts.ReleaseType,
+		opts.buildVersion,
+		opts.branch,
+		opts.parentBranch,
 	)
 	if err != nil {
 		return "", errors.Wrap(err, "set release version")

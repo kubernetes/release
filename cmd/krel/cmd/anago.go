@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -60,16 +61,23 @@ var anagoCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runAnago()
+		return runAnago(anagoOpts)
 	},
 }
 
 func init() {
 	anagoCmd.PersistentFlags().StringVar(
 		&anagoOpts.ReleaseType,
-		"type",
-		"prerelease",
-		"Release type (must be one of: 'prerelease', 'rc', 'official')",
+		"release-type",
+		"",
+		fmt.Sprintf("release type, must be one of: '%s'",
+			strings.Join([]string{
+				release.ReleaseTypeAlpha,
+				release.ReleaseTypeBeta,
+				release.ReleaseTypeRC,
+				release.ReleaseTypeOfficial,
+			}, "', '"),
+		),
 	)
 
 	anagoCmd.PersistentFlags().StringVar(
@@ -79,11 +87,19 @@ func init() {
 		"",
 	)
 
+	for _, f := range []string{
+		"release-type",
+	} {
+		if err := anagoCmd.MarkPersistentFlagRequired(f); err != nil {
+			logrus.Fatalf("Unable to set %q flag as required: %v", f, err)
+		}
+	}
+
 	rootCmd.AddCommand(anagoCmd)
 }
 
 // runAnago is the function invoked by 'krel anago', responsible for submitting release jobs to GCB
-func runAnago() error {
+func runAnago(anagoOpts *release.Options) error {
 	/*
 	   # Clear or validate run state
 	   if ((FLAGS_clean)) && [[ -f $PROGSTATE ]]; then
