@@ -87,9 +87,9 @@ export RELEASE_VERSION_PRIME=v1.19.1-rc.1
 			shouldErr: false,
 			expected: `declare -Ag RELEASE_VERSION
 declare -ag ORDERED_RELEASE_KEYS
-RELEASE_VERSION[alpha]="v1.20.0-alpha.0"
+RELEASE_VERSION[alpha]="v1.20.0-alpha.1"
 ORDERED_RELEASE_KEYS+=("alpha")
-export RELEASE_VERSION_PRIME=v1.20.0-alpha.0
+export RELEASE_VERSION_PRIME=v1.20.0-alpha.1
 `,
 		},
 		{

@@ -136,13 +136,13 @@ func SetReleaseVersion(
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing build patch version to int")
 	}
-	var labelID *int
+	var labelIDPtr *int
 	if versionMatch[5] != "" {
 		parsedLabelID, err := strconv.Atoi(versionMatch[5])
 		if err != nil {
 			return nil, errors.Wrap(err, "parsing build label ID to int")
 		}
-		labelID = &parsedLabelID
+		labelIDPtr = &parsedLabelID
 	}
 	buildVersion := struct {
 		major, minor, patch int
@@ -153,7 +153,12 @@ func SetReleaseVersion(
 		minor:   buildMinor,
 		patch:   buildPatch,
 		label:   versionMatch[4], // -alpha, -beta, -rc
-		labelID: labelID,
+		labelID: labelIDPtr,
+	}
+
+	labelID := 1
+	if labelIDPtr != nil {
+		labelID = *buildVersion.labelID + 1
 	}
 
 	// releaseVersions.prime is the default release version for this
@@ -201,11 +206,6 @@ func SetReleaseVersion(
 		}
 		releaseVersions.prime += fmt.Sprintf(".%d", patch)
 
-		labelID := 1
-		if buildVersion.labelID != nil {
-			labelID = *buildVersion.labelID + 1
-		}
-
 		if releaseType == ReleaseTypeOfficial {
 			releaseVersions.official = releaseVersions.prime
 			// Only primary branches get rc releases
@@ -244,7 +244,7 @@ func SetReleaseVersion(
 			releaseVersions.beta += fmt.Sprintf("%s.0", buildVersion.label)
 		} else {
 			releaseVersions.beta += fmt.Sprintf(
-				"%s.%d", buildVersion.label, *labelID,
+				"%s.%d", buildVersion.label, labelID,
 			)
 		}
 
@@ -270,7 +270,7 @@ func SetReleaseVersion(
 			buildVersion.minor,
 			buildVersion.patch,
 			buildVersion.label,
-			*labelID,
+			labelID,
 		)
 		releaseVersions.prime = releaseVersions.alpha
 	}
