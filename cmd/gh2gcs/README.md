@@ -34,3 +34,16 @@ INFO Writing assets to /tmp/test/kubernetes/kubernetes/v1.18.0
 ...
 
 ```
+
+## Use case
+
+GitHub has a rate limit on downloading release artifacts. The artifacts that are often used (e.g. in CI) are uploaded to Google Cloud Storage, as GCS doesn't have read rate limits. This improves test stability as flakes related to hitting rate limits are avoided.
+
+## SIG Release managed buckets
+
+The following GCS buckets are managed by SIG Release:
+
+- k8s-artifacts-cni - contains [CNI plugins](https://github.com/containernetworking/plugins) artifacts
+- k8s-artifacts-cri-tools - contains [CRI tools](https://github.com/kubernetes-sigs/cri-tools) artifacts (`crictl` and `critest`)
+
+The artifacts are pushed to GCS by [Release Managers](https://github.com/kubernetes/sig-release/blob/master/release-managers.md). The pushing is done manually by running the appropriate `gh2gcs` command. It's recommended for Release Managers to watch the appropriate repositories for new releases.
