@@ -102,8 +102,7 @@ get_tests_by_status() {
   local board
   local summary
 
-  for board in "$@"
-  do
+  for board in "$@"; do
     summary="$( curl_with_retry --retry 0 "${TESTGRID}/${board}/summary" 2>/dev/null )" || {
       log "Could not get summary for board '${board}'"
       return 1
@@ -174,8 +173,7 @@ get_header_stub() {
 
   echo "Boards checked for $(comma_sep "${STATES}"):"
 
-  for board in "$@"
-  do
+  for board in "$@"; do
     printf -- '- [%s](%s)\n' "$board" "${TESTGRID}/${board}"
   done
 }
@@ -197,8 +195,7 @@ usage() {
 }
 
 wait_for_all() {
-  for pid in "$@"
-  do
+  for pid in "$@"; do
     wait "$pid"
   done
 }
@@ -212,8 +209,7 @@ shoot() {
   local pids=()
   local comment
 
-  if [ -n "$LOCAL_IMG_DIR" ] && [ -e "$LOCAL_IMG_DIR" ]
-  then
+  if [ -n "$LOCAL_IMG_DIR" ] && [ -e "$LOCAL_IMG_DIR" ]; then
     log "Directory '${LOCAL_IMG_DIR}' must be empty"
     return 1
   fi
@@ -234,12 +230,10 @@ shoot() {
 
   get_header_stub "$target_release" "${boards[@]}" > "$( get_issue_stub_name "${tmp_dir}" "${idx}" )"
 
-  for s in ${STATES}
-  do
+  for s in ${STATES}; do
     raw_tests="$( get_tests_by_status "$s" "${boards[@]}" )"
     mapfile -t tests <<< "$raw_tests"
-    for t in "${tests[@]}"
-    do
+    for t in "${tests[@]}"; do
       [ -n "${t}" ] || continue
 
       idx=$(( idx + 1 ))
@@ -290,14 +284,17 @@ shoot() {
 
   comment="$( combine_issue_stubs "${tmp_dir}" | tee "${tmp_dir}/issue_comment.txt" )"
 
-  if [ -n "$LOCAL_IMG_DIR" ]
-  then
+  if [ -n "$LOCAL_IMG_DIR" ]; then
     log "Skipping upload, moving results to '$LOCAL_IMG_DIR'"
     mv "${tmp_dir}" "${LOCAL_IMG_DIR}"
   else
-    log "Starting upload to '$BUCKET'"
-    upload_and_publish_images "$img_dir" "$img_bucket_dir"
-    log "Upload finished successfully"
+    if [ ! "$(ls -A $img_dir)" ]; then
+      log "$img_dir is empty! Skipping upload."
+    else
+      log "Starting upload to '$BUCKET'"
+      upload_and_publish_images "$img_dir" "$img_bucket_dir"
+      log "Upload finished successfully"
+    fi
   fi
 
   echo
