@@ -5,8 +5,8 @@ options:
   substitution_option: ALLOW_LOOSE
 
 steps:
-  - name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v20200713-e9b3d9d'
-    entrypoint: make
+  - name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v20200824-5d057db'
+    entrypoint: bash
     env:
     - DOCKER_CLI_EXPERIMENTAL=enabled
     - TAG=$_GIT_TAG
