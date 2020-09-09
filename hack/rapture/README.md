@@ -81,7 +81,7 @@ git checkout master
 Run the following commands to ensure that we are logged in and also the proper project context is setup.
 
 ```shell
-prodaccess
+gcert
 gcloud auth login
 gcloud config set project kubernetes-release-test
 ```
