@@ -25,7 +25,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release/regex"
 )
 
@@ -73,48 +72,29 @@ func (r *Versions) Alpha() string {
 // String returns a string representation for the release versions
 func (r *Versions) String() string {
 	sb := &strings.Builder{}
-	fmt.Fprintf(sb, "prime: %s, ", r.prime)
+	fmt.Fprintf(sb, "prime: %s", r.prime)
 	if r.official != "" {
-		fmt.Fprintf(sb, "%s: %s, ", ReleaseTypeOfficial, r.official)
+		fmt.Fprintf(sb, ", %s: %s", ReleaseTypeOfficial, r.official)
 	}
 	if r.rc != "" {
-		fmt.Fprintf(sb, "%s: %s, ", ReleaseTypeRC, r.rc)
+		fmt.Fprintf(sb, ", %s: %s", ReleaseTypeRC, r.rc)
 	}
 	if r.beta != "" {
-		fmt.Fprintf(sb, "%s: %s, ", ReleaseTypeBeta, r.beta)
+		fmt.Fprintf(sb, ", %s: %s", ReleaseTypeBeta, r.beta)
 	}
 	if r.alpha != "" {
-		fmt.Fprintf(sb, "%s: %s", ReleaseTypeAlpha, r.alpha)
+		fmt.Fprintf(sb, ", %s: %s", ReleaseTypeAlpha, r.alpha)
 	}
 	return sb.String()
 }
 
-// Slice can be used when iterating over the release versions in the order
-// official, rc, beta, alpha
-func (r *Versions) Slice() []string {
-	res := []string{}
-	if r.official != "" {
-		res = append(res, r.official)
-	}
-	if r.rc != "" {
-		res = append(res, r.rc)
-	}
-	if r.beta != "" {
-		res = append(res, r.beta)
-	}
-	if r.alpha != "" {
-		res = append(res, r.alpha)
-	}
-	return res
-}
-
-// SetReleaseVersion returns the release versions for the provided parameters
-func SetReleaseVersion(
-	releaseType, version, branch, parentBranch string,
+// GenerateReleaseVersion returns the next build versions for the provided parameters
+func GenerateReleaseVersion(
+	releaseType, version, branch string, branchFromMaster bool,
 ) (*Versions, error) {
 	logrus.Infof(
-		"Setting release version for %s (branch: %q, parent branch: %q)",
-		version, branch, parentBranch,
+		"Setting release version for %s (branch: %q, branch from master: %v)",
+		version, branch, branchFromMaster,
 	)
 
 	// if branch == git.DefaultBranch, version is an alpha or beta
@@ -152,7 +132,7 @@ func SetReleaseVersion(
 		major:   buildMajor,
 		minor:   buildMinor,
 		patch:   buildPatch,
-		label:   versionMatch[4], // -alpha, -beta, -rc
+		label:   strings.TrimPrefix(versionMatch[4], "-"), // alpha, beta, rc
 		labelID: labelIDPtr,
 	}
 
@@ -165,7 +145,7 @@ func SetReleaseVersion(
 	// session/type Other labels such as alpha, beta, and rc are set as needed
 	// Index ordering is important here as it's how they are processed
 	releaseVersions := &Versions{}
-	if parentBranch == git.DefaultBranch {
+	if branchFromMaster {
 		branchMatch := regex.BranchRegex.FindStringSubmatch(branch)
 		if len(branchMatch) < 3 {
 			return nil, errors.Errorf("invalid formatted branch %s", branch)
@@ -187,10 +167,14 @@ func SetReleaseVersion(
 		}
 
 		// This is a new branch, set new alpha and RC versions
-		releaseVersions.alpha = fmt.Sprintf("v%d.%d.0-alpha.0",
-			releaseBranch.major, releaseBranch.minor+1)
-		releaseVersions.rc = fmt.Sprintf("v%d.%d.0-rc.0",
-			releaseBranch.major, releaseBranch.minor)
+		releaseVersions.alpha = fmt.Sprintf(
+			"v%d.%d.0-alpha.0", releaseBranch.major, releaseBranch.minor+1,
+		)
+
+		releaseVersions.rc = fmt.Sprintf(
+			"v%d.%d.0-rc.0", releaseBranch.major, releaseBranch.minor,
+		)
+
 		releaseVersions.prime = releaseVersions.rc
 	} else if strings.HasPrefix(branch, "release-") {
 		// Build directly from releaseVersions
@@ -239,12 +223,11 @@ func SetReleaseVersion(
 		// Otherwise, we'll assume this is the next x.y beta, so just
 		// increment the
 		// beta version e.g., x.y.z-beta.1 --> x.y.z-beta.2
-		if buildVersion.label == "-alpha" {
-			buildVersion.label = "-beta"
-			releaseVersions.beta += fmt.Sprintf("%s.0", buildVersion.label)
+		if buildVersion.label == ReleaseTypeAlpha {
+			releaseVersions.beta += fmt.Sprintf("-%s.0", ReleaseTypeBeta)
 		} else {
 			releaseVersions.beta += fmt.Sprintf(
-				"%s.%d", buildVersion.label, labelID,
+				"-%s.%d", buildVersion.label, labelID,
 			)
 		}
 
@@ -256,7 +239,7 @@ func SetReleaseVersion(
 		//
 		// Concretely:
 		// We should not be able to cut x.y.z-alpha.N after x.y.z-beta.M
-		if buildVersion.label != "-alpha" {
+		if buildVersion.label != ReleaseTypeAlpha {
 			return nil, errors.Errorf(
 				"cannot cut an alpha tag after a non-alpha release %s. %s",
 				version,
@@ -265,7 +248,7 @@ func SetReleaseVersion(
 		}
 
 		releaseVersions.alpha = fmt.Sprintf(
-			"v%d.%d.%d%s.%d",
+			"v%d.%d.%d-%s.%d",
 			buildVersion.major,
 			buildVersion.minor,
 			buildVersion.patch,

@@ -24,23 +24,25 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
 )
 
-// setReleaseVersionCmd represents the subcommand for `krel set-release-version`
-var setReleaseVersionCmd = &cobra.Command{
-	Use:   "set-release-version",
-	Short: "Set the release version to be sourced from bash",
-	Long: `krel set-release-version
+// generateReleaseVersionCmd represents the subcommand for `krel generate-release-version`
+var generateReleaseVersionCmd = &cobra.Command{
+	Use:   "generate-release-version",
+	Short: "Generate the release version to be sourced from bash",
+	Long: `krel generate-release-version
 
-This subcommand can be used to set the release version from a bash command by
-sourcing it's output. It's mainly indented to be used from anago, which means
-the command might be removed in future releases again if anago is end of life.
+This subcommand can be used to generate the release version from a bash command
+by sourcing it's output. It's mainly indented to be used from anago, which
+means the command might be removed in future releases again if anago is end of
+life.
 `,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		res, err := runSetReleaseVersion(setReleaseVersionOpts, anagoOpts)
+		res, err := runGenerateReleaseVersion(generateReleaseVersionOpts, anagoOpts)
 		if err != nil {
 			return err
 		}
@@ -49,31 +51,31 @@ the command might be removed in future releases again if anago is end of life.
 	},
 }
 
-type setReleaseVersionOptions struct {
+type generateReleaseVersionOptions struct {
 	buildVersion string
 	branch       string
 	parentBranch string
 }
 
-var setReleaseVersionOpts = &setReleaseVersionOptions{}
+var generateReleaseVersionOpts = &generateReleaseVersionOptions{}
 
 func init() {
-	setReleaseVersionCmd.PersistentFlags().StringVar(
-		&setReleaseVersionOpts.buildVersion,
+	generateReleaseVersionCmd.PersistentFlags().StringVar(
+		&generateReleaseVersionOpts.buildVersion,
 		"build-version",
 		"",
 		"build version to be used",
 	)
 
-	setReleaseVersionCmd.PersistentFlags().StringVar(
-		&setReleaseVersionOpts.branch,
+	generateReleaseVersionCmd.PersistentFlags().StringVar(
+		&generateReleaseVersionOpts.branch,
 		"branch",
 		"",
 		"branch for which the version should be calculated",
 	)
 
-	setReleaseVersionCmd.PersistentFlags().StringVar(
-		&setReleaseVersionOpts.parentBranch,
+	generateReleaseVersionCmd.PersistentFlags().StringVar(
+		&generateReleaseVersionOpts.parentBranch,
 		"parent-branch",
 		"",
 		"the parent branch for the target branch",
@@ -84,56 +86,45 @@ func init() {
 		"branch",
 		"parent-branch",
 	} {
-		if err := setReleaseVersionCmd.MarkPersistentFlagRequired(f); err != nil {
+		if err := generateReleaseVersionCmd.MarkPersistentFlagRequired(f); err != nil {
 			logrus.Fatalf("Unable to set %q flag as required: %v", f, err)
 		}
 	}
 
-	anagoCmd.AddCommand(setReleaseVersionCmd)
+	anagoCmd.AddCommand(generateReleaseVersionCmd)
 }
 
-func runSetReleaseVersion(opts *setReleaseVersionOptions, anagoOpts *release.Options) (string, error) {
-	releaseVersion, err := release.SetReleaseVersion(
+func runGenerateReleaseVersion(opts *generateReleaseVersionOptions, anagoOpts *release.Options) (string, error) {
+	releaseVersion, err := release.GenerateReleaseVersion(
 		anagoOpts.ReleaseType,
 		opts.buildVersion,
 		opts.branch,
-		opts.parentBranch,
+		opts.parentBranch == git.DefaultBranch,
 	)
 	if err != nil {
-		return "", errors.Wrap(err, "set release version")
+		return "", errors.Wrap(err, "generate release version")
 	}
 
 	res := strings.Builder{}
 	res.WriteString("declare -Ag RELEASE_VERSION\n")
 	res.WriteString("declare -ag ORDERED_RELEASE_KEYS\n")
 
-	addKey := func(v string) {
-		res.WriteString(fmt.Sprintf("ORDERED_RELEASE_KEYS+=(%q)\n", v))
-	}
-
-	addVersion := func(k, v string) {
+	add := func(k, v string) {
 		res.WriteString(fmt.Sprintf("RELEASE_VERSION[%s]=%q\n", k, v))
+		res.WriteString(fmt.Sprintf("ORDERED_RELEASE_KEYS+=(%q)\n", k))
 	}
 
 	if releaseVersion.Official() != "" {
-		const v = "official"
-		addVersion(v, releaseVersion.Official())
-		addKey(v)
+		add(release.ReleaseTypeOfficial, releaseVersion.Official())
 	}
 	if releaseVersion.RC() != "" {
-		const v = "rc"
-		addVersion(v, releaseVersion.RC())
-		addKey(v)
+		add(release.ReleaseTypeRC, releaseVersion.RC())
 	}
 	if releaseVersion.Beta() != "" {
-		const v = "beta"
-		addVersion(v, releaseVersion.Beta())
-		addKey(v)
+		add(release.ReleaseTypeBeta, releaseVersion.Beta())
 	}
 	if releaseVersion.Alpha() != "" {
-		const v = "alpha"
-		addVersion(v, releaseVersion.Alpha())
-		addKey(v)
+		add(release.ReleaseTypeAlpha, releaseVersion.Alpha())
 	}
 
 	res.WriteString(fmt.Sprintf(
