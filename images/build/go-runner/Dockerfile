@@ -36,18 +36,17 @@ COPY ./go.* ./
 # ref: https://golang.org/doc/go1.15#go-command
 ENV GOPROXY="https://proxy.golang.org|direct"
 
-RUN go env
-
-# Cache the go build
-RUN go build .
-
 # Build
 ARG package=.
 ARG ARCH
 
-# Do not force rebuild of up-to-date packages (do not use -a)
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} \
-    go build -ldflags '-s -w -buildid= -extldflags "-static"' \
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOARCH=${ARCH}
+
+RUN go env
+
+RUN go build -ldflags '-s -w -buildid= -extldflags "-static"' \
     -o go-runner ${package}
 
 # Production image
