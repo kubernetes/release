@@ -12,14 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# set default shell
-SHELL=/bin/bash -o pipefail
+# include the common image-building Makefiles
+include $(CURDIR)/../../Makefile.common-image $(CURDIR)/../Makefile.build-image
 
-REGISTRY ?= gcr.io/k8s-staging-build-image
 IMGNAME = kube-cross
-IMAGE = $(REGISTRY)/$(IMGNAME)
-
-TAG ?= $(shell git describe --tags --always --dirty)
 IMAGE_VERSION ?= v1.15.1-2
 CONFIG ?= go1.15
 
@@ -35,43 +31,6 @@ ETCD_VERSION?=v3.4.13
 #       - https://github.com/kubernetes/kubernetes/issues/75114
 PLATFORMS ?= linux/amd64 #linux/arm linux/arm64 linux/ppc64le linux/s390x
 
-# build with buildx
-# https://github.com/docker/buildx/issues/59
-.PHONY: container
-container: init-docker-buildx
-	echo "Building $(IMGNAME) for the following platforms: $(PLATFORMS)"
-	@for platform in $(PLATFORMS); do \
-		echo "Starting build for $${platform} platform"; \
-		docker buildx build \
-			--load \
-			--progress plain \
-			--platform $${platform} \
-			--tag $(IMAGE)-$${platform##*/}:$(IMAGE_VERSION) \
-			--tag $(IMAGE)-$${platform##*/}:$(TAG)-$(CONFIG) \
-			--tag $(IMAGE)-$${platform##*/}:latest-$(CONFIG) \
-			--build-arg=GO_VERSION=$(GO_VERSION) \
-			--build-arg=PROTOBUF_VERSION=$(PROTOBUF_VERSION) \
-			--build-arg=ETCD_VERSION=$(ETCD_VERSION) \
-			.; \
-	done
-
-.PHONY: push
-push: container
-	echo "Pushing $(IMGNAME) tags"
-	@for platform in $(PLATFORMS); do \
-		echo "Pushing tags for $${platform} platform"; \
-		docker push $(IMAGE)-$${platform##*/}:$(IMAGE_VERSION); \
-		docker push $(IMAGE)-$${platform##*/}:$(TAG)-$(CONFIG); \
-		docker push $(IMAGE)-$${platform##*/}:latest-$(CONFIG); \
-	done
-
-.PHONY: manifest
-manifest: push
-	docker manifest create --amend $(IMAGE):$(IMAGE_VERSION) $(shell echo $(PLATFORMS) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(IMAGE_VERSION)~g")
-	@for arch in $(PLATFORMS); do docker manifest annotate --arch "$${arch##*/}" ${IMAGE}:${IMAGE_VERSION} ${IMAGE}-$${arch}:${IMAGE_VERSION}; done
-	docker manifest push --purge $(IMAGE):$(IMAGE_VERSION)
-
-# enable buildx
-.PHONY: init-docker-buildx
-init-docker-buildx:
-	./../../../hack/init-buildx.sh
+BUILD_ARGS = --build-arg=GO_VERSION=$(GO_VERSION) \
+             --build-arg=PROTOBUF_VERSION=$(PROTOBUF_VERSION) \
+             --build-arg=ETCD_VERSION=$(ETCD_VERSION)
