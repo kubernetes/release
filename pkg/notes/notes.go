@@ -19,6 +19,7 @@ package notes
 import (
 	"bufio"
 	"context"
+	"crypto/sha1"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -31,6 +32,7 @@ import (
 	"github.com/nozzle/throttler"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/notes/options"
@@ -1024,7 +1026,46 @@ func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap) error {
 			indented, rn.PrNumber, rn.PrURL, rn.Author, rn.AuthorURL)
 		// Uppercase the first character of the markdown to make it look uniform
 		rn.Markdown = strings.ToUpper(string(markdown[0])) + markdown[1:]
-		logrus.Warn(rn.Markdown)
 	}
 	return nil
+}
+
+// ToNoteMap returns the note's content as YAML code for use in a notemap
+func (rn *ReleaseNote) ToNoteMap() (string, error) {
+	noteMap := &ReleaseNotesMap{
+		PR:     rn.PrNumber,
+		Commit: rn.Commit,
+	}
+
+	noteMap.ReleaseNote.Text = &rn.Text
+	noteMap.ReleaseNote.Documentation = &rn.Documentation
+	noteMap.ReleaseNote.Author = &rn.Author
+	noteMap.ReleaseNote.Areas = &rn.Areas
+	noteMap.ReleaseNote.Kinds = &rn.Kinds
+	noteMap.ReleaseNote.SIGs = &rn.SIGs
+	noteMap.ReleaseNote.Feature = &rn.Feature
+	noteMap.ReleaseNote.ActionRequired = &rn.ActionRequired
+
+	yamlCode, err := yaml.Marshal(&noteMap)
+	if err != nil {
+		return "", errors.Wrap(err, "marshalling release note to map")
+	}
+
+	return string(yamlCode), nil
+}
+
+// ContentHash returns a sha1 hash derived from the note's content
+func (rn *ReleaseNote) ContentHash() (string, error) {
+	// Converto the note to a map
+	noteMap, err := rn.ToNoteMap()
+	if err != nil {
+		return "", errors.Wrap(err, "serializing note's content")
+	}
+
+	h := sha1.New()
+	_, err = h.Write([]byte(noteMap))
+	if err != nil {
+		return "", errors.Wrap(err, "calculating content hash from map")
+	}
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }

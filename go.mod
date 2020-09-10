@@ -29,8 +29,9 @@ require (
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	google.golang.org/api v0.21.0
 	gopkg.in/yaml.v2 v2.2.8
-	k8s.io/apimachinery v0.18.3
-	k8s.io/utils v0.0.0-20200229041039-0a110f9eb7ab
+	k8s.io/apimachinery v0.18.6
+	k8s.io/kubectl v0.18.6
+	k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89
 	sigs.k8s.io/yaml v1.2.0
 )
 
