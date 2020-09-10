@@ -16,11 +16,11 @@
 include $(CURDIR)/../../Makefile.common-image $(CURDIR)/../Makefile.build-image
 
 IMGNAME = kube-cross
-IMAGE_VERSION ?= v1.15.1-2
+IMAGE_VERSION ?= v1.15.2-1
 CONFIG ?= go1.15
 
 # Build args
-GO_VERSION?=1.15.1
+GO_VERSION?=1.15.2
 PROTOBUF_VERSION?=3.0.2
 ETCD_VERSION?=v3.4.13
 
