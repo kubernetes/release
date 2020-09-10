@@ -12,15 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-.PHONY:	build push
+# include the common image-building Makefiles
+include $(CURDIR)/../../Makefile.common-image $(CURDIR)/../Makefile.build-image
 
-STAGING_REGISTRY?=gcr.io/k8s-staging-build-image
-PROD_REGISTRY?=k8s.gcr.io/build-image
-IMAGE=kube-cross
-
-TAG?=$(shell git describe --tags --always --dirty)
-CONFIG?=go1.15
-KUBE_CROSS_VERSION?=v1.15.1-1
+IMGNAME = kube-cross
+IMAGE_VERSION ?= v1.15.1-2
+CONFIG ?= go1.15
 
 # Build args
 GO_VERSION?=1.15.1
@@ -32,28 +29,8 @@ ETCD_VERSION?=v3.4.13
 #       - https://github.com/kubernetes/release/pull/1140/commits/e96924f58d9ce2bb73045fbba13f259b4345c0d9#r395056830
 #       - https://github.com/kubernetes/kubernetes/issues/78964
 #       - https://github.com/kubernetes/kubernetes/issues/75114
-ARCH=amd64
+PLATFORMS ?= linux/amd64 #linux/arm linux/arm64 linux/ppc64le linux/s390x
 
-all: build push
-
-build:
-	docker build \
-		-t $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
-		-t $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):latest-$(CONFIG) \
-		-t $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION) \
-		-t $(PROD_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION) \
-		--build-arg=GO_VERSION=$(GO_VERSION) \
-		--build-arg=PROTOBUF_VERSION=$(PROTOBUF_VERSION) \
-		--build-arg=ETCD_VERSION=$(ETCD_VERSION) \
-		.
-
-push:
-	docker push $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(TAG)-$(CONFIG)
-	docker push $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):latest-$(CONFIG)
-	docker push $(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION)
-	docker manifest create --amend $(STAGING_REGISTRY)/$(IMAGE):$(KUBE_CROSS_VERSION) \
-		$(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION)
-	docker manifest annotate $(STAGING_REGISTRY)/$(IMAGE):$(KUBE_CROSS_VERSION) \
-		$(STAGING_REGISTRY)/$(IMAGE)-$(ARCH):$(KUBE_CROSS_VERSION) \
-		--arch $(ARCH)
-	docker manifest push -p $(STAGING_REGISTRY)/$(IMAGE):$(KUBE_CROSS_VERSION)
+BUILD_ARGS = --build-arg=GO_VERSION=$(GO_VERSION) \
+             --build-arg=PROTOBUF_VERSION=$(PROTOBUF_VERSION) \
+             --build-arg=ETCD_VERSION=$(ETCD_VERSION)

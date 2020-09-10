@@ -12,14 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# set default shell
-SHELL=/bin/bash -o pipefail
+# include the common image-building Makefiles
+include $(CURDIR)/../../Makefile.common-image $(CURDIR)/../Makefile.build-image
 
-REGISTRY ?= gcr.io/k8s-staging-build-image
 IMGNAME = go-runner
-IMAGE = $(REGISTRY)/$(IMGNAME)
-
-TAG ?= $(shell git describe --tags --always --dirty)
 IMAGE_VERSION ?= buster-v2.0.1
 CONFIG ?= buster
 
@@ -46,38 +42,5 @@ build:
 clean:
 	rm go-runner
 
-.PHONY: container
-container: init-docker-buildx
-	echo "Building go-runner for the following platforms: $(PLATFORMS)"
-	# https://github.com/docker/buildx/issues/59
-	$(foreach PLATFORM,$(PLATFORMS), \
-		echo "Starting build for $(PLATFORM) platform"; \
-		DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build \
-		--load \
-		--progress plain \
-		--platform $(PLATFORM) \
-		--tag $(IMAGE)-$(PLATFORM):$(IMAGE_VERSION) \
-		--tag $(IMAGE)-$(PLATFORM):$(TAG)-$(CONFIG) \
-		--tag $(IMAGE)-$(PLATFORM):latest-$(CONFIG) \
-		--build-arg=GO_VERSION=$(GO_VERSION) \
-		--build-arg=DISTROLESS_IMAGE=$(DISTROLESS_IMAGE) .;)
-
-.PHONY: push
-push: container
-	$(foreach PLATFORM,$(PLATFORMS), \
-		docker push $(IMAGE)-$(PLATFORM):$(IMAGE_VERSION);)
-	$(foreach PLATFORM,$(PLATFORMS), \
-		docker push $(IMAGE)-$(PLATFORM):$(TAG)-$(CONFIG);)
-	$(foreach PLATFORM,$(PLATFORMS), \
-		docker push $(IMAGE)-$(PLATFORM):latest-$(CONFIG);)
-
-.PHONY: manifest
-manifest: push
-	docker manifest create --amend $(IMAGE):$(IMAGE_VERSION) $(shell echo $(PLATFORMS) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(IMAGE_VERSION)~g")
-	@for arch in $(PLATFORMS); do docker manifest annotate --arch "$${arch##*/}" ${IMAGE}:${IMAGE_VERSION} ${IMAGE}-$${arch}:${IMAGE_VERSION}; done
-	docker manifest push --purge $(IMAGE):$(IMAGE_VERSION)
-
-# enable buildx
-.PHONY: init-docker-buildx
-init-docker-buildx:
-	./../../../hack/init-buildx.sh
+BUILD_ARGS = --build-arg=GO_VERSION=$(GO_VERSION) \
+             --build-arg=DISTROLESS_IMAGE=$(DISTROLESS_IMAGE)
