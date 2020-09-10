@@ -46,30 +46,34 @@ build:
 clean:
 	rm go-runner
 
+# build with buildx
+# https://github.com/docker/buildx/issues/59
 .PHONY: container
 container: init-docker-buildx
-	echo "Building go-runner for the following platforms: $(PLATFORMS)"
-	# https://github.com/docker/buildx/issues/59
-	$(foreach PLATFORM,$(PLATFORMS), \
-		echo "Starting build for $(PLATFORM) platform"; \
-		DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build \
-		--load \
-		--progress plain \
-		--platform $(PLATFORM) \
-		--tag $(IMAGE)-$(PLATFORM):$(IMAGE_VERSION) \
-		--tag $(IMAGE)-$(PLATFORM):$(TAG)-$(CONFIG) \
-		--tag $(IMAGE)-$(PLATFORM):latest-$(CONFIG) \
-		--build-arg=GO_VERSION=$(GO_VERSION) \
-		--build-arg=DISTROLESS_IMAGE=$(DISTROLESS_IMAGE) .;)
+	echo "Building $(IMGNAME) for the following platforms: $(PLATFORMS)"
+	@for platform in $(PLATFORMS); do \
+		echo "Starting build for $${platform} platform"; \
+		docker buildx build \
+			--load \
+			--progress plain \
+			--platform $${platform} \
+			--tag $(IMAGE)-$${platform##*/}:$(IMAGE_VERSION) \
+			--tag $(IMAGE)-$${platform##*/}:$(TAG)-$(CONFIG) \
+			--tag $(IMAGE)-$${platform##*/}:latest-$(CONFIG) \
+			--build-arg=GO_VERSION=$(GO_VERSION) \
+			--build-arg=DISTROLESS_IMAGE=$(DISTROLESS_IMAGE) \
+			.; \
+		done
 
 .PHONY: push
 push: container
-	$(foreach PLATFORM,$(PLATFORMS), \
-		docker push $(IMAGE)-$(PLATFORM):$(IMAGE_VERSION);)
-	$(foreach PLATFORM,$(PLATFORMS), \
-		docker push $(IMAGE)-$(PLATFORM):$(TAG)-$(CONFIG);)
-	$(foreach PLATFORM,$(PLATFORMS), \
-		docker push $(IMAGE)-$(PLATFORM):latest-$(CONFIG);)
+	echo "Pushing $(IMGNAME) tags"
+	@for platform in $(PLATFORMS); do \
+		echo "Pushing tags for $${platform} platform"; \
+		docker push $(IMAGE)-$${platform##*/}:$(IMAGE_VERSION); \
+		docker push $(IMAGE)-$${platform##*/}:$(TAG)-$(CONFIG); \
+		docker push $(IMAGE)-$${platform##*/}:latest-$(CONFIG); \
+	done
 
 .PHONY: manifest
 manifest: push
