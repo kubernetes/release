@@ -78,7 +78,7 @@ func PrepareBuilds(o *Options) error {
 		o.BuildDir = o.ConfigDir
 	}
 
-	logrus.Infof("Build directory: %s\n", o.BuildDir)
+	logrus.Infof("Build directory: %s", o.BuildDir)
 
 	// Canonicalize the config directory to be an absolute path.
 	// As we're about to cd into the build directory, we need a consistent way to reference the config files
@@ -96,9 +96,9 @@ func PrepareBuilds(o *Options) error {
 		return errors.Wrapf(configDirErr, "could not validate config directory")
 	}
 
-	logrus.Infof("Config directory: %s\n", o.ConfigDir)
+	logrus.Infof("Config directory: %s", o.ConfigDir)
 
-	logrus.Infof("Changing to build directory: %s\n", o.BuildDir)
+	logrus.Infof("Changing to build directory: %s", o.BuildDir)
 	if err := os.Chdir(o.BuildDir); err != nil {
 		return errors.Wrapf(err, "failed to chdir to build directory (%s)", o.BuildDir)
 	}
