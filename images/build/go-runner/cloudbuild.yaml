@@ -46,6 +46,6 @@ tags:
 - ${_DISTROLESS_IMAGE}
 
 images:
-  - 'gcr.io/$PROJECT_ID/go-runner-linux/amd64:$_IMAGE_VERSION'
-  - 'gcr.io/$PROJECT_ID/go-runner-linux/amd64:$_GIT_TAG-$_CONFIG'
-  - 'gcr.io/$PROJECT_ID/go-runner-linux/amd64:latest-$_CONFIG'
+  - 'gcr.io/$PROJECT_ID/go-runner-amd64:$_IMAGE_VERSION'
+  - 'gcr.io/$PROJECT_ID/go-runner-amd64:$_GIT_TAG-$_CONFIG'
+  - 'gcr.io/$PROJECT_ID/go-runner-amd64:latest-$_CONFIG'

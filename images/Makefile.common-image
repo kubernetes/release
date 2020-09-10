@@ -56,8 +56,8 @@ push: container
 
 .PHONY: manifest
 manifest: push
-	docker manifest create --amend $(IMAGE):$(IMAGE_VERSION) $(shell echo $(PLATFORMS) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(IMAGE_VERSION)~g")
-	@for arch in $(PLATFORMS); do docker manifest annotate --arch "$${arch##*/}" ${IMAGE}:${IMAGE_VERSION} ${IMAGE}-$${arch}:${IMAGE_VERSION}; done
+	docker manifest create --amend $(IMAGE):$(IMAGE_VERSION) $(IMAGE)-$(subst linux/,,$(firstword $(PLATFORMS))):$(IMAGE_VERSION)
+	@for platform in $(PLATFORMS); do docker manifest annotate --arch "$${platform##*/}" ${IMAGE}:${IMAGE_VERSION} ${IMAGE}-$${platform##*/}:${IMAGE_VERSION}; done
 	docker manifest push --purge $(IMAGE):$(IMAGE_VERSION)
 
 # enable buildx
