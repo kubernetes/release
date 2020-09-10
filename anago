@@ -837,59 +837,25 @@ push_git_objects () {
 }
 
 ###############################################################################
-# generate the announcement text to be mailed and published
-branch_announcement_text () {
-  cat <<EOF
-Kubernetes Community,
-<P>
-Kubernetes' $RELEASE_BRANCH branch has been created.
-<P>
-The release owner will be sending updates on how to interact with this branch shortly.  The <A HREF=https://git.k8s.io/community/contributors/devel/sig-release/cherry-picks.md>Cherrypick Guide</A> has some general guidance on how things will proceed.
-<P>
-Announced by your <A HREF=https://git.k8s.io/sig-release/release-managers.md>Kubernetes Release Managers</A>.
-EOF
-}
-
-###############################################################################
-# generate the announcement text to be mailed and published
-release_announcement_text () {
-  local GOLANG_VERSION=$(go version | cut -d' ' -f 3)
-  cat <<EOF
-Kubernetes Community,
-<P>
-Kubernetes $RELEASE_VERSION_PRIME has been built and pushed using Golang version $GOLANG_VERSION.
-<P>
-The release notes have been updated in <A HREF=https://git.k8s.io/kubernetes/$CHANGELOG_FILEPATH/#${RELEASE_VERSION_PRIME//\./}>$CHANGELOG_FILE</A>, with a pointer to them on <A HREF=https://github.com/kubernetes/kubernetes/releases/tag/$RELEASE_VERSION_PRIME>github</A>:
-<P>
-<HR>
-$(cat $RELEASE_NOTES_HTML)
-<HR>
-<P><BR>
-Contributors, the <A HREF=https://git.k8s.io/kubernetes/$CHANGELOG_FILEPATH/#${RELEASE_VERSION_PRIME//\./}>$CHANGELOG_FILE</A> has been bootstrapped with $RELEASE_VERSION_PRIME release notes and you may edit now as needed.
-<P><BR><BR>
-Published by your <A HREF=https://git.k8s.io/sig-release/release-managers.md>Kubernetes Release Managers</A>.
-EOF
-}
-
-###############################################################################
 # Construct META for the announcement and send it out
 # @optparam --branch - Default announcement type is 'release' or --branch.
 PROGSTEP[announce]="ANNOUNCE BRANCH OR RELEASE"
 announce () {
   local arg="$1"
-  local announcement_file="${WORKDIR}/announcement.html"
-  local subject_file="${WORKDIR}/announcement-subject.txt"
   local nomock_flag=""
   local pubotRc=0
   local pubotIssue=''
+  local changelog_path="${$CHANGELOG_FILEPATH}/${CHANGELOG_FILE}"
 
   logecho "Creating k8s ${RELEASE_VERSION_PRIME} announcement in ${WORKDIR} ..."
 
   if [[ "$arg" == "--branch" ]]; then
-    echo "Kubernetes ${RELEASE_BRANCH} branch has been created" > "$subject_file"
-    branch_announcement_text > "$announcement_file"
-    logecho "Kubernetes ${RELEASE_BRANCH} branch creation announcement created."
+    logrun -v krel announce build branch \
+    --branch ${RELEASE_BRANCH} \
+    --workdir ${WORKDIR} \
+    || return 1
 
+    logecho "Kubernetes ${RELEASE_BRANCH} branch creation announcement created."
     # When we create a new branch, we notify the publishing-bot folks by
     # creating an issue for them
     pubotIssue="$( gitlib::create_publishing_bot_issue "$RELEASE_BRANCH" | gitlib::get_issue_url )" || pubotRc=$?
@@ -899,8 +865,13 @@ announce () {
       logecho "${OK}: publishing-bot update issue created: ${pubotIssue}"
     fi
   else
-    echo "Kubernetes ${RELEASE_VERSION_PRIME} is live!" > "$subject_file"
-    release_announcement_text > "$announcement_file"
+    logrun -v krel announce build release \
+    --changelog-file-path "$changelog_path" \
+    --tag ${RELEASE_VERSION_PRIME} \
+    --changelog-html-file ${RELEASE_NOTES_HTML} \
+    --workdir ${WORKDIR} \
+    || return 1
+
     logecho "Kubernetes ${RELEASE_VERSION_PRIME} release announcement created."
   fi
 
@@ -932,7 +903,7 @@ announce () {
   # so values > 0 are actually truthy
   ((FLAGS_nomock)) && nomock_flag="--nomock"
 
-  logecho "$ krel announce ${nomock_flag} --tag ${RELEASE_VERSION_PRIME}"
+  logecho "$ krel announce send ${nomock_flag} --tag ${RELEASE_VERSION_PRIME}"
   logecho
 }
 
