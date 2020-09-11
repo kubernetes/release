@@ -38,6 +38,7 @@ substitutions:
   _DISTROLESS_IMAGE: 'static-debian00'
 
 tags:
+- 'go-runner'
 - ${_GIT_TAG}
 - ${_PULL_BASE_REF}
 - ${_IMAGE_VERSION}
