@@ -122,14 +122,15 @@ permissions to your fork of k/sig-release and k-sigs/release-notes.`,
 
 type releaseNotesOptions struct {
 	tag             string
-	githubOrg       string
-	draftRepo       string
+	userFork        string
 	createDraftPR   bool
 	createWebsitePR bool
 	dependencies    bool
 	fixNotes        bool
 	websiteRepo     string
 	mapProviders    []string
+	githubOrg       string
+	draftRepo       string
 }
 
 type releaseNotesResult struct {
@@ -160,13 +161,6 @@ func init() {
 		"version tag for the notes",
 	)
 
-	releaseNotesCmd.PersistentFlags().StringVar(
-		&releaseNotesOpts.githubOrg,
-		"org",
-		"",
-		"a Github organization hosting the forks of k/sig-release or ksigs/release-notes",
-	)
-
 	releaseNotesCmd.PersistentFlags().BoolVar(
 		&releaseNotesOpts.createDraftPR,
 		"create-draft-pr",
@@ -179,20 +173,6 @@ func init() {
 		"create-website-pr",
 		false,
 		"patch the relnotes.k8s.io sources and generate a PR with the changes",
-	)
-
-	releaseNotesCmd.PersistentFlags().StringVar(
-		&releaseNotesOpts.websiteRepo,
-		"website-repo",
-		"release-notes",
-		"ksigs/release-notes fork used when creating the website PR",
-	)
-
-	releaseNotesCmd.PersistentFlags().StringVar(
-		&releaseNotesOpts.draftRepo,
-		"draft-repo",
-		git.DefaultGithubReleaseRepo,
-		"k/sig-release fork used when creating the draft PR",
 	)
 
 	releaseNotesCmd.PersistentFlags().BoolVar(
@@ -217,6 +197,13 @@ func init() {
 		"fix release notes",
 	)
 
+	releaseNotesCmd.PersistentFlags().StringVar(
+		&releaseNotesOpts.userFork,
+		"fork",
+		"",
+		"the user's fork in the form org/repo. Used to submit Pull Requests for the website and draft",
+	)
+
 	rootCmd.AddCommand(releaseNotesCmd)
 }
 
@@ -230,6 +217,20 @@ func runReleaseNotes() (err error) {
 		releaseNotesOpts.tag = tag
 	} else {
 		tag = releaseNotesOpts.tag
+	}
+
+	if releaseNotesOpts.userFork != "" {
+		org, repo, err := git.ParseRepoSlug(releaseNotesOpts.userFork)
+		if err != nil {
+			return errors.Wrap(err, "parsing the user's fork")
+		}
+		releaseNotesOpts.githubOrg = org
+		releaseNotesOpts.websiteRepo, releaseNotesOpts.draftRepo = repo, repo
+		// If the slug did not have a repo, use the defaults
+		if repo == "" {
+			releaseNotesOpts.websiteRepo = defaultKubernetesSigsRepo
+			releaseNotesOpts.draftRepo = git.DefaultGithubReleaseRepo
+		}
 	}
 
 	// First, validate cmdline options
@@ -254,7 +255,7 @@ func runReleaseNotes() (err error) {
 			releaseNotesOpts.githubOrg, releaseNotesOpts.draftRepo,
 			git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
 		); err != nil {
-			return errors.Wrapf(err, "while checking %s/%s fork", defaultKubernetesSigsOrg, defaultKubernetesSigsRepo)
+			return errors.Wrapf(err, "while checking %s/%s fork", defaultKubernetesSigsOrg, git.DefaultGithubReleaseRepo)
 		}
 	}
 
@@ -469,27 +470,39 @@ func createDraftPR(tag string) (err error) {
 		return errors.Wrap(err, "adding release notes draft to staging area")
 	}
 
-	// add the updated maps
-	if err := sigReleaseRepo.Add(filepath.Join(releasePath, releaseNotesWorkDir, mapsMainDirectory, "*yaml")); err != nil {
-		return errors.Wrap(err, "adding release notes draft to staging area")
+	// List of directories we'll consider for the PR
+	releaseDirectories := []struct{ Path, Name, Ext string }{
+		{Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsMainDirectory),
+			Name: "release notes maps", Ext: "yaml"},
+		{Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsSessionDirectory),
+			Name: "release notes session files", Ext: "json"},
+		{Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsCVEDirectory),
+			Name: "release notes cve data", Ext: "yaml"},
+		{Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsThemesDirectory),
+			Name: "release notes major theme files", Ext: "yaml"},
 	}
 
-	// add the updated session files
-	if err := sigReleaseRepo.Add(filepath.Join(releasePath, releaseNotesWorkDir, mapsSessionDirectory, "*json")); err != nil {
-		return errors.Wrap(err, "adding release notes draft to staging area")
+	// Add to the PR all files that exist
+	for _, dirData := range releaseDirectories {
+		// add the updated maps
+		if util.Exists(filepath.Join(sigReleaseRepo.Dir(), dirData.Path)) {
+			// Check if there are any files to commit
+			matches, err := filepath.Glob(filepath.Join(sigReleaseRepo.Dir(), dirData.Path, "*"+dirData.Ext))
+			logrus.Debugf("Adding %d %s from %s to commit", len(matches), dirData.Name, dirData.Path)
+			if err != nil {
+				return errors.Wrapf(err, "checking for %s files in %s", dirData.Ext, dirData.Path)
+			}
+			if len(matches) > 1 {
+				if err := sigReleaseRepo.Add(filepath.Join(dirData.Path, "*"+dirData.Ext)); err != nil {
+					return errors.Wrapf(err, "adding %s to staging area", dirData.Name)
+				}
+			}
+		} else {
+			logrus.Debugf("Not adding %s files, directory %s not found", dirData.Name, dirData.Path)
+		}
 	}
 
-	// add CVE security maps
-	if err := sigReleaseRepo.Add(filepath.Join(releasePath, releaseNotesWorkDir, mapsCVEDirectory, "*yaml")); err != nil {
-		return errors.Wrap(err, "adding release notes draft to staging area")
-	}
-
-	// add current major themes
-	if err := sigReleaseRepo.Add(filepath.Join(releasePath, releaseNotesWorkDir, mapsThemesDirectory, "*yaml")); err != nil {
-		return errors.Wrap(err, "adding release notes draft to staging area")
-	}
-
-	// commit the changes
+	// add the generated draft
 	if err := sigReleaseRepo.UserCommit("Release Notes draft for k/k " + tag); err != nil {
 		return errors.Wrapf(err, "creating commit in %s/%s", releaseNotesOpts.githubOrg, releaseNotesOpts.draftRepo)
 	}
@@ -933,8 +946,8 @@ func (o *releaseNotesOptions) Validate() error {
 
 	// Options for PR creation
 	if o.createDraftPR || o.createWebsitePR {
-		if o.githubOrg == "" {
-			return errors.New("cannot generate the Release Notes PR without --org")
+		if o.userFork == "" {
+			return errors.New("cannot generate the Release Notes PR without --fork")
 		}
 	}
 
