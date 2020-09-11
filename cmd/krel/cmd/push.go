@@ -68,7 +68,7 @@ var pushBuildCmd = &cobra.Command{
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := runPushBuild(pushBuildOpts); err != nil {
-			return err
+			return errors.Wrap(err, "Failed to run:")
 		}
 
 		return nil
@@ -214,26 +214,26 @@ func runPushBuild(opts *pushBuildOptions) error {
 	// Check if latest build uses bazel
 	dir, err := os.Getwd()
 	if err != nil {
-		return errors.Wrap(err, "Unable to get working directory")
+		return errors.Wrap(err, "get working directory")
 	}
 
 	isBazel, err := release.BuiltWithBazel(dir)
 	if err != nil {
-		return errors.Wrap(err, "Unable to identify if release built with Bazel")
+		return errors.Wrap(err, "identify if release built with Bazel")
 	}
 
 	if isBazel {
 		logrus.Info("Using Bazel build version")
 		version, err := release.ReadBazelVersion(dir)
 		if err != nil {
-			return errors.Wrap(err, "Unable to read Bazel build version")
+			return errors.Wrap(err, "read Bazel build version")
 		}
 		latest = version
 	} else {
 		logrus.Info("Using Dockerized build version")
 		version, err := release.ReadDockerizedVersion(dir)
 		if err != nil {
-			return errors.Wrap(err, "Unable to read Dockerized build version")
+			return errors.Wrap(err, "read Dockerized build version")
 		}
 		latest = version
 	}
@@ -242,15 +242,14 @@ func runPushBuild(opts *pushBuildOptions) error {
 
 	valid, err := release.IsValidReleaseBuild(latest)
 	if err != nil {
-		return errors.Wrap(err, "Unable to determine if release build version is valid")
+		return errors.Wrap(err, "determine if release build version is valid")
 	}
 	if !valid {
-		return errors.Errorf("Build version %s is not valid for release", latest)
+		return errors.Errorf("build version %s is not valid for release", latest)
 	}
 
 	if opts.ci && release.IsDirtyBuild(latest) {
-		return errors.New(`Refusing to push dirty build with --ci flag given.\n
-			CI builds should always be performed from clean commits`)
+		return errors.New(`refusing to push dirty build with --ci flag given. CI builds should always be performed from clean commits`)
 	}
 
 	if opts.versionSuffix != "" {
@@ -276,7 +275,7 @@ func runPushBuild(opts *pushBuildOptions) error {
 	} else {
 		u, err := user.Current()
 		if err != nil {
-			return errors.Wrap(err, "Unable to identify current user")
+			return errors.Wrap(err, "identify current user")
 		}
 
 		releaseBucket += "-" + u.Username
@@ -284,19 +283,19 @@ func runPushBuild(opts *pushBuildOptions) error {
 
 	client, err := storage.NewClient(context.Background())
 	if err != nil {
-		return errors.Wrap(err, "error fetching gcloud credentials... try running \"gcloud auth application-default login\"")
+		return errors.Wrap(err, "fetching gcloud credentials... try running \"gcloud auth application-default login\"")
 	}
 
 	bucket := client.Bucket(releaseBucket)
 	if bucket == nil {
-		return errors.Errorf("unable to identify specified bucket for artifacts: %s", releaseBucket)
+		return errors.Errorf("identify specified bucket for artifacts: %s", releaseBucket)
 	}
 
 	// Check if bucket exists and user has permissions
 	requiredGCSPerms := []string{"storage.objects.create"}
 	perms, err := bucket.IAM().TestPermissions(context.Background(), requiredGCSPerms)
 	if err != nil {
-		return errors.Wrap(err, "Unable to find release artifact bucket")
+		return errors.Wrap(err, "find release artifact bucket")
 	}
 	if len(perms) != 1 {
 		return errors.Errorf("GCP user must have at least %s permissions on bucket %s", requiredGCSPerms, releaseBucket)
@@ -304,25 +303,25 @@ func runPushBuild(opts *pushBuildOptions) error {
 
 	buildDir := buildOpts.BuildDir
 	if err = util.RemoveAndReplaceDir(filepath.Join(buildDir, release.GCSStagePath)); err != nil {
-		return errors.Wrap(err, "Unable remove and replace GCS staging directory.")
+		return errors.Wrap(err, "remove and replace GCS staging directory")
 	}
 
 	// Copy release tarballs to local GCS staging directory for push
 	if err = util.CopyDirContentsLocal(filepath.Join(buildDir, release.ReleaseTarsPath), filepath.Join(buildDir, release.GCSStagePath)); err != nil {
-		return errors.Wrap(err, "Unable to copy source directory into destination")
+		return errors.Wrap(err, "copy source directory into destination")
 	}
 
 	// Copy helpful GCP scripts to local GCS staging directory for push
 	for _, file := range gcpStageFiles {
 		if err := util.CopyFileLocal(filepath.Join(buildDir, file.srcPath), filepath.Join(buildDir, file.dstPath), file.required); err != nil {
-			return err
+			return errors.Wrap(err, "copy GCP stage files")
 		}
 	}
 
 	// Copy helpful Windows scripts to local GCS staging directory for push
 	for _, file := range windowsStageFiles {
 		if err := util.CopyFileLocal(filepath.Join(buildDir, file.srcPath), filepath.Join(buildDir, file.dstPath), file.required); err != nil {
-			return err
+			return errors.Wrap(err, "copy Windows stage files")
 		}
 	}
 
