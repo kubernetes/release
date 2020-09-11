@@ -18,9 +18,9 @@ REGISTRY?="gcr.io/k8s-staging-build-image"
 IMAGE=$(REGISTRY)/debian-iptables
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= buster-v1.2.0
+IMAGE_VERSION ?= buster-v1.3.0
 CONFIG ?= buster
-DEBIAN_BASE_VERSION ?= buster-v1.1.4
+DEBIAN_BASE_VERSION ?= buster-v1.2.0
 
 ARCH?=amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
@@ -28,6 +28,9 @@ TEMP_DIR:=$(shell mktemp -d)
 
 BASE_REGISTRY?=k8s.gcr.io/build-image
 BASEIMAGE?=$(BASE_REGISTRY)/debian-base-$(ARCH):$(DEBIAN_BASE_VERSION)
+
+# Build args
+IPTABLES_VERSION ?= 1.8.5
 
 # This option is for running docker manifest command
 export DOCKER_CLI_EXPERIMENTAL := enabled
@@ -48,6 +51,7 @@ endif
 		-t $(IMAGE)-$(ARCH):$(IMAGE_VERSION) \
 		-t $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
 		-t $(IMAGE)-$(ARCH):latest-$(CONFIG) \
+		--build-arg=IPTABLES_VERSION=$(IPTABLES_VERSION) \
 		$(TEMP_DIR)/$(CONFIG)
 
 push: build

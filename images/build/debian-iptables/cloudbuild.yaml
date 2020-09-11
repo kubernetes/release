@@ -16,6 +16,7 @@ steps:
       - IMAGE_VERSION=$_IMAGE_VERSION
       - CONFIG=$_CONFIG
       - DEBIAN_BASE_VERSION=$_DEBIAN_BASE_VERSION
+      - IPTABLES_VERSION=$_IPTABLES_VERSION
     args:
       - all-push
 
@@ -27,6 +28,7 @@ substitutions:
   _IMAGE_VERSION: 'v0.0.0'
   _CONFIG: 'codename'
   _DEBIAN_BASE_VERSION: 'v0.0.0'
+  _IPTABLES_VERSION: '0.0.0'
 
 tags:
 - ${_GIT_TAG}
@@ -34,6 +36,7 @@ tags:
 - ${_IMAGE_VERSION}
 - ${_CONFIG}
 - ${_DEBIAN_BASE_VERSION}
+- ${_IPTABLES_VERSION}
 
 images:
   - 'gcr.io/$PROJECT_ID/debian-iptables-amd64:$_IMAGE_VERSION'
