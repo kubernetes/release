@@ -31,3 +31,6 @@ images:
   - 'gcr.io/$PROJECT_ID/k8s-cloud-builder:${_GIT_TAG}-${_CONFIG}'
   - 'gcr.io/$PROJECT_ID/k8s-cloud-builder:latest-${_CONFIG}'
   - 'gcr.io/$PROJECT_ID/k8s-cloud-builder:${_KUBE_CROSS_VERSION}'
+
+tags:
+- 'k8s-cloud-builder'

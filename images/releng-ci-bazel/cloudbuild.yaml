@@ -23,3 +23,6 @@ substitutions:
 images:
   - 'gcr.io/$PROJECT_ID/releng-ci-bazel:$_GIT_TAG'
   - 'gcr.io/$PROJECT_ID/releng-ci-bazel:latest'
+
+tags:
+- 'releng-ci-bazel'

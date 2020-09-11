@@ -28,6 +28,7 @@ substitutions:
   _CONFIG: 'codename'
 
 tags:
+- 'debian-base'
 - ${_GIT_TAG}
 - ${_PULL_BASE_REF}
 - ${_IMAGE_VERSION}

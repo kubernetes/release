@@ -13,3 +13,6 @@ steps:
       - IMAGE=gcr.io/$PROJECT_ID/debian-hyperkube-base
     args:
       - all-push
+
+tags:
+- 'debian-hyperkube-base'
