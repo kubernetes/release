@@ -14,16 +14,17 @@
 
 FROM BASEIMAGE
 
-# Install specified iptables package from buster-backports
+# Install iptables and ebtables packages from buster-backports
 ARG IPTABLES_VERSION
-RUN echo deb http://deb.debian.org/debian buster-backports main >> /etc/apt/sources.list; \
-    apt-get update; \
-    apt-get -t buster-backports -y --no-install-recommends install iptables=${IPTABLES_VERSION}*
+RUN echo deb http://deb.debian.org/debian buster-backports main >> /etc/apt/sources.list \
+    && apt-get update \
+    && apt-get -t buster-backports -y --no-install-recommends install \
+        iptables=${IPTABLES_VERSION}* \
+        ebtables
 
 # Install other dependencies and then clean up apt caches
 RUN clean-install \
     conntrack \
-    ebtables \
     ipset \
     kmod \
     netbase
