@@ -17,3 +17,6 @@ steps:
       - |
         gcloud auth configure-docker \
         && make all-push
+
+tags:
+- 'pause'
