@@ -28,7 +28,7 @@ ALL_ARCH = amd64 arm arm64 ppc64le s390x
 
 CFLAGS = -Os -Wall -Werror -static -DVERSION=v$(TAG)-$(REV)
 KUBE_CROSS_IMAGE ?= k8s.gcr.io/build-image/kube-cross
-KUBE_CROSS_VERSION ?= $(shell cat ../build-image/cross/VERSION)
+KUBE_CROSS_VERSION ?= v1.13.9-2
 
 BIN = pause
 SRCS = pause.c
