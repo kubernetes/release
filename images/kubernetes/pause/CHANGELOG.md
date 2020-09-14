@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v3.4.0
+
+- Image building has been migrated to kubernetes/release
+- Built using `kube-cross:v1.15.2-1`
+- Updated to use image tags that are in line with other Release Engineering
+  built images: `vx.y.z`
+
 ## 3.3
 
 - The pause container is now built on Kubernetes Community infra with kube-cross:v1.13.9-2 ([#87954](https://github.com/kubernetes/kubernetes/pull/90665), [@justaugustus](https://github.com/justaugustus))

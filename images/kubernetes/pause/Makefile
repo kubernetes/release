@@ -18,7 +18,7 @@ REGISTRY ?= staging-k8s.gcr.io
 IMAGE = $(REGISTRY)/pause
 IMAGE_WITH_ARCH = $(IMAGE)-$(ARCH)
 
-TAG = 3.3
+TAG ?= v3.4.0
 REV = $(shell git describe --contains --always --match='v*')
 
 # Architectures supported: amd64, arm, arm64, ppc64le and s390x
@@ -28,7 +28,7 @@ ALL_ARCH = amd64 arm arm64 ppc64le s390x
 
 CFLAGS = -Os -Wall -Werror -static -DVERSION=v$(TAG)-$(REV)
 KUBE_CROSS_IMAGE ?= k8s.gcr.io/build-image/kube-cross
-KUBE_CROSS_VERSION ?= v1.13.9-2
+KUBE_CROSS_VERSION ?= v1.15.2-1
 
 BIN = pause
 SRCS = pause.c
