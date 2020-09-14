@@ -957,3 +957,24 @@ func (r *Repo) IsDirty() (bool, error) {
 	}
 	return !status.IsClean(), nil
 }
+
+// ParseRepoSlug parses a repository string and return the organization and repository name/
+func ParseRepoSlug(repoSlug string) (org, repo string, err error) {
+	match, err := regexp.MatchString(`(?i)^[a-z0-9-/]+$`, repoSlug)
+	if err != nil {
+		return "", "", errors.Wrap(err, "checking repository slug")
+	}
+	if !match {
+		return "", "", errors.New("repository slug contains invalid characters")
+	}
+
+	parts := strings.Split(repoSlug, "/")
+	if len(parts) > 2 {
+		return "", "", errors.New("string is not a well formed org/repo slug")
+	}
+	org = parts[0]
+	if len(parts) > 1 {
+		repo = parts[1]
+	}
+	return org, repo, nil
+}
