@@ -845,7 +845,7 @@ announce () {
   local nomock_flag=""
   local pubotRc=0
   local pubotIssue=''
-  local changelog_path="${$CHANGELOG_FILEPATH}/${CHANGELOG_FILE}"
+  local changelog_path="${CHANGELOG_FILEPATH}/${CHANGELOG_FILE}"
 
   logecho "Creating k8s ${RELEASE_VERSION_PRIME} announcement in ${WORKDIR} ..."
 
