@@ -63,6 +63,8 @@ dependencies:
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
     - path: images/build/go-runner/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+    - path: images/releng/ci/cloudbuild.yaml
+      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
   - name: "k8s.gcr.io/kube-cross"
     version: v1.15.2-1
