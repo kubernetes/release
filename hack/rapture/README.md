@@ -107,7 +107,7 @@ Now that `rapture` has successfully complete, we need to verify the packages tha
 
 To check for publish success, see the [Debian package list][deb-package-list] and [RPM package list][rpm-package-list] for the versions that were just uploaded. Or curl via shell for Debian and RPM respectively via the [check_rapture script](./check_rapture.sh):
 ```shell
-./rapture/check_rapture.sh <version>
+./hack/rapture/check_rapture.sh <version>
 ```
 
 **If you are on a system with any of these packages are already installed, you must uninstall them first.**
