@@ -106,6 +106,11 @@ The entire build process takes several hours. Once you are ready to begin, the d
 
 Now that `rapture` has successfully complete, we need to verify the packages that were just created. This validation can be done on any instance where Kubernetes is not already installed. (Ideally, you would want to spin up a new VM to test.)
 
+To check for publish success, see the [Debian package list][deb-package-list] and [RPM package list][rpm-package-list] for the versions that were just uploaded. Or curl via shell for Debian and RPM respectively via the [check_rapture script](./check_rapture.sh):
+```shell
+./hack/rapture/check_rapture.sh <version>
+```
+
 **If you are on a system with any of these packages are already installed, you must uninstall them first.**
 
 Follow the [kubeadm instructions][kubeadm-install] to install kubeadm, kubelet, and kubectl.
