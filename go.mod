@@ -9,7 +9,6 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/go-git/go-git/v5 v5.1.0
 	github.com/golang/protobuf v1.3.2
-	github.com/golangci/golangci-lint v1.25.0
 	github.com/google/go-github/v29 v29.0.3
 	github.com/google/uuid v1.1.1
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.3
@@ -34,5 +33,3 @@ require (
 	k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89
 	sigs.k8s.io/yaml v1.2.0
 )
-
-replace github.com/golangci/golangci-lint => github.com/golangci/golangci-lint v1.23.3
