@@ -445,13 +445,13 @@ func TestGetKubecrossVersionFailureEmpty(t *testing.T) {
 	require.NotNil(t, err)
 }
 
-func writeTestManifests(t *testing.T) (mockPath string) {
+// Writes a couple of test doccker images
+func writeTestImages(t *testing.T, testIDs map[string]string) (mockPath string) {
 	tmpDir, err := ioutil.TempDir("", "")
 	require.Nil(t, err)
-
 	// Sample manifests
 	var mockManifests = map[string]string{
-		"amd64": `[{"Config":"3da02591bd93f4db77a2ee5fb83f28315bb034657447168cfa1ce6161a446873.json","RepoTags":["k8s.gcr.io/kube-apiserver-amd64:v1.19.0-rc.4","gcr.io/k8s-staging-kubernetes/kube-apiserver-amd64:v1.19.0-rc.4"],"Layers":["513643face35501b7b23d0c580bc9abea0d881b2ecc50cb9cb28f4ae58419552/layer.tar","b3b0bad90dd3a6fc642439a93726fcf3028505d1be034327a6d86fe357c3ea50/layer.tar","fcd29bdb829b1c4cf3bbdec0f44a5475d5b9877f225d39c3c22fa1902326261c/layer.tar"]}]`,
+		"amd64": fmt.Sprintf(`[{"Config":"%s.json","RepoTags":["k8s.gcr.io/kube-apiserver-amd64:v1.19.0-rc.4","gcr.io/k8s-staging-kubernetes/kube-apiserver-amd64:v1.19.0-rc.4"],"Layers":["%s/layer.tar"]}]`, testIDs["config"], testIDs["layer"]),
 		"arm64": `[{"Config":"c47b48fe11f383c6e4f30fea7dbf507329d326e94524f8989328d3028a6bf5f5.json","RepoTags":["k8s.gcr.io/kube-apiserver-arm64:v1.19.0-rc.4","gcr.io/k8s-staging-kubernetes/kube-apiserver-arm64:v1.19.0-rc.4"],"Layers":["b3b0bad90dd3a6fc642439a93726fcf3028505d1be034327a6d86fe357c3ea50/layer.tar","db36fea64d6ee6553972b5fbae343c5fcd7cba44445db22e2ba5471045595372/layer.tar"]}]`,
 	}
 
@@ -466,9 +466,45 @@ func writeTestManifests(t *testing.T) (mockPath string) {
 		require.Nil(t, tw.WriteHeader(&tar.Header{
 			Name: "manifest.json",
 			Size: int64(len(manifest)),
+			Mode: int64(os.FileMode(0o644)),
 		}))
 		_, err = fmt.Fprint(tw, manifest)
+		require.Nil(t, err, "writing config file into mock image")
 		require.Nil(t, err)
+
+		// Let's do a more complete mock image for deeper tests
+		if arch == "amd64" {
+			// This image has a config file
+			configFile := `{"architecture":"amd64","config":{"Hostname":"","Domainname":"","User":"","AttachStdin":false,"AttachStdout":false,"AttachStderr":false,"Tty":false,"OpenStdin":false,"StdinOnce":false,"Env":["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin","SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt"],"Cmd":null,"Image":"sha256:9548f17b268a45da87ea8cf5d2258f587dec9fad955b0c719861242f0a34c5b2","Volumes":null,"WorkingDir":"/","Entrypoint":["/go-runner"],"OnBuild":null,"Labels":{"description":"go based runner for distroless scenarios","maintainers":"Kubernetes Authors"}},"container_config":{"Hostname":"","Domainname":"","User":"","AttachStdin":false,"AttachStdout":false,"AttachStderr":false,"Tty":false,"OpenStdin":false,"StdinOnce":false,"Env":["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin","SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt"],"Cmd":["/bin/sh","-c","#(nop) COPY file:e745d995f524b7efd3899831de234e4598a16d667f0befa724fa0585c878c1a8 in /usr/local/bin/kube-apiserver "],"Image":"sha256:9548f17b268a45da87ea8cf5d2258f587dec9fad955b0c719861242f0a34c5b2","Volumes":null,"WorkingDir":"/","Entrypoint":["/go-runner"],"OnBuild":null,"Labels":{"description":"go based runner for distroless scenarios","maintainers":"Kubernetes Authors"}},"created":"2020-09-09T11:59:00.064230207Z","docker_version":"19.03.8","history":[{"created":"1970-01-01T00:00:00Z","author":"Bazel","created_by":"bazel build ..."},{"created":"2020-08-21T17:22:11.318097036Z","created_by":"LABEL maintainers=Kubernetes Authors","comment":"buildkit.dockerfile.v0","empty_layer":true},{"created":"2020-08-21T17:22:11.318097036Z","created_by":"LABEL description=go based runner for distroless scenarios","comment":"buildkit.dockerfile.v0","empty_layer":true},{"created":"2020-08-21T17:22:11.318097036Z","created_by":"WORKDIR /","comment":"buildkit.dockerfile.v0","empty_layer":true},{"created":"2020-08-21T17:22:11.318097036Z","created_by":"COPY /workspace/go-runner . # buildkit","comment":"buildkit.dockerfile.v0"},{"created":"2020-08-21T17:22:11.318097036Z","created_by":"ENTRYPOINT [\"/go-runner\"]","comment":"buildkit.dockerfile.v0","empty_layer":true},{"created":"2020-09-09T11:59:00.064230207Z","created_by":"/bin/sh -c #(nop) COPY file:e745d995f524b7efd3899831de234e4598a16d667f0befa724fa0585c878c1a8 in /usr/local/bin/kube-apiserver "}],"os":"linux","rootfs":{"type":"layers","diff_ids":["sha256:513643face35501b7b23d0c580bc9abea0d881b2ecc50cb9cb28f4ae58419552"]}}`
+			require.Nil(t, tw.WriteHeader(&tar.Header{
+				Name: testIDs["config"] + ".json",
+				Size: int64(len(configFile)),
+				Mode: int64(os.FileMode(0o644)),
+			}))
+			_, err = fmt.Fprint(tw, configFile)
+			require.Nil(t, err, "wrinting config to image")
+
+			// And also, let's write a layer to the image
+			var c bytes.Buffer
+			layerTar := tar.NewWriter(&c)
+			msg := "# All your base are belong to us\n"
+			require.Nil(t, layerTar.WriteHeader(&tar.Header{
+				Name: "/README.md",
+				Size: int64(len(msg)),
+			}))
+			_, err = fmt.Fprint(layerTar, msg)
+			require.Nil(t, err, "writing layer file into mock image")
+			require.Nil(t, err)
+
+			// Add the layer to the image tar
+			require.Nil(t, tw.WriteHeader(&tar.Header{
+				Name: testIDs["layer"] + "/layer.tar",
+				Size: int64(c.Len()),
+				Mode: int64(os.FileMode(0o644)),
+			}))
+			_, err = c.WriteTo(tw)
+			require.Nilf(t, err, "%s writing layer tar into image", err)
+		}
 		require.Nil(t, tw.Close())
 
 		require.Nil(t, ioutil.WriteFile(
@@ -481,7 +517,9 @@ func writeTestManifests(t *testing.T) (mockPath string) {
 }
 
 func TestGetImageTags(t *testing.T) {
-	mockDir := writeTestManifests(t)
+	mockDir := writeTestImages(t, map[string]string{
+		"config": "3da02591bd93f4db77a2ee5fb83f28315bb034657447168cfa1ce6161a446873",
+		"layer":  "513643face35501b7b23d0c580bc9abea0d881b2ecc50cb9cb28f4ae58419552"})
 	require.NotEmpty(t, mockDir)
 	defer cleanupTmps(t, mockDir)
 
@@ -496,7 +534,9 @@ func TestGetImageTags(t *testing.T) {
 }
 
 func TestGetTarManifest(t *testing.T) {
-	mockDir := writeTestManifests(t)
+	mockDir := writeTestImages(t, map[string]string{
+		"config": "3da02591bd93f4db77a2ee5fb83f28315bb034657447168cfa1ce6161a446873",
+		"layer":  "513643face35501b7b23d0c580bc9abea0d881b2ecc50cb9cb28f4ae58419552"})
 	require.NotEmpty(t, mockDir)
 	defer cleanupTmps(t, mockDir)
 
@@ -509,7 +549,7 @@ func TestGetTarManifest(t *testing.T) {
 		switch finfo.Name() {
 		case "amd64":
 			require.Equal(t, "3da02591bd93f4db77a2ee5fb83f28315bb034657447168cfa1ce6161a446873.json", manifest.Config)
-			require.Equal(t, 3, len(manifest.Layers), "checking number of layers read")
+			require.Equal(t, 1, len(manifest.Layers), "checking number of layers read")
 		case "arm64":
 			require.Equal(t, "c47b48fe11f383c6e4f30fea7dbf507329d326e94524f8989328d3028a6bf5f5.json", manifest.Config)
 			require.Equal(t, 2, len(manifest.Layers), "checking number of layers read")
@@ -517,4 +557,27 @@ func TestGetTarManifest(t *testing.T) {
 		require.Equal(t, fmt.Sprintf("k8s.gcr.io/kube-apiserver-%s:v1.19.0-rc.4", finfo.Name()), manifest.RepoTags[0])
 		require.Equal(t, fmt.Sprintf("gcr.io/k8s-staging-kubernetes/kube-apiserver-%s:v1.19.0-rc.4", finfo.Name()), manifest.RepoTags[1])
 	}
+}
+
+func TestGetOCIManifest(t *testing.T) {
+	configid := "3da02591bd93f4db77a2ee5fb83f28315bb034657447168cfa1ce6161a446873"
+	layerid := "513643face35501b7b23d0c580bc9abea0d881b2ecc50cb9cb28f4ae58419552"
+
+	// Note: These values are derived from the mocks created in writeTestImages()
+	manifestSize := 2485
+	layerSize := 545
+
+	mockDir := writeTestImages(t, map[string]string{"config": configid, "layer": layerid})
+	require.DirExists(t, mockDir)
+	defer cleanupTmps(t, mockDir)
+
+	// We test with the mock amd64 image, which is a bit more complete
+	ocimanifest, err := GetOCIManifest(filepath.Join(mockDir, ImagesPath, "amd64", "kube-apiserver.tar"))
+	require.Nil(t, err, "getting manifest from tarred image")
+	require.NotEmpty(t, ocimanifest)
+	require.EqualValues(t, manifestSize, ocimanifest.Config.Size)
+
+	require.Equal(t, 1, len(ocimanifest.Layers))
+	require.EqualValues(t, layerSize, ocimanifest.Layers[0].Size)
+	require.Equal(t, "application/vnd.docker.image.rootfs.diff.tar.gzip", ocimanifest.Layers[0].MediaType)
 }

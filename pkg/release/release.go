@@ -17,6 +17,7 @@ limitations under the License.
 package release
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -24,7 +25,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/containers/image/docker/tarfile"
+	"github.com/containers/image/v5/docker/archive"
+	"github.com/containers/image/v5/docker/tarfile"
+	"github.com/containers/image/v5/manifest"
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -259,4 +263,39 @@ func GetTarManifest(tarPath string) (*tarfile.ManifestItem, error) {
 		return nil, errors.New("could not find a tar manifest in the specified tar file")
 	}
 	return &tarManifest[0], nil
+}
+
+// GetOCIManifest Reads a tar file and returns a v1.Manifest structure with the image data
+func GetOCIManifest(tarPath string) (*ocispec.Manifest, error) {
+	ctx := context.Background()
+
+	// Since we know we're working with tar files,
+	// get the image reference directly from the tar transport
+	ref, err := archive.ParseReference(tarPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing reference")
+	}
+	logrus.Info(ref.StringWithinTransport())
+	// Get a docker image using the tar reference
+	// sys := &types.SystemContext{}
+
+	dockerImage, err := ref.NewImage(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting image")
+	}
+
+	// Get the manifest data from the dockerImage
+	dockerManifest, _, err := dockerImage.Manifest(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "while getting image manifest")
+	}
+
+	// Convert the manifest data to an OCI manifest
+	ociman, err := manifest.OCI1FromManifest(dockerManifest)
+	if err != nil {
+		return nil, errors.Wrap(err, "converting the docker manifest to OCI v1")
+	}
+
+	// Return the embedded v1 manifest wrapped in the container/image struct
+	return &ociman.Manifest, err
 }
