@@ -845,8 +845,7 @@ announce () {
   local nomock_flag=""
   local pubotRc=0
   local pubotIssue=''
-  local changelog_path="${CHANGELOG_FILEPATH}/${CHANGELOG_FILE}"
-
+  
   logecho "Creating k8s ${RELEASE_VERSION_PRIME} announcement in ${WORKDIR} ..."
 
   if [[ "$arg" == "--branch" ]]; then
@@ -866,7 +865,7 @@ announce () {
     fi
   else
     logrun -v krel announce build release \
-    --changelog-file-path "$changelog_path" \
+    --changelog-file-path "${CHANGELOG_FILEPATH}" \
     --tag ${RELEASE_VERSION_PRIME} \
     --changelog-html-file ${RELEASE_NOTES_HTML} \
     --workdir ${WORKDIR} \
