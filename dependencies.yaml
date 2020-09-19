@@ -1,7 +1,7 @@
 dependencies:
   # repo infra
   - name: "repo-infra"
-    version: 0.0.11
+    version: 0.1.1
     refPaths:
     - path: hack/verify-boilerplate.sh
       match: VERSION=v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?

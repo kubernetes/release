@@ -18,7 +18,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-VERSION=v0.0.11
+VERSION=v0.1.1
 URL_BASE=https://raw.githubusercontent.com/kubernetes/repo-infra
 URL=$URL_BASE/$VERSION/hack/verify_boilerplate.py
 BIN_DIR=bin
