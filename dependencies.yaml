@@ -1,13 +1,10 @@
 dependencies:
-  # Bazel
-  # TODO(deps): Not active yet
-  #- name: "repo-infra"
-  #  version: 0.0.10
-  #  refPaths:
-  #  - path: WORKSPACE
-  #    match: strip_prefix = "repo-infra-\d+.\d+.\d+"
-  #  - path: WORKSPACE
-  #    match: https://github.com/kubernetes/repo-infra/archive/v\d+.\d+.\d+.tar.gz
+  # repo infra
+  - name: "repo-infra"
+    version: 0.0.11
+    refPaths:
+    - path: hack/verify-boilerplate.sh
+      match: VERSION\?=v\d+\.\d+.\d+
 
   # CNI plugins
   - name: "CNI plugins"

@@ -33,17 +33,20 @@ verify-published-rpms: ## Ensure rpms have been published
 
 ##@ Verify
 
-.PHONY: verify verify-shellcheck
+.PHONY: verify verify-shellcheck verify-golangci-lint verify-boilerplate
 
 # TODO: Uncomment verify-shellcheck once we finish shellchecking the repo.
 #       ref: https://github.com/kubernetes/release/issues/726
-verify: verify-golangci-lint #verify-shellcheck ## Runs verification scripts to ensure correct execution
+verify: verify-golangci-lint verify-boilerplate #verify-shellcheck ## Runs verification scripts to ensure correct execution
 
 verify-shellcheck: ## Runs shellcheck
 	./hack/verify-shellcheck.sh
 
 verify-golangci-lint: ## Runs all golang linters
 	./hack/verify-golangci-lint.sh
+
+verify-boilerplate: ## Runs the file header check
+	./hack/verify-boilerplate.sh
 
 ##@ Tests
 
