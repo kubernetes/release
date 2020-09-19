@@ -4,7 +4,7 @@ dependencies:
     version: 0.0.11
     refPaths:
     - path: hack/verify-boilerplate.sh
-      match: VERSION\?=v\d+\.\d+.\d+
+      match: VERSION=v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?
 
   # CNI plugins
   - name: "CNI plugins"
@@ -83,6 +83,13 @@ dependencies:
     - path: images/k8s-cloud-builder/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
 
+  # golangci-lint
+  - name: "golangci-lint"
+    version: 1.31.0
+    refPaths:
+    - path: hack/verify-golangci-lint.sh
+      match: VERSION=v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?
+
   # iptables
   - name: "iptables"
     version: 1.8.5
@@ -136,10 +143,3 @@ dependencies:
       match: IMAGE_VERSION\ \?=\ [a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
-
-  # golangci-lint
-  - name: "golangci-lint"
-    version: 1.31.0
-    refPaths:
-    - path: hack/verify-golangci-lint.sh
-      match: VERSION\?=v\d+\.\d+.\d+
