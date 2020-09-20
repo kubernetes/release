@@ -92,7 +92,11 @@ main() {
 
   if [ $# -gt 0 ]; then
     for tool in "$@"; do
-      compile_with_flags "${tool}"
+      if [[ ${tool} =~ github.com\/ ]]; then
+        compile "${tool}"
+      else
+        compile_with_flags "${tool}"
+      fi
     done
   else
     for tool in "${RELEASE_TOOLS[@]}"; do
