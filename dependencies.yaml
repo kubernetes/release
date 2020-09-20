@@ -6,6 +6,13 @@ dependencies:
     - path: hack/verify-boilerplate.sh
       match: VERSION=v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?
 
+  # zeitgeist
+  - name: "zeitgeist"
+    version: 0.0.17
+    refPaths:
+    - path: hack/verify-dependencies.sh
+      match: VERSION=(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?
+
   # CNI plugins
   - name: "CNI plugins"
     version: 0.8.7
