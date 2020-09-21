@@ -28,6 +28,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"k8s.io/release/pkg/gcp"
+	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/gh2gcs"
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/log"
@@ -229,7 +230,7 @@ func run(opts *options) error {
 			IncludePrereleases: opts.includePrereleases,
 			GCSBucket:          opts.bucket,
 			ReleaseDir:         opts.releaseDir,
-			GCSCopyOptions:     gh2gcs.DefaultGCSCopyOptions,
+			GCSCopyOptions:     gcs.DefaultGCSCopyOptions,
 		})
 	}
 

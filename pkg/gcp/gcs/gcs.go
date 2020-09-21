@@ -25,6 +25,7 @@ import (
 
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/gcp"
+	"k8s.io/utils/pointer"
 )
 
 var (
@@ -47,6 +48,14 @@ type Options struct {
 	// operations happen in a loop/channel, so a single "failure" does not block
 	// the entire operation.
 	AllowMissing *bool
+}
+
+// DefaultGCSCopyOptions have the default options for the GCS copy action
+var DefaultGCSCopyOptions = &Options{
+	Concurrent:   pointer.BoolPtr(true),
+	Recursive:    pointer.BoolPtr(true),
+	NoClobber:    pointer.BoolPtr(true),
+	AllowMissing: pointer.BoolPtr(true),
 }
 
 // CopyToGCS copies a local directory to the specified GCS path

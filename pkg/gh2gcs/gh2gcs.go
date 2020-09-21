@@ -45,14 +45,6 @@ type ReleaseConfig struct {
 	GCSCopyOptions     *gcs.Options `yaml:"gcsCopyOptions"`
 }
 
-// DefaultGCSCopyOptions have the default options for the GCS copy action
-var DefaultGCSCopyOptions = &gcs.Options{
-	Concurrent:   pointer.BoolPtr(true),
-	Recursive:    pointer.BoolPtr(true),
-	NoClobber:    pointer.BoolPtr(true),
-	AllowMissing: pointer.BoolPtr(true),
-}
-
 // DownloadReleases downloads release assets to a local directory
 // Assets to download are derived from the tags specified in `ReleaseConfig`.
 func DownloadReleases(releaseCfg *ReleaseConfig, ghClient *github.GitHub, outputDir string) error {
@@ -93,7 +85,7 @@ func Upload(releaseCfg *ReleaseConfig, ghClient *github.GitHub, outputDir string
 func CheckGCSCopyOptions(copyOptions *gcs.Options) *gcs.Options {
 	// set the GCS Copy options to default values
 	if copyOptions == nil {
-		return DefaultGCSCopyOptions
+		return gcs.DefaultGCSCopyOptions
 	}
 
 	if copyOptions.AllowMissing == nil {

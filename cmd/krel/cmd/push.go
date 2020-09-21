@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
 )
@@ -334,10 +335,17 @@ func runPushBuild(opts *pushBuildOptions) error {
 	}
 
 	// Write the release checksums
-	if err := release.WriteChecksums(filepath.Join(
-		opts.buildDir, release.GCSStagePath, latest,
-	)); err != nil {
+	gcsStagePath := filepath.Join(opts.buildDir, release.GCSStagePath, latest)
+	if err := release.WriteChecksums(gcsStagePath); err != nil {
 		return errors.Wrap(err, "write checksums")
+	}
+
+	if err := gcs.CopyToGCS(
+		gcsStagePath,
+		filepath.Join(opts.bucket, gcsDest, latest),
+		gcs.DefaultGCSCopyOptions,
+	); err != nil {
+		return errors.Wrap(err, "copy artifacts to GCS")
 	}
 
 	// TODO
