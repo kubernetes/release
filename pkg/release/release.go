@@ -18,7 +18,11 @@ package release
 
 import (
 	"context"
+	"crypto/sha256"
+	"crypto/sha512"
 	"fmt"
+	"hash"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -359,4 +363,126 @@ func CopyBinaries(rootPath string) error {
 		}
 	}
 	return nil
+}
+
+// WriteChecksums writes the SHA256SUMS/SHA512SUMS files (contains all
+// checksums) as well as a sepearete *.sha[256|512] file containing only the
+// SHA for the corresponding file name.
+func WriteChecksums(rootPath string) error {
+	logrus.Info("Writing artifact hashes to SHA256SUMS/SHA512SUMS files")
+
+	createSHASums := func(hasher hash.Hash) (string, error) {
+		fileName := fmt.Sprintf("SHA%dSUMS", hasher.Size()*8)
+		files := []string{}
+
+		if err := filepath.Walk(rootPath,
+			func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				if info.IsDir() {
+					return nil
+				}
+
+				sha, err := fileToHash(path, hasher)
+				if err != nil {
+					return errors.Wrap(err, "get hash from file")
+				}
+
+				files = append(files, fmt.Sprintf("%s  %s", sha, path))
+				return nil
+			},
+		); err != nil {
+			return "", errors.Wrapf(err, "traversing root path %s", rootPath)
+		}
+
+		file, err := os.Create(fileName)
+		if err != nil {
+			return "", errors.Wrapf(err, "create file %s", fileName)
+		}
+		if _, err := file.WriteString(strings.Join(files, "\n")); err != nil {
+			return "", errors.Wrapf(err, "write to file %s", fileName)
+		}
+
+		return file.Name(), nil
+	}
+
+	// Write the release checksum files.
+	// We checksum everything except our checksum files, which we do next.
+	sha256SumsFile, err := createSHASums(sha256.New())
+	if err != nil {
+		return errors.Wrap(err, "create SHA256 sums")
+	}
+	sha512SumsFile, err := createSHASums(sha512.New())
+	if err != nil {
+		return errors.Wrap(err, "create SHA512 sums")
+	}
+
+	// After all the checksum files are generated, move them into the bucket
+	// staging area
+	moveFile := func(file string) error {
+		if err := util.CopyFileLocal(
+			file, filepath.Join(rootPath, file), true,
+		); err != nil {
+			return errors.Wrapf(err, "move %s sums file to %s", file, rootPath)
+		}
+		if err := os.RemoveAll(file); err != nil {
+			return errors.Wrapf(err, "remove file %s", file)
+		}
+		return nil
+	}
+	if err := moveFile(sha256SumsFile); err != nil {
+		return errors.Wrap(err, "move SHA256 sums")
+	}
+	if err := moveFile(sha512SumsFile); err != nil {
+		return errors.Wrap(err, "move SHA512 sums")
+	}
+
+	logrus.Infof("Hashing files in %s", rootPath)
+	files, err := ioutil.ReadDir(rootPath)
+	if err != nil {
+		return errors.Wrapf(err, "reading files in %s", rootPath)
+	}
+
+	writeSHAFile := func(fileName string, hasher hash.Hash) error {
+		sha, err := fileToHash(fileName, hasher)
+		if err != nil {
+			return errors.Wrap(err, "get hash from file")
+		}
+		shaFileName := fmt.Sprintf("%s.sha%d", fileName, hasher.Size()*8)
+
+		return errors.Wrapf(
+			ioutil.WriteFile(shaFileName, []byte(sha), os.FileMode(0o644)),
+			"write SHA to file %s", shaFileName,
+		)
+	}
+
+	for _, file := range files {
+		fullFilePath := filepath.Join(rootPath, file.Name())
+
+		if err := writeSHAFile(fullFilePath, sha256.New()); err != nil {
+			return errors.Wrapf(err, "write %s.sha256", file.Name())
+		}
+
+		if err := writeSHAFile(fullFilePath, sha512.New()); err != nil {
+			return errors.Wrapf(err, "write %s.sha512", file.Name())
+		}
+	}
+
+	return nil
+}
+
+func fileToHash(fileName string, hasher hash.Hash) (string, error) {
+	file, err := os.Open(fileName)
+	if err != nil {
+		return "", errors.Wrapf(err, "opening file %s", fileName)
+	}
+	defer file.Close()
+
+	hasher.Reset()
+	if _, err := io.Copy(hasher, file); err != nil {
+		return "", errors.Wrapf(err, "copy file %s into hasher", fileName)
+	}
+
+	return fmt.Sprintf("%x", hasher.Sum(nil)), nil
 }
