@@ -104,21 +104,8 @@ git clone git@github.com:kubernetes/release.git $(go env GOPATH)/src/k8s.io/rele
 Run the following from the root of the repository to build the `release-notes` binary:
 
 ```
-bazel build //cmd/release-notes
+go install ./cmd/release-notes
 ```
-
-Use the `-h` flag for help:
-
-```
-./bazel-bin/cmd/release-notes/darwin_amd64_stripped/release-notes -h
-```
-
-Install the binary into your path:
-
-```
-cp ./bazel-bin/cmd/release-notes/darwin_amd64_stripped/release-notes /usr/local/bin/release-notes
-```
-
 
 ## FAQ
 
