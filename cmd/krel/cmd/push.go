@@ -333,8 +333,14 @@ func runPushBuild(opts *pushBuildOptions) error {
 		return errors.Wrap(err, "stage binaries")
 	}
 
+	// Write the release checksums
+	if err := release.WriteChecksums(filepath.Join(
+		opts.buildDir, release.GCSStagePath, latest,
+	)); err != nil {
+		return errors.Wrap(err, "write checksums")
+	}
+
 	// TODO
-	// Write checksums
 	// Push Docker images
 	// Push artifacts to release bucket is --ci
 
