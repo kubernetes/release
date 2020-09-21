@@ -104,9 +104,11 @@ type buildReleaseAnnounceOptions struct {
 	changelogHTML     string
 }
 
-var buildAnnounceOpts = &buildAnnounceOptions{}
-var buildBranchAnnounceOpts = &buildBranchAnnounceOptions{}
-var buildReleaseAnnounceOpts = &buildReleaseAnnounceOptions{}
+var (
+	buildAnnounceOpts        = &buildAnnounceOptions{}
+	buildBranchAnnounceOpts  = &buildBranchAnnounceOptions{}
+	buildReleaseAnnounceOpts = &buildReleaseAnnounceOptions{}
+)
 
 func init() {
 	buildBranchAnnounceCmd.PersistentFlags().StringVarP(

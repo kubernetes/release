@@ -52,8 +52,10 @@ const (
 	maxParallelRequests = 10
 )
 
-type Notes []string
-type Kind string
+type (
+	Notes []string
+	Kind  string
+)
 
 // CVEData Information of a linked CVE vulnerability
 type CVEData struct {
@@ -236,7 +238,6 @@ func NewGathererWithClient(ctx context.Context, c github.Client) *Gatherer {
 func GatherReleaseNotes(opts *options.Options) (*ReleaseNotes, error) {
 	logrus.Info("Gathering release notes")
 	gatherer, err := NewGatherer(context.Background(), opts)
-
 	if err != nil {
 		return nil, errors.Wrapf(err, "retrieving notes gatherer")
 	}

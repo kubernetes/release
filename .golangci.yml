@@ -25,6 +25,7 @@ linters:
     - gocyclo
     - godox
     - gofmt
+    - gofumpt
     - goheader
     - goimports
     - golint
@@ -58,7 +59,6 @@ linters:
     # - gocognit
     # - godot
     # - goerr113
-    # - gofumpt
     # - gomnd
     # - gosec
     # - lll

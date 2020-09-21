@@ -450,7 +450,7 @@ func writeTestImages(t *testing.T, testIDs map[string]string) (mockPath string) 
 	tmpDir, err := ioutil.TempDir("", "")
 	require.Nil(t, err)
 	// Sample manifests
-	var mockManifests = map[string]string{
+	mockManifests := map[string]string{
 		"amd64": fmt.Sprintf(`[{"Config":"%s.json","RepoTags":["k8s.gcr.io/kube-apiserver-amd64:v1.19.0-rc.4","gcr.io/k8s-staging-kubernetes/kube-apiserver-amd64:v1.19.0-rc.4"],"Layers":["%s/layer.tar"]}]`, testIDs["config"], testIDs["layer"]),
 		"arm64": `[{"Config":"c47b48fe11f383c6e4f30fea7dbf507329d326e94524f8989328d3028a6bf5f5.json","RepoTags":["k8s.gcr.io/kube-apiserver-arm64:v1.19.0-rc.4","gcr.io/k8s-staging-kubernetes/kube-apiserver-arm64:v1.19.0-rc.4"],"Layers":["b3b0bad90dd3a6fc642439a93726fcf3028505d1be034327a6d86fe357c3ea50/layer.tar","db36fea64d6ee6553972b5fbae343c5fcd7cba44445db22e2ba5471045595372/layer.tar"]}]`,
 	}
@@ -519,7 +519,8 @@ func writeTestImages(t *testing.T, testIDs map[string]string) (mockPath string) 
 func TestGetImageTags(t *testing.T) {
 	mockDir := writeTestImages(t, map[string]string{
 		"config": "3da02591bd93f4db77a2ee5fb83f28315bb034657447168cfa1ce6161a446873",
-		"layer":  "513643face35501b7b23d0c580bc9abea0d881b2ecc50cb9cb28f4ae58419552"})
+		"layer":  "513643face35501b7b23d0c580bc9abea0d881b2ecc50cb9cb28f4ae58419552",
+	})
 	require.NotEmpty(t, mockDir)
 	defer cleanupTmps(t, mockDir)
 
@@ -536,7 +537,8 @@ func TestGetImageTags(t *testing.T) {
 func TestGetTarManifest(t *testing.T) {
 	mockDir := writeTestImages(t, map[string]string{
 		"config": "3da02591bd93f4db77a2ee5fb83f28315bb034657447168cfa1ce6161a446873",
-		"layer":  "513643face35501b7b23d0c580bc9abea0d881b2ecc50cb9cb28f4ae58419552"})
+		"layer":  "513643face35501b7b23d0c580bc9abea0d881b2ecc50cb9cb28f4ae58419552",
+	})
 	require.NotEmpty(t, mockDir)
 	defer cleanupTmps(t, mockDir)
 
