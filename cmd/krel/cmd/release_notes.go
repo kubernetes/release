@@ -472,14 +472,22 @@ func createDraftPR(tag string) (err error) {
 
 	// List of directories we'll consider for the PR
 	releaseDirectories := []struct{ Path, Name, Ext string }{
-		{Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsMainDirectory),
-			Name: "release notes maps", Ext: "yaml"},
-		{Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsSessionDirectory),
-			Name: "release notes session files", Ext: "json"},
-		{Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsCVEDirectory),
-			Name: "release notes cve data", Ext: "yaml"},
-		{Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsThemesDirectory),
-			Name: "release notes major theme files", Ext: "yaml"},
+		{
+			Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsMainDirectory),
+			Name: "release notes maps", Ext: "yaml",
+		},
+		{
+			Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsSessionDirectory),
+			Name: "release notes session files", Ext: "json",
+		},
+		{
+			Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsCVEDirectory),
+			Name: "release notes cve data", Ext: "yaml",
+		},
+		{
+			Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsThemesDirectory),
+			Name: "release notes major theme files", Ext: "yaml",
+		},
 	}
 
 	// Add to the PR all files that exist
@@ -536,7 +544,6 @@ func createDraftPR(tag string) (err error) {
 		fmt.Sprintf("%s:%s", releaseNotesOpts.githubOrg, branchname),
 		fmt.Sprintf("Update release notes draft to version %s", tag), prBody,
 	)
-
 	if err != nil {
 		logrus.Warnf("An error has occurred while creating the pull request for %s", tag)
 		logrus.Warn("While the PR failed, the release notes draft was generated and submitted to your fork")
@@ -742,7 +749,6 @@ func createWebsitePR(tag string) error {
 		fmt.Sprintf("Patch relnotes.k8s.io to release %s", tag),
 		fmt.Sprintf("Automated patch to update relnotes.k8s.io to k/k version `%s` ", tag),
 	)
-
 	if err != nil {
 		logrus.Warnf("An error has occurred while creating the pull request for %s", tag)
 		logrus.Warn("While the PR failed, the release notes where generated and submitted to your fork")
@@ -768,7 +774,6 @@ func tryToFindLatestMinorTag() (string, error) {
 		Pipe("grep", "-Eo", "v[0-9].[0-9]+.0-.*.[0-9]$").
 		Pipe("tail", "-1").
 		RunSilentSuccessOutput()
-
 	if err != nil {
 		return "", err
 	}

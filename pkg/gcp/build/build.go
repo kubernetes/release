@@ -241,7 +241,6 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 	if o.LogDir != "" {
 		p := path.Join(o.LogDir, strings.ReplaceAll(jobName, "/", "-")+".log")
 		f, err := os.Create(p)
-
 		if err != nil {
 			return errors.Wrapf(err, "couldn't create %s", p)
 		}

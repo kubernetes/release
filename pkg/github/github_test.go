@@ -177,7 +177,7 @@ func TestLatestGitHubTagsPerBranchFailedOnList(t *testing.T) {
 
 func TestLatestGitHubTagsPerBranchSkippedNonSemverTag(t *testing.T) {
 	// Given
-	var tag1 = "not a semver tag"
+	tag1 := "not a semver tag"
 	sut, client := newSUT()
 	client.ListTagsReturns([]*gogithub.RepositoryTag{
 		{Name: &tag1},

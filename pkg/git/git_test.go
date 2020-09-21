@@ -241,26 +241,40 @@ func TestParseRepoSlug(t *testing.T) {
 		caseName, repoSlug, orgName, repoName string
 		isValid                               bool
 	}{
-		{caseName: "valid slug", repoSlug: "kubernetes/release",
-			orgName: "kubernetes", repoName: "release", isValid: true},
+		{
+			caseName: "valid slug", repoSlug: "kubernetes/release",
+			orgName: "kubernetes", repoName: "release", isValid: true,
+		},
 
-		{caseName: "slug with hyphens", repoSlug: "kubernetes/repo_with_underscores",
-			orgName: "", repoName: "", isValid: false},
+		{
+			caseName: "slug with hyphens", repoSlug: "kubernetes/repo_with_underscores",
+			orgName: "", repoName: "", isValid: false,
+		},
 
-		{caseName: "slug with dashes", repoSlug: "kubernetes-sigs/release-notes",
-			orgName: "kubernetes-sigs", repoName: "release-notes", isValid: true},
+		{
+			caseName: "slug with dashes", repoSlug: "kubernetes-sigs/release-notes",
+			orgName: "kubernetes-sigs", repoName: "release-notes", isValid: true,
+		},
 
-		{caseName: "slug with uppercase", repoSlug: "GoogleCloudPlatform/compute-image-tools",
-			orgName: "GoogleCloudPlatform", repoName: "compute-image-tools", isValid: true},
+		{
+			caseName: "slug with uppercase", repoSlug: "GoogleCloudPlatform/compute-image-tools",
+			orgName: "GoogleCloudPlatform", repoName: "compute-image-tools", isValid: true,
+		},
 
-		{caseName: "slug with invalid chars", repoSlug: "kubern#etes/not.valid",
-			orgName: "", repoName: "", isValid: false},
+		{
+			caseName: "slug with invalid chars", repoSlug: "kubern#etes/not.valid",
+			orgName: "", repoName: "", isValid: false,
+		},
 
-		{caseName: "slug with extra slash", repoSlug: "kubernetes/not/valid",
-			orgName: "", repoName: "", isValid: false},
+		{
+			caseName: "slug with extra slash", repoSlug: "kubernetes/not/valid",
+			orgName: "", repoName: "", isValid: false,
+		},
 
-		{caseName: "slug with only org", repoSlug: "kubernetes",
-			orgName: "kubernetes", repoName: "", isValid: true},
+		{
+			caseName: "slug with only org", repoSlug: "kubernetes",
+			orgName: "kubernetes", repoName: "", isValid: true,
+		},
 	}
 
 	for _, testCase := range slugTests {

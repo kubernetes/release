@@ -33,28 +33,22 @@ import (
 //       Once we get further along here, we should break this out into two
 //       distinct, constrained commands: 'stage' and 'release'.
 
-var (
-	anagoOpts = &release.Options{}
+var anagoOpts = &release.Options{} // TODO: Commenting these packages/commands out since they fail in CI.
+//       These can be fixed by changing the CI test image to one that includes the packages.
+//nolint:gocritic
+/*
+	requiredPackages = []string{
+		"jq",
+		"git",
+		"bsdmainutils",
+	}
 
-	// TODO: Commenting these packages/commands out since they fail in CI.
-	//       These can be fixed by changing the CI test image to one that includes the packages.
-	//nolint:gocritic
-	/*
-		requiredPackages = []string{
-			"jq",
-			"git",
-			"bsdmainutils",
-		}
-
-		// TODO: Do we really need this if we use the Google Cloud SDK instead?
-		requiredCommands = []string{
-			"gsutil",
-			"gcloud",
-		}
-	*/
-)
-
-// anagoCmd is a krel subcommand which invokes runAnago()
+	// TODO: Do we really need this if we use the Google Cloud SDK instead?
+	requiredCommands = []string{
+		"gsutil",
+		"gcloud",
+	}
+*/ // anagoCmd is a krel subcommand which invokes runAnago()
 var anagoCmd = &cobra.Command{
 	Use:           "anago",
 	Short:         "Run anago",

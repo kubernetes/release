@@ -132,7 +132,6 @@ func runFf(opts *ffOptions, rootOpts *rootOptions) error {
 			WithAbbrev(0).
 			WithTags(),
 	)
-
 	if err != nil {
 		return err
 	}
