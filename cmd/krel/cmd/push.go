@@ -325,8 +325,15 @@ func runPushBuild(opts *pushBuildOptions) error {
 		}
 	}
 
+	// Copy the "naked" binaries to GCS. This is useful for install scripts
+	// that download the binaries directly and don't need tars.
+	if err := release.CopyBinaries(
+		filepath.Join(buildDir, release.ReleaseStagePath),
+	); err != nil {
+		return errors.Wrap(err, "stage binaries")
+	}
+
 	// TODO
-	// Prepare naked binaries
 	// Write checksums
 	// Push Docker images
 	// Push artifacts to release bucket is --ci

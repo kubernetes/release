@@ -69,16 +69,16 @@ const (
 	ReleaseStagePath = "release-stage"
 
 	// GCEPath is the directory where GCE scripts are created.
-	GCEPath = "release-stage/full/kubernetes/cluster/gce"
+	GCEPath = ReleaseStagePath + "/full/kubernetes/cluster/gce"
 
 	// GCIPath is the path for the container optimized OS for GCP.
-	GCIPath = "release-stage/full/kubernetes/cluster/gce/gci"
+	GCIPath = ReleaseStagePath + "/full/kubernetes/cluster/gce/gci"
 
 	// ReleaseTarsPath is the directory where release artifacts are created.
 	ReleaseTarsPath = "release-tars"
 
 	// WindowsLocalPath is the directory where Windows GCE scripts are created.
-	WindowsLocalPath = "release-stage/full/kubernetes/cluster/gce/windows"
+	WindowsLocalPath = ReleaseStagePath + "/full/kubernetes/cluster/gce/windows"
 
 	// WindowsGCSPath is the directory where Windoes GCE scripts are staged
 	// before push to GCS.
@@ -298,4 +298,65 @@ func GetOCIManifest(tarPath string) (*ocispec.Manifest, error) {
 
 	// Return the embedded v1 manifest wrapped in the container/image struct
 	return &ociman.Manifest, err
+}
+
+// CopyBinaries takes the provided `rootPath` and copies the binaries sorted by
+// their platform into the pre-defined `$PWD/bin/$PLATFORM` directories.
+func CopyBinaries(rootPath string) error {
+	platformsPath := filepath.Join(rootPath, "client")
+	platforms, err := ioutil.ReadDir(platformsPath)
+	if err != nil {
+		return errors.Wrapf(err, "retrieve platforms from %s", platformsPath)
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return errors.Wrap(err, "get current working directory")
+	}
+
+	for _, platform := range platforms {
+		if !platform.IsDir() {
+			logrus.Warnf(
+				"Skipping platform %q because it's not a directory",
+				platform.Name(),
+			)
+			continue
+		}
+
+		logrus.Infof("Copying binaries for %s platform", platform.Name())
+
+		src := filepath.Join(
+			rootPath, "client", platform.Name(), "kubernetes/client/bin",
+		)
+		dst := filepath.Join(cwd, "bin", platform.Name())
+
+		// We assume here the "server package" is a superset of the "client
+		// package"
+		serverSrc := filepath.Join(rootPath, "server", platform.Name())
+		if util.Exists(serverSrc) {
+			logrus.Infof("Server sources found in %s, copying them", serverSrc)
+			src = filepath.Join(serverSrc, "kubernetes/server/bin")
+		}
+
+		logrus.Infof("Copying binaries from %s to %s", src, dst)
+		if err := util.CopyDirContentsLocal(src, dst); err != nil {
+			return errors.Wrapf(err,
+				"copy server binaries from %s to %s", src, dst,
+			)
+		}
+
+		// Copy node binaries if they exist and this isn't a 'server' platform.
+		nodeSrc := filepath.Join(rootPath, "node", platform.Name())
+		if !util.Exists(serverSrc) && util.Exists(nodeSrc) {
+			src = filepath.Join(nodeSrc, "kubernetes/node/bin")
+
+			logrus.Infof("Copying node binaries from %s to %s", src, dst)
+			if err := util.CopyDirContentsLocal(src, dst); err != nil {
+				return errors.Wrapf(err,
+					"copy node binaries from %s to %s", src, dst,
+				)
+			}
+		}
+	}
+	return nil
 }
