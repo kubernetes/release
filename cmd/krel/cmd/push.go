@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	"github.com/pkg/errors"
@@ -259,17 +260,6 @@ func runPushBuild(opts *pushBuildOptions) error {
 
 	logrus.Infof("Latest version is %s", latest)
 
-	gcsDest := opts.releaseType
-
-	// TODO: is this how we want to handle gcs dest args?
-	if opts.ci {
-		gcsDest = "ci"
-	}
-
-	gcsDest += opts.gcsSuffix
-
-	logrus.Infof("GCS destination is %s", gcsDest)
-
 	releaseBucket := opts.bucket
 	if rootOpts.nomock {
 		logrus.Infof("Running a *REAL* push with bucket %s", releaseBucket)
@@ -335,10 +325,18 @@ func runPushBuild(opts *pushBuildOptions) error {
 	}
 
 	// Write the release checksums
-	gcsStagePath := filepath.Join(opts.buildDir, release.GCSStagePath, latest)
+	gcsStagePath := filepath.Join(buildDir, release.GCSStagePath, latest)
 	if err := release.WriteChecksums(gcsStagePath); err != nil {
 		return errors.Wrap(err, "write checksums")
 	}
+
+	// Publish container images
+	gcsDest := opts.releaseType
+	if opts.ci {
+		gcsDest = "ci"
+	}
+	gcsDest += opts.gcsSuffix
+	logrus.Infof("GCS destination is %s", gcsDest)
 
 	if err := gcs.CopyToGCS(
 		gcsStagePath,
@@ -348,8 +346,22 @@ func runPushBuild(opts *pushBuildOptions) error {
 		return errors.Wrap(err, "copy artifacts to GCS")
 	}
 
+	if opts.dockerRegistry != "" {
+		if err := release.NewImages().Publish(
+			opts.dockerRegistry,
+			strings.ReplaceAll(latest, "+", "_"),
+			buildDir,
+		); err != nil {
+			return errors.Wrap(err, "publish container images")
+		}
+	}
+
+	if !opts.ci {
+		logrus.Info("No CI flag set, we're done")
+		return nil
+	}
+
 	// TODO
-	// Push Docker images
 	// Push artifacts to release bucket is --ci
 
 	return nil

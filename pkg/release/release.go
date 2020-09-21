@@ -62,7 +62,7 @@ const (
 	dockerVersionPath = "kubernetes/version"
 	kubernetesTar     = "kubernetes.tar.gz"
 
-	// Directory
+	// Path where the release container images are stored
 	ImagesPath = "release-images"
 
 	// GCSStagePath is the directory where release artifacts are staged before
