@@ -24,7 +24,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/stretchr/testify/require"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/options"
@@ -528,10 +527,7 @@ func makeReleaseNote(kind notes.Kind, markdown string) *notes.ReleaseNote {
 }
 
 func readFile(t *testing.T, path string) string {
-	goldenFile, err := bazel.Runfile(path)
-	require.NoError(t, err, "Locating runfiles are you using bazel test?")
-
-	b, err := ioutil.ReadFile(goldenFile)
+	b, err := ioutil.ReadFile(path)
 	require.NoError(t, err, "Reading file %q", path)
 	return string(b)
 }
