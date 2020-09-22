@@ -11,12 +11,10 @@ require (
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-github/v29 v29.0.3
 	github.com/google/uuid v1.1.2
-	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.3
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6
 	github.com/pkg/errors v0.9.1
-	github.com/psampaz/go-mod-outdated v0.6.0
 	github.com/saschagrunert/go-modiff v1.2.0
 	github.com/sendgrid/rest v2.6.1+incompatible
 	github.com/sendgrid/sendgrid-go v3.6.3+incompatible
