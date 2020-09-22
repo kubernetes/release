@@ -18,9 +18,11 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -28,6 +30,7 @@ import (
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
+	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
 )
 
@@ -169,8 +172,21 @@ func runPromote(opts *promoteOptions) error {
 		}
 	}()
 
+	// Path to the promoter image list
+	imagesListPath := filepath.Join(k8sioManifestsPath, "images", stagingRepo, "images.yaml")
+
+	// Read the current manifest to check later if new images come up
+	oldlist := make([]byte, 0)
+	if util.Exists(filepath.Join(repo.Dir(), imagesListPath)) {
+		logrus.Debug("Reading the current image promoter manifest (image list)")
+		oldlist, err = ioutil.ReadFile(filepath.Join(repo.Dir(), imagesListPath))
+		if err != nil {
+			return errors.Wrap(err, "while reading the current promoter image list")
+		}
+	}
+
 	// Run cip-mm
-	if mustRun(opts, "Run cip-mm?") {
+	if mustRun(opts, "Update the Image Promoter manifest with cip-mm?") {
 		if err := command.New(
 			cipmm,
 			fmt.Sprintf("--base_dir=%s", filepath.Join(repo.Dir(), k8sioManifestsPath)),
@@ -181,13 +197,46 @@ func runPromote(opts *promoteOptions) error {
 		}
 	}
 
-	// TODO: Either remove mock images or we fix them at the origin
+	// Re-write the image list without the mock images
+	rawImageList, err := release.NewPromoterImageListFromFile(filepath.Join(repo.Dir(), imagesListPath))
+	if err != nil {
+		return errors.Wrap(err, "parsing the current manifest")
+	}
 
-	// TODO: verify that the manifest was actually modified
+	// Create a new imagelist to copy the non-mock images
+	newImageList := &release.ImagePromoterImages{}
+
+	// Copy all non mock-images:
+	for _, imageData := range *rawImageList {
+		if !strings.Contains(imageData.Name, "mock/") {
+			*newImageList = append(*newImageList, imageData)
+		}
+	}
+
+	// Write the modified manifest
+	if err := newImageList.Write(filepath.Join(repo.Dir(), imagesListPath)); err != nil {
+		return errors.Wrap(err, "while writing the promoter image list")
+	}
+
+	// Check if the image list was modified
+	if len(oldlist) > 0 {
+		logrus.Debug("Checking if the image list was modified")
+		// read the newly modified manifest
+		newlist, err := ioutil.ReadFile(filepath.Join(repo.Dir(), imagesListPath))
+		if err != nil {
+			return errors.Wrap(err, "while reading the modified manifest images list")
+		}
+
+		// If the manifest was not modified, exit now
+		if string(newlist) == string(oldlist) {
+			logrus.Info("No changes detected in the promoter images list, exiting without changes")
+			return nil
+		}
+	}
 
 	// add the modified manifest to staging
-	logrus.Debugf("Adding %s to staging area", filepath.Join(k8sioManifestsPath, "images", stagingRepo, "images.yaml"))
-	if err := repo.Add(filepath.Join(k8sioManifestsPath, "images", stagingRepo, "images.yaml")); err != nil {
+	logrus.Debugf("Adding %s to staging area", imagesListPath)
+	if err := repo.Add(imagesListPath); err != nil {
 		return errors.Wrap(err, "adding image manifest to staging area")
 	}
 
@@ -200,11 +249,16 @@ func runPromote(opts *promoteOptions) error {
 	}
 
 	// Push to fork
-	if mustRun(opts, "Push changes to user's fork?") {
+	if mustRun(opts, fmt.Sprintf("Push changes to user's fork at %s/%s?", userForkOrg, userForkRepo)) {
 		logrus.Infof("Pushing manifest changes to %s/%s", userForkOrg, userForkRepo)
 		if err := repo.PushToRemote(userForkName, branchname); err != nil {
 			return errors.Wrapf(err, "pushing %s to %s/%s", userForkName, userForkOrg, userForkRepo)
 		}
+	} else {
+		// Exit if no push was made
+
+		logrus.Infof("Exiting without creating a PR since changes were not pushed to %s/%s", userForkOrg, userForkRepo)
+		return nil
 	}
 
 	prBody := fmt.Sprintf("Image promotion for Kubernetes %s\n", opts.tag)
@@ -217,7 +271,6 @@ func runPromote(opts *promoteOptions) error {
 			fmt.Sprintf("%s:%s", userForkOrg, branchname),
 			commitMessage, prBody,
 		)
-
 		if err != nil {
 			return errors.Wrap(err, "creating the pull request in k/k8s.io")
 		}
