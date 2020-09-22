@@ -161,17 +161,17 @@ usage=${1:-yes}
 # by other, manually executed scripts, too
 export FLAGS_gcb=1
 
-if [[ -z "$FLAGS_buildversion" ]]; then
-    common::exit 1 "--buildversion must be set"
-fi
-logecho -r "$ATTENTION: Using --buildversion=$FLAGS_buildversion"
-
 # Deal with OSX limitations out the gate for anyone that tries this there
 BASE_ROOT=$(dirname $(readlink -e "$BASH_SOURCE" 2>&1)) \
  || BASE_ROOT="$BASH_SOURCE"
 source $BASE_ROOT/lib/common.sh
 source $TOOL_LIB_PATH/gitlib.sh
 source $TOOL_LIB_PATH/releaselib.sh
+
+if [[ -z "$FLAGS_buildversion" ]]; then
+    common::exit 1 "--buildversion must be set"
+fi
+logecho -r "$ATTENTION: Using --buildversion=$FLAGS_buildversion"
 
 # Clear or validate run state
 if ((FLAGS_clean)) && [[ -f $PROGSTATE ]]; then
