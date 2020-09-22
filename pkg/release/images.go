@@ -39,7 +39,7 @@ func NewImages() *Images {
 	return &Images{&defaultCommandClient{}}
 }
 
-// NewImages creates a new Images instance
+// SetClient can be used to set the internal command client
 func (i *Images) SetClient(client commandClient) {
 	i.client = client
 }

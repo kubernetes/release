@@ -31,6 +31,7 @@ import (
 	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
+	"k8s.io/utils/pointer"
 )
 
 const description = `
@@ -47,17 +48,17 @@ push --bucket=kubernetes-release-$USER
                            - Do a developer push to kubernetes-release-$USER`
 
 type pushBuildOptions struct {
-	bucket           string
-	buildDir         string
-	dockerRegistry   string
-	extraPublishFile string
-	gcsSuffix        string
-	releaseType      string
-	versionSuffix    string
-	allowDup         bool
-	ci               bool
-	noUpdateLatest   bool
-	privateBucket    bool
+	bucket              string
+	buildDir            string
+	dockerRegistry      string
+	extraVersionMarkers string
+	gcsSuffix           string
+	releaseType         string
+	versionSuffix       string
+	allowDup            bool
+	ci                  bool
+	noUpdateLatest      bool
+	privateBucket       bool
 }
 
 var pushBuildOpts = &pushBuildOptions{}
@@ -183,10 +184,10 @@ func init() {
 		"If set, push docker images to specified registry/project",
 	)
 	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.extraPublishFile,
-		"extra-publish-file",
+		&pushBuildOpts.extraVersionMarkers,
+		"extra-version-markers",
 		"",
-		"Used when need to upload additional version file to GCS. The path is relative and is append to a GCS path. (--ci only)",
+		"Comma separated list which can be used to upload additional version files to GCS. The path is relative and is append to a GCS path. (--ci only)",
 	)
 	pushBuildCmd.PersistentFlags().StringVar(
 		&pushBuildOpts.gcsSuffix,
@@ -338,10 +339,13 @@ func runPushBuild(opts *pushBuildOptions) error {
 	gcsDest += opts.gcsSuffix
 	logrus.Infof("GCS destination is %s", gcsDest)
 
+	copyOpts := gcs.DefaultGCSCopyOptions
+	copyOpts.NoClobber = pointer.BoolPtr(opts.allowDup)
+
 	if err := gcs.CopyToGCS(
 		gcsStagePath,
-		filepath.Join(opts.bucket, gcsDest, latest),
-		gcs.DefaultGCSCopyOptions,
+		filepath.Join(releaseBucket, gcsDest, latest),
+		copyOpts,
 	); err != nil {
 		return errors.Wrap(err, "copy artifacts to GCS")
 	}
@@ -361,8 +365,14 @@ func runPushBuild(opts *pushBuildOptions) error {
 		return nil
 	}
 
-	// TODO
-	// Push artifacts to release bucket is --ci
+	// Publish release to GCS
+	versionMarkers := strings.Split(opts.extraVersionMarkers, ",")
+	if err := release.NewPublisher().PublishVersion(
+		gcsDest, latest, buildDir, releaseBucket, versionMarkers,
+		opts.privateBucket, rootOpts.nomock,
+	); err != nil {
+		return errors.Wrap(err, "publish release")
+	}
 
 	return nil
 }
