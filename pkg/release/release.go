@@ -100,7 +100,7 @@ const (
 // ImagePromoterImages abtracts the manifest used by the image promoter
 type ImagePromoterImages []struct {
 	Name string              `json:"name"`
-	DMap map[string][]string `yaml:"dmap,flow"` // eg "sha256:ef9493aff21f7e368fb3968b46ff2542b0f6863a5de2b9bc58d8d151d8b0232c": ["v1.17.12-rc.0"]
+	DMap map[string][]string `json:"dmap"` // eg "sha256:ef9493aff21f7e368fb3968b46ff2542b0f6863a5de2b9bc58d8d151d8b0232c": ["v1.17.12-rc.0"]
 }
 
 // GetDefaultToolRepoURL returns the default HTTPS repo URL for Release Engineering tools.
@@ -495,8 +495,8 @@ func fileToHash(fileName string, hasher hash.Hash) (string, error) {
 	return fmt.Sprintf("%x", hasher.Sum(nil)), nil
 }
 
-// NewImagePromoterManifestFromFile parses an image promoter manifest file
-func NewImagePromoterManifestFromFile(manifestPath string) (imagesList *ImagePromoterImages, err error) {
+// NewPromoterImageListFromFile parses an image promoter manifest file
+func NewPromoterImageListFromFile(manifestPath string) (imagesList *ImagePromoterImages, err error) {
 	if !util.Exists(manifestPath) {
 		return nil, errors.New("could not find image promoter manifest")
 	}
