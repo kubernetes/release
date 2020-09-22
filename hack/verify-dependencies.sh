@@ -18,16 +18,21 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-VERSION=v0.1.1
-URL_BASE=https://raw.githubusercontent.com/kubernetes/repo-infra
-URL=$URL_BASE/$VERSION/hack/verify_boilerplate.py
-BIN_DIR=bin
-SCRIPT=$BIN_DIR/verify_boilerplate.py
+VERSION=0.0.17
+OS="$(uname -s)"
+OS="${OS,,}"
+URL_BASE=https://github.com/kubernetes-sigs/zeitgeist/releases/download
+FILENAME="zeitgeist_${VERSION}_${OS}_amd64.tar.gz"
+URL="${URL_BASE}/v${VERSION}/${FILENAME}"
 
-if [[ ! -f $SCRIPT ]]; then
-    mkdir -p $BIN_DIR
-    curl -sfL $URL -o $SCRIPT
-    chmod +x $SCRIPT
+mkdir -p ./bin ./zeitgeist
+PATH=$PATH:bin
+
+if ! command -v zeitgeist; then
+  curl -sfL "${URL}" -o "${FILENAME}"
+  tar -xzf "${FILENAME}" -C zeitgeist
+  mv ./zeitgeist/zeitgeist ./bin
+  rm -rf ./zeitgeist "${FILENAME}"
 fi
 
-$SCRIPT --boilerplate-dir hack/boilerplate
+zeitgeist validate
