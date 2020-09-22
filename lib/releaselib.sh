@@ -829,19 +829,6 @@ release::set_globals () {
   # Default disk requirements per version - Modified in found_staged_location()
   RELEASE_GB="75"
 
-  if ! ((FLAGS_gcb)); then
-    GCP_USER=$($GCLOUD auth list --filter=status:ACTIVE \
-                                 --format="value(account)" 2>/dev/null)
-    if [[ -z "$GCP_USER" ]]; then
-      logecho $FAILED
-      logecho "Unable to set a valid GCP credential!"
-      return 1
-    fi
-
-    # Lowercase GCP user
-    GCP_USER="${GCP_USER,,}"
-  fi
-
   if ((FLAGS_stage)); then
     BUCKET_TYPE="stage"
   else
@@ -856,24 +843,8 @@ release::set_globals () {
 
   if ((FLAGS_nomock)); then
     RELEASE_BUCKET="$PROD_BUCKET"
-  elif ((FLAGS_gcb)); then
-    RELEASE_BUCKET="$TEST_BUCKET"
-
-    # This is passed to logrun() where appropriate when we want to mock
-    # specific activities like pushes
-    LOGRUN_MOCK="-m"
   else
-    # GCS buckets cannot contain @ or "google", so for those users, just use
-    # the "$USER" portion of $GCP_USER
-    RELEASE_BUCKET_USER="$RELEASE_BUCKET-${GCP_USER%%@google.com}"
-    RELEASE_BUCKET_USER="${RELEASE_BUCKET_USER/@/-at-}"
-
-    # GCP also doesn't like anything even remotely looking like a domain name
-    # in the bucket name so convert . to -
-    RELEASE_BUCKET_USER="${RELEASE_BUCKET_USER/\./-}"
-    RELEASE_BUCKET="$RELEASE_BUCKET_USER"
-
-    READ_RELEASE_BUCKETS=("$TEST_BUCKET")
+    RELEASE_BUCKET="$TEST_BUCKET"
 
     # This is passed to logrun() where appropriate when we want to mock
     # specific activities like pushes
