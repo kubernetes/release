@@ -27,12 +27,14 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/containers/image/v5/docker/archive"
 	"github.com/containers/image/v5/docker/tarfile"
 	"github.com/containers/image/v5/manifest"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	"gopkg.in/yaml.v2"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -94,6 +96,12 @@ const (
 	// ProductionBucketURL is the url for the ProductionBucket
 	ProductionBucketURL = "https://dl.k8s.io"
 )
+
+// ImagePromoterImages abtracts the manifest used by the image promoter
+type ImagePromoterImages []struct {
+	Name string              `json:"name"`
+	DMap map[string][]string `yaml:"dmap,flow"` // eg "sha256:ef9493aff21f7e368fb3968b46ff2542b0f6863a5de2b9bc58d8d151d8b0232c": ["v1.17.12-rc.0"]
+}
 
 // GetDefaultToolRepoURL returns the default HTTPS repo URL for Release Engineering tools.
 // Expected: https://github.com/kubernetes/release
@@ -485,4 +493,87 @@ func fileToHash(fileName string, hasher hash.Hash) (string, error) {
 	}
 
 	return fmt.Sprintf("%x", hasher.Sum(nil)), nil
+}
+
+// NewImagePromoterManifestFromFile parses an image promoter manifest file
+func NewImagePromoterManifestFromFile(manifestPath string) (imagesList *ImagePromoterImages, err error) {
+	if !util.Exists(manifestPath) {
+		return nil, errors.New("could not find image promoter manifest")
+	}
+	yamlCode, err := ioutil.ReadFile(manifestPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "reading yaml code from file")
+	}
+
+	imagesList = &ImagePromoterImages{}
+	if err := imagesList.Parse(yamlCode); err != nil {
+		return nil, errors.Wrap(err, "parsing manifest yaml")
+	}
+
+	return imagesList, nil
+}
+
+// Parse reads yaml code into an ImagePromoterManifest object
+func (imagesList *ImagePromoterImages) Parse(yamlCode []byte) error {
+	if err := yaml.Unmarshal(yamlCode, imagesList); err != nil {
+		return err
+	}
+	return nil
+}
+
+// ToYAML serializes an image list into an YAML file.
+// We serialize the data by hand to emulate the way it's done by the image promoter
+func (imagesList *ImagePromoterImages) ToYAML() ([]byte, error) {
+	// The image promoter code sorts images by:
+	//	  1. Name 2. Digest SHA (asc)  3. Tag
+
+	// First, sort by name (sort #1)
+	sort.Slice(*imagesList, func(i, j int) bool {
+		return (*imagesList)[i].Name < (*imagesList)[j].Name
+	})
+
+	// Let's build the YAML code
+	yamlCode := ""
+	for _, imgData := range *imagesList {
+		// Add the new name key (it is not sorted in the promoter code)
+		yamlCode += fmt.Sprintf("- name: %s\n", imgData.Name)
+		yamlCode += "  dmap:\n"
+
+		// Now, lets sort by the digest sha (sort #2)
+		keys := make([]string, 0, len(imgData.DMap))
+		for k := range imgData.DMap {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		for _, digestSHA := range keys {
+			// Finally, sort bt tag (sort #3)
+			tags := imgData.DMap[digestSHA]
+			sort.Strings(tags)
+			yamlCode += fmt.Sprintf("    %q: [", digestSHA)
+			for i, tag := range tags {
+				if i > 0 {
+					yamlCode += ","
+				}
+				yamlCode += fmt.Sprintf("%q", tag)
+			}
+			yamlCode += "]\n"
+		}
+	}
+
+	return []byte(yamlCode), nil
+}
+
+// Write writes the promoter image list into an YAML file.
+func (imagesList *ImagePromoterImages) Write(filePath string) error {
+	yamlCode, err := imagesList.ToYAML()
+	if err != nil {
+		return errors.Wrap(err, "while marshalling image list")
+	}
+	// Write the yaml into the specified file
+	if err := ioutil.WriteFile(filePath, yamlCode, os.FileMode(0o644)); err != nil {
+		return errors.Wrap(err, "writing yaml code into file")
+	}
+
+	return nil
 }
