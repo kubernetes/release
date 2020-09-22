@@ -132,6 +132,36 @@ func TestNewAlphaRelease(t *testing.T) {
 	require.Contains(t, string(changelog), alphaReleaseExpectedContent)
 }
 
+func TestNewAlpha1Release(t *testing.T) {
+	// Given
+	s := newSUT(t)
+	defer s.cleanup(t)
+	ro := s.getRootOptions()
+	ro.nomock = true
+
+	co := s.getChangelogOptions("v1.19.0-alpha.1")
+
+	// When
+	require.Nil(t, newChangelog().run(co, ro))
+
+	// Then
+	// Verify local results
+	fileContains(t, "CHANGELOG-1.19.html", alpha1ExpectedHTML)
+	require.Nil(t, os.RemoveAll("CHANGELOG-1.19.html"))
+
+	// Verify commit message
+	lastCommit := s.lastCommit(t, git.DefaultBranch)
+	require.Contains(t, lastCommit, "Anago GCB <nobody@k8s.io>")
+	require.Contains(t, lastCommit, "Update directory for v1.19.0-alpha.1 release")
+
+	// Verify changelog contents
+	changelog, err := ioutil.ReadFile(
+		filepath.Join(s.repo.Dir(), repoChangelogDir, "CHANGELOG-1.19.md"),
+	)
+	require.Nil(t, err)
+	require.Regexp(t, alpha1ReleaseExpectedTOC, string(changelog))
+}
+
 func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 	// Given
 	s := newSUT(t)

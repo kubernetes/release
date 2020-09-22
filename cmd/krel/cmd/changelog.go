@@ -261,6 +261,20 @@ func (c *Changelog) run(opts *changelogOptions, rootOpts *rootOptions) error {
 			// New final minor versions should have remote release notes
 			markdown, err = lookupRemoteReleaseNotes(branch)
 			markdown = downloadsTable.String() + markdown
+		} else if tag.Pre[0].String() == "alpha" && tag.Pre[1].VersionNum == 1 {
+			// v1.x.0-alpha.1 releases use the previous minor as start commit.
+			// Those are usually the first releases being cut on master after
+			// the previous final has been released.
+			startRev = util.SemverToTagString(semver.Version{
+				Major: tag.Major, Minor: tag.Minor - 1, Patch: 0,
+			})
+			logrus.Infof("Using previous minor %s as start tag", startRev)
+
+			// The end tag does not yet exist which means that we stick to
+			// the current HEAD as end revision.
+			endRev = head
+
+			markdown, err = generateReleaseNotes(opts, branch, startRev, endRev)
 		} else {
 			// New minor alpha, beta and rc releases get generated notes
 			latestTags, tErr := github.New().LatestGitHubTagsPerBranch()
