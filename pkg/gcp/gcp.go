@@ -49,3 +49,12 @@ func PreCheck() error {
 func GSUtil(args ...string) error {
 	return command.Execute(GSUtilExecutable, args...)
 }
+
+// GSUtilOutput can be used to run a gsutil command while capturing its output
+func GSUtilOutput(args ...string) (string, error) {
+	stream, err := command.New(GSUtilExecutable, args...).RunSilentSuccessOutput()
+	if err != nil {
+		return "", errors.Wrapf(err, "executing %s", GSUtilExecutable)
+	}
+	return stream.OutputTrimNL(), nil
+}
