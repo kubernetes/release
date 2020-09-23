@@ -86,11 +86,8 @@ var releaseNotesCmd = &cobra.Command{
 
 The 'release-notes' subcommand of krel has been developed to:
 
-1. Generate the release notes for the provided tag for commits on the main
-   branch. We always use the main branch because a release branch
-   gets fast-forwarded until we hit the first release candidate (rc). This is
-   also the reason why we select the first 'v1.xx.0-rc.1' as start tag for
-   the notes generation.
+1. Generate the release notes draft for the provided tag for commits on the main
+   branch.
 
 2. Put the generated notes into a release notes draft markdown document and
    create a GitHub pull request targeting to update the file:
@@ -329,14 +326,12 @@ func createDraftPR(tag string) (err error) {
 		return errors.Wrapf(err, "reading tag: %s", tag)
 	}
 
-	// Release notes are built from the first RC in the previous
-	// minor to encompass all changes received after Code Thaw,
-	// the point where the last minor was forked.
+	// From v1.20.0 on we use the previous minor as a starting tag
+	// for the Release Notes draft because the branch is fast-rowarded now:
 	start := util.SemverToTagString(semver.Version{
 		Major: tagVersion.Major,
 		Minor: tagVersion.Minor - 1,
 		Patch: 0,
-		Pre:   []semver.PRVersion{{VersionStr: "rc.1"}},
 	})
 
 	gh := github.New()
@@ -815,19 +810,28 @@ func releaseNotesJSON(tag string) (string, error) {
 		logrus.Infof("Release branch %s does not exist, working on %s", releaseBranch, git.DefaultBranch)
 	}
 
-	// If it's a patch release, we deduce the startTag manually:
-	var startTag string
+	// Notes for patch releases are generated starting from the previous patch release:
+	var startTag, tagChoice string
 	if tagVersion.Patch > 0 {
-		logrus.Debugf("Working on branch %s instead of %s", tag, git.DefaultBranch)
 		startTag = fmt.Sprintf("v%d.%d.%d", tagVersion.Major, tagVersion.Minor, tagVersion.Patch-1)
+		tagChoice = "previous patch release"
 	} else {
-		startTag, err = repo.PreviousTag(tag, branchName)
-		if err != nil {
-			return "", errors.Wrap(err, "getting previous tag from branch")
+		// From 1.20 the notes fot the first alpha start from the previous minor
+		if tagVersion.Pre[0].String() == "alpha" && tagVersion.Pre[1].VersionNum == 1 {
+			startTag = util.SemverToTagString(semver.Version{
+				Major: tagVersion.Major, Minor: tagVersion.Minor - 1, Patch: 0,
+			})
+			tagChoice = "previous minor version"
+		} else {
+			// All others from the previous existing tag
+			startTag, err = repo.PreviousTag(tag, branchName)
+			if err != nil {
+				return "", errors.Wrap(err, "getting previous tag from branch")
+			}
+			tagChoice = "previous tag"
 		}
 	}
-
-	logrus.Infof("Using start tag %v", startTag)
+	logrus.Infof("Using start tag %v from %s", startTag, tagChoice)
 	logrus.Infof("Using end tag %v", tag)
 
 	notesOptions := options.New()
