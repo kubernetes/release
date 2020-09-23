@@ -17,21 +17,9 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
-	"os"
-	"os/user"
-	"path/filepath"
-	"strings"
-
-	"cloud.google.com/go/storage"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-
-	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/util"
-	"k8s.io/utils/pointer"
 )
 
 const description = `
@@ -47,22 +35,7 @@ push --nomock --ci
 push --bucket=kubernetes-release-$USER
                            - Do a developer push to kubernetes-release-$USER`
 
-type pushBuildOptions struct {
-	bucket              string
-	buildDir            string
-	dockerRegistry      string
-	extraVersionMarkers string
-	gcsSuffix           string
-	releaseType         string
-	versionSuffix       string
-	allowDup            bool
-	ci                  bool
-	noUpdateLatest      bool
-	privateBucket       bool
-	fast                bool
-}
-
-var pushBuildOpts = &pushBuildOptions{}
+var pushBuildOpts = &release.PushBuildOptions{}
 
 var pushBuildCmd = &cobra.Command{
 	Use:           "push [--noupdatelatest] [--ci] [--bucket=<GS bucket>] [--private-bucket]",
@@ -79,137 +52,75 @@ var pushBuildCmd = &cobra.Command{
 	},
 }
 
-type stageFile struct {
-	srcPath  string
-	dstPath  string
-	required bool
-}
-
-var gcpStageFiles = []stageFile{
-	{
-		srcPath:  filepath.Join(release.GCEPath, "configure-vm.sh"),
-		dstPath:  filepath.Join(release.GCSStagePath, "extra/gce"),
-		required: false,
-	},
-	{
-		srcPath:  filepath.Join(release.GCIPath, "node.yaml"),
-		dstPath:  filepath.Join(release.GCSStagePath, "extra/gce"),
-		required: true,
-	},
-	{
-		srcPath:  filepath.Join(release.GCIPath, "master.yaml"),
-		dstPath:  filepath.Join(release.GCSStagePath, "extra/gce"),
-		required: true,
-	},
-	{
-		srcPath:  filepath.Join(release.GCIPath, "configure.sh"),
-		dstPath:  filepath.Join(release.GCSStagePath, "extra/gce"),
-		required: true,
-	},
-	{
-		srcPath:  filepath.Join(release.GCIPath, "shutdown.sh"),
-		dstPath:  filepath.Join(release.GCSStagePath, "extra/gce"),
-		required: false,
-	},
-}
-
-var windowsStageFiles = []stageFile{
-	{
-		srcPath:  filepath.Join(release.WindowsLocalPath, "configure.ps1"),
-		dstPath:  release.WindowsGCSPath,
-		required: true,
-	},
-	{
-		srcPath:  filepath.Join(release.WindowsLocalPath, "common.psm1"),
-		dstPath:  release.WindowsGCSPath,
-		required: true,
-	},
-	{
-		srcPath:  filepath.Join(release.WindowsLocalPath, "k8s-node-setup.psm1"),
-		dstPath:  release.WindowsGCSPath,
-		required: true,
-	},
-	{
-		srcPath:  filepath.Join(release.WindowsLocalPath, "testonly/install-ssh.psm1"),
-		dstPath:  release.WindowsGCSPath,
-		required: true,
-	},
-	{
-		srcPath:  filepath.Join(release.WindowsLocalPath, "testonly/user-profile.psm1"),
-		dstPath:  release.WindowsGCSPath,
-		required: true,
-	},
-}
-
 func init() {
 	pushBuildCmd.PersistentFlags().BoolVar(
-		&pushBuildOpts.allowDup,
+		&pushBuildOpts.AllowDup,
 		"allow-dup",
 		false,
 		"Do not exit error if the build already exists on the gcs path",
 	)
 	pushBuildCmd.PersistentFlags().BoolVar(
-		&pushBuildOpts.ci,
+		&pushBuildOpts.CI,
 		"ci",
 		false,
 		"Used when called from Jenkins (for ci runs)",
 	)
 	pushBuildCmd.PersistentFlags().BoolVar(
-		&pushBuildOpts.noUpdateLatest,
+		&pushBuildOpts.NoUpdateLatest,
 		"noupdatelatest",
 		false,
 		"Do not update the latest file",
 	)
 	pushBuildCmd.PersistentFlags().BoolVar(
-		&pushBuildOpts.privateBucket,
+		&pushBuildOpts.PrivateBucket,
 		"private-bucket",
 		false,
 		"Do not mark published bits on GCS as publicly readable",
 	)
 	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.bucket,
+		&pushBuildOpts.Bucket,
 		"bucket",
 		"devel",
 		"Specify an alternate bucket for pushes (normally 'devel' or 'ci')",
 	)
 	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.buildDir,
+		&pushBuildOpts.BuildDir,
 		"buildDir",
 		"_output",
 		"Specify an alternate build directory (defaults to '_output')",
 	)
 	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.dockerRegistry,
+		&pushBuildOpts.DockerRegistry,
 		"docker-registry",
 		"",
 		"If set, push docker images to specified registry/project",
 	)
 	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.extraVersionMarkers,
+		&pushBuildOpts.ExtraVersionMarkers,
 		"extra-version-markers",
 		"",
 		"Comma separated list which can be used to upload additional version files to GCS. The path is relative and is append to a GCS path. (--ci only)",
 	)
 	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.gcsSuffix,
+		&pushBuildOpts.GCSSuffix,
 		"gcs-suffix",
 		"",
 		"Specify a suffix to append to the upload destination on GCS",
 	)
 	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.releaseType,
+		&pushBuildOpts.ReleaseType,
 		"release-type",
 		"devel",
 		"Specify an alternate bucket for pushes (normally 'devel' or 'ci')",
 	)
 	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.versionSuffix,
+		&pushBuildOpts.VersionSuffix,
 		"version-suffix",
 		"",
 		"Append suffix to version name if set",
 	)
 	pushBuildCmd.PersistentFlags().BoolVar(
-		&pushBuildOpts.fast,
+		&pushBuildOpts.Fast,
 		"fast",
 		false,
 		"Specifies a fast build (linux amd64 only)",
@@ -218,172 +129,7 @@ func init() {
 	rootCmd.AddCommand(pushBuildCmd)
 }
 
-func runPushBuild(opts *pushBuildOptions) error {
-	var latest string
-
-	// Check if latest build uses bazel
-	dir, err := os.Getwd()
-	if err != nil {
-		return errors.Wrap(err, "get working directory")
-	}
-
-	isBazel, err := release.BuiltWithBazel(dir)
-	if err != nil {
-		return errors.Wrap(err, "identify if release built with Bazel")
-	}
-
-	if isBazel {
-		logrus.Info("Using Bazel build version")
-		version, err := release.ReadBazelVersion(dir)
-		if err != nil {
-			return errors.Wrap(err, "read Bazel build version")
-		}
-		latest = version
-	} else {
-		logrus.Info("Using Dockerized build version")
-		version, err := release.ReadDockerizedVersion(dir)
-		if err != nil {
-			return errors.Wrap(err, "read Dockerized build version")
-		}
-		latest = version
-	}
-
-	logrus.Infof("Found build version: %s", latest)
-
-	valid, err := release.IsValidReleaseBuild(latest)
-	if err != nil {
-		return errors.Wrap(err, "determine if release build version is valid")
-	}
-	if !valid {
-		return errors.Errorf("build version %s is not valid for release", latest)
-	}
-
-	if opts.ci && release.IsDirtyBuild(latest) {
-		return errors.New(`refusing to push dirty build with --ci flag given. CI builds should always be performed from clean commits`)
-	}
-
-	if opts.versionSuffix != "" {
-		latest += "-" + opts.versionSuffix
-	}
-
-	logrus.Infof("Latest version is %s", latest)
-
-	releaseBucket := opts.bucket
-	if rootOpts.nomock {
-		logrus.Infof("Running a *REAL* push with bucket %s", releaseBucket)
-	} else {
-		u, err := user.Current()
-		if err != nil {
-			return errors.Wrap(err, "identify current user")
-		}
-
-		releaseBucket += "-" + u.Username
-	}
-
-	client, err := storage.NewClient(context.Background())
-	if err != nil {
-		return errors.Wrap(err, "fetching gcloud credentials... try running \"gcloud auth application-default login\"")
-	}
-
-	bucket := client.Bucket(releaseBucket)
-	if bucket == nil {
-		return errors.Errorf("identify specified bucket for artifacts: %s", releaseBucket)
-	}
-
-	// Check if bucket exists and user has permissions
-	requiredGCSPerms := []string{"storage.objects.create"}
-	perms, err := bucket.IAM().TestPermissions(context.Background(), requiredGCSPerms)
-	if err != nil {
-		return errors.Wrap(err, "find release artifact bucket")
-	}
-	if len(perms) != 1 {
-		return errors.Errorf("GCP user must have at least %s permissions on bucket %s", requiredGCSPerms, releaseBucket)
-	}
-
-	buildDir := buildOpts.BuildDir
-	if err = util.RemoveAndReplaceDir(filepath.Join(buildDir, release.GCSStagePath)); err != nil {
-		return errors.Wrap(err, "remove and replace GCS staging directory")
-	}
-
-	// Copy release tarballs to local GCS staging directory for push
-	if err = util.CopyDirContentsLocal(filepath.Join(buildDir, release.ReleaseTarsPath), filepath.Join(buildDir, release.GCSStagePath)); err != nil {
-		return errors.Wrap(err, "copy source directory into destination")
-	}
-
-	// Copy helpful GCP scripts to local GCS staging directory for push
-	for _, file := range gcpStageFiles {
-		if err := util.CopyFileLocal(filepath.Join(buildDir, file.srcPath), filepath.Join(buildDir, file.dstPath), file.required); err != nil {
-			return errors.Wrap(err, "copy GCP stage files")
-		}
-	}
-
-	// Copy helpful Windows scripts to local GCS staging directory for push
-	for _, file := range windowsStageFiles {
-		if err := util.CopyFileLocal(filepath.Join(buildDir, file.srcPath), filepath.Join(buildDir, file.dstPath), file.required); err != nil {
-			return errors.Wrap(err, "copy Windows stage files")
-		}
-	}
-
-	// Copy the "naked" binaries to GCS. This is useful for install scripts
-	// that download the binaries directly and don't need tars.
-	if err := release.CopyBinaries(
-		filepath.Join(buildDir, release.ReleaseStagePath),
-	); err != nil {
-		return errors.Wrap(err, "stage binaries")
-	}
-
-	// Write the release checksums
-	gcsStagePath := filepath.Join(buildDir, release.GCSStagePath, latest)
-	if err := release.WriteChecksums(gcsStagePath); err != nil {
-		return errors.Wrap(err, "write checksums")
-	}
-
-	// Publish container images
-	gcsDest := opts.releaseType
-	if opts.ci {
-		gcsDest = "ci"
-	}
-	gcsDest += opts.gcsSuffix
-
-	if opts.fast {
-		gcsDest = filepath.Join(gcsDest, "fast")
-	}
-	logrus.Infof("GCS destination is %s", gcsDest)
-
-	copyOpts := gcs.DefaultGCSCopyOptions
-	copyOpts.NoClobber = pointer.BoolPtr(opts.allowDup)
-
-	if err := gcs.CopyToGCS(
-		gcsStagePath,
-		filepath.Join(releaseBucket, gcsDest, latest),
-		copyOpts,
-	); err != nil {
-		return errors.Wrap(err, "copy artifacts to GCS")
-	}
-
-	if opts.dockerRegistry != "" {
-		if err := release.NewImages().Publish(
-			opts.dockerRegistry,
-			strings.ReplaceAll(latest, "+", "_"),
-			buildDir,
-		); err != nil {
-			return errors.Wrap(err, "publish container images")
-		}
-	}
-
-	if !opts.ci {
-		logrus.Info("No CI flag set, we're done")
-		return nil
-	}
-
-	// Publish release to GCS
-	versionMarkers := strings.Split(opts.extraVersionMarkers, ",")
-	if err := release.NewPublisher().PublishVersion(
-		gcsDest, latest, buildDir, releaseBucket, versionMarkers,
-		opts.privateBucket, rootOpts.nomock,
-	); err != nil {
-		return errors.Wrap(err, "publish release")
-	}
-
-	return nil
+func runPushBuild(opts *release.PushBuildOptions) error {
+	opts.NoMock = rootOpts.nomock
+	return release.NewPushBuild(opts).Push()
 }
