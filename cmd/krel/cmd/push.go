@@ -59,6 +59,7 @@ type pushBuildOptions struct {
 	ci                  bool
 	noUpdateLatest      bool
 	privateBucket       bool
+	fast                bool
 }
 
 var pushBuildOpts = &pushBuildOptions{}
@@ -207,6 +208,12 @@ func init() {
 		"",
 		"Append suffix to version name if set",
 	)
+	pushBuildCmd.PersistentFlags().BoolVar(
+		&pushBuildOpts.fast,
+		"fast",
+		false,
+		"Specifies a fast build (linux amd64 only)",
+	)
 
 	rootCmd.AddCommand(pushBuildCmd)
 }
@@ -337,6 +344,10 @@ func runPushBuild(opts *pushBuildOptions) error {
 		gcsDest = "ci"
 	}
 	gcsDest += opts.gcsSuffix
+
+	if opts.fast {
+		gcsDest = filepath.Join(gcsDest, "fast")
+	}
 	logrus.Infof("GCS destination is %s", gcsDest)
 
 	copyOpts := gcs.DefaultGCSCopyOptions
