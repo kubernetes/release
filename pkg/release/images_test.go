@@ -211,7 +211,88 @@ func TestPublish(t *testing.T) {
 		sut.SetClient(clientMock)
 		buildPath, cleanup := tc.prepare(clientMock)
 
-		err := sut.Publish("k8s.gcr.io", "v1.18.9", buildPath)
+		err := sut.Publish(release.GCRIOPathProd, "v1.18.9", buildPath)
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+		cleanup()
+	}
+}
+
+func TestValidate(t *testing.T) {
+	for _, tc := range []struct {
+		prepare     func(*releasefakes.FakeCommandClient) (buildPath string, cleanup func())
+		shouldError bool
+	}{
+		{ // success
+			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+				tempDir := newImagesPath(t)
+				prepareImages(t, tempDir, mock)
+
+				mock.ExecuteOutputReturns("digest", nil)
+
+				return tempDir, func() {
+					require.Nil(t, os.RemoveAll(tempDir))
+				}
+			},
+			shouldError: false,
+		},
+		{ // failure on skopeo call
+			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+				tempDir := newImagesPath(t)
+				prepareImages(t, tempDir, mock)
+
+				mock.ExecuteOutputReturnsOnCall(1, "", errors.New(""))
+
+				return tempDir, func() {
+					require.Nil(t, os.RemoveAll(tempDir))
+				}
+			},
+			shouldError: true,
+		},
+		{ // failure no digest
+			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+				tempDir := newImagesPath(t)
+				prepareImages(t, tempDir, mock)
+
+				return tempDir, func() {
+					require.Nil(t, os.RemoveAll(tempDir))
+				}
+			},
+			shouldError: true,
+		},
+		{ // failure on remote digest retrieval
+			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+				tempDir := newImagesPath(t)
+				prepareImages(t, tempDir, mock)
+
+				mock.ExecuteOutputReturns("", errors.New(""))
+
+				return tempDir, func() {
+					require.Nil(t, os.RemoveAll(tempDir))
+				}
+			},
+			shouldError: true,
+		},
+		{ // failure no images-path
+			prepare: func(*releasefakes.FakeCommandClient) (string, func()) {
+				tempDir, err := ioutil.TempDir("", "publish-test-")
+				require.Nil(t, err)
+				return tempDir, func() {
+					require.Nil(t, os.RemoveAll(tempDir))
+				}
+			},
+			shouldError: true,
+		},
+	} {
+		sut := release.NewImages()
+		clientMock := &releasefakes.FakeCommandClient{}
+		sut.SetClient(clientMock)
+		buildPath, cleanup := tc.prepare(clientMock)
+
+		err := sut.Validate(release.GCRIOPathStaging, "v1.18.9", buildPath)
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {

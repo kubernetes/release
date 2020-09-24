@@ -95,6 +95,12 @@ const (
 
 	// ProductionBucketURL is the url for the ProductionBucket
 	ProductionBucketURL = "https://dl.k8s.io"
+
+	// Production registry root URL
+	GCRIOPathProd = "k8s.gcr.io"
+
+	// Staging registry root URL
+	GCRIOPathStaging = "gcr.io/k8s-staging-kubernetes"
 )
 
 // ImagePromoterImages abtracts the manifest used by the image promoter
