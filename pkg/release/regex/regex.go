@@ -21,11 +21,7 @@ import (
 )
 
 const (
-	branchRegexStr  = `master|release-([0-9]{1,})\.([0-9]{1,})(\.([0-9]{1,}))*$`
-	releaseRegexStr = `v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[a-zA-Z0-9]+)*\.*(0|[1-9][0-9]*)?`
+	branchRegexStr = `master|release-([0-9]{1,})\.([0-9]{1,})(\.([0-9]{1,}))*$`
 )
 
-var (
-	BranchRegex  = regexp.MustCompile(branchRegexStr)
-	ReleaseRegex = regexp.MustCompile(releaseRegexStr)
-)
+var BranchRegex = regexp.MustCompile(branchRegexStr)

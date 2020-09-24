@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/release/regex"
+	"k8s.io/release/pkg/util"
 )
 
 const (
@@ -100,45 +101,22 @@ func GenerateReleaseVersion(
 	// if branch == git.DefaultBranch, version is an alpha or beta
 	// if branch == release, version is a rc
 	// if branch == release+1, version is an alpha
-	versionMatch := regex.ReleaseRegex.FindStringSubmatch(version)
-	if len(versionMatch) < 5 {
+	v, err := util.TagStringToSemver(version)
+	if err != nil {
 		return nil, errors.Errorf("invalid formatted version %s", version)
 	}
-	buildMajor, err := strconv.Atoi(versionMatch[1])
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing build major version to int")
-	}
-	buildMinor, err := strconv.Atoi(versionMatch[2])
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing build minor version to int")
-	}
-	buildPatch, err := strconv.Atoi(versionMatch[3])
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing build patch version to int")
-	}
-	var labelIDPtr *int
-	if versionMatch[5] != "" {
-		parsedLabelID, err := strconv.Atoi(versionMatch[5])
-		if err != nil {
-			return nil, errors.Wrap(err, "parsing build label ID to int")
-		}
-		labelIDPtr = &parsedLabelID
-	}
-	buildVersion := struct {
-		major, minor, patch int
-		labelID             *int
-		label               string
-	}{
-		major:   buildMajor,
-		minor:   buildMinor,
-		patch:   buildPatch,
-		label:   strings.TrimPrefix(versionMatch[4], "-"), // alpha, beta, rc
-		labelID: labelIDPtr,
+
+	var label string
+	if len(v.Pre) > 0 {
+		// alpha, beta, rc
+		label = v.Pre[0].String()
 	}
 
-	labelID := 1
-	if labelIDPtr != nil {
-		labelID = *buildVersion.labelID + 1
+	var labelID uint64 = 1
+	labelIDAvailable := false
+	if len(v.Pre) > 1 && v.Pre[1].IsNum {
+		labelIDAvailable = true
+		labelID = v.Pre[1].VersionNum + 1
 	}
 
 	// releaseVersions.prime is the default release version for this
@@ -178,14 +156,13 @@ func GenerateReleaseVersion(
 		releaseVersions.prime = releaseVersions.rc
 	} else if strings.HasPrefix(branch, "release-") {
 		// Build directly from releaseVersions
-		releaseVersions.prime = fmt.Sprintf("v%d.%d",
-			buildVersion.major, buildVersion.minor)
+		releaseVersions.prime = fmt.Sprintf("v%d.%d", v.Major, v.Minor)
 
 		// If the incoming version is anything bigger than vX.Y.Z, then it's a
 		// Jenkin's build version and it stands as is, otherwise increment the
 		// patch
-		patch := buildVersion.patch
-		if buildVersion.labelID == nil {
+		patch := v.Patch
+		if !labelIDAvailable {
 			patch++
 		}
 		releaseVersions.prime += fmt.Sprintf(".%d", patch)
@@ -195,10 +172,7 @@ func GenerateReleaseVersion(
 			// Only primary branches get rc releases
 			if regexp.MustCompile(`^release-([0-9]{1,})\.([0-9]{1,})$`).MatchString(branch) {
 				releaseVersions.rc = fmt.Sprintf(
-					"v%d.%d.%d-rc.0",
-					buildVersion.major,
-					buildVersion.minor,
-					buildVersion.patch+1,
+					"v%d.%d.%d-rc.0", v.Major, v.Minor, v.Patch+1,
 				)
 			}
 		} else if releaseType == ReleaseTypeRC {
@@ -209,10 +183,7 @@ func GenerateReleaseVersion(
 		}
 	} else if releaseType == ReleaseTypeBeta {
 		releaseVersions.beta = fmt.Sprintf(
-			"v%d.%d.%d",
-			buildVersion.major,
-			buildVersion.minor,
-			buildVersion.patch,
+			"v%d.%d.%d", v.Major, v.Minor, v.Patch,
 		)
 
 		// Enable building beta releases on the main branch.
@@ -223,12 +194,10 @@ func GenerateReleaseVersion(
 		// Otherwise, we'll assume this is the next x.y beta, so just
 		// increment the
 		// beta version e.g., x.y.z-beta.1 --> x.y.z-beta.2
-		if buildVersion.label == ReleaseTypeAlpha {
+		if label == ReleaseTypeAlpha {
 			releaseVersions.beta += fmt.Sprintf("-%s.0", ReleaseTypeBeta)
 		} else {
-			releaseVersions.beta += fmt.Sprintf(
-				"-%s.%d", buildVersion.label, labelID,
-			)
+			releaseVersions.beta += fmt.Sprintf("-%s.%d", label, labelID)
 		}
 
 		releaseVersions.prime = releaseVersions.beta
@@ -239,7 +208,7 @@ func GenerateReleaseVersion(
 		//
 		// Concretely:
 		// We should not be able to cut x.y.z-alpha.N after x.y.z-beta.M
-		if buildVersion.label != ReleaseTypeAlpha {
+		if label != ReleaseTypeAlpha {
 			return nil, errors.Errorf(
 				"cannot cut an alpha tag after a non-alpha release %s. %s",
 				version,
@@ -248,12 +217,7 @@ func GenerateReleaseVersion(
 		}
 
 		releaseVersions.alpha = fmt.Sprintf(
-			"v%d.%d.%d-%s.%d",
-			buildVersion.major,
-			buildVersion.minor,
-			buildVersion.patch,
-			buildVersion.label,
-			labelID,
+			"v%d.%d.%d-%s.%d", v.Major, v.Minor, v.Patch, label, labelID,
 		)
 		releaseVersions.prime = releaseVersions.alpha
 	}
