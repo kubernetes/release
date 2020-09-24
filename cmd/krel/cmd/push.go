@@ -125,6 +125,12 @@ func init() {
 		false,
 		"Specifies a fast build (linux amd64 only)",
 	)
+	pushBuildCmd.PersistentFlags().BoolVar(
+		&pushBuildOpts.ValidateRemoteImageDigests,
+		"validate-images",
+		false,
+		"Validate that the remove image digests exists, needs `skopeo` in `$PATH`",
+	)
 
 	rootCmd.AddCommand(pushBuildCmd)
 }

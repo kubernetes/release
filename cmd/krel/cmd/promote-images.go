@@ -36,8 +36,6 @@ import (
 
 const (
 	k8sioRepo             = "k8s.io"
-	k8sioManifestsPath    = "k8s.gcr.io"
-	stagingRepo           = "k8s-staging-kubernetes"
 	promotionBranchSuffix = "-image-promotion"
 )
 
@@ -173,7 +171,12 @@ func runPromote(opts *promoteOptions) error {
 	}()
 
 	// Path to the promoter image list
-	imagesListPath := filepath.Join(k8sioManifestsPath, "images", stagingRepo, "images.yaml")
+	imagesListPath := filepath.Join(
+		release.GCRIOPathProd,
+		"images",
+		filepath.Base(release.GCRIOPathStaging),
+		"images.yaml",
+	)
 
 	// Read the current manifest to check later if new images come up
 	oldlist := make([]byte, 0)
@@ -189,8 +192,8 @@ func runPromote(opts *promoteOptions) error {
 	if mustRun(opts, "Update the Image Promoter manifest with cip-mm?") {
 		if err := command.New(
 			cipmm,
-			fmt.Sprintf("--base_dir=%s", filepath.Join(repo.Dir(), k8sioManifestsPath)),
-			fmt.Sprintf("--staging_repo=gcr.io/%s", stagingRepo),
+			fmt.Sprintf("--base_dir=%s", filepath.Join(repo.Dir(), release.GCRIOPathProd)),
+			fmt.Sprintf("--staging_repo=%s", release.GCRIOPathStaging),
 			fmt.Sprintf("--filter_tag=%s", opts.tag),
 		).RunSuccess(); err != nil {
 			return errors.Wrap(err, "running cip-mm install in kubernetes-sigs/release-notes")

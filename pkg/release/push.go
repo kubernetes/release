@@ -79,6 +79,10 @@ type PushBuildOptions struct {
 
 	// Specifies if we should push to the bucket or the user suffixed one.
 	NoMock bool
+
+	// Validate that the remove image digests exists, needs `skopeo` in
+	// `$PATH`.
+	ValidateRemoteImageDigests bool
 }
 
 type stageFile struct {
@@ -313,12 +317,20 @@ func (p *PushBuild) Push() error {
 	}
 
 	if p.opts.DockerRegistry != "" {
-		if err := NewImages().Publish(
-			p.opts.DockerRegistry,
-			strings.ReplaceAll(latest, "+", "_"),
-			buildDir,
+		images := NewImages()
+		normalizedVersion := strings.ReplaceAll(latest, "+", "_")
+		if err := images.Publish(
+			p.opts.DockerRegistry, normalizedVersion, buildDir,
 		); err != nil {
 			return errors.Wrap(err, "publish container images")
+		}
+
+		if p.opts.ValidateRemoteImageDigests {
+			if err := images.Validate(
+				p.opts.DockerRegistry, normalizedVersion, buildDir,
+			); err != nil {
+				return errors.Wrap(err, "validate container images")
+			}
 		}
 	}
 
