@@ -25,7 +25,7 @@ import (
 	"k8s.io/release/pkg/release"
 )
 
-func TestSetReleaseVersion(t *testing.T) {
+func TestGenerateReleaseVersion(t *testing.T) {
 	for _, tc := range []struct {
 		releaseType      string
 		version          string
