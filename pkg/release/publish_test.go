@@ -48,8 +48,27 @@ func TestPublishVersion(t *testing.T) {
 			*releasefakes.FakePublisherClient,
 		) (buildDir string, cleanup func())
 		privateBucket bool
+		fast          bool
 		shouldError   bool
 	}{
+		{ // success update fast
+			bucket:  release.ProductionBucket,
+			version: testVersion,
+			fast:    true,
+			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
+				tempDir, err := ioutil.TempDir("", "publish-version-test-")
+				require.Nil(t, err)
+
+				mock.GSUtilOutputReturnsOnCall(0, olderTestVersion, nil)
+				mock.GSUtilOutputReturnsOnCall(1, testVersion, nil)
+				mock.GetURLResponseReturns(testVersion, nil)
+
+				return tempDir, func() {
+					require.Nil(t, os.RemoveAll(tempDir))
+				}
+			},
+			shouldError: false,
+		},
 		{ // success update on private bucket
 			bucket:        release.ProductionBucket,
 			version:       testVersion,
@@ -172,7 +191,7 @@ func TestPublishVersion(t *testing.T) {
 
 		err := sut.PublishVersion(
 			"release", tc.version, buildDir, tc.bucket,
-			nil, true, tc.privateBucket,
+			nil, true, tc.privateBucket, tc.fast,
 		)
 		if tc.shouldError {
 			require.NotNil(t, err)

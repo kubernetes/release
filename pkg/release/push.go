@@ -343,7 +343,7 @@ func (p *PushBuild) Push() error {
 	versionMarkers := strings.Split(p.opts.ExtraVersionMarkers, ",")
 	if err := NewPublisher().PublishVersion(
 		gcsDest, latest, buildDir, releaseBucket, versionMarkers,
-		p.opts.PrivateBucket, p.opts.NoMock,
+		p.opts.PrivateBucket, p.opts.NoMock, p.opts.Fast,
 	); err != nil {
 		return errors.Wrap(err, "publish release")
 	}
