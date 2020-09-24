@@ -189,7 +189,7 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 		imageVersion := fmt.Sprintf("%s:%s", image, version)
 
 		manifest, err := i.client.ExecuteOutput(
-			"skopeo", "inspect", "docker:://%s", imageVersion, "--raw",
+			"skopeo", "inspect", "docker://%s", imageVersion, "--raw",
 		)
 		if err != nil {
 			return errors.Wrapf(
