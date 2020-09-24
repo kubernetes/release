@@ -689,38 +689,6 @@ security_layer::acl_check () {
 }
 
 ###############################################################################
-# Check for and source security layer
-# This function looks for an additional security layer and activates
-# special code paths to allow for enhanced features.
-# The pointer to this file is set with FLAGS_security_layer:
-# * --security_layer=/path/to/script_to_source
-# * $HOME/${PROG}rc (FLAGS_security_layer=/path/to/source)
-# SECURITY_LAYER global defaulted here.  Set to 1 in external source
-common::security_layer () {
-  local rcfile=$HOME/.kubernetes-releaserc
-  SECURITY_LAYER=0
-
-  # Quietly attempt to source the include
-  source $rcfile >/dev/null 2>&1 || true
-
-  # If not there attempt to set it from env
-  FLAGS_security_layer=${FLAGS_security_layer:-""}
-
-  if [[ -n $FLAGS_security_layer ]]; then
-    if [[ -r $FLAGS_security_layer ]]; then
-      source $FLAGS_security_layer >/dev/null 2>&1
-    else
-      logecho "$FATAL! $FLAGS_security_layer is not readable."
-      return 1
-    fi
-  elif [[ "$HOSTNAME" =~ google.com ]]; then
-    logecho "$FATAL! Googler, this session is incomplete." \
-            "$PROG is running with missing functionality.  See go/$PROG"
-    return 1
-  fi
-}
-
-###############################################################################
 # Check packages for a K8s release
 # @param package - A space separated list of packages to verify exist
 #
