@@ -76,10 +76,11 @@ func (*defaultPublisher) GetURLResponse(url string) (string, error) {
 // version - The version
 // buildDir - build output directory
 // bucket - GS bucket
+// was releaselib.sh: release::gcs::publish_version
 func (p *Publisher) PublishVersion(
 	buildType, version, buildDir, bucket string,
 	versionMarkers []string,
-	noMock, privateBucket bool,
+	noMock, privateBucket, fast bool,
 ) error {
 	releaseType := "latest"
 
@@ -92,7 +93,12 @@ func (p *Publisher) PublishVersion(
 		}
 	}
 
-	releasePath := gcs.GcsPrefix + filepath.Join(bucket, buildType, version)
+	releasePath := gcs.GcsPrefix + filepath.Join(bucket, buildType)
+	if fast {
+		releasePath = filepath.Join(releasePath, "fast")
+	}
+	releasePath = filepath.Join(releasePath, version)
+
 	if err := p.client.GSUtil("ls", releasePath); err != nil {
 		return errors.Wrapf(err, "release files dont exist at %s", releasePath)
 	}
@@ -102,11 +108,18 @@ func (p *Publisher) PublishVersion(
 		return errors.Errorf("invalid version %s", version)
 	}
 
-	publishFiles := append([]string{
-		releaseType,
-		fmt.Sprintf("%s-%d", releaseType, sv.Major),
-		fmt.Sprintf("%s-%d.%d", releaseType, sv.Major, sv.Minor),
-	}, versionMarkers...)
+	var publishFiles []string
+	if fast {
+		publishFiles = append([]string{
+			releaseType + "-fast",
+		}, versionMarkers...)
+	} else {
+		publishFiles = append([]string{
+			releaseType,
+			fmt.Sprintf("%s-%d", releaseType, sv.Major),
+			fmt.Sprintf("%s-%d.%d", releaseType, sv.Major, sv.Minor),
+		}, versionMarkers...)
+	}
 
 	logrus.Infof("Publish version markers: %v", publishFiles)
 	logrus.Infof("Publish official pointer text files to bucket %s", bucket)
