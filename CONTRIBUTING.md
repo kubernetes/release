@@ -13,5 +13,5 @@ read and observe the [Code of Conduct](https://github.com/cncf/foundation/blob/m
 Before submitting a pull request, please make sure to verify that all tests are passing:
 
 ```bash
-./hack/verify-all.sh
+make verify
 ```
