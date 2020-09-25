@@ -56,9 +56,6 @@ type PushBuildOptions struct {
 	// Specify a suffix to append to the upload destination on GCS.
 	GCSSuffix string
 
-	// Specify an alternate bucket for pushes (normally 'devel' or 'ci').
-	ReleaseType string
-
 	// Append suffix to version name if set.
 	VersionSuffix string
 
@@ -294,7 +291,7 @@ func (p *PushBuild) Push() error {
 	}
 
 	// Publish container images
-	gcsDest := p.opts.ReleaseType
+	gcsDest := "devel"
 	if p.opts.CI {
 		gcsDest = "ci"
 	}
