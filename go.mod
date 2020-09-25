@@ -3,7 +3,7 @@ module k8s.io/release
 go 1.15
 
 require (
-	cloud.google.com/go/storage v1.11.0
+	cloud.google.com/go/storage v1.12.0
 	github.com/GoogleCloudPlatform/testgrid v0.0.22
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/containers/image/v5 v5.6.0
@@ -25,7 +25,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
 	github.com/yuin/goldmark v1.2.1
-	golang.org/x/net v0.0.0-20200904194848-62affa334b73
+	golang.org/x/net v0.0.0-20200925080053-05aa5d4ee321
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
 	google.golang.org/api v0.32.0
 	gopkg.in/yaml.v2 v2.3.0
