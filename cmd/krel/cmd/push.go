@@ -113,12 +113,6 @@ func init() {
 		"Specify a suffix to append to the upload destination on GCS",
 	)
 	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.ReleaseType,
-		"release-type",
-		"devel",
-		"Specify an alternate bucket for pushes (normally 'devel' or 'ci')",
-	)
-	pushBuildCmd.PersistentFlags().StringVar(
 		&pushBuildOpts.VersionSuffix,
 		"version-suffix",
 		"",
