@@ -42,7 +42,7 @@ type PushBuildOptions struct {
 	// Specify an alternate bucket for pushes (normally 'devel' or 'ci').
 	Bucket string
 
-	// Specify an alternate build directory (defaults to '_output').
+	// Specify an alternate build directory (defaults to `release.BuildDir`).
 	BuildDir string
 
 	// If set, push docker images to specified registry/project.
