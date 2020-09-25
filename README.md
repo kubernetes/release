@@ -26,11 +26,8 @@ Tools | Description
  :---: | --
 [`krel`](/cmd/krel)                     | Kubernetes Release Toolbox<br/>This is the new golang based tool for managing releases
 [`anago`](/anago)                       | Release Tool:<br/>The main driver for creating staged builds and releases. This is what runs inside GCB after a job is submitted using `krel gcbmgr`.
-[`find_green_build`](/find_green_build) | Asks Jenkins for a good build to use.
 [`release-notes`](/cmd/release-notes)   | Scrape GitHub for release notes.<br/>See [Release Notes Gathering](#release-notes-gathering) for more information.
-[`prin`](/prin)                         | To show release tags of a particular PR or commit.
 [`push-build.sh`](/push-build.sh)       | Pushes a developer build or CI Jenkins build up to GCS.
-[`script-template`](/script-template)   | Generates a script template in the kubernetes/release ecosystem.
 [`testgridshot`](/testgridshot)         | Screenshots failing testgrid dashboards and creates a markdown stub that can be copied and pasted into a GitHub issue comment.<br/>This makes it easier to create comments like [this][shot-issue] as part of the release process.
 
 For information on how to use `krel` and `anago`, see the [Branch Manager Handbook]
