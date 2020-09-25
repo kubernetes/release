@@ -26,10 +26,10 @@ set -e
 # legacy iptables was empty / mostly empty.
 
 # Below chains are created by kubelet: valid for now - k8s 1.19
-chains_created_by_kubelet="KUBE-MARK-DROP|KUBE-MARK-MASQ|KUBE-POSTROUTING"
+chains_created_by_kubelet=":KUBE-MARK-DROP|:KUBE-MARK-MASQ|:KUBE-POSTROUTING"
 
-kubelet_nft_chains=$( (iptables-nft -t nat -nL || true; ip6tables-nft -t nat -nL|| true) 2>/dev/null | grep Chain | grep -E ${chains_created_by_kubelet} | wc -l)
-kubelet_legacy_chains=$( (iptables-legacy -t nat -nL || true; ip6tables-legacy -t nat -nL|| true) 2>/dev/null | grep Chain | grep -E ${chains_created_by_kubelet} | wc -l)
+kubelet_nft_chains=$( (iptables-nft-save || true; ip6tables-nft-save || true) 2>/dev/null | grep -E ${chains_created_by_kubelet} | wc -l)
+kubelet_legacy_chains=$( (iptables-legacy-save || true; ip6tables-legacy-save || true) 2>/dev/null | grep -E ${chains_created_by_kubelet} | wc -l)
 
 if [ "${kubelet_nft_chains}" -gt "${kubelet_legacy_chains}" ]; then
     mode=nft
