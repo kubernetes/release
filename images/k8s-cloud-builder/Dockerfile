@@ -94,8 +94,8 @@ ARG SKOPEO_VERSION
 RUN git clone https://github.com/containers/skopeo $GOPATH/src/github.com/containers/skopeo
 RUN cd $GOPATH/src/github.com/containers/skopeo \
     && git checkout ${SKOPEO_VERSION} \
-    && make binary-local \
-    && cp skopeo /usr/local/bin \
+    && make bin/skopeo \
+    && cp bin/skopeo /usr/local/bin \
     && rm -rf $GOPATH/src/github.com/containers/skopeo
 
 # Cleanup a bit
