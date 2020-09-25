@@ -17,6 +17,8 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/release/pkg/release"
@@ -86,8 +88,11 @@ func init() {
 	pushBuildCmd.PersistentFlags().StringVar(
 		&pushBuildOpts.BuildDir,
 		"buildDir",
-		"_output",
-		"Specify an alternate build directory (defaults to '_output')",
+		release.BuildDir,
+		fmt.Sprintf(
+			"Specify an alternate build directory (defaults to '%s')",
+			release.BuildDir,
+		),
 	)
 	pushBuildCmd.PersistentFlags().StringVar(
 		&pushBuildOpts.DockerRegistry,

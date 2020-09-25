@@ -139,13 +139,17 @@ func TestBuiltWithBazel(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	baseDockerFile := filepath.Join(baseTmpDir, "_output/release-tars/kubernetes.tar.gz")
+	baseDockerFile := filepath.Join(
+		baseTmpDir, BuildDir, "release-tars/kubernetes.tar.gz",
+	)
 	require.Nil(t, ioutil.WriteFile(
 		baseDockerFile,
 		[]byte("test"),
 		os.FileMode(0644),
 	))
-	dockerFile := filepath.Join(dockerTmpDir, "_output/release-tars/kubernetes.tar.gz")
+	dockerFile := filepath.Join(
+		dockerTmpDir, BuildDir, "release-tars/kubernetes.tar.gz",
+	)
 	require.Nil(t, ioutil.WriteFile(
 		dockerFile,
 		[]byte("test"),

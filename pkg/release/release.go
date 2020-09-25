@@ -58,7 +58,7 @@ const (
 	versionReleaseRE  = `v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[a-zA-Z0-9]+)*\.*(0|[1-9][0-9]*)?`
 	versionBuildRE    = `([0-9]{1,})\+([0-9a-f]{5,40})`
 	versionDirtyRE    = `(-dirty)`
-	dockerBuildPath   = "_output/release-tars"
+	dockerBuildPath   = BuildDir + "/release-tars"
 	bazelBuildPath    = "bazel-bin/build/release-tars"
 	bazelVersionPath  = "bazel-bin/version"
 	dockerVersionPath = "kubernetes/version"
@@ -101,6 +101,9 @@ const (
 
 	// Staging registry root URL
 	GCRIOPathStaging = "gcr.io/k8s-staging-kubernetes"
+
+	// BuildDir is the default build output directory.
+	BuildDir = "_output"
 )
 
 // ImagePromoterImages abtracts the manifest used by the image promoter
