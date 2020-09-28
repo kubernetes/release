@@ -70,8 +70,6 @@ linters:
     # - testpackage
     # - wsl
 linters-settings:
-  gocyclo:
-    min-complexity: 35
   godox:
     keywords:
       - BUG
