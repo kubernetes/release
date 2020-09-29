@@ -151,43 +151,9 @@ func NewPushBuild(opts *PushBuildOptions) *PushBuild {
 
 // Push pushes the build by taking the internal options into account.
 func (p *PushBuild) Push() error {
-	var latest string
-
-	// Check if latest build uses bazel
-	dir, err := os.Getwd()
+	latest, err := p.findLatestVersion()
 	if err != nil {
-		return errors.Wrap(err, "get working directory")
-	}
-
-	isBazel, err := BuiltWithBazel(dir)
-	if err != nil {
-		return errors.Wrap(err, "identify if release built with Bazel")
-	}
-
-	if isBazel {
-		logrus.Info("Using Bazel build version")
-		version, err := ReadBazelVersion(dir)
-		if err != nil {
-			return errors.Wrap(err, "read Bazel build version")
-		}
-		latest = version
-	} else {
-		logrus.Info("Using Dockerized build version")
-		version, err := ReadDockerizedVersion(dir)
-		if err != nil {
-			return errors.Wrap(err, "read Dockerized build version")
-		}
-		latest = version
-	}
-
-	logrus.Infof("Found build version: %s", latest)
-
-	valid, err := IsValidReleaseBuild(latest)
-	if err != nil {
-		return errors.Wrap(err, "determine if release build version is valid")
-	}
-	if !valid {
-		return errors.Errorf("build version %s is not valid for release", latest)
+		return errors.Wrap(err, "find latest version")
 	}
 
 	if p.opts.CI && IsDirtyBuild(latest) {
@@ -239,55 +205,8 @@ func (p *PushBuild) Push() error {
 		)
 	}
 
-	buildDir := p.opts.BuildDir
-	if err = util.RemoveAndReplaceDir(
-		filepath.Join(buildDir, GCSStagePath),
-	); err != nil {
-		return errors.Wrap(err, "remove and replace GCS staging directory")
-	}
-
-	// Copy release tarballs to local GCS staging directory for push
-	if err = util.CopyDirContentsLocal(
-		filepath.Join(buildDir, ReleaseTarsPath),
-		filepath.Join(buildDir, GCSStagePath),
-	); err != nil {
-		return errors.Wrap(err, "copy source directory into destination")
-	}
-
-	// Copy helpful GCP scripts to local GCS staging directory for push
-	for _, file := range gcpStageFiles {
-		if err := util.CopyFileLocal(
-			filepath.Join(buildDir, file.srcPath),
-			filepath.Join(buildDir, file.dstPath),
-			file.required,
-		); err != nil {
-			return errors.Wrap(err, "copy GCP stage files")
-		}
-	}
-
-	// Copy helpful Windows scripts to local GCS staging directory for push
-	for _, file := range windowsStageFiles {
-		if err := util.CopyFileLocal(
-			filepath.Join(buildDir, file.srcPath),
-			filepath.Join(buildDir, file.dstPath),
-			file.required,
-		); err != nil {
-			return errors.Wrap(err, "copy Windows stage files")
-		}
-	}
-
-	// Copy the "naked" binaries to GCS. This is useful for install scripts
-	// that download the binaries directly and don't need tars.
-	if err := CopyBinaries(
-		filepath.Join(buildDir, ReleaseStagePath),
-	); err != nil {
-		return errors.Wrap(err, "stage binaries")
-	}
-
-	// Write the release checksums
-	gcsStagePath := filepath.Join(buildDir, GCSStagePath, latest)
-	if err := WriteChecksums(gcsStagePath); err != nil {
-		return errors.Wrap(err, "write checksums")
+	if err := p.StageLocalArtifacts(latest); err != nil {
+		return errors.Wrap(err, "staging local artifacts")
 	}
 
 	// Publish container images
@@ -306,7 +225,7 @@ func (p *PushBuild) Push() error {
 	copyOpts.NoClobber = pointer.BoolPtr(p.opts.AllowDup)
 
 	if err := gcs.CopyToGCS(
-		gcsStagePath,
+		filepath.Join(p.opts.BuildDir, GCSStagePath, latest),
 		filepath.Join(releaseBucket, gcsDest, latest),
 		copyOpts,
 	); err != nil {
@@ -317,14 +236,14 @@ func (p *PushBuild) Push() error {
 		images := NewImages()
 		normalizedVersion := strings.ReplaceAll(latest, "+", "_")
 		if err := images.Publish(
-			p.opts.DockerRegistry, normalizedVersion, buildDir,
+			p.opts.DockerRegistry, normalizedVersion, p.opts.BuildDir,
 		); err != nil {
 			return errors.Wrap(err, "publish container images")
 		}
 
 		if p.opts.ValidateRemoteImageDigests {
 			if err := images.Validate(
-				p.opts.DockerRegistry, normalizedVersion, buildDir,
+				p.opts.DockerRegistry, normalizedVersion, p.opts.BuildDir,
 			); err != nil {
 				return errors.Wrap(err, "validate container images")
 			}
@@ -339,11 +258,106 @@ func (p *PushBuild) Push() error {
 	// Publish release to GCS
 	versionMarkers := strings.Split(p.opts.ExtraVersionMarkers, ",")
 	if err := NewPublisher().PublishVersion(
-		gcsDest, latest, buildDir, releaseBucket, versionMarkers,
+		gcsDest, latest, p.opts.BuildDir, releaseBucket, versionMarkers,
 		p.opts.PrivateBucket, p.opts.NoMock, p.opts.Fast,
 	); err != nil {
 		return errors.Wrap(err, "publish release")
 	}
 
+	return nil
+}
+
+func (p *PushBuild) findLatestVersion() (latestVersion string, err error) {
+	// Check if latest build uses bazel
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", errors.Wrap(err, "get working directory")
+	}
+
+	isBazel, err := BuiltWithBazel(dir)
+	if err != nil {
+		return "", errors.Wrap(err, "identify if release built with Bazel")
+	}
+
+	if isBazel {
+		logrus.Info("Using Bazel build version")
+		version, err := ReadBazelVersion(dir)
+		if err != nil {
+			return "", errors.Wrap(err, "read Bazel build version")
+		}
+		latestVersion = version
+	} else {
+		logrus.Info("Using Dockerized build version")
+		version, err := ReadDockerizedVersion(dir)
+		if err != nil {
+			return "", errors.Wrap(err, "read Dockerized build version")
+		}
+		latestVersion = version
+	}
+
+	logrus.Infof("Found build version: %s", latestVersion)
+
+	valid, err := IsValidReleaseBuild(latestVersion)
+	if err != nil {
+		return "", errors.Wrap(err, "determine if release build version is valid")
+	}
+	if !valid {
+		return "", errors.Errorf("build version %s is not valid for release", latestVersion)
+	}
+	return latestVersion, nil
+}
+
+// StageLocalArtifacts locally stages the release artifacts
+// was releaselib.sh: release::gcs::locally_stage_release_artifacts
+func (p *PushBuild) StageLocalArtifacts(version string) error {
+	if err := util.RemoveAndReplaceDir(
+		filepath.Join(p.opts.BuildDir, GCSStagePath),
+	); err != nil {
+		return errors.Wrap(err, "remove and replace GCS staging directory")
+	}
+
+	// Copy release tarballs to local GCS staging directory for push
+	if err := util.CopyDirContentsLocal(
+		filepath.Join(p.opts.BuildDir, ReleaseTarsPath),
+		filepath.Join(p.opts.BuildDir, GCSStagePath),
+	); err != nil {
+		return errors.Wrap(err, "copy source directory into destination")
+	}
+
+	// Copy helpful GCP scripts to local GCS staging directory for push
+	for _, file := range gcpStageFiles {
+		if err := util.CopyFileLocal(
+			filepath.Join(p.opts.BuildDir, file.srcPath),
+			filepath.Join(p.opts.BuildDir, file.dstPath),
+			file.required,
+		); err != nil {
+			return errors.Wrap(err, "copy GCP stage files")
+		}
+	}
+
+	// Copy helpful Windows scripts to local GCS staging directory for push
+	for _, file := range windowsStageFiles {
+		if err := util.CopyFileLocal(
+			filepath.Join(p.opts.BuildDir, file.srcPath),
+			filepath.Join(p.opts.BuildDir, file.dstPath),
+			file.required,
+		); err != nil {
+			return errors.Wrap(err, "copy Windows stage files")
+		}
+	}
+
+	// Copy the "naked" binaries to GCS. This is useful for install scripts
+	// that download the binaries directly and don't need tars.
+	if err := CopyBinaries(
+		filepath.Join(p.opts.BuildDir, ReleaseStagePath),
+	); err != nil {
+		return errors.Wrap(err, "stage binaries")
+	}
+
+	// Write the release checksums
+	gcsStagePath := filepath.Join(p.opts.BuildDir, GCSStagePath, version)
+	if err := WriteChecksums(gcsStagePath); err != nil {
+		return errors.Wrap(err, "write checksums")
+	}
 	return nil
 }
