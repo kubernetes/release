@@ -39,6 +39,7 @@ type GcbmgrOptions struct {
 	Stage        bool
 	Release      bool
 	Stream       bool
+	BuildAtHead  bool
 	Branch       string
 	ReleaseType  string
 	BuildVersion string
@@ -124,6 +125,13 @@ func init() {
 			"inferred by %q and the provided target branch.",
 			release.VersionTypeCILatest,
 		),
+	)
+
+	gcbmgrCmd.PersistentFlags().BoolVar(
+		&gcbmgrOpts.BuildAtHead,
+		"build-at-head",
+		false,
+		"the build version to be used when was to use the lastest in the branch.",
 	)
 
 	// gcloud options
@@ -305,23 +313,37 @@ func SetGCBSubstitutions(o *GcbmgrOptions, toolOrg, toolRepo, toolBranch string)
 
 	gcbSubs["RELEASE_BRANCH"] = o.Branch
 
-	if o.Stage {
-		// TODO: Remove once we remove support for --built-at-head.
-		gcbSubs["BUILD_AT_HEAD"] = ""
+	buildVersion := o.BuildVersion
+	if o.Release && buildVersion == "" {
+		return gcbSubs, errors.New("Build version must be specified when sending a release GCB run")
 	}
 
-	buildVersion := o.BuildVersion
-	if buildVersion == "" {
-		if o.Release {
-			return gcbSubs, errors.New("Build version must be specified when sending a release GCB run")
+	if o.Stage && o.BuildAtHead {
+		hash, err := git.LSRemoteExec(git.GetDefaultKubernetesRepoURL(), "rev-parse", o.Branch)
+		if err != nil {
+			return gcbSubs, errors.New("failed to execute the rev-parse")
 		}
 
+		fields := strings.Fields(hash)
+		if len(fields) < 1 {
+			return gcbSubs, errors.Errorf("unexpected output: %s", hash)
+		}
+
+		buildVersion = fields[0]
+		gcbSubs["BUILD_AT_HEAD"] = buildVersion
+	}
+
+	if buildVersion == "" {
 		var versionErr error
 		buildVersion, versionErr = o.Version.GetKubeVersionForBranch(
 			release.VersionTypeCILatest, o.Branch,
 		)
 		if versionErr != nil {
 			return gcbSubs, versionErr
+		}
+
+		if o.Stage {
+			gcbSubs["BUILD_AT_HEAD"] = ""
 		}
 	}
 
@@ -396,6 +418,14 @@ func (o *GcbmgrOptions) Validate() error {
 		if o.ReleaseType == release.ReleaseTypeAlpha || o.ReleaseType == release.ReleaseTypeBeta {
 			return errors.New("cannot cut an alpha or beta release from a release branch")
 		}
+	}
+
+	if o.BuildVersion != "" && o.BuildAtHead {
+		return errors.New("cannot specify both the 'build-version' and 'build-at-head' flag; resubmit with only one build option selected")
+	}
+
+	if o.BuildAtHead && o.Release {
+		return errors.New("cannot specify both the 'build-at-head' flag together with the 'release' flag; resubmit with a 'build-version' flag set")
 	}
 
 	return nil

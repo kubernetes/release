@@ -190,6 +190,18 @@ func (r *Repo) SetInnerRepo(repo Repository) {
 	r.inner = repo
 }
 
+func LSRemoteExec(repoURL string, args ...string) (string, error) {
+	cmdArgs := append([]string{"ls-remote", repoURL}, args...)
+	cmdStatus, err := command.New(
+		gitExecutable, cmdArgs...).
+		RunSilentSuccessOutput()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to execute the ls-remote command")
+	}
+
+	return strings.TrimSpace(cmdStatus.Output()), nil
+}
+
 // CloneOrOpenDefaultGitHubRepoSSH clones the default Kubernetes GitHub
 // repository via SSH if the repoPath is empty, otherwise updates it at the
 // expected repoPath.
