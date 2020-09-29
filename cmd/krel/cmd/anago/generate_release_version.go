@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package anago
 
 import (
 	"fmt"
@@ -28,11 +28,11 @@ import (
 	"k8s.io/release/pkg/release"
 )
 
-// generateReleaseVersionCmd represents the subcommand for `krel generate-release-version`
+// generateReleaseVersionCmd represents the subcommand for `krel anago generate-release-version`
 var generateReleaseVersionCmd = &cobra.Command{
 	Use:   "generate-release-version",
 	Short: "Generate the release version to be sourced from bash",
-	Long: `krel generate-release-version
+	Long: `krel anago generate-release-version
 
 This subcommand can be used to generate the release version from a bash command
 by sourcing it's output. It's mainly indented to be used from anago, which
@@ -91,7 +91,7 @@ func init() {
 		}
 	}
 
-	anagoCmd.AddCommand(generateReleaseVersionCmd)
+	AnagoCmd.AddCommand(generateReleaseVersionCmd)
 }
 
 func runGenerateReleaseVersion(opts *generateReleaseVersionOptions, anagoOpts *release.Options) (string, error) {
