@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package anago
 
 import (
 	"fmt"
@@ -48,8 +48,10 @@ var anagoOpts = &release.Options{} // TODO: Commenting these packages/commands o
 		"gsutil",
 		"gcloud",
 	}
-*/ // anagoCmd is a krel subcommand which invokes runAnago()
-var anagoCmd = &cobra.Command{
+*/
+
+// AnagoCmd is a krel subcommand which invokes runAnago()
+var AnagoCmd = &cobra.Command{
 	Use:           "anago",
 	Short:         "Run anago",
 	SilenceUsage:  true,
@@ -60,7 +62,7 @@ var anagoCmd = &cobra.Command{
 }
 
 func init() {
-	anagoCmd.PersistentFlags().StringVar(
+	AnagoCmd.PersistentFlags().StringVar(
 		&anagoOpts.ReleaseType,
 		"release-type",
 		"",
@@ -74,7 +76,7 @@ func init() {
 		),
 	)
 
-	anagoCmd.PersistentFlags().StringVar(
+	AnagoCmd.PersistentFlags().StringVar(
 		&anagoOpts.BaseDir,
 		"base-dir",
 		release.DefaultBaseDir,
@@ -84,12 +86,10 @@ func init() {
 	for _, f := range []string{
 		"release-type",
 	} {
-		if err := anagoCmd.MarkPersistentFlagRequired(f); err != nil {
+		if err := AnagoCmd.MarkPersistentFlagRequired(f); err != nil {
 			logrus.Fatalf("Unable to set %q flag as required: %v", f, err)
 		}
 	}
-
-	rootCmd.AddCommand(anagoCmd)
 }
 
 // runAnago is the function invoked by 'krel anago', responsible for submitting release jobs to GCB
