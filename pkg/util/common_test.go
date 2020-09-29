@@ -23,7 +23,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"syscall"
 	"testing"
 	"time"
 
@@ -267,12 +266,9 @@ func TestCopyFile(t *testing.T) {
 		dst      string
 		required bool
 	}
-	type want struct {
-		err error
-	}
 	cases := map[string]struct {
-		args args
-		want want
+		args        args
+		shouldError bool
 	}{
 		"CopyFileSuccess": {
 			args: args{
@@ -280,9 +276,7 @@ func TestCopyFile(t *testing.T) {
 				dst:      dstFileOnePath,
 				required: true,
 			},
-			want: want{
-				err: nil,
-			},
+			shouldError: false,
 		},
 		"CopyFileNotExistNotIgnore": {
 			args: args{
@@ -290,13 +284,7 @@ func TestCopyFile(t *testing.T) {
 				dst:      dstFileOnePath,
 				required: true,
 			},
-			want: want{
-				err: &os.PathError{
-					Op:   "stat",
-					Path: "path/does/not/exit",
-					Err:  syscall.ENOENT,
-				},
-			},
+			shouldError: true,
 		},
 		"CopyFileNotExistIgnore": {
 			args: args{
@@ -304,16 +292,18 @@ func TestCopyFile(t *testing.T) {
 				dst:      dstFileOnePath,
 				required: false,
 			},
-			want: want{
-				err: nil,
-			},
+			shouldError: false,
 		},
 	}
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			copyErr := CopyFileLocal(tc.args.src, tc.args.dst, tc.args.required)
-			require.IsType(t, tc.want.err, copyErr)
+			if tc.shouldError {
+				require.NotNil(t, copyErr)
+			} else {
+				require.Nil(t, copyErr)
+			}
 			if copyErr == nil {
 				_, err := os.Stat(filepath.Join(tc.args.dst))
 				if err != nil && tc.args.required {

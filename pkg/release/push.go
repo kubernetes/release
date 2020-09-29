@@ -87,27 +87,27 @@ type stageFile struct {
 var gcpStageFiles = []stageFile{
 	{
 		srcPath:  filepath.Join(GCEPath, "configure-vm.sh"),
-		dstPath:  filepath.Join(GCSStagePath, "extra/gce"),
+		dstPath:  "extra/gce/configure-vm.sh",
 		required: false,
 	},
 	{
 		srcPath:  filepath.Join(GCIPath, "node.yaml"),
-		dstPath:  filepath.Join(GCSStagePath, "extra/gce"),
+		dstPath:  "extra/gce/node.yaml",
 		required: true,
 	},
 	{
 		srcPath:  filepath.Join(GCIPath, "master.yaml"),
-		dstPath:  filepath.Join(GCSStagePath, "extra/gce"),
+		dstPath:  "extra/gce/master.yaml",
 		required: true,
 	},
 	{
 		srcPath:  filepath.Join(GCIPath, "configure.sh"),
-		dstPath:  filepath.Join(GCSStagePath, "extra/gce"),
+		dstPath:  "extra/gce/configure.sh",
 		required: true,
 	},
 	{
 		srcPath:  filepath.Join(GCIPath, "shutdown.sh"),
-		dstPath:  filepath.Join(GCSStagePath, "extra/gce"),
+		dstPath:  "extra/gce/shutdown.sh",
 		required: false,
 	},
 }
@@ -115,27 +115,27 @@ var gcpStageFiles = []stageFile{
 var windowsStageFiles = []stageFile{
 	{
 		srcPath:  filepath.Join(WindowsLocalPath, "configure.ps1"),
-		dstPath:  WindowsGCSPath,
+		dstPath:  "extra/gce/windows/configure.ps1",
 		required: true,
 	},
 	{
 		srcPath:  filepath.Join(WindowsLocalPath, "common.psm1"),
-		dstPath:  WindowsGCSPath,
+		dstPath:  "extra/gce/windows/common.psm1",
 		required: true,
 	},
 	{
 		srcPath:  filepath.Join(WindowsLocalPath, "k8s-node-setup.psm1"),
-		dstPath:  WindowsGCSPath,
+		dstPath:  "extra/gce/windows/k8s-node-setup.psm1",
 		required: true,
 	},
 	{
 		srcPath:  filepath.Join(WindowsLocalPath, "testonly/install-ssh.psm1"),
-		dstPath:  WindowsGCSPath,
+		dstPath:  "extra/gce/windows/install-ssh.psm1",
 		required: true,
 	},
 	{
 		srcPath:  filepath.Join(WindowsLocalPath, "testonly/user-profile.psm1"),
-		dstPath:  WindowsGCSPath,
+		dstPath:  "extra/gce/windows/user-profile.psm1",
 		required: true,
 	},
 }
@@ -151,15 +151,6 @@ func (p *PushBuild) Push() error {
 	if err != nil {
 		return errors.Wrap(err, "find latest version")
 	}
-
-	if p.opts.CI && IsDirtyBuild(latest) {
-		return errors.New("refusing to push dirty build with --ci flag given")
-	}
-
-	if p.opts.VersionSuffix != "" {
-		latest += "-" + p.opts.VersionSuffix
-	}
-
 	logrus.Infof("Latest version is %s", latest)
 
 	client, err := storage.NewClient(context.Background())
@@ -283,65 +274,103 @@ func (p *PushBuild) findLatestVersion() (latestVersion string, err error) {
 
 	valid, err := IsValidReleaseBuild(latestVersion)
 	if err != nil {
-		return "", errors.Wrap(err, "determine if release build version is valid")
+		return "", errors.Wrap(
+			err, "determine if release build version is valid",
+		)
 	}
 	if !valid {
-		return "", errors.Errorf("build version %s is not valid for release", latestVersion)
+		return "", errors.Errorf(
+			"build version %s is not valid for release", latestVersion,
+		)
 	}
+
+	if p.opts.CI && IsDirtyBuild(latestVersion) {
+		return "", errors.Errorf(
+			"refusing to push dirty build %s with --ci flag given",
+			latestVersion,
+		)
+	}
+
+	if p.opts.VersionSuffix != "" {
+		latestVersion += "-" + p.opts.VersionSuffix
+	}
+
 	return latestVersion, nil
 }
 
 // StageLocalArtifacts locally stages the release artifacts
 // was releaselib.sh: release::gcs::locally_stage_release_artifacts
 func (p *PushBuild) StageLocalArtifacts(version string) error {
-	if err := util.RemoveAndReplaceDir(
-		filepath.Join(p.opts.BuildDir, GCSStagePath),
-	); err != nil {
+	logrus.Info("Staging local artifacts")
+	stageDir := filepath.Join(p.opts.BuildDir, GCSStagePath, version)
+
+	logrus.Infof("Cleaning staging dir %s", stageDir)
+	if err := util.RemoveAndReplaceDir(stageDir); err != nil {
 		return errors.Wrap(err, "remove and replace GCS staging directory")
 	}
 
 	// Copy release tarballs to local GCS staging directory for push
+	logrus.Info("Copying release tarballs")
 	if err := util.CopyDirContentsLocal(
-		filepath.Join(p.opts.BuildDir, ReleaseTarsPath),
-		filepath.Join(p.opts.BuildDir, GCSStagePath),
+		filepath.Join(p.opts.BuildDir, ReleaseTarsPath), stageDir,
 	); err != nil {
 		return errors.Wrap(err, "copy source directory into destination")
 	}
 
 	// Copy helpful GCP scripts to local GCS staging directory for push
-	for _, file := range gcpStageFiles {
-		if err := util.CopyFileLocal(
-			filepath.Join(p.opts.BuildDir, file.srcPath),
-			filepath.Join(p.opts.BuildDir, file.dstPath),
-			file.required,
-		); err != nil {
-			return errors.Wrap(err, "copy GCP stage files")
-		}
+	logrus.Info("Copying GCP stage files")
+	if err := p.copyStageFiles(stageDir, gcpStageFiles); err != nil {
+		return errors.Wrapf(err, "copy GCP stage files")
 	}
 
 	// Copy helpful Windows scripts to local GCS staging directory for push
-	for _, file := range windowsStageFiles {
-		if err := util.CopyFileLocal(
-			filepath.Join(p.opts.BuildDir, file.srcPath),
-			filepath.Join(p.opts.BuildDir, file.dstPath),
-			file.required,
-		); err != nil {
-			return errors.Wrap(err, "copy Windows stage files")
-		}
+	logrus.Info("Copying Windows stage files")
+	if err := p.copyStageFiles(stageDir, windowsStageFiles); err != nil {
+		return errors.Wrapf(err, "copy Windows stage files")
 	}
 
-	// Copy the "naked" binaries to GCS. This is useful for install scripts
-	// that download the binaries directly and don't need tars.
+	// Copy the plain binaries to GCS. This is useful for install scripts that
+	// download the binaries directly and don't need tars.
+	logrus.Info("Copying plain binaries")
 	if err := CopyBinaries(
 		filepath.Join(p.opts.BuildDir, ReleaseStagePath),
+		stageDir,
 	); err != nil {
 		return errors.Wrap(err, "stage binaries")
 	}
 
 	// Write the release checksums
-	gcsStagePath := filepath.Join(p.opts.BuildDir, GCSStagePath, version)
-	if err := WriteChecksums(gcsStagePath); err != nil {
+	logrus.Info("Writing checksums")
+	if err := WriteChecksums(stageDir); err != nil {
 		return errors.Wrap(err, "write checksums")
 	}
+	return nil
+}
+
+// copyStageFiles takes the staging dir and copies each file of `files` into
+// it. It also ensures that the base dir exists before copying the file (if the
+// file is `required`).
+func (p *PushBuild) copyStageFiles(stageDir string, files []stageFile) error {
+	for _, file := range files {
+		dstPath := filepath.Join(stageDir, file.dstPath)
+
+		if file.required {
+			if err := os.MkdirAll(
+				filepath.Dir(dstPath), os.FileMode(0o755),
+			); err != nil {
+				return errors.Wrapf(
+					err, "create destination path %s", file.dstPath,
+				)
+			}
+		}
+
+		if err := util.CopyFileLocal(
+			filepath.Join(p.opts.BuildDir, file.srcPath),
+			dstPath, file.required,
+		); err != nil {
+			return errors.Wrapf(err, "copy stage file")
+		}
+	}
+
 	return nil
 }

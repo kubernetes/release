@@ -86,10 +86,6 @@ const (
 	// WindowsLocalPath is the directory where Windows GCE scripts are created.
 	WindowsLocalPath = ReleaseStagePath + "/full/kubernetes/cluster/gce/windows"
 
-	// WindowsGCSPath is the directory where Windoes GCE scripts are staged
-	// before push to GCS.
-	WindowsGCSPath = "gcs-stage/extra/gce/windows"
-
 	// ProductionBucket is the default bucket for Kubernetes releases
 	ProductionBucket = "kubernetes-release"
 
@@ -322,54 +318,60 @@ func GetOCIManifest(tarPath string) (*ocispec.Manifest, error) {
 }
 
 // CopyBinaries takes the provided `rootPath` and copies the binaries sorted by
-// their platform into the pre-defined `$PWD/bin/$PLATFORM` directories.
-func CopyBinaries(rootPath string) error {
+// their platform into the `targetPath`.
+func CopyBinaries(rootPath, targetPath string) error {
 	platformsPath := filepath.Join(rootPath, "client")
-	platforms, err := ioutil.ReadDir(platformsPath)
+	platformsAndArches, err := ioutil.ReadDir(platformsPath)
 	if err != nil {
 		return errors.Wrapf(err, "retrieve platforms from %s", platformsPath)
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return errors.Wrap(err, "get current working directory")
-	}
-
-	for _, platform := range platforms {
-		if !platform.IsDir() {
+	for _, platformArch := range platformsAndArches {
+		if !platformArch.IsDir() {
 			logrus.Warnf(
-				"Skipping platform %q because it's not a directory",
-				platform.Name(),
+				"Skipping platform and arch %q because it's not a directory",
+				platformArch.Name(),
 			)
 			continue
 		}
 
-		logrus.Infof("Copying binaries for %s platform", platform.Name())
+		split := strings.Split(platformArch.Name(), "-")
+		if len(split) != 2 {
+			return errors.Errorf(
+				"expected `platform-arch` format for %s", platformArch.Name(),
+			)
+		}
+
+		platform := split[0]
+		arch := split[1]
+		logrus.Infof(
+			"Copying binaries for %s platform on %s arch", platform, arch,
+		)
 
 		src := filepath.Join(
-			rootPath, "client", platform.Name(), "kubernetes/client/bin",
+			rootPath, "client", platformArch.Name(), "kubernetes", "client", "bin",
 		)
-		dst := filepath.Join(cwd, "bin", platform.Name())
 
 		// We assume here the "server package" is a superset of the "client
 		// package"
-		serverSrc := filepath.Join(rootPath, "server", platform.Name())
+		serverSrc := filepath.Join(rootPath, "server", platformArch.Name())
 		if util.Exists(serverSrc) {
-			logrus.Infof("Server sources found in %s, copying them", serverSrc)
-			src = filepath.Join(serverSrc, "kubernetes/server/bin")
+			logrus.Infof("Server source found in %s, copying them", serverSrc)
+			src = filepath.Join(serverSrc, "kubernetes", "server", "bin")
 		}
 
-		logrus.Infof("Copying binaries from %s to %s", src, dst)
+		dst := filepath.Join(targetPath, "bin", platform, arch)
+		logrus.Infof("Copying server binaries from %s to %s", src, dst)
 		if err := util.CopyDirContentsLocal(src, dst); err != nil {
 			return errors.Wrapf(err,
 				"copy server binaries from %s to %s", src, dst,
 			)
 		}
 
-		// Copy node binaries if they exist and this isn't a 'server' platform.
-		nodeSrc := filepath.Join(rootPath, "node", platform.Name())
+		// Copy node binaries if they exist and this isn't a 'server' platform
+		nodeSrc := filepath.Join(rootPath, "node", platformArch.Name())
 		if !util.Exists(serverSrc) && util.Exists(nodeSrc) {
-			src = filepath.Join(nodeSrc, "kubernetes/node/bin")
+			src = filepath.Join(nodeSrc, "kubernetes", "node", "bin")
 
 			logrus.Infof("Copying node binaries from %s to %s", src, dst)
 			if err := util.CopyDirContentsLocal(src, dst); err != nil {
@@ -456,10 +458,6 @@ func WriteChecksums(rootPath string) error {
 	}
 
 	logrus.Infof("Hashing files in %s", rootPath)
-	files, err := ioutil.ReadDir(rootPath)
-	if err != nil {
-		return errors.Wrapf(err, "reading files in %s", rootPath)
-	}
 
 	writeSHAFile := func(fileName string, hasher hash.Hash) error {
 		sha, err := fileToHash(fileName, hasher)
@@ -474,16 +472,26 @@ func WriteChecksums(rootPath string) error {
 		)
 	}
 
-	for _, file := range files {
-		fullFilePath := filepath.Join(rootPath, file.Name())
+	if err := filepath.Walk(rootPath,
+		func(path string, file os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if file.IsDir() {
+				return nil
+			}
 
-		if err := writeSHAFile(fullFilePath, sha256.New()); err != nil {
-			return errors.Wrapf(err, "write %s.sha256", file.Name())
-		}
+			if err := writeSHAFile(path, sha256.New()); err != nil {
+				return errors.Wrapf(err, "write %s.sha256", file.Name())
+			}
 
-		if err := writeSHAFile(fullFilePath, sha512.New()); err != nil {
-			return errors.Wrapf(err, "write %s.sha512", file.Name())
-		}
+			if err := writeSHAFile(path, sha512.New()); err != nil {
+				return errors.Wrapf(err, "write %s.sha512", file.Name())
+			}
+			return nil
+		},
+	); err != nil {
+		return errors.Wrapf(err, "traversing root path %s", rootPath)
 	}
 
 	return nil
