@@ -131,7 +131,6 @@ update-deps-go: ## Update all golang dependencies for this repo
 	go mod tidy
 	go mod verify
 	$(MAKE) test-go
-	./hack/update-all.sh
 
 ##@ Helpers
 
