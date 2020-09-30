@@ -28,14 +28,10 @@ const description = `
 Used for pushing developer builds and Jenkins' continuous builds.
 
 Developer pushes simply run as they do pushing to devel/ on GCS.
-In --ci mode, 'push' runs in mock mode by default. Use --nomock to do
-a real push.
 
-push                       - Do a developer push
-push --nomock --ci
-                           - Do a (non-mocked) CI push
-push --bucket=kubernetes-release-$USER
-                           - Do a developer push to kubernetes-release-$USER`
+krel push                                   - Do a developer push
+krel push --ci                              - Do a CI push
+krel push --bucket=kubernetes-release-$USER - Do a developer push to kubernetes-release-$USER`
 
 var pushBuildOpts = &release.PushBuildOptions{}
 
@@ -135,6 +131,5 @@ func init() {
 }
 
 func runPushBuild(opts *release.PushBuildOptions) error {
-	opts.NoMock = rootOpts.nomock
 	return release.NewPushBuild(opts).Push()
 }

@@ -19,7 +19,6 @@ package release
 import (
 	"context"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strings"
 
@@ -73,9 +72,6 @@ type PushBuildOptions struct {
 
 	// Specifies a fast build (linux amd64 only).
 	Fast bool
-
-	// Specifies if we should push to the bucket or the user suffixed one.
-	NoMock bool
 
 	// Validate that the remove image digests exists, needs `skopeo` in
 	// `$PATH`.
@@ -166,27 +162,15 @@ func (p *PushBuild) Push() error {
 
 	logrus.Infof("Latest version is %s", latest)
 
-	releaseBucket := p.opts.Bucket
-	if p.opts.NoMock {
-		logrus.Infof("Running a *REAL* push with bucket %s", releaseBucket)
-	} else {
-		u, err := user.Current()
-		if err != nil {
-			return errors.Wrap(err, "identify current user")
-		}
-
-		releaseBucket += "-" + u.Username
-	}
-
 	client, err := storage.NewClient(context.Background())
 	if err != nil {
 		return errors.Wrap(err, "fetching gcloud credentials, try running \"gcloud auth application-default login\"")
 	}
 
-	bucket := client.Bucket(releaseBucket)
+	bucket := client.Bucket(p.opts.Bucket)
 	if bucket == nil {
 		return errors.Errorf(
-			"identify specified bucket for artifacts: %s", releaseBucket,
+			"identify specified bucket for artifacts: %s", p.opts.Bucket,
 		)
 	}
 
@@ -201,7 +185,7 @@ func (p *PushBuild) Push() error {
 	if len(perms) != 1 {
 		return errors.Errorf(
 			"GCP user must have at least %s permissions on bucket %s",
-			requiredGCSPerms, releaseBucket,
+			requiredGCSPerms, p.opts.Bucket,
 		)
 	}
 
@@ -226,7 +210,7 @@ func (p *PushBuild) Push() error {
 
 	if err := gcs.CopyToGCS(
 		filepath.Join(p.opts.BuildDir, GCSStagePath, latest),
-		filepath.Join(releaseBucket, gcsDest, latest),
+		filepath.Join(p.opts.Bucket, gcsDest, latest),
 		copyOpts,
 	); err != nil {
 		return errors.Wrap(err, "copy artifacts to GCS")
@@ -258,8 +242,8 @@ func (p *PushBuild) Push() error {
 	// Publish release to GCS
 	versionMarkers := strings.Split(p.opts.ExtraVersionMarkers, ",")
 	if err := NewPublisher().PublishVersion(
-		gcsDest, latest, p.opts.BuildDir, releaseBucket, versionMarkers,
-		p.opts.PrivateBucket, p.opts.NoMock, p.opts.Fast,
+		gcsDest, latest, p.opts.BuildDir, p.opts.Bucket, versionMarkers,
+		p.opts.PrivateBucket, p.opts.Fast,
 	); err != nil {
 		return errors.Wrap(err, "publish release")
 	}

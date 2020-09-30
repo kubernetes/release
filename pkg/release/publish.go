@@ -80,7 +80,7 @@ func (*defaultPublisher) GetURLResponse(url string) (string, error) {
 func (p *Publisher) PublishVersion(
 	buildType, version, buildDir, bucket string,
 	versionMarkers []string,
-	noMock, privateBucket, fast bool,
+	privateBucket, fast bool,
 ) error {
 	releaseType := "latest"
 
@@ -143,7 +143,7 @@ func (p *Publisher) PublishVersion(
 		}
 
 		if err := p.PublishToGcs(
-			publishFile, buildDir, bucket, version, noMock, privateBucket,
+			publishFile, buildDir, bucket, version, privateBucket,
 		); err != nil {
 			return errors.Wrap(err, "publish release to GCS")
 		}
@@ -200,7 +200,7 @@ func (p *Publisher) VerifyLatestUpdate(
 // was releaselib.sh: release::gcs::publish
 func (p *Publisher) PublishToGcs(
 	publishFile, buildDir, bucket, version string,
-	noMock, privateBucket bool,
+	privateBucket bool,
 ) error {
 	releaseStage := filepath.Join(buildDir, ReleaseStagePath)
 	publishFileDst := gcs.GcsPrefix + filepath.Join(bucket, publishFile)
@@ -233,7 +233,7 @@ func (p *Publisher) PublishToGcs(
 	}
 
 	var content string
-	if noMock && !privateBucket {
+	if !privateBucket {
 		// New Kubernetes infra buckets, like k8s-staging-kubernetes, have a
 		// bucket-only ACL policy set, which means attempting to set the ACL on
 		// an object will fail. We should skip this ACL change in those

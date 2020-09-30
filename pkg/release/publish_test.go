@@ -191,7 +191,7 @@ func TestPublishVersion(t *testing.T) {
 
 		err := sut.PublishVersion(
 			"release", tc.version, buildDir, tc.bucket,
-			nil, true, tc.privateBucket, tc.fast,
+			nil, tc.privateBucket, tc.fast,
 		)
 		if tc.shouldError {
 			require.NotNil(t, err)
