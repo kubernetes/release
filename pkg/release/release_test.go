@@ -609,7 +609,7 @@ func TestCopyBinaries(t *testing.T) {
 				binDir := filepath.Join(
 					tempDir, "client/linux/kubernetes/client/bin",
 				)
-				require.Nil(t, os.MkdirAll(binDir, os.FileMode(0o644)))
+				require.Nil(t, os.MkdirAll(binDir, os.FileMode(0o755)))
 
 				for _, f := range []string{"1", "2", "3"} {
 					_, err = os.Create(filepath.Join(binDir, f))
