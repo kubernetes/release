@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2019 The Kubernetes Authors.
+# Copyright 2020 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 set -euo pipefail
 
-# Default timeout is 1800s
-TEST_TIMEOUT=1800
+# Default timeout is 900s
+TEST_TIMEOUT=900
 
 for arg in "$@"
 do
@@ -36,5 +36,5 @@ done
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
-GO111MODULE=on go test -v -timeout="${TEST_TIMEOUT}s" -count=1 -cover -coverprofile coverage.out $(go list ./... | grep -v k8s.io/release/cmd)
+GO111MODULE=on go test -v -timeout="${TEST_TIMEOUT}s" -count=1 -cover -coverprofile coverage.out ./cmd/...
 go tool cover -html coverage.out -o coverage.html

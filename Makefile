@@ -57,11 +57,15 @@ verify-shellcheck: ## Runs shellcheck
 ##@ Tests
 
 .PHONY: test
-test: test-go test-sh ## Runs unit tests to ensure correct execution
+test: test-go-unit test-sh ## Runs unit tests to ensure correct execution
 
-.PHONY: test-go
-test-go: ## Runs all golang tests
+.PHONY: test-go-unit
+test-go-unit: ## Runs golang unit tests
 	./hack/test-go.sh
+
+.PHONY: test-go-integration
+test-go-integration: ## Runs golang integration tests
+	./hack/test-go-integration.sh
 
 .PHONY: test-sh
 test-sh: ## Runs all shellscript tests
@@ -130,7 +134,8 @@ update-deps-go: ## Update all golang dependencies for this repo
 	go get -u -t ./...
 	go mod tidy
 	go mod verify
-	$(MAKE) test-go
+	$(MAKE) test-go-unit
+	./hack/update-all.sh
 
 ##@ Helpers
 
