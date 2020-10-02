@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/pkg/errors"
@@ -252,8 +253,20 @@ func (c *Command) run(printOutput bool) (res *Status, err error) {
 				stdErrWriter = stdErrBuffer
 			}
 			go func() {
-				_, stdoutErr := io.Copy(stdOutWriter, stdout)
-				_, stderrErr := io.Copy(stdErrWriter, stderr)
+				var stdoutErr, stderrErr error
+				wg := sync.WaitGroup{}
+
+				wg.Add(2)
+				go func() {
+					_, stdoutErr = io.Copy(stdOutWriter, stdout)
+					wg.Done()
+				}()
+				go func() {
+					_, stderrErr = io.Copy(stdErrWriter, stderr)
+					wg.Done()
+				}()
+
+				wg.Wait()
 				doneChan <- done{stdoutErr, stderrErr}
 			}()
 		}
