@@ -1332,25 +1332,17 @@ push_all_artifacts () {
   local version="${RELEASE_VERSION[$label]}"
   local jbv="$JENKINS_BUILD_VERSION"
 
-  if [[ -z "$STAGED_LOCATION" ]]; then
-    # Locally Stage the release artifacts in build directory (gcs-stage)
-    logrun -v krel anago push \
-      --version "$version" --build-dir "$BUILD_OUTPUT-$version" \
-      || return 1
-  fi
-
   # The full release stage case
   if ((FLAGS_stage)); then
-    # Push gcs-stage to GCS
-    common::runstep release::gcs::push_release_artifacts \
-     $BUILD_OUTPUT-$version/gcs-stage/$version \
-     gs://$RELEASE_BUCKET/$BUCKET_TYPE/$jbv/$version/gcs-stage/$version \
+    # Locally Stage the release artifacts in build directory (gcs-stage)
+    logrun -v krel anago push \
+      --version "$version" \
+      --build-dir "$BUILD_OUTPUT-$version" \
+      --bucket "$RELEASE_BUCKET" \
+      --local-gcs-stage-path "$BUILD_OUTPUT-$version/gcs-stage/$version" \
+      --local-release-images-path "$BUILD_OUTPUT-${RELEASE_VERSION[$label]}/release-images" \
+      --gcs-suffix "$BUCKET_TYPE/$jbv/$version" \
       || return 1
-
-    # Push docker release-images to GCS
-    common::runstep release::gcs::push_release_artifacts \
-     $BUILD_OUTPUT-${RELEASE_VERSION[$label]}/release-images \
-     gs://$RELEASE_BUCKET/$BUCKET_TYPE/$jbv/$version/release-images || return 1
 
     common::runstep release::docker::release \
       $KUBE_DOCKER_REGISTRY $version $BUILD_OUTPUT-$version || return 1

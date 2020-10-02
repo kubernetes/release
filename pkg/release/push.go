@@ -194,17 +194,14 @@ func (p *PushBuild) Push() error {
 	if p.opts.Fast {
 		gcsDest = filepath.Join(gcsDest, "fast")
 	}
+	gcsDest = filepath.Join(gcsDest, latest)
 	logrus.Infof("GCS destination is %s", gcsDest)
 
-	copyOpts := gcs.DefaultGCSCopyOptions
-	copyOpts.NoClobber = pointer.BoolPtr(p.opts.AllowDup)
-
-	if err := gcs.CopyToGCS(
+	if err := p.PushReleaseArtifacts(
 		filepath.Join(p.opts.BuildDir, GCSStagePath, latest),
-		filepath.Join(p.opts.Bucket, gcsDest, latest),
-		copyOpts,
+		gcsDest,
 	); err != nil {
-		return errors.Wrap(err, "copy artifacts to GCS")
+		return errors.Wrap(err, "push release artifacts")
 	}
 
 	if p.opts.DockerRegistry != "" {
@@ -373,4 +370,17 @@ func (p *PushBuild) copyStageFiles(stageDir string, files []stageFile) error {
 	}
 
 	return nil
+}
+
+// PushReleaseArtifacts can be used to push local artifacts from the `srcPath`
+// to the remote `gcsPath`. The Bucket has to be set via the `Bucket` option.
+func (p *PushBuild) PushReleaseArtifacts(srcPath, gcsPath string) error {
+	logrus.Info("Pushing release artifacts")
+
+	copyOpts := gcs.DefaultGCSCopyOptions
+	copyOpts.NoClobber = pointer.BoolPtr(p.opts.AllowDup)
+
+	return errors.Wrap(gcs.CopyToGCS(
+		srcPath, filepath.Join(p.opts.Bucket, gcsPath), copyOpts,
+	), "copy artifacts to GCS")
 }

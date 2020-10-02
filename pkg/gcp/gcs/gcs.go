@@ -106,9 +106,8 @@ func bucketCopy(src, dst string, opts *Options) error {
 
 	args = append(args, src, dst)
 
-	cpErr := command.Execute(gcp.GSUtilExecutable, args...)
-	if cpErr != nil {
-		return errors.Wrap(cpErr, "gcs copy")
+	if err := command.Execute(gcp.GSUtilExecutable, args...); err != nil {
+		return errors.Wrap(err, "gcs copy")
 	}
 
 	return nil
