@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -277,7 +278,8 @@ func TestSuccessLogWriterStdErrAndStdOut(t *testing.T) {
 
 	content, err := ioutil.ReadFile(f.Name())
 	require.Nil(t, err)
-	require.Equal(t, res.Output()+res.Error(), string(content))
+	require.Contains(t, string(content), res.Output())
+	require.Contains(t, string(content), res.Error())
 }
 
 func TestSuccessLogWriterStdErrAndStdOutOnlyStdErr(t *testing.T) {
@@ -323,4 +325,49 @@ func TestCommandsFailure(t *testing.T) {
 	res, err := New("echo", "1").Add("wrong").Add("echo", "3").Run()
 	require.NotNil(t, err)
 	require.Nil(t, res)
+}
+
+func TestStdOutStdErrSync(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "stderr-stdout-sync-test-")
+	require.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	file := filepath.Join(tempDir, "main.go")
+	require.Nil(t, ioutil.WriteFile(file, []byte(`
+		package main
+
+		import (
+			"fmt"
+			"os"
+			"time"
+		)
+
+		func main() {
+			time.Sleep(1 * time.Second)
+			fmt.Fprintln(os.Stderr, "1")
+			time.Sleep(10 * time.Millisecond)
+			fmt.Fprintln(os.Stdout, "2")
+			time.Sleep(10 * time.Millisecond)
+			fmt.Fprintln(os.Stderr, "3")
+			time.Sleep(10 * time.Millisecond)
+			fmt.Fprintln(os.Stdout, "4")
+			time.Sleep(10 * time.Millisecond)
+			fmt.Fprintln(os.Stdout, "5")
+			time.Sleep(10 * time.Millisecond)
+			fmt.Fprintln(os.Stderr, "6")
+			time.Sleep(10 * time.Millisecond)
+			fmt.Fprintln(os.Stdout, "7")
+		}
+	`), os.FileMode(0o644)))
+
+	f, err := ioutil.TempFile("", "log")
+	require.Nil(t, err)
+	defer os.RemoveAll(f.Name())
+
+	require.Nil(t, New("go", "run", file).AddWriter(f).RunSuccess())
+	require.Nil(t, err)
+
+	outFileContent, err := ioutil.ReadFile(f.Name())
+	require.Nil(t, err)
+	require.Equal(t, "1\n2\n3\n4\n5\n6\n7\n", string(outFileContent))
 }
