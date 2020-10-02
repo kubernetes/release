@@ -1334,8 +1334,9 @@ push_all_artifacts () {
 
   if [[ -z "$STAGED_LOCATION" ]]; then
     # Locally Stage the release artifacts in build directory (gcs-stage)
-    common::runstep release::gcs::locally_stage_release_artifacts \
-     $version $BUILD_OUTPUT-$version || return 1
+    logrun -v krel anago push \
+      --version "$version" --build-dir "$BUILD_OUTPUT-$version" \
+      || return 1
   fi
 
   # The full release stage case

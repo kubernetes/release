@@ -442,45 +442,58 @@ func SemverToTagString(tag semver.Version) string {
 
 // CopyFileLocal copies a local file from one local location to another.
 func CopyFileLocal(src, dst string, required bool) error {
+	logrus.Infof("Trying to copy file %s to %s (required: %v)", src, dst, required)
 	srcStat, err := os.Stat(src)
 	if err != nil && required {
-		return err
+		return errors.Wrapf(
+			err, "source %s is required but does not exist", src,
+		)
 	}
 	if os.IsNotExist(err) && !required {
+		logrus.Infof(
+			"File %s does not exist but is also not required",
+			filepath.Base(src),
+		)
 		return nil
 	}
 
 	if !srcStat.Mode().IsRegular() {
-		return errors.New("cannot copy non-regular file: IsRegular reports whether m describes a regular file. That is, it tests that no mode type bits are set")
+		return errors.New("cannot copy non-regular file: IsRegular reports " +
+			"whether m describes a regular file. That is, it tests that no " +
+			"mode type bits are set")
 	}
 
 	source, err := os.Open(src)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "open source file %s", src)
 	}
 	defer source.Close()
 
 	destination, err := os.Create(dst)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "create destination file %s", dst)
 	}
 	defer destination.Close()
-	_, err = io.Copy(destination, source)
-	return err
+	if _, err := io.Copy(destination, source); err != nil {
+		return errors.Wrapf(err, "copy source %s to destination %s", src, dst)
+	}
+	logrus.Infof("Copied %s", filepath.Base(dst))
+	return nil
 }
 
 // CopyDirContentsLocal copies local directory contents from one local location
 // to another.
 func CopyDirContentsLocal(src, dst string) error {
+	logrus.Infof("Trying to copy dir %s to %s", src, dst)
 	// If initial destination does not exist create it.
 	if _, err := os.Stat(dst); err != nil {
-		if err := os.MkdirAll(dst, os.FileMode(0755)); err != nil {
-			return errors.Wrapf(err, "Unable to create directory at path %s", dst)
+		if err := os.MkdirAll(dst, os.FileMode(0o755)); err != nil {
+			return errors.Wrapf(err, "create destination directory %s", dst)
 		}
 	}
 	files, err := ioutil.ReadDir(src)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "reading source dir %s", src)
 	}
 	for _, file := range files {
 		srcPath := filepath.Join(src, file.Name())
@@ -488,35 +501,38 @@ func CopyDirContentsLocal(src, dst string) error {
 
 		fileInfo, err := os.Stat(srcPath)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "stat source path %s", srcPath)
 		}
 
 		switch fileInfo.Mode() & os.ModeType {
 		case os.ModeDir:
 			if !Exists(dstPath) {
 				if err := os.MkdirAll(dstPath, os.FileMode(0755)); err != nil {
-					return err
+					return errors.Wrapf(err, "creating destination dir %s", dstPath)
 				}
 			}
 			if err := CopyDirContentsLocal(srcPath, dstPath); err != nil {
-				return err
+				return errors.Wrapf(err, "copy %s to %s", srcPath, dstPath)
 			}
 		default:
 			if err := CopyFileLocal(srcPath, dstPath, false); err != nil {
-				return err
+				return errors.Wrapf(err, "copy %s to %s", srcPath, dstPath)
 			}
 		}
 	}
+	logrus.Info("Done")
 	return nil
 }
 
 // RemoveAndReplaceDir removes a directory and its contents then recreates it.
 func RemoveAndReplaceDir(path string) error {
+	logrus.Infof("Removing %s", path)
 	if err := os.RemoveAll(path); err != nil {
-		return err
+		return errors.Wrapf(err, "remove %s", path)
 	}
+	logrus.Infof("Creating %s", path)
 	if err := os.MkdirAll(path, os.FileMode(0755)); err != nil {
-		return err
+		return errors.Wrapf(err, "create %s", path)
 	}
 	return nil
 }

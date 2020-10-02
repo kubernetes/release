@@ -82,14 +82,6 @@ func init() {
 		release.DefaultBaseDir,
 		"",
 	)
-
-	for _, f := range []string{
-		"release-type",
-	} {
-		if err := AnagoCmd.MarkPersistentFlagRequired(f); err != nil {
-			logrus.Fatalf("Unable to set %q flag as required: %v", f, err)
-		}
-	}
 }
 
 // runAnago is the function invoked by 'krel anago', responsible for submitting release jobs to GCB

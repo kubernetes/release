@@ -589,17 +589,9 @@ func TestGetOCIManifest(t *testing.T) {
 }
 
 func TestCopyBinaries(t *testing.T) {
-	cwd, err := os.Getwd()
-	require.Nil(t, err)
-
-	testDir, err := ioutil.TempDir("", "test-copy-binaries-")
-	require.Nil(t, err)
-	require.Nil(t, os.Chdir(testDir))
-	defer os.RemoveAll(testDir)
-
 	for _, tc := range []struct {
 		prepare  func() (rootPath string, cleanup func())
-		validate func(error)
+		validate func(error, string)
 	}{
 		{ // success client
 			prepare: func() (string, func()) {
@@ -607,7 +599,7 @@ func TestCopyBinaries(t *testing.T) {
 				require.Nil(t, err)
 
 				binDir := filepath.Join(
-					tempDir, "client/linux/kubernetes/client/bin",
+					tempDir, "client/linux-amd64/kubernetes/client/bin",
 				)
 				require.Nil(t, os.MkdirAll(binDir, os.FileMode(0o755)))
 
@@ -620,10 +612,10 @@ func TestCopyBinaries(t *testing.T) {
 					require.Nil(t, os.RemoveAll(tempDir))
 				}
 			},
-			validate: func(err error) {
+			validate: func(err error, testDir string) {
 				require.Nil(t, err)
 
-				binDir := filepath.Join(testDir, "bin/linux")
+				binDir := filepath.Join(testDir, "bin/linux/amd64")
 				require.FileExists(t, filepath.Join(binDir, "1"))
 				require.FileExists(t, filepath.Join(binDir, "2"))
 				require.FileExists(t, filepath.Join(binDir, "3"))
@@ -638,7 +630,7 @@ func TestCopyBinaries(t *testing.T) {
 				require.Nil(t, err)
 
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "client/linux/kubernetes/client/bin",
+					tempDir, "client/linux-amd64/kubernetes/client/bin",
 				), os.FileMode(0o755)))
 
 				_, err = os.Create(filepath.Join(tempDir, "client/some-file"))
@@ -648,7 +640,7 @@ func TestCopyBinaries(t *testing.T) {
 					require.Nil(t, os.RemoveAll(tempDir))
 				}
 			},
-			validate: func(err error) { require.Nil(t, err) },
+			validate: func(err error, _ string) { require.Nil(t, err) },
 		},
 		{ // success server
 			prepare: func() (string, func()) {
@@ -656,17 +648,17 @@ func TestCopyBinaries(t *testing.T) {
 				require.Nil(t, err)
 
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "client/linux/kubernetes/client/bin",
+					tempDir, "client/linux-amd64/kubernetes/client/bin",
 				), os.FileMode(0o755)))
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "server/linux/kubernetes/server/bin",
+					tempDir, "server/linux-amd64/kubernetes/server/bin",
 				), os.FileMode(0o755)))
 
 				return tempDir, func() {
 					require.Nil(t, os.RemoveAll(tempDir))
 				}
 			},
-			validate: func(err error) { require.Nil(t, err) },
+			validate: func(err error, _ string) { require.Nil(t, err) },
 		},
 		{ // success node
 			prepare: func() (string, func()) {
@@ -674,17 +666,17 @@ func TestCopyBinaries(t *testing.T) {
 				require.Nil(t, err)
 
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "client/linux/kubernetes/client/bin",
+					tempDir, "client/linux-amd64/kubernetes/client/bin",
 				), os.FileMode(0o755)))
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "node/linux/kubernetes/node/bin",
+					tempDir, "node/linux-amd64/kubernetes/node/bin",
 				), os.FileMode(0o755)))
 
 				return tempDir, func() {
 					require.Nil(t, os.RemoveAll(tempDir))
 				}
 			},
-			validate: func(err error) { require.Nil(t, err) },
+			validate: func(err error, _ string) { require.Nil(t, err) },
 		},
 		{ // failure wrong server dir
 			prepare: func() (string, func()) {
@@ -692,17 +684,17 @@ func TestCopyBinaries(t *testing.T) {
 				require.Nil(t, err)
 
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "client/linux/kubernetes/client/bin",
+					tempDir, "client/linux-amd64/kubernetes/client/bin",
 				), os.FileMode(0o755)))
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "server/linux/kubernetes/wrong/bin",
+					tempDir, "server/linux-amd64/kubernetes/wrong/bin",
 				), os.FileMode(0o755)))
 
 				return tempDir, func() {
 					require.Nil(t, os.RemoveAll(tempDir))
 				}
 			},
-			validate: func(err error) { require.NotNil(t, err) },
+			validate: func(err error, _ string) { require.NotNil(t, err) },
 		},
 		{ // failure wrong node dir
 			prepare: func() (string, func()) {
@@ -710,35 +702,34 @@ func TestCopyBinaries(t *testing.T) {
 				require.Nil(t, err)
 
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "client/linux/kubernetes/client/bin",
+					tempDir, "client/linux-amd64/kubernetes/client/bin",
 				), os.FileMode(0o755)))
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "node/linux/kubernetes/wrong/bin",
+					tempDir, "node/linux-amd64/kubernetes/wrong/bin",
 				), os.FileMode(0o755)))
 
 				return tempDir, func() {
 					require.Nil(t, os.RemoveAll(tempDir))
 				}
 			},
-			validate: func(err error) { require.NotNil(t, err) },
+			validate: func(err error, _ string) { require.NotNil(t, err) },
 		},
 		{ // empty dirs should error
 			prepare:  func() (string, func()) { return "", func() {} },
-			validate: func(err error) { require.NotNil(t, err) },
+			validate: func(err error, _ string) { require.NotNil(t, err) },
 		},
 	} {
 		// Given
 		rootPath, cleanup := tc.prepare()
+		stageDir := filepath.Join(rootPath, "stage")
 
 		// When
-		err := CopyBinaries(rootPath)
+		err := CopyBinaries(rootPath, stageDir)
 
 		// Then
-		tc.validate(err)
+		tc.validate(err, stageDir)
 		cleanup()
 	}
-
-	require.Nil(t, os.Chdir(cwd))
 }
 
 func TestWriteChecksums(t *testing.T) {
