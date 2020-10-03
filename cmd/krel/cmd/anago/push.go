@@ -17,6 +17,8 @@ limitations under the License.
 package anago
 
 import (
+	"path/filepath"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -41,8 +43,10 @@ removed in future releases again when anago goes end of life.
 }
 
 var (
-	pushOpts = &release.PushBuildOptions{}
-	version  string
+	pushOpts               = &release.PushBuildOptions{}
+	version                string
+	localGCSStagePath      string
+	localReleaseImagesPath string
 )
 
 func init() {
@@ -60,9 +64,62 @@ func init() {
 		"build artifact directory of the release",
 	)
 
+	pushCmd.PersistentFlags().StringVar(
+		&pushOpts.Bucket,
+		"bucket",
+		"",
+		"GCS bucket to be used",
+	)
+
+	pushCmd.PersistentFlags().StringVar(
+		&pushOpts.GCSSuffix,
+		"gcs-suffix",
+		"",
+		"Specify a suffix to append to the upload destination on GCS",
+	)
+
+	pushCmd.PersistentFlags().StringVar(
+		&localGCSStagePath,
+		"local-gcs-stage-path",
+		"",
+		"Path to the local gcs-stage artifacts",
+	)
+
+	pushCmd.PersistentFlags().StringVar(
+		&localReleaseImagesPath,
+		"local-release-images-path",
+		"",
+		"Path to the local release-images artifacts",
+	)
+
+	pushOpts.AllowDup = true
+
 	AnagoCmd.AddCommand(pushCmd)
 }
 
 func runPush(opts *release.PushBuildOptions, version string) error {
-	return release.NewPushBuild(opts).StageLocalArtifacts(version)
+	pushBuild := release.NewPushBuild(opts)
+
+	// Stage local artifacts and write checksums
+	if err := pushBuild.StageLocalArtifacts(version); err != nil {
+		return errors.Wrap(err, "staging local artifacts")
+	}
+
+	// Push gcs-stage to GCS
+	if err := pushBuild.PushReleaseArtifacts(
+		localGCSStagePath,
+		filepath.Join(opts.GCSSuffix, release.GCSStagePath, version),
+	); err != nil {
+		return errors.Wrap(err, "pushing release artifacts")
+	}
+
+	// Push container release-images to GCS
+	if err := pushBuild.PushReleaseArtifacts(
+		localReleaseImagesPath,
+		filepath.Join(opts.GCSSuffix, release.ImagesPath),
+	); err != nil {
+		return errors.Wrap(err, "pushing release artifacts")
+	}
+
+	return nil
 }
