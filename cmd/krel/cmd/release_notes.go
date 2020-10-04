@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -1086,6 +1087,7 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 	// Cycle all gathered release notes
 	for pr, note := range releaseNotes.ByPR() {
 		contentHash, err := note.ContentHash()
+		noteReviewed := false
 		if err != nil {
 			return errors.Wrapf(err, "getting the content hash for PR#%d", pr)
 		}
@@ -1145,11 +1147,13 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 		if err != nil {
 			// If the user cancelled with ctr+c exit and continue the PR flow
 			if err.(util.UserInputError).IsCtrlC() {
-				logrus.Info("Input cancelled, exiting edit flow >> PRESS ENTER TO CONTINUE")
+				logrus.Info("Input cancelled, exiting edit flow")
 				return nil
 			}
 			return errors.Wrap(err, "while asking to edit release note")
 		}
+
+		noteReviewed = true
 		if choice {
 			for {
 				retry, err := editReleaseNote(pr, workDir, originalNote, note)
@@ -1158,6 +1162,7 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 				}
 				// If it's a user error (like yaml error) we can try again
 				if retry {
+					logrus.Error(err)
 					_, retryEditingChoice, err := util.Ask(
 						fmt.Sprintf("\n- An error occurred while editing PR #%d. Try again?", note.PrNumber),
 						"y:yes|n:no", 10,
@@ -1165,25 +1170,29 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 					if err != nil {
 						return errors.Wrap(err, "while asking to re-edit release note")
 					}
+					// If user chooses not to fix the faulty yaml, do not mark as fixed
 					if !retryEditingChoice {
-						return errors.Wrap(err, "editing release note map")
+						noteReviewed = false
+						break
 					}
 				} else {
 					return errors.Wrap(err, "while editing release note")
 				}
 			}
 		}
-		// Add this PR to the checklist:
-		pullRequestChecklist[note.PrNumber] = contentHash
-		session.PullRequests = append(session.PullRequests, struct {
-			Number int    `json:"nr"`
-			Hash   string `json:"hash"`
-		}{
-			Number: note.PrNumber,
-			Hash:   contentHash,
-		})
-		if err := session.Save(); err != nil {
-			return errors.Wrap(err, "while saving editing session data")
+		// If the note was reviewed, add the PR to the session file:
+		if noteReviewed {
+			pullRequestChecklist[note.PrNumber] = contentHash
+			session.PullRequests = append(session.PullRequests, struct {
+				Number int    `json:"nr"`
+				Hash   string `json:"hash"`
+			}{
+				Number: note.PrNumber,
+				Hash:   contentHash,
+			})
+			if err := session.Save(); err != nil {
+				return errors.Wrap(err, "while saving editing session data")
+			}
 		}
 	}
 	return nil
@@ -1309,14 +1318,38 @@ func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.R
 	}
 
 	kubeEditor := editor.NewDefaultEditor([]string{"KUBE_EDITOR", "EDITOR"})
-	changes, _, err := kubeEditor.LaunchTempFile("map", ".yaml", bytes.NewReader([]byte(output)))
+	changes, tempFilePath, err := kubeEditor.LaunchTempFile("release-notes-map-", ".yaml", bytes.NewReader([]byte(output)))
 	if err != nil {
 		return false, errors.Wrap(err, "while launching editor")
 	}
 
+	defer func() {
+		// Cleanup the temporary map file
+		if err := os.Remove(tempFilePath); err != nil {
+			logrus.Warn("could not remove temporary mapfile")
+		}
+	}()
+
 	// If the map was not modified, we don't make any changes
 	if string(changes) == output || string(changes) == "" {
 		logrus.Info("Release notes map was not modified")
+		return false, nil
+	}
+
+	// If the yaml file is blank, return non error
+	lines := strings.Split(string(changes), "\n")
+	re := regexp.MustCompile(`^\s*#|^\s*$`)
+	blankFile := true
+	for _, line := range lines {
+		// If only only one line is not blank/comment
+		if line != "---" && !re.Match([]byte(line)) {
+			blankFile = false
+			break
+		}
+	}
+
+	if blankFile {
+		logrus.Info("YAML mapfile is blank, ignoring")
 		return false, nil
 	}
 
