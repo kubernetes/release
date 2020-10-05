@@ -55,11 +55,11 @@ type commandClient interface {
 type defaultCommandClient struct{}
 
 func (*defaultCommandClient) Execute(cmd string, args ...string) error {
-	return command.Execute(cmd, args...)
+	return command.New(cmd, args...).RunSilentSuccess()
 }
 
 func (*defaultCommandClient) ExecuteOutput(cmd string, args ...string) (string, error) {
-	res, err := command.New(cmd, args...).RunSuccessOutput()
+	res, err := command.New(cmd, args...).RunSilentSuccessOutput()
 	if err != nil {
 		return "", err
 	}
@@ -74,7 +74,7 @@ func (*defaultCommandClient) RepoTagFromTarball(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return tagOutput.Output(), nil
+	return tagOutput.OutputTrimNL(), nil
 }
 
 var tagRegex = regexp.MustCompile(`^.+/(.+):.+$`)
@@ -122,6 +122,10 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 	)
 	if err != nil {
 		return errors.Wrap(err, "get manifest images")
+	}
+
+	if err := os.Setenv("DOCKER_CLI_EXPERIMENTAL", "enabled"); err != nil {
+		return errors.Wrap(err, "enable docker experimental CLI")
 	}
 
 	for image, arches := range manifestImages {
@@ -189,7 +193,7 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 		imageVersion := fmt.Sprintf("%s:%s", image, version)
 
 		manifest, err := i.client.ExecuteOutput(
-			"skopeo", "inspect", "docker://%s", imageVersion, "--raw",
+			"skopeo", "inspect", fmt.Sprintf("docker://%s", imageVersion), "--raw",
 		)
 		if err != nil {
 			return errors.Wrapf(
@@ -280,7 +284,7 @@ func (i *Images) getManifestImages(
 				tagMatches := tagRegex.FindStringSubmatch(origTag)
 				if len(tagMatches) != 2 {
 					return errors.Errorf(
-						"malformed tag %s in %s", origTag, fileName,
+						"malformed tag %s in %s", origTag, path,
 					)
 				}
 

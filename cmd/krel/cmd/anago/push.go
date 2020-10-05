@@ -92,7 +92,15 @@ func init() {
 		"Path to the local release-images artifacts",
 	)
 
+	pushCmd.PersistentFlags().StringVar(
+		&pushOpts.DockerRegistry,
+		"container-registry",
+		"",
+		"Container image registry to be used",
+	)
+
 	pushOpts.AllowDup = true
+	pushOpts.ValidateRemoteImageDigests = true
 
 	AnagoCmd.AddCommand(pushCmd)
 }
@@ -119,6 +127,11 @@ func runPush(opts *release.PushBuildOptions, version string) error {
 		filepath.Join(opts.GCSSuffix, release.ImagesPath),
 	); err != nil {
 		return errors.Wrap(err, "pushing release artifacts")
+	}
+
+	// Push container images into registry
+	if err := pushBuild.PushContainerImages(version); err != nil {
+		return errors.Wrap(err, "pushing container images")
 	}
 
 	return nil

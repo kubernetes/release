@@ -184,7 +184,6 @@ func (p *PushBuild) Push() error {
 		return errors.Wrap(err, "staging local artifacts")
 	}
 
-	// Publish container images
 	gcsDest := "devel"
 	if p.opts.CI {
 		gcsDest = "ci"
@@ -204,22 +203,8 @@ func (p *PushBuild) Push() error {
 		return errors.Wrap(err, "push release artifacts")
 	}
 
-	if p.opts.DockerRegistry != "" {
-		images := NewImages()
-		normalizedVersion := strings.ReplaceAll(latest, "+", "_")
-		if err := images.Publish(
-			p.opts.DockerRegistry, normalizedVersion, p.opts.BuildDir,
-		); err != nil {
-			return errors.Wrap(err, "publish container images")
-		}
-
-		if p.opts.ValidateRemoteImageDigests {
-			if err := images.Validate(
-				p.opts.DockerRegistry, normalizedVersion, p.opts.BuildDir,
-			); err != nil {
-				return errors.Wrap(err, "validate container images")
-			}
-		}
+	if err := p.PushContainerImages(latest); err != nil {
+		return errors.Wrap(err, "push container images")
 	}
 
 	if !p.opts.CI {
@@ -383,4 +368,37 @@ func (p *PushBuild) PushReleaseArtifacts(srcPath, gcsPath string) error {
 	return errors.Wrap(gcs.CopyToGCS(
 		srcPath, filepath.Join(p.opts.Bucket, gcsPath), copyOpts,
 	), "copy artifacts to GCS")
+}
+
+// PushContainerImages will publish container images into the set
+// `DockerRegistry`. It also validates if the remove manifests are correct,
+// which can be turned of by setting `ValidateRemoteImageDigests` to `false`.
+func (p *PushBuild) PushContainerImages(version string) error {
+	if p.opts.DockerRegistry == "" {
+		logrus.Info("Registry is not set, will not publish container images")
+		return nil
+	}
+
+	images := NewImages()
+	normalizedVersion := strings.ReplaceAll(version, "+", "_")
+	logrus.Infof("Publishing container images for %s", normalizedVersion)
+
+	if err := images.Publish(
+		p.opts.DockerRegistry, normalizedVersion, p.opts.BuildDir,
+	); err != nil {
+		return errors.Wrap(err, "publish container images")
+	}
+
+	if !p.opts.ValidateRemoteImageDigests {
+		logrus.Info("Will not validate remote image digests")
+		return nil
+	}
+
+	if err := images.Validate(
+		p.opts.DockerRegistry, normalizedVersion, p.opts.BuildDir,
+	); err != nil {
+		return errors.Wrap(err, "validate container images")
+	}
+
+	return nil
 }
