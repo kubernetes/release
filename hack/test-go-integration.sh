@@ -16,8 +16,8 @@
 
 set -euo pipefail
 
-# Default timeout is 900s
-TEST_TIMEOUT=900
+# Default timeout is 1800s
+TEST_TIMEOUT=1800
 
 for arg in "$@"
 do
