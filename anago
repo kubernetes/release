@@ -1342,10 +1342,8 @@ push_all_artifacts () {
       --local-gcs-stage-path "$BUILD_OUTPUT-$version/gcs-stage/$version" \
       --local-release-images-path "$BUILD_OUTPUT-${RELEASE_VERSION[$label]}/release-images" \
       --gcs-suffix "$BUCKET_TYPE/$jbv/$version" \
+      --container-registry "$KUBE_DOCKER_REGISTRY" \
       || return 1
-
-    common::runstep release::docker::release \
-      $KUBE_DOCKER_REGISTRY $version $BUILD_OUTPUT-$version || return 1
   else
     if [[ $STAGED_LOCATION == "gcs" ]]; then
       common::runstep copy_staged_from_gcs $label $STAGED_BUCKET \
@@ -1355,17 +1353,6 @@ push_all_artifacts () {
        $BUILD_OUTPUT-$version/gcs-stage/$version \
        gs://$RELEASE_BUCKET/$BUCKET_TYPE/$version || return 1
     fi
-
-    # Validate container image manifests for each release version
-    # Ideally image validation would exist outside of this function, but
-    # because it depends on tags derived from the source tree, this is the
-    # easiest place to put this logic for now.
-    #
-    # TODO: Consider splitting this out when we refactor anago in Go
-    common::runstep release::docker::validate_remote_manifests \
-      "$KUBE_DOCKER_REGISTRY" \
-      "$version" \
-      "$BUILD_OUTPUT-$version" || return 1
 
     common::runstep release::gcs::publish_version \
      $BUCKET_TYPE $version $BUILD_OUTPUT-$version $RELEASE_BUCKET || return 1
