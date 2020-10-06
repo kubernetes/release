@@ -500,7 +500,7 @@ func createDraftPR(tag string) (err error) {
 			if err != nil {
 				return errors.Wrapf(err, "checking for %s files in %s", dirData.Ext, dirData.Path)
 			}
-			if len(matches) > 1 {
+			if len(matches) > 0 {
 				if err := sigReleaseRepo.Add(filepath.Join(dirData.Path, "*"+dirData.Ext)); err != nil {
 					return errors.Wrapf(err, "adding %s to staging area", dirData.Name)
 				}
