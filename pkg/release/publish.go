@@ -82,6 +82,7 @@ func (p *Publisher) PublishVersion(
 	versionMarkers []string,
 	privateBucket, fast bool,
 ) error {
+	logrus.Info("Publishing version")
 	releaseType := "latest"
 
 	if buildType == "release" {
@@ -93,11 +94,11 @@ func (p *Publisher) PublishVersion(
 		}
 	}
 
-	releasePath := gcs.GcsPrefix + filepath.Join(bucket, buildType)
+	releasePath := filepath.Join(bucket, buildType)
 	if fast {
 		releasePath = filepath.Join(releasePath, "fast")
 	}
-	releasePath = filepath.Join(releasePath, version)
+	releasePath = gcs.GcsPrefix + filepath.Join(releasePath, version)
 
 	if err := p.client.GSUtil("ls", releasePath); err != nil {
 		return errors.Wrapf(err, "release files dont exist at %s", releasePath)
@@ -204,9 +205,9 @@ func (p *Publisher) PublishToGcs(
 ) error {
 	releaseStage := filepath.Join(buildDir, ReleaseStagePath)
 	publishFileDst := gcs.GcsPrefix + filepath.Join(bucket, publishFile)
-	publicLink := filepath.Join(URLPrefixForBucket(bucket), publishFile)
+	publicLink := fmt.Sprintf("%s/%s", URLPrefixForBucket(bucket), publishFile)
 	if bucket == ProductionBucket {
-		publicLink = filepath.Join(ProductionBucketURL, publishFile)
+		publicLink = fmt.Sprintf("%s/%s", ProductionBucketURL, publishFile)
 	}
 
 	uploadDir := filepath.Join(releaseStage, "upload")

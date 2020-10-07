@@ -18,6 +18,7 @@ package release
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -398,6 +399,46 @@ func (p *PushBuild) PushContainerImages(version string) error {
 		p.opts.DockerRegistry, normalizedVersion, p.opts.BuildDir,
 	); err != nil {
 		return errors.Wrap(err, "validate container images")
+	}
+
+	return nil
+}
+
+// CopyStagedFromGCS copies artifacts from GCS and between buckets as needed.
+// was: anago:copy_staged_from_gcs
+func (p *PushBuild) CopyStagedFromGCS(stagedBucket, version, buildVersion string) error {
+	logrus.Info("Copy staged release artifacts from GCS")
+
+	copyOpts := gcs.DefaultGCSCopyOptions
+	copyOpts.NoClobber = pointer.BoolPtr(p.opts.AllowDup)
+	copyOpts.AllowMissing = pointer.BoolPtr(false)
+
+	gsStageRoot := filepath.Join(stagedBucket, "stage", buildVersion, version)
+	gsReleaseRoot := filepath.Join(p.opts.Bucket, "release", version)
+	outDir := fmt.Sprintf("%s-%s", BuildDir, version)
+
+	src := filepath.Join(gsStageRoot, GCSStagePath, version)
+	dst := gsReleaseRoot
+	logrus.Infof("Bucket to bucket copy from %s to %s", src, dst)
+	if err := gcs.CopyBucketToBucket(src, dst, copyOpts); err != nil {
+		return errors.Wrap(err, "copy stage to release bucket")
+	}
+
+	src = filepath.Join(src, kubernetesTar)
+	dst = filepath.Join(outDir, GCSStagePath, version)
+	logrus.Infof("Copy kubernetes tarball %s to %s", src, dst)
+	if err := gcs.CopyToLocal(src, dst, copyOpts); err != nil {
+		return errors.Wrapf(err, "copy to local")
+	}
+
+	src = filepath.Join(gsStageRoot, ImagesPath)
+	dst = filepath.Join(outDir, ImagesPath)
+	if err := os.MkdirAll(dst, os.FileMode(0o755)); err != nil {
+		return errors.Wrap(err, "create dst dir")
+	}
+	logrus.Infof("Copy container images %s to %s", src, dst)
+	if err := gcs.CopyToLocal(src, dst, copyOpts); err != nil {
+		return errors.Wrapf(err, "copy to local")
 	}
 
 	return nil

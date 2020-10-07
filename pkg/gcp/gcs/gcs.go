@@ -86,6 +86,12 @@ func CopyToLocal(gcsPath, dst string, opts *Options) error {
 	return bucketCopy(gcsPath, dst, opts)
 }
 
+// CopyBucketToBucket copies between two GCS paths.
+func CopyBucketToBucket(src, dst string, opts *Options) error {
+	logrus.Infof("Copying %s to %s", src, dst)
+	return bucketCopy(normalizeGCSPath(src), normalizeGCSPath(dst), opts)
+}
+
 func bucketCopy(src, dst string, opts *Options) error {
 	args := []string{}
 

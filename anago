@@ -752,45 +752,6 @@ found_staged_location () {
 }
 
 ##############################################################################
-# Copy artifacts from GCS and between buckets as needed
-# @param label - The ${RELEASE_VERSION{index}]
-# @param staged_bucket - The STAGED_BUCKET
-# @param release_bucket - The RELEASE_BUCKET
-# return 1 on failure
-copy_staged_from_gcs () {
-  local label=$1
-  local staged_bucket=$2
-  local release_bucket=$3
-  local jbv="$JENKINS_BUILD_VERSION"
-  local version="${RELEASE_VERSION[$label]}"
-  local gs_stage_root="gs://$staged_bucket/stage/$jbv/$version"
-  local gs_release_root="gs://$release_bucket/release/$version"
-  local outdir="$TREE_ROOT/_output-$version"
-  local type
-
-  # cp the /stage/ tarballs to /release/ on GCS directly
-  logecho -n "Bucket-to-bucket copy $gs_stage_root/gcs-stage artifacts" \
-             "to $gs_release_root: "
-  logrun -s $GSUTIL -mq cp -rc $gs_stage_root/gcs-stage/$version/* \
-                               $gs_release_root/ || return 1
-
-  logrun mkdir -p $outdir/gcs-stage/$version
-  logecho -n "Copy staged kubernetes.tar.gz to $outdir/gcs-stage/$version: "
-  logrun -s $GSUTIL -q \
-            cp -c $gs_stage_root/gcs-stage/$version/kubernetes.tar.gz \
-                  $outdir/gcs-stage/$version || return 1
-
-  # Copy docker images back to _output trees for later pushing
-  # TODO: Can we somehow stage these on GCR.IO using docker or even
-  #       the GCS backend to eliminate the VERY EXPENSIVE --12 minutes--
-  #       it takes to push these containers from local disk?
-  logrun mkdir -p $outdir/release-images
-  logecho -n "Copy staged docker images to $outdir/release-images: "
-  logrun -s $GSUTIL -mq cp -cr $gs_stage_root/release-images/* \
-                               $outdir/release-images/ || return 1
-}
-
-##############################################################################
 # Push git objects to github
 # NOTES:
 # * alpha is alone, pushes tags only
@@ -1328,35 +1289,27 @@ stage_source_tree () {
 # returns 1 on failure
 PROGSTEP[push_all_artifacts]="PUSH BINARY RELEASE ARTIFACTS"
 push_all_artifacts () {
-  local label=$1
-  local version="${RELEASE_VERSION[$label]}"
-  local jbv="$JENKINS_BUILD_VERSION"
+  local version="${RELEASE_VERSION[$1]}"
+  local build_dir="$BUILD_OUTPUT-$version"
 
   # The full release stage case
+  STAGE_FLAG=--release
   if ((FLAGS_stage)); then
-    # Locally Stage the release artifacts in build directory (gcs-stage)
-    logrun -v krel anago push \
-      --version "$version" \
-      --build-dir "$BUILD_OUTPUT-$version" \
-      --bucket "$RELEASE_BUCKET" \
-      --local-gcs-stage-path "$BUILD_OUTPUT-$version/gcs-stage/$version" \
-      --local-release-images-path "$BUILD_OUTPUT-${RELEASE_VERSION[$label]}/release-images" \
-      --gcs-suffix "$BUCKET_TYPE/$jbv/$version" \
-      --container-registry "$KUBE_DOCKER_REGISTRY" \
-      || return 1
-  else
-    if [[ $STAGED_LOCATION == "gcs" ]]; then
-      common::runstep copy_staged_from_gcs $label $STAGED_BUCKET \
-                                           $RELEASE_BUCKET || return 1
-    else
-      common::runstep release::gcs::push_release_artifacts \
-       $BUILD_OUTPUT-$version/gcs-stage/$version \
-       gs://$RELEASE_BUCKET/$BUCKET_TYPE/$version || return 1
-    fi
-
-    common::runstep release::gcs::publish_version \
-     $BUCKET_TYPE $version $BUILD_OUTPUT-$version $RELEASE_BUCKET || return 1
+    STAGE_FLAG=--stage
   fi
+
+  logrun -v krel anago push \
+    $STAGE_FLAG \
+    --version "$version" \
+    --build-dir "$build_dir" \
+    --bucket "$RELEASE_BUCKET" \
+    --local-gcs-stage-path "$build_dir/gcs-stage/$version" \
+    --local-release-images-path "$build_dir/release-images" \
+    --gcs-suffix "$BUCKET_TYPE/$JENKINS_BUILD_VERSION/$version" \
+    --container-registry "$KUBE_DOCKER_REGISTRY" \
+    --staged-bucket "$STAGED_BUCKET" \
+    --build-version "$JENKINS_BUILD_VERSION" \
+    || return 1
 }
 
 ###############################################################################

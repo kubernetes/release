@@ -21,7 +21,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-
 	"k8s.io/release/pkg/release"
 )
 
@@ -47,9 +46,27 @@ var (
 	version                string
 	localGCSStagePath      string
 	localReleaseImagesPath string
+	runStage               bool
+	runRelease             bool
+	stagedBucket           string
+	buildVersion           string
 )
 
 func init() {
+	pushCmd.PersistentFlags().BoolVar(
+		&runStage,
+		"stage",
+		false,
+		"run in stage mode",
+	)
+
+	pushCmd.PersistentFlags().BoolVar(
+		&runRelease,
+		"release",
+		false,
+		"run in release mode",
+	)
+
 	pushCmd.PersistentFlags().StringVar(
 		&version,
 		"version",
@@ -99,6 +116,20 @@ func init() {
 		"Container image registry to be used",
 	)
 
+	pushCmd.PersistentFlags().StringVar(
+		&stagedBucket,
+		"staged-bucket",
+		"",
+		"Bucket for staged artifacts (only used when --release specified)",
+	)
+
+	pushCmd.PersistentFlags().StringVar(
+		&buildVersion,
+		"build-version",
+		"",
+		"Build version from Jenkins (only used when --release specified)",
+	)
+
 	pushOpts.AllowDup = true
 	pushOpts.ValidateRemoteImageDigests = true
 
@@ -106,6 +137,16 @@ func init() {
 }
 
 func runPush(opts *release.PushBuildOptions, version string) error {
+	if runStage {
+		return runPushStage(opts, version)
+	} else if runRelease {
+		return runPushRelease(opts, version)
+	}
+
+	return errors.New("neither --stage nor --release provided")
+}
+
+func runPushStage(opts *release.PushBuildOptions, version string) error {
 	pushBuild := release.NewPushBuild(opts)
 
 	// Stage local artifacts and write checksums
@@ -134,5 +175,20 @@ func runPush(opts *release.PushBuildOptions, version string) error {
 		return errors.Wrap(err, "pushing container images")
 	}
 
+	return nil
+}
+
+func runPushRelease(opts *release.PushBuildOptions, version string) error {
+	if err := release.NewPushBuild(opts).CopyStagedFromGCS(
+		stagedBucket, version, buildVersion,
+	); err != nil {
+		return errors.Wrap(err, "copy staged from GCS")
+	}
+
+	if err := release.NewPublisher().PublishVersion(
+		"release", version, opts.BuildDir, opts.Bucket, nil, false, false,
+	); err != nil {
+		return errors.Wrap(err, "publish release")
+	}
 	return nil
 }
