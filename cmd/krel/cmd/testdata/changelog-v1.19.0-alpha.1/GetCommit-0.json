@@ -1,0 +1,34 @@
+{
+ "Result": {
+  "sha": "e19964183377d0ec2052d1f1fa930c4d7575bd50",
+  "author": {
+   "date": "2020-08-26T14:22:05Z",
+   "name": "Anago GCB",
+   "email": "nobody@k8s.io"
+  },
+  "committer": {
+   "date": "2020-08-26T14:22:05Z",
+   "name": "Anago GCB",
+   "email": "nobody@k8s.io"
+  },
+  "message": "Release commit for Kubernetes v1.19.0",
+  "tree": {
+   "sha": "80f3e9e8b6a7ebac475567450e0f1d7ca22398fa"
+  },
+  "parents": [
+   {
+    "sha": "594f888e19d8da171881d805589cabe459f32d50",
+    "html_url": "https://github.com/kubernetes/kubernetes/commit/594f888e19d8da171881d805589cabe459f32d50",
+    "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/594f888e19d8da171881d805589cabe459f32d50"
+   }
+  ],
+  "html_url": "https://github.com/kubernetes/kubernetes/commit/e19964183377d0ec2052d1f1fa930c4d7575bd50",
+  "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/e19964183377d0ec2052d1f1fa930c4d7575bd50",
+  "verification": {
+   "verified": false,
+   "reason": "unsigned"
+  },
+  "node_id": "MDY6Q29tbWl0MjA1ODA0OTg6ZTE5OTY0MTgzMzc3ZDBlYzIwNTJkMWYxZmE5MzBjNGQ3NTc1YmQ1MA=="
+ },
+ "LastPage": 0
+}

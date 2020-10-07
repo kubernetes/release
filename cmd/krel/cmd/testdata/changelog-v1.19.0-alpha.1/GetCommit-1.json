@@ -1,0 +1,34 @@
+{
+ "Result": {
+  "sha": "f99ed92ed149e8cbb09dfcdcff78e6fb4024d3a0",
+  "author": {
+   "date": "2020-09-22T14:45:58Z",
+   "name": "Anago GCB",
+   "email": "nobody@k8s.io"
+  },
+  "committer": {
+   "date": "2020-09-22T16:35:00Z",
+   "name": "Anago GCB",
+   "email": "nobody@k8s.io"
+  },
+  "message": "CHANGELOG: Update directory for v1.20.0-alpha.1 release",
+  "tree": {
+   "sha": "77afb25ccb4d2850a7dac7a3b0d986b8454af6a5"
+  },
+  "parents": [
+   {
+    "sha": "9f328540990bcb96a6f0084a8e5065971c2734b6",
+    "html_url": "https://github.com/kubernetes/kubernetes/commit/9f328540990bcb96a6f0084a8e5065971c2734b6",
+    "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/9f328540990bcb96a6f0084a8e5065971c2734b6"
+   }
+  ],
+  "html_url": "https://github.com/kubernetes/kubernetes/commit/f99ed92ed149e8cbb09dfcdcff78e6fb4024d3a0",
+  "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/f99ed92ed149e8cbb09dfcdcff78e6fb4024d3a0",
+  "verification": {
+   "verified": false,
+   "reason": "unsigned"
+  },
+  "node_id": "MDY6Q29tbWl0MjA1ODA0OTg6Zjk5ZWQ5MmVkMTQ5ZThjYmIwOWRmY2RjZmY3OGU2ZmI0MDI0ZDNhMA=="
+ },
+ "LastPage": 0
+}
