@@ -189,7 +189,6 @@ func IsDirtyBuild(build string) bool {
 }
 
 // GetKubecrossVersion returns the current kube-cross container version.
-// Replaces release::kubecross_version
 func GetKubecrossVersion(branches ...string) (string, error) {
 	for i, branch := range branches {
 		logrus.Infof("Trying to get the kube-cross version for %s...", branch)
