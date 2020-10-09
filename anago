@@ -358,11 +358,6 @@ check_prerequisites () {
   fi
   logecho -r "$OK"
 
-  # Verify write access to $WRITE_RELEASE_BUCKETS
-  for rb in ${WRITE_RELEASE_BUCKETS[*]}; do
-    release::gcs::check_release_bucket $rb || return 1
-  done
-
   logecho -n "Checking the availability of krel: "
   logrun -v -s krel version || return 1
 }

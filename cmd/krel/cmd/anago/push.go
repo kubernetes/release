@@ -137,18 +137,25 @@ func init() {
 }
 
 func runPush(opts *release.PushBuildOptions, version string) error {
+	pushBuild := release.NewPushBuild(opts)
+	if err := pushBuild.CheckReleaseBucket(); err != nil {
+		return errors.Wrap(err, "check release bucket access")
+	}
+
 	if runStage {
-		return runPushStage(opts, version)
+		return runPushStage(pushBuild, opts, version)
 	} else if runRelease {
-		return runPushRelease(opts, version)
+		return runPushRelease(pushBuild, opts, version)
 	}
 
 	return errors.New("neither --stage nor --release provided")
 }
 
-func runPushStage(opts *release.PushBuildOptions, version string) error {
-	pushBuild := release.NewPushBuild(opts)
-
+func runPushStage(
+	pushBuild *release.PushBuild,
+	opts *release.PushBuildOptions,
+	version string,
+) error {
 	// Stage local artifacts and write checksums
 	if err := pushBuild.StageLocalArtifacts(version); err != nil {
 		return errors.Wrap(err, "staging local artifacts")
@@ -178,8 +185,12 @@ func runPushStage(opts *release.PushBuildOptions, version string) error {
 	return nil
 }
 
-func runPushRelease(opts *release.PushBuildOptions, version string) error {
-	if err := release.NewPushBuild(opts).CopyStagedFromGCS(
+func runPushRelease(
+	pushBuild *release.PushBuild,
+	opts *release.PushBuildOptions,
+	version string,
+) error {
+	if err := pushBuild.CopyStagedFromGCS(
 		stagedBucket, version, buildVersion,
 	); err != nil {
 		return errors.Wrap(err, "copy staged from GCS")

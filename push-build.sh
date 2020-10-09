@@ -86,7 +86,6 @@ PROG=${0##*/}
 #+
 #+ SEE ALSO
 #+     common.sh                 - base function entry points
-#+     releaselib.sh             - ::release:: namespace entry points
 #+     kubernetes/hack/jenkins/build.sh
 #+                               - caller
 #+
@@ -106,7 +105,37 @@ fi
 
 source $(dirname $($READLINK_CMD -ne $BASH_SOURCE))/lib/common.sh
 source $TOOL_LIB_PATH/gitlib.sh
-source $TOOL_LIB_PATH/releaselib.sh
+
+###############################################################################
+# Check that the GCS bucket exists and is writable.
+#
+# @param bucket - The gs release bucket name
+# @return 1 if bucket does not exist or is not writable.
+release::gcs::check_release_bucket() {
+  local bucket=$1
+  local tempfile=$TMPDIR/$PROG-gcs-write.$$
+
+  if ! $GSUTIL ls "gs://$bucket" >/dev/null 2>&1 ; then
+    logecho "Google Cloud Storage bucket does not exist: $bucket. Create the bucket with this command:"
+    logecho "$GSUTIL mb -p \"$GCLOUD_PROJECT\" \"gs://$bucket\""
+    logecho "If the bucket should be publicly readable, make it so with this command:"
+    logecho "$GSUTIL defacl ch -u AllUsers:R \"gs://$bucket\""
+    logecho "WARNING: This affects all objects uploaded to the bucket!"
+    return 1
+  fi
+
+  logecho -n "Checking write access to bucket $bucket: "
+  if logrun touch $tempfile && \
+     logrun $GSUTIL cp $tempfile gs://$bucket && \
+     logrun $GSUTIL rm gs://$bucket/${tempfile##*/} && \
+     logrun rm -f $tempfile; then
+    logecho $OK
+  else
+    logecho "$FAILED: You do not have access/write permission on $bucket." \
+            "Unable to continue."
+    return 1
+  fi
+}
 
 ###############################################################################
 # Creates a tarball for upload to a GCS staging directory.
