@@ -126,7 +126,21 @@ func init() {
 func runPromote(opts *promoteOptions) error {
 	// Validate options
 	branchname := opts.tag + promotionBranchSuffix
-
+	// GrowManifestOptions holds the  parameters for modifying manifests.
+	/*type GrowManifestOptions struct {
+		// BaseDir is the directory containing the thin promoter manifests.
+		BaseDir string
+		// StagingRepo is the staging subproject repo to read from. If no filters
+		// are provided, all images are attempted to be promoted as-is without any
+		// modifications.
+		StagingRepo reg.RegistryName
+		// FilterImage is the image (name) to filter by. Optional.
+		FilterImage reg.ImageName
+		// FilterDigest is the image digest to filter by. Optional.
+		FilterDigest reg.Digest
+		// FilterTag is the image tag to filter by. Optional.
+		FilterTag reg.Tag
+	}*/
 	// Check the cmd line opts
 	if err := opts.Validate(); err != nil {
 		return errors.Wrap(err, "checking command line options")
@@ -184,7 +198,7 @@ func runPromote(opts *promoteOptions) error {
 	}
 	if len(oldlist) == 0 {
 		return errors.Wrap(err, "no image list found")
-	} 
+	}
 	manifest, err := reg.ParseManifest(oldlist)
 	if err != nil {
 		return errors.Wrap(err, "while parsing manifest")
@@ -192,7 +206,7 @@ func runPromote(opts *promoteOptions) error {
 	src := manifest.SrcRegistry
 
 	// Run src-registry
-	if mustRun(opts, "Update the Image Promoter manifest with cip-mm?") {
+	/*if mustRun(opts, "Update the Image Promoter manifest with cip-mm?") {
 		if err := command.New(
 			string(src),
 			fmt.Sprintf("--base_dir=%s", filepath.Join(repo.Dir(), release.GCRIOPathProd)),
@@ -201,6 +215,11 @@ func runPromote(opts *promoteOptions) error {
 		).RunSuccess(); err != nil {
 			return errors.Wrap(err, "running cip-mm install in kubernetes-sigs/release-notes")
 		}
+	}*/
+	if err := command.NewWithWorkDir(filepath.Join(repo.Dir(), release.GCRIOPathProd),
+		fmt.Sprintf("echo %v > %s.yaml", manifest.ToRegInvImageDigest(), src),
+	).RunSuccess(); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("writing src:%s manifest to yaml", src))
 	}
 
 	// Re-write the image list without the mock images
