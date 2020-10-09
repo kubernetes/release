@@ -156,36 +156,6 @@ gitlib::git_config_for_gcb () {
 }
 
 ###############################################################################
-# Looks up the list of releases on github and puts the last release per branch
-# into a global branch-indexed dictionary LAST_RELEASE[$branch]
-#
-# USEFUL: LAST_TAG=$(git describe --abbrev=0 --tags)
-gitlib::last_releases () {
-  local release
-  local branch_name
-  local latest_branch
-  declare -Ag LAST_RELEASE
-
-  logecho -n "Setting last releases by branch: "
-  for release in $($GHCURL $K8S_GITHUB_API/releases|\
-                   jq -r '.[] | select(.draft==false) | .tag_name'); do
-    # Alpha and beta releases only on master branch
-    if [[ $release =~ -alpha ]] || [[ $release =~ -beta ]]; then
-      LAST_RELEASE[master]=${LAST_RELEASE[master]:-$release}
-    elif [[ $release =~ v([0-9]+\.[0-9]+)\.([0-9]+(-.+)?) ]]; then
-      # Latest vx.x.0 release goes on both master and release branch.
-      if [[ ${BASH_REMATCH[2]} == "0" ]]; then
-        LAST_RELEASE[master]=${LAST_RELEASE[master]:-$release}
-      fi
-      branch_name=release-${BASH_REMATCH[1]}
-      LAST_RELEASE[$branch_name]=${LAST_RELEASE[$branch_name]:-$release}
-    fi
-  done
-
-  logecho -r "$OK"
-}
-
-###############################################################################
 # What branch am I on?
 # @optparam repo_dir - An alternative (to current working dir) git repo
 # prints current branch name
@@ -288,43 +258,6 @@ gitlib::push_master () {
   logrun -s -v git rebase origin/master || return 1
   logecho -n "Pushing$dryrun_flag master branch: "
   logrun -s git push$dryrun_flag origin master || return 1
-}
-
-##############################################################################
-# Ensure TOOL_ROOT running with a synced repo.
-#
-gitlib::repo_state () {
-  local expectedOrg="${TOOL_ORG:-kubernetes}"
-  local expectedRepo="${TOOL_REPO:-release}"
-  local expectedRemote="[:/]${expectedOrg}/${expectedRepo}"
-  local expectedBranch="${TOOL_BRANCH:-master}"
-
-  local branch
-  branch=$(gitlib::current_branch "$TOOL_ROOT") || return 1
-
-  if [ "${expectedBranch}" != "$branch" ]
-  then
-    logecho "$FAILED checked out branch $branch is not the same as $expectedBranch"
-    return 1
-  fi
-
-  local remotePattern="${expectedRemote}(.git)* \(fetch\)$"
-
-  local remote=$( git -C "$TOOL_ROOT" remote -v | grep -E "$remotePattern" -m 1 | cut -f1 )
-  local commit=$(git -C "$TOOL_ROOT" \
-                     ls-remote --heads "$remote" refs/heads/master | cut -f1)
-  local output=$(git -C "$TOOL_ROOT" branch --contains "$commit" "$branch" 2>/dev/null)
-
-  logecho -n "Checking $TOOL_ROOT state: "
-  if [[ -n "$output" ]]; then
-    logecho $OK
-  else
-    logecho "$FAILED"
-    logecho
-    logecho "$TOOL_ROOT is not up to date."
-    logecho "$ git pull"
-    return 1
-  fi
 }
 
 # Set up git config for GCB
