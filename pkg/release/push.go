@@ -154,31 +154,8 @@ func (p *PushBuild) Push() error {
 	}
 	logrus.Infof("Latest version is %s", latest)
 
-	client, err := storage.NewClient(context.Background())
-	if err != nil {
-		return errors.Wrap(err, "fetching gcloud credentials, try running \"gcloud auth application-default login\"")
-	}
-
-	bucket := client.Bucket(p.opts.Bucket)
-	if bucket == nil {
-		return errors.Errorf(
-			"identify specified bucket for artifacts: %s", p.opts.Bucket,
-		)
-	}
-
-	// Check if bucket exists and user has permissions
-	requiredGCSPerms := []string{"storage.objects.create"}
-	perms, err := bucket.IAM().TestPermissions(
-		context.Background(), requiredGCSPerms,
-	)
-	if err != nil {
-		return errors.Wrap(err, "find release artifact bucket")
-	}
-	if len(perms) != 1 {
-		return errors.Errorf(
-			"GCP user must have at least %s permissions on bucket %s",
-			requiredGCSPerms, p.opts.Bucket,
-		)
+	if err := p.CheckReleaseBucket(); err != nil {
+		return errors.Wrap(err, "check release bucket access")
 	}
 
 	if err := p.StageLocalArtifacts(latest); err != nil {
@@ -279,6 +256,45 @@ func (p *PushBuild) findLatestVersion() (latestVersion string, err error) {
 	}
 
 	return latestVersion, nil
+}
+
+// CheckReleaseBucket verifies that a release bucket exists and the current
+// authenticated GCP user has write permissions to it.
+// was: releaselib.sh: release::gcs::check_release_bucket
+func (p *PushBuild) CheckReleaseBucket() error {
+	logrus.Infof("Checking bucket %s for write permissions", p.opts.Bucket)
+
+	client, err := storage.NewClient(context.Background())
+	if err != nil {
+		return errors.Wrap(err,
+			"fetching gcloud credentials, try running "+
+				`"gcloud auth application-default login"`,
+		)
+	}
+
+	bucket := client.Bucket(p.opts.Bucket)
+	if bucket == nil {
+		return errors.Errorf(
+			"identify specified bucket for artifacts: %s", p.opts.Bucket,
+		)
+	}
+
+	// Check if bucket exists and user has permissions
+	requiredGCSPerms := []string{"storage.objects.create"}
+	perms, err := bucket.IAM().TestPermissions(
+		context.Background(), requiredGCSPerms,
+	)
+	if err != nil {
+		return errors.Wrap(err, "find release artifact bucket")
+	}
+	if len(perms) != 1 {
+		return errors.Errorf(
+			"GCP user must have at least %s permissions on bucket %s",
+			requiredGCSPerms, p.opts.Bucket,
+		)
+	}
+
+	return nil
 }
 
 // StageLocalArtifacts locally stages the release artifacts
