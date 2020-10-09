@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -32,6 +31,8 @@ import (
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
+
+	reg "sigs.k8s.io/k8s-container-image-promoter/lib/dockerregistry"
 )
 
 const (
@@ -143,12 +144,6 @@ func runPromote(opts *promoteOptions) error {
 	// Check Environment
 	gh := github.New()
 
-	// Check for the cip-mm binary
-	cipmm, err := exec.LookPath("cip-mm")
-	if err != nil {
-		return errors.Wrap(err, "while looking for cip-mm in your path")
-	}
-
 	// Verify the repository is a fork of k8s.io
 	if err = verifyFork(
 		branchname, userForkOrg, userForkRepo, git.DefaultGithubOrg, k8sioRepo,
@@ -187,11 +182,19 @@ func runPromote(opts *promoteOptions) error {
 			return errors.Wrap(err, "while reading the current promoter image list")
 		}
 	}
+	if len(oldlist) == 0 {
+		return errors.Wrap(err, "no image list found")
+	} 
+	manifest, err := reg.ParseManifest(oldlist)
+	if err != nil {
+		return errors.Wrap(err, "while parsing manifest")
+	}
+	src := manifest.SrcRegistry
 
-	// Run cip-mm
+	// Run src-registry
 	if mustRun(opts, "Update the Image Promoter manifest with cip-mm?") {
 		if err := command.New(
-			cipmm,
+			string(src),
 			fmt.Sprintf("--base_dir=%s", filepath.Join(repo.Dir(), release.GCRIOPathProd)),
 			fmt.Sprintf("--staging_repo=%s", release.GCRIOPathStaging),
 			fmt.Sprintf("--filter_tag=%s", opts.tag),
