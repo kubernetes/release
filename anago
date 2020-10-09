@@ -1285,7 +1285,6 @@ stage_source_tree () {
 PROGSTEP[push_all_artifacts]="PUSH BINARY RELEASE ARTIFACTS"
 push_all_artifacts () {
   local version="${RELEASE_VERSION[$1]}"
-  local build_dir="$BUILD_OUTPUT-$version"
 
   # The full release stage case
   STAGE_FLAG=--release
@@ -1296,14 +1295,10 @@ push_all_artifacts () {
   logrun -v krel anago push \
     $STAGE_FLAG \
     --version "$version" \
-    --build-dir "$build_dir" \
-    --bucket "$RELEASE_BUCKET" \
-    --local-gcs-stage-path "$build_dir/gcs-stage/$version" \
-    --local-release-images-path "$build_dir/release-images" \
-    --gcs-suffix "$BUCKET_TYPE/$JENKINS_BUILD_VERSION/$version" \
-    --container-registry "$KUBE_DOCKER_REGISTRY" \
-    --staged-bucket "$STAGED_BUCKET" \
     --build-version "$JENKINS_BUILD_VERSION" \
+    --build-dir "$BUILD_OUTPUT-$version" \
+    --bucket "$RELEASE_BUCKET" \
+    --container-registry "$KUBE_DOCKER_REGISTRY" \
     || return 1
 }
 

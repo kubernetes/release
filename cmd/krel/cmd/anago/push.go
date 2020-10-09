@@ -42,14 +42,11 @@ removed in future releases again when anago goes end of life.
 }
 
 var (
-	pushOpts               = &release.PushBuildOptions{}
-	version                string
-	localGCSStagePath      string
-	localReleaseImagesPath string
-	runStage               bool
-	runRelease             bool
-	stagedBucket           string
-	buildVersion           string
+	pushOpts     = &release.PushBuildOptions{}
+	runStage     bool
+	runRelease   bool
+	version      string
+	buildVersion string
 )
 
 func init() {
@@ -89,38 +86,10 @@ func init() {
 	)
 
 	pushCmd.PersistentFlags().StringVar(
-		&pushOpts.GCSSuffix,
-		"gcs-suffix",
-		"",
-		"Specify a suffix to append to the upload destination on GCS",
-	)
-
-	pushCmd.PersistentFlags().StringVar(
-		&localGCSStagePath,
-		"local-gcs-stage-path",
-		"",
-		"Path to the local gcs-stage artifacts",
-	)
-
-	pushCmd.PersistentFlags().StringVar(
-		&localReleaseImagesPath,
-		"local-release-images-path",
-		"",
-		"Path to the local release-images artifacts",
-	)
-
-	pushCmd.PersistentFlags().StringVar(
 		&pushOpts.DockerRegistry,
 		"container-registry",
 		"",
 		"Container image registry to be used",
-	)
-
-	pushCmd.PersistentFlags().StringVar(
-		&stagedBucket,
-		"staged-bucket",
-		"",
-		"Bucket for staged artifacts (only used when --release specified)",
 	)
 
 	pushCmd.PersistentFlags().StringVar(
@@ -160,19 +129,19 @@ func runPushStage(
 	if err := pushBuild.StageLocalArtifacts(version); err != nil {
 		return errors.Wrap(err, "staging local artifacts")
 	}
+	gcsPath := filepath.Join("stage", buildVersion, version)
 
 	// Push gcs-stage to GCS
 	if err := pushBuild.PushReleaseArtifacts(
-		localGCSStagePath,
-		filepath.Join(opts.GCSSuffix, release.GCSStagePath, version),
+		filepath.Join(opts.BuildDir, release.GCSStagePath, version),
+		filepath.Join(gcsPath, release.GCSStagePath, version),
 	); err != nil {
 		return errors.Wrap(err, "pushing release artifacts")
 	}
 
 	// Push container release-images to GCS
 	if err := pushBuild.PushReleaseArtifacts(
-		localReleaseImagesPath,
-		filepath.Join(opts.GCSSuffix, release.ImagesPath),
+		filepath.Join(opts.BuildDir, release.ImagesPath), gcsPath,
 	); err != nil {
 		return errors.Wrap(err, "pushing release artifacts")
 	}
@@ -191,7 +160,7 @@ func runPushRelease(
 	version string,
 ) error {
 	if err := pushBuild.CopyStagedFromGCS(
-		stagedBucket, version, buildVersion,
+		opts.Bucket, version, buildVersion,
 	); err != nil {
 		return errors.Wrap(err, "copy staged from GCS")
 	}
