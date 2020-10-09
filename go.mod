@@ -11,7 +11,6 @@ require (
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-github/v29 v29.0.3
 	github.com/google/uuid v1.1.2
-	github.com/kubernetes-sigs/k8s-container-image-promoter v2.0.0+incompatible // indirect
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.3
 	github.com/moby/term v0.0.0-20200915141129-7f0af18e79f2
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481
