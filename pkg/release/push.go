@@ -18,7 +18,6 @@ package release
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -431,7 +430,6 @@ func (p *PushBuild) CopyStagedFromGCS(stagedBucket, version, buildVersion string
 
 	gsStageRoot := filepath.Join(stagedBucket, "stage", buildVersion, version)
 	gsReleaseRoot := filepath.Join(p.opts.Bucket, "release", version)
-	outDir := fmt.Sprintf("%s-%s", BuildDir, version)
 
 	src := filepath.Join(gsStageRoot, GCSStagePath, version)
 	dst := gsReleaseRoot
@@ -441,14 +439,14 @@ func (p *PushBuild) CopyStagedFromGCS(stagedBucket, version, buildVersion string
 	}
 
 	src = filepath.Join(src, kubernetesTar)
-	dst = filepath.Join(outDir, GCSStagePath, version)
+	dst = filepath.Join(p.opts.BuildDir, GCSStagePath, version, kubernetesTar)
 	logrus.Infof("Copy kubernetes tarball %s to %s", src, dst)
 	if err := gcs.CopyToLocal(src, dst, copyOpts); err != nil {
 		return errors.Wrapf(err, "copy to local")
 	}
 
 	src = filepath.Join(gsStageRoot, ImagesPath)
-	dst = filepath.Join(outDir, ImagesPath)
+	dst = filepath.Join(p.opts.BuildDir, ImagesPath)
 	if err := os.MkdirAll(dst, os.FileMode(0o755)); err != nil {
 		return errors.Wrap(err, "create dst dir")
 	}
