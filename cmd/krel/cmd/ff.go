@@ -95,8 +95,12 @@ func runFf(opts *ffOptions, rootOpts *rootOptions) error {
 	}
 
 	logrus.Info("Checking if branch is available on the default remote")
-	if err := repo.HasRemoteBranch(branch); err != nil {
-		return err
+	branchExists, err := repo.HasRemoteBranch(branch)
+	if err != nil {
+		return errors.Wrap(err, "checking if branch exists on the default remote")
+	}
+	if !branchExists {
+		return errors.New("branch does not exist on the default remote")
 	}
 
 	if rootOpts.cleanup {

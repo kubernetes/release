@@ -474,30 +474,31 @@ func (r *Repo) releaseBranchOrMainRef(major, minor uint64) (sha, rev string, err
 
 // HasRemoteBranch takes a branch string and verifies that it exists
 // on the default remote
-func (r *Repo) HasRemoteBranch(branch string) error {
+func (r *Repo) HasRemoteBranch(branch string) (branchExists bool, err error) {
 	logrus.Infof("Verifying %s branch exists on the remote", branch)
 
 	remote, err := r.inner.Remote(DefaultRemote)
 	if err != nil {
-		return err
+		return branchExists, err
 	}
 
 	// We can then use every Remote functions to retrieve wanted information
 	refs, err := remote.List(&git.ListOptions{})
 	if err != nil {
 		logrus.Warn("Could not list references on the remote repository.")
-		return err
+		return branchExists, err
 	}
 
 	for _, ref := range refs {
 		if ref.Name().IsBranch() {
 			if ref.Name().Short() == branch {
 				logrus.Infof("Found branch %s", ref.Name().Short())
-				return nil
+				return true, nil
 			}
 		}
 	}
-	return errors.Errorf("branch %v not found", branch)
+	logrus.Infof("Branch %v not found", branch)
+	return false, nil
 }
 
 // Checkout can be used to checkout any revision inside the repository
