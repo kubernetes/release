@@ -21,11 +21,13 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 
 	gogit "github.com/go-git/go-git/v5"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/git/gitfakes"
 )
@@ -287,4 +289,76 @@ func TestParseRepoSlug(t *testing.T) {
 		require.Equal(t, testCase.orgName, org, testCase.caseName)
 		require.Equal(t, testCase.repoName, repo, testCase.caseName)
 	}
+}
+
+func TestRetryErrors(t *testing.T) {
+	retryErrorStrings := []string{
+		"dial tcp: lookup github.com on [::1]:53",
+		"read udp [::1]:48087->[::1]:53",
+		"read: connection refused",
+	}
+
+	nonRetryErrorStrings := []string{
+		"could not list references on the remote repository",
+		"error checking remote branch",
+		"src refspec release-chorizo does not match",
+	}
+
+	for _, message := range retryErrorStrings {
+		err := git.NewNetworkError(errors.New(message))
+		require.True(t, err.CanRetry(), fmt.Sprintf("Checking retriable error '%s'", message))
+	}
+
+	for _, message := range nonRetryErrorStrings {
+		err := git.NewNetworkError(errors.New(message))
+		require.False(t, err.CanRetry(), fmt.Sprintf("Checking non-retriable error '%s'", message))
+	}
+}
+
+func TestNetworkError(t *testing.T) {
+	// Return a NetWorkError in a fun that returns a standard error
+	err := func() error {
+		return git.NewNetworkError(errors.New("This is a test error"))
+	}()
+	require.NotNil(t, err, "checking if NewNetWork error returns nil")
+	require.NotEmpty(t, err.Error(), "checking if NetworkError returns a message")
+	require.False(t, err.(git.NetworkError).CanRetry(), "checking if network error can be properly asserted")
+}
+
+func TestHasBranch(t *testing.T) {
+	testBranchName := "git-package-test-branch"
+	repoPath, err := createTestRepository()
+	require.Nil(t, err, "getting a test repo")
+
+	// Create a file and a test commit
+	testfile := filepath.Join(repoPath, "README.md")
+	err = ioutil.WriteFile(testfile, []byte("# WHY SIG-RELEASE ROCKS\n\n"), os.FileMode(0o644))
+	require.Nil(t, err, "writing test file")
+
+	err = command.NewWithWorkDir(repoPath, "git", "add", testfile).RunSuccess()
+	require.Nil(t, err, fmt.Sprintf("adding test file in %s", repoPath))
+
+	err = command.NewWithWorkDir(repoPath, "git", "commit", "-m", "adding test file").RunSuccess()
+	require.Nil(t, err, "creating first commit")
+
+	// Call git to configure the user's name:
+	err = command.NewWithWorkDir(repoPath, "git", "branch", testBranchName).RunSuccess()
+	require.Nil(t, err, fmt.Sprintf("configuring test branch in %s", repoPath))
+
+	// Now, open the repo and test to see if branches are there
+	testRepo, err := git.OpenRepo(repoPath)
+	require.Nil(t, err, fmt.Sprintf("opening test repo in %s", repoPath))
+	defer testRepo.Cleanup() // nolint: errcheck
+
+	actual, err := testRepo.HasBranch(testBranchName)
+	require.Nil(t, err)
+	require.True(t, actual)
+
+	actual, err = testRepo.HasBranch(git.DefaultBranch)
+	require.Nil(t, err)
+	require.True(t, actual)
+
+	actual, err = testRepo.HasBranch("non-existing-branch")
+	require.Nil(t, err)
+	require.False(t, actual)
 }
