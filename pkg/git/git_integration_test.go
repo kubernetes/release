@@ -274,16 +274,22 @@ func TestSuccessHasRemoteBranch(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	require.Nil(t, testRepo.sut.HasRemoteBranch(testRepo.branchName))
-	require.Nil(t, testRepo.sut.HasRemoteBranch(git.DefaultBranch))
+	for _, repo := range []string{testRepo.branchName, git.DefaultBranch} {
+		branchExists, err := testRepo.sut.HasRemoteBranch(repo)
+		require.Nil(t, err)
+		require.Equal(t, true, branchExists)
+	}
 }
 
 func TestFailureHasRemoteBranch(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	err := testRepo.sut.HasRemoteBranch("wrong")
-	require.NotNil(t, err)
+	// TODO: Let's simulate an actual git/network failure
+
+	branchExists, err := testRepo.sut.HasRemoteBranch("wrong")
+	require.Equal(t, false, branchExists)
+	require.Nil(t, err)
 }
 
 func TestSuccessHead(t *testing.T) {
