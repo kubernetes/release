@@ -26,10 +26,10 @@ ARCH?=amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 
 BASE_REGISTRY?=k8s.gcr.io/build-image
-BASEIMAGE?=$(BASE_REGISTRY)/debian-base-$(ARCH):$(DEBIAN_BASE_VERSION)
 
 # Build args
-IPTABLES_VERSION ?= 1.8.5
+BASEIMAGE?=$(BASE_REGISTRY)/debian-base-$(ARCH):$(DEBIAN_BASE_VERSION)
+
 QEMUVERSION=5.2.0-2
 
 # This option is for running docker manifest command
@@ -52,7 +52,6 @@ build:
 		-t $(IMAGE)-$(ARCH):$(IMAGE_VERSION) \
 		-t $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
 		-t $(IMAGE)-$(ARCH):latest-$(CONFIG) \
-		--build-arg=IPTABLES_VERSION=$(IPTABLES_VERSION) \
 		--build-arg=BASEIMAGE=$(BASEIMAGE) \
 		$(CONFIG)
 	docker buildx rm $$BUILDER
