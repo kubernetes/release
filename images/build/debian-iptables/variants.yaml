@@ -3,4 +3,3 @@ variants:
     CONFIG: 'buster'
     IMAGE_VERSION: 'buster-v1.6.1'
     DEBIAN_BASE_VERSION: 'buster-v1.7.0'
-    IPTABLES_VERSION: '1.8.5'
