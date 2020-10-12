@@ -61,7 +61,7 @@ var DefaultGCSCopyOptions = &Options{
 // CopyToGCS copies a local directory to the specified GCS path
 func CopyToGCS(src, gcsPath string, opts *Options) error {
 	logrus.Infof("Copying %s to GCS (%s)", src, gcsPath)
-	gcsPath = normalizeGCSPath(gcsPath)
+	gcsPath = NormalizeGCSPath(gcsPath)
 
 	_, err := os.Stat(src)
 	if err != nil {
@@ -81,7 +81,7 @@ func CopyToGCS(src, gcsPath string, opts *Options) error {
 // CopyToLocal copies a GCS path to the specified local directory
 func CopyToLocal(gcsPath, dst string, opts *Options) error {
 	logrus.Infof("Copying GCS (%s) to %s", gcsPath, dst)
-	gcsPath = normalizeGCSPath(gcsPath)
+	gcsPath = NormalizeGCSPath(gcsPath)
 
 	return bucketCopy(gcsPath, dst, opts)
 }
@@ -89,7 +89,7 @@ func CopyToLocal(gcsPath, dst string, opts *Options) error {
 // CopyBucketToBucket copies between two GCS paths.
 func CopyBucketToBucket(src, dst string, opts *Options) error {
 	logrus.Infof("Copying %s to %s", src, dst)
-	return bucketCopy(normalizeGCSPath(src), normalizeGCSPath(dst), opts)
+	return bucketCopy(NormalizeGCSPath(src), NormalizeGCSPath(dst), opts)
 }
 
 func bucketCopy(src, dst string, opts *Options) error {
@@ -119,7 +119,9 @@ func bucketCopy(src, dst string, opts *Options) error {
 	return nil
 }
 
-func normalizeGCSPath(gcsPath string) string {
+// NormalizeGCSPath takes a gcs path and ensures that the `GcsPrefix` is
+// prepended to it.
+func NormalizeGCSPath(gcsPath string) string {
 	gcsPath = strings.TrimPrefix(gcsPath, GcsPrefix)
 	gcsPath = GcsPrefix + gcsPath
 

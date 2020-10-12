@@ -141,7 +141,8 @@ func runPushStage(
 
 	// Push container release-images to GCS
 	if err := pushBuild.PushReleaseArtifacts(
-		filepath.Join(opts.BuildDir, release.ImagesPath), gcsPath,
+		filepath.Join(opts.BuildDir, release.ImagesPath),
+		filepath.Join(gcsPath, release.ImagesPath),
 	); err != nil {
 		return errors.Wrap(err, "pushing release artifacts")
 	}
