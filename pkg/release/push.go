@@ -26,7 +26,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/gcp"
 	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/util"
 	"k8s.io/utils/pointer"
@@ -381,8 +380,7 @@ func (p *PushBuild) PushReleaseArtifacts(srcPath, gcsPath string) error {
 	logrus.Infof("Pushing release artifacts from %s to %s", srcPath, dstPath)
 
 	return errors.Wrap(
-		gcp.GSUtil("-m", "rsync", "-r", srcPath, dstPath),
-		"copy artifacts to GCS",
+		gcs.RsyncRecursive(srcPath, dstPath), "rsync artifacts to GCS",
 	)
 }
 

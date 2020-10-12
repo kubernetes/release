@@ -127,3 +127,13 @@ func NormalizeGCSPath(gcsPath string) string {
 
 	return gcsPath
 }
+
+// RsyncRecursive runs `gsutil rsync` in recursive mode. The caller of this
+// function has to ensure that the provided paths are prefixed with gs:// if
+// necessary (see `NormalizeGCSPath()`).
+func RsyncRecursive(src, dst string) error {
+	return errors.Wrap(
+		gcp.GSUtil("-m", "rsync", "-r", src, dst),
+		"running gsutil rsync",
+	)
+}
