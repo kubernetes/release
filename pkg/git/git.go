@@ -19,6 +19,7 @@ package git
 import (
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -140,10 +141,11 @@ func (r *Remote) URLs() []string {
 
 // Wrapper type for a Kubernetes repository instance
 type Repo struct {
-	inner    Repository
-	worktree Worktree
-	dir      string
-	dryRun   bool
+	inner      Repository
+	worktree   Worktree
+	dir        string
+	dryRun     bool
+	maxRetries int
 }
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
@@ -188,6 +190,13 @@ func (r *Repo) SetWorktree(worktree Worktree) {
 // SetInnerRepo can be used to manually set the inner repository
 func (r *Repo) SetInnerRepo(repo Repository) {
 	r.inner = repo
+}
+
+// SetMaxRetries defines the number of times, the git client will retry
+// some operations when timing out or network failures. Setting it to
+// 0 disables retrying
+func (r *Repo) SetMaxRetries(numRetries int) {
+	r.maxRetries = numRetries
 }
 
 func LSRemoteExec(repoURL string, args ...string) (string, error) {
@@ -472,6 +481,28 @@ func (r *Repo) releaseBranchOrMainRef(major, minor uint64) (sha, rev string, err
 	return "", "", err
 }
 
+// HasBranch checks if a branch exists in the repo
+func (r *Repo) HasBranch(branch string) (branchExists bool, err error) {
+	logrus.Infof("Verifying %s branch exists in the repo", branch)
+
+	branches, err := r.inner.Branches()
+	if err != nil {
+		return branchExists, errors.Wrap(err, "getting branches from repository")
+	}
+
+	branchExists = false
+	if err := branches.ForEach(func(ref *plumbing.Reference) error {
+		if ref.Name().Short() == branch {
+			logrus.Infof("Branch %s found in the repository", branch)
+			branchExists = true
+		}
+		return nil
+	}); err != nil {
+		return branchExists, errors.Wrap(err, "iterating branches to check for existence")
+	}
+	return branchExists, nil
+}
+
 // HasRemoteBranch takes a branch string and verifies that it exists
 // on the default remote
 func (r *Repo) HasRemoteBranch(branch string) (branchExists bool, err error) {
@@ -479,14 +510,27 @@ func (r *Repo) HasRemoteBranch(branch string) (branchExists bool, err error) {
 
 	remote, err := r.inner.Remote(DefaultRemote)
 	if err != nil {
-		return branchExists, err
+		return branchExists, NewNetworkError(err)
 	}
-
-	// We can then use every Remote functions to retrieve wanted information
-	refs, err := remote.List(&git.ListOptions{})
-	if err != nil {
+	var refs []*plumbing.Reference
+	for i := r.maxRetries + 1; i > 0; i-- {
+		// We can then use every Remote functions to retrieve wanted information
+		refs, err = remote.List(&git.ListOptions{})
+		if err == nil {
+			break
+		}
 		logrus.Warn("Could not list references on the remote repository.")
-		return branchExists, err
+		// Convert to network error to see if we can retry the push
+		err = NewNetworkError(err)
+		if !err.(NetworkError).CanRetry() || r.maxRetries == 0 || i == 1 {
+			return branchExists, err
+		}
+		waitTime := math.Pow(2, float64(r.maxRetries-i))
+		logrus.Errorf(
+			"Error listing remote references (will retry %d more times in %.0f secs): %s",
+			i-1, waitTime, err.Error(),
+		)
+		time.Sleep(time.Duration(waitTime) * time.Second)
 	}
 
 	for _, ref := range refs {
@@ -580,7 +624,7 @@ func (r *Repo) Merge(from string) error {
 
 // Push does push the specified branch to the default remote, but only if the
 // repository is not in dry run mode
-func (r *Repo) Push(remoteBranch string) error {
+func (r *Repo) Push(remoteBranch string) (err error) {
 	args := []string{"push"}
 	if r.dryRun {
 		logrus.Infof("Won't push due to dry run repository")
@@ -588,7 +632,23 @@ func (r *Repo) Push(remoteBranch string) error {
 	}
 	args = append(args, DefaultRemote, remoteBranch)
 
-	return command.NewWithWorkDir(r.Dir(), gitExecutable, args...).RunSuccess()
+	for i := r.maxRetries + 1; i > 0; i-- {
+		if err = command.NewWithWorkDir(r.Dir(), gitExecutable, args...).RunSuccess(); err == nil {
+			return nil
+		}
+		// Convert to network error to see if we can retry the push
+		err = NewNetworkError(err)
+		if !err.(NetworkError).CanRetry() || r.maxRetries == 0 {
+			return err
+		}
+		waitTime := math.Pow(2, float64(r.maxRetries-i))
+		logrus.Errorf(
+			"Error pushing %s (will retry %d more times in %.0f secs): %s",
+			remoteBranch, i-1, waitTime, err.Error(),
+		)
+		time.Sleep(time.Duration(waitTime) * time.Second)
+	}
+	return errors.Wrapf(err, "trying to push %s %d times", remoteBranch, r.maxRetries)
 }
 
 // Head retrieves the current repository HEAD as a string
@@ -990,4 +1050,36 @@ func ParseRepoSlug(repoSlug string) (org, repo string, err error) {
 		repo = parts[1]
 	}
 	return org, repo, nil
+}
+
+// NewNetworkError creates a new NetworkError
+func NewNetworkError(err error) NetworkError {
+	gerror := NetworkError{
+		error: err,
+	}
+	return gerror
+}
+
+// NetworkError is a wrapper for the error class
+type NetworkError struct {
+	error
+}
+
+// CanRetry tells if an error can be retried
+func (e NetworkError) CanRetry() bool {
+	// We consider these strings as part of errors we can retry
+	retryMessages := []string{
+		"dial tcp", "read udp", "connection refused",
+		"ssh: connect to host", "Could not read from remote",
+	}
+
+	// If any of them are in the error message, we consider it temporary
+	for _, message := range retryMessages {
+		if strings.Contains(e.Error(), message) {
+			return true
+		}
+	}
+
+	// Otherwise permanent
+	return false
 }
