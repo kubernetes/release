@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"k8s.io/release/pkg/gcp"
 	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/util"
 	"k8s.io/utils/pointer"
@@ -376,14 +377,13 @@ func (p *PushBuild) copyStageFiles(stageDir string, files []stageFile) error {
 // PushReleaseArtifacts can be used to push local artifacts from the `srcPath`
 // to the remote `gcsPath`. The Bucket has to be set via the `Bucket` option.
 func (p *PushBuild) PushReleaseArtifacts(srcPath, gcsPath string) error {
-	logrus.Info("Pushing release artifacts")
+	dstPath := gcs.NormalizeGCSPath(filepath.Join(p.opts.Bucket, gcsPath))
+	logrus.Infof("Pushing release artifacts from %s to %s", srcPath, dstPath)
 
-	copyOpts := gcs.DefaultGCSCopyOptions
-	copyOpts.NoClobber = pointer.BoolPtr(p.opts.AllowDup)
-
-	return errors.Wrap(gcs.CopyToGCS(
-		srcPath, filepath.Join(p.opts.Bucket, gcsPath), copyOpts,
-	), "copy artifacts to GCS")
+	return errors.Wrap(
+		gcp.GSUtil("-m", "rsync", "-r", srcPath, dstPath),
+		"copy artifacts to GCS",
+	)
 }
 
 // PushContainerImages will publish container images into the set
