@@ -17,6 +17,7 @@ limitations under the License.
 package git
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -997,8 +998,25 @@ func (r *Repo) PushToRemote(remote, remoteBranch string) error {
 
 // LsRemote can be used to run `git ls-remote` with the provided args on the
 // repository
-func (r *Repo) LsRemote(args ...string) (string, error) {
-	return r.runGitCmd("ls-remote", args...)
+func (r *Repo) LsRemote(args ...string) (output string, err error) {
+	for i := r.maxRetries + 1; i > 0; i-- {
+		output, err = r.runGitCmd("ls-remote", args...)
+		if err == nil {
+			return output, nil
+		}
+		err = NewNetworkError(err)
+		if !err.(NetworkError).CanRetry() || r.maxRetries == 0 || i == 1 {
+			return "", err
+		}
+
+		waitTime := math.Pow(2, float64(r.maxRetries-i))
+		logrus.Errorf(
+			"Executing ls-remote (will retry %d more times in %.0f secs): %s",
+			i-1, waitTime, err.Error(),
+		)
+		time.Sleep(time.Duration(waitTime) * time.Second)
+	}
+	return "", err
 }
 
 // Branch can be used to run `git branch` with the provided args on the
@@ -1029,6 +1047,41 @@ func (r *Repo) IsDirty() (bool, error) {
 		return false, errors.Wrap(err, "retrieving worktree status")
 	}
 	return !status.IsClean(), nil
+}
+
+// RemoteTags return the tags that currently exist in the
+func (r *Repo) RemoteTags() (tags []string, err error) {
+	logrus.Debug("Listing remote tags with ls-remote")
+	output, err := r.LsRemote("--tags", DefaultRemote)
+	if err != nil {
+		return tags, errors.Wrap(err, "while listing tags using ls-remote")
+	}
+	const gitTagPreRef = "refs/tags/"
+	tags = make([]string, 0)
+	scanner := bufio.NewScanner(strings.NewReader(output))
+	scanner.Split(bufio.ScanWords)
+	for scanner.Scan() {
+		if strings.HasPrefix(scanner.Text(), gitTagPreRef) {
+			tags = append(tags, strings.TrimPrefix(scanner.Text(), gitTagPreRef))
+		}
+	}
+	logrus.Debugf("Remote repository contains %d tags", len(tags))
+	return tags, nil
+}
+
+// HasRemoteTag Checks if the default remote already has a tag
+func (r *Repo) HasRemoteTag(tag string) (hasTag bool, err error) {
+	remoteTags, err := r.RemoteTags()
+	if err != nil {
+		return hasTag, errors.Wrap(err, "getting tags to check if tag exists")
+	}
+	for _, remoteTag := range remoteTags {
+		if tag == remoteTag {
+			logrus.Infof("Tag %s found in default remote", tag)
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // ParseRepoSlug parses a repository string and return the organization and repository name/
