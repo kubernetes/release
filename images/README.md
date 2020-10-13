@@ -1,16 +1,19 @@
-# Images for the release tooling
+# Release tooling images
 
-By convention, every image we maintain, has a subdirectory here. This directory as a minimum contains
+By convention, every image we maintain has a subdirectory in this location. Each image directory contains a minimum of:
+
 - a Dockerfile named `Dockerfile`
 - a cloud builder config named `cloudbuild.yaml`
 
-An image can therefore be built via cloud-build with
-```sh
+An image is built using [cloud-build](https://cloud.google.com/cloud-build) as follows:
+
+```sh:
 IMG='k8s-cloud-builder'
 gcloud builds submit --config "./${IMG}/cloudbuild.yaml" "./${IMG}"
 ```
 
-Alternatively those images can also be built/updated via the [top level Makefile](../Makefile):
+Alternatively, these images can also be built/updated using the [project Makefile](../Makefile):
+
 ```sh
 # update all images
 make update-images
@@ -20,11 +23,14 @@ make update-images
 make image-k8s-cloud-builder
 ```
 
-By doing so, the image directorie's content will uploaded to cloud-build & used as a
-build context and an image according to the Dockerfile will be created. If that
-succeeds and the `cloudbuild.yaml` specifies `images` targets, this image will
-be pushed to the specified registries with the specified tags. You can read a
-bit more on that [in the cloud-build docs][gcb_images].
+The build/update process performs the following operations:
+
+- uploads the image directory content to cloud-build
+- uses it as a build context
+- creates an image as per the Dockerfile
+
+If the operations succeeds and if `cloudbuild.yaml` specifies the `images` target, images will
+be pushed to the specified registries with the specified tags. You can get more details in the [cloud-build docs][gcb_images].
 
 ## Currently used images
 
