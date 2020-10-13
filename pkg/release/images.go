@@ -173,17 +173,10 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 // registry.
 // was in releaselib.sh: release::docker::validate_remote_manifests
 func (i *Images) Validate(registry, version, buildPath string) error {
-	// In an official release, we want to ensure that container images have
-	// been promoted from staging to production, so we do the image manifest
-	// validation against production instead of staging.
-	targetRegistry := registry
-	if registry == GCRIOPathStaging {
-		targetRegistry = GCRIOPathProd
-	}
-	logrus.Infof("Validating image manifests in %s", targetRegistry)
+	logrus.Infof("Validating image manifests in %s", registry)
 
 	manifestImages, err := i.getManifestImages(
-		targetRegistry, version, buildPath, nil,
+		registry, version, buildPath, nil,
 	)
 	if err != nil {
 		return errors.Wrap(err, "get manifest images")
