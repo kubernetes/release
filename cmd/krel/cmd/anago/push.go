@@ -166,6 +166,21 @@ func runPushRelease(
 		return errors.Wrap(err, "copy staged from GCS")
 	}
 
+	// In an official nomock release, we want to ensure that container images
+	// have been promoted from staging to production, so we do the image
+	// manifest validation against production instead of staging.
+	targetRegistry := opts.DockerRegistry
+	if targetRegistry == release.GCRIOPathStaging {
+		targetRegistry = release.GCRIOPathProd
+	}
+	// Image promotion has been done on nomock stage, verify that the images
+	// are available.
+	if err := release.NewImages().Validate(
+		targetRegistry, version, opts.BuildDir,
+	); err != nil {
+		return errors.Wrap(err, "validate container images")
+	}
+
 	if err := release.NewPublisher().PublishVersion(
 		"release", version, opts.BuildDir, opts.Bucket, nil, false, false,
 	); err != nil {

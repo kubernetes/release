@@ -82,6 +82,8 @@ var tagRegex = regexp.MustCompile(`^.+/(.+):.+$`)
 // PublishImages relases container images to the provided target registry
 // was in releaselib.sh: release::docker::release
 func (i *Images) Publish(registry, version, buildPath string) error {
+	version = i.normalizeVersion(version)
+
 	releaseImagesPath := filepath.Join(buildPath, ImagesPath)
 	logrus.Infof(
 		"Pushing container images from %s to registry %s",
@@ -174,6 +176,7 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 // was in releaselib.sh: release::docker::validate_remote_manifests
 func (i *Images) Validate(registry, version, buildPath string) error {
 	logrus.Infof("Validating image manifests in %s", registry)
+	version = i.normalizeVersion(version)
 
 	manifestImages, err := i.getManifestImages(
 		registry, version, buildPath, nil,
@@ -181,6 +184,7 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 	if err != nil {
 		return errors.Wrap(err, "get manifest images")
 	}
+	logrus.Infof("Got manifest images %+v", manifestImages)
 
 	for image, arches := range manifestImages {
 		imageVersion := fmt.Sprintf("%s:%s", image, version)
@@ -242,10 +246,13 @@ func (i *Images) getManifestImages(
 	manifestImages := make(map[string][]string)
 
 	releaseImagesPath := filepath.Join(buildPath, ImagesPath)
+	logrus.Infof("Getting manifest images in %s", releaseImagesPath)
+
 	archPaths, err := ioutil.ReadDir(releaseImagesPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "read images path %s", releaseImagesPath)
 	}
+
 	for _, archPath := range archPaths {
 		arch := archPath.Name()
 		if !archPath.IsDir() {
@@ -303,4 +310,9 @@ func (i *Images) getManifestImages(
 		}
 	}
 	return manifestImages, nil
+}
+
+// normalizeVersion normalizes an container image version by replacing all invalid characters.
+func (i *Images) normalizeVersion(version string) string {
+	return strings.ReplaceAll(version, "+", "_")
 }
