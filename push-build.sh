@@ -105,6 +105,7 @@ fi
 
 source $(dirname $($READLINK_CMD -ne $BASH_SOURCE))/lib/common.sh
 source $TOOL_LIB_PATH/gitlib.sh
+source $TOOL_LIB_PATH/releaselib.sh
 
 ###############################################################################
 # Check that the GCS bucket exists and is writable.
