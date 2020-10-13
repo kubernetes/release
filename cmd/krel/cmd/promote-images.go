@@ -266,6 +266,7 @@ func runPromote(opts *promoteOptions) error {
 
 	prBody := fmt.Sprintf("Image promotion for Kubernetes %s\n", opts.tag)
 	prBody += "This is an automated PR generated from `krel The Kubernetes Release Toolbox`\n\n"
+	prBody += "/hold\ncc: @kubernetes/release-engineering\n"
 
 	// Create the Pull Request
 	if mustRun(opts, "Create pull request?") {
