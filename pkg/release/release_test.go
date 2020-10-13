@@ -118,10 +118,10 @@ func TestBuiltWithBazel(t *testing.T) {
 	require.Nil(t, err)
 
 	// Build directories.
-	require.Nil(t, os.MkdirAll(filepath.Join(baseTmpDir, bazelBuildPath), os.ModePerm))
-	require.Nil(t, os.MkdirAll(filepath.Join(baseTmpDir, dockerBuildPath), os.ModePerm))
-	require.Nil(t, os.MkdirAll(filepath.Join(bazelTmpDir, bazelBuildPath), os.ModePerm))
-	require.Nil(t, os.MkdirAll(filepath.Join(dockerTmpDir, dockerBuildPath), os.ModePerm))
+	require.Nil(t, os.MkdirAll(filepath.Join(baseTmpDir, BazelBuildDir, ReleaseTarsPath), os.ModePerm))
+	require.Nil(t, os.MkdirAll(filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath), os.ModePerm))
+	require.Nil(t, os.MkdirAll(filepath.Join(bazelTmpDir, BazelBuildDir, ReleaseTarsPath), os.ModePerm))
+	require.Nil(t, os.MkdirAll(filepath.Join(dockerTmpDir, BuildDir, ReleaseTarsPath), os.ModePerm))
 
 	// Create test files.
 	baseBazelFile := filepath.Join(baseTmpDir, "bazel-bin/build/release-tars/kubernetes.tar.gz")
@@ -275,29 +275,29 @@ func TestReadDockerVersion(t *testing.T) {
 	versionBytes := []byte("1.1.1\n")
 
 	// Build directories.
-	require.Nil(t, os.MkdirAll(filepath.Join(baseTmpDir, dockerBuildPath, release), os.ModePerm))
+	require.Nil(t, os.MkdirAll(filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, release), os.ModePerm))
 
 	var b bytes.Buffer
 
 	// Create version file
-	err = ioutil.WriteFile(filepath.Join(baseTmpDir, dockerBuildPath, dockerVersionPath), versionBytes, os.FileMode(0644))
+	err = ioutil.WriteFile(filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, "kubernetes", "version"), versionBytes, os.FileMode(0644))
 	require.Nil(t, err)
 
 	// Create a zip archive.
 	gz := gzip.NewWriter(&b)
 	tw := tar.NewWriter(gz)
 	require.Nil(t, tw.WriteHeader(&tar.Header{
-		Name: dockerVersionPath,
+		Name: "kubernetes/version",
 		Size: int64(len(versionBytes)),
 	}))
-	versionFile, err := os.Open(filepath.Join(baseTmpDir, dockerBuildPath, dockerVersionPath))
+	versionFile, err := os.Open(filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, "kubernetes", "version"))
 	require.Nil(t, err)
 	_, err = io.Copy(tw, versionFile)
 	require.Nil(t, err)
 	require.Nil(t, tw.Close())
 	require.Nil(t, gz.Close())
 	require.Nil(t, ioutil.WriteFile(
-		filepath.Join(baseTmpDir, dockerBuildPath, "kubernetes.tar.gz"),
+		filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, kubernetesTar),
 		b.Bytes(),
 		os.FileMode(0644),
 	))

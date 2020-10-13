@@ -41,7 +41,8 @@ type PushBuildOptions struct {
 	// Specify an alternate bucket for pushes (normally 'devel' or 'ci').
 	Bucket string
 
-	// Specify an alternate build directory (defaults to `release.BuildDir`).
+	// Specify an alternate build directory. Will be automatically determined
+	// if not set.
 	BuildDir string
 
 	// If set, push docker images to specified registry/project.
@@ -84,30 +85,32 @@ type stageFile struct {
 	required bool
 }
 
+const extraDir = "extra"
+
 var gcpStageFiles = []stageFile{
 	{
 		srcPath:  filepath.Join(GCEPath, "configure-vm.sh"),
-		dstPath:  "extra/gce/configure-vm.sh",
+		dstPath:  extraDir + "/gce/configure-vm.sh",
 		required: false,
 	},
 	{
 		srcPath:  filepath.Join(GCIPath, "node.yaml"),
-		dstPath:  "extra/gce/node.yaml",
+		dstPath:  extraDir + "/gce/node.yaml",
 		required: true,
 	},
 	{
 		srcPath:  filepath.Join(GCIPath, "master.yaml"),
-		dstPath:  "extra/gce/master.yaml",
+		dstPath:  extraDir + "/gce/master.yaml",
 		required: true,
 	},
 	{
 		srcPath:  filepath.Join(GCIPath, "configure.sh"),
-		dstPath:  "extra/gce/configure.sh",
+		dstPath:  extraDir + "/gce/configure.sh",
 		required: true,
 	},
 	{
 		srcPath:  filepath.Join(GCIPath, "shutdown.sh"),
-		dstPath:  "extra/gce/shutdown.sh",
+		dstPath:  extraDir + "/gce/shutdown.sh",
 		required: false,
 	},
 }
@@ -115,27 +118,27 @@ var gcpStageFiles = []stageFile{
 var windowsStageFiles = []stageFile{
 	{
 		srcPath:  filepath.Join(WindowsLocalPath, "configure.ps1"),
-		dstPath:  "extra/gce/windows/configure.ps1",
+		dstPath:  extraDir + "/gce/windows/configure.ps1",
 		required: true,
 	},
 	{
 		srcPath:  filepath.Join(WindowsLocalPath, "common.psm1"),
-		dstPath:  "extra/gce/windows/common.psm1",
+		dstPath:  extraDir + "/gce/windows/common.psm1",
 		required: true,
 	},
 	{
 		srcPath:  filepath.Join(WindowsLocalPath, "k8s-node-setup.psm1"),
-		dstPath:  "extra/gce/windows/k8s-node-setup.psm1",
+		dstPath:  extraDir + "/gce/windows/k8s-node-setup.psm1",
 		required: true,
 	},
 	{
 		srcPath:  filepath.Join(WindowsLocalPath, "testonly/install-ssh.psm1"),
-		dstPath:  "extra/gce/windows/install-ssh.psm1",
+		dstPath:  extraDir + "/gce/windows/install-ssh.psm1",
 		required: true,
 	},
 	{
 		srcPath:  filepath.Join(WindowsLocalPath, "testonly/user-profile.psm1"),
-		dstPath:  "extra/gce/windows/user-profile.psm1",
+		dstPath:  extraDir + "/gce/windows/user-profile.psm1",
 		required: true,
 	},
 }
@@ -147,17 +150,17 @@ func NewPushBuild(opts *PushBuildOptions) *PushBuild {
 
 // Push pushes the build by taking the internal options into account.
 func (p *PushBuild) Push() error {
-	latest, err := p.findLatestVersion()
+	version, err := p.findLatestVersion()
 	if err != nil {
 		return errors.Wrap(err, "find latest version")
 	}
-	logrus.Infof("Latest version is %s", latest)
+	logrus.Infof("Latest version is %s", version)
 
 	if err := p.CheckReleaseBucket(); err != nil {
 		return errors.Wrap(err, "check release bucket access")
 	}
 
-	if err := p.StageLocalArtifacts(latest); err != nil {
+	if err := p.StageLocalArtifacts(version); err != nil {
 		return errors.Wrap(err, "staging local artifacts")
 	}
 
@@ -170,17 +173,17 @@ func (p *PushBuild) Push() error {
 	if p.opts.Fast {
 		gcsDest = filepath.Join(gcsDest, "fast")
 	}
-	gcsDest = filepath.Join(gcsDest, latest)
+	gcsDest = filepath.Join(gcsDest, version)
 	logrus.Infof("GCS destination is %s", gcsDest)
 
 	if err := p.PushReleaseArtifacts(
-		filepath.Join(p.opts.BuildDir, GCSStagePath, latest),
+		filepath.Join(p.opts.BuildDir, GCSStagePath, version),
 		gcsDest,
 	); err != nil {
 		return errors.Wrap(err, "push release artifacts")
 	}
 
-	if err := p.PushContainerImages(latest); err != nil {
+	if err := p.PushContainerImages(version); err != nil {
 		return errors.Wrap(err, "push container images")
 	}
 
@@ -192,7 +195,7 @@ func (p *PushBuild) Push() error {
 	// Publish release to GCS
 	versionMarkers := strings.Split(p.opts.ExtraVersionMarkers, ",")
 	if err := NewPublisher().PublishVersion(
-		gcsDest, latest, p.opts.BuildDir, p.opts.Bucket, versionMarkers,
+		gcsDest, version, p.opts.BuildDir, p.opts.Bucket, versionMarkers,
 		p.opts.PrivateBucket, p.opts.Fast,
 	); err != nil {
 		return errors.Wrap(err, "publish release")
@@ -254,7 +257,24 @@ func (p *PushBuild) findLatestVersion() (latestVersion string, err error) {
 		latestVersion += "-" + p.opts.VersionSuffix
 	}
 
-	return latestVersion, nil
+	if p.opts.BuildDir == "" {
+		logrus.Info("BuildDir is not set, setting it automatically")
+		if isBazel {
+			logrus.Infof(
+				"Release is build by bazel, setting BuildDir to %s",
+				BazelBuildDir,
+			)
+			p.opts.BuildDir = BazelBuildDir
+		} else {
+			logrus.Infof(
+				"Release is build in a container, setting BuildDir to %s",
+				BuildDir,
+			)
+			p.opts.BuildDir = BuildDir
+		}
+	}
+
+	return strings.TrimSpace(latestVersion), nil
 }
 
 // CheckReleaseBucket verifies that a release bucket exists and the current
@@ -315,26 +335,38 @@ func (p *PushBuild) StageLocalArtifacts(version string) error {
 		return errors.Wrap(err, "copy source directory into destination")
 	}
 
-	// Copy helpful GCP scripts to local GCS staging directory for push
-	logrus.Info("Copying GCP stage files")
-	if err := p.copyStageFiles(stageDir, gcpStageFiles); err != nil {
-		return errors.Wrapf(err, "copy GCP stage files")
-	}
+	extraPath := filepath.Join(stageDir, extraDir)
+	if util.Exists(extraPath) {
+		// Copy helpful GCP scripts to local GCS staging directory for push
+		logrus.Info("Copying extra GCP stage files")
+		if err := p.copyStageFiles(stageDir, gcpStageFiles); err != nil {
+			return errors.Wrapf(err, "copy GCP stage files")
+		}
 
-	// Copy helpful Windows scripts to local GCS staging directory for push
-	logrus.Info("Copying Windows stage files")
-	if err := p.copyStageFiles(stageDir, windowsStageFiles); err != nil {
-		return errors.Wrapf(err, "copy Windows stage files")
+		// Copy helpful Windows scripts to local GCS staging directory for push
+		logrus.Info("Copying extra Windows stage files")
+		if err := p.copyStageFiles(stageDir, windowsStageFiles); err != nil {
+			return errors.Wrapf(err, "copy Windows stage files")
+		}
+	} else {
+		logrus.Infof("Skipping not existing extra dir %s", extraPath)
 	}
 
 	// Copy the plain binaries to GCS. This is useful for install scripts that
 	// download the binaries directly and don't need tars.
-	logrus.Info("Copying plain binaries")
-	if err := CopyBinaries(
-		filepath.Join(p.opts.BuildDir, ReleaseStagePath),
-		stageDir,
-	); err != nil {
-		return errors.Wrap(err, "stage binaries")
+	plainBinariesPath := filepath.Join(p.opts.BuildDir, ReleaseStagePath)
+	if util.Exists(plainBinariesPath) {
+		logrus.Info("Copying plain binaries")
+		if err := CopyBinaries(
+			filepath.Join(p.opts.BuildDir, ReleaseStagePath),
+			stageDir,
+		); err != nil {
+			return errors.Wrap(err, "stage binaries")
+		}
+	} else {
+		logrus.Infof(
+			"Skipping not existing plain binaries dir %s", plainBinariesPath,
+		)
 	}
 
 	// Write the release checksums
