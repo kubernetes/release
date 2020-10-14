@@ -192,6 +192,11 @@ func (p *PushBuild) Push() error {
 		return nil
 	}
 
+	if p.opts.NoUpdateLatest {
+		logrus.Info("Not updating version markers")
+		return nil
+	}
+
 	// Publish release to GCS
 	versionMarkers := strings.Split(p.opts.ExtraVersionMarkers, ",")
 	if err := NewPublisher().PublishVersion(
