@@ -87,9 +87,9 @@ func (p *Publisher) PublishVersion(
 
 	if buildType == "release" {
 		// For release/ targets, type should be 'stable'
-		if !(strings.HasSuffix(version, ReleaseTypeAlpha) ||
-			strings.HasSuffix(version, ReleaseTypeBeta) ||
-			strings.HasSuffix(version, ReleaseTypeRC)) {
+		if !(strings.Contains(version, ReleaseTypeAlpha) ||
+			strings.Contains(version, ReleaseTypeBeta) ||
+			strings.Contains(version, ReleaseTypeRC)) {
 			releaseType = "stable"
 		}
 	}
