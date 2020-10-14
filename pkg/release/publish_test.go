@@ -33,7 +33,7 @@ func TestPublishVersion(t *testing.T) {
 		olderTestVersion = "v1.20.0-alpha.0.22+00000000000000"
 	)
 
-	mockVersioMarkers := func(mock *releasefakes.FakePublisherClient) {
+	mockVersionMarkers := func(mock *releasefakes.FakePublisherClient) {
 		mock.GSUtilOutputReturnsOnCall(0, olderTestVersion, nil)
 		mock.GSUtilOutputReturnsOnCall(1, testVersion, nil)
 		mock.GSUtilOutputReturnsOnCall(2, olderTestVersion, nil)
@@ -77,7 +77,7 @@ func TestPublishVersion(t *testing.T) {
 				tempDir, err := ioutil.TempDir("", "publish-version-test-")
 				require.Nil(t, err)
 
-				mockVersioMarkers(mock)
+				mockVersionMarkers(mock)
 				mock.GSUtilOutputReturnsOnCall(5, testVersion, nil)
 
 				return tempDir, func() {
@@ -94,7 +94,7 @@ func TestPublishVersion(t *testing.T) {
 				tempDir, err := ioutil.TempDir("", "publish-version-test-")
 				require.Nil(t, err)
 
-				mockVersioMarkers(mock)
+				mockVersionMarkers(mock)
 				mock.GSUtilOutputReturnsOnCall(5, "", errors.New(""))
 
 				return tempDir, func() {
@@ -111,7 +111,7 @@ func TestPublishVersion(t *testing.T) {
 				tempDir, err := ioutil.TempDir("", "publish-version-test-")
 				require.Nil(t, err)
 
-				mockVersioMarkers(mock)
+				mockVersionMarkers(mock)
 				mock.GSUtilOutputReturnsOnCall(5, "wrong", nil)
 
 				return tempDir, func() {
@@ -128,7 +128,7 @@ func TestPublishVersion(t *testing.T) {
 				tempDir, err := ioutil.TempDir("", "publish-version-test-")
 				require.Nil(t, err)
 
-				mockVersioMarkers(mock)
+				mockVersionMarkers(mock)
 				mock.GetURLResponseReturns(testVersion, nil)
 
 				return tempDir, func() {
@@ -144,8 +144,7 @@ func TestPublishVersion(t *testing.T) {
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
 				tempDir, err := ioutil.TempDir("", "publish-version-test-")
 				require.Nil(t, err)
-
-				mockVersioMarkers(mock)
+				mockVersionMarkers(mock)
 				mock.GetURLResponseReturns("", errors.New(""))
 
 				return tempDir, func() {
