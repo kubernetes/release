@@ -57,12 +57,12 @@ ans creates a PR in kubernetes/k8s.io`,
 
 type promoteOptions struct {
 	userFork        string
-	tag             string
+	tags            []string
 	interactiveMode bool
 }
 
 func (o *promoteOptions) Validate() error {
-	if o.tag == "" {
+	if len(o.tags) == 0 {
 		return errors.New("cannot start promotion --tag is required")
 	}
 	if o.userFork == "" {
@@ -75,8 +75,10 @@ func (o *promoteOptions) Validate() error {
 	}
 
 	// Verify we got a valid tag
-	if _, err := util.TagStringToSemver(o.tag); err != nil {
-		return errors.Wrapf(err, "verifying tag: %s", o.tag)
+	for _, tag := range o.tags {
+		if _, err := util.TagStringToSemver(tag); err != nil {
+			return errors.Wrapf(err, "verifying tag: %s", tag)
+		}
 	}
 
 	// Check that the GitHub token is set
@@ -90,11 +92,11 @@ func (o *promoteOptions) Validate() error {
 var promoteOpts = &promoteOptions{}
 
 func init() {
-	imagePromoteCommand.PersistentFlags().StringVarP(
-		&promoteOpts.tag,
+	imagePromoteCommand.PersistentFlags().StringSliceVarP(
+		&promoteOpts.tags,
 		"tag",
 		"t",
-		"",
+		[]string{},
 		"version tag of the images we will promote",
 	)
 
@@ -123,13 +125,13 @@ func init() {
 }
 
 func runPromote(opts *promoteOptions) error {
-	// Validate options
-	branchname := opts.tag + promotionBranchSuffix
-
 	// Check the cmd line opts
 	if err := opts.Validate(); err != nil {
 		return errors.Wrap(err, "checking command line options")
 	}
+
+	// Validate options
+	branchname := opts.tags[0] + promotionBranchSuffix
 
 	// Get the github org and repo from the fork slug
 	userForkOrg, userForkRepo, err := git.ParseRepoSlug(opts.userFork)
@@ -190,13 +192,16 @@ func runPromote(opts *promoteOptions) error {
 
 	// Run cip-mm
 	if mustRun(opts, "Update the Image Promoter manifest with cip-mm?") {
-		if err := command.New(
-			cipmm,
-			fmt.Sprintf("--base_dir=%s", filepath.Join(repo.Dir(), release.GCRIOPathProd)),
-			fmt.Sprintf("--staging_repo=%s", release.GCRIOPathStaging),
-			fmt.Sprintf("--filter_tag=%s", opts.tag),
-		).RunSuccess(); err != nil {
-			return errors.Wrap(err, "running cip-mm install in kubernetes-sigs/release-notes")
+		for _, tag := range opts.tags {
+			logrus.Infof("Running cip-mm to patch manifests with images with tag tag %s", tag)
+			if err := command.New(
+				cipmm,
+				fmt.Sprintf("--base_dir=%s", filepath.Join(repo.Dir(), release.GCRIOPathProd)),
+				fmt.Sprintf("--staging_repo=%s", release.GCRIOPathStaging),
+				fmt.Sprintf("--filter_tag=%s", tag),
+			).RunSuccess(); err != nil {
+				return errors.Wrap(err, "executing cip-mm")
+			}
 		}
 	}
 
@@ -243,7 +248,7 @@ func runPromote(opts *promoteOptions) error {
 		return errors.Wrap(err, "adding image manifest to staging area")
 	}
 
-	commitMessage := fmt.Sprintf("releng: Image promotion for %s", opts.tag)
+	commitMessage := "releng: Image promotion for " + strings.Join(opts.tags, " / ")
 
 	// Commit files
 	logrus.Debug("Creating commit")
@@ -264,7 +269,7 @@ func runPromote(opts *promoteOptions) error {
 		return nil
 	}
 
-	prBody := fmt.Sprintf("Image promotion for Kubernetes %s\n", opts.tag)
+	prBody := fmt.Sprintf("Image promotion for Kubernetes %s\n", strings.Join(opts.tags, " / "))
 	prBody += "This is an automated PR generated from `krel The Kubernetes Release Toolbox`\n\n"
 	prBody += "/hold\ncc: @kubernetes/release-engineering\n"
 
