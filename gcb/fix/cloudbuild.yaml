@@ -1,0 +1,51 @@
+timeout: 14400s
+
+steps:
+- name: gcr.io/cloud-builders/git
+  dir: "go/src/k8s.io"
+  args:
+  - "clone"
+  - "--branch=${_TOOL_BRANCH}"
+  - "https://github.com/${_TOOL_ORG}/${_TOOL_REPO}"
+
+- name: k8s.gcr.io/build-image/kube-cross:v1.15.2-1
+  dir: "go/src/k8s.io/release"
+  env:
+  - "GOPATH=/workspace/go"
+  - "GOBIN=/workspace/bin"
+  - "GO111MODULE=on"
+  - "GOPROXY=https://proxy.golang.org"
+  - "GOSUMDB=sum.golang.org"
+  args:
+  - "./compile-release-tools"
+
+- name: gcr.io/k8s-staging-releng/k8s-cloud-builder:v1.15.2-1
+  dir: "go/src/k8s.io/release"
+  env:
+  - "TOOL_ORG=${_TOOL_ORG}"
+  - "TOOL_REPO=${_TOOL_REPO}"
+  - "TOOL_BRANCH=${_TOOL_BRANCH}"
+  args:
+  - "./fix-version-marker.sh"
+
+tags:
+- ${_GCP_USER_TAG}
+- ${_RELEASE_BRANCH}
+- ${_BUILD_POINT}
+- ${_NOMOCK_TAG}
+- FIX
+- ${_GIT_TAG}
+- ${_TYPE_TAG}
+- ${_MAJOR_VERSION_TAG}
+- ${_MINOR_VERSION_TAG}
+- ${_PATCH_VERSION_TAG}
+- ${_KUBERNETES_VERSION_TAG}
+
+options:
+  machineType: N1_HIGHCPU_32
+  substitution_option: ALLOW_LOOSE
+
+substitutions:
+  # _GIT_TAG will be filled with a git-based tag of the form vYYYYMMDD-hash, and
+  # can be used as a substitution
+  _GIT_TAG: '12345'
