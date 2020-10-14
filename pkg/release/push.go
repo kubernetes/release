@@ -394,11 +394,10 @@ func (p *PushBuild) PushContainerImages(version string) error {
 	}
 
 	images := NewImages()
-	normalizedVersion := strings.ReplaceAll(version, "+", "_")
-	logrus.Infof("Publishing container images for %s", normalizedVersion)
+	logrus.Infof("Publishing container images for %s", version)
 
 	if err := images.Publish(
-		p.opts.DockerRegistry, normalizedVersion, p.opts.BuildDir,
+		p.opts.DockerRegistry, version, p.opts.BuildDir,
 	); err != nil {
 		return errors.Wrap(err, "publish container images")
 	}
@@ -409,7 +408,7 @@ func (p *PushBuild) PushContainerImages(version string) error {
 	}
 
 	if err := images.Validate(
-		p.opts.DockerRegistry, normalizedVersion, p.opts.BuildDir,
+		p.opts.DockerRegistry, version, p.opts.BuildDir,
 	); err != nil {
 		return errors.Wrap(err, "validate container images")
 	}
@@ -444,12 +443,11 @@ func (p *PushBuild) CopyStagedFromGCS(stagedBucket, version, buildVersion string
 	}
 
 	src = filepath.Join(gsStageRoot, ImagesPath)
-	dst = filepath.Join(p.opts.BuildDir, ImagesPath)
-	if err := os.MkdirAll(dst, os.FileMode(0o755)); err != nil {
+	if err := os.MkdirAll(p.opts.BuildDir, os.FileMode(0o755)); err != nil {
 		return errors.Wrap(err, "create dst dir")
 	}
-	logrus.Infof("Copy container images %s to %s", src, dst)
-	if err := gcs.CopyToLocal(src, dst, copyOpts); err != nil {
+	logrus.Infof("Copy container images %s to %s", src, p.opts.BuildDir)
+	if err := gcs.CopyToLocal(src, p.opts.BuildDir, copyOpts); err != nil {
 		return errors.Wrapf(err, "copy to local")
 	}
 
