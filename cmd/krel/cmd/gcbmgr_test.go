@@ -170,7 +170,6 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				Version:     mockVersion("v1.17.0"),
 			},
 			expected: map[string]string{
-				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         git.DefaultBranch,
 				"TOOL_ORG":               "",
 				"TOOL_REPO":              "",
@@ -218,7 +217,6 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				Version:     mockVersion("v1.15.0-rc.1"),
 			},
 			expected: map[string]string{
-				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         "release-1.15",
 				"TOOL_ORG":               "",
 				"TOOL_REPO":              "",
@@ -242,7 +240,6 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				Version:     mockVersion("v1.15.1"),
 			},
 			expected: map[string]string{
-				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         "release-1.15",
 				"TOOL_ORG":               "",
 				"TOOL_REPO":              "",
@@ -269,7 +266,6 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			toolRepo:   "best-tools",
 			toolBranch: "tool-branch",
 			expected: map[string]string{
-				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         "release-1.16",
 				"TOOL_ORG":               "honk",
 				"TOOL_REPO":              "best-tools",
@@ -296,7 +292,6 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			toolRepo:   "best-tools",
 			toolBranch: "tool-branch",
 			expected: map[string]string{
-				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         "release-1.19",
 				"TOOL_ORG":               "honk",
 				"TOOL_REPO":              "best-tools",
@@ -320,7 +315,6 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				Version:     mockVersion("v1.18.6-rc.0.15+e38139724f8f00"),
 			},
 			expected: map[string]string{
-				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         "release-1.18",
 				"TOOL_ORG":               "",
 				"TOOL_REPO":              "",
@@ -344,7 +338,6 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				Version:     mockVersion("v1.18.0-beta.4.15+e38139724f8f00"),
 			},
 			expected: map[string]string{
-				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         "release-1.18",
 				"TOOL_ORG":               "",
 				"TOOL_REPO":              "",
