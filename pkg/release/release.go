@@ -55,14 +55,11 @@ const (
 	DefaultDiskSize                 = "300"
 	BucketPrefix                    = "kubernetes-release-"
 
-	versionReleaseRE  = `v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[a-zA-Z0-9]+)*\.*(0|[1-9][0-9]*)?`
-	versionBuildRE    = `([0-9]{1,})\+([0-9a-f]{5,40})`
-	versionDirtyRE    = `(-dirty)`
-	dockerBuildPath   = BuildDir + "/release-tars"
-	bazelBuildPath    = "bazel-bin/build/release-tars"
-	bazelVersionPath  = "bazel-bin/version"
-	dockerVersionPath = "kubernetes/version"
-	kubernetesTar     = "kubernetes.tar.gz"
+	versionReleaseRE = `v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[a-zA-Z0-9]+)*\.*(0|[1-9][0-9]*)?`
+	versionBuildRE   = `([0-9]{1,})\+([0-9a-f]{5,40})`
+	versionDirtyRE   = `(-dirty)`
+
+	kubernetesTar = "kubernetes.tar.gz"
 
 	// Path where the release container images are stored
 	ImagesPath = "release-images"
@@ -100,6 +97,9 @@ const (
 
 	// BuildDir is the default build output directory.
 	BuildDir = "_output"
+
+	// The default bazel build directory.
+	BazelBuildDir = "bazel-bin/build"
 )
 
 // ImagePromoterImages abtracts the manifest used by the image promoter
@@ -150,14 +150,14 @@ func GetToolBranch() string {
 
 // BuiltWithBazel determines whether the most recent Kubernetes release was built with Bazel.
 func BuiltWithBazel(workDir string) (bool, error) {
-	bazelBuild := filepath.Join(workDir, bazelBuildPath, kubernetesTar)
-	dockerBuild := filepath.Join(workDir, dockerBuildPath, kubernetesTar)
+	bazelBuild := filepath.Join(workDir, BazelBuildDir, ReleaseTarsPath, kubernetesTar)
+	dockerBuild := filepath.Join(workDir, BuildDir, ReleaseTarsPath, kubernetesTar)
 	return util.MoreRecent(bazelBuild, dockerBuild)
 }
 
 // ReadBazelVersion reads the version from a Bazel build.
 func ReadBazelVersion(workDir string) (string, error) {
-	version, err := ioutil.ReadFile(filepath.Join(workDir, bazelVersionPath))
+	version, err := ioutil.ReadFile(filepath.Join(workDir, "bazel-bin", "version"))
 	if os.IsNotExist(err) {
 		// The check for version in bazel-genfiles can be removed once everyone is
 		// off of versions before 0.25.0.
@@ -169,8 +169,10 @@ func ReadBazelVersion(workDir string) (string, error) {
 
 // ReadDockerizedVersion reads the version from a Dockerized Kubernetes build.
 func ReadDockerizedVersion(workDir string) (string, error) {
-	dockerTarball := filepath.Join(workDir, dockerBuildPath, kubernetesTar)
-	reader, err := util.ReadFileFromGzippedTar(dockerTarball, dockerVersionPath)
+	dockerTarball := filepath.Join(workDir, BuildDir, ReleaseTarsPath, kubernetesTar)
+	reader, err := util.ReadFileFromGzippedTar(
+		dockerTarball, filepath.Join("kubernetes", "version"),
+	)
 	if err != nil {
 		return "", err
 	}
