@@ -343,7 +343,7 @@ func SetGCBSubstitutions(o *GcbmgrOptions, toolOrg, toolRepo, toolBranch string)
 		}
 
 		if o.Stage {
-			delete(gcbSubs, "BUILD_AT_HEAD")
+			gcbSubs["BUILD_AT_HEAD"] = ""
 		}
 	}
 
