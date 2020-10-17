@@ -40,6 +40,7 @@ import (
 	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/util"
+	"sigs.k8s.io/mdtoc/pkg/mdtoc"
 )
 
 // changelogCmd represents the subcommand for `krel changelog`
@@ -236,7 +237,7 @@ func (c *Changelog) run(opts *changelogOptions, rootOpts *rootOptions) error {
 	remoteBranch := git.Remotify(branch)
 	head, err := repo.RevParse(remoteBranch)
 	if err != nil {
-		return errors.Wrapf(err, "get latest branch commit")
+		return errors.Wrap(err, "get latest branch commit")
 	}
 	logrus.Infof("Found latest %s commit %s", remoteBranch, head)
 
@@ -313,7 +314,8 @@ func (c *Changelog) run(opts *changelogOptions, rootOpts *rootOptions) error {
 	}
 
 	logrus.Info("Generating TOC")
-	toc, err := notes.GenerateTOC(markdown)
+	toc, err := mdtoc.GenerateTOC([]byte(markdown))
+	fmt.Println(toc)
 	if err != nil {
 		return err
 	}
@@ -433,7 +435,7 @@ func writeMarkdown(repo *git.Repo, toc, markdown string, tag semver.Version) err
 	mergedMarkdown := fmt.Sprintf(
 		"%s\n%s", markdown, string(content[(len(tocEnd)+tocEndIndex):]),
 	)
-	mergedTOC, err := notes.GenerateTOC(mergedMarkdown)
+	mergedTOC, err := mdtoc.GenerateTOC([]byte(mergedMarkdown))
 	if err != nil {
 		return err
 	}
