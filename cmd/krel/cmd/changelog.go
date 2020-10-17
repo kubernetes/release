@@ -315,7 +315,6 @@ func (c *Changelog) run(opts *changelogOptions, rootOpts *rootOptions) error {
 
 	logrus.Info("Generating TOC")
 	toc, err := mdtoc.GenerateTOC([]byte(markdown))
-	fmt.Println(toc)
 	if err != nil {
 		return err
 	}

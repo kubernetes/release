@@ -29,13 +29,12 @@ require (
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897 // indirect
 	golang.org/x/net v0.0.0-20201024042810-be3efd7ff127
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
-	golang.org/x/sys v0.0.0-20201024232916-9f70ab9862d5 // indirect
-	golang.org/x/tools v0.0.0-20201023174141-c8cfbd0f21e6 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	google.golang.org/api v0.33.0
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/klog/v2 v2.3.0
 	k8s.io/utils v0.0.0-20201015054608-420da100c033
 	sigs.k8s.io/k8s-container-image-promoter/pkg v0.3.0
+	sigs.k8s.io/mdtoc v1.0.1
 	sigs.k8s.io/yaml v1.2.0
 )
