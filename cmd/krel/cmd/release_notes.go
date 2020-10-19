@@ -552,7 +552,7 @@ func createDraftPR(tag string) (err error) {
 	)
 	logrus.Infof("Successfully created PR #%d", pr.GetNumber())
 
-	return nil
+	return err
 }
 
 // prepareFork Prepare a branch a repo
@@ -666,8 +666,8 @@ func processJSONOutput(repoPath string) error {
 }
 
 // createWebsitePR creates the JSON version of the release notes and pushes them to a user fork
-func createWebsitePR(tag string) error {
-	_, err := util.TagStringToSemver(tag)
+func createWebsitePR(tag string) (err error) {
+	_, err = util.TagStringToSemver(tag)
 	if err != nil {
 		return errors.Wrapf(err, "reading tag: %s", tag)
 	}
@@ -690,7 +690,7 @@ func createWebsitePR(tag string) error {
 		return errors.Wrap(err, "preparing local fork branch")
 	}
 	defer func() {
-		err = k8sSigsRepo.Cleanup()
+		err = errors.Wrap(k8sSigsRepo.Cleanup(), "cleaning up k/sigs repo")
 	}()
 
 	// add a reference to the new json file in assets.ts
@@ -756,7 +756,8 @@ func createWebsitePR(tag string) error {
 		github.GitHubURL, defaultKubernetesSigsOrg,
 		defaultKubernetesSigsRepo, pr.GetNumber(),
 	)
-	return nil
+
+	return err
 }
 
 // tryToFindLatestMinorTag looks-up the default k/k remote to find the latest
@@ -779,13 +780,24 @@ func tryToFindLatestMinorTag() (string, error) {
 
 // releaseNotesJSON generate the release notes for a specific tag and returns
 // them as JSON blob
-func releaseNotesJSON(tag string) (string, error) {
+func releaseNotesJSON(tag string) (jsonString string, err error) {
 	logrus.Infof("Generating release notes for tag %s", tag)
 
 	tagVersion, err := util.TagStringToSemver(tag)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing semver from tag string")
 	}
+
+	logrus.Info("Cloning kubernetes/sig-release to read mapping files")
+	sigReleaseRepo, err := git.CleanCloneGitHubRepo(
+		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, true,
+	)
+	if err != nil {
+		return "", errors.Wrap(err, "performing clone of k/sig-release")
+	}
+	defer func() {
+		err = sigReleaseRepo.Cleanup()
+	}()
 
 	branchName := git.DefaultBranch
 	releaseBranch := fmt.Sprintf("release-%d.%d", tagVersion.Major, tagVersion.Minor)
@@ -843,6 +855,18 @@ func releaseNotesJSON(tag string) (string, error) {
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
 	notesOptions.MapProviderStrings = releaseNotesOpts.mapProviders
 
+	// If the the release for the tag we are using has a mapping directory,
+	// add it to the mapProviders array to read the edits from the release team:
+	mapsDir := filepath.Join(
+		sigReleaseRepo.Dir(), "releases",
+		fmt.Sprintf("release-%d.%d", tagVersion.Major, tagVersion.Minor),
+		releaseNotesWorkDir, mapsMainDirectory,
+	)
+	if util.Exists(mapsDir) {
+		logrus.Infof("Notes gatherer will read maps from %s", mapsDir)
+		notesOptions.MapProviderStrings = append(notesOptions.MapProviderStrings, mapsDir)
+	}
+
 	if err := notesOptions.ValidateAndFinish(); err != nil {
 		return "", err
 	}
@@ -868,7 +892,7 @@ func releaseNotesJSON(tag string) (string, error) {
 		return "", errors.Wrapf(err, "generating release notes JSON")
 	}
 
-	return string(j), nil
+	return string(j), err
 }
 
 // gatherNotesFrom gathers all the release notes from the specified startTag up to --tag
