@@ -23,7 +23,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/gcp"
 	"k8s.io/utils/pointer"
 )
@@ -112,7 +111,7 @@ func bucketCopy(src, dst string, opts *Options) error {
 
 	args = append(args, src, dst)
 
-	if err := command.Execute(gcp.GSUtilExecutable, args...); err != nil {
+	if err := gcp.GSUtil(args...); err != nil {
 		return errors.Wrap(err, "gcs copy")
 	}
 

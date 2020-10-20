@@ -18,12 +18,13 @@ package gcp
 
 import (
 	"github.com/pkg/errors"
+
 	"k8s.io/release/pkg/command"
 )
 
 const (
 	GCloudExecutable = "gcloud"
-	GSUtilExecutable = "gsutil"
+	gSUtilExecutable = "gsutil"
 	TarExecutable    = "tar"
 )
 
@@ -32,7 +33,7 @@ const (
 func PreCheck() error {
 	for _, e := range []string{
 		GCloudExecutable,
-		GSUtilExecutable,
+		gSUtilExecutable,
 		TarExecutable,
 	} {
 		if !command.Available(e) {
@@ -47,14 +48,14 @@ func PreCheck() error {
 
 // GSUtil can be used to run a gsutil command
 func GSUtil(args ...string) error {
-	return command.Execute(GSUtilExecutable, args...)
+	return command.New(gSUtilExecutable, args...).RunSilentSuccess()
 }
 
 // GSUtilOutput can be used to run a gsutil command while capturing its output
 func GSUtilOutput(args ...string) (string, error) {
-	stream, err := command.New(GSUtilExecutable, args...).RunSilentSuccessOutput()
+	stream, err := command.New(gSUtilExecutable, args...).RunSilentSuccessOutput()
 	if err != nil {
-		return "", errors.Wrapf(err, "executing %s", GSUtilExecutable)
+		return "", errors.Wrapf(err, "executing %s", gSUtilExecutable)
 	}
 	return stream.OutputTrimNL(), nil
 }

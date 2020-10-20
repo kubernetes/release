@@ -153,8 +153,7 @@ func (o *Options) uploadBuildDir(targetBucket string) (string, error) {
 	u := uuid.New()
 	uploaded := fmt.Sprintf("%s/%s.tgz", targetBucket, u.String())
 	logrus.Infof("Uploading %s to %s...", name, uploaded)
-	cpErr := command.Execute(
-		gcp.GSUtilExecutable,
+	cpErr := gcp.GSUtil(
 		"cp",
 		name,
 		uploaded,
