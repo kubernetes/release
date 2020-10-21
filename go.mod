@@ -4,11 +4,11 @@ go 1.15
 
 require (
 	cloud.google.com/go/storage v1.12.0
-	github.com/GoogleCloudPlatform/testgrid v0.0.22
+	github.com/GoogleCloudPlatform/testgrid v0.0.26
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/containers/image/v5 v5.6.0
-	github.com/go-git/go-git/v5 v5.1.0
-	github.com/golang/protobuf v1.4.2
+	github.com/go-git/go-git/v5 v5.2.0
+	github.com/golang/protobuf v1.4.3
 	github.com/google/go-github/v29 v29.0.3
 	github.com/google/uuid v1.1.2
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.3
@@ -18,21 +18,24 @@ require (
 	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6
 	github.com/pkg/errors v0.9.1
 	github.com/psampaz/go-mod-outdated v0.7.0
-	github.com/saschagrunert/go-modiff v1.2.0
-	github.com/sendgrid/rest v2.6.1+incompatible
-	github.com/sendgrid/sendgrid-go v3.6.4+incompatible
+	github.com/saschagrunert/go-modiff v1.2.1
+	github.com/sendgrid/rest v2.6.2+incompatible
+	github.com/sendgrid/sendgrid-go v3.7.0+incompatible
 	github.com/sirupsen/logrus v1.7.0
-	github.com/spf13/cobra v1.0.0
+	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
 	github.com/yuin/goldmark v1.2.1
-	golang.org/x/net v0.0.0-20200930145003-4acb6c075d10
+	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897 // indirect
+	golang.org/x/net v0.0.0-20201021035429-f5854403a974
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
+	golang.org/x/sys v0.0.0-20201020230747-6e5568b54d1a // indirect
+	golang.org/x/tools v0.0.0-20201021214918-23787c007979 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
-	google.golang.org/api v0.32.0
+	google.golang.org/api v0.33.0
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/klog/v2 v2.3.0
-	k8s.io/utils v0.0.0-20200912215256-4140de9c8800
+	k8s.io/utils v0.0.0-20201015054608-420da100c033
 	sigs.k8s.io/k8s-container-image-promoter/pkg v0.3.0
 	sigs.k8s.io/yaml v1.2.0
 )
