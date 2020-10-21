@@ -1,5 +1,5 @@
 variants:
   cross1.15:
     CONFIG: 'cross1.15'
-    KUBE_CROSS_VERSION: 'v1.15.2-1'
+    KUBE_CROSS_VERSION: 'v1.15.3-1'
     SKOPEO_VERSION: 'v1.2.0'
