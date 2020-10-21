@@ -49,10 +49,7 @@ func (s *gcsSyncFilestore) OpenReader(
 }
 
 // UploadFile uploads a local file to the specified destination.
-func (s *gcsSyncFilestore) UploadFile(
-	ctx context.Context,
-	dest string,
-	localFile string) error {
+func (s *gcsSyncFilestore) UploadFile(ctx context.Context, dest, localFile string) error {
 	absolutePath := s.prefix + dest
 
 	gcsURL := "gs://" + s.bucket + "/" + absolutePath

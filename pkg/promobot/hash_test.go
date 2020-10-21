@@ -56,7 +56,7 @@ func TestHash(t *testing.T) {
 //  is very handy when making bigger changes.  The intention of these
 //  tests is to make the changes explicit, particularly in code
 //  review, not to force manual updates.
-func AssertMatchesFile(t *testing.T, actual string, p string) {
+func AssertMatchesFile(t *testing.T, actual, p string) {
 	b, err := ioutil.ReadFile(p)
 	if err != nil {
 		if os.Getenv("UPDATE_EXPECTED_OUTPUT") == "" {

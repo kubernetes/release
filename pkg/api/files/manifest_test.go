@@ -25,7 +25,7 @@ import (
 )
 
 func TestValidateFilestores(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		filestores    []files.Filestore
 		expectedError string
 	}{
@@ -83,14 +83,13 @@ func TestValidateFilestores(t *testing.T) {
 	for _, test := range tests {
 		err := files.ValidateFilestores(test.filestores)
 		checkErrorMatchesExpected(t, err, test.expectedError)
-
 	}
 }
 
 func TestValidateFiles(t *testing.T) {
 	oksha := "4f2f040fa2bfe9bea64911a2a756e8a1727a8bfd757c5e031631a6e699fcf246"
 
-	var tests = []struct {
+	tests := []struct {
 		files         []files.File
 		expectedError string
 	}{
@@ -153,5 +152,4 @@ func checkErrorMatchesExpected(t *testing.T, err error, expected string) {
 	if err == nil && expected != "" {
 		t.Errorf("expected error %q", expected)
 	}
-
 }
