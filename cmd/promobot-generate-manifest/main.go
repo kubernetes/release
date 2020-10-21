@@ -26,7 +26,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"k8s.io/klog"
-	"sigs.k8s.io/k8s-container-image-promoter/pkg/promobot"
+	"k8s.io/release/pkg/promobot"
 	"sigs.k8s.io/yaml"
 )
 

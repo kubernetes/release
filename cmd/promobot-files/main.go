@@ -23,7 +23,7 @@ import (
 	"os"
 
 	"k8s.io/klog"
-	"sigs.k8s.io/k8s-container-image-promoter/pkg/promobot"
+	"k8s.io/release/pkg/promobot"
 )
 
 func main() {

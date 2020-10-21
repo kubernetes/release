@@ -27,8 +27,9 @@ import (
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
+
 	"k8s.io/klog"
-	api "sigs.k8s.io/k8s-container-image-promoter/pkg/api/files"
+	api "k8s.io/release/pkg/api/files"
 )
 
 type gcsSyncFilestore struct {

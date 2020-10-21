@@ -27,9 +27,10 @@ import (
 	"sort"
 
 	"golang.org/x/xerrors"
+
 	"k8s.io/klog"
-	api "sigs.k8s.io/k8s-container-image-promoter/pkg/api/files"
-	"sigs.k8s.io/k8s-container-image-promoter/pkg/filepromoter"
+	api "k8s.io/release/pkg/api/files"
+	"k8s.io/release/pkg/filepromoter"
 )
 
 // PromoteFilesOptions holds the flag-values for a file promotion

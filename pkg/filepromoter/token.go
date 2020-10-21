@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	"golang.org/x/oauth2"
+
 	"k8s.io/klog"
 	"sigs.k8s.io/k8s-container-image-promoter/pkg/gcloud"
 )

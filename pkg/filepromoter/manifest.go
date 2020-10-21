@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"k8s.io/klog"
-	api "sigs.k8s.io/k8s-container-image-promoter/pkg/api/files"
+	api "k8s.io/release/pkg/api/files"
 )
 
 // ManifestPromoter promotes files as described in Manifest.

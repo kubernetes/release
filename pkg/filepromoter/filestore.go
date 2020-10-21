@@ -25,8 +25,9 @@ import (
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
+
 	"k8s.io/klog"
-	api "sigs.k8s.io/k8s-container-image-promoter/pkg/api/files"
+	api "k8s.io/release/pkg/api/files"
 )
 
 // FilestorePromoter manages the promotion of files.
