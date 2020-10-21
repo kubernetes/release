@@ -21,7 +21,8 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"k8s.io/klog"
+	// TODO: Use k/release/pkg/log instead
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/k8s-container-image-promoter/pkg/gcloud"
 )
 

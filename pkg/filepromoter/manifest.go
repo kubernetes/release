@@ -20,7 +20,8 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/klog"
+	// TODO: Use k/release/pkg/log instead
+	"k8s.io/klog/v2"
 	api "k8s.io/release/pkg/api/files"
 )
 

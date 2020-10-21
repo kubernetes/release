@@ -22,7 +22,8 @@ import (
 	"fmt"
 	"os"
 
-	"k8s.io/klog"
+	// TODO: Use k/release/pkg/log instead
+	"k8s.io/klog/v2"
 	reg "sigs.k8s.io/k8s-container-image-promoter/pkg/dockerregistry"
 )
 

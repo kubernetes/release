@@ -22,7 +22,8 @@ import (
 	"fmt"
 	"os"
 
-	"k8s.io/klog"
+	// TODO: Use k/release/pkg/log instead
+	"k8s.io/klog/v2"
 	"k8s.io/release/pkg/promobot"
 )
 
