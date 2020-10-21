@@ -1,0 +1,11 @@
+files:
+- name: blue.png
+  sha256: 905fef7b0658ff5d266140d1cea1eb5b414393b4d0c7897b05beae78678395c3
+- name: green.png
+  sha256: 7e24ef9e8ed9454980182e787fc61dca44014571be346f3a5b341ce6c028e45d
+- name: red.png
+  sha256: 5e6893c6c9ae8bf2a40b22b4274ca58d68c5614b476451a29859750bf434d6a8
+filestores:
+- base: gs://src
+  src: true
+- base: gs://dest
