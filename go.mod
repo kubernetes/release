@@ -28,8 +28,11 @@ require (
 	github.com/yuin/goldmark v1.2.1
 	golang.org/x/net v0.0.0-20200930145003-4acb6c075d10
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	google.golang.org/api v0.32.0
 	gopkg.in/yaml.v2 v2.3.0
+	k8s.io/klog/v2 v2.3.0
 	k8s.io/utils v0.0.0-20200912215256-4140de9c8800
+	sigs.k8s.io/k8s-container-image-promoter/pkg v0.2.0
 	sigs.k8s.io/yaml v1.2.0
 )
