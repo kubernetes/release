@@ -24,13 +24,9 @@ aliases:
     - sethmccombs # Release Manager Associate
     - verolop # Release Manager Associate
   build-admins:
-    - aleksandra-malinowska
     - amwat
     - BenTheElder
-    - listx
     - MushuEE
-    - ps882
-    - sumitranr
     - spiffxp
   build-image-approvers:
     - BenTheElder
