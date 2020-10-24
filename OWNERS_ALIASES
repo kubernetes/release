@@ -64,6 +64,7 @@ aliases:
     - listx
   release-notes-approvers:
     - jeefy
+    - puerco
     - saschagrunert
   release-notes-reviewers:
     - jeefy
