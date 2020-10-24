@@ -50,9 +50,11 @@ aliases:
     - justaugustus
     - saschagrunert
   krel-reviewers:
+    - cpanato
     - hasheddan
     - hoegaarden
     - justaugustus
+    - puerco
     - saschagrunert
   promo-tools-approvers:
     - justaugustus
