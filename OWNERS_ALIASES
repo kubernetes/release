@@ -54,6 +54,14 @@ aliases:
     - hoegaarden
     - justaugustus
     - saschagrunert
+  promo-tools-approvers:
+    - justaugustus
+    - justinsb
+    - listx
+  promo-tools-reviewers:
+    - justaugustus
+    - justinsb
+    - listx
   release-notes-approvers:
     - jeefy
     - saschagrunert
