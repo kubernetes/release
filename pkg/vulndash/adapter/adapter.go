@@ -27,28 +27,27 @@ import (
 	"strings"
 	"time"
 
-	// nolint[lll]
 	containeranalysis "cloud.google.com/go/containeranalysis/apiv1"
 	"cloud.google.com/go/storage"
+	"github.com/pkg/errors"
 	"golang.org/x/net/html"
 	"google.golang.org/api/iterator"
 	grafeaspb "google.golang.org/genproto/googleapis/grafeas/v1"
 )
 
-// nolint[errcheck]
 func uploadFile(directory, filename, bucket string) error {
 	const timeout = 60
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		return fmt.Errorf("storage.NewClient: %v", err)
+		return errors.Errorf("storage.NewClient: %v", err)
 	}
 	defer client.Close()
 
 	// Open local file
 	f, err := os.Open(directory + filename)
 	if err != nil {
-		return fmt.Errorf("os.Open: %v", err)
+		return errors.Errorf("os.Open: %v", err)
 	}
 	defer f.Close()
 
@@ -58,24 +57,23 @@ func uploadFile(directory, filename, bucket string) error {
 	// Upload the object with storage.Writer
 	wc := client.Bucket(bucket).Object(filename).NewWriter(ctx)
 	if _, err = io.Copy(wc, f); err != nil {
-		return fmt.Errorf("io.Copy: %v", err)
+		return errors.Errorf("io.Copy: %v", err)
 	}
 	if err := wc.Close(); err != nil {
-		return fmt.Errorf("Writer.Close: %v", err)
+		return errors.Errorf("Writer.Close: %v", err)
 	}
 	return nil
 }
 
 // GetAllVulnerabilities gets all of the vulnerability occurrences associated
 // with images in a specific project using the Container Analysis Service.
-// nolint[errcheck]
 func GetAllVulnerabilities(
 	projectID string,
 ) ([]*grafeaspb.Occurrence, error) {
 	ctx := context.Background()
 	client, err := containeranalysis.NewClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("NewClient: %v", err)
+		return nil, errors.Errorf("NewClient: %v", err)
 	}
 	defer client.Close()
 
@@ -92,17 +90,19 @@ func GetAllVulnerabilities(
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("occurrence iteration error: %v", err)
+			return nil, errors.Errorf("occurrence iteration error: %v", err)
 		}
 		occurrenceList = append(occurrenceList, occ)
 	}
 	return occurrenceList, err
 }
 
-func parseImageResourceURL(resourceURL string) (string, string) {
+func parseImageResourceURL(resourceURL string) (registryImageName, digest string) {
 	FQIN := path.Base(resourceURL)
 	splitFQIN := strings.Split(FQIN, "@")
-	return splitFQIN[0], splitFQIN[1]
+	registryImageName, digest = splitFQIN[0], splitFQIN[1]
+
+	return registryImageName, digest
 }
 
 func parseVulnName(noteName string) string {
@@ -115,7 +115,8 @@ func parseVulnName(noteName string) string {
 func GenerateVulnerabilityBreakdown(
 	productionVulnerabilities []*grafeaspb.Occurrence,
 ) map[string]ImageVulnBreakdown {
-	var vulnBreakdowns = make(map[string]ImageVulnBreakdown)
+	vulnBreakdowns := make(map[string]ImageVulnBreakdown)
+
 	for _, occ := range productionVulnerabilities {
 		// resourceURI is a url pointing to a specific image
 		// in the form gcr.io/project/foo@sha256:111
@@ -161,39 +162,47 @@ func UpdateVulnerabilityDashboard(
 	vulnProject string,
 	dashboardBucket string,
 ) error {
-	htmlReader, _ := os.Open(dashboardPath + "dashboard.html")
+	htmlReader, openErr := os.Open(dashboardPath + "dashboard.html")
+	if openErr != nil {
+		return errors.Wrap(openErr, "opening dashboard file")
+	}
+
 	_, err := html.Parse(htmlReader)
 	if err != nil {
-		return fmt.Errorf("dashboard.html is not valid HTML: %v", err)
+		return errors.Errorf("dashboard.html is not valid HTML: %v", err)
 	}
 	err = uploadFile(dashboardPath, "dashboard.html", dashboardBucket)
 	if err != nil {
-		return fmt.Errorf("Unable to upload latest version of "+
+		return errors.Errorf("Unable to upload latest version of "+
 			"dashboard HTML: %v", err)
 	}
 
 	err = uploadFile(dashboardPath, "dashboard.js", dashboardBucket)
 	if err != nil {
-		return fmt.Errorf("Unable to upload latest version of "+
+		return errors.Errorf("Unable to upload latest version of "+
 			"dashboard JS: %v", err)
 	}
 
-	productionVulnerabilities, _ := GetAllVulnerabilities(vulnProject)
+	productionVulnerabilities, getVulnErr := GetAllVulnerabilities(vulnProject)
+	if getVulnErr != nil {
+		return errors.Wrap(getVulnErr, "getting all vulnerabilities")
+	}
+
 	vulnBreakdowns := GenerateVulnerabilityBreakdown(productionVulnerabilities)
 	jsonFile, err := json.MarshalIndent(vulnBreakdowns, "", " ")
 	if err != nil {
-		return fmt.Errorf("Unable to generate dashboard json: %v", err)
+		return errors.Errorf("Unable to generate dashboard json: %v", err)
 	}
 
 	err = ioutil.WriteFile(dashboardPath+"dashboard.json",
 		jsonFile, os.ModeTemporary)
 	if err != nil {
-		return fmt.Errorf("Unable to create temporary local"+
+		return errors.Errorf("Unable to create temporary local"+
 			"JSON file for the dashboard: %v", err)
 	}
 	err = uploadFile(dashboardPath, "dashboard.json", dashboardBucket)
 	if err != nil {
-		return fmt.Errorf("Unable to upload latest version of "+
+		return errors.Errorf("Unable to upload latest version of "+
 			"dashboard JSON: %v", err)
 	}
 	return nil

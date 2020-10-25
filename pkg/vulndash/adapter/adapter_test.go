@@ -51,7 +51,7 @@ func checkError(t *testing.T, err error, msg string) {
 }
 
 func TestGenerateVulnerabilityBreakdown(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name            string
 		vulnerabilities []*grafeaspb.Occurrence
 		expected        map[string]adapter.ImageVulnBreakdown
