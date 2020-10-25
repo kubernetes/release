@@ -71,3 +71,9 @@ aliases:
     - jeefy
     - puerco
     - saschagrunert
+  vulndash-approvers:
+    - justaugustus
+    - listx
+  vulndash-reviewers:
+    - justaugustus
+    - listx
