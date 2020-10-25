@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"k8s.io/klog"
-	adapter "sigs.k8s.io/k8s-container-image-promoter/pkg/vulndash/adapter"
+	adapter "k8s.io/release/pkg/vulndash/adapter"
 )
 
 // nolint[gocyclo]
