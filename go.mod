@@ -3,6 +3,7 @@ module k8s.io/release
 go 1.15
 
 require (
+	cloud.google.com/go v0.66.0
 	cloud.google.com/go/storage v1.12.0
 	github.com/GoogleCloudPlatform/testgrid v0.0.26
 	github.com/blang/semver v3.5.1+incompatible
@@ -33,6 +34,7 @@ require (
 	golang.org/x/tools v0.0.0-20201021214918-23787c007979 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	google.golang.org/api v0.33.0
+	google.golang.org/genproto v0.0.0-20200921151605-7abf4a1a14d5
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/klog/v2 v2.3.0
 	k8s.io/utils v0.0.0-20201015054608-420da100c033
