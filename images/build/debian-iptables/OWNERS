@@ -2,6 +2,7 @@
 
 reviewers:
   - build-image-reviewers
+  - release-engineering-approvers
   - BenTheElder
   - bowei
   - freehan
@@ -11,6 +12,7 @@ reviewers:
   - tallclair
 approvers:
   - build-image-approvers
+  - release-engineering-approvers
   - BenTheElder
   - bowei
   - freehan
