@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://storage.googleapis.com/k8s-artifacts-prod-vuln-dashboard/dashboard.js"></script>
+</head>
+
+<body>
+    <h1>Vulnerability Dashboard</h1>
+    <p>There's nothing here. This is just a test.</p>
+    <input onclick="ToggleFixableVulnerabiliyFilter()" type="checkbox" id="fixfilter" name="fixfilter" value="fixfiltertoggle">
+    <label for="fixfilter"> Show only vulnerabilities with a fix available</label><br>
+    <table align="center" id="table" border="1">
+    </table>
+</body>
+
+</html>
