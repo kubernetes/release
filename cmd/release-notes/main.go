@@ -35,6 +35,7 @@ import (
 	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
+	"sigs.k8s.io/mdtoc/pkg/mdtoc"
 )
 
 type releaseNotesOptions struct {
@@ -328,7 +329,7 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 		}
 
 		if releaseNotesOpts.tableOfContents {
-			toc, err := notes.GenerateTOC(markdown)
+			toc, err := mdtoc.GenerateTOC([]byte(markdown))
 			if err != nil {
 				return errors.Wrap(err, "generating table of contents")
 			}
