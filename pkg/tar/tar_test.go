@@ -24,6 +24,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
 
@@ -55,6 +56,13 @@ func TestCompress(t *testing.T) {
 		))
 	}
 
+	logrus.SetLevel(logrus.DebugLevel)
+
+	require.Nil(t, os.Symlink(
+		filepath.Join(baseTmpDir, "1.txt"),
+		filepath.Join(subTmpDir, "link"),
+	))
+
 	excludes := []*regexp.Regexp{
 		regexp.MustCompile(".md"),
 		regexp.MustCompile("5"),
@@ -64,7 +72,7 @@ func TestCompress(t *testing.T) {
 	require.Nil(t, Compress(tarFilePath, baseTmpDir, excludes...))
 	require.FileExists(t, tarFilePath)
 
-	res := []string{"1.txt", "2.bin", "sub/4.txt"}
+	res := []string{"1.txt", "2.bin", "sub/4.txt", "sub/link"}
 	require.Nil(t, iterateTarball(
 		tarFilePath, func(_ *tar.Reader, header *tar.Header) bool {
 			require.Equal(t, res[0], header.Name)

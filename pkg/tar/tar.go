@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // Compress the provided  `tarContentsPath` into the `tarFilePath` while
@@ -48,41 +49,57 @@ func Compress(tarFilePath, tarContentsPath string, excludes ...*regexp.Regexp) e
 			return err
 		}
 
+		var link string
+		isLink := fileInfo.Mode()&os.ModeSymlink == os.ModeSymlink
+		if isLink {
+			link, err = os.Readlink(filePath)
+			if err != nil {
+				return errors.Wrapf(err, "read file link of %s", filePath)
+			}
+		}
+
+		header, err := tar.FileInfoHeader(fileInfo, link)
+		if err != nil {
+			return errors.Wrapf(err, "create file info header for %q", filePath)
+		}
+
 		if fileInfo.IsDir() || filePath == tarFilePath {
+			logrus.Debugf("Skipping: %s", filePath)
 			return nil
 		}
 
 		for _, re := range excludes {
 			if re != nil && re.MatchString(filePath) {
+				logrus.Debugf("Excluding: %s", filePath)
 				return nil
 			}
 		}
 
-		header, err := tar.FileInfoHeader(fileInfo, filePath)
-		if err != nil {
-			return errors.Wrapf(err, "create file info header for %q", filePath)
-		}
 		// Make the path inside the tar relative to the archive path if
 		// necessary.
 		header.Name = strings.TrimLeft(
 			strings.TrimPrefix(filePath, filepath.Dir(tarFilePath)),
 			string(filepath.Separator),
 		)
+		header.Linkname = filepath.ToSlash(header.Linkname)
 
 		if err := tarWriter.WriteHeader(header); err != nil {
 			return errors.Wrap(err, "writing tar header")
 		}
 
-		file, err := os.Open(filePath)
-		if err != nil {
-			return errors.Wrapf(err, "open file %q", filePath)
+		if !isLink {
+			file, err := os.Open(filePath)
+			if err != nil {
+				return errors.Wrapf(err, "open file %q", filePath)
+			}
+
+			if _, err := io.Copy(tarWriter, file); err != nil {
+				return errors.Wrap(err, "writing file to tar writer")
+			}
+
+			file.Close()
 		}
 
-		if _, err := io.Copy(tarWriter, file); err != nil {
-			return errors.Wrap(err, "writing file to tar writer")
-		}
-
-		file.Close()
 		return nil
 	}); err != nil {
 		return errors.Wrapf(err, "walking tree in %q", tarContentsPath)

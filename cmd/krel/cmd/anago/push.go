@@ -125,6 +125,11 @@ func runPushStage(
 	opts *release.PushBuildOptions,
 	version string,
 ) error {
+	// Stage the local source tree
+	if err := pushBuild.StageLocalSourceTree(buildVersion); err != nil {
+		return errors.Wrap(err, "staging local source tree")
+	}
+
 	// Stage local artifacts and write checksums
 	if err := pushBuild.StageLocalArtifacts(version); err != nil {
 		return errors.Wrap(err, "staging local artifacts")
@@ -160,9 +165,7 @@ func runPushRelease(
 	opts *release.PushBuildOptions,
 	version string,
 ) error {
-	if err := pushBuild.CopyStagedFromGCS(
-		opts.Bucket, version, buildVersion,
-	); err != nil {
+	if err := pushBuild.CopyStagedFromGCS(version, buildVersion); err != nil {
 		return errors.Wrap(err, "copy staged from GCS")
 	}
 
