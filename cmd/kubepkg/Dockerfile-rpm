@@ -12,17 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.13.6 AS builder
+ARG GO_VERSION
+FROM golang:${GO_VERSION} as builder
 
-ENV GO111MODULE=on
+WORKDIR /go/src/k8s.io/release
 
-WORKDIR /workspace
+# Copy the sources
+ENV package="./cmd/kubepkg"
+COPY ../../go.mod ../../go.sum ./
+COPY ../../pkg ./pkg/
+COPY ../../cmd/kubepkg ${package}/
 
-COPY . .
+RUN go mod download
 
-RUN go build -o . ./cmd/kubepkg/...
+# Build
+ARG ARCH
 
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOARCH=${ARCH}
 
+RUN go build -ldflags '-s -w -buildid= -extldflags "-static"' \
+    -o kubepkg ${package}
+
+# Production image
 FROM fedora:30
 
 RUN dnf install -y \
@@ -42,6 +55,6 @@ WORKDIR /home/builder/workspace
 RUN rpmdev-setuptree
 
 COPY --chown=builder:builder ./cmd/kubepkg/templates ./templates
-COPY --from=builder --chown=builder:builder /workspace/kubepkg .
+COPY --from=builder --chown=builder:builder /go/src/k8s.io/release/kubepkg .
 
 ENTRYPOINT ["./kubepkg", "rpms"]
