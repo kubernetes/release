@@ -59,6 +59,10 @@ dependencies:
   - name: "golang"
     version: 1.15.3
     refPaths:
+    - path: cmd/vulndash/Makefile
+      match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+    - path: cmd/vulndash/variants.yaml
+      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
     - path: images/build/cross/Makefile
       match: GO_VERSION\?=\d+.\d+(alpha|beta|rc)?\.?(\d+)?
     - path: images/build/cross/variants.yaml
