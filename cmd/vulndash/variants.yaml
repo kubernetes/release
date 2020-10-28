@@ -1,0 +1,5 @@
+variants:
+  default:
+    IMAGE_VERSION: 'buster-v2.1.0'
+    GO_VERSION: '1.15.3'
+    DISTROLESS_IMAGE: 'static-debian10'

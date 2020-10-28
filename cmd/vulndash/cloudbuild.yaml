@@ -10,7 +10,7 @@ options:
 steps:
   - name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v20200824-5d057db'
     entrypoint: 'bash'
-    dir: ./images/build/vulndash
+    dir: ./cmd/vulndash
     env:
     - DOCKER_CLI_EXPERIMENTAL=enabled
     - REGISTRY=gcr.io/$PROJECT_ID
@@ -18,7 +18,6 @@ steps:
     - TAG=$_GIT_TAG
     - PULL_BASE_REF=$_PULL_BASE_REF
     - IMAGE_VERSION=$_IMAGE_VERSION
-    - CONFIG=$_CONFIG
     - GO_VERSION=$_GO_VERSION
     - DISTROLESS_IMAGE=$_DISTROLESS_IMAGE
     args:
@@ -32,8 +31,7 @@ substitutions:
   # can be used as a substitution
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
-  _IMAGE_VERSION: 'codename-v0.0.0'
-  _CONFIG: 'codename'
+  _IMAGE_VERSION: 'v0.0.0'
   _GO_VERSION: '0.0.0'
   _DISTROLESS_IMAGE: 'static-debian00'
 
@@ -42,11 +40,10 @@ tags:
 - ${_GIT_TAG}
 - ${_PULL_BASE_REF}
 - ${_IMAGE_VERSION}
-- ${_CONFIG}
 - ${_GO_VERSION}
 - ${_DISTROLESS_IMAGE}
 
 images:
   - 'gcr.io/$PROJECT_ID/vulndash-amd64:$_IMAGE_VERSION'
-  - 'gcr.io/$PROJECT_ID/vulndash-amd64:$_GIT_TAG-$_CONFIG'
-  - 'gcr.io/$PROJECT_ID/vulndash-amd64:latest-$_CONFIG'
+  - 'gcr.io/$PROJECT_ID/vulndash-amd64:$_GIT_TAG'
+  - 'gcr.io/$PROJECT_ID/vulndash-amd64:latest'

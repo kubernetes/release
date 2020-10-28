@@ -13,11 +13,12 @@
 # limitations under the License.
 
 # include the common image-building Makefiles
-include $(CURDIR)/../../Makefile.common-image $(CURDIR)/../Makefile.artifact-promoter
+#include $(CURDIR)/../../Makefile.common-image
 
 # set default shell
 SHELL=/bin/bash -o pipefail
 
+REGISTRY ?= gcr.io/k8s-staging-artifact-promoter
 IMGNAME = vulndash
 IMAGE_VERSION ?= buster-v2.1.0
 CONFIG ?= buster
@@ -67,11 +68,11 @@ container: init-docker-buildx
 			--progress plain \
 			--platform $${platform} \
 			--tag $(IMAGE)-$${platform##*/}:$(IMAGE_VERSION) \
-			--tag $(IMAGE)-$${platform##*/}:$(TAG)-$(CONFIG) \
-			--tag $(IMAGE)-$${platform##*/}:latest-$(CONFIG) \
+			--tag $(IMAGE)-$${platform##*/}:$(TAG) \
+			--tag $(IMAGE)-$${platform##*/}:latest \
 			$(BUILD_ARGS) \
 			-f $(CURDIR)/Dockerfile \
-			../../../.; \
+			../../.; \
 	done
 
 .PHONY: push
@@ -80,8 +81,8 @@ push: container
 	@for platform in $(PLATFORMS); do \
 		echo "Pushing tags for $${platform} platform"; \
 		docker push $(IMAGE)-$${platform##*/}:$(IMAGE_VERSION); \
-		docker push $(IMAGE)-$${platform##*/}:$(TAG)-$(CONFIG); \
-		docker push $(IMAGE)-$${platform##*/}:latest-$(CONFIG); \
+		docker push $(IMAGE)-$${platform##*/}:$(TAG); \
+		docker push $(IMAGE)-$${platform##*/}:latest; \
 	done
 
 .PHONY: manifest
@@ -93,4 +94,4 @@ manifest: push
 # enable buildx
 .PHONY: init-docker-buildx
 init-docker-buildx:
-	./../../../hack/init-buildx.sh
+	./../../hack/init-buildx.sh
