@@ -17,9 +17,7 @@ limitations under the License.
 package util
 
 import (
-	"archive/tar"
 	"bufio"
-	"compress/gzip"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -366,33 +364,6 @@ func FakeGOPATH(srcDir string) (string, error) {
 	}
 
 	return gitRoot, nil
-}
-
-// ReadFileFromGzippedTar opens a tarball and reads contents of a file inside.
-func ReadFileFromGzippedTar(tarPath, filePath string) (io.Reader, error) {
-	file, err := os.Open(tarPath)
-	if err != nil {
-		return nil, err
-	}
-
-	archive, err := gzip.NewReader(file)
-	if err != nil {
-		return nil, err
-	}
-	tr := tar.NewReader(archive)
-
-	for {
-		h, err := tr.Next()
-		if err == io.EOF {
-			break // End of archive
-		}
-
-		if h.Name == filePath {
-			return tr, nil
-		}
-	}
-
-	return nil, errors.New("unable to find file in tarball")
 }
 
 // MoreRecent determines if file at path a was modified more recently than file

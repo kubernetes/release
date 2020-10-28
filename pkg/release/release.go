@@ -41,6 +41,7 @@ import (
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/http"
+	"k8s.io/release/pkg/tar"
 	"k8s.io/release/pkg/util"
 )
 
@@ -170,7 +171,7 @@ func ReadBazelVersion(workDir string) (string, error) {
 // ReadDockerizedVersion reads the version from a Dockerized Kubernetes build.
 func ReadDockerizedVersion(workDir string) (string, error) {
 	dockerTarball := filepath.Join(workDir, BuildDir, ReleaseTarsPath, kubernetesTar)
-	reader, err := util.ReadFileFromGzippedTar(
+	reader, err := tar.ReadFileFromGzippedTar(
 		dockerTarball, filepath.Join("kubernetes", "version"),
 	)
 	if err != nil {
