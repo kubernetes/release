@@ -16,47 +16,34 @@
 ARG GO_VERSION
 ARG DISTROLESS_IMAGE
 FROM golang:${GO_VERSION} as builder
-WORKDIR /workspace
+
+WORKDIR /go/src/k8s.io/release
 
 # Copy the sources
-COPY ./../../../cmd/vulndash ./
-#COPY ./../../../go.* ./
-RUN go mod init k8s.io/release/cmd/vulndash
+ENV package="./cmd/vulndash"
+COPY ../../go.mod ../../go.sum ./
+COPY ../../pkg ./pkg/
+COPY ../../cmd/vulndash ${package}/
 
-# Allow fallback to 'direct' for GOPROXY
-#
-# The GOPROXY environment variable now supports skipping proxies that return
-# errors. Proxy URLs may now be separated with either commas (,) or pipe
-# characters (|). If a proxy URL is followed by a comma, the go command will
-# only try the next proxy in the list after a 404 or 410 HTTP response. If a
-# proxy URL is followed by a pipe character, the go command will try the next
-# proxy in the list after any error. Note that the default value of GOPROXY
-# remains https://proxy.golang.org,direct, which does not fall back to direct
-# in case of errors.
-#
-# ref: https://golang.org/doc/go1.15#go-command
-ENV GOPROXY="https://proxy.golang.org|direct"
+RUN go mod download
 
 # Build
-ARG package=.
 ARG ARCH
 
 ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOARCH=${ARCH}
 
-RUN go env
-
-RUN env
-RUN ls -al
-
 RUN go build -ldflags '-s -w -buildid= -extldflags "-static"' \
     -o vulndash ${package}
 
 # Production image
 FROM gcr.io/distroless/${DISTROLESS_IMAGE}:latest
+
 LABEL maintainers="Kubernetes Authors"
-LABEL description="go based runner for distroless scenarios"
+LABEL description="A vulnerability dashboard for GCR container images"
+
 WORKDIR /
-COPY --from=builder /workspace/vulndash .
+COPY --from=builder /go/src/k8s.io/release/vulndash .
+
 ENTRYPOINT ["/vulndash"]
