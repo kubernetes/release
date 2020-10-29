@@ -59,9 +59,11 @@ func uploadFile(directory, filename, bucket string) error {
 	if _, err = io.Copy(wc, f); err != nil {
 		return errors.Errorf("io.Copy: %v", err)
 	}
+
 	if err := wc.Close(); err != nil {
 		return errors.Errorf("Writer.Close: %v", err)
 	}
+
 	return nil
 }
 
@@ -94,6 +96,7 @@ func GetAllVulnerabilities(
 		}
 		occurrenceList = append(occurrenceList, occ)
 	}
+
 	return occurrenceList, err
 }
 
@@ -195,15 +198,17 @@ func UpdateVulnerabilityDashboard(
 	}
 
 	err = ioutil.WriteFile(dashboardPath+"dashboard.json",
-		jsonFile, os.ModeTemporary)
+		jsonFile, 0644)
 	if err != nil {
 		return errors.Errorf("Unable to create temporary local"+
 			"JSON file for the dashboard: %v", err)
 	}
+
 	err = uploadFile(dashboardPath, "dashboard.json", dashboardBucket)
 	if err != nil {
 		return errors.Errorf("Unable to upload latest version of "+
 			"dashboard JSON: %v", err)
 	}
+
 	return nil
 }
