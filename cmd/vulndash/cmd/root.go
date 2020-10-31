@@ -48,6 +48,7 @@ type options struct {
 	project           string
 	bucket            string
 	dashboardFilePath string
+	pageSize          int32
 	logLevel          string
 }
 
@@ -57,6 +58,7 @@ var (
 	projectFlag           = "project"
 	bucketFlag            = "bucket"
 	dashboardFilePathFlag = "dashboard-file-path"
+	pageSizeFlag          = "page-size"
 
 	// requiredFlags only if the config flag is not set
 	requiredFlags = []string{
@@ -102,6 +104,13 @@ func init() {
 		"info",
 		"the logging verbosity, either 'panic', 'fatal', 'error', 'warn', 'warning', 'info', 'debug' or 'trace'",
 	)
+
+	rootCmd.PersistentFlags().Int32Var(
+		&opts.pageSize,
+		pageSizeFlag,
+		200,
+		"the page size when getting the list of vulnerabilities",
+	)
 }
 
 func initLogging(*cobra.Command, []string) error {
@@ -132,6 +141,7 @@ func run(opts *options) error {
 		opts.dashboardFilePath,
 		opts.project,
 		opts.bucket,
+		opts.pageSize,
 	)
 	if updateErr != nil {
 		return errors.Wrap(updateErr, "updating vulnerability dashboard")
