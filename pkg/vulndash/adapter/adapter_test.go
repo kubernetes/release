@@ -17,38 +17,12 @@ limitations under the License.
 package adapter_test
 
 import (
-	"fmt"
-	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	grafeaspb "google.golang.org/genproto/googleapis/grafeas/v1"
 	adapter "k8s.io/release/pkg/vulndash/adapter"
 )
-
-func checkEqual(got, expected interface{}) error {
-	if !reflect.DeepEqual(got, expected) {
-		return fmt.Errorf(
-			`<<<<<<< got (type %T)
-%v
-=======
-%v
->>>>>>> expected (type %T)`,
-			got,
-			got,
-			expected,
-			expected)
-	}
-	return nil
-}
-
-func checkError(t *testing.T, err error, msg string) {
-	if err != nil {
-		fmt.Printf("\n%v", msg)
-		fmt.Println(err)
-		fmt.Println()
-		t.Fail()
-	}
-}
 
 func TestGenerateVulnerabilityBreakdown(t *testing.T) {
 	tests := []struct {
@@ -248,7 +222,6 @@ func TestGenerateVulnerabilityBreakdown(t *testing.T) {
 
 	for _, test := range tests {
 		testBreakdown := adapter.GenerateVulnerabilityBreakdown(test.vulnerabilities)
-		err := checkEqual(testBreakdown, test.expected)
-		checkError(t, err, fmt.Sprintf("checkError: test: %v (GenerateDashboardJSON)\n", test.name))
+		require.Equal(t, testBreakdown, test.expected)
 	}
 }
