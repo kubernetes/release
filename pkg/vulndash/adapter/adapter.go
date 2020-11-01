@@ -30,6 +30,7 @@ import (
 	containeranalysis "cloud.google.com/go/containeranalysis/apiv1"
 	"cloud.google.com/go/storage"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
 	"google.golang.org/api/iterator"
 	grafeaspb "google.golang.org/genproto/googleapis/grafeas/v1"
@@ -71,6 +72,7 @@ func uploadFile(directory, filename, bucket string) error {
 // with images in a specific project using the Container Analysis Service.
 func GetAllVulnerabilities(
 	projectID string,
+	pageSize int32,
 ) ([]*grafeaspb.Occurrence, error) {
 	ctx := context.Background()
 	client, err := containeranalysis.NewClient(ctx)
@@ -80,14 +82,18 @@ func GetAllVulnerabilities(
 	defer client.Close()
 
 	req := &grafeaspb.ListOccurrencesRequest{
-		Parent: fmt.Sprintf("projects/%s", projectID),
-		Filter: fmt.Sprintf("kind = %q", "VULNERABILITY"),
+		Parent:   fmt.Sprintf("projects/%s", projectID),
+		Filter:   fmt.Sprintf("kind = %q", "VULNERABILITY"),
+		PageSize: pageSize,
 	}
 
+	logrus.Info("listing the vulnerabilities, will take a while...")
 	var occurrenceList []*grafeaspb.Occurrence
 	it := client.GetGrafeasClient().ListOccurrences(ctx, req)
 	for {
-		occ, err := it.Next()
+		var occ *grafeaspb.Occurrence
+		var err error
+		occ, err = it.Next()
 		if err == iterator.Done {
 			break
 		}
@@ -96,6 +102,7 @@ func GetAllVulnerabilities(
 		}
 		occurrenceList = append(occurrenceList, occ)
 	}
+	logrus.Infof("done listing the vulnerabilities")
 
 	return occurrenceList, err
 }
@@ -164,46 +171,57 @@ func UpdateVulnerabilityDashboard(
 	dashboardPath string,
 	vulnProject string,
 	dashboardBucket string,
+	pageSize int32,
 ) error {
-	htmlReader, openErr := os.Open(dashboardPath + "dashboard.html")
+	dashboardHTML := dashboardPath + "dashboard.html"
+	logrus.Infof("opening %s", dashboardHTML)
+	htmlReader, openErr := os.Open(dashboardHTML)
 	if openErr != nil {
 		return errors.Wrap(openErr, "opening dashboard file")
 	}
 
+	logrus.Infof("parsing %s", dashboardHTML)
 	_, err := html.Parse(htmlReader)
 	if err != nil {
 		return errors.Errorf("dashboard.html is not valid HTML: %v", err)
 	}
+
+	logrus.Infof("uploading %s to gcs", dashboardHTML)
 	err = uploadFile(dashboardPath, "dashboard.html", dashboardBucket)
 	if err != nil {
 		return errors.Errorf("Unable to upload latest version of "+
 			"dashboard HTML: %v", err)
 	}
 
+	logrus.Info("uploading updated dashboard.js to gcs")
 	err = uploadFile(dashboardPath, "dashboard.js", dashboardBucket)
 	if err != nil {
 		return errors.Errorf("Unable to upload latest version of "+
 			"dashboard JS: %v", err)
 	}
 
-	productionVulnerabilities, getVulnErr := GetAllVulnerabilities(vulnProject)
+	logrus.Infof("checking all vulnerabilities for %s", vulnProject)
+	productionVulnerabilities, getVulnErr := GetAllVulnerabilities(vulnProject, pageSize)
 	if getVulnErr != nil {
 		return errors.Wrap(getVulnErr, "getting all vulnerabilities")
 	}
 
+	logrus.Infof("parsing the vulnerabilities for %s", vulnProject)
 	vulnBreakdowns := GenerateVulnerabilityBreakdown(productionVulnerabilities)
 	jsonFile, err := json.MarshalIndent(vulnBreakdowns, "", " ")
 	if err != nil {
 		return errors.Errorf("Unable to generate dashboard json: %v", err)
 	}
 
-	err = ioutil.WriteFile(dashboardPath+"dashboard.json",
-		jsonFile, 0644)
+	dashboardJSON := dashboardPath + "dashboard.json"
+	logrus.Infof("writing the vulnerabilities for %s in the file %s", vulnProject, dashboardJSON)
+	err = ioutil.WriteFile(dashboardJSON, jsonFile, 0644)
 	if err != nil {
 		return errors.Errorf("Unable to create temporary local"+
 			"JSON file for the dashboard: %v", err)
 	}
 
+	logrus.Infof("uploading updated %s to gcs", dashboardJSON)
 	err = uploadFile(dashboardPath, "dashboard.json", dashboardBucket)
 	if err != nil {
 		return errors.Errorf("Unable to upload latest version of "+
