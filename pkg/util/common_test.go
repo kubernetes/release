@@ -17,9 +17,6 @@ limitations under the License.
 package util
 
 import (
-	"archive/tar"
-	"bytes"
-	"compress/gzip"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -163,81 +160,6 @@ func TestMoreRecent(t *testing.T) {
 			more, err := MoreRecent(tc.args.a, tc.args.b)
 			require.IsType(t, tc.want.err, err)
 			require.Equal(t, tc.want.r, more)
-		})
-	}
-}
-
-func TestReadFileFromGzippedTar(t *testing.T) {
-	baseTmpDir, err := ioutil.TempDir("", "")
-	require.Nil(t, err)
-
-	testFilePath := "test.txt"
-	testFileContents := "test-file-contents"
-	testTarPath := filepath.Join(baseTmpDir, "test.tar.gz")
-
-	var b bytes.Buffer
-
-	// Create a zip archive.
-	gz := gzip.NewWriter(&b)
-	tw := tar.NewWriter(gz)
-	require.Nil(t, tw.WriteHeader(&tar.Header{
-		Name: testFilePath,
-		Size: int64(len(testFileContents)),
-	}))
-	_, err = tw.Write([]byte(testFileContents))
-	require.Nil(t, err)
-	require.Nil(t, gz.Close())
-	require.Nil(t, tw.Close())
-	require.Nil(t, ioutil.WriteFile(
-		testTarPath,
-		b.Bytes(),
-		os.FileMode(0644),
-	))
-
-	defer cleanupTmp(t, baseTmpDir)
-
-	type args struct {
-		tarPath  string
-		filePath string
-	}
-	type want struct {
-		fileContents string
-		err          error
-	}
-	cases := map[string]struct {
-		args args
-		want want
-	}{
-		"FoundFileInTar": {
-			args: args{
-				tarPath:  testTarPath,
-				filePath: testFilePath,
-			},
-			want: want{
-				fileContents: testFileContents,
-				err:          nil,
-			},
-		},
-		"FileNotInTar": {
-			args: args{
-				tarPath:  testTarPath,
-				filePath: "badfile.txt",
-			},
-			want: want{
-				err: errors.New("unable to find file in tarball"),
-			},
-		},
-	}
-
-	for name, tc := range cases {
-		t.Run(name, func(t *testing.T) {
-			r, err := ReadFileFromGzippedTar(tc.args.tarPath, tc.args.filePath)
-			require.IsType(t, tc.want.err, err)
-			if tc.want.err == nil {
-				file, err := ioutil.ReadAll(r)
-				require.Nil(t, err)
-				require.Equal(t, tc.want.fileContents, string(file))
-			}
 		})
 	}
 }
