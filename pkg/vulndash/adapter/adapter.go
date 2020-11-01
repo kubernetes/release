@@ -36,6 +36,10 @@ import (
 	grafeaspb "google.golang.org/genproto/googleapis/grafeas/v1"
 )
 
+// DefaultPageSize to be used in the vulnerabilities list to set how many items
+// will be retrieved in each request
+const DefaultPageSize = 200
+
 func uploadFile(directory, filename, bucket string) error {
 	const timeout = 60
 	ctx := context.Background()
@@ -81,6 +85,9 @@ func GetAllVulnerabilities(
 	}
 	defer client.Close()
 
+	if pageSize <= 0 {
+		pageSize = DefaultPageSize
+	}
 	req := &grafeaspb.ListOccurrencesRequest{
 		Parent:   fmt.Sprintf("projects/%s", projectID),
 		Filter:   fmt.Sprintf("kind = %q", "VULNERABILITY"),
