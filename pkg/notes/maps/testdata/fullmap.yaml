@@ -1,9 +1,9 @@
 ---
 pr: 123
 commit: 1a89038915fe77d73bf7c9cfa8f2ce123a464c82
-release-note:  
-  text: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
-  author: kubernetes-ci-robot
+releasenote:  
+  author: "kubernetes-ci-robot"
+  text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
   areas:
     - testarea
   kinds:
@@ -28,12 +28,12 @@ datafields:
     - 9875
 ---
 pr: 123
-release-note:
+releasenote:
   author: kubernetes-ci-robot
 ---
 pr: 123
 datafields:
-  classifier-score:
+  classifierscore:
     # Hypothetical ML score
     qa-score: 0.35635 # ← would need to fix this one
     suggested-kinds:

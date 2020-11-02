@@ -1,0 +1,50 @@
+---
+pr: 95000
+releasenote:
+  action_required: false
+datafields:
+  testcase:
+    property: "ActionRequired"
+    expected: false
+    name: "Setting ActionRequired to false"
+---
+pr: 95000
+releasenote:
+  text: "This test string has been modified"
+datafields:
+  testcase:
+    property: "Text"
+    expected: "This test string has been modified"
+    name: "Modifying release note text"
+---
+pr: 95000
+releasenote:
+  author: "product-security-committee"
+datafields:
+  testcase:
+    property: "Author"
+    expected: "product-security-committee"
+    name: "Modifying release note author"
+---
+pr: 95000
+releasenote:
+  feature: false
+datafields:
+  testcase:
+    property: "Feature"
+    expected: false
+    name: "Modifying feature flag to false"
+---
+## Areas
+pr: 95000
+releasenote:
+  areas:
+  - kubectl
+  - apiserver
+datafields:
+  testcase:
+    property: "Areas"
+    expected:
+    - kubectl
+    - apiserver
+    name: "Modifying release note areas"
