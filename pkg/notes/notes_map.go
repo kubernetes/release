@@ -61,9 +61,9 @@ func ParseReleaseNotesMap(mapPath string) (*[]ReleaseNotesMap, error) {
 	}
 
 	decoder := yaml.NewDecoder(yamlReader)
-	noteMap := ReleaseNotesMap{}
 
 	for {
+		noteMap := ReleaseNotesMap{}
 		if err := decoder.Decode(&noteMap); err == io.EOF {
 			break
 		} else if err != nil {
