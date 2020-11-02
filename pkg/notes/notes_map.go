@@ -28,7 +28,7 @@ import (
 
 // MapProvider interface that obtains release notes maps from a source
 type MapProvider interface {
-	GetMapsForPR(int) (map[int]*ReleaseNotesMap, error)
+	GetMapsForPR(int) ([]*ReleaseNotesMap, error)
 }
 
 // NewProviderFromInitString creates a new map provider from an initialization string
@@ -118,13 +118,13 @@ type ReleaseNotesDataField interface{}
 // DirectoryMapProvider is a provider that gets maps from a directory
 type DirectoryMapProvider struct {
 	Path string
-	Maps map[int]map[int]*ReleaseNotesMap
+	Maps map[int][]*ReleaseNotesMap
 }
 
 // readMaps Open the dir and read dir notes
 func (mp *DirectoryMapProvider) readMaps() error {
 	var fileList []string
-	mp.Maps = map[int]map[int]*ReleaseNotesMap{}
+	mp.Maps = map[int][]*ReleaseNotesMap{}
 
 	err := filepath.Walk(mp.Path, func(path string, info os.FileInfo, err error) error {
 		if filepath.Ext(path) == ".yaml" || filepath.Ext(path) == ".yml" {
@@ -133,26 +133,24 @@ func (mp *DirectoryMapProvider) readMaps() error {
 		return nil
 	})
 
-	counter := 0
 	for _, fileName := range fileList {
 		notemaps, err := ParseReleaseNotesMap(fileName)
 		if err != nil {
 			return errors.Wrapf(err, "while parsing note map in %s", fileName)
 		}
-		for _, notemap := range *notemaps {
+		for i, notemap := range *notemaps {
 			if _, ok := mp.Maps[notemap.PR]; !ok {
-				mp.Maps[notemap.PR] = map[int]*ReleaseNotesMap{}
+				mp.Maps[notemap.PR] = make([]*ReleaseNotesMap, 0)
 			}
-			mp.Maps[notemap.PR][len(mp.Maps[notemap.PR])] = &notemap
-			counter++
+			mp.Maps[notemap.PR] = append(mp.Maps[notemap.PR], &(*notemaps)[i])
 		}
 	}
-	logrus.Infof("Successfully parsed %d release notes maps for %d PRs from %s", counter, len(mp.Maps), mp.Path)
+	logrus.Infof("Successfully parsed release notes maps for %d PRs from %s", len(mp.Maps), mp.Path)
 	return err
 }
 
 // GetMapsForPR get the release notes maps for a specific PR number
-func (mp *DirectoryMapProvider) GetMapsForPR(pr int) (notesMap map[int]*ReleaseNotesMap, err error) {
+func (mp *DirectoryMapProvider) GetMapsForPR(pr int) (notesMap []*ReleaseNotesMap, err error) {
 	if mp.Maps == nil {
 		err := mp.readMaps()
 		if err != nil {
