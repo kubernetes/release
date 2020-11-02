@@ -16,150 +16,187 @@ limitations under the License.
 
 package release
 
-// "context"
-// "os"
-// "path/filepath"
-// "strings"
+import (
+	"fmt"
 
-// "cloud.google.com/go/storage"
-// "github.com/pkg/errors"
-// "github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	kgit "k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/util"
+)
 
-// "k8s.io/release/pkg/gcp/gcs"
-// "k8s.io/release/pkg/util"
-// "k8s.io/utils/pointer"
-
-// PushBuild is the main structure for pushing builds.
-type Candidate struct {
+// Candidate is the main structure for pushing builds.
+type ffOptions struct {
+	branch         string
+	mainRef        string
+	nonInteractive bool
 }
 
-func fastforward_check() {
-
-	/*
-	   	# When creating new alphas on the master branch, make sure that X.Y-1.0
-	   # has been created first or warn.
-	   # This is to ensure that `krel ff` can continue to be used as needed.  User
-	   # can override here.
-	   # @param buildver - Incoming JENKINS_BUILD_VERSION
-	   fastforward_check () {
-	     local buildver=$1
-	     local latest_official
-
-	     if [[ ! $buildver =~ ${VER_REGEX[release]} ]]; then
-	       logecho "Invalid format: $buildver"
-	       return 1
-	     fi
-
-	     # For master branch alpha builds, ensure we've released the previous .0
-	     # first
-	     if [[ -z "$PARENT_BRANCH" && -n ${RELEASE_VERSION[alpha]} ]]; then
-	       latest_official=${BASH_REMATCH[1]}.$((${BASH_REMATCH[2]}-1))
-	       # The $'\n` construct below is a word boundary.
-	       if [[ ! "$($GHCURL $K8S_GITHUB_API/tags |jq -r '.[] .name')" =~ \
-	          $'\n'v$latest_official.0$'\n' ]]; then
-	         logecho
-	         logecho "$WARNING:" \
-	                 "$latest_official.0 hasn't been tagged/created yet." \
-	                 "Creating ${RELEASE_VERSION[alpha]} *will* preclude any" \
-	                 "future branch fast-forwards from master to" \
-	                 "release-$latest_official."
-
-	         if ! ((FLAGS_yes)); then
-	           logecho "Are you *really* sure you want to do this?"
-	           common::askyorn "Continue creating ${RELEASE_VERSION[alpha]} now" \
-	            || return 1
-	         fi
-	       fi
-	     fi
-	   }
-	*/
-
+type rootOptions struct {
+	nomock   bool
+	cleanup  bool
+	repoPath string
+	logLevel string
 }
 
-/*
-##############################################################################
-# Calls into Jenkins looking for a build to use for release
-# Sets global PARENT_BRANCH when a new branch is created
-# And global BRANCH_POINT when new branch is created from an existing tag
+var RootOptions = &rootOptions{}
+var FfOpts = &ffOptions{}
 
+const pushUpstreamQuestion = `Are you ready to push the local branch fast-forward changes upstream?
+Please only answer after you have validated the changes.`
 
-PROGSTEP[get_build_candidate]="SET BUILD CANDIDATE"
-get_build_candidate () {
-  local testing_branch
-  local branch_head=$($GHCURL $K8S_GITHUB_API/commits/$RELEASE_BRANCH |\
-                      jq -r '.sha')
-  # Shorten
-  branch_head=${branch_head:0:14}
+func RunFf(opts *ffOptions, rootOpts *rootOptions) error {
+	branch := opts.branch
+	if branch == "" {
+		return errors.New("please specify valid release branch")
+	}
 
-  # Are we branching to a new branch?
-  if gitlib::branch_exists $RELEASE_BRANCH; then
-    logecho "RELEASE_BRANCH==$RELEASE_BRANCH already exists"
-    # If the branch is a 3-part branch (ie. release-1.2.3)
-    if [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]] && \
-       [[ -n ${BASH_REMATCH[4]} ]]; then
-      [[ "$FLAGS_type" == official ]] \
-       || common::exit 1 "--official required on 3-part branches!"
+	logrus.Infof("Preparing to fast-forward %s onto the %s branch", opts.mainRef, branch)
+	repo, err := kgit.CloneOrOpenDefaultGitHubRepoSSH(rootOpts.repoPath)
+	if err != nil {
+		return err
+	}
 
-      # The 'missing' . here between 2 and 3 is intentional. It's part of the
-      # optional regex.
-      BRANCH_POINT=v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}${BASH_REMATCH[3]}
-    fi
-    testing_branch=$RELEASE_BRANCH
-  else
-    logecho "RELEASE_BRANCH==$RELEASE_BRANCH does not yet exist"
-    [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]]
+	if !rootOpts.nomock {
+		logrus.Info("Using dry mode, which does not modify any remote content")
+		repo.SetDry()
+	}
 
-    # Not a 3-part branch
-    if [[ -z "${BASH_REMATCH[4]}" ]]; then
-      if [[ "$FLAGS_type" == official ]]; then
-        common::exit 1 "Can't do official releases when creating a new branch!"
-      fi
+	logrus.Infof("Checking if %q is a release branch", branch)
+	if isReleaseBranch := kgit.IsReleaseBranch(branch); !isReleaseBranch {
+		return errors.Errorf("%s is not a release branch", branch)
+	}
 
-      PARENT_BRANCH=master
-      testing_branch=$PARENT_BRANCH
-    # if 3 part branch name, check parent exists
-    elif gitlib::branch_exists ${RELEASE_BRANCH%.*}; then
-      PARENT_BRANCH=${RELEASE_BRANCH%.*}
-      # The 'missing' . here between 2 and 3 is intentional. It's part of the
-      # optional regex.
-      BRANCH_POINT=v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}${BASH_REMATCH[3]}
-      testing_branch=$PARENT_BRANCH
-    else
-      common::exit 1 "$FATAL! We should never get here! branch=$RELEASE_BRANCH"
-    fi
-  fi
+	logrus.Info("Checking if branch is available on the default remote")
+	branchExists, err := repo.HasRemoteBranch(branch)
+	if err != nil {
+		return errors.Wrap(err, "checking if branch exists on the default remote")
+	}
+	if !branchExists {
+		return errors.New("branch does not exist on the default remote")
+	}
 
-  logecho "PARENT_BRANCH set to $PARENT_BRANCH"
-  logecho "BRANCH_POINT set to $BRANCH_POINT"
-  logecho "testing_branch set to $testing_branch"
+	if rootOpts.cleanup {
+		defer repo.Cleanup() // nolint: errcheck
+	} else {
+		// Restore the currently checked out branch afterwards
+		currentBranch, err := repo.CurrentBranch()
+		if err != nil {
+			return errors.Wrap(err, "unable to retrieve current branch")
+		}
+		defer func() {
+			if err := repo.Checkout(currentBranch); err != nil {
+				logrus.Errorf("Unable to restore branch %s: %v", currentBranch, err)
+			}
+		}()
+	}
 
-  if [[ -z $BRANCH_POINT ]]; then
-    JENKINS_BUILD_VERSION="$FLAGS_buildversion"
-    logecho "JENKINS_BUILD_VERSION set to $JENKINS_BUILD_VERSION"
+	logrus.Info("Checking out release branch")
+	if err := repo.Checkout(branch); err != nil {
+		return errors.Wrapf(err, "checking out branch %s", branch)
+	}
 
-    # The RELEASE_BRANCH should always match with the JENKINS_BUILD_VERSION
-    if [[ $RELEASE_BRANCH =~ release- ]] && \
-       [[ ! $JENKINS_BUILD_VERSION =~ ^v${RELEASE_BRANCH/release-/} ]]; then
-      logecho
-      logecho "$FATAL!  branch/build mismatch!"
-      logecho "buildversion=$JENKINS_BUILD_VERSION branch=$RELEASE_BRANCH"
-      common::exit 1
-    fi
+	logrus.Infof("Finding merge base between %q and %q", kgit.DefaultBranch, branch)
+	mergeBase, err := repo.MergeBase(kgit.DefaultBranch, branch)
+	if err != nil {
+		return err
+	}
 
-    # Check state of master branch before continuing
-    fastforward_check $JENKINS_BUILD_VERSION
-  else
-    # The build version should never be behind HEAD on release existing branches
-    if [[ "$RELEASE_BRANCH" =~ release-([0-9]{1,})\. ]]; then
-      if [[ $JENKINS_BUILD_VERSION =~ ${VER_REGEX[build]} && \
-            ${BASH_REMATCH[2]} != $branch_head ]]; then
-        logecho
-        logecho "$FATAL: The $RELEASE_BRANCH HEAD is ahead of the chosen" \
-                "commit. Releases on release branches must be run from HEAD."
-        return 1
-      fi
-    fi
-  fi
+	// Verify the tags
+	mainTag, err := repo.Describe(
+		kgit.NewDescribeOptions().
+			WithRevision(kgit.Remotify(kgit.DefaultBranch)).
+			WithAbbrev(0).
+			WithTags(),
+	)
+	if err != nil {
+		return err
+	}
+	mergeBaseTag, err := repo.Describe(
+		kgit.NewDescribeOptions().
+			WithRevision(mergeBase).
+			WithAbbrev(0).
+			WithTags(),
+	)
+	if err != nil {
+		return err
+	}
+	logrus.Infof("Merge base tag is: %s", mergeBaseTag)
+
+	if mainTag != mergeBaseTag {
+		return errors.Errorf(
+			"unable to fast forward: tag %q does not match %q",
+			mainTag, mergeBaseTag,
+		)
+	}
+	logrus.Infof("Verified that the latest tag on the main branch is the same as the merge base tag")
+
+	releaseRev, err := repo.Head()
+	if err != nil {
+		return err
+	}
+	logrus.Infof("Latest release branch revision is %s", releaseRev)
+
+	logrus.Info("Merging main branch changes into release branch")
+	if err := repo.Merge(opts.mainRef); err != nil {
+		return err
+	}
+
+	headRev, err := repo.Head()
+	if err != nil {
+		return err
+	}
+
+	prepushMessage(repo.Dir(), branch, opts.mainRef, releaseRev, headRev)
+
+	pushUpstream := false
+	if opts.nonInteractive {
+		pushUpstream = true
+	} else {
+		_, pushUpstream, err = util.Ask(pushUpstreamQuestion, "yes", 3)
+		if err != nil {
+			return err
+		}
+	}
+
+	if pushUpstream {
+		logrus.Infof("Pushing %s branch", branch)
+		if err := repo.Push(branch); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-*/
+func prepushMessage(gitRoot, branch, ref, releaseRev, headRev string) {
+	fmt.Printf(`Go look around in %s to make sure things look okay before pushing…
+	
+	Check for files left uncommitted using:
+	
+		git status -s
+	
+	Validate the fast-forward commit using:
+	
+		git show
+	
+	Validate the changes pulled in from main branch using:
+	
+		git log %s..%s
+	
+	Once the branch fast-forward is complete, the diff will be available after push at:
+	
+		https://github.com/%s/%s/compare/%s...%s
+	
+	`,
+		gitRoot,
+		kgit.Remotify(branch),
+		ref,
+		kgit.DefaultGithubOrg,
+		kgit.DefaultGithubRepo,
+		releaseRev[:11],
+		headRev[:11],
+	)
+}
+
+//todo : get_build_func
