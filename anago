@@ -1251,23 +1251,6 @@ archive_release () {
 }
 
 ##############################################################################
-# Stages the completed tar'd up source tree archive on GCS for later use
-# returns 1 on failure
-PROGSTEP[stage_source_tree]="STAGE SOURCE TREE"
-stage_source_tree () {
-  local jbv="$JENKINS_BUILD_VERSION"
-
-  logecho -n "Tar up staged source tree: "
-  logrun -s tar cvfz $WORKDIR/src.tar.gz --exclude="_output-*" -C $WORKDIR src \
-   || return 1
-  logecho -n "Archive fully staged source tree on GCS: "
-  logrun -s $GSUTIL -m cp $WORKDIR/src.tar.gz \
-            gs://$RELEASE_BUCKET/$BUCKET_TYPE/$jbv/src.tar.gz || return 1
-  # Clean up
-  logrun rm -f $WORKDIR/src.tar.gz || return 1
-}
-
-##############################################################################
 # Pushes all binary and pointer artifacts up to GCS and GCR
 # @param label - the label index for the version being pushed
 # returns 1 on failure
@@ -1340,9 +1323,7 @@ if ((FLAGS_buildonly)); then
 elif ! ((FLAGS_prebuild)); then
   common::stepindex "make_cross"
   common::stepindex "build_tree" "generate_release_notes"
-  if ((FLAGS_stage)); then
-    common::stepindex "stage_source_tree"
-  else
+  if ! ((FLAGS_stage)); then
     common::stepindex "push_git_objects"
   fi
   common::stepindex "push_all_artifacts"
@@ -1547,10 +1528,6 @@ else
        common::check_state -a $entry
      fi
   done
-fi
-
-if ((FLAGS_stage)); then
-  common::run_stateful stage_source_tree
 fi
 
 # Push for each release version of this session

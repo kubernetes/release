@@ -18,8 +18,10 @@ package release
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"cloud.google.com/go/storage"
@@ -27,6 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/gcp/gcs"
+	"k8s.io/release/pkg/tar"
 	"k8s.io/release/pkg/util"
 	"k8s.io/utils/pointer"
 )
@@ -450,14 +453,14 @@ func (p *PushBuild) PushContainerImages(version string) error {
 
 // CopyStagedFromGCS copies artifacts from GCS and between buckets as needed.
 // was: anago:copy_staged_from_gcs
-func (p *PushBuild) CopyStagedFromGCS(stagedBucket, version, buildVersion string) error {
+func (p *PushBuild) CopyStagedFromGCS(version, buildVersion string) error {
 	logrus.Info("Copy staged release artifacts from GCS")
 
 	copyOpts := gcs.DefaultGCSCopyOptions
 	copyOpts.NoClobber = pointer.BoolPtr(p.opts.AllowDup)
 	copyOpts.AllowMissing = pointer.BoolPtr(false)
 
-	gsStageRoot := filepath.Join(stagedBucket, "stage", buildVersion, version)
+	gsStageRoot := filepath.Join(p.opts.Bucket, "stage", buildVersion, version)
 	gsReleaseRoot := filepath.Join(p.opts.Bucket, "release", version)
 
 	src := filepath.Join(gsStageRoot, GCSStagePath, version)
@@ -484,4 +487,42 @@ func (p *PushBuild) CopyStagedFromGCS(stagedBucket, version, buildVersion string
 	}
 
 	return nil
+}
+
+// StageLocalSourceTree creates a src.tar.gz from the Kubernetes sources and
+// uploads it to GCS.
+func (p *PushBuild) StageLocalSourceTree(buildVersion string) error {
+	workDir := os.Getenv("GOPATH")
+	if workDir == "" {
+		return errors.New("GOPATH is not set")
+	}
+
+	const tarballFileName = "src.tar.gz"
+	tarballPath := filepath.Join(workDir, tarballFileName)
+	logrus.Infof("Creating source tree tarball in %s", workDir)
+
+	exclude, err := regexp.Compile(fmt.Sprintf(`.*/%s-.*`, BuildDir))
+	if err != nil {
+		return errors.Wrap(err, "compile tarball exclude regex")
+	}
+
+	if err := tar.Compress(
+		tarballPath, filepath.Join(workDir, "src"), exclude,
+	); err != nil {
+		return errors.Wrap(err, "create tarball")
+	}
+
+	logrus.Infof("Uploading source tree tarball to GCS")
+	copyOpts := gcs.DefaultGCSCopyOptions
+	copyOpts.AllowMissing = pointer.BoolPtr(false)
+	if err := gcs.CopyToGCS(
+		tarballPath,
+		filepath.Join(p.opts.Bucket, "stage", buildVersion, tarballFileName),
+		copyOpts,
+	); err != nil {
+		return errors.Wrap(err, "copy tarball to GCS")
+	}
+
+	logrus.Infof("Removing local source tree tarball")
+	return errors.Wrap(os.RemoveAll(tarballPath), "remove local source tarball")
 }
