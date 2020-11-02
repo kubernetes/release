@@ -17,21 +17,21 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
+	reg "sigs.k8s.io/k8s-container-image-promoter/pkg/dockerregistry"
 )
 
 const (
@@ -130,6 +130,8 @@ func runPromote(opts *promoteOptions) error {
 		return errors.Wrap(err, "checking command line options")
 	}
 
+	ctx := context.Background()
+
 	// Validate options
 	branchname := opts.tags[0] + promotionBranchSuffix
 
@@ -144,12 +146,6 @@ func runPromote(opts *promoteOptions) error {
 
 	// Check Environment
 	gh := github.New()
-
-	// Check for the cip-mm binary
-	cipmm, err := exec.LookPath("cip-mm")
-	if err != nil {
-		return errors.Wrap(err, "while looking for cip-mm in your path")
-	}
 
 	// Verify the repository is a fork of k8s.io
 	if err = verifyFork(
@@ -182,25 +178,32 @@ func runPromote(opts *promoteOptions) error {
 
 	// Read the current manifest to check later if new images come up
 	oldlist := make([]byte, 0)
-	if util.Exists(filepath.Join(repo.Dir(), imagesListPath)) {
-		logrus.Debug("Reading the current image promoter manifest (image list)")
-		oldlist, err = ioutil.ReadFile(filepath.Join(repo.Dir(), imagesListPath))
-		if err != nil {
-			return errors.Wrap(err, "while reading the current promoter image list")
-		}
-	}
 
-	// Run cip-mm
-	if mustRun(opts, "Update the Image Promoter manifest with cip-mm?") {
+	// Run the promoter manifest grower
+	if mustRun(opts, "Grow the manifests to add the new tags?") {
+		if util.Exists(filepath.Join(repo.Dir(), imagesListPath)) {
+			logrus.Debug("Reading the current image promoter manifest (image list)")
+			oldlist, err = ioutil.ReadFile(filepath.Join(repo.Dir(), imagesListPath))
+			if err != nil {
+				return errors.Wrap(err, "while reading the current promoter image list")
+			}
+		}
+
 		for _, tag := range opts.tags {
-			logrus.Infof("Running cip-mm to patch manifests with images with tag tag %s", tag)
-			if err := command.New(
-				cipmm,
-				fmt.Sprintf("--base_dir=%s", filepath.Join(repo.Dir(), release.GCRIOPathProd)),
-				fmt.Sprintf("--staging_repo=%s", release.GCRIOPathStaging),
-				fmt.Sprintf("--filter_tag=%s", tag),
-			).RunSuccess(); err != nil {
-				return errors.Wrap(err, "executing cip-mm")
+			opt := reg.GrowManifestOptions{}
+			if err := opt.Populate(
+				filepath.Join(repo.Dir(), release.GCRIOPathProd),
+				release.GCRIOPathStaging, "", "", tag); err != nil {
+				return errors.Wrapf(err, "populating image promoter options for tag %s", tag)
+			}
+
+			if err := opt.Validate(); err != nil {
+				return errors.Wrapf(err, "validate promoter options for tag %s", tag)
+			}
+
+			logrus.Infof("Growing manifests with images matching tag %s", tag)
+			if err := reg.GrowManifest(ctx, opt); err != nil {
+				return errors.Wrapf(err, "Growing manifest with tag %s", tag)
 			}
 		}
 	}
