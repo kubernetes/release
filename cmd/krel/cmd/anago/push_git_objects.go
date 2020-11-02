@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
+	"k8s.io/release/pkg/release/regex"
 )
 
 // pushGitObjectsCmd is the krel push-git-objects subcommand
@@ -132,14 +133,14 @@ func runPushGitObjects(options *pushGitObjectsOptions) (err error) {
 	}
 
 	// if a release branch was specified, push it
-	if options.releaseBranch != "" {
+	if isPushableBranch(options.releaseBranch) {
 		logrus.Infof("Pushing %s %s branch:", nomockLabel[options.nomock], options.releaseBranch)
 		if err := gitPusher.PushBranch(options.releaseBranch); err != nil {
 			return errors.Wrapf(err, "pushing branch %s", options.releaseBranch)
 		}
 
 		// # Additionally push the parent branch if a branch of branch
-		if options.parentBranch != "" {
+		if isPushableBranch(options.parentBranch) {
 			logrus.Infof("Pushing %s %s branch: ", nomockLabel[options.nomock], options.parentBranch)
 			if err := gitPusher.PushBranch(options.parentBranch); err != nil {
 				return errors.Wrapf(err, "pushing parent branch %s", options.parentBranch)
@@ -165,4 +166,20 @@ func (o *pushGitObjectsOptions) Validate() error {
 		return errors.New("cannot specify a parent branch if no release branch is defined")
 	}
 	return nil
+}
+
+// isPushableBranch returns a bool indicating if the string in branchName
+// corresponds to a branch that should be pushed
+func isPushableBranch(branchName string) bool {
+	if branchName == "" {
+		return false
+	}
+	// Keeping "master" here to cover retroactively in case the default changes
+	if branchName == git.DefaultBranch || branchName == "master" {
+		return false
+	}
+	if regex.BranchRegex.Match([]byte(branchName)) {
+		return true
+	}
+	return false
 }
