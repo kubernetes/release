@@ -108,18 +108,73 @@ func Compress(tarFilePath, tarContentsPath string, excludes ...*regexp.Regexp) e
 	return nil
 }
 
+// Extract can be used to extract the provided `tarFilePath` into the
+// `destinationPath`.
+func Extract(tarFilePath, destinationPath string) error {
+	return iterateTarball(
+		tarFilePath,
+		func(reader *tar.Reader, header *tar.Header) (stop bool, err error) {
+			switch header.Typeflag {
+			case tar.TypeDir:
+				targetDir := filepath.Join(destinationPath, header.Name)
+				logrus.Debugf("Creating directory %s", targetDir)
+				if err := os.Mkdir(targetDir, os.FileMode(0o755)); err != nil {
+					return false, errors.Wrapf(err, "create target directory")
+				}
+			case tar.TypeSymlink:
+				targetFile := filepath.Join(destinationPath, header.Name)
+				logrus.Debugf(
+					"Creating symlink %s -> %s", header.Linkname, targetFile,
+				)
+				if err := os.Symlink(header.Linkname, targetFile); err != nil {
+					return false, errors.Wrap(err, "create symlink")
+				}
+			case tar.TypeReg, tar.TypeRegA:
+				targetFile := filepath.Join(destinationPath, header.Name)
+				logrus.Debugf("Creating file %s", targetFile)
+
+				if err := os.MkdirAll(
+					filepath.Dir(targetFile), os.FileMode(0o755),
+				); err != nil {
+					return false, errors.Wrapf(err, "create target directory")
+				}
+
+				outFile, err := os.Create(targetFile)
+				if err != nil {
+					return false, errors.Wrapf(err, "create target file")
+				}
+
+				if _, err := io.Copy(outFile, reader); err != nil {
+					return false, errors.Wrapf(
+						err, "copy file contents %s", targetFile,
+					)
+				}
+				outFile.Close()
+
+			default:
+				logrus.Warnf(
+					"File %s has unknown type %s",
+					header.Name, string(header.Typeflag),
+				)
+			}
+
+			return false, nil
+		},
+	)
+}
+
 // ReadFileFromGzippedTar opens a tarball and reads contents of a file inside.
 func ReadFileFromGzippedTar(
 	tarPath, filePath string,
 ) (res io.Reader, err error) {
 	if err := iterateTarball(
 		tarPath,
-		func(reader *tar.Reader, header *tar.Header) (stop bool) {
+		func(reader *tar.Reader, header *tar.Header) (stop bool, err error) {
 			if header.Name == filePath {
 				res = reader
-				return true
+				return true, nil
 			}
-			return false
+			return false, nil
 		},
 	); err != nil {
 		return nil, err
@@ -138,7 +193,7 @@ func ReadFileFromGzippedTar(
 // calling the callback for each entry.
 func iterateTarball(
 	tarPath string,
-	callback func(*tar.Reader, *tar.Header) (stop bool),
+	callback func(*tar.Reader, *tar.Header) (stop bool, err error),
 ) error {
 	file, err := os.Open(tarPath)
 	if err != nil {
@@ -157,7 +212,11 @@ func iterateTarball(
 			break // End of archive
 		}
 
-		if callback(tarReader, tarHeader) {
+		stop, err := callback(tarReader, tarHeader)
+		if err != nil {
+			return err
+		}
+		if stop {
 			// User wants to stop
 			break
 		}
