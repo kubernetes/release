@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package release
+package fastforward
 
 import (
 	"fmt"
@@ -25,39 +25,35 @@ import (
 	"k8s.io/release/pkg/util"
 )
 
-// Candidate is the main structure for pushing builds.
-type ffOptions struct {
+//  FFrootOptions is the main structure for fastforward.
+type FFrootOptions struct {
 	branch         string
 	mainRef        string
 	nonInteractive bool
+	nomock         bool
+	cleanup        bool
+	repoPath       string
+	logLevel       string
 }
 
-type rootOptions struct {
-	nomock   bool
-	cleanup  bool
-	repoPath string
-	logLevel string
-}
-
-var RootOptions = &rootOptions{}
-var FfOpts = &ffOptions{}
+var RootOptions = &FFrootOptions{}
 
 const pushUpstreamQuestion = `Are you ready to push the local branch fast-forward changes upstream?
 Please only answer after you have validated the changes.`
 
-func RunFf(opts *ffOptions, rootOpts *rootOptions) error {
+func RunFf(opts *FFrootOptions) error {
 	branch := opts.branch
 	if branch == "" {
 		return errors.New("please specify valid release branch")
 	}
 
 	logrus.Infof("Preparing to fast-forward %s onto the %s branch", opts.mainRef, branch)
-	repo, err := kgit.CloneOrOpenDefaultGitHubRepoSSH(rootOpts.repoPath)
+	repo, err := kgit.CloneOrOpenDefaultGitHubRepoSSH(opts.repoPath)
 	if err != nil {
 		return err
 	}
 
-	if !rootOpts.nomock {
+	if !opts.nomock {
 		logrus.Info("Using dry mode, which does not modify any remote content")
 		repo.SetDry()
 	}
@@ -76,7 +72,7 @@ func RunFf(opts *ffOptions, rootOpts *rootOptions) error {
 		return errors.New("branch does not exist on the default remote")
 	}
 
-	if rootOpts.cleanup {
+	if opts.cleanup {
 		defer repo.Cleanup() // nolint: errcheck
 	} else {
 		// Restore the currently checked out branch afterwards
