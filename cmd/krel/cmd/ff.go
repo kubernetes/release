@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"k8s.io/release/pkg/fastforward"
 	kgit "k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
 )
@@ -56,7 +57,7 @@ as real push if the '--nomock' flag is specified.
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return release.RunFf(release.FfOpts, release.RootOptions)
+		return fastforward.RunFf(release.FfOpts, release.RootOptions)
 	},
 }
 
