@@ -19,68 +19,90 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
-	"os"
 
 	// TODO: Use k/release/pkg/log instead
+
+	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 	reg "sigs.k8s.io/k8s-container-image-promoter/pkg/dockerregistry"
 )
 
-func main() {
-	ctx := context.Background()
+var cmd = &cobra.Command{
+	Short: "cip-mm → Container Image Promoter - Manifest Modificator",
+	Long: `cip-mm → Container Image Promoter - Manifest Modificator
+	
+This tool **m**odifies promoter **m**anifests. For now it dumps some filtered
+subset of a staging GCR and merges those contents back into a given promoter
+manifest.`,
+	Use:           "cip-mm",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return run(commandLineOpts)
+	},
+}
 
-	if err := run(ctx); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		// nolint[gomnd]
-		os.Exit(1)
+type commandLineOptions struct {
+	baseDir      string
+	stagingRepo  string
+	filterImage  string
+	filterDigest string
+	filterTag    string
+}
+
+var commandLineOpts = &commandLineOptions{}
+
+func init() {
+	cmd.PersistentFlags().StringVar(
+		&commandLineOpts.baseDir,
+		"base_dir",
+		"",
+		"the manifest directory to look at and modify",
+	)
+	cmd.PersistentFlags().StringVar(
+		&commandLineOpts.stagingRepo,
+		"staging_repo",
+		"",
+		"the staging repo which we want to read from",
+	)
+	cmd.PersistentFlags().StringVar(
+		&commandLineOpts.filterImage,
+		"filter_image",
+		"",
+		"filter staging repo by this image name",
+	)
+	cmd.PersistentFlags().StringVar(
+		&commandLineOpts.filterDigest,
+		"filter_digest",
+		"",
+		"filter images by this digest",
+	)
+	cmd.PersistentFlags().StringVar(
+		&commandLineOpts.filterTag,
+		"filter_tag",
+		"",
+		"filter images by this tag",
+	)
+
+	// Add the flags from klog
+	flagsCompat := &flag.FlagSet{}
+	klog.InitFlags(flagsCompat)
+	cmd.PersistentFlags().AddGoFlagSet(flagsCompat)
+}
+
+func main() {
+	if err := cmd.Execute(); err != nil {
+		klog.Fatal(err)
 	}
 }
 
 // nolint[lll]
-func run(ctx context.Context) error {
-	klog.InitFlags(nil)
-
-	baseDir := ""
-	flag.StringVar(
-		&baseDir,
-		"base_dir",
-		baseDir,
-		"the manifest directory to look at and modify")
-	stagingRepo := ""
-	flag.StringVar(
-		&stagingRepo,
-		"staging_repo",
-		stagingRepo,
-		"the staging repo which we want to read from")
-	filterImage := ""
-	flag.StringVar(
-		&filterImage,
-		"filter_image",
-		filterImage,
-		"filter staging repo by this image name")
-	filterDigest := ""
-	flag.StringVar(
-		&filterDigest,
-		"filter_digest",
-		filterDigest,
-		"filter images by this digest")
-	filterTag := ""
-	flag.StringVar(
-		&filterTag,
-		"filter_tag",
-		filterTag,
-		"filter images by this tag")
-
-	flag.Parse()
-
+func run(cmdOpts *commandLineOptions) error {
 	opt := reg.GrowManifestOptions{}
 	if err := opt.Populate(
-		baseDir,
-		stagingRepo,
-		filterImage,
-		filterDigest,
-		filterTag); err != nil {
+		cmdOpts.baseDir, cmdOpts.stagingRepo,
+		cmdOpts.filterImage, cmdOpts.filterDigest,
+		cmdOpts.filterTag); err != nil {
 		return err
 	}
 
@@ -88,5 +110,6 @@ func run(ctx context.Context) error {
 		return err
 	}
 
+	ctx := context.Background()
 	return reg.GrowManifest(ctx, opt)
 }
