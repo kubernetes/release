@@ -757,35 +757,24 @@ found_staged_location () {
 #   new branch and tags on both
 PROGSTEP[push_git_objects]="PUSH GIT OBJECTS"
 push_git_objects () {
-  local b
-  local dryrun_flag=" --dry-run"
-
-  # The real deal?
-  ((FLAGS_nomock)) && dryrun_flag=""
-
-  ((FLAGS_yes)) \
-   || common::askyorn -e "Pausing here. Confirm push$dryrun_flag of tags" \
-                         "and bits" \
-   || common::exit 1 "Exiting..."
-
-  logecho -n "Checkout master branch to push objects: "
-  logrun -s git checkout master || return 1
-
-  logecho "Pushing$dryrun_flag tags"
+  local nomock_flag=""
+  local tags_flag=""
+    
+  ((FLAGS_nomock)) && nomock_flag="--nomock"
+    
   for release_type in "${ORDERED_RELEASE_KEYS[@]}"; do
-    logecho -n "Pushing ${RELEASE_VERSION[$release_type]} tag: "
-    logrun -v -s git push $dryrun_flag origin ${RELEASE_VERSION[$release_type]} || return 1
+    if [ -n "$tags_flag" ]; then
+      tags_flag="${tags_flag},"
+    fi
+    tags_flag="${tags_flag}${RELEASE_VERSION[$release_type]}"
   done
 
-  if [[ "$RELEASE_BRANCH" =~ release- ]]; then
-    logecho -n "Pushing$dryrun_flag $RELEASE_BRANCH branch: "
-    logrun -v -s git push $dryrun_flag origin $RELEASE_BRANCH || return 1
-    # Additionally push the parent branch if a branch of branch
-    if [[ "$PARENT_BRANCH" =~ release- ]]; then
-      logecho -n "Pushing$dryrun_flag $PARENT_BRANCH branch: "
-      logrun -v -s git push $dryrun_flag origin $PARENT_BRANCH || return 1
-    fi
-  fi
+  logrun -v krel anago push-git-objects \
+    ${nomock_flag} \
+    --release-branch="${RELEASE_BRANCH}" \
+    --parent-branch="${PARENT_BRANCH}" \
+    --repo="$TREE_ROOT" \
+    --tags="${tags_flag}" || return 1
 
   # For files created on master with new branches and
   # for $CHANGELOG_FILEPATH, update the master
