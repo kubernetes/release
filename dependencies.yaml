@@ -127,6 +127,13 @@ dependencies:
     - path: cmd/vulndash/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
+  # Images: k8s.io/releng
+  - name: "k8s.io/releng/releng-ci"
+    version: v0.1.1
+    refPaths:
+    - path: images/releng/ci/cloudbuild.yaml
+      match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
+
   # Base images
   - name: "k8s.gcr.io/debian-base"
     version: buster-v1.2.0
