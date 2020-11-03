@@ -721,7 +721,7 @@ func TestCopyBinaries(t *testing.T) {
 	} {
 		// Given
 		rootPath, cleanup := tc.prepare()
-		stageDir := filepath.Join(rootPath, "stage")
+		stageDir := filepath.Join(rootPath, stagePath)
 
 		// When
 		err := CopyBinaries(rootPath, stageDir)

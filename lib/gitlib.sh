@@ -205,34 +205,6 @@ gitlib::pending_prs () {
 }
 
 ##############################################################################
-# Git repo sync
-# @param repo - full git url
-# @param dest - destination directory
-gitlib::sync_repo () {
-  local repo=$1
-  local dest=$2
-
-  logecho -n "Syncing ${repo##*/} to $dest: "
-  if [[ -d $dest ]]; then
-    (
-    cd $dest
-    logrun git checkout master
-    logrun -s git pull
-    ) || return 1
-  else
-    logrun -s git clone $repo $dest || return 1
-
-    # for https, update the remotes so we don't have to call the git command-line
-    # every time with a token
-    (
-    cd $dest
-    git remote set-url origin $(git remote get-url origin |\
-     sed "s,https://git@github.com,https://git:${GITHUB_TOKEN:-$FLAGS_github_token}@github.com,g")
-    )
-  fi
-}
-
-##############################################################################
 # Does git branch exist?
 # @param branch - branch
 gitlib::branch_exists () {

@@ -460,7 +460,7 @@ func (p *PushBuild) CopyStagedFromGCS(version, buildVersion string) error {
 	copyOpts.NoClobber = pointer.BoolPtr(p.opts.AllowDup)
 	copyOpts.AllowMissing = pointer.BoolPtr(false)
 
-	gsStageRoot := filepath.Join(p.opts.Bucket, "stage", buildVersion, version)
+	gsStageRoot := filepath.Join(p.opts.Bucket, stagePath, buildVersion, version)
 	gsReleaseRoot := filepath.Join(p.opts.Bucket, "release", version)
 
 	src := filepath.Join(gsStageRoot, GCSStagePath, version)
@@ -497,8 +497,7 @@ func (p *PushBuild) StageLocalSourceTree(buildVersion string) error {
 		return errors.New("GOPATH is not set")
 	}
 
-	const tarballFileName = "src.tar.gz"
-	tarballPath := filepath.Join(workDir, tarballFileName)
+	tarballPath := filepath.Join(workDir, sourcesTar)
 	logrus.Infof("Creating source tree tarball in %s", workDir)
 
 	exclude, err := regexp.Compile(fmt.Sprintf(`.*/%s-.*`, BuildDir))
@@ -517,7 +516,7 @@ func (p *PushBuild) StageLocalSourceTree(buildVersion string) error {
 	copyOpts.AllowMissing = pointer.BoolPtr(false)
 	if err := gcs.CopyToGCS(
 		tarballPath,
-		filepath.Join(p.opts.Bucket, "stage", buildVersion, tarballFileName),
+		filepath.Join(p.opts.Bucket, stagePath, buildVersion, sourcesTar),
 		copyOpts,
 	); err != nil {
 		return errors.Wrap(err, "copy tarball to GCS")

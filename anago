@@ -193,6 +193,12 @@ RELEASE_BRANCH=${POSITIONAL_ARGV[0]}
 [[ $RELEASE_BRANCH =~ $BRANCH_REGEX ]] \
  || common::exit 1 "Invalid branch name!"
 
+if ! ((FLAGS_stage)); then
+  STAGED_LOCATION="gcs"
+  STAGED_BUCKET="$RELEASE_BUCKET"
+  RELEASE_GB="10"
+fi
+
 ###############################################################################
 # FUNCTIONS
 ###############################################################################
@@ -643,110 +649,6 @@ build_tree () {
 }
 
 ##############################################################################
-# Look for binary artifacts in the known loctions
-# @param base - The base directory
-# @param version - Version
-# return 1 on failure
-binary_artifacts_exist () {
-  local base=$1
-  local version=$2
-  local gsutil
-
-  # Detect GSC paths
-  [[ $base =~ ^gs:// ]] && gsutil="$GSUTIL -q"
-
-  logecho -n "Searching for artifacts at $base: "
-  if logrun $gsutil ls $base/gcs-stage/$version/*.tar.gz* >/dev/null 2>&1 && \
-     logrun $gsutil ls $base/release-images/*/*.tar >/dev/null 2>&1; then
-    logecho "$FOUND"
-  else
-    logecho "$NOTFOUND"
-    return 1
-  fi
-}
-
-##############################################################################
-# Can be one of
-# * Local disk src - symlink it
-# * src.tar.gz, gcs and gcr artifacts on GCS
-# Sets global STAGED_LOCATION={local,gcs}
-# Sets global STAGED_BUCKET
-# Modifies global RELEASE_GB
-# returns 1 on failure
-found_staged_location () {
-  local release_versions="$*"
-  local bucket
-  local jbv="$JENKINS_BUILD_VERSION"
-  local local_root="$BASEDIR/$PROG-$jbv/src"
-  local k8s_root="$local_root/k8s.io/kubernetes/_output"
-  local gs_stage_root
-  local tmp_tar_archive=$TMPDIR/$PROG-$$-src.tar.gz
-
-  logecho
-  # first look locally
-  for version in $release_versions; do
-    if binary_artifacts_exist $k8s_root-$version $version; then
-      STAGED_LOCATION="local"
-    else
-      STAGED_LOCATION=""
-      break
-    fi
-  done
-
-  # NOTE: We could also look for artifacts on GCS even when found local
-  # in order to do a bucket-to-bucket copy and save 2 minutes.
-  # But this isn't a typical use-case.  Normally staging will happen
-  # exclusively on GCB and then 'release' will happen either on the desktop
-  # or GCB which will never find anything 'local' anyway.
-  if [[ $STAGED_LOCATION == "local" ]]; then
-    # Enjoy the local filesystem
-    logecho -n "Symlinking $local_root to $WORKDIR/src: "
-    logrun mkdir -p $WORKDIR
-    logrun -s ln -nsf $local_root $WORKDIR/src || return 1
-    RELEASE_GB="5"
-    return 0
-  fi
-
-  # If that didn't work out, look for source archive
-  # and artifacts on all READ_RELEASE_BUCKETS on GCS
-  for bucket in ${READ_RELEASE_BUCKETS[*]}; do
-    logecho -n "Searching for staged src.tar.gz on $bucket: "
-
-    if logrun $GSUTIL -m cp gs://$bucket/stage/$jbv/src.tar.gz \
-                         $tmp_tar_archive; then
-      logecho "$FOUND"
-      # Set a global to skip other build steps in workflow
-      STAGED_LOCATION="gcs"
-      STAGED_BUCKET="$bucket"
-      break
-    else
-      logecho "$NOTFOUND"
-    fi
-  done
-
-  # If we get here and STAGED_LOCATION isn't set, give up
-  [[ -z "$STAGED_LOCATION" ]] && return 1
-
-  # Now ensure binary artifacts exist in the same location, or give up
-  for version in $release_versions; do
-    gs_stage_root="gs://$bucket/stage/$jbv/$version"
-    if ! binary_artifacts_exist $gs_stage_root $version; then
-      # Ensure these are unset in this case
-      logecho "unsetting STAGED_LOCATION STAGED_BUCKET"
-      unset STAGED_LOCATION STAGED_BUCKET
-      return 1
-    fi
-  done
-
-  logecho -n "Extracting $tmp_tar_archive: "
-  logrun -s tar xfz $tmp_tar_archive -C $WORKDIR || return 1
-  logrun rm -f $tmp_tar_archive
-
-  # Set disk requirements when everything's on GCS
-  RELEASE_GB="10"
-}
-
-##############################################################################
 # Push git objects to github
 # NOTES:
 # * alpha is alone, pushes tags only
@@ -1163,49 +1065,14 @@ set_release_values () {
 # Prepare the workspace and sync the tree
 PROGSTEP[prepare_workspace]="PREPARE WORKSPACE"
 prepare_workspace () {
-  local outdir
-
-  if [[ -h $WORKDIR/src ]]; then
-    # The case where an existing release tree might have a symlink from a
-    # previously failed attempt.  We don't want to fall into the condition
-    # below and clean it up
-    logrun rm -f $WORKDIR/src || return 1
-  else
-    if [[ -d $TREE_ROOT ]]; then
-      logecho "Checking for _output directories..."
-      logrun cd $TREE_ROOT
-      # set -e sillyness - yes that's a ||true there that would otherwise not
-      # be needed except for 'set -e' in all its glory
-      for outdir in $(ls -1d _output* 2>/dev/null ||true); do
-        # This craziness due to
-        # https://github.com/kubernetes/kubernetes/issues/23839
-        if [[ $outdir != "_output" ]]; then
-          logrun mv $outdir _output
-        fi
-        logecho -n "make clean for $outdir: "
-        logrun -s make clean || return 1
-        logecho -n "Removing _output: "
-        logrun -s rm -rf _output || return 1
-      done
-    fi
-    logecho -n "Removing/recreating $WORKDIR: "
-    logrun cd $TMPDIR
-    logrun -s rm -rf $WORKDIR || return 1
-    logrun mkdir -p $WORKDIR || return 1
+  if ((FLAGS_stage)); then
+    STAGE_FLAG=--stage
   fi
-
-  # Check if locally staged directory contains all of the RELEASE_VERSIONs for
-  # this release type
-  if ((FLAGS_stage)) || ! found_staged_location ${RELEASE_VERSION[@]}; then
-    # GCB releases (krel gcbmgr --release) requires a found staged build to use
-    if ! ((FLAGS_stage)); then
-      logecho "$FATAL: Releasing from GCB requires a staged" \
-              "--buildversion=<buildversion>"
-      return 1
-    fi
-    # Sync the tree
-    gitlib::sync_repo $K8S_GITHUB_AUTH_URL $TREE_ROOT || return 1
-  fi
+  logrun -v krel anago prepare-workspace \
+    $STAGE_FLAG \
+    --directory="$TREE_ROOT" \
+    --bucket="$RELEASE_BUCKET" \
+    --build-version="$JENKINS_BUILD_VERSION" || return 1
 }
 
 

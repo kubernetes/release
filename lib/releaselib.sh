@@ -53,8 +53,6 @@ readonly CHANGELOG_DIR="CHANGELOG"
 # RELEASE_BUCKET - mock or standard release bucket location
 # BUCKET_TYPE - stage or release
 # WRITE_RELEASE_BUCKETS - array of writable buckets
-# READ_RELEASE_BUCKETS - array of readable buckets for multiple sourcing of
-#                        mock staged builds
 # GCRIO_PATH - GCR path based on mock or --nomock
 release::set_globals () {
   logecho -n "Setting global variables: "
@@ -85,7 +83,6 @@ release::set_globals () {
   fi
 
   WRITE_RELEASE_BUCKETS=("$RELEASE_BUCKET")
-  READ_RELEASE_BUCKETS+=("$RELEASE_BUCKET")
 
   # TODO:
   # These KUBE_ globals extend beyond the scope of the new release refactored

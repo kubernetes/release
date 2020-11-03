@@ -871,3 +871,24 @@ func TestIsDirtyFailure(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, dirty)
 }
+
+func TestSetURLSuccess(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	const remote = "https://exmaple.com"
+	require.Nil(t, testRepo.sut.SetURL(git.DefaultRemote, remote))
+	remotes, err := testRepo.sut.Remotes()
+	require.Nil(t, err)
+	require.Len(t, remotes, 1)
+	require.Equal(t, git.DefaultRemote, remotes[0].Name())
+	require.Len(t, remotes[0].URLs(), 1)
+	require.Equal(t, remote, remotes[0].URLs()[0])
+}
+
+func TestSetURLFailureRemoteDoesNotExists(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	require.NotNil(t, testRepo.sut.SetURL("some-remote", ""))
+}

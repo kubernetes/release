@@ -31,6 +31,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
@@ -156,6 +157,8 @@ type Repo struct {
 type Repository interface {
 	Branches() (storer.ReferenceIter, error)
 	CommitObject(plumbing.Hash) (*object.Commit, error)
+	CreateRemote(*config.RemoteConfig) (*git.Remote, error)
+	DeleteRemote(name string) error
 	Head() (*plumbing.Reference, error)
 	Remote(string) (*git.Remote, error)
 	Remotes() ([]*git.Remote, error)
@@ -945,8 +948,8 @@ func (r *Repo) Remotes() (res []*Remote, err error) {
 	})
 
 	for _, remote := range remotes {
-		config := remote.Config()
-		res = append(res, &Remote{name: config.Name, urls: config.URLs})
+		cfg := remote.Config()
+		res = append(res, &Remote{name: cfg.Name, urls: cfg.URLs})
 	}
 
 	return res, nil
@@ -1082,6 +1085,20 @@ func (r *Repo) HasRemoteTag(tag string) (hasTag bool, err error) {
 		}
 	}
 	return false, nil
+}
+
+// SetURL can be used to overwrite the URL for a remote
+func (r *Repo) SetURL(remote, newURL string) error {
+	if err := r.inner.DeleteRemote(remote); err != nil {
+		return errors.Wrap(err, "delete remote")
+	}
+	if _, err := r.inner.CreateRemote(&config.RemoteConfig{
+		Name: remote,
+		URLs: []string{newURL},
+	}); err != nil {
+		return errors.Wrap(err, "create remote")
+	}
+	return nil
 }
 
 // ParseRepoSlug parses a repository string and return the organization and repository name/

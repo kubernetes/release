@@ -126,6 +126,11 @@ func Extract(tarFilePath, destinationPath string) error {
 				logrus.Debugf(
 					"Creating symlink %s -> %s", header.Linkname, targetFile,
 				)
+				if err := os.MkdirAll(
+					filepath.Dir(targetFile), os.FileMode(0o755),
+				); err != nil {
+					return false, errors.Wrapf(err, "create target directory")
+				}
 				if err := os.Symlink(header.Linkname, targetFile); err != nil {
 					return false, errors.Wrap(err, "create symlink")
 				}
@@ -142,6 +147,9 @@ func Extract(tarFilePath, destinationPath string) error {
 				outFile, err := os.Create(targetFile)
 				if err != nil {
 					return false, errors.Wrapf(err, "create target file")
+				}
+				if err := outFile.Chmod(os.FileMode(header.Mode)); err != nil {
+					return false, errors.Wrapf(err, "chmod target file")
 				}
 
 				if _, err := io.Copy(outFile, reader); err != nil {
