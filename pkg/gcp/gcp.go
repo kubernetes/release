@@ -24,7 +24,7 @@ import (
 
 const (
 	GCloudExecutable = "gcloud"
-	gSUtilExecutable = "gsutil"
+	gsutilExecutable = "gsutil"
 )
 
 // PreCheck checks if all requirements are fulfilled to run this package and
@@ -32,7 +32,7 @@ const (
 func PreCheck() error {
 	for _, e := range []string{
 		GCloudExecutable,
-		gSUtilExecutable,
+		gsutilExecutable,
 	} {
 		if !command.Available(e) {
 			return errors.Errorf(
@@ -46,14 +46,14 @@ func PreCheck() error {
 
 // GSUtil can be used to run a gsutil command
 func GSUtil(args ...string) error {
-	return command.New(gSUtilExecutable, args...).RunSilentSuccess()
+	return command.New(gsutilExecutable, args...).RunSilentSuccess()
 }
 
 // GSUtilOutput can be used to run a gsutil command while capturing its output
 func GSUtilOutput(args ...string) (string, error) {
-	stream, err := command.New(gSUtilExecutable, args...).RunSilentSuccessOutput()
+	stream, err := command.New(gsutilExecutable, args...).RunSilentSuccessOutput()
 	if err != nil {
-		return "", errors.Wrapf(err, "executing %s", gSUtilExecutable)
+		return "", errors.Wrapf(err, "executing %s", gsutilExecutable)
 	}
 	return stream.OutputTrimNL(), nil
 }
