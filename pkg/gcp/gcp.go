@@ -25,7 +25,6 @@ import (
 const (
 	GCloudExecutable = "gcloud"
 	gSUtilExecutable = "gsutil"
-	TarExecutable    = "tar"
 )
 
 // PreCheck checks if all requirements are fulfilled to run this package and
@@ -34,7 +33,6 @@ func PreCheck() error {
 	for _, e := range []string{
 		GCloudExecutable,
 		gSUtilExecutable,
-		TarExecutable,
 	} {
 		if !command.Available(e) {
 			return errors.Errorf(
