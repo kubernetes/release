@@ -22,6 +22,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,7 +37,9 @@ import (
 
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/gcp"
+	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/release"
+	"k8s.io/release/pkg/tar"
 	"sigs.k8s.io/yaml"
 )
 
@@ -138,28 +141,19 @@ func (o *Options) uploadBuildDir(targetBucket string) (string, error) {
 	defer os.Remove(name)
 
 	logrus.Infof("Creating source tarball at %s...", name)
-	tarCmdErr := command.Execute(
-		gcp.TarExecutable,
-		"--exclude",
-		".git",
-		"-czf",
-		name,
-		".",
-	)
-	if tarCmdErr != nil {
-		return "", errors.Wrapf(err, "failed to tar files")
+	if err := tar.Compress(name, ".", regexp.MustCompile(".git")); err != nil {
+		return "", errors.Wrap(err, "create tarball")
 	}
 
 	u := uuid.New()
 	uploaded := fmt.Sprintf("%s/%s.tgz", targetBucket, u.String())
 	logrus.Infof("Uploading %s to %s...", name, uploaded)
-	cpErr := gcp.GSUtil(
-		"cp",
+	if err := gcs.CopyToGCS(
 		name,
 		uploaded,
-	)
-	if cpErr != nil {
-		return "", errors.Wrapf(err, "failed to upload files")
+		gcs.DefaultGCSCopyOptions,
+	); err != nil {
+		return "", errors.Wrap(err, "upload files to GCS")
 	}
 
 	return uploaded, nil
