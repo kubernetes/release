@@ -215,7 +215,7 @@ func RunGcbmgr(opts *GcbmgrOptions) error {
 	if rootOpts.nomock {
 		// TODO: Consider a '--yes' flag so we can mock this
 		_, nomockSubmit, askErr := util.Ask(
-			fmt.Sprintf("Really submit a --nomock release job against the %s branch?", opts.Branch),
+			fmt.Sprintf("Really submit a --nomock release job against the %s branch? (yes/no)", opts.Branch),
 			"yes",
 			3,
 		)
