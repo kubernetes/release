@@ -25,16 +25,18 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"k8s.io/release/pkg/changelog"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/notes/notesfakes"
 )
 
-func (s *sut) getChangelogOptions(tag string) *changelogOptions {
-	return &changelogOptions{
-		replayDir: filepath.Join(testDataDir, "changelog-"+tag),
-		tag:       tag,
-		tars:      ".",
-		branch:    git.DefaultBranch,
+func (s *sut) getChangelogOptions(tag string) *changelog.Options {
+	return &changelog.Options{
+		RepoPath:  s.repo.Dir(),
+		ReplayDir: filepath.Join(testDataDir, "changelog-"+tag),
+		Tag:       tag,
+		Tars:      ".",
+		Branch:    git.DefaultBranch,
 	}
 }
 
@@ -46,7 +48,7 @@ func fileContains(t *testing.T, file, contains string) {
 }
 
 func TestChangelogNoArgumentsOrFlags(t *testing.T) {
-	err := newChangelog().run(changelogOpts, rootOpts)
+	err := changelog.New(changelogOptions).Run()
 	require.NotNil(t, err)
 }
 
@@ -55,20 +57,17 @@ func TestNewPatchRelease(t *testing.T) { // nolint: dupl
 	s := newSUT(t)
 	defer s.cleanup(t)
 
-	ro := s.getRootOptions()
-	ro.nomock = true
-
 	releaseBranch := "release-1.16"
 	co := s.getChangelogOptions("v1.16.3")
-	co.branch = releaseBranch
-	co.dependencies = true
+	co.Branch = releaseBranch
+	co.Dependencies = true
 
 	// When
-	cl := newChangelog()
+	cl := changelog.New(co)
 	mock := &notesfakes.FakeMoDiff{}
 	mock.RunReturns(patchReleaseDeps, nil)
-	cl.dependencies.SetMoDiff(mock)
-	require.Nil(t, cl.run(co, ro))
+	cl.SetMoDiff(mock)
+	require.Nil(t, cl.Run())
 
 	// Then
 	// Verify local results
@@ -90,13 +89,13 @@ func TestNewPatchRelease(t *testing.T) { // nolint: dupl
 		require.Contains(t, lastCommit, x.commitMessage)
 
 		// Verify changelog contents
-		changelog, err := ioutil.ReadFile(
-			filepath.Join(s.repo.Dir(), repoChangelogDir, "CHANGELOG-1.16.md"),
+		result, err := ioutil.ReadFile(
+			filepath.Join(s.repo.Dir(), changelog.RepoChangelogDir, "CHANGELOG-1.16.md"),
 		)
 		require.Nil(t, err)
-		require.Contains(t, string(changelog), patchReleaseExpectedTOC)
-		require.Contains(t, string(changelog), patchReleaseExpectedContent)
-		require.Contains(t, string(changelog), patchReleaseDeps)
+		require.Contains(t, string(result), patchReleaseExpectedTOC)
+		require.Contains(t, string(result), patchReleaseExpectedContent)
+		require.Contains(t, string(result), patchReleaseDeps)
 	}
 }
 
@@ -104,13 +103,11 @@ func TestNewAlphaRelease(t *testing.T) {
 	// Given
 	s := newSUT(t)
 	defer s.cleanup(t)
-	ro := s.getRootOptions()
-	ro.nomock = true
 
 	co := s.getChangelogOptions("v1.18.0-alpha.3")
 
 	// When
-	require.Nil(t, newChangelog().run(co, ro))
+	require.Nil(t, changelog.New(co).Run())
 
 	// Then
 	// Verify local results
@@ -124,25 +121,23 @@ func TestNewAlphaRelease(t *testing.T) {
 	require.Contains(t, lastCommit, "Update directory for v1.18.0-alpha.3 release")
 
 	// Verify changelog contents
-	changelog, err := ioutil.ReadFile(
-		filepath.Join(s.repo.Dir(), repoChangelogDir, "CHANGELOG-1.18.md"),
+	result, err := ioutil.ReadFile(
+		filepath.Join(s.repo.Dir(), changelog.RepoChangelogDir, "CHANGELOG-1.18.md"),
 	)
 	require.Nil(t, err)
-	require.Regexp(t, alphaReleaseExpectedTOC, string(changelog))
-	require.Contains(t, string(changelog), alphaReleaseExpectedContent)
+	require.Regexp(t, alphaReleaseExpectedTOC, string(result))
+	require.Contains(t, string(result), alphaReleaseExpectedContent)
 }
 
 func TestNewAlpha1Release(t *testing.T) {
 	// Given
 	s := newSUT(t)
 	defer s.cleanup(t)
-	ro := s.getRootOptions()
-	ro.nomock = true
 
 	co := s.getChangelogOptions("v1.19.0-alpha.1")
 
 	// When
-	require.Nil(t, newChangelog().run(co, ro))
+	require.Nil(t, changelog.New(co).Run())
 
 	// Then
 	// Verify local results
@@ -155,11 +150,11 @@ func TestNewAlpha1Release(t *testing.T) {
 	require.Contains(t, lastCommit, "Update directory for v1.19.0-alpha.1 release")
 
 	// Verify changelog contents
-	changelog, err := ioutil.ReadFile(
-		filepath.Join(s.repo.Dir(), repoChangelogDir, "CHANGELOG-1.19.md"),
+	result, err := ioutil.ReadFile(
+		filepath.Join(s.repo.Dir(), changelog.RepoChangelogDir, "CHANGELOG-1.19.md"),
 	)
 	require.Nil(t, err)
-	require.Regexp(t, alpha1ReleaseExpectedTOC, string(changelog))
+	require.Regexp(t, alpha1ReleaseExpectedTOC, string(result))
 }
 
 func TestNewMinorRelease(t *testing.T) { // nolint: dupl
@@ -167,18 +162,15 @@ func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 	s := newSUT(t)
 	defer s.cleanup(t)
 
-	ro := s.getRootOptions()
-	ro.nomock = true
-
 	releaseBranch := "release-1.17"
 	co := s.getChangelogOptions("v1.17.0")
-	co.branch = releaseBranch
+	co.Branch = releaseBranch
 
 	// Prepare repo
 	changelogIter := func(callback func(string)) {
 		for i := 0; i < 6; i++ {
 			callback(filepath.Join(
-				repoChangelogDir, fmt.Sprintf("CHANGELOG-1.1%d.md", i),
+				changelog.RepoChangelogDir, fmt.Sprintf("CHANGELOG-1.1%d.md", i),
 			))
 		}
 	}
@@ -198,7 +190,7 @@ func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 	require.Nil(t, s.repo.Checkout(git.DefaultBranch))
 
 	// When
-	require.Nil(t, newChangelog().run(co, ro))
+	require.Nil(t, changelog.New(co).Run())
 
 	// Then
 	// Verify local results
@@ -226,12 +218,12 @@ func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 		require.Contains(t, lastCommit, x.commitMessage)
 
 		// Verify changelog contents
-		changelog, err := ioutil.ReadFile(
-			filepath.Join(s.repo.Dir(), repoChangelogDir, "CHANGELOG-1.17.md"),
+		result, err := ioutil.ReadFile(
+			filepath.Join(s.repo.Dir(), changelog.RepoChangelogDir, "CHANGELOG-1.17.md"),
 		)
 		require.Nil(t, err)
-		require.Contains(t, string(changelog), minorReleaseExpectedTOC)
-		require.Contains(t, string(changelog), minorReleaseExpectedContent)
+		require.Contains(t, string(result), minorReleaseExpectedTOC)
+		require.Contains(t, string(result), minorReleaseExpectedContent)
 	}
 }
 
@@ -240,23 +232,20 @@ func TestNewRCRelease(t *testing.T) {
 	s := newSUT(t)
 	defer s.cleanup(t)
 
-	ro := s.getRootOptions()
-	ro.nomock = true
-
 	releaseBranch := "release-1.16"
 	co := s.getChangelogOptions("v1.16.0-rc.1")
-	co.branch = releaseBranch
+	co.Branch = releaseBranch
 
 	// When
-	require.Nil(t, newChangelog().run(co, ro))
+	require.Nil(t, changelog.New(co).Run())
 
 	// Then
 	// Verify local results
 	require.Nil(t, s.repo.Checkout(releaseBranch))
 
-	changelog, err := ioutil.ReadFile(
-		filepath.Join(s.repo.Dir(), repoChangelogDir, "CHANGELOG-1.16.md"),
+	result, err := ioutil.ReadFile(
+		filepath.Join(s.repo.Dir(), changelog.RepoChangelogDir, "CHANGELOG-1.16.md"),
 	)
 	require.Nil(t, err)
-	require.Contains(t, string(changelog), rcReleaseExpectedTOC)
+	require.Contains(t, string(result), rcReleaseExpectedTOC)
 }
