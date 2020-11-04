@@ -196,24 +196,6 @@ RELEASE_BRANCH=${POSITIONAL_ARGV[0]}
 ###############################################################################
 # FUNCTIONS
 ###############################################################################
-###############################################################################
-# common::cleanexit prog-specific override function
-# Do stuff here to clean up after this specific script
-# @param exit code
-#
-common::cleanexit () {
-  [[ -t 1 ]] && tput cnorm
-
-  logrun rm -rf $LOCAL_CACHE
-
-  if [[ -d $WORKDIR ]]; then
-    # Just copy the logs and files up. A completed release copies everything
-    archive_release --files-only
-  fi
-
-  common::timestamp end
-  exit ${1:-0}
-}
 
 ###############################################################################
 # Copy logs to WORKDIR
@@ -228,76 +210,6 @@ copy_logs_to_workdir () {
 
   logecho -n "Copying $LOGFILE{,.[0-9]} to $WORKDIR: "
   logrun -s cp -f $logfiles $WORKDIR
-}
-
-###############################################################################
-# Ensures we have write access to a specified registry
-# @param registry - A registry to check the ACLs for
-#
-ensure_registry_acls () {
-  local registry="$1"
-  local emptyfile="$TMPDIR/empty-file.$$"
-  local gs_path
-  local r
-  local retcode=0
-  local artifact_namespace
-
-  # Make an empty file to test uploading
-  logrun -v touch $emptyfile
-
-  # Short of creating a hardcoded map of project-id to registry, translating
-  # _ to - seems to be a simple rule to keep this, well, simple.
-  r=${registry//_/-}
-
-  # When we are no-mock mode we need to perform an image promotion, so it's
-  # unnecessary to check for write access to the production container registry.
-  if ((FLAGS_nomock)); then
-    logecho -n "Skipping container registry ACL check on $GCRIO_PATH_PROD in no-mock mode: "
-    logecho $OK
-    return 0
-  else
-    artifact_namespace="${r/gcr.io\//}"
-  fi
-
-  gs_path="gs://artifacts.$artifact_namespace.appspot.com/containers/"
-  logecho -n "Checking write access to registry $r: "
-  if logrun -v $GSUTIL cp $emptyfile $gs_path && \
-      logrun -v $GSUTIL rm $gs_path/${emptyfile##*/}; then
-    logecho $OK
-  else
-    logecho $FAILED
-    ((retcode++))
-  fi
-
-  logrun -v rm -f $emptyfile
-
-  return $retcode
-}
-
-###############################################################################
-# Checks GCP users to ensure they are logged in and accessible
-# return 1 on failure
-ensure_gcp_users () {
-  local user
-  local -a users_to_check
-
-  users_to_check+=($GCP_USER)
-
-  for user in ${users_to_check[*]}; do
-    logecho -n "Checking cloud account/auth $user: "
-    if (logrun $GCLOUD config set account $user && \
-        logrun $GCLOUD docker -- version >/dev/null 2>&1); then
-      logecho -r "$OK"
-    else
-      logecho -r "$FAILED"
-      logecho
-      logecho "$user is not in the credentialed accounts list!"
-      logecho "Sign in with:"
-      logecho
-      logecho "$ $GCLOUD auth login $user"
-      return 1
-    fi
-  done
 }
 
 ###############################################################################
@@ -341,11 +253,6 @@ check_prerequisites () {
     return 1
   fi
   logecho -r "$OK"
-
-  # Verify write access to all container registries that might be used
-  # to ensure both mock and --nomock runs will work.
-  # TEMPORARILY DISABLE ACL CHECK FOR VDF
-  #ensure_registry_acls "$GCRIO_PATH" || return 1
 
   logecho -n "Checking cloud project state: "
   GCLOUD_PROJECT=$($GCLOUD config get-value project 2>/dev/null)
