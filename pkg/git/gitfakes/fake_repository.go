@@ -21,6 +21,7 @@ import (
 	"sync"
 
 	gita "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
@@ -52,6 +53,30 @@ type FakeRepository struct {
 	commitObjectReturnsOnCall map[int]struct {
 		result1 *object.Commit
 		result2 error
+	}
+	CreateRemoteStub        func(*config.RemoteConfig) (*gita.Remote, error)
+	createRemoteMutex       sync.RWMutex
+	createRemoteArgsForCall []struct {
+		arg1 *config.RemoteConfig
+	}
+	createRemoteReturns struct {
+		result1 *gita.Remote
+		result2 error
+	}
+	createRemoteReturnsOnCall map[int]struct {
+		result1 *gita.Remote
+		result2 error
+	}
+	DeleteRemoteStub        func(string) error
+	deleteRemoteMutex       sync.RWMutex
+	deleteRemoteArgsForCall []struct {
+		arg1 string
+	}
+	deleteRemoteReturns struct {
+		result1 error
+	}
+	deleteRemoteReturnsOnCall map[int]struct {
+		result1 error
 	}
 	HeadStub        func() (*plumbing.Reference, error)
 	headMutex       sync.RWMutex
@@ -235,6 +260,129 @@ func (fake *FakeRepository) CommitObjectReturnsOnCall(i int, result1 *object.Com
 		result1 *object.Commit
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeRepository) CreateRemote(arg1 *config.RemoteConfig) (*gita.Remote, error) {
+	fake.createRemoteMutex.Lock()
+	ret, specificReturn := fake.createRemoteReturnsOnCall[len(fake.createRemoteArgsForCall)]
+	fake.createRemoteArgsForCall = append(fake.createRemoteArgsForCall, struct {
+		arg1 *config.RemoteConfig
+	}{arg1})
+	fake.recordInvocation("CreateRemote", []interface{}{arg1})
+	fake.createRemoteMutex.Unlock()
+	if fake.CreateRemoteStub != nil {
+		return fake.CreateRemoteStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.createRemoteReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRepository) CreateRemoteCallCount() int {
+	fake.createRemoteMutex.RLock()
+	defer fake.createRemoteMutex.RUnlock()
+	return len(fake.createRemoteArgsForCall)
+}
+
+func (fake *FakeRepository) CreateRemoteCalls(stub func(*config.RemoteConfig) (*gita.Remote, error)) {
+	fake.createRemoteMutex.Lock()
+	defer fake.createRemoteMutex.Unlock()
+	fake.CreateRemoteStub = stub
+}
+
+func (fake *FakeRepository) CreateRemoteArgsForCall(i int) *config.RemoteConfig {
+	fake.createRemoteMutex.RLock()
+	defer fake.createRemoteMutex.RUnlock()
+	argsForCall := fake.createRemoteArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeRepository) CreateRemoteReturns(result1 *gita.Remote, result2 error) {
+	fake.createRemoteMutex.Lock()
+	defer fake.createRemoteMutex.Unlock()
+	fake.CreateRemoteStub = nil
+	fake.createRemoteReturns = struct {
+		result1 *gita.Remote
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepository) CreateRemoteReturnsOnCall(i int, result1 *gita.Remote, result2 error) {
+	fake.createRemoteMutex.Lock()
+	defer fake.createRemoteMutex.Unlock()
+	fake.CreateRemoteStub = nil
+	if fake.createRemoteReturnsOnCall == nil {
+		fake.createRemoteReturnsOnCall = make(map[int]struct {
+			result1 *gita.Remote
+			result2 error
+		})
+	}
+	fake.createRemoteReturnsOnCall[i] = struct {
+		result1 *gita.Remote
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepository) DeleteRemote(arg1 string) error {
+	fake.deleteRemoteMutex.Lock()
+	ret, specificReturn := fake.deleteRemoteReturnsOnCall[len(fake.deleteRemoteArgsForCall)]
+	fake.deleteRemoteArgsForCall = append(fake.deleteRemoteArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("DeleteRemote", []interface{}{arg1})
+	fake.deleteRemoteMutex.Unlock()
+	if fake.DeleteRemoteStub != nil {
+		return fake.DeleteRemoteStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.deleteRemoteReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeRepository) DeleteRemoteCallCount() int {
+	fake.deleteRemoteMutex.RLock()
+	defer fake.deleteRemoteMutex.RUnlock()
+	return len(fake.deleteRemoteArgsForCall)
+}
+
+func (fake *FakeRepository) DeleteRemoteCalls(stub func(string) error) {
+	fake.deleteRemoteMutex.Lock()
+	defer fake.deleteRemoteMutex.Unlock()
+	fake.DeleteRemoteStub = stub
+}
+
+func (fake *FakeRepository) DeleteRemoteArgsForCall(i int) string {
+	fake.deleteRemoteMutex.RLock()
+	defer fake.deleteRemoteMutex.RUnlock()
+	argsForCall := fake.deleteRemoteArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeRepository) DeleteRemoteReturns(result1 error) {
+	fake.deleteRemoteMutex.Lock()
+	defer fake.deleteRemoteMutex.Unlock()
+	fake.DeleteRemoteStub = nil
+	fake.deleteRemoteReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeRepository) DeleteRemoteReturnsOnCall(i int, result1 error) {
+	fake.deleteRemoteMutex.Lock()
+	defer fake.deleteRemoteMutex.Unlock()
+	fake.DeleteRemoteStub = nil
+	if fake.deleteRemoteReturnsOnCall == nil {
+		fake.deleteRemoteReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.deleteRemoteReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeRepository) Head() (*plumbing.Reference, error) {
@@ -535,6 +683,10 @@ func (fake *FakeRepository) Invocations() map[string][][]interface{} {
 	defer fake.branchesMutex.RUnlock()
 	fake.commitObjectMutex.RLock()
 	defer fake.commitObjectMutex.RUnlock()
+	fake.createRemoteMutex.RLock()
+	defer fake.createRemoteMutex.RUnlock()
+	fake.deleteRemoteMutex.RLock()
+	defer fake.deleteRemoteMutex.RUnlock()
 	fake.headMutex.RLock()
 	defer fake.headMutex.RUnlock()
 	fake.remoteMutex.RLock()

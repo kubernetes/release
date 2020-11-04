@@ -62,6 +62,12 @@ const (
 
 	kubernetesTar = "kubernetes.tar.gz"
 
+	// Staged source code tarball of Kubernetes
+	sourcesTar = "src.tar.gz"
+
+	// Root path on the bucket for staged artifacts
+	stagePath = "stage"
+
 	// Path where the release container images are stored
 	ImagesPath = "release-images"
 
