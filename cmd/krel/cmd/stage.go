@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"k8s.io/release/pkg/anago"
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/release"
 )
@@ -54,23 +55,20 @@ following steps are involved in the process:
    into the local working repository.
 
 6. Stage: Copies the build artifacts to a Google Cloud Bucket.
-
 `, github.TokenEnvKey, release.BuildDir),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runStage(stageOpts, rootOpts)
+		return runStage(stageOptions, rootOpts)
 	},
 }
 
-type stageOptions struct{}
-
-var stageOpts = &stageOptions{}
+var stageOptions = anago.DefaultStageOptions()
 
 func init() {
 	rootCmd.AddCommand(stageCmd)
 }
 
-func runStage(opts *stageOptions, rootOpts *rootOptions) error {
-	return nil
+func runStage(stageOptions *anago.StageOptions, _ *rootOptions) error {
+	return anago.NewStage(stageOptions).Run()
 }

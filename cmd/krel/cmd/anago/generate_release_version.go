@@ -42,7 +42,7 @@ life.
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		res, err := runGenerateReleaseVersion(generateReleaseVersionOpts, anagoOpts)
+		res, err := runGenerateReleaseVersion(generateReleaseVersionOpts)
 		if err != nil {
 			return err
 		}
@@ -52,6 +52,7 @@ life.
 }
 
 type generateReleaseVersionOptions struct {
+	releaseType  string
 	buildVersion string
 	branch       string
 	parentBranch string
@@ -60,6 +61,20 @@ type generateReleaseVersionOptions struct {
 var generateReleaseVersionOpts = &generateReleaseVersionOptions{}
 
 func init() {
+	generateReleaseVersionCmd.PersistentFlags().StringVar(
+		&generateReleaseVersionOpts.releaseType,
+		"release-type",
+		"",
+		fmt.Sprintf("release type, must be one of: '%s'",
+			strings.Join([]string{
+				release.ReleaseTypeAlpha,
+				release.ReleaseTypeBeta,
+				release.ReleaseTypeRC,
+				release.ReleaseTypeOfficial,
+			}, "', '"),
+		),
+	)
+
 	generateReleaseVersionCmd.PersistentFlags().StringVar(
 		&generateReleaseVersionOpts.buildVersion,
 		"build-version",
@@ -94,9 +109,9 @@ func init() {
 	AnagoCmd.AddCommand(generateReleaseVersionCmd)
 }
 
-func runGenerateReleaseVersion(opts *generateReleaseVersionOptions, anagoOpts *release.Options) (string, error) {
+func runGenerateReleaseVersion(opts *generateReleaseVersionOptions) (string, error) {
 	releaseVersion, err := release.GenerateReleaseVersion(
-		anagoOpts.ReleaseType,
+		opts.releaseType,
 		opts.buildVersion,
 		opts.branch,
 		opts.parentBranch == git.DefaultBranch,

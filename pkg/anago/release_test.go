@@ -14,22 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package release
+package anago_test
 
-type Options struct {
-	ReleaseType string
+import (
+	"testing"
 
-	BaseDir string
-
-	Stage   bool
-	Release bool
-	GCB     bool
-}
-
-const (
-	DefaultBaseDir = "$HOME/anago"
+	"github.com/stretchr/testify/require"
+	"k8s.io/release/pkg/anago"
+	"k8s.io/release/pkg/anago/anagofakes"
 )
 
-func Anago(o *Options) error {
-	return nil
+func TestCheckPrerequisitesRelease(t *testing.T) {
+	sut := anago.NewDefaultRelease()
+	mock := &anagofakes.FakeReleaseImpl{}
+	sut.SetClient(mock)
+	require.Nil(t, sut.CheckPrerequisites())
 }
