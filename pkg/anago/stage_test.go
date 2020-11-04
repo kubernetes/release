@@ -14,16 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package anago
+package anago_test
 
 import (
-	"github.com/spf13/cobra"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"k8s.io/release/pkg/anago"
+	"k8s.io/release/pkg/anago/anagofakes"
 )
 
-// AnagoCmd is a krel subcommand which just holds further subcommands
-var AnagoCmd = &cobra.Command{
-	Use:           "anago",
-	Short:         "Run anago",
-	SilenceUsage:  true,
-	SilenceErrors: true,
+func TestCheckPrerequisitesStage(t *testing.T) {
+	sut := anago.NewDefaultStage()
+	mock := &anagofakes.FakeStageImpl{}
+	sut.SetClient(mock)
+	require.Nil(t, sut.CheckPrerequisites())
 }

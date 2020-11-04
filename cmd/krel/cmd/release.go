@@ -21,8 +21,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"k8s.io/release/pkg/anago"
 	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/release"
 )
 
 // releaseCmd represents the subcommand for `krel release`
@@ -44,8 +44,8 @@ successful 'krel stage'. The following steps are involved in the process:
    available) and build version for this release.
 
 3. Prepare Workspace: Verifies that the working directory is in the desired
-   state. This means that the build directory "%s" is cleaned up and the
-   checked out repository is in a clean state.
+   state. This means that the staged sources will be downloaded from the bucket
+   which should contain a copy of the repository.
 
 4. Push Artifacts: Pushes the generated artifacts to the release bucket and
    Google Container Registry.
@@ -58,23 +58,20 @@ successful 'krel stage'. The following steps are involved in the process:
 
 7. Archive: Copies the release process logs to a bucket and sets private
    permissions on it.
-
-`, github.TokenEnvKey, release.BuildDir),
+`, github.TokenEnvKey),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runRelease(releaseOpts, rootOpts)
+		return runRelease(releaseOptions, rootOpts)
 	},
 }
 
-type releaseOptions struct{}
-
-var releaseOpts = &releaseOptions{}
+var releaseOptions = anago.DefaultReleaseOptions()
 
 func init() {
 	rootCmd.AddCommand(releaseCmd)
 }
 
-func runRelease(opts *releaseOptions, rootOpts *rootOptions) error {
-	return nil
+func runRelease(options *anago.ReleaseOptions, _ *rootOptions) error {
+	return anago.NewRelease(options).Run()
 }

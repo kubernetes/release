@@ -27,16 +27,13 @@ import (
 
 func TestRunGenerateReleaseVersion(t *testing.T) {
 	for _, tc := range []struct {
-		anagoOpts *release.Options
 		opts      *generateReleaseVersionOptions
 		shouldErr bool
 		expected  string
 	}{
 		{
-			anagoOpts: &release.Options{
-				ReleaseType: release.ReleaseTypeOfficial,
-			},
 			opts: &generateReleaseVersionOptions{
+				releaseType:  release.ReleaseTypeOfficial,
 				buildVersion: "v1.19.1-rc.0.34+5f5b46a6e8ad56",
 				branch:       "release-1.19",
 			},
@@ -51,10 +48,8 @@ export RELEASE_VERSION_PRIME=v1.19.1
 `,
 		},
 		{
-			anagoOpts: &release.Options{
-				ReleaseType: release.ReleaseTypeRC,
-			},
 			opts: &generateReleaseVersionOptions{
+				releaseType:  release.ReleaseTypeRC,
 				buildVersion: "v1.19.1-rc.0.34+5f5b46a6e8ad56",
 				branch:       "release-1.19",
 			},
@@ -67,20 +62,16 @@ export RELEASE_VERSION_PRIME=v1.19.1-rc.1
 `,
 		},
 		{
-			anagoOpts: &release.Options{
-				ReleaseType: release.ReleaseTypeAlpha,
-			},
 			opts: &generateReleaseVersionOptions{
+				releaseType:  release.ReleaseTypeAlpha,
 				buildVersion: "v1.19.1-rc.0.34+5f5b46a6e8ad56",
 				branch:       git.DefaultBranch,
 			},
 			shouldErr: true,
 		},
 		{
-			anagoOpts: &release.Options{
-				ReleaseType: release.ReleaseTypeAlpha,
-			},
 			opts: &generateReleaseVersionOptions{
+				releaseType:  release.ReleaseTypeAlpha,
 				buildVersion: "v1.20.0-alpha.0.1273+4e9bdd481e2400",
 				branch:       git.DefaultBranch,
 			},
@@ -93,10 +84,8 @@ export RELEASE_VERSION_PRIME=v1.20.0-alpha.1
 `,
 		},
 		{
-			anagoOpts: &release.Options{
-				ReleaseType: release.ReleaseTypeBeta,
-			},
 			opts: &generateReleaseVersionOptions{
+				releaseType:  release.ReleaseTypeBeta,
 				buildVersion: "v1.20.0-alpha.0.1273+4e9bdd481e2400",
 				branch:       git.DefaultBranch,
 			},
@@ -109,10 +98,8 @@ export RELEASE_VERSION_PRIME=v1.20.0-beta.0
 `,
 		},
 		{
-			anagoOpts: &release.Options{
-				ReleaseType: release.ReleaseTypeRC,
-			},
 			opts: &generateReleaseVersionOptions{
+				releaseType:  release.ReleaseTypeRC,
 				buildVersion: "v1.20.0-alpha.0.1273+4e9bdd481e2400",
 				branch:       "release-1.20",
 				parentBranch: git.DefaultBranch,
@@ -128,7 +115,7 @@ export RELEASE_VERSION_PRIME=v1.20.0-rc.0
 `,
 		},
 	} {
-		res, err := runGenerateReleaseVersion(tc.opts, tc.anagoOpts)
+		res, err := runGenerateReleaseVersion(tc.opts)
 		if tc.shouldErr {
 			require.NotNil(t, err)
 		} else {
