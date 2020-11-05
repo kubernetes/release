@@ -37,7 +37,7 @@ removed in future releases again when anago goes end of life.
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return errors.Wrap(runPush(pushOpts, version), "run krel anago push")
+		return errors.Wrap(runPush(pushOpts), "run krel anago push")
 	},
 }
 
@@ -45,7 +45,6 @@ var (
 	pushOpts     = &release.PushBuildOptions{}
 	runStage     bool
 	runRelease   bool
-	version      string
 	buildVersion string
 )
 
@@ -65,7 +64,7 @@ func init() {
 	)
 
 	pushCmd.PersistentFlags().StringVar(
-		&version,
+		&pushOpts.Version,
 		"version",
 		"",
 		"version to be used",
@@ -105,16 +104,16 @@ func init() {
 	AnagoCmd.AddCommand(pushCmd)
 }
 
-func runPush(opts *release.PushBuildOptions, version string) error {
+func runPush(opts *release.PushBuildOptions) error {
 	pushBuild := release.NewPushBuild(opts)
 	if err := pushBuild.CheckReleaseBucket(); err != nil {
 		return errors.Wrap(err, "check release bucket access")
 	}
 
 	if runStage {
-		return runPushStage(pushBuild, opts, version)
+		return runPushStage(pushBuild, opts)
 	} else if runRelease {
-		return runPushRelease(pushBuild, opts, version)
+		return runPushRelease(pushBuild, opts)
 	}
 
 	return errors.New("neither --stage nor --release provided")
@@ -123,7 +122,6 @@ func runPush(opts *release.PushBuildOptions, version string) error {
 func runPushStage(
 	pushBuild *release.PushBuild,
 	opts *release.PushBuildOptions,
-	version string,
 ) error {
 	// Stage the local source tree
 	if err := pushBuild.StageLocalSourceTree(buildVersion); err != nil {
@@ -131,15 +129,15 @@ func runPushStage(
 	}
 
 	// Stage local artifacts and write checksums
-	if err := pushBuild.StageLocalArtifacts(version); err != nil {
+	if err := pushBuild.StageLocalArtifacts(); err != nil {
 		return errors.Wrap(err, "staging local artifacts")
 	}
-	gcsPath := filepath.Join("stage", buildVersion, version)
+	gcsPath := filepath.Join("stage", buildVersion, opts.Version)
 
 	// Push gcs-stage to GCS
 	if err := pushBuild.PushReleaseArtifacts(
-		filepath.Join(opts.BuildDir, release.GCSStagePath, version),
-		filepath.Join(gcsPath, release.GCSStagePath, version),
+		filepath.Join(opts.BuildDir, release.GCSStagePath, opts.Version),
+		filepath.Join(gcsPath, release.GCSStagePath, opts.Version),
 	); err != nil {
 		return errors.Wrap(err, "pushing release artifacts")
 	}
@@ -153,7 +151,7 @@ func runPushStage(
 	}
 
 	// Push container images into registry
-	if err := pushBuild.PushContainerImages(version); err != nil {
+	if err := pushBuild.PushContainerImages(); err != nil {
 		return errors.Wrap(err, "pushing container images")
 	}
 
@@ -163,9 +161,8 @@ func runPushStage(
 func runPushRelease(
 	pushBuild *release.PushBuild,
 	opts *release.PushBuildOptions,
-	version string,
 ) error {
-	if err := pushBuild.CopyStagedFromGCS(version, buildVersion); err != nil {
+	if err := pushBuild.CopyStagedFromGCS(opts.Bucket, buildVersion); err != nil {
 		return errors.Wrap(err, "copy staged from GCS")
 	}
 
@@ -179,13 +176,13 @@ func runPushRelease(
 	// Image promotion has been done on nomock stage, verify that the images
 	// are available.
 	if err := release.NewImages().Validate(
-		targetRegistry, version, opts.BuildDir,
+		targetRegistry, opts.Version, opts.BuildDir,
 	); err != nil {
 		return errors.Wrap(err, "validate container images")
 	}
 
 	if err := release.NewPublisher().PublishVersion(
-		"release", version, opts.BuildDir, opts.Bucket, nil, false, false,
+		"release", opts.Version, opts.BuildDir, opts.Bucket, nil, false, false,
 	); err != nil {
 		return errors.Wrap(err, "publish release")
 	}

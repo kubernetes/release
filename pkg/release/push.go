@@ -59,6 +59,10 @@ type PushBuildOptions struct {
 	// Specify a suffix to append to the upload destination on GCS.
 	GCSSuffix string
 
+	// Version to be used. Usually automatically discovered, but it can be
+	// used to overwrite this behavior.
+	Version string
+
 	// Append suffix to version name if set.
 	VersionSuffix string
 
@@ -163,7 +167,7 @@ func (p *PushBuild) Push() error {
 		return errors.Wrap(err, "check release bucket access")
 	}
 
-	if err := p.StageLocalArtifacts(version); err != nil {
+	if err := p.StageLocalArtifacts(); err != nil {
 		return errors.Wrap(err, "staging local artifacts")
 	}
 
@@ -186,7 +190,7 @@ func (p *PushBuild) Push() error {
 		return errors.Wrap(err, "push release artifacts")
 	}
 
-	if err := p.PushContainerImages(version); err != nil {
+	if err := p.PushContainerImages(); err != nil {
 		return errors.Wrap(err, "push container images")
 	}
 
@@ -224,23 +228,26 @@ func (p *PushBuild) findLatestVersion() (latestVersion string, err error) {
 		return "", errors.Wrap(err, "identify if release built with Bazel")
 	}
 
-	if isBazel {
-		logrus.Info("Using Bazel build version")
-		version, err := ReadBazelVersion(dir)
-		if err != nil {
-			return "", errors.Wrap(err, "read Bazel build version")
+	latestVersion = p.opts.Version
+	if p.opts.Version == "" {
+		if isBazel {
+			logrus.Info("Using Bazel build version")
+			version, err := ReadBazelVersion(dir)
+			if err != nil {
+				return "", errors.Wrap(err, "read Bazel build version")
+			}
+			latestVersion = version
+		} else {
+			logrus.Info("Using Dockerized build version")
+			version, err := ReadDockerizedVersion(dir)
+			if err != nil {
+				return "", errors.Wrap(err, "read Dockerized build version")
+			}
+			latestVersion = version
 		}
-		latestVersion = version
-	} else {
-		logrus.Info("Using Dockerized build version")
-		version, err := ReadDockerizedVersion(dir)
-		if err != nil {
-			return "", errors.Wrap(err, "read Dockerized build version")
-		}
-		latestVersion = version
 	}
 
-	logrus.Infof("Found build version: %s", latestVersion)
+	logrus.Infof("Using build version: %s", latestVersion)
 
 	valid, err := IsValidReleaseBuild(latestVersion)
 	if err != nil {
@@ -326,9 +333,9 @@ func (p *PushBuild) CheckReleaseBucket() error {
 
 // StageLocalArtifacts locally stages the release artifacts
 // was releaselib.sh: release::gcs::locally_stage_release_artifacts
-func (p *PushBuild) StageLocalArtifacts(version string) error {
+func (p *PushBuild) StageLocalArtifacts() error {
 	logrus.Info("Staging local artifacts")
-	stageDir := filepath.Join(p.opts.BuildDir, GCSStagePath, version)
+	stageDir := filepath.Join(p.opts.BuildDir, GCSStagePath, p.opts.Version)
 
 	logrus.Infof("Cleaning staging dir %s", stageDir)
 	if err := util.RemoveAndReplaceDir(stageDir); err != nil {
@@ -427,17 +434,17 @@ func (p *PushBuild) PushReleaseArtifacts(srcPath, gcsPath string) error {
 // PushContainerImages will publish container images into the set
 // `DockerRegistry`. It also validates if the remove manifests are correct,
 // which can be turned of by setting `ValidateRemoteImageDigests` to `false`.
-func (p *PushBuild) PushContainerImages(version string) error {
+func (p *PushBuild) PushContainerImages() error {
 	if p.opts.DockerRegistry == "" {
 		logrus.Info("Registry is not set, will not publish container images")
 		return nil
 	}
 
 	images := NewImages()
-	logrus.Infof("Publishing container images for %s", version)
+	logrus.Infof("Publishing container images for %s", p.opts.Version)
 
 	if err := images.Publish(
-		p.opts.DockerRegistry, version, p.opts.BuildDir,
+		p.opts.DockerRegistry, p.opts.Version, p.opts.BuildDir,
 	); err != nil {
 		return errors.Wrap(err, "publish container images")
 	}
@@ -448,7 +455,7 @@ func (p *PushBuild) PushContainerImages(version string) error {
 	}
 
 	if err := images.Validate(
-		p.opts.DockerRegistry, version, p.opts.BuildDir,
+		p.opts.DockerRegistry, p.opts.Version, p.opts.BuildDir,
 	); err != nil {
 		return errors.Wrap(err, "validate container images")
 	}
@@ -458,17 +465,17 @@ func (p *PushBuild) PushContainerImages(version string) error {
 
 // CopyStagedFromGCS copies artifacts from GCS and between buckets as needed.
 // was: anago:copy_staged_from_gcs
-func (p *PushBuild) CopyStagedFromGCS(version, buildVersion string) error {
+func (p *PushBuild) CopyStagedFromGCS(stagedBucket, buildVersion string) error {
 	logrus.Info("Copy staged release artifacts from GCS")
 
 	copyOpts := gcs.DefaultGCSCopyOptions
 	copyOpts.NoClobber = pointer.BoolPtr(p.opts.AllowDup)
 	copyOpts.AllowMissing = pointer.BoolPtr(false)
 
-	gsStageRoot := filepath.Join(p.opts.Bucket, stagePath, buildVersion, version)
-	gsReleaseRoot := filepath.Join(p.opts.Bucket, "release", version)
+	gsStageRoot := filepath.Join(p.opts.Bucket, stagePath, buildVersion, p.opts.Version)
+	gsReleaseRoot := filepath.Join(p.opts.Bucket, "release", p.opts.Version)
 
-	src := filepath.Join(gsStageRoot, GCSStagePath, version)
+	src := filepath.Join(gsStageRoot, GCSStagePath, p.opts.Version)
 	dst := gsReleaseRoot
 	logrus.Infof("Bucket to bucket copy from %s to %s", src, dst)
 	if err := gcs.CopyBucketToBucket(src, dst, copyOpts); err != nil {
@@ -476,7 +483,7 @@ func (p *PushBuild) CopyStagedFromGCS(version, buildVersion string) error {
 	}
 
 	src = filepath.Join(src, kubernetesTar)
-	dst = filepath.Join(p.opts.BuildDir, GCSStagePath, version, kubernetesTar)
+	dst = filepath.Join(p.opts.BuildDir, GCSStagePath, p.opts.Version, kubernetesTar)
 	logrus.Infof("Copy kubernetes tarball %s to %s", src, dst)
 	if err := gcs.CopyToLocal(src, dst, copyOpts); err != nil {
 		return errors.Wrapf(err, "copy to local")
