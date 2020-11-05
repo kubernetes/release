@@ -46,6 +46,10 @@ func TestGenerateReleaseVersion(t *testing.T) {
 				require.Equal(t, "v1.18.5-rc.0", res.RC())
 				require.Empty(t, res.Beta())
 				require.Empty(t, res.Alpha())
+				require.Equal(t,
+					[]string{"v1.18.4", "v1.18.5-rc.0"},
+					res.Ordered(),
+				)
 			},
 		},
 		{
@@ -61,6 +65,7 @@ func TestGenerateReleaseVersion(t *testing.T) {
 				require.Equal(t, "v1.18.4-rc.1", res.RC())
 				require.Empty(t, res.Beta())
 				require.Empty(t, res.Alpha())
+				require.Equal(t, []string{"v1.18.4-rc.1"}, res.Ordered())
 			},
 		},
 		{
@@ -76,6 +81,10 @@ func TestGenerateReleaseVersion(t *testing.T) {
 				require.Equal(t, "v1.18.0-rc.0", res.RC())
 				require.Empty(t, res.Beta())
 				require.Equal(t, "v1.19.0-alpha.0", res.Alpha())
+				require.Equal(t,
+					[]string{"v1.18.0-rc.0", "v1.19.0-alpha.0"},
+					res.Ordered(),
+				)
 			},
 		},
 		{
@@ -91,6 +100,7 @@ func TestGenerateReleaseVersion(t *testing.T) {
 				require.Empty(t, res.RC())
 				require.Equal(t, "v1.18.4-beta.2", res.Beta())
 				require.Empty(t, res.Alpha())
+				require.Equal(t, []string{"v1.18.4-beta.2"}, res.Ordered())
 			},
 		},
 		{
@@ -106,6 +116,7 @@ func TestGenerateReleaseVersion(t *testing.T) {
 				require.Empty(t, res.RC())
 				require.Equal(t, "v1.18.0-beta.0", res.Beta())
 				require.Empty(t, res.Alpha())
+				require.Equal(t, []string{"v1.18.0-beta.0"}, res.Ordered())
 			},
 		},
 		{
@@ -121,6 +132,7 @@ func TestGenerateReleaseVersion(t *testing.T) {
 				require.Empty(t, res.RC())
 				require.Empty(t, res.Beta())
 				require.Equal(t, "v1.18.4-alpha.2", res.Alpha())
+				require.Equal(t, []string{"v1.18.4-alpha.2"}, res.Ordered())
 			},
 		},
 		{
@@ -136,6 +148,7 @@ func TestGenerateReleaseVersion(t *testing.T) {
 				require.Empty(t, res.RC())
 				require.Empty(t, res.Beta())
 				require.Equal(t, "v1.20.0-alpha.3", res.Alpha())
+				require.Equal(t, []string{"v1.20.0-alpha.3"}, res.Ordered())
 			},
 		},
 		{

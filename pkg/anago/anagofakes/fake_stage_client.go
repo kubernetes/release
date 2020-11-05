@@ -19,6 +19,8 @@ package anagofakes
 
 import (
 	"sync"
+
+	"k8s.io/release/pkg/release"
 )
 
 type FakeStageClient struct {
@@ -52,6 +54,19 @@ type FakeStageClient struct {
 	generateReleaseNotesReturnsOnCall map[int]struct {
 		result1 error
 	}
+	GenerateReleaseVersionStub        func(string) (*release.Versions, error)
+	generateReleaseVersionMutex       sync.RWMutex
+	generateReleaseVersionArgsForCall []struct {
+		arg1 string
+	}
+	generateReleaseVersionReturns struct {
+		result1 *release.Versions
+		result2 error
+	}
+	generateReleaseVersionReturnsOnCall map[int]struct {
+		result1 *release.Versions
+		result2 error
+	}
 	PrepareWorkspaceStub        func() error
 	prepareWorkspaceMutex       sync.RWMutex
 	prepareWorkspaceArgsForCall []struct {
@@ -72,9 +87,10 @@ type FakeStageClient struct {
 	setBuildCandidateReturnsOnCall map[int]struct {
 		result1 error
 	}
-	StageArtifactsStub        func() error
+	StageArtifactsStub        func([]string) error
 	stageArtifactsMutex       sync.RWMutex
 	stageArtifactsArgsForCall []struct {
+		arg1 []string
 	}
 	stageArtifactsReturns struct {
 		result1 error
@@ -255,6 +271,70 @@ func (fake *FakeStageClient) GenerateReleaseNotesReturnsOnCall(i int, result1 er
 	}{result1}
 }
 
+func (fake *FakeStageClient) GenerateReleaseVersion(arg1 string) (*release.Versions, error) {
+	fake.generateReleaseVersionMutex.Lock()
+	ret, specificReturn := fake.generateReleaseVersionReturnsOnCall[len(fake.generateReleaseVersionArgsForCall)]
+	fake.generateReleaseVersionArgsForCall = append(fake.generateReleaseVersionArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.GenerateReleaseVersionStub
+	fakeReturns := fake.generateReleaseVersionReturns
+	fake.recordInvocation("GenerateReleaseVersion", []interface{}{arg1})
+	fake.generateReleaseVersionMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeStageClient) GenerateReleaseVersionCallCount() int {
+	fake.generateReleaseVersionMutex.RLock()
+	defer fake.generateReleaseVersionMutex.RUnlock()
+	return len(fake.generateReleaseVersionArgsForCall)
+}
+
+func (fake *FakeStageClient) GenerateReleaseVersionCalls(stub func(string) (*release.Versions, error)) {
+	fake.generateReleaseVersionMutex.Lock()
+	defer fake.generateReleaseVersionMutex.Unlock()
+	fake.GenerateReleaseVersionStub = stub
+}
+
+func (fake *FakeStageClient) GenerateReleaseVersionArgsForCall(i int) string {
+	fake.generateReleaseVersionMutex.RLock()
+	defer fake.generateReleaseVersionMutex.RUnlock()
+	argsForCall := fake.generateReleaseVersionArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStageClient) GenerateReleaseVersionReturns(result1 *release.Versions, result2 error) {
+	fake.generateReleaseVersionMutex.Lock()
+	defer fake.generateReleaseVersionMutex.Unlock()
+	fake.GenerateReleaseVersionStub = nil
+	fake.generateReleaseVersionReturns = struct {
+		result1 *release.Versions
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStageClient) GenerateReleaseVersionReturnsOnCall(i int, result1 *release.Versions, result2 error) {
+	fake.generateReleaseVersionMutex.Lock()
+	defer fake.generateReleaseVersionMutex.Unlock()
+	fake.GenerateReleaseVersionStub = nil
+	if fake.generateReleaseVersionReturnsOnCall == nil {
+		fake.generateReleaseVersionReturnsOnCall = make(map[int]struct {
+			result1 *release.Versions
+			result2 error
+		})
+	}
+	fake.generateReleaseVersionReturnsOnCall[i] = struct {
+		result1 *release.Versions
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeStageClient) PrepareWorkspace() error {
 	fake.prepareWorkspaceMutex.Lock()
 	ret, specificReturn := fake.prepareWorkspaceReturnsOnCall[len(fake.prepareWorkspaceArgsForCall)]
@@ -361,17 +441,23 @@ func (fake *FakeStageClient) SetBuildCandidateReturnsOnCall(i int, result1 error
 	}{result1}
 }
 
-func (fake *FakeStageClient) StageArtifacts() error {
+func (fake *FakeStageClient) StageArtifacts(arg1 []string) error {
+	var arg1Copy []string
+	if arg1 != nil {
+		arg1Copy = make([]string, len(arg1))
+		copy(arg1Copy, arg1)
+	}
 	fake.stageArtifactsMutex.Lock()
 	ret, specificReturn := fake.stageArtifactsReturnsOnCall[len(fake.stageArtifactsArgsForCall)]
 	fake.stageArtifactsArgsForCall = append(fake.stageArtifactsArgsForCall, struct {
-	}{})
+		arg1 []string
+	}{arg1Copy})
 	stub := fake.StageArtifactsStub
 	fakeReturns := fake.stageArtifactsReturns
-	fake.recordInvocation("StageArtifacts", []interface{}{})
+	fake.recordInvocation("StageArtifacts", []interface{}{arg1Copy})
 	fake.stageArtifactsMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -385,10 +471,17 @@ func (fake *FakeStageClient) StageArtifactsCallCount() int {
 	return len(fake.stageArtifactsArgsForCall)
 }
 
-func (fake *FakeStageClient) StageArtifactsCalls(stub func() error) {
+func (fake *FakeStageClient) StageArtifactsCalls(stub func([]string) error) {
 	fake.stageArtifactsMutex.Lock()
 	defer fake.stageArtifactsMutex.Unlock()
 	fake.StageArtifactsStub = stub
+}
+
+func (fake *FakeStageClient) StageArtifactsArgsForCall(i int) []string {
+	fake.stageArtifactsMutex.RLock()
+	defer fake.stageArtifactsMutex.RUnlock()
+	argsForCall := fake.stageArtifactsArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeStageClient) StageArtifactsReturns(result1 error) {
@@ -476,6 +569,8 @@ func (fake *FakeStageClient) Invocations() map[string][][]interface{} {
 	defer fake.checkPrerequisitesMutex.RUnlock()
 	fake.generateReleaseNotesMutex.RLock()
 	defer fake.generateReleaseNotesMutex.RUnlock()
+	fake.generateReleaseVersionMutex.RLock()
+	defer fake.generateReleaseVersionMutex.RUnlock()
 	fake.prepareWorkspaceMutex.RLock()
 	defer fake.prepareWorkspaceMutex.RUnlock()
 	fake.setBuildCandidateMutex.RLock()

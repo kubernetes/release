@@ -17,7 +17,14 @@ limitations under the License.
 package anago
 
 import (
+	"fmt"
+	"path/filepath"
+
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
+	"k8s.io/release/pkg/build"
+	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
 )
 
@@ -38,14 +45,17 @@ type releaseClient interface {
 	// available) and build version for this release.
 	SetBuildCandidate() error
 
+	// GenerateReleaseVersion discovers the next versions to be released.
+	GenerateReleaseVersion(parentBranch string) (*release.Versions, error)
+
 	// PrepareWorkspace verifies that the working directory is in the desired
 	// state. This means that the staged sources will be downloaded from the
 	// bucket which should contain a copy of the repository.
 	PrepareWorkspace() error
 
 	// PushArtifacts pushes the generated artifacts to the release bucket and
-	// Google Container Registry.
-	PushArtifacts() error
+	// Google Container Registry for the specified release `versions`.
+	PushArtifacts(versions []string) error
 
 	// PushGitObjects pushes the new tags and branches to the repository remote
 	// on GitHub.
@@ -83,12 +93,62 @@ type defaultReleaseImpl struct{}
 //counterfeiter:generate . releaseImpl
 type releaseImpl interface {
 	PrepareWorkspaceRelease(directory, buildVersion, bucket string) error
+	GenerateReleaseVersion(
+		releaseType, version, branch string, branchFromMaster bool,
+	) (*release.Versions, error)
+	CheckReleaseBucket(options *build.Options) error
+	CopyStagedFromGCS(
+		options *build.Options, stagedBucket, buildVersion string,
+	) error
+	ValidateImages(registry, version, buildPath string) error
+	PublishVersion(
+		buildType, version, buildDir, bucket string,
+		versionMarkers []string,
+		privateBucket, fast bool,
+	) error
 }
 
 func (d *defaultReleaseImpl) PrepareWorkspaceRelease(
 	directory, buildVersion, bucket string,
 ) error {
 	return release.PrepareWorkspaceRelease(directory, buildVersion, bucket)
+}
+
+func (d *defaultReleaseImpl) GenerateReleaseVersion(
+	releaseType, version, branch string, branchFromMaster bool,
+) (*release.Versions, error) {
+	return release.GenerateReleaseVersion(
+		releaseType, version, branch, branchFromMaster,
+	)
+}
+
+func (d *defaultReleaseImpl) CheckReleaseBucket(
+	options *build.Options,
+) error {
+	return build.NewInstance(options).CheckReleaseBucket()
+}
+
+func (d *defaultReleaseImpl) CopyStagedFromGCS(
+	options *build.Options, stagedBucket, buildVersion string,
+) error {
+	return build.NewInstance(options).
+		CopyStagedFromGCS(stagedBucket, buildVersion)
+}
+
+func (d *defaultReleaseImpl) ValidateImages(
+	registry, version, buildPath string,
+) error {
+	return release.NewImages().Validate(registry, version, buildPath)
+}
+
+func (d *defaultReleaseImpl) PublishVersion(
+	buildType, version, buildDir, bucket string,
+	versionMarkers []string,
+	privateBucket, fast bool,
+) error {
+	return release.
+		NewPublisher().
+		PublishVersion("release", version, buildDir, bucket, nil, false, false)
 }
 
 func (d *DefaultRelease) ValidateOptions() error {
@@ -99,6 +159,17 @@ func (d *DefaultRelease) CheckPrerequisites() error { return nil }
 
 func (d *DefaultRelease) SetBuildCandidate() error { return nil }
 
+func (d *DefaultRelease) GenerateReleaseVersion(
+	parentBranch string,
+) (*release.Versions, error) {
+	return d.impl.GenerateReleaseVersion(
+		d.options.ReleaseType,
+		d.options.BuildVersion,
+		d.options.ReleaseBranch,
+		parentBranch == git.DefaultBranch,
+	)
+}
+
 func (d *DefaultRelease) PrepareWorkspace() error {
 	if err := d.impl.PrepareWorkspaceRelease(
 		gitRoot, d.options.BuildVersion, d.options.Bucket(),
@@ -108,7 +179,56 @@ func (d *DefaultRelease) PrepareWorkspace() error {
 	return nil
 }
 
-func (d *DefaultRelease) PushArtifacts() error { return nil }
+func (d *DefaultRelease) PushArtifacts(versions []string) error {
+	for _, version := range versions {
+		logrus.Infof("Pushing artifacts for version %s", version)
+		buildDir := filepath.Join(
+			gitRoot, fmt.Sprintf("%s-%s", release.BuildDir, version),
+		)
+		bucket := d.options.Bucket()
+		containerRegistry := d.options.ContainerRegistry()
+		pushBuildOptions := &build.Options{
+			Bucket:                     bucket,
+			BuildDir:                   buildDir,
+			DockerRegistry:             containerRegistry,
+			Version:                    version,
+			AllowDup:                   true,
+			ValidateRemoteImageDigests: true,
+		}
+		if err := d.impl.CheckReleaseBucket(pushBuildOptions); err != nil {
+			return errors.Wrap(err, "check release bucket access")
+		}
+
+		if err := d.impl.CopyStagedFromGCS(
+			pushBuildOptions, bucket, d.options.BuildVersion,
+		); err != nil {
+			return errors.Wrap(err, "copy staged from GCS")
+		}
+
+		// In an official nomock release, we want to ensure that container
+		// images have been promoted from staging to production, so we do the
+		// image manifest validation against production instead of staging.
+		targetRegistry := containerRegistry
+		if targetRegistry == release.GCRIOPathStaging {
+			targetRegistry = release.GCRIOPathProd
+		}
+
+		// Image promotion has been done on nomock stage, verify that the
+		// images are available.
+		if err := d.impl.ValidateImages(
+			targetRegistry, version, buildDir,
+		); err != nil {
+			return errors.Wrap(err, "validate container images")
+		}
+
+		if err := d.impl.PublishVersion(
+			"release", version, buildDir, bucket, nil, false, false,
+		); err != nil {
+			return errors.Wrap(err, "publish release")
+		}
+	}
+	return nil
+}
 
 func (d *DefaultRelease) PushGitObjects() error { return nil }
 
