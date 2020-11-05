@@ -16,6 +16,12 @@ limitations under the License.
 
 package anago
 
+import (
+	"github.com/pkg/errors"
+
+	"k8s.io/release/pkg/release"
+)
+
 // stageClient is a client for staging releases.
 //counterfeiter:generate . stageClient
 type stageClient interface {
@@ -71,7 +77,13 @@ type defaultStageImpl struct{}
 
 // stageImpl is the implementation of the stage client.
 //counterfeiter:generate . stageImpl
-type stageImpl interface{}
+type stageImpl interface {
+	PrepareWorkspaceStage(directory string) error
+}
+
+func (d *defaultStageImpl) PrepareWorkspaceStage(directory string) error {
+	return release.PrepareWorkspaceStage(directory)
+}
 
 func (d *DefaultStage) ValidateOptions() error {
 	return d.options.Validate()
@@ -81,7 +93,12 @@ func (d *DefaultStage) CheckPrerequisites() error { return nil }
 
 func (d *DefaultStage) SetBuildCandidate() error { return nil }
 
-func (d *DefaultStage) PrepareWorkspace() error { return nil }
+func (d *DefaultStage) PrepareWorkspace() error {
+	if err := d.impl.PrepareWorkspaceStage(gitRoot); err != nil {
+		return errors.Wrap(err, "prepare workspace")
+	}
+	return nil
+}
 
 func (d *DefaultStage) Build() error { return nil }
 
