@@ -90,6 +90,9 @@ const (
 	// WindowsLocalPath is the directory where Windows GCE scripts are created.
 	WindowsLocalPath = ReleaseStagePath + "/full/kubernetes/cluster/gce/windows"
 
+	// TestBucket is the default bucket for mocked Kubernetes releases
+	TestBucket = "kubernetes-release-gcb"
+
 	// ProductionBucket is the default bucket for Kubernetes releases
 	ProductionBucket = "kubernetes-release"
 

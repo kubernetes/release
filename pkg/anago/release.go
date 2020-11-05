@@ -16,11 +16,16 @@ limitations under the License.
 
 package anago
 
+import (
+	"github.com/pkg/errors"
+	"k8s.io/release/pkg/release"
+)
+
 // releaseClient is a client for release a previously staged release.
 //counterfeiter:generate . releaseClient
 type releaseClient interface {
 	// Validate if the provided `ReleaseOptions` are correctly set.
-	ValidateOptions(*ReleaseOptions) error
+	ValidateOptions() error
 
 	// CheckPrerequisites verifies that a valid GITHUB_TOKEN environment
 	// variable is set. It also checks for the existence and version of
@@ -57,12 +62,13 @@ type releaseClient interface {
 
 // DefaultRelease is the default staging implementation used in production.
 type DefaultRelease struct {
-	impl releaseImpl
+	impl    releaseImpl
+	options *ReleaseOptions
 }
 
 // NewDefaultRelease creates a new defaultRelease instance.
-func NewDefaultRelease() *DefaultRelease {
-	return &DefaultRelease{&defaultReleaseImpl{}}
+func NewDefaultRelease(options *ReleaseOptions) *DefaultRelease {
+	return &DefaultRelease{&defaultReleaseImpl{}, options}
 }
 
 // SetClient can be used to set the internal release implementation.
@@ -75,17 +81,42 @@ type defaultReleaseImpl struct{}
 
 // releaseImpl is the implementation of the release client.
 //counterfeiter:generate . releaseImpl
-type releaseImpl interface{}
+type releaseImpl interface {
+	InitWorkspace() error
+	PrepareWorkspaceRelease(directory, buildVersion, bucket string) error
+}
 
-func (d *DefaultRelease) ValidateOptions(options *ReleaseOptions) error {
-	return options.Validate()
+func (d *defaultReleaseImpl) InitWorkspace() error {
+	return initWorkspace()
+}
+
+func (d *defaultReleaseImpl) PrepareWorkspaceRelease(
+	directory, buildVersion, bucket string,
+) error {
+	return release.PrepareWorkspaceRelease(directory, buildVersion, bucket)
+}
+
+func (d *DefaultRelease) ValidateOptions() error {
+	return d.options.Validate()
 }
 
 func (d *DefaultRelease) CheckPrerequisites() error { return nil }
 
 func (d *DefaultRelease) SetBuildCandidate() error { return nil }
 
-func (d *DefaultRelease) PrepareWorkspace() error { return nil }
+func (d *DefaultRelease) PrepareWorkspace() error {
+	if err := d.impl.InitWorkspace(); err != nil {
+		return errors.Wrap(err, "init workspace")
+	}
+
+	if err := d.impl.PrepareWorkspaceRelease(
+		gitRoot, d.options.BuildVersion, d.options.Bucket(),
+	); err != nil {
+		return errors.Wrap(err, "prepare workspace")
+	}
+
+	return nil
+}
 
 func (d *DefaultRelease) PushArtifacts() error { return nil }
 

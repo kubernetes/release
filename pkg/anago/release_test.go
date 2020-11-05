@@ -25,8 +25,45 @@ import (
 )
 
 func TestCheckPrerequisitesRelease(t *testing.T) {
-	sut := anago.NewDefaultRelease()
+	opts := anago.DefaultReleaseOptions()
+	sut := anago.NewDefaultRelease(opts)
 	mock := &anagofakes.FakeReleaseImpl{}
 	sut.SetClient(mock)
 	require.Nil(t, sut.CheckPrerequisites())
+}
+
+func TestPrepareWorkspace(t *testing.T) {
+	for _, tc := range []struct {
+		prepare     func(*anagofakes.FakeReleaseImpl)
+		shouldError bool
+	}{
+		{ // success
+			prepare:     func(*anagofakes.FakeReleaseImpl) {},
+			shouldError: false,
+		},
+		{ // InitWorkspace fails
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.InitWorkspaceReturns(err)
+			},
+			shouldError: true,
+		},
+		{ // PrepareWorkspaceRelease fails
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.PrepareWorkspaceReleaseReturns(err)
+			},
+			shouldError: true,
+		},
+	} {
+		opts := anago.DefaultReleaseOptions()
+		sut := anago.NewDefaultRelease(opts)
+		mock := &anagofakes.FakeReleaseImpl{}
+		tc.prepare(mock)
+		sut.SetClient(mock)
+		err := sut.PrepareWorkspace()
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
 }

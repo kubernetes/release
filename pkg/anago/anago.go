@@ -18,15 +18,26 @@ package anago
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
+	"k8s.io/release/pkg/util"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
+const (
+	// workspaceDir is the global directory where the stage and release process
+	// happens.
+	workspaceDir = "/workspace"
+
+	// gitRoot is the local repository root of k/k.
+	gitRoot = workspaceDir + "/src/k8s.io/kubernetes"
+)
 
 // Options are settings which will be used by `StageOptions` as well as
 // `ReleaseOptions`.
@@ -67,6 +78,8 @@ func (o *Options) String() string {
 
 // Validate if the options are correctly set.
 func (o *Options) Validate() error {
+	logrus.Infof("Validating generic options: %s", o.String())
+
 	if o.ReleaseType != release.ReleaseTypeAlpha &&
 		o.ReleaseType != release.ReleaseTypeBeta &&
 		o.ReleaseType != release.ReleaseTypeRC &&
@@ -82,6 +95,14 @@ func (o *Options) Validate() error {
 		return errors.Wrapf(err, "invalid build version: %s", o.BuildVersion)
 	}
 	return nil
+}
+
+// Bucket returns the Google Cloud Bucket for this `Options`.
+func (o *Options) Bucket() string {
+	if o.NoMock {
+		return release.ProductionBucket
+	}
+	return release.TestBucket
 }
 
 // StageOptions contains the options for running `Stage`.
@@ -108,16 +129,12 @@ func (s *StageOptions) Validate() error {
 
 // Stage is the structure to be used for staging releases.
 type Stage struct {
-	client  stageClient
-	options *StageOptions
+	client stageClient
 }
 
 // NewStage creates a new `Stage` instance.
 func NewStage(options *StageOptions) *Stage {
-	return &Stage{
-		client:  NewDefaultStage(),
-		options: options,
-	}
+	return &Stage{NewDefaultStage(options)}
 }
 
 // SetClient can be used to set the internal stage client.
@@ -128,10 +145,8 @@ func (s *Stage) SetClient(client stageClient) {
 // Run for the `Stage` struct prepares a release and puts the results on a
 // staging bucket.
 func (s *Stage) Run() error {
-	logrus.Infof("Running stage with options: %s", s.options.String())
-
 	logrus.Info("Validating provided options")
-	if err := s.client.ValidateOptions(s.options); err != nil {
+	if err := s.client.ValidateOptions(); err != nil {
 		return errors.Wrap(err, "validate options")
 	}
 
@@ -193,16 +208,12 @@ func (r *ReleaseOptions) Validate() error {
 
 // Release is the structure to be used for releasing staged releases.
 type Release struct {
-	client  releaseClient
-	options *ReleaseOptions
+	client releaseClient
 }
 
 // NewRelease creates a new `Release` instance.
 func NewRelease(options *ReleaseOptions) *Release {
-	return &Release{
-		client:  NewDefaultRelease(),
-		options: options,
-	}
+	return &Release{NewDefaultRelease(options)}
 }
 
 // SetClient can be used to set the internal stage client.
@@ -212,10 +223,8 @@ func (r *Release) SetClient(client releaseClient) {
 
 // Run for for `Release` struct finishes a previously staged release.
 func (r *Release) Run() error {
-	logrus.Infof("Running release with options: %s", r.options.String())
-
-	logrus.Info("Validating provided options")
-	if err := r.client.ValidateOptions(r.options); err != nil {
+	logrus.Info("Validating options")
+	if err := r.client.ValidateOptions(); err != nil {
 		return errors.Wrap(err, "validate options")
 	}
 
@@ -255,5 +264,21 @@ func (r *Release) Run() error {
 	}
 
 	logrus.Info("Release done")
+	return nil
+}
+
+// initWorkspace initializes the workspace directory and adapts `GOPATH` to
+// point to it. After that call we can assume that we're running every command
+// from the global `workspaceDir`.
+func initWorkspace() error {
+	if err := util.RemoveAndReplaceDir(workspaceDir); err != nil {
+		return errors.Wrap(err, "ensuring workspace directory")
+	}
+	if err := os.Setenv("GOPATH", workspaceDir); err != nil {
+		return errors.Wrapf(err, "change GOPATH to %s", workspaceDir)
+	}
+	if err := os.Chdir(workspaceDir); err != nil {
+		return errors.Wrap(err, "change into workspace")
+	}
 	return nil
 }

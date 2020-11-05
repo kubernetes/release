@@ -19,8 +19,6 @@ package anagofakes
 
 import (
 	"sync"
-
-	"k8s.io/release/pkg/anago"
 )
 
 type FakeReleaseClient struct {
@@ -94,10 +92,9 @@ type FakeReleaseClient struct {
 	setBuildCandidateReturnsOnCall map[int]struct {
 		result1 error
 	}
-	ValidateOptionsStub        func(*anago.ReleaseOptions) error
+	ValidateOptionsStub        func() error
 	validateOptionsMutex       sync.RWMutex
 	validateOptionsArgsForCall []struct {
-		arg1 *anago.ReleaseOptions
 	}
 	validateOptionsReturns struct {
 		result1 error
@@ -480,18 +477,17 @@ func (fake *FakeReleaseClient) SetBuildCandidateReturnsOnCall(i int, result1 err
 	}{result1}
 }
 
-func (fake *FakeReleaseClient) ValidateOptions(arg1 *anago.ReleaseOptions) error {
+func (fake *FakeReleaseClient) ValidateOptions() error {
 	fake.validateOptionsMutex.Lock()
 	ret, specificReturn := fake.validateOptionsReturnsOnCall[len(fake.validateOptionsArgsForCall)]
 	fake.validateOptionsArgsForCall = append(fake.validateOptionsArgsForCall, struct {
-		arg1 *anago.ReleaseOptions
-	}{arg1})
+	}{})
 	stub := fake.ValidateOptionsStub
 	fakeReturns := fake.validateOptionsReturns
-	fake.recordInvocation("ValidateOptions", []interface{}{arg1})
+	fake.recordInvocation("ValidateOptions", []interface{}{})
 	fake.validateOptionsMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
@@ -505,17 +501,10 @@ func (fake *FakeReleaseClient) ValidateOptionsCallCount() int {
 	return len(fake.validateOptionsArgsForCall)
 }
 
-func (fake *FakeReleaseClient) ValidateOptionsCalls(stub func(*anago.ReleaseOptions) error) {
+func (fake *FakeReleaseClient) ValidateOptionsCalls(stub func() error) {
 	fake.validateOptionsMutex.Lock()
 	defer fake.validateOptionsMutex.Unlock()
 	fake.ValidateOptionsStub = stub
-}
-
-func (fake *FakeReleaseClient) ValidateOptionsArgsForCall(i int) *anago.ReleaseOptions {
-	fake.validateOptionsMutex.RLock()
-	defer fake.validateOptionsMutex.RUnlock()
-	argsForCall := fake.validateOptionsArgsForCall[i]
-	return argsForCall.arg1
 }
 
 func (fake *FakeReleaseClient) ValidateOptionsReturns(result1 error) {
