@@ -29,14 +29,11 @@ steps:
   env:
   - "GOPATH=/workspace/go"
   - "GOBIN=/workspace/bin"
-  - "GO111MODULE=on"
-  - "GOPROXY=https://proxy.golang.org"
-  - "GOSUMDB=sum.golang.org"
   args:
   - "./compile-release-tools"
 
 - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
-  dir: "go/src/k8s.io/release"
+  dir: "/workspace"
   env:
   - "TOOL_ORG=${_TOOL_ORG}"
   - "TOOL_REPO=${_TOOL_REPO}"
@@ -44,27 +41,26 @@ steps:
   secretEnv:
   - GITHUB_TOKEN
   args:
-  - "./anago"
-  - "${_RELEASE_BRANCH}"
+  - "bin/krel"
+  - "stage"
   - "${_NOMOCK}"
-  - "--buildversion=${_BUILDVERSION}"
-  - "--yes"
-  - "--basedir=/workspace"
-  - "--tmpdir=/workspace/tmp"
   - "--type=${_TYPE}"
+  - "--branch=${_RELEASE_BRANCH}"
+  - "--build-version=${_BUILDVERSION}"
 
 tags:
 - ${_GCP_USER_TAG}
 - ${_RELEASE_BRANCH}
 - ${_BUILD_POINT}
 - ${_NOMOCK_TAG}
-- RELEASE
+- STAGE
 - ${_GIT_TAG}
 - ${_TYPE_TAG}
 - ${_MAJOR_VERSION_TAG}
 - ${_MINOR_VERSION_TAG}
 - ${_PATCH_VERSION_TAG}
 - ${_KUBERNETES_VERSION_TAG}
+- NO_ANAGO
 
 options:
   machineType: N1_HIGHCPU_32

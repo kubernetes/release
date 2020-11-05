@@ -22,16 +22,6 @@ import (
 )
 
 type FakeReleaseImpl struct {
-	InitWorkspaceStub        func() error
-	initWorkspaceMutex       sync.RWMutex
-	initWorkspaceArgsForCall []struct {
-	}
-	initWorkspaceReturns struct {
-		result1 error
-	}
-	initWorkspaceReturnsOnCall map[int]struct {
-		result1 error
-	}
 	PrepareWorkspaceReleaseStub        func(string, string, string) error
 	prepareWorkspaceReleaseMutex       sync.RWMutex
 	prepareWorkspaceReleaseArgsForCall []struct {
@@ -47,59 +37,6 @@ type FakeReleaseImpl struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
-}
-
-func (fake *FakeReleaseImpl) InitWorkspace() error {
-	fake.initWorkspaceMutex.Lock()
-	ret, specificReturn := fake.initWorkspaceReturnsOnCall[len(fake.initWorkspaceArgsForCall)]
-	fake.initWorkspaceArgsForCall = append(fake.initWorkspaceArgsForCall, struct {
-	}{})
-	stub := fake.InitWorkspaceStub
-	fakeReturns := fake.initWorkspaceReturns
-	fake.recordInvocation("InitWorkspace", []interface{}{})
-	fake.initWorkspaceMutex.Unlock()
-	if stub != nil {
-		return stub()
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fakeReturns.result1
-}
-
-func (fake *FakeReleaseImpl) InitWorkspaceCallCount() int {
-	fake.initWorkspaceMutex.RLock()
-	defer fake.initWorkspaceMutex.RUnlock()
-	return len(fake.initWorkspaceArgsForCall)
-}
-
-func (fake *FakeReleaseImpl) InitWorkspaceCalls(stub func() error) {
-	fake.initWorkspaceMutex.Lock()
-	defer fake.initWorkspaceMutex.Unlock()
-	fake.InitWorkspaceStub = stub
-}
-
-func (fake *FakeReleaseImpl) InitWorkspaceReturns(result1 error) {
-	fake.initWorkspaceMutex.Lock()
-	defer fake.initWorkspaceMutex.Unlock()
-	fake.InitWorkspaceStub = nil
-	fake.initWorkspaceReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeReleaseImpl) InitWorkspaceReturnsOnCall(i int, result1 error) {
-	fake.initWorkspaceMutex.Lock()
-	defer fake.initWorkspaceMutex.Unlock()
-	fake.InitWorkspaceStub = nil
-	if fake.initWorkspaceReturnsOnCall == nil {
-		fake.initWorkspaceReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.initWorkspaceReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
 }
 
 func (fake *FakeReleaseImpl) PrepareWorkspaceRelease(arg1 string, arg2 string, arg3 string) error {
@@ -168,8 +105,6 @@ func (fake *FakeReleaseImpl) PrepareWorkspaceReleaseReturnsOnCall(i int, result1
 func (fake *FakeReleaseImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.initWorkspaceMutex.RLock()
-	defer fake.initWorkspaceMutex.RUnlock()
 	fake.prepareWorkspaceReleaseMutex.RLock()
 	defer fake.prepareWorkspaceReleaseMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
