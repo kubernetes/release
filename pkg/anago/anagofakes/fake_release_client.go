@@ -19,6 +19,8 @@ package anagofakes
 
 import (
 	"sync"
+
+	"k8s.io/release/pkg/anago"
 )
 
 type FakeReleaseClient struct {
@@ -90,6 +92,17 @@ type FakeReleaseClient struct {
 		result1 error
 	}
 	setBuildCandidateReturnsOnCall map[int]struct {
+		result1 error
+	}
+	ValidateOptionsStub        func(*anago.ReleaseOptions) error
+	validateOptionsMutex       sync.RWMutex
+	validateOptionsArgsForCall []struct {
+		arg1 *anago.ReleaseOptions
+	}
+	validateOptionsReturns struct {
+		result1 error
+	}
+	validateOptionsReturnsOnCall map[int]struct {
 		result1 error
 	}
 	invocations      map[string][][]interface{}
@@ -467,6 +480,67 @@ func (fake *FakeReleaseClient) SetBuildCandidateReturnsOnCall(i int, result1 err
 	}{result1}
 }
 
+func (fake *FakeReleaseClient) ValidateOptions(arg1 *anago.ReleaseOptions) error {
+	fake.validateOptionsMutex.Lock()
+	ret, specificReturn := fake.validateOptionsReturnsOnCall[len(fake.validateOptionsArgsForCall)]
+	fake.validateOptionsArgsForCall = append(fake.validateOptionsArgsForCall, struct {
+		arg1 *anago.ReleaseOptions
+	}{arg1})
+	stub := fake.ValidateOptionsStub
+	fakeReturns := fake.validateOptionsReturns
+	fake.recordInvocation("ValidateOptions", []interface{}{arg1})
+	fake.validateOptionsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeReleaseClient) ValidateOptionsCallCount() int {
+	fake.validateOptionsMutex.RLock()
+	defer fake.validateOptionsMutex.RUnlock()
+	return len(fake.validateOptionsArgsForCall)
+}
+
+func (fake *FakeReleaseClient) ValidateOptionsCalls(stub func(*anago.ReleaseOptions) error) {
+	fake.validateOptionsMutex.Lock()
+	defer fake.validateOptionsMutex.Unlock()
+	fake.ValidateOptionsStub = stub
+}
+
+func (fake *FakeReleaseClient) ValidateOptionsArgsForCall(i int) *anago.ReleaseOptions {
+	fake.validateOptionsMutex.RLock()
+	defer fake.validateOptionsMutex.RUnlock()
+	argsForCall := fake.validateOptionsArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeReleaseClient) ValidateOptionsReturns(result1 error) {
+	fake.validateOptionsMutex.Lock()
+	defer fake.validateOptionsMutex.Unlock()
+	fake.ValidateOptionsStub = nil
+	fake.validateOptionsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseClient) ValidateOptionsReturnsOnCall(i int, result1 error) {
+	fake.validateOptionsMutex.Lock()
+	defer fake.validateOptionsMutex.Unlock()
+	fake.ValidateOptionsStub = nil
+	if fake.validateOptionsReturnsOnCall == nil {
+		fake.validateOptionsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.validateOptionsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeReleaseClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -484,6 +558,8 @@ func (fake *FakeReleaseClient) Invocations() map[string][][]interface{} {
 	defer fake.pushGitObjectsMutex.RUnlock()
 	fake.setBuildCandidateMutex.RLock()
 	defer fake.setBuildCandidateMutex.RUnlock()
+	fake.validateOptionsMutex.RLock()
+	defer fake.validateOptionsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

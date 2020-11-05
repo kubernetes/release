@@ -19,6 +19,9 @@ package anago
 // stageClient is a client for staging releases.
 //counterfeiter:generate . stageClient
 type stageClient interface {
+	// Validate if the provided `ReleaseOptions` are correctly set.
+	ValidateOptions(*StageOptions) error
+
 	// CheckPrerequisites verifies that a valid GITHUB_TOKEN environment
 	// variable is set. It also checks for the existence and version of
 	// required packages and if the correct Google Cloud project is set. A
@@ -68,6 +71,10 @@ type defaultStageImpl struct{}
 // stageImpl is the implementation of the stage client.
 //counterfeiter:generate . stageImpl
 type stageImpl interface{}
+
+func (d *DefaultStage) ValidateOptions(options *StageOptions) error {
+	return options.Validate()
+}
 
 func (d *DefaultStage) CheckPrerequisites() error { return nil }
 

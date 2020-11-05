@@ -24,6 +24,8 @@ import (
 
 	"k8s.io/release/pkg/anago"
 	"k8s.io/release/pkg/anago/anagofakes"
+	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/release"
 )
 
 var err = errors.New("error")
@@ -36,6 +38,12 @@ func TestStage(t *testing.T) {
 		{ // success
 			prepare:     func(*anagofakes.FakeStageClient) {},
 			shouldError: false,
+		},
+		{ // ValidateOptions fails
+			prepare: func(mock *anagofakes.FakeStageClient) {
+				mock.ValidateOptionsReturns(err)
+			},
+			shouldError: true,
 		},
 		{ // CheckPrerequisites fails
 			prepare: func(mock *anagofakes.FakeStageClient) {
@@ -103,6 +111,12 @@ func TestRelease(t *testing.T) {
 			},
 			shouldError: true,
 		},
+		{ // ValidateOptions fails
+			prepare: func(mock *anagofakes.FakeReleaseClient) {
+				mock.ValidateOptionsReturns(err)
+			},
+			shouldError: true,
+		},
 		{ // SetBuildCandidate fails
 			prepare: func(mock *anagofakes.FakeReleaseClient) {
 				mock.SetBuildCandidateReturns(err)
@@ -150,6 +164,50 @@ func TestRelease(t *testing.T) {
 			require.NotNil(t, sut.Run())
 		} else {
 			require.Nil(t, sut.Run())
+		}
+	}
+}
+
+func TestValidateOptions(t *testing.T) {
+	for _, tc := range []struct {
+		provided    *anago.Options
+		shouldError bool
+	}{
+		{ // success
+			provided: &anago.Options{
+				ReleaseType:   release.ReleaseTypeAlpha,
+				ReleaseBranch: git.DefaultBranch,
+				BuildVersion:  "1.2.3",
+			},
+			shouldError: false,
+		},
+		{ // invalid release type
+			provided: &anago.Options{
+				ReleaseType: "invalid",
+			},
+			shouldError: true,
+		},
+		{ // invalid release branch
+			provided: &anago.Options{
+				ReleaseType:   release.ReleaseTypeAlpha,
+				ReleaseBranch: "invalid",
+			},
+			shouldError: true,
+		},
+		{ // invalid build version
+			provided: &anago.Options{
+				ReleaseType:   release.ReleaseTypeAlpha,
+				ReleaseBranch: git.DefaultBranch,
+				BuildVersion:  "invalid",
+			},
+			shouldError: true,
+		},
+	} {
+		err := tc.provided.Validate()
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
 		}
 	}
 }

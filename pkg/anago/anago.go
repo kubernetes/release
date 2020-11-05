@@ -17,19 +17,93 @@ limitations under the License.
 package anago
 
 import (
+	"fmt"
+
+	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/release"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
+// Options are settings which will be used by `StageOptions` as well as
+// `ReleaseOptions`.
+type Options struct {
+	// Run the whole process in non-mocked mode. Which means that it uses
+	// production remote locations for storing artifacts and modifying git
+	// repositories.
+	NoMock bool
+
+	// The release type which should be produced. Can be either `alpha`,
+	// `beta`, `rc` or `official`.
+	ReleaseType string
+
+	// The release branch for which the release should be build. Can be
+	// `master` or any `release-x.y` branch.
+	ReleaseBranch string
+
+	// The build version to be released. Has to be specified in the format:
+	// `vX.Y.Z-[alpha|beta|rc].N.C+SHA`
+	BuildVersion string
+}
+
+// DefaultOptions returns a new Options instance.
+func DefaultOptions() *Options {
+	return &Options{
+		ReleaseType:   release.ReleaseTypeAlpha,
+		ReleaseBranch: git.DefaultBranch,
+	}
+}
+
+// String returns a string representation for the `ReleaseOptions` type.
+func (o *Options) String() string {
+	return fmt.Sprintf(
+		"NoMock: %v, ReleaseType: %q, BuildVersion: %q, ReleaseBranch: %q",
+		o.NoMock, o.ReleaseType, o.BuildVersion, o.ReleaseBranch,
+	)
+}
+
+// Validate if the options are correctly set.
+func (o *Options) Validate() error {
+	if o.ReleaseType != release.ReleaseTypeAlpha &&
+		o.ReleaseType != release.ReleaseTypeBeta &&
+		o.ReleaseType != release.ReleaseTypeRC &&
+		o.ReleaseType != release.ReleaseTypeOfficial {
+		return errors.Errorf("invalid release type: %s", o.ReleaseType)
+	}
+
+	if !git.IsReleaseBranch(o.ReleaseBranch) {
+		return errors.Errorf("invalid release branch: %s", o.ReleaseBranch)
+	}
+
+	if _, err := semver.Parse(o.BuildVersion); err != nil {
+		return errors.Wrapf(err, "invalid build version: %s", o.BuildVersion)
+	}
+	return nil
+}
+
 // StageOptions contains the options for running `Stage`.
 type StageOptions struct {
+	*Options
 }
 
 // DefaultStageOptions createa a new default `StageOptions`.
 func DefaultStageOptions() *StageOptions {
-	return &StageOptions{}
+	return &StageOptions{
+		Options: DefaultOptions(),
+	}
+}
+
+// String returns a string representation for the `StageOptions` type.
+func (s *StageOptions) String() string {
+	return s.Options.String()
+}
+
+// Validate if the options are correctly set.
+func (s *StageOptions) Validate() error {
+	return s.Options.Validate()
 }
 
 // Stage is the structure to be used for staging releases.
@@ -54,7 +128,12 @@ func (s *Stage) SetClient(client stageClient) {
 // Run for the `Stage` struct prepares a release and puts the results on a
 // staging bucket.
 func (s *Stage) Run() error {
-	logrus.Info("Running stage")
+	logrus.Infof("Running stage with options: %s", s.options.String())
+
+	logrus.Info("Validating provided options")
+	if err := s.client.ValidateOptions(s.options); err != nil {
+		return errors.Wrap(err, "validate options")
+	}
 
 	logrus.Info("Checking prerequisites")
 	if err := s.client.CheckPrerequisites(); err != nil {
@@ -92,11 +171,24 @@ func (s *Stage) Run() error {
 
 // ReleaseOptions contains the options for running `Release`.
 type ReleaseOptions struct {
+	*Options
 }
 
 // DefaultReleaseOptions createa a new default `ReleaseOptions`.
 func DefaultReleaseOptions() *ReleaseOptions {
-	return &ReleaseOptions{}
+	return &ReleaseOptions{
+		Options: DefaultOptions(),
+	}
+}
+
+// String returns a string representation for the `ReleaseOptions` type.
+func (r *ReleaseOptions) String() string {
+	return r.Options.String()
+}
+
+// Validate if the options are correctly set.
+func (r *ReleaseOptions) Validate() error {
+	return r.Options.Validate()
 }
 
 // Release is the structure to be used for releasing staged releases.
@@ -120,7 +212,12 @@ func (r *Release) SetClient(client releaseClient) {
 
 // Run for for `Release` struct finishes a previously staged release.
 func (r *Release) Run() error {
-	logrus.Info("Running release")
+	logrus.Infof("Running release with options: %s", r.options.String())
+
+	logrus.Info("Validating provided options")
+	if err := r.client.ValidateOptions(r.options); err != nil {
+		return errors.Wrap(err, "validate options")
+	}
 
 	logrus.Info("Checking prerequisites")
 	if err := r.client.CheckPrerequisites(); err != nil {

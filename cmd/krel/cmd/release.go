@@ -18,11 +18,14 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"k8s.io/release/pkg/anago"
 	"k8s.io/release/pkg/github"
+	"k8s.io/release/pkg/release"
 )
 
 // releaseCmd represents the subcommand for `krel release`
@@ -62,16 +65,51 @@ successful 'krel stage'. The following steps are involved in the process:
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runRelease(releaseOptions, rootOpts)
+		return runRelease(releaseOptions)
 	},
 }
 
 var releaseOptions = anago.DefaultReleaseOptions()
 
 func init() {
+	releaseCmd.PersistentFlags().
+		StringVar(
+			&releaseOptions.ReleaseType,
+			"type",
+			releaseOptions.ReleaseType,
+			fmt.Sprintf("The release type, must be one of: '%s'",
+				strings.Join([]string{
+					release.ReleaseTypeAlpha,
+					release.ReleaseTypeBeta,
+					release.ReleaseTypeRC,
+					release.ReleaseTypeOfficial,
+				}, "', '"),
+			))
+
+	releaseCmd.PersistentFlags().
+		StringVar(
+			&releaseOptions.ReleaseBranch,
+			"branch",
+			releaseOptions.ReleaseBranch,
+			"The release branch for which the release should be build",
+		)
+
+	releaseCmd.PersistentFlags().
+		StringVar(
+			&releaseOptions.BuildVersion,
+			"build-version",
+			"",
+			"The build version to be released.",
+		)
+
+	if err := releaseCmd.MarkPersistentFlagRequired("build-version"); err != nil {
+		logrus.Fatal(err)
+	}
+
 	rootCmd.AddCommand(releaseCmd)
 }
 
-func runRelease(options *anago.ReleaseOptions, _ *rootOptions) error {
+func runRelease(options *anago.ReleaseOptions) error {
+	options.NoMock = rootOpts.nomock
 	return anago.NewRelease(options).Run()
 }
