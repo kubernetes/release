@@ -25,7 +25,8 @@ import (
 )
 
 func TestCheckPrerequisitesStage(t *testing.T) {
-	sut := anago.NewDefaultStage()
+	opts := anago.DefaultStageOptions()
+	sut := anago.NewDefaultStage(opts)
 	mock := &anagofakes.FakeStageImpl{}
 	sut.SetClient(mock)
 	require.Nil(t, sut.CheckPrerequisites())

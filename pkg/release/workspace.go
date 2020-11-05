@@ -38,6 +38,8 @@ import (
 func PrepareWorkspaceStage(directory string) error {
 	logrus.Infof("Preparing workspace for staging in %s", directory)
 	parent := filepath.Dir(directory)
+
+	// TODO: remove this if anago does not exist any more
 	if err := util.RemoveAndReplaceDir(parent); err != nil {
 		return errors.Wrapf(err, "ensuring repository parent %s", parent)
 	}
@@ -71,6 +73,8 @@ func PrepareWorkspaceStage(directory string) error {
 // the staged sources on the provided bucket.
 func PrepareWorkspaceRelease(directory, buildVersion, bucket string) error {
 	logrus.Infof("Preparing workspace for release in %s", directory)
+
+	// TODO: remove this if anago does not exist any more
 	if err := os.RemoveAll(directory); err != nil {
 		return errors.Wrap(err, "removing workspace directory")
 	}

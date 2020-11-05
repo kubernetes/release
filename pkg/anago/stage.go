@@ -20,7 +20,7 @@ package anago
 //counterfeiter:generate . stageClient
 type stageClient interface {
 	// Validate if the provided `ReleaseOptions` are correctly set.
-	ValidateOptions(*StageOptions) error
+	ValidateOptions() error
 
 	// CheckPrerequisites verifies that a valid GITHUB_TOKEN environment
 	// variable is set. It also checks for the existence and version of
@@ -52,12 +52,13 @@ type stageClient interface {
 
 // DefaultStage is the default staging implementation used in production.
 type DefaultStage struct {
-	impl stageImpl
+	impl    stageImpl
+	options *StageOptions
 }
 
 // NewDefaultStage creates a new defaultStage instance.
-func NewDefaultStage() *DefaultStage {
-	return &DefaultStage{&defaultStageImpl{}}
+func NewDefaultStage(options *StageOptions) *DefaultStage {
+	return &DefaultStage{&defaultStageImpl{}, options}
 }
 
 // SetClient can be used to set the internal stage implementation.
@@ -72,8 +73,8 @@ type defaultStageImpl struct{}
 //counterfeiter:generate . stageImpl
 type stageImpl interface{}
 
-func (d *DefaultStage) ValidateOptions(options *StageOptions) error {
-	return options.Validate()
+func (d *DefaultStage) ValidateOptions() error {
+	return d.options.Validate()
 }
 
 func (d *DefaultStage) CheckPrerequisites() error { return nil }

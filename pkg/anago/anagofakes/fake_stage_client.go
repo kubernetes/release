@@ -19,8 +19,6 @@ package anagofakes
 
 import (
 	"sync"
-
-	"k8s.io/release/pkg/anago"
 )
 
 type FakeStageClient struct {
@@ -84,10 +82,9 @@ type FakeStageClient struct {
 	stageArtifactsReturnsOnCall map[int]struct {
 		result1 error
 	}
-	ValidateOptionsStub        func(*anago.StageOptions) error
+	ValidateOptionsStub        func() error
 	validateOptionsMutex       sync.RWMutex
 	validateOptionsArgsForCall []struct {
-		arg1 *anago.StageOptions
 	}
 	validateOptionsReturns struct {
 		result1 error
@@ -417,18 +414,17 @@ func (fake *FakeStageClient) StageArtifactsReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeStageClient) ValidateOptions(arg1 *anago.StageOptions) error {
+func (fake *FakeStageClient) ValidateOptions() error {
 	fake.validateOptionsMutex.Lock()
 	ret, specificReturn := fake.validateOptionsReturnsOnCall[len(fake.validateOptionsArgsForCall)]
 	fake.validateOptionsArgsForCall = append(fake.validateOptionsArgsForCall, struct {
-		arg1 *anago.StageOptions
-	}{arg1})
+	}{})
 	stub := fake.ValidateOptionsStub
 	fakeReturns := fake.validateOptionsReturns
-	fake.recordInvocation("ValidateOptions", []interface{}{arg1})
+	fake.recordInvocation("ValidateOptions", []interface{}{})
 	fake.validateOptionsMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
@@ -442,17 +438,10 @@ func (fake *FakeStageClient) ValidateOptionsCallCount() int {
 	return len(fake.validateOptionsArgsForCall)
 }
 
-func (fake *FakeStageClient) ValidateOptionsCalls(stub func(*anago.StageOptions) error) {
+func (fake *FakeStageClient) ValidateOptionsCalls(stub func() error) {
 	fake.validateOptionsMutex.Lock()
 	defer fake.validateOptionsMutex.Unlock()
 	fake.ValidateOptionsStub = stub
-}
-
-func (fake *FakeStageClient) ValidateOptionsArgsForCall(i int) *anago.StageOptions {
-	fake.validateOptionsMutex.RLock()
-	defer fake.validateOptionsMutex.RUnlock()
-	argsForCall := fake.validateOptionsArgsForCall[i]
-	return argsForCall.arg1
 }
 
 func (fake *FakeStageClient) ValidateOptionsReturns(result1 error) {
