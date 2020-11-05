@@ -105,7 +105,6 @@ func (d *DefaultRelease) PrepareWorkspace() error {
 	); err != nil {
 		return errors.Wrap(err, "prepare workspace")
 	}
-
 	return nil
 }
 

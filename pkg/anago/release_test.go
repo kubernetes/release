@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// nolint: dupl
 package anago_test
 
 import (
@@ -32,7 +33,7 @@ func TestCheckPrerequisitesRelease(t *testing.T) {
 	require.Nil(t, sut.CheckPrerequisites())
 }
 
-func TestPrepareWorkspace(t *testing.T) {
+func TestPrepareWorkspaceRelease(t *testing.T) {
 	for _, tc := range []struct {
 		prepare     func(*anagofakes.FakeReleaseImpl)
 		shouldError bool

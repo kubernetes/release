@@ -22,13 +22,87 @@ import (
 )
 
 type FakeStageImpl struct {
+	PrepareWorkspaceStageStub        func(string) error
+	prepareWorkspaceStageMutex       sync.RWMutex
+	prepareWorkspaceStageArgsForCall []struct {
+		arg1 string
+	}
+	prepareWorkspaceStageReturns struct {
+		result1 error
+	}
+	prepareWorkspaceStageReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeStageImpl) PrepareWorkspaceStage(arg1 string) error {
+	fake.prepareWorkspaceStageMutex.Lock()
+	ret, specificReturn := fake.prepareWorkspaceStageReturnsOnCall[len(fake.prepareWorkspaceStageArgsForCall)]
+	fake.prepareWorkspaceStageArgsForCall = append(fake.prepareWorkspaceStageArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.PrepareWorkspaceStageStub
+	fakeReturns := fake.prepareWorkspaceStageReturns
+	fake.recordInvocation("PrepareWorkspaceStage", []interface{}{arg1})
+	fake.prepareWorkspaceStageMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) PrepareWorkspaceStageCallCount() int {
+	fake.prepareWorkspaceStageMutex.RLock()
+	defer fake.prepareWorkspaceStageMutex.RUnlock()
+	return len(fake.prepareWorkspaceStageArgsForCall)
+}
+
+func (fake *FakeStageImpl) PrepareWorkspaceStageCalls(stub func(string) error) {
+	fake.prepareWorkspaceStageMutex.Lock()
+	defer fake.prepareWorkspaceStageMutex.Unlock()
+	fake.PrepareWorkspaceStageStub = stub
+}
+
+func (fake *FakeStageImpl) PrepareWorkspaceStageArgsForCall(i int) string {
+	fake.prepareWorkspaceStageMutex.RLock()
+	defer fake.prepareWorkspaceStageMutex.RUnlock()
+	argsForCall := fake.prepareWorkspaceStageArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStageImpl) PrepareWorkspaceStageReturns(result1 error) {
+	fake.prepareWorkspaceStageMutex.Lock()
+	defer fake.prepareWorkspaceStageMutex.Unlock()
+	fake.PrepareWorkspaceStageStub = nil
+	fake.prepareWorkspaceStageReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) PrepareWorkspaceStageReturnsOnCall(i int, result1 error) {
+	fake.prepareWorkspaceStageMutex.Lock()
+	defer fake.prepareWorkspaceStageMutex.Unlock()
+	fake.PrepareWorkspaceStageStub = nil
+	if fake.prepareWorkspaceStageReturnsOnCall == nil {
+		fake.prepareWorkspaceStageReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.prepareWorkspaceStageReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.prepareWorkspaceStageMutex.RLock()
+	defer fake.prepareWorkspaceStageMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
