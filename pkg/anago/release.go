@@ -82,12 +82,7 @@ type defaultReleaseImpl struct{}
 // releaseImpl is the implementation of the release client.
 //counterfeiter:generate . releaseImpl
 type releaseImpl interface {
-	InitWorkspace() error
 	PrepareWorkspaceRelease(directory, buildVersion, bucket string) error
-}
-
-func (d *defaultReleaseImpl) InitWorkspace() error {
-	return initWorkspace()
 }
 
 func (d *defaultReleaseImpl) PrepareWorkspaceRelease(
@@ -105,10 +100,6 @@ func (d *DefaultRelease) CheckPrerequisites() error { return nil }
 func (d *DefaultRelease) SetBuildCandidate() error { return nil }
 
 func (d *DefaultRelease) PrepareWorkspace() error {
-	if err := d.impl.InitWorkspace(); err != nil {
-		return errors.Wrap(err, "init workspace")
-	}
-
 	if err := d.impl.PrepareWorkspaceRelease(
 		gitRoot, d.options.BuildVersion, d.options.Bucket(),
 	); err != nil {

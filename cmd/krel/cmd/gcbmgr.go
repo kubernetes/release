@@ -40,6 +40,7 @@ type GcbmgrOptions struct {
 	Release      bool
 	Stream       bool
 	BuildAtHead  bool
+	NoAnago      bool
 	Branch       string
 	ReleaseType  string
 	BuildVersion string
@@ -125,6 +126,12 @@ func init() {
 			"inferred by %q and the provided target branch.",
 			release.VersionTypeCILatest,
 		),
+	)
+	gcbmgrCmd.PersistentFlags().BoolVar(
+		&gcbmgrOpts.NoAnago,
+		"no-anago",
+		false,
+		"do not use anago in favor of the native golang implementation",
 	)
 
 	gcbmgrCmd.PersistentFlags().BoolVar(
@@ -269,6 +276,12 @@ func RunGcbmgr(opts *GcbmgrOptions) error {
 		return listJobs(buildOpts.Project, opts.LastJobs)
 	}
 
+	// Use dedicated job types for krel-based executions
+	if opts.NoAnago {
+		delete(gcbSubs, "BUILD_AT_HEAD")
+		jobType += "-krel"
+	}
+
 	buildOpts.ConfigDir = filepath.Join(toolRoot, "gcb", jobType)
 	prepareBuildErr := build.PrepareBuilds(buildOpts)
 	if prepareBuildErr != nil {
@@ -350,8 +363,6 @@ func SetGCBSubstitutions(o *GcbmgrOptions, toolOrg, toolRepo, toolBranch string)
 	buildpoint := buildVersion
 	buildpoint = strings.ReplaceAll(buildpoint, "+", "-")
 	gcbSubs["BUILD_POINT"] = buildpoint
-
-	buildVersion = fmt.Sprintf("--buildversion=%s", buildVersion)
 	gcbSubs["BUILDVERSION"] = buildVersion
 
 	kubecrossBranches := []string{
@@ -367,7 +378,7 @@ func SetGCBSubstitutions(o *GcbmgrOptions, toolOrg, toolRepo, toolBranch string)
 
 	v, err := util.TagStringToSemver(buildpoint)
 	if err != nil {
-		return gcbSubs, errors.Errorf("Failed to parse the buildVersion %s", buildpoint)
+		return gcbSubs, errors.Errorf("Failed to parse the build point %s", buildpoint)
 	}
 
 	gcbSubs["MAJOR_VERSION_TAG"] = strconv.FormatUint(v.Major, 10)

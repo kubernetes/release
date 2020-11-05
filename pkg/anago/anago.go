@@ -18,14 +18,13 @@ package anago
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
+	"k8s.io/release/pkg/version"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
@@ -91,7 +90,7 @@ func (o *Options) Validate() error {
 		return errors.Errorf("invalid release branch: %s", o.ReleaseBranch)
 	}
 
-	if _, err := semver.Parse(o.BuildVersion); err != nil {
+	if _, err := util.TagStringToSemver(o.BuildVersion); err != nil {
 		return errors.Wrapf(err, "invalid build version: %s", o.BuildVersion)
 	}
 	return nil
@@ -145,7 +144,9 @@ func (s *Stage) SetClient(client stageClient) {
 // Run for the `Stage` struct prepares a release and puts the results on a
 // staging bucket.
 func (s *Stage) Run() error {
-	logrus.Info("Validating provided options")
+	logrus.Infof("Using krel version:\n%s", version.Get().String())
+
+	logrus.Info("Validating options")
 	if err := s.client.ValidateOptions(); err != nil {
 		return errors.Wrap(err, "validate options")
 	}
@@ -223,6 +224,8 @@ func (r *Release) SetClient(client releaseClient) {
 
 // Run for for `Release` struct finishes a previously staged release.
 func (r *Release) Run() error {
+	logrus.Infof("Using krel version:\n%s", version.Get().String())
+
 	logrus.Info("Validating options")
 	if err := r.client.ValidateOptions(); err != nil {
 		return errors.Wrap(err, "validate options")
@@ -248,7 +251,7 @@ func (r *Release) Run() error {
 		return errors.Wrap(err, "push artifacts")
 	}
 
-	logrus.Info("Pushing git Objects")
+	logrus.Info("Pushing git objects")
 	if err := r.client.PushGitObjects(); err != nil {
 		return errors.Wrap(err, "push git objects")
 	}
@@ -264,21 +267,5 @@ func (r *Release) Run() error {
 	}
 
 	logrus.Info("Release done")
-	return nil
-}
-
-// initWorkspace initializes the workspace directory and adapts `GOPATH` to
-// point to it. After that call we can assume that we're running every command
-// from the global `workspaceDir`.
-func initWorkspace() error {
-	if err := util.RemoveAndReplaceDir(workspaceDir); err != nil {
-		return errors.Wrap(err, "ensuring workspace directory")
-	}
-	if err := os.Setenv("GOPATH", workspaceDir); err != nil {
-		return errors.Wrapf(err, "change GOPATH to %s", workspaceDir)
-	}
-	if err := os.Chdir(workspaceDir); err != nil {
-		return errors.Wrap(err, "change into workspace")
-	}
 	return nil
 }

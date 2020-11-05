@@ -41,12 +41,6 @@ func TestPrepareWorkspace(t *testing.T) {
 			prepare:     func(*anagofakes.FakeReleaseImpl) {},
 			shouldError: false,
 		},
-		{ // InitWorkspace fails
-			prepare: func(mock *anagofakes.FakeReleaseImpl) {
-				mock.InitWorkspaceReturns(err)
-			},
-			shouldError: true,
-		},
 		{ // PrepareWorkspaceRelease fails
 			prepare: func(mock *anagofakes.FakeReleaseImpl) {
 				mock.PrepareWorkspaceReleaseReturns(err)
