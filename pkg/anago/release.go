@@ -19,6 +19,9 @@ package anago
 // releaseClient is a client for release a previously staged release.
 //counterfeiter:generate . releaseClient
 type releaseClient interface {
+	// Validate if the provided `ReleaseOptions` are correctly set.
+	ValidateOptions(*ReleaseOptions) error
+
 	// CheckPrerequisites verifies that a valid GITHUB_TOKEN environment
 	// variable is set. It also checks for the existence and version of
 	// required packages and if the correct Google Cloud project is set. A
@@ -73,6 +76,10 @@ type defaultReleaseImpl struct{}
 // releaseImpl is the implementation of the release client.
 //counterfeiter:generate . releaseImpl
 type releaseImpl interface{}
+
+func (d *DefaultRelease) ValidateOptions(options *ReleaseOptions) error {
+	return options.Validate()
+}
 
 func (d *DefaultRelease) CheckPrerequisites() error { return nil }
 

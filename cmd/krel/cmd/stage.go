@@ -18,7 +18,9 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"k8s.io/release/pkg/anago"
@@ -59,16 +61,51 @@ following steps are involved in the process:
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runStage(stageOptions, rootOpts)
+		return runStage(stageOptions)
 	},
 }
 
 var stageOptions = anago.DefaultStageOptions()
 
 func init() {
+	stageCmd.PersistentFlags().
+		StringVar(
+			&stageOptions.ReleaseType,
+			"type",
+			stageOptions.ReleaseType,
+			fmt.Sprintf("The release type, must be one of: '%s'",
+				strings.Join([]string{
+					release.ReleaseTypeAlpha,
+					release.ReleaseTypeBeta,
+					release.ReleaseTypeRC,
+					release.ReleaseTypeOfficial,
+				}, "', '"),
+			))
+
+	stageCmd.PersistentFlags().
+		StringVar(
+			&stageOptions.ReleaseBranch,
+			"branch",
+			stageOptions.ReleaseBranch,
+			"The release branch for which the release should be build",
+		)
+
+	stageCmd.PersistentFlags().
+		StringVar(
+			&stageOptions.BuildVersion,
+			"build-version",
+			"",
+			"The build version to be released.",
+		)
+
+	if err := stageCmd.MarkPersistentFlagRequired("build-version"); err != nil {
+		logrus.Fatal(err)
+	}
+
 	rootCmd.AddCommand(stageCmd)
 }
 
-func runStage(stageOptions *anago.StageOptions, _ *rootOptions) error {
+func runStage(options *anago.StageOptions) error {
+	options.NoMock = rootOpts.nomock
 	return anago.NewStage(stageOptions).Run()
 }
