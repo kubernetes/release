@@ -147,11 +147,13 @@ func runPushGitObjects(options *pushGitObjectsOptions) (err error) {
 			}
 		}
 	}
-	/*
-	  # For files created on master with new branches and
-	  # for $CHANGELOG_FILEPATH, update the master
-	  gitlib::push_master
-	*/
+
+	// For files created on master with new branches and
+	// for $CHANGELOG_FILEPATH, update the master
+	if err := gitPusher.PushMain(); err != nil {
+		return errors.Wrap(err, "pushing changes in main branch")
+	}
+
 	logrus.Info("git objects push complete")
 	return nil
 }

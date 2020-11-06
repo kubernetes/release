@@ -1045,7 +1045,7 @@ func (r *Repo) runGitCmd(cmd string, args ...string) (string, error) {
 // IsDirty returns true if the worktree status is not clean. It can also error
 // if the worktree status is not retrievable.
 func (r *Repo) IsDirty() (bool, error) {
-	status, err := r.worktree.Status()
+	status, err := r.Status()
 	if err != nil {
 		return false, errors.Wrap(err, "retrieving worktree status")
 	}
@@ -1097,6 +1097,68 @@ func (r *Repo) SetURL(remote, newURL string) error {
 		URLs: []string{newURL},
 	}); err != nil {
 		return errors.Wrap(err, "create remote")
+	}
+	return nil
+}
+
+// Status reads and returns the Status object from the repository
+func (r *Repo) Status() (*git.Status, error) {
+	status, err := r.worktree.Status()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting the repository status")
+	}
+	return &status, nil
+}
+
+// ShowLastCommit is a simple function that runs git show and returns the
+// last commit in the log
+func (r *Repo) ShowLastCommit() (logData string, err error) {
+	logData, err = r.runGitCmd("show")
+	if err != nil {
+		return logData, errors.Wrap(err, "getting last commit log")
+	}
+	return logData, nil
+}
+
+// FetchRemote gets the objects from the specified remote
+func (r *Repo) FetchRemote(remoteName string) error {
+	if remoteName == "" {
+		return errors.New("error fetching, remote repository name is empty")
+	}
+	// Verify the remote exists
+	remotes, err := r.Remotes()
+	if err != nil {
+		return errors.Wrap(err, "getting repository remotes")
+	}
+
+	remoteExists := false
+	for _, remote := range remotes {
+		if remote.Name() == remoteName {
+			remoteExists = true
+			break
+		}
+	}
+	if !remoteExists {
+		return errors.New("cannot fetch repository, the specified remote does not exist")
+	}
+
+	_, err = r.runGitCmd("fetch", remoteName)
+	if err != nil {
+		return errors.Wrapf(err, "fetching objects from %s", remoteName)
+	}
+	return nil
+}
+
+// Rebase calls rebase on the current repo to the specified branch
+func (r *Repo) Rebase(branch string) error {
+	if branch == "" {
+		return errors.New("cannot rebase repository, branch is empty")
+	}
+	logrus.Infof("Rebasing repository to %s", branch)
+	_, err := r.runGitCmd("rebase", branch)
+	// If we get an error, try to interpret it to make more sense
+	if err != nil {
+		return errors.Wrap(err, "rebasing repository")
 	}
 	return nil
 }

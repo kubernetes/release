@@ -584,10 +584,6 @@ push_git_objects () {
     --parent-branch="${PARENT_BRANCH}" \
     --repo="$TREE_ROOT" \
     --tags="${tags_flag}" || return 1
-
-  # For files created on master with new branches and
-  # for $CHANGELOG_FILEPATH, update the master
-  gitlib::push_master
 }
 
 ###############################################################################

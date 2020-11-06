@@ -22,7 +22,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
+	"time"
 
 	gogit "github.com/go-git/go-git/v5"
 	"github.com/pkg/errors"
@@ -361,4 +364,194 @@ func TestHasBranch(t *testing.T) {
 	actual, err = testRepo.HasBranch("non-existing-branch")
 	require.Nil(t, err)
 	require.False(t, actual)
+}
+
+func TestStatus(t *testing.T) {
+	rawRepoDir, err := ioutil.TempDir("", "k8s-test-repo")
+	require.Nil(t, err)
+	_, err = gogit.PlainInit(rawRepoDir, false)
+	require.Nil(t, err)
+
+	testFile := "test-status.txt"
+
+	testRepo, err := git.OpenRepo(rawRepoDir)
+	require.Nil(t, err)
+	defer testRepo.Cleanup() // nolint: errcheck
+
+	// Get the status object
+	status, err := testRepo.Status()
+	require.Nil(t, err)
+	require.NotNil(t, status)
+	require.True(t, status.IsClean())
+
+	// Create an untracked file
+	require.Nil(t, ioutil.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Hello SIG Release"), 0644))
+
+	// Status should be modified now
+	status, err = testRepo.Status()
+	require.Nil(t, err)
+	require.Equal(t, fmt.Sprintf("?? %s\n", testFile), status.String())
+
+	// Add the file, should status should be A
+	require.Nil(t, testRepo.Add(testFile))
+	status, err = testRepo.Status()
+	require.Nil(t, err)
+	require.Equal(t, fmt.Sprintf("A  %s\n", testFile), status.String())
+
+	// Commit the file, status should be blank again
+	require.Nil(t, testRepo.Commit("Commit test file"))
+	status, err = testRepo.Status()
+	require.Nil(t, err)
+	require.Empty(t, status.String())
+
+	// Modify the file
+	require.Nil(t, ioutil.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Bye SIG Release"), 0644))
+	status, err = testRepo.Status()
+	require.Nil(t, err)
+	require.Equal(t, fmt.Sprintf(" M %s\n", testFile), status.String())
+}
+
+func TestShowLastCommit(t *testing.T) {
+	rawRepoDir, err := ioutil.TempDir("", "k8s-test-repo")
+	require.Nil(t, err)
+	_, err = gogit.PlainInit(rawRepoDir, false)
+	require.Nil(t, err)
+
+	testFile := "test-last-commit.txt"
+	timeNow := strconv.FormatInt(time.Now().UnixNano(), 10)
+
+	testRepo, err := git.OpenRepo(rawRepoDir)
+	require.Nil(t, err)
+	defer testRepo.Cleanup() // nolint: errcheck
+
+	// Create an untracked file
+	require.Nil(t, ioutil.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Hello SIG Release"), 0644))
+	require.Nil(t, testRepo.Add(testFile))
+	require.Nil(t, testRepo.Commit(fmt.Sprintf("Commit test file at %s", timeNow)))
+
+	// Now get the log message back and check if it contains the time
+	lastLog, err := testRepo.ShowLastCommit()
+	require.Nil(t, err)
+	require.NotEmpty(t, lastLog)
+	require.True(t, strings.Contains(lastLog, timeNow))
+}
+
+func TestFetchRemote(t *testing.T) {
+	testTagName := "test-tag" + strconv.FormatInt(time.Now().UnixNano(), 10)
+	// Create a new empty repo
+	rawRepoDir, err := ioutil.TempDir("", "k8s-test-repo")
+	require.Nil(t, err)
+	gogitRepo, err := gogit.PlainInit(rawRepoDir, false)
+	require.Nil(t, err)
+
+	// Create the foirst commit
+	wtree, err := gogitRepo.Worktree()
+	require.Nil(t, err)
+	require.Nil(t, err)
+	commitSha, err := wtree.Commit("Initial Commit", &gogit.CommitOptions{})
+	require.Nil(t, err)
+
+	// Create a git.Repo from it
+	originRepo, err := git.OpenRepo(rawRepoDir)
+	require.Nil(t, err)
+
+	branchName, err := originRepo.CurrentBranch()
+	require.Nil(t, err)
+	defer originRepo.Cleanup() // nolint: errcheck
+
+	// Create a new clone of the original repo
+	testRepo, err := git.CloneOrOpenRepo("", rawRepoDir, false)
+	require.Nil(t, err)
+	defer testRepo.Cleanup() // nolint: errcheck
+
+	// The initial clone must not have any tags
+	testTags, err := testRepo.TagsForBranch(branchName)
+	require.Nil(t, err)
+	require.Empty(t, testTags)
+
+	// Create a tag on the originRepo
+	_, err = gogitRepo.CreateTag(testTagName, commitSha, &gogit.CreateTagOptions{Message: testTagName})
+	require.Nil(t, err)
+
+	// Now, call fetch
+	err = testRepo.FetchRemote("origin")
+	require.Nil(t, err, "Calling fetch to get a test tag")
+
+	// And now we can verify the tags was successfully transferred via FetchRemote()
+	testTags, err = testRepo.TagsForBranch(branchName)
+	require.Nil(t, err)
+	require.NotEmpty(t, testTags)
+	require.ElementsMatch(t, []string{testTagName}, testTags)
+}
+
+func TestRebase(t *testing.T) {
+	testFile := "test-rebase.txt"
+
+	// Create a new empty repo
+	rawRepoDir, err := ioutil.TempDir("", "k8s-test-repo")
+	require.Nil(t, err)
+	gogitRepo, err := gogit.PlainInit(rawRepoDir, false)
+	require.Nil(t, err)
+
+	// Create the initial commit
+	wtree, err := gogitRepo.Worktree()
+	require.Nil(t, err)
+	_, err = wtree.Commit("Initial Commit", &gogit.CommitOptions{})
+	require.Nil(t, err)
+
+	// Create a git.Repo from it
+	originRepo, err := git.OpenRepo(rawRepoDir)
+	require.Nil(t, err)
+
+	branchName, err := originRepo.CurrentBranch()
+	require.Nil(t, err)
+	defer originRepo.Cleanup() // nolint: errcheck
+
+	// Create a new clone of the original repo
+	testRepo, err := git.CloneOrOpenRepo("", rawRepoDir, false)
+	require.Nil(t, err)
+	defer testRepo.Cleanup() // nolint: errcheck
+
+	// Test 1. Rebase should not fail if both repos are in sync
+	require.Nil(t, testRepo.Rebase(fmt.Sprintf("origin/%s", branchName)), "cloning synchronizaed repos")
+
+	// Test 2. Rebase should not fail with pulling changes in the remote
+	require.Nil(t, ioutil.WriteFile(filepath.Join(rawRepoDir, testFile), []byte("Hello SIG Release"), 0644))
+	_, err = wtree.Add(testFile)
+	require.Nil(t, err)
+
+	_, err = wtree.Commit("Test2-Commit", &gogit.CommitOptions{})
+	require.Nil(t, err)
+
+	// Pull the changes to the test repo
+	require.Nil(t, testRepo.FetchRemote("origin"))
+
+	// Do the Rebase
+	require.Nil(t, testRepo.Rebase(fmt.Sprintf("origin/%s", branchName)), "rebasing changes from origin")
+
+	// Verify we got the commit
+	lastLog, err := testRepo.ShowLastCommit()
+	require.Nil(t, err)
+	require.True(t, strings.Contains(lastLog, "Test2-Commit"))
+
+	// Test 3: Rebase must on an invalid branch
+	require.NotNil(t, testRepo.Rebase("origin/invalidBranch"), "rebasing to invalid branch")
+
+	// Test 4: Rebase must fail on merge conflicts
+	require.Nil(t, ioutil.WriteFile(filepath.Join(rawRepoDir, testFile), []byte("Hello again SIG Release"), 0644))
+	_, err = wtree.Add(testFile)
+	require.Nil(t, err)
+
+	_, err = wtree.Commit("Test4-Commit", &gogit.CommitOptions{})
+	require.Nil(t, err)
+
+	// Commit the same file in the test repo
+	require.Nil(t, ioutil.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Conflict me!"), 0644))
+	require.Nil(t, testRepo.Add(filepath.Join(testRepo.Dir(), testFile)))
+	require.Nil(t, testRepo.Commit("Adding file to cause conflict"))
+
+	// Now, fetch and rebase
+	require.Nil(t, testRepo.FetchRemote("origin"))
+	err = testRepo.Rebase(fmt.Sprintf("origin/%s", branchName))
+	require.NotNil(t, err, "testing for merge conflicts")
 }

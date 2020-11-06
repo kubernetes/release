@@ -181,3 +181,49 @@ func (gp *GitObjectPusher) checkBranchName(branchName string) error {
 	}
 	return nil
 }
+
+// PushMain pushes the main branch to the origin
+func (gp *GitObjectPusher) PushMain() error {
+	logrus.Infof("Checkout %s branch to push objects", git.DefaultBranch)
+	if err := gp.repo.Checkout(git.DefaultBranch); err != nil {
+		return errors.Wrapf(err, "checking out %s branch", git.DefaultBranch)
+	}
+
+	// logrun -v git status -s || return 1
+	status, err := gp.repo.Status()
+	if err != nil {
+		return errors.Wrap(err, "while reading the repository status")
+	}
+	if status.String() == "" {
+		logrus.Info("Repository status: no modified paths")
+	} else {
+		logrus.Info(status.String())
+	}
+
+	// logrun -v git show || return 1
+	lastLog, err := gp.repo.ShowLastCommit()
+	if err != nil {
+		return errors.Wrap(err, "getting last commit data from log")
+	}
+	logrus.Info(lastLog)
+
+	logrus.Info("Rebase master branch")
+
+	// logrun -v git fetch origin || return 1
+	if err := gp.repo.FetchRemote(git.DefaultRemote); err != nil {
+		return errors.Wrap(err, "while fetching origin repository")
+	}
+
+	// logrun -s -v git rebase origin/master || return 1
+	if err := gp.repo.Rebase(fmt.Sprintf("%s/%s", git.DefaultRemote, git.DefaultBranch)); err != nil {
+		return errors.Wrap(err, "rebasing repository")
+	}
+
+	logrus.Infof("Pushing%s %s branch", dryRunLabel[gp.opts.DryRun], git.DefaultBranch)
+
+	// logrun -s git push$dryrun_flag origin master || return 1
+	if err := gp.repo.Push(git.DefaultBranch); err != nil {
+		return errors.Wrapf(err, "pushing %s branch", git.DefaultBranch)
+	}
+	return nil
+}
