@@ -44,6 +44,7 @@ steps:
   - "bin/krel"
   - "release"
   - "${_NOMOCK}"
+  - "--log-level=${_LOG_LEVEL}"
   - "--type=${_TYPE}"
   - "--branch=${_RELEASE_BRANCH}"
   - "--build-version=${_BUILDVERSION}"

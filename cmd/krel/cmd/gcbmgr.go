@@ -279,6 +279,7 @@ func RunGcbmgr(opts *GcbmgrOptions) error {
 	// Use dedicated job types for krel-based executions
 	if opts.NoAnago {
 		delete(gcbSubs, "BUILD_AT_HEAD")
+		gcbSubs["LOG_LEVEL"] = rootOpts.logLevel
 		jobType += "-krel"
 	}
 
