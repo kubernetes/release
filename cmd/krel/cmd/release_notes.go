@@ -790,7 +790,7 @@ func releaseNotesJSON(tag string) (jsonString string, err error) {
 
 	logrus.Info("Cloning kubernetes/sig-release to read mapping files")
 	sigReleaseRepo, err := git.CleanCloneGitHubRepo(
-		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, true,
+		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, false,
 	)
 	if err != nil {
 		return "", errors.Wrap(err, "performing clone of k/sig-release")
