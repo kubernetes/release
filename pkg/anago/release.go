@@ -18,6 +18,7 @@ package anago
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -92,7 +93,7 @@ type defaultReleaseImpl struct{}
 // releaseImpl is the implementation of the release client.
 //counterfeiter:generate . releaseImpl
 type releaseImpl interface {
-	PrepareWorkspaceRelease(directory, buildVersion, bucket string) error
+	PrepareWorkspaceRelease(buildVersion, bucket string) error
 	GenerateReleaseVersion(
 		releaseType, version, branch string, branchFromMaster bool,
 	) (*release.Versions, error)
@@ -109,9 +110,14 @@ type releaseImpl interface {
 }
 
 func (d *defaultReleaseImpl) PrepareWorkspaceRelease(
-	directory, buildVersion, bucket string,
+	buildVersion, bucket string,
 ) error {
-	return release.PrepareWorkspaceRelease(directory, buildVersion, bucket)
+	if err := release.PrepareWorkspaceRelease(
+		gitRoot, buildVersion, bucket,
+	); err != nil {
+		return err
+	}
+	return os.Chdir(gitRoot)
 }
 
 func (d *defaultReleaseImpl) GenerateReleaseVersion(
@@ -172,7 +178,7 @@ func (d *DefaultRelease) GenerateReleaseVersion(
 
 func (d *DefaultRelease) PrepareWorkspace() error {
 	if err := d.impl.PrepareWorkspaceRelease(
-		gitRoot, d.options.BuildVersion, d.options.Bucket(),
+		d.options.BuildVersion, d.options.Bucket(),
 	); err != nil {
 		return errors.Wrap(err, "prepare workspace")
 	}

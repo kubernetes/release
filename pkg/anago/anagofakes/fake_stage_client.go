@@ -24,9 +24,10 @@ import (
 )
 
 type FakeStageClient struct {
-	BuildStub        func() error
+	BuildStub        func([]string) error
 	buildMutex       sync.RWMutex
 	buildArgsForCall []struct {
+		arg1 []string
 	}
 	buildReturns struct {
 		result1 error
@@ -98,6 +99,17 @@ type FakeStageClient struct {
 	stageArtifactsReturnsOnCall map[int]struct {
 		result1 error
 	}
+	TagRepositoryStub        func([]string) error
+	tagRepositoryMutex       sync.RWMutex
+	tagRepositoryArgsForCall []struct {
+		arg1 []string
+	}
+	tagRepositoryReturns struct {
+		result1 error
+	}
+	tagRepositoryReturnsOnCall map[int]struct {
+		result1 error
+	}
 	ValidateOptionsStub        func() error
 	validateOptionsMutex       sync.RWMutex
 	validateOptionsArgsForCall []struct {
@@ -112,17 +124,23 @@ type FakeStageClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStageClient) Build() error {
+func (fake *FakeStageClient) Build(arg1 []string) error {
+	var arg1Copy []string
+	if arg1 != nil {
+		arg1Copy = make([]string, len(arg1))
+		copy(arg1Copy, arg1)
+	}
 	fake.buildMutex.Lock()
 	ret, specificReturn := fake.buildReturnsOnCall[len(fake.buildArgsForCall)]
 	fake.buildArgsForCall = append(fake.buildArgsForCall, struct {
-	}{})
+		arg1 []string
+	}{arg1Copy})
 	stub := fake.BuildStub
 	fakeReturns := fake.buildReturns
-	fake.recordInvocation("Build", []interface{}{})
+	fake.recordInvocation("Build", []interface{}{arg1Copy})
 	fake.buildMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -136,10 +154,17 @@ func (fake *FakeStageClient) BuildCallCount() int {
 	return len(fake.buildArgsForCall)
 }
 
-func (fake *FakeStageClient) BuildCalls(stub func() error) {
+func (fake *FakeStageClient) BuildCalls(stub func([]string) error) {
 	fake.buildMutex.Lock()
 	defer fake.buildMutex.Unlock()
 	fake.BuildStub = stub
+}
+
+func (fake *FakeStageClient) BuildArgsForCall(i int) []string {
+	fake.buildMutex.RLock()
+	defer fake.buildMutex.RUnlock()
+	argsForCall := fake.buildArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeStageClient) BuildReturns(result1 error) {
@@ -507,6 +532,72 @@ func (fake *FakeStageClient) StageArtifactsReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeStageClient) TagRepository(arg1 []string) error {
+	var arg1Copy []string
+	if arg1 != nil {
+		arg1Copy = make([]string, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.tagRepositoryMutex.Lock()
+	ret, specificReturn := fake.tagRepositoryReturnsOnCall[len(fake.tagRepositoryArgsForCall)]
+	fake.tagRepositoryArgsForCall = append(fake.tagRepositoryArgsForCall, struct {
+		arg1 []string
+	}{arg1Copy})
+	stub := fake.TagRepositoryStub
+	fakeReturns := fake.tagRepositoryReturns
+	fake.recordInvocation("TagRepository", []interface{}{arg1Copy})
+	fake.tagRepositoryMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageClient) TagRepositoryCallCount() int {
+	fake.tagRepositoryMutex.RLock()
+	defer fake.tagRepositoryMutex.RUnlock()
+	return len(fake.tagRepositoryArgsForCall)
+}
+
+func (fake *FakeStageClient) TagRepositoryCalls(stub func([]string) error) {
+	fake.tagRepositoryMutex.Lock()
+	defer fake.tagRepositoryMutex.Unlock()
+	fake.TagRepositoryStub = stub
+}
+
+func (fake *FakeStageClient) TagRepositoryArgsForCall(i int) []string {
+	fake.tagRepositoryMutex.RLock()
+	defer fake.tagRepositoryMutex.RUnlock()
+	argsForCall := fake.tagRepositoryArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStageClient) TagRepositoryReturns(result1 error) {
+	fake.tagRepositoryMutex.Lock()
+	defer fake.tagRepositoryMutex.Unlock()
+	fake.TagRepositoryStub = nil
+	fake.tagRepositoryReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageClient) TagRepositoryReturnsOnCall(i int, result1 error) {
+	fake.tagRepositoryMutex.Lock()
+	defer fake.tagRepositoryMutex.Unlock()
+	fake.TagRepositoryStub = nil
+	if fake.tagRepositoryReturnsOnCall == nil {
+		fake.tagRepositoryReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.tagRepositoryReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeStageClient) ValidateOptions() error {
 	fake.validateOptionsMutex.Lock()
 	ret, specificReturn := fake.validateOptionsReturnsOnCall[len(fake.validateOptionsArgsForCall)]
@@ -577,6 +668,8 @@ func (fake *FakeStageClient) Invocations() map[string][][]interface{} {
 	defer fake.setBuildCandidateMutex.RUnlock()
 	fake.stageArtifactsMutex.RLock()
 	defer fake.stageArtifactsMutex.RUnlock()
+	fake.tagRepositoryMutex.RLock()
+	defer fake.tagRepositoryMutex.RUnlock()
 	fake.validateOptionsMutex.RLock()
 	defer fake.validateOptionsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

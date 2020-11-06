@@ -18,12 +18,14 @@ package anago
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/build"
+	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
 )
@@ -53,9 +55,13 @@ type stageClient interface {
 	// out repository is in a clean state.
 	PrepareWorkspace() error
 
+	// TagRepository creates all necessary git objects by tagging the
+	// repository for the provided `versions`.
+	TagRepository(versions []string) error
+
 	// Build runs 'make cross-in-a-container' by using the latest kubecross
 	// container image. This step also build all necessary release tarballs.
-	Build() error
+	Build(versions []string) error
 
 	// Generate release notes: Generate the CHANGELOG-x.y.md file and commit it
 	// into the local working repository.
@@ -87,11 +93,13 @@ type defaultStageImpl struct{}
 // stageImpl is the implementation of the stage client.
 //counterfeiter:generate . stageImpl
 type stageImpl interface {
-	PrepareWorkspaceStage(directory string) error
+	PrepareWorkspaceStage() error
 	GenerateReleaseVersion(
 		releaseType, version, branch string, branchFromMaster bool,
 	) (*release.Versions, error)
 	CheckReleaseBucket(options *build.Options) error
+	Tag(releaseType, version string) error
+	MakeCross(version string) error
 	StageLocalSourceTree(
 		options *build.Options, buildVersion string,
 	) error
@@ -110,8 +118,34 @@ func (d *defaultStageImpl) GenerateReleaseVersion(
 	)
 }
 
-func (d *defaultStageImpl) PrepareWorkspaceStage(directory string) error {
-	return release.PrepareWorkspaceStage(directory)
+func (d *defaultStageImpl) PrepareWorkspaceStage() error {
+	if err := release.PrepareWorkspaceStage(gitRoot); err != nil {
+		return err
+	}
+	return os.Chdir(gitRoot)
+}
+
+// TODO: see TagRepository()
+func (d *defaultStageImpl) Tag(releaseType, version string) error {
+	if err := command.New(
+		"git", "config", "--global", "user.email", "nobody@k8s.io",
+	).RunSuccess(); err != nil {
+		return err
+	}
+	if err := command.New(
+		"git", "config", "--global", "user.name", "Anago GCB",
+	).RunSuccess(); err != nil {
+		return err
+	}
+	return command.New(
+		"git", "tag", "-a", "-m",
+		fmt.Sprintf("Kubernetes %s release %s", releaseType, version),
+		version,
+	).RunSuccess()
+}
+
+func (d *defaultStageImpl) MakeCross(version string) error {
+	return build.NewMake().MakeCross(version)
 }
 
 func (d *defaultStageImpl) CheckReleaseBucket(
@@ -164,13 +198,31 @@ func (d *DefaultStage) GenerateReleaseVersion(
 }
 
 func (d *DefaultStage) PrepareWorkspace() error {
-	if err := d.impl.PrepareWorkspaceStage(gitRoot); err != nil {
+	if err := d.impl.PrepareWorkspaceStage(); err != nil {
 		return errors.Wrap(err, "prepare workspace")
 	}
 	return nil
 }
 
-func (d *DefaultStage) Build() error { return nil }
+func (d *DefaultStage) TagRepository(versions []string) error {
+	// TODO: this is a workaround to make `Build work`, it needs to have the
+	// same implementation like anago:prepare_tree.
+	for _, version := range versions {
+		if err := d.impl.Tag(d.options.ReleaseType, version); err != nil {
+			return errors.Wrap(err, "tag version")
+		}
+	}
+	return nil
+}
+
+func (d *DefaultStage) Build(versions []string) error {
+	for _, version := range versions {
+		if err := d.impl.MakeCross(version); err != nil {
+			return errors.Wrap(err, "build artifacts")
+		}
+	}
+	return nil
+}
 
 func (d *DefaultStage) GenerateReleaseNotes() error { return nil }
 

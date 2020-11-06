@@ -183,8 +183,13 @@ func (s *Stage) Run() error {
 		return errors.Wrap(err, "prepare workspace")
 	}
 
+	logrus.Info("Tagging repository")
+	if err := s.client.TagRepository(versions.Ordered()); err != nil {
+		return errors.Wrap(err, "tag repository")
+	}
+
 	logrus.Info("Building release")
-	if err := s.client.Build(); err != nil {
+	if err := s.client.Build(versions.Ordered()); err != nil {
 		return errors.Wrap(err, "build release")
 	}
 

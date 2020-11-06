@@ -52,10 +52,20 @@ type FakeStageImpl struct {
 		result1 *release.Versions
 		result2 error
 	}
-	PrepareWorkspaceStageStub        func(string) error
+	MakeCrossStub        func(string) error
+	makeCrossMutex       sync.RWMutex
+	makeCrossArgsForCall []struct {
+		arg1 string
+	}
+	makeCrossReturns struct {
+		result1 error
+	}
+	makeCrossReturnsOnCall map[int]struct {
+		result1 error
+	}
+	PrepareWorkspaceStageStub        func() error
 	prepareWorkspaceStageMutex       sync.RWMutex
 	prepareWorkspaceStageArgsForCall []struct {
-		arg1 string
 	}
 	prepareWorkspaceStageReturns struct {
 		result1 error
@@ -108,6 +118,18 @@ type FakeStageImpl struct {
 		result1 error
 	}
 	stageLocalSourceTreeReturnsOnCall map[int]struct {
+		result1 error
+	}
+	TagStub        func(string, string) error
+	tagMutex       sync.RWMutex
+	tagArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	tagReturns struct {
+		result1 error
+	}
+	tagReturnsOnCall map[int]struct {
 		result1 error
 	}
 	invocations      map[string][][]interface{}
@@ -242,18 +264,78 @@ func (fake *FakeStageImpl) GenerateReleaseVersionReturnsOnCall(i int, result1 *r
 	}{result1, result2}
 }
 
-func (fake *FakeStageImpl) PrepareWorkspaceStage(arg1 string) error {
+func (fake *FakeStageImpl) MakeCross(arg1 string) error {
+	fake.makeCrossMutex.Lock()
+	ret, specificReturn := fake.makeCrossReturnsOnCall[len(fake.makeCrossArgsForCall)]
+	fake.makeCrossArgsForCall = append(fake.makeCrossArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.MakeCrossStub
+	fakeReturns := fake.makeCrossReturns
+	fake.recordInvocation("MakeCross", []interface{}{arg1})
+	fake.makeCrossMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) MakeCrossCallCount() int {
+	fake.makeCrossMutex.RLock()
+	defer fake.makeCrossMutex.RUnlock()
+	return len(fake.makeCrossArgsForCall)
+}
+
+func (fake *FakeStageImpl) MakeCrossCalls(stub func(string) error) {
+	fake.makeCrossMutex.Lock()
+	defer fake.makeCrossMutex.Unlock()
+	fake.MakeCrossStub = stub
+}
+
+func (fake *FakeStageImpl) MakeCrossArgsForCall(i int) string {
+	fake.makeCrossMutex.RLock()
+	defer fake.makeCrossMutex.RUnlock()
+	argsForCall := fake.makeCrossArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStageImpl) MakeCrossReturns(result1 error) {
+	fake.makeCrossMutex.Lock()
+	defer fake.makeCrossMutex.Unlock()
+	fake.MakeCrossStub = nil
+	fake.makeCrossReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) MakeCrossReturnsOnCall(i int, result1 error) {
+	fake.makeCrossMutex.Lock()
+	defer fake.makeCrossMutex.Unlock()
+	fake.MakeCrossStub = nil
+	if fake.makeCrossReturnsOnCall == nil {
+		fake.makeCrossReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.makeCrossReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) PrepareWorkspaceStage() error {
 	fake.prepareWorkspaceStageMutex.Lock()
 	ret, specificReturn := fake.prepareWorkspaceStageReturnsOnCall[len(fake.prepareWorkspaceStageArgsForCall)]
 	fake.prepareWorkspaceStageArgsForCall = append(fake.prepareWorkspaceStageArgsForCall, struct {
-		arg1 string
-	}{arg1})
+	}{})
 	stub := fake.PrepareWorkspaceStageStub
 	fakeReturns := fake.prepareWorkspaceStageReturns
-	fake.recordInvocation("PrepareWorkspaceStage", []interface{}{arg1})
+	fake.recordInvocation("PrepareWorkspaceStage", []interface{}{})
 	fake.prepareWorkspaceStageMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
@@ -267,17 +349,10 @@ func (fake *FakeStageImpl) PrepareWorkspaceStageCallCount() int {
 	return len(fake.prepareWorkspaceStageArgsForCall)
 }
 
-func (fake *FakeStageImpl) PrepareWorkspaceStageCalls(stub func(string) error) {
+func (fake *FakeStageImpl) PrepareWorkspaceStageCalls(stub func() error) {
 	fake.prepareWorkspaceStageMutex.Lock()
 	defer fake.prepareWorkspaceStageMutex.Unlock()
 	fake.PrepareWorkspaceStageStub = stub
-}
-
-func (fake *FakeStageImpl) PrepareWorkspaceStageArgsForCall(i int) string {
-	fake.prepareWorkspaceStageMutex.RLock()
-	defer fake.prepareWorkspaceStageMutex.RUnlock()
-	argsForCall := fake.prepareWorkspaceStageArgsForCall[i]
-	return argsForCall.arg1
 }
 
 func (fake *FakeStageImpl) PrepareWorkspaceStageReturns(result1 error) {
@@ -550,6 +625,68 @@ func (fake *FakeStageImpl) StageLocalSourceTreeReturnsOnCall(i int, result1 erro
 	}{result1}
 }
 
+func (fake *FakeStageImpl) Tag(arg1 string, arg2 string) error {
+	fake.tagMutex.Lock()
+	ret, specificReturn := fake.tagReturnsOnCall[len(fake.tagArgsForCall)]
+	fake.tagArgsForCall = append(fake.tagArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.TagStub
+	fakeReturns := fake.tagReturns
+	fake.recordInvocation("Tag", []interface{}{arg1, arg2})
+	fake.tagMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) TagCallCount() int {
+	fake.tagMutex.RLock()
+	defer fake.tagMutex.RUnlock()
+	return len(fake.tagArgsForCall)
+}
+
+func (fake *FakeStageImpl) TagCalls(stub func(string, string) error) {
+	fake.tagMutex.Lock()
+	defer fake.tagMutex.Unlock()
+	fake.TagStub = stub
+}
+
+func (fake *FakeStageImpl) TagArgsForCall(i int) (string, string) {
+	fake.tagMutex.RLock()
+	defer fake.tagMutex.RUnlock()
+	argsForCall := fake.tagArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeStageImpl) TagReturns(result1 error) {
+	fake.tagMutex.Lock()
+	defer fake.tagMutex.Unlock()
+	fake.TagStub = nil
+	fake.tagReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) TagReturnsOnCall(i int, result1 error) {
+	fake.tagMutex.Lock()
+	defer fake.tagMutex.Unlock()
+	fake.TagStub = nil
+	if fake.tagReturnsOnCall == nil {
+		fake.tagReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.tagReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -557,6 +694,8 @@ func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	defer fake.checkReleaseBucketMutex.RUnlock()
 	fake.generateReleaseVersionMutex.RLock()
 	defer fake.generateReleaseVersionMutex.RUnlock()
+	fake.makeCrossMutex.RLock()
+	defer fake.makeCrossMutex.RUnlock()
 	fake.prepareWorkspaceStageMutex.RLock()
 	defer fake.prepareWorkspaceStageMutex.RUnlock()
 	fake.pushContainerImagesMutex.RLock()
@@ -567,6 +706,8 @@ func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	defer fake.stageLocalArtifactsMutex.RUnlock()
 	fake.stageLocalSourceTreeMutex.RLock()
 	defer fake.stageLocalSourceTreeMutex.RUnlock()
+	fake.tagMutex.RLock()
+	defer fake.tagMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
