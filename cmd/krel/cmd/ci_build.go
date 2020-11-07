@@ -22,16 +22,17 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/release"
 )
 
-const pushCmdDescription = `
+const ciBuildCmdDescription = `
 Used for pushing developer builds and Jenkins' continuous builds.
 
 Developer pushes simply run as they do pushing to devel/ on GCS.`
 
-const pushCmdExample = `
-krel push [--noupdatelatest] [--ci] [--bucket=<GCS bucket>] [--private-bucket]
+const ciBuildExample = `
+ci-build [--noupdatelatest] [--ci] [--bucket=<GCS bucket>] [--private-bucket]
 
 Scenarios:
 
@@ -39,17 +40,17 @@ krel push                                   - Do a developer push
 krel push --ci                              - Do a CI push
 krel push --bucket=kubernetes-release-$USER - Do a developer push to kubernetes-release-$USER`
 
-var pushBuildOpts = &release.PushBuildOptions{}
+var ciBuildOpts = &release.PushBuildOptions{}
 
-var pushBuildCmd = &cobra.Command{
-	Use:           "push",
+var ciBuildCmd = &cobra.Command{
+	Use:           "ci-build",
 	Short:         "Push Kubernetes release artifacts to Google Cloud Storage (GCS)",
-	Long:          pushCmdDescription,
-	Example:       pushCmdExample,
+	Long:          ciBuildCmdDescription,
+	Example:       ciBuildExample,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := runPushBuild(pushBuildOpts); err != nil {
+		if err := runCIBuild(ciBuildOpts); err != nil {
 			return errors.Wrap(err, "Failed to run:")
 		}
 
@@ -58,43 +59,75 @@ var pushBuildCmd = &cobra.Command{
 }
 
 func init() {
-	pushBuildCmd.PersistentFlags().BoolVar(
-		&pushBuildOpts.AllowDup,
+	// Build options
+	/*
+		PARSER.add_argument(
+				'--fast', action='store_true', help='Specifies a fast build')
+		PARSER.add_argument(
+				'--register-gcloud-helper', action='store_true',
+				help='Register gcloud as docker credentials helper')
+	*/
+
+	ciBuildCmd.PersistentFlags().BoolVar(
+		&ciBuildOpts.Fast,
+		"fast",
+		false,
+		"Specifies a fast build (linux/amd64 only)",
+	)
+
+	// Push options
+	/*
+		PARSER.add_argument(
+				'--release', help='Upload binaries to the specified gs:// path')
+		PARSER.add_argument(
+				'--suffix', help='Append suffix to the upload path if set')
+		PARSER.add_argument(
+				'--registry', help='Push images to the specified docker registry')
+		PARSER.add_argument(
+				'--extra-version-markers', help='Additional version file uploads to')
+		PARSER.add_argument(
+				'--fast', action='store_true', help='Specifies a fast build')
+		PARSER.add_argument(
+				'--skip-update-latest', action='store_true', help='Do not update the latest file')
+	*/
+
+	ciBuildCmd.PersistentFlags().BoolVar(
+		&ciBuildOpts.AllowDup,
 		"allow-dup",
 		false,
 		"Do not exit error if the build already exists on the gcs path",
 	)
 
-	pushBuildCmd.PersistentFlags().BoolVar(
-		&pushBuildOpts.CI,
+	ciBuildCmd.PersistentFlags().BoolVar(
+		&ciBuildOpts.CI,
 		"ci",
 		false,
 		"Used when called from Jenkins (for ci runs)",
 	)
 
-	pushBuildCmd.PersistentFlags().BoolVar(
-		&pushBuildOpts.NoUpdateLatest,
+	ciBuildCmd.PersistentFlags().BoolVar(
+		&ciBuildOpts.NoUpdateLatest,
 		"noupdatelatest",
 		false,
 		"Do not update the latest file",
 	)
 
-	pushBuildCmd.PersistentFlags().BoolVar(
-		&pushBuildOpts.PrivateBucket,
+	ciBuildCmd.PersistentFlags().BoolVar(
+		&ciBuildOpts.PrivateBucket,
 		"private-bucket",
 		false,
 		"Do not mark published bits on GCS as publicly readable",
 	)
 
-	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.Bucket,
+	ciBuildCmd.PersistentFlags().StringVar(
+		&ciBuildOpts.Bucket,
 		"bucket",
 		"devel",
 		"Specify an alternate bucket for pushes (normally 'devel' or 'ci')",
 	)
 
-	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.BuildDir,
+	ciBuildCmd.PersistentFlags().StringVar(
+		&ciBuildOpts.BuildDir,
 		"buildDir",
 		release.BuildDir,
 		fmt.Sprintf(
@@ -103,51 +136,44 @@ func init() {
 		),
 	)
 
-	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.DockerRegistry,
+	ciBuildCmd.PersistentFlags().StringVar(
+		&ciBuildOpts.DockerRegistry,
 		"docker-registry",
 		"",
 		"If set, push docker images to specified registry/project",
 	)
 
-	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.ExtraVersionMarkers,
+	ciBuildCmd.PersistentFlags().StringVar(
+		&ciBuildOpts.ExtraVersionMarkers,
 		"extra-version-markers",
 		"",
 		"Comma separated list which can be used to upload additional version files to GCS. The path is relative and is append to a GCS path. (--ci only)",
 	)
 
-	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.GCSSuffix,
+	ciBuildCmd.PersistentFlags().StringVar(
+		&ciBuildOpts.GCSSuffix,
 		"gcs-suffix",
 		"",
 		"Specify a suffix to append to the upload destination on GCS",
 	)
 
-	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.VersionSuffix,
+	ciBuildCmd.PersistentFlags().StringVar(
+		&ciBuildOpts.VersionSuffix,
 		"version-suffix",
 		"",
 		"Append suffix to version name if set",
 	)
 
-	pushBuildCmd.PersistentFlags().BoolVar(
-		&pushBuildOpts.Fast,
-		"fast",
-		false,
-		"Specifies a fast build (linux/amd64 only)",
-	)
-
-	pushBuildCmd.PersistentFlags().BoolVar(
-		&pushBuildOpts.ValidateRemoteImageDigests,
+	ciBuildCmd.PersistentFlags().BoolVar(
+		&ciBuildOpts.ValidateRemoteImageDigests,
 		"validate-images",
 		false,
 		"Validate that the remove image digests exists, needs `skopeo` in `$PATH`",
 	)
 
-	rootCmd.AddCommand(pushBuildCmd)
+	rootCmd.AddCommand(ciBuildCmd)
 }
 
-func runPushBuild(opts *release.PushBuildOptions) error {
-	return release.NewPushBuild(opts).Push()
+func runCIBuild(opts *release.PushBuildOptions) error {
+	return build.NewBuild(opts).Build()
 }

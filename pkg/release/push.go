@@ -78,7 +78,7 @@ type PushBuildOptions struct {
 	// Do not mark published bits on GCS as publicly readable.
 	PrivateBucket bool
 
-	// Specifies a fast build (linux amd64 only).
+	// Specifies a fast build (linux/amd64 only).
 	Fast bool
 
 	// Validate that the remove image digests exists, needs `skopeo` in
@@ -150,7 +150,7 @@ var windowsStageFiles = []stageFile{
 	},
 }
 
-// NewPushBuild can be used to create a new PushBuild instnace.
+// NewPushBuild can be used to create a new PushBuild instance.
 func NewPushBuild(opts *PushBuildOptions) *PushBuild {
 	return &PushBuild{opts}
 }
