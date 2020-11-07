@@ -21,13 +21,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
@@ -38,11 +36,7 @@ import (
 
 const (
 	TagPrefix = "v"
-	// CharSet defines the alphanumeric set for random string generation
-	CharSet = "0123456789abcdefghijklmnopqrstuvwxyz"
 )
-
-var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 // UserInputError a custom error to handle more user input info
 type UserInputError struct {
@@ -539,14 +533,4 @@ func WrapText(originalText string, lineSize int) (wrappedText string) {
 	}
 
 	return wrappedText
-}
-
-// RandomString returns a random alphanumeric string.
-func RandomString(n int) string {
-	result := make([]byte, n)
-	for i := range result {
-		result[i] = CharSet[rnd.Intn(len(CharSet))]
-	}
-
-	return string(result)
 }

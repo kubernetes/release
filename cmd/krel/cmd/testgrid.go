@@ -25,14 +25,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"k8s.io/release/pkg/gcp/gcs"
+	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/http"
-	"k8s.io/release/pkg/util"
 	"k8s.io/utils/pointer"
 )
 
@@ -70,7 +71,7 @@ const (
 	layoutISO = "2006-01-02"
 )
 
-// ffCmd represents the base command when called without any subcommands
+// testGridCmd represents the base command when called without any subcommands
 var testGridCmd = &cobra.Command{
 	Use:           "testgridshot --branch <release-branch>",
 	Short:         "Take a screenshot of the testgrid dashboards",
@@ -84,7 +85,7 @@ var testGridCmd = &cobra.Command{
 
 func init() {
 	testGridCmd.PersistentFlags().StringVar(&testGridOpts.branch, "branch",
-		"master", "From which release branch will get the testgrid dashboard")
+		git.DefaultBranch, "From which release branch will get the testgrid dashboard")
 
 	testGridCmd.PersistentFlags().StringSliceVar(&testGridOpts.boards, "boards", []string{boardBlocking, boardInforming},
 		"Which Boards to retrieve the dashboards, defaults to blocking and informing")
@@ -114,7 +115,7 @@ func runTestGridShot(opts *TestGridOptions) error {
 	testgridJobs := []TestGridJob{}
 	for _, board := range opts.boards {
 		testGridDashboard := fmt.Sprintf("%s/sig-release-%s-%s/summary", opts.testgridURL, opts.branch, board)
-		content, err := http.GetURLResponse(testGridDashboard, false)
+		content, err := http.GetURLResponseWithTimeOut(testGridDashboard, 30*time.Second)
 		if err != nil {
 			return errors.Wrapf(err,
 				"unable to retrieve release announcement form url: %s", testGridDashboard,
@@ -122,7 +123,7 @@ func runTestGridShot(opts *TestGridOptions) error {
 		}
 
 		var result map[string]interface{}
-		err = json.Unmarshal([]byte(content), &result)
+		err = json.Unmarshal(content, &result)
 		if err != nil {
 			return errors.Wrap(err, "unable unmarshal the testgrid response")
 		}
@@ -132,7 +133,7 @@ func runTestGridShot(opts *TestGridOptions) error {
 			result := TestgridJobInfo{}
 			err = mapstructure.Decode(jobData, &result)
 			if err != nil {
-				return errors.Wrap(err, "failed to decode testgrid data")
+				return errors.Wrap(err, "decode testgrid data")
 			}
 
 			for _, state := range opts.states {
@@ -147,7 +148,7 @@ func runTestGridShot(opts *TestGridOptions) error {
 		}
 		testgridJobs = append(testgridJobs, testgridJobsTemp...)
 
-		dateNow := fmt.Sprintf("%s_%s", time.Now().UTC().Format(layoutISO), util.RandomString(6))
+		dateNow := fmt.Sprintf("%s-%s", time.Now().UTC().Format(layoutISO), uuid.New().String())
 		testgridJobs, err = processDashboards(testgridJobs, dateNow, opts)
 		if err != nil {
 			return errors.Wrap(err, "failed to process the dashboards")

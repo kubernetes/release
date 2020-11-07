@@ -13,6 +13,7 @@ require (
 	github.com/google/go-github/v29 v29.0.3
 	github.com/google/uuid v1.1.2
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.3.0
+	github.com/mitchellh/mapstructure v1.1.2
 	github.com/moby/term v0.0.0-20201110203204-bea5bbe245bf
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481
 	github.com/olekukonko/tablewriter v0.0.4

@@ -28,21 +28,9 @@ import (
 
 // GetURLResponse returns the HTTP response for the provided URL if the request succeeds
 func GetURLResponse(url string, trim bool) (string, error) {
-	resp, httpErr := http.Get(url)
-	if httpErr != nil {
-		return "", errors.Wrapf(httpErr, "an error occurred GET-ing %s", url)
-	}
-
-	defer resp.Body.Close()
-	statusOK := resp.StatusCode >= 200 && resp.StatusCode < 300
-	if !statusOK {
-		errMsg := fmt.Sprintf("HTTP status not OK (%v) for %s", resp.StatusCode, url)
-		return "", errors.New(errMsg)
-	}
-
-	respBytes, ioErr := ioutil.ReadAll(resp.Body)
-	if ioErr != nil {
-		return "", errors.Wrapf(ioErr, "could not handle the response body for %s", url)
+	respBytes, err := GetURLResponseWithTimeOut(url, 0*time.Second)
+	if err != nil {
+		return "", err
 	}
 
 	respString := string(respBytes)
@@ -53,12 +41,13 @@ func GetURLResponse(url string, trim bool) (string, error) {
 	return respString, nil
 }
 
+// GetURLResponseWithTimeOut returns the HTTP response for the provided URL if the request succeeds
+// using a timeout
 func GetURLResponseWithTimeOut(url string, timeout time.Duration) ([]byte, error) {
 	client := http.Client{
 		Timeout: timeout,
 	}
 
-	// Will throw error as it's not quick enough
 	resp, httpErr := client.Get(url)
 	if httpErr != nil {
 		return nil, errors.Wrapf(httpErr, "an error occurred GET-ing %s", url)
