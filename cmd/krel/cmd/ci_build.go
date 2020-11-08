@@ -99,13 +99,6 @@ func init() {
 	)
 
 	ciBuildCmd.PersistentFlags().BoolVar(
-		&ciBuildOpts.CI,
-		"ci",
-		false,
-		"Used when called from Jenkins (for ci runs)",
-	)
-
-	ciBuildCmd.PersistentFlags().BoolVar(
 		&ciBuildOpts.NoUpdateLatest,
 		"noupdatelatest",
 		false,
@@ -175,5 +168,5 @@ func init() {
 }
 
 func runCIBuild(opts *build.Options) error {
-	return build.NewInstance(opts).Build()
+	return build.NewCIInstance(opts).Build()
 }

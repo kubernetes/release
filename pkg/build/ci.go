@@ -21,6 +21,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// NewCIInstance can be used to create a new build `Instance` for use in CI.
+func NewCIInstance(opts *Options) *Instance {
+	instance := NewInstance(opts)
+	instance.opts.CI = true
+
+	return instance
+}
+
 // Push pushes the build by taking the internal options into account.
 func (bi *Instance) Build() error {
 	/*
@@ -36,7 +44,7 @@ func (bi *Instance) Build() error {
 						sys.exit(1)
 	*/
 
-	buildExists, buildExistsErr := checkBuildExists("foo", "bar", "baz")
+	buildExists, buildExistsErr := bi.checkBuildExists()
 	if buildExistsErr != nil {
 		return errors.Wrapf(buildExistsErr, "checking if build exists")
 	}
@@ -89,6 +97,7 @@ func (bi *Instance) Build() error {
 		check('make', 'clean')
 	*/
 
+	// Create a Kubernetes build
 	/*
 		if args.fast:
 				check('make', 'quick-release')
@@ -97,17 +106,12 @@ func (bi *Instance) Build() error {
 	*/
 
 	// Pushing the build
-	pushBuildErr := NewInstance(bi.opts).Push()
-	if pushBuildErr != nil {
-		return errors.Wrapf(pushBuildErr, "pushing build")
-	}
-
-	return nil
+	return bi.Push()
 }
 
 // checkBuildExists check if the target build exists in the specified GCS
 // bucket. This allows us to speed up build jobs by not duplicating builds.
-func checkBuildExists(gcs, suffix, fast string) (bool, error) {
+func (bi *Instance) checkBuildExists() (bool, error) {
 	/*
 		def check_build_exists(gcs, suffix, fast):
 			""" check if a k8s build with same version
