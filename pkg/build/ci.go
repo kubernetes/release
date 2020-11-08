@@ -17,8 +17,17 @@ limitations under the License.
 package build
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"k8s.io/release/pkg/command"
+	"k8s.io/release/pkg/gcp/auth"
+	"k8s.io/release/pkg/gcp/gcs"
+	"k8s.io/release/pkg/release"
 )
 
 // NewCIInstance can be used to create a new build `Instance` for use in CI.
@@ -29,20 +38,26 @@ func NewCIInstance(opts *Options) *Instance {
 	return instance
 }
 
-// Push pushes the build by taking the internal options into account.
+// Build starts a Kubernetes build with the options defined in the build
+// `Instance`.
 func (bi *Instance) Build() error {
-	/*
-		def main(args):
-				# pylint: disable=too-many-branches
-				"""Build and push kubernetes.
+	workingDir, dirErr := os.Getwd()
+	if dirErr != nil {
+		return errors.Wrapf(dirErr, "getting working directory")
+	}
 
-				This is a python port of the kubernetes/hack/jenkins/build.sh script.
-				"""
-				if os.path.split(os.getcwd())[-1] != 'kubernetes':
-						print >>sys.stderr, (
-								'Scenario should only run from either kubernetes directory!')
-						sys.exit(1)
-	*/
+	logrus.Infof("Current working directory: %s", workingDir)
+
+	workingDirRelative := filepath.Base(workingDir)
+	expectedDirRelative := "kubernetes"
+
+	if workingDirRelative != expectedDirRelative {
+		return errors.Errorf(
+			"Build was executed from the %s directory but must be run from the %s directory. Exiting...",
+			workingDirRelative,
+			expectedDirRelative,
+		)
+	}
 
 	buildExists, buildExistsErr := bi.checkBuildExists()
 	if buildExistsErr != nil {
@@ -50,42 +65,44 @@ func (bi *Instance) Build() error {
 	}
 
 	if buildExists {
-		logrus.Infof("Build already exists. Exiting...")
 		return nil
 	}
 
-	/*
-		env = {
-				# Skip gcloud update checking; do we still need this?
-				'CLOUDSDK_COMPONENT_MANAGER_DISABLE_UPDATE_CHECK': 'true',
-				# Don't run any unit/integration tests when building
-				'KUBE_RELEASE_RUN_TESTS': 'n',
+	logrus.Infof("Proceeding with a new build...")
+
+	// TODO: Should this be configurable?
+	envErr := os.Setenv("KUBE_RELEASE_RUN_TESTS", "n")
+	if envErr != nil {
+		return errors.Wrapf(envErr, "setting 'KUBE_RELEASE_RUN_TESTS' to 'n'")
+	}
+
+	// Configure docker client for gcr.io authentication to allow communication
+	// with non-public registries.
+	if bi.opts.ConfigureDocker {
+		if configureErr := auth.ConfigureDocker(); configureErr != nil {
+			return errors.Wrapf(configureErr, "configuring docker auth")
 		}
-	*/
+	}
 
-	/*
-		if args.register_gcloud_helper:
-				# Configure docker client for gcr.io authentication to allow communication
-				# with non-public registries.
-				check_no_stdout('gcloud', 'auth', 'configure-docker')
-	*/
-
-	/*
-		for key, value in env.items():
-				os.environ[key] = value
-	*/
-
-	/*
-		check('make', 'clean')
-	*/
+	if cleanErr := command.New(
+		"make",
+		"clean",
+	).RunSuccess(); cleanErr != nil {
+		return errors.Wrapf(cleanErr, "running make clean")
+	}
 
 	// Create a Kubernetes build
-	/*
-		if args.fast:
-				check('make', 'quick-release')
-		else:
-				check('make', 'release')
-	*/
+	releaseType := "release"
+	if bi.opts.Fast {
+		releaseType = "quick-release"
+	}
+
+	if buildErr := command.New(
+		"make",
+		releaseType,
+	).RunSuccess(); buildErr != nil {
+		return errors.Wrapf(buildErr, fmt.Sprintf("running make %s", releaseType))
+	}
 
 	// Pushing the build
 	return bi.Push()
@@ -94,50 +111,67 @@ func (bi *Instance) Build() error {
 // checkBuildExists check if the target build exists in the specified GCS
 // bucket. This allows us to speed up build jobs by not duplicating builds.
 func (bi *Instance) checkBuildExists() (bool, error) {
-	/*
-		def check_build_exists(gcs, suffix, fast):
-			""" check if a k8s build with same version
-					already exists in remote path
-			"""
-			if not os.path.exists('hack/print-workspace-status.sh'):
-					print >>sys.stderr, 'hack/print-workspace-status.sh not found, continue'
-					return False
-	*/
+	version, getVersionErr := release.GetWorkspaceVersion()
+	if getVersionErr != nil {
+		return false, errors.Wrap(getVersionErr, "getting workspace version")
+	}
 
-	/*
-		version = ''
-		try:
-				match = re.search(
-						r'gitVersion ([^\n]+)',
-						check_output('hack/print-workspace-status.sh')
-				)
-				if match:
-						version = match.group(1)
-		except subprocess.CalledProcessError as exc:
-				# fallback with doing a real build
-				print >>sys.stderr, 'Failed to get k8s version, continue: %s' % exc
-				return False
+	bi.opts.Version = version
+	if bi.opts.Version == "" {
+		logrus.Infof("Failed to get a build version from the workspace")
+		return false, nil
+	}
 
-		if version:
-				if not gcs:
-						gcs = 'kubernetes-release-dev'
-				gcs = 'gs://' + gcs
-				mode = 'ci'
-				if fast:
-						mode += '/fast'
-				if suffix:
-						mode += suffix
-				gcs = os.path.join(gcs, mode, version)
-				try:
-						check_no_stdout('gsutil', 'ls', gcs)
-						check_no_stdout('gsutil', 'ls', gcs + "/kubernetes.tar.gz")
-						check_no_stdout('gsutil', 'ls', gcs + "/bin")
-						return True
-				except subprocess.CalledProcessError as exc:
-						print >>sys.stderr, (
-								'gcs path %s (or some files under it) does not exist yet, continue' % gcs)
-		return False
-	*/
+	bucket := bi.opts.Bucket
+	if bi.opts.Bucket == "" {
+		bucket = "kubernetes-release-dev"
+	}
 
-	return true, nil
+	mode := "ci"
+	if bi.opts.CI {
+		mode = "ci"
+	}
+
+	if bi.opts.Fast {
+		mode += "/fast"
+	}
+
+	if bi.opts.GCSSuffix != "" {
+		mode += bi.opts.GCSSuffix
+	}
+
+	bi.opts.Bucket = bucket
+
+	gcsBuildRoot := filepath.Join(bucket, mode, version)
+	kubernetesTar := filepath.Join(gcsBuildRoot, release.KubernetesTar)
+	binPath := filepath.Join(gcsBuildRoot, "bin")
+
+	gcsBuildRoot = gcs.NormalizeGCSPath(gcsBuildRoot)
+	kubernetesTar = gcs.NormalizeGCSPath(kubernetesTar)
+	binPath = gcs.NormalizeGCSPath(binPath)
+
+	gcsBuildPaths := []string{
+		gcsBuildRoot,
+		kubernetesTar,
+		binPath,
+	}
+
+	// TODO: Do we need to handle the errors more effectively?
+	existErrors := []error{}
+	for i, path := range gcsBuildPaths {
+		logrus.Infof("Checking if GCS build path (%s) exists", path)
+		exists, existErr := gcs.PathExists(path)
+		if existErr != nil || !exists {
+			existErrors = append(existErrors, existErr)
+		}
+
+		if i == len(gcsBuildPaths)-1 && len(existErrors) == 0 {
+			logrus.Infof("Build already exists. Exiting...")
+			return true, nil
+		}
+	}
+
+	logrus.Infof("The following error(s) occurred while looking for a build: %v", existErrors)
+
+	return false, nil
 }

@@ -136,3 +136,17 @@ func RsyncRecursive(src, dst string) error {
 		"running gsutil rsync",
 	)
 }
+
+// PathExists returns true if the specified GCS path exists.
+func PathExists(gcsPath string) (bool, error) {
+	err := gcp.GSUtil(
+		"ls",
+		gcsPath,
+	)
+	if err != nil {
+		return false, err
+	}
+
+	logrus.Infof("Found %s", gcsPath)
+	return true, nil
+}

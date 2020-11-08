@@ -39,6 +39,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/http"
 	"k8s.io/release/pkg/tar"
@@ -56,9 +57,10 @@ const (
 	DefaultDiskSize                 = "300"
 	BucketPrefix                    = "kubernetes-release-"
 
-	versionReleaseRE = `v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[a-zA-Z0-9]+)*\.*(0|[1-9][0-9]*)?`
-	versionBuildRE   = `([0-9]{1,})\+([0-9a-f]{5,40})`
-	versionDirtyRE   = `(-dirty)`
+	versionReleaseRE   = `v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[a-zA-Z0-9]+)*\.*(0|[1-9][0-9]*)?`
+	versionBuildRE     = `([0-9]{1,})\+([0-9a-f]{5,40})`
+	versionWorkspaceRE = `gitVersion ([^\n]+)`
+	versionDirtyRE     = `(-dirty)`
 
 	KubernetesTar = "kubernetes.tar.gz"
 
@@ -198,6 +200,47 @@ func IsValidReleaseBuild(build string) (bool, error) {
 // IsDirtyBuild checks if build version is dirty.
 func IsDirtyBuild(build string) bool {
 	return strings.Contains(build, "dirty")
+}
+
+func GetWorkspaceVersion() (string, error) {
+	workspaceStatusScript := "hack/print-workspace-status.sh"
+	_, workspaceStatusScriptStatErr := os.Stat(workspaceStatusScript)
+	if os.IsNotExist(workspaceStatusScriptStatErr) {
+		return "", errors.Wrapf(workspaceStatusScriptStatErr,
+			"checking for workspace status script",
+		)
+	}
+
+	/*
+		version = ''
+		try:
+				match = re.search(
+						r'gitVersion ([^\n]+)',
+						check_output('hack/print-workspace-status.sh')
+				)
+				if match:
+						version = match.group(1)
+		except subprocess.CalledProcessError as exc:
+				# fallback with doing a real build
+				print >>sys.stderr, 'Failed to get k8s version, continue: %s' % exc
+				return False
+	*/
+
+	logrus.Info("Getting workspace status")
+	workspaceStatusStream, getWorkspaceStatusErr := command.New(workspaceStatusScript).RunSuccessOutput()
+	if getWorkspaceStatusErr != nil {
+		return "", errors.Wrapf(getWorkspaceStatusErr, "getting workspace status")
+	}
+
+	workspaceStatus := workspaceStatusStream.Output()
+
+	re := regexp.MustCompile(versionWorkspaceRE)
+	submatch := re.FindStringSubmatch(workspaceStatus)
+
+	version := submatch[1]
+
+	logrus.Infof("Found workspace version: %s", version)
+	return version, nil
 }
 
 // GetKubecrossVersion returns the current kube-cross container version.

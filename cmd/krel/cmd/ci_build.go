@@ -98,10 +98,11 @@ func init() {
 		"Do not mark published bits on GCS as publicly readable",
 	)
 
+	// TODO: Configure a default const here
 	ciBuildCmd.PersistentFlags().StringVar(
 		&ciBuildOpts.Bucket,
 		"bucket",
-		"devel",
+		"",
 		"Specify an alternate bucket for pushes (normally 'devel' or 'ci')",
 	)
 
