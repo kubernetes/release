@@ -60,13 +60,6 @@ var ciBuildCmd = &cobra.Command{
 
 func init() {
 	// Build options
-	/*
-		PARSER.add_argument(
-				'--fast', action='store_true', help='Specifies a fast build')
-		PARSER.add_argument(
-				'--register-gcloud-helper', action='store_true',
-				help='Register gcloud as docker credentials helper')
-	*/
 
 	ciBuildCmd.PersistentFlags().BoolVar(
 		&ciBuildOpts.Fast,
@@ -75,21 +68,14 @@ func init() {
 		"Specifies a fast build (linux/amd64 only)",
 	)
 
+	ciBuildCmd.PersistentFlags().BoolVar(
+		&ciBuildOpts.ConfigureDocker,
+		"configure-docker",
+		false,
+		"Configure docker client for gcr.io authentication to allow communication with non-public registries",
+	)
+
 	// Push options
-	/*
-		PARSER.add_argument(
-				'--release', help='Upload binaries to the specified gs:// path')
-		PARSER.add_argument(
-				'--suffix', help='Append suffix to the upload path if set')
-		PARSER.add_argument(
-				'--registry', help='Push images to the specified docker registry')
-		PARSER.add_argument(
-				'--extra-version-markers', help='Additional version file uploads to')
-		PARSER.add_argument(
-				'--fast', action='store_true', help='Specifies a fast build')
-		PARSER.add_argument(
-				'--skip-update-latest', action='store_true', help='Do not update the latest file')
-	*/
 
 	ciBuildCmd.PersistentFlags().BoolVar(
 		&ciBuildOpts.AllowDup,

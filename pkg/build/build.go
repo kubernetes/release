@@ -53,20 +53,24 @@ type Options struct {
 	// Append suffix to version name if set.
 	VersionSuffix string
 
-	// Do not exit error if the build already exists on the gcs path.
-	AllowDup bool
-
-	// Used when called from Jenkins (for ci runs).
+	// Used to configure options for CI builds.
 	CI bool
+
+	// Configure docker client for gcr.io authentication to allow communication
+	// with non-public registries.
+	ConfigureDocker bool
+
+	// Specifies a fast build (linux/amd64 only).
+	Fast bool
+
+	// Do not exit error if the build already exists on the GCS path.
+	AllowDup bool
 
 	// Do not update the latest file.
 	NoUpdateLatest bool
 
 	// Do not mark published bits on GCS as publicly readable.
 	PrivateBucket bool
-
-	// Specifies a fast build (linux/amd64 only).
-	Fast bool
 
 	// Validate that the remove image digests exists, needs `skopeo` in
 	// `$PATH`.
