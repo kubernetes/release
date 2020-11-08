@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/release"
 )
 
@@ -39,7 +40,7 @@ krel push                                   - Do a developer push
 krel push --ci                              - Do a CI push
 krel push --bucket=kubernetes-release-$USER - Do a developer push to kubernetes-release-$USER`
 
-var pushBuildOpts = &release.PushBuildOptions{}
+var pushBuildOpts = &build.Options{}
 
 var pushBuildCmd = &cobra.Command{
 	Use:           "push",
@@ -148,6 +149,6 @@ func init() {
 	rootCmd.AddCommand(pushBuildCmd)
 }
 
-func runPushBuild(opts *release.PushBuildOptions) error {
-	return release.NewPushBuild(opts).Push()
+func runPushBuild(opts *build.Options) error {
+	return build.NewInstance(opts).Push()
 }

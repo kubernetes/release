@@ -19,22 +19,10 @@ package build
 import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
-	"k8s.io/release/pkg/release"
 )
 
-// Instance is the main structure for creating and pushing builds.
-type Instance struct {
-	opts *release.PushBuildOptions
-}
-
-// NewBuild can be used to create a new Build instance.
-func NewBuild(opts *release.PushBuildOptions) *Instance {
-	return &Instance{opts}
-}
-
 // Push pushes the build by taking the internal options into account.
-func (b *Instance) Build() error {
+func (bi *Instance) Build() error {
 	/*
 		def main(args):
 				# pylint: disable=too-many-branches
@@ -109,7 +97,7 @@ func (b *Instance) Build() error {
 	*/
 
 	// Pushing the build
-	pushBuildErr := release.NewPushBuild(b.opts).Push()
+	pushBuildErr := NewInstance(bi.opts).Push()
 	if pushBuildErr != nil {
 		return errors.Wrapf(pushBuildErr, "pushing build")
 	}

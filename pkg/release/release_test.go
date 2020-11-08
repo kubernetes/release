@@ -297,7 +297,7 @@ func TestReadDockerVersion(t *testing.T) {
 	require.Nil(t, tw.Close())
 	require.Nil(t, gz.Close())
 	require.Nil(t, ioutil.WriteFile(
-		filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, kubernetesTar),
+		filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, KubernetesTar),
 		b.Bytes(),
 		os.FileMode(0644),
 	))
@@ -721,7 +721,7 @@ func TestCopyBinaries(t *testing.T) {
 	} {
 		// Given
 		rootPath, cleanup := tc.prepare()
-		stageDir := filepath.Join(rootPath, stagePath)
+		stageDir := filepath.Join(rootPath, StagePath)
 
 		// When
 		err := CopyBinaries(rootPath, stageDir)

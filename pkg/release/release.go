@@ -60,13 +60,13 @@ const (
 	versionBuildRE   = `([0-9]{1,})\+([0-9a-f]{5,40})`
 	versionDirtyRE   = `(-dirty)`
 
-	kubernetesTar = "kubernetes.tar.gz"
+	KubernetesTar = "kubernetes.tar.gz"
 
 	// Staged source code tarball of Kubernetes
-	sourcesTar = "src.tar.gz"
+	SourcesTar = "src.tar.gz"
 
 	// Root path on the bucket for staged artifacts
-	stagePath = "stage"
+	StagePath = "stage"
 
 	// Path where the release container images are stored
 	ImagesPath = "release-images"
@@ -160,8 +160,8 @@ func GetToolBranch() string {
 
 // BuiltWithBazel determines whether the most recent Kubernetes release was built with Bazel.
 func BuiltWithBazel(workDir string) (bool, error) {
-	bazelBuild := filepath.Join(workDir, BazelBuildDir, ReleaseTarsPath, kubernetesTar)
-	dockerBuild := filepath.Join(workDir, BuildDir, ReleaseTarsPath, kubernetesTar)
+	bazelBuild := filepath.Join(workDir, BazelBuildDir, ReleaseTarsPath, KubernetesTar)
+	dockerBuild := filepath.Join(workDir, BuildDir, ReleaseTarsPath, KubernetesTar)
 	return util.MoreRecent(bazelBuild, dockerBuild)
 }
 
@@ -179,7 +179,7 @@ func ReadBazelVersion(workDir string) (string, error) {
 
 // ReadDockerizedVersion reads the version from a Dockerized Kubernetes build.
 func ReadDockerizedVersion(workDir string) (string, error) {
-	dockerTarball := filepath.Join(workDir, BuildDir, ReleaseTarsPath, kubernetesTar)
+	dockerTarball := filepath.Join(workDir, BuildDir, ReleaseTarsPath, KubernetesTar)
 	reader, err := tar.ReadFileFromGzippedTar(
 		dockerTarball, filepath.Join("kubernetes", "version"),
 	)

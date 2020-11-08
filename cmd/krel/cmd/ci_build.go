@@ -40,7 +40,7 @@ krel push                                   - Do a developer push
 krel push --ci                              - Do a CI push
 krel push --bucket=kubernetes-release-$USER - Do a developer push to kubernetes-release-$USER`
 
-var ciBuildOpts = &release.PushBuildOptions{}
+var ciBuildOpts = &build.Options{}
 
 var ciBuildCmd = &cobra.Command{
 	Use:           "ci-build",
@@ -174,6 +174,6 @@ func init() {
 	rootCmd.AddCommand(ciBuildCmd)
 }
 
-func runCIBuild(opts *release.PushBuildOptions) error {
-	return build.NewBuild(opts).Build()
+func runCIBuild(opts *build.Options) error {
+	return build.NewInstance(opts).Build()
 }

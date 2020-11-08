@@ -21,6 +21,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/release"
 )
 
@@ -42,7 +44,7 @@ removed in future releases again when anago goes end of life.
 }
 
 var (
-	pushOpts     = &release.PushBuildOptions{}
+	pushOpts     = &build.Options{}
 	runStage     bool
 	runRelease   bool
 	buildVersion string
@@ -104,38 +106,38 @@ func init() {
 	AnagoCmd.AddCommand(pushCmd)
 }
 
-func runPush(opts *release.PushBuildOptions) error {
-	pushBuild := release.NewPushBuild(opts)
-	if err := pushBuild.CheckReleaseBucket(); err != nil {
+func runPush(opts *build.Options) error {
+	buildInstance := build.NewInstance(opts)
+	if err := buildInstance.CheckReleaseBucket(); err != nil {
 		return errors.Wrap(err, "check release bucket access")
 	}
 
 	if runStage {
-		return runPushStage(pushBuild, opts)
+		return runPushStage(buildInstance, opts)
 	} else if runRelease {
-		return runPushRelease(pushBuild, opts)
+		return runPushRelease(buildInstance, opts)
 	}
 
 	return errors.New("neither --stage nor --release provided")
 }
 
 func runPushStage(
-	pushBuild *release.PushBuild,
-	opts *release.PushBuildOptions,
+	buildInstance *build.Instance,
+	opts *build.Options,
 ) error {
 	// Stage the local source tree
-	if err := pushBuild.StageLocalSourceTree(buildVersion); err != nil {
+	if err := buildInstance.StageLocalSourceTree(buildVersion); err != nil {
 		return errors.Wrap(err, "staging local source tree")
 	}
 
 	// Stage local artifacts and write checksums
-	if err := pushBuild.StageLocalArtifacts(); err != nil {
+	if err := buildInstance.StageLocalArtifacts(); err != nil {
 		return errors.Wrap(err, "staging local artifacts")
 	}
 	gcsPath := filepath.Join("stage", buildVersion, opts.Version)
 
 	// Push gcs-stage to GCS
-	if err := pushBuild.PushReleaseArtifacts(
+	if err := buildInstance.PushReleaseArtifacts(
 		filepath.Join(opts.BuildDir, release.GCSStagePath, opts.Version),
 		filepath.Join(gcsPath, release.GCSStagePath, opts.Version),
 	); err != nil {
@@ -143,7 +145,7 @@ func runPushStage(
 	}
 
 	// Push container release-images to GCS
-	if err := pushBuild.PushReleaseArtifacts(
+	if err := buildInstance.PushReleaseArtifacts(
 		filepath.Join(opts.BuildDir, release.ImagesPath),
 		filepath.Join(gcsPath, release.ImagesPath),
 	); err != nil {
@@ -151,7 +153,7 @@ func runPushStage(
 	}
 
 	// Push container images into registry
-	if err := pushBuild.PushContainerImages(); err != nil {
+	if err := buildInstance.PushContainerImages(); err != nil {
 		return errors.Wrap(err, "pushing container images")
 	}
 
@@ -159,10 +161,10 @@ func runPushStage(
 }
 
 func runPushRelease(
-	pushBuild *release.PushBuild,
-	opts *release.PushBuildOptions,
+	buildInstance *build.Instance,
+	opts *build.Options,
 ) error {
-	if err := pushBuild.CopyStagedFromGCS(opts.Bucket, buildVersion); err != nil {
+	if err := buildInstance.CopyStagedFromGCS(opts.Bucket, buildVersion); err != nil {
 		return errors.Wrap(err, "copy staged from GCS")
 	}
 

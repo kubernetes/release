@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package release
+package build
 
 import (
 	"context"
@@ -29,62 +29,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/gcp/gcs"
+	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/tar"
 	"k8s.io/release/pkg/util"
 	"k8s.io/utils/pointer"
 )
-
-// PushBuild is the main structure for pushing builds.
-type PushBuild struct {
-	opts *PushBuildOptions
-}
-
-// PushBuildOptions are the main options to pass to `PushBuild`.
-type PushBuildOptions struct {
-	// Specify an alternate bucket for pushes (normally 'devel' or 'ci').
-	Bucket string
-
-	// Specify an alternate build directory. Will be automatically determined
-	// if not set.
-	BuildDir string
-
-	// If set, push docker images to specified registry/project.
-	DockerRegistry string
-
-	// Comma separated list which can be used to upload additional version
-	// files to GCS. The path is relative and is append to a GCS path. (--ci
-	// only).
-	ExtraVersionMarkers string
-
-	// Specify a suffix to append to the upload destination on GCS.
-	GCSSuffix string
-
-	// Version to be used. Usually automatically discovered, but it can be
-	// used to overwrite this behavior.
-	Version string
-
-	// Append suffix to version name if set.
-	VersionSuffix string
-
-	// Do not exit error if the build already exists on the gcs path.
-	AllowDup bool
-
-	// Used when called from Jenkins (for ci runs).
-	CI bool
-
-	// Do not update the latest file.
-	NoUpdateLatest bool
-
-	// Do not mark published bits on GCS as publicly readable.
-	PrivateBucket bool
-
-	// Specifies a fast build (linux/amd64 only).
-	Fast bool
-
-	// Validate that the remove image digests exists, needs `skopeo` in
-	// `$PATH`.
-	ValidateRemoteImageDigests bool
-}
 
 type stageFile struct {
 	srcPath  string
@@ -96,27 +45,27 @@ const extraDir = "extra"
 
 var gcpStageFiles = []stageFile{
 	{
-		srcPath:  filepath.Join(GCEPath, "configure-vm.sh"),
+		srcPath:  filepath.Join(release.GCEPath, "configure-vm.sh"),
 		dstPath:  extraDir + "/gce/configure-vm.sh",
 		required: false,
 	},
 	{
-		srcPath:  filepath.Join(GCIPath, "node.yaml"),
+		srcPath:  filepath.Join(release.GCIPath, "node.yaml"),
 		dstPath:  extraDir + "/gce/node.yaml",
 		required: true,
 	},
 	{
-		srcPath:  filepath.Join(GCIPath, "master.yaml"),
+		srcPath:  filepath.Join(release.GCIPath, "master.yaml"),
 		dstPath:  extraDir + "/gce/master.yaml",
 		required: true,
 	},
 	{
-		srcPath:  filepath.Join(GCIPath, "configure.sh"),
+		srcPath:  filepath.Join(release.GCIPath, "configure.sh"),
 		dstPath:  extraDir + "/gce/configure.sh",
 		required: true,
 	},
 	{
-		srcPath:  filepath.Join(GCIPath, "shutdown.sh"),
+		srcPath:  filepath.Join(release.GCIPath, "shutdown.sh"),
 		dstPath:  extraDir + "/gce/shutdown.sh",
 		required: false,
 	},
@@ -124,91 +73,86 @@ var gcpStageFiles = []stageFile{
 
 var windowsStageFiles = []stageFile{
 	{
-		srcPath:  filepath.Join(WindowsLocalPath, "configure.ps1"),
+		srcPath:  filepath.Join(release.WindowsLocalPath, "configure.ps1"),
 		dstPath:  extraDir + "/gce/windows/configure.ps1",
 		required: true,
 	},
 	{
-		srcPath:  filepath.Join(WindowsLocalPath, "common.psm1"),
+		srcPath:  filepath.Join(release.WindowsLocalPath, "common.psm1"),
 		dstPath:  extraDir + "/gce/windows/common.psm1",
 		required: true,
 	},
 	{
-		srcPath:  filepath.Join(WindowsLocalPath, "k8s-node-setup.psm1"),
+		srcPath:  filepath.Join(release.WindowsLocalPath, "k8s-node-setup.psm1"),
 		dstPath:  extraDir + "/gce/windows/k8s-node-setup.psm1",
 		required: true,
 	},
 	{
-		srcPath:  filepath.Join(WindowsLocalPath, "testonly/install-ssh.psm1"),
+		srcPath:  filepath.Join(release.WindowsLocalPath, "testonly/install-ssh.psm1"),
 		dstPath:  extraDir + "/gce/windows/install-ssh.psm1",
 		required: true,
 	},
 	{
-		srcPath:  filepath.Join(WindowsLocalPath, "testonly/user-profile.psm1"),
+		srcPath:  filepath.Join(release.WindowsLocalPath, "testonly/user-profile.psm1"),
 		dstPath:  extraDir + "/gce/windows/user-profile.psm1",
 		required: true,
 	},
 }
 
-// NewPushBuild can be used to create a new PushBuild instance.
-func NewPushBuild(opts *PushBuildOptions) *PushBuild {
-	return &PushBuild{opts}
-}
-
 // Push pushes the build by taking the internal options into account.
-func (p *PushBuild) Push() error {
-	version, err := p.findLatestVersion()
+func (bi *Instance) Push() error {
+	version, err := bi.findLatestVersion()
 	if err != nil {
 		return errors.Wrap(err, "find latest version")
 	}
 	logrus.Infof("Latest version is %s", version)
 
-	if err := p.CheckReleaseBucket(); err != nil {
+	if err := bi.CheckReleaseBucket(); err != nil {
 		return errors.Wrap(err, "check release bucket access")
 	}
 
-	if err := p.StageLocalArtifacts(); err != nil {
+	if err := bi.StageLocalArtifacts(); err != nil {
 		return errors.Wrap(err, "staging local artifacts")
 	}
 
 	gcsDest := "devel"
-	if p.opts.CI {
+	if bi.opts.CI {
 		gcsDest = "ci"
 	}
-	gcsDest += p.opts.GCSSuffix
+	gcsDest += bi.opts.GCSSuffix
 
-	if p.opts.Fast {
+	if bi.opts.Fast {
 		gcsDest = filepath.Join(gcsDest, "fast")
 	}
 	gcsDest = filepath.Join(gcsDest, version)
 	logrus.Infof("GCS destination is %s", gcsDest)
 
-	if err := p.PushReleaseArtifacts(
-		filepath.Join(p.opts.BuildDir, GCSStagePath, version),
+	if err := bi.PushReleaseArtifacts(
+		filepath.Join(bi.opts.BuildDir, release.GCSStagePath, version),
 		gcsDest,
 	); err != nil {
 		return errors.Wrap(err, "push release artifacts")
 	}
 
-	if err := p.PushContainerImages(); err != nil {
+	if err := bi.PushContainerImages(); err != nil {
 		return errors.Wrap(err, "push container images")
 	}
 
-	if !p.opts.CI {
+	if !bi.opts.CI {
 		logrus.Info("No CI flag set, we're done")
 		return nil
 	}
 
-	if p.opts.NoUpdateLatest {
+	if bi.opts.NoUpdateLatest {
 		logrus.Info("Not updating version markers")
 		return nil
 	}
 
 	// Publish release to GCS
-	versionMarkers := strings.Split(p.opts.ExtraVersionMarkers, ",")
-	if err := NewPublisher().PublishVersion(
-		gcsDest, version, p.opts.BuildDir, p.opts.Bucket, versionMarkers,
-		p.opts.PrivateBucket, p.opts.Fast,
+	versionMarkers := strings.Split(bi.opts.ExtraVersionMarkers, ",")
+	if err := release.NewPublisher().PublishVersion(
+		gcsDest, version, bi.opts.BuildDir, bi.opts.Bucket, versionMarkers,
+		bi.opts.PrivateBucket, bi.opts.Fast,
 	); err != nil {
 		return errors.Wrap(err, "publish release")
 	}
@@ -216,30 +160,30 @@ func (p *PushBuild) Push() error {
 	return nil
 }
 
-func (p *PushBuild) findLatestVersion() (latestVersion string, err error) {
+func (bi *Instance) findLatestVersion() (latestVersion string, err error) {
 	// Check if latest build uses bazel
 	dir, err := os.Getwd()
 	if err != nil {
 		return "", errors.Wrap(err, "get working directory")
 	}
 
-	isBazel, err := BuiltWithBazel(dir)
+	isBazel, err := release.BuiltWithBazel(dir)
 	if err != nil {
 		return "", errors.Wrap(err, "identify if release built with Bazel")
 	}
 
-	latestVersion = p.opts.Version
-	if p.opts.Version == "" {
+	latestVersion = bi.opts.Version
+	if bi.opts.Version == "" {
 		if isBazel {
 			logrus.Info("Using Bazel build version")
-			version, err := ReadBazelVersion(dir)
+			version, err := release.ReadBazelVersion(dir)
 			if err != nil {
 				return "", errors.Wrap(err, "read Bazel build version")
 			}
 			latestVersion = version
 		} else {
 			logrus.Info("Using Dockerized build version")
-			version, err := ReadDockerizedVersion(dir)
+			version, err := release.ReadDockerizedVersion(dir)
 			if err != nil {
 				return "", errors.Wrap(err, "read Dockerized build version")
 			}
@@ -249,7 +193,7 @@ func (p *PushBuild) findLatestVersion() (latestVersion string, err error) {
 
 	logrus.Infof("Using build version: %s", latestVersion)
 
-	valid, err := IsValidReleaseBuild(latestVersion)
+	valid, err := release.IsValidReleaseBuild(latestVersion)
 	if err != nil {
 		return "", errors.Wrap(
 			err, "determine if release build version is valid",
@@ -261,31 +205,31 @@ func (p *PushBuild) findLatestVersion() (latestVersion string, err error) {
 		)
 	}
 
-	if p.opts.CI && IsDirtyBuild(latestVersion) {
+	if bi.opts.CI && release.IsDirtyBuild(latestVersion) {
 		return "", errors.Errorf(
 			"refusing to push dirty build %s with --ci flag given",
 			latestVersion,
 		)
 	}
 
-	if p.opts.VersionSuffix != "" {
-		latestVersion += "-" + p.opts.VersionSuffix
+	if bi.opts.VersionSuffix != "" {
+		latestVersion += "-" + bi.opts.VersionSuffix
 	}
 
-	if p.opts.BuildDir == "" {
+	if bi.opts.BuildDir == "" {
 		logrus.Info("BuildDir is not set, setting it automatically")
 		if isBazel {
 			logrus.Infof(
 				"Release is build by bazel, setting BuildDir to %s",
-				BazelBuildDir,
+				release.BazelBuildDir,
 			)
-			p.opts.BuildDir = BazelBuildDir
+			bi.opts.BuildDir = release.BazelBuildDir
 		} else {
 			logrus.Infof(
 				"Release is build in a container, setting BuildDir to %s",
-				BuildDir,
+				release.BuildDir,
 			)
-			p.opts.BuildDir = BuildDir
+			bi.opts.BuildDir = release.BuildDir
 		}
 	}
 
@@ -295,8 +239,8 @@ func (p *PushBuild) findLatestVersion() (latestVersion string, err error) {
 // CheckReleaseBucket verifies that a release bucket exists and the current
 // authenticated GCP user has write permissions to it.
 // was: releaselib.sh: release::gcs::check_release_bucket
-func (p *PushBuild) CheckReleaseBucket() error {
-	logrus.Infof("Checking bucket %s for write permissions", p.opts.Bucket)
+func (bi *Instance) CheckReleaseBucket() error {
+	logrus.Infof("Checking bucket %s for write permissions", bi.opts.Bucket)
 
 	client, err := storage.NewClient(context.Background())
 	if err != nil {
@@ -306,10 +250,10 @@ func (p *PushBuild) CheckReleaseBucket() error {
 		)
 	}
 
-	bucket := client.Bucket(p.opts.Bucket)
+	bucket := client.Bucket(bi.opts.Bucket)
 	if bucket == nil {
 		return errors.Errorf(
-			"identify specified bucket for artifacts: %s", p.opts.Bucket,
+			"identify specified bucket for artifacts: %s", bi.opts.Bucket,
 		)
 	}
 
@@ -324,7 +268,7 @@ func (p *PushBuild) CheckReleaseBucket() error {
 	if len(perms) != 1 {
 		return errors.Errorf(
 			"GCP user must have at least %s permissions on bucket %s",
-			requiredGCSPerms, p.opts.Bucket,
+			requiredGCSPerms, bi.opts.Bucket,
 		)
 	}
 
@@ -333,9 +277,9 @@ func (p *PushBuild) CheckReleaseBucket() error {
 
 // StageLocalArtifacts locally stages the release artifacts
 // was releaselib.sh: release::gcs::locally_stage_release_artifacts
-func (p *PushBuild) StageLocalArtifacts() error {
+func (bi *Instance) StageLocalArtifacts() error {
 	logrus.Info("Staging local artifacts")
-	stageDir := filepath.Join(p.opts.BuildDir, GCSStagePath, p.opts.Version)
+	stageDir := filepath.Join(bi.opts.BuildDir, release.GCSStagePath, bi.opts.Version)
 
 	logrus.Infof("Cleaning staging dir %s", stageDir)
 	if err := util.RemoveAndReplaceDir(stageDir); err != nil {
@@ -345,7 +289,7 @@ func (p *PushBuild) StageLocalArtifacts() error {
 	// Copy release tarballs to local GCS staging directory for push
 	logrus.Info("Copying release tarballs")
 	if err := util.CopyDirContentsLocal(
-		filepath.Join(p.opts.BuildDir, ReleaseTarsPath), stageDir,
+		filepath.Join(bi.opts.BuildDir, release.ReleaseTarsPath), stageDir,
 	); err != nil {
 		return errors.Wrap(err, "copy source directory into destination")
 	}
@@ -354,13 +298,13 @@ func (p *PushBuild) StageLocalArtifacts() error {
 	if util.Exists(extraPath) {
 		// Copy helpful GCP scripts to local GCS staging directory for push
 		logrus.Info("Copying extra GCP stage files")
-		if err := p.copyStageFiles(stageDir, gcpStageFiles); err != nil {
+		if err := bi.copyStageFiles(stageDir, gcpStageFiles); err != nil {
 			return errors.Wrapf(err, "copy GCP stage files")
 		}
 
 		// Copy helpful Windows scripts to local GCS staging directory for push
 		logrus.Info("Copying extra Windows stage files")
-		if err := p.copyStageFiles(stageDir, windowsStageFiles); err != nil {
+		if err := bi.copyStageFiles(stageDir, windowsStageFiles); err != nil {
 			return errors.Wrapf(err, "copy Windows stage files")
 		}
 	} else {
@@ -369,11 +313,11 @@ func (p *PushBuild) StageLocalArtifacts() error {
 
 	// Copy the plain binaries to GCS. This is useful for install scripts that
 	// download the binaries directly and don't need tars.
-	plainBinariesPath := filepath.Join(p.opts.BuildDir, ReleaseStagePath)
+	plainBinariesPath := filepath.Join(bi.opts.BuildDir, release.ReleaseStagePath)
 	if util.Exists(plainBinariesPath) {
 		logrus.Info("Copying plain binaries")
-		if err := CopyBinaries(
-			filepath.Join(p.opts.BuildDir, ReleaseStagePath),
+		if err := release.CopyBinaries(
+			filepath.Join(bi.opts.BuildDir, release.ReleaseStagePath),
 			stageDir,
 		); err != nil {
 			return errors.Wrap(err, "stage binaries")
@@ -386,7 +330,7 @@ func (p *PushBuild) StageLocalArtifacts() error {
 
 	// Write the release checksums
 	logrus.Info("Writing checksums")
-	if err := WriteChecksums(stageDir); err != nil {
+	if err := release.WriteChecksums(stageDir); err != nil {
 		return errors.Wrap(err, "write checksums")
 	}
 	return nil
@@ -395,7 +339,7 @@ func (p *PushBuild) StageLocalArtifacts() error {
 // copyStageFiles takes the staging dir and copies each file of `files` into
 // it. It also ensures that the base dir exists before copying the file (if the
 // file is `required`).
-func (p *PushBuild) copyStageFiles(stageDir string, files []stageFile) error {
+func (bi *Instance) copyStageFiles(stageDir string, files []stageFile) error {
 	for _, file := range files {
 		dstPath := filepath.Join(stageDir, file.dstPath)
 
@@ -410,7 +354,7 @@ func (p *PushBuild) copyStageFiles(stageDir string, files []stageFile) error {
 		}
 
 		if err := util.CopyFileLocal(
-			filepath.Join(p.opts.BuildDir, file.srcPath),
+			filepath.Join(bi.opts.BuildDir, file.srcPath),
 			dstPath, file.required,
 		); err != nil {
 			return errors.Wrapf(err, "copy stage file")
@@ -422,8 +366,8 @@ func (p *PushBuild) copyStageFiles(stageDir string, files []stageFile) error {
 
 // PushReleaseArtifacts can be used to push local artifacts from the `srcPath`
 // to the remote `gcsPath`. The Bucket has to be set via the `Bucket` option.
-func (p *PushBuild) PushReleaseArtifacts(srcPath, gcsPath string) error {
-	dstPath := gcs.NormalizeGCSPath(filepath.Join(p.opts.Bucket, gcsPath))
+func (bi *Instance) PushReleaseArtifacts(srcPath, gcsPath string) error {
+	dstPath := gcs.NormalizeGCSPath(filepath.Join(bi.opts.Bucket, gcsPath))
 	logrus.Infof("Pushing release artifacts from %s to %s", srcPath, dstPath)
 
 	return errors.Wrap(
@@ -434,28 +378,28 @@ func (p *PushBuild) PushReleaseArtifacts(srcPath, gcsPath string) error {
 // PushContainerImages will publish container images into the set
 // `DockerRegistry`. It also validates if the remove manifests are correct,
 // which can be turned of by setting `ValidateRemoteImageDigests` to `false`.
-func (p *PushBuild) PushContainerImages() error {
-	if p.opts.DockerRegistry == "" {
+func (bi *Instance) PushContainerImages() error {
+	if bi.opts.DockerRegistry == "" {
 		logrus.Info("Registry is not set, will not publish container images")
 		return nil
 	}
 
-	images := NewImages()
-	logrus.Infof("Publishing container images for %s", p.opts.Version)
+	images := release.NewImages()
+	logrus.Infof("Publishing container images for %s", bi.opts.Version)
 
 	if err := images.Publish(
-		p.opts.DockerRegistry, p.opts.Version, p.opts.BuildDir,
+		bi.opts.DockerRegistry, bi.opts.Version, bi.opts.BuildDir,
 	); err != nil {
 		return errors.Wrap(err, "publish container images")
 	}
 
-	if !p.opts.ValidateRemoteImageDigests {
+	if !bi.opts.ValidateRemoteImageDigests {
 		logrus.Info("Will not validate remote image digests")
 		return nil
 	}
 
 	if err := images.Validate(
-		p.opts.DockerRegistry, p.opts.Version, p.opts.BuildDir,
+		bi.opts.DockerRegistry, bi.opts.Version, bi.opts.BuildDir,
 	); err != nil {
 		return errors.Wrap(err, "validate container images")
 	}
@@ -465,36 +409,36 @@ func (p *PushBuild) PushContainerImages() error {
 
 // CopyStagedFromGCS copies artifacts from GCS and between buckets as needed.
 // was: anago:copy_staged_from_gcs
-func (p *PushBuild) CopyStagedFromGCS(stagedBucket, buildVersion string) error {
+func (bi *Instance) CopyStagedFromGCS(stagedBucket, buildVersion string) error {
 	logrus.Info("Copy staged release artifacts from GCS")
 
 	copyOpts := gcs.DefaultGCSCopyOptions
-	copyOpts.NoClobber = pointer.BoolPtr(p.opts.AllowDup)
+	copyOpts.NoClobber = pointer.BoolPtr(bi.opts.AllowDup)
 	copyOpts.AllowMissing = pointer.BoolPtr(false)
 
-	gsStageRoot := filepath.Join(p.opts.Bucket, stagePath, buildVersion, p.opts.Version)
-	gsReleaseRoot := filepath.Join(p.opts.Bucket, "release", p.opts.Version)
+	gsStageRoot := filepath.Join(bi.opts.Bucket, release.StagePath, buildVersion, bi.opts.Version)
+	gsReleaseRoot := filepath.Join(bi.opts.Bucket, "release", bi.opts.Version)
 
-	src := filepath.Join(gsStageRoot, GCSStagePath, p.opts.Version)
+	src := filepath.Join(gsStageRoot, release.GCSStagePath, bi.opts.Version)
 	dst := gsReleaseRoot
 	logrus.Infof("Bucket to bucket copy from %s to %s", src, dst)
 	if err := gcs.CopyBucketToBucket(src, dst, copyOpts); err != nil {
 		return errors.Wrap(err, "copy stage to release bucket")
 	}
 
-	src = filepath.Join(src, kubernetesTar)
-	dst = filepath.Join(p.opts.BuildDir, GCSStagePath, p.opts.Version, kubernetesTar)
+	src = filepath.Join(src, release.KubernetesTar)
+	dst = filepath.Join(bi.opts.BuildDir, release.GCSStagePath, bi.opts.Version, release.KubernetesTar)
 	logrus.Infof("Copy kubernetes tarball %s to %s", src, dst)
 	if err := gcs.CopyToLocal(src, dst, copyOpts); err != nil {
 		return errors.Wrapf(err, "copy to local")
 	}
 
-	src = filepath.Join(gsStageRoot, ImagesPath)
-	if err := os.MkdirAll(p.opts.BuildDir, os.FileMode(0o755)); err != nil {
+	src = filepath.Join(gsStageRoot, release.ImagesPath)
+	if err := os.MkdirAll(bi.opts.BuildDir, os.FileMode(0o755)); err != nil {
 		return errors.Wrap(err, "create dst dir")
 	}
-	logrus.Infof("Copy container images %s to %s", src, p.opts.BuildDir)
-	if err := gcs.CopyToLocal(src, p.opts.BuildDir, copyOpts); err != nil {
+	logrus.Infof("Copy container images %s to %s", src, bi.opts.BuildDir)
+	if err := gcs.CopyToLocal(src, bi.opts.BuildDir, copyOpts); err != nil {
 		return errors.Wrapf(err, "copy to local")
 	}
 
@@ -503,16 +447,16 @@ func (p *PushBuild) CopyStagedFromGCS(stagedBucket, buildVersion string) error {
 
 // StageLocalSourceTree creates a src.tar.gz from the Kubernetes sources and
 // uploads it to GCS.
-func (p *PushBuild) StageLocalSourceTree(buildVersion string) error {
+func (bi *Instance) StageLocalSourceTree(buildVersion string) error {
 	workDir := os.Getenv("GOPATH")
 	if workDir == "" {
 		return errors.New("GOPATH is not set")
 	}
 
-	tarballPath := filepath.Join(workDir, sourcesTar)
+	tarballPath := filepath.Join(workDir, release.SourcesTar)
 	logrus.Infof("Creating source tree tarball in %s", workDir)
 
-	exclude, err := regexp.Compile(fmt.Sprintf(`.*/%s-.*`, BuildDir))
+	exclude, err := regexp.Compile(fmt.Sprintf(`.*/%s-.*`, release.BuildDir))
 	if err != nil {
 		return errors.Wrap(err, "compile tarball exclude regex")
 	}
@@ -528,7 +472,7 @@ func (p *PushBuild) StageLocalSourceTree(buildVersion string) error {
 	copyOpts.AllowMissing = pointer.BoolPtr(false)
 	if err := gcs.CopyToGCS(
 		tarballPath,
-		filepath.Join(p.opts.Bucket, stagePath, buildVersion, sourcesTar),
+		filepath.Join(bi.opts.Bucket, release.StagePath, buildVersion, release.SourcesTar),
 		copyOpts,
 	); err != nil {
 		return errors.Wrap(err, "copy tarball to GCS")
