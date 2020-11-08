@@ -21,24 +21,20 @@ import (
 
 	"github.com/pkg/errors"
 
-	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/gcp"
 )
 
 func GetCurrentGCPUser() (string, error) {
-	authListStatus, authListErr := command.New(
-		gcp.GCloudExecutable,
+	gcpUser, err := gcp.GCloudOutput(
 		"auth",
 		"list",
 		"--filter=status:ACTIVE",
 		"--format=value(account)",
 		"--verbosity=debug",
-	).RunSilentSuccessOutput()
-	if authListErr != nil {
-		return "", authListErr
+	)
+	if err != nil {
+		return "", err
 	}
-
-	gcpUser := authListStatus.Output()
 
 	if gcpUser == "" {
 		return "", errors.New("the GCP user name should not be empty")
@@ -47,6 +43,18 @@ func GetCurrentGCPUser() (string, error) {
 	gcpUser = NormalizeGCPUser(gcpUser)
 
 	return gcpUser, nil
+}
+
+func ConfigureDocker() error {
+	err := gcp.GCloud(
+		"auth",
+		"configure-docker",
+	)
+	if err != nil {
+		return errors.Wrapf(err, "running 'gcloud auth configure-docker'")
+	}
+
+	return nil
 }
 
 func NormalizeGCPUser(gcpUser string) string {
