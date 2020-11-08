@@ -115,6 +115,10 @@ func (bi *Instance) Push() error {
 		return errors.Wrap(err, "staging local artifacts")
 	}
 
+	if err := bi.PushContainerImages(); err != nil {
+		return errors.Wrap(err, "push container images")
+	}
+
 	gcsDest := "devel"
 	if bi.opts.CI {
 		gcsDest = "ci"
@@ -132,10 +136,6 @@ func (bi *Instance) Push() error {
 		gcsDest,
 	); err != nil {
 		return errors.Wrap(err, "push release artifacts")
-	}
-
-	if err := bi.PushContainerImages(); err != nil {
-		return errors.Wrap(err, "push container images")
 	}
 
 	if !bi.opts.CI {
