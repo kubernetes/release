@@ -104,6 +104,7 @@ func init() {
 		),
 	)
 
+	// TODO: Switch to "--registry" once CI no longer uses it
 	pushBuildCmd.PersistentFlags().StringVar(
 		&pushBuildOpts.DockerRegistry,
 		"docker-registry",

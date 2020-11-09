@@ -28,4 +28,10 @@ FROM gcr.io/k8s-testimages/krte:latest-master
 WORKDIR /
 COPY --from=builder /go/bin/* ./
 
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get -q update \
+    && apt-get install -qqy \
+        jq
+
 ENTRYPOINT ["wrapper.sh"]
