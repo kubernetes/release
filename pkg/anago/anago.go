@@ -96,12 +96,20 @@ func (o *Options) Validate() error {
 	return nil
 }
 
-// Bucket returns the Google Cloud Bucket for this `Options`.
+// Bucket returns the Google Cloud Bucket for these `Options`.
 func (o *Options) Bucket() string {
 	if o.NoMock {
 		return release.ProductionBucket
 	}
 	return release.TestBucket
+}
+
+// ContainerRegistry returns the container registry for these `Options`.
+func (o *Options) ContainerRegistry() string {
+	if o.NoMock {
+		return release.GCRIOPathStaging
+	}
+	return release.GCRIOPathMock
 }
 
 // StageOptions contains the options for running `Stage`.
@@ -160,6 +168,15 @@ func (s *Stage) Run() error {
 	if err := s.client.SetBuildCandidate(); err != nil {
 		return errors.Wrap(err, "set build candidate")
 	}
+	// TODO: the parent branch has to be returned by the SetBuildCandidate
+	// method.
+	parentBranch := ""
+
+	logrus.Info("Generating release version")
+	versions, err := s.client.GenerateReleaseVersion(parentBranch)
+	if err != nil {
+		return errors.Wrap(err, "generate release version")
+	}
 
 	logrus.Info("Preparing workspace")
 	if err := s.client.PrepareWorkspace(); err != nil {
@@ -177,7 +194,7 @@ func (s *Stage) Run() error {
 	}
 
 	logrus.Info("Staging artifacts")
-	if err := s.client.StageArtifacts(); err != nil {
+	if err := s.client.StageArtifacts(versions.Ordered()); err != nil {
 		return errors.Wrap(err, "stage release artifacts")
 	}
 
@@ -240,6 +257,15 @@ func (r *Release) Run() error {
 	if err := r.client.SetBuildCandidate(); err != nil {
 		return errors.Wrap(err, "set build candidate")
 	}
+	// TODO: the parent branch has to be returned by the SetBuildCandidate
+	// method.
+	parentBranch := ""
+
+	logrus.Info("Generating release version")
+	versions, err := r.client.GenerateReleaseVersion(parentBranch)
+	if err != nil {
+		return errors.Wrap(err, "generate release version")
+	}
 
 	logrus.Info("Preparing workspace")
 	if err := r.client.PrepareWorkspace(); err != nil {
@@ -247,7 +273,7 @@ func (r *Release) Run() error {
 	}
 
 	logrus.Info("Pushing artifacts")
-	if err := r.client.PushArtifacts(); err != nil {
+	if err := r.client.PushArtifacts(versions.Ordered()); err != nil {
 		return errors.Wrap(err, "push artifacts")
 	}
 

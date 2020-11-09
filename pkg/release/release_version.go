@@ -89,6 +89,23 @@ func (r *Versions) String() string {
 	return sb.String()
 }
 
+// Ordered returns a list of ordered release versions.
+func (r *Versions) Ordered() (versions []string) {
+	if r.Official() != "" {
+		versions = append(versions, r.Official())
+	}
+	if r.RC() != "" {
+		versions = append(versions, r.RC())
+	}
+	if r.Beta() != "" {
+		versions = append(versions, r.Beta())
+	}
+	if r.Alpha() != "" {
+		versions = append(versions, r.Alpha())
+	}
+	return versions
+}
+
 // GenerateReleaseVersion returns the next build versions for the provided parameters
 func GenerateReleaseVersion(
 	releaseType, version, branch string, branchFromMaster bool,

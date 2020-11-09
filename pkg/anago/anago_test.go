@@ -30,13 +30,23 @@ import (
 
 var err = errors.New("error")
 
+func mockGenerateReleaseVersionStage(mock *anagofakes.FakeStageClient) {
+	mock.GenerateReleaseVersionReturns(&release.Versions{}, nil)
+}
+
+func mockGenerateReleaseVersionRelease(mock *anagofakes.FakeReleaseClient) {
+	mock.GenerateReleaseVersionReturns(&release.Versions{}, nil)
+}
+
 func TestStage(t *testing.T) {
 	for _, tc := range []struct {
 		prepare     func(*anagofakes.FakeStageClient)
 		shouldError bool
 	}{
 		{ // success
-			prepare:     func(*anagofakes.FakeStageClient) {},
+			prepare: func(mock *anagofakes.FakeStageClient) {
+				mockGenerateReleaseVersionStage(mock)
+			},
 			shouldError: false,
 		},
 		{ // ValidateOptions fails
@@ -57,26 +67,36 @@ func TestStage(t *testing.T) {
 			},
 			shouldError: true,
 		},
+		{ // GenerateReleaseVersion fails
+			prepare: func(mock *anagofakes.FakeStageClient) {
+				mock.GenerateReleaseVersionReturns(nil, err)
+			},
+			shouldError: true,
+		},
 		{ // PrepareWorkspace fails
 			prepare: func(mock *anagofakes.FakeStageClient) {
+				mockGenerateReleaseVersionStage(mock)
 				mock.PrepareWorkspaceReturns(err)
 			},
 			shouldError: true,
 		},
 		{ // Build fails
 			prepare: func(mock *anagofakes.FakeStageClient) {
+				mockGenerateReleaseVersionStage(mock)
 				mock.BuildReturns(err)
 			},
 			shouldError: true,
 		},
 		{ // GenerateReleaseNotes fails
 			prepare: func(mock *anagofakes.FakeStageClient) {
+				mockGenerateReleaseVersionStage(mock)
 				mock.GenerateReleaseNotesReturns(err)
 			},
 			shouldError: true,
 		},
 		{ // StageArtifacts fails
 			prepare: func(mock *anagofakes.FakeStageClient) {
+				mockGenerateReleaseVersionStage(mock)
 				mock.StageArtifactsReturns(err)
 			},
 			shouldError: true,
@@ -102,7 +122,9 @@ func TestRelease(t *testing.T) {
 		shouldError bool
 	}{
 		{ // success
-			prepare:     func(*anagofakes.FakeReleaseClient) {},
+			prepare: func(mock *anagofakes.FakeReleaseClient) {
+				mockGenerateReleaseVersionRelease(mock)
+			},
 			shouldError: false,
 		},
 		{ // CheckPrerequisites fails
@@ -123,32 +145,43 @@ func TestRelease(t *testing.T) {
 			},
 			shouldError: true,
 		},
+		{ // GenerateReleaseVersion fails
+			prepare: func(mock *anagofakes.FakeReleaseClient) {
+				mock.GenerateReleaseVersionReturns(nil, err)
+			},
+			shouldError: true,
+		},
 		{ // PrepareWorkspace fails
 			prepare: func(mock *anagofakes.FakeReleaseClient) {
+				mockGenerateReleaseVersionRelease(mock)
 				mock.PrepareWorkspaceReturns(err)
 			},
 			shouldError: true,
 		},
 		{ // PushArtifacts fails
 			prepare: func(mock *anagofakes.FakeReleaseClient) {
+				mockGenerateReleaseVersionRelease(mock)
 				mock.PushArtifactsReturns(err)
 			},
 			shouldError: true,
 		},
 		{ // PushGitObjects fails
 			prepare: func(mock *anagofakes.FakeReleaseClient) {
+				mockGenerateReleaseVersionRelease(mock)
 				mock.PushGitObjectsReturns(err)
 			},
 			shouldError: true,
 		},
 		{ // CreateAnnouncement fails
 			prepare: func(mock *anagofakes.FakeReleaseClient) {
+				mockGenerateReleaseVersionRelease(mock)
 				mock.CreateAnnouncementReturns(err)
 			},
 			shouldError: true,
 		},
 		{ // Archive fails
 			prepare: func(mock *anagofakes.FakeReleaseClient) {
+				mockGenerateReleaseVersionRelease(mock)
 				mock.ArchiveReturns(err)
 			},
 			shouldError: true,
@@ -160,10 +193,11 @@ func TestRelease(t *testing.T) {
 		tc.prepare(mock)
 		sut.SetClient(mock)
 
+		err := sut.Run()
 		if tc.shouldError {
-			require.NotNil(t, sut.Run())
+			require.NotNil(t, err)
 		} else {
-			require.Nil(t, sut.Run())
+			require.Nil(t, err)
 		}
 	}
 }

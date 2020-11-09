@@ -19,9 +19,39 @@ package anagofakes
 
 import (
 	"sync"
+
+	"k8s.io/release/pkg/build"
+	"k8s.io/release/pkg/release"
 )
 
 type FakeStageImpl struct {
+	CheckReleaseBucketStub        func(*build.Options) error
+	checkReleaseBucketMutex       sync.RWMutex
+	checkReleaseBucketArgsForCall []struct {
+		arg1 *build.Options
+	}
+	checkReleaseBucketReturns struct {
+		result1 error
+	}
+	checkReleaseBucketReturnsOnCall map[int]struct {
+		result1 error
+	}
+	GenerateReleaseVersionStub        func(string, string, string, bool) (*release.Versions, error)
+	generateReleaseVersionMutex       sync.RWMutex
+	generateReleaseVersionArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 bool
+	}
+	generateReleaseVersionReturns struct {
+		result1 *release.Versions
+		result2 error
+	}
+	generateReleaseVersionReturnsOnCall map[int]struct {
+		result1 *release.Versions
+		result2 error
+	}
 	PrepareWorkspaceStageStub        func(string) error
 	prepareWorkspaceStageMutex       sync.RWMutex
 	prepareWorkspaceStageArgsForCall []struct {
@@ -33,8 +63,183 @@ type FakeStageImpl struct {
 	prepareWorkspaceStageReturnsOnCall map[int]struct {
 		result1 error
 	}
+	PushContainerImagesStub        func(*build.Options) error
+	pushContainerImagesMutex       sync.RWMutex
+	pushContainerImagesArgsForCall []struct {
+		arg1 *build.Options
+	}
+	pushContainerImagesReturns struct {
+		result1 error
+	}
+	pushContainerImagesReturnsOnCall map[int]struct {
+		result1 error
+	}
+	PushReleaseArtifactsStub        func(*build.Options, string, string) error
+	pushReleaseArtifactsMutex       sync.RWMutex
+	pushReleaseArtifactsArgsForCall []struct {
+		arg1 *build.Options
+		arg2 string
+		arg3 string
+	}
+	pushReleaseArtifactsReturns struct {
+		result1 error
+	}
+	pushReleaseArtifactsReturnsOnCall map[int]struct {
+		result1 error
+	}
+	StageLocalArtifactsStub        func(*build.Options) error
+	stageLocalArtifactsMutex       sync.RWMutex
+	stageLocalArtifactsArgsForCall []struct {
+		arg1 *build.Options
+	}
+	stageLocalArtifactsReturns struct {
+		result1 error
+	}
+	stageLocalArtifactsReturnsOnCall map[int]struct {
+		result1 error
+	}
+	StageLocalSourceTreeStub        func(*build.Options, string) error
+	stageLocalSourceTreeMutex       sync.RWMutex
+	stageLocalSourceTreeArgsForCall []struct {
+		arg1 *build.Options
+		arg2 string
+	}
+	stageLocalSourceTreeReturns struct {
+		result1 error
+	}
+	stageLocalSourceTreeReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeStageImpl) CheckReleaseBucket(arg1 *build.Options) error {
+	fake.checkReleaseBucketMutex.Lock()
+	ret, specificReturn := fake.checkReleaseBucketReturnsOnCall[len(fake.checkReleaseBucketArgsForCall)]
+	fake.checkReleaseBucketArgsForCall = append(fake.checkReleaseBucketArgsForCall, struct {
+		arg1 *build.Options
+	}{arg1})
+	stub := fake.CheckReleaseBucketStub
+	fakeReturns := fake.checkReleaseBucketReturns
+	fake.recordInvocation("CheckReleaseBucket", []interface{}{arg1})
+	fake.checkReleaseBucketMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) CheckReleaseBucketCallCount() int {
+	fake.checkReleaseBucketMutex.RLock()
+	defer fake.checkReleaseBucketMutex.RUnlock()
+	return len(fake.checkReleaseBucketArgsForCall)
+}
+
+func (fake *FakeStageImpl) CheckReleaseBucketCalls(stub func(*build.Options) error) {
+	fake.checkReleaseBucketMutex.Lock()
+	defer fake.checkReleaseBucketMutex.Unlock()
+	fake.CheckReleaseBucketStub = stub
+}
+
+func (fake *FakeStageImpl) CheckReleaseBucketArgsForCall(i int) *build.Options {
+	fake.checkReleaseBucketMutex.RLock()
+	defer fake.checkReleaseBucketMutex.RUnlock()
+	argsForCall := fake.checkReleaseBucketArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStageImpl) CheckReleaseBucketReturns(result1 error) {
+	fake.checkReleaseBucketMutex.Lock()
+	defer fake.checkReleaseBucketMutex.Unlock()
+	fake.CheckReleaseBucketStub = nil
+	fake.checkReleaseBucketReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) CheckReleaseBucketReturnsOnCall(i int, result1 error) {
+	fake.checkReleaseBucketMutex.Lock()
+	defer fake.checkReleaseBucketMutex.Unlock()
+	fake.CheckReleaseBucketStub = nil
+	if fake.checkReleaseBucketReturnsOnCall == nil {
+		fake.checkReleaseBucketReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.checkReleaseBucketReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) GenerateReleaseVersion(arg1 string, arg2 string, arg3 string, arg4 bool) (*release.Versions, error) {
+	fake.generateReleaseVersionMutex.Lock()
+	ret, specificReturn := fake.generateReleaseVersionReturnsOnCall[len(fake.generateReleaseVersionArgsForCall)]
+	fake.generateReleaseVersionArgsForCall = append(fake.generateReleaseVersionArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 bool
+	}{arg1, arg2, arg3, arg4})
+	stub := fake.GenerateReleaseVersionStub
+	fakeReturns := fake.generateReleaseVersionReturns
+	fake.recordInvocation("GenerateReleaseVersion", []interface{}{arg1, arg2, arg3, arg4})
+	fake.generateReleaseVersionMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeStageImpl) GenerateReleaseVersionCallCount() int {
+	fake.generateReleaseVersionMutex.RLock()
+	defer fake.generateReleaseVersionMutex.RUnlock()
+	return len(fake.generateReleaseVersionArgsForCall)
+}
+
+func (fake *FakeStageImpl) GenerateReleaseVersionCalls(stub func(string, string, string, bool) (*release.Versions, error)) {
+	fake.generateReleaseVersionMutex.Lock()
+	defer fake.generateReleaseVersionMutex.Unlock()
+	fake.GenerateReleaseVersionStub = stub
+}
+
+func (fake *FakeStageImpl) GenerateReleaseVersionArgsForCall(i int) (string, string, string, bool) {
+	fake.generateReleaseVersionMutex.RLock()
+	defer fake.generateReleaseVersionMutex.RUnlock()
+	argsForCall := fake.generateReleaseVersionArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+}
+
+func (fake *FakeStageImpl) GenerateReleaseVersionReturns(result1 *release.Versions, result2 error) {
+	fake.generateReleaseVersionMutex.Lock()
+	defer fake.generateReleaseVersionMutex.Unlock()
+	fake.GenerateReleaseVersionStub = nil
+	fake.generateReleaseVersionReturns = struct {
+		result1 *release.Versions
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStageImpl) GenerateReleaseVersionReturnsOnCall(i int, result1 *release.Versions, result2 error) {
+	fake.generateReleaseVersionMutex.Lock()
+	defer fake.generateReleaseVersionMutex.Unlock()
+	fake.GenerateReleaseVersionStub = nil
+	if fake.generateReleaseVersionReturnsOnCall == nil {
+		fake.generateReleaseVersionReturnsOnCall = make(map[int]struct {
+			result1 *release.Versions
+			result2 error
+		})
+	}
+	fake.generateReleaseVersionReturnsOnCall[i] = struct {
+		result1 *release.Versions
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeStageImpl) PrepareWorkspaceStage(arg1 string) error {
@@ -98,11 +303,270 @@ func (fake *FakeStageImpl) PrepareWorkspaceStageReturnsOnCall(i int, result1 err
 	}{result1}
 }
 
+func (fake *FakeStageImpl) PushContainerImages(arg1 *build.Options) error {
+	fake.pushContainerImagesMutex.Lock()
+	ret, specificReturn := fake.pushContainerImagesReturnsOnCall[len(fake.pushContainerImagesArgsForCall)]
+	fake.pushContainerImagesArgsForCall = append(fake.pushContainerImagesArgsForCall, struct {
+		arg1 *build.Options
+	}{arg1})
+	stub := fake.PushContainerImagesStub
+	fakeReturns := fake.pushContainerImagesReturns
+	fake.recordInvocation("PushContainerImages", []interface{}{arg1})
+	fake.pushContainerImagesMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) PushContainerImagesCallCount() int {
+	fake.pushContainerImagesMutex.RLock()
+	defer fake.pushContainerImagesMutex.RUnlock()
+	return len(fake.pushContainerImagesArgsForCall)
+}
+
+func (fake *FakeStageImpl) PushContainerImagesCalls(stub func(*build.Options) error) {
+	fake.pushContainerImagesMutex.Lock()
+	defer fake.pushContainerImagesMutex.Unlock()
+	fake.PushContainerImagesStub = stub
+}
+
+func (fake *FakeStageImpl) PushContainerImagesArgsForCall(i int) *build.Options {
+	fake.pushContainerImagesMutex.RLock()
+	defer fake.pushContainerImagesMutex.RUnlock()
+	argsForCall := fake.pushContainerImagesArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStageImpl) PushContainerImagesReturns(result1 error) {
+	fake.pushContainerImagesMutex.Lock()
+	defer fake.pushContainerImagesMutex.Unlock()
+	fake.PushContainerImagesStub = nil
+	fake.pushContainerImagesReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) PushContainerImagesReturnsOnCall(i int, result1 error) {
+	fake.pushContainerImagesMutex.Lock()
+	defer fake.pushContainerImagesMutex.Unlock()
+	fake.PushContainerImagesStub = nil
+	if fake.pushContainerImagesReturnsOnCall == nil {
+		fake.pushContainerImagesReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.pushContainerImagesReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) PushReleaseArtifacts(arg1 *build.Options, arg2 string, arg3 string) error {
+	fake.pushReleaseArtifactsMutex.Lock()
+	ret, specificReturn := fake.pushReleaseArtifactsReturnsOnCall[len(fake.pushReleaseArtifactsArgsForCall)]
+	fake.pushReleaseArtifactsArgsForCall = append(fake.pushReleaseArtifactsArgsForCall, struct {
+		arg1 *build.Options
+		arg2 string
+		arg3 string
+	}{arg1, arg2, arg3})
+	stub := fake.PushReleaseArtifactsStub
+	fakeReturns := fake.pushReleaseArtifactsReturns
+	fake.recordInvocation("PushReleaseArtifacts", []interface{}{arg1, arg2, arg3})
+	fake.pushReleaseArtifactsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) PushReleaseArtifactsCallCount() int {
+	fake.pushReleaseArtifactsMutex.RLock()
+	defer fake.pushReleaseArtifactsMutex.RUnlock()
+	return len(fake.pushReleaseArtifactsArgsForCall)
+}
+
+func (fake *FakeStageImpl) PushReleaseArtifactsCalls(stub func(*build.Options, string, string) error) {
+	fake.pushReleaseArtifactsMutex.Lock()
+	defer fake.pushReleaseArtifactsMutex.Unlock()
+	fake.PushReleaseArtifactsStub = stub
+}
+
+func (fake *FakeStageImpl) PushReleaseArtifactsArgsForCall(i int) (*build.Options, string, string) {
+	fake.pushReleaseArtifactsMutex.RLock()
+	defer fake.pushReleaseArtifactsMutex.RUnlock()
+	argsForCall := fake.pushReleaseArtifactsArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeStageImpl) PushReleaseArtifactsReturns(result1 error) {
+	fake.pushReleaseArtifactsMutex.Lock()
+	defer fake.pushReleaseArtifactsMutex.Unlock()
+	fake.PushReleaseArtifactsStub = nil
+	fake.pushReleaseArtifactsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) PushReleaseArtifactsReturnsOnCall(i int, result1 error) {
+	fake.pushReleaseArtifactsMutex.Lock()
+	defer fake.pushReleaseArtifactsMutex.Unlock()
+	fake.PushReleaseArtifactsStub = nil
+	if fake.pushReleaseArtifactsReturnsOnCall == nil {
+		fake.pushReleaseArtifactsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.pushReleaseArtifactsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) StageLocalArtifacts(arg1 *build.Options) error {
+	fake.stageLocalArtifactsMutex.Lock()
+	ret, specificReturn := fake.stageLocalArtifactsReturnsOnCall[len(fake.stageLocalArtifactsArgsForCall)]
+	fake.stageLocalArtifactsArgsForCall = append(fake.stageLocalArtifactsArgsForCall, struct {
+		arg1 *build.Options
+	}{arg1})
+	stub := fake.StageLocalArtifactsStub
+	fakeReturns := fake.stageLocalArtifactsReturns
+	fake.recordInvocation("StageLocalArtifacts", []interface{}{arg1})
+	fake.stageLocalArtifactsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) StageLocalArtifactsCallCount() int {
+	fake.stageLocalArtifactsMutex.RLock()
+	defer fake.stageLocalArtifactsMutex.RUnlock()
+	return len(fake.stageLocalArtifactsArgsForCall)
+}
+
+func (fake *FakeStageImpl) StageLocalArtifactsCalls(stub func(*build.Options) error) {
+	fake.stageLocalArtifactsMutex.Lock()
+	defer fake.stageLocalArtifactsMutex.Unlock()
+	fake.StageLocalArtifactsStub = stub
+}
+
+func (fake *FakeStageImpl) StageLocalArtifactsArgsForCall(i int) *build.Options {
+	fake.stageLocalArtifactsMutex.RLock()
+	defer fake.stageLocalArtifactsMutex.RUnlock()
+	argsForCall := fake.stageLocalArtifactsArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStageImpl) StageLocalArtifactsReturns(result1 error) {
+	fake.stageLocalArtifactsMutex.Lock()
+	defer fake.stageLocalArtifactsMutex.Unlock()
+	fake.StageLocalArtifactsStub = nil
+	fake.stageLocalArtifactsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) StageLocalArtifactsReturnsOnCall(i int, result1 error) {
+	fake.stageLocalArtifactsMutex.Lock()
+	defer fake.stageLocalArtifactsMutex.Unlock()
+	fake.StageLocalArtifactsStub = nil
+	if fake.stageLocalArtifactsReturnsOnCall == nil {
+		fake.stageLocalArtifactsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.stageLocalArtifactsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) StageLocalSourceTree(arg1 *build.Options, arg2 string) error {
+	fake.stageLocalSourceTreeMutex.Lock()
+	ret, specificReturn := fake.stageLocalSourceTreeReturnsOnCall[len(fake.stageLocalSourceTreeArgsForCall)]
+	fake.stageLocalSourceTreeArgsForCall = append(fake.stageLocalSourceTreeArgsForCall, struct {
+		arg1 *build.Options
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.StageLocalSourceTreeStub
+	fakeReturns := fake.stageLocalSourceTreeReturns
+	fake.recordInvocation("StageLocalSourceTree", []interface{}{arg1, arg2})
+	fake.stageLocalSourceTreeMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) StageLocalSourceTreeCallCount() int {
+	fake.stageLocalSourceTreeMutex.RLock()
+	defer fake.stageLocalSourceTreeMutex.RUnlock()
+	return len(fake.stageLocalSourceTreeArgsForCall)
+}
+
+func (fake *FakeStageImpl) StageLocalSourceTreeCalls(stub func(*build.Options, string) error) {
+	fake.stageLocalSourceTreeMutex.Lock()
+	defer fake.stageLocalSourceTreeMutex.Unlock()
+	fake.StageLocalSourceTreeStub = stub
+}
+
+func (fake *FakeStageImpl) StageLocalSourceTreeArgsForCall(i int) (*build.Options, string) {
+	fake.stageLocalSourceTreeMutex.RLock()
+	defer fake.stageLocalSourceTreeMutex.RUnlock()
+	argsForCall := fake.stageLocalSourceTreeArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeStageImpl) StageLocalSourceTreeReturns(result1 error) {
+	fake.stageLocalSourceTreeMutex.Lock()
+	defer fake.stageLocalSourceTreeMutex.Unlock()
+	fake.StageLocalSourceTreeStub = nil
+	fake.stageLocalSourceTreeReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) StageLocalSourceTreeReturnsOnCall(i int, result1 error) {
+	fake.stageLocalSourceTreeMutex.Lock()
+	defer fake.stageLocalSourceTreeMutex.Unlock()
+	fake.StageLocalSourceTreeStub = nil
+	if fake.stageLocalSourceTreeReturnsOnCall == nil {
+		fake.stageLocalSourceTreeReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.stageLocalSourceTreeReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.checkReleaseBucketMutex.RLock()
+	defer fake.checkReleaseBucketMutex.RUnlock()
+	fake.generateReleaseVersionMutex.RLock()
+	defer fake.generateReleaseVersionMutex.RUnlock()
 	fake.prepareWorkspaceStageMutex.RLock()
 	defer fake.prepareWorkspaceStageMutex.RUnlock()
+	fake.pushContainerImagesMutex.RLock()
+	defer fake.pushContainerImagesMutex.RUnlock()
+	fake.pushReleaseArtifactsMutex.RLock()
+	defer fake.pushReleaseArtifactsMutex.RUnlock()
+	fake.stageLocalArtifactsMutex.RLock()
+	defer fake.stageLocalArtifactsMutex.RUnlock()
+	fake.stageLocalSourceTreeMutex.RLock()
+	defer fake.stageLocalSourceTreeMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

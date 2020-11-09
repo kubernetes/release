@@ -107,6 +107,9 @@ const (
 	// Staging registry root URL
 	GCRIOPathStaging = "gcr.io/k8s-staging-kubernetes"
 
+	// Mock staging registry root URL
+	GCRIOPathMock = GCRIOPathStaging + "/mock"
+
 	// BuildDir is the default build output directory.
 	BuildDir = "_output"
 
