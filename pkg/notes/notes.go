@@ -422,11 +422,8 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result) (*ReleaseNote, error) {
 	documentation := DocumentationFromString(prBody)
 
 	author := pr.GetUser().GetLogin()
-	authorURL := fmt.Sprintf("https://github.com/%s", author)
-	prURL := fmt.Sprintf(
-		"https://github.com/%s/%s/pull/%d",
-		g.options.GithubOrg, g.options.GithubRepo, pr.GetNumber(),
-	)
+	authorURL := pr.GetUser().GetHTMLURL()
+	prURL := pr.GetHTMLURL()
 	isFeature := hasString(labelsWithPrefix(pr, "kind"), "feature")
 	noteSuffix := prettifySIGList(labelsWithPrefix(pr, "sig"))
 
