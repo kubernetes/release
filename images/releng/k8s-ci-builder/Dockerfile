@@ -13,7 +13,6 @@
 # limitations under the License.
 
 ARG GO_VERSION
-ARG KUBE_CROSS_VERSION
 FROM golang:${GO_VERSION} as builder
 
 WORKDIR /go/src/k8s.io/release
@@ -24,9 +23,9 @@ RUN ./compile-release-tools
 
 ### Production image
 
-FROM gcr.io/k8s-staging-releng/k8s-cloud-builder:${KUBE_CROSS_VERSION}
+FROM gcr.io/k8s-testimages/krte:latest-master
 
 WORKDIR /
 COPY --from=builder /go/bin/* ./
 
-ENTRYPOINT ["/krel"]
+ENTRYPOINT ["wrapper.sh"]
