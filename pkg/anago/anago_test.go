@@ -87,10 +87,10 @@ func TestStage(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // GenerateReleaseNotes fails
+		{ // GenerateChangelog fails
 			prepare: func(mock *anagofakes.FakeStageClient) {
 				mockGenerateReleaseVersionStage(mock)
-				mock.GenerateReleaseNotesReturns(err)
+				mock.GenerateChangelogReturns(err)
 			},
 			shouldError: true,
 		},

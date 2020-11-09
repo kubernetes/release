@@ -193,9 +193,9 @@ func (s *Stage) Run() error {
 		return errors.Wrap(err, "build release")
 	}
 
-	logrus.Info("Generating release notes")
-	if err := s.client.GenerateReleaseNotes(); err != nil {
-		return errors.Wrap(err, "generate release notes")
+	logrus.Info("Generating changelog")
+	if err := s.client.GenerateChangelog(versions.Prime()); err != nil {
+		return errors.Wrap(err, "generate changelog")
 	}
 
 	logrus.Info("Staging artifacts")

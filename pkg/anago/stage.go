@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/build"
+	"k8s.io/release/pkg/changelog"
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
@@ -63,9 +64,9 @@ type stageClient interface {
 	// container image. This step also build all necessary release tarballs.
 	Build(versions []string) error
 
-	// Generate release notes: Generate the CHANGELOG-x.y.md file and commit it
-	// into the local working repository.
-	GenerateReleaseNotes() error
+	// GenerateChangelog builds the CHANGELOG-x.y.md file and commits it
+	// into the local repository.
+	GenerateChangelog(version string) error
 
 	// StageArtifacts copies the build artifacts to a Google Cloud Bucket.
 	StageArtifacts(versions []string) error
@@ -100,6 +101,7 @@ type stageImpl interface {
 	CheckReleaseBucket(options *build.Options) error
 	Tag(releaseType, version string) error
 	MakeCross(version string) error
+	GenerateChangelog(options *changelog.Options) error
 	StageLocalSourceTree(
 		options *build.Options, buildVersion string,
 	) error
@@ -146,6 +148,10 @@ func (d *defaultStageImpl) Tag(releaseType, version string) error {
 
 func (d *defaultStageImpl) MakeCross(version string) error {
 	return build.NewMake().MakeCross(version)
+}
+
+func (d *defaultStageImpl) GenerateChangelog(options *changelog.Options) error {
+	return changelog.New(options).Run()
 }
 
 func (d *defaultStageImpl) CheckReleaseBucket(
@@ -224,7 +230,21 @@ func (d *DefaultStage) Build(versions []string) error {
 	return nil
 }
 
-func (d *DefaultStage) GenerateReleaseNotes() error { return nil }
+func (d *DefaultStage) GenerateChangelog(version string) error {
+	return d.impl.GenerateChangelog(&changelog.Options{
+		RepoPath:     gitRoot,
+		Tag:          version,
+		Branch:       d.options.ReleaseBranch,
+		Bucket:       d.options.Bucket(),
+		HTMLFile:     filepath.Join(workspaceDir, "src/release-notes.html"),
+		Dependencies: true,
+		Tars: filepath.Join(
+			gitRoot,
+			fmt.Sprintf("%s-%s", release.BuildDir, version),
+			release.ReleaseTarsPath,
+		),
+	})
+}
 
 func (d *DefaultStage) StageArtifacts(versions []string) error {
 	for _, version := range versions {

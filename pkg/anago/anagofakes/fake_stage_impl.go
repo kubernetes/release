@@ -21,6 +21,7 @@ import (
 	"sync"
 
 	"k8s.io/release/pkg/build"
+	"k8s.io/release/pkg/changelog"
 	"k8s.io/release/pkg/release"
 )
 
@@ -34,6 +35,17 @@ type FakeStageImpl struct {
 		result1 error
 	}
 	checkReleaseBucketReturnsOnCall map[int]struct {
+		result1 error
+	}
+	GenerateChangelogStub        func(*changelog.Options) error
+	generateChangelogMutex       sync.RWMutex
+	generateChangelogArgsForCall []struct {
+		arg1 *changelog.Options
+	}
+	generateChangelogReturns struct {
+		result1 error
+	}
+	generateChangelogReturnsOnCall map[int]struct {
 		result1 error
 	}
 	GenerateReleaseVersionStub        func(string, string, string, bool) (*release.Versions, error)
@@ -193,6 +205,67 @@ func (fake *FakeStageImpl) CheckReleaseBucketReturnsOnCall(i int, result1 error)
 		})
 	}
 	fake.checkReleaseBucketReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) GenerateChangelog(arg1 *changelog.Options) error {
+	fake.generateChangelogMutex.Lock()
+	ret, specificReturn := fake.generateChangelogReturnsOnCall[len(fake.generateChangelogArgsForCall)]
+	fake.generateChangelogArgsForCall = append(fake.generateChangelogArgsForCall, struct {
+		arg1 *changelog.Options
+	}{arg1})
+	stub := fake.GenerateChangelogStub
+	fakeReturns := fake.generateChangelogReturns
+	fake.recordInvocation("GenerateChangelog", []interface{}{arg1})
+	fake.generateChangelogMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) GenerateChangelogCallCount() int {
+	fake.generateChangelogMutex.RLock()
+	defer fake.generateChangelogMutex.RUnlock()
+	return len(fake.generateChangelogArgsForCall)
+}
+
+func (fake *FakeStageImpl) GenerateChangelogCalls(stub func(*changelog.Options) error) {
+	fake.generateChangelogMutex.Lock()
+	defer fake.generateChangelogMutex.Unlock()
+	fake.GenerateChangelogStub = stub
+}
+
+func (fake *FakeStageImpl) GenerateChangelogArgsForCall(i int) *changelog.Options {
+	fake.generateChangelogMutex.RLock()
+	defer fake.generateChangelogMutex.RUnlock()
+	argsForCall := fake.generateChangelogArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStageImpl) GenerateChangelogReturns(result1 error) {
+	fake.generateChangelogMutex.Lock()
+	defer fake.generateChangelogMutex.Unlock()
+	fake.GenerateChangelogStub = nil
+	fake.generateChangelogReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) GenerateChangelogReturnsOnCall(i int, result1 error) {
+	fake.generateChangelogMutex.Lock()
+	defer fake.generateChangelogMutex.Unlock()
+	fake.GenerateChangelogStub = nil
+	if fake.generateChangelogReturnsOnCall == nil {
+		fake.generateChangelogReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.generateChangelogReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -692,6 +765,8 @@ func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.checkReleaseBucketMutex.RLock()
 	defer fake.checkReleaseBucketMutex.RUnlock()
+	fake.generateChangelogMutex.RLock()
+	defer fake.generateChangelogMutex.RUnlock()
 	fake.generateReleaseVersionMutex.RLock()
 	defer fake.generateReleaseVersionMutex.RUnlock()
 	fake.makeCrossMutex.RLock()
