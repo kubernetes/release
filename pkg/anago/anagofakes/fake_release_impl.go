@@ -65,12 +65,11 @@ type FakeReleaseImpl struct {
 		result1 *release.Versions
 		result2 error
 	}
-	PrepareWorkspaceReleaseStub        func(string, string, string) error
+	PrepareWorkspaceReleaseStub        func(string, string) error
 	prepareWorkspaceReleaseMutex       sync.RWMutex
 	prepareWorkspaceReleaseArgsForCall []struct {
 		arg1 string
 		arg2 string
-		arg3 string
 	}
 	prepareWorkspaceReleaseReturns struct {
 		result1 error
@@ -303,20 +302,19 @@ func (fake *FakeReleaseImpl) GenerateReleaseVersionReturnsOnCall(i int, result1 
 	}{result1, result2}
 }
 
-func (fake *FakeReleaseImpl) PrepareWorkspaceRelease(arg1 string, arg2 string, arg3 string) error {
+func (fake *FakeReleaseImpl) PrepareWorkspaceRelease(arg1 string, arg2 string) error {
 	fake.prepareWorkspaceReleaseMutex.Lock()
 	ret, specificReturn := fake.prepareWorkspaceReleaseReturnsOnCall[len(fake.prepareWorkspaceReleaseArgsForCall)]
 	fake.prepareWorkspaceReleaseArgsForCall = append(fake.prepareWorkspaceReleaseArgsForCall, struct {
 		arg1 string
 		arg2 string
-		arg3 string
-	}{arg1, arg2, arg3})
+	}{arg1, arg2})
 	stub := fake.PrepareWorkspaceReleaseStub
 	fakeReturns := fake.prepareWorkspaceReleaseReturns
-	fake.recordInvocation("PrepareWorkspaceRelease", []interface{}{arg1, arg2, arg3})
+	fake.recordInvocation("PrepareWorkspaceRelease", []interface{}{arg1, arg2})
 	fake.prepareWorkspaceReleaseMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -330,17 +328,17 @@ func (fake *FakeReleaseImpl) PrepareWorkspaceReleaseCallCount() int {
 	return len(fake.prepareWorkspaceReleaseArgsForCall)
 }
 
-func (fake *FakeReleaseImpl) PrepareWorkspaceReleaseCalls(stub func(string, string, string) error) {
+func (fake *FakeReleaseImpl) PrepareWorkspaceReleaseCalls(stub func(string, string) error) {
 	fake.prepareWorkspaceReleaseMutex.Lock()
 	defer fake.prepareWorkspaceReleaseMutex.Unlock()
 	fake.PrepareWorkspaceReleaseStub = stub
 }
 
-func (fake *FakeReleaseImpl) PrepareWorkspaceReleaseArgsForCall(i int) (string, string, string) {
+func (fake *FakeReleaseImpl) PrepareWorkspaceReleaseArgsForCall(i int) (string, string) {
 	fake.prepareWorkspaceReleaseMutex.RLock()
 	defer fake.prepareWorkspaceReleaseMutex.RUnlock()
 	argsForCall := fake.prepareWorkspaceReleaseArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeReleaseImpl) PrepareWorkspaceReleaseReturns(result1 error) {
