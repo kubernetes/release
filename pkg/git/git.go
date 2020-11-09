@@ -18,7 +18,9 @@ package git
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math"
 	"net/url"
@@ -274,10 +276,27 @@ func CloneOrOpenRepo(repoPath, repoURL string, useSSH bool) (*Repo, error) {
 		targetDir = t
 	}
 
+	progressBuffer := &bytes.Buffer{}
+	progressWriters := []io.Writer{progressBuffer}
+
+	// Only output the clone progress on debug or trace level,
+	// otherwise it's too boring.
+	logLevel := logrus.StandardLogger().Level
+	if logLevel >= logrus.DebugLevel {
+		progressWriters = append(progressWriters, os.Stderr)
+	}
+
 	if _, err := git.PlainClone(targetDir, false, &git.CloneOptions{
 		URL:      repoURL,
-		Progress: os.Stdout,
+		Progress: io.MultiWriter(progressWriters...),
 	}); err != nil {
+		// Print the stack only if not already done
+		if logLevel < logrus.DebugLevel {
+			logrus.Errorf(
+				"Clone repository failed. Tracked progress:\n%s",
+				progressBuffer.String(),
+			)
+		}
 		return nil, errors.Wrap(err, "unable to clone repo")
 	}
 	return updateRepo(targetDir)
