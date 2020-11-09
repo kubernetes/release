@@ -45,14 +45,15 @@ type FakeStageClient struct {
 	checkPrerequisitesReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GenerateReleaseNotesStub        func() error
-	generateReleaseNotesMutex       sync.RWMutex
-	generateReleaseNotesArgsForCall []struct {
+	GenerateChangelogStub        func(string) error
+	generateChangelogMutex       sync.RWMutex
+	generateChangelogArgsForCall []struct {
+		arg1 string
 	}
-	generateReleaseNotesReturns struct {
+	generateChangelogReturns struct {
 		result1 error
 	}
-	generateReleaseNotesReturnsOnCall map[int]struct {
+	generateChangelogReturnsOnCall map[int]struct {
 		result1 error
 	}
 	GenerateReleaseVersionStub        func(string) (*release.Versions, error)
@@ -243,17 +244,18 @@ func (fake *FakeStageClient) CheckPrerequisitesReturnsOnCall(i int, result1 erro
 	}{result1}
 }
 
-func (fake *FakeStageClient) GenerateReleaseNotes() error {
-	fake.generateReleaseNotesMutex.Lock()
-	ret, specificReturn := fake.generateReleaseNotesReturnsOnCall[len(fake.generateReleaseNotesArgsForCall)]
-	fake.generateReleaseNotesArgsForCall = append(fake.generateReleaseNotesArgsForCall, struct {
-	}{})
-	stub := fake.GenerateReleaseNotesStub
-	fakeReturns := fake.generateReleaseNotesReturns
-	fake.recordInvocation("GenerateReleaseNotes", []interface{}{})
-	fake.generateReleaseNotesMutex.Unlock()
+func (fake *FakeStageClient) GenerateChangelog(arg1 string) error {
+	fake.generateChangelogMutex.Lock()
+	ret, specificReturn := fake.generateChangelogReturnsOnCall[len(fake.generateChangelogArgsForCall)]
+	fake.generateChangelogArgsForCall = append(fake.generateChangelogArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.GenerateChangelogStub
+	fakeReturns := fake.generateChangelogReturns
+	fake.recordInvocation("GenerateChangelog", []interface{}{arg1})
+	fake.generateChangelogMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -261,37 +263,44 @@ func (fake *FakeStageClient) GenerateReleaseNotes() error {
 	return fakeReturns.result1
 }
 
-func (fake *FakeStageClient) GenerateReleaseNotesCallCount() int {
-	fake.generateReleaseNotesMutex.RLock()
-	defer fake.generateReleaseNotesMutex.RUnlock()
-	return len(fake.generateReleaseNotesArgsForCall)
+func (fake *FakeStageClient) GenerateChangelogCallCount() int {
+	fake.generateChangelogMutex.RLock()
+	defer fake.generateChangelogMutex.RUnlock()
+	return len(fake.generateChangelogArgsForCall)
 }
 
-func (fake *FakeStageClient) GenerateReleaseNotesCalls(stub func() error) {
-	fake.generateReleaseNotesMutex.Lock()
-	defer fake.generateReleaseNotesMutex.Unlock()
-	fake.GenerateReleaseNotesStub = stub
+func (fake *FakeStageClient) GenerateChangelogCalls(stub func(string) error) {
+	fake.generateChangelogMutex.Lock()
+	defer fake.generateChangelogMutex.Unlock()
+	fake.GenerateChangelogStub = stub
 }
 
-func (fake *FakeStageClient) GenerateReleaseNotesReturns(result1 error) {
-	fake.generateReleaseNotesMutex.Lock()
-	defer fake.generateReleaseNotesMutex.Unlock()
-	fake.GenerateReleaseNotesStub = nil
-	fake.generateReleaseNotesReturns = struct {
+func (fake *FakeStageClient) GenerateChangelogArgsForCall(i int) string {
+	fake.generateChangelogMutex.RLock()
+	defer fake.generateChangelogMutex.RUnlock()
+	argsForCall := fake.generateChangelogArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStageClient) GenerateChangelogReturns(result1 error) {
+	fake.generateChangelogMutex.Lock()
+	defer fake.generateChangelogMutex.Unlock()
+	fake.GenerateChangelogStub = nil
+	fake.generateChangelogReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *FakeStageClient) GenerateReleaseNotesReturnsOnCall(i int, result1 error) {
-	fake.generateReleaseNotesMutex.Lock()
-	defer fake.generateReleaseNotesMutex.Unlock()
-	fake.GenerateReleaseNotesStub = nil
-	if fake.generateReleaseNotesReturnsOnCall == nil {
-		fake.generateReleaseNotesReturnsOnCall = make(map[int]struct {
+func (fake *FakeStageClient) GenerateChangelogReturnsOnCall(i int, result1 error) {
+	fake.generateChangelogMutex.Lock()
+	defer fake.generateChangelogMutex.Unlock()
+	fake.GenerateChangelogStub = nil
+	if fake.generateChangelogReturnsOnCall == nil {
+		fake.generateChangelogReturnsOnCall = make(map[int]struct {
 			result1 error
 		})
 	}
-	fake.generateReleaseNotesReturnsOnCall[i] = struct {
+	fake.generateChangelogReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -658,8 +667,8 @@ func (fake *FakeStageClient) Invocations() map[string][][]interface{} {
 	defer fake.buildMutex.RUnlock()
 	fake.checkPrerequisitesMutex.RLock()
 	defer fake.checkPrerequisitesMutex.RUnlock()
-	fake.generateReleaseNotesMutex.RLock()
-	defer fake.generateReleaseNotesMutex.RUnlock()
+	fake.generateChangelogMutex.RLock()
+	defer fake.generateChangelogMutex.RUnlock()
 	fake.generateReleaseVersionMutex.RLock()
 	defer fake.generateReleaseVersionMutex.RUnlock()
 	fake.prepareWorkspaceMutex.RLock()

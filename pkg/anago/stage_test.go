@@ -127,6 +127,36 @@ func TestBuild(t *testing.T) {
 	}
 }
 
+func TestGenerateChangelog(t *testing.T) {
+	for _, tc := range []struct {
+		prepare     func(*anagofakes.FakeStageImpl)
+		shouldError bool
+	}{
+		{ // success
+			prepare:     func(*anagofakes.FakeStageImpl) {},
+			shouldError: false,
+		},
+		{ // GenerateChangelog fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.GenerateChangelogReturns(err)
+			},
+			shouldError: true,
+		},
+	} {
+		opts := anago.DefaultStageOptions()
+		sut := anago.NewDefaultStage(opts)
+		mock := &anagofakes.FakeStageImpl{}
+		tc.prepare(mock)
+		sut.SetClient(mock)
+		err := sut.GenerateChangelog("")
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
+}
+
 func TestStageArtifacts(t *testing.T) {
 	for _, tc := range []struct {
 		prepare     func(*anagofakes.FakeStageImpl)
