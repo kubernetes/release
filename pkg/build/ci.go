@@ -140,8 +140,6 @@ func (bi *Instance) checkBuildExists() (bool, error) {
 		mode += bi.opts.GCSSuffix
 	}
 
-	bi.opts.Bucket = bucket
-
 	gcsBuildRoot := filepath.Join(bucket, mode, version)
 	kubernetesTar := filepath.Join(gcsBuildRoot, release.KubernetesTar)
 	binPath := filepath.Join(gcsBuildRoot, "bin")
