@@ -79,7 +79,7 @@ func PrepareWorkspaceRelease(directory, buildVersion, bucket string) error {
 		return errors.Wrap(err, "removing workspace directory")
 	}
 
-	logrus.Infof("Searching for staged %s on %s", sourcesTar, bucket)
+	logrus.Infof("Searching for staged %s on %s", SourcesTar, bucket)
 	tempDir, err := ioutil.TempDir("", "staged-")
 	if err != nil {
 		return errors.Wrap(err, "create staged sources temp dir")
@@ -87,8 +87,8 @@ func PrepareWorkspaceRelease(directory, buildVersion, bucket string) error {
 	defer os.RemoveAll(tempDir)
 
 	// On `release`, we lookup the staged sources and use them directly
-	src := filepath.Join(bucket, stagePath, buildVersion, sourcesTar)
-	dst := filepath.Join(tempDir, sourcesTar)
+	src := filepath.Join(bucket, StagePath, buildVersion, SourcesTar)
+	dst := filepath.Join(tempDir, SourcesTar)
 	opt := gcs.DefaultGCSCopyOptions
 	opt.AllowMissing = pointer.BoolPtr(false)
 	if err := gcs.CopyToLocal(src, dst, gcs.DefaultGCSCopyOptions); err != nil {
