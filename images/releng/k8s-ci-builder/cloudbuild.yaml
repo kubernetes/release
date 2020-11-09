@@ -1,0 +1,38 @@
+# See https://cloud.google.com/cloud-build/docs/build-config
+timeout: 1200s
+options:
+  substitution_option: ALLOW_LOOSE
+steps:
+  - name: gcr.io/cloud-builders/docker
+    id: build
+    dir: images/releng/k8s-ci-builder
+    args:
+    - build
+    - --tag=gcr.io/$PROJECT_ID/k8s-ci-builder:${_GIT_TAG}-${_CONFIG}
+    - --tag=gcr.io/$PROJECT_ID/k8s-ci-builder:latest-${_CONFIG}
+    - --tag=gcr.io/$PROJECT_ID/k8s-ci-builder:${_KUBE_CROSS_VERSION}
+    - --build-arg=GO_VERSION=${_GO_VERSION}
+    - --build-arg=KUBE_CROSS_VERSION=${_KUBE_CROSS_VERSION}
+    - -f ./Dockerfile
+    - ../../../.
+
+substitutions:
+  # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
+  # can be used as a substitution
+  _GIT_TAG: '12345'
+  _PULL_BASE_REF: 'dev'
+  _CONFIG: 'cross0.0'
+  _GO_VERSION: '0.0.0'
+  _KUBE_CROSS_VERSION: 'v0.0.0-0'
+
+images:
+  - 'gcr.io/$PROJECT_ID/k8s-ci-builder:${_GIT_TAG}-${_CONFIG}'
+  - 'gcr.io/$PROJECT_ID/k8s-ci-builder:latest-${_CONFIG}'
+  - 'gcr.io/$PROJECT_ID/k8s-ci-builder:${_KUBE_CROSS_VERSION}'
+
+tags:
+- 'k8s-ci-builder'
+- ${_GIT_TAG}
+- ${_PULL_BASE_REF}
+- ${_GO_VERSION}
+- ${_KUBE_CROSS_VERSION}
