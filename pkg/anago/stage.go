@@ -66,7 +66,7 @@ type stageClient interface {
 
 	// GenerateChangelog builds the CHANGELOG-x.y.md file and commits it
 	// into the local repository.
-	GenerateChangelog(version string) error
+	GenerateChangelog(version, parentBranch string) error
 
 	// StageArtifacts copies the build artifacts to a Google Cloud Bucket.
 	StageArtifacts(versions []string) error
@@ -230,11 +230,15 @@ func (d *DefaultStage) Build(versions []string) error {
 	return nil
 }
 
-func (d *DefaultStage) GenerateChangelog(version string) error {
+func (d *DefaultStage) GenerateChangelog(version, parentBranch string) error {
+	branch := d.options.ReleaseBranch
+	if parentBranch != "" {
+		branch = parentBranch
+	}
 	return d.impl.GenerateChangelog(&changelog.Options{
 		RepoPath:     gitRoot,
 		Tag:          version,
-		Branch:       d.options.ReleaseBranch,
+		Branch:       branch,
 		Bucket:       d.options.Bucket(),
 		HTMLFile:     filepath.Join(workspaceDir, "src/release-notes.html"),
 		Dependencies: true,

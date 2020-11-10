@@ -45,10 +45,11 @@ type FakeStageClient struct {
 	checkPrerequisitesReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GenerateChangelogStub        func(string) error
+	GenerateChangelogStub        func(string, string) error
 	generateChangelogMutex       sync.RWMutex
 	generateChangelogArgsForCall []struct {
 		arg1 string
+		arg2 string
 	}
 	generateChangelogReturns struct {
 		result1 error
@@ -244,18 +245,19 @@ func (fake *FakeStageClient) CheckPrerequisitesReturnsOnCall(i int, result1 erro
 	}{result1}
 }
 
-func (fake *FakeStageClient) GenerateChangelog(arg1 string) error {
+func (fake *FakeStageClient) GenerateChangelog(arg1 string, arg2 string) error {
 	fake.generateChangelogMutex.Lock()
 	ret, specificReturn := fake.generateChangelogReturnsOnCall[len(fake.generateChangelogArgsForCall)]
 	fake.generateChangelogArgsForCall = append(fake.generateChangelogArgsForCall, struct {
 		arg1 string
-	}{arg1})
+		arg2 string
+	}{arg1, arg2})
 	stub := fake.GenerateChangelogStub
 	fakeReturns := fake.generateChangelogReturns
-	fake.recordInvocation("GenerateChangelog", []interface{}{arg1})
+	fake.recordInvocation("GenerateChangelog", []interface{}{arg1, arg2})
 	fake.generateChangelogMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -269,17 +271,17 @@ func (fake *FakeStageClient) GenerateChangelogCallCount() int {
 	return len(fake.generateChangelogArgsForCall)
 }
 
-func (fake *FakeStageClient) GenerateChangelogCalls(stub func(string) error) {
+func (fake *FakeStageClient) GenerateChangelogCalls(stub func(string, string) error) {
 	fake.generateChangelogMutex.Lock()
 	defer fake.generateChangelogMutex.Unlock()
 	fake.GenerateChangelogStub = stub
 }
 
-func (fake *FakeStageClient) GenerateChangelogArgsForCall(i int) string {
+func (fake *FakeStageClient) GenerateChangelogArgsForCall(i int) (string, string) {
 	fake.generateChangelogMutex.RLock()
 	defer fake.generateChangelogMutex.RUnlock()
 	argsForCall := fake.generateChangelogArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeStageClient) GenerateChangelogReturns(result1 error) {
