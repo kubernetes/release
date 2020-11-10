@@ -112,10 +112,10 @@ func init() {
 		"If set, push docker images to specified registry/project",
 	)
 
-	pushBuildCmd.PersistentFlags().StringVar(
+	pushBuildCmd.PersistentFlags().StringSliceVar(
 		&pushBuildOpts.ExtraVersionMarkers,
 		"extra-version-markers",
-		"",
+		build.DefaultExtraVersionMarkers,
 		"Comma separated list which can be used to upload additional version files to GCS. The path is relative and is append to a GCS path. (--ci only)",
 	)
 

@@ -139,9 +139,9 @@ func (bi *Instance) Push() error {
 	}
 
 	// Publish release to GCS
-	versionMarkers := strings.Split(bi.opts.ExtraVersionMarkers, ",")
+	extraVersionMarkers := bi.opts.ExtraVersionMarkers
 	if err := release.NewPublisher().PublishVersion(
-		bi.opts.BuildType, version, bi.opts.BuildDir, bi.opts.Bucket, versionMarkers,
+		bi.opts.BuildType, version, bi.opts.BuildDir, bi.opts.Bucket, extraVersionMarkers,
 		bi.opts.PrivateBucket, bi.opts.Fast,
 	); err != nil {
 		return errors.Wrap(err, "publish release")

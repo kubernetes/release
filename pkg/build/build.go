@@ -22,6 +22,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var DefaultExtraVersionMarkers = []string{}
+
 // Instance is the main structure for creating and pushing builds.
 type Instance struct {
 	opts *Options
@@ -54,7 +56,7 @@ type Options struct {
 	// Comma separated list which can be used to upload additional version
 	// files to GCS. The path is relative and is append to a GCS path. (--ci
 	// only).
-	ExtraVersionMarkers string
+	ExtraVersionMarkers []string
 
 	// Specify a suffix to append to the upload destination on GCS.
 	GCSSuffix string
