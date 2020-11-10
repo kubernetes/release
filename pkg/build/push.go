@@ -119,17 +119,7 @@ func (bi *Instance) Push() error {
 		return errors.Wrap(err, "push container images")
 	}
 
-	gcsDest := "devel"
-	if bi.opts.CI {
-		gcsDest = "ci"
-	}
-	gcsDest += bi.opts.GCSSuffix
-
-	if bi.opts.Fast {
-		gcsDest = filepath.Join(gcsDest, "fast")
-	}
-	gcsDest = filepath.Join(gcsDest, version)
-	logrus.Infof("GCS destination is %s", gcsDest)
+	gcsDest := bi.getGCSBuildPath(version)
 
 	if err := bi.PushReleaseArtifacts(
 		filepath.Join(bi.opts.BuildDir, release.GCSStagePath, version),
@@ -151,7 +141,7 @@ func (bi *Instance) Push() error {
 	// Publish release to GCS
 	versionMarkers := strings.Split(bi.opts.ExtraVersionMarkers, ",")
 	if err := release.NewPublisher().PublishVersion(
-		gcsDest, version, bi.opts.BuildDir, bi.opts.Bucket, versionMarkers,
+		bi.opts.BuildType, version, bi.opts.BuildDir, bi.opts.Bucket, versionMarkers,
 		bi.opts.PrivateBucket, bi.opts.Fast,
 	); err != nil {
 		return errors.Wrap(err, "publish release")

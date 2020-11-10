@@ -101,7 +101,7 @@ func (p *Publisher) PublishVersion(
 	releasePath = gcs.GcsPrefix + filepath.Join(releasePath, version)
 
 	if err := p.client.GSUtil("ls", releasePath); err != nil {
-		return errors.Wrapf(err, "release files dont exist at %s", releasePath)
+		return errors.Wrapf(err, "release files don't exist at %s", releasePath)
 	}
 
 	sv, err := util.TagStringToSemver(version)
