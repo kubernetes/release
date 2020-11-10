@@ -304,5 +304,22 @@ func (d *DefaultStage) StageArtifacts(versions []string) error {
 			return errors.Wrap(err, "pushing container images")
 		}
 	}
+
+	noMockFlag := ""
+	if d.options.NoMock {
+		noMockFlag = "--nomock"
+	}
+
+	logrus.Infof(
+		"To release this staged build, run:\n\n"+
+			"$ krel gcbmgr --no-anago --release "+
+			"--type %s "+
+			"--branch %s "+
+			"--build-version=%s %s",
+		d.options.ReleaseType,
+		d.options.ReleaseBranch,
+		d.options.BuildVersion,
+		noMockFlag,
+	)
 	return nil
 }
