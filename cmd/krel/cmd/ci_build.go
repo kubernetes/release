@@ -91,13 +91,6 @@ func init() {
 		"Do not update the latest file",
 	)
 
-	ciBuildCmd.PersistentFlags().BoolVar(
-		&ciBuildOpts.PrivateBucket,
-		"private-bucket",
-		false,
-		"Do not mark published bits on GCS as publicly readable",
-	)
-
 	// TODO: Configure a default const here
 	ciBuildCmd.PersistentFlags().StringVar(
 		&ciBuildOpts.Bucket,
@@ -116,6 +109,7 @@ func init() {
 		),
 	)
 
+	// TODO: Switch to "--registry" once CI no longer uses it
 	ciBuildCmd.PersistentFlags().StringVar(
 		&ciBuildOpts.DockerRegistry,
 		"docker-registry",
@@ -123,10 +117,10 @@ func init() {
 		"If set, push docker images to specified registry/project",
 	)
 
-	ciBuildCmd.PersistentFlags().StringVar(
+	ciBuildCmd.PersistentFlags().StringSliceVar(
 		&ciBuildOpts.ExtraVersionMarkers,
 		"extra-version-markers",
-		"",
+		build.DefaultExtraVersionMarkers,
 		"Comma separated list which can be used to upload additional version files to GCS. The path is relative and is append to a GCS path. (--ci only)",
 	)
 

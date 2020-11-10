@@ -1,0 +1,5 @@
+variants:
+  cross1.15:
+    CONFIG: 'cross1.15'
+    GO_VERSION: '1.15.3'
+    KUBE_CROSS_VERSION: 'v1.15.3-1'

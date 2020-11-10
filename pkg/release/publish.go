@@ -79,7 +79,7 @@ func (*defaultPublisher) GetURLResponse(url string) (string, error) {
 // was releaselib.sh: release::gcs::publish_version
 func (p *Publisher) PublishVersion(
 	buildType, version, buildDir, bucket string,
-	versionMarkers []string,
+	extraVersionMarkers []string,
 	privateBucket, fast bool,
 ) error {
 	logrus.Info("Publishing version")
@@ -101,7 +101,7 @@ func (p *Publisher) PublishVersion(
 	releasePath = gcs.GcsPrefix + filepath.Join(releasePath, version)
 
 	if err := p.client.GSUtil("ls", releasePath); err != nil {
-		return errors.Wrapf(err, "release files dont exist at %s", releasePath)
+		return errors.Wrapf(err, "release files don't exist at %s", releasePath)
 	}
 
 	sv, err := util.TagStringToSemver(version)
@@ -109,42 +109,48 @@ func (p *Publisher) PublishVersion(
 		return errors.Errorf("invalid version %s", version)
 	}
 
-	var publishFiles []string
+	var versionMarkers []string
 	if fast {
-		publishFiles = append([]string{
-			releaseType + "-fast",
-		}, versionMarkers...)
+		versionMarkers = append(
+			versionMarkers,
+			releaseType+"-fast",
+		)
 	} else {
-		publishFiles = append([]string{
+		versionMarkers = append(
+			versionMarkers,
 			releaseType,
 			fmt.Sprintf("%s-%d", releaseType, sv.Major),
 			fmt.Sprintf("%s-%d.%d", releaseType, sv.Major, sv.Minor),
-		}, versionMarkers...)
+		)
 	}
 
-	logrus.Infof("Publish version markers: %v", publishFiles)
+	if len(extraVersionMarkers) > 0 {
+		versionMarkers = append(versionMarkers, extraVersionMarkers...)
+	}
+
+	logrus.Infof("Publish version markers: %v", versionMarkers)
 	logrus.Infof("Publish official pointer text files to bucket %s", bucket)
 
-	for _, file := range publishFiles {
-		publishFile := filepath.Join(buildType, file+".txt")
+	for _, file := range versionMarkers {
+		versionMarker := filepath.Join(buildType, file+".txt")
 		needsUpdate, err := p.VerifyLatestUpdate(
-			publishFile, bucket, version,
+			versionMarker, bucket, version,
 		)
 		if err != nil {
-			return errors.Wrapf(err, "verify latest update for %s", publishFile)
+			return errors.Wrapf(err, "verify latest update for %s", versionMarker)
 		}
 		// If there's a version that's above the one we're trying to release,
 		// don't do anything, and just try the next one.
 		if !needsUpdate {
 			logrus.Infof(
 				"Skipping %s for %s because it does not need to be updated",
-				publishFile, version,
+				versionMarker, version,
 			)
 			continue
 		}
 
 		if err := p.PublishToGcs(
-			publishFile, buildDir, bucket, version, privateBucket,
+			versionMarker, buildDir, bucket, version, privateBucket,
 		); err != nil {
 			return errors.Wrap(err, "publish release to GCS")
 		}

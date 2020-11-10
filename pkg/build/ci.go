@@ -34,6 +34,7 @@ import (
 func NewCIInstance(opts *Options) *Instance {
 	instance := NewInstance(opts)
 	instance.opts.CI = true
+	instance.setBuildType()
 
 	return instance
 }
@@ -127,22 +128,9 @@ func (bi *Instance) checkBuildExists() (bool, error) {
 		bucket = "kubernetes-release-dev"
 	}
 
-	mode := "ci"
-	if bi.opts.CI {
-		mode = "ci"
-	}
+	gcsDest := bi.getGCSBuildPath(version)
 
-	if bi.opts.Fast {
-		mode += "/fast"
-	}
-
-	if bi.opts.GCSSuffix != "" {
-		mode += bi.opts.GCSSuffix
-	}
-
-	bi.opts.Bucket = bucket
-
-	gcsBuildRoot := filepath.Join(bucket, mode, version)
+	gcsBuildRoot := filepath.Join(bucket, gcsDest)
 	kubernetesTar := filepath.Join(gcsBuildRoot, release.KubernetesTar)
 	binPath := filepath.Join(gcsBuildRoot, "bin")
 

@@ -16,6 +16,14 @@ limitations under the License.
 
 package build
 
+import (
+	"path/filepath"
+
+	"github.com/sirupsen/logrus"
+)
+
+var DefaultExtraVersionMarkers = []string{}
+
 // Instance is the main structure for creating and pushing builds.
 type Instance struct {
 	opts *Options
@@ -23,7 +31,10 @@ type Instance struct {
 
 // NewInstance can be used to create a new build `Instance`.
 func NewInstance(opts *Options) *Instance {
-	return &Instance{opts}
+	instance := &Instance{opts}
+	instance.setBuildType()
+
+	return instance
 }
 
 // Options are the main options to pass to `Instance`.
@@ -35,13 +46,17 @@ type Options struct {
 	// if not set.
 	BuildDir string
 
+	// Used to make determinations on where to push artifacts
+	// May be one of: 'devel', 'ci', 'release'
+	BuildType string
+
 	// If set, push docker images to specified registry/project.
 	DockerRegistry string
 
 	// Comma separated list which can be used to upload additional version
 	// files to GCS. The path is relative and is append to a GCS path. (--ci
 	// only).
-	ExtraVersionMarkers string
+	ExtraVersionMarkers []string
 
 	// Specify a suffix to append to the upload destination on GCS.
 	GCSSuffix string
@@ -75,4 +90,32 @@ type Options struct {
 	// Validate that the remove image digests exists, needs `skopeo` in
 	// `$PATH`.
 	ValidateRemoteImageDigests bool
+}
+
+// TODO: Support "release" buildType
+func (bi *Instance) getGCSBuildPath(version string) string {
+	gcsDest := bi.opts.BuildType
+
+	if bi.opts.GCSSuffix != "" {
+		gcsDest += "-" + bi.opts.GCSSuffix
+	}
+
+	if bi.opts.Fast {
+		gcsDest = filepath.Join(gcsDest, "fast")
+	}
+	gcsDest = filepath.Join(gcsDest, version)
+	logrus.Infof("GCS destination is %s", gcsDest)
+
+	return gcsDest
+}
+
+func (bi *Instance) setBuildType() {
+	buildType := "devel"
+	if bi.opts.CI {
+		buildType = "ci"
+	}
+
+	bi.opts.BuildType = buildType
+
+	logrus.Infof("Build type is %s", bi.opts.BuildType)
 }
