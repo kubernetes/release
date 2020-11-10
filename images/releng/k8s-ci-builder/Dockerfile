@@ -35,7 +35,7 @@ FROM debian:buster
 # arg that specifies the image name (for debugging)
 ARG IMAGE_ARG
 # arg that specifies the bazel version to install
-ARG BAZEL_VERSION_ARG=0.23.1
+ARG BAZEL_VERSION
 ARG GO_VERSION
 
 # add envs:
@@ -45,16 +45,16 @@ ARG GO_VERSION
 # - disabling prompts when installing gsutil etc.
 # - hinting that we are in a docker container
 ENV IMAGE=${IMAGE_ARG} \
-    BAZEL_VERSION=${BAZEL_VERSION_ARG} \
+    BAZEL_VERSION=${BAZEL_VERSION} \
     GOPATH=/home/prow/go \
     PATH=/home/prow/go/bin:/usr/local/go/bin:/google-cloud-sdk/bin:${PATH} \
     CLOUDSDK_CORE_DISABLE_PROMPTS=1 \
     CONTAINER=docker
 
 # copy in image utility scripts
-COPY ["wrapper.sh", \
-      "create_bazel_cache_rcs.sh", \
-      "install-bazel.sh", \
+COPY ["images/releng/k8s-ci-builder/wrapper.sh", \
+      "images/releng/k8s-ci-builder/create_bazel_cache_rcs.sh", \
+      "images/releng/k8s-ci-builder/install-bazel.sh", \
       "/usr/local/bin/"]
 
 # Install tools needed to:

@@ -22,6 +22,8 @@ steps:
     - PULL_BASE_REF=${_PULL_BASE_REF}
     - CONFIG=${_CONFIG}
     - GO_VERSION=${_GO_VERSION}
+    - BAZEL_VERSION=${_BAZEL_VERSION}
+    - OLD_BAZEL_VERSION=${_OLD_BAZEL_VERSION}
     args:
     - '-c'
     - |
@@ -35,6 +37,8 @@ substitutions:
   _PULL_BASE_REF: 'dev'
   _CONFIG: 'config'
   _GO_VERSION: '0.0.0'
+  _BAZEL_VERSION: '0.0.0'
+  _OLD_BAZEL_VERSION: '0.0.0'
 
 tags:
 - 'k8s-ci-builder'
