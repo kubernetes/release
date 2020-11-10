@@ -447,14 +447,9 @@ func (bi *Instance) CopyStagedFromGCS(stagedBucket, buildVersion string) error {
 
 // StageLocalSourceTree creates a src.tar.gz from the Kubernetes sources and
 // uploads it to GCS.
-func (bi *Instance) StageLocalSourceTree(buildVersion string) error {
-	workDir := os.Getenv("GOPATH")
-	if workDir == "" {
-		return errors.New("GOPATH is not set")
-	}
-
+func (bi *Instance) StageLocalSourceTree(workDir, buildVersion string) error {
 	tarballPath := filepath.Join(workDir, release.SourcesTar)
-	logrus.Infof("Creating source tree tarball in %s", workDir)
+	logrus.Infof("Creating source tree tarball %s", tarballPath)
 
 	exclude, err := regexp.Compile(fmt.Sprintf(`.*/%s-.*`, release.BuildDir))
 	if err != nil {
