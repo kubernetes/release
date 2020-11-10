@@ -148,7 +148,7 @@ func TestGenerateChangelog(t *testing.T) {
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
 		sut.SetClient(mock)
-		err := sut.GenerateChangelog("")
+		err := sut.GenerateChangelog("", "")
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {

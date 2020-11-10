@@ -194,7 +194,9 @@ func (s *Stage) Run() error {
 	}
 
 	logrus.Info("Generating changelog")
-	if err := s.client.GenerateChangelog(versions.Prime()); err != nil {
+	if err := s.client.GenerateChangelog(
+		versions.Prime(), parentBranch,
+	); err != nil {
 		return errors.Wrap(err, "generate changelog")
 	}
 
