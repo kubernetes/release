@@ -120,11 +120,12 @@ type FakeStageImpl struct {
 	stageLocalArtifactsReturnsOnCall map[int]struct {
 		result1 error
 	}
-	StageLocalSourceTreeStub        func(*build.Options, string) error
+	StageLocalSourceTreeStub        func(*build.Options, string, string) error
 	stageLocalSourceTreeMutex       sync.RWMutex
 	stageLocalSourceTreeArgsForCall []struct {
 		arg1 *build.Options
 		arg2 string
+		arg3 string
 	}
 	stageLocalSourceTreeReturns struct {
 		result1 error
@@ -636,19 +637,20 @@ func (fake *FakeStageImpl) StageLocalArtifactsReturnsOnCall(i int, result1 error
 	}{result1}
 }
 
-func (fake *FakeStageImpl) StageLocalSourceTree(arg1 *build.Options, arg2 string) error {
+func (fake *FakeStageImpl) StageLocalSourceTree(arg1 *build.Options, arg2 string, arg3 string) error {
 	fake.stageLocalSourceTreeMutex.Lock()
 	ret, specificReturn := fake.stageLocalSourceTreeReturnsOnCall[len(fake.stageLocalSourceTreeArgsForCall)]
 	fake.stageLocalSourceTreeArgsForCall = append(fake.stageLocalSourceTreeArgsForCall, struct {
 		arg1 *build.Options
 		arg2 string
-	}{arg1, arg2})
+		arg3 string
+	}{arg1, arg2, arg3})
 	stub := fake.StageLocalSourceTreeStub
 	fakeReturns := fake.stageLocalSourceTreeReturns
-	fake.recordInvocation("StageLocalSourceTree", []interface{}{arg1, arg2})
+	fake.recordInvocation("StageLocalSourceTree", []interface{}{arg1, arg2, arg3})
 	fake.stageLocalSourceTreeMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -662,17 +664,17 @@ func (fake *FakeStageImpl) StageLocalSourceTreeCallCount() int {
 	return len(fake.stageLocalSourceTreeArgsForCall)
 }
 
-func (fake *FakeStageImpl) StageLocalSourceTreeCalls(stub func(*build.Options, string) error) {
+func (fake *FakeStageImpl) StageLocalSourceTreeCalls(stub func(*build.Options, string, string) error) {
 	fake.stageLocalSourceTreeMutex.Lock()
 	defer fake.stageLocalSourceTreeMutex.Unlock()
 	fake.StageLocalSourceTreeStub = stub
 }
 
-func (fake *FakeStageImpl) StageLocalSourceTreeArgsForCall(i int) (*build.Options, string) {
+func (fake *FakeStageImpl) StageLocalSourceTreeArgsForCall(i int) (*build.Options, string, string) {
 	fake.stageLocalSourceTreeMutex.RLock()
 	defer fake.stageLocalSourceTreeMutex.RUnlock()
 	argsForCall := fake.stageLocalSourceTreeArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeStageImpl) StageLocalSourceTreeReturns(result1 error) {

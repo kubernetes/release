@@ -17,6 +17,7 @@ limitations under the License.
 package anago
 
 import (
+	"os"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -125,8 +126,13 @@ func runPushStage(
 	buildInstance *build.Instance,
 	opts *build.Options,
 ) error {
+	workDir := os.Getenv("GOPATH")
+	if workDir == "" {
+		return errors.New("GOPATH is not set")
+	}
+
 	// Stage the local source tree
-	if err := buildInstance.StageLocalSourceTree(buildVersion); err != nil {
+	if err := buildInstance.StageLocalSourceTree(workDir, buildVersion); err != nil {
 		return errors.Wrap(err, "staging local source tree")
 	}
 

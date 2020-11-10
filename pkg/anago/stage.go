@@ -103,7 +103,7 @@ type stageImpl interface {
 	MakeCross(version string) error
 	GenerateChangelog(options *changelog.Options) error
 	StageLocalSourceTree(
-		options *build.Options, buildVersion string,
+		options *build.Options, workDir, buildVersion string,
 	) error
 	StageLocalArtifacts(options *build.Options) error
 	PushReleaseArtifacts(
@@ -161,9 +161,9 @@ func (d *defaultStageImpl) CheckReleaseBucket(
 }
 
 func (d *defaultStageImpl) StageLocalSourceTree(
-	options *build.Options, buildVersion string,
+	options *build.Options, workDir, buildVersion string,
 ) error {
-	return build.NewInstance(options).StageLocalSourceTree(buildVersion)
+	return build.NewInstance(options).StageLocalSourceTree(workDir, buildVersion)
 }
 
 func (d *defaultStageImpl) StageLocalArtifacts(
@@ -269,6 +269,7 @@ func (d *DefaultStage) StageArtifacts(versions []string) error {
 		// Stage the local source tree
 		if err := d.impl.StageLocalSourceTree(
 			pushBuildOptions,
+			workspaceDir,
 			d.options.BuildVersion,
 		); err != nil {
 			return errors.Wrap(err, "staging local source tree")
