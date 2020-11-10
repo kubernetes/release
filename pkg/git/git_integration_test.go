@@ -904,3 +904,28 @@ func TestAllTags(t *testing.T) {
 	require.Equal(t, testRepo.firstTagName, tags[1])
 	require.Equal(t, testRepo.thirdTagName, tags[2])
 }
+
+func TestCommitEmptySuccess(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	commitMessage := "This is an empty commit"
+	require.Nil(t, testRepo.sut.CommitEmpty(commitMessage))
+	res, err := command.NewWithWorkDir(
+		testRepo.sut.Dir(), "git", "log", "-1",
+	).Run()
+	require.Nil(t, err)
+	require.True(t, res.Success())
+	require.Contains(t, res.Output(), commitMessage)
+}
+
+func TestTagSuccess(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	testTag := "testTag"
+	require.Nil(t, testRepo.sut.Tag(testTag, "message"))
+	tags, err := testRepo.sut.TagsForBranch(testRepo.branchName)
+	require.Nil(t, err)
+	require.Contains(t, tags, testTag)
+}

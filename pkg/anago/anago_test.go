@@ -211,7 +211,7 @@ func TestValidateOptions(t *testing.T) {
 			provided: &anago.Options{
 				ReleaseType:   release.ReleaseTypeAlpha,
 				ReleaseBranch: git.DefaultBranch,
-				BuildVersion:  "1.2.3",
+				BuildVersion:  "v1.20.0-beta.1.203+8f6ffb24df9896",
 			},
 			shouldError: false,
 		},

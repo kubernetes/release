@@ -54,6 +54,8 @@ const (
 	DefaultBranch            = "master"
 
 	defaultGithubAuthRoot = "git@github.com:"
+	defaultGitUser        = "Anago GCB"
+	defaultGitEmail       = "nobody@k8s.io"
 	gitExecutable         = "git"
 )
 
@@ -95,6 +97,24 @@ func GetRepoURL(org, repo string, useSSH bool) (repoURL string) {
 	}
 
 	return repoURL
+}
+
+// ConfigureGlobalDefaultUserAndEmail globally configures the default git
+// user and email.
+func ConfigureGlobalDefaultUserAndEmail() error {
+	if err := command.New(
+		gitExecutable, "config", "--global", "user.name", defaultGitUser,
+	).RunSuccess(); err != nil {
+		return errors.Wrap(err, "configure user name")
+	}
+
+	if err := command.New(
+		gitExecutable, "config", "--global", "user.email", defaultGitEmail,
+	).RunSuccess(); err != nil {
+		return errors.Wrap(err, "configure user email")
+	}
+
+	return nil
 }
 
 // DiscoverResult is the result of a revision discovery
@@ -157,6 +177,7 @@ type Repo struct {
 // Repository is the main interface to the git.Repository functionality
 //counterfeiter:generate . Repository
 type Repository interface {
+	CreateTag(string, plumbing.Hash, *git.CreateTagOptions) (*plumbing.Reference, error)
 	Branches() (storer.ReferenceIter, error)
 	CommitObject(plumbing.Hash) (*object.Commit, error)
 	CreateRemote(*config.RemoteConfig) (*git.Remote, error)
@@ -909,8 +930,8 @@ func (r *Repo) UserCommit(msg string) error {
 func (r *Repo) Commit(msg string) error {
 	if err := r.CommitWithOptions(msg, &git.CommitOptions{
 		Author: &object.Signature{
-			Name:  "Anago GCB",
-			Email: "nobody@k8s.io",
+			Name:  defaultGitUser,
+			Email: defaultGitEmail,
 			When:  time.Now(),
 		},
 	}); err != nil {
@@ -922,6 +943,37 @@ func (r *Repo) Commit(msg string) error {
 // CommitWithOptions commits the current repository state
 func (r *Repo) CommitWithOptions(msg string, options *git.CommitOptions) error {
 	if _, err := r.worktree.Commit(msg, options); err != nil {
+		return err
+	}
+	return nil
+}
+
+// CommitEmpty commits an empty commit into the repository
+func (r *Repo) CommitEmpty(msg string) error {
+	return command.
+		NewWithWorkDir(r.Dir(), gitExecutable,
+			"commit", "--allow-empty", "-m", msg,
+		).
+		RunSilentSuccess()
+}
+
+// Tag creates a new annotated tag for the provided `name` and `message`.
+func (r *Repo) Tag(name, message string) error {
+	head, err := r.inner.Head()
+	if err != nil {
+		return err
+	}
+	if _, err := r.inner.CreateTag(
+		name,
+		head.Hash(),
+		&git.CreateTagOptions{
+			Tagger: &object.Signature{
+				Name:  defaultGitUser,
+				Email: defaultGitEmail,
+				When:  time.Now(),
+			},
+			Message: message,
+		}); err != nil {
 		return err
 	}
 	return nil

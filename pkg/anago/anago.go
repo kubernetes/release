@@ -19,6 +19,7 @@ package anago
 import (
 	"fmt"
 
+	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/release/pkg/git"
@@ -57,6 +58,10 @@ type Options struct {
 	// The build version to be released. Has to be specified in the format:
 	// `vX.Y.Z-[alpha|beta|rc].N.C+SHA`
 	BuildVersion string
+
+	// semverBuildVersion is the parsed build version which is set after the
+	// validation.
+	semverBuildVersion semver.Version
 }
 
 // DefaultOptions returns a new Options instance.
@@ -90,9 +95,14 @@ func (o *Options) Validate() error {
 		return errors.Errorf("invalid release branch: %s", o.ReleaseBranch)
 	}
 
-	if _, err := util.TagStringToSemver(o.BuildVersion); err != nil {
+	semverBuildVersion, err := util.TagStringToSemver(o.BuildVersion)
+	if err != nil {
 		return errors.Wrapf(err, "invalid build version: %s", o.BuildVersion)
 	}
+	if len(semverBuildVersion.Build) == 0 {
+		return errors.Errorf("build version does not contain build commit")
+	}
+	o.semverBuildVersion = semverBuildVersion
 	return nil
 }
 
@@ -169,7 +179,8 @@ func (s *Stage) Run() error {
 		return errors.Wrap(err, "set build candidate")
 	}
 	// TODO: the parent branch has to be returned by the SetBuildCandidate
-	// method.
+	// method. It should be empty (releases cut from master) or
+	// git.DefaultBranch / "master" (releases cut from release branches).
 	parentBranch := ""
 
 	logrus.Info("Generating release version")
@@ -184,7 +195,7 @@ func (s *Stage) Run() error {
 	}
 
 	logrus.Info("Tagging repository")
-	if err := s.client.TagRepository(versions.Ordered()); err != nil {
+	if err := s.client.TagRepository(versions, parentBranch); err != nil {
 		return errors.Wrap(err, "tag repository")
 	}
 

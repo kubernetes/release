@@ -45,6 +45,17 @@ type Versions struct {
 	alpha    string
 }
 
+// NewReleaseVersions can be used to create a new `*Versions` instance
+func NewReleaseVersions(prime, official, rc, beta, alpha string) *Versions {
+	return &Versions{
+		prime,
+		official,
+		rc,
+		beta,
+		alpha,
+	}
+}
+
 // Prime can be used to get the most prominent release version
 func (r *Versions) Prime() string {
 	return r.prime
