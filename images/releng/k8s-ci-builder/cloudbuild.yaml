@@ -24,6 +24,7 @@ steps:
     - GO_VERSION=${_GO_VERSION}
     - BAZEL_VERSION=${_BAZEL_VERSION}
     - OLD_BAZEL_VERSION=${_OLD_BAZEL_VERSION}
+    - IMAGE_ARG='gcr.io/$PROJECT_ID/k8s-ci-builder:${_GIT_TAG}-${_CONFIG}'
     args:
     - '-c'
     - |
