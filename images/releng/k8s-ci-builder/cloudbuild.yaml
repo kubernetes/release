@@ -1,38 +1,49 @@
-# See https://cloud.google.com/cloud-build/docs/build-config
+# See https://github.com/kubernetes/test-infra/blob/master/config/jobs/image-pushing/README.md for more details on image pushing process
+
+# this must be specified in seconds. If omitted, defaults to 600s (10 mins)
 timeout: 1200s
+
+# this prevents errors if you don't use both _GIT_TAG and _PULL_BASE_REF,
+# or any new substitutions added in the future.
 options:
   substitution_option: ALLOW_LOOSE
+  machineType: 'N1_HIGHCPU_8'
+
 steps:
-  - name: gcr.io/cloud-builders/docker
-    id: build
-    dir: images/releng/k8s-ci-builder
+  # TODO: Update image version
+  - name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v20200824-5d057db'
+    entrypoint: 'bash'
+    dir: ./images/releng/k8s-ci-builder
+    env:
+    - DOCKER_CLI_EXPERIMENTAL=enabled
+    - REGISTRY=gcr.io/$PROJECT_ID
+    - HOME=/root
+    - TAG=${_GIT_TAG}
+    - PULL_BASE_REF=${_PULL_BASE_REF}
+    - CONFIG=${_CONFIG}
+    - GO_VERSION=${_GO_VERSION}
     args:
-    - build
-    - --tag=gcr.io/$PROJECT_ID/k8s-ci-builder:${_GIT_TAG}-${_CONFIG}
-    - --tag=gcr.io/$PROJECT_ID/k8s-ci-builder:latest-${_CONFIG}
-    - --tag=gcr.io/$PROJECT_ID/k8s-ci-builder:${_KUBE_CROSS_VERSION}
-    - --build-arg=GO_VERSION=${_GO_VERSION}
-    - --build-arg=KUBE_CROSS_VERSION=${_KUBE_CROSS_VERSION}
-    - -f ./Dockerfile
-    - ../../../.
+    - '-c'
+    - |
+      gcloud auth configure-docker \
+      && make push
 
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
   # can be used as a substitution
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
-  _CONFIG: 'cross0.0'
+  _CONFIG: 'config'
   _GO_VERSION: '0.0.0'
-  _KUBE_CROSS_VERSION: 'v0.0.0-0'
-
-images:
-  - 'gcr.io/$PROJECT_ID/k8s-ci-builder:${_GIT_TAG}-${_CONFIG}'
-  - 'gcr.io/$PROJECT_ID/k8s-ci-builder:latest-${_CONFIG}'
-  - 'gcr.io/$PROJECT_ID/k8s-ci-builder:${_KUBE_CROSS_VERSION}'
 
 tags:
 - 'k8s-ci-builder'
 - ${_GIT_TAG}
 - ${_PULL_BASE_REF}
+- ${_CONFIG}
 - ${_GO_VERSION}
-- ${_KUBE_CROSS_VERSION}
+
+images:
+  - 'gcr.io/$PROJECT_ID/k8s-ci-builder:${_CONFIG}'
+  - 'gcr.io/$PROJECT_ID/k8s-ci-builder:${_GIT_TAG}-${_CONFIG}'
+  - 'gcr.io/$PROJECT_ID/k8s-ci-builder:latest-${_CONFIG}'
