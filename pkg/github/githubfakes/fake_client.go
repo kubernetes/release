@@ -20,6 +20,7 @@ package githubfakes
 import (
 	"context"
 	"io"
+	"os"
 	"sync"
 
 	githuba "github.com/google/go-github/v29/github"
@@ -45,6 +46,20 @@ type FakeClient struct {
 	createPullRequestReturnsOnCall map[int]struct {
 		result1 *githuba.PullRequest
 		result2 error
+	}
+	DeleteReleaseAssetStub        func(context.Context, string, string, int64) error
+	deleteReleaseAssetMutex       sync.RWMutex
+	deleteReleaseAssetArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 int64
+	}
+	deleteReleaseAssetReturns struct {
+		result1 error
+	}
+	deleteReleaseAssetReturnsOnCall map[int]struct {
+		result1 error
 	}
 	DownloadReleaseAssetStub        func(context.Context, string, string, int64) (io.ReadCloser, string, error)
 	downloadReleaseAssetMutex       sync.RWMutex
@@ -208,6 +223,22 @@ type FakeClient struct {
 		result2 *githuba.Response
 		result3 error
 	}
+	ListReleaseAssetsStub        func(context.Context, string, string, int64) ([]*githuba.ReleaseAsset, error)
+	listReleaseAssetsMutex       sync.RWMutex
+	listReleaseAssetsArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 int64
+	}
+	listReleaseAssetsReturns struct {
+		result1 []*githuba.ReleaseAsset
+		result2 error
+	}
+	listReleaseAssetsReturnsOnCall map[int]struct {
+		result1 []*githuba.ReleaseAsset
+		result2 error
+	}
 	ListReleasesStub        func(context.Context, string, string, *githuba.ListOptions) ([]*githuba.RepositoryRelease, *githuba.Response, error)
 	listReleasesMutex       sync.RWMutex
 	listReleasesArgsForCall []struct {
@@ -244,6 +275,41 @@ type FakeClient struct {
 		result2 *githuba.Response
 		result3 error
 	}
+	UpdateReleasePageStub        func(context.Context, string, string, int64, *githuba.RepositoryRelease) (*githuba.RepositoryRelease, error)
+	updateReleasePageMutex       sync.RWMutex
+	updateReleasePageArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 int64
+		arg5 *githuba.RepositoryRelease
+	}
+	updateReleasePageReturns struct {
+		result1 *githuba.RepositoryRelease
+		result2 error
+	}
+	updateReleasePageReturnsOnCall map[int]struct {
+		result1 *githuba.RepositoryRelease
+		result2 error
+	}
+	UploadReleaseAssetStub        func(context.Context, string, string, int64, *githuba.UploadOptions, *os.File) (*githuba.ReleaseAsset, error)
+	uploadReleaseAssetMutex       sync.RWMutex
+	uploadReleaseAssetArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 int64
+		arg5 *githuba.UploadOptions
+		arg6 *os.File
+	}
+	uploadReleaseAssetReturns struct {
+		result1 *githuba.ReleaseAsset
+		result2 error
+	}
+	uploadReleaseAssetReturnsOnCall map[int]struct {
+		result1 *githuba.ReleaseAsset
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -260,15 +326,16 @@ func (fake *FakeClient) CreatePullRequest(arg1 context.Context, arg2 string, arg
 		arg6 string
 		arg7 string
 	}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
+	stub := fake.CreatePullRequestStub
+	fakeReturns := fake.createPullRequestReturns
 	fake.recordInvocation("CreatePullRequest", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
 	fake.createPullRequestMutex.Unlock()
-	if fake.CreatePullRequestStub != nil {
-		return fake.CreatePullRequestStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.createPullRequestReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -317,6 +384,70 @@ func (fake *FakeClient) CreatePullRequestReturnsOnCall(i int, result1 *githuba.P
 	}{result1, result2}
 }
 
+func (fake *FakeClient) DeleteReleaseAsset(arg1 context.Context, arg2 string, arg3 string, arg4 int64) error {
+	fake.deleteReleaseAssetMutex.Lock()
+	ret, specificReturn := fake.deleteReleaseAssetReturnsOnCall[len(fake.deleteReleaseAssetArgsForCall)]
+	fake.deleteReleaseAssetArgsForCall = append(fake.deleteReleaseAssetArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 int64
+	}{arg1, arg2, arg3, arg4})
+	stub := fake.DeleteReleaseAssetStub
+	fakeReturns := fake.deleteReleaseAssetReturns
+	fake.recordInvocation("DeleteReleaseAsset", []interface{}{arg1, arg2, arg3, arg4})
+	fake.deleteReleaseAssetMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeClient) DeleteReleaseAssetCallCount() int {
+	fake.deleteReleaseAssetMutex.RLock()
+	defer fake.deleteReleaseAssetMutex.RUnlock()
+	return len(fake.deleteReleaseAssetArgsForCall)
+}
+
+func (fake *FakeClient) DeleteReleaseAssetCalls(stub func(context.Context, string, string, int64) error) {
+	fake.deleteReleaseAssetMutex.Lock()
+	defer fake.deleteReleaseAssetMutex.Unlock()
+	fake.DeleteReleaseAssetStub = stub
+}
+
+func (fake *FakeClient) DeleteReleaseAssetArgsForCall(i int) (context.Context, string, string, int64) {
+	fake.deleteReleaseAssetMutex.RLock()
+	defer fake.deleteReleaseAssetMutex.RUnlock()
+	argsForCall := fake.deleteReleaseAssetArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+}
+
+func (fake *FakeClient) DeleteReleaseAssetReturns(result1 error) {
+	fake.deleteReleaseAssetMutex.Lock()
+	defer fake.deleteReleaseAssetMutex.Unlock()
+	fake.DeleteReleaseAssetStub = nil
+	fake.deleteReleaseAssetReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) DeleteReleaseAssetReturnsOnCall(i int, result1 error) {
+	fake.deleteReleaseAssetMutex.Lock()
+	defer fake.deleteReleaseAssetMutex.Unlock()
+	fake.DeleteReleaseAssetStub = nil
+	if fake.deleteReleaseAssetReturnsOnCall == nil {
+		fake.deleteReleaseAssetReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.deleteReleaseAssetReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeClient) DownloadReleaseAsset(arg1 context.Context, arg2 string, arg3 string, arg4 int64) (io.ReadCloser, string, error) {
 	fake.downloadReleaseAssetMutex.Lock()
 	ret, specificReturn := fake.downloadReleaseAssetReturnsOnCall[len(fake.downloadReleaseAssetArgsForCall)]
@@ -326,15 +457,16 @@ func (fake *FakeClient) DownloadReleaseAsset(arg1 context.Context, arg2 string, 
 		arg3 string
 		arg4 int64
 	}{arg1, arg2, arg3, arg4})
+	stub := fake.DownloadReleaseAssetStub
+	fakeReturns := fake.downloadReleaseAssetReturns
 	fake.recordInvocation("DownloadReleaseAsset", []interface{}{arg1, arg2, arg3, arg4})
 	fake.downloadReleaseAssetMutex.Unlock()
-	if fake.DownloadReleaseAssetStub != nil {
-		return fake.DownloadReleaseAssetStub(arg1, arg2, arg3, arg4)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2, ret.result3
 	}
-	fakeReturns := fake.downloadReleaseAssetReturns
 	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
 }
 
@@ -395,15 +527,16 @@ func (fake *FakeClient) GetCommit(arg1 context.Context, arg2 string, arg3 string
 		arg3 string
 		arg4 string
 	}{arg1, arg2, arg3, arg4})
+	stub := fake.GetCommitStub
+	fakeReturns := fake.getCommitReturns
 	fake.recordInvocation("GetCommit", []interface{}{arg1, arg2, arg3, arg4})
 	fake.getCommitMutex.Unlock()
-	if fake.GetCommitStub != nil {
-		return fake.GetCommitStub(arg1, arg2, arg3, arg4)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2, ret.result3
 	}
-	fakeReturns := fake.getCommitReturns
 	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
 }
 
@@ -464,15 +597,16 @@ func (fake *FakeClient) GetPullRequest(arg1 context.Context, arg2 string, arg3 s
 		arg3 string
 		arg4 int
 	}{arg1, arg2, arg3, arg4})
+	stub := fake.GetPullRequestStub
+	fakeReturns := fake.getPullRequestReturns
 	fake.recordInvocation("GetPullRequest", []interface{}{arg1, arg2, arg3, arg4})
 	fake.getPullRequestMutex.Unlock()
-	if fake.GetPullRequestStub != nil {
-		return fake.GetPullRequestStub(arg1, arg2, arg3, arg4)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2, ret.result3
 	}
-	fakeReturns := fake.getPullRequestReturns
 	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
 }
 
@@ -533,15 +667,16 @@ func (fake *FakeClient) GetReleaseByTag(arg1 context.Context, arg2 string, arg3 
 		arg3 string
 		arg4 string
 	}{arg1, arg2, arg3, arg4})
+	stub := fake.GetReleaseByTagStub
+	fakeReturns := fake.getReleaseByTagReturns
 	fake.recordInvocation("GetReleaseByTag", []interface{}{arg1, arg2, arg3, arg4})
 	fake.getReleaseByTagMutex.Unlock()
-	if fake.GetReleaseByTagStub != nil {
-		return fake.GetReleaseByTagStub(arg1, arg2, arg3, arg4)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2, ret.result3
 	}
-	fakeReturns := fake.getReleaseByTagReturns
 	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
 }
 
@@ -602,15 +737,16 @@ func (fake *FakeClient) GetRepoCommit(arg1 context.Context, arg2 string, arg3 st
 		arg3 string
 		arg4 string
 	}{arg1, arg2, arg3, arg4})
+	stub := fake.GetRepoCommitStub
+	fakeReturns := fake.getRepoCommitReturns
 	fake.recordInvocation("GetRepoCommit", []interface{}{arg1, arg2, arg3, arg4})
 	fake.getRepoCommitMutex.Unlock()
-	if fake.GetRepoCommitStub != nil {
-		return fake.GetRepoCommitStub(arg1, arg2, arg3, arg4)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2, ret.result3
 	}
-	fakeReturns := fake.getRepoCommitReturns
 	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
 }
 
@@ -670,15 +806,16 @@ func (fake *FakeClient) GetRepository(arg1 context.Context, arg2 string, arg3 st
 		arg2 string
 		arg3 string
 	}{arg1, arg2, arg3})
+	stub := fake.GetRepositoryStub
+	fakeReturns := fake.getRepositoryReturns
 	fake.recordInvocation("GetRepository", []interface{}{arg1, arg2, arg3})
 	fake.getRepositoryMutex.Unlock()
-	if fake.GetRepositoryStub != nil {
-		return fake.GetRepositoryStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2, ret.result3
 	}
-	fakeReturns := fake.getRepositoryReturns
 	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
 }
 
@@ -739,15 +876,16 @@ func (fake *FakeClient) ListBranches(arg1 context.Context, arg2 string, arg3 str
 		arg3 string
 		arg4 *githuba.BranchListOptions
 	}{arg1, arg2, arg3, arg4})
+	stub := fake.ListBranchesStub
+	fakeReturns := fake.listBranchesReturns
 	fake.recordInvocation("ListBranches", []interface{}{arg1, arg2, arg3, arg4})
 	fake.listBranchesMutex.Unlock()
-	if fake.ListBranchesStub != nil {
-		return fake.ListBranchesStub(arg1, arg2, arg3, arg4)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2, ret.result3
 	}
-	fakeReturns := fake.listBranchesReturns
 	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
 }
 
@@ -808,15 +946,16 @@ func (fake *FakeClient) ListCommits(arg1 context.Context, arg2 string, arg3 stri
 		arg3 string
 		arg4 *githuba.CommitsListOptions
 	}{arg1, arg2, arg3, arg4})
+	stub := fake.ListCommitsStub
+	fakeReturns := fake.listCommitsReturns
 	fake.recordInvocation("ListCommits", []interface{}{arg1, arg2, arg3, arg4})
 	fake.listCommitsMutex.Unlock()
-	if fake.ListCommitsStub != nil {
-		return fake.ListCommitsStub(arg1, arg2, arg3, arg4)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2, ret.result3
 	}
-	fakeReturns := fake.listCommitsReturns
 	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
 }
 
@@ -878,15 +1017,16 @@ func (fake *FakeClient) ListPullRequestsWithCommit(arg1 context.Context, arg2 st
 		arg4 string
 		arg5 *githuba.PullRequestListOptions
 	}{arg1, arg2, arg3, arg4, arg5})
+	stub := fake.ListPullRequestsWithCommitStub
+	fakeReturns := fake.listPullRequestsWithCommitReturns
 	fake.recordInvocation("ListPullRequestsWithCommit", []interface{}{arg1, arg2, arg3, arg4, arg5})
 	fake.listPullRequestsWithCommitMutex.Unlock()
-	if fake.ListPullRequestsWithCommitStub != nil {
-		return fake.ListPullRequestsWithCommitStub(arg1, arg2, arg3, arg4, arg5)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4, arg5)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2, ret.result3
 	}
-	fakeReturns := fake.listPullRequestsWithCommitReturns
 	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
 }
 
@@ -938,6 +1078,73 @@ func (fake *FakeClient) ListPullRequestsWithCommitReturnsOnCall(i int, result1 [
 	}{result1, result2, result3}
 }
 
+func (fake *FakeClient) ListReleaseAssets(arg1 context.Context, arg2 string, arg3 string, arg4 int64) ([]*githuba.ReleaseAsset, error) {
+	fake.listReleaseAssetsMutex.Lock()
+	ret, specificReturn := fake.listReleaseAssetsReturnsOnCall[len(fake.listReleaseAssetsArgsForCall)]
+	fake.listReleaseAssetsArgsForCall = append(fake.listReleaseAssetsArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 int64
+	}{arg1, arg2, arg3, arg4})
+	stub := fake.ListReleaseAssetsStub
+	fakeReturns := fake.listReleaseAssetsReturns
+	fake.recordInvocation("ListReleaseAssets", []interface{}{arg1, arg2, arg3, arg4})
+	fake.listReleaseAssetsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) ListReleaseAssetsCallCount() int {
+	fake.listReleaseAssetsMutex.RLock()
+	defer fake.listReleaseAssetsMutex.RUnlock()
+	return len(fake.listReleaseAssetsArgsForCall)
+}
+
+func (fake *FakeClient) ListReleaseAssetsCalls(stub func(context.Context, string, string, int64) ([]*githuba.ReleaseAsset, error)) {
+	fake.listReleaseAssetsMutex.Lock()
+	defer fake.listReleaseAssetsMutex.Unlock()
+	fake.ListReleaseAssetsStub = stub
+}
+
+func (fake *FakeClient) ListReleaseAssetsArgsForCall(i int) (context.Context, string, string, int64) {
+	fake.listReleaseAssetsMutex.RLock()
+	defer fake.listReleaseAssetsMutex.RUnlock()
+	argsForCall := fake.listReleaseAssetsArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+}
+
+func (fake *FakeClient) ListReleaseAssetsReturns(result1 []*githuba.ReleaseAsset, result2 error) {
+	fake.listReleaseAssetsMutex.Lock()
+	defer fake.listReleaseAssetsMutex.Unlock()
+	fake.ListReleaseAssetsStub = nil
+	fake.listReleaseAssetsReturns = struct {
+		result1 []*githuba.ReleaseAsset
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) ListReleaseAssetsReturnsOnCall(i int, result1 []*githuba.ReleaseAsset, result2 error) {
+	fake.listReleaseAssetsMutex.Lock()
+	defer fake.listReleaseAssetsMutex.Unlock()
+	fake.ListReleaseAssetsStub = nil
+	if fake.listReleaseAssetsReturnsOnCall == nil {
+		fake.listReleaseAssetsReturnsOnCall = make(map[int]struct {
+			result1 []*githuba.ReleaseAsset
+			result2 error
+		})
+	}
+	fake.listReleaseAssetsReturnsOnCall[i] = struct {
+		result1 []*githuba.ReleaseAsset
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) ListReleases(arg1 context.Context, arg2 string, arg3 string, arg4 *githuba.ListOptions) ([]*githuba.RepositoryRelease, *githuba.Response, error) {
 	fake.listReleasesMutex.Lock()
 	ret, specificReturn := fake.listReleasesReturnsOnCall[len(fake.listReleasesArgsForCall)]
@@ -947,15 +1154,16 @@ func (fake *FakeClient) ListReleases(arg1 context.Context, arg2 string, arg3 str
 		arg3 string
 		arg4 *githuba.ListOptions
 	}{arg1, arg2, arg3, arg4})
+	stub := fake.ListReleasesStub
+	fakeReturns := fake.listReleasesReturns
 	fake.recordInvocation("ListReleases", []interface{}{arg1, arg2, arg3, arg4})
 	fake.listReleasesMutex.Unlock()
-	if fake.ListReleasesStub != nil {
-		return fake.ListReleasesStub(arg1, arg2, arg3, arg4)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2, ret.result3
 	}
-	fakeReturns := fake.listReleasesReturns
 	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
 }
 
@@ -1016,15 +1224,16 @@ func (fake *FakeClient) ListTags(arg1 context.Context, arg2 string, arg3 string,
 		arg3 string
 		arg4 *githuba.ListOptions
 	}{arg1, arg2, arg3, arg4})
+	stub := fake.ListTagsStub
+	fakeReturns := fake.listTagsReturns
 	fake.recordInvocation("ListTags", []interface{}{arg1, arg2, arg3, arg4})
 	fake.listTagsMutex.Unlock()
-	if fake.ListTagsStub != nil {
-		return fake.ListTagsStub(arg1, arg2, arg3, arg4)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2, ret.result3
 	}
-	fakeReturns := fake.listTagsReturns
 	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
 }
 
@@ -1076,11 +1285,150 @@ func (fake *FakeClient) ListTagsReturnsOnCall(i int, result1 []*githuba.Reposito
 	}{result1, result2, result3}
 }
 
+func (fake *FakeClient) UpdateReleasePage(arg1 context.Context, arg2 string, arg3 string, arg4 int64, arg5 *githuba.RepositoryRelease) (*githuba.RepositoryRelease, error) {
+	fake.updateReleasePageMutex.Lock()
+	ret, specificReturn := fake.updateReleasePageReturnsOnCall[len(fake.updateReleasePageArgsForCall)]
+	fake.updateReleasePageArgsForCall = append(fake.updateReleasePageArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 int64
+		arg5 *githuba.RepositoryRelease
+	}{arg1, arg2, arg3, arg4, arg5})
+	stub := fake.UpdateReleasePageStub
+	fakeReturns := fake.updateReleasePageReturns
+	fake.recordInvocation("UpdateReleasePage", []interface{}{arg1, arg2, arg3, arg4, arg5})
+	fake.updateReleasePageMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4, arg5)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) UpdateReleasePageCallCount() int {
+	fake.updateReleasePageMutex.RLock()
+	defer fake.updateReleasePageMutex.RUnlock()
+	return len(fake.updateReleasePageArgsForCall)
+}
+
+func (fake *FakeClient) UpdateReleasePageCalls(stub func(context.Context, string, string, int64, *githuba.RepositoryRelease) (*githuba.RepositoryRelease, error)) {
+	fake.updateReleasePageMutex.Lock()
+	defer fake.updateReleasePageMutex.Unlock()
+	fake.UpdateReleasePageStub = stub
+}
+
+func (fake *FakeClient) UpdateReleasePageArgsForCall(i int) (context.Context, string, string, int64, *githuba.RepositoryRelease) {
+	fake.updateReleasePageMutex.RLock()
+	defer fake.updateReleasePageMutex.RUnlock()
+	argsForCall := fake.updateReleasePageArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5
+}
+
+func (fake *FakeClient) UpdateReleasePageReturns(result1 *githuba.RepositoryRelease, result2 error) {
+	fake.updateReleasePageMutex.Lock()
+	defer fake.updateReleasePageMutex.Unlock()
+	fake.UpdateReleasePageStub = nil
+	fake.updateReleasePageReturns = struct {
+		result1 *githuba.RepositoryRelease
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) UpdateReleasePageReturnsOnCall(i int, result1 *githuba.RepositoryRelease, result2 error) {
+	fake.updateReleasePageMutex.Lock()
+	defer fake.updateReleasePageMutex.Unlock()
+	fake.UpdateReleasePageStub = nil
+	if fake.updateReleasePageReturnsOnCall == nil {
+		fake.updateReleasePageReturnsOnCall = make(map[int]struct {
+			result1 *githuba.RepositoryRelease
+			result2 error
+		})
+	}
+	fake.updateReleasePageReturnsOnCall[i] = struct {
+		result1 *githuba.RepositoryRelease
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) UploadReleaseAsset(arg1 context.Context, arg2 string, arg3 string, arg4 int64, arg5 *githuba.UploadOptions, arg6 *os.File) (*githuba.ReleaseAsset, error) {
+	fake.uploadReleaseAssetMutex.Lock()
+	ret, specificReturn := fake.uploadReleaseAssetReturnsOnCall[len(fake.uploadReleaseAssetArgsForCall)]
+	fake.uploadReleaseAssetArgsForCall = append(fake.uploadReleaseAssetArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 int64
+		arg5 *githuba.UploadOptions
+		arg6 *os.File
+	}{arg1, arg2, arg3, arg4, arg5, arg6})
+	stub := fake.UploadReleaseAssetStub
+	fakeReturns := fake.uploadReleaseAssetReturns
+	fake.recordInvocation("UploadReleaseAsset", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6})
+	fake.uploadReleaseAssetMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4, arg5, arg6)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) UploadReleaseAssetCallCount() int {
+	fake.uploadReleaseAssetMutex.RLock()
+	defer fake.uploadReleaseAssetMutex.RUnlock()
+	return len(fake.uploadReleaseAssetArgsForCall)
+}
+
+func (fake *FakeClient) UploadReleaseAssetCalls(stub func(context.Context, string, string, int64, *githuba.UploadOptions, *os.File) (*githuba.ReleaseAsset, error)) {
+	fake.uploadReleaseAssetMutex.Lock()
+	defer fake.uploadReleaseAssetMutex.Unlock()
+	fake.UploadReleaseAssetStub = stub
+}
+
+func (fake *FakeClient) UploadReleaseAssetArgsForCall(i int) (context.Context, string, string, int64, *githuba.UploadOptions, *os.File) {
+	fake.uploadReleaseAssetMutex.RLock()
+	defer fake.uploadReleaseAssetMutex.RUnlock()
+	argsForCall := fake.uploadReleaseAssetArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5, argsForCall.arg6
+}
+
+func (fake *FakeClient) UploadReleaseAssetReturns(result1 *githuba.ReleaseAsset, result2 error) {
+	fake.uploadReleaseAssetMutex.Lock()
+	defer fake.uploadReleaseAssetMutex.Unlock()
+	fake.UploadReleaseAssetStub = nil
+	fake.uploadReleaseAssetReturns = struct {
+		result1 *githuba.ReleaseAsset
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) UploadReleaseAssetReturnsOnCall(i int, result1 *githuba.ReleaseAsset, result2 error) {
+	fake.uploadReleaseAssetMutex.Lock()
+	defer fake.uploadReleaseAssetMutex.Unlock()
+	fake.UploadReleaseAssetStub = nil
+	if fake.uploadReleaseAssetReturnsOnCall == nil {
+		fake.uploadReleaseAssetReturnsOnCall = make(map[int]struct {
+			result1 *githuba.ReleaseAsset
+			result2 error
+		})
+	}
+	fake.uploadReleaseAssetReturnsOnCall[i] = struct {
+		result1 *githuba.ReleaseAsset
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.createPullRequestMutex.RLock()
 	defer fake.createPullRequestMutex.RUnlock()
+	fake.deleteReleaseAssetMutex.RLock()
+	defer fake.deleteReleaseAssetMutex.RUnlock()
 	fake.downloadReleaseAssetMutex.RLock()
 	defer fake.downloadReleaseAssetMutex.RUnlock()
 	fake.getCommitMutex.RLock()
@@ -1099,10 +1447,16 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.listCommitsMutex.RUnlock()
 	fake.listPullRequestsWithCommitMutex.RLock()
 	defer fake.listPullRequestsWithCommitMutex.RUnlock()
+	fake.listReleaseAssetsMutex.RLock()
+	defer fake.listReleaseAssetsMutex.RUnlock()
 	fake.listReleasesMutex.RLock()
 	defer fake.listReleasesMutex.RUnlock()
 	fake.listTagsMutex.RLock()
 	defer fake.listTagsMutex.RUnlock()
+	fake.updateReleasePageMutex.RLock()
+	defer fake.updateReleasePageMutex.RUnlock()
+	fake.uploadReleaseAssetMutex.RLock()
+	defer fake.uploadReleaseAssetMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
