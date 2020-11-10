@@ -5,7 +5,9 @@ Push Kubernetes release artifacts to Google Cloud Storage (GCS)
 - [Summary](#summary)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Important notes](#important-notes)
+  - [Command line flags](#command-line-flags)
+  - [Examples](#examples)
+- [Important Notes](#important-notes)
 
 ## Summary
 
@@ -31,7 +33,7 @@ In `--ci` mode, 'push' runs in mock mode by default. Use `--nomock` to do a real
       --bucket string               Specify an alternate bucket for pushes (normally 'devel' or 'ci') (default "devel")
       --buildDir string             Specify an alternate build directory (defaults to '_output') (default "_output")
       --ci                          Used when called from Jenkins (for ci runs)
-      --docker-registry string      If set, push docker images to specified registry/project
+      --registry string             If set, push docker images to specified registry/project
       --extra-publish-file string   Used when need to upload additional version file to GCS. The path is relative and is append to a GCS path. (--ci only)
       --gcs-suffix string           Specify a suffix to append to the upload destination on GCS
   -h, --help                        help for push

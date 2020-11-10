@@ -88,7 +88,7 @@ func init() {
 	)
 
 	pushCmd.PersistentFlags().StringVar(
-		&pushOpts.DockerRegistry,
+		&pushOpts.Registry,
 		"container-registry",
 		"",
 		"Container image registry to be used",
@@ -177,7 +177,7 @@ func runPushRelease(
 	// In an official nomock release, we want to ensure that container images
 	// have been promoted from staging to production, so we do the image
 	// manifest validation against production instead of staging.
-	targetRegistry := opts.DockerRegistry
+	targetRegistry := opts.Registry
 	if targetRegistry == release.GCRIOPathStaging {
 		targetRegistry = release.GCRIOPathProd
 	}

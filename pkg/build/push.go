@@ -366,10 +366,10 @@ func (bi *Instance) PushReleaseArtifacts(srcPath, gcsPath string) error {
 }
 
 // PushContainerImages will publish container images into the set
-// `DockerRegistry`. It also validates if the remove manifests are correct,
+// `Registry`. It also validates if the remove manifests are correct,
 // which can be turned of by setting `ValidateRemoteImageDigests` to `false`.
 func (bi *Instance) PushContainerImages() error {
-	if bi.opts.DockerRegistry == "" {
+	if bi.opts.Registry == "" {
 		logrus.Info("Registry is not set, will not publish container images")
 		return nil
 	}
@@ -378,7 +378,7 @@ func (bi *Instance) PushContainerImages() error {
 	logrus.Infof("Publishing container images for %s", bi.opts.Version)
 
 	if err := images.Publish(
-		bi.opts.DockerRegistry, bi.opts.Version, bi.opts.BuildDir,
+		bi.opts.Registry, bi.opts.Version, bi.opts.BuildDir,
 	); err != nil {
 		return errors.Wrap(err, "publish container images")
 	}
@@ -389,7 +389,7 @@ func (bi *Instance) PushContainerImages() error {
 	}
 
 	if err := images.Validate(
-		bi.opts.DockerRegistry, bi.opts.Version, bi.opts.BuildDir,
+		bi.opts.Registry, bi.opts.Version, bi.opts.BuildDir,
 	); err != nil {
 		return errors.Wrap(err, "validate container images")
 	}

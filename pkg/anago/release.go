@@ -196,7 +196,7 @@ func (d *DefaultRelease) PushArtifacts(versions []string) error {
 		pushBuildOptions := &build.Options{
 			Bucket:                     bucket,
 			BuildDir:                   buildDir,
-			DockerRegistry:             containerRegistry,
+			Registry:                   containerRegistry,
 			Version:                    version,
 			AllowDup:                   true,
 			ValidateRemoteImageDigests: true,

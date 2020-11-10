@@ -111,8 +111,8 @@ func init() {
 
 	// TODO: Switch to "--registry" once CI no longer uses it
 	ciBuildCmd.PersistentFlags().StringVar(
-		&ciBuildOpts.DockerRegistry,
-		"docker-registry",
+		&ciBuildOpts.Registry,
+		"registry",
 		"",
 		"If set, push docker images to specified registry/project",
 	)
