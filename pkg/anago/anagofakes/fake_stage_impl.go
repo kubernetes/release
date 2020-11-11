@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/changelog"
+	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
 )
 
@@ -36,6 +37,54 @@ type FakeStageImpl struct {
 	}
 	checkReleaseBucketReturnsOnCall map[int]struct {
 		result1 error
+	}
+	CheckoutStub        func(*git.Repo, string, ...string) error
+	checkoutMutex       sync.RWMutex
+	checkoutArgsForCall []struct {
+		arg1 *git.Repo
+		arg2 string
+		arg3 []string
+	}
+	checkoutReturns struct {
+		result1 error
+	}
+	checkoutReturnsOnCall map[int]struct {
+		result1 error
+	}
+	CommitEmptyStub        func(*git.Repo, string) error
+	commitEmptyMutex       sync.RWMutex
+	commitEmptyArgsForCall []struct {
+		arg1 *git.Repo
+		arg2 string
+	}
+	commitEmptyReturns struct {
+		result1 error
+	}
+	commitEmptyReturnsOnCall map[int]struct {
+		result1 error
+	}
+	ConfigureGlobalDefaultUserAndEmailStub        func() error
+	configureGlobalDefaultUserAndEmailMutex       sync.RWMutex
+	configureGlobalDefaultUserAndEmailArgsForCall []struct {
+	}
+	configureGlobalDefaultUserAndEmailReturns struct {
+		result1 error
+	}
+	configureGlobalDefaultUserAndEmailReturnsOnCall map[int]struct {
+		result1 error
+	}
+	CurrentBranchStub        func(*git.Repo) (string, error)
+	currentBranchMutex       sync.RWMutex
+	currentBranchArgsForCall []struct {
+		arg1 *git.Repo
+	}
+	currentBranchReturns struct {
+		result1 string
+		result2 error
+	}
+	currentBranchReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
 	}
 	GenerateChangelogStub        func(*changelog.Options) error
 	generateChangelogMutex       sync.RWMutex
@@ -64,6 +113,20 @@ type FakeStageImpl struct {
 		result1 *release.Versions
 		result2 error
 	}
+	HasBranchStub        func(*git.Repo, string) (bool, error)
+	hasBranchMutex       sync.RWMutex
+	hasBranchArgsForCall []struct {
+		arg1 *git.Repo
+		arg2 string
+	}
+	hasBranchReturns struct {
+		result1 bool
+		result2 error
+	}
+	hasBranchReturnsOnCall map[int]struct {
+		result1 bool
+		result2 error
+	}
 	MakeCrossStub        func(string) error
 	makeCrossMutex       sync.RWMutex
 	makeCrossArgsForCall []struct {
@@ -74,6 +137,19 @@ type FakeStageImpl struct {
 	}
 	makeCrossReturnsOnCall map[int]struct {
 		result1 error
+	}
+	OpenRepoStub        func(string) (*git.Repo, error)
+	openRepoMutex       sync.RWMutex
+	openRepoArgsForCall []struct {
+		arg1 string
+	}
+	openRepoReturns struct {
+		result1 *git.Repo
+		result2 error
+	}
+	openRepoReturnsOnCall map[int]struct {
+		result1 *git.Repo
+		result2 error
 	}
 	PrepareWorkspaceStageStub        func() error
 	prepareWorkspaceStageMutex       sync.RWMutex
@@ -109,6 +185,20 @@ type FakeStageImpl struct {
 	pushReleaseArtifactsReturnsOnCall map[int]struct {
 		result1 error
 	}
+	RevParseStub        func(*git.Repo, string) (string, error)
+	revParseMutex       sync.RWMutex
+	revParseArgsForCall []struct {
+		arg1 *git.Repo
+		arg2 string
+	}
+	revParseReturns struct {
+		result1 string
+		result2 error
+	}
+	revParseReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
 	StageLocalArtifactsStub        func(*build.Options) error
 	stageLocalArtifactsMutex       sync.RWMutex
 	stageLocalArtifactsArgsForCall []struct {
@@ -133,11 +223,12 @@ type FakeStageImpl struct {
 	stageLocalSourceTreeReturnsOnCall map[int]struct {
 		result1 error
 	}
-	TagStub        func(string, string) error
+	TagStub        func(*git.Repo, string, string) error
 	tagMutex       sync.RWMutex
 	tagArgsForCall []struct {
-		arg1 string
+		arg1 *git.Repo
 		arg2 string
+		arg3 string
 	}
 	tagReturns struct {
 		result1 error
@@ -208,6 +299,248 @@ func (fake *FakeStageImpl) CheckReleaseBucketReturnsOnCall(i int, result1 error)
 	fake.checkReleaseBucketReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
+}
+
+func (fake *FakeStageImpl) Checkout(arg1 *git.Repo, arg2 string, arg3 ...string) error {
+	fake.checkoutMutex.Lock()
+	ret, specificReturn := fake.checkoutReturnsOnCall[len(fake.checkoutArgsForCall)]
+	fake.checkoutArgsForCall = append(fake.checkoutArgsForCall, struct {
+		arg1 *git.Repo
+		arg2 string
+		arg3 []string
+	}{arg1, arg2, arg3})
+	stub := fake.CheckoutStub
+	fakeReturns := fake.checkoutReturns
+	fake.recordInvocation("Checkout", []interface{}{arg1, arg2, arg3})
+	fake.checkoutMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3...)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) CheckoutCallCount() int {
+	fake.checkoutMutex.RLock()
+	defer fake.checkoutMutex.RUnlock()
+	return len(fake.checkoutArgsForCall)
+}
+
+func (fake *FakeStageImpl) CheckoutCalls(stub func(*git.Repo, string, ...string) error) {
+	fake.checkoutMutex.Lock()
+	defer fake.checkoutMutex.Unlock()
+	fake.CheckoutStub = stub
+}
+
+func (fake *FakeStageImpl) CheckoutArgsForCall(i int) (*git.Repo, string, []string) {
+	fake.checkoutMutex.RLock()
+	defer fake.checkoutMutex.RUnlock()
+	argsForCall := fake.checkoutArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeStageImpl) CheckoutReturns(result1 error) {
+	fake.checkoutMutex.Lock()
+	defer fake.checkoutMutex.Unlock()
+	fake.CheckoutStub = nil
+	fake.checkoutReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) CheckoutReturnsOnCall(i int, result1 error) {
+	fake.checkoutMutex.Lock()
+	defer fake.checkoutMutex.Unlock()
+	fake.CheckoutStub = nil
+	if fake.checkoutReturnsOnCall == nil {
+		fake.checkoutReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.checkoutReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) CommitEmpty(arg1 *git.Repo, arg2 string) error {
+	fake.commitEmptyMutex.Lock()
+	ret, specificReturn := fake.commitEmptyReturnsOnCall[len(fake.commitEmptyArgsForCall)]
+	fake.commitEmptyArgsForCall = append(fake.commitEmptyArgsForCall, struct {
+		arg1 *git.Repo
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.CommitEmptyStub
+	fakeReturns := fake.commitEmptyReturns
+	fake.recordInvocation("CommitEmpty", []interface{}{arg1, arg2})
+	fake.commitEmptyMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) CommitEmptyCallCount() int {
+	fake.commitEmptyMutex.RLock()
+	defer fake.commitEmptyMutex.RUnlock()
+	return len(fake.commitEmptyArgsForCall)
+}
+
+func (fake *FakeStageImpl) CommitEmptyCalls(stub func(*git.Repo, string) error) {
+	fake.commitEmptyMutex.Lock()
+	defer fake.commitEmptyMutex.Unlock()
+	fake.CommitEmptyStub = stub
+}
+
+func (fake *FakeStageImpl) CommitEmptyArgsForCall(i int) (*git.Repo, string) {
+	fake.commitEmptyMutex.RLock()
+	defer fake.commitEmptyMutex.RUnlock()
+	argsForCall := fake.commitEmptyArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeStageImpl) CommitEmptyReturns(result1 error) {
+	fake.commitEmptyMutex.Lock()
+	defer fake.commitEmptyMutex.Unlock()
+	fake.CommitEmptyStub = nil
+	fake.commitEmptyReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) CommitEmptyReturnsOnCall(i int, result1 error) {
+	fake.commitEmptyMutex.Lock()
+	defer fake.commitEmptyMutex.Unlock()
+	fake.CommitEmptyStub = nil
+	if fake.commitEmptyReturnsOnCall == nil {
+		fake.commitEmptyReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.commitEmptyReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) ConfigureGlobalDefaultUserAndEmail() error {
+	fake.configureGlobalDefaultUserAndEmailMutex.Lock()
+	ret, specificReturn := fake.configureGlobalDefaultUserAndEmailReturnsOnCall[len(fake.configureGlobalDefaultUserAndEmailArgsForCall)]
+	fake.configureGlobalDefaultUserAndEmailArgsForCall = append(fake.configureGlobalDefaultUserAndEmailArgsForCall, struct {
+	}{})
+	stub := fake.ConfigureGlobalDefaultUserAndEmailStub
+	fakeReturns := fake.configureGlobalDefaultUserAndEmailReturns
+	fake.recordInvocation("ConfigureGlobalDefaultUserAndEmail", []interface{}{})
+	fake.configureGlobalDefaultUserAndEmailMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) ConfigureGlobalDefaultUserAndEmailCallCount() int {
+	fake.configureGlobalDefaultUserAndEmailMutex.RLock()
+	defer fake.configureGlobalDefaultUserAndEmailMutex.RUnlock()
+	return len(fake.configureGlobalDefaultUserAndEmailArgsForCall)
+}
+
+func (fake *FakeStageImpl) ConfigureGlobalDefaultUserAndEmailCalls(stub func() error) {
+	fake.configureGlobalDefaultUserAndEmailMutex.Lock()
+	defer fake.configureGlobalDefaultUserAndEmailMutex.Unlock()
+	fake.ConfigureGlobalDefaultUserAndEmailStub = stub
+}
+
+func (fake *FakeStageImpl) ConfigureGlobalDefaultUserAndEmailReturns(result1 error) {
+	fake.configureGlobalDefaultUserAndEmailMutex.Lock()
+	defer fake.configureGlobalDefaultUserAndEmailMutex.Unlock()
+	fake.ConfigureGlobalDefaultUserAndEmailStub = nil
+	fake.configureGlobalDefaultUserAndEmailReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) ConfigureGlobalDefaultUserAndEmailReturnsOnCall(i int, result1 error) {
+	fake.configureGlobalDefaultUserAndEmailMutex.Lock()
+	defer fake.configureGlobalDefaultUserAndEmailMutex.Unlock()
+	fake.ConfigureGlobalDefaultUserAndEmailStub = nil
+	if fake.configureGlobalDefaultUserAndEmailReturnsOnCall == nil {
+		fake.configureGlobalDefaultUserAndEmailReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.configureGlobalDefaultUserAndEmailReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) CurrentBranch(arg1 *git.Repo) (string, error) {
+	fake.currentBranchMutex.Lock()
+	ret, specificReturn := fake.currentBranchReturnsOnCall[len(fake.currentBranchArgsForCall)]
+	fake.currentBranchArgsForCall = append(fake.currentBranchArgsForCall, struct {
+		arg1 *git.Repo
+	}{arg1})
+	stub := fake.CurrentBranchStub
+	fakeReturns := fake.currentBranchReturns
+	fake.recordInvocation("CurrentBranch", []interface{}{arg1})
+	fake.currentBranchMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeStageImpl) CurrentBranchCallCount() int {
+	fake.currentBranchMutex.RLock()
+	defer fake.currentBranchMutex.RUnlock()
+	return len(fake.currentBranchArgsForCall)
+}
+
+func (fake *FakeStageImpl) CurrentBranchCalls(stub func(*git.Repo) (string, error)) {
+	fake.currentBranchMutex.Lock()
+	defer fake.currentBranchMutex.Unlock()
+	fake.CurrentBranchStub = stub
+}
+
+func (fake *FakeStageImpl) CurrentBranchArgsForCall(i int) *git.Repo {
+	fake.currentBranchMutex.RLock()
+	defer fake.currentBranchMutex.RUnlock()
+	argsForCall := fake.currentBranchArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStageImpl) CurrentBranchReturns(result1 string, result2 error) {
+	fake.currentBranchMutex.Lock()
+	defer fake.currentBranchMutex.Unlock()
+	fake.CurrentBranchStub = nil
+	fake.currentBranchReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStageImpl) CurrentBranchReturnsOnCall(i int, result1 string, result2 error) {
+	fake.currentBranchMutex.Lock()
+	defer fake.currentBranchMutex.Unlock()
+	fake.CurrentBranchStub = nil
+	if fake.currentBranchReturnsOnCall == nil {
+		fake.currentBranchReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.currentBranchReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeStageImpl) GenerateChangelog(arg1 *changelog.Options) error {
@@ -338,6 +671,71 @@ func (fake *FakeStageImpl) GenerateReleaseVersionReturnsOnCall(i int, result1 *r
 	}{result1, result2}
 }
 
+func (fake *FakeStageImpl) HasBranch(arg1 *git.Repo, arg2 string) (bool, error) {
+	fake.hasBranchMutex.Lock()
+	ret, specificReturn := fake.hasBranchReturnsOnCall[len(fake.hasBranchArgsForCall)]
+	fake.hasBranchArgsForCall = append(fake.hasBranchArgsForCall, struct {
+		arg1 *git.Repo
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.HasBranchStub
+	fakeReturns := fake.hasBranchReturns
+	fake.recordInvocation("HasBranch", []interface{}{arg1, arg2})
+	fake.hasBranchMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeStageImpl) HasBranchCallCount() int {
+	fake.hasBranchMutex.RLock()
+	defer fake.hasBranchMutex.RUnlock()
+	return len(fake.hasBranchArgsForCall)
+}
+
+func (fake *FakeStageImpl) HasBranchCalls(stub func(*git.Repo, string) (bool, error)) {
+	fake.hasBranchMutex.Lock()
+	defer fake.hasBranchMutex.Unlock()
+	fake.HasBranchStub = stub
+}
+
+func (fake *FakeStageImpl) HasBranchArgsForCall(i int) (*git.Repo, string) {
+	fake.hasBranchMutex.RLock()
+	defer fake.hasBranchMutex.RUnlock()
+	argsForCall := fake.hasBranchArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeStageImpl) HasBranchReturns(result1 bool, result2 error) {
+	fake.hasBranchMutex.Lock()
+	defer fake.hasBranchMutex.Unlock()
+	fake.HasBranchStub = nil
+	fake.hasBranchReturns = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStageImpl) HasBranchReturnsOnCall(i int, result1 bool, result2 error) {
+	fake.hasBranchMutex.Lock()
+	defer fake.hasBranchMutex.Unlock()
+	fake.HasBranchStub = nil
+	if fake.hasBranchReturnsOnCall == nil {
+		fake.hasBranchReturnsOnCall = make(map[int]struct {
+			result1 bool
+			result2 error
+		})
+	}
+	fake.hasBranchReturnsOnCall[i] = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeStageImpl) MakeCross(arg1 string) error {
 	fake.makeCrossMutex.Lock()
 	ret, specificReturn := fake.makeCrossReturnsOnCall[len(fake.makeCrossArgsForCall)]
@@ -397,6 +795,70 @@ func (fake *FakeStageImpl) MakeCrossReturnsOnCall(i int, result1 error) {
 	fake.makeCrossReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
+}
+
+func (fake *FakeStageImpl) OpenRepo(arg1 string) (*git.Repo, error) {
+	fake.openRepoMutex.Lock()
+	ret, specificReturn := fake.openRepoReturnsOnCall[len(fake.openRepoArgsForCall)]
+	fake.openRepoArgsForCall = append(fake.openRepoArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.OpenRepoStub
+	fakeReturns := fake.openRepoReturns
+	fake.recordInvocation("OpenRepo", []interface{}{arg1})
+	fake.openRepoMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeStageImpl) OpenRepoCallCount() int {
+	fake.openRepoMutex.RLock()
+	defer fake.openRepoMutex.RUnlock()
+	return len(fake.openRepoArgsForCall)
+}
+
+func (fake *FakeStageImpl) OpenRepoCalls(stub func(string) (*git.Repo, error)) {
+	fake.openRepoMutex.Lock()
+	defer fake.openRepoMutex.Unlock()
+	fake.OpenRepoStub = stub
+}
+
+func (fake *FakeStageImpl) OpenRepoArgsForCall(i int) string {
+	fake.openRepoMutex.RLock()
+	defer fake.openRepoMutex.RUnlock()
+	argsForCall := fake.openRepoArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStageImpl) OpenRepoReturns(result1 *git.Repo, result2 error) {
+	fake.openRepoMutex.Lock()
+	defer fake.openRepoMutex.Unlock()
+	fake.OpenRepoStub = nil
+	fake.openRepoReturns = struct {
+		result1 *git.Repo
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStageImpl) OpenRepoReturnsOnCall(i int, result1 *git.Repo, result2 error) {
+	fake.openRepoMutex.Lock()
+	defer fake.openRepoMutex.Unlock()
+	fake.OpenRepoStub = nil
+	if fake.openRepoReturnsOnCall == nil {
+		fake.openRepoReturnsOnCall = make(map[int]struct {
+			result1 *git.Repo
+			result2 error
+		})
+	}
+	fake.openRepoReturnsOnCall[i] = struct {
+		result1 *git.Repo
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeStageImpl) PrepareWorkspaceStage() error {
@@ -576,6 +1038,71 @@ func (fake *FakeStageImpl) PushReleaseArtifactsReturnsOnCall(i int, result1 erro
 	}{result1}
 }
 
+func (fake *FakeStageImpl) RevParse(arg1 *git.Repo, arg2 string) (string, error) {
+	fake.revParseMutex.Lock()
+	ret, specificReturn := fake.revParseReturnsOnCall[len(fake.revParseArgsForCall)]
+	fake.revParseArgsForCall = append(fake.revParseArgsForCall, struct {
+		arg1 *git.Repo
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.RevParseStub
+	fakeReturns := fake.revParseReturns
+	fake.recordInvocation("RevParse", []interface{}{arg1, arg2})
+	fake.revParseMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeStageImpl) RevParseCallCount() int {
+	fake.revParseMutex.RLock()
+	defer fake.revParseMutex.RUnlock()
+	return len(fake.revParseArgsForCall)
+}
+
+func (fake *FakeStageImpl) RevParseCalls(stub func(*git.Repo, string) (string, error)) {
+	fake.revParseMutex.Lock()
+	defer fake.revParseMutex.Unlock()
+	fake.RevParseStub = stub
+}
+
+func (fake *FakeStageImpl) RevParseArgsForCall(i int) (*git.Repo, string) {
+	fake.revParseMutex.RLock()
+	defer fake.revParseMutex.RUnlock()
+	argsForCall := fake.revParseArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeStageImpl) RevParseReturns(result1 string, result2 error) {
+	fake.revParseMutex.Lock()
+	defer fake.revParseMutex.Unlock()
+	fake.RevParseStub = nil
+	fake.revParseReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStageImpl) RevParseReturnsOnCall(i int, result1 string, result2 error) {
+	fake.revParseMutex.Lock()
+	defer fake.revParseMutex.Unlock()
+	fake.RevParseStub = nil
+	if fake.revParseReturnsOnCall == nil {
+		fake.revParseReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.revParseReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeStageImpl) StageLocalArtifacts(arg1 *build.Options) error {
 	fake.stageLocalArtifactsMutex.Lock()
 	ret, specificReturn := fake.stageLocalArtifactsReturnsOnCall[len(fake.stageLocalArtifactsArgsForCall)]
@@ -700,19 +1227,20 @@ func (fake *FakeStageImpl) StageLocalSourceTreeReturnsOnCall(i int, result1 erro
 	}{result1}
 }
 
-func (fake *FakeStageImpl) Tag(arg1 string, arg2 string) error {
+func (fake *FakeStageImpl) Tag(arg1 *git.Repo, arg2 string, arg3 string) error {
 	fake.tagMutex.Lock()
 	ret, specificReturn := fake.tagReturnsOnCall[len(fake.tagArgsForCall)]
 	fake.tagArgsForCall = append(fake.tagArgsForCall, struct {
-		arg1 string
+		arg1 *git.Repo
 		arg2 string
-	}{arg1, arg2})
+		arg3 string
+	}{arg1, arg2, arg3})
 	stub := fake.TagStub
 	fakeReturns := fake.tagReturns
-	fake.recordInvocation("Tag", []interface{}{arg1, arg2})
+	fake.recordInvocation("Tag", []interface{}{arg1, arg2, arg3})
 	fake.tagMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -726,17 +1254,17 @@ func (fake *FakeStageImpl) TagCallCount() int {
 	return len(fake.tagArgsForCall)
 }
 
-func (fake *FakeStageImpl) TagCalls(stub func(string, string) error) {
+func (fake *FakeStageImpl) TagCalls(stub func(*git.Repo, string, string) error) {
 	fake.tagMutex.Lock()
 	defer fake.tagMutex.Unlock()
 	fake.TagStub = stub
 }
 
-func (fake *FakeStageImpl) TagArgsForCall(i int) (string, string) {
+func (fake *FakeStageImpl) TagArgsForCall(i int) (*git.Repo, string, string) {
 	fake.tagMutex.RLock()
 	defer fake.tagMutex.RUnlock()
 	argsForCall := fake.tagArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeStageImpl) TagReturns(result1 error) {
@@ -767,18 +1295,32 @@ func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.checkReleaseBucketMutex.RLock()
 	defer fake.checkReleaseBucketMutex.RUnlock()
+	fake.checkoutMutex.RLock()
+	defer fake.checkoutMutex.RUnlock()
+	fake.commitEmptyMutex.RLock()
+	defer fake.commitEmptyMutex.RUnlock()
+	fake.configureGlobalDefaultUserAndEmailMutex.RLock()
+	defer fake.configureGlobalDefaultUserAndEmailMutex.RUnlock()
+	fake.currentBranchMutex.RLock()
+	defer fake.currentBranchMutex.RUnlock()
 	fake.generateChangelogMutex.RLock()
 	defer fake.generateChangelogMutex.RUnlock()
 	fake.generateReleaseVersionMutex.RLock()
 	defer fake.generateReleaseVersionMutex.RUnlock()
+	fake.hasBranchMutex.RLock()
+	defer fake.hasBranchMutex.RUnlock()
 	fake.makeCrossMutex.RLock()
 	defer fake.makeCrossMutex.RUnlock()
+	fake.openRepoMutex.RLock()
+	defer fake.openRepoMutex.RUnlock()
 	fake.prepareWorkspaceStageMutex.RLock()
 	defer fake.prepareWorkspaceStageMutex.RUnlock()
 	fake.pushContainerImagesMutex.RLock()
 	defer fake.pushContainerImagesMutex.RUnlock()
 	fake.pushReleaseArtifactsMutex.RLock()
 	defer fake.pushReleaseArtifactsMutex.RUnlock()
+	fake.revParseMutex.RLock()
+	defer fake.revParseMutex.RUnlock()
 	fake.stageLocalArtifactsMutex.RLock()
 	defer fake.stageLocalArtifactsMutex.RUnlock()
 	fake.stageLocalSourceTreeMutex.RLock()

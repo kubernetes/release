@@ -86,15 +86,16 @@ func (fake *FakeWorktree) Add(arg1 string) (plumbing.Hash, error) {
 	fake.addArgsForCall = append(fake.addArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.AddStub
+	fakeReturns := fake.addReturns
 	fake.recordInvocation("Add", []interface{}{arg1})
 	fake.addMutex.Unlock()
-	if fake.AddStub != nil {
-		return fake.AddStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.addReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -149,15 +150,16 @@ func (fake *FakeWorktree) Checkout(arg1 *gita.CheckoutOptions) error {
 	fake.checkoutArgsForCall = append(fake.checkoutArgsForCall, struct {
 		arg1 *gita.CheckoutOptions
 	}{arg1})
+	stub := fake.CheckoutStub
+	fakeReturns := fake.checkoutReturns
 	fake.recordInvocation("Checkout", []interface{}{arg1})
 	fake.checkoutMutex.Unlock()
-	if fake.CheckoutStub != nil {
-		return fake.CheckoutStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.checkoutReturns
 	return fakeReturns.result1
 }
 
@@ -210,15 +212,16 @@ func (fake *FakeWorktree) Commit(arg1 string, arg2 *gita.CommitOptions) (plumbin
 		arg1 string
 		arg2 *gita.CommitOptions
 	}{arg1, arg2})
+	stub := fake.CommitStub
+	fakeReturns := fake.commitReturns
 	fake.recordInvocation("Commit", []interface{}{arg1, arg2})
 	fake.commitMutex.Unlock()
-	if fake.CommitStub != nil {
-		return fake.CommitStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.commitReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -272,15 +275,16 @@ func (fake *FakeWorktree) Status() (gita.Status, error) {
 	ret, specificReturn := fake.statusReturnsOnCall[len(fake.statusArgsForCall)]
 	fake.statusArgsForCall = append(fake.statusArgsForCall, struct {
 	}{})
+	stub := fake.StatusStub
+	fakeReturns := fake.statusReturns
 	fake.recordInvocation("Status", []interface{}{})
 	fake.statusMutex.Unlock()
-	if fake.StatusStub != nil {
-		return fake.StatusStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.statusReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

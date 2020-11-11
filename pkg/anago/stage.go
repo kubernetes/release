@@ -20,13 +20,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/changelog"
-	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
 )
@@ -57,8 +57,9 @@ type stageClient interface {
 	PrepareWorkspace() error
 
 	// TagRepository creates all necessary git objects by tagging the
-	// repository for the provided `versions`.
-	TagRepository(versions []string) error
+	// repository for the provided `versions` the main version `versionPrime`
+	// and the `parentBranch`.
+	TagRepository(versions *release.Versions, parentBranch string) error
 
 	// Build runs 'make cross-in-a-container' by using the latest kubecross
 	// container image. This step also build all necessary release tarballs.
@@ -98,8 +99,15 @@ type stageImpl interface {
 	GenerateReleaseVersion(
 		releaseType, version, branch string, branchFromMaster bool,
 	) (*release.Versions, error)
+	ConfigureGlobalDefaultUserAndEmail() error
+	OpenRepo(repoPath string) (*git.Repo, error)
+	RevParse(repo *git.Repo, rev string) (string, error)
+	HasBranch(repo *git.Repo, branch string) (bool, error)
+	Checkout(repo *git.Repo, rev string, args ...string) error
+	CurrentBranch(repo *git.Repo) (string, error)
+	CommitEmpty(repo *git.Repo, msg string) error
+	Tag(repo *git.Repo, name, message string) error
 	CheckReleaseBucket(options *build.Options) error
-	Tag(releaseType, version string) error
 	MakeCross(version string) error
 	GenerateChangelog(options *changelog.Options) error
 	StageLocalSourceTree(
@@ -112,6 +120,13 @@ type stageImpl interface {
 	PushContainerImages(options *build.Options) error
 }
 
+func (d *defaultStageImpl) PrepareWorkspaceStage() error {
+	if err := release.PrepareWorkspaceStage(gitRoot); err != nil {
+		return err
+	}
+	return os.Chdir(gitRoot)
+}
+
 func (d *defaultStageImpl) GenerateReleaseVersion(
 	releaseType, version, branch string, branchFromMaster bool,
 ) (*release.Versions, error) {
@@ -120,30 +135,36 @@ func (d *defaultStageImpl) GenerateReleaseVersion(
 	)
 }
 
-func (d *defaultStageImpl) PrepareWorkspaceStage() error {
-	if err := release.PrepareWorkspaceStage(gitRoot); err != nil {
-		return err
-	}
-	return os.Chdir(gitRoot)
+func (d *defaultStageImpl) ConfigureGlobalDefaultUserAndEmail() error {
+	return git.ConfigureGlobalDefaultUserAndEmail()
 }
 
-// TODO: see TagRepository()
-func (d *defaultStageImpl) Tag(releaseType, version string) error {
-	if err := command.New(
-		"git", "config", "--global", "user.email", "nobody@k8s.io",
-	).RunSuccess(); err != nil {
-		return err
-	}
-	if err := command.New(
-		"git", "config", "--global", "user.name", "Anago GCB",
-	).RunSuccess(); err != nil {
-		return err
-	}
-	return command.New(
-		"git", "tag", "-a", "-m",
-		fmt.Sprintf("Kubernetes %s release %s", releaseType, version),
-		version,
-	).RunSuccess()
+func (d *defaultStageImpl) OpenRepo(repoPath string) (*git.Repo, error) {
+	return git.OpenRepo(repoPath)
+}
+
+func (d *defaultStageImpl) RevParse(repo *git.Repo, rev string) (string, error) {
+	return repo.RevParse(rev)
+}
+
+func (d *defaultStageImpl) HasBranch(repo *git.Repo, branch string) (bool, error) {
+	return repo.HasBranch(branch)
+}
+
+func (d *defaultStageImpl) Checkout(repo *git.Repo, rev string, args ...string) error {
+	return repo.Checkout(rev, args...)
+}
+
+func (d *defaultStageImpl) CurrentBranch(repo *git.Repo) (string, error) {
+	return repo.CurrentBranch()
+}
+
+func (d *defaultStageImpl) CommitEmpty(repo *git.Repo, msg string) error {
+	return repo.CommitEmpty(msg)
+}
+
+func (d *defaultStageImpl) Tag(repo *git.Repo, name, message string) error {
+	return repo.Tag(name, message)
 }
 
 func (d *defaultStageImpl) MakeCross(version string) error {
@@ -210,11 +231,135 @@ func (d *DefaultStage) PrepareWorkspace() error {
 	return nil
 }
 
-func (d *DefaultStage) TagRepository(versions []string) error {
-	// TODO: this is a workaround to make `Build work`, it needs to have the
-	// same implementation like anago:prepare_tree.
-	for _, version := range versions {
-		if err := d.impl.Tag(d.options.ReleaseType, version); err != nil {
+func (d *DefaultStage) TagRepository(
+	versions *release.Versions, parentBranch string,
+) error {
+	logrus.Info("Configuring git user and email")
+	if err := d.impl.ConfigureGlobalDefaultUserAndEmail(); err != nil {
+		return errors.Wrap(err, "configure git user and email")
+	}
+
+	repo, err := d.impl.OpenRepo(gitRoot)
+	if err != nil {
+		return errors.Wrap(err, "open Kubernetes repository")
+	}
+
+	for _, version := range versions.Ordered() {
+		logrus.Infof("Preparing version %s", version)
+
+		// Ensure that the tag not already exists
+		if _, err := d.impl.RevParse(repo, version); err == nil {
+			return errors.Errorf("tag %s already exists", version)
+		}
+
+		commit := d.options.semverBuildVersion.Build[0]
+		if parentBranch != "" {
+			logrus.Infof("Parent branch provided: %s", parentBranch)
+
+			if version == versions.Prime() {
+				logrus.Infof("Version %s is the prime version", version)
+				logrus.Infof(
+					"Creating or checking out release branch %s",
+					d.options.ReleaseBranch,
+				)
+
+				hasBranch, err := d.impl.HasBranch(
+					repo, d.options.ReleaseBranch,
+				)
+				if err != nil {
+					return errors.Wrap(err, "check if repository has branch")
+				}
+				logrus.Infof("Branch already exist: %v", hasBranch)
+
+				if !hasBranch {
+					logrus.Infof(
+						"Creating release branch %s from commit %s",
+						d.options.ReleaseBranch, commit,
+					)
+					if err := d.impl.Checkout(
+						repo, "-b", d.options.ReleaseBranch, commit,
+					); err != nil {
+						return errors.Wrap(err, "create new release branch")
+					}
+				} else {
+					logrus.Infof(
+						"Checking out release branch %s since it already exist",
+						d.options.ReleaseBranch,
+					)
+					if err := d.impl.Checkout(
+						repo, d.options.ReleaseBranch,
+					); err != nil {
+						return errors.Wrap(err, "checkout release branch")
+					}
+				}
+			} else {
+				logrus.Infof(
+					"Version %s it not the prime, checking out parent branch",
+					version,
+				)
+				if err := d.impl.Checkout(repo, parentBranch); err != nil {
+					return errors.Wrap(err, "checkout parent branch")
+				}
+			}
+		} else {
+			logrus.Infof("Checking out commit %s", commit)
+			if err := d.impl.Checkout(repo, commit); err != nil {
+				return errors.Wrap(err, "checkout release commit")
+			}
+		}
+
+		// `branch == ""` in case we checked out a commit directly, which is
+		// then in detached head state.
+		branch, err := d.impl.CurrentBranch(repo)
+		if err != nil {
+			return errors.Wrap(err, "get current branch")
+		}
+		logrus.Infof("Current branch is %q", branch)
+
+		// For release branches, we create an empty release commit to avoid
+		// potential ambiguous 'git describe' logic between the official
+		// release, 'x.y.z' and the next beta of that release branch,
+		// 'x.y.(z+1)-beta.0'.
+		//
+		// We avoid doing this empty release commit on 'master', as:
+		//   - there is a potential for branch conflicts as upstream/master
+		//     moves ahead
+		//   - we're checking out a git ref, as opposed to a branch, which
+		//     means the tag will detached from 'upstream/master'
+		//
+		// A side-effect of the tag being detached from 'master' is the primary
+		// build job (ci-kubernetes-build) will build as the previous alpha,
+		// instead of the assumed tag. This causes the next anago run against
+		// 'master' to fail due to an old build version.
+		//
+		// Example: 'v1.18.0-alpha.2.663+df908c3aad70be'
+		//          (should instead be:
+		//			 'v1.18.0-alpha.3.<commits-since-tag>+<commit-ish>')
+		//
+		// ref:
+		//   - https://github.com/kubernetes/release/issues/1020
+		//   - https://github.com/kubernetes/release/pull/1030
+		//   - https://github.com/kubernetes/release/issues/1080
+		//   - https://github.com/kubernetes/kubernetes/pull/88074
+		if strings.HasPrefix(branch, "release-") {
+			logrus.Infof("Creating empty release commit for tag %s", version)
+			if err := d.impl.CommitEmpty(
+				repo,
+				fmt.Sprintf("Release commit for Kubernetes %s", version),
+			); err != nil {
+				return errors.Wrap(err, "create empty release commit")
+			}
+		}
+
+		// Do the actual tag
+		logrus.Infof("Tagging version %s", version)
+		if err := d.impl.Tag(
+			repo,
+			version,
+			fmt.Sprintf(
+				"Kubernetes %s release %s", d.options.ReleaseType, version,
+			),
+		); err != nil {
 			return errors.Wrap(err, "tag version")
 		}
 	}

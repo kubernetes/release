@@ -101,10 +101,11 @@ type FakeStageClient struct {
 	stageArtifactsReturnsOnCall map[int]struct {
 		result1 error
 	}
-	TagRepositoryStub        func([]string) error
+	TagRepositoryStub        func(*release.Versions, string) error
 	tagRepositoryMutex       sync.RWMutex
 	tagRepositoryArgsForCall []struct {
-		arg1 []string
+		arg1 *release.Versions
+		arg2 string
 	}
 	tagRepositoryReturns struct {
 		result1 error
@@ -543,23 +544,19 @@ func (fake *FakeStageClient) StageArtifactsReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeStageClient) TagRepository(arg1 []string) error {
-	var arg1Copy []string
-	if arg1 != nil {
-		arg1Copy = make([]string, len(arg1))
-		copy(arg1Copy, arg1)
-	}
+func (fake *FakeStageClient) TagRepository(arg1 *release.Versions, arg2 string) error {
 	fake.tagRepositoryMutex.Lock()
 	ret, specificReturn := fake.tagRepositoryReturnsOnCall[len(fake.tagRepositoryArgsForCall)]
 	fake.tagRepositoryArgsForCall = append(fake.tagRepositoryArgsForCall, struct {
-		arg1 []string
-	}{arg1Copy})
+		arg1 *release.Versions
+		arg2 string
+	}{arg1, arg2})
 	stub := fake.TagRepositoryStub
 	fakeReturns := fake.tagRepositoryReturns
-	fake.recordInvocation("TagRepository", []interface{}{arg1Copy})
+	fake.recordInvocation("TagRepository", []interface{}{arg1, arg2})
 	fake.tagRepositoryMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -573,17 +570,17 @@ func (fake *FakeStageClient) TagRepositoryCallCount() int {
 	return len(fake.tagRepositoryArgsForCall)
 }
 
-func (fake *FakeStageClient) TagRepositoryCalls(stub func([]string) error) {
+func (fake *FakeStageClient) TagRepositoryCalls(stub func(*release.Versions, string) error) {
 	fake.tagRepositoryMutex.Lock()
 	defer fake.tagRepositoryMutex.Unlock()
 	fake.TagRepositoryStub = stub
 }
 
-func (fake *FakeStageClient) TagRepositoryArgsForCall(i int) []string {
+func (fake *FakeStageClient) TagRepositoryArgsForCall(i int) (*release.Versions, string) {
 	fake.tagRepositoryMutex.RLock()
 	defer fake.tagRepositoryMutex.RUnlock()
 	argsForCall := fake.tagRepositoryArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeStageClient) TagRepositoryReturns(result1 error) {

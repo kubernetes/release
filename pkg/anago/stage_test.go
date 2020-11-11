@@ -24,6 +24,7 @@ import (
 	"k8s.io/release/pkg/anago"
 	"k8s.io/release/pkg/anago/anagofakes"
 	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/release"
 )
 
 func TestCheckPrerequisitesStage(t *testing.T) {
@@ -89,6 +90,196 @@ func TestPrepareWorkspaceStage(t *testing.T) {
 		tc.prepare(mock)
 		sut.SetClient(mock)
 		err := sut.PrepareWorkspace()
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
+}
+
+func TestTagRepository(t *testing.T) {
+	newRCVersions := release.NewReleaseVersions(
+		"v1.20.0-rc.0", "", "v1.20.0-rc.0", "", "v1.21.0-alpha.0",
+	)
+	newBetaVersions := release.NewReleaseVersions(
+		"v1.20.0-beta.1", "", "", "v1.20.0-beta.1", "",
+	)
+	for _, tc := range []struct {
+		prepare       func(*anagofakes.FakeStageImpl)
+		versions      *release.Versions
+		releaseBranch string
+		parentBranch  string
+		shouldError   bool
+	}{
+		{ // success new rc creating release branch
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseReturns("", err)
+				mock.CurrentBranchReturnsOnCall(0, "release-1.20", nil)
+			},
+			versions:      newRCVersions,
+			releaseBranch: "release-1.20",
+			parentBranch:  git.DefaultBranch,
+			shouldError:   false,
+		},
+		{ // failure on CommitEmpty new rc creating release branch
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseReturns("", err)
+				mock.CurrentBranchReturnsOnCall(0, "release-1.20", nil)
+				mock.CommitEmptyReturns(err)
+			},
+			versions:      newRCVersions,
+			releaseBranch: "release-1.20",
+			parentBranch:  git.DefaultBranch,
+			shouldError:   true,
+		},
+		{ // failure on CurrentBranch new rc creating release branch
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseReturns("", err)
+				mock.CurrentBranchReturnsOnCall(0, "release-1.20", nil)
+				mock.CurrentBranchReturns("", err)
+			},
+			versions:      newRCVersions,
+			releaseBranch: "release-1.20",
+			parentBranch:  git.DefaultBranch,
+			shouldError:   true,
+		},
+		{ // failure on Checkout new rc creating release branch
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseReturns("", err)
+				mock.CurrentBranchReturnsOnCall(0, "release-1.20", nil)
+				mock.CheckoutReturns(err)
+			},
+			versions:      newRCVersions,
+			releaseBranch: "release-1.20",
+			parentBranch:  git.DefaultBranch,
+			shouldError:   true,
+		},
+		{ // failure on HasBranch new rc creating release branch
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseReturns("", err)
+				mock.CurrentBranchReturnsOnCall(0, "release-1.20", nil)
+				mock.HasBranchReturns(false, err)
+			},
+			versions:      newRCVersions,
+			releaseBranch: "release-1.20",
+			parentBranch:  git.DefaultBranch,
+			shouldError:   true,
+		},
+		{ // failure on RevParse new rc creating release branch
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseReturns("", nil)
+			},
+			versions:      newRCVersions,
+			releaseBranch: "release-1.20",
+			parentBranch:  git.DefaultBranch,
+			shouldError:   true,
+		},
+		{ // failure on OpenRepo new rc creating release branch
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.OpenRepoReturns(nil, err)
+			},
+			versions:      newRCVersions,
+			releaseBranch: "release-1.20",
+			parentBranch:  git.DefaultBranch,
+			shouldError:   true,
+		},
+		{ // failure on ConfigureGlobalDefaultUserAndEmail new rc creating release branch
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.ConfigureGlobalDefaultUserAndEmailReturns(err)
+			},
+			versions:      newRCVersions,
+			releaseBranch: "release-1.20",
+			parentBranch:  git.DefaultBranch,
+			shouldError:   true,
+		},
+		{ // success new rc checking out release branch
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseReturns("", err)
+				mock.HasBranchReturns(true, nil)
+			},
+			versions:      newRCVersions,
+			releaseBranch: "release-1.20",
+			parentBranch:  git.DefaultBranch,
+			shouldError:   false,
+		},
+		{ // failure on Checkout new rc checking out release branch
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseReturns("", err)
+				mock.HasBranchReturns(true, nil)
+				mock.CheckoutReturns(err)
+			},
+			versions:      newRCVersions,
+			releaseBranch: "release-1.20",
+			parentBranch:  git.DefaultBranch,
+			shouldError:   true,
+		},
+		{ // failure on HasBranch new rc checking out release branch
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseReturns("", err)
+				mock.HasBranchReturns(true, err)
+			},
+			versions:      newRCVersions,
+			releaseBranch: "release-1.20",
+			parentBranch:  git.DefaultBranch,
+			shouldError:   true,
+		},
+		{ // failure on RevParse new rc checking out release branch
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseReturns("", nil)
+			},
+			versions:      newRCVersions,
+			releaseBranch: "release-1.20",
+			parentBranch:  git.DefaultBranch,
+			shouldError:   true,
+		},
+		{ // success new beta
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseReturns("", err)
+			},
+			versions:      newBetaVersions,
+			releaseBranch: git.DefaultBranch,
+			shouldError:   false,
+		},
+		{ // new beta failure on Tag
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseReturns("", err)
+				mock.TagReturns(err)
+			},
+			versions:      newBetaVersions,
+			releaseBranch: git.DefaultBranch,
+			shouldError:   true,
+		},
+		{ // new beta failure on CurrentBranch
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseReturns("", err)
+				mock.CurrentBranchReturns("", err)
+			},
+			versions:      newBetaVersions,
+			releaseBranch: git.DefaultBranch,
+			shouldError:   true,
+		},
+		{ // new beta failure on Checkout
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseReturns("", err)
+				mock.CheckoutReturns(err)
+			},
+			versions:      newBetaVersions,
+			releaseBranch: git.DefaultBranch,
+			shouldError:   true,
+		},
+	} {
+		opts := anago.DefaultStageOptions()
+		opts.BuildVersion = "v1.20.0-beta.1.358+4628c605aadb9b"
+		opts.ReleaseBranch = tc.releaseBranch
+		require.Nil(t, opts.Validate())
+
+		sut := anago.NewDefaultStage(opts)
+		mock := &anagofakes.FakeStageImpl{}
+		tc.prepare(mock)
+		sut.SetClient(mock)
+
+		err := sut.TagRepository(tc.versions, tc.parentBranch)
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {
