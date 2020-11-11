@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd_test
+package gcb_test
 
 import (
 	"errors"
@@ -23,91 +23,77 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/cmd/krel/cmd"
-	"k8s.io/release/cmd/krel/cmd/cmdfakes"
-	"k8s.io/release/pkg/gcp/build"
+	"k8s.io/release/pkg/gcp/gcb"
+	"k8s.io/release/pkg/gcp/gcb/gcbfakes"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
 )
 
-func mockRepo() cmd.Repository {
-	mock := &cmdfakes.FakeRepository{}
+func mockRepo() gcb.Repository {
+	mock := &gcbfakes.FakeRepository{}
 	mock.OpenReturns(nil)
 	mock.CheckStateReturns(nil)
 	mock.GetTagReturns("v1.0.0-20201010", nil)
 	return mock
 }
 
-func mockVersion(version string) cmd.Version {
-	mock := &cmdfakes.FakeVersion{}
+func mockVersion(version string) gcb.Version {
+	mock := &gcbfakes.FakeVersion{}
 	mock.GetKubeVersionForBranchReturns(version, nil)
 	return mock
 }
 
-type fakeListJobs struct {
-	expectedProject  string
-	expectedLastJobs int64
-	t                *testing.T
-	err              error
-}
-
-func (f *fakeListJobs) ListJobs(project string, lastJobs int64) error {
-	require.Equal(f.t, project, f.expectedProject)
-	require.Equal(f.t, lastJobs, f.expectedLastJobs)
-	return f.err
-}
-
 func TestRunGcbmgrList(t *testing.T) {
 	testcases := []struct {
-		name        string
-		gcbmgrOpts  *cmd.GcbmgrOptions
-		buildOpts   build.Options
-		listJobOpts fakeListJobs
-		expectedErr bool
+		name         string
+		gcbmgrOpts   *gcb.Options
+		expectedErr  bool
+		repoMock     gcb.Repository
+		versionMock  gcb.Version
+		listJobsMock gcb.ListJobs
 	}{
 		{
 			name: "list only",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Branch:   git.DefaultBranch,
 				GcpUser:  "test-user",
 				LastJobs: 5,
-				Repo:     mockRepo(),
-				Version:  mockVersion("v1.17.0"),
 			},
-			listJobOpts: fakeListJobs{
-				expectedProject:  "kubernetes-release-test",
-				expectedLastJobs: int64(5),
-				err:              nil,
-			},
+			repoMock:    mockRepo(),
+			versionMock: mockVersion("v1.17.0"),
+			listJobsMock: func() gcb.ListJobs {
+				return &gcbfakes.FakeListJobs{}
+			}(),
 			expectedErr: false,
 		},
 		{
 			name: "error on list jobs",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Branch:   git.DefaultBranch,
 				GcpUser:  "test-user",
 				LastJobs: 10,
-				Repo:     mockRepo(),
-				Version:  mockVersion("v1.17.0"),
 			},
-			listJobOpts: fakeListJobs{
-				expectedProject:  "kubernetes-release-test",
-				expectedLastJobs: int64(10),
-				err:              errors.New("Generic Error"),
-			},
+			repoMock:    mockRepo(),
+			versionMock: mockVersion("v1.17.0"),
+			listJobsMock: func() gcb.ListJobs {
+				m := &gcbfakes.FakeListJobs{}
+				m.ListJobsReturns(errors.New(""))
+				return m
+			}(),
 			expectedErr: true,
 		},
 	}
 
 	// Restore the previous state
-	defer func() { cmd.BuildListJobs = build.ListJobs }()
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
-		f := &tc.listJobOpts
-		f.t = t
-		cmd.BuildListJobs = f.ListJobs
 
-		err := cmd.RunGcbmgr(tc.gcbmgrOpts)
+		sut := gcb.New(tc.gcbmgrOpts)
+		sut.SetRepoClient(tc.repoMock)
+		sut.SetVersionClient(tc.versionMock)
+		sut.SetListJobsClient(tc.listJobsMock)
+		err := sut.Run()
+
 		if tc.expectedErr {
 			require.NotNil(t, err)
 		} else {
@@ -118,57 +104,64 @@ func TestRunGcbmgrList(t *testing.T) {
 
 func TestRunGcbmgrFailure(t *testing.T) {
 	testcases := []struct {
-		name       string
-		gcbmgrOpts *cmd.GcbmgrOptions
-		expected   map[string]string
+		name        string
+		gcbmgrOpts  *gcb.Options
+		expected    map[string]string
+		repoMock    gcb.Repository
+		versionMock gcb.Version
 	}{
 		{
 			name: "no release branch",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Branch:  "",
 				GcpUser: "test-user",
-				Repo:    mockRepo(),
-				Version: mockVersion("v1.17.0"),
 			},
+			repoMock:    mockRepo(),
+			versionMock: mockVersion("v1.17.0"),
 		},
 		{
 			name: "specify stage and release",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Stage:   true,
 				Release: true,
 				GcpUser: "test-user",
-				Repo:    mockRepo(),
-				Version: mockVersion("v1.17.0"),
 			},
+			repoMock:    mockRepo(),
+			versionMock: mockVersion("v1.17.0"),
 		},
 	}
 
 	for _, tc := range testcases {
 		fmt.Printf("Test case: %s\n", tc.name)
-		err := cmd.RunGcbmgr(tc.gcbmgrOpts)
+		sut := gcb.New(tc.gcbmgrOpts)
+		sut.SetRepoClient(tc.repoMock)
+		sut.SetVersionClient(tc.versionMock)
+		err := sut.Run()
 		require.Error(t, err)
 	}
 }
 
 func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 	testcases := []struct {
-		name       string
-		gcbmgrOpts *cmd.GcbmgrOptions
-		toolOrg    string
-		toolRepo   string
-		toolBranch string
-		expected   map[string]string
+		name        string
+		gcbmgrOpts  *gcb.Options
+		toolOrg     string
+		toolRepo    string
+		toolBranch  string
+		expected    map[string]string
+		repoMock    gcb.Repository
+		versionMock gcb.Version
 	}{
 		{
 			name: "main branch alpha - stage",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      git.DefaultBranch,
 				ReleaseType: release.ReleaseTypeAlpha,
 				GcpUser:     "test-user",
-				Repo:        mockRepo(),
-				Version:     mockVersion("v1.17.0"),
 			},
+			repoMock:    mockRepo(),
+			versionMock: mockVersion("v1.17.0"),
 			expected: map[string]string{
 				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         git.DefaultBranch,
@@ -185,15 +178,15 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "main branch beta - release",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Release:      true,
 				Branch:       git.DefaultBranch,
 				ReleaseType:  release.ReleaseTypeBeta,
 				BuildVersion: "v1.33.7",
 				GcpUser:      "test-user",
-				Repo:         mockRepo(),
-				Version:      mockVersion("v1.33.7"),
 			},
+			repoMock:    mockRepo(),
+			versionMock: mockVersion("v1.33.7"),
 			expected: map[string]string{
 				"RELEASE_BRANCH":         git.DefaultBranch,
 				"TOOL_ORG":               "",
@@ -209,14 +202,14 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.15 RC",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.15",
 				ReleaseType: release.ReleaseTypeRC,
 				GcpUser:     "test-user",
-				Repo:        mockRepo(),
-				Version:     mockVersion("v1.15.0-rc.1"),
 			},
+			repoMock:    mockRepo(),
+			versionMock: mockVersion("v1.15.0-rc.1"),
 			expected: map[string]string{
 				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         "release-1.15",
@@ -233,14 +226,14 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.15 official",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.15",
 				ReleaseType: release.ReleaseTypeOfficial,
 				GcpUser:     "test-user",
-				Repo:        mockRepo(),
-				Version:     mockVersion("v1.15.1"),
 			},
+			repoMock:    mockRepo(),
+			versionMock: mockVersion("v1.15.1"),
 			expected: map[string]string{
 				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         "release-1.15",
@@ -257,17 +250,17 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.16 official with custom tool org, repo, and branch",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.16",
 				ReleaseType: release.ReleaseTypeOfficial,
 				GcpUser:     "test-user",
-				Repo:        mockRepo(),
-				Version:     mockVersion("v1.16.0"),
 			},
-			toolOrg:    "honk",
-			toolRepo:   "best-tools",
-			toolBranch: "tool-branch",
+			repoMock:    mockRepo(),
+			versionMock: mockVersion("v1.16.0"),
+			toolOrg:     "honk",
+			toolRepo:    "best-tools",
+			toolBranch:  "tool-branch",
 			expected: map[string]string{
 				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         "release-1.16",
@@ -284,17 +277,17 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.19 beta 1 with custom tool org, repo, branch and full build point",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.19",
 				ReleaseType: release.ReleaseTypeBeta,
 				GcpUser:     "test-user",
-				Repo:        mockRepo(),
-				Version:     mockVersion("v1.19.0-alpha.2.763+2da917d3701904"),
 			},
-			toolOrg:    "honk",
-			toolRepo:   "best-tools",
-			toolBranch: "tool-branch",
+			repoMock:    mockRepo(),
+			versionMock: mockVersion("v1.19.0-alpha.2.763+2da917d3701904"),
+			toolOrg:     "honk",
+			toolRepo:    "best-tools",
+			toolBranch:  "tool-branch",
 			expected: map[string]string{
 				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         "release-1.19",
@@ -311,14 +304,14 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.18 RC 1",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.18",
 				ReleaseType: release.ReleaseTypeRC,
 				GcpUser:     "test-user",
-				Repo:        mockRepo(),
-				Version:     mockVersion("v1.18.6-rc.0.15+e38139724f8f00"),
 			},
+			repoMock:    mockRepo(),
+			versionMock: mockVersion("v1.18.6-rc.0.15+e38139724f8f00"),
 			expected: map[string]string{
 				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         "release-1.18",
@@ -335,14 +328,14 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.18 RC 1 from Beta",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.18",
 				ReleaseType: release.ReleaseTypeRC,
 				GcpUser:     "test-user",
-				Repo:        mockRepo(),
-				Version:     mockVersion("v1.18.0-beta.4.15+e38139724f8f00"),
 			},
+			repoMock:    mockRepo(),
+			versionMock: mockVersion("v1.18.0-beta.4.15+e38139724f8f00"),
 			expected: map[string]string{
 				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         "release-1.18",
@@ -362,8 +355,12 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
 
-		subs, err := cmd.SetGCBSubstitutions(
-			tc.gcbmgrOpts, tc.toolOrg, tc.toolRepo, tc.toolBranch,
+		sut := gcb.New(tc.gcbmgrOpts)
+		sut.SetRepoClient(tc.repoMock)
+		sut.SetVersionClient(tc.versionMock)
+
+		subs, err := sut.SetGCBSubstitutions(
+			tc.toolOrg, tc.toolRepo, tc.toolBranch,
 		)
 		require.Nil(t, err)
 
@@ -374,38 +371,43 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 
 func TestSetGCBSubstitutionsFailure(t *testing.T) {
 	testcases := []struct {
-		name       string
-		gcbmgrOpts *cmd.GcbmgrOptions
-		expected   map[string]string
+		name        string
+		gcbmgrOpts  *gcb.Options
+		expected    map[string]string
+		repoMock    gcb.Repository
+		versionMock gcb.Version
 	}{
 		{
 			name: "no release branch",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Branch:  "",
 				GcpUser: "test-user",
-				Repo:    mockRepo(),
-				Version: func() cmd.Version {
-					m := &cmdfakes.FakeVersion{}
-					m.GetKubeVersionForBranchReturns("", errors.New(""))
-					return m
-				}(),
 			},
+			repoMock: mockRepo(),
+			versionMock: func() gcb.Version {
+				m := &gcbfakes.FakeVersion{}
+				m.GetKubeVersionForBranchReturns("", errors.New(""))
+				return m
+			}(),
 		},
 		{
 			name: "no build version",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Release: true,
 				Branch:  "",
 				GcpUser: "test-user",
-				Repo:    mockRepo(),
-				Version: mockVersion("v1.17.0"),
 			},
+			repoMock:    mockRepo(),
+			versionMock: mockVersion("v1.17.0"),
 		},
 	}
 
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
-		_, err := cmd.SetGCBSubstitutions(tc.gcbmgrOpts, "", "", "")
+		sut := gcb.New(tc.gcbmgrOpts)
+		sut.SetRepoClient(tc.repoMock)
+		sut.SetVersionClient(tc.versionMock)
+		_, err := sut.SetGCBSubstitutions("", "", "")
 		require.Error(t, err)
 	}
 }
@@ -413,11 +415,11 @@ func TestSetGCBSubstitutionsFailure(t *testing.T) {
 func TestValidateSuccess(t *testing.T) {
 	testcases := []struct {
 		name       string
-		gcbmgrOpts *cmd.GcbmgrOptions
+		gcbmgrOpts *gcb.Options
 	}{
 		{
 			name: "main branch alpha - stage",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      git.DefaultBranch,
 				ReleaseType: release.ReleaseTypeAlpha,
@@ -425,7 +427,7 @@ func TestValidateSuccess(t *testing.T) {
 		},
 		{
 			name: "main branch beta - release",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Release:      true,
 				Branch:       git.DefaultBranch,
 				ReleaseType:  release.ReleaseTypeBeta,
@@ -434,7 +436,7 @@ func TestValidateSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.15 RC",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.15",
 				ReleaseType: release.ReleaseTypeRC,
@@ -442,7 +444,7 @@ func TestValidateSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.15 official",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.15",
 				ReleaseType: release.ReleaseTypeOfficial,
@@ -450,7 +452,7 @@ func TestValidateSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.16 official with custom tool org, repo, and branch",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.16",
 				ReleaseType: release.ReleaseTypeOfficial,
@@ -469,32 +471,32 @@ func TestValidateSuccess(t *testing.T) {
 func TestValidateFailure(t *testing.T) {
 	testcases := []struct {
 		name       string
-		gcbmgrOpts *cmd.GcbmgrOptions
+		gcbmgrOpts *gcb.Options
 	}{
 		{
 			name: "RC on main branch",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Branch:      git.DefaultBranch,
 				ReleaseType: release.ReleaseTypeRC,
 			},
 		},
 		{
 			name: "official release on main branch",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Branch:      git.DefaultBranch,
 				ReleaseType: release.ReleaseTypeOfficial,
 			},
 		},
 		{
 			name: "alpha on release branch",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Branch:      "release-1.16",
 				ReleaseType: release.ReleaseTypeAlpha,
 			},
 		},
 		{
 			name: "beta on release branch",
-			gcbmgrOpts: &cmd.GcbmgrOptions{
+			gcbmgrOpts: &gcb.Options{
 				Branch:      "release-1.19",
 				ReleaseType: release.ReleaseTypeBeta,
 			},
