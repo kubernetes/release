@@ -79,7 +79,7 @@ func (*defaultCommandClient) RepoTagFromTarball(path string) (string, error) {
 
 var tagRegex = regexp.MustCompile(`^.+/(.+):.+$`)
 
-// PublishImages relases container images to the provided target registry
+// PublishImages releases container images to the provided target registry
 // was in releaselib.sh: release::docker::release
 func (i *Images) Publish(registry, version, buildPath string) error {
 	version = i.normalizeVersion(version)
@@ -237,6 +237,92 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 	}
 
 	return nil
+}
+
+// Exists verifies that a set of image manifests exists on a specified remote
+// registry. This is a simpler check than Validate, which doesn't presuppose the
+// existence of a local build directory. Used in CI builds to quickly validate
+// if a build is actually required.
+func (i *Images) Exists(registry, version string, fast bool) (bool, error) {
+	logrus.Infof("Validating image manifests in %s", registry)
+	version = i.normalizeVersion(version)
+
+	// TODO: Maybe pull this out into a var?
+	manifestImages := []string{
+		"conformance",
+		"kube-apiserver",
+		"kube-controller-manager",
+		"kube-proxy",
+		"kube-scheduler",
+	}
+
+	// TODO: Maybe pull this out into a var?
+	arches := []string{
+		"amd64",
+		"arm",
+		"arm64",
+		"ppc64le",
+		"s390x",
+	}
+
+	// TODO: Maybe pull this out into a var?
+	if fast {
+		arches = []string{
+			"amd64",
+		}
+	}
+
+	for _, image := range manifestImages {
+		imageVersion := fmt.Sprintf("%s/%s:%s", registry, image, version)
+
+		manifest, err := i.client.ExecuteOutput(
+			"skopeo", "inspect", fmt.Sprintf("docker://%s", imageVersion), "--raw",
+		)
+		if err != nil {
+			return false, errors.Wrapf(
+				err, "get remote manifest from %s", imageVersion,
+			)
+		}
+		manifestFile, err := ioutil.TempFile("", "manifest-")
+		if err != nil {
+			return false, errors.Wrap(err, "create temp file for manifest")
+		}
+		if _, err := manifestFile.WriteString(manifest); err != nil {
+			return false, errors.Wrapf(
+				err, "write manifest to %s", manifestFile.Name(),
+			)
+		}
+		defer os.RemoveAll(manifestFile.Name())
+
+		for _, arch := range arches {
+			logrus.Infof(
+				"Checking image digest for %s on %s architecture", image, arch,
+			)
+
+			digest, err := i.client.ExecuteOutput(
+				"jq", "--arg", "a", arch, "-r",
+				".manifests[] | select(.platform.architecture == $a) | .digest",
+				manifestFile.Name(),
+			)
+			if err != nil {
+				return false, errors.Wrapf(
+					err, "get digest from manifest file %s for arch %s",
+					manifestFile.Name(), arch,
+				)
+			}
+
+			if digest == "" {
+				return false, errors.Errorf(
+					"could not find the image digest for %s on %s",
+					imageVersion, arch,
+				)
+			}
+
+			logrus.Infof("Digest for %s on %s: %s", imageVersion, arch, digest)
+		}
+	}
+
+	return true, nil
 }
 
 func (i *Images) getManifestImages(
