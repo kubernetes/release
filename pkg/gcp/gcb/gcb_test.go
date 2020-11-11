@@ -43,10 +43,10 @@ func mockVersion(version string) gcb.Version {
 	return mock
 }
 
-func TestRunGcbmgrList(t *testing.T) {
+func TestRunList(t *testing.T) {
 	testcases := []struct {
 		name         string
-		gcbmgrOpts   *gcb.Options
+		gcbOpts      *gcb.Options
 		expectedErr  bool
 		repoMock     gcb.Repository
 		versionMock  gcb.Version
@@ -54,7 +54,7 @@ func TestRunGcbmgrList(t *testing.T) {
 	}{
 		{
 			name: "list only",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Branch:   git.DefaultBranch,
 				GcpUser:  "test-user",
 				LastJobs: 5,
@@ -68,7 +68,7 @@ func TestRunGcbmgrList(t *testing.T) {
 		},
 		{
 			name: "error on list jobs",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Branch:   git.DefaultBranch,
 				GcpUser:  "test-user",
 				LastJobs: 10,
@@ -88,7 +88,7 @@ func TestRunGcbmgrList(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
 
-		sut := gcb.New(tc.gcbmgrOpts)
+		sut := gcb.New(tc.gcbOpts)
 		sut.SetRepoClient(tc.repoMock)
 		sut.SetVersionClient(tc.versionMock)
 		sut.SetListJobsClient(tc.listJobsMock)
@@ -102,17 +102,17 @@ func TestRunGcbmgrList(t *testing.T) {
 	}
 }
 
-func TestRunGcbmgrFailure(t *testing.T) {
+func TestRunGcbFailure(t *testing.T) {
 	testcases := []struct {
 		name        string
-		gcbmgrOpts  *gcb.Options
+		gcbOpts     *gcb.Options
 		expected    map[string]string
 		repoMock    gcb.Repository
 		versionMock gcb.Version
 	}{
 		{
 			name: "no release branch",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Branch:  "",
 				GcpUser: "test-user",
 			},
@@ -121,7 +121,7 @@ func TestRunGcbmgrFailure(t *testing.T) {
 		},
 		{
 			name: "specify stage and release",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Stage:   true,
 				Release: true,
 				GcpUser: "test-user",
@@ -133,7 +133,7 @@ func TestRunGcbmgrFailure(t *testing.T) {
 
 	for _, tc := range testcases {
 		fmt.Printf("Test case: %s\n", tc.name)
-		sut := gcb.New(tc.gcbmgrOpts)
+		sut := gcb.New(tc.gcbOpts)
 		sut.SetRepoClient(tc.repoMock)
 		sut.SetVersionClient(tc.versionMock)
 		err := sut.Run()
@@ -144,7 +144,7 @@ func TestRunGcbmgrFailure(t *testing.T) {
 func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 	testcases := []struct {
 		name        string
-		gcbmgrOpts  *gcb.Options
+		gcbOpts     *gcb.Options
 		toolOrg     string
 		toolRepo    string
 		toolBranch  string
@@ -154,7 +154,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 	}{
 		{
 			name: "main branch alpha - stage",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      git.DefaultBranch,
 				ReleaseType: release.ReleaseTypeAlpha,
@@ -178,7 +178,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "main branch beta - release",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Release:      true,
 				Branch:       git.DefaultBranch,
 				ReleaseType:  release.ReleaseTypeBeta,
@@ -202,7 +202,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.15 RC",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.15",
 				ReleaseType: release.ReleaseTypeRC,
@@ -226,7 +226,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.15 official",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.15",
 				ReleaseType: release.ReleaseTypeOfficial,
@@ -250,7 +250,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.16 official with custom tool org, repo, and branch",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.16",
 				ReleaseType: release.ReleaseTypeOfficial,
@@ -277,7 +277,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.19 beta 1 with custom tool org, repo, branch and full build point",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.19",
 				ReleaseType: release.ReleaseTypeBeta,
@@ -304,7 +304,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.18 RC 1",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.18",
 				ReleaseType: release.ReleaseTypeRC,
@@ -328,7 +328,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.18 RC 1 from Beta",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.18",
 				ReleaseType: release.ReleaseTypeRC,
@@ -355,7 +355,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
 
-		sut := gcb.New(tc.gcbmgrOpts)
+		sut := gcb.New(tc.gcbOpts)
 		sut.SetRepoClient(tc.repoMock)
 		sut.SetVersionClient(tc.versionMock)
 
@@ -372,14 +372,14 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 func TestSetGCBSubstitutionsFailure(t *testing.T) {
 	testcases := []struct {
 		name        string
-		gcbmgrOpts  *gcb.Options
+		gcbOpts     *gcb.Options
 		expected    map[string]string
 		repoMock    gcb.Repository
 		versionMock gcb.Version
 	}{
 		{
 			name: "no release branch",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Branch:  "",
 				GcpUser: "test-user",
 			},
@@ -392,7 +392,7 @@ func TestSetGCBSubstitutionsFailure(t *testing.T) {
 		},
 		{
 			name: "no build version",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Release: true,
 				Branch:  "",
 				GcpUser: "test-user",
@@ -404,7 +404,7 @@ func TestSetGCBSubstitutionsFailure(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
-		sut := gcb.New(tc.gcbmgrOpts)
+		sut := gcb.New(tc.gcbOpts)
 		sut.SetRepoClient(tc.repoMock)
 		sut.SetVersionClient(tc.versionMock)
 		_, err := sut.SetGCBSubstitutions("", "", "")
@@ -414,12 +414,12 @@ func TestSetGCBSubstitutionsFailure(t *testing.T) {
 
 func TestValidateSuccess(t *testing.T) {
 	testcases := []struct {
-		name       string
-		gcbmgrOpts *gcb.Options
+		name    string
+		gcbOpts *gcb.Options
 	}{
 		{
 			name: "main branch alpha - stage",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      git.DefaultBranch,
 				ReleaseType: release.ReleaseTypeAlpha,
@@ -427,7 +427,7 @@ func TestValidateSuccess(t *testing.T) {
 		},
 		{
 			name: "main branch beta - release",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Release:      true,
 				Branch:       git.DefaultBranch,
 				ReleaseType:  release.ReleaseTypeBeta,
@@ -436,7 +436,7 @@ func TestValidateSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.15 RC",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.15",
 				ReleaseType: release.ReleaseTypeRC,
@@ -444,7 +444,7 @@ func TestValidateSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.15 official",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.15",
 				ReleaseType: release.ReleaseTypeOfficial,
@@ -452,7 +452,7 @@ func TestValidateSuccess(t *testing.T) {
 		},
 		{
 			name: "release-1.16 official with custom tool org, repo, and branch",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Stage:       true,
 				Branch:      "release-1.16",
 				ReleaseType: release.ReleaseTypeOfficial,
@@ -463,40 +463,40 @@ func TestValidateSuccess(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
 
-		err := tc.gcbmgrOpts.Validate()
+		err := tc.gcbOpts.Validate()
 		require.Nil(t, err)
 	}
 }
 
 func TestValidateFailure(t *testing.T) {
 	testcases := []struct {
-		name       string
-		gcbmgrOpts *gcb.Options
+		name    string
+		gcbOpts *gcb.Options
 	}{
 		{
 			name: "RC on main branch",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Branch:      git.DefaultBranch,
 				ReleaseType: release.ReleaseTypeRC,
 			},
 		},
 		{
 			name: "official release on main branch",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Branch:      git.DefaultBranch,
 				ReleaseType: release.ReleaseTypeOfficial,
 			},
 		},
 		{
 			name: "alpha on release branch",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Branch:      "release-1.16",
 				ReleaseType: release.ReleaseTypeAlpha,
 			},
 		},
 		{
 			name: "beta on release branch",
-			gcbmgrOpts: &gcb.Options{
+			gcbOpts: &gcb.Options{
 				Branch:      "release-1.19",
 				ReleaseType: release.ReleaseTypeBeta,
 			},
@@ -506,7 +506,7 @@ func TestValidateFailure(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
 
-		err := tc.gcbmgrOpts.Validate()
+		err := tc.gcbOpts.Validate()
 		require.Error(t, err)
 	}
 }
