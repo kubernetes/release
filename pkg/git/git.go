@@ -468,8 +468,7 @@ func (r *Repo) latestNonPatchFinalVersions() ([]semver.Version, error) {
 	}
 
 	_ = tags.ForEach(func(t *plumbing.Reference) error { // nolint: errcheck
-		tag := util.TrimTagPrefix(t.Name().Short())
-		ver, err := semver.Make(tag)
+		ver, err := util.TagStringToSemver(t.Name().Short())
 
 		if err == nil {
 			// We're searching for the latest, non patch final tag
