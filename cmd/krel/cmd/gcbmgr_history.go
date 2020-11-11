@@ -84,10 +84,9 @@ func RunHistory(opts *HistoryOptions) error {
 	}
 
 	logrus.Infof("Running history with the following options: %+v", opts)
-	logrus.Infof("Build options: %v", *buildOpts)
 
 	tagFilter := fmt.Sprintf("tags=%q create_time>%q create_time<%q", gcbmgrOpts.Branch, historyOpts.DateFromParsed, historyOpts.DateToParsed)
-	jobs, err := build.GetJobsByTag(buildOpts.Project, tagFilter)
+	jobs, err := build.GetJobsByTag(gcbmgrOpts.Project, tagFilter)
 	if err != nil {
 		return errors.Wrap(err, "getting the GCP build jobs")
 	}
