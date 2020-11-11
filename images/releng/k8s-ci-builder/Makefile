@@ -28,11 +28,13 @@ GO_VERSION ?= 1.15.3
 BAZEL_VERSION ?= 3.4.1
 OLD_BAZEL_VERSION ?= 2.2.0
 IMAGE_ARG ?= $(IMAGE):$(TAG)-$(CONFIG)
+SKOPEO_VERSION ?= v1.2.0
 
 BUILD_ARGS = --build-arg=GO_VERSION=$(GO_VERSION) \
 							--build-arg=BAZEL_VERSION=$(BAZEL_VERSION) \
 							--build-arg=OLD_BAZEL_VERSION=$(OLD_BAZEL_VERSION) \
-							--build-arg=IMAGE_ARG=$(IMAGE_ARG)
+							--build-arg=IMAGE_ARG=$(IMAGE_ARG) \
+							--build-arg=SKOPEO_VERSION=$(SKOPEO_VERSION)
 
 # Ensure support for 'docker buildx' and 'docker manifest' commands
 export DOCKER_CLI_EXPERIMENTAL=enabled

@@ -78,6 +78,10 @@ RUN echo "Installing Packages ..." \
             gnupg2 \
             jq \
             kmod \
+            libassuan-dev \
+            libbtrfs-dev \
+            libdevmapper-dev \
+            libgpgme-dev \
             lsb-release \
             mercurial \
             openssh-client \
@@ -126,6 +130,14 @@ RUN echo "Installing Packages ..." \
 ARG OLD_BAZEL_VERSION
 COPY --from=old-bazel \
     /usr/local/lib/bazel/bin/bazel-real /usr/local/lib/bazel/bin/bazel-${OLD_BAZEL_VERSION}
+
+ARG SKOPEO_VERSION
+RUN git clone https://github.com/containers/skopeo $GOPATH/src/github.com/containers/skopeo
+RUN cd $GOPATH/src/github.com/containers/skopeo \
+    && git checkout ${SKOPEO_VERSION} \
+    && make bin/skopeo \
+    && cp bin/skopeo /usr/local/bin \
+    && rm -rf $GOPATH/src/github.com/containers/skopeo
 
 # Copy in release tools from kubernetes/release
 WORKDIR /
