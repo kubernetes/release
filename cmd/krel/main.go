@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
 package main
 
 import "k8s.io/release/cmd/krel/cmd"
