@@ -54,7 +54,7 @@ const (
 	// TODO(vdf): Need to reference K8s Infra project here
 	DefaultKubernetesStagingProject = "kubernetes-release-test"
 	DefaultRelengStagingProject     = "k8s-staging-releng"
-	DefaultDiskSize                 = "300"
+	DefaultDiskSize                 = "500"
 	BucketPrefix                    = "kubernetes-release-"
 
 	versionReleaseRE   = `v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[a-zA-Z0-9]+)*\.*(0|[1-9][0-9]*)?`

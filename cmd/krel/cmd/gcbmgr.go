@@ -271,7 +271,6 @@ func RunGcbmgr(opts *GcbmgrOptions) error {
 		jobType = "stage"
 	case opts.Release:
 		jobType = "release"
-		buildOpts.DiskSize = "100"
 	default:
 		return listJobs(buildOpts.Project, opts.LastJobs)
 	}
