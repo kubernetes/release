@@ -119,7 +119,7 @@ func (gp *GitObjectPusher) PushTag(newTag string) (err error) {
 	}
 
 	// Check if tag already exists
-	currentTags, err := gp.repo.TagsForBranch(git.DefaultBranch)
+	currentTags, err := gp.repo.Tags()
 	if err != nil {
 		return errors.Wrap(err, "checking if tag exists")
 	}

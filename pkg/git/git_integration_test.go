@@ -892,3 +892,15 @@ func TestSetURLFailureRemoteDoesNotExists(t *testing.T) {
 
 	require.NotNil(t, testRepo.sut.SetURL("some-remote", ""))
 }
+
+func TestAllTags(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	tags, err := testRepo.sut.Tags()
+	require.Nil(t, err)
+	require.Len(t, tags, 3)
+	require.Equal(t, testRepo.secondTagName, tags[0])
+	require.Equal(t, testRepo.firstTagName, tags[1])
+	require.Equal(t, testRepo.thirdTagName, tags[2])
+}

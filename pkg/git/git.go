@@ -833,6 +833,19 @@ func (r *Repo) TagsForBranch(branch string) (res []string, err error) {
 	return strings.Fields(status.Output()), nil
 }
 
+// Tags returns a list of tags for the repository.
+func (r *Repo) Tags() (res []string, err error) {
+	tags, err := r.inner.Tags()
+	if err != nil {
+		return nil, errors.Wrap(err, "get tags")
+	}
+	_ = tags.ForEach(func(t *plumbing.Reference) error { // nolint: errcheck
+		res = append(res, t.Name().Short())
+		return nil
+	})
+	return res, nil
+}
+
 // Add adds a file to the staging area of the repo
 func (r *Repo) Add(filename string) error {
 	return errors.Wrapf(
