@@ -83,8 +83,8 @@ func NewDefaultRelease(options *ReleaseOptions) *DefaultRelease {
 	return &DefaultRelease{&defaultReleaseImpl{}, options, nil}
 }
 
-// SetClient can be used to set the internal release implementation.
-func (d *DefaultRelease) SetClient(impl releaseImpl) {
+// SetImpl can be used to set the internal release implementation.
+func (d *DefaultRelease) SetImpl(impl releaseImpl) {
 	d.impl = impl
 }
 
