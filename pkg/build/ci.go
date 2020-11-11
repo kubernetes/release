@@ -146,17 +146,23 @@ func (bi *Instance) checkBuildExists() (bool, error) {
 
 	// TODO: Do we need to handle the errors more effectively?
 	existErrors := []error{}
-	for i, path := range gcsBuildPaths {
+	for _, path := range gcsBuildPaths {
 		logrus.Infof("Checking if GCS build path (%s) exists", path)
 		exists, existErr := gcs.PathExists(path)
 		if existErr != nil || !exists {
 			existErrors = append(existErrors, existErr)
 		}
+	}
 
-		if i == len(gcsBuildPaths)-1 && len(existErrors) == 0 {
-			logrus.Infof("Build already exists. Exiting...")
-			return true, nil
-		}
+	images := release.NewImages()
+	imagesExist, imagesExistErr := images.Exists(bi.opts.Registry, version, bi.opts.Fast)
+	if imagesExistErr != nil {
+		existErrors = append(existErrors, imagesExistErr)
+	}
+
+	if imagesExist && len(existErrors) == 0 {
+		logrus.Infof("Build already exists. Exiting...")
+		return true, nil
 	}
 
 	logrus.Infof("The following error(s) occurred while looking for a build: %v", existErrors)
