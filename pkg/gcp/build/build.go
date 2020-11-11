@@ -242,6 +242,7 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 		cmd.AddWriter(f)
 	}
 
+	logrus.Infof("cloudbuild command to send to gcp: %s", cmd.String())
 	if err := cmd.RunSuccess(); err != nil {
 		return errors.Wrapf(err, "error running %s", cmd.String())
 	}
