@@ -27,6 +27,18 @@ import (
 	"k8s.io/release/pkg/release"
 )
 
+func generateTestingStageState(params *testStateParameters) *anago.StageState {
+	state := anago.DefaultStageState()
+	if params.versionsTag != nil {
+		state.SetVersions(release.NewReleaseVersions("", *params.versionsTag, "", "", ""))
+	}
+
+	if params.parentBranch != nil {
+		state.SetParentBranch(*params.parentBranch)
+	}
+	return state
+}
+
 func TestCheckPrerequisitesStage(t *testing.T) {
 	opts := anago.DefaultStageOptions()
 	sut := anago.NewDefaultStage(opts)
@@ -56,10 +68,15 @@ func TestGenerateReleaseVersionStage(t *testing.T) {
 	} {
 		opts := anago.DefaultStageOptions()
 		sut := anago.NewDefaultStage(opts)
+
+		sut.SetState(
+			generateTestingStageState(&testStateParameters{parentBranch: &tc.parentBranch}),
+		)
+
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
 		sut.SetClient(mock)
-		_, err := sut.GenerateReleaseVersion(tc.parentBranch)
+		err := sut.GenerateReleaseVersion()
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {
@@ -86,6 +103,11 @@ func TestPrepareWorkspaceStage(t *testing.T) {
 	} {
 		opts := anago.DefaultStageOptions()
 		sut := anago.NewDefaultStage(opts)
+
+		sut.SetState(
+			generateTestingStageState(&testStateParameters{}),
+		)
+
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
 		sut.SetClient(mock)
@@ -272,14 +294,20 @@ func TestTagRepository(t *testing.T) {
 		opts := anago.DefaultStageOptions()
 		opts.BuildVersion = "v1.20.0-beta.1.358+4628c605aadb9b"
 		opts.ReleaseBranch = tc.releaseBranch
-		require.Nil(t, opts.Validate())
+		state, err := opts.Validate()
+		require.Nil(t, err)
 
 		sut := anago.NewDefaultStage(opts)
+
+		state.SetVersions(tc.versions)
+		state.SetParentBranch(tc.parentBranch)
+		sut.SetState(state)
+
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
 		sut.SetClient(mock)
 
-		err := sut.TagRepository(tc.versions, tc.parentBranch)
+		err = sut.TagRepository()
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {
@@ -306,10 +334,16 @@ func TestBuild(t *testing.T) {
 	} {
 		opts := anago.DefaultStageOptions()
 		sut := anago.NewDefaultStage(opts)
+
+		sut.SetState(
+			generateTestingStageState(&testStateParameters{versionsTag: &testVersionTag}),
+		)
+
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
 		sut.SetClient(mock)
-		err := sut.Build([]string{"v1.20.0"})
+
+		err := sut.Build()
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {
@@ -336,10 +370,15 @@ func TestGenerateChangelog(t *testing.T) {
 	} {
 		opts := anago.DefaultStageOptions()
 		sut := anago.NewDefaultStage(opts)
+
+		etag := ""
+		sut.SetState(generateTestingStageState(&testStateParameters{versionsTag: &etag, parentBranch: &etag}))
+
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
 		sut.SetClient(mock)
-		err := sut.GenerateChangelog("", "")
+
+		err := sut.GenerateChangelog()
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {
@@ -399,7 +438,14 @@ func TestStageArtifacts(t *testing.T) {
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
 		sut.SetClient(mock)
-		err := sut.StageArtifacts([]string{"v1.20.0"})
+
+		sut.SetState(
+			generateTestingStageState(
+				&testStateParameters{versionsTag: &testVersionTag},
+			),
+		)
+
+		err := sut.StageArtifacts()
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {

@@ -19,8 +19,6 @@ package anagofakes
 
 import (
 	"sync"
-
-	"k8s.io/release/pkg/release"
 )
 
 type FakeReleaseClient struct {
@@ -54,18 +52,15 @@ type FakeReleaseClient struct {
 	createAnnouncementReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GenerateReleaseVersionStub        func(string) (*release.Versions, error)
+	GenerateReleaseVersionStub        func() error
 	generateReleaseVersionMutex       sync.RWMutex
 	generateReleaseVersionArgsForCall []struct {
-		arg1 string
 	}
 	generateReleaseVersionReturns struct {
-		result1 *release.Versions
-		result2 error
+		result1 error
 	}
 	generateReleaseVersionReturnsOnCall map[int]struct {
-		result1 *release.Versions
-		result2 error
+		result1 error
 	}
 	PrepareWorkspaceStub        func() error
 	prepareWorkspaceMutex       sync.RWMutex
@@ -77,10 +72,9 @@ type FakeReleaseClient struct {
 	prepareWorkspaceReturnsOnCall map[int]struct {
 		result1 error
 	}
-	PushArtifactsStub        func([]string) error
+	PushArtifactsStub        func() error
 	pushArtifactsMutex       sync.RWMutex
 	pushArtifactsArgsForCall []struct {
-		arg1 []string
 	}
 	pushArtifactsReturns struct {
 		result1 error
@@ -281,23 +275,22 @@ func (fake *FakeReleaseClient) CreateAnnouncementReturnsOnCall(i int, result1 er
 	}{result1}
 }
 
-func (fake *FakeReleaseClient) GenerateReleaseVersion(arg1 string) (*release.Versions, error) {
+func (fake *FakeReleaseClient) GenerateReleaseVersion() error {
 	fake.generateReleaseVersionMutex.Lock()
 	ret, specificReturn := fake.generateReleaseVersionReturnsOnCall[len(fake.generateReleaseVersionArgsForCall)]
 	fake.generateReleaseVersionArgsForCall = append(fake.generateReleaseVersionArgsForCall, struct {
-		arg1 string
-	}{arg1})
+	}{})
 	stub := fake.GenerateReleaseVersionStub
 	fakeReturns := fake.generateReleaseVersionReturns
-	fake.recordInvocation("GenerateReleaseVersion", []interface{}{arg1})
+	fake.recordInvocation("GenerateReleaseVersion", []interface{}{})
 	fake.generateReleaseVersionMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub()
 	}
 	if specificReturn {
-		return ret.result1, ret.result2
+		return ret.result1
 	}
-	return fakeReturns.result1, fakeReturns.result2
+	return fakeReturns.result1
 }
 
 func (fake *FakeReleaseClient) GenerateReleaseVersionCallCount() int {
@@ -306,43 +299,33 @@ func (fake *FakeReleaseClient) GenerateReleaseVersionCallCount() int {
 	return len(fake.generateReleaseVersionArgsForCall)
 }
 
-func (fake *FakeReleaseClient) GenerateReleaseVersionCalls(stub func(string) (*release.Versions, error)) {
+func (fake *FakeReleaseClient) GenerateReleaseVersionCalls(stub func() error) {
 	fake.generateReleaseVersionMutex.Lock()
 	defer fake.generateReleaseVersionMutex.Unlock()
 	fake.GenerateReleaseVersionStub = stub
 }
 
-func (fake *FakeReleaseClient) GenerateReleaseVersionArgsForCall(i int) string {
-	fake.generateReleaseVersionMutex.RLock()
-	defer fake.generateReleaseVersionMutex.RUnlock()
-	argsForCall := fake.generateReleaseVersionArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeReleaseClient) GenerateReleaseVersionReturns(result1 *release.Versions, result2 error) {
+func (fake *FakeReleaseClient) GenerateReleaseVersionReturns(result1 error) {
 	fake.generateReleaseVersionMutex.Lock()
 	defer fake.generateReleaseVersionMutex.Unlock()
 	fake.GenerateReleaseVersionStub = nil
 	fake.generateReleaseVersionReturns = struct {
-		result1 *release.Versions
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
-func (fake *FakeReleaseClient) GenerateReleaseVersionReturnsOnCall(i int, result1 *release.Versions, result2 error) {
+func (fake *FakeReleaseClient) GenerateReleaseVersionReturnsOnCall(i int, result1 error) {
 	fake.generateReleaseVersionMutex.Lock()
 	defer fake.generateReleaseVersionMutex.Unlock()
 	fake.GenerateReleaseVersionStub = nil
 	if fake.generateReleaseVersionReturnsOnCall == nil {
 		fake.generateReleaseVersionReturnsOnCall = make(map[int]struct {
-			result1 *release.Versions
-			result2 error
+			result1 error
 		})
 	}
 	fake.generateReleaseVersionReturnsOnCall[i] = struct {
-		result1 *release.Versions
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeReleaseClient) PrepareWorkspace() error {
@@ -398,23 +381,17 @@ func (fake *FakeReleaseClient) PrepareWorkspaceReturnsOnCall(i int, result1 erro
 	}{result1}
 }
 
-func (fake *FakeReleaseClient) PushArtifacts(arg1 []string) error {
-	var arg1Copy []string
-	if arg1 != nil {
-		arg1Copy = make([]string, len(arg1))
-		copy(arg1Copy, arg1)
-	}
+func (fake *FakeReleaseClient) PushArtifacts() error {
 	fake.pushArtifactsMutex.Lock()
 	ret, specificReturn := fake.pushArtifactsReturnsOnCall[len(fake.pushArtifactsArgsForCall)]
 	fake.pushArtifactsArgsForCall = append(fake.pushArtifactsArgsForCall, struct {
-		arg1 []string
-	}{arg1Copy})
+	}{})
 	stub := fake.PushArtifactsStub
 	fakeReturns := fake.pushArtifactsReturns
-	fake.recordInvocation("PushArtifacts", []interface{}{arg1Copy})
+	fake.recordInvocation("PushArtifacts", []interface{}{})
 	fake.pushArtifactsMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
@@ -428,17 +405,10 @@ func (fake *FakeReleaseClient) PushArtifactsCallCount() int {
 	return len(fake.pushArtifactsArgsForCall)
 }
 
-func (fake *FakeReleaseClient) PushArtifactsCalls(stub func([]string) error) {
+func (fake *FakeReleaseClient) PushArtifactsCalls(stub func() error) {
 	fake.pushArtifactsMutex.Lock()
 	defer fake.pushArtifactsMutex.Unlock()
 	fake.PushArtifactsStub = stub
-}
-
-func (fake *FakeReleaseClient) PushArtifactsArgsForCall(i int) []string {
-	fake.pushArtifactsMutex.RLock()
-	defer fake.pushArtifactsMutex.RUnlock()
-	argsForCall := fake.pushArtifactsArgsForCall[i]
-	return argsForCall.arg1
 }
 
 func (fake *FakeReleaseClient) PushArtifactsReturns(result1 error) {
