@@ -49,7 +49,7 @@ type stageClient interface {
 	SetBuildCandidate() error
 
 	// GenerateReleaseVersion discovers the next versions to be released.
-	GenerateReleaseVersion(parentBranch string) (*release.Versions, error)
+	GenerateReleaseVersion() error
 
 	// PrepareWorkspace verifies that the working directory is in the desired
 	// state. This means that the build directory is cleaned up and the checked
@@ -59,34 +59,41 @@ type stageClient interface {
 	// TagRepository creates all necessary git objects by tagging the
 	// repository for the provided `versions` the main version `versionPrime`
 	// and the `parentBranch`.
-	TagRepository(versions *release.Versions, parentBranch string) error
+	TagRepository() error
 
 	// Build runs 'make cross-in-a-container' by using the latest kubecross
 	// container image. This step also build all necessary release tarballs.
-	Build(versions []string) error
+	Build() error
 
 	// GenerateChangelog builds the CHANGELOG-x.y.md file and commits it
 	// into the local repository.
-	GenerateChangelog(version, parentBranch string) error
+	GenerateChangelog() error
 
 	// StageArtifacts copies the build artifacts to a Google Cloud Bucket.
-	StageArtifacts(versions []string) error
+	StageArtifacts() error
 }
 
 // DefaultStage is the default staging implementation used in production.
 type DefaultStage struct {
 	impl    stageImpl
 	options *StageOptions
+	state   *StageState
 }
 
 // NewDefaultStage creates a new defaultStage instance.
 func NewDefaultStage(options *StageOptions) *DefaultStage {
-	return &DefaultStage{&defaultStageImpl{}, options}
+	return &DefaultStage{&defaultStageImpl{}, options, nil}
 }
 
 // SetClient can be used to set the internal stage implementation.
 func (d *DefaultStage) SetClient(impl stageImpl) {
 	d.impl = impl
+}
+
+// SetState fixes the current state. Mainly used for passing
+// arbitrary values during testing
+func (d *DefaultStage) SetState(state *StageState) {
+	d.state = state
 }
 
 // defaultStageImpl is the default internal stage client implementation.
@@ -206,22 +213,41 @@ func (d *defaultStageImpl) PushContainerImages(
 }
 
 func (d *DefaultStage) ValidateOptions() error {
-	return d.options.Validate()
+	// Call options, validate. The validation returns the initial
+	// state of the stage process
+	state, err := d.options.Validate()
+	if err != nil {
+		return errors.Wrap(err, "validating options")
+	}
+	d.state = state
+	return nil
 }
 
 func (d *DefaultStage) CheckPrerequisites() error { return nil }
 
-func (d *DefaultStage) SetBuildCandidate() error { return nil }
+func (d *DefaultStage) SetBuildCandidate() error {
+	// TODO: the parent branch has to be returned by the SetBuildCandidate
+	// method. It should be empty (releases cut from master) or
+	// git.DefaultBranch / "master" (releases cut from release branches).
+	//
+	// d.state.parentBranch = XXXXX
+	d.state.parentBranch = ""
+	return nil
+}
 
-func (d *DefaultStage) GenerateReleaseVersion(
-	parentBranch string,
-) (*release.Versions, error) {
-	return d.impl.GenerateReleaseVersion(
+func (d *DefaultStage) GenerateReleaseVersion() error {
+	versions, err := d.impl.GenerateReleaseVersion(
 		d.options.ReleaseType,
 		d.options.BuildVersion,
 		d.options.ReleaseBranch,
-		parentBranch == git.DefaultBranch,
+		d.state.parentBranch == git.DefaultBranch,
 	)
+	if err != nil {
+		return errors.Wrap(err, "generating release versions for stage")
+	}
+	// Set the versions on the state
+	d.state.versions = versions
+	return nil
 }
 
 func (d *DefaultStage) PrepareWorkspace() error {
@@ -231,9 +257,7 @@ func (d *DefaultStage) PrepareWorkspace() error {
 	return nil
 }
 
-func (d *DefaultStage) TagRepository(
-	versions *release.Versions, parentBranch string,
-) error {
+func (d *DefaultStage) TagRepository() error {
 	logrus.Info("Configuring git user and email")
 	if err := d.impl.ConfigureGlobalDefaultUserAndEmail(); err != nil {
 		return errors.Wrap(err, "configure git user and email")
@@ -244,7 +268,7 @@ func (d *DefaultStage) TagRepository(
 		return errors.Wrap(err, "open Kubernetes repository")
 	}
 
-	for _, version := range versions.Ordered() {
+	for _, version := range d.state.versions.Ordered() {
 		logrus.Infof("Preparing version %s", version)
 
 		// Ensure that the tag not already exists
@@ -252,11 +276,11 @@ func (d *DefaultStage) TagRepository(
 			return errors.Errorf("tag %s already exists", version)
 		}
 
-		commit := d.options.semverBuildVersion.Build[0]
-		if parentBranch != "" {
-			logrus.Infof("Parent branch provided: %s", parentBranch)
+		commit := d.state.semverBuildVersion.Build[0]
+		if d.state.parentBranch != "" {
+			logrus.Infof("Parent branch provided: %s", d.state.parentBranch)
 
-			if version == versions.Prime() {
+			if version == d.state.versions.Prime() {
 				logrus.Infof("Version %s is the prime version", version)
 				logrus.Infof(
 					"Creating or checking out release branch %s",
@@ -297,7 +321,7 @@ func (d *DefaultStage) TagRepository(
 					"Version %s it not the prime, checking out parent branch",
 					version,
 				)
-				if err := d.impl.Checkout(repo, parentBranch); err != nil {
+				if err := d.impl.Checkout(repo, d.state.parentBranch); err != nil {
 					return errors.Wrap(err, "checkout parent branch")
 				}
 			}
@@ -366,8 +390,8 @@ func (d *DefaultStage) TagRepository(
 	return nil
 }
 
-func (d *DefaultStage) Build(versions []string) error {
-	for _, version := range versions {
+func (d *DefaultStage) Build() error {
+	for _, version := range d.state.versions.Ordered() {
 		if err := d.impl.MakeCross(version); err != nil {
 			return errors.Wrap(err, "build artifacts")
 		}
@@ -375,28 +399,28 @@ func (d *DefaultStage) Build(versions []string) error {
 	return nil
 }
 
-func (d *DefaultStage) GenerateChangelog(version, parentBranch string) error {
+func (d *DefaultStage) GenerateChangelog() error {
 	branch := d.options.ReleaseBranch
-	if parentBranch != "" {
-		branch = parentBranch
+	if d.state.parentBranch != "" {
+		branch = d.state.parentBranch
 	}
 	return d.impl.GenerateChangelog(&changelog.Options{
 		RepoPath:     gitRoot,
-		Tag:          version,
+		Tag:          d.state.versions.Prime(),
 		Branch:       branch,
 		Bucket:       d.options.Bucket(),
 		HTMLFile:     filepath.Join(workspaceDir, "src/release-notes.html"),
 		Dependencies: true,
 		Tars: filepath.Join(
 			gitRoot,
-			fmt.Sprintf("%s-%s", release.BuildDir, version),
+			fmt.Sprintf("%s-%s", release.BuildDir, d.state.versions.Prime()),
 			release.ReleaseTarsPath,
 		),
 	})
 }
 
-func (d *DefaultStage) StageArtifacts(versions []string) error {
-	for _, version := range versions {
+func (d *DefaultStage) StageArtifacts() error {
+	for _, version := range d.state.versions.Ordered() {
 		logrus.Infof("Staging artifacts for version %s", version)
 		buildDir := filepath.Join(
 			gitRoot, fmt.Sprintf("%s-%s", release.BuildDir, version),

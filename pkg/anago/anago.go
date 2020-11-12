@@ -58,10 +58,6 @@ type Options struct {
 	// The build version to be released. Has to be specified in the format:
 	// `vX.Y.Z-[alpha|beta|rc].N.C+SHA`
 	BuildVersion string
-
-	// semverBuildVersion is the parsed build version which is set after the
-	// validation.
-	semverBuildVersion semver.Version
 }
 
 // DefaultOptions returns a new Options instance.
@@ -81,29 +77,34 @@ func (o *Options) String() string {
 }
 
 // Validate if the options are correctly set.
-func (o *Options) Validate() error {
+func (o *Options) Validate() (*State, error) {
 	logrus.Infof("Validating generic options: %s", o.String())
+	state := DefaultState()
 
 	if o.ReleaseType != release.ReleaseTypeAlpha &&
 		o.ReleaseType != release.ReleaseTypeBeta &&
 		o.ReleaseType != release.ReleaseTypeRC &&
 		o.ReleaseType != release.ReleaseTypeOfficial {
-		return errors.Errorf("invalid release type: %s", o.ReleaseType)
+		return nil, errors.Errorf("invalid release type: %s", o.ReleaseType)
 	}
 
 	if !git.IsReleaseBranch(o.ReleaseBranch) {
-		return errors.Errorf("invalid release branch: %s", o.ReleaseBranch)
+		return nil, errors.Errorf("invalid release branch: %s", o.ReleaseBranch)
 	}
+
+	// TODO: Adjust this value once SetBuildCandidate is done
+	state.parentBranch = ""
 
 	semverBuildVersion, err := util.TagStringToSemver(o.BuildVersion)
 	if err != nil {
-		return errors.Wrapf(err, "invalid build version: %s", o.BuildVersion)
+		return nil, errors.Wrapf(err, "invalid build version: %s", o.BuildVersion)
 	}
 	if len(semverBuildVersion.Build) == 0 {
-		return errors.Errorf("build version does not contain build commit")
+		return nil, errors.Errorf("build version does not contain build commit")
 	}
-	o.semverBuildVersion = semverBuildVersion
-	return nil
+	state.semverBuildVersion = semverBuildVersion
+
+	return state, nil
 }
 
 // Bucket returns the Google Cloud Bucket for these `Options`.
@@ -120,6 +121,49 @@ func (o *Options) ContainerRegistry() string {
 		return release.GCRIOPathStaging
 	}
 	return release.GCRIOPathMock
+}
+
+// State holds all inferred and calculated values from the release process
+// it's state mutates as each step es executed
+type State struct {
+	// semverBuildVersion is the parsed build version which is set after the
+	// validation.
+	semverBuildVersion semver.Version
+
+	// The release versions generated after GenerateReleaseVersion()
+	versions *release.Versions
+
+	// TODO: the parent branch has to be returned by the SetBuildCandidate
+	// method. It should be empty (releases cut from master) or
+	// git.DefaultBranch / "master" (releases cut from release branches).
+	parentBranch string
+}
+
+// DefaultState returns a new empty State
+func DefaultState() *State {
+	// The default state is empty, it will be initialized after ValidateOptions()
+	// runs in Stage/Releas. It will change as the satege/release processes move forward
+	return &State{}
+}
+
+func (s *State) SetParentBranch(branchName string) {
+	s.parentBranch = branchName
+}
+
+func (s *State) SetVersions(versions *release.Versions) {
+	s.versions = versions
+}
+
+// StageState holds the release process state
+type StageState struct {
+	*State
+}
+
+// DefaultStageState createa a new default `ReleaseOptions`.
+func DefaultStageState() *StageState {
+	return &StageState{
+		State: DefaultState(),
+	}
 }
 
 // StageOptions contains the options for running `Stage`.
@@ -140,8 +184,12 @@ func (s *StageOptions) String() string {
 }
 
 // Validate if the options are correctly set.
-func (s *StageOptions) Validate() error {
-	return s.Options.Validate()
+func (s *StageOptions) Validate() (*StageState, error) {
+	state, err := s.Options.Validate()
+	if err != nil {
+		return nil, errors.Wrap(err, "validating generic options")
+	}
+	return &StageState{State: state}, nil
 }
 
 // Stage is the structure to be used for staging releases.
@@ -161,6 +209,7 @@ func (s *Stage) SetClient(client stageClient) {
 
 // Run for the `Stage` struct prepares a release and puts the results on a
 // staging bucket.
+// nolint:dupl
 func (s *Stage) Run() error {
 	logrus.Infof("Using krel version:\n%s", version.Get().String())
 
@@ -178,14 +227,9 @@ func (s *Stage) Run() error {
 	if err := s.client.SetBuildCandidate(); err != nil {
 		return errors.Wrap(err, "set build candidate")
 	}
-	// TODO: the parent branch has to be returned by the SetBuildCandidate
-	// method. It should be empty (releases cut from master) or
-	// git.DefaultBranch / "master" (releases cut from release branches).
-	parentBranch := ""
 
 	logrus.Info("Generating release version")
-	versions, err := s.client.GenerateReleaseVersion(parentBranch)
-	if err != nil {
+	if err := s.client.GenerateReleaseVersion(); err != nil {
 		return errors.Wrap(err, "generate release version")
 	}
 
@@ -195,29 +239,39 @@ func (s *Stage) Run() error {
 	}
 
 	logrus.Info("Tagging repository")
-	if err := s.client.TagRepository(versions, parentBranch); err != nil {
+	if err := s.client.TagRepository(); err != nil {
 		return errors.Wrap(err, "tag repository")
 	}
 
 	logrus.Info("Building release")
-	if err := s.client.Build(versions.Ordered()); err != nil {
+	if err := s.client.Build(); err != nil {
 		return errors.Wrap(err, "build release")
 	}
 
 	logrus.Info("Generating changelog")
-	if err := s.client.GenerateChangelog(
-		versions.Prime(), parentBranch,
-	); err != nil {
+	if err := s.client.GenerateChangelog(); err != nil {
 		return errors.Wrap(err, "generate changelog")
 	}
 
 	logrus.Info("Staging artifacts")
-	if err := s.client.StageArtifacts(versions.Ordered()); err != nil {
+	if err := s.client.StageArtifacts(); err != nil {
 		return errors.Wrap(err, "stage release artifacts")
 	}
 
 	logrus.Info("Stage done")
 	return nil
+}
+
+// ReleaseState holds the release process state
+type ReleaseState struct {
+	*State
+}
+
+// DefaultReleaseState createa a new default `ReleaseOptions`.
+func DefaultReleaseState() *ReleaseState {
+	return &ReleaseState{
+		State: DefaultState(),
+	}
 }
 
 // ReleaseOptions contains the options for running `Release`.
@@ -238,8 +292,12 @@ func (r *ReleaseOptions) String() string {
 }
 
 // Validate if the options are correctly set.
-func (r *ReleaseOptions) Validate() error {
-	return r.Options.Validate()
+func (r *ReleaseOptions) Validate() (*ReleaseState, error) {
+	state, err := r.Options.Validate()
+	if err != nil {
+		return nil, errors.Wrap(err, "validating generic options")
+	}
+	return &ReleaseState{State: state}, nil
 }
 
 // Release is the structure to be used for releasing staged releases.
@@ -258,6 +316,7 @@ func (r *Release) SetClient(client releaseClient) {
 }
 
 // Run for for `Release` struct finishes a previously staged release.
+// nolint:dupl
 func (r *Release) Run() error {
 	logrus.Infof("Using krel version:\n%s", version.Get().String())
 
@@ -275,13 +334,9 @@ func (r *Release) Run() error {
 	if err := r.client.SetBuildCandidate(); err != nil {
 		return errors.Wrap(err, "set build candidate")
 	}
-	// TODO: the parent branch has to be returned by the SetBuildCandidate
-	// method.
-	parentBranch := ""
 
 	logrus.Info("Generating release version")
-	versions, err := r.client.GenerateReleaseVersion(parentBranch)
-	if err != nil {
+	if err := r.client.GenerateReleaseVersion(); err != nil {
 		return errors.Wrap(err, "generate release version")
 	}
 
@@ -291,7 +346,7 @@ func (r *Release) Run() error {
 	}
 
 	logrus.Info("Pushing artifacts")
-	if err := r.client.PushArtifacts(versions.Ordered()); err != nil {
+	if err := r.client.PushArtifacts(); err != nil {
 		return errors.Wrap(err, "push artifacts")
 	}
 

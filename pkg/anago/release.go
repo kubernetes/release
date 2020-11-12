@@ -47,7 +47,7 @@ type releaseClient interface {
 	SetBuildCandidate() error
 
 	// GenerateReleaseVersion discovers the next versions to be released.
-	GenerateReleaseVersion(parentBranch string) (*release.Versions, error)
+	GenerateReleaseVersion() error
 
 	// PrepareWorkspace verifies that the working directory is in the desired
 	// state. This means that the staged sources will be downloaded from the
@@ -56,7 +56,7 @@ type releaseClient interface {
 
 	// PushArtifacts pushes the generated artifacts to the release bucket and
 	// Google Container Registry for the specified release `versions`.
-	PushArtifacts(versions []string) error
+	PushArtifacts() error
 
 	// PushGitObjects pushes the new tags and branches to the repository remote
 	// on GitHub.
@@ -75,16 +75,23 @@ type releaseClient interface {
 type DefaultRelease struct {
 	impl    releaseImpl
 	options *ReleaseOptions
+	state   *ReleaseState
 }
 
 // NewDefaultRelease creates a new defaultRelease instance.
 func NewDefaultRelease(options *ReleaseOptions) *DefaultRelease {
-	return &DefaultRelease{&defaultReleaseImpl{}, options}
+	return &DefaultRelease{&defaultReleaseImpl{}, options, nil}
 }
 
 // SetClient can be used to set the internal release implementation.
 func (d *DefaultRelease) SetClient(impl releaseImpl) {
 	d.impl = impl
+}
+
+// SetState fixes the current state. Mainly used for passing
+// arbitrary values during testing
+func (d *DefaultRelease) SetState(state *ReleaseState) {
+	d.state = state
 }
 
 // defaultReleaseImpl is the default internal release client implementation.
@@ -158,22 +165,41 @@ func (d *defaultReleaseImpl) PublishVersion(
 }
 
 func (d *DefaultRelease) ValidateOptions() error {
-	return d.options.Validate()
+	// Call options, validate. The validation returns the initial
+	// state of the release process
+	state, err := d.options.Validate()
+	if err != nil {
+		return errors.Wrap(err, "validating options")
+	}
+	d.state = state
+	return nil
 }
 
 func (d *DefaultRelease) CheckPrerequisites() error { return nil }
 
-func (d *DefaultRelease) SetBuildCandidate() error { return nil }
+func (d *DefaultRelease) SetBuildCandidate() error {
+	// TODO: the parent branch has to be returned by the SetBuildCandidate
+	// method. It should be empty (releases cut from master) or
+	// git.DefaultBranch / "master" (releases cut from release branches).
+	//
+	// d.state.parentBranch = XXXXX
+	d.state.parentBranch = ""
+	return nil
+}
 
-func (d *DefaultRelease) GenerateReleaseVersion(
-	parentBranch string,
-) (*release.Versions, error) {
-	return d.impl.GenerateReleaseVersion(
+func (d *DefaultRelease) GenerateReleaseVersion() error {
+	versions, err := d.impl.GenerateReleaseVersion(
 		d.options.ReleaseType,
 		d.options.BuildVersion,
 		d.options.ReleaseBranch,
-		parentBranch == git.DefaultBranch,
+		d.state.parentBranch == git.DefaultBranch,
 	)
+	if err != nil {
+		return errors.Wrap(err, "generating versions for release")
+	}
+	// Set the versions object in the state
+	d.state.versions = versions
+	return nil
 }
 
 func (d *DefaultRelease) PrepareWorkspace() error {
@@ -185,8 +211,8 @@ func (d *DefaultRelease) PrepareWorkspace() error {
 	return nil
 }
 
-func (d *DefaultRelease) PushArtifacts(versions []string) error {
-	for _, version := range versions {
+func (d *DefaultRelease) PushArtifacts() error {
+	for _, version := range d.state.versions.Ordered() {
 		logrus.Infof("Pushing artifacts for version %s", version)
 		buildDir := filepath.Join(
 			gitRoot, fmt.Sprintf("%s-%s", release.BuildDir, version),
