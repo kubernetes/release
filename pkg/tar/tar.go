@@ -64,13 +64,13 @@ func Compress(tarFilePath, tarContentsPath string, excludes ...*regexp.Regexp) e
 		}
 
 		if fileInfo.IsDir() || filePath == tarFilePath {
-			logrus.Debugf("Skipping: %s", filePath)
+			logrus.Tracef("Skipping: %s", filePath)
 			return nil
 		}
 
 		for _, re := range excludes {
 			if re != nil && re.MatchString(filePath) {
-				logrus.Debugf("Excluding: %s", filePath)
+				logrus.Tracef("Excluding: %s", filePath)
 				return nil
 			}
 		}
@@ -117,13 +117,13 @@ func Extract(tarFilePath, destinationPath string) error {
 			switch header.Typeflag {
 			case tar.TypeDir:
 				targetDir := filepath.Join(destinationPath, header.Name)
-				logrus.Debugf("Creating directory %s", targetDir)
+				logrus.Tracef("Creating directory %s", targetDir)
 				if err := os.Mkdir(targetDir, os.FileMode(0o755)); err != nil {
 					return false, errors.Wrapf(err, "create target directory")
 				}
 			case tar.TypeSymlink:
 				targetFile := filepath.Join(destinationPath, header.Name)
-				logrus.Debugf(
+				logrus.Tracef(
 					"Creating symlink %s -> %s", header.Linkname, targetFile,
 				)
 				if err := os.MkdirAll(
@@ -136,7 +136,7 @@ func Extract(tarFilePath, destinationPath string) error {
 				}
 			case tar.TypeReg, tar.TypeRegA:
 				targetFile := filepath.Join(destinationPath, header.Name)
-				logrus.Debugf("Creating file %s", targetFile)
+				logrus.Tracef("Creating file %s", targetFile)
 
 				if err := os.MkdirAll(
 					filepath.Dir(targetFile), os.FileMode(0o755),
