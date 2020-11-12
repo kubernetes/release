@@ -14,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+bold="$(tput bold)"
+normal="$(tput sgr0)"
+red="$(tput setaf 1)"
+green="$(tput setaf 2)"
+
 if [ $# -eq 0 ]
   then
     echo "No argument supplied for version. Ex: 1.19.1"
@@ -22,9 +28,13 @@ fi
 
 curl https://packages.cloud.google.com/apt/dists/kubernetes-xenial/main/binary-amd64/Packages | grep -F $1 2>&1
 if [ $? != 0 ]; then
-   echo "Unable to find version $1 published in debs"
+   echo "${bold}${red}Unable to find version $1 published in debs${normal}"
+else
+   echo "${bold}${green}Debs for $1 look good!${normal}"
 fi
 curl https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64/repodata/primary.xml | grep -F $1 2>&1
 if [ $? != 0 ]; then
-   echo "Unable to find version $1 published in rpms"
+   echo "${bold}${red}Unable to find version $1 published in rpms${normal}"
+else
+  echo "${bold}${green}RPMs for $1 look good!${normal}"
 fi
