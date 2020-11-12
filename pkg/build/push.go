@@ -407,12 +407,12 @@ func (bi *Instance) CopyStagedFromGCS(stagedBucket, buildVersion string) error {
 	copyOpts.AllowMissing = pointer.BoolPtr(false)
 
 	gsStageRoot := filepath.Join(bi.opts.Bucket, release.StagePath, buildVersion, bi.opts.Version)
-	gsReleaseRoot := filepath.Join(bi.opts.Bucket, "release", bi.opts.Version)
-
 	src := filepath.Join(gsStageRoot, release.GCSStagePath, bi.opts.Version)
-	dst := gsReleaseRoot
-	logrus.Infof("Bucket to bucket copy from %s to %s", src, dst)
-	if err := gcs.CopyBucketToBucket(src, dst, copyOpts); err != nil {
+
+	gcsSrc := gcs.NormalizeGCSPath(src)
+	dst := gcs.NormalizeGCSPath(filepath.Join(bi.opts.Bucket, "release", bi.opts.Version))
+	logrus.Infof("Bucket to bucket rsync from %s to %s", gcsSrc, dst)
+	if err := gcs.RsyncRecursive(gcsSrc, dst); err != nil {
 		return errors.Wrap(err, "copy stage to release bucket")
 	}
 
