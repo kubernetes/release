@@ -61,11 +61,14 @@ Before proceeding with the release, ensure the [kubernetes/release][kubernetes/r
 
 **NOTE**: It is a good idea to start in a clean directory, when possible.
 
+`VERSION` should be the Kubernetes version we are building the debs/rpms for e.g., `1.20.0`
+
 _The directory name can be anything. We'll use `$HOME/k8s-1.20.0` as the example here._
 
 ```shell
-mkdir -p $HOME/k8s-1.20.0
-cd $HOME/k8s-1.20.0
+export VERSION=1.20.0 # this is an example, use the appropriate version here
+mkdir -p $HOME/k8s-$VERSION
+cd $HOME/k8s-$VERSION
 git clone https://github.com/kubernetes/release.git
 cd release
 ```
@@ -93,7 +96,7 @@ The entire build process takes several hours. Once you are ready to begin, the d
 `rapture` can be executed as follows:
 
 ```shell
-./hack/rapture/k8s-rapture.sh <version> # <version> should be the Kubernetes version we are building the debs/rpms for e.g., `1.20.0`
+./hack/rapture/k8s-rapture.sh $VERSION
 ```
 
 #### Notes
@@ -108,7 +111,7 @@ Now that `rapture` has successfully complete, we need to verify the packages tha
 
 To check for publish success, see the [Debian package list][deb-package-list] and [RPM package list][rpm-package-list] for the versions that were just uploaded. Or curl via shell for Debian and RPM respectively via the [check_rapture script](./check_rapture.sh):
 ```shell
-./hack/rapture/check_rapture.sh <version>
+./hack/rapture/check_rapture.sh $VERSION
 ```
 
 **If you are on a system with any of these packages are already installed, you must uninstall them first.**
