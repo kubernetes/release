@@ -59,6 +59,9 @@ const (
 	gitExecutable         = "git"
 )
 
+// To parse the GitHub ApiKey
+var re = regexp.MustCompile(`[0-9a-zA-Z]{35,40}`)
+
 // GetDefaultKubernetesRepoURL returns the default HTTPS repo URL for Kubernetes.
 // Expected: https://github.com/kubernetes/kubernetes
 func GetDefaultKubernetesRepoURL() string {
@@ -660,9 +663,11 @@ func Remotify(name string) string {
 
 // Merge does a git merge into the current branch from the provided one
 func (r *Repo) Merge(from string) error {
-	return command.NewWithWorkDir(
+	err := command.NewWithWorkDir(
 		r.Dir(), gitExecutable, "merge", "-X", "ours", from,
-	).RunSuccess()
+	).RunSilentSuccess()
+
+	return safeError(err)
 }
 
 // Push does push the specified branch to the default remote, but only if the
@@ -676,13 +681,13 @@ func (r *Repo) Push(remoteBranch string) (err error) {
 	args = append(args, DefaultRemote, remoteBranch)
 
 	for i := r.maxRetries + 1; i > 0; i-- {
-		if err = command.NewWithWorkDir(r.Dir(), gitExecutable, args...).RunSuccess(); err == nil {
+		if err = command.NewWithWorkDir(r.Dir(), gitExecutable, args...).RunSilentSuccess(); err == nil {
 			return nil
 		}
 		// Convert to network error to see if we can retry the push
 		err = NewNetworkError(err)
 		if !err.(NetworkError).CanRetry() || r.maxRetries == 0 {
-			return err
+			return safeError(err)
 		}
 		waitTime := math.Pow(2, float64(r.maxRetries-i))
 		logrus.Errorf(
@@ -691,7 +696,7 @@ func (r *Repo) Push(remoteBranch string) (err error) {
 		)
 		time.Sleep(time.Duration(waitTime) * time.Second)
 	}
-	return errors.Wrapf(err, "trying to push %s %d times", remoteBranch, r.maxRetries)
+	return errors.Wrapf(safeError(err), "trying to push %s %d times", remoteBranch, r.maxRetries)
 }
 
 // Head retrieves the current repository HEAD as a string
@@ -847,7 +852,7 @@ func (r *Repo) TagsForBranch(branch string) (res []string, err error) {
 		r.Dir(), gitExecutable, "tag", "--sort=-creatordate", "--merged",
 	).RunSilentSuccessOutput()
 	if err != nil {
-		return nil, errors.Wrapf(err, "retrieving merged tags for branch %s", branch)
+		return nil, errors.Wrapf(safeError(err), "retrieving merged tags for branch %s", branch)
 	}
 
 	return strings.Fields(status.Output()), nil
@@ -1297,4 +1302,14 @@ func (e NetworkError) CanRetry() bool {
 
 	// Otherwise permanent
 	return false
+}
+
+func safeError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	errUpdated := re.ReplaceAllString(err.Error(), "[REDACTED]")
+
+	return errors.New(errUpdated)
 }
