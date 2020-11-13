@@ -79,7 +79,7 @@ func init() {
 		&pushGitObjectsOpts.nomock,
 		"nomock",
 		false,
-		"nomock flag",
+		"run the command in real without a dry run",
 	)
 
 	pushGitObjectsCmd.PersistentFlags().StringSliceVarP(

@@ -17,6 +17,8 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -60,8 +62,19 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().BoolVar(&rootOpts.nomock, "nomock", false, "nomock flag")
-	rootCmd.PersistentFlags().StringVar(&rootOpts.logLevel, "log-level", "info", "the logging verbosity, either 'panic', 'fatal', 'error', 'warn', 'warning', 'info', 'debug' or 'trace'")
+	rootCmd.PersistentFlags().BoolVar(
+		&rootOpts.nomock,
+		"nomock",
+		false,
+		"run the command to target the production environment",
+	)
+
+	rootCmd.PersistentFlags().StringVar(
+		&rootOpts.logLevel,
+		"log-level",
+		"info",
+		fmt.Sprintf("the logging verbosity, either %s", log.LevelNames()),
+	)
 
 	rootCmd.AddCommand(anago.AnagoCmd)
 }
