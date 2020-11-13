@@ -138,7 +138,7 @@ func (o *Options) Validate() error {
 // Run is the function responsible for submitting release jobs to GCB.
 func (g *GCB) Run() error {
 	if err := g.options.Validate(); err != nil {
-		return errors.Wrap(err, "validating gcbmgr options")
+		return errors.Wrap(err, "validating gcb options")
 	}
 
 	toolOrg := release.GetToolOrg()
@@ -157,7 +157,7 @@ func (g *GCB) Run() error {
 		return errors.Wrap(err, "verifying repository state")
 	}
 
-	logrus.Infof("Running gcbmgr with the following options: %+v", g.options)
+	logrus.Infof("Running gcb with the following options: %+v", g.options)
 
 	g.options.NoSource = true
 	g.options.DiskSize = release.DefaultDiskSize
@@ -255,7 +255,7 @@ func (g *GCB) Run() error {
 	)
 }
 
-// SetGCBSubstitutions takes a set of GcbmgrOptions and returns a map of GCB
+// SetGCBSubstitutions takes a set of `Options` and returns a map of GCB
 // substitutions.
 func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolBranch string) (map[string]string, error) {
 	gcbSubs := map[string]string{}
