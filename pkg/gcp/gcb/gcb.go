@@ -85,6 +85,14 @@ type Options struct {
 	LastJobs     int64
 }
 
+// NewDefaultOptions returns a new default `*Options` instance.
+func NewDefaultOptions() *Options {
+	return &Options{
+		LogLevel: logrus.StandardLogger().GetLevel().String(),
+		Options:  *build.NewDefaultOptions(),
+	}
+}
+
 //counterfeiter:generate . Repository
 type Repository interface {
 	Open() error

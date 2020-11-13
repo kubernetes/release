@@ -27,6 +27,7 @@ import (
 
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/changelog"
+	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
 )
@@ -34,6 +35,9 @@ import (
 // stageClient is a client for staging releases.
 //counterfeiter:generate . stageClient
 type stageClient interface {
+	// Submit can be used to submit a Google Cloud Build (GCB) job.
+	Submit() error
+
 	// Validate if the provided `ReleaseOptions` are correctly set.
 	ValidateOptions() error
 
@@ -102,6 +106,7 @@ type defaultStageImpl struct{}
 // stageImpl is the implementation of the stage client.
 //counterfeiter:generate . stageImpl
 type stageImpl interface {
+	Submit(options *gcb.Options) error
 	PrepareWorkspaceStage() error
 	GenerateReleaseVersion(
 		releaseType, version, branch string, branchFromMaster bool,
@@ -125,6 +130,10 @@ type stageImpl interface {
 		options *build.Options, srcPath, gcsPath string,
 	) error
 	PushContainerImages(options *build.Options) error
+}
+
+func (d *defaultStageImpl) Submit(options *gcb.Options) error {
+	return gcb.New(options).Submit()
 }
 
 func (d *defaultStageImpl) PrepareWorkspaceStage() error {
@@ -210,6 +219,16 @@ func (d *defaultStageImpl) PushContainerImages(
 	options *build.Options,
 ) error {
 	return build.NewInstance(options).PushContainerImages()
+}
+
+func (d *DefaultStage) Submit() error {
+	options := gcb.NewDefaultOptions()
+	options.Stage = true
+	options.NoMock = d.options.NoMock
+	options.Branch = d.options.ReleaseBranch
+	options.ReleaseType = d.options.ReleaseType
+	options.NoAnago = true
+	return d.impl.Submit(options)
 }
 
 func (d *DefaultStage) ValidateOptions() error {

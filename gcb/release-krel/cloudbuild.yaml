@@ -43,6 +43,7 @@ steps:
   args:
   - "bin/krel"
   - "release"
+  - "--submit=false"
   - "${_NOMOCK}"
   - "--log-level=${_LOG_LEVEL}"
   - "--type=${_TYPE}"

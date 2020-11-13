@@ -45,7 +45,7 @@ func mockGenerateReleaseVersionRelease(mock *anagofakes.FakeReleaseClient) {
 	mock.GenerateReleaseVersionReturns(nil)
 }
 
-func TestStage(t *testing.T) {
+func TestRunStage(t *testing.T) {
 	for _, tc := range []struct {
 		prepare     func(*anagofakes.FakeStageClient)
 		shouldError bool
@@ -115,15 +115,16 @@ func TestStage(t *testing.T) {
 		tc.prepare(mock)
 		sut.SetClient(mock)
 
+		err := sut.Run()
 		if tc.shouldError {
-			require.NotNil(t, sut.Run())
+			require.NotNil(t, err)
 		} else {
-			require.Nil(t, sut.Run())
+			require.Nil(t, err)
 		}
 	}
 }
 
-func TestRelease(t *testing.T) {
+func TestRunRelease(t *testing.T) {
 	for _, tc := range []struct {
 		prepare     func(*anagofakes.FakeReleaseClient)
 		shouldError bool
@@ -245,6 +246,72 @@ func TestValidateOptions(t *testing.T) {
 		},
 	} {
 		_, err := tc.provided.Validate()
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
+}
+
+func TestSubmitStage(t *testing.T) {
+	for _, tc := range []struct {
+		prepare     func(*anagofakes.FakeStageClient)
+		shouldError bool
+	}{
+		{ // success
+			prepare: func(mock *anagofakes.FakeStageClient) {
+				mockGenerateReleaseVersionStage(mock)
+			},
+			shouldError: false,
+		},
+		{ // Submit fails
+			prepare: func(mock *anagofakes.FakeStageClient) {
+				mock.SubmitReturns(err)
+			},
+			shouldError: true,
+		},
+	} {
+		opts := anago.DefaultStageOptions()
+		sut := anago.NewStage(opts)
+		mock := &anagofakes.FakeStageClient{}
+		tc.prepare(mock)
+		sut.SetClient(mock)
+
+		err := sut.Submit()
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
+}
+
+func TestSubmitRelease(t *testing.T) {
+	for _, tc := range []struct {
+		prepare     func(*anagofakes.FakeReleaseClient)
+		shouldError bool
+	}{
+		{ // success
+			prepare: func(mock *anagofakes.FakeReleaseClient) {
+				mockGenerateReleaseVersionRelease(mock)
+			},
+			shouldError: false,
+		},
+		{ // Submit fails
+			prepare: func(mock *anagofakes.FakeReleaseClient) {
+				mock.SubmitReturns(err)
+			},
+			shouldError: true,
+		},
+	} {
+		opts := anago.DefaultReleaseOptions()
+		sut := anago.NewRelease(opts)
+		mock := &anagofakes.FakeReleaseClient{}
+		tc.prepare(mock)
+		sut.SetClient(mock)
+
+		err := sut.Submit()
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {

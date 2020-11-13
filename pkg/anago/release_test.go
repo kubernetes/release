@@ -170,3 +170,33 @@ func TestPrepareWorkspaceRelease(t *testing.T) {
 		}
 	}
 }
+
+func TestSubmitReleaseImpl(t *testing.T) {
+	for _, tc := range []struct {
+		prepare     func(*anagofakes.FakeReleaseImpl)
+		shouldError bool
+	}{
+		{ // success
+			prepare:     func(*anagofakes.FakeReleaseImpl) {},
+			shouldError: false,
+		},
+		{ // Submit fails
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.SubmitReturns(err)
+			},
+			shouldError: true,
+		},
+	} {
+		opts := anago.DefaultReleaseOptions()
+		sut := anago.NewDefaultRelease(opts)
+		mock := &anagofakes.FakeReleaseImpl{}
+		tc.prepare(mock)
+		sut.SetImpl(mock)
+		err := sut.Submit()
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
+}
