@@ -39,7 +39,7 @@ var gcbmgrCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		gcbmgrOpts.NoMock = rootOpts.nomock
 		gcbmgrOpts.LogLevel = rootOpts.logLevel
-		return gcb.New(gcbmgrOpts).Run()
+		return gcb.New(gcbmgrOpts).Submit()
 	},
 }
 
