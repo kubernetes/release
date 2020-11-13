@@ -57,7 +57,7 @@ dependencies:
 
   # Golang
   - name: "golang"
-    version: 1.15.3
+    version: 1.15.5
     refPaths:
     - path: cmd/vulndash/Makefile
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -74,21 +74,42 @@ dependencies:
     - path: images/releng/ci/cloudbuild.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
-  - name: "k8s.gcr.io/go-runner"
-    version: buster-v2.1.0
+  # TODO(go): Update to 1.15.5 after kubernetes/kubernetes has been updated
+  - name: "golang: after kubernetes/kubernetes update"
+    version: 1.15.3
+    refPaths:
+    - path: images/releng/k8s-ci-builder/variants.yaml
+      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+
+  - name: "gcr.io/k8s-staging-releng/releng-ci"
+    version: v0.1.2
+    refPaths:
+    - path: images/releng/ci/cloudbuild.yaml
+      match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
+
+  - name: "k8s.gcr.io/artifact-promoter/vulndash"
+    version: v0.3.0-1
+    refPaths:
+    - path: cmd/vulndash/Makefile
+      match: IMAGE_VERSION\ \?=\ v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-([0-9]+)
+    - path: cmd/vulndash/variants.yaml
+      match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-([0-9]+)
+
+  - name: "k8s.gcr.io/build-image/go-runner"
+    version: buster-v2.2.0
     refPaths:
     - path: images/build/go-runner/Makefile
       match: IMAGE_VERSION\ \?=\ [a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
-  - name: "k8s.gcr.io/kube-cross"
-    version: v1.15.3-1
+  - name: "k8s.gcr.io/build-image/kube-cross"
+    version: v1.15.5-1
     refPaths:
     - path: images/build/cross/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
 
-  - name: "k8s.gcr.io/kube-cross: config variant"
+  - name: "k8s.gcr.io/build-image/kube-cross: config variant"
     version: go1.15
     refPaths:
     - path: images/build/cross/Makefile
@@ -96,7 +117,8 @@ dependencies:
     - path: images/build/cross/variants.yaml
       match: go\d+.\d+
 
-  - name: "k8s.gcr.io/kube-cross: dependents"
+  # TODO(go): Bump tag to denote go1.15.5 update
+  - name: "k8s.gcr.io/build-image/kube-cross: dependents"
     version: v1.15.3-1
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
@@ -118,24 +140,8 @@ dependencies:
     - path: images/build/debian-iptables/variants.yaml
       match: (0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?
 
-  # Images: k8s.io/artifact-promoter
-  - name: "k8s.io/artifact-promoter/vulndash"
-    version: v0.3.0
-    refPaths:
-    - path: cmd/vulndash/Makefile
-      match: IMAGE_VERSION\ \?=\ v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
-    - path: cmd/vulndash/variants.yaml
-      match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
-
-  # Images: k8s.io/releng
-  - name: "k8s.io/releng/releng-ci"
-    version: v0.1.1
-    refPaths:
-    - path: images/releng/ci/cloudbuild.yaml
-      match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
-
   # Base images
-  - name: "k8s.gcr.io/debian-base"
+  - name: "k8s.gcr.io/build-image/debian-base"
     version: buster-v1.2.0
     refPaths:
     - path: images/build/debian-base/Makefile
@@ -143,7 +149,7 @@ dependencies:
     - path: images/build/debian-base/variants.yaml
       match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
 
-  - name: "k8s.gcr.io/debian-base: dependents"
+  - name: "k8s.gcr.io/build-image/debian-base: dependents"
     version: buster-v1.2.0
     refPaths:
     - path: images/build/debian-iptables/Makefile
@@ -151,13 +157,13 @@ dependencies:
     - path: images/build/debian-iptables/variants.yaml
       match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
 
-  - name: "k8s.gcr.io/debian-hyperkube-base"
+  - name: "k8s.gcr.io/build-image/debian-hyperkube-base"
     version: buster-v1.2.0
     refPaths:
     - path: images/build/debian-hyperkube-base/Makefile
       match: TAG\?=[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
-  - name: "k8s.gcr.io/debian-iptables"
+  - name: "k8s.gcr.io/build-image/debian-iptables"
     version: buster-v1.3.0
     refPaths:
     - path: images/build/debian-iptables/Makefile
@@ -165,7 +171,7 @@ dependencies:
     - path: images/build/debian-iptables/variants.yaml
       match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
 
-  - name: "k8s.gcr.io/debian-iptables: dependents"
+  - name: "k8s.gcr.io/build-image/debian-iptables: dependents"
     version: buster-v1.3.0
     refPaths:
     - path: images/build/debian-hyperkube-base/Makefile
