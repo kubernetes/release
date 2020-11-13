@@ -81,6 +81,14 @@ dependencies:
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
+  - name: "k8s.gcr.io/artifact-promoter/vulndash"
+    version: v0.3.0-1
+    refPaths:
+    - path: cmd/vulndash/Makefile
+      match: IMAGE_VERSION\ \?=\ v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-([0-9]+)
+    - path: cmd/vulndash/variants.yaml
+      match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-([0-9]+)
+
   - name: "k8s.gcr.io/build-image/go-runner"
     version: buster-v2.2.0
     refPaths:
@@ -109,15 +117,6 @@ dependencies:
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
-
-  # TODO(go): Bump tag to denote go1.15.5 update
-  - name: "k8s.io/artifact-promoter/vulndash"
-    version: v0.3.0
-    refPaths:
-    - path: cmd/vulndash/Makefile
-      match: IMAGE_VERSION\ \?=\ v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
-    - path: cmd/vulndash/variants.yaml
-      match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
   # golangci-lint
   - name: "golangci-lint"
