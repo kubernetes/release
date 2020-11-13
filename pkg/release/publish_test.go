@@ -42,9 +42,10 @@ func TestPublishVersion(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		bucket  string
-		version string
-		prepare func(
+		bucket    string
+		gcsSuffix string
+		version   string
+		prepare   func(
 			*releasefakes.FakePublisherClient,
 		) (buildDir string, cleanup func())
 		privateBucket bool
@@ -189,7 +190,7 @@ func TestPublishVersion(t *testing.T) {
 		buildDir, cleanup := tc.prepare(clientMock)
 
 		err := sut.PublishVersion(
-			"release", tc.version, buildDir, tc.bucket,
+			"release", tc.version, buildDir, tc.bucket, tc.gcsSuffix,
 			nil, tc.privateBucket, tc.fast,
 		)
 		if tc.shouldError {
