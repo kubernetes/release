@@ -119,6 +119,7 @@ permissions to your fork of k/sig-release and k-sigs/release-notes.`,
 }
 
 type releaseNotesOptions struct {
+	repoPath        string
 	tag             string
 	userFork        string
 	createDraftPR   bool
@@ -151,6 +152,13 @@ type sessionData struct {
 var releaseNotesOpts = &releaseNotesOptions{}
 
 func init() {
+	releaseNotesCmd.PersistentFlags().StringVar(
+		&releaseNotesOpts.repoPath,
+		"repo",
+		filepath.Join(os.TempDir(), "k8s"),
+		"the local path to the repository to be used",
+	)
+
 	releaseNotesCmd.PersistentFlags().StringVarP(
 		&releaseNotesOpts.tag,
 		"tag",
@@ -260,7 +268,7 @@ func runReleaseNotes() (err error) {
 	// Create the PR for relnotes.k8s.io
 	if releaseNotesOpts.createWebsitePR {
 		// Run the website PR process
-		if err := createWebsitePR(tag); err != nil {
+		if err := createWebsitePR(releaseNotesOpts.repoPath, tag); err != nil {
 			return errors.Wrap(err, "creating website PR")
 		}
 	}
@@ -268,7 +276,7 @@ func runReleaseNotes() (err error) {
 	// Create the PR for the Release Notes Draft in k/sig-release
 	if releaseNotesOpts.createDraftPR {
 		// Create the Draft PR Process
-		if err := createDraftPR(tag); err != nil {
+		if err := createDraftPR(releaseNotesOpts.repoPath, tag); err != nil {
 			return errors.Wrap(err, "creating Draft PR")
 		}
 	}
@@ -321,7 +329,7 @@ func verifyFork(branchName, forkOwner, forkRepo, parentOwner, parentRepo string)
 }
 
 // createDraftPR pushes the release notes draft to the users fork
-func createDraftPR(tag string) (err error) {
+func createDraftPR(repoPath, tag string) (err error) {
 	tagVersion, err := util.TagStringToSemver(tag)
 	if err != nil {
 		return errors.Wrapf(err, "reading tag: %s", tag)
@@ -361,7 +369,7 @@ func createDraftPR(tag string) (err error) {
 	}
 
 	// Generate the notes for the current version
-	releaseNotes, err := gatherNotesFrom(start)
+	releaseNotes, err := gatherNotesFrom(repoPath, start)
 	if err != nil {
 		return errors.Wrapf(err, "while generating the release notes for tag %s", start)
 	}
@@ -666,14 +674,14 @@ func processJSONOutput(repoPath string) error {
 }
 
 // createWebsitePR creates the JSON version of the release notes and pushes them to a user fork
-func createWebsitePR(tag string) (err error) {
+func createWebsitePR(repoPath, tag string) (err error) {
 	_, err = util.TagStringToSemver(tag)
 	if err != nil {
 		return errors.Wrapf(err, "reading tag: %s", tag)
 	}
 
 	// Generate the release notes for ust the current tag
-	jsonStr, err := releaseNotesJSON(tag)
+	jsonStr, err := releaseNotesJSON(repoPath, tag)
 	if err != nil {
 		return errors.Wrapf(err, "generating release notes in JSON format")
 	}
@@ -780,7 +788,7 @@ func tryToFindLatestMinorTag() (string, error) {
 
 // releaseNotesJSON generate the release notes for a specific tag and returns
 // them as JSON blob
-func releaseNotesJSON(tag string) (jsonString string, err error) {
+func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 	logrus.Infof("Generating release notes for tag %s", tag)
 
 	tagVersion, err := util.TagStringToSemver(tag)
@@ -809,7 +817,7 @@ func releaseNotesJSON(tag string) (jsonString string, err error) {
 
 	// Preclone the repo to be able to read branches and tags
 	logrus.Infof("Cloning %s/%s", git.DefaultGithubOrg, git.DefaultGithubRepo)
-	repo, err := git.CloneOrOpenDefaultGitHubRepoSSH(rootOpts.repoPath)
+	repo, err := git.CloneOrOpenDefaultGitHubRepoSSH(repoPath)
 	if err != nil {
 		return "", errors.Wrap(err, "cloning default github repo")
 	}
@@ -849,7 +857,7 @@ func releaseNotesJSON(tag string) (jsonString string, err error) {
 
 	notesOptions := options.New()
 	notesOptions.Branch = branchName
-	notesOptions.RepoPath = rootOpts.repoPath
+	notesOptions.RepoPath = repoPath
 	notesOptions.StartRev = startTag
 	notesOptions.EndRev = tag
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
@@ -896,12 +904,12 @@ func releaseNotesJSON(tag string) (jsonString string, err error) {
 }
 
 // gatherNotesFrom gathers all the release notes from the specified startTag up to --tag
-func gatherNotesFrom(startTag string) (*notes.ReleaseNotes, error) {
+func gatherNotesFrom(repoPath, startTag string) (*notes.ReleaseNotes, error) {
 	logrus.Infof("Gathering release notes from %s to %s", startTag, releaseNotesOpts.tag)
 
 	notesOptions := options.New()
 	notesOptions.Branch = git.DefaultBranch
-	notesOptions.RepoPath = rootOpts.repoPath
+	notesOptions.RepoPath = repoPath
 	notesOptions.StartRev = startTag
 	notesOptions.EndRev = releaseNotesOpts.tag
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel

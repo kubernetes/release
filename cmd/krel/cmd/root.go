@@ -17,9 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"os"
-	"path/filepath"
-
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -49,8 +46,6 @@ clarifies its purpose.`,
 
 type rootOptions struct {
 	nomock   bool
-	cleanup  bool
-	repoPath string
 	logLevel string
 }
 
@@ -66,8 +61,6 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().BoolVar(&rootOpts.nomock, "nomock", false, "nomock flag")
-	rootCmd.PersistentFlags().BoolVar(&rootOpts.cleanup, "cleanup", false, "cleanup flag")
-	rootCmd.PersistentFlags().StringVar(&rootOpts.repoPath, "repo", filepath.Join(os.TempDir(), "k8s"), "the local path to the repository to be used")
 	rootCmd.PersistentFlags().StringVar(&rootOpts.logLevel, "log-level", "info", "the logging verbosity, either 'panic', 'fatal', 'error', 'warn', 'warning', 'info', 'debug' or 'trace'")
 
 	rootCmd.AddCommand(anago.AnagoCmd)

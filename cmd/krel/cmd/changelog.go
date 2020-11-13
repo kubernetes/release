@@ -18,6 +18,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -61,7 +63,6 @@ the golang based 'release-notes' tool:
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		changelogOptions.RepoPath = rootOpts.repoPath
 		return changelog.New(changelogOptions).Run()
 	},
 }
@@ -69,6 +70,7 @@ the golang based 'release-notes' tool:
 var changelogOptions = &changelog.Options{}
 
 func init() {
+	changelogCmd.PersistentFlags().StringVar(&changelogOptions.RepoPath, "repo", filepath.Join(os.TempDir(), "k8s"), "the local path to the repository to be used")
 	changelogCmd.PersistentFlags().StringVar(&changelogOptions.Bucket, "bucket", "kubernetes-release", "Specify gs bucket to point to in generated notes")
 	changelogCmd.PersistentFlags().StringVar(&changelogOptions.Tag, "tag", "", "The version tag of the release, for example v1.17.0-rc.1")
 	changelogCmd.PersistentFlags().StringVar(&changelogOptions.Branch, "branch", "", "The branch to be used. Will be automatically inherited by the tag if not set.")
