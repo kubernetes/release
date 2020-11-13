@@ -18,6 +18,7 @@ package gcs
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -116,6 +117,34 @@ func bucketCopy(src, dst string, opts *Options) error {
 	}
 
 	return nil
+}
+
+// GetReleasePath returns a GCS path to retrieve builds from or push builds to
+//
+// Expected destination format:
+//   gs://<bucket>/<buildType>[-<gcsSuffix>][/fast][/<version>]
+// TODO: Support "release" buildType
+func GetReleasePath(
+	bucket, buildType, gcsSuffix, version string,
+	fast bool) string {
+	gcsPath := bucket
+	gcsPath = filepath.Join(gcsPath, buildType)
+
+	if gcsSuffix != "" {
+		gcsPath += "-" + gcsSuffix
+	}
+
+	if fast {
+		gcsPath = filepath.Join(gcsPath, "fast")
+	}
+
+	if version != "" {
+		gcsPath = filepath.Join(gcsPath, version)
+	}
+
+	logrus.Infof("GCS path is %s", gcsPath)
+
+	return gcsPath
 }
 
 // NormalizeGCSPath takes a gcs path and ensures that the `GcsPrefix` is

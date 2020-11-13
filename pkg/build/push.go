@@ -105,6 +105,11 @@ func (bi *Instance) Push() error {
 	if err != nil {
 		return errors.Wrap(err, "find latest version")
 	}
+
+	if version == "" {
+		return errors.New("cannot push an empty version")
+	}
+
 	logrus.Infof("Latest version is %s", version)
 
 	if err := bi.CheckReleaseBucket(); err != nil {

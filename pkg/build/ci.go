@@ -123,14 +123,8 @@ func (bi *Instance) checkBuildExists() (bool, error) {
 		return false, nil
 	}
 
-	bucket := bi.opts.Bucket
-	if bi.opts.Bucket == "" {
-		bucket = "kubernetes-release-dev"
-	}
+	gcsBuildRoot := bi.getGCSBuildPath(bi.opts.Version)
 
-	gcsDest := bi.getGCSBuildPath(version)
-
-	gcsBuildRoot := filepath.Join(bucket, gcsDest)
 	kubernetesTar := filepath.Join(gcsBuildRoot, release.KubernetesTar)
 	binPath := filepath.Join(gcsBuildRoot, "bin")
 
