@@ -28,6 +28,7 @@ func (s *sut) getFfOptions() *ffOptions {
 	return &ffOptions{
 		mainRef:        git.Remotify(git.DefaultBranch),
 		nonInteractive: true,
+		repoPath:       s.repo.Dir(),
 	}
 }
 

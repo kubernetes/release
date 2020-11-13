@@ -130,8 +130,6 @@ func (s *sut) lastCommit(t *testing.T, branch string) string {
 func (s *sut) getRootOptions() *rootOptions {
 	return &rootOptions{
 		nomock:   false,
-		cleanup:  false,
-		repoPath: s.repo.Dir(),
 		logLevel: "debug",
 	}
 }

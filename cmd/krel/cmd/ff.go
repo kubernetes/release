@@ -18,6 +18,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -28,9 +30,11 @@ import (
 )
 
 type ffOptions struct {
+	repoPath       string
 	branch         string
 	mainRef        string
 	nonInteractive bool
+	cleanup        bool
 }
 
 var ffOpts = &ffOptions{}
@@ -66,8 +70,10 @@ const pushUpstreamQuestion = `Are you ready to push the local branch fast-forwar
 Please only answer after you have validated the changes.`
 
 func init() {
+	ffCmd.PersistentFlags().StringVar(&ffOpts.repoPath, "repo", filepath.Join(os.TempDir(), "k8s"), "the local path to the repository to be used")
 	ffCmd.PersistentFlags().StringVar(&ffOpts.branch, "branch", "", "branch")
 	ffCmd.PersistentFlags().StringVar(&ffOpts.mainRef, "ref", kgit.Remotify(kgit.DefaultBranch), "ref on the main branch")
+	ffCmd.PersistentFlags().BoolVar(&ffOpts.cleanup, "cleanup", false, "cleanup the repository after the run")
 
 	rootCmd.AddCommand(ffCmd)
 }
@@ -79,7 +85,7 @@ func runFf(opts *ffOptions, rootOpts *rootOptions) error {
 	}
 
 	logrus.Infof("Preparing to fast-forward %s onto the %s branch", opts.mainRef, branch)
-	repo, err := kgit.CloneOrOpenDefaultGitHubRepoSSH(rootOpts.repoPath)
+	repo, err := kgit.CloneOrOpenDefaultGitHubRepoSSH(opts.repoPath)
 	if err != nil {
 		return err
 	}
@@ -103,7 +109,7 @@ func runFf(opts *ffOptions, rootOpts *rootOptions) error {
 		return errors.New("branch does not exist on the default remote")
 	}
 
-	if rootOpts.cleanup {
+	if ffOpts.cleanup {
 		defer repo.Cleanup() // nolint: errcheck
 	} else {
 		// Restore the currently checked out branch afterwards
