@@ -190,7 +190,7 @@ func runPushRelease(
 	}
 
 	if err := release.NewPublisher().PublishVersion(
-		"release", opts.Version, opts.BuildDir, opts.Bucket, nil, false, false,
+		"release", opts.Version, opts.BuildDir, opts.Bucket, "", nil, false, false,
 	); err != nil {
 		return errors.Wrap(err, "publish release")
 	}

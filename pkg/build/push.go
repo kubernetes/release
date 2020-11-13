@@ -146,8 +146,14 @@ func (bi *Instance) Push() error {
 	// Publish release to GCS
 	extraVersionMarkers := bi.opts.ExtraVersionMarkers
 	if err := release.NewPublisher().PublishVersion(
-		bi.opts.BuildType, version, bi.opts.BuildDir, bi.opts.Bucket, extraVersionMarkers,
-		bi.opts.PrivateBucket, bi.opts.Fast,
+		bi.opts.BuildType,
+		version,
+		bi.opts.BuildDir,
+		bi.opts.Bucket,
+		bi.opts.GCSSuffix,
+		extraVersionMarkers,
+		bi.opts.PrivateBucket,
+		bi.opts.Fast,
 	); err != nil {
 		return errors.Wrap(err, "publish release")
 	}

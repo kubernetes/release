@@ -103,7 +103,7 @@ type releaseImpl interface {
 	) error
 	ValidateImages(registry, version, buildPath string) error
 	PublishVersion(
-		buildType, version, buildDir, bucket string,
+		buildType, version, buildDir, bucket, gcsSuffix string,
 		versionMarkers []string,
 		privateBucket, fast bool,
 	) error
@@ -148,13 +148,13 @@ func (d *defaultReleaseImpl) ValidateImages(
 }
 
 func (d *defaultReleaseImpl) PublishVersion(
-	buildType, version, buildDir, bucket string,
+	buildType, version, buildDir, bucket, gcsSuffix string,
 	versionMarkers []string,
 	privateBucket, fast bool,
 ) error {
 	return release.
 		NewPublisher().
-		PublishVersion("release", version, buildDir, bucket, nil, false, false)
+		PublishVersion("release", version, buildDir, bucket, gcsSuffix, nil, false, false)
 }
 
 func (d *DefaultRelease) ValidateOptions() error {
@@ -228,7 +228,7 @@ func (d *DefaultRelease) PushArtifacts(versions []string) error {
 		}
 
 		if err := d.impl.PublishVersion(
-			"release", version, buildDir, bucket, nil, false, false,
+			"release", version, buildDir, bucket, "", nil, false, false,
 		); err != nil {
 			return errors.Wrap(err, "publish release")
 		}
