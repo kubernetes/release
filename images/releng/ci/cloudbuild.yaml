@@ -25,7 +25,7 @@ substitutions:
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
   _IMAGE_VERSION: 'v0.1.1'
-  _GO_VERSION: '1.15.3'
+  _GO_VERSION: '1.15.5'
 images:
   - 'gcr.io/$PROJECT_ID/releng-ci:${_GIT_TAG}'
   - 'gcr.io/$PROJECT_ID/releng-ci:${_IMAGE_VERSION}'

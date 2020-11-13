@@ -20,7 +20,7 @@ IMAGE_VERSION ?= buster-v2.1.0
 CONFIG ?= buster
 
 # Build args
-GO_VERSION ?= 1.15.3
+GO_VERSION ?= 1.15.5
 DISTROLESS_IMAGE ?= static-debian10
 
 # TODO: Re-enable linux/ppc64le builds once upstream distroless builds are fixed
