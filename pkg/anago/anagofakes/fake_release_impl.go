@@ -20,6 +20,7 @@ package anagofakes
 import (
 	"sync"
 
+	"k8s.io/release/pkg/announce"
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/release"
@@ -50,6 +51,17 @@ type FakeReleaseImpl struct {
 	copyStagedFromGCSReturnsOnCall map[int]struct {
 		result1 error
 	}
+	CreateAnnouncementStub        func(*announce.Options) error
+	createAnnouncementMutex       sync.RWMutex
+	createAnnouncementArgsForCall []struct {
+		arg1 *announce.Options
+	}
+	createAnnouncementReturns struct {
+		result1 error
+	}
+	createAnnouncementReturnsOnCall map[int]struct {
+		result1 error
+	}
 	GenerateReleaseVersionStub        func(string, string, string, bool) (*release.Versions, error)
 	generateReleaseVersionMutex       sync.RWMutex
 	generateReleaseVersionArgsForCall []struct {
@@ -64,6 +76,19 @@ type FakeReleaseImpl struct {
 	}
 	generateReleaseVersionReturnsOnCall map[int]struct {
 		result1 *release.Versions
+		result2 error
+	}
+	NewGitPusherStub        func(*release.GitObjectPusherOptions) (*release.GitObjectPusher, error)
+	newGitPusherMutex       sync.RWMutex
+	newGitPusherArgsForCall []struct {
+		arg1 *release.GitObjectPusherOptions
+	}
+	newGitPusherReturns struct {
+		result1 *release.GitObjectPusher
+		result2 error
+	}
+	newGitPusherReturnsOnCall map[int]struct {
+		result1 *release.GitObjectPusher
 		result2 error
 	}
 	PrepareWorkspaceReleaseStub        func(string, string) error
@@ -94,6 +119,41 @@ type FakeReleaseImpl struct {
 		result1 error
 	}
 	publishVersionReturnsOnCall map[int]struct {
+		result1 error
+	}
+	PushBranchesStub        func(*release.GitObjectPusher, []string) error
+	pushBranchesMutex       sync.RWMutex
+	pushBranchesArgsForCall []struct {
+		arg1 *release.GitObjectPusher
+		arg2 []string
+	}
+	pushBranchesReturns struct {
+		result1 error
+	}
+	pushBranchesReturnsOnCall map[int]struct {
+		result1 error
+	}
+	PushMainBranchStub        func(*release.GitObjectPusher) error
+	pushMainBranchMutex       sync.RWMutex
+	pushMainBranchArgsForCall []struct {
+		arg1 *release.GitObjectPusher
+	}
+	pushMainBranchReturns struct {
+		result1 error
+	}
+	pushMainBranchReturnsOnCall map[int]struct {
+		result1 error
+	}
+	PushTagsStub        func(*release.GitObjectPusher, []string) error
+	pushTagsMutex       sync.RWMutex
+	pushTagsArgsForCall []struct {
+		arg1 *release.GitObjectPusher
+		arg2 []string
+	}
+	pushTagsReturns struct {
+		result1 error
+	}
+	pushTagsReturnsOnCall map[int]struct {
 		result1 error
 	}
 	SubmitStub        func(*gcb.Options) error
@@ -248,6 +308,67 @@ func (fake *FakeReleaseImpl) CopyStagedFromGCSReturnsOnCall(i int, result1 error
 	}{result1}
 }
 
+func (fake *FakeReleaseImpl) CreateAnnouncement(arg1 *announce.Options) error {
+	fake.createAnnouncementMutex.Lock()
+	ret, specificReturn := fake.createAnnouncementReturnsOnCall[len(fake.createAnnouncementArgsForCall)]
+	fake.createAnnouncementArgsForCall = append(fake.createAnnouncementArgsForCall, struct {
+		arg1 *announce.Options
+	}{arg1})
+	stub := fake.CreateAnnouncementStub
+	fakeReturns := fake.createAnnouncementReturns
+	fake.recordInvocation("CreateAnnouncement", []interface{}{arg1})
+	fake.createAnnouncementMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeReleaseImpl) CreateAnnouncementCallCount() int {
+	fake.createAnnouncementMutex.RLock()
+	defer fake.createAnnouncementMutex.RUnlock()
+	return len(fake.createAnnouncementArgsForCall)
+}
+
+func (fake *FakeReleaseImpl) CreateAnnouncementCalls(stub func(*announce.Options) error) {
+	fake.createAnnouncementMutex.Lock()
+	defer fake.createAnnouncementMutex.Unlock()
+	fake.CreateAnnouncementStub = stub
+}
+
+func (fake *FakeReleaseImpl) CreateAnnouncementArgsForCall(i int) *announce.Options {
+	fake.createAnnouncementMutex.RLock()
+	defer fake.createAnnouncementMutex.RUnlock()
+	argsForCall := fake.createAnnouncementArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeReleaseImpl) CreateAnnouncementReturns(result1 error) {
+	fake.createAnnouncementMutex.Lock()
+	defer fake.createAnnouncementMutex.Unlock()
+	fake.CreateAnnouncementStub = nil
+	fake.createAnnouncementReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) CreateAnnouncementReturnsOnCall(i int, result1 error) {
+	fake.createAnnouncementMutex.Lock()
+	defer fake.createAnnouncementMutex.Unlock()
+	fake.CreateAnnouncementStub = nil
+	if fake.createAnnouncementReturnsOnCall == nil {
+		fake.createAnnouncementReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.createAnnouncementReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeReleaseImpl) GenerateReleaseVersion(arg1 string, arg2 string, arg3 string, arg4 bool) (*release.Versions, error) {
 	fake.generateReleaseVersionMutex.Lock()
 	ret, specificReturn := fake.generateReleaseVersionReturnsOnCall[len(fake.generateReleaseVersionArgsForCall)]
@@ -311,6 +432,70 @@ func (fake *FakeReleaseImpl) GenerateReleaseVersionReturnsOnCall(i int, result1 
 	}
 	fake.generateReleaseVersionReturnsOnCall[i] = struct {
 		result1 *release.Versions
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeReleaseImpl) NewGitPusher(arg1 *release.GitObjectPusherOptions) (*release.GitObjectPusher, error) {
+	fake.newGitPusherMutex.Lock()
+	ret, specificReturn := fake.newGitPusherReturnsOnCall[len(fake.newGitPusherArgsForCall)]
+	fake.newGitPusherArgsForCall = append(fake.newGitPusherArgsForCall, struct {
+		arg1 *release.GitObjectPusherOptions
+	}{arg1})
+	stub := fake.NewGitPusherStub
+	fakeReturns := fake.newGitPusherReturns
+	fake.recordInvocation("NewGitPusher", []interface{}{arg1})
+	fake.newGitPusherMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeReleaseImpl) NewGitPusherCallCount() int {
+	fake.newGitPusherMutex.RLock()
+	defer fake.newGitPusherMutex.RUnlock()
+	return len(fake.newGitPusherArgsForCall)
+}
+
+func (fake *FakeReleaseImpl) NewGitPusherCalls(stub func(*release.GitObjectPusherOptions) (*release.GitObjectPusher, error)) {
+	fake.newGitPusherMutex.Lock()
+	defer fake.newGitPusherMutex.Unlock()
+	fake.NewGitPusherStub = stub
+}
+
+func (fake *FakeReleaseImpl) NewGitPusherArgsForCall(i int) *release.GitObjectPusherOptions {
+	fake.newGitPusherMutex.RLock()
+	defer fake.newGitPusherMutex.RUnlock()
+	argsForCall := fake.newGitPusherArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeReleaseImpl) NewGitPusherReturns(result1 *release.GitObjectPusher, result2 error) {
+	fake.newGitPusherMutex.Lock()
+	defer fake.newGitPusherMutex.Unlock()
+	fake.NewGitPusherStub = nil
+	fake.newGitPusherReturns = struct {
+		result1 *release.GitObjectPusher
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeReleaseImpl) NewGitPusherReturnsOnCall(i int, result1 *release.GitObjectPusher, result2 error) {
+	fake.newGitPusherMutex.Lock()
+	defer fake.newGitPusherMutex.Unlock()
+	fake.NewGitPusherStub = nil
+	if fake.newGitPusherReturnsOnCall == nil {
+		fake.newGitPusherReturnsOnCall = make(map[int]struct {
+			result1 *release.GitObjectPusher
+			result2 error
+		})
+	}
+	fake.newGitPusherReturnsOnCall[i] = struct {
+		result1 *release.GitObjectPusher
 		result2 error
 	}{result1, result2}
 }
@@ -450,6 +635,201 @@ func (fake *FakeReleaseImpl) PublishVersionReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeReleaseImpl) PushBranches(arg1 *release.GitObjectPusher, arg2 []string) error {
+	var arg2Copy []string
+	if arg2 != nil {
+		arg2Copy = make([]string, len(arg2))
+		copy(arg2Copy, arg2)
+	}
+	fake.pushBranchesMutex.Lock()
+	ret, specificReturn := fake.pushBranchesReturnsOnCall[len(fake.pushBranchesArgsForCall)]
+	fake.pushBranchesArgsForCall = append(fake.pushBranchesArgsForCall, struct {
+		arg1 *release.GitObjectPusher
+		arg2 []string
+	}{arg1, arg2Copy})
+	stub := fake.PushBranchesStub
+	fakeReturns := fake.pushBranchesReturns
+	fake.recordInvocation("PushBranches", []interface{}{arg1, arg2Copy})
+	fake.pushBranchesMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeReleaseImpl) PushBranchesCallCount() int {
+	fake.pushBranchesMutex.RLock()
+	defer fake.pushBranchesMutex.RUnlock()
+	return len(fake.pushBranchesArgsForCall)
+}
+
+func (fake *FakeReleaseImpl) PushBranchesCalls(stub func(*release.GitObjectPusher, []string) error) {
+	fake.pushBranchesMutex.Lock()
+	defer fake.pushBranchesMutex.Unlock()
+	fake.PushBranchesStub = stub
+}
+
+func (fake *FakeReleaseImpl) PushBranchesArgsForCall(i int) (*release.GitObjectPusher, []string) {
+	fake.pushBranchesMutex.RLock()
+	defer fake.pushBranchesMutex.RUnlock()
+	argsForCall := fake.pushBranchesArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeReleaseImpl) PushBranchesReturns(result1 error) {
+	fake.pushBranchesMutex.Lock()
+	defer fake.pushBranchesMutex.Unlock()
+	fake.PushBranchesStub = nil
+	fake.pushBranchesReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) PushBranchesReturnsOnCall(i int, result1 error) {
+	fake.pushBranchesMutex.Lock()
+	defer fake.pushBranchesMutex.Unlock()
+	fake.PushBranchesStub = nil
+	if fake.pushBranchesReturnsOnCall == nil {
+		fake.pushBranchesReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.pushBranchesReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) PushMainBranch(arg1 *release.GitObjectPusher) error {
+	fake.pushMainBranchMutex.Lock()
+	ret, specificReturn := fake.pushMainBranchReturnsOnCall[len(fake.pushMainBranchArgsForCall)]
+	fake.pushMainBranchArgsForCall = append(fake.pushMainBranchArgsForCall, struct {
+		arg1 *release.GitObjectPusher
+	}{arg1})
+	stub := fake.PushMainBranchStub
+	fakeReturns := fake.pushMainBranchReturns
+	fake.recordInvocation("PushMainBranch", []interface{}{arg1})
+	fake.pushMainBranchMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeReleaseImpl) PushMainBranchCallCount() int {
+	fake.pushMainBranchMutex.RLock()
+	defer fake.pushMainBranchMutex.RUnlock()
+	return len(fake.pushMainBranchArgsForCall)
+}
+
+func (fake *FakeReleaseImpl) PushMainBranchCalls(stub func(*release.GitObjectPusher) error) {
+	fake.pushMainBranchMutex.Lock()
+	defer fake.pushMainBranchMutex.Unlock()
+	fake.PushMainBranchStub = stub
+}
+
+func (fake *FakeReleaseImpl) PushMainBranchArgsForCall(i int) *release.GitObjectPusher {
+	fake.pushMainBranchMutex.RLock()
+	defer fake.pushMainBranchMutex.RUnlock()
+	argsForCall := fake.pushMainBranchArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeReleaseImpl) PushMainBranchReturns(result1 error) {
+	fake.pushMainBranchMutex.Lock()
+	defer fake.pushMainBranchMutex.Unlock()
+	fake.PushMainBranchStub = nil
+	fake.pushMainBranchReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) PushMainBranchReturnsOnCall(i int, result1 error) {
+	fake.pushMainBranchMutex.Lock()
+	defer fake.pushMainBranchMutex.Unlock()
+	fake.PushMainBranchStub = nil
+	if fake.pushMainBranchReturnsOnCall == nil {
+		fake.pushMainBranchReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.pushMainBranchReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) PushTags(arg1 *release.GitObjectPusher, arg2 []string) error {
+	var arg2Copy []string
+	if arg2 != nil {
+		arg2Copy = make([]string, len(arg2))
+		copy(arg2Copy, arg2)
+	}
+	fake.pushTagsMutex.Lock()
+	ret, specificReturn := fake.pushTagsReturnsOnCall[len(fake.pushTagsArgsForCall)]
+	fake.pushTagsArgsForCall = append(fake.pushTagsArgsForCall, struct {
+		arg1 *release.GitObjectPusher
+		arg2 []string
+	}{arg1, arg2Copy})
+	stub := fake.PushTagsStub
+	fakeReturns := fake.pushTagsReturns
+	fake.recordInvocation("PushTags", []interface{}{arg1, arg2Copy})
+	fake.pushTagsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeReleaseImpl) PushTagsCallCount() int {
+	fake.pushTagsMutex.RLock()
+	defer fake.pushTagsMutex.RUnlock()
+	return len(fake.pushTagsArgsForCall)
+}
+
+func (fake *FakeReleaseImpl) PushTagsCalls(stub func(*release.GitObjectPusher, []string) error) {
+	fake.pushTagsMutex.Lock()
+	defer fake.pushTagsMutex.Unlock()
+	fake.PushTagsStub = stub
+}
+
+func (fake *FakeReleaseImpl) PushTagsArgsForCall(i int) (*release.GitObjectPusher, []string) {
+	fake.pushTagsMutex.RLock()
+	defer fake.pushTagsMutex.RUnlock()
+	argsForCall := fake.pushTagsArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeReleaseImpl) PushTagsReturns(result1 error) {
+	fake.pushTagsMutex.Lock()
+	defer fake.pushTagsMutex.Unlock()
+	fake.PushTagsStub = nil
+	fake.pushTagsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) PushTagsReturnsOnCall(i int, result1 error) {
+	fake.pushTagsMutex.Lock()
+	defer fake.pushTagsMutex.Unlock()
+	fake.PushTagsStub = nil
+	if fake.pushTagsReturnsOnCall == nil {
+		fake.pushTagsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.pushTagsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeReleaseImpl) Submit(arg1 *gcb.Options) error {
 	fake.submitMutex.Lock()
 	ret, specificReturn := fake.submitReturnsOnCall[len(fake.submitArgsForCall)]
@@ -581,12 +961,22 @@ func (fake *FakeReleaseImpl) Invocations() map[string][][]interface{} {
 	defer fake.checkReleaseBucketMutex.RUnlock()
 	fake.copyStagedFromGCSMutex.RLock()
 	defer fake.copyStagedFromGCSMutex.RUnlock()
+	fake.createAnnouncementMutex.RLock()
+	defer fake.createAnnouncementMutex.RUnlock()
 	fake.generateReleaseVersionMutex.RLock()
 	defer fake.generateReleaseVersionMutex.RUnlock()
+	fake.newGitPusherMutex.RLock()
+	defer fake.newGitPusherMutex.RUnlock()
 	fake.prepareWorkspaceReleaseMutex.RLock()
 	defer fake.prepareWorkspaceReleaseMutex.RUnlock()
 	fake.publishVersionMutex.RLock()
 	defer fake.publishVersionMutex.RUnlock()
+	fake.pushBranchesMutex.RLock()
+	defer fake.pushBranchesMutex.RUnlock()
+	fake.pushMainBranchMutex.RLock()
+	defer fake.pushMainBranchMutex.RUnlock()
+	fake.pushTagsMutex.RLock()
+	defer fake.pushTagsMutex.RUnlock()
 	fake.submitMutex.RLock()
 	defer fake.submitMutex.RUnlock()
 	fake.validateImagesMutex.RLock()

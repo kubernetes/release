@@ -27,7 +27,10 @@ import (
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/git"
+
+	"k8s.io/release/pkg/announce"
 	"k8s.io/release/pkg/release"
+	"k8s.io/release/pkg/util"
 )
 
 // releaseClient is a client for release a previously staged release.
@@ -119,6 +122,13 @@ type releaseImpl interface {
 		versionMarkers []string,
 		privateBucket, fast bool,
 	) error
+	CreateAnnouncement(
+		options *announce.Options,
+	) error
+	PushTags(pusher *release.GitObjectPusher, tagList []string) error
+	PushBranches(pusher *release.GitObjectPusher, branchList []string) error
+	PushMainBranch(pusher *release.GitObjectPusher) error
+	NewGitPusher(opts *release.GitObjectPusherOptions) (*release.GitObjectPusher, error)
 }
 
 func (d *defaultReleaseImpl) Submit(options *gcb.Options) error {
@@ -182,6 +192,41 @@ func (d *DefaultRelease) Submit() error {
 	options.BuildVersion = d.options.BuildVersion
 	options.NoAnago = true
 	return d.impl.Submit(options)
+}
+
+func (d *defaultReleaseImpl) CreateAnnouncement(options *announce.Options) error {
+	// Create the announcement
+	return announce.CreateForRelease(options)
+}
+
+func (d *defaultReleaseImpl) PushTags(
+	pusher *release.GitObjectPusher, tagList []string,
+) error {
+	return pusher.PushTags(tagList)
+}
+
+func (d *defaultReleaseImpl) PushBranches(
+	pusher *release.GitObjectPusher, branchList []string,
+) error {
+	return pusher.PushBranches(branchList)
+}
+
+func (d *defaultReleaseImpl) PushMainBranch(pusher *release.GitObjectPusher) error {
+	if err := pusher.PushMain(); err != nil {
+		return errors.Wrap(err, "pushing changes in main branch")
+	}
+	return nil
+}
+
+// NewGitPusher returns a new instance of the git pusher to reuse
+func (d *defaultReleaseImpl) NewGitPusher(
+	opts *release.GitObjectPusherOptions,
+) (pusher *release.GitObjectPusher, err error) {
+	pusher, err = release.NewGitPusher(opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating new git object pusher")
+	}
+	return pusher, nil
 }
 
 func (d *DefaultRelease) ValidateOptions() error {
@@ -282,8 +327,80 @@ func (d *DefaultRelease) PushArtifacts() error {
 	return nil
 }
 
-func (d *DefaultRelease) PushGitObjects() error { return nil }
+// PushGitObjects uploads to the remote repository the release's tags and branches.
+// Internally, this function calls the release implementation's PushTags,
+// PushBranches and PushMainBranch methods
+func (d *DefaultRelease) PushGitObjects() error {
+	// Build the git object pusher
+	pusher, err := d.impl.NewGitPusher(
+		&release.GitObjectPusherOptions{
+			DryRun: !d.options.NoMock,
+			// MaxRetries: options.maxRetries,
+			RepoPath: gitRoot,
+		})
+	if err != nil {
+		return errors.Wrap(err, "getting git pusher from the release implementation")
+	}
 
-func (d *DefaultRelease) CreateAnnouncement() error { return nil }
+	// The list of tags to be pushed to the remote repository.
+	// These come from the versions object created during
+	// GenerateReleaseVersion()
+	if err := d.impl.PushTags(pusher, d.state.versions.Ordered()); err != nil {
+		return errors.Wrap(err, "pushing release tags")
+	}
+
+	// Determine which branches have to be pushed, except main
+	// which gets pushed at the end by itself
+	branchList := []string{}
+	if d.options.ReleaseBranch != git.DefaultBranch {
+		branchList = append(branchList, d.options.ReleaseBranch)
+
+		// # Additionally push the parent branch if a branch of branch
+		if d.state.parentBranch != git.DefaultBranch {
+			branchList = append(branchList, d.state.parentBranch)
+		}
+	}
+
+	// Call the release imprementation PushBranches() method
+	if err := d.impl.PushBranches(pusher, branchList); err != nil {
+		return errors.Wrap(err, "pushing branches to the remote repository")
+	}
+
+	// For files created on master with new branches and
+	// for $CHANGELOG_FILEPATH, update the main branch
+	if err := d.impl.PushMainBranch(pusher); err != nil {
+		return errors.Wrap(err, "pushing changes in main branch")
+	}
+
+	logrus.Infof(
+		"Git objects push complete (%d branches, %d tags & main branch)",
+		len(d.state.versions.Ordered()), len(branchList),
+	)
+	return nil
+}
+
+// CreateAnnouncement creates the announcement.html file
+func (d *DefaultRelease) CreateAnnouncement() error {
+	// Buld the announcement options set
+	announceOpts := announce.NewOptions()
+	announceOpts.WithWorkDir(gitRoot)
+	announceOpts.WithTag(util.SemverToTagString(d.state.semverBuildVersion))
+	announceOpts.WithBranch(d.options.ReleaseBranch)
+	announceOpts.WithChangelogPath(
+		filepath.Join(
+			gitRoot, fmt.Sprintf("/CHANGELOG/CHANGELOG-%d.%d.md",
+				d.state.semverBuildVersion.Major, d.state.semverBuildVersion.Minor,
+			),
+		),
+	)
+	announceOpts.WithChangelogHTML(
+		filepath.Join(workspaceDir, "/src/release-notes.html"),
+	)
+
+	if err := d.impl.CreateAnnouncement(announceOpts); err != nil {
+		return errors.Wrap(err, "creating the announcement")
+	}
+	return nil
+}
 
 func (d *DefaultRelease) Archive() error { return nil }

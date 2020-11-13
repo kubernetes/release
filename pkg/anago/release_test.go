@@ -200,3 +200,87 @@ func TestSubmitReleaseImpl(t *testing.T) {
 		}
 	}
 }
+
+func TestCreateAnnouncement(t *testing.T) {
+	for _, tc := range []struct {
+		prepare     func(*anagofakes.FakeReleaseImpl)
+		shouldError bool
+	}{
+		{ // success
+			prepare:     func(*anagofakes.FakeReleaseImpl) {},
+			shouldError: false,
+		},
+		{ // Create announcement fails
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.CreateAnnouncementReturns(err)
+			},
+			shouldError: true,
+		},
+	} {
+		opts := anago.DefaultReleaseOptions()
+		sut := anago.NewDefaultRelease(opts)
+		sut.SetState(
+			generateTestingReleaseState(&testStateParameters{versionsTag: &testVersionTag}),
+		)
+		mock := &anagofakes.FakeReleaseImpl{}
+		tc.prepare(mock)
+		sut.SetImpl(mock)
+		err := sut.CreateAnnouncement()
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
+}
+
+func TestPushGitObjects(t *testing.T) {
+	for _, tc := range []struct {
+		prepare     func(*anagofakes.FakeReleaseImpl)
+		shouldError bool
+	}{
+		{ // success
+			prepare:     func(*anagofakes.FakeReleaseImpl) {},
+			shouldError: false,
+		},
+		{ // Pushing list of branches fails
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.PushBranchesReturns(err)
+			},
+			shouldError: true,
+		},
+		{ // Pushing list of tags fails
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.PushTagsReturns(err)
+			},
+			shouldError: true,
+		},
+		{ // Pushing the main branch fails
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.PushMainBranchReturns(err)
+			},
+			shouldError: true,
+		},
+		{ // Creating the git pusher object fails
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.NewGitPusherReturns(nil, err)
+			},
+			shouldError: true,
+		},
+	} {
+		opts := anago.DefaultReleaseOptions()
+		sut := anago.NewDefaultRelease(opts)
+		sut.SetState(
+			generateTestingReleaseState(&testStateParameters{versionsTag: &testVersionTag}),
+		)
+		mock := &anagofakes.FakeReleaseImpl{}
+		tc.prepare(mock)
+		sut.SetImpl(mock)
+		err := sut.PushGitObjects()
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
+}
