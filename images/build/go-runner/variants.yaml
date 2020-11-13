@@ -1,6 +1,6 @@
 variants:
   buster:
     CONFIG: 'buster'
-    IMAGE_VERSION: 'buster-v2.1.0'
+    IMAGE_VERSION: 'buster-v2.2.0'
     GO_VERSION: '1.15.5'
     DISTROLESS_IMAGE: 'static-debian10'
