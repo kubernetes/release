@@ -77,16 +77,17 @@ type FakeReleaseImpl struct {
 	prepareWorkspaceReleaseReturnsOnCall map[int]struct {
 		result1 error
 	}
-	PublishVersionStub        func(string, string, string, string, []string, bool, bool) error
+	PublishVersionStub        func(string, string, string, string, string, []string, bool, bool) error
 	publishVersionMutex       sync.RWMutex
 	publishVersionArgsForCall []struct {
 		arg1 string
 		arg2 string
 		arg3 string
 		arg4 string
-		arg5 []string
-		arg6 bool
+		arg5 string
+		arg6 []string
 		arg7 bool
+		arg8 bool
 	}
 	publishVersionReturns struct {
 		result1 error
@@ -364,11 +365,11 @@ func (fake *FakeReleaseImpl) PrepareWorkspaceReleaseReturnsOnCall(i int, result1
 	}{result1}
 }
 
-func (fake *FakeReleaseImpl) PublishVersion(arg1 string, arg2 string, arg3 string, arg4 string, arg5 []string, arg6 bool, arg7 bool) error {
-	var arg5Copy []string
-	if arg5 != nil {
-		arg5Copy = make([]string, len(arg5))
-		copy(arg5Copy, arg5)
+func (fake *FakeReleaseImpl) PublishVersion(arg1 string, arg2 string, arg3 string, arg4 string, arg5 string, arg6 []string, arg7 bool, arg8 bool) error {
+	var arg6Copy []string
+	if arg6 != nil {
+		arg6Copy = make([]string, len(arg6))
+		copy(arg6Copy, arg6)
 	}
 	fake.publishVersionMutex.Lock()
 	ret, specificReturn := fake.publishVersionReturnsOnCall[len(fake.publishVersionArgsForCall)]
@@ -377,16 +378,17 @@ func (fake *FakeReleaseImpl) PublishVersion(arg1 string, arg2 string, arg3 strin
 		arg2 string
 		arg3 string
 		arg4 string
-		arg5 []string
-		arg6 bool
+		arg5 string
+		arg6 []string
 		arg7 bool
-	}{arg1, arg2, arg3, arg4, arg5Copy, arg6, arg7})
+		arg8 bool
+	}{arg1, arg2, arg3, arg4, arg5, arg6Copy, arg7, arg8})
 	stub := fake.PublishVersionStub
 	fakeReturns := fake.publishVersionReturns
-	fake.recordInvocation("PublishVersion", []interface{}{arg1, arg2, arg3, arg4, arg5Copy, arg6, arg7})
+	fake.recordInvocation("PublishVersion", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6Copy, arg7, arg8})
 	fake.publishVersionMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+		return stub(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
 	}
 	if specificReturn {
 		return ret.result1
@@ -400,17 +402,17 @@ func (fake *FakeReleaseImpl) PublishVersionCallCount() int {
 	return len(fake.publishVersionArgsForCall)
 }
 
-func (fake *FakeReleaseImpl) PublishVersionCalls(stub func(string, string, string, string, []string, bool, bool) error) {
+func (fake *FakeReleaseImpl) PublishVersionCalls(stub func(string, string, string, string, string, []string, bool, bool) error) {
 	fake.publishVersionMutex.Lock()
 	defer fake.publishVersionMutex.Unlock()
 	fake.PublishVersionStub = stub
 }
 
-func (fake *FakeReleaseImpl) PublishVersionArgsForCall(i int) (string, string, string, string, []string, bool, bool) {
+func (fake *FakeReleaseImpl) PublishVersionArgsForCall(i int) (string, string, string, string, string, []string, bool, bool) {
 	fake.publishVersionMutex.RLock()
 	defer fake.publishVersionMutex.RUnlock()
 	argsForCall := fake.publishVersionArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5, argsForCall.arg6, argsForCall.arg7
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5, argsForCall.arg6, argsForCall.arg7, argsForCall.arg8
 }
 
 func (fake *FakeReleaseImpl) PublishVersionReturns(result1 error) {
