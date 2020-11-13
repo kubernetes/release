@@ -75,10 +75,16 @@ func (*defaultPublisher) GetURLResponse(url string) (string, error) {
 // buildType - One of 'release' or 'ci'
 // version - The version
 // buildDir - build output directory
-// bucket - GS bucket
+// bucket - GCS bucket
+// gcsSuffix - appended to the buildType to construct a new top-level
+//             destination
+//
+// Expected destination format:
+//   gs://<bucket>/<buildType>[-<gcsSuffix>][/fast]/<version>
+//
 // was releaselib.sh: release::gcs::publish_version
 func (p *Publisher) PublishVersion(
-	buildType, version, buildDir, bucket string,
+	buildType, version, buildDir, bucket, gcsSuffix string,
 	extraVersionMarkers []string,
 	privateBucket, fast bool,
 ) error {
@@ -94,19 +100,28 @@ func (p *Publisher) PublishVersion(
 		}
 	}
 
-	releasePath := filepath.Join(bucket, buildType)
-	if fast {
-		releasePath = filepath.Join(releasePath, "fast")
-	}
-	releasePath = gcs.GcsPrefix + filepath.Join(releasePath, version)
-
-	if err := p.client.GSUtil("ls", releasePath); err != nil {
-		return errors.Wrapf(err, "release files don't exist at %s", releasePath)
-	}
-
 	sv, err := util.TagStringToSemver(version)
 	if err != nil {
 		return errors.Errorf("invalid version %s", version)
+	}
+
+	markerPath := gcs.GetMarkerPath(
+		bucket,
+		buildType,
+		gcsSuffix,
+	)
+
+	releasePath := gcs.GetReleasePath(
+		bucket,
+		buildType,
+		gcsSuffix,
+		version,
+		fast,
+	)
+
+	// TODO: This should probably be a more thorough check of explicit files
+	if err := p.client.GSUtil("ls", releasePath); err != nil {
+		return errors.Wrapf(err, "release files don't exist at %s", releasePath)
 	}
 
 	var versionMarkers []string
@@ -129,12 +144,12 @@ func (p *Publisher) PublishVersion(
 	}
 
 	logrus.Infof("Publish version markers: %v", versionMarkers)
-	logrus.Infof("Publish official pointer text files to bucket %s", bucket)
+	logrus.Infof("Publish official pointer text files to %s", markerPath)
 
 	for _, file := range versionMarkers {
 		versionMarker := filepath.Join(buildType, file+".txt")
 		needsUpdate, err := p.VerifyLatestUpdate(
-			versionMarker, bucket, version,
+			versionMarker, markerPath, version,
 		)
 		if err != nil {
 			return errors.Wrapf(err, "verify latest update for %s", versionMarker)
@@ -150,7 +165,7 @@ func (p *Publisher) PublishVersion(
 		}
 
 		if err := p.PublishToGcs(
-			versionMarker, buildDir, bucket, version, privateBucket,
+			versionMarker, buildDir, markerPath, version, privateBucket,
 		); err != nil {
 			return errors.Wrap(err, "publish release to GCS")
 		}
@@ -162,16 +177,16 @@ func (p *Publisher) PublishVersion(
 // VerifyLatestUpdate checks if the new version is greater than the version
 // currently published on GCS. It returns `true` for `needsUpdate` if the remote
 // version does not exist or needs to be updated.
-// publishFile - the GCS location to look in
-// bucket - GS bucket
+// publishFile - the version marker to look for
+// markerPath - the GCS path to search for the version marker in
 // version - release version
 // was releaselib.sh: release::gcs::verify_latest_update
 func (p *Publisher) VerifyLatestUpdate(
-	publishFile, bucket, version string,
+	publishFile, markerPath, version string,
 ) (needsUpdate bool, err error) {
 	logrus.Infof("Testing %s > %s (published)", version, publishFile)
 
-	publishFileDst := gcs.GcsPrefix + filepath.Join(bucket, publishFile)
+	publishFileDst := gcs.NormalizeGCSPath(filepath.Join(markerPath, publishFile))
 	gcsVersion, err := p.client.GSUtilOutput("cat", publishFileDst)
 	if err != nil {
 		logrus.Infof("%s does not exist but will be created", publishFileDst)
@@ -202,17 +217,17 @@ func (p *Publisher) VerifyLatestUpdate(
 // PublishToGcs publishes a release to GCS
 // publishFile - the GCS location to look in
 // buildDir - build output directory
-// bucket - GS bucket
+// markerPath - the GCS path to publish a version marker to
 // version - release version
 // was releaselib.sh: release::gcs::publish
 func (p *Publisher) PublishToGcs(
-	publishFile, buildDir, bucket, version string,
+	publishFile, buildDir, markerPath, version string,
 	privateBucket bool,
 ) error {
 	releaseStage := filepath.Join(buildDir, ReleaseStagePath)
-	publishFileDst := gcs.GcsPrefix + filepath.Join(bucket, publishFile)
-	publicLink := fmt.Sprintf("%s/%s", URLPrefixForBucket(bucket), publishFile)
-	if bucket == ProductionBucket {
+	publishFileDst := gcs.NormalizeGCSPath(filepath.Join(markerPath, publishFile))
+	publicLink := fmt.Sprintf("%s/%s", URLPrefixForBucket(markerPath), publishFile)
+	if strings.HasPrefix(markerPath, ProductionBucket) {
 		publicLink = fmt.Sprintf("%s/%s", ProductionBucketURL, publishFile)
 	}
 
@@ -250,7 +265,7 @@ func (p *Publisher) PublishToGcs(
 		// Ref:
 		// - https://cloud.google.com/storage/docs/bucket-policy-only
 		// - https://github.com/kubernetes/release/issues/904
-		if strings.HasPrefix(bucket, "k8s-") {
+		if !strings.HasPrefix(markerPath, "k8s-") {
 			aclOutput, err := p.client.GSUtilOutput(
 				"acl", "ch", "-R", "-g", "all:R", publishFileDst,
 			)

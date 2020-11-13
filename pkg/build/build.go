@@ -17,9 +17,9 @@ limitations under the License.
 package build
 
 import (
-	"path/filepath"
-
 	"github.com/sirupsen/logrus"
+
+	"k8s.io/release/pkg/gcp/gcs"
 )
 
 var DefaultExtraVersionMarkers = []string{}
@@ -92,21 +92,21 @@ type Options struct {
 	ValidateRemoteImageDigests bool
 }
 
-// TODO: Support "release" buildType
+// TODO: Refactor so that version is not required as a parameter
 func (bi *Instance) getGCSBuildPath(version string) string {
-	gcsDest := bi.opts.BuildType
-
-	if bi.opts.GCSSuffix != "" {
-		gcsDest += "-" + bi.opts.GCSSuffix
+	// TODO: Parameterize this? Maybe a setter for defaults?
+	bucket := bi.opts.Bucket
+	if bi.opts.Bucket == "" {
+		bucket = "kubernetes-release-dev"
 	}
 
-	if bi.opts.Fast {
-		gcsDest = filepath.Join(gcsDest, "fast")
-	}
-	gcsDest = filepath.Join(gcsDest, version)
-	logrus.Infof("GCS destination is %s", gcsDest)
-
-	return gcsDest
+	return gcs.GetReleasePath(
+		bucket,
+		bi.opts.BuildType,
+		bi.opts.GCSSuffix,
+		version,
+		bi.opts.Fast,
+	)
 }
 
 func (bi *Instance) setBuildType() {

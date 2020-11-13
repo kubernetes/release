@@ -18,6 +18,7 @@ package gcs
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -116,6 +117,69 @@ func bucketCopy(src, dst string, opts *Options) error {
 	}
 
 	return nil
+}
+
+// GetReleasePath returns a GCS path to retrieve builds from or push builds to
+//
+// Expected destination format:
+//   gs://<bucket>/<buildType>[-<gcsSuffix>][/fast][/<version>]
+func GetReleasePath(
+	bucket, buildType, gcsSuffix, version string,
+	fast bool) string {
+	return getPath(
+		bucket,
+		buildType,
+		gcsSuffix,
+		version,
+		"release",
+		fast,
+	)
+}
+
+// GetMarkerPath returns a GCS path where version markers should be stored
+//
+// Expected destination format:
+//   gs://<bucket>/<buildType>[-<gcsSuffix>]
+func GetMarkerPath(
+	bucket, buildType, gcsSuffix string) string {
+	return getPath(
+		bucket,
+		buildType,
+		gcsSuffix,
+		"",
+		"marker",
+		false,
+	)
+}
+
+// GetReleasePath returns a GCS path to retrieve builds from or push builds to
+//
+// Expected destination format:
+//   gs://<bucket>/<buildType>[-<gcsSuffix>][/fast][/<version>]
+// TODO: Support "release" buildType
+func getPath(
+	bucket, buildType, gcsSuffix, version, pathType string,
+	fast bool) string {
+	gcsPath := bucket
+	gcsPath = filepath.Join(gcsPath, buildType)
+
+	if gcsSuffix != "" {
+		gcsPath += "-" + gcsSuffix
+	}
+
+	if pathType == "release" {
+		if fast {
+			gcsPath = filepath.Join(gcsPath, "fast")
+		}
+
+		if version != "" {
+			gcsPath = filepath.Join(gcsPath, version)
+		}
+	}
+
+	logrus.Infof("GCS path is %s", gcsPath)
+
+	return gcsPath
 }
 
 // NormalizeGCSPath takes a gcs path and ensures that the `GcsPrefix` is
