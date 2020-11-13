@@ -43,7 +43,7 @@ func TestCheckPrerequisitesRelease(t *testing.T) {
 	opts := anago.DefaultReleaseOptions()
 	sut := anago.NewDefaultRelease(opts)
 	mock := &anagofakes.FakeReleaseImpl{}
-	sut.SetClient(mock)
+	sut.SetImpl(mock)
 	require.Nil(t, sut.CheckPrerequisites())
 }
 
@@ -75,7 +75,7 @@ func TestGenerateReleaseVersionRelease(t *testing.T) {
 
 		mock := &anagofakes.FakeReleaseImpl{}
 		tc.prepare(mock)
-		sut.SetClient(mock)
+		sut.SetImpl(mock)
 
 		err := sut.GenerateReleaseVersion()
 		if tc.shouldError {
@@ -130,7 +130,7 @@ func TestPushArtifacts(t *testing.T) {
 
 		mock := &anagofakes.FakeReleaseImpl{}
 		tc.prepare(mock)
-		sut.SetClient(mock)
+		sut.SetImpl(mock)
 
 		err := sut.PushArtifacts()
 		if tc.shouldError {
@@ -161,7 +161,7 @@ func TestPrepareWorkspaceRelease(t *testing.T) {
 		sut := anago.NewDefaultRelease(opts)
 		mock := &anagofakes.FakeReleaseImpl{}
 		tc.prepare(mock)
-		sut.SetClient(mock)
+		sut.SetImpl(mock)
 		err := sut.PrepareWorkspace()
 		if tc.shouldError {
 			require.NotNil(t, err)

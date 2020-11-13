@@ -85,8 +85,8 @@ func NewDefaultStage(options *StageOptions) *DefaultStage {
 	return &DefaultStage{&defaultStageImpl{}, options, nil}
 }
 
-// SetClient can be used to set the internal stage implementation.
-func (d *DefaultStage) SetClient(impl stageImpl) {
+// SetImpl can be used to set the internal stage implementation.
+func (d *DefaultStage) SetImpl(impl stageImpl) {
 	d.impl = impl
 }
 

@@ -43,7 +43,7 @@ func TestCheckPrerequisitesStage(t *testing.T) {
 	opts := anago.DefaultStageOptions()
 	sut := anago.NewDefaultStage(opts)
 	mock := &anagofakes.FakeStageImpl{}
-	sut.SetClient(mock)
+	sut.SetImpl(mock)
 	require.Nil(t, sut.CheckPrerequisites())
 }
 
@@ -75,7 +75,7 @@ func TestGenerateReleaseVersionStage(t *testing.T) {
 
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
-		sut.SetClient(mock)
+		sut.SetImpl(mock)
 		err := sut.GenerateReleaseVersion()
 		if tc.shouldError {
 			require.NotNil(t, err)
@@ -110,7 +110,7 @@ func TestPrepareWorkspaceStage(t *testing.T) {
 
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
-		sut.SetClient(mock)
+		sut.SetImpl(mock)
 		err := sut.PrepareWorkspace()
 		if tc.shouldError {
 			require.NotNil(t, err)
@@ -305,7 +305,7 @@ func TestTagRepository(t *testing.T) {
 
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
-		sut.SetClient(mock)
+		sut.SetImpl(mock)
 
 		err = sut.TagRepository()
 		if tc.shouldError {
@@ -341,7 +341,7 @@ func TestBuild(t *testing.T) {
 
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
-		sut.SetClient(mock)
+		sut.SetImpl(mock)
 
 		err := sut.Build()
 		if tc.shouldError {
@@ -376,7 +376,7 @@ func TestGenerateChangelog(t *testing.T) {
 
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
-		sut.SetClient(mock)
+		sut.SetImpl(mock)
 
 		err := sut.GenerateChangelog()
 		if tc.shouldError {
@@ -437,7 +437,7 @@ func TestStageArtifacts(t *testing.T) {
 		sut := anago.NewDefaultStage(opts)
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
-		sut.SetClient(mock)
+		sut.SetImpl(mock)
 
 		sut.SetState(
 			generateTestingStageState(
