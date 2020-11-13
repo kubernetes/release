@@ -74,6 +74,17 @@ func NewGitPusher(opts *GitObjectPusherOptions) (*GitObjectPusher, error) {
 	}, nil
 }
 
+// PushBranches Convenience method to push a list of branches
+func (gp *GitObjectPusher) PushBranches(branchList []string) error {
+	for _, branchName := range branchList {
+		if err := gp.PushBranch(branchName); err != nil {
+			return errors.Wrapf(err, "pushing %s branch", branchName)
+		}
+	}
+	logrus.Infof("Successfully pushed %d branches", len(branchList))
+	return nil
+}
+
 // PushBranch pushes a branch to the repository
 //  this function is idempotent.
 func (gp *GitObjectPusher) PushBranch(branchName string) error {
@@ -96,6 +107,17 @@ func (gp *GitObjectPusher) PushBranch(branchName string) error {
 		return errors.Wrapf(err, "pushing branch %s", branchName)
 	}
 	logrus.Infof("Branch %s pushed successfully", branchName)
+	return nil
+}
+
+// PushTags convenience method to push a list of tags to the remote repo
+func (gp *GitObjectPusher) PushTags(tagList []string) (err error) {
+	for _, tag := range tagList {
+		if err := gp.PushTag(tag); err != nil {
+			return errors.Wrapf(err, "while pushing %s tag", tag)
+		}
+	}
+	logrus.Infof("Pushed %d tags to the remote repo", len(tagList))
 	return nil
 }
 
