@@ -24,7 +24,7 @@ substitutions:
   # vYYYYMMDD-hash, and can be used as a substitution
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
-  _IMAGE_VERSION: 'v0.1.1'
+  _IMAGE_VERSION: 'v0.1.2'
   _GO_VERSION: '1.15.5'
 images:
   - 'gcr.io/$PROJECT_ID/releng-ci:${_GIT_TAG}'
