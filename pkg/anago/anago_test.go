@@ -30,12 +30,19 @@ import (
 
 var err = errors.New("error")
 
+var testVersionTag string = "v1.20.0"
+
+type testStateParameters struct {
+	versionsTag  *string
+	parentBranch *string
+}
+
 func mockGenerateReleaseVersionStage(mock *anagofakes.FakeStageClient) {
-	mock.GenerateReleaseVersionReturns(&release.Versions{}, nil)
+	mock.GenerateReleaseVersionReturns(nil)
 }
 
 func mockGenerateReleaseVersionRelease(mock *anagofakes.FakeReleaseClient) {
-	mock.GenerateReleaseVersionReturns(&release.Versions{}, nil)
+	mock.GenerateReleaseVersionReturns(nil)
 }
 
 func TestStage(t *testing.T) {
@@ -69,7 +76,7 @@ func TestStage(t *testing.T) {
 		},
 		{ // GenerateReleaseVersion fails
 			prepare: func(mock *anagofakes.FakeStageClient) {
-				mock.GenerateReleaseVersionReturns(nil, err)
+				mock.GenerateReleaseVersionReturns(err)
 			},
 			shouldError: true,
 		},
@@ -147,7 +154,7 @@ func TestRelease(t *testing.T) {
 		},
 		{ // GenerateReleaseVersion fails
 			prepare: func(mock *anagofakes.FakeReleaseClient) {
-				mock.GenerateReleaseVersionReturns(nil, err)
+				mock.GenerateReleaseVersionReturns(err)
 			},
 			shouldError: true,
 		},
@@ -237,7 +244,7 @@ func TestValidateOptions(t *testing.T) {
 			shouldError: true,
 		},
 	} {
-		err := tc.provided.Validate()
+		_, err := tc.provided.Validate()
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {

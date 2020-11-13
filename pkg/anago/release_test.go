@@ -24,7 +24,20 @@ import (
 	"k8s.io/release/pkg/anago"
 	"k8s.io/release/pkg/anago/anagofakes"
 	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/release"
 )
+
+func generateTestingReleaseState(params *testStateParameters) *anago.ReleaseState {
+	state := anago.DefaultReleaseState()
+	if params.versionsTag != nil {
+		state.SetVersions(release.NewReleaseVersions("", *params.versionsTag, "", "", ""))
+	}
+
+	if params.parentBranch != nil {
+		state.SetParentBranch(*params.parentBranch)
+	}
+	return state
+}
 
 func TestCheckPrerequisitesRelease(t *testing.T) {
 	opts := anago.DefaultReleaseOptions()
@@ -54,11 +67,17 @@ func TestGenerateReleaseVersionRelease(t *testing.T) {
 		},
 	} {
 		opts := anago.DefaultReleaseOptions()
+
 		sut := anago.NewDefaultRelease(opts)
+		sut.SetState(
+			generateTestingReleaseState(&testStateParameters{parentBranch: &tc.parentBranch}),
+		)
+
 		mock := &anagofakes.FakeReleaseImpl{}
 		tc.prepare(mock)
 		sut.SetClient(mock)
-		_, err := sut.GenerateReleaseVersion(tc.parentBranch)
+
+		err := sut.GenerateReleaseVersion()
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {
@@ -102,11 +121,18 @@ func TestPushArtifacts(t *testing.T) {
 		},
 	} {
 		opts := anago.DefaultReleaseOptions()
+
 		sut := anago.NewDefaultRelease(opts)
+
+		sut.SetState(
+			generateTestingReleaseState(&testStateParameters{versionsTag: &testVersionTag}),
+		)
+
 		mock := &anagofakes.FakeReleaseImpl{}
 		tc.prepare(mock)
 		sut.SetClient(mock)
-		err := sut.PushArtifacts([]string{"v1.20.0"})
+
+		err := sut.PushArtifacts()
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {
