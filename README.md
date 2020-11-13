@@ -28,7 +28,6 @@ Tools | Description
 [`anago`](/anago)                       | Release Tool:<br/>The main driver for creating staged builds and releases. This is what runs inside GCB after a job is submitted using `krel gcbmgr`.
 [`release-notes`](/cmd/release-notes)   | Scrape GitHub for release notes.<br/>See [Release Notes Gathering](#release-notes-gathering) for more information.
 [`push-build.sh`](/push-build.sh)       | Pushes a developer build or CI Jenkins build up to GCS.
-[`testgridshot`](/testgridshot)         | Screenshots failing testgrid dashboards and creates a markdown stub that can be copied and pasted into a GitHub issue comment.<br/>This makes it easier to create comments like [this][shot-issue] as part of the release process.
 
 For information on how to use `krel` and `anago`, see the [Branch Manager Handbook]
 
