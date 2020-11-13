@@ -91,18 +91,6 @@ func (gp *GitObjectPusher) PushBranch(branchName string) error {
 		return errors.New(fmt.Sprintf("Unable to push branch %s, it does not exist in the local repo", branchName))
 	}
 
-	// Check if the remote branch exists already:
-	branchExists, err = gp.repo.HasRemoteBranch(branchName)
-	if err != nil {
-		return errors.Wrapf(err, "checking if branch %s exists in remote repository", branchName)
-	}
-
-	// If the branch already exists in the remote repo, we do not do anything
-	if branchExists {
-		logrus.Infof("Branch %s already exists in the default remote. Noop.", branchName)
-		return nil
-	}
-
 	logrus.Infof("Pushing%s %s branch:", dryRunLabel[gp.opts.DryRun], branchName)
 	if err := gp.repo.Push(branchName); err != nil {
 		return errors.Wrapf(err, "pushing branch %s", branchName)
