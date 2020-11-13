@@ -339,8 +339,7 @@ func noteTextFromString(s string) (string, error) {
 			}
 		}
 
-		note := strings.ReplaceAll(result["note"], "#", "&#35;")
-		note = strings.ReplaceAll(note, "\r", "")
+		note := strings.ReplaceAll(result["note"], "\r", "")
 		note = stripActionRequired(note)
 		note = dashify(note)
 		note = unlist(note)
