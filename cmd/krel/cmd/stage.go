@@ -35,8 +35,8 @@ var stageCmd = &cobra.Command{
 	Long: fmt.Sprintf(`krel stage
 
 This subcommand is the first of two necessary steps for cutting Kubernetes
-releases. It is intended to be run only in Google Cloud Build (GCB). The
-following steps are involved in the process:
+releases. It is intended to be run by users who want to submit a Google Cloud
+Build (GCB) job which does:
 
 1. Check Prerequisites: Verify that a valid %s environment variable is set. It
    also checks for the existence and version of required packages and if
@@ -65,7 +65,15 @@ following steps are involved in the process:
 	},
 }
 
-var stageOptions = anago.DefaultStageOptions()
+var (
+	stageOptions = anago.DefaultStageOptions()
+	submitJob    = true
+)
+
+const (
+	buildVersionFlag = "build-version"
+	submitJobFlag    = "submit"
+)
 
 func init() {
 	stageCmd.PersistentFlags().
@@ -93,13 +101,23 @@ func init() {
 	stageCmd.PersistentFlags().
 		StringVar(
 			&stageOptions.BuildVersion,
-			"build-version",
+			buildVersionFlag,
 			"",
 			"The build version to be released.",
 		)
 
-	if err := stageCmd.MarkPersistentFlagRequired("build-version"); err != nil {
-		logrus.Fatal(err)
+	stageCmd.PersistentFlags().
+		BoolVar(
+			&submitJob,
+			submitJobFlag,
+			true,
+			"Submit a Google Cloud Build job",
+		)
+
+	for _, flag := range []string{buildVersionFlag, submitJobFlag} {
+		if err := stageCmd.PersistentFlags().MarkHidden(flag); err != nil {
+			logrus.Fatal(err)
+		}
 	}
 
 	rootCmd.AddCommand(stageCmd)
@@ -107,5 +125,9 @@ func init() {
 
 func runStage(options *anago.StageOptions) error {
 	options.NoMock = rootOpts.nomock
-	return anago.NewStage(stageOptions).Run()
+	stage := anago.NewStage(options)
+	if submitJob {
+		return stage.Submit()
+	}
+	return stage.Run()
 }

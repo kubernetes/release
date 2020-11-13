@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/changelog"
+	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
 )
@@ -221,6 +222,17 @@ type FakeStageImpl struct {
 		result1 error
 	}
 	stageLocalSourceTreeReturnsOnCall map[int]struct {
+		result1 error
+	}
+	SubmitStub        func(*gcb.Options) error
+	submitMutex       sync.RWMutex
+	submitArgsForCall []struct {
+		arg1 *gcb.Options
+	}
+	submitReturns struct {
+		result1 error
+	}
+	submitReturnsOnCall map[int]struct {
 		result1 error
 	}
 	TagStub        func(*git.Repo, string, string) error
@@ -1227,6 +1239,67 @@ func (fake *FakeStageImpl) StageLocalSourceTreeReturnsOnCall(i int, result1 erro
 	}{result1}
 }
 
+func (fake *FakeStageImpl) Submit(arg1 *gcb.Options) error {
+	fake.submitMutex.Lock()
+	ret, specificReturn := fake.submitReturnsOnCall[len(fake.submitArgsForCall)]
+	fake.submitArgsForCall = append(fake.submitArgsForCall, struct {
+		arg1 *gcb.Options
+	}{arg1})
+	stub := fake.SubmitStub
+	fakeReturns := fake.submitReturns
+	fake.recordInvocation("Submit", []interface{}{arg1})
+	fake.submitMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) SubmitCallCount() int {
+	fake.submitMutex.RLock()
+	defer fake.submitMutex.RUnlock()
+	return len(fake.submitArgsForCall)
+}
+
+func (fake *FakeStageImpl) SubmitCalls(stub func(*gcb.Options) error) {
+	fake.submitMutex.Lock()
+	defer fake.submitMutex.Unlock()
+	fake.SubmitStub = stub
+}
+
+func (fake *FakeStageImpl) SubmitArgsForCall(i int) *gcb.Options {
+	fake.submitMutex.RLock()
+	defer fake.submitMutex.RUnlock()
+	argsForCall := fake.submitArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStageImpl) SubmitReturns(result1 error) {
+	fake.submitMutex.Lock()
+	defer fake.submitMutex.Unlock()
+	fake.SubmitStub = nil
+	fake.submitReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) SubmitReturnsOnCall(i int, result1 error) {
+	fake.submitMutex.Lock()
+	defer fake.submitMutex.Unlock()
+	fake.SubmitStub = nil
+	if fake.submitReturnsOnCall == nil {
+		fake.submitReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.submitReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeStageImpl) Tag(arg1 *git.Repo, arg2 string, arg3 string) error {
 	fake.tagMutex.Lock()
 	ret, specificReturn := fake.tagReturnsOnCall[len(fake.tagArgsForCall)]
@@ -1325,6 +1398,8 @@ func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	defer fake.stageLocalArtifactsMutex.RUnlock()
 	fake.stageLocalSourceTreeMutex.RLock()
 	defer fake.stageLocalSourceTreeMutex.RUnlock()
+	fake.submitMutex.RLock()
+	defer fake.submitMutex.RUnlock()
 	fake.tagMutex.RLock()
 	defer fake.tagMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

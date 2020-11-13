@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/build"
+	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
 )
@@ -32,6 +33,9 @@ import (
 // releaseClient is a client for release a previously staged release.
 //counterfeiter:generate . releaseClient
 type releaseClient interface {
+	// Submit can be used to submit a Google Cloud Build (GCB) job.
+	Submit() error
+
 	// Validate if the provided `ReleaseOptions` are correctly set.
 	ValidateOptions() error
 
@@ -100,6 +104,7 @@ type defaultReleaseImpl struct{}
 // releaseImpl is the implementation of the release client.
 //counterfeiter:generate . releaseImpl
 type releaseImpl interface {
+	Submit(options *gcb.Options) error
 	PrepareWorkspaceRelease(buildVersion, bucket string) error
 	GenerateReleaseVersion(
 		releaseType, version, branch string, branchFromMaster bool,
@@ -114,6 +119,10 @@ type releaseImpl interface {
 		versionMarkers []string,
 		privateBucket, fast bool,
 	) error
+}
+
+func (d *defaultReleaseImpl) Submit(options *gcb.Options) error {
+	return gcb.New(options).Submit()
 }
 
 func (d *defaultReleaseImpl) PrepareWorkspaceRelease(
@@ -162,6 +171,17 @@ func (d *defaultReleaseImpl) PublishVersion(
 	return release.
 		NewPublisher().
 		PublishVersion("release", version, buildDir, bucket, gcsSuffix, nil, false, false)
+}
+
+func (d *DefaultRelease) Submit() error {
+	options := gcb.NewDefaultOptions()
+	options.Release = true
+	options.NoMock = d.options.NoMock
+	options.Branch = d.options.ReleaseBranch
+	options.ReleaseType = d.options.ReleaseType
+	options.BuildVersion = d.options.BuildVersion
+	options.NoAnago = true
+	return d.impl.Submit(options)
 }
 
 func (d *DefaultRelease) ValidateOptions() error {

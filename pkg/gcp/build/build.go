@@ -66,6 +66,14 @@ type Options struct {
 	EnvPassthrough string
 }
 
+// NewDefaultOptions returns a new default `*Options` instance.
+func NewDefaultOptions() *Options {
+	return &Options{
+		Project:        release.DefaultKubernetesStagingProject,
+		CloudbuildFile: DefaultCloudbuildFile,
+	}
+}
+
 func PrepareBuilds(o *Options) error {
 	if o.ConfigDir == "" {
 		return errors.New("expected a config directory to be provided")

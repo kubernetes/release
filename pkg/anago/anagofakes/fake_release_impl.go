@@ -21,6 +21,7 @@ import (
 	"sync"
 
 	"k8s.io/release/pkg/build"
+	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/release"
 )
 
@@ -93,6 +94,17 @@ type FakeReleaseImpl struct {
 		result1 error
 	}
 	publishVersionReturnsOnCall map[int]struct {
+		result1 error
+	}
+	SubmitStub        func(*gcb.Options) error
+	submitMutex       sync.RWMutex
+	submitArgsForCall []struct {
+		arg1 *gcb.Options
+	}
+	submitReturns struct {
+		result1 error
+	}
+	submitReturnsOnCall map[int]struct {
 		result1 error
 	}
 	ValidateImagesStub        func(string, string, string) error
@@ -438,6 +450,67 @@ func (fake *FakeReleaseImpl) PublishVersionReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeReleaseImpl) Submit(arg1 *gcb.Options) error {
+	fake.submitMutex.Lock()
+	ret, specificReturn := fake.submitReturnsOnCall[len(fake.submitArgsForCall)]
+	fake.submitArgsForCall = append(fake.submitArgsForCall, struct {
+		arg1 *gcb.Options
+	}{arg1})
+	stub := fake.SubmitStub
+	fakeReturns := fake.submitReturns
+	fake.recordInvocation("Submit", []interface{}{arg1})
+	fake.submitMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeReleaseImpl) SubmitCallCount() int {
+	fake.submitMutex.RLock()
+	defer fake.submitMutex.RUnlock()
+	return len(fake.submitArgsForCall)
+}
+
+func (fake *FakeReleaseImpl) SubmitCalls(stub func(*gcb.Options) error) {
+	fake.submitMutex.Lock()
+	defer fake.submitMutex.Unlock()
+	fake.SubmitStub = stub
+}
+
+func (fake *FakeReleaseImpl) SubmitArgsForCall(i int) *gcb.Options {
+	fake.submitMutex.RLock()
+	defer fake.submitMutex.RUnlock()
+	argsForCall := fake.submitArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeReleaseImpl) SubmitReturns(result1 error) {
+	fake.submitMutex.Lock()
+	defer fake.submitMutex.Unlock()
+	fake.SubmitStub = nil
+	fake.submitReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) SubmitReturnsOnCall(i int, result1 error) {
+	fake.submitMutex.Lock()
+	defer fake.submitMutex.Unlock()
+	fake.SubmitStub = nil
+	if fake.submitReturnsOnCall == nil {
+		fake.submitReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.submitReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeReleaseImpl) ValidateImages(arg1 string, arg2 string, arg3 string) error {
 	fake.validateImagesMutex.Lock()
 	ret, specificReturn := fake.validateImagesReturnsOnCall[len(fake.validateImagesArgsForCall)]
@@ -514,6 +587,8 @@ func (fake *FakeReleaseImpl) Invocations() map[string][][]interface{} {
 	defer fake.prepareWorkspaceReleaseMutex.RUnlock()
 	fake.publishVersionMutex.RLock()
 	defer fake.publishVersionMutex.RUnlock()
+	fake.submitMutex.RLock()
+	defer fake.submitMutex.RUnlock()
 	fake.validateImagesMutex.RLock()
 	defer fake.validateImagesMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

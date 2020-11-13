@@ -207,6 +207,15 @@ func (s *Stage) SetClient(client stageClient) {
 	s.client = client
 }
 
+// Submit can be used to submit a staging Google Cloud Build (GCB) job.
+func (s *Stage) Submit() error {
+	logrus.Info("Submitting stage GCB job")
+	if err := s.client.Submit(); err != nil {
+		return errors.Wrap(err, "submit stage job")
+	}
+	return nil
+}
+
 // Run for the `Stage` struct prepares a release and puts the results on a
 // staging bucket.
 // nolint:dupl
@@ -313,6 +322,15 @@ func NewRelease(options *ReleaseOptions) *Release {
 // SetClient can be used to set the internal stage client.
 func (r *Release) SetClient(client releaseClient) {
 	r.client = client
+}
+
+// Submit can be used to submit a releasing Google Cloud Build (GCB) job.
+func (r *Release) Submit() error {
+	logrus.Info("Submitting release GCB job")
+	if err := r.client.Submit(); err != nil {
+		return errors.Wrap(err, "submit release job")
+	}
+	return nil
 }
 
 // Run for for `Release` struct finishes a previously staged release.

@@ -35,8 +35,8 @@ var releaseCmd = &cobra.Command{
 	Long: fmt.Sprintf(`krel release
 
 This subcommand is the second of two necessary steps for cutting Kubernetes
-releases. It is intended to be run only in Google Cloud Build (GCB) and after a
-successful 'krel stage'. The following steps are involved in the process:
+releases. It is intended to be run by users who want to submit a Google Cloud
+Build (GCB) job, which does:
 
 1. Check Prerequisites: Verify that a valid %s environment variable is set. It
    also checks for the existence and version of required packages and if
@@ -97,12 +97,24 @@ func init() {
 	releaseCmd.PersistentFlags().
 		StringVar(
 			&releaseOptions.BuildVersion,
-			"build-version",
+			buildVersionFlag,
 			"",
 			"The build version to be released.",
 		)
 
-	if err := releaseCmd.MarkPersistentFlagRequired("build-version"); err != nil {
+	releaseCmd.PersistentFlags().
+		BoolVar(
+			&submitJob,
+			submitJobFlag,
+			true,
+			"Submit a Google Cloud Build job",
+		)
+
+	if err := releaseCmd.PersistentFlags().MarkHidden(submitJobFlag); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := releaseCmd.MarkPersistentFlagRequired(buildVersionFlag); err != nil {
 		logrus.Fatal(err)
 	}
 
@@ -111,5 +123,9 @@ func init() {
 
 func runRelease(options *anago.ReleaseOptions) error {
 	options.NoMock = rootOpts.nomock
-	return anago.NewRelease(options).Run()
+	rel := anago.NewRelease(options)
+	if submitJob {
+		return rel.Submit()
+	}
+	return rel.Run()
 }

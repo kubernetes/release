@@ -453,3 +453,33 @@ func TestStageArtifacts(t *testing.T) {
 		}
 	}
 }
+
+func TestSubmitStageImpl(t *testing.T) {
+	for _, tc := range []struct {
+		prepare     func(*anagofakes.FakeStageImpl)
+		shouldError bool
+	}{
+		{ // success
+			prepare:     func(*anagofakes.FakeStageImpl) {},
+			shouldError: false,
+		},
+		{ // Submit fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.SubmitReturns(err)
+			},
+			shouldError: true,
+		},
+	} {
+		opts := anago.DefaultStageOptions()
+		sut := anago.NewDefaultStage(opts)
+		mock := &anagofakes.FakeStageImpl{}
+		tc.prepare(mock)
+		sut.SetImpl(mock)
+		err := sut.Submit()
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
+}
