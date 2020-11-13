@@ -43,7 +43,7 @@ func mockVersion(version string) gcb.Version {
 	return mock
 }
 
-func TestRunList(t *testing.T) {
+func TestSubmitList(t *testing.T) {
 	testcases := []struct {
 		name         string
 		gcbOpts      *gcb.Options
@@ -92,7 +92,7 @@ func TestRunList(t *testing.T) {
 		sut.SetRepoClient(tc.repoMock)
 		sut.SetVersionClient(tc.versionMock)
 		sut.SetListJobsClient(tc.listJobsMock)
-		err := sut.Run()
+		err := sut.Submit()
 
 		if tc.expectedErr {
 			require.NotNil(t, err)
@@ -102,7 +102,7 @@ func TestRunList(t *testing.T) {
 	}
 }
 
-func TestRunGcbFailure(t *testing.T) {
+func TestSubmitGcbFailure(t *testing.T) {
 	testcases := []struct {
 		name        string
 		gcbOpts     *gcb.Options
@@ -136,7 +136,7 @@ func TestRunGcbFailure(t *testing.T) {
 		sut := gcb.New(tc.gcbOpts)
 		sut.SetRepoClient(tc.repoMock)
 		sut.SetVersionClient(tc.versionMock)
-		err := sut.Run()
+		err := sut.Submit()
 		require.Error(t, err)
 	}
 }

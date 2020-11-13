@@ -135,10 +135,10 @@ func (o *Options) Validate() error {
 	return nil
 }
 
-// Run is the function responsible for submitting release jobs to GCB.
-func (g *GCB) Run() error {
+// Submit is the main method responsible for submitting release jobs to GCB.
+func (g *GCB) Submit() error {
 	if err := g.options.Validate(); err != nil {
-		return errors.Wrap(err, "validating gcb options")
+		return errors.Wrap(err, "validating GCB options")
 	}
 
 	toolOrg := release.GetToolOrg()
@@ -157,7 +157,7 @@ func (g *GCB) Run() error {
 		return errors.Wrap(err, "verifying repository state")
 	}
 
-	logrus.Infof("Running gcb with the following options: %+v", g.options)
+	logrus.Infof("Running GCB with the following options: %+v", g.options)
 
 	g.options.NoSource = true
 	g.options.DiskSize = release.DefaultDiskSize
