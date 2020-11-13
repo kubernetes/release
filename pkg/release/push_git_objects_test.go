@@ -17,13 +17,64 @@ limitations under the License.
 package release
 
 import (
+	"io/ioutil"
+	"os"
+	"strings"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"k8s.io/release/pkg/command"
+	"k8s.io/release/pkg/git"
 )
 
+func getTestGitObjectPusher() (pusher *GitObjectPusher, repoPath string, err error) {
+	// Initialize a test repository for the test pusher
+	repoPath, err = ioutil.TempDir(os.TempDir(), "sigrelease-test-repo-*")
+	if err != nil {
+		return nil, "", errors.Wrap(err, "creating a directory for test repository")
+	}
+
+	if err := command.NewWithWorkDir(
+		repoPath, "git", "init").RunSilentSuccess(); err != nil {
+		os.RemoveAll(repoPath)
+		return nil, repoPath, errors.Wrapf(err, "initializing test repository")
+	}
+
+	// Create root commit
+	if err := command.NewWithWorkDir(
+		repoPath, "git", "commit", "--allow-empty", "-m", "Root commit",
+	).RunSilentSuccess(); err != nil {
+		os.RemoveAll(repoPath)
+		return nil, repoPath, errors.Wrapf(err, "creating first commit")
+	}
+
+	// Check if branch exists (in case initial branch is 'main' and we expect 'master')
+	out, err := command.NewWithWorkDir(repoPath, "git", "branch").RunSuccessOutput()
+	if err != nil {
+		return nil, repoPath, errors.Wrap(err, "listing branches in test repo")
+	}
+	if !strings.Contains(out.Output(), git.DefaultBranch) {
+		if err := command.NewWithWorkDir(
+			repoPath, "git", "branch", git.DefaultBranch,
+		).RunSilentSuccess(); err != nil {
+			return nil, repoPath, errors.Wrap(err, "creating main branch")
+		}
+	}
+
+	pusher, err = NewGitPusher(&GitObjectPusherOptions{RepoPath: repoPath})
+	if err != nil {
+		return nil, repoPath, errors.Wrap(err, "creating test git pusher")
+	}
+
+	return pusher, repoPath, nil
+}
+
 func TestCheckBranchName(t *testing.T) {
-	ghp, err := NewGitPusher(&GitObjectPusherOptions{})
+	ghp, repoPath, err := getTestGitObjectPusher()
+	if repoPath != "" {
+		defer os.RemoveAll(repoPath)
+	}
 	require.Nil(t, err)
 
 	sampleBaranches := []struct {
@@ -44,7 +95,10 @@ func TestCheckBranchName(t *testing.T) {
 }
 
 func TestCheckTagName(t *testing.T) {
-	ghp, err := NewGitPusher(&GitObjectPusherOptions{})
+	ghp, repoPath, err := getTestGitObjectPusher()
+	if repoPath != "" {
+		defer os.RemoveAll(repoPath)
+	}
 	require.Nil(t, err)
 
 	sampleTags := []struct {
