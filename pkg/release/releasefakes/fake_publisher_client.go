@@ -69,15 +69,16 @@ func (fake *FakePublisherClient) GSUtil(arg1 ...string) error {
 	fake.gSUtilArgsForCall = append(fake.gSUtilArgsForCall, struct {
 		arg1 []string
 	}{arg1})
+	stub := fake.GSUtilStub
+	fakeReturns := fake.gSUtilReturns
 	fake.recordInvocation("GSUtil", []interface{}{arg1})
 	fake.gSUtilMutex.Unlock()
-	if fake.GSUtilStub != nil {
-		return fake.GSUtilStub(arg1...)
+	if stub != nil {
+		return stub(arg1...)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.gSUtilReturns
 	return fakeReturns.result1
 }
 
@@ -129,15 +130,16 @@ func (fake *FakePublisherClient) GSUtilOutput(arg1 ...string) (string, error) {
 	fake.gSUtilOutputArgsForCall = append(fake.gSUtilOutputArgsForCall, struct {
 		arg1 []string
 	}{arg1})
+	stub := fake.GSUtilOutputStub
+	fakeReturns := fake.gSUtilOutputReturns
 	fake.recordInvocation("GSUtilOutput", []interface{}{arg1})
 	fake.gSUtilOutputMutex.Unlock()
-	if fake.GSUtilOutputStub != nil {
-		return fake.GSUtilOutputStub(arg1...)
+	if stub != nil {
+		return stub(arg1...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.gSUtilOutputReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -192,15 +194,16 @@ func (fake *FakePublisherClient) GetURLResponse(arg1 string) (string, error) {
 	fake.getURLResponseArgsForCall = append(fake.getURLResponseArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.GetURLResponseStub
+	fakeReturns := fake.getURLResponseReturns
 	fake.recordInvocation("GetURLResponse", []interface{}{arg1})
 	fake.getURLResponseMutex.Unlock()
-	if fake.GetURLResponseStub != nil {
-		return fake.GetURLResponseStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getURLResponseReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

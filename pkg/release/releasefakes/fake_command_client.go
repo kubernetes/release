@@ -72,15 +72,16 @@ func (fake *FakeCommandClient) Execute(arg1 string, arg2 ...string) error {
 		arg1 string
 		arg2 []string
 	}{arg1, arg2})
+	stub := fake.ExecuteStub
+	fakeReturns := fake.executeReturns
 	fake.recordInvocation("Execute", []interface{}{arg1, arg2})
 	fake.executeMutex.Unlock()
-	if fake.ExecuteStub != nil {
-		return fake.ExecuteStub(arg1, arg2...)
+	if stub != nil {
+		return stub(arg1, arg2...)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.executeReturns
 	return fakeReturns.result1
 }
 
@@ -133,15 +134,16 @@ func (fake *FakeCommandClient) ExecuteOutput(arg1 string, arg2 ...string) (strin
 		arg1 string
 		arg2 []string
 	}{arg1, arg2})
+	stub := fake.ExecuteOutputStub
+	fakeReturns := fake.executeOutputReturns
 	fake.recordInvocation("ExecuteOutput", []interface{}{arg1, arg2})
 	fake.executeOutputMutex.Unlock()
-	if fake.ExecuteOutputStub != nil {
-		return fake.ExecuteOutputStub(arg1, arg2...)
+	if stub != nil {
+		return stub(arg1, arg2...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.executeOutputReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -196,15 +198,16 @@ func (fake *FakeCommandClient) RepoTagFromTarball(arg1 string) (string, error) {
 	fake.repoTagFromTarballArgsForCall = append(fake.repoTagFromTarballArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.RepoTagFromTarballStub
+	fakeReturns := fake.repoTagFromTarballReturns
 	fake.recordInvocation("RepoTagFromTarball", []interface{}{arg1})
 	fake.repoTagFromTarballMutex.Unlock()
-	if fake.RepoTagFromTarballStub != nil {
-		return fake.RepoTagFromTarballStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.repoTagFromTarballReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

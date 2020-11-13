@@ -47,15 +47,16 @@ func (fake *FakeVersionClient) GetURLResponse(arg1 string) (string, error) {
 	fake.getURLResponseArgsForCall = append(fake.getURLResponseArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.GetURLResponseStub
+	fakeReturns := fake.getURLResponseReturns
 	fake.recordInvocation("GetURLResponse", []interface{}{arg1})
 	fake.getURLResponseMutex.Unlock()
-	if fake.GetURLResponseStub != nil {
-		return fake.GetURLResponseStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getURLResponseReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
