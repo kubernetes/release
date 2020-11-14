@@ -194,11 +194,39 @@ func getPath(
 
 // NormalizeGCSPath takes a GCS path and ensures that the `GcsPrefix` is
 // prepended to it.
-func NormalizeGCSPath(gcsPath string) string {
+func NormalizeGCSPath(gcsPathParts ...string) (string, error) {
+	gcsPath := ""
+
+	// Ensure there is at least one element in the gcsPathParts slice before
+	// trying to construct a path
+	if len(gcsPathParts) == 0 {
+		return "", errors.New("must contain at least one path part")
+	} else if len(gcsPathParts) == 1 {
+		if gcsPathParts[0] == "" {
+			return "", errors.New("path should not be an empty string")
+		}
+
+		gcsPath = gcsPathParts[0]
+	} else {
+		gcsPath = filepath.Join(gcsPathParts...)
+	}
+
+	// Strip `gs://` if it was included in gcsPathParts
 	gcsPath = strings.TrimPrefix(gcsPath, GcsPrefix)
+
+	// Strip `gs:/` if:
+	// - `gs://` was included in gcsPathParts
+	// - gcsPathParts had more than element
+	// - filepath.Join() was called somewhere in a caller's logic
+	gcsPath = strings.TrimPrefix(gcsPath, "gs:/")
+
+	// Strip `/`
+	// This scenario may never happen, but let's catch it, just in case
+	gcsPath = strings.TrimPrefix(gcsPath, "/")
+
 	gcsPath = GcsPrefix + gcsPath
 
-	return gcsPath
+	return gcsPath, nil
 }
 
 // isPathNormalized determines if a GCS path is prefixed with `gs://`.
