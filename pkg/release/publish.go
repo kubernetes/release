@@ -154,8 +154,7 @@ func (p *Publisher) PublishVersion(
 	logrus.Infof("Publish official pointer text files to %s", markerPath)
 
 	for _, file := range versionMarkers {
-		// TODO: This should respect the GCS suffix, if specified
-		versionMarker := filepath.Join(buildType, file+".txt")
+		versionMarker := file + ".txt"
 		needsUpdate, err := p.VerifyLatestUpdate(
 			versionMarker, markerPath, version,
 		)
@@ -200,6 +199,7 @@ func (p *Publisher) VerifyLatestUpdate(
 		return false, errors.Wrap(publishFileDstErr, "get marker file destination")
 	}
 
+	// TODO: Should we add pkg/gcp/gcs function for `gsutil cat`?
 	gcsVersion, err := p.client.GSUtilOutput("cat", publishFileDst)
 	if err != nil {
 		logrus.Infof("%s does not exist but will be created", publishFileDst)
