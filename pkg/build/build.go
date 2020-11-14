@@ -17,6 +17,7 @@ limitations under the License.
 package build
 
 import (
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/gcp/gcs"
@@ -93,20 +94,25 @@ type Options struct {
 }
 
 // TODO: Refactor so that version is not required as a parameter
-func (bi *Instance) getGCSBuildPath(version string) string {
+func (bi *Instance) getGCSBuildPath(version string) (string, error) {
 	// TODO: Parameterize this? Maybe a setter for defaults?
 	bucket := bi.opts.Bucket
 	if bi.opts.Bucket == "" {
 		bucket = "kubernetes-release-dev"
 	}
 
-	return gcs.GetReleasePath(
+	buildPath, err := gcs.GetReleasePath(
 		bucket,
 		bi.opts.BuildType,
 		bi.opts.GCSSuffix,
 		version,
 		bi.opts.Fast,
 	)
+	if err != nil {
+		return "", errors.Wrap(err, "get GCS release path")
+	}
+
+	return buildPath, nil
 }
 
 func (bi *Instance) setBuildType() {

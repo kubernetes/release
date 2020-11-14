@@ -123,14 +123,20 @@ func (bi *Instance) checkBuildExists() (bool, error) {
 		return false, nil
 	}
 
-	gcsBuildRoot := bi.getGCSBuildPath(bi.opts.Version)
+	gcsBuildRoot, gcsBuildRootErr := bi.getGCSBuildPath(bi.opts.Version)
+	if gcsBuildRootErr != nil {
+		return false, errors.Wrap(gcsBuildRootErr, "get GCS build root")
+	}
 
-	kubernetesTar := filepath.Join(gcsBuildRoot, release.KubernetesTar)
-	binPath := filepath.Join(gcsBuildRoot, "bin")
+	kubernetesTar, kubernetesTarErr := gcs.NormalizeGCSPath(gcsBuildRoot, release.KubernetesTar)
+	if kubernetesTarErr != nil {
+		return false, errors.Wrap(kubernetesTarErr, "get tarball path")
+	}
 
-	gcsBuildRoot = gcs.NormalizeGCSPath(gcsBuildRoot)
-	kubernetesTar = gcs.NormalizeGCSPath(kubernetesTar)
-	binPath = gcs.NormalizeGCSPath(binPath)
+	binPath, binPathErr := gcs.NormalizeGCSPath(gcsBuildRoot, "bin")
+	if binPathErr != nil {
+		return false, errors.Wrap(binPathErr, "get binary path")
+	}
 
 	gcsBuildPaths := []string{
 		gcsBuildRoot,

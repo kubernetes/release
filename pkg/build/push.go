@@ -124,7 +124,10 @@ func (bi *Instance) Push() error {
 		return errors.Wrap(err, "push container images")
 	}
 
-	gcsDest := bi.getGCSBuildPath(version)
+	gcsDest, gcsDestErr := bi.getGCSBuildPath(version)
+	if gcsDestErr != nil {
+		return errors.Wrap(gcsDestErr, "get GCS destination")
+	}
 
 	if err := bi.PushReleaseArtifacts(
 		filepath.Join(bi.opts.BuildDir, release.GCSStagePath, version),
@@ -368,7 +371,11 @@ func (bi *Instance) copyStageFiles(stageDir string, files []stageFile) error {
 // PushReleaseArtifacts can be used to push local artifacts from the `srcPath`
 // to the remote `gcsPath`. The Bucket has to be set via the `Bucket` option.
 func (bi *Instance) PushReleaseArtifacts(srcPath, gcsPath string) error {
-	dstPath := gcs.NormalizeGCSPath(filepath.Join(bi.opts.Bucket, gcsPath))
+	dstPath, dstPathErr := gcs.NormalizeGCSPath(bi.opts.Bucket, gcsPath)
+	if dstPathErr != nil {
+		return errors.Wrap(dstPathErr, "normalize GCS destination")
+	}
+
 	logrus.Infof("Pushing release artifacts from %s to %s", srcPath, dstPath)
 
 	return errors.Wrap(
@@ -420,8 +427,16 @@ func (bi *Instance) CopyStagedFromGCS(stagedBucket, buildVersion string) error {
 	gsStageRoot := filepath.Join(bi.opts.Bucket, release.StagePath, buildVersion, bi.opts.Version)
 	src := filepath.Join(gsStageRoot, release.GCSStagePath, bi.opts.Version)
 
-	gcsSrc := gcs.NormalizeGCSPath(src)
-	dst := gcs.NormalizeGCSPath(filepath.Join(bi.opts.Bucket, "release", bi.opts.Version))
+	gcsSrc, gcsSrcErr := gcs.NormalizeGCSPath(src)
+	if gcsSrcErr != nil {
+		return errors.Wrap(gcsSrcErr, "normalize GCS source")
+	}
+
+	dst, dstErr := gcs.NormalizeGCSPath(bi.opts.Bucket, "release", bi.opts.Version)
+	if dstErr != nil {
+		return errors.Wrap(dstErr, "normalize GCS destination")
+	}
+
 	logrus.Infof("Bucket to bucket rsync from %s to %s", gcsSrc, dst)
 	if err := gcs.RsyncRecursive(gcsSrc, dst); err != nil {
 		return errors.Wrap(err, "copy stage to release bucket")

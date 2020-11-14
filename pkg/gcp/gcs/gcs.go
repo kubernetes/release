@@ -62,7 +62,10 @@ var DefaultGCSCopyOptions = &Options{
 // TODO: Consider using isPathNormalized here
 func CopyToGCS(src, gcsPath string, opts *Options) error {
 	logrus.Infof("Copying %s to GCS (%s)", src, gcsPath)
-	gcsPath = NormalizeGCSPath(gcsPath)
+	gcsPath, gcsPathErr := NormalizeGCSPath(gcsPath)
+	if gcsPathErr != nil {
+		return errors.Wrap(gcsPathErr, "normalize GCS path")
+	}
 
 	_, err := os.Stat(src)
 	if err != nil {
@@ -83,7 +86,10 @@ func CopyToGCS(src, gcsPath string, opts *Options) error {
 // TODO: Consider using isPathNormalized here
 func CopyToLocal(gcsPath, dst string, opts *Options) error {
 	logrus.Infof("Copying GCS (%s) to %s", gcsPath, dst)
-	gcsPath = NormalizeGCSPath(gcsPath)
+	gcsPath, gcsPathErr := NormalizeGCSPath(gcsPath)
+	if gcsPathErr != nil {
+		return errors.Wrap(gcsPathErr, "normalize GCS path")
+	}
 
 	return bucketCopy(gcsPath, dst, opts)
 }
@@ -92,7 +98,18 @@ func CopyToLocal(gcsPath, dst string, opts *Options) error {
 // TODO: Consider using isPathNormalized here
 func CopyBucketToBucket(src, dst string, opts *Options) error {
 	logrus.Infof("Copying %s to %s", src, dst)
-	return bucketCopy(NormalizeGCSPath(src), NormalizeGCSPath(dst), opts)
+
+	src, srcErr := NormalizeGCSPath(src)
+	if srcErr != nil {
+		return errors.Wrap(srcErr, "normalize GCS path")
+	}
+
+	dst, dstErr := NormalizeGCSPath(dst)
+	if dstErr != nil {
+		return errors.Wrap(dstErr, "normalize GCS path")
+	}
+
+	return bucketCopy(src, dst, opts)
 }
 
 func bucketCopy(src, dst string, opts *Options) error {
@@ -128,8 +145,8 @@ func bucketCopy(src, dst string, opts *Options) error {
 //   gs://<bucket>/<buildType>[-<gcsSuffix>][/fast][/<version>]
 func GetReleasePath(
 	bucket, buildType, gcsSuffix, version string,
-	fast bool) string {
-	gcsPath := getPath(
+	fast bool) (string, error) {
+	gcsPath, err := getPath(
 		bucket,
 		buildType,
 		gcsSuffix,
@@ -137,9 +154,12 @@ func GetReleasePath(
 		"release",
 		fast,
 	)
+	if err != nil {
+		return "", errors.Wrap(err, "normalize GCS path")
+	}
 
 	logrus.Infof("Release path is %s", gcsPath)
-	return gcsPath
+	return gcsPath, nil
 }
 
 // GetMarkerPath returns a GCS path where version markers should be stored
@@ -147,8 +167,8 @@ func GetReleasePath(
 // Expected destination format:
 //   gs://<bucket>/<buildType>[-<gcsSuffix>]
 func GetMarkerPath(
-	bucket, buildType, gcsSuffix string) string {
-	gcsPath := getPath(
+	bucket, buildType, gcsSuffix string) (string, error) {
+	gcsPath, err := getPath(
 		bucket,
 		buildType,
 		gcsSuffix,
@@ -156,9 +176,12 @@ func GetMarkerPath(
 		"marker",
 		false,
 	)
+	if err != nil {
+		return "", errors.Wrap(err, "normalize GCS path")
+	}
 
 	logrus.Infof("Version marker path is %s", gcsPath)
-	return gcsPath
+	return gcsPath, nil
 }
 
 // GetReleasePath returns a GCS path to retrieve builds from or push builds to
@@ -168,32 +191,36 @@ func GetMarkerPath(
 // TODO: Support "release" buildType
 func getPath(
 	bucket, buildType, gcsSuffix, version, pathType string,
-	fast bool) string {
-	gcsPath := bucket
-	gcsPath = filepath.Join(gcsPath, buildType)
+	fast bool) (string, error) {
+	gcsPathParts := []string{}
 
+	gcsPathParts = append(gcsPathParts, bucket)
+
+	releaseRoot := buildType
 	if gcsSuffix != "" {
-		gcsPath += "-" + gcsSuffix
+		releaseRoot += "-" + gcsSuffix
 	}
+
+	gcsPathParts = append(gcsPathParts, releaseRoot)
 
 	if pathType == "release" {
 		if fast {
-			gcsPath = filepath.Join(gcsPath, "fast")
+			gcsPathParts = append(gcsPathParts, "fast")
 		}
 
 		if version != "" {
-			gcsPath = filepath.Join(gcsPath, version)
+			gcsPathParts = append(gcsPathParts, version)
 		}
 	}
 
 	// Ensure any constructed GCS path is prefixed with `gs://`
-	gcsPath = NormalizeGCSPath(gcsPath)
-
-	return gcsPath
+	return NormalizeGCSPath(gcsPathParts...)
 }
 
 // NormalizeGCSPath takes a GCS path and ensures that the `GcsPrefix` is
 // prepended to it.
+// TODO: Should there be an append function for paths to prevent multiple calls
+//       like in build.checkBuildExists()?
 func NormalizeGCSPath(gcsPathParts ...string) (string, error) {
 	gcsPath := ""
 
