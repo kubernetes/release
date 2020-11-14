@@ -59,6 +59,7 @@ var DefaultGCSCopyOptions = &Options{
 }
 
 // CopyToGCS copies a local directory to the specified GCS path
+// TODO: Consider using isPathNormalized here
 func CopyToGCS(src, gcsPath string, opts *Options) error {
 	logrus.Infof("Copying %s to GCS (%s)", src, gcsPath)
 	gcsPath = NormalizeGCSPath(gcsPath)
@@ -79,6 +80,7 @@ func CopyToGCS(src, gcsPath string, opts *Options) error {
 }
 
 // CopyToLocal copies a GCS path to the specified local directory
+// TODO: Consider using isPathNormalized here
 func CopyToLocal(gcsPath, dst string, opts *Options) error {
 	logrus.Infof("Copying GCS (%s) to %s", gcsPath, dst)
 	gcsPath = NormalizeGCSPath(gcsPath)
@@ -87,6 +89,7 @@ func CopyToLocal(gcsPath, dst string, opts *Options) error {
 }
 
 // CopyBucketToBucket copies between two GCS paths.
+// TODO: Consider using isPathNormalized here
 func CopyBucketToBucket(src, dst string, opts *Options) error {
 	logrus.Infof("Copying %s to %s", src, dst)
 	return bucketCopy(NormalizeGCSPath(src), NormalizeGCSPath(dst), opts)
@@ -126,7 +129,7 @@ func bucketCopy(src, dst string, opts *Options) error {
 func GetReleasePath(
 	bucket, buildType, gcsSuffix, version string,
 	fast bool) string {
-	return getPath(
+	gcsPath := getPath(
 		bucket,
 		buildType,
 		gcsSuffix,
@@ -134,6 +137,9 @@ func GetReleasePath(
 		"release",
 		fast,
 	)
+
+	logrus.Infof("Release path is %s", gcsPath)
+	return gcsPath
 }
 
 // GetMarkerPath returns a GCS path where version markers should be stored
@@ -142,7 +148,7 @@ func GetReleasePath(
 //   gs://<bucket>/<buildType>[-<gcsSuffix>]
 func GetMarkerPath(
 	bucket, buildType, gcsSuffix string) string {
-	return getPath(
+	gcsPath := getPath(
 		bucket,
 		buildType,
 		gcsSuffix,
@@ -150,6 +156,9 @@ func GetMarkerPath(
 		"marker",
 		false,
 	)
+
+	logrus.Infof("Version marker path is %s", gcsPath)
+	return gcsPath
 }
 
 // GetReleasePath returns a GCS path to retrieve builds from or push builds to
@@ -177,12 +186,13 @@ func getPath(
 		}
 	}
 
-	logrus.Infof("GCS path is %s", gcsPath)
+	// Ensure any constructed GCS path is prefixed with `gs://`
+	gcsPath = NormalizeGCSPath(gcsPath)
 
 	return gcsPath
 }
 
-// NormalizeGCSPath takes a gcs path and ensures that the `GcsPrefix` is
+// NormalizeGCSPath takes a GCS path and ensures that the `GcsPrefix` is
 // prepended to it.
 func NormalizeGCSPath(gcsPath string) string {
 	gcsPath = strings.TrimPrefix(gcsPath, GcsPrefix)
@@ -191,18 +201,41 @@ func NormalizeGCSPath(gcsPath string) string {
 	return gcsPath
 }
 
+// isPathNormalized determines if a GCS path is prefixed with `gs://`.
+// Use this function as pre-check for any gsutil/GCS functions that manipulate
+// GCS bucket contents.
+func isPathNormalized(gcsPath string) bool {
+	if !strings.HasPrefix(gcsPath, GcsPrefix) {
+		logrus.Errorf("GCS path (%s) should be prefixed with `gs://`", GcsPrefix)
+
+		return false
+	}
+
+	return true
+}
+
 // RsyncRecursive runs `gsutil rsync` in recursive mode. The caller of this
 // function has to ensure that the provided paths are prefixed with gs:// if
 // necessary (see `NormalizeGCSPath()`).
+// TODO: Implementation of `gsutil rsync` should support local directory copies
+//       with `-d`
 func RsyncRecursive(src, dst string) error {
+	if !isPathNormalized(src) || !isPathNormalized(dst) {
+		return errors.New("cannot run `gsutil rsync` as one or more paths does not begin with `gs://`")
+	}
+
 	return errors.Wrap(
-		gcp.GSUtil("-m", "rsync", "-r", src, dst),
+		gcp.GSUtil(concurrentFlag, "rsync", recursiveFlag, src, dst),
 		"running gsutil rsync",
 	)
 }
 
 // PathExists returns true if the specified GCS path exists.
 func PathExists(gcsPath string) (bool, error) {
+	if !isPathNormalized(gcsPath) {
+		return false, errors.New("cannot run `gsutil ls` GCS path does not begin with `gs://`")
+	}
+
 	err := gcp.GSUtil(
 		"ls",
 		gcsPath,
