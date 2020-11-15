@@ -308,13 +308,7 @@ func IsPathNormalized(gcsPath string) bool {
 // RsyncRecursive runs `gsutil rsync` in recursive mode. The caller of this
 // function has to ensure that the provided paths are prefixed with gs:// if
 // necessary (see `NormalizeGCSPath()`).
-// TODO: Implementation of `gsutil rsync` should support local directory copies
-//       with `-d`
 func RsyncRecursive(src, dst string) error {
-	if !IsPathNormalized(src) || !IsPathNormalized(dst) {
-		return errors.New("cannot run `gsutil rsync` as one or more paths does not begin with `gs://`")
-	}
-
 	return errors.Wrap(
 		gcp.GSUtil(concurrentFlag, "rsync", recursiveFlag, src, dst),
 		"running gsutil rsync",
