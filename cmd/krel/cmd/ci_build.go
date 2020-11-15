@@ -153,6 +153,7 @@ func init() {
 	)
 
 	// Deprecated flags
+	// nolint: errcheck
 	ciBuildCmd.PersistentFlags().MarkDeprecated(
 		"gcs-suffix",
 		"please use `--gcs-root` if you need to override the default GCS root",
@@ -162,5 +163,7 @@ func init() {
 }
 
 func runCIBuild(opts *build.Options) error {
-	return build.NewCIInstance(opts).Build()
+	opts.CI = true
+
+	return build.NewInstance(opts).Build()
 }

@@ -30,15 +30,6 @@ import (
 	"k8s.io/release/pkg/release"
 )
 
-// NewCIInstance can be used to create a new build `Instance` for use in CI.
-func NewCIInstance(opts *Options) *Instance {
-	instance := NewInstance(opts)
-	instance.opts.CI = true
-	instance.setBuildType()
-
-	return instance
-}
-
 // Build starts a Kubernetes build with the options defined in the build
 // `Instance`.
 func (bi *Instance) Build() error {

@@ -76,15 +76,14 @@ func (*defaultPublisher) GetURLResponse(url string) (string, error) {
 // version - The version
 // buildDir - build output directory
 // bucket - GCS bucket
-// gcsSuffix - appended to the buildType to construct a new top-level
-//             destination
+// gcsRoot - The top-level GCS directory builds will be released to
 //
 // Expected destination format:
-//   gs://<bucket>/<buildType>[-<gcsSuffix>][/fast]/<version>
+//   gs://<bucket>/<gcsRoot>[/fast]/<version>
 //
 // was releaselib.sh: release::gcs::publish_version
 func (p *Publisher) PublishVersion(
-	buildType, version, buildDir, bucket, gcsSuffix string,
+	buildType, version, buildDir, bucket, gcsRoot string,
 	extraVersionMarkers []string,
 	privateBucket, fast bool,
 ) error {
@@ -107,8 +106,7 @@ func (p *Publisher) PublishVersion(
 
 	markerPath, markerPathErr := gcs.GetMarkerPath(
 		bucket,
-		buildType,
-		gcsSuffix,
+		gcsRoot,
 	)
 	if markerPathErr != nil {
 		return errors.Wrap(markerPathErr, "get version marker path")
@@ -116,8 +114,7 @@ func (p *Publisher) PublishVersion(
 
 	releasePath, releasePathErr := gcs.GetReleasePath(
 		bucket,
-		buildType,
-		gcsSuffix,
+		gcsRoot,
 		version,
 		fast,
 	)

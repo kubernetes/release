@@ -153,7 +153,7 @@ func (bi *Instance) Push() error {
 		version,
 		bi.opts.BuildDir,
 		bi.opts.Bucket,
-		bi.opts.GCSSuffix,
+		bi.opts.GCSRoot,
 		extraVersionMarkers,
 		bi.opts.PrivateBucket,
 		bi.opts.Fast,

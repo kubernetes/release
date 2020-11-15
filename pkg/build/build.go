@@ -34,6 +34,7 @@ type Instance struct {
 func NewInstance(opts *Options) *Instance {
 	instance := &Instance{opts}
 	instance.setBuildType()
+	instance.setGCSRoot()
 
 	return instance
 }
@@ -121,8 +122,7 @@ func (bi *Instance) getGCSBuildPath(version string) (string, error) {
 
 	buildPath, err := gcs.GetReleasePath(
 		bucket,
-		bi.opts.BuildType,
-		bi.opts.GCSSuffix,
+		bi.opts.GCSRoot,
 		version,
 		bi.opts.Fast,
 	)
@@ -141,5 +141,17 @@ func (bi *Instance) setBuildType() {
 
 	bi.opts.BuildType = buildType
 
-	logrus.Infof("Build type is %s", bi.opts.BuildType)
+	logrus.Infof("Build type has been set to %s", bi.opts.BuildType)
+}
+
+func (bi *Instance) setGCSRoot() {
+	if bi.opts.GCSRoot == "" {
+		if bi.opts.GCSSuffix != "" {
+			bi.opts.GCSRoot = bi.opts.BuildType + "-" + bi.opts.GCSSuffix
+		} else {
+			bi.opts.GCSRoot = bi.opts.BuildType
+		}
+	}
+
+	logrus.Infof("GCS root has been set to %s", bi.opts.GCSRoot)
 }

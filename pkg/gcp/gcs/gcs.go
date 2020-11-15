@@ -142,14 +142,13 @@ func bucketCopy(src, dst string, opts *Options) error {
 // GetReleasePath returns a GCS path to retrieve builds from or push builds to
 //
 // Expected destination format:
-//   gs://<bucket>/<buildType>[-<gcsSuffix>][/fast][/<version>]
+//   gs://<bucket>/<gcsRoot>[/fast][/<version>]
 func GetReleasePath(
-	bucket, buildType, gcsSuffix, version string,
+	bucket, gcsRoot, version string,
 	fast bool) (string, error) {
 	gcsPath, err := getPath(
 		bucket,
-		buildType,
-		gcsSuffix,
+		gcsRoot,
 		version,
 		"release",
 		fast,
@@ -165,13 +164,12 @@ func GetReleasePath(
 // GetMarkerPath returns a GCS path where version markers should be stored
 //
 // Expected destination format:
-//   gs://<bucket>/<buildType>[-<gcsSuffix>]
+//   gs://<bucket>/<gcsRoot>
 func GetMarkerPath(
-	bucket, buildType, gcsSuffix string) (string, error) {
+	bucket, gcsRoot string) (string, error) {
 	gcsPath, err := getPath(
 		bucket,
-		buildType,
-		gcsSuffix,
+		gcsRoot,
 		"",
 		"marker",
 		false,
@@ -187,21 +185,18 @@ func GetMarkerPath(
 // GetReleasePath returns a GCS path to retrieve builds from or push builds to
 //
 // Expected destination format:
-//   gs://<bucket>/<buildType>[-<gcsSuffix>][/fast][/<version>]
+//   gs://<bucket>/<gcsRoot>[/fast][/<version>]
 // TODO: Support "release" buildType
 func getPath(
-	bucket, buildType, gcsSuffix, version, pathType string,
+	bucket, gcsRoot, version, pathType string,
 	fast bool) (string, error) {
-	gcsPathParts := []string{}
-
-	gcsPathParts = append(gcsPathParts, bucket)
-
-	releaseRoot := buildType
-	if gcsSuffix != "" {
-		releaseRoot += "-" + gcsSuffix
+	if gcsRoot == "" {
+		return "", errors.New("GCS root must be specified")
 	}
 
-	gcsPathParts = append(gcsPathParts, releaseRoot)
+	gcsPathParts := []string{}
+
+	gcsPathParts = append(gcsPathParts, bucket, gcsRoot)
 
 	if pathType == "release" {
 		if fast {
@@ -211,6 +206,9 @@ func getPath(
 		if version != "" {
 			gcsPathParts = append(gcsPathParts, version)
 		}
+	} else if pathType == "marker" {
+	} else {
+		return "", errors.New("a GCS path type must be specified")
 	}
 
 	// Ensure any constructed GCS path is prefixed with `gs://`

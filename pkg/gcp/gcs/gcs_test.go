@@ -27,21 +27,20 @@ import (
 // TODO: Add production use cases
 func TestGetReleasePath(t *testing.T) {
 	for _, tc := range []struct {
-		bucket, buildType, gcsSuffix, version string
-		expected                              string
-		fast                                  bool
-		shouldError                           bool
+		bucket, gcsRoot, version string
+		expected                 string
+		fast                     bool
+		shouldError              bool
 	}{
 		{ // default CI build
 			bucket:      "k8s-release-dev",
-			buildType:   "ci",
+			gcsRoot:     "ci",
 			expected:    "gs://k8s-release-dev/ci",
 			shouldError: false,
 		},
 		{ // fast CI build
 			bucket:      "k8s-release-dev",
-			buildType:   "ci",
-			gcsSuffix:   "",
+			gcsRoot:     "ci",
 			version:     "",
 			fast:        true,
 			expected:    "gs://k8s-release-dev/ci/fast",
@@ -49,26 +48,16 @@ func TestGetReleasePath(t *testing.T) {
 		},
 		{ // has version
 			bucket:      "k8s-release-dev",
-			buildType:   "ci",
-			gcsSuffix:   "",
+			gcsRoot:     "ci",
 			version:     "42",
 			fast:        true,
 			expected:    "gs://k8s-release-dev/ci/fast/42",
 			shouldError: false,
 		},
-		{ // has GCS suffix
-			bucket:      "k8s-release-dev",
-			buildType:   "ci",
-			gcsSuffix:   "suffix",
-			fast:        true,
-			expected:    "gs://k8s-release-dev/ci-suffix/fast",
-			shouldError: false,
-		},
 	} {
 		actual, err := gcs.GetReleasePath(
 			tc.bucket,
-			tc.buildType,
-			tc.gcsSuffix,
+			tc.gcsRoot,
 			tc.version,
 			tc.fast,
 		)
@@ -86,28 +75,20 @@ func TestGetReleasePath(t *testing.T) {
 // TODO: Add production use cases
 func TestGetMarkerPath(t *testing.T) {
 	for _, tc := range []struct {
-		bucket, buildType, gcsSuffix string
-		expected                     string
-		shouldError                  bool
+		bucket, gcsRoot string
+		expected        string
+		shouldError     bool
 	}{
 		{ // default CI build
 			bucket:      "k8s-release-dev",
-			buildType:   "ci",
+			gcsRoot:     "ci",
 			expected:    "gs://k8s-release-dev/ci",
-			shouldError: false,
-		},
-		{ // has GCS suffix
-			bucket:      "k8s-release-dev",
-			buildType:   "ci",
-			gcsSuffix:   "suffix",
-			expected:    "gs://k8s-release-dev/ci-suffix",
 			shouldError: false,
 		},
 	} {
 		actual, err := gcs.GetMarkerPath(
 			tc.bucket,
-			tc.buildType,
-			tc.gcsSuffix,
+			tc.gcsRoot,
 		)
 
 		require.Equal(t, tc.expected, actual)
