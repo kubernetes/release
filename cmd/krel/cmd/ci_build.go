@@ -27,24 +27,23 @@ import (
 )
 
 const ciBuildCmdDescription = `
-Used for pushing developer builds and Jenkins' continuous builds.
+Build Kubernetes in CI and push artifacts.
 
 Developer pushes simply run as they do pushing to devel/ on GCS.`
 
 const ciBuildExample = `
-ci-build [--noupdatelatest] [--ci] [--bucket=<GCS bucket>] [--private-bucket]
+krel ci-build [--noupdatelatest] [--bucket=<GCS bucket>] [--gcs-root=<GCS root>]
 
 Scenarios:
 
-krel push                                   - Do a developer push
-krel push --ci                              - Do a CI push
-krel push --bucket=kubernetes-release-$USER - Do a developer push to kubernetes-release-$USER`
+krel ci-build --allow-dup --fast --registry=gcr.io/foo     - Run a fast build and push images to gcr.io/foo
+krel ci-build --bucket cool-bucket --gcs-root new-gcs-root - Push to gs://cool-bucket/new-gcs-root`
 
 var ciBuildOpts = &build.Options{}
 
 var ciBuildCmd = &cobra.Command{
 	Use:           "ci-build",
-	Short:         "Push Kubernetes release artifacts to Google Cloud Storage (GCS)",
+	Short:         "Build Kubernetes in CI and push release artifacts to Google Cloud Storage (GCS)",
 	Long:          ciBuildCmdDescription,
 	Example:       ciBuildExample,
 	SilenceUsage:  true,
@@ -125,6 +124,14 @@ func init() {
 	)
 
 	ciBuildCmd.PersistentFlags().StringVar(
+		&ciBuildOpts.GCSRoot,
+		"gcs-root",
+		"",
+		"Specify an alternate GCS path to push artifacts to",
+	)
+
+	// TODO: Fully remove this flag once we stop using it in CI
+	ciBuildCmd.PersistentFlags().StringVar(
 		&ciBuildOpts.GCSSuffix,
 		"gcs-suffix",
 		"",
@@ -143,6 +150,12 @@ func init() {
 		"validate-images",
 		false,
 		"Validate that the remove image digests exists, needs `skopeo` in `$PATH`",
+	)
+
+	// Deprecated flags
+	ciBuildCmd.PersistentFlags().MarkDeprecated(
+		"gcs-suffix",
+		"please use `--gcs-root` if you need to override the default GCS root",
 	)
 
 	rootCmd.AddCommand(ciBuildCmd)

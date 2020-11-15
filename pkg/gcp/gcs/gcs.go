@@ -298,6 +298,8 @@ func IsPathNormalized(gcsPath string) bool {
 		errCount++
 	}
 
+	// TODO: Add logic to handle invalid path characters
+
 	if errCount > 0 {
 		return false
 	}

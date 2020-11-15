@@ -120,10 +120,10 @@ func init() {
 	)
 
 	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.GCSSuffix,
-		"gcs-suffix",
+		&ciBuildOpts.GCSRoot,
+		"gcs-root",
 		"",
-		"Specify a suffix to append to the upload destination on GCS",
+		"Specify an alternate GCS path to push artifacts to",
 	)
 
 	pushBuildCmd.PersistentFlags().StringVar(
