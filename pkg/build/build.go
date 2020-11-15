@@ -78,9 +78,6 @@ type Options struct {
 	// was not plumbed through
 	GCSRoot string
 
-	// [DEPRECATED] Specify a suffix to append to the upload destination on GCS.
-	GCSSuffix string
-
 	// Version to be used. Usually automatically discovered, but it can be
 	// used to overwrite this behavior.
 	Version string
@@ -146,11 +143,7 @@ func (bi *Instance) setBuildType() {
 
 func (bi *Instance) setGCSRoot() {
 	if bi.opts.GCSRoot == "" {
-		if bi.opts.GCSSuffix != "" {
-			bi.opts.GCSRoot = bi.opts.BuildType + "-" + bi.opts.GCSSuffix
-		} else {
-			bi.opts.GCSRoot = bi.opts.BuildType
-		}
+		bi.opts.GCSRoot = bi.opts.BuildType
 	}
 
 	logrus.Infof("GCS root has been set to %s", bi.opts.GCSRoot)
