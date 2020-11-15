@@ -21,6 +21,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/gcp/gcs"
+	"k8s.io/release/pkg/release"
 )
 
 var DefaultExtraVersionMarkers = []string{}
@@ -34,6 +35,7 @@ type Instance struct {
 func NewInstance(opts *Options) *Instance {
 	instance := &Instance{opts}
 	instance.setBuildType()
+	instance.setBucket()
 	instance.setGCSRoot()
 
 	return instance
@@ -111,14 +113,12 @@ type Options struct {
 
 // TODO: Refactor so that version is not required as a parameter
 func (bi *Instance) getGCSBuildPath(version string) (string, error) {
-	// TODO: Parameterize this? Maybe a setter for defaults?
-	bucket := bi.opts.Bucket
 	if bi.opts.Bucket == "" {
-		bucket = "kubernetes-release-dev"
+		bi.setBucket()
 	}
 
 	buildPath, err := gcs.GetReleasePath(
-		bucket,
+		bi.opts.Bucket,
 		bi.opts.GCSRoot,
 		version,
 		bi.opts.Fast,
@@ -128,6 +128,20 @@ func (bi *Instance) getGCSBuildPath(version string) (string, error) {
 	}
 
 	return buildPath, nil
+}
+
+func (bi *Instance) setBucket() {
+	bucket := bi.opts.Bucket
+	if bi.opts.Bucket == "" {
+		if bi.opts.CI {
+			// TODO: Remove this once all CI and release jobs run on K8s Infra
+			bucket = release.CIBucketLegacy
+		}
+	}
+
+	bi.opts.Bucket = bucket
+
+	logrus.Infof("Bucket has been set to %s", bi.opts.Bucket)
 }
 
 func (bi *Instance) setBuildType() {
