@@ -118,7 +118,7 @@ type releaseImpl interface {
 	) error
 	ValidateImages(registry, version, buildPath string) error
 	PublishVersion(
-		buildType, version, buildDir, bucket, gcsSuffix string,
+		buildType, version, buildDir, bucket, gcsRoot string,
 		versionMarkers []string,
 		privateBucket, fast bool,
 	) error
@@ -174,13 +174,13 @@ func (d *defaultReleaseImpl) ValidateImages(
 }
 
 func (d *defaultReleaseImpl) PublishVersion(
-	buildType, version, buildDir, bucket, gcsSuffix string,
+	buildType, version, buildDir, bucket, gcsRoot string,
 	versionMarkers []string,
 	privateBucket, fast bool,
 ) error {
 	return release.
 		NewPublisher().
-		PublishVersion("release", version, buildDir, bucket, gcsSuffix, nil, false, false)
+		PublishVersion("release", version, buildDir, bucket, gcsRoot, nil, false, false)
 }
 
 func (d *DefaultRelease) Submit() error {

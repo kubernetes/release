@@ -17,6 +17,7 @@ limitations under the License.
 package build
 
 import (
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/gcp/gcs"
@@ -33,6 +34,7 @@ type Instance struct {
 func NewInstance(opts *Options) *Instance {
 	instance := &Instance{opts}
 	instance.setBuildType()
+	instance.setGCSRoot()
 
 	return instance
 }
@@ -47,6 +49,8 @@ type Options struct {
 	BuildDir string
 
 	// Used to make determinations on where to push artifacts
+	// Can be overridden using `GCSRoot`.
+	//
 	// May be one of: 'devel', 'ci', 'release'
 	BuildType string
 
@@ -58,7 +62,23 @@ type Options struct {
 	// only).
 	ExtraVersionMarkers []string
 
-	// Specify a suffix to append to the upload destination on GCS.
+	// The top-level GCS directory builds will be released to.
+	// If specified, it will override BuildType.
+	//
+	// When unset:
+	//   - BuildType: "ci"
+	//   - final path: gs://<bucket>/ci
+	//
+	// When set:
+	//   - BuildType: "ci"
+	//   - GCSRoot: "new-root"
+	//   - final path: gs://<bucket>/new-root
+	//
+	// This option exists to handle the now-deprecated GCSSuffix option, which
+	// was not plumbed through
+	GCSRoot string
+
+	// [DEPRECATED] Specify a suffix to append to the upload destination on GCS.
 	GCSSuffix string
 
 	// Version to be used. Usually automatically discovered, but it can be
@@ -93,20 +113,24 @@ type Options struct {
 }
 
 // TODO: Refactor so that version is not required as a parameter
-func (bi *Instance) getGCSBuildPath(version string) string {
+func (bi *Instance) getGCSBuildPath(version string) (string, error) {
 	// TODO: Parameterize this? Maybe a setter for defaults?
 	bucket := bi.opts.Bucket
 	if bi.opts.Bucket == "" {
 		bucket = "kubernetes-release-dev"
 	}
 
-	return gcs.GetReleasePath(
+	buildPath, err := gcs.GetReleasePath(
 		bucket,
-		bi.opts.BuildType,
-		bi.opts.GCSSuffix,
+		bi.opts.GCSRoot,
 		version,
 		bi.opts.Fast,
 	)
+	if err != nil {
+		return "", errors.Wrap(err, "get GCS release path")
+	}
+
+	return buildPath, nil
 }
 
 func (bi *Instance) setBuildType() {
@@ -117,5 +141,17 @@ func (bi *Instance) setBuildType() {
 
 	bi.opts.BuildType = buildType
 
-	logrus.Infof("Build type is %s", bi.opts.BuildType)
+	logrus.Infof("Build type has been set to %s", bi.opts.BuildType)
+}
+
+func (bi *Instance) setGCSRoot() {
+	if bi.opts.GCSRoot == "" {
+		if bi.opts.GCSSuffix != "" {
+			bi.opts.GCSRoot = bi.opts.BuildType + "-" + bi.opts.GCSSuffix
+		} else {
+			bi.opts.GCSRoot = bi.opts.BuildType
+		}
+	}
+
+	logrus.Infof("GCS root has been set to %s", bi.opts.GCSRoot)
 }

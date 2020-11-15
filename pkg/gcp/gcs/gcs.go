@@ -59,9 +59,13 @@ var DefaultGCSCopyOptions = &Options{
 }
 
 // CopyToGCS copies a local directory to the specified GCS path
+// TODO: Consider using IsPathNormalized here
 func CopyToGCS(src, gcsPath string, opts *Options) error {
 	logrus.Infof("Copying %s to GCS (%s)", src, gcsPath)
-	gcsPath = NormalizeGCSPath(gcsPath)
+	gcsPath, gcsPathErr := NormalizeGCSPath(gcsPath)
+	if gcsPathErr != nil {
+		return errors.Wrap(gcsPathErr, "normalize GCS path")
+	}
 
 	_, err := os.Stat(src)
 	if err != nil {
@@ -79,17 +83,33 @@ func CopyToGCS(src, gcsPath string, opts *Options) error {
 }
 
 // CopyToLocal copies a GCS path to the specified local directory
+// TODO: Consider using IsPathNormalized here
 func CopyToLocal(gcsPath, dst string, opts *Options) error {
 	logrus.Infof("Copying GCS (%s) to %s", gcsPath, dst)
-	gcsPath = NormalizeGCSPath(gcsPath)
+	gcsPath, gcsPathErr := NormalizeGCSPath(gcsPath)
+	if gcsPathErr != nil {
+		return errors.Wrap(gcsPathErr, "normalize GCS path")
+	}
 
 	return bucketCopy(gcsPath, dst, opts)
 }
 
 // CopyBucketToBucket copies between two GCS paths.
+// TODO: Consider using IsPathNormalized here
 func CopyBucketToBucket(src, dst string, opts *Options) error {
 	logrus.Infof("Copying %s to %s", src, dst)
-	return bucketCopy(NormalizeGCSPath(src), NormalizeGCSPath(dst), opts)
+
+	src, srcErr := NormalizeGCSPath(src)
+	if srcErr != nil {
+		return errors.Wrap(srcErr, "normalize GCS path")
+	}
+
+	dst, dstErr := NormalizeGCSPath(dst)
+	if dstErr != nil {
+		return errors.Wrap(dstErr, "normalize GCS path")
+	}
+
+	return bucketCopy(src, dst, opts)
 }
 
 func bucketCopy(src, dst string, opts *Options) error {
@@ -122,73 +142,167 @@ func bucketCopy(src, dst string, opts *Options) error {
 // GetReleasePath returns a GCS path to retrieve builds from or push builds to
 //
 // Expected destination format:
-//   gs://<bucket>/<buildType>[-<gcsSuffix>][/fast][/<version>]
+//   gs://<bucket>/<gcsRoot>[/fast][/<version>]
 func GetReleasePath(
-	bucket, buildType, gcsSuffix, version string,
-	fast bool) string {
-	return getPath(
+	bucket, gcsRoot, version string,
+	fast bool) (string, error) {
+	gcsPath, err := getPath(
 		bucket,
-		buildType,
-		gcsSuffix,
+		gcsRoot,
 		version,
 		"release",
 		fast,
 	)
+	if err != nil {
+		return "", errors.Wrap(err, "normalize GCS path")
+	}
+
+	logrus.Infof("Release path is %s", gcsPath)
+	return gcsPath, nil
 }
 
 // GetMarkerPath returns a GCS path where version markers should be stored
 //
 // Expected destination format:
-//   gs://<bucket>/<buildType>[-<gcsSuffix>]
+//   gs://<bucket>/<gcsRoot>
 func GetMarkerPath(
-	bucket, buildType, gcsSuffix string) string {
-	return getPath(
+	bucket, gcsRoot string) (string, error) {
+	gcsPath, err := getPath(
 		bucket,
-		buildType,
-		gcsSuffix,
+		gcsRoot,
 		"",
 		"marker",
 		false,
 	)
+	if err != nil {
+		return "", errors.Wrap(err, "normalize GCS path")
+	}
+
+	logrus.Infof("Version marker path is %s", gcsPath)
+	return gcsPath, nil
 }
 
 // GetReleasePath returns a GCS path to retrieve builds from or push builds to
 //
 // Expected destination format:
-//   gs://<bucket>/<buildType>[-<gcsSuffix>][/fast][/<version>]
+//   gs://<bucket>/<gcsRoot>[/fast][/<version>]
 // TODO: Support "release" buildType
 func getPath(
-	bucket, buildType, gcsSuffix, version, pathType string,
-	fast bool) string {
-	gcsPath := bucket
-	gcsPath = filepath.Join(gcsPath, buildType)
-
-	if gcsSuffix != "" {
-		gcsPath += "-" + gcsSuffix
+	bucket, gcsRoot, version, pathType string,
+	fast bool) (string, error) {
+	if gcsRoot == "" {
+		return "", errors.New("GCS root must be specified")
 	}
+
+	gcsPathParts := []string{}
+
+	gcsPathParts = append(gcsPathParts, bucket, gcsRoot)
 
 	if pathType == "release" {
 		if fast {
-			gcsPath = filepath.Join(gcsPath, "fast")
+			gcsPathParts = append(gcsPathParts, "fast")
 		}
 
 		if version != "" {
-			gcsPath = filepath.Join(gcsPath, version)
+			gcsPathParts = append(gcsPathParts, version)
 		}
+	} else if pathType == "marker" {
+	} else {
+		return "", errors.New("a GCS path type must be specified")
 	}
 
-	logrus.Infof("GCS path is %s", gcsPath)
-
-	return gcsPath
+	// Ensure any constructed GCS path is prefixed with `gs://`
+	return NormalizeGCSPath(gcsPathParts...)
 }
 
-// NormalizeGCSPath takes a gcs path and ensures that the `GcsPrefix` is
+// NormalizeGCSPath takes a GCS path and ensures that the `GcsPrefix` is
 // prepended to it.
-func NormalizeGCSPath(gcsPath string) string {
+// TODO: Should there be an append function for paths to prevent multiple calls
+//       like in build.checkBuildExists()?
+func NormalizeGCSPath(gcsPathParts ...string) (string, error) {
+	gcsPath := ""
+
+	// Ensure there is at least one element in the gcsPathParts slice before
+	// trying to construct a path
+	if len(gcsPathParts) == 0 {
+		return "", errors.New("must contain at least one path part")
+	} else if len(gcsPathParts) == 1 {
+		if gcsPathParts[0] == "" {
+			return "", errors.New("path should not be an empty string")
+		}
+
+		gcsPath = gcsPathParts[0]
+	} else {
+		var emptyParts int
+
+		for i, part := range gcsPathParts {
+			if part == "" {
+				emptyParts++
+			}
+
+			if i == 0 {
+				continue
+			}
+
+			if strings.Contains(part, "gs:/") {
+				return "", errors.New("one of the GCS path parts contained a `gs:/`, which may suggest a filepath.Join() error in the caller")
+			}
+
+			if i == len(gcsPathParts)-1 && emptyParts == len(gcsPathParts) {
+				return "", errors.New("all paths provided were empty")
+			}
+		}
+
+		gcsPath = filepath.Join(gcsPathParts...)
+	}
+
+	// Strip `gs://` if it was included in gcsPathParts
 	gcsPath = strings.TrimPrefix(gcsPath, GcsPrefix)
+
+	// Strip `gs:/` if:
+	// - `gs://` was included in gcsPathParts
+	// - gcsPathParts had more than element
+	// - filepath.Join() was called somewhere in a caller's logic
+	gcsPath = strings.TrimPrefix(gcsPath, "gs:/")
+
+	// Strip `/`
+	// This scenario may never happen, but let's catch it, just in case
+	gcsPath = strings.TrimPrefix(gcsPath, "/")
+
 	gcsPath = GcsPrefix + gcsPath
 
-	return gcsPath
+	isNormalized := IsPathNormalized(gcsPath)
+	if !isNormalized {
+		return gcsPath, errors.New("unknown error while trying to normalize GCS path")
+	}
+
+	return gcsPath, nil
+}
+
+// IsPathNormalized determines if a GCS path is prefixed with `gs://`.
+// Use this function as pre-check for any gsutil/GCS functions that manipulate
+// GCS bucket contents.
+func IsPathNormalized(gcsPath string) bool {
+	var errCount int
+
+	if !strings.HasPrefix(gcsPath, GcsPrefix) {
+		logrus.Errorf("GCS path (%s) should be prefixed with `gs://`", gcsPath)
+		errCount++
+	}
+
+	strippedPath := strings.TrimPrefix(gcsPath, GcsPrefix)
+	if strings.Contains(strippedPath, "gs:/") {
+		logrus.Errorf("GCS path (%s) should be prefixed with `gs:/`", gcsPath)
+		errCount++
+	}
+
+	// TODO: Add logic to handle invalid path characters
+
+	if errCount > 0 {
+		return false
+	}
+
+	return true
 }
 
 // RsyncRecursive runs `gsutil rsync` in recursive mode. The caller of this
@@ -196,13 +310,17 @@ func NormalizeGCSPath(gcsPath string) string {
 // necessary (see `NormalizeGCSPath()`).
 func RsyncRecursive(src, dst string) error {
 	return errors.Wrap(
-		gcp.GSUtil("-m", "rsync", "-r", src, dst),
+		gcp.GSUtil(concurrentFlag, "rsync", recursiveFlag, src, dst),
 		"running gsutil rsync",
 	)
 }
 
 // PathExists returns true if the specified GCS path exists.
 func PathExists(gcsPath string) (bool, error) {
+	if !IsPathNormalized(gcsPath) {
+		return false, errors.New("cannot run `gsutil ls` GCS path does not begin with `gs://`")
+	}
+
 	err := gcp.GSUtil(
 		"ls",
 		gcsPath,

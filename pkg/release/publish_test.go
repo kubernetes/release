@@ -42,10 +42,10 @@ func TestPublishVersion(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		bucket    string
-		gcsSuffix string
-		version   string
-		prepare   func(
+		bucket  string
+		gcsRoot string
+		version string
+		prepare func(
 			*releasefakes.FakePublisherClient,
 		) (buildDir string, cleanup func())
 		privateBucket bool
@@ -54,6 +54,7 @@ func TestPublishVersion(t *testing.T) {
 	}{
 		{ // success update fast
 			bucket:  release.ProductionBucket,
+			gcsRoot: "release",
 			version: testVersion,
 			fast:    true,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
@@ -70,8 +71,27 @@ func TestPublishVersion(t *testing.T) {
 			},
 			shouldError: false,
 		},
+		{ // failure missing GCS root
+			bucket:  release.ProductionBucket,
+			version: testVersion,
+			fast:    true,
+			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
+				tempDir, err := ioutil.TempDir("", "publish-version-test-")
+				require.Nil(t, err)
+
+				mock.GSUtilOutputReturnsOnCall(0, olderTestVersion, nil)
+				mock.GSUtilOutputReturnsOnCall(1, testVersion, nil)
+				mock.GetURLResponseReturns(testVersion, nil)
+
+				return tempDir, func() {
+					require.Nil(t, os.RemoveAll(tempDir))
+				}
+			},
+			shouldError: true,
+		},
 		{ // success update on private bucket
 			bucket:        release.ProductionBucket,
+			gcsRoot:       "release",
 			version:       testVersion,
 			privateBucket: true,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
@@ -89,6 +109,7 @@ func TestPublishVersion(t *testing.T) {
 		},
 		{ // failure update on private bucket
 			bucket:        release.ProductionBucket,
+			gcsRoot:       "release",
 			version:       testVersion,
 			privateBucket: true,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
@@ -106,6 +127,7 @@ func TestPublishVersion(t *testing.T) {
 		},
 		{ // failure update on private bucket wrong content
 			bucket:        release.ProductionBucket,
+			gcsRoot:       "release",
 			version:       testVersion,
 			privateBucket: true,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
@@ -123,6 +145,7 @@ func TestPublishVersion(t *testing.T) {
 		},
 		{ // success update non private bucket
 			bucket:        "k8s-another-bucket",
+			gcsRoot:       "release",
 			version:       testVersion,
 			privateBucket: false,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
@@ -140,6 +163,7 @@ func TestPublishVersion(t *testing.T) {
 		},
 		{ // failure update non private bucket url response failed
 			bucket:        "k8s-another-bucket",
+			gcsRoot:       "release",
 			version:       testVersion,
 			privateBucket: false,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
@@ -156,6 +180,7 @@ func TestPublishVersion(t *testing.T) {
 		},
 		{ // failure release files do not exist
 			bucket:        release.ProductionBucket,
+			gcsRoot:       "release",
 			version:       testVersion,
 			privateBucket: false,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
@@ -172,6 +197,7 @@ func TestPublishVersion(t *testing.T) {
 		},
 		{ // failure no semver version
 			bucket:  release.ProductionBucket,
+			gcsRoot: "release",
 			version: "wrong",
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
 				tempDir, err := ioutil.TempDir("", "publish-version-test-")
@@ -190,7 +216,7 @@ func TestPublishVersion(t *testing.T) {
 		buildDir, cleanup := tc.prepare(clientMock)
 
 		err := sut.PublishVersion(
-			"release", tc.version, buildDir, tc.bucket, tc.gcsSuffix,
+			"release", tc.version, buildDir, tc.bucket, tc.gcsRoot,
 			nil, tc.privateBucket, tc.fast,
 		)
 		if tc.shouldError {

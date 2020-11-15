@@ -76,15 +76,14 @@ func (*defaultPublisher) GetURLResponse(url string) (string, error) {
 // version - The version
 // buildDir - build output directory
 // bucket - GCS bucket
-// gcsSuffix - appended to the buildType to construct a new top-level
-//             destination
+// gcsRoot - The top-level GCS directory builds will be released to
 //
 // Expected destination format:
-//   gs://<bucket>/<buildType>[-<gcsSuffix>][/fast]/<version>
+//   gs://<bucket>/<gcsRoot>[/fast]/<version>
 //
 // was releaselib.sh: release::gcs::publish_version
 func (p *Publisher) PublishVersion(
-	buildType, version, buildDir, bucket, gcsSuffix string,
+	buildType, version, buildDir, bucket, gcsRoot string,
 	extraVersionMarkers []string,
 	privateBucket, fast bool,
 ) error {
@@ -105,21 +104,26 @@ func (p *Publisher) PublishVersion(
 		return errors.Errorf("invalid version %s", version)
 	}
 
-	markerPath := gcs.GetMarkerPath(
+	markerPath, markerPathErr := gcs.GetMarkerPath(
 		bucket,
-		buildType,
-		gcsSuffix,
+		gcsRoot,
 	)
+	if markerPathErr != nil {
+		return errors.Wrap(markerPathErr, "get version marker path")
+	}
 
-	releasePath := gcs.GetReleasePath(
+	releasePath, releasePathErr := gcs.GetReleasePath(
 		bucket,
-		buildType,
-		gcsSuffix,
+		gcsRoot,
 		version,
 		fast,
 	)
+	if releasePathErr != nil {
+		return errors.Wrap(releasePathErr, "get release path")
+	}
 
 	// TODO: This should probably be a more thorough check of explicit files
+	// TODO: This should explicitly do a `gsutil ls` via gcs.PathExists
 	if err := p.client.GSUtil("ls", releasePath); err != nil {
 		return errors.Wrapf(err, "release files don't exist at %s", releasePath)
 	}
@@ -147,13 +151,14 @@ func (p *Publisher) PublishVersion(
 	logrus.Infof("Publish official pointer text files to %s", markerPath)
 
 	for _, file := range versionMarkers {
-		versionMarker := filepath.Join(buildType, file+".txt")
+		versionMarker := file + ".txt"
 		needsUpdate, err := p.VerifyLatestUpdate(
 			versionMarker, markerPath, version,
 		)
 		if err != nil {
 			return errors.Wrapf(err, "verify latest update for %s", versionMarker)
 		}
+
 		// If there's a version that's above the one we're trying to release,
 		// don't do anything, and just try the next one.
 		if !needsUpdate {
@@ -186,7 +191,12 @@ func (p *Publisher) VerifyLatestUpdate(
 ) (needsUpdate bool, err error) {
 	logrus.Infof("Testing %s > %s (published)", version, publishFile)
 
-	publishFileDst := gcs.NormalizeGCSPath(filepath.Join(markerPath, publishFile))
+	publishFileDst, publishFileDstErr := gcs.NormalizeGCSPath(markerPath, publishFile)
+	if publishFileDstErr != nil {
+		return false, errors.Wrap(publishFileDstErr, "get marker file destination")
+	}
+
+	// TODO: Should we add a pkg/gcp/gcs function for `gsutil cat`?
 	gcsVersion, err := p.client.GSUtilOutput("cat", publishFileDst)
 	if err != nil {
 		logrus.Infof("%s does not exist but will be created", publishFileDst)
@@ -225,7 +235,11 @@ func (p *Publisher) PublishToGcs(
 	privateBucket bool,
 ) error {
 	releaseStage := filepath.Join(buildDir, ReleaseStagePath)
-	publishFileDst := gcs.NormalizeGCSPath(filepath.Join(markerPath, publishFile))
+	publishFileDst, publishFileDstErr := gcs.NormalizeGCSPath(markerPath, publishFile)
+	if publishFileDstErr != nil {
+		return errors.Wrap(publishFileDstErr, "get marker file destination")
+	}
+
 	publicLink := fmt.Sprintf("%s/%s", URLPrefixForBucket(markerPath), publishFile)
 	if strings.HasPrefix(markerPath, ProductionBucket) {
 		publicLink = fmt.Sprintf("%s/%s", ProductionBucketURL, publishFile)
@@ -265,7 +279,7 @@ func (p *Publisher) PublishToGcs(
 		// Ref:
 		// - https://cloud.google.com/storage/docs/bucket-policy-only
 		// - https://github.com/kubernetes/release/issues/904
-		if !strings.HasPrefix(markerPath, "k8s-") {
+		if !strings.HasPrefix(markerPath, "gs://k8s-") {
 			aclOutput, err := p.client.GSUtilOutput(
 				"acl", "ch", "-R", "-g", "all:R", publishFileDst,
 			)
