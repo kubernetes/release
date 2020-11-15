@@ -117,6 +117,28 @@ const (
 	BazelBuildDir = "bazel-bin/build"
 )
 
+var (
+	ManifestImages = []string{
+		"conformance",
+		"kube-apiserver",
+		"kube-controller-manager",
+		"kube-proxy",
+		"kube-scheduler",
+	}
+
+	SupportedArchitectures = []string{
+		"amd64",
+		"arm",
+		"arm64",
+		"ppc64le",
+		"s390x",
+	}
+
+	FastArchitectures = []string{
+		"amd64",
+	}
+)
+
 // ImagePromoterImages abtracts the manifest used by the image promoter
 type ImagePromoterImages []struct {
 	Name string              `json:"name"`

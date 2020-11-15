@@ -247,29 +247,11 @@ func (i *Images) Exists(registry, version string, fast bool) (bool, error) {
 	logrus.Infof("Validating image manifests in %s", registry)
 	version = i.normalizeVersion(version)
 
-	// TODO: Maybe pull this out into a var?
-	manifestImages := []string{
-		"conformance",
-		"kube-apiserver",
-		"kube-controller-manager",
-		"kube-proxy",
-		"kube-scheduler",
-	}
+	manifestImages := ManifestImages
 
-	// TODO: Maybe pull this out into a var?
-	arches := []string{
-		"amd64",
-		"arm",
-		"arm64",
-		"ppc64le",
-		"s390x",
-	}
-
-	// TODO: Maybe pull this out into a var?
+	arches := SupportedArchitectures
 	if fast {
-		arches = []string{
-			"amd64",
-		}
+		arches = FastArchitectures
 	}
 
 	for _, image := range manifestImages {
