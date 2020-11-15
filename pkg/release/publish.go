@@ -199,7 +199,7 @@ func (p *Publisher) VerifyLatestUpdate(
 		return false, errors.Wrap(publishFileDstErr, "get marker file destination")
 	}
 
-	// TODO: Should we add pkg/gcp/gcs function for `gsutil cat`?
+	// TODO: Should we add a pkg/gcp/gcs function for `gsutil cat`?
 	gcsVersion, err := p.client.GSUtilOutput("cat", publishFileDst)
 	if err != nil {
 		logrus.Infof("%s does not exist but will be created", publishFileDst)
