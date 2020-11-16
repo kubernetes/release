@@ -73,10 +73,24 @@ type Options struct {
 func DefaultOptions() *Options {
 	return &Options{
 		Options: &build.Options{
-			BuildType: "ci",
-			Bucket:    release.CIBucketK8sInfra,
+			BuildType:                  "ci",
+			CI:                         true,
+			Bucket:                     release.CIBucketK8sInfra,
+			AllowDup:                   true,
+			BuildDir:                   release.BuildDir,
+			Registry:                   release.GCRIOPathCI,
+			ExtraVersionMarkers:        build.DefaultExtraVersionMarkers,
+			ConfigureDocker:            false,
+			NoUpdateLatest:             false,
+			ValidateRemoteImageDigests: true,
 		},
 	}
+}
+
+// NewBuild creates a new `Build` instance.
+// TODO: Needs a client to support the non-default option
+func NewBuild(opts *Options) *DefaultBuild {
+	return NewDefaultBuild()
 }
 
 // DefaultBuild is the default build implementation used in CI.
