@@ -33,8 +33,8 @@ var err = errors.New("error")
 var testVersionTag string = "v1.20.0"
 
 type testStateParameters struct {
-	versionsTag  *string
-	parentBranch *string
+	versionsTag         *string
+	createReleaseBranch *bool
 }
 
 func mockGenerateReleaseVersionStage(mock *anagofakes.FakeStageClient) {

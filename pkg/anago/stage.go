@@ -245,12 +245,8 @@ func (d *DefaultStage) ValidateOptions() error {
 func (d *DefaultStage) CheckPrerequisites() error { return nil }
 
 func (d *DefaultStage) SetBuildCandidate() error {
-	// TODO: the parent branch has to be returned by the SetBuildCandidate
-	// method. It should be empty (releases cut from master) or
-	// git.DefaultBranch / "master" (releases cut from release branches).
-	//
-	// d.state.parentBranch = XXXXX
-	d.state.parentBranch = ""
+	// TODO: finish the implementation
+	// d.state.createReleaseBranch = true
 	return nil
 }
 
@@ -259,7 +255,7 @@ func (d *DefaultStage) GenerateReleaseVersion() error {
 		d.options.ReleaseType,
 		d.options.BuildVersion,
 		d.options.ReleaseBranch,
-		d.state.parentBranch == git.DefaultBranch,
+		d.state.createReleaseBranch,
 	)
 	if err != nil {
 		return errors.Wrap(err, "generating release versions for stage")
@@ -296,15 +292,11 @@ func (d *DefaultStage) TagRepository() error {
 		}
 
 		commit := d.state.semverBuildVersion.Build[0]
-		if d.state.parentBranch != "" {
-			logrus.Infof("Parent branch provided: %s", d.state.parentBranch)
+		if d.state.createReleaseBranch {
+			logrus.Infof("Creating release branch %s", d.options.ReleaseBranch)
 
 			if version == d.state.versions.Prime() {
 				logrus.Infof("Version %s is the prime version", version)
-				logrus.Infof(
-					"Creating or checking out release branch %s",
-					d.options.ReleaseBranch,
-				)
 
 				hasBranch, err := d.impl.HasBranch(
 					repo, d.options.ReleaseBranch,
@@ -337,11 +329,11 @@ func (d *DefaultStage) TagRepository() error {
 				}
 			} else {
 				logrus.Infof(
-					"Version %s it not the prime, checking out parent branch",
-					version,
+					"Version %s it not the prime, checking out %s branch",
+					version, git.DefaultBranch,
 				)
-				if err := d.impl.Checkout(repo, d.state.parentBranch); err != nil {
-					return errors.Wrap(err, "checkout parent branch")
+				if err := d.impl.Checkout(repo, git.DefaultBranch); err != nil {
+					return errors.Wrapf(err, "checkout %s branch", git.DefaultBranch)
 				}
 			}
 		} else {
@@ -420,8 +412,8 @@ func (d *DefaultStage) Build() error {
 
 func (d *DefaultStage) GenerateChangelog() error {
 	branch := d.options.ReleaseBranch
-	if d.state.parentBranch != "" {
-		branch = d.state.parentBranch
+	if d.state.createReleaseBranch {
+		branch = git.DefaultBranch
 	}
 	return d.impl.GenerateChangelog(&changelog.Options{
 		RepoPath:     gitRoot,

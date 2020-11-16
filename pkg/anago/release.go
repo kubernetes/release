@@ -243,12 +243,8 @@ func (d *DefaultRelease) ValidateOptions() error {
 func (d *DefaultRelease) CheckPrerequisites() error { return nil }
 
 func (d *DefaultRelease) SetBuildCandidate() error {
-	// TODO: the parent branch has to be returned by the SetBuildCandidate
-	// method. It should be empty (releases cut from master) or
-	// git.DefaultBranch / "master" (releases cut from release branches).
-	//
-	// d.state.parentBranch = XXXXX
-	d.state.parentBranch = ""
+	// TODO: finish the implementation
+	// d.state.createReleaseBranch = true
 	return nil
 }
 
@@ -257,7 +253,7 @@ func (d *DefaultRelease) GenerateReleaseVersion() error {
 		d.options.ReleaseType,
 		d.options.BuildVersion,
 		d.options.ReleaseBranch,
-		d.state.parentBranch == git.DefaultBranch,
+		d.state.createReleaseBranch,
 	)
 	if err != nil {
 		return errors.Wrap(err, "generating versions for release")
@@ -354,11 +350,6 @@ func (d *DefaultRelease) PushGitObjects() error {
 	branchList := []string{}
 	if d.options.ReleaseBranch != git.DefaultBranch {
 		branchList = append(branchList, d.options.ReleaseBranch)
-
-		// # Additionally push the parent branch if a branch of branch
-		if d.state.parentBranch != git.DefaultBranch {
-			branchList = append(branchList, d.state.parentBranch)
-		}
 	}
 
 	// Call the release imprementation PushBranches() method
