@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -159,7 +160,7 @@ func init() {
 		&opts.logLevel,
 		"log-level",
 		"info",
-		"the logging verbosity, either 'panic', 'fatal', 'error', 'warn', 'warning', 'info', 'debug' or 'trace'",
+		fmt.Sprintf("the logging verbosity, either %s", log.LevelNames()),
 	)
 
 	rootCmd.PersistentFlags().StringVar(

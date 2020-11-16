@@ -17,6 +17,8 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -131,7 +133,7 @@ func init() {
 		&logLevel,
 		"log-level",
 		"info",
-		"the logging verbosity, either 'panic', 'fatal', 'error', 'warn', 'warning', 'info', 'debug' or 'trace'",
+		fmt.Sprintf("the logging verbosity, either %s", log.LevelNames()),
 	)
 }
 

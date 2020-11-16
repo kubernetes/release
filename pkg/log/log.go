@@ -17,6 +17,9 @@ limitations under the License.
 package log
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -41,4 +44,13 @@ func SetupGlobalLogger(level string) error {
 	logrus.AddHook(NewFilenameHook())
 	logrus.Debugf("Using log level %q", lvl)
 	return nil
+}
+
+// LevelNames returns a comma separated list of available levels.
+func LevelNames() string {
+	levels := []string{}
+	for _, level := range logrus.AllLevels {
+		levels = append(levels, fmt.Sprintf("'%s'", level.String()))
+	}
+	return strings.Join(levels, ", ")
 }

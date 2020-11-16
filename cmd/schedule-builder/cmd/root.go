@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 
 	"github.com/pkg/errors"
@@ -84,7 +85,7 @@ func init() {
 		&opts.logLevel,
 		"log-level",
 		"info",
-		"the logging verbosity, either 'panic', 'fatal', 'error', 'warn', 'warning', 'info', 'debug' or 'trace'",
+		fmt.Sprintf("the logging verbosity, either %s", log.LevelNames()),
 	)
 
 	for _, flag := range requiredFlags {
