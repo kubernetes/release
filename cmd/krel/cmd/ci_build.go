@@ -22,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/cibuild"
+	"k8s.io/release/pkg/build/ci"
 )
 
 const ciBuildCmdDescription = `
@@ -38,7 +38,7 @@ Scenarios:
 krel ci-build --allow-dup --fast --registry=gcr.io/foo     - Run a fast build and push images to gcr.io/foo
 krel ci-build --bucket cool-bucket --gcs-root new-gcs-root - Push to gs://cool-bucket/new-gcs-root`
 
-var ciBuildOpts = cibuild.DefaultOptions()
+var ciBuildOpts = ci.DefaultOptions()
 
 var ciBuildCmd = &cobra.Command{
 	Use:           "ci-build",
@@ -146,6 +146,6 @@ func init() {
 	rootCmd.AddCommand(ciBuildCmd)
 }
 
-func runCIBuild(opts *cibuild.Options) error {
-	return cibuild.NewBuild(opts).Build()
+func runCIBuild(opts *ci.Options) error {
+	return ci.NewBuild(opts).Build()
 }

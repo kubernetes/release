@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cibuild_test
+package ci_test
 
 import (
 	"testing"
@@ -22,8 +22,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/cibuild"
-	"k8s.io/release/pkg/cibuild/cibuildfakes"
+	"k8s.io/release/pkg/build/ci"
+	"k8s.io/release/pkg/build/ci/cifakes"
 )
 
 var err = errors.New("error")
@@ -31,24 +31,27 @@ var err = errors.New("error")
 var testVersion string = "v1.20.0-beta.1.655+d20e3246bade17"
 
 type testStateParameters struct {
+	version *string
 }
 
-func generateTestingState(params *testStateParameters) *cibuild.State {
-	state := cibuild.DefaultState()
+func generateTestingState(params *testStateParameters) *ci.State {
+	state := ci.DefaultState()
 
 	// TODO: Populate logic
+	if params.version != nil { //nolint: staticcheck
+	}
 
 	return state
 }
 
 func TestBuild(t *testing.T) {
 	for _, tc := range []struct {
-		prepare          func(*cibuildfakes.FakeImpl)
+		prepare          func(*cifakes.FakeImpl)
 		isKubernetesRepo bool
 		shouldError      bool
 	}{ /*
 			{ // success
-				prepare: func(mock *cibuildfakes.FakeImpl) {
+				prepare: func(mock *cifakes.FakeImpl) {
 					mock.IsKubernetesRepoReturnsOnCall(0, true, nil)
 				},
 				//isKubernetesRepo: true,
@@ -56,19 +59,19 @@ func TestBuild(t *testing.T) {
 			},
 		*/
 		{ // IsKubernetesRepo fails
-			prepare: func(mock *cibuildfakes.FakeImpl) {
+			prepare: func(mock *cifakes.FakeImpl) {
 				mock.IsKubernetesRepoReturns(true, nil)
 			},
 			shouldError: false,
 		}, /*
 			{ // IsKubernetesRepo fails
-				prepare: func(mock *cibuildfakes.FakeImpl) {
+				prepare: func(mock *cifakes.FakeImpl) {
 					mock.IsKubernetesRepoReturns(false, err)
 				},
 				shouldError: true,
 			},
 			{ // IsKubernetesRepo fails
-				prepare: func(mock *cibuildfakes.FakeImpl) {
+				prepare: func(mock *cifakes.FakeImpl) {
 					mock.IsKubernetesRepoStub = func() (bool, error) {
 						return true, nil
 					}
@@ -76,14 +79,14 @@ func TestBuild(t *testing.T) {
 				shouldError: false,
 			},*/
 	} {
-		sut := cibuild.NewDefaultBuild()
+		sut := ci.NewDefaultBuild()
 
 		// TODO: Populate logic
 		sut.SetState(
 			generateTestingState(&testStateParameters{}),
 		)
 
-		mock := &cibuildfakes.FakeImpl{}
+		mock := &cifakes.FakeImpl{}
 
 		tc.prepare(mock)
 		sut.SetImpl(mock)
@@ -100,32 +103,32 @@ func TestBuild(t *testing.T) {
 
 func TestIsKubernetesRepo(t *testing.T) {
 	for _, tc := range []struct {
-		prepare          func(*cibuildfakes.FakeImpl)
+		prepare          func(*cifakes.FakeImpl)
 		isKubernetesRepo bool
 		shouldError      bool
 	}{
 		{ // success
-			prepare: func(mock *cibuildfakes.FakeImpl) {
+			prepare: func(mock *cifakes.FakeImpl) {
 				mock.IsKubernetesRepoReturns(true, nil)
 			},
 			isKubernetesRepo: true,
 			shouldError:      false,
 		},
 		{ // IsKubernetesRepo fails
-			prepare: func(mock *cibuildfakes.FakeImpl) {
+			prepare: func(mock *cifakes.FakeImpl) {
 			},
 			isKubernetesRepo: false,
 			shouldError:      false,
 		},
 	} {
-		sut := cibuild.NewDefaultBuild()
+		sut := ci.NewDefaultBuild()
 
 		// TODO: Populate logic
 		sut.SetState(
 			generateTestingState(&testStateParameters{}),
 		)
 
-		mock := &cibuildfakes.FakeImpl{}
+		mock := &cifakes.FakeImpl{}
 
 		tc.prepare(mock)
 		sut.SetImpl(mock)
@@ -144,48 +147,48 @@ func TestIsKubernetesRepo(t *testing.T) {
 
 func TestCheckBuildExists(t *testing.T) {
 	for _, tc := range []struct {
-		prepare     func(*cibuildfakes.FakeImpl)
+		prepare     func(*cifakes.FakeImpl)
 		shouldError bool
 	}{
 		{ // success
-			prepare: func(mock *cibuildfakes.FakeImpl) {
+			prepare: func(mock *cifakes.FakeImpl) {
 				mock.GetWorkspaceVersionReturns(testVersion, nil)
 			},
 			shouldError: false,
 		},
 		{ // GetWorkspaceVersion fails with err
-			prepare: func(mock *cibuildfakes.FakeImpl) {
+			prepare: func(mock *cifakes.FakeImpl) {
 				mock.GetWorkspaceVersionReturns("", err)
 			},
 			shouldError: true,
 		},
 		{ // GetWorkspaceVersion fails on empty version
-			prepare: func(mock *cibuildfakes.FakeImpl) {
+			prepare: func(mock *cifakes.FakeImpl) {
 				mock.GetWorkspaceVersionReturns("", nil)
 			},
 			shouldError: true,
 		},
 		{ // GetGCSBuildPaths fails with err
-			prepare: func(mock *cibuildfakes.FakeImpl) {
+			prepare: func(mock *cifakes.FakeImpl) {
 				mock.GetGCSBuildPathsReturns([]string{}, err)
 			},
 			shouldError: true,
 		},
 		{ // ImagesExist fails with err
-			prepare: func(mock *cibuildfakes.FakeImpl) {
+			prepare: func(mock *cifakes.FakeImpl) {
 				mock.ImagesExistReturns(false, err)
 			},
 			shouldError: true,
 		},
 	} {
-		sut := cibuild.NewDefaultBuild()
+		sut := ci.NewDefaultBuild()
 
 		// TODO: Populate logic
 		sut.SetState(
 			generateTestingState(&testStateParameters{}),
 		)
 
-		mock := &cibuildfakes.FakeImpl{}
+		mock := &cifakes.FakeImpl{}
 
 		tc.prepare(mock)
 		sut.SetImpl(mock)
