@@ -124,7 +124,7 @@ func (bi *Instance) Push() error {
 		return errors.Wrap(err, "push container images")
 	}
 
-	gcsDest, gcsDestErr := bi.getGCSBuildPath(version)
+	gcsDest, gcsDestErr := bi.GetGCSBuildPath(version)
 	if gcsDestErr != nil {
 		return errors.Wrap(gcsDestErr, "get GCS destination")
 	}

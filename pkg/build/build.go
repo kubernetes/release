@@ -112,7 +112,7 @@ type Options struct {
 }
 
 // TODO: Refactor so that version is not required as a parameter
-func (bi *Instance) getGCSBuildPath(version string) (string, error) {
+func (bi *Instance) GetGCSBuildPath(version string) (string, error) {
 	if bi.opts.Bucket == "" {
 		bi.setBucket()
 	}
