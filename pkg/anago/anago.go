@@ -22,7 +22,9 @@ import (
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
 	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/log"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
 	"k8s.io/release/pkg/version"
@@ -220,54 +222,55 @@ func (s *Stage) Submit() error {
 // staging bucket.
 // nolint:dupl
 func (s *Stage) Run() error {
-	logrus.Infof("Using krel version:\n%s", version.Get().String())
+	logger := log.NewStepLogger(9)
+	logger.Infof("Using krel version:\n%s", version.Get().String())
 
-	logrus.Info("Validating options")
+	logger.WithStep().Info("Validating options")
 	if err := s.client.ValidateOptions(); err != nil {
 		return errors.Wrap(err, "validate options")
 	}
 
-	logrus.Info("Checking prerequisites")
+	logger.WithStep().Info("Checking prerequisites")
 	if err := s.client.CheckPrerequisites(); err != nil {
 		return errors.Wrap(err, "check prerequisites")
 	}
 
-	logrus.Info("Setting build candidate")
+	logger.WithStep().Info("Setting build candidate")
 	if err := s.client.SetBuildCandidate(); err != nil {
 		return errors.Wrap(err, "set build candidate")
 	}
 
-	logrus.Info("Generating release version")
+	logger.WithStep().Info("Generating release version")
 	if err := s.client.GenerateReleaseVersion(); err != nil {
 		return errors.Wrap(err, "generate release version")
 	}
 
-	logrus.Info("Preparing workspace")
+	logger.WithStep().Info("Preparing workspace")
 	if err := s.client.PrepareWorkspace(); err != nil {
 		return errors.Wrap(err, "prepare workspace")
 	}
 
-	logrus.Info("Tagging repository")
+	logger.WithStep().Info("Tagging repository")
 	if err := s.client.TagRepository(); err != nil {
 		return errors.Wrap(err, "tag repository")
 	}
 
-	logrus.Info("Building release")
+	logger.WithStep().Info("Building release")
 	if err := s.client.Build(); err != nil {
 		return errors.Wrap(err, "build release")
 	}
 
-	logrus.Info("Generating changelog")
+	logger.WithStep().Info("Generating changelog")
 	if err := s.client.GenerateChangelog(); err != nil {
 		return errors.Wrap(err, "generate changelog")
 	}
 
-	logrus.Info("Staging artifacts")
+	logger.WithStep().Info("Staging artifacts")
 	if err := s.client.StageArtifacts(); err != nil {
 		return errors.Wrap(err, "stage release artifacts")
 	}
 
-	logrus.Info("Stage done")
+	logger.Info("Stage done")
 	return nil
 }
 
@@ -336,53 +339,54 @@ func (r *Release) Submit() error {
 // Run for for `Release` struct finishes a previously staged release.
 // nolint:dupl
 func (r *Release) Run() error {
-	logrus.Infof("Using krel version:\n%s", version.Get().String())
+	logger := log.NewStepLogger(9)
+	logger.Infof("Using krel version:\n%s", version.Get().String())
 
-	logrus.Info("Validating options")
+	logger.WithStep().Info("Validating options")
 	if err := r.client.ValidateOptions(); err != nil {
 		return errors.Wrap(err, "validate options")
 	}
 
-	logrus.Info("Checking prerequisites")
+	logger.WithStep().Info("Checking prerequisites")
 	if err := r.client.CheckPrerequisites(); err != nil {
 		return errors.Wrap(err, "check prerequisites")
 	}
 
-	logrus.Info("Setting build candidate")
+	logger.WithStep().Info("Setting build candidate")
 	if err := r.client.SetBuildCandidate(); err != nil {
 		return errors.Wrap(err, "set build candidate")
 	}
 
-	logrus.Info("Generating release version")
+	logger.WithStep().Info("Generating release version")
 	if err := r.client.GenerateReleaseVersion(); err != nil {
 		return errors.Wrap(err, "generate release version")
 	}
 
-	logrus.Info("Preparing workspace")
+	logger.WithStep().Info("Preparing workspace")
 	if err := r.client.PrepareWorkspace(); err != nil {
 		return errors.Wrap(err, "prepare workspace")
 	}
 
-	logrus.Info("Pushing artifacts")
+	logger.WithStep().Info("Pushing artifacts")
 	if err := r.client.PushArtifacts(); err != nil {
 		return errors.Wrap(err, "push artifacts")
 	}
 
-	logrus.Info("Pushing git objects")
+	logger.WithStep().Info("Pushing git objects")
 	if err := r.client.PushGitObjects(); err != nil {
 		return errors.Wrap(err, "push git objects")
 	}
 
-	logrus.Info("Creating announcement")
+	logger.WithStep().Info("Creating announcement")
 	if err := r.client.CreateAnnouncement(); err != nil {
 		return errors.Wrap(err, "create announcement")
 	}
 
-	logrus.Info("Archiving release")
+	logger.WithStep().Info("Archiving release")
 	if err := r.client.Archive(); err != nil {
 		return errors.Wrap(err, "archive release")
 	}
 
-	logrus.Info("Release done")
+	logger.Info("Release done")
 	return nil
 }
