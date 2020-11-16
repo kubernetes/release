@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package build
+package make
 
 import (
 	"fmt"
@@ -35,7 +35,7 @@ type Make struct {
 }
 
 // New creates a new `Build` instance.
-func NewMake() *Make {
+func New() *Make {
 	return &Make{&defaultMakeImpl{}}
 }
 

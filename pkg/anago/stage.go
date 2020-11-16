@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/build"
+	"k8s.io/release/pkg/build/make"
 	"k8s.io/release/pkg/changelog"
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/git"
@@ -184,7 +185,7 @@ func (d *defaultStageImpl) Tag(repo *git.Repo, name, message string) error {
 }
 
 func (d *defaultStageImpl) MakeCross(version string) error {
-	return build.NewMake().MakeCross(version)
+	return make.New().MakeCross(version)
 }
 
 func (d *defaultStageImpl) GenerateChangelog(options *changelog.Options) error {

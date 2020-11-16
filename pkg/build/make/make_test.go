@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package build_test
+package make_test
 
 import (
 	"errors"
@@ -22,54 +22,54 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/build"
-	"k8s.io/release/pkg/build/buildfakes"
+	"k8s.io/release/pkg/build/make"
+	"k8s.io/release/pkg/build/make/makefakes"
 )
 
 var err = errors.New("error")
 
 func TestMakeCross(t *testing.T) {
 	for _, tc := range []struct {
-		prepare     func(*buildfakes.FakeImpl)
+		prepare     func(*makefakes.FakeImpl)
 		shouldError bool
 	}{
 		{ // success
-			prepare:     func(*buildfakes.FakeImpl) {},
+			prepare:     func(*makefakes.FakeImpl) {},
 			shouldError: false,
 		},
 		{ // OpenRepo fails
-			prepare: func(mock *buildfakes.FakeImpl) {
+			prepare: func(mock *makefakes.FakeImpl) {
 				mock.OpenRepoReturns(nil, err)
 			},
 			shouldError: true,
 		},
 		{ // Checkout fails
-			prepare: func(mock *buildfakes.FakeImpl) {
+			prepare: func(mock *makefakes.FakeImpl) {
 				mock.CheckoutReturns(err)
 			},
 			shouldError: true,
 		},
 		{ // Command fails
-			prepare: func(mock *buildfakes.FakeImpl) {
+			prepare: func(mock *makefakes.FakeImpl) {
 				mock.CommandReturns(err)
 			},
 			shouldError: true,
 		},
 		{ // Rename fails
-			prepare: func(mock *buildfakes.FakeImpl) {
+			prepare: func(mock *makefakes.FakeImpl) {
 				mock.RenameReturns(err)
 			},
 			shouldError: true,
 		},
 		{ // Command fails on second call
-			prepare: func(mock *buildfakes.FakeImpl) {
+			prepare: func(mock *makefakes.FakeImpl) {
 				mock.CommandReturnsOnCall(1, err)
 			},
 			shouldError: true,
 		},
 	} {
-		sut := build.NewMake()
-		mock := &buildfakes.FakeImpl{}
+		sut := make.New()
+		mock := &makefakes.FakeImpl{}
 		tc.prepare(mock)
 		sut.SetImpl(mock)
 		err := sut.MakeCross("v1.20.0")
