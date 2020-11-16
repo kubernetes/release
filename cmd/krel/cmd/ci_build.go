@@ -130,14 +130,6 @@ func init() {
 		"Specify an alternate GCS path to push artifacts to",
 	)
 
-	// TODO: Fully remove this flag once we stop using it in CI
-	ciBuildCmd.PersistentFlags().StringVar(
-		&ciBuildOpts.GCSSuffix,
-		"gcs-suffix",
-		"",
-		"Specify a suffix to append to the upload destination on GCS",
-	)
-
 	ciBuildCmd.PersistentFlags().StringVar(
 		&ciBuildOpts.VersionSuffix,
 		"version-suffix",
@@ -150,13 +142,6 @@ func init() {
 		"validate-images",
 		false,
 		"Validate that the remove image digests exists, needs `skopeo` in `$PATH`",
-	)
-
-	// Deprecated flags
-	// nolint: errcheck
-	ciBuildCmd.PersistentFlags().MarkDeprecated(
-		"gcs-suffix",
-		"please use `--gcs-root` if you need to override the default GCS root",
 	)
 
 	rootCmd.AddCommand(ciBuildCmd)

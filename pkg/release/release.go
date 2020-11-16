@@ -56,6 +56,7 @@ const (
 	DefaultRelengStagingProject     = "k8s-staging-releng"
 	DefaultDiskSize                 = "500"
 	BucketPrefix                    = "kubernetes-release-"
+	BucketPrefixK8sInfra            = "k8s-release-"
 
 	versionReleaseRE   = `v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[a-zA-Z0-9]+)*\.*(0|[1-9][0-9]*)?`
 	versionBuildRE     = `([0-9]{1,})\+([0-9a-f]{5,40})`
@@ -92,6 +93,12 @@ const (
 	// WindowsLocalPath is the directory where Windows GCE scripts are created.
 	WindowsLocalPath = ReleaseStagePath + "/full/kubernetes/cluster/gce/windows"
 
+	// CIBucketLegacy is the default bucket for Kubernetes CI releases
+	CIBucketLegacy = "kubernetes-release-dev"
+
+	// CIBucketK8sInfra is the community infra bucket for Kubernetes CI releases
+	CIBucketK8sInfra = "k8s-release-dev"
+
 	// TestBucket is the default bucket for mocked Kubernetes releases
 	TestBucket = "kubernetes-release-gcb"
 
@@ -115,6 +122,28 @@ const (
 
 	// The default bazel build directory.
 	BazelBuildDir = "bazel-bin/build"
+)
+
+var (
+	ManifestImages = []string{
+		"conformance",
+		"kube-apiserver",
+		"kube-controller-manager",
+		"kube-proxy",
+		"kube-scheduler",
+	}
+
+	SupportedArchitectures = []string{
+		"amd64",
+		"arm",
+		"arm64",
+		"ppc64le",
+		"s390x",
+	}
+
+	FastArchitectures = []string{
+		"amd64",
+	}
 )
 
 // ImagePromoterImages abtracts the manifest used by the image promoter

@@ -120,7 +120,7 @@ func init() {
 	)
 
 	pushBuildCmd.PersistentFlags().StringVar(
-		&ciBuildOpts.GCSRoot,
+		&pushBuildOpts.GCSRoot,
 		"gcs-root",
 		"",
 		"Specify an alternate GCS path to push artifacts to",

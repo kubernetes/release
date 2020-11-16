@@ -59,7 +59,6 @@ var DefaultGCSCopyOptions = &Options{
 }
 
 // CopyToGCS copies a local directory to the specified GCS path
-// TODO: Consider using IsPathNormalized here
 func CopyToGCS(src, gcsPath string, opts *Options) error {
 	logrus.Infof("Copying %s to GCS (%s)", src, gcsPath)
 	gcsPath, gcsPathErr := NormalizeGCSPath(gcsPath)
@@ -83,7 +82,6 @@ func CopyToGCS(src, gcsPath string, opts *Options) error {
 }
 
 // CopyToLocal copies a GCS path to the specified local directory
-// TODO: Consider using IsPathNormalized here
 func CopyToLocal(gcsPath, dst string, opts *Options) error {
 	logrus.Infof("Copying GCS (%s) to %s", gcsPath, dst)
 	gcsPath, gcsPathErr := NormalizeGCSPath(gcsPath)
@@ -95,7 +93,6 @@ func CopyToLocal(gcsPath, dst string, opts *Options) error {
 }
 
 // CopyBucketToBucket copies between two GCS paths.
-// TODO: Consider using IsPathNormalized here
 func CopyBucketToBucket(src, dst string, opts *Options) error {
 	logrus.Infof("Copying %s to %s", src, dst)
 
