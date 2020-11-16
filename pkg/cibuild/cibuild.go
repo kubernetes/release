@@ -87,6 +87,46 @@ func DefaultOptions() *Options {
 	}
 }
 
+// String returns a string representation for the `ReleaseOptions` type.
+func (o *Options) String() string {
+	return fmt.Sprintf(
+		"BuildType: %v, Bucket: %v, Registry: %v, AllowDup: %v, ValidateRemoteImageDigests: %v",
+		o.BuildType, o.Bucket, o.Registry, o.AllowDup, o.ValidateRemoteImageDigests,
+	)
+}
+
+// Validate if the options are correctly set.
+// TODO: Populate logic
+func (o *Options) Validate() (*State, error) {
+	logrus.Infof("Validating generic options: %s", o.String())
+	state := DefaultState()
+
+	if o.BuildType != "ci" {
+		return nil, errors.Errorf("invalid release type: %s", o.BuildType)
+	}
+
+	if o.Bucket != release.CIBucketK8sInfra &&
+		o.Bucket != release.CIBucketLegacy {
+		return nil, errors.Errorf("invalid GCS bucket: %s", o.Bucket)
+	}
+
+	/*
+		// TODO: Adjust this value once SetBuildCandidate is done
+		state.parentBranch = ""
+
+		semverBuildVersion, err := util.TagStringToSemver(o.BuildVersion)
+		if err != nil {
+			return nil, errors.Wrapf(err, "invalid build version: %s", o.BuildVersion)
+		}
+		if len(semverBuildVersion.Build) == 0 {
+			return nil, errors.Errorf("build version does not contain build commit")
+		}
+		state.semverBuildVersion = semverBuildVersion
+	*/
+
+	return state, nil
+}
+
 // NewBuild creates a new `Build` instance.
 // TODO: Needs a client to support the non-default option
 func NewBuild(opts *Options) *DefaultBuild {
@@ -335,6 +375,17 @@ func (d *DefaultBuild) Build() error {
 
 	// Pushing the build
 	return d.impl.Push(d.opts)
+}
+
+func (d *DefaultBuild) ValidateOptions() error {
+	// Call options, validate. The validation returns the initial
+	// state of the build process
+	state, err := d.opts.Validate()
+	if err != nil {
+		return errors.Wrap(err, "validating options")
+	}
+	d.state = state
+	return nil
 }
 
 // IsKubernetesRepo validates if the current working directory is a Kubernetes
