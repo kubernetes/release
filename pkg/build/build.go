@@ -22,6 +22,8 @@ import (
 	"github.com/spf13/afero"
 
 	"k8s.io/release/pkg/gcp/gcs"
+	"k8s.io/release/pkg/image"
+	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/release"
 )
 
@@ -55,22 +57,18 @@ type Client interface {
 }
 
 type DefaultClient struct {
-	opts *Options
-	fs   afero.Fs
-
-	// TODO: Uncomment once these are implemented
-	// objectStore object.Store   // new krel pkg
-	// registry    image.Registry // new krel pkg
+	opts        *Options
+	fs          afero.Fs
+	objectStore object.Store
+	registry    image.Registry
 }
 
 func New(opts *Options) *DefaultClient {
 	return &DefaultClient{
-		opts: opts,
-		fs:   opts.Fs,
-
-		// TODO: Uncomment once these are implemented
-		// objectStore: opts.Store,
-		// registry:    opts.Registry,
+		opts:        opts,
+		fs:          opts.Fs,
+		objectStore: opts.Store,
+		registry:    opts.Registry,
 	}
 }
 
@@ -79,7 +77,14 @@ type Options struct {
 	// Filesystem interface
 	Fs afero.Fs
 
+	// Object store interface
+	Store object.Store
+
+	// Container registry interface
+	Registry image.Registry
+
 	// Specify an alternate bucket for pushes (normally 'devel' or 'ci').
+	// TODO: Choose a name for this that isn't GCS-specific
 	Bucket string
 
 	// Specify an alternate build directory. Will be automatically determined
@@ -93,7 +98,7 @@ type Options struct {
 	BuildType string
 
 	// If set, push docker images to specified registry/project.
-	Registry string
+	RegistryName string
 
 	// Comma separated list which can be used to upload additional version
 	// files to GCS. The path is relative and is append to a GCS path. (--ci
@@ -114,6 +119,7 @@ type Options struct {
 	//
 	// This option exists to handle the now-deprecated GCSSuffix option, which
 	// was not plumbed through
+	// TODO: Choose a name for this that isn't GCS-specific
 	GCSRoot string
 
 	// Version to be used. Usually automatically discovered, but it can be
