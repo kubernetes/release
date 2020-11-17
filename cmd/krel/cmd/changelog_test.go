@@ -27,7 +27,6 @@ import (
 
 	"k8s.io/release/pkg/changelog"
 	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/notes/notesfakes"
 )
 
 func (s *sut) getChangelogOptions(tag string) *changelog.Options {
@@ -64,9 +63,6 @@ func TestNewPatchRelease(t *testing.T) { // nolint: dupl
 
 	// When
 	cl := changelog.New(co)
-	mock := &notesfakes.FakeMoDiff{}
-	mock.RunReturns(patchReleaseDeps, nil)
-	cl.SetMoDiff(mock)
 	require.Nil(t, cl.Run())
 
 	// Then
