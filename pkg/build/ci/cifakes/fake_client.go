@@ -19,16 +19,12 @@ package cifakes
 
 import (
 	"sync"
-
-	"k8s.io/release/pkg/build"
-	"k8s.io/release/pkg/build/ci"
 )
 
-type FakeImpl struct {
-	BuildStub        func(*build.Options) error
+type FakeClient struct {
+	BuildStub        func() error
 	buildMutex       sync.RWMutex
 	buildArgsForCall []struct {
-		arg1 *build.Options
 	}
 	buildReturns struct {
 		result1 error
@@ -48,10 +44,9 @@ type FakeImpl struct {
 		result1 bool
 		result2 error
 	}
-	ConfigureDockerAuthStub        func(*ci.Options) error
+	ConfigureDockerAuthStub        func() error
 	configureDockerAuthMutex       sync.RWMutex
 	configureDockerAuthArgsForCall []struct {
-		arg1 *ci.Options
 	}
 	configureDockerAuthReturns struct {
 		result1 error
@@ -72,10 +67,9 @@ type FakeImpl struct {
 		result1 bool
 		result2 []error
 	}
-	GetGCSBuildPathsStub        func(*ci.Options) ([]string, error)
+	GetGCSBuildPathsStub        func() ([]string, error)
 	getGCSBuildPathsMutex       sync.RWMutex
 	getGCSBuildPathsArgsForCall []struct {
-		arg1 *ci.Options
 	}
 	getGCSBuildPathsReturns struct {
 		result1 []string
@@ -97,10 +91,9 @@ type FakeImpl struct {
 		result1 string
 		result2 error
 	}
-	ImagesExistStub        func(*ci.Options) (bool, error)
+	ImagesExistStub        func() (bool, error)
 	imagesExistMutex       sync.RWMutex
 	imagesExistArgsForCall []struct {
-		arg1 *ci.Options
 	}
 	imagesExistReturns struct {
 		result1 bool
@@ -143,10 +136,9 @@ type FakeImpl struct {
 	makeReleaseReturnsOnCall map[int]struct {
 		result1 error
 	}
-	PushStub        func(*ci.Options) error
+	PushStub        func() error
 	pushMutex       sync.RWMutex
 	pushArgsForCall []struct {
-		arg1 *ci.Options
 	}
 	pushReturns struct {
 		result1 error
@@ -154,10 +146,13 @@ type FakeImpl struct {
 	pushReturnsOnCall map[int]struct {
 		result1 error
 	}
-	SetReleaseTypeStub        func(*ci.Options) string
+	SetBucketStub        func()
+	setBucketMutex       sync.RWMutex
+	setBucketArgsForCall []struct {
+	}
+	SetReleaseTypeStub        func() string
 	setReleaseTypeMutex       sync.RWMutex
 	setReleaseTypeArgsForCall []struct {
-		arg1 *ci.Options
 	}
 	setReleaseTypeReturns struct {
 		result1 string
@@ -179,18 +174,17 @@ type FakeImpl struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeImpl) Build(arg1 *build.Options) error {
+func (fake *FakeClient) Build() error {
 	fake.buildMutex.Lock()
 	ret, specificReturn := fake.buildReturnsOnCall[len(fake.buildArgsForCall)]
 	fake.buildArgsForCall = append(fake.buildArgsForCall, struct {
-		arg1 *build.Options
-	}{arg1})
+	}{})
 	stub := fake.BuildStub
 	fakeReturns := fake.buildReturns
-	fake.recordInvocation("Build", []interface{}{arg1})
+	fake.recordInvocation("Build", []interface{}{})
 	fake.buildMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
@@ -198,26 +192,19 @@ func (fake *FakeImpl) Build(arg1 *build.Options) error {
 	return fakeReturns.result1
 }
 
-func (fake *FakeImpl) BuildCallCount() int {
+func (fake *FakeClient) BuildCallCount() int {
 	fake.buildMutex.RLock()
 	defer fake.buildMutex.RUnlock()
 	return len(fake.buildArgsForCall)
 }
 
-func (fake *FakeImpl) BuildCalls(stub func(*build.Options) error) {
+func (fake *FakeClient) BuildCalls(stub func() error) {
 	fake.buildMutex.Lock()
 	defer fake.buildMutex.Unlock()
 	fake.BuildStub = stub
 }
 
-func (fake *FakeImpl) BuildArgsForCall(i int) *build.Options {
-	fake.buildMutex.RLock()
-	defer fake.buildMutex.RUnlock()
-	argsForCall := fake.buildArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeImpl) BuildReturns(result1 error) {
+func (fake *FakeClient) BuildReturns(result1 error) {
 	fake.buildMutex.Lock()
 	defer fake.buildMutex.Unlock()
 	fake.BuildStub = nil
@@ -226,7 +213,7 @@ func (fake *FakeImpl) BuildReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) BuildReturnsOnCall(i int, result1 error) {
+func (fake *FakeClient) BuildReturnsOnCall(i int, result1 error) {
 	fake.buildMutex.Lock()
 	defer fake.buildMutex.Unlock()
 	fake.BuildStub = nil
@@ -240,7 +227,7 @@ func (fake *FakeImpl) BuildReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) CheckBuildExists() (bool, error) {
+func (fake *FakeClient) CheckBuildExists() (bool, error) {
 	fake.checkBuildExistsMutex.Lock()
 	ret, specificReturn := fake.checkBuildExistsReturnsOnCall[len(fake.checkBuildExistsArgsForCall)]
 	fake.checkBuildExistsArgsForCall = append(fake.checkBuildExistsArgsForCall, struct {
@@ -258,19 +245,19 @@ func (fake *FakeImpl) CheckBuildExists() (bool, error) {
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeImpl) CheckBuildExistsCallCount() int {
+func (fake *FakeClient) CheckBuildExistsCallCount() int {
 	fake.checkBuildExistsMutex.RLock()
 	defer fake.checkBuildExistsMutex.RUnlock()
 	return len(fake.checkBuildExistsArgsForCall)
 }
 
-func (fake *FakeImpl) CheckBuildExistsCalls(stub func() (bool, error)) {
+func (fake *FakeClient) CheckBuildExistsCalls(stub func() (bool, error)) {
 	fake.checkBuildExistsMutex.Lock()
 	defer fake.checkBuildExistsMutex.Unlock()
 	fake.CheckBuildExistsStub = stub
 }
 
-func (fake *FakeImpl) CheckBuildExistsReturns(result1 bool, result2 error) {
+func (fake *FakeClient) CheckBuildExistsReturns(result1 bool, result2 error) {
 	fake.checkBuildExistsMutex.Lock()
 	defer fake.checkBuildExistsMutex.Unlock()
 	fake.CheckBuildExistsStub = nil
@@ -280,7 +267,7 @@ func (fake *FakeImpl) CheckBuildExistsReturns(result1 bool, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) CheckBuildExistsReturnsOnCall(i int, result1 bool, result2 error) {
+func (fake *FakeClient) CheckBuildExistsReturnsOnCall(i int, result1 bool, result2 error) {
 	fake.checkBuildExistsMutex.Lock()
 	defer fake.checkBuildExistsMutex.Unlock()
 	fake.CheckBuildExistsStub = nil
@@ -296,18 +283,17 @@ func (fake *FakeImpl) CheckBuildExistsReturnsOnCall(i int, result1 bool, result2
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) ConfigureDockerAuth(arg1 *ci.Options) error {
+func (fake *FakeClient) ConfigureDockerAuth() error {
 	fake.configureDockerAuthMutex.Lock()
 	ret, specificReturn := fake.configureDockerAuthReturnsOnCall[len(fake.configureDockerAuthArgsForCall)]
 	fake.configureDockerAuthArgsForCall = append(fake.configureDockerAuthArgsForCall, struct {
-		arg1 *ci.Options
-	}{arg1})
+	}{})
 	stub := fake.ConfigureDockerAuthStub
 	fakeReturns := fake.configureDockerAuthReturns
-	fake.recordInvocation("ConfigureDockerAuth", []interface{}{arg1})
+	fake.recordInvocation("ConfigureDockerAuth", []interface{}{})
 	fake.configureDockerAuthMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
@@ -315,26 +301,19 @@ func (fake *FakeImpl) ConfigureDockerAuth(arg1 *ci.Options) error {
 	return fakeReturns.result1
 }
 
-func (fake *FakeImpl) ConfigureDockerAuthCallCount() int {
+func (fake *FakeClient) ConfigureDockerAuthCallCount() int {
 	fake.configureDockerAuthMutex.RLock()
 	defer fake.configureDockerAuthMutex.RUnlock()
 	return len(fake.configureDockerAuthArgsForCall)
 }
 
-func (fake *FakeImpl) ConfigureDockerAuthCalls(stub func(*ci.Options) error) {
+func (fake *FakeClient) ConfigureDockerAuthCalls(stub func() error) {
 	fake.configureDockerAuthMutex.Lock()
 	defer fake.configureDockerAuthMutex.Unlock()
 	fake.ConfigureDockerAuthStub = stub
 }
 
-func (fake *FakeImpl) ConfigureDockerAuthArgsForCall(i int) *ci.Options {
-	fake.configureDockerAuthMutex.RLock()
-	defer fake.configureDockerAuthMutex.RUnlock()
-	argsForCall := fake.configureDockerAuthArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeImpl) ConfigureDockerAuthReturns(result1 error) {
+func (fake *FakeClient) ConfigureDockerAuthReturns(result1 error) {
 	fake.configureDockerAuthMutex.Lock()
 	defer fake.configureDockerAuthMutex.Unlock()
 	fake.ConfigureDockerAuthStub = nil
@@ -343,7 +322,7 @@ func (fake *FakeImpl) ConfigureDockerAuthReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) ConfigureDockerAuthReturnsOnCall(i int, result1 error) {
+func (fake *FakeClient) ConfigureDockerAuthReturnsOnCall(i int, result1 error) {
 	fake.configureDockerAuthMutex.Lock()
 	defer fake.configureDockerAuthMutex.Unlock()
 	fake.ConfigureDockerAuthStub = nil
@@ -357,7 +336,7 @@ func (fake *FakeImpl) ConfigureDockerAuthReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) GCSPathsExist(arg1 []string) (bool, []error) {
+func (fake *FakeClient) GCSPathsExist(arg1 []string) (bool, []error) {
 	var arg1Copy []string
 	if arg1 != nil {
 		arg1Copy = make([]string, len(arg1))
@@ -381,26 +360,26 @@ func (fake *FakeImpl) GCSPathsExist(arg1 []string) (bool, []error) {
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeImpl) GCSPathsExistCallCount() int {
+func (fake *FakeClient) GCSPathsExistCallCount() int {
 	fake.gCSPathsExistMutex.RLock()
 	defer fake.gCSPathsExistMutex.RUnlock()
 	return len(fake.gCSPathsExistArgsForCall)
 }
 
-func (fake *FakeImpl) GCSPathsExistCalls(stub func([]string) (bool, []error)) {
+func (fake *FakeClient) GCSPathsExistCalls(stub func([]string) (bool, []error)) {
 	fake.gCSPathsExistMutex.Lock()
 	defer fake.gCSPathsExistMutex.Unlock()
 	fake.GCSPathsExistStub = stub
 }
 
-func (fake *FakeImpl) GCSPathsExistArgsForCall(i int) []string {
+func (fake *FakeClient) GCSPathsExistArgsForCall(i int) []string {
 	fake.gCSPathsExistMutex.RLock()
 	defer fake.gCSPathsExistMutex.RUnlock()
 	argsForCall := fake.gCSPathsExistArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeImpl) GCSPathsExistReturns(result1 bool, result2 []error) {
+func (fake *FakeClient) GCSPathsExistReturns(result1 bool, result2 []error) {
 	fake.gCSPathsExistMutex.Lock()
 	defer fake.gCSPathsExistMutex.Unlock()
 	fake.GCSPathsExistStub = nil
@@ -410,7 +389,7 @@ func (fake *FakeImpl) GCSPathsExistReturns(result1 bool, result2 []error) {
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) GCSPathsExistReturnsOnCall(i int, result1 bool, result2 []error) {
+func (fake *FakeClient) GCSPathsExistReturnsOnCall(i int, result1 bool, result2 []error) {
 	fake.gCSPathsExistMutex.Lock()
 	defer fake.gCSPathsExistMutex.Unlock()
 	fake.GCSPathsExistStub = nil
@@ -426,18 +405,17 @@ func (fake *FakeImpl) GCSPathsExistReturnsOnCall(i int, result1 bool, result2 []
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) GetGCSBuildPaths(arg1 *ci.Options) ([]string, error) {
+func (fake *FakeClient) GetGCSBuildPaths() ([]string, error) {
 	fake.getGCSBuildPathsMutex.Lock()
 	ret, specificReturn := fake.getGCSBuildPathsReturnsOnCall[len(fake.getGCSBuildPathsArgsForCall)]
 	fake.getGCSBuildPathsArgsForCall = append(fake.getGCSBuildPathsArgsForCall, struct {
-		arg1 *ci.Options
-	}{arg1})
+	}{})
 	stub := fake.GetGCSBuildPathsStub
 	fakeReturns := fake.getGCSBuildPathsReturns
-	fake.recordInvocation("GetGCSBuildPaths", []interface{}{arg1})
+	fake.recordInvocation("GetGCSBuildPaths", []interface{}{})
 	fake.getGCSBuildPathsMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -445,26 +423,19 @@ func (fake *FakeImpl) GetGCSBuildPaths(arg1 *ci.Options) ([]string, error) {
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeImpl) GetGCSBuildPathsCallCount() int {
+func (fake *FakeClient) GetGCSBuildPathsCallCount() int {
 	fake.getGCSBuildPathsMutex.RLock()
 	defer fake.getGCSBuildPathsMutex.RUnlock()
 	return len(fake.getGCSBuildPathsArgsForCall)
 }
 
-func (fake *FakeImpl) GetGCSBuildPathsCalls(stub func(*ci.Options) ([]string, error)) {
+func (fake *FakeClient) GetGCSBuildPathsCalls(stub func() ([]string, error)) {
 	fake.getGCSBuildPathsMutex.Lock()
 	defer fake.getGCSBuildPathsMutex.Unlock()
 	fake.GetGCSBuildPathsStub = stub
 }
 
-func (fake *FakeImpl) GetGCSBuildPathsArgsForCall(i int) *ci.Options {
-	fake.getGCSBuildPathsMutex.RLock()
-	defer fake.getGCSBuildPathsMutex.RUnlock()
-	argsForCall := fake.getGCSBuildPathsArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeImpl) GetGCSBuildPathsReturns(result1 []string, result2 error) {
+func (fake *FakeClient) GetGCSBuildPathsReturns(result1 []string, result2 error) {
 	fake.getGCSBuildPathsMutex.Lock()
 	defer fake.getGCSBuildPathsMutex.Unlock()
 	fake.GetGCSBuildPathsStub = nil
@@ -474,7 +445,7 @@ func (fake *FakeImpl) GetGCSBuildPathsReturns(result1 []string, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) GetGCSBuildPathsReturnsOnCall(i int, result1 []string, result2 error) {
+func (fake *FakeClient) GetGCSBuildPathsReturnsOnCall(i int, result1 []string, result2 error) {
 	fake.getGCSBuildPathsMutex.Lock()
 	defer fake.getGCSBuildPathsMutex.Unlock()
 	fake.GetGCSBuildPathsStub = nil
@@ -490,7 +461,7 @@ func (fake *FakeImpl) GetGCSBuildPathsReturnsOnCall(i int, result1 []string, res
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) GetWorkspaceVersion() (string, error) {
+func (fake *FakeClient) GetWorkspaceVersion() (string, error) {
 	fake.getWorkspaceVersionMutex.Lock()
 	ret, specificReturn := fake.getWorkspaceVersionReturnsOnCall[len(fake.getWorkspaceVersionArgsForCall)]
 	fake.getWorkspaceVersionArgsForCall = append(fake.getWorkspaceVersionArgsForCall, struct {
@@ -508,19 +479,19 @@ func (fake *FakeImpl) GetWorkspaceVersion() (string, error) {
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeImpl) GetWorkspaceVersionCallCount() int {
+func (fake *FakeClient) GetWorkspaceVersionCallCount() int {
 	fake.getWorkspaceVersionMutex.RLock()
 	defer fake.getWorkspaceVersionMutex.RUnlock()
 	return len(fake.getWorkspaceVersionArgsForCall)
 }
 
-func (fake *FakeImpl) GetWorkspaceVersionCalls(stub func() (string, error)) {
+func (fake *FakeClient) GetWorkspaceVersionCalls(stub func() (string, error)) {
 	fake.getWorkspaceVersionMutex.Lock()
 	defer fake.getWorkspaceVersionMutex.Unlock()
 	fake.GetWorkspaceVersionStub = stub
 }
 
-func (fake *FakeImpl) GetWorkspaceVersionReturns(result1 string, result2 error) {
+func (fake *FakeClient) GetWorkspaceVersionReturns(result1 string, result2 error) {
 	fake.getWorkspaceVersionMutex.Lock()
 	defer fake.getWorkspaceVersionMutex.Unlock()
 	fake.GetWorkspaceVersionStub = nil
@@ -530,7 +501,7 @@ func (fake *FakeImpl) GetWorkspaceVersionReturns(result1 string, result2 error) 
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) GetWorkspaceVersionReturnsOnCall(i int, result1 string, result2 error) {
+func (fake *FakeClient) GetWorkspaceVersionReturnsOnCall(i int, result1 string, result2 error) {
 	fake.getWorkspaceVersionMutex.Lock()
 	defer fake.getWorkspaceVersionMutex.Unlock()
 	fake.GetWorkspaceVersionStub = nil
@@ -546,18 +517,17 @@ func (fake *FakeImpl) GetWorkspaceVersionReturnsOnCall(i int, result1 string, re
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) ImagesExist(arg1 *ci.Options) (bool, error) {
+func (fake *FakeClient) ImagesExist() (bool, error) {
 	fake.imagesExistMutex.Lock()
 	ret, specificReturn := fake.imagesExistReturnsOnCall[len(fake.imagesExistArgsForCall)]
 	fake.imagesExistArgsForCall = append(fake.imagesExistArgsForCall, struct {
-		arg1 *ci.Options
-	}{arg1})
+	}{})
 	stub := fake.ImagesExistStub
 	fakeReturns := fake.imagesExistReturns
-	fake.recordInvocation("ImagesExist", []interface{}{arg1})
+	fake.recordInvocation("ImagesExist", []interface{}{})
 	fake.imagesExistMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -565,26 +535,19 @@ func (fake *FakeImpl) ImagesExist(arg1 *ci.Options) (bool, error) {
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeImpl) ImagesExistCallCount() int {
+func (fake *FakeClient) ImagesExistCallCount() int {
 	fake.imagesExistMutex.RLock()
 	defer fake.imagesExistMutex.RUnlock()
 	return len(fake.imagesExistArgsForCall)
 }
 
-func (fake *FakeImpl) ImagesExistCalls(stub func(*ci.Options) (bool, error)) {
+func (fake *FakeClient) ImagesExistCalls(stub func() (bool, error)) {
 	fake.imagesExistMutex.Lock()
 	defer fake.imagesExistMutex.Unlock()
 	fake.ImagesExistStub = stub
 }
 
-func (fake *FakeImpl) ImagesExistArgsForCall(i int) *ci.Options {
-	fake.imagesExistMutex.RLock()
-	defer fake.imagesExistMutex.RUnlock()
-	argsForCall := fake.imagesExistArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeImpl) ImagesExistReturns(result1 bool, result2 error) {
+func (fake *FakeClient) ImagesExistReturns(result1 bool, result2 error) {
 	fake.imagesExistMutex.Lock()
 	defer fake.imagesExistMutex.Unlock()
 	fake.ImagesExistStub = nil
@@ -594,7 +557,7 @@ func (fake *FakeImpl) ImagesExistReturns(result1 bool, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) ImagesExistReturnsOnCall(i int, result1 bool, result2 error) {
+func (fake *FakeClient) ImagesExistReturnsOnCall(i int, result1 bool, result2 error) {
 	fake.imagesExistMutex.Lock()
 	defer fake.imagesExistMutex.Unlock()
 	fake.ImagesExistStub = nil
@@ -610,7 +573,7 @@ func (fake *FakeImpl) ImagesExistReturnsOnCall(i int, result1 bool, result2 erro
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) IsKubernetesRepo() (bool, error) {
+func (fake *FakeClient) IsKubernetesRepo() (bool, error) {
 	fake.isKubernetesRepoMutex.Lock()
 	ret, specificReturn := fake.isKubernetesRepoReturnsOnCall[len(fake.isKubernetesRepoArgsForCall)]
 	fake.isKubernetesRepoArgsForCall = append(fake.isKubernetesRepoArgsForCall, struct {
@@ -628,19 +591,19 @@ func (fake *FakeImpl) IsKubernetesRepo() (bool, error) {
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeImpl) IsKubernetesRepoCallCount() int {
+func (fake *FakeClient) IsKubernetesRepoCallCount() int {
 	fake.isKubernetesRepoMutex.RLock()
 	defer fake.isKubernetesRepoMutex.RUnlock()
 	return len(fake.isKubernetesRepoArgsForCall)
 }
 
-func (fake *FakeImpl) IsKubernetesRepoCalls(stub func() (bool, error)) {
+func (fake *FakeClient) IsKubernetesRepoCalls(stub func() (bool, error)) {
 	fake.isKubernetesRepoMutex.Lock()
 	defer fake.isKubernetesRepoMutex.Unlock()
 	fake.IsKubernetesRepoStub = stub
 }
 
-func (fake *FakeImpl) IsKubernetesRepoReturns(result1 bool, result2 error) {
+func (fake *FakeClient) IsKubernetesRepoReturns(result1 bool, result2 error) {
 	fake.isKubernetesRepoMutex.Lock()
 	defer fake.isKubernetesRepoMutex.Unlock()
 	fake.IsKubernetesRepoStub = nil
@@ -650,7 +613,7 @@ func (fake *FakeImpl) IsKubernetesRepoReturns(result1 bool, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) IsKubernetesRepoReturnsOnCall(i int, result1 bool, result2 error) {
+func (fake *FakeClient) IsKubernetesRepoReturnsOnCall(i int, result1 bool, result2 error) {
 	fake.isKubernetesRepoMutex.Lock()
 	defer fake.isKubernetesRepoMutex.Unlock()
 	fake.IsKubernetesRepoStub = nil
@@ -666,7 +629,7 @@ func (fake *FakeImpl) IsKubernetesRepoReturnsOnCall(i int, result1 bool, result2
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) MakeClean() error {
+func (fake *FakeClient) MakeClean() error {
 	fake.makeCleanMutex.Lock()
 	ret, specificReturn := fake.makeCleanReturnsOnCall[len(fake.makeCleanArgsForCall)]
 	fake.makeCleanArgsForCall = append(fake.makeCleanArgsForCall, struct {
@@ -684,19 +647,19 @@ func (fake *FakeImpl) MakeClean() error {
 	return fakeReturns.result1
 }
 
-func (fake *FakeImpl) MakeCleanCallCount() int {
+func (fake *FakeClient) MakeCleanCallCount() int {
 	fake.makeCleanMutex.RLock()
 	defer fake.makeCleanMutex.RUnlock()
 	return len(fake.makeCleanArgsForCall)
 }
 
-func (fake *FakeImpl) MakeCleanCalls(stub func() error) {
+func (fake *FakeClient) MakeCleanCalls(stub func() error) {
 	fake.makeCleanMutex.Lock()
 	defer fake.makeCleanMutex.Unlock()
 	fake.MakeCleanStub = stub
 }
 
-func (fake *FakeImpl) MakeCleanReturns(result1 error) {
+func (fake *FakeClient) MakeCleanReturns(result1 error) {
 	fake.makeCleanMutex.Lock()
 	defer fake.makeCleanMutex.Unlock()
 	fake.MakeCleanStub = nil
@@ -705,7 +668,7 @@ func (fake *FakeImpl) MakeCleanReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) MakeCleanReturnsOnCall(i int, result1 error) {
+func (fake *FakeClient) MakeCleanReturnsOnCall(i int, result1 error) {
 	fake.makeCleanMutex.Lock()
 	defer fake.makeCleanMutex.Unlock()
 	fake.MakeCleanStub = nil
@@ -719,7 +682,7 @@ func (fake *FakeImpl) MakeCleanReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) MakeRelease(arg1 string) error {
+func (fake *FakeClient) MakeRelease(arg1 string) error {
 	fake.makeReleaseMutex.Lock()
 	ret, specificReturn := fake.makeReleaseReturnsOnCall[len(fake.makeReleaseArgsForCall)]
 	fake.makeReleaseArgsForCall = append(fake.makeReleaseArgsForCall, struct {
@@ -738,26 +701,26 @@ func (fake *FakeImpl) MakeRelease(arg1 string) error {
 	return fakeReturns.result1
 }
 
-func (fake *FakeImpl) MakeReleaseCallCount() int {
+func (fake *FakeClient) MakeReleaseCallCount() int {
 	fake.makeReleaseMutex.RLock()
 	defer fake.makeReleaseMutex.RUnlock()
 	return len(fake.makeReleaseArgsForCall)
 }
 
-func (fake *FakeImpl) MakeReleaseCalls(stub func(string) error) {
+func (fake *FakeClient) MakeReleaseCalls(stub func(string) error) {
 	fake.makeReleaseMutex.Lock()
 	defer fake.makeReleaseMutex.Unlock()
 	fake.MakeReleaseStub = stub
 }
 
-func (fake *FakeImpl) MakeReleaseArgsForCall(i int) string {
+func (fake *FakeClient) MakeReleaseArgsForCall(i int) string {
 	fake.makeReleaseMutex.RLock()
 	defer fake.makeReleaseMutex.RUnlock()
 	argsForCall := fake.makeReleaseArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeImpl) MakeReleaseReturns(result1 error) {
+func (fake *FakeClient) MakeReleaseReturns(result1 error) {
 	fake.makeReleaseMutex.Lock()
 	defer fake.makeReleaseMutex.Unlock()
 	fake.MakeReleaseStub = nil
@@ -766,7 +729,7 @@ func (fake *FakeImpl) MakeReleaseReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) MakeReleaseReturnsOnCall(i int, result1 error) {
+func (fake *FakeClient) MakeReleaseReturnsOnCall(i int, result1 error) {
 	fake.makeReleaseMutex.Lock()
 	defer fake.makeReleaseMutex.Unlock()
 	fake.MakeReleaseStub = nil
@@ -780,18 +743,17 @@ func (fake *FakeImpl) MakeReleaseReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) Push(arg1 *ci.Options) error {
+func (fake *FakeClient) Push() error {
 	fake.pushMutex.Lock()
 	ret, specificReturn := fake.pushReturnsOnCall[len(fake.pushArgsForCall)]
 	fake.pushArgsForCall = append(fake.pushArgsForCall, struct {
-		arg1 *ci.Options
-	}{arg1})
+	}{})
 	stub := fake.PushStub
 	fakeReturns := fake.pushReturns
-	fake.recordInvocation("Push", []interface{}{arg1})
+	fake.recordInvocation("Push", []interface{}{})
 	fake.pushMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
@@ -799,26 +761,19 @@ func (fake *FakeImpl) Push(arg1 *ci.Options) error {
 	return fakeReturns.result1
 }
 
-func (fake *FakeImpl) PushCallCount() int {
+func (fake *FakeClient) PushCallCount() int {
 	fake.pushMutex.RLock()
 	defer fake.pushMutex.RUnlock()
 	return len(fake.pushArgsForCall)
 }
 
-func (fake *FakeImpl) PushCalls(stub func(*ci.Options) error) {
+func (fake *FakeClient) PushCalls(stub func() error) {
 	fake.pushMutex.Lock()
 	defer fake.pushMutex.Unlock()
 	fake.PushStub = stub
 }
 
-func (fake *FakeImpl) PushArgsForCall(i int) *ci.Options {
-	fake.pushMutex.RLock()
-	defer fake.pushMutex.RUnlock()
-	argsForCall := fake.pushArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeImpl) PushReturns(result1 error) {
+func (fake *FakeClient) PushReturns(result1 error) {
 	fake.pushMutex.Lock()
 	defer fake.pushMutex.Unlock()
 	fake.PushStub = nil
@@ -827,7 +782,7 @@ func (fake *FakeImpl) PushReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) PushReturnsOnCall(i int, result1 error) {
+func (fake *FakeClient) PushReturnsOnCall(i int, result1 error) {
 	fake.pushMutex.Lock()
 	defer fake.pushMutex.Unlock()
 	fake.PushStub = nil
@@ -841,18 +796,41 @@ func (fake *FakeImpl) PushReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) SetReleaseType(arg1 *ci.Options) string {
+func (fake *FakeClient) SetBucket() {
+	fake.setBucketMutex.Lock()
+	fake.setBucketArgsForCall = append(fake.setBucketArgsForCall, struct {
+	}{})
+	stub := fake.SetBucketStub
+	fake.recordInvocation("SetBucket", []interface{}{})
+	fake.setBucketMutex.Unlock()
+	if stub != nil {
+		fake.SetBucketStub()
+	}
+}
+
+func (fake *FakeClient) SetBucketCallCount() int {
+	fake.setBucketMutex.RLock()
+	defer fake.setBucketMutex.RUnlock()
+	return len(fake.setBucketArgsForCall)
+}
+
+func (fake *FakeClient) SetBucketCalls(stub func()) {
+	fake.setBucketMutex.Lock()
+	defer fake.setBucketMutex.Unlock()
+	fake.SetBucketStub = stub
+}
+
+func (fake *FakeClient) SetReleaseType() string {
 	fake.setReleaseTypeMutex.Lock()
 	ret, specificReturn := fake.setReleaseTypeReturnsOnCall[len(fake.setReleaseTypeArgsForCall)]
 	fake.setReleaseTypeArgsForCall = append(fake.setReleaseTypeArgsForCall, struct {
-		arg1 *ci.Options
-	}{arg1})
+	}{})
 	stub := fake.SetReleaseTypeStub
 	fakeReturns := fake.setReleaseTypeReturns
-	fake.recordInvocation("SetReleaseType", []interface{}{arg1})
+	fake.recordInvocation("SetReleaseType", []interface{}{})
 	fake.setReleaseTypeMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
@@ -860,26 +838,19 @@ func (fake *FakeImpl) SetReleaseType(arg1 *ci.Options) string {
 	return fakeReturns.result1
 }
 
-func (fake *FakeImpl) SetReleaseTypeCallCount() int {
+func (fake *FakeClient) SetReleaseTypeCallCount() int {
 	fake.setReleaseTypeMutex.RLock()
 	defer fake.setReleaseTypeMutex.RUnlock()
 	return len(fake.setReleaseTypeArgsForCall)
 }
 
-func (fake *FakeImpl) SetReleaseTypeCalls(stub func(*ci.Options) string) {
+func (fake *FakeClient) SetReleaseTypeCalls(stub func() string) {
 	fake.setReleaseTypeMutex.Lock()
 	defer fake.setReleaseTypeMutex.Unlock()
 	fake.SetReleaseTypeStub = stub
 }
 
-func (fake *FakeImpl) SetReleaseTypeArgsForCall(i int) *ci.Options {
-	fake.setReleaseTypeMutex.RLock()
-	defer fake.setReleaseTypeMutex.RUnlock()
-	argsForCall := fake.setReleaseTypeArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeImpl) SetReleaseTypeReturns(result1 string) {
+func (fake *FakeClient) SetReleaseTypeReturns(result1 string) {
 	fake.setReleaseTypeMutex.Lock()
 	defer fake.setReleaseTypeMutex.Unlock()
 	fake.SetReleaseTypeStub = nil
@@ -888,7 +859,7 @@ func (fake *FakeImpl) SetReleaseTypeReturns(result1 string) {
 	}{result1}
 }
 
-func (fake *FakeImpl) SetReleaseTypeReturnsOnCall(i int, result1 string) {
+func (fake *FakeClient) SetReleaseTypeReturnsOnCall(i int, result1 string) {
 	fake.setReleaseTypeMutex.Lock()
 	defer fake.setReleaseTypeMutex.Unlock()
 	fake.SetReleaseTypeStub = nil
@@ -902,7 +873,7 @@ func (fake *FakeImpl) SetReleaseTypeReturnsOnCall(i int, result1 string) {
 	}{result1}
 }
 
-func (fake *FakeImpl) SetRunTestsEnvVar() error {
+func (fake *FakeClient) SetRunTestsEnvVar() error {
 	fake.setRunTestsEnvVarMutex.Lock()
 	ret, specificReturn := fake.setRunTestsEnvVarReturnsOnCall[len(fake.setRunTestsEnvVarArgsForCall)]
 	fake.setRunTestsEnvVarArgsForCall = append(fake.setRunTestsEnvVarArgsForCall, struct {
@@ -920,19 +891,19 @@ func (fake *FakeImpl) SetRunTestsEnvVar() error {
 	return fakeReturns.result1
 }
 
-func (fake *FakeImpl) SetRunTestsEnvVarCallCount() int {
+func (fake *FakeClient) SetRunTestsEnvVarCallCount() int {
 	fake.setRunTestsEnvVarMutex.RLock()
 	defer fake.setRunTestsEnvVarMutex.RUnlock()
 	return len(fake.setRunTestsEnvVarArgsForCall)
 }
 
-func (fake *FakeImpl) SetRunTestsEnvVarCalls(stub func() error) {
+func (fake *FakeClient) SetRunTestsEnvVarCalls(stub func() error) {
 	fake.setRunTestsEnvVarMutex.Lock()
 	defer fake.setRunTestsEnvVarMutex.Unlock()
 	fake.SetRunTestsEnvVarStub = stub
 }
 
-func (fake *FakeImpl) SetRunTestsEnvVarReturns(result1 error) {
+func (fake *FakeClient) SetRunTestsEnvVarReturns(result1 error) {
 	fake.setRunTestsEnvVarMutex.Lock()
 	defer fake.setRunTestsEnvVarMutex.Unlock()
 	fake.SetRunTestsEnvVarStub = nil
@@ -941,7 +912,7 @@ func (fake *FakeImpl) SetRunTestsEnvVarReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) SetRunTestsEnvVarReturnsOnCall(i int, result1 error) {
+func (fake *FakeClient) SetRunTestsEnvVarReturnsOnCall(i int, result1 error) {
 	fake.setRunTestsEnvVarMutex.Lock()
 	defer fake.setRunTestsEnvVarMutex.Unlock()
 	fake.SetRunTestsEnvVarStub = nil
@@ -955,7 +926,7 @@ func (fake *FakeImpl) SetRunTestsEnvVarReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) Invocations() map[string][][]interface{} {
+func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.buildMutex.RLock()
@@ -980,6 +951,8 @@ func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	defer fake.makeReleaseMutex.RUnlock()
 	fake.pushMutex.RLock()
 	defer fake.pushMutex.RUnlock()
+	fake.setBucketMutex.RLock()
+	defer fake.setBucketMutex.RUnlock()
 	fake.setReleaseTypeMutex.RLock()
 	defer fake.setReleaseTypeMutex.RUnlock()
 	fake.setRunTestsEnvVarMutex.RLock()
@@ -991,7 +964,7 @@ func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeImpl) recordInvocation(key string, args []interface{}) {
+func (fake *FakeClient) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {

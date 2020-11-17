@@ -147,5 +147,5 @@ func init() {
 }
 
 func runCIBuild(opts *ci.Options) error {
-	return ci.NewBuild(opts).Build()
+	return ci.New(opts).Build()
 }

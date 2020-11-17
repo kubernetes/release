@@ -54,6 +54,10 @@ type defaultImpl struct{}
 //counterfeiter:generate . impl
 type impl interface {
 	Push() error
+	SetBucket()
+}
+
+func (d *defaultImpl) SetBucket() {
 }
 
 func (d *defaultImpl) Push() error {
@@ -133,7 +137,7 @@ type Options struct {
 // TODO: Refactor so that version is not required as a parameter
 func (c *Client) GetGCSBuildPath(version string) (string, error) {
 	if c.opts.Bucket == "" {
-		c.setBucket()
+		c.SetBucket()
 	}
 
 	buildPath, err := gcs.GetReleasePath(
@@ -149,7 +153,7 @@ func (c *Client) GetGCSBuildPath(version string) (string, error) {
 	return buildPath, nil
 }
 
-func (c *Client) setBucket() {
+func (c *Client) SetBucket() {
 	bucket := c.opts.Bucket
 	if c.opts.Bucket == "" {
 		if c.opts.CI {
@@ -161,23 +165,4 @@ func (c *Client) setBucket() {
 	c.opts.Bucket = bucket
 
 	logrus.Infof("Bucket has been set to %s", c.opts.Bucket)
-}
-
-func (c *Client) setBuildType() {
-	buildType := "devel"
-	if c.opts.CI {
-		buildType = "ci"
-	}
-
-	c.opts.BuildType = buildType
-
-	logrus.Infof("Build type has been set to %s", c.opts.BuildType)
-}
-
-func (c *Client) setGCSRoot() {
-	if c.opts.GCSRoot == "" {
-		c.opts.GCSRoot = c.opts.BuildType
-	}
-
-	logrus.Infof("GCS root has been set to %s", c.opts.GCSRoot)
 }

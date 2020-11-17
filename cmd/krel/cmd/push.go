@@ -151,5 +151,5 @@ func init() {
 }
 
 func runPushBuild(opts *build.Options) error {
-	return build.NewInstance(opts).Push()
+	return build.New(opts).Push()
 }

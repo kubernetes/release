@@ -17,6 +17,8 @@ limitations under the License.
 package ci_test
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -28,7 +30,15 @@ import (
 
 var err = errors.New("error")
 
+//nolint
 var testVersion string = "v1.20.0-beta.1.655+d20e3246bade17"
+
+//nolint
+var testGCSPaths = []string{
+	"gs://k8s-release-dev/ci/v1.20.0-beta.1.655+d20e3246bade17",
+	"gs://k8s-release-dev/ci/v1.20.0-beta.1.655+d20e3246bade17/kubernetes.tar.gz",
+	"gs://k8s-release-dev/ci/v1.20.0-beta.1.655+d20e3246bade17/bin",
+}
 
 type testStateParameters struct {
 	version *string
@@ -44,41 +54,57 @@ func generateTestingState(params *testStateParameters) *ci.State {
 	return state
 }
 
+//nolint
+func chdirKubernetes() {
+	// TODO: Do this a little bit more elegantly
+	wd, _ := os.Getwd()
+	gopath := os.Getenv("GOPATH")
+	kubernetesDir := filepath.Join(gopath, "/src/k8s.io/kubernetes")
+
+	defer os.Chdir(wd)
+
+	os.Chdir(kubernetesDir)
+}
+
 func TestBuild(t *testing.T) {
 	for _, tc := range []struct {
-		prepare          func(*cifakes.FakeImpl)
-		isKubernetesRepo bool
-		shouldError      bool
-	}{ /*
-			{ // success
-				prepare: func(mock *cifakes.FakeImpl) {
-					mock.IsKubernetesRepoReturnsOnCall(0, true, nil)
-				},
-				//isKubernetesRepo: true,
-				shouldError: false,
-			},
-		*/
-		{ // IsKubernetesRepo fails
-			prepare: func(mock *cifakes.FakeImpl) {
-				mock.IsKubernetesRepoReturns(true, nil)
+		name        string
+		prepare     func(*cifakes.FakeClient)
+		shouldError bool
+	}{
+		{
+			name: "success",
+			prepare: func(mock *cifakes.FakeClient) {
+				mock.IsKubernetesRepoReturnsOnCall(0, true, nil)
 			},
 			shouldError: false,
-		}, /*
-			{ // IsKubernetesRepo fails
-				prepare: func(mock *cifakes.FakeImpl) {
-					mock.IsKubernetesRepoReturns(false, err)
-				},
-				shouldError: true,
+		},
+
+		{
+			name: "IsKubernetesRepo fails",
+			prepare: func(mock *cifakes.FakeClient) {
+				mock.IsKubernetesRepoReturns(true, nil)
 			},
-			{ // IsKubernetesRepo fails
-				prepare: func(mock *cifakes.FakeImpl) {
-					mock.IsKubernetesRepoStub = func() (bool, error) {
-						return true, nil
-					}
-				},
-				shouldError: false,
-			},*/
+			shouldError: true,
+		},
+		{
+			name: "IsKubernetesRepo fails",
+			prepare: func(mock *cifakes.FakeClient) {
+				mock.IsKubernetesRepoReturns(false, err)
+			},
+			shouldError: true,
+		},
+		{
+			name: "IsKubernetesRepo fails",
+			prepare: func(mock *cifakes.FakeClient) {
+				mock.IsKubernetesRepoStub = func() (bool, error) {
+					return true, nil
+				}
+			},
+			shouldError: false,
+		},
 	} {
+		t.Logf("test case: %v", tc.name)
 		sut := ci.NewDefaultBuild()
 
 		// TODO: Populate logic
@@ -86,10 +112,10 @@ func TestBuild(t *testing.T) {
 			generateTestingState(&testStateParameters{}),
 		)
 
-		mock := &cifakes.FakeImpl{}
+		mock := &cifakes.FakeClient{}
 
 		tc.prepare(mock)
-		sut.SetImpl(mock)
+		sut.SetClient(mock)
 
 		err := sut.Build()
 
@@ -103,24 +129,27 @@ func TestBuild(t *testing.T) {
 
 func TestIsKubernetesRepo(t *testing.T) {
 	for _, tc := range []struct {
-		prepare          func(*cifakes.FakeImpl)
-		isKubernetesRepo bool
-		shouldError      bool
+		name        string
+		prepare     func(*cifakes.FakeClient)
+		chdirK8s    bool
+		shouldError bool
 	}{
-		{ // success
-			prepare: func(mock *cifakes.FakeImpl) {
-				mock.IsKubernetesRepoReturns(true, nil)
+		{
+			name: "success",
+			prepare: func(mock *cifakes.FakeClient) {
 			},
-			isKubernetesRepo: true,
-			shouldError:      false,
+			chdirK8s:    true,
+			shouldError: false,
 		},
-		{ // IsKubernetesRepo fails
-			prepare: func(mock *cifakes.FakeImpl) {
+		{
+			name: "IsKubernetesRepo fails",
+			prepare: func(mock *cifakes.FakeClient) {
 			},
-			isKubernetesRepo: false,
-			shouldError:      false,
+			chdirK8s:    false,
+			shouldError: true,
 		},
 	} {
+		t.Logf("test case: %v", tc.name)
 		sut := ci.NewDefaultBuild()
 
 		// TODO: Populate logic
@@ -128,14 +157,18 @@ func TestIsKubernetesRepo(t *testing.T) {
 			generateTestingState(&testStateParameters{}),
 		)
 
-		mock := &cifakes.FakeImpl{}
+		mock := &cifakes.FakeClient{}
+
+		if tc.chdirK8s {
+			chdirKubernetes()
+		}
 
 		tc.prepare(mock)
-		sut.SetImpl(mock)
+		sut.SetClient(mock)
 
 		isK8sRepo, err := sut.IsKubernetesRepo()
 
-		require.Equal(t, tc.isKubernetesRepo, isK8sRepo)
+		require.Equal(t, tc.chdirK8s, isK8sRepo)
 
 		if tc.shouldError {
 			require.NotNil(t, err)
@@ -147,40 +180,54 @@ func TestIsKubernetesRepo(t *testing.T) {
 
 func TestCheckBuildExists(t *testing.T) {
 	for _, tc := range []struct {
-		prepare     func(*cifakes.FakeImpl)
+		name        string
+		prepare     func(*cifakes.FakeClient)
 		shouldError bool
 	}{
-		{ // success
-			prepare: func(mock *cifakes.FakeImpl) {
-				mock.GetWorkspaceVersionReturns(testVersion, nil)
+		{
+			name: "success",
+			prepare: func(mock *cifakes.FakeClient) {
+				/*
+					mock.GetWorkspaceVersionReturns(testVersion, nil)
+					mock.GetGCSBuildPathsReturns(testGCSPaths, nil)
+					mock.GCSPathsExistReturns(true, nil)
+					mock.ImagesExistReturns(true, nil)
+				*/
+				//mock.GetGCSBuildPathsReturns([]string{}, nil)
 			},
+			// TODO: WRONG
 			shouldError: false,
 		},
-		{ // GetWorkspaceVersion fails with err
-			prepare: func(mock *cifakes.FakeImpl) {
+		{
+			name: "GetWorkspaceVersion fails with err",
+			prepare: func(mock *cifakes.FakeClient) {
 				mock.GetWorkspaceVersionReturns("", err)
 			},
 			shouldError: true,
 		},
-		{ // GetWorkspaceVersion fails on empty version
-			prepare: func(mock *cifakes.FakeImpl) {
+		{
+			name: "GetWorkspaceVersion fails on empty version",
+			prepare: func(mock *cifakes.FakeClient) {
 				mock.GetWorkspaceVersionReturns("", nil)
 			},
 			shouldError: true,
 		},
-		{ // GetGCSBuildPaths fails with err
-			prepare: func(mock *cifakes.FakeImpl) {
+		{
+			name: "GetGCSBuildPaths fails with err",
+			prepare: func(mock *cifakes.FakeClient) {
 				mock.GetGCSBuildPathsReturns([]string{}, err)
 			},
 			shouldError: true,
 		},
-		{ // ImagesExist fails with err
-			prepare: func(mock *cifakes.FakeImpl) {
+		{
+			name: "ImagesExist fails with err",
+			prepare: func(mock *cifakes.FakeClient) {
 				mock.ImagesExistReturns(false, err)
 			},
 			shouldError: true,
 		},
 	} {
+		t.Logf("test case: %v", tc.name)
 		sut := ci.NewDefaultBuild()
 
 		// TODO: Populate logic
@@ -188,10 +235,10 @@ func TestCheckBuildExists(t *testing.T) {
 			generateTestingState(&testStateParameters{}),
 		)
 
-		mock := &cifakes.FakeImpl{}
+		mock := &cifakes.FakeClient{}
 
 		tc.prepare(mock)
-		sut.SetImpl(mock)
+		sut.SetClient(mock)
 
 		_, err := sut.CheckBuildExists()
 
