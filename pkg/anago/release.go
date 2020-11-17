@@ -318,7 +318,7 @@ func (d *DefaultRelease) PushArtifacts() error {
 		}
 
 		if err := d.impl.PublishVersion(
-			"release", version, buildDir, bucket, "", nil, false, false,
+			"release", version, buildDir, bucket, "release", nil, false, false,
 		); err != nil {
 			return errors.Wrap(err, "publish release")
 		}
