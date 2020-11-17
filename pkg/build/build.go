@@ -24,24 +24,47 @@ import (
 	"k8s.io/release/pkg/release"
 )
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
 var DefaultExtraVersionMarkers = []string{}
 
-// Instance is the main structure for creating and pushing builds.
-type Instance struct {
+// Client is the main structure for creating and pushing builds.
+type Client struct {
 	opts *Options
+	impl
 }
 
-// NewInstance can be used to create a new build `Instance`.
-func NewInstance(opts *Options) *Instance {
-	instance := &Instance{opts}
-	instance.setBuildType()
-	instance.setBucket()
-	instance.setGCSRoot()
-
-	return instance
+// New can be used to create a new build `Client`.
+func New(opts *Options) *Client {
+	return &Client{opts, &defaultImpl{}}
 }
 
-// Options are the main options to pass to `Instance`.
+// SetImpl can be used to set the internal implementation.
+func (c *Client) SetOptions(opts *Options) {
+	c.opts = opts
+}
+
+// SetImpl can be used to set the internal implementation.
+func (c *Client) SetImpl(impl impl) {
+	c.impl = impl
+}
+
+type defaultImpl struct{}
+
+//counterfeiter:generate . impl
+type impl interface {
+	Push() error
+	SetBucket()
+}
+
+func (d *defaultImpl) SetBucket() {
+}
+
+func (d *defaultImpl) Push() error {
+	return nil
+}
+
+// Options are the main options to pass to `Client`.
 type Options struct {
 	// Specify an alternate bucket for pushes (normally 'devel' or 'ci').
 	Bucket string
@@ -112,16 +135,16 @@ type Options struct {
 }
 
 // TODO: Refactor so that version is not required as a parameter
-func (bi *Instance) getGCSBuildPath(version string) (string, error) {
-	if bi.opts.Bucket == "" {
-		bi.setBucket()
+func (c *Client) GetGCSBuildPath(version string) (string, error) {
+	if c.opts.Bucket == "" {
+		c.SetBucket()
 	}
 
 	buildPath, err := gcs.GetReleasePath(
-		bi.opts.Bucket,
-		bi.opts.GCSRoot,
+		c.opts.Bucket,
+		c.opts.GCSRoot,
 		version,
-		bi.opts.Fast,
+		c.opts.Fast,
 	)
 	if err != nil {
 		return "", errors.Wrap(err, "get GCS release path")
@@ -130,35 +153,16 @@ func (bi *Instance) getGCSBuildPath(version string) (string, error) {
 	return buildPath, nil
 }
 
-func (bi *Instance) setBucket() {
-	bucket := bi.opts.Bucket
-	if bi.opts.Bucket == "" {
-		if bi.opts.CI {
+func (c *Client) SetBucket() {
+	bucket := c.opts.Bucket
+	if c.opts.Bucket == "" {
+		if c.opts.CI {
 			// TODO: Remove this once all CI and release jobs run on K8s Infra
 			bucket = release.CIBucketLegacy
 		}
 	}
 
-	bi.opts.Bucket = bucket
+	c.opts.Bucket = bucket
 
-	logrus.Infof("Bucket has been set to %s", bi.opts.Bucket)
-}
-
-func (bi *Instance) setBuildType() {
-	buildType := "devel"
-	if bi.opts.CI {
-		buildType = "ci"
-	}
-
-	bi.opts.BuildType = buildType
-
-	logrus.Infof("Build type has been set to %s", bi.opts.BuildType)
-}
-
-func (bi *Instance) setGCSRoot() {
-	if bi.opts.GCSRoot == "" {
-		bi.opts.GCSRoot = bi.opts.BuildType
-	}
-
-	logrus.Infof("GCS root has been set to %s", bi.opts.GCSRoot)
+	logrus.Infof("Bucket has been set to %s", c.opts.Bucket)
 }

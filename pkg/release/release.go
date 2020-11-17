@@ -115,6 +115,9 @@ const (
 	// Staging registry root URL
 	GCRIOPathStaging = "gcr.io/k8s-staging-kubernetes"
 
+	// CI registry root URL
+	GCRIOPathCI = "gcr.io/k8s-staging-ci-images"
+
 	// Mock staging registry root URL
 	GCRIOPathMock = GCRIOPathStaging + "/mock"
 

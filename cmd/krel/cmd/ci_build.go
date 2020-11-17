@@ -22,8 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/build"
-	"k8s.io/release/pkg/release"
+	"k8s.io/release/pkg/build/ci"
 )
 
 const ciBuildCmdDescription = `
@@ -39,7 +38,7 @@ Scenarios:
 krel ci-build --allow-dup --fast --registry=gcr.io/foo     - Run a fast build and push images to gcr.io/foo
 krel ci-build --bucket cool-bucket --gcs-root new-gcs-root - Push to gs://cool-bucket/new-gcs-root`
 
-var ciBuildOpts = &build.Options{}
+var ciBuildOpts = ci.DefaultOptions()
 
 var ciBuildCmd = &cobra.Command{
 	Use:           "ci-build",
@@ -63,14 +62,14 @@ func init() {
 	ciBuildCmd.PersistentFlags().BoolVar(
 		&ciBuildOpts.Fast,
 		"fast",
-		false,
+		ciBuildOpts.Fast,
 		"Specifies a fast build (linux/amd64 only)",
 	)
 
 	ciBuildCmd.PersistentFlags().BoolVar(
 		&ciBuildOpts.ConfigureDocker,
 		"configure-docker",
-		false,
+		ciBuildOpts.ConfigureDocker,
 		"Configure docker client for gcr.io authentication to allow communication with non-public registries",
 	)
 
@@ -79,14 +78,14 @@ func init() {
 	ciBuildCmd.PersistentFlags().BoolVar(
 		&ciBuildOpts.AllowDup,
 		"allow-dup",
-		false,
+		ciBuildOpts.AllowDup,
 		"Do not exit error if the build already exists on the gcs path",
 	)
 
 	ciBuildCmd.PersistentFlags().BoolVar(
 		&ciBuildOpts.NoUpdateLatest,
 		"noupdatelatest",
-		false,
+		ciBuildOpts.NoUpdateLatest,
 		"Do not update the latest file",
 	)
 
@@ -94,17 +93,17 @@ func init() {
 	ciBuildCmd.PersistentFlags().StringVar(
 		&ciBuildOpts.Bucket,
 		"bucket",
-		"",
+		ciBuildOpts.Bucket,
 		"Specify an alternate bucket for pushes (normally 'devel' or 'ci')",
 	)
 
 	ciBuildCmd.PersistentFlags().StringVar(
 		&ciBuildOpts.BuildDir,
 		"buildDir",
-		release.BuildDir,
+		ciBuildOpts.BuildDir,
 		fmt.Sprintf(
 			"Specify an alternate build directory (defaults to '%s')",
-			release.BuildDir,
+			ciBuildOpts.BuildDir,
 		),
 	)
 
@@ -112,43 +111,41 @@ func init() {
 	ciBuildCmd.PersistentFlags().StringVar(
 		&ciBuildOpts.Registry,
 		"registry",
-		"",
+		ciBuildOpts.Registry,
 		"If set, push docker images to specified registry/project",
 	)
 
 	ciBuildCmd.PersistentFlags().StringSliceVar(
 		&ciBuildOpts.ExtraVersionMarkers,
 		"extra-version-markers",
-		build.DefaultExtraVersionMarkers,
+		ciBuildOpts.ExtraVersionMarkers,
 		"Comma separated list which can be used to upload additional version files to GCS. The path is relative and is append to a GCS path. (--ci only)",
 	)
 
 	ciBuildCmd.PersistentFlags().StringVar(
 		&ciBuildOpts.GCSRoot,
 		"gcs-root",
-		"",
+		ciBuildOpts.GCSRoot,
 		"Specify an alternate GCS path to push artifacts to",
 	)
 
 	ciBuildCmd.PersistentFlags().StringVar(
 		&ciBuildOpts.VersionSuffix,
 		"version-suffix",
-		"",
+		ciBuildOpts.VersionSuffix,
 		"Append suffix to version name if set",
 	)
 
 	ciBuildCmd.PersistentFlags().BoolVar(
 		&ciBuildOpts.ValidateRemoteImageDigests,
 		"validate-images",
-		false,
+		ciBuildOpts.ValidateRemoteImageDigests,
 		"Validate that the remove image digests exists, needs `skopeo` in `$PATH`",
 	)
 
 	rootCmd.AddCommand(ciBuildCmd)
 }
 
-func runCIBuild(opts *build.Options) error {
-	opts.CI = true
-
-	return build.NewInstance(opts).Build()
+func runCIBuild(opts *ci.Options) error {
+	return ci.New(opts).Build()
 }
