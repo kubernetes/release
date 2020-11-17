@@ -156,13 +156,13 @@ func (d *defaultReleaseImpl) GenerateReleaseVersion(
 func (d *defaultReleaseImpl) CheckReleaseBucket(
 	options *build.Options,
 ) error {
-	return build.NewInstance(options).CheckReleaseBucket()
+	return build.New(options).CheckReleaseBucket()
 }
 
 func (d *defaultReleaseImpl) CopyStagedFromGCS(
 	options *build.Options, stagedBucket, buildVersion string,
 ) error {
-	return build.NewInstance(options).
+	return build.New(options).
 		CopyStagedFromGCS(stagedBucket, buildVersion)
 }
 
