@@ -19,6 +19,7 @@ package build
 import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
 
 	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/release"
@@ -28,44 +29,56 @@ import (
 
 var DefaultExtraVersionMarkers = []string{}
 
-// Client is the main structure for creating and pushing builds.
-type Client struct {
-	opts *Options
-	impl
-}
-
-// New can be used to create a new build `Client`.
-func New(opts *Options) *Client {
-	return &Client{opts, &defaultImpl{}}
-}
-
-// SetImpl can be used to set the internal implementation.
-func (c *Client) SetOptions(opts *Options) {
-	c.opts = opts
-}
-
-// SetImpl can be used to set the internal implementation.
-func (c *Client) SetImpl(impl impl) {
-	c.impl = impl
-}
-
-type defaultImpl struct{}
-
-//counterfeiter:generate . impl
-type impl interface {
+//counterfeiter:generate . client
+type Client interface {
+	// Primary build implementation
+	Build() error
 	Push() error
-	SetBucket()
+
+	// TODO: Consider adding functions for:
+	//       - setting options (*Options, filesystem, object store, registry)
+	//       - validating options
+	//
+	// TODO: Needed for anago
+	//       Uncomment these as:
+	//       - pkg/anago starts implement them
+	//       - pkg/build/ci can support them
+	//
+	//       Let's also remove anything that isn't explicitly needed to build.
+	//
+	// CheckReleaseBucket() error
+	// StageLocalArtifacts() error
+	// PushReleaseArtifacts(srcPath, gcsPath string) error
+	// PushContainerImages() error
+	// CopyStagedFromGCS(stagedBucket, buildVersion string) error
+	// StageLocalSourceTree(workDir, buildVersion string) error
 }
 
-func (d *defaultImpl) SetBucket() {
+type DefaultClient struct {
+	opts *Options
+	fs   afero.Fs
+
+	// TODO: Uncomment once these are implemented
+	// objectStore object.Store   // new krel pkg
+	// registry    image.Registry // new krel pkg
 }
 
-func (d *defaultImpl) Push() error {
-	return nil
+func New(opts *Options) *DefaultClient {
+	return &DefaultClient{
+		opts: opts,
+		fs:   opts.Fs,
+
+		// TODO: Uncomment once these are implemented
+		// objectStore: opts.Store,
+		// registry:    opts.Registry,
+	}
 }
 
 // Options are the main options to pass to `Client`.
 type Options struct {
+	// Filesystem interface
+	Fs afero.Fs
+
 	// Specify an alternate bucket for pushes (normally 'devel' or 'ci').
 	Bucket string
 
@@ -135,16 +148,16 @@ type Options struct {
 }
 
 // TODO: Refactor so that version is not required as a parameter
-func (c *Client) GetGCSBuildPath(version string) (string, error) {
-	if c.opts.Bucket == "" {
-		c.SetBucket()
+func (d *DefaultClient) GetGCSBuildPath(version string) (string, error) {
+	if d.opts.Bucket == "" {
+		d.SetBucket()
 	}
 
 	buildPath, err := gcs.GetReleasePath(
-		c.opts.Bucket,
-		c.opts.GCSRoot,
+		d.opts.Bucket,
+		d.opts.GCSRoot,
 		version,
-		c.opts.Fast,
+		d.opts.Fast,
 	)
 	if err != nil {
 		return "", errors.Wrap(err, "get GCS release path")
@@ -153,16 +166,16 @@ func (c *Client) GetGCSBuildPath(version string) (string, error) {
 	return buildPath, nil
 }
 
-func (c *Client) SetBucket() {
-	bucket := c.opts.Bucket
-	if c.opts.Bucket == "" {
-		if c.opts.CI {
+func (d *DefaultClient) SetBucket() {
+	bucket := d.opts.Bucket
+	if d.opts.Bucket == "" {
+		if d.opts.CI {
 			// TODO: Remove this once all CI and release jobs run on K8s Infra
 			bucket = release.CIBucketLegacy
 		}
 	}
 
-	c.opts.Bucket = bucket
+	d.opts.Bucket = bucket
 
-	logrus.Infof("Bucket has been set to %s", c.opts.Bucket)
+	logrus.Infof("Bucket has been set to %s", d.opts.Bucket)
 }
