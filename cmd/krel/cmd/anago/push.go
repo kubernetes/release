@@ -140,7 +140,7 @@ func runPushStage(
 	if err := buildInstance.StageLocalArtifacts(); err != nil {
 		return errors.Wrap(err, "staging local artifacts")
 	}
-	gcsPath := filepath.Join("stage", buildVersion, opts.Version)
+	gcsPath := filepath.Join(opts.Bucket, "stage", buildVersion, opts.Version)
 
 	// Push gcs-stage to GCS
 	if err := buildInstance.PushReleaseArtifacts(
