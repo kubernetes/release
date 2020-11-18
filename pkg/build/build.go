@@ -28,8 +28,6 @@ import (
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
-var DefaultExtraVersionMarkers = []string{}
-
 //counterfeiter:generate . client
 type Client interface {
 	// Primary build implementation
@@ -71,8 +69,26 @@ func New(opts *Options) *DefaultClient {
 	}
 }
 
+func NewDefault() *DefaultClient {
+	return &DefaultClient{
+		opts: DefaultOptions,
+	}
+}
+
+func (d *DefaultClient) SetOptions(opts *Options) {
+	d.opts = opts
+}
+
+func (d *DefaultClient) SetFs(fs afero.Afero) {
+	d.fs = fs
+}
+
 func (d *DefaultClient) SetObjStore(s object.Store) {
 	d.objStore = s
+}
+
+func (d *DefaultClient) SetRegistry(r image.Registry) {
+	d.registry = r
 }
 
 // Options are the main options to pass to `Client`.
@@ -155,6 +171,51 @@ type Options struct {
 	// `$PATH`.
 	ValidateRemoteImageDigests bool
 }
+
+const (
+	DefaultBucket                     = release.CIBucketK8sInfra
+	DefaultBuildDir                   = ""
+	DefaultBuildType                  = "ci"
+	DefaultRegistryName               = release.GCRIOPathCI
+	DefaultGCSRoot                    = DefaultBuildType
+	DefaultVersion                    = ""
+	DefaultVersionSuffix              = ""
+	DefaultCI                         = true
+	DefaultConfigureDocker            = false
+	DefaultFast                       = false
+	DefaultAllowDup                   = true
+	DefaultNoUpdateLatest             = false
+	DefaultPrivateBucket              = false
+	DefaultValidateRemoteImageDigests = false
+)
+
+var (
+	DefaultExtraVersionMarkers = []string{}
+
+	DefaultOptions = &Options{
+		Fs:    afero.NewOsFs(),
+		Store: object.NewDefaultGCS(),
+
+		// TODO: Uncomment once image.`GCR` is implemented
+		// Registry: image.NewDefaultGCR(),
+
+		Bucket:                     DefaultBucket,
+		BuildDir:                   DefaultBuildDir,
+		BuildType:                  DefaultBuildType,
+		RegistryName:               DefaultRegistryName,
+		ExtraVersionMarkers:        DefaultExtraVersionMarkers,
+		GCSRoot:                    DefaultGCSRoot,
+		Version:                    DefaultVersion,
+		VersionSuffix:              DefaultVersionSuffix,
+		CI:                         DefaultCI,
+		ConfigureDocker:            DefaultConfigureDocker,
+		Fast:                       DefaultFast,
+		AllowDup:                   DefaultAllowDup,
+		NoUpdateLatest:             DefaultNoUpdateLatest,
+		PrivateBucket:              DefaultPrivateBucket,
+		ValidateRemoteImageDigests: DefaultValidateRemoteImageDigests,
+	}
+)
 
 func (d *DefaultClient) Build() error {
 	// TODO: Needs implementation
