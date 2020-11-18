@@ -23,6 +23,8 @@ import (
 	"k8s.io/release/pkg/object"
 )
 
+var gcs = object.NewGCS(object.DefaultGCSCopyOptions)
+
 // TODO: Add production use cases
 func TestGetReleasePath(t *testing.T) {
 	for _, tc := range []struct {
@@ -54,7 +56,7 @@ func TestGetReleasePath(t *testing.T) {
 			shouldError: false,
 		},
 	} {
-		actual, err := object.GetReleasePath(
+		actual, err := gcs.GetReleasePath(
 			tc.bucket,
 			tc.gcsRoot,
 			tc.version,
@@ -85,7 +87,7 @@ func TestGetMarkerPath(t *testing.T) {
 			shouldError: false,
 		},
 	} {
-		actual, err := object.GetMarkerPath(
+		actual, err := gcs.GetMarkerPath(
 			tc.bucket,
 			tc.gcsRoot,
 		)
@@ -164,7 +166,7 @@ func TestNormalizeGCSPath(t *testing.T) {
 			shouldError: true,
 		},
 	} {
-		actual, err := object.NormalizeGCSPath(tc.gcsPathParts...)
+		actual, err := gcs.NormalizeGCSPath(tc.gcsPathParts...)
 
 		require.Equal(t, tc.expected, actual)
 
@@ -194,7 +196,7 @@ func TestIsPathNormalized(t *testing.T) {
 			expected: true,
 		},
 	} {
-		actual := object.IsPathNormalized(tc.gcsPath)
+		actual := gcs.IsPathNormalized(tc.gcsPath)
 
 		require.Equal(t, tc.expected, actual)
 	}

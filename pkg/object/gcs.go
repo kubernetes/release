@@ -36,7 +36,18 @@ var (
 	noClobberFlag  = "-n"
 )
 
-type Options struct {
+type GCS struct {
+	// TODO: Implement store
+	opts *GCSOptions
+}
+
+func NewGCS(opts *GCSOptions) *GCS {
+	return &GCS{opts}
+}
+
+// GCSOptions are the main options to pass to `GCS`.
+type GCSOptions struct {
+	// TODO: Populate fields
 	// gsutil options
 	Concurrent *bool
 	Recursive  *bool
@@ -50,8 +61,14 @@ type Options struct {
 	AllowMissing *bool
 }
 
+// TODO: Consider a method to set options
+
+func NewDefaultGCS() *GCS {
+	return &GCS{DefaultGCSCopyOptions}
+}
+
 // DefaultGCSCopyOptions have the default options for the GCS copy action
-var DefaultGCSCopyOptions = &Options{
+var DefaultGCSCopyOptions = &GCSOptions{
 	Concurrent:   pointer.BoolPtr(true),
 	Recursive:    pointer.BoolPtr(true),
 	NoClobber:    pointer.BoolPtr(true),
@@ -59,9 +76,9 @@ var DefaultGCSCopyOptions = &Options{
 }
 
 // CopyToGCS copies a local directory to the specified GCS path
-func CopyToGCS(src, gcsPath string, opts *Options) error {
+func (g *GCS) CopyToGCS(src, gcsPath string) error {
 	logrus.Infof("Copying %s to GCS (%s)", src, gcsPath)
-	gcsPath, gcsPathErr := NormalizeGCSPath(gcsPath)
+	gcsPath, gcsPathErr := g.NormalizeGCSPath(gcsPath)
 	if gcsPathErr != nil {
 		return errors.Wrap(gcsPathErr, "normalize GCS path")
 	}
@@ -70,7 +87,7 @@ func CopyToGCS(src, gcsPath string, opts *Options) error {
 	if err != nil {
 		logrus.Info("Unable to get local source directory info")
 
-		if *opts.AllowMissing {
+		if *g.opts.AllowMissing {
 			logrus.Infof("Source directory (%s) does not exist. Skipping GCS upload.", src)
 			return nil
 		}
@@ -78,51 +95,51 @@ func CopyToGCS(src, gcsPath string, opts *Options) error {
 		return errors.New("source directory does not exist")
 	}
 
-	return bucketCopy(src, gcsPath, opts)
+	return g.bucketCopy(src, gcsPath)
 }
 
 // CopyToLocal copies a GCS path to the specified local directory
-func CopyToLocal(gcsPath, dst string, opts *Options) error {
+func (g *GCS) CopyToLocal(gcsPath, dst string) error {
 	logrus.Infof("Copying GCS (%s) to %s", gcsPath, dst)
-	gcsPath, gcsPathErr := NormalizeGCSPath(gcsPath)
+	gcsPath, gcsPathErr := g.NormalizeGCSPath(gcsPath)
 	if gcsPathErr != nil {
 		return errors.Wrap(gcsPathErr, "normalize GCS path")
 	}
 
-	return bucketCopy(gcsPath, dst, opts)
+	return g.bucketCopy(gcsPath, dst)
 }
 
 // CopyBucketToBucket copies between two GCS paths.
-func CopyBucketToBucket(src, dst string, opts *Options) error {
+func (g *GCS) CopyBucketToBucket(src, dst string) error {
 	logrus.Infof("Copying %s to %s", src, dst)
 
-	src, srcErr := NormalizeGCSPath(src)
+	src, srcErr := g.NormalizeGCSPath(src)
 	if srcErr != nil {
 		return errors.Wrap(srcErr, "normalize GCS path")
 	}
 
-	dst, dstErr := NormalizeGCSPath(dst)
+	dst, dstErr := g.NormalizeGCSPath(dst)
 	if dstErr != nil {
 		return errors.Wrap(dstErr, "normalize GCS path")
 	}
 
-	return bucketCopy(src, dst, opts)
+	return g.bucketCopy(src, dst)
 }
 
-func bucketCopy(src, dst string, opts *Options) error {
+func (g *GCS) bucketCopy(src, dst string) error {
 	args := []string{}
 
-	if *opts.Concurrent {
+	if *g.opts.Concurrent {
 		logrus.Debug("Setting GCS copy to run concurrently")
 		args = append(args, concurrentFlag)
 	}
 
 	args = append(args, "cp")
-	if *opts.Recursive {
+	if *g.opts.Recursive {
 		logrus.Debug("Setting GCS copy to run recursively")
 		args = append(args, recursiveFlag)
 	}
-	if *opts.NoClobber {
+	if *g.opts.NoClobber {
 		logrus.Debug("Setting GCS copy to not clobber existing files")
 		args = append(args, noClobberFlag)
 	}
@@ -140,10 +157,10 @@ func bucketCopy(src, dst string, opts *Options) error {
 //
 // Expected destination format:
 //   gs://<bucket>/<gcsRoot>[/fast][/<version>]
-func GetReleasePath(
+func (g *GCS) GetReleasePath(
 	bucket, gcsRoot, version string,
 	fast bool) (string, error) {
-	gcsPath, err := getPath(
+	gcsPath, err := g.getPath(
 		bucket,
 		gcsRoot,
 		version,
@@ -162,9 +179,9 @@ func GetReleasePath(
 //
 // Expected destination format:
 //   gs://<bucket>/<gcsRoot>
-func GetMarkerPath(
+func (g *GCS) GetMarkerPath(
 	bucket, gcsRoot string) (string, error) {
-	gcsPath, err := getPath(
+	gcsPath, err := g.getPath(
 		bucket,
 		gcsRoot,
 		"",
@@ -184,7 +201,7 @@ func GetMarkerPath(
 // Expected destination format:
 //   gs://<bucket>/<gcsRoot>[/fast][/<version>]
 // TODO: Support "release" buildType
-func getPath(
+func (g *GCS) getPath(
 	bucket, gcsRoot, version, pathType string,
 	fast bool) (string, error) {
 	if gcsRoot == "" {
@@ -209,14 +226,14 @@ func getPath(
 	}
 
 	// Ensure any constructed GCS path is prefixed with `gs://`
-	return NormalizeGCSPath(gcsPathParts...)
+	return g.NormalizeGCSPath(gcsPathParts...)
 }
 
 // NormalizeGCSPath takes a GCS path and ensures that the `GcsPrefix` is
 // prepended to it.
 // TODO: Should there be an append function for paths to prevent multiple calls
 //       like in build.checkBuildExists()?
-func NormalizeGCSPath(gcsPathParts ...string) (string, error) {
+func (g *GCS) NormalizeGCSPath(gcsPathParts ...string) (string, error) {
 	gcsPath := ""
 
 	// Ensure there is at least one element in the gcsPathParts slice before
@@ -268,7 +285,7 @@ func NormalizeGCSPath(gcsPathParts ...string) (string, error) {
 
 	gcsPath = GcsPrefix + gcsPath
 
-	isNormalized := IsPathNormalized(gcsPath)
+	isNormalized := g.IsPathNormalized(gcsPath)
 	if !isNormalized {
 		return gcsPath, errors.New("unknown error while trying to normalize GCS path")
 	}
@@ -279,7 +296,7 @@ func NormalizeGCSPath(gcsPathParts ...string) (string, error) {
 // IsPathNormalized determines if a GCS path is prefixed with `gs://`.
 // Use this function as pre-check for any gsutil/GCS functions that manipulate
 // GCS bucket contents.
-func IsPathNormalized(gcsPath string) bool {
+func (g *GCS) IsPathNormalized(gcsPath string) bool {
 	var errCount int
 
 	if !strings.HasPrefix(gcsPath, GcsPrefix) {
@@ -305,7 +322,7 @@ func IsPathNormalized(gcsPath string) bool {
 // RsyncRecursive runs `gsutil rsync` in recursive mode. The caller of this
 // function has to ensure that the provided paths are prefixed with gs:// if
 // necessary (see `NormalizeGCSPath()`).
-func RsyncRecursive(src, dst string) error {
+func (g *GCS) RsyncRecursive(src, dst string) error {
 	return errors.Wrap(
 		gcp.GSUtil(concurrentFlag, "rsync", recursiveFlag, src, dst),
 		"running gsutil rsync",
@@ -313,8 +330,8 @@ func RsyncRecursive(src, dst string) error {
 }
 
 // PathExists returns true if the specified GCS path exists.
-func PathExists(gcsPath string) (bool, error) {
-	if !IsPathNormalized(gcsPath) {
+func (g *GCS) PathExists(gcsPath string) (bool, error) {
+	if !g.IsPathNormalized(gcsPath) {
 		return false, errors.New("cannot run `gsutil ls` GCS path does not begin with `gs://`")
 	}
 

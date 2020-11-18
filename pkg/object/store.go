@@ -18,19 +18,29 @@ package object
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
-//counterfeiter:generate . store
+//counterfeiter:generate . Store
 type Store interface {
 	// TODO: Implement interface
+	// TODO: Consider a method to set options
+	// TODO: Choose GCS-agnostic names
+	CopyToGCS(src, gcsPath string) error
+	CopyToLocal(gcsPath, dst string) error
+	CopyBucketToBucket(src, dst string) error
+	GetReleasePath(bucket, gcsRoot, version string, fast bool) (string, error)
+	GetMarkerPath(bucket, gcsRoot string) (string, error)
+	NormalizeGCSPath(gcsPathParts ...string) (string, error)
+	IsPathNormalized(gcsPath string) bool
+	RsyncRecursive(src, dst string) error
+	PathExists(gcsPath string) (bool, error)
 }
 
 type DefaultStore struct {
 	// TODO: Implement store
+	opts *Options
 }
 
 func New(opts *Options) *DefaultStore {
-	return &DefaultStore{
-		// TODO: Populate fields
-	}
+	return &DefaultStore{opts}
 }
 
 // Options are the main options to pass to `Store`.
