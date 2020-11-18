@@ -106,7 +106,7 @@ func init() {
 
 	// TODO: Switch to "--registry" once CI no longer uses it
 	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.Registry,
+		&pushBuildOpts.RegistryName,
 		"registry",
 		"",
 		"If set, push docker images to specified registry/project",
@@ -151,5 +151,5 @@ func init() {
 }
 
 func runPushBuild(opts *build.Options) error {
-	return build.NewInstance(opts).Push()
+	return build.New(opts).Push()
 }

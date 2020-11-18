@@ -88,7 +88,7 @@ func init() {
 	)
 
 	pushCmd.PersistentFlags().StringVar(
-		&pushOpts.Registry,
+		&pushOpts.RegistryName,
 		"container-registry",
 		"",
 		"Container image registry to be used",
@@ -108,22 +108,22 @@ func init() {
 }
 
 func runPush(opts *build.Options) error {
-	buildInstance := build.NewInstance(opts)
-	if err := buildInstance.CheckReleaseBucket(); err != nil {
+	buildClient := build.New(opts)
+	if err := buildClient.CheckReleaseBucket(); err != nil {
 		return errors.Wrap(err, "check release bucket access")
 	}
 
 	if runStage {
-		return runPushStage(buildInstance, opts)
+		return runPushStage(buildClient, opts)
 	} else if runRelease {
-		return runPushRelease(buildInstance, opts)
+		return runPushRelease(buildClient, opts)
 	}
 
 	return errors.New("neither --stage nor --release provided")
 }
 
 func runPushStage(
-	buildInstance *build.Instance,
+	buildClient *build.DefaultClient,
 	opts *build.Options,
 ) error {
 	workDir := os.Getenv("GOPATH")
@@ -132,18 +132,18 @@ func runPushStage(
 	}
 
 	// Stage the local source tree
-	if err := buildInstance.StageLocalSourceTree(workDir, buildVersion); err != nil {
+	if err := buildClient.StageLocalSourceTree(workDir, buildVersion); err != nil {
 		return errors.Wrap(err, "staging local source tree")
 	}
 
 	// Stage local artifacts and write checksums
-	if err := buildInstance.StageLocalArtifacts(); err != nil {
+	if err := buildClient.StageLocalArtifacts(); err != nil {
 		return errors.Wrap(err, "staging local artifacts")
 	}
 	gcsPath := filepath.Join(opts.Bucket, "stage", buildVersion, opts.Version)
 
 	// Push gcs-stage to GCS
-	if err := buildInstance.PushReleaseArtifacts(
+	if err := buildClient.PushReleaseArtifacts(
 		filepath.Join(opts.BuildDir, release.GCSStagePath, opts.Version),
 		filepath.Join(gcsPath, release.GCSStagePath, opts.Version),
 	); err != nil {
@@ -151,7 +151,7 @@ func runPushStage(
 	}
 
 	// Push container release-images to GCS
-	if err := buildInstance.PushReleaseArtifacts(
+	if err := buildClient.PushReleaseArtifacts(
 		filepath.Join(opts.BuildDir, release.ImagesPath),
 		filepath.Join(gcsPath, release.ImagesPath),
 	); err != nil {
@@ -159,7 +159,7 @@ func runPushStage(
 	}
 
 	// Push container images into registry
-	if err := buildInstance.PushContainerImages(); err != nil {
+	if err := buildClient.PushContainerImages(); err != nil {
 		return errors.Wrap(err, "pushing container images")
 	}
 
@@ -167,17 +167,17 @@ func runPushStage(
 }
 
 func runPushRelease(
-	buildInstance *build.Instance,
+	buildClient *build.DefaultClient,
 	opts *build.Options,
 ) error {
-	if err := buildInstance.CopyStagedFromGCS(opts.Bucket, buildVersion); err != nil {
+	if err := buildClient.CopyStagedFromGCS(opts.Bucket, buildVersion); err != nil {
 		return errors.Wrap(err, "copy staged from GCS")
 	}
 
 	// In an official nomock release, we want to ensure that container images
 	// have been promoted from staging to production, so we do the image
 	// manifest validation against production instead of staging.
-	targetRegistry := opts.Registry
+	targetRegistry := opts.RegistryName
 	if targetRegistry == release.GCRIOPathStaging {
 		targetRegistry = release.GCRIOPathProd
 	}

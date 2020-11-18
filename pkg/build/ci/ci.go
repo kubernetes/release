@@ -101,7 +101,7 @@ func DefaultOptions() *Options {
 }
 
 // State holds all inferred and calculated values from the release process
-// it's state mutates as each step es executed
+// its state mutates as each step es executed
 type State struct {
 	buildExists bool
 }
@@ -169,7 +169,6 @@ func (c *Client) SetGCSRoot() {
 
 func (c *Client) Push() error {
 	buildClient := build.New(c.opts.Options)
-	buildClient.SetImpl(c.client)
 
 	return buildClient.Push()
 }
@@ -451,7 +450,7 @@ func (c *Client) GCSPathsExist(gcsBuildPaths []string) (bool, []error) {
 func (c *Client) ImagesExist() (bool, error) {
 	images := release.NewImages()
 	return images.Exists(
-		c.opts.Registry,
+		c.opts.RegistryName,
 		c.opts.Version,
 		c.opts.Fast,
 	)
@@ -460,6 +459,7 @@ func (c *Client) ImagesExist() (bool, error) {
 // Internal
 
 // defaultImpl is the default internal ciBuild client implementation.
+//nolint
 type defaultImpl struct{}
 
 // TODO: Populate logic

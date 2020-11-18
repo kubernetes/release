@@ -194,31 +194,31 @@ func (d *defaultStageImpl) GenerateChangelog(options *changelog.Options) error {
 func (d *defaultStageImpl) CheckReleaseBucket(
 	options *build.Options,
 ) error {
-	return build.NewInstance(options).CheckReleaseBucket()
+	return build.New(options).CheckReleaseBucket()
 }
 
 func (d *defaultStageImpl) StageLocalSourceTree(
 	options *build.Options, workDir, buildVersion string,
 ) error {
-	return build.NewInstance(options).StageLocalSourceTree(workDir, buildVersion)
+	return build.New(options).StageLocalSourceTree(workDir, buildVersion)
 }
 
 func (d *defaultStageImpl) StageLocalArtifacts(
 	options *build.Options,
 ) error {
-	return build.NewInstance(options).StageLocalArtifacts()
+	return build.New(options).StageLocalArtifacts()
 }
 
 func (d *defaultStageImpl) PushReleaseArtifacts(
 	options *build.Options, srcPath, gcsPath string,
 ) error {
-	return build.NewInstance(options).PushReleaseArtifacts(srcPath, gcsPath)
+	return build.New(options).PushReleaseArtifacts(srcPath, gcsPath)
 }
 
 func (d *defaultStageImpl) PushContainerImages(
 	options *build.Options,
 ) error {
-	return build.NewInstance(options).PushContainerImages()
+	return build.New(options).PushContainerImages()
 }
 
 func (d *DefaultStage) Submit() error {

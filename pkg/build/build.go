@@ -153,6 +153,11 @@ type Options struct {
 	ValidateRemoteImageDigests bool
 }
 
+func (d *DefaultClient) Build() error {
+	// TODO: Needs implementation
+	return nil
+}
+
 // TODO: Refactor so that version is not required as a parameter
 func (d *DefaultClient) GetGCSBuildPath(version string) (string, error) {
 	if d.opts.Bucket == "" {
