@@ -40,6 +40,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/command"
+	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/http"
 	"k8s.io/release/pkg/tar"
@@ -302,6 +303,7 @@ func GetKubecrossVersion(branches ...string) (string, error) {
 
 // URLPrefixForBucket returns the URL prefix for the provided bucket string
 func URLPrefixForBucket(bucket string) string {
+	bucket = strings.TrimPrefix(bucket, gcs.GcsPrefix)
 	urlPrefix := fmt.Sprintf("https://storage.googleapis.com/%s", bucket)
 	if bucket == ProductionBucket {
 		urlPrefix = ProductionBucketURL
