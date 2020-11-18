@@ -31,10 +31,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/http"
-	"k8s.io/utils/pointer"
+	"k8s.io/release/pkg/object"
 )
 
 type TestGridOptions struct {
@@ -186,13 +185,9 @@ func processDashboards(testgridJobs []TestGridJob, date string, opts *TestGridOp
 
 		gcsPath := filepath.Join(opts.bucket, "testgridshot", opts.branch, date, filepath.Base(jobFile))
 
-		GCSCopyOptions := &gcs.Options{
-			Concurrent:   pointer.BoolPtr(true),
-			Recursive:    pointer.BoolPtr(true),
-			NoClobber:    pointer.BoolPtr(true),
-			AllowMissing: pointer.BoolPtr(true),
-		}
-		if err := gcs.CopyToGCS(jobFile, gcsPath, GCSCopyOptions); err != nil {
+		// TODO: Consider passing this in a client instead
+		gcsClient := object.NewDefaultGCS()
+		if err := gcsClient.CopyToGCS(jobFile, gcsPath); err != nil {
 			return testgridJobs, errors.Wrapf(err, "failed to upload the file %s to GCS bucket %s", jobFile, gcsPath)
 		}
 		testgridJobs[i].GCSLocation = fmt.Sprintf("https://storage.googleapis.com/%s", gcsPath)

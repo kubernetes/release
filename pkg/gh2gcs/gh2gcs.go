@@ -22,8 +22,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/github"
+	"k8s.io/release/pkg/object"
 	"k8s.io/utils/pointer"
 )
 
@@ -36,13 +36,16 @@ type Config struct {
 // ReleaseConfig contains source (GitHub) and destination (GCS) information
 // to perform a copy/upload operation using gh2gcs.
 type ReleaseConfig struct {
-	Org                string       `yaml:"org"`
-	Repo               string       `yaml:"repo"`
-	Tags               []string     `yaml:"tags"`
-	IncludePrereleases bool         `yaml:"includePrereleases"`
-	GCSBucket          string       `yaml:"gcsBucket"`
-	ReleaseDir         string       `yaml:"releaseDir"`
-	GCSCopyOptions     *gcs.Options `yaml:"gcsCopyOptions"`
+	GCS                object.GCS
+	Org                string   `yaml:"org"`
+	Repo               string   `yaml:"repo"`
+	Tags               []string `yaml:"tags"`
+	IncludePrereleases bool     `yaml:"includePrereleases"`
+	GCSBucket          string   `yaml:"gcsBucket"`
+	ReleaseDir         string   `yaml:"releaseDir"`
+
+	// TODO: We can probably get rid of this once we set object.GCS
+	GCSCopyOptions *object.GCSOptions `yaml:"gcsCopyOptions"`
 }
 
 // DownloadReleases downloads release assets to a local directory
@@ -66,14 +69,14 @@ func DownloadReleases(releaseCfg *ReleaseConfig, ghClient *github.GitHub, output
 
 // Upload copies a set of release assets from local directory to GCS
 // Assets to upload are derived from the tags specified in `ReleaseConfig`.
-func Upload(releaseCfg *ReleaseConfig, ghClient *github.GitHub, outputDir string) error {
+func (r *ReleaseConfig) Upload(releaseCfg *ReleaseConfig, ghClient *github.GitHub, outputDir string) error {
 	uploadBase := filepath.Join(outputDir, releaseCfg.Org, releaseCfg.Repo)
 
 	tags := releaseCfg.Tags
 	for _, tag := range tags {
 		srcDir := filepath.Join(uploadBase, tag)
 		gcsPath := filepath.Join(releaseCfg.GCSBucket, releaseCfg.ReleaseDir, tag)
-		if err := gcs.CopyToGCS(srcDir, gcsPath, releaseCfg.GCSCopyOptions); err != nil {
+		if err := r.GCS.CopyToGCS(srcDir, gcsPath); err != nil {
 			return err
 		}
 	}
@@ -82,10 +85,11 @@ func Upload(releaseCfg *ReleaseConfig, ghClient *github.GitHub, outputDir string
 }
 
 // CheckGCSCopyOptions checks if the user set any config or we need to set the default config
-func CheckGCSCopyOptions(copyOptions *gcs.Options) *gcs.Options {
+// TODO: Do we want to make this a method?
+func CheckGCSCopyOptions(copyOptions *object.GCSOptions) *object.GCSOptions {
 	// set the GCS Copy options to default values
 	if copyOptions == nil {
-		return gcs.DefaultGCSCopyOptions
+		return object.DefaultGCSCopyOptions
 	}
 
 	if copyOptions.AllowMissing == nil {

@@ -27,19 +27,23 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/gcp"
-	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/http"
+	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/util"
 )
 
 // Publisher is the structure for publishing anything release related
 type Publisher struct {
 	client publisherClient
+	gcs    *object.GCS
 }
 
 // NewPublisher creates a new Publisher instance
 func NewPublisher() *Publisher {
-	return &Publisher{&defaultPublisher{}}
+	return &Publisher{
+		client: &defaultPublisher{},
+		gcs:    object.NewDefaultGCS(),
+	}
 }
 
 // SetClient can be used to set the internal publisher client
@@ -104,7 +108,7 @@ func (p *Publisher) PublishVersion(
 		return errors.Errorf("invalid version %s", version)
 	}
 
-	markerPath, markerPathErr := gcs.GetMarkerPath(
+	markerPath, markerPathErr := p.gcs.GetMarkerPath(
 		bucket,
 		gcsRoot,
 	)
@@ -112,7 +116,7 @@ func (p *Publisher) PublishVersion(
 		return errors.Wrap(markerPathErr, "get version marker path")
 	}
 
-	releasePath, releasePathErr := gcs.GetReleasePath(
+	releasePath, releasePathErr := p.gcs.GetReleasePath(
 		bucket,
 		gcsRoot,
 		version,
@@ -123,7 +127,7 @@ func (p *Publisher) PublishVersion(
 	}
 
 	// TODO: This should probably be a more thorough check of explicit files
-	// TODO: This should explicitly do a `gsutil ls` via gcs.PathExists
+	// TODO: This should explicitly do a `gsutil ls` via object.PathExists
 	if err := p.client.GSUtil("ls", releasePath); err != nil {
 		return errors.Wrapf(err, "release files don't exist at %s", releasePath)
 	}
@@ -191,12 +195,12 @@ func (p *Publisher) VerifyLatestUpdate(
 ) (needsUpdate bool, err error) {
 	logrus.Infof("Testing %s > %s (published)", version, publishFile)
 
-	publishFileDst, publishFileDstErr := gcs.NormalizeGCSPath(markerPath, publishFile)
+	publishFileDst, publishFileDstErr := p.gcs.NormalizeGCSPath(markerPath, publishFile)
 	if publishFileDstErr != nil {
 		return false, errors.Wrap(publishFileDstErr, "get marker file destination")
 	}
 
-	// TODO: Should we add a pkg/gcp/gcs function for `gsutil cat`?
+	// TODO: Should we add a pkg/object/gcs function for `gsutil cat`?
 	gcsVersion, err := p.client.GSUtilOutput("cat", publishFileDst)
 	if err != nil {
 		logrus.Infof("%s does not exist but will be created", publishFileDst)
@@ -235,7 +239,7 @@ func (p *Publisher) PublishToGcs(
 	privateBucket bool,
 ) error {
 	releaseStage := filepath.Join(buildDir, ReleaseStagePath)
-	publishFileDst, publishFileDstErr := gcs.NormalizeGCSPath(markerPath, publishFile)
+	publishFileDst, publishFileDstErr := p.gcs.NormalizeGCSPath(markerPath, publishFile)
 	if publishFileDstErr != nil {
 		return errors.Wrap(publishFileDstErr, "get marker file destination")
 	}

@@ -29,10 +29,10 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"k8s.io/release/pkg/gcp"
-	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/gh2gcs"
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/log"
+	"k8s.io/release/pkg/object"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -225,13 +225,14 @@ func run(opts *options) error {
 	} else {
 		// TODO: Expose certain GCSCopyOptions for user configuration
 		releaseConfigs.ReleaseConfigs = append(releaseConfigs.ReleaseConfigs, gh2gcs.ReleaseConfig{
+			GCS:                *object.NewDefaultGCS(),
 			Org:                opts.org,
 			Repo:               opts.repo,
 			Tags:               opts.tags,
 			IncludePrereleases: opts.includePrereleases,
 			GCSBucket:          opts.bucket,
 			ReleaseDir:         opts.releaseDir,
-			GCSCopyOptions:     gcs.DefaultGCSCopyOptions,
+			GCSCopyOptions:     object.DefaultGCSCopyOptions,
 		})
 	}
 
@@ -254,7 +255,7 @@ func run(opts *options) error {
 		logrus.Infof("Files downloaded to %s directory", opts.outputDir)
 
 		if !opts.downloadOnly {
-			if err := gh2gcs.Upload(&releaseConfig, gh, opts.outputDir); err != nil {
+			if err := releaseConfig.Upload(&releaseConfig, gh, opts.outputDir); err != nil {
 				return errors.Wrap(err, "uploading release assets to GCS")
 			}
 		}

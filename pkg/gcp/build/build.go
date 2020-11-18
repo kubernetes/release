@@ -37,7 +37,7 @@ import (
 
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/gcp"
-	"k8s.io/release/pkg/gcp/gcs"
+	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/tar"
 	"sigs.k8s.io/yaml"
@@ -52,6 +52,7 @@ const (
 
 // TODO: Pull some of these options in cmd/gcbuilder, so they don't have to be public.
 type Options struct {
+	gcs            *object.GCS
 	BuildDir       string
 	ConfigDir      string
 	CloudbuildFile string
@@ -69,6 +70,7 @@ type Options struct {
 // NewDefaultOptions returns a new default `*Options` instance.
 func NewDefaultOptions() *Options {
 	return &Options{
+		gcs:            object.NewDefaultGCS(),
 		Project:        release.DefaultKubernetesStagingProject,
 		CloudbuildFile: DefaultCloudbuildFile,
 	}
@@ -156,10 +158,9 @@ func (o *Options) uploadBuildDir(targetBucket string) (string, error) {
 	u := uuid.New()
 	uploaded := fmt.Sprintf("%s/%s.tgz", targetBucket, u.String())
 	logrus.Infof("Uploading %s to %s...", name, uploaded)
-	if err := gcs.CopyToGCS(
+	if err := o.gcs.CopyToGCS(
 		name,
 		uploaded,
-		gcs.DefaultGCSCopyOptions,
 	); err != nil {
 		return "", errors.Wrap(err, "upload files to GCS")
 	}

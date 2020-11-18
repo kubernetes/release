@@ -26,9 +26,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
+	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/tar"
 	"k8s.io/release/pkg/util"
 	"k8s.io/utils/pointer"
@@ -69,7 +69,7 @@ func PrepareWorkspaceStage(directory string) error {
 	return nil
 }
 
-// PrepareWorkspaceRelease sets up the workspace by downloading and extractig
+// PrepareWorkspaceRelease sets up the workspace by downloading and extracting
 // the staged sources on the provided bucket.
 func PrepareWorkspaceRelease(directory, buildVersion, bucket string) error {
 	logrus.Infof("Preparing workspace for release in %s", directory)
@@ -89,9 +89,17 @@ func PrepareWorkspaceRelease(directory, buildVersion, bucket string) error {
 	// On `release`, we lookup the staged sources and use them directly
 	src := filepath.Join(bucket, StagePath, buildVersion, SourcesTar)
 	dst := filepath.Join(tempDir, SourcesTar)
-	opt := gcs.DefaultGCSCopyOptions
-	opt.AllowMissing = pointer.BoolPtr(false)
-	if err := gcs.CopyToLocal(src, dst, gcs.DefaultGCSCopyOptions); err != nil {
+
+	// TODO: Consider passing this in a client instead
+	gcsClient := object.NewGCS(
+		&object.GCSOptions{
+			Concurrent:   pointer.BoolPtr(true),
+			Recursive:    pointer.BoolPtr(true),
+			NoClobber:    pointer.BoolPtr(true),
+			AllowMissing: pointer.BoolPtr(false),
+		},
+	)
+	if err := gcsClient.CopyToLocal(src, dst); err != nil {
 		return errors.Wrap(err, "copying staged sources from GCS")
 	}
 
