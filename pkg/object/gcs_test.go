@@ -14,14 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gcs_test
+package object_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"k8s.io/release/pkg/gcp/gcs"
+	"k8s.io/release/pkg/object"
 )
 
 // TODO: Add production use cases
@@ -55,7 +54,7 @@ func TestGetReleasePath(t *testing.T) {
 			shouldError: false,
 		},
 	} {
-		actual, err := gcs.GetReleasePath(
+		actual, err := object.GetReleasePath(
 			tc.bucket,
 			tc.gcsRoot,
 			tc.version,
@@ -86,7 +85,7 @@ func TestGetMarkerPath(t *testing.T) {
 			shouldError: false,
 		},
 	} {
-		actual, err := gcs.GetMarkerPath(
+		actual, err := object.GetMarkerPath(
 			tc.bucket,
 			tc.gcsRoot,
 		)
@@ -165,7 +164,7 @@ func TestNormalizeGCSPath(t *testing.T) {
 			shouldError: true,
 		},
 	} {
-		actual, err := gcs.NormalizeGCSPath(tc.gcsPathParts...)
+		actual, err := object.NormalizeGCSPath(tc.gcsPathParts...)
 
 		require.Equal(t, tc.expected, actual)
 
@@ -195,7 +194,7 @@ func TestIsPathNormalized(t *testing.T) {
 			expected: true,
 		},
 	} {
-		actual := gcs.IsPathNormalized(tc.gcsPath)
+		actual := object.IsPathNormalized(tc.gcsPath)
 
 		require.Equal(t, tc.expected, actual)
 	}
