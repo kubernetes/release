@@ -27,7 +27,7 @@ import (
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/gcp/auth"
-	"k8s.io/release/pkg/gcp/gcs"
+	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/release"
 )
 
@@ -38,6 +38,9 @@ type Client struct {
 	client
 	opts  *Options
 	state *State
+
+	// TODO: Remove once we push this into the client
+	object.GCS
 }
 
 // NewBuild creates a new `Build` instance.
@@ -410,12 +413,12 @@ func (c *Client) GetGCSBuildPaths() ([]string, error) {
 		return gcsBuildPaths, errors.Wrap(gcsBuildRootErr, "get GCS build root")
 	}
 
-	kubernetesTar, kubernetesTarErr := gcs.NormalizeGCSPath(gcsBuildRoot, release.KubernetesTar)
+	kubernetesTar, kubernetesTarErr := c.NormalizeGCSPath(gcsBuildRoot, release.KubernetesTar)
 	if kubernetesTarErr != nil {
 		return gcsBuildPaths, errors.Wrap(kubernetesTarErr, "get tarball path")
 	}
 
-	binPath, binPathErr := gcs.NormalizeGCSPath(gcsBuildRoot, "bin")
+	binPath, binPathErr := c.GCS.NormalizeGCSPath(gcsBuildRoot, "bin")
 	if binPathErr != nil {
 		return gcsBuildPaths, errors.Wrap(binPathErr, "get binary path")
 	}
@@ -434,7 +437,7 @@ func (c *Client) GCSPathsExist(gcsBuildPaths []string) (bool, []error) {
 	existErrors := []error{}
 	for _, path := range gcsBuildPaths {
 		logrus.Infof("Checking if GCS build path (%s) exists", path)
-		exists, err := gcs.PathExists(path)
+		exists, err := c.GCS.PathExists(path)
 		if err != nil || !exists {
 			existErrors = append(existErrors, err)
 		}

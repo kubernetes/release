@@ -21,7 +21,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 
-	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/image"
 	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/release"
@@ -57,19 +56,23 @@ type Client interface {
 }
 
 type DefaultClient struct {
-	opts        *Options
-	fs          afero.Fs
-	objectStore object.Store
-	registry    image.Registry
+	opts     *Options
+	fs       afero.Fs
+	objStore object.Store
+	registry image.Registry
 }
 
 func New(opts *Options) *DefaultClient {
 	return &DefaultClient{
-		opts:        opts,
-		fs:          opts.Fs,
-		objectStore: opts.Store,
-		registry:    opts.Registry,
+		opts:     opts,
+		fs:       opts.Fs,
+		objStore: opts.Store,
+		registry: opts.Registry,
 	}
+}
+
+func (d *DefaultClient) SetObjStore(s object.Store) {
+	d.objStore = s
 }
 
 // Options are the main options to pass to `Client`.
@@ -164,7 +167,7 @@ func (d *DefaultClient) GetGCSBuildPath(version string) (string, error) {
 		d.SetBucket()
 	}
 
-	buildPath, err := gcs.GetReleasePath(
+	buildPath, err := d.objStore.GetReleasePath(
 		d.opts.Bucket,
 		d.opts.GCSRoot,
 		version,
