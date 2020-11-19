@@ -33,8 +33,8 @@ func generateTestingStageState(params *testStateParameters) *anago.StageState {
 		state.SetVersions(release.NewReleaseVersions("", *params.versionsTag, "", "", ""))
 	}
 
-	if params.parentBranch != nil {
-		state.SetParentBranch(*params.parentBranch)
+	if params.createReleaseBranch != nil {
+		state.SetCreateReleaseBranch(*params.createReleaseBranch)
 	}
 	return state
 }
@@ -49,17 +49,17 @@ func TestCheckPrerequisitesStage(t *testing.T) {
 
 func TestGenerateReleaseVersionStage(t *testing.T) {
 	for _, tc := range []struct {
-		parentBranch string
-		prepare      func(*anagofakes.FakeStageImpl)
-		shouldError  bool
+		prepare             func(*anagofakes.FakeStageImpl)
+		createReleaseBranch bool
+		shouldError         bool
 	}{
 		{ // success
-			parentBranch: git.DefaultBranch,
-			prepare:      func(*anagofakes.FakeStageImpl) {},
-			shouldError:  false,
+			createReleaseBranch: true,
+			prepare:             func(*anagofakes.FakeStageImpl) {},
+			shouldError:         false,
 		},
 		{ // PrepareWorkspaceStage fails
-			parentBranch: git.DefaultBranch,
+			createReleaseBranch: true,
 			prepare: func(mock *anagofakes.FakeStageImpl) {
 				mock.GenerateReleaseVersionReturns(nil, err)
 			},
@@ -70,7 +70,9 @@ func TestGenerateReleaseVersionStage(t *testing.T) {
 		sut := anago.NewDefaultStage(opts)
 
 		sut.SetState(
-			generateTestingStageState(&testStateParameters{parentBranch: &tc.parentBranch}),
+			generateTestingStageState(&testStateParameters{
+				createReleaseBranch: &tc.createReleaseBranch,
+			}),
 		)
 
 		mock := &anagofakes.FakeStageImpl{}
@@ -128,21 +130,21 @@ func TestTagRepository(t *testing.T) {
 		"v1.20.0-beta.1", "", "", "v1.20.0-beta.1", "",
 	)
 	for _, tc := range []struct {
-		prepare       func(*anagofakes.FakeStageImpl)
-		versions      *release.Versions
-		releaseBranch string
-		parentBranch  string
-		shouldError   bool
+		prepare             func(*anagofakes.FakeStageImpl)
+		versions            *release.Versions
+		releaseBranch       string
+		createReleaseBranch bool
+		shouldError         bool
 	}{
 		{ // success new rc creating release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
 				mock.RevParseReturns("", err)
 				mock.CurrentBranchReturnsOnCall(0, "release-1.20", nil)
 			},
-			versions:      newRCVersions,
-			releaseBranch: "release-1.20",
-			parentBranch:  git.DefaultBranch,
-			shouldError:   false,
+			versions:            newRCVersions,
+			releaseBranch:       "release-1.20",
+			createReleaseBranch: true,
+			shouldError:         false,
 		},
 		{ // failure on CommitEmpty new rc creating release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
@@ -150,10 +152,10 @@ func TestTagRepository(t *testing.T) {
 				mock.CurrentBranchReturnsOnCall(0, "release-1.20", nil)
 				mock.CommitEmptyReturns(err)
 			},
-			versions:      newRCVersions,
-			releaseBranch: "release-1.20",
-			parentBranch:  git.DefaultBranch,
-			shouldError:   true,
+			versions:            newRCVersions,
+			releaseBranch:       "release-1.20",
+			createReleaseBranch: true,
+			shouldError:         true,
 		},
 		{ // failure on CurrentBranch new rc creating release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
@@ -161,10 +163,10 @@ func TestTagRepository(t *testing.T) {
 				mock.CurrentBranchReturnsOnCall(0, "release-1.20", nil)
 				mock.CurrentBranchReturns("", err)
 			},
-			versions:      newRCVersions,
-			releaseBranch: "release-1.20",
-			parentBranch:  git.DefaultBranch,
-			shouldError:   true,
+			versions:            newRCVersions,
+			releaseBranch:       "release-1.20",
+			createReleaseBranch: true,
+			shouldError:         true,
 		},
 		{ // failure on Checkout new rc creating release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
@@ -172,10 +174,10 @@ func TestTagRepository(t *testing.T) {
 				mock.CurrentBranchReturnsOnCall(0, "release-1.20", nil)
 				mock.CheckoutReturns(err)
 			},
-			versions:      newRCVersions,
-			releaseBranch: "release-1.20",
-			parentBranch:  git.DefaultBranch,
-			shouldError:   true,
+			versions:            newRCVersions,
+			releaseBranch:       "release-1.20",
+			createReleaseBranch: true,
+			shouldError:         true,
 		},
 		{ // failure on HasBranch new rc creating release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
@@ -183,47 +185,47 @@ func TestTagRepository(t *testing.T) {
 				mock.CurrentBranchReturnsOnCall(0, "release-1.20", nil)
 				mock.HasBranchReturns(false, err)
 			},
-			versions:      newRCVersions,
-			releaseBranch: "release-1.20",
-			parentBranch:  git.DefaultBranch,
-			shouldError:   true,
+			versions:            newRCVersions,
+			releaseBranch:       "release-1.20",
+			createReleaseBranch: true,
+			shouldError:         true,
 		},
 		{ // failure on RevParse new rc creating release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
 				mock.RevParseReturns("", nil)
 			},
-			versions:      newRCVersions,
-			releaseBranch: "release-1.20",
-			parentBranch:  git.DefaultBranch,
-			shouldError:   true,
+			versions:            newRCVersions,
+			releaseBranch:       "release-1.20",
+			createReleaseBranch: true,
+			shouldError:         true,
 		},
 		{ // failure on OpenRepo new rc creating release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
 				mock.OpenRepoReturns(nil, err)
 			},
-			versions:      newRCVersions,
-			releaseBranch: "release-1.20",
-			parentBranch:  git.DefaultBranch,
-			shouldError:   true,
+			versions:            newRCVersions,
+			releaseBranch:       "release-1.20",
+			createReleaseBranch: true,
+			shouldError:         true,
 		},
 		{ // failure on ConfigureGlobalDefaultUserAndEmail new rc creating release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
 				mock.ConfigureGlobalDefaultUserAndEmailReturns(err)
 			},
-			versions:      newRCVersions,
-			releaseBranch: "release-1.20",
-			parentBranch:  git.DefaultBranch,
-			shouldError:   true,
+			versions:            newRCVersions,
+			releaseBranch:       "release-1.20",
+			createReleaseBranch: true,
+			shouldError:         true,
 		},
 		{ // success new rc checking out release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
 				mock.RevParseReturns("", err)
 				mock.HasBranchReturns(true, nil)
 			},
-			versions:      newRCVersions,
-			releaseBranch: "release-1.20",
-			parentBranch:  git.DefaultBranch,
-			shouldError:   false,
+			versions:            newRCVersions,
+			releaseBranch:       "release-1.20",
+			createReleaseBranch: true,
+			shouldError:         false,
 		},
 		{ // failure on Checkout new rc checking out release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
@@ -231,29 +233,29 @@ func TestTagRepository(t *testing.T) {
 				mock.HasBranchReturns(true, nil)
 				mock.CheckoutReturns(err)
 			},
-			versions:      newRCVersions,
-			releaseBranch: "release-1.20",
-			parentBranch:  git.DefaultBranch,
-			shouldError:   true,
+			versions:            newRCVersions,
+			releaseBranch:       "release-1.20",
+			createReleaseBranch: true,
+			shouldError:         true,
 		},
 		{ // failure on HasBranch new rc checking out release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
 				mock.RevParseReturns("", err)
 				mock.HasBranchReturns(true, err)
 			},
-			versions:      newRCVersions,
-			releaseBranch: "release-1.20",
-			parentBranch:  git.DefaultBranch,
-			shouldError:   true,
+			versions:            newRCVersions,
+			releaseBranch:       "release-1.20",
+			createReleaseBranch: true,
+			shouldError:         true,
 		},
 		{ // failure on RevParse new rc checking out release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
 				mock.RevParseReturns("", nil)
 			},
-			versions:      newRCVersions,
-			releaseBranch: "release-1.20",
-			parentBranch:  git.DefaultBranch,
-			shouldError:   true,
+			versions:            newRCVersions,
+			releaseBranch:       "release-1.20",
+			createReleaseBranch: true,
+			shouldError:         true,
 		},
 		{ // success new beta
 			prepare: func(mock *anagofakes.FakeStageImpl) {
@@ -300,7 +302,7 @@ func TestTagRepository(t *testing.T) {
 		sut := anago.NewDefaultStage(opts)
 
 		state.SetVersions(tc.versions)
-		state.SetParentBranch(tc.parentBranch)
+		state.SetCreateReleaseBranch(tc.createReleaseBranch)
 		sut.SetState(state)
 
 		mock := &anagofakes.FakeStageImpl{}
@@ -372,7 +374,9 @@ func TestGenerateChangelog(t *testing.T) {
 		sut := anago.NewDefaultStage(opts)
 
 		etag := ""
-		sut.SetState(generateTestingStageState(&testStateParameters{versionsTag: &etag, parentBranch: &etag}))
+		sut.SetState(generateTestingStageState(&testStateParameters{
+			versionsTag: &etag,
+		}))
 
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)

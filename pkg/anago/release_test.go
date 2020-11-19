@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"k8s.io/release/pkg/anago"
 	"k8s.io/release/pkg/anago/anagofakes"
-	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
 )
 
@@ -33,8 +32,8 @@ func generateTestingReleaseState(params *testStateParameters) *anago.ReleaseStat
 		state.SetVersions(release.NewReleaseVersions("", *params.versionsTag, "", "", ""))
 	}
 
-	if params.parentBranch != nil {
-		state.SetParentBranch(*params.parentBranch)
+	if params.createReleaseBranch != nil {
+		state.SetCreateReleaseBranch(*params.createReleaseBranch)
 	}
 	return state
 }
@@ -49,17 +48,17 @@ func TestCheckPrerequisitesRelease(t *testing.T) {
 
 func TestGenerateReleaseVersionRelease(t *testing.T) {
 	for _, tc := range []struct {
-		parentBranch string
-		prepare      func(*anagofakes.FakeReleaseImpl)
-		shouldError  bool
+		prepare             func(*anagofakes.FakeReleaseImpl)
+		createReleaseBranch bool
+		shouldError         bool
 	}{
 		{ // success
-			parentBranch: git.DefaultBranch,
-			prepare:      func(*anagofakes.FakeReleaseImpl) {},
-			shouldError:  false,
+			createReleaseBranch: true,
+			prepare:             func(*anagofakes.FakeReleaseImpl) {},
+			shouldError:         false,
 		},
 		{ // PrepareWorkspaceRelease fails
-			parentBranch: git.DefaultBranch,
+			createReleaseBranch: true,
 			prepare: func(mock *anagofakes.FakeReleaseImpl) {
 				mock.GenerateReleaseVersionReturns(nil, err)
 			},
@@ -70,7 +69,9 @@ func TestGenerateReleaseVersionRelease(t *testing.T) {
 
 		sut := anago.NewDefaultRelease(opts)
 		sut.SetState(
-			generateTestingReleaseState(&testStateParameters{parentBranch: &tc.parentBranch}),
+			generateTestingReleaseState(&testStateParameters{
+				createReleaseBranch: &tc.createReleaseBranch,
+			}),
 		)
 
 		mock := &anagofakes.FakeReleaseImpl{}

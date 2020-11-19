@@ -94,9 +94,6 @@ func (o *Options) Validate() (*State, error) {
 		return nil, errors.Errorf("invalid release branch: %s", o.ReleaseBranch)
 	}
 
-	// TODO: Adjust this value once SetBuildCandidate is done
-	state.parentBranch = ""
-
 	semverBuildVersion, err := util.TagStringToSemver(o.BuildVersion)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid build version: %s", o.BuildVersion)
@@ -135,10 +132,10 @@ type State struct {
 	// The release versions generated after GenerateReleaseVersion()
 	versions *release.Versions
 
-	// TODO: the parent branch has to be returned by the SetBuildCandidate
-	// method. It should be empty (releases cut from master) or
-	// git.DefaultBranch / "master" (releases cut from release branches).
-	parentBranch string
+	// TODO: This was the `$PARENT_BRANCH` in `anago`.
+	// Indicates if we're going to create a new release branch.
+	// Has to be set by the SetBuildCandidate method.
+	createReleaseBranch bool
 }
 
 // DefaultState returns a new empty State
@@ -148,8 +145,8 @@ func DefaultState() *State {
 	return &State{}
 }
 
-func (s *State) SetParentBranch(branchName string) {
-	s.parentBranch = branchName
+func (s *State) SetCreateReleaseBranch(createReleaseBranch bool) {
+	s.createReleaseBranch = createReleaseBranch
 }
 
 func (s *State) SetVersions(versions *release.Versions) {
