@@ -463,7 +463,9 @@ func (d *DefaultStage) StageArtifacts() error {
 		if err := d.impl.StageLocalArtifacts(pushBuildOptions); err != nil {
 			return errors.Wrap(err, "staging local artifacts")
 		}
-		gcsPath := filepath.Join("stage", d.options.BuildVersion, version)
+		gcsPath := filepath.Join(
+			d.options.Bucket(), "stage", d.options.BuildVersion, version,
+		)
 
 		// Push gcs-stage to GCS
 		if err := d.impl.PushReleaseArtifacts(
