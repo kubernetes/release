@@ -215,17 +215,6 @@ func TestTagRepository(t *testing.T) {
 			createReleaseBranch: true,
 			shouldError:         true,
 		},
-		{ // failure on HasBranch new rc creating release branch
-			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.RevParseReturns("", err)
-				mock.CurrentBranchReturnsOnCall(0, "release-1.20", nil)
-				mock.HasBranchReturns(false, err)
-			},
-			versions:            newRCVersions,
-			releaseBranch:       "release-1.20",
-			createReleaseBranch: true,
-			shouldError:         true,
-		},
 		{ // failure on RevParse new rc creating release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
 				mock.RevParseReturns("", nil)
@@ -256,7 +245,6 @@ func TestTagRepository(t *testing.T) {
 		{ // success new rc checking out release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
 				mock.RevParseReturns("", err)
-				mock.HasBranchReturns(true, nil)
 			},
 			versions:            newRCVersions,
 			releaseBranch:       "release-1.20",
@@ -266,18 +254,7 @@ func TestTagRepository(t *testing.T) {
 		{ // failure on Checkout new rc checking out release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
 				mock.RevParseReturns("", err)
-				mock.HasBranchReturns(true, nil)
 				mock.CheckoutReturns(err)
-			},
-			versions:            newRCVersions,
-			releaseBranch:       "release-1.20",
-			createReleaseBranch: true,
-			shouldError:         true,
-		},
-		{ // failure on HasBranch new rc checking out release branch
-			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.RevParseReturns("", err)
-				mock.HasBranchReturns(true, err)
 			},
 			versions:            newRCVersions,
 			releaseBranch:       "release-1.20",

@@ -130,20 +130,6 @@ type FakeStageImpl struct {
 		result1 *release.Versions
 		result2 error
 	}
-	HasBranchStub        func(*git.Repo, string) (bool, error)
-	hasBranchMutex       sync.RWMutex
-	hasBranchArgsForCall []struct {
-		arg1 *git.Repo
-		arg2 string
-	}
-	hasBranchReturns struct {
-		result1 bool
-		result2 error
-	}
-	hasBranchReturnsOnCall map[int]struct {
-		result1 bool
-		result2 error
-	}
 	MakeCrossStub        func(string) error
 	makeCrossMutex       sync.RWMutex
 	makeCrossArgsForCall []struct {
@@ -761,71 +747,6 @@ func (fake *FakeStageImpl) GenerateReleaseVersionReturnsOnCall(i int, result1 *r
 	}
 	fake.generateReleaseVersionReturnsOnCall[i] = struct {
 		result1 *release.Versions
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeStageImpl) HasBranch(arg1 *git.Repo, arg2 string) (bool, error) {
-	fake.hasBranchMutex.Lock()
-	ret, specificReturn := fake.hasBranchReturnsOnCall[len(fake.hasBranchArgsForCall)]
-	fake.hasBranchArgsForCall = append(fake.hasBranchArgsForCall, struct {
-		arg1 *git.Repo
-		arg2 string
-	}{arg1, arg2})
-	stub := fake.HasBranchStub
-	fakeReturns := fake.hasBranchReturns
-	fake.recordInvocation("HasBranch", []interface{}{arg1, arg2})
-	fake.hasBranchMutex.Unlock()
-	if stub != nil {
-		return stub(arg1, arg2)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	return fakeReturns.result1, fakeReturns.result2
-}
-
-func (fake *FakeStageImpl) HasBranchCallCount() int {
-	fake.hasBranchMutex.RLock()
-	defer fake.hasBranchMutex.RUnlock()
-	return len(fake.hasBranchArgsForCall)
-}
-
-func (fake *FakeStageImpl) HasBranchCalls(stub func(*git.Repo, string) (bool, error)) {
-	fake.hasBranchMutex.Lock()
-	defer fake.hasBranchMutex.Unlock()
-	fake.HasBranchStub = stub
-}
-
-func (fake *FakeStageImpl) HasBranchArgsForCall(i int) (*git.Repo, string) {
-	fake.hasBranchMutex.RLock()
-	defer fake.hasBranchMutex.RUnlock()
-	argsForCall := fake.hasBranchArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
-}
-
-func (fake *FakeStageImpl) HasBranchReturns(result1 bool, result2 error) {
-	fake.hasBranchMutex.Lock()
-	defer fake.hasBranchMutex.Unlock()
-	fake.HasBranchStub = nil
-	fake.hasBranchReturns = struct {
-		result1 bool
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeStageImpl) HasBranchReturnsOnCall(i int, result1 bool, result2 error) {
-	fake.hasBranchMutex.Lock()
-	defer fake.hasBranchMutex.Unlock()
-	fake.HasBranchStub = nil
-	if fake.hasBranchReturnsOnCall == nil {
-		fake.hasBranchReturnsOnCall = make(map[int]struct {
-			result1 bool
-			result2 error
-		})
-	}
-	fake.hasBranchReturnsOnCall[i] = struct {
-		result1 bool
 		result2 error
 	}{result1, result2}
 }
@@ -1464,8 +1385,6 @@ func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	defer fake.generateChangelogMutex.RUnlock()
 	fake.generateReleaseVersionMutex.RLock()
 	defer fake.generateReleaseVersionMutex.RUnlock()
-	fake.hasBranchMutex.RLock()
-	defer fake.hasBranchMutex.RUnlock()
 	fake.makeCrossMutex.RLock()
 	defer fake.makeCrossMutex.RUnlock()
 	fake.openRepoMutex.RLock()
