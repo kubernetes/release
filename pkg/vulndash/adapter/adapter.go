@@ -97,16 +97,19 @@ func GetAllVulnerabilities(
 	logrus.Info("listing the vulnerabilities, will take a while...")
 	var occurrenceList []*grafeaspb.Occurrence
 	it := client.GetGrafeasClient().ListOccurrences(ctx, req)
+	logrus.Debug("got a list of occurrences")
 	for {
 		var occ *grafeaspb.Occurrence
 		var err error
 		occ, err = it.Next()
 		if err == iterator.Done {
+			logrus.Debug("no more occurrencess")
 			break
 		}
 		if err != nil {
 			return nil, errors.Errorf("occurrence iteration error: %v", err)
 		}
+		logrus.Debug("updating the list of occurrences")
 		occurrenceList = append(occurrenceList, occ)
 	}
 	logrus.Infof("done listing the vulnerabilities")
