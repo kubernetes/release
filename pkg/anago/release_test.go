@@ -46,6 +46,42 @@ func TestCheckPrerequisitesRelease(t *testing.T) {
 	require.Nil(t, sut.CheckPrerequisites())
 }
 
+func TestCheckReleaseBranchStateRelease(t *testing.T) {
+	for _, tc := range []struct {
+		prepare     func(*anagofakes.FakeReleaseImpl)
+		shouldError bool
+	}{
+		{ // success
+			prepare:     func(*anagofakes.FakeReleaseImpl) {},
+			shouldError: false,
+		},
+		{ // BranchNeedsCreation fails
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.BranchNeedsCreationReturns(false, err)
+			},
+			shouldError: true,
+		},
+	} {
+		opts := anago.DefaultReleaseOptions()
+		sut := anago.NewDefaultRelease(opts)
+
+		sut.SetState(
+			generateTestingReleaseState(&testStateParameters{versionsTag: &testVersionTag}),
+		)
+
+		mock := &anagofakes.FakeReleaseImpl{}
+		tc.prepare(mock)
+		sut.SetImpl(mock)
+
+		err := sut.CheckReleaseBranchState()
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
+}
+
 func TestGenerateReleaseVersionRelease(t *testing.T) {
 	for _, tc := range []struct {
 		prepare             func(*anagofakes.FakeReleaseImpl)

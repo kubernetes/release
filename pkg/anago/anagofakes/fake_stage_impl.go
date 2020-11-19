@@ -20,6 +20,7 @@ package anagofakes
 import (
 	"sync"
 
+	"github.com/blang/semver"
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/changelog"
 	"k8s.io/release/pkg/gcp/gcb"
@@ -28,6 +29,21 @@ import (
 )
 
 type FakeStageImpl struct {
+	BranchNeedsCreationStub        func(string, string, semver.Version) (bool, error)
+	branchNeedsCreationMutex       sync.RWMutex
+	branchNeedsCreationArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 semver.Version
+	}
+	branchNeedsCreationReturns struct {
+		result1 bool
+		result2 error
+	}
+	branchNeedsCreationReturnsOnCall map[int]struct {
+		result1 bool
+		result2 error
+	}
 	CheckReleaseBucketStub        func(*build.Options) error
 	checkReleaseBucketMutex       sync.RWMutex
 	checkReleaseBucketArgsForCall []struct {
@@ -250,6 +266,72 @@ type FakeStageImpl struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeStageImpl) BranchNeedsCreation(arg1 string, arg2 string, arg3 semver.Version) (bool, error) {
+	fake.branchNeedsCreationMutex.Lock()
+	ret, specificReturn := fake.branchNeedsCreationReturnsOnCall[len(fake.branchNeedsCreationArgsForCall)]
+	fake.branchNeedsCreationArgsForCall = append(fake.branchNeedsCreationArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 semver.Version
+	}{arg1, arg2, arg3})
+	stub := fake.BranchNeedsCreationStub
+	fakeReturns := fake.branchNeedsCreationReturns
+	fake.recordInvocation("BranchNeedsCreation", []interface{}{arg1, arg2, arg3})
+	fake.branchNeedsCreationMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeStageImpl) BranchNeedsCreationCallCount() int {
+	fake.branchNeedsCreationMutex.RLock()
+	defer fake.branchNeedsCreationMutex.RUnlock()
+	return len(fake.branchNeedsCreationArgsForCall)
+}
+
+func (fake *FakeStageImpl) BranchNeedsCreationCalls(stub func(string, string, semver.Version) (bool, error)) {
+	fake.branchNeedsCreationMutex.Lock()
+	defer fake.branchNeedsCreationMutex.Unlock()
+	fake.BranchNeedsCreationStub = stub
+}
+
+func (fake *FakeStageImpl) BranchNeedsCreationArgsForCall(i int) (string, string, semver.Version) {
+	fake.branchNeedsCreationMutex.RLock()
+	defer fake.branchNeedsCreationMutex.RUnlock()
+	argsForCall := fake.branchNeedsCreationArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeStageImpl) BranchNeedsCreationReturns(result1 bool, result2 error) {
+	fake.branchNeedsCreationMutex.Lock()
+	defer fake.branchNeedsCreationMutex.Unlock()
+	fake.BranchNeedsCreationStub = nil
+	fake.branchNeedsCreationReturns = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStageImpl) BranchNeedsCreationReturnsOnCall(i int, result1 bool, result2 error) {
+	fake.branchNeedsCreationMutex.Lock()
+	defer fake.branchNeedsCreationMutex.Unlock()
+	fake.BranchNeedsCreationStub = nil
+	if fake.branchNeedsCreationReturnsOnCall == nil {
+		fake.branchNeedsCreationReturnsOnCall = make(map[int]struct {
+			result1 bool
+			result2 error
+		})
+	}
+	fake.branchNeedsCreationReturnsOnCall[i] = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeStageImpl) CheckReleaseBucket(arg1 *build.Options) error {
@@ -1366,6 +1448,8 @@ func (fake *FakeStageImpl) TagReturnsOnCall(i int, result1 error) {
 func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.branchNeedsCreationMutex.RLock()
+	defer fake.branchNeedsCreationMutex.RUnlock()
 	fake.checkReleaseBucketMutex.RLock()
 	defer fake.checkReleaseBucketMutex.RUnlock()
 	fake.checkoutMutex.RLock()

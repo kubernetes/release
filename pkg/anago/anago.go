@@ -132,9 +132,7 @@ type State struct {
 	// The release versions generated after GenerateReleaseVersion()
 	versions *release.Versions
 
-	// TODO: This was the `$PARENT_BRANCH` in `anago`.
 	// Indicates if we're going to create a new release branch.
-	// Has to be set by the SetBuildCandidate method.
 	createReleaseBranch bool
 }
 
@@ -232,9 +230,9 @@ func (s *Stage) Run() error {
 		return errors.Wrap(err, "check prerequisites")
 	}
 
-	logger.WithStep().Info("Setting build candidate")
-	if err := s.client.SetBuildCandidate(); err != nil {
-		return errors.Wrap(err, "set build candidate")
+	logger.WithStep().Info("Checking release branch state")
+	if err := s.client.CheckReleaseBranchState(); err != nil {
+		return errors.Wrap(err, "check release branch state")
 	}
 
 	logger.WithStep().Info("Generating release version")
@@ -349,9 +347,9 @@ func (r *Release) Run() error {
 		return errors.Wrap(err, "check prerequisites")
 	}
 
-	logger.WithStep().Info("Setting build candidate")
-	if err := r.client.SetBuildCandidate(); err != nil {
-		return errors.Wrap(err, "set build candidate")
+	logger.WithStep().Info("Checking release branch state")
+	if err := r.client.CheckReleaseBranchState(); err != nil {
+		return errors.Wrap(err, "check release branch state")
 	}
 
 	logger.WithStep().Info("Generating release version")

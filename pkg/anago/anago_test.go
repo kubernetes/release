@@ -68,9 +68,9 @@ func TestRunStage(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // SetBuildCandidate fails
+		{ // CheckReleaseBranchState fails
 			prepare: func(mock *anagofakes.FakeStageClient) {
-				mock.SetBuildCandidateReturns(err)
+				mock.CheckReleaseBranchStateReturns(err)
 			},
 			shouldError: true,
 		},
@@ -147,9 +147,9 @@ func TestRunRelease(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // SetBuildCandidate fails
+		{ // CheckReleaseBranchState fails
 			prepare: func(mock *anagofakes.FakeReleaseClient) {
-				mock.SetBuildCandidateReturns(err)
+				mock.CheckReleaseBranchStateReturns(err)
 			},
 			shouldError: true,
 		},
