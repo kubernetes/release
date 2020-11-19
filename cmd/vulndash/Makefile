@@ -20,7 +20,7 @@ SHELL=/bin/bash -o pipefail
 
 REGISTRY ?= gcr.io/k8s-staging-artifact-promoter
 IMGNAME = vulndash
-IMAGE_VERSION ?= v0.3.0-1
+IMAGE_VERSION ?= v0.3.1-1
 CONFIG ?= buster
 
 IMAGE = $(REGISTRY)/$(IMGNAME)
