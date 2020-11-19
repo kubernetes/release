@@ -96,7 +96,7 @@ func NewDefaultOptions() *Options {
 //counterfeiter:generate . Repository
 type Repository interface {
 	Open() error
-	CheckState(string, string, string) error
+	CheckState(string, string, string, bool) error
 	GetTag() (string, error)
 }
 
@@ -161,7 +161,7 @@ func (g *GCB) Submit() error {
 		return errors.Wrap(err, "open release repo")
 	}
 
-	if err := g.repoClient.CheckState(toolOrg, toolRepo, toolBranch); err != nil {
+	if err := g.repoClient.CheckState(toolOrg, toolRepo, toolBranch, g.options.NoMock); err != nil {
 		return errors.Wrap(err, "verifying repository state")
 	}
 

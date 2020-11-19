@@ -24,12 +24,13 @@ import (
 )
 
 type FakeRepository struct {
-	CheckStateStub        func(string, string, string) error
+	CheckStateStub        func(string, string, string, bool) error
 	checkStateMutex       sync.RWMutex
 	checkStateArgsForCall []struct {
 		arg1 string
 		arg2 string
 		arg3 string
+		arg4 bool
 	}
 	checkStateReturns struct {
 		result1 error
@@ -63,20 +64,21 @@ type FakeRepository struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeRepository) CheckState(arg1 string, arg2 string, arg3 string) error {
+func (fake *FakeRepository) CheckState(arg1 string, arg2 string, arg3 string, arg4 bool) error {
 	fake.checkStateMutex.Lock()
 	ret, specificReturn := fake.checkStateReturnsOnCall[len(fake.checkStateArgsForCall)]
 	fake.checkStateArgsForCall = append(fake.checkStateArgsForCall, struct {
 		arg1 string
 		arg2 string
 		arg3 string
-	}{arg1, arg2, arg3})
+		arg4 bool
+	}{arg1, arg2, arg3, arg4})
 	stub := fake.CheckStateStub
 	fakeReturns := fake.checkStateReturns
 	fake.recordInvocation("CheckState", []interface{}{arg1, arg2, arg3})
 	fake.checkStateMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3)
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1
@@ -90,17 +92,17 @@ func (fake *FakeRepository) CheckStateCallCount() int {
 	return len(fake.checkStateArgsForCall)
 }
 
-func (fake *FakeRepository) CheckStateCalls(stub func(string, string, string) error) {
+func (fake *FakeRepository) CheckStateCalls(stub func(string, string, string, bool) error) {
 	fake.checkStateMutex.Lock()
 	defer fake.checkStateMutex.Unlock()
 	fake.CheckStateStub = stub
 }
 
-func (fake *FakeRepository) CheckStateArgsForCall(i int) (string, string, string) {
+func (fake *FakeRepository) CheckStateArgsForCall(i int) (string, string, string, bool) {
 	fake.checkStateMutex.RLock()
 	defer fake.checkStateMutex.RUnlock()
 	argsForCall := fake.checkStateArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
 func (fake *FakeRepository) CheckStateReturns(result1 error) {
