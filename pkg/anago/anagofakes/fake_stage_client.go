@@ -42,6 +42,16 @@ type FakeStageClient struct {
 	checkPrerequisitesReturnsOnCall map[int]struct {
 		result1 error
 	}
+	CheckReleaseBranchStateStub        func() error
+	checkReleaseBranchStateMutex       sync.RWMutex
+	checkReleaseBranchStateArgsForCall []struct {
+	}
+	checkReleaseBranchStateReturns struct {
+		result1 error
+	}
+	checkReleaseBranchStateReturnsOnCall map[int]struct {
+		result1 error
+	}
 	GenerateChangelogStub        func() error
 	generateChangelogMutex       sync.RWMutex
 	generateChangelogArgsForCall []struct {
@@ -70,16 +80,6 @@ type FakeStageClient struct {
 		result1 error
 	}
 	prepareWorkspaceReturnsOnCall map[int]struct {
-		result1 error
-	}
-	SetBuildCandidateStub        func() error
-	setBuildCandidateMutex       sync.RWMutex
-	setBuildCandidateArgsForCall []struct {
-	}
-	setBuildCandidateReturns struct {
-		result1 error
-	}
-	setBuildCandidateReturnsOnCall map[int]struct {
 		result1 error
 	}
 	StageArtifactsStub        func() error
@@ -228,6 +228,59 @@ func (fake *FakeStageClient) CheckPrerequisitesReturnsOnCall(i int, result1 erro
 		})
 	}
 	fake.checkPrerequisitesReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageClient) CheckReleaseBranchState() error {
+	fake.checkReleaseBranchStateMutex.Lock()
+	ret, specificReturn := fake.checkReleaseBranchStateReturnsOnCall[len(fake.checkReleaseBranchStateArgsForCall)]
+	fake.checkReleaseBranchStateArgsForCall = append(fake.checkReleaseBranchStateArgsForCall, struct {
+	}{})
+	stub := fake.CheckReleaseBranchStateStub
+	fakeReturns := fake.checkReleaseBranchStateReturns
+	fake.recordInvocation("CheckReleaseBranchState", []interface{}{})
+	fake.checkReleaseBranchStateMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageClient) CheckReleaseBranchStateCallCount() int {
+	fake.checkReleaseBranchStateMutex.RLock()
+	defer fake.checkReleaseBranchStateMutex.RUnlock()
+	return len(fake.checkReleaseBranchStateArgsForCall)
+}
+
+func (fake *FakeStageClient) CheckReleaseBranchStateCalls(stub func() error) {
+	fake.checkReleaseBranchStateMutex.Lock()
+	defer fake.checkReleaseBranchStateMutex.Unlock()
+	fake.CheckReleaseBranchStateStub = stub
+}
+
+func (fake *FakeStageClient) CheckReleaseBranchStateReturns(result1 error) {
+	fake.checkReleaseBranchStateMutex.Lock()
+	defer fake.checkReleaseBranchStateMutex.Unlock()
+	fake.CheckReleaseBranchStateStub = nil
+	fake.checkReleaseBranchStateReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageClient) CheckReleaseBranchStateReturnsOnCall(i int, result1 error) {
+	fake.checkReleaseBranchStateMutex.Lock()
+	defer fake.checkReleaseBranchStateMutex.Unlock()
+	fake.CheckReleaseBranchStateStub = nil
+	if fake.checkReleaseBranchStateReturnsOnCall == nil {
+		fake.checkReleaseBranchStateReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.checkReleaseBranchStateReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -387,59 +440,6 @@ func (fake *FakeStageClient) PrepareWorkspaceReturnsOnCall(i int, result1 error)
 		})
 	}
 	fake.prepareWorkspaceReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeStageClient) SetBuildCandidate() error {
-	fake.setBuildCandidateMutex.Lock()
-	ret, specificReturn := fake.setBuildCandidateReturnsOnCall[len(fake.setBuildCandidateArgsForCall)]
-	fake.setBuildCandidateArgsForCall = append(fake.setBuildCandidateArgsForCall, struct {
-	}{})
-	stub := fake.SetBuildCandidateStub
-	fakeReturns := fake.setBuildCandidateReturns
-	fake.recordInvocation("SetBuildCandidate", []interface{}{})
-	fake.setBuildCandidateMutex.Unlock()
-	if stub != nil {
-		return stub()
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fakeReturns.result1
-}
-
-func (fake *FakeStageClient) SetBuildCandidateCallCount() int {
-	fake.setBuildCandidateMutex.RLock()
-	defer fake.setBuildCandidateMutex.RUnlock()
-	return len(fake.setBuildCandidateArgsForCall)
-}
-
-func (fake *FakeStageClient) SetBuildCandidateCalls(stub func() error) {
-	fake.setBuildCandidateMutex.Lock()
-	defer fake.setBuildCandidateMutex.Unlock()
-	fake.SetBuildCandidateStub = stub
-}
-
-func (fake *FakeStageClient) SetBuildCandidateReturns(result1 error) {
-	fake.setBuildCandidateMutex.Lock()
-	defer fake.setBuildCandidateMutex.Unlock()
-	fake.SetBuildCandidateStub = nil
-	fake.setBuildCandidateReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeStageClient) SetBuildCandidateReturnsOnCall(i int, result1 error) {
-	fake.setBuildCandidateMutex.Lock()
-	defer fake.setBuildCandidateMutex.Unlock()
-	fake.SetBuildCandidateStub = nil
-	if fake.setBuildCandidateReturnsOnCall == nil {
-		fake.setBuildCandidateReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.setBuildCandidateReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -663,14 +663,14 @@ func (fake *FakeStageClient) Invocations() map[string][][]interface{} {
 	defer fake.buildMutex.RUnlock()
 	fake.checkPrerequisitesMutex.RLock()
 	defer fake.checkPrerequisitesMutex.RUnlock()
+	fake.checkReleaseBranchStateMutex.RLock()
+	defer fake.checkReleaseBranchStateMutex.RUnlock()
 	fake.generateChangelogMutex.RLock()
 	defer fake.generateChangelogMutex.RUnlock()
 	fake.generateReleaseVersionMutex.RLock()
 	defer fake.generateReleaseVersionMutex.RUnlock()
 	fake.prepareWorkspaceMutex.RLock()
 	defer fake.prepareWorkspaceMutex.RUnlock()
-	fake.setBuildCandidateMutex.RLock()
-	defer fake.setBuildCandidateMutex.RUnlock()
 	fake.stageArtifactsMutex.RLock()
 	defer fake.stageArtifactsMutex.RUnlock()
 	fake.submitMutex.RLock()

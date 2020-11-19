@@ -42,6 +42,16 @@ type FakeReleaseClient struct {
 	checkPrerequisitesReturnsOnCall map[int]struct {
 		result1 error
 	}
+	CheckReleaseBranchStateStub        func() error
+	checkReleaseBranchStateMutex       sync.RWMutex
+	checkReleaseBranchStateArgsForCall []struct {
+	}
+	checkReleaseBranchStateReturns struct {
+		result1 error
+	}
+	checkReleaseBranchStateReturnsOnCall map[int]struct {
+		result1 error
+	}
 	CreateAnnouncementStub        func() error
 	createAnnouncementMutex       sync.RWMutex
 	createAnnouncementArgsForCall []struct {
@@ -90,16 +100,6 @@ type FakeReleaseClient struct {
 		result1 error
 	}
 	pushGitObjectsReturnsOnCall map[int]struct {
-		result1 error
-	}
-	SetBuildCandidateStub        func() error
-	setBuildCandidateMutex       sync.RWMutex
-	setBuildCandidateArgsForCall []struct {
-	}
-	setBuildCandidateReturns struct {
-		result1 error
-	}
-	setBuildCandidateReturnsOnCall map[int]struct {
 		result1 error
 	}
 	SubmitStub        func() error
@@ -228,6 +228,59 @@ func (fake *FakeReleaseClient) CheckPrerequisitesReturnsOnCall(i int, result1 er
 		})
 	}
 	fake.checkPrerequisitesReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseClient) CheckReleaseBranchState() error {
+	fake.checkReleaseBranchStateMutex.Lock()
+	ret, specificReturn := fake.checkReleaseBranchStateReturnsOnCall[len(fake.checkReleaseBranchStateArgsForCall)]
+	fake.checkReleaseBranchStateArgsForCall = append(fake.checkReleaseBranchStateArgsForCall, struct {
+	}{})
+	stub := fake.CheckReleaseBranchStateStub
+	fakeReturns := fake.checkReleaseBranchStateReturns
+	fake.recordInvocation("CheckReleaseBranchState", []interface{}{})
+	fake.checkReleaseBranchStateMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeReleaseClient) CheckReleaseBranchStateCallCount() int {
+	fake.checkReleaseBranchStateMutex.RLock()
+	defer fake.checkReleaseBranchStateMutex.RUnlock()
+	return len(fake.checkReleaseBranchStateArgsForCall)
+}
+
+func (fake *FakeReleaseClient) CheckReleaseBranchStateCalls(stub func() error) {
+	fake.checkReleaseBranchStateMutex.Lock()
+	defer fake.checkReleaseBranchStateMutex.Unlock()
+	fake.CheckReleaseBranchStateStub = stub
+}
+
+func (fake *FakeReleaseClient) CheckReleaseBranchStateReturns(result1 error) {
+	fake.checkReleaseBranchStateMutex.Lock()
+	defer fake.checkReleaseBranchStateMutex.Unlock()
+	fake.CheckReleaseBranchStateStub = nil
+	fake.checkReleaseBranchStateReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseClient) CheckReleaseBranchStateReturnsOnCall(i int, result1 error) {
+	fake.checkReleaseBranchStateMutex.Lock()
+	defer fake.checkReleaseBranchStateMutex.Unlock()
+	fake.CheckReleaseBranchStateStub = nil
+	if fake.checkReleaseBranchStateReturnsOnCall == nil {
+		fake.checkReleaseBranchStateReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.checkReleaseBranchStateReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -497,59 +550,6 @@ func (fake *FakeReleaseClient) PushGitObjectsReturnsOnCall(i int, result1 error)
 	}{result1}
 }
 
-func (fake *FakeReleaseClient) SetBuildCandidate() error {
-	fake.setBuildCandidateMutex.Lock()
-	ret, specificReturn := fake.setBuildCandidateReturnsOnCall[len(fake.setBuildCandidateArgsForCall)]
-	fake.setBuildCandidateArgsForCall = append(fake.setBuildCandidateArgsForCall, struct {
-	}{})
-	stub := fake.SetBuildCandidateStub
-	fakeReturns := fake.setBuildCandidateReturns
-	fake.recordInvocation("SetBuildCandidate", []interface{}{})
-	fake.setBuildCandidateMutex.Unlock()
-	if stub != nil {
-		return stub()
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fakeReturns.result1
-}
-
-func (fake *FakeReleaseClient) SetBuildCandidateCallCount() int {
-	fake.setBuildCandidateMutex.RLock()
-	defer fake.setBuildCandidateMutex.RUnlock()
-	return len(fake.setBuildCandidateArgsForCall)
-}
-
-func (fake *FakeReleaseClient) SetBuildCandidateCalls(stub func() error) {
-	fake.setBuildCandidateMutex.Lock()
-	defer fake.setBuildCandidateMutex.Unlock()
-	fake.SetBuildCandidateStub = stub
-}
-
-func (fake *FakeReleaseClient) SetBuildCandidateReturns(result1 error) {
-	fake.setBuildCandidateMutex.Lock()
-	defer fake.setBuildCandidateMutex.Unlock()
-	fake.SetBuildCandidateStub = nil
-	fake.setBuildCandidateReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeReleaseClient) SetBuildCandidateReturnsOnCall(i int, result1 error) {
-	fake.setBuildCandidateMutex.Lock()
-	defer fake.setBuildCandidateMutex.Unlock()
-	fake.SetBuildCandidateStub = nil
-	if fake.setBuildCandidateReturnsOnCall == nil {
-		fake.setBuildCandidateReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.setBuildCandidateReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
 func (fake *FakeReleaseClient) Submit() error {
 	fake.submitMutex.Lock()
 	ret, specificReturn := fake.submitReturnsOnCall[len(fake.submitArgsForCall)]
@@ -663,6 +663,8 @@ func (fake *FakeReleaseClient) Invocations() map[string][][]interface{} {
 	defer fake.archiveMutex.RUnlock()
 	fake.checkPrerequisitesMutex.RLock()
 	defer fake.checkPrerequisitesMutex.RUnlock()
+	fake.checkReleaseBranchStateMutex.RLock()
+	defer fake.checkReleaseBranchStateMutex.RUnlock()
 	fake.createAnnouncementMutex.RLock()
 	defer fake.createAnnouncementMutex.RUnlock()
 	fake.generateReleaseVersionMutex.RLock()
@@ -673,8 +675,6 @@ func (fake *FakeReleaseClient) Invocations() map[string][][]interface{} {
 	defer fake.pushArtifactsMutex.RUnlock()
 	fake.pushGitObjectsMutex.RLock()
 	defer fake.pushGitObjectsMutex.RUnlock()
-	fake.setBuildCandidateMutex.RLock()
-	defer fake.setBuildCandidateMutex.RUnlock()
 	fake.submitMutex.RLock()
 	defer fake.submitMutex.RUnlock()
 	fake.validateOptionsMutex.RLock()

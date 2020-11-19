@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -48,9 +49,9 @@ type stageClient interface {
 	// too.
 	CheckPrerequisites() error
 
-	// SetBuildCandidate discovers the release branch, parent branch (if
-	// available) and build version for this release.
-	SetBuildCandidate() error
+	// CheckReleaseBranchState discovers if the provided release branch has to
+	// be created.
+	CheckReleaseBranchState() error
 
 	// GenerateReleaseVersion discovers the next versions to be released.
 	GenerateReleaseVersion() error
@@ -107,6 +108,9 @@ type defaultStageImpl struct{}
 //counterfeiter:generate . stageImpl
 type stageImpl interface {
 	Submit(options *gcb.Options) error
+	BranchNeedsCreation(
+		branch, releaseType string, buildVersion semver.Version,
+	) (bool, error)
 	PrepareWorkspaceStage() error
 	GenerateReleaseVersion(
 		releaseType, version, branch string, branchFromMaster bool,
@@ -134,6 +138,14 @@ type stageImpl interface {
 
 func (d *defaultStageImpl) Submit(options *gcb.Options) error {
 	return gcb.New(options).Submit()
+}
+
+func (d *defaultStageImpl) BranchNeedsCreation(
+	branch, releaseType string, buildVersion semver.Version,
+) (bool, error) {
+	return release.NewBranchChecker().NeedsCreation(
+		branch, releaseType, buildVersion,
+	)
 }
 
 func (d *defaultStageImpl) PrepareWorkspaceStage() error {
@@ -244,9 +256,16 @@ func (d *DefaultStage) ValidateOptions() error {
 
 func (d *DefaultStage) CheckPrerequisites() error { return nil }
 
-func (d *DefaultStage) SetBuildCandidate() error {
-	// TODO: finish the implementation
-	// d.state.createReleaseBranch = true
+func (d *DefaultStage) CheckReleaseBranchState() error {
+	createReleaseBranch, err := d.impl.BranchNeedsCreation(
+		d.options.ReleaseBranch,
+		d.options.ReleaseType,
+		d.state.semverBuildVersion,
+	)
+	if err != nil {
+		return errors.Wrap(err, "check if release branch needs creation")
+	}
+	d.state.createReleaseBranch = createReleaseBranch
 	return nil
 }
 
