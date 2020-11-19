@@ -118,7 +118,6 @@ type stageImpl interface {
 	ConfigureGlobalDefaultUserAndEmail() error
 	OpenRepo(repoPath string) (*git.Repo, error)
 	RevParse(repo *git.Repo, rev string) (string, error)
-	HasBranch(repo *git.Repo, branch string) (bool, error)
 	Checkout(repo *git.Repo, rev string, args ...string) error
 	CurrentBranch(repo *git.Repo) (string, error)
 	CommitEmpty(repo *git.Repo, msg string) error
@@ -173,10 +172,6 @@ func (d *defaultStageImpl) OpenRepo(repoPath string) (*git.Repo, error) {
 
 func (d *defaultStageImpl) RevParse(repo *git.Repo, rev string) (string, error) {
 	return repo.RevParse(rev)
-}
-
-func (d *defaultStageImpl) HasBranch(repo *git.Repo, branch string) (bool, error) {
-	return repo.HasBranch(branch)
 }
 
 func (d *defaultStageImpl) Checkout(repo *git.Repo, rev string, args ...string) error {
@@ -316,35 +311,14 @@ func (d *DefaultStage) TagRepository() error {
 
 			if version == d.state.versions.Prime() {
 				logrus.Infof("Version %s is the prime version", version)
-
-				hasBranch, err := d.impl.HasBranch(
-					repo, d.options.ReleaseBranch,
+				logrus.Infof(
+					"Creating release branch %s from commit %s",
+					d.options.ReleaseBranch, commit,
 				)
-				if err != nil {
-					return errors.Wrap(err, "check if repository has branch")
-				}
-				logrus.Infof("Branch already exist: %v", hasBranch)
-
-				if !hasBranch {
-					logrus.Infof(
-						"Creating release branch %s from commit %s",
-						d.options.ReleaseBranch, commit,
-					)
-					if err := d.impl.Checkout(
-						repo, "-b", d.options.ReleaseBranch, commit,
-					); err != nil {
-						return errors.Wrap(err, "create new release branch")
-					}
-				} else {
-					logrus.Infof(
-						"Checking out release branch %s since it already exist",
-						d.options.ReleaseBranch,
-					)
-					if err := d.impl.Checkout(
-						repo, d.options.ReleaseBranch,
-					); err != nil {
-						return errors.Wrap(err, "checkout release branch")
-					}
+				if err := d.impl.Checkout(
+					repo, "-b", d.options.ReleaseBranch, commit,
+				); err != nil {
+					return errors.Wrap(err, "create new release branch")
 				}
 			} else {
 				logrus.Infof(
@@ -368,7 +342,9 @@ func (d *DefaultStage) TagRepository() error {
 		if err != nil {
 			return errors.Wrap(err, "get current branch")
 		}
-		logrus.Infof("Current branch is %q", branch)
+		if branch != "" {
+			logrus.Infof("Current branch is %s", branch)
+		}
 
 		// For release branches, we create an empty release commit to avoid
 		// potential ambiguous 'git describe' logic between the official
