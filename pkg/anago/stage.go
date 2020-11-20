@@ -252,7 +252,6 @@ func (d *DefaultStage) Submit(stream bool) error {
 	options.NoMock = d.options.NoMock
 	options.Branch = d.options.ReleaseBranch
 	options.ReleaseType = d.options.ReleaseType
-	options.NoAnago = true
 	return d.impl.Submit(options)
 }
 

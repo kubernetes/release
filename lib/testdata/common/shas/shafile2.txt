@@ -1,1 +1,0 @@
-This is the second file to test the generation of SHA hashes.

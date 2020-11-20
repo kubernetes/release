@@ -84,7 +84,6 @@ type Options struct {
 	Release      bool
 	Stream       bool
 	BuildAtHead  bool
-	NoAnago      bool
 	Branch       string
 	ReleaseType  string
 	BuildVersion string
@@ -273,12 +272,7 @@ func (g *GCB) Submit() error {
 		return g.listJobs(g.options.Project, g.options.LastJobs)
 	}
 
-	// Use dedicated job types for krel-based executions
-	if g.options.NoAnago {
-		delete(gcbSubs, "BUILD_AT_HEAD")
-		gcbSubs["LOG_LEVEL"] = g.options.LogLevel
-		jobType += "-krel"
-	}
+	gcbSubs["LOG_LEVEL"] = g.options.LogLevel
 
 	g.options.ConfigDir = filepath.Join(toolRoot, "gcb", jobType)
 	prepareBuildErr := build.PrepareBuilds(&g.options.Options)
@@ -344,7 +338,6 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolBranch string) (map[str
 		}
 
 		buildVersion = fields[0]
-		gcbSubs["BUILD_AT_HEAD"] = buildVersion
 	}
 
 	if buildVersion == "" {
@@ -354,10 +347,6 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolBranch string) (map[str
 		)
 		if versionErr != nil {
 			return gcbSubs, versionErr
-		}
-
-		if g.options.Stage {
-			gcbSubs["BUILD_AT_HEAD"] = ""
 		}
 	}
 

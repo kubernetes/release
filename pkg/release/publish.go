@@ -85,7 +85,6 @@ func (*defaultPublisher) GetURLResponse(url string) (string, error) {
 // Expected destination format:
 //   gs://<bucket>/<gcsRoot>[/fast]/<version>
 //
-// was releaselib.sh: release::gcs::publish_version
 func (p *Publisher) PublishVersion(
 	buildType, version, buildDir, bucket, gcsRoot string,
 	extraVersionMarkers []string,
@@ -189,7 +188,6 @@ func (p *Publisher) PublishVersion(
 // publishFile - the version marker to look for
 // markerPath - the GCS path to search for the version marker in
 // version - release version
-// was releaselib.sh: release::gcs::verify_latest_update
 func (p *Publisher) VerifyLatestUpdate(
 	publishFile, markerPath, version string,
 ) (needsUpdate bool, err error) {
@@ -233,7 +231,6 @@ func (p *Publisher) VerifyLatestUpdate(
 // buildDir - build output directory
 // markerPath - the GCS path to publish a version marker to
 // version - release version
-// was releaselib.sh: release::gcs::publish
 func (p *Publisher) PublishToGcs(
 	publishFile, buildDir, markerPath, version string,
 	privateBucket bool,

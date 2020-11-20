@@ -240,7 +240,6 @@ func (bi *Instance) findLatestVersion() (latestVersion string, err error) {
 
 // CheckReleaseBucket verifies that a release bucket exists and the current
 // authenticated GCP user has write permissions to it.
-// was: releaselib.sh: release::gcs::check_release_bucket
 func (bi *Instance) CheckReleaseBucket() error {
 	logrus.Infof("Checking bucket %s for write permissions", bi.opts.Bucket)
 
@@ -278,7 +277,6 @@ func (bi *Instance) CheckReleaseBucket() error {
 }
 
 // StageLocalArtifacts locally stages the release artifacts
-// was releaselib.sh: release::gcs::locally_stage_release_artifacts
 func (bi *Instance) StageLocalArtifacts() error {
 	logrus.Info("Staging local artifacts")
 	stageDir := filepath.Join(bi.opts.BuildDir, release.GCSStagePath, bi.opts.Version)
@@ -414,7 +412,6 @@ func (bi *Instance) PushContainerImages() error {
 }
 
 // CopyStagedFromGCS copies artifacts from GCS and between buckets as needed.
-// was: anago:copy_staged_from_gcs
 // TODO: Investigate if it's worthwhile to use any of the bi.objStore.Get*Path()
 //       functions here or create a new one to populate staging paths
 func (bi *Instance) CopyStagedFromGCS(stagedBucket, buildVersion string) error {

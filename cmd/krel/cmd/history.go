@@ -24,7 +24,7 @@ import (
 
 var historyOpts = gcb.NewHistoryOptions()
 
-// historyCmd is a krel gcbmgr subcommand which generates information about the
+// historyCmd is a krel subcommand which generates information about the
 // command that the operator ran for a specific release cut.
 var historyCmd = &cobra.Command{
 	Use:           "history --branch release-1.19 --date-from 2020-06-18 [--date-to 2020-06-19]",

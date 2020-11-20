@@ -48,7 +48,6 @@ import (
 )
 
 const (
-	// gcbmgr/anago defaults
 	DefaultToolRepo   = "release"
 	DefaultToolBranch = git.DefaultBranch
 	DefaultToolOrg    = git.DefaultGithubOrg

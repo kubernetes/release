@@ -25,11 +25,10 @@ development and testing.
 Tools | Description
  :---: | --
 [`krel`](/cmd/krel)                     | Kubernetes Release Toolbox<br/>This is the new golang based tool for managing releases
-[`anago`](/anago)                       | Release Tool:<br/>The main driver for creating staged builds and releases. This is what runs inside GCB after a job is submitted using `krel gcbmgr`.
 [`release-notes`](/cmd/release-notes)   | Scrape GitHub for release notes.<br/>See [Release Notes Gathering](#release-notes-gathering) for more information.
 [`push-build.sh`](/push-build.sh)       | Pushes a developer build or CI Jenkins build up to GCS.
 
-For information on how to use `krel` and `anago`, see the [Branch Manager Handbook]
+For information on how to use `krel`, see the [Branch Manager Handbook]
 
 [kubernetes/kubernetes]: https://git.k8s.io/kubernetes
 [Branch Manager Handbook]: https://git.k8s.io/sig-release/release-engineering/role-handbooks/branch-manager.md
