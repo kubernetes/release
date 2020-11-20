@@ -28,11 +28,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/tar"
 	"k8s.io/release/pkg/util"
-	"k8s.io/utils/pointer"
 )
 
 type stageFile struct {
@@ -371,7 +369,7 @@ func (bi *Instance) copyStageFiles(stageDir string, files []stageFile) error {
 // PushReleaseArtifacts can be used to push local artifacts from the `srcPath`
 // to the remote `gcsPath`. The Bucket has to be set via the `Bucket` option.
 func (bi *Instance) PushReleaseArtifacts(srcPath, gcsPath string) error {
-	dstPath, dstPathErr := gcs.NormalizeGCSPath(gcsPath)
+	dstPath, dstPathErr := bi.objStore.NormalizePath(gcsPath)
 	if dstPathErr != nil {
 		return errors.Wrap(dstPathErr, "normalize GCS destination")
 	}
@@ -379,7 +377,7 @@ func (bi *Instance) PushReleaseArtifacts(srcPath, gcsPath string) error {
 	logrus.Infof("Pushing release artifacts from %s to %s", srcPath, dstPath)
 
 	return errors.Wrap(
-		gcs.RsyncRecursive(srcPath, dstPath), "rsync artifacts to GCS",
+		bi.objStore.RsyncRecursive(srcPath, dstPath), "rsync artifacts to GCS",
 	)
 }
 
@@ -417,37 +415,38 @@ func (bi *Instance) PushContainerImages() error {
 
 // CopyStagedFromGCS copies artifacts from GCS and between buckets as needed.
 // was: anago:copy_staged_from_gcs
-// TODO: Investigate if it's worthwhile to use any of the gcs.Get*Path()
+// TODO: Investigate if it's worthwhile to use any of the bi.objStore.Get*Path()
 //       functions here or create a new one to populate staging paths
 func (bi *Instance) CopyStagedFromGCS(stagedBucket, buildVersion string) error {
 	logrus.Info("Copy staged release artifacts from GCS")
 
-	copyOpts := gcs.DefaultGCSCopyOptions
-	copyOpts.NoClobber = pointer.BoolPtr(bi.opts.AllowDup)
-	copyOpts.AllowMissing = pointer.BoolPtr(false)
+	bi.objStore.SetOptions(
+		bi.objStore.WithNoClobber(bi.opts.AllowDup),
+		bi.objStore.WithAllowMissing(false),
+	)
 
 	gcsStageRoot := filepath.Join(bi.opts.Bucket, release.StagePath, buildVersion, bi.opts.Version)
 	src := filepath.Join(gcsStageRoot, release.GCSStagePath, bi.opts.Version)
 
-	gcsSrc, gcsSrcErr := gcs.NormalizeGCSPath(src)
+	gcsSrc, gcsSrcErr := bi.objStore.NormalizePath(src)
 	if gcsSrcErr != nil {
 		return errors.Wrap(gcsSrcErr, "normalize GCS source")
 	}
 
-	dst, dstErr := gcs.NormalizeGCSPath(bi.opts.Bucket, "release", bi.opts.Version)
+	dst, dstErr := bi.objStore.NormalizePath(bi.opts.Bucket, "release", bi.opts.Version)
 	if dstErr != nil {
 		return errors.Wrap(dstErr, "normalize GCS destination")
 	}
 
 	logrus.Infof("Bucket to bucket rsync from %s to %s", gcsSrc, dst)
-	if err := gcs.RsyncRecursive(gcsSrc, dst); err != nil {
+	if err := bi.objStore.RsyncRecursive(gcsSrc, dst); err != nil {
 		return errors.Wrap(err, "copy stage to release bucket")
 	}
 
 	src = filepath.Join(src, release.KubernetesTar)
 	dst = filepath.Join(bi.opts.BuildDir, release.GCSStagePath, bi.opts.Version, release.KubernetesTar)
 	logrus.Infof("Copy kubernetes tarball %s to %s", src, dst)
-	if err := gcs.CopyToLocal(src, dst, copyOpts); err != nil {
+	if err := bi.objStore.CopyToLocal(src, dst); err != nil {
 		return errors.Wrapf(err, "copy to local")
 	}
 
@@ -456,7 +455,7 @@ func (bi *Instance) CopyStagedFromGCS(stagedBucket, buildVersion string) error {
 		return errors.Wrap(err, "create dst dir")
 	}
 	logrus.Infof("Copy container images %s to %s", src, bi.opts.BuildDir)
-	if err := gcs.CopyToLocal(src, bi.opts.BuildDir, copyOpts); err != nil {
+	if err := bi.objStore.CopyToLocal(src, bi.opts.BuildDir); err != nil {
 		return errors.Wrapf(err, "copy to local")
 	}
 
@@ -481,12 +480,12 @@ func (bi *Instance) StageLocalSourceTree(workDir, buildVersion string) error {
 	}
 
 	logrus.Infof("Uploading source tree tarball to GCS")
-	copyOpts := gcs.DefaultGCSCopyOptions
-	copyOpts.AllowMissing = pointer.BoolPtr(false)
-	if err := gcs.CopyToGCS(
+	bi.objStore.SetOptions(
+		bi.objStore.WithAllowMissing(false),
+	)
+	if err := bi.objStore.CopyToRemote(
 		tarballPath,
 		filepath.Join(bi.opts.Bucket, release.StagePath, buildVersion, release.SourcesTar),
-		copyOpts,
 	); err != nil {
 		return errors.Wrap(err, "copy tarball to GCS")
 	}

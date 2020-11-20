@@ -22,9 +22,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/github"
-	"k8s.io/utils/pointer"
+	"k8s.io/release/pkg/object"
 )
 
 // Config contains a slice of `ReleaseConfig` to be used when unmarshalling a
@@ -36,13 +35,15 @@ type Config struct {
 // ReleaseConfig contains source (GitHub) and destination (GCS) information
 // to perform a copy/upload operation using gh2gcs.
 type ReleaseConfig struct {
-	Org                string       `yaml:"org"`
-	Repo               string       `yaml:"repo"`
-	Tags               []string     `yaml:"tags"`
-	IncludePrereleases bool         `yaml:"includePrereleases"`
-	GCSBucket          string       `yaml:"gcsBucket"`
-	ReleaseDir         string       `yaml:"releaseDir"`
-	GCSCopyOptions     *gcs.Options `yaml:"gcsCopyOptions"`
+	// GitHub options
+	Org                string   `yaml:"org"`
+	Repo               string   `yaml:"repo"`
+	Tags               []string `yaml:"tags"`
+	IncludePrereleases bool     `yaml:"includePrereleases"`
+
+	// GCS options
+	GCSBucket  string `yaml:"gcsBucket"`
+	ReleaseDir string `yaml:"releaseDir"`
 }
 
 // DownloadReleases downloads release assets to a local directory
@@ -66,43 +67,19 @@ func DownloadReleases(releaseCfg *ReleaseConfig, ghClient *github.GitHub, output
 
 // Upload copies a set of release assets from local directory to GCS
 // Assets to upload are derived from the tags specified in `ReleaseConfig`.
-func Upload(releaseCfg *ReleaseConfig, ghClient *github.GitHub, outputDir string) error {
-	uploadBase := filepath.Join(outputDir, releaseCfg.Org, releaseCfg.Repo)
+func Upload(cfg *ReleaseConfig, ghClient *github.GitHub, outputDir string) error {
+	uploadBase := filepath.Join(outputDir, cfg.Org, cfg.Repo)
 
-	tags := releaseCfg.Tags
+	tags := cfg.Tags
 	for _, tag := range tags {
 		srcDir := filepath.Join(uploadBase, tag)
-		gcsPath := filepath.Join(releaseCfg.GCSBucket, releaseCfg.ReleaseDir, tag)
-		if err := gcs.CopyToGCS(srcDir, gcsPath, releaseCfg.GCSCopyOptions); err != nil {
+		gcsPath := filepath.Join(cfg.GCSBucket, cfg.ReleaseDir, tag)
+
+		gcs := object.NewGCS()
+		if err := gcs.CopyToRemote(srcDir, gcsPath); err != nil {
 			return err
 		}
 	}
 
 	return nil
-}
-
-// CheckGCSCopyOptions checks if the user set any config or we need to set the default config
-func CheckGCSCopyOptions(copyOptions *gcs.Options) *gcs.Options {
-	// set the GCS Copy options to default values
-	if copyOptions == nil {
-		return gcs.DefaultGCSCopyOptions
-	}
-
-	if copyOptions.AllowMissing == nil {
-		copyOptions.AllowMissing = pointer.BoolPtr(true)
-	}
-
-	if copyOptions.Concurrent == nil {
-		copyOptions.Concurrent = pointer.BoolPtr(true)
-	}
-
-	if copyOptions.NoClobber == nil {
-		copyOptions.NoClobber = pointer.BoolPtr(true)
-	}
-
-	if copyOptions.Recursive == nil {
-		copyOptions.Recursive = pointer.BoolPtr(true)
-	}
-
-	return copyOptions
 }

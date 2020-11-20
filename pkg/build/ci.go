@@ -26,7 +26,6 @@ import (
 
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/gcp/auth"
-	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/release"
 )
 
@@ -119,12 +118,12 @@ func (bi *Instance) checkBuildExists() (bool, error) {
 		return false, errors.Wrap(gcsBuildRootErr, "get GCS build root")
 	}
 
-	kubernetesTar, kubernetesTarErr := gcs.NormalizeGCSPath(gcsBuildRoot, release.KubernetesTar)
+	kubernetesTar, kubernetesTarErr := bi.objStore.NormalizePath(gcsBuildRoot, release.KubernetesTar)
 	if kubernetesTarErr != nil {
 		return false, errors.Wrap(kubernetesTarErr, "get tarball path")
 	}
 
-	binPath, binPathErr := gcs.NormalizeGCSPath(gcsBuildRoot, "bin")
+	binPath, binPathErr := bi.objStore.NormalizePath(gcsBuildRoot, "bin")
 	if binPathErr != nil {
 		return false, errors.Wrap(binPathErr, "get binary path")
 	}
@@ -139,7 +138,7 @@ func (bi *Instance) checkBuildExists() (bool, error) {
 	existErrors := []error{}
 	for _, path := range gcsBuildPaths {
 		logrus.Infof("Checking if GCS build path (%s) exists", path)
-		exists, existErr := gcs.PathExists(path)
+		exists, existErr := bi.objStore.PathExists(path)
 		if existErr != nil || !exists {
 			existErrors = append(existErrors, existErr)
 		}

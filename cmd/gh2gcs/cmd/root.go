@@ -29,7 +29,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"k8s.io/release/pkg/gcp"
-	"k8s.io/release/pkg/gcp/gcs"
 	"k8s.io/release/pkg/gh2gcs"
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/log"
@@ -205,7 +204,7 @@ func run(opts *options) error {
 		return errors.Wrap(err, "pre-checking for GCP package usage")
 	}
 
-	releaseConfigs := &gh2gcs.Config{}
+	releaseCfgs := &gh2gcs.Config{}
 	if opts.configFilePath != "" {
 		logrus.Infof("Reading the config file %s...", opts.configFilePath)
 		data, err := ioutil.ReadFile(opts.configFilePath)
@@ -214,47 +213,44 @@ func run(opts *options) error {
 		}
 
 		logrus.Info("Parsing the config...")
-		err = yaml.UnmarshalStrict(data, &releaseConfigs)
+		err = yaml.UnmarshalStrict(data, &releaseCfgs)
 		if err != nil {
 			return errors.Wrap(err, "failed to decode the file")
 		}
-
-		for i, releaseConfig := range releaseConfigs.ReleaseConfigs {
-			releaseConfigs.ReleaseConfigs[i].GCSCopyOptions = gh2gcs.CheckGCSCopyOptions(releaseConfig.GCSCopyOptions)
-		}
 	} else {
 		// TODO: Expose certain GCSCopyOptions for user configuration
-		releaseConfigs.ReleaseConfigs = append(releaseConfigs.ReleaseConfigs, gh2gcs.ReleaseConfig{
+		newReleaseCfg := &gh2gcs.ReleaseConfig{
 			Org:                opts.org,
 			Repo:               opts.repo,
 			Tags:               opts.tags,
 			IncludePrereleases: opts.includePrereleases,
 			GCSBucket:          opts.bucket,
 			ReleaseDir:         opts.releaseDir,
-			GCSCopyOptions:     gcs.DefaultGCSCopyOptions,
-		})
+		}
+
+		releaseCfgs.ReleaseConfigs = append(releaseCfgs.ReleaseConfigs, *newReleaseCfg)
 	}
 
 	// Create a real GitHub API client
 	gh := github.New()
 
-	for _, releaseConfig := range releaseConfigs.ReleaseConfigs {
-		if len(releaseConfig.Tags) == 0 {
-			releaseTags, err := gh.GetReleaseTags(releaseConfig.Org, releaseConfig.Repo, releaseConfig.IncludePrereleases)
+	for _, releaseCfg := range releaseCfgs.ReleaseConfigs {
+		if len(releaseCfg.Tags) == 0 {
+			releaseTags, err := gh.GetReleaseTags(releaseCfg.Org, releaseCfg.Repo, releaseCfg.IncludePrereleases)
 			if err != nil {
 				return errors.Wrap(err, "getting release tags")
 			}
 
-			releaseConfig.Tags = releaseTags
+			releaseCfg.Tags = releaseTags
 		}
 
-		if err := gh2gcs.DownloadReleases(&releaseConfig, gh, opts.outputDir); err != nil {
+		if err := gh2gcs.DownloadReleases(&releaseCfg, gh, opts.outputDir); err != nil {
 			return errors.Wrap(err, "downloading release assets")
 		}
 		logrus.Infof("Files downloaded to %s directory", opts.outputDir)
 
 		if !opts.downloadOnly {
-			if err := gh2gcs.Upload(&releaseConfig, gh, opts.outputDir); err != nil {
+			if err := gh2gcs.Upload(&releaseCfg, gh, opts.outputDir); err != nil {
 				return errors.Wrap(err, "uploading release assets to GCS")
 			}
 		}
