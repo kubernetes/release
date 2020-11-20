@@ -25,8 +25,76 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/gcp"
-	"k8s.io/utils/pointer"
 )
+
+type GCS struct {
+	// gsutil options
+	concurrent bool
+	recursive  bool
+	noClobber  bool
+
+	// local options
+	// AllowMissing allows a copy operation to be skipped if the source or
+	// destination does not exist. This is useful for scenarios where copy
+	// operations happen in a loop/channel, so a single "failure" does not block
+	// the entire operation.
+	allowMissing bool
+}
+
+func NewGCS() *GCS {
+	return &GCS{
+		concurrent:   true,
+		recursive:    true,
+		noClobber:    true,
+		allowMissing: true,
+	}
+}
+
+func (g *GCS) SetOptions(opts ...OptFn) {
+	for _, f := range opts {
+		f(g)
+	}
+}
+
+func (g *GCS) WithConcurrent(concurrent bool) OptFn {
+	return func(Store) {
+		g.concurrent = concurrent
+	}
+}
+
+func (g *GCS) WithRecursive(recursive bool) OptFn {
+	return func(Store) {
+		g.recursive = recursive
+	}
+}
+
+func (g *GCS) WithNoClobber(noClobber bool) OptFn {
+	return func(Store) {
+		g.noClobber = noClobber
+	}
+}
+
+func (g *GCS) WithAllowMissing(allowMissing bool) OptFn {
+	return func(Store) {
+		g.allowMissing = allowMissing
+	}
+}
+
+func (g *GCS) Concurrent() bool {
+	return g.concurrent
+}
+
+func (g *GCS) Recursive() bool {
+	return g.recursive
+}
+
+func (g *GCS) NoClobber() bool {
+	return g.noClobber
+}
+
+func (g *GCS) AllowMissing() bool {
+	return g.allowMissing
+}
 
 var (
 	// GcsPrefix url prefix for google cloud storage buckets
@@ -35,45 +103,6 @@ var (
 	recursiveFlag  = "-r"
 	noClobberFlag  = "-n"
 )
-
-type GCS struct {
-	// TODO: Implement store
-	opts *GCSOptions
-}
-
-func NewGCS(opts *GCSOptions) *GCS {
-	return &GCS{opts}
-}
-
-// GCSOptions are the main options to pass to `GCS`.
-type GCSOptions struct {
-	// TODO: Populate fields
-	// gsutil options
-	Concurrent *bool
-	Recursive  *bool
-	NoClobber  *bool
-
-	// local options
-	// AllowMissing allows a copy operation to be skipped if the source or
-	// destination does not exist. This is useful for scenarios where copy
-	// operations happen in a loop/channel, so a single "failure" does not block
-	// the entire operation.
-	AllowMissing *bool
-}
-
-// TODO: Consider a method to set options
-
-func NewDefaultGCS() *GCS {
-	return &GCS{DefaultGCSCopyOptions}
-}
-
-// DefaultGCSCopyOptions have the default options for the GCS copy action
-var DefaultGCSCopyOptions = &GCSOptions{
-	Concurrent:   pointer.BoolPtr(true),
-	Recursive:    pointer.BoolPtr(true),
-	NoClobber:    pointer.BoolPtr(true),
-	AllowMissing: pointer.BoolPtr(true),
-}
 
 // CopyToGCS copies a local directory to the specified GCS path
 func (g *GCS) CopyToGCS(src, gcsPath string) error {
@@ -87,7 +116,7 @@ func (g *GCS) CopyToGCS(src, gcsPath string) error {
 	if err != nil {
 		logrus.Info("Unable to get local source directory info")
 
-		if *g.opts.AllowMissing {
+		if g.allowMissing {
 			logrus.Infof("Source directory (%s) does not exist. Skipping GCS upload.", src)
 			return nil
 		}
@@ -129,17 +158,17 @@ func (g *GCS) CopyBucketToBucket(src, dst string) error {
 func (g *GCS) bucketCopy(src, dst string) error {
 	args := []string{}
 
-	if *g.opts.Concurrent {
+	if g.concurrent {
 		logrus.Debug("Setting GCS copy to run concurrently")
 		args = append(args, concurrentFlag)
 	}
 
 	args = append(args, "cp")
-	if *g.opts.Recursive {
+	if g.recursive {
 		logrus.Debug("Setting GCS copy to run recursively")
 		args = append(args, recursiveFlag)
 	}
-	if *g.opts.NoClobber {
+	if g.noClobber {
 		logrus.Debug("Setting GCS copy to not clobber existing files")
 		args = append(args, noClobberFlag)
 	}

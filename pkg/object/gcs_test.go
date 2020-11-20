@@ -20,10 +20,41 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	"k8s.io/release/pkg/object"
 )
 
-var gcs = object.NewGCS(object.DefaultGCSCopyOptions)
+var testGCS = object.NewGCS()
+
+func TestGCSSetOptions(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		gcs      *object.GCS
+		opt      bool
+		expected bool
+	}{
+		{
+			name:     "should be false",
+			gcs:      testGCS,
+			opt:      false,
+			expected: false,
+		},
+	} {
+		t.Logf("test case: %v", tc.name)
+
+		testGCS.SetOptions(
+			testGCS.WithConcurrent(tc.opt),
+			testGCS.WithRecursive(tc.opt),
+			testGCS.WithNoClobber(tc.opt),
+			testGCS.WithAllowMissing(tc.opt),
+		)
+
+		require.Equal(t, tc.expected, testGCS.Concurrent())
+		require.Equal(t, tc.expected, testGCS.Recursive())
+		require.Equal(t, tc.expected, testGCS.NoClobber())
+		require.Equal(t, tc.expected, testGCS.AllowMissing())
+	}
+}
 
 // TODO: Add production use cases
 func TestGetReleasePath(t *testing.T) {
@@ -56,7 +87,7 @@ func TestGetReleasePath(t *testing.T) {
 			shouldError: false,
 		},
 	} {
-		actual, err := gcs.GetReleasePath(
+		actual, err := testGCS.GetReleasePath(
 			tc.bucket,
 			tc.gcsRoot,
 			tc.version,
@@ -87,7 +118,7 @@ func TestGetMarkerPath(t *testing.T) {
 			shouldError: false,
 		},
 	} {
-		actual, err := gcs.GetMarkerPath(
+		actual, err := testGCS.GetMarkerPath(
 			tc.bucket,
 			tc.gcsRoot,
 		)
@@ -166,7 +197,7 @@ func TestNormalizeGCSPath(t *testing.T) {
 			shouldError: true,
 		},
 	} {
-		actual, err := gcs.NormalizeGCSPath(tc.gcsPathParts...)
+		actual, err := testGCS.NormalizeGCSPath(tc.gcsPathParts...)
 
 		require.Equal(t, tc.expected, actual)
 
@@ -196,7 +227,7 @@ func TestIsPathNormalized(t *testing.T) {
 			expected: true,
 		},
 	} {
-		actual := gcs.IsPathNormalized(tc.gcsPath)
+		actual := testGCS.IsPathNormalized(tc.gcsPath)
 
 		require.Equal(t, tc.expected, actual)
 	}

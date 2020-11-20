@@ -20,8 +20,8 @@ package object
 
 //counterfeiter:generate . Store
 type Store interface {
-	// TODO: Implement interface
-	// TODO: Consider a method to set options
+	SetOptions(opts ...OptFn)
+
 	// TODO: Choose GCS-agnostic names
 	CopyToGCS(src, gcsPath string) error
 	CopyToLocal(gcsPath, dst string) error
@@ -33,3 +33,5 @@ type Store interface {
 	RsyncRecursive(src, dst string) error
 	PathExists(gcsPath string) (bool, error)
 }
+
+type OptFn func(Store)
