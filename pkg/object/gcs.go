@@ -105,9 +105,9 @@ var (
 )
 
 // CopyToGCS copies a local directory to the specified GCS path
-func (g *GCS) CopyToGCS(src, gcsPath string) error {
+func (g *GCS) CopyToRemote(src, gcsPath string) error {
 	logrus.Infof("Copying %s to GCS (%s)", src, gcsPath)
-	gcsPath, gcsPathErr := g.NormalizeGCSPath(gcsPath)
+	gcsPath, gcsPathErr := g.NormalizePath(gcsPath)
 	if gcsPathErr != nil {
 		return errors.Wrap(gcsPathErr, "normalize GCS path")
 	}
@@ -130,7 +130,7 @@ func (g *GCS) CopyToGCS(src, gcsPath string) error {
 // CopyToLocal copies a GCS path to the specified local directory
 func (g *GCS) CopyToLocal(gcsPath, dst string) error {
 	logrus.Infof("Copying GCS (%s) to %s", gcsPath, dst)
-	gcsPath, gcsPathErr := g.NormalizeGCSPath(gcsPath)
+	gcsPath, gcsPathErr := g.NormalizePath(gcsPath)
 	if gcsPathErr != nil {
 		return errors.Wrap(gcsPathErr, "normalize GCS path")
 	}
@@ -142,12 +142,12 @@ func (g *GCS) CopyToLocal(gcsPath, dst string) error {
 func (g *GCS) CopyBucketToBucket(src, dst string) error {
 	logrus.Infof("Copying %s to %s", src, dst)
 
-	src, srcErr := g.NormalizeGCSPath(src)
+	src, srcErr := g.NormalizePath(src)
 	if srcErr != nil {
 		return errors.Wrap(srcErr, "normalize GCS path")
 	}
 
-	dst, dstErr := g.NormalizeGCSPath(dst)
+	dst, dstErr := g.NormalizePath(dst)
 	if dstErr != nil {
 		return errors.Wrap(dstErr, "normalize GCS path")
 	}
@@ -255,14 +255,14 @@ func (g *GCS) getPath(
 	}
 
 	// Ensure any constructed GCS path is prefixed with `gs://`
-	return g.NormalizeGCSPath(gcsPathParts...)
+	return g.NormalizePath(gcsPathParts...)
 }
 
 // NormalizeGCSPath takes a GCS path and ensures that the `GcsPrefix` is
 // prepended to it.
 // TODO: Should there be an append function for paths to prevent multiple calls
 //       like in build.checkBuildExists()?
-func (g *GCS) NormalizeGCSPath(gcsPathParts ...string) (string, error) {
+func (g *GCS) NormalizePath(gcsPathParts ...string) (string, error) {
 	gcsPath := ""
 
 	// Ensure there is at least one element in the gcsPathParts slice before
@@ -350,7 +350,7 @@ func (g *GCS) IsPathNormalized(gcsPath string) bool {
 
 // RsyncRecursive runs `gsutil rsync` in recursive mode. The caller of this
 // function has to ensure that the provided paths are prefixed with gs:// if
-// necessary (see `NormalizeGCSPath()`).
+// necessary (see `NormalizePath()`).
 func (g *GCS) RsyncRecursive(src, dst string) error {
 	return errors.Wrap(
 		gcp.GSUtil(concurrentFlag, "rsync", recursiveFlag, src, dst),

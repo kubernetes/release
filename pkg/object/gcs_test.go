@@ -133,7 +133,7 @@ func TestGetMarkerPath(t *testing.T) {
 	}
 }
 
-func TestNormalizeGCSPath(t *testing.T) {
+func TestNormalizePath(t *testing.T) {
 	for _, tc := range []struct {
 		gcsPathParts []string
 		expected     string
@@ -197,7 +197,7 @@ func TestNormalizeGCSPath(t *testing.T) {
 			shouldError: true,
 		},
 	} {
-		actual, err := testGCS.NormalizeGCSPath(tc.gcsPathParts...)
+		actual, err := testGCS.NormalizePath(tc.gcsPathParts...)
 
 		require.Equal(t, tc.expected, actual)
 

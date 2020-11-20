@@ -20,18 +20,25 @@ package object
 
 //counterfeiter:generate . Store
 type Store interface {
+	// Configure options
 	SetOptions(opts ...OptFn)
 
-	// TODO: Choose GCS-agnostic names
-	CopyToGCS(src, gcsPath string) error
-	CopyToLocal(gcsPath, dst string) error
+	// Path operations
+	NormalizePath(pathParts ...string) (string, error)
+	IsPathNormalized(path string) bool
+	PathExists(path string) (bool, error)
+
+	// Copy operations
+	// TODO: Determine if these methods should even be part of the interface
+	// TODO: Maybe overly specific. Consider reducing these down to Copy()
+	CopyToRemote(local, remote string) error
+	CopyToLocal(remote, local string) error
 	CopyBucketToBucket(src, dst string) error
+	RsyncRecursive(src, dst string) error
+
+	// TODO: Overly specific. We should only care these methods during a release.
 	GetReleasePath(bucket, gcsRoot, version string, fast bool) (string, error)
 	GetMarkerPath(bucket, gcsRoot string) (string, error)
-	NormalizeGCSPath(gcsPathParts ...string) (string, error)
-	IsPathNormalized(gcsPath string) bool
-	RsyncRecursive(src, dst string) error
-	PathExists(gcsPath string) (bool, error)
 }
 
 type OptFn func(Store)
