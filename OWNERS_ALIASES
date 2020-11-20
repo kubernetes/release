@@ -2,13 +2,14 @@
 
 aliases:
   sig-release-leads:
-    - alejandrox1
-    - justaugustus
-    - saschagrunert
+    - alejandrox1 # SIG Technical Lead
+    - hasheddan # SIG Technical Lead
+    - justaugustus # SIG Chair
+    - saschagrunert # SIG Chair
   release-engineering-approvers:
     - cpanato # Release Manager
     - feiskyer # Release Manager
-    - hasheddan # Release Manager
+    - hasheddan # subproject owner / Release Manager
     - idealhack # Release Manager
     - puerco # Release Manager
     - saschagrunert # subproject owner / Release Manager
