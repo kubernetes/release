@@ -24,25 +24,61 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/api/cloudbuild/v1"
+
 	"k8s.io/release/pkg/gcp/build"
 )
 
+// History is the main structure for retrieving the GCB history output.
 type History struct {
 	opts *HistoryOptions
+	impl historyImpl
 }
 
 // NewHistory creates a new `History` instance.
 func NewHistory(opts *HistoryOptions) *History {
-	return &History{opts}
+	return &History{
+		opts: opts,
+		impl: &defaultHistoryImpl{},
+	}
 }
 
+// SetImpl can be used to set the internal History implementation.
+func (h *History) SetImpl(impl historyImpl) {
+	h.impl = impl
+}
+
+// HistoryOptions are the main settings for the `History`.
 type HistoryOptions struct {
-	Branch         string
-	Project        string
-	DateFrom       string
-	DateTo         string
-	DateFromParsed string
-	DateToParsed   string
+	// Branch is the release branch for filtering the jobs.
+	Branch string
+
+	// Project is the GCB project to be used.
+	Project string
+
+	// DateFrom is the string date for selecting the start of the range.
+	DateFrom string
+
+	// DateTo is the string date for selecting the end of the range.
+	DateTo string
+}
+
+//counterfeiter:generate . historyImpl
+type historyImpl interface {
+	ParseTime(layout, value string) (time.Time, error)
+	GetJobsByTag(project, tagsFilter string) ([]*cloudbuild.Build, error)
+}
+
+type defaultHistoryImpl struct{}
+
+func (*defaultHistoryImpl) ParseTime(layout, value string) (time.Time, error) {
+	return time.Parse(layout, value)
+}
+
+func (*defaultHistoryImpl) GetJobsByTag(
+	project, tagsFilter string,
+) ([]*cloudbuild.Build, error) {
+	return build.GetJobsByTag(project, tagsFilter)
 }
 
 var status = map[string]string{
@@ -55,19 +91,19 @@ var status = map[string]string{
 // RunHistory is the function invoked by 'krel gcbmgr history', responsible for
 // getting the jobs and builind the list of commands to be added in the GitHub issue
 func (h *History) Run() error {
-	if err := h.opts.Validate(); err != nil {
-		return errors.Wrap(err, "validating history options")
+	from, to, err := h.parseDateRange()
+	if err != nil {
+		return errors.Wrap(err, "parse from and to dates")
 	}
 
 	logrus.Infof("Running history with the following options: %+v", h.opts)
 
 	tagFilter := fmt.Sprintf(
-		"tags=%q create_time>%q create_time<%q",
-		h.opts.Branch, h.opts.DateFromParsed, h.opts.DateToParsed,
+		"tags=%q create_time>%q create_time<%q", h.opts.Branch, from, to,
 	)
-	jobs, err := build.GetJobsByTag(h.opts.Project, tagFilter)
+	jobs, err := h.impl.GetJobsByTag(h.opts.Project, tagFilter)
 	if err != nil {
-		return errors.Wrap(err, "getting the GCP build jobs")
+		return errors.Wrap(err, "get GCP build jobs by tag")
 	}
 
 	tableString := &strings.Builder{}
@@ -111,12 +147,12 @@ func (h *History) Run() error {
 		logs := job.LogUrl
 
 		// Calculate the duration of the job
-		layout := "2006-01-02T15:04:05.000000000Z"
-		tStart, err := time.Parse(layout, start)
+		const layout = "2006-01-02T15:04:05.000000000Z"
+		tStart, err := h.impl.ParseTime(layout, start)
 		if err != nil {
 			return errors.Wrap(err, "parsing the start job time")
 		}
-		tEnd, err := time.Parse(layout, end)
+		tEnd, err := h.impl.ParseTime(layout, end)
 		if err != nil {
 			return errors.Wrap(err, "parsing the end job time")
 		}
@@ -140,37 +176,40 @@ func (h *History) Run() error {
 	return nil
 }
 
-func (o *HistoryOptions) Validate() error {
-	if o.DateFrom == "" {
-		return errors.New("need to specify a starting date")
+func (h *History) parseDateRange() (from, to string, err error) {
+	if h.opts.DateFrom == "" {
+		return "", "", errors.New("need to specify a start date")
 	}
 
-	layOut := "2006-01-02"
-	timeStampFrom, err := time.Parse(layOut, o.DateFrom)
+	const (
+		parseLayout  = "2006-01-02"
+		resultLayout = "2006-01-02T15:04:05.000Z"
+	)
+	timeStampFrom, err := h.impl.ParseTime(parseLayout, h.opts.DateFrom)
 	if err != nil {
-		return errors.Wrapf(err, "failed to convert the date from flag")
+		return "", "", errors.Wrapf(err, "convert date from")
 	}
-	o.DateFromParsed = timeStampFrom.Format("2006-01-02T15:04:05.000Z")
+	from = timeStampFrom.Format(resultLayout)
 
-	if o.DateTo == "" {
+	if h.opts.DateTo == "" {
 		// Set the ending date to midnight of the next day
 		dateTo := time.Date(
 			timeStampFrom.Year(), timeStampFrom.Month(), timeStampFrom.Day(),
 			24, 0, 0, 0, timeStampFrom.Location(),
 		)
-		o.DateToParsed = dateTo.Format("2006-01-02T15:04:05.000Z")
+		to = dateTo.Format(resultLayout)
 	} else {
-		timeStampTo, err := time.Parse(layOut, o.DateFrom)
+		timeStampTo, err := h.impl.ParseTime(parseLayout, h.opts.DateTo)
 		if err != nil {
-			return errors.Wrapf(err, "failed to convert the date from flag")
+			return "", "", errors.Wrapf(err, "convert date to")
 		}
 		// Set the ending date to midnight of the next day
 		dateTo := time.Date(
 			timeStampTo.Year(), timeStampTo.Month(), timeStampTo.Day(),
 			24, 0, 0, 0, timeStampTo.Location(),
 		)
-		o.DateToParsed = dateTo.Format("2006-01-02T15:04:05.000Z")
+		to = dateTo.Format(resultLayout)
 	}
 
-	return nil
+	return from, to, nil
 }
