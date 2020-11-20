@@ -8,15 +8,13 @@ aliases:
     - tpepper
   release-engineering-approvers:
     - cpanato # Release Manager
-    - dougm # Release Manager
     - feiskyer # Release Manager
     - hasheddan # Release Manager
-    - hoegaarden # Release Manager
     - idealhack # Release Manager
     - puerco # Release Manager
     - saschagrunert # subproject owner / Release Manager
     - justaugustus # subproject owner / Release Manager
-    - tpepper # subproject owner / Release Manager
+    - tpepper # subproject owner
     - xmudrii # Release Manager
   release-engineering-reviewers:
     - gianarb # Release Manager Associate
@@ -53,13 +51,11 @@ aliases:
     - listx
   krel-approvers:
     - hasheddan
-    - hoegaarden
     - justaugustus
     - saschagrunert
   krel-reviewers:
     - cpanato
     - hasheddan
-    - hoegaarden
     - justaugustus
     - puerco
     - saschagrunert
