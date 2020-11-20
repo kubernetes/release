@@ -25,6 +25,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/release/pkg/gcp/build"
+	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/release"
 )
 
 type History struct {
@@ -43,6 +45,16 @@ type HistoryOptions struct {
 	DateTo         string
 	DateFromParsed string
 	DateToParsed   string
+}
+
+// NewHistoryOptions creates a new default HistoryOptions instance.
+func NewHistoryOptions() *HistoryOptions {
+	return &HistoryOptions{
+		Branch:   git.DefaultBranch,
+		Project:  release.DefaultKubernetesStagingProject,
+		DateFrom: time.Now().Format("2006-01-30"),
+		DateTo:   time.Now().Format("2006-01-30"),
+	}
 }
 
 var status = map[string]string{
