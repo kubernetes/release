@@ -37,7 +37,7 @@ import (
 //counterfeiter:generate . stageClient
 type stageClient interface {
 	// Submit can be used to submit a Google Cloud Build (GCB) job.
-	Submit() error
+	Submit(stream bool) error
 
 	// Validate if the provided `ReleaseOptions` are correctly set.
 	ValidateOptions() error
@@ -233,8 +233,9 @@ func (d *defaultStageImpl) PushContainerImages(
 	return build.NewInstance(options).PushContainerImages()
 }
 
-func (d *DefaultStage) Submit() error {
+func (d *DefaultStage) Submit(stream bool) error {
 	options := gcb.NewDefaultOptions()
+	options.Stream = stream
 	options.Stage = true
 	options.NoMock = d.options.NoMock
 	options.Branch = d.options.ReleaseBranch

@@ -278,7 +278,7 @@ func TestSubmitStage(t *testing.T) {
 		tc.prepare(mock)
 		sut.SetClient(mock)
 
-		err := sut.Submit()
+		err := sut.Submit(false)
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {
@@ -311,7 +311,7 @@ func TestSubmitRelease(t *testing.T) {
 		tc.prepare(mock)
 		sut.SetClient(mock)
 
-		err := sut.Submit()
+		err := sut.Submit(false)
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {

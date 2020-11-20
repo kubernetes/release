@@ -110,6 +110,14 @@ func init() {
 			"Submit a Google Cloud Build job",
 		)
 
+	releaseCmd.PersistentFlags().
+		BoolVar(
+			&stream,
+			streamFlag,
+			false,
+			"Run the Google Cloud Build job synchronously",
+		)
+
 	if err := releaseCmd.PersistentFlags().MarkHidden(submitJobFlag); err != nil {
 		logrus.Fatal(err)
 	}
@@ -125,7 +133,7 @@ func runRelease(options *anago.ReleaseOptions) error {
 	options.NoMock = rootOpts.nomock
 	rel := anago.NewRelease(options)
 	if submitJob {
-		return rel.Submit()
+		return rel.Submit(stream)
 	}
 	return rel.Run()
 }

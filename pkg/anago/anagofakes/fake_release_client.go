@@ -102,9 +102,10 @@ type FakeReleaseClient struct {
 	pushGitObjectsReturnsOnCall map[int]struct {
 		result1 error
 	}
-	SubmitStub        func() error
+	SubmitStub        func(bool) error
 	submitMutex       sync.RWMutex
 	submitArgsForCall []struct {
+		arg1 bool
 	}
 	submitReturns struct {
 		result1 error
@@ -550,17 +551,18 @@ func (fake *FakeReleaseClient) PushGitObjectsReturnsOnCall(i int, result1 error)
 	}{result1}
 }
 
-func (fake *FakeReleaseClient) Submit() error {
+func (fake *FakeReleaseClient) Submit(arg1 bool) error {
 	fake.submitMutex.Lock()
 	ret, specificReturn := fake.submitReturnsOnCall[len(fake.submitArgsForCall)]
 	fake.submitArgsForCall = append(fake.submitArgsForCall, struct {
-	}{})
+		arg1 bool
+	}{arg1})
 	stub := fake.SubmitStub
 	fakeReturns := fake.submitReturns
-	fake.recordInvocation("Submit", []interface{}{})
+	fake.recordInvocation("Submit", []interface{}{arg1})
 	fake.submitMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -574,10 +576,17 @@ func (fake *FakeReleaseClient) SubmitCallCount() int {
 	return len(fake.submitArgsForCall)
 }
 
-func (fake *FakeReleaseClient) SubmitCalls(stub func() error) {
+func (fake *FakeReleaseClient) SubmitCalls(stub func(bool) error) {
 	fake.submitMutex.Lock()
 	defer fake.submitMutex.Unlock()
 	fake.SubmitStub = stub
+}
+
+func (fake *FakeReleaseClient) SubmitArgsForCall(i int) bool {
+	fake.submitMutex.RLock()
+	defer fake.submitMutex.RUnlock()
+	argsForCall := fake.submitArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeReleaseClient) SubmitReturns(result1 error) {

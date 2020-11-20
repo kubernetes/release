@@ -68,11 +68,13 @@ Build (GCB) job which does:
 var (
 	stageOptions = anago.DefaultStageOptions()
 	submitJob    = true
+	stream       = false
 )
 
 const (
 	buildVersionFlag = "build-version"
 	submitJobFlag    = "submit"
+	streamFlag       = "stream"
 )
 
 func init() {
@@ -114,6 +116,14 @@ func init() {
 			"Submit a Google Cloud Build job",
 		)
 
+	stageCmd.PersistentFlags().
+		BoolVar(
+			&stream,
+			streamFlag,
+			false,
+			"Run the Google Cloud Build job synchronously",
+		)
+
 	for _, flag := range []string{buildVersionFlag, submitJobFlag} {
 		if err := stageCmd.PersistentFlags().MarkHidden(flag); err != nil {
 			logrus.Fatal(err)
@@ -127,7 +137,7 @@ func runStage(options *anago.StageOptions) error {
 	options.NoMock = rootOpts.nomock
 	stage := anago.NewStage(options)
 	if submitJob {
-		return stage.Submit()
+		return stage.Submit(stream)
 	}
 	return stage.Run()
 }

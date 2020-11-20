@@ -257,7 +257,7 @@ func TestSubmitReleaseImpl(t *testing.T) {
 		mock := &anagofakes.FakeReleaseImpl{}
 		tc.prepare(mock)
 		sut.SetImpl(mock)
-		err := sut.Submit()
+		err := sut.Submit(false)
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {

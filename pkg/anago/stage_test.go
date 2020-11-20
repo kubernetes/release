@@ -520,7 +520,7 @@ func TestSubmitStageImpl(t *testing.T) {
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
 		sut.SetImpl(mock)
-		err := sut.Submit()
+		err := sut.Submit(false)
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {
