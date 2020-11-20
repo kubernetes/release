@@ -80,8 +80,10 @@ aliases:
     - puerco
     - saschagrunert
   vulndash-approvers:
+    - cpanato
     - justaugustus
     - listx
   vulndash-reviewers:
+    - cpanato
     - justaugustus
     - listx
