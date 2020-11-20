@@ -20,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/gcp/gcs"
+	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/release"
 )
 
@@ -28,12 +28,18 @@ var DefaultExtraVersionMarkers = []string{}
 
 // Instance is the main structure for creating and pushing builds.
 type Instance struct {
-	opts *Options
+	opts     *Options
+	objStore object.GCS
 }
 
 // NewInstance can be used to create a new build `Instance`.
+// TODO: Prefer functional options here instead
 func NewInstance(opts *Options) *Instance {
-	instance := &Instance{opts}
+	instance := &Instance{
+		opts:     opts,
+		objStore: *object.NewGCS(),
+	}
+
 	instance.setBuildType()
 	instance.setBucket()
 	instance.setGCSRoot()
@@ -117,7 +123,7 @@ func (bi *Instance) getGCSBuildPath(version string) (string, error) {
 		bi.setBucket()
 	}
 
-	buildPath, err := gcs.GetReleasePath(
+	buildPath, err := bi.objStore.GetReleasePath(
 		bi.opts.Bucket,
 		bi.opts.GCSRoot,
 		version,
