@@ -44,6 +44,16 @@ type FakeStageImpl struct {
 		result1 bool
 		result2 error
 	}
+	CheckPrerequisitesStub        func() error
+	checkPrerequisitesMutex       sync.RWMutex
+	checkPrerequisitesArgsForCall []struct {
+	}
+	checkPrerequisitesReturns struct {
+		result1 error
+	}
+	checkPrerequisitesReturnsOnCall map[int]struct {
+		result1 error
+	}
 	CheckReleaseBucketStub        func(*build.Options) error
 	checkReleaseBucketMutex       sync.RWMutex
 	checkReleaseBucketArgsForCall []struct {
@@ -318,6 +328,59 @@ func (fake *FakeStageImpl) BranchNeedsCreationReturnsOnCall(i int, result1 bool,
 		result1 bool
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeStageImpl) CheckPrerequisites() error {
+	fake.checkPrerequisitesMutex.Lock()
+	ret, specificReturn := fake.checkPrerequisitesReturnsOnCall[len(fake.checkPrerequisitesArgsForCall)]
+	fake.checkPrerequisitesArgsForCall = append(fake.checkPrerequisitesArgsForCall, struct {
+	}{})
+	stub := fake.CheckPrerequisitesStub
+	fakeReturns := fake.checkPrerequisitesReturns
+	fake.recordInvocation("CheckPrerequisites", []interface{}{})
+	fake.checkPrerequisitesMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) CheckPrerequisitesCallCount() int {
+	fake.checkPrerequisitesMutex.RLock()
+	defer fake.checkPrerequisitesMutex.RUnlock()
+	return len(fake.checkPrerequisitesArgsForCall)
+}
+
+func (fake *FakeStageImpl) CheckPrerequisitesCalls(stub func() error) {
+	fake.checkPrerequisitesMutex.Lock()
+	defer fake.checkPrerequisitesMutex.Unlock()
+	fake.CheckPrerequisitesStub = stub
+}
+
+func (fake *FakeStageImpl) CheckPrerequisitesReturns(result1 error) {
+	fake.checkPrerequisitesMutex.Lock()
+	defer fake.checkPrerequisitesMutex.Unlock()
+	fake.CheckPrerequisitesStub = nil
+	fake.checkPrerequisitesReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) CheckPrerequisitesReturnsOnCall(i int, result1 error) {
+	fake.checkPrerequisitesMutex.Lock()
+	defer fake.checkPrerequisitesMutex.Unlock()
+	fake.CheckPrerequisitesStub = nil
+	if fake.checkPrerequisitesReturnsOnCall == nil {
+		fake.checkPrerequisitesReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.checkPrerequisitesReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeStageImpl) CheckReleaseBucket(arg1 *build.Options) error {
@@ -1371,6 +1434,8 @@ func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.branchNeedsCreationMutex.RLock()
 	defer fake.branchNeedsCreationMutex.RUnlock()
+	fake.checkPrerequisitesMutex.RLock()
+	defer fake.checkPrerequisitesMutex.RUnlock()
 	fake.checkReleaseBucketMutex.RLock()
 	defer fake.checkReleaseBucketMutex.RUnlock()
 	fake.checkoutMutex.RLock()

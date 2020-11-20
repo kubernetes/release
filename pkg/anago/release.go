@@ -108,6 +108,7 @@ type defaultReleaseImpl struct{}
 //counterfeiter:generate . releaseImpl
 type releaseImpl interface {
 	Submit(options *gcb.Options) error
+	CheckPrerequisites() error
 	BranchNeedsCreation(
 		branch, releaseType string, buildVersion semver.Version,
 	) (bool, error)
@@ -136,6 +137,10 @@ type releaseImpl interface {
 
 func (d *defaultReleaseImpl) Submit(options *gcb.Options) error {
 	return gcb.New(options).Submit()
+}
+
+func (d *defaultReleaseImpl) CheckPrerequisites() error {
+	return release.NewPrerequisitesChecker().Run()
 }
 
 func (d *defaultReleaseImpl) BranchNeedsCreation(
@@ -251,7 +256,9 @@ func (d *DefaultRelease) ValidateOptions() error {
 	return nil
 }
 
-func (d *DefaultRelease) CheckPrerequisites() error { return nil }
+func (d *DefaultRelease) CheckPrerequisites() error {
+	return d.impl.CheckPrerequisites()
+}
 
 func (d *DefaultRelease) CheckReleaseBranchState() error {
 	createReleaseBranch, err := d.impl.BranchNeedsCreation(

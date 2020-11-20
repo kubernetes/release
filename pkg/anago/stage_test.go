@@ -40,11 +40,39 @@ func generateTestingStageState(params *testStateParameters) *anago.StageState {
 }
 
 func TestCheckPrerequisitesStage(t *testing.T) {
-	opts := anago.DefaultStageOptions()
-	sut := anago.NewDefaultStage(opts)
-	mock := &anagofakes.FakeStageImpl{}
-	sut.SetImpl(mock)
-	require.Nil(t, sut.CheckPrerequisites())
+	for _, tc := range []struct {
+		prepare     func(*anagofakes.FakeStageImpl)
+		shouldError bool
+	}{
+		{ // success
+			prepare:     func(*anagofakes.FakeStageImpl) {},
+			shouldError: false,
+		},
+		{ // CheckPrerequisites fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.CheckPrerequisitesReturns(err)
+			},
+			shouldError: true,
+		},
+	} {
+		opts := anago.DefaultStageOptions()
+		sut := anago.NewDefaultStage(opts)
+
+		sut.SetState(
+			generateTestingStageState(&testStateParameters{versionsTag: &testVersionTag}),
+		)
+
+		mock := &anagofakes.FakeStageImpl{}
+		tc.prepare(mock)
+		sut.SetImpl(mock)
+
+		err := sut.CheckPrerequisites()
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
 }
 
 func TestCheckReleaseBranchStateStage(t *testing.T) {

@@ -108,6 +108,7 @@ type defaultStageImpl struct{}
 //counterfeiter:generate . stageImpl
 type stageImpl interface {
 	Submit(options *gcb.Options) error
+	CheckPrerequisites() error
 	BranchNeedsCreation(
 		branch, releaseType string, buildVersion semver.Version,
 	) (bool, error)
@@ -137,6 +138,10 @@ type stageImpl interface {
 
 func (d *defaultStageImpl) Submit(options *gcb.Options) error {
 	return gcb.New(options).Submit()
+}
+
+func (d *defaultStageImpl) CheckPrerequisites() error {
+	return release.NewPrerequisitesChecker().Run()
 }
 
 func (d *defaultStageImpl) BranchNeedsCreation(
@@ -249,7 +254,9 @@ func (d *DefaultStage) ValidateOptions() error {
 	return nil
 }
 
-func (d *DefaultStage) CheckPrerequisites() error { return nil }
+func (d *DefaultStage) CheckPrerequisites() error {
+	return d.impl.CheckPrerequisites()
+}
 
 func (d *DefaultStage) CheckReleaseBranchState() error {
 	createReleaseBranch, err := d.impl.BranchNeedsCreation(
