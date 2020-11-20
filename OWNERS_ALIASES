@@ -5,7 +5,6 @@ aliases:
     - alejandrox1
     - justaugustus
     - saschagrunert
-    - tpepper
   release-engineering-approvers:
     - cpanato # Release Manager
     - feiskyer # Release Manager
