@@ -22,35 +22,41 @@ import (
 	"k8s.io/release/pkg/gcp/gcb"
 )
 
-var gcbmgrHistoryOpts = &gcb.HistoryOptions{}
+var historyOpts = gcb.NewHistoryOptions()
 
-// gcbmgrHistoryCmd is a krel gcbmgr subcommand which generates information about the command that the operator ran for a specific release cut
-var gcbmgrHistoryCmd = &cobra.Command{
-	Use:           "history --branch release-1.18 --date-from 2020-06-18 [--date-to 2020-06-19]",
+// historyCmd is a krel gcbmgr subcommand which generates information about the
+// command that the operator ran for a specific release cut.
+var historyCmd = &cobra.Command{
+	Use:           "history --branch release-1.19 --date-from 2020-06-18 [--date-to 2020-06-19]",
 	Short:         "Run history to build a list of commands that ran when cutting a specific Kubernetes release",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		gcbmgrHistoryOpts.Branch = gcbmgrOpts.Branch
-		gcbmgrHistoryOpts.Project = gcbmgrOpts.Project
-		return gcb.NewHistory(gcbmgrHistoryOpts).Run()
+		return gcb.NewHistory(historyOpts).Run()
 	},
 }
 
 func init() {
-	gcbmgrHistoryCmd.PersistentFlags().StringVar(
-		&gcbmgrHistoryOpts.DateFrom,
+	historyCmd.PersistentFlags().StringVar(
+		&historyOpts.Branch,
+		"branch",
+		historyOpts.Branch,
+		"The release branch for which the release should be build",
+	)
+
+	historyCmd.PersistentFlags().StringVar(
+		&historyOpts.DateFrom,
 		"date-from",
-		"",
-		"Get the jobs starting from a specific date. Format to use yyyy-mm-dd",
+		historyOpts.DateFrom,
+		"Get the jobs starting from a specific date.",
 	)
 
-	gcbmgrHistoryCmd.PersistentFlags().StringVar(
-		&gcbmgrHistoryOpts.DateTo,
+	historyCmd.PersistentFlags().StringVar(
+		&historyOpts.DateTo,
 		"date-to",
-		"",
-		"Get the jobs ending from a specific date. Format to use yyyy-mm-dd",
+		historyOpts.DateTo,
+		"Get the jobs ending from a specific date.",
 	)
 
-	gcbmgrCmd.AddCommand(gcbmgrHistoryCmd)
+	rootCmd.AddCommand(historyCmd)
 }
