@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -75,7 +76,7 @@ func TestMoreRecent(t *testing.T) {
 	require.Nil(t, ioutil.WriteFile(
 		testFileOne,
 		[]byte("file-one-contents"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 
 	time.Sleep(1 * time.Second)
@@ -84,7 +85,7 @@ func TestMoreRecent(t *testing.T) {
 	require.Nil(t, ioutil.WriteFile(
 		testFileTwo,
 		[]byte("file-two-contents"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 
 	notFile := filepath.Join(baseTmpDir, "noexist.txt")
@@ -175,7 +176,7 @@ func TestCopyFile(t *testing.T) {
 	require.Nil(t, ioutil.WriteFile(
 		srcFileOnePath,
 		[]byte("file-one-contents"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 
 	dstFileOnePath := filepath.Join(dstDir, "testone.txt")
@@ -247,14 +248,14 @@ func TestCopyDirContentLocal(t *testing.T) {
 	require.Nil(t, ioutil.WriteFile(
 		srcFileOnePath,
 		[]byte("file-one-contents"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 
 	srcFileTwoPath := filepath.Join(srcDir, "testtwo.txt")
 	require.Nil(t, ioutil.WriteFile(
 		srcFileTwoPath,
 		[]byte("file-two-contents"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 
 	defer cleanupTmp(t, srcDir)
@@ -308,14 +309,14 @@ func TestRemoveAndReplaceDir(t *testing.T) {
 	require.Nil(t, ioutil.WriteFile(
 		fileOnePath,
 		[]byte("file-one-contents"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 
 	fileTwoPath := filepath.Join(dir, "testtwo.txt")
 	require.Nil(t, ioutil.WriteFile(
 		fileTwoPath,
 		[]byte("file-two-contents"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 
 	defer cleanupTmp(t, dir)
@@ -365,7 +366,7 @@ func TestExist(t *testing.T) {
 	require.Nil(t, ioutil.WriteFile(
 		fileOnePath,
 		[]byte("file-one-contents"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 
 	defer cleanupTmp(t, dir)
@@ -479,4 +480,90 @@ func TestWrapText(t *testing.T) {
 	wrappedText += "tristique. Curabitur id purus sem.\n"
 	wrappedText += "Vivamus nec mollis lorem."
 	require.Equal(t, WrapText(longText, 40), wrappedText)
+}
+
+func TestStripSensitiveData(t *testing.T) {
+	testCases := []struct {
+		text       string
+		mustChange bool
+	}{
+		{text: "a", mustChange: false},
+		{text: `s;!3Vc2]x~qL&'Sc/W/>^}8pau\.xr;;5uL:mL:h:x-oauth-basic`, mustChange: false},                // Non base64 token
+		{text: `ab0ff5efdbafcf1def98cac7bd4fa5856d53d000:x-oauth-basic`, mustChange: true},                 // Visible token
+		{text: `X-Some-Header: ab0ff5efdbafcf1def98cac7bd4fa5856d53d000:x-oauth-basic;`, mustChange: true}, // in string
+	}
+	for _, tc := range testCases {
+		testBytes := []byte(tc.text)
+		if tc.mustChange {
+			require.NotEqual(t, StripSensitiveData(testBytes), testBytes, fmt.Sprintf("Failed sanitizing %s", tc.text))
+		} else {
+			require.ElementsMatch(t, StripSensitiveData(testBytes), testBytes)
+		}
+	}
+}
+
+func TestStripControlCharacters(t *testing.T) {
+	testCases := []struct {
+		text       []byte
+		mustChange bool
+	}{
+		{text: append([]byte{27}, []byte("[1m")...), mustChange: true},
+		{text: append([]byte{27}, []byte("[1K")...), mustChange: true},
+		{text: append([]byte{27}, []byte("[1B")...), mustChange: true},
+		{text: append([]byte{27}, []byte("(1B")...), mustChange: true},            // Parenthesis
+		{text: append([]byte{27}, []byte("[1;1m")...), mustChange: true},          // ; + 1 digit
+		{text: append([]byte{27}, []byte("[1;12m")...), mustChange: true},         // ; + 2 digits
+		{text: append([]byte{27}, []byte("[21K")...), mustChange: true},           //
+		{text: append([]byte{}, []byte("[1;13m")...), mustChange: false},          // No ESC
+		{text: append([]byte{27}, []byte("[1,13m")...), mustChange: false},        // No semicolon
+		{text: append([]byte("Test line"), []byte{13}...), mustChange: true},      // Bare CR
+		{text: append([]byte("Test line"), []byte{13, 15}...), mustChange: false}, // CRLF
+		{text: []byte("Test line"), mustChange: false},                            // Plain string
+	}
+	for _, tc := range testCases {
+		if tc.mustChange {
+			require.NotEqual(t, StripControlCharacters(tc.text), tc.text)
+		} else {
+			require.ElementsMatch(t, StripControlCharacters(tc.text), tc.text)
+		}
+	}
+}
+
+func TestCleanLogFile(t *testing.T) {
+	line1 := "This is a test log\n"
+	line2 := "It should not contain a test token here:\n"
+	line3 := "nor control characters o bare line feeds here:\n"
+	line4 := "Bare line feed: "
+	line5 := "\nControl Chars: "
+
+	// Create a token line
+	originalTokenLine := "7aa33bd2186c40849c4c2df321241e241def98ca:x-oauth-basic"
+	sanitizedTokenLine := string(StripSensitiveData([]byte(originalTokenLine)))
+	require.NotEqual(t, originalTokenLine, sanitizedTokenLine)
+
+	// Create the log
+	originalLog := line1 + line2 + originalTokenLine + line3 +
+		line4 + string([]byte{13}) + line5 +
+		string(append([]byte{27}, []byte("[1;1m")...)) + "\n"
+
+	// And expected output
+	cleanLog := line1 + line2 + sanitizedTokenLine + line3 + line4 + line5 + "\n"
+
+	logfile, err := ioutil.TempFile(os.TempDir(), "clean-log-test-")
+	require.Nil(t, err, "creating test logfile")
+	defer os.Remove(logfile.Name())
+	err = ioutil.WriteFile(logfile.Name(), []byte(originalLog), os.FileMode(0o644))
+	require.Nil(t, err, "writing test file")
+
+	// Now, run the cleanLogFile
+	err = CleanLogFile(logfile.Name())
+	require.Nil(t, err, "running log cleaner")
+
+	resultingData, err := ioutil.ReadFile(logfile.Name())
+	require.Nil(t, err, "reading modified file")
+	require.NotEmpty(t, resultingData)
+
+	// Must have changed
+	require.NotEqual(t, originalLog, string(resultingData))
+	require.Equal(t, cleanLog, string(resultingData))
 }
