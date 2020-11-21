@@ -44,12 +44,12 @@ type Git struct {
 
 // Fetch gets the remote Git contents and parses it into promoter manifests. It
 // could be the case that the repository is defined simply as a local path on
-// disk (in the case of e2e tests where we do not have a full-fledghed online
+// disk (in the case of e2e tests where we do not have a full-fledged online
 // repository for the manifests we want to audit) --- in such cases, we have to
 // use the local path instead of freshly cloning a remote repo.
 func (remote *Git) Fetch() ([]reg.Manifest, error) {
 	// There is no remote; use the local path directly.
-	if len(remote.repoURL.String()) == 0 {
+	if remote.repoURL.String() == "" {
 		manifests, err := reg.ParseThinManifestsFromDir(
 			remote.thinManifestDirPath)
 		if err != nil {
@@ -94,7 +94,7 @@ func cloneToTempDir(
 
 	r, err := gogit.PlainClone(tdir, false, &gogit.CloneOptions{
 		URL:           repoURL.String(),
-		ReferenceName: (plumbing.ReferenceName)("refs/heads/" + branch),
+		ReferenceName: plumbing.ReferenceName("refs/heads/" + branch),
 		Depth:         gitCloneDepth,
 	})
 	if err != nil {
@@ -125,7 +125,6 @@ func NewGit(
 	repoBranch string,
 	thinManifestDirPath string,
 ) (*Git, error) {
-
 	remote := Git{}
 
 	repoURL, err := url.Parse(repoURLStr)

@@ -40,7 +40,6 @@ import (
 func InitRealServerContext(
 	gcpProjectID, repoURLStr, branch, path, uuid string,
 ) (*ServerContext, error) {
-
 	remoteManifestFacility, err := remotemanifest.NewGit(
 		repoURLStr,
 		branch,
@@ -80,9 +79,13 @@ func (s *ServerContext) RunAuditor() {
 	// nolint[errcheck]
 	defer s.ErrorReportingFacility.Close()
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		s.Audit(w, r)
-	})
+	http.HandleFunc(
+		"/",
+		func(w http.ResponseWriter, r *http.Request) {
+			s.Audit(w, r)
+		},
+	)
+
 	// Determine port for HTTP service.
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -96,7 +99,6 @@ func (s *ServerContext) RunAuditor() {
 
 // ParsePubSubMessage parses an HTTP request body into a reg.GCRPubSubPayload.
 func ParsePubSubMessage(body io.Reader) (*reg.GCRPubSubPayload, error) {
-
 	// Handle basic errors (malformed requests).
 	bodyBytes, err := ioutil.ReadAll(body)
 	if err != nil {
@@ -111,7 +113,6 @@ func ParsePubSubMessage(body io.Reader) (*reg.GCRPubSubPayload, error) {
 func ParsePubSubMessageBody(
 	body []byte,
 ) (*reg.GCRPubSubPayload, error) {
-
 	var psm PubSubMessage
 	var gcrPayload reg.GCRPubSubPayload
 
@@ -129,7 +130,6 @@ func ParsePubSubMessageBody(
 // ValidatePayload ensures that the payload is well-formed, per our
 // business-logic needs.
 func ValidatePayload(gcrPayload *reg.GCRPubSubPayload) error {
-
 	if gcrPayload.FQIN == "" && gcrPayload.PQIN == "" {
 		return fmt.Errorf(
 			"%v: neither 'digest' nor 'tag' was specified", gcrPayload)
@@ -142,14 +142,14 @@ func ValidatePayload(gcrPayload *reg.GCRPubSubPayload) error {
 	switch gcrPayload.Action {
 	case "":
 		return fmt.Errorf("%v: Action not specified", gcrPayload)
+
 	// All deletions will for now be treated as an error. If it's an insertion,
 	// it can either have "digest" with FQIN, or "digest" + "tag" with PQIN. So
 	// we always verify FQIN, and if there is PQIN, verify that as well.
 	case "DELETE":
 		// Even though this is an error, we successfully processed this message,
 		// so exit with an error.
-		return fmt.Errorf(
-			"%v: deletions are prohibited", gcrPayload)
+		return fmt.Errorf("%v: deletions are prohibited", gcrPayload)
 	case "INSERT":
 		break
 	default:
@@ -176,11 +176,13 @@ func (s *ServerContext) Audit(w http.ResponseWriter, r *http.Request) {
 
 			stacktrace := debug.Stack()
 
-			s.ErrorReportingFacility.Report(errorreporting.Entry{
-				Req:   r,
-				Error: fmt.Errorf("%s", panicStr),
-				Stack: stacktrace,
-			})
+			s.ErrorReportingFacility.Report(
+				errorreporting.Entry{
+					Req:   r,
+					Error: fmt.Errorf("%s", panicStr),
+					Stack: stacktrace,
+				},
+			)
 
 			logAlert.Printf("%s\n%s\n", panicStr, string(stacktrace))
 			klog.Errorln(panicStr)
@@ -194,6 +196,7 @@ func (s *ServerContext) Audit(w http.ResponseWriter, r *http.Request) {
 		// first place.
 		msg := fmt.Sprintf("(%s) TRANSACTION REJECTED: parse failure: %v", s.ID, err)
 		_, _ = w.Write([]byte(msg))
+
 		panic(msg)
 	}
 
@@ -203,6 +206,7 @@ func (s *ServerContext) Audit(w http.ResponseWriter, r *http.Request) {
 	if err := ValidatePayload(gcrPayload); err != nil {
 		msg := fmt.Sprintf("(%s) TRANSACTION REJECTED: validation failure: %v", s.ID, err)
 		_, _ = w.Write([]byte(msg))
+
 		panic(msg)
 	}
 
@@ -232,7 +236,11 @@ func (s *ServerContext) Audit(w http.ResponseWriter, r *http.Request) {
 		if (m.DigestMatch || m.TagMatch) &&
 			!m.TagMismatch {
 			msg := fmt.Sprintf(
-				"(%s) TRANSACTION VERIFIED: %v: agrees with manifest\n", s.ID, gcrPayload)
+				"(%s) TRANSACTION VERIFIED: %v: agrees with manifest\n",
+				s.ID,
+				gcrPayload,
+			)
+
 			logInfo.Println(msg)
 			klog.Infoln(msg)
 			_, _ = w.Write([]byte(msg))
@@ -269,13 +277,16 @@ func (s *ServerContext) Audit(w http.ResponseWriter, r *http.Request) {
 		// set to True).
 		logError.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+
 		return
 	}
+
 	// Find the subproject repository responsible for the GCRPubSubPayload. This
 	// is so that we can query the subproject to figure out all digests that
 	// belong there, so that we can validate the child manifest in the
 	// GCRPubSubPayload.
 	srcRegistries, err := GetMatchingSourceRegistries(manifests, *gcrPayload)
+
 	// If we can't find any source registry for this image, then reject the
 	// transaction.
 	if err != nil {
@@ -283,18 +294,22 @@ func (s *ServerContext) Audit(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(msg))
 		panic(msg)
 	}
-	logInfo.Printf("(%s): reading srcRegistries %q for %q", s.ID, srcRegistries, gcrPayload)
+
+	logInfo.Printf("(%s): reading srcRegistries %v for %q", s.ID, srcRegistries, gcrPayload)
 
 	sc.ReadRegistries(
 		srcRegistries,
 		true,
-		s.GcrReadingFacility.ReadRepo)
+		s.GcrReadingFacility.ReadRepo,
+	)
+
 	sc.ReadGCRManifestLists(s.GcrReadingFacility.ReadManifestList)
 	if gcrPayload.Digest == "" {
 		msg := fmt.Sprintf("(%s) TRANSACTION REJECTED: digest missing from payload --- cannot check parent digest: %v", s.ID, gcrPayload.Digest)
 		_, _ = w.Write([]byte(msg))
 		panic(msg)
 	}
+
 	klog.Infof("(%s): looking for child digest %v", s.ID, gcrPayload.Digest)
 	if parentDigest, hasParent := sc.ParentDigest[gcrPayload.Digest]; hasParent {
 		msg := fmt.Sprintf(
@@ -302,6 +317,7 @@ func (s *ServerContext) Audit(w http.ResponseWriter, r *http.Request) {
 		logInfo.Println(msg)
 		klog.Infoln(msg)
 		_, _ = w.Write([]byte(msg))
+
 		return
 	}
 
@@ -318,11 +334,12 @@ func (s *ServerContext) Audit(w http.ResponseWriter, r *http.Request) {
 
 // GetMatchingSourceRegistries gets the first source repository that matches the
 // image information inside a GCRPubSubPayload.
+// TODO: Consider passing by pointer (hugeParam)
+// nolint: gocritic
 func GetMatchingSourceRegistries(
 	manifests []reg.Manifest,
 	gcrPayload reg.GCRPubSubPayload,
 ) ([]reg.RegistryContext, error) {
-
 	rcs := []reg.RegistryContext{}
 
 	for _, manifest := range manifests {

@@ -50,6 +50,7 @@ func GetSrcRegistry(rcs []RegistryContext) (*RegistryContext, error) {
 			return &registry, nil
 		}
 	}
+
 	return nil, fmt.Errorf("could not find source registry")
 }
 
@@ -57,8 +58,8 @@ func GetSrcRegistry(rcs []RegistryContext) (*RegistryContext, error) {
 func MakeSyncContext(
 	mfests []Manifest,
 	threads int,
-	dryRun, useSvcAcc bool) (SyncContext, error) {
-
+	dryRun, useSvcAcc bool,
+) (SyncContext, error) {
 	sc := SyncContext{
 		Threads:           threads,
 		DryRun:            dryRun,
@@ -69,7 +70,8 @@ func MakeSyncContext(
 		RegistryContexts:  make([]RegistryContext, 0),
 		DigestMediaType:   make(DigestMediaType),
 		DigestImageSize:   make(DigestImageSize),
-		ParentDigest:      make(ParentDigest)}
+		ParentDigest:      make(ParentDigest),
+	}
 
 	registriesSeen := make(map[RegistryContext]interface{})
 	for _, mfest := range mfests {
@@ -88,13 +90,19 @@ func MakeSyncContext(
 	// first). This is so that we try to match the leading prefix against the
 	// longest registry names first. We sort alphabetically first because we
 	// want the final order to be deterministic.
-	sort.Slice(sc.RegistryContexts, func(i, j int) bool {
-		return sc.RegistryContexts[i].Name < sc.RegistryContexts[j].Name
-	})
-	sort.Slice(sc.RegistryContexts, func(i, j int) bool {
-		// nolint[lll]
-		return len(sc.RegistryContexts[i].Name) > len(sc.RegistryContexts[j].Name)
-	})
+	sort.Slice(
+		sc.RegistryContexts,
+		func(i, j int) bool {
+			return sc.RegistryContexts[i].Name < sc.RegistryContexts[j].Name
+		},
+	)
+
+	sort.Slice(
+		sc.RegistryContexts,
+		func(i, j int) bool {
+			return len(sc.RegistryContexts[i].Name) > len(sc.RegistryContexts[j].Name)
+		},
+	)
 
 	// Populate access tokens for all registries listed in the manifest.
 	if useSvcAcc {
@@ -109,18 +117,17 @@ func MakeSyncContext(
 
 // LogJSONSummary logs the SyncContext's Logs as a prettified JSON.
 func (sc *SyncContext) LogJSONSummary() {
-	json, err := json.MarshalIndent(sc.Logs, "", "  ")
+	marshalled, err := json.MarshalIndent(sc.Logs, "", "  ")
 	if err != nil {
 		klog.Infof("There was a problem generating the JSON summary: %v",
 			err)
 	} else {
-		klog.Info(string(json))
+		klog.Info(string(marshalled))
 	}
 }
 
 // ParseManifestFromFile parses a Manifest from a filepath.
 func ParseManifestFromFile(filePath string) (Manifest, error) {
-
 	var mfest Manifest
 	var empty Manifest
 
@@ -147,7 +154,6 @@ func ParseManifestFromFile(filePath string) (Manifest, error) {
 // ParseThinManifestFromFile parses a ThinManifest from a filepath and generates
 // a Manifest.
 func ParseThinManifestFromFile(filePath string) (Manifest, error) {
-
 	var thinManifest ThinManifest
 	var mfest Manifest
 	var empty Manifest
@@ -204,6 +210,8 @@ func ParseImagesFromFile(filePath string) (Images, error) {
 }
 
 // Finalize finalizes a Manifest by populating extra fields.
+// TODO: ST1016: methods on the same type should have the same receiver name
+// nolint: stylecheck
 func (m *Manifest) Finalize() error {
 	// Perform semantic checks (beyond just YAML validation).
 	srcRegistry, err := GetSrcRegistry(m.Registries)
@@ -380,10 +388,8 @@ func validateIsDirectory(dir string) error {
 
 // ToPromotionEdges converts a list of manifests to a set of edges we want to
 // try promoting.
-func ToPromotionEdges(
-	mfests []Manifest) (map[PromotionEdge]interface{}, error) {
+func ToPromotionEdges(mfests []Manifest) (map[PromotionEdge]interface{}, error) {
 	edges := make(map[PromotionEdge]interface{})
-	// nolint[lll]
 	for _, mfest := range mfests {
 		for _, image := range mfest.Images {
 			for digest, tagArray := range image.Dmap {
@@ -403,15 +409,16 @@ func ToPromotionEdges(
 							edges[edge] = nil
 						}
 					} else {
-						// If this digest does not have any associated tags,
-						// still create a promotion edge for it (tagless
-						// promotion).
+						// If this digest does not have any associated tags, still create
+						// a promotion edge for it (tagless promotion).
 						edge := mkPromotionEdge(
 							*mfest.SrcRegistry,
 							destRC,
 							image.ImageName,
 							digest,
-							"") // No associated tag; still promote!
+							"",
+						)
+
 						edges[edge] = nil
 					}
 				}
@@ -426,13 +433,15 @@ func mkPromotionEdge(
 	srcRC, dstRC RegistryContext,
 	srcImageName ImageName,
 	digest Digest,
-	tag Tag) PromotionEdge {
-
+	tag Tag,
+) PromotionEdge {
 	edge := PromotionEdge{
 		SrcRegistry: srcRC,
 		SrcImageTag: ImageTag{
 			ImageName: srcImageName,
-			Tag:       tag},
+			Tag:       tag,
+		},
+
 		Digest:      digest,
 		DstRegistry: dstRC,
 	}
@@ -440,7 +449,9 @@ func mkPromotionEdge(
 	// The name in the destination is the same as the name in the source.
 	edge.DstImageTag = ImageTag{
 		ImageName: srcImageName,
-		Tag:       tag}
+		Tag:       tag,
+	}
+
 	return edge
 }
 
@@ -448,11 +459,11 @@ func mkPromotionEdge(
 // only those PromotionEdges that makes sense to keep around. For example, we
 // want to remove all edges that have already been promoted.
 //
-// nolint[funlen]
 // nolint[gocyclo]
-func (sc *SyncContext) GetPromotionCandidates(
-	edges map[PromotionEdge]interface{}) (map[PromotionEdge]interface{}, bool) {
-
+func (sc *SyncContext) GetPromotionCandidates(edges map[PromotionEdge]interface{}) (
+	map[PromotionEdge]interface{},
+	bool,
+) {
 	clean := true
 
 	// Create lookup-optimized structure for images to ignore.
@@ -514,7 +525,7 @@ func (sc *SyncContext) GetPromotionCandidates(
 				}
 			} else {
 				// Pqin points to the wrong digest.
-				klog.Warningf("edge %v: tag %s points to the wrong digest; moving\n, dp.BadDigest")
+				klog.Warningf("edge %v: tag %s points to the wrong digest; moving\n", edge, dp.BadDigest)
 			}
 		} else {
 			if dp.DigestExists {
@@ -640,9 +651,11 @@ func CheckOverlappingEdges(
 
 // VertexProps determines the properties of each vertex (src and dst) in the
 // edge, depending on the state of the world in the MasterInventory.
+// TODO: Consider passing by pointer (hugeParam)
+// nolint: gocritic
 func (edge PromotionEdge) VertexProps(
-	mi MasterInventory) (VertexProperty, VertexProperty) {
-
+	mi MasterInventory,
+) (VertexProperty, VertexProperty) {
 	d := edge.VertexPropsFor(edge.DstRegistry, edge.DstImageTag, mi)
 	s := edge.VertexPropsFor(edge.SrcRegistry, edge.SrcImageTag, mi)
 
@@ -651,11 +664,13 @@ func (edge PromotionEdge) VertexProps(
 
 // VertexPropsFor examines one of the two vertices (src or dst) of a
 // PromotionEdge.
+// TODO: Consider passing by pointer (hugeParam)
+// nolint: gocritic
 func (edge PromotionEdge) VertexPropsFor(
 	rc RegistryContext,
 	imageTag ImageTag,
-	mi MasterInventory) VertexProperty {
-
+	mi MasterInventory,
+) VertexProperty {
 	p := VertexProperty{}
 
 	rii, ok := mi[rc.Name]
@@ -757,26 +772,29 @@ func ValidateDigest(digest Digest) error {
 	if !validDigest.Match([]byte(digest)) {
 		return fmt.Errorf("invalid digest: %v", digest)
 	}
+
 	return nil
 }
 
 // ValidateTag validates the tag.
 func ValidateTag(tag Tag) error {
-	var validTag = regexp.MustCompile(`^[\w][\w.-]{0,127}$`)
+	validTag := regexp.MustCompile(`^[\w][\w.-]{0,127}$`)
 	if !validTag.Match([]byte(tag)) {
 		return fmt.Errorf("invalid tag: %v", tag)
 	}
+
 	return nil
 }
 
 // ValidateRegistryImagePath validates the RegistryImagePath.
 func ValidateRegistryImagePath(rip RegistryImagePath) error {
-	validRegistryImagePath := regexp.MustCompile(
-		// \w is [0-9a-zA-Z_]
-		`^[\w-]+(\.[\w-]+)+(/[\w-]+)+$`)
+	// \w is [0-9a-zA-Z_]
+	validRegistryImagePath := regexp.MustCompile(`^[\w-]+(\.[\w-]+)+(/[\w-]+)+$`)
+
 	if !validRegistryImagePath.Match([]byte(rip)) {
 		return fmt.Errorf("invalid registry image path: %v", rip)
 	}
+
 	return nil
 }
 
@@ -787,6 +805,7 @@ func (m Manifest) srcRegistryCount() int {
 			count++
 		}
 	}
+
 	return count
 }
 
@@ -796,6 +815,7 @@ func (m Manifest) srcRegistryName() RegistryName {
 			return registry.Name
 		}
 	}
+
 	return RegistryName("")
 }
 
@@ -803,10 +823,12 @@ func (m Manifest) srcRegistryName() RegistryName {
 func validateRequiredComponents(m Manifest) error {
 	errs := make([]string, 0)
 	srcRegistryName := RegistryName("")
+
 	if len(m.Registries) > 0 {
 		if m.srcRegistryCount() > 1 {
 			errs = append(errs, fmt.Sprintf("cannot have more than 1 source registry"))
 		}
+
 		srcRegistryName = m.srcRegistryName()
 		if len(srcRegistryName) == 0 {
 			errs = append(errs, fmt.Sprintf("source registry must be set"))
@@ -817,6 +839,7 @@ func validateRequiredComponents(m Manifest) error {
 	if len(m.Registries) == 0 {
 		errs = append(errs, fmt.Sprintf("'registries' field cannot be empty"))
 	}
+
 	for _, registry := range m.Registries {
 		if len(registry.Name) == 0 {
 			errs = append(
@@ -825,12 +848,14 @@ func validateRequiredComponents(m Manifest) error {
 		}
 		knownRegistries = append(knownRegistries, registry.Name)
 	}
+
 	for _, image := range m.Images {
 		if len(image.ImageName) == 0 {
 			errs = append(
 				errs,
 				fmt.Sprintf("images: 'name' field cannot be empty"))
 		}
+
 		if len(image.Dmap) == 0 {
 			errs = append(
 				errs,
@@ -854,9 +879,13 @@ func (mi *MasterInventory) PrettyValue() string {
 	for regName := range *mi {
 		regNames = append(regNames, regName)
 	}
-	sort.Slice(regNames, func(i, j int) bool {
-		return regNames[i] < regNames[j]
-	})
+
+	sort.Slice(
+		regNames,
+		func(i, j int) bool {
+			return regNames[i] < regNames[j]
+		},
+	)
 
 	for _, regName := range regNames {
 		v, ok := (*mi)[regName]
@@ -864,11 +893,13 @@ func (mi *MasterInventory) PrettyValue() string {
 			klog.Error("corrupt MasterInventory")
 			return ""
 		}
+
 		fmt.Fprintln(&b, regName)
 		imageNamesSorted := make([]string, 0)
 		for imageName := range v {
 			imageNamesSorted = append(imageNamesSorted, string(imageName))
 		}
+
 		sort.Strings(imageNamesSorted)
 		for _, imageName := range imageNamesSorted {
 			fmt.Fprintf(&b, "  %v\n", imageName)
@@ -876,10 +907,12 @@ func (mi *MasterInventory) PrettyValue() string {
 			if !ok {
 				continue
 			}
+
 			digestSorted := make([]string, 0)
 			for digest := range digestTags {
 				digestSorted = append(digestSorted, string(digest))
 			}
+
 			sort.Strings(digestSorted)
 			for _, digest := range digestSorted {
 				fmt.Fprintf(&b, "    %v\n", digest)
@@ -887,12 +920,14 @@ func (mi *MasterInventory) PrettyValue() string {
 				if !ok {
 					continue
 				}
+
 				for _, tag := range tags {
 					fmt.Fprintf(&b, "      %v\n", tag)
 				}
 			}
 		}
 	}
+
 	return b.String()
 }
 
@@ -938,7 +973,6 @@ func (riid *RegInvImageDigest) PrettyValue() string {
 
 func getRegistryTagsWrapper(req stream.ExternalRequest,
 ) (*ggcrV1Google.Tags, error) {
-
 	var googleTags *ggcrV1Google.Tags
 
 	var getRegistryTagsCondition wait.ConditionFunc = func() (bool, error) {
@@ -955,13 +989,14 @@ func getRegistryTagsWrapper(req stream.ExternalRequest,
 		if err == nil && googleTags != nil && len(googleTags.Name) > 0 {
 			return true, nil
 		}
+
 		return false, nil
 	}
 
 	err := wait.ExponentialBackoff(
 		stream.BackoffDefault,
-		getRegistryTagsCondition)
-
+		getRegistryTagsCondition,
+	)
 	if err != nil {
 		klog.Error(err)
 		return nil, err
@@ -993,9 +1028,7 @@ func getRegistryTagsFrom(req stream.ExternalRequest,
 	return tags, nil
 }
 
-func getGCRManifestListWrapper(
-	req stream.ExternalRequest) (*ggcrV1.IndexManifest, error) {
-
+func getGCRManifestListWrapper(req stream.ExternalRequest) (*ggcrV1.IndexManifest, error) {
 	var gcrManifestList *ggcrV1.IndexManifest
 
 	var getGCRManifestListCondition wait.ConditionFunc = func() (bool, error) {
@@ -1012,18 +1045,22 @@ func getGCRManifestListWrapper(
 		if err == nil &&
 			gcrManifestList != nil &&
 			len(gcrManifestList.Manifests) > 0 {
-
 			return true, nil
 		}
-		// nolint[lll]
-		klog.Errorf("invalid gcrManifestList state: %s for request %s", gcrManifestList, req)
+
+		klog.Errorf(
+			"invalid gcrManifestList state: %v for request %s",
+			gcrManifestList,
+			req,
+		)
+
 		return false, nil
 	}
 
 	err := wait.ExponentialBackoff(
 		stream.BackoffDefault,
-		getGCRManifestListCondition)
-
+		getGCRManifestListCondition,
+	)
 	if err != nil {
 		klog.Error(err)
 		return nil, err
@@ -1032,9 +1069,7 @@ func getGCRManifestListWrapper(
 	return gcrManifestList, nil
 }
 
-func getGCRManifestListFrom(
-	req stream.ExternalRequest) (*ggcrV1.IndexManifest, error) {
-
+func getGCRManifestListFrom(req stream.ExternalRequest) (*ggcrV1.IndexManifest, error) {
 	reader, _, err := req.StreamProducer.Produce()
 	if err != nil {
 		klog.Warning("error reading from stream:", err)
@@ -1057,35 +1092,61 @@ func getGCRManifestListFrom(
 func getJSONSFromProcess(req stream.ExternalRequest) (cipJson.Objects, Errors) {
 	var jsons cipJson.Objects
 	errors := make(Errors, 0)
+
 	stdoutReader, stderrReader, err := req.StreamProducer.Produce()
 	if err != nil {
-		errors = append(errors, Error{
-			Context: "running process",
-			Error:   err})
+		errors = append(
+			errors,
+			Error{
+				Context: "running process",
+				Error:   err,
+			},
+		)
 	}
+
 	jsons, err = cipJson.Consume(stdoutReader)
 	if err != nil {
-		errors = append(errors, Error{
-			Context: "parsing JSON",
-			Error:   err})
+		errors = append(
+			errors,
+			Error{
+				Context: "parsing JSON",
+				Error:   err,
+			},
+		)
 	}
+
 	be, err := ioutil.ReadAll(stderrReader)
 	if err != nil {
-		errors = append(errors, Error{
-			Context: "reading process stderr",
-			Error:   err})
+		errors = append(
+			errors,
+			Error{
+				Context: "reading process stderr",
+				Error:   err,
+			},
+		)
 	}
+
 	if len(be) > 0 {
-		errors = append(errors, Error{
-			Context: "process had stderr",
-			Error:   fmt.Errorf("%v", string(be))})
+		errors = append(
+			errors,
+			Error{
+				Context: "process had stderr",
+				Error:   fmt.Errorf("%v", string(be)),
+			},
+		)
 	}
+
 	err = req.StreamProducer.Close()
 	if err != nil {
-		errors = append(errors, Error{
-			Context: "closing process",
-			Error:   err})
+		errors = append(
+			errors,
+			Error{
+				Context: "closing process",
+				Error:   err,
+			},
+		)
 	}
+
 	return jsons, errors
 }
 
@@ -1150,14 +1211,16 @@ error:
 // access tokens.
 func (sc *SyncContext) PopulateTokens() error {
 	for _, rc := range sc.RegistryContexts {
-		token, err := gcloud.GetServiceAccountToken(
-			rc.ServiceAccount,
-			sc.UseServiceAccount)
+		token, err := gcloud.GetServiceAccountToken(rc.ServiceAccount, sc.UseServiceAccount)
 		if err != nil {
-			klog.Errorf("could not get service account token for %v",
-				rc.ServiceAccount)
+			klog.Errorf(
+				"could not get service account token for %v",
+				rc.ServiceAccount,
+			)
+
 			return err
 		}
+
 		tokenKey, _, _ := GetTokenKeyDomainRepoPath(rc.Name)
 		sc.Tokens[RootRepo(tokenKey)] = token
 	}
@@ -1168,18 +1231,15 @@ func (sc *SyncContext) PopulateTokens() error {
 // GetTokenKeyDomainRepoPath splits a string by '/'. It's OK to do this because
 // the RegistryName is already parsed against a Regex. (Maybe we should store
 // the repo path separately when we do the initial parse...).
-func GetTokenKeyDomainRepoPath(
-	registryName RegistryName) (string, string, string) {
-
+func GetTokenKeyDomainRepoPath(registryName RegistryName) (key, domain, repoPath string) {
 	s := string(registryName)
 	i := strings.IndexByte(s, '/')
-	key := ""
-	// nolint[gomnd]
 	if strings.Count(s, "/") < 2 {
 		key = s
 	} else {
 		key = strings.Join(strings.Split(s, "/")[0:2], "/")
 	}
+
 	// key, domain, repository path
 	return key, s[:i], s[i+1:]
 }
@@ -1209,7 +1269,7 @@ func GetTokenKeyDomainRepoPath(
 // credentials that extend to all child repos. And also in GCR, the name of the
 // root repo is the same as the name of the GCP project that hosts it.
 //
-// NOTE: Repository names may overlap with image names. E.g., it may be in the
+// NOTE: Repository names may overlap with image names. e.g., it may be in the
 // example above that there are images named gcr.io/google-containers/foo:2.0
 // and gcr.io/google-containers/foo/baz:2.0.
 //
@@ -1217,8 +1277,8 @@ func GetTokenKeyDomainRepoPath(
 func (sc *SyncContext) ReadRegistries(
 	toRead []RegistryContext,
 	recurse bool,
-	mkProducer func(*SyncContext, RegistryContext) stream.Producer) {
-
+	mkProducer func(*SyncContext, RegistryContext) stream.Producer,
+) {
 	// Collect all images in sc.Inv (the src and dest registry names found in
 	// the manifest).
 	var populateRequests PopulateRequests = func(
@@ -1414,8 +1474,8 @@ func (sc *SyncContext) ReadGCRManifestLists(
 		reqs chan stream.ExternalRequest,
 		requestResults chan<- RequestResult,
 		wg *sync.WaitGroup,
-		mutex *sync.Mutex) {
-
+		mutex *sync.Mutex,
+	) {
 		for req := range reqs {
 			reqRes := RequestResult{Context: req}
 
@@ -1445,6 +1505,7 @@ func (sc *SyncContext) ReadGCRManifestLists(
 			requestResults <- reqRes
 		}
 	}
+
 	sc.ExecRequests(populateRequests, processRequest)
 }
 
@@ -1452,6 +1513,7 @@ func (sc *SyncContext) ReadGCRManifestLists(
 // filterTag.
 func FilterByTag(rii RegInvImage, filterTag string) RegInvImage {
 	filtered := make(RegInvImage)
+
 	for imageName, digestTags := range rii {
 		for digest, tags := range digestTags {
 			for _, tag := range tags {
@@ -1459,13 +1521,16 @@ func FilterByTag(rii RegInvImage, filterTag string) RegInvImage {
 					if filtered[imageName] == nil {
 						filtered[imageName] = make(DigestTags)
 					}
+
 					filtered[imageName][digest] = append(
 						filtered[imageName][digest],
-						tag)
+						tag,
+					)
 				}
 			}
 		}
 	}
+
 	return filtered
 }
 
@@ -1476,6 +1541,7 @@ func (sc *SyncContext) RemoveChildDigestEntries(rii RegInvImage) RegInvImage {
 	for imageName, digestTags := range rii {
 		for digest, tagSlice := range digestTags {
 			_, hasParent := sc.ParentDigest[digest]
+
 			// If this image digest is only referenced as part of a parent
 			// ManfestList (i.e. not directly tagged), we filter it out.
 			if hasParent && len(tagSlice) == 0 {
@@ -1485,9 +1551,11 @@ func (sc *SyncContext) RemoveChildDigestEntries(rii RegInvImage) RegInvImage {
 			if filtered[imageName] == nil {
 				filtered[imageName] = make(DigestTags)
 			}
+
 			filtered[imageName][digest] = tagSlice
 		}
 	}
+
 	return filtered
 }
 
@@ -1497,8 +1565,8 @@ func (sc *SyncContext) RemoveChildDigestEntries(rii RegInvImage) RegInvImage {
 // "/" all the time, because some manifests have an image with a "/" in it.
 func SplitByKnownRegistries(
 	r RegistryName,
-	rcs []RegistryContext) (RegistryName, ImageName, error) {
-
+	rcs []RegistryContext,
+) (RegistryName, ImageName, error) {
 	for _, rc := range rcs {
 		if strings.HasPrefix(string(r), string(rc.Name)) {
 			trimmed := strings.TrimPrefix(string(r), string(rc.Name))
@@ -1537,8 +1605,8 @@ func SplitByKnownRegistries(
 // over the network.
 func MkReadRepositoryCmdReal(
 	sc *SyncContext,
-	rc RegistryContext) stream.Producer {
-
+	rc RegistryContext,
+) stream.Producer {
 	var sh stream.HTTP
 
 	tokenKey, domain, repoPath := GetTokenKeyDomainRepoPath(rc.Name)
@@ -1546,8 +1614,8 @@ func MkReadRepositoryCmdReal(
 	httpReq, err := http.NewRequest(
 		"GET",
 		fmt.Sprintf("https://%s/v2/%s/tags/list", domain, repoPath),
-		nil)
-
+		nil,
+	)
 	if err != nil {
 		klog.Fatalf(
 			"could not create HTTP request for '%s/%s'",
@@ -1562,7 +1630,8 @@ func MkReadRepositoryCmdReal(
 		}
 
 		rc.Token = token
-		var bearer = "Bearer " + string(rc.Token)
+		bearer := "Bearer " + string(rc.Token)
+
 		httpReq.Header.Add("Authorization", bearer)
 	}
 
@@ -1575,14 +1644,12 @@ func MkReadRepositoryCmdReal(
 //
 // TODO: Consider replacing stream.Producer return type with a simple ([]byte,
 // error) tuple instead.
-func MkReadManifestListCmdReal(
-	sc *SyncContext,
-	gmlc GCRManifestListContext) stream.Producer {
-
+// TODO: Consider passing by pointer (hugeParam)
+// nolint: gocritic
+func MkReadManifestListCmdReal(sc *SyncContext, gmlc GCRManifestListContext) stream.Producer {
 	var sh stream.HTTP
 
-	tokenKey, domain, repoPath := GetTokenKeyDomainRepoPath(
-		gmlc.RegistryContext.Name)
+	tokenKey, domain, repoPath := GetTokenKeyDomainRepoPath(gmlc.RegistryContext.Name)
 
 	endpoint := fmt.Sprintf(
 		"https://%s/v2/%s/%s/manifests/%s",
@@ -1591,7 +1658,8 @@ func MkReadManifestListCmdReal(
 		gmlc.ImageName,
 		// Always refer by a digest, because it may be the case that this
 		// manifest list is not actually tagged!
-		gmlc.Digest)
+		gmlc.Digest,
+	)
 
 	httpReq, err := http.NewRequest("GET", endpoint, nil)
 
@@ -1605,7 +1673,8 @@ func MkReadManifestListCmdReal(
 			domain,
 			repoPath,
 			gmlc.ImageName,
-			gmlc.Digest)
+			gmlc.Digest,
+		)
 	}
 
 	if sc.UseServiceAccount {
@@ -1614,7 +1683,7 @@ func MkReadManifestListCmdReal(
 			klog.Exitf("access token for key '%s' not found\n", tokenKey)
 		}
 
-		var bearer = "Bearer " + string(token)
+		bearer := "Bearer " + string(token)
 		httpReq.Header.Add("Authorization", bearer)
 	}
 
@@ -1628,36 +1697,43 @@ func MkReadManifestListCmdReal(
 // nolint[funlen]
 func (sc *SyncContext) ExecRequests(
 	populateRequests PopulateRequests,
-	processRequest ProcessRequest) error {
+	processRequest ProcessRequest,
+) error {
 	// Run requests.
 	MaxConcurrentRequests := 10
+
 	if sc.Threads > 0 {
 		MaxConcurrentRequests = sc.Threads
 	}
+
 	mutex := &sync.Mutex{}
 	reqs := make(chan stream.ExternalRequest, MaxConcurrentRequests)
 	requestResults := make(chan RequestResult)
+
 	// We have to use a WaitGroup, because even though we know beforehand the
 	// number of workers, we don't know the number of jobs.
 	wg := new(sync.WaitGroup)
 
 	var err error
+
 	// Log any errors encountered.
 	go func() {
 		for reqRes := range requestResults {
 			if len(reqRes.Errors) > 0 {
 				(*mutex).Lock()
-				err = fmt.Errorf("Encountered an error while" +
-					" executing requests")
+				err = fmt.Errorf("Encountered an error while executing requests")
 				sc.Logs.Errors = append(sc.Logs.Errors, reqRes.Errors...)
 				(*mutex).Unlock()
+
 				klog.Errorf(
 					"Request %v: error(s) encountered: %v\n",
 					reqRes.Context,
-					reqRes.Errors)
+					reqRes.Errors,
+				)
 			} else {
 				klog.Infof("Request %v: OK\n", reqRes.Context.RequestParams)
 			}
+
 			wg.Add(-1)
 		}
 	}()
@@ -1692,7 +1768,6 @@ func (sc *SyncContext) ExecRequests(
 }
 
 func extractRegistryTags(reader io.Reader) (*ggcrV1Google.Tags, error) {
-
 	tags := ggcrV1Google.Tags{}
 	decoder := json.NewDecoder(reader)
 	decoder.DisallowUnknownFields()
@@ -1711,7 +1786,6 @@ func extractRegistryTags(reader io.Reader) (*ggcrV1Google.Tags, error) {
 }
 
 func extractGCRManifestList(reader io.Reader) (*ggcrV1.IndexManifest, error) {
-
 	gcrManifestList := ggcrV1.IndexManifest{}
 	decoder := json.NewDecoder(reader)
 	decoder.DisallowUnknownFields()
@@ -1738,10 +1812,7 @@ func (a DigestTags) Overwrite(b DigestTags) {
 
 // ToFQIN combines a RegistryName, ImageName, and Digest to form a
 // fully-qualified image name (FQIN).
-func ToFQIN(registryName RegistryName,
-	imageName ImageName,
-	digest Digest) string {
-
+func ToFQIN(registryName RegistryName, imageName ImageName, digest Digest) string {
 	return string(registryName) + "/" + string(imageName) + "@" + string(digest)
 }
 
@@ -1880,8 +1951,8 @@ func ToLQIN(registryName RegistryName, imageName ImageName) string {
 // were given "gcr.io/foo/a", we would split it into "gcr.io/foo/a" and "b/c".
 func SplitRegistryImagePath(
 	registryImagePath RegistryImagePath,
-	knownRegistries []RegistryName) (RegistryName, ImageName, error) {
-
+	knownRegistries []RegistryName,
+) (RegistryName, ImageName, error) {
 	for _, rName := range knownRegistries {
 		if strings.HasPrefix(string(registryImagePath), string(rName)) {
 			return rName, ImageName(registryImagePath[len(rName)+1:]), nil
@@ -1890,17 +1961,16 @@ func SplitRegistryImagePath(
 
 	return RegistryName(""),
 		ImageName(""),
-		// nolint[lll]
 		fmt.Errorf("could not determine registry name for '%v'", registryImagePath)
 }
 
 // MKPopulateRequestsForPromotionEdges takes in a map of PromotionEdges to promote
 // and a PromotionContext and returns a PopulateRequests which can generate
 // requests to be processed
-// nolint[lll]
 func MKPopulateRequestsForPromotionEdges(
 	toPromote map[PromotionEdge]interface{},
-	mkProducer PromotionContext) PopulateRequests {
+	mkProducer PromotionContext,
+) PopulateRequests {
 	return func(sc *SyncContext, reqs chan<- stream.ExternalRequest, wg *sync.WaitGroup) {
 		if len(toPromote) == 0 {
 			klog.Info("Nothing to promote.")
@@ -1922,7 +1992,14 @@ func MKPopulateRequestsForPromotionEdges(
 			if dp.PqinExists {
 				if !dp.DigestExists {
 					// Pqin points to the wrong digest.
-					klog.Errorf("edge %s: tag '%s' in dest points to %s, not %s (as per the manifest), but tag moves are not supported; skipping\n", promoteMe, promoteMe.DstImageTag.Tag, dp.BadDigest, promoteMe.Digest)
+					klog.Errorf(
+						"edge %v: tag '%s' in dest points to %s, not %s (as per the manifest), but tag moves are not supported; skipping\n",
+						promoteMe,
+						promoteMe.DstImageTag.Tag,
+						dp.BadDigest,
+						promoteMe.Digest,
+					)
+
 					continue
 				}
 			}
@@ -1955,10 +2032,7 @@ func MKPopulateRequestsForPromotionEdges(
 }
 
 // RunChecks runs defined PreChecks in order to check the promotion.
-func (sc *SyncContext) RunChecks(
-	preChecks []PreCheck,
-) error {
-
+func (sc *SyncContext) RunChecks(preChecks []PreCheck) error {
 	var errors []error
 	for _, preCheck := range preChecks {
 		err := preCheck.Run()
@@ -1980,12 +2054,12 @@ func (sc *SyncContext) FilterPromotionEdges(
 	edges map[PromotionEdge]interface{},
 	readRepos bool,
 ) (map[PromotionEdge]interface{}, bool) {
-
 	if readRepos {
 		regs := getRegistriesToRead(edges)
 		for _, reg := range regs {
 			klog.Info("reading this reg:", reg)
 		}
+
 		sc.ReadRegistries(
 			regs,
 			// Do not read these registries recursively, because we already know
@@ -2002,8 +2076,8 @@ func (sc *SyncContext) FilterPromotionEdges(
 // trying to promote to the given destination registry.
 func EdgesToRegInvImage(
 	edges map[PromotionEdge]interface{},
-	destRegistry string) RegInvImage {
-
+	destRegistry string,
+) RegInvImage {
 	rii := make(RegInvImage)
 
 	destRegistry = strings.TrimRight(destRegistry, "/")
@@ -2011,10 +2085,8 @@ func EdgesToRegInvImage(
 	for edge := range edges {
 		imgName := ""
 		prefix := ""
-		if strings.HasPrefix(
-			string(edge.DstRegistry.Name),
-			destRegistry) {
 
+		if strings.HasPrefix(string(edge.DstRegistry.Name), destRegistry) {
 			prefix = strings.TrimPrefix(
 				string(edge.DstRegistry.Name),
 				destRegistry)
@@ -2026,7 +2098,6 @@ func EdgesToRegInvImage(
 			}
 
 			imgName = strings.TrimLeft(imgName, "/")
-
 		} else {
 			continue
 		}
@@ -2051,9 +2122,7 @@ func EdgesToRegInvImage(
 // getRegistriesToRead collects all unique Docker repositories we want to read
 // from. This way, we don't have to read the entire Docker registry, but only
 // those paths that we are thinking of modifying.
-func getRegistriesToRead(
-	edges map[PromotionEdge]interface{}) []RegistryContext {
-
+func getRegistriesToRead(edges map[PromotionEdge]interface{}) []RegistryContext {
 	rcs := make(map[RegistryContext]interface{})
 
 	// Save the src and dst endpoints as registries. We only care about the
@@ -2206,6 +2275,8 @@ func (sc *SyncContext) PrintCapturedRequests(capReqs *CapturedRequests) {
 		fmt.Println("")
 		fmt.Println("captured reqs summary:")
 		fmt.Println("")
+		// TODO: Consider pointers or indexing (rangeValCopy)
+		// nolint: gocritic
 		for _, pr := range prs {
 			fmt.Printf("captured req: %v", pr.PrettyValue())
 		}
@@ -2226,21 +2297,26 @@ func (op *TagOp) PrettyValue() string {
 	case Delete:
 		tagOpPretty = "DELETE"
 	}
+
 	return tagOpPretty
 }
 
 // PrettyValue is a prettified string representation of a PromotionRequest.
 func (pr *PromotionRequest) PrettyValue() string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "%v -> %v: Tag: '%v' <%v> %v",
+	fmt.Fprintf(
+		&b, "%v -> %v: Tag: '%v' <%v> %v",
 		ToLQIN(pr.RegistrySrc, pr.ImageNameSrc),
 		ToLQIN(pr.RegistryDest, pr.ImageNameDest),
 		string(pr.Tag),
 		pr.TagOp.PrettyValue(),
-		string(pr.Digest))
+		string(pr.Digest),
+	)
+
 	if len(pr.DigestOld) > 0 {
 		fmt.Fprintf(&b, " (move from '%v')", string(pr.DigestOld))
 	}
+
 	fmt.Fprintf(&b, "\n")
 
 	return b.String()
@@ -2254,13 +2330,17 @@ func MkRequestCapturer(captured *CapturedRequests) ProcessRequest {
 		reqs chan stream.ExternalRequest,
 		requestResults chan<- RequestResult,
 		wg *sync.WaitGroup,
-		mutex *sync.Mutex) {
-
+		mutex *sync.Mutex,
+	) {
 		for req := range reqs {
+			// TODO: Why are we not checking errors here?
+			// nolint: errcheck
 			pr := req.RequestParams.(PromotionRequest)
+
 			mutex.Lock()
 			(*captured)[pr]++
 			mutex.Unlock()
+
 			// Add a request result to signal the processing of this "request".
 			// This is necessary because ExecRequests() is the sole function in
 			// the codebase that decrements the WaitGroup semaphore.
@@ -2519,25 +2599,30 @@ func GetWriteCmd(
 	destImageName ImageName,
 	digest Digest,
 	tag Tag,
-	tp TagOp) []string {
-
+	tp TagOp,
+) []string {
 	var cmd []string
+
 	switch tp {
 	case Delete:
-		cmd = []string{"gcloud",
+		cmd = []string{
+			"gcloud",
 			"--quiet",
 			"container",
 			"images",
 			"untag",
-			ToPQIN(dest.Name, destImageName, tag)}
+			ToPQIN(dest.Name, destImageName, tag),
+		}
 	default:
 		klog.Exitln("unsupported tag operation:", tp)
 	}
+
 	// Use the service account if it is desired.
 	return gcloud.MaybeUseServiceAccount(
 		dest.ServiceAccount,
 		useServiceAccount,
-		cmd)
+		cmd,
+	)
 }
 
 // GetDeleteCmd generates the cloud command used to delete images (used for
@@ -2547,24 +2632,32 @@ func GetDeleteCmd(
 	useServiceAccount bool,
 	img ImageName,
 	digest Digest,
-	force bool) []string {
-
+	force bool,
+) []string {
 	fqin := ToFQIN(rc.Name, img, digest)
+
 	cmd := []string{
 		"gcloud",
 		"container",
 		"images",
 		"delete",
 		fqin,
-		"--format=json"}
-	if force {
-		cmd = append(cmd, "--force-delete-tags")
-		cmd = append(cmd, "--quiet")
+		"--format=json",
 	}
+
+	if force {
+		cmd = append(
+			cmd,
+			"--force-delete-tags",
+			"--quiet",
+		)
+	}
+
 	return gcloud.MaybeUseServiceAccount(
 		rc.ServiceAccount,
 		useServiceAccount,
-		cmd)
+		cmd,
+	)
 }
 
 // GcrPayloadMatch holds booleans for matching a GCRPubSubPayload against a
@@ -2588,6 +2681,8 @@ type GcrPayloadMatch struct {
 
 // Match checks whether a GCRPubSubPayload is mentioned in a Manifest. The
 // degree of the match is reflected in the GcrPayloadMatch result.
+// TODO: Consider passing by pointer (hugeParam)
+// nolint: gocritic
 func (payload GCRPubSubPayload) Match(manifest Manifest) GcrPayloadMatch {
 	var m GcrPayloadMatch
 	for _, rc := range manifest.Registries {
@@ -2599,11 +2694,12 @@ func (payload GCRPubSubPayload) Match(manifest Manifest) GcrPayloadMatch {
 	return m
 }
 
+// TODO: Consider passing by pointer (hugeParam)
+// nolint: gocritic
 func (payload GCRPubSubPayload) matchImages(
 	rc RegistryContext,
 	images []Image,
 ) GcrPayloadMatch {
-
 	var m GcrPayloadMatch
 	// We do not look at source registries, because the payload will only
 	// contain the image name as it appears on the destination (production).
@@ -2629,11 +2725,12 @@ func (payload GCRPubSubPayload) matchImages(
 	return m
 }
 
+// TODO: Consider passing by pointer (hugeParam)
+// nolint: gocritic
 func (payload GCRPubSubPayload) matchImage(
 	rc RegistryContext,
 	image Image,
 ) GcrPayloadMatch {
-
 	var m GcrPayloadMatch
 
 	constructedPath := strings.Join(
@@ -2712,13 +2809,16 @@ func (payload *GCRPubSubPayload) PopulateExtraFields() error {
 
 // Prettified prints the payload in a way that is stable and which hides extra
 // fields which are redundant.
+// TODO: Consider passing by pointer (hugeParam)
+// nolint: gocritic
 func (payload GCRPubSubPayload) String() string {
-	// nolint[lll]
-	return fmt.Sprintf("{Action: %q, FQIN: %q, PQIN: %q, Path: %q, Digest: %q, Tag: %q}",
+	return fmt.Sprintf(
+		"{Action: %q, FQIN: %q, PQIN: %q, Path: %q, Digest: %q, Tag: %q}",
 		payload.Action,
 		payload.FQIN,
 		payload.PQIN,
 		payload.Path,
 		payload.Digest,
-		payload.Tag)
+		payload.Tag,
+	)
 }

@@ -36,7 +36,6 @@ type Token string
 func GetServiceAccountToken(
 	serviceAccount string,
 	useServiceAccount bool) (Token, error) {
-
 	args := []string{
 		"auth",
 		"print-access-token",

@@ -74,10 +74,13 @@ func TestParsePubSubMessageBody(t *testing.T) {
 		return audit.PubSubMessage{
 			Message: audit.PubSubMessageInner{
 				Data: []byte(s),
-				ID:   "1"},
-			Subscription: "2"}
+				ID:   "1",
+			},
+			Subscription: "2",
+		}
 	}
-	var shouldBeValid = []struct {
+
+	shouldBeValid := []struct {
 		name string
 		body string
 	}{
@@ -112,7 +115,7 @@ func TestParsePubSubMessageBody(t *testing.T) {
 		checkError(t, errEqual, fmt.Sprintf("checkError: test: %q: shouldBeValid\n", test.name))
 	}
 
-	var shouldBeInvalid = []struct {
+	shouldBeInvalid := []struct {
 		name        string
 		body        string
 		expectedErr error
@@ -163,31 +166,43 @@ func TestValidatePayload(t *testing.T) {
 		checkError(t, errEqual, "checkError: test: shouldBeValid\n")
 	}
 
-	var shouldBeInValid = []struct {
+	shouldBeInValid := []struct {
 		input    reg.GCRPubSubPayload
 		expected error
 	}{
 		{
 			reg.GCRPubSubPayload{
-				Action: "INSERT"},
-			fmt.Errorf(`{Action: "INSERT", FQIN: "", PQIN: "", Path: "", Digest: "", Tag: ""}: neither 'digest' nor 'tag' was specified`),
+				Action: "INSERT",
+			},
+			fmt.Errorf(
+				`{Action: "INSERT", FQIN: "", PQIN: "", Path: "", Digest: "", Tag: ""}: neither 'digest' nor 'tag' was specified`,
+			),
 		},
 		{
 			reg.GCRPubSubPayload{
-				FQIN: "gcr.io/foo/bar@sha256:0000000000000000000000000000000000000000000000000000000000000000"},
-			fmt.Errorf(`{Action: "", FQIN: "gcr.io/foo/bar@sha256:0000000000000000000000000000000000000000000000000000000000000000", PQIN: "", Path: "gcr.io/foo/bar", Digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000", Tag: ""}: Action not specified`),
+				FQIN: "gcr.io/foo/bar@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+			},
+			fmt.Errorf(
+				`{Action: "", FQIN: "gcr.io/foo/bar@sha256:0000000000000000000000000000000000000000000000000000000000000000", PQIN: "", Path: "gcr.io/foo/bar", Digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000", Tag: ""}: Action not specified`,
+			),
 		},
 		{
 			reg.GCRPubSubPayload{
 				Action: "DELETE",
-				FQIN:   "gcr.io/foo/bar@sha256:0000000000000000000000000000000000000000000000000000000000000000"},
-			fmt.Errorf(`{Action: "DELETE", FQIN: "gcr.io/foo/bar@sha256:0000000000000000000000000000000000000000000000000000000000000000", PQIN: "", Path: "gcr.io/foo/bar", Digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000", Tag: ""}: deletions are prohibited`),
+				FQIN:   "gcr.io/foo/bar@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+			},
+			fmt.Errorf(
+				`{Action: "DELETE", FQIN: "gcr.io/foo/bar@sha256:0000000000000000000000000000000000000000000000000000000000000000", PQIN: "", Path: "gcr.io/foo/bar", Digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000", Tag: ""}: deletions are prohibited`,
+			),
 		},
 		{
 			reg.GCRPubSubPayload{
 				Action: "WOOF",
-				FQIN:   "gcr.io/foo/bar@sha256:0000000000000000000000000000000000000000000000000000000000000000"},
-			fmt.Errorf(`{Action: "WOOF", FQIN: "gcr.io/foo/bar@sha256:0000000000000000000000000000000000000000000000000000000000000000", PQIN: "", Path: "gcr.io/foo/bar", Digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000", Tag: ""}: unknown action "WOOF"`),
+				FQIN:   "gcr.io/foo/bar@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+			},
+			fmt.Errorf(
+				`{Action: "WOOF", FQIN: "gcr.io/foo/bar@sha256:0000000000000000000000000000000000000000000000000000000000000000", PQIN: "", Path: "gcr.io/foo/bar", Digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000", Tag: ""}: unknown action "WOOF"`,
+			),
 		},
 	}
 
@@ -873,6 +888,7 @@ func TestAudit(t *testing.T) {
 
 			_, domain, repoPath := reg.GetTokenKeyDomainRepoPath(rc.Name)
 			key := fmt.Sprintf("%s/%s", domain, repoPath)
+
 			fakeHTTPBody, ok := test.readRepo[key]
 			if !ok {
 				checkError(
@@ -880,6 +896,7 @@ func TestAudit(t *testing.T) {
 					fmt.Errorf("could not read fakeHTTPBody"),
 					fmt.Sprintf("Test: %v\n", test.name))
 			}
+
 			sr.Bytes = []byte(fakeHTTPBody)
 			return &sr
 		}
@@ -912,7 +929,8 @@ func TestAudit(t *testing.T) {
 			reportingFacility,
 			loggingFacility,
 			fakeReadRepo,
-			fakeReadManifestList)
+			fakeReadManifestList,
+		)
 
 		// Handle the request.
 		s.Audit(w, r)
@@ -982,7 +1000,6 @@ func initFakeServerContext(
 	fakeReadRepo func(*reg.SyncContext, reg.RegistryContext) stream.Producer,
 	fakeReadManifestList func(*reg.SyncContext, reg.GCRManifestListContext) stream.Producer,
 ) audit.ServerContext {
-
 	remoteManifestFacility := remotemanifest.NewFake(manifests)
 
 	serverContext := audit.ServerContext{

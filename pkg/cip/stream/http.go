@@ -38,12 +38,10 @@ const (
 
 // Produce runs the external process and returns two io.Readers (to stdout and
 // stderr). In this case we equate the http.Respose "Body" with stdout.
-func (h *HTTP) Produce() (io.Reader, io.Reader, error) {
+func (h *HTTP) Produce() (stdOut, stdErr io.Reader, err error) {
 	client := http.Client{
 		Timeout: time.Second * requestTimeoutSeconds,
 	}
-
-	var err error
 
 	// We close the response body in Close().
 	// nolint[bodyclose]
@@ -65,13 +63,15 @@ func (h *HTTP) Produce() (io.Reader, io.Reader, error) {
 		klog.Errorf("could not read from HTTP response body")
 		return nil, nil, fmt.Errorf(
 			"problems encountered: unexpected response code %d",
-			h.Res.StatusCode)
+			h.Res.StatusCode,
+		)
 	}
 
 	return nil, nil, fmt.Errorf(
 		"problems encountered: unexpected response code %d; body: %s",
 		h.Res.StatusCode,
-		buf.String())
+		buf.String(),
+	)
 }
 
 // Close closes the http request. This is required because otherwise there will

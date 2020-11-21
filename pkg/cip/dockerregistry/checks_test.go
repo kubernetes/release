@@ -49,17 +49,25 @@ func TestImageRemovalCheck(t *testing.T) {
 	imageA := reg.Image{
 		ImageName: "a",
 		Dmap: reg.DigestTags{
-			"sha256:000": {"0.9"}}}
+			"sha256:000": {"0.9"},
+		},
+	}
+
 	imageA2 := reg.Image{
 		ImageName: "a",
 		Dmap: reg.DigestTags{
-			"sha256:111": {"0.9"}}}
+			"sha256:111": {"0.9"},
+		},
+	}
+
 	imageB := reg.Image{
 		ImageName: "b",
 		Dmap: reg.DigestTags{
-			"sha256:000": {"0.9"}}}
+			"sha256:000": {"0.9"},
+		},
+	}
 
-	var tests = []struct {
+	tests := []struct {
 		name            string
 		check           reg.ImageRemovalCheck
 		masterManifests []reg.Manifest
@@ -82,7 +90,8 @@ func TestImageRemovalCheck(t *testing.T) {
 					Images: []reg.Image{
 						imageA,
 					},
-					SrcRegistry: &srcRC},
+					SrcRegistry: &srcRC,
+				},
 			},
 			[]reg.Manifest{
 				{
@@ -90,7 +99,8 @@ func TestImageRemovalCheck(t *testing.T) {
 					Images: []reg.Image{
 						imageA,
 					},
-					SrcRegistry: &srcRC},
+					SrcRegistry: &srcRC,
+				},
 			},
 			nil,
 		},
@@ -103,7 +113,8 @@ func TestImageRemovalCheck(t *testing.T) {
 					Images: []reg.Image{
 						imageA,
 					},
-					SrcRegistry: &srcRC},
+					SrcRegistry: &srcRC,
+				},
 			},
 			[]reg.Manifest{
 				{
@@ -111,10 +122,12 @@ func TestImageRemovalCheck(t *testing.T) {
 					Images: []reg.Image{
 						imageB,
 					},
-					SrcRegistry: &srcRC},
+					SrcRegistry: &srcRC,
+				},
 			},
-			fmt.Errorf("The following images were removed in this pull " +
-				"request: a"),
+			fmt.Errorf(
+				"the following images were removed in this pull request: a",
+			),
 		},
 		{
 			"Promoting same image from different registry",
@@ -125,7 +138,8 @@ func TestImageRemovalCheck(t *testing.T) {
 					Images: []reg.Image{
 						imageA,
 					},
-					SrcRegistry: &srcRC},
+					SrcRegistry: &srcRC,
+				},
 			},
 			[]reg.Manifest{
 				{
@@ -133,7 +147,8 @@ func TestImageRemovalCheck(t *testing.T) {
 					Images: []reg.Image{
 						imageA,
 					},
-					SrcRegistry: &srcRC2},
+					SrcRegistry: &srcRC2,
+				},
 			},
 			nil,
 		},
@@ -146,7 +161,8 @@ func TestImageRemovalCheck(t *testing.T) {
 					Images: []reg.Image{
 						imageA,
 					},
-					SrcRegistry: &srcRC},
+					SrcRegistry: &srcRC,
+				},
 			},
 			[]reg.Manifest{
 				{
@@ -154,15 +170,21 @@ func TestImageRemovalCheck(t *testing.T) {
 					Images: []reg.Image{
 						imageA2,
 					},
-					SrcRegistry: &srcRC},
+					SrcRegistry: &srcRC,
+				},
 			},
-			fmt.Errorf("The following images were removed in this pull " +
-				"request: a"),
+			fmt.Errorf(
+				"the following images were removed in this pull request: a",
+			),
 		},
 	}
 
 	for _, test := range tests {
+		// TODO: Why are we not checking errors here?
+		// nolint: errcheck
 		masterEdges, _ := reg.ToPromotionEdges(test.masterManifests)
+		// TODO: Why are we not checking errors here?
+		// nolint: errcheck
 		pullEdges, _ := reg.ToPromotionEdges(test.pullManifests)
 		got := test.check.Compare(masterEdges, pullEdges)
 		err := checkEqual(got, test.expected)
@@ -174,27 +196,34 @@ func TestImageRemovalCheck(t *testing.T) {
 func TestImageSizeCheck(t *testing.T) {
 	srcRegName := reg.RegistryName("gcr.io/foo")
 	destRegName := reg.RegistryName("gcr.io/bar")
+
 	destRC := reg.RegistryContext{
 		Name:           destRegName,
 		ServiceAccount: "robot",
 	}
+
 	srcRC := reg.RegistryContext{
 		Name:           srcRegName,
 		ServiceAccount: "robot",
 		Src:            true,
 	}
+
 	registries := []reg.RegistryContext{destRC, srcRC}
 
 	image1 := reg.Image{
 		ImageName: "foo",
 		Dmap: reg.DigestTags{
-			"sha256:000": {"0.9"}}}
+			"sha256:000": {"0.9"},
+		},
+	}
 	image2 := reg.Image{
 		ImageName: "bar",
 		Dmap: reg.DigestTags{
-			"sha256:111": {"0.9"}}}
+			"sha256:111": {"0.9"},
+		},
+	}
 
-	var tests = []struct {
+	tests := []struct {
 		name       string
 		check      reg.ImageSizeCheck
 		manifests  []reg.Manifest
@@ -213,7 +242,8 @@ func TestImageSizeCheck(t *testing.T) {
 					Images: []reg.Image{
 						image1,
 					},
-					SrcRegistry: &srcRC},
+					SrcRegistry: &srcRC,
+				},
 			},
 			map[reg.Digest]int{
 				"sha256:000": reg.MBToBytes(1),
@@ -232,7 +262,8 @@ func TestImageSizeCheck(t *testing.T) {
 					Images: []reg.Image{
 						image1,
 					},
-					SrcRegistry: &srcRC},
+					SrcRegistry: &srcRC,
+				},
 			},
 			map[reg.Digest]int{
 				"sha256:000": reg.MBToBytes(5),
@@ -258,7 +289,8 @@ func TestImageSizeCheck(t *testing.T) {
 						image1,
 						image2,
 					},
-					SrcRegistry: &srcRC},
+					SrcRegistry: &srcRC,
+				},
 			},
 			map[reg.Digest]int{
 				"sha256:000": reg.MBToBytes(5),
@@ -286,7 +318,8 @@ func TestImageSizeCheck(t *testing.T) {
 						image1,
 						image2,
 					},
-					SrcRegistry: &srcRC},
+					SrcRegistry: &srcRC,
+				},
 			},
 			map[reg.Digest]int{
 				"sha256:000": 0,
@@ -304,19 +337,33 @@ func TestImageSizeCheck(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		// TODO: Why are we not checking errors here?
+		// nolint: errcheck
 		test.check.PullEdges, _ = reg.ToPromotionEdges(test.manifests)
 		err := checkEqual(len(test.check.PullEdges), len(test.imageSizes))
-		checkError(t, err,
-			fmt.Sprintf("checkError: test: %v Number of image sizes should be "+
-				"equal to the number of edges (ImageSizeCheck)\n", test.name))
+
+		checkError(
+			t,
+			err,
+			fmt.Sprintf(
+				"checkError: test: %v Number of image sizes should be equal to the number of edges (ImageSizeCheck)\n",
+				test.name,
+			),
+		)
+
 		for edge := range test.check.PullEdges {
 			test.check.DigestImageSize[edge.Digest] =
 				test.imageSizes[edge.Digest]
 		}
+
 		got := test.check.Run()
 		err = checkEqual(got, test.expected)
-		checkError(t, err,
-			fmt.Sprintf("checkError: test: %v (ImageSizeCheck)\n", test.name))
+
+		checkError(
+			t,
+			err,
+			fmt.Sprintf("checkError: test: %v (ImageSizeCheck)\n", test.name),
+		)
 	}
 }
 
@@ -364,7 +411,7 @@ func TestImageVulnCheck(t *testing.T) {
 		}
 	}
 
-	var tests = []struct {
+	tests := []struct {
 		name              string
 		severityThreshold int
 		edges             map[reg.PromotionEdge]interface{}

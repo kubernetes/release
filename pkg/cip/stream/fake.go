@@ -31,9 +31,9 @@ type Fake struct {
 // Produce a fake stream on stdout (and an empty stderr). Unlike a real stream,
 // this does not call a subprocess --- instead it just provides a predefined
 // stream (Bytes) to create an io.Reader for stdout. The stderr stream is empty.
-func (producer *Fake) Produce() (io.Reader, io.Reader, error) {
+func (producer *Fake) Produce() (stream, blankStderr io.Reader, err error) {
 	producer.stream = bytes.NewReader(producer.Bytes)
-	blankStderr := strings.NewReader("")
+	blankStderr = strings.NewReader("")
 	return producer.stream, blankStderr, nil
 }
 

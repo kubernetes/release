@@ -34,7 +34,8 @@ func TestFindManifest(t *testing.T) {
 		ServiceAccount: "sa@robot.com",
 		Src:            true,
 	}
-	var tests = []struct {
+
+	tests := []struct {
 		// name is folder name
 		name             string
 		input            reg.GrowManifestOptions
@@ -77,7 +78,8 @@ func TestFindManifest(t *testing.T) {
 					},
 				},
 				Images: []reg.Image{
-					{ImageName: "foo-controller",
+					{
+						ImageName: "foo-controller",
 						Dmap: reg.DigestTags{
 							"sha256:c3d310f4741b3642497da8826e0986db5e02afc9777a2b8e668c8e41034128c1": {"1.0"},
 						},
@@ -107,10 +109,9 @@ func TestFindManifest(t *testing.T) {
 		gotManifest.SrcRegistry = nil
 
 		eqErr := checkEqual(gotManifest, test.expectedManifest)
-		checkError(
-			t,
-			eqErr,
-			fmt.Sprintf("Test: %q (unexpected manifest)\n", test.name))
+		checkError(t, eqErr,
+			fmt.Sprintf("Test: %q (unexpected manifest)\n", test.name),
+		)
 
 		var gotErrStr string
 		var expectedErrStr string
@@ -122,15 +123,14 @@ func TestFindManifest(t *testing.T) {
 		}
 
 		eqErr = checkEqual(gotErrStr, expectedErrStr)
-		checkError(
-			t,
-			eqErr,
-			fmt.Sprintf("Test: %q (unexpected error)\n", test.name))
+		checkError(t, eqErr,
+			fmt.Sprintf("Test: %q (unexpected error)\n", test.name),
+		)
 	}
 }
 
 func TestApplyFilters(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		// name is folder name
 		name         string
 		inputOptions reg.GrowManifestOptions

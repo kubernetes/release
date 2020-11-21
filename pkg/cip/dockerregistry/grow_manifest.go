@@ -72,11 +72,11 @@ func (o *GrowManifestOptions) Populate(
 
 // Validate validates the options.
 func (o *GrowManifestOptions) Validate() error {
-	if len(o.BaseDir) == 0 {
+	if o.BaseDir == "" {
 		return xerrors.New("must specify --base_dir")
 	}
 
-	if len(o.StagingRepo) == 0 {
+	if o.StagingRepo == "" {
 		return xerrors.New("must specify --staging_repo")
 	}
 
@@ -88,11 +88,12 @@ func (o *GrowManifestOptions) Validate() error {
 }
 
 // GrowManifest modifies a manifest by adding images into it.
+// TODO: Consider passing by pointer (hugeParam)
+// nolint: gocritic
 func GrowManifest(
 	ctx context.Context,
 	o GrowManifestOptions,
 ) error {
-
 	var err error
 	var riiCombined RegInvImage
 
@@ -145,6 +146,8 @@ func WriteImages(manifest Manifest, rii RegInvImage) error {
 }
 
 // FindManifest finds the manifest to modify.
+// TODO: Consider passing by pointer (hugeParam)
+// nolint: gocritic
 func FindManifest(o GrowManifestOptions) (Manifest, error) {
 	var err error
 	var manifests []Manifest
@@ -166,10 +169,11 @@ func FindManifest(o GrowManifestOptions) (Manifest, error) {
 // ReadStagingRepo reads the StagingRepo, and applies whatever filters are
 // available to the resulting RegInvImage. This RegInvImage is what we want to
 // inject into the "images.yaml" of a thin manifest.
+// TODO: Consider passing by pointer (hugeParam)
+// nolint: gocritic
 func ReadStagingRepo(
 	o GrowManifestOptions,
 ) (RegInvImage, error) {
-
 	stagingRepoRC := RegistryContext{
 		Name: o.StagingRepo,
 	}
@@ -203,8 +207,9 @@ func ReadStagingRepo(
 
 // ApplyFilters applies the filters in the options to whittle down the given
 // rii.
+// TODO: Consider passing by pointer (hugeParam)
+// nolint: gocritic
 func ApplyFilters(o GrowManifestOptions, rii RegInvImage) (RegInvImage, error) {
-
 	// If nothing to filter, short-circuit.
 	if len(rii) == 0 {
 		return rii, nil

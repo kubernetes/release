@@ -28,14 +28,18 @@ func (a RegInvImageDigest) Minus(b RegInvImageDigest) RegInvImageDigest {
 	aSet := a.ToSet()
 	bSet := b.ToSet()
 	cSet := aSet.Minus(bSet)
+
 	return setToRegInvImageDigest(cSet)
 }
 
 // Intersection is a set operation.
+// TODO: ST1016: methods on the same type should have the same receiver name
+// nolint: stylecheck
 func (a RegInvImageDigest) Intersection(b RegInvImageDigest) RegInvImageDigest {
 	aSet := a.ToSet()
 	bSet := b.ToSet()
 	cSet := aSet.Intersection(bSet)
+
 	return setToRegInvImageDigest(cSet)
 }
 
@@ -45,14 +49,18 @@ func (a RegInvImageDigest) ToSet() container.Set {
 	for k, v := range a {
 		b[k] = v
 	}
+
 	return b
 }
 
 func setToRegInvImageDigest(a container.Set) RegInvImageDigest {
 	b := make(RegInvImageDigest)
 	for k, v := range a {
+		// TODO: Why are we not checking errors here?
+		// nolint: errcheck
 		b[k.(ImageDigest)] = v.(TagSlice)
 	}
+
 	return b
 }
 
@@ -62,6 +70,7 @@ func (a RegInvFlat) ToSet() container.Set {
 	for k, v := range a {
 		b[k] = v
 	}
+
 	return b
 }
 
@@ -70,14 +79,18 @@ func (a RegInvImageTag) Minus(b RegInvImageTag) RegInvImageTag {
 	aSet := a.ToSet()
 	bSet := b.ToSet()
 	cSet := aSet.Minus(bSet)
+
 	return setToRegInvImageTag(cSet)
 }
 
 // Intersection is a set operation.
+// TODO: ST1016: methods on the same type should have the same receiver name
+// nolint: stylecheck
 func (a RegInvImageTag) Intersection(b RegInvImageTag) RegInvImageTag {
 	aSet := a.ToSet()
 	bSet := b.ToSet()
 	cSet := aSet.Intersection(bSet)
+
 	return setToRegInvImageTag(cSet)
 }
 
@@ -87,14 +100,18 @@ func (a RegInvImageTag) ToSet() container.Set {
 	for k, v := range a {
 		b[k] = v
 	}
+
 	return b
 }
 
 func setToRegInvImageTag(a container.Set) RegInvImageTag {
 	b := make(RegInvImageTag)
 	for k, v := range a {
+		// TODO: Why are we not checking errors here?
+		// nolint: errcheck
 		b[k.(ImageTag)] = v.(Digest)
 	}
+
 	return b
 }
 
@@ -104,22 +121,29 @@ func (a RegInvImage) ToSet() container.Set {
 	for k, v := range a {
 		b[k] = v
 	}
+
 	return b
 }
 
 func toRegistryInventory(a container.Set) RegInvImage {
 	b := make(RegInvImage)
 	for k, v := range a {
+		// TODO: Why are we not checking errors here?
+		// nolint: errcheck
 		b[k.(ImageName)] = v.(DigestTags)
 	}
+
 	return b
 }
 
 // Minus is a set operation.
+// TODO: ST1016: methods on the same type should have the same receiver name
+// nolint: stylecheck
 func (a RegInvImage) Minus(b RegInvImage) RegInvImage {
 	aSet := a.ToSet()
 	bSet := b.ToSet()
 	cSet := aSet.Minus(bSet)
+
 	return toRegistryInventory(cSet)
 }
 
@@ -128,6 +152,7 @@ func (a RegInvImage) Union(b RegInvImage) RegInvImage {
 	aSet := a.ToSet()
 	bSet := b.ToSet()
 	cSet := aSet.Union(bSet)
+
 	return toRegistryInventory(cSet)
 }
 
@@ -138,6 +163,7 @@ func (a TagSlice) ToTagSet() TagSet {
 		// The value doesn't matter.
 		b[t] = nil
 	}
+
 	return b
 }
 
@@ -146,6 +172,7 @@ func (a TagSlice) Minus(b TagSlice) TagSet {
 	aSet := a.ToTagSet()
 	bSet := b.ToTagSet()
 	cSet := aSet.Minus(bSet)
+
 	return cSet
 }
 
@@ -154,6 +181,7 @@ func (a TagSlice) Union(b TagSlice) TagSet {
 	aSet := a.ToTagSet()
 	bSet := b.ToTagSet()
 	cSet := aSet.Union(bSet)
+
 	return cSet
 }
 
@@ -162,6 +190,7 @@ func (a TagSlice) Intersection(b TagSlice) TagSet {
 	aSet := a.ToTagSet()
 	bSet := b.ToTagSet()
 	cSet := aSet.Intersection(bSet)
+
 	return cSet
 }
 
@@ -172,6 +201,7 @@ func (a TagSet) ToSet() container.Set {
 		// The value doesn't matter.
 		b[t] = nil
 	}
+
 	return b
 }
 
@@ -180,6 +210,7 @@ func setToTagSet(a container.Set) TagSet {
 	for k := range a {
 		b[k.(Tag)] = nil
 	}
+
 	return b
 }
 
@@ -188,6 +219,7 @@ func (a TagSet) Minus(b TagSet) TagSet {
 	aSet := a.ToSet()
 	bSet := b.ToSet()
 	cSet := aSet.Minus(bSet)
+
 	return setToTagSet(cSet)
 }
 
@@ -196,6 +228,7 @@ func (a TagSet) Union(b TagSet) TagSet {
 	aSet := a.ToSet()
 	bSet := b.ToSet()
 	cSet := aSet.Union(bSet)
+
 	return setToTagSet(cSet)
 }
 
@@ -204,5 +237,6 @@ func (a TagSet) Intersection(b TagSet) TagSet {
 	aSet := a.ToSet()
 	bSet := b.ToSet()
 	cSet := aSet.Intersection(bSet)
+
 	return setToTagSet(cSet)
 }

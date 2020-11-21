@@ -55,9 +55,7 @@ func (c *GcpLogClient) GetAlertLogger() *log.Logger {
 func NewGcpLogClient(
 	projectID, logName string,
 ) (*GcpLogClient, error) {
-
 	c := GcpLogClient{}
-
 	ctx := context.Background()
 
 	// This creates a logging client that performs better logging than the

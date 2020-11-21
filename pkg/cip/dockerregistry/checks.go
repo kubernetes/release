@@ -54,12 +54,12 @@ func getGitShaFromEnv(envVar string) (plumbing.Hash, error) {
 	const gitShaLength = 40
 	if len(potenitalSHA) != gitShaLength {
 		return plumbing.Hash{},
-			fmt.Errorf("Length of SHA is %d characters, should be %d",
+			fmt.Errorf("length of SHA is %d characters, should be %d",
 				len(potenitalSHA), gitShaLength)
 	}
 	_, err := hex.DecodeString(potenitalSHA)
 	if err != nil {
-		return plumbing.Hash{}, fmt.Errorf("Not a valid SHA: %v", err)
+		return plumbing.Hash{}, fmt.Errorf("not a valid SHA: %v", err)
 	}
 	return plumbing.NewHash(potenitalSHA), nil
 }
@@ -74,20 +74,21 @@ func MKRealImageRemovalCheck(
 	// for the master branch and the pull request branch respectively.
 	masterSHA, err := getGitShaFromEnv("PULL_BASE_SHA")
 	if err != nil {
-		return nil, fmt.Errorf("The PULL_BASE_SHA environment variable "+
+		return nil, fmt.Errorf("the PULL_BASE_SHA environment variable "+
 			"is invalid: %v", err)
 	}
 	pullRequestSHA, err := getGitShaFromEnv("PULL_PULL_SHA")
 	if err != nil {
-		return nil, fmt.Errorf("The PULL_PULL_SHA environment variable "+
+		return nil, fmt.Errorf("the PULL_PULL_SHA environment variable "+
 			"is invalid: %v", err)
 	}
 	return &ImageRemovalCheck{
-		gitRepoPath,
-		masterSHA,
-		pullRequestSHA,
-		edges,
-	}, nil
+			gitRepoPath,
+			masterSHA,
+			pullRequestSHA,
+			edges,
+		},
+		nil
 }
 
 // Run executes ImageRemovalCheck on a set of promotion edges.
@@ -96,11 +97,11 @@ func MKRealImageRemovalCheck(
 func (check *ImageRemovalCheck) Run() error {
 	r, err := gogit.PlainOpen(check.GitRepoPath)
 	if err != nil {
-		return fmt.Errorf("Could not open the Git repo: %v", err)
+		return fmt.Errorf("could not open the Git repo: %v", err)
 	}
 	w, err := r.Worktree()
 	if err != nil {
-		return fmt.Errorf("Could not create Git worktree: %v", err)
+		return fmt.Errorf("could not create Git worktree: %v", err)
 	}
 
 	// The Prow job that this check is running in has already cloned the
@@ -111,18 +112,18 @@ func (check *ImageRemovalCheck) Run() error {
 		Force: true,
 	})
 	if err != nil {
-		return fmt.Errorf("Could not checkout the master branch of the Git"+
+		return fmt.Errorf("could not checkout the master branch of the Git"+
 			" repo: %v", err)
 	}
 
 	mfests, err := ParseThinManifestsFromDir(check.GitRepoPath)
 	if err != nil {
-		return fmt.Errorf("Could not parse manifests from the directory: %v",
+		return fmt.Errorf("could not parse manifests from the directory: %v",
 			err)
 	}
 	masterEdges, err := ToPromotionEdges(mfests)
 	if err != nil {
-		return fmt.Errorf("Could not generate promotion edges from promoter"+
+		return fmt.Errorf("could not generate promotion edges from promoter"+
 			" manifests: %v", err)
 	}
 
@@ -133,7 +134,7 @@ func (check *ImageRemovalCheck) Run() error {
 		Force: true,
 	})
 	if err != nil {
-		return fmt.Errorf("Could not checkout the pull request branch of the"+
+		return fmt.Errorf("could not checkout the pull request branch of the"+
 			" Git repo %v: %v",
 			check.GitRepoPath, err)
 	}
@@ -173,7 +174,7 @@ func (check *ImageRemovalCheck) Compare(
 	}
 
 	if len(removedImages) > 0 {
-		return fmt.Errorf("The following images were removed in this pull "+
+		return fmt.Errorf("the following images were removed in this pull "+
 			"request: %v", strings.Join(removedImages, ", "))
 	}
 	return nil
@@ -387,6 +388,8 @@ func (check *ImageVulnCheck) Run() error {
 
 // Error is a function of ImageSizeError and implements the error interface.
 func (err ImageVulnError) Error() string {
+	// TODO: Why are we not checking errors here?
+	// nolint: errcheck
 	vulnJSON, _ := json.MarshalIndent(err, "", "  ")
 	return string(vulnJSON)
 }
@@ -401,15 +404,16 @@ func IsSevereOccurrence(
 	return int(severityLevel) >= severityThreshold
 }
 
-func parseImageProjectID(
-	edge PromotionEdge,
-) (string, error) {
+// TODO: Consider passing by pointer (hugeParam)
+// nolint: gocritic
+func parseImageProjectID(edge PromotionEdge) (string, error) {
 	const projectIDIndex = 1
 	splitName := strings.Split(string(edge.SrcRegistry.Name), "/")
 	if len(splitName) <= projectIDIndex {
-		return "", fmt.Errorf("Could not parse project ID from image name: %q",
+		return "", fmt.Errorf("could not parse project ID from image name: %q",
 			string(edge.SrcRegistry.Name))
 	}
+
 	return splitName[projectIDIndex], nil
 }
 

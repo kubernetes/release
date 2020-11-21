@@ -28,7 +28,6 @@ import (
 func NewGcpErrorReportingClient(
 	projectID, serviceName string,
 ) *errorreporting.Client {
-
 	ctx := context.Background()
 
 	erc, err := errorreporting.NewClient(ctx, projectID, errorreporting.Config{

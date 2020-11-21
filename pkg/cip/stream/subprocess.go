@@ -30,7 +30,7 @@ type Subprocess struct {
 
 // Produce runs the external process and returns two io.Readers (to stdout and
 // stderr).
-func (sp *Subprocess) Produce() (io.Reader, io.Reader, error) {
+func (sp *Subprocess) Produce() (stdOut, stdErr io.Reader, err error) {
 	invocation := sp.CmdInvocation
 	cmd := exec.Command(invocation[0], invocation[1:]...)
 	stdoutReader, err := cmd.StdoutPipe()
