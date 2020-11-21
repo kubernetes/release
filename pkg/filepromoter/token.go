@@ -23,7 +23,7 @@ import (
 
 	// TODO: Use k/release/pkg/log instead
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/k8s-container-image-promoter/pkg/gcloud"
+	"k8s.io/release/pkg/cip/gcloud"
 )
 
 // gcloudTokenSource implements oauth2.TokenSource.

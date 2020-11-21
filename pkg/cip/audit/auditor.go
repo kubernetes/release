@@ -26,11 +26,12 @@ import (
 	"runtime/debug"
 
 	"cloud.google.com/go/errorreporting"
+
 	"k8s.io/klog"
-	reg "sigs.k8s.io/k8s-container-image-promoter/pkg/dockerregistry"
-	"sigs.k8s.io/k8s-container-image-promoter/pkg/logclient"
-	"sigs.k8s.io/k8s-container-image-promoter/pkg/remotemanifest"
-	"sigs.k8s.io/k8s-container-image-promoter/pkg/report"
+	reg "k8s.io/release/pkg/cip/dockerregistry"
+	"k8s.io/release/pkg/cip/logclient"
+	"k8s.io/release/pkg/cip/remotemanifest"
+	"k8s.io/release/pkg/cip/report"
 )
 
 // InitRealServerContext creates a ServerContext with facilities that are meant

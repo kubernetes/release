@@ -27,14 +27,14 @@ import (
 	"strings"
 	"sync"
 
-	"k8s.io/klog"
-
 	containeranalysis "cloud.google.com/go/containeranalysis/apiv1"
 	"google.golang.org/api/iterator"
 	grafeaspb "google.golang.org/genproto/googleapis/grafeas/v1"
 	gogit "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
-	"sigs.k8s.io/k8s-container-image-promoter/pkg/stream"
+
+	"k8s.io/klog"
+	"k8s.io/release/pkg/cip/stream"
 )
 
 // MBToBytes converts a value from MiB to Bytes.

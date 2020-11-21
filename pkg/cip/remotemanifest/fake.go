@@ -17,7 +17,7 @@ limitations under the License.
 package remotemanifest
 
 import (
-	reg "sigs.k8s.io/k8s-container-image-promoter/pkg/dockerregistry"
+	reg "k8s.io/release/pkg/cip/dockerregistry"
 )
 
 // Fake is a fake remote manifest. It is fake in the sense that it

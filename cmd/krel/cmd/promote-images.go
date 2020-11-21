@@ -27,11 +27,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	reg "k8s.io/release/pkg/cip/dockerregistry"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
-	reg "sigs.k8s.io/k8s-container-image-promoter/pkg/dockerregistry"
 )
 
 const (

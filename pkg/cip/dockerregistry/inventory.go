@@ -29,17 +29,17 @@ import (
 	"strings"
 	"sync"
 
-	yaml "gopkg.in/yaml.v2"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/klog"
-
 	"github.com/google/go-containerregistry/pkg/crane"
 	ggcrV1 "github.com/google/go-containerregistry/pkg/v1"
 	ggcrV1Google "github.com/google/go-containerregistry/pkg/v1/google"
 	ggcrV1Types "github.com/google/go-containerregistry/pkg/v1/types"
-	"sigs.k8s.io/k8s-container-image-promoter/pkg/gcloud"
-	cipJson "sigs.k8s.io/k8s-container-image-promoter/pkg/json"
-	"sigs.k8s.io/k8s-container-image-promoter/pkg/stream"
+	yaml "gopkg.in/yaml.v2"
+
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/klog"
+	"k8s.io/release/pkg/cip/gcloud"
+	cipJson "k8s.io/release/pkg/cip/json"
+	"k8s.io/release/pkg/cip/stream"
 )
 
 // GetSrcRegistry gets the source registry.
