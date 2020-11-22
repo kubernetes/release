@@ -18,27 +18,28 @@ package main
 
 import (
 	"context"
-	"flag"
+	"fmt"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	// TODO: Use k/release/pkg/log instead
-	"k8s.io/klog/v2"
 	reg "k8s.io/release/pkg/cip/dockerregistry"
+	"k8s.io/release/pkg/log"
 )
 
 var cmd = &cobra.Command{
 	Short: "cip-mm → Container Image Promoter - Manifest Modificator",
 	Long: `cip-mm → Container Image Promoter - Manifest Modificator
-	
+
 This tool **m**odifies promoter **m**anifests. For now it dumps some filtered
 subset of a staging GCR and merges those contents back into a given promoter
 manifest.`,
-	Use:           "cip-mm",
-	SilenceUsage:  true,
-	SilenceErrors: true,
+	Use:               "cip-mm",
+	SilenceUsage:      true,
+	SilenceErrors:     true,
+	PersistentPreRunE: initLogging,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return run(commandLineOpts)
+		return run()
 	},
 }
 
@@ -48,6 +49,7 @@ type commandLineOptions struct {
 	filterImage  string
 	filterDigest string
 	filterTag    string
+	logLevel     string
 }
 
 var commandLineOpts = &commandLineOptions{}
@@ -83,26 +85,30 @@ func init() {
 		"",
 		"filter images by this tag",
 	)
-
-	// Add the flags from klog
-	flagsCompat := &flag.FlagSet{}
-	klog.InitFlags(flagsCompat)
-	cmd.PersistentFlags().AddGoFlagSet(flagsCompat)
+	cmd.PersistentFlags().StringVar(
+		&commandLineOpts.logLevel,
+		"log-level",
+		"info",
+		fmt.Sprintf("the logging verbosity, either %s", log.LevelNames()),
+	)
 }
 
 func main() {
 	if err := cmd.Execute(); err != nil {
-		klog.Fatal(err)
+		logrus.Fatal(err)
 	}
 }
 
-// nolint[lll]
-func run(cmdOpts *commandLineOptions) error {
+func initLogging(*cobra.Command, []string) error {
+	return log.SetupGlobalLogger(commandLineOpts.logLevel)
+}
+
+func run() error {
 	opt := reg.GrowManifestOptions{}
 	if err := opt.Populate(
-		cmdOpts.baseDir, cmdOpts.stagingRepo,
-		cmdOpts.filterImage, cmdOpts.filterDigest,
-		cmdOpts.filterTag); err != nil {
+		commandLineOpts.baseDir, commandLineOpts.stagingRepo,
+		commandLineOpts.filterImage, commandLineOpts.filterDigest,
+		commandLineOpts.filterTag); err != nil {
 		return err
 	}
 
