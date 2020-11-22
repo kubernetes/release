@@ -23,6 +23,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"k8s.io/release/pkg/object"
 )
 
 const fictionalTestBucketName = "kubernetes-test-name"
@@ -56,7 +58,7 @@ func TestCopyReleaseLogsToWorkDir(t *testing.T) {
 	// Create the implementation
 	impl := &defaultArchiverImpl{}
 	// Copy the log files to the mock directory
-	err = impl.CopyReleaseLogs([]string{tmp1.Name(), tmp2.Name()}, destDir)
+	err = impl.CopyReleaseLogs([]string{tmp1.Name(), tmp2.Name()}, destDir, "")
 	require.Nil(t, err)
 
 	// Reopoen the files to check them
@@ -84,11 +86,11 @@ func TestArchiveBucketPath(t *testing.T) {
 	opts := ArchiverOptions{
 		// Here, we test without "gs://", the gcs package should
 		// normalize the location with or without
-		ArchiveGCSPath: fictionalTestBucketName + "/archive",
-		BuildVersion:   "v1.20.0-beta.2",
+		Bucket:       fictionalTestBucketName,
+		PrimeVersion: "v1.20.0-beta.2",
 	}
 	require.Equal(t,
-		"gs://"+filepath.Join(fictionalTestBucketName, "archive", archiveDirPrefix+opts.BuildVersion),
+		object.GcsPrefix+filepath.Join(fictionalTestBucketName, archiveBucketPath, archiveDirPrefix+opts.PrimeVersion),
 		opts.ArchiveBucketPath(),
 	)
 }
@@ -106,16 +108,17 @@ func TestValidateOpts(t *testing.T) {
 
 	// With complete values, still should not validate as most
 	// directories do not exist
-	testOpts.ArchiveGCSPath = "gcs://kubernetes-test-name/archive"
-	testOpts.StageGCSPath = "gcs://kubernetes-test-name/archive"
-	testOpts.LogsDirectory = filepath.Join(dir, "/tmp/")
-	testOpts.BuildVersion = "v1.20.0-beta.1.687+3af376d3ad5009"
+	testOpts.Bucket = "kubernetes-test-name"
+	testOpts.PrimeVersion = "v1.20.0-beta.1"
+	testOpts.BuildVersion = "v1.20.0-beta.0.80+cdfd82733af78c"
 	testOpts.ReleaseBuildDir = filepath.Join(dir, testOpts.BuildVersion)
 	require.NotNil(t, testOpts.Validate())
 
-	// Creating the logs dir (/workdir/tmp) should still not
+	// Creating a test log (/workdir/tmp) should still not
 	// validate, build dir is missing
-	require.Nil(t, os.Mkdir(testOpts.LogsDirectory, os.FileMode(0o755)))
+	tmplog, err := ioutil.TempFile(os.TempDir(), "anago-test-log-")
+	require.Nil(t, err)
+	testOpts.LogFile = tmplog.Name()
 	require.NotNil(t, testOpts.Validate())
 
 	// Finally create the build dir and we're done

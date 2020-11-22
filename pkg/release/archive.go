@@ -19,6 +19,7 @@ package release
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -33,7 +34,9 @@ import (
 )
 
 const (
-	archiveDirPrefix = "anago-"
+	archiveDirPrefix   = "anago-"  // Prefix for archive directories
+	archiveBucketPath  = "archive" // Archiv sibdirectory in bucket
+	logsArchiveSubPath = "logs"    // Logs subdirectory
 )
 
 // Archiver stores the release build directory in a bucket
@@ -56,23 +59,21 @@ func (archiver *Archiver) SetImpl(impl archiverImpl) {
 // ArchiverOptions set the options used when archiving a release
 type ArchiverOptions struct {
 	ReleaseBuildDir string // Build directory that will be archived
-	LogsDirectory   string // Subdirectory to get the logs from
-
-	StageGCSPath   string // Stage path in the bucket // ie gs://kubernetes-release/stage
-	ArchiveGCSPath string // Archive path in the bucket // ie gs://kubernetes-release/archive
-
-	BuildVersion string // Version tag of the release we are archiving
+	LogFile         string // Log file to process and include in the archive
+	PrimeVersion    string // Final version tag
+	BuildVersion    string // Build version from where this release has cut
+	Bucket          string // Bucket we will use to archive and read staged data
 }
 
 // ArchiveBucketPath returns the bucket path we the release will be stored
 func (o *ArchiverOptions) ArchiveBucketPath() string {
 	// local archive_bucket="gs://$RELEASE_BUCKET/archive"
-	if o.ArchiveGCSPath == "" || o.BuildVersion == "" {
+	if o.Bucket == "" || o.PrimeVersion == "" {
 		return ""
 	}
 	gcs := object.NewGCS()
 	archiveBucketPath, err := gcs.NormalizePath(
-		filepath.Join(o.ArchiveGCSPath, archiveDirPrefix+o.BuildVersion),
+		object.GcsPrefix + filepath.Join(o.Bucket, ArchivePath, archiveDirPrefix+o.PrimeVersion),
 	)
 	if err != nil {
 		logrus.Error(err)
@@ -84,29 +85,33 @@ func (o *ArchiverOptions) ArchiveBucketPath() string {
 // Validate checks if the set values are correct and complete to
 // start running the archival process
 func (o *ArchiverOptions) Validate() error {
-	if o.LogsDirectory == "" {
-		return errors.New("missing logs subdirectory in archive options")
-	}
-	if o.ArchiveGCSPath == "" {
-		return errors.New("archival bucket location is missing from options")
-	}
-	if o.StageGCSPath == "" {
-		return errors.New("stage bucket location is missing from options")
+	if o.LogFile == "" {
+		return errors.New("release log file was not specified")
 	}
 	if !util.Exists(o.ReleaseBuildDir) {
 		return errors.New("GCB worskapce directory does not exist")
 	}
-	if !util.Exists(filepath.Join(o.LogsDirectory)) {
-		return errors.New("logs directory does not exist")
+	if !util.Exists(o.LogFile) {
+		return errors.New("logs file not found")
 	}
 	if o.BuildVersion == "" {
-		return errors.New("release tag in archiver options is empty")
+		return errors.New("build version tag in archiver options is empty")
+	}
+	if o.PrimeVersion == "" {
+		return errors.New("prime version tag in archiver options is empty")
+	}
+	if o.Bucket == "" {
+		return errors.New("archive bucket is not specified")
 	}
 
-	// Check if the tag is well formed
-	_, err := util.TagStringToSemver(o.BuildVersion)
-	if err != nil {
-		return errors.Wrap(err, "verifying release tag")
+	// Check if the build version is well formed (used for cleaning old staged build)
+	if _, err := util.TagStringToSemver(o.BuildVersion); err != nil {
+		return errors.Wrap(err, "verifying build version tag")
+	}
+
+	// Check if the prime version is well formed
+	if _, err := util.TagStringToSemver(o.PrimeVersion); err != nil {
+		return errors.Wrap(err, "verifying prime version tag")
 	}
 
 	return nil
@@ -116,10 +121,9 @@ func (o *ArchiverOptions) Validate() error {
 type archiverImpl interface {
 	CopyReleaseToBucket(string, string) error
 	DeleteStalePasswordFiles(string) error
-	MakeFilesPrivate(string, []string) error
-	GetLogFiles(string) ([]string, error)
+	MakeFilesPrivate(string) error
 	ValidateOptions(*ArchiverOptions) error
-	CopyReleaseLogs([]string, string) error
+	CopyReleaseLogs([]string, string, string) error
 	CleanStagedBuilds(string, string) error
 }
 
@@ -133,22 +137,8 @@ func (archiver *Archiver) ArchiveRelease() error {
 		return errors.Wrap(err, "validating archive options")
 	}
 
-	// local logfiles=$(ls $LOGFILE{,.[0-9]} 2>/dev/null || true)
-	// Before moving anything, find the log files (full path)
-	logFiles, err := archiver.impl.GetLogFiles(archiver.opts.LogsDirectory)
-	if err != nil {
-		return errors.Wrap(err, "getting files from logs directory")
-	}
-
 	// TODO: Is this still relevant?
 	// local text="files"
-
-	// copy_logs_to_workdir
-	if err := archiver.impl.CopyReleaseLogs(
-		logFiles, archiver.opts.ReleaseBuildDir,
-	); err != nil {
-		return errors.Wrap(err, "copying release logs to archive")
-	}
 
 	// # TODO: Copy $PROGSTATE as well to GCS and restore it if found
 	// # also delete if complete or just delete once copied back to $TMPDIR
@@ -166,27 +156,36 @@ func (archiver *Archiver) ArchiveRelease() error {
 		return errors.Wrap(err, "looking for stale password files")
 	}
 
-	// Copy the logs to the bucket
-	if err = archiver.impl.CopyReleaseToBucket(
+	// Clean previous staged builds
+	if err := archiver.impl.CleanStagedBuilds(
+		object.GcsPrefix+filepath.Join(archiver.opts.Bucket, StagePath),
+		archiver.opts.BuildVersion,
+	); err != nil {
+		return errors.Wrap(err, "deleting previous staged builds")
+	}
+
+	// Copy the release to the bucket
+	if err := archiver.impl.CopyReleaseToBucket(
 		archiver.opts.ReleaseBuildDir,
 		archiver.opts.ArchiveBucketPath(),
 	); err != nil {
 		return errors.Wrap(err, "while copying the release directory")
 	}
 
-	// Make the logs private (remove AllUsers from GCS ACL)
-	if err := archiver.impl.MakeFilesPrivate(
-		archiver.opts.ArchiveBucketPath(), logFiles,
+	// copy_logs_to_workdir
+	if err := archiver.impl.CopyReleaseLogs(
+		[]string{archiver.opts.LogFile},
+		filepath.Join(archiver.opts.ReleaseBuildDir, logsArchiveSubPath),
+		filepath.Join(archiver.opts.ArchiveBucketPath(), logsArchiveSubPath),
 	); err != nil {
-		return errors.Wrapf(err, "setting private ACL on logs")
+		return errors.Wrap(err, "copying release logs to archive")
 	}
 
-	// Clean previous staged builds
-	if err := archiver.impl.CleanStagedBuilds(
-		archiver.opts.StageGCSPath,
-		archiver.opts.BuildVersion,
+	// Make the logs private (remove AllUsers from the GCS ACL)
+	if err := archiver.impl.MakeFilesPrivate(
+		filepath.Join(archiver.opts.ArchiveBucketPath(), logsArchiveSubPath),
 	); err != nil {
-		return errors.Wrap(err, "deleting previous staged builds")
+		return errors.Wrapf(err, "setting private ACL on logs")
 	}
 
 	logrus.Info("Release archive complete")
@@ -198,18 +197,17 @@ func (a *defaultArchiverImpl) ValidateOptions(o *ArchiverOptions) error {
 	return errors.Wrap(o.Validate(), "validating options")
 }
 
-// makeFilesPrivate updates the ACL on the logs to ensure they do not remain worl-readable
-func (a *defaultArchiverImpl) MakeFilesPrivate(
-	archiveBucketPath string, logFiles []string,
-) error {
-	for _, logFile := range logFiles {
-		logrus.Infof("Ensure PRIVATE ACL on %s/%s", archiveBucketPath, logFile)
-		// logrun -s $GSUTIL acl ch -d AllUsers "$archive_bucket/$build_dir/${LOGFILE##*/}*" || true
-		if err := gcp.GSUtil(
-			"acl", "ch", "-d", "AllUsers", filepath.Join(archiveBucketPath, logFile),
-		); err != nil {
-			return errors.Wrapf(err, "removing public access from %s", logFile)
-		}
+// makeFilesPrivate updates the ACL on all files in a directory
+func (a *defaultArchiverImpl) MakeFilesPrivate(archiveBucketPath string) error {
+	logrus.Infof("Ensure PRIVATE ACL on %s/*", archiveBucketPath)
+	gcs := object.NewGCS()
+	logsPath, err := gcs.NormalizePath(archiveBucketPath + "/*")
+	if err != nil {
+		return errors.Wrap(err, "normalizing gcs path to modify ACL")
+	}
+	// logrun -s $GSUTIL acl ch -d AllUsers "$archive_bucket/$build_dir/${LOGFILE##*/}*" || true
+	if err := gcp.GSUtil("acl", "ch", "-d", "AllUsers", logsPath); err != nil {
+		return errors.Wrapf(err, "removing public access from files in %s", archiveBucketPath)
 	}
 	return nil
 }
@@ -227,7 +225,23 @@ func (a *defaultArchiverImpl) DeleteStalePasswordFiles(releaseBuildDir string) e
 // copyReleaseLogs gets a slice of log file names. Those files are
 // sanitized to remove sensitive data and control characters and then are
 // copied to the GCB working directory.
-func (a *defaultArchiverImpl) CopyReleaseLogs(logFiles []string, targetDir string) error {
+func (a *defaultArchiverImpl) CopyReleaseLogs(
+	logFiles []string, targetDir, archiveBucketLogsPath string,
+) (err error) {
+	// Verify the destination bucket address is correct
+	gcs := object.NewGCS()
+	if archiveBucketLogsPath != "" {
+		archiveBucketLogsPath, err = gcs.NormalizePath(archiveBucketLogsPath)
+		if err != nil {
+			return errors.Wrap(err, "normalizing remote logfile destination")
+		}
+	}
+	// Check the destination directory exists
+	if !util.Exists(targetDir) {
+		if err := os.Mkdir(targetDir, os.FileMode(0o755)); err != nil {
+			return errors.Wrap(err, "creating logs archive directory")
+		}
+	}
 	for _, fileName := range logFiles {
 		// Strip the logfiles from control chars and sensitive data
 		if err := util.CleanLogFile(fileName); err != nil {
@@ -241,6 +255,15 @@ func (a *defaultArchiverImpl) CopyReleaseLogs(logFiles []string, targetDir strin
 			return errors.Wrapf(err, "Copying logfile %s to %s", fileName, targetDir)
 		}
 	}
+	// TODO: Grab previous log files from stage and copy them to logs dir
+
+	// Rsync log files to remote location if a bucket is specified
+	if archiveBucketLogsPath != "" {
+		logrus.Infof("Rsyncing logs to remote bucket %s", archiveBucketLogsPath)
+		if err := gcs.RsyncRecursive(targetDir, archiveBucketLogsPath); err != nil {
+			return errors.Wrap(err, "while synching log files to remote bucket addr")
+		}
+	}
 	return nil
 }
 
@@ -250,14 +273,17 @@ func (a *defaultArchiverImpl) CopyReleaseToBucket(releaseBuildDir, archiveBucket
 
 	// Create a GCS cliente to copy the release
 	gcs := object.NewGCS()
-
-	logrus.Infof("Copy %s $text to %s...", releaseBuildDir, archiveBucketPath)
-
-	// logrun $GSUTIL -mq cp $dash_args $WORKDIR/* $archive_bucket/$build_dir || true
-	if err := gcs.CopyToRemote(releaseBuildDir, archiveBucketPath); err != nil {
-		return errors.Wrap(err, "copying release directory to bucket")
+	remoteDest, err := gcs.NormalizePath(archiveBucketPath)
+	if err != nil {
+		return errors.Wrap(err, "normalizing destination path")
 	}
 
+	logrus.Infof("Copy %s to %s...", releaseBuildDir, remoteDest)
+
+	// logrun $GSUTIL -mq cp $dash_args $WORKDIR/* $archive_bucket/$build_dir || true
+	if err := gcs.RsyncRecursive(releaseBuildDir, remoteDest); err != nil {
+		return errors.Wrap(err, "copying release directory to bucket")
+	}
 	return nil
 }
 
