@@ -1,0 +1,8 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+approvers:
+  - cip-approvers
+reviewers:
+  - cip-reviewers
+labels:
+  - area/artifacts

@@ -4,12 +4,14 @@ go 1.15
 
 require (
 	cloud.google.com/go v0.72.0
+	cloud.google.com/go/logging v1.1.0
 	cloud.google.com/go/storage v1.12.0
 	github.com/GoogleCloudPlatform/testgrid v0.0.30
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/containers/image/v5 v5.7.0
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/golang/protobuf v1.4.3
+	github.com/google/go-containerregistry v0.1.3
 	github.com/google/go-github/v29 v29.0.3
 	github.com/google/uuid v1.1.2
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.3.0
@@ -33,10 +35,12 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	google.golang.org/api v0.35.0
 	google.golang.org/genproto v0.0.0-20201110150050-8816d57aaa9a
+	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.3.0
+	k8s.io/apimachinery v0.19.2
+	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.4.0
 	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
-	sigs.k8s.io/k8s-container-image-promoter/pkg v0.3.0
 	sigs.k8s.io/mdtoc v1.0.1
 	sigs.k8s.io/yaml v1.2.0
 )

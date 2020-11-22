@@ -20,11 +20,11 @@ import (
 	"context"
 	"flag"
 
-	// TODO: Use k/release/pkg/log instead
-
 	"github.com/spf13/cobra"
+
+	// TODO: Use k/release/pkg/log instead
 	"k8s.io/klog/v2"
-	reg "sigs.k8s.io/k8s-container-image-promoter/pkg/dockerregistry"
+	reg "k8s.io/release/pkg/cip/dockerregistry"
 )
 
 var cmd = &cobra.Command{
