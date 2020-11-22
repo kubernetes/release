@@ -4,3 +4,5 @@ approvers:
   - promo-tools-approvers
 reviewers:
   - promo-tools-reviewers
+labels:
+  - area/artifacts

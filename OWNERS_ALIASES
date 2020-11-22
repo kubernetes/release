@@ -42,14 +42,6 @@ aliases:
     - dims
     - justaugustus
     - listx
-  cip-approvers:
-    - justaugustus
-    - justinsb
-    - listx
-  cip-reviewers:
-    - justaugustus
-    - justinsb
-    - listx
   krel-approvers:
     - hasheddan
     - justaugustus

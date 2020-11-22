@@ -21,10 +21,9 @@ set -o pipefail
 RELEASE_TOOLS=(
   cip-mm
   gh2gcs
-  kubepkg
+  kpromo
   krel
-  promobot-files
-  promobot-generate-manifest
+  kubepkg
   schedule-builder
 )
 
