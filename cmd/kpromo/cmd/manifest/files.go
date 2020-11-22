@@ -39,9 +39,7 @@ var filesCmd = &cobra.Command{
 	},
 }
 
-var (
-	filesOpts = &promobot.GenerateManifestOptions{}
-)
+var filesOpts = &promobot.GenerateManifestOptions{}
 
 func init() {
 	// TODO: Move this into a default options function in pkg/promobot
@@ -62,6 +60,7 @@ func init() {
 	)
 
 	// TODO: Consider moving this into a validation function
+	// nolint: errcheck
 	filesCmd.MarkPersistentFlagRequired("src")
 
 	ManifestCmd.AddCommand(filesCmd)
