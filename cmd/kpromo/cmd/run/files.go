@@ -18,53 +18,72 @@ package run
 
 import (
 	"context"
-	"flag"
-	"fmt"
-	"os"
 
-	// TODO: Use k/release/pkg/log instead
-	"k8s.io/klog/v2"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	"k8s.io/release/pkg/promobot"
 )
 
-func main() {
-	klog.InitFlags(nil)
-
-	var options promobot.PromoteFilesOptions
-	options.PopulateDefaults()
-
-	flag.StringVar(
-		&options.FilestoresPath,
-		"filestores",
-		options.FilestoresPath,
-		"the manifest of filestores (REQUIRED)")
-	flag.StringVar(
-		&options.FilesPath,
-		"files",
-		options.FilesPath,
-		"path to the files manifest (REQUIRED).  A directory can be specified.")
-	flag.BoolVar(
-		&options.DryRun,
-		"dry-run",
-		options.DryRun,
-		"print what would have happened by running this tool;"+
-			" do not actually modify any registry")
-
-	flag.BoolVar(
-		&options.UseServiceAccount,
-		"use-service-account",
-		options.UseServiceAccount,
-		"allow service account usage with gcloud calls"+
-			" (default: false)")
-
-	flag.Parse()
-
-	ctx := context.Background()
-	if err := promobot.RunPromoteFiles(ctx, options); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		// nolint[gomnd]
-		os.Exit(1)
-	} else {
-		os.Exit(0)
-	}
+// filesCmd represents the subcommand for `kpromo run files`
+var filesCmd = &cobra.Command{
+	Use:           "files",
+	Short:         "Promote files from a staging object store to production",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return errors.Wrap(runFilePromotion(filesOpts), "run `kpromo run files`")
+	},
 }
+
+var (
+	filesOpts = &promobot.PromoteFilesOptions{}
+)
+
+func init() {
+	// TODO: Move this into a default options function in pkg/promobot
+	filesOpts.PopulateDefaults()
+
+	filesCmd.PersistentFlags().StringVar(
+		&filesOpts.FilestoresPath,
+		"filestores",
+		filesOpts.FilestoresPath,
+		"path to the `filestores` promoter manifest",
+	)
+
+	filesCmd.PersistentFlags().StringVar(
+		&filesOpts.FilesPath,
+		"files",
+		filesOpts.FilesPath,
+		"path to the `files` manifest",
+	)
+
+	// TODO: Consider moving this to the root command
+	filesCmd.PersistentFlags().BoolVar(
+		&filesOpts.DryRun,
+		"dry-run",
+		filesOpts.DryRun,
+		"test run promotion without modifying any filestore",
+	)
+
+	filesCmd.PersistentFlags().BoolVar(
+		&filesOpts.UseServiceAccount,
+		"use-service-account",
+		filesOpts.UseServiceAccount,
+		"allow service account usage with gcloud calls",
+	)
+
+	// TODO: Consider moving this into a validation function
+	filesCmd.MarkPersistentFlagRequired("filestores")
+	filesCmd.MarkPersistentFlagRequired("files")
+
+	RunCmd.AddCommand(filesCmd)
+}
+
+func runFilePromotion(opts *promobot.PromoteFilesOptions) error {
+	ctx := context.Background()
+
+	return promobot.RunPromoteFiles(ctx, *opts)
+}
+
+// TODO: Validate options
