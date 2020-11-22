@@ -18,69 +18,73 @@ package manifest
 
 import (
 	"context"
-	"flag"
-	"fmt"
 	"os"
 	"path/filepath"
 
-	"golang.org/x/xerrors"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 
-	// TODO: Use k/release/pkg/log instead
-	"k8s.io/klog/v2"
 	"k8s.io/release/pkg/promobot"
 	"sigs.k8s.io/yaml"
 )
 
-func main() {
-	ctx := context.Background()
-
-	if err := run(ctx); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		// nolint[gomnd]
-		os.Exit(1)
-	}
+// filesCmd represents the subcommand for `kpromo manifest files`
+var filesCmd = &cobra.Command{
+	Use:           "files",
+	Short:         "Promote files from a staging object store to production",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return errors.Wrap(runFileManifest(filesOpts), "run `kpromo manifest files`")
+	},
 }
 
-// nolint[lll]
-func run(ctx context.Context) error {
-	klog.InitFlags(nil)
+var (
+	filesOpts = &promobot.GenerateManifestOptions{}
+)
 
-	var opt promobot.GenerateManifestOptions
-	opt.PopulateDefaults()
+func init() {
+	// TODO: Move this into a default options function in pkg/promobot
+	filesOpts.PopulateDefaults()
 
-	src := ""
-	flag.StringVar(
-		&src,
+	filesCmd.PersistentFlags().StringVar(
+		&filesOpts.BaseDir,
 		"src",
-		src,
-		"the base directory to copy from")
+		filesOpts.BaseDir,
+		"the base directory to copy from",
+	)
 
-	flag.StringVar(
-		&opt.Prefix,
+	filesCmd.PersistentFlags().StringVar(
+		&filesOpts.Prefix,
 		"prefix",
-		opt.Prefix,
-		"restrict the exported files; only export those starting with the provided prefix")
+		filesOpts.Prefix,
+		"only export files starting with the provided prefix",
+	)
 
-	flag.Parse()
+	// TODO: Consider moving this into a validation function
+	filesCmd.MarkPersistentFlagRequired("src")
 
-	if src == "" {
-		return xerrors.New("must specify --src")
-	}
+	ManifestCmd.AddCommand(filesCmd)
+}
 
-	s, err := filepath.Abs(src)
+func runFileManifest(opts *promobot.GenerateManifestOptions) error {
+	ctx := context.Background()
+
+	src, err := filepath.Abs(opts.BaseDir)
 	if err != nil {
-		return xerrors.Errorf("cannot resolve %q to absolute path: %w", src, err)
+		return errors.Wrapf(err, "resolving %q to absolute path", src)
 	}
-	opt.BaseDir = s
 
-	manifest, err := promobot.GenerateManifest(ctx, opt)
+	opts.BaseDir = src
+
+	manifest, err := promobot.GenerateManifest(ctx, *opts)
 	if err != nil {
 		return err
 	}
 
 	manifestYAML, err := yaml.Marshal(manifest)
 	if err != nil {
-		return xerrors.Errorf("error serializing manifest: %w", err)
+		return errors.Wrap(err, "serializing manifest")
 	}
 
 	if _, err := os.Stdout.Write(manifestYAML); err != nil {
@@ -89,3 +93,5 @@ func run(ctx context.Context) error {
 
 	return nil
 }
+
+// TODO: Validate options
