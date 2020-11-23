@@ -141,7 +141,7 @@ func (d *defaultStageImpl) Submit(options *gcb.Options) error {
 }
 
 func (d *defaultStageImpl) CheckPrerequisites() error {
-	return release.NewPrerequisitesChecker().Run()
+	return release.NewPrerequisitesChecker().Run(workspaceDir)
 }
 
 func (d *defaultStageImpl) BranchNeedsCreation(

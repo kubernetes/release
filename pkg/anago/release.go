@@ -140,7 +140,7 @@ func (d *defaultReleaseImpl) Submit(options *gcb.Options) error {
 }
 
 func (d *defaultReleaseImpl) CheckPrerequisites() error {
-	return release.NewPrerequisitesChecker().Run()
+	return release.NewPrerequisitesChecker().Run(workspaceDir)
 }
 
 func (d *defaultReleaseImpl) BranchNeedsCreation(

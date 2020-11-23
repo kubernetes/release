@@ -20,6 +20,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/shirou/gopsutil/disk"
 	"github.com/stretchr/testify/require"
 
 	"k8s.io/release/pkg/release"
@@ -37,6 +38,9 @@ func TestCheckPrerequisites(t *testing.T) {
 				mock.CommandAvailableReturns(true)
 				mock.DockerVersionReturns("19.03.13", nil)
 				mock.IsEnvSetReturns(true)
+				mock.UsageReturns(
+					&disk.UsageStat{Free: 101 * 1024 * 1024 * 1024}, nil,
+				)
 			},
 			shouldErr: false,
 		},
@@ -76,13 +80,29 @@ func TestCheckPrerequisites(t *testing.T) {
 			},
 			shouldErr: true,
 		},
+		{ // failure Usage
+			prepare: func(mock *releasefakes.FakePrerequisitesCheckerImpl) {
+				mock.CommandAvailableReturns(true)
+				mock.DockerVersionReturns("19.03.13", nil)
+				mock.UsageReturns(nil, err)
+			},
+			shouldErr: true,
+		},
+		{ // failure not enough disk space
+			prepare: func(mock *releasefakes.FakePrerequisitesCheckerImpl) {
+				mock.CommandAvailableReturns(true)
+				mock.DockerVersionReturns("19.03.13", nil)
+				mock.UsageReturns(&disk.UsageStat{Free: 100}, nil)
+			},
+			shouldErr: true,
+		},
 	} {
 		mock := &releasefakes.FakePrerequisitesCheckerImpl{}
 		sut := release.NewPrerequisitesChecker()
 		tc.prepare(mock)
 		sut.SetImpl(mock)
 
-		err := sut.Run()
+		err := sut.Run("")
 		if tc.shouldErr {
 			require.NotNil(t, err)
 		} else {

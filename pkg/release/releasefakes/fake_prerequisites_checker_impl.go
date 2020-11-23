@@ -19,6 +19,8 @@ package releasefakes
 
 import (
 	"sync"
+
+	"github.com/shirou/gopsutil/disk"
 )
 
 type FakePrerequisitesCheckerImpl struct {
@@ -68,6 +70,19 @@ type FakePrerequisitesCheckerImpl struct {
 	}
 	isEnvSetReturnsOnCall map[int]struct {
 		result1 bool
+	}
+	UsageStub        func(string) (*disk.UsageStat, error)
+	usageMutex       sync.RWMutex
+	usageArgsForCall []struct {
+		arg1 string
+	}
+	usageReturns struct {
+		result1 *disk.UsageStat
+		result2 error
+	}
+	usageReturnsOnCall map[int]struct {
+		result1 *disk.UsageStat
+		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -315,6 +330,70 @@ func (fake *FakePrerequisitesCheckerImpl) IsEnvSetReturnsOnCall(i int, result1 b
 	}{result1}
 }
 
+func (fake *FakePrerequisitesCheckerImpl) Usage(arg1 string) (*disk.UsageStat, error) {
+	fake.usageMutex.Lock()
+	ret, specificReturn := fake.usageReturnsOnCall[len(fake.usageArgsForCall)]
+	fake.usageArgsForCall = append(fake.usageArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.UsageStub
+	fakeReturns := fake.usageReturns
+	fake.recordInvocation("Usage", []interface{}{arg1})
+	fake.usageMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakePrerequisitesCheckerImpl) UsageCallCount() int {
+	fake.usageMutex.RLock()
+	defer fake.usageMutex.RUnlock()
+	return len(fake.usageArgsForCall)
+}
+
+func (fake *FakePrerequisitesCheckerImpl) UsageCalls(stub func(string) (*disk.UsageStat, error)) {
+	fake.usageMutex.Lock()
+	defer fake.usageMutex.Unlock()
+	fake.UsageStub = stub
+}
+
+func (fake *FakePrerequisitesCheckerImpl) UsageArgsForCall(i int) string {
+	fake.usageMutex.RLock()
+	defer fake.usageMutex.RUnlock()
+	argsForCall := fake.usageArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakePrerequisitesCheckerImpl) UsageReturns(result1 *disk.UsageStat, result2 error) {
+	fake.usageMutex.Lock()
+	defer fake.usageMutex.Unlock()
+	fake.UsageStub = nil
+	fake.usageReturns = struct {
+		result1 *disk.UsageStat
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePrerequisitesCheckerImpl) UsageReturnsOnCall(i int, result1 *disk.UsageStat, result2 error) {
+	fake.usageMutex.Lock()
+	defer fake.usageMutex.Unlock()
+	fake.UsageStub = nil
+	if fake.usageReturnsOnCall == nil {
+		fake.usageReturnsOnCall = make(map[int]struct {
+			result1 *disk.UsageStat
+			result2 error
+		})
+	}
+	fake.usageReturnsOnCall[i] = struct {
+		result1 *disk.UsageStat
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakePrerequisitesCheckerImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -326,6 +405,8 @@ func (fake *FakePrerequisitesCheckerImpl) Invocations() map[string][][]interface
 	defer fake.gCloudOutputMutex.RUnlock()
 	fake.isEnvSetMutex.RLock()
 	defer fake.isEnvSetMutex.RUnlock()
+	fake.usageMutex.RLock()
+	defer fake.usageMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
