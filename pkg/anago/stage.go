@@ -493,21 +493,20 @@ func (d *DefaultStage) StageArtifacts() error {
 		}
 	}
 
-	noMockFlag := ""
+	args := ""
 	if d.options.NoMock {
-		noMockFlag = "--nomock"
+		args += " --nomock"
 	}
+	if d.options.ReleaseType != DefaultOptions().ReleaseType {
+		args += " --type=" + d.options.ReleaseType
+	}
+	if d.options.ReleaseBranch != DefaultOptions().ReleaseBranch {
+		args += " --branch=" + d.options.ReleaseBranch
+	}
+	args += " --build-version=" + d.options.BuildVersion
 
 	logrus.Infof(
-		"To release this staged build, run:\n\n"+
-			"$ krel gcbmgr --no-anago --release "+
-			"--type %s "+
-			"--branch %s "+
-			"--build-version=%s %s",
-		d.options.ReleaseType,
-		d.options.ReleaseBranch,
-		d.options.BuildVersion,
-		noMockFlag,
+		"To release this staged build, run:\n\n$ krel release%s", args,
 	)
 	return nil
 }
