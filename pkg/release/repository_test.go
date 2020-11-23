@@ -99,7 +99,7 @@ func TestCheckStateSuccess(t *testing.T) {
 	sut.mock.HeadReturns("dbade8e", nil)
 
 	// When
-	err := sut.repo.CheckState("org", "repo", "branch")
+	err := sut.repo.CheckState("org", "repo", "branch", false)
 
 	// Then
 	require.Nil(t, err)
@@ -115,7 +115,7 @@ func TestCheckStateFailedNoRemoteFound(t *testing.T) {
 	}, nil)
 
 	// When
-	err := sut.repo.CheckState("org", "repo", "branch")
+	err := sut.repo.CheckState("org", "repo", "branch", false)
 
 	// Then
 	require.NotNil(t, err)
@@ -129,7 +129,7 @@ func TestCheckStateFailedRemoteFailed(t *testing.T) {
 	sut.mock.RemotesReturns(nil, errors.New(""))
 
 	// When
-	err := sut.repo.CheckState("org", "repo", "branch")
+	err := sut.repo.CheckState("org", "repo", "branch", false)
 
 	// Then
 	require.NotNil(t, err)
@@ -142,7 +142,7 @@ func TestCheckStateFailedWrongBranch(t *testing.T) {
 	sut.mock.CurrentBranchReturns("wrong", nil)
 
 	// When
-	err := sut.repo.CheckState("org", "repo", "branch")
+	err := sut.repo.CheckState("org", "repo", "branch", false)
 
 	// Then
 	require.NotNil(t, err)
@@ -155,7 +155,7 @@ func TestCheckStateFailedBranchFailed(t *testing.T) {
 	sut.mock.CurrentBranchReturns("", errors.New(""))
 
 	// When
-	err := sut.repo.CheckState("org", "repo", "branch")
+	err := sut.repo.CheckState("org", "repo", "branch", false)
 
 	// Then
 	require.NotNil(t, err)
@@ -172,7 +172,7 @@ func TestCheckStateFailedLsRemote(t *testing.T) {
 	sut.mock.LsRemoteReturns("", errors.New(""))
 
 	// When
-	err := sut.repo.CheckState("org", "repo", "branch")
+	err := sut.repo.CheckState("org", "repo", "branch", false)
 
 	// Then
 	require.NotNil(t, err)
@@ -190,7 +190,7 @@ func TestCheckStateFailedBranchHeadRetrievalFails(t *testing.T) {
 	sut.mock.HeadReturns("", errors.New("no such commit"))
 
 	// When
-	err := sut.repo.CheckState("org", "repo", "branch")
+	err := sut.repo.CheckState("org", "repo", "branch", false)
 
 	// Then
 	require.NotNil(t, err)
@@ -208,7 +208,7 @@ func TestCheckStateFailedBranchHeadRetrievalNotEqual(t *testing.T) {
 	sut.mock.HeadReturns("123", nil)
 
 	// When
-	err := sut.repo.CheckState("org", "repo", "branch")
+	err := sut.repo.CheckState("org", "repo", "branch", false)
 
 	// Then
 	require.NotNil(t, err)
