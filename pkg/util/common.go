@@ -339,40 +339,6 @@ func Ask(question, expectedResponse string, retries int) (answer string, success
 	return answer, false, NewUserInputError("expected response was not input. Retries exceeded", false)
 }
 
-// FakeGOPATH creates a temp directory, links the base directory into it and
-// sets the GOPATH environment variable to it.
-func FakeGOPATH(srcDir string) (string, error) {
-	logrus.Debug("Linking repository into temp dir")
-	baseDir, err := ioutil.TempDir("", "ff-")
-	if err != nil {
-		return "", err
-	}
-
-	logrus.Infof("New working directory is %q", baseDir)
-
-	os.Setenv("GOPATH", baseDir)
-	logrus.Debugf("GOPATH: %s", os.Getenv("GOPATH"))
-
-	gitRoot := fmt.Sprintf("%s/src/k8s.io", baseDir)
-	if err := os.MkdirAll(gitRoot, os.FileMode(0o755)); err != nil {
-		return "", err
-	}
-	gitRoot = filepath.Join(gitRoot, "kubernetes")
-
-	// link the repo into the working directory
-	logrus.Debugf("Creating symlink from %q to %q", srcDir, gitRoot)
-	if err := os.Symlink(srcDir, gitRoot); err != nil {
-		return "", err
-	}
-
-	logrus.Infof("Changing working directory to %s", gitRoot)
-	if err := os.Chdir(gitRoot); err != nil {
-		return "", err
-	}
-
-	return gitRoot, nil
-}
-
 // MoreRecent determines if file at path a was modified more recently than file
 // at path b. If one file does not exist, the other will be treated as most
 // recent. If both files do not exist or an error occurs, an error is returned.
