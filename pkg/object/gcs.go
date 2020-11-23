@@ -375,3 +375,34 @@ func (g *GCS) PathExists(gcsPath string) (bool, error) {
 	logrus.Infof("Found %s", gcsPath)
 	return true, nil
 }
+
+// DeletePath deletes a bucket location recursevly
+func (g *GCS) DeletePath(path string) error {
+	path, err := g.NormalizePath(path)
+	if err != nil {
+		return errors.Wrap(err, "normalizing GCS path")
+	}
+
+	// Build the command arguments
+	args := []string{"-q"}
+
+	if g.concurrent {
+		logrus.Debug("Setting GCS copy to run concurrently")
+		args = append(args, concurrentFlag)
+	}
+
+	args = append(args, "rm")
+
+	if g.recursive {
+		logrus.Debug("Setting GCS copy to run recursively")
+		args = append(args, recursiveFlag)
+	}
+
+	args = append(args, path)
+
+	// Cal gsutil to remove the path
+	if err = gcp.GSUtil(args...); err != nil {
+		return errors.Wrap(err, "while calling gsutil to remove path")
+	}
+	return nil
+}

@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"syscall"
 
@@ -36,6 +37,12 @@ import (
 
 const (
 	TagPrefix = "v"
+)
+
+var (
+	regexpCRLF       *regexp.Regexp = regexp.MustCompile(`\015$`)
+	regexpCtrlChar   *regexp.Regexp = regexp.MustCompile(`\x1B[\[(]([0-9]{1,2}(;[0-9]{1,2})?)?[mKB]`)
+	regexpOauthToken *regexp.Regexp = regexp.MustCompile(`[a-f0-9]{40}:x-oauth-basic`)
 )
 
 // UserInputError a custom error to handle more user input info
@@ -347,7 +354,7 @@ func FakeGOPATH(srcDir string) (string, error) {
 	logrus.Debugf("GOPATH: %s", os.Getenv("GOPATH"))
 
 	gitRoot := fmt.Sprintf("%s/src/k8s.io", baseDir)
-	if err := os.MkdirAll(gitRoot, os.FileMode(0755)); err != nil {
+	if err := os.MkdirAll(gitRoot, os.FileMode(0o755)); err != nil {
 		return "", err
 	}
 	gitRoot = filepath.Join(gitRoot, "kubernetes")
@@ -478,7 +485,7 @@ func CopyDirContentsLocal(src, dst string) error {
 		switch fileInfo.Mode() & os.ModeType {
 		case os.ModeDir:
 			if !Exists(dstPath) {
-				if err := os.MkdirAll(dstPath, os.FileMode(0755)); err != nil {
+				if err := os.MkdirAll(dstPath, os.FileMode(0o755)); err != nil {
 					return errors.Wrapf(err, "creating destination dir %s", dstPath)
 				}
 			}
@@ -502,7 +509,7 @@ func RemoveAndReplaceDir(path string) error {
 		return errors.Wrapf(err, "remove %s", path)
 	}
 	logrus.Infof("Creating %s", path)
-	if err := os.MkdirAll(path, os.FileMode(0755)); err != nil {
+	if err := os.MkdirAll(path, os.FileMode(0o755)); err != nil {
 		return errors.Wrapf(err, "create %s", path)
 	}
 	return nil
@@ -533,4 +540,61 @@ func WrapText(originalText string, lineSize int) (wrappedText string) {
 	}
 
 	return wrappedText
+}
+
+// StripControlCharacters takes a slice of bytes and removes control
+// characters and bare line feeds (ported from the original bash anago)
+func StripControlCharacters(logData []byte) []byte {
+	return regexpCRLF.ReplaceAllLiteral(
+		regexpCtrlChar.ReplaceAllLiteral(logData, []byte{}), []byte{},
+	)
+}
+
+// StripSensitiveData removes data deemed sensitive or non public
+// from a byte slice (ported from the original bash anago)
+func StripSensitiveData(logData []byte) []byte {
+	return regexpOauthToken.ReplaceAllLiteral(logData, []byte("__SANITIZED__:x-oauth-basic"))
+}
+
+// CleanLogFile cleans control characters and sensitive data from a file
+func CleanLogFile(logPath string) (err error) {
+	logrus.Debugf("Sanitizing logfile %s", logPath)
+
+	// Open a tempfile to write sanitized log
+	tempFile, err := ioutil.TempFile(os.TempDir(), "temp-release-log-")
+	if err != nil {
+		return errors.Wrap(err, "creating temp file for sanitizing log")
+	}
+	defer func() {
+		err = tempFile.Close()
+		os.Remove(tempFile.Name())
+	}()
+
+	// Open the new logfile for reading
+	logFile, err := os.Open(logPath)
+	if err != nil {
+		return errors.Wrapf(err, "while opening %s ", logPath)
+	}
+	// Scan the log and pass it through the cleaning funcs
+	scanner := bufio.NewScanner(logFile)
+	for scanner.Scan() {
+		chunk := scanner.Bytes()
+		chunk = StripControlCharacters(
+			StripSensitiveData(chunk),
+		)
+		chunk = append(chunk, []byte{10}...)
+		_, err := tempFile.Write(chunk)
+		if err != nil {
+			return errors.Wrap(err, "while writing buffer to file")
+		}
+	}
+	if err := logFile.Close(); err != nil {
+		return errors.Wrap(err, "closing log file")
+	}
+
+	if err := CopyFileLocal(tempFile.Name(), logPath, true); err != nil {
+		return errors.Wrap(err, "writing clean logfile")
+	}
+
+	return err
 }
