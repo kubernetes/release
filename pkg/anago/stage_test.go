@@ -39,6 +39,42 @@ func generateTestingStageState(params *testStateParameters) *anago.StageState {
 	return state
 }
 
+func TestInitLogFileStage(t *testing.T) {
+	for _, tc := range []struct {
+		prepare     func(*anagofakes.FakeStageImpl)
+		shouldError bool
+	}{
+		{ // success
+			prepare:     func(*anagofakes.FakeStageImpl) {},
+			shouldError: false,
+		},
+		{ // ToFile fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.ToFileReturns(err)
+			},
+			shouldError: true,
+		},
+	} {
+		opts := anago.DefaultStageOptions()
+		sut := anago.NewDefaultStage(opts)
+
+		sut.SetState(
+			generateTestingStageState(&testStateParameters{versionsTag: &testVersionTag}),
+		)
+
+		mock := &anagofakes.FakeStageImpl{}
+		tc.prepare(mock)
+		sut.SetImpl(mock)
+
+		err := sut.InitLogFile()
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
+}
+
 func TestCheckPrerequisitesStage(t *testing.T) {
 	for _, tc := range []struct {
 		prepare     func(*anagofakes.FakeStageImpl)
@@ -337,14 +373,15 @@ func TestTagRepository(t *testing.T) {
 		opts := anago.DefaultStageOptions()
 		opts.BuildVersion = "v1.20.0-beta.1.358+4628c605aadb9b"
 		opts.ReleaseBranch = tc.releaseBranch
-		state, err := opts.Validate()
+		state := anago.DefaultState()
+		err := opts.Validate(state)
 		require.Nil(t, err)
 
 		sut := anago.NewDefaultStage(opts)
 
 		state.SetVersions(tc.versions)
 		state.SetCreateReleaseBranch(tc.createReleaseBranch)
-		sut.SetState(state)
+		sut.SetState(&anago.StageState{state})
 
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)

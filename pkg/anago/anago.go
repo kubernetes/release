@@ -79,31 +79,30 @@ func (o *Options) String() string {
 }
 
 // Validate if the options are correctly set.
-func (o *Options) Validate() (*State, error) {
+func (o *Options) Validate(state *State) error {
 	logrus.Infof("Validating generic options: %s", o.String())
-	state := DefaultState()
 
 	if o.ReleaseType != release.ReleaseTypeAlpha &&
 		o.ReleaseType != release.ReleaseTypeBeta &&
 		o.ReleaseType != release.ReleaseTypeRC &&
 		o.ReleaseType != release.ReleaseTypeOfficial {
-		return nil, errors.Errorf("invalid release type: %s", o.ReleaseType)
+		return errors.Errorf("invalid release type: %s", o.ReleaseType)
 	}
 
 	if !git.IsReleaseBranch(o.ReleaseBranch) {
-		return nil, errors.Errorf("invalid release branch: %s", o.ReleaseBranch)
+		return errors.Errorf("invalid release branch: %s", o.ReleaseBranch)
 	}
 
 	semverBuildVersion, err := util.TagStringToSemver(o.BuildVersion)
 	if err != nil {
-		return nil, errors.Wrapf(err, "invalid build version: %s", o.BuildVersion)
+		return errors.Wrapf(err, "invalid build version: %s", o.BuildVersion)
 	}
 	if len(semverBuildVersion.Build) == 0 {
-		return nil, errors.Errorf("build version does not contain build commit")
+		return errors.Errorf("build version does not contain build commit")
 	}
 	state.semverBuildVersion = semverBuildVersion
 
-	return state, nil
+	return nil
 }
 
 // Bucket returns the Google Cloud Bucket for these `Options`.
@@ -125,6 +124,9 @@ func (o *Options) ContainerRegistry() string {
 // State holds all inferred and calculated values from the release process
 // it's state mutates as each step es executed
 type State struct {
+	// logFile is the internal logging file target.
+	logFile string // nolint: structcheck
+
 	// semverBuildVersion is the parsed build version which is set after the
 	// validation.
 	semverBuildVersion semver.Version
@@ -181,12 +183,11 @@ func (s *StageOptions) String() string {
 }
 
 // Validate if the options are correctly set.
-func (s *StageOptions) Validate() (*StageState, error) {
-	state, err := s.Options.Validate()
-	if err != nil {
-		return nil, errors.Wrap(err, "validating generic options")
+func (s *StageOptions) Validate(state *State) error {
+	if err := s.Options.Validate(state); err != nil {
+		return errors.Wrap(err, "validating generic options")
 	}
-	return &StageState{State: state}, nil
+	return nil
 }
 
 // Stage is the structure to be used for staging releases.
@@ -217,6 +218,12 @@ func (s *Stage) Submit() error {
 // staging bucket.
 // nolint:dupl
 func (s *Stage) Run() error {
+	s.client.InitState()
+
+	if err := s.client.InitLogFile(); err != nil {
+		return errors.Wrap(err, "init log file")
+	}
+
 	logger := log.NewStepLogger(9)
 	logger.Infof("Using krel version:\n%s", version.Get().String())
 
@@ -299,12 +306,11 @@ func (r *ReleaseOptions) String() string {
 }
 
 // Validate if the options are correctly set.
-func (r *ReleaseOptions) Validate() (*ReleaseState, error) {
-	state, err := r.Options.Validate()
-	if err != nil {
-		return nil, errors.Wrap(err, "validating generic options")
+func (r *ReleaseOptions) Validate(state *State) error {
+	if err := r.Options.Validate(state); err != nil {
+		return errors.Wrap(err, "validating generic options")
 	}
-	return &ReleaseState{State: state}, nil
+	return nil
 }
 
 // Release is the structure to be used for releasing staged releases.
@@ -334,6 +340,12 @@ func (r *Release) Submit() error {
 // Run for for `Release` struct finishes a previously staged release.
 // nolint:dupl
 func (r *Release) Run() error {
+	r.client.InitState()
+
+	if err := r.client.InitLogFile(); err != nil {
+		return errors.Wrap(err, "init log file")
+	}
+
 	logger := log.NewStepLogger(9)
 	logger.Infof("Using krel version:\n%s", version.Get().String())
 

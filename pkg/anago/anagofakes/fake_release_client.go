@@ -72,6 +72,20 @@ type FakeReleaseClient struct {
 	generateReleaseVersionReturnsOnCall map[int]struct {
 		result1 error
 	}
+	InitLogFileStub        func() error
+	initLogFileMutex       sync.RWMutex
+	initLogFileArgsForCall []struct {
+	}
+	initLogFileReturns struct {
+		result1 error
+	}
+	initLogFileReturnsOnCall map[int]struct {
+		result1 error
+	}
+	InitStateStub        func()
+	initStateMutex       sync.RWMutex
+	initStateArgsForCall []struct {
+	}
 	PrepareWorkspaceStub        func() error
 	prepareWorkspaceMutex       sync.RWMutex
 	prepareWorkspaceArgsForCall []struct {
@@ -391,6 +405,83 @@ func (fake *FakeReleaseClient) GenerateReleaseVersionReturnsOnCall(i int, result
 	}{result1}
 }
 
+func (fake *FakeReleaseClient) InitLogFile() error {
+	fake.initLogFileMutex.Lock()
+	ret, specificReturn := fake.initLogFileReturnsOnCall[len(fake.initLogFileArgsForCall)]
+	fake.initLogFileArgsForCall = append(fake.initLogFileArgsForCall, struct {
+	}{})
+	stub := fake.InitLogFileStub
+	fakeReturns := fake.initLogFileReturns
+	fake.recordInvocation("InitLogFile", []interface{}{})
+	fake.initLogFileMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeReleaseClient) InitLogFileCallCount() int {
+	fake.initLogFileMutex.RLock()
+	defer fake.initLogFileMutex.RUnlock()
+	return len(fake.initLogFileArgsForCall)
+}
+
+func (fake *FakeReleaseClient) InitLogFileCalls(stub func() error) {
+	fake.initLogFileMutex.Lock()
+	defer fake.initLogFileMutex.Unlock()
+	fake.InitLogFileStub = stub
+}
+
+func (fake *FakeReleaseClient) InitLogFileReturns(result1 error) {
+	fake.initLogFileMutex.Lock()
+	defer fake.initLogFileMutex.Unlock()
+	fake.InitLogFileStub = nil
+	fake.initLogFileReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseClient) InitLogFileReturnsOnCall(i int, result1 error) {
+	fake.initLogFileMutex.Lock()
+	defer fake.initLogFileMutex.Unlock()
+	fake.InitLogFileStub = nil
+	if fake.initLogFileReturnsOnCall == nil {
+		fake.initLogFileReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.initLogFileReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseClient) InitState() {
+	fake.initStateMutex.Lock()
+	fake.initStateArgsForCall = append(fake.initStateArgsForCall, struct {
+	}{})
+	stub := fake.InitStateStub
+	fake.recordInvocation("InitState", []interface{}{})
+	fake.initStateMutex.Unlock()
+	if stub != nil {
+		fake.InitStateStub()
+	}
+}
+
+func (fake *FakeReleaseClient) InitStateCallCount() int {
+	fake.initStateMutex.RLock()
+	defer fake.initStateMutex.RUnlock()
+	return len(fake.initStateArgsForCall)
+}
+
+func (fake *FakeReleaseClient) InitStateCalls(stub func()) {
+	fake.initStateMutex.Lock()
+	defer fake.initStateMutex.Unlock()
+	fake.InitStateStub = stub
+}
+
 func (fake *FakeReleaseClient) PrepareWorkspace() error {
 	fake.prepareWorkspaceMutex.Lock()
 	ret, specificReturn := fake.prepareWorkspaceReturnsOnCall[len(fake.prepareWorkspaceArgsForCall)]
@@ -669,6 +760,10 @@ func (fake *FakeReleaseClient) Invocations() map[string][][]interface{} {
 	defer fake.createAnnouncementMutex.RUnlock()
 	fake.generateReleaseVersionMutex.RLock()
 	defer fake.generateReleaseVersionMutex.RUnlock()
+	fake.initLogFileMutex.RLock()
+	defer fake.initLogFileMutex.RUnlock()
+	fake.initStateMutex.RLock()
+	defer fake.initStateMutex.RUnlock()
 	fake.prepareWorkspaceMutex.RLock()
 	defer fake.prepareWorkspaceMutex.RUnlock()
 	fake.pushArtifactsMutex.RLock()

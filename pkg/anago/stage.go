@@ -30,6 +30,7 @@ import (
 	"k8s.io/release/pkg/changelog"
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/log"
 	"k8s.io/release/pkg/release"
 )
 
@@ -38,6 +39,12 @@ import (
 type stageClient interface {
 	// Submit can be used to submit a Google Cloud Build (GCB) job.
 	Submit() error
+
+	// InitState initializes the default internal state.
+	InitState()
+
+	// InitLogFile sets up the log file target.
+	InitLogFile() error
 
 	// Validate if the provided `ReleaseOptions` are correctly set.
 	ValidateOptions() error
@@ -101,6 +108,11 @@ func (d *DefaultStage) SetState(state *StageState) {
 	d.state = state
 }
 
+// State returns the internal state.
+func (d *DefaultStage) State() *StageState {
+	return d.state
+}
+
 // defaultStageImpl is the default internal stage client implementation.
 type defaultStageImpl struct{}
 
@@ -108,6 +120,7 @@ type defaultStageImpl struct{}
 //counterfeiter:generate . stageImpl
 type stageImpl interface {
 	Submit(options *gcb.Options) error
+	ToFile(fileName string) error
 	CheckPrerequisites() error
 	BranchNeedsCreation(
 		branch, releaseType string, buildVersion semver.Version,
@@ -138,6 +151,10 @@ type stageImpl interface {
 
 func (d *defaultStageImpl) Submit(options *gcb.Options) error {
 	return gcb.New(options).Submit()
+}
+
+func (d *defaultStageImpl) ToFile(fileName string) error {
+	return log.ToFile(fileName)
 }
 
 func (d *defaultStageImpl) CheckPrerequisites() error {
@@ -243,14 +260,27 @@ func (d *DefaultStage) Submit() error {
 	return d.impl.Submit(options)
 }
 
+func (d *DefaultStage) InitLogFile() error {
+	logrus.SetFormatter(
+		&logrus.TextFormatter{FullTimestamp: true, ForceColors: true},
+	)
+	logFile := filepath.Join(os.TempDir(), "stage.log")
+	if err := d.impl.ToFile(logFile); err != nil {
+		return errors.Wrap(err, "setup log file")
+	}
+	d.state.logFile = logFile
+	logrus.Infof("Additionally logging to file %s", d.state.logFile)
+	return nil
+}
+
+func (d *DefaultStage) InitState() {
+	d.state = &StageState{DefaultState()}
+}
+
 func (d *DefaultStage) ValidateOptions() error {
-	// Call options, validate. The validation returns the initial
-	// state of the stage process
-	state, err := d.options.Validate()
-	if err != nil {
+	if err := d.options.Validate(d.state.State); err != nil {
 		return errors.Wrap(err, "validating options")
 	}
-	d.state = state
 	return nil
 }
 
