@@ -329,7 +329,9 @@ func (g *GCS) IsPathNormalized(gcsPath string) bool {
 	var errCount int
 
 	if !strings.HasPrefix(gcsPath, GcsPrefix) {
-		logrus.Errorf("GCS path (%s) should be prefixed with `gs://`", gcsPath)
+		logrus.Errorf(
+			"GCS path (%s) should be prefixed with `%s`", gcsPath, GcsPrefix,
+		)
 		errCount++
 	}
 
@@ -361,7 +363,10 @@ func (g *GCS) RsyncRecursive(src, dst string) error {
 // PathExists returns true if the specified GCS path exists.
 func (g *GCS) PathExists(gcsPath string) (bool, error) {
 	if !g.IsPathNormalized(gcsPath) {
-		return false, errors.New("cannot run `gsutil ls` GCS path does not begin with `gs://`")
+		return false, errors.Errorf(
+			"cannot run `gsutil ls` GCS path does not begin with `%s`",
+			GcsPrefix,
+		)
 	}
 
 	err := gcp.GSUtil(

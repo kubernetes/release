@@ -24,6 +24,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
+
+	"k8s.io/release/pkg/object"
 )
 
 // MapProvider interface that obtains release notes maps from a source
@@ -34,7 +36,7 @@ type MapProvider interface {
 // NewProviderFromInitString creates a new map provider from an initialization string
 func NewProviderFromInitString(initString string) (MapProvider, error) {
 	// If init string starts with gs:// return a CloudStorageProvider
-	if initString[0:5] == "gs://" {
+	if initString[0:5] == object.GcsPrefix {
 		// Currently for illustration purposes
 		return nil, errors.New("CloudStorageProvider is not yet implemented")
 	}

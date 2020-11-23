@@ -20,6 +20,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
+
+	"k8s.io/release/pkg/object"
 )
 
 // Validate checks for semantic errors in the yaml fields (the structure of the
@@ -51,7 +53,7 @@ func ValidateFilestores(filestores []Filestore) error {
 		}
 
 		// Currently the only backend supported is GCS
-		if !strings.HasPrefix(filestore.Base, "gs://") {
+		if !strings.HasPrefix(filestore.Base, object.GcsPrefix) {
 			return fmt.Errorf(
 				"filestore has unsupported scheme in base %q",
 				filestore.Base)
