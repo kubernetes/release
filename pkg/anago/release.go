@@ -29,6 +29,7 @@ import (
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/log"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
 )
@@ -38,6 +39,12 @@ import (
 type releaseClient interface {
 	// Submit can be used to submit a Google Cloud Build (GCB) job.
 	Submit() error
+
+	// InitState initializes the default internal state.
+	InitState()
+
+	// InitLogFile sets up the log file target.
+	InitLogFile() error
 
 	// Validate if the provided `ReleaseOptions` are correctly set.
 	ValidateOptions() error
@@ -108,6 +115,7 @@ type defaultReleaseImpl struct{}
 //counterfeiter:generate . releaseImpl
 type releaseImpl interface {
 	Submit(options *gcb.Options) error
+	ToFile(fileName string) error
 	CheckPrerequisites() error
 	BranchNeedsCreation(
 		branch, releaseType string, buildVersion semver.Version,
@@ -137,6 +145,10 @@ type releaseImpl interface {
 
 func (d *defaultReleaseImpl) Submit(options *gcb.Options) error {
 	return gcb.New(options).Submit()
+}
+
+func (d *defaultReleaseImpl) ToFile(fileName string) error {
+	return log.ToFile(fileName)
 }
 
 func (d *defaultReleaseImpl) CheckPrerequisites() error {
@@ -210,6 +222,23 @@ func (d *DefaultRelease) Submit() error {
 	return d.impl.Submit(options)
 }
 
+func (d *DefaultRelease) InitState() {
+	d.state = &ReleaseState{DefaultState()}
+}
+
+func (d *DefaultRelease) InitLogFile() error {
+	logrus.SetFormatter(
+		&logrus.TextFormatter{FullTimestamp: true, ForceColors: true},
+	)
+	logFile := filepath.Join(os.TempDir(), "release.log")
+	if err := d.impl.ToFile(logFile); err != nil {
+		return errors.Wrap(err, "setup log file")
+	}
+	d.state.logFile = logFile
+	logrus.Infof("Additionally logging to file %s", d.state.logFile)
+	return nil
+}
+
 func (d *defaultReleaseImpl) CreateAnnouncement(options *announce.Options) error {
 	// Create the announcement
 	return announce.CreateForRelease(options)
@@ -246,13 +275,9 @@ func (d *defaultReleaseImpl) NewGitPusher(
 }
 
 func (d *DefaultRelease) ValidateOptions() error {
-	// Call options, validate. The validation returns the initial
-	// state of the release process
-	state, err := d.options.Validate()
-	if err != nil {
+	if err := d.options.Validate(d.state.State); err != nil {
 		return errors.Wrap(err, "validating options")
 	}
-	d.state = state
 	return nil
 }
 

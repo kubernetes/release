@@ -18,6 +18,8 @@ package log
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -26,6 +28,7 @@ import (
 	"k8s.io/release/pkg/command"
 )
 
+// SetupGlobalLogger uses to provided log level string and applies it globally.
 func SetupGlobalLogger(level string) error {
 	logrus.SetFormatter(&logrus.TextFormatter{
 		DisableTimestamp: true,
@@ -43,6 +46,19 @@ func SetupGlobalLogger(level string) error {
 	}
 	logrus.AddHook(NewFilenameHook())
 	logrus.Debugf("Using log level %q", lvl)
+	return nil
+}
+
+// ToFile adds a file destination to the global logger.
+func ToFile(fileName string) error {
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0755)
+	if err != nil {
+		return errors.Wrap(err, "open log file")
+	}
+
+	writer := io.MultiWriter(logrus.StandardLogger().Out, file)
+	logrus.SetOutput(writer)
+
 	return nil
 }
 

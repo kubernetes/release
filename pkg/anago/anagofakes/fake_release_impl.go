@@ -193,6 +193,17 @@ type FakeReleaseImpl struct {
 	submitReturnsOnCall map[int]struct {
 		result1 error
 	}
+	ToFileStub        func(string) error
+	toFileMutex       sync.RWMutex
+	toFileArgsForCall []struct {
+		arg1 string
+	}
+	toFileReturns struct {
+		result1 error
+	}
+	toFileReturnsOnCall map[int]struct {
+		result1 error
+	}
 	ValidateImagesStub        func(string, string, string) error
 	validateImagesMutex       sync.RWMutex
 	validateImagesArgsForCall []struct {
@@ -1036,6 +1047,67 @@ func (fake *FakeReleaseImpl) SubmitReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeReleaseImpl) ToFile(arg1 string) error {
+	fake.toFileMutex.Lock()
+	ret, specificReturn := fake.toFileReturnsOnCall[len(fake.toFileArgsForCall)]
+	fake.toFileArgsForCall = append(fake.toFileArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.ToFileStub
+	fakeReturns := fake.toFileReturns
+	fake.recordInvocation("ToFile", []interface{}{arg1})
+	fake.toFileMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeReleaseImpl) ToFileCallCount() int {
+	fake.toFileMutex.RLock()
+	defer fake.toFileMutex.RUnlock()
+	return len(fake.toFileArgsForCall)
+}
+
+func (fake *FakeReleaseImpl) ToFileCalls(stub func(string) error) {
+	fake.toFileMutex.Lock()
+	defer fake.toFileMutex.Unlock()
+	fake.ToFileStub = stub
+}
+
+func (fake *FakeReleaseImpl) ToFileArgsForCall(i int) string {
+	fake.toFileMutex.RLock()
+	defer fake.toFileMutex.RUnlock()
+	argsForCall := fake.toFileArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeReleaseImpl) ToFileReturns(result1 error) {
+	fake.toFileMutex.Lock()
+	defer fake.toFileMutex.Unlock()
+	fake.ToFileStub = nil
+	fake.toFileReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) ToFileReturnsOnCall(i int, result1 error) {
+	fake.toFileMutex.Lock()
+	defer fake.toFileMutex.Unlock()
+	fake.ToFileStub = nil
+	if fake.toFileReturnsOnCall == nil {
+		fake.toFileReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.toFileReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeReleaseImpl) ValidateImages(arg1 string, arg2 string, arg3 string) error {
 	fake.validateImagesMutex.Lock()
 	ret, specificReturn := fake.validateImagesReturnsOnCall[len(fake.validateImagesArgsForCall)]
@@ -1128,6 +1200,8 @@ func (fake *FakeReleaseImpl) Invocations() map[string][][]interface{} {
 	defer fake.pushTagsMutex.RUnlock()
 	fake.submitMutex.RLock()
 	defer fake.submitMutex.RUnlock()
+	fake.toFileMutex.RLock()
+	defer fake.toFileMutex.RUnlock()
 	fake.validateImagesMutex.RLock()
 	defer fake.validateImagesMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

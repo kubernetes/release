@@ -56,6 +56,12 @@ func TestRunStage(t *testing.T) {
 			},
 			shouldError: false,
 		},
+		{ // InitLogFile fails
+			prepare: func(mock *anagofakes.FakeStageClient) {
+				mock.InitLogFileReturns(err)
+			},
+			shouldError: true,
+		},
 		{ // ValidateOptions fails
 			prepare: func(mock *anagofakes.FakeStageClient) {
 				mock.ValidateOptionsReturns(err)
@@ -134,6 +140,12 @@ func TestRunRelease(t *testing.T) {
 				mockGenerateReleaseVersionRelease(mock)
 			},
 			shouldError: false,
+		},
+		{ // InitLogFile fails
+			prepare: func(mock *anagofakes.FakeReleaseClient) {
+				mock.InitLogFileReturns(err)
+			},
+			shouldError: true,
 		},
 		{ // CheckPrerequisites fails
 			prepare: func(mock *anagofakes.FakeReleaseClient) {
@@ -245,7 +257,8 @@ func TestValidateOptions(t *testing.T) {
 			shouldError: true,
 		},
 	} {
-		_, err := tc.provided.Validate()
+		state := anago.DefaultState()
+		err := tc.provided.Validate(state)
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {
