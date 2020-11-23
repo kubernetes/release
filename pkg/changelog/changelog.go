@@ -290,11 +290,13 @@ func (c *Changelog) Run() error {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if err := repo.Checkout(currentBranch); err != nil {
-			logrus.Errorf("Restore branch %s: %v", currentBranch, err)
-		}
-	}()
+	if currentBranch != "" {
+		defer func() {
+			if err := repo.Checkout(currentBranch); err != nil {
+				logrus.Errorf("Restore branch %s: %v", currentBranch, err)
+			}
+		}()
+	}
 
 	logrus.Infof("Checking out %s branch", git.DefaultBranch)
 	if err := repo.Checkout(git.DefaultBranch); err != nil {
