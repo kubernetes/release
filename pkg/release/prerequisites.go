@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/shirou/gopsutil/disk"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/command"
@@ -50,6 +51,7 @@ type prerequisitesCheckerImpl interface {
 	DockerVersion() (string, error)
 	GCloudOutput(args ...string) (string, error)
 	IsEnvSet(key string) bool
+	Usage(dir string) (*disk.UsageStat, error)
 }
 
 type defaultPrerequisitesChecker struct{}
@@ -80,7 +82,11 @@ func (*defaultPrerequisitesChecker) DockerVersion() (string, error) {
 	return res.OutputTrimNL(), err
 }
 
-func (p *PrerequisitesChecker) Run() error {
+func (*defaultPrerequisitesChecker) Usage(dir string) (*disk.UsageStat, error) {
+	return disk.Usage(dir)
+}
+
+func (p *PrerequisitesChecker) Run(workdir string) error {
 	// Command checks
 	commands := []string{
 		"docker", "jq", "gsutil", "gcloud", "ssh",
@@ -122,6 +128,23 @@ func (p *PrerequisitesChecker) Run() error {
 	)
 	if !p.impl.IsEnvSet(github.TokenEnvKey) {
 		return errors.Errorf("no %s env variable set", github.TokenEnvKey)
+	}
+
+	// Disk space check
+	const minDiskSpaceGiB = 100
+	logrus.Infof(
+		"Checking available disk space (%dGB) for %s", minDiskSpaceGiB, workdir,
+	)
+	res, err := p.impl.Usage(workdir)
+	if err != nil {
+		return errors.Wrap(err, "check available disk space")
+	}
+	diskSpaceGiB := res.Free / 1024 / 1024 / 1024
+	if diskSpaceGiB < minDiskSpaceGiB {
+		return errors.Errorf(
+			"not enough disk space available. Got %dGiB, need at least %dGiB",
+			diskSpaceGiB, minDiskSpaceGiB,
+		)
 	}
 
 	return nil
