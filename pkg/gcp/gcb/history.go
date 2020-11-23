@@ -88,8 +88,8 @@ func NewHistoryOptions() *HistoryOptions {
 	return &HistoryOptions{
 		Branch:   git.DefaultBranch,
 		Project:  release.DefaultKubernetesStagingProject,
-		DateFrom: time.Now().Format("2006-01-30"),
-		DateTo:   time.Now().Format("2006-01-30"),
+		DateFrom: time.Now().Format("2006-01-02"),
+		DateTo:   time.Now().Format("2006-01-02"),
 	}
 }
 
