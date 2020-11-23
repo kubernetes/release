@@ -29,6 +29,7 @@ import (
 	// TODO: Use k/release/pkg/log instead
 	"k8s.io/klog/v2"
 	api "k8s.io/release/pkg/api/files"
+	"k8s.io/release/pkg/object"
 )
 
 // FilestorePromoter manages the promotion of files.
@@ -67,8 +68,9 @@ func openFilestore(
 
 	if u.Scheme != "gs" {
 		return nil, fmt.Errorf(
-			"unrecognized scheme %q (supported schemes: gs://)",
-			filestore.Base)
+			"unrecognized scheme %q (supported schemes: %s)",
+			object.GcsPrefix, filestore.Base,
+		)
 	}
 
 	var opts []option.ClientOption

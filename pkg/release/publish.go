@@ -283,7 +283,7 @@ func (p *Publisher) PublishToGcs(
 		// Ref:
 		// - https://cloud.google.com/storage/docs/bucket-policy-only
 		// - https://github.com/kubernetes/release/issues/904
-		if !strings.HasPrefix(markerPath, "gs://k8s-") {
+		if !strings.HasPrefix(markerPath, object.GcsPrefix+"k8s-") {
 			aclOutput, err := p.client.GSUtilOutput(
 				"acl", "ch", "-R", "-g", "all:R", publishFileDst,
 			)

@@ -31,6 +31,7 @@ import (
 	// TODO: Use k/release/pkg/log instead
 	"k8s.io/klog/v2"
 	api "k8s.io/release/pkg/api/files"
+	"k8s.io/release/pkg/object"
 )
 
 type gcsSyncFilestore struct {
@@ -52,7 +53,7 @@ func (s *gcsSyncFilestore) OpenReader(
 func (s *gcsSyncFilestore) UploadFile(ctx context.Context, dest, localFile string) error {
 	absolutePath := s.prefix + dest
 
-	gcsURL := "gs://" + s.bucket + "/" + absolutePath
+	gcsURL := object.GcsPrefix + s.bucket + "/" + absolutePath
 
 	in, err := os.Open(localFile)
 	if err != nil {
@@ -130,7 +131,7 @@ func (s *gcsSyncFilestore) ListFiles(
 		}
 
 		file := &syncFileInfo{}
-		file.AbsolutePath = "gs://" + s.bucket + "/" + obj.Name
+		file.AbsolutePath = object.GcsPrefix + s.bucket + "/" + obj.Name
 		file.RelativePath = strings.TrimPrefix(name, s.prefix)
 		if obj.MD5 == nil {
 			return nil, fmt.Errorf("MD5 not set on file %q", file.AbsolutePath)
