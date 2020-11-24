@@ -90,16 +90,6 @@ type FakeStageImpl struct {
 	commitEmptyReturnsOnCall map[int]struct {
 		result1 error
 	}
-	ConfigureGlobalDefaultUserAndEmailStub        func() error
-	configureGlobalDefaultUserAndEmailMutex       sync.RWMutex
-	configureGlobalDefaultUserAndEmailArgsForCall []struct {
-	}
-	configureGlobalDefaultUserAndEmailReturns struct {
-		result1 error
-	}
-	configureGlobalDefaultUserAndEmailReturnsOnCall map[int]struct {
-		result1 error
-	}
 	CurrentBranchStub        func(*git.Repo) (string, error)
 	currentBranchMutex       sync.RWMutex
 	currentBranchArgsForCall []struct {
@@ -576,59 +566,6 @@ func (fake *FakeStageImpl) CommitEmptyReturnsOnCall(i int, result1 error) {
 		})
 	}
 	fake.commitEmptyReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeStageImpl) ConfigureGlobalDefaultUserAndEmail() error {
-	fake.configureGlobalDefaultUserAndEmailMutex.Lock()
-	ret, specificReturn := fake.configureGlobalDefaultUserAndEmailReturnsOnCall[len(fake.configureGlobalDefaultUserAndEmailArgsForCall)]
-	fake.configureGlobalDefaultUserAndEmailArgsForCall = append(fake.configureGlobalDefaultUserAndEmailArgsForCall, struct {
-	}{})
-	stub := fake.ConfigureGlobalDefaultUserAndEmailStub
-	fakeReturns := fake.configureGlobalDefaultUserAndEmailReturns
-	fake.recordInvocation("ConfigureGlobalDefaultUserAndEmail", []interface{}{})
-	fake.configureGlobalDefaultUserAndEmailMutex.Unlock()
-	if stub != nil {
-		return stub()
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fakeReturns.result1
-}
-
-func (fake *FakeStageImpl) ConfigureGlobalDefaultUserAndEmailCallCount() int {
-	fake.configureGlobalDefaultUserAndEmailMutex.RLock()
-	defer fake.configureGlobalDefaultUserAndEmailMutex.RUnlock()
-	return len(fake.configureGlobalDefaultUserAndEmailArgsForCall)
-}
-
-func (fake *FakeStageImpl) ConfigureGlobalDefaultUserAndEmailCalls(stub func() error) {
-	fake.configureGlobalDefaultUserAndEmailMutex.Lock()
-	defer fake.configureGlobalDefaultUserAndEmailMutex.Unlock()
-	fake.ConfigureGlobalDefaultUserAndEmailStub = stub
-}
-
-func (fake *FakeStageImpl) ConfigureGlobalDefaultUserAndEmailReturns(result1 error) {
-	fake.configureGlobalDefaultUserAndEmailMutex.Lock()
-	defer fake.configureGlobalDefaultUserAndEmailMutex.Unlock()
-	fake.ConfigureGlobalDefaultUserAndEmailStub = nil
-	fake.configureGlobalDefaultUserAndEmailReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeStageImpl) ConfigureGlobalDefaultUserAndEmailReturnsOnCall(i int, result1 error) {
-	fake.configureGlobalDefaultUserAndEmailMutex.Lock()
-	defer fake.configureGlobalDefaultUserAndEmailMutex.Unlock()
-	fake.ConfigureGlobalDefaultUserAndEmailStub = nil
-	if fake.configureGlobalDefaultUserAndEmailReturnsOnCall == nil {
-		fake.configureGlobalDefaultUserAndEmailReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.configureGlobalDefaultUserAndEmailReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -1514,8 +1451,6 @@ func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	defer fake.checkoutMutex.RUnlock()
 	fake.commitEmptyMutex.RLock()
 	defer fake.commitEmptyMutex.RUnlock()
-	fake.configureGlobalDefaultUserAndEmailMutex.RLock()
-	defer fake.configureGlobalDefaultUserAndEmailMutex.RUnlock()
 	fake.currentBranchMutex.RLock()
 	defer fake.currentBranchMutex.RUnlock()
 	fake.generateChangelogMutex.RLock()

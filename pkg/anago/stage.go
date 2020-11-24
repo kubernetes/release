@@ -129,7 +129,6 @@ type stageImpl interface {
 	GenerateReleaseVersion(
 		releaseType, version, branch string, branchFromMaster bool,
 	) (*release.Versions, error)
-	ConfigureGlobalDefaultUserAndEmail() error
 	OpenRepo(repoPath string) (*git.Repo, error)
 	RevParse(repo *git.Repo, rev string) (string, error)
 	Checkout(repo *git.Repo, rev string, args ...string) error
@@ -182,10 +181,6 @@ func (d *defaultStageImpl) GenerateReleaseVersion(
 	return release.GenerateReleaseVersion(
 		releaseType, version, branch, branchFromMaster,
 	)
-}
-
-func (d *defaultStageImpl) ConfigureGlobalDefaultUserAndEmail() error {
-	return git.ConfigureGlobalDefaultUserAndEmail()
 }
 
 func (d *defaultStageImpl) OpenRepo(repoPath string) (*git.Repo, error) {
@@ -324,11 +319,6 @@ func (d *DefaultStage) PrepareWorkspace() error {
 }
 
 func (d *DefaultStage) TagRepository() error {
-	logrus.Info("Configuring git user and email")
-	if err := d.impl.ConfigureGlobalDefaultUserAndEmail(); err != nil {
-		return errors.Wrap(err, "configure git user and email")
-	}
-
 	repo, err := d.impl.OpenRepo(gitRoot)
 	if err != nil {
 		return errors.Wrap(err, "open Kubernetes repository")

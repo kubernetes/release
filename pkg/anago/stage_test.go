@@ -297,15 +297,6 @@ func TestTagRepository(t *testing.T) {
 			createReleaseBranch: true,
 			shouldError:         true,
 		},
-		{ // failure on ConfigureGlobalDefaultUserAndEmail new rc creating release branch
-			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.ConfigureGlobalDefaultUserAndEmailReturns(err)
-			},
-			versions:            newRCVersions,
-			releaseBranch:       "release-1.20",
-			createReleaseBranch: true,
-			shouldError:         true,
-		},
 		{ // success new rc checking out release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
 				mock.RevParseReturns("", err)

@@ -96,6 +96,18 @@ func TestCheckPrerequisites(t *testing.T) {
 			},
 			shouldErr: true,
 		},
+		{ // failure ConfigureGlobalDefaultUserAndEmail
+			prepare: func(mock *releasefakes.FakePrerequisitesCheckerImpl) {
+				mock.CommandAvailableReturns(true)
+				mock.DockerVersionReturns("19.03.13", nil)
+				mock.IsEnvSetReturns(true)
+				mock.UsageReturns(
+					&disk.UsageStat{Free: 101 * 1024 * 1024 * 1024}, nil,
+				)
+				mock.ConfigureGlobalDefaultUserAndEmailReturns(err)
+			},
+			shouldErr: true,
+		},
 	} {
 		mock := &releasefakes.FakePrerequisitesCheckerImpl{}
 		sut := release.NewPrerequisitesChecker()

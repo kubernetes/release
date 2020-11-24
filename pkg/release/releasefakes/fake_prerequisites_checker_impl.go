@@ -35,6 +35,16 @@ type FakePrerequisitesCheckerImpl struct {
 	commandAvailableReturnsOnCall map[int]struct {
 		result1 bool
 	}
+	ConfigureGlobalDefaultUserAndEmailStub        func() error
+	configureGlobalDefaultUserAndEmailMutex       sync.RWMutex
+	configureGlobalDefaultUserAndEmailArgsForCall []struct {
+	}
+	configureGlobalDefaultUserAndEmailReturns struct {
+		result1 error
+	}
+	configureGlobalDefaultUserAndEmailReturnsOnCall map[int]struct {
+		result1 error
+	}
 	DockerVersionStub        func() (string, error)
 	dockerVersionMutex       sync.RWMutex
 	dockerVersionArgsForCall []struct {
@@ -146,6 +156,59 @@ func (fake *FakePrerequisitesCheckerImpl) CommandAvailableReturnsOnCall(i int, r
 	}
 	fake.commandAvailableReturnsOnCall[i] = struct {
 		result1 bool
+	}{result1}
+}
+
+func (fake *FakePrerequisitesCheckerImpl) ConfigureGlobalDefaultUserAndEmail() error {
+	fake.configureGlobalDefaultUserAndEmailMutex.Lock()
+	ret, specificReturn := fake.configureGlobalDefaultUserAndEmailReturnsOnCall[len(fake.configureGlobalDefaultUserAndEmailArgsForCall)]
+	fake.configureGlobalDefaultUserAndEmailArgsForCall = append(fake.configureGlobalDefaultUserAndEmailArgsForCall, struct {
+	}{})
+	stub := fake.ConfigureGlobalDefaultUserAndEmailStub
+	fakeReturns := fake.configureGlobalDefaultUserAndEmailReturns
+	fake.recordInvocation("ConfigureGlobalDefaultUserAndEmail", []interface{}{})
+	fake.configureGlobalDefaultUserAndEmailMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakePrerequisitesCheckerImpl) ConfigureGlobalDefaultUserAndEmailCallCount() int {
+	fake.configureGlobalDefaultUserAndEmailMutex.RLock()
+	defer fake.configureGlobalDefaultUserAndEmailMutex.RUnlock()
+	return len(fake.configureGlobalDefaultUserAndEmailArgsForCall)
+}
+
+func (fake *FakePrerequisitesCheckerImpl) ConfigureGlobalDefaultUserAndEmailCalls(stub func() error) {
+	fake.configureGlobalDefaultUserAndEmailMutex.Lock()
+	defer fake.configureGlobalDefaultUserAndEmailMutex.Unlock()
+	fake.ConfigureGlobalDefaultUserAndEmailStub = stub
+}
+
+func (fake *FakePrerequisitesCheckerImpl) ConfigureGlobalDefaultUserAndEmailReturns(result1 error) {
+	fake.configureGlobalDefaultUserAndEmailMutex.Lock()
+	defer fake.configureGlobalDefaultUserAndEmailMutex.Unlock()
+	fake.ConfigureGlobalDefaultUserAndEmailStub = nil
+	fake.configureGlobalDefaultUserAndEmailReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakePrerequisitesCheckerImpl) ConfigureGlobalDefaultUserAndEmailReturnsOnCall(i int, result1 error) {
+	fake.configureGlobalDefaultUserAndEmailMutex.Lock()
+	defer fake.configureGlobalDefaultUserAndEmailMutex.Unlock()
+	fake.ConfigureGlobalDefaultUserAndEmailStub = nil
+	if fake.configureGlobalDefaultUserAndEmailReturnsOnCall == nil {
+		fake.configureGlobalDefaultUserAndEmailReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.configureGlobalDefaultUserAndEmailReturnsOnCall[i] = struct {
+		result1 error
 	}{result1}
 }
 
@@ -399,6 +462,8 @@ func (fake *FakePrerequisitesCheckerImpl) Invocations() map[string][][]interface
 	defer fake.invocationsMutex.RUnlock()
 	fake.commandAvailableMutex.RLock()
 	defer fake.commandAvailableMutex.RUnlock()
+	fake.configureGlobalDefaultUserAndEmailMutex.RLock()
+	defer fake.configureGlobalDefaultUserAndEmailMutex.RUnlock()
 	fake.dockerVersionMutex.RLock()
 	defer fake.dockerVersionMutex.RUnlock()
 	fake.gCloudOutputMutex.RLock()
