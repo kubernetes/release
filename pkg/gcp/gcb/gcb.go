@@ -325,9 +325,6 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolBranch string) (map[str
 		}
 	}
 
-	buildpoint := buildVersion
-	buildpoint = strings.ReplaceAll(buildpoint, "+", "-")
-	gcbSubs["BUILD_POINT"] = buildpoint
 	gcbSubs["BUILDVERSION"] = buildVersion
 
 	kubecrossBranches := []string{
@@ -341,9 +338,9 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolBranch string) (map[str
 	}
 	gcbSubs["KUBE_CROSS_VERSION"] = kubecrossVersion
 
-	v, err := util.TagStringToSemver(buildpoint)
+	v, err := util.TagStringToSemver(buildVersion)
 	if err != nil {
-		return gcbSubs, errors.Errorf("Failed to parse the build point %s", buildpoint)
+		return gcbSubs, errors.Wrap(err, "parse build version")
 	}
 
 	gcbSubs["MAJOR_VERSION_TAG"] = strconv.FormatUint(v.Major, 10)

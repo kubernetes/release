@@ -53,7 +53,6 @@ steps:
 tags:
 - ${_GCP_USER_TAG}
 - ${_RELEASE_BRANCH}
-- ${_BUILD_POINT}
 - ${_NOMOCK_TAG}
 - STAGE
 - ${_GIT_TAG}

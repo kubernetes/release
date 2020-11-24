@@ -515,7 +515,7 @@ func dropDynamicSubstitutions(orig map[string]string) (result map[string]string)
 	result = orig
 
 	for k := range result {
-		if k == "BUILDVERSION" || k == "BUILD_POINT" || k == "GCP_USER_TAG" || k == "KUBE_CROSS_VERSION" {
+		if k == "BUILDVERSION" || k == "GCP_USER_TAG" || k == "KUBE_CROSS_VERSION" {
 			delete(result, k)
 		}
 	}
