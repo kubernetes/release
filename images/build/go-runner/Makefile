@@ -16,17 +16,14 @@
 include $(CURDIR)/../../Makefile.common-image $(CURDIR)/../Makefile.build-image
 
 IMGNAME = go-runner
-IMAGE_VERSION ?= buster-v2.2.1
+IMAGE_VERSION ?= buster-v2.2.2
 CONFIG ?= buster
 
 # Build args
 GO_VERSION ?= 1.15.5
 DISTROLESS_IMAGE ?= static-debian10
 
-# TODO: Re-enable linux/ppc64le builds once upstream distroless builds are fixed
-#       ref: https://github.com/GoogleContainerTools/distroless/pull/622
-#PLATFORMS ?= linux/amd64 linux/arm64 linux/arm linux/ppc64le linux/s390x
-PLATFORMS ?= linux/amd64 linux/arm64 linux/arm linux/s390x
+PLATFORMS ?= linux/amd64 linux/arm64 linux/arm linux/ppc64le linux/s390x
 
 HOST_GOOS ?= $(shell go env GOOS)
 HOST_GOARCH ?= $(shell go env GOARCH)
