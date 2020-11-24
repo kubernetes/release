@@ -135,6 +135,7 @@ const patchReleaseDeps = `## Dependencies
 - github.com/coreos/bbolt: [v1.3.1-coreos.6 → v1.3.3](https://github.com/coreos/bbolt/compare/v1.3.1-coreos.6...v1.3.3)
 - github.com/coreos/etcd: [v3.3.15+incompatible → v3.3.17+incompatible](https://github.com/coreos/etcd/compare/v3.3.15...v3.3.17)
 - github.com/coreos/go-systemd: [39ca1b0 → c6f51f8](https://github.com/coreos/go-systemd/compare/39ca1b0...c6f51f8)
+- github.com/evanphx/json-patch: [v4.2.0+incompatible → v4.9.0+incompatible](https://github.com/evanphx/json-patch/compare/v4.2.0...v4.9.0)
 - github.com/go-openapi/jsonpointer: [v0.19.2 → v0.19.3](https://github.com/go-openapi/jsonpointer/compare/v0.19.2...v0.19.3)
 - github.com/go-openapi/swag: [v0.19.2 → v0.19.5](https://github.com/go-openapi/swag/compare/v0.19.2...v0.19.5)
 - github.com/gregjones/httpcache: [787624d → 9cad4c3](https://github.com/gregjones/httpcache/compare/787624d...9cad4c3)
@@ -299,6 +300,7 @@ const patchReleaseExpectedHTML = `<!DOCTYPE html>
 <li>github.com/coreos/bbolt: <a href="https://github.com/coreos/bbolt/compare/v1.3.1-coreos.6...v1.3.3">v1.3.1-coreos.6 → v1.3.3</a></li>
 <li>github.com/coreos/etcd: <a href="https://github.com/coreos/etcd/compare/v3.3.15...v3.3.17">v3.3.15+incompatible → v3.3.17+incompatible</a></li>
 <li>github.com/coreos/go-systemd: <a href="https://github.com/coreos/go-systemd/compare/39ca1b0...c6f51f8">39ca1b0 → c6f51f8</a></li>
+<li>github.com/evanphx/json-patch: <a href="https://github.com/evanphx/json-patch/compare/v4.2.0...v4.9.0">v4.2.0+incompatible → v4.9.0+incompatible</a></li>
 <li>github.com/go-openapi/jsonpointer: <a href="https://github.com/go-openapi/jsonpointer/compare/v0.19.2...v0.19.3">v0.19.2 → v0.19.3</a></li>
 <li>github.com/go-openapi/swag: <a href="https://github.com/go-openapi/swag/compare/v0.19.2...v0.19.5">v0.19.2 → v0.19.5</a></li>
 <li>github.com/gregjones/httpcache: <a href="https://github.com/gregjones/httpcache/compare/787624d...9cad4c3">787624d → 9cad4c3</a></li>
