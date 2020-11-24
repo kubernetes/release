@@ -25,6 +25,7 @@ import (
 
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/gcp"
+	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/util"
 )
@@ -52,6 +53,7 @@ type prerequisitesCheckerImpl interface {
 	GCloudOutput(args ...string) (string, error)
 	IsEnvSet(key string) bool
 	Usage(dir string) (*disk.UsageStat, error)
+	ConfigureGlobalDefaultUserAndEmail() error
 }
 
 type defaultPrerequisitesChecker struct{}
@@ -70,6 +72,10 @@ func (*defaultPrerequisitesChecker) GCloudOutput(
 
 func (*defaultPrerequisitesChecker) IsEnvSet(key string) bool {
 	return util.IsEnvSet(key)
+}
+
+func (*defaultPrerequisitesChecker) ConfigureGlobalDefaultUserAndEmail() error {
+	return git.ConfigureGlobalDefaultUserAndEmail()
 }
 
 func (*defaultPrerequisitesChecker) DockerVersion() (string, error) {
@@ -145,6 +151,12 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 			"not enough disk space available. Got %dGiB, need at least %dGiB",
 			diskSpaceGiB, minDiskSpaceGiB,
 		)
+	}
+
+	// Git setup check
+	logrus.Info("Configuring git user and email")
+	if err := p.impl.ConfigureGlobalDefaultUserAndEmail(); err != nil {
+		return errors.Wrap(err, "configure git user and email")
 	}
 
 	return nil
