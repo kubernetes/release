@@ -43,15 +43,16 @@ aliases:
     - justaugustus
     - listx
   krel-approvers:
+    - cpanato
     - hasheddan
-    - justaugustus
+    - puerco
     - saschagrunert
   krel-reviewers:
     - cpanato
     - hasheddan
-    - justaugustus
     - puerco
     - saschagrunert
+    - xmudrii
   promo-tools-approvers:
     - justaugustus
     - justinsb
