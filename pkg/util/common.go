@@ -43,6 +43,7 @@ var (
 	regexpCRLF       *regexp.Regexp = regexp.MustCompile(`\015$`)
 	regexpCtrlChar   *regexp.Regexp = regexp.MustCompile(`\x1B[\[(]([0-9]{1,2}(;[0-9]{1,2})?)?[mKB]`)
 	regexpOauthToken *regexp.Regexp = regexp.MustCompile(`[a-f0-9]{40}:x-oauth-basic`)
+	regexpGitToken   *regexp.Regexp = regexp.MustCompile(`git:[a-f0-9]{35,40}@github.com`)
 )
 
 // UserInputError a custom error to handle more user input info
@@ -519,7 +520,11 @@ func StripControlCharacters(logData []byte) []byte {
 // StripSensitiveData removes data deemed sensitive or non public
 // from a byte slice (ported from the original bash anago)
 func StripSensitiveData(logData []byte) []byte {
-	return regexpOauthToken.ReplaceAllLiteral(logData, []byte("__SANITIZED__:x-oauth-basic"))
+	// Remove OAuth tokens
+	logData = regexpOauthToken.ReplaceAllLiteral(logData, []byte("__SANITIZED__:x-oauth-basic"))
+	// Remove GitHub tokens
+	logData = regexpGitToken.ReplaceAllLiteral(logData, []byte("//git:__SANITIZED__:@github.com"))
+	return logData
 }
 
 // CleanLogFile cleans control characters and sensitive data from a file
