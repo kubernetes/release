@@ -38,7 +38,7 @@ import (
 //counterfeiter:generate . releaseClient
 type releaseClient interface {
 	// Submit can be used to submit a Google Cloud Build (GCB) job.
-	Submit() error
+	Submit(stream bool) error
 
 	// InitState initializes the default internal state.
 	InitState()
@@ -211,8 +211,9 @@ func (d *defaultReleaseImpl) PublishVersion(
 		PublishVersion("release", version, buildDir, bucket, gcsRoot, nil, false, false)
 }
 
-func (d *DefaultRelease) Submit() error {
+func (d *DefaultRelease) Submit(stream bool) error {
 	options := gcb.NewDefaultOptions()
+	options.Stream = stream
 	options.Release = true
 	options.NoMock = d.options.NoMock
 	options.Branch = d.options.ReleaseBranch

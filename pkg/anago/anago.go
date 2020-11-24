@@ -206,9 +206,9 @@ func (s *Stage) SetClient(client stageClient) {
 }
 
 // Submit can be used to submit a staging Google Cloud Build (GCB) job.
-func (s *Stage) Submit() error {
+func (s *Stage) Submit(stream bool) error {
 	logrus.Info("Submitting stage GCB job")
-	if err := s.client.Submit(); err != nil {
+	if err := s.client.Submit(stream); err != nil {
 		return errors.Wrap(err, "submit stage job")
 	}
 	return nil
@@ -329,9 +329,9 @@ func (r *Release) SetClient(client releaseClient) {
 }
 
 // Submit can be used to submit a releasing Google Cloud Build (GCB) job.
-func (r *Release) Submit() error {
+func (r *Release) Submit(stream bool) error {
 	logrus.Info("Submitting release GCB job")
-	if err := r.client.Submit(); err != nil {
+	if err := r.client.Submit(stream); err != nil {
 		return errors.Wrap(err, "submit release job")
 	}
 	return nil

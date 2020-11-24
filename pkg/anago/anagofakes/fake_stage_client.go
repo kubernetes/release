@@ -106,9 +106,10 @@ type FakeStageClient struct {
 	stageArtifactsReturnsOnCall map[int]struct {
 		result1 error
 	}
-	SubmitStub        func() error
+	SubmitStub        func(bool) error
 	submitMutex       sync.RWMutex
 	submitArgsForCall []struct {
+		arg1 bool
 	}
 	submitReturns struct {
 		result1 error
@@ -588,17 +589,18 @@ func (fake *FakeStageClient) StageArtifactsReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeStageClient) Submit() error {
+func (fake *FakeStageClient) Submit(arg1 bool) error {
 	fake.submitMutex.Lock()
 	ret, specificReturn := fake.submitReturnsOnCall[len(fake.submitArgsForCall)]
 	fake.submitArgsForCall = append(fake.submitArgsForCall, struct {
-	}{})
+		arg1 bool
+	}{arg1})
 	stub := fake.SubmitStub
 	fakeReturns := fake.submitReturns
-	fake.recordInvocation("Submit", []interface{}{})
+	fake.recordInvocation("Submit", []interface{}{arg1})
 	fake.submitMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -612,10 +614,17 @@ func (fake *FakeStageClient) SubmitCallCount() int {
 	return len(fake.submitArgsForCall)
 }
 
-func (fake *FakeStageClient) SubmitCalls(stub func() error) {
+func (fake *FakeStageClient) SubmitCalls(stub func(bool) error) {
 	fake.submitMutex.Lock()
 	defer fake.submitMutex.Unlock()
 	fake.SubmitStub = stub
+}
+
+func (fake *FakeStageClient) SubmitArgsForCall(i int) bool {
+	fake.submitMutex.RLock()
+	defer fake.submitMutex.RUnlock()
+	argsForCall := fake.submitArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeStageClient) SubmitReturns(result1 error) {
