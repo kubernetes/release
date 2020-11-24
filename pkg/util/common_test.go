@@ -488,9 +488,11 @@ func TestStripSensitiveData(t *testing.T) {
 		mustChange bool
 	}{
 		{text: "a", mustChange: false},
-		{text: `s;!3Vc2]x~qL&'Sc/W/>^}8pau\.xr;;5uL:mL:h:x-oauth-basic`, mustChange: false},                // Non base64 token
-		{text: `ab0ff5efdbafcf1def98cac7bd4fa5856d53d000:x-oauth-basic`, mustChange: true},                 // Visible token
-		{text: `X-Some-Header: ab0ff5efdbafcf1def98cac7bd4fa5856d53d000:x-oauth-basic;`, mustChange: true}, // in string
+		{text: `s;!3Vc2]x~qL&'Sc/W/>^}8pau\.xr;;5uL:mL:h:x-oauth-basic`, mustChange: false},                                                                        // Non base64 token
+		{text: `ab0ff5efdbafcf1def98cac7bd4fa5856d53d000:x-oauth-basic`, mustChange: true},                                                                         // Visible token
+		{text: `X-Some-Header: ab0ff5efdbafcf1def98cac7bd4fa5856d53d000:x-oauth-basic;`, mustChange: true},                                                         // in string
+		{text: `error: failed to push some refs to 'https://git:538b8ca9618eaf316b8ca37bcf78da2c24639c14@github.com/kubernetes/kubernetes.git'`, mustChange: true}, // GitHub token
+		{text: `error: failed to push some refs to 'https://git:538b8c9618a316bca3bcf78da2c24639c35@github.com/kubernetes/kubernetes.git'`, mustChange: true},      // 35-char GitHub token
 	}
 	for _, tc := range testCases {
 		testBytes := []byte(tc.text)
