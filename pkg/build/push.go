@@ -482,6 +482,7 @@ func (bi *Instance) StageLocalSourceTree(workDir, buildVersion string) error {
 	logrus.Infof("Uploading source tree tarball to GCS")
 	bi.objStore.SetOptions(
 		bi.objStore.WithAllowMissing(false),
+		bi.objStore.WithNoClobber(false),
 	)
 	if err := bi.objStore.CopyToRemote(
 		tarballPath,
