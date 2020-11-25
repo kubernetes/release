@@ -75,7 +75,7 @@ func (fake *FakeRepository) CheckState(arg1 string, arg2 string, arg3 string, ar
 	}{arg1, arg2, arg3, arg4})
 	stub := fake.CheckStateStub
 	fakeReturns := fake.checkStateReturns
-	fake.recordInvocation("CheckState", []interface{}{arg1, arg2, arg3})
+	fake.recordInvocation("CheckState", []interface{}{arg1, arg2, arg3, arg4})
 	fake.checkStateMutex.Unlock()
 	if stub != nil {
 		return stub(arg1, arg2, arg3, arg4)

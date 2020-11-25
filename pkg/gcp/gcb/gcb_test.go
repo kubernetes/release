@@ -43,6 +43,14 @@ func mockVersion(version string) gcb.Version {
 	return mock
 }
 
+func mockRelease(version string) gcb.Release {
+	mock := &gcbfakes.FakeRelease{}
+	mock.GenerateReleaseVersionReturns(
+		release.NewReleaseVersions(version, "", "", "", ""), nil,
+	)
+	return mock
+}
+
 func TestSubmitList(t *testing.T) {
 	testcases := []struct {
 		name         string
@@ -51,6 +59,7 @@ func TestSubmitList(t *testing.T) {
 		repoMock     gcb.Repository
 		versionMock  gcb.Version
 		listJobsMock gcb.ListJobs
+		releaseMock  gcb.Release
 	}{
 		{
 			name: "list only",
@@ -64,6 +73,7 @@ func TestSubmitList(t *testing.T) {
 			listJobsMock: func() gcb.ListJobs {
 				return &gcbfakes.FakeListJobs{}
 			}(),
+			releaseMock: mockRelease("v1.17.0"),
 			expectedErr: false,
 		},
 		{
@@ -80,6 +90,7 @@ func TestSubmitList(t *testing.T) {
 				m.ListJobsReturns(errors.New(""))
 				return m
 			}(),
+			releaseMock: mockRelease("v1.17.0"),
 			expectedErr: true,
 		},
 	}
@@ -92,6 +103,7 @@ func TestSubmitList(t *testing.T) {
 		sut.SetRepoClient(tc.repoMock)
 		sut.SetVersionClient(tc.versionMock)
 		sut.SetListJobsClient(tc.listJobsMock)
+		sut.SetReleaseClient(tc.releaseMock)
 		err := sut.Submit()
 
 		if tc.expectedErr {
@@ -151,6 +163,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		expected    map[string]string
 		repoMock    gcb.Repository
 		versionMock gcb.Version
+		releaseMock gcb.Release
 	}{
 		{
 			name: "main branch alpha - stage",
@@ -162,6 +175,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			},
 			repoMock:    mockRepo(),
 			versionMock: mockVersion("v1.17.0"),
+			releaseMock: mockRelease("v1.17.0"),
 			expected: map[string]string{
 				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         git.DefaultBranch,
@@ -187,6 +201,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			},
 			repoMock:    mockRepo(),
 			versionMock: mockVersion("v1.33.7"),
+			releaseMock: mockRelease("v1.33.7"),
 			expected: map[string]string{
 				"RELEASE_BRANCH":         git.DefaultBranch,
 				"TOOL_ORG":               "",
@@ -210,6 +225,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			},
 			repoMock:    mockRepo(),
 			versionMock: mockVersion("v1.15.0-rc.1"),
+			releaseMock: mockRelease("v1.15.0-rc.2"),
 			expected: map[string]string{
 				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         "release-1.15",
@@ -221,7 +237,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"MAJOR_VERSION_TAG":      "1",
 				"MINOR_VERSION_TAG":      "15",
 				"KUBERNETES_VERSION_TAG": "1.15.0-rc.2",
-				"PATCH_VERSION_TAG":      "0-rc.2",
+				"PATCH_VERSION_TAG":      "0",
 			},
 		},
 		{
@@ -234,6 +250,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			},
 			repoMock:    mockRepo(),
 			versionMock: mockVersion("v1.15.1"),
+			releaseMock: mockRelease("v1.15.1"),
 			expected: map[string]string{
 				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         "release-1.15",
@@ -258,6 +275,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			},
 			repoMock:    mockRepo(),
 			versionMock: mockVersion("v1.16.0"),
+			releaseMock: mockRelease("v1.16.0"),
 			toolOrg:     "honk",
 			toolRepo:    "best-tools",
 			toolBranch:  "tool-branch",
@@ -285,6 +303,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			},
 			repoMock:    mockRepo(),
 			versionMock: mockVersion("v1.19.0-alpha.2.763+2da917d3701904"),
+			releaseMock: mockRelease("1.19.0-beta.0"),
 			toolOrg:     "honk",
 			toolRepo:    "best-tools",
 			toolBranch:  "tool-branch",
@@ -298,7 +317,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"TYPE_TAG":               release.ReleaseTypeBeta,
 				"MAJOR_VERSION_TAG":      "1",
 				"MINOR_VERSION_TAG":      "19",
-				"PATCH_VERSION_TAG":      "0-beta.0",
+				"PATCH_VERSION_TAG":      "0",
 				"KUBERNETES_VERSION_TAG": "1.19.0-beta.0",
 			},
 		},
@@ -312,6 +331,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			},
 			repoMock:    mockRepo(),
 			versionMock: mockVersion("v1.18.6-rc.0.15+e38139724f8f00"),
+			releaseMock: mockRelease("1.18.6-rc.1"),
 			expected: map[string]string{
 				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         "release-1.18",
@@ -323,7 +343,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"MAJOR_VERSION_TAG":      "1",
 				"MINOR_VERSION_TAG":      "18",
 				"KUBERNETES_VERSION_TAG": "1.18.6-rc.1",
-				"PATCH_VERSION_TAG":      "6-rc.1",
+				"PATCH_VERSION_TAG":      "6",
 			},
 		},
 		{
@@ -336,6 +356,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			},
 			repoMock:    mockRepo(),
 			versionMock: mockVersion("v1.18.0-beta.4.15+e38139724f8f00"),
+			releaseMock: mockRelease("1.18.0-rc.1"),
 			expected: map[string]string{
 				"BUILD_AT_HEAD":          "",
 				"RELEASE_BRANCH":         "release-1.18",
@@ -347,7 +368,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"MAJOR_VERSION_TAG":      "1",
 				"MINOR_VERSION_TAG":      "18",
 				"KUBERNETES_VERSION_TAG": "1.18.0-rc.1",
-				"PATCH_VERSION_TAG":      "0-rc.1",
+				"PATCH_VERSION_TAG":      "0",
 			},
 		},
 	}
@@ -358,6 +379,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		sut := gcb.New(tc.gcbOpts)
 		sut.SetRepoClient(tc.repoMock)
 		sut.SetVersionClient(tc.versionMock)
+		sut.SetReleaseClient(tc.releaseMock)
 
 		subs, err := sut.SetGCBSubstitutions(
 			tc.toolOrg, tc.toolRepo, tc.toolBranch,
