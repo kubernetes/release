@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -42,6 +43,7 @@ type GCB struct {
 	repoClient     Repository
 	versionClient  Version
 	listJobsClient ListJobs
+	releaseClient  Release
 }
 
 // New creates a new `*GCB` instance.
@@ -50,6 +52,7 @@ func New(options *Options) *GCB {
 		repoClient:     release.NewRepo(),
 		versionClient:  release.NewVersion(),
 		listJobsClient: &defaultListJobsClient{},
+		releaseClient:  &defaultReleaseClient{},
 		options:        options,
 	}
 }
@@ -67,6 +70,11 @@ func (g *GCB) SetVersionClient(client Version) {
 // SetListJobsClient can be used to set the internal `ListJobs` client.
 func (g *GCB) SetListJobsClient(client ListJobs) {
 	g.listJobsClient = client
+}
+
+// SetReleaseClient can be used to set the internal `Release` client.
+func (g *GCB) SetReleaseClient(client Release) {
+	g.releaseClient = client
 }
 
 type Options struct {
@@ -114,6 +122,34 @@ type defaultListJobsClient struct{}
 
 func (d *defaultListJobsClient) ListJobs(project string, lastJobs int64) error {
 	return build.ListJobs(project, lastJobs)
+}
+
+//counterfeiter:generate . Release
+type Release interface {
+	NeedsCreation(
+		branch, releaseType string, buildVersion semver.Version,
+	) (createReleaseBranch bool, err error)
+	GenerateReleaseVersion(
+		releaseType, version, branch string, branchFromMaster bool,
+	) (*release.Versions, error)
+}
+
+type defaultReleaseClient struct{}
+
+func (*defaultReleaseClient) NeedsCreation(
+	branch, releaseType string, buildVersion semver.Version,
+) (createReleaseBranch bool, err error) {
+	return release.NewBranchChecker().NeedsCreation(
+		branch, releaseType, buildVersion,
+	)
+}
+
+func (*defaultReleaseClient) GenerateReleaseVersion(
+	releaseType, version, branch string, branchFromMaster bool,
+) (*release.Versions, error) {
+	return release.GenerateReleaseVersion(
+		releaseType, version, branch, branchFromMaster,
+	)
 }
 
 // Validate checks if the Options are valid.
@@ -338,29 +374,33 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolBranch string) (map[str
 	}
 	gcbSubs["KUBE_CROSS_VERSION"] = kubecrossVersion
 
-	v, err := util.TagStringToSemver(buildVersion)
+	buildVersionSemver, err := util.TagStringToSemver(buildVersion)
 	if err != nil {
 		return gcbSubs, errors.Wrap(err, "parse build version")
 	}
 
-	gcbSubs["MAJOR_VERSION_TAG"] = strconv.FormatUint(v.Major, 10)
-	gcbSubs["MINOR_VERSION_TAG"] = strconv.FormatUint(v.Minor, 10)
-
-	patch := fmt.Sprintf("%d", v.Patch)
-	if g.options.ReleaseType != release.ReleaseTypeOfficial && len(v.Pre) > 0 {
-		// if the release we will build is the same in the current build point then we increment
-		// otherwise we are building the next type so set to 0
-		if v.Pre[0].String() == g.options.ReleaseType {
-			patch = fmt.Sprintf("%d-%s.%d", v.Patch, g.options.ReleaseType, v.Pre[1].VersionNum+1)
-		} else if g.options.ReleaseType == release.ReleaseTypeRC && v.Pre[0].String() != release.ReleaseTypeRC {
-			// Now if is RC we are building and is the first time we set to 1 since the 0 is bypassed
-			patch = fmt.Sprintf("%d-%s.1", v.Patch, g.options.ReleaseType)
-		} else {
-			patch = fmt.Sprintf("%d-%s.0", v.Patch, g.options.ReleaseType)
-		}
+	createBranch, err := g.releaseClient.NeedsCreation(
+		g.options.Branch, g.options.ReleaseType, buildVersionSemver,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "check if branch needs to be created")
 	}
-	gcbSubs["PATCH_VERSION_TAG"] = patch
-	gcbSubs["KUBERNETES_VERSION_TAG"] = fmt.Sprintf("%d.%d.%s", v.Major, v.Minor, patch)
+	versions, err := g.releaseClient.GenerateReleaseVersion(
+		g.options.ReleaseType, buildVersion,
+		g.options.Branch, createBranch,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "generate release version")
+	}
+	primeSemver, err := util.TagStringToSemver(versions.Prime())
+	if err != nil {
+		return gcbSubs, errors.Wrap(err, "parse prime version")
+	}
+
+	gcbSubs["MAJOR_VERSION_TAG"] = strconv.FormatUint(primeSemver.Major, 10)
+	gcbSubs["MINOR_VERSION_TAG"] = strconv.FormatUint(primeSemver.Minor, 10)
+	gcbSubs["PATCH_VERSION_TAG"] = strconv.FormatUint(primeSemver.Patch, 10)
+	gcbSubs["KUBERNETES_VERSION_TAG"] = primeSemver.String()
 
 	return gcbSubs, nil
 }
