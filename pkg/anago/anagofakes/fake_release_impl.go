@@ -199,6 +199,17 @@ type FakeReleaseImpl struct {
 	toFileReturnsOnCall map[int]struct {
 		result1 error
 	}
+	UpdateGitHubPageStub        func(*announce.GitHubPageOptions) error
+	updateGitHubPageMutex       sync.RWMutex
+	updateGitHubPageArgsForCall []struct {
+		arg1 *announce.GitHubPageOptions
+	}
+	updateGitHubPageReturns struct {
+		result1 error
+	}
+	updateGitHubPageReturnsOnCall map[int]struct {
+		result1 error
+	}
 	ValidateImagesStub        func(string, string, string) error
 	validateImagesMutex       sync.RWMutex
 	validateImagesArgsForCall []struct {
@@ -1164,6 +1175,67 @@ func (fake *FakeReleaseImpl) ToFileReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeReleaseImpl) UpdateGitHubPage(arg1 *announce.GitHubPageOptions) error {
+	fake.updateGitHubPageMutex.Lock()
+	ret, specificReturn := fake.updateGitHubPageReturnsOnCall[len(fake.updateGitHubPageArgsForCall)]
+	fake.updateGitHubPageArgsForCall = append(fake.updateGitHubPageArgsForCall, struct {
+		arg1 *announce.GitHubPageOptions
+	}{arg1})
+	stub := fake.UpdateGitHubPageStub
+	fakeReturns := fake.updateGitHubPageReturns
+	fake.recordInvocation("UpdateGitHubPage", []interface{}{arg1})
+	fake.updateGitHubPageMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeReleaseImpl) UpdateGitHubPageCallCount() int {
+	fake.updateGitHubPageMutex.RLock()
+	defer fake.updateGitHubPageMutex.RUnlock()
+	return len(fake.updateGitHubPageArgsForCall)
+}
+
+func (fake *FakeReleaseImpl) UpdateGitHubPageCalls(stub func(*announce.GitHubPageOptions) error) {
+	fake.updateGitHubPageMutex.Lock()
+	defer fake.updateGitHubPageMutex.Unlock()
+	fake.UpdateGitHubPageStub = stub
+}
+
+func (fake *FakeReleaseImpl) UpdateGitHubPageArgsForCall(i int) *announce.GitHubPageOptions {
+	fake.updateGitHubPageMutex.RLock()
+	defer fake.updateGitHubPageMutex.RUnlock()
+	argsForCall := fake.updateGitHubPageArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeReleaseImpl) UpdateGitHubPageReturns(result1 error) {
+	fake.updateGitHubPageMutex.Lock()
+	defer fake.updateGitHubPageMutex.Unlock()
+	fake.UpdateGitHubPageStub = nil
+	fake.updateGitHubPageReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) UpdateGitHubPageReturnsOnCall(i int, result1 error) {
+	fake.updateGitHubPageMutex.Lock()
+	defer fake.updateGitHubPageMutex.Unlock()
+	fake.UpdateGitHubPageStub = nil
+	if fake.updateGitHubPageReturnsOnCall == nil {
+		fake.updateGitHubPageReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.updateGitHubPageReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeReleaseImpl) ValidateImages(arg1 string, arg2 string, arg3 string) error {
 	fake.validateImagesMutex.Lock()
 	ret, specificReturn := fake.validateImagesReturnsOnCall[len(fake.validateImagesArgsForCall)]
@@ -1260,6 +1332,8 @@ func (fake *FakeReleaseImpl) Invocations() map[string][][]interface{} {
 	defer fake.submitMutex.RUnlock()
 	fake.toFileMutex.RLock()
 	defer fake.toFileMutex.RUnlock()
+	fake.updateGitHubPageMutex.RLock()
+	defer fake.updateGitHubPageMutex.RUnlock()
 	fake.validateImagesMutex.RLock()
 	defer fake.validateImagesMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

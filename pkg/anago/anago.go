@@ -346,7 +346,7 @@ func (r *Release) Run() error {
 		return errors.Wrap(err, "init log file")
 	}
 
-	logger := log.NewStepLogger(9)
+	logger := log.NewStepLogger(10)
 	logger.Infof("Using krel version:\n%s", version.Get().String())
 
 	logger.WithStep().Info("Validating options")
@@ -387,6 +387,11 @@ func (r *Release) Run() error {
 	logger.WithStep().Info("Creating announcement")
 	if err := r.client.CreateAnnouncement(); err != nil {
 		return errors.Wrap(err, "create announcement")
+	}
+
+	logger.WithStep().Info("Updating GitHub release page")
+	if err := r.client.UpdateGitHubPage(); err != nil {
+		return errors.Wrap(err, "updating github page")
 	}
 
 	logger.WithStep().Info("Archiving release")
