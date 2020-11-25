@@ -141,6 +141,7 @@ type releaseImpl interface {
 	PushBranches(pusher *release.GitObjectPusher, branchList []string) error
 	PushMainBranch(pusher *release.GitObjectPusher) error
 	NewGitPusher(opts *release.GitObjectPusherOptions) (*release.GitObjectPusher, error)
+	ArchiveRelease(options *release.ArchiverOptions) error
 }
 
 func (d *defaultReleaseImpl) Submit(options *gcb.Options) error {
@@ -243,6 +244,11 @@ func (d *DefaultRelease) InitLogFile() error {
 func (d *defaultReleaseImpl) CreateAnnouncement(options *announce.Options) error {
 	// Create the announcement
 	return announce.CreateForRelease(options)
+}
+
+func (d *defaultReleaseImpl) ArchiveRelease(options *release.ArchiverOptions) error {
+	// Create a new release archiver
+	return release.NewArchiver(options).ArchiveRelease()
 }
 
 func (d *defaultReleaseImpl) PushTags(
@@ -445,4 +451,20 @@ func (d *DefaultRelease) CreateAnnouncement() error {
 	return nil
 }
 
-func (d *DefaultRelease) Archive() error { return nil }
+// Archive stores the release artifact in a bucket along with
+// its logs for long term conservation
+func (d *DefaultRelease) Archive() error {
+	// Create a new options set for the release archiver
+	archiverOptions := &release.ArchiverOptions{
+		ReleaseBuildDir: filepath.Join(workspaceDir, "src"),
+		LogFile:         d.state.logFile,
+		BuildVersion:    d.options.BuildVersion,
+		PrimeVersion:    d.state.versions.Prime(),
+		Bucket:          d.options.Bucket(),
+	}
+
+	if err := d.impl.ArchiveRelease(archiverOptions); err != nil {
+		return errors.Wrap(err, "running the release archival process")
+	}
+	return nil
+}

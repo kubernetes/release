@@ -41,12 +41,6 @@ func TestArchiveRelease(t *testing.T) {
 			},
 			shouldErr: true,
 		},
-		{ // failure GetLogFiles fails
-			prepare: func(mock *releasefakes.FakeArchiverImpl) {
-				mock.GetLogFilesReturns([]string{}, err)
-			},
-			shouldErr: true,
-		},
 		{ // failure CopyReleaseLogsReturns errors
 			prepare: func(mock *releasefakes.FakeArchiverImpl) {
 				mock.CopyReleaseLogsReturns(err)

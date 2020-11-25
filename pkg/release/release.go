@@ -123,6 +123,9 @@ const (
 
 	// The default bazel build directory.
 	BazelBuildDir = "bazel-bin/build"
+
+	// Archive path is the root path in the bucket where releases are archived
+	ArchivePath = "archive"
 )
 
 var (
