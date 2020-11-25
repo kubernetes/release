@@ -80,6 +80,10 @@ type releaseClient interface {
 	// GitHub release page to contain the artifacts and their checksums.
 	CreateAnnouncement() error
 
+	// UpdateGitHubPage updates the GitHub release page to with the source code
+	// and release information.
+	UpdateGitHubPage() error
+
 	// Archive copies the release process logs to a bucket and sets private
 	// permissions on it.
 	Archive() error
@@ -137,6 +141,7 @@ type releaseImpl interface {
 	CreateAnnouncement(
 		options *announce.Options,
 	) error
+	UpdateGitHubPage(options *announce.GitHubPageOptions) error
 	PushTags(pusher *release.GitObjectPusher, tagList []string) error
 	PushBranches(pusher *release.GitObjectPusher, branchList []string) error
 	PushMainBranch(pusher *release.GitObjectPusher) error
@@ -249,6 +254,10 @@ func (d *defaultReleaseImpl) CreateAnnouncement(options *announce.Options) error
 func (d *defaultReleaseImpl) ArchiveRelease(options *release.ArchiverOptions) error {
 	// Create a new release archiver
 	return release.NewArchiver(options).ArchiveRelease()
+}
+
+func (d *defaultReleaseImpl) UpdateGitHubPage(options *announce.GitHubPageOptions) error {
+	return announce.UpdateGitHubPage(options)
 }
 
 func (d *defaultReleaseImpl) PushTags(
@@ -447,6 +456,52 @@ func (d *DefaultRelease) CreateAnnouncement() error {
 
 	if err := d.impl.CreateAnnouncement(announceOpts); err != nil {
 		return errors.Wrap(err, "creating the announcement")
+	}
+	return nil
+}
+
+// UpdateGitHubPage Update the GitHub release page, uploading the
+// source code
+func (d *DefaultRelease) UpdateGitHubPage() error {
+	// Array of assets to be published in the release page
+	assetList := []string{
+		// Build the path to the kubernetes tar file:
+		filepath.Join(
+			gitRoot, // /workspace/src/k8s.io/kubernetes
+			fmt.Sprintf("%s-%s", release.BuildDir, d.state.versions.Prime()), // _output-v1.20.0-beta.3/
+			release.GCSStagePath,     // gcs-stage/
+			d.state.versions.Prime(), // v1.20.0-beta.3
+			release.KubernetesTar,    // kubernetes.tar.gz
+		) + ":Kubernetes Source Code",
+	}
+
+	// URL to the changelog:
+	changelogURL := fmt.Sprintf(
+		"https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-%d.%d.md",
+		d.state.semverBuildVersion.Major,
+		d.state.semverBuildVersion.Minor,
+	)
+
+	// Build the options set for the GitHub page
+	ghPageOpts := &announce.GitHubPageOptions{
+		AssetFiles:            assetList,
+		Tag:                   d.state.versions.Prime(),
+		NoMock:                d.options.NoMock,
+		UpdateIfReleaseExists: true,
+		Name:                  "Kubernetes " + d.state.versions.Prime(),
+		Draft:                 false,
+		Owner:                 git.DefaultGithubOrg,
+		Repo:                  git.DefaultGithubRepo,
+		// PageTemplate: ,     // If we use a custom template, define it here
+		Substitutions: map[string]string{
+			"intro": "See [kubernetes-announce@](https://groups.google.com/forum/#!forum/kubernetes-announce). " +
+				fmt.Sprintf("Additional binary downloads are linked in the [CHANGELOG](%s).", changelogURL),
+			"changelog": changelogURL,
+		},
+	}
+	// Update the release page (or simply output it during mock)
+	if err := d.impl.UpdateGitHubPage(ghPageOpts); err != nil {
+		return errors.Wrap(err, "updating GitHub release page")
 	}
 	return nil
 }

@@ -127,6 +127,42 @@ func UpdateGitHubPage(opts *GitHubPageOptions) (err error) {
 		return errors.Wrap(err, "processing the asset file list")
 	}
 
+	// Substitution struct for the template
+	subs := struct {
+		Substitutions map[string]string
+		Assets        []map[string]string
+	}{
+		Substitutions: opts.Substitutions,
+		Assets:        releaseAssets,
+	}
+
+	// Open the template file (if a custom)
+	templateText := ghPageBody
+	if opts.PageTemplate != "" {
+		logrus.Debugf("Using custom page template %s", opts.PageTemplate)
+		templateText = opts.PageTemplate
+	}
+	// Parse the template we will use to build the release page
+	tmpl, err := template.New("GitHubPage").Parse(templateText)
+	if err != nil {
+		return errors.Wrap(err, "parsing github page template")
+	}
+
+	// Run the template to verify the output.
+	output := new(bytes.Buffer)
+	err = tmpl.Execute(output, subs)
+	if err != nil {
+		return errors.Wrap(err, "executing page template")
+	}
+
+	// If we are in mock, we write it to stdout and exit. All checks
+	// performed to the repo are skipped as the tag may not exist yet.
+	if !opts.NoMock {
+		logrus.Info("Mock mode, outputting the release page")
+		_, err := os.Stdout.Write(output.Bytes())
+		return errors.Wrap(err, "writing github page to stdout")
+	}
+
 	// Check to see that a tag exists.
 	// non-draft release posts to github create a tag.  We don't want to
 	// create any tags on the repo this way. The tag should already exist
@@ -169,41 +205,6 @@ func UpdateGitHubPage(opts *GitHubPageOptions) (err error) {
 
 	// Post release data
 	logrus.Infof("%s the %s release on github...", releaseVerb, opts.Tag)
-
-	// Substitution struct for the template
-	subs := struct {
-		Substitutions map[string]string
-		Assets        []map[string]string
-	}{
-		Substitutions: opts.Substitutions,
-		Assets:        releaseAssets,
-	}
-
-	// Open the template file (if a custom)
-	templateText := ghPageBody
-	if opts.PageTemplate != "" {
-		logrus.Debugf("Using custom page template %s", opts.PageTemplate)
-		templateText = opts.PageTemplate
-	}
-	// Parse the template we will use to build the release page
-	tmpl, err := template.New("GitHubPage").Parse(templateText)
-	if err != nil {
-		return errors.Wrap(err, "parsing github page template")
-	}
-
-	// Run the template to verify the output.
-	output := new(bytes.Buffer)
-	err = tmpl.Execute(output, subs)
-	if err != nil {
-		return errors.Wrap(err, "executing page template")
-	}
-
-	// If we are in mock, we write it to stdout and exit
-	if !opts.NoMock {
-		logrus.Info("Mock mod, outputting the release page")
-		_, err := os.Stdout.Write(output.Bytes())
-		return errors.Wrap(err, "writing github page to stdout")
-	}
 
 	// Call GitHub to set the release page
 	release, err := gh.UpdateReleasePage(
