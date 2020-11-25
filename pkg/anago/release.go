@@ -225,7 +225,6 @@ func (d *DefaultRelease) Submit(stream bool) error {
 	options.Branch = d.options.ReleaseBranch
 	options.ReleaseType = d.options.ReleaseType
 	options.BuildVersion = d.options.BuildVersion
-	options.NoAnago = true
 	return d.impl.Submit(options)
 }
 

@@ -100,7 +100,7 @@ var status = map[string]string{
 	"TIMEOUT":   "No, Timeout",
 }
 
-// RunHistory is the function invoked by 'krel gcbmgr history', responsible for
+// RunHistory is the function invoked by 'krel history', responsible for
 // getting the jobs and builind the list of commands to be added in the GitHub issue
 func (h *History) Run() error {
 	from, to, err := h.parseDateRange()
@@ -125,21 +125,17 @@ func (h *History) Run() error {
 	table.SetHeader([]string{"Step", "Command", "Link", "Start", "Duration", "Succeeded?"})
 	for i := len(jobs) - 1; i >= 0; i-- {
 		job := jobs[i]
-		stage := ""
-		for _, stageTag := range job.Tags {
-			if stageTag == "RELEASE" {
-				stage = stageTag
-				break
-			}
-			if stageTag == "STAGE" {
-				stage = stageTag
+		subcommand := ""
+		for _, tag := range job.Tags {
+			if tag == "RELEASE" || tag == "STAGE" {
+				subcommand = strings.ToLower(tag)
 				break
 			}
 		}
 
 		// Build the command that was executed
-		command := fmt.Sprintf("`krel gcbmgr --%s --type %s --branch %s %s",
-			strings.ToLower(stage),
+		command := fmt.Sprintf("`krel %s --type %s --branch %s --build-version %s",
+			subcommand,
 			job.Substitutions["_TYPE"],
 			job.Substitutions["_RELEASE_BRANCH"],
 			job.Substitutions["_BUILDVERSION"],
@@ -151,7 +147,7 @@ func (h *History) Run() error {
 			mock = ""
 		} else {
 			command = fmt.Sprintf("%s`", command)
-			mock = "MOCK "
+			mock = "mock "
 		}
 
 		start := job.Timing["BUILD"].StartTime
@@ -171,7 +167,7 @@ func (h *History) Run() error {
 		diff := tEnd.Sub(tStart)
 		out := time.Time{}.Add(diff)
 
-		step := fmt.Sprintf("`%s%s`", mock, stage)
+		step := fmt.Sprintf("`%s%s`", mock, subcommand)
 		table.Append([]string{
 			step, command, logs, start,
 			out.Format("15:04:05"), status[job.Status],

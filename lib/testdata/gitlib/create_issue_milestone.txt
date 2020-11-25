@@ -1,1 +1,0 @@
-https://api.github.com/repos/some/repo/issues --data {"title":"the title","body":"and the body with some \"strange\" stuff\n          and even new lines","milestone":12345}

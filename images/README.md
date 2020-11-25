@@ -36,7 +36,7 @@ be pushed to the specified registries with the specified tags. You can get more 
 
 | Image | used in/by |
 | --- | --- |
-| [k8s-cloud-builder](./k8s-cloud-builder/) | The "main" image, [`anago`](../anago) runs with on cloud-build (submitted via [`krel gcbmgr`](../docs/krel)) |
+| [k8s-cloud-builder](./k8s-cloud-builder/) | The "main" image, [`krel stage/release`](../cmd/krel) runs with on cloud-build |
 | [releng-ci](./releng/ci) | The image used for CI testing |
 
 [gcb_images]: https://cloud.google.com/cloud-build/docs/configuring-builds/store-images-artifacts#storing_images_in

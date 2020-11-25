@@ -22,7 +22,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/cmd/krel/cmd/anago"
 	"k8s.io/release/pkg/log"
 )
 
@@ -75,8 +74,6 @@ func init() {
 		"info",
 		fmt.Sprintf("the logging verbosity, either %s", log.LevelNames()),
 	)
-
-	rootCmd.AddCommand(anago.AnagoCmd)
 }
 
 func initLogging(*cobra.Command, []string) error {

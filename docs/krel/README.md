@@ -32,7 +32,6 @@ krel has several subcommands that perform various tasks during the release lifec
 | ----------------------------------- | --------------------------------------------------------------------------- |
 | [changelog](changelog.md)           | Automate the lifecycle of CHANGELOG-x.y.{md,html} files in a k/k repository |
 | [ff](ff.md)                         | Fast forward a Kubernetes release branch                                    |
-| [gcbmgr](gcbmgr.md)                 | Submit Kubernetes staging and release jobs to Google Cloud Build            |
 | [push](push.md)                     | Push Kubernetes release artifacts to Google Cloud Storage (GCS)             |
 | [release-notes](release-notes.md)   | The subcommand of choice for the Release Notes subteam of SIG Release       |
 

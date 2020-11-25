@@ -80,7 +80,6 @@ func (*defaultCommandClient) RepoTagFromTarball(path string) (string, error) {
 var tagRegex = regexp.MustCompile(`^.+/(.+):.+$`)
 
 // PublishImages releases container images to the provided target registry
-// was in releaselib.sh: release::docker::release
 func (i *Images) Publish(registry, version, buildPath string) error {
 	version = i.normalizeVersion(version)
 
@@ -173,7 +172,6 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 
 // Validates that image manifests have been pushed to a specified remote
 // registry.
-// was in releaselib.sh: release::docker::validate_remote_manifests
 func (i *Images) Validate(registry, version, buildPath string) error {
 	logrus.Infof("Validating image manifests in %s", registry)
 	version = i.normalizeVersion(version)

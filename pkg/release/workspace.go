@@ -30,19 +30,11 @@ import (
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/tar"
-	"k8s.io/release/pkg/util"
 )
 
 // PrepareWorkspaceStage sets up the workspace by cloning a new copy of k/k.
 func PrepareWorkspaceStage(directory string) error {
 	logrus.Infof("Preparing workspace for staging in %s", directory)
-	parent := filepath.Dir(directory)
-
-	// TODO: remove this if anago does not exist any more
-	if err := util.RemoveAndReplaceDir(parent); err != nil {
-		return errors.Wrapf(err, "ensuring repository parent %s", parent)
-	}
-
 	logrus.Infof("Cloning repository to %s", directory)
 	repo, err := git.CloneOrOpenGitHubRepo(
 		directory, git.DefaultGithubOrg, git.DefaultGithubRepo, false,
@@ -72,12 +64,6 @@ func PrepareWorkspaceStage(directory string) error {
 // the staged sources on the provided bucket.
 func PrepareWorkspaceRelease(directory, buildVersion, bucket string) error {
 	logrus.Infof("Preparing workspace for release in %s", directory)
-
-	// TODO: remove this if anago does not exist any more
-	if err := os.RemoveAll(directory); err != nil {
-		return errors.Wrap(err, "removing workspace directory")
-	}
-
 	logrus.Infof("Searching for staged %s on %s", SourcesTar, bucket)
 	tempDir, err := ioutil.TempDir("", "staged-")
 	if err != nil {
