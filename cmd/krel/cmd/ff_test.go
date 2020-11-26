@@ -21,14 +21,15 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"k8s.io/release/pkg/fastforward"
 	"k8s.io/release/pkg/git"
 )
 
-func (s *sut) getFfOptions() *ffOptions {
-	return &ffOptions{
-		mainRef:        git.Remotify(git.DefaultBranch),
-		nonInteractive: true,
-		repoPath:       s.repo.Dir(),
+func (s *sut) getFfOptions() *fastforward.Options {
+	return &fastforward.Options{
+		MainRef:        git.Remotify(git.DefaultBranch),
+		NonInteractive: true,
+		RepoPath:       s.repo.Dir(),
 	}
 }
 
@@ -37,11 +38,10 @@ func TestFfFailedWithoutReleaseBranch(t *testing.T) {
 	s := newSUT(t)
 	defer s.cleanup(t)
 
-	ff := &ffOptions{}
+	ff := &fastforward.Options{}
 
 	// When
-	err := runFf(ff, s.getRootOptions())
-
+	err := fastforward.Run(ff)
 	// Then
 	require.NotNil(t, err)
 }
@@ -52,10 +52,10 @@ func TestFfFailedNoReleaseBranch(t *testing.T) {
 	defer s.cleanup(t)
 
 	ffo := s.getFfOptions()
-	ffo.branch = "not-a-release-branch"
+	ffo.Branch = "not-a-release-branch"
 
 	// When
-	err := runFf(ffo, s.getRootOptions())
+	err := fastforward.Run(ffo)
 
 	// Then
 	require.NotNil(t, err)
@@ -67,10 +67,10 @@ func TestFfFailedReleaseBranchDoesNotExist(t *testing.T) {
 	defer s.cleanup(t)
 
 	ffo := s.getFfOptions()
-	ffo.branch = "release-1.999"
+	ffo.Branch = "release-1.999"
 
 	// When
-	err := runFf(ffo, s.getRootOptions())
+	err := fastforward.Run(ffo)
 
 	// Then
 	require.NotNil(t, err)
@@ -82,10 +82,10 @@ func TestFfFailedOldReleaseBranch(t *testing.T) {
 	defer s.cleanup(t)
 
 	ffo := s.getFfOptions()
-	ffo.branch = "release-1.17"
+	ffo.Branch = "release-1.17"
 
 	// When
-	err := runFf(ffo, s.getRootOptions())
+	err := fastforward.Run(ffo)
 
 	// Then
 	require.NotNil(t, err)
@@ -97,10 +97,10 @@ func TestFfSuccessDryRun(t *testing.T) {
 	defer s.cleanup(t)
 
 	ffo := s.getFfOptions()
-	ffo.branch = pseudoReleaseBranch
+	ffo.Branch = pseudoReleaseBranch
 
 	// When
-	err := runFf(ffo, s.getRootOptions())
+	err := fastforward.Run(ffo)
 
 	// Then
 	require.Nil(t, err)
@@ -120,13 +120,12 @@ func TestFfSuccess(t *testing.T) {
 	defer s.cleanup(t)
 
 	ffo := s.getFfOptions()
-	ffo.branch = pseudoReleaseBranch
+	ffo.Branch = pseudoReleaseBranch
 
-	ro := s.getRootOptions()
-	ro.nomock = true
+	ffo.NoMock = true
 
 	// When
-	err := runFf(ffo, ro)
+	err := fastforward.Run(ffo)
 
 	// Then
 	require.Nil(t, err)

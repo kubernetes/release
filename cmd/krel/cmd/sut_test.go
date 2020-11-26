@@ -126,10 +126,3 @@ func (s *sut) lastCommit(t *testing.T, branch string) string {
 	require.Nil(t, err)
 	return res.OutputTrimNL()
 }
-
-func (s *sut) getRootOptions() *rootOptions {
-	return &rootOptions{
-		nomock:   false,
-		logLevel: "debug",
-	}
-}
