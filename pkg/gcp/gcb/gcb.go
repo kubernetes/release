@@ -280,16 +280,14 @@ func (g *GCB) Submit() error {
 		return prepareBuildErr
 	}
 
-	// TODO: Need actual values
-	var jobName, uploaded string
-
 	version, err := g.repoClient.GetTag()
 	if err != nil {
 		return errors.Wrap(err, "getting current tag")
 	}
 
-	return build.RunSingleJob(
-		&g.options.Options, jobName, uploaded, version, gcbSubs,
+	return errors.Wrap(
+		build.RunSingleJob(&g.options.Options, "", "", version, gcbSubs),
+		"run GCB job",
 	)
 }
 
