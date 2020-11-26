@@ -49,15 +49,16 @@ func (fake *FakeClient) GetURLResponse(arg1 string, arg2 bool) (string, error) {
 		arg1 string
 		arg2 bool
 	}{arg1, arg2})
+	stub := fake.GetURLResponseStub
+	fakeReturns := fake.getURLResponseReturns
 	fake.recordInvocation("GetURLResponse", []interface{}{arg1, arg2})
 	fake.getURLResponseMutex.Unlock()
-	if fake.GetURLResponseStub != nil {
-		return fake.GetURLResponseStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getURLResponseReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

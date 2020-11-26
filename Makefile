@@ -119,8 +119,8 @@ local-image-run: ## Run a locally build image to use the tools of this repositor
 
 ##@ Dependencies
 
-.SILENT: update-deps update-deps-go
-.PHONY:  update-deps update-deps-go
+.SILENT: update-deps update-deps-go update-mocks
+.PHONY:  update-deps update-deps-go update-mocks
 
 update-deps: update-deps-go ## Update all dependencies for this repo
 	echo -e "${COLOR}Commit/PR the following changes:${NOCOLOR}"
@@ -133,6 +133,15 @@ update-deps-go: ## Update all golang dependencies for this repo
 	go mod verify
 	$(MAKE) test-go-unit
 	./hack/update-all.sh
+
+update-mocks: ## Update all generated mocks
+	go generate ./...
+	for f in $(shell find . -name fake_*.go); do \
+		cp hack/boilerplate/boilerplate.go.txt tmp ;\
+		sed -i 's/YEAR/$(shell date +"%Y")/g' tmp ;\
+		cat $$f >> tmp ;\
+		mv tmp $$f ;\
+	done
 
 ##@ Helpers
 

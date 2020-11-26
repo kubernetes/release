@@ -48,15 +48,16 @@ func (fake *FakeAPIClient) API(arg1 rest.Request) (*rest.Response, error) {
 	fake.aPIArgsForCall = append(fake.aPIArgsForCall, struct {
 		arg1 rest.Request
 	}{arg1})
+	stub := fake.APIStub
+	fakeReturns := fake.aPIReturns
 	fake.recordInvocation("API", []interface{}{arg1})
 	fake.aPIMutex.Unlock()
-	if fake.APIStub != nil {
-		return fake.APIStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.aPIReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
