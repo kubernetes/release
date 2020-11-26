@@ -33,6 +33,7 @@ import (
 type Command struct {
 	cmds                         []*command
 	stdErrWriters, stdOutWriters []io.Writer
+	env                          []string
 	verbose                      bool
 }
 
@@ -94,6 +95,14 @@ func (c *Command) Pipe(cmd string, args ...string) *Command {
 		Cmd:        pipeCmd,
 		pipeWriter: writer,
 	})
+	return c
+}
+
+// Env specifies the environment added to the command. Each entry is of the
+// form "key=value". The environment of the current process is being preserved,
+// while it is possible to overwrite already existing environment variables.
+func (c *Command) Env(env ...string) *Command {
+	c.env = append(c.env, env...)
 	return c
 }
 
@@ -274,6 +283,8 @@ func (c *Command) run(printOutput bool) (res *Status, err error) {
 		if c.isVerbose() {
 			logrus.Infof("+ %s", c.String())
 		}
+
+		cmd.Env = append(os.Environ(), c.env...)
 
 		if err := cmd.Start(); err != nil {
 			return nil, err

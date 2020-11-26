@@ -325,3 +325,14 @@ func TestCommandsFailure(t *testing.T) {
 	require.NotNil(t, err)
 	require.Nil(t, res)
 }
+
+func TestEnv(t *testing.T) {
+	require.Nil(t, os.Setenv("ABC", "test")) // preserved
+	require.Nil(t, os.Setenv("FOO", "test")) // overwritten
+	res, err := New("sh", "-c", "echo $TEST; echo $FOO; echo $ABC").
+		Env("TEST=123").
+		Env("FOO=bar").
+		RunSuccessOutput()
+	require.Nil(t, err)
+	require.Equal(t, "123\nbar\ntest", res.OutputTrimNL())
+}
