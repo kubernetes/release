@@ -49,15 +49,16 @@ func (fake *FakeSendClient) Send(arg1 *maila.SGMailV3) (*rest.Response, error) {
 	fake.sendArgsForCall = append(fake.sendArgsForCall, struct {
 		arg1 *maila.SGMailV3
 	}{arg1})
+	stub := fake.SendStub
+	fakeReturns := fake.sendReturns
 	fake.recordInvocation("Send", []interface{}{arg1})
 	fake.sendMutex.Unlock()
-	if fake.SendStub != nil {
-		return fake.SendStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.sendReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
