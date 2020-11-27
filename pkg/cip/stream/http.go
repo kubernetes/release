@@ -23,7 +23,7 @@ import (
 	"net/http"
 	"time"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // HTTP is a wrapper around the net/http's Request type.

@@ -36,7 +36,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"k8s.io/release/pkg/cip/gcloud"
 	cipJson "k8s.io/release/pkg/cip/json"
 	"k8s.io/release/pkg/cip/stream"

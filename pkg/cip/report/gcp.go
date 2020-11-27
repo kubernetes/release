@@ -21,7 +21,7 @@ import (
 
 	"cloud.google.com/go/errorreporting"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // NewGcpErrorReportingClient returns a new Stackdriver Error Reporting client.

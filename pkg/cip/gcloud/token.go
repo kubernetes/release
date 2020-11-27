@@ -25,7 +25,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // Token is the oauth2 access token used for API calls over HTTP.
