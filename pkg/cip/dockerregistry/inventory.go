@@ -28,14 +28,16 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/google/go-containerregistry/pkg/crane"
 	ggcrV1 "github.com/google/go-containerregistry/pkg/v1"
 	ggcrV1Google "github.com/google/go-containerregistry/pkg/v1/google"
 	ggcrV1Types "github.com/google/go-containerregistry/pkg/v1/types"
+	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
 	"k8s.io/release/pkg/cip/gcloud"
 	cipJson "k8s.io/release/pkg/cip/json"
@@ -971,31 +973,28 @@ func (riid *RegInvImageDigest) PrettyValue() string {
 	return b.String()
 }
 
-func getRegistryTagsWrapper(req stream.ExternalRequest,
+func getRegistryTagsWrapper(
+	req stream.ExternalRequest,
 ) (*ggcrV1Google.Tags, error) {
 	var googleTags *ggcrV1Google.Tags
 
-	var getRegistryTagsCondition wait.ConditionFunc = func() (bool, error) {
-		var err error
+	retryFn := func() error {
+		var retryErr error
 
-		googleTags, err = getRegistryTagsFrom(req)
+		googleTags, retryErr = getRegistryTagsFrom(req)
 
-		// We never return an error (err) in the second part of our return
-		// argument, because we don't want to prematurely stop the
-		// ExponentialBackoff() loop; we want it to continue looping until
-		// either we get a well-formed tags value, or until it hits
-		// ErrWaitTimeout. This is how ExponentialBackoff() uses the
-		// ConditionFunc type.
-		if err == nil && googleTags != nil && len(googleTags.Name) > 0 {
-			return true, nil
-		}
-
-		return false, nil
+		return retryErr
 	}
 
-	err := wait.ExponentialBackoff(
-		stream.BackoffDefault,
-		getRegistryTagsCondition,
+	b := stream.BackoffDefault()
+	notify := func(err error, t time.Duration) {
+		logrus.Errorf("error: %v happened at time: %v", err, t)
+	}
+
+	err := backoff.RetryNotify(
+		retryFn,
+		b,
+		notify,
 	)
 	if err != nil {
 		klog.Error(err)
@@ -1028,38 +1027,28 @@ func getRegistryTagsFrom(req stream.ExternalRequest,
 	return tags, nil
 }
 
-func getGCRManifestListWrapper(req stream.ExternalRequest) (*ggcrV1.IndexManifest, error) {
+func getGCRManifestListWrapper(
+	req stream.ExternalRequest,
+) (*ggcrV1.IndexManifest, error) {
 	var gcrManifestList *ggcrV1.IndexManifest
 
-	var getGCRManifestListCondition wait.ConditionFunc = func() (bool, error) {
-		var err error
+	retryFn := func() error {
+		var retryErr error
 
-		gcrManifestList, err = getGCRManifestListFrom(req)
+		gcrManifestList, retryErr = getGCRManifestListFrom(req)
 
-		// We never return an error (err) in the second part of our return
-		// argument, because we don't want to prematurely stop the
-		// ExponentialBackoff() loop; we want it to continue looping until
-		// either we get a well-formed value, or until it hits
-		// ErrWaitTimeout. This is how ExponentialBackoff() uses the
-		// ConditionFunc type.
-		if err == nil &&
-			gcrManifestList != nil &&
-			len(gcrManifestList.Manifests) > 0 {
-			return true, nil
-		}
-
-		klog.Errorf(
-			"invalid gcrManifestList state: %v for request %s",
-			gcrManifestList,
-			req,
-		)
-
-		return false, nil
+		return retryErr
 	}
 
-	err := wait.ExponentialBackoff(
-		stream.BackoffDefault,
-		getGCRManifestListCondition,
+	b := stream.BackoffDefault()
+	notify := func(err error, t time.Duration) {
+		logrus.Errorf("error: %v happened at time: %v", err, t)
+	}
+
+	err := backoff.RetryNotify(
+		retryFn,
+		b,
+		notify,
 	)
 	if err != nil {
 		klog.Error(err)
@@ -1091,12 +1080,12 @@ func getGCRManifestListFrom(req stream.ExternalRequest) (*ggcrV1.IndexManifest, 
 
 func getJSONSFromProcess(req stream.ExternalRequest) (cipJson.Objects, Errors) {
 	var jsons cipJson.Objects
-	errors := make(Errors, 0)
+	streamErrs := make(Errors, 0)
 
 	stdoutReader, stderrReader, err := req.StreamProducer.Produce()
 	if err != nil {
-		errors = append(
-			errors,
+		streamErrs = append(
+			streamErrs,
 			Error{
 				Context: "running process",
 				Error:   err,
@@ -1106,8 +1095,8 @@ func getJSONSFromProcess(req stream.ExternalRequest) (cipJson.Objects, Errors) {
 
 	jsons, err = cipJson.Consume(stdoutReader)
 	if err != nil {
-		errors = append(
-			errors,
+		streamErrs = append(
+			streamErrs,
 			Error{
 				Context: "parsing JSON",
 				Error:   err,
@@ -1117,8 +1106,8 @@ func getJSONSFromProcess(req stream.ExternalRequest) (cipJson.Objects, Errors) {
 
 	be, err := ioutil.ReadAll(stderrReader)
 	if err != nil {
-		errors = append(
-			errors,
+		streamErrs = append(
+			streamErrs,
 			Error{
 				Context: "reading process stderr",
 				Error:   err,
@@ -1127,8 +1116,8 @@ func getJSONSFromProcess(req stream.ExternalRequest) (cipJson.Objects, Errors) {
 	}
 
 	if len(be) > 0 {
-		errors = append(
-			errors,
+		streamErrs = append(
+			streamErrs,
 			Error{
 				Context: "process had stderr",
 				Error:   fmt.Errorf("%v", string(be)),
@@ -1138,8 +1127,8 @@ func getJSONSFromProcess(req stream.ExternalRequest) (cipJson.Objects, Errors) {
 
 	err = req.StreamProducer.Close()
 	if err != nil {
-		errors = append(
-			errors,
+		streamErrs = append(
+			streamErrs,
 			Error{
 				Context: "closing process",
 				Error:   err,
@@ -1147,7 +1136,7 @@ func getJSONSFromProcess(req stream.ExternalRequest) (cipJson.Objects, Errors) {
 		)
 	}
 
-	return jsons, errors
+	return jsons, streamErrs
 }
 
 // IgnoreFromPromotion works by building up a new Inv type of those images that
@@ -1316,7 +1305,9 @@ func (sc *SyncContext) ReadRegistries(
 				reqRes.Errors = Errors{
 					Error{
 						Context: "getRegistryTagsWrapper",
-						Error:   err}}
+						Error:   err,
+					},
+				}
 				requestResults <- reqRes
 
 				// Invalidate promotion conservatively for the subset of images
@@ -1432,8 +1423,8 @@ func (sc *SyncContext) ReadGCRManifestLists(
 	var populateRequests PopulateRequests = func(
 		sc *SyncContext,
 		reqs chan<- stream.ExternalRequest,
-		wg *sync.WaitGroup) {
-
+		wg *sync.WaitGroup,
+	) {
 		// Find all images that are of ggcrV1Types.MediaType == DockerManifestList; these
 		// images will be queried.
 		for registryName, rii := range sc.Inv {
@@ -1488,7 +1479,9 @@ func (sc *SyncContext) ReadGCRManifestLists(
 				reqRes.Errors = Errors{
 					Error{
 						Context: "getGCRManifestListWrapper",
-						Error:   err}}
+						Error:   err,
+					},
+				}
 				requestResults <- reqRes
 				continue
 			}
@@ -2033,18 +2026,18 @@ func MKPopulateRequestsForPromotionEdges(
 
 // RunChecks runs defined PreChecks in order to check the promotion.
 func (sc *SyncContext) RunChecks(preChecks []PreCheck) error {
-	var errors []error
+	var preCheckErrs []error
 	for _, preCheck := range preChecks {
 		err := preCheck.Run()
 		if err != nil {
 			klog.Error(err)
-			errors = append(errors, err)
+			preCheckErrs = append(preCheckErrs, err)
 		}
 	}
 
-	if errors != nil {
+	if preCheckErrs != nil {
 		return fmt.Errorf("%v error(s) encountered during the prechecks",
-			len(errors))
+			len(preCheckErrs))
 	}
 	return nil
 }

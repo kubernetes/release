@@ -20,7 +20,7 @@ import (
 	"io"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/wait"
+	"github.com/cenkalti/backoff/v4"
 )
 
 // Producer is an interface for anything that can generate an io.Reader from
@@ -49,11 +49,18 @@ type ExternalRequest struct {
 
 // BackoffDefault is the default Backoff behavior for network call retries.
 //
-// nolint[gomnd]
-var BackoffDefault = wait.Backoff{
-	Duration: time.Second,
-	Factor:   2,
-	Jitter:   0.1,
-	Steps:    45,
-	Cap:      time.Second * 60,
+// Previous values from k8s.io/apimachinery/pkg/util/wait.`Backoff`:
+// - Duration: time.Second
+// - Factor:   2
+// - Jitter:   0.1
+// - Steps:    45
+// - Cap:      time.Second * 60
+func BackoffDefault() *backoff.ExponentialBackOff {
+	b := backoff.NewExponentialBackOff()
+	b.InitialInterval = time.Second
+	b.Multiplier = 2
+	b.RandomizationFactor = 0.1
+	b.MaxElapsedTime = time.Second * 60
+
+	return b
 }
