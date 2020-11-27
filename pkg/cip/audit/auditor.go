@@ -27,7 +27,7 @@ import (
 
 	"cloud.google.com/go/errorreporting"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	reg "k8s.io/release/pkg/cip/dockerregistry"
 	"k8s.io/release/pkg/cip/logclient"
 	"k8s.io/release/pkg/cip/remotemanifest"

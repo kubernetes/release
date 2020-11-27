@@ -26,7 +26,7 @@ import (
 	gogit "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	reg "k8s.io/release/pkg/cip/dockerregistry"
 )
 
