@@ -26,10 +26,9 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 
-	// TODO: Use k/release/pkg/log instead
-	"k8s.io/klog/v2"
 	api "k8s.io/release/pkg/api/files"
 	"k8s.io/release/pkg/filepromoter"
 )
@@ -102,7 +101,7 @@ func RunPromoteFiles(ctx context.Context, options PromoteFilesOptions) error {
 
 		if !options.DryRun {
 			if err := op.Run(ctx); err != nil {
-				klog.Warningf("error copying file: %v", err)
+				logrus.Warnf("error copying file: %v", err)
 				errors = append(errors, err)
 			}
 		}
