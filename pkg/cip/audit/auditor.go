@@ -26,8 +26,8 @@ import (
 	"runtime/debug"
 
 	"cloud.google.com/go/errorreporting"
+	"github.com/sirupsen/logrus"
 
-	"k8s.io/klog/v2"
 	reg "k8s.io/release/pkg/cip/dockerregistry"
 	"k8s.io/release/pkg/cip/logclient"
 	"k8s.io/release/pkg/cip/remotemanifest"
@@ -71,8 +71,8 @@ func InitRealServerContext(
 
 // RunAuditor runs an HTTP server.
 func (s *ServerContext) RunAuditor() {
-	klog.Info("Starting Auditor")
-	klog.Infoln(s)
+	logrus.Info("Starting Auditor")
+	logrus.Infoln(s)
 
 	// nolint[errcheck]
 	defer s.LoggingFacility.Close()
@@ -90,11 +90,11 @@ func (s *ServerContext) RunAuditor() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
-		klog.Infof("Defaulting to port %s", port)
+		logrus.Infof("Defaulting to port %s", port)
 	}
 	// Start HTTP server.
-	klog.Infof("Listening on port %s", port)
-	klog.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
+	logrus.Infof("Listening on port %s", port)
+	logrus.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 }
 
 // ParsePubSubMessage parses an HTTP request body into a reg.GCRPubSubPayload.
@@ -185,7 +185,7 @@ func (s *ServerContext) Audit(w http.ResponseWriter, r *http.Request) {
 			)
 
 			logAlert.Printf("%s\n%s\n", panicStr, string(stacktrace))
-			klog.Errorln(panicStr)
+			logrus.Errorln(panicStr)
 		}
 	}()
 	// (1) Parse request payload.
@@ -242,7 +242,7 @@ func (s *ServerContext) Audit(w http.ResponseWriter, r *http.Request) {
 			)
 
 			logInfo.Println(msg)
-			klog.Infoln(msg)
+			logrus.Infoln(msg)
 			_, _ = w.Write([]byte(msg))
 			return
 		}
@@ -310,12 +310,12 @@ func (s *ServerContext) Audit(w http.ResponseWriter, r *http.Request) {
 		panic(msg)
 	}
 
-	klog.Infof("(%s): looking for child digest %v", s.ID, gcrPayload.Digest)
+	logrus.Infof("(%s): looking for child digest %v", s.ID, gcrPayload.Digest)
 	if parentDigest, hasParent := sc.ParentDigest[gcrPayload.Digest]; hasParent {
 		msg := fmt.Sprintf(
 			"(%s) TRANSACTION VERIFIED: %v: agrees with manifest (parent digest %v)\n", s.ID, gcrPayload, parentDigest)
 		logInfo.Println(msg)
-		klog.Infoln(msg)
+		logrus.Infoln(msg)
 		_, _ = w.Write([]byte(msg))
 
 		return

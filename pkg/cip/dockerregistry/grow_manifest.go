@@ -22,9 +22,8 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
-
-	"k8s.io/klog/v2"
 )
 
 const (
@@ -136,7 +135,7 @@ func WriteImages(manifest Manifest, rii RegInvImage) error {
 	// Construct path to the images.yaml.
 	imagesPath := path.Join(p, "..", "..",
 		"images", stagingRepoName, "images.yaml")
-	klog.Infoln("RENDER", imagesPath)
+	logrus.Infoln("RENDER", imagesPath)
 
 	// Write the file.
 	err := ioutil.WriteFile(
@@ -153,7 +152,7 @@ func FindManifest(o *GrowManifestOptions) (Manifest, error) {
 		return Manifest{}, err
 	}
 
-	klog.Infof("%d manifests parsed", len(manifests))
+	logrus.Infof("%d manifests parsed", len(manifests))
 	for _, manifest := range manifests {
 		if manifest.SrcRegistry.Name == o.StagingRepo {
 			return manifest, nil

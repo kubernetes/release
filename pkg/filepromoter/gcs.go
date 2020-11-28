@@ -26,10 +26,9 @@ import (
 	"strings"
 
 	"cloud.google.com/go/storage"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/api/iterator"
 
-	// TODO: Use k/release/pkg/log instead
-	"k8s.io/klog/v2"
 	api "k8s.io/release/pkg/api/files"
 	"k8s.io/release/pkg/object"
 )
@@ -61,7 +60,7 @@ func (s *gcsSyncFilestore) UploadFile(ctx context.Context, dest, localFile strin
 	}
 	defer func() {
 		if err := in.Close(); err != nil {
-			klog.Warningf("error closing %q: %v", localFile, err)
+			logrus.Warnf("error closing %q: %v", localFile, err)
 		}
 	}()
 
@@ -79,7 +78,7 @@ func (s *gcsSyncFilestore) UploadFile(ctx context.Context, dest, localFile strin
 		}
 	}
 
-	klog.Infof("uploading to %s", gcsURL)
+	logrus.Infof("uploading to %s", gcsURL)
 
 	w := s.client.Bucket(s.bucket).Object(absolutePath).NewWriter(ctx)
 
@@ -92,7 +91,7 @@ func (s *gcsSyncFilestore) UploadFile(ctx context.Context, dest, localFile strin
 
 	if _, err := io.Copy(w, in); err != nil {
 		if err2 := w.Close(); err2 != nil {
-			klog.Warningf("error closing upload stream: %v", err)
+			logrus.Warnf("error closing upload stream: %v", err)
 			// TODO: Try to delete the possibly partially written file?
 		}
 		return fmt.Errorf("error uploading to %q: %v", gcsURL, err)
@@ -111,7 +110,7 @@ func (s *gcsSyncFilestore) ListFiles(
 	files := make(map[string]*syncFileInfo)
 
 	q := &storage.Query{Prefix: s.prefix}
-	klog.Infof("listing files in bucket %s with prefix %q", s.bucket, s.prefix)
+	logrus.Infof("listing files in bucket %s with prefix %q", s.bucket, s.prefix)
 	it := s.client.Bucket(s.bucket).Objects(ctx, q)
 	for {
 		obj, err := it.Next()

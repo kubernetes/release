@@ -23,10 +23,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/sirupsen/logrus"
 	gogit "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 
-	"k8s.io/klog/v2"
 	reg "k8s.io/release/pkg/cip/dockerregistry"
 )
 
@@ -77,7 +77,7 @@ func (remote *Git) Fetch() ([]reg.Manifest, error) {
 		// We don't really care too much about failures about removing the
 		// (temporary) repoPath directory, because we'll clone a fresh one
 		// anyway in the future. So don't return an error even if this fails.
-		klog.Errorf("Could not remove temporary Git repo %v: %v", repoPath, err)
+		logrus.Errorf("Could not remove temporary Git repo %v: %v", repoPath, err)
 	}
 
 	return manifests, nil
@@ -103,7 +103,7 @@ func cloneToTempDir(
 
 	sha, err := getHeadSha(r)
 	if err == nil {
-		klog.Infof("cloned %v at revision %v", tdir, sha)
+		logrus.Infof("cloned %v at revision %v", tdir, sha)
 	}
 
 	return tdir, nil

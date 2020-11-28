@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 
-	// TODO: Use k/release/pkg/log instead
-	"k8s.io/klog/v2"
+	"github.com/sirupsen/logrus"
+
 	api "k8s.io/release/pkg/api/files"
 )
 
@@ -51,7 +51,7 @@ func (p *ManifestPromoter) BuildOperations(
 		if filestore.Src {
 			continue
 		}
-		klog.Infof("processing destination %q", filestore.Base)
+		logrus.Infof("processing destination %q", filestore.Base)
 		fp := &FilestorePromoter{
 			Source:            source,
 			Dest:              filestore,

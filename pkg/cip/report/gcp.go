@@ -20,8 +20,7 @@ import (
 	"context"
 
 	"cloud.google.com/go/errorreporting"
-
-	"k8s.io/klog/v2"
+	"github.com/sirupsen/logrus"
 )
 
 // NewGcpErrorReportingClient returns a new Stackdriver Error Reporting client.
@@ -34,11 +33,11 @@ func NewGcpErrorReportingClient(
 		ServiceName: serviceName,
 		OnError: func(err error) {
 			// nolint[lll]
-			klog.Errorf("Could not log error to GCP Stackdriver Error Reporting: %v", err)
+			logrus.Errorf("Could not log error to GCP Stackdriver Error Reporting: %v", err)
 		},
 	})
 	if err != nil {
-		klog.Fatalf("Failed to create errorreporting client: %v", err)
+		logrus.Fatalf("Failed to create errorreporting client: %v", err)
 	}
 
 	return erc

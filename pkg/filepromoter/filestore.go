@@ -24,10 +24,9 @@ import (
 	"strings"
 
 	"cloud.google.com/go/storage"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/api/option"
 
-	// TODO: Use k/release/pkg/log instead
-	"k8s.io/klog/v2"
 	api "k8s.io/release/pkg/api/files"
 	"k8s.io/release/pkg/object"
 )
@@ -140,7 +139,7 @@ func (p *FilestorePromoter) computeNeededOperations(
 
 		changed := false
 		if destFile.MD5 != sourceFile.MD5 {
-			klog.Warningf("MD5 mismatch on source %q vs dest %q: %q vs %q",
+			logrus.Warnf("MD5 mismatch on source %q vs dest %q: %q vs %q",
 				sourceFile.AbsolutePath,
 				destFile.AbsolutePath,
 				sourceFile.MD5,
@@ -149,7 +148,7 @@ func (p *FilestorePromoter) computeNeededOperations(
 		}
 
 		if destFile.Size != sourceFile.Size {
-			klog.Warningf("Size mismatch on source %q vs dest %q: %d vs %d",
+			logrus.Warnf("Size mismatch on source %q vs dest %q: %d vs %d",
 				sourceFile.AbsolutePath,
 				destFile.AbsolutePath,
 				sourceFile.Size,
@@ -158,7 +157,7 @@ func (p *FilestorePromoter) computeNeededOperations(
 		}
 
 		if !changed {
-			klog.V(2).Infof("metadata match for %q", destFile.AbsolutePath)
+			logrus.Infof("metadata match for %q", destFile.AbsolutePath)
 			continue
 		}
 		ops = append(ops, &copyFileOp{

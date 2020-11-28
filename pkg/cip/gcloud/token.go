@@ -25,7 +25,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"k8s.io/klog/v2"
+	"github.com/sirupsen/logrus"
 )
 
 // Token is the oauth2 access token used for API calls over HTTP.
@@ -53,7 +53,7 @@ func GetServiceAccountToken(
 
 	err := cmd.Run()
 	if err != nil {
-		klog.Errorf("could not execute cmd %v", cmd)
+		logrus.Errorf("could not execute cmd %v", cmd)
 		return "", err
 	}
 
@@ -85,12 +85,12 @@ func ActivateServiceAccounts(keyFilePaths string) error {
 			break
 		}
 		if err != nil {
-			klog.Exitln(err)
+			logrus.Fatal(err)
 		}
 
 		for _, keyFilePath := range record {
 			if err := ActivateServiceAccount(keyFilePath); err != nil {
-				klog.Exitln(err)
+				logrus.Fatal(err)
 			}
 		}
 	}
