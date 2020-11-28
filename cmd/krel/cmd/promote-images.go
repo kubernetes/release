@@ -203,7 +203,7 @@ func runPromote(opts *promoteOptions) error {
 			}
 
 			logrus.Infof("Growing manifests with images matching tag %s", tag)
-			if err := reg.GrowManifest(ctx, opt); err != nil {
+			if err := reg.GrowManifest(ctx, &opt); err != nil {
 				return errors.Wrapf(err, "Growing manifest with tag %s", tag)
 			}
 		}
