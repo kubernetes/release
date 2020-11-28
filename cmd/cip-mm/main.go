@@ -117,5 +117,5 @@ func run() error {
 	}
 
 	ctx := context.Background()
-	return reg.GrowManifest(ctx, opt)
+	return reg.GrowManifest(ctx, &opt)
 }

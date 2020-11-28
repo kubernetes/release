@@ -102,7 +102,7 @@ func TestFindManifest(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		gotManifest, gotErr := reg.FindManifest(test.input)
+		gotManifest, gotErr := reg.FindManifest(&test.input)
 		if test.expectedErr != nil {
 			require.NotNil(t, gotErr)
 			require.Error(t, gotErr, test.expectedErr.Error())
@@ -291,7 +291,7 @@ func TestApplyFilters(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		gotRii, gotErr := reg.ApplyFilters(test.inputOptions, test.inputRii)
+		gotRii, gotErr := reg.ApplyFilters(&test.inputOptions, test.inputRii)
 		if test.expectedErr != nil {
 			require.NotNil(t, gotErr)
 			require.Error(t, gotErr, test.expectedErr.Error())
