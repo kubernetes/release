@@ -28,12 +28,12 @@ import (
 	"sync"
 
 	containeranalysis "cloud.google.com/go/containeranalysis/apiv1"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/api/iterator"
 	grafeaspb "google.golang.org/genproto/googleapis/grafeas/v1"
 	gogit "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 
-	"k8s.io/klog/v2"
 	"k8s.io/release/pkg/cip/stream"
 )
 
@@ -354,7 +354,7 @@ func (check *ImageVulnCheck) Run() error {
 					})
 					fixableSevereOccurrences++
 				} else {
-					klog.Error(vulnErr)
+					logrus.Error(vulnErr)
 				}
 			}
 

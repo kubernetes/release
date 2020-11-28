@@ -25,8 +25,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	// TODO: Use k/release/pkg/log instead
-	"k8s.io/klog/v2"
+	"github.com/sirupsen/logrus"
+
 	api "k8s.io/release/pkg/api/files"
 )
 
@@ -66,14 +66,14 @@ func (o *copyFileOp) Run(ctx context.Context) error {
 	defer func() {
 		if f != nil {
 			if err := f.Close(); err != nil {
-				klog.Warningf(
+				logrus.Warnf(
 					"error closing temp file %q: %v",
 					tempFilename, err)
 			}
 		}
 
 		if err := os.Remove(tempFilename); err != nil {
-			klog.Warningf(
+			logrus.Warnf(
 				"unable to remove temp file %q: %v",
 				tempFilename, err)
 		}
@@ -134,7 +134,7 @@ func ComputeSHA256ForFile(filename string) (string, error) {
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
-			klog.Warningf(
+			logrus.Warnf(
 				"error closing file %q: %v",
 				filename, err)
 		}

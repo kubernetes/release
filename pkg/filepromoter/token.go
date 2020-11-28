@@ -19,10 +19,9 @@ package filepromoter
 import (
 	"sync"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
-	// TODO: Use k/release/pkg/log instead
-	"k8s.io/klog/v2"
 	"k8s.io/release/pkg/cip/gcloud"
 )
 
@@ -37,11 +36,11 @@ func (s *gcloudTokenSource) Token() (*oauth2.Token, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	klog.Infof("getting service-account-token for %q", s.ServiceAccount)
+	logrus.Infof("getting service-account-token for %q", s.ServiceAccount)
 
 	token, err := gcloud.GetServiceAccountToken(s.ServiceAccount, true)
 	if err != nil {
-		klog.Warningf("failed to get service-account-token for %q: %v",
+		logrus.Warnf("failed to get service-account-token for %q: %v",
 			s.ServiceAccount, err)
 		return nil, err
 	}

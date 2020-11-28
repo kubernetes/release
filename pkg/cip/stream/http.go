@@ -23,7 +23,7 @@ import (
 	"net/http"
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/sirupsen/logrus"
 )
 
 // HTTP is a wrapper around the net/http's Request type.
@@ -60,7 +60,7 @@ func (h *HTTP) Produce() (stdOut, stdErr io.Reader, err error) {
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(h.Res.Body)
 	if err != nil {
-		klog.Errorf("could not read from HTTP response body")
+		logrus.Errorf("could not read from HTTP response body")
 		return nil, nil, fmt.Errorf(
 			"problems encountered: unexpected response code %d",
 			h.Res.StatusCode,

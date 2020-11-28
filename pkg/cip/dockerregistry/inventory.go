@@ -38,7 +38,6 @@ import (
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 
-	"k8s.io/klog/v2"
 	"k8s.io/release/pkg/cip/gcloud"
 	cipJson "k8s.io/release/pkg/cip/json"
 	"k8s.io/release/pkg/cip/stream"
@@ -121,10 +120,10 @@ func MakeSyncContext(
 func (sc *SyncContext) LogJSONSummary() {
 	marshalled, err := json.MarshalIndent(sc.Logs, "", "  ")
 	if err != nil {
-		klog.Infof("There was a problem generating the JSON summary: %v",
+		logrus.Infof("There was a problem generating the JSON summary: %v",
 			err)
 	} else {
-		klog.Info(string(marshalled))
+		logrus.Info(string(marshalled))
 	}
 }
 
@@ -248,7 +247,7 @@ func ParseThinManifestsFromDir(
 
 		if err != nil {
 			// Prevent panic in case of incoming errors accessing this path.
-			klog.Errorf("failure accessing a path %q: %v\n", path, err)
+			logrus.Errorf("failure accessing a path %q: %v\n", path, err)
 		}
 
 		// Skip directories (because they are not YAML files).
@@ -275,7 +274,7 @@ func ParseThinManifestsFromDir(
 
 		mfest, errParse := ParseThinManifestFromFile(path)
 		if errParse != nil {
-			klog.Errorf("could not parse manifest file '%s'\n", path)
+			logrus.Errorf("could not parse manifest file '%s'\n", path)
 			return errParse
 		}
 
@@ -325,7 +324,7 @@ func ValidateThinManifestDirectoryStructure(
 		return err
 	}
 
-	klog.Infof("*looking at %q", dir)
+	logrus.Infof("*looking at %q", dir)
 	for _, file := range files {
 		p, err := os.Stat(filepath.Join(manifestDir, file.Name()))
 		if err != nil {
@@ -343,11 +342,11 @@ func ValidateThinManifestDirectoryStructure(
 				file.Name(),
 				"promoter-manifest.yaml"))
 		if err != nil {
-			klog.Warningln(err)
+			logrus.Warningln(err)
 			continue
 		}
 		if !manifestInfo.Mode().IsRegular() {
-			klog.Warningf("ignoring irregular file %q", manifestInfo)
+			logrus.Warnf("ignoring irregular file %q", manifestInfo)
 			continue
 		}
 
@@ -477,10 +476,9 @@ func (sc *SyncContext) GetPromotionCandidates(edges map[PromotionEdge]interface{
 	toPromote := make(map[PromotionEdge]interface{})
 	// nolint[lll]
 	for edge := range edges {
-		// If the edge should be ignored because of a bad read in sc.Inv, drop
-		// it (complain with klog though).
+		// If the edge should be ignored because of a bad read in sc.Inv, drop it
 		if img, ok := ignoreMap[edge.SrcImageTag.ImageName]; ok {
-			klog.Warningf("edge %v: ignoring because src image could not be read: %s\n", edge, img)
+			logrus.Warnf("edge %v: ignoring because src image could not be read: %s\n", edge, img)
 			continue
 		}
 
@@ -488,7 +486,7 @@ func (sc *SyncContext) GetPromotionCandidates(edges map[PromotionEdge]interface{
 
 		// If dst vertex exists, NOP.
 		if dp.PqinDigestMatch {
-			klog.Infof("edge %v: skipping because it was already promoted (case 1)\n", edge)
+			logrus.Infof("edge %v: skipping because it was already promoted (case 1)\n", edge)
 			continue
 		}
 
@@ -497,7 +495,7 @@ func (sc *SyncContext) GetPromotionCandidates(edges map[PromotionEdge]interface{
 		if edge.DstImageTag.Tag == "" && dp.DigestExists {
 			// Still, log a warning if the source is missing the image.
 			if !sp.DigestExists {
-				klog.Errorf("edge %v: skipping %s/%s@%s because it was already promoted, but it is still _LOST_ (can't find it in src registry! please backfill it!)\n", edge, edge.SrcRegistry.Name, edge.SrcImageTag.ImageName, edge.Digest)
+				logrus.Errorf("edge %v: skipping %s/%s@%s because it was already promoted, but it is still _LOST_ (can't find it in src registry! please backfill it!)\n", edge, edge.SrcRegistry.Name, edge.SrcImageTag.ImageName, edge.Digest)
 			}
 			continue
 		}
@@ -505,7 +503,7 @@ func (sc *SyncContext) GetPromotionCandidates(edges map[PromotionEdge]interface{
 		// If src vertex missing, LOST && NOP. We just need the digest to exist
 		// in src (we don't care if it points to the wrong tag).
 		if !sp.DigestExists {
-			klog.Errorf("edge %v: skipping %s/%s@%s because it is _LOST_ (can't find it in src registry!)\n", edge, edge.SrcRegistry.Name, edge.SrcImageTag.ImageName, edge.Digest)
+			logrus.Errorf("edge %v: skipping %s/%s@%s because it is _LOST_ (can't find it in src registry!)\n", edge, edge.SrcRegistry.Name, edge.SrcImageTag.ImageName, edge.Digest)
 			continue
 		}
 
@@ -515,10 +513,10 @@ func (sc *SyncContext) GetPromotionCandidates(edges map[PromotionEdge]interface{
 				// a different tag, then it's an error.
 				if dp.PqinDigestMatch {
 					// NOP (already promoted).
-					klog.Infof("edge %v: skipping because it was already promoted (case 2)\n", edge)
+					logrus.Infof("edge %v: skipping because it was already promoted (case 2)\n", edge)
 					continue
 				} else {
-					klog.Errorf("edge %v: tag %s: ERROR: tag move detected from %s to %s", edge, edge.DstImageTag.Tag, edge.Digest, *sc.getDigestForTag(edge.DstImageTag.Tag))
+					logrus.Errorf("edge %v: tag %s: ERROR: tag move detected from %s to %s", edge, edge.DstImageTag.Tag, edge.Digest, *sc.getDigestForTag(edge.DstImageTag.Tag))
 					clean = false
 					// We continue instead of returning early, because we want
 					// to see and log as many errors as possible as we go
@@ -527,16 +525,16 @@ func (sc *SyncContext) GetPromotionCandidates(edges map[PromotionEdge]interface{
 				}
 			} else {
 				// Pqin points to the wrong digest.
-				klog.Warningf("edge %v: tag %s points to the wrong digest; moving\n", edge, dp.BadDigest)
+				logrus.Warnf("edge %v: tag %s points to the wrong digest; moving\n", edge, dp.BadDigest)
 			}
 		} else {
 			if dp.DigestExists {
 				// Digest exists in dst, but the pqin we desire does not
 				// exist. Just add the pqin to this existing digest.
-				klog.Infof("edge %v: digest %q already exists, but does not have the pqin we want (%s)\n", edge, edge.Digest, dp.OtherTags)
+				logrus.Infof("edge %v: digest %q already exists, but does not have the pqin we want (%s)\n", edge, edge.Digest, dp.OtherTags)
 			} else {
 				// Neither the digest nor the pqin exists in dst.
-				klog.Infof("edge %v: regular promotion (neither digest nor pqin exists in dst)\n", edge)
+				logrus.Infof("edge %v: regular promotion (neither digest nor pqin exists in dst)\n", edge)
 			}
 		}
 
@@ -615,25 +613,25 @@ func CheckOverlappingEdges(
 			for _, edgeList := range digestToEdges {
 				switch len(edgeList) {
 				case 0:
-					klog.Errorf("no edges for %v", pqin)
+					logrus.Errorf("no edges for %v", pqin)
 					emptyEdgeListError = true
 				case 1:
 					checked[edgeList[0]] = nil
 				default:
-					klog.Infof("redundant promotion: multiple edges want to promote the same digest to the same destination endpoint %v:", pqin)
+					logrus.Infof("redundant promotion: multiple edges want to promote the same digest to the same destination endpoint %v:", pqin)
 					for _, edge := range edgeList {
-						klog.Infof("%v", edge)
+						logrus.Infof("%v", edge)
 					}
-					klog.Infof("using the first one: %v", edgeList[0])
+					logrus.Infof("using the first one: %v", edgeList[0])
 					checked[edgeList[0]] = nil
 				}
 			}
 		} else {
-			klog.Errorf("multiple edges want to promote *different* images (digests) to the same destination endpoint %v:", pqin)
+			logrus.Errorf("multiple edges want to promote *different* images (digests) to the same destination endpoint %v:", pqin)
 			for digest, edgeList := range digestToEdges {
-				klog.Errorf("  for digest %v:\n", digest)
+				logrus.Errorf("  for digest %v:\n", digest)
 				for _, edge := range edgeList {
-					klog.Errorf("%v\n", edge)
+					logrus.Errorf("%v\n", edge)
 				}
 			}
 			overlapError = true
@@ -892,7 +890,7 @@ func (mi *MasterInventory) PrettyValue() string {
 	for _, regName := range regNames {
 		v, ok := (*mi)[regName]
 		if !ok {
-			klog.Error("corrupt MasterInventory")
+			logrus.Error("corrupt MasterInventory")
 			return ""
 		}
 
@@ -997,7 +995,7 @@ func getRegistryTagsWrapper(
 		notify,
 	)
 	if err != nil {
-		klog.Error(err)
+		logrus.Error(err)
 		return nil, err
 	}
 
@@ -1008,7 +1006,7 @@ func getRegistryTagsFrom(req stream.ExternalRequest,
 ) (*ggcrV1Google.Tags, error) {
 	reader, _, err := req.StreamProducer.Produce()
 	if err != nil {
-		klog.Warning("error reading from stream:", err)
+		logrus.Warning("error reading from stream:", err)
 		// Skip ggcrV1Google.Tags JSON parsing if there were errors reading from
 		// the HTTP stream.
 		return nil, err
@@ -1019,7 +1017,7 @@ func getRegistryTagsFrom(req stream.ExternalRequest,
 
 	tags, err := extractRegistryTags(reader)
 	if err != nil {
-		klog.Warning("error parsing *ggcrV1Google.Tags from io.Reader handle:",
+		logrus.Warn("error parsing *ggcrV1Google.Tags from io.Reader handle:",
 			err)
 		return nil, err
 	}
@@ -1051,7 +1049,7 @@ func getGCRManifestListWrapper(
 		notify,
 	)
 	if err != nil {
-		klog.Error(err)
+		logrus.Error(err)
 		return nil, err
 	}
 
@@ -1061,7 +1059,7 @@ func getGCRManifestListWrapper(
 func getGCRManifestListFrom(req stream.ExternalRequest) (*ggcrV1.IndexManifest, error) {
 	reader, _, err := req.StreamProducer.Produce()
 	if err != nil {
-		klog.Warning("error reading from stream:", err)
+		logrus.Warn("error reading from stream:", err)
 		return nil, err
 	}
 
@@ -1070,8 +1068,7 @@ func getGCRManifestListFrom(req stream.ExternalRequest) (*ggcrV1.IndexManifest, 
 
 	gcrManifestList, err := extractGCRManifestList(reader)
 	if err != nil {
-		// nolint[lll]
-		klog.Warningf("for request %s: error parsing GCRManifestList from io.Reader handle: %s", req.RequestParams, err)
+		logrus.Warnf("for request %s: error parsing GCRManifestList from io.Reader handle: %s", req.RequestParams, err)
 		return nil, err
 	}
 
@@ -1147,11 +1144,11 @@ func (sc *SyncContext) IgnoreFromPromotion(regName RegistryName) {
 	// "foo/bar/baz".
 	_, imgName, err := ParseContainerParts(string(regName))
 	if err != nil {
-		klog.Errorf("unable to ignore from promotion: %s\n", err)
+		logrus.Errorf("unable to ignore from promotion: %s\n", err)
 		return
 	}
 
-	klog.Infof("ignoring from promotion: %s\n", imgName)
+	logrus.Infof("ignoring from promotion: %s\n", imgName)
 	sc.InvIgnore = append(sc.InvIgnore, ImageName(imgName))
 }
 
@@ -1202,7 +1199,7 @@ func (sc *SyncContext) PopulateTokens() error {
 	for _, rc := range sc.RegistryContexts {
 		token, err := gcloud.GetServiceAccountToken(rc.ServiceAccount, sc.UseServiceAccount)
 		if err != nil {
-			klog.Errorf(
+			logrus.Errorf(
 				"could not get service account token for %v",
 				rc.ServiceAccount,
 			)
@@ -1352,7 +1349,7 @@ func (sc *SyncContext) ReadRegistries(
 			if len(digestTags) > 0 {
 				rootReg, imageName, err := SplitByKnownRegistries(rName, sc.RegistryContexts)
 				if err != nil {
-					klog.Exitln(err)
+					logrus.Fatal(err)
 				}
 
 				currentRepo := make(RegInvImage)
@@ -1610,7 +1607,7 @@ func MkReadRepositoryCmdReal(
 		nil,
 	)
 	if err != nil {
-		klog.Fatalf(
+		logrus.Fatalf(
 			"could not create HTTP request for '%s/%s'",
 			domain,
 			repoPath)
@@ -1619,7 +1616,7 @@ func MkReadRepositoryCmdReal(
 	if sc.UseServiceAccount {
 		token, ok := sc.Tokens[RootRepo(tokenKey)]
 		if !ok {
-			klog.Exitf("access token for key '%s' not found\n", tokenKey)
+			logrus.Fatalf("access token for key '%s' not found\n", tokenKey)
 		}
 
 		rc.Token = token
@@ -1661,7 +1658,7 @@ func MkReadManifestListCmdReal(sc *SyncContext, gmlc GCRManifestListContext) str
 	httpReq.Header.Add("Accept", "*/*")
 
 	if err != nil {
-		klog.Fatalf(
+		logrus.Fatalf(
 			"could not create HTTP request for manifest list '%s/%s/%s:%s'",
 			domain,
 			repoPath,
@@ -1673,7 +1670,7 @@ func MkReadManifestListCmdReal(sc *SyncContext, gmlc GCRManifestListContext) str
 	if sc.UseServiceAccount {
 		token, ok := sc.Tokens[RootRepo(tokenKey)]
 		if !ok {
-			klog.Exitf("access token for key '%s' not found\n", tokenKey)
+			logrus.Fatalf("access token for key '%s' not found\n", tokenKey)
 		}
 
 		bearer := "Bearer " + string(token)
@@ -1718,13 +1715,13 @@ func (sc *SyncContext) ExecRequests(
 				sc.Logs.Errors = append(sc.Logs.Errors, reqRes.Errors...)
 				(*mutex).Unlock()
 
-				klog.Errorf(
+				logrus.Errorf(
 					"Request %v: error(s) encountered: %v\n",
 					reqRes.Context,
 					reqRes.Errors,
 				)
 			} else {
-				klog.Infof("Request %v: OK\n", reqRes.Context.RequestParams)
+				logrus.Infof("Request %v: OK\n", reqRes.Context.RequestParams)
 			}
 
 			wg.Add(-1)
@@ -1771,7 +1768,7 @@ func extractRegistryTags(reader io.Reader) (*ggcrV1Google.Tags, error) {
 			if err == io.EOF {
 				break
 			}
-			klog.Error("DECODING ERROR: ", err)
+			logrus.Error("DECODING ERROR: ", err)
 			return nil, err
 		}
 	}
@@ -1789,7 +1786,7 @@ func extractGCRManifestList(reader io.Reader) (*ggcrV1.IndexManifest, error) {
 			if err == io.EOF {
 				break
 			}
-			klog.Error("DECODING ERROR: ", err)
+			logrus.Error("DECODING ERROR: ", err)
 			return nil, err
 		}
 	}
@@ -1966,14 +1963,14 @@ func MKPopulateRequestsForPromotionEdges(
 ) PopulateRequests {
 	return func(sc *SyncContext, reqs chan<- stream.ExternalRequest, wg *sync.WaitGroup) {
 		if len(toPromote) == 0 {
-			klog.Info("Nothing to promote.")
+			logrus.Info("Nothing to promote.")
 			return
 		}
 
 		if sc.DryRun {
-			klog.Info("---------- BEGIN PROMOTION (DRY RUN) ----------")
+			logrus.Info("---------- BEGIN PROMOTION (DRY RUN) ----------")
 		} else {
-			klog.Info("---------- BEGIN PROMOTION ----------")
+			logrus.Info("---------- BEGIN PROMOTION ----------")
 		}
 
 		for promoteMe := range toPromote {
@@ -1985,7 +1982,7 @@ func MKPopulateRequestsForPromotionEdges(
 			if dp.PqinExists {
 				if !dp.DigestExists {
 					// Pqin points to the wrong digest.
-					klog.Errorf(
+					logrus.Errorf(
 						"edge %v: tag '%s' in dest points to %s, not %s (as per the manifest), but tag moves are not supported; skipping\n",
 						promoteMe,
 						promoteMe.DstImageTag.Tag,
@@ -2030,7 +2027,7 @@ func (sc *SyncContext) RunChecks(preChecks []PreCheck) error {
 	for _, preCheck := range preChecks {
 		err := preCheck.Run()
 		if err != nil {
-			klog.Error(err)
+			logrus.Error(err)
 			preCheckErrs = append(preCheckErrs, err)
 		}
 	}
@@ -2050,7 +2047,7 @@ func (sc *SyncContext) FilterPromotionEdges(
 	if readRepos {
 		regs := getRegistriesToRead(edges)
 		for _, reg := range regs {
-			klog.Info("reading this reg:", reg)
+			logrus.Info("reading this reg:", reg)
 		}
 
 		sc.ReadRegistries(
@@ -2162,13 +2159,13 @@ func (sc *SyncContext) Promote(
 	customProcessRequest *ProcessRequest) error {
 
 	if len(edges) == 0 {
-		klog.Info("Nothing to promote.")
+		logrus.Info("Nothing to promote.")
 		return nil
 	}
 
-	klog.Info("Pending promotions:")
+	logrus.Info("Pending promotions:")
 	for edge := range edges {
-		klog.Infof("  %v\n", edge)
+		logrus.Infof("  %v\n", edge)
 	}
 
 	var populateRequests = MKPopulateRequestsForPromotionEdges(
@@ -2213,15 +2210,15 @@ func (sc *SyncContext) Promote(
 				}
 
 				if err := crane.Copy(srcVertex, dstVertex); err != nil {
-					klog.Error(err)
+					logrus.Error(err)
 					errors = append(errors, Error{
 						Context: "running writeImage()",
 						Error:   err})
 				}
 			case Move:
-				klog.Infof("tag moves are no longer supported")
+				logrus.Infof("tag moves are no longer supported")
 			case Delete:
-				klog.Infof("deletions are no longer supported")
+				logrus.Infof("deletions are no longer supported")
 			}
 
 			reqRes.Errors = errors
@@ -2407,7 +2404,7 @@ func (sc *SyncContext) GarbageCollect(
 				continue
 			}
 			for _, json := range jsons {
-				klog.Info("DELETED image:", json)
+				logrus.Info("DELETED image:", json)
 			}
 			reqRes.Errors = errors
 			requestResults <- reqRes
@@ -2429,7 +2426,7 @@ func (sc *SyncContext) GarbageCollect(
 
 	err := sc.ExecRequests(populateRequests, processRequest)
 	if err != nil {
-		klog.Info(err)
+		logrus.Info(err)
 	}
 
 	if sc.DryRun {
@@ -2531,7 +2528,7 @@ func (sc *SyncContext) ClearRepository(
 			reqRes := RequestResult{Context: req}
 			jsons, errors := getJSONSFromProcess(req)
 			for _, json := range jsons {
-				klog.Info("DELETED image:", json)
+				logrus.Info("DELETED image:", json)
 			}
 			reqRes.Errors = errors
 			requestResults <- reqRes
@@ -2569,12 +2566,12 @@ func (sc *SyncContext) ClearRepository(
 	deleteManifestLists := deleteRequestsPopulator(isEqualTo(ggcrV1Types.DockerManifestList))
 	err := sc.ExecRequests(deleteManifestLists, processRequest)
 	if err != nil {
-		klog.Info(err)
+		logrus.Info(err)
 	}
 	deleteOthers := deleteRequestsPopulator(isNotEqualTo(ggcrV1Types.DockerManifestList))
 	err = sc.ExecRequests(deleteOthers, processRequest)
 	if err != nil {
-		klog.Info(err)
+		logrus.Info(err)
 	}
 
 	if sc.DryRun {
@@ -2607,7 +2604,7 @@ func GetWriteCmd(
 			ToPQIN(dest.Name, destImageName, tag),
 		}
 	default:
-		klog.Exitln("unsupported tag operation:", tp)
+		logrus.Fatalf("unsupported tag operation: %v", tp)
 	}
 
 	// Use the service account if it is desired.
