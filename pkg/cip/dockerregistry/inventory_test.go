@@ -1255,7 +1255,7 @@ func TestReadGManifestLists(t *testing.T) {
 		// test is used to pin the "test" variable from the outer "range"
 		// scope (see scopelint).
 		test := test
-		mkFakeStream1 := func(sc *reg.SyncContext, gmlc reg.GCRManifestListContext) stream.Producer {
+		mkFakeStream1 := func(sc *reg.SyncContext, gmlc *reg.GCRManifestListContext) stream.Producer {
 			var sr stream.Fake
 
 			_, domain, repoPath := reg.GetTokenKeyDomainRepoPath(gmlc.RegistryContext.Name)
@@ -3400,7 +3400,7 @@ func TestMatch(t *testing.T) {
 
 	for _, test := range tests {
 		require.Nil(t, test.gcrPayload.PopulateExtraFields())
-		got := test.gcrPayload.Match(test.mfest)
+		got := test.gcrPayload.Match(&test.mfest)
 
 		require.Equal(t, got, test.expectedMatch)
 	}

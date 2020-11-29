@@ -482,7 +482,7 @@ func (sc *SyncContext) GetPromotionCandidates(edges map[PromotionEdge]interface{
 			continue
 		}
 
-		sp, dp := edge.VertexProps(sc.Inv)
+		sp, dp := edge.VertexProps(&sc.Inv)
 
 		// If dst vertex exists, NOP.
 		if dp.PqinDigestMatch {
@@ -651,29 +651,23 @@ func CheckOverlappingEdges(
 
 // VertexProps determines the properties of each vertex (src and dst) in the
 // edge, depending on the state of the world in the MasterInventory.
-// TODO: Consider passing by pointer (hugeParam)
-// nolint: gocritic
-func (edge PromotionEdge) VertexProps(
-	mi MasterInventory,
-) (VertexProperty, VertexProperty) {
-	d := edge.VertexPropsFor(edge.DstRegistry, edge.DstImageTag, mi)
-	s := edge.VertexPropsFor(edge.SrcRegistry, edge.SrcImageTag, mi)
-
-	return s, d
+func (edge *PromotionEdge) VertexProps(
+	mi *MasterInventory,
+) (d, s VertexProperty) {
+	return edge.VertexPropsFor(&edge.SrcRegistry, &edge.SrcImageTag, mi),
+		edge.VertexPropsFor(&edge.DstRegistry, &edge.DstImageTag, mi)
 }
 
 // VertexPropsFor examines one of the two vertices (src or dst) of a
 // PromotionEdge.
-// TODO: Consider passing by pointer (hugeParam)
-// nolint: gocritic
-func (edge PromotionEdge) VertexPropsFor(
-	rc RegistryContext,
-	imageTag ImageTag,
-	mi MasterInventory,
+func (edge *PromotionEdge) VertexPropsFor(
+	rc *RegistryContext,
+	imageTag *ImageTag,
+	mi *MasterInventory,
 ) VertexProperty {
 	p := VertexProperty{}
 
-	rii, ok := mi[rc.Name]
+	rii, ok := (*mi)[rc.Name]
 	if !ok {
 		return p
 	}
@@ -1413,7 +1407,7 @@ func (sc *SyncContext) ReadRegistries(
 //
 // nolint[gocyclo]
 func (sc *SyncContext) ReadGCRManifestLists(
-	mkProducer func(*SyncContext, GCRManifestListContext) stream.Producer) {
+	mkProducer func(*SyncContext, *GCRManifestListContext) stream.Producer) {
 
 	// Collect all images in sc.Inv (the src and dest registry names found in
 	// the manifest).
@@ -1448,7 +1442,7 @@ func (sc *SyncContext) ReadGCRManifestLists(
 							Tag:             tag,
 							Digest:          digest}
 						req.RequestParams = gmlc
-						req.StreamProducer = mkProducer(sc, gmlc)
+						req.StreamProducer = mkProducer(sc, &gmlc)
 						wg.Add(1)
 						reqs <- req
 					}
@@ -1634,9 +1628,7 @@ func MkReadRepositoryCmdReal(
 //
 // TODO: Consider replacing stream.Producer return type with a simple ([]byte,
 // error) tuple instead.
-// TODO: Consider passing by pointer (hugeParam)
-// nolint: gocritic
-func MkReadManifestListCmdReal(sc *SyncContext, gmlc GCRManifestListContext) stream.Producer {
+func MkReadManifestListCmdReal(sc *SyncContext, gmlc *GCRManifestListContext) stream.Producer {
 	var sh stream.HTTP
 
 	tokenKey, domain, repoPath := GetTokenKeyDomainRepoPath(gmlc.RegistryContext.Name)
@@ -1977,7 +1969,7 @@ func MKPopulateRequestsForPromotionEdges(
 			var req stream.ExternalRequest
 			oldDigest := Digest("")
 
-			_, dp := promoteMe.VertexProps(sc.Inv)
+			_, dp := promoteMe.VertexProps(&sc.Inv)
 
 			if dp.PqinExists {
 				if !dp.DigestExists {
@@ -2671,12 +2663,10 @@ type GcrPayloadMatch struct {
 
 // Match checks whether a GCRPubSubPayload is mentioned in a Manifest. The
 // degree of the match is reflected in the GcrPayloadMatch result.
-// TODO: Consider passing by pointer (hugeParam)
-// nolint: gocritic
-func (payload GCRPubSubPayload) Match(manifest Manifest) GcrPayloadMatch {
+func (payload *GCRPubSubPayload) Match(manifest *Manifest) GcrPayloadMatch {
 	var m GcrPayloadMatch
 	for _, rc := range manifest.Registries {
-		m = payload.matchImages(rc, manifest.Images)
+		m = payload.matchImages(&rc, manifest.Images)
 		if m.PathMatch {
 			return m
 		}
@@ -2684,10 +2674,8 @@ func (payload GCRPubSubPayload) Match(manifest Manifest) GcrPayloadMatch {
 	return m
 }
 
-// TODO: Consider passing by pointer (hugeParam)
-// nolint: gocritic
-func (payload GCRPubSubPayload) matchImages(
-	rc RegistryContext,
+func (payload *GCRPubSubPayload) matchImages(
+	rc *RegistryContext,
 	images []Image,
 ) GcrPayloadMatch {
 	var m GcrPayloadMatch
@@ -2700,7 +2688,7 @@ func (payload GCRPubSubPayload) matchImages(
 	}
 	// Speed up the search by skipping over registry names whose leading
 	// characters do not match.
-	if !strings.HasPrefix(payload.Path, (string)(rc.Name)) {
+	if !strings.HasPrefix(payload.Path, string(rc.Name)) {
 		return m
 	}
 
@@ -2715,16 +2703,14 @@ func (payload GCRPubSubPayload) matchImages(
 	return m
 }
 
-// TODO: Consider passing by pointer (hugeParam)
-// nolint: gocritic
-func (payload GCRPubSubPayload) matchImage(
-	rc RegistryContext,
+func (payload *GCRPubSubPayload) matchImage(
+	rc *RegistryContext,
 	image Image,
 ) GcrPayloadMatch {
 	var m GcrPayloadMatch
 
 	constructedPath := strings.Join(
-		[]string{string(rc.Name), (string)(image.ImageName)}, "/")
+		[]string{string(rc.Name), string(image.ImageName)}, "/")
 	if payload.Path != constructedPath {
 		return m
 	}
@@ -2799,9 +2785,7 @@ func (payload *GCRPubSubPayload) PopulateExtraFields() error {
 
 // Prettified prints the payload in a way that is stable and which hides extra
 // fields which are redundant.
-// TODO: Consider passing by pointer (hugeParam)
-// nolint: gocritic
-func (payload GCRPubSubPayload) String() string {
+func (payload *GCRPubSubPayload) String() string {
 	return fmt.Sprintf(
 		"{Action: %q, FQIN: %q, PQIN: %q, Path: %q, Digest: %q, Tag: %q}",
 		payload.Action,

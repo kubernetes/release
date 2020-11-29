@@ -232,7 +232,7 @@ func (s *ServerContext) Audit(w http.ResponseWriter, r *http.Request) {
 	// (3) Compare GCR state change with the intent of the promoter manifests
 	// (exact digest match on a tagged or tagless image).
 	for _, manifest := range manifests {
-		m := gcrPayload.Match(manifest)
+		m := gcrPayload.Match(&manifest)
 		if (m.DigestMatch || m.TagMatch) &&
 			!m.TagMismatch {
 			msg := fmt.Sprintf(
@@ -285,7 +285,7 @@ func (s *ServerContext) Audit(w http.ResponseWriter, r *http.Request) {
 	// is so that we can query the subproject to figure out all digests that
 	// belong there, so that we can validate the child manifest in the
 	// GCRPubSubPayload.
-	srcRegistries, err := GetMatchingSourceRegistries(manifests, *gcrPayload)
+	srcRegistries, err := GetMatchingSourceRegistries(&manifests, gcrPayload)
 
 	// If we can't find any source registry for this image, then reject the
 	// transaction.
@@ -334,16 +334,14 @@ func (s *ServerContext) Audit(w http.ResponseWriter, r *http.Request) {
 
 // GetMatchingSourceRegistries gets the first source repository that matches the
 // image information inside a GCRPubSubPayload.
-// TODO: Consider passing by pointer (hugeParam)
-// nolint: gocritic
 func GetMatchingSourceRegistries(
-	manifests []reg.Manifest,
-	gcrPayload reg.GCRPubSubPayload,
+	manifests *[]reg.Manifest,
+	gcrPayload *reg.GCRPubSubPayload,
 ) ([]reg.RegistryContext, error) {
 	rcs := []reg.RegistryContext{}
 
-	for _, manifest := range manifests {
-		if !gcrPayload.Match(manifest).PathMatch {
+	for _, manifest := range *manifests {
+		if !gcrPayload.Match(&manifest).PathMatch {
 			continue
 		}
 		// Now that there is a match (at least a PathMatch), just fish out

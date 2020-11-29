@@ -30,7 +30,7 @@ import (
 // nolint[lll]
 type GcrReadingFacility struct {
 	ReadRepo         func(*reg.SyncContext, reg.RegistryContext) stream.Producer
-	ReadManifestList func(*reg.SyncContext, reg.GCRManifestListContext) stream.Producer
+	ReadManifestList func(*reg.SyncContext, *reg.GCRManifestListContext) stream.Producer
 }
 
 // ServerContext holds all of the initialization data for the server to start
