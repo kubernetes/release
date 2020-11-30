@@ -27,6 +27,7 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
+	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
 )
@@ -124,19 +125,17 @@ type FakeImpl struct {
 		result1 string
 		result2 error
 	}
-	GatherReleaseNotesDocumentStub        func(*options.Options, string, string) (*document.Document, error)
-	gatherReleaseNotesDocumentMutex       sync.RWMutex
-	gatherReleaseNotesDocumentArgsForCall []struct {
+	GatherReleaseNotesStub        func(*options.Options) (*notes.ReleaseNotes, error)
+	gatherReleaseNotesMutex       sync.RWMutex
+	gatherReleaseNotesArgsForCall []struct {
 		arg1 *options.Options
-		arg2 string
-		arg3 string
 	}
-	gatherReleaseNotesDocumentReturns struct {
-		result1 *document.Document
+	gatherReleaseNotesReturns struct {
+		result1 *notes.ReleaseNotes
 		result2 error
 	}
-	gatherReleaseNotesDocumentReturnsOnCall map[int]struct {
-		result1 *document.Document
+	gatherReleaseNotesReturnsOnCall map[int]struct {
+		result1 *notes.ReleaseNotes
 		result2 error
 	}
 	GenerateTOCStub        func(string) (string, error)
@@ -190,6 +189,21 @@ type FakeImpl struct {
 	}
 	markdownToHTMLReturnsOnCall map[int]struct {
 		result1 error
+	}
+	NewDocumentStub        func(*notes.ReleaseNotes, string, string) (*document.Document, error)
+	newDocumentMutex       sync.RWMutex
+	newDocumentArgsForCall []struct {
+		arg1 *notes.ReleaseNotes
+		arg2 string
+		arg3 string
+	}
+	newDocumentReturns struct {
+		result1 *document.Document
+		result2 error
+	}
+	newDocumentReturnsOnCall map[int]struct {
+		result1 *document.Document
+		result2 error
 	}
 	OpenRepoStub        func(string) (*git.Repo, error)
 	openRepoMutex       sync.RWMutex
@@ -796,20 +810,18 @@ func (fake *FakeImpl) DependencyChangesReturnsOnCall(i int, result1 string, resu
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) GatherReleaseNotesDocument(arg1 *options.Options, arg2 string, arg3 string) (*document.Document, error) {
-	fake.gatherReleaseNotesDocumentMutex.Lock()
-	ret, specificReturn := fake.gatherReleaseNotesDocumentReturnsOnCall[len(fake.gatherReleaseNotesDocumentArgsForCall)]
-	fake.gatherReleaseNotesDocumentArgsForCall = append(fake.gatherReleaseNotesDocumentArgsForCall, struct {
+func (fake *FakeImpl) GatherReleaseNotes(arg1 *options.Options) (*notes.ReleaseNotes, error) {
+	fake.gatherReleaseNotesMutex.Lock()
+	ret, specificReturn := fake.gatherReleaseNotesReturnsOnCall[len(fake.gatherReleaseNotesArgsForCall)]
+	fake.gatherReleaseNotesArgsForCall = append(fake.gatherReleaseNotesArgsForCall, struct {
 		arg1 *options.Options
-		arg2 string
-		arg3 string
-	}{arg1, arg2, arg3})
-	stub := fake.GatherReleaseNotesDocumentStub
-	fakeReturns := fake.gatherReleaseNotesDocumentReturns
-	fake.recordInvocation("GatherReleaseNotesDocument", []interface{}{arg1, arg2, arg3})
-	fake.gatherReleaseNotesDocumentMutex.Unlock()
+	}{arg1})
+	stub := fake.GatherReleaseNotesStub
+	fakeReturns := fake.gatherReleaseNotesReturns
+	fake.recordInvocation("GatherReleaseNotes", []interface{}{arg1})
+	fake.gatherReleaseNotesMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3)
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -817,47 +829,47 @@ func (fake *FakeImpl) GatherReleaseNotesDocument(arg1 *options.Options, arg2 str
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeImpl) GatherReleaseNotesDocumentCallCount() int {
-	fake.gatherReleaseNotesDocumentMutex.RLock()
-	defer fake.gatherReleaseNotesDocumentMutex.RUnlock()
-	return len(fake.gatherReleaseNotesDocumentArgsForCall)
+func (fake *FakeImpl) GatherReleaseNotesCallCount() int {
+	fake.gatherReleaseNotesMutex.RLock()
+	defer fake.gatherReleaseNotesMutex.RUnlock()
+	return len(fake.gatherReleaseNotesArgsForCall)
 }
 
-func (fake *FakeImpl) GatherReleaseNotesDocumentCalls(stub func(*options.Options, string, string) (*document.Document, error)) {
-	fake.gatherReleaseNotesDocumentMutex.Lock()
-	defer fake.gatherReleaseNotesDocumentMutex.Unlock()
-	fake.GatherReleaseNotesDocumentStub = stub
+func (fake *FakeImpl) GatherReleaseNotesCalls(stub func(*options.Options) (*notes.ReleaseNotes, error)) {
+	fake.gatherReleaseNotesMutex.Lock()
+	defer fake.gatherReleaseNotesMutex.Unlock()
+	fake.GatherReleaseNotesStub = stub
 }
 
-func (fake *FakeImpl) GatherReleaseNotesDocumentArgsForCall(i int) (*options.Options, string, string) {
-	fake.gatherReleaseNotesDocumentMutex.RLock()
-	defer fake.gatherReleaseNotesDocumentMutex.RUnlock()
-	argsForCall := fake.gatherReleaseNotesDocumentArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+func (fake *FakeImpl) GatherReleaseNotesArgsForCall(i int) *options.Options {
+	fake.gatherReleaseNotesMutex.RLock()
+	defer fake.gatherReleaseNotesMutex.RUnlock()
+	argsForCall := fake.gatherReleaseNotesArgsForCall[i]
+	return argsForCall.arg1
 }
 
-func (fake *FakeImpl) GatherReleaseNotesDocumentReturns(result1 *document.Document, result2 error) {
-	fake.gatherReleaseNotesDocumentMutex.Lock()
-	defer fake.gatherReleaseNotesDocumentMutex.Unlock()
-	fake.GatherReleaseNotesDocumentStub = nil
-	fake.gatherReleaseNotesDocumentReturns = struct {
-		result1 *document.Document
+func (fake *FakeImpl) GatherReleaseNotesReturns(result1 *notes.ReleaseNotes, result2 error) {
+	fake.gatherReleaseNotesMutex.Lock()
+	defer fake.gatherReleaseNotesMutex.Unlock()
+	fake.GatherReleaseNotesStub = nil
+	fake.gatherReleaseNotesReturns = struct {
+		result1 *notes.ReleaseNotes
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) GatherReleaseNotesDocumentReturnsOnCall(i int, result1 *document.Document, result2 error) {
-	fake.gatherReleaseNotesDocumentMutex.Lock()
-	defer fake.gatherReleaseNotesDocumentMutex.Unlock()
-	fake.GatherReleaseNotesDocumentStub = nil
-	if fake.gatherReleaseNotesDocumentReturnsOnCall == nil {
-		fake.gatherReleaseNotesDocumentReturnsOnCall = make(map[int]struct {
-			result1 *document.Document
+func (fake *FakeImpl) GatherReleaseNotesReturnsOnCall(i int, result1 *notes.ReleaseNotes, result2 error) {
+	fake.gatherReleaseNotesMutex.Lock()
+	defer fake.gatherReleaseNotesMutex.Unlock()
+	fake.GatherReleaseNotesStub = nil
+	if fake.gatherReleaseNotesReturnsOnCall == nil {
+		fake.gatherReleaseNotesReturnsOnCall = make(map[int]struct {
+			result1 *notes.ReleaseNotes
 			result2 error
 		})
 	}
-	fake.gatherReleaseNotesDocumentReturnsOnCall[i] = struct {
-		result1 *document.Document
+	fake.gatherReleaseNotesReturnsOnCall[i] = struct {
+		result1 *notes.ReleaseNotes
 		result2 error
 	}{result1, result2}
 }
@@ -1108,6 +1120,72 @@ func (fake *FakeImpl) MarkdownToHTMLReturnsOnCall(i int, result1 error) {
 	fake.markdownToHTMLReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
+}
+
+func (fake *FakeImpl) NewDocument(arg1 *notes.ReleaseNotes, arg2 string, arg3 string) (*document.Document, error) {
+	fake.newDocumentMutex.Lock()
+	ret, specificReturn := fake.newDocumentReturnsOnCall[len(fake.newDocumentArgsForCall)]
+	fake.newDocumentArgsForCall = append(fake.newDocumentArgsForCall, struct {
+		arg1 *notes.ReleaseNotes
+		arg2 string
+		arg3 string
+	}{arg1, arg2, arg3})
+	stub := fake.NewDocumentStub
+	fakeReturns := fake.newDocumentReturns
+	fake.recordInvocation("NewDocument", []interface{}{arg1, arg2, arg3})
+	fake.newDocumentMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeImpl) NewDocumentCallCount() int {
+	fake.newDocumentMutex.RLock()
+	defer fake.newDocumentMutex.RUnlock()
+	return len(fake.newDocumentArgsForCall)
+}
+
+func (fake *FakeImpl) NewDocumentCalls(stub func(*notes.ReleaseNotes, string, string) (*document.Document, error)) {
+	fake.newDocumentMutex.Lock()
+	defer fake.newDocumentMutex.Unlock()
+	fake.NewDocumentStub = stub
+}
+
+func (fake *FakeImpl) NewDocumentArgsForCall(i int) (*notes.ReleaseNotes, string, string) {
+	fake.newDocumentMutex.RLock()
+	defer fake.newDocumentMutex.RUnlock()
+	argsForCall := fake.newDocumentArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeImpl) NewDocumentReturns(result1 *document.Document, result2 error) {
+	fake.newDocumentMutex.Lock()
+	defer fake.newDocumentMutex.Unlock()
+	fake.NewDocumentStub = nil
+	fake.newDocumentReturns = struct {
+		result1 *document.Document
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImpl) NewDocumentReturnsOnCall(i int, result1 *document.Document, result2 error) {
+	fake.newDocumentMutex.Lock()
+	defer fake.newDocumentMutex.Unlock()
+	fake.NewDocumentStub = nil
+	if fake.newDocumentReturnsOnCall == nil {
+		fake.newDocumentReturnsOnCall = make(map[int]struct {
+			result1 *document.Document
+			result2 error
+		})
+	}
+	fake.newDocumentReturnsOnCall[i] = struct {
+		result1 *document.Document
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeImpl) OpenRepo(arg1 string) (*git.Repo, error) {
@@ -1895,8 +1973,8 @@ func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	defer fake.currentBranchMutex.RUnlock()
 	fake.dependencyChangesMutex.RLock()
 	defer fake.dependencyChangesMutex.RUnlock()
-	fake.gatherReleaseNotesDocumentMutex.RLock()
-	defer fake.gatherReleaseNotesDocumentMutex.RUnlock()
+	fake.gatherReleaseNotesMutex.RLock()
+	defer fake.gatherReleaseNotesMutex.RUnlock()
 	fake.generateTOCMutex.RLock()
 	defer fake.generateTOCMutex.RUnlock()
 	fake.getURLResponseMutex.RLock()
@@ -1905,6 +1983,8 @@ func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	defer fake.latestGitHubTagsPerBranchMutex.RUnlock()
 	fake.markdownToHTMLMutex.RLock()
 	defer fake.markdownToHTMLMutex.RUnlock()
+	fake.newDocumentMutex.RLock()
+	defer fake.newDocumentMutex.RUnlock()
 	fake.openRepoMutex.RLock()
 	defer fake.openRepoMutex.RUnlock()
 	fake.parseHTMLTemplateMutex.RLock()

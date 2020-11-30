@@ -57,8 +57,9 @@ type impl interface {
 
 	// Used in `generateReleaseNotes()`
 	ValidateAndFinish(opts *options.Options) error
-	GatherReleaseNotesDocument(
-		opts *options.Options, previousRev, currentRev string,
+	GatherReleaseNotes(opts *options.Options) (*notes.ReleaseNotes, error)
+	NewDocument(
+		releaseNotes *notes.ReleaseNotes, previousRev, currentRev string,
 	) (*document.Document, error)
 	RenderMarkdownTemplate(
 		document *document.Document, bucket, fileDir, templateSpec string,
@@ -133,10 +134,16 @@ func (*defaultImpl) ValidateAndFinish(opts *options.Options) error {
 	return opts.ValidateAndFinish()
 }
 
-func (*defaultImpl) GatherReleaseNotesDocument(
-	opts *options.Options, previousRev, currentRev string,
+func (*defaultImpl) GatherReleaseNotes(
+	opts *options.Options,
+) (*notes.ReleaseNotes, error) {
+	return notes.GatherReleaseNotes(opts)
+}
+
+func (*defaultImpl) NewDocument(
+	releaseNotes *notes.ReleaseNotes, previousRev, currentRev string,
 ) (*document.Document, error) {
-	return document.GatherReleaseNotesDocument(opts, previousRev, currentRev)
+	return document.New(releaseNotes, previousRev, currentRev)
 }
 
 func (*defaultImpl) RenderMarkdownTemplate(
