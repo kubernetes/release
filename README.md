@@ -1,49 +1,141 @@
-<!-- BEGIN MUNGE: GENERATED_TOC -->
-- [Kubernetes Release](#kubernetes-release)
-  - [Intro](#intro)
-  - [Tools](#tools)
-  - [Release Notes Gathering](#release-notes-gathering)
-  - [Building Linux Packages](#building-linux-packages)
-  - [Contributing](#contributing)
-<!-- END MUNGE: GENERATED_TOC -->
+# Kubernetes Release Tooling
 
-# Kubernetes Release
+[![PkgGoDev](https://pkg.go.dev/badge/k8s.io/release)](https://pkg.go.dev/k8s.io/release)
+[![Go Report Card](https://goreportcard.com/badge/k8s.io/release)](https://goreportcard.com/report/k8s.io/release)
+[![Slack](https://img.shields.io/badge/Slack-%23release--management-blueviolet)](https://kubernetes.slack.com/archives/C2C40FMNF)
 
-This repo contains the tooling and infrastructure to create Kubernetes releases from the [kubernetes/kubernetes] main repository.
+This repo contains the tooling and infrastructure configurations for creating
+Kubernetes releases from the [kubernetes/kubernetes] main repository.
 
-## Intro
+There are several scripts and helpers in this repository a Release Manager will
+find useful when managing all kinds of releases (alpha, beta, official, rc)
+across branches.
 
-There are several scripts and helpers in this repository a release
-manager will find useful when managing all kinds of releases (alpha,
-beta, official, rc) across branches.
+- [Release Management](#release-management)
+  - [`krel`](#krel)
+  - [`schedule-builder`](#schedule-builder)
+- [Artifact Management](#artifact-management)
+  - [`kpromo`](#kpromo)
+  - [`kubepkg`](#kubepkg)
+  - [`cip-mm`](#cip-mm)
+  - [`gh2gcs`](#gh2gcs)
+  - [`vulndash`](#vulndash)
+- [End User](#end-user)
+  - [`release-notes`](#release-notes)
+  - [`gcbuilder`](#gcbuilder)
+- [Legacy](#legacy)
+  - [`push-build.sh`](#push-buildsh)
+- [Contributing](#contributing)
 
-## Tools
+**Each of the headings below links to a tool's location in the repository.**
 
-Most tools in this repo run by default in *mock* mode to allow for ease in
-development and testing.
+## Release Management
 
-Tools | Description
- :---: | --
-[`krel`](/cmd/krel)                     | Kubernetes Release Toolbox<br/>This is the new golang based tool for managing releases
-[`release-notes`](/cmd/release-notes)   | Scrape GitHub for release notes.<br/>See [Release Notes Gathering](#release-notes-gathering) for more information.
-[`push-build.sh`](/push-build.sh)       | Pushes a developer build or CI Jenkins build up to GCS.
+### [`krel`](/cmd/krel)
 
-For information on how to use `krel`, see the [Branch Manager Handbook]
+**K**ubernetes **rel**ease Toolbox: tooling for releasing Kubernetes
 
-[kubernetes/kubernetes]: https://git.k8s.io/kubernetes
-[Branch Manager Handbook]: https://git.k8s.io/sig-release/release-engineering/role-handbooks/branch-manager.md
-[shot-issue]: https://github.com/kubernetes/sig-release/issues/756#issuecomment-520721968
+Status: Feature Complete
 
-## Release Notes Gathering
+Audience: [Release Managers][release-managers]
 
-For more extensive build and usage documentation for the `release-notes` tool, see the [documentation](./cmd/release-notes/README.md).
+Details: [Documentation](/docs/krel/README.md)
 
-Once the tool is installed, use `release-notes -h/--help`.
+### [`schedule-builder`](/cmd/schedule-builder)
 
-## Building Linux Packages
+Generate a Markdown schedule for Kubernetes releases.
 
-See the [`kubepkg`](/cmd/kubepkg/README.md) documentation for instructions on how to build debs and rpms.
+Status: In Progress
+
+Audience: [Release Managers][release-managers]
+
+Details: [Documentation](/cmd/schedule-builder/README.md)
+
+## Artifact Management
+
+### [`kpromo`](/cmd/kpromo)
+
+**K**ubernetes artifact **promo**tion tooling: tooling for promoting artifacts
+
+Status: In Progress
+
+Audience: [Release Managers][release-managers] and subproject maintainers
+responsible for promoting file or container artifacts
+
+Details: [Documentation](/cmd/kpromo/README.md)
+
+### [`kubepkg`](/cmd/kubepkg)
+
+Create Kubernetes deb/rpm packages.
+
+Status: In Progress
+
+Audience: [Release Managers][release-managers]
+
+Details: [Documentation](/cmd/kubepkg/README.md)
+
+### [`cip-mm`](/cmd/cip-mm)
+
+Modify container image manifests for promotion.
+
+Status: In Progress
+
+Details: [Documentation](/cmd/cip-mm/README.md)
+
+### [`gh2gcs`](/cmd/gh2gcs)
+
+Upload GitHub release assets to Google Cloud Storage.
+
+Status: In Progress
+
+Audience: [Release Managers][release-managers] and subproject maintainers
+responsible for promoting container artifacts
+
+Details: [Documentation](/cmd/gh2gcs/README.md)
+
+### [`vulndash`](/cmd/vulndash)
+
+Generate a dashboard of container image vulnerabilities.
+
+Status: In Progress
+
+Audience: [Release Managers][release-managers]
+
+Details: [Documentation](/docs/vuln-dashboard.md)
+
+## End User
+
+### [`release-notes`](/cmd/release-notes)
+
+Scrape GitHub pull requests for release notes.
+
+Status: Feature Complete
+
+Details: [Documentation](/cmd/release-notes/README.md)
+
+### [`gcbuilder`](/cmd/gcbuilder)
+
+General purpose tool for triggering Google Cloud Build (GCB) runs with
+substitutions.
+
+Status: Unused
+
+Details: [Documentation](/cmd/gcbuilder/README.md)
+
+## Legacy
+
+### [`push-build.sh`](push-build.sh)
+
+Push a CI build of Kubernetes to Google Cloud Storage (GCS).
+
+Status: Deprecated (but still in use)
+
+Audience: [Release Managers][release-managers], Prowjobs
 
 ## Contributing
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how to contribute.
+
+[kubernetes/kubernetes]: https://git.k8s.io/kubernetes
+[Branch Manager Handbook]: https://git.k8s.io/sig-release/release-engineering/role-handbooks/branch-manager.md
+[release-managers]: https://git.k8s.io/sig-release/release-managers.md
