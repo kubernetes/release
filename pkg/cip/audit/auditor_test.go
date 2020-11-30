@@ -851,7 +851,7 @@ func TestAudit(t *testing.T) {
 			return &sr
 		}
 
-		fakeReadManifestList := func(sc *reg.SyncContext, gmlc reg.GCRManifestListContext) stream.Producer {
+		fakeReadManifestList := func(sc *reg.SyncContext, gmlc *reg.GCRManifestListContext) stream.Producer {
 			var sr stream.Fake
 
 			_, domain, repoPath := reg.GetTokenKeyDomainRepoPath(gmlc.RegistryContext.Name)
@@ -933,7 +933,7 @@ func initFakeServerContext(
 	reportingFacility report.ReportingFacility,
 	loggingFacility logclient.LoggingFacility,
 	fakeReadRepo func(*reg.SyncContext, reg.RegistryContext) stream.Producer,
-	fakeReadManifestList func(*reg.SyncContext, reg.GCRManifestListContext) stream.Producer,
+	fakeReadManifestList func(*reg.SyncContext, *reg.GCRManifestListContext) stream.Producer,
 ) audit.ServerContext {
 	remoteManifestFacility := remotemanifest.NewFake(manifests)
 

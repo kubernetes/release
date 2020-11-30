@@ -404,9 +404,7 @@ func IsSevereOccurrence(
 	return int(severityLevel) >= severityThreshold
 }
 
-// TODO: Consider passing by pointer (hugeParam)
-// nolint: gocritic
-func parseImageProjectID(edge PromotionEdge) (string, error) {
+func parseImageProjectID(edge *PromotionEdge) (string, error) {
 	const projectIDIndex = 1
 	splitName := strings.Split(string(edge.SrcRegistry.Name), "/")
 	if len(splitName) <= projectIDIndex {
@@ -428,7 +426,8 @@ func mkRealVulnProducer(client *containeranalysis.Client) ImageVulnProducer {
 		// resourceURL is of the form https://gcr.io/[projectID]/my-image
 		resourceURL := "https://" + path.Join(string(edge.SrcRegistry.Name),
 			string(edge.SrcImageTag.ImageName)) + "@" + string(edge.Digest)
-		projectID, err := parseImageProjectID(edge)
+
+		projectID, err := parseImageProjectID(&edge)
 		if err != nil {
 			return nil, fmt.Errorf("ParsingProjectID: %v", err)
 		}
