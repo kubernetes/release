@@ -26,6 +26,7 @@ import (
 	"k8s.io/release/pkg/changelog"
 	"k8s.io/release/pkg/changelog/changelogfakes"
 	"k8s.io/release/pkg/github"
+	"k8s.io/release/pkg/notes"
 )
 
 func TestRun(t *testing.T) {
@@ -49,6 +50,7 @@ func TestRun(t *testing.T) {
 					},
 				}, nil)
 				mock.ReadFileReturns([]byte(changelog.TocEnd), nil)
+				mock.GatherReleaseNotesReturns(&notes.ReleaseNotes{}, nil)
 			},
 			shouldErr: false,
 		},
@@ -60,6 +62,7 @@ func TestRun(t *testing.T) {
 					Patch: 3,
 				}, nil)
 				mock.ReadFileReturns([]byte(changelog.TocEnd), nil)
+				mock.GatherReleaseNotesReturns(&notes.ReleaseNotes{}, nil)
 			},
 			shouldErr: false,
 		},
@@ -77,6 +80,7 @@ func TestRun(t *testing.T) {
 					"release-1.19": "v1.19.0-beta.0",
 				}, nil)
 				mock.ReadFileReturns([]byte(changelog.TocEnd), nil)
+				mock.GatherReleaseNotesReturns(&notes.ReleaseNotes{}, nil)
 			},
 			shouldErr: false,
 		},
@@ -231,6 +235,33 @@ func TestRun(t *testing.T) {
 			prepare: func(mock *changelogfakes.FakeImpl, _ *changelog.Options) {
 				mock.ReadFileReturns([]byte(changelog.TocEnd), nil)
 				mock.RmReturns(err)
+			},
+			shouldErr: true,
+		},
+		{ // GatherReleaseNotes failed
+			prepare: func(mock *changelogfakes.FakeImpl, _ *changelog.Options) {
+				mock.TagStringToSemverReturns(semver.Version{
+					Pre: []semver.PRVersion{
+						{VersionStr: "alpha"},
+						{VersionNum: 1},
+					},
+				}, nil)
+				mock.ReadFileReturns([]byte(changelog.TocEnd), nil)
+				mock.GatherReleaseNotesReturns(nil, err)
+			},
+			shouldErr: true,
+		},
+		{ // NewDocumentReturns failed
+			prepare: func(mock *changelogfakes.FakeImpl, _ *changelog.Options) {
+				mock.TagStringToSemverReturns(semver.Version{
+					Pre: []semver.PRVersion{
+						{VersionStr: "alpha"},
+						{VersionNum: 1},
+					},
+				}, nil)
+				mock.ReadFileReturns([]byte(changelog.TocEnd), nil)
+				mock.GatherReleaseNotesReturns(&notes.ReleaseNotes{}, nil)
+				mock.NewDocumentReturns(nil, err)
 			},
 			shouldErr: true,
 		},

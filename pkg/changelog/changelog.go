@@ -19,6 +19,7 @@ package changelog
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -41,6 +42,7 @@ type Options struct {
 	Bucket       string
 	Tars         string
 	HTMLFile     string
+	JSONFile     string
 	RecordDir    string
 	ReplayDir    string
 	Dependencies bool
@@ -97,7 +99,7 @@ func (c *Changelog) Run() error {
 	}
 	logrus.Infof("Found latest %s commit %s", remoteBranch, head)
 
-	var markdown, startRev, endRev string
+	var markdown, jsonStr, startRev, endRev string
 	if tag.Patch == 0 {
 		if len(tag.Pre) == 0 {
 			// Still create the downloads table
@@ -132,7 +134,7 @@ func (c *Changelog) Run() error {
 			// the current HEAD as end revision.
 			endRev = head
 
-			markdown, err = c.generateReleaseNotes(branch, startRev, endRev)
+			markdown, jsonStr, err = c.generateReleaseNotes(branch, startRev, endRev)
 		} else {
 			// New minor alpha, beta and rc releases get generated notes
 			latestTags, tErr := c.impl.LatestGitHubTagsPerBranch()
@@ -148,7 +150,7 @@ func (c *Changelog) Run() error {
 				startRev = startTag
 				endRev = head
 
-				markdown, err = c.generateReleaseNotes(branch, startRev, endRev)
+				markdown, jsonStr, err = c.generateReleaseNotes(branch, startRev, endRev)
 			} else {
 				return errors.Errorf(
 					"no latest tag available for branch %s", branch,
@@ -164,7 +166,7 @@ func (c *Changelog) Run() error {
 		startRev = startTag
 		endRev = head
 
-		markdown, err = c.generateReleaseNotes(branch, startTag, endRev)
+		markdown, jsonStr, err = c.generateReleaseNotes(branch, startTag, endRev)
 	}
 	if err != nil {
 		return errors.Wrap(err, "generate release notes")
@@ -213,6 +215,11 @@ func (c *Changelog) Run() error {
 		return errors.Wrap(err, "write HTML")
 	}
 
+	logrus.Info("Writing JSON")
+	if err := c.writeJSON(tag, jsonStr); err != nil {
+		return errors.Wrap(err, "write JSON")
+	}
+
 	logrus.Info("Committing changes")
 	return errors.Wrap(
 		c.commitChanges(repo, branch, tag),
@@ -220,7 +227,9 @@ func (c *Changelog) Run() error {
 	)
 }
 
-func (c *Changelog) generateReleaseNotes(branch, startRev, endRev string) (string, error) {
+func (c *Changelog) generateReleaseNotes(
+	branch, startRev, endRev string,
+) (markdown, jsonStr string, err error) {
 	logrus.Info("Generating release notes")
 
 	notesOptions := options.New()
@@ -236,25 +245,33 @@ func (c *Changelog) generateReleaseNotes(branch, startRev, endRev string) (strin
 	notesOptions.Pull = false
 
 	if err := c.impl.ValidateAndFinish(notesOptions); err != nil {
-		return "", errors.Wrap(err, "validating notes options")
+		return "", "", errors.Wrap(err, "validating notes options")
 	}
 
-	doc, err := c.impl.GatherReleaseNotesDocument(
-		notesOptions, startRev, c.options.Tag,
-	)
+	releaseNotes, err := c.impl.GatherReleaseNotes(notesOptions)
 	if err != nil {
-		return "", errors.Wrap(err, "gather release notes")
+		return "", "", errors.Wrapf(err, "gather release notes")
 	}
 
-	markdown, err := c.impl.RenderMarkdownTemplate(
+	doc, err := c.impl.NewDocument(releaseNotes, startRev, c.options.Tag)
+	if err != nil {
+		return "", "", errors.Wrapf(err, "create release note document")
+	}
+
+	releaseNotesJSON, err := json.MarshalIndent(releaseNotes.ByPR(), "", "  ")
+	if err != nil {
+		return "", "", errors.Wrapf(err, "build release notes JSON")
+	}
+
+	markdown, err = c.impl.RenderMarkdownTemplate(
 		doc, c.options.Bucket, c.options.Tars,
 		options.GoTemplateInline+releaseNotesTemplate,
 	)
 	if err != nil {
-		return "", errors.Wrapf(err, "render release notes to markdown")
+		return "", "", errors.Wrapf(err, "render release notes to markdown")
 	}
 
-	return markdown, nil
+	return markdown, string(releaseNotesJSON), nil
 }
 
 func (c *Changelog) writeMarkdown(
@@ -316,6 +333,13 @@ func (c *Changelog) htmlChangelogFilename(tag semver.Version) string {
 	return changelogFilename(tag, "html")
 }
 
+func (c *Changelog) jsonChangelogFilename(tag semver.Version) string {
+	if c.options.JSONFile != "" {
+		return c.options.JSONFile
+	}
+	return changelogFilename(tag, "json")
+}
+
 func markdownChangelogReadme() string {
 	return filepath.Join(RepoChangelogDir, "README.md")
 }
@@ -358,6 +382,18 @@ func (c *Changelog) writeHTML(tag semver.Version, markdown string) error {
 	return errors.Wrap(
 		c.impl.WriteFile(absOutputPath, output.Bytes(), os.FileMode(0o644)),
 		"write template",
+	)
+}
+
+func (c *Changelog) writeJSON(tag semver.Version, jsonStr string) error {
+	absOutputPath, err := c.impl.Abs(c.jsonChangelogFilename(tag))
+	if err != nil {
+		return errors.Wrap(err, "get absolute file path")
+	}
+	logrus.Infof("Writing JSON file to %s", absOutputPath)
+	return errors.Wrap(
+		c.impl.WriteFile(absOutputPath, []byte(jsonStr), os.FileMode(0o644)),
+		"write JSON",
 	)
 }
 

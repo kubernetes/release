@@ -443,6 +443,7 @@ func (d *DefaultStage) GenerateChangelog() error {
 		Branch:       branch,
 		Bucket:       d.options.Bucket(),
 		HTMLFile:     filepath.Join(workspaceDir, "src/release-notes.html"),
+		JSONFile:     filepath.Join(workspaceDir, "src/release-notes.json"),
 		Dependencies: true,
 		Tars: filepath.Join(
 			gitRoot,
