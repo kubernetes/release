@@ -29,7 +29,7 @@ import (
 func generateTestingReleaseState(params *testStateParameters) *anago.ReleaseState {
 	state := anago.DefaultReleaseState()
 	if params.versionsTag != nil {
-		state.SetVersions(release.NewReleaseVersions("", *params.versionsTag, "", "", ""))
+		state.SetVersions(release.NewReleaseVersions(*params.versionsTag, *params.versionsTag, "", "", ""))
 	}
 
 	if params.createReleaseBranch != nil {

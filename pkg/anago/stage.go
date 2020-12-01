@@ -442,8 +442,8 @@ func (d *DefaultStage) GenerateChangelog() error {
 		Tag:          d.state.versions.Prime(),
 		Branch:       branch,
 		Bucket:       d.options.Bucket(),
-		HTMLFile:     filepath.Join(workspaceDir, "src/release-notes.html"),
-		JSONFile:     filepath.Join(workspaceDir, "src/release-notes.json"),
+		HTMLFile:     filepath.Join(workspaceDir, releaseNotesHTMLFile),
+		JSONFile:     filepath.Join(workspaceDir, releaseNotesJSONFile),
 		Dependencies: true,
 		Tars: filepath.Join(
 			gitRoot,
