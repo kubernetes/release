@@ -62,6 +62,10 @@ type Client interface {
 		context.Context, string, string, int,
 	) (*github.PullRequest, *github.Response, error)
 
+	GetIssue(
+		context.Context, string, string, int,
+	) (*github.Issue, *github.Response, error)
+
 	GetRepoCommit(
 		context.Context, string, string, string,
 	) (*github.RepositoryCommit, *github.Response, error)
@@ -117,6 +121,10 @@ type Client interface {
 	ListReleaseAssets(
 		context.Context, string, string, int64,
 	) ([]*github.ReleaseAsset, error)
+
+	CreateComment(
+		context.Context, string, string, int, string,
+	) (*github.IssueComment, *github.Response, error)
 }
 
 // New creates a new default GitHub client. Tokens set via the $GITHUB_TOKEN
@@ -165,6 +173,17 @@ func (g *githubClient) GetPullRequest(
 		pr, resp, err := g.PullRequests.Get(ctx, owner, repo, number)
 		if !shouldRetry(err) {
 			return pr, resp, err
+		}
+	}
+}
+
+func (g *githubClient) GetIssue(
+	ctx context.Context, owner, repo string, number int,
+) (*github.Issue, *github.Response, error) {
+	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
+		issue, resp, err := g.Issues.Get(ctx, owner, repo, number)
+		if !shouldRetry(err) {
+			return issue, resp, err
 		}
 	}
 }
@@ -344,6 +363,21 @@ func (g *githubClient) ListReleaseAssets(
 		return nil, errors.Wrap(err, "getting release assets from GitHub")
 	}
 	return assets, nil
+}
+
+func (g *githubClient) CreateComment(
+	ctx context.Context, owner, repo string, number int, message string,
+) (*github.IssueComment, *github.Response, error) {
+	comment := &github.IssueComment{
+		Body: &message,
+	}
+
+	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
+		issueComment, resp, err := g.Issues.CreateComment(ctx, owner, repo, number, comment)
+		if !shouldRetry(err) {
+			return issueComment, resp, err
+		}
+	}
 }
 
 // SetClient can be used to manually set the internal GitHub client

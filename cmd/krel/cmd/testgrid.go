@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -32,8 +33,13 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/http"
 	"k8s.io/release/pkg/object"
+)
+
+const (
+	k8sSigReleaseRepo = "sig-release"
 )
 
 type TestGridOptions struct {
@@ -43,6 +49,7 @@ type TestGridOptions struct {
 	bucket        string
 	testgridURL   string
 	renderTronURL string
+	gitHubIssue   int
 }
 
 var testGridOpts = &TestGridOptions{}
@@ -98,6 +105,9 @@ func init() {
 	testGridCmd.PersistentFlags().StringVar(&testGridOpts.renderTronURL,
 		"rendertron-url", "https://render-tron.appspot.com/screenshot", "The RenderTron URL service")
 
+	testGridCmd.PersistentFlags().IntVar(&testGridOpts.gitHubIssue,
+		"github-issue", -1, "The GitHub Issue for the release cut")
+
 	testGridCmd.PersistentFlags().StringVar(&testGridOpts.bucket, "bucket", "k8s-staging-releng",
 		"The name of the bucket to upload the images to. The files will be put into '/testgridshot/<release>/<datetime>_<rand>/...'. Defaults to k8s-staging-releng")
 
@@ -150,11 +160,15 @@ func runTestGridShot(opts *TestGridOptions) error {
 		dateNow := fmt.Sprintf("%s-%s", time.Now().UTC().Format(layoutISO), uuid.New().String())
 		testgridJobs, err = processDashboards(testgridJobs, dateNow, opts)
 		if err != nil {
-			return errors.Wrap(err, "failed to process the dashboards")
+			return errors.Wrap(err, "processing the dashboards")
 		}
 	}
 
-	generateIssueComment(testgridJobs, opts)
+	err := generateIssueComment(testgridJobs, opts)
+	if err != nil {
+		return errors.Wrap(err, "generating the GitHub issue comment")
+	}
+
 	return nil
 }
 
@@ -196,7 +210,7 @@ func processDashboards(testgridJobs []TestGridJob, date string, opts *TestGridOp
 	return testgridJobs, nil
 }
 
-func generateIssueComment(testgridJobs []TestGridJob, opts *TestGridOptions) {
+func generateIssueComment(testgridJobs []TestGridJob, opts *TestGridOptions) error {
 	// Generate comment to GH
 	output := []string{}
 	output = append(output, fmt.Sprintf("<!-- ----[ issue comment ]---- -->\n### Testgrid dashboards for %s\n", opts.branch))
@@ -215,7 +229,7 @@ func generateIssueComment(testgridJobs []TestGridJob, opts *TestGridOptions) {
 				output = append(output,
 					fmt.Sprintf(
 						"<details><summary><tt>%[1]s</tt> %[2]s <a href=\"%[5]s/%[3]s#%[4]s&width=30\">%[3]s#%[4]s - TestGrid</a></summary><p>\n"+
-							"![%[3]s#%[4]s](%[6]s)\n"+
+							"\n![%[3]s#%[4]s](%[6]s)\n\n"+
 							"</p></details>",
 						timeNow, state, job.DashboardName, job.JobName, opts.testgridURL, job.GCSLocation),
 				)
@@ -233,8 +247,20 @@ func generateIssueComment(testgridJobs []TestGridJob, opts *TestGridOptions) {
 
 	output = append(output, "<!-- ----[ issue comment ]---- -->")
 
-	logrus.Info("Please copy the lines below and paste in the Github Issue for the Release cut. Thanks for using krel!")
-	fmt.Println(strings.Join(output, "\n"))
+	if opts.gitHubIssue != -1 {
+		gh := github.New()
+
+		_, _, err := gh.Client().CreateComment(context.Background(), git.DefaultGithubOrg, k8sSigReleaseRepo, opts.gitHubIssue, strings.Join(output, "\n"))
+		if err != nil {
+			return errors.Wrap(err, "creating the GitHub comment")
+		}
+		logrus.Infof("Comment created in the GitHub Issue https://github.com/%s/%s/issues/%d. Thanks for using krel!", git.DefaultGithubOrg, k8sSigReleaseRepo, opts.gitHubIssue)
+	} else {
+		logrus.Info("Please copy the lines below and paste in the Github Issue for the Release cut. Thanks for using krel!")
+		fmt.Println(strings.Join(output, "\n"))
+	}
+
+	return nil
 }
 
 func (o *TestGridOptions) Validate() error {
@@ -257,6 +283,30 @@ func (o *TestGridOptions) Validate() error {
 				fmt.Sprintf("invalid board %s option. Valid options are: %s, %s",
 					board, boardBlocking, boardInforming),
 			)
+		}
+	}
+
+	if o.gitHubIssue != -1 {
+		token, isSet := os.LookupEnv(github.TokenEnvKey)
+		if !isSet || token == "" {
+			return errors.New("cannot send the screenshots if GitHub token is not set")
+		}
+
+		gh := github.New()
+
+		issue, _, err := gh.Client().GetIssue(context.Background(), git.DefaultGithubOrg, k8sSigReleaseRepo, o.gitHubIssue)
+		if err != nil || issue == nil {
+			return errors.Wrapf(err, "getting the GitHub Issue %d", o.gitHubIssue)
+		}
+
+		// The issue needs to be in open state
+		if issue.GetState() != "open" {
+			return errors.Errorf("GitHub Issue %d is %s needs to be a open issue", o.gitHubIssue, issue.GetState())
+		}
+
+		// Should be a Issue and not a Pull Request
+		if issue.PullRequestLinks != nil {
+			return errors.New("This is a Pull Request and not a GitHub Issue")
 		}
 	}
 
