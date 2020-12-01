@@ -20,7 +20,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/stretchr/testify/require"
 
 	"k8s.io/release/pkg/release"
