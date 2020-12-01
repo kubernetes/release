@@ -83,8 +83,8 @@ func (o *promoteOptions) Validate() error {
 	}
 
 	// Check that the GitHub token is set
-	token, isset := os.LookupEnv(github.TokenEnvKey)
-	if !isset || token == "" {
+	token, isSet := os.LookupEnv(github.TokenEnvKey)
+	if !isSet || token == "" {
 		return errors.New("cannot promote images if GitHub token is not set")
 	}
 	return nil
