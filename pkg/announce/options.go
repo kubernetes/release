@@ -17,11 +17,22 @@ limitations under the License.
 package announce
 
 type Options struct {
-	workDir       string
-	tag           string
-	branch        string
+	// workDir is the directory where announcement.html and
+	// announcement-subject.txt will be written
+	workDir string
+	// Release tag we will build the announcement for
+	tag    string
+	branch string
+	// Changelog path is the path used to build the link to the changelog
+	// in the announcement HTML. For example CHANGELOG/CHANGELOG-1.20.md
 	changelogPath string
+	// Changelog HTML is the changelog in HTML format. This will be
+	// embedded in the announcement HTML, overrides changelogFile if
+	// both are present.
 	changelogHTML string
+	// changelogFile is the path to an HTML file containing the changelog
+	// which will be embedded in the announcement template
+	changelogFile string
 }
 
 // NewOptions can be used to create a new Options instance
@@ -51,5 +62,10 @@ func (o *Options) WithChangelogPath(changelogPath string) *Options {
 
 func (o *Options) WithChangelogHTML(changelogHTML string) *Options {
 	o.changelogHTML = changelogHTML
+	return o
+}
+
+func (o *Options) WithChangelogFile(changelogFile string) *Options {
+	o.changelogFile = changelogFile
 	return o
 }

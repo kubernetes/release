@@ -88,12 +88,28 @@ func CreateForBranch(opts *Options) error {
 func CreateForRelease(opts *Options) error {
 	logrus.Infof("Creating %s announcement in %s", opts.tag, opts.workDir)
 
+	changelog := ""
+
+	// Read the changelog from the specified file if we got one
+	if opts.changelogFile != "" {
+		changelogData, err := ioutil.ReadFile(opts.changelogFile)
+		if err != nil {
+			return errors.Wrap(err, "reading changelog html file")
+		}
+		changelog = string(changelogData)
+	}
+
+	// ... unless it is overridden by passing the HTML directly
+	if opts.changelogHTML != "" {
+		changelog = opts.changelogHTML
+	}
+
 	if err := create(
 		opts.workDir,
 		fmt.Sprintf("Kubernetes %s is live!", opts.tag),
 		fmt.Sprintf(releaseAnnouncement,
 			opts.tag, opts.changelogPath, filepath.Base(opts.changelogPath),
-			opts.tag, opts.changelogHTML, opts.changelogPath,
+			opts.tag, changelog, opts.changelogPath,
 			filepath.Base(opts.changelogPath), opts.tag,
 		),
 	); err != nil {
