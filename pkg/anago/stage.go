@@ -332,7 +332,14 @@ func (d *DefaultStage) TagRepository() error {
 			return errors.Errorf("tag %s already exists", version)
 		}
 
-		commit := d.state.semverBuildVersion.Build[0]
+		// Usually the build version contains a commit we can reference. If
+		// not, because the build version is exactly a tag, then we fallback to
+		// that tag.
+		commit := d.options.BuildVersion
+		if len(d.state.semverBuildVersion.Build) > 0 {
+			commit = d.state.semverBuildVersion.Build[0]
+		}
+
 		if d.state.createReleaseBranch {
 			logrus.Infof("Creating release branch %s", d.options.ReleaseBranch)
 

@@ -97,9 +97,6 @@ func (o *Options) Validate(state *State) error {
 	if err != nil {
 		return errors.Wrapf(err, "invalid build version: %s", o.BuildVersion)
 	}
-	if len(semverBuildVersion.Build) == 0 {
-		return errors.Errorf("build version does not contain build commit")
-	}
 	state.semverBuildVersion = semverBuildVersion
 
 	return nil
