@@ -439,20 +439,28 @@ func (d *DefaultRelease) PushGitObjects() error {
 func (d *DefaultRelease) CreateAnnouncement() error {
 	// Buld the announcement options set
 	announceOpts := announce.NewOptions()
-	announceOpts.WithWorkDir(gitRoot)
-	announceOpts.WithTag(util.SemverToTagString(d.state.semverBuildVersion))
-	announceOpts.WithBranch(d.options.ReleaseBranch)
+
+	// Workdir is where the announce files will be saved
+	announceOpts.WithWorkDir(filepath.Join(workspaceDir, "/src"))
+
+	// Get a semver from the prime tag
+	primeSemver, err := util.TagStringToSemver(d.state.versions.Prime())
+	if err != nil {
+		return errors.Wrap(err, "parsing prime version into semver")
+	}
+
+	// The main tag we are releasing
+	announceOpts.WithTag(d.state.versions.Prime())
+
+	// Path to the changelog in the k/k repo (used to build a link to it)
 	announceOpts.WithChangelogPath(
-		filepath.Join(
-			gitRoot, fmt.Sprintf("/CHANGELOG/CHANGELOG-%d.%d.md",
-				d.state.semverBuildVersion.Major, d.state.semverBuildVersion.Minor,
-			),
-		),
-	)
-	announceOpts.WithChangelogHTML(
-		filepath.Join(workspaceDir, "/src/release-notes.html"),
+		fmt.Sprintf("CHANGELOG/CHANGELOG-%d.%d.md", primeSemver.Major, primeSemver.Minor),
 	)
 
+	// Pass the file path as a string to the annoucement options
+	announceOpts.WithChangelogFile(filepath.Join(workspaceDir, releaseNotesHTMLFile))
+
+	// Run the annoucement creation
 	if err := d.impl.CreateAnnouncement(announceOpts); err != nil {
 		return errors.Wrap(err, "creating the announcement")
 	}
