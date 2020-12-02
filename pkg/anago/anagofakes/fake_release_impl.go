@@ -24,6 +24,7 @@ import (
 	"k8s.io/release/pkg/announce"
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/gcp/gcb"
+	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/release"
 )
 
@@ -88,6 +89,19 @@ type FakeReleaseImpl struct {
 	copyStagedFromGCSReturnsOnCall map[int]struct {
 		result1 error
 	}
+	CopyToRemoteStub        func(object.Store, string, string) error
+	copyToRemoteMutex       sync.RWMutex
+	copyToRemoteArgsForCall []struct {
+		arg1 object.Store
+		arg2 string
+		arg3 string
+	}
+	copyToRemoteReturns struct {
+		result1 error
+	}
+	copyToRemoteReturnsOnCall map[int]struct {
+		result1 error
+	}
 	CreateAnnouncementStub        func(*announce.Options) error
 	createAnnouncementMutex       sync.RWMutex
 	createAnnouncementArgsForCall []struct {
@@ -128,6 +142,20 @@ type FakeReleaseImpl struct {
 		result1 *release.GitObjectPusher
 		result2 error
 	}
+	NormalizePathStub        func(object.Store, ...string) (string, error)
+	normalizePathMutex       sync.RWMutex
+	normalizePathArgsForCall []struct {
+		arg1 object.Store
+		arg2 []string
+	}
+	normalizePathReturns struct {
+		result1 string
+		result2 error
+	}
+	normalizePathReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
 	PrepareWorkspaceReleaseStub        func(string, string) error
 	prepareWorkspaceReleaseMutex       sync.RWMutex
 	prepareWorkspaceReleaseArgsForCall []struct {
@@ -138,6 +166,19 @@ type FakeReleaseImpl struct {
 		result1 error
 	}
 	prepareWorkspaceReleaseReturnsOnCall map[int]struct {
+		result1 error
+	}
+	PublishReleaseNotesIndexStub        func(string, string, string) error
+	publishReleaseNotesIndexMutex       sync.RWMutex
+	publishReleaseNotesIndexArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 string
+	}
+	publishReleaseNotesIndexReturns struct {
+		result1 error
+	}
+	publishReleaseNotesIndexReturnsOnCall map[int]struct {
 		result1 error
 	}
 	PublishVersionStub        func(string, string, string, string, string, []string, bool, bool) error
@@ -547,6 +588,69 @@ func (fake *FakeReleaseImpl) CopyStagedFromGCSReturnsOnCall(i int, result1 error
 	}{result1}
 }
 
+func (fake *FakeReleaseImpl) CopyToRemote(arg1 object.Store, arg2 string, arg3 string) error {
+	fake.copyToRemoteMutex.Lock()
+	ret, specificReturn := fake.copyToRemoteReturnsOnCall[len(fake.copyToRemoteArgsForCall)]
+	fake.copyToRemoteArgsForCall = append(fake.copyToRemoteArgsForCall, struct {
+		arg1 object.Store
+		arg2 string
+		arg3 string
+	}{arg1, arg2, arg3})
+	stub := fake.CopyToRemoteStub
+	fakeReturns := fake.copyToRemoteReturns
+	fake.recordInvocation("CopyToRemote", []interface{}{arg1, arg2, arg3})
+	fake.copyToRemoteMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeReleaseImpl) CopyToRemoteCallCount() int {
+	fake.copyToRemoteMutex.RLock()
+	defer fake.copyToRemoteMutex.RUnlock()
+	return len(fake.copyToRemoteArgsForCall)
+}
+
+func (fake *FakeReleaseImpl) CopyToRemoteCalls(stub func(object.Store, string, string) error) {
+	fake.copyToRemoteMutex.Lock()
+	defer fake.copyToRemoteMutex.Unlock()
+	fake.CopyToRemoteStub = stub
+}
+
+func (fake *FakeReleaseImpl) CopyToRemoteArgsForCall(i int) (object.Store, string, string) {
+	fake.copyToRemoteMutex.RLock()
+	defer fake.copyToRemoteMutex.RUnlock()
+	argsForCall := fake.copyToRemoteArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeReleaseImpl) CopyToRemoteReturns(result1 error) {
+	fake.copyToRemoteMutex.Lock()
+	defer fake.copyToRemoteMutex.Unlock()
+	fake.CopyToRemoteStub = nil
+	fake.copyToRemoteReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) CopyToRemoteReturnsOnCall(i int, result1 error) {
+	fake.copyToRemoteMutex.Lock()
+	defer fake.copyToRemoteMutex.Unlock()
+	fake.CopyToRemoteStub = nil
+	if fake.copyToRemoteReturnsOnCall == nil {
+		fake.copyToRemoteReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.copyToRemoteReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeReleaseImpl) CreateAnnouncement(arg1 *announce.Options) error {
 	fake.createAnnouncementMutex.Lock()
 	ret, specificReturn := fake.createAnnouncementReturnsOnCall[len(fake.createAnnouncementArgsForCall)]
@@ -739,6 +843,71 @@ func (fake *FakeReleaseImpl) NewGitPusherReturnsOnCall(i int, result1 *release.G
 	}{result1, result2}
 }
 
+func (fake *FakeReleaseImpl) NormalizePath(arg1 object.Store, arg2 ...string) (string, error) {
+	fake.normalizePathMutex.Lock()
+	ret, specificReturn := fake.normalizePathReturnsOnCall[len(fake.normalizePathArgsForCall)]
+	fake.normalizePathArgsForCall = append(fake.normalizePathArgsForCall, struct {
+		arg1 object.Store
+		arg2 []string
+	}{arg1, arg2})
+	stub := fake.NormalizePathStub
+	fakeReturns := fake.normalizePathReturns
+	fake.recordInvocation("NormalizePath", []interface{}{arg1, arg2})
+	fake.normalizePathMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2...)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeReleaseImpl) NormalizePathCallCount() int {
+	fake.normalizePathMutex.RLock()
+	defer fake.normalizePathMutex.RUnlock()
+	return len(fake.normalizePathArgsForCall)
+}
+
+func (fake *FakeReleaseImpl) NormalizePathCalls(stub func(object.Store, ...string) (string, error)) {
+	fake.normalizePathMutex.Lock()
+	defer fake.normalizePathMutex.Unlock()
+	fake.NormalizePathStub = stub
+}
+
+func (fake *FakeReleaseImpl) NormalizePathArgsForCall(i int) (object.Store, []string) {
+	fake.normalizePathMutex.RLock()
+	defer fake.normalizePathMutex.RUnlock()
+	argsForCall := fake.normalizePathArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeReleaseImpl) NormalizePathReturns(result1 string, result2 error) {
+	fake.normalizePathMutex.Lock()
+	defer fake.normalizePathMutex.Unlock()
+	fake.NormalizePathStub = nil
+	fake.normalizePathReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeReleaseImpl) NormalizePathReturnsOnCall(i int, result1 string, result2 error) {
+	fake.normalizePathMutex.Lock()
+	defer fake.normalizePathMutex.Unlock()
+	fake.NormalizePathStub = nil
+	if fake.normalizePathReturnsOnCall == nil {
+		fake.normalizePathReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.normalizePathReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeReleaseImpl) PrepareWorkspaceRelease(arg1 string, arg2 string) error {
 	fake.prepareWorkspaceReleaseMutex.Lock()
 	ret, specificReturn := fake.prepareWorkspaceReleaseReturnsOnCall[len(fake.prepareWorkspaceReleaseArgsForCall)]
@@ -797,6 +966,69 @@ func (fake *FakeReleaseImpl) PrepareWorkspaceReleaseReturnsOnCall(i int, result1
 		})
 	}
 	fake.prepareWorkspaceReleaseReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) PublishReleaseNotesIndex(arg1 string, arg2 string, arg3 string) error {
+	fake.publishReleaseNotesIndexMutex.Lock()
+	ret, specificReturn := fake.publishReleaseNotesIndexReturnsOnCall[len(fake.publishReleaseNotesIndexArgsForCall)]
+	fake.publishReleaseNotesIndexArgsForCall = append(fake.publishReleaseNotesIndexArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 string
+	}{arg1, arg2, arg3})
+	stub := fake.PublishReleaseNotesIndexStub
+	fakeReturns := fake.publishReleaseNotesIndexReturns
+	fake.recordInvocation("PublishReleaseNotesIndex", []interface{}{arg1, arg2, arg3})
+	fake.publishReleaseNotesIndexMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeReleaseImpl) PublishReleaseNotesIndexCallCount() int {
+	fake.publishReleaseNotesIndexMutex.RLock()
+	defer fake.publishReleaseNotesIndexMutex.RUnlock()
+	return len(fake.publishReleaseNotesIndexArgsForCall)
+}
+
+func (fake *FakeReleaseImpl) PublishReleaseNotesIndexCalls(stub func(string, string, string) error) {
+	fake.publishReleaseNotesIndexMutex.Lock()
+	defer fake.publishReleaseNotesIndexMutex.Unlock()
+	fake.PublishReleaseNotesIndexStub = stub
+}
+
+func (fake *FakeReleaseImpl) PublishReleaseNotesIndexArgsForCall(i int) (string, string, string) {
+	fake.publishReleaseNotesIndexMutex.RLock()
+	defer fake.publishReleaseNotesIndexMutex.RUnlock()
+	argsForCall := fake.publishReleaseNotesIndexArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeReleaseImpl) PublishReleaseNotesIndexReturns(result1 error) {
+	fake.publishReleaseNotesIndexMutex.Lock()
+	defer fake.publishReleaseNotesIndexMutex.Unlock()
+	fake.PublishReleaseNotesIndexStub = nil
+	fake.publishReleaseNotesIndexReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) PublishReleaseNotesIndexReturnsOnCall(i int, result1 error) {
+	fake.publishReleaseNotesIndexMutex.Lock()
+	defer fake.publishReleaseNotesIndexMutex.Unlock()
+	fake.PublishReleaseNotesIndexStub = nil
+	if fake.publishReleaseNotesIndexReturnsOnCall == nil {
+		fake.publishReleaseNotesIndexReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.publishReleaseNotesIndexReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -1328,14 +1560,20 @@ func (fake *FakeReleaseImpl) Invocations() map[string][][]interface{} {
 	defer fake.checkReleaseBucketMutex.RUnlock()
 	fake.copyStagedFromGCSMutex.RLock()
 	defer fake.copyStagedFromGCSMutex.RUnlock()
+	fake.copyToRemoteMutex.RLock()
+	defer fake.copyToRemoteMutex.RUnlock()
 	fake.createAnnouncementMutex.RLock()
 	defer fake.createAnnouncementMutex.RUnlock()
 	fake.generateReleaseVersionMutex.RLock()
 	defer fake.generateReleaseVersionMutex.RUnlock()
 	fake.newGitPusherMutex.RLock()
 	defer fake.newGitPusherMutex.RUnlock()
+	fake.normalizePathMutex.RLock()
+	defer fake.normalizePathMutex.RUnlock()
 	fake.prepareWorkspaceReleaseMutex.RLock()
 	defer fake.prepareWorkspaceReleaseMutex.RUnlock()
+	fake.publishReleaseNotesIndexMutex.RLock()
+	defer fake.publishReleaseNotesIndexMutex.RUnlock()
 	fake.publishVersionMutex.RLock()
 	defer fake.publishVersionMutex.RUnlock()
 	fake.pushBranchesMutex.RLock()
