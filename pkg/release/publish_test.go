@@ -71,7 +71,7 @@ func TestPublishVersion(t *testing.T) {
 			},
 			shouldError: false,
 		},
-		{ // failure missing GCS root
+		{ // failure GetMarkerPath
 			bucket:  release.ProductionBucket,
 			version: testVersion,
 			fast:    true,
@@ -79,9 +79,7 @@ func TestPublishVersion(t *testing.T) {
 				tempDir, err := ioutil.TempDir("", "publish-version-test-")
 				require.Nil(t, err)
 
-				mock.GSUtilOutputReturnsOnCall(0, olderTestVersion, nil)
-				mock.GSUtilOutputReturnsOnCall(1, testVersion, nil)
-				mock.GetURLResponseReturns(testVersion, nil)
+				mock.GetMarkerPathReturns("", err)
 
 				return tempDir, func() {
 					require.Nil(t, os.RemoveAll(tempDir))
@@ -225,5 +223,106 @@ func TestPublishVersion(t *testing.T) {
 			require.Nil(t, err)
 		}
 		cleanup()
+	}
+}
+
+func TestPublishReleaseNotesIndex(t *testing.T) {
+	err := errors.New("")
+	for _, tc := range []struct {
+		prepare     func(*releasefakes.FakePublisherClient)
+		shouldError bool
+	}{
+		{ // success not existing
+			prepare: func(mock *releasefakes.FakePublisherClient) {
+				mock.TempFileCalls(ioutil.TempFile)
+			},
+			shouldError: false,
+		},
+		{ // success existing
+			prepare: func(mock *releasefakes.FakePublisherClient) {
+				mock.TempFileCalls(ioutil.TempFile)
+				mock.GSUtilStatusReturns(true, nil)
+			},
+			shouldError: false,
+		},
+		{ // failure CopyToRemote
+			prepare: func(mock *releasefakes.FakePublisherClient) {
+				mock.TempFileCalls(ioutil.TempFile)
+				mock.CopyToRemoteReturns(err)
+			},
+			shouldError: true,
+		},
+		{ // failure TempFile
+			prepare: func(mock *releasefakes.FakePublisherClient) {
+				mock.TempFileReturns(nil, err)
+			},
+			shouldError: true,
+		},
+		{ // failure Marshal
+			prepare: func(mock *releasefakes.FakePublisherClient) {
+				mock.MarshalReturns(nil, err)
+			},
+			shouldError: true,
+		},
+		{ // failure Unmarshal
+			prepare: func(mock *releasefakes.FakePublisherClient) {
+				mock.GSUtilStatusReturns(true, nil)
+				mock.UnmarshalReturns(err)
+			},
+			shouldError: true,
+		},
+		{ // failure ReadFile
+			prepare: func(mock *releasefakes.FakePublisherClient) {
+				mock.GSUtilStatusReturns(true, nil)
+				mock.ReadFileReturns(nil, err)
+			},
+			shouldError: true,
+		},
+		{ // failure CopyToLocal
+			prepare: func(mock *releasefakes.FakePublisherClient) {
+				mock.GSUtilStatusReturns(true, nil)
+				mock.CopyToLocalReturns(err)
+			},
+			shouldError: true,
+		},
+		{ // failure TempDir
+			prepare: func(mock *releasefakes.FakePublisherClient) {
+				mock.GSUtilStatusReturns(true, nil)
+				mock.TempDirReturns("", err)
+			},
+			shouldError: true,
+		},
+		{ // failure GSUtilStatus
+			prepare: func(mock *releasefakes.FakePublisherClient) {
+				mock.GSUtilStatusReturns(false, err)
+			},
+			shouldError: true,
+		},
+		{ // failure NormalizePath 0
+			prepare: func(mock *releasefakes.FakePublisherClient) {
+				mock.NormalizePathReturnsOnCall(0, "", err)
+			},
+			shouldError: true,
+		},
+		{ // failure NormalizePath 1
+			prepare: func(mock *releasefakes.FakePublisherClient) {
+				mock.NormalizePathReturnsOnCall(1, "", err)
+			},
+			shouldError: true,
+		},
+	} {
+		sut := release.NewPublisher()
+		clientMock := &releasefakes.FakePublisherClient{}
+		sut.SetClient(clientMock)
+		tc.prepare(clientMock)
+
+		err := sut.PublishReleaseNotesIndex(
+			"", "", "",
+		)
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
 	}
 }

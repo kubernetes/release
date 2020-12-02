@@ -18,10 +18,35 @@ limitations under the License.
 package releasefakes
 
 import (
+	"os"
 	"sync"
 )
 
 type FakePublisherClient struct {
+	CopyToLocalStub        func(string, string) error
+	copyToLocalMutex       sync.RWMutex
+	copyToLocalArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	copyToLocalReturns struct {
+		result1 error
+	}
+	copyToLocalReturnsOnCall map[int]struct {
+		result1 error
+	}
+	CopyToRemoteStub        func(string, string) error
+	copyToRemoteMutex       sync.RWMutex
+	copyToRemoteArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	copyToRemoteReturns struct {
+		result1 error
+	}
+	copyToRemoteReturnsOnCall map[int]struct {
+		result1 error
+	}
 	GSUtilStub        func(...string) error
 	gSUtilMutex       sync.RWMutex
 	gSUtilArgsForCall []struct {
@@ -46,6 +71,49 @@ type FakePublisherClient struct {
 		result1 string
 		result2 error
 	}
+	GSUtilStatusStub        func(...string) (bool, error)
+	gSUtilStatusMutex       sync.RWMutex
+	gSUtilStatusArgsForCall []struct {
+		arg1 []string
+	}
+	gSUtilStatusReturns struct {
+		result1 bool
+		result2 error
+	}
+	gSUtilStatusReturnsOnCall map[int]struct {
+		result1 bool
+		result2 error
+	}
+	GetMarkerPathStub        func(string, string) (string, error)
+	getMarkerPathMutex       sync.RWMutex
+	getMarkerPathArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	getMarkerPathReturns struct {
+		result1 string
+		result2 error
+	}
+	getMarkerPathReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
+	GetReleasePathStub        func(string, string, string, bool) (string, error)
+	getReleasePathMutex       sync.RWMutex
+	getReleasePathArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 bool
+	}
+	getReleasePathReturns struct {
+		result1 string
+		result2 error
+	}
+	getReleasePathReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
 	GetURLResponseStub        func(string) (string, error)
 	getURLResponseMutex       sync.RWMutex
 	getURLResponseArgsForCall []struct {
@@ -59,8 +127,211 @@ type FakePublisherClient struct {
 		result1 string
 		result2 error
 	}
+	MarshalStub        func(interface{}) ([]byte, error)
+	marshalMutex       sync.RWMutex
+	marshalArgsForCall []struct {
+		arg1 interface{}
+	}
+	marshalReturns struct {
+		result1 []byte
+		result2 error
+	}
+	marshalReturnsOnCall map[int]struct {
+		result1 []byte
+		result2 error
+	}
+	NormalizePathStub        func(...string) (string, error)
+	normalizePathMutex       sync.RWMutex
+	normalizePathArgsForCall []struct {
+		arg1 []string
+	}
+	normalizePathReturns struct {
+		result1 string
+		result2 error
+	}
+	normalizePathReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
+	ReadFileStub        func(string) ([]byte, error)
+	readFileMutex       sync.RWMutex
+	readFileArgsForCall []struct {
+		arg1 string
+	}
+	readFileReturns struct {
+		result1 []byte
+		result2 error
+	}
+	readFileReturnsOnCall map[int]struct {
+		result1 []byte
+		result2 error
+	}
+	TempDirStub        func(string, string) (string, error)
+	tempDirMutex       sync.RWMutex
+	tempDirArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	tempDirReturns struct {
+		result1 string
+		result2 error
+	}
+	tempDirReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
+	TempFileStub        func(string, string) (*os.File, error)
+	tempFileMutex       sync.RWMutex
+	tempFileArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	tempFileReturns struct {
+		result1 *os.File
+		result2 error
+	}
+	tempFileReturnsOnCall map[int]struct {
+		result1 *os.File
+		result2 error
+	}
+	UnmarshalStub        func([]byte, interface{}) error
+	unmarshalMutex       sync.RWMutex
+	unmarshalArgsForCall []struct {
+		arg1 []byte
+		arg2 interface{}
+	}
+	unmarshalReturns struct {
+		result1 error
+	}
+	unmarshalReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakePublisherClient) CopyToLocal(arg1 string, arg2 string) error {
+	fake.copyToLocalMutex.Lock()
+	ret, specificReturn := fake.copyToLocalReturnsOnCall[len(fake.copyToLocalArgsForCall)]
+	fake.copyToLocalArgsForCall = append(fake.copyToLocalArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.CopyToLocalStub
+	fakeReturns := fake.copyToLocalReturns
+	fake.recordInvocation("CopyToLocal", []interface{}{arg1, arg2})
+	fake.copyToLocalMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakePublisherClient) CopyToLocalCallCount() int {
+	fake.copyToLocalMutex.RLock()
+	defer fake.copyToLocalMutex.RUnlock()
+	return len(fake.copyToLocalArgsForCall)
+}
+
+func (fake *FakePublisherClient) CopyToLocalCalls(stub func(string, string) error) {
+	fake.copyToLocalMutex.Lock()
+	defer fake.copyToLocalMutex.Unlock()
+	fake.CopyToLocalStub = stub
+}
+
+func (fake *FakePublisherClient) CopyToLocalArgsForCall(i int) (string, string) {
+	fake.copyToLocalMutex.RLock()
+	defer fake.copyToLocalMutex.RUnlock()
+	argsForCall := fake.copyToLocalArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakePublisherClient) CopyToLocalReturns(result1 error) {
+	fake.copyToLocalMutex.Lock()
+	defer fake.copyToLocalMutex.Unlock()
+	fake.CopyToLocalStub = nil
+	fake.copyToLocalReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakePublisherClient) CopyToLocalReturnsOnCall(i int, result1 error) {
+	fake.copyToLocalMutex.Lock()
+	defer fake.copyToLocalMutex.Unlock()
+	fake.CopyToLocalStub = nil
+	if fake.copyToLocalReturnsOnCall == nil {
+		fake.copyToLocalReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.copyToLocalReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakePublisherClient) CopyToRemote(arg1 string, arg2 string) error {
+	fake.copyToRemoteMutex.Lock()
+	ret, specificReturn := fake.copyToRemoteReturnsOnCall[len(fake.copyToRemoteArgsForCall)]
+	fake.copyToRemoteArgsForCall = append(fake.copyToRemoteArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.CopyToRemoteStub
+	fakeReturns := fake.copyToRemoteReturns
+	fake.recordInvocation("CopyToRemote", []interface{}{arg1, arg2})
+	fake.copyToRemoteMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakePublisherClient) CopyToRemoteCallCount() int {
+	fake.copyToRemoteMutex.RLock()
+	defer fake.copyToRemoteMutex.RUnlock()
+	return len(fake.copyToRemoteArgsForCall)
+}
+
+func (fake *FakePublisherClient) CopyToRemoteCalls(stub func(string, string) error) {
+	fake.copyToRemoteMutex.Lock()
+	defer fake.copyToRemoteMutex.Unlock()
+	fake.CopyToRemoteStub = stub
+}
+
+func (fake *FakePublisherClient) CopyToRemoteArgsForCall(i int) (string, string) {
+	fake.copyToRemoteMutex.RLock()
+	defer fake.copyToRemoteMutex.RUnlock()
+	argsForCall := fake.copyToRemoteArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakePublisherClient) CopyToRemoteReturns(result1 error) {
+	fake.copyToRemoteMutex.Lock()
+	defer fake.copyToRemoteMutex.Unlock()
+	fake.CopyToRemoteStub = nil
+	fake.copyToRemoteReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakePublisherClient) CopyToRemoteReturnsOnCall(i int, result1 error) {
+	fake.copyToRemoteMutex.Lock()
+	defer fake.copyToRemoteMutex.Unlock()
+	fake.CopyToRemoteStub = nil
+	if fake.copyToRemoteReturnsOnCall == nil {
+		fake.copyToRemoteReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.copyToRemoteReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakePublisherClient) GSUtil(arg1 ...string) error {
@@ -188,6 +459,202 @@ func (fake *FakePublisherClient) GSUtilOutputReturnsOnCall(i int, result1 string
 	}{result1, result2}
 }
 
+func (fake *FakePublisherClient) GSUtilStatus(arg1 ...string) (bool, error) {
+	fake.gSUtilStatusMutex.Lock()
+	ret, specificReturn := fake.gSUtilStatusReturnsOnCall[len(fake.gSUtilStatusArgsForCall)]
+	fake.gSUtilStatusArgsForCall = append(fake.gSUtilStatusArgsForCall, struct {
+		arg1 []string
+	}{arg1})
+	stub := fake.GSUtilStatusStub
+	fakeReturns := fake.gSUtilStatusReturns
+	fake.recordInvocation("GSUtilStatus", []interface{}{arg1})
+	fake.gSUtilStatusMutex.Unlock()
+	if stub != nil {
+		return stub(arg1...)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakePublisherClient) GSUtilStatusCallCount() int {
+	fake.gSUtilStatusMutex.RLock()
+	defer fake.gSUtilStatusMutex.RUnlock()
+	return len(fake.gSUtilStatusArgsForCall)
+}
+
+func (fake *FakePublisherClient) GSUtilStatusCalls(stub func(...string) (bool, error)) {
+	fake.gSUtilStatusMutex.Lock()
+	defer fake.gSUtilStatusMutex.Unlock()
+	fake.GSUtilStatusStub = stub
+}
+
+func (fake *FakePublisherClient) GSUtilStatusArgsForCall(i int) []string {
+	fake.gSUtilStatusMutex.RLock()
+	defer fake.gSUtilStatusMutex.RUnlock()
+	argsForCall := fake.gSUtilStatusArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakePublisherClient) GSUtilStatusReturns(result1 bool, result2 error) {
+	fake.gSUtilStatusMutex.Lock()
+	defer fake.gSUtilStatusMutex.Unlock()
+	fake.GSUtilStatusStub = nil
+	fake.gSUtilStatusReturns = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePublisherClient) GSUtilStatusReturnsOnCall(i int, result1 bool, result2 error) {
+	fake.gSUtilStatusMutex.Lock()
+	defer fake.gSUtilStatusMutex.Unlock()
+	fake.GSUtilStatusStub = nil
+	if fake.gSUtilStatusReturnsOnCall == nil {
+		fake.gSUtilStatusReturnsOnCall = make(map[int]struct {
+			result1 bool
+			result2 error
+		})
+	}
+	fake.gSUtilStatusReturnsOnCall[i] = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePublisherClient) GetMarkerPath(arg1 string, arg2 string) (string, error) {
+	fake.getMarkerPathMutex.Lock()
+	ret, specificReturn := fake.getMarkerPathReturnsOnCall[len(fake.getMarkerPathArgsForCall)]
+	fake.getMarkerPathArgsForCall = append(fake.getMarkerPathArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.GetMarkerPathStub
+	fakeReturns := fake.getMarkerPathReturns
+	fake.recordInvocation("GetMarkerPath", []interface{}{arg1, arg2})
+	fake.getMarkerPathMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakePublisherClient) GetMarkerPathCallCount() int {
+	fake.getMarkerPathMutex.RLock()
+	defer fake.getMarkerPathMutex.RUnlock()
+	return len(fake.getMarkerPathArgsForCall)
+}
+
+func (fake *FakePublisherClient) GetMarkerPathCalls(stub func(string, string) (string, error)) {
+	fake.getMarkerPathMutex.Lock()
+	defer fake.getMarkerPathMutex.Unlock()
+	fake.GetMarkerPathStub = stub
+}
+
+func (fake *FakePublisherClient) GetMarkerPathArgsForCall(i int) (string, string) {
+	fake.getMarkerPathMutex.RLock()
+	defer fake.getMarkerPathMutex.RUnlock()
+	argsForCall := fake.getMarkerPathArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakePublisherClient) GetMarkerPathReturns(result1 string, result2 error) {
+	fake.getMarkerPathMutex.Lock()
+	defer fake.getMarkerPathMutex.Unlock()
+	fake.GetMarkerPathStub = nil
+	fake.getMarkerPathReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePublisherClient) GetMarkerPathReturnsOnCall(i int, result1 string, result2 error) {
+	fake.getMarkerPathMutex.Lock()
+	defer fake.getMarkerPathMutex.Unlock()
+	fake.GetMarkerPathStub = nil
+	if fake.getMarkerPathReturnsOnCall == nil {
+		fake.getMarkerPathReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.getMarkerPathReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePublisherClient) GetReleasePath(arg1 string, arg2 string, arg3 string, arg4 bool) (string, error) {
+	fake.getReleasePathMutex.Lock()
+	ret, specificReturn := fake.getReleasePathReturnsOnCall[len(fake.getReleasePathArgsForCall)]
+	fake.getReleasePathArgsForCall = append(fake.getReleasePathArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 bool
+	}{arg1, arg2, arg3, arg4})
+	stub := fake.GetReleasePathStub
+	fakeReturns := fake.getReleasePathReturns
+	fake.recordInvocation("GetReleasePath", []interface{}{arg1, arg2, arg3, arg4})
+	fake.getReleasePathMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakePublisherClient) GetReleasePathCallCount() int {
+	fake.getReleasePathMutex.RLock()
+	defer fake.getReleasePathMutex.RUnlock()
+	return len(fake.getReleasePathArgsForCall)
+}
+
+func (fake *FakePublisherClient) GetReleasePathCalls(stub func(string, string, string, bool) (string, error)) {
+	fake.getReleasePathMutex.Lock()
+	defer fake.getReleasePathMutex.Unlock()
+	fake.GetReleasePathStub = stub
+}
+
+func (fake *FakePublisherClient) GetReleasePathArgsForCall(i int) (string, string, string, bool) {
+	fake.getReleasePathMutex.RLock()
+	defer fake.getReleasePathMutex.RUnlock()
+	argsForCall := fake.getReleasePathArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+}
+
+func (fake *FakePublisherClient) GetReleasePathReturns(result1 string, result2 error) {
+	fake.getReleasePathMutex.Lock()
+	defer fake.getReleasePathMutex.Unlock()
+	fake.GetReleasePathStub = nil
+	fake.getReleasePathReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePublisherClient) GetReleasePathReturnsOnCall(i int, result1 string, result2 error) {
+	fake.getReleasePathMutex.Lock()
+	defer fake.getReleasePathMutex.Unlock()
+	fake.GetReleasePathStub = nil
+	if fake.getReleasePathReturnsOnCall == nil {
+		fake.getReleasePathReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.getReleasePathReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakePublisherClient) GetURLResponse(arg1 string) (string, error) {
 	fake.getURLResponseMutex.Lock()
 	ret, specificReturn := fake.getURLResponseReturnsOnCall[len(fake.getURLResponseArgsForCall)]
@@ -252,15 +719,426 @@ func (fake *FakePublisherClient) GetURLResponseReturnsOnCall(i int, result1 stri
 	}{result1, result2}
 }
 
+func (fake *FakePublisherClient) Marshal(arg1 interface{}) ([]byte, error) {
+	fake.marshalMutex.Lock()
+	ret, specificReturn := fake.marshalReturnsOnCall[len(fake.marshalArgsForCall)]
+	fake.marshalArgsForCall = append(fake.marshalArgsForCall, struct {
+		arg1 interface{}
+	}{arg1})
+	stub := fake.MarshalStub
+	fakeReturns := fake.marshalReturns
+	fake.recordInvocation("Marshal", []interface{}{arg1})
+	fake.marshalMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakePublisherClient) MarshalCallCount() int {
+	fake.marshalMutex.RLock()
+	defer fake.marshalMutex.RUnlock()
+	return len(fake.marshalArgsForCall)
+}
+
+func (fake *FakePublisherClient) MarshalCalls(stub func(interface{}) ([]byte, error)) {
+	fake.marshalMutex.Lock()
+	defer fake.marshalMutex.Unlock()
+	fake.MarshalStub = stub
+}
+
+func (fake *FakePublisherClient) MarshalArgsForCall(i int) interface{} {
+	fake.marshalMutex.RLock()
+	defer fake.marshalMutex.RUnlock()
+	argsForCall := fake.marshalArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakePublisherClient) MarshalReturns(result1 []byte, result2 error) {
+	fake.marshalMutex.Lock()
+	defer fake.marshalMutex.Unlock()
+	fake.MarshalStub = nil
+	fake.marshalReturns = struct {
+		result1 []byte
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePublisherClient) MarshalReturnsOnCall(i int, result1 []byte, result2 error) {
+	fake.marshalMutex.Lock()
+	defer fake.marshalMutex.Unlock()
+	fake.MarshalStub = nil
+	if fake.marshalReturnsOnCall == nil {
+		fake.marshalReturnsOnCall = make(map[int]struct {
+			result1 []byte
+			result2 error
+		})
+	}
+	fake.marshalReturnsOnCall[i] = struct {
+		result1 []byte
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePublisherClient) NormalizePath(arg1 ...string) (string, error) {
+	fake.normalizePathMutex.Lock()
+	ret, specificReturn := fake.normalizePathReturnsOnCall[len(fake.normalizePathArgsForCall)]
+	fake.normalizePathArgsForCall = append(fake.normalizePathArgsForCall, struct {
+		arg1 []string
+	}{arg1})
+	stub := fake.NormalizePathStub
+	fakeReturns := fake.normalizePathReturns
+	fake.recordInvocation("NormalizePath", []interface{}{arg1})
+	fake.normalizePathMutex.Unlock()
+	if stub != nil {
+		return stub(arg1...)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakePublisherClient) NormalizePathCallCount() int {
+	fake.normalizePathMutex.RLock()
+	defer fake.normalizePathMutex.RUnlock()
+	return len(fake.normalizePathArgsForCall)
+}
+
+func (fake *FakePublisherClient) NormalizePathCalls(stub func(...string) (string, error)) {
+	fake.normalizePathMutex.Lock()
+	defer fake.normalizePathMutex.Unlock()
+	fake.NormalizePathStub = stub
+}
+
+func (fake *FakePublisherClient) NormalizePathArgsForCall(i int) []string {
+	fake.normalizePathMutex.RLock()
+	defer fake.normalizePathMutex.RUnlock()
+	argsForCall := fake.normalizePathArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakePublisherClient) NormalizePathReturns(result1 string, result2 error) {
+	fake.normalizePathMutex.Lock()
+	defer fake.normalizePathMutex.Unlock()
+	fake.NormalizePathStub = nil
+	fake.normalizePathReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePublisherClient) NormalizePathReturnsOnCall(i int, result1 string, result2 error) {
+	fake.normalizePathMutex.Lock()
+	defer fake.normalizePathMutex.Unlock()
+	fake.NormalizePathStub = nil
+	if fake.normalizePathReturnsOnCall == nil {
+		fake.normalizePathReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.normalizePathReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePublisherClient) ReadFile(arg1 string) ([]byte, error) {
+	fake.readFileMutex.Lock()
+	ret, specificReturn := fake.readFileReturnsOnCall[len(fake.readFileArgsForCall)]
+	fake.readFileArgsForCall = append(fake.readFileArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.ReadFileStub
+	fakeReturns := fake.readFileReturns
+	fake.recordInvocation("ReadFile", []interface{}{arg1})
+	fake.readFileMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakePublisherClient) ReadFileCallCount() int {
+	fake.readFileMutex.RLock()
+	defer fake.readFileMutex.RUnlock()
+	return len(fake.readFileArgsForCall)
+}
+
+func (fake *FakePublisherClient) ReadFileCalls(stub func(string) ([]byte, error)) {
+	fake.readFileMutex.Lock()
+	defer fake.readFileMutex.Unlock()
+	fake.ReadFileStub = stub
+}
+
+func (fake *FakePublisherClient) ReadFileArgsForCall(i int) string {
+	fake.readFileMutex.RLock()
+	defer fake.readFileMutex.RUnlock()
+	argsForCall := fake.readFileArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakePublisherClient) ReadFileReturns(result1 []byte, result2 error) {
+	fake.readFileMutex.Lock()
+	defer fake.readFileMutex.Unlock()
+	fake.ReadFileStub = nil
+	fake.readFileReturns = struct {
+		result1 []byte
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePublisherClient) ReadFileReturnsOnCall(i int, result1 []byte, result2 error) {
+	fake.readFileMutex.Lock()
+	defer fake.readFileMutex.Unlock()
+	fake.ReadFileStub = nil
+	if fake.readFileReturnsOnCall == nil {
+		fake.readFileReturnsOnCall = make(map[int]struct {
+			result1 []byte
+			result2 error
+		})
+	}
+	fake.readFileReturnsOnCall[i] = struct {
+		result1 []byte
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePublisherClient) TempDir(arg1 string, arg2 string) (string, error) {
+	fake.tempDirMutex.Lock()
+	ret, specificReturn := fake.tempDirReturnsOnCall[len(fake.tempDirArgsForCall)]
+	fake.tempDirArgsForCall = append(fake.tempDirArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.TempDirStub
+	fakeReturns := fake.tempDirReturns
+	fake.recordInvocation("TempDir", []interface{}{arg1, arg2})
+	fake.tempDirMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakePublisherClient) TempDirCallCount() int {
+	fake.tempDirMutex.RLock()
+	defer fake.tempDirMutex.RUnlock()
+	return len(fake.tempDirArgsForCall)
+}
+
+func (fake *FakePublisherClient) TempDirCalls(stub func(string, string) (string, error)) {
+	fake.tempDirMutex.Lock()
+	defer fake.tempDirMutex.Unlock()
+	fake.TempDirStub = stub
+}
+
+func (fake *FakePublisherClient) TempDirArgsForCall(i int) (string, string) {
+	fake.tempDirMutex.RLock()
+	defer fake.tempDirMutex.RUnlock()
+	argsForCall := fake.tempDirArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakePublisherClient) TempDirReturns(result1 string, result2 error) {
+	fake.tempDirMutex.Lock()
+	defer fake.tempDirMutex.Unlock()
+	fake.TempDirStub = nil
+	fake.tempDirReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePublisherClient) TempDirReturnsOnCall(i int, result1 string, result2 error) {
+	fake.tempDirMutex.Lock()
+	defer fake.tempDirMutex.Unlock()
+	fake.TempDirStub = nil
+	if fake.tempDirReturnsOnCall == nil {
+		fake.tempDirReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.tempDirReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePublisherClient) TempFile(arg1 string, arg2 string) (*os.File, error) {
+	fake.tempFileMutex.Lock()
+	ret, specificReturn := fake.tempFileReturnsOnCall[len(fake.tempFileArgsForCall)]
+	fake.tempFileArgsForCall = append(fake.tempFileArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.TempFileStub
+	fakeReturns := fake.tempFileReturns
+	fake.recordInvocation("TempFile", []interface{}{arg1, arg2})
+	fake.tempFileMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakePublisherClient) TempFileCallCount() int {
+	fake.tempFileMutex.RLock()
+	defer fake.tempFileMutex.RUnlock()
+	return len(fake.tempFileArgsForCall)
+}
+
+func (fake *FakePublisherClient) TempFileCalls(stub func(string, string) (*os.File, error)) {
+	fake.tempFileMutex.Lock()
+	defer fake.tempFileMutex.Unlock()
+	fake.TempFileStub = stub
+}
+
+func (fake *FakePublisherClient) TempFileArgsForCall(i int) (string, string) {
+	fake.tempFileMutex.RLock()
+	defer fake.tempFileMutex.RUnlock()
+	argsForCall := fake.tempFileArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakePublisherClient) TempFileReturns(result1 *os.File, result2 error) {
+	fake.tempFileMutex.Lock()
+	defer fake.tempFileMutex.Unlock()
+	fake.TempFileStub = nil
+	fake.tempFileReturns = struct {
+		result1 *os.File
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePublisherClient) TempFileReturnsOnCall(i int, result1 *os.File, result2 error) {
+	fake.tempFileMutex.Lock()
+	defer fake.tempFileMutex.Unlock()
+	fake.TempFileStub = nil
+	if fake.tempFileReturnsOnCall == nil {
+		fake.tempFileReturnsOnCall = make(map[int]struct {
+			result1 *os.File
+			result2 error
+		})
+	}
+	fake.tempFileReturnsOnCall[i] = struct {
+		result1 *os.File
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePublisherClient) Unmarshal(arg1 []byte, arg2 interface{}) error {
+	var arg1Copy []byte
+	if arg1 != nil {
+		arg1Copy = make([]byte, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.unmarshalMutex.Lock()
+	ret, specificReturn := fake.unmarshalReturnsOnCall[len(fake.unmarshalArgsForCall)]
+	fake.unmarshalArgsForCall = append(fake.unmarshalArgsForCall, struct {
+		arg1 []byte
+		arg2 interface{}
+	}{arg1Copy, arg2})
+	stub := fake.UnmarshalStub
+	fakeReturns := fake.unmarshalReturns
+	fake.recordInvocation("Unmarshal", []interface{}{arg1Copy, arg2})
+	fake.unmarshalMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakePublisherClient) UnmarshalCallCount() int {
+	fake.unmarshalMutex.RLock()
+	defer fake.unmarshalMutex.RUnlock()
+	return len(fake.unmarshalArgsForCall)
+}
+
+func (fake *FakePublisherClient) UnmarshalCalls(stub func([]byte, interface{}) error) {
+	fake.unmarshalMutex.Lock()
+	defer fake.unmarshalMutex.Unlock()
+	fake.UnmarshalStub = stub
+}
+
+func (fake *FakePublisherClient) UnmarshalArgsForCall(i int) ([]byte, interface{}) {
+	fake.unmarshalMutex.RLock()
+	defer fake.unmarshalMutex.RUnlock()
+	argsForCall := fake.unmarshalArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakePublisherClient) UnmarshalReturns(result1 error) {
+	fake.unmarshalMutex.Lock()
+	defer fake.unmarshalMutex.Unlock()
+	fake.UnmarshalStub = nil
+	fake.unmarshalReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakePublisherClient) UnmarshalReturnsOnCall(i int, result1 error) {
+	fake.unmarshalMutex.Lock()
+	defer fake.unmarshalMutex.Unlock()
+	fake.UnmarshalStub = nil
+	if fake.unmarshalReturnsOnCall == nil {
+		fake.unmarshalReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.unmarshalReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakePublisherClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.copyToLocalMutex.RLock()
+	defer fake.copyToLocalMutex.RUnlock()
+	fake.copyToRemoteMutex.RLock()
+	defer fake.copyToRemoteMutex.RUnlock()
 	fake.gSUtilMutex.RLock()
 	defer fake.gSUtilMutex.RUnlock()
 	fake.gSUtilOutputMutex.RLock()
 	defer fake.gSUtilOutputMutex.RUnlock()
+	fake.gSUtilStatusMutex.RLock()
+	defer fake.gSUtilStatusMutex.RUnlock()
+	fake.getMarkerPathMutex.RLock()
+	defer fake.getMarkerPathMutex.RUnlock()
+	fake.getReleasePathMutex.RLock()
+	defer fake.getReleasePathMutex.RUnlock()
 	fake.getURLResponseMutex.RLock()
 	defer fake.getURLResponseMutex.RUnlock()
+	fake.marshalMutex.RLock()
+	defer fake.marshalMutex.RUnlock()
+	fake.normalizePathMutex.RLock()
+	defer fake.normalizePathMutex.RUnlock()
+	fake.readFileMutex.RLock()
+	defer fake.readFileMutex.RUnlock()
+	fake.tempDirMutex.RLock()
+	defer fake.tempDirMutex.RUnlock()
+	fake.tempFileMutex.RLock()
+	defer fake.tempFileMutex.RUnlock()
+	fake.unmarshalMutex.RLock()
+	defer fake.unmarshalMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
