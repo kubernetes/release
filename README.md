@@ -23,6 +23,7 @@ across branches.
 - [End User](#end-user)
   - [`release-notes`](#release-notes)
   - [`gcbuilder`](#gcbuilder)
+  - [`publish-release`](#publish-release)
 - [Legacy](#legacy)
   - [`push-build.sh`](#push-buildsh)
 - [Contributing](#contributing)
@@ -121,6 +122,13 @@ substitutions.
 Status: Unused
 
 Details: [Documentation](/cmd/gcbuilder/README.md)
+
+### [`publish-release`](/cmd/publish-release)
+
+A tool to announce software releases. Currently supports updating the
+release page on GitHub based on templates and updating release artifacts.
+
+Details: [Documentation](cmd/publish-release/README.md)
 
 ## Legacy
 
