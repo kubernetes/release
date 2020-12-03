@@ -41,9 +41,10 @@ const (
 	gitRoot = workspaceDir + "/src/k8s.io/kubernetes"
 
 	// releaseNotesHTMLFile is the name of the release notes in HTML
-	releaseNotesHTMLFile = "/src/release-notes.html"
+	releaseNotesHTMLFile = workspaceDir + "/src/release-notes.html"
+
 	// releaseNotesJSONFile is the file containing the release notes in json format
-	releaseNotesJSONFile = "/src/release-notes.json"
+	releaseNotesJSONFile = workspaceDir + "/src/release-notes.json"
 )
 
 // Options are settings which will be used by `StageOptions` as well as

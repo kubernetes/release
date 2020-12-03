@@ -220,6 +220,24 @@ func TestPushArtifacts(t *testing.T) {
 			},
 			shouldError: true,
 		},
+		{ // NormalizePath fails
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.NormalizePathReturns("", err)
+			},
+			shouldError: true,
+		},
+		{ // CopyToRemote fails
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.CopyToRemoteReturns(err)
+			},
+			shouldError: true,
+		},
+		{ // PublishReleaseNotesIndex fails
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.PublishReleaseNotesIndexReturns(err)
+			},
+			shouldError: true,
+		},
 	} {
 		opts := anago.DefaultReleaseOptions()
 

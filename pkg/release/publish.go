@@ -389,11 +389,6 @@ func (p *Publisher) PublishToGcs(
 func (p *Publisher) PublishReleaseNotesIndex(
 	gcsIndexRootPath, gcsReleaseNotesPath, version string,
 ) error {
-	type entry struct {
-		Version string `json:"version"`
-		Path    string `json:"path"`
-	}
-
 	const releaseNotesIndex = "/release-notes-index.json"
 
 	indexFilePath, err := p.client.NormalizePath(
@@ -415,7 +410,7 @@ func (p *Publisher) PublishReleaseNotesIndex(
 	}
 
 	logrus.Info("Building release notes index")
-	var versions []entry
+	versions := make(map[string]string)
 	if success {
 		logrus.Info("Modifying existing release notes index file")
 
@@ -443,10 +438,7 @@ func (p *Publisher) PublishReleaseNotesIndex(
 	} else {
 		logrus.Info("Creating non existing release notes index file")
 	}
-	versions = append(versions, entry{
-		Version: version,
-		Path:    releaseNotesFilePath,
-	})
+	versions[version] = releaseNotesFilePath
 
 	versionJSON, err := p.client.Marshal(versions)
 	if err != nil {

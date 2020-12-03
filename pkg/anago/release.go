@@ -30,6 +30,7 @@ import (
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/log"
+	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/util"
 )
@@ -147,6 +148,11 @@ type releaseImpl interface {
 	PushMainBranch(pusher *release.GitObjectPusher) error
 	NewGitPusher(opts *release.GitObjectPusherOptions) (*release.GitObjectPusher, error)
 	ArchiveRelease(options *release.ArchiverOptions) error
+	NormalizePath(store object.Store, pathParts ...string) (string, error)
+	CopyToRemote(store object.Store, src, gcsPath string) error
+	PublishReleaseNotesIndex(
+		gcsIndexRootPath, gcsReleaseNotesPath, version string,
+	) error
 }
 
 func (d *defaultReleaseImpl) Submit(options *gcb.Options) error {
@@ -278,6 +284,26 @@ func (d *defaultReleaseImpl) PushMainBranch(pusher *release.GitObjectPusher) err
 	return nil
 }
 
+func (d *defaultReleaseImpl) NormalizePath(
+	store object.Store, pathParts ...string,
+) (string, error) {
+	return store.NormalizePath(pathParts...)
+}
+
+func (d *defaultReleaseImpl) CopyToRemote(
+	store object.Store, src, gcsPath string,
+) error {
+	return store.CopyToRemote(src, gcsPath)
+}
+
+func (d *defaultReleaseImpl) PublishReleaseNotesIndex(
+	gcsIndexRootPath, gcsReleaseNotesPath, version string,
+) error {
+	return release.NewPublisher().PublishReleaseNotesIndex(
+		gcsIndexRootPath, gcsReleaseNotesPath, version,
+	)
+}
+
 // NewGitPusher returns a new instance of the git pusher to reuse
 func (d *defaultReleaseImpl) NewGitPusher(
 	opts *release.GitObjectPusherOptions,
@@ -338,6 +364,8 @@ func (d *DefaultRelease) PrepareWorkspace() error {
 }
 
 func (d *DefaultRelease) PushArtifacts() error {
+	const gcsRoot = "release"
+
 	for _, version := range d.state.versions.Ordered() {
 		logrus.Infof("Pushing artifacts for version %s", version)
 		buildDir := filepath.Join(
@@ -380,11 +408,41 @@ func (d *DefaultRelease) PushArtifacts() error {
 		}
 
 		if err := d.impl.PublishVersion(
-			"release", version, buildDir, bucket, "release", nil, false, false,
+			"release", version, buildDir, bucket, gcsRoot, nil, false, false,
 		); err != nil {
 			return errors.Wrap(err, "publish release")
 		}
 	}
+
+	logrus.Info("Publishing release notes JSON")
+	objStore := object.NewGCS()
+	objStore.SetOptions(objStore.WithNoClobber(false))
+	gcsReleaseRootPath, err := d.impl.NormalizePath(
+		objStore, d.options.Bucket(), gcsRoot,
+	)
+	if err != nil {
+		return errors.Wrap(err, "get GCS release root path")
+	}
+
+	gcsReleaseNotesPath := gcsReleaseRootPath + fmt.Sprintf(
+		"/%s/release-notes.json", d.state.versions.Prime(),
+	)
+
+	if err := d.impl.CopyToRemote(
+		objStore,
+		releaseNotesJSONFile,
+		gcsReleaseNotesPath,
+	); err != nil {
+		return errors.Wrap(err, "copy release notes to bucket")
+	}
+
+	logrus.Info("Publishing updated release notes index")
+	if err := d.impl.PublishReleaseNotesIndex(
+		gcsReleaseRootPath, gcsReleaseNotesPath, d.state.versions.Prime(),
+	); err != nil {
+		return errors.Wrap(err, "publish release notes index")
+	}
+
 	return nil
 }
 
@@ -458,7 +516,7 @@ func (d *DefaultRelease) CreateAnnouncement() error {
 	)
 
 	// Pass the file path as a string to the annoucement options
-	announceOpts.WithChangelogFile(filepath.Join(workspaceDir, releaseNotesHTMLFile))
+	announceOpts.WithChangelogFile(releaseNotesHTMLFile)
 
 	// Run the annoucement creation
 	if err := d.impl.CreateAnnouncement(announceOpts); err != nil {
