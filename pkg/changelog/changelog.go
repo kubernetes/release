@@ -119,7 +119,7 @@ func (c *Changelog) Run() error {
 			}
 
 			// New final minor versions should have remote release notes
-			markdown, err = c.lookupRemoteReleaseNotes(branch)
+			markdown, jsonStr, err = c.lookupRemoteReleaseNotes(branch)
 			markdown = downloadsTable.String() + markdown
 		} else if tag.Pre[0].String() == "alpha" && tag.Pre[1].VersionNum == 1 {
 			// v1.x.0-alpha.1 releases use the previous minor as start commit.
@@ -397,21 +397,40 @@ func (c *Changelog) writeJSON(tag semver.Version, jsonStr string) error {
 	)
 }
 
-func (c *Changelog) lookupRemoteReleaseNotes(branch string) (string, error) {
-	logrus.Info("Assuming new minor release")
+func (c *Changelog) lookupRemoteReleaseNotes(
+	branch string,
+) (markdownStr, jsonStr string, err error) {
+	logrus.Info("Assuming new minor release, fetching remote release notes")
 
-	remote := fmt.Sprintf(
+	remoteBase := fmt.Sprintf(
 		"https://raw.githubusercontent.com/kubernetes/sig-release/%s/"+
-			"releases/%s/release-notes-draft.md", git.DefaultBranch, branch,
+			"releases/%s/", git.DefaultBranch, branch,
 	)
-	response, err := c.impl.GetURLResponse(remote, false)
+
+	// Retrieve the markdown version
+	remoteMarkdown := remoteBase + "release-notes-draft.md"
+	markdownStr, err = c.impl.GetURLResponse(remoteMarkdown, false)
 	if err != nil {
-		return "", errors.Wrapf(err,
-			"fetch release notes from remote: %s", remote,
+		return "", "", errors.Wrapf(err,
+			"fetch release notes markdown from remote: %s", remoteMarkdown,
 		)
 	}
-	logrus.Infof("Found remote release notes on: %s", remote)
-	return response, nil
+	logrus.Infof("Found remote release notes markdown on: %s", remoteMarkdown)
+
+	// Retrieve the JSON version
+	remoteJSON := remoteBase + "release-notes-draft.json"
+	jsonStr, err = c.impl.GetURLResponse(remoteJSON, false)
+	if err != nil {
+		logrus.Warnf(
+			"Unable to fetch release notes JSON from remote %s: %v",
+			remoteJSON, err,
+		)
+		// Fallback in case we're not able to retrieve a JSON draft.
+		jsonStr = "{}"
+	}
+	logrus.Infof("Found remote release notes JSON on: %s", remoteJSON)
+
+	return markdownStr, jsonStr, nil
 }
 
 func (c *Changelog) commitChanges(

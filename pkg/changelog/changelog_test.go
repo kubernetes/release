@@ -108,9 +108,9 @@ func TestRun(t *testing.T) {
 			},
 			shouldErr: true,
 		},
-		{ // GetURLResponse failed
+		{ // GetURLResponse 0 failed
 			prepare: func(mock *changelogfakes.FakeImpl, _ *changelog.Options) {
-				mock.GetURLResponseReturns("", err)
+				mock.GetURLResponseReturnsOnCall(0, "", err)
 			},
 			shouldErr: true,
 		},
