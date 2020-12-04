@@ -20,9 +20,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"k8s.io/release/pkg/command"
+	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/release"
+	"k8s.io/release/pkg/util"
 )
 
 const (
@@ -45,7 +52,7 @@ Managers</A>.
 
 const releaseAnnouncement = `Kubernetes Community,
 <p>
-Kubernetes %s has been built and pushed.
+Kubernetes <b>%s</b> has been built and pushed using Golang version <b>%s</b>.
 <p>
 The release notes have been updated in
 <a href=https://git.k8s.io/kubernetes/%s>%s</a>, with a pointer to them on
@@ -104,13 +111,20 @@ func CreateForRelease(opts *Options) error {
 		changelog = opts.changelogHTML
 	}
 
+	logrus.Infof("Trying to get the Go version used to build %s...", opts.tag)
+	goVersion, err := getGoVersion(opts.tag)
+	if err != nil {
+		return err
+	}
+	logrus.Infof("Found the following Go version: %s", goVersion)
+
 	if err := create(
 		opts.workDir,
 		fmt.Sprintf("Kubernetes %s is live!", opts.tag),
 		fmt.Sprintf(releaseAnnouncement,
-			opts.tag, opts.changelogPath, filepath.Base(opts.changelogPath),
-			opts.tag, changelog, opts.changelogPath,
-			filepath.Base(opts.changelogPath), opts.tag,
+			opts.tag, goVersion, opts.changelogPath,
+			filepath.Base(opts.changelogPath), opts.tag, changelog,
+			opts.changelogPath, filepath.Base(opts.changelogPath), opts.tag,
 		),
 	); err != nil {
 		return errors.Wrap(err, "creating release announcement")
@@ -142,4 +156,37 @@ func create(workDir, subject, message string) error {
 	logrus.Debugf("Wrote file %s", announcementFile)
 
 	return nil
+}
+
+// getGoVersion runs kube-cross container and go version inside it.
+// We're running kube-cross container because it's not guaranteed that
+// k8s-cloud-builder container will be running the same Go version as
+// the kube-cross container used to build the release.
+func getGoVersion(tag string) (string, error) {
+	semver, err := util.TagStringToSemver(tag)
+	if err != nil {
+		return "", errors.Wrap(err, "parse version tag")
+	}
+
+	kubecrossBranches := []string{
+		fmt.Sprintf("release-%d.%d", semver.Major, semver.Minor),
+		git.DefaultBranch,
+	}
+
+	kubecrossVer, err := release.GetKubecrossVersion(kubecrossBranches...)
+	if err != nil {
+		return "", errors.Wrap(err, "get kubecross version")
+	}
+
+	kubecrossImg := fmt.Sprintf("k8s.gcr.io/build-image/kube-cross:%s", kubecrossVer)
+
+	res, err := command.New(
+		"docker", "run", "--rm", kubecrossImg, "go", "version",
+	).RunSilentSuccessOutput()
+	if err != nil {
+		return "", errors.Wrap(err, "get go version")
+	}
+
+	versionRegex := regexp.MustCompile(`^?([0-9]+)(\.[0-9]+)?(\.[0-9]+)`)
+	return versionRegex.FindString(strings.TrimSpace(res.OutputTrimNL())), nil
 }
