@@ -586,5 +586,16 @@ func (d *DefaultRelease) Archive() error {
 	if err := d.impl.ArchiveRelease(archiverOptions); err != nil {
 		return errors.Wrap(err, "running the release archival process")
 	}
+
+	args := ""
+	if d.options.NoMock {
+		args += " --nomock"
+	}
+	args += " --tag=" + d.state.versions.Prime()
+
+	logrus.Infof(
+		"To announce this release, run:\n\n$ krel announce send%s", args,
+	)
+
 	return nil
 }
