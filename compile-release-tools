@@ -79,7 +79,7 @@ compile_with_flags() {
     -X $pkg.buildDate=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
     -X $pkg.gitCommit=$(git rev-parse HEAD 2>/dev/null || echo unknown) \
     -X $pkg.gitTreeState=$git_tree_state \
-    -X $pkg.gitVersion=$(git describe --abbrev=0 || echo unknown)" \
+    -X $pkg.gitVersion=$(git describe --tags --abbrev=0 || echo unknown)" \
     -o "$RELEASE_TOOL_BIN/$tool" "./cmd/$tool" \
     || return 1
 
