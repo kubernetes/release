@@ -46,8 +46,10 @@ import (
 )
 
 const (
-	// draftFilename filename for the release notes draft
-	draftFilename = "release-notes-draft.md"
+	// draftMarkdownFile filename for the release notes draft
+	draftMarkdownFile = "release-notes-draft.md"
+	// draftJSONFile is the json version of the release notes
+	draftJSONFile = "release-notes-draft.json"
 	// serviceDirectory is where we keep the files used to generate the notes
 	releaseNotesWorkDir = "release-notes"
 	// mapsMainDirectory is where we will save the release notes maps
@@ -385,6 +387,9 @@ func createDraftPR(repoPath, tag string) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "preparing local fork of kubernetes/sig-release")
 	}
+	defer func() {
+		err = sigReleaseRepo.Cleanup()
+	}()
 
 	// The release path inside the repository
 	releasePath := filepath.Join("releases", fmt.Sprintf("release-%d.%d", tagVersion.Major, tagVersion.Minor))
@@ -436,13 +441,22 @@ func createDraftPR(repoPath, tag string) (err error) {
 		return errors.Wrap(err, "building release notes results")
 	}
 
-	// generate the notes
-	logrus.Debugf("Release notes markdown will be written to %s", releaseDir)
-	err = ioutil.WriteFile(filepath.Join(releaseDir, draftFilename), []byte(result.markdown), 0644)
+	// generate the notes files
+	logrus.Debugf("Release notes draft files will be written to %s", releaseDir)
+
+	// Write the markdown draft
+	err = ioutil.WriteFile(filepath.Join(releaseDir, draftMarkdownFile), []byte(result.markdown), 0644)
 	if err != nil {
 		return errors.Wrapf(err, "writing release notes draft")
 	}
-	logrus.Infof("Release Notes Draft written to %s", filepath.Join(releaseDir, draftFilename))
+	logrus.Infof("Release Notes Markdown Draft written to %s", filepath.Join(releaseDir, draftMarkdownFile))
+
+	// Write the JSON file of the current notes
+	err = ioutil.WriteFile(filepath.Join(releaseDir, draftJSONFile), []byte(result.json), 0644)
+	if err != nil {
+		return errors.Wrapf(err, "writing release notes json file")
+	}
+	logrus.Infof("Release Notes JSON version written to %s", filepath.Join(releaseDir, draftJSONFile))
 
 	// If we are in interactive mode, ask before continuing
 	if !autoCreatePullRequest {
@@ -465,58 +479,11 @@ func createDraftPR(repoPath, tag string) (err error) {
 		return nil
 	}
 
-	defer func() {
-		err = sigReleaseRepo.Cleanup()
-	}()
-
-	// add the updated draft
-	if err := sigReleaseRepo.Add(filepath.Join(releasePath, draftFilename)); err != nil {
-		return errors.Wrap(err, "adding release notes draft to staging area")
-	}
-
-	// List of directories we'll consider for the PR
-	releaseDirectories := []struct{ Path, Name, Ext string }{
-		{
-			Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsMainDirectory),
-			Name: "release notes maps", Ext: "yaml",
-		},
-		{
-			Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsSessionDirectory),
-			Name: "release notes session files", Ext: "json",
-		},
-		{
-			Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsCVEDirectory),
-			Name: "release notes cve data", Ext: "yaml",
-		},
-		{
-			Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsThemesDirectory),
-			Name: "release notes major theme files", Ext: "yaml",
-		},
-	}
-
-	// Add to the PR all files that exist
-	for _, dirData := range releaseDirectories {
-		// add the updated maps
-		if util.Exists(filepath.Join(sigReleaseRepo.Dir(), dirData.Path)) {
-			// Check if there are any files to commit
-			matches, err := filepath.Glob(filepath.Join(sigReleaseRepo.Dir(), dirData.Path, "*"+dirData.Ext))
-			logrus.Debugf("Adding %d %s from %s to commit", len(matches), dirData.Name, dirData.Path)
-			if err != nil {
-				return errors.Wrapf(err, "checking for %s files in %s", dirData.Ext, dirData.Path)
-			}
-			if len(matches) > 0 {
-				if err := sigReleaseRepo.Add(filepath.Join(dirData.Path, "*"+dirData.Ext)); err != nil {
-					return errors.Wrapf(err, "adding %s to staging area", dirData.Name)
-				}
-			}
-		} else {
-			logrus.Debugf("Not adding %s files, directory %s not found", dirData.Name, dirData.Path)
-		}
-	}
-
-	// add the generated draft
-	if err := sigReleaseRepo.UserCommit("Release Notes draft for k/k " + tag); err != nil {
-		return errors.Wrapf(err, "creating commit in %s/%s", releaseNotesOpts.githubOrg, releaseNotesOpts.draftRepo)
+	// Create the commit
+	if err := createDraftCommit(
+		sigReleaseRepo, releasePath, "Release Notes draft for k/k "+tag,
+	); err != nil {
+		return errors.Wrap(err, "creating release notes commit")
 	}
 
 	// push to the user's remote
@@ -561,6 +528,67 @@ func createDraftPR(repoPath, tag string) (err error) {
 	logrus.Infof("Successfully created PR #%d", pr.GetNumber())
 
 	return err
+}
+
+// createDraftCommit creates the release notes commit in the temporary clone
+// of the user's sig-release fork. It will include both versions of the draft,
+// the maps and cve directories and the edit session files.
+func createDraftCommit(repo *git.Repo, releasePath, commitMessage string) error {
+	// add the updated draft
+	if err := repo.Add(filepath.Join(releasePath, draftMarkdownFile)); err != nil {
+		return errors.Wrap(err, "adding release notes draft to staging area")
+	}
+
+	// add the json draft
+	if err := repo.Add(filepath.Join(releasePath, draftJSONFile)); err != nil {
+		return errors.Wrap(err, "adding release notes json to staging area")
+	}
+
+	// List of directories we'll consider for the PR
+	releaseDirectories := []struct{ Path, Name, Ext string }{
+		{
+			Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsMainDirectory),
+			Name: "release notes maps", Ext: "yaml",
+		},
+		{
+			Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsSessionDirectory),
+			Name: "release notes session files", Ext: "json",
+		},
+		{
+			Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsCVEDirectory),
+			Name: "release notes cve data", Ext: "yaml",
+		},
+		{
+			Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsThemesDirectory),
+			Name: "release notes major theme files", Ext: "yaml",
+		},
+	}
+
+	// Add to the PR all files that exist
+	for _, dirData := range releaseDirectories {
+		// add the updated maps
+		if util.Exists(filepath.Join(repo.Dir(), dirData.Path)) {
+			// Check if there are any files to commit
+			matches, err := filepath.Glob(filepath.Join(repo.Dir(), dirData.Path, "*"+dirData.Ext))
+			logrus.Debugf("Adding %d %s from %s to commit", len(matches), dirData.Name, dirData.Path)
+			if err != nil {
+				return errors.Wrapf(err, "checking for %s files in %s", dirData.Ext, dirData.Path)
+			}
+			if len(matches) > 0 {
+				if err := repo.Add(filepath.Join(dirData.Path, "*"+dirData.Ext)); err != nil {
+					return errors.Wrapf(err, "adding %s to staging area", dirData.Name)
+				}
+			}
+		} else {
+			logrus.Debugf("Not adding %s files, directory %s not found", dirData.Name, dirData.Path)
+		}
+	}
+
+	// add the generated draft
+	if err := repo.UserCommit(commitMessage); err != nil {
+		return errors.Wrapf(err, "creating commit in %s/%s", releaseNotesOpts.githubOrg, releaseNotesOpts.draftRepo)
+	}
+	return nil
 }
 
 // prepareFork Prepare a branch a repo
@@ -764,7 +792,6 @@ func createWebsitePR(repoPath, tag string) (err error) {
 		github.GitHubURL, defaultKubernetesSigsOrg,
 		defaultKubernetesSigsRepo, pr.GetNumber(),
 	)
-
 	return err
 }
 
