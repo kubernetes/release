@@ -793,7 +793,7 @@ func (g *GitHub) ListReleaseAssets(
 // TagExists returns true is a specified tag exists in the repo
 func (g *GitHub) TagExists(owner, repo, tag string) (exists bool, err error) {
 	tags, _, err := g.Client().ListTags(
-		context.Background(), owner, repo, &github.ListOptions{},
+		context.Background(), owner, repo, &github.ListOptions{PerPage: 100},
 	)
 	if err != nil {
 		return exists, errors.Wrap(err, "listing repository tags")
