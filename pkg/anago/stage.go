@@ -364,9 +364,9 @@ func (d *DefaultStage) TagRepository() error {
 				}
 			}
 		} else {
-			logrus.Infof("Checking out commit %s", commit)
-			if err := d.impl.Checkout(repo, commit); err != nil {
-				return errors.Wrap(err, "checkout release commit")
+			logrus.Infof("Checking out branch %s", d.options.ReleaseBranch)
+			if err := d.impl.Checkout(repo, d.options.ReleaseBranch); err != nil {
+				return errors.Wrapf(err, "checking out branch %s", d.options.ReleaseBranch)
 			}
 		}
 
