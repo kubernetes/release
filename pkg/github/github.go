@@ -155,6 +155,32 @@ func NewWithToken(token string) (*GitHub, error) {
 	return New(), nil
 }
 
+func NewEnterprise(baseURL, uploadURL string) (*GitHub, error) {
+	ctx := context.Background()
+	token := util.EnvDefault(TokenEnvKey, "")
+	client := http.DefaultClient
+	state := "unauthenticated"
+	if token != "" {
+		state = strings.TrimPrefix(state, "un")
+		client = oauth2.NewClient(ctx, oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: token},
+		))
+	}
+	logrus.Debugf("Using %s Enterprise GitHub client", state)
+	ghclient, err := github.NewEnterpriseClient(baseURL, uploadURL, client)
+	if err != nil {
+		return nil, fmt.Errorf("failed to new github client: %s", err)
+	}
+	return &GitHub{&githubClient{ghclient}}, nil
+}
+
+func NewEnterpriseWithToken(baseURL, uploadURL, token string) (*GitHub, error) {
+	if err := os.Setenv(TokenEnvKey, token); err != nil {
+		return nil, errors.Wrapf(err, "unable to export %s", TokenEnvKey)
+	}
+	return NewEnterprise(baseURL, uploadURL)
+}
+
 func (g *githubClient) GetCommit(
 	ctx context.Context, owner, repo, sha string,
 ) (*github.Commit, *github.Response, error) {

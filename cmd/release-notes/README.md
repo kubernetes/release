@@ -79,6 +79,8 @@ level=debug timestamp=2019-07-30T04:02:44.3716249Z caller=notes.go:497 msg="Excl
 | branch                  | BRANCH          | master              | Yes      | The GitHub repository branch to scrape                                                                                            |
 | start-sha               | START_SHA       |                     | Yes      | The commit hash to start processing from (inclusive)                                                                              |
 | end-sha                 | END_SHA         |                     | Yes      | The commit hash to end processing at (inclusive)                                                                                  |
+| github-base-url         | GITHUB_BASE_URL |                     | No       | The base URL of Github              |
+| github-upload-url       | GITHUB_UPLOAD_URL |                   | No       | The upload URL of enterprise Github |
 | repo-path               | REPO_PATH       | /tmp/k8s-repo       | No       | Path to a local Kubernetes repository, used only for tag discovery                                                                |
 | start-rev               | START_REV       |                     | No       | The git revision to start at. Can be used as alternative to start-sha                                                             |
 | env-rev                 | END_REV         |                     | No       | The git revision to end at. Can be used as alternative to end-sha                                                                 |
