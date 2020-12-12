@@ -29,24 +29,33 @@ import (
 
 type GCS struct {
 	// gsutil options
-	concurrent bool
-	recursive  bool
-	noClobber  bool
+	Concurrent bool
+	Recursive  bool
+	NoClobber  bool
 
 	// local options
 	// AllowMissing allows a copy operation to be skipped if the source or
 	// destination does not exist. This is useful for scenarios where copy
 	// operations happen in a loop/channel, so a single "failure" does not block
 	// the entire operation.
-	allowMissing bool
+	AllowMissing bool
+}
+
+func NewGCSWithOptions(opts GCS) *GCS {
+	return &GCS{
+		Concurrent:   opts.Concurrent,
+		Recursive:    opts.Recursive,
+		NoClobber:    opts.NoClobber,
+		AllowMissing: opts.AllowMissing,
+	}
 }
 
 func NewGCS() *GCS {
 	return &GCS{
-		concurrent:   true,
-		recursive:    true,
-		noClobber:    true,
-		allowMissing: true,
+		Concurrent:   true,
+		Recursive:    true,
+		NoClobber:    true,
+		AllowMissing: true,
 	}
 }
 
@@ -58,42 +67,42 @@ func (g *GCS) SetOptions(opts ...OptFn) {
 
 func (g *GCS) WithConcurrent(concurrent bool) OptFn {
 	return func(Store) {
-		g.concurrent = concurrent
+		g.Concurrent = concurrent
 	}
 }
 
 func (g *GCS) WithRecursive(recursive bool) OptFn {
 	return func(Store) {
-		g.recursive = recursive
+		g.Recursive = recursive
 	}
 }
 
 func (g *GCS) WithNoClobber(noClobber bool) OptFn {
 	return func(Store) {
-		g.noClobber = noClobber
+		g.NoClobber = noClobber
 	}
 }
 
 func (g *GCS) WithAllowMissing(allowMissing bool) OptFn {
 	return func(Store) {
-		g.allowMissing = allowMissing
+		g.AllowMissing = allowMissing
 	}
 }
 
-func (g *GCS) Concurrent() bool {
-	return g.concurrent
+func (g *GCS) GetConcurrent() bool {
+	return g.Concurrent
 }
 
-func (g *GCS) Recursive() bool {
-	return g.recursive
+func (g *GCS) GetRecursive() bool {
+	return g.Recursive
 }
 
-func (g *GCS) NoClobber() bool {
-	return g.noClobber
+func (g *GCS) GetNoClobber() bool {
+	return g.NoClobber
 }
 
-func (g *GCS) AllowMissing() bool {
-	return g.allowMissing
+func (g *GCS) GetAllowMissing() bool {
+	return g.AllowMissing
 }
 
 var (
@@ -116,7 +125,7 @@ func (g *GCS) CopyToRemote(src, gcsPath string) error {
 	if err != nil {
 		logrus.Info("Unable to get local source directory info")
 
-		if g.allowMissing {
+		if g.GetAllowMissing() {
 			logrus.Infof("Source directory (%s) does not exist. Skipping GCS upload.", src)
 			return nil
 		}
@@ -158,17 +167,17 @@ func (g *GCS) CopyBucketToBucket(src, dst string) error {
 func (g *GCS) bucketCopy(src, dst string) error {
 	args := []string{}
 
-	if g.concurrent {
+	if g.GetConcurrent() {
 		logrus.Debug("Setting GCS copy to run concurrently")
 		args = append(args, concurrentFlag)
 	}
 
 	args = append(args, "cp")
-	if g.recursive {
+	if g.GetRecursive() {
 		logrus.Debug("Setting GCS copy to run recursively")
 		args = append(args, recursiveFlag)
 	}
-	if g.noClobber {
+	if g.GetNoClobber() {
 		logrus.Debug("Setting GCS copy to not clobber existing files")
 		args = append(args, noClobberFlag)
 	}
@@ -391,14 +400,14 @@ func (g *GCS) DeletePath(path string) error {
 	// Build the command arguments
 	args := []string{"-q"}
 
-	if g.concurrent {
+	if g.GetConcurrent() {
 		logrus.Debug("Setting GCS copy to run concurrently")
 		args = append(args, concurrentFlag)
 	}
 
 	args = append(args, "rm")
 
-	if g.recursive {
+	if g.GetRecursive() {
 		logrus.Debug("Setting GCS copy to run recursively")
 		args = append(args, recursiveFlag)
 	}

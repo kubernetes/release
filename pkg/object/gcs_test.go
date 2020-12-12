@@ -49,10 +49,10 @@ func TestGCSSetOptions(t *testing.T) {
 			testGCS.WithAllowMissing(tc.opt),
 		)
 
-		require.Equal(t, tc.expected, testGCS.Concurrent())
-		require.Equal(t, tc.expected, testGCS.Recursive())
-		require.Equal(t, tc.expected, testGCS.NoClobber())
-		require.Equal(t, tc.expected, testGCS.AllowMissing())
+		require.Equal(t, tc.expected, testGCS.GetConcurrent())
+		require.Equal(t, tc.expected, testGCS.GetRecursive())
+		require.Equal(t, tc.expected, testGCS.GetNoClobber())
+		require.Equal(t, tc.expected, testGCS.GetAllowMissing())
 	}
 }
 

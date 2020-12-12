@@ -42,8 +42,9 @@ type ReleaseConfig struct {
 	IncludePrereleases bool     `yaml:"includePrereleases"`
 
 	// GCS options
-	GCSBucket  string `yaml:"gcsBucket"`
-	ReleaseDir string `yaml:"releaseDir"`
+	GCSOptions object.GCS `yaml:"gcsOptions"`
+	GCSBucket  string     `yaml:"gcsBucket"`
+	ReleaseDir string     `yaml:"releaseDir"`
 }
 
 // DownloadReleases downloads release assets to a local directory
@@ -75,7 +76,7 @@ func Upload(cfg *ReleaseConfig, ghClient *github.GitHub, outputDir string) error
 		srcDir := filepath.Join(uploadBase, tag)
 		gcsPath := filepath.Join(cfg.GCSBucket, cfg.ReleaseDir, tag)
 
-		gcs := object.NewGCS()
+		gcs := object.NewGCSWithOptions(cfg.GCSOptions)
 		if err := gcs.CopyToRemote(srcDir, gcsPath); err != nil {
 			return err
 		}

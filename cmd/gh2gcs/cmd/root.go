@@ -32,6 +32,7 @@ import (
 	"k8s.io/release/pkg/gh2gcs"
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/log"
+	"k8s.io/release/pkg/object"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -51,6 +52,12 @@ var rootCmd = &cobra.Command{
 }
 
 type options struct {
+	// GCS configs
+	gcsConcurrent   bool
+	gcsRecursive    bool
+	gcsNoClobber    bool
+	gcsAllowMissing bool
+
 	downloadOnly       bool
 	includePrereleases bool
 	org                string
@@ -75,6 +82,10 @@ var (
 	releaseDirFlag         = "release-dir"
 	outputDirFlag          = "output-dir"
 	downloadOnlyFlag       = "download-only"
+	gcsConcurrentFlag      = "gcs-concurrent"
+	gcsRecursiveFlag       = "gcs-recursive"
+	gcsNoClobberFlag       = "gcs-no-clobber"
+	gcsAllowMissingFlag    = "gcs-allow-missing"
 
 	// requiredFlags only if the config flag is not set
 	requiredFlags = []string{
@@ -168,6 +179,34 @@ func init() {
 		"",
 		"config file to set all the branch/repositories the user wants to",
 	)
+
+	rootCmd.PersistentFlags().BoolVar(
+		&opts.gcsConcurrent,
+		gcsConcurrentFlag,
+		true,
+		"gsutils option: to upload files in parallel. Defaults to true.",
+	)
+
+	rootCmd.PersistentFlags().BoolVar(
+		&opts.gcsRecursive,
+		gcsRecursiveFlag,
+		true,
+		"gsutils option: to copy an entire directory tree. Defaults to true.",
+	)
+
+	rootCmd.PersistentFlags().BoolVar(
+		&opts.gcsNoClobber,
+		gcsNoClobberFlag,
+		true,
+		"gsutils option: when specified, existing files or objects at the destination are not replaced. Defaults to true.",
+	)
+
+	rootCmd.PersistentFlags().BoolVar(
+		&opts.gcsAllowMissing,
+		gcsAllowMissingFlag,
+		true,
+		"gsutils option: allows a copy operation to be skipped if the source or destination does not exist. Defaults to true.",
+	)
 }
 
 func initLogging(*cobra.Command, []string) error {
@@ -226,6 +265,12 @@ func run(opts *options) error {
 			IncludePrereleases: opts.includePrereleases,
 			GCSBucket:          opts.bucket,
 			ReleaseDir:         opts.releaseDir,
+			GCSOptions: object.GCS{
+				Concurrent:   opts.gcsConcurrent,
+				Recursive:    opts.gcsRecursive,
+				NoClobber:    opts.gcsNoClobber,
+				AllowMissing: opts.gcsAllowMissing,
+			},
 		}
 
 		releaseCfgs.ReleaseConfigs = append(releaseCfgs.ReleaseConfigs, *newReleaseCfg)
