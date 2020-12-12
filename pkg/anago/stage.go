@@ -356,7 +356,7 @@ func (d *DefaultStage) TagRepository() error {
 				}
 			} else {
 				logrus.Infof(
-					"Version %s it not the prime, checking out %s branch",
+					"Version %s is not the prime, checking out %s branch",
 					version, git.DefaultBranch,
 				)
 				if err := d.impl.Checkout(repo, git.DefaultBranch); err != nil {
@@ -405,6 +405,8 @@ func (d *DefaultStage) TagRepository() error {
 		//   - https://github.com/kubernetes/release/pull/1030
 		//   - https://github.com/kubernetes/release/issues/1080
 		//   - https://github.com/kubernetes/kubernetes/pull/88074
+
+		// When tagging a release branch, always create an empty commit:
 		if strings.HasPrefix(branch, "release-") {
 			logrus.Infof("Creating empty release commit for tag %s", version)
 			if err := d.impl.CommitEmpty(
@@ -415,7 +417,17 @@ func (d *DefaultStage) TagRepository() error {
 			}
 		}
 
-		// Do the actual tag
+		// If we are on master/main we do not create an empty commit,
+		// but we detach the head at the specified commit to avoid having
+		// commits merged between the BuildVersion commit and the tag:
+		if branch != "" && !strings.HasPrefix(branch, "release-") {
+			logrus.Infof("Detaching HEAD at commit %s to create tag %s", commit, version)
+			if err := d.impl.Checkout(repo, commit); err != nil {
+				return errors.Wrap(err, "checkout release commit")
+			}
+		}
+
+		// Tag the repository:
 		logrus.Infof("Tagging version %s", version)
 		if err := d.impl.Tag(
 			repo,
@@ -425,6 +437,17 @@ func (d *DefaultStage) TagRepository() error {
 			),
 		); err != nil {
 			return errors.Wrap(err, "tag version")
+		}
+
+		// if we are working on master/main at this point, we are in
+		// detached HEAD state. So we checkout the branch again.
+		// The next stage (build) will checkout the branch it needs, but
+		// let's not end this step with a detached HEAD
+		if branch != "" && !strings.HasPrefix(branch, "release-") {
+			logrus.Infof("Checking out %s to reattach HEAD", d.options.ReleaseBranch)
+			if err := d.impl.Checkout(repo, d.options.ReleaseBranch); err != nil {
+				return errors.Wrapf(err, "checking out branch %s", d.options.ReleaseBranch)
+			}
 		}
 	}
 	return nil
