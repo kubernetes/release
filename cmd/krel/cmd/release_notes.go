@@ -837,12 +837,21 @@ func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 		startTag = fmt.Sprintf("v%d.%d.%d", tagVersion.Major, tagVersion.Minor, tagVersion.Patch-1)
 		tagChoice = "previous patch release"
 	} else {
-		// From 1.20 the notes fot the first alpha start from the previous minor
-		if tagVersion.Pre[0].String() == "alpha" && tagVersion.Pre[1].VersionNum == 1 {
+		// From 1.20 the notes for the first alpha start from the previous minor
+		if len(tagVersion.Pre) == 2 &&
+			tagVersion.Pre[0].String() == "alpha" &&
+			tagVersion.Pre[1].VersionNum == 1 {
 			startTag = util.SemverToTagString(semver.Version{
 				Major: tagVersion.Major, Minor: tagVersion.Minor - 1, Patch: 0,
 			})
 			tagChoice = "previous minor version"
+		} else if len(tagVersion.Pre) == 0 && tagVersion.Patch == 0 {
+			// If we are writing the notes for the first minor version (eg 1.20.0)
+			// we choose as the start tag also the previous minor
+			startTag = util.SemverToTagString(semver.Version{
+				Major: tagVersion.Major, Minor: tagVersion.Minor - 1, Patch: 0,
+			})
+			tagChoice = "previous minor version because we are in a new minor version"
 		} else {
 			// All others from the previous existing tag
 			startTag, err = repo.PreviousTag(tag, branchName)
