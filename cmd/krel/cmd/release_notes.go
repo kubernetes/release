@@ -422,14 +422,23 @@ func createDraftPR(repoPath, tag string) (err error) {
 		if err != nil {
 			return errors.Wrap(err, "creating release notes draft")
 		}
-		for _, note := range releaseNotes.ByPR() {
-			maps, err := rnMapProvider.GetMapsForPR(note.PrNumber)
+
+		releaseNotesByPr := releaseNotes.ByPR()
+		for _, prnum := range releaseNotes.History() {
+			maps, err := rnMapProvider.GetMapsForPR(prnum)
 			if err != nil {
-				return errors.Wrapf(err, "while getting maps for PR#%d", note.PrNumber)
+				return errors.Wrapf(err, "while getting maps for PR#%d", prnum)
 			}
+
+			note := releaseNotesByPr[prnum]
 			for _, noteMap := range maps {
 				if err := note.ApplyMap(noteMap); err != nil {
-					return errors.Wrapf(err, "applying note maps to pr #%d", note.PrNumber)
+					return errors.Wrapf(err, "applying note maps to pr #%d", prnum)
+				}
+
+				if noteMap.ToRemove {
+					logrus.Debugf("PR %d has mapping value of `toremove: true'", prnum)
+					delete(releaseNotesByPr, prnum)
 				}
 			}
 		}

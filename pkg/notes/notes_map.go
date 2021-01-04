@@ -83,7 +83,10 @@ type ReleaseNotesMap struct {
 	// Pull request where the note was published
 	PR int `json:"pr"`
 	// SHA of the notes commit
-	Commit      string `json:"commit,omitempty" yaml:"commit,omitempty"`
+	Commit string `json:"commit,omitempty" yaml:"commit,omitempty"`
+	// Indicate whether the entry should be removed from final draft
+	ToRemove bool `json:"toremove,omitempty" yaml:"toremove"`
+
 	ReleaseNote struct {
 		// Text is the actual content of the release note
 		Text *string `json:"text,omitempty" yaml:"text,omitempty"`
