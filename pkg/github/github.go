@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Kubernetes Authors.
+Copyright 2021 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -45,11 +45,30 @@ const (
 
 // GitHub is a wrapper around GitHub related functionality
 type GitHub struct {
-	client Client
+	client  Client
+	options *Options
 }
 
 type githubClient struct {
 	*github.Client
+}
+
+// Options is a set of options to configure the behavior of the GitHub package
+type Options struct {
+	// How many items to request in calls to the github API
+	// that require pagination.
+	ItemsPerPage int
+}
+
+func (o *Options) GetItemsPerPage() int {
+	return o.ItemsPerPage
+}
+
+// DefaultOptions return an options struct with commonly used settings
+func DefaultOptions() *Options {
+	return &Options{
+		ItemsPerPage: 50,
+	}
 }
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
@@ -159,7 +178,10 @@ func NewWithToken(token string) (*GitHub, error) {
 		))
 	}
 	logrus.Debugf("Using %s GitHub client", state)
-	return &GitHub{&githubClient{github.NewClient(client)}}, nil
+	return &GitHub{
+		client:  &githubClient{github.NewClient(client)},
+		options: DefaultOptions(),
+	}, nil
 }
 
 func NewEnterprise(baseURL, uploadURL string) (*GitHub, error) {
@@ -182,7 +204,10 @@ func NewEnterpriseWithToken(baseURL, uploadURL, token string) (*GitHub, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to new github client: %s", err)
 	}
-	return &GitHub{&githubClient{ghclient}}, nil
+	return &GitHub{
+		client:  &githubClient{ghclient},
+		options: DefaultOptions(),
+	}, nil
 }
 
 func (g *githubClient) GetCommit(
@@ -420,6 +445,16 @@ func (g *GitHub) Client() Client {
 	return g.client
 }
 
+// SetOptions gets an options set for the GitHub object
+func (g *GitHub) SetOptions(opts *Options) {
+	g.options = opts
+}
+
+// Options return a pointer to the options struct
+func (g *GitHub) Options() *Options {
+	return g.options
+}
+
 // TagsPerBranch is an abstraction over a simple branch to latest tag association
 type TagsPerBranch map[string]string
 
@@ -436,7 +471,7 @@ type TagsPerBranch map[string]string
 func (g *GitHub) LatestGitHubTagsPerBranch() (TagsPerBranch, error) {
 	// List tags for all pages
 	allTags := []*github.RepositoryTag{}
-	opts := &github.ListOptions{PerPage: 100}
+	opts := &github.ListOptions{PerPage: g.options.GetItemsPerPage()}
 	for {
 		tags, resp, err := g.client.ListTags(
 			context.Background(), git.DefaultGithubOrg, git.DefaultGithubRepo,
