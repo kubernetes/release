@@ -247,7 +247,7 @@ func (c *githubNotesReplayClient) DeleteReleaseAsset(
 }
 
 func (c *githubNotesReplayClient) ListReleaseAssets(
-	ctx context.Context, owner, repo string, releaseID int64,
+	ctx context.Context, owner, repo string, releaseID int64, opts *github.ListOptions,
 ) ([]*github.ReleaseAsset, error) {
 	data, err := c.readRecordedData(gitHubAPIListReleaseAssets)
 	if err != nil {
