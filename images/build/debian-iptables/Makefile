@@ -46,8 +46,9 @@ ifneq ($(ARCH),amd64)
 	$(SUDO) ../../../third_party/multiarch/qemu-user-static/register/register.sh --reset
 endif
 
-	docker build \
+	docker buildx build \
 		--pull \
+		--platform $(ARCH) \
 		-t $(IMAGE)-$(ARCH):$(IMAGE_VERSION) \
 		-t $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
 		-t $(IMAGE)-$(ARCH):latest-$(CONFIG) \
