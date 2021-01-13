@@ -115,6 +115,10 @@ type Options struct {
 	// Validate that the remove image digests exists, needs `skopeo` in
 	// `$PATH`.
 	ValidateRemoteImageDigests bool
+
+	// Stage additional files defined by `ExtraGcpStageFiles` and
+	// `ExtraWindowsStageFiles`, otherwise they will be skipped.
+	StageExtraFiles bool
 }
 
 // TODO: Refactor so that version is not required as a parameter
