@@ -28,7 +28,7 @@ import (
 	"strings"
 	"sync"
 
-	gogithub "github.com/google/go-github/v29/github"
+	gogithub "github.com/google/go-github/v33/github"
 	"github.com/nozzle/throttler"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
