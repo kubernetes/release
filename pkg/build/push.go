@@ -41,7 +41,9 @@ type stageFile struct {
 
 const extraDir = "extra"
 
-var gcpStageFiles = []stageFile{
+// ExtraGcpStageFiles defines extra GCP files to be staged if `StageExtraFiles`
+// in `Options` is set to `true`.
+var ExtraGcpStageFiles = []stageFile{
 	{
 		srcPath:  filepath.Join(release.GCEPath, "configure-vm.sh"),
 		dstPath:  extraDir + "/gce/configure-vm.sh",
@@ -69,7 +71,9 @@ var gcpStageFiles = []stageFile{
 	},
 }
 
-var windowsStageFiles = []stageFile{
+// ExtraWindowsStageFiles defines extra Windows files to be staged if
+// `StageExtraFiles` in `Options` is set to `true`.
+var ExtraWindowsStageFiles = []stageFile{
 	{
 		srcPath:  filepath.Join(release.WindowsLocalPath, "configure.ps1"),
 		dstPath:  extraDir + "/gce/windows/configure.ps1",
@@ -294,21 +298,18 @@ func (bi *Instance) StageLocalArtifacts() error {
 		return errors.Wrap(err, "copy source directory into destination")
 	}
 
-	extraPath := filepath.Join(stageDir, extraDir)
-	if util.Exists(extraPath) {
+	if bi.opts.StageExtraFiles {
 		// Copy helpful GCP scripts to local GCS staging directory for push
 		logrus.Info("Copying extra GCP stage files")
-		if err := bi.copyStageFiles(stageDir, gcpStageFiles); err != nil {
+		if err := bi.copyStageFiles(stageDir, ExtraGcpStageFiles); err != nil {
 			return errors.Wrapf(err, "copy GCP stage files")
 		}
 
 		// Copy helpful Windows scripts to local GCS staging directory for push
 		logrus.Info("Copying extra Windows stage files")
-		if err := bi.copyStageFiles(stageDir, windowsStageFiles); err != nil {
+		if err := bi.copyStageFiles(stageDir, ExtraWindowsStageFiles); err != nil {
 			return errors.Wrapf(err, "copy Windows stage files")
 		}
-	} else {
-		logrus.Infof("Skipping not existing extra dir %s", extraPath)
 	}
 
 	// Copy the plain binaries to GCS. This is useful for install scripts that
