@@ -33,70 +33,6 @@ import (
 	"k8s.io/release/pkg/util"
 )
 
-type stageFile struct {
-	srcPath  string
-	dstPath  string
-	required bool
-}
-
-const extraDir = "extra"
-
-var gcpStageFiles = []stageFile{
-	{
-		srcPath:  filepath.Join(release.GCEPath, "configure-vm.sh"),
-		dstPath:  extraDir + "/gce/configure-vm.sh",
-		required: false,
-	},
-	{
-		srcPath:  filepath.Join(release.GCIPath, "node.yaml"),
-		dstPath:  extraDir + "/gce/node.yaml",
-		required: true,
-	},
-	{
-		srcPath:  filepath.Join(release.GCIPath, "master.yaml"),
-		dstPath:  extraDir + "/gce/master.yaml",
-		required: true,
-	},
-	{
-		srcPath:  filepath.Join(release.GCIPath, "configure.sh"),
-		dstPath:  extraDir + "/gce/configure.sh",
-		required: true,
-	},
-	{
-		srcPath:  filepath.Join(release.GCIPath, "shutdown.sh"),
-		dstPath:  extraDir + "/gce/shutdown.sh",
-		required: false,
-	},
-}
-
-var windowsStageFiles = []stageFile{
-	{
-		srcPath:  filepath.Join(release.WindowsLocalPath, "configure.ps1"),
-		dstPath:  extraDir + "/gce/windows/configure.ps1",
-		required: true,
-	},
-	{
-		srcPath:  filepath.Join(release.WindowsLocalPath, "common.psm1"),
-		dstPath:  extraDir + "/gce/windows/common.psm1",
-		required: true,
-	},
-	{
-		srcPath:  filepath.Join(release.WindowsLocalPath, "k8s-node-setup.psm1"),
-		dstPath:  extraDir + "/gce/windows/k8s-node-setup.psm1",
-		required: true,
-	},
-	{
-		srcPath:  filepath.Join(release.WindowsLocalPath, "testonly/install-ssh.psm1"),
-		dstPath:  extraDir + "/gce/windows/install-ssh.psm1",
-		required: true,
-	},
-	{
-		srcPath:  filepath.Join(release.WindowsLocalPath, "testonly/user-profile.psm1"),
-		dstPath:  extraDir + "/gce/windows/user-profile.psm1",
-		required: true,
-	},
-}
-
 // Push pushes the build by taking the internal options into account.
 func (bi *Instance) Push() error {
 	version, err := bi.findLatestVersion()
@@ -294,23 +230,6 @@ func (bi *Instance) StageLocalArtifacts() error {
 		return errors.Wrap(err, "copy source directory into destination")
 	}
 
-	extraPath := filepath.Join(stageDir, extraDir)
-	if util.Exists(extraPath) {
-		// Copy helpful GCP scripts to local GCS staging directory for push
-		logrus.Info("Copying extra GCP stage files")
-		if err := bi.copyStageFiles(stageDir, gcpStageFiles); err != nil {
-			return errors.Wrapf(err, "copy GCP stage files")
-		}
-
-		// Copy helpful Windows scripts to local GCS staging directory for push
-		logrus.Info("Copying extra Windows stage files")
-		if err := bi.copyStageFiles(stageDir, windowsStageFiles); err != nil {
-			return errors.Wrapf(err, "copy Windows stage files")
-		}
-	} else {
-		logrus.Infof("Skipping not existing extra dir %s", extraPath)
-	}
-
 	// Copy the plain binaries to GCS. This is useful for install scripts that
 	// download the binaries directly and don't need tars.
 	plainBinariesPath := filepath.Join(bi.opts.BuildDir, release.ReleaseStagePath)
@@ -333,34 +252,6 @@ func (bi *Instance) StageLocalArtifacts() error {
 	if err := release.WriteChecksums(stageDir); err != nil {
 		return errors.Wrap(err, "write checksums")
 	}
-	return nil
-}
-
-// copyStageFiles takes the staging dir and copies each file of `files` into
-// it. It also ensures that the base dir exists before copying the file (if the
-// file is `required`).
-func (bi *Instance) copyStageFiles(stageDir string, files []stageFile) error {
-	for _, file := range files {
-		dstPath := filepath.Join(stageDir, file.dstPath)
-
-		if file.required {
-			if err := os.MkdirAll(
-				filepath.Dir(dstPath), os.FileMode(0o755),
-			); err != nil {
-				return errors.Wrapf(
-					err, "create destination path %s", file.dstPath,
-				)
-			}
-		}
-
-		if err := util.CopyFileLocal(
-			filepath.Join(bi.opts.BuildDir, file.srcPath),
-			dstPath, file.required,
-		); err != nil {
-			return errors.Wrapf(err, "copy stage file")
-		}
-	}
-
 	return nil
 }
 
