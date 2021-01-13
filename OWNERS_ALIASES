@@ -4,6 +4,7 @@ aliases:
   sig-release-leads:
     - alejandrox1 # SIG Technical Lead
     - hasheddan # SIG Technical Lead
+    - jeremyrickard # SIG Technical Lead
     - justaugustus # SIG Chair
     - saschagrunert # SIG Chair
   release-engineering-approvers:
