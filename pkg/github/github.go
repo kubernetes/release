@@ -25,7 +25,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/google/go-github/v29/github"
+	"github.com/google/go-github/v33/github"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
@@ -584,7 +584,7 @@ func (g *GitHub) DownloadReleaseAssets(owner, repo string, releaseTags []string,
 	return finalErr
 }
 
-func (g *GitHub) downloadAssetsParallel(assets []github.ReleaseAsset, owner, repo, releaseDir string) (finalErr error) {
+func (g *GitHub) downloadAssetsParallel(assets []*github.ReleaseAsset, owner, repo, releaseDir string) (finalErr error) {
 	errChan := make(chan error, len(assets))
 	for i := range assets {
 		asset := assets[i]
