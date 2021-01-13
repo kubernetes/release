@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	gogithub "github.com/google/go-github/v29/github"
+	gogithub "github.com/google/go-github/v33/github"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
