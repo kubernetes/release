@@ -27,6 +27,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -216,22 +217,34 @@ func UpdateGitHubPage(opts *GitHubPageOptions) (err error) {
 		return errors.Wrap(err, "updating the release on GitHub")
 	}
 
-	// verify the release was created
-	releases, err = gh.Releases(opts.Owner, opts.Repo, true)
-	if err != nil {
-		return errors.Wrap(err, "listing releases in repository")
-	}
-	releaseFound := false
-	for _, testRelease := range releases {
-		if testRelease.GetID() == release.GetID() {
-			releaseFound = true
+	// Releases often take a bit of time to show up in the API
+	// after creating the page. If the release does not appear
+	// in the API right away , sleep 3 secs and retry 3 times.
+	for checkAttempts := 3; checkAttempts >= 0; checkAttempts-- {
+		releaseFound := false
+		releases, err = gh.Releases(opts.Owner, opts.Repo, true)
+		if err != nil {
+			return errors.Wrap(err, "listing releases in repository")
+		}
+		// Check if the page shows up in the API
+		for _, testRelease := range releases {
+			if testRelease.GetID() == release.GetID() {
+				releaseFound = true
+				break
+			}
+		}
+		if releaseFound {
 			break
 		}
-	}
-	if !releaseFound {
-		return errors.New("release not found, even when call to github was successful")
+
+		if checkAttempts == 0 {
+			return errors.New("release not found, even when call to github was successful")
+		}
+		logrus.Info("Release page not yet returned by the GitHub API, sleeping and retrying")
+		time.Sleep(3 * time.Second)
 	}
 
+	// Delete any assets reviously uploaded
 	if err := deleteReleaseAssets(gh, opts.Owner, opts.Repo, release.GetID()); err != nil {
 		return errors.Wrap(err, "deleting the existing release assets")
 	}
