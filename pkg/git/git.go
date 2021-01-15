@@ -52,6 +52,7 @@ const (
 	DefaultRemote            = "origin"
 	DefaultRef               = "HEAD"
 	DefaultBranch            = "master"
+	DefaultTagRegexp         = `v\d+\.\d+\.\d+.*`
 
 	defaultGithubAuthRoot = "git@github.com:"
 	defaultGitUser        = "Anago GCB"
@@ -441,7 +442,13 @@ func (r *Repo) Cleanup() error {
 // RevParse parses a git revision and returns a SHA1 on success, otherwise an
 // error.
 func (r *Repo) RevParse(rev string) (string, error) {
-	matched, err := regexp.MatchString(`v\d+\.\d+\.\d+.*`, rev)
+	return r.RevParseWithTagRegexp(rev, DefaultTagRegexp)
+}
+
+// RevParseWithTagRegexp parses a git revision with a specified tag name pattern.
+// Fallback to parse branch name if revision is not recognized as tag.
+func (r *Repo) RevParseWithTagRegexp(rev string, tagRegexp string) (string, error) {
+	matched, err := regexp.MatchString(tagRegexp, rev)
 	if err != nil {
 		return "", err
 	}

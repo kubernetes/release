@@ -68,6 +68,9 @@ type Options struct {
 	// valid git revision. Should not be used together with EndSHA.
 	EndRev string
 
+	// TagRegexp is the regular expression to match git tag names.
+	TagRegexp string
+
 	// Format specifies the format of the release notes. Can be either
 	// `json` or `markdown`.
 	Format string
@@ -146,6 +149,7 @@ func New() *Options {
 		DiscoverMode: RevisionDiscoveryModeNONE,
 		GithubOrg:    git.DefaultGithubOrg,
 		GithubRepo:   git.DefaultGithubRepo,
+		TagRegexp:    git.DefaultTagRegexp,
 		Format:       FormatMarkdown,
 		GoTemplate:   GoTemplateDefault,
 		Pull:         true,
@@ -207,7 +211,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 			return err
 		}
 		if o.StartRev != "" && o.StartSHA == "" {
-			sha, err := repo.RevParse(o.StartRev)
+			sha, err := repo.RevParseWithTagRegexp(o.StartRev, o.TagRegexp)
 			if err != nil {
 				return errors.Wrapf(err, "resolving %s", o.StartRev)
 			}
@@ -215,7 +219,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 			o.StartSHA = sha
 		}
 		if o.EndRev != "" && o.EndSHA == "" {
-			sha, err := repo.RevParse(o.EndRev)
+			sha, err := repo.RevParseWithTagRegexp(o.EndRev, o.TagRegexp)
 			if err != nil {
 				return errors.Wrapf(err, "resolving %s", o.EndRev)
 			}

@@ -144,6 +144,14 @@ func init() {
 		"The git revision to end at. Can be used as alternative to end-sha.",
 	)
 
+	// tagRegexp specifies the regular expression to match git tag names.
+	cmd.PersistentFlags().StringVar(
+		&opts.TagRegexp,
+		"tag-regexp",
+		util.EnvDefault("TAG_REGEXP", git.DefaultTagRegexp),
+		"The regular expression to match git tag names.",
+	)
+
 	// repoPath contains the path to a local Kubernetes repository to avoid the
 	// delay during git clone
 	cmd.PersistentFlags().StringVar(
