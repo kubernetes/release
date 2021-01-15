@@ -670,9 +670,6 @@ we're pulling the correct go-runner arch from the manifest list.</p>
 <p>Kubelet: assume that swap is disabled when <code>/proc/swaps</code> does not exist (<a href="https://github.com/kubernetes/kubernetes/pull/93931">#93931</a>, <a href="https://github.com/SataQiu">@SataQiu</a>) [SIG Node]</p>
 </li>
 <li>
-<p>NONE (<a href="https://github.com/kubernetes/kubernetes/pull/71269">#71269</a>, <a href="https://github.com/DeliangFan">@DeliangFan</a>) [SIG Node]</p>
-</li>
-<li>
 <p>New Azure instance types do now have correct max data disk count information. (<a href="https://github.com/kubernetes/kubernetes/pull/94340">#94340</a>, <a href="https://github.com/ialidzhikov">@ialidzhikov</a>) [SIG Cloud Provider and Storage]</p>
 </li>
 <li>
@@ -724,7 +721,6 @@ we're pulling the correct go-runner arch from the manifest list.</p>
 <li>Service.beta.kubernetes.io/azure-load-balancer-disable-tcp-reset is removed.  All Standard load balancers will always enable tcp resets. (<a href="https://github.com/kubernetes/kubernetes/pull/94297">#94297</a>, <a href="https://github.com/MarcPow">@MarcPow</a>) [SIG Cloud Provider]</li>
 <li>Stop propagating SelfLink (deprecated in 1.16) in kube-apiserver (<a href="https://github.com/kubernetes/kubernetes/pull/94397">#94397</a>, <a href="https://github.com/wojtek-t">@wojtek-t</a>) [SIG API Machinery and Testing]</li>
 <li>Strip unnecessary security contexts on Windows (<a href="https://github.com/kubernetes/kubernetes/pull/93475">#93475</a>, <a href="https://github.com/ravisantoshgudimetla">@ravisantoshgudimetla</a>) [SIG Node, Testing and Windows]</li>
-<li>To ensure the code be strong,  add unit test for GetAddressAndDialer (<a href="https://github.com/kubernetes/kubernetes/pull/93180">#93180</a>, <a href="https://github.com/FreeZhang61">@FreeZhang61</a>) [SIG Node]</li>
 <li>Update CNI plugins to v0.8.7 (<a href="https://github.com/kubernetes/kubernetes/pull/94367">#94367</a>, <a href="https://github.com/justaugustus">@justaugustus</a>) [SIG Cloud Provider, Network, Node, Release and Testing]</li>
 <li>Update cri-tools to <a href="https://github.com/kubernetes-sigs/cri-tools/releases/tag/v1.19.0">v1.19.0</a> (<a href="https://github.com/kubernetes/kubernetes/pull/94307">#94307</a>, <a href="https://github.com/xmudrii">@xmudrii</a>) [SIG Cloud Provider]</li>
 <li>Update etcd client side to v3.4.13 (<a href="https://github.com/kubernetes/kubernetes/pull/94259">#94259</a>, <a href="https://github.com/jingyih">@jingyih</a>) [SIG API Machinery and Cloud Provider]</li>
