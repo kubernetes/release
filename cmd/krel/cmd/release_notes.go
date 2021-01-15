@@ -387,9 +387,6 @@ func createDraftPR(repoPath, tag string) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "preparing local fork of kubernetes/sig-release")
 	}
-	defer func() {
-		err = sigReleaseRepo.Cleanup()
-	}()
 
 	// The release path inside the repository
 	releasePath := filepath.Join("releases", fmt.Sprintf("release-%d.%d", tagVersion.Major, tagVersion.Minor))
@@ -478,6 +475,10 @@ func createDraftPR(repoPath, tag string) (err error) {
 		logrus.Warn("Changes were made locally, user needs to perform manual push and create pull request.")
 		return nil
 	}
+
+	defer func() {
+		err = sigReleaseRepo.Cleanup()
+	}()
 
 	// Create the commit
 	if err := createDraftCommit(
