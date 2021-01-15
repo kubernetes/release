@@ -20,7 +20,7 @@ FROM golang:${GO_VERSION}
 
 ##------------------------------------------------------------
 # global ARGs & ENVs
-
+ARG TARGETPLATFORM
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV GOARM 7
@@ -41,8 +41,11 @@ ENV KUBE_CROSSPLATFORMS \
 ##------------------------------------------------------------
 
 # Pre-compile the standard go library when cross-compiling. This is much easier now when we have go1.5+
-RUN for platform in ${KUBE_CROSSPLATFORMS}; do GOOS=${platform%/*} GOARCH=${platform##*/} go install std; done \
-    && go clean -cache
+RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
+    && if [ ${targetArch} = "amd64" ]; then \
+    for platform in ${KUBE_CROSSPLATFORMS}; do GOOS=${platform%/*} GOARCH=${platform##*/} go install std; done \
+    && go clean -cache; \
+fi
 
 # Install packages
 RUN apt-get -q update \
@@ -56,15 +59,33 @@ RUN apt-get -q update \
 
 # Use dynamic cgo linking for architectures other than amd64 for the server platforms
 # To install crossbuild essential for other architectures add the following repository.
-RUN echo "deb http://archive.ubuntu.com/ubuntu xenial main universe" > /etc/apt/sources.list.d/cgocrosscompiling.list \
-  && apt-key adv --no-tty --keyserver keyserver.ubuntu.com --recv-keys 40976EAF437D05B5 3B4FE6ACC0B21F32 \
-  && apt-get update \
-  && apt-get install -y build-essential \
-  && for platform in ${KUBE_DYNAMIC_CROSSPLATFORMS}; do apt-get install -y crossbuild-essential-${platform}; done
+RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
+  && if [ ${targetArch} = "amd64" ]; then \
+    echo "deb http://archive.ubuntu.com/ubuntu xenial main universe" > /etc/apt/sources.list.d/cgocrosscompiling.list \
+    && apt-key adv --no-tty --keyserver keyserver.ubuntu.com --recv-keys 40976EAF437D05B5 3B4FE6ACC0B21F32 \
+    && apt-get update \
+    && apt-get install -y build-essential \
+    && for platform in ${KUBE_DYNAMIC_CROSSPLATFORMS}; do apt-get install -y crossbuild-essential-${platform}; done \
+fi
+
+RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
+  && if [ ${targetArch} = "arm64" ] || [ ${targetArch} = "ppc64le" ]; then \
+    echo "deb http://ports.ubuntu.com/ubuntu-ports/ xenial main" > /etc/apt/sources.list.d/ports.list \
+    && apt-key adv --no-tty --keyserver keyserver.ubuntu.com --recv-keys 40976EAF437D05B5 3B4FE6ACC0B21F32 \
+    && apt-get update \
+    && apt-get install -y build-essential; \
+fi
 
 ARG PROTOBUF_VERSION
-ENV ZIPNAME="protoc-${PROTOBUF_VERSION}-linux-x86_64.zip"
-RUN mkdir /tmp/protoc && cd /tmp/protoc \
+RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
+  && if [ ${targetArch} = "amd64" ]; then \
+  ZIPNAME="protoc-${PROTOBUF_VERSION}-linux-x86_64.zip"; \
+elif [ ${targetArch} = "arm64" ]; then \
+  ZIPNAME="protoc-${PROTOBUF_VERSION}-linux-aarch_64.zip"; \
+elif [ ${targetArch} = "ppc64le" ]; then \
+  ZIPNAME="protoc-${PROTOBUF_VERSION}-linux-ppcle_64.zip"; \
+fi \
+  && mkdir /tmp/protoc && cd /tmp/protoc \
   && wget "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/${ZIPNAME}" \
   && unzip "${ZIPNAME}" \
   && chmod -R +rX /tmp/protoc \
@@ -86,11 +107,12 @@ RUN go get golang.org/x/tools/cmd/cover \
 
 # Download and symlink etcd. We need this for our integration tests.
 ARG ETCD_VERSION
-RUN mkdir -p /usr/local/src/etcd \
+RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
+  && mkdir -p /usr/local/src/etcd \
   && cd /usr/local/src/etcd \
-  && curl -fsSL https://github.com/coreos/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz | tar -xz \
+  && curl -fsSL https://github.com/coreos/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-${targetArch}.tar.gz | tar -xz \
   && chown -R $(id -u):$(id -g) /usr/local/src/etcd \
-  && ln -s ../src/etcd/etcd-${ETCD_VERSION}-linux-amd64/etcd /usr/local/bin/
+  && ln -s ../src/etcd/etcd-${ETCD_VERSION}-linux-${targetArch}/etcd /usr/local/bin/
 
 # Cleanup a bit
 RUN apt-get -qqy remove \
