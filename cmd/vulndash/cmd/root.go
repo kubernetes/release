@@ -29,6 +29,8 @@ import (
 	adapter "k8s.io/release/pkg/vulndash/adapter"
 )
 
+var validRegistryHostnames = []string{"gcr.io", "us.gcr.io", "asia.gcr.io", "eu.gcr.io"}
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:               "vulndash --project <project-name> --bucket <bucket> --dashboard-file-path <path>",
@@ -49,6 +51,7 @@ type options struct {
 	project           string
 	bucket            string
 	dashboardFilePath string
+	registryHostname  string
 	pageSize          int32
 	logLevel          string
 }
@@ -59,6 +62,7 @@ var (
 	projectFlag           = "project"
 	bucketFlag            = "bucket"
 	dashboardFilePathFlag = "dashboard-file-path"
+	registryHostnameFlag  = "registry-hostname"
 	pageSizeFlag          = "page-size"
 
 	// requiredFlags only if the config flag is not set
@@ -106,6 +110,14 @@ func init() {
 		fmt.Sprintf("the logging verbosity, either %s", log.LevelNames()),
 	)
 
+	rootCmd.PersistentFlags().StringVar(
+		&opts.registryHostname,
+		registryHostnameFlag,
+		"",
+		"the registry hostname for where the images are located to use to filter "+
+			"when getting the reports, ie. us.gcr.io, asia.gcr.io or eu.gcr.io",
+	)
+
 	rootCmd.PersistentFlags().Int32Var(
 		&opts.pageSize,
 		pageSizeFlag,
@@ -135,12 +147,32 @@ func checkRequiredFlags(flags *pflag.FlagSet) error {
 	return nil
 }
 
+func validateFlags(opts *options) error {
+	if opts.registryHostname != "" {
+		for _, registry := range validRegistryHostnames {
+			if registry == opts.registryHostname {
+				return nil
+			}
+		}
+
+		return errors.New("--registry-hostname needs to be one of " + strings.Join(validRegistryHostnames, ", ") +
+			" and was set " + opts.registryHostname)
+	}
+
+	return nil
+}
+
 func run(opts *options) error {
+	if err := validateFlags(opts); err != nil {
+		return errors.Wrap(err, "validating the flags")
+	}
+
 	logrus.Info("Updating the vulnerability dashboard...")
 
 	updateErr := adapter.UpdateVulnerabilityDashboard(
 		opts.dashboardFilePath,
 		opts.project,
+		opts.registryHostname,
 		opts.bucket,
 		opts.pageSize,
 	)
