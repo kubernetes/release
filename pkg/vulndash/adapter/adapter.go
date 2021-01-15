@@ -75,7 +75,8 @@ func uploadFile(directory, filename, bucket string) error {
 // GetAllVulnerabilities gets all of the vulnerability occurrences associated
 // with images in a specific project using the Container Analysis Service.
 func GetAllVulnerabilities(
-	projectID string,
+	projectID,
+	registryHostname string,
 	pageSize int32,
 ) ([]*grafeaspb.Occurrence, error) {
 	ctx := context.Background()
@@ -94,6 +95,12 @@ func GetAllVulnerabilities(
 		PageSize: pageSize,
 	}
 
+	if registryHostname != "" {
+		resourceURLPrefix := fmt.Sprintf("https://%s/%s/", registryHostname, projectID)
+		logrus.Infof("checking all vulnerabilities in %s", resourceURLPrefix)
+		req.Filter = fmt.Sprintf("kind = %q AND has_prefix(resourceUrl, %q)", "VULNERABILITY", resourceURLPrefix)
+	}
+
 	logrus.Info("listing the vulnerabilities, will take a while...")
 	var occurrenceList []*grafeaspb.Occurrence
 	it := client.GetGrafeasClient().ListOccurrences(ctx, req)
@@ -103,7 +110,6 @@ func GetAllVulnerabilities(
 		var err error
 		occ, err = it.Next()
 		if err == iterator.Done {
-			logrus.Debug("no more occurrencess")
 			break
 		}
 		if err != nil {
@@ -178,8 +184,9 @@ func GenerateVulnerabilityBreakdown(
 // UpdateVulnerabilityDashboard updates the vulnerability dashboard by uploading
 // the lastest versions of all the vulnerability dashboard's files.
 func UpdateVulnerabilityDashboard(
-	dashboardPath string,
-	vulnProject string,
+	dashboardPath,
+	vulnProject,
+	registryHostname,
 	dashboardBucket string,
 	pageSize int32,
 ) error {
@@ -211,7 +218,7 @@ func UpdateVulnerabilityDashboard(
 	}
 
 	logrus.Infof("checking all vulnerabilities for %s", vulnProject)
-	productionVulnerabilities, getVulnErr := GetAllVulnerabilities(vulnProject, pageSize)
+	productionVulnerabilities, getVulnErr := GetAllVulnerabilities(vulnProject, registryHostname, pageSize)
 	if getVulnErr != nil {
 		return errors.Wrap(getVulnErr, "getting all vulnerabilities")
 	}
