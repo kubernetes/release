@@ -92,15 +92,10 @@ else
 endif
 	mv $(TEMP_DIR)/$(CONFIG)/Dockerfile.build.tmp $(TEMP_DIR)/$(CONFIG)/Dockerfile.build
 
-	docker buildx build \
-		--pull \
-		--platform $(ARCH) \
-		-t $(BUILD_IMAGE) \
-		-f $(TEMP_DIR)/$(CONFIG)/Dockerfile.build $(TEMP_DIR)/$(CONFIG)
+	docker build --pull -t $(BUILD_IMAGE) -f $(TEMP_DIR)/$(CONFIG)/Dockerfile.build $(TEMP_DIR)/$(CONFIG)
 	docker create --name $(BUILD_IMAGE) $(BUILD_IMAGE)
 	docker export $(BUILD_IMAGE) > $(TEMP_DIR)/$(CONFIG)/$(TAR_FILE)
-	docker buildx build \
-		--platform $(ARCH) \
+	docker build \
 		-t $(IMAGE)-$(ARCH):$(IMAGE_VERSION) \
 		-t $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
 		-t $(IMAGE)-$(ARCH):latest-$(CONFIG) \
