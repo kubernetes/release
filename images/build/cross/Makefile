@@ -21,15 +21,13 @@ CONFIG ?= go1.15
 
 # Build args
 GO_VERSION?=1.15.5
-PROTOBUF_VERSION?=3.0.2
+PROTOBUF_VERSION?=3.7.0
 ETCD_VERSION?=v3.4.13
 
-# TODO: Support multi-arch kube-cross images
-#       ref:
-#       - https://github.com/kubernetes/release/pull/1140/commits/e96924f58d9ce2bb73045fbba13f259b4345c0d9#r395056830
-#       - https://github.com/kubernetes/kubernetes/issues/78964
-#       - https://github.com/kubernetes/kubernetes/issues/75114
-PLATFORMS ?= linux/amd64 #linux/arm linux/arm64 linux/ppc64le linux/s390x
+# TODO: Support multi-arch kube-cross images for linux/arm linux/s390x
+#       Currently some of the components references in the Dockerfile are
+#       not supported in specific architectures (example etcd does not support s390x)
+PLATFORMS ?= linux/amd64 linux/arm64 linux/ppc64le #linux/arm linux/s390x
 
 BUILD_ARGS = --build-arg=GO_VERSION=$(GO_VERSION) \
              --build-arg=PROTOBUF_VERSION=$(PROTOBUF_VERSION) \
