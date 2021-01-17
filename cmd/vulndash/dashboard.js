@@ -1,77 +1,72 @@
 const DASHBOARD_JSON = "https://storage.googleapis.com/k8s-artifacts-prod-vuln-dashboard/dashboard.json";
 const VULNERABILITY_URL_PREFIX = "https://cve.mitre.org/cgi-bin/cvename.cgi?name=";
 const TABLE = "#table";
-var JSON;
-var filtering = false;
 
-console.log("Starting up");
+console.log("Starting up...");
 
 $.getJSON(DASHBOARD_JSON, function (data) {
-    console.log(data);
-    JSON = data;
-    constructTable();
+    $('#pagination-container').pagination({
+        dataSource: function (done) {
+            var result = [];
+            for (var resourceURI in data) {
+                result.push(data[resourceURI]);
+            }
+            done(result);
+        },
+        pageSize: 20,
+        callback: function (data, pagination) {
+            $(TABLE).empty();
+            var html = Headers(data)
+            html += constructTable(data);
+        }
+    });
 })
 
-function constructTable() {
-    $(TABLE).empty();
-    // Getting the all column names 
-    var headers = Headers();
-
-    // Traversing the JSON data 
-    for (var resourceURI in JSON) {
-        var ignoreRow = false;
+function constructTable(data) {
+    var html = '<div>';
+    $.each(data, function (index, item) {
         var row = $('<tr/>');
-        for (var index = 0; index < headers.length; index++) {
-            var val = JSON[resourceURI][headers[index]];
-            
-            // If there is any key, which is matching 
-            // with the column name 
-            if (val == null) val = "";
-            if (filtering && headers[index] == "NumVulnerabilities"
-            && val != "" && parseInt(val) <= 0) {
-                ignoreRow = true;
-                break;
-            }
-            if (headers[index] == "ResourceURI") {
-                var link = $('<a href="' + val + '">' + val + '</a>')
-                row.append($('<td/>').html(link));
-            } else if (headers[index] == "CriticalVulnerabilities"
-            || headers[index] == "FixableVulnerabilities") {
-                var column = $('<div>');
-                for (var i = 0; i < val.length; i++) {
-                    $('<a style=\'display :block; width: 100%;\' href="' + VULNERABILITY_URL_PREFIX + val[i] + '">' + val[i] + '</a>').appendTo($div);
-                }
-                row.append($('<td/>').html(column));
-            } else row.append($('<td/>').html(val));
+        var link = $('<a href="' + item.ResourceURI + '">' + item.ResourceURI + '</a>')
+        row.append($('<td/>').html(link));
+
+        var vul = $('<div>' + item.NumVulnerabilities + '<div/>')
+        row.append($('<td/>').html(vul));
+
+        var column = $('<div>');
+        for (var i = 0; i < item.CriticalVulnerabilities.length; i++) {
+            $('<a style=\'display :block; width: 100%;\' href="' + VULNERABILITY_URL_PREFIX + item.CriticalVulnerabilities[i] + '">' + item.CriticalVulnerabilities[i] + '</a>').appendTo(column);
         }
 
-        if (ignoreRow) continue;
-        // Adding each row to the table 
+        row.append($('<td/>').html(column));
+        var column1 = $('<div>');
+        for (var i = 0; i < item.FixableVulnerabilities.length; i++) {
+            $('<a style=\'display :block; width: 100%;\' href="' + VULNERABILITY_URL_PREFIX + item.FixableVulnerabilities[i] + '">' + item.FixableVulnerabilities[i] + '</a>').appendTo(column1);
+        }
+
+        row.append($('<td/>').html(column1));
         $(TABLE).append(row);
-    }
+    });
+    html += '</div>';
+    return html;
 }
 
-function Headers() {
+function Headers(item) {
     var headers = [];
     var header = $('<tr/>');
-    for (var resourceURI in JSON) {
-        var row = JSON[resourceURI];
+    for (var resourceURI in item) {
+        var row = item[resourceURI];
         for (var k in row) {
+            if (k == "ResourceURI" || k == "ImageDigest") {
+                continue;
+            }
             if ($.inArray(k, headers) == -1) {
                 headers.push(k);
-
-                // Creating the header 
+                // Creating the header
                 header.append($('<th/>').html(k));
             }
         }
     }
-
-    // Appending the header to the table 
+    // Appending the header to the table
     $(TABLE).append(header);
     return headers;
-}
-
-function ToggleFixableVulnerabiliyFilter() {
-    filtering = !filtering;
-    constructTable();
 }
