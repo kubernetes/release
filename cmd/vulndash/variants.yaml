@@ -1,6 +1,6 @@
 
 variants:
   default:
-    IMAGE_VERSION: 'v0.4.1-1'
+    IMAGE_VERSION: 'v0.4.2-1'
     GO_VERSION: '1.15.5'
     DISTROLESS_IMAGE: 'static-debian10'
