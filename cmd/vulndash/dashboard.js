@@ -16,41 +16,38 @@ $.getJSON(DASHBOARD_JSON, function (data) {
         pageSize: 20,
         callback: function (data, pagination) {
             $(TABLE).empty();
-            var html = Headers(data)
-            html += constructTable(data);
+            headers(data);
+            constructTable(data);
         }
     });
 })
 
 function constructTable(data) {
-    var html = '<div>';
     $.each(data, function (index, item) {
         var row = $('<tr/>');
-        var link = $('<a href="' + item.ResourceURI + '">' + item.ResourceURI + '</a>')
+        var link = $('<a href="' + item.ResourceURI + '">' + item.ResourceURI + '</a>');
         row.append($('<td/>').html(link));
 
-        var vul = $('<div>' + item.NumVulnerabilities + '<div/>')
+        var vul = $('<div>' + item.NumVulnerabilities + '<div/>');
         row.append($('<td/>').html(vul));
 
-        var column = $('<div>');
+        var columnCrit = $('<div>');
         for (var i = 0; i < item.CriticalVulnerabilities.length; i++) {
-            $('<a style=\'display :block; width: 100%;\' href="' + VULNERABILITY_URL_PREFIX + item.CriticalVulnerabilities[i] + '">' + item.CriticalVulnerabilities[i] + '</a>').appendTo(column);
+            $('<a style=\'display :block; width: 100%;\' href="' + VULNERABILITY_URL_PREFIX + item.CriticalVulnerabilities[i] + '">' + item.CriticalVulnerabilities[i] + '</a>').appendTo(columnCrit);
         }
+        row.append($('<td/><div/>').html(columnCrit));
 
-        row.append($('<td/>').html(column));
-        var column1 = $('<div>');
+        var columnFix = $('<div>');
         for (var i = 0; i < item.FixableVulnerabilities.length; i++) {
-            $('<a style=\'display :block; width: 100%;\' href="' + VULNERABILITY_URL_PREFIX + item.FixableVulnerabilities[i] + '">' + item.FixableVulnerabilities[i] + '</a>').appendTo(column1);
+            $('<a style=\'display :block; width: 100%;\' href="' + VULNERABILITY_URL_PREFIX + item.FixableVulnerabilities[i] + '">' + item.FixableVulnerabilities[i] + '</a>').appendTo(columnFix);
         }
+        row.append($('<td/><div/>').html(columnFix));
 
-        row.append($('<td/>').html(column1));
         $(TABLE).append(row);
     });
-    html += '</div>';
-    return html;
 }
 
-function Headers(item) {
+function headers(item) {
     var headers = [];
     var header = $('<tr/>');
     for (var resourceURI in item) {
