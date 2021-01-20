@@ -20,7 +20,7 @@ SHELL=/bin/bash -o pipefail
 
 REGISTRY ?= gcr.io/k8s-staging-artifact-promoter
 IMGNAME = vulndash
-IMAGE_VERSION ?= v0.4.2-1
+IMAGE_VERSION ?= v0.4.3-1
 CONFIG ?= buster
 
 IMAGE = $(REGISTRY)/$(IMGNAME)
@@ -28,7 +28,7 @@ IMAGE = $(REGISTRY)/$(IMGNAME)
 TAG ?= $(shell git describe --tags --always --dirty)
 
 # Build args
-GO_VERSION ?= 1.15.5
+GO_VERSION ?= 1.15.7
 DISTROLESS_IMAGE ?= static-debian10
 
 PLATFORMS ?= linux/amd64
