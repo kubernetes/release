@@ -19,12 +19,12 @@
 
 REGISTRY?=gcr.io/k8s-staging-build-image
 IMAGE?=$(REGISTRY)/debian-hyperkube-base
-TAG?=buster-v1.2.0
+TAG?=buster-v1.3.0
 ARCH?=amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 
 BASE_REGISTRY?=k8s.gcr.io/build-image
-BASEIMAGE?=$(BASE_REGISTRY)/debian-iptables-$(ARCH):buster-v1.3.0
+BASEIMAGE?=$(BASE_REGISTRY)/debian-iptables-$(ARCH):buster-v1.4.0
 CNI_VERSION?=v0.8.7
 
 TEMP_DIR:=$(shell mktemp -d)
