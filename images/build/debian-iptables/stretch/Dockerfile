@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM BASEIMAGE
+FROM --platform=linux/ARCH BASEIMAGE
 
 # Install other dependencies and then clean up apt caches
 RUN clean-install \

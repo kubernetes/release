@@ -39,7 +39,8 @@ SUDO=$(if $(filter 0,$(shell id -u)),,sudo)
 
 build:
 	cp -r ./$(CONFIG) $(TEMP_DIR)/
-	cd $(TEMP_DIR)/$(CONFIG) && sed -i "s|BASEIMAGE|$(BASEIMAGE)|g" Dockerfile
+	cd $(TEMP_DIR)/$(CONFIG) && \
+		sed -i "s|ARCH|${ARCH}|g; s|BASEIMAGE|$(BASEIMAGE)|g" Dockerfile
 
 ifneq ($(ARCH),amd64)
 	# Register /usr/bin/qemu-ARCH-static as the handler for non-x86 binaries in the kernel
