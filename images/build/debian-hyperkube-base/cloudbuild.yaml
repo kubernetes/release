@@ -11,6 +11,7 @@ steps:
       - DOCKER_CLI_EXPERIMENTAL=enabled
       - REGISTRY=gcr.io/$PROJECT_ID
       - IMAGE=gcr.io/$PROJECT_ID/debian-hyperkube-base
+      - HOME=/root  # for docker buildx
     args:
       - all-push
 
