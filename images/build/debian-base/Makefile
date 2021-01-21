@@ -19,15 +19,15 @@ IMAGE ?= $(REGISTRY)/debian-base
 BUILD_IMAGE ?= debian-build
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= buster-v1.3.0
+IMAGE_VERSION ?= buster-v1.4.0
 CONFIG ?= buster
 
 TAR_FILE ?= rootfs.tar
-ARCH?=amd64
+ARCH ?= amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 
 TEMP_DIR:=$(shell mktemp -d)
-QEMUVERSION=v4.2.0-6
+QEMUVERSION=v5.2.0-2
 
 SUDO=$(if $(filter 0,$(shell id -u)),,sudo)
 
@@ -92,10 +92,14 @@ else
 endif
 	mv $(TEMP_DIR)/$(CONFIG)/Dockerfile.build.tmp $(TEMP_DIR)/$(CONFIG)/Dockerfile.build
 
-	docker build --pull -t $(BUILD_IMAGE) -f $(TEMP_DIR)/$(CONFIG)/Dockerfile.build $(TEMP_DIR)/$(CONFIG)
+	docker buildx build \
+		--pull -t $(BUILD_IMAGE) \
+		--platform linux/$(ARCH) \
+		-f $(TEMP_DIR)/$(CONFIG)/Dockerfile.build $(TEMP_DIR)/$(CONFIG)
 	docker create --name $(BUILD_IMAGE) $(BUILD_IMAGE)
 	docker export $(BUILD_IMAGE) > $(TEMP_DIR)/$(CONFIG)/$(TAR_FILE)
-	docker build \
+	docker buildx build \
+		--platform linux/$(ARCH) \
 		-t $(IMAGE)-$(ARCH):$(IMAGE_VERSION) \
 		-t $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
 		-t $(IMAGE)-$(ARCH):latest-$(CONFIG) \
