@@ -2,12 +2,12 @@ variants:
   canary:
     CONFIG: 'canary'
     GO_VERSION: '1.15.7'
-    IMAGE_VERSION: 'v1.15.7-canary-1'
+    IMAGE_VERSION: 'v1.15.7-canary-2'
     PROTOBUF_VERSION: '3.7.0'
     ETCD_VERSION: 'v3.4.13'
   go1.15:
     CONFIG: 'go1.15'
     GO_VERSION: '1.15.7'
-    IMAGE_VERSION: 'v1.15.7-1'
+    IMAGE_VERSION: 'v1.15.7-2'
     PROTOBUF_VERSION: '3.7.0'
     ETCD_VERSION: 'v3.4.13'
