@@ -11,7 +11,7 @@ options:
 
 steps:
   # TODO: Update image version
-  - name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v20200824-5d057db'
+  - name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v20201130-750d12f'
     entrypoint: 'bash'
     dir: ./images/releng/k8s-ci-builder
     env:
