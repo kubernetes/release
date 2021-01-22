@@ -5,7 +5,7 @@ options:
   machineType: 'N1_HIGHCPU_8'
 steps:
   - name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v20201130-750d12f'
-    entrypoint: make
+    entrypoint: bash
     dir: ./images/build/debian-iptables
     env:
       - DOCKER_CLI_EXPERIMENTAL=enabled
@@ -19,7 +19,10 @@ steps:
       - IPTABLES_VERSION=$_IPTABLES_VERSION
       - HOME=/root  # for docker buildx
     args:
-      - all-push
+    - -c
+    - |
+      gcloud auth configure-docker && \
+      make all-push
 
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
