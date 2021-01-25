@@ -27,7 +27,7 @@ ARCH ?= amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 
 TEMP_DIR:=$(shell mktemp -d)
-QEMUVERSION=v5.2.0-2
+QEMUVERSION=5.2.0-2
 
 SUDO=$(if $(filter 0,$(shell id -u)),,sudo)
 
@@ -82,23 +82,31 @@ ifeq ($(ARCH),amd64)
 	# When building "normally" for amd64, remove the whole line, it has no part in the amd64 image
 	sed "/CROSS_BUILD_/d" $(TEMP_DIR)/$(CONFIG)/Dockerfile.build > $(TEMP_DIR)/$(CONFIG)/Dockerfile.build.tmp
 else
-	# When cross-building, only the placeholder "CROSS_BUILD_" should be removed
 	# Register /usr/bin/qemu-ARCH-static as the handler for non-x86 binaries in the kernel
-	$(SUDO) ../../../third_party/multiarch/qemu-user-static/register/register.sh --reset
-	curl -sSL https://github.com/multiarch/qemu-user-static/releases/download/$(QEMUVERSION)/x86_64_qemu-$(QEMUARCH)-static.tar.gz | tar -xz -C $(TEMP_DIR)/$(CONFIG)
+	docker run --rm --privileged multiarch/qemu-user-static:$(QEMUVERSION) --reset -p yes
+	docker buildx version
+	docker buildx create --use
+	docker buildx inspect --bootstrap
+
+	curl -sSL https://github.com/multiarch/qemu-user-static/releases/download/v$(QEMUVERSION)/x86_64_qemu-$(QEMUARCH)-static.tar.gz | tar -xz -C $(TEMP_DIR)/$(CONFIG)
 	# Ensure we don't get surprised by umask settings
 	chmod 0755 $(TEMP_DIR)/$(CONFIG)/qemu-$(QEMUARCH)-static
+
+	# When cross-building, only the placeholder "CROSS_BUILD_" should be removed
 	sed "s/CROSS_BUILD_//g" $(TEMP_DIR)/$(CONFIG)/Dockerfile.build > $(TEMP_DIR)/$(CONFIG)/Dockerfile.build.tmp
 endif
 	mv $(TEMP_DIR)/$(CONFIG)/Dockerfile.build.tmp $(TEMP_DIR)/$(CONFIG)/Dockerfile.build
 
 	docker buildx build \
-		--pull -t $(BUILD_IMAGE) \
+		--pull \
+		--load \
 		--platform linux/$(ARCH) \
+		-t $(BUILD_IMAGE) \
 		-f $(TEMP_DIR)/$(CONFIG)/Dockerfile.build $(TEMP_DIR)/$(CONFIG)
 	docker create --name $(BUILD_IMAGE) $(BUILD_IMAGE)
 	docker export $(BUILD_IMAGE) > $(TEMP_DIR)/$(CONFIG)/$(TAR_FILE)
 	docker buildx build \
+		--load \
 		--platform linux/$(ARCH) \
 		-t $(IMAGE)-$(ARCH):$(IMAGE_VERSION) \
 		-t $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
