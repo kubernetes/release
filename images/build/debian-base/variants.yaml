@@ -2,6 +2,3 @@ variants:
   buster:
     CONFIG: 'buster'
     IMAGE_VERSION: 'buster-v1.4.0'
-  stretch:
-    CONFIG: 'stretch'
-    IMAGE_VERSION: 'stretch-v1.2.0'
