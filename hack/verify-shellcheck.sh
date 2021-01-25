@@ -31,8 +31,6 @@ SHELLCHECK_IMAGE="koalaman/shellcheck-alpine:v0.7.1"
 # - ./_* - No need to lint output directories.
 # - ./.git/* - Ignore anything in the git object store.
 # - ./vendor* - Vendored code should be fixed upstream instead.
-# - ./third_party/*, but re-include ./third_party/forked/*  - only code we
-#    forked should be linted and fixed.
 all_shell_scripts=()
 while IFS=$'\n' read -r script;
   do git check-ignore -q "$script" || all_shell_scripts+=("$script");
