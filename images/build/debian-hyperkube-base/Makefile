@@ -30,6 +30,8 @@ CNI_VERSION?=v0.8.7
 TEMP_DIR:=$(shell mktemp -d)
 CNI_TARBALL=cni-plugins-linux-$(ARCH)-$(CNI_VERSION).tgz
 
+QEMUVERSION=5.2.0-2
+
 # This option is for running docker manifest command
 export DOCKER_CLI_EXPERIMENTAL := enabled
 
@@ -72,10 +74,17 @@ build: cni-tars/$(CNI_TARBALL)
 
 ifneq ($(ARCH),amd64)
 	# Register /usr/bin/qemu-ARCH-static as the handler for non-x86 binaries in the kernel
-	$(SUDO) ../../../third_party/multiarch/qemu-user-static/register/register.sh --reset
+	docker run --rm --privileged multiarch/qemu-user-static:$(QEMUVERSION) --reset -p yes
+	docker buildx version
+	docker buildx create --use
+	docker buildx inspect --bootstrap
 endif
 	docker buildx build \
-		--pull --platform linux/$(ARCH) -t $(IMAGE)-$(ARCH):$(TAG) $(TEMP_DIR)
+		--pull \
+		--load \
+		--platform linux/$(ARCH) \
+		-t $(IMAGE)-$(ARCH):$(TAG) \
+		$(TEMP_DIR)
 	rm -rf $(TEMP_DIR)
 
 push: build

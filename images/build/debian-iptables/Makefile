@@ -31,6 +31,7 @@ BASEIMAGE?=$(BASE_REGISTRY)/debian-base-$(ARCH):$(DEBIAN_BASE_VERSION)
 
 # Build args
 IPTABLES_VERSION ?= 1.8.5
+QEMUVERSION=5.2.0-2
 
 # This option is for running docker manifest command
 export DOCKER_CLI_EXPERIMENTAL := enabled
@@ -43,10 +44,14 @@ build:
 
 ifneq ($(ARCH),amd64)
 	# Register /usr/bin/qemu-ARCH-static as the handler for non-x86 binaries in the kernel
-	$(SUDO) ../../../third_party/multiarch/qemu-user-static/register/register.sh --reset
+	docker run --rm --privileged multiarch/qemu-user-static:$(QEMUVERSION) --reset -p yes
+	docker buildx version
+	docker buildx create --use
+	docker buildx inspect --bootstrap
 endif
 	docker buildx build \
 		--pull \
+		--load \
 		--platform linux/$(ARCH) \
 		-t $(IMAGE)-$(ARCH):$(IMAGE_VERSION) \
 		-t $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
