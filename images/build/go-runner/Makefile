@@ -16,7 +16,7 @@
 include $(CURDIR)/../../Makefile.common-image $(CURDIR)/../Makefile.build-image
 
 IMGNAME = go-runner
-IMAGE_VERSION ?= buster-v2.2.3
+IMAGE_VERSION ?= buster-v2.2.4
 CONFIG ?= buster
 
 # Build args
