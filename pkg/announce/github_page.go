@@ -18,11 +18,7 @@ package announce
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"crypto/sha512"
-	"fmt"
 	"html/template"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -31,8 +27,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
+	"k8s.io/release/pkg/hash"
 	"k8s.io/release/pkg/util"
 )
 
@@ -327,30 +325,17 @@ func deleteReleaseAssets(gh *github.GitHub, owner, repo string, releaseID int64)
 
 // getFileHashes obtains a file's sha256 and 512
 func getFileHashes(path string) (hashes map[string]string, err error) {
-	// Get the hashes for this asset file
-	f, err := os.Open(path)
+	sha256, err := hash.SHA256ForFile(path)
 	if err != nil {
-		return hashes, errors.Wrap(err, "opening asset file")
-	}
-	defer f.Close()
-
-	hasher256 := sha256.New()
-	hasher512 := sha512.New()
-
-	// Get the SHA256 of the file
-	if _, err := io.Copy(hasher256, f); err != nil {
-		return hashes, errors.Wrap(err, "calculating the file's sha256")
+		return nil, errors.Wrap(err, "get sha256")
 	}
 
-	// Get the SHA512 of the file
-	if _, err := io.Copy(hasher512, f); err != nil {
-		return hashes, errors.Wrap(err, "calculating the file's sha512")
+	sha512, err := hash.SHA512ForFile(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "get sha512")
 	}
 
-	return map[string]string{
-		"256": fmt.Sprintf("%x", hasher256.Sum(nil)),
-		"512": fmt.Sprintf("%x", hasher512.Sum(nil)),
-	}, nil
+	return map[string]string{"256": sha256, "512": sha512}, nil
 }
 
 // Validate the GitHub page options to ensure they are correct

@@ -18,8 +18,6 @@ package filepromoter
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -28,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	api "k8s.io/release/pkg/api/files"
+	"k8s.io/release/pkg/hash"
 )
 
 // syncFileInfo tracks a file during the synchronization operation.
@@ -97,7 +96,7 @@ func (o *copyFileOp) Run(ctx context.Context) error {
 	f = nil
 
 	// Verify the source hash
-	sha256, err := ComputeSHA256ForFile(tempFilename)
+	sha256, err := hash.SHA256ForFile(tempFilename)
 	if err != nil {
 		return err
 	}
@@ -121,30 +120,4 @@ func (o *copyFileOp) String() string {
 	return fmt.Sprintf(
 		"COPY %q to %q",
 		o.Source.AbsolutePath, o.Dest.AbsolutePath)
-}
-
-// nolint[lll]
-// ComputeSHA256ForFile returns the hex-encoded sha256 hash of the file named filename
-func ComputeSHA256ForFile(filename string) (string, error) {
-	f, err := os.Open(filename)
-	if err != nil {
-		return "", fmt.Errorf(
-			"error re-opening temp file %q: %v",
-			filename, err)
-	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			logrus.Warnf(
-				"error closing file %q: %v",
-				filename, err)
-		}
-	}()
-
-	hasher := sha256.New()
-	if _, err := io.Copy(hasher, f); err != nil {
-		return "", fmt.Errorf("error hashing file %q: %v", filename, err)
-	}
-
-	sha256 := hex.EncodeToString(hasher.Sum(nil))
-	return sha256, nil
 }
