@@ -22,7 +22,6 @@ import (
 	"crypto/sha512"
 	"fmt"
 	"hash"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -41,6 +40,7 @@ import (
 
 	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/git"
+	rhash "k8s.io/release/pkg/hash"
 	"k8s.io/release/pkg/http"
 	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/tar"
@@ -493,7 +493,7 @@ func WriteChecksums(rootPath string) error {
 					return nil
 				}
 
-				sha, err := fileToHash(path, hasher)
+				sha, err := rhash.ForFile(path, hasher)
 				if err != nil {
 					return errors.Wrap(err, "get hash from file")
 				}
@@ -550,7 +550,7 @@ func WriteChecksums(rootPath string) error {
 	logrus.Infof("Hashing files in %s", rootPath)
 
 	writeSHAFile := func(fileName string, hasher hash.Hash) error {
-		sha, err := fileToHash(fileName, hasher)
+		sha, err := rhash.ForFile(fileName, hasher)
 		if err != nil {
 			return errors.Wrap(err, "get hash from file")
 		}
@@ -585,21 +585,6 @@ func WriteChecksums(rootPath string) error {
 	}
 
 	return nil
-}
-
-func fileToHash(fileName string, hasher hash.Hash) (string, error) {
-	file, err := os.Open(fileName)
-	if err != nil {
-		return "", errors.Wrapf(err, "opening file %s", fileName)
-	}
-	defer file.Close()
-
-	hasher.Reset()
-	if _, err := io.Copy(hasher, file); err != nil {
-		return "", errors.Wrapf(err, "copy file %s into hasher", fileName)
-	}
-
-	return fmt.Sprintf("%x", hasher.Sum(nil)), nil
 }
 
 // NewPromoterImageListFromFile parses an image promoter manifest file

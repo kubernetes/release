@@ -25,7 +25,7 @@ import (
 	"golang.org/x/xerrors"
 
 	api "k8s.io/release/pkg/api/files"
-	"k8s.io/release/pkg/filepromoter"
+	"k8s.io/release/pkg/hash"
 )
 
 // GenerateManifestOptions holds the parameters for a hash-files operation.
@@ -75,7 +75,7 @@ func GenerateManifest(ctx context.Context, options GenerateManifestOptions) (*ap
 
 		if !info.IsDir() {
 			relativePath := strings.TrimPrefix(p, basedir)
-			sha256, err := filepromoter.ComputeSHA256ForFile(p)
+			sha256, err := hash.SHA256ForFile(p)
 			if err != nil {
 				return xerrors.Errorf("error hashing file %q: %w", p, err)
 			}
