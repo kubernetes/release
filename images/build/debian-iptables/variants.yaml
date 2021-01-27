@@ -4,9 +4,3 @@ variants:
     IMAGE_VERSION: 'buster-v1.4.0'
     DEBIAN_BASE_VERSION: 'buster-v1.3.0'
     IPTABLES_VERSION: '1.8.5'
-  stretch:
-    CONFIG: 'stretch'
-    IMAGE_VERSION: 'stretch-v1.2.0'
-    # TODO(debian-base): Need to update to new version format
-    #                    ('codename-v0.0.0') on next image bump
-    DEBIAN_BASE_VERSION: 'v1.1.0'
