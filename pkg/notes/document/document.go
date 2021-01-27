@@ -17,11 +17,9 @@ limitations under the License.
 package document
 
 import (
-	"crypto/sha512"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -30,6 +28,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"k8s.io/release/pkg/hash"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/release"
@@ -108,20 +107,14 @@ func fileInfo(dir string, patterns []string, urlPrefix, tag string) ([]File, err
 		}
 
 		for _, filePath := range matches {
-			f, err := os.Open(filePath)
+			sha512, err := hash.SHA512ForFile(filePath)
 			if err != nil {
-				return nil, err
-			}
-			defer f.Close()
-
-			h := sha512.New()
-			if _, err := io.Copy(h, f); err != nil {
-				return nil, err
+				return nil, errors.Wrap(err, "get sha512")
 			}
 
 			fileName := filepath.Base(filePath)
 			files = append(files, File{
-				Checksum: fmt.Sprintf("%x", h.Sum(nil)),
+				Checksum: sha512,
 				Name:     fileName,
 				URL:      fmt.Sprintf("%s/%s/%s", urlPrefix, tag, fileName),
 			})
