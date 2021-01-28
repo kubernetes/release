@@ -422,11 +422,11 @@ func createDraftPR(repoPath, tag string) (err error) {
 		for _, note := range releaseNotes.ByPR() {
 			maps, err := rnMapProvider.GetMapsForPR(note.PrNumber)
 			if err != nil {
-				return errors.Wrapf(err, "while getting maps for PR#%d", note.PrNumber)
+				return errors.Wrapf(err, "while getting maps for PR #%d", note.PrNumber)
 			}
 			for _, noteMap := range maps {
 				if err := note.ApplyMap(noteMap); err != nil {
-					return errors.Wrapf(err, "applying note maps to pr #%d", note.PrNumber)
+					return errors.Wrapf(err, "applying note maps to PR #%d", note.PrNumber)
 				}
 			}
 		}
@@ -1001,7 +1001,7 @@ func buildNotesResult(startTag string, releaseNotes *notes.ReleaseNotes) (*relea
 	}
 
 	// Create the JSON
-	j, err := json.Marshal(releaseNotes.ByPR())
+	j, err := json.MarshalIndent(releaseNotes.ByPR(), "", "  ")
 	if err != nil {
 		return nil, errors.Wrapf(err, "generating release notes JSON")
 	}
