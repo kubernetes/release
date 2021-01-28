@@ -81,7 +81,7 @@ dependencies:
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
   - name: "gcr.io/k8s-staging-releng/releng-ci"
-    version: v0.1.3
+    version: v0.2.0
     refPaths:
     - path: images/releng/ci/cloudbuild.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
