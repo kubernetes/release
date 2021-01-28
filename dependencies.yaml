@@ -57,7 +57,7 @@ dependencies:
 
   # Golang
   - name: "golang"
-    version: 1.15.7
+    version: 1.16rc1
     refPaths:
     - path: cmd/vulndash/Makefile
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
