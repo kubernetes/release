@@ -103,13 +103,13 @@ dependencies:
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
   - name: "k8s.gcr.io/build-image/kube-cross"
-    version: v1.15.7-2
+    version: v1.16.0-rc.1-1
     refPaths:
     - path: images/build/cross/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
 
   - name: "k8s.gcr.io/build-image/kube-cross: config variant"
-    version: go1.15
+    version: go1.16
     refPaths:
     - path: images/build/cross/Makefile
       match: CONFIG \?= go\d+.\d+
