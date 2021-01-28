@@ -76,8 +76,7 @@ ifneq ($(ARCH),amd64)
 	# Register /usr/bin/qemu-ARCH-static as the handler for non-x86 binaries in the kernel
 	docker run --rm --privileged multiarch/qemu-user-static:$(QEMUVERSION) --reset -p yes
 	docker buildx version
-	docker buildx create --use
-	docker buildx inspect --bootstrap
+	BUILDER=$(shell docker buildx create --use)
 endif
 	docker buildx build \
 		--pull \
@@ -86,6 +85,9 @@ endif
 		-t $(IMAGE)-$(ARCH):$(TAG) \
 		$(TEMP_DIR)
 	rm -rf $(TEMP_DIR)
+ifneq ($(ARCH),amd64)
+	docker buildx rm $$BUILDER
+endif
 
 push: build
 	docker push $(IMAGE)-$(ARCH):$(TAG)

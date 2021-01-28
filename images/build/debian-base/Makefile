@@ -85,8 +85,7 @@ else
 	# Register /usr/bin/qemu-ARCH-static as the handler for non-x86 binaries in the kernel
 	docker run --rm --privileged multiarch/qemu-user-static:$(QEMUVERSION) --reset -p yes
 	docker buildx version
-	docker buildx create --use
-	docker buildx inspect --bootstrap
+	BUILDER=$(shell docker buildx create --use)
 
 	curl -sSL https://github.com/multiarch/qemu-user-static/releases/download/v$(QEMUVERSION)/x86_64_qemu-$(QEMUARCH)-static.tar.gz | tar -xz -C $(TEMP_DIR)/$(CONFIG)
 	# Ensure we don't get surprised by umask settings
@@ -113,6 +112,9 @@ endif
 		-t $(IMAGE)-$(ARCH):latest-$(CONFIG) \
 		$(TEMP_DIR)/$(CONFIG)
 	rm -rf $(TEMP_DIR)
+ifneq ($(ARCH),amd64)
+	docker buildx rm $$BUILDER
+endif
 
 push: build
 	docker push $(IMAGE)-$(ARCH):$(IMAGE_VERSION)
