@@ -24,7 +24,7 @@ CONFIG ?= buster
 
 TAR_FILE ?= rootfs.tar
 ARCH ?= amd64
-ALL_ARCH = amd64 arm arm64 ppc64le s390x
+ALL_ARCH = amd64 arm arm64 ppc64le s390x mips64le
 
 TEMP_DIR:=$(shell mktemp -d)
 QEMUVERSION=v5.2.0-2
@@ -52,6 +52,10 @@ endif
 ifeq ($(ARCH),s390x)
 	BASEIMAGE?=s390x/debian:$(CONFIG)-slim
 	QEMUARCH=s390x
+endif
+ifeq ($(ARCH),mips64le)
+	BASEIMAGE?=debian:$(CONFIG)-slim
+	QEMUARCH=mips64el
 endif
 
 sub-build-%:
