@@ -121,17 +121,18 @@ permissions to your fork of k/sig-release and k-sigs/release-notes.`,
 }
 
 type releaseNotesOptions struct {
-	repoPath        string
-	tag             string
-	userFork        string
-	createDraftPR   bool
-	createWebsitePR bool
-	dependencies    bool
-	fixNotes        bool
-	websiteRepo     string
-	mapProviders    []string
-	githubOrg       string
-	draftRepo       string
+	repoPath           string
+	tag                string
+	userFork           string
+	createDraftPR      bool
+	createWebsitePR    bool
+	dependencies       bool
+	fixNotes           bool
+	websiteRepo        string
+	mapProviders       []string
+	githubOrg          string
+	draftRepo          string
+	listReleaseNotesV2 bool
 }
 
 type releaseNotesResult struct {
@@ -210,6 +211,13 @@ func init() {
 		"fork",
 		"",
 		"the user's fork in the form org/repo. Used to submit Pull Requests for the website and draft",
+	)
+
+	releaseNotesCmd.PersistentFlags().BoolVar(
+		&releaseNotesOpts.listReleaseNotesV2,
+		"list-v2",
+		false,
+		"enable experimental implementation to list commits (ListReleaseNotesV2)",
 	)
 
 	rootCmd.AddCommand(releaseNotesCmd)
@@ -958,6 +966,7 @@ func gatherNotesFrom(repoPath, startTag string) (*notes.ReleaseNotes, error) {
 	notesOptions.EndRev = releaseNotesOpts.tag
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
 	notesOptions.MapProviderStrings = releaseNotesOpts.mapProviders
+	notesOptions.ListReleaseNotesV2 = releaseNotesOpts.listReleaseNotesV2
 
 	if err := notesOptions.ValidateAndFinish(); err != nil {
 		return nil, err

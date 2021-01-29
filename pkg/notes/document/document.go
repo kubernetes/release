@@ -217,7 +217,7 @@ func New(
 		note := releaseNotes.Get(pr)
 
 		if note.DoNotPublish {
-			logrus.Infof("skipping PR %d as (marked to not be published)", pr)
+			logrus.Debugf("skipping PR %d as (marked to not be published)", pr)
 			continue
 		}
 
