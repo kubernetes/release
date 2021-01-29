@@ -118,6 +118,9 @@ type Options struct {
 
 	// MapProviders list of release notes map providers to query during generations
 	MapProviderStrings []string
+
+	// EXPERIMENTAL: Feature flag for using v2 implementation to list commits
+	ListReleaseNotesV2 bool
 }
 
 type RevisionDiscoveryMode string
