@@ -16,11 +16,11 @@
 include $(CURDIR)/../../Makefile.common-image $(CURDIR)/../Makefile.build-image
 
 IMGNAME = go-runner
-IMAGE_VERSION ?= buster-v2.2.4
+IMAGE_VERSION ?= buster-v2.3.0
 CONFIG ?= buster
 
 # Build args
-GO_VERSION ?= 1.15.7
+GO_VERSION ?= 1.16rc1
 DISTROLESS_IMAGE ?= static-debian10
 
 PLATFORMS ?= linux/amd64 linux/arm64 linux/arm linux/ppc64le linux/s390x
