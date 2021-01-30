@@ -1361,6 +1361,13 @@ func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.R
 		numChanges++
 	}
 
+	if fmt.Sprint(originalNote.DoNotPublish) == fmt.Sprint(modifiedNote.DoNotPublish) {
+		unalteredFields.ReleaseNote.DoNotPublish = &originalNote.DoNotPublish
+	} else {
+		modifiedFields.ReleaseNote.DoNotPublish = &modifiedNote.DoNotPublish
+		numChanges++
+	}
+
 	// TODO: Implement after writing a documentation comparison func
 	unalteredFields.ReleaseNote.Documentation = &originalNote.Documentation
 
