@@ -13,8 +13,12 @@
 # limitations under the License.
 
 all: all-build
-
+ifneq ($(ARCH),mips64le)
 REGISTRY ?= gcr.io/k8s-staging-build-image
+else
+REGISTRY ?= gcr.io/k8s-staging-experimental
+endif
+
 IMAGE ?= $(REGISTRY)/debian-base
 BUILD_IMAGE ?= debian-build
 
