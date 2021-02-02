@@ -128,11 +128,11 @@ type releaseNotesOptions struct {
 	createWebsitePR    bool
 	dependencies       bool
 	fixNotes           bool
+	listReleaseNotesV2 bool
 	websiteRepo        string
 	mapProviders       []string
 	githubOrg          string
 	draftRepo          string
-	listReleaseNotesV2 bool
 }
 
 type releaseNotesResult struct {

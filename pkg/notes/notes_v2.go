@@ -175,7 +175,6 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 		ActionRequired: labelExactMatch(pr, "release-note-action-required"),
 		DoNotPublish:   labelExactMatch(pr, "release-note-none"),
 	}, nil
-
 }
 
 func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair, error) {
