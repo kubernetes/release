@@ -105,6 +105,9 @@ type Options struct {
 	// log level
 	Debug bool
 
+	// EXPERIMENTAL: Feature flag for using v2 implementation to list commits
+	ListReleaseNotesV2 bool
+
 	// RecordDir specifies the directory for API call recordings. Cannot be
 	// used together with ReplayDir.
 	RecordDir string
@@ -118,9 +121,6 @@ type Options struct {
 
 	// MapProviders list of release notes map providers to query during generations
 	MapProviderStrings []string
-
-	// EXPERIMENTAL: Feature flag for using v2 implementation to list commits
-	ListReleaseNotesV2 bool
 }
 
 type RevisionDiscoveryMode string
