@@ -168,12 +168,14 @@ func (bi *Instance) Push() error {
 
 func (bi *Instance) findLatestVersion() (latestVersion string, err error) {
 	// Check if latest build uses bazel
-	dir, err := os.Getwd()
-	if err != nil {
-		return "", errors.Wrap(err, "get working directory")
+	if bi.opts.RepoRoot == "" {
+		bi.opts.RepoRoot, err = os.Getwd()
+		if err != nil {
+			return "", errors.Wrap(err, "get working directory")
+		}
 	}
 
-	isBazel, err := release.BuiltWithBazel(dir)
+	isBazel, err := release.BuiltWithBazel(bi.opts.RepoRoot)
 	if err != nil {
 		return "", errors.Wrap(err, "identify if release built with Bazel")
 	}
@@ -182,14 +184,14 @@ func (bi *Instance) findLatestVersion() (latestVersion string, err error) {
 	if bi.opts.Version == "" {
 		if isBazel {
 			logrus.Info("Using Bazel build version")
-			version, err := release.ReadBazelVersion(dir)
+			version, err := release.ReadBazelVersion(bi.opts.RepoRoot)
 			if err != nil {
 				return "", errors.Wrap(err, "read Bazel build version")
 			}
 			latestVersion = version
 		} else {
 			logrus.Info("Using Dockerized build version")
-			version, err := release.ReadDockerizedVersion(dir)
+			version, err := release.ReadDockerizedVersion(bi.opts.RepoRoot)
 			if err != nil {
 				return "", errors.Wrap(err, "read Dockerized build version")
 			}
@@ -222,24 +224,34 @@ func (bi *Instance) findLatestVersion() (latestVersion string, err error) {
 		latestVersion += "-" + bi.opts.VersionSuffix
 	}
 
+	setupBuildDir(bi, isBazel)
+
+	return strings.TrimSpace(latestVersion), nil
+}
+
+func setupBuildDir(bi *Instance, isBazel bool) {
 	if bi.opts.BuildDir == "" {
 		logrus.Info("BuildDir is not set, setting it automatically")
 		if isBazel {
 			logrus.Infof(
-				"Release is build by bazel, setting BuildDir to %s",
+				"Release is build by bazel, using BuildDir as %s",
 				release.BazelBuildDir,
 			)
 			bi.opts.BuildDir = release.BazelBuildDir
 		} else {
 			logrus.Infof(
-				"Release is build in a container, setting BuildDir to %s",
+				"Release is build in a container, using BuildDir as %s",
 				release.BuildDir,
 			)
 			bi.opts.BuildDir = release.BuildDir
 		}
 	}
-
-	return strings.TrimSpace(latestVersion), nil
+	// convert buildDir to an absolute path
+	bi.opts.BuildDir = filepath.Join(bi.opts.RepoRoot, bi.opts.BuildDir)
+	logrus.Infof(
+		"Setting BuildDir to %s",
+		bi.opts.BuildDir,
+	)
 }
 
 // CheckReleaseBucket verifies that a release bucket exists and the current

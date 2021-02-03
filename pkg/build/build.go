@@ -52,7 +52,7 @@ type Options struct {
 	// Specify an alternate bucket for pushes (normally 'devel' or 'ci').
 	Bucket string
 
-	// Specify an alternate build directory. Will be automatically determined
+	// Specify an alternate build directory (relative to RepoRoot). Will be automatically determined
 	// if not set.
 	BuildDir string
 
@@ -64,6 +64,10 @@ type Options struct {
 
 	// If set, push docker images to specified registry/project.
 	Registry string
+
+	// Absolute path to the kubernetes repository root directory
+	// defaults to current working directory
+	RepoRoot string
 
 	// Comma separated list which can be used to upload additional version
 	// files to GCS. The path is relative and is append to a GCS path. (--ci
