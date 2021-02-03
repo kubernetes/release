@@ -32,11 +32,14 @@ import (
 // Build starts a Kubernetes build with the options defined in the build
 // `Instance`.
 func (bi *Instance) Build() error {
-	workingDir, dirErr := os.Getwd()
-	if dirErr != nil {
-		return errors.Wrapf(dirErr, "getting working directory")
+	workingDir := bi.opts.RepoRoot
+	if workingDir == "" {
+		var dirErr error
+		workingDir, dirErr = os.Getwd()
+		if dirErr != nil {
+			return errors.Wrapf(dirErr, "getting working directory")
+		}
 	}
-
 	logrus.Infof("Current working directory: %s", workingDir)
 
 	workingDirRelative := filepath.Base(workingDir)
