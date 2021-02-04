@@ -248,7 +248,7 @@ func runReleaseNotes() (err error) {
 
 	// before running the generators, verify that the repositories are ready
 	if releaseNotesOpts.createWebsitePR {
-		if err = verifyFork(
+		if err := verifyFork(
 			websiteBranchPrefix+tag,
 			releaseNotesOpts.githubOrg, releaseNotesOpts.websiteRepo,
 			defaultKubernetesSigsOrg, defaultKubernetesSigsRepo,
@@ -258,7 +258,7 @@ func runReleaseNotes() (err error) {
 	}
 
 	if releaseNotesOpts.createDraftPR {
-		if err = verifyFork(
+		if err := verifyFork(
 			draftBranchPrefix+tag,
 			releaseNotesOpts.githubOrg, releaseNotesOpts.draftRepo,
 			git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
@@ -477,7 +477,9 @@ func createDraftPR(repoPath, tag string) (err error) {
 	}
 
 	defer func() {
-		err = sigReleaseRepo.Cleanup()
+		if e := sigReleaseRepo.Cleanup(); e != nil {
+			err = errors.Wrap(e, "cleaning temporary sig release clone")
+		}
 	}()
 
 	// Create the commit
@@ -727,7 +729,9 @@ func createWebsitePR(repoPath, tag string) (err error) {
 		return errors.Wrap(err, "preparing local fork branch")
 	}
 	defer func() {
-		err = errors.Wrap(k8sSigsRepo.Cleanup(), "cleaning up k/sigs repo")
+		if e := k8sSigsRepo.Cleanup(); e != nil {
+			err = errors.Wrap(e, "cleaning up k/sigs repo")
+		}
 	}()
 
 	// add a reference to the new json file in assets.ts
@@ -738,8 +742,9 @@ func createWebsitePR(repoPath, tag string) (err error) {
 	// generate the notes
 	jsonNotesPath := filepath.Join("src", "assets", jsonNotesFilename)
 	logrus.Debugf("Release notes json file will be written to %s", filepath.Join(k8sSigsRepo.Dir(), jsonNotesPath))
-	err = ioutil.WriteFile(filepath.Join(k8sSigsRepo.Dir(), jsonNotesPath), []byte(jsonStr), 0644)
-	if err != nil {
+	if err := ioutil.WriteFile(
+		filepath.Join(k8sSigsRepo.Dir(), jsonNotesPath), []byte(jsonStr), os.FileMode(0o644),
+	); err != nil {
 		return errors.Wrapf(err, "writing release notes json file")
 	}
 
@@ -832,7 +837,9 @@ func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 		return "", errors.Wrap(err, "performing clone of k/sig-release")
 	}
 	defer func() {
-		err = sigReleaseRepo.Cleanup()
+		if e := sigReleaseRepo.Cleanup(); e != nil {
+			err = sigReleaseRepo.Cleanup()
+		}
 	}()
 
 	branchName := git.DefaultBranch
