@@ -222,10 +222,17 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 
 	// the stopping point to be set should be the last shared commit between release branch and primary (master) branch
 	// usually, following the left / first parents, it would be
-	// * tag: v1.20.0, some merge commit
+
+	// ^ master
 	// |
-	// * Anago GCB release commit (begin branch out of release-1.20)
+	// * tag: 1.21.0-alpha.x / 1.21.0-beta.y
 	// |
+	// : :
+	// | |
+	// | * tag: v1.20.0, some merge commit pointed by opts.StartSHA
+	// | |
+	// | * Anago GCB release commit (begin branch out of release-1.20)
+	// |/
 	// * last shared commit
 
 	// this means the stopping point is 2 commits behind the tag pointed by opts.StartSHA
