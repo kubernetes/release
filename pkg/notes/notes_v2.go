@@ -18,6 +18,7 @@ package notes
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 
@@ -68,36 +69,52 @@ func (g *Gatherer) ListReleaseNotesV2() (*ReleaseNotes, error) {
 
 	pairsCount := len(pairs)
 	logrus.Infof("processing release notes for %d commits", pairsCount)
-	bar := pb.Full.Start(pairsCount)
+	bar := pb.New(pairsCount).SetWriter(os.Stdout).Start()
 
 	for _, pair := range pairs {
-		noteMaps := []*ReleaseNotesMap{}
-
-		for _, provider := range mapProviders {
-			noteMaps, err = provider.GetMapsForPR(pair.PrNum)
-			if err != nil {
-				logrus.Errorf("[ignored] pr: %d err: %v", pair.PrNum, err)
-				noteMaps = []*ReleaseNotesMap{}
-			}
-		}
-
-		go func() {
-			releaseNote, err := g.buildReleaseNote(pair)
-			if err == nil && releaseNote != nil {
-				for _, noteMap := range noteMaps {
-					if err := releaseNote.ApplyMap(noteMap); err != nil {
-						logrus.Errorf("[ignored] pr: %d err: %v", pair.PrNum, err)
-					}
+		go func(pair *commitPrPair) {
+			noteMaps := []*ReleaseNotesMap{}
+			for _, provider := range mapProviders {
+				noteMaps, err = provider.GetMapsForPR(pair.PrNum)
+				if err != nil {
+					logrus.WithFields(logrus.Fields{
+						"pr": pair.PrNum,
+					}).Errorf("ignore err: %v", err)
+					noteMaps = []*ReleaseNotesMap{}
 				}
-				aggregator.Lock()
-				aggregator.releaseNotes.Set(pair.PrNum, releaseNote)
-				aggregator.Unlock()
-			} else if err != nil {
-				logrus.Errorf("sha: %s pr: %d err: %v", pair.Commit.Hash.String(), pair.PrNum, err)
+			}
+
+			releaseNote, err := g.buildReleaseNote(pair)
+			if err == nil {
+				if releaseNote != nil {
+					for _, noteMap := range noteMaps {
+						if err := releaseNote.ApplyMap(noteMap); err != nil {
+							logrus.WithFields(logrus.Fields{
+								"pr": pair.PrNum,
+							}).Errorf("ignore err: %v", err)
+						}
+					}
+					logrus.WithFields(logrus.Fields{
+						"pr":   pair.PrNum,
+						"note": releaseNote.Text,
+					}).Debugf("finalized release note")
+					aggregator.Lock()
+					aggregator.releaseNotes.Set(pair.PrNum, releaseNote)
+					aggregator.Unlock()
+				} else {
+					logrus.WithFields(logrus.Fields{
+						"pr": pair.PrNum,
+					}).Debugf("skip: empty release note")
+				}
+			} else {
+				logrus.WithFields(logrus.Fields{
+					"sha": pair.Commit.Hash.String(),
+					"pr":  pair.PrNum,
+				}).Errorf("err: %v", err)
 			}
 			bar.Increment()
 			t.Done(nil)
-		}()
+		}(pair)
 
 		if t.Throttle() > 0 {
 			break
@@ -121,9 +138,16 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 
 	prBody := pr.GetBody()
 
+	if MatchesExcludeFilter(prBody) {
+		return nil, nil
+	}
+
 	text, err := noteTextFromString(prBody)
 	if err != nil {
-		logrus.Debugf("sha: %s pr: %d err: %v", pair.Commit.Hash.String(), pair.PrNum, err)
+		logrus.WithFields(logrus.Fields{
+			"sha": pair.Commit.Hash.String(),
+			"pr":  pair.PrNum,
+		}).Debugf("ignore err: %v", err)
 		return nil, nil
 	}
 
@@ -223,20 +247,27 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 		// Find and collect PR number from commit message
 		prNums, err := prsNumForCommitFromMessage(commitPointer.Message)
 		if err == errNoPRIDFoundInCommitMessage {
-			logrus.Debugf("sha: %s prs: []", hashString)
+			logrus.WithFields(logrus.Fields{
+				"sha": hashString,
+			}).Debug("no associated PR found")
 
 			// Advance pointer based on left parent
 			hashPointer = commitPointer.ParentHashes[0]
 			continue
 		}
 		if err != nil {
-			logrus.Warnf("sha: %s err: %s (silenced)", hashString, err.Error())
+			logrus.WithFields(logrus.Fields{
+				"sha": hashString,
+			}).Warnf("ignore err: %v", err)
 
 			// Advance pointer based on left parent
 			hashPointer = commitPointer.ParentHashes[0]
 			continue
 		}
-		logrus.Debugf("sha: %s prs: %v", hashString, prNums)
+		logrus.WithFields(logrus.Fields{
+			"sha": hashString,
+			"prs": prNums,
+		}).Debug("found PR from commit")
 
 		// Only taking the first one, assuming they are merged by Prow
 		pairs = append(pairs, &commitPrPair{Commit: commitPointer, PrNum: prNums[0]})
