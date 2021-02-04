@@ -30,6 +30,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	gitobject "github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/mattn/go-isatty"
 	"github.com/nozzle/throttler"
 	"github.com/sirupsen/logrus"
 )
@@ -69,7 +70,14 @@ func (g *Gatherer) ListReleaseNotesV2() (*ReleaseNotes, error) {
 
 	pairsCount := len(pairs)
 	logrus.Infof("processing release notes for %d commits", pairsCount)
-	bar := pb.New(pairsCount).SetWriter(os.Stdout).Start()
+
+	// display progress bar in stdout, since stderr is used by logger
+	bar := pb.New(pairsCount).SetWriter(os.Stdout)
+
+	// only display progress bar in user TTY
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		bar.Start()
+	}
 
 	for _, pair := range pairs {
 		// pair needs to be scoped in parameter so that the specific variable read
