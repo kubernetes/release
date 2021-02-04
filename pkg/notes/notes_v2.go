@@ -72,6 +72,8 @@ func (g *Gatherer) ListReleaseNotesV2() (*ReleaseNotes, error) {
 	bar := pb.New(pairsCount).SetWriter(os.Stdout).Start()
 
 	for _, pair := range pairs {
+		// pair needs to be scoped in parameter so that the specific variable read
+		// happens when the goroutine is declared, not when referenced inside
 		go func(pair *commitPrPair) {
 			noteMaps := []*ReleaseNotesMap{}
 			for _, provider := range mapProviders {
