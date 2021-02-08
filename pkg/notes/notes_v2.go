@@ -21,6 +21,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -233,20 +234,33 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 	// | |
 	// | * Anago GCB release commit (begin branch out of release-1.20)
 	// |/
-	// * last shared commit
+	// x last shared commit
 
-	// this means the stopping point is 2 commits behind the tag pointed by opts.StartSHA
+	// merge base would resolve to last shared commit, marked by (x)
 
-	stopHash := plumbing.NewHash(opts.StartSHA)
-	for i := 0; i < 2; i++ {
-		commitObject, err := localRepository.CommitObject(stopHash)
-		if err != nil {
-			return nil, errors.Wrap(err, "finding last shared commit")
-		}
-		stopHash = commitObject.ParentHashes[0]
+	endCommit, err := localRepository.CommitObject(plumbing.NewHash(opts.EndSHA))
+	if err != nil {
+		return nil, errors.Wrap(err, "finding commit of EndSHA")
 	}
 
-	logrus.Infof("will stop at %s", stopHash)
+	startCommit, err := localRepository.CommitObject(plumbing.NewHash(opts.StartSHA))
+	if err != nil {
+		return nil, errors.Wrap(err, "finding commit of StartSHA")
+	}
+
+	logrus.Debugf("finding merge base (last shared commit) between the two SHAs")
+	startTime := time.Now()
+	lastSharedCommits, err := endCommit.MergeBase(startCommit)
+	if err != nil {
+		return nil, errors.Wrap(err, "finding shared commits")
+	}
+	if len(lastSharedCommits) == 0 {
+		return nil, fmt.Errorf("no shared commits between the provided SHAs")
+	}
+	logrus.Debugf("found merge base in %v", time.Since(startTime))
+
+	stopHash := lastSharedCommits[0].Hash
+	logrus.Infof("will stop at %s", stopHash.String())
 
 	currentTagHash := plumbing.NewHash(opts.EndSHA)
 
