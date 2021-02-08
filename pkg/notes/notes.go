@@ -982,7 +982,9 @@ func prettifySIGList(sigs []string) string {
 // ApplyMap Modifies the content of the release using information from
 //  a ReleaseNotesMap
 func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap) error {
-	logrus.Infof("Applying map to note from PR %d", rn.PrNumber)
+	logrus.WithFields(logrus.Fields{
+		"pr": rn.PrNumber,
+	}).Debugf("Applying map to note")
 	reRenderMarkdown := false
 	if noteMap.ReleaseNote.Author != nil {
 		rn.Author = *noteMap.ReleaseNote.Author
