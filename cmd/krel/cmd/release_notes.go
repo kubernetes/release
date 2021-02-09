@@ -1208,10 +1208,11 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 			Feature:        note.Feature,
 			ActionRequired: note.ActionRequired,
 			Documentation:  note.Documentation,
+			DoNotPublish:   note.DoNotPublish,
 		}
 
 		if noteMaps != nil {
-			fmt.Println("✨ Note contents are modified with a map")
+			fmt.Println("✨ Note contents was previously modified with a map")
 			for _, noteMap := range noteMaps {
 				if err := note.ApplyMap(noteMap); err != nil {
 					return errors.Wrapf(err, "applying notemap for PR #%d", pr)
@@ -1225,6 +1226,7 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 		fmt.Println(pointIfChanged("Areas", note.Areas, originalNote.Areas), note.Areas)
 		fmt.Println(pointIfChanged("Feature", note.Feature, originalNote.Feature), note.Feature)
 		fmt.Println(pointIfChanged("ActionRequired", note.ActionRequired, originalNote.ActionRequired), note.ActionRequired)
+		fmt.Println(pointIfChanged("DoNotPublish", note.DoNotPublish, originalNote.DoNotPublish), note.DoNotPublish)
 		// TODO: Implement note.Documentation
 
 		// Wrap the note for better readability on the terminal
