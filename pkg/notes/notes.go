@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	gogithub "github.com/google/go-github/v33/github"
 	"github.com/nozzle/throttler"
@@ -245,10 +246,18 @@ func GatherReleaseNotes(opts *options.Options) (*ReleaseNotes, error) {
 		return nil, errors.Wrapf(err, "retrieving notes gatherer")
 	}
 
-	releaseNotes, err := gatherer.ListReleaseNotes()
+	var releaseNotes *ReleaseNotes
+	startTime := time.Now()
+	if gatherer.options.ListReleaseNotesV2 {
+		logrus.Warn("EXPERIMENTAL IMPLEMENTATION ListReleaseNotesV2 ENABLED")
+		releaseNotes, err = gatherer.ListReleaseNotesV2()
+	} else {
+		releaseNotes, err = gatherer.ListReleaseNotes()
+	}
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing release notes")
 	}
+	logrus.Infof("finished gathering release notes in %v", time.Since(startTime))
 
 	return releaseNotes, nil
 }
@@ -662,7 +671,7 @@ func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, e
 	prs, err := g.prsFromCommit(commit)
 	if err != nil {
 		if err == errNoPRIDFoundInCommitMessage || err == errNoPRFoundForCommitSHA {
-			logrus.Infof(
+			logrus.Debugf(
 				"No matches found when parsing PR from commit SHA %s",
 				commit.GetSHA(),
 			)
@@ -674,12 +683,12 @@ func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, e
 	for _, pr := range prs {
 		prBody := pr.GetBody()
 
-		logrus.Infof(
+		logrus.Debugf(
 			"Got PR #%d for commit: %s", pr.GetNumber(), commit.GetSHA(),
 		)
 
 		if MatchesExcludeFilter(prBody) {
-			logrus.Infof(
+			logrus.Debugf(
 				"Skipping PR #%d because it contains no release note",
 				pr.GetNumber(),
 			)
@@ -722,7 +731,7 @@ func (g *Gatherer) prsFromCommit(commit *gogithub.RepositoryCommit) (
 ) {
 	githubPRs, err := g.prsForCommitFromMessage(*commit.Commit.Message)
 	if err != nil {
-		logrus.Infof("No PR found for commit %s: %v", commit.GetSHA(), err)
+		logrus.Debugf("No PR found for commit %s: %v", commit.GetSHA(), err)
 		return g.prsForCommitFromSHA(*commit.SHA)
 	}
 	return githubPRs, err
@@ -973,7 +982,9 @@ func prettifySIGList(sigs []string) string {
 // ApplyMap Modifies the content of the release using information from
 //  a ReleaseNotesMap
 func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap) error {
-	logrus.Infof("Applying map to note from PR %d", rn.PrNumber)
+	logrus.WithFields(logrus.Fields{
+		"pr": rn.PrNumber,
+	}).Debugf("Applying map to note")
 	reRenderMarkdown := false
 	if noteMap.ReleaseNote.Author != nil {
 		rn.Author = *noteMap.ReleaseNote.Author
