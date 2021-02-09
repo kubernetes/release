@@ -23,9 +23,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	reg "k8s.io/release/pkg/cip/dockerregistry"
-	"k8s.io/release/pkg/cip/gcloud"
-	"k8s.io/release/pkg/cip/stream"
+	reg "k8s.io/release/v1/pkg/cip/dockerregistry"
+	"k8s.io/release/v1/pkg/cip/gcloud"
+	"k8s.io/release/v1/pkg/cip/stream"
 )
 
 type RunOptions struct {

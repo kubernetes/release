@@ -22,7 +22,7 @@ import (
 
 	"github.com/sendgrid/rest"
 	maila "github.com/sendgrid/sendgrid-go/helpers/mail"
-	"k8s.io/release/pkg/mail"
+	"k8s.io/release/v1/pkg/mail"
 )
 
 type FakeSendClient struct {

@@ -24,8 +24,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/changelog"
-	"k8s.io/release/pkg/github"
+	"k8s.io/release/v1/pkg/changelog"
+	"k8s.io/release/v1/pkg/github"
 )
 
 // changelogCmd represents the subcommand for `krel changelog`

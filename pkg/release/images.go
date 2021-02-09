@@ -26,7 +26,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"k8s.io/release/pkg/command"
+	"k8s.io/release/v1/pkg/command"
 )
 
 // Images is a wrapper around container image related functionality

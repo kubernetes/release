@@ -16,7 +16,7 @@ limitations under the License.
 
 package main
 
-import "k8s.io/release/cmd/gcbuilder/cmd"
+import "k8s.io/release/v1/cmd/gcbuilder/cmd"
 
 func main() {
 	cmd.Execute()

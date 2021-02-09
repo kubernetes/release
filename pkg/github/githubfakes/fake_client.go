@@ -24,7 +24,7 @@ import (
 	"sync"
 
 	githuba "github.com/google/go-github/v33/github"
-	"k8s.io/release/pkg/github"
+	"k8s.io/release/v1/pkg/github"
 )
 
 type FakeClient struct {

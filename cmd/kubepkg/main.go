@@ -16,7 +16,7 @@ limitations under the License.
 
 package main
 
-import "k8s.io/release/cmd/kubepkg/cmd"
+import "k8s.io/release/v1/cmd/kubepkg/cmd"
 
 func main() {
 	cmd.Execute()

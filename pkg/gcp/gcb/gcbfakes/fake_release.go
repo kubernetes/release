@@ -21,8 +21,8 @@ import (
 	"sync"
 
 	"github.com/blang/semver"
-	"k8s.io/release/pkg/gcp/gcb"
-	"k8s.io/release/pkg/release"
+	"k8s.io/release/v1/pkg/gcp/gcb"
+	"k8s.io/release/v1/pkg/release"
 )
 
 type FakeRelease struct {

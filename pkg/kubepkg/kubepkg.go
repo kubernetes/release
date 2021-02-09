@@ -30,11 +30,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/command"
-	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/kubepkg/options"
-	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/util"
+	"k8s.io/release/v1/pkg/command"
+	"k8s.io/release/v1/pkg/github"
+	"k8s.io/release/v1/pkg/kubepkg/options"
+	"k8s.io/release/v1/pkg/release"
+	"k8s.io/release/v1/pkg/util"
 )
 
 type ChannelType string

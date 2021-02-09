@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	grafeaspb "google.golang.org/genproto/googleapis/grafeas/v1"
 
-	reg "k8s.io/release/pkg/cip/dockerregistry"
+	reg "k8s.io/release/v1/pkg/cip/dockerregistry"
 )
 
 func TestImageRemovalCheck(t *testing.T) {

@@ -7,7 +7,7 @@ This simple tool has the objective to parse the yaml file located in [SIG-Releas
 The simplest way to install the `schedule-builder` CLI is via `go get`:
 
 ```
-$ go get k8s.io/release/cmd/schedule-builder
+$ go get k8s.io/release/v1/cmd/schedule-builder
 ```
 
 This will install `schedule-builder` to `$(go env GOPATH)/bin/schedule-builder`.

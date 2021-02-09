@@ -28,10 +28,10 @@ import (
 	"cloud.google.com/go/errorreporting"
 	"github.com/sirupsen/logrus"
 
-	reg "k8s.io/release/pkg/cip/dockerregistry"
-	"k8s.io/release/pkg/cip/logclient"
-	"k8s.io/release/pkg/cip/remotemanifest"
-	"k8s.io/release/pkg/cip/report"
+	reg "k8s.io/release/v1/pkg/cip/dockerregistry"
+	"k8s.io/release/v1/pkg/cip/logclient"
+	"k8s.io/release/v1/pkg/cip/remotemanifest"
+	"k8s.io/release/v1/pkg/cip/report"
 )
 
 // InitRealServerContext creates a ServerContext with facilities that are meant

@@ -17,7 +17,7 @@ limitations under the License.
 package remotemanifest
 
 import (
-	reg "k8s.io/release/pkg/cip/dockerregistry"
+	reg "k8s.io/release/v1/pkg/cip/dockerregistry"
 )
 
 // Facility requires a single method, called Fetch(), which corresponds to

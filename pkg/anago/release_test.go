@@ -21,9 +21,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"k8s.io/release/pkg/anago"
-	"k8s.io/release/pkg/anago/anagofakes"
-	"k8s.io/release/pkg/release"
+	"k8s.io/release/v1/pkg/anago"
+	"k8s.io/release/v1/pkg/anago/anagofakes"
+	"k8s.io/release/v1/pkg/release"
 )
 
 func generateTestingReleaseState(params *testStateParameters) *anago.ReleaseState {

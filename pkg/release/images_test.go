@@ -26,8 +26,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/release/releasefakes"
+	"k8s.io/release/v1/pkg/release"
+	"k8s.io/release/v1/pkg/release/releasefakes"
 )
 
 func TestPublish(t *testing.T) {

@@ -16,7 +16,7 @@ limitations under the License.
 
 package main
 
-import "k8s.io/release/cmd/vulndash/cmd"
+import "k8s.io/release/v1/cmd/vulndash/cmd"
 
 func main() {
 	cmd.Execute()

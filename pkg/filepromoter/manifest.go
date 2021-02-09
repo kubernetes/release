@@ -22,7 +22,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	api "k8s.io/release/pkg/api/files"
+	api "k8s.io/release/v1/pkg/api/files"
 )
 
 // ManifestPromoter promotes files as described in Manifest.

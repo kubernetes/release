@@ -24,7 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/log"
+	"k8s.io/release/v1/pkg/log"
 )
 
 func TestToFile(t *testing.T) {

@@ -25,9 +25,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/kubepkg"
-	"k8s.io/release/pkg/kubepkg/kubepkgfakes"
-	"k8s.io/release/pkg/kubepkg/options"
+	"k8s.io/release/v1/pkg/kubepkg"
+	"k8s.io/release/v1/pkg/kubepkg/kubepkgfakes"
+	"k8s.io/release/v1/pkg/kubepkg/options"
 )
 
 var err = errors.New("")

@@ -22,8 +22,8 @@ import (
 	"sync"
 
 	"github.com/google/go-github/v33/github"
-	"k8s.io/release/pkg/kubepkg"
-	"k8s.io/release/pkg/release"
+	"k8s.io/release/v1/pkg/kubepkg"
+	"k8s.io/release/v1/pkg/release"
 )
 
 type FakeImpl struct {

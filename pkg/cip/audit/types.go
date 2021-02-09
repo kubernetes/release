@@ -17,11 +17,11 @@ limitations under the License.
 package audit
 
 import (
-	reg "k8s.io/release/pkg/cip/dockerregistry"
-	"k8s.io/release/pkg/cip/logclient"
-	"k8s.io/release/pkg/cip/remotemanifest"
-	"k8s.io/release/pkg/cip/report"
-	"k8s.io/release/pkg/cip/stream"
+	reg "k8s.io/release/v1/pkg/cip/dockerregistry"
+	"k8s.io/release/v1/pkg/cip/logclient"
+	"k8s.io/release/v1/pkg/cip/remotemanifest"
+	"k8s.io/release/v1/pkg/cip/report"
+	"k8s.io/release/v1/pkg/cip/stream"
 )
 
 // GcrReadingFacility holds functions used to create streams for reading the

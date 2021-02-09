@@ -23,8 +23,8 @@ import (
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/util"
+	"k8s.io/release/v1/pkg/git"
+	"k8s.io/release/v1/pkg/util"
 )
 
 // GitObjectPusher is an object that pushes things to a gitrepo

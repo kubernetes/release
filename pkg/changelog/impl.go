@@ -29,13 +29,13 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"sigs.k8s.io/mdtoc/pkg/mdtoc"
 
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/http"
-	"k8s.io/release/pkg/notes"
-	"k8s.io/release/pkg/notes/document"
-	"k8s.io/release/pkg/notes/options"
-	"k8s.io/release/pkg/util"
+	"k8s.io/release/v1/pkg/git"
+	"k8s.io/release/v1/pkg/github"
+	"k8s.io/release/v1/pkg/http"
+	"k8s.io/release/v1/pkg/notes"
+	"k8s.io/release/v1/pkg/notes/document"
+	"k8s.io/release/v1/pkg/notes/options"
+	"k8s.io/release/v1/pkg/util"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate

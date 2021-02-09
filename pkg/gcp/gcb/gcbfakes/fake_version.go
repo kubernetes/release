@@ -20,8 +20,8 @@ package gcbfakes
 import (
 	"sync"
 
-	"k8s.io/release/pkg/gcp/gcb"
-	"k8s.io/release/pkg/release"
+	"k8s.io/release/v1/pkg/gcp/gcb"
+	"k8s.io/release/v1/pkg/release"
 )
 
 type FakeVersion struct {

@@ -26,7 +26,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	kgithub "k8s.io/release/pkg/github"
+	kgithub "k8s.io/release/v1/pkg/github"
 )
 
 func githubClient(t *testing.T) (kgithub.Client, context.Context) {

@@ -25,9 +25,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"k8s.io/release/pkg/notes"
-	"k8s.io/release/pkg/notes/options"
-	"k8s.io/release/pkg/release"
+	"k8s.io/release/v1/pkg/notes"
+	"k8s.io/release/v1/pkg/notes/options"
+	"k8s.io/release/v1/pkg/release"
 )
 
 func TestFileMetadata(t *testing.T) {

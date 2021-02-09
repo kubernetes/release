@@ -40,9 +40,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/command"
-	"k8s.io/release/pkg/release/regex"
-	"k8s.io/release/pkg/util"
+	"k8s.io/release/v1/pkg/command"
+	"k8s.io/release/v1/pkg/release/regex"
+	"k8s.io/release/v1/pkg/util"
 )
 
 const (

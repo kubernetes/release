@@ -20,8 +20,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/object"
-	"k8s.io/release/pkg/release"
+	"k8s.io/release/v1/pkg/object"
+	"k8s.io/release/v1/pkg/release"
 )
 
 var DefaultExtraVersionMarkers = []string{}

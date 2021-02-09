@@ -24,7 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/log"
+	"k8s.io/release/v1/pkg/log"
 	"sigs.k8s.io/yaml"
 )
 

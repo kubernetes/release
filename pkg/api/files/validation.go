@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"strings"
 
-	"k8s.io/release/pkg/object"
+	"k8s.io/release/v1/pkg/object"
 )
 
 // Validate checks for semantic errors in the yaml fields (the structure of the

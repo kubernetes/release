@@ -20,7 +20,7 @@ package testgridfakes
 import (
 	"sync"
 
-	"k8s.io/release/pkg/testgrid"
+	"k8s.io/release/v1/pkg/testgrid"
 )
 
 type FakeClient struct {

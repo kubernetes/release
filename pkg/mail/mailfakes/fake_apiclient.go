@@ -21,7 +21,7 @@ import (
 	"sync"
 
 	"github.com/sendgrid/rest"
-	"k8s.io/release/pkg/mail"
+	"k8s.io/release/v1/pkg/mail"
 )
 
 type FakeAPIClient struct {

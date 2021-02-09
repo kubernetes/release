@@ -21,7 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"k8s.io/release/pkg/gcp"
+	"k8s.io/release/v1/pkg/gcp"
 )
 
 func GetCurrentGCPUser() (string, error) {

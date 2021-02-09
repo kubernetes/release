@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/cip/audit"
+	"k8s.io/release/v1/pkg/cip/audit"
 )
 
 type AuditOptions struct {

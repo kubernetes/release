@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	khttp "k8s.io/release/pkg/http"
+	khttp "k8s.io/release/v1/pkg/http"
 )
 
 func TestGetURLResponseSuccess(t *testing.T) {

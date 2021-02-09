@@ -22,8 +22,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/http"
+	"k8s.io/release/v1/pkg/git"
+	"k8s.io/release/v1/pkg/http"
 )
 
 // Version is a wrapper around version related functionality

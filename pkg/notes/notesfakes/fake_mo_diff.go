@@ -21,7 +21,7 @@ import (
 	"sync"
 
 	"github.com/saschagrunert/go-modiff/pkg/modiff"
-	"k8s.io/release/pkg/notes"
+	"k8s.io/release/v1/pkg/notes"
 )
 
 type FakeMoDiff struct {

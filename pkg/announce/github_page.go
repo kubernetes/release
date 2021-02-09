@@ -28,10 +28,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/hash"
-	"k8s.io/release/pkg/util"
+	"k8s.io/release/v1/pkg/git"
+	"k8s.io/release/v1/pkg/github"
+	"k8s.io/release/v1/pkg/hash"
+	"k8s.io/release/v1/pkg/util"
 )
 
 // ghPageBody is a generic template to build the GitHub

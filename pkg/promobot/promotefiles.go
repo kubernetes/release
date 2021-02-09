@@ -29,8 +29,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 
-	api "k8s.io/release/pkg/api/files"
-	"k8s.io/release/pkg/filepromoter"
+	api "k8s.io/release/v1/pkg/api/files"
+	"k8s.io/release/v1/pkg/filepromoter"
 )
 
 // PromoteFilesOptions holds the flag-values for a file promotion

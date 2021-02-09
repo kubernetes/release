@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	kHash "k8s.io/release/pkg/hash"
+	kHash "k8s.io/release/v1/pkg/hash"
 )
 
 func TestSHA512ForFile(t *testing.T) {

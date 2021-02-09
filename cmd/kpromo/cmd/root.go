@@ -22,9 +22,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/cmd/kpromo/cmd/manifest"
-	"k8s.io/release/cmd/kpromo/cmd/run"
-	"k8s.io/release/pkg/log"
+	"k8s.io/release/v1/cmd/kpromo/cmd/manifest"
+	"k8s.io/release/v1/cmd/kpromo/cmd/run"
+	"k8s.io/release/v1/pkg/log"
 )
 
 // rootCmd represents the base command when called without any subcommands

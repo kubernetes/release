@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/notes"
-	"k8s.io/release/pkg/notes/notesfakes"
+	"k8s.io/release/v1/pkg/notes"
+	"k8s.io/release/v1/pkg/notes/notesfakes"
 )
 
 const expected = `## Dependencies

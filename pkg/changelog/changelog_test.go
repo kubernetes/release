@@ -23,10 +23,10 @@ import (
 	"github.com/blang/semver"
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/changelog"
-	"k8s.io/release/pkg/changelog/changelogfakes"
-	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/notes"
+	"k8s.io/release/v1/pkg/changelog"
+	"k8s.io/release/v1/pkg/changelog/changelogfakes"
+	"k8s.io/release/v1/pkg/github"
+	"k8s.io/release/v1/pkg/notes"
 )
 
 func TestRun(t *testing.T) {

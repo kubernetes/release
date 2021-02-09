@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/api/cloudbuild/v1"
 
-	"k8s.io/release/pkg/gcp/gcb"
-	"k8s.io/release/pkg/gcp/gcb/gcbfakes"
+	"k8s.io/release/v1/pkg/gcp/gcb"
+	"k8s.io/release/v1/pkg/gcp/gcb/gcbfakes"
 )
 
 func TestHistoryRun(t *testing.T) {

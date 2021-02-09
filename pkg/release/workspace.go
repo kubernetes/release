@@ -26,10 +26,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/object"
-	"k8s.io/release/pkg/tar"
+	"k8s.io/release/v1/pkg/git"
+	"k8s.io/release/v1/pkg/github"
+	"k8s.io/release/v1/pkg/object"
+	"k8s.io/release/v1/pkg/tar"
 )
 
 // PrepareWorkspaceStage sets up the workspace by cloning a new copy of k/k.

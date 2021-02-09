@@ -28,10 +28,10 @@ import (
 	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v2"
 
-	"k8s.io/release/pkg/gcp"
-	"k8s.io/release/pkg/gh2gcs"
-	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/log"
+	"k8s.io/release/v1/pkg/gcp"
+	"k8s.io/release/v1/pkg/gh2gcs"
+	"k8s.io/release/v1/pkg/github"
+	"k8s.io/release/v1/pkg/log"
 )
 
 // rootCmd represents the base command when called without any subcommands

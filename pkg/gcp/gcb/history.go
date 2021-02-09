@@ -26,9 +26,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/cloudbuild/v1"
 
-	"k8s.io/release/pkg/gcp/build"
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/release"
+	"k8s.io/release/v1/pkg/gcp/build"
+	"k8s.io/release/v1/pkg/git"
+	"k8s.io/release/v1/pkg/release"
 )
 
 // History is the main structure for retrieving the GCB history output.

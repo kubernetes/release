@@ -23,9 +23,9 @@ import (
 
 	"github.com/sendgrid/rest"
 	"github.com/stretchr/testify/require"
-	"k8s.io/release/pkg/mail"
-	"k8s.io/release/pkg/mail/mailfakes"
-	it "k8s.io/release/pkg/testing"
+	"k8s.io/release/v1/pkg/mail"
+	"k8s.io/release/v1/pkg/mail/mailfakes"
+	it "k8s.io/release/v1/pkg/testing"
 )
 
 func TestSetDefaultSender(t *testing.T) {

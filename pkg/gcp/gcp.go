@@ -19,7 +19,7 @@ package gcp
 import (
 	"github.com/pkg/errors"
 
-	"k8s.io/release/pkg/command"
+	"k8s.io/release/v1/pkg/command"
 )
 
 const (

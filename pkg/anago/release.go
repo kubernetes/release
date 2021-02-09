@@ -25,14 +25,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/announce"
-	"k8s.io/release/pkg/build"
-	"k8s.io/release/pkg/gcp/gcb"
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/log"
-	"k8s.io/release/pkg/object"
-	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/util"
+	"k8s.io/release/v1/pkg/announce"
+	"k8s.io/release/v1/pkg/build"
+	"k8s.io/release/v1/pkg/gcp/gcb"
+	"k8s.io/release/v1/pkg/git"
+	"k8s.io/release/v1/pkg/log"
+	"k8s.io/release/v1/pkg/object"
+	"k8s.io/release/v1/pkg/release"
+	"k8s.io/release/v1/pkg/util"
 )
 
 // releaseClient is a client for release a previously staged release.

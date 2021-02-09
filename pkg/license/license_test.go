@@ -24,9 +24,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"k8s.io/release/pkg/license"
+	"k8s.io/release/v1/pkg/license"
 
-	"k8s.io/release/pkg/license/licensefakes"
+	"k8s.io/release/v1/pkg/license/licensefakes"
 )
 
 const testFullLicense = `

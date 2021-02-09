@@ -25,8 +25,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"k8s.io/release/pkg/log"
-	adapter "k8s.io/release/pkg/vulndash/adapter"
+	"k8s.io/release/v1/pkg/log"
+	adapter "k8s.io/release/v1/pkg/vulndash/adapter"
 )
 
 var validRegistryHostnames = []string{"gcr.io", "us.gcr.io", "asia.gcr.io", "eu.gcr.io"}

@@ -21,11 +21,11 @@ import (
 	"sync"
 
 	"github.com/blang/semver"
-	"k8s.io/release/pkg/build"
-	"k8s.io/release/pkg/changelog"
-	"k8s.io/release/pkg/gcp/gcb"
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/release"
+	"k8s.io/release/v1/pkg/build"
+	"k8s.io/release/v1/pkg/changelog"
+	"k8s.io/release/v1/pkg/gcp/gcb"
+	"k8s.io/release/v1/pkg/git"
+	"k8s.io/release/v1/pkg/release"
 )
 
 type FakeStageImpl struct {

@@ -25,7 +25,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"k8s.io/release/pkg/notes/options"
+	"k8s.io/release/v1/pkg/notes/options"
 
 	"github.com/cheggaaa/pb/v3"
 	"github.com/go-git/go-git/v5"

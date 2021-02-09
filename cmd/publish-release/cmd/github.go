@@ -19,7 +19,7 @@ package cmd
 import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"k8s.io/release/pkg/announce"
+	"k8s.io/release/v1/pkg/announce"
 )
 
 // releaseNotesCmd represents the subcommand for `krel release-notes`

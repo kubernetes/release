@@ -21,7 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"k8s.io/release/pkg/version"
+	"k8s.io/release/v1/pkg/version"
 )
 
 type VersionOptions struct {

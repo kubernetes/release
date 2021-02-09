@@ -23,8 +23,8 @@ import (
 	grafeaspb "google.golang.org/genproto/googleapis/grafeas/v1"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 
-	"k8s.io/release/pkg/cip/gcloud"
-	"k8s.io/release/pkg/cip/stream"
+	"k8s.io/release/v1/pkg/cip/gcloud"
+	"k8s.io/release/v1/pkg/cip/stream"
 )
 
 // RequestResult contains information about the result of running a request

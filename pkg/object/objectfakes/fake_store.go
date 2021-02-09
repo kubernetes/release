@@ -20,7 +20,7 @@ package objectfakes
 import (
 	"sync"
 
-	"k8s.io/release/pkg/object"
+	"k8s.io/release/v1/pkg/object"
 )
 
 type FakeStore struct {

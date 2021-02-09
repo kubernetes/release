@@ -28,11 +28,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	reg "k8s.io/release/pkg/cip/dockerregistry"
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/util"
+	reg "k8s.io/release/v1/pkg/cip/dockerregistry"
+	"k8s.io/release/v1/pkg/git"
+	"k8s.io/release/v1/pkg/github"
+	"k8s.io/release/v1/pkg/release"
+	"k8s.io/release/v1/pkg/util"
 )
 
 const (

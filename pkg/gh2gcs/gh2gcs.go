@@ -22,8 +22,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/object"
+	"k8s.io/release/v1/pkg/github"
+	"k8s.io/release/v1/pkg/object"
 )
 
 // Config contains a slice of `ReleaseConfig` to be used when unmarshalling a

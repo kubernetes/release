@@ -34,7 +34,7 @@ import (
 	gogit "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 
-	"k8s.io/release/pkg/cip/stream"
+	"k8s.io/release/v1/pkg/cip/stream"
 )
 
 // MBToBytes converts a value from MiB to Bytes.

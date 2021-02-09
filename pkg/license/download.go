@@ -28,7 +28,7 @@ import (
 	"github.com/nozzle/throttler"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"k8s.io/release/pkg/util"
+	"k8s.io/release/v1/pkg/util"
 )
 
 // ListURL is the json list of all spdx licenses

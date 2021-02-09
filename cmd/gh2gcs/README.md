@@ -13,7 +13,7 @@ Google Cloud has [documentation on installing and configuring the Google Cloud S
 The simplest way to install the `gh2gcs` CLI is via `go get`:
 
 ```
-$ go get k8s.io/release/cmd/gh2gcs
+$ go get k8s.io/release/v1/cmd/gh2gcs
 ```
 
 This will install `gh2gcs` to `$(go env GOPATH)/bin/gh2gcs`.

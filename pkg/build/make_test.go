@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/build"
-	"k8s.io/release/pkg/build/buildfakes"
+	"k8s.io/release/v1/pkg/build"
+	"k8s.io/release/v1/pkg/build/buildfakes"
 )
 
 var err = errors.New("error")

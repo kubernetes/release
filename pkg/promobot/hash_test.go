@@ -22,7 +22,7 @@ import (
 	"os"
 	"testing"
 
-	"k8s.io/release/pkg/promobot"
+	"k8s.io/release/v1/pkg/promobot"
 	"k8s.io/utils/diff"
 	"sigs.k8s.io/yaml"
 )

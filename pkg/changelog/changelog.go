@@ -29,9 +29,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/notes/options"
-	"k8s.io/release/pkg/util"
+	"k8s.io/release/v1/pkg/git"
+	"k8s.io/release/v1/pkg/notes/options"
+	"k8s.io/release/v1/pkg/util"
 )
 
 // Options are the main settings for generating the changelog.

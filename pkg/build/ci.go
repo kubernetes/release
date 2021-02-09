@@ -24,9 +24,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/command"
-	"k8s.io/release/pkg/gcp/auth"
-	"k8s.io/release/pkg/release"
+	"k8s.io/release/v1/pkg/command"
+	"k8s.io/release/v1/pkg/gcp/auth"
+	"k8s.io/release/v1/pkg/release"
 )
 
 // Build starts a Kubernetes build with the options defined in the build

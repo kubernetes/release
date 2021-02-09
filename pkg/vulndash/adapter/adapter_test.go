@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	grafeaspb "google.golang.org/genproto/googleapis/grafeas/v1"
-	adapter "k8s.io/release/pkg/vulndash/adapter"
+	adapter "k8s.io/release/v1/pkg/vulndash/adapter"
 )
 
 func TestGenerateVulnerabilityBreakdown(t *testing.T) {

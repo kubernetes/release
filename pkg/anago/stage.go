@@ -26,12 +26,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/build"
-	"k8s.io/release/pkg/changelog"
-	"k8s.io/release/pkg/gcp/gcb"
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/log"
-	"k8s.io/release/pkg/release"
+	"k8s.io/release/v1/pkg/build"
+	"k8s.io/release/v1/pkg/changelog"
+	"k8s.io/release/v1/pkg/gcp/gcb"
+	"k8s.io/release/v1/pkg/git"
+	"k8s.io/release/v1/pkg/log"
+	"k8s.io/release/v1/pkg/release"
 )
 
 // stageClient is a client for staging releases.

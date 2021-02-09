@@ -18,7 +18,7 @@ limitations under the License.
 
 package main
 
-import "k8s.io/release/cmd/krel/cmd"
+import "k8s.io/release/v1/cmd/krel/cmd"
 
 func main() {
 	cmd.Execute()

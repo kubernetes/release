@@ -24,9 +24,9 @@ import (
 	gogithub "github.com/google/go-github/v33/github"
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/github/githubfakes"
+	"k8s.io/release/v1/pkg/git"
+	"k8s.io/release/v1/pkg/github"
+	"k8s.io/release/v1/pkg/github/githubfakes"
 )
 
 func newSUT() (*github.GitHub, *githubfakes.FakeClient) {

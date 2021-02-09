@@ -23,9 +23,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/anago"
-	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/release"
+	"k8s.io/release/v1/pkg/anago"
+	"k8s.io/release/v1/pkg/github"
+	"k8s.io/release/v1/pkg/release"
 )
 
 // releaseCmd represents the subcommand for `krel release`

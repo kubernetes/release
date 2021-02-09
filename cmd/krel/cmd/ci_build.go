@@ -22,8 +22,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/build"
-	"k8s.io/release/pkg/release"
+	"k8s.io/release/v1/pkg/build"
+	"k8s.io/release/v1/pkg/release"
 )
 
 const ciBuildCmdDescription = `

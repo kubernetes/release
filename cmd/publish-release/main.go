@@ -17,7 +17,7 @@ limitations under the License.
 package main
 
 import (
-	"k8s.io/release/cmd/publish-release/cmd"
+	"k8s.io/release/v1/cmd/publish-release/cmd"
 )
 
 func main() {

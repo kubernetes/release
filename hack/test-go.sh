@@ -36,5 +36,5 @@ done
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
-GO111MODULE=on go test -v -timeout="${TEST_TIMEOUT}s" -count=1 -cover -coverprofile coverage.out $(go list ./... | grep -v k8s.io/release/cmd)
+GO111MODULE=on go test -v -timeout="${TEST_TIMEOUT}s" -count=1 -cover -coverprofile coverage.out $(go list ./... | grep -v k8s.io/release/v1/cmd)
 go tool cover -html coverage.out -o coverage.html

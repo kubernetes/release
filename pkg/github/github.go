@@ -30,9 +30,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/github/internal"
-	"k8s.io/release/pkg/util"
+	"k8s.io/release/v1/pkg/git"
+	"k8s.io/release/v1/pkg/github/internal"
+	"k8s.io/release/v1/pkg/util"
 )
 
 const (

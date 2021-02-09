@@ -19,7 +19,7 @@ package promobot_test
 import (
 	"testing"
 
-	"k8s.io/release/pkg/promobot"
+	"k8s.io/release/v1/pkg/promobot"
 	"sigs.k8s.io/yaml"
 )
 

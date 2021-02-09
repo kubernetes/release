@@ -1242,6 +1242,7 @@ k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a/go.mod h1:1TqjTSzOxsLGIKf
 k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6/go.mod h1:GRQhZsXIAJ1xR0C9bd8UpWHZ5plfAS9fzPjJuQ6JL3E=
 k8s.io/legacy-cloud-providers v0.18.8/go.mod h1:tgp4xYf6lvjrWnjQwTOPvWQE9IVqSBGPF4on0IyICQE=
 k8s.io/release v0.3.2-0.20200513161026-05b87eb96960/go.mod h1:fcMNfhJFSHSBFv4BSrzJV2mesdz3yJeEqsqKs8cxjGU=
+k8s.io/release v0.4.2 h1:GlhSh0dciGwtbEFFpYLVjW0326f+DtM2XwxTtWTHtks=
 k8s.io/release v0.4.2/go.mod h1:Kuj+iBm1aa/xxVyK8SVHrmxXn3g1IZUlB3ekJwx+NTw=
 k8s.io/utils v0.0.0-20200229041039-0a110f9eb7ab/go.mod h1:sZAwmy6armz5eXlNoLmJcl4F1QuKu7sr+mFQ0byX7Ew=
 k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89/go.mod h1:sZAwmy6armz5eXlNoLmJcl4F1QuKu7sr+mFQ0byX7Ew=

@@ -23,8 +23,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/github"
+	"k8s.io/release/v1/pkg/git"
+	"k8s.io/release/v1/pkg/github"
 )
 
 // Options is the global options structure which can be used to build release

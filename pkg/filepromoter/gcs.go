@@ -29,8 +29,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/iterator"
 
-	api "k8s.io/release/pkg/api/files"
-	"k8s.io/release/pkg/object"
+	api "k8s.io/release/v1/pkg/api/files"
+	"k8s.io/release/v1/pkg/object"
 )
 
 type gcsSyncFilestore struct {

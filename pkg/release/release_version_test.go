@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/release"
+	"k8s.io/release/v1/pkg/git"
+	"k8s.io/release/v1/pkg/release"
 )
 
 func TestGenerateReleaseVersion(t *testing.T) {
