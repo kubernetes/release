@@ -38,6 +38,7 @@ linters:
     - gomoddirectives
     - gomodguard
     - goprintffuncname
+    - gosec
     - gosimple
     - govet
     - importas
@@ -76,7 +77,6 @@ linters:
     # - godot
     # - goerr113
     # - gomnd
-    # - gosec
     # - ifshort
     # - lll
     # - nestif
