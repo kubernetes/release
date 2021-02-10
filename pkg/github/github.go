@@ -127,13 +127,28 @@ type Client interface {
 	) (*github.IssueComment, *github.Response, error)
 }
 
+// TODO: we should clean up the functions listed below and agree on the same
+// return type (with or without error):
+// - New
+// - NewWithToken
+// - NewEnterprise
+// - NewEnterpriseWithToken
+
 // New creates a new default GitHub client. Tokens set via the $GITHUB_TOKEN
 // environment variable will result in an authenticated client.
 // If the $GITHUB_TOKEN is not set, then the client will do unauthenticated
 // GitHub requests.
 func New() *GitHub {
-	ctx := context.Background()
 	token := util.EnvDefault(TokenEnvKey, "")
+	client, _ := NewWithToken(token) // nolint: errcheck
+	return client
+}
+
+// NewWithToken can be used to specify a GitHub token through parameters.
+// Empty string will result in unauthenticated client, which makes
+// unauthenticated requests.
+func NewWithToken(token string) (*GitHub, error) {
+	ctx := context.Background()
 	client := http.DefaultClient
 	state := "unauthenticated"
 	if token != "" {
@@ -143,21 +158,16 @@ func New() *GitHub {
 		))
 	}
 	logrus.Debugf("Using %s GitHub client", state)
-	return &GitHub{&githubClient{github.NewClient(client)}}
-}
-
-// NewWithToken can be used to specify a GITHUB_TOKEN before retrieving the
-// client to enforce authenticated GitHub requests
-func NewWithToken(token string) (*GitHub, error) {
-	if err := os.Setenv(TokenEnvKey, token); err != nil {
-		return nil, errors.Wrapf(err, "unable to export %s", TokenEnvKey)
-	}
-	return New(), nil
+	return &GitHub{&githubClient{github.NewClient(client)}}, nil
 }
 
 func NewEnterprise(baseURL, uploadURL string) (*GitHub, error) {
-	ctx := context.Background()
 	token := util.EnvDefault(TokenEnvKey, "")
+	return NewEnterpriseWithToken(baseURL, uploadURL, token)
+}
+
+func NewEnterpriseWithToken(baseURL, uploadURL, token string) (*GitHub, error) {
+	ctx := context.Background()
 	client := http.DefaultClient
 	state := "unauthenticated"
 	if token != "" {
@@ -172,13 +182,6 @@ func NewEnterprise(baseURL, uploadURL string) (*GitHub, error) {
 		return nil, fmt.Errorf("failed to new github client: %s", err)
 	}
 	return &GitHub{&githubClient{ghclient}}, nil
-}
-
-func NewEnterpriseWithToken(baseURL, uploadURL, token string) (*GitHub, error) {
-	if err := os.Setenv(TokenEnvKey, token); err != nil {
-		return nil, errors.Wrapf(err, "unable to export %s", TokenEnvKey)
-	}
-	return NewEnterprise(baseURL, uploadURL)
 }
 
 func (g *githubClient) GetCommit(
