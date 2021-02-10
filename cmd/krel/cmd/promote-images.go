@@ -37,6 +37,7 @@ import (
 
 const (
 	k8sioRepo             = "k8s.io"
+	k8sioDefaultBranch    = "main"
 	promotionBranchSuffix = "-image-promotion"
 )
 
@@ -280,7 +281,7 @@ func runPromote(opts *promoteOptions) error {
 	// Create the Pull Request
 	if mustRun(opts, "Create pull request?") {
 		pr, err := gh.CreatePullRequest(
-			git.DefaultGithubOrg, k8sioRepo, git.DefaultBranch,
+			git.DefaultGithubOrg, k8sioRepo, k8sioDefaultBranch,
 			fmt.Sprintf("%s:%s", userForkOrg, branchname),
 			commitMessage, prBody,
 		)
