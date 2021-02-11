@@ -18,11 +18,14 @@ secrets:
 
 steps:
 - name: gcr.io/cloud-builders/git
-  dir: "go/src/k8s.io"
+  entrypoint: "bash"
+  dir: "go/src/k8s.io/release"
   args:
-  - "clone"
-  - "--branch=${_TOOL_BRANCH}"
-  - "https://github.com/${_TOOL_ORG}/${_TOOL_REPO}"
+  - '-c'
+  - |
+    git fetch
+    echo "Checking out ${_TOOL_REF}"
+    git checkout ${_TOOL_REF}
 
 - name: k8s.gcr.io/releng/releng-ci:v0.5.0
   dir: "go/src/k8s.io/release"
@@ -38,7 +41,7 @@ steps:
   env:
   - "TOOL_ORG=${_TOOL_ORG}"
   - "TOOL_REPO=${_TOOL_REPO}"
-  - "TOOL_BRANCH=${_TOOL_BRANCH}"
+  - "TOOL_REF=${_TOOL_REF}"
   secretEnv:
   - GITHUB_TOKEN
   args:

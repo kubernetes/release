@@ -81,10 +81,10 @@ func TestGetToolRepoURLSuccess(t *testing.T) {
 	}
 }
 
-func TestGetToolBranchSuccess(t *testing.T) {
+func TestGetToolRefSuccess(t *testing.T) {
 	testcases := []struct {
 		name     string
-		branch   string
+		ref      string
 		expected string
 	}{
 		{
@@ -93,16 +93,16 @@ func TestGetToolBranchSuccess(t *testing.T) {
 		},
 		{
 			name:     "custom branch",
-			branch:   "tool-branch",
+			ref:      "tool-branch",
 			expected: "tool-branch",
 		},
 	}
 
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
-		require.Nil(t, os.Setenv("TOOL_BRANCH", tc.branch))
+		require.Nil(t, os.Setenv("TOOL_REF", tc.ref))
 
-		actual := GetToolBranch()
+		actual := GetToolRef()
 		require.Equal(t, tc.expected, actual)
 	}
 }

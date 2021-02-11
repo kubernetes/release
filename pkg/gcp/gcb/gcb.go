@@ -186,7 +186,7 @@ func (g *GCB) Submit() error {
 
 	toolOrg := release.GetToolOrg()
 	toolRepo := release.GetToolRepo()
-	toolBranch := release.GetToolBranch()
+	toolRef := release.GetToolRef()
 
 	if err := gcp.PreCheck(); err != nil {
 		return errors.Wrap(err, "pre-checking for GCP package usage")
@@ -196,7 +196,7 @@ func (g *GCB) Submit() error {
 		return errors.Wrap(err, "open release repo")
 	}
 
-	if err := g.repoClient.CheckState(toolOrg, toolRepo, toolBranch, g.options.NoMock); err != nil {
+	if err := g.repoClient.CheckState(toolOrg, toolRepo, toolRef, g.options.NoMock); err != nil {
 		return errors.Wrap(err, "verifying repository state")
 	}
 
@@ -211,7 +211,7 @@ func (g *GCB) Submit() error {
 		g.options.Async = false
 	}
 
-	gcbSubs, gcbSubsErr := g.SetGCBSubstitutions(toolOrg, toolRepo, toolBranch)
+	gcbSubs, gcbSubsErr := g.SetGCBSubstitutions(toolOrg, toolRepo, toolRef)
 	if gcbSubs == nil || gcbSubsErr != nil {
 		return gcbSubsErr
 	}
@@ -293,12 +293,12 @@ func (g *GCB) Submit() error {
 
 // SetGCBSubstitutions takes a set of `Options` and returns a map of GCB
 // substitutions.
-func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolBranch string) (map[string]string, error) {
+func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef string) (map[string]string, error) {
 	gcbSubs := map[string]string{}
 
 	gcbSubs["TOOL_ORG"] = toolOrg
 	gcbSubs["TOOL_REPO"] = toolRepo
-	gcbSubs["TOOL_BRANCH"] = toolBranch
+	gcbSubs["TOOL_REF"] = toolRef
 
 	gcpUser := g.options.GcpUser
 	if gcpUser == "" {
