@@ -22,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/version"
+	"k8s.io/release/internal/version"
 )
 
 type versionOptions struct {

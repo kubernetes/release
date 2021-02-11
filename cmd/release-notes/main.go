@@ -28,13 +28,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/log"
-	"k8s.io/release/pkg/notes"
-	"k8s.io/release/pkg/notes/document"
-	"k8s.io/release/pkg/notes/options"
-	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/util"
+	"k8s.io/release/internal/git"
+	"k8s.io/release/internal/log"
+	"k8s.io/release/internal/notes"
+	"k8s.io/release/internal/notes/document"
+	"k8s.io/release/internal/notes/options"
+	"k8s.io/release/internal/release"
+	"k8s.io/release/internal/util"
 	"sigs.k8s.io/mdtoc/pkg/mdtoc"
 )
 

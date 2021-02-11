@@ -23,8 +23,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	reg "k8s.io/release/pkg/cip/dockerregistry"
-	"k8s.io/release/pkg/log"
+	reg "k8s.io/release/internal/cip/dockerregistry"
+	"k8s.io/release/internal/log"
 )
 
 var cmd = &cobra.Command{

@@ -25,9 +25,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/command"
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/util"
+	"k8s.io/release/internal/command"
+	"k8s.io/release/internal/git"
+	"k8s.io/release/internal/util"
 )
 
 const (

@@ -32,10 +32,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/http"
-	"k8s.io/release/pkg/object"
+	"k8s.io/release/internal/git"
+	"k8s.io/release/internal/github"
+	"k8s.io/release/internal/http"
+	"k8s.io/release/internal/object"
 )
 
 const (

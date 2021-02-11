@@ -23,9 +23,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/kubepkg"
-	"k8s.io/release/pkg/kubepkg/options"
-	"k8s.io/release/pkg/log"
+	"k8s.io/release/internal/kubepkg"
+	"k8s.io/release/internal/kubepkg/options"
+	"k8s.io/release/internal/log"
 )
 
 // rootCmd represents the base command when called without any subcommands

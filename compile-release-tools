@@ -69,7 +69,7 @@ compile_with_flags() {
   local tool="$1"
 
   git_tree_state=dirty
-  pkg=k8s.io/release/pkg/version
+  pkg=k8s.io/release/internal/version
 
   if git_status=$(git status --porcelain --untracked=no 2>/dev/null) && [[ -z "${git_status}" ]]; then
     git_tree_state=clean

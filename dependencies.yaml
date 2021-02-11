@@ -23,7 +23,7 @@ dependencies:
       match: currentCNIVersion\s+= "\d+\.\d+.\d+"
     - path: packages/rpm/kubelet.spec
       match: \%global CNI_VERSION \d+\.\d+.\d+
-    - path: pkg/kubepkg/kubepkg.go
+    - path: internal/kubepkg/kubepkg.go
       match: CurrentCNIVersion\s+= "\d+\.\d+.\d+"
 
   - name: "CNI plugins: minimum version"
@@ -33,7 +33,7 @@ dependencies:
       match: minimumCNIVersion\s+= "\d+\.\d+.\d+"
     - path: packages/rpm/kubelet.spec
       match: kubernetes-cni >= \d+\.\d+.\d+
-    - path: pkg/kubepkg/kubepkg.go
+    - path: internal/kubepkg/kubepkg.go
       match: MinimumCNIVersion\s+= "\d+\.\d+.\d+"
 
   # CRI Tools

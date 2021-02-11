@@ -24,7 +24,7 @@ import (
 
 	"k8s.io/release/cmd/kpromo/cmd/manifest"
 	"k8s.io/release/cmd/kpromo/cmd/run"
-	"k8s.io/release/pkg/log"
+	"k8s.io/release/internal/log"
 )
 
 // rootCmd represents the base command when called without any subcommands

@@ -19,7 +19,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/kubepkg/options"
+	"k8s.io/release/internal/kubepkg/options"
 )
 
 // rpmsCmd represents the base command when called without any subcommands

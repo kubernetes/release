@@ -22,8 +22,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/build"
-	"k8s.io/release/pkg/release"
+	"k8s.io/release/internal/build"
+	"k8s.io/release/internal/release"
 )
 
 const pushCmdDescription = `
