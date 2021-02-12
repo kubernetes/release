@@ -135,3 +135,5 @@ CHANGELOG-*.html
 
 # downloaded and built binaries
 bin
+qemu-*-static
+rootfs.tar
