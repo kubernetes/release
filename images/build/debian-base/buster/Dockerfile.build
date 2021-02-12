@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM BASEIMAGE
+ARG BASEIMAGE
+FROM $BASEIMAGE
 
-# If we're building for another architecture than amd64, the CROSS_BUILD_ placeholder is removed so
-# e.g. CROSS_BUILD_COPY turns into COPY
-# If we're building normally, for amd64, CROSS_BUILD lines are removed
-CROSS_BUILD_COPY qemu-ARCH-static /usr/bin/
+ARG ARCH
+COPY qemu-$ARCH-static /usr/bin/
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -26,6 +25,16 @@ COPY excludes /etc/dpkg/dpkg.cfg.d/excludes
 
 # Convenience script for building on this base image.
 COPY clean-install /usr/local/bin/clean-install
+
+# An attempt to fix issues like:
+# ```
+# Error while loading /usr/sbin/dpkg-split: No such file or directory
+# Error while loading /usr/sbin/dpkg-deb: No such file or directory
+# ```
+# See: https://github.com/docker/buildx/issues/495
+RUN ln -s /usr/bin/dpkg-split /usr/sbin/dpkg-split
+RUN ln -s /usr/bin/dpkg-deb /usr/sbin/dpkg-deb
+RUN ln -s /bin/tar /usr/sbin/tar
 
 # Update system packages.
 RUN apt-get update \
