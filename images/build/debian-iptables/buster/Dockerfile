@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM BASEIMAGE
+ARG BASEIMAGE
+
+FROM ${BASEIMAGE}
 
 # Install iptables and ebtables packages from buster-backports
 ARG IPTABLES_VERSION

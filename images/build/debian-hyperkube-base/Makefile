@@ -67,7 +67,6 @@ clean:
 
 build: cni-tars/$(CNI_TARBALL)
 	cp Dockerfile $(TEMP_DIR)
-	cd $(TEMP_DIR) && sed -i "s|BASEIMAGE|$(BASEIMAGE)|g" Dockerfile
 
 	mkdir -p ${TEMP_DIR}/cni-bin/bin
 	tar -xz -C ${TEMP_DIR}/cni-bin/bin -f "cni-tars/${CNI_TARBALL}"
@@ -83,6 +82,7 @@ endif
 		--load \
 		--platform linux/$(ARCH) \
 		-t $(IMAGE)-$(ARCH):$(TAG) \
+		--build-arg BASEIMAGE=$(BASEIMAGE) \
 		$(TEMP_DIR)
 	rm -rf $(TEMP_DIR)
 ifneq ($(ARCH),amd64)

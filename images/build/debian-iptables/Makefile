@@ -40,7 +40,6 @@ SUDO=$(if $(filter 0,$(shell id -u)),,sudo)
 
 build:
 	cp -r ./$(CONFIG) $(TEMP_DIR)/
-	cd $(TEMP_DIR)/$(CONFIG) && sed -i "s|BASEIMAGE|$(BASEIMAGE)|g" Dockerfile
 
 ifneq ($(ARCH),amd64)
 	# Register /usr/bin/qemu-ARCH-static as the handler for non-x86 binaries in the kernel
@@ -56,6 +55,7 @@ endif
 		-t $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
 		-t $(IMAGE)-$(ARCH):latest-$(CONFIG) \
 		--build-arg=IPTABLES_VERSION=$(IPTABLES_VERSION) \
+		--build-arg=BASEIMAGE=$(BASEIMAGE) \
 		$(TEMP_DIR)/$(CONFIG)
 ifneq ($(ARCH),amd64)
 	docker buildx rm $$BUILDER
