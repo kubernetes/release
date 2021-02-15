@@ -55,4 +55,4 @@ RUN clean-install \
     util-linux \
     xfsprogs
 
-COPY cni-bin/bin /opt/cni/bin
+COPY cni-bin /opt/cni/bin
