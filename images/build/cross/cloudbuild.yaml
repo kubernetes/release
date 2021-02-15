@@ -12,6 +12,7 @@ steps:
     - TAG=$_GIT_TAG
     - PULL_BASE_REF=$_PULL_BASE_REF
     - CONFIG=$_CONFIG
+    - TYPE=$_TYPE
     - GO_VERSION=$_GO_VERSION
     - IMAGE_VERSION=$_IMAGE_VERSION
     - PROTOBUF_VERSION=$_PROTOBUF_VERSION
@@ -31,6 +32,7 @@ substitutions:
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
   _CONFIG: 'go0.0'
+  _TYPE: 'default'
   _GO_VERSION: '0.0.0'
   _IMAGE_VERSION: 'v0.0.0-0'
   _PROTOBUF_VERSION: '0.0.0'
@@ -41,6 +43,7 @@ tags:
 - ${_GIT_TAG}
 - ${_PULL_BASE_REF}
 - ${_CONFIG}
+- ${_TYPE}
 - ${_GO_VERSION}
 - ${_IMAGE_VERSION}
 - ${_PROTOBUF_VERSION}
@@ -48,5 +51,5 @@ tags:
 
 images:
   - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_IMAGE_VERSION'
-  - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_GIT_TAG-$_CONFIG'
-  - 'gcr.io/$PROJECT_ID/kube-cross-amd64:latest-$_CONFIG'
+  - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_GIT_TAG-$_CONFIG-$_TYPE'
+  - 'gcr.io/$PROJECT_ID/kube-cross-amd64:latest-$_CONFIG-$_TYPE'
