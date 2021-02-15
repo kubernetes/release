@@ -24,7 +24,6 @@ DEBIAN_BASE_VERSION ?= buster-v1.4.0
 
 ARCH?=amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
-TEMP_DIR:=$(shell mktemp -d)
 
 BASE_REGISTRY?=k8s.gcr.io/build-image
 BASEIMAGE?=$(BASE_REGISTRY)/debian-base-$(ARCH):$(DEBIAN_BASE_VERSION)
@@ -39,14 +38,13 @@ export DOCKER_CLI_EXPERIMENTAL := enabled
 SUDO=$(if $(filter 0,$(shell id -u)),,sudo)
 
 build:
-	cp -r ./$(CONFIG) $(TEMP_DIR)/
+	# Fix possible issues with the local umask
+	umask 0022
 
-ifneq ($(ARCH),amd64)
-	# Register /usr/bin/qemu-ARCH-static as the handler for non-x86 binaries in the kernel
+	# Enable execution of multi-architecture containers
 	docker run --rm --privileged multiarch/qemu-user-static:$(QEMUVERSION) --reset -p yes
 	docker buildx version
 	BUILDER=$(shell docker buildx create --use)
-endif
 	docker buildx build \
 		--pull \
 		--load \
@@ -56,10 +54,8 @@ endif
 		-t $(IMAGE)-$(ARCH):latest-$(CONFIG) \
 		--build-arg=IPTABLES_VERSION=$(IPTABLES_VERSION) \
 		--build-arg=BASEIMAGE=$(BASEIMAGE) \
-		$(TEMP_DIR)/$(CONFIG)
-ifneq ($(ARCH),amd64)
+		$(CONFIG)
 	docker buildx rm $$BUILDER
-endif
 
 push: build
 	docker push $(IMAGE)-$(ARCH):$(IMAGE_VERSION)

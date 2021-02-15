@@ -73,7 +73,7 @@ build: clean
 	# Fix possible issues with the local umask
 	umask 0022
 
-	# Register /usr/bin/qemu-ARCH-static as the handler for non-x86 binaries in the kernel
+	# Enable execution of multi-architecture containers
 	docker run --rm --privileged multiarch/qemu-user-static:$(QEMUVERSION) --reset -p yes
 	docker buildx version
 	BUILDER=$(shell docker buildx create --use)
