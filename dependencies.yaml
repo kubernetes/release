@@ -57,7 +57,7 @@ dependencies:
 
   # Golang
   - name: "golang"
-    version: 1.15.8
+    version: 1.16rc1
     refPaths:
     - path: cmd/vulndash/Makefile
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -74,20 +74,36 @@ dependencies:
     - path: images/releng/ci/cloudbuild.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
+  # Golang pre-releases are denoted as `1.y<pre-release stage>.z`
+  # Example: go1.16rc1
+  #
+  # This entry is a stub of the major and minor version to allow dependency
+  # checks to pass when building Kubernetes using a pre-release of Golang.
+  - name: "golang: <major>.<minor>"
+    version: 1.16
+    refPaths:
+    - path: images/build/go-runner/Makefile
+      match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+
   - name: "golang: after kubernetes/kubernetes update"
     version: 1.15.8
     refPaths:
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
+  - name: "go-runner"
+    version: v2.3.1
+    refPaths:
+    - path: images/build/go-runner/VERSION
+
   - name: "gcr.io/k8s-staging-releng/releng-ci"
-    version: v0.2.1
+    version: v0.3.0
     refPaths:
     - path: images/releng/ci/cloudbuild.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
   - name: "k8s.gcr.io/artifact-promoter/vulndash"
-    version: v0.4.3-3
+    version: v0.4.3-4
     refPaths:
     - path: cmd/vulndash/Makefile
       match: IMAGE_VERSION\ \?=\ v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-([0-9]+)
@@ -95,10 +111,8 @@ dependencies:
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-([0-9]+)
 
   - name: "k8s.gcr.io/build-image/go-runner"
-    version: buster-v2.3.1
+    version: v2.3.1-go1.16rc1-buster.0
     refPaths:
-    - path: images/build/go-runner/Makefile
-      match: IMAGE_VERSION\ \?=\ [a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
