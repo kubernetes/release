@@ -19,12 +19,12 @@ include $(CURDIR)/../Makefile.build-image
 SHELL=/bin/bash -o pipefail
 
 IMGNAME = kube-cross
-IMAGE_VERSION ?= v1.15.8-1
+IMAGE_VERSION ?= v1.16.0-rc.1-2
 CONFIG ?= go1.15
 TYPE ?= default
 
 # Build args
-GO_VERSION?=1.15.8
+GO_VERSION?=1.16rc1
 PROTOBUF_VERSION?=3.7.0
 ETCD_VERSION?=v3.4.13
 
