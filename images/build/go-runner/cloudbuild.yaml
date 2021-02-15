@@ -18,8 +18,11 @@ steps:
     - HOME=/root
     - TAG=$_GIT_TAG
     - PULL_BASE_REF=$_PULL_BASE_REF
-    - IMAGE_VERSION=$_IMAGE_VERSION
     - CONFIG=$_CONFIG
+    - IMAGE_VERSION=$_IMAGE_VERSION
+    - GO_MINOR_VERSION=$_GO_MINOR_VERSION
+    - OS_CODENAME=$_OS_CODENAME
+    - REVISION=$_REVISION
     - GO_VERSION=$_GO_VERSION
     - DISTROLESS_IMAGE=$_DISTROLESS_IMAGE
     args:
@@ -33,8 +36,11 @@ substitutions:
   # can be used as a substitution
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
-  _IMAGE_VERSION: 'codename-v0.0.0'
-  _CONFIG: 'codename'
+  _CONFIG: 'go-minor-codename'
+  _IMAGE_VERSION: 'v0.0.0-go0.0.0-codename.0'
+  _GO_MINOR_VERSION: '1.16'
+  _OS_CODENAME: 'codename'
+  _REVISION: '0'
   _GO_VERSION: '0.0.0'
   _DISTROLESS_IMAGE: 'static-debian00'
 
@@ -42,8 +48,11 @@ tags:
 - 'go-runner'
 - ${_GIT_TAG}
 - ${_PULL_BASE_REF}
-- ${_IMAGE_VERSION}
 - ${_CONFIG}
+- ${_IMAGE_VERSION}
+- ${_GO_MINOR_VERSION}
+- ${_OS_CODENAME}
+- ${_REVISION}
 - ${_GO_VERSION}
 - ${_DISTROLESS_IMAGE}
 
