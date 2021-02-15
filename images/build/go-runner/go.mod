@@ -1,3 +1,3 @@
 module k8s.io/release/images/build/go-runner
 
-go 1.15
+go 1.16
