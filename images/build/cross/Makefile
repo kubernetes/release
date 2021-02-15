@@ -13,22 +13,77 @@
 # limitations under the License.
 
 # include the common image-building Makefiles
-include $(CURDIR)/../../Makefile.common-image $(CURDIR)/../Makefile.build-image
+include $(CURDIR)/../Makefile.build-image
+
+# set default shell
+SHELL=/bin/bash -o pipefail
 
 IMGNAME = kube-cross
 IMAGE_VERSION ?= v1.15.8-1
 CONFIG ?= go1.15
+TYPE ?= default
 
 # Build args
 GO_VERSION?=1.15.8
 PROTOBUF_VERSION?=3.7.0
 ETCD_VERSION?=v3.4.13
 
+IMAGE = $(REGISTRY)/$(IMGNAME)
+TAG ?= $(shell git describe --tags --always --dirty)
+
+# Ensure support for 'docker buildx' and 'docker manifest' commands
+export DOCKER_CLI_EXPERIMENTAL=enabled
+
 # TODO: Support multi-arch kube-cross images for linux/arm linux/s390x
 #       Currently some of the components references in the Dockerfile are
 #       not supported in specific architectures (example etcd does not support s390x)
 PLATFORMS ?= linux/amd64 linux/arm64 linux/ppc64le #linux/arm linux/s390x
 
-BUILD_ARGS = --build-arg=GO_VERSION=$(GO_VERSION) \
-             --build-arg=PROTOBUF_VERSION=$(PROTOBUF_VERSION) \
-             --build-arg=ETCD_VERSION=$(ETCD_VERSION)
+# for legacy images only build linux/amd64
+ifeq ($(TYPE), legacy)
+  PLATFORMS = linux/amd64
+endif
+
+ARCHS = $(patsubst linux/%,%,$(PLATFORMS))
+
+# build with buildx
+# https://github.com/docker/buildx/issues/59
+.PHONY: container
+container: init-docker-buildx
+	echo "Building $(IMGNAME) for the following platforms: $(PLATFORMS)"
+	@for platform in $(PLATFORMS); do \
+		echo "Starting build for $${platform} platform"; \
+		docker buildx build \
+			--load \
+			--progress plain \
+			--platform $${platform} \
+			--tag $(IMAGE)-$${platform##*/}:$(IMAGE_VERSION) \
+			--tag $(IMAGE)-$${platform##*/}:$(TAG)-$(CONFIG)-$(TYPE) \
+			--tag $(IMAGE)-$${platform##*/}:latest-$(CONFIG)-$(TYPE) \
+			--build-arg=GO_VERSION=$(GO_VERSION) \
+			--build-arg=PROTOBUF_VERSION=$(PROTOBUF_VERSION) \
+			--build-arg=ETCD_VERSION=$(ETCD_VERSION) \
+			--file $(TYPE)/Dockerfile \
+			.; \
+	done
+
+.PHONY: push
+push: container
+	echo "Pushing $(IMGNAME) tags"
+	@for platform in $(PLATFORMS); do \
+		echo "Pushing tags for $${platform} platform"; \
+		docker push $(IMAGE)-$${platform##*/}:$(IMAGE_VERSION); \
+		docker push $(IMAGE)-$${platform##*/}:$(TAG)-$(CONFIG)-$(TYPE); \
+		docker push $(IMAGE)-$${platform##*/}:latest-$(CONFIG)-$(TYPE); \
+	done
+
+.PHONY: manifest
+manifest: push
+	docker manifest create --amend $(IMAGE):$(IMAGE_VERSION) $(shell echo $(ARCHS) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(IMAGE_VERSION)~g")
+	@for platform in $(ARCHS); do docker manifest annotate --arch "$${platform}" ${IMAGE}:${IMAGE_VERSION} ${IMAGE}-$${platform}:${IMAGE_VERSION}; done
+	docker manifest push --purge $(IMAGE):$(IMAGE_VERSION)
+
+# enable buildx
+.PHONY: init-docker-buildx
+init-docker-buildx:
+	./../../../hack/init-buildx.sh
