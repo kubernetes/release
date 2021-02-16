@@ -1,9 +1,9 @@
 variants:
   go1.16-buster:
     CONFIG: 'go1.16-buster'
-    IMAGE_VERSION: 'v2.3.1-go1.16rc1-buster.1'
+    IMAGE_VERSION: 'v2.3.1-go1.16-buster.0'
     GO_MINOR_VERSION: '1.16'
     OS_CODENAME: 'buster'
-    REVISION: '1'
-    GO_VERSION: '1.16rc1'
+    REVISION: '0'
+    GO_VERSION: '1.16'
     DISTROLESS_IMAGE: 'static-debian10'
