@@ -98,7 +98,7 @@ dependencies:
 
   # Golang images
   - name: "gcr.io/k8s-staging-releng/releng-ci"
-    version: v0.3.0
+    version: v0.4.0
     refPaths:
     - path: images/releng/ci/cloudbuild.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
