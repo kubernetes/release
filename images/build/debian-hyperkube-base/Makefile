@@ -27,7 +27,6 @@ BASE_REGISTRY?=k8s.gcr.io/build-image
 BASEIMAGE?=$(BASE_REGISTRY)/debian-iptables-$(ARCH):buster-v1.5.0
 CNI_VERSION?=v0.8.7
 
-TEMP_DIR:=$(shell mktemp -d)
 CNI_TARBALL=cni-plugins-linux-$(ARCH)-$(CNI_VERSION).tgz
 
 QEMUVERSION=5.2.0-2
@@ -66,28 +65,24 @@ clean:
 	rm -rf cni-tars/
 
 build: cni-tars/$(CNI_TARBALL)
-	cp Dockerfile $(TEMP_DIR)
+	# Fix possible issues with the local umask
+	umask 0022
 
-	mkdir -p ${TEMP_DIR}/cni-bin/bin
-	tar -xz -C ${TEMP_DIR}/cni-bin/bin -f "cni-tars/${CNI_TARBALL}"
+	mkdir -p cni-bin
+	tar xfz "./cni-tars/${CNI_TARBALL}" -C cni-bin
 
-ifneq ($(ARCH),amd64)
-	# Register /usr/bin/qemu-ARCH-static as the handler for non-x86 binaries in the kernel
+	# Enable execution of multi-architecture containers
 	docker run --rm --privileged multiarch/qemu-user-static:$(QEMUVERSION) --reset -p yes
 	docker buildx version
 	BUILDER=$(shell docker buildx create --use)
-endif
 	docker buildx build \
 		--pull \
 		--load \
 		--platform linux/$(ARCH) \
 		-t $(IMAGE)-$(ARCH):$(TAG) \
 		--build-arg BASEIMAGE=$(BASEIMAGE) \
-		$(TEMP_DIR)
-	rm -rf $(TEMP_DIR)
-ifneq ($(ARCH),amd64)
+		.
 	docker buildx rm $$BUILDER
-endif
 
 push: build
 	docker push $(IMAGE)-$(ARCH):$(TAG)

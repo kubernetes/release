@@ -35,12 +35,13 @@ QEMUVERSION=5.2.0-2
 export DOCKER_CLI_EXPERIMENTAL := enabled
 
 build:
-ifneq ($(ARCH),amd64)
-	# Register /usr/bin/qemu-ARCH-static as the handler for non-x86 binaries in the kernel
+	# Fix possible issues with the local umask
+	umask 0022
+
+	# Enable execution of multi-architecture containers
 	docker run --rm --privileged multiarch/qemu-user-static:$(QEMUVERSION) --reset -p yes
 	docker buildx version
 	BUILDER=$(shell docker buildx create --use)
-endif
 	docker buildx build \
 		--pull \
 		--load \
@@ -50,9 +51,7 @@ endif
 		-t $(IMAGE)-$(ARCH):latest-$(CONFIG) \
 		--build-arg=BASEIMAGE=$(BASEIMAGE) \
 		.
-ifneq ($(ARCH),amd64)
 	docker buildx rm $$BUILDER
-endif
 
 push: build
 	docker push $(IMAGE)-$(ARCH):$(IMAGE_VERSION)
@@ -77,4 +76,3 @@ push-manifest:
 	docker manifest push --purge ${IMAGE}:${IMAGE_VERSION}
 
 all: all-push
-
