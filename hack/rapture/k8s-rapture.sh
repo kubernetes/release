@@ -134,9 +134,13 @@ publish_debs() {
       rm "${debpath}"
     fi
   done
-
-  log "Pushing debs to kubernetes-${distro}-unstable"
-  rapture --universe=cloud-apt addpkg -keepold "kubernetes-${distro}" bin/stable/${distro}/*.deb
+  if ls bin/stable/${distro}/*.deb 1> /dev/null 2>&1;
+  then
+    log "Pushing debs to kubernetes-${distro}-unstable"
+    rapture --universe=cloud-apt addpkg -keepold "kubernetes-${distro}" bin/stable/${distro}/*.deb
+  else
+    log "No debs found in bin/stable/${distro}/*.deb, skipping rapture addpkg"
+  fi
 
   log "Packages in kubernetes-${distro}-unstable:"
   rapture --universe=cloud-apt listrepo "kubernetes-${distro}-unstable"
@@ -218,8 +222,13 @@ publish_rpms() {
   local repo
   for arch in "${archlist[@]}"; do
     repo="kubernetes-${distro}-${arch}"
-    log "Pushing RPMs to ${repo}-unstable"
-    rapture --universe=cloud-yum addpkg -keepold "${repo}" output/${arch}/*.rpm
+    if ls output/${arch}/*.rpm 1> /dev/null 2>&1;
+    then
+      log "Pushing RPMs to ${repo}-unstable"
+      rapture --universe=cloud-yum addpkg -keepold "${repo}" output/${arch}/*.rpm
+    else
+      log "No RPMs found in output/${arch}/ skipping rapture addpkg"
+    fi
   done
 
   local target
