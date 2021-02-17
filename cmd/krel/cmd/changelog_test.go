@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -184,9 +185,28 @@ func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 	})
 	require.Nil(t, s.repo.Commit("Adding other changelog files"))
 	require.Nil(t, s.repo.Checkout(git.DefaultBranch))
+	mockHTTP := changelog.NewFakeImpl()
+	realHTTP := mockHTTP.GetURLResponseStub
+	mockHTTP.GetURLResponseStub = func(url string, trim bool) (string, error) {
+		var result string
+		var err error
+
+		switch {
+		case strings.Contains(url, "release-notes-draft.md"):
+			oldURL := "https://raw.githubusercontent.com/kubernetes/sig-release/master/releases/release-1.17/release-notes-draft.md"
+			result, err = realHTTP(oldURL, trim)
+		default:
+			result, err = realHTTP(url, trim)
+		}
+
+		return result, err
+	}
+
+	changelogGenerator := changelog.New(co)
+	changelogGenerator.SetImpl(mockHTTP)
 
 	// When
-	require.Nil(t, changelog.New(co).Run())
+	require.Nil(t, changelogGenerator.Run())
 
 	// Then
 	// Verify local results

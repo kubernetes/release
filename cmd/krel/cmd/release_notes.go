@@ -449,18 +449,18 @@ func createDraftPR(repoPath, tag string) (err error) {
 	logrus.Debugf("Release notes draft files will be written to %s", releaseDir)
 
 	// Write the markdown draft
-	err = os.WriteFile(filepath.Join(releaseDir, draftMarkdownFile), []byte(result.markdown), 0644)
+	err = os.WriteFile(filepath.Join(releaseDir, releaseNotesWorkDir, draftMarkdownFile), []byte(result.markdown), 0644)
 	if err != nil {
 		return errors.Wrapf(err, "writing release notes draft")
 	}
-	logrus.Infof("Release Notes Markdown Draft written to %s", filepath.Join(releaseDir, draftMarkdownFile))
+	logrus.Infof("Release Notes Markdown Draft written to %s", filepath.Join(releaseDir, releaseNotesWorkDir, draftMarkdownFile))
 
 	// Write the JSON file of the current notes
-	err = os.WriteFile(filepath.Join(releaseDir, draftJSONFile), []byte(result.json), 0644)
+	err = os.WriteFile(filepath.Join(releaseDir, releaseNotesWorkDir, draftJSONFile), []byte(result.json), 0644)
 	if err != nil {
 		return errors.Wrapf(err, "writing release notes json file")
 	}
-	logrus.Infof("Release Notes JSON version written to %s", filepath.Join(releaseDir, draftJSONFile))
+	logrus.Infof("Release Notes JSON version written to %s", filepath.Join(releaseDir, releaseNotesWorkDir, draftJSONFile))
 
 	// If we are in interactive mode, ask before continuing
 	if !autoCreatePullRequest {
@@ -545,12 +545,12 @@ func createDraftPR(repoPath, tag string) (err error) {
 // the maps and cve directories and the edit session files.
 func createDraftCommit(repo *git.Repo, releasePath, commitMessage string) error {
 	// add the updated draft
-	if err := repo.Add(filepath.Join(releasePath, draftMarkdownFile)); err != nil {
+	if err := repo.Add(filepath.Join(releasePath, releaseNotesWorkDir, draftMarkdownFile)); err != nil {
 		return errors.Wrap(err, "adding release notes draft to staging area")
 	}
 
 	// add the json draft
-	if err := repo.Add(filepath.Join(releasePath, draftJSONFile)); err != nil {
+	if err := repo.Add(filepath.Join(releasePath, releaseNotesWorkDir, draftJSONFile)); err != nil {
 		return errors.Wrap(err, "adding release notes json to staging area")
 	}
 
@@ -1057,7 +1057,7 @@ func (sd *sessionData) Save() error {
 		return errors.New("unable to save session, path is not defined")
 	}
 
-	jsonData, err := json.Marshal(sd)
+	jsonData, err := json.MarshalIndent(sd, "", "  ")
 	if err != nil {
 		return errors.Wrap(err, "marshaling session data")
 	}
