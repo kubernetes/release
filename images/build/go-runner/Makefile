@@ -19,10 +19,10 @@ IMGNAME = go-runner
 APP_VERSION = $(shell cat VERSION)
 GO_MINOR_VERSION ?= 1.16
 OS_CODENAME ?= buster
-REVISION ?= 1
+REVISION ?= 0
 
 # Build args
-GO_VERSION ?= 1.16rc1
+GO_VERSION ?= 1.16
 DISTROLESS_IMAGE ?= static-debian10
 
 # Configuration

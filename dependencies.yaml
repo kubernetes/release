@@ -57,7 +57,7 @@ dependencies:
 
   # Golang
   - name: "golang"
-    version: 1.16rc1
+    version: 1.16
     refPaths:
     - path: cmd/vulndash/Makefile
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -96,14 +96,15 @@ dependencies:
     refPaths:
     - path: images/build/go-runner/VERSION
 
+  # Golang images
   - name: "gcr.io/k8s-staging-releng/releng-ci"
-    version: v0.3.0
+    version: v0.4.0
     refPaths:
     - path: images/releng/ci/cloudbuild.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
   - name: "k8s.gcr.io/artifact-promoter/vulndash"
-    version: v0.4.3-4
+    version: v0.4.3-5
     refPaths:
     - path: cmd/vulndash/Makefile
       match: IMAGE_VERSION\ \?=\ v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-([0-9]+)
@@ -111,13 +112,13 @@ dependencies:
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-([0-9]+)
 
   - name: "k8s.gcr.io/build-image/go-runner"
-    version: v2.3.1-go1.16rc1-buster.1
+    version: v2.3.1-go1.16-buster.0
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
   - name: "k8s.gcr.io/build-image/go-runner: image revision"
-    version: 1
+    version: 0
     refPaths:
     - path: images/build/go-runner/Makefile
       match: REVISION \?= \d+
@@ -125,13 +126,13 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "k8s.gcr.io/build-image/kube-cross"
-    version: v1.16.0-rc.1-2
+    version: v1.16.0-1
     refPaths:
     - path: images/build/cross/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
 
   - name: "k8s.gcr.io/build-image/kube-cross: config variant"
-    version: go1.15
+    version: go1.16
     refPaths:
     - path: images/build/cross/Makefile
       match: CONFIG \?= go\d+.\d+
