@@ -93,7 +93,7 @@ func (c *Changelog) Run() error {
 	}
 
 	remoteBranch := git.Remotify(branch)
-	head, err := c.impl.RevParse(repo, remoteBranch)
+	head, err := c.impl.RevParseTag(repo, remoteBranch)
 	if err != nil {
 		return errors.Wrap(err, "get latest branch commit")
 	}

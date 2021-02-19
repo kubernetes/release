@@ -340,6 +340,27 @@ func TestSuccessRevParse(t *testing.T) {
 	tagRev, err := testRepo.sut.RevParse(testRepo.firstTagName)
 	require.Nil(t, err)
 	require.Equal(t, tagRev, testRepo.firstCommit)
+
+	tagRev, err = testRepo.sut.RevParse(testRepo.firstCommit)
+	require.Nil(t, err)
+	require.Equal(t, tagRev, testRepo.firstCommit)
+}
+
+func TestSuccessRevTagParse(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	mainRev, err := testRepo.sut.RevParseTag(git.DefaultBranch)
+	require.Nil(t, err)
+	require.Equal(t, mainRev, testRepo.firstCommit)
+
+	branchRev, err := testRepo.sut.RevParseTag(testRepo.branchName)
+	require.Nil(t, err)
+	require.Equal(t, branchRev, testRepo.thirdBranchCommit)
+
+	tagRev, err := testRepo.sut.RevParseTag(testRepo.firstTagName)
+	require.Nil(t, err)
+	require.Equal(t, tagRev, testRepo.firstCommit)
 }
 
 func TestFailureRevParse(t *testing.T) {
@@ -347,6 +368,17 @@ func TestFailureRevParse(t *testing.T) {
 	defer testRepo.cleanup(t)
 
 	_, err := testRepo.sut.RevParse("wrong")
+	require.NotNil(t, err)
+}
+
+func TestFailureRevParseTag(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	_, err := testRepo.sut.RevParseTag("wrong")
+	require.NotNil(t, err)
+
+	_, err = testRepo.sut.RevParseTag(testRepo.firstCommit)
 	require.NotNil(t, err)
 }
 
@@ -365,6 +397,27 @@ func TestSuccessRevParseShort(t *testing.T) {
 	tagRev, err := testRepo.sut.RevParseShort(testRepo.firstTagName)
 	require.Nil(t, err)
 	require.Equal(t, tagRev, testRepo.firstCommit[:10])
+
+	tagRev, err = testRepo.sut.RevParseShort(testRepo.firstCommit)
+	require.Nil(t, err)
+	require.Equal(t, tagRev, testRepo.firstCommit[:10])
+}
+
+func TestSuccessRevParseTagShort(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	mainRev, err := testRepo.sut.RevParseTagShort(git.DefaultBranch)
+	require.Nil(t, err)
+	require.Equal(t, mainRev, testRepo.firstCommit[:10])
+
+	branchRev, err := testRepo.sut.RevParseTagShort(testRepo.branchName)
+	require.Nil(t, err)
+	require.Equal(t, branchRev, testRepo.thirdBranchCommit[:10])
+
+	tagRev, err := testRepo.sut.RevParseTagShort(testRepo.firstTagName)
+	require.Nil(t, err)
+	require.Equal(t, tagRev, testRepo.firstCommit[:10])
 }
 
 func TestFailureRevParseShort(t *testing.T) {
@@ -372,6 +425,17 @@ func TestFailureRevParseShort(t *testing.T) {
 	defer testRepo.cleanup(t)
 
 	_, err := testRepo.sut.RevParseShort("wrong")
+	require.NotNil(t, err)
+}
+
+func TestFailureRevParseTagShort(t *testing.T) {
+	testRepo := newTestRepo(t)
+	defer testRepo.cleanup(t)
+
+	_, err := testRepo.sut.RevParseTagShort("wrong")
+	require.NotNil(t, err)
+
+	_, err = testRepo.sut.RevParseTagShort(testRepo.firstCommit)
 	require.NotNil(t, err)
 }
 

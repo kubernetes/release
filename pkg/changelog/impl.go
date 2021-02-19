@@ -46,6 +46,7 @@ type impl interface {
 	OpenRepo(repoPath string) (*git.Repo, error)
 	CurrentBranch(repo *git.Repo) (branch string, err error)
 	RevParse(repo *git.Repo, rev string) (string, error)
+	RevParseTag(repo *git.Repo, rev string) (string, error)
 	CreateDownloadsTable(
 		w io.Writer, bucket, tars, prevTag, newTag string,
 	) error
@@ -105,6 +106,10 @@ func (*defaultImpl) CurrentBranch(repo *git.Repo) (string, error) {
 
 func (*defaultImpl) RevParse(repo *git.Repo, rev string) (string, error) {
 	return repo.RevParse(rev)
+}
+
+func (*defaultImpl) RevParseTag(repo *git.Repo, rev string) (string, error) {
+	return repo.RevParseTag(rev)
 }
 
 func (*defaultImpl) CreateDownloadsTable(
