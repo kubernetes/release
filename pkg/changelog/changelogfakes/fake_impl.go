@@ -285,6 +285,20 @@ type FakeImpl struct {
 		result1 string
 		result2 error
 	}
+	RevParseTagStub        func(*git.Repo, string) (string, error)
+	revParseTagMutex       sync.RWMutex
+	revParseTagArgsForCall []struct {
+		arg1 *git.Repo
+		arg2 string
+	}
+	revParseTagReturns struct {
+		result1 string
+		result2 error
+	}
+	revParseTagReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
 	RmStub        func(*git.Repo, bool, ...string) error
 	rmMutex       sync.RWMutex
 	rmArgsForCall []struct {
@@ -1573,6 +1587,71 @@ func (fake *FakeImpl) RevParseReturnsOnCall(i int, result1 string, result2 error
 	}{result1, result2}
 }
 
+func (fake *FakeImpl) RevParseTag(arg1 *git.Repo, arg2 string) (string, error) {
+	fake.revParseTagMutex.Lock()
+	ret, specificReturn := fake.revParseTagReturnsOnCall[len(fake.revParseTagArgsForCall)]
+	fake.revParseTagArgsForCall = append(fake.revParseTagArgsForCall, struct {
+		arg1 *git.Repo
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.RevParseTagStub
+	fakeReturns := fake.revParseTagReturns
+	fake.recordInvocation("RevParseTag", []interface{}{arg1, arg2})
+	fake.revParseTagMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeImpl) RevParseTagCallCount() int {
+	fake.revParseTagMutex.RLock()
+	defer fake.revParseTagMutex.RUnlock()
+	return len(fake.revParseTagArgsForCall)
+}
+
+func (fake *FakeImpl) RevParseTagCalls(stub func(*git.Repo, string) (string, error)) {
+	fake.revParseTagMutex.Lock()
+	defer fake.revParseTagMutex.Unlock()
+	fake.RevParseTagStub = stub
+}
+
+func (fake *FakeImpl) RevParseTagArgsForCall(i int) (*git.Repo, string) {
+	fake.revParseTagMutex.RLock()
+	defer fake.revParseTagMutex.RUnlock()
+	argsForCall := fake.revParseTagArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeImpl) RevParseTagReturns(result1 string, result2 error) {
+	fake.revParseTagMutex.Lock()
+	defer fake.revParseTagMutex.Unlock()
+	fake.RevParseTagStub = nil
+	fake.revParseTagReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImpl) RevParseTagReturnsOnCall(i int, result1 string, result2 error) {
+	fake.revParseTagMutex.Lock()
+	defer fake.revParseTagMutex.Unlock()
+	fake.RevParseTagStub = nil
+	if fake.revParseTagReturnsOnCall == nil {
+		fake.revParseTagReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.revParseTagReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeImpl) Rm(arg1 *git.Repo, arg2 bool, arg3 ...string) error {
 	fake.rmMutex.Lock()
 	ret, specificReturn := fake.rmReturnsOnCall[len(fake.rmArgsForCall)]
@@ -1997,6 +2076,8 @@ func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	defer fake.repoDirMutex.RUnlock()
 	fake.revParseMutex.RLock()
 	defer fake.revParseMutex.RUnlock()
+	fake.revParseTagMutex.RLock()
+	defer fake.revParseTagMutex.RUnlock()
 	fake.rmMutex.RLock()
 	defer fake.rmMutex.RUnlock()
 	fake.statMutex.RLock()

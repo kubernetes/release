@@ -202,6 +202,20 @@ type FakeStageImpl struct {
 		result1 string
 		result2 error
 	}
+	RevParseTagStub        func(*git.Repo, string) (string, error)
+	revParseTagMutex       sync.RWMutex
+	revParseTagArgsForCall []struct {
+		arg1 *git.Repo
+		arg2 string
+	}
+	revParseTagReturns struct {
+		result1 string
+		result2 error
+	}
+	revParseTagReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
 	StageLocalArtifactsStub        func(*build.Options) error
 	stageLocalArtifactsMutex       sync.RWMutex
 	stageLocalArtifactsArgsForCall []struct {
@@ -1129,6 +1143,71 @@ func (fake *FakeStageImpl) RevParseReturnsOnCall(i int, result1 string, result2 
 	}{result1, result2}
 }
 
+func (fake *FakeStageImpl) RevParseTag(arg1 *git.Repo, arg2 string) (string, error) {
+	fake.revParseTagMutex.Lock()
+	ret, specificReturn := fake.revParseTagReturnsOnCall[len(fake.revParseTagArgsForCall)]
+	fake.revParseTagArgsForCall = append(fake.revParseTagArgsForCall, struct {
+		arg1 *git.Repo
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.RevParseTagStub
+	fakeReturns := fake.revParseTagReturns
+	fake.recordInvocation("RevParseTag", []interface{}{arg1, arg2})
+	fake.revParseTagMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeStageImpl) RevParseTagCallCount() int {
+	fake.revParseTagMutex.RLock()
+	defer fake.revParseTagMutex.RUnlock()
+	return len(fake.revParseTagArgsForCall)
+}
+
+func (fake *FakeStageImpl) RevParseTagCalls(stub func(*git.Repo, string) (string, error)) {
+	fake.revParseTagMutex.Lock()
+	defer fake.revParseTagMutex.Unlock()
+	fake.RevParseTagStub = stub
+}
+
+func (fake *FakeStageImpl) RevParseTagArgsForCall(i int) (*git.Repo, string) {
+	fake.revParseTagMutex.RLock()
+	defer fake.revParseTagMutex.RUnlock()
+	argsForCall := fake.revParseTagArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeStageImpl) RevParseTagReturns(result1 string, result2 error) {
+	fake.revParseTagMutex.Lock()
+	defer fake.revParseTagMutex.Unlock()
+	fake.RevParseTagStub = nil
+	fake.revParseTagReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStageImpl) RevParseTagReturnsOnCall(i int, result1 string, result2 error) {
+	fake.revParseTagMutex.Lock()
+	defer fake.revParseTagMutex.Unlock()
+	fake.RevParseTagStub = nil
+	if fake.revParseTagReturnsOnCall == nil {
+		fake.revParseTagReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.revParseTagReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeStageImpl) StageLocalArtifacts(arg1 *build.Options) error {
 	fake.stageLocalArtifactsMutex.Lock()
 	ret, specificReturn := fake.stageLocalArtifactsReturnsOnCall[len(fake.stageLocalArtifactsArgsForCall)]
@@ -1469,6 +1548,8 @@ func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	defer fake.pushReleaseArtifactsMutex.RUnlock()
 	fake.revParseMutex.RLock()
 	defer fake.revParseMutex.RUnlock()
+	fake.revParseTagMutex.RLock()
+	defer fake.revParseTagMutex.RUnlock()
 	fake.stageLocalArtifactsMutex.RLock()
 	defer fake.stageLocalArtifactsMutex.RUnlock()
 	fake.stageLocalSourceTreeMutex.RLock()
