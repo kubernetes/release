@@ -42,7 +42,9 @@ require (
 	google.golang.org/genproto v0.0.0-20210111234610-22ae2b108f89
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.4.0
+	k8s.io/code-generator v0.18.2
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
+	sigs.k8s.io/controller-tools v0.4.1
 	sigs.k8s.io/mdtoc v1.0.1
 	sigs.k8s.io/yaml v1.2.0
 )
