@@ -257,6 +257,12 @@ func init() {
 		[]string{},
 		"specify a location to recursively look for release notes *.y[a]ml file mappings",
 	)
+	cmd.PersistentFlags().BoolVar(
+		&opts.ListReleaseNotesV2,
+		"list-v2",
+		false,
+		"enable experimental implementation to list commits (ListReleaseNotesV2)",
+	)
 }
 
 func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
