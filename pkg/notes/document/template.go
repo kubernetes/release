@@ -68,12 +68,12 @@ filename | sha512 hash
 
 This release contains changes that address the following vulnerabilities:
 {{range .}}
-### {{.ID}} {{.Title}}
+### {{.ID}}: {{.Title}}
 
 {{.Description}}
 
-CVSS Rating: {{.CVSSRating}} ({{.CVSSScore}}) {{.CVSSVector}}
-Tracking Issue: {{.TrackingIssue}}
+**CVSS Rating:** {{.CVSSRating}} ({{.CVSSScore}}) {{.CVSSVector}}<br>
+**Tracking Issue:** {{.TrackingIssue}}
 
 {{ end }}
 {{- end -}}
