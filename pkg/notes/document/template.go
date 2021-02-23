@@ -72,8 +72,11 @@ This release contains changes that address the following vulnerabilities:
 
 {{.Description}}
 
-**CVSS Rating:** {{.CVSSRating}} ({{.CVSSScore}}) [{{.CVSSVector}}]({{.CalcLink}})<br>
+**CVSS Rating:** {{.CVSSRating}} ({{.CVSSScore}}) [{{.CVSSVector}}]({{.CalcLink}})
+{{- if .TrackingIssue -}}
+<br>
 **Tracking Issue:** {{.TrackingIssue}}
+{{- end }}
 
 {{ end }}
 {{- end -}}

@@ -33,6 +33,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
+	github.com/spiegel-im-spiegel/go-cvss v0.4.0
 	github.com/stretchr/testify v1.7.0
 	github.com/yuin/goldmark v1.3.1
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
