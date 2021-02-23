@@ -253,7 +253,10 @@ func New(
 					cve.LinkedPRs = append(cve.LinkedPRs, prid.(int))
 				}
 			}
-			// TODO: Add a validation function to check the struct
+			// Verify that CVE data has the minimum fields defined
+			if err := cve.Validate(); err != nil {
+				return nil, errors.Wrapf(err, "checking CVE map file for PR #%d", pr)
+			}
 			doc.CVEList = append(doc.CVEList, cve)
 		}
 

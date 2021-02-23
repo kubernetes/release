@@ -1086,3 +1086,41 @@ func (rn *ReleaseNote) ContentHash() (string, error) {
 	}
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
+
+// Validate checks the data defined in a CVE map is complete and valid
+func (cve *CVEData) Validate() error {
+	if cve.CVSSRating == "" {
+		return errors.New("CVSS rating missing from CVE data")
+	}
+
+	// Check rating is a valid string
+	if cve.CVSSRating != "None" &&
+		cve.CVSSRating != "Low" &&
+		cve.CVSSRating != "Medium" &&
+		cve.CVSSRating != "High" &&
+		cve.CVSSRating != "Critical" {
+		return errors.New("Invalida CVSS rating")
+	}
+
+	if cve.CVSSVector == "" {
+		return errors.New("CVSS vector string missing from CVE data")
+	}
+
+	if cve.CVSSScore == 0 {
+		return errors.New("CVSS score missing from CVE data")
+	}
+
+	if cve.ID == "" {
+		return errors.New("ID missing from CVE data")
+	}
+
+	if cve.Title == "" {
+		return errors.New("Title missing from CVE data")
+	}
+
+	if cve.Description == "" {
+		return errors.New("CVE description missing from CVE data")
+	}
+
+	return nil
+}
