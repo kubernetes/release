@@ -67,7 +67,8 @@ type CVEData struct {
 	CVSSVector    string  `json:"vector"`      // Full CVSS vector string, CVSS:3.1/AV:N/AC:H/PR:H/UI:R/S:U/C:H/I:H/A:H
 	CVSSScore     float32 `json:"score"`       // Numeric CVSS score (eg 6.2)
 	CVSSRating    string  `json:"rating"`      // Severity bucket (eg Medium)
-	LinkedPRs     []int   `json:"linkedPRs"`   // List of linked PRs (to remove them from the release notes doc)
+	CalcLink      string  // Link to the CVE calculator (automatic)
+	LinkedPRs     []int   `json:"linkedPRs"` // List of linked PRs (to remove them from the release notes doc)
 }
 
 const (
@@ -1099,7 +1100,7 @@ func (cve *CVEData) Validate() error {
 		cve.CVSSRating != "Medium" &&
 		cve.CVSSRating != "High" &&
 		cve.CVSSRating != "Critical" {
-		return errors.New("Invalida CVSS rating")
+		return errors.New("Invalid CVSS rating")
 	}
 
 	if cve.CVSSVector == "" {
@@ -1121,6 +1122,15 @@ func (cve *CVEData) Validate() error {
 	if cve.Description == "" {
 		return errors.New("CVE description missing from CVE data")
 	}
+
+	// Since we're checking the vector string with a regex, use the effort to
+	// add a link to the CVE calculator
+	re := regexp.MustCompile(`^CVSS:(\d+\.\d+)/`)
+	cvssVer := re.FindStringSubmatch(cve.CVSSVector)
+	if len(cvssVer) == 0 {
+		return errors.New("CVSS vector in not properly formed: version missing")
+	}
+	cve.CalcLink = fmt.Sprintf("https://www.first.org/cvss/calculator/%s#%s", cvssVer[1], cve.CVSSVector)
 
 	return nil
 }
