@@ -41,6 +41,13 @@ for release in $(curl -s https://api.github.com/repos/kubernetes/kubernetes/rele
 	if [[ "${release}" =~ $unstable_versions ]]; then
 		# alpha, beta, rc releases should be ignored
 		echo "Unstable version ${release} ignored"
+	elif [[ "${release}" == "v1.20.3" ]]; then
+		# v1.20.3 was interrupted due to a conformance metada
+		# problem. We ignore this release as no packages were
+		# published
+		#
+		# ref: https://groups.google.com/g/kubernetes-dev/c/oUpY9vWgzJo
+		echo "Ignoring v1.20.3: no packages were created"
 	elif [[ $supported_versions != *"${minor#v}"* ]]; then
 		# release we don't care about (e.g. older releases)
 		skipped="${skipped} ${release}"
