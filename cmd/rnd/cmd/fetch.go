@@ -17,16 +17,30 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 
+	"github.com/blang/semver"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
+
+	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/notes"
+	notesoptions "k8s.io/release/pkg/notes/options"
+	"k8s.io/release/pkg/util"
 )
 
 // ATTENTION: if you're modifying this struct, make sure you update the command help
 type fetchOptions struct {
-	SourceRepo  string `split_words:"true" required:"true" default:"github.com/kubernetes/kubernetes"`
-	StorageRepo string `split_words:"true" required:"true" default:"github.com/wilsonehusin/k8s-release-notes-data"` // TODO: create new repository?
-	StorageDir  string `split_words:"true" required:"true" default:"release-1.21/raw"`
+	SourceRepo     string `split_words:"true" required:"true" default:"kubernetes/kubernetes"`
+	SourceRepoPath string `split_words:"true"`
+	StorageRepo    string `split_words:"true" required:"true" default:"wilsonehusin/k8s-release-notes-data"` // TODO: create new repository?
+	ReleaseTag     string `split_words:"true" required:"true"`
+	GithubAuth     string `split_words:"true"` // TODO: more generic field?
 }
 
 var fetchOpts = &fetchOptions{}
@@ -42,7 +56,10 @@ add / update the entries in RND_STORAGE_REPO under RND_STORAGE_DIR.`,
 		return processFetchFlags()
 	},
 	Run: func(*cobra.Command, []string) {
-		cmd.Help()
+		if err := rndFetch(); err != nil {
+			logrus.Error(err)
+			os.Exit(1)
+		}
 	},
 }
 
@@ -61,4 +78,129 @@ func processFetchFlags() error {
 	}
 
 	return nil
+}
+
+func rndFetch() error {
+	releaseTagVersion, err := util.TagStringToSemver(fetchOpts.ReleaseTag)
+	if err != nil {
+		return err
+	}
+	logrus.WithFields(logrus.Fields{
+		"releaseTagVersion": releaseTagVersion,
+	}).Debug("convert string tag to semver")
+
+	startTag, err := getPreviousTag(&releaseTagVersion)
+	if err != nil {
+		return err
+	}
+
+	storageGitOrg, storageGitRepo, err := git.ParseRepoSlug(fetchOpts.StorageRepo)
+	if err != nil {
+		return err
+	}
+	logrus.WithFields(logrus.Fields{
+		"storageGitOrg":  storageGitOrg,
+		"storageGitRepo": storageGitRepo,
+		"StorageRepo":    fetchOpts.StorageRepo,
+	}).Debug("parse repository path")
+
+	notesOpts := notesoptions.New()
+	notesOpts.Branch = git.DefaultBranch
+	notesOpts.StartRev = startTag
+	notesOpts.EndRev = fetchOpts.ReleaseTag
+	notesOpts.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
+	notesOpts.ListReleaseNotesV2 = true
+	notesOpts.RepoPath = fetchOpts.SourceRepoPath
+	notesOpts.SetGithubToken(fetchOpts.GithubAuth)
+
+	logrus.Trace("begin k/k validation")
+	if err := notesOpts.ValidateAndFinish(); err != nil {
+		return err
+	}
+	logrus.Trace("completed k/k validation")
+
+	releaseNotes, err := notes.GatherReleaseNotes(notesOpts)
+	if err != nil {
+		return err
+	}
+
+	storageGit, err := git.CleanCloneGitHubRepo(storageGitOrg, storageGitRepo, false)
+	if err != nil {
+		return err
+	}
+
+	storagePath := filepath.Join(fmt.Sprintf("releases-%d.%d", releaseTagVersion.Major, releaseTagVersion.Minor), "fetched")
+	if err = writeReleaseNotesToGitRepo(releaseNotes, storageGit, storagePath); err != nil {
+		return err
+	}
+
+	if err = stageAndCommit(storageGit, storagePath); err != nil {
+		return err
+	}
+
+	if err = storageGit.PushToRemote("origin", "main"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func stageAndCommit(storageGit *git.Repo, storagePath string) error {
+	if err := storageGit.Add("."); err != nil {
+		return err
+	}
+	if err := storageGit.Commit("Add release notes"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeReleaseNotesToGitRepo(releaseNotes *notes.ReleaseNotes, storageGit *git.Repo, storagePath string) error {
+	workDir := filepath.Join(storageGit.Dir(), storagePath)
+	if err := os.MkdirAll(workDir, 0755); err != nil {
+		return err
+	}
+	for prnum, releaseNote := range releaseNotes.ByPR() {
+		notePath := filepath.Join(workDir, fmt.Sprintf("%d.yaml", prnum))
+		logrus.WithFields(logrus.Fields{
+			"filepath": notePath,
+		}).Debug("writing")
+		noteContent, err := yaml.Marshal(releaseNote)
+		if err != nil {
+			return err
+		}
+		if err := ioutil.WriteFile(notePath, noteContent, os.FileMode(0o644)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// copy pasta'd from cmd/krel/cmd/release_notes.go with modifications
+func getPreviousTag(releaseTagVersion *semver.Version) (string, error) {
+	var previousTag, tagStrategy string
+	if releaseTagVersion.Patch > 0 {
+		previousTag = fmt.Sprintf("v%d.%d.%d", releaseTagVersion.Major, releaseTagVersion.Minor, releaseTagVersion.Patch-1)
+		tagStrategy = "previous patch release"
+	} else {
+		if len(releaseTagVersion.Pre) == 2 && releaseTagVersion.Patch == 0 {
+			// pre-releases
+			previousTag = util.SemverToTagString(semver.Version{
+				Major: releaseTagVersion.Major, Minor: releaseTagVersion.Minor - 1, Patch: 0,
+			})
+			tagStrategy = "previous minor release for pre-release"
+		} else if len(releaseTagVersion.Pre) == 0 && releaseTagVersion.Patch == 0 {
+			// full minor release
+			previousTag = util.SemverToTagString(semver.Version{
+				Major: releaseTagVersion.Major, Minor: releaseTagVersion.Minor - 1, Patch: 0,
+			})
+			tagStrategy = "previous minor release for new minor"
+		} else {
+			return "", fmt.Errorf("unable to determine previous tag")
+		}
+	}
+	logrus.WithFields(logrus.Fields{
+		"previousTag": previousTag,
+		"tagStrategy": tagStrategy,
+	}).Info("getting previous tag")
+	return previousTag, nil
 }

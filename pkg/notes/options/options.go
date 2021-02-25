@@ -157,6 +157,10 @@ func New() *Options {
 	}
 }
 
+func (o *Options) SetGithubToken(token string) {
+	o.githubToken = token
+}
+
 // ValidateAndFinish checks if the options are set in a consistent way and
 // adapts them if necessary. It returns an error if options are set to invalid
 // values.
@@ -177,14 +181,16 @@ func (o *Options) ValidateAndFinish() (err error) {
 	}
 
 	// The GitHub Token is required if replay is not specified
-	token, ok := os.LookupEnv(github.TokenEnvKey)
-	if ok {
-		o.githubToken = token
-	} else if o.ReplayDir == "" {
-		return errors.Errorf(
-			"neither environment variable `%s` nor `replay` option is set",
-			github.TokenEnvKey,
-		)
+	if o.githubToken == "" {
+		token, ok := os.LookupEnv(github.TokenEnvKey)
+		if ok {
+			o.githubToken = token
+		} else if o.ReplayDir == "" {
+			return errors.Errorf(
+				"neither environment variable `%s` nor `replay` option is set",
+				github.TokenEnvKey,
+			)
+		}
 	}
 
 	// Check if we want to automatically discover the revisions
@@ -278,6 +284,7 @@ func (o *Options) checkFormatOptions() error {
 }
 
 func (o *Options) resolveDiscoverMode() error {
+	logrus.Debug("automatically discovering revisions")
 	repo, err := o.repo()
 	if err != nil {
 		return err
@@ -313,7 +320,7 @@ func (o *Options) resolveDiscoverMode() error {
 
 func (o *Options) repo() (repo *git.Repo, err error) {
 	if o.Pull {
-		logrus.Infof("Cloning/updating repository %s/%s", o.GithubOrg, o.GithubRepo)
+		logrus.Infof("Cloning/updating repository %s/%s in %s", o.GithubOrg, o.GithubRepo, o.RepoPath)
 		repo, err = o.gitCloneFn(
 			o.RepoPath,
 			o.GithubOrg,

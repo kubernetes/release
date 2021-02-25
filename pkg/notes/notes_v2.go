@@ -213,6 +213,9 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 }
 
 func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair, error) {
+	logrus.WithFields(logrus.Fields{
+		"RepoPath": opts.RepoPath,
+	}).Debug("opening existing local k/k")
 	localRepository, err := git.PlainOpen(opts.RepoPath)
 	if err != nil {
 		return nil, err
