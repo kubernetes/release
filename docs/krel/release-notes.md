@@ -44,7 +44,9 @@ Before running `krel release-notes` export your GitHub token to \$GITHUB_TOKEN:
       --fix                 fix release notes
       --fork string         the user's fork in the form org/repo. Used to submit Pull Requests for the website and draft
   -h, --help                help for release-notes
+      --list-v2             enable experimental implementation to list commits (ListReleaseNotesV2)
   -m, --maps-from strings   specify a location to recursively look for release notes *.y[a]ml file mappings
+      --repo string         the local path to the repository to be used (default "/var/folders/1t/bzbyv7tn75nfznj4fttc22nh0000gn/T/k8s")
   -t, --tag string          version tag for the notes
 ```
 
@@ -56,7 +58,7 @@ Before running `krel release-notes` export your GitHub token to \$GITHUB_TOKEN:
 
 This invocation will generate the Release Notes Draft [published in sig-release](https://github.com/kubernetes/sig-release/blob/master/releases/release-1.19/release-notes-draft.md).
 It will generate the draft for the current branch, starting from the first RC of the previous
-minor Kubernets release. For example, if you are generating the draft for `v1.19.0-beta.1`, `krel`
+minor Kubernetes release. For example, if you are generating the draft for `v1.19.0-beta.1`, `krel`
 will generate the release notes draft starting from `v1.18.0-rc.1`.
 
 The draft will be written into your fork of
@@ -65,7 +67,7 @@ clone k/sig-release, create a branch, write the draft markdown and then push the
 back to your fork in GitHub. Finally __it will create a pull request__ on your behalf.
 
 To update the Release Notes Draft, run `krel release-notes` with `--create-draft-pr` and set 
-`--fork` to your GitHub user (the organization that owns your fork o k/sig-release):
+`--fork` to your GitHub user (the organization that owns your fork of k/sig-release):
 
 ```bash
 krel release-notes --create-draft-pr --fork=kubefriend --tag v1.19.0-beta.1 
@@ -77,7 +79,7 @@ of your repository by specifying the full repo slug `--fork=myorg/myrepo`.
 
 #### Update the relnotes.k8s.io website
 
-The subcommand can also generate the notes and modify the necessary files to update th
+The subcommand can also generate the notes and modify the necessary files to update the
 [release notes website](https://relnotes.k8s.io/). This invocation will clone the
 [release-notes repo](https://github.com/kubernetes-sigs/release-notes) and add your fork as
 a remote (kubefriend/release-notes). It will then create a feature branch to commit the notes
