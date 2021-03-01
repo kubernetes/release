@@ -231,23 +231,31 @@ func New(
 			if val, ok := cvedata.(map[interface{}]interface{})["title"].(string); ok {
 				cve.Title = val
 			}
+			if val, ok := cvedata.(map[interface{}]interface{})["issue"].(string); ok {
+				cve.TrackingIssue = val
+			}
+			if val, ok := cvedata.(map[interface{}]interface{})["vector"].(string); ok {
+				cve.CVSSVector = val
+			}
+			if val, ok := cvedata.(map[interface{}]interface{})["score"].(float64); ok {
+				cve.CVSSScore = float32(val)
+			}
+			if val, ok := cvedata.(map[interface{}]interface{})["rating"].(string); ok {
+				cve.CVSSRating = val
+			}
+			if val, ok := cvedata.(map[interface{}]interface{})["description"].(string); ok {
+				cve.Description = val
+			}
+			// Linked PRs is a list of the PR IDs
 			if val, ok := cvedata.(map[interface{}]interface{})["linkedPRs"].([]interface{}); ok {
 				cve.LinkedPRs = []int{}
 				for _, prid := range val {
 					cve.LinkedPRs = append(cve.LinkedPRs, prid.(int))
 				}
 			}
-			if val, ok := cvedata.(map[interface{}]interface{})["published"].(string); ok {
-				cve.Published = val
-			}
-			if val, ok := cvedata.(map[interface{}]interface{})["score"].(float64); ok {
-				cve.Score = float32(val)
-			}
-			if val, ok := cvedata.(map[interface{}]interface{})["rating"].(string); ok {
-				cve.Rating = val
-			}
-			if val, ok := cvedata.(map[interface{}]interface{})["description"].(string); ok {
-				cve.Description = val
+			// Verify that CVE data has the minimum fields defined
+			if err := cve.Validate(); err != nil {
+				return nil, errors.Wrapf(err, "checking CVE map file for PR #%d", pr)
 			}
 			doc.CVEList = append(doc.CVEList, cve)
 		}
