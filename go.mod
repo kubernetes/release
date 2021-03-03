@@ -33,7 +33,7 @@ require (
 	github.com/spiegel-im-spiegel/go-cvss v0.4.0
 	github.com/stretchr/testify v1.7.0
 	github.com/yuin/goldmark v1.3.1
-	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
+	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
 	golang.org/x/oauth2 v0.0.0-20210112200429-01de73cf58bd
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	google.golang.org/api v0.36.0
@@ -44,4 +44,5 @@ require (
 	sigs.k8s.io/mdtoc v1.0.1
 	sigs.k8s.io/release-utils v0.2.0
 	sigs.k8s.io/yaml v1.2.0
+	sigs.k8s.io/zeitgeist v0.3.0
 )
