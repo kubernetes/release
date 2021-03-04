@@ -24,7 +24,7 @@ import (
 	"github.com/spf13/cobra"
 
 	reg "k8s.io/release/pkg/cip/dockerregistry"
-	"k8s.io/release/pkg/log"
+	"sigs.k8s.io/release-utils/log"
 )
 
 var cmd = &cobra.Command{

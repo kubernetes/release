@@ -22,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	kgit "k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/util"
+	"sigs.k8s.io/release-utils/util"
 )
 
 // Options is the main structure for configuring a fast forward.

@@ -26,10 +26,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/util"
+	"sigs.k8s.io/release-utils/command"
+	"sigs.k8s.io/release-utils/util"
 )
 
 const (

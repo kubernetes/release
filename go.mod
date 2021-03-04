@@ -20,7 +20,6 @@ require (
 	github.com/mattn/go-isatty v0.0.12
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.3.0
 	github.com/mitchellh/mapstructure v1.4.1
-	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/opencontainers/image-spec v1.0.2-0.20200206005212-79b036d80240
@@ -30,7 +29,7 @@ require (
 	github.com/sendgrid/rest v2.6.2+incompatible
 	github.com/sendgrid/sendgrid-go v3.7.2+incompatible
 	github.com/shirou/gopsutil/v3 v3.20.12
-	github.com/sirupsen/logrus v1.7.0
+	github.com/sirupsen/logrus v1.8.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spiegel-im-spiegel/go-cvss v0.4.0
@@ -45,5 +44,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
 	sigs.k8s.io/mdtoc v1.0.1
+	sigs.k8s.io/release-utils v0.1.0
 	sigs.k8s.io/yaml v1.2.0
 )

@@ -35,14 +35,14 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
-	"k8s.io/release/pkg/command"
-	"k8s.io/release/pkg/editor"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
-	"k8s.io/release/pkg/util"
+	"sigs.k8s.io/release-utils/command"
+	"sigs.k8s.io/release-utils/editor"
+	"sigs.k8s.io/release-utils/util"
 )
 
 const (

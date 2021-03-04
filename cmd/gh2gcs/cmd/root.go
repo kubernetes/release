@@ -31,7 +31,7 @@ import (
 	"k8s.io/release/pkg/gcp"
 	"k8s.io/release/pkg/gh2gcs"
 	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/log"
+	"sigs.k8s.io/release-utils/log"
 )
 
 // rootCmd represents the base command when called without any subcommands

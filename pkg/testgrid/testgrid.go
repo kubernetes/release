@@ -25,7 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/http"
+	"sigs.k8s.io/release-utils/http"
 )
 
 const testgridConfigURL = "https://storage.googleapis.com/k8s-testgrid/config"

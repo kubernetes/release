@@ -29,10 +29,10 @@ import (
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/log"
 	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/util"
+	"sigs.k8s.io/release-utils/log"
+	"sigs.k8s.io/release-utils/util"
 )
 
 // releaseClient is a client for release a previously staged release.

@@ -28,7 +28,7 @@ import (
 	licenseclassifier "github.com/google/licenseclassifier/v2"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"k8s.io/release/pkg/util"
+	"sigs.k8s.io/release-utils/util"
 )
 
 const (

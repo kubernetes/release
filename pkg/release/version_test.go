@@ -25,7 +25,7 @@ import (
 
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/release/releasefakes"
-	"k8s.io/release/pkg/util"
+	"sigs.k8s.io/release-utils/util"
 )
 
 func newVersionSUT() (*release.Version, *releasefakes.FakeVersionClient) {

@@ -31,7 +31,7 @@ import (
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/notes/options"
-	"k8s.io/release/pkg/util"
+	"sigs.k8s.io/release-utils/util"
 )
 
 // Options are the main settings for generating the changelog.

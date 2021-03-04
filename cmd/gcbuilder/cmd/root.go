@@ -24,7 +24,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/release/pkg/gcp/build"
-	"k8s.io/release/pkg/log"
+	"sigs.k8s.io/release-utils/log"
 )
 
 // rootCmd represents the base command when called without any subcommands

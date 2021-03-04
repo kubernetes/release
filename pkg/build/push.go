@@ -29,8 +29,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/tar"
-	"k8s.io/release/pkg/util"
+	"sigs.k8s.io/release-utils/tar"
+	"sigs.k8s.io/release-utils/util"
 )
 
 type stageFile struct {
