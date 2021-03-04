@@ -26,7 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	api "k8s.io/release/pkg/api/files"
-	"k8s.io/release/pkg/hash"
+	"sigs.k8s.io/release-utils/hash"
 )
 
 // syncFileInfo tracks a file during the synchronization operation.

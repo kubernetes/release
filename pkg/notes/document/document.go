@@ -28,10 +28,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"k8s.io/release/pkg/hash"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/release"
+	"sigs.k8s.io/release-utils/hash"
 )
 
 // Document represents the underlying structure of a release notes document.
