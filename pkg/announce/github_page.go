@@ -31,7 +31,7 @@ import (
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/hash"
-	"k8s.io/release/pkg/util"
+	"sigs.k8s.io/release-utils/util"
 )
 
 // ghPageBody is a generic template to build the GitHub

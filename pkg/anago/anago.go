@@ -24,10 +24,10 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/log"
 	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/util"
 	"k8s.io/release/pkg/version"
+	"sigs.k8s.io/release-utils/log"
+	"sigs.k8s.io/release-utils/util"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate

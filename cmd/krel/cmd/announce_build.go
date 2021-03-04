@@ -30,7 +30,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/command"
+	"sigs.k8s.io/release-utils/command"
 )
 
 const (

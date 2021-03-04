@@ -35,11 +35,11 @@ import (
 	"google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/option"
 
-	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/gcp"
 	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/tar"
+	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/yaml"
 )
 

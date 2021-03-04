@@ -23,11 +23,11 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/gcp"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/util"
+	"sigs.k8s.io/release-utils/command"
+	"sigs.k8s.io/release-utils/util"
 )
 
 // PrerequisitesChecker is the main type for checking the prerequisites for a

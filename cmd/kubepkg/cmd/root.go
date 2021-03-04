@@ -25,7 +25,7 @@ import (
 
 	"k8s.io/release/pkg/kubepkg"
 	"k8s.io/release/pkg/kubepkg/options"
-	"k8s.io/release/pkg/log"
+	"sigs.k8s.io/release-utils/log"
 )
 
 // rootCmd represents the base command when called without any subcommands

@@ -34,7 +34,7 @@ import (
 	"k8s.io/release/pkg/gcp/build"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/util"
+	"sigs.k8s.io/release-utils/util"
 )
 
 // GCB is the main structure of this package.

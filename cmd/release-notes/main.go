@@ -29,13 +29,13 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/log"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/util"
 	"sigs.k8s.io/mdtoc/pkg/mdtoc"
+	"sigs.k8s.io/release-utils/log"
+	"sigs.k8s.io/release-utils/util"
 )
 
 type releaseNotesOptions struct {

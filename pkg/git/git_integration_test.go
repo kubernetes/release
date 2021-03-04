@@ -29,9 +29,9 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/util"
+	"sigs.k8s.io/release-utils/command"
+	"sigs.k8s.io/release-utils/util"
 )
 
 type testRepo struct {
