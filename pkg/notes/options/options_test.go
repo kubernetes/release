@@ -30,8 +30,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/command"
 	"k8s.io/release/pkg/github"
+	"sigs.k8s.io/release-utils/command"
 
 	kgit "k8s.io/release/pkg/git"
 )

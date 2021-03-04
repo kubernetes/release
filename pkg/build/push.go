@@ -30,7 +30,7 @@ import (
 
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/tar"
-	"k8s.io/release/pkg/util"
+	"sigs.k8s.io/release-utils/util"
 )
 
 type stageFile struct {

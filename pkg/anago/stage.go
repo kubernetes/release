@@ -30,8 +30,8 @@ import (
 	"k8s.io/release/pkg/changelog"
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/log"
 	"k8s.io/release/pkg/release"
+	"sigs.k8s.io/release-utils/log"
 )
 
 // stageClient is a client for staging releases.

@@ -30,7 +30,7 @@ import (
 	"k8s.io/release/pkg/gcp"
 	"k8s.io/release/pkg/http"
 	"k8s.io/release/pkg/object"
-	"k8s.io/release/pkg/util"
+	"sigs.k8s.io/release-utils/util"
 )
 
 // Publisher is the structure for publishing anything release related

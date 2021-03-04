@@ -26,7 +26,7 @@ import (
 	"k8s.io/release/pkg/http"
 	"k8s.io/release/pkg/mail"
 	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/util"
+	"sigs.k8s.io/release-utils/util"
 )
 
 const (
