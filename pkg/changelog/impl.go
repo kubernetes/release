@@ -31,10 +31,10 @@ import (
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/http"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
+	"sigs.k8s.io/release-utils/http"
 	"sigs.k8s.io/release-utils/util"
 )
 

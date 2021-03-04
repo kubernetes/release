@@ -29,7 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/tar"
+	"sigs.k8s.io/release-utils/tar"
 	"sigs.k8s.io/release-utils/util"
 )
 

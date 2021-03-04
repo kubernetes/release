@@ -29,7 +29,7 @@ import (
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/object"
-	"k8s.io/release/pkg/tar"
+	"sigs.k8s.io/release-utils/tar"
 )
 
 // PrepareWorkspaceStage sets up the workspace by cloning a new copy of k/k.

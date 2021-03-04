@@ -20,7 +20,6 @@ require (
 	github.com/mattn/go-isatty v0.0.12
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.3.0
 	github.com/mitchellh/mapstructure v1.4.1
-	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/opencontainers/image-spec v1.0.2-0.20200206005212-79b036d80240

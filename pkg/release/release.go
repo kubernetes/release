@@ -39,11 +39,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/git"
-	rhash "k8s.io/release/pkg/hash"
-	"k8s.io/release/pkg/http"
 	"k8s.io/release/pkg/object"
-	"k8s.io/release/pkg/tar"
 	"sigs.k8s.io/release-utils/command"
+	rhash "sigs.k8s.io/release-utils/hash"
+	"sigs.k8s.io/release-utils/http"
+	"sigs.k8s.io/release-utils/tar"
 	"sigs.k8s.io/release-utils/util"
 )
 
