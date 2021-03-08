@@ -1,2 +1,2 @@
 # most likely used for credentials in testing / development
-.direnv
+.envrc

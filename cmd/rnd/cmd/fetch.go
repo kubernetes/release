@@ -31,16 +31,17 @@ import (
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/notes"
 	notesoptions "k8s.io/release/pkg/notes/options"
+	"k8s.io/release/pkg/rnd"
 	"k8s.io/release/pkg/util"
 )
 
 // ATTENTION: if you're modifying this struct, make sure you update the command help
 type fetchOptions struct {
+	GithubAuth     string `split_words:"true" required:"true"` // TODO: more generic field?
 	SourceRepo     string `split_words:"true" required:"true" default:"kubernetes/kubernetes"`
 	SourceRepoPath string `split_words:"true"`
-	StorageRepo    string `split_words:"true" required:"true" default:"wilsonehusin/k8s-release-notes-data"` // TODO: create new repository?
 	ReleaseTag     string `split_words:"true" required:"true"`
-	GithubAuth     string `split_words:"true"` // TODO: more generic field?
+	StorageRepo    string `split_words:"true" required:"true" default:"wilsonehusin/k8s-release-notes-data"` // TODO: create new repository?
 }
 
 var fetchOpts = &fetchOptions{}
@@ -51,7 +52,7 @@ var fetchCmd = &cobra.Command{
 	Long: `rnd fetch -- Fetch latest release notes
 
 This command will look up relevant pull requests in RND_SOURCE_REPO,
-add / update the entries in RND_STORAGE_REPO under RND_STORAGE_DIR.`,
+add / update the entries in RND_STORAGE_REPO`,
 	PreRunE: func(*cobra.Command, []string) error {
 		return processFetchFlags()
 	},
@@ -87,22 +88,12 @@ func rndFetch() error {
 	}
 	logrus.WithFields(logrus.Fields{
 		"releaseTagVersion": releaseTagVersion,
-	}).Debug("convert string tag to semver")
+	}).Debug("converted string tag to semver")
 
 	startTag, err := getPreviousTag(&releaseTagVersion)
 	if err != nil {
 		return err
 	}
-
-	storageGitOrg, storageGitRepo, err := git.ParseRepoSlug(fetchOpts.StorageRepo)
-	if err != nil {
-		return err
-	}
-	logrus.WithFields(logrus.Fields{
-		"storageGitOrg":  storageGitOrg,
-		"storageGitRepo": storageGitRepo,
-		"StorageRepo":    fetchOpts.StorageRepo,
-	}).Debug("parse repository path")
 
 	notesOpts := notesoptions.New()
 	notesOpts.Branch = git.DefaultBranch
@@ -124,32 +115,34 @@ func rndFetch() error {
 		return err
 	}
 
-	storageGit, err := git.CleanCloneGitHubRepo(storageGitOrg, storageGitRepo, false)
+	storageGit, err := rnd.CloneStorageRepo(fetchOpts.StorageRepo)
 	if err != nil {
 		return err
 	}
 
-	storagePath := filepath.Join(fmt.Sprintf("releases-%d.%d", releaseTagVersion.Major, releaseTagVersion.Minor), "fetched")
+	storagePath := filepath.Join(rnd.StorageWorkDir(releaseTagVersion), "fetched")
 	if err = writeReleaseNotesToGitRepo(releaseNotes, storageGit, storagePath); err != nil {
 		return err
 	}
 
-	if err = stageAndCommit(storageGit, storagePath); err != nil {
+	hasChanges, err := storageGit.IsDirty()
+	if err != nil {
 		return err
 	}
+	if hasChanges {
+		if err := storageGit.Add("."); err != nil {
+			return err
+		}
+		if err := storageGit.Commit("Add release notes"); err != nil {
+			return err
+		}
 
-	if err = storageGit.PushToRemote("origin", "main"); err != nil {
-		return err
-	}
-	return nil
-}
-
-func stageAndCommit(storageGit *git.Repo, storagePath string) error {
-	if err := storageGit.Add("."); err != nil {
-		return err
-	}
-	if err := storageGit.Commit("Add release notes"); err != nil {
-		return err
+		if err = storageGit.PushToRemote("origin", "main"); err != nil {
+			return err
+		}
+	} else {
+		logrus.Info("no new changes to be committed")
+		return nil
 	}
 	return nil
 }
