@@ -32,6 +32,7 @@ import (
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github/internal"
+	"sigs.k8s.io/release-utils/env"
 	"sigs.k8s.io/release-utils/util"
 )
 
@@ -139,7 +140,7 @@ type Client interface {
 // If the $GITHUB_TOKEN is not set, then the client will do unauthenticated
 // GitHub requests.
 func New() *GitHub {
-	token := util.EnvDefault(TokenEnvKey, "")
+	token := env.Default(TokenEnvKey, "")
 	client, _ := NewWithToken(token) // nolint: errcheck
 	return client
 }
@@ -162,7 +163,7 @@ func NewWithToken(token string) (*GitHub, error) {
 }
 
 func NewEnterprise(baseURL, uploadURL string) (*GitHub, error) {
-	token := util.EnvDefault(TokenEnvKey, "")
+	token := env.Default(TokenEnvKey, "")
 	return NewEnterpriseWithToken(baseURL, uploadURL, token)
 }
 

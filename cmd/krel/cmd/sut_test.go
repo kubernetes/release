@@ -27,7 +27,7 @@ import (
 
 	"k8s.io/release/pkg/git"
 	"sigs.k8s.io/release-utils/command"
-	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/env"
 )
 
 const (
@@ -47,7 +47,7 @@ func newSUT(t *testing.T) *sut {
 	// Bazel test runs have no $HOME set, which prevents git to find its
 	// global .gitconfig. This means we're silently assuming that we're running
 	// inside a container with the actual $HOME of `/root`.
-	if !util.IsEnvSet("HOME") {
+	if !env.IsSet("HOME") {
 		os.Setenv("HOME", "/root")
 	}
 
