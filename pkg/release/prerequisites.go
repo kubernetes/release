@@ -27,7 +27,7 @@ import (
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
 	"sigs.k8s.io/release-utils/command"
-	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/env"
 )
 
 // PrerequisitesChecker is the main type for checking the prerequisites for a
@@ -71,7 +71,7 @@ func (*defaultPrerequisitesChecker) GCloudOutput(
 }
 
 func (*defaultPrerequisitesChecker) IsEnvSet(key string) bool {
-	return util.IsEnvSet(key)
+	return env.IsSet(key)
 }
 
 func (*defaultPrerequisitesChecker) ConfigureGlobalDefaultUserAndEmail() error {

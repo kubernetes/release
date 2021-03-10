@@ -25,6 +25,7 @@ import (
 
 	"k8s.io/release/pkg/mail"
 	"k8s.io/release/pkg/release"
+	"sigs.k8s.io/release-utils/env"
 	"sigs.k8s.io/release-utils/http"
 	"sigs.k8s.io/release-utils/util"
 )
@@ -86,7 +87,7 @@ type sendAnnounceOptions struct {
 var sendAnnounceOpts = &sendAnnounceOptions{}
 
 func init() {
-	sendAnnounceOpts.sendgridAPIKey = util.EnvDefault(sendgridAPIKeyEnvKey, "")
+	sendAnnounceOpts.sendgridAPIKey = env.Default(sendgridAPIKeyEnvKey, "")
 
 	sendAnnounceCmd.PersistentFlags().StringVarP(
 		&sendAnnounceOpts.name,

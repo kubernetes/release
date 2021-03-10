@@ -41,6 +41,7 @@ import (
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/object"
 	"sigs.k8s.io/release-utils/command"
+	"sigs.k8s.io/release-utils/env"
 	rhash "sigs.k8s.io/release-utils/hash"
 	"sigs.k8s.io/release-utils/http"
 	"sigs.k8s.io/release-utils/tar"
@@ -180,19 +181,19 @@ func GetToolRepoURL(org, repo string, useSSH bool) string {
 // GetToolOrg checks if the 'TOOL_ORG' environment variable is set.
 // If 'TOOL_ORG' is non-empty, it returns the value. Otherwise, it returns DefaultToolOrg.
 func GetToolOrg() string {
-	return util.EnvDefault("TOOL_ORG", DefaultToolOrg)
+	return env.Default("TOOL_ORG", DefaultToolOrg)
 }
 
 // GetToolRepo checks if the 'TOOL_REPO' environment variable is set.
 // If 'TOOL_REPO' is non-empty, it returns the value. Otherwise, it returns DefaultToolRepo.
 func GetToolRepo() string {
-	return util.EnvDefault("TOOL_REPO", DefaultToolRepo)
+	return env.Default("TOOL_REPO", DefaultToolRepo)
 }
 
 // GetToolBranch checks if the 'TOOL_BRANCH' environment variable is set.
 // If 'TOOL_BRANCH' is non-empty, it returns the value. Otherwise, it returns DefaultToolBranch.
 func GetToolBranch() string {
-	return util.EnvDefault("TOOL_BRANCH", DefaultToolBranch)
+	return env.Default("TOOL_BRANCH", DefaultToolBranch)
 }
 
 // BuiltWithBazel determines whether the most recent Kubernetes release was built with Bazel.
