@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # include the common image-building Makefiles
-include $(CURDIR)/../../Makefile.common-image $(CURDIR)/../Makefile.build-image
+include $(CURDIR)/../../Makefile.common-image
 
 IMGNAME = go-runner
 APP_VERSION = $(shell cat VERSION)
