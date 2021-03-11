@@ -27,10 +27,16 @@ ARCHS = $(patsubst linux/%,%,$(PLATFORMS))
 # Ensure support for 'docker buildx' and 'docker manifest' commands
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
+.PHONY: check-env
+check-env:
+ifndef REGISTRY
+	$(error REGISTRY is undefined, please set to registry you want to push)
+endif
+
 # build with buildx
 # https://github.com/docker/buildx/issues/59
 .PHONY: container
-container: init-docker-buildx
+container: check-env init-docker-buildx
 	echo "Building $(IMGNAME) for the following platforms: $(PLATFORMS)"
 	@for platform in $(PLATFORMS); do \
 		echo "Starting build for $${platform} platform"; \
