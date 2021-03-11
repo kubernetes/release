@@ -25,6 +25,7 @@ steps:
     - REVISION=$_REVISION
     - GO_VERSION=$_GO_VERSION
     - DISTROLESS_IMAGE=$_DISTROLESS_IMAGE
+    - REGISTRY=$_REGISTRY
     args:
     - '-c'
     - |
@@ -43,6 +44,7 @@ substitutions:
   _REVISION: '0'
   _GO_VERSION: '0.0.0'
   _DISTROLESS_IMAGE: 'static-debian00'
+  _REGISTRY: 'fake.repository/registry-name'
 
 tags:
 - 'go-runner'
