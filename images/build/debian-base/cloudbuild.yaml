@@ -16,6 +16,7 @@ steps:
       - PULL_BASE_REF=$_PULL_BASE_REF
       - IMAGE_VERSION=$_IMAGE_VERSION
       - CONFIG=$_CONFIG
+      - REGISTRY=$_REGISTRY
       - HOME=/root  # for docker buildx
     args:
     - -c
@@ -30,6 +31,7 @@ substitutions:
   _PULL_BASE_REF: 'dev'
   _IMAGE_VERSION: 'codename-v0.0.0'
   _CONFIG: 'codename'
+  _REGISTRY: 'fake.repository/registry-name'
 
 tags:
 - 'debian-base'
