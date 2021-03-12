@@ -9,14 +9,13 @@ steps:
     dir: ./images/build/debian-base
     env:
       - DOCKER_CLI_EXPERIMENTAL=enabled
-      - REGISTRY=gcr.io/$PROJECT_ID
-      - IMAGE=gcr.io/$PROJECT_ID/debian-base
+      - REGISTRY=$_REGISTRY
+      - IMAGE=$_REGISTRY/debian-base
       - BUILD_IMAGE=debian-build
       - TAG=$_GIT_TAG
       - PULL_BASE_REF=$_PULL_BASE_REF
       - IMAGE_VERSION=$_IMAGE_VERSION
       - CONFIG=$_CONFIG
-      - REGISTRY=$_REGISTRY
       - HOME=/root  # for docker buildx
     args:
     - -c

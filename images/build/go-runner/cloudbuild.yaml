@@ -14,7 +14,7 @@ steps:
     dir: ./images/build/go-runner
     env:
     - DOCKER_CLI_EXPERIMENTAL=enabled
-    - REGISTRY=gcr.io/$PROJECT_ID
+    - REGISTRY=$_REGISTRY
     - HOME=/root
     - TAG=$_GIT_TAG
     - PULL_BASE_REF=$_PULL_BASE_REF
@@ -25,7 +25,6 @@ steps:
     - REVISION=$_REVISION
     - GO_VERSION=$_GO_VERSION
     - DISTROLESS_IMAGE=$_DISTROLESS_IMAGE
-    - REGISTRY=$_REGISTRY
     args:
     - '-c'
     - |
