@@ -9,8 +9,8 @@ steps:
     dir: ./images/build/setcap
     env:
       - DOCKER_CLI_EXPERIMENTAL=enabled
-      - REGISTRY=gcr.io/$PROJECT_ID
-      - IMAGE=gcr.io/$PROJECT_ID/setcap
+      - REGISTRY=$_REGISTRY
+      - IMAGE=$_REGISTRY/setcap
       - TAG=$_GIT_TAG
       - PULL_BASE_REF=$_PULL_BASE_REF
       - IMAGE_VERSION=$_IMAGE_VERSION
@@ -30,6 +30,7 @@ substitutions:
   _IMAGE_VERSION: 'v0.0.0'
   _CONFIG: 'codename'
   _DEBIAN_BASE_VERSION: 'v0.0.0'
+  _REGISTRY: 'fake.repository/registry-name'
 
 tags:
 - 'setcap'
