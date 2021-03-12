@@ -9,14 +9,17 @@ steps:
     dir: ./images/build/debian-hyperkube-base
     env:
       - DOCKER_CLI_EXPERIMENTAL=enabled
-      - REGISTRY=gcr.io/$PROJECT_ID
-      - IMAGE=gcr.io/$PROJECT_ID/debian-hyperkube-base
+      - REGISTRY=$_REGISTRY
+      - IMAGE=$_REGISTRY/debian-hyperkube-base
       - HOME=/root  # for docker buildx
     args:
     - -c
     - |
       gcloud auth configure-docker && \
       make all-push
+
+substitutions:
+  _REGISTRY: 'fake.repository/registry-name'
 
 tags:
 - 'debian-hyperkube-base'
