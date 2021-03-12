@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# include the common image-building Makefiles
-include $(CURDIR)/../Makefile.build-image
-
 # set default shell
 SHELL=/bin/bash -o pipefail
 
@@ -46,10 +43,15 @@ endif
 
 ARCHS = $(patsubst linux/%,%,$(PLATFORMS))
 
+check-env:
+ifndef REGISTRY
+	$(error REGISTRY is undefined, please set to registry you want to push)
+endif
+
 # build with buildx
 # https://github.com/docker/buildx/issues/59
 .PHONY: container
-container: init-docker-buildx
+container: check-env init-docker-buildx
 	echo "Building $(IMGNAME) for the following platforms: $(PLATFORMS)"
 	@for platform in $(PLATFORMS); do \
 		echo "Starting build for $${platform} platform"; \
