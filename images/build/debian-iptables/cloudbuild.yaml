@@ -9,8 +9,8 @@ steps:
     dir: ./images/build/debian-iptables
     env:
       - DOCKER_CLI_EXPERIMENTAL=enabled
-      - REGISTRY=gcr.io/$PROJECT_ID
-      - IMAGE=gcr.io/$PROJECT_ID/debian-iptables
+      - REGISTRY=$_REGISTRY
+      - IMAGE=$_REGISTRY/debian-iptables
       - TAG=$_GIT_TAG
       - PULL_BASE_REF=$_PULL_BASE_REF
       - IMAGE_VERSION=$_IMAGE_VERSION
@@ -33,6 +33,7 @@ substitutions:
   _CONFIG: 'codename'
   _DEBIAN_BASE_VERSION: 'v0.0.0'
   _IPTABLES_VERSION: '0.0.0'
+  _REGISTRY: 'fake.repository/registry-name'
 
 tags:
 - 'debian-iptables'
