@@ -8,16 +8,16 @@ steps:
     dir: ./images/releng/ci
     args:
       - build
-      - --tag=gcr.io/$PROJECT_ID/releng-ci:$_GIT_TAG
-      - --tag=gcr.io/$PROJECT_ID/releng-ci:$_IMAGE_VERSION
-      - --tag=gcr.io/$PROJECT_ID/releng-ci:latest
+      - --tag=$_REGISTRY/releng-ci:$_GIT_TAG
+      - --tag=$_REGISTRY/releng-ci:$_IMAGE_VERSION
+      - --tag=$_REGISTRY/releng-ci:latest
       - --build-arg=GO_VERSION=${_GO_VERSION}
       - .
   - name: gcr.io/gcp-runtimes/container-structure-test
     dir: ./images/releng/ci
     args:
       - test
-      - --image=gcr.io/$PROJECT_ID/releng-ci:latest
+      - --image=$_REGISTRY/releng-ci:latest
       - --config=test.yaml
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form
@@ -26,6 +26,7 @@ substitutions:
   _PULL_BASE_REF: 'dev'
   _IMAGE_VERSION: 'v0.5.0'
   _GO_VERSION: '1.16.1'
+  _REGISTRY: 'fake.repository/registry-name'
 images:
   - 'gcr.io/$PROJECT_ID/releng-ci:${_GIT_TAG}'
   - 'gcr.io/$PROJECT_ID/releng-ci:${_IMAGE_VERSION}'
