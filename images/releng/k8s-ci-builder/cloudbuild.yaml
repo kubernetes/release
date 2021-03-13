@@ -16,7 +16,8 @@ steps:
     dir: ./images/releng/k8s-ci-builder
     env:
     - DOCKER_CLI_EXPERIMENTAL=enabled
-    - REGISTRY=gcr.io/$PROJECT_ID
+    - REGISTRY=$_REGISTRY
+    - IMAGE_ARG='$_REGISTRY/k8s-ci-builder:${_GIT_TAG}-${_CONFIG}'
     - HOME=/root
     - TAG=${_GIT_TAG}
     - PULL_BASE_REF=${_PULL_BASE_REF}
@@ -24,7 +25,6 @@ steps:
     - GO_VERSION=${_GO_VERSION}
     - BAZEL_VERSION=${_BAZEL_VERSION}
     - OLD_BAZEL_VERSION=${_OLD_BAZEL_VERSION}
-    - IMAGE_ARG='gcr.io/$PROJECT_ID/k8s-ci-builder:${_GIT_TAG}-${_CONFIG}'
     - SKOPEO_VERSION=${_SKOPEO_VERSION}
     args:
     - '-c'
@@ -42,6 +42,7 @@ substitutions:
   _BAZEL_VERSION: '0.0.0'
   _OLD_BAZEL_VERSION: '0.0.0'
   _SKOPEO_VERSION: 'v0.0.0'
+  _REGISTRY: 'fake.repository/registry-name'
 
 tags:
 - 'k8s-ci-builder'
