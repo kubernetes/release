@@ -8,22 +8,23 @@ steps:
     - build
     - -f
     - ./Dockerfile-kubepkg
-    - --tag=gcr.io/$PROJECT_ID/kubepkg:$_GIT_TAG
-    - --tag=gcr.io/$PROJECT_ID/kubepkg:latest
+    - --tag=$_REGISTRY/kubepkg:$_GIT_TAG
+    - --tag=$_REGISTRY/kubepkg:latest
     - .
   - name: gcr.io/cloud-builders/docker
     args:
     - build
     - -f
     - ./Dockerfile-kubepkg-rpm
-    - --tag=gcr.io/$PROJECT_ID/kubepkg-rpm:$_GIT_TAG
-    - --tag=gcr.io/$PROJECT_ID/kubepkg-rpm:latest
+    - --tag=$_REGISTRY/kubepkg-rpm:$_GIT_TAG
+    - --tag=$_REGISTRY/kubepkg-rpm:latest
     - .
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
   # can be used as a substitution
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
+  _REGISTRY: 'fake.repository/registry-name'
 images:
   - 'gcr.io/$PROJECT_ID/kubepkg:$_GIT_TAG'
   - 'gcr.io/$PROJECT_ID/kubepkg:latest'
