@@ -17,7 +17,6 @@ limitations under the License.
 package release
 
 import (
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -65,7 +64,7 @@ func PrepareWorkspaceStage(directory string) error {
 func PrepareWorkspaceRelease(directory, buildVersion, bucket string) error {
 	logrus.Infof("Preparing workspace for release in %s", directory)
 	logrus.Infof("Searching for staged %s on %s", SourcesTar, bucket)
-	tempDir, err := ioutil.TempDir("", "staged-")
+	tempDir, err := os.MkdirTemp("", "staged-")
 	if err != nil {
 		return errors.Wrap(err, "create staged sources temp dir")
 	}

@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -132,7 +131,7 @@ func ParseManifestFromFile(filePath string) (Manifest, error) {
 	var mfest Manifest
 	var empty Manifest
 
-	b, err := ioutil.ReadFile(filePath)
+	b, err := os.ReadFile(filePath)
 	if err != nil {
 		return empty, err
 	}
@@ -159,7 +158,7 @@ func ParseThinManifestFromFile(filePath string) (Manifest, error) {
 	var mfest Manifest
 	var empty Manifest
 
-	b, err := ioutil.ReadFile(filePath)
+	b, err := os.ReadFile(filePath)
 	if err != nil {
 		return empty, err
 	}
@@ -197,7 +196,7 @@ func ParseImagesFromFile(filePath string) (Images, error) {
 	var images Images
 	var empty Images
 
-	b, err := ioutil.ReadFile(filePath)
+	b, err := os.ReadFile(filePath)
 	if err != nil {
 		return empty, err
 	}
@@ -319,7 +318,7 @@ func ValidateThinManifestDirectoryStructure(
 	// For every subfolder in <dir>/manifests, ensure that a
 	// "promoter-manifest.yaml" file exists, and also that a corresponding file
 	// exists in the "images" folder.
-	files, err := ioutil.ReadDir(manifestDir)
+	files, err := os.ReadDir(manifestDir)
 	if err != nil {
 		return err
 	}
@@ -1095,7 +1094,7 @@ func getJSONSFromProcess(req stream.ExternalRequest) (cipJson.Objects, Errors) {
 		)
 	}
 
-	be, err := ioutil.ReadAll(stderrReader)
+	be, err := io.ReadAll(stderrReader)
 	if err != nil {
 		streamErrs = append(
 			streamErrs,

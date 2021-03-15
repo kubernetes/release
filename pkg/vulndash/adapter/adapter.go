@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -232,7 +231,7 @@ func UpdateVulnerabilityDashboard(
 
 	dashboardJSON := dashboardPath + "dashboard.json"
 	logrus.Infof("writing the vulnerabilities for %s in the file %s", vulnProject, dashboardJSON)
-	err = ioutil.WriteFile(dashboardJSON, jsonFile, 0644)
+	err = os.WriteFile(dashboardJSON, jsonFile, 0644)
 	if err != nil {
 		return errors.Errorf("Unable to create temporary local"+
 			"JSON file for the dashboard: %v", err)

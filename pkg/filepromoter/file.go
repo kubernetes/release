@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -56,7 +55,7 @@ type copyFileOp struct {
 // nolint[gocyclo]
 func (o *copyFileOp) Run(ctx context.Context) error {
 	// Download to our temp file
-	f, err := ioutil.TempFile("", "promoter")
+	f, err := os.CreateTemp("", "promoter")
 	if err != nil {
 		return fmt.Errorf("error creating temp file: %v", err)
 	}

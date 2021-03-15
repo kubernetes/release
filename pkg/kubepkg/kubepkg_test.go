@@ -17,7 +17,6 @@ limitations under the License.
 package kubepkg_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -48,7 +47,7 @@ func newSUT(opts *options.Options) (*kubepkg.Client, *kubepkgfakes.FakeImpl) {
 func sutWithTemplateDir(
 	t *testing.T, opts *options.Options, buildType options.BuildType,
 ) (sut *kubepkg.Client, cleanup func(), mock *kubepkgfakes.FakeImpl) {
-	tempDir, err := ioutil.TempDir("", "kubepkg-test-")
+	tempDir, err := os.MkdirTemp("", "kubepkg-test-")
 	require.Nil(t, err)
 	cleanup = func() { require.Nil(t, os.RemoveAll(tempDir)) }
 

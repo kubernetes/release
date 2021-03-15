@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -207,7 +206,7 @@ func run(opts *options) error {
 	releaseCfgs := &gh2gcs.Config{}
 	if opts.configFilePath != "" {
 		logrus.Infof("Reading the config file %s...", opts.configFilePath)
-		data, err := ioutil.ReadFile(opts.configFilePath)
+		data, err := os.ReadFile(opts.configFilePath)
 		if err != nil {
 			return errors.Wrap(err, "failed to read the file")
 		}
@@ -268,7 +267,7 @@ func (o *options) SetAndValidate() error {
 			return errors.Errorf("when %s flag is set you need to specify the %s", downloadOnlyFlag, outputDirFlag)
 		}
 
-		tmpDir, err := ioutil.TempDir("", "gh2gcs")
+		tmpDir, err := os.MkdirTemp("", "gh2gcs")
 		if err != nil {
 			return errors.Wrap(err, "creating temp directory")
 		}

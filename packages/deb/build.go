@@ -21,7 +21,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -131,7 +131,7 @@ func (c cfg) run() error {
 	var w []work
 
 	srcdir := filepath.Join(c.DistroName, c.Package)
-	dstdir, err := ioutil.TempDir(os.TempDir(), "debs")
+	dstdir, err := os.MkdirTemp("", "debs")
 	if err != nil {
 		return err
 	}
@@ -257,7 +257,7 @@ func fetchVersion(url string) (string, error) {
 		return "", err
 	}
 
-	versionBytes, err := ioutil.ReadAll(res.Body)
+	versionBytes, err := io.ReadAll(res.Body)
 	res.Body.Close()
 	if err != nil {
 		return "", err

@@ -19,7 +19,6 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -203,7 +202,7 @@ func runBuildReleaseAnnounce(opts *buildReleaseAnnounceOptions, buildOpts *build
 		return err
 	}
 
-	changelogHTML, err := ioutil.ReadFile(opts.changelogHTML)
+	changelogHTML, err := os.ReadFile(opts.changelogHTML)
 	if err != nil {
 		return err
 	}
@@ -237,14 +236,14 @@ func (opts *buildAnnounceOptions) saveAnnouncement(announcementSubject string, a
 
 	absOutputPath := filepath.Join(opts.workDir, "announcement.html")
 	logrus.Infof("Writing HTML file to %s", absOutputPath)
-	err := ioutil.WriteFile(absOutputPath, annoucement.Bytes(), os.FileMode(0644))
+	err := os.WriteFile(absOutputPath, annoucement.Bytes(), os.FileMode(0644))
 	if err != nil {
 		return errors.Wrap(err, "saving announcement.html")
 	}
 
 	absOutputPath = filepath.Join(opts.workDir, "announcement-subject.txt")
 	logrus.Infof("Writing announcement subject to %s", absOutputPath)
-	err = ioutil.WriteFile(absOutputPath, []byte(announcementSubject), os.FileMode(0644))
+	err = os.WriteFile(absOutputPath, []byte(announcementSubject), os.FileMode(0644))
 	if err != nil {
 		return errors.Wrap(err, "saving announcement-subject.txt")
 	}

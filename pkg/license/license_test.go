@@ -17,7 +17,6 @@ limitations under the License.
 package license_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -96,7 +95,7 @@ func TestUSPDXWriteLicensesAsText(t *testing.T) {
 	require.Nil(t, spdx.LoadLicenses())
 
 	// Create a test directory
-	tempdir, err := ioutil.TempDir(os.TempDir(), "spdx-test-")
+	tempdir, err := os.MkdirTemp("", "spdx-test-")
 	require.Nil(t, err)
 	defer func() { require.Nil(t, os.RemoveAll(tempdir)) }()
 

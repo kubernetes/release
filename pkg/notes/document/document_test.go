@@ -18,7 +18,6 @@ package document
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,7 +31,7 @@ import (
 
 func TestFileMetadata(t *testing.T) {
 	// Given
-	dir, err := ioutil.TempDir("", "")
+	dir, err := os.MkdirTemp("", "")
 	require.Nil(t, err)
 	defer os.RemoveAll(dir)
 
@@ -61,7 +60,7 @@ func TestFileMetadata(t *testing.T) {
 		"kubernetes-src.tar.gz",
 		"kubernetes.tar.gz",
 	} {
-		require.Nil(t, ioutil.WriteFile(
+		require.Nil(t, os.WriteFile(
 			filepath.Join(dir, file), []byte{1, 2, 3}, os.FileMode(0644),
 		))
 	}
@@ -139,14 +138,14 @@ func TestDocument_RenderMarkdownTemplateFailure(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dir, err := ioutil.TempDir("", "")
+			dir, err := os.MkdirTemp("", "")
 			require.Nil(t, err)
 			defer os.RemoveAll(dir)
 
 			if tt.templateExist {
 				fileName := strings.Split(tt.templateSpec, ":")[1]
 				p := filepath.Join(dir, fileName)
-				require.Nil(t, ioutil.WriteFile(p, []byte(tt.templateContents), 0664))
+				require.Nil(t, os.WriteFile(p, []byte(tt.templateContents), 0664))
 			}
 
 			doc := Document{}
@@ -158,7 +157,7 @@ func TestDocument_RenderMarkdownTemplateFailure(t *testing.T) {
 
 func TestCreateDownloadsTable(t *testing.T) {
 	// Given
-	dir, err := ioutil.TempDir("", "")
+	dir, err := os.MkdirTemp("", "")
 	require.Nil(t, err)
 	defer os.RemoveAll(dir)
 	setupTestDir(t, dir)
@@ -249,7 +248,7 @@ func setupTestDir(t *testing.T, dir string) {
 		"kubernetes-src.tar.gz",
 		"kubernetes.tar.gz",
 	} {
-		require.Nil(t, ioutil.WriteFile(
+		require.Nil(t, os.WriteFile(
 			filepath.Join(dir, file), []byte{1, 2, 3}, os.FileMode(0644),
 		))
 	}
@@ -488,7 +487,7 @@ func TestDocument_RenderMarkdownTemplate(t *testing.T) {
 			templateSpec := tt.templateSpec
 			var dir string
 			if tt.hasDownloads || tt.userTemplate {
-				dir, err = ioutil.TempDir("", "")
+				dir, err = os.MkdirTemp("", "")
 				require.NoError(t, err, "Creating tmpDir")
 				defer os.RemoveAll(dir)
 
@@ -502,7 +501,7 @@ func TestDocument_RenderMarkdownTemplate(t *testing.T) {
 
 					require.NoError(
 						t,
-						ioutil.WriteFile(p, []byte(defaultReleaseNotesTemplate), 0664),
+						os.WriteFile(p, []byte(defaultReleaseNotesTemplate), 0664),
 						"Writing user specified template.")
 				}
 			}
@@ -527,7 +526,7 @@ func makeReleaseNote(kind notes.Kind, markdown string) *notes.ReleaseNote {
 }
 
 func readFile(t *testing.T, path string) string {
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	require.NoError(t, err, "Reading file %q", path)
 	return string(b)
 }

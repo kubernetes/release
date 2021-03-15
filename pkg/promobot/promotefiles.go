@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -161,7 +160,7 @@ func readFilestores(p string) ([]api.Filestore, error) {
 		return nil, fmt.Errorf("FilestoresPath is required")
 	}
 
-	b, err := ioutil.ReadFile(p)
+	b, err := os.ReadFile(p)
 	if err != nil {
 		return nil, fmt.Errorf("error reading manifest %q: %v", p, err)
 	}
@@ -204,7 +203,7 @@ func readFiles(filesPath string) ([]api.File, error) {
 
 	var files []api.File
 	for _, p := range paths {
-		b, err := ioutil.ReadFile(p)
+		b, err := os.ReadFile(p)
 		if err != nil {
 			return nil, xerrors.Errorf("error reading file %q: %w", p, err)
 		}

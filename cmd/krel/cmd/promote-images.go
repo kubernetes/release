@@ -19,7 +19,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -185,7 +184,7 @@ func runPromote(opts *promoteOptions) error {
 	if mustRun(opts, "Grow the manifests to add the new tags?") {
 		if util.Exists(filepath.Join(repo.Dir(), imagesListPath)) {
 			logrus.Debug("Reading the current image promoter manifest (image list)")
-			oldlist, err = ioutil.ReadFile(filepath.Join(repo.Dir(), imagesListPath))
+			oldlist, err = os.ReadFile(filepath.Join(repo.Dir(), imagesListPath))
 			if err != nil {
 				return errors.Wrap(err, "while reading the current promoter image list")
 			}
@@ -235,7 +234,7 @@ func runPromote(opts *promoteOptions) error {
 	if len(oldlist) > 0 {
 		logrus.Debug("Checking if the image list was modified")
 		// read the newly modified manifest
-		newlist, err := ioutil.ReadFile(filepath.Join(repo.Dir(), imagesListPath))
+		newlist, err := os.ReadFile(filepath.Join(repo.Dir(), imagesListPath))
 		if err != nil {
 			return errors.Wrap(err, "while reading the modified manifest images list")
 		}

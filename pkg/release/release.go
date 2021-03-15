@@ -22,7 +22,7 @@ import (
 	"crypto/sha512"
 	"fmt"
 	"hash"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -205,12 +205,12 @@ func BuiltWithBazel(workDir string) (bool, error) {
 
 // ReadBazelVersion reads the version from a Bazel build.
 func ReadBazelVersion(workDir string) (string, error) {
-	version, err := ioutil.ReadFile(filepath.Join(workDir, "bazel-bin", "version"))
+	version, err := os.ReadFile(filepath.Join(workDir, "bazel-bin", "version"))
 	if os.IsNotExist(err) {
 		// The check for version in bazel-genfiles can be removed once everyone is
 		// off of versions before 0.25.0.
 		// https://github.com/bazelbuild/bazel/issues/8651
-		version, err = ioutil.ReadFile(filepath.Join(workDir, "bazel-genfiles/version"))
+		version, err = os.ReadFile(filepath.Join(workDir, "bazel-genfiles/version"))
 	}
 	return string(version), err
 }
@@ -224,7 +224,7 @@ func ReadDockerizedVersion(workDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	file, err := ioutil.ReadAll(reader)
+	file, err := io.ReadAll(reader)
 	return strings.TrimSpace(string(file)), err
 }
 
@@ -325,14 +325,14 @@ func GetImageTags(workDir string) (imagesList map[string][]string, err error) {
 		return nil, errors.Errorf("images directory %s does not exist", imagesDir)
 	}
 
-	archDirs, err := ioutil.ReadDir(imagesDir)
+	archDirs, err := os.ReadDir(imagesDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading images dir")
 	}
 
 	for _, archDir := range archDirs {
 		imagesList[archDir.Name()] = make([]string, 0)
-		tarFiles, err := ioutil.ReadDir(filepath.Join(imagesDir, archDir.Name()))
+		tarFiles, err := os.ReadDir(filepath.Join(imagesDir, archDir.Name()))
 		if err != nil {
 			return nil, errors.Wrapf(err, "listing tar files for %s", archDir.Name())
 		}
@@ -412,7 +412,7 @@ func GetOCIManifest(tarPath string) (*ocispec.Manifest, error) {
 // their platform into the `targetPath`.
 func CopyBinaries(rootPath, targetPath string) error {
 	platformsPath := filepath.Join(rootPath, "client")
-	platformsAndArches, err := ioutil.ReadDir(platformsPath)
+	platformsAndArches, err := os.ReadDir(platformsPath)
 	if err != nil {
 		return errors.Wrapf(err, "retrieve platforms from %s", platformsPath)
 	}
@@ -558,7 +558,7 @@ func WriteChecksums(rootPath string) error {
 		shaFileName := fmt.Sprintf("%s.sha%d", fileName, hasher.Size()*8)
 
 		return errors.Wrapf(
-			ioutil.WriteFile(shaFileName, []byte(sha), os.FileMode(0o644)),
+			os.WriteFile(shaFileName, []byte(sha), os.FileMode(0o644)),
 			"write SHA to file %s", shaFileName,
 		)
 	}
@@ -593,7 +593,7 @@ func NewPromoterImageListFromFile(manifestPath string) (imagesList *ImagePromote
 	if !util.Exists(manifestPath) {
 		return nil, errors.New("could not find image promoter manifest")
 	}
-	yamlCode, err := ioutil.ReadFile(manifestPath)
+	yamlCode, err := os.ReadFile(manifestPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading yaml code from file")
 	}
@@ -664,7 +664,7 @@ func (imagesList *ImagePromoterImages) Write(filePath string) error {
 		return errors.Wrap(err, "while marshalling image list")
 	}
 	// Write the yaml into the specified file
-	if err := ioutil.WriteFile(filePath, yamlCode, os.FileMode(0o644)); err != nil {
+	if err := os.WriteFile(filePath, yamlCode, os.FileMode(0o644)); err != nil {
 		return errors.Wrap(err, "writing yaml code into file")
 	}
 

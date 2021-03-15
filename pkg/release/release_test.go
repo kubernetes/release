@@ -22,7 +22,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -109,12 +108,12 @@ func TestGetToolBranchSuccess(t *testing.T) {
 }
 
 func TestBuiltWithBazel(t *testing.T) {
-	baseTmpDir, err := ioutil.TempDir("", "")
+	baseTmpDir, err := os.MkdirTemp("", "")
 	require.Nil(t, err)
 
-	bazelTmpDir, err := ioutil.TempDir("", "bazel")
+	bazelTmpDir, err := os.MkdirTemp("", "bazel")
 	require.Nil(t, err)
-	dockerTmpDir, err := ioutil.TempDir("", "docker")
+	dockerTmpDir, err := os.MkdirTemp("", "docker")
 	require.Nil(t, err)
 
 	// Build directories.
@@ -125,13 +124,13 @@ func TestBuiltWithBazel(t *testing.T) {
 
 	// Create test files.
 	baseBazelFile := filepath.Join(baseTmpDir, "bazel-bin/build/release-tars/kubernetes.tar.gz")
-	require.Nil(t, ioutil.WriteFile(
+	require.Nil(t, os.WriteFile(
 		baseBazelFile,
 		[]byte("test"),
 		os.FileMode(0644),
 	))
 	bazelFile := filepath.Join(bazelTmpDir, "bazel-bin/build/release-tars/kubernetes.tar.gz")
-	require.Nil(t, ioutil.WriteFile(
+	require.Nil(t, os.WriteFile(
 		bazelFile,
 		[]byte("test"),
 		os.FileMode(0644),
@@ -142,7 +141,7 @@ func TestBuiltWithBazel(t *testing.T) {
 	baseDockerFile := filepath.Join(
 		baseTmpDir, BuildDir, "release-tars/kubernetes.tar.gz",
 	)
-	require.Nil(t, ioutil.WriteFile(
+	require.Nil(t, os.WriteFile(
 		baseDockerFile,
 		[]byte("test"),
 		os.FileMode(0644),
@@ -150,7 +149,7 @@ func TestBuiltWithBazel(t *testing.T) {
 	dockerFile := filepath.Join(
 		dockerTmpDir, BuildDir, "release-tars/kubernetes.tar.gz",
 	)
-	require.Nil(t, ioutil.WriteFile(
+	require.Nil(t, os.WriteFile(
 		dockerFile,
 		[]byte("test"),
 		os.FileMode(0644),
@@ -243,7 +242,7 @@ func TestReadBazelVersion(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			baseTmpDir, err := ioutil.TempDir("", "")
+			baseTmpDir, err := os.MkdirTemp("", "")
 			if err != nil {
 				t.Fatalf("unable to create temp dir: %v", err)
 			}
@@ -253,7 +252,7 @@ func TestReadBazelVersion(t *testing.T) {
 			require.Nil(t, os.MkdirAll(filepath.Join(baseTmpDir, tc.outdir), os.ModePerm))
 
 			bazelVersionFile := filepath.Join(baseTmpDir, tc.outdir, "version")
-			require.Nil(t, ioutil.WriteFile(
+			require.Nil(t, os.WriteFile(
 				bazelVersionFile,
 				[]byte(version),
 				os.FileMode(0644),
@@ -267,7 +266,7 @@ func TestReadBazelVersion(t *testing.T) {
 }
 
 func TestReadDockerVersion(t *testing.T) {
-	baseTmpDir, err := ioutil.TempDir("", "ahhh")
+	baseTmpDir, err := os.MkdirTemp("", "ahhh")
 	require.Nil(t, err)
 
 	release := "kubernetes"
@@ -280,7 +279,7 @@ func TestReadDockerVersion(t *testing.T) {
 	var b bytes.Buffer
 
 	// Create version file
-	err = ioutil.WriteFile(filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, "kubernetes", "version"), versionBytes, os.FileMode(0644))
+	err = os.WriteFile(filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, "kubernetes", "version"), versionBytes, os.FileMode(0644))
 	require.Nil(t, err)
 
 	// Create a zip archive.
@@ -296,7 +295,7 @@ func TestReadDockerVersion(t *testing.T) {
 	require.Nil(t, err)
 	require.Nil(t, tw.Close())
 	require.Nil(t, gz.Close())
-	require.Nil(t, ioutil.WriteFile(
+	require.Nil(t, os.WriteFile(
 		filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, KubernetesTar),
 		b.Bytes(),
 		os.FileMode(0644),
@@ -451,7 +450,7 @@ func TestGetKubecrossVersionFailureEmpty(t *testing.T) {
 
 // Writes a couple of test doccker images
 func writeTestImages(t *testing.T, testIDs map[string]string) (mockPath string) {
-	tmpDir, err := ioutil.TempDir("", "")
+	tmpDir, err := os.MkdirTemp("", "")
 	require.Nil(t, err)
 	// Sample manifests
 	mockManifests := map[string]string{
@@ -511,7 +510,7 @@ func writeTestImages(t *testing.T, testIDs map[string]string) (mockPath string) 
 		}
 		require.Nil(t, tw.Close())
 
-		require.Nil(t, ioutil.WriteFile(
+		require.Nil(t, os.WriteFile(
 			filepath.Join(filepath.Join(tmpDir, ImagesPath, arch), "kube-apiserver.tar"),
 			b.Bytes(),
 			os.FileMode(0o644),
@@ -547,7 +546,7 @@ func TestGetTarManifest(t *testing.T) {
 	defer cleanupTmps(t, mockDir)
 
 	// Read the mock manifests and check we are reporting the data
-	finfos, err := ioutil.ReadDir(filepath.Join(mockDir, ImagesPath))
+	finfos, err := os.ReadDir(filepath.Join(mockDir, ImagesPath))
 	require.Nil(t, err, "reading mock monifests directory")
 	for _, finfo := range finfos {
 		manifest, err := GetTarManifest(filepath.Join(mockDir, ImagesPath, finfo.Name(), "kube-apiserver.tar"))
@@ -595,7 +594,7 @@ func TestCopyBinaries(t *testing.T) {
 	}{
 		{ // success client
 			prepare: func() (string, func()) {
-				tempDir, err := ioutil.TempDir("", "test-copy-binaries-")
+				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
 				require.Nil(t, err)
 
 				binDir := filepath.Join(
@@ -619,14 +618,14 @@ func TestCopyBinaries(t *testing.T) {
 				require.FileExists(t, filepath.Join(binDir, "1"))
 				require.FileExists(t, filepath.Join(binDir, "2"))
 				require.FileExists(t, filepath.Join(binDir, "3"))
-				dirContent, err := ioutil.ReadDir(binDir)
+				dirContent, err := os.ReadDir(binDir)
 				require.Nil(t, err)
 				require.Len(t, dirContent, 3)
 			},
 		},
 		{ // success client skip non-dir
 			prepare: func() (string, func()) {
-				tempDir, err := ioutil.TempDir("", "test-copy-binaries-")
+				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
 				require.Nil(t, err)
 
 				require.Nil(t, os.MkdirAll(filepath.Join(
@@ -644,7 +643,7 @@ func TestCopyBinaries(t *testing.T) {
 		},
 		{ // success server
 			prepare: func() (string, func()) {
-				tempDir, err := ioutil.TempDir("", "test-copy-binaries-")
+				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
 				require.Nil(t, err)
 
 				require.Nil(t, os.MkdirAll(filepath.Join(
@@ -662,7 +661,7 @@ func TestCopyBinaries(t *testing.T) {
 		},
 		{ // success node
 			prepare: func() (string, func()) {
-				tempDir, err := ioutil.TempDir("", "test-copy-binaries-")
+				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
 				require.Nil(t, err)
 
 				require.Nil(t, os.MkdirAll(filepath.Join(
@@ -680,7 +679,7 @@ func TestCopyBinaries(t *testing.T) {
 		},
 		{ // failure wrong server dir
 			prepare: func() (string, func()) {
-				tempDir, err := ioutil.TempDir("", "test-copy-binaries-")
+				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
 				require.Nil(t, err)
 
 				require.Nil(t, os.MkdirAll(filepath.Join(
@@ -698,7 +697,7 @@ func TestCopyBinaries(t *testing.T) {
 		},
 		{ // failure wrong node dir
 			prepare: func() (string, func()) {
-				tempDir, err := ioutil.TempDir("", "test-copy-binaries-")
+				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
 				require.Nil(t, err)
 
 				require.Nil(t, os.MkdirAll(filepath.Join(
@@ -739,11 +738,11 @@ func TestWriteChecksums(t *testing.T) {
 	}{
 		{ // success
 			prepare: func() (rootPath string, cleanup func()) {
-				tempDir, err := ioutil.TempDir("", "write-checksum-test-")
+				tempDir, err := os.MkdirTemp("", "write-checksum-test-")
 				require.Nil(t, err)
 
 				for i, v := range []byte{1, 2, 4, 8, 16, 32, 64, 128} {
-					require.Nil(t, ioutil.WriteFile(
+					require.Nil(t, os.WriteFile(
 						filepath.Join(tempDir, fmt.Sprintf("%d", i)),
 						[]byte{v}, os.FileMode(0o644),
 					))
@@ -779,13 +778,13 @@ func TestWriteChecksums(t *testing.T) {
 					},
 				} {
 					for i, expectedSha := range shas {
-						shaSums, err := ioutil.ReadFile(filepath.Join(
+						shaSums, err := os.ReadFile(filepath.Join(
 							rootPath, fmt.Sprintf("SHA%dSUMS", digest),
 						))
 						require.Nil(t, err)
 						require.Contains(t, string(shaSums), expectedSha)
 
-						sha, err := ioutil.ReadFile(filepath.Join(
+						sha, err := os.ReadFile(filepath.Join(
 							rootPath, fmt.Sprintf("%d.sha%d", i, digest),
 						))
 						require.Nil(t, err)
@@ -797,7 +796,7 @@ func TestWriteChecksums(t *testing.T) {
 
 		{ // success no content
 			prepare: func() (rootPath string, cleanup func()) {
-				tempDir, err := ioutil.TempDir("", "write-checksum-test-")
+				tempDir, err := os.MkdirTemp("", "write-checksum-test-")
 				require.Nil(t, err)
 
 				return tempDir, func() {
@@ -810,7 +809,7 @@ func TestWriteChecksums(t *testing.T) {
 		},
 		{ // failure dir not existing
 			prepare: func() (rootPath string, cleanup func()) {
-				tempDir, err := ioutil.TempDir("", "write-checksum-test-")
+				tempDir, err := os.MkdirTemp("", "write-checksum-test-")
 				require.Nil(t, err)
 				require.Nil(t, os.RemoveAll(tempDir))
 
@@ -839,7 +838,7 @@ func TestNewPromoterImageListFromFile(t *testing.T) {
 	listYAML += "    \"sha256:927d98197ec1141a368550822d18fa1c60bdae27b78b0c004f705f548c07814f\": [\"3.2\"]\n"
 	listYAML += "    \"sha256:a319ac2280eb7e3a59e252e54b76327cb4a33cf8389053b0d78277f22bbca2fa\": [\"3.3\"]\n"
 
-	tempFile, err := ioutil.TempFile(os.TempDir(), "release-test")
+	tempFile, err := os.CreateTemp("", "release-test")
 	require.Nil(t, err, "creating temp file")
 	defer os.Remove(tempFile.Name())
 
@@ -954,7 +953,7 @@ func TestPromoterImageWrite(t *testing.T) {
 	expectedFile += "- name: kube-scheduler\n  dmap:\n"
 	expectedFile += "    \"sha256:022b81d70447014f63fdc734df48cb9e3a2854c48f65acdca67aac5c1974fc22\": [\"v1.19.0-rc.2\"]\n"
 
-	tempFile, err := ioutil.TempFile(os.TempDir(), "release-test")
+	tempFile, err := os.CreateTemp("", "release-test")
 	require.Nil(t, err, "creating temp file")
 	defer os.Remove(tempFile.Name())
 
@@ -962,7 +961,7 @@ func TestPromoterImageWrite(t *testing.T) {
 	require.Nil(t, err, "writing data to disk")
 
 	// Read back the file to see if it correct
-	fileContents, err := ioutil.ReadFile(tempFile.Name())
+	fileContents, err := os.ReadFile(tempFile.Name())
 	require.Nil(t, err, "reading temporary file")
 
 	require.Equal(t, expectedFile, string(fileContents))

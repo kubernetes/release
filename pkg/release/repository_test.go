@@ -18,7 +18,6 @@ package release_test
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -38,7 +37,7 @@ type sut struct {
 }
 
 func newSUT(t *testing.T) *sut {
-	dir, err := ioutil.TempDir("", "k8s-test-")
+	dir, err := os.MkdirTemp("", "k8s-test-")
 	require.Nil(t, err)
 
 	_, err = gogit.PlainInit(dir, false)

@@ -20,7 +20,6 @@ package license
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -85,7 +84,7 @@ type ReaderOptions struct {
 func (ro *ReaderOptions) Validate() error {
 	// if there is no working dir, create one
 	if ro.WorkDir == "" {
-		dir, err := ioutil.TempDir(os.TempDir(), "license-reader-")
+		dir, err := os.MkdirTemp("", "license-reader-")
 		if err != nil {
 			return errors.Wrap(err, "creating working dir")
 		}

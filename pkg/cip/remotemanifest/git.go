@@ -18,7 +18,6 @@ package remotemanifest
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -87,7 +86,7 @@ func cloneToTempDir(
 	repoURL fmt.Stringer,
 	branch string,
 ) (string, error) {
-	tdir, err := ioutil.TempDir("", "k8s.io-")
+	tdir, err := os.MkdirTemp("", "k8s.io-")
 	if err != nil {
 		return "", err
 	}

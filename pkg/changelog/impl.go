@@ -18,7 +18,6 @@ package changelog
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -159,7 +158,7 @@ func (*defaultImpl) RepoDir(repo *git.Repo) string {
 func (*defaultImpl) WriteFile(
 	filename string, data []byte, perm os.FileMode,
 ) error {
-	return ioutil.WriteFile(filename, data, perm)
+	return os.WriteFile(filename, data, perm)
 }
 
 func (*defaultImpl) Stat(name string) (os.FileInfo, error) {
@@ -167,7 +166,7 @@ func (*defaultImpl) Stat(name string) (os.FileInfo, error) {
 }
 
 func (*defaultImpl) ReadFile(filename string) ([]byte, error) {
-	return ioutil.ReadFile(filename)
+	return os.ReadFile(filename)
 }
 
 func (*defaultImpl) MarkdownToHTML(

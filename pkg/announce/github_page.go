@@ -19,7 +19,6 @@ package announce
 import (
 	"bytes"
 	"html/template"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -390,7 +389,7 @@ func (o *GitHubPageOptions) ReadTemplate(templatePath string) error {
 	}
 
 	// Otherwise, read a custom template from a file
-	templateData, err := ioutil.ReadFile(templatePath)
+	templateData, err := os.ReadFile(templatePath)
 	if err != nil {
 		return errors.Wrap(err, "reading page template text")
 	}

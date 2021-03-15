@@ -19,7 +19,7 @@ package document
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -359,7 +359,7 @@ func (d *Document) template(templateSpec string) (string, error) {
 	}
 
 	// Assume file-based template
-	b, err := ioutil.ReadFile(templatePathOrOnline)
+	b, err := os.ReadFile(templatePathOrOnline)
 	if err != nil {
 		return "", errors.Wrap(err, "reading template")
 	}

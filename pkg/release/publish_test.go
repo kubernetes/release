@@ -17,7 +17,6 @@ limitations under the License.
 package release_test
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -58,7 +57,7 @@ func TestPublishVersion(t *testing.T) {
 			version: testVersion,
 			fast:    true,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := ioutil.TempDir("", "publish-version-test-")
+				tempDir, err := os.MkdirTemp("", "publish-version-test-")
 				require.Nil(t, err)
 
 				mock.GSUtilOutputReturnsOnCall(0, olderTestVersion, nil)
@@ -76,7 +75,7 @@ func TestPublishVersion(t *testing.T) {
 			version: testVersion,
 			fast:    true,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := ioutil.TempDir("", "publish-version-test-")
+				tempDir, err := os.MkdirTemp("", "publish-version-test-")
 				require.Nil(t, err)
 
 				mock.GetMarkerPathReturns("", err)
@@ -93,7 +92,7 @@ func TestPublishVersion(t *testing.T) {
 			version:       testVersion,
 			privateBucket: true,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := ioutil.TempDir("", "publish-version-test-")
+				tempDir, err := os.MkdirTemp("", "publish-version-test-")
 				require.Nil(t, err)
 
 				mockVersionMarkers(mock)
@@ -111,7 +110,7 @@ func TestPublishVersion(t *testing.T) {
 			version:       testVersion,
 			privateBucket: true,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := ioutil.TempDir("", "publish-version-test-")
+				tempDir, err := os.MkdirTemp("", "publish-version-test-")
 				require.Nil(t, err)
 
 				mockVersionMarkers(mock)
@@ -129,7 +128,7 @@ func TestPublishVersion(t *testing.T) {
 			version:       testVersion,
 			privateBucket: true,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := ioutil.TempDir("", "publish-version-test-")
+				tempDir, err := os.MkdirTemp("", "publish-version-test-")
 				require.Nil(t, err)
 
 				mockVersionMarkers(mock)
@@ -147,7 +146,7 @@ func TestPublishVersion(t *testing.T) {
 			version:       testVersion,
 			privateBucket: false,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := ioutil.TempDir("", "publish-version-test-")
+				tempDir, err := os.MkdirTemp("", "publish-version-test-")
 				require.Nil(t, err)
 
 				mockVersionMarkers(mock)
@@ -165,7 +164,7 @@ func TestPublishVersion(t *testing.T) {
 			version:       testVersion,
 			privateBucket: false,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := ioutil.TempDir("", "publish-version-test-")
+				tempDir, err := os.MkdirTemp("", "publish-version-test-")
 				require.Nil(t, err)
 				mockVersionMarkers(mock)
 				mock.GetURLResponseReturns("", errors.New(""))
@@ -182,7 +181,7 @@ func TestPublishVersion(t *testing.T) {
 			version:       testVersion,
 			privateBucket: false,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := ioutil.TempDir("", "publish-version-test-")
+				tempDir, err := os.MkdirTemp("", "publish-version-test-")
 				require.Nil(t, err)
 
 				mock.GSUtilReturnsOnCall(0, errors.New(""))
@@ -198,7 +197,7 @@ func TestPublishVersion(t *testing.T) {
 			gcsRoot: "release",
 			version: "wrong",
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := ioutil.TempDir("", "publish-version-test-")
+				tempDir, err := os.MkdirTemp("", "publish-version-test-")
 				require.Nil(t, err)
 
 				return tempDir, func() {
@@ -234,20 +233,20 @@ func TestPublishReleaseNotesIndex(t *testing.T) {
 	}{
 		{ // success not existing
 			prepare: func(mock *releasefakes.FakePublisherClient) {
-				mock.TempFileCalls(ioutil.TempFile)
+				mock.TempFileCalls(os.CreateTemp)
 			},
 			shouldError: false,
 		},
 		{ // success existing
 			prepare: func(mock *releasefakes.FakePublisherClient) {
-				mock.TempFileCalls(ioutil.TempFile)
+				mock.TempFileCalls(os.CreateTemp)
 				mock.GSUtilStatusReturns(true, nil)
 			},
 			shouldError: false,
 		},
 		{ // failure CopyToRemote
 			prepare: func(mock *releasefakes.FakePublisherClient) {
-				mock.TempFileCalls(ioutil.TempFile)
+				mock.TempFileCalls(os.CreateTemp)
 				mock.CopyToRemoteReturns(err)
 			},
 			shouldError: true,

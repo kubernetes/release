@@ -18,7 +18,6 @@ package license
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -108,7 +107,7 @@ type SPDXLicense struct {
 // WriteText writes the SPDX license text to a text file
 func (license *SPDXLicense) WriteText(filePath string) error {
 	return errors.Wrap(
-		ioutil.WriteFile(
+		os.WriteFile(
 			filePath, []byte(license.LicenseText), os.FileMode(0o644),
 		), "while writing license to text file",
 	)

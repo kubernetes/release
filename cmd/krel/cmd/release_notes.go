@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -450,14 +449,14 @@ func createDraftPR(repoPath, tag string) (err error) {
 	logrus.Debugf("Release notes draft files will be written to %s", releaseDir)
 
 	// Write the markdown draft
-	err = ioutil.WriteFile(filepath.Join(releaseDir, draftMarkdownFile), []byte(result.markdown), 0644)
+	err = os.WriteFile(filepath.Join(releaseDir, draftMarkdownFile), []byte(result.markdown), 0644)
 	if err != nil {
 		return errors.Wrapf(err, "writing release notes draft")
 	}
 	logrus.Infof("Release Notes Markdown Draft written to %s", filepath.Join(releaseDir, draftMarkdownFile))
 
 	// Write the JSON file of the current notes
-	err = ioutil.WriteFile(filepath.Join(releaseDir, draftJSONFile), []byte(result.json), 0644)
+	err = os.WriteFile(filepath.Join(releaseDir, draftJSONFile), []byte(result.json), 0644)
 	if err != nil {
 		return errors.Wrapf(err, "writing release notes json file")
 	}
@@ -683,7 +682,7 @@ func addReferenceToAssetsFile(repoPath, newJSONFile string) error {
 	}
 
 	// write the modified assets.ts file
-	if err := ioutil.WriteFile(assetsFullPath, assetsBuffer.Bytes(), os.FileMode(0o644)); err != nil {
+	if err := os.WriteFile(assetsFullPath, assetsBuffer.Bytes(), os.FileMode(0o644)); err != nil {
 		return errors.Wrap(err, "writing assets.ts file")
 	}
 
@@ -750,7 +749,7 @@ func createWebsitePR(repoPath, tag string) (err error) {
 	// generate the notes
 	jsonNotesPath := filepath.Join("src", "assets", jsonNotesFilename)
 	logrus.Debugf("Release notes json file will be written to %s", filepath.Join(k8sSigsRepo.Dir(), jsonNotesPath))
-	if err := ioutil.WriteFile(
+	if err := os.WriteFile(
 		filepath.Join(k8sSigsRepo.Dir(), jsonNotesPath), []byte(jsonStr), os.FileMode(0o644),
 	); err != nil {
 		return errors.Wrapf(err, "writing release notes json file")
@@ -1063,7 +1062,7 @@ func (sd *sessionData) Save() error {
 		return errors.Wrap(err, "marshaling session data")
 	}
 
-	if err := ioutil.WriteFile(
+	if err := os.WriteFile(
 		filepath.Join(sd.Path, fmt.Sprintf("maps-%d.json", sd.Date)),
 		jsonData, os.FileMode(0o644)); err != nil {
 		return errors.Wrap(err, "writing session data to disk")
@@ -1073,7 +1072,7 @@ func (sd *sessionData) Save() error {
 
 // readFixSessions reads all the previous fixing data
 func readFixSessions(sessionPath string) (pullRequestChecklist map[int]string, err error) {
-	files, err := ioutil.ReadDir(sessionPath)
+	files, err := os.ReadDir(sessionPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading working directory")
 	}
@@ -1087,7 +1086,7 @@ func readFixSessions(sessionPath string) (pullRequestChecklist map[int]string, e
 		currentSession := &sessionData{}
 		if strings.HasSuffix(fileData.Name(), ".json") {
 			logrus.Debugf("Reading session data from %s", fileData.Name())
-			jsonData, err := ioutil.ReadFile(filepath.Join(sessionPath, fileData.Name()))
+			jsonData, err := os.ReadFile(filepath.Join(sessionPath, fileData.Name()))
 			if err != nil {
 				return nil, errors.Wrapf(err, "reading session data from %s", fileData.Name())
 			}
@@ -1473,7 +1472,7 @@ func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.R
 
 	// Write the new map, removing the instructions
 	mapPath := filepath.Join(workDir, mapsMainDirectory, fmt.Sprintf("pr-%d-map.yaml", pr))
-	err = ioutil.WriteFile(mapPath, newYAML, os.FileMode(0o644))
+	err = os.WriteFile(mapPath, newYAML, os.FileMode(0o644))
 	if err != nil {
 		logrus.Errorf("Error writing map to %s: %s", mapPath, err)
 		return true, errors.Wrap(err, "writing modified release note map")
