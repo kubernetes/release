@@ -19,7 +19,7 @@ package notes
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -36,7 +36,7 @@ import (
 
 func TestMain(m *testing.M) {
 	// logrus, shut up
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	os.Exit(m.Run())
 }
 

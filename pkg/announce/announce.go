@@ -18,7 +18,7 @@ package announce
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -99,7 +99,7 @@ func CreateForRelease(opts *Options) error {
 
 	// Read the changelog from the specified file if we got one
 	if opts.changelogFile != "" {
-		changelogData, err := ioutil.ReadFile(opts.changelogFile)
+		changelogData, err := os.ReadFile(opts.changelogFile)
 		if err != nil {
 			return errors.Wrap(err, "reading changelog html file")
 		}
@@ -136,7 +136,7 @@ func CreateForRelease(opts *Options) error {
 
 func create(workDir, subject, message string) error {
 	subjectFile := filepath.Join(workDir, subjectFile)
-	if err := ioutil.WriteFile(
+	if err := os.WriteFile(
 		subjectFile, []byte(subject), 0o755,
 	); err != nil {
 		return errors.Wrapf(
@@ -146,7 +146,7 @@ func create(workDir, subject, message string) error {
 	logrus.Debugf("Wrote file %s", subjectFile)
 
 	announcementFile := filepath.Join(workDir, announcementFile)
-	if err := ioutil.WriteFile(
+	if err := os.WriteFile(
 		announcementFile, []byte(message), 0o755,
 	); err != nil {
 		return errors.Wrapf(

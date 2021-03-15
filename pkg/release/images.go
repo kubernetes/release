@@ -18,7 +18,6 @@ package release
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -195,7 +194,7 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 				err, "get remote manifest from %s", imageVersion,
 			)
 		}
-		manifestFile, err := ioutil.TempFile("", "manifest-")
+		manifestFile, err := os.CreateTemp("", "manifest-")
 		if err != nil {
 			return errors.Wrap(err, "create temp file for manifest")
 		}
@@ -263,7 +262,7 @@ func (i *Images) Exists(registry, version string, fast bool) (bool, error) {
 				err, "get remote manifest from %s", imageVersion,
 			)
 		}
-		manifestFile, err := ioutil.TempFile("", "manifest-")
+		manifestFile, err := os.CreateTemp("", "manifest-")
 		if err != nil {
 			return false, errors.Wrap(err, "create temp file for manifest")
 		}
@@ -314,7 +313,7 @@ func (i *Images) getManifestImages(
 	releaseImagesPath := filepath.Join(buildPath, ImagesPath)
 	logrus.Infof("Getting manifest images in %s", releaseImagesPath)
 
-	archPaths, err := ioutil.ReadDir(releaseImagesPath)
+	archPaths, err := os.ReadDir(releaseImagesPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "read images path %s", releaseImagesPath)
 	}

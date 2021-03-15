@@ -18,7 +18,7 @@ package inventory
 
 import (
 	"context"
-	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 
@@ -138,7 +138,7 @@ func WriteImages(manifest Manifest, rii RegInvImage) error {
 	logrus.Infoln("RENDER", imagesPath)
 
 	// Write the file.
-	err := ioutil.WriteFile(
+	err := os.WriteFile(
 		imagesPath, []byte(rii.ToYAML(YamlMarshalingOpts{})), 0644)
 	return err
 }

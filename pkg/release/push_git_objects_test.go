@@ -17,7 +17,6 @@ limitations under the License.
 package release
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -30,7 +29,7 @@ import (
 
 func getTestGitObjectPusher() (pusher *GitObjectPusher, repoPath string, err error) {
 	// Initialize a test repository for the test pusher
-	repoPath, err = ioutil.TempDir(os.TempDir(), "sigrelease-test-repo-*")
+	repoPath, err = os.MkdirTemp("", "sigrelease-test-repo-*")
 	if err != nil {
 		return nil, "", errors.Wrap(err, "creating a directory for test repository")
 	}

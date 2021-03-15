@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"runtime/debug"
@@ -100,7 +99,7 @@ func (s *ServerContext) RunAuditor() {
 // ParsePubSubMessage parses an HTTP request body into a reg.GCRPubSubPayload.
 func ParsePubSubMessage(body io.Reader) (*reg.GCRPubSubPayload, error) {
 	// Handle basic errors (malformed requests).
-	bodyBytes, err := ioutil.ReadAll(body)
+	bodyBytes, err := io.ReadAll(body)
 	if err != nil {
 		return nil, fmt.Errorf("iotuil.ReadAll: %v", err)
 	}

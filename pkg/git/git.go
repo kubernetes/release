@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"net/url"
 	"os"
@@ -343,7 +342,7 @@ func CloneOrOpenRepo(repoPath, repoURL string, useSSH bool) (*Repo, error) {
 		}
 	} else {
 		// No repoPath given, use a random temp dir instead
-		t, err := ioutil.TempDir("", "k8s-")
+		t, err := os.MkdirTemp("", "k8s-")
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to create temp dir")
 		}

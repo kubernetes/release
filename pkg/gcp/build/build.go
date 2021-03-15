@@ -18,7 +18,6 @@ package build
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -142,7 +141,7 @@ func (o *Options) ValidateConfigDir() error {
 }
 
 func (o *Options) uploadBuildDir(targetBucket string) (string, error) {
-	f, err := ioutil.TempFile("", "")
+	f, err := os.CreateTemp("", "")
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to create temp file")
 	}
@@ -262,7 +261,7 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 type variants map[string]map[string]string
 
 func getVariants(o *Options) (variants, error) {
-	content, err := ioutil.ReadFile(path.Join(o.ConfigDir, "variants.yaml"))
+	content, err := os.ReadFile(path.Join(o.ConfigDir, "variants.yaml"))
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return nil, errors.Wrapf(err, "failed to load variants.yaml")

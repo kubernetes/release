@@ -18,7 +18,6 @@ package options
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -94,7 +93,7 @@ func newTestOptions(t *testing.T) *testOptions {
 //
 func newTestRepo(t *testing.T) *testRepo {
 	// Setup the bare repo as base
-	bareTempDir, err := ioutil.TempDir("", "k8s-test-bare-")
+	bareTempDir, err := os.MkdirTemp("", "k8s-test-bare-")
 	require.Nil(t, err)
 
 	bareRepo, err := git.PlainInit(bareTempDir, true)
@@ -102,14 +101,14 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.NotNil(t, bareRepo)
 
 	// Clone from the bare to be able to add our test data
-	cloneTempDir, err := ioutil.TempDir("", "k8s-test-clone-")
+	cloneTempDir, err := os.MkdirTemp("", "k8s-test-clone-")
 	require.Nil(t, err)
 	cloneRepo, err := git.PlainInit(cloneTempDir, false)
 	require.Nil(t, err)
 
 	// Add the test data set
 	const testFileName = "test-file"
-	require.Nil(t, ioutil.WriteFile(
+	require.Nil(t, os.WriteFile(
 		filepath.Join(cloneTempDir, testFileName),
 		[]byte("test-content"),
 		os.FileMode(0644),
@@ -146,7 +145,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	).RunSuccess())
 
 	const branchTestFileName = "branch-test-file"
-	require.Nil(t, ioutil.WriteFile(
+	require.Nil(t, os.WriteFile(
 		filepath.Join(cloneTempDir, branchTestFileName),
 		[]byte("test-content"),
 		os.FileMode(0644),
@@ -170,7 +169,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, err)
 
 	const secondBranchTestFileName = "branch-test-file-2"
-	require.Nil(t, ioutil.WriteFile(
+	require.Nil(t, os.WriteFile(
 		filepath.Join(cloneTempDir, secondBranchTestFileName),
 		[]byte("test-content"),
 		os.FileMode(0644),

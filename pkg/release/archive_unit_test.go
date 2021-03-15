@@ -17,7 +17,6 @@ limitations under the License.
 package release
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -31,27 +30,27 @@ const fictionalTestBucketName = "kubernetes-test-name"
 
 func TestCopyReleaseLogsToWorkDir(t *testing.T) {
 	// create two files to  simulate logs
-	tmp1, err := ioutil.TempFile(os.TempDir(), "test-copylogs-")
+	tmp1, err := os.CreateTemp("", "test-copylogs-")
 	require.Nil(t, err)
 	defer os.Remove(tmp1.Name())
-	tmp2, err := ioutil.TempFile(os.TempDir(), "test-copylogs-")
+	tmp2, err := os.CreateTemp("", "test-copylogs-")
 	require.Nil(t, err)
 	defer os.Remove(tmp2.Name())
 
 	// Create a target directory to copy the files
-	destDir, err := ioutil.TempDir(os.TempDir(), "test-move-logs")
+	destDir, err := os.MkdirTemp("", "test-move-logs")
 	require.Nil(t, err, "creating test dir")
 	defer os.RemoveAll(destDir)
 
 	// Put an oauth token in the first log
 	content1 := "7aa33bd2186c40840c4c2df321241e241def98ca:x-oauth-basic\n"
-	require.Nil(t, ioutil.WriteFile(
+	require.Nil(t, os.WriteFile(
 		tmp1.Name(), []byte(content1), os.FileMode(0o644),
 	))
 
 	// Write a regular text in the second
 	content2 := "Hello world!\n"
-	require.Nil(t, ioutil.WriteFile(
+	require.Nil(t, os.WriteFile(
 		tmp2.Name(), []byte(content2), os.FileMode(0o644),
 	))
 
@@ -62,10 +61,10 @@ func TestCopyReleaseLogsToWorkDir(t *testing.T) {
 	require.Nil(t, err)
 
 	// Reopoen the files to check them
-	movedData1, err := ioutil.ReadFile(filepath.Join(destDir, filepath.Base(tmp1.Name())))
+	movedData1, err := os.ReadFile(filepath.Join(destDir, filepath.Base(tmp1.Name())))
 	require.Nil(t, err)
 
-	movedData2, err := ioutil.ReadFile(filepath.Join(destDir, filepath.Base(tmp2.Name())))
+	movedData2, err := os.ReadFile(filepath.Join(destDir, filepath.Base(tmp2.Name())))
 	require.Nil(t, err)
 
 	// The first file should be sanitized. Should differ
@@ -102,7 +101,7 @@ func TestValidateOpts(t *testing.T) {
 	require.NotNil(t, testOpts.Validate())
 
 	// Create a fake directory to test
-	dir, err := ioutil.TempDir(os.TempDir(), "archiver-opts-test-")
+	dir, err := os.MkdirTemp("", "archiver-opts-test-")
 	require.Nil(t, err)
 	defer os.RemoveAll(dir)
 
@@ -116,7 +115,7 @@ func TestValidateOpts(t *testing.T) {
 
 	// Creating a test log (/workdir/tmp) should still not
 	// validate, build dir is missing
-	tmplog, err := ioutil.TempFile(os.TempDir(), "anago-test-log-")
+	tmplog, err := os.CreateTemp("", "anago-test-log-")
 	require.Nil(t, err)
 	testOpts.LogFile = tmplog.Name()
 	require.NotNil(t, testOpts.Validate())
@@ -129,14 +128,14 @@ func TestValidateOpts(t *testing.T) {
 }
 
 func TestGetLogFiles(t *testing.T) {
-	dir, err := ioutil.TempDir(os.TempDir(), "test-get-anago-logs")
+	dir, err := os.MkdirTemp("", "test-get-anago-logs")
 	require.Nil(t, err, "creating test dir")
 	defer os.RemoveAll(dir)
 
 	goodFiles := []string{"anago.log", "anago-stage.log", "anago.log.1", "anago-stage.log.1"}
 	allFiles := append(goodFiles, []string{"test1.txt", "other.log", "anago.txt"}...)
 	for _, fileName := range allFiles {
-		require.Nil(t, ioutil.WriteFile(filepath.Join(dir, fileName), []byte("test"), os.FileMode(0o644)))
+		require.Nil(t, os.WriteFile(filepath.Join(dir, fileName), []byte("test"), os.FileMode(0o644)))
 	}
 	impl := &defaultArchiverImpl{}
 	foundPaths, err := impl.GetLogFiles(dir)
@@ -149,13 +148,13 @@ func TestGetLogFiles(t *testing.T) {
 }
 
 func TestDeleteStalePasswordFiles(t *testing.T) {
-	dir, err := ioutil.TempDir(os.TempDir(), "test-delete-stale-pw-")
+	dir, err := os.MkdirTemp("", "test-delete-stale-pw-")
 	require.Nil(t, err, "creating test dir")
 	defer os.RemoveAll(dir)
 
 	// Create temporary files
-	require.Nil(t, ioutil.WriteFile(filepath.Join(dir, "test.txt"), []byte("Hello World"), os.FileMode(0o644)))
-	require.Nil(t, ioutil.WriteFile(filepath.Join(dir, "rsyncd.password"), []byte("Hello World"), os.FileMode(0o644)))
+	require.Nil(t, os.WriteFile(filepath.Join(dir, "test.txt"), []byte("Hello World"), os.FileMode(0o644)))
+	require.Nil(t, os.WriteFile(filepath.Join(dir, "rsyncd.password"), []byte("Hello World"), os.FileMode(0o644)))
 
 	// Run the pass clear
 	impl := &defaultArchiverImpl{}

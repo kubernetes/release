@@ -18,7 +18,6 @@ package release_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -52,13 +51,13 @@ func TestPublish(t *testing.T) {
 				prepareImages(t, tempDir, mock)
 
 				// arch is not a directory, should be just skipped
-				require.Nil(t, ioutil.WriteFile(
+				require.Nil(t, os.WriteFile(
 					filepath.Join(tempDir, release.ImagesPath, "wrong"),
 					[]byte{}, os.FileMode(0o644),
 				))
 
 				// image is no tarball, should be just skipped
-				require.Nil(t, ioutil.WriteFile(
+				require.Nil(t, os.WriteFile(
 					filepath.Join(tempDir, release.ImagesPath, "amd64", "no-tar"),
 					[]byte{}, os.FileMode(0o644),
 				))
@@ -197,7 +196,7 @@ func TestPublish(t *testing.T) {
 		},
 		{ // failure no images-path
 			prepare: func(*releasefakes.FakeCommandClient) (string, func()) {
-				tempDir, err := ioutil.TempDir("", "publish-test-")
+				tempDir, err := os.MkdirTemp("", "publish-test-")
 				require.Nil(t, err)
 				return tempDir, func() {
 					require.Nil(t, os.RemoveAll(tempDir))
@@ -278,7 +277,7 @@ func TestValidate(t *testing.T) {
 		},
 		{ // failure no images-path
 			prepare: func(*releasefakes.FakeCommandClient) (string, func()) {
-				tempDir, err := ioutil.TempDir("", "publish-test-")
+				tempDir, err := os.MkdirTemp("", "publish-test-")
 				require.Nil(t, err)
 				return tempDir, func() {
 					require.Nil(t, os.RemoveAll(tempDir))
@@ -303,7 +302,7 @@ func TestValidate(t *testing.T) {
 }
 
 func newImagesPath(t *testing.T) string {
-	tempDir, err := ioutil.TempDir("", "publish-test-")
+	tempDir, err := os.MkdirTemp("", "publish-test-")
 	require.Nil(t, err)
 
 	require.Nil(t, os.MkdirAll(
@@ -323,7 +322,7 @@ func prepareImages(t *testing.T, tempDir string, mock *releasefakes.FakeCommandC
 		for _, image := range []string{
 			"conformance-amd64.tar", "kube-apiserver.tar", "kube-proxy.tar",
 		} {
-			require.Nil(t, ioutil.WriteFile(
+			require.Nil(t, os.WriteFile(
 				filepath.Join(archPath, image),
 				[]byte{}, os.FileMode(0o644),
 			))

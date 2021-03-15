@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -297,7 +296,7 @@ func (c *githubNotesRecordClient) recordAPICall(
 	if err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(
+	if err := os.WriteFile(
 		filepath.Join(c.recordDir, fileName), file, os.FileMode(0644),
 	); err != nil {
 		return err

@@ -17,7 +17,6 @@ limitations under the License.
 package testgrid
 
 import (
-	"io/ioutil"
 	"os"
 
 	"github.com/GoogleCloudPlatform/testgrid/config"
@@ -83,7 +82,7 @@ func (t *TestGrid) BlockingTests(branch string) (tests []string, err error) {
 func (t *TestGrid) configFromURL(url string) (cfg *pb.Configuration, err error) {
 	logrus.Info("Retrieving testgrid configuration")
 
-	tmpFile, err := ioutil.TempFile("", "testgrid-jobs-")
+	tmpFile, err := os.CreateTemp("", "testgrid-jobs-")
 	if err != nil {
 		return nil, err
 	}

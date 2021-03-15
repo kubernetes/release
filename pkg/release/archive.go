@@ -18,7 +18,6 @@ package release
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -290,7 +289,7 @@ func (a *defaultArchiverImpl) CopyReleaseToBucket(releaseBuildDir, archiveBucket
 // GetLogFiles reads a directory and returns the files that are anago logs
 func (a *defaultArchiverImpl) GetLogFiles(logsDir string) ([]string, error) {
 	logFiles := []string{}
-	tmpContents, err := ioutil.ReadDir(logsDir)
+	tmpContents, err := os.ReadDir(logsDir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "searching for logfiles in %s", logsDir)
 	}

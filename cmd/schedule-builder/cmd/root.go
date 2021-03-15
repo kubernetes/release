@@ -18,7 +18,7 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -105,7 +105,7 @@ func run(opts *options) error {
 	}
 
 	logrus.Infof("Reading the schedule file %s...", opts.configPath)
-	data, err := ioutil.ReadFile(opts.configPath)
+	data, err := os.ReadFile(opts.configPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to read the file")
 	}
@@ -124,7 +124,7 @@ func run(opts *options) error {
 
 	if opts.outputFile != "" {
 		logrus.Infof("Saving schedule to a file %s.", opts.outputFile)
-		err := ioutil.WriteFile(opts.outputFile, []byte(scheduleOut), 0644)
+		err := os.WriteFile(opts.outputFile, []byte(scheduleOut), 0644)
 		if err != nil {
 			return errors.Wrap(err, "failed to save schedule to the file")
 		}

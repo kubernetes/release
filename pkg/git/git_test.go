@@ -18,7 +18,6 @@ package git_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -75,7 +74,7 @@ func TestGetDefaultKubernetesRepoURLSuccess(t *testing.T) {
 
 // createTestRepository creates a test repo, cd into it and returns the path
 func createTestRepository() (repoPath string, err error) {
-	repoPath, err = ioutil.TempDir(os.TempDir(), "sigrelease-test-repo-*")
+	repoPath, err = os.MkdirTemp("", "sigrelease-test-repo-*")
 	if err != nil {
 		return "", errors.Wrap(err, "creating a directory for test repository")
 	}
@@ -335,7 +334,7 @@ func TestHasBranch(t *testing.T) {
 
 	// Create a file and a test commit
 	testfile := filepath.Join(repoPath, "README.md")
-	err = ioutil.WriteFile(testfile, []byte("# WHY SIG-RELEASE ROCKS\n\n"), os.FileMode(0o644))
+	err = os.WriteFile(testfile, []byte("# WHY SIG-RELEASE ROCKS\n\n"), os.FileMode(0o644))
 	require.Nil(t, err, "writing test file")
 
 	err = command.NewWithWorkDir(repoPath, "git", "add", testfile).RunSuccess()
@@ -367,7 +366,7 @@ func TestHasBranch(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
-	rawRepoDir, err := ioutil.TempDir("", "k8s-test-repo")
+	rawRepoDir, err := os.MkdirTemp("", "k8s-test-repo")
 	require.Nil(t, err)
 	_, err = gogit.PlainInit(rawRepoDir, false)
 	require.Nil(t, err)
@@ -385,7 +384,7 @@ func TestStatus(t *testing.T) {
 	require.True(t, status.IsClean())
 
 	// Create an untracked file
-	require.Nil(t, ioutil.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Hello SIG Release"), 0644))
+	require.Nil(t, os.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Hello SIG Release"), 0644))
 
 	// Status should be modified now
 	status, err = testRepo.Status()
@@ -405,14 +404,14 @@ func TestStatus(t *testing.T) {
 	require.Empty(t, status.String())
 
 	// Modify the file
-	require.Nil(t, ioutil.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Bye SIG Release"), 0644))
+	require.Nil(t, os.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Bye SIG Release"), 0644))
 	status, err = testRepo.Status()
 	require.Nil(t, err)
 	require.Equal(t, fmt.Sprintf(" M %s\n", testFile), status.String())
 }
 
 func TestShowLastCommit(t *testing.T) {
-	rawRepoDir, err := ioutil.TempDir("", "k8s-test-repo")
+	rawRepoDir, err := os.MkdirTemp("", "k8s-test-repo")
 	require.Nil(t, err)
 	_, err = gogit.PlainInit(rawRepoDir, false)
 	require.Nil(t, err)
@@ -425,7 +424,7 @@ func TestShowLastCommit(t *testing.T) {
 	defer testRepo.Cleanup() // nolint: errcheck
 
 	// Create an untracked file
-	require.Nil(t, ioutil.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Hello SIG Release"), 0644))
+	require.Nil(t, os.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Hello SIG Release"), 0644))
 	require.Nil(t, testRepo.Add(testFile))
 	require.Nil(t, testRepo.Commit(fmt.Sprintf("Commit test file at %s", timeNow)))
 
@@ -439,7 +438,7 @@ func TestShowLastCommit(t *testing.T) {
 func TestFetchRemote(t *testing.T) {
 	testTagName := "test-tag" + strconv.FormatInt(time.Now().UnixNano(), 10)
 	// Create a new empty repo
-	rawRepoDir, err := ioutil.TempDir("", "k8s-test-repo")
+	rawRepoDir, err := os.MkdirTemp("", "k8s-test-repo")
 	require.Nil(t, err)
 	gogitRepo, err := gogit.PlainInit(rawRepoDir, false)
 	require.Nil(t, err)
@@ -488,7 +487,7 @@ func TestRebase(t *testing.T) {
 	testFile := "test-rebase.txt"
 
 	// Create a new empty repo
-	rawRepoDir, err := ioutil.TempDir("", "k8s-test-repo")
+	rawRepoDir, err := os.MkdirTemp("", "k8s-test-repo")
 	require.Nil(t, err)
 	gogitRepo, err := gogit.PlainInit(rawRepoDir, false)
 	require.Nil(t, err)
@@ -516,7 +515,7 @@ func TestRebase(t *testing.T) {
 	require.Nil(t, testRepo.Rebase(fmt.Sprintf("origin/%s", branchName)), "cloning synchronizaed repos")
 
 	// Test 2. Rebase should not fail with pulling changes in the remote
-	require.Nil(t, ioutil.WriteFile(filepath.Join(rawRepoDir, testFile), []byte("Hello SIG Release"), 0644))
+	require.Nil(t, os.WriteFile(filepath.Join(rawRepoDir, testFile), []byte("Hello SIG Release"), 0644))
 	_, err = wtree.Add(testFile)
 	require.Nil(t, err)
 
@@ -538,7 +537,7 @@ func TestRebase(t *testing.T) {
 	require.NotNil(t, testRepo.Rebase("origin/invalidBranch"), "rebasing to invalid branch")
 
 	// Test 4: Rebase must fail on merge conflicts
-	require.Nil(t, ioutil.WriteFile(filepath.Join(rawRepoDir, testFile), []byte("Hello again SIG Release"), 0644))
+	require.Nil(t, os.WriteFile(filepath.Join(rawRepoDir, testFile), []byte("Hello again SIG Release"), 0644))
 	_, err = wtree.Add(testFile)
 	require.Nil(t, err)
 
@@ -546,7 +545,7 @@ func TestRebase(t *testing.T) {
 	require.Nil(t, err)
 
 	// Commit the same file in the test repo
-	require.Nil(t, ioutil.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Conflict me!"), 0644))
+	require.Nil(t, os.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Conflict me!"), 0644))
 	require.Nil(t, testRepo.Add(filepath.Join(testRepo.Dir(), testFile)))
 	require.Nil(t, testRepo.Commit("Adding file to cause conflict"))
 

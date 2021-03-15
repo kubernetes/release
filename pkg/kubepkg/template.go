@@ -18,7 +18,6 @@ package kubepkg
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -72,7 +71,7 @@ func buildSpecs(bc *buildConfig, specDir string) (workItems []work, err error) {
 			return nil, errors.Wrapf(err, "executing template for %s", item.src)
 		}
 
-		if err := ioutil.WriteFile(
+		if err := os.WriteFile(
 			item.dst, buf.Bytes(), item.info.Mode(),
 		); err != nil {
 			return nil, errors.Wrapf(err, "writing file %s", item.dst)

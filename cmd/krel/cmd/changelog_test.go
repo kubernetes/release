@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -41,7 +40,7 @@ func (s *sut) getChangelogOptions(tag string) *changelog.Options {
 
 func fileContains(t *testing.T, file, contains string) {
 	require.FileExists(t, file)
-	content, err := ioutil.ReadFile(file)
+	content, err := os.ReadFile(file)
 	require.Nil(t, err)
 	require.Contains(t, string(content), contains)
 }
@@ -85,7 +84,7 @@ func TestNewPatchRelease(t *testing.T) { // nolint: dupl
 		require.Contains(t, lastCommit, x.commitMessage)
 
 		// Verify changelog contents
-		result, err := ioutil.ReadFile(
+		result, err := os.ReadFile(
 			filepath.Join(s.repo.Dir(), changelog.RepoChangelogDir, "CHANGELOG-1.16.md"),
 		)
 		require.Nil(t, err)
@@ -117,7 +116,7 @@ func TestNewAlphaRelease(t *testing.T) {
 	require.Contains(t, lastCommit, "Update directory for v1.18.0-alpha.3 release")
 
 	// Verify changelog contents
-	result, err := ioutil.ReadFile(
+	result, err := os.ReadFile(
 		filepath.Join(s.repo.Dir(), changelog.RepoChangelogDir, "CHANGELOG-1.18.md"),
 	)
 	require.Nil(t, err)
@@ -146,7 +145,7 @@ func TestNewAlpha1Release(t *testing.T) {
 	require.Contains(t, lastCommit, "Update directory for v1.19.0-alpha.1 release")
 
 	// Verify changelog contents
-	result, err := ioutil.ReadFile(
+	result, err := os.ReadFile(
 		filepath.Join(s.repo.Dir(), changelog.RepoChangelogDir, "CHANGELOG-1.19.md"),
 	)
 	require.Nil(t, err)
@@ -174,7 +173,7 @@ func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 	require.Nil(t, s.repo.Checkout(releaseBranch))
 	changelogIter(func(filename string) {
 		require.Nil(t,
-			ioutil.WriteFile(
+			os.WriteFile(
 				filepath.Join(s.repo.Dir(), filename),
 				[]byte("Some content"),
 				0644,
@@ -214,7 +213,7 @@ func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 		require.Contains(t, lastCommit, x.commitMessage)
 
 		// Verify changelog contents
-		result, err := ioutil.ReadFile(
+		result, err := os.ReadFile(
 			filepath.Join(s.repo.Dir(), changelog.RepoChangelogDir, "CHANGELOG-1.17.md"),
 		)
 		require.Nil(t, err)
@@ -239,7 +238,7 @@ func TestNewRCRelease(t *testing.T) {
 	// Verify local results
 	require.Nil(t, s.repo.Checkout(releaseBranch))
 
-	result, err := ioutil.ReadFile(
+	result, err := os.ReadFile(
 		filepath.Join(s.repo.Dir(), changelog.RepoChangelogDir, "CHANGELOG-1.16.md"),
 	)
 	require.Nil(t, err)

@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -218,7 +217,7 @@ func (c *githubNotesReplayClient) readRecordedData(api gitHubAPI) ([]byte, error
 	}
 
 	path := filepath.Join(c.replayDir, fmt.Sprintf("%s-%d.json", api, i))
-	file, err := ioutil.ReadFile(path)
+	file, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

@@ -18,7 +18,6 @@ package license
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -48,7 +47,7 @@ const (
 )
 
 func TestCacheData(t *testing.T) {
-	tempdir, err := ioutil.TempDir(os.TempDir(), testDirPrefix)
+	tempdir, err := os.MkdirTemp("", testDirPrefix)
 	require.Nil(t, err)
 	defer func() { require.Nil(t, os.RemoveAll(tempdir)) }()
 
@@ -78,7 +77,7 @@ func TestFindLicenseFiles(t *testing.T) {
 		"license.go", "README.md",
 	}
 
-	tempdir, err := ioutil.TempDir(os.TempDir(), testDirPrefix)
+	tempdir, err := os.MkdirTemp("", testDirPrefix)
 	require.Nil(t, err)
 	defer func() { require.Nil(t, os.RemoveAll(tempdir)) }()
 
@@ -86,7 +85,7 @@ func TestFindLicenseFiles(t *testing.T) {
 	fileData := []byte("bleh")
 	for _, sub := range []string{"", "/some/sub/dir"} {
 		for _, filename := range files {
-			require.Nil(t, ioutil.WriteFile(
+			require.Nil(t, os.WriteFile(
 				filepath.Join(tempdir, sub, filename), fileData, os.FileMode(0o644),
 			))
 		}
@@ -101,7 +100,7 @@ func TestFindLicenseFiles(t *testing.T) {
 }
 
 func TestGetLicenseFromURL(t *testing.T) {
-	tempdir, err := ioutil.TempDir(os.TempDir(), testDirPrefix)
+	tempdir, err := os.MkdirTemp("", testDirPrefix)
 	require.Nil(t, err)
 	defer func() { require.Nil(t, os.RemoveAll(tempdir)) }()
 

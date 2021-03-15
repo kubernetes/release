@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -84,7 +83,7 @@ func TestRun(t *testing.T) {
 				require.Nil(t, err)
 
 				// compare the output generated with the expected
-				outFile, errFile := ioutil.ReadFile(out)
+				outFile, errFile := os.ReadFile(out)
 				require.NoError(t, errFile)
 				require.Equal(t, string(outFile), expectedOut)
 			},
@@ -108,7 +107,7 @@ func TestRun(t *testing.T) {
 	for tcCount, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
 
-		tempDir, err := ioutil.TempDir("/tmp", "schedule-test")
+		tempDir, err := os.MkdirTemp("/tmp", "schedule-test")
 		require.Nil(t, err)
 		defer os.RemoveAll(tempDir)
 

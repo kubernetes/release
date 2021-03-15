@@ -19,7 +19,6 @@ package binary_test
 import (
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -94,7 +93,7 @@ func GetTestHeaders() []TestHeader {
 
 // writeTestBinary Writes a test binary and returns the path
 func writeTestBinary(t *testing.T, base64Data *string) *os.File {
-	f, err := ioutil.TempFile(os.TempDir(), "test-binary-")
+	f, err := os.CreateTemp("", "test-binary-")
 	require.Nil(t, err)
 
 	binData, err := base64.StdEncoding.DecodeString(*base64Data)

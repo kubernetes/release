@@ -17,7 +17,6 @@ limitations under the License.
 package git_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -75,7 +74,7 @@ type testRepo struct {
 //
 func newTestRepo(t *testing.T) *testRepo {
 	// Setup the bare repo as base
-	bareTempDir, err := ioutil.TempDir("", "k8s-test-bare-")
+	bareTempDir, err := os.MkdirTemp("", "k8s-test-bare-")
 	require.Nil(t, err)
 
 	bareRepo, err := gogit.PlainInit(bareTempDir, true)
@@ -83,14 +82,14 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.NotNil(t, bareRepo)
 
 	// Clone from the bare to be able to add our test data
-	cloneTempDir, err := ioutil.TempDir("", "k8s-test-clone-")
+	cloneTempDir, err := os.MkdirTemp("", "k8s-test-clone-")
 	require.Nil(t, err)
 	cloneRepo, err := gogit.PlainInit(cloneTempDir, false)
 	require.Nil(t, err)
 
 	// Add the test data set
 	const testFileName = "test-file"
-	require.Nil(t, ioutil.WriteFile(
+	require.Nil(t, os.WriteFile(
 		filepath.Join(cloneTempDir, testFileName),
 		[]byte("test-content"),
 		os.FileMode(0644),
@@ -127,7 +126,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	).RunSuccess())
 
 	const branchTestFileName = "branch-test-file"
-	require.Nil(t, ioutil.WriteFile(
+	require.Nil(t, os.WriteFile(
 		filepath.Join(cloneTempDir, branchTestFileName),
 		[]byte("test-content"),
 		os.FileMode(0644),
@@ -151,7 +150,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, err)
 
 	const secondBranchTestFileName = "branch-test-file-2"
-	require.Nil(t, ioutil.WriteFile(
+	require.Nil(t, os.WriteFile(
 		filepath.Join(cloneTempDir, secondBranchTestFileName),
 		[]byte("test-content"),
 		os.FileMode(0644),
@@ -175,7 +174,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, err)
 
 	const thirdBranchTestFileName = "branch-test-file-3"
-	require.Nil(t, ioutil.WriteFile(
+	require.Nil(t, os.WriteFile(
 		filepath.Join(cloneTempDir, thirdBranchTestFileName),
 		[]byte("test-content"),
 		os.FileMode(0644),
@@ -577,7 +576,7 @@ func TestCheckoutSuccess(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	require.Nil(t, ioutil.WriteFile(
+	require.Nil(t, os.WriteFile(
 		testRepo.testFileName,
 		[]byte("hello world"),
 		os.FileMode(0644),
@@ -611,7 +610,7 @@ func TestAddSuccess(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	f, err := ioutil.TempFile(testRepo.sut.Dir(), "test")
+	f, err := os.CreateTemp(testRepo.sut.Dir(), "test")
 	require.Nil(t, err)
 	require.Nil(t, f.Close())
 
@@ -674,7 +673,7 @@ func TestCurrentBranchMain(t *testing.T) {
 func TestRmSuccessForce(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
-	require.Nil(t, ioutil.WriteFile(testRepo.testFileName,
+	require.Nil(t, os.WriteFile(testRepo.testFileName,
 		[]byte("test"), os.FileMode(0755)),
 	)
 
@@ -741,7 +740,7 @@ func TestRmSuccess(t *testing.T) {
 func TestRmFailureModified(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
-	require.Nil(t, ioutil.WriteFile(testRepo.testFileName,
+	require.Nil(t, os.WriteFile(testRepo.testFileName,
 		[]byte("test"), os.FileMode(0755)),
 	)
 	require.NotNil(t, testRepo.sut.Rm(false, testRepo.testFileName))
@@ -862,7 +861,7 @@ func TestIsDirtyFailure(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 
-	require.Nil(t, ioutil.WriteFile(
+	require.Nil(t, os.WriteFile(
 		filepath.Join(testRepo.sut.Dir(), "any-file"),
 		[]byte("test"), os.FileMode(0755)),
 	)

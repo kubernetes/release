@@ -19,7 +19,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -283,7 +283,7 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 			return errors.Wrapf(err, "opening the supplied output file")
 		}
 	} else {
-		output, err = ioutil.TempFile("", "release-notes-")
+		output, err = os.CreateTemp("", "release-notes-")
 		if err != nil {
 			return errors.Wrapf(err, "creating a temporary file to write the release notes to")
 		}
@@ -291,7 +291,7 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 
 	// Contextualized release notes can be printed in a variety of formats
 	if opts.Format == options.FormatJSON {
-		byteValue, err := ioutil.ReadAll(output)
+		byteValue, err := io.ReadAll(output)
 		if err != nil {
 			return err
 		}

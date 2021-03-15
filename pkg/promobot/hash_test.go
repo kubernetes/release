@@ -18,7 +18,6 @@ package promobot_test
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -57,7 +56,7 @@ func TestHash(t *testing.T) {
 //  tests is to make the changes explicit, particularly in code
 //  review, not to force manual updates.
 func AssertMatchesFile(t *testing.T, actual, p string) {
-	b, err := ioutil.ReadFile(p)
+	b, err := os.ReadFile(p)
 	if err != nil {
 		if os.Getenv("UPDATE_EXPECTED_OUTPUT") == "" {
 			t.Fatalf("error reading file %q: %v", p, err)
@@ -68,7 +67,7 @@ func AssertMatchesFile(t *testing.T, actual, p string) {
 
 	if actual != expected {
 		if os.Getenv("UPDATE_EXPECTED_OUTPUT") != "" {
-			if err := ioutil.WriteFile(p, []byte(actual), 0644); err != nil {
+			if err := os.WriteFile(p, []byte(actual), 0644); err != nil {
 				t.Fatalf("error writing file %q: %v", p, err)
 			}
 		}

@@ -18,7 +18,6 @@ package kubepkg
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -125,11 +124,11 @@ func (i *impl) GetKubeVersion(versionType release.VersionType) (string, error) {
 }
 
 func (i *impl) ReadFile(filename string) ([]byte, error) {
-	return ioutil.ReadFile(filename)
+	return os.ReadFile(filename)
 }
 
 func (i *impl) WriteFile(filename string, data []byte, perm os.FileMode) error {
-	return ioutil.WriteFile(filename, data, perm)
+	return os.WriteFile(filename, data, perm)
 }
 
 type Build struct {
@@ -218,7 +217,7 @@ func (c *Client) WalkBuilds(builds []Build) (err error) {
 
 	workingDir := os.Getenv("KUBEPKG_WORKING_DIR")
 	if workingDir == "" {
-		workingDir, err = ioutil.TempDir("", "kubepkg")
+		workingDir, err = os.MkdirTemp("", "kubepkg")
 		if err != nil {
 			return err
 		}

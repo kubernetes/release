@@ -20,7 +20,7 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -72,7 +72,7 @@ func (do *DownloaderOptions) Validate() error {
 		}
 		// And no cache dir was specified
 		if do.CacheDir == "" {
-			dir, err := ioutil.TempDir(os.TempDir(), "license-cache-")
+			dir, err := os.MkdirTemp("", "license-cache-")
 			if err != nil {
 				return errors.Wrap(err, "creating temporary directory")
 			}
@@ -135,7 +135,7 @@ func (ddi *DefaultDownloaderImpl) GetLicenses() (licenses *SPDXLicenseList, err 
 	}
 	defer resp.Body.Close()
 
-	licensesJSON, err := ioutil.ReadAll(resp.Body)
+	licensesJSON, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading license list response body")
 	}
@@ -186,7 +186,7 @@ func (ddi *DefaultDownloaderImpl) cacheData(url string, data []byte) error {
 			return errors.Wrap(err, "creating cache directory")
 		}
 	}
-	return errors.Wrap(ioutil.WriteFile(cacheFileName, data, os.FileMode(0o644)), "writing cache file")
+	return errors.Wrap(os.WriteFile(cacheFileName, data, os.FileMode(0o644)), "writing cache file")
 }
 
 // getCachedData returns cached data for an URL if we have it
@@ -206,7 +206,7 @@ func (ddi *DefaultDownloaderImpl) getCachedData(url string) ([]byte, error) {
 		logrus.Warn("Cached file is empty, removing")
 		return nil, errors.Wrap(os.Remove(cacheFileName), "removing corrupt cached file")
 	}
-	licensesJSON, err := ioutil.ReadFile(cacheFileName)
+	licensesJSON, err := os.ReadFile(cacheFileName)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading cached data file")
 	}
@@ -235,7 +235,7 @@ func (ddi *DefaultDownloaderImpl) getLicenseFromURL(url string) (license *SPDXLi
 			return nil, errors.Wrapf(err, "getting %s", url)
 		}
 		defer resp.Body.Close()
-		licenseJSON, err = ioutil.ReadAll(resp.Body)
+		licenseJSON, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, errors.Wrap(err, "reading response body")
 		}
