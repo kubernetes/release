@@ -24,7 +24,7 @@ steps:
   - "--branch=${_TOOL_BRANCH}"
   - "https://github.com/${_TOOL_ORG}/${_TOOL_REPO}"
 
-- name: k8s.gcr.io/build-image/kube-cross:${_KUBE_CROSS_VERSION}
+- name: k8s.gcr.io/build-image/kube-cross:${_RELENG_CROSS_VERSION}
   dir: "go/src/k8s.io/release"
   env:
   - "GOPATH=/workspace/go"

@@ -51,19 +51,20 @@ const (
 
 // TODO: Pull some of these options in cmd/gcbuilder, so they don't have to be public.
 type Options struct {
-	objStore       object.Store
-	BuildDir       string
-	ConfigDir      string
-	CloudbuildFile string
-	LogDir         string
-	ScratchBucket  string
-	Project        string
-	AllowDirty     bool
-	NoSource       bool
-	Async          bool
-	DiskSize       string
-	Variant        string
-	EnvPassthrough string
+	objStore           object.Store
+	BuildDir           string
+	ConfigDir          string
+	CloudbuildFile     string
+	LogDir             string
+	ScratchBucket      string
+	Project            string
+	AllowDirty         bool
+	NoSource           bool
+	Async              bool
+	DiskSize           string
+	Variant            string
+	EnvPassthrough     string
+	RelengCrossVersion string
 }
 
 // NewDefaultOptions returns a new default `*Options` instance.

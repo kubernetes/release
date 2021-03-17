@@ -37,6 +37,10 @@ import (
 	"sigs.k8s.io/release-utils/util"
 )
 
+const (
+	defaultRelengCrossVersion = "v1.16.1-1"
+)
+
 // GCB is the main structure of this package.
 type GCB struct {
 	options        *Options
@@ -79,24 +83,26 @@ func (g *GCB) SetReleaseClient(client Release) {
 
 type Options struct {
 	build.Options
-	NoMock       bool
-	Stage        bool
-	Release      bool
-	Stream       bool
-	BuildAtHead  bool
-	Branch       string
-	ReleaseType  string
-	BuildVersion string
-	GcpUser      string
-	LogLevel     string
-	LastJobs     int64
+	NoMock             bool
+	Stage              bool
+	Release            bool
+	Stream             bool
+	BuildAtHead        bool
+	Branch             string
+	ReleaseType        string
+	BuildVersion       string
+	GcpUser            string
+	LogLevel           string
+	RelengCrossVersion string
+	LastJobs           int64
 }
 
 // NewDefaultOptions returns a new default `*Options` instance.
 func NewDefaultOptions() *Options {
 	return &Options{
-		LogLevel: logrus.StandardLogger().GetLevel().String(),
-		Options:  *build.NewDefaultOptions(),
+		LogLevel:           logrus.StandardLogger().GetLevel().String(),
+		Options:            *build.NewDefaultOptions(),
+		RelengCrossVersion: defaultRelengCrossVersion,
 	}
 }
 
@@ -349,6 +355,9 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolBranch string) (map[str
 	}
 
 	gcbSubs["BUILDVERSION"] = buildVersion
+
+	// The Release Engineering tools use their own kubecross version
+	gcbSubs["RELENG_CROSS_VERSION"] = g.options.RelengCrossVersion
 
 	kubecrossBranches := []string{
 		g.options.Branch,
