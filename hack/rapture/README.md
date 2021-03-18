@@ -163,9 +163,10 @@ In addition to manual validation, we also have some periodic package verificatio
 See the [Release Engineering dashboard][release-engineering-dashboard] on Testgrid.
 The following jobs are currently configured to do some aspect of package validation:
 
-- https://testgrid.k8s.io/sig-release-misc#debian-unstable
-- https://testgrid.k8s.io/sig-release-misc#periodic-packages-pushed
-- https://testgrid.k8s.io/sig-release-misc#periodic-packages-install-deb
+- https://testgrid.k8s.io/sig-release-releng-informing#build-packages-debs
+- https://testgrid.k8s.io/sig-release-releng-informing#build-packages-rpms
+- https://testgrid.k8s.io/sig-release-releng-informing#verify-packages-debs
+- https://testgrid.k8s.io/sig-release-releng-informing#verify-packages-rpms
 
 **These tend to break when we are in the middle of a push.**
 
@@ -179,7 +180,7 @@ If there is continued test failure on this dashboard without intervention from t
 [kubernetes-build-admins]:  https://github.com/kubernetes/sig-release/tree/master/release-managers.md#build-admins
 [rapture]: k8s-rapture.sh
 [rapture-readme]: https://g3doc.corp.google.com/cloud/kubernetes/g3doc/release/rapture.md?cl=head
-[release-engineering-dashboard]: https://testgrid.k8s.io/sig-release-misc
+[release-engineering-dashboard]: https://testgrid.k8s.io/sig-release-releng-informing
 [release-management-slack]: https://kubernetes.slack.com/messages/CJH2GBF7Y
 [release-managers]: /release-managers.md#release-managers
 [release-managers-group]: https://groups.google.com/a/kubernetes.io/forum/#!forum/release-managers
