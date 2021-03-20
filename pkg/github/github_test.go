@@ -417,3 +417,38 @@ func TestListBranches(t *testing.T) {
 	require.Len(t, result, 3)
 	require.Equal(t, result[1].GetName(), branch1)
 }
+
+func TestCreateIssue(t *testing.T) {
+	// Given
+	sut, client := newSUT()
+	var fakeID int = 100000
+	title := "Test Issue"
+	body := "Issue body text"
+	opts := &github.NewIssueOptions{
+		Assignees: []string{"k8s-ci-robot"},
+		Milestone: "v1.21",
+		State:     "open",
+		Labels:    []string{"bug"},
+	}
+	issue := &gogithub.Issue{
+		Number: &fakeID,
+		State:  &opts.State,
+		Title:  &title,
+		Body:   &body,
+	}
+
+	for _, tcErr := range []error{errors.New("Test error"), nil} {
+		// When
+		client.CreateIssueReturns(issue, tcErr)
+		newissue, err := sut.CreateIssue("kubernetes-fake-org", "kubernetes-fake-repo", title, body, opts)
+
+		// Then
+		if tcErr == nil {
+			require.Nil(t, err)
+			require.NotNil(t, newissue)
+			require.Equal(t, fakeID, issue.GetNumber())
+		} else {
+			require.NotNil(t, err)
+		}
+	}
+}
