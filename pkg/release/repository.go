@@ -111,7 +111,7 @@ func (r *Repo) CheckState(expOrg, expRepo, expRev string, nomock bool) error {
 		return errors.Wrap(err, "retrieving repository HEAD")
 	}
 
-	logrus.Infof("repo head %s", head)
+	logrus.Infof("Repo head is: %s", head)
 
 	rev, err := r.repo.RevParse(expRev)
 	if err != nil {

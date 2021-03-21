@@ -18,6 +18,12 @@ secrets:
 
 steps:
 - name: gcr.io/cloud-builders/git
+  dir: "go/src/k8s.io"
+  args:
+  - "clone"
+  - "https://github.com/${_TOOL_ORG}/${_TOOL_REPO}"
+
+- name: gcr.io/cloud-builders/git
   entrypoint: "bash"
   dir: "go/src/k8s.io/release"
   args:
