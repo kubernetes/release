@@ -113,6 +113,17 @@ type FakeReleaseImpl struct {
 	createAnnouncementReturnsOnCall map[int]struct {
 		result1 error
 	}
+	CreatePubBotBranchIssueStub        func(string) error
+	createPubBotBranchIssueMutex       sync.RWMutex
+	createPubBotBranchIssueArgsForCall []struct {
+		arg1 string
+	}
+	createPubBotBranchIssueReturns struct {
+		result1 error
+	}
+	createPubBotBranchIssueReturnsOnCall map[int]struct {
+		result1 error
+	}
 	GenerateReleaseVersionStub        func(string, string, string, bool) (*release.Versions, error)
 	generateReleaseVersionMutex       sync.RWMutex
 	generateReleaseVersionArgsForCall []struct {
@@ -708,6 +719,67 @@ func (fake *FakeReleaseImpl) CreateAnnouncementReturnsOnCall(i int, result1 erro
 		})
 	}
 	fake.createAnnouncementReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) CreatePubBotBranchIssue(arg1 string) error {
+	fake.createPubBotBranchIssueMutex.Lock()
+	ret, specificReturn := fake.createPubBotBranchIssueReturnsOnCall[len(fake.createPubBotBranchIssueArgsForCall)]
+	fake.createPubBotBranchIssueArgsForCall = append(fake.createPubBotBranchIssueArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.CreatePubBotBranchIssueStub
+	fakeReturns := fake.createPubBotBranchIssueReturns
+	fake.recordInvocation("CreatePubBotBranchIssue", []interface{}{arg1})
+	fake.createPubBotBranchIssueMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeReleaseImpl) CreatePubBotBranchIssueCallCount() int {
+	fake.createPubBotBranchIssueMutex.RLock()
+	defer fake.createPubBotBranchIssueMutex.RUnlock()
+	return len(fake.createPubBotBranchIssueArgsForCall)
+}
+
+func (fake *FakeReleaseImpl) CreatePubBotBranchIssueCalls(stub func(string) error) {
+	fake.createPubBotBranchIssueMutex.Lock()
+	defer fake.createPubBotBranchIssueMutex.Unlock()
+	fake.CreatePubBotBranchIssueStub = stub
+}
+
+func (fake *FakeReleaseImpl) CreatePubBotBranchIssueArgsForCall(i int) string {
+	fake.createPubBotBranchIssueMutex.RLock()
+	defer fake.createPubBotBranchIssueMutex.RUnlock()
+	argsForCall := fake.createPubBotBranchIssueArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeReleaseImpl) CreatePubBotBranchIssueReturns(result1 error) {
+	fake.createPubBotBranchIssueMutex.Lock()
+	defer fake.createPubBotBranchIssueMutex.Unlock()
+	fake.CreatePubBotBranchIssueStub = nil
+	fake.createPubBotBranchIssueReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) CreatePubBotBranchIssueReturnsOnCall(i int, result1 error) {
+	fake.createPubBotBranchIssueMutex.Lock()
+	defer fake.createPubBotBranchIssueMutex.Unlock()
+	fake.CreatePubBotBranchIssueStub = nil
+	if fake.createPubBotBranchIssueReturnsOnCall == nil {
+		fake.createPubBotBranchIssueReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.createPubBotBranchIssueReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -1564,6 +1636,8 @@ func (fake *FakeReleaseImpl) Invocations() map[string][][]interface{} {
 	defer fake.copyToRemoteMutex.RUnlock()
 	fake.createAnnouncementMutex.RLock()
 	defer fake.createAnnouncementMutex.RUnlock()
+	fake.createPubBotBranchIssueMutex.RLock()
+	defer fake.createPubBotBranchIssueMutex.RUnlock()
 	fake.generateReleaseVersionMutex.RLock()
 	defer fake.generateReleaseVersionMutex.RUnlock()
 	fake.newGitPusherMutex.RLock()

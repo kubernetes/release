@@ -39,6 +39,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/object"
 	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/env"
@@ -126,6 +127,10 @@ const (
 
 	// Archive path is the root path in the bucket where releases are archived
 	ArchivePath = "archive"
+
+	// Publishing bot issue repository
+	PubBotRepoOrg  = "k8s-release-robot"
+	PubBotRepoName = "sig-release"
 )
 
 var (
@@ -668,5 +673,35 @@ func (imagesList *ImagePromoterImages) Write(filePath string) error {
 		return errors.Wrap(err, "writing yaml code into file")
 	}
 
+	return nil
+}
+
+// CreatePubBotBranchIssue creates an issue on GitHub to notify
+func CreatePubBotBranchIssue(branchName string) error {
+	// Check the GH token is set
+	if os.Getenv(github.TokenEnvKey) == "" {
+		return errors.New("cannot file publishing bot issue as GitHub token is not set")
+	}
+
+	gh := github.New()
+
+	// Create the body for the issue
+	issueBody := fmt.Sprintf("The branch `%s` was just created.\n\n", branchName)
+	issueBody += "Please update the publishing-bot's configuration to also publish this new branch.\n\n"
+	issueBody += "/sig release\n"
+	issueBody += "/area release-eng\n"
+	issueBody += "/milestone v" + strings.TrimPrefix(branchName, "release-") + "\n"
+
+	// Create the issue on GitHub
+	issue, err := gh.CreateIssue(
+		PubBotRepoOrg, PubBotRepoName,
+		"Update publishing-bot for "+branchName,
+		issueBody,
+		&github.NewIssueOptions{},
+	)
+	if err != nil {
+		return errors.Wrap(err, "creating publishing bot issue")
+	}
+	logrus.Infof("Publishing bot issue created #%d!", issue.GetNumber())
 	return nil
 }
