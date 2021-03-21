@@ -289,6 +289,55 @@ func TestCreatePullRequest(t *testing.T) {
 	require.Equal(t, fakeID, pr.GetID())
 }
 
+func TestGetMilestone(t *testing.T) {
+	sut, client := newSUT()
+	// Given
+	searchTitle := "Target Milestone"
+	otherTitle := "Another Milestone"
+	fakeMstoneID := 9999
+
+	client.ListMilestonesReturns(
+		[]*gogithub.Milestone{
+			{
+				Title: &otherTitle,
+			},
+			{
+				Number: &fakeMstoneID,
+				Title:  &searchTitle,
+			},
+		},
+		&gogithub.Response{NextPage: 0},
+		nil,
+	)
+
+	// When
+	for _, tc := range []struct {
+		Title string
+		Err   bool
+	}{
+		{Title: searchTitle},
+		{Title: "Non existent"},
+		{Title: "", Err: true},
+	} {
+		ms, exists, err := sut.GetMilestone("test", "test", tc.Title)
+
+		// Then
+		if searchTitle == tc.Title {
+			require.True(t, exists)
+			require.Equal(t, fakeMstoneID, ms.GetNumber())
+			require.Equal(t, searchTitle, ms.GetTitle())
+		} else {
+			require.False(t, exists)
+		}
+
+		if tc.Err {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
+}
+
 func TestGetRepository(t *testing.T) {
 	// Given
 	sut, client := newSUT()

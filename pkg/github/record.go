@@ -46,6 +46,7 @@ const (
 	gitHubAPIGetReleaseByTag            gitHubAPI = "GetReleaseByTag"
 	gitHubAPIListReleaseAssets          gitHubAPI = "ListReleaseAssets"
 	gitHubAPICreateComment              gitHubAPI = "CreateComment"
+	gitHubAPIListMilestones             gitHubAPI = "ListMilestones"
 )
 
 type apiRecord struct {
@@ -253,6 +254,19 @@ func (c *githubNotesRecordClient) ListReleaseAssets(
 	}
 
 	return assets, nil
+}
+
+func (c *githubNotesRecordClient) ListMilestones(
+	ctx context.Context, owner, repo string, opts *github.MilestoneListOptions,
+) ([]*github.Milestone, *github.Response, error) {
+	mstones, resp, err := c.client.ListMilestones(ctx, owner, repo, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := c.recordAPICall(gitHubAPIListMilestones, mstones, resp); err != nil {
+		return nil, nil, err
+	}
+	return mstones, resp, nil
 }
 
 func (c *githubNotesRecordClient) CreateComment(ctx context.Context, owner, repo string, number int, message string) (*github.IssueComment, *github.Response, error) {
