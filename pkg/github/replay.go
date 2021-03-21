@@ -177,6 +177,12 @@ func (c *githubNotesReplayClient) CreatePullRequest(
 	return &github.PullRequest{}, nil
 }
 
+func (c *githubNotesReplayClient) CreateIssue(
+	ctx context.Context, owner, repo string, req *github.IssueRequest,
+) (*github.Issue, error) {
+	return &github.Issue{}, nil
+}
+
 func (c *githubNotesReplayClient) GetRepository(
 	ctx context.Context, owner, repo string,
 ) (*github.Repository, *github.Response, error) {

@@ -107,6 +107,10 @@ type Client interface {
 		context.Context, string, string, string, string, string, string,
 	) (*github.PullRequest, error)
 
+	CreateIssue(
+		context.Context, string, string, *github.IssueRequest,
+	) (*github.Issue, error)
+
 	GetRepository(
 		context.Context, string, string,
 	) (*github.Repository, *github.Response, error)
@@ -130,6 +134,14 @@ type Client interface {
 	CreateComment(
 		context.Context, string, string, int, string,
 	) (*github.IssueComment, *github.Response, error)
+}
+
+// NewIssueOptions is a struct of optional fields for new issues
+type NewIssueOptions struct {
+	Milestone string   // Name of milestone to set
+	State     string   // open, closed or all. Defaults to "open"
+	Assignees []string // List of GitHub handles of extra assignees, must be collaborators
+	Labels    []string // List of labels to apply. They will be created if new
 }
 
 // TODO: we should clean up the functions listed below and agree on the same
@@ -347,6 +359,19 @@ func (g *githubClient) CreatePullRequest(
 
 	logrus.Infof("Successfully created PR #%d", pr.GetNumber())
 	return pr, nil
+}
+
+func (g *githubClient) CreateIssue(
+	ctx context.Context, owner, repo string, req *github.IssueRequest,
+) (*github.Issue, error) {
+	// Create the issue on github
+	issue, _, err := g.Issues.Create(ctx, owner, repo, req)
+	if err != nil {
+		return issue, errors.Wrap(err, "creating new issue")
+	}
+
+	logrus.Infof("Successfully created issue #%d: %s", issue.GetNumber(), issue.GetTitle())
+	return issue, nil
 }
 
 func (g *githubClient) GetRepository(
@@ -700,6 +725,39 @@ func (g *GitHub) UploadReleaseAsset(
 	}
 
 	return asset, nil
+}
+
+// ToRequest builds an issue request from the set of options
+func (nio *NewIssueOptions) toRequest() *github.IssueRequest {
+	request := &github.IssueRequest{}
+
+	if nio.State == "open" || nio.State == "closed" || nio.State == "all" {
+		request.State = &nio.State
+	}
+
+	if len(nio.Labels) > 0 {
+		request.Labels = &nio.Labels
+	}
+
+	if len(nio.Assignees) == 1 {
+		request.Assignee = &nio.Assignees[0]
+	} else if len(nio.Assignees) > 1 {
+		request.Assignees = &nio.Assignees
+	}
+	return request
+}
+
+// CreateIssue files a new issue in the specified respoitory
+func (g *GitHub) CreateIssue(
+	owner, repo, title, body string, opts *NewIssueOptions,
+) (*github.Issue, error) {
+	// Create the issue request
+	issueRequest := opts.toRequest()
+	issueRequest.Title = &title
+	issueRequest.Body = &body
+
+	// Create the issue using the cliente
+	return g.Client().CreateIssue(context.Background(), owner, repo, issueRequest)
 }
 
 // CreatePullRequest Creates a new pull request in owner/repo:baseBranch to merge changes from headBranchName
