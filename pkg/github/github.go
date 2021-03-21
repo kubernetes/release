@@ -79,6 +79,10 @@ type Client interface {
 		context.Context, string, string, string, *github.PullRequestListOptions,
 	) ([]*github.PullRequest, *github.Response, error)
 
+	ListMilestones(
+		context.Context, string, string, *github.MilestoneListOptions,
+	) ([]*github.Milestone, *github.Response, error)
+
 	ListReleases(
 		context.Context, string, string, *github.ListOptions,
 	) ([]*github.RepositoryRelease, *github.Response, error)
@@ -311,6 +315,18 @@ func (g *githubClient) ListBranches(
 	}
 
 	return branches, response, nil
+}
+
+// ListMilestones calls the github API to retrieve milestones (with retry)
+func (g *githubClient) ListMilestones(
+	ctx context.Context, owner, repo string, opts *github.MilestoneListOptions,
+) (mstones []*github.Milestone, resp *github.Response, err error) {
+	for shouldRetry := internal.DefaultGithubErrChecker(); ; {
+		mstones, resp, err := g.Issues.ListMilestones(ctx, owner, repo, opts)
+		if !shouldRetry(err) {
+			return mstones, resp, err
+		}
+	}
 }
 
 func (g *githubClient) CreatePullRequest(
@@ -698,6 +714,37 @@ func (g *GitHub) CreatePullRequest(
 	}
 
 	return pr, nil
+}
+
+// GetMilestone returns a milestone object from its string name
+func (g *GitHub) GetMilestone(owner, repo, title string) (
+	ms *github.Milestone, exists bool, err error) {
+	if title == "" {
+		return nil, false, errors.New("unable to search milestone. Title is empty")
+	}
+	opts := &github.MilestoneListOptions{
+		State:       "all",
+		ListOptions: github.ListOptions{PerPage: 100},
+	}
+	for {
+		mstones, resp, err := g.Client().ListMilestones(
+			context.Background(), owner, repo, opts)
+		if err != nil {
+			return nil, exists, errors.Wrap(err, "listing repository milestones")
+		}
+		for _, ms = range mstones {
+			if ms.GetTitle() == title {
+				logrus.Debugf("Milestone %s is milestone ID#%d", ms.GetTitle(), ms.GetID())
+				return ms, true, nil
+			}
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+
+	return nil, false, nil
 }
 
 // GetRepository gets a repository using the current client

@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -238,6 +238,24 @@ type FakeClient struct {
 	}
 	listCommitsReturnsOnCall map[int]struct {
 		result1 []*githuba.RepositoryCommit
+		result2 *githuba.Response
+		result3 error
+	}
+	ListMilestonesStub        func(context.Context, string, string, *githuba.MilestoneListOptions) ([]*githuba.Milestone, *githuba.Response, error)
+	listMilestonesMutex       sync.RWMutex
+	listMilestonesArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 *githuba.MilestoneListOptions
+	}
+	listMilestonesReturns struct {
+		result1 []*githuba.Milestone
+		result2 *githuba.Response
+		result3 error
+	}
+	listMilestonesReturnsOnCall map[int]struct {
+		result1 []*githuba.Milestone
 		result2 *githuba.Response
 		result3 error
 	}
@@ -1185,6 +1203,76 @@ func (fake *FakeClient) ListCommitsReturnsOnCall(i int, result1 []*githuba.Repos
 	}{result1, result2, result3}
 }
 
+func (fake *FakeClient) ListMilestones(arg1 context.Context, arg2 string, arg3 string, arg4 *githuba.MilestoneListOptions) ([]*githuba.Milestone, *githuba.Response, error) {
+	fake.listMilestonesMutex.Lock()
+	ret, specificReturn := fake.listMilestonesReturnsOnCall[len(fake.listMilestonesArgsForCall)]
+	fake.listMilestonesArgsForCall = append(fake.listMilestonesArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 *githuba.MilestoneListOptions
+	}{arg1, arg2, arg3, arg4})
+	stub := fake.ListMilestonesStub
+	fakeReturns := fake.listMilestonesReturns
+	fake.recordInvocation("ListMilestones", []interface{}{arg1, arg2, arg3, arg4})
+	fake.listMilestonesMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2, ret.result3
+	}
+	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
+}
+
+func (fake *FakeClient) ListMilestonesCallCount() int {
+	fake.listMilestonesMutex.RLock()
+	defer fake.listMilestonesMutex.RUnlock()
+	return len(fake.listMilestonesArgsForCall)
+}
+
+func (fake *FakeClient) ListMilestonesCalls(stub func(context.Context, string, string, *githuba.MilestoneListOptions) ([]*githuba.Milestone, *githuba.Response, error)) {
+	fake.listMilestonesMutex.Lock()
+	defer fake.listMilestonesMutex.Unlock()
+	fake.ListMilestonesStub = stub
+}
+
+func (fake *FakeClient) ListMilestonesArgsForCall(i int) (context.Context, string, string, *githuba.MilestoneListOptions) {
+	fake.listMilestonesMutex.RLock()
+	defer fake.listMilestonesMutex.RUnlock()
+	argsForCall := fake.listMilestonesArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+}
+
+func (fake *FakeClient) ListMilestonesReturns(result1 []*githuba.Milestone, result2 *githuba.Response, result3 error) {
+	fake.listMilestonesMutex.Lock()
+	defer fake.listMilestonesMutex.Unlock()
+	fake.ListMilestonesStub = nil
+	fake.listMilestonesReturns = struct {
+		result1 []*githuba.Milestone
+		result2 *githuba.Response
+		result3 error
+	}{result1, result2, result3}
+}
+
+func (fake *FakeClient) ListMilestonesReturnsOnCall(i int, result1 []*githuba.Milestone, result2 *githuba.Response, result3 error) {
+	fake.listMilestonesMutex.Lock()
+	defer fake.listMilestonesMutex.Unlock()
+	fake.ListMilestonesStub = nil
+	if fake.listMilestonesReturnsOnCall == nil {
+		fake.listMilestonesReturnsOnCall = make(map[int]struct {
+			result1 []*githuba.Milestone
+			result2 *githuba.Response
+			result3 error
+		})
+	}
+	fake.listMilestonesReturnsOnCall[i] = struct {
+		result1 []*githuba.Milestone
+		result2 *githuba.Response
+		result3 error
+	}{result1, result2, result3}
+}
+
 func (fake *FakeClient) ListPullRequestsWithCommit(arg1 context.Context, arg2 string, arg3 string, arg4 string, arg5 *githuba.PullRequestListOptions) ([]*githuba.PullRequest, *githuba.Response, error) {
 	fake.listPullRequestsWithCommitMutex.Lock()
 	ret, specificReturn := fake.listPullRequestsWithCommitReturnsOnCall[len(fake.listPullRequestsWithCommitArgsForCall)]
@@ -1627,6 +1715,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.listBranchesMutex.RUnlock()
 	fake.listCommitsMutex.RLock()
 	defer fake.listCommitsMutex.RUnlock()
+	fake.listMilestonesMutex.RLock()
+	defer fake.listMilestonesMutex.RUnlock()
 	fake.listPullRequestsWithCommitMutex.RLock()
 	defer fake.listPullRequestsWithCommitMutex.RUnlock()
 	fake.listReleaseAssetsMutex.RLock()
