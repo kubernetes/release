@@ -153,6 +153,7 @@ type releaseImpl interface {
 	PublishReleaseNotesIndex(
 		gcsIndexRootPath, gcsReleaseNotesPath, version string,
 	) error
+	CreatePubBotBranchIssue(string) error
 }
 
 func (d *defaultReleaseImpl) Submit(options *gcb.Options) error {
@@ -302,6 +303,10 @@ func (d *defaultReleaseImpl) PublishReleaseNotesIndex(
 	return release.NewPublisher().PublishReleaseNotesIndex(
 		gcsIndexRootPath, gcsReleaseNotesPath, version,
 	)
+}
+
+func (d *defaultReleaseImpl) CreatePubBotBranchIssue(branchName string) error {
+	return release.CreatePubBotBranchIssue(branchName)
 }
 
 // NewGitPusher returns a new instance of the git pusher to reuse
@@ -521,6 +526,23 @@ func (d *DefaultRelease) CreateAnnouncement() error {
 	// Run the annoucement creation
 	if err := d.impl.CreateAnnouncement(announceOpts); err != nil {
 		return errors.Wrap(err, "creating the announcement")
+	}
+
+	// Check if we are releasing is the initial minor (eg 1.20.0),
+	// and we are working on a release-M.m branch
+	if primeSemver.Patch == 0 && len(primeSemver.Pre) == 0 &&
+		d.options.ReleaseBranch != git.DefaultBranch {
+		if d.options.NoMock {
+			// Create the publishing bot issue
+			if err := d.impl.CreatePubBotBranchIssue(d.options.ReleaseBranch); err != nil {
+				// If it fails, log the error, but do not treat it
+				// as fatal to avoid breaking the release process:
+				logrus.Warn("Failed to create Publishing Bot Issue")
+				logrus.Error(err)
+			}
+		} else {
+			logrus.Info("Not creating publishing bot issue in mock release")
+		}
 	}
 	return nil
 }
