@@ -248,9 +248,9 @@ func (c *githubNotesRecordClient) DeleteReleaseAsset(
 }
 
 func (c *githubNotesRecordClient) ListReleaseAssets(
-	ctx context.Context, owner, repo string, releaseID int64,
+	ctx context.Context, owner, repo string, releaseID int64, opts *github.ListOptions,
 ) ([]*github.ReleaseAsset, error) {
-	assets, err := c.client.ListReleaseAssets(ctx, owner, repo, releaseID)
+	assets, err := c.client.ListReleaseAssets(ctx, owner, repo, releaseID, opts)
 	if err != nil {
 		return assets, err
 	}
