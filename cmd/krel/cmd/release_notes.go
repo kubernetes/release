@@ -865,7 +865,7 @@ func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 	}
 
 	// Chech if release branch already exists
-	_, err = repo.RevParse(releaseBranch)
+	_, err = repo.RevParseTag(releaseBranch)
 	if err == nil {
 		logrus.Infof("Working on branch %s instead of %s", releaseBranch, git.DefaultBranch)
 		branchName = releaseBranch

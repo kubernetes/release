@@ -159,7 +159,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		gcbOpts     *gcb.Options
 		toolOrg     string
 		toolRepo    string
-		toolBranch  string
+		toolRef     string
 		expected    map[string]string
 		repoMock    gcb.Repository
 		versionMock gcb.Version
@@ -180,7 +180,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"RELEASE_BRANCH":         git.DefaultBranch,
 				"TOOL_ORG":               "",
 				"TOOL_REPO":              "",
-				"TOOL_BRANCH":            "",
+				"TOOL_REF":               "",
 				"TYPE":                   release.ReleaseTypeAlpha,
 				"TYPE_TAG":               release.ReleaseTypeAlpha,
 				"MAJOR_VERSION_TAG":      "1",
@@ -205,7 +205,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"RELEASE_BRANCH":         git.DefaultBranch,
 				"TOOL_ORG":               "",
 				"TOOL_REPO":              "",
-				"TOOL_BRANCH":            "",
+				"TOOL_REF":               "",
 				"TYPE":                   release.ReleaseTypeBeta,
 				"TYPE_TAG":               release.ReleaseTypeBeta,
 				"MAJOR_VERSION_TAG":      "1",
@@ -229,7 +229,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"RELEASE_BRANCH":         "release-1.15",
 				"TOOL_ORG":               "",
 				"TOOL_REPO":              "",
-				"TOOL_BRANCH":            "",
+				"TOOL_REF":               "",
 				"TYPE":                   release.ReleaseTypeRC,
 				"TYPE_TAG":               release.ReleaseTypeRC,
 				"MAJOR_VERSION_TAG":      "1",
@@ -253,7 +253,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"RELEASE_BRANCH":         "release-1.15",
 				"TOOL_ORG":               "",
 				"TOOL_REPO":              "",
-				"TOOL_BRANCH":            "",
+				"TOOL_REF":               "",
 				"TYPE":                   release.ReleaseTypeOfficial,
 				"TYPE_TAG":               release.ReleaseTypeOfficial,
 				"MAJOR_VERSION_TAG":      "1",
@@ -275,12 +275,12 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			releaseMock: mockRelease("v1.16.0"),
 			toolOrg:     "honk",
 			toolRepo:    "best-tools",
-			toolBranch:  "tool-branch",
+			toolRef:     "tool-branch",
 			expected: map[string]string{
 				"RELEASE_BRANCH":         "release-1.16",
 				"TOOL_ORG":               "honk",
 				"TOOL_REPO":              "best-tools",
-				"TOOL_BRANCH":            "tool-branch",
+				"TOOL_REF":               "tool-branch",
 				"TYPE":                   release.ReleaseTypeOfficial,
 				"TYPE_TAG":               release.ReleaseTypeOfficial,
 				"MAJOR_VERSION_TAG":      "1",
@@ -302,12 +302,12 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 			releaseMock: mockRelease("1.19.0-beta.0"),
 			toolOrg:     "honk",
 			toolRepo:    "best-tools",
-			toolBranch:  "tool-branch",
+			toolRef:     "tool-branch",
 			expected: map[string]string{
 				"RELEASE_BRANCH":         "release-1.19",
 				"TOOL_ORG":               "honk",
 				"TOOL_REPO":              "best-tools",
-				"TOOL_BRANCH":            "tool-branch",
+				"TOOL_REF":               "tool-branch",
 				"TYPE":                   release.ReleaseTypeBeta,
 				"TYPE_TAG":               release.ReleaseTypeBeta,
 				"MAJOR_VERSION_TAG":      "1",
@@ -331,7 +331,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"RELEASE_BRANCH":         "release-1.18",
 				"TOOL_ORG":               "",
 				"TOOL_REPO":              "",
-				"TOOL_BRANCH":            "",
+				"TOOL_REF":               "",
 				"TYPE":                   release.ReleaseTypeRC,
 				"TYPE_TAG":               release.ReleaseTypeRC,
 				"MAJOR_VERSION_TAG":      "1",
@@ -355,7 +355,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"RELEASE_BRANCH":         "release-1.18",
 				"TOOL_ORG":               "",
 				"TOOL_REPO":              "",
-				"TOOL_BRANCH":            "",
+				"TOOL_REF":               "",
 				"TYPE":                   release.ReleaseTypeRC,
 				"TYPE_TAG":               release.ReleaseTypeRC,
 				"MAJOR_VERSION_TAG":      "1",
@@ -375,7 +375,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		sut.SetReleaseClient(tc.releaseMock)
 
 		subs, err := sut.SetGCBSubstitutions(
-			tc.toolOrg, tc.toolRepo, tc.toolBranch,
+			tc.toolOrg, tc.toolRepo, tc.toolRef,
 		)
 		require.Nil(t, err)
 

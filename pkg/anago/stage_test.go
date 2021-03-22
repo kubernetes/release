@@ -238,7 +238,7 @@ func TestTagRepository(t *testing.T) {
 	}{
 		{ // success new rc creating release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.RevParseReturns("", err)
+				mock.RevParseTagReturns("", err)
 				mock.CurrentBranchReturnsOnCall(0, "release-1.20", nil)
 			},
 			versions:            newRCVersions,
@@ -248,7 +248,7 @@ func TestTagRepository(t *testing.T) {
 		},
 		{ // failure on CommitEmpty new rc creating release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.RevParseReturns("", err)
+				mock.RevParseTagReturns("", err)
 				mock.CurrentBranchReturnsOnCall(0, "release-1.20", nil)
 				mock.CommitEmptyReturns(err)
 			},
@@ -259,7 +259,7 @@ func TestTagRepository(t *testing.T) {
 		},
 		{ // failure on CurrentBranch new rc creating release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.RevParseReturns("", err)
+				mock.RevParseTagReturns("", err)
 				mock.CurrentBranchReturnsOnCall(0, "release-1.20", nil)
 				mock.CurrentBranchReturns("", err)
 			},
@@ -270,7 +270,7 @@ func TestTagRepository(t *testing.T) {
 		},
 		{ // failure on Checkout new rc creating release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.RevParseReturns("", err)
+				mock.RevParseTagReturns("", err)
 				mock.CurrentBranchReturnsOnCall(0, "release-1.20", nil)
 				mock.CheckoutReturns(err)
 			},
@@ -281,7 +281,7 @@ func TestTagRepository(t *testing.T) {
 		},
 		{ // failure on RevParse new rc creating release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.RevParseReturns("", nil)
+				mock.RevParseTagReturns("", nil)
 			},
 			versions:            newRCVersions,
 			releaseBranch:       "release-1.20",
@@ -299,7 +299,7 @@ func TestTagRepository(t *testing.T) {
 		},
 		{ // success new rc checking out release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.RevParseReturns("", err)
+				mock.RevParseTagReturns("", err)
 			},
 			versions:            newRCVersions,
 			releaseBranch:       "release-1.20",
@@ -308,7 +308,7 @@ func TestTagRepository(t *testing.T) {
 		},
 		{ // failure on Checkout new rc checking out release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.RevParseReturns("", err)
+				mock.RevParseTagReturns("", err)
 				mock.CheckoutReturns(err)
 			},
 			versions:            newRCVersions,
@@ -318,7 +318,7 @@ func TestTagRepository(t *testing.T) {
 		},
 		{ // failure on RevParse new rc checking out release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.RevParseReturns("", nil)
+				mock.RevParseTagReturns("", nil)
 			},
 			versions:            newRCVersions,
 			releaseBranch:       "release-1.20",
@@ -327,7 +327,7 @@ func TestTagRepository(t *testing.T) {
 		},
 		{ // success new beta
 			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.RevParseReturns("", err)
+				mock.RevParseTagReturns("", err)
 			},
 			versions:      newBetaVersions,
 			releaseBranch: git.DefaultBranch,
@@ -335,7 +335,7 @@ func TestTagRepository(t *testing.T) {
 		},
 		{ // new beta failure on Tag
 			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.RevParseReturns("", err)
+				mock.RevParseTagReturns("", err)
 				mock.TagReturns(err)
 			},
 			versions:      newBetaVersions,
@@ -344,7 +344,7 @@ func TestTagRepository(t *testing.T) {
 		},
 		{ // new beta failure on CurrentBranch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.RevParseReturns("", err)
+				mock.RevParseTagReturns("", err)
 				mock.CurrentBranchReturns("", err)
 			},
 			versions:      newBetaVersions,
@@ -353,7 +353,7 @@ func TestTagRepository(t *testing.T) {
 		},
 		{ // new beta failure on Checkout
 			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.RevParseReturns("", err)
+				mock.RevParseTagReturns("", err)
 				mock.CheckoutReturns(err)
 			},
 			versions:      newBetaVersions,

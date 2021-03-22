@@ -94,8 +94,9 @@ func TestCheckStateSuccess(t *testing.T) {
 	sut.mock.RemotesReturns([]*git.Remote{
 		git.NewRemote("origin", []string{"github.com:org/repo"}),
 	}, nil)
-	sut.mock.LsRemoteReturns("dbade8e refs/heads/master", nil)
 	sut.mock.HeadReturns("dbade8e", nil)
+	sut.mock.RevParseReturns("dbade8e", nil)
+	sut.mock.LsRemoteReturns("dbade8e refs/heads/master", nil)
 
 	// When
 	err := sut.repo.CheckState("org", "repo", "branch", false)

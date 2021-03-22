@@ -131,6 +131,7 @@ type stageImpl interface {
 	) (*release.Versions, error)
 	OpenRepo(repoPath string) (*git.Repo, error)
 	RevParse(repo *git.Repo, rev string) (string, error)
+	RevParseTag(repo *git.Repo, rev string) (string, error)
 	Checkout(repo *git.Repo, rev string, args ...string) error
 	CurrentBranch(repo *git.Repo) (string, error)
 	CommitEmpty(repo *git.Repo, msg string) error
@@ -189,6 +190,10 @@ func (d *defaultStageImpl) OpenRepo(repoPath string) (*git.Repo, error) {
 
 func (d *defaultStageImpl) RevParse(repo *git.Repo, rev string) (string, error) {
 	return repo.RevParse(rev)
+}
+
+func (d *defaultStageImpl) RevParseTag(repo *git.Repo, rev string) (string, error) {
+	return repo.RevParseTag(rev)
 }
 
 func (d *defaultStageImpl) Checkout(repo *git.Repo, rev string, args ...string) error {
@@ -328,7 +333,7 @@ func (d *DefaultStage) TagRepository() error {
 		logrus.Infof("Preparing version %s", version)
 
 		// Ensure that the tag not already exists
-		if _, err := d.impl.RevParse(repo, version); err == nil {
+		if _, err := d.impl.RevParseTag(repo, version); err == nil {
 			return errors.Errorf("tag %s already exists", version)
 		}
 

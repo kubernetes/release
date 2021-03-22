@@ -15,7 +15,7 @@ steps:
   dir: 'go/src/k8s.io'
   args:
   - clone
-  - --branch=${_TOOL_BRANCH}
+  - --branch=${_TOOL_REF}
   - ${_TOOL_REPO}
   waitFor: [ '-' ]
 
@@ -55,7 +55,7 @@ substitutions:
   _KUBERNETES_REPO: 'https://github.com/kubernetes/kubernetes.git'
   _KUBERNETES_BRANCH: 'master'
   _TOOL_REPO: 'https://github.com/kubernetes/release.git'
-  _TOOL_BRANCH: 'master'
+  _TOOL_REF: 'master'
   _RELEASE_TYPE: 'release-in-a-container'
   _CI: ''
   _NOMOCK: ''

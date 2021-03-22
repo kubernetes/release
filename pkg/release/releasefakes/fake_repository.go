@@ -99,6 +99,19 @@ type FakeRepository struct {
 		result1 []*git.Remote
 		result2 error
 	}
+	RevParseStub        func(string) (string, error)
+	revParseMutex       sync.RWMutex
+	revParseArgsForCall []struct {
+		arg1 string
+	}
+	revParseReturns struct {
+		result1 string
+		result2 error
+	}
+	revParseReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -455,6 +468,70 @@ func (fake *FakeRepository) RemotesReturnsOnCall(i int, result1 []*git.Remote, r
 	}{result1, result2}
 }
 
+func (fake *FakeRepository) RevParse(arg1 string) (string, error) {
+	fake.revParseMutex.Lock()
+	ret, specificReturn := fake.revParseReturnsOnCall[len(fake.revParseArgsForCall)]
+	fake.revParseArgsForCall = append(fake.revParseArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.RevParseStub
+	fakeReturns := fake.revParseReturns
+	fake.recordInvocation("RevParse", []interface{}{arg1})
+	fake.revParseMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRepository) RevParseCallCount() int {
+	fake.revParseMutex.RLock()
+	defer fake.revParseMutex.RUnlock()
+	return len(fake.revParseArgsForCall)
+}
+
+func (fake *FakeRepository) RevParseCalls(stub func(string) (string, error)) {
+	fake.revParseMutex.Lock()
+	defer fake.revParseMutex.Unlock()
+	fake.RevParseStub = stub
+}
+
+func (fake *FakeRepository) RevParseArgsForCall(i int) string {
+	fake.revParseMutex.RLock()
+	defer fake.revParseMutex.RUnlock()
+	argsForCall := fake.revParseArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeRepository) RevParseReturns(result1 string, result2 error) {
+	fake.revParseMutex.Lock()
+	defer fake.revParseMutex.Unlock()
+	fake.RevParseStub = nil
+	fake.revParseReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepository) RevParseReturnsOnCall(i int, result1 string, result2 error) {
+	fake.revParseMutex.Lock()
+	defer fake.revParseMutex.Unlock()
+	fake.RevParseStub = nil
+	if fake.revParseReturnsOnCall == nil {
+		fake.revParseReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.revParseReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -470,6 +547,8 @@ func (fake *FakeRepository) Invocations() map[string][][]interface{} {
 	defer fake.lsRemoteMutex.RUnlock()
 	fake.remotesMutex.RLock()
 	defer fake.remotesMutex.RUnlock()
+	fake.revParseMutex.RLock()
+	defer fake.revParseMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
