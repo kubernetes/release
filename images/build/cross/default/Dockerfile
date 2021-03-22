@@ -15,8 +15,8 @@
 # This file creates a standard build environment for building cross
 # platform go binary for the architecture kubernetes cares about.
 
-ARG GO_VERSION
-FROM golang:${GO_VERSION}
+ARG BASEIMAGE
+FROM ${BASEIMAGE}
 
 ##------------------------------------------------------------
 # global ARGs & ENVs
