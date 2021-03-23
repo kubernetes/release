@@ -44,7 +44,6 @@ import (
 	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/env"
 	rhash "sigs.k8s.io/release-utils/hash"
-	"sigs.k8s.io/release-utils/http"
 	"sigs.k8s.io/release-utils/tar"
 	"sigs.k8s.io/release-utils/util"
 )
@@ -282,31 +281,6 @@ func GetWorkspaceVersion() (string, error) {
 
 	logrus.Infof("Found workspace version: %s", version)
 	return version, nil
-}
-
-// GetKubecrossVersion returns the current kube-cross container version.
-func GetKubecrossVersion(branches ...string) (string, error) {
-	for i, branch := range branches {
-		logrus.Infof("Trying to get the kube-cross version for %s...", branch)
-
-		versionURL := fmt.Sprintf("https://raw.githubusercontent.com/kubernetes/kubernetes/%s/build/build-image/cross/VERSION", branch)
-
-		version, httpErr := http.GetURLResponse(versionURL, true)
-		if httpErr != nil {
-			if i < len(branches)-1 {
-				logrus.Infof("Error retrieving the kube-cross version for the '%s': %v", branch, httpErr)
-			} else {
-				return "", httpErr
-			}
-		}
-
-		if version != "" {
-			logrus.Infof("Found the following kube-cross version: %s", version)
-			return version, nil
-		}
-	}
-
-	return "", errors.New("kube-cross version should not be empty; cannot continue")
 }
 
 // URLPrefixForBucket returns the URL prefix for the provided bucket string

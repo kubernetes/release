@@ -33,7 +33,7 @@ steps:
     echo "Checking out ${_TOOL_REF}"
     git checkout ${_TOOL_REF}
 
-- name: k8s.gcr.io/releng/releng-ci:v0.5.0
+- name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION_LATEST}
   dir: "go/src/k8s.io/release"
   env:
   - "GOPATH=/workspace/go"

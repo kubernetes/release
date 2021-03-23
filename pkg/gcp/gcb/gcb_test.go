@@ -19,6 +19,7 @@ package gcb_test
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -530,7 +531,7 @@ func dropDynamicSubstitutions(orig map[string]string) (result map[string]string)
 	result = orig
 
 	for k := range result {
-		if k == "BUILDVERSION" || k == "GCP_USER_TAG" || k == "KUBE_CROSS_VERSION" {
+		if k == "BUILDVERSION" || k == "GCP_USER_TAG" || strings.HasPrefix(k, "KUBE_CROSS_VERSION") {
 			delete(result, k)
 		}
 	}

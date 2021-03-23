@@ -428,26 +428,6 @@ func TestURLPrefixForBucket(t *testing.T) {
 	}
 }
 
-func TestGetKubecrossVersionSuccess(t *testing.T) {
-	_, err := GetKubecrossVersion("release-1.15")
-	require.Nil(t, err)
-}
-
-func TestGetKubecrossVersionSuccessOneNotExisting(t *testing.T) {
-	_, err := GetKubecrossVersion("not-existing", "release-1.15")
-	require.Nil(t, err)
-}
-
-func TestGetKubecrossVersionFailureNotExisting(t *testing.T) {
-	_, err := GetKubecrossVersion("not-existing")
-	require.NotNil(t, err)
-}
-
-func TestGetKubecrossVersionFailureEmpty(t *testing.T) {
-	_, err := GetKubecrossVersion()
-	require.NotNil(t, err)
-}
-
 // Writes a couple of test doccker images
 func writeTestImages(t *testing.T, testIDs map[string]string) (mockPath string) {
 	tmpDir, err := os.MkdirTemp("", "")
