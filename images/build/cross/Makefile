@@ -22,6 +22,7 @@ TYPE ?= default
 
 # Build args
 GO_VERSION?=1.16.1
+BASEIMAGE?=golang:$(GO_VERSION)
 PROTOBUF_VERSION?=3.7.0
 ETCD_VERSION?=v3.4.13
 
@@ -62,7 +63,7 @@ container: check-env init-docker-buildx
 			--tag $(IMAGE)-$${platform##*/}:$(IMAGE_VERSION) \
 			--tag $(IMAGE)-$${platform##*/}:$(TAG)-$(CONFIG)-$(TYPE) \
 			--tag $(IMAGE)-$${platform##*/}:latest-$(CONFIG)-$(TYPE) \
-			--build-arg=GO_VERSION=$(GO_VERSION) \
+			--build-arg=BASEIMAGE=$(BASEIMAGE) \
 			--build-arg=PROTOBUF_VERSION=$(PROTOBUF_VERSION) \
 			--build-arg=ETCD_VERSION=$(ETCD_VERSION) \
 			--file $(TYPE)/Dockerfile \
