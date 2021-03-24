@@ -19,7 +19,7 @@ package changelogfakes
 
 import (
 	"io"
-	"os"
+	"io/fs"
 	"sync"
 	"text/template"
 
@@ -312,17 +312,17 @@ type FakeImpl struct {
 	rmReturnsOnCall map[int]struct {
 		result1 error
 	}
-	StatStub        func(string) (os.FileInfo, error)
+	StatStub        func(string) (fs.FileInfo, error)
 	statMutex       sync.RWMutex
 	statArgsForCall []struct {
 		arg1 string
 	}
 	statReturns struct {
-		result1 os.FileInfo
+		result1 fs.FileInfo
 		result2 error
 	}
 	statReturnsOnCall map[int]struct {
-		result1 os.FileInfo
+		result1 fs.FileInfo
 		result2 error
 	}
 	TagStringToSemverStub        func(string) (semver.Version, error)
@@ -362,12 +362,12 @@ type FakeImpl struct {
 	validateAndFinishReturnsOnCall map[int]struct {
 		result1 error
 	}
-	WriteFileStub        func(string, []byte, os.FileMode) error
+	WriteFileStub        func(string, []byte, fs.FileMode) error
 	writeFileMutex       sync.RWMutex
 	writeFileArgsForCall []struct {
 		arg1 string
 		arg2 []byte
-		arg3 os.FileMode
+		arg3 fs.FileMode
 	}
 	writeFileReturns struct {
 		result1 error
@@ -1715,7 +1715,7 @@ func (fake *FakeImpl) RmReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) Stat(arg1 string) (os.FileInfo, error) {
+func (fake *FakeImpl) Stat(arg1 string) (fs.FileInfo, error) {
 	fake.statMutex.Lock()
 	ret, specificReturn := fake.statReturnsOnCall[len(fake.statArgsForCall)]
 	fake.statArgsForCall = append(fake.statArgsForCall, struct {
@@ -1740,7 +1740,7 @@ func (fake *FakeImpl) StatCallCount() int {
 	return len(fake.statArgsForCall)
 }
 
-func (fake *FakeImpl) StatCalls(stub func(string) (os.FileInfo, error)) {
+func (fake *FakeImpl) StatCalls(stub func(string) (fs.FileInfo, error)) {
 	fake.statMutex.Lock()
 	defer fake.statMutex.Unlock()
 	fake.StatStub = stub
@@ -1753,28 +1753,28 @@ func (fake *FakeImpl) StatArgsForCall(i int) string {
 	return argsForCall.arg1
 }
 
-func (fake *FakeImpl) StatReturns(result1 os.FileInfo, result2 error) {
+func (fake *FakeImpl) StatReturns(result1 fs.FileInfo, result2 error) {
 	fake.statMutex.Lock()
 	defer fake.statMutex.Unlock()
 	fake.StatStub = nil
 	fake.statReturns = struct {
-		result1 os.FileInfo
+		result1 fs.FileInfo
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) StatReturnsOnCall(i int, result1 os.FileInfo, result2 error) {
+func (fake *FakeImpl) StatReturnsOnCall(i int, result1 fs.FileInfo, result2 error) {
 	fake.statMutex.Lock()
 	defer fake.statMutex.Unlock()
 	fake.StatStub = nil
 	if fake.statReturnsOnCall == nil {
 		fake.statReturnsOnCall = make(map[int]struct {
-			result1 os.FileInfo
+			result1 fs.FileInfo
 			result2 error
 		})
 	}
 	fake.statReturnsOnCall[i] = struct {
-		result1 os.FileInfo
+		result1 fs.FileInfo
 		result2 error
 	}{result1, result2}
 }
@@ -1967,7 +1967,7 @@ func (fake *FakeImpl) ValidateAndFinishReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) WriteFile(arg1 string, arg2 []byte, arg3 os.FileMode) error {
+func (fake *FakeImpl) WriteFile(arg1 string, arg2 []byte, arg3 fs.FileMode) error {
 	var arg2Copy []byte
 	if arg2 != nil {
 		arg2Copy = make([]byte, len(arg2))
@@ -1978,7 +1978,7 @@ func (fake *FakeImpl) WriteFile(arg1 string, arg2 []byte, arg3 os.FileMode) erro
 	fake.writeFileArgsForCall = append(fake.writeFileArgsForCall, struct {
 		arg1 string
 		arg2 []byte
-		arg3 os.FileMode
+		arg3 fs.FileMode
 	}{arg1, arg2Copy, arg3})
 	stub := fake.WriteFileStub
 	fakeReturns := fake.writeFileReturns
@@ -1999,13 +1999,13 @@ func (fake *FakeImpl) WriteFileCallCount() int {
 	return len(fake.writeFileArgsForCall)
 }
 
-func (fake *FakeImpl) WriteFileCalls(stub func(string, []byte, os.FileMode) error) {
+func (fake *FakeImpl) WriteFileCalls(stub func(string, []byte, fs.FileMode) error) {
 	fake.writeFileMutex.Lock()
 	defer fake.writeFileMutex.Unlock()
 	fake.WriteFileStub = stub
 }
 
-func (fake *FakeImpl) WriteFileArgsForCall(i int) (string, []byte, os.FileMode) {
+func (fake *FakeImpl) WriteFileArgsForCall(i int) (string, []byte, fs.FileMode) {
 	fake.writeFileMutex.RLock()
 	defer fake.writeFileMutex.RUnlock()
 	argsForCall := fake.writeFileArgsForCall[i]
