@@ -16,7 +16,11 @@ limitations under the License.
 
 package kubecross
 
-import "sigs.k8s.io/release-utils/http"
+import (
+	"bytes"
+
+	"sigs.k8s.io/release-utils/http"
+)
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //counterfeiter:generate . impl
@@ -27,5 +31,9 @@ type impl interface {
 type defaultImpl struct{}
 
 func (*defaultImpl) GetURLResponse(url string, trim bool) (string, error) {
-	return http.GetURLResponse(url, trim)
+	content, err := http.NewAgent().Get(url)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes.TrimSpace(content)), nil
 }
