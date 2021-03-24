@@ -1,4 +1,4 @@
 variants:
   buster:
     CONFIG: 'buster'
-    IMAGE_VERSION: 'buster-v1.4.0'
+    IMAGE_VERSION: 'buster-v1.5.0'
