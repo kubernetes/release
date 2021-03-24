@@ -33,6 +33,7 @@ import (
 	"k8s.io/release/pkg/gcp/auth"
 	"k8s.io/release/pkg/gcp/build"
 	"k8s.io/release/pkg/git"
+	"k8s.io/release/pkg/kubecross"
 	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-utils/util"
 )
@@ -350,16 +351,21 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef string) (map[string
 
 	gcbSubs["BUILDVERSION"] = buildVersion
 
-	kubecrossBranches := []string{
-		g.options.Branch,
-		git.DefaultBranch,
+	kc := kubecross.New()
+	kcVersionBranch, err := kc.ForBranch(g.options.Branch)
+	if err != nil {
+		return gcbSubs, errors.Wrap(err, "retrieve kube-cross version")
 	}
+	gcbSubs["KUBE_CROSS_VERSION"] = kcVersionBranch
 
-	kubecrossVersion, kubecrossVersionErr := release.GetKubecrossVersion(kubecrossBranches...)
-	if kubecrossVersionErr != nil {
-		return gcbSubs, kubecrossVersionErr
+	kcVersionLatest := kcVersionBranch
+	if g.options.Branch != git.DefaultBranch {
+		kcVersionLatest, err = kc.Latest()
+		if err != nil {
+			return gcbSubs, errors.Wrap(err, "retrieve latest kube-cross version")
+		}
 	}
-	gcbSubs["KUBE_CROSS_VERSION"] = kubecrossVersion
+	gcbSubs["KUBE_CROSS_VERSION_LATEST"] = kcVersionLatest
 
 	buildVersionSemver, err := util.TagStringToSemver(buildVersion)
 	if err != nil {

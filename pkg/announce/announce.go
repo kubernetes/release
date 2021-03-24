@@ -25,11 +25,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/util"
+
+	"k8s.io/release/pkg/kubecross"
 )
 
 const (
@@ -168,14 +167,14 @@ func getGoVersion(tag string) (string, error) {
 		return "", errors.Wrap(err, "parse version tag")
 	}
 
-	kubecrossBranches := []string{
-		fmt.Sprintf("release-%d.%d", semver.Major, semver.Minor),
-		git.DefaultBranch,
-	}
-
-	kubecrossVer, err := release.GetKubecrossVersion(kubecrossBranches...)
+	branch := fmt.Sprintf("release-%d.%d", semver.Major, semver.Minor)
+	kc := kubecross.New()
+	kubecrossVer, err := kc.ForBranch(branch)
 	if err != nil {
-		return "", errors.Wrap(err, "get kubecross version")
+		kubecrossVer, err = kc.Latest()
+		if err != nil {
+			return "", errors.Wrap(err, "get kubecross version")
+		}
 	}
 
 	kubecrossImg := fmt.Sprintf("k8s.gcr.io/build-image/kube-cross:%s", kubecrossVer)
