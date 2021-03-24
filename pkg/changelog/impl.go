@@ -82,7 +82,7 @@ type impl interface {
 	Abs(path string) (string, error)
 
 	// Used in `lookupRemoteReleaseNotes()`
-	GetURLResponse(url string, trim bool) (string, error)
+	GetURLResponse(url string) (string, error)
 
 	// Used in `commitChanges()`
 	Add(repo *git.Repo, filename string) error
@@ -196,8 +196,12 @@ func (*defaultImpl) Abs(path string) (string, error) {
 	return filepath.Abs(path)
 }
 
-func (*defaultImpl) GetURLResponse(url string, trim bool) (string, error) {
-	return http.GetURLResponse(url, trim)
+func (*defaultImpl) GetURLResponse(url string) (string, error) {
+	content, err := http.NewAgent().Get(url)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
 }
 
 func (*defaultImpl) Add(repo *git.Repo, filename string) error {
