@@ -409,7 +409,7 @@ func (c *Changelog) lookupRemoteReleaseNotes(
 
 	// Retrieve the markdown version
 	remoteMarkdown := remoteBase + "release-notes-draft.md"
-	markdownStr, err = c.impl.GetURLResponse(remoteMarkdown, false)
+	markdownStr, err = c.impl.GetURLResponse(remoteMarkdown)
 	if err != nil {
 		return "", "", errors.Wrapf(err,
 			"fetch release notes markdown from remote: %s", remoteMarkdown,
@@ -419,7 +419,7 @@ func (c *Changelog) lookupRemoteReleaseNotes(
 
 	// Retrieve the JSON version
 	remoteJSON := remoteBase + "release-notes-draft.json"
-	jsonStr, err = c.impl.GetURLResponse(remoteJSON, false)
+	jsonStr, err = c.impl.GetURLResponse(remoteJSON)
 	if err != nil {
 		logrus.Warnf(
 			"Unable to fetch release notes JSON from remote %s: %v",
