@@ -356,9 +356,9 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef string) (map[string
 	kc := kubecross.New()
 	kcVersionBranch, err := kc.ForBranch(g.options.Branch)
 	if err != nil {
-		// If the kubecross version is not set, we will get a 404 from GitHub
-		// we do not err but use the latest version
-		if !strings.Contains(err.Error(), "404") {
+		// If the kubecross version is not set, we will get a 404 from GitHub.
+		// In that case, we do not err but use the latest version (unless we're on main branch)
+		if g.options.Branch == git.DefaultBranch || !strings.Contains(err.Error(), "404") {
 			return gcbSubs, errors.Wrap(err, "retrieve kube-cross version")
 		}
 		logrus.Infof("KubeCross version not set for %s, falling back to latest", g.options.Branch)
