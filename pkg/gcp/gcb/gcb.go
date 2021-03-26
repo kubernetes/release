@@ -328,7 +328,9 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef string) (map[string
 	if g.options.Stage && g.options.BuildAtHead {
 		hash, err := git.LSRemoteExec(git.GetDefaultKubernetesRepoURL(), "rev-parse", g.options.Branch)
 		if err != nil {
-			return gcbSubs, errors.New("failed to execute the rev-parse")
+			return gcbSubs, errors.Wrapf(
+				err, "execute rev-parse for branch %s", g.options.Branch,
+			)
 		}
 
 		fields := strings.Fields(hash)
