@@ -103,6 +103,16 @@ type FakeStageImpl struct {
 		result1 string
 		result2 error
 	}
+	DockerHubLoginStub        func() error
+	dockerHubLoginMutex       sync.RWMutex
+	dockerHubLoginArgsForCall []struct {
+	}
+	dockerHubLoginReturns struct {
+		result1 error
+	}
+	dockerHubLoginReturnsOnCall map[int]struct {
+		result1 error
+	}
 	GenerateChangelogStub        func(*changelog.Options) error
 	generateChangelogMutex       sync.RWMutex
 	generateChangelogArgsForCall []struct {
@@ -646,6 +656,59 @@ func (fake *FakeStageImpl) CurrentBranchReturnsOnCall(i int, result1 string, res
 		result1 string
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeStageImpl) DockerHubLogin() error {
+	fake.dockerHubLoginMutex.Lock()
+	ret, specificReturn := fake.dockerHubLoginReturnsOnCall[len(fake.dockerHubLoginArgsForCall)]
+	fake.dockerHubLoginArgsForCall = append(fake.dockerHubLoginArgsForCall, struct {
+	}{})
+	stub := fake.DockerHubLoginStub
+	fakeReturns := fake.dockerHubLoginReturns
+	fake.recordInvocation("DockerHubLogin", []interface{}{})
+	fake.dockerHubLoginMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) DockerHubLoginCallCount() int {
+	fake.dockerHubLoginMutex.RLock()
+	defer fake.dockerHubLoginMutex.RUnlock()
+	return len(fake.dockerHubLoginArgsForCall)
+}
+
+func (fake *FakeStageImpl) DockerHubLoginCalls(stub func() error) {
+	fake.dockerHubLoginMutex.Lock()
+	defer fake.dockerHubLoginMutex.Unlock()
+	fake.DockerHubLoginStub = stub
+}
+
+func (fake *FakeStageImpl) DockerHubLoginReturns(result1 error) {
+	fake.dockerHubLoginMutex.Lock()
+	defer fake.dockerHubLoginMutex.Unlock()
+	fake.DockerHubLoginStub = nil
+	fake.dockerHubLoginReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) DockerHubLoginReturnsOnCall(i int, result1 error) {
+	fake.dockerHubLoginMutex.Lock()
+	defer fake.dockerHubLoginMutex.Unlock()
+	fake.DockerHubLoginStub = nil
+	if fake.dockerHubLoginReturnsOnCall == nil {
+		fake.dockerHubLoginReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.dockerHubLoginReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeStageImpl) GenerateChangelog(arg1 *changelog.Options) error {
@@ -1532,6 +1595,8 @@ func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	defer fake.commitEmptyMutex.RUnlock()
 	fake.currentBranchMutex.RLock()
 	defer fake.currentBranchMutex.RUnlock()
+	fake.dockerHubLoginMutex.RLock()
+	defer fake.dockerHubLoginMutex.RUnlock()
 	fake.generateChangelogMutex.RLock()
 	defer fake.generateChangelogMutex.RUnlock()
 	fake.generateReleaseVersionMutex.RLock()

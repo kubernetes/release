@@ -402,6 +402,12 @@ func TestBuild(t *testing.T) {
 			},
 			shouldError: true,
 		},
+		{ // DockerHubLogin fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.DockerHubLoginReturns(err)
+			},
+			shouldError: true,
+		},
 	} {
 		opts := anago.DefaultStageOptions()
 		sut := anago.NewDefaultStage(opts)
