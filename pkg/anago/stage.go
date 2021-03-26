@@ -137,6 +137,7 @@ type stageImpl interface {
 	CommitEmpty(repo *git.Repo, msg string) error
 	Tag(repo *git.Repo, name, message string) error
 	CheckReleaseBucket(options *build.Options) error
+	DockerHubLogin() error
 	MakeCross(version string) error
 	GenerateChangelog(options *changelog.Options) error
 	StageLocalSourceTree(
@@ -214,6 +215,10 @@ func (d *defaultStageImpl) Tag(repo *git.Repo, name, message string) error {
 
 func (d *defaultStageImpl) MakeCross(version string) error {
 	return build.NewMake().MakeCross(version)
+}
+
+func (d *defaultStageImpl) DockerHubLogin() error {
+	return release.DockerHubLogin()
 }
 
 func (d *defaultStageImpl) GenerateChangelog(options *changelog.Options) error {
@@ -459,6 +464,12 @@ func (d *DefaultStage) TagRepository() error {
 }
 
 func (d *DefaultStage) Build() error {
+	// Log in to Docker Hub to avoid getting rate limited
+	if err := d.impl.DockerHubLogin(); err != nil {
+		return errors.Wrap(err, "loging into Docker Hub")
+	}
+
+	// Call MakeCross for each of the versions we are building
 	for _, version := range d.state.versions.Ordered() {
 		if err := d.impl.MakeCross(version); err != nil {
 			return errors.Wrap(err, "build artifacts")
