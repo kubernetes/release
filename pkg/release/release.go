@@ -130,6 +130,9 @@ const (
 	// Publishing bot issue repository
 	PubBotRepoOrg  = "k8s-release-robot"
 	PubBotRepoName = "sig-release"
+
+	DockerHubEnvKey   = "DOCKERHUB_TOKEN" // Env var containing the docker key
+	DockerHubUserName = "k8sreleng"       // Docker Hub username
 )
 
 var (
@@ -677,5 +680,25 @@ func CreatePubBotBranchIssue(branchName string) error {
 		return errors.Wrap(err, "creating publishing bot issue")
 	}
 	logrus.Infof("Publishing bot issue created #%d!", issue.GetNumber())
+	return nil
+}
+
+// Calls docker login to log into docker hub using a token from the environment
+func DockerHubLogin() error {
+	// Check the environment  variable is set
+	if os.Getenv(DockerHubEnvKey) == "" {
+		return errors.New("Unable to find docker token in the environment")
+	}
+	// Pipe the token into docker login
+	cmd := command.New(
+		"docker", "login", fmt.Sprintf("--username=%s", DockerHubUserName),
+		"--password", os.Getenv(DockerHubEnvKey),
+	)
+	// Run docker login:
+	if err := cmd.RunSuccess(); err != nil {
+		errStr := strings.ReplaceAll(err.Error(), os.Getenv(DockerHubEnvKey), "**********")
+		return errors.Wrap(errors.New(errStr), "logging into Docker Hub")
+	}
+	logrus.Infof("User %s successfully logged into Docker Hub", DockerHubUserName)
 	return nil
 }
