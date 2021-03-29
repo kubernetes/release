@@ -124,7 +124,7 @@ func runTestGridShot(opts *TestGridOptions) error {
 	testgridJobs := []TestGridJob{}
 	for _, board := range opts.boards {
 		testGridDashboard := fmt.Sprintf("%s/sig-release-%s-%s/summary", opts.testgridURL, opts.branch, board)
-		content, err := http.GetURLResponseWithTimeOut(testGridDashboard, 30*time.Second)
+		content, err := http.NewAgent().WithTimeout(30 * time.Second).Get(testGridDashboard)
 		if err != nil {
 			return errors.Wrapf(err,
 				"unable to retrieve release announcement form url: %s", testGridDashboard,
@@ -178,7 +178,7 @@ func processDashboards(testgridJobs []TestGridJob, date string, opts *TestGridOp
 		rendertronURL := fmt.Sprintf("%s/%s?width=3000&height=2500", opts.renderTronURL, url.PathEscape(testGridJobURL))
 		logrus.Infof("rendertronURL for %s: %s", testGridJobURL, rendertronURL)
 
-		content, err := http.GetURLResponseWithTimeOut(rendertronURL, 300*time.Second)
+		content, err := http.NewAgent().WithTimeout(300 * time.Second).Get(rendertronURL)
 		if err != nil {
 			return testgridJobs, errors.Wrapf(err, "failed to get the testgrid screenshot")
 		}
