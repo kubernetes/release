@@ -83,14 +83,6 @@ RELEASE_TOOLS ?=
 release-tools: ## Compiles a set of release tools, specified by $RELEASE_TOOLS
 	./compile-release-tools $(RELEASE_TOOLS)
 
-##@ GCB Jobs
-
-.PHONY: stage-ci
-
-stage-ci: ## Compiles/installs krel and submits a MOCK streamed stage build to GCB (used for Prow)
-	RELEASE_TOOLS="krel" $(MAKE) release-tools
-	krel stage --stream
-
 ##@ Images
 
 .PHONY: update-images
