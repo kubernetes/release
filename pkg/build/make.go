@@ -83,11 +83,6 @@ func (m *Make) MakeCross(version string) error {
 		return errors.Wrapf(err, "checking out version %s", version)
 	}
 
-	// Unset the build memory requirement for parallel builds
-	const buildMemoryKey = "KUBE_PARALLEL_BUILD_MEMORY"
-	logrus.Infof("Unsetting %s to force parallel build", buildMemoryKey)
-	os.Setenv(buildMemoryKey, "0")
-
 	logrus.Info("Building binaries")
 	if err := m.impl.Command(
 		"make",
