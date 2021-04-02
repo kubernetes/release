@@ -9,9 +9,9 @@ variants:
     DISTROLESS_IMAGE: 'static-debian10'
   go1.15-buster:
     CONFIG: 'go1.15-buster'
-    IMAGE_VERSION: 'v2.3.1-go1.15.10-buster.0'
+    IMAGE_VERSION: 'v2.3.1-go1.15.11-buster.0'
     GO_MINOR_VERSION: '1.15'
     OS_CODENAME: 'buster'
     REVISION: '0'
-    GO_VERSION: '1.15.10'
+    GO_VERSION: '1.15.11'
     DISTROLESS_IMAGE: 'static-debian10'
