@@ -10,7 +10,6 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/cheggaaa/pb/v3 v3.0.5
-	github.com/containers/image/v5 v5.10.4
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/golang/protobuf v1.4.3
 	github.com/google/go-containerregistry v0.3.0
@@ -22,7 +21,6 @@ require (
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481
 	github.com/olekukonko/tablewriter v0.0.4
-	github.com/opencontainers/image-spec v1.0.2-0.20200206005212-79b036d80240
 	github.com/pkg/errors v0.9.1
 	github.com/psampaz/go-mod-outdated v0.7.0
 	github.com/saschagrunert/go-modiff v1.3.0
