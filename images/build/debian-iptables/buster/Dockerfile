@@ -18,7 +18,8 @@ FROM ${BASEIMAGE}
 
 # Install iptables and ebtables packages from buster-backports
 ARG IPTABLES_VERSION
-RUN echo deb http://deb.debian.org/debian buster-backports main >> /etc/apt/sources.list \
+RUN ln -s /bin/rm /usr/sbin/rm \
+    && echo deb http://deb.debian.org/debian buster-backports main >> /etc/apt/sources.list \
     && apt-get update \
     && apt-get -t buster-backports -y --no-install-recommends install \
         iptables=${IPTABLES_VERSION}* \
