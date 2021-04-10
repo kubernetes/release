@@ -265,6 +265,32 @@ func TestRun(t *testing.T) {
 			},
 			shouldErr: true,
 		},
+		{ // CloneCVEData returns error
+			prepare: func(mock *changelogfakes.FakeImpl, o *changelog.Options) {
+				o.CloneCVEMaps = true
+				mock.TagStringToSemverReturns(semver.Version{
+					Major: 1,
+					Minor: 19,
+					Patch: 3,
+				}, nil)
+				mock.CloneCVEDataReturns("", err)
+			},
+			shouldErr: true,
+		},
+		{ // CloneCVEData returns empty string
+			prepare: func(mock *changelogfakes.FakeImpl, o *changelog.Options) {
+				o.CloneCVEMaps = true
+				mock.TagStringToSemverReturns(semver.Version{
+					Major: 1,
+					Minor: 19,
+					Patch: 3,
+				}, nil)
+				mock.ReadFileReturns([]byte(changelog.TocEnd), nil)
+				mock.GatherReleaseNotesReturns(&notes.ReleaseNotes{}, nil)
+				mock.CloneCVEDataReturns("", nil)
+			},
+			shouldErr: false,
+		},
 	} {
 		options := &changelog.Options{}
 		sut := changelog.New(options)
