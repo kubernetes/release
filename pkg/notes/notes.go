@@ -1092,6 +1092,41 @@ func (rn *ReleaseNote) ContentHash() (string, error) {
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
+// ReadRawInterface populates the CVE data struct from the raw array
+// as returned by the YAML parser
+func (cve *CVEData) ReadRawInterface(cvedata interface{}) error {
+	if val, ok := cvedata.(map[interface{}]interface{})["id"].(string); ok {
+		cve.ID = val
+	}
+	if val, ok := cvedata.(map[interface{}]interface{})["title"].(string); ok {
+		cve.Title = val
+	}
+	if val, ok := cvedata.(map[interface{}]interface{})["issue"].(string); ok {
+		cve.TrackingIssue = val
+	}
+	if val, ok := cvedata.(map[interface{}]interface{})["vector"].(string); ok {
+		cve.CVSSVector = val
+	}
+	if val, ok := cvedata.(map[interface{}]interface{})["score"].(float64); ok {
+		cve.CVSSScore = float32(val)
+	}
+	if val, ok := cvedata.(map[interface{}]interface{})["rating"].(string); ok {
+		cve.CVSSRating = val
+	}
+	if val, ok := cvedata.(map[interface{}]interface{})["description"].(string); ok {
+		cve.Description = val
+	}
+	// Linked PRs is a list of the PR IDs
+	if val, ok := cvedata.(map[interface{}]interface{})["linkedPRs"].([]interface{}); ok {
+		cve.LinkedPRs = []int{}
+		for _, prid := range val {
+			cve.LinkedPRs = append(cve.LinkedPRs, prid.(int))
+		}
+	}
+
+	return nil
+}
+
 // Validate checks the data defined in a CVE map is complete and valid
 func (cve *CVEData) Validate() error {
 	// Verify that rating is defined and a known string
@@ -1124,7 +1159,7 @@ func (cve *CVEData) Validate() error {
 		return errors.New("CVSS score missing from CVE data")
 	}
 	if cve.CVSSScore < 0 || cve.CVSSScore > 10 {
-		return errors.New("CVSS score pit of range, should be 0-10")
+		return errors.New("CVSS score out of range, should be 0.0 - 10.0")
 	}
 
 	// Check that the CVE ID is not empty

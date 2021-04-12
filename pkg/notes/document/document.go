@@ -221,38 +221,17 @@ func New(
 			continue
 		}
 
-		cvedata, hasCVE := note.DataFields["cve"]
-		if hasCVE {
+		if _, hasCVE := note.DataFields["cve"]; hasCVE {
 			logrus.Infof("Release note for PR #%d has CVE vulnerability info", note.PrNumber)
+
+			// Create a new CVE data struct for the document
 			cve := notes.CVEData{}
-			if val, ok := cvedata.(map[interface{}]interface{})["id"].(string); ok {
-				cve.ID = val
+
+			// Populate the struct from the raw interface
+			if err := cve.ReadRawInterface(note.DataFields["cve"]); err != nil {
+				return nil, errors.Wrap(err, "reading CVE data embedded in map file")
 			}
-			if val, ok := cvedata.(map[interface{}]interface{})["title"].(string); ok {
-				cve.Title = val
-			}
-			if val, ok := cvedata.(map[interface{}]interface{})["issue"].(string); ok {
-				cve.TrackingIssue = val
-			}
-			if val, ok := cvedata.(map[interface{}]interface{})["vector"].(string); ok {
-				cve.CVSSVector = val
-			}
-			if val, ok := cvedata.(map[interface{}]interface{})["score"].(float64); ok {
-				cve.CVSSScore = float32(val)
-			}
-			if val, ok := cvedata.(map[interface{}]interface{})["rating"].(string); ok {
-				cve.CVSSRating = val
-			}
-			if val, ok := cvedata.(map[interface{}]interface{})["description"].(string); ok {
-				cve.Description = val
-			}
-			// Linked PRs is a list of the PR IDs
-			if val, ok := cvedata.(map[interface{}]interface{})["linkedPRs"].([]interface{}); ok {
-				cve.LinkedPRs = []int{}
-				for _, prid := range val {
-					cve.LinkedPRs = append(cve.LinkedPRs, prid.(int))
-				}
-			}
+
 			// Verify that CVE data has the minimum fields defined
 			if err := cve.Validate(); err != nil {
 				return nil, errors.Wrapf(err, "checking CVE map file for PR #%d", pr)
