@@ -28,6 +28,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"k8s.io/release/pkg/cve"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/release"
@@ -41,7 +42,7 @@ type Document struct {
 	Downloads               *FileMetadata  `json:"downloads"`
 	CurrentRevision         string         `json:"release_tag"`
 	PreviousRevision        string
-	CVEList                 []notes.CVEData
+	CVEList                 []cve.CVE
 }
 
 // FileMetadata contains metadata about files associated with the release.
@@ -225,18 +226,18 @@ func New(
 			logrus.Infof("Release note for PR #%d has CVE vulnerability info", note.PrNumber)
 
 			// Create a new CVE data struct for the document
-			cve := notes.CVEData{}
+			newcve := cve.CVE{}
 
 			// Populate the struct from the raw interface
-			if err := cve.ReadRawInterface(note.DataFields["cve"]); err != nil {
+			if err := newcve.ReadRawInterface(note.DataFields["cve"]); err != nil {
 				return nil, errors.Wrap(err, "reading CVE data embedded in map file")
 			}
 
 			// Verify that CVE data has the minimum fields defined
-			if err := cve.Validate(); err != nil {
+			if err := newcve.Validate(); err != nil {
 				return nil, errors.Wrapf(err, "checking CVE map file for PR #%d", pr)
 			}
-			doc.CVEList = append(doc.CVEList, cve)
+			doc.CVEList = append(doc.CVEList, newcve)
 		}
 
 		// TODO: Refactor the logic here and add testing.
