@@ -15,12 +15,8 @@
 ARG KUBE_CROSS_VERSION
 FROM k8s.gcr.io/build-image/kube-cross:${KUBE_CROSS_VERSION}
 
-##------------------------------------------------------------
-# global ARGs & ENVs
-
-ARG DEBIAN_FRONTEND=noninteractive
-
-##------------------------------------------------------------
+# Non-interactive debian build
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
 # Install packages
 RUN apt-get -q update \

@@ -21,7 +21,6 @@ FROM ${BASEIMAGE}
 ##------------------------------------------------------------
 # global ARGs & ENVs
 ARG TARGETPLATFORM
-ARG DEBIAN_FRONTEND=noninteractive
 
 ENV GOARM 7
 ENV KUBE_DYNAMIC_CROSSPLATFORMS \
@@ -39,6 +38,9 @@ ENV KUBE_CROSSPLATFORMS \
   windows/amd64 windows/386
 
 ##------------------------------------------------------------
+
+# Ensure the debian image is noninteractive
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
 # Pre-compile the standard go library when cross-compiling. This is much easier now when we have go1.5+
 RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \

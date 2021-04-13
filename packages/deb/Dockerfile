@@ -14,7 +14,7 @@
 
 FROM golang:1.16.1
 
-RUN export DEBIAN_FRONTEND=noninteractive \
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections \
     && apt-get update -y \
     && apt-get -yy -q install --no-install-recommends --no-install-suggests --fix-missing \
       dpkg-dev \

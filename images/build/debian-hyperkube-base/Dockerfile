@@ -36,7 +36,8 @@ RUN clean-install bash
 # The samba-common, cifs-utils, and nfs-common packages depend on
 # ucf, which itself depends on /bin/bash.
 RUN echo "dash dash/sh boolean false" | debconf-set-selections
-RUN DEBIAN_FRONTEND=noninteractive dpkg-reconfigure dash
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+RUN dpkg-reconfigure dash
 
 RUN clean-install \
     ca-certificates \
