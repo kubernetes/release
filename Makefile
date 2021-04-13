@@ -23,13 +23,16 @@ NOCOLOR:=\\033[0m
 
 ##@ Package
 
-.PHONY: verify-published-debs verify-published-rpms
+.PHONY: verify-published-debs verify-published-rpms verify-installed-debs
 
 verify-published-debs: ## Ensure debs have been published
 	./hack/packages/verify-published.sh debs
 
 verify-published-rpms: ## Ensure rpms have been published
 	./hack/packages/verify-published.sh rpms
+
+verify-installed-debs: ## Ensure debs have been installed
+    ./hack/packages/verify-packages-install-deb
 
 ##@ Verify
 
