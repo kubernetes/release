@@ -127,7 +127,7 @@ type ReleaseNote struct {
 	DoNotPublish bool `json:"do_not_publish,omitempty"`
 
 	// DataFields a key indexed map of data fields
-	DataFields map[string]ReleaseNotesDataField `json:"data_fields,omitempty"`
+	DataFields map[string]ReleaseNotesDataField `json:"-"`
 }
 
 type Documentation struct {
