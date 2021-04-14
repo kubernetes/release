@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
 	"k8s.io/release/pkg/cve"
 	"sigs.k8s.io/release-utils/editor"
 )

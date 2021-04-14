@@ -21,17 +21,19 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
+
 	"k8s.io/release/pkg/object"
+	"k8s.io/release/pkg/release"
 )
 
 const (
-	Bucket       = "kubernetes-release"
+	Bucket       = release.TestBucket
 	Directory    = "/release/cve/"
 	mapExt       = ".yaml"
 	newMapHeader = `---
-# This is a new CVE entry data map. Complete all required sections, save 
+# This is a new CVE entry data map. Complete all required sections, save
 # and exit to publish. If you need to cancel don't save the file or delete
-# everything, save and exit. 
+# everything, save and exit.
 `
 	// Regexp to check CVE IDs
 	CVEIDRegExp = `^CVE-\d{4}-\d+$`
