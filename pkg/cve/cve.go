@@ -26,15 +26,15 @@ import (
 
 // CVE Information of a linked CVE vulnerability
 type CVE struct {
-	ID            string  `json:"id"`          // CVE ID, eg CVE-2019-1010260
-	Title         string  `json:"title"`       // Title of the vulnerability
-	Description   string  `json:"description"` // Description text of the vulnerability
-	TrackingIssue string  `json:"issue"`       // Link to the vulnerability tracking issue (url, optional)
-	CVSSVector    string  `json:"vector"`      // Full CVSS vector string, CVSS:3.1/AV:N/AC:H/PR:H/UI:R/S:U/C:H/I:H/A:H
-	CVSSScore     float32 `json:"score"`       // Numeric CVSS score (eg 6.2)
-	CVSSRating    string  `json:"rating"`      // Severity bucket (eg Medium)
-	CalcLink      string  // Link to the CVE calculator (automatic)
-	LinkedPRs     []int   `json:"pullrequests"` // List of linked PRs (to remove them from the release notes doc)
+	ID            string  `json:"id" yaml:"id"`                                 // CVE ID, eg CVE-2019-1010260
+	Title         string  `json:"title" yaml:"title"`                           // Title of the vulnerability
+	Description   string  `json:"description" yaml:"description"`               // Description text of the vulnerability
+	TrackingIssue string  `json:"issue" yaml:"issue"`                           // Link to the vulnerability tracking issue (url, optional)
+	CVSSVector    string  `json:"vector" yaml:"vector"`                         // Full CVSS vector string, CVSS:3.1/AV:N/AC:H/PR:H/UI:R/S:U/C:H/I:H/A:H
+	CVSSScore     float32 `json:"score" yaml:"score"`                           // Numeric CVSS score (eg 6.2)
+	CVSSRating    string  `json:"rating" yaml:"rating"`                         // Severity bucket (eg Medium)
+	CalcLink      string  `json:"calclink,omitempty" yaml:"calclink,omitempty"` // Link to the CVE calculator (automatic)
+	LinkedPRs     []int   `json:"pullrequests"`                                 // List of linked PRs (to remove them from the release notes doc)
 }
 
 // ReadRawInterface populates the CVE data struct from the raw array
