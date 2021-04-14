@@ -33,7 +33,6 @@ import (
 	"github.com/nozzle/throttler"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	cvss "github.com/spiegel-im-spiegel/go-cvss/v3/metric"
 	"gopkg.in/yaml.v2"
 
 	"k8s.io/release/pkg/github"
@@ -52,28 +51,12 @@ const (
 	// maxParallelRequests is the maximum parallel requests we shall make to the
 	// GitHub API
 	maxParallelRequests = 10
-
-	// Regexp to check CVE IDs
-	cveIDRegExp = `^CVE-\d{4}-\d+$`
 )
 
 type (
 	Notes []string
 	Kind  string
 )
-
-// CVEData Information of a linked CVE vulnerability
-type CVEData struct {
-	ID            string  `json:"id"`          // CVE ID, eg CVE-2019-1010260
-	Title         string  `json:"title"`       // Title of the vulnerability
-	Description   string  `json:"description"` // Description text of the vulnerability
-	TrackingIssue string  `json:"issue"`       // Link to the vulnerability tracking issue (url, optional)
-	CVSSVector    string  `json:"vector"`      // Full CVSS vector string, CVSS:3.1/AV:N/AC:H/PR:H/UI:R/S:U/C:H/I:H/A:H
-	CVSSScore     float32 `json:"score"`       // Numeric CVSS score (eg 6.2)
-	CVSSRating    string  `json:"rating"`      // Severity bucket (eg Medium)
-	CalcLink      string  // Link to the CVE calculator (automatic)
-	LinkedPRs     []int   `json:"pullrequests"` // List of linked PRs (to remove them from the release notes doc)
-}
 
 const (
 	KindAPIChange     Kind = "api-change"
@@ -1090,62 +1073,4 @@ func (rn *ReleaseNote) ContentHash() (string, error) {
 		return "", errors.Wrap(err, "calculating content hash from map")
 	}
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
-}
-
-// Validate checks the data defined in a CVE map is complete and valid
-func (cve *CVEData) Validate() error {
-	// Verify that rating is defined and a known string
-	if cve.CVSSRating == "" {
-		return errors.New("CVSS rating missing from CVE data")
-	}
-
-	// Check rating is a valid string
-	if _, ok := map[string]bool{
-		"None": true, "Low": true, "Medium": true, "High": true, "Critical": true,
-	}[cve.CVSSRating]; !ok {
-		return errors.New("Invalid CVSS rating")
-	}
-
-	// Check vector string is not empty
-	if cve.CVSSVector == "" {
-		return errors.New("CVSS vector string missing from CVE data")
-	}
-
-	// Parse the vector string to make sure it is well formed
-	bm, err := cvss.NewBase().Decode(cve.CVSSVector)
-	if err != nil {
-		return errors.Wrap(err, "parsing CVSS vector string")
-	}
-	cve.CalcLink = fmt.Sprintf(
-		"https://www.first.org/cvss/calculator/%s#%s", bm.Ver.String(), cve.CVSSVector,
-	)
-
-	if cve.CVSSScore == 0 {
-		return errors.New("CVSS score missing from CVE data")
-	}
-	if cve.CVSSScore < 0 || cve.CVSSScore > 10 {
-		return errors.New("CVSS score pit of range, should be 0-10")
-	}
-
-	// Check that the CVE ID is not empty
-	if cve.ID == "" {
-		return errors.New("ID missing from CVE data")
-	}
-
-	// Verify that the CVE ID is well formed
-	cvsre := regexp.MustCompile(cveIDRegExp)
-	if !cvsre.MatchString(cve.ID) {
-		return errors.New("CVS ID is not well formed")
-	}
-
-	// Title and description must not be empty
-	if cve.Title == "" {
-		return errors.New("Title missing from CVE data")
-	}
-
-	if cve.Description == "" {
-		return errors.New("CVE description missing from CVE data")
-	}
-
-	return nil
 }
