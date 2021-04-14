@@ -23,16 +23,20 @@ import (
 	"text/template"
 
 	"github.com/blang/semver"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"sigs.k8s.io/mdtoc/pkg/mdtoc"
 
+	"k8s.io/release/pkg/cve"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
+	"k8s.io/release/pkg/object"
 	"sigs.k8s.io/release-utils/http"
 	"sigs.k8s.io/release-utils/util"
 )
@@ -88,6 +92,7 @@ type impl interface {
 	Add(repo *git.Repo, filename string) error
 	Commit(repo *git.Repo, msg string) error
 	Rm(repo *git.Repo, force bool, files ...string) error
+	CloneCVEData() (cveDir string, err error)
 }
 
 type defaultImpl struct{}
@@ -214,4 +219,35 @@ func (*defaultImpl) Commit(repo *git.Repo, msg string) error {
 
 func (*defaultImpl) Rm(repo *git.Repo, force bool, files ...string) error {
 	return repo.Rm(force, files...)
+}
+
+// CloneCVEData copies the CVE data maps from the release bucket
+func (*defaultImpl) CloneCVEData() (cveDir string, err error) {
+	tmpdir, err := os.MkdirTemp(os.TempDir(), "cve-maps-")
+	if err != nil {
+		return "", errors.Wrap(err, "creating temporary dir for CVE data")
+	}
+
+	// Create a new GCS client
+	gcs := object.NewGCS()
+	remoteSrc, err := gcs.NormalizePath(object.GcsPrefix + filepath.Join(cve.Bucket, cve.Directory))
+	if err != nil {
+		return "", errors.Wrap(err, "normalizing cve bucket path")
+	}
+
+	bucketExists, err := gcs.PathExists(remoteSrc)
+	if err != nil {
+		return "", errors.Wrap(err, "checking if CVE directory exists")
+	}
+	if !bucketExists {
+		logrus.Warnf("CVE data maps not found in bucket location: %s", remoteSrc)
+		return "", nil
+	}
+
+	// Rsync the CVE files to the temp dir
+	if err := gcs.RsyncRecursive(remoteSrc, tmpdir); err != nil {
+		return "", errors.Wrap(err, "copying release directory to bucket")
+	}
+	logrus.Infof("Successfully synchronized CVE data maps from %s", remoteSrc)
+	return tmpdir, nil
 }

@@ -45,6 +45,8 @@ type Options struct {
 	JSONFile     string
 	RecordDir    string
 	ReplayDir    string
+	CVEDataDir   string
+	CloneCVEMaps bool
 	Dependencies bool
 }
 
@@ -158,6 +160,14 @@ func (c *Changelog) Run() error {
 			}
 		}
 	} else {
+		if c.options.CloneCVEMaps {
+			cveDir, err := c.impl.CloneCVEData()
+			if err != nil {
+				return errors.Wrap(err, "getting cve data maps")
+			}
+			c.options.CVEDataDir = cveDir
+		}
+
 		// A patch version, let’s just use the previous patch
 		startTag := util.SemverToTagString(semver.Version{
 			Major: tag.Major, Minor: tag.Minor, Patch: tag.Patch - 1,
@@ -243,6 +253,12 @@ func (c *Changelog) generateReleaseNotes(
 	notesOptions.RecordDir = c.options.RecordDir
 	notesOptions.ReplayDir = c.options.ReplayDir
 	notesOptions.Pull = false
+
+	if c.options.CVEDataDir != "" {
+		notesOptions.MapProviderStrings = append(
+			notesOptions.MapProviderStrings, c.options.CVEDataDir,
+		)
+	}
 
 	if err := c.impl.ValidateAndFinish(notesOptions); err != nil {
 		return "", "", errors.Wrap(err, "validating notes options")

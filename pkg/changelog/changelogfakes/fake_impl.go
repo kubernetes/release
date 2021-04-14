@@ -1,5 +1,5 @@
 /*
-Copyright The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -70,6 +70,18 @@ type FakeImpl struct {
 	}
 	checkoutReturnsOnCall map[int]struct {
 		result1 error
+	}
+	CloneCVEDataStub        func() (string, error)
+	cloneCVEDataMutex       sync.RWMutex
+	cloneCVEDataArgsForCall []struct {
+	}
+	cloneCVEDataReturns struct {
+		result1 string
+		result2 error
+	}
+	cloneCVEDataReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
 	}
 	CommitStub        func(*git.Repo, string) error
 	commitMutex       sync.RWMutex
@@ -565,6 +577,62 @@ func (fake *FakeImpl) CheckoutReturnsOnCall(i int, result1 error) {
 	fake.checkoutReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
+}
+
+func (fake *FakeImpl) CloneCVEData() (string, error) {
+	fake.cloneCVEDataMutex.Lock()
+	ret, specificReturn := fake.cloneCVEDataReturnsOnCall[len(fake.cloneCVEDataArgsForCall)]
+	fake.cloneCVEDataArgsForCall = append(fake.cloneCVEDataArgsForCall, struct {
+	}{})
+	stub := fake.CloneCVEDataStub
+	fakeReturns := fake.cloneCVEDataReturns
+	fake.recordInvocation("CloneCVEData", []interface{}{})
+	fake.cloneCVEDataMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeImpl) CloneCVEDataCallCount() int {
+	fake.cloneCVEDataMutex.RLock()
+	defer fake.cloneCVEDataMutex.RUnlock()
+	return len(fake.cloneCVEDataArgsForCall)
+}
+
+func (fake *FakeImpl) CloneCVEDataCalls(stub func() (string, error)) {
+	fake.cloneCVEDataMutex.Lock()
+	defer fake.cloneCVEDataMutex.Unlock()
+	fake.CloneCVEDataStub = stub
+}
+
+func (fake *FakeImpl) CloneCVEDataReturns(result1 string, result2 error) {
+	fake.cloneCVEDataMutex.Lock()
+	defer fake.cloneCVEDataMutex.Unlock()
+	fake.CloneCVEDataStub = nil
+	fake.cloneCVEDataReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImpl) CloneCVEDataReturnsOnCall(i int, result1 string, result2 error) {
+	fake.cloneCVEDataMutex.Lock()
+	defer fake.cloneCVEDataMutex.Unlock()
+	fake.CloneCVEDataStub = nil
+	if fake.cloneCVEDataReturnsOnCall == nil {
+		fake.cloneCVEDataReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.cloneCVEDataReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeImpl) Commit(arg1 *git.Repo, arg2 string) error {
@@ -2042,6 +2110,8 @@ func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	defer fake.addMutex.RUnlock()
 	fake.checkoutMutex.RLock()
 	defer fake.checkoutMutex.RUnlock()
+	fake.cloneCVEDataMutex.RLock()
+	defer fake.cloneCVEDataMutex.RUnlock()
 	fake.commitMutex.RLock()
 	defer fake.commitMutex.RUnlock()
 	fake.createDownloadsTableMutex.RLock()

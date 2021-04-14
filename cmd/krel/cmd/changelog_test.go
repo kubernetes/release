@@ -30,11 +30,12 @@ import (
 
 func (s *sut) getChangelogOptions(tag string) *changelog.Options {
 	return &changelog.Options{
-		RepoPath:  s.repo.Dir(),
-		ReplayDir: filepath.Join(testDataDir, "changelog-"+tag),
-		Tag:       tag,
-		Tars:      ".",
-		Branch:    git.DefaultBranch,
+		RepoPath:     s.repo.Dir(),
+		ReplayDir:    filepath.Join(testDataDir, "changelog-"+tag),
+		Tag:          tag,
+		Tars:         ".",
+		Branch:       git.DefaultBranch,
+		CloneCVEMaps: false,
 	}
 }
 

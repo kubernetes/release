@@ -52,7 +52,6 @@ const patchReleaseExpectedContent = `## Changes by Kind
 - Restores compatibility of kube-scheduler with clusters that do not enable the events.k8s.io/v1beta1 API ([#84465](https://github.com/kubernetes/kubernetes/pull/84465), [@yastij](https://github.com/yastij)) [SIG API Machinery and Scheduling]
 - Switched intstr.Type to sized integer to follow API guidelines and improve compatibility with proto libraries ([#83956](https://github.com/kubernetes/kubernetes/pull/83956), [@liggitt](https://github.com/liggitt)) [SIG API Machinery]
 - Update Cluster Autoscaler version to 1.16.2 (CA release docs: https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.16.2) ([#84038](https://github.com/kubernetes/kubernetes/pull/84038), [@losipiuk](https://github.com/losipiuk)) [SIG Cluster Lifecycle]
-- Update to use go1.12.12 ([#84064](https://github.com/kubernetes/kubernetes/pull/84064), [@cblecker](https://github.com/cblecker)) [SIG Release and Testing]
 - Upgrade to etcd client 3.3.17 to fix bug where etcd client does not parse IPv6 addresses correctly when members are joining, and to fix bug where failover on multi-member etcd cluster fails certificate check on DNS mismatch ([#83968](https://github.com/kubernetes/kubernetes/pull/83968), [@jpbetz](https://github.com/jpbetz)) [SIG API Machinery and Cloud Provider]`
 
 const patchReleaseDeps = `## Dependencies
@@ -216,7 +215,6 @@ const patchReleaseExpectedHTML = `<!DOCTYPE html>
 <li>Restores compatibility of kube-scheduler with clusters that do not enable the events.k8s.io/v1beta1 API (<a href="https://github.com/kubernetes/kubernetes/pull/84465">#84465</a>, <a href="https://github.com/yastij">@yastij</a>) [SIG API Machinery and Scheduling]</li>
 <li>Switched intstr.Type to sized integer to follow API guidelines and improve compatibility with proto libraries (<a href="https://github.com/kubernetes/kubernetes/pull/83956">#83956</a>, <a href="https://github.com/liggitt">@liggitt</a>) [SIG API Machinery]</li>
 <li>Update Cluster Autoscaler version to 1.16.2 (CA release docs: <a href="https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.16.2">https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.16.2</a>) (<a href="https://github.com/kubernetes/kubernetes/pull/84038">#84038</a>, <a href="https://github.com/losipiuk">@losipiuk</a>) [SIG Cluster Lifecycle]</li>
-<li>Update to use go1.12.12 (<a href="https://github.com/kubernetes/kubernetes/pull/84064">#84064</a>, <a href="https://github.com/cblecker">@cblecker</a>) [SIG Release and Testing]</li>
 <li>Upgrade to etcd client 3.3.17 to fix bug where etcd client does not parse IPv6 addresses correctly when members are joining, and to fix bug where failover on multi-member etcd cluster fails certificate check on DNS mismatch (<a href="https://github.com/kubernetes/kubernetes/pull/83968">#83968</a>, <a href="https://github.com/jpbetz">@jpbetz</a>) [SIG API Machinery and Cloud Provider]</li>
 </ul>
 <h2>Dependencies</h2>

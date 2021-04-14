@@ -370,7 +370,7 @@ func TestGatherNotes(t *testing.T) {
 			resultsChecker: func(t *testing.T, results []*Result) {
 				// there is not much we can check on the Result, as all the fields are
 				// unexported
-				expectedResultSize := 7
+				expectedResultSize := 13
 				if e, a := expectedResultSize, len(results); e != a {
 					t.Errorf("Expected the result to be of size %d, got %d", e, a)
 				}

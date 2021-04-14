@@ -491,6 +491,7 @@ func (d *DefaultStage) GenerateChangelog() error {
 		HTMLFile:     releaseNotesHTMLFile,
 		JSONFile:     releaseNotesJSONFile,
 		Dependencies: true,
+		CloneCVEMaps: true,
 		Tars: filepath.Join(
 			gitRoot,
 			fmt.Sprintf("%s-%s", release.BuildDir, d.state.versions.Prime()),
