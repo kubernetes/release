@@ -29,7 +29,7 @@ To run this tool you can just do, assuming you have cloned both `SIG-Release` an
 $ schedule-builder --config-path ../sig-release/releases/schedule.yaml
 ```
 
-The output will be something similiar to this
+The output will be something similar to this
 
 ```
 ### Timeline
