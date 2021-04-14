@@ -295,13 +295,13 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 						res.pullRequest.GetNumber(),
 					)
 					results = append(results, res)
+				} else {
+					logrus.Debugf(
+						"Skipping PR #%d because it contains no release note",
+						res.pullRequest.GetNumber(),
+					)
 				}
 			}
-			logrus.Debugf(
-				"Skipping PR #%d because it contains no release note",
-				res.pullRequest.GetNumber(),
-			)
-			continue
 		} else {
 			// Append the note as it is
 			results = append(results, res)
