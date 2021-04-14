@@ -269,9 +269,43 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 		return nil, errors.Wrap(err, "listing commits")
 	}
 
-	results, err := g.gatherNotes(commits)
+	// Get the PRs into a temporary results set
+	resultsTemp, err := g.gatherNotes(commits)
 	if err != nil {
 		return nil, errors.Wrap(err, "gathering notes")
+	}
+
+	// Cycle the results and add the complete notes, as well as those that
+	// have a map associated with it
+	results := []*Result{}
+	logrus.Info("Checking PRs for mapped data")
+	for _, res := range resultsTemp {
+		// If the PR has no release note, check if we have to add it
+		if MatchesExcludeFilter(*res.pullRequest.Body) {
+			for _, provider := range mapProviders {
+				noteMaps, err := provider.GetMapsForPR(res.pullRequest.GetNumber())
+				if err != nil {
+					return nil, errors.Wrapf(
+						err, "checking if a map exists for PR %d", res.pullRequest.GetNumber(),
+					)
+				}
+				if len(noteMaps) != 0 {
+					logrus.Infof(
+						"Artificially adding pr #%d because a map for it was found",
+						res.pullRequest.GetNumber(),
+					)
+					results = append(results, res)
+				}
+			}
+			logrus.Debugf(
+				"Skipping PR #%d because it contains no release note",
+				res.pullRequest.GetNumber(),
+			)
+			continue
+		} else {
+			// Append the note as it is
+			results = append(results, res)
+		}
 	}
 
 	dedupeCache := map[string]struct{}{}
@@ -311,7 +345,6 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 			dedupeCache[note.Text] = struct{}{}
 		}
 	}
-
 	return notes, nil
 }
 
@@ -675,14 +708,6 @@ func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, e
 		logrus.Debugf(
 			"Got PR #%d for commit: %s", pr.GetNumber(), commit.GetSHA(),
 		)
-
-		if MatchesExcludeFilter(prBody) {
-			logrus.Debugf(
-				"Skipping PR #%d because it contains no release note",
-				pr.GetNumber(),
-			)
-			continue
-		}
 
 		if MatchesIncludeFilter(prBody) {
 			res := &Result{commit: commit, pullRequest: pr}

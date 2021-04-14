@@ -217,11 +217,6 @@ func New(
 	for _, pr := range releaseNotes.History() {
 		note := releaseNotes.Get(pr)
 
-		if note.DoNotPublish {
-			logrus.Debugf("skipping PR %d as (marked to not be published)", pr)
-			continue
-		}
-
 		if _, hasCVE := note.DataFields["cve"]; hasCVE {
 			logrus.Infof("Release note for PR #%d has CVE vulnerability info", note.PrNumber)
 
@@ -238,6 +233,11 @@ func New(
 				return nil, errors.Wrapf(err, "checking CVE map file for PR #%d", pr)
 			}
 			doc.CVEList = append(doc.CVEList, newcve)
+		}
+
+		if note.DoNotPublish {
+			logrus.Debugf("skipping PR %d as (marked to not be published)", pr)
+			continue
 		}
 
 		// TODO: Refactor the logic here and add testing.
