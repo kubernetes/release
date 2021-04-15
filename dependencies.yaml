@@ -160,10 +160,8 @@ dependencies:
   - name: "golang: after kubernetes/kubernetes update (for previous release branches)"
     version: 1.15.10
     refPaths:
-    # TODO(images): Uncomment once k8s-ci-builder is using the correct Golang
-    #               versions for all branches
-    #- path: images/releng/k8s-ci-builder/variants.yaml
-    #  match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+    - path: images/releng/k8s-ci-builder/variants.yaml
+      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
   # Golang images (for previous release branches)
   - name: "k8s.gcr.io/build-image/go-runner (for previous release branches)"
