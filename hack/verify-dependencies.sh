@@ -18,21 +18,22 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-VERSION=0.0.17
-OS="$(uname -s)"
-OS="${OS,,}"
-URL_BASE=https://github.com/kubernetes-sigs/zeitgeist/releases/download
-FILENAME="zeitgeist_${VERSION}_${OS}_amd64.tar.gz"
-URL="${URL_BASE}/v${VERSION}/${FILENAME}"
+VERSION=v0.3.0
+REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 
-mkdir -p ./bin ./zeitgeist
-PATH=$PATH:bin
+# Ensure that we find the binaries we build before anything else.
+export GOBIN="${GOPATH}/bin"
+PATH="${GOBIN}:${PATH}"
 
-if ! command -v zeitgeist; then
-  curl -sfL "${URL}" -o "${FILENAME}"
-  tar -xzf "${FILENAME}" -C zeitgeist
-  mv ./zeitgeist/zeitgeist ./bin
-  rm -rf ./zeitgeist "${FILENAME}"
-fi
+# Install zeitgeist
+cd "${REPO_ROOT}/internal"
+GO111MODULE=on go install sigs.k8s.io/zeitgeist@"${VERSION}"
+cd -
 
-zeitgeist validate
+# Prefer full path for running zeitgeist
+ZEITGEIST_BIN="$(which zeitgeist)"
+
+"${ZEITGEIST_BIN}" validate \
+  --local-only \
+  --base-path "${REPO_ROOT}" \
+  --config "${REPO_ROOT}"/dependencies.yaml
