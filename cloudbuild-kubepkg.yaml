@@ -25,6 +25,8 @@ substitutions:
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
   _REGISTRY: 'fake.repository/registry-name'
+  # TODO(images): Remove once CI failures are resolved.
+  _CI_FAILURES: 'https://prow.k8s.io/view/gs/kubernetes-jenkins/logs/post-release-push-image-releng-ci/1380321161841217536'
 images:
   - 'gcr.io/$PROJECT_ID/kubepkg:$_GIT_TAG'
   - 'gcr.io/$PROJECT_ID/kubepkg:latest'
