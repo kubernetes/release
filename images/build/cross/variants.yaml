@@ -3,14 +3,14 @@ variants:
     TYPE: 'default'
     CONFIG: 'canary'
     GO_VERSION: '1.16.1'
-    IMAGE_VERSION: 'v1.16.1-canary-1'
+    IMAGE_VERSION: 'v1.16.1-canary-2'
     PROTOBUF_VERSION: '3.7.0'
     ETCD_VERSION: 'v3.4.13'
   go1.16:
     TYPE: 'default'
     CONFIG: 'go1.16'
     GO_VERSION: '1.16.1'
-    IMAGE_VERSION: 'v1.16.1-1'
+    IMAGE_VERSION: 'v1.16.1-2'
     PROTOBUF_VERSION: '3.7.0'
     ETCD_VERSION: 'v3.4.13'
   go1.15:

@@ -64,7 +64,7 @@ RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
     echo "deb http://archive.ubuntu.com/ubuntu xenial main universe" > /etc/apt/sources.list.d/cgocrosscompiling.list \
     && apt-key adv --no-tty --keyserver keyserver.ubuntu.com --recv-keys 40976EAF437D05B5 3B4FE6ACC0B21F32 \
     && apt-get update \
-    && apt-get install -y build-essential \
+    && apt-get install -y build-essential mingw-w64 \
     && for platform in ${KUBE_DYNAMIC_CROSSPLATFORMS}; do apt-get install -y crossbuild-essential-${platform}; done \
 fi
 
