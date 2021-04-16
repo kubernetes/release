@@ -88,6 +88,8 @@ dependencies:
   - name: "golang: after kubernetes/kubernetes update"
     version: 1.16.1
     refPaths:
+    - path: images/releng/k8s-ci-builder/Dockerfile
+      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+) as builder
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
