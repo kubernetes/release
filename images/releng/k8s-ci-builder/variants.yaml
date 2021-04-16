@@ -6,7 +6,7 @@ variants:
     OLD_BAZEL_VERSION: '2.2.0'
     SKOPEO_VERSION: 'v1.2.0'
   '1.21':
-    CONFIG: default
+    CONFIG: '1.21'
     GO_VERSION: '1.16.1'
     BAZEL_VERSION: '3.4.1'
     OLD_BAZEL_VERSION: '2.2.0'
