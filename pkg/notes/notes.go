@@ -313,6 +313,10 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 	for _, result := range results {
 		if g.options.RequiredAuthor != "" {
 			if result.commit.GetAuthor().GetLogin() != g.options.RequiredAuthor {
+				logrus.Infof(
+					"Skipping release note for PR #%d because required author %q does not match with %q",
+					result.pullRequest.GetNumber(), g.options.RequiredAuthor, result.commit.GetAuthor().GetLogin(),
+				)
 				continue
 			}
 		}
