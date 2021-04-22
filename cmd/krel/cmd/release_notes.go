@@ -270,7 +270,7 @@ func runReleaseNotes() (err error) {
 			releaseNotesOpts.githubOrg, releaseNotesOpts.draftRepo,
 			git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
 		); err != nil {
-			return errors.Wrapf(err, "while checking %s/%s fork", defaultKubernetesSigsOrg, git.DefaultGithubReleaseRepo)
+			return errors.Wrapf(err, "while checking %s/%s fork", git.DefaultGithubOrg, git.DefaultGithubReleaseRepo)
 		}
 	}
 
