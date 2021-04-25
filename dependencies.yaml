@@ -121,13 +121,13 @@ dependencies:
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-([0-9]+)
 
   - name: "k8s.gcr.io/build-image/go-runner"
-    version: v2.3.1-go1.16.3-buster.0
+    version: v2.3.1-go1.16.3-buster.1
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
   - name: "k8s.gcr.io/build-image/go-runner: image revision"
-    version: 0
+    version: 1
     refPaths:
     - path: images/build/go-runner/Makefile
       match: REVISION \?= \d+
@@ -174,13 +174,13 @@ dependencies:
 
   # Golang images (for previous release branches)
   - name: "k8s.gcr.io/build-image/go-runner (for previous release branches)"
-    version: v2.3.1-go1.15.11-buster.0
+    version: v2.3.1-go1.15.11-buster.1
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
   - name: "k8s.gcr.io/build-image/go-runner: image revision (for previous release branches)"
-    version: 0
+    version: 1
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: REVISION:\ '\d+'

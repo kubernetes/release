@@ -19,7 +19,7 @@ IMGNAME = go-runner
 APP_VERSION = $(shell cat VERSION)
 GO_MINOR_VERSION ?= 1.16
 OS_CODENAME ?= buster
-REVISION ?= 0
+REVISION ?= 1
 
 # Build args
 GO_VERSION ?= 1.16.3
