@@ -50,7 +50,7 @@ RUN go build -ldflags '-s -w -buildid= -extldflags "-static"' \
     -o go-runner ${package}
 
 # Production image
-FROM gcr.io/distroless/${DISTROLESS_IMAGE}:latest
+FROM gcr.io/distroless/${DISTROLESS_IMAGE}
 LABEL maintainers="Kubernetes Authors"
 LABEL description="go based runner for distroless scenarios"
 WORKDIR /
