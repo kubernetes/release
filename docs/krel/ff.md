@@ -37,9 +37,16 @@ Simply [install krel](README.md#installation).
 ### Command Line Flags
 
 ```
+Flags:
       --branch string   branch
+      --cleanup         cleanup the repository after the run
   -h, --help            help for ff
-      --ref string      ref on master (default "origin/master")
+      --ref string      ref on the main branch (default "origin/master")
+      --repo string     the local path to the repository to be used (default "/tmp/k8s")
+
+Global Flags:
+      --log-level string   the logging verbosity, either 'panic', 'fatal', 'error', 'warning', 'info', 'debug', 'trace' (default "info")
+      --nomock             run the command to target the production environment
 ```
 
 ### Example
