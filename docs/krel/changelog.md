@@ -52,6 +52,11 @@ Flags:
       --html-file string   The target html file to be written. If empty, then it will be CHANGELOG-x.y.html in the current path.
       --record string      Record the API into a directory
       --replay string      Replay a previously recorded API from a directory
+      --repo string        the local path to the repository to be used (default "/tmp/k8s")
       --tag string         The version tag of the release, for example v1.17.0-rc.1
       --tars string        Directory of tars to SHA512 sum for display (default ".")
+
+Global Flags:
+      --log-level string   the logging verbosity, either 'panic', 'fatal', 'error', 'warning', 'info', 'debug', 'trace' (default "info")
+      --nomock             run the command to target the production environment
 ```

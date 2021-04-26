@@ -38,6 +38,7 @@ Before running `krel release-notes` export your GitHub token to \$GITHUB_TOKEN:
 ### Command line flags
 
 ```
+Flags:
       --create-draft-pr     update the Release Notes draft and create a PR in k/sig-release
       --create-website-pr   patch the relnotes.k8s.io sources and generate a PR with the changes
       --dependencies        add dependency report (default true)
@@ -46,8 +47,12 @@ Before running `krel release-notes` export your GitHub token to \$GITHUB_TOKEN:
   -h, --help                help for release-notes
       --list-v2             enable experimental implementation to list commits (ListReleaseNotesV2)
   -m, --maps-from strings   specify a location to recursively look for release notes *.y[a]ml file mappings
-      --repo string         the local path to the repository to be used (default "/var/folders/1t/bzbyv7tn75nfznj4fttc22nh0000gn/T/k8s")
+      --repo string         the local path to the repository to be used (default "/tmp/k8s")
   -t, --tag string          version tag for the notes
+
+Global Flags:
+      --log-level string   the logging verbosity, either 'panic', 'fatal', 'error', 'warning', 'info', 'debug', 'trace' (default "info")
+      --nomock             run the command to target the production environment
 ```
 
 ### Examples
