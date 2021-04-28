@@ -210,6 +210,10 @@ func ReadDockerizedVersion(workDir string) (string, error) {
 
 // IsValidReleaseBuild checks if build version is valid for release.
 func IsValidReleaseBuild(build string) (bool, error) {
+	// If the tag has a plus sign, then we force the versionBuildRe to match
+	if strings.Contains(build, "+") {
+		return regexp.MatchString("("+versionReleaseRE+`(\.`+versionBuildRE+")"+versionDirtyRE+"?)", build)
+	}
 	return regexp.MatchString("("+versionReleaseRE+`(\.`+versionBuildRE+")?"+versionDirtyRE+"?)", build)
 }
 
