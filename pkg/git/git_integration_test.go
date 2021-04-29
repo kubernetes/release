@@ -33,6 +33,12 @@ import (
 	"sigs.k8s.io/release-utils/util"
 )
 
+var testAuthor = &object.Signature{
+	Name:  "John Doe",
+	Email: "john@doe.org",
+	When:  time.Now(),
+}
+
 type testRepo struct {
 	sut                *git.Repo
 	dir                string
@@ -100,20 +106,15 @@ func newTestRepo(t *testing.T) *testRepo {
 	_, err = worktree.Add(testFileName)
 	require.Nil(t, err)
 
-	author := &object.Signature{
-		Name:  "John Doe",
-		Email: "john@doe.org",
-		When:  time.Now(),
-	}
 	firstCommit, err := worktree.Commit("First commit", &gogit.CommitOptions{
-		Author: author,
+		Author: testAuthor,
 	})
 	require.Nil(t, err)
 
 	firstTagName := "v1.17.0"
 	firstTagRef, err := cloneRepo.CreateTag(firstTagName, firstCommit,
 		&gogit.CreateTagOptions{
-			Tagger:  author,
+			Tagger:  testAuthor,
 			Message: firstTagName,
 		},
 	)
@@ -135,7 +136,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, err)
 
 	firstBranchCommit, err := worktree.Commit("Second commit", &gogit.CommitOptions{
-		Author: author,
+		Author: testAuthor,
 		All:    true,
 	})
 	require.Nil(t, err)
@@ -143,7 +144,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	secondTagName := "v0.1.1"
 	secondTagRef, err := cloneRepo.CreateTag(secondTagName, firstBranchCommit,
 		&gogit.CreateTagOptions{
-			Tagger:  author,
+			Tagger:  testAuthor,
 			Message: secondTagName,
 		},
 	)
@@ -159,7 +160,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, err)
 
 	secondBranchCommit, err := worktree.Commit("Third commit", &gogit.CommitOptions{
-		Author: author,
+		Author: testAuthor,
 		All:    true,
 	})
 	require.Nil(t, err)
@@ -167,7 +168,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	thirdTagName := "v1.17.1"
 	thirdTagRef, err := cloneRepo.CreateTag(thirdTagName, secondBranchCommit,
 		&gogit.CreateTagOptions{
-			Tagger:  author,
+			Tagger:  testAuthor,
 			Message: thirdTagName,
 		},
 	)
@@ -183,7 +184,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, err)
 
 	thirdBranchCommit, err := worktree.Commit("Fourth commit", &gogit.CommitOptions{
-		Author: author,
+		Author: testAuthor,
 		All:    true,
 	})
 	require.Nil(t, err)
