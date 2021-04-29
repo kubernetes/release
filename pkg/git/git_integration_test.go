@@ -238,7 +238,7 @@ func TestSuccessCloneOrOpen(t *testing.T) {
 	secondRepo, err := git.CloneOrOpenRepo(testRepo.sut.Dir(), testRepo.dir, false)
 	require.Nil(t, err)
 
-	require.Equal(t, testRepo.sut.Dir(), secondRepo.Dir())
+	require.Equal(t, secondRepo.Dir(), testRepo.sut.Dir())
 	require.Nil(t, secondRepo.Cleanup())
 }
 
@@ -253,7 +253,7 @@ func TestSuccessDescribeTags(t *testing.T) {
 			WithTags(),
 	)
 	require.Nil(t, err)
-	require.Equal(t, tag, testRepo.firstTagName)
+	require.Equal(t, testRepo.firstTagName, tag)
 }
 
 func TestFailureDescribeTags(t *testing.T) {
@@ -276,7 +276,7 @@ func TestSuccessHasRemoteBranch(t *testing.T) {
 	for _, repo := range []string{testRepo.branchName, git.DefaultBranch} {
 		branchExists, err := testRepo.sut.HasRemoteBranch(repo)
 		require.Nil(t, err)
-		require.Equal(t, true, branchExists)
+		require.Equal(t, branchExists, true)
 	}
 }
 
@@ -287,7 +287,7 @@ func TestFailureHasRemoteBranch(t *testing.T) {
 	// TODO: Let's simulate an actual git/network failure
 
 	branchExists, err := testRepo.sut.HasRemoteBranch("wrong")
-	require.Equal(t, false, branchExists)
+	require.Equal(t, branchExists, false)
 	require.Nil(t, err)
 }
 
@@ -297,7 +297,7 @@ func TestSuccessHead(t *testing.T) {
 
 	head, err := testRepo.sut.Head()
 	require.Nil(t, err)
-	require.Equal(t, head, testRepo.thirdBranchCommit)
+	require.Equal(t, testRepo.thirdBranchCommit, head)
 }
 
 func TestSuccessMerge(t *testing.T) {
@@ -322,7 +322,7 @@ func TestSuccessMergeBase(t *testing.T) {
 
 	mergeBase, err := testRepo.sut.MergeBase(git.DefaultBranch, testRepo.branchName)
 	require.Nil(t, err)
-	require.Equal(t, mergeBase, testRepo.firstCommit)
+	require.Equal(t, testRepo.firstCommit, mergeBase)
 }
 
 func TestSuccessRevParse(t *testing.T) {
@@ -331,19 +331,19 @@ func TestSuccessRevParse(t *testing.T) {
 
 	mainRev, err := testRepo.sut.RevParse(git.DefaultBranch)
 	require.Nil(t, err)
-	require.Equal(t, mainRev, testRepo.firstCommit)
+	require.Equal(t, testRepo.firstCommit, mainRev)
 
 	branchRev, err := testRepo.sut.RevParse(testRepo.branchName)
 	require.Nil(t, err)
-	require.Equal(t, branchRev, testRepo.thirdBranchCommit)
+	require.Equal(t, testRepo.thirdBranchCommit, branchRev)
 
 	tagRev, err := testRepo.sut.RevParse(testRepo.firstTagName)
 	require.Nil(t, err)
-	require.Equal(t, tagRev, testRepo.firstCommit)
+	require.Equal(t, testRepo.firstCommit, tagRev)
 
 	tagRev, err = testRepo.sut.RevParse(testRepo.firstCommit)
 	require.Nil(t, err)
-	require.Equal(t, tagRev, testRepo.firstCommit)
+	require.Equal(t, testRepo.firstCommit, tagRev)
 }
 
 func TestSuccessRevTagParse(t *testing.T) {
@@ -352,15 +352,15 @@ func TestSuccessRevTagParse(t *testing.T) {
 
 	mainRev, err := testRepo.sut.RevParseTag(git.DefaultBranch)
 	require.Nil(t, err)
-	require.Equal(t, mainRev, testRepo.firstCommit)
+	require.Equal(t, testRepo.firstCommit, mainRev)
 
 	branchRev, err := testRepo.sut.RevParseTag(testRepo.branchName)
 	require.Nil(t, err)
-	require.Equal(t, branchRev, testRepo.thirdBranchCommit)
+	require.Equal(t, testRepo.thirdBranchCommit, branchRev)
 
 	tagRev, err := testRepo.sut.RevParseTag(testRepo.firstTagName)
 	require.Nil(t, err)
-	require.Equal(t, tagRev, testRepo.firstCommit)
+	require.Equal(t, testRepo.firstCommit, tagRev)
 }
 
 func TestFailureRevParse(t *testing.T) {
@@ -388,19 +388,19 @@ func TestSuccessRevParseShort(t *testing.T) {
 
 	mainRev, err := testRepo.sut.RevParseShort(git.DefaultBranch)
 	require.Nil(t, err)
-	require.Equal(t, mainRev, testRepo.firstCommit[:10])
+	require.Equal(t, testRepo.firstCommit[:10], mainRev)
 
 	branchRev, err := testRepo.sut.RevParseShort(testRepo.branchName)
 	require.Nil(t, err)
-	require.Equal(t, branchRev, testRepo.thirdBranchCommit[:10])
+	require.Equal(t, testRepo.thirdBranchCommit[:10], branchRev)
 
 	tagRev, err := testRepo.sut.RevParseShort(testRepo.firstTagName)
 	require.Nil(t, err)
-	require.Equal(t, tagRev, testRepo.firstCommit[:10])
+	require.Equal(t, testRepo.firstCommit[:10], tagRev)
 
 	tagRev, err = testRepo.sut.RevParseShort(testRepo.firstCommit)
 	require.Nil(t, err)
-	require.Equal(t, tagRev, testRepo.firstCommit[:10])
+	require.Equal(t, testRepo.firstCommit[:10], tagRev)
 }
 
 func TestSuccessRevParseTagShort(t *testing.T) {
@@ -409,15 +409,15 @@ func TestSuccessRevParseTagShort(t *testing.T) {
 
 	mainRev, err := testRepo.sut.RevParseTagShort(git.DefaultBranch)
 	require.Nil(t, err)
-	require.Equal(t, mainRev, testRepo.firstCommit[:10])
+	require.Equal(t, testRepo.firstCommit[:10], mainRev)
 
 	branchRev, err := testRepo.sut.RevParseTagShort(testRepo.branchName)
 	require.Nil(t, err)
-	require.Equal(t, branchRev, testRepo.thirdBranchCommit[:10])
+	require.Equal(t, testRepo.thirdBranchCommit[:10], branchRev)
 
 	tagRev, err := testRepo.sut.RevParseTagShort(testRepo.firstTagName)
 	require.Nil(t, err)
-	require.Equal(t, tagRev, testRepo.firstCommit[:10])
+	require.Equal(t, testRepo.firstCommit[:10], tagRev)
 }
 
 func TestFailureRevParseShort(t *testing.T) {
@@ -457,7 +457,7 @@ func TestFailurePush(t *testing.T) {
 
 func TestSuccessRemotify(t *testing.T) {
 	newRemote := git.Remotify(git.DefaultBranch)
-	require.Equal(t, newRemote, git.DefaultRemote+"/"+git.DefaultBranch)
+	require.Equal(t, git.DefaultRemote+"/"+git.DefaultBranch, newRemote)
 }
 
 func TestSuccessIsReleaseBranch(t *testing.T) {
@@ -474,7 +474,7 @@ func TestSuccessLatestTagForBranch(t *testing.T) {
 
 	version, err := testRepo.sut.LatestTagForBranch(git.DefaultBranch)
 	require.Nil(t, err)
-	require.Equal(t, util.SemverToTagString(version), testRepo.firstTagName)
+	require.Equal(t, testRepo.firstTagName, util.SemverToTagString(version))
 }
 
 func TestSuccessLatestTagForBranchRelease(t *testing.T) {
@@ -483,7 +483,7 @@ func TestSuccessLatestTagForBranchRelease(t *testing.T) {
 
 	version, err := testRepo.sut.LatestTagForBranch("release-1.17")
 	require.Nil(t, err)
-	require.Equal(t, util.SemverToTagString(version), testRepo.thirdTagName)
+	require.Equal(t, testRepo.thirdTagName, util.SemverToTagString(version))
 }
 
 func TestFailureLatestTagForBranchInvalidBranch(t *testing.T) {
@@ -492,7 +492,7 @@ func TestFailureLatestTagForBranchInvalidBranch(t *testing.T) {
 
 	version, err := testRepo.sut.LatestTagForBranch("wrong-branch")
 	require.NotNil(t, err)
-	require.Equal(t, version, semver.Version{})
+	require.Equal(t, semver.Version{}, version)
 }
 
 func TestSuccessLatestPatchToPatch(t *testing.T) {
@@ -502,9 +502,9 @@ func TestSuccessLatestPatchToPatch(t *testing.T) {
 	// This test case gets commits from v1.17.0 to v1.17.1
 	result, err := testRepo.sut.LatestPatchToPatch(testRepo.branchName)
 	require.Nil(t, err)
-	require.Equal(t, result.StartSHA(), testRepo.firstCommit)
-	require.Equal(t, result.StartRev(), testRepo.firstTagName)
-	require.Equal(t, result.EndRev(), testRepo.thirdTagName)
+	require.Equal(t, testRepo.firstCommit, result.StartSHA())
+	require.Equal(t, testRepo.firstTagName, result.StartRev())
+	require.Equal(t, testRepo.thirdTagName, result.EndRev())
 }
 
 func TestSuccessLatestPatchToPatchNewTag(t *testing.T) {
@@ -519,9 +519,9 @@ func TestSuccessLatestPatchToPatchNewTag(t *testing.T) {
 
 	result, err := testRepo.sut.LatestPatchToPatch(testRepo.branchName)
 	require.Nil(t, err)
-	require.Equal(t, result.StartSHA(), testRepo.secondBranchCommit)
-	require.Equal(t, result.StartRev(), testRepo.thirdTagName)
-	require.Equal(t, result.EndRev(), nextMinorTag)
+	require.Equal(t, testRepo.secondBranchCommit, result.StartSHA())
+	require.Equal(t, testRepo.thirdTagName, result.StartRev())
+	require.Equal(t, nextMinorTag, result.EndRev())
 }
 
 func TestFailureLatestPatchToPatchWrongBranch(t *testing.T) {
@@ -530,7 +530,7 @@ func TestFailureLatestPatchToPatchWrongBranch(t *testing.T) {
 
 	result, err := testRepo.sut.LatestPatchToPatch("wrong-branch")
 	require.NotNil(t, err)
-	require.Equal(t, git.DiscoverResult{}, result)
+	require.Equal(t, result, git.DiscoverResult{})
 }
 
 func TestSuccessLatestPatchToLatest(t *testing.T) {
@@ -540,9 +540,9 @@ func TestSuccessLatestPatchToLatest(t *testing.T) {
 	// This test case gets commits from v1.17.1 to head of release-1.17
 	result, err := testRepo.sut.LatestPatchToLatest(testRepo.branchName)
 	require.Nil(t, err)
-	require.Equal(t, result.StartSHA(), testRepo.secondBranchCommit)
-	require.Equal(t, result.StartRev(), testRepo.thirdTagName)
-	require.Equal(t, result.EndSHA(), testRepo.thirdBranchCommit)
+	require.Equal(t, testRepo.secondBranchCommit, result.StartSHA())
+	require.Equal(t, testRepo.thirdTagName, result.StartRev())
+	require.Equal(t, testRepo.thirdBranchCommit, result.EndSHA())
 }
 
 func TestSuccessDry(t *testing.T) {
@@ -561,10 +561,10 @@ func TestSuccessLatestReleaseBranchMergeBaseToLatest(t *testing.T) {
 
 	result, err := testRepo.sut.LatestReleaseBranchMergeBaseToLatest()
 	require.Nil(t, err)
-	require.Equal(t, result.StartSHA(), testRepo.firstCommit)
-	require.Equal(t, result.StartRev(), testRepo.firstTagName)
-	require.Equal(t, result.EndSHA(), testRepo.firstCommit)
-	require.Equal(t, result.EndRev(), git.DefaultBranch)
+	require.Equal(t, testRepo.firstCommit, result.StartSHA())
+	require.Equal(t, testRepo.firstTagName, result.StartRev())
+	require.Equal(t, testRepo.firstCommit, result.EndSHA())
+	require.Equal(t, git.DefaultBranch, result.EndRev())
 }
 
 func TestFailureLatestReleaseBranchMergeBaseToLatestNoLatestTag(t *testing.T) {
@@ -577,7 +577,7 @@ func TestFailureLatestReleaseBranchMergeBaseToLatestNoLatestTag(t *testing.T) {
 
 	result, err := testRepo.sut.LatestReleaseBranchMergeBaseToLatest()
 	require.NotNil(t, err)
-	require.Equal(t, git.DiscoverResult{}, result)
+	require.Equal(t, result, git.DiscoverResult{})
 }
 
 func TestSuccessLatestNonPatchFinalToMinor(t *testing.T) {
@@ -591,9 +591,9 @@ func TestSuccessLatestNonPatchFinalToMinor(t *testing.T) {
 
 	result, err := testRepo.sut.LatestNonPatchFinalToMinor()
 	require.Nil(t, err)
-	require.Equal(t, result.StartSHA(), testRepo.firstCommit)
-	require.Equal(t, result.StartRev(), testRepo.firstTagName)
-	require.Equal(t, result.EndRev(), nextMinorTag)
+	require.Equal(t, testRepo.firstCommit, result.StartSHA())
+	require.Equal(t, testRepo.firstTagName, result.StartRev())
+	require.Equal(t, nextMinorTag, result.EndRev())
 }
 
 func TestFailureLatestNonPatchFinalToMinor(t *testing.T) {
@@ -602,7 +602,7 @@ func TestFailureLatestNonPatchFinalToMinor(t *testing.T) {
 
 	result, err := testRepo.sut.LatestNonPatchFinalToMinor()
 	require.NotNil(t, err)
-	require.Equal(t, git.DiscoverResult{}, result)
+	require.Equal(t, result, git.DiscoverResult{})
 }
 
 func TestTagsForBranchMain(t *testing.T) {
@@ -611,7 +611,7 @@ func TestTagsForBranchMain(t *testing.T) {
 
 	result, err := testRepo.sut.TagsForBranch(git.DefaultBranch)
 	require.Nil(t, err)
-	require.Equal(t, result, []string{testRepo.firstTagName})
+	require.Equal(t, []string{testRepo.firstTagName}, result)
 }
 
 func TestTagsForBranchOnBranch(t *testing.T) {
@@ -620,11 +620,11 @@ func TestTagsForBranchOnBranch(t *testing.T) {
 
 	result, err := testRepo.sut.TagsForBranch(testRepo.branchName)
 	require.Nil(t, err)
-	require.Equal(t, result, []string{
+	require.Equal(t, []string{
 		testRepo.thirdTagName,
 		testRepo.firstTagName,
 		testRepo.secondTagName,
-	})
+	}, result)
 }
 
 func TestTagsForBranchFailureWrongBranch(t *testing.T) {
@@ -721,7 +721,7 @@ func TestCurrentBranchDefault(t *testing.T) {
 
 	branch, err := testRepo.sut.CurrentBranch()
 	require.Nil(t, err)
-	require.Equal(t, testRepo.branchName, branch)
+	require.Equal(t, branch, testRepo.branchName)
 }
 
 func TestCurrentBranchMain(t *testing.T) {
@@ -731,7 +731,7 @@ func TestCurrentBranchMain(t *testing.T) {
 
 	branch, err := testRepo.sut.CurrentBranch()
 	require.Nil(t, err)
-	require.Equal(t, git.DefaultBranch, branch)
+	require.Equal(t, branch, git.DefaultBranch)
 }
 
 func TestRmSuccessForce(t *testing.T) {
@@ -760,19 +760,19 @@ func TestHasRemoteSuccess(t *testing.T) {
 	require.Len(t, remotes, 2)
 
 	// The origin remote
-	require.Equal(t, git.DefaultRemote, remotes[0].Name())
+	require.Equal(t, remotes[0].Name(), git.DefaultRemote)
 	require.Len(t, remotes[0].URLs(), 1)
-	require.Equal(t, testRepo.dir, remotes[0].URLs()[0])
+	require.Equal(t, remotes[0].URLs()[0], testRepo.dir)
 
 	// Or via the API
 	require.True(t, testRepo.sut.HasRemote("origin", testRepo.dir))
 
 	// The added test remote
-	require.Equal(t, "test", remotes[1].Name())
+	require.Equal(t, remotes[1].Name(), "test")
 	require.Len(t, remotes[1].URLs(), 1)
 
 	url := git.GetRepoURL("owner", "repo", true)
-	require.Equal(t, url, remotes[1].URLs()[0])
+	require.Equal(t, remotes[1].URLs()[0], url)
 
 	// Or via the API
 	require.True(t, testRepo.sut.HasRemote("test", url))
@@ -816,7 +816,7 @@ func TestOpenRepoSuccess(t *testing.T) {
 
 	repo, err := git.OpenRepo(testRepo.sut.Dir())
 	require.Nil(t, err)
-	require.Equal(t, testRepo.sut.Dir(), repo.Dir())
+	require.Equal(t, repo.Dir(), testRepo.sut.Dir())
 }
 
 func TestOpenRepoSuccessSearchGitDot(t *testing.T) {
@@ -825,7 +825,7 @@ func TestOpenRepoSuccessSearchGitDot(t *testing.T) {
 
 	repo, err := git.OpenRepo(filepath.Join(testRepo.sut.Dir(), "not-existing"))
 	require.Nil(t, err)
-	require.Equal(t, testRepo.sut.Dir(), repo.Dir())
+	require.Equal(t, repo.Dir(), testRepo.sut.Dir())
 }
 
 func TestOpenRepoFailure(t *testing.T) {
@@ -946,7 +946,7 @@ func TestSetURLSuccess(t *testing.T) {
 	require.Len(t, remotes, 1)
 	require.Equal(t, git.DefaultRemote, remotes[0].Name())
 	require.Len(t, remotes[0].URLs(), 1)
-	require.Equal(t, remote, remotes[0].URLs()[0])
+	require.Equal(t, remotes[0].URLs()[0], remote)
 }
 
 func TestSetURLFailureRemoteDoesNotExists(t *testing.T) {
@@ -963,9 +963,9 @@ func TestAllTags(t *testing.T) {
 	tags, err := testRepo.sut.Tags()
 	require.Nil(t, err)
 	require.Len(t, tags, 3)
-	require.Equal(t, testRepo.secondTagName, tags[0])
-	require.Equal(t, testRepo.firstTagName, tags[1])
-	require.Equal(t, testRepo.thirdTagName, tags[2])
+	require.Equal(t, tags[0], testRepo.secondTagName)
+	require.Equal(t, tags[1], testRepo.firstTagName)
+	require.Equal(t, tags[2], testRepo.thirdTagName)
 }
 
 func TestCommitEmptySuccess(t *testing.T) {
