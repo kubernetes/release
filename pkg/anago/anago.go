@@ -99,6 +99,15 @@ func (o *Options) Validate(state *State) error {
 		return errors.Errorf("invalid release branch: %s", o.ReleaseBranch)
 	}
 
+	// Verify the build version is correct:
+	correct, err := release.IsValidReleaseBuild(o.BuildVersion)
+	if err != nil {
+		return errors.Wrap(err, "checking for a valid build version")
+	}
+	if !correct {
+		return errors.New("invalid BuildVersion specified")
+	}
+
 	semverBuildVersion, err := util.TagStringToSemver(o.BuildVersion)
 	if err != nil {
 		return errors.Wrapf(err, "invalid build version: %s", o.BuildVersion)

@@ -331,6 +331,23 @@ func TestIsValidReleaseBuild(t *testing.T) {
 				rErr: false,
 			},
 		},
+		"InvalidCopiedBuild": {
+			// This trimmed tag often gets copied when double clicking
+			// on the CloudBuild console:
+			build: "v1.22.0-alpha.0.787+e6",
+			want: want{
+				r:    false,
+				rErr: false,
+			},
+		},
+		"ValidCopiedBuild": {
+			// Full tag from previous test case:
+			build: "v1.22.0-alpha.0.787+e6b4fa381152d6",
+			want: want{
+				r:    true,
+				rErr: false,
+			},
+		},
 	}
 
 	for name, tc := range cases {
