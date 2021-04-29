@@ -447,7 +447,9 @@ func TestFetchRemote(t *testing.T) {
 	wtree, err := gogitRepo.Worktree()
 	require.Nil(t, err)
 	require.Nil(t, err)
-	commitSha, err := wtree.Commit("Initial Commit", &gogit.CommitOptions{})
+	commitSha, err := wtree.Commit("Initial Commit", &gogit.CommitOptions{
+		Author: testAuthor,
+	})
 	require.Nil(t, err)
 
 	// Create a git.Repo from it
@@ -469,7 +471,10 @@ func TestFetchRemote(t *testing.T) {
 	require.Empty(t, testTags)
 
 	// Create a tag on the originRepo
-	_, err = gogitRepo.CreateTag(testTagName, commitSha, &gogit.CreateTagOptions{Message: testTagName})
+	_, err = gogitRepo.CreateTag(testTagName, commitSha, &gogit.CreateTagOptions{
+		Message: testTagName,
+		Tagger:  testAuthor,
+	})
 	require.Nil(t, err)
 
 	// Now, call fetch
@@ -495,7 +500,9 @@ func TestRebase(t *testing.T) {
 	// Create the initial commit
 	wtree, err := gogitRepo.Worktree()
 	require.Nil(t, err)
-	_, err = wtree.Commit("Initial Commit", &gogit.CommitOptions{})
+	_, err = wtree.Commit("Initial Commit", &gogit.CommitOptions{
+		Author: testAuthor,
+	})
 	require.Nil(t, err)
 
 	// Create a git.Repo from it
@@ -519,7 +526,9 @@ func TestRebase(t *testing.T) {
 	_, err = wtree.Add(testFile)
 	require.Nil(t, err)
 
-	_, err = wtree.Commit("Test2-Commit", &gogit.CommitOptions{})
+	_, err = wtree.Commit("Test2-Commit", &gogit.CommitOptions{
+		Author: testAuthor,
+	})
 	require.Nil(t, err)
 
 	// Pull the changes to the test repo
@@ -541,7 +550,9 @@ func TestRebase(t *testing.T) {
 	_, err = wtree.Add(testFile)
 	require.Nil(t, err)
 
-	_, err = wtree.Commit("Test4-Commit", &gogit.CommitOptions{})
+	_, err = wtree.Commit("Test4-Commit", &gogit.CommitOptions{
+		Author: testAuthor,
+	})
 	require.Nil(t, err)
 
 	// Commit the same file in the test repo
