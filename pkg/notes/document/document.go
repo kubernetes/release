@@ -379,7 +379,7 @@ func CreateDownloadsTable(w io.Writer, bucket, tars, prevTag, newTag string) err
 
 	// Sort the files by their headers
 	headers := [4]string{
-		"", "Client Binaries", "Server Binaries", "Node Binaries",
+		"Source Code", "Client Binaries", "Server Binaries", "Node Binaries",
 	}
 	files := map[string][]File{
 		headers[0]: fileMetadata.Source,

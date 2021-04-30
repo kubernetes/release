@@ -41,7 +41,7 @@ filename | sha512 hash
 {{end}}
 
 {{- with .Downloads.Client -}}
-### Client binaries
+### Client Binaries
 
 filename | sha512 hash
 -------- | -----------
@@ -49,7 +49,7 @@ filename | sha512 hash
 {{end}}
 
 {{- with .Downloads.Server -}}
-### Server binaries
+### Server Binaries
 
 filename | sha512 hash
 -------- | -----------
@@ -57,7 +57,7 @@ filename | sha512 hash
 {{end}}
 
 {{- with .Downloads.Node -}}
-### Node binaries
+### Node Binaries
 
 filename | sha512 hash
 -------- | -----------
