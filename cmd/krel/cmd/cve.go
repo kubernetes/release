@@ -46,25 +46,6 @@ release bucket. See each subcommand for more information.
 	SilenceErrors: false,
 }
 
-var cveWriteCmd = &cobra.Command{
-	Use:   "write",
-	Short: "Write a new CVE vulnerability entry",
-	Long: `Adds or updates a CVE map file. The write subcommand will open a new empty CVE data
-map in the user's editor of choice. When saved, krel will verify the entry and uploaded
-to the release bucket.
-
-A non interactive mode for use in scripts, and processes can be invoked by
-passing the write subcommand a datamap using the --file flag. In this case, krel will 
-verify the map and if the CVE data is correct, it will upload the data to the bucket
-`,
-	SilenceUsage:  true,
-	SilenceErrors: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return writeCVE(cveOpts)
-	},
-	Args: argFunc,
-}
-
 var cveDeleteCmd = &cobra.Command{
 	Use:           "delete",
 	Short:         "Delete an existing cve map",
@@ -79,8 +60,8 @@ var cveDeleteCmd = &cobra.Command{
 
 var cveEditCmd = &cobra.Command{
 	Use:   "edit",
-	Short: "Edit an already published CVE map file",
-	Long: `The edit command pulls a CVE map which has already been published and
+	Short: "Edit a CVE map file",
+	Long: `The edit command opens an editor pulls a CVE map which has already been published and
 opens it for editing in the user's editor of choice (defined by the $EDITOR 
 or $KUBEEDITOR env vars). When saving and exiting the editor, krel will check
 the new CVE entry and upload it to the release bucket.
@@ -123,43 +104,46 @@ func init() {
 		"version tag for the notes",
 	)
 
-	cveCmd.AddCommand(cveWriteCmd, cveEditCmd, cveDeleteCmd)
+	cveCmd.AddCommand(cveEditCmd, cveDeleteCmd)
 	rootCmd.AddCommand(cveCmd)
 }
 
-func writeCVE(opts *cveOptions) (err error) {
+// writeNewCVE opens an editor to edit a new CVE entry interactively
+func writeNewCVE(opts *cveOptions) (err error) {
 	client := cve.NewClient()
 
-	if len(opts.mapFiles) == 0 {
-		file, err := client.CreateEmptyMap(opts.CVE)
-		if err != nil {
-			return errors.Wrap(err, "creating new cve data map")
-		}
-
-		oldFile, err := os.ReadFile(file.Name())
-		if err != nil {
-			return errors.Wrap(err, "reading local copy of CVE entry")
-		}
-
-		kubeEditor := editor.NewDefaultEditor([]string{"KUBE_EDITOR", "EDITOR"})
-		changes, tempFilePath, err := kubeEditor.LaunchTempFile(
-			"cve-datamap-", ".yaml", bytes.NewReader(oldFile),
-		)
-		if err != nil {
-			return errors.Wrap(err, "launching editor")
-		}
-
-		if string(changes) == string(oldFile) || string(changes) == "" {
-			logrus.Info("CVE information not modified")
-			return nil
-		}
-
-		logrus.Infof("Creating %s entry", opts.CVE)
-
-		// If the file was changed, re-write it:
-		return client.Write(opts.CVE, tempFilePath)
+	file, err := client.CreateEmptyMap(opts.CVE)
+	if err != nil {
+		return errors.Wrap(err, "creating new cve data map")
 	}
 
+	oldFile, err := os.ReadFile(file.Name())
+	if err != nil {
+		return errors.Wrap(err, "reading local copy of CVE entry")
+	}
+
+	kubeEditor := editor.NewDefaultEditor([]string{"KUBE_EDITOR", "EDITOR"})
+	changes, tempFilePath, err := kubeEditor.LaunchTempFile(
+		"cve-datamap-", ".yaml", bytes.NewReader(oldFile),
+	)
+	if err != nil {
+		return errors.Wrap(err, "launching editor")
+	}
+
+	if string(changes) == string(oldFile) || string(changes) == "" {
+		logrus.Info("CVE information not modified")
+		return nil
+	}
+
+	logrus.Infof("Creating %s entry", opts.CVE)
+
+	// If the file was changed, re-write it:
+	return client.Write(opts.CVE, tempFilePath)
+}
+
+// writeCVEFiles handles non interactive file writes
+func writeCVEFiles(opts *cveOptions) error {
+	client := cve.NewClient()
 	for _, mapFile := range opts.mapFiles {
 		if err := client.Write(opts.CVE, mapFile); err != nil {
 			return errors.Wrapf(err, "writing map file %s", mapFile)
@@ -168,13 +152,38 @@ func writeCVE(opts *cveOptions) (err error) {
 	return nil
 }
 
+// deleteCVE removes an existing map file
 func deleteCVE(opts *cveOptions) (err error) {
 	client := cve.NewClient()
 	return client.Delete(opts.CVE)
 }
 
-// editCVE
+// editCVE main edit funcion
 func editCVE(opts *cveOptions) (err error) {
+	client := cve.NewClient()
+
+	// If yaml files were specified, skip the interactive mode
+	if len(opts.mapFiles) != 0 {
+		return writeCVEFiles(opts)
+	}
+
+	// If we're editing interactively, check if it is a new CVE
+	// or we should first pull the data from the bucket
+	exists, err := client.EntryExists(opts.CVE)
+	if err != nil {
+		return errors.Wrap(err, "checking if cve entry exists")
+	}
+
+	if exists {
+		return editExistingCVE(opts)
+	}
+
+	return writeNewCVE(opts)
+}
+
+// editExistingCVE loads an existing map from the bucket and opens is
+// in the user's default editor
+func editExistingCVE(opts *cveOptions) (err error) {
 	client := cve.NewClient()
 	file, err := client.CopyToTemp(opts.CVE)
 	if err != nil {
