@@ -24,7 +24,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/psampaz/go-mod-outdated v0.7.0
 	github.com/saschagrunert/go-modiff v1.3.0
-	github.com/sendgrid/rest v2.6.2+incompatible
+	github.com/sendgrid/rest v2.6.3+incompatible
 	github.com/sendgrid/sendgrid-go v3.7.2+incompatible
 	github.com/shirou/gopsutil/v3 v3.20.12
 	github.com/sirupsen/logrus v1.8.1
