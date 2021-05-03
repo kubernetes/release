@@ -113,3 +113,8 @@ func (c *Client) CopyToTemp(cve string) (file *os.File, err error) {
 func (c *Client) CreateEmptyMap(cve string) (file *os.File, err error) {
 	return c.impl.CreateEmptyFile(cve, &c.options)
 }
+
+// List return a list iof existing CVE entries
+func (c *Client) EntryExists(cveID string) (bool, error) {
+	return c.impl.EntryExists(cveID, &c.options)
+}

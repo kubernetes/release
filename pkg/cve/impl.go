@@ -42,6 +42,7 @@ type ClientImplementation interface {
 	CopyToTemp(string, *ClientOptions) (*os.File, error)
 	ValidateCVEMap(string, string, *ClientOptions) error
 	CreateEmptyFile(string, *ClientOptions) (*os.File, error)
+	EntryExists(string, *ClientOptions) (bool, error)
 }
 
 // defaultClientImplementation
@@ -261,4 +262,27 @@ func (impl *defaultClientImplementation) CreateEmptyFile(cve string, opts *Clien
 	}
 
 	return file, nil
+}
+
+// EntryExists returns true if a CVE already exists
+func (impl *defaultClientImplementation) EntryExists(
+	cveID string, opts *ClientOptions,
+) (exists bool, err error) {
+	// Check the ID string to be valid
+	if err := ValidateID(cveID); err != nil {
+		return exists, errors.Wrap(err, "checking CVE ID string")
+	}
+
+	// Verify the expected file exists in the bucket
+	gcs := object.NewGCS()
+	// Normalizar the path to the CVE
+	path, err := gcs.NormalizePath(
+		object.GcsPrefix + filepath.Join(
+			opts.Bucket, opts.Directory, cveID+mapExt,
+		),
+	)
+	if err != nil {
+		return exists, errors.Wrap(err, "checking if CVE entry already exists")
+	}
+	return gcs.PathExists(path)
 }

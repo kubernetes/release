@@ -107,15 +107,8 @@ func (cve *CVE) Validate() error {
 		return errors.New("CVSS score out of range, should be 0.0 - 10.0")
 	}
 
-	// Check that the CVE ID is not empty
-	if cve.ID == "" {
-		return errors.New("ID missing from CVE data")
-	}
-
-	// Verify that the CVE ID is well formed
-	cvsre := regexp.MustCompile(CVEIDRegExp)
-	if !cvsre.MatchString(cve.ID) {
-		return errors.New("CVS ID is not well formed")
+	if err := ValidateID(cve.ID); err != nil {
+		return errors.Wrap(err, "checking CVE ID")
 	}
 
 	// Title and description must not be empty
@@ -125,6 +118,20 @@ func (cve *CVE) Validate() error {
 
 	if cve.Description == "" {
 		return errors.New("CVE description missing from CVE data")
+	}
+
+	return nil
+}
+
+// ValidateID checks if a CVE IS string is valid
+func ValidateID(cveID string) error {
+	if cveID == "" {
+		return errors.New("CVE ID string is empty")
+	}
+
+	// Verify that the CVE ID is well formed
+	if !regexp.MustCompile(CVEIDRegExp).MatchString(cveID) {
+		return errors.New("CVS ID is not well formed")
 	}
 
 	return nil
