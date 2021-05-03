@@ -157,7 +157,7 @@ func runTestGridShot(opts *TestGridOptions) error {
 		}
 		testgridJobs = append(testgridJobs, testgridJobsTemp...)
 
-		dateNow := fmt.Sprintf("%s-%s", time.Now().UTC().Format(layoutISO), uuid.New().String())
+		dateNow := fmt.Sprintf("%s-%s", time.Now().UTC().Format(layoutISO), uuid.NewString())
 		testgridJobs, err = processDashboards(testgridJobs, dateNow, opts)
 		if err != nil {
 			return errors.Wrap(err, "processing the dashboards")
