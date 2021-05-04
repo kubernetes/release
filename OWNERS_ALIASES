@@ -48,7 +48,9 @@ aliases:
   promo-tools-approvers:
     - justaugustus
   promo-tools-reviewers:
+    - hasheddan
     - justaugustus
+    - saschagrunert
   release-notes-approvers:
     - puerco
     - saschagrunert
