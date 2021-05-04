@@ -17,7 +17,7 @@ require (
 	github.com/google/licenseclassifier/v2 v2.0.0-alpha.1
 	github.com/google/uuid v1.2.0
 	github.com/mattn/go-isatty v0.0.12
-	github.com/maxbrunsfeld/counterfeiter/v6 v6.3.0
+	github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481
 	github.com/olekukonko/tablewriter v0.0.5
@@ -33,7 +33,7 @@ require (
 	github.com/spiegel-im-spiegel/go-cvss v0.4.0
 	github.com/stretchr/testify v1.7.0
 	github.com/yuin/goldmark v1.3.5
-	golang.org/x/net v0.0.0-20210326060303-6b1517762897
+	golang.org/x/net v0.0.0-20210331212208-0fccb6fa2b5c
 	golang.org/x/oauth2 v0.0.0-20210112200429-01de73cf58bd
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	google.golang.org/api v0.36.0
@@ -42,7 +42,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/utils v0.0.0-20210305010621-2afb4311ab10
 	sigs.k8s.io/mdtoc v1.0.1
-	sigs.k8s.io/release-utils v0.2.0
+	sigs.k8s.io/release-utils v0.2.1
 	sigs.k8s.io/yaml v1.2.0
 	sigs.k8s.io/zeitgeist v0.3.0
 )
