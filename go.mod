@@ -9,13 +9,13 @@ require (
 	github.com/GoogleCloudPlatform/testgrid v0.0.38
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff/v4 v4.1.0
-	github.com/cheggaaa/pb/v3 v3.0.5
-	github.com/go-git/go-git/v5 v5.2.0
+	github.com/cheggaaa/pb/v3 v3.0.8
+	github.com/go-git/go-git/v5 v5.3.0
 	github.com/golang/protobuf v1.4.3
 	github.com/google/go-containerregistry v0.3.0
 	github.com/google/go-github/v33 v33.0.0
 	github.com/google/licenseclassifier/v2 v2.0.0-alpha.1
-	github.com/google/uuid v1.1.4
+	github.com/google/uuid v1.2.0
 	github.com/mattn/go-isatty v0.0.12
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.3.0
 	github.com/mitchellh/mapstructure v1.4.1
@@ -24,16 +24,16 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/psampaz/go-mod-outdated v0.7.0
 	github.com/saschagrunert/go-modiff v1.3.0
-	github.com/sendgrid/rest v2.6.2+incompatible
+	github.com/sendgrid/rest v2.6.3+incompatible
 	github.com/sendgrid/sendgrid-go v3.7.2+incompatible
 	github.com/shirou/gopsutil/v3 v3.20.12
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/cobra v1.1.1
+	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spiegel-im-spiegel/go-cvss v0.4.0
 	github.com/stretchr/testify v1.7.0
 	github.com/yuin/goldmark v1.3.1
-	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
+	golang.org/x/net v0.0.0-20210326060303-6b1517762897
 	golang.org/x/oauth2 v0.0.0-20210112200429-01de73cf58bd
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	google.golang.org/api v0.36.0

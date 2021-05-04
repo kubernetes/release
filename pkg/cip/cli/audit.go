@@ -81,7 +81,7 @@ func (o *AuditOptions) set() {
 	if len(o.UUID) > 0 {
 		logrus.Infof("Starting auditor in Test Mode (%s)", o.UUID)
 	} else {
-		o.UUID = guuid.New().String()
+		o.UUID = guuid.NewString()
 		logrus.Infof("Starting auditor in Regular Mode (%s)", o.UUID)
 	}
 
