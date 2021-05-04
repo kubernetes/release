@@ -33,12 +33,6 @@ aliases:
     - dims
     - justaugustus
     - listx
-  build-image-reviewers:
-    - BenTheElder
-    - cblecker
-    - dims
-    - justaugustus
-    - listx
   krel-approvers:
     - cpanato
     - hasheddan
