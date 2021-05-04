@@ -20,7 +20,7 @@ require (
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.3.0
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481
-	github.com/olekukonko/tablewriter v0.0.4
+	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pkg/errors v0.9.1
 	github.com/psampaz/go-mod-outdated v0.7.0
 	github.com/saschagrunert/go-modiff v1.3.0
