@@ -420,7 +420,7 @@ func (c *Changelog) lookupRemoteReleaseNotes(
 
 	remoteBase := fmt.Sprintf(
 		"https://raw.githubusercontent.com/kubernetes/sig-release/%s/"+
-			"releases/%s/", git.DefaultBranch, branch,
+			"releases/%s/release-notes/", git.DefaultBranch, branch,
 	)
 
 	// Retrieve the markdown version

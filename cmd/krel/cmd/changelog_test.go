@@ -158,15 +158,15 @@ func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 	s := newSUT(t)
 	defer s.cleanup(t)
 
-	releaseBranch := "release-1.17"
-	co := s.getChangelogOptions("v1.17.0")
+	releaseBranch := "release-1.21"
+	co := s.getChangelogOptions("v1.21.0")
 	co.Branch = releaseBranch
 
 	// Prepare repo
 	changelogIter := func(callback func(string)) {
-		for i := 0; i < 6; i++ {
+		for i := 18; i < 21; i++ {
 			callback(filepath.Join(
-				changelog.RepoChangelogDir, fmt.Sprintf("CHANGELOG-1.1%d.md", i),
+				changelog.RepoChangelogDir, fmt.Sprintf("CHANGELOG-1.%d.md", i),
 			))
 		}
 	}
@@ -196,14 +196,14 @@ func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 		require.True(t, os.IsNotExist(err))
 	})
 
-	fileContains(t, "CHANGELOG-1.17.html", minorReleaseExpectedHTML)
-	require.Nil(t, os.RemoveAll("CHANGELOG-1.17.html"))
+	fileContains(t, "CHANGELOG-1.21.html", minorReleaseExpectedHTML)
+	require.Nil(t, os.RemoveAll("CHANGELOG-1.21.html"))
 	for _, x := range []struct {
 		branch        string
 		commitMessage string
 	}{
-		{releaseBranch, "Update CHANGELOG/CHANGELOG-1.17.md for v1.17.0"},
-		{git.DefaultBranch, "Update directory for v1.17.0 release"},
+		{releaseBranch, "Update CHANGELOG/CHANGELOG-1.21.md for v1.21.0"},
+		{git.DefaultBranch, "Update directory for v1.21.0 release"},
 	} {
 		// Switch to the test branch
 		require.Nil(t, s.repo.Checkout(x.branch))
@@ -215,7 +215,7 @@ func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 
 		// Verify changelog contents
 		result, err := os.ReadFile(
-			filepath.Join(s.repo.Dir(), changelog.RepoChangelogDir, "CHANGELOG-1.17.md"),
+			filepath.Join(s.repo.Dir(), changelog.RepoChangelogDir, "CHANGELOG-1.21.md"),
 		)
 		require.Nil(t, err)
 		require.Contains(t, string(result), minorReleaseExpectedTOC)
