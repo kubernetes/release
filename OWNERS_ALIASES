@@ -9,13 +9,10 @@ aliases:
     - saschagrunert # SIG Chair
   release-engineering-approvers:
     - cpanato # Release Manager
-    - feiskyer # Release Manager
     - hasheddan # subproject owner / Release Manager
-    - idealhack # Release Manager
     - puerco # Release Manager
     - saschagrunert # subproject owner / Release Manager
     - justaugustus # subproject owner / Release Manager
-    - tpepper # subproject owner
     - xmudrii # Release Manager
   release-engineering-reviewers:
     - ameukam # Release Manager Associate
@@ -56,25 +53,17 @@ aliases:
     - xmudrii
   promo-tools-approvers:
     - justaugustus
-    - justinsb
-    - listx
   promo-tools-reviewers:
     - justaugustus
-    - justinsb
-    - listx
   release-notes-approvers:
-    - jeefy
     - puerco
     - saschagrunert
   release-notes-reviewers:
-    - jeefy
     - puerco
     - saschagrunert
   vulndash-approvers:
     - cpanato
     - justaugustus
-    - listx
   vulndash-reviewers:
     - cpanato
     - justaugustus
-    - listx
