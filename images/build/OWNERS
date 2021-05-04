@@ -6,5 +6,4 @@ approvers:
   - build-image-approvers
   - release-engineering-approvers
 reviewers:
-  - build-image-reviewers
   - release-engineering-approvers
