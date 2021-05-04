@@ -2,7 +2,6 @@
 
 aliases:
   sig-release-leads:
-    - alejandrox1 # SIG Technical Lead
     - hasheddan # SIG Technical Lead
     - jeremyrickard # SIG Technical Lead
     - justaugustus # SIG Chair
@@ -16,7 +15,6 @@ aliases:
     - xmudrii # Release Manager
   release-engineering-reviewers:
     - ameukam # Release Manager Associate
-    - gianarb # Release Manager Associate
     - jimangel # Release Manager Associate
     - markyjackson-taulia # Release Manager Associate
     - mkorbi # Release Manager Associate
