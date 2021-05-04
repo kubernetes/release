@@ -54,6 +54,7 @@ aliases:
   release-notes-reviewers:
     - puerco
     - saschagrunert
+    - wilsonehusin
   vulndash-approvers:
     - cpanato
     - justaugustus
