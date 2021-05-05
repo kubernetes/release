@@ -43,7 +43,7 @@ dependencies:
 
   # distroless
   - name: "gcr.io/projectsigstore/cosign"
-    version: v0.3.1@sha256:c581a4f0f6dd158220fa05d2351d8015f969b68de5c61d52c41478fae84e7064
+    version: v0.4.0@sha256:7e9a6ca62c3b502a125754fbeb4cde2d37d4261a9c905359585bfc0a63ff17f4
     refPaths:
     - path: images/build/go-runner/cloudbuild.yaml
       match: gcr.io/projectsigstore/cosign:v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)@sha256:[a-f0-9]{64}
