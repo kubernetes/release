@@ -22,7 +22,8 @@ RUN ln -s /bin/rm /usr/sbin/rm \
     && apt-get update \
     && apt-get -t buster-backports -y --no-install-recommends install \
         iptables \
-        ebtables
+        ebtables \
+        nftables
 
 # DEBUG
 RUN iptables-nft --version
