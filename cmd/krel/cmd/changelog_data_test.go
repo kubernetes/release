@@ -697,7 +697,7 @@ we're pulling the correct go-runner arch from the manifest list.</p>
 </ul>
 <h3>Other (Cleanup or Flake)</h3>
 <ul>
-<li>Adds a bootstrapping ClusterRole, ClusterRoleBinding and group for /metrics, /livez/<em>, /readyz/</em>, &amp; /healthz/- endpoints. (<a href="https://github.com/kubernetes/kubernetes/pull/93311">#93311</a>, <a href="https://github.com/logicalhan">@logicalhan</a>) [SIG API Machinery, Auth, Cloud Provider and Instrumentation]</li>
+<li>Adds a bootstrapping ClusterRole, ClusterRoleBinding and group for /metrics, /livez/<em>, /readyz/</em>, &amp; /healthz/* endpoints. (<a href="https://github.com/kubernetes/kubernetes/pull/93311">#93311</a>, <a href="https://github.com/logicalhan">@logicalhan</a>) [SIG API Machinery, Auth, Cloud Provider and Instrumentation]</li>
 <li>Base-images: Update to debian-iptables:buster-v1.3.0
 <ul>
 <li>Uses iptables 1.8.5</li>
