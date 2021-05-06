@@ -24,6 +24,10 @@ RUN ln -s /bin/rm /usr/sbin/rm \
         iptables \
         ebtables
 
+# DEBUG
+RUN iptables-nft --version
+RUN update-alternatives --config iptables
+
 # Install other dependencies and then clean up apt caches
 RUN clean-install \
     conntrack \
@@ -31,8 +35,16 @@ RUN clean-install \
     kmod \
     netbase
 
+# DEBUG
+RUN iptables-nft --version
+RUN update-alternatives --config iptables
+
 # Install iptables wrapper scripts to detect the correct iptables mode
 # the first time any of them is run
 ADD https://raw.githubusercontent.com/kubernetes-sigs/iptables-wrappers/master/iptables-wrapper-installer.sh .
 RUN chmod +x ./iptables-wrapper-installer.sh \
     && ./iptables-wrapper-installer.sh
+
+# DEBUG
+RUN iptables-nft --version
+RUN update-alternatives --config iptables
