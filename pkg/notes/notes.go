@@ -806,7 +806,8 @@ func stripDash(note string) string {
 const listPrefix = "- "
 
 func dashify(note string) string {
-	return strings.ReplaceAll(note, "* ", listPrefix)
+	re := regexp.MustCompile(`(?m)(^\s*)\*\s`)
+	return re.ReplaceAllString(note, "$1- ")
 }
 
 // unlist transforms a single markdown list entry to a flat note entry

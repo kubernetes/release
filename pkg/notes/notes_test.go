@@ -430,3 +430,41 @@ func TestApplyMap(t *testing.T) {
 		}
 	}
 }
+
+func TestDashify(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		input, expected string
+	}{
+		{ // modify list
+			input:    "* test",
+			expected: "- test",
+		},
+		{ // modify list
+			input: `
+				* list item
+				  * sub list item
+				  * sub list item
+			`,
+			expected: `
+				- list item
+				  - sub list item
+				  - sub list item
+			`,
+		},
+		{ // no substitution
+			input: `
+				This is some plain **bold** text.
+				**And bold at the beginning of a line**.
+			`,
+			expected: `
+				This is some plain **bold** text.
+				**And bold at the beginning of a line**.
+			`,
+		},
+	} {
+		result := dashify(tc.input)
+		require.Equal(t, tc.expected, result)
+	}
+}
