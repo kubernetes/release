@@ -16,12 +16,12 @@
 SHELL=/bin/bash -o pipefail
 
 IMGNAME = kube-cross
-IMAGE_VERSION ?= v1.16.2-1
+IMAGE_VERSION ?= v1.16.4-1
 CONFIG ?= go1.16
 TYPE ?= default
 
 # Build args
-GO_VERSION?=1.16.3
+GO_VERSION?=1.16.4
 BASEIMAGE?=golang:$(GO_VERSION)
 PROTOBUF_VERSION?=3.7.0
 ETCD_VERSION?=v3.4.13
