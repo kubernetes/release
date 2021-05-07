@@ -22,8 +22,11 @@ VERSION=v0.3.0
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 
 # Ensure that we find the binaries we build before anything else.
-export GOBIN="${GOPATH}/bin"
-PATH="${GOBIN}:${PATH}"
+gobin=${GOBIN:-$(go env GOBIN)}
+if [[ -z $gobin ]]; then
+  gobin="$(go env GOPATH)/bin"
+fi
+PATH="${gobin}:${PATH}"
 
 # Install zeitgeist
 cd "${REPO_ROOT}/internal"
