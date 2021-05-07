@@ -64,7 +64,7 @@ dependencies:
 
   # Golang
   - name: "golang"
-    version: 1.16.3
+    version: 1.16.4
     refPaths:
     - path: cmd/vulndash/Makefile
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -107,7 +107,7 @@ dependencies:
 
   # Golang images
   - name: "gcr.io/k8s-staging-releng/releng-ci"
-    version: v0.5.1
+    version: v0.5.2
     refPaths:
     - path: images/releng/ci/cloudbuild.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -121,13 +121,13 @@ dependencies:
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-([0-9]+)
 
   - name: "k8s.gcr.io/build-image/go-runner"
-    version: v2.3.1-go1.16.3-buster.1
+    version: v2.3.1-go1.16.4-buster.0
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
   - name: "k8s.gcr.io/build-image/go-runner: image revision"
-    version: 1
+    version: 0
     refPaths:
     - path: images/build/go-runner/Makefile
       match: REVISION \?= \d+
@@ -135,8 +135,10 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "k8s.gcr.io/build-image/kube-cross"
-    version: v1.16.3-1
+    version: v1.16.4-1
     refPaths:
+    - path: images/build/cross/Makefile
+      match: IMAGE_VERSION\ \?=\ v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-([0-9]+)
     - path: images/build/cross/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
 
@@ -156,7 +158,7 @@ dependencies:
 
   # Golang (for previous release branches)
   - name: "golang (for previous release branches)"
-    version: 1.15.11
+    version: 1.15.12
     refPaths:
     - path: images/build/cross/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -174,19 +176,19 @@ dependencies:
 
   # Golang images (for previous release branches)
   - name: "k8s.gcr.io/build-image/go-runner (for previous release branches)"
-    version: v2.3.1-go1.15.11-buster.1
+    version: v2.3.1-go1.15.12-buster.0
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
   - name: "k8s.gcr.io/build-image/go-runner: image revision (for previous release branches)"
-    version: 1
+    version: 0
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: REVISION:\ '\d+'
 
   - name: "k8s.gcr.io/build-image/kube-cross (for previous release branches)"
-    version: v1.15.11-1
+    version: v1.15.12-1
     refPaths:
     - path: images/build/cross/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
