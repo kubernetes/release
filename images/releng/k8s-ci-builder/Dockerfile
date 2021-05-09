@@ -134,14 +134,6 @@ ARG OLD_BAZEL_VERSION
 COPY --from=old-bazel \
     /usr/local/lib/bazel/bin/bazel-real /usr/local/lib/bazel/bin/bazel-${OLD_BAZEL_VERSION}
 
-ARG SKOPEO_VERSION
-RUN git clone https://github.com/containers/skopeo $GOPATH/src/github.com/containers/skopeo
-RUN cd $GOPATH/src/github.com/containers/skopeo \
-    && git checkout ${SKOPEO_VERSION} \
-    && make bin/skopeo \
-    && cp bin/skopeo /usr/local/bin \
-    && rm -rf $GOPATH/src/github.com/containers/skopeo
-
 # Copy in release tools from kubernetes/release
 WORKDIR /
 COPY --from=builder /go/bin/* ./

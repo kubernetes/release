@@ -90,14 +90,6 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
     && apt-get -qqy install \
         docker-ce-cli
 
-ARG SKOPEO_VERSION
-RUN git clone https://github.com/containers/skopeo $GOPATH/src/github.com/containers/skopeo
-RUN cd $GOPATH/src/github.com/containers/skopeo \
-    && git checkout ${SKOPEO_VERSION} \
-    && make bin/skopeo \
-    && cp bin/skopeo /usr/local/bin \
-    && rm -rf $GOPATH/src/github.com/containers/skopeo
-
 # Cleanup a bit
 RUN apt-get -qqy remove \
       wget \

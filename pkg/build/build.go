@@ -116,8 +116,7 @@ type Options struct {
 	// Do not mark published bits on GCS as publicly readable.
 	PrivateBucket bool
 
-	// Validate that the remove image digests exists, needs `skopeo` in
-	// `$PATH`.
+	// Validate that the remote image digests exists.
 	ValidateRemoteImageDigests bool
 
 	// Stage additional files defined by `ExtraGcpStageFiles` and
