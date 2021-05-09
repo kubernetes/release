@@ -66,6 +66,10 @@ dependencies:
   - name: "golang"
     version: 1.16.4
     refPaths:
+    - path: Dockerfile-kubepkg
+      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+) AS builder
+    - path: Dockerfile-kubepkg-rpm
+      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+) AS builder
     - path: cmd/vulndash/Makefile
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
     - path: cmd/vulndash/variants.yaml
@@ -80,6 +84,10 @@ dependencies:
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
     - path: images/releng/ci/cloudbuild.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+    - path: images/releng/k8s-ci-builder/Makefile
+      match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+    - path: packages/deb/Dockerfile
+      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)
 
   # Golang pre-releases are denoted as `1.y<pre-release stage>.z`
   # Example: go1.16rc1
@@ -93,10 +101,10 @@ dependencies:
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
   - name: "golang: after kubernetes/kubernetes update"
-    version: 1.16.3
+    version: 1.16.4
     refPaths:
     - path: images/releng/k8s-ci-builder/Dockerfile
-      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+) as builder
+      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+) AS builder
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
@@ -151,7 +159,7 @@ dependencies:
       match: go\d+.\d+
 
   - name: "k8s.gcr.io/build-image/kube-cross: dependents"
-    version: v1.16.3-1
+    version: v1.16.4-1
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
