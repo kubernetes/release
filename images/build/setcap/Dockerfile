@@ -16,15 +16,5 @@ ARG BASEIMAGE
 
 FROM ${BASEIMAGE}
 
-# An attempt to fix issues like:
-# ```
-# Error while loading /usr/sbin/dpkg-split: No such file or directory
-# Error while loading /usr/sbin/dpkg-deb: No such file or directory
-# ```
-# See: https://github.com/docker/buildx/issues/495
-RUN ln -s /usr/bin/dpkg-split /usr/sbin/dpkg-split \
-    && ln -s /usr/bin/dpkg-deb /usr/sbin/dpkg-deb \
-    && ln -s /bin/tar /usr/sbin/tar \
-    && ln -s /bin/rm /usr/sbin/rm \
-    && apt-get update \
+RUN apt-get update \
     && apt-get -y --no-install-recommends install libcap2-bin
