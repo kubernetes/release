@@ -25,7 +25,6 @@ steps:
     - GO_VERSION=${_GO_VERSION}
     - BAZEL_VERSION=${_BAZEL_VERSION}
     - OLD_BAZEL_VERSION=${_OLD_BAZEL_VERSION}
-    - SKOPEO_VERSION=${_SKOPEO_VERSION}
     args:
     - '-c'
     - |
@@ -41,7 +40,6 @@ substitutions:
   _GO_VERSION: '0.0.0'
   _BAZEL_VERSION: '0.0.0'
   _OLD_BAZEL_VERSION: '0.0.0'
-  _SKOPEO_VERSION: 'v0.0.0'
   _REGISTRY: 'fake.repository/registry-name'
 
 tags:
