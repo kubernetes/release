@@ -238,7 +238,7 @@ func TestValidate(t *testing.T) {
 			},
 			shouldError: false,
 		},
-		{ // failure on skopeo call
+		{ // failure on crane call
 			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)

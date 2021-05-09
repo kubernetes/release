@@ -144,7 +144,7 @@ func init() {
 		&pushBuildOpts.ValidateRemoteImageDigests,
 		"validate-images",
 		false,
-		"Validate that the remove image digests exists, needs `skopeo` in `$PATH`",
+		"Validate that the remote image digests exists",
 	)
 
 	rootCmd.AddCommand(pushBuildCmd)

@@ -41,7 +41,7 @@ Flags:
       --noupdatelatest                  Do not update the latest file
       --private-bucket                  Do not mark published bits on GCS as publicly readable
       --registry string                 If set, push docker images to specified registry/project
-      --validate-images skopeo          Validate that the remove image digests exists, needs skopeo in `$PATH`
+      --validate-images                 Validate that the remote image digests exists
       --version-suffix string           Append suffix to version name if set
 
 Global Flags:
