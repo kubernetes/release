@@ -104,7 +104,7 @@ dependencies:
     version: 1.16.4
     refPaths:
     - path: images/releng/k8s-ci-builder/Dockerfile
-      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+) as builder
+      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+) AS builder
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
