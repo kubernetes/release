@@ -177,7 +177,7 @@ dependencies:
     #  match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
   - name: "golang: after kubernetes/kubernetes update (for previous release branches)"
-    version: 1.15.11
+    version: 1.15.12
     refPaths:
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -208,7 +208,7 @@ dependencies:
       match: go\d+.\d+
 
   - name: "k8s.gcr.io/build-image/kube-cross: dependents (for previous release branches)"
-    version: v1.15.11-1
+    version: v1.15.12-1
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
