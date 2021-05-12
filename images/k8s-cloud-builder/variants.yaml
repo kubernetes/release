@@ -4,7 +4,7 @@ variants:
     KUBE_CROSS_VERSION: 'v1.16.4-1'
   cross1.15:
     CONFIG: 'cross1.15'
-    KUBE_CROSS_VERSION: 'v1.15.11-1'
+    KUBE_CROSS_VERSION: 'v1.15.12-1'
   cross1.15-legacy:
     CONFIG: 'cross1.15-legacy'
-    KUBE_CROSS_VERSION: 'v1.15.11-legacy-1'
+    KUBE_CROSS_VERSION: 'v1.15.12-legacy-1'
