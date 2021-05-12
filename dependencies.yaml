@@ -17,8 +17,6 @@ dependencies:
   - name: "CNI plugins"
     version: 0.8.7
     refPaths:
-    - path: images/build/debian-hyperkube-base/Makefile
-      match: CNI_VERSION\?=
     - path: packages/deb/build.go
       match: currentCNIVersion\s+= "\d+\.\d+.\d+"
     - path: packages/rpm/kubelet.spec
@@ -250,12 +248,6 @@ dependencies:
     - path: images/build/setcap/variants.yaml
       match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
 
-  - name: "k8s.gcr.io/build-image/debian-hyperkube-base"
-    version: buster-v1.4.0
-    refPaths:
-    - path: images/build/debian-hyperkube-base/Makefile
-      match: TAG\?=[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
-
   - name: "k8s.gcr.io/build-image/debian-iptables"
     version: buster-v1.6.0
     refPaths:
@@ -263,12 +255,6 @@ dependencies:
       match: IMAGE_VERSION\ \?=\ [a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
     - path: images/build/debian-iptables/variants.yaml
       match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
-
-  - name: "k8s.gcr.io/build-image/debian-iptables: dependents"
-    version: buster-v1.5.0
-    refPaths:
-    - path: images/build/debian-hyperkube-base/Makefile
-      match: BASEIMAGE\?\=\$\(BASE_REGISTRY\)\/debian-iptables-\$\(ARCH\):[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
   - name: "k8s.gcr.io/build-image/setcap"
     version: buster-v2.0.0
