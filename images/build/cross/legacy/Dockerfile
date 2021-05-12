@@ -21,7 +21,6 @@ FROM ${BASEIMAGE}
 ##------------------------------------------------------------
 # global ARGs & ENVs
 
-ARG DEBIAN_FRONTEND=noninteractive
 
 ENV GOARM 7
 ENV KUBE_DYNAMIC_CROSSPLATFORMS \
@@ -39,6 +38,9 @@ ENV KUBE_CROSSPLATFORMS \
   windows/amd64 windows/386
 
 ##------------------------------------------------------------
+
+# Ensure the image is noninteractive
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
 # Pre-compile the standard go library when cross-compiling. This is much easier now when we have go1.5+
 RUN for platform in ${KUBE_CROSSPLATFORMS}; do GOOS=${platform%/*} GOARCH=${platform##*/} go install std; done \

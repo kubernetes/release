@@ -18,13 +18,13 @@ FROM $BASEIMAGE
 ARG ARCH
 COPY qemu-$ARCH-static /usr/bin/
 
-ENV DEBIAN_FRONTEND=noninteractive
-
 # Smaller package install size.
 COPY excludes /etc/dpkg/dpkg.cfg.d/excludes
 
 # Convenience script for building on this base image.
 COPY clean-install /usr/local/bin/clean-install
+
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
 # An attempt to fix issues like:
 # ```
