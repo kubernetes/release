@@ -46,21 +46,21 @@ const testFullLicense = `
 }
 `
 
-func TestISPDXLoadLicenses(t *testing.T) {
+func TestISCatalogLoadLicenses(t *testing.T) {
 	downloader := &license.Downloader{}
 	// Create a SPDX to test
-	spdx := &license.SPDX{
+	spdx := &license.Catalog{
 		Downloader: downloader,
-		Options:    license.DefaultSPDXOpts,
+		Options:    license.DefaultCatalogOpts,
 	}
 
 	for _, tc := range []struct {
 		mustFail        bool
-		dnLoaderReturns *license.SPDXLicenseList
+		dnLoaderReturns *license.List
 		dnLoaderError   error
 	}{
 		{true, nil, errors.New("Some download error")},
-		{false, &license.SPDXLicenseList{}, nil},
+		{false, &license.List{}, nil},
 	} {
 		impl := licensefakes.FakeDownloaderImplementation{}
 		impl.GetLicensesReturns(tc.dnLoaderReturns, tc.dnLoaderError)
@@ -78,17 +78,17 @@ func TestUSPDXWriteLicensesAsText(t *testing.T) {
 	testLicenseID := "test-license"
 	downloader := &license.Downloader{}
 	impl := licensefakes.FakeDownloaderImplementation{}
-	impl.GetLicensesReturns(&license.SPDXLicenseList{
-		Licenses: map[string]*license.SPDXLicense{
+	impl.GetLicensesReturns(&license.List{
+		Licenses: map[string]*license.License{
 			testLicenseID: {LicenseID: testLicenseID, LicenseText: "Test"},
 		},
 	}, nil)
 	downloader.SetImplementation(&impl)
 
 	// Create a SPDX to test
-	spdx := &license.SPDX{
+	spdx := &license.Catalog{
 		Downloader: downloader,
-		Options:    license.DefaultSPDXOpts,
+		Options:    license.DefaultCatalogOpts,
 	}
 
 	// Get the licenses from the fke downloader
@@ -109,29 +109,29 @@ func TestUSPDXWriteLicensesAsText(t *testing.T) {
 func TestUSPDXGetLicense(t *testing.T) {
 	testLicenseID := "test-license"
 	testLicenseContent := "Test license content"
-	spdx := license.SPDX{
+	catalog := license.Catalog{
 		Downloader: &license.Downloader{},
-		Licenses: &license.SPDXLicenseList{
-			Licenses: map[string]*license.SPDXLicense{
+		List: &license.List{
+			Licenses: map[string]*license.License{
 				testLicenseID: {LicenseID: testLicenseID, LicenseText: testLicenseContent},
 			},
 		},
-		Options: &license.SPDXOptions{},
+		Options: &license.CatalogOptions{},
 	}
 
-	testTicense := spdx.GetLicense(testLicenseID)
+	testTicense := catalog.GetLicense(testLicenseID)
 	require.NotNil(t, testTicense)
 	require.Equal(t, testTicense.LicenseID, testLicenseID)
 	require.Equal(t, testTicense.LicenseText, testLicenseContent)
 
-	testTicense = spdx.GetLicense("invalid-license-id")
+	testTicense = catalog.GetLicense("invalid-license-id")
 	require.Nil(t, testTicense)
 }
 
 func TestUSPDXLicenseListAdd(t *testing.T) {
 	// Create a sample license
-	licenseList := &license.SPDXLicenseList{}
-	testLicense := &license.SPDXLicense{LicenseID: "test-license", LicenseText: "test text"}
+	licenseList := &license.List{}
+	testLicense := &license.License{LicenseID: "test-license", LicenseText: "test text"}
 	// Use the Add method to add it to the collection
 	licenseList.Add(testLicense)
 	// Retrieve the data from the struct
@@ -167,7 +167,7 @@ func CheckFileExists(t *testing.T, path string) error {
 }
 
 func TestULicenseWriteText(t *testing.T) {
-	testLicense := license.SPDXLicense{
+	testLicense := license.License{
 		LicenseText: "Test license text",
 		LicenseID:   "test-license",
 	}
@@ -182,7 +182,7 @@ func TestULicenseWriteText(t *testing.T) {
 }
 
 func TestParseSPDXLicense(t *testing.T) {
-	testsLicense, err := license.ParseSPDXLicense([]byte(testFullLicense))
+	testsLicense, err := license.ParseLicense([]byte(testFullLicense))
 	require.Nil(t, err)
 	require.NotNil(t, testsLicense)
 
