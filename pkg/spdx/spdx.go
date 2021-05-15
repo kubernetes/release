@@ -14,157 +14,145 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package license
+package spdx
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/release-utils/util"
 )
 
-// NewSPDX returns a SPDX object with the default options
-func NewSPDX() (spdx *SPDX, err error) {
-	return NewSPDXWithOptions(DefaultSPDXOpts)
-}
+const (
+	defaultDocumentAuthor   = "Kubernetes Release Managers (release-managers@kubernetes.io)"
+	archiveManifestFilename = "manifest.json"
+	spdxLicenseCacheDir     = "spdx/lic"
+)
 
-// NewSPDXWithOptions returns a SPDX object with the specified options
-func NewSPDXWithOptions(opts *SPDXOptions) (spdx *SPDX, err error) {
-	// Create the license Downloader
-	doptions := DefaultDownloaderOpts
-	doptions.CacheDir = opts.CacheDir
-	downloader, err := NewDownloaderWithOptions(doptions)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating downloader")
-	}
-	spdx = &SPDX{
-		Downloader: downloader,
-		Options:    DefaultSPDXOpts,
-	}
-	if err := spdx.Options.Validate(); err != nil {
-		return nil, err
-	}
-	return spdx, nil
-}
-
-// SPDX is an objec to interact with licenses and manifest creation
 type SPDX struct {
-	Downloader *Downloader      // License Downloader
-	Licenses   *SPDXLicenseList // List of licenses
-	Options    *SPDXOptions     // SPDX Options
+	impl    spdxImplementation
+	options *Options
 }
 
-// SPDXOptions are the spdx settings
-type SPDXOptions struct {
-	CacheDir string
-}
-
-// Validate checks the spdx options
-func (o *SPDXOptions) Validate() error {
-	return nil
-}
-
-// DefaultSPDXOpts are the predetermined settings. License and cache directories
-// are in the temporary OS directory and are created if the do not exist
-var DefaultSPDXOpts = &SPDXOptions{}
-
-// SPDXLicenseList abstracts the list of licenses published by SPDX.org
-type SPDXLicenseList struct {
-	sync.RWMutex
-	Version           string                 `json:"licenseListVersion"`
-	ReleaseDateString string                 `json:"releaseDate "`
-	LicenseData       []SPDXLicenseListEntry `json:"licenses"`
-	Licenses          map[string]*SPDXLicense
-}
-
-// Add appends a license to the license list
-func (list *SPDXLicenseList) Add(license *SPDXLicense) {
-	list.Lock()
-	defer list.Unlock()
-	if list.Licenses == nil {
-		list.Licenses = map[string]*SPDXLicense{}
+func NewSPDX() *SPDX {
+	return &SPDX{
+		impl:    &spdxDefaultImplementation{},
+		options: &defaultSPDXOptions,
 	}
-	list.Licenses[license.LicenseID] = license
 }
 
-// SPDXLicense is a license described in JSON
-type SPDXLicense struct {
-	IsDeprecatedLicenseID         bool     `json:"isDeprecatedLicenseId"`
-	IsFsfLibre                    bool     `json:"isFsfLibre"`
-	IsOsiApproved                 bool     `json:"isOsiApproved"`
-	LicenseText                   string   `json:"licenseText"`
-	StandardLicenseHeaderTemplate string   `json:"standardLicenseHeaderTemplate"`
-	StandardLicenseTemplate       string   `json:"standardLicenseTemplate"`
-	Name                          string   `json:"name"`
-	LicenseID                     string   `json:"licenseId"`
-	StandardLicenseHeader         string   `json:"standardLicenseHeader"`
-	SeeAlso                       []string `json:"seeAlso"`
+type Options struct {
+	LicenseCacheDir string // Directory to cache SPDX license information
+	AnalyzeLayers   bool
 }
 
-// WriteText writes the SPDX license text to a text file
-func (license *SPDXLicense) WriteText(filePath string) error {
-	return errors.Wrap(
-		os.WriteFile(
-			filePath, []byte(license.LicenseText), os.FileMode(0o644),
-		), "while writing license to text file",
-	)
+var defaultSPDXOptions = Options{
+	LicenseCacheDir: filepath.Join(os.TempDir(), spdxLicenseCacheDir),
+	AnalyzeLayers:   true,
 }
 
-// SPDXLicenseListEntry a license entry in the list
-type SPDXLicenseListEntry struct {
-	IsOsiApproved   bool     `json:"isOsiApproved"`
-	IsDeprectaed    bool     `json:"isDeprecatedLicenseId"`
-	Reference       string   `json:"reference"`
-	DetailsURL      string   `json:"detailsUrl"`
-	ReferenceNumber string   `json:"referenceNumber"`
-	Name            string   `json:"name"`
-	LicenseID       string   `json:"licenseId"`
-	SeeAlso         []string `json:"seeAlso"`
+type archiveManifest struct {
+	ConfigFilename string   `json:"Config"`
+	RepoTags       []string `json:"RepoTags"`
+	LayerFiles     []string `json:"Layers"`
 }
 
-// LoadLicenses reads the license data from the downloader
-func (spdx *SPDX) LoadLicenses() error {
-	logrus.Info("Loading license data from downloader")
-	licenses, err := spdx.Downloader.GetLicenses()
+// ImageOptions set of options for processing tar files
+type TarballOptions struct {
+	ExtractDir string // Directory where the docker tar archive will be extracted
+}
+
+// PackageFromImageTarball returns a SPDX package from a tarball
+func (spdx *SPDX) PackageFromImageTarball(
+	tarPath string, opts *TarballOptions,
+) (imagePackage *Package, err error) {
+	logrus.Infof("Generating SPDX package from image tarball %s", tarPath)
+
+	// Extract all files from tarfile
+	opts.ExtractDir, err = spdx.impl.ExtractTarballTmp(tarPath)
 	if err != nil {
-		return errors.Wrap(err, "getting licenses from downloader")
+		return nil, errors.Wrap(err, "extracting tarball to temp dir")
 	}
-	spdx.Licenses = licenses
-	logrus.Infof("SPDX: Got %d licenses from downloader", len(licenses.Licenses))
-	return nil
-}
+	defer os.RemoveAll(opts.ExtractDir)
 
-// WriteLicensesAsText writes the SPDX license collection to text files
-func (spdx *SPDX) WriteLicensesAsText(targetDir string) error {
-	logrus.Info("Writing SPDX licenses to " + targetDir)
-	if spdx.Licenses.Licenses == nil {
-		return errors.New("unable to write licenses, they have not been loaded yet")
+	// Read the archive manifest json:
+	manifest, err := spdx.impl.ReadArchiveManifest(
+		filepath.Join(opts.ExtractDir, archiveManifestFilename),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "while reading docker archive manifest")
 	}
-	for _, l := range spdx.Licenses.Licenses {
-		if err := l.WriteText(filepath.Join(targetDir, l.LicenseID+".txt")); err != nil {
-			return errors.Wrapf(err, "while writing license %s", l.LicenseID)
+
+	if manifest.RepoTags[0] == "" {
+		return nil, errors.New(
+			"unable to add tar archive, manifest does not have a RepoTags entry",
+		)
+	}
+
+	logrus.Infof("Package describes %s image", manifest.RepoTags[0])
+
+	// Create the new SPDX package
+	imagePackage = NewPackage()
+	imagePackage.Options().WorkDir = opts.ExtractDir
+	imagePackage.Name = manifest.RepoTags[0]
+
+	logrus.Infof("Image manifest lists %d layers", len(manifest.LayerFiles))
+
+	// Cycle all the layers from the manifest and add them as packages
+	for _, layerFile := range manifest.LayerFiles {
+		// Generate a package from a layer
+		pkg, err := spdx.impl.PackageFromLayerTarBall(layerFile, opts)
+		if err != nil {
+			return nil, errors.Wrap(err, "building package from layer")
+		}
+
+		// If the option is enabled, scan the container layers
+		if spdx.options.AnalyzeLayers {
+			if err := spdx.AnalyzeImageLayer(filepath.Join(opts.ExtractDir, layerFile), pkg); err != nil {
+				return nil, errors.Wrap(err, "scanning layer "+pkg.ID)
+			}
+		} else {
+			logrus.Info("Not performing deep image analysis (opts.AnalyzeLayers = false)")
+		}
+
+		// Add the layer package to the image package
+		if err := imagePackage.AddPackage(pkg); err != nil {
+			return nil, errors.Wrap(err, "adding layer to image package")
 		}
 	}
-	return nil
+
+	// return the finished package
+	return imagePackage, nil
 }
 
-// GetLicense returns a license struct from its SPDX ID label
-func (spdx *SPDX) GetLicense(label string) *SPDXLicense {
-	if lic, ok := spdx.Licenses.Licenses[label]; ok {
-		return lic
+// FileFromPath creates a File object from a path
+func (spdx *SPDX) FileFromPath(filePath string) (*File, error) {
+	if !util.Exists(filePath) {
+		return nil, errors.New("file does not exist")
 	}
-	logrus.Warn("Label %s is not an ID of a known license " + label)
-	return nil
+	f := NewFile()
+	if err := f.ReadSourceFile(filePath); err != nil {
+		return nil, errors.Wrap(err, "creating file from path")
+	}
+	return f, nil
 }
 
-// ParseSPDXLicense parses a SPDX license from its JSON source
-func ParseSPDXLicense(licenseJSON []byte) (license *SPDXLicense, err error) {
-	license = &SPDXLicense{}
-	if err := json.Unmarshal(licenseJSON, license); err != nil {
-		return nil, errors.Wrap(err, "parsing SPDX licence")
-	}
-	return license, nil
+// AnalyzeLayer uses the collection of image analyzers to see if
+//  it matches a known image from which a spdx package can be
+//  enriched with more information
+func (spdx *SPDX) AnalyzeImageLayer(layerPath string, pkg *Package) error {
+	return NewImageAnalyzer().AnalyzeLayer(layerPath, pkg)
+}
+
+// ExtractTarballTmp extracts a tarball to a temp file
+func (spdx *SPDX) ExtractTarballTmp(tarPath string) (tmpDir string, err error) {
+	return spdx.impl.ExtractTarballTmp(tarPath)
+}
+
+// PullImagesToArchive
+func (spdx *SPDX) PullImagesToArchive(reference, path string) error {
+	return spdx.impl.PullImagesToArchive(reference, path)
 }
