@@ -46,8 +46,7 @@ type Binary struct {
 }
 
 // Options to control the binary checker
-type Options struct {
-}
+type Options struct{}
 
 // DefaultOptions set of options
 var DefaultOptions = &Options{}
