@@ -49,10 +49,9 @@ const testFullLicense = `
 func TestISCatalogLoadLicenses(t *testing.T) {
 	downloader := &license.Downloader{}
 	// Create a SPDX to test
-	spdx := &license.Catalog{
-		Downloader: downloader,
-		Options:    license.DefaultCatalogOpts,
-	}
+	spdx, err := license.NewCatalogWithOptions(license.DefaultCatalogOpts)
+	require.Nil(t, err)
+	spdx.Downloader = downloader
 
 	for _, tc := range []struct {
 		mustFail        bool
@@ -76,20 +75,21 @@ func TestISCatalogLoadLicenses(t *testing.T) {
 
 func TestUSPDXWriteLicensesAsText(t *testing.T) {
 	testLicenseID := "test-license"
+	testLicenseID2 := "test-license2"
 	downloader := &license.Downloader{}
 	impl := licensefakes.FakeDownloaderImplementation{}
 	impl.GetLicensesReturns(&license.List{
 		Licenses: map[string]*license.License{
-			testLicenseID: {LicenseID: testLicenseID, LicenseText: "Test"},
+			testLicenseID:  {LicenseID: testLicenseID, LicenseText: "Test"},
+			testLicenseID2: {LicenseID: testLicenseID2, LicenseText: "Test2"},
 		},
 	}, nil)
 	downloader.SetImplementation(&impl)
 
 	// Create a SPDX to test
-	spdx := &license.Catalog{
-		Downloader: downloader,
-		Options:    license.DefaultCatalogOpts,
-	}
+	spdx, err := license.NewCatalogWithOptions(license.DefaultCatalogOpts)
+	require.Nil(t, err)
+	spdx.Downloader = downloader
 
 	// Get the licenses from the fke downloader
 	require.Nil(t, spdx.LoadLicenses())
@@ -109,14 +109,12 @@ func TestUSPDXWriteLicensesAsText(t *testing.T) {
 func TestUSPDXGetLicense(t *testing.T) {
 	testLicenseID := "test-license"
 	testLicenseContent := "Test license content"
-	catalog := license.Catalog{
-		Downloader: &license.Downloader{},
-		List: &license.List{
-			Licenses: map[string]*license.License{
-				testLicenseID: {LicenseID: testLicenseID, LicenseText: testLicenseContent},
-			},
+	catalog, err := license.NewCatalogWithOptions(&license.CatalogOptions{})
+	require.Nil(t, err)
+	catalog.List = &license.List{
+		Licenses: map[string]*license.License{
+			testLicenseID: {LicenseID: testLicenseID, LicenseText: testLicenseContent},
 		},
-		Options: &license.CatalogOptions{},
 	}
 
 	testTicense := catalog.GetLicense(testLicenseID)
