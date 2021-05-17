@@ -16,6 +16,8 @@ limitations under the License.
 
 package spdx
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
 import (
 	"archive/tar"
 	"crypto/sha1"
@@ -35,9 +37,11 @@ import (
 	"sigs.k8s.io/release-utils/util"
 )
 
+//counterfeiter:generate . spdxImplementation
+
 type spdxImplementation interface {
 	ExtractTarballTmp(string) (string, error)
-	ReadArchiveManifest(string) (*archiveManifest, error)
+	ReadArchiveManifest(string) (*ArchiveManifest, error)
 	PullImagesToArchive(string, string) error
 	PackageFromLayerTarBall(string, *TarballOptions) (*Package, error)
 }
@@ -101,14 +105,14 @@ func (di *spdxDefaultImplementation) ExtractTarballTmp(tarPath string) (tmpDir s
 
 // readArchiveManifest extracts the manifest json from an image tar
 //    archive and returns the data as a struct
-func (di *spdxDefaultImplementation) ReadArchiveManifest(manifestPath string) (manifest *archiveManifest, err error) {
+func (di *spdxDefaultImplementation) ReadArchiveManifest(manifestPath string) (manifest *ArchiveManifest, err error) {
 	// Check that we have the archive manifest.json file
 	if !util.Exists(manifestPath) {
 		return manifest, errors.New("unable to find manifest file " + manifestPath)
 	}
 
 	// Parse the json file
-	manifestData := []archiveManifest{}
+	manifestData := []ArchiveManifest{}
 	manifestJSON, err := os.ReadFile(manifestPath)
 	if err != nil {
 		return manifest, errors.Wrap(err, "unable to read from tarfile")

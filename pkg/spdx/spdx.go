@@ -44,9 +44,17 @@ func NewSPDX() *SPDX {
 	}
 }
 
+func (spdx *SPDX) SetImplementation(impl spdxImplementation) {
+	spdx.impl = impl
+}
+
 type Options struct {
 	LicenseCacheDir string // Directory to cache SPDX license information
 	AnalyzeLayers   bool
+}
+
+func (spdx *SPDX) Options() *Options {
+	return spdx.options
 }
 
 var defaultSPDXOptions = Options{
@@ -54,7 +62,7 @@ var defaultSPDXOptions = Options{
 	AnalyzeLayers:   true,
 }
 
-type archiveManifest struct {
+type ArchiveManifest struct {
 	ConfigFilename string   `json:"Config"`
 	RepoTags       []string `json:"RepoTags"`
 	LayerFiles     []string `json:"Layers"`
@@ -84,6 +92,10 @@ func (spdx *SPDX) PackageFromImageTarball(
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "while reading docker archive manifest")
+	}
+
+	if len(manifest.RepoTags) == 0 {
+		return nil, errors.New("No RepoTags found in manifest")
 	}
 
 	if manifest.RepoTags[0] == "" {

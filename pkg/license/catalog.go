@@ -18,6 +18,7 @@ package license
 
 import (
 	"path/filepath"
+	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -25,12 +26,7 @@ import (
 
 // CatalogOptions are the spdx settings
 type CatalogOptions struct {
-	CacheDir string
-}
-
-// Validate checks the spdx options
-func (o *CatalogOptions) Validate() error {
-	return nil
+	CacheDir string // Directrory to catch the license we download from SPDX.org
 }
 
 // DefaultCatalogOpts are the predetermined settings. License and cache directories
@@ -48,12 +44,15 @@ func NewCatalogWithOptions(opts *CatalogOptions) (catalog *Catalog, err error) {
 	}
 	catalog = &Catalog{
 		Downloader: downloader,
-		Options:    DefaultCatalogOpts,
+		opts:       opts,
 	}
-	if err := catalog.Options.Validate(); err != nil {
-		return nil, err
-	}
+
 	return catalog, nil
+}
+
+// Options returns  a pointer to the catlog options
+func (catalog *Catalog) Options() *CatalogOptions {
+	return catalog.opts
 }
 
 // LoadLicenses reads the license data from the downloader
@@ -72,7 +71,7 @@ func (catalog *Catalog) LoadLicenses() error {
 type Catalog struct {
 	Downloader *Downloader     // License Downloader
 	List       *List           // List of licenses
-	Options    *CatalogOptions // SPDX Options
+	opts       *CatalogOptions // SPDX Options
 }
 
 // WriteLicensesAsText writes the SPDX license collection to text files
@@ -81,12 +80,23 @@ func (catalog *Catalog) WriteLicensesAsText(targetDir string) error {
 	if catalog.List.Licenses == nil {
 		return errors.New("unable to write licenses, they have not been loaded yet")
 	}
+	wg := sync.WaitGroup{}
+	var err error
 	for _, l := range catalog.List.Licenses {
-		if err := l.WriteText(filepath.Join(targetDir, l.LicenseID+".txt")); err != nil {
-			return errors.Wrapf(err, "while writing license %s", l.LicenseID)
-		}
+		wg.Add(1)
+		go func(l *License) {
+			defer wg.Done()
+			if lerr := l.WriteText(filepath.Join(targetDir, l.LicenseID+".txt")); err != nil {
+				if err == nil {
+					err = lerr
+				} else {
+					err = errors.Wrap(err, lerr.Error())
+				}
+			}
+		}(l)
 	}
-	return nil
+	wg.Wait()
+	return errors.Wrap(err, "caught errors while writing license files")
 }
 
 // GetLicense returns a license struct from its SPDX ID label
