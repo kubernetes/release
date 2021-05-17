@@ -133,7 +133,8 @@ func TestGetLogFiles(t *testing.T) {
 	defer os.RemoveAll(dir)
 
 	goodFiles := []string{"anago.log", "anago-stage.log", "anago.log.1", "anago-stage.log.1"}
-	allFiles := append(goodFiles, []string{"test1.txt", "other.log", "anago.txt"}...)
+	allFiles := goodFiles
+	allFiles = append(allFiles, "test1.txt", "other.log", "anago.txt")
 	for _, fileName := range allFiles {
 		require.Nil(t, os.WriteFile(filepath.Join(dir, fileName), []byte("test"), os.FileMode(0o644)))
 	}
