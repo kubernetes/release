@@ -122,7 +122,7 @@ func rndFetch() error {
 	}
 
 	storagePath := filepath.Join(rnd.StorageWorkDir(releaseTagVersion), "fetched")
-	if err = writeReleaseNotesToGitRepo(releaseNotes, storageGit, storagePath); err != nil {
+	if err := writeReleaseNotesToGitRepo(releaseNotes, storageGit, storagePath); err != nil {
 		return err
 	}
 
@@ -138,7 +138,7 @@ func rndFetch() error {
 			return err
 		}
 
-		if err = storageGit.PushToRemote("origin", "main"); err != nil {
+		if err := storageGit.PushToRemote("origin", "main"); err != nil {
 			return err
 		}
 	} else {

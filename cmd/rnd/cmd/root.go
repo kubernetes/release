@@ -51,8 +51,8 @@ the program expects to be run unattended, such as through CI systems`,
 	PersistentPreRunE: func(*cobra.Command, []string) error {
 		return processRootFlags()
 	},
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }
 
