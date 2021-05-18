@@ -27,12 +27,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/release-utils/util"
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/notes"
 	notesoptions "k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/rnd"
-	"k8s.io/release/pkg/util"
 )
 
 // ATTENTION: if you're modifying this struct, make sure you update the command help
