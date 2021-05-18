@@ -12,7 +12,7 @@ require (
 	github.com/cheggaaa/pb/v3 v3.0.8
 	github.com/go-git/go-git/v5 v5.3.0
 	github.com/golang/protobuf v1.5.2
-	github.com/google/go-containerregistry v0.5.0
+	github.com/google/go-containerregistry v0.5.1
 	github.com/google/go-github/v33 v33.0.0
 	github.com/google/licenseclassifier/v2 v2.0.0-alpha.1
 	github.com/google/uuid v1.2.0
