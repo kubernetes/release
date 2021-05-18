@@ -32,7 +32,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spiegel-im-spiegel/go-cvss v0.4.0
 	github.com/stretchr/testify v1.7.0
-	github.com/yuin/goldmark v1.3.6
+	github.com/yuin/goldmark v1.3.7
 	golang.org/x/net v0.0.0-20210503060351-7fd8e65b6420
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
