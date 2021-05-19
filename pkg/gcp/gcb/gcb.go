@@ -301,6 +301,10 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef string) (map[string
 	gcbSubs["TOOL_REPO"] = toolRepo
 	gcbSubs["TOOL_REF"] = toolRef
 
+	gcbSubs["K8S_ORG"] = release.GetK8sOrg()
+	gcbSubs["K8S_REPO"] = release.GetK8sRepo()
+	gcbSubs["K8S_REF"] = release.GetK8sRef()
+
 	gcpUser := g.options.GcpUser
 	if gcpUser == "" {
 		var gcpUserErr error

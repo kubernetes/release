@@ -151,6 +151,18 @@ type FakeStageImpl struct {
 	makeCrossReturnsOnCall map[int]struct {
 		result1 error
 	}
+	MergeStub        func(*git.Repo, string) error
+	mergeMutex       sync.RWMutex
+	mergeArgsForCall []struct {
+		arg1 *git.Repo
+		arg2 string
+	}
+	mergeReturns struct {
+		result1 error
+	}
+	mergeReturnsOnCall map[int]struct {
+		result1 error
+	}
 	OpenRepoStub        func(string) (*git.Repo, error)
 	openRepoMutex       sync.RWMutex
 	openRepoArgsForCall []struct {
@@ -164,9 +176,10 @@ type FakeStageImpl struct {
 		result1 *git.Repo
 		result2 error
 	}
-	PrepareWorkspaceStageStub        func() error
+	PrepareWorkspaceStageStub        func(bool) error
 	prepareWorkspaceStageMutex       sync.RWMutex
 	prepareWorkspaceStageArgsForCall []struct {
+		arg1 bool
 	}
 	prepareWorkspaceStageReturns struct {
 		result1 error
@@ -900,6 +913,68 @@ func (fake *FakeStageImpl) MakeCrossReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeStageImpl) Merge(arg1 *git.Repo, arg2 string) error {
+	fake.mergeMutex.Lock()
+	ret, specificReturn := fake.mergeReturnsOnCall[len(fake.mergeArgsForCall)]
+	fake.mergeArgsForCall = append(fake.mergeArgsForCall, struct {
+		arg1 *git.Repo
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.MergeStub
+	fakeReturns := fake.mergeReturns
+	fake.recordInvocation("Merge", []interface{}{arg1, arg2})
+	fake.mergeMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) MergeCallCount() int {
+	fake.mergeMutex.RLock()
+	defer fake.mergeMutex.RUnlock()
+	return len(fake.mergeArgsForCall)
+}
+
+func (fake *FakeStageImpl) MergeCalls(stub func(*git.Repo, string) error) {
+	fake.mergeMutex.Lock()
+	defer fake.mergeMutex.Unlock()
+	fake.MergeStub = stub
+}
+
+func (fake *FakeStageImpl) MergeArgsForCall(i int) (*git.Repo, string) {
+	fake.mergeMutex.RLock()
+	defer fake.mergeMutex.RUnlock()
+	argsForCall := fake.mergeArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeStageImpl) MergeReturns(result1 error) {
+	fake.mergeMutex.Lock()
+	defer fake.mergeMutex.Unlock()
+	fake.MergeStub = nil
+	fake.mergeReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) MergeReturnsOnCall(i int, result1 error) {
+	fake.mergeMutex.Lock()
+	defer fake.mergeMutex.Unlock()
+	fake.MergeStub = nil
+	if fake.mergeReturnsOnCall == nil {
+		fake.mergeReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.mergeReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeStageImpl) OpenRepo(arg1 string) (*git.Repo, error) {
 	fake.openRepoMutex.Lock()
 	ret, specificReturn := fake.openRepoReturnsOnCall[len(fake.openRepoArgsForCall)]
@@ -964,17 +1039,18 @@ func (fake *FakeStageImpl) OpenRepoReturnsOnCall(i int, result1 *git.Repo, resul
 	}{result1, result2}
 }
 
-func (fake *FakeStageImpl) PrepareWorkspaceStage() error {
+func (fake *FakeStageImpl) PrepareWorkspaceStage(arg1 bool) error {
 	fake.prepareWorkspaceStageMutex.Lock()
 	ret, specificReturn := fake.prepareWorkspaceStageReturnsOnCall[len(fake.prepareWorkspaceStageArgsForCall)]
 	fake.prepareWorkspaceStageArgsForCall = append(fake.prepareWorkspaceStageArgsForCall, struct {
-	}{})
+		arg1 bool
+	}{arg1})
 	stub := fake.PrepareWorkspaceStageStub
 	fakeReturns := fake.prepareWorkspaceStageReturns
-	fake.recordInvocation("PrepareWorkspaceStage", []interface{}{})
+	fake.recordInvocation("PrepareWorkspaceStage", []interface{}{arg1})
 	fake.prepareWorkspaceStageMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -988,10 +1064,17 @@ func (fake *FakeStageImpl) PrepareWorkspaceStageCallCount() int {
 	return len(fake.prepareWorkspaceStageArgsForCall)
 }
 
-func (fake *FakeStageImpl) PrepareWorkspaceStageCalls(stub func() error) {
+func (fake *FakeStageImpl) PrepareWorkspaceStageCalls(stub func(bool) error) {
 	fake.prepareWorkspaceStageMutex.Lock()
 	defer fake.prepareWorkspaceStageMutex.Unlock()
 	fake.PrepareWorkspaceStageStub = stub
+}
+
+func (fake *FakeStageImpl) PrepareWorkspaceStageArgsForCall(i int) bool {
+	fake.prepareWorkspaceStageMutex.RLock()
+	defer fake.prepareWorkspaceStageMutex.RUnlock()
+	argsForCall := fake.prepareWorkspaceStageArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeStageImpl) PrepareWorkspaceStageReturns(result1 error) {
@@ -1603,6 +1686,8 @@ func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	defer fake.generateReleaseVersionMutex.RUnlock()
 	fake.makeCrossMutex.RLock()
 	defer fake.makeCrossMutex.RUnlock()
+	fake.mergeMutex.RLock()
+	defer fake.mergeMutex.RUnlock()
 	fake.openRepoMutex.RLock()
 	defer fake.openRepoMutex.RUnlock()
 	fake.prepareWorkspaceStageMutex.RLock()

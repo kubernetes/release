@@ -61,7 +61,7 @@ func (r *BranchChecker) NeedsCreation(
 	logrus.Infof("Checking if branch %s exists on remote", branch)
 
 	output, err := r.impl.LSRemoteExec(
-		git.GetDefaultKubernetesRepoURL(),
+		git.GetRepoURL(GetK8sOrg(), GetK8sRepo(), false),
 		fmt.Sprintf("refs/heads/%s", branch),
 	)
 	if err != nil {
