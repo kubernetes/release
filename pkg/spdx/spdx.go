@@ -29,7 +29,9 @@ import (
 const (
 	defaultDocumentAuthor   = "Kubernetes Release Managers (release-managers@kubernetes.io)"
 	archiveManifestFilename = "manifest.json"
-	spdxLicenseCacheDir     = "spdx/lic"
+	spdxTempDir             = "spdx"
+	spdxLicenseData         = spdxTempDir + "/licenses"
+	spdxLicenseDlCache      = spdxTempDir + "/downloadCache"
 )
 
 type SPDX struct {
@@ -58,7 +60,7 @@ func (spdx *SPDX) Options() *Options {
 }
 
 var defaultSPDXOptions = Options{
-	LicenseCacheDir: filepath.Join(os.TempDir(), spdxLicenseCacheDir),
+	LicenseCacheDir: filepath.Join(os.TempDir(), spdxLicenseDlCache),
 	AnalyzeLayers:   true,
 }
 

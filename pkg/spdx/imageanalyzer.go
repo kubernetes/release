@@ -36,7 +36,7 @@ type ImageAnalyzer struct {
 func NewImageAnalyzer() *ImageAnalyzer {
 	// Default options for all analyzers
 	opts := &ContainerLayerAnalyzerOptions{
-		LicenseCacheDir: filepath.Join(os.TempDir(), spdxLicenseCacheDir),
+		LicenseCacheDir: filepath.Join(os.TempDir(), spdxLicenseData),
 	}
 
 	// Create the instance with all the drivers we have so far

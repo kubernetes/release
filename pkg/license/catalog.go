@@ -33,7 +33,7 @@ type CatalogOptions struct {
 // are in the temporary OS directory and are created if the do not exist
 var DefaultCatalogOpts = &CatalogOptions{}
 
-// NewSPDXWithOptions returns a SPDX object with the specified options
+// NewCatalogWithOptions returns a SPDX object with the specified options
 func NewCatalogWithOptions(opts *CatalogOptions) (catalog *Catalog, err error) {
 	// Create the license downloader
 	doptions := DefaultDownloaderOpts
@@ -76,7 +76,7 @@ type Catalog struct {
 
 // WriteLicensesAsText writes the SPDX license collection to text files
 func (catalog *Catalog) WriteLicensesAsText(targetDir string) error {
-	logrus.Info("Writing SPDX licenses to " + targetDir)
+	logrus.Infof("Writing %d SPDX licenses to %s", len(catalog.List.Licenses), targetDir)
 	if catalog.List.Licenses == nil {
 		return errors.New("unable to write licenses, they have not been loaded yet")
 	}

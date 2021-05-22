@@ -103,7 +103,7 @@ func (h *goRunnerHandler) licenseReader(o *ContainerLayerAnalyzerOptions) (*lice
 		logrus.Info("Initializing licence reader with default options")
 		// We use a default license cache
 		opts := license.DefaultReaderOptions
-		ldir := filepath.Join(os.TempDir(), "spdx-license-reader-licenses")
+		ldir := filepath.Join(os.TempDir(), spdxLicenseDlCache)
 		// ... unless overridden by the options
 		if o.LicenseCacheDir != "" {
 			ldir = o.LicenseCacheDir
@@ -116,6 +116,7 @@ func (h *goRunnerHandler) licenseReader(o *ContainerLayerAnalyzerOptions) (*lice
 			}
 		}
 		opts.CacheDir = ldir
+		opts.LicenseDir = filepath.Join(os.TempDir(), spdxLicenseData)
 		// Create the new reader
 		reader, err := license.NewReaderWithOptions(opts)
 		if err != nil {
