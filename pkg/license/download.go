@@ -147,24 +147,27 @@ func (ddi *DefaultDownloaderImpl) GetLicenses() (licenses *List, err error) {
 	// Create a new Throttler that will get `parallelDownloads` urls at a time
 	t := throttler.New(ddi.Options.parallelDownloads, len(licenseList.LicenseData))
 	for _, l := range licenseList.LicenseData {
-		licURL := l.Reference
+		licURL := l.DetailsURL
 		// If the license URLs have a local reference
 		if strings.HasPrefix(licURL, "./") {
 			licURL = LicenseDataURL + strings.TrimPrefix(licURL, "./")
 		}
 		// Launch a goroutine to fetch the URL.
 		go func(url string) {
-			var err error
+			var lic *License
 			defer t.Done(err)
-			l, err := ddi.getLicenseFromURL(url)
+			lic, err = ddi.getLicenseFromURL(url)
 			if err != nil {
+				logrus.Error(err)
 				return
 			}
 			logrus.Debugf("Got license: %s from %s", l.LicenseID, url)
-			licenseList.Add(l)
+			licenseList.Add(lic)
 		}(licURL)
 		t.Throttle()
 	}
+
+	logrus.Infof("Downloaded %d licenses", len(licenseList.Licenses))
 
 	// If the throttler collected errors, return those
 	if t.Err() != nil {
