@@ -51,13 +51,15 @@ of analyzers designed to add more sense to common base images.
 }
 
 type generateOptions struct {
-	analyze     bool
-	namespace   string
-	outputFile  string
-	images      []string
-	tarballs    []string
-	files       []string
-	directories []string
+	analyze        bool
+	noGitignore    bool
+	namespace      string
+	outputFile     string
+	images         []string
+	tarballs       []string
+	files          []string
+	directories    []string
+	ignorePatterns []string
 }
 
 // Validate verify options consistency
@@ -68,7 +70,17 @@ func (opts *generateOptions) Validate() error {
 
 	// A namespace URL is required
 	if opts.namespace == "" {
-		return errors.New("A namespace (URL) must be defined to have a compliant SPDX BOM")
+		msg := "\nYou did not specify a namespace for your document. This is an error.\n"
+		msg += "To produce a valid SPDX SBOM, the document has to have an URI as its\n"
+		msg += "namespace.\n\nYou can use http://example.com/ for now if you are testing but your\n"
+		msg += "final document must have the namespace URI pointing to the location where\n"
+		msg += "you SBOM will be referenced in the future.\n\n"
+		msg += "For more details, check the SPDX documentation here:\n"
+		msg += "https://spdx.github.io/spdx-spec/2-document-creation-information/#25-spdx-document-namespace\n\n"
+		msg += "Hint: --namespace is your friend here\n\n"
+		logrus.Info(msg)
+
+		return errors.New("A namespace URI must be defined to have a compliant SPDX BOM")
 	}
 
 	// CHeck namespace is a valid URL
@@ -111,6 +123,20 @@ func init() {
 		"list of directories to include in the manifest as packages",
 	)
 
+	generateCmd.PersistentFlags().StringSliceVar(
+		&genOpts.ignorePatterns,
+		"ignore",
+		[]string{},
+		"list of regexp patterns to ignore when scanning directories",
+	)
+
+	generateCmd.PersistentFlags().BoolVar(
+		&genOpts.noGitignore,
+		"no-gitignore",
+		false,
+		"don't use exclusions from .gitignore files",
+	)
+
 	generateCmd.PersistentFlags().StringVarP(
 		&genOpts.namespace,
 		"namespace",
@@ -143,15 +169,21 @@ func generateBOM(opts *generateOptions) error {
 	logrus.Info("Generating SPDX Bill of Materials")
 
 	builder := spdx.NewDocBuilder()
-	doc, err := builder.Generate(&spdx.DocGenerateOptions{
+	builderOpts := &spdx.DocGenerateOptions{
 		Tarballs:      opts.tarballs,
 		Files:         opts.files,
 		Images:        opts.images,
 		Directories:   opts.directories,
 		OutputFile:    opts.outputFile,
-		Namespace:     "",
+		Namespace:     opts.namespace,
 		AnalyseLayers: opts.analyze,
-	})
+	}
+
+	// We only replace the ignore patterns one or more where defined
+	if len(opts.ignorePatterns) > 0 {
+		builderOpts.IgnorePatterns = opts.ignorePatterns
+	}
+	doc, err := builder.Generate(builderOpts)
 	if err != nil {
 		return errors.Wrap(err, "generating doc")
 	}

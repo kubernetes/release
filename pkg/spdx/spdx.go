@@ -17,7 +17,6 @@ limitations under the License.
 package spdx
 
 import (
-	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -33,6 +32,7 @@ const (
 	spdxTempDir             = "spdx"
 	spdxLicenseData         = spdxTempDir + "/licenses"
 	spdxLicenseDlCache      = spdxTempDir + "/downloadCache"
+	gitIgnoreFile           = ".gitignore"
 )
 
 type SPDX struct {
@@ -52,8 +52,10 @@ func (spdx *SPDX) SetImplementation(impl spdxImplementation) {
 }
 
 type Options struct {
-	LicenseCacheDir string // Directory to cache SPDX license information
 	AnalyzeLayers   bool
+	NoGitignore     bool     // Do not read exclusions from gitignore file
+	LicenseCacheDir string   // Directory to cache SPDX license information
+	IgnorePatterns  []string // Patterns to ignore when scanning file
 }
 
 func (spdx *SPDX) Options() *Options {
@@ -63,6 +65,7 @@ func (spdx *SPDX) Options() *Options {
 var defaultSPDXOptions = Options{
 	LicenseCacheDir: filepath.Join(os.TempDir(), spdxLicenseDlCache),
 	AnalyzeLayers:   true,
+	IgnorePatterns:  []string{},
 }
 
 type ArchiveManifest struct {
@@ -79,25 +82,27 @@ type TarballOptions struct {
 // PackageFromDirectory indexes all files in a directory and builds a
 //  SPDX package describing its contents
 func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error) {
-	fileList := []string{}
-	if err = fs.WalkDir(os.DirFS(dirPath), ".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-
-		fileList = append(fileList, path)
-		return nil
-	}); err != nil {
-		return nil, errors.Wrap(err, "buiding directory tree")
+	fileList, err := spdx.impl.GetDirectoryTree(dirPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "building directory tree")
 	}
+
+	// BUild a list of patterns from those found in the .gitignore file and
+	// posssibly others passed in the options:
+	patterns, err := spdx.impl.IgnorePatterns(
+		dirPath, spdx.Options().IgnorePatterns, spdx.Options().NoGitignore,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "building ignore patterns list")
+	}
+
+	// Apply the ignore patterns to the list of files
+	fileList = spdx.impl.ApplyIgnorePatterns(fileList, patterns)
 
 	pkg = NewPackage()
 	pkg.Name = filepath.Base(dirPath)
 
-	// fixme: parallell
+	// todo: parallellize
 	for _, path := range fileList {
 		f := NewFile()
 		f.Name = path

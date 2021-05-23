@@ -61,13 +61,15 @@ func (db *DocBuilder) Generate(genopts *DocGenerateOptions) (*Document, error) {
 }
 
 type DocGenerateOptions struct {
-	Tarballs      []string // A slice of tar paths
-	Files         []string // A slice of naked files to include in the bom
-	Images        []string // A slice of docker images
-	Directories   []string // A slice of directories to convert into packages
-	OutputFile    string   // Output location
-	Namespace     string   // Namespace for the document (a unique URI)
-	AnalyseLayers bool     // A flag that controls if deep layer analysis should be performed
+	AnalyseLayers  bool     // A flag that controls if deep layer analysis should be performed
+	NoGitignore    bool     // Do not read exclusions from gitignore file
+	OutputFile     string   // Output location
+	Namespace      string   // Namespace for the document (a unique URI)
+	Tarballs       []string // A slice of tar paths
+	Files          []string // A slice of naked files to include in the bom
+	Images         []string // A slice of docker images
+	Directories    []string // A slice of directories to convert into packages
+	IgnorePatterns []string // a slice of regexp patterns to ignore when scanning dirs
 }
 
 func (o *DocGenerateOptions) Validate() error {
@@ -105,7 +107,10 @@ func (builder defaultDocBuilderImpl) GenerateDoc(
 	}
 
 	spdx := NewSPDX()
-	spdx.options.AnalyzeLayers = genopts.AnalyseLayers
+	if len(genopts.IgnorePatterns) > 0 {
+		spdx.Options().IgnorePatterns = genopts.IgnorePatterns
+	}
+	spdx.Options().AnalyzeLayers = genopts.AnalyseLayers
 
 	if !util.Exists(opts.WorkDir) {
 		if err := os.MkdirAll(opts.WorkDir, os.FileMode(0o755)); err != nil {
@@ -124,12 +129,11 @@ func (builder defaultDocBuilderImpl) GenerateDoc(
 	doc.Namespace = genopts.Namespace
 
 	if genopts.Namespace == "" {
-		logrus.Warn("Document namespace is empty, a mock URI will be supplied but the doc will not be valid")
-		doc.Namespace = "http://example.com/"
+		return nil, errors.New("unable to generate doc, namespace URI is not defined")
 	}
 
 	for _, i := range genopts.Directories {
-		logrus.Info("Processing directory %s", i)
+		logrus.Infof("Processing directory %s", i)
 		pkg, err := spdx.PackageFromDirectory(i)
 		if err != nil {
 			return nil, errors.Wrap(err, "generating package from directory")
