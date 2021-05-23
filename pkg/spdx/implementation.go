@@ -50,6 +50,7 @@ type spdxImplementation interface {
 	GetDirectoryTree(string) ([]string, error)
 	IgnorePatterns(string, []string, bool) ([]gitignore.Pattern, error)
 	ApplyIgnorePatterns([]string, []gitignore.Pattern) []string
+	GetGoDependencies(string, bool) ([]*Package, error)
 }
 
 type spdxDefaultImplementation struct{}
@@ -264,4 +265,31 @@ func (di *spdxDefaultImplementation) ApplyIgnorePatterns(
 		}
 	}
 	return filteredList
+}
+
+// GetGoDependencies
+func (di *spdxDefaultImplementation) GetGoDependencies(path string, scanLicenses bool) ([]*Package, error) {
+	// Open the directory as a go module:
+	mod, err := NewGoModuleFromPath(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating a mod from the specified path")
+	}
+	defer mod.GoMod.Cleanup()
+
+	if scanLicenses {
+		if err := mod.ScanLicenses(); err != nil {
+			return nil, errors.Wrap(err, "scanning go module licenses")
+		}
+	}
+
+	spdxPackages := []*Package{}
+	for _, goPkg := range mod.Packages {
+		spdxPkg, err := goPkg.ToSPDXPackage()
+		if err != nil {
+			return nil, errors.Wrap(err, "converting go module to spdx package")
+		}
+		spdxPackages = append(spdxPackages, spdxPkg)
+	}
+
+	return spdxPackages, nil
 }

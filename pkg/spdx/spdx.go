@@ -112,6 +112,20 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 			return nil, errors.Wrapf(err, "adding %s as file to the spdx package", path)
 		}
 	}
+
+	if util.Exists(filepath.Join(dirPath, GoModFileName)) {
+		logrus.Info("Directory contains a go module. Scanning go packages")
+		deps, err := spdx.impl.GetGoDependencies(dirPath, true)
+		if err != nil {
+			return nil, errors.Wrap(err, "scanning go packages")
+		}
+		for _, dep := range deps {
+			if err := pkg.AddDependency(dep); err != nil {
+				return nil, errors.Wrap(err, "adding go dependency")
+			}
+		}
+	}
+
 	// Add files into the package
 	return pkg, nil
 }
