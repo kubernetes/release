@@ -163,7 +163,7 @@ func (p *Package) AddFile(file *File) error {
 func (p *Package) preProcessSubPackage(pkg *Package) error {
 	if pkg.ID == "" {
 		// If we so not have an ID but have a name generate it fro there
-		reg := regexp.MustCompile("[^a-zA-Z0-9-]+")
+		reg := regexp.MustCompile(validNameCharsRe)
 		id := reg.ReplaceAllString(pkg.Name, "")
 		if id != "" {
 			pkg.ID = "SPDXRef-Package-" + id

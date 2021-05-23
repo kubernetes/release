@@ -113,6 +113,18 @@ func (f *File) ReadChecksums(filePath string) error {
 
 // Render renders the document fragment of a file
 func (f *File) Render() (docFragment string, err error) {
+	// If we have not yet checksummed the file, do it now:
+	if f.Checksum == nil || len(f.Checksum) == 0 {
+		if f.SourceFile != "" {
+			if err := f.ReadSourceFile(f.SourceFile); err != nil {
+				return "", errors.Wrap(err, "checksumming file")
+			}
+		} else {
+			logrus.Warnf(
+				"File %s does not have checksums, SBOM will not be SPDX compliant", f.ID,
+			)
+		}
+	}
 	var buf bytes.Buffer
 	tmpl, err := template.New("file").Parse(fileTemplate)
 	if err != nil {

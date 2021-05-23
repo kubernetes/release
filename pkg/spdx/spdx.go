@@ -19,7 +19,9 @@ package spdx
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -33,6 +35,7 @@ const (
 	spdxLicenseData         = spdxTempDir + "/licenses"
 	spdxLicenseDlCache      = spdxTempDir + "/downloadCache"
 	gitIgnoreFile           = ".gitignore"
+	validNameCharsRe        = `[^a-zA-Z0-9-]+`
 )
 
 type SPDX struct {
@@ -100,7 +103,13 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 	fileList = spdx.impl.ApplyIgnorePatterns(fileList, patterns)
 
 	pkg = NewPackage()
+	pkg.FilesAnalyzed = true
 	pkg.Name = filepath.Base(dirPath)
+	// If the package file will result in an empty ID, generate one
+	reg := regexp.MustCompile(validNameCharsRe)
+	if reg.ReplaceAllString(pkg.Name, "") == "" {
+		pkg.Name = uuid.NewString()
+	}
 
 	// todo: parallellize
 	for _, path := range fileList {
@@ -108,6 +117,9 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 		f.Name = path
 		f.FileName = path
 		f.SourceFile = filepath.Join(dirPath, path)
+		if err := f.ReadSourceFile(filepath.Join(dirPath, path)); err != nil {
+			return nil, errors.Wrap(err, "checksumming file")
+		}
 		if err := pkg.AddFile(f); err != nil {
 			return nil, errors.Wrapf(err, "adding %s as file to the spdx package", path)
 		}
