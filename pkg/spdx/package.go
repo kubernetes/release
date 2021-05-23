@@ -87,9 +87,10 @@ type Package struct {
 		Organization string // organization name and optional (<email>)
 	}
 	// Subpackages contained
-	Packages map[string]*Package // Sub packages conatined in this pkg
-	Files    map[string]*File    // List of files
-	Checksum map[string]string   // Checksum of the package
+	Packages     map[string]*Package // Sub packages conatined in this pkg
+	Files        map[string]*File    // List of files
+	Checksum     map[string]string   // Checksum of the package
+	Dependencies map[string]*Package // Packages marked as dependencies
 
 	options *PackageOptions // Options
 }
@@ -156,11 +157,10 @@ func (p *Package) AddFile(file *File) error {
 	return nil
 }
 
-// AddPackage adds a new subpackage to a package
-func (p *Package) AddPackage(pkg *Package) error {
-	if p.Packages == nil {
-		p.Packages = map[string]*Package{}
-	}
+// preProcessSubPackage performs a basic check on a package
+// to ensure it can be added as a subpackage, trying to infer
+// missing data when possible
+func (p *Package) preProcessSubPackage(pkg *Package) error {
 	if pkg.ID == "" {
 		// If we so not have an ID but have a name generate it fro there
 		reg := regexp.MustCompile("[^a-zA-Z0-9-]+")
@@ -173,10 +173,41 @@ func (p *Package) AddPackage(pkg *Package) error {
 		return errors.New("package name is needed to add a new package")
 	}
 	if _, ok := p.Packages[pkg.ID]; ok {
-		return errors.New("a package named " + pkg.ID + " already exists in the document")
+		return errors.New("a package named " + pkg.ID + " already exists as a subpackage")
+	}
+
+	if _, ok := p.Dependencies[pkg.ID]; ok {
+		return errors.New("a package named " + pkg.ID + " already exists as a dependency")
+	}
+
+	return nil
+}
+
+// AddPackage adds a new subpackage to a package
+func (p *Package) AddPackage(pkg *Package) error {
+	if p.Packages == nil {
+		p.Packages = map[string]*Package{}
+	}
+
+	if err := p.preProcessSubPackage(pkg); err != nil {
+		return errors.Wrap(err, "performing subpackage preprocessing")
 	}
 
 	p.Packages[pkg.ID] = pkg
+	return nil
+}
+
+// AddDependency adds a new subpackage as a dependency
+func (p *Package) AddDependency(pkg *Package) error {
+	if p.Dependencies == nil {
+		p.Dependencies = map[string]*Package{}
+	}
+
+	if err := p.preProcessSubPackage(pkg); err != nil {
+		return errors.Wrap(err, "performing subpackage preprocessing")
+	}
+
+	p.Dependencies[pkg.ID] = pkg
 	return nil
 }
 
@@ -237,6 +268,19 @@ func (p *Package) Render() (docFragment string, err error) {
 
 			docFragment += pkgDoc
 			docFragment += fmt.Sprintf("Relationship: %s CONTAINS %s\n\n", p.ID, pkg.ID)
+		}
+	}
+
+	// Print the contained dependencies
+	if p.Dependencies != nil {
+		for _, pkg := range p.Dependencies {
+			pkgDoc, err := pkg.Render()
+			if err != nil {
+				return "", errors.Wrap(err, "rendering pkg "+pkg.Name)
+			}
+
+			docFragment += pkgDoc
+			docFragment += fmt.Sprintf("Relationship: %s DEPENDS_ON %s\n\n", p.ID, pkg.ID)
 		}
 	}
 	return docFragment, nil
