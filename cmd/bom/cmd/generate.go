@@ -51,17 +51,18 @@ of analyzers designed to add more sense to common base images.
 }
 
 type generateOptions struct {
-	analyze    bool
-	namespace  string
-	outputFile string
-	images     []string
-	tarballs   []string
-	files      []string
+	analyze     bool
+	namespace   string
+	outputFile  string
+	images      []string
+	tarballs    []string
+	files       []string
+	directories []string
 }
 
 // Validate verify options consistency
 func (opts *generateOptions) Validate() error {
-	if len(opts.images) == 0 && len(opts.files) == 0 && len(opts.tarballs) == 0 {
+	if len(opts.images) == 0 && len(opts.files) == 0 && len(opts.tarballs) == 0 && len(opts.directories) == 0 {
 		return errors.New("to generate a SPDX BOM you have to provide at least one image or file")
 	}
 
@@ -102,6 +103,14 @@ func init() {
 		"list of docker archive tarballs to include in the manifest",
 	)
 
+	generateCmd.PersistentFlags().StringSliceVarP(
+		&genOpts.directories,
+		"dirs",
+		"d",
+		[]string{},
+		"list of directories to include in the manifest as packages",
+	)
+
 	generateCmd.PersistentFlags().StringVarP(
 		&genOpts.namespace,
 		"namespace",
@@ -138,6 +147,7 @@ func generateBOM(opts *generateOptions) error {
 		Tarballs:      opts.tarballs,
 		Files:         opts.files,
 		Images:        opts.images,
+		Directories:   opts.directories,
 		OutputFile:    opts.outputFile,
 		Namespace:     "",
 		AnalyseLayers: opts.analyze,

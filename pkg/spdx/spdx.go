@@ -17,6 +17,7 @@ limitations under the License.
 package spdx
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -73,6 +74,41 @@ type ArchiveManifest struct {
 // ImageOptions set of options for processing tar files
 type TarballOptions struct {
 	ExtractDir string // Directory where the docker tar archive will be extracted
+}
+
+// PackageFromDirectory indexes all files in a directory and builds a
+//  SPDX package describing its contents
+func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error) {
+	fileList := []string{}
+	if err = fs.WalkDir(os.DirFS(dirPath), ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+
+		fileList = append(fileList, path)
+		return nil
+	}); err != nil {
+		return nil, errors.Wrap(err, "buiding directory tree")
+	}
+
+	pkg = NewPackage()
+	pkg.Name = filepath.Base(dirPath)
+
+	// fixme: parallell
+	for _, path := range fileList {
+		f := NewFile()
+		f.Name = path
+		f.FileName = path
+		f.SourceFile = filepath.Join(dirPath, path)
+		if err := pkg.AddFile(f); err != nil {
+			return nil, errors.Wrapf(err, "adding %s as file to the spdx package", path)
+		}
+	}
+	// Add files into the package
+	return pkg, nil
 }
 
 // PackageFromImageTarball returns a SPDX package from a tarball

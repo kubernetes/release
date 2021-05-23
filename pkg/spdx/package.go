@@ -144,7 +144,7 @@ func (p *Package) AddFile(file *File) error {
 			return errors.New("unable to generate file ID, filename not set")
 		}
 		if p.Name == "" {
-			return errors.New("unable to generate file ID, filename not set")
+			return errors.New("unable to generate file ID, package not set")
 		}
 		h := sha1.New()
 		if _, err := h.Write([]byte(p.Name + ":" + file.Name)); err != nil {
