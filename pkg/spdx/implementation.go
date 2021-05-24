@@ -200,6 +200,10 @@ func (di *spdxDefaultImplementation) GetDirectoryTree(dirPath string) ([]string,
 			return nil
 		}
 
+		if d.Type() == os.ModeSymlink {
+			return nil
+		}
+
 		fileList = append(fileList, path)
 		return nil
 	}); err != nil {

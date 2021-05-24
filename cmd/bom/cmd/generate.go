@@ -19,11 +19,13 @@ package cmd
 import (
 	"fmt"
 	"net/url"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/release/pkg/spdx"
+	"sigs.k8s.io/release-utils/util"
 )
 
 var genOpts = &generateOptions{}
@@ -46,6 +48,21 @@ of analyzers designed to add more sense to common base images.
 	SilenceErrors:     true,
 	PersistentPreRunE: initLogging,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		for i, arg := range args {
+			if util.Exists(arg) {
+				file, err := os.Open(arg)
+				if err != nil {
+					return errors.Wrapf(err, "checking argument %d", i)
+				}
+				fileInfo, err := file.Stat()
+				if err != nil {
+					return errors.Wrapf(err, "calling stat on argument %d", i)
+				}
+				if fileInfo.IsDir() {
+					genOpts.directories = append(genOpts.directories, arg)
+				}
+			}
+		}
 		return generateBOM(genOpts)
 	},
 }
