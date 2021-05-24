@@ -61,15 +61,16 @@ func (db *DocBuilder) Generate(genopts *DocGenerateOptions) (*Document, error) {
 }
 
 type DocGenerateOptions struct {
-	AnalyseLayers  bool     // A flag that controls if deep layer analysis should be performed
-	NoGitignore    bool     // Do not read exclusions from gitignore file
-	OutputFile     string   // Output location
-	Namespace      string   // Namespace for the document (a unique URI)
-	Tarballs       []string // A slice of tar paths
-	Files          []string // A slice of naked files to include in the bom
-	Images         []string // A slice of docker images
-	Directories    []string // A slice of directories to convert into packages
-	IgnorePatterns []string // a slice of regexp patterns to ignore when scanning dirs
+	AnalyseLayers    bool     // A flag that controls if deep layer analysis should be performed
+	NoGitignore      bool     // Do not read exclusions from gitignore file
+	ProcessGoModules bool     // Analyze go.mod to include data about packages
+	OutputFile       string   // Output location
+	Namespace        string   // Namespace for the document (a unique URI)
+	Tarballs         []string // A slice of tar paths
+	Files            []string // A slice of naked files to include in the bom
+	Images           []string // A slice of docker images
+	Directories      []string // A slice of directories to convert into packages
+	IgnorePatterns   []string // a slice of regexp patterns to ignore when scanning dirs
 }
 
 func (o *DocGenerateOptions) Validate() error {
@@ -111,6 +112,7 @@ func (builder defaultDocBuilderImpl) GenerateDoc(
 		spdx.Options().IgnorePatterns = genopts.IgnorePatterns
 	}
 	spdx.Options().AnalyzeLayers = genopts.AnalyseLayers
+	spdx.Options().ProcessGoModules = genopts.ProcessGoModules
 
 	if !util.Exists(opts.WorkDir) {
 		if err := os.MkdirAll(opts.WorkDir, os.FileMode(0o755)); err != nil {

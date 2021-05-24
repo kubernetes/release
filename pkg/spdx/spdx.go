@@ -55,10 +55,11 @@ func (spdx *SPDX) SetImplementation(impl spdxImplementation) {
 }
 
 type Options struct {
-	AnalyzeLayers   bool
-	NoGitignore     bool     // Do not read exclusions from gitignore file
-	LicenseCacheDir string   // Directory to cache SPDX license information
-	IgnorePatterns  []string // Patterns to ignore when scanning file
+	AnalyzeLayers    bool
+	NoGitignore      bool     // Do not read exclusions from gitignore file
+	ProcessGoModules bool     // If true, spdx will check if dirs are go modules and analize the packages
+	LicenseCacheDir  string   // Directory to cache SPDX license information
+	IgnorePatterns   []string // Patterns to ignore when scanning file
 }
 
 func (spdx *SPDX) Options() *Options {
@@ -66,9 +67,10 @@ func (spdx *SPDX) Options() *Options {
 }
 
 var defaultSPDXOptions = Options{
-	LicenseCacheDir: filepath.Join(os.TempDir(), spdxLicenseDlCache),
-	AnalyzeLayers:   true,
-	IgnorePatterns:  []string{},
+	LicenseCacheDir:  filepath.Join(os.TempDir(), spdxLicenseDlCache),
+	AnalyzeLayers:    true,
+	ProcessGoModules: true,
+	IgnorePatterns:   []string{},
 }
 
 type ArchiveManifest struct {
@@ -89,8 +91,22 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 	if err != nil {
 		return nil, errors.Wrap(err, "building directory tree")
 	}
+	reader, err := spdx.impl.LicenseReader(spdx.Options())
+	if err != nil {
+		return nil, errors.Wrap(err, "creating license reader")
+	}
+	licenseTag := ""
+	lic, err := spdx.impl.GetDirectoryLicense(reader, dirPath, spdx.Options())
+	if err != nil {
+		return nil, errors.Wrap(err, "scanning directory for licenses")
+	}
+	if lic == nil {
+		logrus.Warn(err, "Licenseclassifier could not find a license for directory")
+	} else {
+		licenseTag = lic.LicenseID
+	}
 
-	// BUild a list of patterns from those found in the .gitignore file and
+	// Build a list of patterns from those found in the .gitignore file and
 	// posssibly others passed in the options:
 	patterns, err := spdx.impl.IgnorePatterns(
 		dirPath, spdx.Options().IgnorePatterns, spdx.Options().NoGitignore,
@@ -110,6 +126,7 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 	if reg.ReplaceAllString(pkg.Name, "") == "" {
 		pkg.Name = uuid.NewString()
 	}
+	pkg.LicenseConcluded = licenseTag
 
 	// todo: parallellize
 	for _, path := range fileList {
@@ -117,6 +134,16 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 		f.Name = path
 		f.FileName = path
 		f.SourceFile = filepath.Join(dirPath, path)
+		lic, err := reader.LicenseFromFile(f.SourceFile)
+		if err != nil {
+			return nil, errors.Wrap(err, "scanning file for license")
+		}
+		if lic != nil {
+			f.LicenseInfoInFile = lic.LicenseID
+		} else {
+			f.LicenseInfoInFile = "NONE"
+		}
+		f.LicenseConcluded = licenseTag
 		if err := f.ReadSourceFile(filepath.Join(dirPath, path)); err != nil {
 			return nil, errors.Wrap(err, "checksumming file")
 		}
@@ -125,7 +152,7 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 		}
 	}
 
-	if util.Exists(filepath.Join(dirPath, GoModFileName)) {
+	if util.Exists(filepath.Join(dirPath, GoModFileName)) && spdx.Options().ProcessGoModules {
 		logrus.Info("Directory contains a go module. Scanning go packages")
 		deps, err := spdx.impl.GetGoDependencies(dirPath, true)
 		if err != nil {

@@ -53,6 +53,7 @@ of analyzers designed to add more sense to common base images.
 type generateOptions struct {
 	analyze        bool
 	noGitignore    bool
+	noGoModules    bool
 	namespace      string
 	outputFile     string
 	images         []string
@@ -137,6 +138,13 @@ func init() {
 		"don't use exclusions from .gitignore files",
 	)
 
+	generateCmd.PersistentFlags().BoolVar(
+		&genOpts.noGitignore,
+		"no-gomod",
+		false,
+		"don't perform go.mod analysis, sbom will not include data about go packages",
+	)
+
 	generateCmd.PersistentFlags().StringVarP(
 		&genOpts.namespace,
 		"namespace",
@@ -170,13 +178,14 @@ func generateBOM(opts *generateOptions) error {
 
 	builder := spdx.NewDocBuilder()
 	builderOpts := &spdx.DocGenerateOptions{
-		Tarballs:      opts.tarballs,
-		Files:         opts.files,
-		Images:        opts.images,
-		Directories:   opts.directories,
-		OutputFile:    opts.outputFile,
-		Namespace:     opts.namespace,
-		AnalyseLayers: opts.analyze,
+		Tarballs:         opts.tarballs,
+		Files:            opts.files,
+		Images:           opts.images,
+		Directories:      opts.directories,
+		OutputFile:       opts.outputFile,
+		Namespace:        opts.namespace,
+		AnalyseLayers:    opts.analyze,
+		ProcessGoModules: !opts.noGoModules,
 	}
 
 	// We only replace the ignore patterns one or more where defined

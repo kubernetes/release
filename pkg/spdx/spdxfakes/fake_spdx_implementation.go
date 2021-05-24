@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
+	"k8s.io/release/pkg/license"
 	"k8s.io/release/pkg/spdx"
 )
 
@@ -34,6 +35,21 @@ type FakeSpdxImplementation struct {
 		result1 string
 		result2 error
 	}
+	GetDirectoryLicenseStub        func(*license.Reader, string, *spdx.Options) (*license.License, error)
+	getDirectoryLicenseMutex       sync.RWMutex
+	getDirectoryLicenseArgsForCall []struct {
+		arg1 *license.Reader
+		arg2 string
+		arg3 *spdx.Options
+	}
+	getDirectoryLicenseReturns struct {
+		result1 *license.License
+		result2 error
+	}
+	getDirectoryLicenseReturnsOnCall map[int]struct {
+		result1 *license.License
+		result2 error
+	}
 	GetDirectoryTreeStub        func(string) ([]string, error)
 	getDirectoryTreeMutex       sync.RWMutex
 	getDirectoryTreeArgsForCall []struct {
@@ -45,6 +61,20 @@ type FakeSpdxImplementation struct {
 	}
 	getDirectoryTreeReturnsOnCall map[int]struct {
 		result1 []string
+		result2 error
+	}
+	GetGoDependenciesStub        func(string, bool) ([]*spdx.Package, error)
+	getGoDependenciesMutex       sync.RWMutex
+	getGoDependenciesArgsForCall []struct {
+		arg1 string
+		arg2 bool
+	}
+	getGoDependenciesReturns struct {
+		result1 []*spdx.Package
+		result2 error
+	}
+	getGoDependenciesReturnsOnCall map[int]struct {
+		result1 []*spdx.Package
 		result2 error
 	}
 	IgnorePatternsStub        func(string, []string, bool) ([]gitignore.Pattern, error)
@@ -60,6 +90,19 @@ type FakeSpdxImplementation struct {
 	}
 	ignorePatternsReturnsOnCall map[int]struct {
 		result1 []gitignore.Pattern
+		result2 error
+	}
+	LicenseReaderStub        func(*spdx.Options) (*license.Reader, error)
+	licenseReaderMutex       sync.RWMutex
+	licenseReaderArgsForCall []struct {
+		arg1 *spdx.Options
+	}
+	licenseReaderReturns struct {
+		result1 *license.Reader
+		result2 error
+	}
+	licenseReaderReturnsOnCall map[int]struct {
+		result1 *license.Reader
 		result2 error
 	}
 	PackageFromLayerTarBallStub        func(string, *spdx.TarballOptions) (*spdx.Package, error)
@@ -241,6 +284,72 @@ func (fake *FakeSpdxImplementation) ExtractTarballTmpReturnsOnCall(i int, result
 	}{result1, result2}
 }
 
+func (fake *FakeSpdxImplementation) GetDirectoryLicense(arg1 *license.Reader, arg2 string, arg3 *spdx.Options) (*license.License, error) {
+	fake.getDirectoryLicenseMutex.Lock()
+	ret, specificReturn := fake.getDirectoryLicenseReturnsOnCall[len(fake.getDirectoryLicenseArgsForCall)]
+	fake.getDirectoryLicenseArgsForCall = append(fake.getDirectoryLicenseArgsForCall, struct {
+		arg1 *license.Reader
+		arg2 string
+		arg3 *spdx.Options
+	}{arg1, arg2, arg3})
+	stub := fake.GetDirectoryLicenseStub
+	fakeReturns := fake.getDirectoryLicenseReturns
+	fake.recordInvocation("GetDirectoryLicense", []interface{}{arg1, arg2, arg3})
+	fake.getDirectoryLicenseMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeSpdxImplementation) GetDirectoryLicenseCallCount() int {
+	fake.getDirectoryLicenseMutex.RLock()
+	defer fake.getDirectoryLicenseMutex.RUnlock()
+	return len(fake.getDirectoryLicenseArgsForCall)
+}
+
+func (fake *FakeSpdxImplementation) GetDirectoryLicenseCalls(stub func(*license.Reader, string, *spdx.Options) (*license.License, error)) {
+	fake.getDirectoryLicenseMutex.Lock()
+	defer fake.getDirectoryLicenseMutex.Unlock()
+	fake.GetDirectoryLicenseStub = stub
+}
+
+func (fake *FakeSpdxImplementation) GetDirectoryLicenseArgsForCall(i int) (*license.Reader, string, *spdx.Options) {
+	fake.getDirectoryLicenseMutex.RLock()
+	defer fake.getDirectoryLicenseMutex.RUnlock()
+	argsForCall := fake.getDirectoryLicenseArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeSpdxImplementation) GetDirectoryLicenseReturns(result1 *license.License, result2 error) {
+	fake.getDirectoryLicenseMutex.Lock()
+	defer fake.getDirectoryLicenseMutex.Unlock()
+	fake.GetDirectoryLicenseStub = nil
+	fake.getDirectoryLicenseReturns = struct {
+		result1 *license.License
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeSpdxImplementation) GetDirectoryLicenseReturnsOnCall(i int, result1 *license.License, result2 error) {
+	fake.getDirectoryLicenseMutex.Lock()
+	defer fake.getDirectoryLicenseMutex.Unlock()
+	fake.GetDirectoryLicenseStub = nil
+	if fake.getDirectoryLicenseReturnsOnCall == nil {
+		fake.getDirectoryLicenseReturnsOnCall = make(map[int]struct {
+			result1 *license.License
+			result2 error
+		})
+	}
+	fake.getDirectoryLicenseReturnsOnCall[i] = struct {
+		result1 *license.License
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeSpdxImplementation) GetDirectoryTree(arg1 string) ([]string, error) {
 	fake.getDirectoryTreeMutex.Lock()
 	ret, specificReturn := fake.getDirectoryTreeReturnsOnCall[len(fake.getDirectoryTreeArgsForCall)]
@@ -301,6 +410,71 @@ func (fake *FakeSpdxImplementation) GetDirectoryTreeReturnsOnCall(i int, result1
 	}
 	fake.getDirectoryTreeReturnsOnCall[i] = struct {
 		result1 []string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeSpdxImplementation) GetGoDependencies(arg1 string, arg2 bool) ([]*spdx.Package, error) {
+	fake.getGoDependenciesMutex.Lock()
+	ret, specificReturn := fake.getGoDependenciesReturnsOnCall[len(fake.getGoDependenciesArgsForCall)]
+	fake.getGoDependenciesArgsForCall = append(fake.getGoDependenciesArgsForCall, struct {
+		arg1 string
+		arg2 bool
+	}{arg1, arg2})
+	stub := fake.GetGoDependenciesStub
+	fakeReturns := fake.getGoDependenciesReturns
+	fake.recordInvocation("GetGoDependencies", []interface{}{arg1, arg2})
+	fake.getGoDependenciesMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeSpdxImplementation) GetGoDependenciesCallCount() int {
+	fake.getGoDependenciesMutex.RLock()
+	defer fake.getGoDependenciesMutex.RUnlock()
+	return len(fake.getGoDependenciesArgsForCall)
+}
+
+func (fake *FakeSpdxImplementation) GetGoDependenciesCalls(stub func(string, bool) ([]*spdx.Package, error)) {
+	fake.getGoDependenciesMutex.Lock()
+	defer fake.getGoDependenciesMutex.Unlock()
+	fake.GetGoDependenciesStub = stub
+}
+
+func (fake *FakeSpdxImplementation) GetGoDependenciesArgsForCall(i int) (string, bool) {
+	fake.getGoDependenciesMutex.RLock()
+	defer fake.getGoDependenciesMutex.RUnlock()
+	argsForCall := fake.getGoDependenciesArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeSpdxImplementation) GetGoDependenciesReturns(result1 []*spdx.Package, result2 error) {
+	fake.getGoDependenciesMutex.Lock()
+	defer fake.getGoDependenciesMutex.Unlock()
+	fake.GetGoDependenciesStub = nil
+	fake.getGoDependenciesReturns = struct {
+		result1 []*spdx.Package
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeSpdxImplementation) GetGoDependenciesReturnsOnCall(i int, result1 []*spdx.Package, result2 error) {
+	fake.getGoDependenciesMutex.Lock()
+	defer fake.getGoDependenciesMutex.Unlock()
+	fake.GetGoDependenciesStub = nil
+	if fake.getGoDependenciesReturnsOnCall == nil {
+		fake.getGoDependenciesReturnsOnCall = make(map[int]struct {
+			result1 []*spdx.Package
+			result2 error
+		})
+	}
+	fake.getGoDependenciesReturnsOnCall[i] = struct {
+		result1 []*spdx.Package
 		result2 error
 	}{result1, result2}
 }
@@ -372,6 +546,70 @@ func (fake *FakeSpdxImplementation) IgnorePatternsReturnsOnCall(i int, result1 [
 	}
 	fake.ignorePatternsReturnsOnCall[i] = struct {
 		result1 []gitignore.Pattern
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeSpdxImplementation) LicenseReader(arg1 *spdx.Options) (*license.Reader, error) {
+	fake.licenseReaderMutex.Lock()
+	ret, specificReturn := fake.licenseReaderReturnsOnCall[len(fake.licenseReaderArgsForCall)]
+	fake.licenseReaderArgsForCall = append(fake.licenseReaderArgsForCall, struct {
+		arg1 *spdx.Options
+	}{arg1})
+	stub := fake.LicenseReaderStub
+	fakeReturns := fake.licenseReaderReturns
+	fake.recordInvocation("LicenseReader", []interface{}{arg1})
+	fake.licenseReaderMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeSpdxImplementation) LicenseReaderCallCount() int {
+	fake.licenseReaderMutex.RLock()
+	defer fake.licenseReaderMutex.RUnlock()
+	return len(fake.licenseReaderArgsForCall)
+}
+
+func (fake *FakeSpdxImplementation) LicenseReaderCalls(stub func(*spdx.Options) (*license.Reader, error)) {
+	fake.licenseReaderMutex.Lock()
+	defer fake.licenseReaderMutex.Unlock()
+	fake.LicenseReaderStub = stub
+}
+
+func (fake *FakeSpdxImplementation) LicenseReaderArgsForCall(i int) *spdx.Options {
+	fake.licenseReaderMutex.RLock()
+	defer fake.licenseReaderMutex.RUnlock()
+	argsForCall := fake.licenseReaderArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeSpdxImplementation) LicenseReaderReturns(result1 *license.Reader, result2 error) {
+	fake.licenseReaderMutex.Lock()
+	defer fake.licenseReaderMutex.Unlock()
+	fake.LicenseReaderStub = nil
+	fake.licenseReaderReturns = struct {
+		result1 *license.Reader
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeSpdxImplementation) LicenseReaderReturnsOnCall(i int, result1 *license.Reader, result2 error) {
+	fake.licenseReaderMutex.Lock()
+	defer fake.licenseReaderMutex.Unlock()
+	fake.LicenseReaderStub = nil
+	if fake.licenseReaderReturnsOnCall == nil {
+		fake.licenseReaderReturnsOnCall = make(map[int]struct {
+			result1 *license.Reader
+			result2 error
+		})
+	}
+	fake.licenseReaderReturnsOnCall[i] = struct {
+		result1 *license.Reader
 		result2 error
 	}{result1, result2}
 }
@@ -574,10 +812,16 @@ func (fake *FakeSpdxImplementation) Invocations() map[string][][]interface{} {
 	defer fake.applyIgnorePatternsMutex.RUnlock()
 	fake.extractTarballTmpMutex.RLock()
 	defer fake.extractTarballTmpMutex.RUnlock()
+	fake.getDirectoryLicenseMutex.RLock()
+	defer fake.getDirectoryLicenseMutex.RUnlock()
 	fake.getDirectoryTreeMutex.RLock()
 	defer fake.getDirectoryTreeMutex.RUnlock()
+	fake.getGoDependenciesMutex.RLock()
+	defer fake.getGoDependenciesMutex.RUnlock()
 	fake.ignorePatternsMutex.RLock()
 	defer fake.ignorePatternsMutex.RUnlock()
+	fake.licenseReaderMutex.RLock()
+	defer fake.licenseReaderMutex.RUnlock()
 	fake.packageFromLayerTarBallMutex.RLock()
 	defer fake.packageFromLayerTarBallMutex.RUnlock()
 	fake.pullImagesToArchiveMutex.RLock()

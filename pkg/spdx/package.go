@@ -57,6 +57,7 @@ PackageLicenseConcluded: {{ if .LicenseConcluded }}{{ .LicenseConcluded }}{{ els
 PackageLicenseDeclared: {{ if .LicenseDeclared }}{{ .LicenseDeclared }}{{ else }}NOASSERTION{{ end }}
 PackageCopyrightText: {{ if .CopyrightText }}<text>{{ .CopyrightText }}
 </text>{{ else }}NOASSERTION{{ end }}
+
 `
 
 // Package groups a set of files

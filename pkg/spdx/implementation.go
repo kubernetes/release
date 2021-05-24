@@ -37,6 +37,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"k8s.io/release/pkg/license"
 	"sigs.k8s.io/release-utils/util"
 )
 
@@ -51,6 +52,8 @@ type spdxImplementation interface {
 	IgnorePatterns(string, []string, bool) ([]gitignore.Pattern, error)
 	ApplyIgnorePatterns([]string, []gitignore.Pattern) []string
 	GetGoDependencies(string, bool) ([]*Package, error)
+	GetDirectoryLicense(*license.Reader, string, *Options) (*license.License, error)
+	LicenseReader(*Options) (*license.Reader, error)
 }
 
 type spdxDefaultImplementation struct{}
@@ -292,4 +295,37 @@ func (di *spdxDefaultImplementation) GetGoDependencies(path string, scanLicenses
 	}
 
 	return spdxPackages, nil
+}
+
+func (di *spdxDefaultImplementation) LicenseReader(spdxOpts *Options) (*license.Reader, error) {
+	opts := license.DefaultReaderOptions
+	opts.CacheDir = spdxOpts.LicenseCacheDir
+	// Create the new reader
+	reader, err := license.NewReaderWithOptions(opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating reusable license reader")
+	}
+	return reader, nil
+}
+
+// GetDirectoryLicense takes a path and scans
+// the files in it to determine licensins information
+func (di *spdxDefaultImplementation) GetDirectoryLicense(
+	reader *license.Reader, path string, spdxOpts *Options,
+) (*license.License, error) {
+	// Perhaps here we should take into account thre results
+	licenselist, _, err := reader.ReadLicenses(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "scanning directory for licensing information")
+	}
+	if len(licenselist) == 0 {
+		logrus.Warn("No license info could be determined, SPDX SBOM will not be valid")
+		return nil, nil
+	}
+	logrus.Infof("Determined license %s for directory %s", licenselist[0].License.LicenseID, path)
+
+	if len(licenselist) > 1 {
+		logrus.Warnf("Found %d licenses in directory, picking the first", len(licenselist))
+	}
+	return licenselist[0].License, nil
 }
