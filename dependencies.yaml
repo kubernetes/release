@@ -39,7 +39,7 @@ dependencies:
   #- name: "crictl"
   #  version: 1.18.0
 
-  # distroless
+  # cosign
   - name: "gcr.io/projectsigstore/cosign"
     version: v1.0.0@sha256:5e88d8f6162c04da4fa7d63b032bac34d8c906b48e88057263d67b059ace7de4
     refPaths:
