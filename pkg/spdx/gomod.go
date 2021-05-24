@@ -1,8 +1,25 @@
+/*
+Copyright 2021 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package spdx
 
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -125,11 +142,16 @@ func (mod *GoModule) ScanLicenses() error {
 		return errors.Wrap(err, "creating license scanner")
 	}
 
-	// Do aquick re-check for missing downloads
+	// Do a quick re-check for missing downloads
+	// todo: paralelize this. urgently.
 	for _, pkg := range mod.Packages {
 		// Call download with no force in case local data is missing
 		if err := mod.impl.DownloadPackage(pkg, mod.opts, false); err != nil {
-			return err
+			// If we're unable to download the module we dont treat it as
+			// fatal, package will remain without license info but we go
+			// on scanning the rest of the packages.
+			logrus.Error(err)
+			continue
 		}
 
 		if err := mod.impl.ScanPackageLicense(pkg, reader, mod.opts); err != nil {
@@ -202,7 +224,13 @@ func (di *GoModDefaultImpl) DownloadPackage(pkg *GoPackage, opts *GoModuleOption
 		return errors.Wrap(err, "creating temporary dir")
 	}
 	// Create a clone of the module repo at the revision
-	if err := repo.VCS.CreateAtRev(tmpDir, repo.Repo, pkg.Revision); err != nil {
+	rev := pkg.Revision
+	m := regexp.MustCompile(`v\d+\.\d+\.\d+-[0-9.]+-([a-f0-9]+)`).FindStringSubmatch(pkg.Revision)
+	if len(m) > 1 {
+		rev = m[1]
+		logrus.Infof("Using commit %s as revision for download", rev)
+	}
+	if err := repo.VCS.CreateAtRev(tmpDir, repo.Repo, rev); err != nil {
 		return errors.Wrapf(err, "creating local clone of %s", repo.Repo)
 	}
 
