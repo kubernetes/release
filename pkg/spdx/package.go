@@ -50,7 +50,8 @@ FilesAnalyzed: {{ .FilesAnalyzed }}
 PackageLicenseConcluded: {{ if .LicenseConcluded }}{{ .LicenseConcluded }}{{ else }}NOASSERTION{{ end }}
 {{ if .FileName }}PackageFileName: {{ .FileName }}
 {{ end -}}
-{{ if .LicenseInfoFromFiles }}PackageLicenseInfoFromFiles: {{ .LicenseInfoFromFiles }}
+{{ if .LicenseInfoFromFiles }}{{- range $key, $value := .LicenseInfoFromFiles -}}PackageLicenseInfoFromFiles: {{ $value }}
+{{ end -}}
 {{ end -}}
 {{ if .Version }}PackageVersion: {{ .Version }}
 {{ end -}}
@@ -62,19 +63,19 @@ PackageCopyrightText: {{ if .CopyrightText }}<text>{{ .CopyrightText }}
 
 // Package groups a set of files
 type Package struct {
-	FilesAnalyzed        bool   // true
-	Name                 string // hello-go-src
-	ID                   string // SPDXRef-Package-hello-go-src
-	DownloadLocation     string // git@github.com:swinslow/spdx-examples.git#example6/content/src
-	VerificationCode     string // 6486e016b01e9ec8a76998cefd0705144d869234
-	LicenseConcluded     string // LicenseID o NOASSERTION
-	LicenseInfoFromFiles string // GPL-3.0-or-later
-	LicenseDeclared      string // GPL-3.0-or-later
-	LicenseComments      string // record any relevant background information or analysis that went in to arriving at the Concluded License
-	CopyrightText        string // string NOASSERTION
-	Version              string // Package version
-	FileName             string // Name of the package
-	SourceFile           string // Source file for the package (taball for images, rpm, deb, etc)
+	FilesAnalyzed        bool     // true
+	Name                 string   // hello-go-src
+	ID                   string   // SPDXRef-Package-hello-go-src
+	DownloadLocation     string   // git@github.com:swinslow/spdx-examples.git#example6/content/src
+	VerificationCode     string   // 6486e016b01e9ec8a76998cefd0705144d869234
+	LicenseConcluded     string   // LicenseID o NOASSERTION
+	LicenseInfoFromFiles []string // GPL-3.0-or-later
+	LicenseDeclared      string   // GPL-3.0-or-later
+	LicenseComments      string   // record any relevant background information or analysis that went in to arriving at the Concluded License
+	CopyrightText        string   // string NOASSERTION
+	Version              string   // Package version
+	FileName             string   // Name of the package
+	SourceFile           string   // Source file for the package (taball for images, rpm, deb, etc)
 
 	// Supplier: the actual distribution source for the package/directory
 	Supplier struct {
@@ -221,6 +222,7 @@ func (p *Package) Render() (docFragment string, err error) {
 	}
 
 	// If files were analyzed, calculate the verification
+	filesTagList := map[string]*struct{}{}
 	if p.FilesAnalyzed {
 		if len(p.Files) == 0 {
 			return docFragment, errors.New("unable to get package verification code, package has no files")
@@ -234,6 +236,11 @@ func (p *Package) Render() (docFragment string, err error) {
 				return docFragment, errors.New("unable to render package, files were analyzed but some do not have sha1 checksum")
 			}
 			shaList = append(shaList, f.Checksum["SHA1"])
+
+			// Collect the license tags
+			if f.LicenseInfoInFile != "" {
+				filesTagList[f.LicenseInfoInFile] = nil
+			}
 		}
 		sort.Strings(shaList)
 		h := sha1.New()
@@ -241,6 +248,16 @@ func (p *Package) Render() (docFragment string, err error) {
 			return docFragment, errors.Wrap(err, "getting sha1 verification of files")
 		}
 		p.VerificationCode = fmt.Sprintf("%x", h.Sum(nil))
+
+		for tag := range filesTagList {
+			if tag != "NONE" && tag != "NOASSERTION" {
+				p.LicenseInfoFromFiles = append(p.LicenseInfoFromFiles, tag)
+			}
+		}
+
+		if len(filesTagList) == 0 {
+			p.LicenseInfoFromFiles = append(p.LicenseInfoFromFiles, "NONE")
+		}
 	}
 
 	// Run the template to verify the output.
