@@ -275,13 +275,15 @@ func (di *spdxDefaultImplementation) ApplyIgnorePatterns(
 }
 
 // GetGoDependencies
-func (di *spdxDefaultImplementation) GetGoDependencies(path string, scanLicenses bool) ([]*Package, error) {
+func (di *spdxDefaultImplementation) GetGoDependencies(
+	path string, scanLicenses bool,
+) (spdxPackages []*Package, err error) {
 	// Open the directory as a go module:
 	mod, err := NewGoModuleFromPath(path)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating a mod from the specified path")
 	}
-	defer mod.GoMod.Cleanup()
+	defer func() { err = mod.RemoveDownloads() }()
 
 	if scanLicenses {
 		if err := mod.ScanLicenses(); err != nil {
@@ -289,7 +291,7 @@ func (di *spdxDefaultImplementation) GetGoDependencies(path string, scanLicenses
 		}
 	}
 
-	spdxPackages := []*Package{}
+	spdxPackages = []*Package{}
 	for _, goPkg := range mod.Packages {
 		spdxPkg, err := goPkg.ToSPDXPackage()
 		if err != nil {
@@ -298,7 +300,7 @@ func (di *spdxDefaultImplementation) GetGoDependencies(path string, scanLicenses
 		spdxPackages = append(spdxPackages, spdxPkg)
 	}
 
-	return spdxPackages, nil
+	return spdxPackages, err
 }
 
 func (di *spdxDefaultImplementation) LicenseReader(spdxOpts *Options) (*license.Reader, error) {

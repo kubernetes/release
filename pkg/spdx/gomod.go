@@ -20,7 +20,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
+	"github.com/nozzle/throttler"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/mod/modfile"
@@ -142,21 +144,40 @@ func (mod *GoModule) ScanLicenses() error {
 		return errors.Wrap(err, "creating license scanner")
 	}
 
+	// Create a new Throttler that will get `parallelDownloads` urls at a time
+	t := throttler.New(10, len(mod.Packages))
 	// Do a quick re-check for missing downloads
 	// todo: paralelize this. urgently.
+	i := 1
 	for _, pkg := range mod.Packages {
-		// Call download with no force in case local data is missing
-		if err := mod.impl.DownloadPackage(pkg, mod.opts, false); err != nil {
-			// If we're unable to download the module we dont treat it as
-			// fatal, package will remain without license info but we go
-			// on scanning the rest of the packages.
-			logrus.Error(err)
-			continue
-		}
+		// Launch a goroutine to fetch the package contents
+		go func(curPkg *GoPackage) {
+			logrus.WithField(
+				"package", curPkg.ImportPath).Infof(
+				"Downloading package %d/%d", i, len(mod.Packages),
+			)
+			defer t.Done(err)
+			// Call download with no force in case local data is missing
+			if err2 := mod.impl.DownloadPackage(curPkg, mod.opts, false); err2 != nil {
+				// If we're unable to download the module we dont treat it as
+				// fatal, package will remain without license info but we go
+				// on scanning the rest of the packages.
+				logrus.WithField("package", curPkg.ImportPath).Error(err2)
+				return
+			}
 
-		if err := mod.impl.ScanPackageLicense(pkg, reader, mod.opts); err != nil {
-			return errors.Wrapf(err, "scanning package %s for licensing info", pkg.ImportPath)
-		}
+			if err = mod.impl.ScanPackageLicense(curPkg, reader, mod.opts); err != nil {
+				logrus.WithField("package", curPkg.ImportPath).Errorf(
+					"scanning package %s for licensing info", curPkg.ImportPath,
+				)
+			}
+		}(pkg)
+		t.Throttle()
+		i++
+	}
+
+	if t.Err() != nil {
+		return t.Err()
 	}
 
 	return nil
@@ -224,7 +245,9 @@ func (di *GoModDefaultImpl) DownloadPackage(pkg *GoPackage, opts *GoModuleOption
 		return errors.Wrap(err, "creating temporary dir")
 	}
 	// Create a clone of the module repo at the revision
-	rev := pkg.Revision
+	rev := strings.TrimSuffix(pkg.Revision, "+incompatible")
+
+	// Strip
 	m := regexp.MustCompile(`v\d+\.\d+\.\d+-[0-9.]+-([a-f0-9]+)`).FindStringSubmatch(pkg.Revision)
 	if len(m) > 1 {
 		rev = m[1]
@@ -243,7 +266,7 @@ func (di *GoModDefaultImpl) DownloadPackage(pkg *GoPackage, opts *GoModuleOption
 func (di *GoModDefaultImpl) RemoveDownloads(packageList []*GoPackage) error {
 	for _, pkg := range packageList {
 		if pkg.ImportPath != "" && util.Exists(pkg.LocalDir) {
-			if err := os.RemoveAll(pkg.ImportPath); err != nil {
+			if err := os.RemoveAll(pkg.LocalDir); err != nil {
 				return errors.Wrap(err, "removing package data")
 			}
 		}
