@@ -11,6 +11,9 @@ There are several scripts and helpers in this repository a Release Manager will
 find useful when managing all kinds of releases (alpha, beta, official, rc)
 across branches.
 
+Golang-based tools can be built via the `compile-release-tools` script.
+Individual tools can be installed via `go install k8s.io/release/cmd/$TOOL@latest`.
+
 - [Release Management](#release-management)
   - [`krel`](#krel)
   - [`schedule-builder`](#schedule-builder)
