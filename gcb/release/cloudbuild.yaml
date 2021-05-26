@@ -48,6 +48,9 @@ steps:
   - "TOOL_ORG=${_TOOL_ORG}"
   - "TOOL_REPO=${_TOOL_REPO}"
   - "TOOL_REF=${_TOOL_REF}"
+  - "K8S_ORG=${_K8S_ORG}"
+  - "K8S_REPO=${_K8S_REPO}"
+  - "K8S_REF=${_K8S_REF}"
   secretEnv:
   - GITHUB_TOKEN
   args:

@@ -125,7 +125,7 @@ type stageImpl interface {
 	BranchNeedsCreation(
 		branch, releaseType string, buildVersion semver.Version,
 	) (bool, error)
-	PrepareWorkspaceStage() error
+	PrepareWorkspaceStage(noMock bool) error
 	GenerateReleaseVersion(
 		releaseType, version, branch string, branchFromMaster bool,
 	) (*release.Versions, error)
@@ -136,6 +136,7 @@ type stageImpl interface {
 	CurrentBranch(repo *git.Repo) (string, error)
 	CommitEmpty(repo *git.Repo, msg string) error
 	Tag(repo *git.Repo, name, message string) error
+	Merge(repo *git.Repo, rev string) error
 	CheckReleaseBucket(options *build.Options) error
 	DockerHubLogin() error
 	MakeCross(version string) error
@@ -170,8 +171,8 @@ func (d *defaultStageImpl) BranchNeedsCreation(
 	)
 }
 
-func (d *defaultStageImpl) PrepareWorkspaceStage() error {
-	if err := release.PrepareWorkspaceStage(gitRoot); err != nil {
+func (d *defaultStageImpl) PrepareWorkspaceStage(noMock bool) error {
+	if err := release.PrepareWorkspaceStage(gitRoot, noMock); err != nil {
 		return err
 	}
 	return os.Chdir(gitRoot)
@@ -211,6 +212,10 @@ func (d *defaultStageImpl) CommitEmpty(repo *git.Repo, msg string) error {
 
 func (d *defaultStageImpl) Tag(repo *git.Repo, name, message string) error {
 	return repo.Tag(name, message)
+}
+
+func (d *defaultStageImpl) Merge(repo *git.Repo, rev string) error {
+	return repo.Merge(rev)
 }
 
 func (d *defaultStageImpl) MakeCross(version string) error {
@@ -322,7 +327,7 @@ func (d *DefaultStage) GenerateReleaseVersion() error {
 }
 
 func (d *DefaultStage) PrepareWorkspace() error {
-	if err := d.impl.PrepareWorkspaceStage(); err != nil {
+	if err := d.impl.PrepareWorkspaceStage(d.options.NoMock); err != nil {
 		return errors.Wrap(err, "prepare workspace")
 	}
 	return nil
@@ -434,6 +439,16 @@ func (d *DefaultStage) TagRepository() error {
 			logrus.Infof("Detaching HEAD at commit %s to create tag %s", commit, version)
 			if err := d.impl.Checkout(repo, commit); err != nil {
 				return errors.Wrap(err, "checkout release commit")
+			}
+		}
+
+		// If a custom ref is provided, try to merge it into the release
+		// branch.
+		ref := release.GetK8sRef()
+		if ref != release.DefaultK8sRef {
+			logrus.Infof("Merging custom ref: %s", ref)
+			if err := d.impl.Merge(repo, git.Remotify(ref)); err != nil {
+				return errors.Wrap(err, "merge k8s ref")
 			}
 		}
 

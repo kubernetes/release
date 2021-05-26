@@ -188,6 +188,9 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"MINOR_VERSION_TAG":      "17",
 				"PATCH_VERSION_TAG":      "0",
 				"KUBERNETES_VERSION_TAG": "1.17.0",
+				"K8S_ORG":                git.DefaultGithubOrg,
+				"K8S_REPO":               git.DefaultGithubRepo,
+				"K8S_REF":                git.DefaultRef,
 			},
 		},
 		{
@@ -213,6 +216,9 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"MINOR_VERSION_TAG":      "33",
 				"PATCH_VERSION_TAG":      "7",
 				"KUBERNETES_VERSION_TAG": "1.33.7",
+				"K8S_ORG":                git.DefaultGithubOrg,
+				"K8S_REPO":               git.DefaultGithubRepo,
+				"K8S_REF":                git.DefaultRef,
 			},
 		},
 		{
@@ -237,6 +243,9 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"MINOR_VERSION_TAG":      "15",
 				"KUBERNETES_VERSION_TAG": "1.15.0-rc.2",
 				"PATCH_VERSION_TAG":      "0",
+				"K8S_ORG":                git.DefaultGithubOrg,
+				"K8S_REPO":               git.DefaultGithubRepo,
+				"K8S_REF":                git.DefaultRef,
 			},
 		},
 		{
@@ -261,6 +270,9 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"MINOR_VERSION_TAG":      "15",
 				"PATCH_VERSION_TAG":      "1",
 				"KUBERNETES_VERSION_TAG": "1.15.1",
+				"K8S_ORG":                git.DefaultGithubOrg,
+				"K8S_REPO":               git.DefaultGithubRepo,
+				"K8S_REF":                git.DefaultRef,
 			},
 		},
 		{
@@ -288,6 +300,9 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"MINOR_VERSION_TAG":      "16",
 				"PATCH_VERSION_TAG":      "0",
 				"KUBERNETES_VERSION_TAG": "1.16.0",
+				"K8S_ORG":                git.DefaultGithubOrg,
+				"K8S_REPO":               git.DefaultGithubRepo,
+				"K8S_REF":                git.DefaultRef,
 			},
 		},
 		{
@@ -315,6 +330,9 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"MINOR_VERSION_TAG":      "19",
 				"PATCH_VERSION_TAG":      "0",
 				"KUBERNETES_VERSION_TAG": "1.19.0-beta.0",
+				"K8S_ORG":                git.DefaultGithubOrg,
+				"K8S_REPO":               git.DefaultGithubRepo,
+				"K8S_REF":                git.DefaultRef,
 			},
 		},
 		{
@@ -339,6 +357,9 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"MINOR_VERSION_TAG":      "18",
 				"KUBERNETES_VERSION_TAG": "1.18.6-rc.1",
 				"PATCH_VERSION_TAG":      "6",
+				"K8S_ORG":                git.DefaultGithubOrg,
+				"K8S_REPO":               git.DefaultGithubRepo,
+				"K8S_REF":                git.DefaultRef,
 			},
 		},
 		{
@@ -363,6 +384,9 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"MINOR_VERSION_TAG":      "18",
 				"KUBERNETES_VERSION_TAG": "1.18.0-rc.1",
 				"PATCH_VERSION_TAG":      "0",
+				"K8S_ORG":                git.DefaultGithubOrg,
+				"K8S_REPO":               git.DefaultGithubRepo,
+				"K8S_REF":                git.DefaultRef,
 			},
 		},
 	}
