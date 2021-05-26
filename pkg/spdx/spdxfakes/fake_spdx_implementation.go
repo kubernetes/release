@@ -63,11 +63,11 @@ type FakeSpdxImplementation struct {
 		result1 []string
 		result2 error
 	}
-	GetGoDependenciesStub        func(string, bool) ([]*spdx.Package, error)
+	GetGoDependenciesStub        func(string, *spdx.Options) ([]*spdx.Package, error)
 	getGoDependenciesMutex       sync.RWMutex
 	getGoDependenciesArgsForCall []struct {
 		arg1 string
-		arg2 bool
+		arg2 *spdx.Options
 	}
 	getGoDependenciesReturns struct {
 		result1 []*spdx.Package
@@ -414,12 +414,12 @@ func (fake *FakeSpdxImplementation) GetDirectoryTreeReturnsOnCall(i int, result1
 	}{result1, result2}
 }
 
-func (fake *FakeSpdxImplementation) GetGoDependencies(arg1 string, arg2 bool) ([]*spdx.Package, error) {
+func (fake *FakeSpdxImplementation) GetGoDependencies(arg1 string, arg2 *spdx.Options) ([]*spdx.Package, error) {
 	fake.getGoDependenciesMutex.Lock()
 	ret, specificReturn := fake.getGoDependenciesReturnsOnCall[len(fake.getGoDependenciesArgsForCall)]
 	fake.getGoDependenciesArgsForCall = append(fake.getGoDependenciesArgsForCall, struct {
 		arg1 string
-		arg2 bool
+		arg2 *spdx.Options
 	}{arg1, arg2})
 	stub := fake.GetGoDependenciesStub
 	fakeReturns := fake.getGoDependenciesReturns
@@ -440,13 +440,13 @@ func (fake *FakeSpdxImplementation) GetGoDependenciesCallCount() int {
 	return len(fake.getGoDependenciesArgsForCall)
 }
 
-func (fake *FakeSpdxImplementation) GetGoDependenciesCalls(stub func(string, bool) ([]*spdx.Package, error)) {
+func (fake *FakeSpdxImplementation) GetGoDependenciesCalls(stub func(string, *spdx.Options) ([]*spdx.Package, error)) {
 	fake.getGoDependenciesMutex.Lock()
 	defer fake.getGoDependenciesMutex.Unlock()
 	fake.GetGoDependenciesStub = stub
 }
 
-func (fake *FakeSpdxImplementation) GetGoDependenciesArgsForCall(i int) (string, bool) {
+func (fake *FakeSpdxImplementation) GetGoDependenciesArgsForCall(i int) (string, *spdx.Options) {
 	fake.getGoDependenciesMutex.RLock()
 	defer fake.getGoDependenciesMutex.RUnlock()
 	argsForCall := fake.getGoDependenciesArgsForCall[i]
