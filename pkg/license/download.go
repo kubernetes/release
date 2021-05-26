@@ -67,19 +67,23 @@ type DownloaderOptions struct {
 func (do *DownloaderOptions) Validate() error {
 	// If we are using a cache
 	if do.EnableCache {
-		// Is we have a cache dir, check if it exists
-		if do.CacheDir != "" {
-			if !util.Exists(do.CacheDir) {
-				return errors.New("the specified cache directory does not exist: " + do.CacheDir)
-			}
-		}
-		// And no cache dir was specified
+		// and no cache dir was specified
 		if do.CacheDir == "" {
+			// use a temporary dir
 			dir, err := os.MkdirTemp(os.TempDir(), "license-cache-")
+			do.CacheDir = dir
 			if err != nil {
 				return errors.Wrap(err, "creating temporary directory")
 			}
-			do.CacheDir = dir
+		} else if !util.Exists(do.CacheDir) {
+			if err := os.MkdirAll(do.CacheDir, os.FileMode(0o755)); err != nil {
+				return errors.Wrap(err, "creating license downloader cache")
+			}
+		}
+
+		// Is we have a cache dir, check if it exists
+		if !util.Exists(do.CacheDir) {
+			return errors.New("the specified cache directory does not exist: " + do.CacheDir)
 		}
 	}
 	return nil
