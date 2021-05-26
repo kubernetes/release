@@ -71,6 +71,7 @@ type generateOptions struct {
 	analyze        bool
 	noGitignore    bool
 	noGoModules    bool
+	noGoTransient  bool
 	namespace      string
 	outputFile     string
 	images         []string
@@ -161,6 +162,12 @@ func init() {
 		false,
 		"don't perform go.mod analysis, sbom will not include data about go packages",
 	)
+	generateCmd.PersistentFlags().BoolVar(
+		&genOpts.noGoTransient,
+		"no-transient",
+		false,
+		"don't include transient go dependencies, only direct deps from go.mod",
+	)
 
 	generateCmd.PersistentFlags().StringVarP(
 		&genOpts.namespace,
@@ -203,6 +210,7 @@ func generateBOM(opts *generateOptions) error {
 		Namespace:        opts.namespace,
 		AnalyseLayers:    opts.analyze,
 		ProcessGoModules: !opts.noGoModules,
+		OnlyDirectDeps:   !opts.noGoTransient,
 	}
 
 	// We only replace the ignore patterns one or more where defined

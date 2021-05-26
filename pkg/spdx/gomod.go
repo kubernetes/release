@@ -17,7 +17,9 @@ limitations under the License.
 package spdx
 
 import (
+	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -28,21 +30,23 @@ import (
 	"golang.org/x/mod/modfile"
 	"golang.org/x/tools/go/vcs"
 	"k8s.io/release/pkg/license"
+	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/util"
 )
 
 const (
 	downloadDir   = spdxTempDir + "/gomod-scanner"
 	GoModFileName = "go.mod"
+	GoSumFileName = "go.sum"
+	goModRevPtn   = `v\d+\.\d+\.\d+-[0-9.]+-([a-f0-9]+)` // Match revisions in go modules
 )
+
+var goModRevRe *regexp.Regexp
 
 // NewGoModule returns a new go module from the specified path
 func NewGoModuleFromPath(path string) (*GoModule, error) {
 	mod := NewGoModule()
 	mod.opts.Path = path
-	if err := mod.Open(); err != nil {
-		return nil, errors.Wrap(err, "opening new module path")
-	}
 	return mod, nil
 }
 
@@ -62,15 +66,23 @@ type GoModule struct {
 }
 
 type GoModuleOptions struct {
-	Path string // Path to the dir where go.mod resides
+	Path           string // Path to the dir where go.mod resides
+	OnlyDirectDeps bool   // Only include direct dependencies from go.mod
+	ScanLicenses   bool   // Scan licenses from everypossible place unless false
+}
+
+// Options returns a pointer to the module options set
+func (mod *GoModule) Options() *GoModuleOptions {
+	return mod.opts
 }
 
 // GoPackage basic pkg data we need
 type GoPackage struct {
-	ImportPath string
-	Revision   string
-	LocalDir   string
-	LicenseID  string
+	ImportPath   string
+	Revision     string
+	LocalDir     string
+	LocalInstall string
+	LicenseID    string
 }
 
 // SPDXPackage builds a spdx package from the go package data
@@ -80,10 +92,10 @@ func (pkg *GoPackage) ToSPDXPackage() (*Package, error) {
 		return nil, errors.Wrap(err, "building repository from package import path")
 	}
 	spdxPackage := NewPackage()
-	spdxPackage.Name = pkg.ImportPath
+	spdxPackage.Name = pkg.ImportPath + "@" + strings.TrimSuffix(pkg.Revision, "+incompatible")
 	spdxPackage.DownloadLocation = repo.Repo
 	spdxPackage.LicenseConcluded = pkg.LicenseID
-	spdxPackage.Version = pkg.Revision
+	spdxPackage.Version = strings.TrimSuffix(pkg.Revision, "+incompatible")
 	return spdxPackage, nil
 }
 
@@ -105,7 +117,12 @@ func (mod *GoModule) Open() error {
 	mod.GoMod = gomod
 
 	// Build the package list
-	pkgs, err := mod.impl.BuildPackageList(mod.GoMod)
+	var pkgs []*GoPackage
+	if mod.Options().OnlyDirectDeps {
+		pkgs, err = mod.impl.BuildPackageList(mod.GoMod)
+	} else {
+		pkgs, err = mod.BuildFullPackageList(mod.GoMod)
+	}
 	if err != nil {
 		return errors.Wrap(err, "building module package list")
 	}
@@ -122,7 +139,7 @@ func (mod *GoModule) RemoveDownloads() error {
 func (mod *GoModule) DownloadPackages() error {
 	logrus.Infof("Downloading source code for %d packages", len(mod.Packages))
 	if mod.Packages == nil {
-		return errors.New("Unable to download packages, package list is nil")
+		return errors.New("unable to download packages, package list is nil")
 	}
 
 	for _, pkg := range mod.Packages {
@@ -136,7 +153,7 @@ func (mod *GoModule) DownloadPackages() error {
 // ScanLicenses scans the licenses and populats the fields
 func (mod *GoModule) ScanLicenses() error {
 	if mod.Packages == nil {
-		return errors.New("Unable to scan lincese files, package list is nil")
+		return errors.New("unable to scan lincese files, package list is nil")
 	}
 
 	reader, err := mod.impl.LicenseReader()
@@ -148,22 +165,27 @@ func (mod *GoModule) ScanLicenses() error {
 	t := throttler.New(10, len(mod.Packages))
 	// Do a quick re-check for missing downloads
 	// todo: paralelize this. urgently.
-	i := 1
 	for _, pkg := range mod.Packages {
 		// Launch a goroutine to fetch the package contents
 		go func(curPkg *GoPackage) {
 			logrus.WithField(
 				"package", curPkg.ImportPath).Infof(
-				"Downloading package %d/%d", i, len(mod.Packages),
+				"Downloading package (%d total)", len(mod.Packages),
 			)
 			defer t.Done(err)
-			// Call download with no force in case local data is missing
-			if err2 := mod.impl.DownloadPackage(curPkg, mod.opts, false); err2 != nil {
-				// If we're unable to download the module we dont treat it as
-				// fatal, package will remain without license info but we go
-				// on scanning the rest of the packages.
-				logrus.WithField("package", curPkg.ImportPath).Error(err2)
-				return
+			if curPkg.LocalInstall == "" {
+				// Call download with no force in case local data is missing
+				if err2 := mod.impl.DownloadPackage(curPkg, mod.opts, false); err2 != nil {
+					// If we're unable to download the module we dont treat it as
+					// fatal, package will remain without license info but we go
+					// on scanning the rest of the packages.
+					logrus.WithField("package", curPkg.ImportPath).Error(err2)
+					return
+				}
+			} else {
+				logrus.WithField("package", curPkg.ImportPath).Infof(
+					"There is a local copy of %s@%s", curPkg.ImportPath, curPkg.Revision,
+				)
 			}
 
 			if err = mod.impl.ScanPackageLicense(curPkg, reader, mod.opts); err != nil {
@@ -173,7 +195,6 @@ func (mod *GoModule) ScanLicenses() error {
 			}
 		}(pkg)
 		t.Throttle()
-		i++
 	}
 
 	if t.Err() != nil {
@@ -181,6 +202,73 @@ func (mod *GoModule) ScanLicenses() error {
 	}
 
 	return nil
+}
+
+// BuildFullPackageList return the complete of packages imported into
+// the module, instead of reading go.mod, this functions calls
+// go list and works from there
+func (mod *GoModule) BuildFullPackageList(g *modfile.File) (packageList []*GoPackage, err error) {
+	packageList = []*GoPackage{}
+	gobin, err := exec.LookPath("go")
+	if err != nil {
+		return nil, errors.New("unable to get full list of packages, go executbale not found ")
+	}
+
+	if !util.Exists(filepath.Join(mod.opts.Path, GoSumFileName)) {
+		return nil, errors.New("unable to generate package list, go.sum file not found")
+	}
+
+	gorun := command.NewWithWorkDir(mod.opts.Path, gobin, "list", "-deps", "-e", "-json", "./...")
+	output, err := gorun.RunSilentSuccessOutput()
+	if err != nil {
+		return nil, errors.Wrap(err, "while calling go to get full list of deps")
+	}
+
+	type ModEntry struct {
+		DepOnly bool `json:"DepOnly,omitempty"`
+		Main    bool `json:"Main,omitempty"`
+		Module  struct {
+			Path     string `json:"Path,omitempty"`    // Path is theImportPath
+			Main     bool   `json:"Main,omitempty"`    // true if its the main module (eg k/release)
+			Dir      string `json:"Dir,omitempty"`     // The source can be found here
+			GoMod    string `json:"GoMod,omitempty"`   // Or cached here
+			Version  string `json:"Version,omitempty"` // PAckage version
+			Indirect bool   `json:"Indirect,omitempty"`
+		} `json:"Module,omitempty"`
+	}
+
+	dec := json.NewDecoder(strings.NewReader(output.Output()))
+	list := map[string]map[string]*ModEntry{}
+	for dec.More() {
+		m := &ModEntry{}
+		if err := dec.Decode(m); err != nil {
+			return nil, errors.Wrap(err, "decoding module list")
+		}
+		if m.Module.Path != "" {
+			if _, ok := list[m.Module.Path]; !ok {
+				list[m.Module.Path] = map[string]*ModEntry{}
+			}
+			list[m.Module.Path][m.Module.Version] = m
+		}
+	}
+	logrus.Info("Adding full list of dependencies:")
+	for _, versions := range list {
+		for _, fmod := range versions {
+			dep := &GoPackage{
+				ImportPath:   fmod.Module.Path,
+				Revision:     fmod.Module.Version,
+				LocalDir:     "",
+				LocalInstall: "",
+			}
+			if util.Exists(fmod.Module.Dir) {
+				dep.LocalInstall = fmod.Module.Dir
+			}
+			logrus.Infof(" > %s@%s", dep.ImportPath, dep.Revision)
+			packageList = append(packageList, dep)
+		}
+	}
+	logrus.Infof("Found %d modules from full dependency tree", len(packageList))
+	return packageList, nil
 }
 
 type GoModDefaultImpl struct {
@@ -198,7 +286,7 @@ func (di *GoModDefaultImpl) OpenModule(opts *GoModuleOptions) (*modfile.File, er
 		return nil, errors.Wrap(err, "reading go.mod")
 	}
 	logrus.Infof(
-		"Parsed go.mod file for %s, found %d packages",
+		"Parsed go.mod file for %s, found %d direct dependencies",
 		gomod.Module.Mod.Path,
 		len(gomod.Require),
 	)
@@ -247,8 +335,11 @@ func (di *GoModDefaultImpl) DownloadPackage(pkg *GoPackage, opts *GoModuleOption
 	// Create a clone of the module repo at the revision
 	rev := strings.TrimSuffix(pkg.Revision, "+incompatible")
 
-	// Strip
-	m := regexp.MustCompile(`v\d+\.\d+\.\d+-[0-9.]+-([a-f0-9]+)`).FindStringSubmatch(pkg.Revision)
+	// Strip the revision from the whole string part
+	if goModRevRe == nil {
+		goModRevRe = regexp.MustCompile(goModRevPtn)
+	}
+	m := goModRevRe.FindStringSubmatch(pkg.Revision)
 	if len(m) > 1 {
 		rev = m[1]
 		logrus.Infof("Using commit %s as revision for download", rev)
@@ -298,7 +389,11 @@ func (di *GoModDefaultImpl) LicenseReader() (*license.Reader, error) {
 // ScanPackageLicense scans a package for licensing info
 func (di *GoModDefaultImpl) ScanPackageLicense(
 	pkg *GoPackage, reader *license.Reader, opts *GoModuleOptions) error {
-	licenselist, _, err := reader.ReadLicenses(pkg.LocalDir)
+	dir := pkg.LocalDir
+	if dir == "" && pkg.LocalInstall != "" {
+		dir = pkg.LocalInstall
+	}
+	licenselist, _, err := reader.ReadLicenses(dir)
 	if err != nil {
 		return errors.Wrapf(err, "scanning package %s for licensing information", pkg.ImportPath)
 	}

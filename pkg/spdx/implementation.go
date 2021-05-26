@@ -51,7 +51,7 @@ type spdxImplementation interface {
 	GetDirectoryTree(string) ([]string, error)
 	IgnorePatterns(string, []string, bool) ([]gitignore.Pattern, error)
 	ApplyIgnorePatterns([]string, []gitignore.Pattern) []string
-	GetGoDependencies(string, bool) ([]*Package, error)
+	GetGoDependencies(string, *Options) ([]*Package, error)
 	GetDirectoryLicense(*license.Reader, string, *Options) (*license.License, error)
 	LicenseReader(*Options) (*license.Reader, error)
 }
@@ -274,18 +274,27 @@ func (di *spdxDefaultImplementation) ApplyIgnorePatterns(
 	return filteredList
 }
 
-// GetGoDependencies
+// GetGoDependencies opens a Go module and directory and returns the
+// dependencies as SPDX packages.
 func (di *spdxDefaultImplementation) GetGoDependencies(
-	path string, scanLicenses bool,
+	path string, opts *Options,
 ) (spdxPackages []*Package, err error) {
 	// Open the directory as a go module:
 	mod, err := NewGoModuleFromPath(path)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating a mod from the specified path")
 	}
+	mod.Options().OnlyDirectDeps = opts.OnlyDirectDeps
+	mod.Options().ScanLicenses = opts.ScanLicenses
+
+	// Open the module
+	if err := mod.Open(); err != nil {
+		return nil, errors.Wrap(err, "opening new module path")
+	}
+
 	defer func() { err = mod.RemoveDownloads() }()
 
-	if scanLicenses {
+	if opts.ScanLicenses {
 		if err := mod.ScanLicenses(); err != nil {
 			return nil, errors.Wrap(err, "scanning go module licenses")
 		}
