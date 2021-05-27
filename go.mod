@@ -16,7 +16,7 @@ require (
 	github.com/google/go-github/v33 v33.0.0
 	github.com/google/licenseclassifier/v2 v2.0.0-alpha.1
 	github.com/google/uuid v1.2.0
-	github.com/mattn/go-isatty v0.0.12
+	github.com/mattn/go-isatty v0.0.13
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481
