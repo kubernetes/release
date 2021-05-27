@@ -50,30 +50,32 @@ FilesAnalyzed: {{ .FilesAnalyzed }}
 PackageLicenseConcluded: {{ if .LicenseConcluded }}{{ .LicenseConcluded }}{{ else }}NOASSERTION{{ end }}
 {{ if .FileName }}PackageFileName: {{ .FileName }}
 {{ end -}}
-{{ if .LicenseInfoFromFiles }}PackageLicenseInfoFromFiles: {{ .LicenseInfoFromFiles }}
+{{ if .LicenseInfoFromFiles }}{{- range $key, $value := .LicenseInfoFromFiles -}}PackageLicenseInfoFromFiles: {{ $value }}
+{{ end -}}
 {{ end -}}
 {{ if .Version }}PackageVersion: {{ .Version }}
 {{ end -}}
 PackageLicenseDeclared: {{ if .LicenseDeclared }}{{ .LicenseDeclared }}{{ else }}NOASSERTION{{ end }}
 PackageCopyrightText: {{ if .CopyrightText }}<text>{{ .CopyrightText }}
 </text>{{ else }}NOASSERTION{{ end }}
+
 `
 
 // Package groups a set of files
 type Package struct {
-	FilesAnalyzed        bool   // true
-	Name                 string // hello-go-src
-	ID                   string // SPDXRef-Package-hello-go-src
-	DownloadLocation     string // git@github.com:swinslow/spdx-examples.git#example6/content/src
-	VerificationCode     string // 6486e016b01e9ec8a76998cefd0705144d869234
-	LicenseConcluded     string // LicenseID o NOASSERTION
-	LicenseInfoFromFiles string // GPL-3.0-or-later
-	LicenseDeclared      string // GPL-3.0-or-later
-	LicenseComments      string // record any relevant background information or analysis that went in to arriving at the Concluded License
-	CopyrightText        string // string NOASSERTION
-	Version              string // Package version
-	FileName             string // Name of the package
-	SourceFile           string // Source file for the package (taball for images, rpm, deb, etc)
+	FilesAnalyzed        bool     // true
+	Name                 string   // hello-go-src
+	ID                   string   // SPDXRef-Package-hello-go-src
+	DownloadLocation     string   // git@github.com:swinslow/spdx-examples.git#example6/content/src
+	VerificationCode     string   // 6486e016b01e9ec8a76998cefd0705144d869234
+	LicenseConcluded     string   // LicenseID o NOASSERTION
+	LicenseInfoFromFiles []string // GPL-3.0-or-later
+	LicenseDeclared      string   // GPL-3.0-or-later
+	LicenseComments      string   // record any relevant background information or analysis that went in to arriving at the Concluded License
+	CopyrightText        string   // string NOASSERTION
+	Version              string   // Package version
+	FileName             string   // Name of the package
+	SourceFile           string   // Source file for the package (taball for images, rpm, deb, etc)
 
 	// Supplier: the actual distribution source for the package/directory
 	Supplier struct {
@@ -87,9 +89,10 @@ type Package struct {
 		Organization string // organization name and optional (<email>)
 	}
 	// Subpackages contained
-	Packages map[string]*Package // Sub packages conatined in this pkg
-	Files    map[string]*File    // List of files
-	Checksum map[string]string   // Checksum of the package
+	Packages     map[string]*Package // Sub packages conatined in this pkg
+	Files        map[string]*File    // List of files
+	Checksum     map[string]string   // Checksum of the package
+	Dependencies map[string]*Package // Packages marked as dependencies
 
 	options *PackageOptions // Options
 }
@@ -144,7 +147,7 @@ func (p *Package) AddFile(file *File) error {
 			return errors.New("unable to generate file ID, filename not set")
 		}
 		if p.Name == "" {
-			return errors.New("unable to generate file ID, filename not set")
+			return errors.New("unable to generate file ID, package not set")
 		}
 		h := sha1.New()
 		if _, err := h.Write([]byte(p.Name + ":" + file.Name)); err != nil {
@@ -156,14 +159,13 @@ func (p *Package) AddFile(file *File) error {
 	return nil
 }
 
-// AddPackage adds a new subpackage to a package
-func (p *Package) AddPackage(pkg *Package) error {
-	if p.Packages == nil {
-		p.Packages = map[string]*Package{}
-	}
+// preProcessSubPackage performs a basic check on a package
+// to ensure it can be added as a subpackage, trying to infer
+// missing data when possible
+func (p *Package) preProcessSubPackage(pkg *Package) error {
 	if pkg.ID == "" {
 		// If we so not have an ID but have a name generate it fro there
-		reg := regexp.MustCompile("[^a-zA-Z0-9-]+")
+		reg := regexp.MustCompile(validNameCharsRe)
 		id := reg.ReplaceAllString(pkg.Name, "")
 		if id != "" {
 			pkg.ID = "SPDXRef-Package-" + id
@@ -173,10 +175,41 @@ func (p *Package) AddPackage(pkg *Package) error {
 		return errors.New("package name is needed to add a new package")
 	}
 	if _, ok := p.Packages[pkg.ID]; ok {
-		return errors.New("a package named " + pkg.ID + " already exists in the document")
+		return errors.New("a package named " + pkg.ID + " already exists as a subpackage")
+	}
+
+	if _, ok := p.Dependencies[pkg.ID]; ok {
+		return errors.New("a package named " + pkg.ID + " already exists as a dependency")
+	}
+
+	return nil
+}
+
+// AddPackage adds a new subpackage to a package
+func (p *Package) AddPackage(pkg *Package) error {
+	if p.Packages == nil {
+		p.Packages = map[string]*Package{}
+	}
+
+	if err := p.preProcessSubPackage(pkg); err != nil {
+		return errors.Wrap(err, "performing subpackage preprocessing")
 	}
 
 	p.Packages[pkg.ID] = pkg
+	return nil
+}
+
+// AddDependency adds a new subpackage as a dependency
+func (p *Package) AddDependency(pkg *Package) error {
+	if p.Dependencies == nil {
+		p.Dependencies = map[string]*Package{}
+	}
+
+	if err := p.preProcessSubPackage(pkg); err != nil {
+		return errors.Wrap(err, "performing subpackage preprocessing")
+	}
+
+	p.Dependencies[pkg.ID] = pkg
 	return nil
 }
 
@@ -189,6 +222,7 @@ func (p *Package) Render() (docFragment string, err error) {
 	}
 
 	// If files were analyzed, calculate the verification
+	filesTagList := map[string]*struct{}{}
 	if p.FilesAnalyzed {
 		if len(p.Files) == 0 {
 			return docFragment, errors.New("unable to get package verification code, package has no files")
@@ -202,6 +236,11 @@ func (p *Package) Render() (docFragment string, err error) {
 				return docFragment, errors.New("unable to render package, files were analyzed but some do not have sha1 checksum")
 			}
 			shaList = append(shaList, f.Checksum["SHA1"])
+
+			// Collect the license tags
+			if f.LicenseInfoInFile != "" {
+				filesTagList[f.LicenseInfoInFile] = nil
+			}
 		}
 		sort.Strings(shaList)
 		h := sha1.New()
@@ -209,6 +248,16 @@ func (p *Package) Render() (docFragment string, err error) {
 			return docFragment, errors.Wrap(err, "getting sha1 verification of files")
 		}
 		p.VerificationCode = fmt.Sprintf("%x", h.Sum(nil))
+
+		for tag := range filesTagList {
+			if tag != "NONE" && tag != "NOASSERTION" {
+				p.LicenseInfoFromFiles = append(p.LicenseInfoFromFiles, tag)
+			}
+		}
+
+		if len(filesTagList) == 0 {
+			p.LicenseInfoFromFiles = append(p.LicenseInfoFromFiles, "NONE")
+		}
 	}
 
 	// Run the template to verify the output.
@@ -237,6 +286,19 @@ func (p *Package) Render() (docFragment string, err error) {
 
 			docFragment += pkgDoc
 			docFragment += fmt.Sprintf("Relationship: %s CONTAINS %s\n\n", p.ID, pkg.ID)
+		}
+	}
+
+	// Print the contained dependencies
+	if p.Dependencies != nil {
+		for _, pkg := range p.Dependencies {
+			pkgDoc, err := pkg.Render()
+			if err != nil {
+				return "", errors.Wrap(err, "rendering pkg "+pkg.Name)
+			}
+
+			docFragment += pkgDoc
+			docFragment += fmt.Sprintf("Relationship: %s DEPENDS_ON %s\n\n", p.ID, pkg.ID)
 		}
 	}
 	return docFragment, nil

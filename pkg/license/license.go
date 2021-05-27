@@ -28,7 +28,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"sigs.k8s.io/release-utils/util"
 )
 
 const (
@@ -120,32 +119,6 @@ func (ro *ReaderOptions) Validate() error {
 		return errors.Wrap(err, "checking working directory")
 	}
 
-	// Check the cache directory
-	if !util.Exists(ro.CacheDir) {
-		if ro.CacheDir == "" {
-			if err := os.MkdirAll(
-				filepath.Join(ro.WorkDir, defaultCacheSubDir), os.FileMode(0o755),
-			); err != nil {
-				return errors.Wrap(err, "creating cache directory")
-			}
-		} else {
-			return errors.New("specified cache directory does not exist")
-		}
-	}
-
-	// Check the licenses directory
-	if !util.Exists(ro.LicenseDir) {
-		if ro.LicenseDir == "" {
-			if err := os.MkdirAll(
-				filepath.Join(ro.WorkDir, defaultLicenseSubDir), os.FileMode(0o755),
-			); err != nil {
-				return errors.Wrap(err, "creating licenses directory")
-			}
-		} else {
-			return errors.New("specified licenses directory does not exist")
-		}
-	}
-
 	// TODO check dirs
 	return nil
 }
@@ -159,7 +132,7 @@ func (ro *ReaderOptions) CachePath() string {
 	return filepath.Join(ro.WorkDir, defaultCacheSubDir)
 }
 
-// LicensesPath return the full path to the downloads cache
+// LicensesPath return the full path the dir where the licenses are
 func (ro *ReaderOptions) LicensesPath() string {
 	if ro.LicenseDir != "" {
 		return ro.LicenseDir

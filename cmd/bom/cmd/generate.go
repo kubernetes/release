@@ -19,11 +19,13 @@ package cmd
 import (
 	"fmt"
 	"net/url"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/release/pkg/spdx"
+	"sigs.k8s.io/release-utils/util"
 )
 
 var genOpts = &generateOptions{}
@@ -46,28 +48,57 @@ of analyzers designed to add more sense to common base images.
 	SilenceErrors:     true,
 	PersistentPreRunE: initLogging,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		for i, arg := range args {
+			if util.Exists(arg) {
+				file, err := os.Open(arg)
+				if err != nil {
+					return errors.Wrapf(err, "checking argument %d", i)
+				}
+				fileInfo, err := file.Stat()
+				if err != nil {
+					return errors.Wrapf(err, "calling stat on argument %d", i)
+				}
+				if fileInfo.IsDir() {
+					genOpts.directories = append(genOpts.directories, arg)
+				}
+			}
+		}
 		return generateBOM(genOpts)
 	},
 }
 
 type generateOptions struct {
-	analyze    bool
-	namespace  string
-	outputFile string
-	images     []string
-	tarballs   []string
-	files      []string
+	analyze        bool
+	noGitignore    bool
+	noGoModules    bool
+	namespace      string
+	outputFile     string
+	images         []string
+	tarballs       []string
+	files          []string
+	directories    []string
+	ignorePatterns []string
 }
 
 // Validate verify options consistency
 func (opts *generateOptions) Validate() error {
-	if len(opts.images) == 0 && len(opts.files) == 0 && len(opts.tarballs) == 0 {
+	if len(opts.images) == 0 && len(opts.files) == 0 && len(opts.tarballs) == 0 && len(opts.directories) == 0 {
 		return errors.New("to generate a SPDX BOM you have to provide at least one image or file")
 	}
 
 	// A namespace URL is required
 	if opts.namespace == "" {
-		return errors.New("A namespace (URL) must be defined to have a compliant SPDX BOM")
+		msg := "\nYou did not specify a namespace for your document. This is an error.\n"
+		msg += "To produce a valid SPDX SBOM, the document has to have an URI as its\n"
+		msg += "namespace.\n\nYou can use http://example.com/ for now if you are testing but your\n"
+		msg += "final document must have the namespace URI pointing to the location where\n"
+		msg += "you SBOM will be referenced in the future.\n\n"
+		msg += "For more details, check the SPDX documentation here:\n"
+		msg += "https://spdx.github.io/spdx-spec/2-document-creation-information/#25-spdx-document-namespace\n\n"
+		msg += "Hint: --namespace is your friend here\n\n"
+		logrus.Info(msg)
+
+		return errors.New("A namespace URI must be defined to have a compliant SPDX BOM")
 	}
 
 	// CHeck namespace is a valid URL
@@ -102,6 +133,35 @@ func init() {
 		"list of docker archive tarballs to include in the manifest",
 	)
 
+	generateCmd.PersistentFlags().StringSliceVarP(
+		&genOpts.directories,
+		"dirs",
+		"d",
+		[]string{},
+		"list of directories to include in the manifest as packages",
+	)
+
+	generateCmd.PersistentFlags().StringSliceVar(
+		&genOpts.ignorePatterns,
+		"ignore",
+		[]string{},
+		"list of regexp patterns to ignore when scanning directories",
+	)
+
+	generateCmd.PersistentFlags().BoolVar(
+		&genOpts.noGitignore,
+		"no-gitignore",
+		false,
+		"don't use exclusions from .gitignore files",
+	)
+
+	generateCmd.PersistentFlags().BoolVar(
+		&genOpts.noGitignore,
+		"no-gomod",
+		false,
+		"don't perform go.mod analysis, sbom will not include data about go packages",
+	)
+
 	generateCmd.PersistentFlags().StringVarP(
 		&genOpts.namespace,
 		"namespace",
@@ -134,14 +194,22 @@ func generateBOM(opts *generateOptions) error {
 	logrus.Info("Generating SPDX Bill of Materials")
 
 	builder := spdx.NewDocBuilder()
-	doc, err := builder.Generate(&spdx.DocGenerateOptions{
-		Tarballs:      opts.tarballs,
-		Files:         opts.files,
-		Images:        opts.images,
-		OutputFile:    opts.outputFile,
-		Namespace:     "",
-		AnalyseLayers: opts.analyze,
-	})
+	builderOpts := &spdx.DocGenerateOptions{
+		Tarballs:         opts.tarballs,
+		Files:            opts.files,
+		Images:           opts.images,
+		Directories:      opts.directories,
+		OutputFile:       opts.outputFile,
+		Namespace:        opts.namespace,
+		AnalyseLayers:    opts.analyze,
+		ProcessGoModules: !opts.noGoModules,
+	}
+
+	// We only replace the ignore patterns one or more where defined
+	if len(opts.ignorePatterns) > 0 {
+		builderOpts.IgnorePatterns = opts.ignorePatterns
+	}
+	doc, err := builder.Generate(builderOpts)
 	if err != nil {
 		return errors.Wrap(err, "generating doc")
 	}

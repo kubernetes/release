@@ -61,18 +61,22 @@ func (db *DocBuilder) Generate(genopts *DocGenerateOptions) (*Document, error) {
 }
 
 type DocGenerateOptions struct {
-	Tarballs      []string // A slice of tar paths
-	Files         []string // A slice of naked files to include in the bom
-	Images        []string // A slice of docker images
-	OutputFile    string   // Output location
-	Namespace     string   // Namespace for the document (a unique URI)
-	AnalyseLayers bool     // A flag that controls if deep layer analysis should be performed
+	AnalyseLayers    bool     // A flag that controls if deep layer analysis should be performed
+	NoGitignore      bool     // Do not read exclusions from gitignore file
+	ProcessGoModules bool     // Analyze go.mod to include data about packages
+	OutputFile       string   // Output location
+	Namespace        string   // Namespace for the document (a unique URI)
+	Tarballs         []string // A slice of tar paths
+	Files            []string // A slice of naked files to include in the bom
+	Images           []string // A slice of docker images
+	Directories      []string // A slice of directories to convert into packages
+	IgnorePatterns   []string // a slice of regexp patterns to ignore when scanning dirs
 }
 
 func (o *DocGenerateOptions) Validate() error {
-	if len(o.Tarballs) == 0 && len(o.Files) == 0 && len(o.Images) == 0 {
+	if len(o.Tarballs) == 0 && len(o.Files) == 0 && len(o.Images) == 0 && len(o.Directories) == 0 {
 		return errors.New(
-			"To build a document at least an image, tarball or a file has to be specified",
+			"To build a document at least an image, tarball, directory or a file has to be specified",
 		)
 	}
 	return nil
@@ -104,7 +108,11 @@ func (builder defaultDocBuilderImpl) GenerateDoc(
 	}
 
 	spdx := NewSPDX()
-	spdx.options.AnalyzeLayers = genopts.AnalyseLayers
+	if len(genopts.IgnorePatterns) > 0 {
+		spdx.Options().IgnorePatterns = genopts.IgnorePatterns
+	}
+	spdx.Options().AnalyzeLayers = genopts.AnalyseLayers
+	spdx.Options().ProcessGoModules = genopts.ProcessGoModules
 
 	if !util.Exists(opts.WorkDir) {
 		if err := os.MkdirAll(opts.WorkDir, os.FileMode(0o755)); err != nil {
@@ -123,8 +131,19 @@ func (builder defaultDocBuilderImpl) GenerateDoc(
 	doc.Namespace = genopts.Namespace
 
 	if genopts.Namespace == "" {
-		logrus.Warn("Document namespace is empty, a mock URI will be supplied but the doc will not be valid")
-		doc.Namespace = "http://example.com/"
+		return nil, errors.New("unable to generate doc, namespace URI is not defined")
+	}
+
+	for _, i := range genopts.Directories {
+		logrus.Infof("Processing directory %s", i)
+		pkg, err := spdx.PackageFromDirectory(i)
+		if err != nil {
+			return nil, errors.Wrap(err, "generating package from directory")
+		}
+
+		if err := doc.AddPackage(pkg); err != nil {
+			return nil, errors.Wrap(err, "adding directory package to document")
+		}
 	}
 
 	for _, i := range genopts.Images {

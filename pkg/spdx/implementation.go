@@ -20,20 +20,24 @@ package spdx
 
 import (
 	"archive/tar"
+	"bufio"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
+	gitignore "github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"k8s.io/release/pkg/license"
 	"sigs.k8s.io/release-utils/util"
 )
 
@@ -44,6 +48,12 @@ type spdxImplementation interface {
 	ReadArchiveManifest(string) (*ArchiveManifest, error)
 	PullImagesToArchive(string, string) error
 	PackageFromLayerTarBall(string, *TarballOptions) (*Package, error)
+	GetDirectoryTree(string) ([]string, error)
+	IgnorePatterns(string, []string, bool) ([]gitignore.Pattern, error)
+	ApplyIgnorePatterns([]string, []gitignore.Pattern) []string
+	GetGoDependencies(string, bool) ([]*Package, error)
+	GetDirectoryLicense(*license.Reader, string, *Options) (*license.License, error)
+	LicenseReader(*Options) (*license.Reader, error)
 }
 
 type spdxDefaultImplementation struct{}
@@ -176,4 +186,150 @@ func (di *spdxDefaultImplementation) PackageFromLayerTarBall(
 	pkg.Name = fmt.Sprintf("%x", h.Sum(nil))
 
 	return pkg, nil
+}
+
+// GetDirectoryTree traverses a directory and return a slice of strings with all files
+func (di *spdxDefaultImplementation) GetDirectoryTree(dirPath string) ([]string, error) {
+	fileList := []string{}
+
+	if err := fs.WalkDir(os.DirFS(dirPath), ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+
+		if d.Type() == os.ModeSymlink {
+			return nil
+		}
+
+		fileList = append(fileList, path)
+		return nil
+	}); err != nil {
+		return nil, errors.Wrap(err, "buiding directory tree")
+	}
+	return fileList, nil
+}
+
+// IgnorePatterns return a list of gitignore patterns
+func (di *spdxDefaultImplementation) IgnorePatterns(
+	dirPath string, extraPatterns []string, skipGitIgnore bool,
+) ([]gitignore.Pattern, error) {
+	patterns := []gitignore.Pattern{}
+	for _, s := range extraPatterns {
+		patterns = append(patterns, gitignore.ParsePattern(s, nil))
+	}
+
+	if skipGitIgnore {
+		logrus.Debug("Not using patterns in .gitignore")
+		return patterns, nil
+	}
+
+	if util.Exists(filepath.Join(dirPath, gitIgnoreFile)) {
+		f, err := os.Open(filepath.Join(dirPath, gitIgnoreFile))
+		if err != nil {
+			return nil, errors.Wrap(err, "opening gitignore file")
+		}
+		defer f.Close()
+
+		// When using .gitignore files, we alwas add the .git directory
+		// to match git's behavior
+		patterns = append(patterns, gitignore.ParsePattern(".git/", nil))
+
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			s := scanner.Text()
+			if !strings.HasPrefix(s, "#") && len(strings.TrimSpace(s)) > 0 {
+				logrus.Debugf("Loaded .gitignore pattern: >>%s<<", s)
+				patterns = append(patterns, gitignore.ParsePattern(s, nil))
+			}
+		}
+	}
+
+	logrus.Debugf(
+		"Loaded %d patterns from .gitignore (+ %d extra) at root of directory", len(patterns), len(extraPatterns),
+	)
+	return patterns, nil
+}
+
+// ApplyIgnorePatterns applies the gitignore patterns to a list of files, removing matched
+func (di *spdxDefaultImplementation) ApplyIgnorePatterns(
+	fileList []string, patterns []gitignore.Pattern,
+) (filteredList []string) {
+	// We will return a new file list
+	filteredList = []string{}
+
+	// Build the new gitignore matcher
+	matcher := gitignore.NewMatcher(patterns)
+
+	// Cycle all files, removing those matched:
+	for _, file := range fileList {
+		if matcher.Match(strings.Split(file, string(filepath.Separator)), false) {
+			logrus.Debugf("File ignored by .gitignore: %s", file)
+		} else {
+			filteredList = append(filteredList, file)
+		}
+	}
+	return filteredList
+}
+
+// GetGoDependencies
+func (di *spdxDefaultImplementation) GetGoDependencies(path string, scanLicenses bool) ([]*Package, error) {
+	// Open the directory as a go module:
+	mod, err := NewGoModuleFromPath(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating a mod from the specified path")
+	}
+	defer mod.GoMod.Cleanup()
+
+	if scanLicenses {
+		if err := mod.ScanLicenses(); err != nil {
+			return nil, errors.Wrap(err, "scanning go module licenses")
+		}
+	}
+
+	spdxPackages := []*Package{}
+	for _, goPkg := range mod.Packages {
+		spdxPkg, err := goPkg.ToSPDXPackage()
+		if err != nil {
+			return nil, errors.Wrap(err, "converting go module to spdx package")
+		}
+		spdxPackages = append(spdxPackages, spdxPkg)
+	}
+
+	return spdxPackages, nil
+}
+
+func (di *spdxDefaultImplementation) LicenseReader(spdxOpts *Options) (*license.Reader, error) {
+	opts := license.DefaultReaderOptions
+	opts.CacheDir = spdxOpts.LicenseCacheDir
+	// Create the new reader
+	reader, err := license.NewReaderWithOptions(opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating reusable license reader")
+	}
+	return reader, nil
+}
+
+// GetDirectoryLicense takes a path and scans
+// the files in it to determine licensins information
+func (di *spdxDefaultImplementation) GetDirectoryLicense(
+	reader *license.Reader, path string, spdxOpts *Options,
+) (*license.License, error) {
+	// Perhaps here we should take into account thre results
+	licenselist, _, err := reader.ReadLicenses(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "scanning directory for licensing information")
+	}
+	if len(licenselist) == 0 {
+		logrus.Warn("No license info could be determined, SPDX SBOM will not be valid")
+		return nil, nil
+	}
+	logrus.Infof("Determined license %s for directory %s", licenselist[0].License.LicenseID, path)
+
+	if len(licenselist) > 1 {
+		logrus.Warnf("Found %d licenses in directory, picking the first", len(licenselist))
+	}
+	return licenselist[0].License, nil
 }

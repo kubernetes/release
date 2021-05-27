@@ -133,7 +133,7 @@ func (d *Document) Render() (doc string, err error) {
 	}
 
 	if d.Name == "" {
-		d.Name = "BOM-SPDX-" + uuid.New().String()
+		d.Name = "SBOM-SPDX-" + uuid.New().String()
 		logrus.Warnf("Document has no name defined, automatically set to " + d.Name)
 	}
 
