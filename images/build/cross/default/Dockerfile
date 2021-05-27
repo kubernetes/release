@@ -25,10 +25,11 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 ENV GOARM 7
 ENV KUBE_DYNAMIC_CROSSPLATFORMS \
-  armhf \
   arm64 \
-  s390x \
-  ppc64el
+  armhf \
+  i386 \
+  ppc64el \
+  s390x
 
 ENV KUBE_CROSSPLATFORMS \
   linux/386 \
