@@ -221,8 +221,13 @@ func (p *Package) Render() (docFragment string, err error) {
 		return "", errors.Wrap(err, "parsing package template")
 	}
 
-	// If files were analyzed, calculate the verification
-	filesTagList := map[string]*struct{}{}
+	// If files were analyzed, calculate the verification which
+	// is a sha1sum from all sha1 checksumf from included friles.
+	//
+	// Since we are already doing it, we use the same loop to
+	// collect license tags to express them in the LicenseInfoFromFiles
+	// entry of the SPDX package:
+	filesTagList := []string{}
 	if p.FilesAnalyzed {
 		if len(p.Files) == 0 {
 			return docFragment, errors.New("unable to get package verification code, package has no files")
@@ -239,7 +244,16 @@ func (p *Package) Render() (docFragment string, err error) {
 
 			// Collect the license tags
 			if f.LicenseInfoInFile != "" {
-				filesTagList[f.LicenseInfoInFile] = nil
+				collected := false
+				for _, tag := range filesTagList {
+					if tag == f.LicenseInfoInFile {
+						collected = true
+						break
+					}
+				}
+				if !collected {
+					filesTagList = append(filesTagList, f.LicenseInfoInFile)
+				}
 			}
 		}
 		sort.Strings(shaList)
@@ -249,14 +263,17 @@ func (p *Package) Render() (docFragment string, err error) {
 		}
 		p.VerificationCode = fmt.Sprintf("%x", h.Sum(nil))
 
-		for tag := range filesTagList {
-			if tag != "NONE" && tag != "NOASSERTION" {
+		for _, tag := range filesTagList {
+			if tag != NONE && tag != NOASSERTION {
 				p.LicenseInfoFromFiles = append(p.LicenseInfoFromFiles, tag)
 			}
 		}
 
+		// If no license tags where collected from files, then
+		// the BOM has to express "NONE" in the LicenseInfoFromFiles
+		// section to be compliant:
 		if len(filesTagList) == 0 {
-			p.LicenseInfoFromFiles = append(p.LicenseInfoFromFiles, "NONE")
+			p.LicenseInfoFromFiles = append(p.LicenseInfoFromFiles, NONE)
 		}
 	}
 

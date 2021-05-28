@@ -36,6 +36,10 @@ const (
 	spdxLicenseDlCache      = spdxTempDir + "/downloadCache"
 	gitIgnoreFile           = ".gitignore"
 	validNameCharsRe        = `[^a-zA-Z0-9-]+`
+
+	// Consts of some SPDX expressions
+	NONE        = "NONE"
+	NOASSERTION = "NOASSERTION"
 )
 
 type SPDX struct {
@@ -144,7 +148,7 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 		if lic != nil {
 			f.LicenseInfoInFile = lic.LicenseID
 		} else {
-			f.LicenseInfoInFile = "NONE"
+			f.LicenseInfoInFile = NONE
 		}
 		f.LicenseConcluded = licenseTag
 		if err := f.ReadSourceFile(filepath.Join(dirPath, path)); err != nil {
