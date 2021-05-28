@@ -51,13 +51,11 @@ func TestCacheData(t *testing.T) {
 	require.Nil(t, err)
 	defer func() { require.Nil(t, os.RemoveAll(tempdir)) }()
 
-	impl := DefaultDownloaderImpl{
-		Options: &DownloaderOptions{
-			EnableCache:       true,
-			CacheDir:          tempdir,
-			parallelDownloads: 0,
-		},
-	}
+	opts := DefaultDownloaderOpts
+	opts.CacheDir = tempdir
+
+	impl := DefaultDownloaderImpl{Options: opts}
+
 	// Get some testing data
 	testData := []byte("Testing 1,2,3")
 	testURL := "http://example.com/"
@@ -106,14 +104,11 @@ func TestGetLicenseFromURL(t *testing.T) {
 
 	testURL := "http://www.example.com"
 
+	opts := DefaultDownloaderOpts
+	opts.CacheDir = tempdir
+
 	// Create a default implementation with caching enabled
-	impl := DefaultDownloaderImpl{
-		Options: &DownloaderOptions{
-			EnableCache:       true,
-			CacheDir:          tempdir,
-			parallelDownloads: 1,
-		},
-	}
+	impl := DefaultDownloaderImpl{Options: opts}
 
 	// First, cache the data artificially
 	require.Nil(t, impl.cacheData(testURL, []byte(testFullLicense)))
