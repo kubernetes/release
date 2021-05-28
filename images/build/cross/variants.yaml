@@ -10,7 +10,7 @@ variants:
     TYPE: 'default'
     CONFIG: 'go1.16'
     GO_VERSION: '1.16.4'
-    IMAGE_VERSION: 'v1.16.4-1'
+    IMAGE_VERSION: 'v1.16.4-2'
     PROTOBUF_VERSION: '3.7.0'
     ETCD_VERSION: 'v3.4.13'
   go1.15:
