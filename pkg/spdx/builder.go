@@ -17,6 +17,7 @@ limitations under the License.
 package spdx
 
 import (
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -92,7 +93,10 @@ type DocGenerateOptions struct {
 	ScanLicenses     bool     // Try to llok into files to determine their license
 	ConfigFile       string   // Path to SBOM configuration file
 	OutputFile       string   // Output location
+	Name             string   // Name to us ein the resulting document
 	Namespace        string   // Namespace for the document (a unique URI)
+	CreatorPerson    string   // Document creator information
+	License          string   // Main license of the document
 	Tarballs         []string // A slice of tar paths
 	Files            []string // A slice of naked files to include in the bom
 	Images           []string // A slice of docker images
@@ -109,6 +113,11 @@ func (o *DocGenerateOptions) Validate() error {
 
 	if o.ConfigFile != "" && !util.Exists(o.ConfigFile) {
 		return errors.New("the specified configuration file was not found")
+	}
+
+	// Check namespace is a valid URL
+	if _, err := url.Parse(o.Namespace); err != nil {
+		return errors.Wrap(err, "parsing the namespace URL")
 	}
 	return nil
 }
@@ -160,7 +169,9 @@ func (builder *defaultDocBuilderImpl) GenerateDoc(
 
 	// Create the new document
 	doc = NewDocument()
+	doc.Name = genopts.Name
 	doc.Namespace = genopts.Namespace
+	doc.Creator.Person = genopts.CreatorPerson
 
 	if genopts.Namespace == "" {
 		return nil, errors.New("unable to generate doc, namespace URI is not defined")
@@ -264,8 +275,20 @@ func (builder *defaultDocBuilderImpl) ReadYamlConfiguration(
 		return errors.Wrap(err, "unmarshalling SBOM configuration YAML")
 	}
 
+	if conf.Name != "" {
+		opts.Name = conf.Name
+	}
+
 	if conf.Namespace != "" {
 		opts.Namespace = conf.Namespace
+	}
+
+	if conf.Creator.Person != "" {
+		opts.CreatorPerson = conf.Creator.Person
+	}
+
+	if conf.License != "" {
+		opts.License = conf.License
 	}
 
 	// Add all the artifacts
