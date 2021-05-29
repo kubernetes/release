@@ -74,6 +74,7 @@ type generateOptions struct {
 	noGoTransient  bool
 	namespace      string
 	outputFile     string
+	configFile     string
 	images         []string
 	tarballs       []string
 	files          []string
@@ -83,17 +84,22 @@ type generateOptions struct {
 
 // Validate verify options consistency
 func (opts *generateOptions) Validate() error {
-	if len(opts.images) == 0 && len(opts.files) == 0 && len(opts.tarballs) == 0 && len(opts.directories) == 0 {
+	if opts.configFile == "" &&
+		len(opts.images) == 0 &&
+		len(opts.files) == 0 &&
+		len(opts.tarballs) == 0 &&
+		len(opts.directories) == 0 {
 		return errors.New("to generate a SPDX BOM you have to provide at least one image or file")
 	}
 
 	// A namespace URL is required
-	if opts.namespace == "" {
-		msg := "\nYou did not specify a namespace for your document. This is an error.\n"
+	if opts.configFile == "" && opts.namespace == "" {
+		msg := "Error. No namespace defined\n\n"
+		msg += "You did not specify a namespace for your document. This is an error.\n"
 		msg += "To produce a valid SPDX SBOM, the document has to have an URI as its\n"
-		msg += "namespace.\n\nYou can use http://example.com/ for now if you are testing but your\n"
-		msg += "final document must have the namespace URI pointing to the location where\n"
-		msg += "you SBOM will be referenced in the future.\n\n"
+		msg += "namespace.\n\nIf you are testing, you can use http://example.com/ for now but your\n"
+		msg += "final document must have a namespace URI pointing to the location where\n"
+		msg += "your SBOM will be referenced in the future.\n\n"
 		msg += "For more details, check the SPDX documentation here:\n"
 		msg += "https://spdx.github.io/spdx-spec/2-document-creation-information/#25-spdx-document-namespace\n\n"
 		msg += "Hint: --namespace is your friend here\n\n"
@@ -102,7 +108,7 @@ func (opts *generateOptions) Validate() error {
 		return errors.New("A namespace URI must be defined to have a compliant SPDX BOM")
 	}
 
-	// CHeck namespace is a valid URL
+	// Check namespace is a valid URL
 	if _, err := url.Parse(opts.namespace); err != nil {
 		return errors.Wrap(err, "parsing the namespace URL")
 	}
@@ -118,6 +124,7 @@ func init() {
 		[]string{},
 		"list of images",
 	)
+
 	generateCmd.PersistentFlags().StringSliceVarP(
 		&genOpts.files,
 		"file",
@@ -162,6 +169,7 @@ func init() {
 		false,
 		"don't perform go.mod analysis, sbom will not include data about go packages",
 	)
+
 	generateCmd.PersistentFlags().BoolVar(
 		&genOpts.noGoTransient,
 		"no-transient",
@@ -192,6 +200,14 @@ func init() {
 		false,
 		"go deeper into images using the available analyzers",
 	)
+
+	generateCmd.PersistentFlags().StringVarP(
+		&genOpts.configFile,
+		"config",
+		"c",
+		"",
+		"path to yaml SBOM configuration file",
+	)
 }
 
 func generateBOM(opts *generateOptions) error {
@@ -211,6 +227,7 @@ func generateBOM(opts *generateOptions) error {
 		AnalyseLayers:    opts.analyze,
 		ProcessGoModules: !opts.noGoModules,
 		OnlyDirectDeps:   !opts.noGoTransient,
+		ConfigFile:       opts.configFile,
 	}
 
 	// We only replace the ignore patterns one or more where defined

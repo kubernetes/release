@@ -24,13 +24,32 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 	"sigs.k8s.io/release-utils/util"
 )
+
+type YamlBuildArtifact struct {
+	Type      string `yaml:"type"` //  directory
+	Source    string `yaml:"source"`
+	License   string `yaml:"license"`   // SPDX license ID Apache-2.0
+	GoModules *bool  `yaml:"gomodules"` // Shoud we scan go modules
+}
+
+type YamlBOMConfiguration struct {
+	Namespace string `yaml:"namespace"`
+	License   string `yaml:"license"` // Document wide license
+	Name      string `yaml:"name"`
+	Creator   struct {
+		Person string `yaml:"person"`
+		Tool   string `yaml:"tool"`
+	} `yaml:"creator"`
+	Artifacts []*YamlBuildArtifact `yaml:"artifacts"`
+}
 
 func NewDocBuilder() *DocBuilder {
 	db := &DocBuilder{
 		options: &defaultDocBuilderOpts,
-		impl:    defaultDocBuilderImpl{},
+		impl:    &defaultDocBuilderImpl{},
 	}
 	return db
 }
@@ -43,6 +62,11 @@ type DocBuilder struct {
 
 // Generate creates anew SPDX document describing the artifacts specified in the options
 func (db *DocBuilder) Generate(genopts *DocGenerateOptions) (*Document, error) {
+	if genopts.ConfigFile != "" {
+		if err := db.impl.ReadYamlConfiguration(genopts.ConfigFile, genopts); err != nil {
+			return nil, errors.Wrap(err, "parsing configuration file")
+		}
+	}
 	// Create the SPDX document
 	doc, err := db.impl.GenerateDoc(db.options, genopts)
 	if err != nil {
@@ -65,9 +89,10 @@ type DocGenerateOptions struct {
 	NoGitignore      bool     // Do not read exclusions from gitignore file
 	ProcessGoModules bool     // Analyze go.mod to include data about packages
 	OnlyDirectDeps   bool     // Only include direct dependencies from go.mod
+	ScanLicenses     bool     // Try to llok into files to determine their license
+	ConfigFile       string   // Path to SBOM configuration file
 	OutputFile       string   // Output location
 	Namespace        string   // Namespace for the document (a unique URI)
-	ScanLicenses     bool     // Try to llok into files to determine their license
 	Tarballs         []string // A slice of tar paths
 	Files            []string // A slice of naked files to include in the bom
 	Images           []string // A slice of docker images
@@ -78,8 +103,12 @@ type DocGenerateOptions struct {
 func (o *DocGenerateOptions) Validate() error {
 	if len(o.Tarballs) == 0 && len(o.Files) == 0 && len(o.Images) == 0 && len(o.Directories) == 0 {
 		return errors.New(
-			"To build a document at least an image, tarball, directory or a file has to be specified",
+			"to build a document at least an image, tarball, directory or a file has to be specified",
 		)
+	}
+
+	if o.ConfigFile != "" && !util.Exists(o.ConfigFile) {
+		return errors.New("the specified configuration file was not found")
 	}
 	return nil
 }
@@ -95,6 +124,7 @@ var defaultDocBuilderOpts = DocBuilderOptions{
 type DocBuilderImplementation interface {
 	GenerateDoc(*DocBuilderOptions, *DocGenerateOptions) (*Document, error)
 	WriteDoc(*Document, string) error
+	ReadYamlConfiguration(string, *DocGenerateOptions) error
 }
 
 // defaultDocBuilderImpl is the default implementation for the
@@ -102,7 +132,7 @@ type DocBuilderImplementation interface {
 type defaultDocBuilderImpl struct{}
 
 // Generate generates a document
-func (builder defaultDocBuilderImpl) GenerateDoc(
+func (builder *defaultDocBuilderImpl) GenerateDoc(
 	opts *DocBuilderOptions, genopts *DocGenerateOptions,
 ) (doc *Document, err error) {
 	if err := genopts.Validate(); err != nil {
@@ -208,7 +238,7 @@ func (builder defaultDocBuilderImpl) GenerateDoc(
 }
 
 // WriteDoc renders the document to a file
-func (builder defaultDocBuilderImpl) WriteDoc(doc *Document, path string) error {
+func (builder *defaultDocBuilderImpl) WriteDoc(doc *Document, path string) error {
 	markup, err := doc.Render()
 	if err != nil {
 		return errors.Wrap(err, "generating document markup")
@@ -218,4 +248,40 @@ func (builder defaultDocBuilderImpl) WriteDoc(doc *Document, path string) error 
 		os.WriteFile(path, []byte(markup), os.FileMode(0o644)),
 		"writing document markup to file",
 	)
+}
+
+// ReadYamlConfiguration reads a yaml configuration and
+// set the values in an options struct
+func (builder *defaultDocBuilderImpl) ReadYamlConfiguration(
+	path string, opts *DocGenerateOptions) (err error) {
+	yamldata, err := os.ReadFile(path)
+	if err != nil {
+		return errors.Wrap(err, "reading yaml SBOM configuration")
+	}
+
+	conf := &YamlBOMConfiguration{}
+	if err := yaml.Unmarshal(yamldata, conf); err != nil {
+		return errors.Wrap(err, "unmarshalling SBOM configuration YAML")
+	}
+
+	if conf.Namespace != "" {
+		opts.Namespace = conf.Namespace
+	}
+
+	// Add all the artifacts
+	for _, artifact := range conf.Artifacts {
+		logrus.Infof("Configuration has artifact of type %s: %s", artifact.Type, artifact.Source)
+		switch artifact.Type {
+		case "directory":
+			opts.Directories = append(opts.Directories, artifact.Source)
+		case "image":
+			opts.Images = append(opts.Images, artifact.Source)
+		case "docker-archive":
+			opts.Tarballs = append(opts.Tarballs, artifact.Source)
+		case "file":
+			opts.Files = append(opts.Files, artifact.Source)
+		}
+	}
+
+	return nil
 }
