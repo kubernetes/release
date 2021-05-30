@@ -40,7 +40,7 @@ type RunOptions struct {
 	Threads                 int
 	MaxImageSize            int
 	SeverityThreshold       int
-	NoDryRun                bool
+	DryRun                  bool
 	JSONLogSummary          bool
 	ParseOnly               bool
 	MinimalSnapshot         bool
@@ -142,7 +142,7 @@ func RunPromoteCmd(opts *RunOptions) error {
 		sc, err = reg.MakeSyncContext(
 			mfests,
 			opts.Threads,
-			opts.NoDryRun,
+			opts.DryRun,
 			opts.UseServiceAcct,
 		)
 		if err != nil {
@@ -159,9 +159,8 @@ func RunPromoteCmd(opts *RunOptions) error {
 		sc, err = reg.MakeSyncContext(
 			mfests,
 			opts.Threads,
-			opts.NoDryRun,
-			opts.UseServiceAcct,
-		)
+			opts.DryRun,
+			opts.UseServiceAcct)
 		if err != nil {
 			logrus.Fatal(err)
 		}
@@ -212,7 +211,7 @@ So a 'fixable' vulnerability may not necessarily be immediately actionable. For
 example, even though a fixed version of the binary is available, it doesn't
 necessarily mean that a new version of the image layer is available.`,
 			)
-		} else if !opts.NoDryRun {
+		} else if opts.DryRun {
 			logrus.Info("********** START (DRY RUN) **********")
 		} else {
 			logrus.Info("********** START **********")
@@ -251,7 +250,7 @@ necessarily mean that a new version of the image layer is available.`,
 			sc, err = reg.MakeSyncContext(
 				mfests,
 				opts.Threads,
-				opts.NoDryRun,
+				opts.DryRun,
 				opts.UseServiceAcct,
 			)
 			if err != nil {
@@ -304,7 +303,7 @@ necessarily mean that a new version of the image layer is available.`,
 	}
 
 	// Check the pull request
-	if !opts.NoDryRun {
+	if opts.DryRun {
 		err = sc.RunChecks([]reg.PreCheck{})
 		if err != nil {
 			return errors.Wrap(err, "running prechecks before promotion")
@@ -365,7 +364,7 @@ necessarily mean that a new version of the image layer is available.`,
 	// nolint: gocritic
 	if opts.SeverityThreshold >= 0 {
 		logrus.Info("********** FINISHED (VULN CHECK) **********")
-	} else if !opts.NoDryRun {
+	} else if opts.DryRun {
 		logrus.Info("********** FINISHED (DRY RUN) **********")
 	} else {
 		logrus.Info("********** FINISHED **********")

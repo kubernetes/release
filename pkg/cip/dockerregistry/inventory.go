@@ -59,11 +59,11 @@ func GetSrcRegistry(rcs []RegistryContext) (*RegistryContext, error) {
 func MakeSyncContext(
 	mfests []Manifest,
 	threads int,
-	noDryRun, useSvcAcc bool,
+	dryRun, useSvcAcc bool,
 ) (SyncContext, error) {
 	sc := SyncContext{
 		Threads:           threads,
-		NoDryRun:          noDryRun,
+		DryRun:            dryRun,
 		UseServiceAccount: useSvcAcc,
 		Inv:               make(MasterInventory),
 		InvIgnore:         []ImageName{},
@@ -1959,7 +1959,7 @@ func MKPopulateRequestsForPromotionEdges(
 			return
 		}
 
-		if !sc.NoDryRun {
+		if sc.DryRun {
 			logrus.Info("---------- BEGIN PROMOTION (DRY RUN) ----------")
 		} else {
 			logrus.Info("---------- BEGIN PROMOTION ----------")
@@ -2220,7 +2220,7 @@ func (sc *SyncContext) Promote(
 
 	captured := make(CapturedRequests)
 
-	if !sc.NoDryRun {
+	if sc.DryRun {
 		processRequestDryRun := MkRequestCapturer(&captured)
 		processRequest = processRequestDryRun
 	} else {
@@ -2233,7 +2233,7 @@ func (sc *SyncContext) Promote(
 
 	err := sc.ExecRequests(populateRequests, processRequest)
 
-	if !sc.NoDryRun {
+	if sc.DryRun {
 		sc.PrintCapturedRequests(&captured)
 	}
 
@@ -2405,7 +2405,7 @@ func (sc *SyncContext) GarbageCollect(
 
 	captured := make(CapturedRequests)
 
-	if !sc.NoDryRun {
+	if sc.DryRun {
 		processRequestDryRun := MkRequestCapturer(&captured)
 		processRequest = processRequestDryRun
 	} else {
@@ -2421,7 +2421,7 @@ func (sc *SyncContext) GarbageCollect(
 		logrus.Info(err)
 	}
 
-	if !sc.NoDryRun {
+	if sc.DryRun {
 		sc.PrintCapturedRequests(&captured)
 	}
 }
@@ -2529,7 +2529,7 @@ func (sc *SyncContext) ClearRepository(
 
 	captured := make(CapturedRequests)
 
-	if !sc.NoDryRun {
+	if sc.DryRun {
 		processRequestDryRun := MkRequestCapturer(&captured)
 		processRequest = processRequestDryRun
 	} else {
@@ -2566,7 +2566,7 @@ func (sc *SyncContext) ClearRepository(
 		logrus.Info(err)
 	}
 
-	if !sc.NoDryRun {
+	if sc.DryRun {
 		sc.PrintCapturedRequests(&captured)
 	}
 }

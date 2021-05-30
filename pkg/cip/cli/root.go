@@ -31,6 +31,7 @@ var (
 
 type RootOptions struct {
 	LogLevel string
+	DryRun   bool
 	Version  bool
 }
 
