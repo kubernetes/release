@@ -22,7 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
-	"k8s.io/release/pkg/cip/gcloud"
+	"sigs.k8s.io/k8s-container-image-promoter/legacy/gcloud"
 )
 
 // gcloudTokenSource implements oauth2.TokenSource.
