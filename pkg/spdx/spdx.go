@@ -36,6 +36,10 @@ const (
 	spdxLicenseDlCache      = spdxTempDir + "/downloadCache"
 	gitIgnoreFile           = ".gitignore"
 	validNameCharsRe        = `[^a-zA-Z0-9-]+`
+
+	// Consts of some SPDX expressions
+	NONE        = "NONE"
+	NOASSERTION = "NOASSERTION"
 )
 
 type SPDX struct {
@@ -58,6 +62,8 @@ type Options struct {
 	AnalyzeLayers    bool
 	NoGitignore      bool     // Do not read exclusions from gitignore file
 	ProcessGoModules bool     // If true, spdx will check if dirs are go modules and analize the packages
+	OnlyDirectDeps   bool     // Only include direct dependencies from go.mod
+	ScanLicenses     bool     // Scan licenses from everypossible place unless false
 	LicenseCacheDir  string   // Directory to cache SPDX license information
 	IgnorePatterns   []string // Patterns to ignore when scanning file
 }
@@ -71,6 +77,7 @@ var defaultSPDXOptions = Options{
 	AnalyzeLayers:    true,
 	ProcessGoModules: true,
 	IgnorePatterns:   []string{},
+	ScanLicenses:     true,
 }
 
 type ArchiveManifest struct {
@@ -85,7 +92,7 @@ type TarballOptions struct {
 }
 
 // PackageFromDirectory indexes all files in a directory and builds a
-//  SPDX package describing its contents
+// SPDX package describing its contents
 func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error) {
 	fileList, err := spdx.impl.GetDirectoryTree(dirPath)
 	if err != nil {
@@ -101,7 +108,7 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 		return nil, errors.Wrap(err, "scanning directory for licenses")
 	}
 	if lic == nil {
-		logrus.Warn(err, "Licenseclassifier could not find a license for directory")
+		logrus.Warnf("Licenseclassifier could not find a license for directory: %v", err)
 	} else {
 		licenseTag = lic.LicenseID
 	}
@@ -141,7 +148,7 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 		if lic != nil {
 			f.LicenseInfoInFile = lic.LicenseID
 		} else {
-			f.LicenseInfoInFile = "NONE"
+			f.LicenseInfoInFile = NONE
 		}
 		f.LicenseConcluded = licenseTag
 		if err := f.ReadSourceFile(filepath.Join(dirPath, path)); err != nil {
@@ -154,7 +161,7 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 
 	if util.Exists(filepath.Join(dirPath, GoModFileName)) && spdx.Options().ProcessGoModules {
 		logrus.Info("Directory contains a go module. Scanning go packages")
-		deps, err := spdx.impl.GetGoDependencies(dirPath, true)
+		deps, err := spdx.impl.GetGoDependencies(dirPath, spdx.Options())
 		if err != nil {
 			return nil, errors.Wrap(err, "scanning go packages")
 		}

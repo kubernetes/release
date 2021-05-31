@@ -64,8 +64,10 @@ type DocGenerateOptions struct {
 	AnalyseLayers    bool     // A flag that controls if deep layer analysis should be performed
 	NoGitignore      bool     // Do not read exclusions from gitignore file
 	ProcessGoModules bool     // Analyze go.mod to include data about packages
+	OnlyDirectDeps   bool     // Only include direct dependencies from go.mod
 	OutputFile       string   // Output location
 	Namespace        string   // Namespace for the document (a unique URI)
+	ScanLicenses     bool     // Try to llok into files to determine their license
 	Tarballs         []string // A slice of tar paths
 	Files            []string // A slice of naked files to include in the bom
 	Images           []string // A slice of docker images

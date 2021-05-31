@@ -45,7 +45,7 @@ func (d *ReaderDefaultImpl) ClassifyFile(path string) (licenseTag string, moreTa
 	// Get the classsification
 	matches, err := d.Classifier().MatchFrom(file)
 	if len(matches) == 0 {
-		logrus.Warn("File does not match a known license: " + path)
+		logrus.Debugf("File does not match a known license: %s", path)
 	}
 	var highestConf float64
 	moreTags = []string{}
@@ -81,10 +81,12 @@ func (d *ReaderDefaultImpl) ClassifyLicenseFiles(paths []string) (
 		// Apend to the return results
 		licenseList = append(licenseList, ClassifyResult{f, license})
 	}
-	logrus.Infof(
-		"License classifier recognized %d/%d (%d%%) os the files",
-		len(licenseList), len(paths), (len(licenseList)/len(paths))*100,
-	)
+	if len(paths) > 0 {
+		logrus.Infof(
+			"License classifier recognized %d/%d (%d%%) os the files",
+			len(licenseList), len(paths), (len(licenseList)/len(paths))*100,
+		)
+	}
 	return licenseList, unrecognizedPaths, nil
 }
 
@@ -102,7 +104,7 @@ func (d *ReaderDefaultImpl) LicenseFromFile(path string) (license *License, err 
 	}
 
 	if label == "" {
-		logrus.Info("File does not contain a known license: " + path)
+		logrus.Debugf("File does not contain a known license: %s", path)
 		return nil, nil
 	}
 
@@ -170,7 +172,7 @@ func (d *ReaderDefaultImpl) Initialize(opts *ReaderOptions) error {
 	logrus.Infof("Writing license data to %s", opts.CachePath())
 
 	// Write the licenses to disk as th classifier will need them
-	if err := catalog.WriteLicensesAsText(opts.LicensesPath()); err != nil {
+	if err := catalog.WriteLicensesAsText(opts.CachePath()); err != nil {
 		return errors.Wrap(err, "writing license data to disk")
 	}
 
