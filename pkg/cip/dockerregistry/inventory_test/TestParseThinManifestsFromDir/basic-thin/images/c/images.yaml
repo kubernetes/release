@@ -1,3 +1,0 @@
-- name: cat-controller
-  dmap:
-    "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc": ["1.0"]

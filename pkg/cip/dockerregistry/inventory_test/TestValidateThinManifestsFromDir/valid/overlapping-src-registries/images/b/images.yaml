@@ -1,3 +1,0 @@
-- name: foo-controller
-  dmap:
-    "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb": ["1.1"]
