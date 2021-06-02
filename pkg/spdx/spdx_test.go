@@ -25,14 +25,7 @@ import (
 	"k8s.io/release/pkg/spdx/spdxfakes"
 )
 
-var (
-	err      = errors.New("synthetic error")
-	manifest = &spdx.ArchiveManifest{
-		ConfigFilename: "9283479287498237498.json",
-		RepoTags:       []string{"image-test:latest"},
-		LayerFiles:     []string{"ksjdhfkjsdhfkjsdhf/layer.tar"},
-	}
-)
+var err = errors.New("synthetic error")
 
 func TestPackageFromImageTarball(t *testing.T) {
 	for _, tc := range []struct {
@@ -41,29 +34,13 @@ func TestPackageFromImageTarball(t *testing.T) {
 	}{
 		{ // success
 			prepare: func(mock *spdxfakes.FakeSpdxImplementation) {
-				mock.ExtractTarballTmpReturns("/mock/path", nil)
-				mock.ReadArchiveManifestReturns(manifest, nil)
-				mock.PackageFromLayerTarBallReturns(&spdx.Package{Name: "test"}, nil)
+				mock.PackageFromImageTarballReturns(&spdx.Package{Name: "test"}, nil)
 			},
 			shouldError: false,
 		},
-		{
+		{ // PackageFromImageTarball fails
 			prepare: func(mock *spdxfakes.FakeSpdxImplementation) {
-				mock.ReadArchiveManifestReturns(manifest, nil)
-				mock.ExtractTarballTmpReturns("", err)
-			},
-			shouldError: true,
-		},
-		{
-			prepare: func(mock *spdxfakes.FakeSpdxImplementation) {
-				mock.ReadArchiveManifestReturns(nil, err)
-			},
-			shouldError: true,
-		},
-		{
-			prepare: func(mock *spdxfakes.FakeSpdxImplementation) {
-				mock.ReadArchiveManifestReturns(manifest, nil)
-				mock.PackageFromLayerTarBallReturns(nil, err)
+				mock.PackageFromImageTarballReturns(nil, err)
 			},
 			shouldError: true,
 		},
@@ -73,13 +50,13 @@ func TestPackageFromImageTarball(t *testing.T) {
 		mock := &spdxfakes.FakeSpdxImplementation{}
 		tc.prepare(mock)
 		sut.SetImplementation(mock)
-
-		dir, err := sut.PackageFromImageTarball("mock.tar", &spdx.TarballOptions{})
+		// Run the test function
+		pkg, err := sut.PackageFromImageTarball("mock.tar")
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {
 			require.Nil(t, err)
-			require.NotNil(t, dir)
+			require.NotNil(t, pkg)
 		}
 	}
 }
@@ -124,13 +101,13 @@ func TestPullImagesToArchive(t *testing.T) {
 	}{
 		{ // success
 			prepare: func(mock *spdxfakes.FakeSpdxImplementation) {
-				mock.PullImagesToArchiveReturns(nil)
+				mock.PullImagesToArchiveReturns(nil, nil)
 			},
 			shouldError: false,
 		},
 		{ // success
 			prepare: func(mock *spdxfakes.FakeSpdxImplementation) {
-				mock.PullImagesToArchiveReturns(err)
+				mock.PullImagesToArchiveReturns(nil, err)
 			},
 			shouldError: true,
 		},
@@ -141,7 +118,7 @@ func TestPullImagesToArchive(t *testing.T) {
 		tc.prepare(mock)
 		sut.SetImplementation(mock)
 
-		err := sut.PullImagesToArchive("mock-image:latest", "/tmp")
+		_, err := sut.PullImagesToArchive("mock-image:latest", "/tmp")
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {

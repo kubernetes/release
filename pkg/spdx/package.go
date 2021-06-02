@@ -27,6 +27,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/release-utils/hash"
 	"sigs.k8s.io/release-utils/util"
 )
@@ -165,6 +166,7 @@ func (p *Package) AddFile(file *File) error {
 // BuildID sets the package ID, optionally from a series of strings
 func (p *Package) BuildID(seeds ...string) {
 	p.ID = "SPDXRef-Package" + "-" + buildIDString(seeds...)
+	logrus.Infof("set %s as package id", p.ID)
 }
 
 // preProcessSubPackage performs a basic check on a package
@@ -174,15 +176,15 @@ func (p *Package) preProcessSubPackage(pkg *Package) error {
 	if pkg.ID == "" {
 		p.BuildID(pkg.Name)
 	}
-	if pkg.ID == "" {
+	if pkg.Name == "" {
 		return errors.New("package name is needed to add a new package")
 	}
 	if _, ok := p.Packages[pkg.ID]; ok {
-		return errors.New("a package named " + pkg.ID + " already exists as a subpackage")
+		return errors.New("a package named '" + pkg.ID + "' already exists as a subpackage")
 	}
 
 	if _, ok := p.Dependencies[pkg.ID]; ok {
-		return errors.New("a package named " + pkg.ID + " already exists as a dependency")
+		return errors.New("a package named '" + pkg.ID + "' already exists as a dependency")
 	}
 
 	return nil
