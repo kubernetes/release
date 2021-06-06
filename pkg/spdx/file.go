@@ -156,6 +156,5 @@ func (f *File) ReadSourceFile(path string) error {
 		path, f.Options().WorkDir+string(filepath.Separator),
 	)
 	f.ID = "SPDXRef-File-" + f.Checksum["SHA256"][0:15]
-	logrus.Infof("Added file %s as %s", f.Name, f.ID)
 	return nil
 }
