@@ -52,6 +52,16 @@ type FakeStageClient struct {
 	checkReleaseBranchStateReturnsOnCall map[int]struct {
 		result1 error
 	}
+	GenerateBillOfMaterialsStub        func() error
+	generateBillOfMaterialsMutex       sync.RWMutex
+	generateBillOfMaterialsArgsForCall []struct {
+	}
+	generateBillOfMaterialsReturns struct {
+		result1 error
+	}
+	generateBillOfMaterialsReturnsOnCall map[int]struct {
+		result1 error
+	}
 	GenerateChangelogStub        func() error
 	generateChangelogMutex       sync.RWMutex
 	generateChangelogArgsForCall []struct {
@@ -296,6 +306,59 @@ func (fake *FakeStageClient) CheckReleaseBranchStateReturnsOnCall(i int, result1
 		})
 	}
 	fake.checkReleaseBranchStateReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageClient) GenerateBillOfMaterials() error {
+	fake.generateBillOfMaterialsMutex.Lock()
+	ret, specificReturn := fake.generateBillOfMaterialsReturnsOnCall[len(fake.generateBillOfMaterialsArgsForCall)]
+	fake.generateBillOfMaterialsArgsForCall = append(fake.generateBillOfMaterialsArgsForCall, struct {
+	}{})
+	stub := fake.GenerateBillOfMaterialsStub
+	fakeReturns := fake.generateBillOfMaterialsReturns
+	fake.recordInvocation("GenerateBillOfMaterials", []interface{}{})
+	fake.generateBillOfMaterialsMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageClient) GenerateBillOfMaterialsCallCount() int {
+	fake.generateBillOfMaterialsMutex.RLock()
+	defer fake.generateBillOfMaterialsMutex.RUnlock()
+	return len(fake.generateBillOfMaterialsArgsForCall)
+}
+
+func (fake *FakeStageClient) GenerateBillOfMaterialsCalls(stub func() error) {
+	fake.generateBillOfMaterialsMutex.Lock()
+	defer fake.generateBillOfMaterialsMutex.Unlock()
+	fake.GenerateBillOfMaterialsStub = stub
+}
+
+func (fake *FakeStageClient) GenerateBillOfMaterialsReturns(result1 error) {
+	fake.generateBillOfMaterialsMutex.Lock()
+	defer fake.generateBillOfMaterialsMutex.Unlock()
+	fake.GenerateBillOfMaterialsStub = nil
+	fake.generateBillOfMaterialsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageClient) GenerateBillOfMaterialsReturnsOnCall(i int, result1 error) {
+	fake.generateBillOfMaterialsMutex.Lock()
+	defer fake.generateBillOfMaterialsMutex.Unlock()
+	fake.GenerateBillOfMaterialsStub = nil
+	if fake.generateBillOfMaterialsReturnsOnCall == nil {
+		fake.generateBillOfMaterialsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.generateBillOfMaterialsReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -765,6 +828,8 @@ func (fake *FakeStageClient) Invocations() map[string][][]interface{} {
 	defer fake.checkPrerequisitesMutex.RUnlock()
 	fake.checkReleaseBranchStateMutex.RLock()
 	defer fake.checkReleaseBranchStateMutex.RUnlock()
+	fake.generateBillOfMaterialsMutex.RLock()
+	defer fake.generateBillOfMaterialsMutex.RUnlock()
 	fake.generateChangelogMutex.RLock()
 	defer fake.generateChangelogMutex.RUnlock()
 	fake.generateReleaseVersionMutex.RLock()
