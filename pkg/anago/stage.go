@@ -31,6 +31,7 @@ import (
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
+	"k8s.io/release/pkg/spdx"
 	"sigs.k8s.io/release-utils/log"
 	"sigs.k8s.io/release-utils/util"
 )
@@ -153,6 +154,7 @@ type stageImpl interface {
 		options *build.Options, srcPath, gcsPath string,
 	) error
 	PushContainerImages(options *build.Options) error
+	GenerateVersionArtifactsBOM(options *spdx.DocGenerateOptions) error
 	ListArtifacts(version string) (map[string][]string, error)
 }
 
@@ -622,6 +624,39 @@ func (d *DefaultStage) GenerateChangelog() error {
 			release.ReleaseTarsPath,
 		),
 	})
+}
+
+func (d *defaultStageImpl) GenerateVersionArtifactsBOM(options *spdx.DocGenerateOptions) error {
+	logrus.Info("Generating release artifacts SBOM")
+	_, err := spdx.NewDocBuilder().Generate(options)
+	return errors.Wrap(err, "generating bill of materials")
+}
+
+func (d *DefaultStage) GenerateBillOfMaterials() error {
+	// We generate an artifacts sbom for each of the versions
+	// we are building
+	for _, version := range d.state.versions.Ordered() {
+		artifactsList, err := d.impl.ListArtifacts(version)
+		if err != nil {
+			return errors.Wrap(err, "getting artifacts list")
+		}
+		if err := d.impl.GenerateVersionArtifactsBOM(&spdx.DocGenerateOptions{
+			AnalyseLayers:  false,
+			OnlyDirectDeps: false,
+			// License:          "Apache-2.0", // Needs https://github.com/kubernetes/release/pull/2096
+			Namespace:    fmt.Sprintf("https://k8s.io/sbom/release/%s", version),
+			ScanLicenses: false,
+			Tarballs:     artifactsList["images"],
+			Files:        artifactsList["binaries"],
+			OutputFile: filepath.Join(
+				os.TempDir(), fmt.Sprintf("release-bom-%s.spdx", version),
+			),
+		}); err != nil {
+			return errors.Wrapf(err, "generating SBOM for version %s", version)
+		}
+	}
+
+	return nil
 }
 
 func (d *DefaultStage) StageArtifacts() error {
