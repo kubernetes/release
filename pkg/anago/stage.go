@@ -81,6 +81,10 @@ type stageClient interface {
 	// into the local repository.
 	GenerateChangelog() error
 
+	// GenerateBillOfMaterials generates the SBOM documents for the Kubernetes
+	// source code and the release artifacts.
+	GenerateBillOfMaterials() error
+
 	// StageArtifacts copies the build artifacts to a Google Cloud Bucket.
 	StageArtifacts() error
 }
