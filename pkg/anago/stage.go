@@ -155,6 +155,8 @@ type stageImpl interface {
 	) error
 	PushContainerImages(options *build.Options) error
 	GenerateVersionArtifactsBOM(options *spdx.DocGenerateOptions) error
+	GenerateSourceTreeBOM(options *spdx.DocGenerateOptions) (*spdx.Document, error)
+	WriteSourceBOM(spdxDoc *spdx.Document, version string) error
 	ListArtifacts(version string) (map[string][]string, error)
 }
 
@@ -632,7 +634,43 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(options *spdx.DocGenerate
 	return errors.Wrap(err, "generating bill of materials")
 }
 
+func (d *defaultStageImpl) GenerateSourceTreeBOM(
+	options *spdx.DocGenerateOptions,
+) (*spdx.Document, error) {
+	logrus.Info("Generating Kubernetes source SBOM file")
+	doc, err := spdx.NewDocBuilder().Generate(options)
+	return doc, errors.Wrap(err, "Generating kubernetes source code SBOM")
+}
+
+// WriteSourceBOM takes a source code SBOM and writes it into a file, updating
+// its Namespace to match the final destination
+func (d *defaultStageImpl) WriteSourceBOM(
+	spdxDoc *spdx.Document, version string,
+) error {
+	spdxDoc.Namespace = fmt.Sprintf("https://k8s.io/sbom/source/%s", version)
+	spdxDoc.Name = fmt.Sprintf("kubernetes-%s", version)
+	return errors.Wrap(
+		spdxDoc.Write(filepath.Join(os.TempDir(), fmt.Sprintf("source-bom-%s.spdx", version))),
+		"writing the source code SBOM",
+	)
+}
+
 func (d *DefaultStage) GenerateBillOfMaterials() error {
+	// For the Kubernetes source, we only generate the SBOM once as both
+	// versions are cut from the same point in the git history. The
+	// resulting SPDX document will be customized for each version
+	// in WriteSourceBOM() before writing the actual files.
+	spdxDOC, err := d.impl.GenerateSourceTreeBOM(&spdx.DocGenerateOptions{
+		ProcessGoModules: true,
+		OutputFile:       "/tmp/kubernetes-source.spdx",
+		Namespace:        "http://k8s.io/sbom/source/REPLACE",
+		ScanLicenses:     true,
+		Directories:      []string{gitRoot},
+	})
+	if err != nil {
+		return errors.Wrap(err, "generating the kubernetes source SBOM")
+	}
+
 	// We generate an artifacts sbom for each of the versions
 	// we are building
 	for _, version := range d.state.versions.Ordered() {
@@ -653,6 +691,11 @@ func (d *DefaultStage) GenerateBillOfMaterials() error {
 			),
 		}); err != nil {
 			return errors.Wrapf(err, "generating SBOM for version %s", version)
+		}
+
+		// Render the common source bom for this version
+		if err := d.impl.WriteSourceBOM(spdxDOC, version); err != nil {
+			return errors.Wrapf(err, "writing SBOM for version %s", version)
 		}
 	}
 
