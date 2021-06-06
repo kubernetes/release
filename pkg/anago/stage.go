@@ -32,6 +32,7 @@ import (
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-utils/log"
+	"sigs.k8s.io/release-utils/util"
 )
 
 // stageClient is a client for staging releases.
@@ -152,6 +153,7 @@ type stageImpl interface {
 		options *build.Options, srcPath, gcsPath string,
 	) error
 	PushContainerImages(options *build.Options) error
+	ListArtifacts(version string) (map[string][]string, error)
 }
 
 func (d *defaultStageImpl) Submit(options *gcb.Options) error {
@@ -267,6 +269,124 @@ func (d *DefaultStage) Submit(stream bool) error {
 	options.Branch = d.options.ReleaseBranch
 	options.ReleaseType = d.options.ReleaseType
 	return d.impl.Submit(options)
+}
+
+// ListArtifacts is a function lists the release artifacts, will be
+// replaced once the supported platforms code is ready
+func (d *defaultStageImpl) ListArtifacts(version string) (list map[string][]string, err error) {
+	list = map[string][]string{
+		"images":   {},
+		"binaries": {},
+	}
+	buildDir := filepath.Join(
+		gitRoot, fmt.Sprintf("%s-%s", release.BuildDir, version),
+	)
+
+	// Stage 1: add all image archives:
+	arches, err := os.ReadDir(filepath.Join(buildDir, release.ImagesPath))
+	if err != nil {
+		return nil, errors.Wrap(err, "opening images directory")
+	}
+	for _, arch := range arches {
+		if !arch.IsDir() {
+			continue
+		}
+		images, err := os.ReadDir(filepath.Join(buildDir, release.ImagesPath, arch.Name()))
+		if err != nil {
+			return nil, errors.Wrapf(err, "opening %s images directory", arch.Name())
+		}
+		for _, tarball := range images {
+			list["images"] = append(list["images"],
+				filepath.Join(buildDir, release.ImagesPath, arch.Name(), tarball.Name()),
+			)
+		}
+	}
+
+	// Stage 2: add the naked binaries:
+	rootPath := filepath.Join(buildDir, release.ReleaseStagePath)
+	platformsPath := filepath.Join(rootPath, "client")
+	if !util.Exists(platformsPath) {
+		logrus.Infof("Not adding binaries as %s was not found", platformsPath)
+		return list, nil
+	}
+	platformsAndArches, err := os.ReadDir(platformsPath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "retrieve platforms from %s", platformsPath)
+	}
+
+	for _, platformArch := range platformsAndArches {
+		if !platformArch.IsDir() {
+			logrus.Warnf(
+				"Skipping platform and arch %q because it's not a directory",
+				platformArch.Name(),
+			)
+			continue
+		}
+
+		split := strings.Split(platformArch.Name(), "-")
+		if len(split) != 2 {
+			return nil, errors.Errorf(
+				"expected `platform-arch` format for %s", platformArch.Name(),
+			)
+		}
+
+		platform := split[0]
+		arch := split[1]
+		logrus.Infof(
+			"Copying binaries for %s platform on %s arch", platform, arch,
+		)
+
+		src := filepath.Join(
+			rootPath, "client", platformArch.Name(), "kubernetes", "client", "bin",
+		)
+
+		// We assume here the "server package" is a superset of the "client
+		// package"
+		serverSrc := filepath.Join(rootPath, "server", platformArch.Name())
+		if util.Exists(serverSrc) {
+			logrus.Infof("Server source found in %s, copying them", serverSrc)
+			src = filepath.Join(serverSrc, "kubernetes", "server", "bin")
+		}
+
+		if err := filepath.Walk(src,
+			func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				if info.IsDir() {
+					return nil
+				}
+
+				list["binaries"] = append(list["binaries"], path)
+				return nil
+			},
+		); err != nil {
+			return nil, errors.Wrapf(err, "gathering binaries from %s", src)
+		}
+
+		// ADD node binaries
+		// Copy node binaries if they exist and this isn't a 'server' platform
+		nodeSrc := filepath.Join(rootPath, "node", platformArch.Name())
+		if !util.Exists(serverSrc) && util.Exists(nodeSrc) {
+			src = filepath.Join(nodeSrc, "kubernetes", "node", "bin")
+			if err := filepath.Walk(src,
+				func(path string, info os.FileInfo, err error) error {
+					if err != nil {
+						return err
+					}
+					if info.IsDir() {
+						return nil
+					}
+
+					list["binaries"] = append(list["binaries"], path)
+					return nil
+				},
+			); err != nil {
+				return nil, errors.Wrapf(err, "gathering node binaries from %s", src)
+			}
+		}
+	}
+	return list, nil
 }
 
 func (d *DefaultStage) InitLogFile() error {
