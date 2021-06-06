@@ -25,6 +25,7 @@ RELEASE_TOOLS=(
   krel
   kubepkg
   schedule-builder
+  bom
 )
 
 setup_env() {
