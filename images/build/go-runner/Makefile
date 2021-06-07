@@ -22,7 +22,7 @@ OS_CODENAME ?= buster
 REVISION ?= 0
 
 # Build args
-GO_VERSION ?= 1.16.4
+GO_VERSION ?= 1.16.5
 DISTROLESS_IMAGE ?= static-debian10
 
 # Configuration
