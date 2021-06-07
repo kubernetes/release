@@ -341,6 +341,18 @@ func (bi *Instance) StageLocalArtifacts() error {
 		)
 	}
 
+	// Write the bill of materials manifests
+	for filename, sbom := range map[string]string{
+		"kubernetes-source.spdx":  filepath.Join(os.TempDir(), fmt.Sprintf("source-bom-%s.spdx", bi.opts.Version)),
+		"kubernetes-release.spdx": filepath.Join(os.TempDir(), fmt.Sprintf("release-bom-%s.spdx", bi.opts.Version)),
+	} {
+		if err := util.CopyFileLocal(
+			sbom, filepath.Join(stageDir, filename), true,
+		); err != nil {
+			return errors.Wrapf(err, "copying SBOM manifests")
+		}
+	}
+
 	// Write the release checksums
 	logrus.Info("Writing checksums")
 	if err := release.WriteChecksums(stageDir); err != nil {

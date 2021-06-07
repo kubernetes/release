@@ -27,7 +27,9 @@ import (
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
+	"k8s.io/release/pkg/license"
 	"k8s.io/release/pkg/object"
+	"k8s.io/release/pkg/spdx"
 	"sigs.k8s.io/release-utils/tar"
 )
 
@@ -54,6 +56,22 @@ func PrepareWorkspaceStage(directory string) error {
 		Path:   filepath.Join(git.DefaultGithubOrg, git.DefaultGithubRepo),
 	}).String()); err != nil {
 		return errors.Wrap(err, "changing git remote of repository")
+	}
+
+	// Prewarm the SPDX licenses cache. As it is one of the main
+	// remote operations, we do it now to have the data and fail early
+	// is something goes wrong.
+	s := spdx.NewSPDX()
+	logrus.Infof("Caching SPDX license set to %s", s.Options().LicenseCacheDir)
+	doptions := license.DefaultDownloaderOpts
+	doptions.CacheDir = s.Options().LicenseCacheDir
+	downloader, err := license.NewDownloaderWithOptions(doptions)
+	if err != nil {
+		return errors.Wrap(err, "creating license downloader")
+	}
+	// Fetch the SPDX licenses
+	if _, err := downloader.GetLicenses(); err != nil {
+		return errors.Wrap(err, "retrieving SPDX licenses")
 	}
 
 	return nil

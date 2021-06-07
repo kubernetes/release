@@ -31,7 +31,9 @@ import (
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
+	"k8s.io/release/pkg/spdx"
 	"sigs.k8s.io/release-utils/log"
+	"sigs.k8s.io/release-utils/util"
 )
 
 // stageClient is a client for staging releases.
@@ -80,6 +82,10 @@ type stageClient interface {
 	// GenerateChangelog builds the CHANGELOG-x.y.md file and commits it
 	// into the local repository.
 	GenerateChangelog() error
+
+	// GenerateBillOfMaterials generates the SBOM documents for the Kubernetes
+	// source code and the release artifacts.
+	GenerateBillOfMaterials() error
 
 	// StageArtifacts copies the build artifacts to a Google Cloud Bucket.
 	StageArtifacts() error
@@ -148,6 +154,10 @@ type stageImpl interface {
 		options *build.Options, srcPath, gcsPath string,
 	) error
 	PushContainerImages(options *build.Options) error
+	GenerateVersionArtifactsBOM(options *spdx.DocGenerateOptions) error
+	GenerateSourceTreeBOM(options *spdx.DocGenerateOptions) (*spdx.Document, error)
+	WriteSourceBOM(spdxDoc *spdx.Document, version string) error
+	ListArtifacts(version string) (map[string][]string, error)
 }
 
 func (d *defaultStageImpl) Submit(options *gcb.Options) error {
@@ -263,6 +273,124 @@ func (d *DefaultStage) Submit(stream bool) error {
 	options.Branch = d.options.ReleaseBranch
 	options.ReleaseType = d.options.ReleaseType
 	return d.impl.Submit(options)
+}
+
+// ListArtifacts is a function lists the release artifacts, will be
+// replaced once the supported platforms code is ready
+func (d *defaultStageImpl) ListArtifacts(version string) (list map[string][]string, err error) {
+	list = map[string][]string{
+		"images":   {},
+		"binaries": {},
+	}
+	buildDir := filepath.Join(
+		gitRoot, fmt.Sprintf("%s-%s", release.BuildDir, version),
+	)
+
+	// Stage 1: add all image archives:
+	arches, err := os.ReadDir(filepath.Join(buildDir, release.ImagesPath))
+	if err != nil {
+		return nil, errors.Wrap(err, "opening images directory")
+	}
+	for _, arch := range arches {
+		if !arch.IsDir() {
+			continue
+		}
+		images, err := os.ReadDir(filepath.Join(buildDir, release.ImagesPath, arch.Name()))
+		if err != nil {
+			return nil, errors.Wrapf(err, "opening %s images directory", arch.Name())
+		}
+		for _, tarball := range images {
+			list["images"] = append(list["images"],
+				filepath.Join(buildDir, release.ImagesPath, arch.Name(), tarball.Name()),
+			)
+		}
+	}
+
+	// Stage 2: add the naked binaries:
+	rootPath := filepath.Join(buildDir, release.ReleaseStagePath)
+	platformsPath := filepath.Join(rootPath, "client")
+	if !util.Exists(platformsPath) {
+		logrus.Infof("Not adding binaries as %s was not found", platformsPath)
+		return list, nil
+	}
+	platformsAndArches, err := os.ReadDir(platformsPath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "retrieve platforms from %s", platformsPath)
+	}
+
+	for _, platformArch := range platformsAndArches {
+		if !platformArch.IsDir() {
+			logrus.Warnf(
+				"Skipping platform and arch %q because it's not a directory",
+				platformArch.Name(),
+			)
+			continue
+		}
+
+		split := strings.Split(platformArch.Name(), "-")
+		if len(split) != 2 {
+			return nil, errors.Errorf(
+				"expected `platform-arch` format for %s", platformArch.Name(),
+			)
+		}
+
+		platform := split[0]
+		arch := split[1]
+		logrus.Infof(
+			"Copying binaries for %s platform on %s arch", platform, arch,
+		)
+
+		src := filepath.Join(
+			rootPath, "client", platformArch.Name(), "kubernetes", "client", "bin",
+		)
+
+		// We assume here the "server package" is a superset of the "client
+		// package"
+		serverSrc := filepath.Join(rootPath, "server", platformArch.Name())
+		if util.Exists(serverSrc) {
+			logrus.Infof("Server source found in %s, copying them", serverSrc)
+			src = filepath.Join(serverSrc, "kubernetes", "server", "bin")
+		}
+
+		if err := filepath.Walk(src,
+			func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				if info.IsDir() {
+					return nil
+				}
+
+				list["binaries"] = append(list["binaries"], path)
+				return nil
+			},
+		); err != nil {
+			return nil, errors.Wrapf(err, "gathering binaries from %s", src)
+		}
+
+		// ADD node binaries
+		// Copy node binaries if they exist and this isn't a 'server' platform
+		nodeSrc := filepath.Join(rootPath, "node", platformArch.Name())
+		if !util.Exists(serverSrc) && util.Exists(nodeSrc) {
+			src = filepath.Join(nodeSrc, "kubernetes", "node", "bin")
+			if err := filepath.Walk(src,
+				func(path string, info os.FileInfo, err error) error {
+					if err != nil {
+						return err
+					}
+					if info.IsDir() {
+						return nil
+					}
+
+					list["binaries"] = append(list["binaries"], path)
+					return nil
+				},
+			); err != nil {
+				return nil, errors.Wrapf(err, "gathering node binaries from %s", src)
+			}
+		}
+	}
+	return list, nil
 }
 
 func (d *DefaultStage) InitLogFile() error {
@@ -498,6 +626,80 @@ func (d *DefaultStage) GenerateChangelog() error {
 			release.ReleaseTarsPath,
 		),
 	})
+}
+
+func (d *defaultStageImpl) GenerateVersionArtifactsBOM(options *spdx.DocGenerateOptions) error {
+	logrus.Info("Generating release artifacts SBOM")
+	_, err := spdx.NewDocBuilder().Generate(options)
+	return errors.Wrap(err, "generating bill of materials")
+}
+
+func (d *defaultStageImpl) GenerateSourceTreeBOM(
+	options *spdx.DocGenerateOptions,
+) (*spdx.Document, error) {
+	logrus.Info("Generating Kubernetes source SBOM file")
+	doc, err := spdx.NewDocBuilder().Generate(options)
+	return doc, errors.Wrap(err, "Generating kubernetes source code SBOM")
+}
+
+// WriteSourceBOM takes a source code SBOM and writes it into a file, updating
+// its Namespace to match the final destination
+func (d *defaultStageImpl) WriteSourceBOM(
+	spdxDoc *spdx.Document, version string,
+) error {
+	spdxDoc.Namespace = fmt.Sprintf("https://k8s.io/sbom/source/%s", version)
+	spdxDoc.Name = fmt.Sprintf("kubernetes-%s", version)
+	return errors.Wrap(
+		spdxDoc.Write(filepath.Join(os.TempDir(), fmt.Sprintf("source-bom-%s.spdx", version))),
+		"writing the source code SBOM",
+	)
+}
+
+func (d *DefaultStage) GenerateBillOfMaterials() error {
+	// For the Kubernetes source, we only generate the SBOM once as both
+	// versions are cut from the same point in the git history. The
+	// resulting SPDX document will be customized for each version
+	// in WriteSourceBOM() before writing the actual files.
+	spdxDOC, err := d.impl.GenerateSourceTreeBOM(&spdx.DocGenerateOptions{
+		ProcessGoModules: true,
+		OutputFile:       "/tmp/kubernetes-source.spdx",
+		Namespace:        "http://k8s.io/sbom/source/REPLACE",
+		ScanLicenses:     true,
+		Directories:      []string{gitRoot},
+	})
+	if err != nil {
+		return errors.Wrap(err, "generating the kubernetes source SBOM")
+	}
+
+	// We generate an artifacts sbom for each of the versions
+	// we are building
+	for _, version := range d.state.versions.Ordered() {
+		artifactsList, err := d.impl.ListArtifacts(version)
+		if err != nil {
+			return errors.Wrap(err, "getting artifacts list")
+		}
+		if err := d.impl.GenerateVersionArtifactsBOM(&spdx.DocGenerateOptions{
+			AnalyseLayers:  false,
+			OnlyDirectDeps: false,
+			// License:          "Apache-2.0", // Needs https://github.com/kubernetes/release/pull/2096
+			Namespace:    fmt.Sprintf("https://k8s.io/sbom/release/%s", version),
+			ScanLicenses: false,
+			Tarballs:     artifactsList["images"],
+			Files:        artifactsList["binaries"],
+			OutputFile: filepath.Join(
+				os.TempDir(), fmt.Sprintf("release-bom-%s.spdx", version),
+			),
+		}); err != nil {
+			return errors.Wrapf(err, "generating SBOM for version %s", version)
+		}
+
+		// Render the common source bom for this version
+		if err := d.impl.WriteSourceBOM(spdxDOC, version); err != nil {
+			return errors.Wrapf(err, "writing SBOM for version %s", version)
+		}
+	}
+
+	return nil
 }
 
 func (d *DefaultStage) StageArtifacts() error {

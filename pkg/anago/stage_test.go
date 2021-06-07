@@ -562,3 +562,63 @@ func TestSubmitStageImpl(t *testing.T) {
 		}
 	}
 }
+
+func TestGenerateBillOfMaterials(t *testing.T) {
+	blankArtifactsList := map[string][]string{
+		"images":   {},
+		"binaries": {},
+	}
+	for _, tc := range []struct {
+		prepare     func(*anagofakes.FakeStageImpl)
+		shouldError bool
+	}{
+		{ // success
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.ListArtifactsReturns(blankArtifactsList, nil)
+			},
+			shouldError: false,
+		},
+		{ // ListArtifactsReturns fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.ListArtifactsReturns(nil, err)
+			},
+			shouldError: true,
+		},
+		{ // GenerateVersionArtifactsBOM fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.ListArtifactsReturns(blankArtifactsList, nil)
+				mock.GenerateVersionArtifactsBOMReturns(err)
+			},
+			shouldError: true,
+		},
+		{ // GenerateSourceTreeBOM fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.ListArtifactsReturns(blankArtifactsList, nil)
+				mock.GenerateSourceTreeBOMReturns(nil, err)
+			},
+			shouldError: true,
+		},
+		{ // WriteSourceBOM fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.ListArtifactsReturns(blankArtifactsList, nil)
+				mock.WriteSourceBOMReturns(err)
+			},
+			shouldError: true,
+		},
+	} {
+		opts := anago.DefaultStageOptions()
+		sut := anago.NewDefaultStage(opts)
+		sut.SetState(
+			generateTestingStageState(&testStateParameters{versionsTag: &testVersionTag}),
+		)
+		mock := &anagofakes.FakeStageImpl{}
+		tc.prepare(mock)
+		sut.SetImpl(mock)
+		err := sut.GenerateBillOfMaterials()
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
+}
