@@ -347,7 +347,7 @@ func (bi *Instance) StageLocalArtifacts() error {
 		"kubernetes-release.spdx": filepath.Join(os.TempDir(), fmt.Sprintf("release-bom-%s.spdx", bi.opts.Version)),
 	} {
 		if err := util.CopyFileLocal(
-			sbom, filepath.Join(stageDir, filename), true,
+			sbom, filepath.Join(stageDir, filename), false,
 		); err != nil {
 			return errors.Wrapf(err, "copying SBOM manifests")
 		}
