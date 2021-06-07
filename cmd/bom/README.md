@@ -1,14 +1,15 @@
 # bom (Bill of Materials)
 ## A utility to generate SPDX compliant Bill of Materials manifests.
 
-bom is a tiny utility that leverages the code written for the Kubernetes
+`bom` is a tiny utility that leverages the code written for the Kubernetes
 Bill of Materials project. It enables software authors to generate an 
 SBOM for their projects in a simple, yet powerful way.
 
-[![asciicast](https://asciinema.org/a/418528.svg)](https://asciinema.org/a/418528)
+![terminal demo](../../docs/bom/cast.svg "Terminal demo")
+
 
 `bom` is a general-purpose tool that can generate SPDX packages from
-directories, docker images, single files, and other sources. The utility
+directories, container images, single files, and other sources. The utility
 has a built-in license classifier that recognizes the 400+ licenses in 
 the SPDX catalog.
 
@@ -46,14 +47,14 @@ describing different packages.
 
 ### Generate an SBOM from the Current Directory:
 
-To process a directory as a source for your SBOM, use the -d flag or simply pass
+To process a directory as a source for your SBOM, use the `-d` flag or simply pass
 the path as the first argument to `bom`:
 
 ```bash
 bom generate -n http://example.com/ .
 ```
 
-### Process a Docker Image
+### Process a Container Image
 
 This example pulls the kube-apiserver image, analyzes it, and describes in the
 SBOM. Each of its layers are then expressed as a subpackage in the resulting

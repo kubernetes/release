@@ -24,6 +24,7 @@ Individual tools can be installed via `go install k8s.io/release/cmd/$TOOL@lates
   - [`gh2gcs`](#gh2gcs)
   - [`vulndash`](#vulndash)
 - [End User](#end-user)
+  - [`bom`](#bom)
   - [`release-notes`](#release-notes)
   - [`gcbuilder`](#gcbuilder)
   - [`publish-release`](#publish-release)
@@ -108,6 +109,13 @@ Audience: [Release Managers][release-managers]
 Details: [Documentation](/docs/vuln-dashboard.md)
 
 ## End User
+
+### [`bom`](/cmd/bom)
+
+Generate SPDX-compliant Bills of Materials for a software
+project. Supports reading directories, images, files and more.
+
+Details: [Documentation](cmd/bom/README.md) | [SBOM HOWTO](docs/bom/create-a-bill-of-materials.md)
 
 ### [`release-notes`](/cmd/release-notes)
 
