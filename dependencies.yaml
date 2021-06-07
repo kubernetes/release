@@ -82,8 +82,6 @@ dependencies:
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
     - path: images/releng/ci/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
-    - path: images/releng/k8s-ci-builder/Makefile
-      match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
     - path: packages/deb/Dockerfile
       match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)
 
@@ -101,6 +99,8 @@ dependencies:
   - name: "golang: after kubernetes/kubernetes update"
     version: 1.16.4
     refPaths:
+    - path: images/releng/k8s-ci-builder/Makefile
+      match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
     - path: images/releng/k8s-ci-builder/Dockerfile
       match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+) AS builder
     - path: images/releng/k8s-ci-builder/variants.yaml
