@@ -19,7 +19,7 @@ IMAGE ?= $(REGISTRY)/debian-base
 BUILD_IMAGE ?= debian-build
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= buster-v1.7.1
+IMAGE_VERSION ?= buster-v1.7.2
 CONFIG ?= buster
 
 TAR_FILE ?= rootfs.tar
@@ -78,10 +78,6 @@ build: clean
 	docker buildx version
 	BUILDER=$(shell docker buildx create --use)
 
-	curl -sSL https://github.com/multiarch/qemu-user-static/releases/download/v$(QEMUVERSION)/x86_64_qemu-$(QEMUARCH)-static.tar.gz | tar -xz -C $(CONFIG)
-	# Ensure we don't get surprised by umask settings
-	chmod 0755 $(CONFIG)/qemu-$(QEMUARCH)-static
-
 	docker buildx build \
 		--pull \
 		--load \
@@ -101,7 +97,6 @@ build: clean
 		-t $(IMAGE)-$(ARCH):latest-$(CONFIG) \
 		$(CONFIG)
 	docker buildx rm $$BUILDER
-	rm $(CONFIG)/qemu-$(QEMUARCH)-static
 	rm $(CONFIG)/rootfs.tar
 
 push: build

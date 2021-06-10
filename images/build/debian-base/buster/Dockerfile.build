@@ -16,7 +16,6 @@ ARG BASEIMAGE
 FROM $BASEIMAGE
 
 ARG ARCH
-COPY qemu-$ARCH-static /usr/bin/
 
 ENV DEBIAN_FRONTEND=noninteractive
 
