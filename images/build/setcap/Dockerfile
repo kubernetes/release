@@ -16,6 +16,5 @@ ARG BASEIMAGE
 
 FROM ${BASEIMAGE}
 
-RUN ln -s /bin/rm /usr/sbin/rm \
-    && apt-get update \
+RUN apt-get update \
     && apt-get -y --no-install-recommends install libcap2-bin
