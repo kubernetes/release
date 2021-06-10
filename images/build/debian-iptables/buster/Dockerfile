@@ -14,12 +14,11 @@
 
 ARG BASEIMAGE
 
-FROM ${BASEIMAGE}
+FROM ${BASEIMAGE} as build
 
 # Install iptables and ebtables packages from buster-backports
 ARG IPTABLES_VERSION
-RUN ln -s /bin/rm /usr/sbin/rm \
-    && echo deb http://deb.debian.org/debian buster-backports main >> /etc/apt/sources.list \
+RUN echo deb http://deb.debian.org/debian buster-backports main >> /etc/apt/sources.list \
     && apt-get update \
     && apt-get -t buster-backports -y --no-install-recommends install \
         iptables=${IPTABLES_VERSION}* \
@@ -44,3 +43,6 @@ RUN update-alternatives \
 	--install /usr/sbin/ip6tables ip6tables /usr/sbin/iptables-wrapper 100 \
 	--slave /usr/sbin/ip6tables-restore ip6tables-restore /usr/sbin/iptables-wrapper \
 	--slave /usr/sbin/ip6tables-save ip6tables-save /usr/sbin/iptables-wrapper
+
+FROM scratch
+COPY --from=build / /
