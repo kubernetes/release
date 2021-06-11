@@ -2,9 +2,11 @@
 
 aliases:
   sig-release-leads:
+    - cpanato # SIG Technical Lead
     - hasheddan # SIG Technical Lead
     - jeremyrickard # SIG Technical Lead
     - justaugustus # SIG Chair
+    - puerco # SIG Technical Lead
     - saschagrunert # SIG Chair
   release-engineering-approvers:
     - cpanato # Release Manager
