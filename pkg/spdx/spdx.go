@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/nozzle/throttler"
@@ -95,6 +96,10 @@ type TarballOptions struct {
 // PackageFromDirectory indexes all files in a directory and builds a
 // SPDX package describing its contents
 func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error) {
+	dirPath, err = filepath.Abs(dirPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting absolute directory path")
+	}
 	fileList, err := spdx.impl.GetDirectoryTree(dirPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "building directory tree")
@@ -141,7 +146,6 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 	processDirectoryFile := func(path string, pkg *Package) {
 		defer t.Done(err)
 		f := NewFile()
-		f.Name = path
 		f.FileName = path
 		f.SourceFile = filepath.Join(dirPath, path)
 		lic, err = reader.LicenseFromFile(f.SourceFile)
@@ -160,6 +164,7 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 			err = errors.Wrap(err, "checksumming file")
 			return
 		}
+		f.Name = strings.TrimPrefix(path, dirPath+string(filepath.Separator))
 		if err = pkg.AddFile(f); err != nil {
 			err = errors.Wrapf(err, "adding %s as file to the spdx package", path)
 			return
