@@ -22,6 +22,7 @@ import (
 	"regexp"
 
 	"github.com/google/uuid"
+	"github.com/nozzle/throttler"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -108,7 +109,7 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 		return nil, errors.Wrap(err, "scanning directory for licenses")
 	}
 	if lic == nil {
-		logrus.Warnf("Licenseclassifier could not find a license for directory: %v", err)
+		logrus.Warnf("License classifier could not find a license for directory: %v", err)
 	} else {
 		licenseTag = lic.LicenseID
 	}
@@ -135,28 +136,44 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 	}
 	pkg.LicenseConcluded = licenseTag
 
-	// todo: parallellize
-	for _, path := range fileList {
+	t := throttler.New(5, len(fileList))
+
+	processDirectoryFile := func(path string, pkg *Package) {
+		defer t.Done(err)
 		f := NewFile()
 		f.Name = path
 		f.FileName = path
 		f.SourceFile = filepath.Join(dirPath, path)
-		lic, err := reader.LicenseFromFile(f.SourceFile)
+		lic, err = reader.LicenseFromFile(f.SourceFile)
 		if err != nil {
-			return nil, errors.Wrap(err, "scanning file for license")
+			err = errors.Wrap(err, "scanning file for license")
+			return
 		}
-		if lic != nil {
-			f.LicenseInfoInFile = lic.LicenseID
+		f.LicenseInfoInFile = NONE
+		if lic == nil {
+			f.LicenseConcluded = licenseTag
 		} else {
-			f.LicenseInfoInFile = NONE
+			f.LicenseInfoInFile = lic.LicenseID
 		}
-		f.LicenseConcluded = licenseTag
-		if err := f.ReadSourceFile(filepath.Join(dirPath, path)); err != nil {
-			return nil, errors.Wrap(err, "checksumming file")
+
+		if err = f.ReadSourceFile(filepath.Join(dirPath, path)); err != nil {
+			err = errors.Wrap(err, "checksumming file")
+			return
 		}
-		if err := pkg.AddFile(f); err != nil {
-			return nil, errors.Wrapf(err, "adding %s as file to the spdx package", path)
+		if err = pkg.AddFile(f); err != nil {
+			err = errors.Wrapf(err, "adding %s as file to the spdx package", path)
+			return
 		}
+	}
+
+	// Read the files in parallel
+	for _, path := range fileList {
+		go processDirectoryFile(path, pkg)
+		t.Throttle()
+	}
+
+	if err := t.Err(); err != nil {
+		return nil, err
 	}
 
 	if util.Exists(filepath.Join(dirPath, GoModFileName)) && spdx.Options().ProcessGoModules {
