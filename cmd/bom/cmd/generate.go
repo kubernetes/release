@@ -164,7 +164,7 @@ func init() {
 	)
 
 	generateCmd.PersistentFlags().BoolVar(
-		&genOpts.noGitignore,
+		&genOpts.noGoModules,
 		"no-gomod",
 		false,
 		"don't perform go.mod analysis, sbom will not include data about go packages",
