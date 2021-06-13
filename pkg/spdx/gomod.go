@@ -78,6 +78,7 @@ func (mod *GoModule) Options() *GoModuleOptions {
 
 // GoPackage basic pkg data we need
 type GoPackage struct {
+	TmpDir       bool
 	ImportPath   string
 	Revision     string
 	LocalDir     string
@@ -365,13 +366,14 @@ func (di *GoModDefaultImpl) DownloadPackage(pkg *GoPackage, opts *GoModuleOption
 
 	logrus.Infof("Go Package %s (rev %s) downloaded to %s", pkg.ImportPath, pkg.Revision, tmpDir)
 	pkg.LocalDir = tmpDir
+	pkg.TmpDir = true
 	return nil
 }
 
 // RemoveDownloads takes a list of packages and remove its downloads
 func (di *GoModDefaultImpl) RemoveDownloads(packageList []*GoPackage) error {
 	for _, pkg := range packageList {
-		if pkg.ImportPath != "" && util.Exists(pkg.LocalDir) {
+		if pkg.ImportPath != "" && util.Exists(pkg.LocalDir) && pkg.TmpDir {
 			if err := os.RemoveAll(pkg.LocalDir); err != nil {
 				return errors.Wrap(err, "removing package data")
 			}
