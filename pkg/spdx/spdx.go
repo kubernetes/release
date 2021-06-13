@@ -66,7 +66,8 @@ type Options struct {
 	ProcessGoModules bool     // If true, spdx will check if dirs are go modules and analize the packages
 	OnlyDirectDeps   bool     // Only include direct dependencies from go.mod
 	ScanLicenses     bool     // Scan licenses from everypossible place unless false
-	LicenseCacheDir  string   // Directory to cache SPDX license information
+	LicenseCacheDir  string   // Directory to cache SPDX license downloads
+	LicenseData      string   // Directory to store the SPDX licenses
 	IgnorePatterns   []string // Patterns to ignore when scanning file
 }
 
@@ -76,6 +77,7 @@ func (spdx *SPDX) Options() *Options {
 
 var defaultSPDXOptions = Options{
 	LicenseCacheDir:  filepath.Join(os.TempDir(), spdxLicenseDlCache),
+	LicenseData:      filepath.Join(os.TempDir(), spdxLicenseData),
 	AnalyzeLayers:    true,
 	ProcessGoModules: true,
 	IgnorePatterns:   []string{},

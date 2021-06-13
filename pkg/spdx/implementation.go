@@ -315,6 +315,7 @@ func (di *spdxDefaultImplementation) GetGoDependencies(
 func (di *spdxDefaultImplementation) LicenseReader(spdxOpts *Options) (*license.Reader, error) {
 	opts := license.DefaultReaderOptions
 	opts.CacheDir = spdxOpts.LicenseCacheDir
+	opts.LicenseDir = spdxOpts.LicenseData
 	// Create the new reader
 	reader, err := license.NewReaderWithOptions(opts)
 	if err != nil {
