@@ -161,7 +161,9 @@ func (r *Reader) LicenseFromFile(filePath string) (license *License, err error) 
 }
 
 // ReadLicenses returns an array of all licenses found in the specified path
-func (r *Reader) ReadLicenses(path string) (licenseList []ClassifyResult, unknownPaths []string, err error) {
+func (r *Reader) ReadLicenses(path string) (
+	licenseList []*ClassifyResult, unknownPaths []string, err error,
+) {
 	licenseFiles, err := r.impl.FindLicenseFiles(path)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "searching for license files")
@@ -177,6 +179,7 @@ func (r *Reader) ReadLicenses(path string) (licenseList []ClassifyResult, unknow
 // ClassifyResult abstracts the data resulting from a file classification
 type ClassifyResult struct {
 	File    string
+	Text    string
 	License *License
 }
 
@@ -186,7 +189,7 @@ type ClassifyResult struct {
 // initializes -> finds license files to scan -> classifies them to a SPDX license
 type ReaderImplementation interface {
 	Initialize(*ReaderOptions) error
-	ClassifyLicenseFiles([]string) ([]ClassifyResult, []string, error)
+	ClassifyLicenseFiles([]string) ([]*ClassifyResult, []string, error)
 	ClassifyFile(string) (string, []string, error)
 	LicenseFromFile(string) (*License, error)
 	LicenseFromLabel(string) *License

@@ -78,12 +78,13 @@ func (mod *GoModule) Options() *GoModuleOptions {
 
 // GoPackage basic pkg data we need
 type GoPackage struct {
-	TmpDir       bool
-	ImportPath   string
-	Revision     string
-	LocalDir     string
-	LocalInstall string
-	LicenseID    string
+	TmpDir        bool
+	ImportPath    string
+	Revision      string
+	LocalDir      string
+	LocalInstall  string
+	LicenseID     string
+	CopyrightText string
 }
 
 // SPDXPackage builds a spdx package from the go package data
@@ -97,6 +98,7 @@ func (pkg *GoPackage) ToSPDXPackage() (*Package, error) {
 	spdxPackage.DownloadLocation = repo.Repo
 	spdxPackage.LicenseConcluded = pkg.LicenseID
 	spdxPackage.Version = strings.TrimSuffix(pkg.Revision, "+incompatible")
+	spdxPackage.CopyrightText = pkg.CopyrightText
 	return spdxPackage, nil
 }
 
@@ -425,6 +427,7 @@ func (di *GoModDefaultImpl) ScanPackageLicense(
 			licenselist[0].License.LicenseID,
 		)
 		pkg.LicenseID = licenselist[0].License.LicenseID
+		pkg.CopyrightText = licenselist[0].Text
 	} else {
 		logrus.Infof("Could not find licensing information for package %s", pkg.ImportPath)
 	}

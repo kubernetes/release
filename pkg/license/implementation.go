@@ -61,7 +61,8 @@ func (d *ReaderDefaultImpl) ClassifyFile(path string) (licenseTag string, moreTa
 
 // ClassifyLicenseFiles takes a list of paths and tries to find return all licenses found in it
 func (d *ReaderDefaultImpl) ClassifyLicenseFiles(paths []string) (
-	licenseList []ClassifyResult, unrecognizedPaths []string, err error) {
+	licenseList []*ClassifyResult, unrecognizedPaths []string, err error) {
+	licenseList = []*ClassifyResult{}
 	// Run the files through the clasifier
 	for _, f := range paths {
 		label, _, err := d.ClassifyFile(f)
@@ -78,8 +79,12 @@ func (d *ReaderDefaultImpl) ClassifyLicenseFiles(paths []string) (
 			return nil, unrecognizedPaths,
 				errors.New(fmt.Sprintf("ID does not correspond to a valid license: '%s'", label))
 		}
+		licenseText, err := os.ReadFile(f)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "reading license text")
+		}
 		// Apend to the return results
-		licenseList = append(licenseList, ClassifyResult{f, license})
+		licenseList = append(licenseList, &ClassifyResult{f, string(licenseText), license})
 	}
 	if len(paths) > 0 {
 		logrus.Infof(
