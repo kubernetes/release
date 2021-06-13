@@ -234,6 +234,9 @@ func (mod *GoModule) BuildFullPackageList(g *modfile.File) (packageList []*GoPac
 			GoMod    string `json:"GoMod,omitempty"`   // Or cached here
 			Version  string `json:"Version,omitempty"` // PAckage version
 			Indirect bool   `json:"Indirect,omitempty"`
+			Replace  *struct {
+				Dir string `json:"Dir,omitempty"`
+			} `json:"Replace,omitempty"`
 		} `json:"Module,omitempty"`
 	}
 
@@ -260,14 +263,27 @@ func (mod *GoModule) BuildFullPackageList(g *modfile.File) (packageList []*GoPac
 				LocalDir:     "",
 				LocalInstall: "",
 			}
-			if util.Exists(fmod.Module.Dir) {
+			status := ""
+			if fmod.Module.Dir != "" && util.Exists(fmod.Module.Dir) {
 				dep.LocalInstall = fmod.Module.Dir
+				status = "(available locally)"
 			}
-			logrus.Infof(" > %s@%s", dep.ImportPath, dep.Revision)
+
+			// Check if we have a local replacement
+			if fmod.Module.Replace != nil &&
+				fmod.Module.Replace.Dir != "" &&
+				// If the local directory exists:
+				util.Exists(fmod.Module.Replace.Dir) {
+				logrus.Info("Package %s has local replacement in %s", dep.ImportPath, fmod.Module.Replace.Dir)
+				dep.LocalInstall = fmod.Module.Replace.Dir
+				status = "(has a local replacement)"
+			}
+
+			logrus.Infof(" > %s@%s %s", dep.ImportPath, dep.Revision, status)
 			packageList = append(packageList, dep)
 		}
 	}
-	logrus.Infof("Found %d modules from full dependency tree", len(packageList))
+	logrus.Infof("Found %d packages from full dependency tree", len(packageList))
 	return packageList, nil
 }
 
@@ -287,8 +303,7 @@ func (di *GoModDefaultImpl) OpenModule(opts *GoModuleOptions) (*modfile.File, er
 	}
 	logrus.Infof(
 		"Parsed go.mod file for %s, found %d direct dependencies",
-		gomod.Module.Mod.Path,
-		len(gomod.Require),
+		gomod.Module.Mod.Path, len(gomod.Require),
 	)
 	return gomod, nil
 }
@@ -308,15 +323,15 @@ func (di *GoModDefaultImpl) BuildPackageList(gomod *modfile.File) ([]*GoPackage,
 // DownloadPackage takes a pkg, downloads it from its src and sets
 //  the download dir in the LocalDir field
 func (di *GoModDefaultImpl) DownloadPackage(pkg *GoPackage, opts *GoModuleOptions, force bool) error {
+	if pkg.LocalDir != "" && util.Exists(pkg.LocalDir) && !force {
+		logrus.Infof("Not downloading %s as it already has local data", pkg.ImportPath)
+		return nil
+	}
+
 	logrus.Infof("Downloading package %s@%s", pkg.ImportPath, pkg.Revision)
 	repo, err := vcs.RepoRootForImportPath(pkg.ImportPath, true)
 	if err != nil {
 		return errors.Wrapf(err, "Fetching package %s from %s", pkg.ImportPath, repo.Repo)
-	}
-
-	if pkg.LocalDir != "" && util.Exists(pkg.LocalDir) && !force {
-		logrus.Infof("Not downloading %s as it already has local data", pkg.ImportPath)
-		return nil
 	}
 
 	if !util.Exists(filepath.Join(os.TempDir(), downloadDir)) {
