@@ -277,7 +277,10 @@ func (mod *GoModule) BuildFullPackageList(g *modfile.File) (packageList []*GoPac
 				fmod.Module.Replace.Dir != "" &&
 				// If the local directory exists:
 				util.Exists(fmod.Module.Replace.Dir) {
-				logrus.Info("Package %s has local replacement in %s", dep.ImportPath, fmod.Module.Replace.Dir)
+				logrus.Infof(
+					"Package %s has local replacement in %s",
+					dep.ImportPath, fmod.Module.Replace.Dir,
+				)
 				dep.LocalInstall = fmod.Module.Replace.Dir
 				status = "(has a local replacement)"
 			}
@@ -412,22 +415,18 @@ func (di *GoModDefaultImpl) ScanPackageLicense(
 	if dir == "" && pkg.LocalInstall != "" {
 		dir = pkg.LocalInstall
 	}
-	licenselist, _, err := reader.ReadLicenses(dir)
+	licenseResult, err := reader.ReadTopLicense(dir)
 	if err != nil {
 		return errors.Wrapf(err, "scanning package %s for licensing information", pkg.ImportPath)
 	}
 
-	if len(licenselist) > 1 {
-		logrus.Warnf("Package %s has %d licenses, picking the first", pkg.ImportPath, len(licenselist))
-	}
-
-	if len(licenselist) != 0 {
+	if licenseResult != nil {
 		logrus.Infof(
 			"Package %s license is %s", pkg.ImportPath,
-			licenselist[0].License.LicenseID,
+			licenseResult.License.LicenseID,
 		)
-		pkg.LicenseID = licenselist[0].License.LicenseID
-		pkg.CopyrightText = licenselist[0].Text
+		pkg.LicenseID = licenseResult.License.LicenseID
+		pkg.CopyrightText = licenseResult.Text
 	} else {
 		logrus.Infof("Could not find licensing information for package %s", pkg.ImportPath)
 	}

@@ -132,6 +132,7 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 
 	// Apply the ignore patterns to the list of files
 	fileList = spdx.impl.ApplyIgnorePatterns(fileList, patterns)
+	logrus.Infof("Scanning %d files and adding them to the SPDX package", len(fileList))
 
 	pkg = NewPackage()
 	pkg.FilesAnalyzed = true
@@ -189,6 +190,7 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 		if err != nil {
 			return nil, errors.Wrap(err, "scanning go packages")
 		}
+		logrus.Infof("Go module built list of %d dependencies", len(deps))
 		for _, dep := range deps {
 			if err := pkg.AddDependency(dep); err != nil {
 				return nil, errors.Wrap(err, "adding go dependency")

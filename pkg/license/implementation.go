@@ -86,9 +86,9 @@ func (d *ReaderDefaultImpl) ClassifyLicenseFiles(paths []string) (
 		// Apend to the return results
 		licenseList = append(licenseList, &ClassifyResult{f, string(licenseText), license})
 	}
-	if len(paths) > 0 {
+	if len(paths) != len(licenseList) {
 		logrus.Infof(
-			"License classifier recognized %d/%d (%d%%) os the files",
+			"License classifier recognized %d/%d (%d%%) of the license files",
 			len(licenseList), len(paths), (len(licenseList)/len(paths))*100,
 		)
 	}

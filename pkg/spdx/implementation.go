@@ -257,6 +257,10 @@ func (di *spdxDefaultImplementation) IgnorePatterns(
 func (di *spdxDefaultImplementation) ApplyIgnorePatterns(
 	fileList []string, patterns []gitignore.Pattern,
 ) (filteredList []string) {
+	logrus.Infof(
+		"Applying %d ignore patterns to list of %d filenames",
+		len(patterns), len(fileList),
+	)
 	// We will return a new file list
 	filteredList = []string{}
 
@@ -293,10 +297,9 @@ func (di *spdxDefaultImplementation) GetGoDependencies(
 	}
 
 	defer func() { err = mod.RemoveDownloads() }()
-
 	if opts.ScanLicenses {
-		if err := mod.ScanLicenses(); err != nil {
-			return nil, errors.Wrap(err, "scanning go module licenses")
+		if errScan := mod.ScanLicenses(); err != nil {
+			return nil, errScan
 		}
 	}
 
@@ -329,19 +332,9 @@ func (di *spdxDefaultImplementation) LicenseReader(spdxOpts *Options) (*license.
 func (di *spdxDefaultImplementation) GetDirectoryLicense(
 	reader *license.Reader, path string, spdxOpts *Options,
 ) (*license.License, error) {
-	// Perhaps here we should take into account thre results
-	licenselist, _, err := reader.ReadLicenses(path)
+	licenseResult, err := reader.ReadTopLicense(path)
 	if err != nil {
-		return nil, errors.Wrap(err, "scanning directory for licensing information")
+		return nil, errors.Wrap(err, "getting directory license")
 	}
-	if len(licenselist) == 0 {
-		logrus.Warn("No license info could be determined, SPDX SBOM will not be valid")
-		return nil, nil
-	}
-	logrus.Infof("Determined license %s for directory %s", licenselist[0].License.LicenseID, path)
-
-	if len(licenselist) > 1 {
-		logrus.Warnf("Found %d licenses in directory, picking the first", len(licenselist))
-	}
-	return licenselist[0].License, nil
+	return licenseResult.License, nil
 }

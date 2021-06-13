@@ -28,6 +28,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"sigs.k8s.io/release-utils/util"
 )
 
 const (
@@ -158,6 +159,75 @@ func (r *Reader) LicenseFromFile(filePath string) (license *License, err error) 
 		return nil, errors.Wrap(err, "classifying file to determine license")
 	}
 	return license, err
+}
+
+// ReadTopLicense returns the topmost license file in a directory
+func (r *Reader) ReadTopLicense(path string) (*ClassifyResult, error) {
+	licenseFilePath := ""
+	// First, if we have a topmost license, we use that one
+	commonNames := []string{"LICENSE", "LICENSE.txt", "COPYING", "COPYRIGHT"}
+	for _, f := range commonNames {
+		if util.Exists(filepath.Join(path, f)) {
+			licenseFilePath = filepath.Join(path, f)
+			break
+		}
+	}
+
+	if licenseFilePath != "" {
+		result, _, err := r.impl.ClassifyLicenseFiles([]string{licenseFilePath})
+		if err != nil {
+			return nil, errors.Wrap(err, "scanning topmost license file")
+		}
+		if len(result) != 0 {
+			logrus.Infof("Concluded license %s from %s", result[0].License.LicenseID, licenseFilePath)
+			return result[0], nil
+		}
+	}
+
+	// If the standard file did not work, then we try to
+	// find the license file at the highest dir in the FS tree
+	var res *ClassifyResult
+	bestPartsN := 0
+	licenseFiles, err := r.impl.FindLicenseFiles(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "finding license files in path")
+	}
+	for _, fileName := range licenseFiles {
+		try := false
+		dir := filepath.Dir(fileName)
+		parts := strings.Split(dir, string(filepath.Separator))
+		// If this file is higher in the fstree, we use it
+		if bestPartsN == 0 || len(parts) < bestPartsN {
+			try = true
+		}
+		// If this file in the same level but the path is shorter, we try it
+		if len(parts) == bestPartsN && len(fileName) < len(licenseFilePath) {
+			try = true
+		}
+
+		// If this file is not a better candidate, skip to the next one
+		if !try {
+			continue
+		}
+
+		result, _, err := r.impl.ClassifyLicenseFiles([]string{fileName})
+		if err != nil {
+			return nil, errors.Wrap(err, "scanning topmost license file")
+		}
+
+		// If the file is a license, use it
+		if len(result) > 0 {
+			bestPartsN = len(parts)
+			licenseFilePath = fileName
+			res = result[0]
+		}
+	}
+	if res == nil {
+		logrus.Warnf("Could not find any licensing information in %s", path)
+	} else {
+		logrus.Infof("Concluded license %s from %s", res.License.LicenseID, licenseFilePath)
+	}
+	return res, nil
 }
 
 // ReadLicenses returns an array of all licenses found in the specified path
