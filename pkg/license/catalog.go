@@ -17,11 +17,13 @@ limitations under the License.
 package license
 
 import (
+	"os"
 	"path/filepath"
 	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"sigs.k8s.io/release-utils/util"
 )
 
 // CatalogOptions are the spdx settings
@@ -79,6 +81,11 @@ func (catalog *Catalog) WriteLicensesAsText(targetDir string) error {
 	logrus.Infof("Writing %d SPDX licenses to %s", len(catalog.List.Licenses), targetDir)
 	if catalog.List.Licenses == nil {
 		return errors.New("unable to write licenses, they have not been loaded yet")
+	}
+	if !util.Exists(targetDir) {
+		if err := os.MkdirAll(targetDir, os.FileMode(0o755)); err != nil {
+			return errors.Wrap(err, "creating license data dir")
+		}
 	}
 	wg := sync.WaitGroup{}
 	var err error

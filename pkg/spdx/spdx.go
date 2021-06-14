@@ -20,8 +20,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/google/uuid"
+	"github.com/nozzle/throttler"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -64,7 +66,8 @@ type Options struct {
 	ProcessGoModules bool     // If true, spdx will check if dirs are go modules and analize the packages
 	OnlyDirectDeps   bool     // Only include direct dependencies from go.mod
 	ScanLicenses     bool     // Scan licenses from everypossible place unless false
-	LicenseCacheDir  string   // Directory to cache SPDX license information
+	LicenseCacheDir  string   // Directory to cache SPDX license downloads
+	LicenseData      string   // Directory to store the SPDX licenses
 	IgnorePatterns   []string // Patterns to ignore when scanning file
 }
 
@@ -74,6 +77,7 @@ func (spdx *SPDX) Options() *Options {
 
 var defaultSPDXOptions = Options{
 	LicenseCacheDir:  filepath.Join(os.TempDir(), spdxLicenseDlCache),
+	LicenseData:      filepath.Join(os.TempDir(), spdxLicenseData),
 	AnalyzeLayers:    true,
 	ProcessGoModules: true,
 	IgnorePatterns:   []string{},
@@ -94,6 +98,10 @@ type TarballOptions struct {
 // PackageFromDirectory indexes all files in a directory and builds a
 // SPDX package describing its contents
 func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error) {
+	dirPath, err = filepath.Abs(dirPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting absolute directory path")
+	}
 	fileList, err := spdx.impl.GetDirectoryTree(dirPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "building directory tree")
@@ -108,7 +116,7 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 		return nil, errors.Wrap(err, "scanning directory for licenses")
 	}
 	if lic == nil {
-		logrus.Warnf("Licenseclassifier could not find a license for directory: %v", err)
+		logrus.Warnf("License classifier could not find a license for directory: %v", err)
 	} else {
 		licenseTag = lic.LicenseID
 	}
@@ -124,6 +132,7 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 
 	// Apply the ignore patterns to the list of files
 	fileList = spdx.impl.ApplyIgnorePatterns(fileList, patterns)
+	logrus.Infof("Scanning %d files and adding them to the SPDX package", len(fileList))
 
 	pkg = NewPackage()
 	pkg.FilesAnalyzed = true
@@ -135,28 +144,44 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 	}
 	pkg.LicenseConcluded = licenseTag
 
-	// todo: parallellize
-	for _, path := range fileList {
+	t := throttler.New(5, len(fileList))
+
+	processDirectoryFile := func(path string, pkg *Package) {
+		defer t.Done(err)
 		f := NewFile()
-		f.Name = path
 		f.FileName = path
 		f.SourceFile = filepath.Join(dirPath, path)
-		lic, err := reader.LicenseFromFile(f.SourceFile)
+		lic, err = reader.LicenseFromFile(f.SourceFile)
 		if err != nil {
-			return nil, errors.Wrap(err, "scanning file for license")
+			err = errors.Wrap(err, "scanning file for license")
+			return
 		}
-		if lic != nil {
-			f.LicenseInfoInFile = lic.LicenseID
+		f.LicenseInfoInFile = NONE
+		if lic == nil {
+			f.LicenseConcluded = licenseTag
 		} else {
-			f.LicenseInfoInFile = NONE
+			f.LicenseInfoInFile = lic.LicenseID
 		}
-		f.LicenseConcluded = licenseTag
-		if err := f.ReadSourceFile(filepath.Join(dirPath, path)); err != nil {
-			return nil, errors.Wrap(err, "checksumming file")
+
+		if err = f.ReadSourceFile(filepath.Join(dirPath, path)); err != nil {
+			err = errors.Wrap(err, "checksumming file")
+			return
 		}
-		if err := pkg.AddFile(f); err != nil {
-			return nil, errors.Wrapf(err, "adding %s as file to the spdx package", path)
+		f.Name = strings.TrimPrefix(path, dirPath+string(filepath.Separator))
+		if err = pkg.AddFile(f); err != nil {
+			err = errors.Wrapf(err, "adding %s as file to the spdx package", path)
+			return
 		}
+	}
+
+	// Read the files in parallel
+	for _, path := range fileList {
+		go processDirectoryFile(path, pkg)
+		t.Throttle()
+	}
+
+	if err := t.Err(); err != nil {
+		return nil, err
 	}
 
 	if util.Exists(filepath.Join(dirPath, GoModFileName)) && spdx.Options().ProcessGoModules {
@@ -165,6 +190,7 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 		if err != nil {
 			return nil, errors.Wrap(err, "scanning go packages")
 		}
+		logrus.Infof("Go module built list of %d dependencies", len(deps))
 		for _, dep := range deps {
 			if err := pkg.AddDependency(dep); err != nil {
 				return nil, errors.Wrap(err, "adding go dependency")

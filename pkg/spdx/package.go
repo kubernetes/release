@@ -25,6 +25,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/release-utils/hash"
@@ -63,6 +64,7 @@ PackageCopyrightText: {{ if .CopyrightText }}<text>{{ .CopyrightText }}
 
 // Package groups a set of files
 type Package struct {
+	sync.RWMutex
 	FilesAnalyzed        bool     // true
 	Name                 string   // hello-go-src
 	ID                   string   // SPDXRef-Package-hello-go-src
@@ -137,6 +139,8 @@ func (p *Package) ReadSourceFile(path string) error {
 
 // AddFile adds a file contained in the package
 func (p *Package) AddFile(file *File) error {
+	p.Lock()
+	defer p.Unlock()
 	if p.Files == nil {
 		p.Files = map[string]*File{}
 	}

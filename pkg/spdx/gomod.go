@@ -78,11 +78,13 @@ func (mod *GoModule) Options() *GoModuleOptions {
 
 // GoPackage basic pkg data we need
 type GoPackage struct {
-	ImportPath   string
-	Revision     string
-	LocalDir     string
-	LocalInstall string
-	LicenseID    string
+	TmpDir        bool
+	ImportPath    string
+	Revision      string
+	LocalDir      string
+	LocalInstall  string
+	LicenseID     string
+	CopyrightText string
 }
 
 // SPDXPackage builds a spdx package from the go package data
@@ -96,6 +98,7 @@ func (pkg *GoPackage) ToSPDXPackage() (*Package, error) {
 	spdxPackage.DownloadLocation = repo.Repo
 	spdxPackage.LicenseConcluded = pkg.LicenseID
 	spdxPackage.Version = strings.TrimSuffix(pkg.Revision, "+incompatible")
+	spdxPackage.CopyrightText = pkg.CopyrightText
 	return spdxPackage, nil
 }
 
@@ -234,6 +237,9 @@ func (mod *GoModule) BuildFullPackageList(g *modfile.File) (packageList []*GoPac
 			GoMod    string `json:"GoMod,omitempty"`   // Or cached here
 			Version  string `json:"Version,omitempty"` // PAckage version
 			Indirect bool   `json:"Indirect,omitempty"`
+			Replace  *struct {
+				Dir string `json:"Dir,omitempty"`
+			} `json:"Replace,omitempty"`
 		} `json:"Module,omitempty"`
 	}
 
@@ -260,14 +266,30 @@ func (mod *GoModule) BuildFullPackageList(g *modfile.File) (packageList []*GoPac
 				LocalDir:     "",
 				LocalInstall: "",
 			}
-			if util.Exists(fmod.Module.Dir) {
+			status := ""
+			if fmod.Module.Dir != "" && util.Exists(fmod.Module.Dir) {
 				dep.LocalInstall = fmod.Module.Dir
+				status = "(available locally)"
 			}
-			logrus.Infof(" > %s@%s", dep.ImportPath, dep.Revision)
+
+			// Check if we have a local replacement
+			if fmod.Module.Replace != nil &&
+				fmod.Module.Replace.Dir != "" &&
+				// If the local directory exists:
+				util.Exists(fmod.Module.Replace.Dir) {
+				logrus.Infof(
+					"Package %s has local replacement in %s",
+					dep.ImportPath, fmod.Module.Replace.Dir,
+				)
+				dep.LocalInstall = fmod.Module.Replace.Dir
+				status = "(has a local replacement)"
+			}
+
+			logrus.Infof(" > %s@%s %s", dep.ImportPath, dep.Revision, status)
 			packageList = append(packageList, dep)
 		}
 	}
-	logrus.Infof("Found %d modules from full dependency tree", len(packageList))
+	logrus.Infof("Found %d packages from full dependency tree", len(packageList))
 	return packageList, nil
 }
 
@@ -287,8 +309,7 @@ func (di *GoModDefaultImpl) OpenModule(opts *GoModuleOptions) (*modfile.File, er
 	}
 	logrus.Infof(
 		"Parsed go.mod file for %s, found %d direct dependencies",
-		gomod.Module.Mod.Path,
-		len(gomod.Require),
+		gomod.Module.Mod.Path, len(gomod.Require),
 	)
 	return gomod, nil
 }
@@ -308,15 +329,15 @@ func (di *GoModDefaultImpl) BuildPackageList(gomod *modfile.File) ([]*GoPackage,
 // DownloadPackage takes a pkg, downloads it from its src and sets
 //  the download dir in the LocalDir field
 func (di *GoModDefaultImpl) DownloadPackage(pkg *GoPackage, opts *GoModuleOptions, force bool) error {
+	if pkg.LocalDir != "" && util.Exists(pkg.LocalDir) && !force {
+		logrus.Infof("Not downloading %s as it already has local data", pkg.ImportPath)
+		return nil
+	}
+
 	logrus.Infof("Downloading package %s@%s", pkg.ImportPath, pkg.Revision)
 	repo, err := vcs.RepoRootForImportPath(pkg.ImportPath, true)
 	if err != nil {
 		return errors.Wrapf(err, "Fetching package %s from %s", pkg.ImportPath, repo.Repo)
-	}
-
-	if pkg.LocalDir != "" && util.Exists(pkg.LocalDir) && !force {
-		logrus.Infof("Not downloading %s as it already has local data", pkg.ImportPath)
-		return nil
 	}
 
 	if !util.Exists(filepath.Join(os.TempDir(), downloadDir)) {
@@ -350,13 +371,14 @@ func (di *GoModDefaultImpl) DownloadPackage(pkg *GoPackage, opts *GoModuleOption
 
 	logrus.Infof("Go Package %s (rev %s) downloaded to %s", pkg.ImportPath, pkg.Revision, tmpDir)
 	pkg.LocalDir = tmpDir
+	pkg.TmpDir = true
 	return nil
 }
 
 // RemoveDownloads takes a list of packages and remove its downloads
 func (di *GoModDefaultImpl) RemoveDownloads(packageList []*GoPackage) error {
 	for _, pkg := range packageList {
-		if pkg.ImportPath != "" && util.Exists(pkg.LocalDir) {
+		if pkg.ImportPath != "" && util.Exists(pkg.LocalDir) && pkg.TmpDir {
 			if err := os.RemoveAll(pkg.LocalDir); err != nil {
 				return errors.Wrap(err, "removing package data")
 			}
@@ -393,21 +415,18 @@ func (di *GoModDefaultImpl) ScanPackageLicense(
 	if dir == "" && pkg.LocalInstall != "" {
 		dir = pkg.LocalInstall
 	}
-	licenselist, _, err := reader.ReadLicenses(dir)
+	licenseResult, err := reader.ReadTopLicense(dir)
 	if err != nil {
 		return errors.Wrapf(err, "scanning package %s for licensing information", pkg.ImportPath)
 	}
 
-	if len(licenselist) > 1 {
-		logrus.Warnf("Package %s has %d licenses, picking the first", pkg.ImportPath, len(licenselist))
-	}
-
-	if len(licenselist) != 0 {
+	if licenseResult != nil {
 		logrus.Infof(
 			"Package %s license is %s", pkg.ImportPath,
-			licenselist[0].License.LicenseID,
+			licenseResult.License.LicenseID,
 		)
-		pkg.LicenseID = licenselist[0].License.LicenseID
+		pkg.LicenseID = licenseResult.License.LicenseID
+		pkg.CopyrightText = licenseResult.Text
 	} else {
 		logrus.Infof("Could not find licensing information for package %s", pkg.ImportPath)
 	}

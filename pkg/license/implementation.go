@@ -61,7 +61,8 @@ func (d *ReaderDefaultImpl) ClassifyFile(path string) (licenseTag string, moreTa
 
 // ClassifyLicenseFiles takes a list of paths and tries to find return all licenses found in it
 func (d *ReaderDefaultImpl) ClassifyLicenseFiles(paths []string) (
-	licenseList []ClassifyResult, unrecognizedPaths []string, err error) {
+	licenseList []*ClassifyResult, unrecognizedPaths []string, err error) {
+	licenseList = []*ClassifyResult{}
 	// Run the files through the clasifier
 	for _, f := range paths {
 		label, _, err := d.ClassifyFile(f)
@@ -78,12 +79,16 @@ func (d *ReaderDefaultImpl) ClassifyLicenseFiles(paths []string) (
 			return nil, unrecognizedPaths,
 				errors.New(fmt.Sprintf("ID does not correspond to a valid license: '%s'", label))
 		}
+		licenseText, err := os.ReadFile(f)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "reading license text")
+		}
 		// Apend to the return results
-		licenseList = append(licenseList, ClassifyResult{f, license})
+		licenseList = append(licenseList, &ClassifyResult{f, string(licenseText), license})
 	}
-	if len(paths) > 0 {
+	if len(paths) != len(licenseList) {
 		logrus.Infof(
-			"License classifier recognized %d/%d (%d%%) os the files",
+			"License classifier recognized %d/%d (%d%%) of the license files",
 			len(licenseList), len(paths), (len(licenseList)/len(paths))*100,
 		)
 	}
@@ -172,13 +177,13 @@ func (d *ReaderDefaultImpl) Initialize(opts *ReaderOptions) error {
 	logrus.Infof("Writing license data to %s", opts.CachePath())
 
 	// Write the licenses to disk as th classifier will need them
-	if err := catalog.WriteLicensesAsText(opts.CachePath()); err != nil {
+	if err := catalog.WriteLicensesAsText(opts.LicensesPath()); err != nil {
 		return errors.Wrap(err, "writing license data to disk")
 	}
 
 	// Create the implementation's classifier
 	d.lc = licenseclassifier.NewClassifier(opts.ConfidenceThreshold)
-	return errors.Wrap(d.lc.LoadLicenses(opts.CachePath()), "loading licenses at init")
+	return errors.Wrap(d.lc.LoadLicenses(opts.LicensesPath()), "loading licenses at init")
 }
 
 // Classifier returns the license classifier
