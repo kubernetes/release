@@ -132,6 +132,7 @@ type releaseNotesOptions struct {
 	mapProviders       []string
 	githubOrg          string
 	draftRepo          string
+	interactiveMode    bool
 }
 
 type releaseNotesResult struct {
@@ -219,6 +220,13 @@ func init() {
 		"enable experimental implementation to list commits (ListReleaseNotesV2)",
 	)
 
+	releaseNotesCmd.PersistentFlags().BoolVar(
+		&releaseNotesOpts.interactiveMode,
+		"interactiveMode",
+		true,
+		"interactive mode, ask before creating the PR",
+	)
+
 	rootCmd.AddCommand(releaseNotesCmd)
 }
 
@@ -275,7 +283,7 @@ func runReleaseNotes() (err error) {
 	}
 
 	// Create the PR for relnotes.k8s.io
-	if releaseNotesOpts.createWebsitePR {
+	if releaseNotesOpts.createWebsitePR && confirmWithUser(releaseNotesOpts, "Create website pull request?") {
 		// Run the website PR process
 		if err := createWebsitePR(releaseNotesOpts.repoPath, tag); err != nil {
 			return errors.Wrap(err, "creating website PR")
@@ -283,7 +291,7 @@ func runReleaseNotes() (err error) {
 	}
 
 	// Create the PR for the Release Notes Draft in k/sig-release
-	if releaseNotesOpts.createDraftPR {
+	if releaseNotesOpts.createDraftPR && confirmWithUser(releaseNotesOpts, "Create draft pull request?") {
 		// Create the Draft PR Process
 		if err := createDraftPR(releaseNotesOpts.repoPath, tag); err != nil {
 			return errors.Wrap(err, "creating Draft PR")
@@ -353,6 +361,7 @@ func createDraftPR(repoPath, tag string) (err error) {
 	})
 
 	gh := github.New()
+
 	autoCreatePullRequest := true
 
 	// Verify the repository
@@ -464,7 +473,7 @@ func createDraftPR(repoPath, tag string) (err error) {
 
 	// If we are in interactive mode, ask before continuing
 	if !autoCreatePullRequest {
-		_, autoCreatePullRequest, err = util.Ask("Create pull request with your changes? (y/n)", "y:yes|n:no", 10)
+		_, autoCreatePullRequest, err = util.Ask("Create pull request with your changes? (y/n)", "y:Y:yes|n:N:no|y", 10)
 		if err != nil {
 			return errors.Wrap(err, "while asking to create pull request")
 		}
@@ -1154,9 +1163,9 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 	// Ask the user if they want to continue the last session o fix all notes
 	continueFromLastSession := true
 	if len(pullRequestChecklist) > 0 {
-		_, continueFromLastSession, err = util.Ask("Would you like to continue from the last session? (Y/n)", "y:yes|n:no|y", 10)
+		_, continueFromLastSession, err = util.Ask("Would you like to continue from the last session? (Y/n)", "y:Y:yes|n:N:no|y", 10)
 	} else {
-		_, _, err = util.Ask("Press enter to start editing", "y:yes|n:no|y", 10)
+		_, _, err = util.Ask("Press enter to start editing", "y:Y:yes|n:N:no|y", 10)
 	}
 	if err != nil {
 		return errors.Wrap(err, "asking to retrieve last session")
@@ -1233,7 +1242,7 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 		text := util.WrapText(note.Text, 80)
 		fmt.Println(spacer + strings.ReplaceAll(text, nl, nl+spacer))
 
-		_, choice, err := util.Ask(fmt.Sprintf("\n- Fix note for PR #%d? (y/N)", note.PrNumber), "y:yes|n:no|n", 10)
+		_, choice, err := util.Ask(fmt.Sprintf("\n- Fix note for PR #%d? (y/N)", note.PrNumber), "y:Y:yes|n:N:no|n", 10)
 		if err != nil {
 			// If the user cancelled with ctr+c exit and continue the PR flow
 			if err.(util.UserInputError).IsCtrlC() {
@@ -1498,4 +1507,23 @@ func createNotesWorkDir(releaseDir string) error {
 		}
 	}
 	return nil
+}
+
+// confirmWithUser avoid running when a users chooses n in interactive mode
+func confirmWithUser(opts *releaseNotesOptions, question string) bool {
+	if !opts.interactiveMode {
+		return true
+	}
+	_, success, err := util.Ask(fmt.Sprintf("%s (Y/n)", question), "y:Y:yes|n:N:no|y", 10)
+	if err != nil {
+		logrus.Error(err)
+		if err.(util.UserInputError).IsCtrlC() {
+			os.Exit(1)
+		}
+		return false
+	}
+	if success {
+		return true
+	}
+	return false
 }
