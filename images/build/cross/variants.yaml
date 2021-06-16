@@ -1,6 +1,6 @@
 variants:
   canary:
-    TYPE: 'default'
+    TYPE: 'canary'
     CONFIG: 'canary'
     GO_VERSION: '1.16.5'
     IMAGE_VERSION: 'v1.16.5-canary-1'
