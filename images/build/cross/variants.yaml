@@ -1,4 +1,11 @@
 variants:
+  dev:
+    TYPE: 'default'
+    CONFIG: 'dev'
+    GO_VERSION: '1.16.5'
+    IMAGE_VERSION: 'v1.22-dev-1'
+    PROTOBUF_VERSION: '3.7.0'
+    ETCD_VERSION: 'v3.5.0'
   canary:
     TYPE: 'default'
     CONFIG: 'canary'
