@@ -6,6 +6,13 @@ variants:
     IMAGE_VERSION: 'v1.16.5-canary-1'
     PROTOBUF_VERSION: '3.7.0'
     ETCD_VERSION: 'v3.4.13'
+  '1.22':
+    TYPE: 'default'
+    CONFIG: '1.22'
+    GO_VERSION: '1.16.5'
+    IMAGE_VERSION: 'v1.22-go1.16.5-1'
+    PROTOBUF_VERSION: '3.7.0'
+    ETCD_VERSION: 'v3.4.13'
   '1.21':
     TYPE: 'default'
     CONFIG: '1.21'
