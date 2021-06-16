@@ -6,20 +6,16 @@ variants:
     IMAGE_VERSION: 'v1.16.5-canary-1'
     PROTOBUF_VERSION: '3.7.0'
     ETCD_VERSION: 'v3.4.13'
-  go1.16:
+  '1.21':
     TYPE: 'default'
-    CONFIG: 'go1.16'
+    CONFIG: '1.21'
     GO_VERSION: '1.16.5'
-    IMAGE_VERSION: 'v1.16.5-1'
+    IMAGE_VERSION: 'v1.21-go1.16.5-1'
     PROTOBUF_VERSION: '3.7.0'
     ETCD_VERSION: 'v3.4.13'
-  go1.15:
-    TYPE: 'default'
-    CONFIG: 'go1.15'
-    GO_VERSION: '1.15.13'
-    IMAGE_VERSION: 'v1.15.13-1'
-    PROTOBUF_VERSION: '3.7.0'
-    ETCD_VERSION: 'v3.4.13'
+
+# For 1.20 and 1.19 release branches
+# TODO: Remove once 1.20 and 1.19 are EOL
   go1.15-legacy:
     TYPE: 'legacy'
     CONFIG: 'go1.15'
