@@ -102,6 +102,26 @@ func (gp *GitObjectPusher) PushBranch(branchName string) error {
 		return errors.New(fmt.Sprintf("Unable to push branch %s, it does not exist in the local repo", branchName))
 	}
 
+	// Checkout the branch before merging
+	logrus.Infof("Checking out branch %s to merge upstream changes", branchName)
+	if err := gp.repo.Checkout(branchName); err != nil {
+		return errors.Wrapf(err, "checking out branch %s", git.Remotify(branchName))
+	}
+
+	// Fetch the origin to check for new commits
+	logrus.Infof("Fetching %s", git.DefaultRemote)
+	if err := gp.repo.FetchRemote(git.DefaultRemote); err != nil {
+		return errors.Wrap(err, "while fetching origin repository")
+	}
+
+	// Merge any new changes in the remote repo
+	logrus.Infof("Merging %s", git.Remotify(branchName))
+	if err := gp.repo.Merge(git.Remotify(branchName)); err != nil {
+		return errors.Wrapf(
+			err, "merging remote branch %s to local repo", git.Remotify(branchName),
+		)
+	}
+
 	logrus.Infof("Pushing%s %s branch:", dryRunLabel[gp.opts.DryRun], branchName)
 	if err := gp.repo.Push(branchName); err != nil {
 		return errors.Wrapf(err, "pushing branch %s", branchName)
