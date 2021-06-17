@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"strings"
 
@@ -88,7 +87,7 @@ var argFunc = func(cmd *cobra.Command, args []string) error {
 	}
 	cveOpts.CVE = strings.ToUpper(args[0])
 	if err := cve.NewClient().CheckID(cveOpts.CVE); err != nil {
-		return errors.New(fmt.Sprintf("Invalid CVE ID. Format must match %s", cve.CVEIDRegExp))
+		return errors.Errorf("invalid CVE ID. Format must match %s", cve.CVEIDRegExp)
 	}
 	return nil
 }

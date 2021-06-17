@@ -99,7 +99,7 @@ func (gp *GitObjectPusher) PushBranch(branchName string) error {
 		return errors.Wrap(err, "checking if branch already exists locally")
 	}
 	if !branchExists {
-		return errors.New(fmt.Sprintf("Unable to push branch %s, it does not exist in the local repo", branchName))
+		return errors.Errorf("unable to push branch %s, it does not exist in the local repo", branchName)
 	}
 
 	logrus.Infof("Pushing%s %s branch:", dryRunLabel[gp.opts.DryRun], branchName)

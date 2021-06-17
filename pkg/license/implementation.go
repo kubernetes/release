@@ -17,7 +17,6 @@ limitations under the License.
 package license
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -77,7 +76,7 @@ func (d *ReaderDefaultImpl) ClassifyLicenseFiles(paths []string) (
 		license := d.catalog.GetLicense(label)
 		if license == nil {
 			return nil, unrecognizedPaths,
-				errors.New(fmt.Sprintf("ID does not correspond to a valid license: '%s'", label))
+				errors.Errorf("ID does not correspond to a valid license: '%s'", label)
 		}
 		licenseText, err := os.ReadFile(f)
 		if err != nil {
@@ -116,7 +115,7 @@ func (d *ReaderDefaultImpl) LicenseFromFile(path string) (license *License, err 
 	// Get the license corresponding to the ID label
 	license = d.catalog.GetLicense(label)
 	if license == nil {
-		return nil, errors.New(fmt.Sprintf("ID does not correspond to a valid license: %s", label))
+		return nil, errors.Errorf("ID does not correspond to a valid license: %s", label)
 	}
 
 	return license, nil
