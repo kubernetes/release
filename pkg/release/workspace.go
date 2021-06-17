@@ -37,25 +37,11 @@ import (
 func PrepareWorkspaceStage(directory string) error {
 	logrus.Infof("Preparing workspace for staging in %s", directory)
 	logrus.Infof("Cloning repository to %s", directory)
-	repo, err := git.CloneOrOpenGitHubRepo(
+	_, err := git.CloneOrOpenGitHubRepo(
 		directory, git.DefaultGithubOrg, git.DefaultGithubRepo, false,
 	)
 	if err != nil {
 		return errors.Wrap(err, "clone k/k repository")
-	}
-
-	token, ok := os.LookupEnv(github.TokenEnvKey)
-	if !ok {
-		return errors.Errorf("%s env variable is not set", github.TokenEnvKey)
-	}
-
-	if err := repo.SetURL(git.DefaultRemote, (&url.URL{
-		Scheme: "https",
-		User:   url.UserPassword("git", token),
-		Host:   "github.com",
-		Path:   filepath.Join(git.DefaultGithubOrg, git.DefaultGithubRepo),
-	}).String()); err != nil {
-		return errors.Wrap(err, "changing git remote of repository")
 	}
 
 	// Prewarm the SPDX licenses cache. As it is one of the main
