@@ -218,6 +218,17 @@ func (a *defaultArchiverImpl) DeleteStalePasswordFiles(releaseBuildDir string) e
 	).RunSuccess(); err != nil {
 		return errors.Wrap(err, "deleting temporary password files")
 	}
+
+	// Delete the git remote config to avoid it ending in the stage bucket
+	gitConf := filepath.Join(releaseBuildDir, "k8s.io/kubernetes/.git/config")
+	if util.Exists(gitConf) {
+		if err := os.Remove(gitConf); err != nil {
+			return errors.Wrap(err, "deleting git remote config")
+		}
+	} else {
+		logrus.Warn("git configuration file not found, nothing to remove")
+	}
+
 	return nil
 }
 
