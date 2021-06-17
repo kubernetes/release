@@ -478,8 +478,14 @@ func TestFetchRemote(t *testing.T) {
 	require.Nil(t, err)
 
 	// Now, call fetch
-	err = testRepo.FetchRemote("origin")
+	newContent, err := testRepo.FetchRemote("origin")
 	require.Nil(t, err, "Calling fetch to get a test tag")
+	require.True(t, newContent)
+
+	// Fetching again should provide no updates
+	newContent, err = testRepo.FetchRemote("origin")
+	require.Nil(t, err, "Calling fetch to get a test tag again")
+	require.False(t, newContent)
 
 	// And now we can verify the tags was successfully transferred via FetchRemote()
 	testTags, err = testRepo.TagsForBranch(branchName)
@@ -532,7 +538,9 @@ func TestRebase(t *testing.T) {
 	require.Nil(t, err)
 
 	// Pull the changes to the test repo
-	require.Nil(t, testRepo.FetchRemote("origin"))
+	newContent, err := testRepo.FetchRemote("origin")
+	require.Nil(t, err)
+	require.True(t, newContent)
 
 	// Do the Rebase
 	require.Nil(t, testRepo.Rebase(fmt.Sprintf("origin/%s", branchName)), "rebasing changes from origin")
@@ -561,7 +569,10 @@ func TestRebase(t *testing.T) {
 	require.Nil(t, testRepo.Commit("Adding file to cause conflict"))
 
 	// Now, fetch and rebase
-	require.Nil(t, testRepo.FetchRemote("origin"))
+	newContent, err = testRepo.FetchRemote("origin")
+	require.Nil(t, err)
+	require.True(t, newContent)
+
 	err = testRepo.Rebase(fmt.Sprintf("origin/%s", branchName))
 	require.NotNil(t, err, "testing for merge conflicts")
 }
