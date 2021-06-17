@@ -84,6 +84,7 @@ func (m *Make) MakeCross(version string) error {
 	}
 
 	// Unset the build memory requirement for parallel builds
+	// TODO: Remove this once the 1.20 release reaches EOL.
 	const buildMemoryKey = "KUBE_PARALLEL_BUILD_MEMORY"
 	logrus.Infof("Unsetting %s to force parallel build", buildMemoryKey)
 	os.Setenv(buildMemoryKey, "0")
