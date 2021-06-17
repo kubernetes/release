@@ -105,5 +105,25 @@ func PrepareWorkspaceRelease(directory, buildVersion, bucket string) error {
 		return errors.Wrapf(err, "extracting %s", dst)
 	}
 
+	// Reset the github token in the staged k/k clone
+	token, ok := os.LookupEnv(github.TokenEnvKey)
+	if !ok {
+		return errors.Errorf("%s env variable is not set", github.TokenEnvKey)
+	}
+
+	repo, err := git.OpenRepo(directory)
+	if err != nil {
+		return errors.Wrap(err, "opening staged clone of k/k")
+	}
+
+	if err := repo.SetURL(git.DefaultRemote, (&url.URL{
+		Scheme: "https",
+		User:   url.UserPassword("git", token),
+		Host:   "github.com",
+		Path:   filepath.Join(git.DefaultGithubOrg, git.DefaultGithubRepo),
+	}).String()); err != nil {
+		return errors.Wrap(err, "changing git remote of repository")
+	}
+
 	return nil
 }
