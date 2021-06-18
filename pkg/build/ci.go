@@ -17,7 +17,6 @@ limitations under the License.
 package build
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -95,7 +94,7 @@ func (bi *Instance) Build() error {
 		"make",
 		releaseType,
 	).RunSuccess(); buildErr != nil {
-		return errors.Wrapf(buildErr, fmt.Sprintf("running make %s", releaseType))
+		return errors.Wrapf(buildErr, "running make %s", releaseType)
 	}
 
 	// Pushing the build

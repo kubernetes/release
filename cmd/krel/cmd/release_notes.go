@@ -410,7 +410,7 @@ func createDraftPR(repoPath, tag string) (err error) {
 	// Check if the directory exists
 	releaseDir := filepath.Join(sigReleaseRepo.Dir(), releasePath)
 	if !util.Exists(releaseDir) {
-		return errors.New(fmt.Sprintf("could not find release directory %s", releaseDir))
+		return errors.Errorf("could not find release directory %s", releaseDir)
 	}
 
 	// If we got the --fix flag, start the fix flow
