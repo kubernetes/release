@@ -28,6 +28,7 @@ import (
 	"k8s.io/release/pkg/gcp"
 	"k8s.io/release/pkg/object"
 	"sigs.k8s.io/release-utils/command"
+	"sigs.k8s.io/release-utils/tar"
 
 	"sigs.k8s.io/release-utils/util"
 )
@@ -288,10 +289,14 @@ func (a *defaultArchiverImpl) CopyReleaseToBucket(releaseBuildDir, archiveBucket
 		return errors.Wrap(err, "normalizing destination path")
 	}
 
-	logrus.Infof("Copy %s to %s...", releaseBuildDir, remoteDest)
+	tarball := releaseBuildDir + ".tar.gz"
+	logrus.Infof("Compressing %s to %s", releaseBuildDir, tarball)
+	if err := tar.Compress(tarball, releaseBuildDir); err != nil {
+		return errors.Wrap(err, "create source tarball")
+	}
 
-	// logrun $GSUTIL -mq cp $dash_args $WORKDIR/* $archive_bucket/$build_dir || true
-	if err := gcs.RsyncRecursive(releaseBuildDir, remoteDest); err != nil {
+	logrus.Infof("Copy %s to %s", tarball, remoteDest)
+	if err := gcs.CopyToRemote(tarball, remoteDest); err != nil {
 		return errors.Wrap(err, "copying release directory to bucket")
 	}
 	return nil
