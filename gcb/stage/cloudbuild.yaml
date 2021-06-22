@@ -14,7 +14,6 @@ timeout: 14400s
 secrets:
 - kmsKeyName: projects/k8s-releng-prod/locations/global/keyRings/release/cryptoKeys/encrypt-0
   secretEnv:
-    GITHUB_TOKEN: CiQAIkWjMImwKwjbMsGh/N6QPg/AgdFo8f/6kNTBESxQLfTtWuMSUQBLz1D+ff3d7WKkopX86uyuO2xZH1k6KZRo2dXv6X5SbEkMoV5l6Bzm2owbIqJUMqWIyrMPJvNGi30iOERBOfbJ6IISMK81RDV+JmWzLCcANA==
     DOCKERHUB_TOKEN: CiQAIkWjMJDKU6Hu3pJIBf31dIl7xJQQEiccN7k1cCzGadGoT2gSTQBLz1D+uc9PMusYnFvXtJi25OqEUktDJs28d09jDyj9gcyTx9iX/JvOE3Dn2qnhrjwrUMk5bBhFjR7dHCr4mJgEVD5dXrd6yLGbDBu2
 
 steps:
@@ -50,7 +49,6 @@ steps:
   - "TOOL_REPO=${_TOOL_REPO}"
   - "TOOL_REF=${_TOOL_REF}"
   secretEnv:
-  - GITHUB_TOKEN
   - DOCKERHUB_TOKEN
   args:
   - "bin/krel"
