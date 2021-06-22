@@ -169,9 +169,7 @@ func (d *defaultStageImpl) ToFile(fileName string) error {
 }
 
 func (d *defaultStageImpl) CheckPrerequisites() error {
-	preReqChecker := release.NewPrerequisitesChecker()
-	preReqChecker.Options().CheckGitHubToken = false
-	return preReqChecker.Run(workspaceDir)
+	return release.NewPrerequisitesChecker().Run(workspaceDir)
 }
 
 func (d *defaultStageImpl) BranchNeedsCreation(
