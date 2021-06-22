@@ -1292,15 +1292,16 @@ func (r *Repo) ShowLastCommit() (logData string, err error) {
 	return logData, nil
 }
 
-// FetchRemote gets the objects from the specified remote
-func (r *Repo) FetchRemote(remoteName string) error {
+// FetchRemote gets the objects from the specified remote. It returns true as
+// first argument if something has been fetched remotely.
+func (r *Repo) FetchRemote(remoteName string) (bool, error) {
 	if remoteName == "" {
-		return errors.New("error fetching, remote repository name is empty")
+		return false, errors.New("error fetching, remote repository name is empty")
 	}
 	// Verify the remote exists
 	remotes, err := r.Remotes()
 	if err != nil {
-		return errors.Wrap(err, "getting repository remotes")
+		return false, errors.Wrap(err, "getting repository remotes")
 	}
 
 	remoteExists := false
@@ -1311,14 +1312,17 @@ func (r *Repo) FetchRemote(remoteName string) error {
 		}
 	}
 	if !remoteExists {
-		return errors.New("cannot fetch repository, the specified remote does not exist")
+		return false, errors.New("cannot fetch repository, the specified remote does not exist")
 	}
 
-	_, err = r.runGitCmd("fetch", remoteName)
+	res, err := command.NewWithWorkDir(r.Dir(), gitExecutable, "fetch", remoteName).RunSilentSuccessOutput()
 	if err != nil {
-		return errors.Wrapf(err, "fetching objects from %s", remoteName)
+		return false, errors.Wrapf(err, "fetching objects from %s", remoteName)
 	}
-	return nil
+	// git fetch outputs on stderr
+	output := strings.TrimSpace(res.Error())
+	logrus.Debugf("Fetch result: %s", output)
+	return len(output) > 0, nil
 }
 
 // Rebase calls rebase on the current repo to the specified branch

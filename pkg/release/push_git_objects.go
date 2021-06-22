@@ -17,7 +17,6 @@ limitations under the License.
 package release
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/blang/semver"
@@ -108,18 +107,8 @@ func (gp *GitObjectPusher) PushBranch(branchName string) error {
 		return errors.Wrapf(err, "checking out branch %s", git.Remotify(branchName))
 	}
 
-	// Fetch the origin to check for new commits
-	logrus.Infof("Fetching %s", git.DefaultRemote)
-	if err := gp.repo.FetchRemote(git.DefaultRemote); err != nil {
-		return errors.Wrap(err, "while fetching origin repository")
-	}
-
-	// Merge any new changes in the remote repo
-	logrus.Infof("Merging %s", git.Remotify(branchName))
-	if err := gp.repo.Merge(git.Remotify(branchName)); err != nil {
-		return errors.Wrapf(
-			err, "merging remote branch %s to local repo", git.Remotify(branchName),
-		)
+	if err := gp.mergeRemoteIfRequired(branchName); err != nil {
+		return errors.Wrap(err, "merge remote if required")
 	}
 
 	logrus.Infof("Pushing%s %s branch:", dryRunLabel[gp.opts.DryRun], branchName)
@@ -237,16 +226,8 @@ func (gp *GitObjectPusher) PushMain() error {
 	}
 	logrus.Info(lastLog)
 
-	logrus.Info("Rebase master branch")
-
-	// logrun -v git fetch origin || return 1
-	if err := gp.repo.FetchRemote(git.DefaultRemote); err != nil {
-		return errors.Wrap(err, "while fetching origin repository")
-	}
-
-	// logrun -s -v git rebase origin/master || return 1
-	if err := gp.repo.Rebase(fmt.Sprintf("%s/%s", git.DefaultRemote, git.DefaultBranch)); err != nil {
-		return errors.Wrap(err, "rebasing repository")
+	if err := gp.mergeRemoteIfRequired(git.DefaultBranch); err != nil {
+		return errors.Wrap(err, "merge remote if required")
 	}
 
 	logrus.Infof("Pushing%s %s branch", dryRunLabel[gp.opts.DryRun], git.DefaultBranch)
@@ -255,5 +236,25 @@ func (gp *GitObjectPusher) PushMain() error {
 	if err := gp.repo.Push(git.DefaultBranch); err != nil {
 		return errors.Wrapf(err, "pushing %s branch", git.DefaultBranch)
 	}
+	return nil
+}
+
+func (gp *GitObjectPusher) mergeRemoteIfRequired(branch string) error {
+	branch = git.Remotify(branch)
+	logrus.Infof("Merging %s branch if required", branch)
+
+	logrus.Infof("Fetching from %s", git.DefaultRemote)
+	if _, err := gp.repo.FetchRemote(git.DefaultRemote); err != nil {
+		return errors.Wrap(err, "fetch remote")
+	}
+
+	logrus.Infof("Merging %s branch", branch)
+	if err := gp.repo.Merge(branch); err != nil {
+		return errors.Wrapf(
+			err, "merging remote branch %s to local repo", branch,
+		)
+	}
+
+	logrus.Info("Local branch is now up to date")
 	return nil
 }
