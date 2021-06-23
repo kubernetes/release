@@ -18,7 +18,7 @@ REGISTRY?="gcr.io/k8s-staging-build-image"
 IMAGE=$(REGISTRY)/debian-iptables
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= buster-v1.6.4
+IMAGE_VERSION ?= buster-v1.6.5
 CONFIG ?= buster
 DEBIAN_BASE_VERSION ?= buster-v1.8.0
 
