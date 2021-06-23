@@ -289,14 +289,20 @@ func (a *defaultArchiverImpl) CopyReleaseToBucket(releaseBuildDir, archiveBucket
 		return errors.Wrap(err, "normalizing destination path")
 	}
 
-	tarball := releaseBuildDir + ".tar.gz"
-	logrus.Infof("Compressing %s to %s", releaseBuildDir, tarball)
-	if err := tar.Compress(tarball, releaseBuildDir); err != nil {
+	srcPath := filepath.Join(releaseBuildDir, "k8s.io")
+	tarball := srcPath + ".tar.gz"
+	logrus.Infof("Compressing %s to %s", srcPath, tarball)
+	if err := tar.Compress(tarball, srcPath); err != nil {
 		return errors.Wrap(err, "create source tarball")
 	}
 
-	logrus.Infof("Copy %s to %s", tarball, remoteDest)
-	if err := gcs.CopyToRemote(tarball, remoteDest); err != nil {
+	logrus.Infof("Removing source path %s before syncing", srcPath)
+	if err := os.RemoveAll(srcPath); err != nil {
+		return errors.Wrap(err, "remove source path")
+	}
+
+	logrus.Infof("Rsync %s to %s", releaseBuildDir, remoteDest)
+	if err := gcs.RsyncRecursive(releaseBuildDir, remoteDest); err != nil {
 		return errors.Wrap(err, "copying release directory to bucket")
 	}
 	return nil
