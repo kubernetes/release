@@ -42,7 +42,7 @@ require (
 	k8s.io/utils v0.0.0-20210305010621-2afb4311ab10
 	sigs.k8s.io/k8s-container-image-promoter v1.337.0
 	sigs.k8s.io/mdtoc v1.0.1
-	sigs.k8s.io/release-utils v0.2.1
+	sigs.k8s.io/release-utils v0.3.0
 	sigs.k8s.io/yaml v1.2.0
 	sigs.k8s.io/zeitgeist v0.3.0
 )

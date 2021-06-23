@@ -58,9 +58,6 @@ const (
 	gitExecutable         = "git"
 )
 
-// To parse the GitHub ApiKey
-var re = regexp.MustCompile(`[0-9a-zA-Z]{35,40}`)
-
 // setVerboseTrace enables maximum verbosity output.
 func setVerboseTrace() error {
 	return errors.Wrap(setVerbose(5, 2, 2, 2, 2, 2, 2, 2), "set verbose")
@@ -174,19 +171,33 @@ func GetRepoURL(org, repo string, useSSH bool) (repoURL string) {
 // ConfigureGlobalDefaultUserAndEmail globally configures the default git
 // user and email.
 func ConfigureGlobalDefaultUserAndEmail() error {
-	if err := command.New(
-		gitExecutable, "config", "--global", "user.name", defaultGitUser,
+	if err := filterCommand(
+		"", "config", "--global", "user.name", defaultGitUser,
 	).RunSuccess(); err != nil {
 		return errors.Wrap(err, "configure user name")
 	}
 
-	if err := command.New(
-		gitExecutable, "config", "--global", "user.email", defaultGitEmail,
+	if err := filterCommand(
+		"", "config", "--global", "user.email", defaultGitEmail,
 	).RunSuccess(); err != nil {
 		return errors.Wrap(err, "configure user email")
 	}
 
 	return nil
+}
+
+// filterCommand returns a command which automatically filters sensitive information.
+func filterCommand(workdir string, args ...string) *command.Command {
+	// Filter GitHub API keys
+	c, err := command.NewWithWorkDir(
+		workdir, gitExecutable, args...,
+	).Filter(`(?m)git:[0-9a-zA-Z]{35,40}`, "[REDACTED]")
+	if err != nil {
+		// should never happen
+		logrus.Fatalf("git command creation failed: %v", err)
+	}
+
+	return c
 }
 
 // DiscoverResult is the result of a revision discovery
@@ -300,8 +311,7 @@ func (r *Repo) SetMaxRetries(numRetries int) {
 
 func LSRemoteExec(repoURL string, args ...string) (string, error) {
 	cmdArgs := append([]string{"ls-remote", repoURL}, args...)
-	cmdStatus, err := command.New(
-		gitExecutable, cmdArgs...).
+	cmdStatus, err := filterCommand("", cmdArgs...).
 		RunSilentSuccessOutput()
 	if err != nil {
 		return "", errors.Wrap(err, "failed to execute the ls-remote command")
@@ -404,8 +414,8 @@ func updateRepo(repoPath string) (*Repo, error) {
 	}
 
 	// Update the repo
-	if err := command.NewWithWorkDir(
-		r.Dir(), gitExecutable, "pull", "--rebase",
+	if err := filterCommand(
+		r.Dir(), "pull", "--rebase",
 	).RunSilentSuccess(); err != nil {
 		return nil, errors.Wrap(err, "unable to pull from remote")
 	}
@@ -769,11 +779,9 @@ func Remotify(name string) string {
 
 // Merge does a git merge into the current branch from the provided one
 func (r *Repo) Merge(from string) error {
-	err := command.NewWithWorkDir(
-		r.Dir(), gitExecutable, "merge", "-X", "ours", from,
-	).RunSilentSuccess()
-
-	return safeError(err)
+	return errors.Wrap(filterCommand(
+		r.Dir(), "merge", "-X", "ours", from,
+	).RunSilentSuccess(), "run git merge")
 }
 
 // Push does push the specified branch to the default remote, but only if the
@@ -787,13 +795,13 @@ func (r *Repo) Push(remoteBranch string) (err error) {
 	args = append(args, DefaultRemote, remoteBranch)
 
 	for i := r.maxRetries + 1; i > 0; i-- {
-		if err = command.NewWithWorkDir(r.Dir(), gitExecutable, args...).RunSilentSuccess(); err == nil {
+		if err = filterCommand(r.Dir(), args...).RunSilentSuccess(); err == nil {
 			return nil
 		}
 		// Convert to network error to see if we can retry the push
 		err = NewNetworkError(err)
 		if !err.(NetworkError).CanRetry() || r.maxRetries == 0 {
-			return safeError(err)
+			return err
 		}
 		waitTime := math.Pow(2, float64(r.maxRetries-i))
 		logrus.Errorf(
@@ -802,7 +810,7 @@ func (r *Repo) Push(remoteBranch string) (err error) {
 		)
 		time.Sleep(time.Duration(waitTime) * time.Second)
 	}
-	return errors.Wrapf(safeError(err), "trying to push %s %d times", remoteBranch, r.maxRetries)
+	return errors.Wrapf(err, "trying to push %s %d times", remoteBranch, r.maxRetries)
 }
 
 // Head retrieves the current repository HEAD as a string
@@ -954,11 +962,11 @@ func (r *Repo) TagsForBranch(branch string) (res []string, err error) {
 	}
 	defer func() { err = r.Checkout(previousBranch) }()
 
-	status, err := command.NewWithWorkDir(
-		r.Dir(), gitExecutable, "tag", "--sort=creatordate", "--merged",
+	status, err := filterCommand(
+		r.Dir(), "tag", "--sort=creatordate", "--merged",
 	).RunSilentSuccessOutput()
 	if err != nil {
-		return nil, errors.Wrapf(safeError(err), "retrieving merged tags for branch %s", branch)
+		return nil, errors.Wrapf(err, "retrieving merged tags for branch %s", branch)
 	}
 
 	tags := strings.Fields(status.Output())
@@ -983,8 +991,8 @@ func (r *Repo) Tags() (res []string, err error) {
 // Add adds a file to the staging area of the repo
 func (r *Repo) Add(filename string) error {
 	return errors.Wrapf(
-		command.NewWithWorkDir(
-			r.Dir(), gitExecutable, "add", filename,
+		filterCommand(
+			r.Dir(), "add", filename,
 		).RunSilentSuccess(),
 		"adding file %s to repository", filename,
 	)
@@ -993,7 +1001,9 @@ func (r *Repo) Add(filename string) error {
 // GetUserName Reads the local user's name from the git configuration
 func GetUserName() (string, error) {
 	// Retrieve username from git
-	userName, err := command.New(gitExecutable, "config", "--get", "user.name").RunSilentSuccessOutput()
+	userName, err := filterCommand(
+		"", "config", "--get", "user.name",
+	).RunSilentSuccessOutput()
 	if err != nil {
 		return "", errors.Wrap(err, "reading the user name from git")
 	}
@@ -1002,7 +1012,9 @@ func GetUserName() (string, error) {
 
 // GetUserEmail reads the user's name from git
 func GetUserEmail() (string, error) {
-	userEmail, err := command.New(gitExecutable, "config", "--get", "user.email").RunSilentSuccessOutput()
+	userEmail, err := filterCommand(
+		"", "config", "--get", "user.email",
+	).RunSilentSuccessOutput()
 	if err != nil {
 		return "", errors.Wrap(err, "reading the user's email from git")
 	}
@@ -1193,7 +1205,7 @@ func (r *Repo) PushToRemote(remote, remoteBranch string) error {
 	}
 	args = append(args, remote, remoteBranch)
 
-	return command.NewWithWorkDir(r.Dir(), gitExecutable, args...).RunSuccess()
+	return filterCommand(r.Dir(), args...).RunSuccess()
 }
 
 // LsRemote can be used to run `git ls-remote` with the provided args on the
@@ -1230,9 +1242,7 @@ func (r *Repo) Branch(args ...string) (string, error) {
 // error in case of any failure.
 func (r *Repo) runGitCmd(cmd string, args ...string) (string, error) {
 	cmdArgs := append([]string{cmd}, args...)
-	res, err := command.NewWithWorkDir(
-		r.Dir(), gitExecutable, cmdArgs...,
-	).RunSilentSuccessOutput()
+	res, err := filterCommand(r.Dir(), cmdArgs...).RunSilentSuccessOutput()
 	if err != nil {
 		return "", errors.Wrapf(err, "running git %s", cmd)
 	}
@@ -1340,7 +1350,7 @@ func (r *Repo) FetchRemote(remoteName string) (bool, error) {
 		return false, errors.New("cannot fetch repository, the specified remote does not exist")
 	}
 
-	res, err := command.NewWithWorkDir(r.Dir(), gitExecutable, "fetch", remoteName).RunSilentSuccessOutput()
+	res, err := filterCommand(r.Dir(), "fetch", remoteName).RunSilentSuccessOutput()
 	if err != nil {
 		return false, errors.Wrapf(err, "fetching objects from %s", remoteName)
 	}
@@ -1415,14 +1425,4 @@ func (e NetworkError) CanRetry() bool {
 
 	// Otherwise permanent
 	return false
-}
-
-func safeError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	errUpdated := re.ReplaceAllString(err.Error(), "[REDACTED]")
-
-	return errors.New(errUpdated)
 }
