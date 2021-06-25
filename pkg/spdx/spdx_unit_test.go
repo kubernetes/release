@@ -29,6 +29,30 @@ import (
 	"sigs.k8s.io/release-utils/util"
 )
 
+func TestBuildIDString(t *testing.T) {
+	cases := []struct {
+		seeds    []string
+		expected string
+	}{
+		{[]string{"1234"}, "1234"},
+		{[]string{"abc"}, "abc"},
+		{[]string{"ABC"}, "ABC"},
+		{[]string{"ABC", "123"}, "ABC-123"},
+		{[]string{"Hello:bye", "123"}, "Hellobye-123"},
+		{[]string{"Hello:bye", "123", "&^%&$"}, "Hellobye-123"},
+	}
+	for _, tc := range cases {
+		require.Equal(t, tc.expected, buildIDString(tc.seeds...))
+	}
+
+	// If we do not pass any seeds, func should return an UUID
+	// which is 36 chars long
+	require.Len(t, buildIDString(), 36)
+
+	// Same thing for only invalid chars
+	require.Len(t, buildIDString("&^$&^%"), 36)
+}
+
 func TestUnitExtractTarballTmp(t *testing.T) {
 	tar := writeTestTarball(t)
 	require.NotNil(t, tar)

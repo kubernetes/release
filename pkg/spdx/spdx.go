@@ -37,7 +37,7 @@ const (
 	spdxLicenseData         = spdxTempDir + "/licenses"
 	spdxLicenseDlCache      = spdxTempDir + "/downloadCache"
 	gitIgnoreFile           = ".gitignore"
-	validNameCharsRe        = `[^a-zA-Z0-9-]+`
+	validIDCharsRe          = `[^a-zA-Z0-9-.]+` // https://spdx.github.io/spdx-spec/3-package-information/#32-package-spdx-identifier
 
 	// Consts of some SPDX expressions
 	NONE        = "NONE"
@@ -95,6 +95,34 @@ type TarballOptions struct {
 	ExtractDir string // Directory where the docker tar archive will be extracted
 }
 
+// buildIDString takes a list of seed strings and builds a
+// valid SPDX ID string from them. If none is supplied, an
+// ID using an UUID will be returned
+func buildIDString(seeds ...string) string {
+	validSeeds := []string{}
+	for _, s := range seeds {
+		reg := regexp.MustCompile(validIDCharsRe)
+		s = reg.ReplaceAllString(s, "")
+		if s != "" {
+			validSeeds = append(validSeeds, s)
+		}
+	}
+
+	// If we did not get any seeds, use an UUID
+	if len(validSeeds) == 0 {
+		validSeeds = append(validSeeds, uuid.New().String())
+	}
+
+	id := ""
+	for _, s := range validSeeds {
+		if id != "" {
+			id += "-"
+		}
+		id += s
+	}
+	return id
+}
+
 // PackageFromDirectory indexes all files in a directory and builds a
 // SPDX package describing its contents
 func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error) {
@@ -137,9 +165,7 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 	pkg = NewPackage()
 	pkg.FilesAnalyzed = true
 	pkg.Name = filepath.Base(dirPath)
-	// If the package file will result in an empty ID, generate one
-	reg := regexp.MustCompile(validNameCharsRe)
-	if reg.ReplaceAllString(pkg.Name, "") == "" {
+	if pkg.Name == "" {
 		pkg.Name = uuid.NewString()
 	}
 	pkg.LicenseConcluded = licenseTag

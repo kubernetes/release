@@ -23,7 +23,6 @@ import (
 	"html/template"
 	"log"
 	"os"
-	"regexp"
 	"time"
 
 	"github.com/google/uuid"
@@ -93,12 +92,7 @@ func (d *Document) AddPackage(pkg *Package) error {
 	}
 
 	if pkg.ID == "" {
-		// If we so not have an ID but have a name generate it fro there
-		reg := regexp.MustCompile("[^a-zA-Z0-9-]+")
-		id := reg.ReplaceAllString(pkg.Name, "")
-		if id != "" {
-			pkg.ID = "SPDXRef-Package-" + id
-		}
+		pkg.BuildID(pkg.Name)
 	}
 	if pkg.ID == "" {
 		return errors.New("package id is needed to add a new package")

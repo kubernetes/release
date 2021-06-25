@@ -158,3 +158,8 @@ func (f *File) ReadSourceFile(path string) error {
 	f.ID = "SPDXRef-File-" + f.Checksum["SHA256"][0:15]
 	return nil
 }
+
+// BuildID sets the file ID, optionally from a series of strings
+func (f *File) BuildID(seeds ...string) {
+	f.ID = "SPDXRef-File" + "-" + buildIDString(seeds...)
+}

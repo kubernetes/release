@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"html/template"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -157,10 +156,15 @@ func (p *Package) AddFile(file *File) error {
 		if _, err := h.Write([]byte(p.Name + ":" + file.Name)); err != nil {
 			return errors.Wrap(err, "getting sha1 of filename")
 		}
-		file.ID = "SPDXRef-File-" + fmt.Sprintf("%x", h.Sum(nil))
+		file.BuildID(fmt.Sprintf("%x", h.Sum(nil)))
 	}
 	p.Files[file.ID] = file
 	return nil
+}
+
+// BuildID sets the package ID, optionally from a series of strings
+func (p *Package) BuildID(seeds ...string) {
+	p.ID = "SPDXRef-Package" + "-" + buildIDString(seeds...)
 }
 
 // preProcessSubPackage performs a basic check on a package
@@ -168,12 +172,7 @@ func (p *Package) AddFile(file *File) error {
 // missing data when possible
 func (p *Package) preProcessSubPackage(pkg *Package) error {
 	if pkg.ID == "" {
-		// If we so not have an ID but have a name generate it fro there
-		reg := regexp.MustCompile(validNameCharsRe)
-		id := reg.ReplaceAllString(pkg.Name, "")
-		if id != "" {
-			pkg.ID = "SPDXRef-Package-" + id
-		}
+		p.BuildID(pkg.Name)
 	}
 	if pkg.ID == "" {
 		return errors.New("package name is needed to add a new package")
