@@ -75,6 +75,15 @@ func (spdx *SPDX) Options() *Options {
 	return spdx.options
 }
 
+// Object is an interface that dictates the common methods of spdx
+// objects. Currently this includes files and packages.
+type Object interface {
+	SPDXID() string
+	ReadSourceFile(string) error
+	Render() (string, error)
+	BuildID(seeds ...string)
+}
+
 var defaultSPDXOptions = Options{
 	LicenseCacheDir:  filepath.Join(os.TempDir(), spdxLicenseDlCache),
 	LicenseData:      filepath.Join(os.TempDir(), spdxLicenseData),
