@@ -123,7 +123,7 @@ func (d *Document) Render() (doc string, err error) {
 	var buf bytes.Buffer
 	funcMap := template.FuncMap{
 		// The name "title" is what the function will be called in the template text.
-		"dateFormat": func(t time.Time) string { return t.UTC().Format("2006-02-01T15:04:05Z") },
+		"dateFormat": func(t time.Time) string { return t.UTC().Format("2006-01-02T15:04:05Z") },
 	}
 
 	if d.Name == "" {
