@@ -338,7 +338,7 @@ func (di *spdxDefaultImplementation) PackageFromLayerTarball(
 	logrus.Infof("Generating SPDX package from layer in %s", layerFile)
 
 	pkg := NewPackage()
-	pkg.options.WorkDir = opts.ExtractDir
+	pkg.Options().WorkDir = opts.ExtractDir
 	if err := pkg.ReadSourceFile(filepath.Join(opts.ExtractDir, layerFile)); err != nil {
 		return nil, errors.Wrap(err, "reading source file")
 	}
@@ -520,20 +520,42 @@ func (di *spdxDefaultImplementation) ImageRefToPackage(ref string, opts *Options
 		return di.PackageFromImageTarball(imgs[0].Archive, opts)
 	}
 
-	// Otherwise, we do a package referencing each image:
+	// Create the package representing the image tag:
 	pkg := &Package{}
 	pkg.Name = ref
+	pkg.BuildID(pkg.Name)
 	pkg.DownloadLocation = ref
+
+	// Now, cycle each image in the index and generate a package from it
 	for _, img := range imgs {
 		subpkg, err := di.PackageFromImageTarball(img.Archive, opts)
 		if err != nil {
 			return nil, errors.Wrap(err, "adding image variant package")
 		}
-		// Set the subpackage data:
-		subpkg.Name = img.Reference
-		if err := pkg.AddPackage(subpkg); err != nil {
-			return nil, errors.Wrap(err, "addding image package")
+
+		if img.Arch != "" || img.OS != "" {
+			subpkg.Name = ref + " (" + img.Arch
+			if img.Arch != "" {
+				subpkg.Name += "/"
+			}
+			subpkg.Name += img.OS + ")"
+		} else {
+			subpkg.Name = img.Reference
 		}
+		subpkg.DownloadLocation = img.Reference
+
+		// Add the package
+		pkg.AddRelationship(&Relationship{
+			Peer:       subpkg,
+			Type:       CONTAINS,
+			FullRender: true,
+			Comment:    "Container image lager",
+		})
+		pkg.AddRelationship(&Relationship{
+			Peer:    subpkg,
+			Type:    VARIANT_OF,
+			Comment: "Image index",
+		})
 	}
 	return pkg, nil
 }
@@ -576,8 +598,10 @@ func (di *spdxDefaultImplementation) PackageFromImageTarball(
 
 	// Create the new SPDX package
 	imagePackage = NewPackage()
+	logrus.Infof("%+v", imagePackage.Options())
 	imagePackage.Options().WorkDir = tarOpts.ExtractDir
 	imagePackage.Name = manifest.RepoTags[0]
+	imagePackage.BuildID(imagePackage.Name)
 
 	logrus.Infof("Image manifest lists %d layers", len(manifest.LayerFiles))
 

@@ -18,16 +18,10 @@ package spdx
 
 import (
 	"bytes"
-	"crypto/sha1"
 	"html/template"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"sigs.k8s.io/release-utils/hash"
-	"sigs.k8s.io/release-utils/util"
 )
 
 var fileTemplate = `{{ if .Name }}FileName: {{ .Name }}
@@ -49,66 +43,14 @@ FileCopyrightText: {{ if .CopyrightText }}<text>{{ .CopyrightText }}
 
 // File abstracts a file contained in a package
 type File struct {
-	Name              string // string /Makefile
-	FileName          string // Name of the file
-	ID                string // SPDXRef-Makefile
-	LicenseConcluded  string // GPL-3.0-or-later
+	Entity
 	LicenseInfoInFile string // GPL-3.0-or-later
-	CopyrightText     string // NOASSERTION
-	SourceFile        string // Source file to read from (not part of the spec)
-	Checksum          map[string]string
-
-	options *FileOptions // Options
 }
 
 func NewFile() (f *File) {
-	f = &File{
-		options: &FileOptions{},
-	}
+	f = &File{}
+	f.Entity.Opts = &ObjectOptions{}
 	return f
-}
-
-func (f *File) Options() *FileOptions {
-	return f.options
-}
-
-// FileOptions
-type FileOptions struct {
-	WorkDir string
-}
-
-// ReadChecksums receives a path to a file and calculates its checksums
-func (f *File) ReadChecksums(filePath string) error {
-	if f.Checksum == nil {
-		f.Checksum = map[string]string{}
-	}
-	file, err := os.Open(filePath)
-	if err != nil {
-		return errors.Wrap(err, "opening file for reading: "+filePath)
-	}
-	defer file.Close()
-	// TODO: Make this line like the others once this PR is
-	// included in a k-sigs/release-util release:
-	// https://github.com/kubernetes-sigs/release-utils/pull/16
-	s1, err := hash.ForFile(filePath, sha1.New())
-	if err != nil {
-		return errors.Wrap(err, "getting sha1 sum for file")
-	}
-	s256, err := hash.SHA256ForFile(filePath)
-	if err != nil {
-		return errors.Wrap(err, "getting file checksums")
-	}
-	s512, err := hash.SHA512ForFile(filePath)
-	if err != nil {
-		return errors.Wrap(err, "getting file checksums")
-	}
-
-	f.Checksum = map[string]string{
-		"SHA1":   s1,
-		"SHA256": s256,
-		"SHA512": s512,
-	}
-	return nil
 }
 
 // Render renders the document fragment of a file
@@ -140,26 +82,7 @@ func (f *File) Render() (docFragment string, err error) {
 	return docFragment, nil
 }
 
-// ReadSourceFile reads the source file for the package and populates
-//  the fields derived from it (Checksums and FileName)
-func (f *File) ReadSourceFile(path string) error {
-	if !util.Exists(path) {
-		return errors.New("unable to find package source file")
-	}
-
-	if err := f.ReadChecksums(path); err != nil {
-		return errors.Wrap(err, "reading file checksums")
-	}
-
-	f.SourceFile = path
-	f.Name = strings.TrimPrefix(
-		path, f.Options().WorkDir+string(filepath.Separator),
-	)
-	f.ID = "SPDXRef-File-" + f.Checksum["SHA256"][0:15]
-	return nil
-}
-
 // BuildID sets the file ID, optionally from a series of strings
 func (f *File) BuildID(seeds ...string) {
-	f.ID = "SPDXRef-File" + "-" + buildIDString(seeds...)
+	f.Entity.BuildID(append([]string{"SPDXRef-File"}, seeds...)...)
 }

@@ -91,17 +91,17 @@ func (d *Document) AddPackage(pkg *Package) error {
 		d.Packages = map[string]*Package{}
 	}
 
-	if pkg.ID == "" {
+	if pkg.SPDXID() == "" {
 		pkg.BuildID(pkg.Name)
 	}
-	if pkg.ID == "" {
+	if pkg.SPDXID() == "" {
 		return errors.New("package id is needed to add a new package")
 	}
-	if _, ok := d.Packages[pkg.ID]; ok {
-		return errors.New("a package named " + pkg.ID + " already exists in the document")
+	if _, ok := d.Packages[pkg.SPDXID()]; ok {
+		return errors.New("a package named " + pkg.SPDXID() + " already exists in the document")
 	}
 
-	d.Packages[pkg.ID] = pkg
+	d.Packages[pkg.SPDXID()] = pkg
 	return nil
 }
 

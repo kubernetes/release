@@ -94,7 +94,11 @@ func (pkg *GoPackage) ToSPDXPackage() (*Package, error) {
 		return nil, errors.Wrap(err, "building repository from package import path")
 	}
 	spdxPackage := NewPackage()
-	spdxPackage.Name = pkg.ImportPath + "@" + strings.TrimSuffix(pkg.Revision, "+incompatible")
+	spdxPackage.Name = pkg.ImportPath
+	if pkg.Revision != "" {
+		spdxPackage.Name += "@" + strings.TrimSuffix(pkg.Revision, "+incompatible")
+	}
+	spdxPackage.BuildID()
 	spdxPackage.DownloadLocation = repo.Repo
 	spdxPackage.LicenseConcluded = pkg.LicenseID
 	spdxPackage.Version = strings.TrimSuffix(pkg.Revision, "+incompatible")

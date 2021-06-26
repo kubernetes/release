@@ -75,15 +75,6 @@ func (spdx *SPDX) Options() *Options {
 	return spdx.options
 }
 
-// Object is an interface that dictates the common methods of spdx
-// objects. Currently this includes files and packages.
-type Object interface {
-	SPDXID() string
-	ReadSourceFile(string) error
-	Render() (string, error)
-	BuildID(seeds ...string)
-}
-
 var defaultSPDXOptions = Options{
 	LicenseCacheDir:  filepath.Join(os.TempDir(), spdxLicenseDlCache),
 	LicenseData:      filepath.Join(os.TempDir(), spdxLicenseData),
@@ -109,16 +100,24 @@ type TarballOptions struct {
 // ID using an UUID will be returned
 func buildIDString(seeds ...string) string {
 	validSeeds := []string{}
+	numValidSeeds := 0
+	reg := regexp.MustCompile(validIDCharsRe)
 	for _, s := range seeds {
-		reg := regexp.MustCompile(validIDCharsRe)
+		// Replace some chars with - to keep the sense of the ID
+		for _, r := range []string{"/", ":"} {
+			s = strings.ReplaceAll(s, r, "-")
+		}
 		s = reg.ReplaceAllString(s, "")
 		if s != "" {
 			validSeeds = append(validSeeds, s)
+			if !strings.HasPrefix(s, "SPDXRef-") {
+				numValidSeeds++
+			}
 		}
 	}
 
 	// If we did not get any seeds, use an UUID
-	if len(validSeeds) == 0 {
+	if numValidSeeds == 0 {
 		validSeeds = append(validSeeds, uuid.New().String())
 	}
 

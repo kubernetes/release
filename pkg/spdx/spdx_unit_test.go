@@ -38,8 +38,9 @@ func TestBuildIDString(t *testing.T) {
 		{[]string{"abc"}, "abc"},
 		{[]string{"ABC"}, "ABC"},
 		{[]string{"ABC", "123"}, "ABC-123"},
-		{[]string{"Hello:bye", "123"}, "Hellobye-123"},
-		{[]string{"Hello:bye", "123", "&^%&$"}, "Hellobye-123"},
+		{[]string{"Hello:bye", "123"}, "Hello-bye-123"},
+		{[]string{"Hello^bye", "123"}, "Hellobye-123"},
+		{[]string{"Hello:bye", "123", "&^%&$"}, "Hello-bye-123"},
 	}
 	for _, tc := range cases {
 		require.Equal(t, tc.expected, buildIDString(tc.seeds...))

@@ -34,7 +34,7 @@ func TestPackageFromImageTarball(t *testing.T) {
 	}{
 		{ // success
 			prepare: func(mock *spdxfakes.FakeSpdxImplementation) {
-				mock.PackageFromImageTarballReturns(&spdx.Package{Name: "test"}, nil)
+				mock.PackageFromImageTarballReturns(&spdx.Package{Entity: spdx.Entity{Name: "test"}}, nil)
 			},
 			shouldError: false,
 		},
