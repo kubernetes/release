@@ -18,7 +18,7 @@ package spdx
 
 import (
 	"bytes"
-	"html/template"
+	"text/template"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

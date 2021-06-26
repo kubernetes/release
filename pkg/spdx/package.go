@@ -20,10 +20,10 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"fmt"
-	"html/template"
 	"sort"
 	"strings"
 	"sync"
+	"text/template"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
