@@ -280,7 +280,7 @@ func (bi *Instance) CheckReleaseBucket() error {
 		context.Background(), requiredGCSPerms,
 	)
 	if err != nil {
-		return errors.Wrap(err, "find release artifact bucket")
+		return errors.Wrap(err, "find release artifact bucket, try running `gcloud auth application-default login`")
 	}
 	if len(perms) != 1 {
 		return errors.Errorf(
