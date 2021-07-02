@@ -21,8 +21,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
@@ -161,12 +159,6 @@ func (builder *defaultDocBuilderImpl) GenerateDoc(
 		}
 	}
 
-	tmpdir, err := os.MkdirTemp(opts.WorkDir, "doc-build-")
-	if err != nil {
-		return nil, errors.Wrapf(err, "creating temporary workdir in %s", opts.WorkDir)
-	}
-	defer os.RemoveAll(tmpdir)
-
 	// Create the new document
 	doc = NewDocument()
 	doc.Name = genopts.Name
@@ -189,44 +181,22 @@ func (builder *defaultDocBuilderImpl) GenerateDoc(
 		}
 	}
 
+	// Process all image references from registries
 	for _, i := range genopts.Images {
-		logrus.Infof("Processing image: %s", i)
-		tararchive := filepath.Join(tmpdir, uuid.New().String()+".tar")
-		if err := spdx.PullImagesToArchive(i, tararchive); err != nil {
-			return nil, errors.Wrapf(err, "writing image %s to file", i)
-		}
-		p, err := spdx.PackageFromImageTarball(tararchive, &TarballOptions{})
+		logrus.Infof("Processing image reference: %s", i)
+		p, err := spdx.ImageRefToPackage(i)
 		if err != nil {
-			return nil, errors.Wrap(err, "generating tarball package")
-		}
-		ref, err := name.ParseReference(i)
-		if err != nil {
-			return nil, errors.Wrapf(err, "parsing image reference %q", i)
-		}
-
-		// Grab the package data from wither the tag or, if it's a digest,
-		// from parsing the digest
-		tag, ok := ref.(name.Tag)
-		if ok {
-			p.Name = tag.RepositoryStr()
-			p.DownloadLocation = tag.Name()
-			p.Version = tag.Identifier()
-		} else {
-			dgst, ok := ref.(name.Digest)
-			if ok {
-				p.Version = dgst.DigestStr()
-				p.Name = dgst.RepositoryStr()
-				p.DownloadLocation = dgst.Name()
-			}
+			return nil, errors.Wrapf(err, "generating SPDX package from image ref %s", i)
 		}
 		if err := doc.AddPackage(p); err != nil {
 			return nil, errors.Wrap(err, "adding package to document")
 		}
 	}
 
+	// Porcess OCI image archives
 	for _, tb := range genopts.Tarballs {
 		logrus.Infof("Processing tarball %s", tb)
-		p, err := spdx.PackageFromImageTarball(tb, &TarballOptions{})
+		p, err := spdx.PackageFromImageTarball(tb)
 		if err != nil {
 			return nil, errors.Wrap(err, "generating tarball package")
 		}
@@ -235,6 +205,7 @@ func (builder *defaultDocBuilderImpl) GenerateDoc(
 		}
 	}
 
+	// Process single files, not part of a package
 	for _, f := range genopts.Files {
 		logrus.Infof("Processing file %s", f)
 		f, err := spdx.FileFromPath(f)

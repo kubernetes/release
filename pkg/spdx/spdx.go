@@ -37,7 +37,7 @@ const (
 	spdxLicenseData         = spdxTempDir + "/licenses"
 	spdxLicenseDlCache      = spdxTempDir + "/downloadCache"
 	gitIgnoreFile           = ".gitignore"
-	validNameCharsRe        = `[^a-zA-Z0-9-]+`
+	validIDCharsRe          = `[^a-zA-Z0-9-.]+` // https://spdx.github.io/spdx-spec/3-package-information/#32-package-spdx-identifier
 
 	// Consts of some SPDX expressions
 	NONE        = "NONE"
@@ -95,6 +95,42 @@ type TarballOptions struct {
 	ExtractDir string // Directory where the docker tar archive will be extracted
 }
 
+// buildIDString takes a list of seed strings and builds a
+// valid SPDX ID string from them. If none is supplied, an
+// ID using an UUID will be returned
+func buildIDString(seeds ...string) string {
+	validSeeds := []string{}
+	numValidSeeds := 0
+	reg := regexp.MustCompile(validIDCharsRe)
+	for _, s := range seeds {
+		// Replace some chars with - to keep the sense of the ID
+		for _, r := range []string{"/", ":"} {
+			s = strings.ReplaceAll(s, r, "-")
+		}
+		s = reg.ReplaceAllString(s, "")
+		if s != "" {
+			validSeeds = append(validSeeds, s)
+			if !strings.HasPrefix(s, "SPDXRef-") {
+				numValidSeeds++
+			}
+		}
+	}
+
+	// If we did not get any seeds, use an UUID
+	if numValidSeeds == 0 {
+		validSeeds = append(validSeeds, uuid.New().String())
+	}
+
+	id := ""
+	for _, s := range validSeeds {
+		if id != "" {
+			id += "-"
+		}
+		id += s
+	}
+	return id
+}
+
 // PackageFromDirectory indexes all files in a directory and builds a
 // SPDX package describing its contents
 func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error) {
@@ -137,9 +173,7 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 	pkg = NewPackage()
 	pkg.FilesAnalyzed = true
 	pkg.Name = filepath.Base(dirPath)
-	// If the package file will result in an empty ID, generate one
-	reg := regexp.MustCompile(validNameCharsRe)
-	if reg.ReplaceAllString(pkg.Name, "") == "" {
+	if pkg.Name == "" {
 		pkg.Name = uuid.NewString()
 	}
 	pkg.LicenseConcluded = licenseTag
@@ -203,70 +237,8 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 }
 
 // PackageFromImageTarball returns a SPDX package from a tarball
-func (spdx *SPDX) PackageFromImageTarball(
-	tarPath string, opts *TarballOptions,
-) (imagePackage *Package, err error) {
-	logrus.Infof("Generating SPDX package from image tarball %s", tarPath)
-
-	// Extract all files from tarfile
-	opts.ExtractDir, err = spdx.impl.ExtractTarballTmp(tarPath)
-	if err != nil {
-		return nil, errors.Wrap(err, "extracting tarball to temp dir")
-	}
-	defer os.RemoveAll(opts.ExtractDir)
-
-	// Read the archive manifest json:
-	manifest, err := spdx.impl.ReadArchiveManifest(
-		filepath.Join(opts.ExtractDir, archiveManifestFilename),
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "while reading docker archive manifest")
-	}
-
-	if len(manifest.RepoTags) == 0 {
-		return nil, errors.New("No RepoTags found in manifest")
-	}
-
-	if manifest.RepoTags[0] == "" {
-		return nil, errors.New(
-			"unable to add tar archive, manifest does not have a RepoTags entry",
-		)
-	}
-
-	logrus.Infof("Package describes %s image", manifest.RepoTags[0])
-
-	// Create the new SPDX package
-	imagePackage = NewPackage()
-	imagePackage.Options().WorkDir = opts.ExtractDir
-	imagePackage.Name = manifest.RepoTags[0]
-
-	logrus.Infof("Image manifest lists %d layers", len(manifest.LayerFiles))
-
-	// Cycle all the layers from the manifest and add them as packages
-	for _, layerFile := range manifest.LayerFiles {
-		// Generate a package from a layer
-		pkg, err := spdx.impl.PackageFromLayerTarBall(layerFile, opts)
-		if err != nil {
-			return nil, errors.Wrap(err, "building package from layer")
-		}
-
-		// If the option is enabled, scan the container layers
-		if spdx.options.AnalyzeLayers {
-			if err := spdx.AnalyzeImageLayer(filepath.Join(opts.ExtractDir, layerFile), pkg); err != nil {
-				return nil, errors.Wrap(err, "scanning layer "+pkg.ID)
-			}
-		} else {
-			logrus.Info("Not performing deep image analysis (opts.AnalyzeLayers = false)")
-		}
-
-		// Add the layer package to the image package
-		if err := imagePackage.AddPackage(pkg); err != nil {
-			return nil, errors.Wrap(err, "adding layer to image package")
-		}
-	}
-
-	// return the finished package
-	return imagePackage, nil
+func (spdx *SPDX) PackageFromImageTarball(tarPath string) (imagePackage *Package, err error) {
+	return spdx.impl.PackageFromImageTarball(tarPath, spdx.Options())
 }
 
 // FileFromPath creates a File object from a path
@@ -285,7 +257,7 @@ func (spdx *SPDX) FileFromPath(filePath string) (*File, error) {
 //  it matches a known image from which a spdx package can be
 //  enriched with more information
 func (spdx *SPDX) AnalyzeImageLayer(layerPath string, pkg *Package) error {
-	return NewImageAnalyzer().AnalyzeLayer(layerPath, pkg)
+	return spdx.impl.AnalyzeImageLayer(layerPath, pkg)
 }
 
 // ExtractTarballTmp extracts a tarball to a temp file
@@ -294,6 +266,22 @@ func (spdx *SPDX) ExtractTarballTmp(tarPath string) (tmpDir string, err error) {
 }
 
 // PullImagesToArchive
-func (spdx *SPDX) PullImagesToArchive(reference, path string) error {
+func (spdx *SPDX) PullImagesToArchive(reference, path string) ([]struct {
+	Reference string
+	Archive   string
+	Arch      string
+	OS        string
+}, error) {
 	return spdx.impl.PullImagesToArchive(reference, path)
+}
+
+// ImageRefToPackage gets an image reference (tag or digest) and returns
+// a spdx package describing it. It can take two forms:
+//  - When the reference is a digest (or single image), a single package
+//    describing the layers is returned
+//  - When the reference is an image index, the returned package is a
+//    package referencing each of the images, each in its own packages.
+//  All subpackages are returned with a relationship of VARIANT_OF
+func (spdx *SPDX) ImageRefToPackage(reference string) (pkg *Package, err error) {
+	return spdx.impl.ImageRefToPackage(reference, spdx.Options())
 }

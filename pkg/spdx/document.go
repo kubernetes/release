@@ -23,7 +23,6 @@ import (
 	"html/template"
 	"log"
 	"os"
-	"regexp"
 	"time"
 
 	"github.com/google/uuid"
@@ -92,22 +91,17 @@ func (d *Document) AddPackage(pkg *Package) error {
 		d.Packages = map[string]*Package{}
 	}
 
-	if pkg.ID == "" {
-		// If we so not have an ID but have a name generate it fro there
-		reg := regexp.MustCompile("[^a-zA-Z0-9-]+")
-		id := reg.ReplaceAllString(pkg.Name, "")
-		if id != "" {
-			pkg.ID = "SPDXRef-Package-" + id
-		}
+	if pkg.SPDXID() == "" {
+		pkg.BuildID(pkg.Name)
 	}
-	if pkg.ID == "" {
+	if pkg.SPDXID() == "" {
 		return errors.New("package id is needed to add a new package")
 	}
-	if _, ok := d.Packages[pkg.ID]; ok {
-		return errors.New("a package named " + pkg.ID + " already exists in the document")
+	if _, ok := d.Packages[pkg.SPDXID()]; ok {
+		return errors.New("a package named " + pkg.SPDXID() + " already exists in the document")
 	}
 
-	d.Packages[pkg.ID] = pkg
+	d.Packages[pkg.SPDXID()] = pkg
 	return nil
 }
 
@@ -129,7 +123,7 @@ func (d *Document) Render() (doc string, err error) {
 	var buf bytes.Buffer
 	funcMap := template.FuncMap{
 		// The name "title" is what the function will be called in the template text.
-		"dateFormat": func(t time.Time) string { return t.UTC().Format("2006-02-01T15:04:05Z") },
+		"dateFormat": func(t time.Time) string { return t.UTC().Format("2006-01-02T15:04:05Z") },
 	}
 
 	if d.Name == "" {

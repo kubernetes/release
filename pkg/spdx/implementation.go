@@ -21,7 +21,6 @@ package spdx
 import (
 	"archive/tar"
 	"bufio"
-	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -46,14 +45,22 @@ import (
 type spdxImplementation interface {
 	ExtractTarballTmp(string) (string, error)
 	ReadArchiveManifest(string) (*ArchiveManifest, error)
-	PullImagesToArchive(string, string) error
-	PackageFromLayerTarBall(string, *TarballOptions) (*Package, error)
+	PullImagesToArchive(string, string) ([]struct {
+		Reference string
+		Archive   string
+		Arch      string
+		OS        string
+	}, error)
+	PackageFromImageTarball(string, *Options) (*Package, error)
+	PackageFromLayerTarball(string, *TarballOptions) (*Package, error)
 	GetDirectoryTree(string) ([]string, error)
 	IgnorePatterns(string, []string, bool) ([]gitignore.Pattern, error)
 	ApplyIgnorePatterns([]string, []gitignore.Pattern) []string
 	GetGoDependencies(string, *Options) ([]*Package, error)
 	GetDirectoryLicense(*license.Reader, string, *Options) (*license.License, error)
 	LicenseReader(*Options) (*license.Reader, error)
+	ImageRefToPackage(string, *Options) (*Package, error)
+	AnalyzeImageLayer(string, *Package) error
 }
 
 type spdxDefaultImplementation struct{}
@@ -134,57 +141,210 @@ func (di *spdxDefaultImplementation) ReadArchiveManifest(manifestPath string) (m
 	return &manifestData[0], nil
 }
 
-// PullImagesToArchive takes an image reference (a tag or a digest)
-// and writes it into a docker tar archive in path
-func (di *spdxDefaultImplementation) PullImagesToArchive(referenceString, path string) error {
-	// Parse the string to get a reference (tag or digest)
+// getImageReferences gets a reference string and returns all image
+// references from it
+func getImageReferences(referenceString string) ([]struct {
+	Digest string
+	Arch   string
+	OS     string
+}, error) {
+	ref, err := name.ParseReference(referenceString)
+	if err != nil {
+		return nil, errors.Wrapf(err, "parsing image reference %s", referenceString)
+	}
+	descr, err := remote.Get(ref)
+	if err != nil {
+		return nil, errors.Wrap(err, "fetching remote descriptor")
+	}
+
+	images := []struct {
+		Digest string
+		Arch   string
+		OS     string
+	}{}
+
+	// If we got a digest, we reuse it as is
+	if _, ok := ref.(name.Digest); ok {
+		images = append(images, struct {
+			Digest string
+			Arch   string
+			OS     string
+		}{Digest: ref.(name.Digest).String()})
+		return images, nil
+	}
+
+	// If the reference is not an image, it has to work as a tag
+	tag, ok := ref.(name.Tag)
+	if !ok {
+		return nil, errors.Errorf("could not cast tag from reference %s", referenceString)
+	}
+	// If the reference points to an image, return it
+	if descr.MediaType.IsImage() {
+		logrus.Infof("Reference %s points to a single image", referenceString)
+		// Check if we can get an image
+		im, err := descr.Image()
+		if err != nil {
+			return nil, errors.Wrap(err, "getting image from descriptor")
+		}
+
+		imageDigest, err := im.Digest()
+		if err != nil {
+			return nil, errors.Wrap(err, "while calculating image digest")
+		}
+
+		logrus.Infof("Adding image digest %s from reference", imageDigest.String())
+		return append(images, struct {
+			Digest string
+			Arch   string
+			OS     string
+		}{Digest: imageDigest.String()}), nil
+	}
+
+	// Get the image index
+	index, err := descr.ImageIndex()
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting image index for %s", referenceString)
+	}
+	indexManifest, err := index.IndexManifest()
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting index manifest from %s", referenceString)
+	}
+	logrus.Infof("Reference image index points to %d manifests", len(indexManifest.Manifests))
+
+	for _, manifest := range indexManifest.Manifests {
+		dig, err := name.NewDigest(
+			fmt.Sprintf(
+				"%s/%s@%s:%s",
+				tag.RegistryStr(), tag.RepositoryStr(),
+				manifest.Digest.Algorithm, manifest.Digest.Hex,
+			))
+		if err != nil {
+			return nil, errors.Wrap(err, "generating digest for image")
+		}
+
+		logrus.Infof(
+			"Adding image %s/%s@%s:%s (%s/%s)",
+			tag.RegistryStr(), tag.RepositoryStr(), manifest.Digest.Algorithm, manifest.Digest.Hex,
+			manifest.Platform.Architecture, manifest.Platform.OS,
+		)
+		arch, osid := "", ""
+		if manifest.Platform != nil {
+			arch = manifest.Platform.Architecture
+			osid = manifest.Platform.OS
+		}
+		images = append(images,
+			struct {
+				Digest string
+				Arch   string
+				OS     string
+			}{
+				Digest: dig.String(),
+				Arch:   arch,
+				OS:     osid,
+			})
+	}
+	return images, nil
+}
+
+func PullImageToArchive(referenceString, path string) error {
 	ref, err := name.ParseReference(referenceString)
 	if err != nil {
 		return errors.Wrapf(err, "parsing reference %s", referenceString)
 	}
 
-	// Build an image from the reference
+	// Get the image from the reference:
 	img, err := remote.Image(ref)
 	if err != nil {
 		return errors.Wrap(err, "getting image")
 	}
 
-	// This algo comes from crane:
-	// Try to cast the reference as a tag:
-	tag, ok := ref.(name.Tag)
-	// if it fails
-	if !ok {
-		// .. and it is a digest
-		d, ok := ref.(name.Digest)
-		if !ok {
-			return fmt.Errorf("reference is not a tag or digest")
-		}
-		// We add a mock tag
-		tag = d.Repository.Tag("from-digest") // Append digest here?
-	}
-
-	return tarball.MultiWriteToFile(path, map[name.Tag]v1.Image{tag: img})
+	return errors.Wrap(tarball.WriteToFile(path, ref, img), "writing image to disk")
 }
 
-// PackageFromLayerTarBall builds a SPDX package from an image
-//  tarball
-func (di *spdxDefaultImplementation) PackageFromLayerTarBall(
+// PullImagesToArchive takes an image reference (a tag or a digest)
+// and writes it into a docker tar archive in path
+func (di *spdxDefaultImplementation) PullImagesToArchive(
+	referenceString, path string,
+) (images []struct {
+	Reference string
+	Archive   string
+	Arch      string
+	OS        string
+}, err error) {
+	images = []struct {
+		Reference string
+		Archive   string
+		Arch      string
+		OS        string
+	}{}
+	// Get the image references from the index
+	references, err := getImageReferences(referenceString)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(references) == 0 {
+		return nil, errors.Wrap(err, "the supplied reference did not return any image references")
+	}
+
+	if !util.Exists(path) {
+		if err := os.MkdirAll(path, os.FileMode(0o755)); err != nil {
+			return nil, errors.Wrap(err, "creating image directory")
+		}
+	}
+
+	for _, refData := range references {
+		ref, err := name.ParseReference(refData.Digest)
+		if err != nil {
+			return nil, errors.Wrapf(err, "parsing reference %s", referenceString)
+		}
+
+		// Get the reference image
+		img, err := remote.Image(ref)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting image")
+		}
+		// This function is not for digests
+		d, ok := ref.(name.Digest)
+		if !ok {
+			return nil, fmt.Errorf("reference is not a tag or digest")
+		}
+		p := strings.Split(d.DigestStr(), ":")
+		tarPath := filepath.Join(path, p[1]+".tar")
+		logrus.Infof("Jalo %+v a %s", d.String(), path)
+		if err := tarball.MultiWriteToFile(
+			tarPath,
+			map[name.Tag]v1.Image{
+				d.Repository.Tag(p[1]): img,
+			},
+		); err != nil {
+			return nil, err
+		}
+		images = append(images, struct {
+			Reference string
+			Archive   string
+			Arch      string
+			OS        string
+		}{refData.Digest, tarPath, refData.Arch, refData.OS})
+	}
+	return images, nil
+}
+
+// PackageFromLayerTarball builds a SPDX package from an image
+// tarball
+func (di *spdxDefaultImplementation) PackageFromLayerTarball(
 	layerFile string, opts *TarballOptions,
 ) (*Package, error) {
 	logrus.Infof("Generating SPDX package from layer in %s", layerFile)
 
 	pkg := NewPackage()
-	pkg.options.WorkDir = opts.ExtractDir
+	pkg.Options().WorkDir = opts.ExtractDir
 	if err := pkg.ReadSourceFile(filepath.Join(opts.ExtractDir, layerFile)); err != nil {
 		return nil, errors.Wrap(err, "reading source file")
 	}
-	// Build the pkg name from its internal path
-	h := sha1.New()
-	if _, err := h.Write([]byte(layerFile)); err != nil {
-		return nil, errors.Wrap(err, "hashing file path")
-	}
-	pkg.Name = fmt.Sprintf("%x", h.Sum(nil))
-
+	pkg.BuildID(layerFile)
+	pkg.Name = layerFile
+	pkg.FileName = layerFile
 	return pkg, nil
 }
 
@@ -337,4 +497,141 @@ func (di *spdxDefaultImplementation) GetDirectoryLicense(
 		return nil, errors.Wrap(err, "getting directory license")
 	}
 	return licenseResult.License, nil
+}
+
+// ImageRefToPackage Returns a spdx package from an OCI image reference
+func (di *spdxDefaultImplementation) ImageRefToPackage(ref string, opts *Options) (*Package, error) {
+	tmpdir, err := os.MkdirTemp("", "doc-build-")
+	if err != nil {
+		return nil, errors.Wrap(err, "creating temporary workdir in")
+	}
+	imgs, err := di.PullImagesToArchive(ref, tmpdir)
+	if err != nil {
+		return nil, errors.Wrap(err, "while downloading images to archive")
+	}
+
+	if len(imgs) == 0 {
+		return nil, errors.Errorf("Could not get any images from reference %s", ref)
+	}
+
+	// If we just got one image and that image is exactly the same
+	// reference, return a single package:
+	if len(imgs) == 1 && imgs[0].Reference == ref {
+		return di.PackageFromImageTarball(imgs[0].Archive, opts)
+	}
+
+	// Create the package representing the image tag:
+	pkg := &Package{}
+	pkg.Name = ref
+	pkg.BuildID(pkg.Name)
+	pkg.DownloadLocation = ref
+
+	// Now, cycle each image in the index and generate a package from it
+	for _, img := range imgs {
+		subpkg, err := di.PackageFromImageTarball(img.Archive, opts)
+		if err != nil {
+			return nil, errors.Wrap(err, "adding image variant package")
+		}
+
+		if img.Arch != "" || img.OS != "" {
+			subpkg.Name = ref + " (" + img.Arch
+			if img.Arch != "" {
+				subpkg.Name += "/"
+			}
+			subpkg.Name += img.OS + ")"
+		} else {
+			subpkg.Name = img.Reference
+		}
+		subpkg.DownloadLocation = img.Reference
+
+		// Add the package
+		pkg.AddRelationship(&Relationship{
+			Peer:       subpkg,
+			Type:       CONTAINS,
+			FullRender: true,
+			Comment:    "Container image lager",
+		})
+		pkg.AddRelationship(&Relationship{
+			Peer:    subpkg,
+			Type:    VARIANT_OF,
+			Comment: "Image index",
+		})
+	}
+	return pkg, nil
+}
+
+// PackageFromImageTarball reads an OCI image archive and produces a SPDX
+// packafe describing its layers
+func (di *spdxDefaultImplementation) PackageFromImageTarball(
+	tarPath string, spdxOpts *Options,
+) (imagePackage *Package, err error) {
+	logrus.Infof("Generating SPDX package from image tarball %s", tarPath)
+
+	// Extract all files from tarfile
+	tarOpts := &TarballOptions{}
+	tarOpts.ExtractDir, err = di.ExtractTarballTmp(tarPath)
+	if err != nil {
+		logrus.Info("Nononono")
+		return nil, errors.Wrap(err, "extracting tarball to temp dir")
+	}
+	defer os.RemoveAll(tarOpts.ExtractDir)
+
+	// Read the archive manifest json:
+	manifest, err := di.ReadArchiveManifest(
+		filepath.Join(tarOpts.ExtractDir, archiveManifestFilename),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "while reading docker archive manifest")
+	}
+
+	if len(manifest.RepoTags) == 0 {
+		return nil, errors.New("No RepoTags found in manifest")
+	}
+
+	if manifest.RepoTags[0] == "" {
+		return nil, errors.New(
+			"unable to add tar archive, manifest does not have a RepoTags entry",
+		)
+	}
+
+	logrus.Infof("Package describes %s image", manifest.RepoTags[0])
+
+	// Create the new SPDX package
+	imagePackage = NewPackage()
+	logrus.Infof("%+v", imagePackage.Options())
+	imagePackage.Options().WorkDir = tarOpts.ExtractDir
+	imagePackage.Name = manifest.RepoTags[0]
+	imagePackage.BuildID(imagePackage.Name)
+
+	logrus.Infof("Image manifest lists %d layers", len(manifest.LayerFiles))
+
+	// Cycle all the layers from the manifest and add them as packages
+	for _, layerFile := range manifest.LayerFiles {
+		// Generate a package from a layer
+		pkg, err := di.PackageFromLayerTarball(layerFile, tarOpts)
+		if err != nil {
+			return nil, errors.Wrap(err, "building package from layer")
+		}
+
+		// If the option is enabled, scan the container layers
+		if spdxOpts.AnalyzeLayers {
+			if err := di.AnalyzeImageLayer(filepath.Join(tarOpts.ExtractDir, layerFile), pkg); err != nil {
+				return nil, errors.Wrap(err, "scanning layer "+pkg.ID)
+			}
+		} else {
+			logrus.Info("Not performing deep image analysis (opts.AnalyzeLayers = false)")
+		}
+
+		// Add the layer package to the image package
+		if err := imagePackage.AddPackage(pkg); err != nil {
+			return nil, errors.Wrap(err, "adding layer to image package")
+		}
+	}
+
+	// return the finished package
+	return imagePackage, nil
+}
+
+func (di *spdxDefaultImplementation) AnalyzeImageLayer(layerPath string, pkg *Package) error {
+	return NewImageAnalyzer().AnalyzeLayer(layerPath, pkg)
 }

@@ -150,11 +150,7 @@ func (ddi *DefaultDownloaderImpl) GetLicenses() (licenses *List, err error) {
 
 	// Create a new Throttler that will get `parallelDownloads` urls at a time
 	t := throttler.New(ddi.Options.parallelDownloads, len(licenseList.LicenseData))
-	for i, l := range licenseList.LicenseData {
-		// Plus signs in the license list come as xml entity
-		licenseList.LicenseData[i].LicenseID = strings.ReplaceAll(
-			licenseList.LicenseData[i].LicenseID, `&#43;`, `+`,
-		)
+	for _, l := range licenseList.LicenseData {
 		licURL := l.DetailsURL
 		// If the license URLs have a local reference
 		if strings.HasPrefix(licURL, "./") {

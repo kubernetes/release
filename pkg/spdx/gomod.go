@@ -94,7 +94,11 @@ func (pkg *GoPackage) ToSPDXPackage() (*Package, error) {
 		return nil, errors.Wrap(err, "building repository from package import path")
 	}
 	spdxPackage := NewPackage()
-	spdxPackage.Name = pkg.ImportPath + "@" + strings.TrimSuffix(pkg.Revision, "+incompatible")
+	spdxPackage.Name = pkg.ImportPath
+	if pkg.Revision != "" {
+		spdxPackage.Name += "@" + strings.TrimSuffix(pkg.Revision, "+incompatible")
+	}
+	spdxPackage.BuildID()
 	spdxPackage.DownloadLocation = repo.Repo
 	spdxPackage.LicenseConcluded = pkg.LicenseID
 	spdxPackage.Version = strings.TrimSuffix(pkg.Revision, "+incompatible")
@@ -164,7 +168,7 @@ func (mod *GoModule) ScanLicenses() error {
 		return errors.Wrap(err, "creating license scanner")
 	}
 
-	// Create a new Throttler that will get `parallelDownloads` urls at a time
+	// Create a new Throttler that will get parallelDownloads urls at a time
 	t := throttler.New(10, len(mod.Packages))
 	// Do a quick re-check for missing downloads
 	// todo: paralelize this. urgently.
@@ -247,6 +251,7 @@ func (mod *GoModule) BuildFullPackageList(g *modfile.File) (packageList []*GoPac
 	list := map[string]map[string]*ModEntry{}
 	for dec.More() {
 		m := &ModEntry{}
+		// Decode the json stream as we get "Module" blocks from go:
 		if err := dec.Decode(m); err != nil {
 			return nil, errors.Wrap(err, "decoding module list")
 		}
@@ -254,7 +259,23 @@ func (mod *GoModule) BuildFullPackageList(g *modfile.File) (packageList []*GoPac
 			if _, ok := list[m.Module.Path]; !ok {
 				list[m.Module.Path] = map[string]*ModEntry{}
 			}
-			list[m.Module.Path][m.Module.Version] = m
+
+			// Go list will return modules with a specific version
+			// and sometime duplicate entries, generic for the module
+			// witjout version. We try to handle both cases here:
+			if m.Module.Version == "" {
+				// If we got a generic module entry, add it to the list
+				// but only if we do not have a more specific (versioned)
+				// entry
+				if len(list[m.Module.Path]) == 0 {
+					list[m.Module.Path][m.Module.Version] = m
+				}
+			} else {
+				// If we got a specific version, but previously had a
+				// generic entry for the module, delete it
+				list[m.Module.Path][m.Module.Version] = m
+				delete(list[m.Module.Path], "")
+			}
 		}
 	}
 	logrus.Info("Adding full list of dependencies:")
@@ -330,11 +351,11 @@ func (di *GoModDefaultImpl) BuildPackageList(gomod *modfile.File) ([]*GoPackage,
 //  the download dir in the LocalDir field
 func (di *GoModDefaultImpl) DownloadPackage(pkg *GoPackage, opts *GoModuleOptions, force bool) error {
 	if pkg.LocalDir != "" && util.Exists(pkg.LocalDir) && !force {
-		logrus.Infof("Not downloading %s as it already has local data", pkg.ImportPath)
+		logrus.WithField("package", pkg.ImportPath).Infof("Not downloading %s as it already has local data", pkg.ImportPath)
 		return nil
 	}
 
-	logrus.Infof("Downloading package %s@%s", pkg.ImportPath, pkg.Revision)
+	logrus.WithField("package", pkg.ImportPath).Infof("Downloading package %s@%s", pkg.ImportPath, pkg.Revision)
 	repo, err := vcs.RepoRootForImportPath(pkg.ImportPath, true)
 	if err != nil {
 		return errors.Wrapf(err, "Fetching package %s from %s", pkg.ImportPath, repo.Repo)
@@ -363,13 +384,19 @@ func (di *GoModDefaultImpl) DownloadPackage(pkg *GoPackage, opts *GoModuleOption
 	m := goModRevRe.FindStringSubmatch(pkg.Revision)
 	if len(m) > 1 {
 		rev = m[1]
-		logrus.Infof("Using commit %s as revision for download", rev)
+		logrus.WithField("package", pkg.ImportPath).Infof("Using commit %s as revision for download", rev)
 	}
-	if err := repo.VCS.CreateAtRev(tmpDir, repo.Repo, rev); err != nil {
-		return errors.Wrapf(err, "creating local clone of %s", repo.Repo)
+	if rev == "" {
+		if err := repo.VCS.Create(tmpDir, repo.Repo); err != nil {
+			return errors.Wrapf(err, "creating local clone of %s", repo.Repo)
+		}
+	} else {
+		if err := repo.VCS.CreateAtRev(tmpDir, repo.Repo, rev); err != nil {
+			return errors.Wrapf(err, "creating local clone of %s", repo.Repo)
+		}
 	}
 
-	logrus.Infof("Go Package %s (rev %s) downloaded to %s", pkg.ImportPath, pkg.Revision, tmpDir)
+	logrus.WithField("package", pkg.ImportPath).Infof("Go Package %s (rev %s) downloaded to %s", pkg.ImportPath, pkg.Revision, tmpDir)
 	pkg.LocalDir = tmpDir
 	pkg.TmpDir = true
 	return nil
