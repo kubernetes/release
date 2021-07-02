@@ -122,6 +122,27 @@ func TestPackageFromLayerTarBall(t *testing.T) {
 	require.Equal(t, "f3b48a64a3d9db36fff10a9752dea6271725ddf125baf7026cdf09a2c352d9ff4effadb75da31e4310bc1b2513be441c86488b69d689353128f703563846c97e", pkg.Checksum["SHA512"])
 }
 
+func TestExternalDocRef(t *testing.T) {
+	cases := []struct {
+		DocRef    ExternalDocumentRef
+		StringVal string
+	}{
+		{ExternalDocumentRef{ID: "", URI: "", Checksums: map[string]string{}}, ""},
+		{ExternalDocumentRef{ID: "", URI: "http://example.com/", Checksums: map[string]string{"SHA256": "d3b53860aa08e5c7ea868629800eaf78856f6ef3bcd4a2f8c5c865b75f6837c8"}}, ""},
+		{ExternalDocumentRef{ID: "test-id", URI: "", Checksums: map[string]string{"SHA256": "d3b53860aa08e5c7ea868629800eaf78856f6ef3bcd4a2f8c5c865b75f6837c8"}}, ""},
+		{ExternalDocumentRef{ID: "test-id", URI: "http://example.com/", Checksums: map[string]string{}}, ""},
+		{
+			ExternalDocumentRef{
+				ID: "test-id", URI: "http://example.com/", Checksums: map[string]string{"SHA256": "d3b53860aa08e5c7ea868629800eaf78856f6ef3bcd4a2f8c5c865b75f6837c8"},
+			},
+			"DocumentRef-test-id http://example.com/ SHA256:d3b53860aa08e5c7ea868629800eaf78856f6ef3bcd4a2f8c5c865b75f6837c8",
+		},
+	}
+	for _, tc := range cases {
+		require.Equal(t, tc.StringVal, tc.DocRef.String())
+	}
+}
+
 func writeTestTarball(t *testing.T) *os.File {
 	// Create a testdire
 	tar, err := os.CreateTemp(os.TempDir(), "test-tar-*.tar.gz")

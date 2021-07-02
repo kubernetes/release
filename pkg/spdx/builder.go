@@ -42,7 +42,8 @@ type YamlBOMConfiguration struct {
 		Person string `yaml:"person"`
 		Tool   string `yaml:"tool"`
 	} `yaml:"creator"`
-	Artifacts []*YamlBuildArtifact `yaml:"artifacts"`
+	ExternalDocRefs []ExternalDocumentRef `yaml:"external-docs"`
+	Artifacts       []*YamlBuildArtifact  `yaml:"artifacts"`
 }
 
 func NewDocBuilder() *DocBuilder {
@@ -84,22 +85,23 @@ func (db *DocBuilder) Generate(genopts *DocGenerateOptions) (*Document, error) {
 }
 
 type DocGenerateOptions struct {
-	AnalyseLayers    bool     // A flag that controls if deep layer analysis should be performed
-	NoGitignore      bool     // Do not read exclusions from gitignore file
-	ProcessGoModules bool     // Analyze go.mod to include data about packages
-	OnlyDirectDeps   bool     // Only include direct dependencies from go.mod
-	ScanLicenses     bool     // Try to llok into files to determine their license
-	ConfigFile       string   // Path to SBOM configuration file
-	OutputFile       string   // Output location
-	Name             string   // Name to us ein the resulting document
-	Namespace        string   // Namespace for the document (a unique URI)
-	CreatorPerson    string   // Document creator information
-	License          string   // Main license of the document
-	Tarballs         []string // A slice of tar paths
-	Files            []string // A slice of naked files to include in the bom
-	Images           []string // A slice of docker images
-	Directories      []string // A slice of directories to convert into packages
-	IgnorePatterns   []string // a slice of regexp patterns to ignore when scanning dirs
+	AnalyseLayers       bool                  // A flag that controls if deep layer analysis should be performed
+	NoGitignore         bool                  // Do not read exclusions from gitignore file
+	ProcessGoModules    bool                  // Analyze go.mod to include data about packages
+	OnlyDirectDeps      bool                  // Only include direct dependencies from go.mod
+	ScanLicenses        bool                  // Try to llok into files to determine their license
+	ConfigFile          string                // Path to SBOM configuration file
+	OutputFile          string                // Output location
+	Name                string                // Name to us ein the resulting document
+	Namespace           string                // Namespace for the document (a unique URI)
+	CreatorPerson       string                // Document creator information
+	License             string                // Main license of the document
+	Tarballs            []string              // A slice of tar paths
+	Files               []string              // A slice of naked files to include in the bom
+	Images              []string              // A slice of docker images
+	Directories         []string              // A slice of directories to convert into packages
+	IgnorePatterns      []string              // a slice of regexp patterns to ignore when scanning dirs
+	ExternalDocumentRef []ExternalDocumentRef // List of external documents related to the bom
 }
 
 func (o *DocGenerateOptions) Validate() error {
@@ -164,6 +166,7 @@ func (builder *defaultDocBuilderImpl) GenerateDoc(
 	doc.Name = genopts.Name
 	doc.Namespace = genopts.Namespace
 	doc.Creator.Person = genopts.CreatorPerson
+	doc.ExternalDocRefs = genopts.ExternalDocumentRef
 
 	if genopts.Namespace == "" {
 		return nil, errors.New("unable to generate doc, namespace URI is not defined")
@@ -261,6 +264,8 @@ func (builder *defaultDocBuilderImpl) ReadYamlConfiguration(
 	if conf.License != "" {
 		opts.License = conf.License
 	}
+
+	opts.ExternalDocumentRef = conf.ExternalDocRefs
 
 	// Add all the artifacts
 	for _, artifact := range conf.Artifacts {
