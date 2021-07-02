@@ -662,6 +662,7 @@ func (d *DefaultStage) GenerateBillOfMaterials() error {
 	// in WriteSourceBOM() before writing the actual files.
 	spdxDOC, err := d.impl.GenerateSourceTreeBOM(&spdx.DocGenerateOptions{
 		ProcessGoModules: true,
+		License:          "Apache-2.0",
 		OutputFile:       "/tmp/kubernetes-source.spdx",
 		Namespace:        "http://k8s.io/sbom/source/REPLACE",
 		ScanLicenses:     true,
@@ -681,11 +682,11 @@ func (d *DefaultStage) GenerateBillOfMaterials() error {
 		if err := d.impl.GenerateVersionArtifactsBOM(&spdx.DocGenerateOptions{
 			AnalyseLayers:  false,
 			OnlyDirectDeps: false,
-			// License:          "Apache-2.0", // Needs https://github.com/kubernetes/release/pull/2096
-			Namespace:    fmt.Sprintf("https://k8s.io/sbom/release/%s", version),
-			ScanLicenses: false,
-			Tarballs:     artifactsList["images"],
-			Files:        artifactsList["binaries"],
+			License:        "Apache-2.0",
+			Namespace:      fmt.Sprintf("https://k8s.io/sbom/release/%s", version),
+			ScanLicenses:   false,
+			Tarballs:       artifactsList["images"],
+			Files:          artifactsList["binaries"],
 			OutputFile: filepath.Join(
 				os.TempDir(), fmt.Sprintf("release-bom-%s.spdx", version),
 			),
