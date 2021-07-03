@@ -289,7 +289,7 @@ func getCRIToolsLatestVersion() (string, error) {
 }
 
 func getLatestKubeCIBuild() (string, error) {
-	return fetchVersion("https://dl.k8s.io/ci-cross/latest.txt")
+	return fetchVersion("https://dl.k8s.io/ci/latest.txt")
 }
 
 func getCIBuildsDownloadLinkBase(_ version) (string, error) {
@@ -298,7 +298,7 @@ func getCIBuildsDownloadLinkBase(_ version) (string, error) {
 		return "", err
 	}
 
-	return fmt.Sprintf("https://dl.k8s.io/ci-cross/v%s", latestCiVersion), nil
+	return fmt.Sprintf("https://dl.k8s.io/ci/v%s", latestCiVersion), nil
 }
 
 func getReleaseDownloadLinkBase(v version) (string, error) {
