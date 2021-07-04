@@ -17,6 +17,7 @@ limitations under the License.
 package release
 
 import (
+	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -31,6 +32,7 @@ import (
 	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/spdx"
 	"sigs.k8s.io/release-utils/tar"
+	"sigs.k8s.io/release-utils/util"
 )
 
 // PrepareWorkspaceStage sets up the workspace by cloning a new copy of k/k.
@@ -112,4 +114,163 @@ func PrepareWorkspaceRelease(directory, buildVersion, bucket string) error {
 	}
 
 	return nil
+}
+
+// ListBuildBinaries returns a list of binaries
+func ListBuildBinaries(gitroot, version string) (list []struct{ Path, Platform, Arch string }, err error) {
+	list = []struct {
+		Path     string
+		Platform string
+		Arch     string
+	}{}
+	buildDir := filepath.Join(
+		gitroot, fmt.Sprintf("%s-%s", BuildDir, version),
+	)
+
+	rootPath := filepath.Join(buildDir, ReleaseStagePath)
+	platformsPath := filepath.Join(rootPath, "client")
+	if !util.Exists(platformsPath) {
+		logrus.Infof("Not adding binaries as %s was not found", platformsPath)
+		return list, nil
+	}
+	platformsAndArches, err := os.ReadDir(platformsPath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "retrieve platforms from %s", platformsPath)
+	}
+
+	for _, platformArch := range platformsAndArches {
+		if !platformArch.IsDir() {
+			logrus.Warnf(
+				"Skipping platform and arch %q because it's not a directory",
+				platformArch.Name(),
+			)
+			continue
+		}
+
+		split := strings.Split(platformArch.Name(), "-")
+		if len(split) != 2 {
+			return nil, errors.Errorf(
+				"expected `platform-arch` format for %s", platformArch.Name(),
+			)
+		}
+
+		platform := split[0]
+		arch := split[1]
+
+		src := filepath.Join(
+			rootPath, "client", platformArch.Name(), "kubernetes", "client", "bin",
+		)
+
+		// We assume here the "server package" is a superset of the "client
+		// package"
+		serverSrc := filepath.Join(rootPath, "server", platformArch.Name())
+		if util.Exists(serverSrc) {
+			src = filepath.Join(serverSrc, "kubernetes", "server", "bin")
+		}
+
+		if err := filepath.Walk(src,
+			func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				if info.IsDir() {
+					return nil
+				}
+
+				if strings.HasSuffix(path, ".docker_tag") {
+					return nil
+				}
+
+				list = append(list, struct {
+					Path     string
+					Platform string
+					Arch     string
+				}{path, platform, arch})
+				return nil
+			},
+		); err != nil {
+			return nil, errors.Wrapf(err, "gathering binaries from %s", src)
+		}
+
+		// Copy node binaries if they exist and this isn't a 'server' platform
+		nodeSrc := filepath.Join(rootPath, "node", platformArch.Name())
+		if !util.Exists(serverSrc) && util.Exists(nodeSrc) {
+			src = filepath.Join(nodeSrc, "kubernetes", "node", "bin")
+			if err := filepath.Walk(src,
+				func(path string, info os.FileInfo, err error) error {
+					if err != nil {
+						return err
+					}
+					if info.IsDir() {
+						return nil
+					}
+
+					list = append(list, struct {
+						Path     string
+						Platform string
+						Arch     string
+					}{path, platform, arch})
+					return nil
+				},
+			); err != nil {
+				return nil, errors.Wrapf(err, "gathering node binaries from %s", src)
+			}
+		}
+	}
+	return list, nil
+}
+
+// ListBuildTarballs returns a list of the client, node server and other tarballs
+func ListBuildTarballs(gitroot, version string) (tarList []string, err error) {
+	tarsPath := filepath.Join(
+		gitroot, fmt.Sprintf("%s-%s", BuildDir, version), ReleaseTarsPath,
+	)
+
+	tarList = []string{}
+	if err := filepath.Walk(tarsPath,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil
+			}
+
+			if strings.HasSuffix(path, "tar.gz") {
+				tarList = append(tarList, path)
+			}
+			return nil
+		},
+	); err != nil {
+		return nil, errors.Wrapf(err, "gathering tarfiles binaries from %s", tarsPath)
+	}
+	return tarList, nil
+}
+
+// ListBuildImages returns a slice with paths to all images produced by the build
+func ListBuildImages(gitroot, version string) (imageList []string, err error) {
+	imageList = []string{}
+	buildDir := filepath.Join(
+		gitroot, fmt.Sprintf("%s-%s", BuildDir, version),
+	)
+
+	arches, err := os.ReadDir(filepath.Join(buildDir, ImagesPath))
+	if err != nil {
+		return nil, errors.Wrap(err, "opening images directory")
+	}
+	for _, arch := range arches {
+		if !arch.IsDir() {
+			continue
+		}
+		images, err := os.ReadDir(filepath.Join(buildDir, ImagesPath, arch.Name()))
+		if err != nil {
+			return nil, errors.Wrapf(err, "opening %s images directory", arch.Name())
+		}
+		for _, tarball := range images {
+			imageList = append(
+				imageList, filepath.Join(buildDir, ImagesPath, arch.Name(), tarball.Name()),
+			)
+		}
+	}
+	return imageList, nil
 }
