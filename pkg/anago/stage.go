@@ -550,6 +550,12 @@ func (d *defaultStageImpl) AddBinariesToSBOM(sbom *spdx.Document, version string
 		if err := sbom.AddFile(file); err != nil {
 			return errors.Wrap(err, "adding file to artifacts sbom")
 		}
+		file.AddRelationship(&spdx.Relationship{
+			FullRender:    false,
+			PeerReference: fmt.Sprintf("DocumentRef-kubernetes-%s", version),
+			Comment:       "Source code",
+			Type:          spdx.GENERATED_FROM,
+		})
 	}
 	return nil
 }
@@ -573,6 +579,12 @@ func (d *defaultStageImpl) AddTarfilesToSBOM(sbom *spdx.Document, version string
 		if err := sbom.AddFile(file); err != nil {
 			return errors.Wrap(err, "adding file to artifacts sbom")
 		}
+		file.AddRelationship(&spdx.Relationship{
+			FullRender:    false,
+			PeerReference: fmt.Sprintf("DocumentRef-kubernetes-%s", version),
+			Comment:       "Source code",
+			Type:          spdx.GENERATED_FROM,
+		})
 	}
 	return nil
 }
@@ -612,6 +624,29 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 		return errors.Wrapf(err, "adding tarballs to %s SBOM", version)
 	}
 
+	// Reference the source code SBOM as external document
+	extRef := spdx.ExternalDocumentRef{
+		ID:  fmt.Sprintf("kubernetes-%s", version),
+		URI: fmt.Sprintf("https://k8s.io/sbom/source/%s", version),
+	}
+	if err := extRef.ReadSourceFile(
+		filepath.Join(os.TempDir(), fmt.Sprintf("source-bom-%s.spdx", version)),
+	); err != nil {
+		return errors.Wrap(err, "reading the source file as external reference")
+	}
+	doc.ExternalDocRefs = append(doc.ExternalDocRefs, extRef)
+
+	// Stamp all packages. We do this here because it includes both images and
+	for _, pkg := range doc.Packages {
+		pkg.AddRelationship(&spdx.Relationship{
+			FullRender:    false,
+			PeerReference: fmt.Sprintf("DocumentRef-kubernetes-%s", version),
+			Comment:       "Source code",
+			Type:          spdx.GENERATED_FROM,
+		})
+	}
+
+	// Write the Releas Artifacts SBOM to disk
 	if err := doc.Write(filepath.Join(os.TempDir(), fmt.Sprintf("release-bom-%s.spdx", version))); err != nil {
 		return errors.Wrapf(err, "writing artifacts SBOM for %s", version)
 	}
@@ -659,13 +694,14 @@ func (d *DefaultStage) GenerateBillOfMaterials() error {
 	// We generate an artifacts sbom for each of the versions
 	// we are building
 	for _, version := range d.state.versions.Ordered() {
-		if err := d.impl.GenerateVersionArtifactsBOM(version); err != nil {
-			return errors.Wrapf(err, "generating SBOM for version %s", version)
-		}
-
-		// Render the common source bom for this version
+		// Render the common source SBOM for this version
 		if err := d.impl.WriteSourceBOM(spdxDOC, version); err != nil {
 			return errors.Wrapf(err, "writing SBOM for version %s", version)
+		}
+
+		// Render the artifacts SBOM for version
+		if err := d.impl.GenerateVersionArtifactsBOM(version); err != nil {
+			return errors.Wrapf(err, "generating SBOM for version %s", version)
 		}
 	}
 

@@ -143,6 +143,20 @@ func TestExternalDocRef(t *testing.T) {
 	}
 }
 
+func TestExtDocReadSourceFile(t *testing.T) {
+	// Create a known testfile
+	f, err := os.CreateTemp("", "")
+	require.Nil(t, err)
+	require.Nil(t, os.WriteFile(f.Name(), []byte("Hellow World"), os.FileMode(0o644)))
+
+	ed := ExternalDocumentRef{}
+	require.NotNil(t, ed.ReadSourceFile("/kjfhg/skjdfkjh"))
+	require.Nil(t, ed.ReadSourceFile(f.Name()))
+	require.NotNil(t, ed.Checksums)
+	require.Equal(t, len(ed.Checksums), 1)
+	require.Equal(t, "5f341d31f6b6a8b15bc4e6704830bf37f99511d1", ed.Checksums["SHA1"])
+}
+
 func writeTestTarball(t *testing.T) *os.File {
 	// Create a testdire
 	tar, err := os.CreateTemp(os.TempDir(), "test-tar-*.tar.gz")

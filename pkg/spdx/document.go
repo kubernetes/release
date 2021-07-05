@@ -28,6 +28,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"sigs.k8s.io/release-utils/hash"
 )
 
 var docTemplate = `{{ if .Version }}SPDXVersion: {{.Version}}
@@ -91,7 +92,23 @@ func (ed *ExternalDocumentRef) String() string {
 		break
 	}
 
-	return fmt.Sprintf("DocumentRef-%s %s %s:%s", ed.ID, ed.URI, csAlgo, csHash)
+	return fmt.Sprintf("DocumentRef-%s %s %s: %s", ed.ID, ed.URI, csAlgo, csHash)
+}
+
+// ReadSourceFile populates the external reference data (the sha256 checksum)
+// from a given path
+func (ed *ExternalDocumentRef) ReadSourceFile(path string) error {
+	if ed.Checksums == nil {
+		ed.Checksums = map[string]string{}
+	}
+	// The SPDX validator tools are broken and cannot validate non SHA1 checksums
+	// ref https://github.com/spdx/tools-java/issues/21
+	val, err := hash.SHA1ForFile(path)
+	if err != nil {
+		return errors.Wrap(err, "while calculating the sha256 checksum of the external reference")
+	}
+	ed.Checksums["SHA1"] = val
+	return nil
 }
 
 // NewDocument returns a new SPDX document with some defaults preloaded
