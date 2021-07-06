@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/base64"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -135,7 +136,7 @@ func TestExternalDocRef(t *testing.T) {
 			ExternalDocumentRef{
 				ID: "test-id", URI: "http://example.com/", Checksums: map[string]string{"SHA256": "d3b53860aa08e5c7ea868629800eaf78856f6ef3bcd4a2f8c5c865b75f6837c8"},
 			},
-			"DocumentRef-test-id http://example.com/ SHA256:d3b53860aa08e5c7ea868629800eaf78856f6ef3bcd4a2f8c5c865b75f6837c8",
+			"DocumentRef-test-id http://example.com/ SHA256: d3b53860aa08e5c7ea868629800eaf78856f6ef3bcd4a2f8c5c865b75f6837c8",
 		},
 	}
 	for _, tc := range cases {
@@ -148,6 +149,7 @@ func TestExtDocReadSourceFile(t *testing.T) {
 	f, err := os.CreateTemp("", "")
 	require.Nil(t, err)
 	require.Nil(t, os.WriteFile(f.Name(), []byte("Hellow World"), os.FileMode(0o644)))
+	defer os.Remove(f.Name())
 
 	ed := ExternalDocumentRef{}
 	require.NotNil(t, ed.ReadSourceFile("/kjfhg/skjdfkjh"))
@@ -176,6 +178,72 @@ func writeTestTarball(t *testing.T) *os.File {
 		tar.Name(), bindata, os.FileMode(0o644)), "writing test tar file",
 	)
 	return tar
+}
+
+func TestRelationshipRender(t *testing.T) {
+	host := NewPackage()
+	host.BuildID("TestHost")
+	peer := NewFile()
+	peer.BuildID("TestPeer")
+	dummyref := "SPDXRef-File-6c0c16be41af1064ee8fd2328b17a0a778dd5e52"
+
+	cases := []struct {
+		Rel      Relationship
+		MustErr  bool
+		Rendered string
+	}{
+		{
+			// Relationships with a full peer object have to render
+			Relationship{FullRender: false, Type: DEPENDS_ON, Peer: peer},
+			false, fmt.Sprintf("Relationship: %s DEPENDS_ON %s\n", host.SPDXID(), peer.SPDXID()),
+		},
+		{
+			// Relationships without a full object, but
+			// with a set reference must render
+			Relationship{FullRender: false, PeerReference: dummyref, Type: DEPENDS_ON},
+			false, fmt.Sprintf("Relationship: %s DEPENDS_ON %s\n", host.SPDXID(), dummyref),
+		},
+		{
+			// Relationships without a object and without a set reference
+			// must return an error
+			Relationship{FullRender: false, Type: DEPENDS_ON}, true, "",
+		},
+		{
+			// Relationships with a peer object withouth id should err
+			Relationship{FullRender: false, Peer: &File{}, Type: DEPENDS_ON}, true, "",
+		},
+		{
+			// Relationships with only a a peer reference that should render
+			// in full should err
+			Relationship{FullRender: true, PeerReference: dummyref, Type: DEPENDS_ON}, true, "",
+		},
+		{
+			// Relationships without a type should err
+			Relationship{FullRender: false, PeerReference: dummyref}, true, "",
+		},
+	}
+
+	for _, tc := range cases {
+		res, err := tc.Rel.Render(host)
+		if tc.MustErr {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+			require.Equal(t, tc.Rendered, res)
+		}
+	}
+
+	// Full rednering should not be the same as non full render
+	nonFullRender, err := cases[0].Rel.Render(host)
+	require.Nil(t, err)
+	cases[0].Rel.FullRender = true
+	fullRender, err := cases[0].Rel.Render(host)
+	require.Nil(t, err)
+	require.NotEqual(t, nonFullRender, fullRender)
+
+	// Finally, rendering with a host objectwithout an ID should err
+	_, err = cases[0].Rel.Render(&File{})
+	require.NotNil(t, err)
 }
 
 var testTar string = `H4sICPIFo2AAA2hlbGxvLnRhcgDt1EsKwjAUBdCMXUXcQPuS5rMFwaEraDGgUFpIE3D5puAPRYuD

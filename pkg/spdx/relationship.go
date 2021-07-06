@@ -80,10 +80,26 @@ type Relationship struct {
 }
 
 func (ro *Relationship) Render(hostObject Object) (string, error) {
-	if ro.Peer.SPDXID() == "" {
+	// We can render the relationship from an object or from a
+	// predefined entity reference. But we have to have on of them
+	if ro.Peer == nil && ro.PeerReference == "" {
+		return "", errors.New(
+			"unable to render reference no peer or peer reference defined",
+		)
+	}
+	if ro.Peer != nil && ro.Peer.SPDXID() == "" {
 		return "", errors.New("unable to render relationship, peer object has no SPDX ID")
 	}
 
+	if ro.FullRender && ro.Peer == nil {
+		return "", errors.New("unable to render relationship. perr object has to be set")
+	}
+
+	if ro.Type == "" {
+		return "", errors.New("unable to render relationship, type is not set")
+	}
+
+	// The host object must have an ID defined in all cases
 	if hostObject.SPDXID() == "" {
 		return "", errors.New("Unable to rennder relationship, hostObject has no ID")
 	}
@@ -96,6 +112,10 @@ func (ro *Relationship) Render(hostObject Object) (string, error) {
 		}
 		docFragment += objDoc
 	}
-	docFragment += fmt.Sprintf("Relationship: %s %s %s\n", hostObject.SPDXID(), ro.Type, ro.Peer.SPDXID())
+	if ro.Peer != nil {
+		docFragment += fmt.Sprintf("Relationship: %s %s %s\n", hostObject.SPDXID(), ro.Type, ro.Peer.SPDXID())
+	} else {
+		docFragment += fmt.Sprintf("Relationship: %s %s %s\n", hostObject.SPDXID(), ro.Type, ro.PeerReference)
+	}
 	return docFragment, nil
 }
