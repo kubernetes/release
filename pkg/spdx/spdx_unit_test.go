@@ -198,6 +198,11 @@ func TestRelationshipRender(t *testing.T) {
 			false, fmt.Sprintf("Relationship: %s DEPENDS_ON %s\n", host.SPDXID(), peer.SPDXID()),
 		},
 		{
+			// Relationships with a remote reference
+			Relationship{FullRender: false, Type: DEPENDS_ON, Peer: peer, PeerExtReference: "Remote"},
+			false, fmt.Sprintf("Relationship: %s DEPENDS_ON DocumentRef-Remote:%s\n", host.SPDXID(), peer.SPDXID()),
+		},
+		{
 			// Relationships without a full object, but
 			// with a set reference must render
 			Relationship{FullRender: false, PeerReference: dummyref, Type: DEPENDS_ON},

@@ -72,11 +72,12 @@ const (
 )
 
 type Relationship struct {
-	FullRender    bool             // Flag, then true the package will be rendered in the doc
-	PeerReference string           // SPDX Ref of the peer object. Will override the ID of provided package if set
-	Comment       string           // Relationship ship commnet
-	Type          RelationshipType // Relationship of the specified package
-	Peer          Object           //
+	FullRender       bool             // Flag, then true the package will be rendered in the doc
+	PeerReference    string           // SPDX Ref of the peer object. Will override the ID of provided package if set
+	PeerExtReference string           // External doc reference if peer is a different doc
+	Comment          string           // Relationship ship commnet
+	Type             RelationshipType // Relationship of the specified package
+	Peer             Object           // SPDX object that acts as peer
 }
 
 func (ro *Relationship) Render(hostObject Object) (string, error) {
@@ -112,10 +113,18 @@ func (ro *Relationship) Render(hostObject Object) (string, error) {
 		}
 		docFragment += objDoc
 	}
+	peerExtRef := ""
+	if ro.PeerExtReference != "" {
+		peerExtRef = fmt.Sprintf("DocumentRef-%s:", ro.PeerExtReference)
+	}
 	if ro.Peer != nil {
-		docFragment += fmt.Sprintf("Relationship: %s %s %s\n", hostObject.SPDXID(), ro.Type, ro.Peer.SPDXID())
+		docFragment += fmt.Sprintf(
+			"Relationship: %s %s %s%s\n", hostObject.SPDXID(), ro.Type, peerExtRef, ro.Peer.SPDXID(),
+		)
 	} else {
-		docFragment += fmt.Sprintf("Relationship: %s %s %s\n", hostObject.SPDXID(), ro.Type, ro.PeerReference)
+		docFragment += fmt.Sprintf(
+			"Relationship: %s %s %s%s\n", hostObject.SPDXID(), ro.Type, peerExtRef, ro.PeerReference,
+		)
 	}
 	return docFragment, nil
 }
