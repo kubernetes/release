@@ -551,10 +551,11 @@ func (d *defaultStageImpl) AddBinariesToSBOM(sbom *spdx.Document, version string
 			return errors.Wrap(err, "adding file to artifacts sbom")
 		}
 		file.AddRelationship(&spdx.Relationship{
-			FullRender:    false,
-			PeerReference: fmt.Sprintf("DocumentRef-kubernetes-%s", version),
-			Comment:       "Source code",
-			Type:          spdx.GENERATED_FROM,
+			FullRender:       false,
+			PeerReference:    "SPDXRef-Package-kubernetes",
+			PeerExtReference: fmt.Sprintf("kubernetes-%s", version),
+			Comment:          "Source code",
+			Type:             spdx.GENERATED_FROM,
 		})
 	}
 	return nil
@@ -580,10 +581,11 @@ func (d *defaultStageImpl) AddTarfilesToSBOM(sbom *spdx.Document, version string
 			return errors.Wrap(err, "adding file to artifacts sbom")
 		}
 		file.AddRelationship(&spdx.Relationship{
-			FullRender:    false,
-			PeerReference: fmt.Sprintf("DocumentRef-kubernetes-%s", version),
-			Comment:       "Source code",
-			Type:          spdx.GENERATED_FROM,
+			FullRender:       false,
+			PeerReference:    "SPDXRef-Package-kubernetes",
+			PeerExtReference: fmt.Sprintf("kubernetes-%s", version),
+			Comment:          "Source code",
+			Type:             spdx.GENERATED_FROM,
 		})
 	}
 	return nil
@@ -639,10 +641,11 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 	// Stamp all packages. We do this here because it includes both images and
 	for _, pkg := range doc.Packages {
 		pkg.AddRelationship(&spdx.Relationship{
-			FullRender:    false,
-			PeerReference: fmt.Sprintf("DocumentRef-kubernetes-%s", version),
-			Comment:       "Source code",
-			Type:          spdx.GENERATED_FROM,
+			FullRender:       false,
+			PeerReference:    "SPDXRef-Package-kubernetes",
+			PeerExtReference: fmt.Sprintf("kubernetes-%s", version),
+			Comment:          "Source code",
+			Type:             spdx.GENERATED_FROM,
 		})
 	}
 
