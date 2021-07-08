@@ -45,6 +45,9 @@ const (
 
 	// releaseNotesJSONFile is the file containing the release notes in json format
 	releaseNotesJSONFile = workspaceDir + "/src/release-notes.json"
+
+	// The default license for all artifacts
+	LicenseIdentifier = "Apache-2.0"
 )
 
 // Options are settings which will be used by `StageOptions` as well as

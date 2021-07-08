@@ -25,6 +25,7 @@ import (
 	"k8s.io/release/pkg/anago/anagofakes"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
+	"k8s.io/release/pkg/spdx"
 )
 
 func generateTestingStageState(params *testStateParameters) *anago.StageState {
@@ -564,46 +565,82 @@ func TestSubmitStageImpl(t *testing.T) {
 }
 
 func TestGenerateBillOfMaterials(t *testing.T) {
-	blankArtifactsList := map[string][]string{
-		"images":   {},
-		"binaries": {},
-	}
 	for _, tc := range []struct {
 		prepare     func(*anagofakes.FakeStageImpl)
 		shouldError bool
 	}{
-		{ // success
+		{
+			// GenerateSourceTreeBOM fails
 			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.ListArtifactsReturns(blankArtifactsList, nil)
-			},
-			shouldError: false,
-		},
-		{ // ListArtifactsReturns fails
-			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.ListArtifactsReturns(nil, err)
-			},
-			shouldError: true,
-		},
-		{ // GenerateVersionArtifactsBOM fails
-			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.ListArtifactsReturns(blankArtifactsList, nil)
-				mock.GenerateVersionArtifactsBOMReturns(err)
-			},
-			shouldError: true,
-		},
-		{ // GenerateSourceTreeBOM fails
-			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.ListArtifactsReturns(blankArtifactsList, nil)
 				mock.GenerateSourceTreeBOMReturns(nil, err)
 			},
 			shouldError: true,
 		},
-		{ // WriteSourceBOM fails
+		{
+			// GenerateVersionArtifactsBOM fails
 			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.ListArtifactsReturns(blankArtifactsList, nil)
+				mock.GenerateSourceTreeBOMReturns(&spdx.Document{}, nil)
+				mock.GenerateVersionArtifactsBOMReturns(err)
+			},
+			shouldError: true,
+		},
+		{
+			// WriteSourceBOM fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.GenerateSourceTreeBOMReturns(&spdx.Document{}, nil)
+				mock.GenerateVersionArtifactsBOMReturns(err)
+			},
+			shouldError: true,
+		},
+		{
+			// WriteSourceBOM fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.GenerateSourceTreeBOMReturns(&spdx.Document{}, nil)
+				mock.GenerateVersionArtifactsBOMReturns(nil)
 				mock.WriteSourceBOMReturns(err)
 			},
 			shouldError: true,
+		},
+		{
+			// success
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.GenerateSourceTreeBOMReturns(&spdx.Document{}, nil)
+				mock.GenerateVersionArtifactsBOMReturns(nil)
+				mock.WriteSourceBOMReturns(nil)
+			},
+			shouldError: false,
+		},
+		// Functions called inside of GenerateVersionArtifactsBOM
+		{
+			// buildBaseArtifactsSBOM fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.GenerateSourceTreeBOMReturns(&spdx.Document{}, nil)
+				mock.WriteSourceBOMReturns(nil)
+				mock.BuildBaseArtifactsSBOMReturns(&spdx.Document{}, err)
+			},
+			shouldError: false,
+		},
+		{
+			// AddTarfilesToSBOM fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.GenerateSourceTreeBOMReturns(&spdx.Document{}, nil)
+				mock.WriteSourceBOMReturns(nil)
+				mock.BuildBaseArtifactsSBOMReturns(&spdx.Document{}, nil)
+				mock.AddTarfilesToSBOMReturns(err)
+				mock.AddBinariesToSBOMReturns(nil)
+			},
+			shouldError: false,
+		},
+		{
+			// AddBinariesToSBOM fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.GenerateSourceTreeBOMReturns(&spdx.Document{}, nil)
+				mock.WriteSourceBOMReturns(nil)
+				mock.BuildBaseArtifactsSBOMReturns(&spdx.Document{}, nil)
+				mock.AddTarfilesToSBOMReturns(nil)
+				mock.AddBinariesToSBOMReturns(err)
+			},
+			shouldError: false,
 		},
 	} {
 		opts := anago.DefaultStageOptions()
@@ -616,7 +653,7 @@ func TestGenerateBillOfMaterials(t *testing.T) {
 		sut.SetImpl(mock)
 		err := sut.GenerateBillOfMaterials()
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.NotNil(t, err, err)
 		} else {
 			require.Nil(t, err)
 		}

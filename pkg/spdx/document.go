@@ -28,6 +28,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"sigs.k8s.io/release-utils/hash"
 )
 
 var docTemplate = `{{ if .Version }}SPDXVersion: {{.Version}}
@@ -39,6 +40,11 @@ DataLicense: CC0-1.0
 {{ end -}}
 {{ if .Namespace }}DocumentNamespace: {{ .Namespace }}
 {{ end -}}
+{{- if .ExternalDocRefs -}}
+{{- range $key, $value := .ExternalDocRefs -}}
+ExternalDocumentRef:{{ extDocFormat $value }}
+{{ end -}}
+{{- end -}}
 {{ if .Creator -}}
 {{- if .Creator.Person }}Creator: Person: {{ .Creator.Person }}
 {{ end -}}
@@ -63,9 +69,46 @@ type Document struct {
 		Person string   // Steve Winslow (steve@swinslow.net)
 		Tool   []string // github.com/spdx/tools-golang/builder
 	}
-	Created  time.Time // 2020-11-24T01:12:27Z
-	Packages map[string]*Package
-	Files    map[string]*File // List of files
+	Created         time.Time // 2020-11-24T01:12:27Z
+	Packages        map[string]*Package
+	Files           map[string]*File      // List of files
+	ExternalDocRefs []ExternalDocumentRef // List of related external documents
+}
+
+// ExternalDocumentRef is a pointer to an external, related document
+type ExternalDocumentRef struct {
+	ID        string            `yaml:"id"`        // Identifier for the external doc (eg "external-source-bom")
+	URI       string            `yaml:"uri"`       // URI where the doc can be retrieved
+	Checksums map[string]string `yaml:"checksums"` // Document checksums
+}
+
+// String returns the SPDX string of the external document ref
+func (ed *ExternalDocumentRef) String() string {
+	if len(ed.Checksums) == 0 || ed.ID == "" || ed.URI == "" {
+		return ""
+	}
+	var csAlgo, csHash string
+	for csAlgo, csHash = range ed.Checksums {
+		break
+	}
+
+	return fmt.Sprintf("DocumentRef-%s %s %s: %s", ed.ID, ed.URI, csAlgo, csHash)
+}
+
+// ReadSourceFile populates the external reference data (the sha256 checksum)
+// from a given path
+func (ed *ExternalDocumentRef) ReadSourceFile(path string) error {
+	if ed.Checksums == nil {
+		ed.Checksums = map[string]string{}
+	}
+	// The SPDX validator tools are broken and cannot validate non SHA1 checksums
+	// ref https://github.com/spdx/tools-java/issues/21
+	val, err := hash.SHA1ForFile(path)
+	if err != nil {
+		return errors.Wrap(err, "while calculating the sha256 checksum of the external reference")
+	}
+	ed.Checksums["SHA1"] = val
+	return nil
 }
 
 // NewDocument returns a new SPDX document with some defaults preloaded
@@ -123,7 +166,8 @@ func (d *Document) Render() (doc string, err error) {
 	var buf bytes.Buffer
 	funcMap := template.FuncMap{
 		// The name "title" is what the function will be called in the template text.
-		"dateFormat": func(t time.Time) string { return t.UTC().Format("2006-01-02T15:04:05Z") },
+		"dateFormat":   func(t time.Time) string { return t.UTC().Format("2006-01-02T15:04:05Z") },
+		"extDocFormat": func(ed ExternalDocumentRef) string { logrus.Infof("External doc: %s", ed.ID); return ed.String() },
 	}
 
 	if d.Name == "" {

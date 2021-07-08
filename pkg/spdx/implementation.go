@@ -571,7 +571,6 @@ func (di *spdxDefaultImplementation) PackageFromImageTarball(
 	tarOpts := &TarballOptions{}
 	tarOpts.ExtractDir, err = di.ExtractTarballTmp(tarPath)
 	if err != nil {
-		logrus.Info("Nononono")
 		return nil, errors.Wrap(err, "extracting tarball to temp dir")
 	}
 	defer os.RemoveAll(tarOpts.ExtractDir)
@@ -598,7 +597,6 @@ func (di *spdxDefaultImplementation) PackageFromImageTarball(
 
 	// Create the new SPDX package
 	imagePackage = NewPackage()
-	logrus.Infof("%+v", imagePackage.Options())
 	imagePackage.Options().WorkDir = tarOpts.ExtractDir
 	imagePackage.Name = manifest.RepoTags[0]
 	imagePackage.BuildID(imagePackage.Name)
@@ -612,6 +610,9 @@ func (di *spdxDefaultImplementation) PackageFromImageTarball(
 		if err != nil {
 			return nil, errors.Wrap(err, "building package from layer")
 		}
+		// Regenerate the BuildID to avoid clashes when handling multiple
+		// images at the same time.
+		pkg.BuildID(manifest.RepoTags[0], layerFile)
 
 		// If the option is enabled, scan the container layers
 		if spdxOpts.AnalyzeLayers {
