@@ -824,7 +824,7 @@ readonly TEST_PROJECT="kubernetes-release-test"
 readonly DEFAULT_BUCKET="kubernetes-release-gcb"
 readonly PROD_BUCKET="kubernetes-release"
 readonly TEST_BUCKET="kubernetes-release-gcb"
-readonly CI_BUCKET="kubernetes-release-dev"
+readonly CI_BUCKET="k8s-release-dev"
 
 readonly GCRIO_PATH_PROD="k8s.gcr.io"
 readonly GCRIO_PATH_STAGING="gcr.io/k8s-staging-kubernetes"
