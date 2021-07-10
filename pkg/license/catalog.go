@@ -93,6 +93,9 @@ func (catalog *Catalog) WriteLicensesAsText(targetDir string) error {
 		wg.Add(1)
 		go func(l *License) {
 			defer wg.Done()
+			if l.IsDeprecatedLicenseID {
+				return
+			}
 			if lerr := l.WriteText(filepath.Join(targetDir, l.LicenseID+".txt")); err != nil {
 				if err == nil {
 					err = lerr
