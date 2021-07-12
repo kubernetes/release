@@ -177,7 +177,9 @@ func ListBuildBinaries(gitroot, version string) (list []struct{ Path, Platform, 
 					return nil
 				}
 
-				if strings.HasSuffix(path, ".docker_tag") {
+				// The binaries directory stores the image tarfiles and the
+				// docker tag files. Skip those from the binaries list
+				if strings.HasSuffix(path, ".docker_tag") || strings.HasSuffix(path, ".tar") {
 					return nil
 				}
 
