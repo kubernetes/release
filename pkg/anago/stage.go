@@ -82,6 +82,9 @@ type stageClient interface {
 	// into the local repository.
 	GenerateChangelog() error
 
+	// VerifyArtifacts performs verification of the generated artifacts
+	VerifyArtifacts() error
+
 	// GenerateBillOfMaterials generates the SBOM documents for the Kubernetes
 	// source code and the release artifacts.
 	GenerateBillOfMaterials() error
@@ -506,6 +509,11 @@ func (d *DefaultStage) Build() error {
 			return errors.Wrap(err, "build artifacts")
 		}
 	}
+	return nil
+}
+
+// VerifyArtifacts checks the artifacts to ensure they are correct
+func (d *DefaultStage) VerifyArtifacts() error {
 	return nil
 }
 

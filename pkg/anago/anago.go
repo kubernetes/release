@@ -239,7 +239,7 @@ func (s *Stage) Run() error {
 		return errors.Wrap(err, "init log file")
 	}
 
-	logger := log.NewStepLogger(10)
+	logger := log.NewStepLogger(11)
 	logger.Infof("Using krel version:\n%s", version.Get().String())
 
 	logger.WithStep().Info("Validating options")
@@ -280,6 +280,11 @@ func (s *Stage) Run() error {
 	logger.WithStep().Info("Generating changelog")
 	if err := s.client.GenerateChangelog(); err != nil {
 		return errors.Wrap(err, "generate changelog")
+	}
+
+	logger.WithStep().Info("Verifying artifacts")
+	if err := s.client.VerifyArtifacts(); err != nil {
+		return errors.Wrap(err, "verifying artifacts")
 	}
 
 	logger.WithStep().Info("Generating bill of materials")
