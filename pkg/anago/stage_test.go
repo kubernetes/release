@@ -659,3 +659,38 @@ func TestGenerateBillOfMaterials(t *testing.T) {
 		}
 	}
 }
+
+func TestVerifyArtifactsImpl(t *testing.T) {
+	for _, tc := range []struct {
+		prepare     func(*anagofakes.FakeStageImpl)
+		shouldError bool
+	}{
+		{ // success
+			prepare:     func(*anagofakes.FakeStageImpl) {},
+			shouldError: false,
+		},
+		{ // VerifyArtifacts fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.VerifyArtifactsReturns(err)
+			},
+			shouldError: true,
+		},
+	} {
+		opts := anago.DefaultStageOptions()
+		sut := anago.NewDefaultStage(opts)
+		mock := &anagofakes.FakeStageImpl{}
+		tc.prepare(mock)
+		sut.SetImpl(mock)
+		sut.SetState(
+			generateTestingStageState(
+				&testStateParameters{versionsTag: &testVersionTag},
+			),
+		)
+		err := sut.VerifyArtifacts()
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
+}

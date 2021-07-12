@@ -398,6 +398,17 @@ type FakeStageImpl struct {
 	toFileReturnsOnCall map[int]struct {
 		result1 error
 	}
+	VerifyArtifactsStub        func([]string) error
+	verifyArtifactsMutex       sync.RWMutex
+	verifyArtifactsArgsForCall []struct {
+		arg1 []string
+	}
+	verifyArtifactsReturns struct {
+		result1 error
+	}
+	verifyArtifactsReturnsOnCall map[int]struct {
+		result1 error
+	}
 	WriteSourceBOMStub        func(*spdx.Document, string) error
 	writeSourceBOMMutex       sync.RWMutex
 	writeSourceBOMArgsForCall []struct {
@@ -2238,6 +2249,72 @@ func (fake *FakeStageImpl) ToFileReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeStageImpl) VerifyArtifacts(arg1 []string) error {
+	var arg1Copy []string
+	if arg1 != nil {
+		arg1Copy = make([]string, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.verifyArtifactsMutex.Lock()
+	ret, specificReturn := fake.verifyArtifactsReturnsOnCall[len(fake.verifyArtifactsArgsForCall)]
+	fake.verifyArtifactsArgsForCall = append(fake.verifyArtifactsArgsForCall, struct {
+		arg1 []string
+	}{arg1Copy})
+	stub := fake.VerifyArtifactsStub
+	fakeReturns := fake.verifyArtifactsReturns
+	fake.recordInvocation("VerifyArtifacts", []interface{}{arg1Copy})
+	fake.verifyArtifactsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) VerifyArtifactsCallCount() int {
+	fake.verifyArtifactsMutex.RLock()
+	defer fake.verifyArtifactsMutex.RUnlock()
+	return len(fake.verifyArtifactsArgsForCall)
+}
+
+func (fake *FakeStageImpl) VerifyArtifactsCalls(stub func([]string) error) {
+	fake.verifyArtifactsMutex.Lock()
+	defer fake.verifyArtifactsMutex.Unlock()
+	fake.VerifyArtifactsStub = stub
+}
+
+func (fake *FakeStageImpl) VerifyArtifactsArgsForCall(i int) []string {
+	fake.verifyArtifactsMutex.RLock()
+	defer fake.verifyArtifactsMutex.RUnlock()
+	argsForCall := fake.verifyArtifactsArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStageImpl) VerifyArtifactsReturns(result1 error) {
+	fake.verifyArtifactsMutex.Lock()
+	defer fake.verifyArtifactsMutex.Unlock()
+	fake.VerifyArtifactsStub = nil
+	fake.verifyArtifactsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) VerifyArtifactsReturnsOnCall(i int, result1 error) {
+	fake.verifyArtifactsMutex.Lock()
+	defer fake.verifyArtifactsMutex.Unlock()
+	fake.VerifyArtifactsStub = nil
+	if fake.verifyArtifactsReturnsOnCall == nil {
+		fake.verifyArtifactsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.verifyArtifactsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeStageImpl) WriteSourceBOM(arg1 *spdx.Document, arg2 string) error {
 	fake.writeSourceBOMMutex.Lock()
 	ret, specificReturn := fake.writeSourceBOMReturnsOnCall[len(fake.writeSourceBOMArgsForCall)]
@@ -2361,6 +2438,8 @@ func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	defer fake.tagMutex.RUnlock()
 	fake.toFileMutex.RLock()
 	defer fake.toFileMutex.RUnlock()
+	fake.verifyArtifactsMutex.RLock()
+	defer fake.verifyArtifactsMutex.RUnlock()
 	fake.writeSourceBOMMutex.RLock()
 	defer fake.writeSourceBOMMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
