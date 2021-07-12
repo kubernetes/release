@@ -514,6 +514,20 @@ func (d *DefaultStage) Build() error {
 
 // VerifyArtifacts checks the artifacts to ensure they are correct
 func (d *DefaultStage) VerifyArtifacts() error {
+	// Create a new artifact checker to verify the consistency of
+	// the produced artifacts.
+	checker := release.NewArtifactCheckerWithOptions(
+		&release.ArtifactCheckerOptions{
+			GitRoot:  gitRoot,
+			Versions: d.state.versions.Ordered(),
+		},
+	)
+
+	// Check that binaries are correctly tagged
+	if err := checker.CheckBinaryTags(); err != nil {
+		return errors.Wrap(err, "checking tags in release binaries")
+	}
+
 	return nil
 }
 
