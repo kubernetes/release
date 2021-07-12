@@ -528,6 +528,10 @@ func (d *DefaultStage) VerifyArtifacts() error {
 		return errors.Wrap(err, "checking tags in release binaries")
 	}
 
+	if err := checker.CheckBinaryTags(); err != nil {
+		return errors.Wrap(err, "checking binary architectures")
+	}
+
 	return nil
 }
 

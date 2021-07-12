@@ -41,7 +41,7 @@ func NewArtifactChecker() *ArtifactChecker {
 func NewArtifactCheckerWithOptions(opts *ArtifactCheckerOptions) *ArtifactChecker {
 	return &ArtifactChecker{
 		opts: opts,
-		impl: &DefaultArtifactCheckerImpl{},
+		impl: &defaultArtifactCheckerImpl{},
 	}
 }
 
@@ -60,15 +60,27 @@ func (ac *ArtifactChecker) CheckBinaryTags() error {
 	return nil
 }
 
+// CheckBinaryArchitectures ensures all the artifacts produced in each
+// release are of the right architecture
+func (ac *ArtifactChecker) CheckBinaryArchitectures() error {
+	for _, tag := range ac.opts.Versions {
+		if err := ac.impl.CheckVersionArch(ac.opts, tag); err != nil {
+			return errors.Wrapf(err, "checking tags in %s binaries", tag)
+		}
+	}
+	return nil
+}
+
 type artifactCheckerImplementation interface {
 	ListReleaseBinaries(opts *ArtifactCheckerOptions, version string) ([]struct{ Path, Platform, Arch string }, error)
 	CheckVersionTags(*ArtifactCheckerOptions, string) error
+	CheckVersionArch(*ArtifactCheckerOptions, string) error
 }
 
-type DefaultArtifactCheckerImpl struct{}
+type defaultArtifactCheckerImpl struct{}
 
 // ListReleaseBinaries lists a release's binaries, with expected platform
-func (impl *DefaultArtifactCheckerImpl) ListReleaseBinaries(
+func (impl *defaultArtifactCheckerImpl) ListReleaseBinaries(
 	opts *ArtifactCheckerOptions, version string,
 ) (
 	list []struct{ Path, Platform, Arch string }, err error,
@@ -78,7 +90,7 @@ func (impl *DefaultArtifactCheckerImpl) ListReleaseBinaries(
 
 // CheckVersionTags checks the binaries of a release to verify they have
 // the correct version tag
-func (impl *DefaultArtifactCheckerImpl) CheckVersionTags(
+func (impl *defaultArtifactCheckerImpl) CheckVersionTags(
 	opts *ArtifactCheckerOptions, version string,
 ) error {
 	binaries, err := impl.ListReleaseBinaries(opts, version)
@@ -105,6 +117,32 @@ func (impl *DefaultArtifactCheckerImpl) CheckVersionTags(
 		if !contains {
 			return errors.Errorf(
 				"tag %s not found in produced binary: %s ", version, binData.Path,
+			)
+		}
+	}
+	return nil
+}
+
+// CheckVersionArch checks that the binaries of a certain version are
+// in fact of the expected OS/Arch.
+func (impl *defaultArtifactCheckerImpl) CheckVersionArch(
+	opts *ArtifactCheckerOptions, version string,
+) error {
+	binaries, err := impl.ListReleaseBinaries(opts, version)
+	if err != nil {
+		return errors.Wrapf(err, "listing binaries for release %s", version)
+	}
+	logrus.Infof("Ensuring architecture of %d binaries for version %s", len(binaries), version)
+	for _, binData := range binaries {
+		bin, err := binary.New(binData.Path)
+		if err != nil {
+			return errors.Wrapf(err, "creating binary object from %s", binData.Path)
+		}
+
+		if bin.Arch() != binData.Arch || bin.OS() != binData.Platform {
+			return errors.Errorf(
+				"binary %s has incorrect architecture: expected %s/%s got %s/%s",
+				binData.Path, binData.Arch, binData.Platform, bin.Arch(), bin.OS(),
 			)
 		}
 	}
