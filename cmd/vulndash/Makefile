@@ -28,7 +28,7 @@ IMAGE = $(REGISTRY)/$(IMGNAME)
 TAG ?= $(shell git describe --tags --always --dirty)
 
 # Build args
-GO_VERSION ?= 1.16.5
+GO_VERSION ?= 1.16.6
 DISTROLESS_IMAGE ?= static-debian10
 
 PLATFORMS ?= linux/amd64
