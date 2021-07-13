@@ -1,7 +1,7 @@
 variants:
   cross1.16:
     CONFIG: 'cross1.16'
-    KUBE_CROSS_VERSION: 'v1.16.5-1'
+    KUBE_CROSS_VERSION: 'v1.16.6-1'
   cross1.15:
     CONFIG: 'cross1.15'
     KUBE_CROSS_VERSION: 'v1.15.13-1'
