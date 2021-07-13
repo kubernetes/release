@@ -82,6 +82,9 @@ type stageClient interface {
 	// into the local repository.
 	GenerateChangelog() error
 
+	// VerifyArtifacts performs verification of the generated artifacts
+	VerifyArtifacts() error
+
 	// GenerateBillOfMaterials generates the SBOM documents for the Kubernetes
 	// source code and the release artifacts.
 	GenerateBillOfMaterials() error
@@ -162,6 +165,7 @@ type stageImpl interface {
 	BuildBaseArtifactsSBOM(*spdx.DocGenerateOptions) (*spdx.Document, error)
 	AddBinariesToSBOM(*spdx.Document, string) error
 	AddTarfilesToSBOM(*spdx.Document, string) error
+	VerifyArtifacts([]string) error
 }
 
 func (d *defaultStageImpl) Submit(options *gcb.Options) error {
@@ -294,6 +298,30 @@ func (d *defaultStageImpl) ListImageArchives(version string) ([]string, error) {
 // ListTarballs returns the produced tarballs produced for this version
 func (d *defaultStageImpl) ListTarballs(version string) ([]string, error) {
 	return release.ListBuildTarballs(gitRoot, version)
+}
+
+// VerifyArtifacts check the artifacts produced are correct
+func (d *defaultStageImpl) VerifyArtifacts(versions []string) error {
+	// Create a new artifact checker to verify the consistency of
+	// the produced artifacts.
+	checker := release.NewArtifactCheckerWithOptions(
+		&release.ArtifactCheckerOptions{
+			GitRoot:  gitRoot,
+			Versions: versions,
+		},
+	)
+
+	// Check that binaries are correctly tagged
+	if err := checker.CheckBinaryTags(); err != nil {
+		return errors.Wrap(err, "checking tags in release binaries")
+	}
+
+	// Ensure binaries are of the correct architecture
+	if err := checker.CheckBinaryArchitectures(); err != nil {
+		return errors.Wrap(err, "checking binary architectures")
+	}
+
+	return nil
 }
 
 func (d *DefaultStage) InitLogFile() error {
@@ -507,6 +535,11 @@ func (d *DefaultStage) Build() error {
 		}
 	}
 	return nil
+}
+
+// VerifyArtifacts checks the artifacts to ensure they are correct
+func (d *DefaultStage) VerifyArtifacts() error {
+	return d.impl.VerifyArtifacts(d.state.versions.Ordered())
 }
 
 func (d *DefaultStage) GenerateChangelog() error {

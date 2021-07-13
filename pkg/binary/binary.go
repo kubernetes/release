@@ -17,6 +17,11 @@ limitations under the License.
 package binary
 
 import (
+	"bufio"
+	"io"
+	"os"
+	"unicode"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -35,7 +40,7 @@ const (
 	ARM64   = "arm64"
 	PPC     = "ppc"
 	PPC64LE = "ppc64le"
-	S390    = "s390"
+	S390    = "s390x"
 	RISCV   = "riscv"
 )
 
@@ -46,7 +51,9 @@ type Binary struct {
 }
 
 // Options to control the binary checker
-type Options struct{}
+type Options struct {
+	Path string
+}
 
 // DefaultOptions set of options
 var DefaultOptions = &Options{}
@@ -67,6 +74,7 @@ func NewWithOptions(filePath string, opts *Options) (bin *Binary, err error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "getting arch implementation")
 	}
+	bin.options.Path = filePath
 	bin.SetImplementation(impl)
 	return bin, nil
 }
@@ -127,4 +135,48 @@ func (b *Binary) Arch() string {
 // OS returns a string with the GOOS label of the binary file
 func (b *Binary) OS() string {
 	return b.binaryImplementation.OS()
+}
+
+// ContainsStrings searches the printable strings un a binary file
+func (b *Binary) ContainsStrings(s ...string) (match bool, err error) {
+	// We cannot search for 0 items:
+	if len(s) == 0 {
+		return match, errors.New("cannot search binary, no search terms defined")
+	}
+
+	// Open the binary
+	f, err := os.Open(b.options.Path)
+	if err != nil {
+		return match, errors.Wrap(err, "opening binary to search")
+	}
+	defer f.Close()
+	terms := map[string]bool{}
+	for _, s := range s {
+		terms[s] = true
+	}
+
+	in := bufio.NewReader(f)
+	runes := []rune{}
+
+	for {
+		// Read each rune from the binary file
+		r, _, err := in.ReadRune()
+		if err != nil {
+			if err != io.EOF {
+				return match, errors.Wrap(err, "while reading binary data")
+			}
+			return false, nil
+		}
+		// If the char is not printable, we assume the string ended
+		// and we can check if the collected runes form one of our terms:
+		if !unicode.IsPrint(r) {
+			delete(terms, string(runes))
+			runes = []rune{}
+			if len(terms) == 0 {
+				return true, nil
+			}
+			continue
+		}
+		runes = append(runes, r)
+	}
 }

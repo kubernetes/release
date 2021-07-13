@@ -147,6 +147,16 @@ type FakeStageClient struct {
 	validateOptionsReturnsOnCall map[int]struct {
 		result1 error
 	}
+	VerifyArtifactsStub        func() error
+	verifyArtifactsMutex       sync.RWMutex
+	verifyArtifactsArgsForCall []struct {
+	}
+	verifyArtifactsReturns struct {
+		result1 error
+	}
+	verifyArtifactsReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -819,6 +829,59 @@ func (fake *FakeStageClient) ValidateOptionsReturnsOnCall(i int, result1 error) 
 	}{result1}
 }
 
+func (fake *FakeStageClient) VerifyArtifacts() error {
+	fake.verifyArtifactsMutex.Lock()
+	ret, specificReturn := fake.verifyArtifactsReturnsOnCall[len(fake.verifyArtifactsArgsForCall)]
+	fake.verifyArtifactsArgsForCall = append(fake.verifyArtifactsArgsForCall, struct {
+	}{})
+	stub := fake.VerifyArtifactsStub
+	fakeReturns := fake.verifyArtifactsReturns
+	fake.recordInvocation("VerifyArtifacts", []interface{}{})
+	fake.verifyArtifactsMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageClient) VerifyArtifactsCallCount() int {
+	fake.verifyArtifactsMutex.RLock()
+	defer fake.verifyArtifactsMutex.RUnlock()
+	return len(fake.verifyArtifactsArgsForCall)
+}
+
+func (fake *FakeStageClient) VerifyArtifactsCalls(stub func() error) {
+	fake.verifyArtifactsMutex.Lock()
+	defer fake.verifyArtifactsMutex.Unlock()
+	fake.VerifyArtifactsStub = stub
+}
+
+func (fake *FakeStageClient) VerifyArtifactsReturns(result1 error) {
+	fake.verifyArtifactsMutex.Lock()
+	defer fake.verifyArtifactsMutex.Unlock()
+	fake.VerifyArtifactsStub = nil
+	fake.verifyArtifactsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageClient) VerifyArtifactsReturnsOnCall(i int, result1 error) {
+	fake.verifyArtifactsMutex.Lock()
+	defer fake.verifyArtifactsMutex.Unlock()
+	fake.VerifyArtifactsStub = nil
+	if fake.verifyArtifactsReturnsOnCall == nil {
+		fake.verifyArtifactsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.verifyArtifactsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeStageClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -848,6 +911,8 @@ func (fake *FakeStageClient) Invocations() map[string][][]interface{} {
 	defer fake.tagRepositoryMutex.RUnlock()
 	fake.validateOptionsMutex.RLock()
 	defer fake.validateOptionsMutex.RUnlock()
+	fake.verifyArtifactsMutex.RLock()
+	defer fake.verifyArtifactsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
