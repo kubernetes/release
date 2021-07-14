@@ -4,6 +4,11 @@ variants:
     GO_VERSION: '1.16.5'
     BAZEL_VERSION: '3.4.1'
     OLD_BAZEL_VERSION: '2.2.0'
+  '1.22':
+    CONFIG: '1.22'
+    GO_VERSION: '1.16.5'
+    BAZEL_VERSION: '3.4.1'
+    OLD_BAZEL_VERSION: '2.2.0'
   '1.21':
     CONFIG: '1.21'
     GO_VERSION: '1.16.5'
@@ -17,10 +22,5 @@ variants:
   '1.19':
     CONFIG: '1.19'
     GO_VERSION: '1.15.13'
-    BAZEL_VERSION: '2.2.0'
-    OLD_BAZEL_VERSION: '0.23.2'
-  '1.18':
-    CONFIG: '1.18'
-    GO_VERSION: '1.13.15'
     BAZEL_VERSION: '2.2.0'
     OLD_BAZEL_VERSION: '0.23.2'
