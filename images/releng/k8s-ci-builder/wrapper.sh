@@ -58,7 +58,7 @@ early_exit_handler() {
 
 trap early_exit_handler TERM INT
 
-# Check if the job has opted-in to bazel remote caching and if so generate 
+# Check if the job has opted-in to bazel remote caching and if so generate
 # .bazelrc entries pointing to the remote cache
 export BAZEL_REMOTE_CACHE_ENABLED=${BAZEL_REMOTE_CACHE_ENABLED:-false}
 if [[ "${BAZEL_REMOTE_CACHE_ENABLED}" == "true" ]]; then

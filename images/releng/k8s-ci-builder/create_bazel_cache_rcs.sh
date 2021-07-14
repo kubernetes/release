@@ -80,7 +80,7 @@ make_bazel_rc () {
     # since this is the only hash our cache supports
     echo "startup --host_jvm_args=-Dbazel.DigestFunction=sha256"
     # use remote caching for all the things
-    # Only set this flag for older bazel versions, it is now enabled by 
+    # Only set this flag for older bazel versions, it is now enabled by
     # default and the flag was removed.
     #
     # NOTE: This is an exceptional case (version comparison)
