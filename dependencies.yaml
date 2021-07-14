@@ -162,6 +162,60 @@ dependencies:
     - path: images/k8s-cloud-builder/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
 
+  # Golang (next candidate)
+  - name: "golang (next candidate)"
+    version: 1.17rc1
+    refPaths:
+    - path: images/build/cross/variants.yaml
+      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+    - path: images/build/go-runner/variants.yaml
+      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+    - path: images/releng/ci/variants.yaml
+      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+
+  - name: "golang: after kubernetes/kubernetes update (next candidate)"
+    version: 1.16.5
+    refPaths:
+    - path: images/releng/k8s-ci-builder/variants.yaml
+      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+
+  # Golang images (next candidate)
+  - name: "gcr.io/k8s-staging-releng/releng-ci: image revision (next candidate)"
+    version: 0
+    refPaths:
+    - path: images/releng/ci/variants.yaml
+      match: REVISION:\ '\d+'
+
+  - name: "k8s.gcr.io/build-image/go-runner (next candidate)"
+    version: v2.3.1-go1.17rc1-buster.0
+    refPaths:
+    - path: images/build/go-runner/variants.yaml
+      match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
+
+  - name: "k8s.gcr.io/build-image/go-runner: image revision (next candidate)"
+    version: 0
+    refPaths:
+    - path: images/build/go-runner/variants.yaml
+      match: REVISION:\ '\d+'
+
+  - name: "k8s.gcr.io/build-image/kube-cross (next candidate)"
+    version: v1.17.0-rc.1-1
+    refPaths:
+    - path: images/build/cross/variants.yaml
+      match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
+
+  - name: "k8s.gcr.io/build-image/kube-cross: config variant (next candidate)"
+    version: go1.17
+    refPaths:
+    - path: images/build/cross/variants.yaml
+      match: go\d+.\d+
+
+  - name: "k8s.gcr.io/build-image/kube-cross: dependents (next candidate)"
+    version: v1.16.6-1
+    refPaths:
+    - path: images/k8s-cloud-builder/variants.yaml
+      match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
+
   # Golang (for previous release branches)
   - name: "golang (for previous release branches)"
     version: 1.15.14
