@@ -97,7 +97,7 @@ dependencies:
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
   - name: "golang: after kubernetes/kubernetes update"
-    version: 1.16.5
+    version: 1.16.6
     refPaths:
     - path: images/releng/k8s-ci-builder/Makefile
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
