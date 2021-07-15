@@ -39,6 +39,7 @@ require (
 	google.golang.org/api v0.50.0
 	google.golang.org/genproto v0.0.0-20210713002101-d411969a0d9a
 	gopkg.in/yaml.v2 v2.4.0
+	k8s.io/client-go v0.18.8
 	k8s.io/utils v0.0.0-20210305010621-2afb4311ab10
 	sigs.k8s.io/k8s-container-image-promoter v1.337.0
 	sigs.k8s.io/mdtoc v1.0.1
