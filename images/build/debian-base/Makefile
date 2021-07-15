@@ -13,8 +13,12 @@
 # limitations under the License.
 
 all: all-build
-
+ifneq ($(ARCH),mips64le)
 REGISTRY ?= gcr.io/k8s-staging-build-image
+else
+REGISTRY ?= gcr.io/k8s-staging-experimental
+endif
+
 IMAGE ?= $(REGISTRY)/debian-base
 BUILD_IMAGE ?= debian-build
 
@@ -24,7 +28,7 @@ CONFIG ?= buster
 
 TAR_FILE ?= rootfs.tar
 ARCH ?= amd64
-ALL_ARCH = amd64 arm arm64 ppc64le s390x
+ALL_ARCH = amd64 arm arm64 ppc64le s390x mips64le
 
 QEMUVERSION=5.2.0-2
 
@@ -50,6 +54,10 @@ endif
 ifeq ($(ARCH),s390x)
 	BASEIMAGE?=s390x/debian:$(CONFIG)-slim
 	QEMUARCH=s390x
+endif
+ifeq ($(ARCH),mips64le)
+	BASEIMAGE?=debian:$(CONFIG)-slim
+	QEMUARCH=mips64el
 endif
 
 sub-build-%:
