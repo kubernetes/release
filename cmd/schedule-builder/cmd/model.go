@@ -21,11 +21,12 @@ type PatchSchedule struct {
 	Schedules []Schedule `yaml:"schedules"`
 }
 
-// PreviousPatches struct to define the old pacth schedules
+// PreviousPatches struct to define the old patch schedules
 type PreviousPatches struct {
 	Release            string `yaml:"release"`
 	CherryPickDeadline string `yaml:"cherryPickDeadline"`
 	TargetDate         string `yaml:"targetDate"`
+	Note               string `yaml:"note"`
 }
 
 // Schedule struct to define the release schedule for a specific version

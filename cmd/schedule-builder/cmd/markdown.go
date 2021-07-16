@@ -35,15 +35,15 @@ func parseSchedule(patchSchedule PatchSchedule) string {
 		tableString := &strings.Builder{}
 		table := tablewriter.NewWriter(tableString)
 		table.SetAutoWrapText(false)
-		table.SetHeader([]string{"Patch Release", "Cherry Pick Deadline", "Target Date"})
+		table.SetHeader([]string{"Patch Release", "Cherry Pick Deadline", "Target Date", "Note"})
 
 		// Check if the next patch release is in the Previous Patch list, if yes dont read in the output
 		if !patchReleaseInPreviousList(releaseSchedule.Next, releaseSchedule.PreviousPatches) {
-			table.Append([]string{strings.TrimSpace(releaseSchedule.Next), strings.TrimSpace(releaseSchedule.CherryPickDeadline), strings.TrimSpace(releaseSchedule.TargetDate)})
+			table.Append([]string{strings.TrimSpace(releaseSchedule.Next), strings.TrimSpace(releaseSchedule.CherryPickDeadline), strings.TrimSpace(releaseSchedule.TargetDate), ""})
 		}
 
 		for _, previous := range releaseSchedule.PreviousPatches {
-			table.Append([]string{strings.TrimSpace(previous.Release), strings.TrimSpace(previous.CherryPickDeadline), strings.TrimSpace(previous.TargetDate)})
+			table.Append([]string{strings.TrimSpace(previous.Release), strings.TrimSpace(previous.CherryPickDeadline), strings.TrimSpace(previous.TargetDate), strings.TrimSpace(previous.Note)})
 		}
 		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
 		table.SetCenterSeparator("|")

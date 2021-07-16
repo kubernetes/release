@@ -31,11 +31,11 @@ Next patch release is **X.Y.ZZZ**
 
 End of Life for **X.Y** is **NOW**
 
-| PATCH RELEASE | CHERRY PICK DEADLINE | TARGET DATE |
-|---------------|----------------------|-------------|
-| X.Y.ZZZ       | 2020-06-12           | 2020-06-17  |
-| X.Y.XXX       | 2020-05-15           | 2020-05-20  |
-| X.Y.YYY       | 2020-04-13           | 2020-04-16  |
+| PATCH RELEASE | CHERRY PICK DEADLINE | TARGET DATE | NOTE |
+|---------------|----------------------|-------------|------|
+| X.Y.ZZZ       | 2020-06-12           | 2020-06-17  |      |
+| X.Y.XXX       | 2020-05-15           | 2020-05-20  | honk |
+| X.Y.YYY       | 2020-04-13           | 2020-04-16  |      |
 `
 
 func TestParseSchedule(t *testing.T) {
@@ -58,6 +58,7 @@ func TestParseSchedule(t *testing.T) {
 								Release:            "X.Y.XXX",
 								CherryPickDeadline: "2020-05-15",
 								TargetDate:         "2020-05-20",
+								Note:               "honk",
 							},
 							{
 								Release:            "X.Y.YYY",
@@ -89,6 +90,7 @@ func TestParseSchedule(t *testing.T) {
 								Release:            "X.Y.XXX",
 								CherryPickDeadline: "2020-05-15",
 								TargetDate:         "2020-05-20",
+								Note:               "honk",
 							},
 							{
 								Release:            "X.Y.YYY",
