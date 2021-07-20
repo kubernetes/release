@@ -311,11 +311,6 @@ func (d *defaultStageImpl) VerifyArtifacts(versions []string) error {
 		},
 	)
 
-	// Check that binaries are correctly tagged
-	if err := checker.CheckBinaryTags(); err != nil {
-		return errors.Wrap(err, "checking tags in release binaries")
-	}
-
 	// Ensure binaries are of the correct architecture
 	if err := checker.CheckBinaryArchitectures(); err != nil {
 		return errors.Wrap(err, "checking binary architectures")
