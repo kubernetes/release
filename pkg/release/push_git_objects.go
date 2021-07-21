@@ -248,6 +248,19 @@ func (gp *GitObjectPusher) mergeRemoteIfRequired(branch string) error {
 		return errors.Wrap(err, "fetch remote")
 	}
 
+	branchExists, err := gp.repo.HasRemoteBranch(branch)
+	if err != nil {
+		return errors.Wrapf(
+			err, "checking if branch %s exists in repo remote", branch,
+		)
+	}
+	if !branchExists {
+		logrus.Infof(
+			"Git repository does not have remote branch %s, not attempting merge", branch,
+		)
+		return nil
+	}
+
 	logrus.Infof("Merging %s branch", branch)
 	if err := gp.repo.Merge(branch); err != nil {
 		return errors.Wrapf(
