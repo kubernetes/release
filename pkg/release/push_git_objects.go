@@ -241,6 +241,7 @@ func (gp *GitObjectPusher) PushMain() error {
 
 func (gp *GitObjectPusher) mergeRemoteIfRequired(branch string) error {
 	branch = git.Remotify(branch)
+	branchParts := strings.Split(branch, "/")
 	logrus.Infof("Merging %s branch if required", branch)
 
 	logrus.Infof("Fetching from %s", git.DefaultRemote)
@@ -248,7 +249,7 @@ func (gp *GitObjectPusher) mergeRemoteIfRequired(branch string) error {
 		return errors.Wrap(err, "fetch remote")
 	}
 
-	branchExists, err := gp.repo.HasRemoteBranch(branch)
+	branchExists, err := gp.repo.HasRemoteBranch(branchParts[1])
 	if err != nil {
 		return errors.Wrapf(
 			err, "checking if branch %s exists in repo remote", branch,
