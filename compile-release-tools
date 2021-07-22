@@ -76,7 +76,7 @@ compile_with_flags() {
     git_tree_state=clean
   fi
 
-  go build -v -ldflags "-s -w \
+  go build -v -trimpath -ldflags "-s -w \
     -X $pkg.buildDate=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
     -X $pkg.gitCommit=$(git rev-parse HEAD 2>/dev/null || echo unknown) \
     -X $pkg.gitTreeState=$git_tree_state \
