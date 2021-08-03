@@ -642,7 +642,7 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 		AnalyseLayers:  false,
 		OnlyDirectDeps: false,
 		License:        LicenseIdentifier,
-		Namespace:      fmt.Sprintf("https://k8s.io/sbom/release/%s", version),
+		Namespace:      fmt.Sprintf("https://sbom.k8s.io/%s/release", version),
 		ScanLicenses:   false,
 		Tarballs:       images,
 		OutputFile:     filepath.Join(),
@@ -662,7 +662,7 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 	// Reference the source code SBOM as external document
 	extRef := spdx.ExternalDocumentRef{
 		ID:  fmt.Sprintf("kubernetes-%s", version),
-		URI: fmt.Sprintf("https://k8s.io/sbom/source/%s", version),
+		URI: fmt.Sprintf("https://sbom.k8s.io/%s/source", version),
 	}
 	if err := extRef.ReadSourceFile(
 		filepath.Join(os.TempDir(), fmt.Sprintf("source-bom-%s.spdx", version)),
@@ -702,7 +702,7 @@ func (d *defaultStageImpl) GenerateSourceTreeBOM(
 func (d *defaultStageImpl) WriteSourceBOM(
 	spdxDoc *spdx.Document, version string,
 ) error {
-	spdxDoc.Namespace = fmt.Sprintf("https://k8s.io/sbom/source/%s", version)
+	spdxDoc.Namespace = fmt.Sprintf("https://sbom.k8s.io/%s/source", version)
 	spdxDoc.Name = fmt.Sprintf("kubernetes-%s", version)
 	return errors.Wrap(
 		spdxDoc.Write(filepath.Join(os.TempDir(), fmt.Sprintf("source-bom-%s.spdx", version))),
@@ -719,7 +719,7 @@ func (d *DefaultStage) GenerateBillOfMaterials() error {
 		ProcessGoModules: true,
 		License:          LicenseIdentifier,
 		OutputFile:       "/tmp/kubernetes-source.spdx",
-		Namespace:        "http://k8s.io/sbom/source/REPLACE",
+		Namespace:        "https://sbom.k8s.io/REPLACE/source", // This one gets replaced when writing to disk
 		ScanLicenses:     true,
 		Directories:      []string{gitRoot},
 	})
