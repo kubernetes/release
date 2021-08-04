@@ -207,7 +207,7 @@ dependencies:
       match: go\d+.\d+
 
   - name: "k8s.gcr.io/build-image/kube-cross: dependents (next candidate)"
-    version: v1.17.0-rc.1-1
+    version: v1.17.0-rc.2-1
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
