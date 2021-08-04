@@ -8,8 +8,8 @@ variants:
   go1.17:
     TYPE: 'default'
     CONFIG: 'go1.17'
-    GO_VERSION: '1.17rc1'
-    IMAGE_VERSION: 'v1.17.0-rc.1-1'
+    GO_VERSION: '1.17rc2'
+    IMAGE_VERSION: 'v1.17.0-rc.2-1'
     PROTOBUF_VERSION: '3.7.0'
     ETCD_VERSION: 'v3.4.13'
   go1.16:
