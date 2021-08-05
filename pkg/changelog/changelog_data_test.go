@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package changelog_test
 
 const patchReleaseExpectedTOC = `<!-- BEGIN MUNGE: GENERATED_TOC -->
 

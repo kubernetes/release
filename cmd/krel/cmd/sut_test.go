@@ -33,7 +33,6 @@ import (
 const (
 	pseudoReleaseBranch = "release-2.0"
 	testCommitMessage   = `"This is my test commit"`
-	testDataDir         = "testdata"
 )
 
 type sut struct {
