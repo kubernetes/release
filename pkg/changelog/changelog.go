@@ -182,12 +182,6 @@ func (c *Changelog) Run() error {
 		return errors.Wrap(err, "generate release notes")
 	}
 
-	logrus.Info("Generating TOC")
-	toc, err := c.impl.GenerateTOC(markdown)
-	if err != nil {
-		return errors.Wrap(err, "generate table of contents")
-	}
-
 	if c.options.Dependencies {
 		logrus.Info("Generating dependency changes")
 		deps, err := c.impl.DependencyChanges(startRev, endRev)
@@ -195,6 +189,12 @@ func (c *Changelog) Run() error {
 			return errors.Wrap(err, "generate dependency changes")
 		}
 		markdown += strings.Repeat(nl, 2) + deps
+	}
+
+	logrus.Info("Generating TOC")
+	toc, err := c.impl.GenerateTOC(markdown)
+	if err != nil {
+		return errors.Wrap(err, "generate table of contents")
 	}
 
 	// Restore the currently checked out branch
