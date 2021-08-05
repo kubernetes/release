@@ -1,5 +1,5 @@
 variants:
   buster:
     CONFIG: 'buster'
-    IMAGE_VERSION: 'buster-v2.0.3'
-    DEBIAN_BASE_VERSION: 'buster-v1.8.0'
+    IMAGE_VERSION: 'buster-v2.0.4'
+    DEBIAN_BASE_VERSION: 'buster-v1.9.0'
