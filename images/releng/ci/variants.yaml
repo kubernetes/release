@@ -5,9 +5,9 @@ variants:
     REVISION: '0'
   go1.16:
     CONFIG: 'go1.16'
-    GO_VERSION: '1.16.6'
+    GO_VERSION: '1.16.7'
     REVISION: '0'
   go1.15:
     CONFIG: 'go1.15'
-    GO_VERSION: '1.15.14'
+    GO_VERSION: '1.15.15'
     REVISION: '0'

@@ -2,8 +2,8 @@ variants:
   canary:
     TYPE: 'canary'
     CONFIG: 'canary'
-    GO_VERSION: '1.16.6'
-    IMAGE_VERSION: 'v1.16.6-canary-1'
+    GO_VERSION: '1.16.7'
+    IMAGE_VERSION: 'v1.16.7-canary-1'
     PROTOBUF_VERSION: '3.7.0'
   go1.17:
     TYPE: 'default'
@@ -15,21 +15,21 @@ variants:
   go1.16:
     TYPE: 'default'
     CONFIG: 'go1.16'
-    GO_VERSION: '1.16.6'
-    IMAGE_VERSION: 'v1.16.6-1'
+    GO_VERSION: '1.16.7'
+    IMAGE_VERSION: 'v1.16.7-1'
     PROTOBUF_VERSION: '3.7.0'
     ETCD_VERSION: 'v3.4.13'
   go1.15:
     TYPE: 'default'
     CONFIG: 'go1.15'
-    GO_VERSION: '1.15.14'
-    IMAGE_VERSION: 'v1.15.14-1'
+    GO_VERSION: '1.15.15'
+    IMAGE_VERSION: 'v1.15.15-1'
     PROTOBUF_VERSION: '3.7.0'
     ETCD_VERSION: 'v3.4.13'
   go1.15-legacy:
     TYPE: 'legacy'
     CONFIG: 'go1.15'
-    GO_VERSION: '1.15.14'
-    IMAGE_VERSION: 'v1.15.14-legacy-1'
+    GO_VERSION: '1.15.15'
+    IMAGE_VERSION: 'v1.15.15-legacy-1'
     PROTOBUF_VERSION: '3.0.2'
     ETCD_VERSION: 'v3.4.13'
