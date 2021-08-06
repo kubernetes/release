@@ -62,7 +62,7 @@ dependencies:
 
   # Golang
   - name: "golang"
-    version: 1.16.6
+    version: 1.16.7
     refPaths:
     - path: Dockerfile-kubepkg
       match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+) AS builder
@@ -214,7 +214,7 @@ dependencies:
 
   # Golang (for previous release branches)
   - name: "golang (for previous release branches)"
-    version: 1.15.14
+    version: 1.15.15
     refPaths:
     - path: images/build/cross/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
