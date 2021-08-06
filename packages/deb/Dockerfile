@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.16.6
+FROM golang:1.16.7
 
 RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get update -y \
