@@ -17,7 +17,7 @@ ARG OLD_BAZEL_VERSION
 
 # The Golang version for the builder image should always be explicitly set to
 # the Golang version of the kubernetes/kubernetes active development branch
-FROM golang:1.16.6 AS builder
+FROM golang:1.16.7 AS builder
 
 WORKDIR /go/src/k8s.io/release
 
