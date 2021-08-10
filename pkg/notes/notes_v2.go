@@ -190,7 +190,7 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 	}
 
 	// Uppercase the first character of the markdown to make it look uniform
-	markdown = strings.ToUpper(string(markdown[0])) + markdown[1:]
+	markdown = capitalizeString(markdown)
 
 	return &ReleaseNote{
 		Commit:         pair.Commit.Hash.String(),

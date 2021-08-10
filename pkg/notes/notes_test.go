@@ -468,3 +468,31 @@ func TestDashify(t *testing.T) {
 		require.Equal(t, tc.expected, result)
 	}
 }
+
+func TestCapitalizeString(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		input, expected string
+	}{
+		{ // capitalize English
+			input:    "hello, world!",
+			expected: "Hello, world!",
+		},
+		{ // capitalize Russian
+			input:    "привет, мир!",
+			expected: "Привет, мир!",
+		},
+		{ // no capitalization, English
+			input:    "Hello, world!",
+			expected: "Hello, world!",
+		},
+		{ // no capitalization, Korean
+			input:    "안녕, 세상아!",
+			expected: "안녕, 세상아!",
+		},
+	} {
+		result := capitalizeString(tc.input)
+		require.Equal(t, tc.expected, result)
+	}
+}
