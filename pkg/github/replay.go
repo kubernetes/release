@@ -25,7 +25,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/google/go-github/v33/github"
+	"github.com/google/go-github/v37/github"
 )
 
 func NewReplayer(replayDir string) Client {
