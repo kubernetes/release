@@ -29,7 +29,7 @@ import (
 	"sync"
 	"time"
 
-	gogithub "github.com/google/go-github/v33/github"
+	gogithub "github.com/google/go-github/v37/github"
 	"github.com/nozzle/throttler"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

@@ -28,7 +28,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v33/github"
+	"github.com/google/go-github/v37/github"
 	"github.com/sirupsen/logrus"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github/githubfakes"
