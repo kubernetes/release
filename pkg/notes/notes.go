@@ -28,6 +28,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	gogithub "github.com/google/go-github/v37/github"
 	"github.com/nozzle/throttler"
@@ -484,7 +485,7 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result) (*ReleaseNote, error) {
 	}
 
 	// Uppercase the first character of the markdown to make it look uniform
-	markdown = strings.ToUpper(string(markdown[0])) + markdown[1:]
+	markdown = capitalizeString(markdown)
 
 	return &ReleaseNote{
 		Commit:         result.commit.GetSHA(),
@@ -1059,7 +1060,7 @@ func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap) error {
 		markdown := fmt.Sprintf("%s ([#%d](%s), [@%s](%s))",
 			indented, rn.PrNumber, rn.PrURL, rn.Author, rn.AuthorURL)
 		// Uppercase the first character of the markdown to make it look uniform
-		rn.Markdown = strings.ToUpper(string(markdown[0])) + markdown[1:]
+		rn.Markdown = capitalizeString(markdown)
 	}
 	return nil
 }
@@ -1103,4 +1104,12 @@ func (rn *ReleaseNote) ContentHash() (string, error) {
 		return "", errors.Wrap(err, "calculating content hash from map")
 	}
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
+}
+
+// capitalizeString returns a capitalized string of the input string
+func capitalizeString(s string) string {
+	r := []rune(s)
+	r[0] = unicode.ToUpper(r[0])
+
+	return string(r)
 }
