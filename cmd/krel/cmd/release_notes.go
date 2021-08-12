@@ -125,7 +125,6 @@ type releaseNotesOptions struct {
 	userFork           string
 	createDraftPR      bool
 	createWebsitePR    bool
-	dependencies       bool
 	fixNotes           bool
 	listReleaseNotesV2 bool
 	websiteRepo        string
@@ -182,13 +181,6 @@ func init() {
 		"create-website-pr",
 		false,
 		"patch the relnotes.k8s.io sources and generate a PR with the changes",
-	)
-
-	releaseNotesCmd.PersistentFlags().BoolVar(
-		&releaseNotesOpts.dependencies,
-		"dependencies",
-		true,
-		"add dependency report",
 	)
 
 	releaseNotesCmd.PersistentFlags().StringSliceVarP(
@@ -1010,18 +1002,6 @@ func buildNotesResult(startTag string, releaseNotes *notes.ReleaseNotes) (*relea
 		return nil, errors.Wrapf(
 			err, "rendering release notes to markdown",
 		)
-	}
-
-	// Add the dependency report if necessary
-	if releaseNotesOpts.dependencies {
-		logrus.Info("Generating dependency changes")
-		deps, err := notes.NewDependencies().Changes(
-			startTag, releaseNotesOpts.tag,
-		)
-		if err != nil {
-			return nil, errors.Wrap(err, "creating dependency report")
-		}
-		markdown += strings.Repeat(nl, 2) + deps
 	}
 
 	// Create the JSON
