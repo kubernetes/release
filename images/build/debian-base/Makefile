@@ -19,8 +19,8 @@ IMAGE ?= $(REGISTRY)/debian-base
 BUILD_IMAGE ?= debian-build
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= bullseye-v1.0.0
-CONFIG ?= bullseye
+IMAGE_VERSION ?= buster-v1.9.0
+CONFIG ?= buster
 
 TAR_FILE ?= rootfs.tar
 ARCH ?= amd64

@@ -360,9 +360,8 @@ dependencies:
       match: OS_CODENAME\ \?=\ (bullseye|buster)
     - path: images/build/cross/variants.yaml
       match: "OS_CODENAME: '(bullseye|buster)'"
-    # TODO(codename): Uncomment once bullseye is default
-    #- path: images/build/debian-base/Makefile
-    #  match: CONFIG\ \?=\ (bullseye|buster)
+    - path: images/build/debian-base/Makefile
+      match: CONFIG\ \?=\ (bullseye|buster)
     - path: images/build/debian-base/variants.yaml
       match: "CONFIG: '(bullseye|buster)'"
     - path: images/build/debian-iptables/Makefile
@@ -387,74 +386,75 @@ dependencies:
     - path: packages/deb/Dockerfile
       match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bullseye|buster)
 
-  - name: "Debian: codename (next)"
+  - name: "Debian: codename (next candidate)"
     version: bullseye
     refPaths:
     - path: images/build/debian-base/variants.yaml
       match: "CONFIG: '(bullseye|buster)'"
 
   - name: "k8s.gcr.io/build-image/debian-base"
-    version: bullseye-v1.0.0
+    version: buster-v1.9.0
     refPaths:
     - path: images/build/debian-base/Makefile
-      match: IMAGE_VERSION\ \?=\ [a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
+      match: IMAGE_VERSION\ \?=\ (bullseye|buster)-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
     - path: images/build/debian-base/variants.yaml
-      match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
+      match: "IMAGE_VERSION: '(bullseye|buster)-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "k8s.gcr.io/build-image/debian-base: dependents"
     version: buster-v1.9.0
     refPaths:
     - path: images/build/debian-iptables/Makefile
-      match: DEBIAN_BASE_VERSION\ \?=\ [a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
+      match: DEBIAN_BASE_VERSION\ \?=\ (bullseye|buster)-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
     - path: images/build/debian-iptables/variants.yaml
-      match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
+      match: "DEBIAN_BASE_VERSION: '(bullseye|buster)-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
     - path: images/build/setcap/Makefile
-      match: DEBIAN_BASE_VERSION\ \?=\ [a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
+      match: DEBIAN_BASE_VERSION\ \?=\ (bullseye|buster)-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
     - path: images/build/setcap/variants.yaml
-      match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
+      match: "DEBIAN_BASE_VERSION: '(bullseye|buster)-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "k8s.gcr.io/build-image/debian-iptables"
     version: buster-v1.6.7
     refPaths:
     - path: images/build/debian-iptables/Makefile
-      match: IMAGE_VERSION\ \?=\ [a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
+      match: IMAGE_VERSION\ \?=\ (bullseye|buster)-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
     - path: images/build/debian-iptables/variants.yaml
-      match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
+      match: "IMAGE_VERSION: '(bullseye|buster)-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "k8s.gcr.io/build-image/setcap"
     version: buster-v2.0.4
     refPaths:
     - path: images/build/setcap/Makefile
-      match: IMAGE_VERSION\ \?=\ [a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
+      match: IMAGE_VERSION\ \?=\ (bullseye|buster)-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
     - path: images/build/setcap/variants.yaml
-      match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
+      match: "IMAGE_VERSION: '(bullseye|buster)-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
-  # Base images (for previous release branches)
-  - name: "k8s.gcr.io/build-image/debian-base (for previous release branches)"
-    version: buster-v1.9.0
+  # Base images (next candidate)
+  - name: "k8s.gcr.io/build-image/debian-base (next candidate)"
+    version: bullseye-v1.0.0
     refPaths:
     - path: images/build/debian-base/variants.yaml
-      match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
+      match: "IMAGE_VERSION: '(bullseye|buster)-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
-  - name: "k8s.gcr.io/build-image/debian-base: dependents (for previous release branches)"
-    version: buster-v1.9.0
+  - name: "k8s.gcr.io/build-image/debian-base: dependents (next candidate)"
+    version: bullseye-v1.0.0
     refPaths:
     - path: images/build/debian-iptables/variants.yaml
-      match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
-    - path: images/build/setcap/variants.yaml
-      match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
+      match: "DEBIAN_BASE_VERSION: '(bullseye|buster)-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
+    # TODO(bullseye): Uncomment as part of https://github.com/kubernetes/release/pull/2249
+    #- path: images/build/setcap/variants.yaml
+    #  match: "DEBIAN_BASE_VERSION: '(bullseye|buster)-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
-  - name: "k8s.gcr.io/build-image/debian-iptables (for previous release branches)"
+  - name: "k8s.gcr.io/build-image/debian-iptables (next candidate)"
     version: buster-v1.6.7
     refPaths:
     - path: images/build/debian-iptables/variants.yaml
-      match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
+      match: "IMAGE_VERSION: '(bullseye|buster)-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
-  - name: "k8s.gcr.io/build-image/setcap (for previous release branches)"
+  - name: "k8s.gcr.io/build-image/setcap (next candidate)"
     version: buster-v2.0.4
     refPaths:
     - path: images/build/setcap/variants.yaml
-      match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
+      match: "IMAGE_VERSION: '(bullseye|buster)-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
 # Build environments
   - name: "gcr.io/k8s-testimages/gcb-docker-gcloud"
