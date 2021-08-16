@@ -192,12 +192,23 @@ func getImageReferences(referenceString string) ([]struct {
 			return nil, errors.Wrap(err, "while calculating image digest")
 		}
 
-		logrus.Infof("Adding image digest %s from reference", imageDigest.String())
+		dig, err := name.NewDigest(
+			fmt.Sprintf(
+				"%s/%s@%s:%s",
+				tag.RegistryStr(), tag.RepositoryStr(),
+				imageDigest.Algorithm, imageDigest.Hex,
+			),
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "building single image digest")
+		}
+
+		logrus.Infof("Adding image digest %s from reference", dig.String())
 		return append(images, struct {
 			Digest string
 			Arch   string
 			OS     string
-		}{Digest: imageDigest.String()}), nil
+		}{Digest: dig.String()}), nil
 	}
 
 	// Get the image index
@@ -311,7 +322,6 @@ func (di *spdxDefaultImplementation) PullImagesToArchive(
 		}
 		p := strings.Split(d.DigestStr(), ":")
 		tarPath := filepath.Join(path, p[1]+".tar")
-		logrus.Infof("Jalo %+v a %s", d.String(), path)
 		if err := tarball.MultiWriteToFile(
 			tarPath,
 			map[name.Tag]v1.Image{
