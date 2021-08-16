@@ -1,6 +1,9 @@
 # Schedule Builder
 
-This simple tool has the objective to parse the yaml file located in [SIG-Release](https://github.com/kubernetes/sig-release/blob/master/releases/), which shows the scheduled and past patch releases of the current Kubernetes Release cycle in machine readable format.
+This simple tool has the objective to parse the yaml file located in
+[k/website](https://github.com/kubernetes/website/blob/main/data/releases/schedule.yaml),
+which shows the scheduled and past patch releases of the current Kubernetes
+Release cycle in machine readable format.
 
 ## Install
 
@@ -16,17 +19,17 @@ Also if you have the `kubernetes/release` cloned you can run the `make release-t
 
 ## Usage
 
-To run this tool you can just do, assuming you have cloned both `SIG-Release` and `Release` repositories, like
+To run this tool you can just do, assuming you have cloned both `website` and `release` repositories, like
 
 ```
 .
-+-- kubernetes
-|   +-- sig-release
++-- k8s.io
 |   +-- release
+|   +-- website
 ```
 
 ```bash
-$ schedule-builder --config-path ../sig-release/releases/schedule.yaml
+$ schedule-builder --config-path ../website/data/releases/schedule.yaml
 ```
 
 The output will be something similar to this
@@ -87,5 +90,5 @@ End of Life for **1.16** is **TBD**
 Also can save the schedule in a file, to do that, you can set the `--output-file` flag together with the filename.
 
 ```
-$ schedule-builder --config-path ../sig-release/releases/schedule.yaml --output-file my-schedule.md
+$ schedule-builder --config-path ../website/data/releases/schedule.yaml --output-file my-schedule.md
 ```
