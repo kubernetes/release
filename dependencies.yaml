@@ -309,3 +309,30 @@ dependencies:
       match: IMAGE_VERSION\ \?=\ [a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
     - path: images/build/setcap/variants.yaml
       match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
+
+  # Base images (for previous release branches)
+  - name: "k8s.gcr.io/build-image/debian-base (for previous release branches)"
+    version: buster-v1.9.0
+    refPaths:
+    - path: images/build/debian-base/variants.yaml
+      match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
+
+  - name: "k8s.gcr.io/build-image/debian-base: dependents (for previous release branches)"
+    version: buster-v1.9.0
+    refPaths:
+    - path: images/build/debian-iptables/variants.yaml
+      match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
+    - path: images/build/setcap/variants.yaml
+      match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
+
+  - name: "k8s.gcr.io/build-image/debian-iptables (for previous release branches)"
+    version: buster-v1.6.6
+    refPaths:
+    - path: images/build/debian-iptables/variants.yaml
+      match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
+
+  - name: "k8s.gcr.io/build-image/setcap (for previous release branches)"
+    version: buster-v2.0.4
+    refPaths:
+    - path: images/build/setcap/variants.yaml
+      match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
