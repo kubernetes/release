@@ -3,7 +3,7 @@ module k8s.io/release
 go 1.16
 
 require (
-	cloud.google.com/go v0.91.1
+	cloud.google.com/go/containeranalysis v0.1.0
 	cloud.google.com/go/storage v1.12.0
 	github.com/GoogleCloudPlatform/testgrid v0.0.38
 	github.com/blang/semver v3.5.1+incompatible
@@ -36,8 +36,8 @@ require (
 	golang.org/x/oauth2 v0.0.0-20210805134026-6f1e6394065a
 	golang.org/x/tools v0.1.5
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
-	google.golang.org/api v0.52.0
-	google.golang.org/genproto v0.0.0-20210811021853-ddbe55d93216
+	google.golang.org/api v0.54.0
+	google.golang.org/genproto v0.0.0-20210813162853-db860fec028c
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/utils v0.0.0-20210305010621-2afb4311ab10
 	sigs.k8s.io/k8s-container-image-promoter v1.337.0
