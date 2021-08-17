@@ -16,17 +16,12 @@ ARG BASEIMAGE
 
 FROM ${BASEIMAGE} as build
 
-# Install iptables and ebtables packages from bullseye-backports
-RUN echo deb http://deb.debian.org/debian bullseye-backports main >> /etc/apt/sources.list \
-    && apt-get update \
-    && apt-get -t bullseye-backports -y --no-install-recommends install \
-        iptables \
-        ebtables
-
 # Install other dependencies and then clean up apt caches
 RUN clean-install \
     conntrack \
+    ebtables \
     ipset \
+    iptables \
     kmod \
     netbase
 
