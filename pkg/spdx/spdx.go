@@ -151,9 +151,7 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 	if err != nil {
 		return nil, errors.Wrap(err, "scanning directory for licenses")
 	}
-	if lic == nil {
-		logrus.Warnf("License classifier could not find a license for directory: %v", err)
-	} else {
+	if lic != nil {
 		licenseTag = lic.LicenseID
 	}
 

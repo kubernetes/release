@@ -506,6 +506,10 @@ func (di *spdxDefaultImplementation) GetDirectoryLicense(
 	if err != nil {
 		return nil, errors.Wrap(err, "getting directory license")
 	}
+	if licenseResult == nil {
+		logrus.Warnf("License classifier could not find a license for directory: %v", err)
+		return nil, nil
+	}
 	return licenseResult.License, nil
 }
 
