@@ -1,6 +1,6 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 approvers:
-  - vulndash-approvers
+  - promo-tools-approvers
 reviewers:
-  - vulndash-reviewers
+  - promo-tools-reviewers

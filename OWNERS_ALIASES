@@ -3,14 +3,12 @@
 aliases:
   sig-release-leads:
     - cpanato # SIG Technical Lead
-    - hasheddan # SIG Technical Lead
     - jeremyrickard # SIG Technical Lead
     - justaugustus # SIG Chair
     - puerco # SIG Technical Lead
     - saschagrunert # SIG Chair
   release-engineering-approvers:
     - cpanato # Release Manager
-    - hasheddan # subproject owner / Release Manager
     - puerco # Release Manager
     - saschagrunert # subproject owner / Release Manager
     - justaugustus # subproject owner / Release Manager
@@ -18,10 +16,11 @@ aliases:
   release-engineering-reviewers:
     - ameukam # Release Manager Associate
     - jimangel # Release Manager Associate
-    - markyjackson-taulia # Release Manager Associate
     - mkorbi # Release Manager Associate
+    - palnabarun # Release Manager Associate
     - onlydole # Release Manager Associate
     - sethmccombs # Release Manager Associate
+    - thejoycekung # Release Manager Associate
     - verolop # Release Manager Associate
     - wilsonehusin # Release Manager Associate
   build-admins:
@@ -29,29 +28,26 @@ aliases:
     - BenTheElder
     - MushuEE
     - spiffxp
-  build-image-approvers:
-    - BenTheElder
-    - cblecker
-    - dims
-    - justaugustus
-    - listx
   krel-approvers:
     - cpanato
-    - hasheddan
     - puerco
     - saschagrunert
     - xmudrii
   krel-reviewers:
     - cpanato
-    - hasheddan
     - puerco
     - saschagrunert
     - xmudrii
   promo-tools-approvers:
+    - cpanato
     - justaugustus
+    - puerco
+    - saschagrunert
   promo-tools-reviewers:
-    - hasheddan
+    - cpanato
+    - jeremyrickard
     - justaugustus
+    - puerco
     - saschagrunert
   release-notes-approvers:
     - puerco
@@ -60,9 +56,3 @@ aliases:
     - puerco
     - saschagrunert
     - wilsonehusin
-  vulndash-approvers:
-    - cpanato
-    - justaugustus
-  vulndash-reviewers:
-    - cpanato
-    - justaugustus
