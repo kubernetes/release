@@ -24,5 +24,3 @@ declare -r IMG_NAME="debian-builder:${BUILD_TAG}"
 
 docker build -t "${IMG_NAME}" "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 docker run -it --rm -v "${PWD}/bin:/src/bin" "${IMG_NAME}" $@
-
-printf "%s" "${BUILD_TAG}" | gsutil cp - "${DEB_RELEASE_BUCKET}/latest"
