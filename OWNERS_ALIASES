@@ -27,12 +27,6 @@ aliases:
     - BenTheElder
     - MushuEE
     - spiffxp
-  build-image-approvers:
-    - BenTheElder
-    - cblecker
-    - dims
-    - justaugustus
-    - listx
   krel-approvers:
     - cpanato
     - puerco

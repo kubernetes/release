@@ -1,22 +1,15 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
-reviewers:
-  - build-image-reviewers
-  - release-engineering-approvers
-  - BenTheElder
-  - bowei
-  - freehan
-  - mkumatag
-  - mrhohn
-  - tallclair
 approvers:
-  - build-image-approvers
   - release-engineering-approvers
+reviewers:
+  - release-engineering-reviewers
+
+emeritus_approvers:
   - BenTheElder
   - bowei
   - freehan
+  - jingax10
   - mkumatag
   - mrhohn
   - tallclair
-emeritus_approvers:
-  - jingax10
