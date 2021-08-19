@@ -30,9 +30,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:               "schedule-builder --config-path path/to/schedule.yaml [--output-file <filename.md>]",
+	Use:               "schedule-builder --config-path path/to/schedule.yaml --type-file <release>/or/<patch>[--output-file <filename.md>]",
 	Short:             "schedule-builder generate a humam readable format of the Kubernetes release schedule",
-	Example:           "schedule-builder --config-path /home/user/kubernetes/sig-release/releases/schedule.yaml",
+	Example:           "schedule-builder --config-path /home/user/kubernetes/sig-release/releases/schedule.yaml --type-file patch",
 	SilenceUsage:      true,
 	SilenceErrors:     true,
 	PersistentPreRunE: initLogging,
@@ -45,6 +45,7 @@ type options struct {
 	configPath string
 	outputFile string
 	logLevel   string
+	typeFile   string
 }
 
 var opts = &options{}
@@ -52,10 +53,12 @@ var opts = &options{}
 const (
 	configPathFlag = "config-path"
 	outputFileFlag = "output-file"
+	typeFileFlag   = "type-file"
 )
 
 var requiredFlags = []string{
 	configPathFlag,
+	typeFileFlag,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -88,6 +91,13 @@ func init() {
 		fmt.Sprintf("the logging verbosity, either %s", log.LevelNames()),
 	)
 
+	rootCmd.PersistentFlags().StringVar(
+		&opts.typeFile,
+		typeFileFlag,
+		"patch",
+		"type of file to be produced - release cycle schedule or patch schedule. To be set to `release` or `patch` and respective yaml needs to be supplied with --config-path",
+	)
+
 	for _, flag := range requiredFlags {
 		if err := rootCmd.MarkPersistentFlagRequired(flag); err != nil {
 			logrus.Fatal(err)
@@ -110,17 +120,34 @@ func run(opts *options) error {
 		return errors.Wrap(err, "failed to read the file")
 	}
 
-	var patchSchedule PatchSchedule
+	var (
+		patchSchedule   PatchSchedule
+		releaseSchedule ReleaseSchedule
+		scheduleOut     string
+	)
 
 	logrus.Info("Parsing the schedule...")
-	err = yaml.UnmarshalStrict(data, &patchSchedule)
-	if err != nil {
-		return errors.Wrap(err, "failed to decode the file")
+
+	if opts.typeFile == "patch" {
+		err = yaml.UnmarshalStrict(data, &patchSchedule)
+		if err != nil {
+			return errors.Wrap(err, "failed to decode the file")
+		}
+
+		logrus.Info("Generating the markdown output...")
+		scheduleOut = parseSchedule(patchSchedule)
+	} else if opts.typeFile == "release" {
+
+		err = yaml.UnmarshalStrict(data, &releaseSchedule)
+		if err != nil {
+			return errors.Wrap(err, "failed to decode the file")
+		}
+
+		logrus.Info("Generating the markdown output...")
+		scheduleOut = parseReleaseSchedule(releaseSchedule)
+	} else {
+		return errors.New("type-file must be either `release` or `patch`")
 	}
-
-	logrus.Info("Generating the markdown output...")
-
-	scheduleOut := parseSchedule(patchSchedule)
 
 	if opts.outputFile != "" {
 		logrus.Infof("Saving schedule to a file %s.", opts.outputFile)

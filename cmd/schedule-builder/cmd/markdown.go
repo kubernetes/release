@@ -60,6 +60,51 @@ func parseSchedule(patchSchedule PatchSchedule) string {
 	return scheduleOut
 }
 
+func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
+	output := []string{}
+	output = append(output, fmt.Sprintf("# Kubernetes %s\n", releaseSchedule.Releases[0].Version))
+
+	output = append(output, fmt.Sprintf("#### Links\n"))
+	for _, link := range releaseSchedule.Releases[0].Links {
+		output = append(output, fmt.Sprintf("* [%s](%s)\n", link.Text, link.Href))
+	}
+	output = append(output, fmt.Sprintf("#### Tracking docs\n"))
+	for _, trackingDocs := range releaseSchedule.Releases[0].TrackingDocs {
+		output = append(output, fmt.Sprintf("* [%s](%s)\n", trackingDocs.Text, trackingDocs.Href))
+	}
+
+	output = append(output, fmt.Sprintf("#### Guides\n"))
+	for _, guide := range releaseSchedule.Releases[0].Guides {
+		output = append(output, fmt.Sprintf("* [%s](%s)\n", guide.Text, guide.Href))
+	}
+
+	output = append(output, fmt.Sprintf("## Timeline\n"))
+	for _, releaseSchedule := range releaseSchedule.Releases {
+		tableString := &strings.Builder{}
+		table := tablewriter.NewWriter(tableString)
+		table.SetAutoWrapText(false)
+		table.SetHeader([]string{"**What**", "**Who**", "**When**", "**WEEK**", "**CI Signal**"})
+
+		for _, timeline := range releaseSchedule.Timeline {
+			table.Append([]string{strings.TrimSpace(timeline.What), strings.TrimSpace(timeline.Who), strings.TrimSpace(timeline.When), strings.TrimSpace(timeline.Week), strings.TrimSpace(timeline.CISignal), ""})
+
+		}
+
+		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
+		table.SetCenterSeparator("|")
+		table.Render()
+
+		output = append(output, tableString.String())
+	}
+
+	scheduleOut := strings.Join(output, "\n")
+
+	logrus.Info("Release Schedule parsed")
+	println(scheduleOut)
+
+	return scheduleOut
+}
+
 func patchReleaseInPreviousList(a string, previousPatches []PreviousPatches) bool {
 	for _, b := range previousPatches {
 		if b.Release == a {

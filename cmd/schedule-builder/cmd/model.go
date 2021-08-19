@@ -38,3 +38,38 @@ type Schedule struct {
 	EndOfLifeDate      string            `yaml:"endOfLifeDate"`
 	PreviousPatches    []PreviousPatches `yaml:"previousPatches"`
 }
+
+type ReleaseSchedule struct {
+	Releases []Release `yaml:"releases"`
+}
+
+type Release struct {
+	Version      string        `yaml:"version"`
+	Links        []Link        `yaml:"links"`
+	TrackingDocs []TrackingDoc `yaml:"trackingDocs"`
+	Guides       []Guide       `yaml:"guides"`
+	Timeline     []Timeline    `yaml:"timeline"`
+}
+
+type Link struct {
+	Href string `yaml:"href"`
+	Text string `yaml:"text"`
+}
+
+type TrackingDoc struct {
+	Href string `yaml:"href"`
+	Text string `yaml:"text"`
+}
+
+type Guide struct {
+	Href string `yaml:"href"`
+	Text string `yaml:"text"`
+}
+
+type Timeline struct {
+	What     string `yaml:"what"`
+	Who      string `yaml:"who"`
+	When     string `yaml:"when"`
+	Week     string `yaml:"week"`
+	CISignal string `yaml:"ciSignal"`
+}
