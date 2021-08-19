@@ -3,14 +3,12 @@
 aliases:
   sig-release-leads:
     - cpanato # SIG Technical Lead
-    - hasheddan # SIG Technical Lead
     - jeremyrickard # SIG Technical Lead
     - justaugustus # SIG Chair
     - puerco # SIG Technical Lead
     - saschagrunert # SIG Chair
   release-engineering-approvers:
     - cpanato # Release Manager
-    - hasheddan # subproject owner / Release Manager
     - puerco # Release Manager
     - saschagrunert # subproject owner / Release Manager
     - justaugustus # subproject owner / Release Manager
@@ -37,20 +35,17 @@ aliases:
     - listx
   krel-approvers:
     - cpanato
-    - hasheddan
     - puerco
     - saschagrunert
     - xmudrii
   krel-reviewers:
     - cpanato
-    - hasheddan
     - puerco
     - saschagrunert
     - xmudrii
   promo-tools-approvers:
     - justaugustus
   promo-tools-reviewers:
-    - hasheddan
     - justaugustus
     - saschagrunert
   release-notes-approvers:
