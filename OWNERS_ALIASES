@@ -39,9 +39,15 @@ aliases:
     - saschagrunert
     - xmudrii
   promo-tools-approvers:
+    - cpanato
     - justaugustus
+    - puerco
+    - saschagrunert
   promo-tools-reviewers:
+    - cpanato
+    - jeremyrickard
     - justaugustus
+    - puerco
     - saschagrunert
   release-notes-approvers:
     - puerco
@@ -50,9 +56,3 @@ aliases:
     - puerco
     - saschagrunert
     - wilsonehusin
-  vulndash-approvers:
-    - cpanato
-    - justaugustus
-  vulndash-reviewers:
-    - cpanato
-    - justaugustus
