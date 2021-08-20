@@ -37,6 +37,7 @@ End of Life for **X.Y** is **NOW**
 | X.Y.XXX       | 2020-05-15           | 2020-05-20  | honk |
 | X.Y.YYY       | 2020-04-13           | 2020-04-16  |      |
 `
+
 const expectedReleaseSchedule = `# Kubernetes X.Y
 
 #### Links

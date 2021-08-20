@@ -64,9 +64,7 @@ func parseSchedule(patchSchedule PatchSchedule) string {
 // runs with `--type-file=release` to retrun the release cycle schedule
 func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 	output := []string{}
-	output = append(output, fmt.Sprintf("# Kubernetes %s\n", releaseSchedule.Releases[0].Version))
-
-	output = append(output, "#### Links\n")
+	output = append(output, fmt.Sprintf("# Kubernetes %s\n", releaseSchedule.Releases[0].Version), "#### Links\n")
 	for _, link := range releaseSchedule.Releases[0].Links {
 		output = append(output, fmt.Sprintf("* [%s](%s)\n", link.Text, link.Href))
 	}
@@ -89,7 +87,6 @@ func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 
 		for _, timeline := range releaseSchedule.Timeline {
 			table.Append([]string{strings.TrimSpace(timeline.What), strings.TrimSpace(timeline.Who), strings.TrimSpace(timeline.When), strings.TrimSpace(timeline.Week), strings.TrimSpace(timeline.CISignal), ""})
-
 		}
 
 		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})

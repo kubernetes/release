@@ -137,7 +137,6 @@ func run(opts *options) error {
 		logrus.Info("Generating the markdown output...")
 		scheduleOut = parseSchedule(patchSchedule)
 	} else if opts.typeFile == "release" {
-
 		err = yaml.UnmarshalStrict(data, &releaseSchedule)
 		if err != nil {
 			return errors.Wrap(err, "failed to decode the file")
@@ -151,7 +150,7 @@ func run(opts *options) error {
 
 	if opts.outputFile != "" {
 		logrus.Infof("Saving schedule to a file %s.", opts.outputFile)
-		err := os.WriteFile(opts.outputFile, []byte(scheduleOut), 0644)
+		err := os.WriteFile(opts.outputFile, []byte(scheduleOut), 0o644)
 		if err != nil {
 			return errors.Wrap(err, "failed to save schedule to the file")
 		}

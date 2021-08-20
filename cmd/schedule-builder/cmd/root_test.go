@@ -66,6 +66,7 @@ End of Life for **1.16** is **TBD**
 | 1.16.10       | 2020-05-15           | 2020-05-20  |      |
 | 1.16.9        | 2020-04-13           | 2020-04-16  |      |
 `
+
 const expectedReleaseOut = `# Kubernetes 1.23
 
 #### Links
