@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// runs with `--type-file=patch` to retrun the patch schedule
 func parseSchedule(patchSchedule PatchSchedule) string {
 	output := []string{}
 	output = append(output, "### Timeline\n")
@@ -60,25 +61,26 @@ func parseSchedule(patchSchedule PatchSchedule) string {
 	return scheduleOut
 }
 
+// runs with `--type-file=release` to retrun the release cycle schedule
 func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 	output := []string{}
 	output = append(output, fmt.Sprintf("# Kubernetes %s\n", releaseSchedule.Releases[0].Version))
 
-	output = append(output, fmt.Sprintf("#### Links\n"))
+	output = append(output, "#### Links\n")
 	for _, link := range releaseSchedule.Releases[0].Links {
 		output = append(output, fmt.Sprintf("* [%s](%s)\n", link.Text, link.Href))
 	}
-	output = append(output, fmt.Sprintf("#### Tracking docs\n"))
+	output = append(output, "#### Tracking docs\n")
 	for _, trackingDocs := range releaseSchedule.Releases[0].TrackingDocs {
 		output = append(output, fmt.Sprintf("* [%s](%s)\n", trackingDocs.Text, trackingDocs.Href))
 	}
 
-	output = append(output, fmt.Sprintf("#### Guides\n"))
+	output = append(output, "#### Guides\n")
 	for _, guide := range releaseSchedule.Releases[0].Guides {
 		output = append(output, fmt.Sprintf("* [%s](%s)\n", guide.Text, guide.Href))
 	}
 
-	output = append(output, fmt.Sprintf("## Timeline\n"))
+	output = append(output, "## Timeline\n")
 	for _, releaseSchedule := range releaseSchedule.Releases {
 		tableString := &strings.Builder{}
 		table := tablewriter.NewWriter(tableString)

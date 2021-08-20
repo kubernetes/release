@@ -3,7 +3,7 @@
 This simple tool has the objective to parse the yaml file located in
 [k/website](https://github.com/kubernetes/website/blob/main/data/releases/schedule.yaml),
 which shows the scheduled and past patch releases of the current Kubernetes
-Release cycle in machine readable format.
+Release cycle as well as Kubernetes Release Cycles schedules ([like 1.23](https://github.com/kubernetes/sig-release/blob/master/releases/release-1.23/README.md)) in machine readable format.
 
 ## Install
 
@@ -28,8 +28,9 @@ To run this tool you can just do, assuming you have cloned both `website` and `r
 |   +-- website
 ```
 
+### For Patch Release Schedule
 ```bash
-$ schedule-builder --config-path ../website/data/releases/schedule.yaml
+$ schedule-builder --config-path ../website/data/releases/schedule.yaml --type-file patch
 ```
 
 The output will be something similar to this
@@ -87,8 +88,49 @@ End of Life for **1.16** is **TBD**
 | 1.16.1        | 2019-09-27                                                                            | 2019-10-02  |
 ```
 
+### For Release Cycle Schedule
+```bash
+$ schedule-builder --config-path testdata/rel-schedule.yaml --type-file release
+```
+The output will be something similar to this
+
+```
+# Kubernetes 1.23
+
+#### Links
+
+* [This document](https://git.k8s.io/sig-release/releases/release-1.23/README.md)
+
+* [Release Team](https://groups.google.com/a/kubernetes.io/g/release-team)
+
+* [Meeting Minutes](http://bit.ly/k8s123-releasemtg)
+
+#### Tracking docs
+
+* [Enhancements Tracking Sheet](https://bit.ly/k8s123-enhancements)
+
+* [Feature blog Tracking Sheet](TBD)
+
+* [kubernetes/sig-release v1.23 milestone](https://github.com/kubernetes/kubernetes/milestone/56)
+
+#### Guides
+
+* [Targeting Issues and PRs to This Milestone](https://git.k8s.io/community/contributors/devel/sig-release/release.md)
+
+* [Triaging and Escalating Test Failures](https://git.k8s.io/community/contributors/devel/sig-testing/testing.md#troubleshooting-a-failure)
+
+## Timeline
+
+|          **WHAT**           |      **WHO**      |      **WHEN**       | **WEEK** |  **CI SIGNAL**  |  |
+|-----------------------------|-------------------|---------------------|----------|-----------------|--|
+| Start of Release Cycle      | Lead              | Mon August 23, 2021 | week 1   | master-blocking |  |
+| Start Enhancements Tracking | Enhancements Lead | Mon August 23, 2021 | week 1   |                 |  |
+| 1.23.0-alpha.1 released     | Branch Manager    | Wed August 25, 2021 | week 1   |                 |  |
+| Schedule finalized          | Lead              | Thu August 26, 2021 | week 1   |                 |  |
+```
+
 Also can save the schedule in a file, to do that, you can set the `--output-file` flag together with the filename.
 
 ```
-$ schedule-builder --config-path ../website/data/releases/schedule.yaml --output-file my-schedule.md
+$ schedule-builder --config-path ../website/data/releases/schedule.yaml --type-file patch--output-file my-schedule.md
 ```
