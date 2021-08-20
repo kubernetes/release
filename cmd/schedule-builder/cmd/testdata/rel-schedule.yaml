@@ -1,0 +1,42 @@
+releases:
+- version: 1.23
+  links:
+    - href: https://git.k8s.io/sig-release/releases/release-1.23/README.md
+      text: This document
+    - href: https://groups.google.com/a/kubernetes.io/g/release-team
+      text: Release Team
+    - href: http://bit.ly/k8s123-releasemtg
+      text: Meeting Minutes
+  trackingDocs:
+    - href: https://bit.ly/k8s123-enhancements
+      text: Enhancements Tracking Sheet
+    - href: TBD
+      text: Feature blog Tracking Sheet
+    - href: https://github.com/kubernetes/kubernetes/milestone/56
+      text: kubernetes/sig-release v1.23 milestone
+  guides:
+    - href: https://git.k8s.io/community/contributors/devel/sig-release/release.md
+      text: Targeting Issues and PRs to This Milestone
+    - href: https://git.k8s.io/community/contributors/devel/sig-testing/testing.md#troubleshooting-a-failure
+      text: Triaging and Escalating Test Failures
+  timeline:
+    - what: Start of Release Cycle
+      who: Lead
+      when: Mon August 23, 2021
+      week: week 1
+      ciSignal: master-blocking
+    - what:  Start Enhancements Tracking
+      who: Enhancements Lead
+      when: Mon August 23, 2021
+      week: week 1
+      ciSignal:
+    - what: 1.23.0-alpha.1 released
+      who: Branch Manager
+      when: Wed August 25, 2021
+      week: week 1
+      ciSignal:
+    - what: Schedule finalized
+      who: Lead
+      when: Thu August 26, 2021
+      week: week 1
+      ciSignal:

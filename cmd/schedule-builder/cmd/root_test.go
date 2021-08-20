@@ -29,7 +29,7 @@ func TestFailRootCommand(t *testing.T) {
 	require.Error(t, err)
 }
 
-const expectedOut = `### Timeline
+const expectedPatchOut = `### Timeline
 
 ### 1.18
 
@@ -66,6 +66,39 @@ End of Life for **1.16** is **TBD**
 | 1.16.10       | 2020-05-15           | 2020-05-20  |      |
 | 1.16.9        | 2020-04-13           | 2020-04-16  |      |
 `
+const expectedReleaseOut = `# Kubernetes 1.23
+
+#### Links
+
+* [This document](https://git.k8s.io/sig-release/releases/release-1.23/README.md)
+
+* [Release Team](https://groups.google.com/a/kubernetes.io/g/release-team)
+
+* [Meeting Minutes](http://bit.ly/k8s123-releasemtg)
+
+#### Tracking docs
+
+* [Enhancements Tracking Sheet](https://bit.ly/k8s123-enhancements)
+
+* [Feature blog Tracking Sheet](TBD)
+
+* [kubernetes/sig-release v1.23 milestone](https://github.com/kubernetes/kubernetes/milestone/56)
+
+#### Guides
+
+* [Targeting Issues and PRs to This Milestone](https://git.k8s.io/community/contributors/devel/sig-release/release.md)
+
+* [Triaging and Escalating Test Failures](https://git.k8s.io/community/contributors/devel/sig-testing/testing.md#troubleshooting-a-failure)
+
+## Timeline
+
+|          **WHAT**           |      **WHO**      |      **WHEN**       | **WEEK** |  **CI SIGNAL**  |  |
+|-----------------------------|-------------------|---------------------|----------|-----------------|--|
+| Start of Release Cycle      | Lead              | Mon August 23, 2021 | week 1   | master-blocking |  |
+| Start Enhancements Tracking | Enhancements Lead | Mon August 23, 2021 | week 1   |                 |  |
+| 1.23.0-alpha.1 released     | Branch Manager    | Wed August 25, 2021 | week 1   |                 |  |
+| Schedule finalized          | Lead              | Thu August 26, 2021 | week 1   |                 |  |
+`
 
 func TestRun(t *testing.T) {
 	testcases := []struct {
@@ -74,9 +107,10 @@ func TestRun(t *testing.T) {
 		expect  func(error, string)
 	}{
 		{
-			name: "should parse successufuly",
+			name: "should parse successfully-patch type",
 			options: &options{
 				configPath: "testdata/schedule.yaml",
+				typeFile:   "patch",
 			},
 			expect: func(err error, out string) {
 				// checks the error of run func call
@@ -85,13 +119,45 @@ func TestRun(t *testing.T) {
 				// compare the output generated with the expected
 				outFile, errFile := os.ReadFile(out)
 				require.NoError(t, errFile)
-				require.Equal(t, string(outFile), expectedOut)
+				require.Equal(t, string(outFile), expectedPatchOut)
+			},
+		},
+		{
+			name: "should parse successfully-release type",
+			options: &options{
+				configPath: "testdata/rel-schedule.yaml",
+				typeFile:   "release",
+			},
+			expect: func(err error, out string) {
+				// checks the error of run func call
+				require.Nil(t, err)
+
+				// compare the output generated with the expected
+				outFile, errFile := os.ReadFile(out)
+				require.NoError(t, errFile)
+				require.Equal(t, string(outFile), expectedReleaseOut)
 			},
 		},
 		{
 			name: "should fail parsing",
 			options: &options{
 				configPath: "testdata/bad_schedule.yaml",
+				typeFile:   "patch",
+			},
+			expect: func(err error, out string) {
+				// checks the error of run func call
+				require.NotNil(t, err)
+
+				// should not create the output file
+				_, errFile := os.Stat(out)
+				require.True(t, os.IsNotExist(errFile))
+			},
+		},
+		{
+			name: "should fail parsing",
+			options: &options{
+				configPath: "testdata/bad_schedule.yaml",
+				typeFile:   "release",
 			},
 			expect: func(err error, out string) {
 				// checks the error of run func call
