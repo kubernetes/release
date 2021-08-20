@@ -2,11 +2,11 @@
 
 approvers:
   - release-engineering-approvers
+  - BenTheElder
 reviewers:
   - release-engineering-reviewers
 
 emeritus_approvers:
-  - BenTheElder
   - bowei
   - freehan
   - jingax10

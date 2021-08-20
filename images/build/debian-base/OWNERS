@@ -2,10 +2,10 @@
 
 approvers:
   - release-engineering-approvers
+  - BenTheElder
 reviewers:
   - release-engineering-reviewers
 
 emeritus_approvers:
-  - BenTheElder
   - mkumatag
   - tallclair
