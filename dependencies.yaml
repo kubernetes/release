@@ -63,9 +63,9 @@ dependencies:
     version: 1.16.7
     refPaths:
     - path: Dockerfile-kubepkg
-      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+) AS builder
+      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bullseye|buster) AS builder
     - path: Dockerfile-kubepkg-rpm
-      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+) AS builder
+      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bullseye|buster) AS builder
     - path: cmd/vulndash/Makefile
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
     - path: cmd/vulndash/variants.yaml
@@ -81,7 +81,7 @@ dependencies:
     - path: images/releng/ci/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
     - path: packages/deb/Dockerfile
-      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)
+      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bullseye|buster)
 
   # Golang pre-releases are denoted as `1.y<pre-release stage>.z`
   # Example: go1.16rc1
@@ -100,7 +100,7 @@ dependencies:
     - path: images/releng/k8s-ci-builder/Makefile
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
     - path: images/releng/k8s-ci-builder/Dockerfile
-      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+) AS builder
+      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bullseye|buster) AS builder
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
@@ -276,9 +276,9 @@ dependencies:
     version: bullseye
     refPaths:
     - path: images/build/debian-base/Makefile
-      match: IMAGE_VERSION\ \?=\ [a-zA-Z]+
+      match: CONFIG\ \?=\ (bullseye|buster)
     - path: images/build/debian-base/variants.yaml
-      match: '[a-zA-Z]+'
+      match: "CONFIG: '(bullseye|buster)'"
 
   - name: "k8s.gcr.io/build-image/debian-base"
     version: bullseye-v1.0.0
@@ -320,20 +320,33 @@ dependencies:
   - name: "Debian: codename (previous)"
     version: buster
     refPaths:
+    # TODO: Capture in Makefile instead
+    # Must match distroless Debian version as well
+    - path: cmd/vulndash/Dockerfile
+      match: FROM golang:\${GO_VERSION}-(bullseye|buster) as builder
     - path: images/build/debian-base/variants.yaml
-      match: '[a-zA-Z]+'
+      match: "CONFIG: '(bullseye|buster)'"
     - path: images/build/debian-iptables/Makefile
-      match: CONFIG\ \?=\ [a-zA-Z]+
+      match: CONFIG\ \?=\ (bullseye|buster)
     - path: images/build/debian-iptables/variants.yaml
-      match: '[a-zA-Z]+'
+      match: "CONFIG: '(bullseye|buster)'"
+    - path: images/build/cross/Makefile
+      match: BASEIMAGE\ \?=\ golang:\$\(GO_VERSION\)-(bullseye|buster)
+    # TODO: Capture in Makefile instead
+    # Must match distroless Debian version as well
+    - path: images/build/go-runner/Dockerfile
+      match: FROM golang:\${GO_VERSION}-(bullseye|buster) as builder
     - path: images/build/go-runner/Makefile
-      match: OS_CODENAME\ \?=\ [a-zA-Z]+
+      match: OS_CODENAME\ \?=\ (bullseye|buster)
     - path: images/build/go-runner/variants.yaml
-      match: '[a-zA-Z]+'
+      match: "OS_CODENAME: '(bullseye|buster)'"
     - path: images/build/setcap/Makefile
-      match: CONFIG\ \?=\ [a-zA-Z]+
+      match: CONFIG\ \?=\ (bullseye|buster)
     - path: images/build/setcap/variants.yaml
-      match: '[a-zA-Z]+'
+      match: "CONFIG: '(bullseye|buster)'"
+    # TODO: Capture in Makefile instead
+    - path: images/releng/ci/Dockerfile
+      match: FROM golang:\${GO_VERSION}-(bullseye|buster)
 
   - name: "k8s.gcr.io/build-image/debian-base (for previous release branches)"
     version: buster-v1.9.0

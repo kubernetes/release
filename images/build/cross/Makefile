@@ -22,7 +22,7 @@ TYPE ?= default
 
 # Build args
 GO_VERSION?=1.16.7
-BASEIMAGE?=golang:$(GO_VERSION)
+BASEIMAGE ?= golang:$(GO_VERSION)-buster
 PROTOBUF_VERSION?=3.7.0
 # TODO: Remove (along with `go1.15-legacy` variant) once Kubernetes 1.20 is EOL
 ETCD_VERSION?=v0.0.0

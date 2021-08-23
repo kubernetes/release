@@ -15,7 +15,7 @@
 # Build the manager binary
 ARG GO_VERSION
 ARG DISTROLESS_IMAGE
-FROM golang:${GO_VERSION} as builder
+FROM golang:${GO_VERSION}-buster as builder
 WORKDIR /workspace
 
 # Copy the sources
