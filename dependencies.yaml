@@ -272,6 +272,14 @@ dependencies:
       match: VERSION=v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?
 
   # Base images
+  - name: "Debian: codename (default)"
+    version: bullseye
+    refPaths:
+    - path: images/build/debian-base/Makefile
+      match: IMAGE_VERSION\ \?=\ [a-zA-Z]+
+    - path: images/build/debian-base/variants.yaml
+      match: '[a-zA-Z]+'
+
   - name: "k8s.gcr.io/build-image/debian-base"
     version: bullseye-v1.0.0
     refPaths:
@@ -309,6 +317,24 @@ dependencies:
       match: '[a-zA-Z]+\-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)'
 
   # Base images (for previous release branches)
+  - name: "Debian: codename (previous)"
+    version: buster
+    refPaths:
+    - path: images/build/debian-base/variants.yaml
+      match: '[a-zA-Z]+'
+    - path: images/build/debian-iptables/Makefile
+      match: CONFIG\ \?=\ [a-zA-Z]+
+    - path: images/build/debian-iptables/variants.yaml
+      match: '[a-zA-Z]+'
+    - path: images/build/go-runner/Makefile
+      match: OS_CODENAME\ \?=\ [a-zA-Z]+
+    - path: images/build/go-runner/variants.yaml
+      match: '[a-zA-Z]+'
+    - path: images/build/setcap/Makefile
+      match: CONFIG\ \?=\ [a-zA-Z]+
+    - path: images/build/setcap/variants.yaml
+      match: '[a-zA-Z]+'
+
   - name: "k8s.gcr.io/build-image/debian-base (for previous release branches)"
     version: buster-v1.9.0
     refPaths:
