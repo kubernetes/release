@@ -55,8 +55,6 @@ dependencies:
   - name: "etcd"
     version: 3.4.13
     refPaths:
-    - path: images/build/cross/Makefile
-      match: ETCD_VERSION\?=v\d+\.\d+.\d+
     - path: images/build/cross/variants.yaml
       match: \d+\.\d+.\d+
 

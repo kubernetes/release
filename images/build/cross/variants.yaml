@@ -11,14 +11,14 @@ variants:
     GO_VERSION: '1.17rc2'
     IMAGE_VERSION: 'v1.17.0-rc.2-1'
     PROTOBUF_VERSION: '3.7.0'
-    ETCD_VERSION: 'v3.4.13'
   go1.16:
     TYPE: 'default'
     CONFIG: 'go1.16'
     GO_VERSION: '1.16.7'
     IMAGE_VERSION: 'v1.16.7-1'
     PROTOBUF_VERSION: '3.7.0'
-    ETCD_VERSION: 'v3.4.13'
+
+  # TODO: Remove (along with `ETCD_VERSION` in Makefile) once Kubernetes 1.20 is EOL
   go1.15-legacy:
     TYPE: 'legacy'
     CONFIG: 'go1.15'
