@@ -13,11 +13,12 @@
 # limitations under the License.
 
 ARG GO_VERSION
+ARG OS_CODENAME
 ARG OLD_BAZEL_VERSION
 
 # The Golang version for the builder image should always be explicitly set to
 # the Golang version of the kubernetes/kubernetes active development branch
-FROM golang:1.16.7-buster AS builder
+FROM golang:1.16.7-${OS_CODENAME} AS builder
 
 WORKDIR /go/src/k8s.io/release
 
@@ -33,7 +34,7 @@ RUN ./compile-release-tools
 # supporting kubernetes builds, kind installation, etc.
 
 FROM launcher.gcr.io/google/bazel:${OLD_BAZEL_VERSION} as old-bazel
-FROM debian:buster
+FROM debian:${OS_CODENAME}
 
 # arg that specifies the image name (for debugging)
 ARG IMAGE_ARG

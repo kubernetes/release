@@ -103,10 +103,10 @@ dependencies:
   - name: "golang: after kubernetes/kubernetes update"
     version: 1.16.7
     refPaths:
+    - path: images/releng/k8s-ci-builder/Dockerfile
+      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-\${OS_CODENAME} AS builder
     - path: images/releng/k8s-ci-builder/Makefile
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
-    - path: images/releng/k8s-ci-builder/Dockerfile
-      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bullseye|buster) AS builder
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
 
@@ -341,6 +341,10 @@ dependencies:
     - path: images/build/setcap/variants.yaml
       match: "CONFIG: '(bullseye|buster)'"
     - path: images/releng/ci/variants.yaml
+      match: "OS_CODENAME: '(bullseye|buster)'"
+    - path: images/releng/k8s-ci-builder/Makefile
+      match: OS_CODENAME\ \?=\ (bullseye|buster)
+    - path: images/releng/k8s-ci-builder/variants.yaml
       match: "OS_CODENAME: '(bullseye|buster)'"
     - path: packages/deb/Dockerfile
       match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bullseye|buster)

@@ -25,14 +25,16 @@ TAG ?= $(shell git describe --tags --always --dirty)
 
 # Build args
 GO_VERSION ?= 1.16.7
+OS_CODENAME ?= buster
 BAZEL_VERSION ?= 3.4.1
 OLD_BAZEL_VERSION ?= 2.2.0
 IMAGE_ARG ?= $(IMAGE):$(TAG)-$(CONFIG)
 
 BUILD_ARGS = --build-arg=GO_VERSION=$(GO_VERSION) \
-							--build-arg=BAZEL_VERSION=$(BAZEL_VERSION) \
-							--build-arg=OLD_BAZEL_VERSION=$(OLD_BAZEL_VERSION) \
-							--build-arg=IMAGE_ARG=$(IMAGE_ARG)
+             --build-arg=OS_CODENAME=$(OS_CODENAME) \
+			 --build-arg=BAZEL_VERSION=$(BAZEL_VERSION) \
+			 --build-arg=OLD_BAZEL_VERSION=$(OLD_BAZEL_VERSION) \
+			 --build-arg=IMAGE_ARG=$(IMAGE_ARG)
 
 # Ensure support for 'docker buildx' and 'docker manifest' commands
 export DOCKER_CLI_EXPERIMENTAL=enabled
