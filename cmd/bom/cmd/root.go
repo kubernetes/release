@@ -36,7 +36,7 @@ contained in packages, images, and individual files while
 packing the data along with licensing information.
 
 bom is still in its early stages and it is an effort to open
-the libraries developed for the Kubernetes SBOM for other 
+the libraries developed for the Kubernetes SBOM for other
 projects to use.
 
 `,
