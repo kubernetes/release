@@ -170,23 +170,17 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "k8s.gcr.io/build-image/kube-cross"
-    version: v1.16.7-1
+    version: v1.22.0-go1.16.7-buster.0
     refPaths:
-    # TODO: Review if this entry is still required
-    #- path: images/build/cross/Makefile
-    #  match: IMAGE_VERSION\ \?=\ v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-([0-9]+)
     - path: images/build/cross/variants.yaml
-      match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)-\\d+'"
+      match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   # TODO: Consider capturing this in "golang: 1.<major>" instead
   - name: "k8s.gcr.io/build-image/kube-cross: config variant"
-    version: go1.16
+    version: go1.16-buster
     refPaths:
-    # TODO: Review if this entry is still required
-    #- path: images/build/cross/Makefile
-    #  match: CONFIG \?= go\d+.\d+
     - path: images/build/cross/variants.yaml
-      match: go\d+.\d+
+      match: "CONFIG: 'go\\d+.\\d+-(bullseye|buster)'"
 
   - name: "k8s.gcr.io/build-image/kube-cross: image revision"
     version: 0
@@ -200,7 +194,7 @@ dependencies:
     version: v1.16.7-1
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
-      match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
+      match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)-\\d+'"
 
   # Golang (next candidate)
   - name: "golang (next candidate)"
@@ -235,23 +229,23 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "k8s.gcr.io/build-image/kube-cross (next candidate)"
-    version: v1.17.0-rc.2-1
+    version: v1.23.0-go1.17rc2-buster.0
     refPaths:
     - path: images/build/cross/variants.yaml
-      match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
+      match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   # TODO: Consider capturing this in "golang: 1.<major>" instead
   - name: "k8s.gcr.io/build-image/kube-cross: config variant (next candidate)"
-    version: go1.17
+    version: go1.17-buster
     refPaths:
     - path: images/build/cross/variants.yaml
-      match: go\d+.\d+
+      match: "CONFIG: 'go\\d+.\\d+-(bullseye|buster)'"
 
   - name: "k8s.gcr.io/build-image/kube-cross: dependents (next candidate)"
     version: v1.17.0-rc.2-1
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
-      match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
+      match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)-\\d+'"
 
   # Golang (for previous release branches)
   - name: "golang (for previous release branches)"
@@ -290,23 +284,23 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "k8s.gcr.io/build-image/kube-cross (for previous release branches)"
-    version: v1.15.15-legacy-1
+    version: v1.20.0-go1.15.15-buster.0
     refPaths:
     - path: images/build/cross/variants.yaml
-      match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
+      match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   # TODO: Consider capturing this in "golang: 1.<major>" instead
   - name: "k8s.gcr.io/build-image/kube-cross: config variant (for previous release branches)"
-    version: go1.15
+    version: go1.15-buster
     refPaths:
     - path: images/build/cross/variants.yaml
-      match: go\d+.\d+
+      match: "CONFIG: 'go\\d+.\\d+-(bullseye|buster)'"
 
   - name: "k8s.gcr.io/build-image/kube-cross: dependents (for previous release branches)"
     version: v1.15.15-legacy-1
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
-      match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-\d+
+      match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)-\\d+'"
 
   # golangci-lint
   - name: "golangci-lint"
