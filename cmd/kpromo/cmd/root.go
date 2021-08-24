@@ -41,7 +41,7 @@ It has two operation modes:
 
 Expectations:
 - "kpromo run" should only be run in auditable environments
-- "kpromo manifest" should primarily be run by contributors 
+- "kpromo manifest" should primarily be run by contributors
 
 Each subcommand should contain its own self-describing help output which
 clarifies its purpose.`,
