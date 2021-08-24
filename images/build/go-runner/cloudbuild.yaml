@@ -43,7 +43,7 @@ substitutions:
   # can be used as a substitution
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
-  _CONFIG: 'go-minor-codename'
+  _CONFIG: 'go-major-codename'
   _IMAGE_VERSION: 'v0.0.0-go0.0.0-codename.0'
   _GO_MAJOR_VERSION: '1.16'
   _OS_CODENAME: 'codename'

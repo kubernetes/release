@@ -345,9 +345,8 @@ dependencies:
       match: CONFIG\ \?=\ (bullseye|buster)
     - path: images/build/setcap/variants.yaml
       match: "CONFIG: '(bullseye|buster)'"
-    # TODO(codename): Capture in Makefile instead
-    - path: images/releng/ci/Dockerfile
-      match: FROM golang:\${GO_VERSION}-(bullseye|buster)
+    - path: images/releng/ci/variants.yaml
+      match: "OS_CODENAME: '(bullseye|buster)'"
     - path: packages/deb/Dockerfile
       match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bullseye|buster)
 

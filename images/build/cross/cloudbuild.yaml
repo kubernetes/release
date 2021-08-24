@@ -36,7 +36,7 @@ substitutions:
   # can be used as a substitution
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
-  _CONFIG: 'k8s-go-minor-codename'
+  _CONFIG: 'k8s-go-major-codename'
   _TYPE: 'default'
   _IMAGE_VERSION: 'v0.0.0-go0.0.0-codename.0'
   _KUBERNETES_VERSION: 'v0.0.0'
