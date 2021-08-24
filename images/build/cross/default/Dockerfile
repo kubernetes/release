@@ -106,15 +106,6 @@ RUN go get golang.org/x/tools/cmd/cover \
            golang.org/x/tools/cmd/goimports \
     && go clean -cache
 
-# Download and symlink etcd. We need this for our integration tests.
-ARG ETCD_VERSION
-RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
-  && mkdir -p /usr/local/src/etcd \
-  && cd /usr/local/src/etcd \
-  && curl -fsSL https://github.com/coreos/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-${targetArch}.tar.gz | tar -xz \
-  && chown -R $(id -u):$(id -g) /usr/local/src/etcd \
-  && ln -s ../src/etcd/etcd-${ETCD_VERSION}-linux-${targetArch}/etcd /usr/local/bin/
-
 # Cleanup a bit
 RUN apt-get -qqy remove \
       wget \

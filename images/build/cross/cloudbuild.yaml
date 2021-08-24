@@ -13,8 +13,12 @@ steps:
     - PULL_BASE_REF=$_PULL_BASE_REF
     - CONFIG=$_CONFIG
     - TYPE=$_TYPE
-    - GO_VERSION=$_GO_VERSION
     - IMAGE_VERSION=$_IMAGE_VERSION
+    - KUBERNETES_VERSION=$_KUBERNETES_VERSION
+    - GO_VERSION=$_GO_VERSION
+    - GO_MAJOR_VERSION=$_GO_MAJOR_VERSION
+    - OS_CODENAME=$_OS_CODENAME
+    - REVISION=$_REVISION
     - PROTOBUF_VERSION=$_PROTOBUF_VERSION
     - ETCD_VERSION=$_ETCD_VERSION
     - REGISTRY=$_REGISTRY
@@ -32,10 +36,14 @@ substitutions:
   # can be used as a substitution
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
-  _CONFIG: 'go0.0'
+  _CONFIG: 'k8s-go-major-codename'
   _TYPE: 'default'
+  _IMAGE_VERSION: 'v0.0.0-go0.0.0-codename.0'
+  _KUBERNETES_VERSION: 'v0.0.0'
   _GO_VERSION: '0.0.0'
-  _IMAGE_VERSION: 'v0.0.0-0'
+  _GO_MAJOR_VERSION: '0.00'
+  _OS_CODENAME: 'codename'
+  _REVISION: '0'
   _PROTOBUF_VERSION: '0.0.0'
   _ETCD_VERSION: 'v0.0.0'
   _REGISTRY: 'fake.repository/registry-name'
@@ -46,8 +54,12 @@ tags:
 - ${_PULL_BASE_REF}
 - ${_CONFIG}
 - ${_TYPE}
+- ${_KUBERNETES_VERSION}
 - ${_GO_VERSION}
+- ${_GO_MAJOR_VERSION}
+- ${_OS_CODENAME}
 - ${_IMAGE_VERSION}
+- ${_REVISION}
 - ${_PROTOBUF_VERSION}
 - ${_ETCD_VERSION}
 

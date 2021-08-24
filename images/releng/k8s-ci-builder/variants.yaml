@@ -2,30 +2,36 @@ variants:
   default:
     CONFIG: default
     GO_VERSION: '1.16.7'
+    OS_CODENAME: 'buster'
     BAZEL_VERSION: '3.4.1'
     OLD_BAZEL_VERSION: '2.2.0'
   '1.23':
     CONFIG: '1.23'
-    GO_VERSION: '1.17rc2'
+    GO_VERSION: '1.17'
+    OS_CODENAME: 'buster'
     BAZEL_VERSION: '3.4.1'
     OLD_BAZEL_VERSION: '2.2.0'
   '1.22':
     CONFIG: '1.22'
     GO_VERSION: '1.16.7'
+    OS_CODENAME: 'buster'
     BAZEL_VERSION: '3.4.1'
     OLD_BAZEL_VERSION: '2.2.0'
   '1.21':
     CONFIG: '1.21'
     GO_VERSION: '1.16.7'
+    OS_CODENAME: 'buster'
     BAZEL_VERSION: '3.4.1'
     OLD_BAZEL_VERSION: '2.2.0'
   '1.20':
     CONFIG: '1.20'
     GO_VERSION: '1.15.15'
+    OS_CODENAME: 'buster'
     BAZEL_VERSION: '3.4.1'
     OLD_BAZEL_VERSION: '2.2.0'
   '1.19':
     CONFIG: '1.19'
     GO_VERSION: '1.15.15'
+    OS_CODENAME: 'buster'
     BAZEL_VERSION: '2.2.0'
     OLD_BAZEL_VERSION: '0.23.2'

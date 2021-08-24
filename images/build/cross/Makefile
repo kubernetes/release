@@ -16,18 +16,38 @@
 SHELL=/bin/bash -o pipefail
 
 IMGNAME = kube-cross
-IMAGE_VERSION ?= v1.16.7-1
-CONFIG ?= go1.16
+
+# Represents the targeted Kubernetes version at the time the images
+# are to be created e.g., 'v1.22.0'
+#
+# Note: There is no need to increment the patch version of this variable.
+#       The reason for the inclusion of the patch version here is to satisfy
+#       a SemVer regex on the IMAGE_VERSION.
+#
+# Example:
+# - v1.22.0-go1.16-buster.0 satisfies SemVer regex, while:
+# - v1.22-go1.16-buster.0 does not
+KUBERNETES_VERSION ?= v1.22.0
+GO_VERSION ?= 1.16.7
+GO_MAJOR_VERSION ?= 1.16
+OS_CODENAME ?= buster
+REVISION ?= 0
 TYPE ?= default
 
 # Build args
-GO_VERSION?=1.16.7
-BASEIMAGE?=golang:$(GO_VERSION)
-PROTOBUF_VERSION?=3.7.0
-ETCD_VERSION?=v3.4.13
+BASEIMAGE ?= golang:$(GO_VERSION)-$(OS_CODENAME)
+PROTOBUF_VERSION ?= 3.7.0
+# TODO: Remove (along with `go1.15-legacy` variant) once Kubernetes 1.20 is EOL
+ETCD_VERSION ?= v0.0.0
 
 IMAGE = $(REGISTRY)/$(IMGNAME)
 TAG ?= $(shell git describe --tags --always --dirty)
+
+# Configuration
+CONFIG = go$(GO_MAJOR_VERSION)-$(OS_CODENAME)
+BUILD_METADATA = go$(GO_VERSION)-$(OS_CODENAME).$(REVISION)
+
+IMAGE_VERSION = $(KUBERNETES_VERSION)-$(BUILD_METADATA)
 
 # Ensure support for 'docker buildx' and 'docker manifest' commands
 export DOCKER_CLI_EXPERIMENTAL=enabled

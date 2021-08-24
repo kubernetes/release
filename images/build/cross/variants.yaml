@@ -1,35 +1,34 @@
 variants:
-  canary:
-    TYPE: 'canary'
-    CONFIG: 'canary'
+  go1.17-buster:
+    CONFIG: 'go1.17-buster'
+    TYPE: 'default'
+    IMAGE_VERSION: 'v1.23.0-go1.17-buster.0'
+    KUBERNETES_VERSION: 'v1.23.0'
+    GO_VERSION: '1.17'
+    GO_MAJOR_VERSION: '1.17'
+    OS_CODENAME: 'buster'
+    REVISION: '0'
+    PROTOBUF_VERSION: '3.7.0'
+  go1.16-buster:
+    CONFIG: 'go1.16-buster'
+    TYPE: 'default'
+    IMAGE_VERSION: 'v1.22.0-go1.16.7-buster.0'
+    KUBERNETES_VERSION: 'v1.22.0'
     GO_VERSION: '1.16.7'
-    IMAGE_VERSION: 'v1.16.7-canary-1'
+    GO_MAJOR_VERSION: '1.16'
+    OS_CODENAME: 'buster'
+    REVISION: '0'
     PROTOBUF_VERSION: '3.7.0'
-  go1.17:
-    TYPE: 'default'
-    CONFIG: 'go1.17'
-    GO_VERSION: '1.17rc2'
-    IMAGE_VERSION: 'v1.17.0-rc.2-1'
-    PROTOBUF_VERSION: '3.7.0'
-    ETCD_VERSION: 'v3.4.13'
-  go1.16:
-    TYPE: 'default'
-    CONFIG: 'go1.16'
-    GO_VERSION: '1.16.7'
-    IMAGE_VERSION: 'v1.16.7-1'
-    PROTOBUF_VERSION: '3.7.0'
-    ETCD_VERSION: 'v3.4.13'
-  go1.15:
-    TYPE: 'default'
-    CONFIG: 'go1.15'
-    GO_VERSION: '1.15.15'
-    IMAGE_VERSION: 'v1.15.15-1'
-    PROTOBUF_VERSION: '3.7.0'
-    ETCD_VERSION: 'v3.4.13'
-  go1.15-legacy:
+
+  # TODO: Remove (along with `ETCD_VERSION` in Makefile) once Kubernetes 1.20 is EOL
+  go1.15-buster:
+    CONFIG: 'go1.15-buster'
     TYPE: 'legacy'
-    CONFIG: 'go1.15'
+    IMAGE_VERSION: 'v1.20.0-go1.15.15-buster.0'
+    KUBERNETES_VERSION: 'v1.20.0'
     GO_VERSION: '1.15.15'
-    IMAGE_VERSION: 'v1.15.15-legacy-1'
+    GO_MAJOR_VERSION: '1.15'
+    OS_CODENAME: 'buster'
+    REVISION: '0'
     PROTOBUF_VERSION: '3.0.2'
     ETCD_VERSION: 'v3.4.13'

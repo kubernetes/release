@@ -13,7 +13,8 @@
 # limitations under the License.
 
 ARG GO_VERSION
-FROM golang:${GO_VERSION}
+ARG OS_CODENAME
+FROM golang:${GO_VERSION}-${OS_CODENAME} as builder
 
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | \
     tee -a /etc/apt/sources.list.d/google-cloud-sdk.list

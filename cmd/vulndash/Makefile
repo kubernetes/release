@@ -21,7 +21,6 @@ SHELL=/bin/bash -o pipefail
 REGISTRY ?= gcr.io/k8s-staging-artifact-promoter
 IMGNAME = vulndash
 IMAGE_VERSION ?= v0.4.3-7
-CONFIG ?= buster
 
 IMAGE = $(REGISTRY)/$(IMGNAME)
 
@@ -29,7 +28,11 @@ TAG ?= $(shell git describe --tags --always --dirty)
 
 # Build args
 GO_VERSION ?= 1.16.7
+OS_CODENAME ?= buster
 DISTROLESS_IMAGE ?= static-debian10
+
+# Configuration
+CONFIG = $(OS_CODENAME)
 
 PLATFORMS ?= linux/amd64
 
@@ -38,6 +41,7 @@ HOST_GOARCH ?= $(shell go env GOARCH)
 GO_BUILD ?= go build
 
 BUILD_ARGS = --build-arg=GO_VERSION=$(GO_VERSION) \
+             --build-arg=OS_CODENAME=$(OS_CODENAME) \
              --build-arg=DISTROLESS_IMAGE=$(DISTROLESS_IMAGE)
 
 # Ensure support for 'docker buildx' and 'docker manifest' commands

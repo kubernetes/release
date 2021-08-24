@@ -14,8 +14,10 @@
 
 # Build the manager binary
 ARG GO_VERSION
+ARG OS_CODENAME
+# TODO(codename): Consider parameterizing in Makefile based on codename
 ARG DISTROLESS_IMAGE
-FROM golang:${GO_VERSION} as builder
+FROM golang:${GO_VERSION}-${OS_CODENAME} as builder
 
 WORKDIR /go/src/k8s.io/release
 
