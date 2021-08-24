@@ -336,10 +336,7 @@ dependencies:
       match: CONFIG\ \?=\ (bullseye|buster)
     - path: images/build/debian-iptables/variants.yaml
       match: "CONFIG: '(bullseye|buster)'"
-    # TODO(codename): Capture in Makefile instead
     # Must match distroless Debian version as well
-    - path: images/build/go-runner/Dockerfile
-      match: FROM golang:\${GO_VERSION}-(bullseye|buster) as builder
     - path: images/build/go-runner/Makefile
       match: OS_CODENAME\ \?=\ (bullseye|buster)
     - path: images/build/go-runner/variants.yaml

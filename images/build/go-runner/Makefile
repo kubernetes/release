@@ -18,11 +18,11 @@ include $(CURDIR)/../../Makefile.common-image
 IMGNAME = go-runner
 APP_VERSION = $(shell cat VERSION)
 GO_MAJOR_VERSION ?= 1.16
-OS_CODENAME ?= buster
 REVISION ?= 0
 
 # Build args
 GO_VERSION ?= 1.16.7
+OS_CODENAME ?= buster
 DISTROLESS_IMAGE ?= static-debian10
 
 # Configuration
@@ -51,4 +51,5 @@ clean:
 	rm go-runner
 
 BUILD_ARGS = --build-arg=GO_VERSION=$(GO_VERSION) \
+             --build-arg=OS_CODENAME=$(OS_CODENAME) \
              --build-arg=DISTROLESS_IMAGE=$(DISTROLESS_IMAGE)
