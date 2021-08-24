@@ -19,6 +19,7 @@ steps:
     - PULL_BASE_REF=$_PULL_BASE_REF
     - IMAGE_VERSION=$_IMAGE_VERSION
     - GO_VERSION=$_GO_VERSION
+    - OS_CODENAME=$_OS_CODENAME
     - DISTROLESS_IMAGE=$_DISTROLESS_IMAGE
     args:
     - '-c'
@@ -33,6 +34,7 @@ substitutions:
   _PULL_BASE_REF: 'dev'
   _IMAGE_VERSION: 'v0.0.0'
   _GO_VERSION: '0.0.0'
+  _OS_CODENAME: 'codename'
   _DISTROLESS_IMAGE: 'static-debian00'
 
 tags:
@@ -41,6 +43,7 @@ tags:
 - ${_PULL_BASE_REF}
 - ${_IMAGE_VERSION}
 - ${_GO_VERSION}
+- ${_OS_CODENAME}
 - ${_DISTROLESS_IMAGE}
 
 images:

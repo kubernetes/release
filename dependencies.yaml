@@ -319,10 +319,11 @@ dependencies:
   - name: "Debian: codename (default)"
     version: buster
     refPaths:
-    # TODO(codename): Capture in Makefile instead
     # Must match distroless Debian version as well
-    - path: cmd/vulndash/Dockerfile
-      match: FROM golang:\${GO_VERSION}-(bullseye|buster) as builder
+    - path: cmd/vulndash/Makefile
+      match: OS_CODENAME\ \?=\ (bullseye|buster)
+    - path: cmd/vulndash/variants.yaml
+      match: "OS_CODENAME: '(bullseye|buster)'"
     - path: images/build/cross/Makefile
       match: OS_CODENAME\ \?=\ (bullseye|buster)
     - path: images/build/cross/variants.yaml
