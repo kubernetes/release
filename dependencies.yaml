@@ -389,18 +389,16 @@ dependencies:
   - name: "Debian: codename (next candidate)"
     version: bullseye
     refPaths:
-    # TODO(bullseye): Uncomment as part of https://github.com/kubernetes/release/pull/2249
-    #- path: images/build/cross/variants.yaml
-    #  match: "OS_CODENAME: '(bullseye|buster)'"
+    - path: images/build/cross/variants.yaml
+      match: "OS_CODENAME: '(bullseye|buster)'"
     - path: images/build/debian-base/variants.yaml
       match: "CONFIG: '(bullseye|buster)'"
     - path: images/build/go-runner/variants.yaml
       match: "OS_CODENAME: '(bullseye|buster)'"
     - path: images/releng/ci/variants.yaml
       match: "OS_CODENAME: '(bullseye|buster)'"
-    # TODO(bullseye): Uncomment as part of https://github.com/kubernetes/release/pull/2249
-    #- path: images/releng/k8s-ci-builder/variants.yaml
-    #  match: "OS_CODENAME: '(bullseye|buster)'"
+    - path: images/releng/k8s-ci-builder/variants.yaml
+      match: "OS_CODENAME: '(bullseye|buster)'"
 
   - name: "k8s.gcr.io/build-image/debian-base"
     version: buster-v1.9.0

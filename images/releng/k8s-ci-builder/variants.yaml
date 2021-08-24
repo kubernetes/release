@@ -3,6 +3,10 @@ variants:
     CONFIG: default
     GO_VERSION: '1.16.8'
     OS_CODENAME: 'buster'
+  next:
+    CONFIG: next
+    GO_VERSION: '1.17.1'
+    OS_CODENAME: 'bullseye'
   '1.23':
     CONFIG: '1.23'
     GO_VERSION: '1.17.1'
