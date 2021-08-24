@@ -393,6 +393,8 @@ dependencies:
     # TODO: Capture in Makefile instead
     - path: images/releng/ci/Dockerfile
       match: FROM golang:\${GO_VERSION}-(bullseye|buster)
+    - path: packages/deb/Dockerfile
+      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bullseye|buster)
 
   - name: "k8s.gcr.io/build-image/debian-base (for previous release branches)"
     version: buster-v1.9.0
