@@ -1,6 +1,6 @@
 variants:
   default:
-    IMAGE_VERSION: 'v0.4.3-7'
-    GO_VERSION: '1.16.7'
+    IMAGE_VERSION: 'v0.4.3-8'
+    GO_VERSION: '1.17'
     OS_CODENAME: 'buster'
     DISTROLESS_IMAGE: 'static-debian10'
