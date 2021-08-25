@@ -17,11 +17,11 @@ include $(CURDIR)/../../Makefile.common-image
 
 IMGNAME = go-runner
 APP_VERSION = $(shell cat VERSION)
-GO_MAJOR_VERSION ?= 1.16
+GO_MAJOR_VERSION ?= 1.17
 REVISION ?= 0
 
 # Build args
-GO_VERSION ?= 1.16.7
+GO_VERSION ?= 1.17
 OS_CODENAME ?= buster
 DISTROLESS_IMAGE ?= static-debian10
 
