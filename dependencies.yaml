@@ -100,6 +100,16 @@ dependencies:
     - path: images/build/go-runner/variants.yaml
       match: "GO_MAJOR_VERSION: '\\d+.\\d+'"
 
+  - name: "golang: go.mod"
+    version: 1.17
+    refPaths:
+    - path: go.mod
+      match: go \d+.\d+
+    - path: images/build/go-runner/go.mod
+      match: go \d+.\d+
+    - path: packages/deb/go.mod
+      match: go \d+.\d+
+
   - name: "golang: after kubernetes/kubernetes update"
     version: 1.17
     refPaths:
