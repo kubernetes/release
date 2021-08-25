@@ -44,26 +44,8 @@ type ReleaseSchedule struct {
 }
 
 type Release struct {
-	Version      string        `yaml:"version"`
-	Links        []Link        `yaml:"links"`
-	TrackingDocs []TrackingDoc `yaml:"trackingDocs"`
-	Guides       []Guide       `yaml:"guides"`
-	Timeline     []Timeline    `yaml:"timeline"`
-}
-
-type Link struct {
-	Href string `yaml:"href"`
-	Text string `yaml:"text"`
-}
-
-type TrackingDoc struct {
-	Href string `yaml:"href"`
-	Text string `yaml:"text"`
-}
-
-type Guide struct {
-	Href string `yaml:"href"`
-	Text string `yaml:"text"`
+	Version  string     `yaml:"version"`
+	Timeline []Timeline `yaml:"timeline"`
 }
 
 type Timeline struct {
@@ -72,4 +54,5 @@ type Timeline struct {
 	When     string `yaml:"when"`
 	Week     string `yaml:"week"`
 	CISignal string `yaml:"ciSignal"`
+	Tldr     string `yaml:"tldr"`
 }
