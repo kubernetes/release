@@ -14,7 +14,6 @@
 
 ARG GO_VERSION
 ARG OS_CODENAME
-ARG OLD_BAZEL_VERSION
 
 # The Golang version for the builder image should always be explicitly set to
 # the Golang version of the kubernetes/kubernetes active development branch
@@ -29,41 +28,31 @@ RUN ./compile-release-tools
 ### Production image
 
 # Includes tools used for building Kubernetes in CI
-#
-# NOTE: we attempt to avoid unnecessary tools and image layers while
-# supporting kubernetes builds, kind installation, etc.
-
-FROM launcher.gcr.io/google/bazel:${OLD_BAZEL_VERSION} as old-bazel
 FROM debian:${OS_CODENAME}
 
 # arg that specifies the image name (for debugging)
 ARG IMAGE_ARG
-# arg that specifies the bazel version to install
-ARG BAZEL_VERSION
+
+# arg that specifies the go version to install
 ARG GO_VERSION
 
 # add envs:
 # - so we can debug with the image name:tag
-# - with the bazel version
 # - adding gsutil etc. to path (where we will install them)
 # - disabling prompts when installing gsutil etc.
 # - hinting that we are in a docker container
 ENV IMAGE=${IMAGE_ARG} \
-    BAZEL_VERSION=${BAZEL_VERSION} \
     GOPATH=/home/prow/go \
     PATH=/home/prow/go/bin:/usr/local/go/bin:/google-cloud-sdk/bin:${PATH} \
     CLOUDSDK_CORE_DISABLE_PROMPTS=1 \
     CONTAINER=docker
 
 # copy in image utility scripts
-COPY ["images/releng/k8s-ci-builder/wrapper.sh", \
-      "images/releng/k8s-ci-builder/create_bazel_cache_rcs.sh", \
-      "images/releng/k8s-ci-builder/install-bazel.sh", \
-      "/usr/local/bin/"]
+COPY images/releng/k8s-ci-builder/wrapper.sh /usr/local/bin/
 
 # Install tools needed to:
 # - install docker
-# - build kubernetes (dockerized, or with bazel)
+# - build kubernetes (dockerized)
 #
 # TODO: the `sed` is a bit of a hack, look into alternatives.
 # Why this exists: `docker service start` on debian runs a `cgroupfs_mount` method,
@@ -82,13 +71,8 @@ RUN echo "Installing Packages ..." \
             gnupg2 \
             jq \
             kmod \
-            libassuan-dev \
-            libbtrfs-dev \
-            libdevmapper-dev \
-            libgpgme-dev \
             lsb-release \
             mercurial \
-            openssh-client \
             pkg-config \
             procps \
             python \
@@ -104,9 +88,7 @@ RUN echo "Installing Packages ..." \
         && tar xzf "${GO_TARBALL}" -C /usr/local \
         && rm "${GO_TARBALL}"\
         && mkdir -p "${GOPATH}/bin" \
-    && echo "Installing Bazel ..." \
-        && install-bazel.sh \
-        && echo "Installing gcloud SDK, kubectl ..." \
+    && echo "Installing gcloud SDK, kubectl ..." \
         && curl -fsSL https://dl.google.com/dl/cloudsdk/channels/rapid/google-cloud-sdk.tar.gz --output google-cloud-sdk.tar.gz \
         && tar xzf google-cloud-sdk.tar.gz -C / \
         && rm google-cloud-sdk.tar.gz \
@@ -116,8 +98,6 @@ RUN echo "Installing Packages ..." \
             --path-update=false \
             --usage-reporting=false \
         && gcloud components install kubectl \
-        && gcloud components install alpha \
-        && gcloud components install beta \
     && echo "Installing Docker ..." \
         && curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "$ID")/gpg | apt-key add - \
         && add-apt-repository \
@@ -128,12 +108,8 @@ RUN echo "Installing Packages ..." \
         && rm -rf /var/lib/apt/lists/* \
         && sed -i 's/cgroupfs_mount$/#cgroupfs_mount\n/' /etc/init.d/docker \
     && echo "Ensuring Legacy Iptables ..." \
-    && update-alternatives --set iptables /usr/sbin/iptables-legacy \
-    && update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
-
-ARG OLD_BAZEL_VERSION
-COPY --from=old-bazel \
-    /usr/local/lib/bazel/bin/bazel-real /usr/local/lib/bazel/bin/bazel-${OLD_BAZEL_VERSION}
+        && update-alternatives --set iptables /usr/sbin/iptables-legacy \
+        && update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
 
 # Copy in release tools from kubernetes/release
 WORKDIR /

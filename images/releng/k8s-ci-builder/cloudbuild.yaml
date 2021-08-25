@@ -24,8 +24,6 @@ steps:
     - CONFIG=${_CONFIG}
     - GO_VERSION=${_GO_VERSION}
     - OS_CODENAME=${_OS_CODENAME}
-    - BAZEL_VERSION=${_BAZEL_VERSION}
-    - OLD_BAZEL_VERSION=${_OLD_BAZEL_VERSION}
     args:
     - '-c'
     - |
@@ -40,8 +38,6 @@ substitutions:
   _CONFIG: 'config'
   _GO_VERSION: '0.0.0'
   _OS_CODENAME: 'codename'
-  _BAZEL_VERSION: '0.0.0'
-  _OLD_BAZEL_VERSION: '0.0.0'
   _REGISTRY: 'fake.repository/registry-name'
 
 tags:
