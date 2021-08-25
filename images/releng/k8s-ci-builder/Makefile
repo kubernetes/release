@@ -24,7 +24,7 @@ IMAGE = $(REGISTRY)/$(IMGNAME)
 TAG ?= $(shell git describe --tags --always --dirty)
 
 # Build args
-GO_VERSION ?= 1.16.7
+GO_VERSION ?= 1.17
 OS_CODENAME ?= buster
 IMAGE_ARG ?= $(IMAGE):$(TAG)-$(CONFIG)
 

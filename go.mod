@@ -1,6 +1,6 @@
 module k8s.io/release
 
-go 1.16
+go 1.17
 
 require (
 	cloud.google.com/go/containeranalysis v0.1.0
@@ -45,4 +45,73 @@ require (
 	sigs.k8s.io/release-utils v0.3.0
 	sigs.k8s.io/yaml v1.2.0
 	sigs.k8s.io/zeitgeist v0.3.0
+)
+
+require (
+	cloud.google.com/go v0.92.1 // indirect
+	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
+	github.com/BurntSushi/toml v0.3.1 // indirect
+	github.com/Microsoft/go-winio v0.5.0 // indirect
+	github.com/ProtonMail/go-crypto v0.0.0-20210428141323-04723f9f07d7 // indirect
+	github.com/StackExchange/wmi v1.2.1 // indirect
+	github.com/VividCortex/ewma v1.1.1 // indirect
+	github.com/acomagu/bufpipe v1.0.3 // indirect
+	github.com/aws/aws-sdk-go v1.37.6 // indirect
+	github.com/cenkalti/backoff/v4 v4.1.0 // indirect
+	github.com/containerd/stargz-snapshotter/estargz v0.7.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/docker/cli v20.10.7+incompatible // indirect
+	github.com/docker/distribution v2.7.1+incompatible // indirect
+	github.com/docker/docker v20.10.7+incompatible // indirect
+	github.com/docker/docker-credential-helpers v0.6.3 // indirect
+	github.com/emirpasic/gods v1.12.0 // indirect
+	github.com/fatih/color v1.10.0 // indirect
+	github.com/fvbommel/sortorder v1.0.1 // indirect
+	github.com/go-git/gcfg v1.5.0 // indirect
+	github.com/go-git/go-billy/v5 v5.3.1 // indirect
+	github.com/go-ole/go-ole v1.2.5 // indirect
+	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
+	github.com/golang/snappy v0.0.3 // indirect
+	github.com/gomarkdown/markdown v0.0.0-20200824053859-8c8b3816f167 // indirect
+	github.com/google/go-cmp v0.5.6 // indirect
+	github.com/google/go-github/v33 v33.0.0 // indirect
+	github.com/google/go-querystring v1.0.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.0.5 // indirect
+	github.com/hashicorp/errwrap v1.0.0 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
+	github.com/hashicorp/go-multierror v1.0.0 // indirect
+	github.com/hashicorp/go-retryablehttp v0.6.4 // indirect
+	github.com/imdario/mergo v0.3.12 // indirect
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 // indirect
+	github.com/klauspost/compress v1.13.0 // indirect
+	github.com/mattn/go-colorable v0.1.8 // indirect
+	github.com/mattn/go-runewidth v0.0.12 // indirect
+	github.com/mitchellh/go-homedir v1.1.0 // indirect
+	github.com/mmarkdown/mmark v2.0.40+incompatible // indirect
+	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635 // indirect
+	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/opencontainers/image-spec v1.0.2-0.20200206005212-79b036d80240 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/sergi/go-diff v1.1.0 // indirect
+	github.com/spiegel-im-spiegel/errs v1.0.2 // indirect
+	github.com/src-d/gcfg v1.4.0 // indirect
+	github.com/xanzy/go-gitlab v0.43.0 // indirect
+	github.com/xanzy/ssh-agent v0.3.0 // indirect
+	go.opencensus.io v0.23.0 // indirect
+	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
+	golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069 // indirect
+	golang.org/x/text v0.3.6 // indirect
+	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
+	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/grpc v1.39.1 // indirect
+	google.golang.org/protobuf v1.27.1 // indirect
+	gopkg.in/src-d/go-billy.v4 v4.3.2 // indirect
+	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect
+	gopkg.in/warnings.v0 v0.1.2 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

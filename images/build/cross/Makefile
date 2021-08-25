@@ -18,18 +18,18 @@ SHELL=/bin/bash -o pipefail
 IMGNAME = kube-cross
 
 # Represents the targeted Kubernetes version at the time the images
-# are to be created e.g., 'v1.22.0'
+# are to be created e.g., 'v1.100.0'
 #
 # Note: There is no need to increment the patch version of this variable.
 #       The reason for the inclusion of the patch version here is to satisfy
 #       a SemVer regex on the IMAGE_VERSION.
 #
 # Example:
-# - v1.22.0-go1.16-buster.0 satisfies SemVer regex, while:
-# - v1.22-go1.16-buster.0 does not
+# - v1.100.0-go1.17-buster.0 satisfies SemVer regex, while:
+# - v1.100-go1.17-buster.0 does not
 KUBERNETES_VERSION ?= v1.22.0
-GO_VERSION ?= 1.16.7
-GO_MAJOR_VERSION ?= 1.16
+GO_VERSION ?= 1.17
+GO_MAJOR_VERSION ?= 1.17
 OS_CODENAME ?= buster
 REVISION ?= 0
 TYPE ?= default

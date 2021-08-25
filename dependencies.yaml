@@ -60,7 +60,7 @@ dependencies:
 
   # Golang
   - name: "golang"
-    version: 1.16.7
+    version: 1.17
     refPaths:
     - path: Dockerfile-kubepkg
       match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bullseye|buster) AS builder
@@ -84,12 +84,12 @@ dependencies:
       match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bullseye|buster)
 
   # Golang pre-releases are denoted as `1.y<pre-release stage>.z`
-  # Example: go1.16rc1
+  # Example: go1.17rc1
   #
   # This entry is a stub of the major version to allow dependency checks to
   # pass when building Kubernetes using a pre-release of Golang.
   - name: "golang: 1.<major>"
-    version: 1.16
+    version: 1.17
     refPaths:
     - path: images/build/cross/Makefile
       match: GO_MAJOR_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -100,8 +100,18 @@ dependencies:
     - path: images/build/go-runner/variants.yaml
       match: "GO_MAJOR_VERSION: '\\d+.\\d+'"
 
+  - name: "golang: go.mod"
+    version: 1.17
+    refPaths:
+    - path: go.mod
+      match: go \d+.\d+
+    - path: images/build/go-runner/go.mod
+      match: go \d+.\d+
+    - path: packages/deb/go.mod
+      match: go \d+.\d+
+
   - name: "golang: after kubernetes/kubernetes update"
-    version: 1.16.7
+    version: 1.17
     refPaths:
     - path: images/releng/k8s-ci-builder/Dockerfile
       match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-\${OS_CODENAME} AS builder
@@ -118,15 +128,15 @@ dependencies:
   # Golang images
 
   # Represents the targeted Kubernetes version at the time the images
-  # are to be created e.g., 'v1.22.0'
+  # are to be created e.g., 'v1.100.0'
   #
   # Note: There is no need to increment the patch version of this variable.
   #       The reason for the inclusion of the patch version here is to satisfy
   #       a SemVer regex on the IMAGE_VERSION.
   #
   # Example:
-  # - v1.22.0-go1.16-buster.0 satisfies SemVer regex, while:
-  # - v1.22-go1.16-buster.0 does not
+  # - v1.100.0-go1.17-buster.0 satisfies SemVer regex, while:
+  # - v1.100-go1.17-buster.0 does not
   - name: "Kubernetes version (stable.0)"
     version: v1.22.0
     refPaths:
@@ -148,7 +158,7 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "k8s.gcr.io/artifact-promoter/vulndash"
-    version: v0.4.3-7
+    version: v0.4.3-8
     refPaths:
     - path: cmd/vulndash/Makefile
       match: IMAGE_VERSION\ \?=\ v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-([0-9]+)
@@ -156,7 +166,7 @@ dependencies:
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-([0-9]+)
 
   - name: "k8s.gcr.io/build-image/go-runner"
-    version: v2.3.1-go1.16.7-buster.0
+    version: v2.3.1-go1.17-buster.0
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -170,14 +180,13 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "k8s.gcr.io/build-image/kube-cross"
-    version: v1.22.0-go1.16.7-buster.0
+    version: v1.23.0-go1.17-buster.0
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
-  # TODO: Consider capturing this in "golang: 1.<major>" instead
   - name: "k8s.gcr.io/build-image/kube-cross: config variant"
-    version: go1.16-buster
+    version: go1.17-buster
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "CONFIG: 'go\\d+.\\d+-(bullseye|buster)'"
@@ -234,7 +243,6 @@ dependencies:
     - path: images/build/cross/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
-  # TODO: Consider capturing this in "golang: 1.<major>" instead
   - name: "k8s.gcr.io/build-image/kube-cross: config variant (next candidate)"
     version: go1.17-buster
     refPaths:
@@ -289,7 +297,6 @@ dependencies:
     - path: images/build/cross/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
-  # TODO: Consider capturing this in "golang: 1.<major>" instead
   - name: "k8s.gcr.io/build-image/kube-cross: config variant (for previous release branches)"
     version: go1.15-buster
     refPaths:
