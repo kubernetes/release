@@ -25,7 +25,7 @@ substitutions:
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'dev'
   _CONFIG: 'cross0.0'
-  _KUBE_CROSS_VERSION: 'v0.0.0-0'
+  _KUBE_CROSS_VERSION: 'v0.0.0-go0.0.0-codename.0'
   _REGISTRY: 'fake.repository/registry-name'
 
 images:
