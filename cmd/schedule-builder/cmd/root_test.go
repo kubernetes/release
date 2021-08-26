@@ -99,8 +99,8 @@ const expectedReleaseOut = `# Kubernetes 1.23
 
 The 1.23 release cycle is proposed as follows:
 
-- **Mon August 23, 2021**: week 1- Release cycle begins
-- **Thu September 2, 2021**: week 2- [Production Readiness Soft Freeze](https://groups.google.com/g/kubernetes-sig-architecture/c/a6_y81N49aQ)
+- **Mon August 23, 2021**: week 1 - Release cycle begins
+- **Thu September 2, 2021**: week 2 - [Production Readiness Soft Freeze](https://groups.google.com/g/kubernetes-sig-architecture/c/a6_y81N49aQ)
 - **Thu September 9, 2021**: week 3 - [Enhancements Freeze](../release_phases.md#enhancements-freeze)
 - **Tue November 16, 2021**: week 13 - [Code Freeze](../release_phases.md#code-freeze)
 - **Tue November 23, 2021**: week 14 - [Test Freeze](../release_phases.md#test-freeze)
@@ -151,7 +151,6 @@ The 1.23 release cycle is proposed as follows:
 | Release retrospective part 3 (10:00am PST)                               | Community                     | Thu December 16, 2021 | week 17     |                                                  |  |
 
 ## Phases
-
 
 Please refer to the [release phases document](../release_phases.md).
 

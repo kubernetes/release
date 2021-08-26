@@ -17,12 +17,18 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
+	"embed"
 	"fmt"
 	"strings"
+	"text/template"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
 )
+
+//go:embed templates/*.tmpl
+var tpls embed.FS
 
 // runs with `--type=patch` to retrun the patch schedule
 func parseSchedule(patchSchedule PatchSchedule) string {
@@ -62,54 +68,27 @@ func parseSchedule(patchSchedule PatchSchedule) string {
 }
 
 // runs with `--type=release` to retrun the release cycle schedule
-func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
-	k8VersionWithDot := releaseSchedule.Releases[0].Version
-	k8VersionWithoutDot := removeDotfromVersion(releaseSchedule.Releases[0].Version)
-	output := []string{}
-	output = append(output, fmt.Sprintf("# Kubernetes %s\n", k8VersionWithDot), "#### Links\n",
-		`
-* [This document](https://git.k8s.io/sig-release/releases/release-`+k8VersionWithDot+`/README.md)
-* [Release Team](https://github.com/kubernetes/sig-release/blob/master/releases/release-`+k8VersionWithDot+`/release-team.md)
-* [Meeting Minutes](http://bit.ly/k8s`+k8VersionWithoutDot+`-releasemtg) (join [kubernetes-sig-release@] to receive meeting invites)
-* [v`+k8VersionWithDot+` Release Calendar](https://bit.ly/k8s-release-cal)
-* Contact: [#sig-release] on slack, [kubernetes-release-team@] on e-mail
-* [Internal Contact Info][Internal Contact Info] (accessible only to members of [kubernetes-release-team@])
-`, "#### Tracking docs\n",
-		`
-* [Enhancements Tracking Sheet](https://bit.ly/k8s`+k8VersionWithoutDot+`-enhancements)
-* [Feature blog Tracking Sheet](TBD)
-* [Bug Triage Tracking Sheet](TBD)
-* CI Signal Report: TODO
-* [Retrospective Document][Retrospective Document]
-* [kubernetes/sig-release v`+k8VersionWithDot+` milestone](https://github.com/kubernetes/kubernetes/milestone/56)
-`, "#### Guides\n",
-		`
-* [Targeting Issues and PRs to This Milestone](https://git.k8s.io/community/contributors/devel/sig-release/release.md)
-* [Triaging and Escalating Test Failures](https://git.k8s.io/community/contributors/devel/sig-testing/testing.md#troubleshooting-a-failure)
-`)
 
-	arr := []Timeline{}
+func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
+	type RelSched struct {
+		K8VersionWithDot    string
+		K8VersionWithoutDot string
+		Arr                 []Timeline
+		TimelineOutput      string
+	}
+
+	var relSched RelSched
+
+	relSched.K8VersionWithDot = releaseSchedule.Releases[0].Version
+	relSched.K8VersionWithoutDot = removeDotfromVersion(releaseSchedule.Releases[0].Version)
+	relSched.Arr = []Timeline{}
 	for _, releaseSchedule := range releaseSchedule.Releases {
 		for _, timeline := range releaseSchedule.Timeline {
-			if timeline.Tldr == "true" {
-				arr = append(arr, timeline)
+			if timeline.Tldr {
+				relSched.Arr = append(relSched.Arr, timeline)
 			}
 		}
 	}
-	output = append(output, "## TL;DR\n",
-		`The `+k8VersionWithDot+` release cycle is proposed as follows:
-
-- **`+arr[0].When+`**: `+arr[0].Week+`- Release cycle begins
-- **`+arr[1].When+`**: `+arr[1].Week+`- [Production Readiness Soft Freeze](https://groups.google.com/g/kubernetes-sig-architecture/c/a6_y81N49aQ)
-- **`+arr[2].When+`**: `+arr[2].Week+` - [Enhancements Freeze](../release_phases.md#enhancements-freeze)
-- **`+arr[3].When+`**: `+arr[3].Week+` - [Code Freeze](../release_phases.md#code-freeze)
-- **`+arr[4].When+`**: `+arr[4].Week+` - [Test Freeze](../release_phases.md#test-freeze)
-- **`+arr[5].When+`**: `+arr[5].Week+` - Docs must be completed and reviewed
-- **`+arr[6].When+`**: `+arr[6].Week+` - Kubernetes v`+k8VersionWithDot+`.0 released
-- **`+arr[7].When+`**: `+arr[7].Week+` - [Release Retrospective][Retrospective Document] part 1
-- **`+arr[8].When+`**: `+arr[8].Week+` - [Release Retrospective][Retrospective Document] part 2
-- **`+arr[9].When+`**: `+arr[9].Week+` - [Release Retrospective][Retrospective Document] part 3
-`, "## Timeline\n")
 	for _, releaseSchedule := range releaseSchedule.Releases {
 		tableString := &strings.Builder{}
 		table := tablewriter.NewWriter(tableString)
@@ -124,35 +103,10 @@ func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 		table.SetCenterSeparator("|")
 		table.Render()
 
-		output = append(output, tableString.String())
+		relSched.TimelineOutput = tableString.String()
 	}
 
-	output = append(output, "## Phases\n",
-		`
-Please refer to the [release phases document](../release_phases.md).
-
-[k8s`+k8VersionWithDot+`-calendar]: https://bit.ly/k8s-release-cal
-[Internal Contact Info]: https://bit.ly/k8s`+k8VersionWithoutDot+`-contacts
-[Retrospective Document]: https://bit.ly/k8s`+k8VersionWithoutDot+`-retro
-
-[Enhancements Freeze]: ../release_phases.md#enhancements-freeze
-[Burndown]: ../release_phases.md#burndown
-[Code Freeze]: ../release_phases.md#code-freeze
-[Exception]: ../release_phases.md#exceptions
-[Thaw]: ../release_phases.md#thaw
-[Test Freeze]: ../release_phases.md#test-freeze
-[release-team@]: https://groups.google.com/a/kubernetes.io/g/release-team
-[kubernetes-sig-release@]: https://groups.google.com/forum/#!forum/kubernetes-sig-release
-[#sig-release]: https://kubernetes.slack.com/messages/sig-release/
-[kubernetes-release-calendar]: https://bit.ly/k8s-release-cal
-[kubernetes/kubernetes]: https://github.com/kubernetes/kubernetes
-[master-blocking]: https://testgrid.k8s.io/sig-release-master-blocking#Summary
-[master-informing]: https://testgrid.k8s.io/sig-release-master-informing#Summary
-[`+k8VersionWithoutDot+`-blocking]: https://testgrid.k8s.io/sig-release-`+k8VersionWithDot+`-blocking#Summary
-[exception requests]: ../EXCEPTIONS.md
-[release phases document]: ../release_phases.md`)
-
-	scheduleOut := strings.Join(output, "\n")
+	scheduleOut := ProcessFile("templates/rel-schedule.tmpl", relSched)
 
 	logrus.Info("Release Schedule parsed")
 	println(scheduleOut)
@@ -171,4 +125,24 @@ func patchReleaseInPreviousList(a string, previousPatches []PreviousPatches) boo
 
 func removeDotfromVersion(a string) string {
 	return strings.ReplaceAll(a, ".", "")
+}
+
+// process applies the data structure 'vars' onto an already
+// parsed template 't', and returns the resulting string.
+func process(t *template.Template, vars interface{}) string {
+	var tmplBytes bytes.Buffer
+
+	err := t.Execute(&tmplBytes, vars)
+	if err != nil {
+		panic(err)
+	}
+	return tmplBytes.String()
+}
+
+func ProcessFile(fileName string, vars interface{}) string {
+	tmpl, err := template.ParseFS(tpls, fileName)
+	if err != nil {
+		panic(err)
+	}
+	return process(tmpl, vars)
 }

@@ -1,0 +1,70 @@
+# Kubernetes {{.K8VersionWithDot}}
+
+#### Links
+
+
+* [This document](https://git.k8s.io/sig-release/releases/release-{{.K8VersionWithDot}}/README.md)
+* [Release Team](https://github.com/kubernetes/sig-release/blob/master/releases/release-{{.K8VersionWithDot}}/release-team.md)
+* [Meeting Minutes](http://bit.ly/k8s{{.K8VersionWithoutDot}}-releasemtg) (join [kubernetes-sig-release@] to receive meeting invites)
+* [v{{.K8VersionWithDot}} Release Calendar](https://bit.ly/k8s-release-cal)
+* Contact: [#sig-release] on slack, [kubernetes-release-team@] on e-mail
+* [Internal Contact Info][Internal Contact Info] (accessible only to members of [kubernetes-release-team@])
+
+#### Tracking docs
+
+
+* [Enhancements Tracking Sheet](https://bit.ly/k8s{{.K8VersionWithoutDot}}-enhancements)
+* [Feature blog Tracking Sheet](TBD)
+* [Bug Triage Tracking Sheet](TBD)
+* CI Signal Report: TODO
+* [Retrospective Document][Retrospective Document]
+* [kubernetes/sig-release v{{.K8VersionWithDot}} milestone](https://github.com/kubernetes/kubernetes/milestone/56)
+
+#### Guides
+
+
+* [Targeting Issues and PRs to This Milestone](https://git.k8s.io/community/contributors/devel/sig-release/release.md)
+* [Triaging and Escalating Test Failures](https://git.k8s.io/community/contributors/devel/sig-testing/testing.md#troubleshooting-a-failure)
+
+## TL;DR
+
+The {{.K8VersionWithDot}} release cycle is proposed as follows:
+
+- **{{(index .Arr 0).When}}**: {{(index .Arr 0).Week}} - Release cycle begins
+- **{{(index .Arr 1).When}}**: {{(index .Arr 1).Week}} - [Production Readiness Soft Freeze](https://groups.google.com/g/kubernetes-sig-architecture/c/a6_y81N49aQ)
+- **{{(index .Arr 2).When}}**: {{(index .Arr 2).Week}} - [Enhancements Freeze](../release_phases.md#enhancements-freeze)
+- **{{(index .Arr 3).When}}**: {{(index .Arr 3).Week}} - [Code Freeze](../release_phases.md#code-freeze)
+- **{{(index .Arr 4).When}}**: {{(index .Arr 4).Week}} - [Test Freeze](../release_phases.md#test-freeze)
+- **{{(index .Arr 5).When}}**: {{(index .Arr 5).Week}} - Docs must be completed and reviewed
+- **{{(index .Arr 6).When}}**: {{(index .Arr 6).Week}} - Kubernetes v{{.K8VersionWithDot}}.0 released
+- **{{(index .Arr 7).When}}**: {{(index .Arr 7).Week}} - [Release Retrospective][Retrospective Document] part 1
+- **{{(index .Arr 8).When}}**: {{(index .Arr 8).Week}} - [Release Retrospective][Retrospective Document] part 2
+- **{{(index .Arr 9).When}}**: {{(index .Arr 9).Week}} - [Release Retrospective][Retrospective Document] part 3
+
+## Timeline
+
+{{.TimelineOutput}}
+## Phases
+
+Please refer to the [release phases document](../release_phases.md).
+
+[k8s{{.K8VersionWithDot}}-calendar]: https://bit.ly/k8s-release-cal
+[Internal Contact Info]: https://bit.ly/k8s{{.K8VersionWithoutDot}}-contacts
+[Retrospective Document]: https://bit.ly/k8s{{.K8VersionWithoutDot}}-retro
+
+[Enhancements Freeze]: ../release_phases.md#enhancements-freeze
+[Burndown]: ../release_phases.md#burndown
+[Code Freeze]: ../release_phases.md#code-freeze
+[Exception]: ../release_phases.md#exceptions
+[Thaw]: ../release_phases.md#thaw
+[Test Freeze]: ../release_phases.md#test-freeze
+[release-team@]: https://groups.google.com/a/kubernetes.io/g/release-team
+[kubernetes-sig-release@]: https://groups.google.com/forum/#!forum/kubernetes-sig-release
+[#sig-release]: https://kubernetes.slack.com/messages/sig-release/
+[kubernetes-release-calendar]: https://bit.ly/k8s-release-cal
+[kubernetes/kubernetes]: https://github.com/kubernetes/kubernetes
+[master-blocking]: https://testgrid.k8s.io/sig-release-master-blocking#Summary
+[master-informing]: https://testgrid.k8s.io/sig-release-master-informing#Summary
+[{{.K8VersionWithoutDot}}-blocking]: https://testgrid.k8s.io/sig-release-{{.K8VersionWithDot}}-blocking#Summary
+[exception requests]: ../EXCEPTIONS.md
+[release phases document]: ../release_phases.md

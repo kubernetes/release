@@ -54,5 +54,5 @@ type Timeline struct {
 	When     string `yaml:"when"`
 	Week     string `yaml:"week"`
 	CISignal string `yaml:"ciSignal"`
-	Tldr     string `yaml:"tldr"`
+	Tldr     bool   `yaml:"tldr"`
 }

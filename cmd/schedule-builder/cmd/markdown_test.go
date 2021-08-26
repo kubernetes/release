@@ -70,8 +70,8 @@ const expectedReleaseSchedule = `# Kubernetes X.Y
 
 The X.Y release cycle is proposed as follows:
 
-- **2020-06-17**: week 1- Release cycle begins
-- **2020-06-20**: week 1- [Production Readiness Soft Freeze](https://groups.google.com/g/kubernetes-sig-architecture/c/a6_y81N49aQ)
+- **2020-06-17**: week 1 - Release cycle begins
+- **2020-06-20**: week 1 - [Production Readiness Soft Freeze](https://groups.google.com/g/kubernetes-sig-architecture/c/a6_y81N49aQ)
 - **2020-06-21**: week 1 - [Enhancements Freeze](../release_phases.md#enhancements-freeze)
 - **2020-06-22**: week 1 - [Code Freeze](../release_phases.md#code-freeze)
 - **2020-06-25**: week 2 - [Test Freeze](../release_phases.md#test-freeze)
@@ -99,7 +99,6 @@ The X.Y release cycle is proposed as follows:
 | Testing-L | tester  | 2020-06-28 | week 2   | green         |  |
 
 ## Phases
-
 
 Please refer to the [release phases document](../release_phases.md).
 
@@ -215,7 +214,7 @@ func TestParseReleaseSchedule(t *testing.T) {
 								When:     "2020-06-17",
 								Week:     "week 1",
 								CISignal: "green",
-								Tldr:     "true",
+								Tldr:     true,
 							},
 							{
 								What:     "Testing-B",
@@ -230,7 +229,7 @@ func TestParseReleaseSchedule(t *testing.T) {
 								When:     "2020-06-20",
 								Week:     "week 1",
 								CISignal: "green",
-								Tldr:     "true",
+								Tldr:     true,
 							},
 							{
 								What:     "Testing-D",
@@ -238,7 +237,7 @@ func TestParseReleaseSchedule(t *testing.T) {
 								When:     "2020-06-21",
 								Week:     "week 1",
 								CISignal: "green",
-								Tldr:     "true",
+								Tldr:     true,
 							},
 							{
 								What:     "Testing-E",
@@ -246,7 +245,7 @@ func TestParseReleaseSchedule(t *testing.T) {
 								When:     "2020-06-22",
 								Week:     "week 1",
 								CISignal: "green",
-								Tldr:     "true",
+								Tldr:     true,
 							},
 							{
 								What:     "Testing-F",
@@ -254,7 +253,7 @@ func TestParseReleaseSchedule(t *testing.T) {
 								When:     "2020-06-25",
 								Week:     "week 2",
 								CISignal: "green",
-								Tldr:     "true",
+								Tldr:     true,
 							},
 							{
 								What:     "Testing-G",
@@ -262,7 +261,7 @@ func TestParseReleaseSchedule(t *testing.T) {
 								When:     "2020-06-26",
 								Week:     "week 2",
 								CISignal: "green",
-								Tldr:     "true",
+								Tldr:     true,
 							},
 							{
 								What:     "Testing-H",
@@ -270,7 +269,7 @@ func TestParseReleaseSchedule(t *testing.T) {
 								When:     "2020-06-27",
 								Week:     "week 2",
 								CISignal: "green",
-								Tldr:     "true",
+								Tldr:     true,
 							},
 							{
 								What:     "Testing-I",
@@ -278,7 +277,7 @@ func TestParseReleaseSchedule(t *testing.T) {
 								When:     "2020-06-27",
 								Week:     "week 2",
 								CISignal: "green",
-								Tldr:     "true",
+								Tldr:     true,
 							},
 							{
 								What:     "Testing-J",
@@ -286,7 +285,7 @@ func TestParseReleaseSchedule(t *testing.T) {
 								When:     "2020-06-27",
 								Week:     "week 2",
 								CISignal: "green",
-								Tldr:     "true",
+								Tldr:     true,
 							},
 							{
 								What:     "Testing-K",
@@ -294,7 +293,7 @@ func TestParseReleaseSchedule(t *testing.T) {
 								When:     "2020-06-28",
 								Week:     "week 2",
 								CISignal: "green",
-								Tldr:     "true",
+								Tldr:     true,
 							},
 							{
 								What:     "Testing-L",

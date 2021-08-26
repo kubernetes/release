@@ -6,7 +6,7 @@ releases:
       when: Mon August 23, 2021
       week: week 1
       ciSignal: master-blocking
-      tldr: "true"
+      tldr: true
     - what:  Start Enhancements Tracking
       who: Enhancements Lead
       when: Mon August 23, 2021
@@ -32,7 +32,7 @@ releases:
       when: Thu September 2, 2021
       week: week 2
       ciSignal:
-      tldr: "true"
+      tldr: true
     - what: Start Release Notes Draft
       who: Release Notes Lead
       when: Tue September 7, 2021
@@ -43,7 +43,7 @@ releases:
       when: Thu September 9, 2021
       week: week 3
       ciSignal: master-blocking, master-informing
-      tldr: "true"
+      tldr: true
     - what: 1.23.0-alpha.2 released
       who: Branch Manager
       when: TBD
@@ -94,7 +94,7 @@ releases:
       when: Tue November 16, 2021
       week: week 13
       ciSignal:
-      tldr: "true"
+      tldr: true
     - what: 1.23.0-beta.0 released
       who: Branch Manager
       when: Tue November 16, 2021
@@ -110,7 +110,7 @@ releases:
       when: Tue November 23, 2021
       week: week 14
       ciSignal:
-      tldr: "true"
+      tldr: true
     - what: Docs deadline - PRs ready for review
       who: Docs Lead
       when: Tue November 23, 2021
@@ -141,7 +141,7 @@ releases:
       when: Tue November 30, 2021
       week: week 15
       ciSignal:
-      tldr: "true"
+      tldr: true
     - what: Feature blogs ready to review (23:59 PST)
       who: Enhancement Owner / SIG Leads
       when: Tue November 30, 2021
@@ -157,7 +157,7 @@ releases:
       when: Tue December 7, 2021
       week: week 16
       ciSignal:
-      tldr: "true"
+      tldr: true
     - what: Release blog published
       who: Comms
       when: Tue December 7, 2021
@@ -173,16 +173,16 @@ releases:
       when: Tue December 14, 2021
       week: week 17
       ciSignal:
-      tldr: "true"
+      tldr: true
     - what: Release retrospective part 2 (10:00am PST)
       who: Community
       when: Wed December 15, 2021
       week: week 17
       ciSignal:
-      tldr: "true"
+      tldr: true
     - what: Release retrospective part 3 (10:00am PST)
       who: Community
       when: Thu December 16, 2021
       week: week 17
       ciSignal:
-      tldr: "true"
+      tldr: true
