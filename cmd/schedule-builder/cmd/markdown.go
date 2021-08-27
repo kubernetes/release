@@ -17,13 +17,20 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
+	"embed"
 	"fmt"
 	"strings"
+	"text/template"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
 )
 
+//go:embed templates/*.tmpl
+var tpls embed.FS
+
+// runs with `--type=patch` to retrun the patch schedule
 func parseSchedule(patchSchedule PatchSchedule) string {
 	output := []string{}
 	output = append(output, "### Timeline\n")
@@ -60,6 +67,52 @@ func parseSchedule(patchSchedule PatchSchedule) string {
 	return scheduleOut
 }
 
+// runs with `--type=release` to retrun the release cycle schedule
+func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
+	type RelSched struct {
+		K8VersionWithDot    string
+		K8VersionWithoutDot string
+		Arr                 []Timeline
+		TimelineOutput      string
+	}
+
+	var relSched RelSched
+
+	relSched.K8VersionWithDot = releaseSchedule.Releases[0].Version
+	relSched.K8VersionWithoutDot = removeDotfromVersion(releaseSchedule.Releases[0].Version)
+	relSched.Arr = []Timeline{}
+	for _, releaseSchedule := range releaseSchedule.Releases {
+		for _, timeline := range releaseSchedule.Timeline {
+			if timeline.Tldr {
+				relSched.Arr = append(relSched.Arr, timeline)
+			}
+		}
+	}
+	for _, releaseSchedule := range releaseSchedule.Releases {
+		tableString := &strings.Builder{}
+		table := tablewriter.NewWriter(tableString)
+		table.SetAutoWrapText(false)
+		table.SetHeader([]string{"**What**", "**Who**", "**When**", "**WEEK**", "**CI Signal**"})
+
+		for _, timeline := range releaseSchedule.Timeline {
+			table.Append([]string{strings.TrimSpace(timeline.What), strings.TrimSpace(timeline.Who), strings.TrimSpace(timeline.When), strings.TrimSpace(timeline.Week), strings.TrimSpace(timeline.CISignal), ""})
+		}
+
+		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
+		table.SetCenterSeparator("|")
+		table.Render()
+
+		relSched.TimelineOutput = tableString.String()
+	}
+
+	scheduleOut := ProcessFile("templates/rel-schedule.tmpl", relSched)
+
+	logrus.Info("Release Schedule parsed")
+	println(scheduleOut)
+
+	return scheduleOut
+}
+
 func patchReleaseInPreviousList(a string, previousPatches []PreviousPatches) bool {
 	for _, b := range previousPatches {
 		if b.Release == a {
@@ -67,4 +120,28 @@ func patchReleaseInPreviousList(a string, previousPatches []PreviousPatches) boo
 		}
 	}
 	return false
+}
+
+func removeDotfromVersion(a string) string {
+	return strings.ReplaceAll(a, ".", "")
+}
+
+// process applies the data structure 'vars' onto an already
+// parsed template 't', and returns the resulting string.
+func process(t *template.Template, vars interface{}) string {
+	var tmplBytes bytes.Buffer
+
+	err := t.Execute(&tmplBytes, vars)
+	if err != nil {
+		panic(err)
+	}
+	return tmplBytes.String()
+}
+
+func ProcessFile(fileName string, vars interface{}) string {
+	tmpl, err := template.ParseFS(tpls, fileName)
+	if err != nil {
+		panic(err)
+	}
+	return process(tmpl, vars)
 }

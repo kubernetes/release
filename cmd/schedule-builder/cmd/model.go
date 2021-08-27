@@ -38,3 +38,21 @@ type Schedule struct {
 	EndOfLifeDate      string            `yaml:"endOfLifeDate"`
 	PreviousPatches    []PreviousPatches `yaml:"previousPatches"`
 }
+
+type ReleaseSchedule struct {
+	Releases []Release `yaml:"releases"`
+}
+
+type Release struct {
+	Version  string     `yaml:"version"`
+	Timeline []Timeline `yaml:"timeline"`
+}
+
+type Timeline struct {
+	What     string `yaml:"what"`
+	Who      string `yaml:"who"`
+	When     string `yaml:"when"`
+	Week     string `yaml:"week"`
+	CISignal string `yaml:"ciSignal"`
+	Tldr     bool   `yaml:"tldr"`
+}
