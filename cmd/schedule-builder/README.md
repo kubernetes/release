@@ -99,7 +99,6 @@ The output will be something similar to this
 
 #### Links
 
-
 * [This document](https://git.k8s.io/sig-release/releases/release-1.23/README.md)
 * [Release Team](https://github.com/kubernetes/sig-release/blob/master/releases/release-1.23/release-team.md)
 * [Meeting Minutes](http://bit.ly/k8s123-releasemtg) (join [kubernetes-sig-release@] to receive meeting invites)
@@ -108,7 +107,6 @@ The output will be something similar to this
 * [Internal Contact Info][Internal Contact Info] (accessible only to members of [kubernetes-release-team@])
 
 #### Tracking docs
-
 
 * [Enhancements Tracking Sheet](https://bit.ly/k8s123-enhancements)
 * [Feature blog Tracking Sheet](TBD)
@@ -119,7 +117,6 @@ The output will be something similar to this
 
 #### Guides
 
-
 * [Targeting Issues and PRs to This Milestone](https://git.k8s.io/community/contributors/devel/sig-release/release.md)
 * [Triaging and Escalating Test Failures](https://git.k8s.io/community/contributors/devel/sig-testing/testing.md#troubleshooting-a-failure)
 
@@ -127,8 +124,8 @@ The output will be something similar to this
 
 The 1.23 release cycle is proposed as follows:
 
-- **Mon August 23, 2021**: week 1- Release cycle begins
-- **Thu September 2, 2021**: week 2- [Production Readiness Soft Freeze](https://groups.google.com/g/kubernetes-sig-architecture/c/a6_y81N49aQ)
+- **Mon August 23, 2021**: week 1 - Release cycle begins
+- **Thu September 2, 2021**: week 2 - [Production Readiness Soft Freeze](https://groups.google.com/g/kubernetes-sig-architecture/c/a6_y81N49aQ)
 - **Thu September 9, 2021**: week 3 - [Enhancements Freeze](../release_phases.md#enhancements-freeze)
 - **Tue November 16, 2021**: week 13 - [Code Freeze](../release_phases.md#code-freeze)
 - **Tue November 23, 2021**: week 14 - [Test Freeze](../release_phases.md#test-freeze)
@@ -180,7 +177,6 @@ The 1.23 release cycle is proposed as follows:
 
 ## Phases
 
-
 Please refer to the [release phases document](../release_phases.md).
 
 [k8s1.23-calendar]: https://bit.ly/k8s-release-cal
@@ -203,10 +199,11 @@ Please refer to the [release phases document](../release_phases.md).
 [123-blocking]: https://testgrid.k8s.io/sig-release-1.23-blocking#Summary
 [exception requests]: ../EXCEPTIONS.md
 [release phases document]: ../release_phases.md
+
 ```
 
 Also can save the schedule in a file, to do that, you can set the `--output-file` flag together with the filename.
 
 ```
-$ schedule-builder --config-path ../website/data/releases/schedule.yaml --type patch--output-file my-schedule.md
+$ schedule-builder --config-path ../website/data/releases/schedule.yaml --type patch --output-file my-schedule.md
 ```

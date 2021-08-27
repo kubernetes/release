@@ -68,7 +68,6 @@ func parseSchedule(patchSchedule PatchSchedule) string {
 }
 
 // runs with `--type=release` to retrun the release cycle schedule
-
 func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 	type RelSched struct {
 		K8VersionWithDot    string

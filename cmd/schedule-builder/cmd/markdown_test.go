@@ -42,7 +42,6 @@ const expectedReleaseSchedule = `# Kubernetes X.Y
 
 #### Links
 
-
 * [This document](https://git.k8s.io/sig-release/releases/release-X.Y/README.md)
 * [Release Team](https://github.com/kubernetes/sig-release/blob/master/releases/release-X.Y/release-team.md)
 * [Meeting Minutes](http://bit.ly/k8sXY-releasemtg) (join [kubernetes-sig-release@] to receive meeting invites)
@@ -52,7 +51,6 @@ const expectedReleaseSchedule = `# Kubernetes X.Y
 
 #### Tracking docs
 
-
 * [Enhancements Tracking Sheet](https://bit.ly/k8sXY-enhancements)
 * [Feature blog Tracking Sheet](TBD)
 * [Bug Triage Tracking Sheet](TBD)
@@ -61,7 +59,6 @@ const expectedReleaseSchedule = `# Kubernetes X.Y
 * [kubernetes/sig-release vX.Y milestone](https://github.com/kubernetes/kubernetes/milestone/56)
 
 #### Guides
-
 
 * [Targeting Issues and PRs to This Milestone](https://git.k8s.io/community/contributors/devel/sig-release/release.md)
 * [Triaging and Escalating Test Failures](https://git.k8s.io/community/contributors/devel/sig-testing/testing.md#troubleshooting-a-failure)
@@ -121,7 +118,8 @@ Please refer to the [release phases document](../release_phases.md).
 [master-informing]: https://testgrid.k8s.io/sig-release-master-informing#Summary
 [XY-blocking]: https://testgrid.k8s.io/sig-release-X.Y-blocking#Summary
 [exception requests]: ../EXCEPTIONS.md
-[release phases document]: ../release_phases.md`
+[release phases document]: ../release_phases.md
+`
 
 func TestParseSchedule(t *testing.T) {
 	testcases := []struct {

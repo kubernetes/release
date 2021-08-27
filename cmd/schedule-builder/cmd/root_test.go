@@ -71,7 +71,6 @@ const expectedReleaseOut = `# Kubernetes 1.23
 
 #### Links
 
-
 * [This document](https://git.k8s.io/sig-release/releases/release-1.23/README.md)
 * [Release Team](https://github.com/kubernetes/sig-release/blob/master/releases/release-1.23/release-team.md)
 * [Meeting Minutes](http://bit.ly/k8s123-releasemtg) (join [kubernetes-sig-release@] to receive meeting invites)
@@ -81,7 +80,6 @@ const expectedReleaseOut = `# Kubernetes 1.23
 
 #### Tracking docs
 
-
 * [Enhancements Tracking Sheet](https://bit.ly/k8s123-enhancements)
 * [Feature blog Tracking Sheet](TBD)
 * [Bug Triage Tracking Sheet](TBD)
@@ -90,7 +88,6 @@ const expectedReleaseOut = `# Kubernetes 1.23
 * [kubernetes/sig-release v1.23 milestone](https://github.com/kubernetes/kubernetes/milestone/56)
 
 #### Guides
-
 
 * [Targeting Issues and PRs to This Milestone](https://git.k8s.io/community/contributors/devel/sig-release/release.md)
 * [Triaging and Escalating Test Failures](https://git.k8s.io/community/contributors/devel/sig-testing/testing.md#troubleshooting-a-failure)
@@ -173,7 +170,8 @@ Please refer to the [release phases document](../release_phases.md).
 [master-informing]: https://testgrid.k8s.io/sig-release-master-informing#Summary
 [123-blocking]: https://testgrid.k8s.io/sig-release-1.23-blocking#Summary
 [exception requests]: ../EXCEPTIONS.md
-[release phases document]: ../release_phases.md`
+[release phases document]: ../release_phases.md
+`
 
 func TestRun(t *testing.T) {
 	testcases := []struct {
