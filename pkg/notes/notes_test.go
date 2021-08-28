@@ -389,8 +389,8 @@ func TestApplyMap(t *testing.T) {
 		testcase, ok := testNote.DataFields["testcase"]
 		require.True(t, ok, "found map test without testcase")
 
-		// Read the property this test csae checks
-		//nolint
+		// Read the property this test case checks
+		//nolint:errcheck
 		property := testcase.(map[interface{}]interface{})["property"].(string)
 		require.NotEmpty(t, property)
 		require.NotEmpty(t, property, "testcase found without property")
@@ -401,7 +401,7 @@ func TestApplyMap(t *testing.T) {
 		originalVal := reflect.Indirect(reflectedOriginalNote).FieldByName(property)
 
 		// Factor the test name
-		//nolint
+		//nolint:errcheck
 		testName := testcase.(map[interface{}]interface{})["name"].(string)
 
 		switch expectedValue := testcase.(map[interface{}]interface{})["expected"].(type) {

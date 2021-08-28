@@ -24,7 +24,7 @@ import (
 
 type RelationshipType string
 
-// nolint
+//nolint:revive,stylecheck
 const (
 	DESCRIBES              RelationshipType = "DESCRIBES"
 	DESCRIBED_BY           RelationshipType = "DESCRIBED_BY"
