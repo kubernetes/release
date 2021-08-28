@@ -10,6 +10,12 @@ issues:
         - gocritic
         - golint
         - dupl
+
+  # Maximum issues count per one linter. Set to 0 to disable. Default is 50.
+  max-issues-per-linter: 0
+
+  # Maximum count of issues with the same text. Set to 0 to disable. Default is 3.
+  max-same-issues: 0
 linters:
   disable-all: true
   enable:
