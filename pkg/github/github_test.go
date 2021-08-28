@@ -470,7 +470,7 @@ func TestListBranches(t *testing.T) {
 func TestCreateIssue(t *testing.T) {
 	// Given
 	sut, client := newSUT()
-	var fakeID int = 100000
+	fakeID := 100000
 	title := "Test Issue"
 	body := "Issue body text"
 	opts := &github.NewIssueOptions{
