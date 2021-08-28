@@ -53,7 +53,7 @@ type PEBinary struct {
 	Options *Options
 }
 
-// NewPEBinary Returns a binary implemetation for a windows executable
+// NewPEBinary Returns a binary implementation for a Windows executable
 func NewPEBinary(filePath string, opts *Options) (bin *PEBinary, err error) {
 	header, err := GetPEHeader(filePath)
 	if err != nil {
@@ -76,43 +76,45 @@ func (peh *PEHeader) String() string {
 
 // MachineType returns the moniker of the binary architecture
 func (peh *PEHeader) MachineType() string {
+	//nolint:gocritic
 	switch peh.Machine {
-	//nolint IMAGE_FILE_MACHINE_AMD64     = 0x8664
+	// IMAGE_FILE_MACHINE_AMD64     = 0x8664
 	case 0x8664:
 		return AMD64
-	//nolint IMAGE_FILE_MACHINE_ARM       = 0x1c0
+	// IMAGE_FILE_MACHINE_ARM       = 0x1c0
 	case 0x1c0:
 		return ARM
-	//nolint IMAGE_FILE_MACHINE_ARMNT     = 0x1c4
-	//nolint IMAGE_FILE_MACHINE_ARM64     = 0xaa64
+	// IMAGE_FILE_MACHINE_ARMNT     = 0x1c4
+	// IMAGE_FILE_MACHINE_ARM64     = 0xaa64
 	case 0xaa64:
 		return ARM64
-	//nolint IMAGE_FILE_MACHINE_EBC       = 0xebc
-	//nolint IMAGE_FILE_MACHINE_I386      = 0x14c
+	// IMAGE_FILE_MACHINE_EBC       = 0xebc
+	// IMAGE_FILE_MACHINE_I386      = 0x14c
 	case 0x14c:
 		return I386
-	//nolint IMAGE_FILE_MACHINE_IA64      = 0x200
-	//nolint IMAGE_FILE_MACHINE_M32R      = 0x9041
-	//nolint IMAGE_FILE_MACHINE_MIPS16    = 0x266
-	//nolint IMAGE_FILE_MACHINE_MIPSFPU   = 0x366
-	//nolint IMAGE_FILE_MACHINE_MIPSFPU16 = 0x466
-	//nolint IMAGE_FILE_MACHINE_POWERPC   = 0x1f0
-	//nolint IMAGE_FILE_MACHINE_POWERPCFP = 0x1f1
-	//nolint IMAGE_FILE_MACHINE_R4000     = 0x166
-	//nolint IMAGE_FILE_MACHINE_SH3       = 0x1a2
-	//nolint IMAGE_FILE_MACHINE_SH3DSP    = 0x1a3
-	//nolint IMAGE_FILE_MACHINE_SH4       = 0x1a6
-	//nolint IMAGE_FILE_MACHINE_SH5       = 0x1a8
-	//nolint IMAGE_FILE_MACHINE_THUMB     = 0x1c2
-	//nolint IMAGE_FILE_MACHINE_WCEMIPSV2 = 0x169
+	// IMAGE_FILE_MACHINE_IA64      = 0x200
+	// IMAGE_FILE_MACHINE_M32R      = 0x9041
+	// IMAGE_FILE_MACHINE_MIPS16    = 0x266
+	// IMAGE_FILE_MACHINE_MIPSFPU   = 0x366
+	// IMAGE_FILE_MACHINE_MIPSFPU16 = 0x466
+	// IMAGE_FILE_MACHINE_POWERPC   = 0x1f0
+	// IMAGE_FILE_MACHINE_POWERPCFP = 0x1f1
+	// IMAGE_FILE_MACHINE_R4000     = 0x166
+	// IMAGE_FILE_MACHINE_SH3       = 0x1a2
+	// IMAGE_FILE_MACHINE_SH3DSP    = 0x1a3
+	// IMAGE_FILE_MACHINE_SH4       = 0x1a6
+	// IMAGE_FILE_MACHINE_SH5       = 0x1a8
+	// IMAGE_FILE_MACHINE_THUMB     = 0x1c2
+	// IMAGE_FILE_MACHINE_WCEMIPSV2 = 0x169
 	case 0x1f0:
 		return PPC
 	}
+
 	logrus.Warn("Could not determine architecture type")
 	return ""
 }
 
-// WordLength Returns an intenger indicating if it's a 64 or 32 bit binary
+// WordLength Returns an integer indicating if it's a 64 or 32 bit binary
 func (peh *PEHeader) WordLength() int {
 	// We infer the wordlength from the machine type
 	// https://en.wikibooks.org/wiki/X86_Disassembly/Windows_Executable_Files#PE_Optional_Header

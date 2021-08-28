@@ -97,27 +97,28 @@ func (machoh *MachOHeader) MachineType() string {
 
 	// Todo: Perhaps if only one arch is in the file, we could return it here
 
-	// #define CPU_ARCH_ABI64		 0x1000000
+	// CPU_ARCH_ABI64 / 0x1000000
 	switch machoh.CPU {
-	//nolint CPU_TYPE_I386		((cpu_type_t) 7)
+	// CPU_TYPE_I386 / ((cpu_type_t) 7)
 	case 7:
 		return I386
-	//nolint CPU_TYPE_X86_64		((cpu_type_t) (CPU_TYPE_I386 | CPU_ARCH_ABI64))
+	// CPU_TYPE_X86_64 / ((cpu_type_t) (CPU_TYPE_I386 | CPU_ARCH_ABI64))
 	case 16777223:
 		return AMD64
-	//nolint CPU_TYPE_POWERPC		((cpu_type_t) 18)
+	// CPU_TYPE_POWERPC / ((cpu_type_t) 18)
 	case 18:
 		return PPC
-	//nolint CPU_TYPE_POWERPC64	((cpu_type_t)(CPU_TYPE_POWERPC | CPU_ARCH_ABI64))
+	// CPU_TYPE_POWERPC64 / ((cpu_type_t)(CPU_TYPE_POWERPC | CPU_ARCH_ABI64))
 	case 16777234:
 		return PPC64LE
-	//nolint CPU_TYPE_ARM			((cpu_type_t) 12)
+	// CPU_TYPE_ARM / ((cpu_type_t) 12)
 	case 12:
 		return ARM
-	//nolint ARM 64-bits (ARMv8/Aarch64) (not in source)
+	// ARM 64-bits (ARMv8/Aarch64) (not in source)
 	case 16777228:
 		return ARM64
 	}
+
 	logrus.Warnf("Unable to interpret machine type from mach-o header value %d", machoh.CPU)
 	return ""
 }
