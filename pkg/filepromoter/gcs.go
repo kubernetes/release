@@ -86,7 +86,6 @@ func (s *gcsSyncFilestore) UploadFile(ctx context.Context, dest, localFile strin
 	w.SendCRC32C = true
 
 	// Much bigger chunk size for faster uploading
-	// nolint[gomnd]
 	w.ChunkSize = 128 * 1024 * 1024
 
 	if _, err := io.Copy(w, in); err != nil {

@@ -102,7 +102,6 @@ func openFilestore(
 }
 
 // computeNeededOperations determines the list of files that need to be copied
-// nolint[funlen]
 func (p *FilestorePromoter) computeNeededOperations(
 	source, dest map[string]*syncFileInfo,
 	destFilestore syncFilestore) ([]SyncFileOp, error) {

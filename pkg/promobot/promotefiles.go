@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// nolint[lll]
 package promobot
 
 import (
@@ -59,7 +58,6 @@ func (o *PromoteFilesOptions) PopulateDefaults() {
 }
 
 // RunPromoteFiles executes a file promotion command
-// nolint[gocyclo]
 func RunPromoteFiles(ctx context.Context, options PromoteFilesOptions) error {
 	manifest, err := ReadManifest(options)
 	if err != nil {

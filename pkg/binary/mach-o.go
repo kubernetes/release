@@ -26,7 +26,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-//nolint
 const (
 	MachO32Magic   uint32 = 0xfeedface // 32 bit, big endian
 	MachO64Magic   uint32 = 0xfeedfacf // 64 bit, big endian
@@ -48,7 +47,7 @@ type MachOBinary struct {
 	Options *Options
 }
 
-// NewMachOBinary returns a Mach-O binary if the sepciefied file is one
+// NewMachOBinary returns a Mach-O binary if the specified file is one
 func NewMachOBinary(filePath string, opts *Options) (*MachOBinary, error) {
 	header, err := GetMachOHeader(filePath)
 	if err != nil {

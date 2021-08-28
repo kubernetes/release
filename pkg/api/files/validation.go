@@ -101,7 +101,6 @@ func ValidateFiles(files []File) error {
 			return fmt.Errorf("sha256 was not valid (not hex): %q", f.SHA256)
 		}
 
-		// nolint[gomnd]
 		if len(sha256) != 32 {
 			return fmt.Errorf("sha256 was not valid (bad length): %q", f.SHA256)
 		}

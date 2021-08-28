@@ -114,7 +114,7 @@ func TestGetUserName(t *testing.T) {
 
 func TestGetUserEmail(t *testing.T) {
 	const fakeUserEmail = "kubernetes-test@example.com"
-	currentDir, err := os.Getwd() // nolint: errcheck
+	currentDir, err := os.Getwd()
 	require.Nil(t, err, "error reading the current directory")
 	defer os.Chdir(currentDir) // nolint: errcheck
 

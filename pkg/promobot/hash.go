@@ -48,7 +48,6 @@ func (o *GenerateManifestOptions) PopulateDefaults() {
 }
 
 // GenerateManifest generates a manifest containing the files in options.BaseDir
-// nolint[lll]
 func GenerateManifest(ctx context.Context, options GenerateManifestOptions) (*api.Manifest, error) {
 	manifest := &api.Manifest{}
 
