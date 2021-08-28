@@ -269,9 +269,12 @@ func (o *TestGridOptions) Validate() error {
 		if o.states[i] != stateFailing &&
 			o.states[i] != statePassing &&
 			o.states[i] != stateFlaky {
-			return errors.New(
-				fmt.Sprintf("invalid state %s option. Valid options are: %s, %s, %s",
-					o.states[i], stateFailing, stateFlaky, statePassing),
+			return fmt.Errorf(
+				"invalid state %s option. Valid options are: %s, %s, %s",
+				o.states[i],
+				stateFailing,
+				stateFlaky,
+				statePassing,
 			)
 		}
 	}
@@ -279,9 +282,11 @@ func (o *TestGridOptions) Validate() error {
 	for _, board := range o.boards {
 		if board != boardBlocking &&
 			board != boardInforming {
-			return errors.New(
-				fmt.Sprintf("invalid board %s option. Valid options are: %s, %s",
-					board, boardBlocking, boardInforming),
+			return fmt.Errorf(
+				"invalid board %s option. Valid options are: %s, %s",
+				board,
+				boardBlocking,
+				boardInforming,
 			)
 		}
 	}

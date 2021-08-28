@@ -369,12 +369,12 @@ func createDraftPR(repoPath, tag string) (err error) {
 	}
 
 	if !isrepo {
-		return errors.New(
-			fmt.Sprintf(
-				"Cannot create PR, %s/%s is not a fork of %s/%s",
-				releaseNotesOpts.githubOrg, releaseNotesOpts.draftRepo,
-				git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
-			),
+		return fmt.Errorf(
+			"cannot create PR, %s/%s is not a fork of %s/%s",
+			releaseNotesOpts.githubOrg,
+			releaseNotesOpts.draftRepo,
+			git.DefaultGithubOrg,
+			git.DefaultGithubReleaseRepo,
 		)
 	}
 
