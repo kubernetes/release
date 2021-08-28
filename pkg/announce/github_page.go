@@ -183,7 +183,7 @@ func UpdateGitHubPage(opts *GitHubPageOptions) (err error) {
 	}
 
 	// Does the release exist yet?
-	var releaseID int64 = 0
+	var releaseID int64
 	commitish := ""
 	for _, release := range releases {
 		if release.GetTagName() == opts.Tag {

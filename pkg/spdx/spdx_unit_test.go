@@ -251,7 +251,7 @@ func TestRelationshipRender(t *testing.T) {
 	require.NotNil(t, err)
 }
 
-var testTar string = `H4sICPIFo2AAA2hlbGxvLnRhcgDt1EsKwjAUBdCMXUXcQPuS5rMFwaEraDGgUFpIE3D5puAPRYuD
+var testTar = `H4sICPIFo2AAA2hlbGxvLnRhcgDt1EsKwjAUBdCMXUXcQPuS5rMFwaEraDGgUFpIE3D5puAPRYuD
 VNR7Jm+QQh7c3hQly44Sa/U4hdV0O8+YUKTJkLRCMhKk0zHX+VdjLA6h9pyz6Ju66198N3H+pYpy
 iM1273P+Bm/lX4mUvyQlkP8cLvkHdwhFOIQMd4wBG6Oe5y/1Xf6VNhXjlGGXB3+e/yY2O9e2PV/H
 xvnOBTcsF59eCmZT5Cz+yXT/5bX/pMb3P030fw4rlB8AAAAAAAAAAAAAAAAA4CccAXRRwL4AKAAA

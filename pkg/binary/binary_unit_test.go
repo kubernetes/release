@@ -51,7 +51,7 @@ func TestContainsString(t *testing.T) {
 	require.Nil(t, err)
 }
 
-var kubectlFragment string = `nxsirlx0QAAAAAAA0HZAFANwVyHQekA7vuLSGA57QHEaitUNKXtAY+ef53SofUDqSbATP1Z+QGgo
+var kubectlFragment = `nxsirlx0QAAAAAAA0HZAFANwVyHQekA7vuLSGA57QHEaitUNKXtAY+ef53SofUDqSbATP1Z+QGgo
 7CEZK4RA97PI/X55hUACFbBWgMiFQO85+v5CLoZABGeTp8C4i0D///////+PQBhRnRjrAphA5jvf
 zhnyo0BqJIxot/+oQB7FLgvj9rJAaUuYyn5qtECfyHUuMhK1QAAAAAAAiMNAER3/Jb8Vx0Dhka4+
 lrfNQIWi5Wbutc9AZlLW1XK31ED7KgGmgjnXQHausXxFDtxAvvRkqnwx40AAAAAAAADwQAAAAAAA
