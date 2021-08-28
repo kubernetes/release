@@ -61,7 +61,7 @@ func TestFileMetadata(t *testing.T) {
 		"kubernetes.tar.gz",
 	} {
 		require.Nil(t, os.WriteFile(
-			filepath.Join(dir, file), []byte{1, 2, 3}, os.FileMode(0644),
+			filepath.Join(dir, file), []byte{1, 2, 3}, os.FileMode(0o644),
 		))
 	}
 
@@ -145,7 +145,7 @@ func TestDocument_RenderMarkdownTemplateFailure(t *testing.T) {
 			if tt.templateExist {
 				fileName := strings.Split(tt.templateSpec, ":")[1]
 				p := filepath.Join(dir, fileName)
-				require.Nil(t, os.WriteFile(p, []byte(tt.templateContents), 0664))
+				require.Nil(t, os.WriteFile(p, []byte(tt.templateContents), 0o664))
 			}
 
 			doc := Document{}
@@ -251,7 +251,7 @@ func setupTestDir(t *testing.T, dir string) {
 		"kubernetes.tar.gz",
 	} {
 		require.Nil(t, os.WriteFile(
-			filepath.Join(dir, file), []byte{1, 2, 3}, os.FileMode(0644),
+			filepath.Join(dir, file), []byte{1, 2, 3}, os.FileMode(0o644),
 		))
 	}
 }
@@ -503,7 +503,7 @@ func TestDocument_RenderMarkdownTemplate(t *testing.T) {
 
 					require.NoError(
 						t,
-						os.WriteFile(p, []byte(defaultReleaseNotesTemplate), 0664),
+						os.WriteFile(p, []byte(defaultReleaseNotesTemplate), 0o664),
 						"Writing user specified template.")
 				}
 			}

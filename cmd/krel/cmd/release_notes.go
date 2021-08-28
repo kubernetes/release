@@ -369,12 +369,12 @@ func createDraftPR(repoPath, tag string) (err error) {
 	}
 
 	if !isrepo {
-		return errors.New(
-			fmt.Sprintf(
-				"Cannot create PR, %s/%s is not a fork of %s/%s",
-				releaseNotesOpts.githubOrg, releaseNotesOpts.draftRepo,
-				git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
-			),
+		return fmt.Errorf(
+			"cannot create PR, %s/%s is not a fork of %s/%s",
+			releaseNotesOpts.githubOrg,
+			releaseNotesOpts.draftRepo,
+			git.DefaultGithubOrg,
+			git.DefaultGithubReleaseRepo,
 		)
 	}
 
@@ -450,14 +450,14 @@ func createDraftPR(repoPath, tag string) (err error) {
 	logrus.Debugf("Release notes draft files will be written to %s", releaseDir)
 
 	// Write the markdown draft
-	err = os.WriteFile(filepath.Join(releaseDir, releaseNotesWorkDir, draftMarkdownFile), []byte(result.markdown), 0644)
+	err = os.WriteFile(filepath.Join(releaseDir, releaseNotesWorkDir, draftMarkdownFile), []byte(result.markdown), 0o644)
 	if err != nil {
 		return errors.Wrapf(err, "writing release notes draft")
 	}
 	logrus.Infof("Release Notes Markdown Draft written to %s", filepath.Join(releaseDir, releaseNotesWorkDir, draftMarkdownFile))
 
 	// Write the JSON file of the current notes
-	err = os.WriteFile(filepath.Join(releaseDir, releaseNotesWorkDir, draftJSONFile), []byte(result.json), 0644)
+	err = os.WriteFile(filepath.Join(releaseDir, releaseNotesWorkDir, draftJSONFile), []byte(result.json), 0o644)
 	if err != nil {
 		return errors.Wrapf(err, "writing release notes json file")
 	}

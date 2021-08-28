@@ -51,7 +51,7 @@ func TestChangelogNoArgumentsOrFlags(t *testing.T) {
 	require.NotNil(t, err)
 }
 
-func TestNewPatchRelease(t *testing.T) { // nolint: dupl
+func TestNewPatchRelease(t *testing.T) {
 	// Given
 	s := newSUT(t)
 	defer s.cleanup(t)
@@ -153,7 +153,7 @@ func TestNewAlpha1Release(t *testing.T) {
 	require.Regexp(t, alpha1ReleaseExpectedTOC, string(result))
 }
 
-func TestNewMinorRelease(t *testing.T) { // nolint: dupl
+func TestNewMinorRelease(t *testing.T) {
 	// Given
 	s := newSUT(t)
 	defer s.cleanup(t)
@@ -177,7 +177,7 @@ func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 			os.WriteFile(
 				filepath.Join(s.repo.Dir(), filename),
 				[]byte("Some content"),
-				0644,
+				0o644,
 			),
 		)
 		require.Nil(t, s.repo.Add(filename))

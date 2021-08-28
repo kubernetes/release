@@ -28,6 +28,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
+
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/object"
 )
@@ -199,9 +200,7 @@ func (impl *defaultClientImplementation) ValidateCVEMap(
 	for i, dataMap := range *maps {
 		// Check if map has other the CVE field
 		if _, ok := dataMap.DataFields["cve"]; !ok {
-			return errors.New(
-				fmt.Sprintf("Data map #%d in file %s has no CVE data", i, path),
-			)
+			return fmt.Errorf("data map #%d in file %s has no CVE data", i, path)
 		}
 		// Cast the datafield as CVE data
 		cvedata := CVE{}
@@ -213,10 +212,11 @@ func (impl *defaultClientImplementation) ValidateCVEMap(
 		}
 
 		if cvedata.ID != cveID {
-			return errors.New(
-				fmt.Sprintf(
-					"CVE ID in map #%d in file %s does not match %s", i, path, cveID,
-				),
+			return fmt.Errorf(
+				"CVE ID in map #%d in file %s does not match %s",
+				i,
+				path,
+				cveID,
 			)
 		}
 	}

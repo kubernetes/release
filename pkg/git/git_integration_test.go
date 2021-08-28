@@ -98,7 +98,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, os.WriteFile(
 		filepath.Join(cloneTempDir, testFileName),
 		[]byte("test-content"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 
 	worktree, err := cloneRepo.Worktree()
@@ -130,7 +130,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, os.WriteFile(
 		filepath.Join(cloneTempDir, branchTestFileName),
 		[]byte("test-content"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 	_, err = worktree.Add(branchTestFileName)
 	require.Nil(t, err)
@@ -154,7 +154,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, os.WriteFile(
 		filepath.Join(cloneTempDir, secondBranchTestFileName),
 		[]byte("test-content"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 	_, err = worktree.Add(secondBranchTestFileName)
 	require.Nil(t, err)
@@ -178,7 +178,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, os.WriteFile(
 		filepath.Join(cloneTempDir, thirdBranchTestFileName),
 		[]byte("test-content"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 	_, err = worktree.Add(thirdBranchTestFileName)
 	require.Nil(t, err)
@@ -644,7 +644,7 @@ func TestCheckoutSuccess(t *testing.T) {
 	require.Nil(t, os.WriteFile(
 		testRepo.testFileName,
 		[]byte("hello world"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 	res, err := command.NewWithWorkDir(
 		testRepo.sut.Dir(), "git", "diff", "--name-only").Run()
@@ -739,7 +739,7 @@ func TestRmSuccessForce(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 	require.Nil(t, os.WriteFile(testRepo.testFileName,
-		[]byte("test"), os.FileMode(0755)),
+		[]byte("test"), os.FileMode(0o755)),
 	)
 
 	require.Nil(t, testRepo.sut.Rm(true, testRepo.testFileName))
@@ -806,7 +806,7 @@ func TestRmFailureModified(t *testing.T) {
 	testRepo := newTestRepo(t)
 	defer testRepo.cleanup(t)
 	require.Nil(t, os.WriteFile(testRepo.testFileName,
-		[]byte("test"), os.FileMode(0755)),
+		[]byte("test"), os.FileMode(0o755)),
 	)
 	require.NotNil(t, testRepo.sut.Rm(false, testRepo.testFileName))
 }
@@ -928,7 +928,7 @@ func TestIsDirtyFailure(t *testing.T) {
 
 	require.Nil(t, os.WriteFile(
 		filepath.Join(testRepo.sut.Dir(), "any-file"),
-		[]byte("test"), os.FileMode(0755)),
+		[]byte("test"), os.FileMode(0o755)),
 	)
 
 	dirty, err := testRepo.sut.IsDirty()

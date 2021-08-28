@@ -67,7 +67,7 @@ func AssertMatchesFile(t *testing.T, actual, p string) {
 
 	if actual != expected {
 		if os.Getenv("UPDATE_EXPECTED_OUTPUT") != "" {
-			if err := os.WriteFile(p, []byte(actual), 0644); err != nil {
+			if err := os.WriteFile(p, []byte(actual), 0o644); err != nil {
 				t.Fatalf("error writing file %q: %v", p, err)
 			}
 		}

@@ -43,7 +43,6 @@ func (p *ManifestPromoter) BuildOperations(
 		return nil, err
 	}
 
-	// nolint[prealloc]
 	var operations []SyncFileOp
 
 	for i := range p.Manifest.Filestores {

@@ -30,7 +30,7 @@ import (
 
 var err = errors.New("error")
 
-var testVersionTag string = "v1.20.0"
+var testVersionTag = "v1.20.0"
 
 type testStateParameters struct {
 	versionsTag         *string

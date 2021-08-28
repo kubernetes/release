@@ -114,7 +114,7 @@ func TestGetUserName(t *testing.T) {
 
 func TestGetUserEmail(t *testing.T) {
 	const fakeUserEmail = "kubernetes-test@example.com"
-	currentDir, err := os.Getwd() // nolint: errcheck
+	currentDir, err := os.Getwd()
 	require.Nil(t, err, "error reading the current directory")
 	defer os.Chdir(currentDir) // nolint: errcheck
 
@@ -384,7 +384,7 @@ func TestStatus(t *testing.T) {
 	require.True(t, status.IsClean())
 
 	// Create an untracked file
-	require.Nil(t, os.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Hello SIG Release"), 0644))
+	require.Nil(t, os.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Hello SIG Release"), 0o644))
 
 	// Status should be modified now
 	status, err = testRepo.Status()
@@ -404,7 +404,7 @@ func TestStatus(t *testing.T) {
 	require.Empty(t, status.String())
 
 	// Modify the file
-	require.Nil(t, os.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Bye SIG Release"), 0644))
+	require.Nil(t, os.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Bye SIG Release"), 0o644))
 	status, err = testRepo.Status()
 	require.Nil(t, err)
 	require.Equal(t, fmt.Sprintf(" M %s\n", testFile), status.String())
@@ -424,7 +424,7 @@ func TestShowLastCommit(t *testing.T) {
 	defer testRepo.Cleanup() // nolint: errcheck
 
 	// Create an untracked file
-	require.Nil(t, os.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Hello SIG Release"), 0644))
+	require.Nil(t, os.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Hello SIG Release"), 0o644))
 	require.Nil(t, testRepo.Add(testFile))
 	require.Nil(t, testRepo.Commit(fmt.Sprintf("Commit test file at %s", timeNow)))
 
@@ -528,7 +528,7 @@ func TestRebase(t *testing.T) {
 	require.Nil(t, testRepo.Rebase(fmt.Sprintf("origin/%s", branchName)), "cloning synchronizaed repos")
 
 	// Test 2. Rebase should not fail with pulling changes in the remote
-	require.Nil(t, os.WriteFile(filepath.Join(rawRepoDir, testFile), []byte("Hello SIG Release"), 0644))
+	require.Nil(t, os.WriteFile(filepath.Join(rawRepoDir, testFile), []byte("Hello SIG Release"), 0o644))
 	_, err = wtree.Add(testFile)
 	require.Nil(t, err)
 
@@ -554,7 +554,7 @@ func TestRebase(t *testing.T) {
 	require.NotNil(t, testRepo.Rebase("origin/invalidBranch"), "rebasing to invalid branch")
 
 	// Test 4: Rebase must fail on merge conflicts
-	require.Nil(t, os.WriteFile(filepath.Join(rawRepoDir, testFile), []byte("Hello again SIG Release"), 0644))
+	require.Nil(t, os.WriteFile(filepath.Join(rawRepoDir, testFile), []byte("Hello again SIG Release"), 0o644))
 	_, err = wtree.Add(testFile)
 	require.Nil(t, err)
 
@@ -564,7 +564,7 @@ func TestRebase(t *testing.T) {
 	require.Nil(t, err)
 
 	// Commit the same file in the test repo
-	require.Nil(t, os.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Conflict me!"), 0644))
+	require.Nil(t, os.WriteFile(filepath.Join(testRepo.Dir(), testFile), []byte("Conflict me!"), 0o644))
 	require.Nil(t, testRepo.Add(filepath.Join(testRepo.Dir(), testFile)))
 	require.Nil(t, testRepo.Commit("Adding file to cause conflict"))
 

@@ -231,7 +231,6 @@ func (s *Stage) Submit(stream bool) error {
 
 // Run for the `Stage` struct prepares a release and puts the results on a
 // staging bucket.
-// nolint:dupl
 func (s *Stage) Run() error {
 	s.client.InitState()
 
@@ -363,7 +362,6 @@ func (r *Release) Submit(stream bool) error {
 }
 
 // Run for for `Release` struct finishes a previously staged release.
-// nolint:dupl
 func (r *Release) Run() error {
 	r.client.InitState()
 

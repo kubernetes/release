@@ -111,7 +111,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, os.WriteFile(
 		filepath.Join(cloneTempDir, testFileName),
 		[]byte("test-content"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 
 	worktree, err := cloneRepo.Worktree()
@@ -148,7 +148,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, os.WriteFile(
 		filepath.Join(cloneTempDir, branchTestFileName),
 		[]byte("test-content"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 	_, err = worktree.Add(branchTestFileName)
 	require.Nil(t, err)
@@ -172,7 +172,7 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, os.WriteFile(
 		filepath.Join(cloneTempDir, secondBranchTestFileName),
 		[]byte("test-content"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 	_, err = worktree.Add(secondBranchTestFileName)
 	require.Nil(t, err)

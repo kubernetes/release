@@ -317,7 +317,7 @@ func (c *githubNotesRecordClient) recordAPICall(
 		return err
 	}
 	if err := os.WriteFile(
-		filepath.Join(c.recordDir, fileName), file, os.FileMode(0644),
+		filepath.Join(c.recordDir, fileName), file, os.FileMode(0o644),
 	); err != nil {
 		return err
 	}

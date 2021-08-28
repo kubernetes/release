@@ -231,7 +231,7 @@ func UpdateVulnerabilityDashboard(
 
 	dashboardJSON := dashboardPath + "dashboard.json"
 	logrus.Infof("writing the vulnerabilities for %s in the file %s", vulnProject, dashboardJSON)
-	err = os.WriteFile(dashboardJSON, jsonFile, 0644)
+	err = os.WriteFile(dashboardJSON, jsonFile, 0o644)
 	if err != nil {
 		return errors.Errorf("Unable to create temporary local"+
 			"JSON file for the dashboard: %v", err)
