@@ -45,6 +45,7 @@ linters:
     - makezero
     - misspell
     - nakedret
+    - nolintlint
     - prealloc
     - predeclared
     - promlinter
@@ -82,7 +83,6 @@ linters:
     # - nilerr
     # - nlreturn
     # - noctx
-    # - nolintlint
     # - paralleltest
     # - scopelint
     # - tagliatelle
