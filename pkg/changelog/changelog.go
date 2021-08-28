@@ -537,7 +537,7 @@ func (c *Changelog) adaptChangelogReadmeFile(
 	}
 
 	if err := c.impl.WriteFile(
-		targetFile, []byte(strings.Join(res, nl)+nl), os.FileMode(0644)); err != nil {
+		targetFile, []byte(strings.Join(res, nl)+nl), os.FileMode(0o644)); err != nil {
 		return errors.Wrap(err, "write changelog README.md")
 	}
 	return nil

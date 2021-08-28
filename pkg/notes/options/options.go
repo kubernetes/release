@@ -231,7 +231,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 	// Create the record dir
 	if o.RecordDir != "" {
 		logrus.Info("Using record mode")
-		if err := os.MkdirAll(o.RecordDir, os.FileMode(0755)); err != nil {
+		if err := os.MkdirAll(o.RecordDir, os.FileMode(0o755)); err != nil {
 			return err
 		}
 	}

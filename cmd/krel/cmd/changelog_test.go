@@ -177,7 +177,7 @@ func TestNewMinorRelease(t *testing.T) { // nolint: dupl
 			os.WriteFile(
 				filepath.Join(s.repo.Dir(), filename),
 				[]byte("Some content"),
-				0644,
+				0o644,
 			),
 		)
 		require.Nil(t, s.repo.Add(filename))

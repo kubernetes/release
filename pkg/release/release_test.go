@@ -79,13 +79,13 @@ func TestBuiltWithBazel(t *testing.T) {
 	require.Nil(t, os.WriteFile(
 		baseBazelFile,
 		[]byte("test"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 	bazelFile := filepath.Join(bazelTmpDir, "bazel-bin/build/release-tars/kubernetes.tar.gz")
 	require.Nil(t, os.WriteFile(
 		bazelFile,
 		[]byte("test"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 
 	time.Sleep(1 * time.Second)
@@ -96,7 +96,7 @@ func TestBuiltWithBazel(t *testing.T) {
 	require.Nil(t, os.WriteFile(
 		baseDockerFile,
 		[]byte("test"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 	dockerFile := filepath.Join(
 		dockerTmpDir, BuildDir, "release-tars/kubernetes.tar.gz",
@@ -104,7 +104,7 @@ func TestBuiltWithBazel(t *testing.T) {
 	require.Nil(t, os.WriteFile(
 		dockerFile,
 		[]byte("test"),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 
 	defer cleanupTmps(t, baseTmpDir, bazelTmpDir, dockerTmpDir)
@@ -207,7 +207,7 @@ func TestReadBazelVersion(t *testing.T) {
 			require.Nil(t, os.WriteFile(
 				bazelVersionFile,
 				[]byte(version),
-				os.FileMode(0644),
+				os.FileMode(0o644),
 			))
 
 			res, err := ReadBazelVersion(baseTmpDir)
@@ -231,7 +231,7 @@ func TestReadDockerVersion(t *testing.T) {
 	var b bytes.Buffer
 
 	// Create version file
-	err = os.WriteFile(filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, "kubernetes", "version"), versionBytes, os.FileMode(0644))
+	err = os.WriteFile(filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, "kubernetes", "version"), versionBytes, os.FileMode(0o644))
 	require.Nil(t, err)
 
 	// Create a zip archive.
@@ -250,7 +250,7 @@ func TestReadDockerVersion(t *testing.T) {
 	require.Nil(t, os.WriteFile(
 		filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, KubernetesTar),
 		b.Bytes(),
-		os.FileMode(0644),
+		os.FileMode(0o644),
 	))
 
 	defer cleanupTmps(t, baseTmpDir)

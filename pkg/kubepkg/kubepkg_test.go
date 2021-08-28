@@ -62,7 +62,7 @@ func sutWithTemplateDir(
 
 	for _, dir := range opts.Packages() {
 		pkgPath := filepath.Join(tempDir, string(buildType), dir)
-		require.Nil(t, os.MkdirAll(pkgPath, 0755))
+		require.Nil(t, os.MkdirAll(pkgPath, 0o755))
 	}
 	return sut, cleanup, mock
 }
