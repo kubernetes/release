@@ -35,7 +35,6 @@ linters:
     - gofumpt
     - goheader
     - goimports
-    - golint
     - gomoddirectives
     - gomodguard
     - goprintffuncname
@@ -49,6 +48,7 @@ linters:
     - prealloc
     - predeclared
     - promlinter
+    - revive
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
@@ -84,7 +84,6 @@ linters:
     # - noctx
     # - nolintlint
     # - paralleltest
-    # - revive
     # - scopelint
     # - tagliatelle
     # - testpackage
