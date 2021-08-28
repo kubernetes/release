@@ -39,12 +39,12 @@ dependencies:
   #- name: "crictl"
   #  version: 1.18.0
 
-  # distroless
+  # cosign
   - name: "gcr.io/projectsigstore/cosign"
-    version: v1.0.0@sha256:5e88d8f6162c04da4fa7d63b032bac34d8c906b48e88057263d67b059ace7de4
+    version: v1.1.0@sha256:47bdf660ceadb5065aa05af62fd24b184db0fdcb34d5892247035dd0dd2d5c3f
     refPaths:
     - path: images/build/go-runner/cloudbuild.yaml
-      match: gcr.io/projectsigstore/cosign:v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)@sha256:[a-f0-9]{64}
+      match: gcr.io/projectsigstore/cosign:v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?@sha256:[a-f0-9]{64}
 
   # Docker
   # TODO(deps): Not active yet
