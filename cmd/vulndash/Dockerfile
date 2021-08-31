@@ -36,7 +36,7 @@ ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOARCH=${ARCH}
 
-RUN go build -ldflags '-s -w -buildid= -extldflags "-static"' \
+RUN go build -trimpath -ldflags '-s -w -buildid= -extldflags "-static"' \
     -o vulndash ${package}
 
 # Production image
