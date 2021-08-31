@@ -27,9 +27,9 @@ import (
 	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v2"
 
-	"k8s.io/release/pkg/gcp"
 	"k8s.io/release/pkg/gh2gcs"
 	"k8s.io/release/pkg/github"
+	"sigs.k8s.io/release-sdk/gcli"
 	"sigs.k8s.io/release-utils/log"
 )
 
@@ -199,7 +199,7 @@ func run(opts *options) error {
 		return errors.Wrap(err, "validating gh2gcs options")
 	}
 
-	if err := gcp.PreCheck(); err != nil {
+	if err := gcli.PreCheck(); err != nil {
 		return errors.Wrap(err, "pre-checking for GCP package usage")
 	}
 

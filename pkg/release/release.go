@@ -35,7 +35,7 @@ import (
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/object"
+	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/env"
 	rhash "sigs.k8s.io/release-utils/hash"
@@ -80,7 +80,7 @@ const (
 	// GCEPath is the directory where GCE scripts are created.
 	GCEPath = ReleaseStagePath + "/full/kubernetes/cluster/gce"
 
-	// GCIPath is the path for the container optimized OS for GCP.
+	// GCIPath is the path for the container optimized OS for gcli.
 	GCIPath = ReleaseStagePath + "/full/kubernetes/cluster/gce/gci"
 
 	// ReleaseTarsPath is the directory where release artifacts are created.

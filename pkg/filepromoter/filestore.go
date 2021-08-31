@@ -28,7 +28,7 @@ import (
 	"google.golang.org/api/option"
 
 	api "k8s.io/release/pkg/api/files"
-	"k8s.io/release/pkg/object"
+	"sigs.k8s.io/release-sdk/object"
 )
 
 // FilestorePromoter manages the promotion of files.

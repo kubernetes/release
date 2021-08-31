@@ -23,7 +23,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/object"
+	"sigs.k8s.io/release-sdk/object"
 )
 
 const fictionalTestBucketName = "kubernetes-test-name"

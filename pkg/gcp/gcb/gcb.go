@@ -29,12 +29,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/gcp"
 	"k8s.io/release/pkg/gcp/auth"
 	"k8s.io/release/pkg/gcp/build"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/kubecross"
 	"k8s.io/release/pkg/release"
+	"sigs.k8s.io/release-sdk/gcli"
 	"sigs.k8s.io/release-utils/util"
 )
 
@@ -189,7 +189,7 @@ func (g *GCB) Submit() error {
 	toolRepo := release.GetToolRepo()
 	toolRef := release.GetToolRef()
 
-	if err := gcp.PreCheck(); err != nil {
+	if err := gcli.PreCheck(); err != nil {
 		return errors.Wrap(err, "pre-checking for GCP package usage")
 	}
 

@@ -34,9 +34,9 @@ import (
 	"google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/option"
 
-	"k8s.io/release/pkg/gcp"
-	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/release"
+	"sigs.k8s.io/release-sdk/gcli"
+	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/tar"
 	"sigs.k8s.io/yaml"
@@ -237,7 +237,7 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 		args = append(args, diskSizeArg)
 	}
 
-	cmd := command.New(gcp.GCloudExecutable, args...)
+	cmd := command.New(gcli.GCloudExecutable, args...)
 
 	if o.LogDir != "" {
 		p := path.Join(o.LogDir, strings.ReplaceAll(jobName, "/", "-")+".log")

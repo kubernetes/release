@@ -23,9 +23,9 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/gcp"
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
+	"sigs.k8s.io/release-sdk/gcli"
 	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/env"
 )
@@ -85,7 +85,7 @@ func (*defaultPrerequisitesChecker) CommandAvailable(
 func (*defaultPrerequisitesChecker) GCloudOutput(
 	args ...string,
 ) (string, error) {
-	return gcp.GCloudOutput(args...)
+	return gcli.GCloudOutput(args...)
 }
 
 func (*defaultPrerequisitesChecker) IsEnvSet(key string) bool {
