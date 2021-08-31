@@ -20,12 +20,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-
-	"k8s.io/release/pkg/gcp"
+	"sigs.k8s.io/release-sdk/gcli"
 )
 
 func GetCurrentGCPUser() (string, error) {
-	gcpUser, err := gcp.GCloudOutput(
+	gcpUser, err := gcli.GCloudOutput(
 		"auth",
 		"list",
 		"--filter=status:ACTIVE",
@@ -46,7 +45,7 @@ func GetCurrentGCPUser() (string, error) {
 }
 
 func ConfigureDocker() error {
-	err := gcp.GCloud(
+	err := gcli.GCloud(
 		"auth",
 		"configure-docker",
 	)

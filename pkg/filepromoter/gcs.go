@@ -30,7 +30,7 @@ import (
 	"google.golang.org/api/iterator"
 
 	api "k8s.io/release/pkg/api/files"
-	"k8s.io/release/pkg/object"
+	"sigs.k8s.io/release-sdk/object"
 )
 
 type gcsSyncFilestore struct {

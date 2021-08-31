@@ -36,7 +36,7 @@ import (
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
-	"k8s.io/release/pkg/object"
+	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/http"
 	"sigs.k8s.io/release-utils/util"
 )

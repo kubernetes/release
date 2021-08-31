@@ -25,8 +25,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/gcp"
-	"k8s.io/release/pkg/object"
+	"sigs.k8s.io/release-sdk/gcli"
+	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/tar"
 
@@ -206,7 +206,7 @@ func (a *defaultArchiverImpl) MakeFilesPrivate(archiveBucketPath string) error {
 		return errors.Wrap(err, "normalizing gcs path to modify ACL")
 	}
 	// logrun -s $GSUTIL acl ch -d AllUsers "$archive_bucket/$build_dir/${LOGFILE##*/}*" || true
-	if err := gcp.GSUtil("acl", "ch", "-d", "AllUsers", logsPath); err != nil {
+	if err := gcli.GSUtil("acl", "ch", "-d", "AllUsers", logsPath); err != nil {
 		return errors.Wrapf(err, "removing public access from files in %s", archiveBucketPath)
 	}
 	return nil
@@ -349,7 +349,7 @@ func (a *defaultArchiverImpl) CleanStagedBuilds(bucketPath, buildVersion string)
 	}
 
 	// Get all staged build that match the pattern
-	output, err := gcp.GSUtilOutput("ls", "-d", path)
+	output, err := gcli.GSUtilOutput("ls", "-d", path)
 	if err != nil {
 		return errors.Wrap(err, "listing bucket contents")
 	}

@@ -34,7 +34,7 @@ import (
 
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
-	"k8s.io/release/pkg/object"
+	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/http"
 )
 

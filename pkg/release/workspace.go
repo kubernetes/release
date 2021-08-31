@@ -29,8 +29,8 @@ import (
 	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/license"
-	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/spdx"
+	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/tar"
 	"sigs.k8s.io/release-utils/util"
 )

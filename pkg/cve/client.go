@@ -22,8 +22,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/release"
+	"sigs.k8s.io/release-sdk/object"
 )
 
 const (

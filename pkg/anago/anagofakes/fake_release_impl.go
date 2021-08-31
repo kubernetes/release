@@ -24,8 +24,8 @@ import (
 	"k8s.io/release/pkg/announce"
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/gcp/gcb"
-	"k8s.io/release/pkg/object"
 	"k8s.io/release/pkg/release"
+	"sigs.k8s.io/release-sdk/object"
 )
 
 type FakeReleaseImpl struct {
