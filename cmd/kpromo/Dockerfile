@@ -1,4 +1,4 @@
-# Copyright 2020 The Kubernetes Authors.
+# Copyright 2021 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@ FROM golang:${GO_VERSION}-${OS_CODENAME} as builder
 WORKDIR /go/src/k8s.io/release
 
 # Copy the sources
-ENV package="./cmd/vulndash"
+ENV package="./cmd/kpromo"
 COPY ../../go.mod ../../go.sum ./
 COPY ../../pkg ./pkg/
-COPY ../../cmd/vulndash ${package}/
+COPY ../../cmd/kpromo ${package}/
 
 RUN go mod download
 
@@ -37,15 +37,15 @@ ENV GOOS=linux
 ENV GOARCH=${ARCH}
 
 RUN go build -trimpath -ldflags '-s -w -buildid= -extldflags "-static"' \
-    -o vulndash ${package}
+    -o kpromo ${package}
 
 # Production image
 FROM gcr.io/distroless/${DISTROLESS_IMAGE}:latest
 
 LABEL maintainers="Kubernetes Authors"
-LABEL description="A vulnerability dashboard for GCR container images"
+LABEL description="kpromo: The Kubernetes project artifact promoter"
 
 WORKDIR /
-COPY --from=builder /go/src/k8s.io/release/vulndash .
+COPY --from=builder /go/src/k8s.io/release/kpromo .
 
-ENTRYPOINT ["/vulndash"]
+ENTRYPOINT ["/kpromo"]

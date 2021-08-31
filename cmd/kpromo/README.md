@@ -111,4 +111,4 @@ Global Flags:
 
 - [`kOps`][kops-release-process]
 
-[kops-release-process]: https://kops.sigs.k8s.io/development/release/
+[kops-release-process]: https://kops.sigs.k8s.io/contributing/release-process/
