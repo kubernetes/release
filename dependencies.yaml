@@ -66,10 +66,6 @@ dependencies:
       match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bullseye|buster) AS builder
     - path: Dockerfile-kubepkg-rpm
       match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bullseye|buster) AS builder
-    - path: cmd/kpromo/Makefile
-      match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
-    - path: cmd/kpromo/variants.yaml
-      match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
     - path: cmd/vulndash/Makefile
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
     - path: cmd/vulndash/variants.yaml
@@ -160,14 +156,6 @@ dependencies:
     refPaths:
     - path: images/releng/ci/variants.yaml
       match: REVISION:\ '\d+'
-
-  - name: "k8s.gcr.io/artifact-promoter/kpromo"
-    version: v0.1.0-1
-    refPaths:
-    - path: cmd/kpromo/Makefile
-      match: IMAGE_VERSION\ \?=\ v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-([0-9]+)
-    - path: cmd/kpromo/variants.yaml
-      match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-([0-9]+)
 
   - name: "k8s.gcr.io/artifact-promoter/vulndash"
     version: v0.4.3-8
@@ -367,11 +355,6 @@ dependencies:
   - name: "Debian: codename (default)"
     version: buster
     refPaths:
-    # Must match distroless Debian version as well
-    - path: cmd/kpromo/Makefile
-      match: OS_CODENAME\ \?=\ (bullseye|buster)
-    - path: cmd/kpromo/variants.yaml
-      match: "OS_CODENAME: '(bullseye|buster)'"
     # Must match distroless Debian version as well
     - path: cmd/vulndash/Makefile
       match: OS_CODENAME\ \?=\ (bullseye|buster)

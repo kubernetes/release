@@ -19,9 +19,7 @@ set -u
 set -o pipefail
 
 RELEASE_TOOLS=(
-  cip-mm
   gh2gcs
-  kpromo
   krel
   kubepkg
   schedule-builder

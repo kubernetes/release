@@ -22,7 +22,6 @@ Individual tools can be installed via `go install k8s.io/release/cmd/$TOOL@lates
   - [`kubepkg`](#kubepkg)
   - [`cip-mm`](#cip-mm)
   - [`gh2gcs`](#gh2gcs)
-  - [`vulndash`](#vulndash)
 - [End User](#end-user)
   - [`bom`](#bom)
   - [`release-notes`](#release-notes)
@@ -32,7 +31,7 @@ Individual tools can be installed via `go install k8s.io/release/cmd/$TOOL@lates
   - [`push-build.sh`](#push-buildsh)
 - [Contributing](#contributing)
 
-**Each of the headings below links to a tool's location in the repository.**
+**Each of the headings below links to a tool's location.**
 
 ## Release Management
 
@@ -58,7 +57,7 @@ Details: [Documentation](/cmd/schedule-builder/README.md)
 
 ## Artifact Management
 
-### [`kpromo`](/cmd/kpromo)
+### [`kpromo`](https://sigs.k8s.io/k8s-container-image-promoter/cmd/kpromo)
 
 **K**ubernetes artifact **promo**tion tooling: tooling for promoting artifacts
 
@@ -67,7 +66,7 @@ Status: In Progress
 Audience: [Release Managers][release-managers] and subproject maintainers
 responsible for promoting file or container artifacts
 
-Details: [Documentation](/cmd/kpromo/README.md)
+Details: [Documentation](https://sigs.k8s.io/k8s-container-image-promoter/cmd/kpromo/README.md)
 
 ### [`kubepkg`](/cmd/kubepkg)
 
@@ -79,13 +78,13 @@ Audience: [Release Managers][release-managers]
 
 Details: [Documentation](/cmd/kubepkg/README.md)
 
-### [`cip-mm`](/cmd/cip-mm)
+### [`cip-mm`](https://sigs.k8s.io/k8s-container-image-promoter/cmd/cip-mm)
 
 Modify container image manifests for promotion.
 
 Status: In Progress
 
-Details: [Documentation](/cmd/cip-mm/README.md)
+Details: [Documentation](https://sigs.k8s.io/k8s-container-image-promoter/cmd/cip-mm/README.md)
 
 ### [`gh2gcs`](/cmd/gh2gcs)
 
@@ -97,16 +96,6 @@ Audience: [Release Managers][release-managers] and subproject maintainers
 responsible for promoting container artifacts
 
 Details: [Documentation](/cmd/gh2gcs/README.md)
-
-### [`vulndash`](/cmd/vulndash)
-
-Generate a dashboard of container image vulnerabilities.
-
-Status: In Progress
-
-Audience: [Release Managers][release-managers]
-
-Details: [Documentation](/docs/vuln-dashboard.md)
 
 ## End User
 
