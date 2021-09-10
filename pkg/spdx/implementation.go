@@ -565,8 +565,8 @@ func (di *spdxDefaultImplementation) ImageRefToPackage(ref string, opts *Options
 			FullRender: true,
 			Comment:    "Container image lager",
 		})
-		pkg.AddRelationship(&Relationship{
-			Peer:    subpkg,
+		subpkg.AddRelationship(&Relationship{
+			Peer:    pkg,
 			Type:    VARIANT_OF,
 			Comment: "Image index",
 		})
