@@ -1,4 +1,0 @@
-filestores:
-- base: gs://src
-  src: true
-- base: gs://dest
