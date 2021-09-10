@@ -15,11 +15,3 @@ variants:
     REVISION: '0'
     GO_VERSION: '1.16.8'
     DISTROLESS_IMAGE: 'static-debian10'
-  go1.15-buster:
-    CONFIG: 'go1.15-buster'
-    IMAGE_VERSION: 'v2.3.1-go1.15.15-buster.0'
-    GO_MAJOR_VERSION: '1.15'
-    OS_CODENAME: 'buster'
-    REVISION: '0'
-    GO_VERSION: '1.15.15'
-    DISTROLESS_IMAGE: 'static-debian10'
