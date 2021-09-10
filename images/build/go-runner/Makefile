@@ -21,7 +21,7 @@ GO_MAJOR_VERSION ?= 1.17
 REVISION ?= 0
 
 # Build args
-GO_VERSION ?= 1.17
+GO_VERSION ?= 1.17.1
 OS_CODENAME ?= buster
 DISTROLESS_IMAGE ?= static-debian10
 

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.17-buster
+FROM golang:1.17.1-buster
 
 RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get update -y \
