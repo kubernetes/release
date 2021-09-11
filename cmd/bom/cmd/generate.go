@@ -75,6 +75,7 @@ type generateOptions struct {
 	namespace      string
 	outputFile     string
 	configFile     string
+	license        string
 	images         []string
 	tarballs       []string
 	files          []string
@@ -156,6 +157,14 @@ func init() {
 		"list of regexp patterns to ignore when scanning directories",
 	)
 
+	generateCmd.PersistentFlags().StringVarP(
+		&genOpts.license,
+		"license",
+		"l",
+		"",
+		"SPDX license identifier to declare in the SBOM",
+	)
+
 	generateCmd.PersistentFlags().BoolVar(
 		&genOpts.noGitignore,
 		"no-gitignore",
@@ -228,6 +237,7 @@ func generateBOM(opts *generateOptions) error {
 		ProcessGoModules: !opts.noGoModules,
 		OnlyDirectDeps:   !opts.noGoTransient,
 		ConfigFile:       opts.configFile,
+		License:          opts.license,
 	}
 
 	// We only replace the ignore patterns one or more where defined
