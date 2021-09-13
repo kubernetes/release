@@ -24,8 +24,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/release/pkg/anago"
-	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/release"
+	"sigs.k8s.io/release-sdk/github"
 )
 
 // stageCmd represents the subcommand for `krel stage`

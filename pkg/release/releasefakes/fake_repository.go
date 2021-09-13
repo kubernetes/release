@@ -20,8 +20,8 @@ package releasefakes
 import (
 	"sync"
 
-	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
+	"sigs.k8s.io/release-sdk/git"
 )
 
 type FakeRepository struct {

@@ -30,7 +30,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/git"
+	"sigs.k8s.io/release-sdk/git"
 )
 
 func TestGetToolRefSuccess(t *testing.T) {

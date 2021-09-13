@@ -23,7 +23,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"k8s.io/release/pkg/git"
+	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/command"
 )
 

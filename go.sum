@@ -1584,8 +1584,9 @@ sigs.k8s.io/k8s-container-image-promoter v1.339.0 h1:7GHS6BjS3+BhwgUF0lJVCx4gh4s
 sigs.k8s.io/k8s-container-image-promoter v1.339.0/go.mod h1:xOKpNZcaBOs6mImuFMUN4L+12izUeqIdelvgHV2u1tM=
 sigs.k8s.io/mdtoc v1.0.1 h1:6ECKhQnbetwZBR6R2IeT2LH+1w+2Zsip0iXjikgaXIk=
 sigs.k8s.io/mdtoc v1.0.1/go.mod h1:COYBtOjsaCg7o7SC4eaLwEXPuVRSuiVuLLRrHd7kShw=
-sigs.k8s.io/release-sdk v0.1.0 h1:gesMqsV1W1r0PS9dbxeX0nuW45ZoRsIzILA23+WFjYU=
 sigs.k8s.io/release-sdk v0.1.0/go.mod h1:XhDgjf0bu2Vuyosp0Cc/mc3UUJiWS171S7WsNxA9iY0=
+sigs.k8s.io/release-sdk v0.2.0 h1:DVTHyvEoim//zhckxQJBwofDcyHJIsxeo/WdPMm48Ow=
+sigs.k8s.io/release-sdk v0.2.0/go.mod h1:zwNNQSkw9En31gqn2aRdCi0qxodxEaTgonDCINsdyoA=
 sigs.k8s.io/release-utils v0.2.0/go.mod h1:9O5livl2h3Q56jUkoZ7UnV22XVRB6MuD4l/51C2vAPg=
 sigs.k8s.io/release-utils v0.3.0 h1:cyNeXvm+2lPn67f4MWmq9xapZDAI5hekpT7iQPRxta4=
 sigs.k8s.io/release-utils v0.3.0/go.mod h1:J9xpziRNRI4mAeMZxPRryDodQMoMudMu6yC1aViFHU4=

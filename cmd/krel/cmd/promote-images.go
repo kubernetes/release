@@ -27,10 +27,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/release"
 	reg "sigs.k8s.io/k8s-container-image-promoter/legacy/dockerregistry"
+	"sigs.k8s.io/release-sdk/git"
+	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-utils/util"
 )
 

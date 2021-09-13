@@ -32,8 +32,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/github"
+	"sigs.k8s.io/release-sdk/git"
+	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/http"
 )

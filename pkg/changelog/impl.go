@@ -31,11 +31,11 @@ import (
 	"sigs.k8s.io/mdtoc/pkg/mdtoc"
 
 	"k8s.io/release/pkg/cve"
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
+	"sigs.k8s.io/release-sdk/git"
+	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/http"
 	"sigs.k8s.io/release-utils/util"

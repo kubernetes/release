@@ -19,7 +19,6 @@ set -u
 set -o pipefail
 
 RELEASE_TOOLS=(
-  gh2gcs
   krel
   kubepkg
   schedule-builder

@@ -24,8 +24,8 @@ import (
 
 	"k8s.io/release/pkg/anago"
 	"k8s.io/release/pkg/anago/anagofakes"
-	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
+	"sigs.k8s.io/release-sdk/git"
 )
 
 var err = errors.New("error")
