@@ -86,7 +86,7 @@ Status: In Progress
 
 Details: [Documentation](https://sigs.k8s.io/k8s-container-image-promoter/cmd/cip-mm/README.md)
 
-### [`gh2gcs`](/cmd/gh2gcs)
+### [`gh2gcs`](https://sigs.k8s.io/k8s-container-image-promoter/cmd/gh2gcs)
 
 Upload GitHub release assets to Google Cloud Storage.
 
@@ -95,7 +95,7 @@ Status: In Progress
 Audience: [Release Managers][release-managers] and subproject maintainers
 responsible for promoting container artifacts
 
-Details: [Documentation](/cmd/gh2gcs/README.md)
+Details: [Documentation](https://sigs.k8s.io/k8s-container-image-promoter/cmd/gh2gcs/README.md)
 
 ## End User
 
