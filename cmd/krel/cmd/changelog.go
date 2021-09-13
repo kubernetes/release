@@ -25,7 +25,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/release/pkg/changelog"
-	"k8s.io/release/pkg/github"
+	"sigs.k8s.io/release-sdk/github"
 )
 
 // changelogCmd represents the subcommand for `krel changelog`

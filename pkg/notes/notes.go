@@ -36,8 +36,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
-	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/notes/options"
+	"sigs.k8s.io/release-sdk/github"
 )
 
 var (

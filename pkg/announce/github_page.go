@@ -27,8 +27,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/github"
+	"sigs.k8s.io/release-sdk/git"
+	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-utils/hash"
 	"sigs.k8s.io/release-utils/util"
 )

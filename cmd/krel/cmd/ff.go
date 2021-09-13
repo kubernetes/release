@@ -24,7 +24,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/release/pkg/fastforward"
-	kgit "k8s.io/release/pkg/git"
+	kgit "sigs.k8s.io/release-sdk/git"
 )
 
 var ffOpts = &fastforward.Options{}

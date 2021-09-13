@@ -31,10 +31,10 @@ import (
 
 	"k8s.io/release/pkg/gcp/auth"
 	"k8s.io/release/pkg/gcp/build"
-	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/kubecross"
 	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-sdk/gcli"
+	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/util"
 )
 

@@ -25,11 +25,11 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/yuin/goldmark/parser"
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
+	"sigs.k8s.io/release-sdk/git"
+	"sigs.k8s.io/release-sdk/github"
 )
 
 type FakeImpl struct {

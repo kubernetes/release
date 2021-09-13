@@ -34,11 +34,11 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
-	"k8s.io/release/pkg/git"
-	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
+	"sigs.k8s.io/release-sdk/git"
+	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/editor"
 	"sigs.k8s.io/release-utils/util"

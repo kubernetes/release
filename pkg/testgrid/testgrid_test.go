@@ -24,9 +24,9 @@ import (
 	"github.com/golang/protobuf/proto" // nolint: staticcheck
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/testgrid"
 	"k8s.io/release/pkg/testgrid/testgridfakes"
+	"sigs.k8s.io/release-sdk/git"
 )
 
 func newSut() (*testgrid.TestGrid, *testgridfakes.FakeClient) {

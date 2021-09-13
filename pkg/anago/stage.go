@@ -29,9 +29,9 @@ import (
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/changelog"
 	"k8s.io/release/pkg/gcp/gcb"
-	"k8s.io/release/pkg/git"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/spdx"
+	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/log"
 )
 

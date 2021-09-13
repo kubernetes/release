@@ -29,9 +29,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/github"
 	"k8s.io/release/pkg/kubepkg/options"
 	"k8s.io/release/pkg/release"
+	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/util"
 )
