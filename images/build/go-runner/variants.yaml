@@ -1,4 +1,12 @@
 variants:
+  go1.17-bullseye:
+    CONFIG: 'go1.17-bullseye'
+    IMAGE_VERSION: 'v2.3.1-go1.17.1-bullseye.0'
+    GO_MAJOR_VERSION: '1.17'
+    OS_CODENAME: 'bullseye'
+    REVISION: '0'
+    GO_VERSION: '1.17.1'
+    DISTROLESS_IMAGE: 'static-debian11'
   go1.17-buster:
     CONFIG: 'go1.17-buster'
     IMAGE_VERSION: 'v2.3.1-go1.17.1-buster.0'
