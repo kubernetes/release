@@ -57,7 +57,7 @@ Details: [Documentation](/cmd/schedule-builder/README.md)
 
 ## Artifact Management
 
-### [`kpromo`](https://sigs.k8s.io/k8s-container-image-promoter/cmd/kpromo)
+### [`kpromo`](https://sigs.k8s.io/promo-tools/cmd/kpromo)
 
 **K**ubernetes artifact **promo**tion tooling: tooling for promoting artifacts
 
@@ -66,7 +66,7 @@ Status: In Progress
 Audience: [Release Managers][release-managers] and subproject maintainers
 responsible for promoting file or container artifacts
 
-Details: [Documentation](https://sigs.k8s.io/k8s-container-image-promoter/cmd/kpromo/README.md)
+Details: [Documentation](https://sigs.k8s.io/promo-tools/cmd/kpromo/README.md)
 
 ### [`kubepkg`](/cmd/kubepkg)
 
@@ -78,15 +78,15 @@ Audience: [Release Managers][release-managers]
 
 Details: [Documentation](/cmd/kubepkg/README.md)
 
-### [`cip-mm`](https://sigs.k8s.io/k8s-container-image-promoter/cmd/cip-mm)
+### [`cip-mm`](https://sigs.k8s.io/promo-tools/cmd/cip-mm)
 
 Modify container image manifests for promotion.
 
 Status: In Progress
 
-Details: [Documentation](https://sigs.k8s.io/k8s-container-image-promoter/cmd/cip-mm/README.md)
+Details: [Documentation](https://sigs.k8s.io/promo-tools/cmd/cip-mm/README.md)
 
-### [`gh2gcs`](https://sigs.k8s.io/k8s-container-image-promoter/cmd/gh2gcs)
+### [`gh2gcs`](https://sigs.k8s.io/promo-tools/cmd/gh2gcs)
 
 Upload GitHub release assets to Google Cloud Storage.
 
@@ -95,7 +95,7 @@ Status: In Progress
 Audience: [Release Managers][release-managers] and subproject maintainers
 responsible for promoting container artifacts
 
-Details: [Documentation](https://sigs.k8s.io/k8s-container-image-promoter/cmd/gh2gcs/README.md)
+Details: [Documentation](https://sigs.k8s.io/promo-tools/cmd/gh2gcs/README.md)
 
 ## End User
 
