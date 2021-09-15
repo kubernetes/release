@@ -1,5 +1,5 @@
 variants:
-  go1.17-buster:
+  v1.23-go1.17-buster:
     CONFIG: 'go1.17-buster'
     TYPE: 'default'
     IMAGE_VERSION: 'v1.23.0-go1.17.1-buster.0'
@@ -9,11 +9,21 @@ variants:
     OS_CODENAME: 'buster'
     REVISION: '0'
     PROTOBUF_VERSION: '3.7.0'
-  go1.16-buster:
+  v1.22-go1.16-buster:
     CONFIG: 'go1.16-buster'
     TYPE: 'default'
     IMAGE_VERSION: 'v1.22.0-go1.16.8-buster.0'
     KUBERNETES_VERSION: 'v1.22.0'
+    GO_VERSION: '1.16.8'
+    GO_MAJOR_VERSION: '1.16'
+    OS_CODENAME: 'buster'
+    REVISION: '0'
+    PROTOBUF_VERSION: '3.7.0'
+  v1.21-go1.16-buster:
+    CONFIG: 'go1.16-buster'
+    TYPE: 'default'
+    IMAGE_VERSION: 'v1.21.0-go1.16.8-buster.0'
+    KUBERNETES_VERSION: 'v1.21.0'
     GO_VERSION: '1.16.8'
     GO_MAJOR_VERSION: '1.16'
     OS_CODENAME: 'buster'
