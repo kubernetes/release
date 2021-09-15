@@ -10,7 +10,7 @@ options:
   machineType: 'N1_HIGHCPU_8'
 
 steps:
-  - name: 'gcr.io/projectsigstore/cosign:v1.1.0@sha256:47bdf660ceadb5065aa05af62fd24b184db0fdcb34d5892247035dd0dd2d5c3f'
+  - name: 'gcr.io/projectsigstore/cosign:v1.2.0@sha256:96ef6fb02c5a56901dc3c2e0ca34eec9ed926ab8d936ea30ec38f9ec9db017a5'
     dir: ./images/build/go-runner
     args:
     - 'verify'
