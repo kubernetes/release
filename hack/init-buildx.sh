@@ -60,9 +60,9 @@ fi
 
 # Ensure qemu is in binfmt_misc
 # NOTE: Please always pin this to a digest for predictability/auditability
-# Last updated: 08/21/2020
+# Last updated: 09/18/2021
 if [ "$(uname)" == 'Linux' ]; then
-  docker run --rm --privileged multiarch/qemu-user-static@sha256:c772ee1965aa0be9915ee1b018a0dd92ea361b4fa1bcab5bbc033517749b2af4 --reset -p yes
+  docker run --rm --privileged multiarch/qemu-user-static:5.2.0-2@sha256:14ef836763dd8a1d69927699811f89338b129faa3bd9eb52cd696bc3d84aa81a --reset -p yes
 fi
 
 # Ensure we use a builder that can leverage it (the default on linux will not)
