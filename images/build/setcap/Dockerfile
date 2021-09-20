@@ -16,5 +16,9 @@ ARG BASEIMAGE
 
 FROM ${BASEIMAGE}
 
+ARG BASEIMAGE
+
 RUN apt-get update \
+    && CODENAME=$(. /etc/os-release; echo $VERSION_CODENAME) && \
+    if [ "bullseye" = "$CODENAME" ]; then apt-get -y --allow-change-held-packages install libcap2; fi \
     && apt-get -y --no-install-recommends install libcap2-bin

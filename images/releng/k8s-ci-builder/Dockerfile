@@ -75,9 +75,9 @@ RUN echo "Installing Packages ..." \
             mercurial \
             pkg-config \
             procps \
-            python \
-            python-dev \
-            python-pip \
+            python3 \
+            python3-dev \
+            python3-pip \
             rsync \
             software-properties-common \
             unzip \
