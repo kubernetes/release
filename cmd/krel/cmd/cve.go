@@ -100,7 +100,7 @@ func init() {
 		"file",
 		"f",
 		[]string{},
-		"version tag for the notes",
+		"update vulnerability data from a local map file",
 	)
 
 	cveCmd.AddCommand(cveEditCmd, cveDeleteCmd)
