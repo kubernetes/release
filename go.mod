@@ -32,8 +32,8 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/yuin/goldmark v1.4.1
 	golang.org/x/mod v0.5.0
-	golang.org/x/net v0.0.0-20210525063256-abc453219eb5
-	golang.org/x/tools v0.1.5
+	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d
+	golang.org/x/tools v0.1.6
 	google.golang.org/api v0.56.0
 	google.golang.org/genproto v0.0.0-20210828152312-66f60bf46e71
 	gopkg.in/yaml.v2 v2.4.0
