@@ -41,7 +41,7 @@ require (
 	sigs.k8s.io/promo-tools/v3 v3.2.1
 	sigs.k8s.io/release-sdk v0.2.0
 	sigs.k8s.io/release-utils v0.3.0
-	sigs.k8s.io/yaml v1.2.0
+	sigs.k8s.io/yaml v1.3.0
 	sigs.k8s.io/zeitgeist v0.3.0
 )
 
