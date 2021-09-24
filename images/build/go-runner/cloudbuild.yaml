@@ -18,7 +18,7 @@ steps:
     - 'distroless-cosign.pub' # From https://github.com/GoogleContainerTools/distroless/blob/main/cosign.pub
     - 'gcr.io/distroless/$_DISTROLESS_IMAGE'
 
-  - name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v20210722-085d930'
+  - name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v20210917-12df099d55'
     entrypoint: 'bash'
     dir: ./images/build/go-runner
     env:
