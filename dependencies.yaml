@@ -464,20 +464,20 @@ dependencies:
       match: "IMAGE_VERSION: '(bullseye|buster)-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
 # Build environments
-  - name: "gcr.io/k8s-testimages/gcb-docker-gcloud"
-    version: v20210722-085d930
+  - name: "gcr.io/k8s-staging-test-infra/gcb-docker-gcloud"
+    version: v20210917-12df099d55
     refPaths:
     - path: cmd/vulndash/cloudbuild.yaml
-      match: "name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{7}'"
+      match: "name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{10}'"
     - path: images/build/cross/cloudbuild.yaml
-      match: "name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{7}'"
+      match: "name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{10}'"
     - path: images/build/debian-base/cloudbuild.yaml
-      match: "name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{7}'"
+      match: "name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{10}'"
     - path: images/build/debian-iptables/cloudbuild.yaml
-      match: "name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{7}'"
+      match: "name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{10}'"
     - path: images/build/go-runner/cloudbuild.yaml
-      match: "name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{7}'"
+      match: "name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{10}'"
     - path: images/build/setcap/cloudbuild.yaml
-      match: "name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{7}'"
+      match: "name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{10}'"
     - path: images/releng/k8s-ci-builder/cloudbuild.yaml
-      match: "name: 'gcr.io/k8s-testimages/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{7}'"
+      match: "name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{10}'"
