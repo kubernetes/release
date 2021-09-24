@@ -15,7 +15,7 @@
 EXTRA_ARG =
 
 push-prod:
-	bazel run //images/builder -- $(EXTRA_ARG) --project=k8s-testimages --scratch-bucket=gs://k8s-testimages-scratch images/builder
+	bazel run //images/builder -- $(EXTRA_ARG) --project=k8s-staging-test-infra --scratch-bucket=gs://k8s-staging-test-infra-gcb images/builder
 
 push:
 	bazel run //images/builder -- $(EXTRA_ARG) --allow-dirty images/builder
