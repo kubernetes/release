@@ -56,7 +56,8 @@ RUN apt-get -q update \
         jq \
         patch \
         rsync \
-        unzip
+        unzip \
+        iproute2
 
 # Use dynamic cgo linking for architectures other than amd64 for the server platforms
 # To install crossbuild essential for other architectures add the following repository.
@@ -102,8 +103,8 @@ RUN mkdir $TMPDIR \
   && chmod o+t $TMPDIR
 
 # Get the code coverage tool and goimports
-RUN go get golang.org/x/tools/cmd/cover \
-           golang.org/x/tools/cmd/goimports \
+RUN for i in {1..5}; do GOPROXY="direct" go install golang.org/x/tools/cmd/cover@latest && break || sleep 15; done  \
+    && for i in {1..5}; do GOPROXY="direct" go install golang.org/x/tools/cmd/goimports@latest && break || sleep 15; done  \
     && go clean -cache
 
 # Cleanup a bit
