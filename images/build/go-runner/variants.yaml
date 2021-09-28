@@ -4,7 +4,7 @@ variants:
     IMAGE_VERSION: 'v2.3.1-go1.17.1-bullseye.0'
     GO_MAJOR_VERSION: '1.17'
     OS_CODENAME: 'bullseye'
-    REVISION: '0'
+    REVISION: '1'
     GO_VERSION: '1.17.1'
     DISTROLESS_IMAGE: 'static-debian11'
   go1.17-buster:
@@ -12,7 +12,7 @@ variants:
     IMAGE_VERSION: 'v2.3.1-go1.17.1-buster.0'
     GO_MAJOR_VERSION: '1.17'
     OS_CODENAME: 'buster'
-    REVISION: '0'
+    REVISION: '1'
     GO_VERSION: '1.17.1'
     DISTROLESS_IMAGE: 'static-debian10'
   go1.16-buster:
@@ -20,6 +20,6 @@ variants:
     IMAGE_VERSION: 'v2.3.1-go1.16.8-buster.0'
     GO_MAJOR_VERSION: '1.16'
     OS_CODENAME: 'buster'
-    REVISION: '0'
+    REVISION: '1'
     GO_VERSION: '1.16.8'
     DISTROLESS_IMAGE: 'static-debian10'
