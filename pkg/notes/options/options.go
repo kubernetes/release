@@ -105,8 +105,8 @@ type Options struct {
 	// log level
 	Debug bool
 
-	// EXPERIMENTAL: Feature flag for using v2 implementation to list commits
-	ListReleaseNotesV2 bool
+	// Feature flag for using v1 implementation to list commits
+	ListReleaseNotesV1 bool
 
 	// RecordDir specifies the directory for API call recordings. Cannot be
 	// used together with ReplayDir.
