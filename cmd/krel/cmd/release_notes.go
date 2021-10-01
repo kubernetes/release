@@ -126,7 +126,7 @@ type releaseNotesOptions struct {
 	createDraftPR      bool
 	createWebsitePR    bool
 	fixNotes           bool
-	listReleaseNotesV2 bool
+	listReleaseNotesV1 bool
 	websiteRepo        string
 	mapProviders       []string
 	githubOrg          string
@@ -206,10 +206,10 @@ func init() {
 	)
 
 	releaseNotesCmd.PersistentFlags().BoolVar(
-		&releaseNotesOpts.listReleaseNotesV2,
-		"list-v2",
-		true,
-		"enable experimental implementation to list commits (ListReleaseNotesV2)",
+		&releaseNotesOpts.listReleaseNotesV1,
+		"list-v1",
+		false,
+		"enable previous implementation to list commits",
 	)
 
 	releaseNotesCmd.PersistentFlags().BoolVar(
@@ -966,7 +966,7 @@ func gatherNotesFrom(repoPath, startTag string) (*notes.ReleaseNotes, error) {
 	notesOptions.EndRev = releaseNotesOpts.tag
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
 	notesOptions.MapProviderStrings = releaseNotesOpts.mapProviders
-	notesOptions.ListReleaseNotesV2 = releaseNotesOpts.listReleaseNotesV2
+	notesOptions.ListReleaseNotesV1 = releaseNotesOpts.listReleaseNotesV1
 
 	if err := notesOptions.ValidateAndFinish(); err != nil {
 		return nil, err

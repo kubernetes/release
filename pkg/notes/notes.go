@@ -238,11 +238,11 @@ func GatherReleaseNotes(opts *options.Options) (*ReleaseNotes, error) {
 
 	var releaseNotes *ReleaseNotes
 	startTime := time.Now()
-	if gatherer.options.ListReleaseNotesV2 {
-		logrus.Warn("EXPERIMENTAL IMPLEMENTATION ListReleaseNotesV2 ENABLED")
-		releaseNotes, err = gatherer.ListReleaseNotesV2()
-	} else {
+	if gatherer.options.ListReleaseNotesV1 {
+		logrus.Warn("Previous implementation of listing commits ENABLED")
 		releaseNotes, err = gatherer.ListReleaseNotes()
+	} else {
+		releaseNotes, err = gatherer.ListReleaseNotesV2()
 	}
 	if err != nil {
 		return nil, errors.Wrapf(err, "listing release notes")
