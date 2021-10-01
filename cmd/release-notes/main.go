@@ -260,7 +260,7 @@ func init() {
 	cmd.PersistentFlags().BoolVar(
 		&opts.ListReleaseNotesV2,
 		"list-v2",
-		false,
+		true,
 		"enable experimental implementation to list commits (ListReleaseNotesV2)",
 	)
 }

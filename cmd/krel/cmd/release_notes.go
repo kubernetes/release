@@ -208,7 +208,7 @@ func init() {
 	releaseNotesCmd.PersistentFlags().BoolVar(
 		&releaseNotesOpts.listReleaseNotesV2,
 		"list-v2",
-		false,
+		true,
 		"enable experimental implementation to list commits (ListReleaseNotesV2)",
 	)
 
