@@ -174,6 +174,8 @@ func TestNewMinorRelease(t *testing.T) {
 	require.Nil(t, s.repo.Checkout(releaseBranch))
 	changelogIter(func(filename string) {
 		require.Nil(t,
+			//nolint:gosec // TODO(gosec): G306: Expect WriteFile permissions
+			// to be 0600 or less
 			os.WriteFile(
 				filepath.Join(s.repo.Dir(), filename),
 				[]byte("Some content"),
