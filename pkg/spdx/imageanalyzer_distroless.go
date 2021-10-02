@@ -122,7 +122,11 @@ func (h *distrolessHandler) ReadPackageData(layerPath string, pkg *Package) erro
 			}
 			defer f.Close()
 
-			if _, err := io.Copy(f, tr); err != nil {
+			if _, err := io.CopyN(f, tr, 1024); err != nil {
+				if err == io.EOF {
+					break
+				}
+
 				return errors.Wrap(err, "extracting license data for "+subpkg.Name)
 			}
 
@@ -263,7 +267,11 @@ func (h *distrolessHandler) CanHandle(layerPath string) (can bool, err error) {
 
 		// Scan for the os-release file in the tarball
 		if hdr.Name == "./etc/os-release" {
-			if _, err = io.Copy(b, tr); err != nil {
+			if _, err = io.CopyN(b, tr, 1024); err != nil {
+				if err == io.EOF {
+					break
+				}
+
 				return can, errors.Wrap(err, "extracting os-release file")
 			}
 		}

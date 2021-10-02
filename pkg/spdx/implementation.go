@@ -111,7 +111,11 @@ func (di *spdxDefaultImplementation) ExtractTarballTmp(tarPath string) (tmpDir s
 		}
 		defer f.Close()
 
-		if _, err := io.Copy(f, tr); err != nil {
+		if _, err := io.CopyN(f, tr, 1024); err != nil {
+			if err == io.EOF {
+				break
+			}
+
 			return tmpDir, errors.Wrap(err, "extracting image data")
 		}
 		numFiles++
