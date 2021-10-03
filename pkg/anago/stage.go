@@ -745,33 +745,33 @@ func (d *DefaultStage) GenerateBillOfMaterials() error {
 }
 
 func (d *DefaultStage) StageArtifacts() error {
+	pushBuildOptions := &build.Options{
+		Bucket:                     d.options.Bucket(),
+		Registry:                   d.options.ContainerRegistry(),
+		AllowDup:                   true,
+		ValidateRemoteImageDigests: true,
+	}
+	if err := d.impl.CheckReleaseBucket(pushBuildOptions); err != nil {
+		return errors.Wrap(err, "check release bucket access")
+	}
+
+	// Stage the local source tree
+	if err := d.impl.StageLocalSourceTree(
+		pushBuildOptions,
+		workspaceDir,
+		d.options.BuildVersion,
+	); err != nil {
+		return errors.Wrap(err, "staging local source tree")
+	}
+
 	for _, version := range d.state.versions.Ordered() {
 		logrus.Infof("Staging artifacts for version %s", version)
 		buildDir := filepath.Join(
 			gitRoot, fmt.Sprintf("%s-%s", release.BuildDir, version),
 		)
-		bucket := d.options.Bucket()
-		containerRegistry := d.options.ContainerRegistry()
-		pushBuildOptions := &build.Options{
-			Bucket:                     bucket,
-			BuildDir:                   buildDir,
-			Registry:                   containerRegistry,
-			Version:                    version,
-			AllowDup:                   true,
-			ValidateRemoteImageDigests: true,
-		}
-		if err := d.impl.CheckReleaseBucket(pushBuildOptions); err != nil {
-			return errors.Wrap(err, "check release bucket access")
-		}
-
-		// Stage the local source tree
-		if err := d.impl.StageLocalSourceTree(
-			pushBuildOptions,
-			workspaceDir,
-			d.options.BuildVersion,
-		); err != nil {
-			return errors.Wrap(err, "staging local source tree")
-		}
+		// Set the version-specific option for the push
+		pushBuildOptions.Version = version
+		pushBuildOptions.BuildDir = buildDir
 
 		// Stage local artifacts and write checksums
 		if err := d.impl.StageLocalArtifacts(pushBuildOptions); err != nil {
@@ -803,11 +803,11 @@ func (d *DefaultStage) StageArtifacts() error {
 		if err := d.impl.PushContainerImages(pushBuildOptions); err != nil {
 			return errors.Wrap(err, "pushing container images")
 		}
+	}
 
-		// Delete the local tarball
-		if err := d.impl.DeleteLocalSourceTarball(pushBuildOptions, workspaceDir); err != nil {
-			return errors.Wrap(err, "delete source tarball")
-		}
+	// Delete the local source tarball
+	if err := d.impl.DeleteLocalSourceTarball(pushBuildOptions, workspaceDir); err != nil {
+		return errors.Wrap(err, "delete source tarball")
 	}
 
 	args := ""
