@@ -151,6 +151,7 @@ type stageImpl interface {
 	StageLocalSourceTree(
 		options *build.Options, workDir, buildVersion string,
 	) error
+	DeleteLocalSourceTarball(*build.Options, string) error
 	StageLocalArtifacts(options *build.Options) error
 	PushReleaseArtifacts(
 		options *build.Options, srcPath, gcsPath string,
@@ -253,6 +254,10 @@ func (d *defaultStageImpl) StageLocalSourceTree(
 	options *build.Options, workDir, buildVersion string,
 ) error {
 	return build.NewInstance(options).StageLocalSourceTree(workDir, buildVersion)
+}
+
+func (d *defaultStageImpl) DeleteLocalSourceTarball(options *build.Options, workDir string) error {
+	return build.NewInstance(options).DeleteLocalSourceTarball(workDir)
 }
 
 func (d *defaultStageImpl) StageLocalArtifacts(
@@ -797,6 +802,11 @@ func (d *DefaultStage) StageArtifacts() error {
 		// Push container images into registry
 		if err := d.impl.PushContainerImages(pushBuildOptions); err != nil {
 			return errors.Wrap(err, "pushing container images")
+		}
+
+		// Delete the local tarball
+		if err := d.impl.DeleteLocalSourceTarball(pushBuildOptions, workspaceDir); err != nil {
+			return errors.Wrap(err, "delete source tarball")
 		}
 	}
 

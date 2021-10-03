@@ -512,6 +512,12 @@ func TestStageArtifacts(t *testing.T) {
 			},
 			shouldError: true,
 		},
+		{ // DeleteLocalSourceTarball fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.DeleteLocalSourceTarballReturns(err)
+			},
+			shouldError: true,
+		},
 	} {
 		opts := anago.DefaultStageOptions()
 		sut := anago.NewDefaultStage(opts)

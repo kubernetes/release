@@ -513,6 +513,13 @@ func (bi *Instance) StageLocalSourceTree(workDir, buildVersion string) error {
 		return errors.Wrap(err, "copy tarball to GCS")
 	}
 
-	logrus.Infof("Removing local source tree tarball")
+	return nil
+}
+
+// DeleteLocalSourceTarball the deletion of the tarball is now decoupled from
+// StageLocalSourceTree to be able to use it during the anago.stage function
+func (bi *Instance) DeleteLocalSourceTarball(workDir string) error {
+	tarballPath := filepath.Join(workDir, release.SourcesTar)
+	logrus.Infof("Removing local source tree tarball " + tarballPath)
 	return errors.Wrap(os.RemoveAll(tarballPath), "remove local source tarball")
 }
