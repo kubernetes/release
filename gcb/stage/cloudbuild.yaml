@@ -49,6 +49,7 @@ steps:
   - "TOOL_ORG=${_TOOL_ORG}"
   - "TOOL_REPO=${_TOOL_REPO}"
   - "TOOL_REF=${_TOOL_REF}"
+  - "BUILD_ID=${BUILD_ID}"
   secretEnv:
   - GITHUB_TOKEN
   - DOCKERHUB_TOKEN
