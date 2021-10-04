@@ -518,6 +518,24 @@ func TestStageArtifacts(t *testing.T) {
 			},
 			shouldError: true,
 		},
+		{ // GenerateAttestation fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.GenerateAttestationReturns(nil, err)
+			},
+			shouldError: true,
+		},
+		{ // PushAttestation fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.PushAttestationReturns(err)
+			},
+			shouldError: true,
+		},
+		{ // Add AddProvenanceSubject fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.AddProvenanceSubjectReturns(err)
+			},
+			shouldError: true,
+		},
 	} {
 		opts := anago.DefaultStageOptions()
 		sut := anago.NewDefaultStage(opts)
