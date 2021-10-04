@@ -399,6 +399,18 @@ func (bi *Instance) PushReleaseArtifacts(srcPath, gcsPath string) error {
 
 	logrus.Infof("Pushing release artifacts from %s to %s", srcPath, dstPath)
 
+	finfo, err := os.Stat(srcPath)
+	if err != nil {
+		return errors.Wrap(err, "checking if source path is a directory")
+	}
+
+	// If we are handling a single file copy instead of rsync
+	if !finfo.IsDir() {
+		return errors.Wrap(
+			bi.objStore.CopyToRemote(srcPath, dstPath), "copying file to GCS",
+		)
+	}
+
 	return errors.Wrap(
 		bi.objStore.RsyncRecursive(srcPath, dstPath), "rsync artifacts to GCS",
 	)
