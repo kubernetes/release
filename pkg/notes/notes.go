@@ -477,8 +477,8 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result) (*ReleaseNote, error) {
 
 	// TODO: Spin this to sep function
 	indented := strings.ReplaceAll(text, "\n", "\n  ")
-	markdown := fmt.Sprintf("%s ([#%d](%s), [@%s](%s))",
-		indented, pr.GetNumber(), prURL, author, authorURL)
+	markdown := fmt.Sprintf("%s (#%d, @%s)",
+		indented, pr.GetNumber(), author)
 
 	if noteSuffix != "" {
 		markdown = fmt.Sprintf("%s [%s]", markdown, noteSuffix)
@@ -1057,8 +1057,8 @@ func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap) error {
 	// TODO: Spin this to sep function
 	if reRenderMarkdown {
 		indented := strings.ReplaceAll(rn.Text, "\n", "\n  ")
-		markdown := fmt.Sprintf("%s ([#%d](%s), [@%s](%s))",
-			indented, rn.PrNumber, rn.PrURL, rn.Author, rn.AuthorURL)
+		markdown := fmt.Sprintf("%s (#%d, @%s)",
+			indented, rn.PrNumber, rn.Author)
 		// Uppercase the first character of the markdown to make it look uniform
 		rn.Markdown = capitalizeString(markdown)
 	}

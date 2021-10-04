@@ -182,8 +182,8 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 
 	// TODO(wilsonehusin): extract / follow original in ReleasenoteFromCommit
 	indented := strings.ReplaceAll(text, "\n", "\n  ")
-	markdown := fmt.Sprintf("%s ([#%d](%s), [@%s](%s))",
-		indented, pr.GetNumber(), prURL, author, authorURL)
+	markdown := fmt.Sprintf("%s (#%d, @%s)",
+		indented, pr.GetNumber(), author)
 
 	if noteSuffix != "" {
 		markdown = fmt.Sprintf("%s [%s]", markdown, noteSuffix)
