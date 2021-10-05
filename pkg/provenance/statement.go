@@ -87,12 +87,19 @@ func (s *Statement) LoadPredicate(path string) error {
 	return nil
 }
 
+// ClonePredicate reads a provenance metadata file from `manifestPath` and
+// clones the predicate data to the current object.
+func (s *Statement) ClonePredicate(manifestPath string) error {
+	return s.impl.ClonePredicate(s, manifestPath)
+}
+
 //counterfeiter:generate . StatementImplementation
 type StatementImplementation interface {
 	AddSubject(*Statement, string, intoto.DigestSet)
 	ReadSubjectsFromDir(*Statement, string) error
 	SubjectFromFile(string) (intoto.Subject, error)
 	Write(*Statement, string) error
+	ClonePredicate(*Statement, string) error
 }
 
 type defaultStatementImplementation struct{}
@@ -169,4 +176,16 @@ func (si *defaultStatementImplementation) Write(s *Statement, path string) error
 		os.WriteFile(path, jsonData, os.FileMode(0o644)),
 		"writing predicate file",
 	)
+}
+
+// ClonePredicate clonea the predicate from the file in manifestPath
+// to Statement s
+func (si *defaultStatementImplementation) ClonePredicate(s *Statement, manifestPath string) error {
+	otherStatment, err := LoadStatement(manifestPath)
+	if err != nil {
+		return errors.Wrap(err, "loading other manifest to clone data")
+	}
+
+	s.Predicate = otherStatment.Predicate
+	return nil
 }

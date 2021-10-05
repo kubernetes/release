@@ -139,3 +139,9 @@ func TestWriteStatement(t *testing.T) {
 	require.Nil(t, err)
 	require.Greater(t, st.Size(), int64(0))
 }
+
+func TestClonePredicate(t *testing.T) {
+	s1 := NewSLSAStatement()
+	require.Nil(t, s1.ClonePredicate(testProvenanceFile1), "cloning predicate")
+	require.Equal(t, s1.Predicate.Builder.ID, "pkg:github/puerco/release@provenance")
+}
