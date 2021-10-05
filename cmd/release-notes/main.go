@@ -351,7 +351,11 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 		}
 
 		if releaseNotesOpts.tableOfContents {
-			toc, err := mdtoc.GenerateTOC([]byte(markdown))
+			toc, err := mdtoc.GenerateTOC([]byte(markdown), mdtoc.Options{
+				Dryrun:     false,
+				SkipPrefix: false,
+				MaxDepth:   mdtoc.MaxHeaderDepth,
+			})
 			if err != nil {
 				return errors.Wrap(err, "generating table of contents")
 			}

@@ -844,7 +844,7 @@ const minorReleaseExpectedTOC = `<!-- BEGIN MUNGE: GENERATED_TOC -->
     - [CSI Service Account Token](#csi-service-account-token)
     - [CSI Health Monitoring](#csi-health-monitoring)
   - [Known Issues](#known-issues)
-    - [<code>TopologyAwareHints</code> feature falls back to default behavior](#-feature-falls-back-to-default-behavior)
+    - [<code>TopologyAwareHints</code> feature falls back to default behavior](#topologyawarehints-feature-falls-back-to-default-behavior)
   - [Urgent Upgrade Notes](#urgent-upgrade-notes)
     - [(No, really, you MUST read this before you upgrade)](#no-really-you-must-read-this-before-you-upgrade)
   - [Changes by Kind](#changes-by-kind)

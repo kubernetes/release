@@ -37,7 +37,7 @@ require (
 	google.golang.org/api v0.56.0
 	google.golang.org/genproto v0.0.0-20210828152312-66f60bf46e71
 	gopkg.in/yaml.v2 v2.4.0
-	sigs.k8s.io/mdtoc v1.0.1
+	sigs.k8s.io/mdtoc v1.1.0
 	sigs.k8s.io/promo-tools/v3 v3.2.1
 	sigs.k8s.io/release-sdk v0.2.0
 	sigs.k8s.io/release-utils v0.3.0
@@ -71,7 +71,7 @@ require (
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/snappy v0.0.3 // indirect
-	github.com/gomarkdown/markdown v0.0.0-20200824053859-8c8b3816f167 // indirect
+	github.com/gomarkdown/markdown v0.0.0-20210514010506-3b9f47219fe7 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/go-github/v33 v33.0.0 // indirect
 	github.com/google/go-querystring v1.0.0 // indirect
