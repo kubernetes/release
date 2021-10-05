@@ -30,7 +30,7 @@ import (
 	"time"
 	"unicode"
 
-	gogithub "github.com/google/go-github/v37/github"
+	gogithub "github.com/google/go-github/v39/github"
 	"github.com/nozzle/throttler"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
