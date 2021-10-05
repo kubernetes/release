@@ -399,6 +399,18 @@ func (bi *Instance) PushReleaseArtifacts(srcPath, gcsPath string) error {
 
 	logrus.Infof("Pushing release artifacts from %s to %s", srcPath, dstPath)
 
+	finfo, err := os.Stat(srcPath)
+	if err != nil {
+		return errors.Wrap(err, "checking if source path is a directory")
+	}
+
+	// If we are handling a single file copy instead of rsync
+	if !finfo.IsDir() {
+		return errors.Wrap(
+			bi.objStore.CopyToRemote(srcPath, dstPath), "copying file to GCS",
+		)
+	}
+
 	return errors.Wrap(
 		bi.objStore.RsyncRecursive(srcPath, dstPath), "rsync artifacts to GCS",
 	)
@@ -513,6 +525,13 @@ func (bi *Instance) StageLocalSourceTree(workDir, buildVersion string) error {
 		return errors.Wrap(err, "copy tarball to GCS")
 	}
 
-	logrus.Infof("Removing local source tree tarball")
+	return nil
+}
+
+// DeleteLocalSourceTarball the deletion of the tarball is now decoupled from
+// StageLocalSourceTree to be able to use it during the anago.stage function
+func (bi *Instance) DeleteLocalSourceTarball(workDir string) error {
+	tarballPath := filepath.Join(workDir, release.SourcesTar)
+	logrus.Infof("Removing local source tree tarball " + tarballPath)
 	return errors.Wrap(os.RemoveAll(tarballPath), "remove local source tarball")
 }

@@ -18,6 +18,7 @@ package anago
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
@@ -151,13 +152,18 @@ type State struct {
 
 	// Indicates if we're going to create a new release branch.
 	createReleaseBranch bool
+
+	// startTime is the time when stage/release starts
+	startTime time.Time
 }
 
 // DefaultState returns a new empty State
 func DefaultState() *State {
 	// The default state is empty, it will be initialized after ValidateOptions()
-	// runs in Stage/Releas. It will change as the satege/release processes move forward
-	return &State{}
+	// runs in Stage/Release. It will change as the satege/release processes move forward
+	return &State{
+		startTime: time.Now(),
+	}
 }
 
 func (s *State) SetCreateReleaseBranch(createReleaseBranch bool) {

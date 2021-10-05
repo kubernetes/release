@@ -20,18 +20,23 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"time"
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/changelog"
 	"k8s.io/release/pkg/gcp/gcb"
+	"k8s.io/release/pkg/provenance"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/spdx"
 	"sigs.k8s.io/release-sdk/git"
+	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/log"
 )
 
@@ -151,6 +156,7 @@ type stageImpl interface {
 	StageLocalSourceTree(
 		options *build.Options, workDir, buildVersion string,
 	) error
+	DeleteLocalSourceTarball(*build.Options, string) error
 	StageLocalArtifacts(options *build.Options) error
 	PushReleaseArtifacts(
 		options *build.Options, srcPath, gcsPath string,
@@ -166,6 +172,9 @@ type stageImpl interface {
 	AddBinariesToSBOM(*spdx.Document, string) error
 	AddTarfilesToSBOM(*spdx.Document, string) error
 	VerifyArtifacts([]string) error
+	GenerateAttestation(*StageState, *StageOptions) (*provenance.Statement, error)
+	PushAttestation(*provenance.Statement, *StageOptions) error
+	AddProvenanceSubject(*provenance.Statement, string, bool) error
 }
 
 func (d *defaultStageImpl) Submit(options *gcb.Options) error {
@@ -253,6 +262,10 @@ func (d *defaultStageImpl) StageLocalSourceTree(
 	options *build.Options, workDir, buildVersion string,
 ) error {
 	return build.NewInstance(options).StageLocalSourceTree(workDir, buildVersion)
+}
+
+func (d *defaultStageImpl) DeleteLocalSourceTarball(options *build.Options, workDir string) error {
+	return build.NewInstance(options).DeleteLocalSourceTarball(workDir)
 }
 
 func (d *defaultStageImpl) StageLocalArtifacts(
@@ -740,40 +753,53 @@ func (d *DefaultStage) GenerateBillOfMaterials() error {
 }
 
 func (d *DefaultStage) StageArtifacts() error {
+	// Generat the intoto attestation, reloaded with the current run data
+	statement, err := d.impl.GenerateAttestation(d.state, d.options)
+	if err != nil {
+		return errors.Wrap(err, "generating the provenance attestation")
+	}
+	// Init a the push options we will use
+	pushBuildOptions := &build.Options{
+		Bucket:                     d.options.Bucket(),
+		Registry:                   d.options.ContainerRegistry(),
+		AllowDup:                   true,
+		ValidateRemoteImageDigests: true,
+	}
+	if err := d.impl.CheckReleaseBucket(pushBuildOptions); err != nil {
+		return errors.Wrap(err, "check release bucket access")
+	}
+
+	// Stage the local source tree
+	if err := d.impl.StageLocalSourceTree(
+		pushBuildOptions,
+		workspaceDir,
+		d.options.BuildVersion,
+	); err != nil {
+		return errors.Wrap(err, "staging local source tree")
+	}
+
+	// Add the sources tarball to the attestation
+	if err := d.impl.AddProvenanceSubject(
+		statement, filepath.Join(workspaceDir, release.SourcesTar), false,
+	); err != nil {
+		return errors.Wrap(err, "adding sources tarball to provenance attestation")
+	}
+
 	for _, version := range d.state.versions.Ordered() {
 		logrus.Infof("Staging artifacts for version %s", version)
 		buildDir := filepath.Join(
 			gitRoot, fmt.Sprintf("%s-%s", release.BuildDir, version),
 		)
-		bucket := d.options.Bucket()
-		containerRegistry := d.options.ContainerRegistry()
-		pushBuildOptions := &build.Options{
-			Bucket:                     bucket,
-			BuildDir:                   buildDir,
-			Registry:                   containerRegistry,
-			Version:                    version,
-			AllowDup:                   true,
-			ValidateRemoteImageDigests: true,
-		}
-		if err := d.impl.CheckReleaseBucket(pushBuildOptions); err != nil {
-			return errors.Wrap(err, "check release bucket access")
-		}
-
-		// Stage the local source tree
-		if err := d.impl.StageLocalSourceTree(
-			pushBuildOptions,
-			workspaceDir,
-			d.options.BuildVersion,
-		); err != nil {
-			return errors.Wrap(err, "staging local source tree")
-		}
+		// Set the version-specific option for the push
+		pushBuildOptions.Version = version
+		pushBuildOptions.BuildDir = buildDir
 
 		// Stage local artifacts and write checksums
 		if err := d.impl.StageLocalArtifacts(pushBuildOptions); err != nil {
 			return errors.Wrap(err, "staging local artifacts")
 		}
 		gcsPath := filepath.Join(
-			d.options.Bucket(), "stage", d.options.BuildVersion, version,
+			d.options.Bucket(), release.StagePath, d.options.BuildVersion, version,
 		)
 
 		// Push gcs-stage to GCS
@@ -798,6 +824,24 @@ func (d *DefaultStage) StageArtifacts() error {
 		if err := d.impl.PushContainerImages(pushBuildOptions); err != nil {
 			return errors.Wrap(err, "pushing container images")
 		}
+
+		// Add artifacts to the attestation, this should get both release-images
+		// and gcs-stage directories in one call.
+		if err := d.impl.AddProvenanceSubject(
+			statement, filepath.Join(buildDir), true,
+		); err != nil {
+			return errors.Wrapf(err, "adding provenance of release-images for version %s", version)
+		}
+	}
+
+	// Push the attestation metadata file to the bucket
+	if err := d.impl.PushAttestation(statement, d.options); err != nil {
+		return errors.Wrap(err, "writing provenance metadata to disk")
+	}
+
+	// Delete the local source tarball
+	if err := d.impl.DeleteLocalSourceTarball(pushBuildOptions, workspaceDir); err != nil {
+		return errors.Wrap(err, "delete source tarball")
 	}
 
 	args := ""
@@ -816,4 +860,143 @@ func (d *DefaultStage) StageArtifacts() error {
 		"To release this staged build, run:\n\n$ krel release%s", args,
 	)
 	return nil
+}
+
+// GenerateAttestation creates a provenance attestation with its predicate
+// preloaded with the current krel run information
+func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *StageOptions) (attestation *provenance.Statement, err error) {
+	// Build the arguments RawMessage:
+	arguments := map[string]string{
+		"--type=":          options.ReleaseType,
+		"--branch=":        options.ReleaseBranch,
+		"--build-version=": options.BuildVersion,
+	}
+	if options.NoMock {
+		arguments["--nomock"] = "true"
+	}
+
+	// Fetch the last commit:
+	repo, err := git.OpenRepo(gitRoot)
+	if err != nil {
+		return nil, errors.Wrap(err, "opening repository to check commit hash")
+	}
+	// TODO: When this PR merges and the commit is part of a release:
+	// https://github.com/kubernetes-sigs/release-sdk/pull/6
+	// and k/release is bumped, replace the commit logic with this line:
+	// commitSHA, err := repo.LastCommitSha()
+	logData, err := repo.ShowLastCommit()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting last commit data")
+	}
+	re := regexp.MustCompile(`commit\s+([a-f0-9]{40})`)
+	commitSHA := re.FindString(logData)
+	if commitSHA == "" {
+		return nil, errors.New("Unable to find last commit sha in git output")
+	}
+
+	// Create the predicate to populate it with the current
+	// run metadata:
+	p := provenance.NewSLSAPredicate()
+
+	// TODO: In regular runs, this will insert "master", we should
+	// record the git sha of the commit in k/release we are using.
+	p.Builder.ID = fmt.Sprintf(
+		"pkg:github/%s/%s@%s", os.Getenv("TOOL_ORG"),
+		os.Getenv("TOOL_REPO"), os.Getenv("TOOL_REF"),
+	)
+	// Some of these fields have yet to be checked to assign the
+	// correct values to them
+	// This is commented as the in-toto go port does not have it
+	// p.Metadata.BuildInvocationID: os.Getenv("BUILD_ID"),
+	p.Metadata.Completeness.Arguments = true // The arguments are complete as we know the from GCB
+	p.Metadata.Completeness.Materials = true // The materials are complete as we only use the github repo
+	startTime := state.startTime.UTC()
+	endTime := time.Now().UTC()
+	p.Metadata.BuildStartedOn = &startTime
+	p.Metadata.BuildFinishedOn = &endTime
+
+	p.Recipe.Type = "https://cloudbuild.googleapis.com/CloudBuildYaml@v1"
+	p.Recipe.EntryPoint = "https://github.com/kubernetes/release/blob/master/gcb/stage/cloudbuild.yaml"
+	p.Recipe.Arguments = arguments
+
+	p.AddMaterial("git+https://github.com/kubernetes/kubernetes", intoto.DigestSet{"sha1": commitSHA})
+
+	// Create the new attestation and attach the predicate
+	attestation = provenance.NewSLSAStatement()
+	attestation.Predicate = p
+
+	return attestation, nil
+}
+
+// PushAttestation writes the provenance metadata to the staging location in
+// the Google Cloud Bucket.
+func (d *defaultStageImpl) PushAttestation(attestation *provenance.Statement, options *StageOptions) (err error) {
+	gcsPath := filepath.Join(options.Bucket(), release.StagePath, options.BuildVersion)
+	// Clean up the subkects list to normalize and only keep the ones
+	// we are interested in:
+	newSubjects := []intoto.Subject{}
+	for _, sub := range attestation.Subject {
+		// The sources tar is special:
+		if sub.Name == filepath.Join(workspaceDir, release.SourcesTar) {
+			sub.Name = object.GcsPrefix + filepath.Join(gcsPath, release.SourcesTar)
+			newSubjects = append(newSubjects, sub)
+			continue
+		}
+
+		// If the artifact is not in the images or gcs-stage dir, skip
+		if !strings.HasPrefix(sub.Name, release.ImagesPath) &&
+			!strings.HasPrefix(sub.Name, release.GCSStagePath) {
+			continue
+		}
+
+		// Now the tricky part. We need to re-append the version tag, ie
+		// gcs-stage/v1.23.0-alpha.4/file.txt shoud be
+		// v1.23.0-alpha.4/gcs-stage/v1.23.0-alpha.4/file.txt shoud be
+		parts := strings.Split(sub.Name, string(filepath.Separator))
+		if len(parts) < 3 {
+			logrus.Warnf("Unkwn path found in provenance subjects: %s", sub.Name)
+			continue
+		}
+		sub.Name = object.GcsPrefix + filepath.Join(gcsPath, parts[1], sub.Name)
+		newSubjects = append(newSubjects, sub)
+	}
+
+	attestation.Subject = newSubjects
+
+	// Create a temporary file:
+	f, err := os.CreateTemp("", "provenance-")
+	if err != nil {
+		return errors.Wrap(err, "creating temp file for provenance metadata")
+	}
+	// Write the provenance statement to disk:
+	if err := attestation.Write(f.Name()); err != nil {
+		return errors.Wrap(err, "writing provenance attestation to disk")
+	}
+
+	// TODO for SLSA2: Sign the attestation
+	// Upload the metadata file to the staging bucket
+	pushBuildOptions := &build.Options{
+		Bucket:   options.Bucket(),
+		AllowDup: true,
+	}
+
+	if err := d.CheckReleaseBucket(pushBuildOptions); err != nil {
+		return errors.Wrap(err, "check release bucket access")
+	}
+
+	// Push the provenance file to GCS
+	return errors.Wrap(
+		d.PushReleaseArtifacts(pushBuildOptions, f.Name(), filepath.Join(gcsPath, release.ProvenanceFilename)),
+		"pushing provenance manifest",
+	)
+}
+
+// AddProvenanceSubject adds artifacts to the provenance metadata.
+func (d *defaultStageImpl) AddProvenanceSubject(statement *provenance.Statement, path string, isDir bool) (err error) {
+	if isDir {
+		err = statement.ReadSubjectsFromDir(path)
+	} else {
+		err = statement.AddSubjectFromFile(path)
+	}
+	return errors.Wrapf(err, "adding %s to provenance metadata", path)
 }
