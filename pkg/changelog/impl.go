@@ -128,7 +128,11 @@ func (*defaultImpl) LatestGitHubTagsPerBranch() (github.TagsPerBranch, error) {
 }
 
 func (*defaultImpl) GenerateTOC(markdown string) (string, error) {
-	return mdtoc.GenerateTOC([]byte(markdown))
+	return mdtoc.GenerateTOC([]byte(markdown), mdtoc.Options{
+		Dryrun:     false,
+		SkipPrefix: false,
+		MaxDepth:   mdtoc.MaxHeaderDepth,
+	})
 }
 
 func (*defaultImpl) DependencyChanges(from, to string) (string, error) {
