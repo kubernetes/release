@@ -19,10 +19,30 @@ limitations under the License.
 package provenance
 
 import (
+	"encoding/json"
+	"os"
+
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
+	"github.com/pkg/errors"
 )
 
-// NewStatement creates a new attestation
+// LoadStatement loads a statement from a json file
+func LoadStatement(path string) (s *Statement, err error) {
+	statement := NewSLSAStatement()
+
+	jsonData, err := os.ReadFile(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "opening stament JSON file")
+	}
+
+	if err := json.Unmarshal(jsonData, &statement); err != nil {
+		return nil, errors.Wrap(err, "decoding attestation JSON data")
+	}
+
+	return statement, nil
+}
+
+// NewSLSAStatement creates a new attestation
 func NewSLSAStatement() *Statement {
 	return &Statement{
 
