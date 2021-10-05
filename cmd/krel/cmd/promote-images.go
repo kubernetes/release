@@ -43,11 +43,11 @@ const (
 // promoteCommand is the krel subcommand to promote conainer images
 var imagePromoteCommand = &cobra.Command{
 	Use:   "promote-images",
-	Short: "Starts an image promotion for a tag of kubernetes images",
+	Short: "Starts an image promotion for a tag of kubernetes or kubernetes-sigs images",
 	Long: `krel promote
 
 The 'promote' subcommand of krel updates the image promoter manifests
-ans creates a PR in kubernetes/k8s.io`,
+and creates a PR in kubernetes/k8s.io`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -57,8 +57,10 @@ ans creates a PR in kubernetes/k8s.io`,
 }
 
 type promoteOptions struct {
+	project         string
 	userFork        string
 	tags            []string
+	reviewers       string
 	interactiveMode bool
 }
 
@@ -93,6 +95,13 @@ func (o *promoteOptions) Validate() error {
 var promoteOpts = &promoteOptions{}
 
 func init() {
+	imagePromoteCommand.PersistentFlags().StringVar(
+		&promoteOpts.project,
+		"project",
+		release.Kubernetes,
+		"the name of the project to promote images for",
+	)
+
 	imagePromoteCommand.PersistentFlags().StringSliceVarP(
 		&promoteOpts.tags,
 		"tag",
@@ -106,6 +115,13 @@ func init() {
 		"fork",
 		"",
 		"the user's fork of kubernetes/k8s.io",
+	)
+
+	imagePromoteCommand.PersistentFlags().StringVar(
+		&promoteOpts.reviewers,
+		"reviewers",
+		"@kubernetes/release-engineering",
+		"the list of GitHub users or teams to assign to the PR",
 	)
 
 	imagePromoteCommand.PersistentFlags().BoolVarP(
@@ -134,7 +150,7 @@ func runPromote(opts *promoteOptions) error {
 	ctx := context.Background()
 
 	// Validate options
-	branchname := opts.tags[0] + promotionBranchSuffix
+	branchname := opts.project + "-" + opts.tags[0] + promotionBranchSuffix
 
 	// Get the github org and repo from the fork slug
 	userForkOrg, userForkRepo, err := git.ParseRepoSlug(opts.userFork)
@@ -173,7 +189,7 @@ func runPromote(opts *promoteOptions) error {
 	imagesListPath := filepath.Join(
 		release.GCRIOPathProd,
 		"images",
-		filepath.Base(release.GCRIOPathStaging),
+		filepath.Base(release.GCRIOPathStagingPrefix)+opts.project,
 		"images.yaml",
 	)
 
@@ -194,7 +210,7 @@ func runPromote(opts *promoteOptions) error {
 			opt := reg.GrowManifestOptions{}
 			if err := opt.Populate(
 				filepath.Join(repo.Dir(), release.GCRIOPathProd),
-				release.GCRIOPathStaging, "", "", tag); err != nil {
+				release.GCRIOPathStagingPrefix+opts.project, "", "", tag); err != nil {
 				return errors.Wrapf(err, "populating image promoter options for tag %s", tag)
 			}
 
@@ -252,7 +268,7 @@ func runPromote(opts *promoteOptions) error {
 		return errors.Wrap(err, "adding image manifest to staging area")
 	}
 
-	commitMessage := "releng: Image promotion for " + strings.Join(opts.tags, " / ")
+	commitMessage := "releng: Image promotion for " + opts.project + " " + strings.Join(opts.tags, " / ")
 
 	// Commit files
 	logrus.Debug("Creating commit")
@@ -273,9 +289,9 @@ func runPromote(opts *promoteOptions) error {
 		return nil
 	}
 
-	prBody := fmt.Sprintf("Image promotion for Kubernetes %s\n", strings.Join(opts.tags, " / "))
+	prBody := fmt.Sprintf("Image promotion for %s %s\n", opts.project, strings.Join(opts.tags, " / "))
 	prBody += "This is an automated PR generated from `krel The Kubernetes Release Toolbox`\n\n"
-	prBody += "/hold\ncc: @kubernetes/release-engineering\n"
+	prBody += fmt.Sprintf("/hold\ncc: %s\n", opts.reviewers)
 
 	// Create the Pull Request
 	if mustRun(opts, "Create pull request?") {
