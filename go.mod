@@ -11,7 +11,7 @@ require (
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-containerregistry v0.6.0
-	github.com/google/go-github/v37 v37.0.0
+	github.com/google/go-github/v39 v39.1.0
 	github.com/google/licenseclassifier/v2 v2.0.0-alpha.1
 	github.com/google/uuid v1.3.0
 	github.com/mattn/go-isatty v0.0.14
@@ -39,7 +39,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	sigs.k8s.io/mdtoc v1.0.1
 	sigs.k8s.io/promo-tools/v3 v3.2.1
-	sigs.k8s.io/release-sdk v0.2.0
+	sigs.k8s.io/release-sdk v0.2.1-0.20211005095109-f50f5112261c
 	sigs.k8s.io/release-utils v0.3.0
 	sigs.k8s.io/yaml v1.3.0
 	sigs.k8s.io/zeitgeist v0.3.0
@@ -74,7 +74,7 @@ require (
 	github.com/gomarkdown/markdown v0.0.0-20200824053859-8c8b3816f167 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/go-github/v33 v33.0.0 // indirect
-	github.com/google/go-querystring v1.0.0 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.1.0 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
@@ -101,7 +101,7 @@ require (
 	github.com/xanzy/go-gitlab v0.43.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e // indirect
+	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
