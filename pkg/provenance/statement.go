@@ -29,6 +29,7 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/release-utils/hash"
 
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
@@ -93,6 +94,12 @@ func (s *Statement) ClonePredicate(manifestPath string) error {
 	return s.impl.ClonePredicate(s, manifestPath)
 }
 
+// VerifySubjects checks the provenance metadata of the attestation
+// subjects by reading them from `path`.
+func (s *Statement) VerifySubjects(path string) (err error) {
+	return s.impl.VerifySubjects(path, &s.Subject)
+}
+
 //counterfeiter:generate . StatementImplementation
 type StatementImplementation interface {
 	AddSubject(*Statement, string, intoto.DigestSet)
@@ -100,6 +107,7 @@ type StatementImplementation interface {
 	SubjectFromFile(string) (intoto.Subject, error)
 	Write(*Statement, string) error
 	ClonePredicate(*Statement, string) error
+	VerifySubjects(path string, subjects *[]intoto.Subject) (err error)
 }
 
 type defaultStatementImplementation struct{}
@@ -187,5 +195,49 @@ func (si *defaultStatementImplementation) ClonePredicate(s *Statement, manifestP
 	}
 
 	s.Predicate = otherStatment.Predicate
+	return nil
+}
+
+// VerifySubjects checks the subjects registered in the manifest to make
+// sure the attesttion data matches the artifacts
+func (si *defaultStatementImplementation) VerifySubjects(path string, subjects *[]intoto.Subject) (err error) {
+	errs := 0
+	for _, sub := range *subjects {
+		computed := ""
+		if sub.Name == "" {
+			logrus.Error("found empty subject in provenance data")
+			errs++
+			continue
+		}
+		if len(sub.Digest) == 0 {
+			logrus.Errorf("%s has no hash information", sub.Name)
+			errs++
+			continue
+		}
+		for algo, val := range sub.Digest {
+			computed = ""
+
+			switch algo {
+			case "sha256":
+				computed, err = hash.SHA256ForFile(filepath.Join(path, sub.Name))
+			case "sha512":
+				computed, err = hash.SHA512ForFile(filepath.Join(path, sub.Name))
+			}
+
+			if err != nil {
+				logrus.Errorf("Error validating %s: %v", sub.Name, err)
+				errs++
+				continue
+			}
+
+			if val != computed {
+				errs++
+				logrus.Errorf("Invalid hash in %s", sub.Name)
+			}
+		}
+	}
+	if errs > 0 {
+		return errors.Errorf("%d errors validating subjects in provenance metadata", errs)
+	}
 	return nil
 }
