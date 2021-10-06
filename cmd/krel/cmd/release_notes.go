@@ -433,7 +433,7 @@ func createDraftPR(repoPath, tag string) (err error) {
 				return errors.Wrapf(err, "while getting maps for PR #%d", note.PrNumber)
 			}
 			for _, noteMap := range maps {
-				if err := note.ApplyMap(noteMap); err != nil {
+				if err := note.ApplyMap(noteMap, true); err != nil {
 					return errors.Wrapf(err, "applying note maps to PR #%d", note.PrNumber)
 				}
 			}
@@ -914,6 +914,7 @@ func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 	notesOptions.EndRev = tag
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
 	notesOptions.MapProviderStrings = releaseNotesOpts.mapProviders
+	notesOptions.AddMarkdownLinks = true
 
 	// If the the release for the tag we are using has a mapping directory,
 	// add it to the mapProviders array to read the edits from the release team:
@@ -967,6 +968,7 @@ func gatherNotesFrom(repoPath, startTag string) (*notes.ReleaseNotes, error) {
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
 	notesOptions.MapProviderStrings = releaseNotesOpts.mapProviders
 	notesOptions.ListReleaseNotesV2 = releaseNotesOpts.listReleaseNotesV2
+	notesOptions.AddMarkdownLinks = true
 
 	if err := notesOptions.ValidateAndFinish(); err != nil {
 		return nil, err
@@ -1202,7 +1204,7 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 		if noteMaps != nil {
 			fmt.Println("✨ Note contents was previously modified with a map")
 			for _, noteMap := range noteMaps {
-				if err := note.ApplyMap(noteMap); err != nil {
+				if err := note.ApplyMap(noteMap, true); err != nil {
 					return errors.Wrapf(err, "applying notemap for PR #%d", pr)
 				}
 			}

@@ -180,6 +180,13 @@ func init() {
 		),
 	)
 
+	cmd.PersistentFlags().BoolVar(
+		&opts.AddMarkdownLinks,
+		"markdown-links",
+		env.IsSet("MARKDOWN_LINKS"),
+		"Add links for PRs and authors are added in the markdown format",
+	)
+
 	cmd.PersistentFlags().StringVar(
 		&opts.RequiredAuthor,
 		"required-author",

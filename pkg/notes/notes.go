@@ -340,7 +340,7 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 			}
 
 			for _, noteMap := range noteMaps {
-				if err := note.ApplyMap(noteMap); err != nil {
+				if err := note.ApplyMap(noteMap, g.options.AddMarkdownLinks); err != nil {
 					return nil, errors.Wrapf(err, "applying notemap for PR #%d", result.pullRequest.GetNumber())
 				}
 			}
@@ -479,6 +479,10 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result) (*ReleaseNote, error) {
 	indented := strings.ReplaceAll(text, "\n", "\n  ")
 	markdown := fmt.Sprintf("%s (#%d, @%s)",
 		indented, pr.GetNumber(), author)
+	if g.options.AddMarkdownLinks {
+		markdown = fmt.Sprintf("%s ([#%d](%s), [@%s](%s))",
+			indented, pr.GetNumber(), prURL, author, authorURL)
+	}
 
 	if noteSuffix != "" {
 		markdown = fmt.Sprintf("%s [%s]", markdown, noteSuffix)
@@ -1001,7 +1005,7 @@ func prettifySIGList(sigs []string) string {
 
 // ApplyMap Modifies the content of the release using information from
 //  a ReleaseNotesMap
-func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap) error {
+func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap, markdownLinks bool) error {
 	logrus.WithFields(logrus.Fields{
 		"pr": rn.PrNumber,
 	}).Debugf("Applying map to note")
@@ -1059,6 +1063,10 @@ func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap) error {
 		indented := strings.ReplaceAll(rn.Text, "\n", "\n  ")
 		markdown := fmt.Sprintf("%s (#%d, @%s)",
 			indented, rn.PrNumber, rn.Author)
+		if markdownLinks {
+			markdown = fmt.Sprintf("%s ([#%d](%s), [@%s](%s))",
+				indented, rn.PrNumber, rn.PrURL, rn.Author, rn.AuthorURL)
+		}
 		// Uppercase the first character of the markdown to make it look uniform
 		rn.Markdown = capitalizeString(markdown)
 	}
