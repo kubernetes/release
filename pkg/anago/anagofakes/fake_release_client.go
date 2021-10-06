@@ -42,6 +42,16 @@ type FakeReleaseClient struct {
 	checkPrerequisitesReturnsOnCall map[int]struct {
 		result1 error
 	}
+	CheckProvenanceStub        func() error
+	checkProvenanceMutex       sync.RWMutex
+	checkProvenanceArgsForCall []struct {
+	}
+	checkProvenanceReturns struct {
+		result1 error
+	}
+	checkProvenanceReturnsOnCall map[int]struct {
+		result1 error
+	}
 	CheckReleaseBranchStateStub        func() error
 	checkReleaseBranchStateMutex       sync.RWMutex
 	checkReleaseBranchStateArgsForCall []struct {
@@ -253,6 +263,59 @@ func (fake *FakeReleaseClient) CheckPrerequisitesReturnsOnCall(i int, result1 er
 		})
 	}
 	fake.checkPrerequisitesReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseClient) CheckProvenance() error {
+	fake.checkProvenanceMutex.Lock()
+	ret, specificReturn := fake.checkProvenanceReturnsOnCall[len(fake.checkProvenanceArgsForCall)]
+	fake.checkProvenanceArgsForCall = append(fake.checkProvenanceArgsForCall, struct {
+	}{})
+	stub := fake.CheckProvenanceStub
+	fakeReturns := fake.checkProvenanceReturns
+	fake.recordInvocation("CheckProvenance", []interface{}{})
+	fake.checkProvenanceMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeReleaseClient) CheckProvenanceCallCount() int {
+	fake.checkProvenanceMutex.RLock()
+	defer fake.checkProvenanceMutex.RUnlock()
+	return len(fake.checkProvenanceArgsForCall)
+}
+
+func (fake *FakeReleaseClient) CheckProvenanceCalls(stub func() error) {
+	fake.checkProvenanceMutex.Lock()
+	defer fake.checkProvenanceMutex.Unlock()
+	fake.CheckProvenanceStub = stub
+}
+
+func (fake *FakeReleaseClient) CheckProvenanceReturns(result1 error) {
+	fake.checkProvenanceMutex.Lock()
+	defer fake.checkProvenanceMutex.Unlock()
+	fake.CheckProvenanceStub = nil
+	fake.checkProvenanceReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseClient) CheckProvenanceReturnsOnCall(i int, result1 error) {
+	fake.checkProvenanceMutex.Lock()
+	defer fake.checkProvenanceMutex.Unlock()
+	fake.CheckProvenanceStub = nil
+	if fake.checkProvenanceReturnsOnCall == nil {
+		fake.checkProvenanceReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.checkProvenanceReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -826,6 +889,8 @@ func (fake *FakeReleaseClient) Invocations() map[string][][]interface{} {
 	defer fake.archiveMutex.RUnlock()
 	fake.checkPrerequisitesMutex.RLock()
 	defer fake.checkPrerequisitesMutex.RUnlock()
+	fake.checkProvenanceMutex.RLock()
+	defer fake.checkProvenanceMutex.RUnlock()
 	fake.checkReleaseBranchStateMutex.RLock()
 	defer fake.checkReleaseBranchStateMutex.RUnlock()
 	fake.createAnnouncementMutex.RLock()
