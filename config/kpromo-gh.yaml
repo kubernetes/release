@@ -1,0 +1,11 @@
+# Configurations for copying GitHub releases to GCS buckets
+# Used by https://sigs.k8s.io/promo-tools/cmd/kpromo
+releaseConfigs:
+- org: containernetworking
+  repo: plugins
+  gcsBucket: k8s-staging-cni-plugins
+  releaseDir: releases
+- org: kubernetes-sigs
+  repo: cri-tools
+  gcsBucket: k8s-staging-cri-tools
+  releaseDir: releases
