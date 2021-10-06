@@ -436,3 +436,33 @@ func TestUpdateGitHubPage(t *testing.T) {
 		}
 	}
 }
+
+func TestCheckProvenance(t *testing.T) {
+	for _, tc := range []struct {
+		prepare     func(*anagofakes.FakeReleaseImpl)
+		shouldError bool
+	}{
+		{ // success
+			prepare:     func(*anagofakes.FakeReleaseImpl) {},
+			shouldError: false,
+		},
+		{ // Provenance does not check
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.CheckStageProvenanceReturns(err)
+			},
+			shouldError: true,
+		},
+	} {
+		opts := anago.DefaultReleaseOptions()
+		sut := anago.NewDefaultRelease(opts)
+		mock := &anagofakes.FakeReleaseImpl{}
+		tc.prepare(mock)
+		sut.SetImpl(mock)
+		err := sut.CheckProvenance()
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
+}

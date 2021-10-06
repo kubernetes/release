@@ -69,6 +69,10 @@ type releaseClient interface {
 	// bucket which should contain a copy of the repository.
 	PrepareWorkspace() error
 
+	// CheckProvenance downloads the artifacts from the staging bucket
+	// and verifies them against the provenance metadata.
+	CheckProvenance() error
+
 	// PushArtifacts pushes the generated artifacts to the release bucket and
 	// Google Container Registry for the specified release `versions`.
 	PushArtifacts() error
@@ -154,6 +158,7 @@ type releaseImpl interface {
 		gcsIndexRootPath, gcsReleaseNotesPath, version string,
 	) error
 	CreatePubBotBranchIssue(string) error
+	CheckStageProvenance(string, string) error
 }
 
 func (d *defaultReleaseImpl) Submit(options *gcb.Options) error {
@@ -620,4 +625,18 @@ func (d *DefaultRelease) Archive() error {
 	)
 
 	return nil
+}
+
+// CheckProvenance verifies the artifacts staged in the release bucket
+// by verifying the provenance metadata generated during the stage run.
+func (d *DefaultRelease) CheckProvenance() error {
+	return d.impl.CheckStageProvenance(d.options.Bucket(), d.options.BuildVersion)
+}
+
+func (d *defaultReleaseImpl) CheckStageProvenance(bucket, buildVersion string) error {
+	checker := release.NewProvenanceChecker(&release.ProvenanceCheckerOptions{
+		StageBucket: bucket,
+	})
+
+	return checker.CheckStageProvenance(buildVersion)
 }

@@ -403,6 +403,11 @@ func (r *Release) Run() error {
 		return errors.Wrap(err, "prepare workspace")
 	}
 
+	logger.WithStep().Info("Checking artifacts provenance")
+	if err := r.client.CheckProvenance(); err != nil {
+		return errors.Wrap(err, "checking provenance attestation")
+	}
+
 	logger.WithStep().Info("Pushing artifacts")
 	if err := r.client.PushArtifacts(); err != nil {
 		return errors.Wrap(err, "push artifacts")
