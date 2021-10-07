@@ -47,6 +47,11 @@ const (
 	DefaultToolRepo = "release"
 	DefaultToolRef  = git.DefaultBranch
 	DefaultToolOrg  = git.DefaultGithubOrg
+
+	DefaultK8sOrg  = git.DefaultGithubOrg
+	DefaultK8sRepo = git.DefaultGithubRepo
+	DefaultK8sRef  = git.DefaultRef
+
 	// TODO(vdf): Need to reference K8s Infra project here
 	DefaultKubernetesStagingProject = "kubernetes-release-test"
 	DefaultRelengStagingProject     = "k8s-staging-releng"
@@ -182,6 +187,32 @@ func GetToolRepo() string {
 // If 'TOOL_REF' is non-empty, it returns the value. Otherwise, it returns DefaultToolRef.
 func GetToolRef() string {
 	return env.Default("TOOL_REF", DefaultToolRef)
+}
+
+// GetK8sOrg checks if the 'K8S_ORG' environment variable is set.
+// If 'K8S_ORG' is non-empty, it returns the value. Otherwise, it returns DefaultK8sOrg.
+func GetK8sOrg() string {
+	return env.Default("K8S_ORG", DefaultK8sOrg)
+}
+
+// GetK8sRepo checks if the 'K8S_REPO' environment variable is set.
+// If 'K8S_REPO' is non-empty, it returns the value. Otherwise, it returns DefaultK8sRepo.
+func GetK8sRepo() string {
+	return env.Default("K8S_REPO", DefaultK8sRepo)
+}
+
+// GetK8sRef checks if the 'K8S_REF' environment variable is set.
+// If 'K8S_REF' is non-empty, it returns the value. Otherwise, it returns DefaultK8sRef.
+func GetK8sRef() string {
+	return env.Default("K8S_REF", DefaultK8sRef)
+}
+
+// IsDefaultK8sUpstream returns true if GetK8sOrg(), GetK8sRepo() and
+// GetK8sRef() point to their default values.
+func IsDefaultK8sUpstream() bool {
+	return GetK8sOrg() == DefaultK8sOrg &&
+		GetK8sRepo() == DefaultK8sRepo &&
+		GetK8sRef() == DefaultK8sRef
 }
 
 // BuiltWithBazel determines whether the most recent Kubernetes release was built with Bazel.

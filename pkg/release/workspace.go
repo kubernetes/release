@@ -36,12 +36,29 @@ import (
 )
 
 // PrepareWorkspaceStage sets up the workspace by cloning a new copy of k/k.
-func PrepareWorkspaceStage(directory string) error {
+func PrepareWorkspaceStage(directory string, noMock bool) error {
 	logrus.Infof("Preparing workspace for staging in %s", directory)
-	logrus.Infof("Cloning repository to %s", directory)
-	_, err := git.CloneOrOpenGitHubRepo(
-		directory, git.DefaultGithubOrg, git.DefaultGithubRepo, false,
-	)
+
+	k8sOrg := GetK8sOrg()
+	k8sRepo := GetK8sRepo()
+	isDefaultK8sUpstream := IsDefaultK8sUpstream()
+
+	if noMock && !isDefaultK8sUpstream {
+		// TODO: We could allow releasing custom Kubernetes forks by pushing
+		// the artifacts into non-default locations. This needs further
+		// investigation and goes beyond the currently implemented testing
+		// approach.
+		return errors.Errorf(
+			"staging non default upstream Kubernetes is forbidden. " +
+				"Verify that the $K8S_ORG, $K8S_REPO and $K8S_REF " +
+				"environment variables point to their defaults when " +
+				"doing using nomock releases.",
+		)
+	}
+
+	logrus.Infof("Cloning repository %s/%s to %s", k8sOrg, k8sRepo, directory)
+
+	repo, err := git.CloneOrOpenGitHubRepo(directory, k8sOrg, k8sRepo, false)
 	if err != nil {
 		return errors.Wrap(err, "clone k/k repository")
 	}
@@ -60,6 +77,24 @@ func PrepareWorkspaceStage(directory string) error {
 	// Fetch the SPDX licenses
 	if _, err := downloader.GetLicenses(); err != nil {
 		return errors.Wrap(err, "retrieving SPDX licenses")
+	}
+
+	if isDefaultK8sUpstream {
+		token, ok := os.LookupEnv(github.TokenEnvKey)
+		if !ok {
+			return errors.Errorf("%s env variable is not set", github.TokenEnvKey)
+		}
+
+		if err := repo.SetURL(git.DefaultRemote, (&url.URL{
+			Scheme: "https",
+			User:   url.UserPassword("git", token),
+			Host:   "github.com",
+			Path:   filepath.Join(git.DefaultGithubOrg, git.DefaultGithubRepo),
+		}).String()); err != nil {
+			return errors.Wrap(err, "changing git remote of repository")
+		}
+	} else {
+		logrus.Info("Using non-default k8s upstream, doing no git modifications")
 	}
 
 	return nil
