@@ -16,6 +16,18 @@ type FakeStatementImplementation struct {
 		arg2 string
 		arg3 in_toto.DigestSet
 	}
+	ClonePredicateStub        func(*provenance.Statement, string) error
+	clonePredicateMutex       sync.RWMutex
+	clonePredicateArgsForCall []struct {
+		arg1 *provenance.Statement
+		arg2 string
+	}
+	clonePredicateReturns struct {
+		result1 error
+	}
+	clonePredicateReturnsOnCall map[int]struct {
+		result1 error
+	}
 	ReadSubjectsFromDirStub        func(*provenance.Statement, string) error
 	readSubjectsFromDirMutex       sync.RWMutex
 	readSubjectsFromDirArgsForCall []struct {
@@ -40,6 +52,18 @@ type FakeStatementImplementation struct {
 	subjectFromFileReturnsOnCall map[int]struct {
 		result1 in_toto.Subject
 		result2 error
+	}
+	VerifySubjectsStub        func(string, *[]in_toto.Subject) error
+	verifySubjectsMutex       sync.RWMutex
+	verifySubjectsArgsForCall []struct {
+		arg1 string
+		arg2 *[]in_toto.Subject
+	}
+	verifySubjectsReturns struct {
+		result1 error
+	}
+	verifySubjectsReturnsOnCall map[int]struct {
+		result1 error
 	}
 	WriteStub        func(*provenance.Statement, string) error
 	writeMutex       sync.RWMutex
@@ -89,6 +113,68 @@ func (fake *FakeStatementImplementation) AddSubjectArgsForCall(i int) (*provenan
 	defer fake.addSubjectMutex.RUnlock()
 	argsForCall := fake.addSubjectArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeStatementImplementation) ClonePredicate(arg1 *provenance.Statement, arg2 string) error {
+	fake.clonePredicateMutex.Lock()
+	ret, specificReturn := fake.clonePredicateReturnsOnCall[len(fake.clonePredicateArgsForCall)]
+	fake.clonePredicateArgsForCall = append(fake.clonePredicateArgsForCall, struct {
+		arg1 *provenance.Statement
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.ClonePredicateStub
+	fakeReturns := fake.clonePredicateReturns
+	fake.recordInvocation("ClonePredicate", []interface{}{arg1, arg2})
+	fake.clonePredicateMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStatementImplementation) ClonePredicateCallCount() int {
+	fake.clonePredicateMutex.RLock()
+	defer fake.clonePredicateMutex.RUnlock()
+	return len(fake.clonePredicateArgsForCall)
+}
+
+func (fake *FakeStatementImplementation) ClonePredicateCalls(stub func(*provenance.Statement, string) error) {
+	fake.clonePredicateMutex.Lock()
+	defer fake.clonePredicateMutex.Unlock()
+	fake.ClonePredicateStub = stub
+}
+
+func (fake *FakeStatementImplementation) ClonePredicateArgsForCall(i int) (*provenance.Statement, string) {
+	fake.clonePredicateMutex.RLock()
+	defer fake.clonePredicateMutex.RUnlock()
+	argsForCall := fake.clonePredicateArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeStatementImplementation) ClonePredicateReturns(result1 error) {
+	fake.clonePredicateMutex.Lock()
+	defer fake.clonePredicateMutex.Unlock()
+	fake.ClonePredicateStub = nil
+	fake.clonePredicateReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStatementImplementation) ClonePredicateReturnsOnCall(i int, result1 error) {
+	fake.clonePredicateMutex.Lock()
+	defer fake.clonePredicateMutex.Unlock()
+	fake.ClonePredicateStub = nil
+	if fake.clonePredicateReturnsOnCall == nil {
+		fake.clonePredicateReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.clonePredicateReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeStatementImplementation) ReadSubjectsFromDir(arg1 *provenance.Statement, arg2 string) error {
@@ -217,6 +303,68 @@ func (fake *FakeStatementImplementation) SubjectFromFileReturnsOnCall(i int, res
 	}{result1, result2}
 }
 
+func (fake *FakeStatementImplementation) VerifySubjects(arg1 string, arg2 *[]in_toto.Subject) error {
+	fake.verifySubjectsMutex.Lock()
+	ret, specificReturn := fake.verifySubjectsReturnsOnCall[len(fake.verifySubjectsArgsForCall)]
+	fake.verifySubjectsArgsForCall = append(fake.verifySubjectsArgsForCall, struct {
+		arg1 string
+		arg2 *[]in_toto.Subject
+	}{arg1, arg2})
+	stub := fake.VerifySubjectsStub
+	fakeReturns := fake.verifySubjectsReturns
+	fake.recordInvocation("VerifySubjects", []interface{}{arg1, arg2})
+	fake.verifySubjectsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStatementImplementation) VerifySubjectsCallCount() int {
+	fake.verifySubjectsMutex.RLock()
+	defer fake.verifySubjectsMutex.RUnlock()
+	return len(fake.verifySubjectsArgsForCall)
+}
+
+func (fake *FakeStatementImplementation) VerifySubjectsCalls(stub func(string, *[]in_toto.Subject) error) {
+	fake.verifySubjectsMutex.Lock()
+	defer fake.verifySubjectsMutex.Unlock()
+	fake.VerifySubjectsStub = stub
+}
+
+func (fake *FakeStatementImplementation) VerifySubjectsArgsForCall(i int) (string, *[]in_toto.Subject) {
+	fake.verifySubjectsMutex.RLock()
+	defer fake.verifySubjectsMutex.RUnlock()
+	argsForCall := fake.verifySubjectsArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeStatementImplementation) VerifySubjectsReturns(result1 error) {
+	fake.verifySubjectsMutex.Lock()
+	defer fake.verifySubjectsMutex.Unlock()
+	fake.VerifySubjectsStub = nil
+	fake.verifySubjectsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStatementImplementation) VerifySubjectsReturnsOnCall(i int, result1 error) {
+	fake.verifySubjectsMutex.Lock()
+	defer fake.verifySubjectsMutex.Unlock()
+	fake.VerifySubjectsStub = nil
+	if fake.verifySubjectsReturnsOnCall == nil {
+		fake.verifySubjectsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.verifySubjectsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeStatementImplementation) Write(arg1 *provenance.Statement, arg2 string) error {
 	fake.writeMutex.Lock()
 	ret, specificReturn := fake.writeReturnsOnCall[len(fake.writeArgsForCall)]
@@ -284,10 +432,14 @@ func (fake *FakeStatementImplementation) Invocations() map[string][][]interface{
 	defer fake.invocationsMutex.RUnlock()
 	fake.addSubjectMutex.RLock()
 	defer fake.addSubjectMutex.RUnlock()
+	fake.clonePredicateMutex.RLock()
+	defer fake.clonePredicateMutex.RUnlock()
 	fake.readSubjectsFromDirMutex.RLock()
 	defer fake.readSubjectsFromDirMutex.RUnlock()
 	fake.subjectFromFileMutex.RLock()
 	defer fake.subjectFromFileMutex.RUnlock()
+	fake.verifySubjectsMutex.RLock()
+	defer fake.verifySubjectsMutex.RUnlock()
 	fake.writeMutex.RLock()
 	defer fake.writeMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

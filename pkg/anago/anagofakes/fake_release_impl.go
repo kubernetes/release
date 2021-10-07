@@ -76,6 +76,18 @@ type FakeReleaseImpl struct {
 	checkReleaseBucketReturnsOnCall map[int]struct {
 		result1 error
 	}
+	CheckStageProvenanceStub        func(string, string) error
+	checkStageProvenanceMutex       sync.RWMutex
+	checkStageProvenanceArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	checkStageProvenanceReturns struct {
+		result1 error
+	}
+	checkStageProvenanceReturnsOnCall map[int]struct {
+		result1 error
+	}
 	CopyStagedFromGCSStub        func(*build.Options, string, string) error
 	copyStagedFromGCSMutex       sync.RWMutex
 	copyStagedFromGCSArgsForCall []struct {
@@ -532,6 +544,68 @@ func (fake *FakeReleaseImpl) CheckReleaseBucketReturnsOnCall(i int, result1 erro
 		})
 	}
 	fake.checkReleaseBucketReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) CheckStageProvenance(arg1 string, arg2 string) error {
+	fake.checkStageProvenanceMutex.Lock()
+	ret, specificReturn := fake.checkStageProvenanceReturnsOnCall[len(fake.checkStageProvenanceArgsForCall)]
+	fake.checkStageProvenanceArgsForCall = append(fake.checkStageProvenanceArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.CheckStageProvenanceStub
+	fakeReturns := fake.checkStageProvenanceReturns
+	fake.recordInvocation("CheckStageProvenance", []interface{}{arg1, arg2})
+	fake.checkStageProvenanceMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeReleaseImpl) CheckStageProvenanceCallCount() int {
+	fake.checkStageProvenanceMutex.RLock()
+	defer fake.checkStageProvenanceMutex.RUnlock()
+	return len(fake.checkStageProvenanceArgsForCall)
+}
+
+func (fake *FakeReleaseImpl) CheckStageProvenanceCalls(stub func(string, string) error) {
+	fake.checkStageProvenanceMutex.Lock()
+	defer fake.checkStageProvenanceMutex.Unlock()
+	fake.CheckStageProvenanceStub = stub
+}
+
+func (fake *FakeReleaseImpl) CheckStageProvenanceArgsForCall(i int) (string, string) {
+	fake.checkStageProvenanceMutex.RLock()
+	defer fake.checkStageProvenanceMutex.RUnlock()
+	argsForCall := fake.checkStageProvenanceArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeReleaseImpl) CheckStageProvenanceReturns(result1 error) {
+	fake.checkStageProvenanceMutex.Lock()
+	defer fake.checkStageProvenanceMutex.Unlock()
+	fake.CheckStageProvenanceStub = nil
+	fake.checkStageProvenanceReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) CheckStageProvenanceReturnsOnCall(i int, result1 error) {
+	fake.checkStageProvenanceMutex.Lock()
+	defer fake.checkStageProvenanceMutex.Unlock()
+	fake.CheckStageProvenanceStub = nil
+	if fake.checkStageProvenanceReturnsOnCall == nil {
+		fake.checkStageProvenanceReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.checkStageProvenanceReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -1630,6 +1704,8 @@ func (fake *FakeReleaseImpl) Invocations() map[string][][]interface{} {
 	defer fake.checkPrerequisitesMutex.RUnlock()
 	fake.checkReleaseBucketMutex.RLock()
 	defer fake.checkReleaseBucketMutex.RUnlock()
+	fake.checkStageProvenanceMutex.RLock()
+	defer fake.checkStageProvenanceMutex.RUnlock()
 	fake.copyStagedFromGCSMutex.RLock()
 	defer fake.copyStagedFromGCSMutex.RUnlock()
 	fake.copyToRemoteMutex.RLock()
