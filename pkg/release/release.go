@@ -61,6 +61,9 @@ const (
 
 	KubernetesTar = "kubernetes.tar.gz"
 
+	// name of the kubernetes project
+	Kubernetes = "kubernetes"
+
 	// Staged source code tarball of Kubernetes
 	SourcesTar = "src.tar.gz"
 
@@ -107,8 +110,11 @@ const (
 	// Production registry root URL
 	GCRIOPathProd = "k8s.gcr.io"
 
+	// Staging registry root URL prefix
+	GCRIOPathStagingPrefix = "gcr.io/k8s-staging-"
+
 	// Staging registry root URL
-	GCRIOPathStaging = "gcr.io/k8s-staging-kubernetes"
+	GCRIOPathStaging = GCRIOPathStagingPrefix + Kubernetes
 
 	// Mock staging registry root URL
 	GCRIOPathMock = GCRIOPathStaging + "/mock"
