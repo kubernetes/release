@@ -145,3 +145,37 @@ func TestClonePredicate(t *testing.T) {
 	require.Nil(t, s1.ClonePredicate(testProvenanceFile1), "cloning predicate")
 	require.Equal(t, s1.Predicate.Builder.ID, "pkg:github/puerco/release@provenance")
 }
+
+func TestVerifySubjects(t *testing.T) {
+	s := NewSLSAStatement()
+
+	dir, err := os.MkdirTemp("", "provenance-subjects-")
+	require.Nil(t, err)
+	defer os.RemoveAll(dir)
+
+	strs := []struct {
+		Letter string
+		Sha    string
+		Data   string
+	}{
+		{"alpha", "a2be58c40358d08fa15cb5065a487f14e20dacc43d57ba0ee58dc247159d5ddf", "63bf294fdc9acafb474469457d8d6f1d08bbfd85b39f0259ccb92bccf2ef9fe8"},
+		{"beta", "27059170711e52bf00591cf5f076b782ccb5311a57bb493f928646c8be03dd59", "a5456b3c74f34644abf12796b5eb00a43922f8699f02820b3ebef983dd013cfc"},
+		{"gamma", "6a7e0dabf73072ef0812c16c040bf5cb3873fb0410417c75d33d1f5175a707b7", "3dbd86398d3a976b430d285d2bc245c494003c21e84b908e837b4f0596aa05ff"},
+	}
+
+	path := ""
+	for _, data := range strs {
+		path = filepath.Join(path, data.Letter)
+		require.Nil(t, os.Mkdir(filepath.Join(dir, path), os.FileMode(0o755)))
+		require.Nil(
+			t, os.WriteFile(
+				filepath.Join(dir, path, data.Letter+".txt"), []byte(data.Data), os.FileMode(0o644),
+			),
+		)
+		s.Subject = append(s.Subject, intoto.Subject{
+			Name:   filepath.Join(path, data.Letter+".txt"),
+			Digest: map[string]string{"sha256": data.Sha},
+		})
+	}
+	require.Nil(t, s.VerifySubjects(dir))
+}
