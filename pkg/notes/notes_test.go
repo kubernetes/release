@@ -381,7 +381,7 @@ func TestApplyMap(t *testing.T) {
 		testNote := makeNewNote()
 
 		// Check that the map application does note return error
-		require.Nil(t, testNote.ApplyMap(testMap))
+		require.Nil(t, testNote.ApplyMap(testMap, false))
 
 		reflectedNote := reflect.ValueOf(testNote)
 
