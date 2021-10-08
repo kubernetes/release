@@ -60,7 +60,7 @@ dependencies:
 
   # Golang
   - name: "golang"
-    version: 1.17.1
+    version: 1.17.2
     refPaths:
     - path: Dockerfile-kubepkg
       match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bullseye|buster) AS builder
@@ -166,7 +166,7 @@ dependencies:
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)-([0-9]+)
 
   - name: "k8s.gcr.io/build-image/go-runner"
-    version: v2.3.1-go1.17.1-buster.0
+    version: v2.3.1-go1.17.2-buster.0
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -180,7 +180,7 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "k8s.gcr.io/build-image/kube-cross"
-    version: v1.23.0-go1.17.1-buster.0
+    version: v1.23.0-go1.17.2-buster.0
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -213,7 +213,7 @@ dependencies:
 
   # Golang (next candidate)
   - name: "golang (next candidate)"
-    version: 1.17.1
+    version: 1.17
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
@@ -232,7 +232,7 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "k8s.gcr.io/build-image/go-runner (next candidate)"
-    version: v2.3.1-go1.17.1-buster.0
+    version: v2.3.1-go1.17.2-buster.0
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -244,7 +244,7 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "k8s.gcr.io/build-image/kube-cross (next candidate)"
-    version: v1.23.0-go1.17.1-buster.0
+    version: v1.23.0-go1.17.2-buster.0
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -263,7 +263,7 @@ dependencies:
 
   # Golang (for previous release branches 1.21/1.22)
   - name: "golang (for previous release branches)"
-    version: 1.16.8
+    version: 1.16.9
     refPaths:
     - path: images/build/cross/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -301,7 +301,7 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "k8s.gcr.io/build-image/go-runner (for previous release branches 1.21/1.22)"
-    version: v2.3.1-go1.16.8-buster.0
+    version: v2.3.1-go1.16.9-buster.0
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -317,7 +317,7 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "k8s.gcr.io/build-image/kube-cross (for previous release branches 1.21/1.22)"
-    version: v1.22.0-go1.16.8-buster.0
+    version: v1.22.0-go1.16.9-buster.0
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
