@@ -19,7 +19,7 @@ package notes
 import (
 	"bufio"
 	"context"
-	"crypto/sha1"
+	"crypto/sha1" //nolint:gosec // used for file integrity checks, NOT security
 	"fmt"
 	"net/url"
 	"regexp"
@@ -1100,12 +1100,14 @@ func (rn *ReleaseNote) ToNoteMap() (string, error) {
 
 // ContentHash returns a sha1 hash derived from the note's content
 func (rn *ReleaseNote) ContentHash() (string, error) {
-	// Converto the note to a map
+	// Convert the note to a map
 	noteMap, err := rn.ToNoteMap()
 	if err != nil {
 		return "", errors.Wrap(err, "serializing note's content")
 	}
 
+	//nolint:gosec // used for file integrity checks, NOT security
+	// TODO(relnotes): Could we use SHA256 here instead?
 	h := sha1.New()
 	_, err = h.Write([]byte(noteMap))
 	if err != nil {

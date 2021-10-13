@@ -135,6 +135,8 @@ func CreateForRelease(opts *Options) error {
 
 func create(workDir, subject, message string) error {
 	subjectFile := filepath.Join(workDir, subjectFile)
+	//nolint:gosec // TODO(gosec): G306: Expect WriteFile permissions to be
+	// 0600 or less
 	if err := os.WriteFile(
 		subjectFile, []byte(subject), 0o755,
 	); err != nil {
@@ -145,6 +147,8 @@ func create(workDir, subject, message string) error {
 	logrus.Debugf("Wrote file %s", subjectFile)
 
 	announcementFile := filepath.Join(workDir, announcementFile)
+	//nolint:gosec // TODO(gosec): G306: Expect WriteFile permissions to be
+	// 0600 or less
 	if err := os.WriteFile(
 		announcementFile, []byte(message), 0o755,
 	); err != nil {

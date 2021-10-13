@@ -66,6 +66,7 @@ func TestUnitExtractTarballTmp(t *testing.T) {
 	dir, err := sut.ExtractTarballTmp(tar.Name())
 	require.Nil(t, err, "extracting file")
 	defer os.RemoveAll(dir)
+
 	require.True(t, util.Exists(filepath.Join(dir, "/text.txt")), "checking directory")
 	require.True(t, util.Exists(filepath.Join(dir, "/subdir/text.txt")), "checking subdirectory")
 	require.True(t, util.Exists(dir), "checking directory")
@@ -160,7 +161,7 @@ func TestExtDocReadSourceFile(t *testing.T) {
 }
 
 func writeTestTarball(t *testing.T) *os.File {
-	// Create a testdire
+	// Create a testdir
 	tar, err := os.CreateTemp(os.TempDir(), "test-tar-*.tar.gz")
 	require.Nil(t, err)
 

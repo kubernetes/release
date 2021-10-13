@@ -148,6 +148,8 @@ func run(opts *options) error {
 
 	if opts.outputFile != "" {
 		logrus.Infof("Saving schedule to a file %s.", opts.outputFile)
+		//nolint:gosec // TODO(gosec): G306: Expect WriteFile permissions to be
+		// 0600 or less
 		err := os.WriteFile(opts.outputFile, []byte(scheduleOut), 0o644)
 		if err != nil {
 			return errors.Wrap(err, "failed to save schedule to the file")

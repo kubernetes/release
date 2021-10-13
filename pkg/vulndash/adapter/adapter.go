@@ -231,6 +231,8 @@ func UpdateVulnerabilityDashboard(
 
 	dashboardJSON := dashboardPath + "dashboard.json"
 	logrus.Infof("writing the vulnerabilities for %s in the file %s", vulnProject, dashboardJSON)
+	//nolint:gosec // TODO(gosec): G306: Expect WriteFile permissions to be
+	// 0600 or less
 	err = os.WriteFile(dashboardJSON, jsonFile, 0o644)
 	if err != nil {
 		return errors.Errorf("Unable to create temporary local"+

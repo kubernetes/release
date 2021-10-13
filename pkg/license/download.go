@@ -14,6 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+//nolint:gosec
+// SHA1 is the currently accepted hash algorithm for SPDX documents, used for
+// file integrity checks, NOT security.
+// Instances of G401 and G505 can be safely ignored in this file.
+//
+// ref: https://github.com/spdx/spdx-spec/issues/11
 package license
 
 import (

@@ -145,6 +145,8 @@ func TestDocument_RenderMarkdownTemplateFailure(t *testing.T) {
 			if tt.templateExist {
 				fileName := strings.Split(tt.templateSpec, ":")[1]
 				p := filepath.Join(dir, fileName)
+				//nolint:gosec // TODO(gosec): G306: Expect WriteFile
+				// permissions to be 0600 or less
 				require.Nil(t, os.WriteFile(p, []byte(tt.templateContents), 0o664))
 			}
 
@@ -503,8 +505,11 @@ func TestDocument_RenderMarkdownTemplate(t *testing.T) {
 
 					require.NoError(
 						t,
+						//nolint:gosec // TODO(gosec): G306: Expect WriteFile
+						// permissions to be 0600 or less
 						os.WriteFile(p, []byte(defaultReleaseNotesTemplate), 0o664),
-						"Writing user specified template.")
+						"Writing user specified template.",
+					)
 				}
 			}
 

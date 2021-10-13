@@ -450,6 +450,8 @@ func createDraftPR(repoPath, tag string) (err error) {
 	logrus.Debugf("Release notes draft files will be written to %s", releaseDir)
 
 	// Write the markdown draft
+	//nolint:gosec // TODO(gosec): G306: Expect WriteFile permissions to be
+	// 0600 or less
 	err = os.WriteFile(filepath.Join(releaseDir, releaseNotesWorkDir, draftMarkdownFile), []byte(result.markdown), 0o644)
 	if err != nil {
 		return errors.Wrapf(err, "writing release notes draft")
@@ -457,6 +459,8 @@ func createDraftPR(repoPath, tag string) (err error) {
 	logrus.Infof("Release Notes Markdown Draft written to %s", filepath.Join(releaseDir, releaseNotesWorkDir, draftMarkdownFile))
 
 	// Write the JSON file of the current notes
+	//nolint:gosec // TODO(gosec): G306: Expect WriteFile permissions to be
+	// 0600 or less
 	err = os.WriteFile(filepath.Join(releaseDir, releaseNotesWorkDir, draftJSONFile), []byte(result.json), 0o644)
 	if err != nil {
 		return errors.Wrapf(err, "writing release notes json file")
