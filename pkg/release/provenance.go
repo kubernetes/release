@@ -17,7 +17,7 @@ limitations under the License.
 package release
 
 import (
-	"crypto/sha1"
+	"crypto/sha1" //nolint:gosec // used for file integrity checks, NOT security
 	"fmt"
 	"os"
 	"path/filepath"
@@ -51,6 +51,7 @@ type ProvenanceChecker struct {
 
 // CheckStageProvenance
 func (pc *ProvenanceChecker) CheckStageProvenance(buildVersion string) error {
+	//nolint:gosec // used for file integrity checks, NOT security
 	// Init the local dir
 	h := sha1.New()
 	if _, err := h.Write([]byte(buildVersion)); err != nil {

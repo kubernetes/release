@@ -94,7 +94,7 @@ func (di *spdxDefaultImplementation) ExtractTarballTmp(tarPath string) (tmpDir s
 		}
 
 		if strings.HasPrefix(filepath.Base(hdr.FileInfo().Name()), ".wh") {
-			logrus.Info("Skipping extraction of whiteout file")
+			logrus.Info("Skipping extraction of whithout file")
 			continue
 		}
 
@@ -104,24 +104,40 @@ func (di *spdxDefaultImplementation) ExtractTarballTmp(tarPath string) (tmpDir s
 			return tmpDir, errors.Wrap(err, "creating image directory structure")
 		}
 
-		targetFile := filepath.Join(tmpDir, hdr.Name)
+		targetFile, err := sanitizeExtractPath(tmpDir, hdr.Name)
+		if err != nil {
+			return tmpDir, err
+		}
 		f, err := os.Create(targetFile)
 		if err != nil {
 			return tmpDir, errors.Wrap(err, "creating image layer file")
 		}
 		defer f.Close()
 
-		if _, err := io.CopyN(f, tr, 1024); err != nil {
+		if _, err := io.CopyN(f, tr, hdr.Size); err != nil {
 			if err == io.EOF {
 				break
 			}
 
 			return tmpDir, errors.Wrap(err, "extracting image data")
 		}
+
 		numFiles++
 	}
+
 	logrus.Infof("Successfully extracted %d files from image tarball %s", numFiles, tarPath)
 	return tmpDir, err
+}
+
+// fix gosec G305: File traversal when extracting zip/tar archive
+// more context: https://snyk.io/research/zip-slip-vulnerability
+func sanitizeExtractPath(tmpDir, filePath string) (string, error) {
+	destpath := filepath.Join(tmpDir, filePath)
+	if !strings.HasPrefix(destpath, filepath.Clean(tmpDir)+string(os.PathSeparator)) {
+		return "", fmt.Errorf("%s: illegal file path", filePath)
+	}
+
+	return destpath, nil
 }
 
 // readArchiveManifest extracts the manifest json from an image tar
