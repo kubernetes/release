@@ -111,7 +111,7 @@ dependencies:
       match: go \d+.\d+
 
   - name: "golang: after kubernetes/kubernetes update"
-    version: 1.17.1
+    version: 1.17.2
     refPaths:
     - path: images/releng/k8s-ci-builder/Dockerfile
       match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-\${OS_CODENAME} AS builder
@@ -200,13 +200,13 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "k8s.gcr.io/build-image/kube-cross: dependents bullseye"
-    version: v1.23.0-go1.17.1-bullseye.1
+    version: v1.23.0-go1.17.2-bullseye.0
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "k8s.gcr.io/build-image/kube-cross: dependents buster"
-    version: v1.23.0-go1.17.1-buster.0
+    version: v1.23.0-go1.17.2-buster.0
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -256,7 +256,7 @@ dependencies:
       match: "CONFIG: 'go\\d+.\\d+-(bullseye|buster)'"
 
   - name: "k8s.gcr.io/build-image/kube-cross: dependents (next candidate)"
-    version: v1.23.0-go1.17.1-buster.0
+    version: v1.23.0-go1.17.2-buster.0
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
