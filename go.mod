@@ -11,7 +11,7 @@ require (
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-containerregistry v0.6.0
-	github.com/google/go-github/v39 v39.1.0
+	github.com/google/go-github/v39 v39.2.0
 	github.com/google/licenseclassifier/v2 v2.0.0-alpha.1
 	github.com/google/uuid v1.3.0
 	github.com/mattn/go-isatty v0.0.14
