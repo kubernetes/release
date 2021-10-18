@@ -43,14 +43,6 @@ SIG Release Slack thread:
   <!-- Example: https://github.com/kubernetes/k8s.io/pull/1423 -->
   - [ ] image promotion: 
 
-#### During kube-cross image promotion
-
-<!-- Example: https://github.com/kubernetes/repo-infra/pull/212 -->
-- [ ] kubernetes/repo-infra update: 
-
-<!-- Example: https://github.com/kubernetes/repo-infra/releases/tag/v0.1.3 -->
-- [ ] kubernetes/repo-infra release cut: 
-
 #### After kube-cross image promotion
 
 <!-- Example: https://github.com/kubernetes/kubernetes/pull/95776 -->
@@ -58,7 +50,6 @@ SIG Release Slack thread:
 
   Ensure the following have been updated within the PR:
 
-  - [ ] rules_go
   - [ ] kube-cross image
   - [ ] go-runner image
   - [ ] publishing bot rules
