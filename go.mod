@@ -23,7 +23,7 @@ require (
 	github.com/psampaz/go-mod-outdated v0.8.0
 	github.com/saschagrunert/go-modiff v1.3.0
 	github.com/sendgrid/rest v2.6.5+incompatible
-	github.com/sendgrid/sendgrid-go v3.10.2+incompatible
+	github.com/sendgrid/sendgrid-go v3.10.3+incompatible
 	github.com/shirou/gopsutil/v3 v3.21.9
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.2.1
