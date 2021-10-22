@@ -43,7 +43,7 @@ const (
 
 	currentCNIVersion  = "0.8.7"
 	minimumCNIVersion  = "0.8.6"
-	criToolsVersion    = "1.13.0"
+	criToolsVersion    = "1.19.0"
 	pre180kubeadmconf  = "pre-1.8/10-kubeadm.conf"
 	pre1110kubeadmconf = "post-1.8/10-kubeadm.conf"
 	latestkubeadmconf  = "post-1.10/10-kubeadm.conf"
@@ -312,8 +312,8 @@ func getKubeadmDependencies(v version) (string, error) {
 	}
 
 	deps := []string{
-		"kubelet (>= 1.13.0)",
-		"kubectl (>= 1.13.0)",
+		"kubelet (>= 1.19.0)",
+		"kubectl (>= 1.19.0)",
 		fmt.Sprintf("kubernetes-cni (>= %s)", cniVersion),
 		"${misc:Depends}",
 	}

@@ -1,5 +1,5 @@
 %global KUBE_MAJOR 1
-%global KUBE_MINOR 13
+%global KUBE_MINOR 19
 %global KUBE_PATCH 0
 %global KUBE_VERSION %{KUBE_MAJOR}.%{KUBE_MINOR}.%{KUBE_PATCH}
 %global RPM_RELEASE 0
@@ -12,7 +12,7 @@
 %global KUBE_SEMVER %{semver %{KUBE_MAJOR} %{KUBE_MINOR} %{KUBE_PATCH}}
 
 %global CNI_VERSION 0.8.7
-%global CRI_TOOLS_VERSION 1.13.0
+%global CRI_TOOLS_VERSION 1.19.0
 
 Name: kubelet
 Version: %{KUBE_VERSION}
@@ -69,10 +69,10 @@ Command-line utility for interacting with a Kubernetes cluster.
 Version: %{KUBE_VERSION}
 Release: %{RPM_RELEASE}
 Summary: Command-line utility for administering a Kubernetes cluster.
-Requires: kubelet >= 1.13.0
-Requires: kubectl >= 1.13.0
+Requires: kubelet >= 1.19.0
+Requires: kubectl >= 1.19.0
 Requires: kubernetes-cni >= 0.8.6
-Requires: cri-tools >= 1.13.0
+Requires: cri-tools >= 1.19.0
 
 %description -n kubeadm
 Command-line utility for administering a Kubernetes cluster.
@@ -157,6 +157,9 @@ mv cni-plugins/* %{buildroot}/opt/cni/bin/
 
 
 %changelog
+* Fri Oct 22 2021 Stephen Augustus <foo@auggie.dev> - 1.22.3
+- Update minimum Kubernetes version to v1.19.0
+
 * Wed Sep 2 2020 Stephen Augustus <saugustus@vmware.com> - 1.19.1
 - Update CNI plugins to v0.8.7
 

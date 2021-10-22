@@ -36,17 +36,7 @@ func TestGetKubeadmConfig(t *testing.T) {
 			true,
 		},
 		{
-			"1.12.0",
-			"post-1.10/10-kubeadm.conf",
-			false,
-		},
-		{
-			"1.13.0",
-			"post-1.10/10-kubeadm.conf",
-			false,
-		},
-		{
-			"1.15.0",
+			"1.22.0",
 			"post-1.10/10-kubeadm.conf",
 			false,
 		},
@@ -78,24 +68,24 @@ func TestGetKubeadmDependencies(t *testing.T) {
 	}{
 		{
 			name:    "minimum supported kubernetes",
-			version: "1.13.0",
+			version: "1.19.0",
 			deps: []string{
-				"kubelet (>= 1.13.0)",
-				"kubectl (>= 1.13.0)",
-				"kubernetes-cni (>= 0.8.6)",
+				"kubelet (>= 1.19.0)",
+				"kubectl (>= 1.19.0)",
+				"kubernetes-cni (>= 0.8.7)",
 				"${misc:Depends}",
-				"cri-tools (>= 1.13.0)",
+				"cri-tools (>= 1.19.0)",
 			},
 		},
 		{
 			name:    "latest stable minor kubernetes",
-			version: "1.15.0",
+			version: "1.22.0",
 			deps: []string{
-				"kubelet (>= 1.13.0)",
-				"kubectl (>= 1.13.0)",
-				"kubernetes-cni (>= 0.8.6)",
+				"kubelet (>= 1.19.0)",
+				"kubectl (>= 1.19.0)",
+				"kubernetes-cni (>= 0.8.7)",
 				"${misc:Depends}",
-				"cri-tools (>= 1.13.0)",
+				"cri-tools (>= 1.19.0)",
 			},
 		},
 	}
