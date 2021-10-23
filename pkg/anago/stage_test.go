@@ -20,9 +20,11 @@ package anago_test
 import (
 	"testing"
 
+	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/stretchr/testify/require"
 	"k8s.io/release/pkg/anago"
 	"k8s.io/release/pkg/anago/anagofakes"
+	"k8s.io/release/pkg/provenance"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/spdx"
 	"sigs.k8s.io/release-sdk/git"
@@ -530,9 +532,15 @@ func TestStageArtifacts(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // Add AddProvenanceSubject fails
+		{ // GetProvenanceSubjects fails
 			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.AddProvenanceSubjectReturns(err)
+				mock.GetProvenanceSubjectsReturns(nil, err)
+			},
+			shouldError: true,
+		},
+		{ // GetOutputDirSubjects fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.GetOutputDirSubjectsReturns(nil, err)
 			},
 			shouldError: true,
 		},
@@ -540,6 +548,9 @@ func TestStageArtifacts(t *testing.T) {
 		opts := anago.DefaultStageOptions()
 		sut := anago.NewDefaultStage(opts)
 		mock := &anagofakes.FakeStageImpl{}
+		mock.GenerateAttestationReturns(provenance.NewSLSAStatement(), nil)
+		mock.GetProvenanceSubjectsReturns([]intoto.Subject{}, nil)
+		mock.GetOutputDirSubjectsReturns([]intoto.Subject{}, nil)
 		tc.prepare(mock)
 		sut.SetImpl(mock)
 
