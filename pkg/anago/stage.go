@@ -36,7 +36,6 @@ import (
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/spdx"
 	"sigs.k8s.io/release-sdk/git"
-	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/log"
 )
 
@@ -175,7 +174,8 @@ type stageImpl interface {
 	VerifyArtifacts([]string) error
 	GenerateAttestation(*StageState, *StageOptions) (*provenance.Statement, error)
 	PushAttestation(*provenance.Statement, *StageOptions) error
-	AddProvenanceSubject(*provenance.Statement, string, bool) error
+	GetProvenanceSubjects(*StageOptions, string) ([]intoto.Subject, error)
+	GetOutputDirSubjects(*StageOptions, string, string) ([]intoto.Subject, error)
 }
 
 func (d *defaultStageImpl) Submit(options *gcb.Options) error {
@@ -794,11 +794,13 @@ func (d *DefaultStage) StageArtifacts() error {
 	}
 
 	// Add the sources tarball to the attestation
-	if err := d.impl.AddProvenanceSubject(
-		statement, filepath.Join(workspaceDir, release.SourcesTar), false,
-	); err != nil {
+	subjects, err := d.impl.GetProvenanceSubjects(
+		d.options, filepath.Join(workspaceDir, release.SourcesTar),
+	)
+	if err != nil {
 		return errors.Wrap(err, "adding sources tarball to provenance attestation")
 	}
+	statement.Subject = append(statement.Subject, subjects...)
 
 	for _, version := range d.state.versions.Ordered() {
 		logrus.Infof("Staging artifacts for version %s", version)
@@ -842,11 +844,13 @@ func (d *DefaultStage) StageArtifacts() error {
 
 		// Add artifacts to the attestation, this should get both release-images
 		// and gcs-stage directories in one call.
-		if err := d.impl.AddProvenanceSubject(
-			statement, filepath.Join(buildDir), true,
-		); err != nil {
+		subjects, err = d.impl.GetOutputDirSubjects(
+			d.options, filepath.Join(buildDir), version,
+		)
+		if err != nil {
 			return errors.Wrapf(err, "adding provenance of release-images for version %s", version)
 		}
+		statement.Subject = append(statement.Subject, subjects...)
 	}
 
 	// Push the attestation metadata file to the bucket
@@ -947,36 +951,6 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 // the Google Cloud Bucket.
 func (d *defaultStageImpl) PushAttestation(attestation *provenance.Statement, options *StageOptions) (err error) {
 	gcsPath := filepath.Join(options.Bucket(), release.StagePath, options.BuildVersion)
-	// Clean up the subkects list to normalize and only keep the ones
-	// we are interested in:
-	newSubjects := []intoto.Subject{}
-	for _, sub := range attestation.Subject {
-		// The sources tar is special:
-		if sub.Name == filepath.Join(workspaceDir, release.SourcesTar) {
-			sub.Name = object.GcsPrefix + filepath.Join(gcsPath, release.SourcesTar)
-			newSubjects = append(newSubjects, sub)
-			continue
-		}
-
-		// If the artifact is not in the images or gcs-stage dir, skip
-		if !strings.HasPrefix(sub.Name, release.ImagesPath) &&
-			!strings.HasPrefix(sub.Name, release.GCSStagePath) {
-			continue
-		}
-
-		// Now the tricky part. We need to re-append the version tag, ie
-		// gcs-stage/v1.23.0-alpha.4/file.txt shoud be
-		// v1.23.0-alpha.4/gcs-stage/v1.23.0-alpha.4/file.txt shoud be
-		parts := strings.Split(sub.Name, string(filepath.Separator))
-		if len(parts) < 3 {
-			logrus.Warnf("Unkwn path found in provenance subjects: %s", sub.Name)
-			continue
-		}
-		sub.Name = object.GcsPrefix + filepath.Join(gcsPath, parts[1], sub.Name)
-		newSubjects = append(newSubjects, sub)
-	}
-
-	attestation.Subject = newSubjects
 
 	// Create a temporary file:
 	f, err := os.CreateTemp("", "provenance-")
@@ -989,6 +963,7 @@ func (d *defaultStageImpl) PushAttestation(attestation *provenance.Statement, op
 	}
 
 	// TODO for SLSA2: Sign the attestation
+
 	// Upload the metadata file to the staging bucket
 	pushBuildOptions := &build.Options{
 		Bucket:   options.Bucket(),
@@ -1006,12 +981,24 @@ func (d *defaultStageImpl) PushAttestation(attestation *provenance.Statement, op
 	)
 }
 
-// AddProvenanceSubject adds artifacts to the provenance metadata.
-func (d *defaultStageImpl) AddProvenanceSubject(statement *provenance.Statement, path string, isDir bool) (err error) {
-	if isDir {
-		err = statement.ReadSubjectsFromDir(path)
-	} else {
-		err = statement.AddSubjectFromFile(path)
-	}
-	return errors.Wrapf(err, "adding %s to provenance metadata", path)
+// GetOutputDirSubjects reads the built artifacts and returns them
+// as intoto subjects. All paths are translated to their final path in the bucket
+func (d *defaultStageImpl) GetOutputDirSubjects(
+	options *StageOptions, path, version string) ([]intoto.Subject, error) {
+	return release.NewProvenanceReader(&release.ProvenanceReaderOptions{
+		Bucket:       options.Bucket(),
+		BuildVersion: options.BuildVersion,
+		WorkspaceDir: workspaceDir,
+	}).GetBuildSubjects(path, version)
+}
+
+// GetProvenanceSubjects returns artifacts as intoto subjects, normalized to
+// the staging bucket location
+func (d *defaultStageImpl) GetProvenanceSubjects(
+	options *StageOptions, path string) ([]intoto.Subject, error) {
+	return release.NewProvenanceReader(&release.ProvenanceReaderOptions{
+		Bucket:       options.Bucket(),
+		BuildVersion: options.BuildVersion,
+		WorkspaceDir: workspaceDir,
+	}).GetStagingSubjects(path)
 }
