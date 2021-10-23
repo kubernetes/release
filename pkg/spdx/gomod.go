@@ -358,7 +358,11 @@ func (di *GoModDefaultImpl) DownloadPackage(pkg *GoPackage, opts *GoModuleOption
 	logrus.WithField("package", pkg.ImportPath).Infof("Downloading package %s@%s", pkg.ImportPath, pkg.Revision)
 	repo, err := vcs.RepoRootForImportPath(pkg.ImportPath, true)
 	if err != nil {
-		return errors.Wrapf(err, "Fetching package %s from %s", pkg.ImportPath, repo.Repo)
+		repoName := "[unknown repo]"
+		if repo != nil {
+			repoName = repo.Repo
+		}
+		return errors.Wrapf(err, "Fetching package %s from %s", pkg.ImportPath, repoName)
 	}
 
 	if !util.Exists(filepath.Join(os.TempDir(), downloadDir)) {
