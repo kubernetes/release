@@ -635,7 +635,8 @@ func (d *DefaultRelease) CheckProvenance() error {
 
 func (d *defaultReleaseImpl) CheckStageProvenance(bucket, buildVersion string) error {
 	checker := release.NewProvenanceChecker(&release.ProvenanceCheckerOptions{
-		StageBucket: bucket,
+		ScratchDirectory: filepath.Join(workspaceDir, "provenance-workdir"),
+		StageBucket:      bucket,
 	})
 
 	return checker.CheckStageProvenance(buildVersion)

@@ -80,7 +80,14 @@ func (pc *ProvenanceChecker) CheckStageProvenance(buildVersion string) error {
 	}
 
 	// Run the check of the artifacts
-	return pc.impl.checkProvenance(pc.options, statement)
+	if err := pc.impl.checkProvenance(pc.options, statement); err != nil {
+		return errors.Wrap(err, "verifying provenance of staged artifacts")
+	}
+	logrus.Infof(
+		"Successfully verified provenance information of %d staged artifacts",
+		len(statement.Subject),
+	)
+	return nil
 }
 
 type ProvenanceCheckerOptions struct {
@@ -103,7 +110,7 @@ func (di *defaultProvenanceCheckerImpl) downloadStagedArtifacts(
 ) error {
 	logrus.Infof("Synching stage from %s to %s", path, opts.StageDirectory)
 	if !util.Exists(opts.StageDirectory) {
-		if err := os.Mkdir(opts.StageDirectory, os.FileMode(0o755)); err != nil {
+		if err := os.MkdirAll(opts.StageDirectory, os.FileMode(0o755)); err != nil {
 			return errors.Wrap(err, "creating local working directory")
 		}
 	}
