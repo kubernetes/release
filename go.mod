@@ -33,6 +33,7 @@ require (
 	github.com/yuin/goldmark v1.4.2
 	golang.org/x/mod v0.5.1
 	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d
+	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1
 	golang.org/x/tools v0.1.7
 	google.golang.org/api v0.56.0
 	google.golang.org/genproto v0.0.0-20210828152312-66f60bf46e71
