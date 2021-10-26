@@ -18,6 +18,7 @@ package spdx
 
 import (
 	"bytes"
+	"fmt"
 	"text/template"
 
 	"github.com/pkg/errors"
@@ -85,4 +86,18 @@ func (f *File) Render() (docFragment string, err error) {
 // BuildID sets the file ID, optionally from a series of strings
 func (f *File) BuildID(seeds ...string) {
 	f.Entity.BuildID(append([]string{"SPDXRef-File"}, seeds...)...)
+}
+
+func (f *File) SetEntity(e *Entity) {
+	f.Entity = *e
+}
+
+// Draw renders the file data as a tree-like structure
+// nolint:gocritic
+func (f *File) Draw(o *DrawingOptions, depth int, seen *map[string]struct{}) {
+	connector := connectorT
+	if o.LastItem {
+		connector = connectorL
+	}
+	fmt.Printf(treeLines(o, depth, connector)+"%s (%s)\n", f.SPDXID(), f.Name)
 }

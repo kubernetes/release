@@ -75,6 +75,7 @@ type Package struct {
 	LicenseDeclared      string   // GPL-3.0-or-later
 	LicenseComments      string   // record any relevant background information or analysis that went in to arriving at the Concluded License
 	Version              string   // Package version
+	Comment              string   // a place for the SPDX document creator to record any general comments
 
 	// Supplier: the actual distribution source for the package/directory
 	Supplier struct {
@@ -87,6 +88,8 @@ type Package struct {
 		Person       string // person name and optional (<email>)
 		Organization string // organization name and optional (<email>)
 	}
+
+	ExternalRefs []ExternalRef // List of external references
 }
 
 func NewPackage() (p *Package) {
@@ -266,4 +269,112 @@ func (p *Package) CheckRelationships() error {
 // BuildID sets the file ID, optionally from a series of strings
 func (p *Package) BuildID(seeds ...string) {
 	p.Entity.BuildID(append([]string{"SPDXRef-Package"}, seeds...)...)
+}
+
+func (p *Package) SetEntity(e *Entity) {
+	p.Entity = *e
+}
+
+// Draw renders the package data as a tree-like structure
+// nolint:gocritic
+func (p *Package) Draw(o *DrawingOptions, depth int, seen *map[string]struct{}) {
+	title := p.SPDXID()
+	(*seen)[p.SPDXID()] = struct{}{}
+	if p.Name != "" {
+		title = p.Name
+	}
+	if !o.SkipName {
+		fmt.Println(treeLines(o, depth-1, connectorT) + title)
+	}
+
+	connector := ""
+	if len(p.Relationships) == 0 || depth >= o.Recursion {
+		connector = connectorL
+	}
+
+	fmt.Printf(treeLines(o, depth, connector)+"🔗 %d Relationships\n", len(p.Relationships))
+	if depth >= o.Recursion {
+		fmt.Println(treeLines(o, depth-1, ""))
+		return
+	}
+
+	i := 0
+	for _, rel := range p.Relationships {
+		i++
+		o.LastItem = true
+		if i < len(p.Relationships) {
+			o.LastItem = false
+		}
+
+		connector = connectorT
+		if o.LastItem {
+			connector = connectorL
+		}
+		line := treeLines(o, depth, connector)
+		if rel.Peer != nil {
+			name := rel.Peer.SPDXID()
+
+			if !o.OnlyIDs {
+				if _, ok := rel.Peer.(*Package); ok {
+					name = rel.Peer.(*Package).Name
+				}
+
+				if _, ok := rel.Peer.(*File); ok {
+					name = rel.Peer.(*File).Name
+				}
+			}
+			line += fmt.Sprintf("%s %s", rel.Type, name)
+		} else {
+			line += fmt.Sprintf("%s %s", rel.Type, rel.PeerReference)
+		}
+
+		// If the peer is external, state it
+		if rel.PeerExtReference != "" {
+			line += " (external)"
+		}
+
+		// Version is useful for dependencies, so add it:
+		if rel.Type == DEPENDS_ON {
+			if _, ok := rel.Peer.(*Package); ok {
+				if rel.Peer.(*Package).Version != "" {
+					line += fmt.Sprintf(" (version %s)", rel.Peer.(*Package).Version)
+				}
+			}
+		}
+
+		// If it is a file, print the name
+		if _, ok := rel.Peer.(*File); ok {
+			if rel.Peer.(*File).Name != "" {
+				line += fmt.Sprintf(" (%s)", rel.Peer.(*File).Name)
+			}
+		}
+		if o.Width > 0 && len(line) > o.Width {
+			line = line[:o.Width]
+		}
+		fmt.Println(line)
+
+		// If the child has relationships, dig in
+		if rel.Peer != nil {
+			if _, ok := (*seen)[rel.Peer.SPDXID()]; !ok {
+				// if the child is a package:
+				if _, ok := rel.Peer.(*Package); ok {
+					o.SkipName = true
+					if len(rel.Peer.(*Package).Relationships) > 0 {
+						rel.Peer.(*Package).Draw(o, depth+1, seen)
+					}
+				}
+
+				// If the child is a file:
+				if _, ok := rel.Peer.(*File); ok {
+					o.SkipName = false
+					if len(rel.Peer.(*File).Relationships) > 0 {
+						rel.Peer.(*File).Draw(o, depth+1, seen)
+					}
+				}
+			}
+		}
+		if i == len(p.Relationships) {
+			fmt.Println(treeLines(o, depth-1, ""))
+		}
+	}
 }
