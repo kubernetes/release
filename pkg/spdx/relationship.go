@@ -93,7 +93,7 @@ func (ro *Relationship) Render(hostObject Object) (string, error) {
 	}
 
 	if ro.FullRender && ro.Peer == nil {
-		return "", errors.New("unable to render relationship. perr object has to be set")
+		return "", errors.New("unable to render relationship. peer object has to be set")
 	}
 
 	if ro.Type == "" {
