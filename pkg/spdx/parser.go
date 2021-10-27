@@ -27,6 +27,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Regexp to match the tag-value spdx expressions
+var (
+	tagRegExp          = regexp.MustCompile(`^([a-z0-9A-Z]+):\s+(.+)`)
+	relationshioRegExp = regexp.MustCompile(`^*(\S+)\s+([_A-Z]+)\s+(\S+)`)
+)
+
 // OpenDoc opens a file, parses a SPDX tag-value file and returns a loaded
 // spdx.Document object. This functions has the cyclomatic chec disabled as
 // it spans specific cases for each of the tags it recognizes.
@@ -44,10 +50,6 @@ func OpenDoc(path string) (*Document, error) {
 		Files:           map[string]*File{},
 		ExternalDocRefs: []ExternalDocumentRef{},
 	}
-
-	// Regexp to match the tag-value spdx expressions
-	tagRegExp := regexp.MustCompile(`^([a-z0-9A-Z]+):\s+(.+)`)
-	relationshioRegExp := regexp.MustCompile(`^*(\S+)\s+([_A-Z]+)\s+(\S+)`)
 
 	// Scan the file, looking for tags
 	scanner := bufio.NewScanner(file)
