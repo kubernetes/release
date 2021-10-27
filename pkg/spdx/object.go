@@ -40,6 +40,9 @@ type Object interface {
 	ReadSourceFile(string) error
 	Render() (string, error)
 	BuildID(seeds ...string)
+	SetEntity(*Entity)
+	AddRelationship(*Relationship)
+	GetRelationships() *[]*Relationship
 }
 
 type Entity struct {
@@ -144,4 +147,8 @@ func (e *Entity) ReadSourceFile(path string) error {
 // Render is overridden by Package and File with their own variants
 func (e *Entity) Render() (string, error) {
 	return "", nil
+}
+
+func (e *Entity) GetRelationships() *[]*Relationship {
+	return &e.Relationships
 }

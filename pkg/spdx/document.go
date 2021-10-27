@@ -29,11 +29,13 @@ import (
 	"html/template"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/term"
 	"sigs.k8s.io/release-utils/hash"
 )
 
@@ -64,6 +66,11 @@ ExternalDocumentRef:{{ extDocFormat $value }}
 
 `
 
+const (
+	connectorL = "└"
+	connectorT = "├"
+)
+
 // Document abstracts the SPDX document
 type Document struct {
 	Version     string // SPDX-2.2
@@ -72,13 +79,15 @@ type Document struct {
 	Name        string // hello-go-src
 	Namespace   string // https://swinslow.net/spdx-examples/example6/hello-go-src-v1
 	Creator     struct {
-		Person string   // Steve Winslow (steve@swinslow.net)
-		Tool   []string // github.com/spdx/tools-golang/builder
+		Person       string // Steve Winslow (steve@swinslow.net)
+		Organization string
+		Tool         []string // github.com/spdx/tools-golang/builder
 	}
-	Created         time.Time // 2020-11-24T01:12:27Z
-	Packages        map[string]*Package
-	Files           map[string]*File      // List of files
-	ExternalDocRefs []ExternalDocumentRef // List of related external documents
+	Created            time.Time // 2020-11-24T01:12:27Z
+	LicenseListVersion string
+	Packages           map[string]*Package
+	Files              map[string]*File      // List of files
+	ExternalDocRefs    []ExternalDocumentRef // List of related external documents
 }
 
 // ExternalDocumentRef is a pointer to an external, related document
@@ -86,6 +95,24 @@ type ExternalDocumentRef struct {
 	ID        string            `yaml:"id"`        // Identifier for the external doc (eg "external-source-bom")
 	URI       string            `yaml:"uri"`       // URI where the doc can be retrieved
 	Checksums map[string]string `yaml:"checksums"` // Document checksums
+}
+
+// Example: cpe23Type cpe:2.3:a:base-files:base-files:10.3+deb10u9:*:*:*:*:*:*:*
+type ExternalRef struct {
+	Category string // SECURITY | PACKAGE-MANAGER | PERSISTENT-ID | OTHER
+	Type     string // cpe22Type | cpe23Type | maven-central | npm | nuget | bower | purl | swh | other
+	Locator  string // unique string with no spaces
+}
+
+type DrawingOptions struct {
+	Width       int
+	Height      int
+	Recursion   int
+	DisableTerm bool
+	LastItem    bool
+	SkipName    bool
+	OnlyIDs     bool
+	ASCIIOnly   bool
 }
 
 // String returns the SPDX string of the external document ref
@@ -125,11 +152,13 @@ func NewDocument() *Document {
 		DataLicense: "CC0-1.0",
 		Created:     time.Now().UTC(),
 		Creator: struct {
-			Person string
-			Tool   []string
+			Person       string
+			Organization string
+			Tool         []string
 		}{
-			Person: defaultDocumentAuthor,
-			Tool:   []string{"k8s.io/release/pkg/spdx"},
+			Person:       defaultDocumentAuthor,
+			Organization: "Kubernetes Release Engineering",
+			Tool:         []string{"k8s.io/release/pkg/spdx"},
 		},
 	}
 }
@@ -247,4 +276,75 @@ func (d *Document) AddFile(file *File) error {
 	}
 	d.Files[file.ID] = file
 	return nil
+}
+
+func treeLines(o *DrawingOptions, depth int, connector string) string {
+	stick := "│"
+	if o.ASCIIOnly {
+		stick = "|"
+	}
+	if connector == "" {
+		connector = stick
+	}
+	res := " " + strings.Repeat(fmt.Sprintf(" %s ", stick), depth)
+	res += " " + connector + " "
+	return res
+}
+
+// Outline draws an outline of the relationships inside the doc
+func (d *Document) Outline(o *DrawingOptions) (outline string, err error) {
+	seen := map[string]struct{}{}
+	builder := &strings.Builder{}
+	title := d.ID
+	if d.Name != "" {
+		title = d.Name
+	}
+	fmt.Fprintf(builder, " 📂 SPDX Document %s\n", title)
+	fmt.Fprintln(builder, treeLines(o, 0, ""))
+	var width, height int
+	if term.IsTerminal(0) {
+		width, height, err = term.GetSize(0)
+		if err != nil {
+			return "", errors.Wrap(err, "reading the terminal size")
+		}
+		logrus.Debugf("Terminal size is %dx%d", width, height)
+	}
+	o.Width = width
+	o.Height = height
+
+	fmt.Fprintf(builder, treeLines(o, 0, "")+"📦 DESCRIBES %d Packages\n", len(d.Packages))
+	fmt.Fprintln(builder, treeLines(o, 0, ""))
+	i := 0
+	for _, p := range d.Packages {
+		i++
+		o.LastItem = true
+		if i < len(d.Packages) {
+			o.LastItem = false
+		}
+		o.SkipName = false
+		p.Draw(builder, o, 1, &seen)
+	}
+	if len(d.Files) > 0 {
+		fmt.Fprintln(builder, treeLines(o, 0, ""))
+	}
+	connector := "│"
+	if len(d.Files) == 0 {
+		connector = connectorL
+	}
+	fmt.Fprintf(builder, treeLines(o, 0, connector)+"📄 DESCRIBES %d Files\n", len(d.Files))
+	if len(d.Files) > 0 {
+		fmt.Fprint(builder, treeLines(o, 0, ""))
+	}
+	fmt.Fprintln(builder, "")
+	i = 0
+
+	for _, f := range d.Files {
+		i++
+		o.LastItem = true
+		if i < len(d.Files) {
+			o.LastItem = false
+		}
+		f.Draw(builder, o, 0, &seen)
+	}
+	return builder.String(), nil
 }

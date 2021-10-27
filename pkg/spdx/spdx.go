@@ -17,6 +17,7 @@ limitations under the License.
 package spdx
 
 import (
+	"encoding/base64"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -42,6 +43,10 @@ const (
 	// Consts of some SPDX expressions
 	NONE        = "NONE"
 	NOASSERTION = "NOASSERTION"
+
+	termBanner = `ICAgICAgICAgICAgICAgXyAgICAgIAogX19fIF8gX18gICBfX3wgfF8gIF9fCi8gX198ICdfIFwg
+LyBfYCBcIFwvIC8KXF9fIFwgfF8pIHwgKF98IHw+ICA8IAp8X19fLyAuX18vIFxfXyxfL18vXF9c
+CiAgICB8X3wgICAgICAgICAgICAgICAK`
 )
 
 type SPDX struct {
@@ -282,4 +287,12 @@ func (spdx *SPDX) PullImagesToArchive(reference, path string) ([]struct {
 //  All subpackages are returned with a relationship of VARIANT_OF
 func (spdx *SPDX) ImageRefToPackage(reference string) (pkg *Package, err error) {
 	return spdx.impl.ImageRefToPackage(reference, spdx.Options())
+}
+
+func Banner() string {
+	d, err := base64.StdEncoding.DecodeString(termBanner)
+	if err != nil {
+		return ""
+	}
+	return string(d)
 }
