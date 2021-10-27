@@ -288,12 +288,12 @@ func (p *Package) Draw(builder *strings.Builder, o *DrawingOptions, depth int, s
 	}
 
 	connector := ""
-	if len(p.Relationships) == 0 || depth >= o.Recursion {
+	if len(p.Relationships) == 0 || (o.Recursion > 0 && depth >= o.Recursion) {
 		connector = connectorL
 	}
 
 	fmt.Fprintf(builder, treeLines(o, depth, connector)+"🔗 %d Relationships\n", len(p.Relationships))
-	if depth >= o.Recursion {
+	if depth >= o.Recursion && o.Recursion > 0 {
 		fmt.Fprintln(builder, treeLines(o, depth-1, ""))
 		return
 	}
