@@ -293,14 +293,14 @@ func treeLines(o *DrawingOptions, depth int, connector string) string {
 
 // Outline draws an outline of the relationships inside the doc
 func (d *Document) Outline(o *DrawingOptions) (outline string, err error) {
-	fmt.Println(Banner())
 	seen := map[string]struct{}{}
+	builder := &strings.Builder{}
 	title := d.ID
 	if d.Name != "" {
 		title = d.Name
 	}
-	fmt.Printf(" 📂 SPDX Document %s\n", title)
-	fmt.Println(treeLines(o, 0, ""))
+	fmt.Fprintf(builder, " 📂 SPDX Document %s\n", title)
+	fmt.Fprintln(builder, treeLines(o, 0, ""))
 	var width, height int
 	if term.IsTerminal(0) {
 		width, height, err = term.GetSize(0)
@@ -312,8 +312,8 @@ func (d *Document) Outline(o *DrawingOptions) (outline string, err error) {
 	o.Width = width
 	o.Height = height
 
-	fmt.Printf(treeLines(o, 0, "")+"📦 DESCRIBES %d Packages\n", len(d.Packages))
-	fmt.Println(treeLines(o, 0, ""))
+	fmt.Fprintf(builder, treeLines(o, 0, "")+"📦 DESCRIBES %d Packages\n", len(d.Packages))
+	fmt.Fprintln(builder, treeLines(o, 0, ""))
 	i := 0
 	for _, p := range d.Packages {
 		i++
@@ -322,20 +322,20 @@ func (d *Document) Outline(o *DrawingOptions) (outline string, err error) {
 			o.LastItem = false
 		}
 		o.SkipName = false
-		p.Draw(o, 1, &seen)
+		p.Draw(builder, o, 1, &seen)
 	}
 	if len(d.Files) > 0 {
-		fmt.Println(treeLines(o, 0, ""))
+		fmt.Fprintln(builder, treeLines(o, 0, ""))
 	}
 	connector := "│"
 	if len(d.Files) == 0 {
 		connector = connectorL
 	}
-	fmt.Printf(treeLines(o, 0, connector)+"📄 DESCRIBES %d Files\n", len(d.Files))
+	fmt.Fprintf(builder, treeLines(o, 0, connector)+"📄 DESCRIBES %d Files\n", len(d.Files))
 	if len(d.Files) > 0 {
-		fmt.Print(treeLines(o, 0, ""))
+		fmt.Fprint(builder, treeLines(o, 0, ""))
 	}
-	fmt.Println("")
+	fmt.Fprintln(builder, "")
 	i = 0
 
 	for _, f := range d.Files {
@@ -344,7 +344,7 @@ func (d *Document) Outline(o *DrawingOptions) (outline string, err error) {
 		if i < len(d.Files) {
 			o.LastItem = false
 		}
-		f.Draw(o, 0, &seen)
+		f.Draw(builder, o, 0, &seen)
 	}
-	return "", nil
+	return builder.String(), nil
 }

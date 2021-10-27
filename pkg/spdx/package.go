@@ -277,14 +277,14 @@ func (p *Package) SetEntity(e *Entity) {
 
 // Draw renders the package data as a tree-like structure
 // nolint:gocritic
-func (p *Package) Draw(o *DrawingOptions, depth int, seen *map[string]struct{}) {
+func (p *Package) Draw(builder *strings.Builder, o *DrawingOptions, depth int, seen *map[string]struct{}) {
 	title := p.SPDXID()
 	(*seen)[p.SPDXID()] = struct{}{}
 	if p.Name != "" {
 		title = p.Name
 	}
 	if !o.SkipName {
-		fmt.Println(treeLines(o, depth-1, connectorT) + title)
+		fmt.Fprintln(builder, treeLines(o, depth-1, connectorT)+title)
 	}
 
 	connector := ""
@@ -292,9 +292,9 @@ func (p *Package) Draw(o *DrawingOptions, depth int, seen *map[string]struct{}) 
 		connector = connectorL
 	}
 
-	fmt.Printf(treeLines(o, depth, connector)+"🔗 %d Relationships\n", len(p.Relationships))
+	fmt.Fprintf(builder, treeLines(o, depth, connector)+"🔗 %d Relationships\n", len(p.Relationships))
 	if depth >= o.Recursion {
-		fmt.Println(treeLines(o, depth-1, ""))
+		fmt.Fprintln(builder, treeLines(o, depth-1, ""))
 		return
 	}
 
@@ -351,7 +351,7 @@ func (p *Package) Draw(o *DrawingOptions, depth int, seen *map[string]struct{}) 
 		if o.Width > 0 && len(line) > o.Width {
 			line = line[:o.Width]
 		}
-		fmt.Println(line)
+		fmt.Fprintln(builder, line)
 
 		// If the child has relationships, dig in
 		if rel.Peer != nil {
@@ -360,7 +360,7 @@ func (p *Package) Draw(o *DrawingOptions, depth int, seen *map[string]struct{}) 
 				if _, ok := rel.Peer.(*Package); ok {
 					o.SkipName = true
 					if len(rel.Peer.(*Package).Relationships) > 0 {
-						rel.Peer.(*Package).Draw(o, depth+1, seen)
+						rel.Peer.(*Package).Draw(builder, o, depth+1, seen)
 					}
 				}
 
@@ -368,13 +368,13 @@ func (p *Package) Draw(o *DrawingOptions, depth int, seen *map[string]struct{}) 
 				if _, ok := rel.Peer.(*File); ok {
 					o.SkipName = false
 					if len(rel.Peer.(*File).Relationships) > 0 {
-						rel.Peer.(*File).Draw(o, depth+1, seen)
+						rel.Peer.(*File).Draw(builder, o, depth+1, seen)
 					}
 				}
 			}
 		}
 		if i == len(p.Relationships) {
-			fmt.Println(treeLines(o, depth-1, ""))
+			fmt.Fprintln(builder, treeLines(o, depth-1, ""))
 		}
 	}
 }

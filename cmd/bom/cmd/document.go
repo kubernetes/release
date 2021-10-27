@@ -36,31 +36,22 @@ var documentCmd = &cobra.Command{
 	SilenceUsage:      false,
 	SilenceErrors:     true,
 	PersistentPreRunE: initLogging,
-	/*
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 1 {
-				return errors.New("You should only specify one file")
-			}
-			doc, err := spdx.OpenDoc(args[0])
-			if err != nil {
-				return errors.Wrap(err, "opening doc")
-			}
-			output, err := doc.Outline()
-			if err != nil {
-				return errors.Wrap(err, "generating document outline")
-			}
-			fmt.Println(output)
-			return nil
-		},
-	*/
-	// doc.
-
 }
 
 var outlineCmd = &cobra.Command{
 	Short: "bom document outline → Draw structure of a SPDX document",
 	Long: `bom document outline → Draw structure of a SPDX document",
 
+This subcommand draws a tree-like outline to help the user visualize 
+the structure of the bom. Even when an SBOM represents a graph structure, 
+drawing a tree helps a lot to understand what is contained in the document.
+
+You can define a level of depth to limit the expansion of the entities.
+For example set --depth=1 to only visualize only the files and packages
+attached directly to the root of the document. 
+
+bom will try to add useful information to the oultine but, if needed, you can
+set the --spdx-ids to only output the IDs of the entities.
 
 `,
 	Use:               "outline",
@@ -79,6 +70,7 @@ var outlineCmd = &cobra.Command{
 		if err != nil {
 			return errors.Wrap(err, "generating document outline")
 		}
+		fmt.Println(spdx.Banner())
 		fmt.Println(output)
 		return nil
 	},
@@ -89,7 +81,7 @@ func init() {
 		&outlineOpts.Recursion,
 		"depth",
 		"d",
-		9999,
+		-1,
 		"recursion level",
 	)
 
