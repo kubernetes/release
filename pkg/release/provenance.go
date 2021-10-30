@@ -150,3 +150,111 @@ func (di *defaultProvenanceCheckerImpl) checkProvenance(
 	opts *ProvenanceCheckerOptions, s *provenance.Statement) error {
 	return errors.Wrap(s.VerifySubjects(opts.StageDirectory), "checking subjects in attestation")
 }
+
+func NewProvenanceReader(opts *ProvenanceReaderOptions) *ProvenanceReader {
+	return &ProvenanceReader{
+		options: opts,
+		impl:    &defaultProvenanceReaderImpl{},
+	}
+}
+
+type ProvenanceReader struct {
+	options *ProvenanceReaderOptions
+	impl    provenanceReaderImplementation
+}
+
+type provenanceReaderImplementation interface {
+	GetStagingSubjects(*ProvenanceReaderOptions, string) ([]intoto.Subject, error)
+	GetBuildSubjects(*ProvenanceReaderOptions, string, string) ([]intoto.Subject, error)
+}
+
+type ProvenanceReaderOptions struct {
+	Bucket       string
+	BuildVersion string
+	WorkspaceDir string
+}
+
+// GetBuildSubjects returns all artifacts in the output directory
+// as intoto subjects, ready to add to the attestation
+func (pr *ProvenanceReader) GetBuildSubjects(path, version string) ([]intoto.Subject, error) {
+	return pr.impl.GetBuildSubjects(pr.options, path, version)
+}
+
+// GetStagingSubjects reads artifacts from the GCB workspace and returns them
+// as in-toto subjects, with their paths normalized to their final locations
+// in the staging bucket.
+func (pr *ProvenanceReader) GetStagingSubjects(path string) ([]intoto.Subject, error) {
+	return pr.impl.GetStagingSubjects(pr.options, path)
+}
+
+type defaultProvenanceReaderImpl struct{}
+
+func (di *defaultProvenanceReaderImpl) GetStagingSubjects(
+	opts *ProvenanceReaderOptions, path string) ([]intoto.Subject, error) {
+	// Create the dummy statement to read artifacts
+	dummy := provenance.NewSLSAStatement()
+
+	// The path in the bucket were built artifacts will be staged
+	gcsPath := filepath.Join(opts.Bucket, StagePath, opts.BuildVersion)
+
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "checking artifact path to generate provenance subjects")
+	}
+
+	if info.IsDir() {
+		if err := dummy.ReadSubjectsFromDir(path); err != nil {
+			return nil, errors.Wrapf(err, "generating provenance subject from file %s", path)
+		}
+	} else {
+		if err := dummy.AddSubjectFromFile(path); err != nil {
+			return nil, errors.Wrapf(err, "generating provenance subject from file %s", path)
+		}
+	}
+
+	// Check if we are dealing with the sources tar and translate to the top
+	if dummy.Subject[0].Name == filepath.Join(opts.WorkspaceDir, SourcesTar) {
+		dummy.Subject[0].Name = SourcesTar
+	}
+
+	for i, s := range dummy.Subject {
+		dummy.Subject[i].Name = object.GcsPrefix + filepath.Join(gcsPath, s.Name)
+	}
+
+	return dummy.Subject, nil
+}
+
+func (di *defaultProvenanceReaderImpl) GetBuildSubjects(
+	opts *ProvenanceReaderOptions, path, version string) ([]intoto.Subject, error) {
+	// The path in the bucket were built artifacts will be staged
+	gcsPath := filepath.Join(opts.Bucket, StagePath, opts.BuildVersion)
+
+	// When adding the output directory for a specific version, we need
+	// to modiy the paths in the attestation to match the bucket names.
+	// In order to do that, we create a dummy statement. Use that to read
+	// the files and translate those to the final attestation with the paths
+	// translated.
+	dummy := provenance.NewSLSAStatement()
+	if err := dummy.ReadSubjectsFromDir(path); err != nil {
+		return nil, errors.Wrap(err, "reading output directory provenance subjects")
+	}
+
+	// Cycle the subjects, translate the paths and copy them to the
+	// real attestation:
+	newSubjects := []intoto.Subject{}
+	for _, subject := range dummy.Subject {
+		// If the artifact is not in the images or gcs-stage dir, skip
+		if !strings.HasPrefix(subject.Name, ImagesPath) &&
+			!strings.HasPrefix(subject.Name, GCSStagePath) {
+			continue
+		}
+
+		// Now the tricky part. We need to re-append the version tag. Eg
+		// gcs-stage/v1.23.0-alpha.4/file.txt shoud be
+		// v1.23.0-alpha.4/gcs-stage/v1.23.0-alpha.4/file.txt shoud be
+		subject.Name = object.GcsPrefix + filepath.Join(gcsPath, version, subject.Name)
+
+		newSubjects = append(newSubjects, subject)
+	}
+	return newSubjects, nil
+}

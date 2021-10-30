@@ -21,6 +21,7 @@ import (
 	"sync"
 
 	"github.com/blang/semver"
+	"github.com/in-toto/in-toto-golang/in_toto"
 	"k8s.io/release/pkg/anago"
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/changelog"
@@ -42,19 +43,6 @@ type FakeStageImpl struct {
 		result1 error
 	}
 	addBinariesToSBOMReturnsOnCall map[int]struct {
-		result1 error
-	}
-	AddProvenanceSubjectStub        func(*provenance.Statement, string, bool) error
-	addProvenanceSubjectMutex       sync.RWMutex
-	addProvenanceSubjectArgsForCall []struct {
-		arg1 *provenance.Statement
-		arg2 string
-		arg3 bool
-	}
-	addProvenanceSubjectReturns struct {
-		result1 error
-	}
-	addProvenanceSubjectReturnsOnCall map[int]struct {
 		result1 error
 	}
 	AddTarfilesToSBOMStub        func(*spdx.Document, string) error
@@ -242,6 +230,35 @@ type FakeStageImpl struct {
 	}
 	generateVersionArtifactsBOMReturnsOnCall map[int]struct {
 		result1 error
+	}
+	GetOutputDirSubjectsStub        func(*anago.StageOptions, string, string) ([]in_toto.Subject, error)
+	getOutputDirSubjectsMutex       sync.RWMutex
+	getOutputDirSubjectsArgsForCall []struct {
+		arg1 *anago.StageOptions
+		arg2 string
+		arg3 string
+	}
+	getOutputDirSubjectsReturns struct {
+		result1 []in_toto.Subject
+		result2 error
+	}
+	getOutputDirSubjectsReturnsOnCall map[int]struct {
+		result1 []in_toto.Subject
+		result2 error
+	}
+	GetProvenanceSubjectsStub        func(*anago.StageOptions, string) ([]in_toto.Subject, error)
+	getProvenanceSubjectsMutex       sync.RWMutex
+	getProvenanceSubjectsArgsForCall []struct {
+		arg1 *anago.StageOptions
+		arg2 string
+	}
+	getProvenanceSubjectsReturns struct {
+		result1 []in_toto.Subject
+		result2 error
+	}
+	getProvenanceSubjectsReturnsOnCall map[int]struct {
+		result1 []in_toto.Subject
+		result2 error
 	}
 	ListBinariesStub func(string) ([]struct {
 		Path     string
@@ -549,69 +566,6 @@ func (fake *FakeStageImpl) AddBinariesToSBOMReturnsOnCall(i int, result1 error) 
 		})
 	}
 	fake.addBinariesToSBOMReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeStageImpl) AddProvenanceSubject(arg1 *provenance.Statement, arg2 string, arg3 bool) error {
-	fake.addProvenanceSubjectMutex.Lock()
-	ret, specificReturn := fake.addProvenanceSubjectReturnsOnCall[len(fake.addProvenanceSubjectArgsForCall)]
-	fake.addProvenanceSubjectArgsForCall = append(fake.addProvenanceSubjectArgsForCall, struct {
-		arg1 *provenance.Statement
-		arg2 string
-		arg3 bool
-	}{arg1, arg2, arg3})
-	stub := fake.AddProvenanceSubjectStub
-	fakeReturns := fake.addProvenanceSubjectReturns
-	fake.recordInvocation("AddProvenanceSubject", []interface{}{arg1, arg2, arg3})
-	fake.addProvenanceSubjectMutex.Unlock()
-	if stub != nil {
-		return stub(arg1, arg2, arg3)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fakeReturns.result1
-}
-
-func (fake *FakeStageImpl) AddProvenanceSubjectCallCount() int {
-	fake.addProvenanceSubjectMutex.RLock()
-	defer fake.addProvenanceSubjectMutex.RUnlock()
-	return len(fake.addProvenanceSubjectArgsForCall)
-}
-
-func (fake *FakeStageImpl) AddProvenanceSubjectCalls(stub func(*provenance.Statement, string, bool) error) {
-	fake.addProvenanceSubjectMutex.Lock()
-	defer fake.addProvenanceSubjectMutex.Unlock()
-	fake.AddProvenanceSubjectStub = stub
-}
-
-func (fake *FakeStageImpl) AddProvenanceSubjectArgsForCall(i int) (*provenance.Statement, string, bool) {
-	fake.addProvenanceSubjectMutex.RLock()
-	defer fake.addProvenanceSubjectMutex.RUnlock()
-	argsForCall := fake.addProvenanceSubjectArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
-}
-
-func (fake *FakeStageImpl) AddProvenanceSubjectReturns(result1 error) {
-	fake.addProvenanceSubjectMutex.Lock()
-	defer fake.addProvenanceSubjectMutex.Unlock()
-	fake.AddProvenanceSubjectStub = nil
-	fake.addProvenanceSubjectReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeStageImpl) AddProvenanceSubjectReturnsOnCall(i int, result1 error) {
-	fake.addProvenanceSubjectMutex.Lock()
-	defer fake.addProvenanceSubjectMutex.Unlock()
-	fake.AddProvenanceSubjectStub = nil
-	if fake.addProvenanceSubjectReturnsOnCall == nil {
-		fake.addProvenanceSubjectReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.addProvenanceSubjectReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -1542,6 +1496,137 @@ func (fake *FakeStageImpl) GenerateVersionArtifactsBOMReturnsOnCall(i int, resul
 	fake.generateVersionArtifactsBOMReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
+}
+
+func (fake *FakeStageImpl) GetOutputDirSubjects(arg1 *anago.StageOptions, arg2 string, arg3 string) ([]in_toto.Subject, error) {
+	fake.getOutputDirSubjectsMutex.Lock()
+	ret, specificReturn := fake.getOutputDirSubjectsReturnsOnCall[len(fake.getOutputDirSubjectsArgsForCall)]
+	fake.getOutputDirSubjectsArgsForCall = append(fake.getOutputDirSubjectsArgsForCall, struct {
+		arg1 *anago.StageOptions
+		arg2 string
+		arg3 string
+	}{arg1, arg2, arg3})
+	stub := fake.GetOutputDirSubjectsStub
+	fakeReturns := fake.getOutputDirSubjectsReturns
+	fake.recordInvocation("GetOutputDirSubjects", []interface{}{arg1, arg2, arg3})
+	fake.getOutputDirSubjectsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeStageImpl) GetOutputDirSubjectsCallCount() int {
+	fake.getOutputDirSubjectsMutex.RLock()
+	defer fake.getOutputDirSubjectsMutex.RUnlock()
+	return len(fake.getOutputDirSubjectsArgsForCall)
+}
+
+func (fake *FakeStageImpl) GetOutputDirSubjectsCalls(stub func(*anago.StageOptions, string, string) ([]in_toto.Subject, error)) {
+	fake.getOutputDirSubjectsMutex.Lock()
+	defer fake.getOutputDirSubjectsMutex.Unlock()
+	fake.GetOutputDirSubjectsStub = stub
+}
+
+func (fake *FakeStageImpl) GetOutputDirSubjectsArgsForCall(i int) (*anago.StageOptions, string, string) {
+	fake.getOutputDirSubjectsMutex.RLock()
+	defer fake.getOutputDirSubjectsMutex.RUnlock()
+	argsForCall := fake.getOutputDirSubjectsArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeStageImpl) GetOutputDirSubjectsReturns(result1 []in_toto.Subject, result2 error) {
+	fake.getOutputDirSubjectsMutex.Lock()
+	defer fake.getOutputDirSubjectsMutex.Unlock()
+	fake.GetOutputDirSubjectsStub = nil
+	fake.getOutputDirSubjectsReturns = struct {
+		result1 []in_toto.Subject
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStageImpl) GetOutputDirSubjectsReturnsOnCall(i int, result1 []in_toto.Subject, result2 error) {
+	fake.getOutputDirSubjectsMutex.Lock()
+	defer fake.getOutputDirSubjectsMutex.Unlock()
+	fake.GetOutputDirSubjectsStub = nil
+	if fake.getOutputDirSubjectsReturnsOnCall == nil {
+		fake.getOutputDirSubjectsReturnsOnCall = make(map[int]struct {
+			result1 []in_toto.Subject
+			result2 error
+		})
+	}
+	fake.getOutputDirSubjectsReturnsOnCall[i] = struct {
+		result1 []in_toto.Subject
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStageImpl) GetProvenanceSubjects(arg1 *anago.StageOptions, arg2 string) ([]in_toto.Subject, error) {
+	fake.getProvenanceSubjectsMutex.Lock()
+	ret, specificReturn := fake.getProvenanceSubjectsReturnsOnCall[len(fake.getProvenanceSubjectsArgsForCall)]
+	fake.getProvenanceSubjectsArgsForCall = append(fake.getProvenanceSubjectsArgsForCall, struct {
+		arg1 *anago.StageOptions
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.GetProvenanceSubjectsStub
+	fakeReturns := fake.getProvenanceSubjectsReturns
+	fake.recordInvocation("GetProvenanceSubjects", []interface{}{arg1, arg2})
+	fake.getProvenanceSubjectsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeStageImpl) GetProvenanceSubjectsCallCount() int {
+	fake.getProvenanceSubjectsMutex.RLock()
+	defer fake.getProvenanceSubjectsMutex.RUnlock()
+	return len(fake.getProvenanceSubjectsArgsForCall)
+}
+
+func (fake *FakeStageImpl) GetProvenanceSubjectsCalls(stub func(*anago.StageOptions, string) ([]in_toto.Subject, error)) {
+	fake.getProvenanceSubjectsMutex.Lock()
+	defer fake.getProvenanceSubjectsMutex.Unlock()
+	fake.GetProvenanceSubjectsStub = stub
+}
+
+func (fake *FakeStageImpl) GetProvenanceSubjectsArgsForCall(i int) (*anago.StageOptions, string) {
+	fake.getProvenanceSubjectsMutex.RLock()
+	defer fake.getProvenanceSubjectsMutex.RUnlock()
+	argsForCall := fake.getProvenanceSubjectsArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeStageImpl) GetProvenanceSubjectsReturns(result1 []in_toto.Subject, result2 error) {
+	fake.getProvenanceSubjectsMutex.Lock()
+	defer fake.getProvenanceSubjectsMutex.Unlock()
+	fake.GetProvenanceSubjectsStub = nil
+	fake.getProvenanceSubjectsReturns = struct {
+		result1 []in_toto.Subject
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStageImpl) GetProvenanceSubjectsReturnsOnCall(i int, result1 []in_toto.Subject, result2 error) {
+	fake.getProvenanceSubjectsMutex.Lock()
+	defer fake.getProvenanceSubjectsMutex.Unlock()
+	fake.GetProvenanceSubjectsStub = nil
+	if fake.getProvenanceSubjectsReturnsOnCall == nil {
+		fake.getProvenanceSubjectsReturnsOnCall = make(map[int]struct {
+			result1 []in_toto.Subject
+			result2 error
+		})
+	}
+	fake.getProvenanceSubjectsReturnsOnCall[i] = struct {
+		result1 []in_toto.Subject
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeStageImpl) ListBinaries(arg1 string) ([]struct {
@@ -2770,8 +2855,6 @@ func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.addBinariesToSBOMMutex.RLock()
 	defer fake.addBinariesToSBOMMutex.RUnlock()
-	fake.addProvenanceSubjectMutex.RLock()
-	defer fake.addProvenanceSubjectMutex.RUnlock()
 	fake.addTarfilesToSBOMMutex.RLock()
 	defer fake.addTarfilesToSBOMMutex.RUnlock()
 	fake.branchNeedsCreationMutex.RLock()
@@ -2802,6 +2885,10 @@ func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	defer fake.generateSourceTreeBOMMutex.RUnlock()
 	fake.generateVersionArtifactsBOMMutex.RLock()
 	defer fake.generateVersionArtifactsBOMMutex.RUnlock()
+	fake.getOutputDirSubjectsMutex.RLock()
+	defer fake.getOutputDirSubjectsMutex.RUnlock()
+	fake.getProvenanceSubjectsMutex.RLock()
+	defer fake.getProvenanceSubjectsMutex.RUnlock()
 	fake.listBinariesMutex.RLock()
 	defer fake.listBinariesMutex.RUnlock()
 	fake.listImageArchivesMutex.RLock()
