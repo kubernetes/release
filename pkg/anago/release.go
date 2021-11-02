@@ -446,6 +446,18 @@ func (d *DefaultRelease) PushArtifacts() error {
 		return errors.Wrap(err, "copy release notes to bucket")
 	}
 
+	for _, version := range d.state.versions.Ordered() {
+		if err := d.impl.CopyToRemote(
+			objStore,
+			filepath.Join(os.TempDir(), fmt.Sprintf("provenance-%s.json", version)),
+			gcsReleaseRootPath+fmt.Sprintf(
+				"/%s/provenance.json", version,
+			),
+		); err != nil {
+			return errors.Wrap(err, "copying provenance data to release bucket")
+		}
+	}
+
 	logrus.Info("Publishing updated release notes index")
 	if err := d.impl.PublishReleaseNotesIndex(
 		gcsReleaseRootPath, gcsReleaseNotesPath, d.state.versions.Prime(),
