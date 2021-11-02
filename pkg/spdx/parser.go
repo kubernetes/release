@@ -128,6 +128,7 @@ func OpenDoc(path string) (*Document, error) {
 			// And the new SPDX object:
 			if tag == "FileName" {
 				currentObject = &File{}
+				currentEntity.FileName = value
 			}
 			if tag == "PackageName" {
 				currentObject = &Package{}
@@ -215,7 +216,9 @@ func OpenDoc(path string) (*Document, error) {
 				matches[1], matches[2], matches[3], ext,
 			})
 		case "PackageDownloadLocation":
-			currentEntity.DownloadLocation = value
+			if value != NONE {
+				currentEntity.DownloadLocation = value
+			}
 			// Tags that apply top the doc
 		case "Created":
 			t, err := time.Parse("2006-01-02T15:04:05Z", value)
