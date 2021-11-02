@@ -375,7 +375,7 @@ func (r *Release) Run() error {
 		return errors.Wrap(err, "init log file")
 	}
 
-	logger := log.NewStepLogger(10)
+	logger := log.NewStepLogger(11)
 	logger.Infof("Using krel version:\n%s", version.Get().String())
 
 	logger.WithStep().Info("Validating options")
