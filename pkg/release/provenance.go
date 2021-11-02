@@ -97,6 +97,7 @@ func (pc *ProvenanceChecker) GenerateFinalAttestation(buildVersion string, versi
 	statementPath := filepath.Join(pc.options.StageDirectory, buildVersion, ProvenanceFilename)
 	for _, version := range versions.Ordered() {
 		if err := pc.impl.generateFinalAttestation(
+			pc.options,
 			filepath.Join(
 				pc.options.StageDirectory, buildVersion, version, GCSStagePath, version, "kubernetes-release.spdx",
 			),
@@ -118,7 +119,7 @@ type provenanceCheckerImplementation interface {
 	downloadStagedArtifacts(*ProvenanceCheckerOptions, *object.GCS, string) error
 	processAttestation(*ProvenanceCheckerOptions, string) (*provenance.Statement, error)
 	checkProvenance(*ProvenanceCheckerOptions, *provenance.Statement) error
-	generateFinalAttestation(sbom, stageProvenance, version string) error
+	generateFinalAttestation(opts *ProvenanceCheckerOptions, sbom, stageProvenance, version string) error
 }
 
 type defaultProvenanceCheckerImpl struct{}
@@ -170,13 +171,21 @@ func (di *defaultProvenanceCheckerImpl) checkProvenance(
 	return errors.Wrap(s.VerifySubjects(opts.StageDirectory), "checking subjects in attestation")
 }
 
-func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(sbom, stageProvenance, version string) error {
+func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(
+	opts *ProvenanceCheckerOptions, sbom, stageProvenance, version string) error {
 	doc, err := spdx.OpenDoc(sbom)
 	if err != nil {
 		return errors.Wrapf(err, "parsing sbom for version %s from %s", version, sbom)
 	}
 
 	slsaStatement := doc.ToProvenanceStatement(spdx.DefaultProvenanceOptions)
+
+	// Rewrite the provenance sublects to list their full paths in the bucket
+	for i, sub := range slsaStatement.Subject {
+		slsaStatement.Subject[i].Name = object.GcsPrefix + filepath.Join(
+			opts.StageBucket, "release", version, sub.Name,
+		)
+	}
 	if err := slsaStatement.ClonePredicate(stageProvenance); err != nil {
 		return errors.Wrapf(
 			err, "cloning SLSA predicate from staging provenance: %s", stageProvenance,

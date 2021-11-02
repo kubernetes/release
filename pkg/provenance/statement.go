@@ -191,7 +191,7 @@ func (si *defaultStatementImplementation) ToJSON(s *Statement) ([]byte, error) {
 func (si *defaultStatementImplementation) Write(s *Statement, path string) error {
 	jsonData, err := si.ToJSON(s)
 	if err != nil {
-		return errors.Wrap(err, "marshalling statement to json")
+		return err
 	}
 	return errors.Wrap(
 		os.WriteFile(path, jsonData, os.FileMode(0o644)),
@@ -199,8 +199,8 @@ func (si *defaultStatementImplementation) Write(s *Statement, path string) error
 	)
 }
 
-// ClonePredicate clonea the predicate from the file in manifestPath
-// to Statement s
+// ClonePredicate clones the predicate from the file in manifestPath
+// to into the Statement
 func (si *defaultStatementImplementation) ClonePredicate(s *Statement, manifestPath string) error {
 	otherStatment, err := LoadStatement(manifestPath)
 	if err != nil {
