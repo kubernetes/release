@@ -158,7 +158,7 @@ type releaseImpl interface {
 		gcsIndexRootPath, gcsReleaseNotesPath, version string,
 	) error
 	CreatePubBotBranchIssue(string) error
-	CheckStageProvenance(string, string) error
+	CheckStageProvenance(string, string, *release.Versions) error
 }
 
 func (d *defaultReleaseImpl) Submit(options *gcb.Options) error {
@@ -630,14 +630,23 @@ func (d *DefaultRelease) Archive() error {
 // CheckProvenance verifies the artifacts staged in the release bucket
 // by verifying the provenance metadata generated during the stage run.
 func (d *DefaultRelease) CheckProvenance() error {
-	return d.impl.CheckStageProvenance(d.options.Bucket(), d.options.BuildVersion)
+	return d.impl.CheckStageProvenance(d.options.Bucket(), d.options.BuildVersion, d.state.versions)
 }
 
-func (d *defaultReleaseImpl) CheckStageProvenance(bucket, buildVersion string) error {
+func (d *defaultReleaseImpl) CheckStageProvenance(bucket, buildVersion string, versions *release.Versions) error {
 	checker := release.NewProvenanceChecker(&release.ProvenanceCheckerOptions{
 		ScratchDirectory: filepath.Join(workspaceDir, "provenance-workdir"),
 		StageBucket:      bucket,
 	})
 
-	return checker.CheckStageProvenance(buildVersion)
+	if err := checker.CheckStageProvenance(buildVersion); err != nil {
+		return errors.Wrap(err, "checking provenance of staged artifacts")
+	}
+
+	// Write the final, end-user attestations
+	if err := checker.GenerateFinalAttestation(buildVersion, versions); err != nil {
+		return errors.Wrap(err, "generating final SLSA attestations")
+	}
+
+	return nil
 }
