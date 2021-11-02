@@ -24,7 +24,7 @@ require (
 	github.com/saschagrunert/go-modiff v1.3.0
 	github.com/sendgrid/rest v2.6.5+incompatible
 	github.com/sendgrid/sendgrid-go v3.10.3+incompatible
-	github.com/shirou/gopsutil/v3 v3.21.9
+	github.com/shirou/gopsutil/v3 v3.21.10
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
@@ -69,7 +69,7 @@ require (
 	github.com/fvbommel/sortorder v1.0.1 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.3.1 // indirect
-	github.com/go-ole/go-ole v1.2.5 // indirect
+	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/gomarkdown/markdown v0.0.0-20210514010506-3b9f47219fe7 // indirect
@@ -120,5 +120,5 @@ require (
 
 require (
 	github.com/shibumi/go-pathspec v1.2.0 // indirect
-	golang.org/x/sys v0.0.0-20210909193231-528a39cd75f3 // indirect
+	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c // indirect
 )
