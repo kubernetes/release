@@ -10,11 +10,11 @@ options:
   machineType: 'N1_HIGHCPU_8'
 
 steps:
-  - name: 'gcr.io/projectsigstore/cosign:v1.2.1@sha256:68801416e6ae0a48820baa3f071146d18846d8cd26ca8ec3a1e87fca8a735498'
+  - name: 'gcr.io/projectsigstore/cosign:v1.3.0@sha256:65de2f3f2844815ed20ab939319e3dad4238a9aaaf4893b22ec5702e9bc33755'
     dir: ./images/build/go-runner
     args:
     - 'verify'
-    - '-key'
+    - '--key'
     - 'distroless-cosign.pub' # From https://github.com/GoogleContainerTools/distroless/blob/main/cosign.pub
     - 'gcr.io/distroless/$_DISTROLESS_IMAGE'
 
