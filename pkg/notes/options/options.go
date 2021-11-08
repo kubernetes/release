@@ -179,7 +179,6 @@ func (o *Options) ValidateAndFinish() (err error) {
 	// Recover for replay if needed
 	if o.ReplayDir != "" {
 		logrus.Info("Using replay mode")
-		return nil
 	}
 
 	// The GitHub Token is required if replay is not specified
@@ -187,7 +186,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 	if ok {
 		o.githubToken = token
 	} else if o.ReplayDir == "" {
-		return errors.Errorf(
+		logrus.Errorf(
 			"neither environment variable `%s` nor `replay` option is set",
 			github.TokenEnvKey,
 		)

@@ -37,8 +37,10 @@ import (
 )
 
 type commitPrPair struct {
+	// Git commit object where the merge commit by Prow is found
 	Commit *gitobject.Commit
-	PrNum  int
+	// PR Numbers found in merge commit to release branch
+	PrNums []int
 }
 
 type releaseNotesAggregator struct {
@@ -79,53 +81,61 @@ func (g *Gatherer) ListReleaseNotesV2() (*ReleaseNotes, error) {
 	if isatty.IsTerminal(os.Stdout.Fd()) {
 		bar.Start()
 	}
-
-	for _, pair := range pairs {
-		// pair needs to be scoped in parameter so that the specific variable read
-		// happens when the goroutine is declared, not when referenced inside
-		go func(pair *commitPrPair) {
-			noteMaps := []*ReleaseNotesMap{}
-			for _, provider := range mapProviders {
-				noteMaps, err = provider.GetMapsForPR(pair.PrNum)
+	processNotesFromCommit := func(pair *commitPrPair) {
+		noteMaps := []*ReleaseNotesMap{}
+		for _, provider := range mapProviders {
+			for _, prnum := range pair.PrNums {
+				noteMaps, err = provider.GetMapsForPR(prnum)
 				if err != nil {
 					logrus.WithFields(logrus.Fields{
-						"pr": pair.PrNum,
+						"pr": prnum,
 					}).Errorf("ignore err: %v", err)
 					noteMaps = []*ReleaseNotesMap{}
 				}
 			}
+		}
 
-			releaseNote, err := g.buildReleaseNote(pair)
-			if err == nil {
-				if releaseNote != nil {
-					for _, noteMap := range noteMaps {
-						if err := releaseNote.ApplyMap(noteMap, g.options.AddMarkdownLinks); err != nil {
-							logrus.WithFields(logrus.Fields{
-								"pr": pair.PrNum,
-							}).Errorf("ignore err: %v", err)
-						}
+		releaseNote, err := g.buildReleaseNote(pair)
+		if err == nil {
+			if releaseNote != nil {
+				for _, noteMap := range noteMaps {
+					if err := releaseNote.ApplyMap(noteMap, g.options.AddMarkdownLinks); err != nil {
+						logrus.WithFields(logrus.Fields{
+							"pr": releaseNote.PrNumber,
+						}).Errorf("ignore err: %v", err)
 					}
-					logrus.WithFields(logrus.Fields{
-						"pr":   pair.PrNum,
-						"note": releaseNote.Text,
-					}).Debugf("finalized release note")
-					aggregator.Lock()
-					aggregator.releaseNotes.Set(pair.PrNum, releaseNote)
-					aggregator.Unlock()
-				} else {
-					logrus.WithFields(logrus.Fields{
-						"pr": pair.PrNum,
-					}).Debugf("skip: empty release note")
 				}
+				logrus.WithFields(logrus.Fields{
+					"pr":   releaseNote.PrNumber,
+					"note": releaseNote.Text,
+				}).Debugf("finalized release note")
+				aggregator.Lock()
+				aggregator.releaseNotes.Set(releaseNote.PrNumber, releaseNote)
+				aggregator.Unlock()
 			} else {
 				logrus.WithFields(logrus.Fields{
-					"sha": pair.Commit.Hash.String(),
-					"pr":  pair.PrNum,
-				}).Errorf("err: %v", err)
+					"prNums": pair.PrNums,
+				}).Debugf("skip: empty release note")
 			}
-			bar.Increment()
-			t.Done(nil)
-		}(pair)
+		} else {
+			logrus.WithFields(logrus.Fields{
+				"sha":    pair.Commit.Hash.String(),
+				"prNums": pair.PrNums,
+			}).Errorf("err: %v", err)
+		}
+		bar.Increment()
+		t.Done(nil)
+	}
+
+	for _, pair := range pairs {
+		if g.options.ReplayDir == "" && g.options.RecordDir == "" {
+			go processNotesFromCommit(pair)
+		} else {
+			// Using record/replay directory means we need to preserve order as recorded.
+			// This is because record/replay only rely on the order that requests are made,
+			// not the parameters necessarily.
+			processNotesFromCommit(pair)
+		}
 
 		if t.Throttle() > 0 {
 			break
@@ -142,23 +152,48 @@ func (g *Gatherer) ListReleaseNotesV2() (*ReleaseNotes, error) {
 }
 
 func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
-	pr, _, err := g.client.GetPullRequest(g.context, g.options.GithubOrg, g.options.GithubRepo, pair.PrNum)
-	if err != nil {
-		return nil, err
+	var prBody string
+	var text string = ""
+	var err error
+
+	pr, _, err := g.client.GetPullRequest(g.context, g.options.GithubOrg, g.options.GithubRepo, pair.PrNums[0])
+
+	// textPr _may_ not be the same as pr.
+	// In the event that they are not the same, it's because pr represent the cherry-pick PR without release notes
+	// while the original PR has release notes.
+	textPr := pr
+
+	for _, prnum := range pair.PrNums {
+		if textPr == nil {
+			textPr, _, err = g.client.GetPullRequest(g.context, g.options.GithubOrg, g.options.GithubRepo, prnum)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		prBody := textPr.GetBody()
+
+		if MatchesExcludeFilter(prBody) {
+			logrus.WithFields(logrus.Fields{
+				"sha": pair.Commit.Hash.String(),
+				"pr":  prnum,
+			}).Debugf("MatchesExcludeFilter")
+			textPr = nil
+			continue
+		}
+
+		text, err = noteTextFromString(prBody)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"sha": pair.Commit.Hash.String(),
+				"pr":  prnum,
+			}).Debugf("ignore err: %v", err)
+			textPr = nil
+			continue
+		}
 	}
 
-	prBody := pr.GetBody()
-
-	if MatchesExcludeFilter(prBody) {
-		return nil, nil
-	}
-
-	text, err := noteTextFromString(prBody)
-	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"sha": pair.Commit.Hash.String(),
-			"pr":  pair.PrNum,
-		}).Debugf("ignore err: %v", err)
+	if text == "" {
 		return nil, nil
 	}
 
@@ -304,8 +339,7 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 			"prs": prNums,
 		}).Debug("found PR from commit")
 
-		// Only taking the first one, assuming they are merged by Prow
-		pairs = append(pairs, &commitPrPair{Commit: commitPointer, PrNum: prNums[0]})
+		pairs = append(pairs, &commitPrPair{Commit: commitPointer, PrNums: prNums})
 
 		// Advance pointer based on left parent
 		hashPointer = commitPointer.ParentHashes[0]
