@@ -3,7 +3,7 @@
 You can get the current overview for CI signal report by running
 
 ```
-GITHUB_AUTH_TOKEN=xxx go run report.go
+GITHUB_AUTH_TOKEN=xxx go run cmd/ci-reporter/report.go
 ```
 
 It needs a GitHub token to be able to query the project board for CI signal. For some reason even though those boards are available for public view, the APIs require auth. See [this documentation](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line) to set up your access token.
@@ -13,23 +13,23 @@ It needs a GitHub token to be able to query the project board for CI signal. For
 
 ## Run the report
 ```
-git clone git@github.com:alenkacz/ci-signal-report.git <folder>
+git clone git@github.com:kubernetes/release <folder>
 cd <folder>
-GITHUB_AUTH_TOKEN=xxx go run report.go
+GITHUB_AUTH_TOKEN=xxx go run cmd/ci-reporter/report.go
 ```
 
 ### Other version statistics
 By adding `RELEASE_VERSION=xxx` where the XXX can be like `1.21`, the report statistics get extended for the choosen version.
 
 ```
-GITHUB_AUTH_TOKEN=xxx RELEASE_VERSION=xxx go run report.go
+GITHUB_AUTH_TOKEN=xxx RELEASE_VERSION=xxx go run cmd/ci-reporter/report.go
 ```
 
 ### Short report
 You can also output a short version of the report with the flag `-short`. This reduces the report to `New/Not Yet Started` and `In Flight` issues.
 
 ```
-GITHUB_AUTH_TOKEN=xxx go run report.go -short
+GITHUB_AUTH_TOKEN=xxx go run cmd/ci-reporter/report.go -short
 ```
 
 ## Rate limits
@@ -45,7 +45,7 @@ curl \
 
 ## Example output
 ```
-GITHUB_AUTH_TOKEN=yourFavouriteGitHubTokenLivesHere RELEASE_VERSION=1.21 go run report.go -short
+GITHUB_AUTH_TOKEN=yourFavouriteGitHubTokenLivesHere RELEASE_VERSION=1.21 go run cmd/ci-reporter/report.go -short
 
 New/Not Yet Started
 SIG network
