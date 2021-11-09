@@ -103,15 +103,15 @@ func TestReadArchiveManifest(t *testing.T) {
 	}
 }
 
-func TestPackageFromLayerTarBall(t *testing.T) {
+func TestPackageFromTarball(t *testing.T) {
 	tar := writeTestTarball(t)
 	require.NotNil(t, tar)
 	defer os.Remove(tar.Name())
 
 	sut := spdxDefaultImplementation{}
-	_, err := sut.PackageFromLayerTarball("lsdkjflksdjflk", &TarballOptions{})
+	_, err := sut.PackageFromTarball("lsdkjflksdjflk", &TarballOptions{})
 	require.NotNil(t, err)
-	pkg, err := sut.PackageFromLayerTarball(tar.Name(), &TarballOptions{})
+	pkg, err := sut.PackageFromTarball(tar.Name(), &TarballOptions{})
 	require.Nil(t, err)
 	require.NotNil(t, pkg)
 

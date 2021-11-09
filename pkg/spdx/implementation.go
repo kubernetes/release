@@ -52,7 +52,7 @@ type spdxImplementation interface {
 		OS        string
 	}, error)
 	PackageFromImageTarball(string, *Options) (*Package, error)
-	PackageFromLayerTarball(string, *TarballOptions) (*Package, error)
+	PackageFromTarball(string, *TarballOptions) (*Package, error)
 	GetDirectoryTree(string) ([]string, error)
 	IgnorePatterns(string, []string, bool) ([]gitignore.Pattern, error)
 	ApplyIgnorePatterns([]string, []gitignore.Pattern) []string
@@ -360,12 +360,11 @@ func (di *spdxDefaultImplementation) PullImagesToArchive(
 	return images, nil
 }
 
-// PackageFromLayerTarball builds a SPDX package from an image
-// tarball
-func (di *spdxDefaultImplementation) PackageFromLayerTarball(
+// PackageFromTarball builds a SPDX package from the contents of a tarball
+func (di *spdxDefaultImplementation) PackageFromTarball(
 	layerFile string, opts *TarballOptions,
 ) (*Package, error) {
-	logrus.Infof("Generating SPDX package from layer in %s", layerFile)
+	logrus.Infof("Generating SPDX package from tarball %s", layerFile)
 
 	pkg := NewPackage()
 	pkg.Options().WorkDir = opts.ExtractDir
@@ -640,7 +639,7 @@ func (di *spdxDefaultImplementation) PackageFromImageTarball(
 	// Cycle all the layers from the manifest and add them as packages
 	for _, layerFile := range manifest.LayerFiles {
 		// Generate a package from a layer
-		pkg, err := di.PackageFromLayerTarball(layerFile, tarOpts)
+		pkg, err := di.PackageFromTarball(layerFile, tarOpts)
 		if err != nil {
 			return nil, errors.Wrap(err, "building package from layer")
 		}

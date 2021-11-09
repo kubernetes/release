@@ -161,17 +161,17 @@ type FakeSpdxImplementation struct {
 		result1 *spdx.Package
 		result2 error
 	}
-	PackageFromLayerTarballStub        func(string, *spdx.TarballOptions) (*spdx.Package, error)
-	packageFromLayerTarballMutex       sync.RWMutex
-	packageFromLayerTarballArgsForCall []struct {
+	PackageFromTarballStub        func(string, *spdx.TarballOptions) (*spdx.Package, error)
+	packageFromTarballMutex       sync.RWMutex
+	packageFromTarballArgsForCall []struct {
 		arg1 string
 		arg2 *spdx.TarballOptions
 	}
-	packageFromLayerTarballReturns struct {
+	packageFromTarballReturns struct {
 		result1 *spdx.Package
 		result2 error
 	}
-	packageFromLayerTarballReturnsOnCall map[int]struct {
+	packageFromTarballReturnsOnCall map[int]struct {
 		result1 *spdx.Package
 		result2 error
 	}
@@ -879,17 +879,17 @@ func (fake *FakeSpdxImplementation) PackageFromImageTarballReturnsOnCall(i int, 
 	}{result1, result2}
 }
 
-func (fake *FakeSpdxImplementation) PackageFromLayerTarball(arg1 string, arg2 *spdx.TarballOptions) (*spdx.Package, error) {
-	fake.packageFromLayerTarballMutex.Lock()
-	ret, specificReturn := fake.packageFromLayerTarballReturnsOnCall[len(fake.packageFromLayerTarballArgsForCall)]
-	fake.packageFromLayerTarballArgsForCall = append(fake.packageFromLayerTarballArgsForCall, struct {
+func (fake *FakeSpdxImplementation) PackageFromTarball(arg1 string, arg2 *spdx.TarballOptions) (*spdx.Package, error) {
+	fake.packageFromTarballMutex.Lock()
+	ret, specificReturn := fake.packageFromTarballReturnsOnCall[len(fake.packageFromTarballArgsForCall)]
+	fake.packageFromTarballArgsForCall = append(fake.packageFromTarballArgsForCall, struct {
 		arg1 string
 		arg2 *spdx.TarballOptions
 	}{arg1, arg2})
-	stub := fake.PackageFromLayerTarballStub
-	fakeReturns := fake.packageFromLayerTarballReturns
-	fake.recordInvocation("PackageFromLayerTarball", []interface{}{arg1, arg2})
-	fake.packageFromLayerTarballMutex.Unlock()
+	stub := fake.PackageFromTarballStub
+	fakeReturns := fake.packageFromTarballReturns
+	fake.recordInvocation("PackageFromTarball", []interface{}{arg1, arg2})
+	fake.packageFromTarballMutex.Unlock()
 	if stub != nil {
 		return stub(arg1, arg2)
 	}
@@ -899,46 +899,46 @@ func (fake *FakeSpdxImplementation) PackageFromLayerTarball(arg1 string, arg2 *s
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeSpdxImplementation) PackageFromLayerTarballCallCount() int {
-	fake.packageFromLayerTarballMutex.RLock()
-	defer fake.packageFromLayerTarballMutex.RUnlock()
-	return len(fake.packageFromLayerTarballArgsForCall)
+func (fake *FakeSpdxImplementation) PackageFromTarballCallCount() int {
+	fake.packageFromTarballMutex.RLock()
+	defer fake.packageFromTarballMutex.RUnlock()
+	return len(fake.packageFromTarballArgsForCall)
 }
 
-func (fake *FakeSpdxImplementation) PackageFromLayerTarballCalls(stub func(string, *spdx.TarballOptions) (*spdx.Package, error)) {
-	fake.packageFromLayerTarballMutex.Lock()
-	defer fake.packageFromLayerTarballMutex.Unlock()
-	fake.PackageFromLayerTarballStub = stub
+func (fake *FakeSpdxImplementation) PackageFromTarballCalls(stub func(string, *spdx.TarballOptions) (*spdx.Package, error)) {
+	fake.packageFromTarballMutex.Lock()
+	defer fake.packageFromTarballMutex.Unlock()
+	fake.PackageFromTarballStub = stub
 }
 
-func (fake *FakeSpdxImplementation) PackageFromLayerTarballArgsForCall(i int) (string, *spdx.TarballOptions) {
-	fake.packageFromLayerTarballMutex.RLock()
-	defer fake.packageFromLayerTarballMutex.RUnlock()
-	argsForCall := fake.packageFromLayerTarballArgsForCall[i]
+func (fake *FakeSpdxImplementation) PackageFromTarballArgsForCall(i int) (string, *spdx.TarballOptions) {
+	fake.packageFromTarballMutex.RLock()
+	defer fake.packageFromTarballMutex.RUnlock()
+	argsForCall := fake.packageFromTarballArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeSpdxImplementation) PackageFromLayerTarballReturns(result1 *spdx.Package, result2 error) {
-	fake.packageFromLayerTarballMutex.Lock()
-	defer fake.packageFromLayerTarballMutex.Unlock()
-	fake.PackageFromLayerTarballStub = nil
-	fake.packageFromLayerTarballReturns = struct {
+func (fake *FakeSpdxImplementation) PackageFromTarballReturns(result1 *spdx.Package, result2 error) {
+	fake.packageFromTarballMutex.Lock()
+	defer fake.packageFromTarballMutex.Unlock()
+	fake.PackageFromTarballStub = nil
+	fake.packageFromTarballReturns = struct {
 		result1 *spdx.Package
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeSpdxImplementation) PackageFromLayerTarballReturnsOnCall(i int, result1 *spdx.Package, result2 error) {
-	fake.packageFromLayerTarballMutex.Lock()
-	defer fake.packageFromLayerTarballMutex.Unlock()
-	fake.PackageFromLayerTarballStub = nil
-	if fake.packageFromLayerTarballReturnsOnCall == nil {
-		fake.packageFromLayerTarballReturnsOnCall = make(map[int]struct {
+func (fake *FakeSpdxImplementation) PackageFromTarballReturnsOnCall(i int, result1 *spdx.Package, result2 error) {
+	fake.packageFromTarballMutex.Lock()
+	defer fake.packageFromTarballMutex.Unlock()
+	fake.PackageFromTarballStub = nil
+	if fake.packageFromTarballReturnsOnCall == nil {
+		fake.packageFromTarballReturnsOnCall = make(map[int]struct {
 			result1 *spdx.Package
 			result2 error
 		})
 	}
-	fake.packageFromLayerTarballReturnsOnCall[i] = struct {
+	fake.packageFromTarballReturnsOnCall[i] = struct {
 		result1 *spdx.Package
 		result2 error
 	}{result1, result2}
@@ -1131,8 +1131,8 @@ func (fake *FakeSpdxImplementation) Invocations() map[string][][]interface{} {
 	defer fake.licenseReaderMutex.RUnlock()
 	fake.packageFromImageTarballMutex.RLock()
 	defer fake.packageFromImageTarballMutex.RUnlock()
-	fake.packageFromLayerTarballMutex.RLock()
-	defer fake.packageFromLayerTarballMutex.RUnlock()
+	fake.packageFromTarballMutex.RLock()
+	defer fake.packageFromTarballMutex.RUnlock()
 	fake.pullImagesToArchiveMutex.RLock()
 	defer fake.pullImagesToArchiveMutex.RUnlock()
 	fake.readArchiveManifestMutex.RLock()
