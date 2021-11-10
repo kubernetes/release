@@ -273,7 +273,7 @@ dependencies:
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
   - name: "golang: after kubernetes/kubernetes update (for previous release branches 1.21/1.22)"
-    version: 1.16.9
+    version: 1.16.10
     refPaths:
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
