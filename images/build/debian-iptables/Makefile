@@ -18,9 +18,10 @@ REGISTRY?="gcr.io/k8s-staging-build-image"
 IMAGE=$(REGISTRY)/debian-iptables
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= buster-v1.6.7
+IMAGE_VERSION ?= buster-v1.7.0
 CONFIG ?= buster
 DEBIAN_BASE_VERSION ?= buster-v1.9.0
+GORUNNER_VERSION ?= v2.3.1-go1.17.3-buster.0
 
 ARCH?=amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
@@ -29,6 +30,7 @@ BASE_REGISTRY?=k8s.gcr.io/build-image
 
 # Build args
 BASEIMAGE?=$(BASE_REGISTRY)/debian-base-$(ARCH):$(DEBIAN_BASE_VERSION)
+GORUNNERIMAGE?=$(BASE_REGISTRY)/go-runner:$(GORUNNER_VERSION)
 
 QEMUVERSION=5.2.0-2
 
@@ -53,6 +55,7 @@ build:
 		-t $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
 		-t $(IMAGE)-$(ARCH):latest-$(CONFIG) \
 		--build-arg=BASEIMAGE=$(BASEIMAGE) \
+		--build-arg=GORUNNERIMAGE=$(GORUNNERIMAGE) \
 		$(CONFIG)
 	docker buildx rm $$BUILDER
 

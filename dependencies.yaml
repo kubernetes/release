@@ -427,12 +427,18 @@ dependencies:
       match: "DEBIAN_BASE_VERSION: '(bullseye|buster)-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "k8s.gcr.io/build-image/debian-iptables"
-    version: buster-v1.6.7
+    version: buster-v1.7.0
     refPaths:
     - path: images/build/debian-iptables/Makefile
       match: IMAGE_VERSION\ \?=\ (bullseye|buster)-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
     - path: images/build/debian-iptables/variants.yaml
       match: "IMAGE_VERSION: '(bullseye|buster)-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
+
+  - name: "k8s.gcr.io/build-image/go-runner: dependents"
+    version: v2.3.1-go1.17.3-buster.0
+    refPaths:
+    - path: images/build/debian-iptables/Makefile
+      match: GORUNNER_VERSION \?= v\d+\.\d+\.\d+-go\d+.\d+(alpha|beta|rc)?\.?(\d+)?-(bullseye|buster)\.\d+
 
   - name: "k8s.gcr.io/build-image/setcap"
     version: buster-v2.0.4
