@@ -13,6 +13,7 @@
 # limitations under the License.
 
 ARG BASEIMAGE
+ARG GORUNNERIMAGE
 
 FROM ${BASEIMAGE} as build
 
@@ -38,5 +39,10 @@ RUN update-alternatives \
 	--slave /usr/sbin/ip6tables-restore ip6tables-restore /usr/sbin/iptables-wrapper \
 	--slave /usr/sbin/ip6tables-save ip6tables-save /usr/sbin/iptables-wrapper
 
+# we're going to borrow the /go-runner binary in the final image
+# dedupe this binary by just copying it from the go-runner image
+FROM ${GORUNNERIMAGE} as gorunner
+
 FROM scratch
 COPY --from=build / /
+COPY --from=gorunner /go-runner /go-runner
