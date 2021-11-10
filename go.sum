@@ -486,6 +486,8 @@ github.com/google/go-containerregistry v0.6.0 h1:niQ+8XD//kKgArIFwDVBXsWVWbde16L
 github.com/google/go-containerregistry v0.6.0/go.mod h1:euCCtNbZ6tKqi1E72vwDj2xZcN5ttKpZLfa/wSo5iLw=
 github.com/google/go-github/v33 v33.0.0 h1:qAf9yP0qc54ufQxzwv+u9H0tiVOnPJxo0lI/JXqw3ZM=
 github.com/google/go-github/v33 v33.0.0/go.mod h1:GMdDnVZY/2TsWgp/lkYnpSAh6TrzhANBBwm6k6TTEXg=
+github.com/google/go-github/v34 v34.0.0 h1:/siYFImY8KwGc5QD1gaPf+f8QX6tLwxNIco2RkYxoFA=
+github.com/google/go-github/v34 v34.0.0/go.mod h1:w/2qlrXUfty+lbyO6tatnzIw97v1CM+/jZcwXMDiPQQ=
 github.com/google/go-github/v37 v37.0.0/go.mod h1:LM7in3NmXDrX58GbEHy7FtNLbI2JijX93RnMKvWG3m4=
 github.com/google/go-github/v39 v39.1.0/go.mod h1:C1s8C5aCC9L+JXIYpJM5GYytdX52vC1bLvHEF1IhBrE=
 github.com/google/go-github/v39 v39.2.0 h1:rNNM311XtPOz5rDdsJXAp2o8F67X9FnROXTvto3aSnQ=
