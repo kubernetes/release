@@ -28,7 +28,7 @@ import (
 	"regexp"
 	"strings"
 
-	github_official "github.com/google/go-github/v34/github"
+	"github.com/google/go-github/v34/github"
 	"golang.org/x/oauth2"
 )
 
@@ -56,7 +56,7 @@ func main() {
 		&oauth2.Token{AccessToken: githubAPIToken},
 	)
 	tc := oauth2.NewClient(ctx, ts)
-	client := github_official.NewClient(tc)
+	client := github.NewClient(tc)
 
 	// GitHub Report
 	err := printGithubIssueReport(githubAPIToken, client, *isShortFlagSet)
@@ -96,7 +96,7 @@ type issueOverview struct {
 	sig   []string
 }
 
-func printGithubIssueReport(token string, client *github_official.Client, setShort bool) error {
+func printGithubIssueReport(token string, client *github.Client, setShort bool) error {
 	ciSignalProjectBoard := map[columnTitle]columnID{
 		newColumnTitle:      newColumn,
 		inFLightColumnTitle: underInvestigationColumn,
@@ -132,8 +132,8 @@ func printGithubCards(shortReport bool, reportData map[columnTitle][]issueOvervi
 	fmt.Print("\n\n")
 }
 
-func getCardsFromColumn(cardsID columnID, client *github_official.Client, token string) ([]issueOverview, error) {
-	opt := &github_official.ProjectCardListOptions{}
+func getCardsFromColumn(cardsID columnID, client *github.Client, token string) ([]issueOverview, error) {
+	opt := &github.ProjectCardListOptions{}
 	cards, _, err := client.Projects.ListProjectCards(context.Background(), int64(cardsID), opt)
 	if err != nil {
 		fmt.Printf("error when querying cards %v", err)
@@ -165,10 +165,10 @@ func getCardsFromColumn(cardsID columnID, client *github_official.Client, token 
 }
 
 type issueDetail struct {
-	Number  int64                   `json:"number"`
-	HTMLURL string                  `json:"html_url"`
-	Title   string                  `json:"title"`
-	Labels  []github_official.Label `json:"labels,omitempty"`
+	Number  int64          `json:"number"`
+	HTMLURL string         `json:"html_url"`
+	Title   string         `json:"title"`
+	Labels  []github.Label `json:"labels,omitempty"`
 }
 
 func getIssueDetail(url, authToken string) (*issueDetail, error) {
