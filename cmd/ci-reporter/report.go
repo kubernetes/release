@@ -116,11 +116,11 @@ func printGithubIssueReport(token string, client *github.Client, setShort bool) 
 		}
 		githubReportData[columnTitle] = cards
 	}
-	printGithubCards(setShort, githubReportData)
+	printGithubCards(githubReportData)
 	return nil
 }
 
-func printGithubCards(shortReport bool, reportData map[columnTitle][]issueOverview) {
+func printGithubCards(reportData map[columnTitle][]issueOverview) {
 	for columnTitle, issuesInColumn := range reportData {
 		if len(issuesInColumn) > 0 {
 			fmt.Println("\n" + columnTitle)
