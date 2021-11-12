@@ -43,7 +43,7 @@ func main() {
 	releaseVersion := flag.String("v", "", "Adds specific K8s release version to the report like 1.22")
 	flag.Parse()
 
-	// set environment variables
+	// get environment variables
 	githubAPIToken := os.Getenv("GITHUB_AUTH_TOKEN")
 	if githubAPIToken == "" {
 		fmt.Printf("Please provide GITHUB_AUTH_TOKEN env variable to be able to pull cards from the github board")
