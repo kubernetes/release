@@ -93,7 +93,7 @@ type issueOverview struct {
 	url   string
 	id    int64
 	title string
-	sig   []string
+	sigs   []string
 }
 
 func printGithubIssueReport(token string, client *github.Client, setShort bool) error {
