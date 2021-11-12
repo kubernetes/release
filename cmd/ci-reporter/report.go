@@ -156,7 +156,7 @@ func getCardsFromColumn(cardsID columnID, client *github.Client, token string) (
 			sig := sigRegex.FindString(*v.Name)
 			if sig != "" {
 				sig = strings.Replace(sig, "/", " ", 1)
-				overview.sig = append(overview.sig, sig)
+				overview.sigs = append(overview.sigs, sig)
 			}
 		}
 		issues = append(issues, overview)
