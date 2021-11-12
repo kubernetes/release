@@ -30,6 +30,7 @@ import (
 
 	"github.com/google/go-github/v34/github"
 	"golang.org/x/oauth2"
+	"sigs.k8s.io/release-utils/env"
 )
 
 type requiredJob struct {
@@ -39,7 +40,7 @@ type requiredJob struct {
 
 func main() {
 	// parse flags
-	isShortFlagSet := flag.Bool("short", false, "A short report for mails and slack")
+	short := flag.Bool("short", false, "A short report for mails and slack")
 	releaseVersion := flag.String("v", "", "Adds specific K8s release version to the report like 1.22")
 	flag.Parse()
 
@@ -59,7 +60,7 @@ func main() {
 	client := github.NewClient(tc)
 
 	// GitHub Report
-	err := printGithubIssueReport(githubAPIToken, client, *isShortFlagSet)
+	err := printGithubIssueReport(githubAPIToken, client, *short)
 	if err != nil {
 		fmt.Printf("error when querying cards overview, exiting: %v\n", err)
 		os.Exit(1)
@@ -93,7 +94,7 @@ type issueOverview struct {
 	url   string
 	id    int64
 	title string
-	sigs   []string
+	sigs  []string
 }
 
 func printGithubIssueReport(token string, client *github.Client, setShort bool) error {
@@ -125,7 +126,7 @@ func printGithubCards(reportData map[columnTitle][]issueOverview) {
 		if len(issuesInColumn) > 0 {
 			fmt.Println("\n" + columnTitle)
 			for _, issue := range issuesInColumn {
-				fmt.Printf("#%d %v\n - %s\n - %s\n", issue.id, issue.sig, issue.title, issue.url)
+				fmt.Printf("#%d %v\n - %s\n - %s\n", issue.id, issue.sigs, issue.title, issue.url)
 			}
 		}
 	}
