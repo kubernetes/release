@@ -44,7 +44,7 @@ func main() {
 	flag.Parse()
 
 	// get environment variables
-	githubAPIToken := os.Getenv("GITHUB_AUTH_TOKEN")
+	githubAPIToken := env.Default("GITHUB_AUTH_TOKEN", "")
 	if githubAPIToken == "" {
 		fmt.Printf("Please provide GITHUB_AUTH_TOKEN env variable to be able to pull cards from the github board")
 		os.Exit(1)
