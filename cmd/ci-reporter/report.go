@@ -25,11 +25,12 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sort"
+	"regexp"
 	"strings"
 
 	"github.com/google/go-github/v34/github"
 	"golang.org/x/oauth2"
+	"sigs.k8s.io/release-utils/env"
 )
 
 type requiredJob struct {
@@ -38,167 +39,111 @@ type requiredJob struct {
 }
 
 func main() {
-	boolPtr := flag.Bool("short", false, "a short report for mails and slack")
+	// parse flags
+	short := flag.Bool("short", false, "A short report for mails and slack")
+	releaseVersion := flag.String("v", "", "Adds specific K8s release version to the report like 1.22")
 	flag.Parse()
 
-	githubAPIToken := os.Getenv("GITHUB_AUTH_TOKEN")
+	// get environment variables
+	githubAPIToken := env.Default("GITHUB_AUTH_TOKEN", "")
 	if githubAPIToken == "" {
 		fmt.Printf("Please provide GITHUB_AUTH_TOKEN env variable to be able to pull cards from the github board")
 		os.Exit(1)
 	}
 
-	releaseVersion := os.Getenv("RELEASE_VERSION")
+	// create a new github client
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: githubAPIToken},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+	client := github.NewClient(tc)
 
-	err := printCardsOverview(githubAPIToken, *boolPtr)
+	// GitHub Report
+	err := printGithubIssueReport(githubAPIToken, client, *short)
 	if err != nil {
 		fmt.Printf("error when querying cards overview, exiting: %v\n", err)
 		os.Exit(1)
 	}
 
-	printJobsStatistics(releaseVersion)
+	// Testgrid Report
+	printTestgridReport(*releaseVersion)
 }
 
+// This regex is getting used to identify sig lables on github issues
+var sigRegex = regexp.MustCompile(`sig/[a-zA-Z-]+`)
+
+type (
+	columnTitle string
+	columnID    int64
+)
+
 const (
-	newCards                = 4212817
-	underInvestigationCards = 4212819
-	observingCards          = 4212821
-	ciSignalBoardProjectID  = 2093513
+	newColumn                columnID = 4212817
+	underInvestigationColumn columnID = 4212819
+	observingColumn          columnID = 4212821
+	resolvedColumn           columnID = 6798858
+
+	newColumnTitle       columnTitle = "New/Not Yet Started"
+	inFLightColumnTitle  columnTitle = "In flight"
+	observingColumnTitle columnTitle = "Observing"
+	resolvedColumnTitle  columnTitle = "Resolved"
 )
 
 type issueOverview struct {
 	url   string
 	id    int64
 	title string
-	sig   string
+	sigs  []string
 }
 
-func printCardsOverview(token string, setShort bool) error {
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	)
-
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
-
-	newCardsOverview, err := getCardsFromColumn(newCards, client, token)
-	if err != nil {
-		return err
+func printGithubIssueReport(token string, client *github.Client, setShort bool) error {
+	ciSignalProjectBoard := map[columnTitle]columnID{
+		newColumnTitle:      newColumn,
+		inFLightColumnTitle: underInvestigationColumn,
 	}
 
-	investigationCardsOverview, err := getCardsFromColumn(underInvestigationCards, client, token)
-	if err != nil {
-		return err
+	// if the short flag is not set observingColumn & resolvedColumn will be added to the report
+	if !setShort {
+		ciSignalProjectBoard[observingColumnTitle] = observingColumn
+		ciSignalProjectBoard[resolvedColumnTitle] = resolvedColumn
 	}
 
-	observingCardsOverview, err := getCardsFromColumn(observingCards, client, token)
-	if err != nil {
-		return err
+	githubReportData := map[columnTitle][]issueOverview{}
+	for columnTitle, columnID := range ciSignalProjectBoard {
+		cards, err := getCardsFromColumn(columnID, client, token)
+		if err != nil {
+			return err
+		}
+		githubReportData[columnTitle] = cards
 	}
-
-	resolvedCards, err := findResolvedCardsColumns(client)
-	if err != nil {
-		return err
-	}
-
-	resolvedCardsOverview, err := getCardsFromColumn(resolvedCards, client, token)
-	if err != nil {
-		return err
-	}
-
-	printCards(setShort, groupByCards(newCardsOverview), groupByCards(investigationCardsOverview), groupByCards(observingCardsOverview), groupByCards(resolvedCardsOverview))
-
+	printGithubCards(githubReportData)
 	return nil
 }
 
-func findResolvedCardsColumns(client *github.Client) (int64, error) {
-	opt := &github.ListOptions{}
-	columns, _, err := client.Projects.ListProjectColumns(context.Background(), ciSignalBoardProjectID, opt)
-	if err != nil {
-		return 0, err
-	}
-
-	resolvedColumns := make([]*github.ProjectColumn, 0)
-	for _, v := range columns {
-		if v.Name != nil && *v.Name == "Resolved" {
-			resolvedColumns = append(resolvedColumns, v)
-		}
-	}
-
-	sort.Slice(resolvedColumns, func(i, j int) bool {
-		return resolvedColumns[i].GetID() < resolvedColumns[j].GetID()
-	})
-	return resolvedColumns[0].GetID(), err
-}
-
-func printCards(shortReport bool, newCards, investigation, observing, resolved map[string][]*issueOverview) {
-	fmt.Println("New/Not Yet Started")
-	for k, v := range newCards {
-		fmt.Printf("SIG %s\n", k)
-		for _, i := range v {
-			fmt.Printf("#%d %s %s\n", i.id, i.url, i.title)
-		}
-		fmt.Println()
-	}
-
-	fmt.Println("In flight")
-	for k, v := range investigation {
-		fmt.Printf("SIG %s\n", k)
-		for _, i := range v {
-			fmt.Printf("#%d %s %s\n", i.id, i.url, i.title)
-		}
-		fmt.Println()
-	}
-
-	if !shortReport {
-		fmt.Println("Observing")
-		for k, v := range observing {
-			fmt.Printf("SIG %s\n", k)
-			for _, i := range v {
-				fmt.Printf("#%d %s %s\n", i.id, i.url, i.title)
+func printGithubCards(reportData map[columnTitle][]issueOverview) {
+	for columnTitle, issuesInColumn := range reportData {
+		if len(issuesInColumn) > 0 {
+			fmt.Println("\n" + columnTitle)
+			for _, issue := range issuesInColumn {
+				fmt.Printf("#%d %v\n - %s\n - %s\n", issue.id, issue.sigs, issue.title, issue.url)
 			}
-			fmt.Println()
-		}
-
-		fmt.Println("Resolved")
-		for k, v := range resolved {
-			fmt.Printf("SIG %s\n", k)
-			for _, i := range v {
-				fmt.Printf("#%d %s %s\n", i.id, i.url, i.title)
-			}
-			fmt.Println()
 		}
 	}
+	fmt.Print("\n\n")
 }
 
-func groupByCards(issues []*issueOverview) map[string][]*issueOverview {
-	result := make(map[string][]*issueOverview)
-	for _, i := range issues {
-		_, ok := result[i.sig]
-		if !ok {
-			result[i.sig] = make([]*issueOverview, 0)
-		}
-		result[i.sig] = append(result[i.sig], i)
-	}
-	return result
-}
-
-func getCardsFromColumn(cardsID int64, client *github.Client, token string) ([]*issueOverview, error) {
+func getCardsFromColumn(cardsID columnID, client *github.Client, token string) ([]issueOverview, error) {
 	opt := &github.ProjectCardListOptions{}
-	cards, _, err := client.Projects.ListProjectCards(context.Background(), cardsID, opt)
+	cards, _, err := client.Projects.ListProjectCards(context.Background(), int64(cardsID), opt)
 	if err != nil {
 		fmt.Printf("error when querying cards %v", err)
 		return nil, err
 	}
 
-	issues := make([]*issueOverview, 0)
+	issues := []issueOverview{}
 	for _, c := range cards {
-		if c.ContentURL == nil {
-			continue
-		}
-
-		issueURL := *c.ContentURL
-		issueDetail, err := getIssueDetail(issueURL, token)
+		issueDetail, err := getIssueDetail(*c.ContentURL, token)
 		if err != nil {
 			return nil, err
 		}
@@ -209,41 +154,32 @@ func getCardsFromColumn(cardsID int64, client *github.Client, token string) ([]*
 			title: cleanTitle(issueDetail.Title),
 		}
 		for _, v := range issueDetail.Labels {
-			if strings.Contains(*v.Name, "sig/") {
-				overview.sig = strings.Title(strings.ReplaceAll(*v.Name, "sig/", ""))
-				if strings.EqualFold(overview.sig, "cli") {
-					overview.sig = strings.ToUpper(overview.sig)
-				}
-				if strings.EqualFold(overview.sig, "cluster-lifecycle") {
-					overview.sig = strings.ToLower(overview.sig)
-				}
-				break
+			sig := sigRegex.FindString(*v.Name)
+			if sig != "" {
+				sig = strings.Replace(sig, "/", " ", 1)
+				overview.sigs = append(overview.sigs, sig)
 			}
 		}
-		issues = append(issues, &overview)
+		issues = append(issues, overview)
 	}
-
 	return issues, nil
 }
 
-type IssueDetail struct {
+type issueDetail struct {
 	Number  int64          `json:"number"`
 	HTMLURL string         `json:"html_url"`
 	Title   string         `json:"title"`
 	Labels  []github.Label `json:"labels,omitempty"`
 }
 
-func getIssueDetail(url, authToken string) (*IssueDetail, error) {
-	// Create a Bearer string by appending string access token
-	bearer := "Bearer " + authToken
-
+func getIssueDetail(url, authToken string) (*issueDetail, error) {
 	// Create a new request using http
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	// add authorization header to the req
-	req.Header.Add("Authorization", bearer)
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", authToken))
 
 	// Send req using http Client
 	client := &http.Client{}
@@ -258,7 +194,7 @@ func getIssueDetail(url, authToken string) (*IssueDetail, error) {
 		fmt.Printf("%v", err)
 		return nil, err
 	}
-	var result IssueDetail
+	var result issueDetail
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		return nil, err
@@ -270,7 +206,7 @@ func cleanTitle(title string) string {
 	return strings.ReplaceAll(title, "[Failing Test]", "")
 }
 
-func printJobsStatistics(version string) {
+func printTestgridReport(version string) {
 	requiredJobs := []requiredJob{
 		{OutputName: "Master-Blocking", URLName: "sig-release-master-blocking"},
 		{OutputName: "Master-Informing", URLName: "sig-release-master-informing"},
@@ -284,8 +220,8 @@ func printJobsStatistics(version string) {
 	}
 
 	result := make([]statistics, 0)
-	for _, kubeJob := range requiredJobs {
-		resp, err := http.Get(fmt.Sprintf("https://testgrid.k8s.io/%s/summary", kubeJob.URLName))
+	for _, job := range requiredJobs {
+		resp, err := http.Get(fmt.Sprintf("https://testgrid.k8s.io/%s/summary", job.URLName))
 		if err != nil {
 			fmt.Printf("%v", err)
 			return
@@ -305,7 +241,7 @@ func printJobsStatistics(version string) {
 		}
 
 		statistics := getStatistics(jobs)
-		statistics.name = kubeJob.OutputName
+		statistics.name = job.OutputName
 		result = append(result, statistics)
 	}
 
