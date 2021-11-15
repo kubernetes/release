@@ -42,8 +42,8 @@ func TestBuildIDString(t *testing.T) {
 		{[]string{"ABC"}, "ABC"},
 		{[]string{"ABC", "123"}, "ABC-123"},
 		{[]string{"Hello:bye", "123"}, "Hello-bye-123"},
-		{[]string{"Hello^bye", "123"}, "Hellobye-123"},
-		{[]string{"Hello:bye", "123", "&^%&$"}, "Hello-bye-123"},
+		{[]string{"Hello^bye", "123"}, "HelloC94bye-123"},
+		{[]string{"Hello:bye", "123", "&-^%&$"}, "Hello-bye-123-C38-C94C37C38C36"},
 	}
 	for _, tc := range cases {
 		require.Equal(t, tc.expected, buildIDString(tc.seeds...))
@@ -52,9 +52,6 @@ func TestBuildIDString(t *testing.T) {
 	// If we do not pass any seeds, func should return an UUID
 	// which is 36 chars long
 	require.Len(t, buildIDString(), 36)
-
-	// Same thing for only invalid chars
-	require.Len(t, buildIDString("&^$&^%"), 36)
 }
 
 func TestUnitExtractTarballTmp(t *testing.T) {

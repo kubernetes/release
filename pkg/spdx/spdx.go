@@ -18,9 +18,12 @@ package spdx
 
 import (
 	"encoding/base64"
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -45,6 +48,9 @@ const (
 LyBfYCBcIFwvIC8KXF9fIFwgfF8pIHwgKF98IHw+ICA8IAp8X19fLyAuX18vIFxfXyxfL18vXF9c
 CiAgICB8X3wgICAgICAgICAgICAgICAK`
 )
+
+// https://spdx.github.io/spdx-spec/3-package-information/#32-package-spdx-identifier
+var validIDCharsRe = regexp.MustCompile(`[^a-zA-Z0-9-.]+`)
 
 type SPDX struct {
 	impl    spdxImplementation
@@ -110,6 +116,15 @@ func buildIDString(seeds ...string) string {
 		for _, r := range []string{"/", ":"} {
 			s = strings.ReplaceAll(s, r, "-")
 		}
+		// Replace invalid chars with unicode numbers to avoid collisions
+		s = validIDCharsRe.ReplaceAllStringFunc(s, func(s string) string {
+			r := ""
+			for i := 0; i < len(s); i++ {
+				uc, _ := utf8.DecodeRuneInString(string(s[i]))
+				r = fmt.Sprintf("%sC%d", r, uc)
+			}
+			return r
+		})
 		if s != "" {
 			validSeeds = append(validSeeds, s)
 			if !strings.HasPrefix(s, "SPDXRef-") {
