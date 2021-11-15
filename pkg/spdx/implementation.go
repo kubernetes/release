@@ -51,8 +51,8 @@ type spdxImplementation interface {
 		Arch      string
 		OS        string
 	}, error)
-	PackageFromImageTarball(string, *Options) (*Package, error)
-	PackageFromTarball(string, *TarballOptions) (*Package, error)
+	PackageFromImageTarball(*Options, string) (*Package, error)
+	PackageFromTarball(*Options, *TarballOptions, string) (*Package, error)
 	GetDirectoryTree(string) ([]string, error)
 	IgnorePatterns(string, []string, bool) ([]gitignore.Pattern, error)
 	ApplyIgnorePatterns([]string, []gitignore.Pattern) []string
@@ -77,16 +77,17 @@ func (di *spdxDefaultImplementation) ExtractTarballTmp(tarPath string) (tmpDir s
 	if err != nil {
 		return tmpDir, errors.Wrap(err, "opening tarball")
 	}
+	defer f.Close()
 
 	tr := tar.NewReader(f)
 	numFiles := 0
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
-			break // End of archive
+			break
 		}
 		if err != nil {
-			return tmpDir, errors.Wrap(err, "reading the image tarfile")
+			return tmpDir, errors.Wrapf(err, "reading tarfile %s", tarPath)
 		}
 
 		if hdr.FileInfo().IsDir() {
@@ -112,15 +113,16 @@ func (di *spdxDefaultImplementation) ExtractTarballTmp(tarPath string) (tmpDir s
 		if err != nil {
 			return tmpDir, errors.Wrap(err, "creating image layer file")
 		}
-		defer f.Close()
 
 		if _, err := io.CopyN(f, tr, hdr.Size); err != nil {
+			f.Close()
 			if err == io.EOF {
 				break
 			}
 
 			return tmpDir, errors.Wrap(err, "extracting image data")
 		}
+		f.Close()
 
 		numFiles++
 	}
@@ -362,18 +364,31 @@ func (di *spdxDefaultImplementation) PullImagesToArchive(
 
 // PackageFromTarball builds a SPDX package from the contents of a tarball
 func (di *spdxDefaultImplementation) PackageFromTarball(
-	layerFile string, opts *TarballOptions,
-) (*Package, error) {
-	logrus.Infof("Generating SPDX package from tarball %s", layerFile)
+	opts *Options, tarOpts *TarballOptions, tarFile string,
+) (pkg *Package, err error) {
+	logrus.Infof("Generating SPDX package from tarball %s", tarFile)
 
-	pkg := NewPackage()
-	pkg.Options().WorkDir = opts.ExtractDir
-	if err := pkg.ReadSourceFile(filepath.Join(opts.ExtractDir, layerFile)); err != nil {
-		return nil, errors.Wrap(err, "reading source file")
+	if tarOpts.AddFiles {
+		// Estract the tarball
+		tmp, err := di.ExtractTarballTmp(tarFile)
+		if err != nil {
+			return nil, errors.Wrap(err, "extracting tarball to temporary archive")
+		}
+		defer os.RemoveAll(tmp)
+		pkg, err = di.PackageFromDirectory(opts, tmp)
+		if err != nil {
+			return nil, errors.Wrap(err, "generating package from tar contents")
+		}
+	} else {
+		pkg = NewPackage()
 	}
-	pkg.BuildID(layerFile)
-	pkg.Name = layerFile
-	pkg.FileName = layerFile
+	// Set the extract dir option. This makes the package to remove
+	// the tempdir prefix from the document paths:
+	pkg.Options().WorkDir = tarOpts.ExtractDir
+	if err := pkg.ReadSourceFile(tarFile); err != nil {
+		return nil, errors.Wrapf(err, "reading source file %s", tarFile)
+	}
+	// Build the ID and the filename from the tarball name
 	return pkg, nil
 }
 
@@ -550,7 +565,7 @@ func (di *spdxDefaultImplementation) ImageRefToPackage(ref string, opts *Options
 	// If we just got one image and that image is exactly the same
 	// reference, return a single package:
 	if len(imgs) == 1 && imgs[0].Reference == ref {
-		return di.PackageFromImageTarball(imgs[0].Archive, opts)
+		return di.PackageFromImageTarball(opts, imgs[0].Archive)
 	}
 
 	// Create the package representing the image tag:
@@ -561,7 +576,7 @@ func (di *spdxDefaultImplementation) ImageRefToPackage(ref string, opts *Options
 
 	// Now, cycle each image in the index and generate a package from it
 	for _, img := range imgs {
-		subpkg, err := di.PackageFromImageTarball(img.Archive, opts)
+		subpkg, err := di.PackageFromImageTarball(opts, img.Archive)
 		if err != nil {
 			return nil, errors.Wrap(err, "adding image variant package")
 		}
@@ -596,17 +611,19 @@ func (di *spdxDefaultImplementation) ImageRefToPackage(ref string, opts *Options
 // PackageFromImageTarball reads an OCI image archive and produces a SPDX
 // packafe describing its layers
 func (di *spdxDefaultImplementation) PackageFromImageTarball(
-	tarPath string, spdxOpts *Options,
+	spdxOpts *Options, tarPath string,
 ) (imagePackage *Package, err error) {
 	logrus.Infof("Generating SPDX package from image tarball %s", tarPath)
 
 	// Extract all files from tarfile
-	tarOpts := &TarballOptions{}
+	tarOpts := &TarballOptions{
+		AddFiles: true,
+	}
 	tarOpts.ExtractDir, err = di.ExtractTarballTmp(tarPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "extracting tarball to temp dir")
 	}
-	defer os.RemoveAll(tarOpts.ExtractDir)
+	// defer os.RemoveAll(tarOpts.ExtractDir)
 
 	// Read the archive manifest json:
 	manifest, err := di.ReadArchiveManifest(
@@ -639,7 +656,7 @@ func (di *spdxDefaultImplementation) PackageFromImageTarball(
 	// Cycle all the layers from the manifest and add them as packages
 	for _, layerFile := range manifest.LayerFiles {
 		// Generate a package from a layer
-		pkg, err := di.PackageFromTarball(layerFile, tarOpts)
+		pkg, err := di.PackageFromTarball(spdxOpts, tarOpts, filepath.Join(tarOpts.ExtractDir, layerFile))
 		if err != nil {
 			return nil, errors.Wrap(err, "building package from layer")
 		}

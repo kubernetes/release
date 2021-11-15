@@ -109,9 +109,9 @@ func TestPackageFromTarball(t *testing.T) {
 	defer os.Remove(tarFile.Name())
 
 	sut := spdxDefaultImplementation{}
-	_, err := sut.PackageFromTarball("lsdkjflksdjflk", &TarballOptions{})
+	_, err := sut.PackageFromTarball(&Options{}, &TarballOptions{}, "lsdkjflksdjflk")
 	require.NotNil(t, err)
-	pkg, err := sut.PackageFromTarball(tarFile.Name(), &TarballOptions{})
+	pkg, err := sut.PackageFromTarball(&Options{}, &TarballOptions{}, tarFile.Name())
 	require.Nil(t, err)
 	require.NotNil(t, pkg)
 

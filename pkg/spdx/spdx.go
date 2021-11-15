@@ -20,7 +20,6 @@ import (
 	"encoding/base64"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
@@ -38,7 +37,6 @@ const (
 	spdxLicenseData         = spdxTempDir + "/licenses"
 	spdxLicenseDlCache      = spdxTempDir + "/downloadCache"
 	gitIgnoreFile           = ".gitignore"
-	validIDCharsRe          = `[^a-zA-Z0-9-.]+` // https://spdx.github.io/spdx-spec/3-package-information/#32-package-spdx-identifier
 
 	// Consts of some SPDX expressions
 	NONE        = "NONE"
@@ -98,6 +96,7 @@ type ArchiveManifest struct {
 // ImageOptions set of options for processing tar files
 type TarballOptions struct {
 	ExtractDir string // Directory where the docker tar archive will be extracted
+	AddFiles   bool
 }
 
 // buildIDString takes a list of seed strings and builds a
@@ -106,13 +105,11 @@ type TarballOptions struct {
 func buildIDString(seeds ...string) string {
 	validSeeds := []string{}
 	numValidSeeds := 0
-	reg := regexp.MustCompile(validIDCharsRe)
 	for _, s := range seeds {
 		// Replace some chars with - to keep the sense of the ID
 		for _, r := range []string{"/", ":"} {
 			s = strings.ReplaceAll(s, r, "-")
 		}
-		s = reg.ReplaceAllString(s, "")
 		if s != "" {
 			validSeeds = append(validSeeds, s)
 			if !strings.HasPrefix(s, "SPDXRef-") {
@@ -235,13 +232,12 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 		}
 	}
 
-	// Add files into the package
 	return pkg, nil
 }
 
 // PackageFromImageTarball returns a SPDX package from a tarball
 func (spdx *SPDX) PackageFromImageTarball(tarPath string) (imagePackage *Package, err error) {
-	return spdx.impl.PackageFromImageTarball(tarPath, spdx.Options())
+	return spdx.impl.PackageFromImageTarball(spdx.Options(), tarPath)
 }
 
 // FileFromPath creates a File object from a path
