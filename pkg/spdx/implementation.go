@@ -21,6 +21,7 @@ package spdx
 import (
 	"archive/tar"
 	"bufio"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -79,7 +80,16 @@ func (di *spdxDefaultImplementation) ExtractTarballTmp(tarPath string) (tmpDir s
 	}
 	defer f.Close()
 
-	tr := tar.NewReader(f)
+	var tr *tar.Reader
+	if strings.HasSuffix(tarPath, ".gz") || strings.HasSuffix(tarPath, ".tgz") {
+		gzipReader, err := gzip.NewReader(f)
+		if err != nil {
+			return "", err
+		}
+		tr = tar.NewReader(gzipReader)
+	} else {
+		tr = tar.NewReader(f)
+	}
 	numFiles := 0
 	for {
 		hdr, err := tr.Next()

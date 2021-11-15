@@ -58,20 +58,25 @@ func TestBuildIDString(t *testing.T) {
 }
 
 func TestUnitExtractTarballTmp(t *testing.T) {
-	tarFile := writeTestTarball(t)
-	require.NotNil(t, tarFile)
-	defer os.Remove(tarFile.Name())
-
 	sut := NewSPDX()
+	// Non existent files shoud error
 	_, err := sut.ExtractTarballTmp("lsdjkflskdjfl")
-	require.NotNil(t, err)
-	dir, err := sut.ExtractTarballTmp(tarFile.Name())
-	require.Nil(t, err, "extracting file")
-	defer os.RemoveAll(dir)
+	require.Error(t, err)
 
-	require.True(t, util.Exists(filepath.Join(dir, "/text.txt")), "checking directory")
-	require.True(t, util.Exists(filepath.Join(dir, "/subdir/text.txt")), "checking subdirectory")
-	require.True(t, util.Exists(dir), "checking directory")
+	// Lets test a zipped and unzipped tarball
+	for _, tf := range []bool{true, false} {
+		tarFile := writeTestTarball(t, tf)
+		require.NotNil(t, tarFile)
+		defer os.Remove(tarFile.Name())
+
+		dir, err := sut.ExtractTarballTmp(tarFile.Name())
+		require.Nil(t, err, "extracting file")
+		defer os.RemoveAll(dir)
+
+		require.True(t, util.Exists(filepath.Join(dir, "/text.txt")), "checking directory")
+		require.True(t, util.Exists(filepath.Join(dir, "/subdir/text.txt")), "checking subdirectory")
+		require.True(t, util.Exists(dir), "checking directory")
+	}
 }
 
 func TestReadArchiveManifest(t *testing.T) {
@@ -104,7 +109,7 @@ func TestReadArchiveManifest(t *testing.T) {
 }
 
 func TestPackageFromTarball(t *testing.T) {
-	tarFile := writeTestTarball(t)
+	tarFile := writeTestTarball(t, false)
 	require.NotNil(t, tarFile)
 	defer os.Remove(tarFile.Name())
 
@@ -160,13 +165,22 @@ func TestExtDocReadSourceFile(t *testing.T) {
 	require.Equal(t, "5f341d31f6b6a8b15bc4e6704830bf37f99511d1", ed.Checksums["SHA1"])
 }
 
-func writeTestTarball(t *testing.T) *os.File {
+func writeTestTarball(t *testing.T, zipped bool) *os.File {
 	// Create a testdir
-	tarFile, err := os.CreateTemp(os.TempDir(), "test-tar-*.tar.gz")
+	fileprefix := "test-tar-*.tar"
+	if zipped {
+		fileprefix += ".gz"
+	}
+	tarFile, err := os.CreateTemp(os.TempDir(), fileprefix)
 	require.Nil(t, err)
 
 	tardata, err := base64.StdEncoding.DecodeString(testTar)
 	require.Nil(t, err)
+
+	if zipped {
+		require.NoError(t, os.WriteFile(tarFile.Name(), tardata, os.FileMode(0o644)))
+		return tarFile
+	}
 
 	reader := bytes.NewReader(tardata)
 	zipreader, err := gzip.NewReader(reader)
