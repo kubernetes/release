@@ -38,6 +38,8 @@ const (
 	k8sioRepo             = "k8s.io"
 	k8sioDefaultBranch    = "main"
 	promotionBranchSuffix = "-image-promotion"
+	defaultProject        = release.Kubernetes
+	defaultReviewers      = "@kubernetes/release-engineering"
 )
 
 // promoteCommand is the krel subcommand to promote conainer images
@@ -87,7 +89,7 @@ func (o *promoteOptions) Validate() error {
 	// Check that the GitHub token is set
 	token, isSet := os.LookupEnv(github.TokenEnvKey)
 	if !isSet || token == "" {
-		return errors.New("cannot promote images if GitHub token is not set")
+		return fmt.Errorf("cannot promote images if GitHub token env var %s is not set", github.TokenEnvKey)
 	}
 	return nil
 }
@@ -98,7 +100,7 @@ func init() {
 	imagePromoteCommand.PersistentFlags().StringVar(
 		&promoteOpts.project,
 		"project",
-		release.Kubernetes,
+		defaultProject,
 		"the name of the project to promote images for",
 	)
 
@@ -120,7 +122,7 @@ func init() {
 	imagePromoteCommand.PersistentFlags().StringVar(
 		&promoteOpts.reviewers,
 		"reviewers",
-		"@kubernetes/release-engineering",
+		defaultReviewers,
 		"the list of GitHub users or teams to assign to the PR",
 	)
 
@@ -289,16 +291,12 @@ func runPromote(opts *promoteOptions) error {
 		return nil
 	}
 
-	prBody := fmt.Sprintf("Image promotion for %s %s\n", opts.project, strings.Join(opts.tags, " / "))
-	prBody += "This is an automated PR generated from `krel The Kubernetes Release Toolbox`\n\n"
-	prBody += fmt.Sprintf("/hold\ncc: %s\n", opts.reviewers)
-
 	// Create the Pull Request
 	if mustRun(opts, "Create pull request?") {
 		pr, err := gh.CreatePullRequest(
 			git.DefaultGithubOrg, k8sioRepo, k8sioDefaultBranch,
 			fmt.Sprintf("%s:%s", userForkOrg, branchname),
-			commitMessage, prBody,
+			commitMessage, generatePRBody(opts),
 		)
 		if err != nil {
 			return errors.Wrap(err, "creating the pull request in k/k8s.io")
@@ -330,4 +328,31 @@ func mustRun(opts *promoteOptions, question string) bool {
 		return true
 	}
 	return false
+}
+
+// generatePRBody creates the body of the Image Promotion Pull Request
+func generatePRBody(opts *promoteOptions) string {
+	args := fmt.Sprintf("--fork %s", opts.userFork)
+	if opts.interactiveMode {
+		args += " --interactive"
+	}
+
+	if opts.project != defaultProject {
+		args += " --project" + opts.project
+	}
+
+	if opts.reviewers != defaultReviewers {
+		args += " --reviewers" + opts.reviewers
+	}
+
+	for _, tag := range opts.tags {
+		args += " --tag " + tag
+	}
+
+	prBody := fmt.Sprintf("Image promotion for %s %s\n", opts.project, strings.Join(opts.tags, " / "))
+	prBody += "This is an automated PR generated from `krel The Kubernetes Release Toolbox`\n"
+	prBody += fmt.Sprintf("```\nkrel promote-images %s\n```\n\n", args)
+	prBody += fmt.Sprintf("/hold\ncc: %s\n", opts.reviewers)
+
+	return prBody
 }
