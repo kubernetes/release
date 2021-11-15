@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/nozzle/throttler"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -136,88 +135,13 @@ func buildIDString(seeds ...string) string {
 // PackageFromDirectory indexes all files in a directory and builds a
 // SPDX package describing its contents
 func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error) {
-	dirPath, err = filepath.Abs(dirPath)
+	pkg, err = spdx.impl.PackageFromDirectory(spdx.options, dirPath)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting absolute directory path")
-	}
-	fileList, err := spdx.impl.GetDirectoryTree(dirPath)
-	if err != nil {
-		return nil, errors.Wrap(err, "building directory tree")
-	}
-	reader, err := spdx.impl.LicenseReader(spdx.Options())
-	if err != nil {
-		return nil, errors.Wrap(err, "creating license reader")
-	}
-	licenseTag := ""
-	lic, err := spdx.impl.GetDirectoryLicense(reader, dirPath, spdx.Options())
-	if err != nil {
-		return nil, errors.Wrap(err, "scanning directory for licenses")
-	}
-	if lic != nil {
-		licenseTag = lic.LicenseID
+		return nil, errors.Wrap(err, "generating SPDX package from directory")
 	}
 
-	// Build a list of patterns from those found in the .gitignore file and
-	// posssibly others passed in the options:
-	patterns, err := spdx.impl.IgnorePatterns(
-		dirPath, spdx.Options().IgnorePatterns, spdx.Options().NoGitignore,
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "building ignore patterns list")
-	}
-
-	// Apply the ignore patterns to the list of files
-	fileList = spdx.impl.ApplyIgnorePatterns(fileList, patterns)
-	logrus.Infof("Scanning %d files and adding them to the SPDX package", len(fileList))
-
-	pkg = NewPackage()
-	pkg.FilesAnalyzed = true
-	pkg.Name = filepath.Base(dirPath)
-	if pkg.Name == "" {
-		pkg.Name = uuid.NewString()
-	}
-	pkg.LicenseConcluded = licenseTag
-
-	t := throttler.New(5, len(fileList))
-
-	processDirectoryFile := func(path string, pkg *Package) {
-		defer t.Done(err)
-		f := NewFile()
-		f.FileName = path
-		f.SourceFile = filepath.Join(dirPath, path)
-		lic, err = reader.LicenseFromFile(f.SourceFile)
-		if err != nil {
-			err = errors.Wrap(err, "scanning file for license")
-			return
-		}
-		f.LicenseInfoInFile = NONE
-		if lic == nil {
-			f.LicenseConcluded = licenseTag
-		} else {
-			f.LicenseInfoInFile = lic.LicenseID
-		}
-
-		if err = f.ReadSourceFile(filepath.Join(dirPath, path)); err != nil {
-			err = errors.Wrap(err, "checksumming file")
-			return
-		}
-		f.Name = strings.TrimPrefix(path, dirPath+string(filepath.Separator))
-		if err = pkg.AddFile(f); err != nil {
-			err = errors.Wrapf(err, "adding %s as file to the spdx package", path)
-			return
-		}
-	}
-
-	// Read the files in parallel
-	for _, path := range fileList {
-		go processDirectoryFile(path, pkg)
-		t.Throttle()
-	}
-
-	if err := t.Err(); err != nil {
-		return nil, err
-	}
-
+	// Scan the directory contents and if it is a go module, process the
+	// dependencies
 	if util.Exists(filepath.Join(dirPath, GoModFileName)) && spdx.Options().ProcessGoModules {
 		logrus.Info("Directory contains a go module. Scanning go packages")
 		deps, err := spdx.impl.GetGoDependencies(dirPath, spdx.Options())

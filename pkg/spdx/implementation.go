@@ -35,6 +35,8 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	"github.com/google/uuid"
+	"github.com/nozzle/throttler"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/release/pkg/license"
@@ -54,6 +56,7 @@ type spdxImplementation interface {
 	}, error)
 	PackageFromImageTarball(*Options, string) (*Package, error)
 	PackageFromTarball(*Options, *TarballOptions, string) (*Package, error)
+	PackageFromDirectory(*Options, string) (*Package, error)
 	GetDirectoryTree(string) ([]string, error)
 	IgnorePatterns(string, []string, bool) ([]gitignore.Pattern, error)
 	ApplyIgnorePatterns([]string, []gitignore.Pattern) []string
@@ -695,4 +698,97 @@ func (di *spdxDefaultImplementation) PackageFromImageTarball(
 
 func (di *spdxDefaultImplementation) AnalyzeImageLayer(layerPath string, pkg *Package) error {
 	return NewImageAnalyzer().AnalyzeLayer(layerPath, pkg)
+}
+
+// PackageFromDirectory scans a directory and returns its contents as a
+// SPDX package, optionally determining the licenses found
+func (di *spdxDefaultImplementation) PackageFromDirectory(opts *Options, dirPath string) (pkg *Package, err error) {
+	dirPath, err = filepath.Abs(dirPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting absolute directory path")
+	}
+	fileList, err := di.GetDirectoryTree(dirPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "building directory tree")
+	}
+	reader, err := di.LicenseReader(opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating license reader")
+	}
+	licenseTag := ""
+	lic, err := di.GetDirectoryLicense(reader, dirPath, opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "scanning directory for licenses")
+	}
+	if lic != nil {
+		licenseTag = lic.LicenseID
+	}
+
+	// Build a list of patterns from those found in the .gitignore file and
+	// posssibly others passed in the options:
+	patterns, err := di.IgnorePatterns(
+		dirPath, opts.IgnorePatterns, opts.NoGitignore,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "building ignore patterns list")
+	}
+
+	// Apply the ignore patterns to the list of files
+	fileList = di.ApplyIgnorePatterns(fileList, patterns)
+	logrus.Infof("Scanning %d files and adding them to the SPDX package", len(fileList))
+
+	pkg = NewPackage()
+	pkg.FilesAnalyzed = true
+	pkg.Name = filepath.Base(dirPath)
+	if pkg.Name == "" {
+		pkg.Name = uuid.NewString()
+	}
+	pkg.LicenseConcluded = licenseTag
+
+	// Set the working directory of the package:
+	pkg.Options().WorkDir = filepath.Dir(dirPath)
+
+	t := throttler.New(5, len(fileList))
+
+	processDirectoryFile := func(path string, pkg *Package) {
+		defer t.Done(err)
+		f := NewFile()
+		f.Options().WorkDir = dirPath
+		f.Options().Prefix = pkg.Name
+
+		lic, err = reader.LicenseFromFile(filepath.Join(dirPath, path))
+		if err != nil {
+			err = errors.Wrap(err, "scanning file for license")
+			return
+		}
+		f.LicenseInfoInFile = NONE
+		if lic == nil {
+			f.LicenseConcluded = licenseTag
+		} else {
+			f.LicenseInfoInFile = lic.LicenseID
+		}
+
+		if err = f.ReadSourceFile(filepath.Join(dirPath, path)); err != nil {
+			err = errors.Wrap(err, "checksumming file")
+			return
+		}
+		if err = pkg.AddFile(f); err != nil {
+			err = errors.Wrapf(err, "adding %s as file to the spdx package", path)
+			return
+		}
+	}
+
+	// Read the files in parallel
+	for _, path := range fileList {
+		go processDirectoryFile(path, pkg)
+		t.Throttle()
+	}
+
+	// If the throttler picked an error, fail here
+	if err := t.Err(); err != nil {
+		return nil, err
+	}
+
+	// Add files into the package
+	return pkg, nil
 }
