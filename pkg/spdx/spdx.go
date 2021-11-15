@@ -68,6 +68,7 @@ type Options struct {
 	ProcessGoModules bool     // If true, spdx will check if dirs are go modules and analize the packages
 	OnlyDirectDeps   bool     // Only include direct dependencies from go.mod
 	ScanLicenses     bool     // Scan licenses from everypossible place unless false
+	AddTarFiles      bool     // Scan and add files inside of tarfiles
 	LicenseCacheDir  string   // Directory to cache SPDX license downloads
 	LicenseData      string   // Directory to store the SPDX licenses
 	IgnorePatterns   []string // Patterns to ignore when scanning file
@@ -162,6 +163,18 @@ func (spdx *SPDX) PackageFromDirectory(dirPath string) (pkg *Package, err error)
 // PackageFromImageTarball returns a SPDX package from a tarball
 func (spdx *SPDX) PackageFromImageTarball(tarPath string) (imagePackage *Package, err error) {
 	return spdx.impl.PackageFromImageTarball(spdx.Options(), tarPath)
+}
+
+// PackageFromArchive returns a SPDX package from a tarball
+func (spdx *SPDX) PackageFromArchive(archivePath string) (imagePackage *Package, err error) {
+	if strings.HasSuffix(archivePath, "tar") || strings.HasSuffix(archivePath, "tar.gz") {
+		return spdx.impl.PackageFromTarball(
+			spdx.Options(), &TarballOptions{
+				AddFiles: true,
+			}, archivePath,
+		)
+	}
+	return nil, errors.Wrap(err, "unable to create spdx package from archive, only tar archives are supported")
 }
 
 // FileFromPath creates a File object from a path

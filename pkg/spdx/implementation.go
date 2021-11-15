@@ -629,14 +629,19 @@ func (di *spdxDefaultImplementation) PackageFromImageTarball(
 	logrus.Infof("Generating SPDX package from image tarball %s", tarPath)
 
 	// Extract all files from tarfile
-	tarOpts := &TarballOptions{
-		AddFiles: true,
+	tarOpts := &TarballOptions{}
+
+	// If specified, add individual files from the tarball to the
+	// spdx package, unless AnalyzeLayers is set because in that
+	// case the individual analyzers decide to do that.
+	if spdxOpts.AddTarFiles && !spdxOpts.AnalyzeLayers {
+		tarOpts.AddFiles = true
 	}
 	tarOpts.ExtractDir, err = di.ExtractTarballTmp(tarPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "extracting tarball to temp dir")
 	}
-	// defer os.RemoveAll(tarOpts.ExtractDir)
+	defer os.RemoveAll(tarOpts.ExtractDir)
 
 	// Read the archive manifest json:
 	manifest, err := di.ReadArchiveManifest(

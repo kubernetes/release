@@ -96,7 +96,8 @@ type DocGenerateOptions struct {
 	Namespace           string                // Namespace for the document (a unique URI)
 	CreatorPerson       string                // Document creator information
 	License             string                // Main license of the document
-	Tarballs            []string              // A slice of tar paths
+	Tarballs            []string              // A slice of docker archives (tar)
+	Archives            []string              // A list of archive files to add as packages
 	Files               []string              // A slice of naked files to include in the bom
 	Images              []string              // A slice of docker images
 	Directories         []string              // A slice of directories to convert into packages
@@ -105,7 +106,11 @@ type DocGenerateOptions struct {
 }
 
 func (o *DocGenerateOptions) Validate() error {
-	if len(o.Tarballs) == 0 && len(o.Files) == 0 && len(o.Images) == 0 && len(o.Directories) == 0 {
+	if len(o.Tarballs) == 0 &&
+		len(o.Files) == 0 &&
+		len(o.Images) == 0 &&
+		len(o.Directories) == 0 &&
+		len(o.Archives) == 0 {
 		return errors.New(
 			"to build a document at least an image, tarball, directory or a file has to be specified",
 		)
@@ -196,12 +201,24 @@ func (builder *defaultDocBuilderImpl) GenerateDoc(
 		}
 	}
 
-	// Porcess OCI image archives
+	// Process OCI image archives
 	for _, tb := range genopts.Tarballs {
 		logrus.Infof("Processing tarball %s", tb)
 		p, err := spdx.PackageFromImageTarball(tb)
 		if err != nil {
 			return nil, errors.Wrap(err, "generating tarball package")
+		}
+		if err := doc.AddPackage(p); err != nil {
+			return nil, errors.Wrap(err, "adding package to document")
+		}
+	}
+
+	// Add archive files as packages
+	for _, tf := range genopts.Archives {
+		logrus.Infof("Adding archive file as package: %s", tf)
+		p, err := spdx.PackageFromArchive(tf)
+		if err != nil {
+			return nil, errors.Wrap(err, "creating spdx package from archive")
 		}
 		if err := doc.AddPackage(p); err != nil {
 			return nil, errors.Wrap(err, "adding package to document")
