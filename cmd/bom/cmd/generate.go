@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 
 	"github.com/pkg/errors"
@@ -93,27 +92,6 @@ func (opts *generateOptions) Validate() error {
 		len(opts.archives) == 0 &&
 		len(opts.directories) == 0 {
 		return errors.New("to generate a SPDX BOM you have to provide at least one image or file")
-	}
-
-	// A namespace URL is required
-	if opts.configFile == "" && opts.namespace == "" {
-		msg := "Error. No namespace defined\n\n"
-		msg += "You did not specify a namespace for your document. This is an error.\n"
-		msg += "To produce a valid SPDX SBOM, the document has to have an URI as its\n"
-		msg += "namespace.\n\nIf you are testing, you can use http://example.com/ for now but your\n"
-		msg += "final document must have a namespace URI pointing to the location where\n"
-		msg += "your SBOM will be referenced in the future.\n\n"
-		msg += "For more details, check the SPDX documentation here:\n"
-		msg += "https://spdx.github.io/spdx-spec/2-document-creation-information/#25-spdx-document-namespace\n\n"
-		msg += "Hint: --namespace is your friend here\n\n"
-		logrus.Info(msg)
-
-		return errors.New("A namespace URI must be defined to have a compliant SPDX BOM")
-	}
-
-	// Check namespace is a valid URL
-	if _, err := url.Parse(opts.namespace); err != nil {
-		return errors.Wrap(err, "parsing the namespace URL")
 	}
 
 	return nil

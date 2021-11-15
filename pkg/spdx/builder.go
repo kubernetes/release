@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
@@ -169,13 +170,17 @@ func (builder *defaultDocBuilderImpl) GenerateDoc(
 	// Create the new document
 	doc = NewDocument()
 	doc.Name = genopts.Name
-	doc.Namespace = genopts.Namespace
+
+	// If we do not have a namespace, we generate one
+	// under the public SPDX URL defined in the spec.
+	// (ref https://spdx.github.io/spdx-spec/document-creation-information/#65-spdx-document-namespace-field)
+	if genopts.Namespace == "" {
+		doc.Namespace = "https://spdx.org/spdxdocs/k8s-releng-bom-" + uuid.NewString()
+	} else {
+		doc.Namespace = genopts.Namespace
+	}
 	doc.Creator.Person = genopts.CreatorPerson
 	doc.ExternalDocRefs = genopts.ExternalDocumentRef
-
-	if genopts.Namespace == "" {
-		return nil, errors.New("unable to generate doc, namespace URI is not defined")
-	}
 
 	for _, i := range genopts.Directories {
 		logrus.Infof("Processing directory %s", i)
