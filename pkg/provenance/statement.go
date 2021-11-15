@@ -53,6 +53,10 @@ func (s *Statement) Write(path string) error {
 	return s.impl.Write(s, path)
 }
 
+func (s *Statement) ToJSON() ([]byte, error) {
+	return s.impl.ToJSON(s)
+}
+
 // ReadSubjectsFromDir reads a directory and adds every file as a subject
 // to the statement.
 func (s *Statement) ReadSubjectsFromDir(path string) (err error) {
@@ -106,6 +110,7 @@ type StatementImplementation interface {
 	ReadSubjectsFromDir(*Statement, string) error
 	SubjectFromFile(string) (intoto.Subject, error)
 	Write(*Statement, string) error
+	ToJSON(s *Statement) ([]byte, error)
 	ClonePredicate(*Statement, string) error
 	VerifySubjects(path string, subjects *[]intoto.Subject) (err error)
 }
@@ -174,11 +179,19 @@ func (si *defaultStatementImplementation) SubjectFromFile(filePath string) (subj
 	return subject, nil
 }
 
-// Write dumps the statement data to disk in json
-func (si *defaultStatementImplementation) Write(s *Statement, path string) error {
+func (si *defaultStatementImplementation) ToJSON(s *Statement) ([]byte, error) {
 	jsonData, err := json.Marshal(s)
 	if err != nil {
-		return errors.Wrap(err, "marshalling statement to json")
+		return nil, errors.Wrap(err, "marshalling statement to json")
+	}
+	return jsonData, nil
+}
+
+// Write dumps the statement data to disk in json
+func (si *defaultStatementImplementation) Write(s *Statement, path string) error {
+	jsonData, err := si.ToJSON(s)
+	if err != nil {
+		return err
 	}
 	return errors.Wrap(
 		os.WriteFile(path, jsonData, os.FileMode(0o644)),
@@ -186,8 +199,8 @@ func (si *defaultStatementImplementation) Write(s *Statement, path string) error
 	)
 }
 
-// ClonePredicate clonea the predicate from the file in manifestPath
-// to Statement s
+// ClonePredicate clones the predicate from the file in manifestPath
+// to into the Statement
 func (si *defaultStatementImplementation) ClonePredicate(s *Statement, manifestPath string) error {
 	otherStatment, err := LoadStatement(manifestPath)
 	if err != nil {

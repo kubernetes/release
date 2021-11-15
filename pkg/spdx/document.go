@@ -33,9 +33,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/term"
+	"k8s.io/release/pkg/provenance"
 	"sigs.k8s.io/release-utils/hash"
 )
 
@@ -347,4 +349,37 @@ func (d *Document) Outline(o *DrawingOptions) (outline string, err error) {
 		f.Draw(builder, o, 0, &seen)
 	}
 	return builder.String(), nil
+}
+
+type ProvenanceOptions struct {
+	Relationships map[string][]RelationshipType
+}
+
+// DefaultProvenanceOptions we consider examples and dependencies as not part of the doc
+var DefaultProvenanceOptions = &ProvenanceOptions{
+	Relationships: map[string][]RelationshipType{
+		"include": {},
+		"exclude": {
+			EXAMPLE_OF,
+			DEPENDS_ON,
+		},
+	},
+}
+
+func (d *Document) ToProvenanceStatement(opts *ProvenanceOptions) *provenance.Statement {
+	statement := provenance.NewSLSAStatement()
+	subs := []intoto.Subject{}
+	seen := &map[string]struct{}{}
+
+	for _, p := range d.Packages {
+		subsubs := p.getProvenanceSubjects(opts, seen)
+		subs = append(subs, subsubs...)
+	}
+
+	for _, f := range d.Files {
+		subsubs := f.getProvenanceSubjects(opts, seen)
+		subs = append(subs, subsubs...)
+	}
+	statement.Subject = subs
+	return statement
 }

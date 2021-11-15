@@ -455,6 +455,9 @@ func TestCheckProvenance(t *testing.T) {
 	} {
 		opts := anago.DefaultReleaseOptions()
 		sut := anago.NewDefaultRelease(opts)
+		sut.SetState(
+			generateTestingReleaseState(&testStateParameters{versionsTag: &testVersionTag}),
+		)
 		mock := &anagofakes.FakeReleaseImpl{}
 		tc.prepare(mock)
 		sut.SetImpl(mock)

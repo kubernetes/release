@@ -28,7 +28,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/release-utils/hash"
 	"sigs.k8s.io/release-utils/util"
 )
@@ -43,6 +45,8 @@ type Object interface {
 	SetEntity(*Entity)
 	AddRelationship(*Relationship)
 	GetRelationships() *[]*Relationship
+	ToProvenanceSubject() *intoto.Subject
+	getProvenanceSubjects(opts *ProvenanceOptions, seen *map[string]struct{}) []intoto.Subject
 }
 
 type Entity struct {
@@ -151,4 +155,115 @@ func (e *Entity) Render() (string, error) {
 
 func (e *Entity) GetRelationships() *[]*Relationship {
 	return &e.Relationships
+}
+
+// ToProvenanceSubject converts the element to an intoto subject, suitable
+// to use inprovenance attestaions
+func (e *Entity) ToProvenanceSubject() *intoto.Subject {
+	location := ""
+	if e.DownloadLocation != "" {
+		location = e.DownloadLocation
+	} else if e.FileName != "" {
+		location = e.FileName
+	}
+
+	if location == "" {
+		logrus.Warnf("%+v", e)
+		logrus.Warnf(
+			"Unable to convert element %s to provenance subject, no location found",
+			e.SPDXID(),
+		)
+		return nil
+	}
+	if len(e.Checksum) == 0 {
+		logrus.Warnf(
+			"Unable to convert element %s to provenance subject, no checksums found",
+			e.SPDXID(),
+		)
+		return nil
+	}
+
+	sub := &intoto.Subject{
+		Name:   location,
+		Digest: map[string]string{},
+	}
+
+	for algo, hashVal := range e.Checksum {
+		sub.Digest[strings.ToLower(algo)] = hashVal
+	}
+	return sub
+}
+
+// getProvenanceSubjects regturns all provenance subjects found in this
+// entity by scanning all relationships recursively
+// nolint:gocritic // seen needs to be a pointer as it is used recursively
+func (e *Entity) getProvenanceSubjects(opts *ProvenanceOptions, seen *map[string]struct{}) []intoto.Subject {
+	ret := []intoto.Subject{}
+
+	if _, ok := (*seen)[e.SPDXID()]; !ok {
+		esub := e.ToProvenanceSubject()
+		if esub != nil {
+			ret = append(ret, *esub)
+		}
+	}
+
+mloop:
+	for _, rel := range *e.GetRelationships() {
+		if rel.Peer == nil {
+			continue mloop
+		}
+
+		// If peer is external, skip
+		if rel.PeerExtReference != "" {
+			continue
+		}
+		// If the peer has already been added, skip
+		if _, ok := (*seen)[rel.Peer.SPDXID()]; ok {
+			continue
+		}
+
+		// If relationships filters are set
+		if opts.Relationships != nil {
+			// Version is useful for dependencies, so add it:
+			found := false
+			for exclusion, rels := range opts.Relationships {
+				for _, relt := range rels {
+					// If rel is excluded, we can ignore
+					if exclusion == "exclude" && relt == rel.Type {
+						logrus.Infof("Relationships of type %s are excluded from provenance", rel.Type)
+						continue mloop
+					}
+
+					if exclusion == "include" && relt == rel.Type {
+						found = true
+						break
+					}
+				}
+			}
+
+			// Now if rel was not found, we don't use it but only if we have a
+			// list of relationships we DO want:
+			if _, ok := opts.Relationships["include"]; ok {
+				if !found && len(opts.Relationships["include"]) > 0 {
+					logrus.Infof("Relationships of type %s not included in provenance", rel.Type)
+					continue
+				}
+			}
+		}
+
+		// Convert entity to subject
+		var subject *intoto.Subject
+		if p, ok := rel.Peer.(*Package); ok {
+			subject = p.ToProvenanceSubject()
+		}
+		if f, ok := rel.Peer.(*File); ok {
+			subject = f.ToProvenanceSubject()
+		}
+
+		if subject != nil {
+			ret = append(ret, *subject)
+			(*seen)[rel.Peer.SPDXID()] = struct{}{}
+		}
+	}
+	return ret
 }

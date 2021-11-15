@@ -76,11 +76,12 @@ type FakeReleaseImpl struct {
 	checkReleaseBucketReturnsOnCall map[int]struct {
 		result1 error
 	}
-	CheckStageProvenanceStub        func(string, string) error
+	CheckStageProvenanceStub        func(string, string, *release.Versions) error
 	checkStageProvenanceMutex       sync.RWMutex
 	checkStageProvenanceArgsForCall []struct {
 		arg1 string
 		arg2 string
+		arg3 *release.Versions
 	}
 	checkStageProvenanceReturns struct {
 		result1 error
@@ -548,19 +549,20 @@ func (fake *FakeReleaseImpl) CheckReleaseBucketReturnsOnCall(i int, result1 erro
 	}{result1}
 }
 
-func (fake *FakeReleaseImpl) CheckStageProvenance(arg1 string, arg2 string) error {
+func (fake *FakeReleaseImpl) CheckStageProvenance(arg1 string, arg2 string, arg3 *release.Versions) error {
 	fake.checkStageProvenanceMutex.Lock()
 	ret, specificReturn := fake.checkStageProvenanceReturnsOnCall[len(fake.checkStageProvenanceArgsForCall)]
 	fake.checkStageProvenanceArgsForCall = append(fake.checkStageProvenanceArgsForCall, struct {
 		arg1 string
 		arg2 string
-	}{arg1, arg2})
+		arg3 *release.Versions
+	}{arg1, arg2, arg3})
 	stub := fake.CheckStageProvenanceStub
 	fakeReturns := fake.checkStageProvenanceReturns
-	fake.recordInvocation("CheckStageProvenance", []interface{}{arg1, arg2})
+	fake.recordInvocation("CheckStageProvenance", []interface{}{arg1, arg2, arg3})
 	fake.checkStageProvenanceMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -574,17 +576,17 @@ func (fake *FakeReleaseImpl) CheckStageProvenanceCallCount() int {
 	return len(fake.checkStageProvenanceArgsForCall)
 }
 
-func (fake *FakeReleaseImpl) CheckStageProvenanceCalls(stub func(string, string) error) {
+func (fake *FakeReleaseImpl) CheckStageProvenanceCalls(stub func(string, string, *release.Versions) error) {
 	fake.checkStageProvenanceMutex.Lock()
 	defer fake.checkStageProvenanceMutex.Unlock()
 	fake.CheckStageProvenanceStub = stub
 }
 
-func (fake *FakeReleaseImpl) CheckStageProvenanceArgsForCall(i int) (string, string) {
+func (fake *FakeReleaseImpl) CheckStageProvenanceArgsForCall(i int) (string, string, *release.Versions) {
 	fake.checkStageProvenanceMutex.RLock()
 	defer fake.checkStageProvenanceMutex.RUnlock()
 	argsForCall := fake.checkStageProvenanceArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeReleaseImpl) CheckStageProvenanceReturns(result1 error) {

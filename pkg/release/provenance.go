@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/release/pkg/provenance"
+	"k8s.io/release/pkg/spdx"
 	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/util"
 )
@@ -90,6 +91,24 @@ func (pc *ProvenanceChecker) CheckStageProvenance(buildVersion string) error {
 	return nil
 }
 
+// GenerateFinalAttestation combines the stage provenance attestation
+// with a release sbom to create the end-user provenance atteatation
+func (pc *ProvenanceChecker) GenerateFinalAttestation(buildVersion string, versions *Versions) error {
+	statementPath := filepath.Join(pc.options.StageDirectory, buildVersion, ProvenanceFilename)
+	for _, version := range versions.Ordered() {
+		if err := pc.impl.generateFinalAttestation(
+			pc.options,
+			filepath.Join(
+				pc.options.StageDirectory, buildVersion, version, GCSStagePath, version, "kubernetes-release.spdx",
+			),
+			statementPath, version,
+		); err != nil {
+			return errors.Wrapf(err, "generating provenance data for %s", version)
+		}
+	}
+	return nil
+}
+
 type ProvenanceCheckerOptions struct {
 	StageBucket      string // Bucket where the artifacts are stored
 	StageDirectory   string // Directory where artifacts will be downloaded
@@ -100,6 +119,7 @@ type provenanceCheckerImplementation interface {
 	downloadStagedArtifacts(*ProvenanceCheckerOptions, *object.GCS, string) error
 	processAttestation(*ProvenanceCheckerOptions, string) (*provenance.Statement, error)
 	checkProvenance(*ProvenanceCheckerOptions, *provenance.Statement) error
+	generateFinalAttestation(opts *ProvenanceCheckerOptions, sbom, stageProvenance, version string) error
 }
 
 type defaultProvenanceCheckerImpl struct{}
@@ -149,6 +169,35 @@ func (di *defaultProvenanceCheckerImpl) processAttestation(
 func (di *defaultProvenanceCheckerImpl) checkProvenance(
 	opts *ProvenanceCheckerOptions, s *provenance.Statement) error {
 	return errors.Wrap(s.VerifySubjects(opts.StageDirectory), "checking subjects in attestation")
+}
+
+func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(
+	opts *ProvenanceCheckerOptions, sbom, stageProvenance, version string) error {
+	doc, err := spdx.OpenDoc(sbom)
+	if err != nil {
+		return errors.Wrapf(err, "parsing sbom for version %s from %s", version, sbom)
+	}
+
+	slsaStatement := doc.ToProvenanceStatement(spdx.DefaultProvenanceOptions)
+
+	// Rewrite the provenance sublects to list their full paths in the bucket
+	for i, sub := range slsaStatement.Subject {
+		slsaStatement.Subject[i].Name = object.GcsPrefix + filepath.Join(
+			opts.StageBucket, "release", version, sub.Name,
+		)
+	}
+	if err := slsaStatement.ClonePredicate(stageProvenance); err != nil {
+		return errors.Wrapf(
+			err, "cloning SLSA predicate from staging provenance: %s", stageProvenance,
+		)
+	}
+	if err := slsaStatement.Write(
+		filepath.Join(os.TempDir(), fmt.Sprintf("provenance-%s.json", version)),
+	); err != nil {
+		return errors.Wrapf(err, "writing final provenance attestation for %s", version)
+	}
+
+	return nil
 }
 
 func NewProvenanceReader(opts *ProvenanceReaderOptions) *ProvenanceReader {
