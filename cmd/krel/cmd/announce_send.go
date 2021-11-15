@@ -169,8 +169,20 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 
 	logrus.Info("Sending mail")
 	subject := fmt.Sprintf("Kubernetes %s is live!", tag)
-	if err := m.Send(content, subject); err != nil {
-		return errors.Wrap(err, "unable to send mail")
+
+	yes := true
+
+	if rootOpts.nomock {
+		_, yes, err = util.Ask("Send email? (y/N)", "y:Y:yes|n:N:no|N", 10)
+		if err != nil {
+			return err
+		}
+	}
+
+	if yes {
+		if err := m.Send(content, subject); err != nil {
+			return errors.Wrap(err, "unable to send mail")
+		}
 	}
 
 	return nil
