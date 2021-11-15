@@ -268,7 +268,13 @@ func (p *Package) CheckRelationships() error {
 
 // BuildID sets the file ID, optionally from a series of strings
 func (p *Package) BuildID(seeds ...string) {
-	p.Entity.BuildID(append([]string{"SPDXRef-Package"}, seeds...)...)
+	prefix := ""
+	if p.Options() != nil {
+		if p.Options().Prefix != "" {
+			prefix = "-" + p.Options().Prefix
+		}
+	}
+	p.Entity.BuildID(append([]string{"SPDXRef-Package" + prefix}, seeds...)...)
 }
 
 func (p *Package) SetEntity(e *Entity) {
@@ -313,17 +319,20 @@ func (p *Package) Draw(builder *strings.Builder, o *DrawingOptions, depth int, s
 		line := treeLines(o, depth, connector)
 		if rel.Peer != nil {
 			name := rel.Peer.SPDXID()
+			etype := ""
 
 			if !o.OnlyIDs {
 				if _, ok := rel.Peer.(*Package); ok {
 					name = rel.Peer.(*Package).Name
+					etype = "PACKAGE"
 				}
 
 				if _, ok := rel.Peer.(*File); ok {
 					name = rel.Peer.(*File).Name
+					etype = "FILE"
 				}
 			}
-			line += fmt.Sprintf("%s %s", rel.Type, name)
+			line += fmt.Sprintf("%s %s %s", rel.Type, etype, name)
 		} else {
 			line += fmt.Sprintf("%s %s", rel.Type, rel.PeerReference)
 		}
@@ -377,4 +386,14 @@ func (p *Package) Draw(builder *strings.Builder, o *DrawingOptions, depth int, s
 			fmt.Fprintln(builder, treeLines(o, depth-1, ""))
 		}
 	}
+}
+
+func (p *Package) ReadSourceFile(path string) error {
+	if err := p.Entity.ReadSourceFile(path); err != nil {
+		return err
+	}
+	if p.SPDXID() == "" {
+		p.BuildID()
+	}
+	return nil
 }

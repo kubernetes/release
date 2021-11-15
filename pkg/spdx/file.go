@@ -86,7 +86,13 @@ func (f *File) Render() (docFragment string, err error) {
 
 // BuildID sets the file ID, optionally from a series of strings
 func (f *File) BuildID(seeds ...string) {
-	f.Entity.BuildID(append([]string{"SPDXRef-File"}, seeds...)...)
+	prefix := ""
+	if f.Options() != nil {
+		if f.Options().Prefix != "" {
+			prefix = "-" + f.Options().Prefix
+		}
+	}
+	f.Entity.BuildID(append([]string{"SPDXRef-File" + prefix}, seeds...)...)
 }
 
 func (f *File) SetEntity(e *Entity) {
@@ -101,4 +107,14 @@ func (f *File) Draw(builder *strings.Builder, o *DrawingOptions, depth int, seen
 		connector = connectorL
 	}
 	fmt.Fprintf(builder, treeLines(o, depth, connector)+"%s (%s)\n", f.SPDXID(), f.Name)
+}
+
+func (f *File) ReadSourceFile(path string) error {
+	if err := f.Entity.ReadSourceFile(path); err != nil {
+		return err
+	}
+	if f.SPDXID() == "" {
+		f.BuildID()
+	}
+	return nil
 }

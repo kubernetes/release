@@ -59,6 +59,7 @@ type Entity struct {
 }
 
 type ObjectOptions struct {
+	Prefix  string
 	WorkDir string
 }
 
