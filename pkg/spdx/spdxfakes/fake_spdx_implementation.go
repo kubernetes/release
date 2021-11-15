@@ -1,5 +1,5 @@
 /*
-Copyright The Kubernetes Authors.
+Copyright 2021 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -147,11 +147,25 @@ type FakeSpdxImplementation struct {
 		result1 *license.Reader
 		result2 error
 	}
-	PackageFromImageTarballStub        func(string, *spdx.Options) (*spdx.Package, error)
+	PackageFromDirectoryStub        func(*spdx.Options, string) (*spdx.Package, error)
+	packageFromDirectoryMutex       sync.RWMutex
+	packageFromDirectoryArgsForCall []struct {
+		arg1 *spdx.Options
+		arg2 string
+	}
+	packageFromDirectoryReturns struct {
+		result1 *spdx.Package
+		result2 error
+	}
+	packageFromDirectoryReturnsOnCall map[int]struct {
+		result1 *spdx.Package
+		result2 error
+	}
+	PackageFromImageTarballStub        func(*spdx.Options, string) (*spdx.Package, error)
 	packageFromImageTarballMutex       sync.RWMutex
 	packageFromImageTarballArgsForCall []struct {
-		arg1 string
-		arg2 *spdx.Options
+		arg1 *spdx.Options
+		arg2 string
 	}
 	packageFromImageTarballReturns struct {
 		result1 *spdx.Package
@@ -161,11 +175,12 @@ type FakeSpdxImplementation struct {
 		result1 *spdx.Package
 		result2 error
 	}
-	PackageFromTarballStub        func(string, *spdx.TarballOptions) (*spdx.Package, error)
+	PackageFromTarballStub        func(*spdx.Options, *spdx.TarballOptions, string) (*spdx.Package, error)
 	packageFromTarballMutex       sync.RWMutex
 	packageFromTarballArgsForCall []struct {
-		arg1 string
+		arg1 *spdx.Options
 		arg2 *spdx.TarballOptions
+		arg3 string
 	}
 	packageFromTarballReturns struct {
 		result1 *spdx.Package
@@ -814,12 +829,77 @@ func (fake *FakeSpdxImplementation) LicenseReaderReturnsOnCall(i int, result1 *l
 	}{result1, result2}
 }
 
-func (fake *FakeSpdxImplementation) PackageFromImageTarball(arg1 string, arg2 *spdx.Options) (*spdx.Package, error) {
+func (fake *FakeSpdxImplementation) PackageFromDirectory(arg1 *spdx.Options, arg2 string) (*spdx.Package, error) {
+	fake.packageFromDirectoryMutex.Lock()
+	ret, specificReturn := fake.packageFromDirectoryReturnsOnCall[len(fake.packageFromDirectoryArgsForCall)]
+	fake.packageFromDirectoryArgsForCall = append(fake.packageFromDirectoryArgsForCall, struct {
+		arg1 *spdx.Options
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.PackageFromDirectoryStub
+	fakeReturns := fake.packageFromDirectoryReturns
+	fake.recordInvocation("PackageFromDirectory", []interface{}{arg1, arg2})
+	fake.packageFromDirectoryMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeSpdxImplementation) PackageFromDirectoryCallCount() int {
+	fake.packageFromDirectoryMutex.RLock()
+	defer fake.packageFromDirectoryMutex.RUnlock()
+	return len(fake.packageFromDirectoryArgsForCall)
+}
+
+func (fake *FakeSpdxImplementation) PackageFromDirectoryCalls(stub func(*spdx.Options, string) (*spdx.Package, error)) {
+	fake.packageFromDirectoryMutex.Lock()
+	defer fake.packageFromDirectoryMutex.Unlock()
+	fake.PackageFromDirectoryStub = stub
+}
+
+func (fake *FakeSpdxImplementation) PackageFromDirectoryArgsForCall(i int) (*spdx.Options, string) {
+	fake.packageFromDirectoryMutex.RLock()
+	defer fake.packageFromDirectoryMutex.RUnlock()
+	argsForCall := fake.packageFromDirectoryArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeSpdxImplementation) PackageFromDirectoryReturns(result1 *spdx.Package, result2 error) {
+	fake.packageFromDirectoryMutex.Lock()
+	defer fake.packageFromDirectoryMutex.Unlock()
+	fake.PackageFromDirectoryStub = nil
+	fake.packageFromDirectoryReturns = struct {
+		result1 *spdx.Package
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeSpdxImplementation) PackageFromDirectoryReturnsOnCall(i int, result1 *spdx.Package, result2 error) {
+	fake.packageFromDirectoryMutex.Lock()
+	defer fake.packageFromDirectoryMutex.Unlock()
+	fake.PackageFromDirectoryStub = nil
+	if fake.packageFromDirectoryReturnsOnCall == nil {
+		fake.packageFromDirectoryReturnsOnCall = make(map[int]struct {
+			result1 *spdx.Package
+			result2 error
+		})
+	}
+	fake.packageFromDirectoryReturnsOnCall[i] = struct {
+		result1 *spdx.Package
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeSpdxImplementation) PackageFromImageTarball(arg1 *spdx.Options, arg2 string) (*spdx.Package, error) {
 	fake.packageFromImageTarballMutex.Lock()
 	ret, specificReturn := fake.packageFromImageTarballReturnsOnCall[len(fake.packageFromImageTarballArgsForCall)]
 	fake.packageFromImageTarballArgsForCall = append(fake.packageFromImageTarballArgsForCall, struct {
-		arg1 string
-		arg2 *spdx.Options
+		arg1 *spdx.Options
+		arg2 string
 	}{arg1, arg2})
 	stub := fake.PackageFromImageTarballStub
 	fakeReturns := fake.packageFromImageTarballReturns
@@ -840,13 +920,13 @@ func (fake *FakeSpdxImplementation) PackageFromImageTarballCallCount() int {
 	return len(fake.packageFromImageTarballArgsForCall)
 }
 
-func (fake *FakeSpdxImplementation) PackageFromImageTarballCalls(stub func(string, *spdx.Options) (*spdx.Package, error)) {
+func (fake *FakeSpdxImplementation) PackageFromImageTarballCalls(stub func(*spdx.Options, string) (*spdx.Package, error)) {
 	fake.packageFromImageTarballMutex.Lock()
 	defer fake.packageFromImageTarballMutex.Unlock()
 	fake.PackageFromImageTarballStub = stub
 }
 
-func (fake *FakeSpdxImplementation) PackageFromImageTarballArgsForCall(i int) (string, *spdx.Options) {
+func (fake *FakeSpdxImplementation) PackageFromImageTarballArgsForCall(i int) (*spdx.Options, string) {
 	fake.packageFromImageTarballMutex.RLock()
 	defer fake.packageFromImageTarballMutex.RUnlock()
 	argsForCall := fake.packageFromImageTarballArgsForCall[i]
@@ -879,19 +959,20 @@ func (fake *FakeSpdxImplementation) PackageFromImageTarballReturnsOnCall(i int, 
 	}{result1, result2}
 }
 
-func (fake *FakeSpdxImplementation) PackageFromTarball(arg1 string, arg2 *spdx.TarballOptions) (*spdx.Package, error) {
+func (fake *FakeSpdxImplementation) PackageFromTarball(arg1 *spdx.Options, arg2 *spdx.TarballOptions, arg3 string) (*spdx.Package, error) {
 	fake.packageFromTarballMutex.Lock()
 	ret, specificReturn := fake.packageFromTarballReturnsOnCall[len(fake.packageFromTarballArgsForCall)]
 	fake.packageFromTarballArgsForCall = append(fake.packageFromTarballArgsForCall, struct {
-		arg1 string
+		arg1 *spdx.Options
 		arg2 *spdx.TarballOptions
-	}{arg1, arg2})
+		arg3 string
+	}{arg1, arg2, arg3})
 	stub := fake.PackageFromTarballStub
 	fakeReturns := fake.packageFromTarballReturns
-	fake.recordInvocation("PackageFromTarball", []interface{}{arg1, arg2})
+	fake.recordInvocation("PackageFromTarball", []interface{}{arg1, arg2, arg3})
 	fake.packageFromTarballMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -905,17 +986,17 @@ func (fake *FakeSpdxImplementation) PackageFromTarballCallCount() int {
 	return len(fake.packageFromTarballArgsForCall)
 }
 
-func (fake *FakeSpdxImplementation) PackageFromTarballCalls(stub func(string, *spdx.TarballOptions) (*spdx.Package, error)) {
+func (fake *FakeSpdxImplementation) PackageFromTarballCalls(stub func(*spdx.Options, *spdx.TarballOptions, string) (*spdx.Package, error)) {
 	fake.packageFromTarballMutex.Lock()
 	defer fake.packageFromTarballMutex.Unlock()
 	fake.PackageFromTarballStub = stub
 }
 
-func (fake *FakeSpdxImplementation) PackageFromTarballArgsForCall(i int) (string, *spdx.TarballOptions) {
+func (fake *FakeSpdxImplementation) PackageFromTarballArgsForCall(i int) (*spdx.Options, *spdx.TarballOptions, string) {
 	fake.packageFromTarballMutex.RLock()
 	defer fake.packageFromTarballMutex.RUnlock()
 	argsForCall := fake.packageFromTarballArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeSpdxImplementation) PackageFromTarballReturns(result1 *spdx.Package, result2 error) {
@@ -1129,6 +1210,8 @@ func (fake *FakeSpdxImplementation) Invocations() map[string][][]interface{} {
 	defer fake.imageRefToPackageMutex.RUnlock()
 	fake.licenseReaderMutex.RLock()
 	defer fake.licenseReaderMutex.RUnlock()
+	fake.packageFromDirectoryMutex.RLock()
+	defer fake.packageFromDirectoryMutex.RUnlock()
 	fake.packageFromImageTarballMutex.RLock()
 	defer fake.packageFromImageTarballMutex.RUnlock()
 	fake.packageFromTarballMutex.RLock()
