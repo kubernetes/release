@@ -64,9 +64,9 @@ func init() {
 
 func setGithubConfig(cmd *cobra.Command, args []string) {
 	// look for token in environment variables
-	cfg.GithubToken = env.Default("GITHUB_AUTH_TOKEN", "")
+	cfg.GithubToken = env.Default("GITHUB_TOKEN", "")
 	if cfg.GithubToken == "" {
-		logrus.Fatal("Please specify your github access token via the environment variable 'GITHUB_AUTH_TOKEN' or by setting the flag '--github-token' to generate a ci-report")
+		logrus.Fatal("Please specify your Github access token via the environment variable 'GITHUB_TOKEN' to generate a ci-report")
 		os.Exit(1)
 	}
 

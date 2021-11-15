@@ -3,7 +3,7 @@
 You can get the current overview for CI signal report by running
 
 ```
-GITHUB_AUTH_TOKEN=xxx go run cmd/ci-reporter/main.go
+GITHUB_TOKEN=xxx go run cmd/ci-reporter/main.go
 ```
 
 It needs a GitHub token to be able to query the project board for CI signal. For some reason even though those boards are available for public view, the APIs require auth. See [this documentation](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line) to set up your access token.
@@ -17,7 +17,7 @@ It needs a GitHub token to be able to query the project board for CI signal. For
 ```
 git clone git@github.com:kubernetes/release <folder>
 cd <folder>
-GITHUB_AUTH_TOKEN=xxx go run cmd/ci-reporter/main.go
+GITHUB_TOKEN=xxx go run cmd/ci-reporter/main.go
 ```
 
 ### Flags and Commands
@@ -53,7 +53,7 @@ curl \
 ## Example output
 
 ```
-GITHUB_AUTH_TOKEN=xxx go run cmd/ci-reporter/main.go -s
+GITHUB_TOKEN=xxx go run cmd/ci-reporter/main.go -s
 
 In flight
 #106278 [sig windows]

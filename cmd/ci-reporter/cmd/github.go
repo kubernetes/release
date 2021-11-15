@@ -21,12 +21,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
 
 	"github.com/google/go-github/v34/github"
+	"github.com/pkg/errors"
 )
 
 // This regex is getting used to identify sig lables on github issues
@@ -116,8 +116,7 @@ func getCardsFromColumn(cfg ReporterConfig, cardsID ColumnID) ([]IssueOverview, 
 	opt := &github.ProjectCardListOptions{}
 	cards, _, err := cfg.GithubClient.Projects.ListProjectCards(context.Background(), int64(cardsID), opt)
 	if err != nil {
-		fmt.Printf("error when querying cards %v", err)
-		return nil, err
+		return nil, errors.Wrap(err, "querying cards")
 	}
 
 	issues := []IssueOverview{}
@@ -155,7 +154,7 @@ func getIssueDetail(cfg ReporterConfig, url string) (*issueDetail, error) {
 	// Create a new request using http
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "creating HTTP request")
 	}
 	// add authorization header to the req
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", cfg.GithubToken))
@@ -164,19 +163,18 @@ func getIssueDetail(cfg ReporterConfig, url string) (*issueDetail, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("Error on response.\n[ERROR] -", err)
+		return nil, errors.Wrap(err, "getting card details from GitHub")
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Printf("%v", err)
-		return nil, err
+		return nil, errors.Wrap(err, "reading GitHub response data")
 	}
 	var result issueDetail
 	err = json.Unmarshal(body, &result)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unmarshal GitHub response data")
 	}
 	return &result, nil
 }
