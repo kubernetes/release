@@ -22,8 +22,8 @@ REVISION ?= 0
 
 # Build args
 GO_VERSION ?= 1.17.3
-OS_CODENAME ?= buster
-DISTROLESS_IMAGE ?= static-debian10
+OS_CODENAME ?= bullseye
+DISTROLESS_IMAGE ?= static-debian11
 
 # Configuration
 CONFIG = go$(GO_MAJOR_VERSION)-$(OS_CODENAME)
