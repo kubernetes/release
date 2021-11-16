@@ -31,9 +31,6 @@ SIG Release Slack thread:
   <!-- Example: https://github.com/kubernetes/k8s.io/pull/1449 -->
   - [ ] image promotion: 
 
-<!-- Example: https://github.com/kubernetes/release/pull/1732 -->
-- [ ] `vulndash` image update: 
-
   <!-- Example: https://github.com/kubernetes/k8s.io/pull/1423 -->
   - [ ] image promotion: 
 
