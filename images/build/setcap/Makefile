@@ -18,9 +18,9 @@ REGISTRY?="gcr.io/k8s-staging-build-image"
 IMAGE=$(REGISTRY)/setcap
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= buster-v2.0.4
-CONFIG ?= buster
-DEBIAN_BASE_VERSION ?= buster-v1.9.0
+IMAGE_VERSION ?= bullseye-v1.0.0
+CONFIG ?= bullseye
+DEBIAN_BASE_VERSION ?= bullseye-v1.0.0
 
 ARCH?=amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x

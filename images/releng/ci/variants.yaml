@@ -14,8 +14,3 @@ variants:
     GO_VERSION: '1.16.10'
     OS_CODENAME: 'buster'
     REVISION: '0'
-  go1.15-buster:
-    CONFIG: 'go1.15-buster'
-    GO_VERSION: '1.15.15'
-    OS_CODENAME: 'buster'
-    REVISION: '0'

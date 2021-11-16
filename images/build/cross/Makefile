@@ -25,20 +25,18 @@ IMGNAME = kube-cross
 #       a SemVer regex on the IMAGE_VERSION.
 #
 # Example:
-# - v1.100.0-go1.17-buster.0 satisfies SemVer regex, while:
-# - v1.100-go1.17-buster.0 does not
+# - v1.100.0-go1.17-bullseye.0 satisfies SemVer regex, while:
+# - v1.100-go1.17-bullseye.0 does not
 KUBERNETES_VERSION ?= v1.22.0
 GO_VERSION ?= 1.17.3
 GO_MAJOR_VERSION ?= 1.17
-OS_CODENAME ?= buster
+OS_CODENAME ?= bullseye
 REVISION ?= 0
 TYPE ?= default
 
 # Build args
 BASEIMAGE ?= golang:$(GO_VERSION)-$(OS_CODENAME)
 PROTOBUF_VERSION ?= 3.7.0
-# TODO: Remove (along with `go1.15-legacy` variant) once Kubernetes 1.20 is EOL
-ETCD_VERSION ?= v0.0.0
 
 IMAGE = $(REGISTRY)/$(IMGNAME)
 TAG ?= $(shell git describe --tags --always --dirty)
