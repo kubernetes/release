@@ -11,9 +11,3 @@ variants:
   v1.21-cross1.16-buster:
     CONFIG: 'cross1.16'
     KUBE_CROSS_VERSION: 'v1.21.0-go1.16.10-buster.0'
-  cross1.15:
-    CONFIG: 'cross1.15'
-    KUBE_CROSS_VERSION: 'v1.15.15-1'
-  cross1.15-legacy:
-    CONFIG: 'cross1.15-legacy'
-    KUBE_CROSS_VERSION: 'v1.15.15-legacy-1'

@@ -23,7 +23,3 @@ variants:
     CONFIG: '1.20'
     GO_VERSION: '1.15.15'
     OS_CODENAME: 'buster'
-  '1.19':
-    CONFIG: '1.19'
-    GO_VERSION: '1.15.15'
-    OS_CODENAME: 'buster'

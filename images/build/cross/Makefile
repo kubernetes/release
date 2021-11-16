@@ -37,8 +37,6 @@ TYPE ?= default
 # Build args
 BASEIMAGE ?= golang:$(GO_VERSION)-$(OS_CODENAME)
 PROTOBUF_VERSION ?= 3.7.0
-# TODO: Remove (along with `go1.15-legacy` variant) once Kubernetes 1.20 is EOL
-ETCD_VERSION ?= v0.0.0
 
 IMAGE = $(REGISTRY)/$(IMGNAME)
 TAG ?= $(shell git describe --tags --always --dirty)
