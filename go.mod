@@ -3,7 +3,6 @@ module k8s.io/release
 go 1.17
 
 require (
-	cloud.google.com/go/containeranalysis v0.1.0
 	cloud.google.com/go/storage v1.16.1
 	github.com/GoogleCloudPlatform/testgrid v0.0.38
 	github.com/blang/semver v3.5.1+incompatible
@@ -27,7 +26,6 @@ require (
 	github.com/shirou/gopsutil/v3 v3.21.10
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.2.1
-	github.com/spf13/pflag v1.0.5
 	github.com/spiegel-im-spiegel/go-cvss v0.4.0
 	github.com/stretchr/testify v1.7.0
 	github.com/yuin/goldmark v1.4.4
@@ -36,7 +34,6 @@ require (
 	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1
 	golang.org/x/tools v0.1.7
 	google.golang.org/api v0.56.0
-	google.golang.org/genproto v0.0.0-20210828152312-66f60bf46e71
 	gopkg.in/yaml.v2 v2.4.0
 	sigs.k8s.io/mdtoc v1.1.0
 	sigs.k8s.io/promo-tools/v3 v3.2.1
@@ -120,6 +117,9 @@ require (
 )
 
 require (
+	cloud.google.com/go/containeranalysis v0.1.0 // indirect
 	github.com/shibumi/go-pathspec v1.2.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c // indirect
+	google.golang.org/genproto v0.0.0-20210828152312-66f60bf46e71 // indirect
 )
