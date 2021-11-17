@@ -34,7 +34,6 @@ RUN apt-get update -y \
         ca-certificates \
         curl \
         debhelper \
-        dh-systemd \
         fakeroot \
     && apt-get upgrade -y \
     && apt-get autoremove -y \
