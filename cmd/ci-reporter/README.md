@@ -3,7 +3,7 @@
 You can get the current overview for CI signal report by running
 
 ```
-GITHUB_AUTH_TOKEN=xxx go run cmd/ci-reporter/report.go
+GITHUB_TOKEN=xxx go run cmd/ci-reporter/main.go
 ```
 
 It needs a GitHub token to be able to query the project board for CI signal. For some reason even though those boards are available for public view, the APIs require auth. See [this documentation](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line) to set up your access token.
@@ -17,23 +17,25 @@ It needs a GitHub token to be able to query the project board for CI signal. For
 ```
 git clone git@github.com:kubernetes/release <folder>
 cd <folder>
-GITHUB_AUTH_TOKEN=xxx go run cmd/ci-reporter/report.go
+GITHUB_TOKEN=xxx go run cmd/ci-reporter/main.go
 ```
 
-### Other version statistics
+### Flags and Commands
 
-By adding `-v x.xx` where the XXX can be like `1.21`, the report statistics get extended for the chosen version.
-
-```
-GITHUB_AUTH_TOKEN=xxx go run cmd/ci-reporter/report.go -v x.xx
+```bash
+$ go run cmd/ci-reporter/main.go --help
 ```
 
-### Short report
+```bash
+CI-Signal reporter that generates github and testgrid reports.
 
-You can also output a short version of the report with the flag `-short`. This reduces the report to `New/Not Yet Started` and `In Flight` issues.
+Usage:
+  reporter [flags]
 
-```
-GITHUB_AUTH_TOKEN=xxx go run cmd/ci-reporter/report.go -short
+Flags:
+  -h, --help                     help for reporter
+  -v, --release-version string   Specify a Kubernetes release versions like '1.22' which will populate the report additionally
+  -s, --short                    A short report for mails and slack
 ```
 
 ## Rate limits
@@ -51,7 +53,7 @@ curl \
 ## Example output
 
 ```
-GITHUB_AUTH_TOKEN=xxx go run cmd/ci-reporter/report.go -short
+GITHUB_TOKEN=xxx go run cmd/ci-reporter/main.go -s
 
 In flight
 #106278 [sig windows]
