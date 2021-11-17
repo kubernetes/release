@@ -518,6 +518,7 @@ func checkErrMsg(t *testing.T, err error, expectedMsg string) {
 func response(statusCode, lastPage int) *github.Response {
 	res := &github.Response{
 		LastPage: lastPage,
+		NextPage: 0,
 		Response: &http.Response{
 			StatusCode: statusCode,
 		},
