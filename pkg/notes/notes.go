@@ -19,8 +19,11 @@ package notes
 import (
 	"bufio"
 	"context"
+	"crypto/rand"
 	"crypto/sha1" //nolint:gosec // used for file integrity checks, NOT security
 	"fmt"
+	"math/big"
+	"net/http"
 	"net/url"
 	"regexp"
 	"sort"
@@ -41,8 +44,9 @@ import (
 )
 
 var (
-	errNoPRIDFoundInCommitMessage = errors.New("no PR IDs found in the commit message")
-	errNoPRFoundForCommitSHA      = errors.New("no PR found for this commit")
+	errNoPRIDFoundInCommitMessage       = errors.New("no PR IDs found in the commit message")
+	errNoPRFoundForCommitSHA            = errors.New("no PR found for this commit")
+	apiSleepTime                  int64 = 60
 )
 
 const (
@@ -526,10 +530,18 @@ func (g *Gatherer) listCommits(branch, start, end string) ([]*gogithub.Repositor
 
 	allCommits := &commitList{}
 
-	worker := func(clo *gogithub.CommitsListOptions) ([]*gogithub.RepositoryCommit, *gogithub.Response, error) {
-		commits, resp, err := g.client.ListCommits(g.context, g.options.GithubOrg, g.options.GithubRepo, clo)
-		if err != nil {
-			return nil, nil, err
+	worker := func(clo *gogithub.CommitsListOptions) (
+		commits []*gogithub.RepositoryCommit, resp *gogithub.Response, err error,
+	) {
+		for {
+			commits, resp, err = g.client.ListCommits(g.context, g.options.GithubOrg, g.options.GithubRepo, clo)
+			if err != nil {
+				if !canWaitAndRetry(resp, err) {
+					return nil, nil, err
+				}
+			} else {
+				break
+			}
 		}
 		return commits, resp, err
 	}
@@ -861,6 +873,29 @@ func hasString(a []string, x string) bool {
 	return false
 }
 
+// canWaitAndRetry retruen true if the gatherer hit the GitHub API secondary rate limit
+func canWaitAndRetry(r *gogithub.Response, err error) bool {
+	// If we hit the secondary rate limit...
+	if r == nil {
+		return false
+	}
+	if r.StatusCode == http.StatusForbidden &&
+		strings.Contains(err.Error(), "secondary rate limit. Please wait") {
+		// ... sleep for a minute plus a random bit so that workers don't
+		// respawn all at the same time
+		rtime, err := rand.Int(rand.Reader, big.NewInt(30))
+		if err != nil {
+			logrus.Error(err)
+			return false
+		}
+		waitTime := rtime.Int64() + apiSleepTime
+		logrus.Warnf("Hit the GitHub secondary rate limit, sleeping for %d secs.", waitTime)
+		time.Sleep(time.Duration(waitTime) * time.Second)
+		return true
+	}
+	return false
+}
+
 // prsForCommitFromSHA retrieves the PR numbers for a commit given its sha
 func (g *Gatherer) prsForCommitFromSHA(sha string) (prs []*gogithub.PullRequest, err error) {
 	plo := &gogithub.PullRequestListOptions{
@@ -870,20 +905,32 @@ func (g *Gatherer) prsForCommitFromSHA(sha string) (prs []*gogithub.PullRequest,
 			PerPage: 100,
 		},
 	}
-	prs, resp, err := g.client.ListPullRequestsWithCommit(g.context, g.options.GithubOrg, g.options.GithubRepo, sha, plo)
-	if err != nil {
-		return nil, err
-	}
 
-	plo.ListOptions.Page++
-	for plo.ListOptions.Page <= resp.LastPage {
-		pResult, pResp, err := g.client.ListPullRequestsWithCommit(g.context, g.options.GithubOrg, g.options.GithubRepo, sha, plo)
-		if err != nil {
-			return nil, err
+	prs = []*gogithub.PullRequest{}
+	var pResult []*gogithub.PullRequest
+	var resp *gogithub.Response
+
+	for {
+		for {
+			pResult, resp, err = g.client.ListPullRequestsWithCommit(
+				g.context, g.options.GithubOrg, g.options.GithubRepo, sha, plo,
+			)
+			if err != nil {
+				if !canWaitAndRetry(resp, err) {
+					return nil, err
+				}
+			} else {
+				break
+			}
 		}
 		prs = append(prs, pResult...)
-		resp = pResp
+		if resp.NextPage == 0 {
+			break
+		}
 		plo.ListOptions.Page++
+		if plo.ListOptions.Page > resp.LastPage {
+			break
+		}
 	}
 
 	if len(prs) == 0 {
@@ -898,13 +945,21 @@ func (g *Gatherer) prsForCommitFromMessage(commitMessage string) (prs []*gogithu
 	if err != nil {
 		return nil, err
 	}
+	var res *gogithub.PullRequest
+	var resp *gogithub.Response
 
 	for _, pr := range prsNum {
 		// Given the PR number that we've now converted to an integer, get the PR from
 		// the API
-		res, _, err := g.client.GetPullRequest(g.context, g.options.GithubOrg, g.options.GithubRepo, pr)
-		if err != nil {
-			return nil, err
+		for {
+			res, resp, err = g.client.GetPullRequest(g.context, g.options.GithubOrg, g.options.GithubRepo, pr)
+			if err != nil {
+				if !canWaitAndRetry(resp, err) {
+					return nil, err
+				}
+			} else {
+				break
+			}
 		}
 		prs = append(prs, res)
 	}
