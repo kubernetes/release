@@ -28,13 +28,6 @@ aliases:
     - BenTheElder
     - MushuEE
     - spiffxp
-  ci-signal-reporter-reviewers:
-    - calvh # 1.23 CI Signal Shadow
-    - encodeflush # 1.23 CI Signal Lead
-    - leonardpahlke # 1.23 CI Signal Shadow
-    - rajula96reddy # 1.23 CI Signal Shadow
-    - RinkiyaKeDad # 1.23 CI Signal Shadow
-    - simrangupta234 # 1.23 CI Signal Shadow
   krel-approvers:
     - cpanato
     - puerco
