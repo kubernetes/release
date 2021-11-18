@@ -36,7 +36,6 @@ require (
 	google.golang.org/api v0.56.0
 	gopkg.in/yaml.v2 v2.4.0
 	sigs.k8s.io/mdtoc v1.1.0
-	sigs.k8s.io/promo-tools/v3 v3.2.1
 	sigs.k8s.io/release-sdk v0.2.1-0.20211005095109-f50f5112261c
 	sigs.k8s.io/release-utils v0.3.0
 	sigs.k8s.io/yaml v1.3.0
@@ -45,7 +44,6 @@ require (
 
 require (
 	cloud.google.com/go v0.93.3 // indirect
-	cloud.google.com/go/grafeas v0.0.0-20210817223811-71387f0142a4 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/Microsoft/go-winio v0.5.0 // indirect
@@ -54,7 +52,6 @@ require (
 	github.com/VividCortex/ewma v1.1.1 // indirect
 	github.com/acomagu/bufpipe v1.0.3 // indirect
 	github.com/aws/aws-sdk-go v1.37.6 // indirect
-	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.7.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/cli v20.10.7+incompatible // indirect
@@ -97,7 +94,6 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/spiegel-im-spiegel/errs v1.0.2 // indirect
-	github.com/src-d/gcfg v1.4.0 // indirect
 	github.com/xanzy/go-gitlab v0.43.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
@@ -110,14 +106,11 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/grpc v1.40.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
-	gopkg.in/src-d/go-billy.v4 v4.3.2 // indirect
-	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 
 require (
-	cloud.google.com/go/containeranalysis v0.1.0 // indirect
 	github.com/shibumi/go-pathspec v1.2.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c // indirect

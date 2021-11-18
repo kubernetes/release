@@ -4,8 +4,9 @@
 
 - [Summary](#summary)
 - [Installation](#installation)
-- [Usage](#usage)
-- [Important notes](#important-notes)
+- [Usage:](#usage)
+  - [Available Commands:](#available-commands)
+- [Important Notes](#important-notes)
 
 ## Summary
 
@@ -36,7 +37,6 @@ krel has several subcommands that perform various tasks during the release lifec
 | cve                                 | Add and edit CVE information                                                                |
 | [ff](ff.md)                         | Fast forward a Kubernetes release branch                                                    |
 | history                             | Run history to build a list of commands that ran when cutting a specific Kubernetes release |
-| promote-images                      | Starts an image promotion for a tag of kubernetes or kubernetes-sigs images                 |
 | [push](push.md)                     | Push Kubernetes release artifacts to Google Cloud Storage (GCS)                             |
 | release                             | Release a staged Kubernetes version                                                         |
 | [release-notes](release-notes.md)   | The subcommand of choice for the Release Notes subteam of SIG Release                       |
