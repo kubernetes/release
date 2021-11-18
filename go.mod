@@ -36,7 +36,7 @@ require (
 	google.golang.org/api v0.56.0
 	gopkg.in/yaml.v2 v2.4.0
 	sigs.k8s.io/mdtoc v1.1.0
-	sigs.k8s.io/release-sdk v0.2.1-0.20211005095109-f50f5112261c
+	sigs.k8s.io/release-sdk v0.5.0
 	sigs.k8s.io/release-utils v0.3.0
 	sigs.k8s.io/yaml v1.3.0
 	sigs.k8s.io/zeitgeist v0.3.0
