@@ -4,7 +4,6 @@ approvers:
   - sig-release-leads
   - release-engineering-approvers
 reviewers:
-  - release-engineering-approvers
   - release-engineering-reviewers
 labels:
   - sig/release
