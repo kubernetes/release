@@ -22,11 +22,12 @@ import (
 
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/stretchr/testify/require"
+
 	"k8s.io/release/pkg/anago"
 	"k8s.io/release/pkg/anago/anagofakes"
-	"k8s.io/release/pkg/provenance"
 	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/spdx"
+	"sigs.k8s.io/bom/pkg/provenance"
+	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/git"
 )
 

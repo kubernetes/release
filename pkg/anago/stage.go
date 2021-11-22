@@ -25,16 +25,16 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/changelog"
 	"k8s.io/release/pkg/gcp/gcb"
-	"k8s.io/release/pkg/provenance"
 	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/spdx"
+	"sigs.k8s.io/bom/pkg/provenance"
+	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/log"
 )
