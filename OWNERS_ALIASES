@@ -12,6 +12,7 @@ aliases:
     - puerco # Release Manager
     - saschagrunert # subproject owner / Release Manager
     - justaugustus # subproject owner / Release Manager
+    - Verolop # Release Manager
     - xmudrii # Release Manager
   release-engineering-reviewers:
     - ameukam # Release Manager Associate
@@ -21,7 +22,6 @@ aliases:
     - onlydole # Release Manager Associate
     - sethmccombs # Release Manager Associate
     - thejoycekung # Release Manager Associate
-    - verolop # Release Manager Associate
     - wilsonehusin # Release Manager Associate
   build-admins:
     - amwat
