@@ -26,8 +26,9 @@ import (
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"k8s.io/release/pkg/provenance"
-	"k8s.io/release/pkg/spdx"
+
+	"sigs.k8s.io/bom/pkg/provenance"
+	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/util"
 )

@@ -99,12 +99,12 @@ Details: [Documentation](https://sigs.k8s.io/promo-tools/cmd/gh2gcs/README.md)
 
 ## End User
 
-### [`bom`](/cmd/bom)
+### [`bom`](https://sigs.k8s.io/bom)
 
 Generate SPDX-compliant Bills of Materials for a software
 project. Supports reading directories, images, files and more.
 
-Details: [Documentation](cmd/bom/README.md) | [SBOM HOWTO](docs/bom/create-a-bill-of-materials.md)
+Details: [Documentation](https://sigs.k8s.io/bom/README.md)
 
 ### [`release-notes`](/cmd/release-notes)
 
