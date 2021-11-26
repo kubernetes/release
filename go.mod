@@ -13,6 +13,7 @@ require (
 	github.com/google/go-github/v39 v39.2.0
 	github.com/google/licenseclassifier/v2 v2.0.0-alpha.1
 	github.com/google/uuid v1.3.0
+	github.com/hashicorp/go-multierror v1.0.0
 	github.com/mattn/go-isatty v0.0.14
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1
 	github.com/mitchellh/mapstructure v1.4.2
@@ -74,7 +75,6 @@ require (
 	github.com/googleapis/gax-go/v2 v2.1.1 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
-	github.com/hashicorp/go-multierror v1.0.0 // indirect
 	github.com/hashicorp/go-retryablehttp v0.6.4 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/in-toto/in-toto-golang v0.3.3
