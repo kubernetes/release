@@ -66,7 +66,8 @@ func PrintTestgridReportData(cfg ReporterConfig, stats *testgrid.DashboardData) 
 				fmt.Printf("%s: %s\n", jobData.OverallStatus, jobName)
 				fmt.Printf("- %s\n", jobData.GetJobURL(jobName))
 				fmt.Printf("- %s\n", jobData.Status)
-			} else if jobData.OverallStatus == testgrid.Failing {
+			}
+			if jobData.OverallStatus == testgrid.Failing {
 				// Filter sigs
 				sigRegex := regexp.MustCompile(`sig-[a-zA-Z]+`)
 				sigsInvolved := map[string]int{}
