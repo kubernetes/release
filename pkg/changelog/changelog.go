@@ -253,6 +253,7 @@ func (c *Changelog) generateReleaseNotes(
 	notesOptions.RecordDir = c.options.RecordDir
 	notesOptions.ReplayDir = c.options.ReplayDir
 	notesOptions.Pull = false
+	notesOptions.AddMarkdownLinks = true
 
 	if c.options.CVEDataDir != "" {
 		notesOptions.MapProviderStrings = append(
