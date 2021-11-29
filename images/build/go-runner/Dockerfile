@@ -47,7 +47,7 @@ ENV GOOS=linux
 ENV GOARCH=${ARCH}
 
 RUN go env
-
+RUN echo hello world
 RUN go build -ldflags '-s -w -buildid= -extldflags "-static"' \
     -o go-runner ${package}
 
