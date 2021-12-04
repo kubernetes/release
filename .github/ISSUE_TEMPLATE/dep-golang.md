@@ -31,9 +31,6 @@ SIG Release Slack thread:
   <!-- Example: https://github.com/kubernetes/k8s.io/pull/1449 -->
   - [ ] image promotion: 
 
-  <!-- Example: https://github.com/kubernetes/k8s.io/pull/1423 -->
-  - [ ] image promotion: 
-
 <!-- Example: https://github.com/kubernetes/release/pull/1732 -->
 - [ ] `releng-ci` image update: 
 
@@ -117,7 +114,7 @@ addressed before the next Golang update.
 -->
 
 - [ ] Ensure the Golang issue template is updated with any new requirements
-- [ ] 
+- [ ] <Any other follow up items>
 
 /assign
 cc: @kubernetes/release-engineering
