@@ -17,6 +17,7 @@ limitations under the License.
 package release
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/blang/semver"
@@ -226,8 +227,15 @@ func (gp *GitObjectPusher) PushMain() error {
 	}
 	logrus.Info(lastLog)
 
-	if err := gp.mergeRemoteIfRequired(git.DefaultBranch); err != nil {
-		return errors.Wrap(err, "merge remote if required")
+	logrus.Info("Rebase master branch")
+
+	_, err = gp.repo.FetchRemote(git.DefaultRemote)
+	if err != nil {
+		return errors.Wrap(err, "while fetching origin repository")
+	}
+
+	if err := gp.repo.Rebase(fmt.Sprintf("%s/%s", git.DefaultRemote, git.DefaultBranch)); err != nil {
+		return errors.Wrap(err, "rebasing repository")
 	}
 
 	logrus.Infof("Pushing%s %s branch", dryRunLabel[gp.opts.DryRun], git.DefaultBranch)
