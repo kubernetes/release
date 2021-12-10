@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"reflect"
 	"regexp"
 
 	"github.com/pkg/errors"
@@ -77,7 +76,10 @@ func PrintTestgridReportData(cfg ReporterConfig, stats *testgrid.DashboardData) 
 						sigsInvolved[sig]++
 					}
 				}
-				sigs := reflect.ValueOf(sigsInvolved).MapKeys()
+				sigs := []string{}
+				for k := range sigsInvolved {
+					sigs = append(sigs, k)
+				}
 				fmt.Printf("- Currently %d test are failing\n", len(jobData.Tests))
 				fmt.Printf("- Sig's involved %v\n", sigs)
 			}
