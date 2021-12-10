@@ -1,16 +1,16 @@
 variants:
   go1.17-bullseye:
     CONFIG: 'go1.17-bullseye'
-    GO_VERSION: '1.17.4'
+    GO_VERSION: '1.17.5'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
   go1.17-buster:
     CONFIG: 'go1.17-buster'
-    GO_VERSION: '1.17.4'
+    GO_VERSION: '1.17.5'
     OS_CODENAME: 'buster'
     REVISION: '0'
   go1.16-buster:
     CONFIG: 'go1.16-buster'
-    GO_VERSION: '1.16.11'
+    GO_VERSION: '1.16.12'
     OS_CODENAME: 'buster'
     REVISION: '0'
