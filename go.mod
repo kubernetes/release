@@ -30,11 +30,11 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/yuin/goldmark v1.4.4
 	golang.org/x/net v0.0.0-20211118161319-6a13c67c3ce4
-	google.golang.org/api v0.61.0
+	google.golang.org/api v0.62.0
 	gopkg.in/yaml.v2 v2.4.0
 	sigs.k8s.io/bom v0.1.0
 	sigs.k8s.io/mdtoc v1.1.0
-	sigs.k8s.io/promo-tools/v3 v3.3.0-beta.3
+	sigs.k8s.io/promo-tools/v3 v3.3.0
 	sigs.k8s.io/release-sdk v0.5.0
 	sigs.k8s.io/release-utils v0.3.0
 	sigs.k8s.io/yaml v1.3.0
@@ -42,7 +42,7 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.97.0 // indirect
+	cloud.google.com/go v0.98.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/Microsoft/go-winio v0.5.1 // indirect
@@ -120,8 +120,8 @@ require (
 	github.com/vbatts/tar-split v0.11.2 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	golang.org/x/mod v0.5.1 // indirect
-	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881 // indirect
+	golang.org/x/sys v0.0.0-20211205182925-97ca703d548d // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/tools v0.1.7 // indirect
-	google.golang.org/genproto v0.0.0-20211118181313-81c1377c94b1 // indirect
+	google.golang.org/genproto v0.0.0-20211203200212-54befc351ae9 // indirect
 )
