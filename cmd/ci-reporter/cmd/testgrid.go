@@ -90,8 +90,7 @@ func PrintTestgridReportData(cfg ReporterConfig, stats *testgrid.DashboardData) 
 	for name := range *stats {
 		s := *stats
 		data := s[name]
-		err := printShortReport(name, &data)
-		if err != nil {
+		if err := printShortReport(name, &data); err != nil {
 			return err
 		}
 		if !cfg.ShortReport {
