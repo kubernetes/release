@@ -17,97 +17,85 @@ limitations under the License.
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+	"regexp"
+
+	"github.com/pkg/errors"
+	"k8s.io/release/pkg/testgrid"
 )
 
-// RequiredTestgridJob specifies a testgrid job like 'Master-Blocking'
-type RequiredTestgridJob struct {
-	OutputName string
-	URLName    string
-}
-
 // GetTestgridReportData used to request the raw report data from testgrid
-func GetTestgridReportData(cfg ReporterConfig) ([]TestgridStatistics, error) {
-	requiredJobs := []RequiredTestgridJob{
-		{OutputName: "Master-Blocking", URLName: "sig-release-master-blocking"},
-		{OutputName: "Master-Informing", URLName: "sig-release-master-informing"},
-	}
+func GetTestgridReportData(cfg ReporterConfig) (testgrid.DashboardData, error) {
+	testgridURLs := []testgrid.DashboardName{"sig-release-master-blocking", "sig-release-master-informing"}
 
 	if cfg.ReleaseVersion != "" {
-		requiredJobs = append(requiredJobs, []RequiredTestgridJob{
-			{OutputName: cfg.ReleaseVersion + "-blocking", URLName: "sig-release-" + cfg.ReleaseVersion + "-blocking"},
-			{OutputName: cfg.ReleaseVersion + "-informing", URLName: "sig-release-" + cfg.ReleaseVersion + "-informing"},
+		testgridURLs = append(testgridURLs, []testgrid.DashboardName{
+			testgrid.DashboardName(fmt.Sprintf("sig-release-%s-blocking", cfg.ReleaseVersion)),
+			testgrid.DashboardName(fmt.Sprintf("sig-release-%s-informing", cfg.ReleaseVersion)),
 		}...)
 	}
-	result := make([]TestgridStatistics, 0)
-	for _, job := range requiredJobs {
-		resp, err := http.Get(fmt.Sprintf("https://testgrid.k8s.io/%s/summary", job.URLName))
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
 
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-
-		jobs := make(map[string]overview)
-		err = json.Unmarshal(body, &jobs)
-		if err != nil {
-			return nil, err
-		}
-
-		statistics := getStatistics(jobs)
-		statistics.Name = job.OutputName
-		result = append(result, statistics)
-	}
-	return result, nil
+	return testgrid.ReqTestgridDashboardSummaries(testgridURLs)
 }
 
 // PrintTestgridReportData used to print testgrid report data out to the console
-func PrintTestgridReportData(stats []TestgridStatistics) {
-	for _, stat := range stats {
-		fmt.Printf("Failures in %s\n", stat.Name)
-		fmt.Printf("\t%d jobs total\n", stat.Total)
-		fmt.Printf("\t%d are passing\n", stat.Passing)
-		fmt.Printf("\t%d are flaking\n", stat.Flaking)
-		fmt.Printf("\t%d are failing\n", stat.Failing)
-		fmt.Printf("\t%d are stale\n", stat.Stale)
-		fmt.Print("\n\n")
-	}
-}
-
-func getStatistics(jobs map[string]overview) TestgridStatistics {
-	result := TestgridStatistics{}
-	for _, v := range jobs {
-		if v.OverallStatus == "PASSING" {
-			result.Passing++
-		} else if v.OverallStatus == "FAILING" {
-			result.Failing++
-		} else if v.OverallStatus == "FLAKY" {
-			result.Flaking++
-		} else {
-			result.Stale++
+func PrintTestgridReportData(cfg ReporterConfig, stats *testgrid.DashboardData) error {
+	printShortReport := func(name testgrid.DashboardName, jobData *testgrid.JobData) error {
+		overview, err := jobData.Overview()
+		if err != nil {
+			return errors.Wrap(err, "could not get testgrid data overview")
 		}
-		result.Total++
+		fmt.Printf("\nOverview for %s\n", name)
+		fmt.Printf("\t%d jobs total\n", len(overview.FailingJobs)+len(overview.FlakyJobs)+len(overview.PassingJobs)+len(overview.StaleJobs))
+		fmt.Printf("\t%d are passing\n", len(overview.PassingJobs))
+		fmt.Printf("\t%d are flaking\n", len(overview.FlakyJobs))
+		fmt.Printf("\t%d are failing\n", len(overview.FailingJobs))
+		if len(overview.StaleJobs) > 0 {
+			fmt.Printf("\t%d are stale\n", len(overview.StaleJobs))
+		}
+		return nil
 	}
-	return result
-}
 
-// TestgridStatistics specifies a testgrid job overview
-type TestgridStatistics struct {
-	Name    string
-	Total   int
-	Passing int
-	Flaking int
-	Failing int
-	Stale   int
-}
+	printLongReport := func(name testgrid.DashboardName, jobData *testgrid.JobData) {
+		fmt.Printf("\nDetails for %s\n", name)
+		for jobName := range *jobData {
+			j := *jobData
+			jobData := j[jobName]
+			if jobData.OverallStatus != testgrid.Passing {
+				fmt.Printf("%s: %s\n", jobData.OverallStatus, jobName)
+				fmt.Printf("- %s\n", jobData.GetJobURL(jobName))
+				fmt.Printf("- %s\n", jobData.Status)
+			}
+			if jobData.OverallStatus == testgrid.Failing {
+				// Filter sigs
+				sigRegex := regexp.MustCompile(`sig-[a-zA-Z]+`)
+				sigsInvolved := map[string]int{}
+				for i := range jobData.Tests {
+					sigs := sigRegex.FindAllString(jobData.Tests[i].TestName, -1)
+					for _, sig := range sigs {
+						sigsInvolved[sig]++
+					}
+				}
+				sigs := []string{}
+				for k := range sigsInvolved {
+					sigs = append(sigs, k)
+				}
+				fmt.Printf("- Currently %d test are failing\n", len(jobData.Tests))
+				fmt.Printf("- Sig's involved %v\n", sigs)
+			}
+		}
+	}
 
-type overview struct {
-	OverallStatus string `json:"overall_status"`
+	// if the short flag ist set, only print the short report otherwise print both the short & long report
+	for name := range *stats {
+		s := *stats
+		data := s[name]
+		if err := printShortReport(name, &data); err != nil {
+			return err
+		}
+		if !cfg.ShortReport {
+			printLongReport(name, &data)
+		}
+	}
+	return nil
 }

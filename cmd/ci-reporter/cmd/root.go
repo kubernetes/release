@@ -89,7 +89,10 @@ func RunReport(cfg ReporterConfig) error {
 	if err != nil {
 		return err
 	}
-	PrintTestgridReportData(testgridReportData)
+	err = PrintTestgridReportData(cfg, &testgridReportData)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
