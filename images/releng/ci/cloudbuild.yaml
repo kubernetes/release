@@ -8,9 +8,9 @@ steps:
     dir: ./images/releng/ci
     args:
       - build
-      - --tag=$_REGISTRY/releng-ci:${_GO_VERSION}-${_OS_CODENAME}-${_REVISION}
-      - --tag=$_REGISTRY/releng-ci:${_GIT_TAG}-${_CONFIG}
-      - --tag=$_REGISTRY/releng-ci:latest-${_CONFIG}
+      - --tag=us-docker.pkg.dev/$PROJECT_ID/${_REPO}/releng-ci:${_GO_VERSION}-${_OS_CODENAME}-${_REVISION}
+      - --tag=us-docker.pkg.dev/$PROJECT_ID/${_REPO}/releng-ci:${_GIT_TAG}-${_CONFIG}
+      - --tag=us-docker.pkg.dev/$PROJECT_ID/${_REPO}/releng-ci:latest-${_CONFIG}
       - --build-arg=GO_VERSION=${_GO_VERSION}
       - --build-arg=OS_CODENAME=${_OS_CODENAME}
       - .
@@ -18,7 +18,7 @@ steps:
     dir: ./images/releng/ci
     args:
       - test
-      - --image=$_REGISTRY/releng-ci:latest-${_CONFIG}
+      - --image=us-docker.pkg.dev/$PROJECT_ID/${_REPO}/releng-ci:latest-${_CONFIG}
       - --config=test.yaml
 
 substitutions:
@@ -31,6 +31,7 @@ substitutions:
   _OS_CODENAME: 'codename'
   _REVISION: '0'
   _REGISTRY: 'fake.repository/registry-name'
+  _REPO: 'i'
 
 tags:
 - 'releng-ci'
@@ -42,6 +43,7 @@ tags:
 - ${_REVISION}
 
 images:
-  - 'gcr.io/$PROJECT_ID/releng-ci:${_GO_VERSION}-${_OS_CODENAME}-${_REVISION}'
-  - 'gcr.io/$PROJECT_ID/releng-ci:${_GIT_TAG}-${_CONFIG}'
-  - 'gcr.io/$PROJECT_ID/releng-ci:latest-${_CONFIG}'
+  # TODO(gar): Find a nicer way to handle the registry/repo variables
+  - 'us-docker.pkg.dev/$PROJECT_ID/${_REPO}/releng-ci:${_GO_VERSION}-${_OS_CODENAME}-${_REVISION}'
+  - 'us-docker.pkg.dev/$PROJECT_ID/${_REPO}/releng-ci:${_GIT_TAG}-${_CONFIG}'
+  - 'us-docker.pkg.dev/$PROJECT_ID/${_REPO}/releng-ci:latest-${_CONFIG}'
