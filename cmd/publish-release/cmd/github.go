@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/release/pkg/announce"
 )
@@ -124,6 +125,17 @@ func init() {
 		false,
 		"Mark the release as a draft in GitHub so you can finish editing and publish it manually.",
 	)
+
+	for _, f := range []string{"template", "asset"} {
+		if err := githuPageCmd.MarkPersistentFlagFilename(f); err != nil {
+			logrus.Error(err)
+		}
+	}
+
+	if err := githuPageCmd.MarkPersistentFlagRequired("repo"); err != nil {
+		logrus.Error(err)
+	}
+
 	rootCmd.AddCommand(githuPageCmd)
 }
 
