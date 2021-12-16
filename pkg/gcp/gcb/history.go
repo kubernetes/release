@@ -155,7 +155,7 @@ func (h *History) Run() error {
 		logs := job.LogUrl
 
 		// Calculate the duration of the job
-		const layout = "2006-01-02T15:04:05.000000000Z"
+		const layout = "2006-01-02T15:04:05.99Z"
 		tStart, err := h.impl.ParseTime(layout, start)
 		if err != nil {
 			return errors.Wrap(err, "parsing the start job time")
