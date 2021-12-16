@@ -27,10 +27,16 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-utils/hash"
 	"sigs.k8s.io/release-utils/util"
+)
+
+const (
+	sbomFileName      = "sbom.spdx"
+	assetDownloadPath = "/releases/download/"
 )
 
 // ghPageBody is a generic template to build the GitHub
@@ -96,6 +102,74 @@ type GitHubPageOptions struct {
 	// We automatizally calculate most values, but more substitutions for
 	// the template can be supplied
 	Substitutions map[string]string
+}
+
+type SBOMOptions struct {
+	ReleaseName   string
+	Repo          string
+	RepoDirectory string
+	Tag           string // Version Tag
+	Assets        []Asset
+}
+
+type Asset struct {
+	Path     string // Path where the artifact will be listed
+	ReadFrom string // LocalPath to read the information
+	Label    string // Label for the asset
+}
+
+// GenerateReleaseSBOM creates an SBOM describing the release
+func GenerateReleaseSBOM(opts *SBOMOptions) (string, error) {
+	// Create a temporary file to write the sbom
+	dir, err := os.MkdirTemp("", "project-sbom-")
+	if err != nil {
+		return "", errors.Wrap(err, "creating temporary directory to write sbom")
+	}
+
+	sbomFile := filepath.Join(dir, sbomFileName)
+	logrus.Infof("SBOM will be temporarily written to %s", sbomFile)
+
+	builder := spdx.NewDocBuilder()
+	builderOpts := &spdx.DocGenerateOptions{
+		ProcessGoModules: true,
+		ScanLicenses:     true,
+		Name:             opts.ReleaseName,
+		Namespace:        github.GitHubURL + opts.Repo + "@" + opts.Tag,
+		Directories:      []string{opts.RepoDirectory},
+	}
+
+	doc, err := builder.Generate(builderOpts)
+	if err != nil {
+		return "", errors.Wrap(err, "generating initial SBOM")
+	}
+
+	// Add the downlad location and version to the first
+	// SPDX package (which represents the repo)
+	for t := range doc.Packages {
+		doc.Packages[t].Version = opts.Tag
+		doc.Packages[t].DownloadLocation = "git+" + github.GitHubURL + opts.Repo + "@" + opts.Tag
+		break
+	}
+
+	// List all artifacts and add them
+	spdxClient := spdx.NewSPDX()
+	for _, f := range opts.Assets {
+		logrus.Infof("Adding file %s to SBOM", f.Path)
+		spdxFile, err := spdxClient.FileFromPath(f.ReadFrom)
+		if err != nil {
+			return "", errors.Wrapf(err, "Adding %s to SBOM", f.ReadFrom)
+		}
+		spdxFile.Name = f.Path
+		spdxFile.BuildID() // This is a boog in the spdx pkg, we have to call manually
+		spdxFile.DownloadLocation = github.GitHubURL + filepath.Join(
+			opts.Repo, assetDownloadPath, opts.Tag, f.Path,
+		)
+		if err := doc.AddFile(spdxFile); err != nil {
+			return "", errors.Wrapf(err, "adding %s as SPDX file to SBOM", f.ReadFrom)
+		}
+	}
+
+	return sbomFile, errors.Wrap(doc.Write(sbomFile), "writing sbom to disk")
 }
 
 // UpdateGitHubPage updates a github page with data from the release

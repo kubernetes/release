@@ -17,6 +17,10 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -69,9 +73,11 @@ to the asset file:
 type githubPageCmdLineOptions struct {
 	noupdate      bool
 	draft         bool
+	sbom          bool
 	name          string
 	repo          string
 	template      string
+	repoPath      string
 	substitutions []string
 	assets        []string
 }
@@ -125,6 +131,19 @@ func init() {
 		false,
 		"Mark the release as a draft in GitHub so you can finish editing and publish it manually.",
 	)
+	githuPageCmd.PersistentFlags().BoolVar(
+		&ghPageOpts.sbom,
+		"sbom",
+		true,
+		"Generate an SPDX bill of materials and attach it to the release",
+	)
+
+	githuPageCmd.PersistentFlags().StringVar(
+		&ghPageOpts.repoPath,
+		"repo-path",
+		".",
+		"Path to the source code repository",
+	)
 
 	for _, f := range []string{"template", "asset"} {
 		if err := githuPageCmd.MarkPersistentFlagFilename(f); err != nil {
@@ -139,7 +158,46 @@ func init() {
 	rootCmd.AddCommand(githuPageCmd)
 }
 
-func runGithubPage(opts *githubPageCmdLineOptions) error {
+func getAssetsFromStrings(assetStrings []string) []announce.Asset {
+	r := []announce.Asset{}
+	for _, s := range assetStrings {
+		parts := strings.Split(s, ":")
+		l := ""
+		if len(parts) > 0 {
+			l = parts[1]
+		}
+		r = append(r, announce.Asset{
+			Path:     filepath.Base(parts[0]),
+			ReadFrom: parts[0],
+			Label:    l,
+		})
+	}
+	return r
+}
+
+func runGithubPage(opts *githubPageCmdLineOptions) (err error) {
+	// Generate the release SBOM
+	assets := getAssetsFromStrings(opts.assets)
+	sbom := ""
+	if opts.sbom {
+		// Generate the assets file
+		sbom, err = announce.GenerateReleaseSBOM(&announce.SBOMOptions{
+			ReleaseName:   opts.name,
+			Repo:          opts.repo,
+			RepoDirectory: opts.repoPath,
+			Assets:        assets,
+			Tag:           commandLineOpts.tag,
+		})
+		if err != nil {
+			return errors.Wrap(err, "generating sbom")
+		}
+		opts.assets = append(opts.assets, sbom+":SPDX Software Bill of Materials (SBOM)")
+		// Delete the temporary sbom  when we're done
+		if commandLineOpts.nomock {
+			defer os.Remove(sbom)
+		}
+	}
+
 	// Build the release page options
 	announceOpts := announce.GitHubPageOptions{
 		AssetFiles:            opts.assets,
