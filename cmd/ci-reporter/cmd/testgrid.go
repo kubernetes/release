@@ -18,84 +18,69 @@ package cmd
 
 import (
 	"fmt"
-	"regexp"
+	"time"
 
-	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 	"k8s.io/release/pkg/testgrid"
 )
 
-// GetTestgridReportData used to request the raw report data from testgrid
-func GetTestgridReportData(cfg ReporterConfig) (testgrid.DashboardData, error) {
-	testgridURLs := []testgrid.DashboardName{"sig-release-master-blocking", "sig-release-master-informing"}
+var testgridCmd = &cobra.Command{
+	Use:    "testgrid",
+	Short:  "Testgrid report generator",
+	Long:   "CI-Signal reporter that generates only a testgrid report.",
+	PreRun: setGithubConfig,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return RunReport(cfg, &CIReporters{TestgridReporter{}})
+	},
+}
 
+// TestgridReporterName used to identify github reporter
+var TestgridReporterName CIReporterName = "testgrid"
+
+func init() {
+	rootCmd.AddCommand(testgridCmd)
+}
+
+// TestgridReporter github CIReporter implementation
+type TestgridReporter struct{}
+
+// GetCIReporterHead implementation from CIReporter
+func (r TestgridReporter) GetCIReporterHead() CIReporterInfo {
+	return CIReporterInfo{Name: TestgridReporterName}
+}
+
+// CollectReportData implementation from CIReporter
+func (r TestgridReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error) {
+	testgridReportData, err := GetTestgridReportData(*cfg)
+	if err != nil {
+		return nil, err
+	}
+	records := []*CIReportRecord{}
+	for dashboardName, jobData := range testgridReportData {
+		for jobName := range jobData {
+			jobSummary := jobData[jobName]
+			records = append(records, &CIReportRecord{
+				ID:               string(jobName),
+				Title:            string(dashboardName),
+				URL:              jobSummary.GetJobURL(jobName),
+				Category:         string(jobSummary.OverallStatus),
+				Sigs:             jobSummary.FilterSigs(),
+				Status:           jobSummary.FilterSuccessRateForLastRuns(),
+				CreatedTimestamp: time.Unix(jobSummary.LastRunTimestamp, 0).Format("2006-01-02 15:04:05 CET"),
+			})
+		}
+	}
+	return records, nil
+}
+
+// GetTestgridReportData used to request the raw report data from testgrid
+func GetTestgridReportData(cfg Config) (testgrid.DashboardData, error) {
+	testgridURLs := []testgrid.DashboardName{"sig-release-master-blocking", "sig-release-master-informing"}
 	if cfg.ReleaseVersion != "" {
 		testgridURLs = append(testgridURLs, []testgrid.DashboardName{
 			testgrid.DashboardName(fmt.Sprintf("sig-release-%s-blocking", cfg.ReleaseVersion)),
 			testgrid.DashboardName(fmt.Sprintf("sig-release-%s-informing", cfg.ReleaseVersion)),
 		}...)
 	}
-
 	return testgrid.ReqTestgridDashboardSummaries(testgridURLs)
-}
-
-// PrintTestgridReportData used to print testgrid report data out to the console
-func PrintTestgridReportData(cfg ReporterConfig, stats *testgrid.DashboardData) error {
-	printShortReport := func(name testgrid.DashboardName, jobData *testgrid.JobData) error {
-		overview, err := jobData.Overview()
-		if err != nil {
-			return errors.Wrap(err, "could not get testgrid data overview")
-		}
-		fmt.Printf("\nOverview for %s\n", name)
-		fmt.Printf("\t%d jobs total\n", len(overview.FailingJobs)+len(overview.FlakyJobs)+len(overview.PassingJobs)+len(overview.StaleJobs))
-		fmt.Printf("\t%d are passing\n", len(overview.PassingJobs))
-		fmt.Printf("\t%d are flaking\n", len(overview.FlakyJobs))
-		fmt.Printf("\t%d are failing\n", len(overview.FailingJobs))
-		if len(overview.StaleJobs) > 0 {
-			fmt.Printf("\t%d are stale\n", len(overview.StaleJobs))
-		}
-		return nil
-	}
-
-	printLongReport := func(name testgrid.DashboardName, jobData *testgrid.JobData) {
-		fmt.Printf("\nDetails for %s\n", name)
-		for jobName := range *jobData {
-			j := *jobData
-			jobData := j[jobName]
-			if jobData.OverallStatus != testgrid.Passing {
-				fmt.Printf("%s: %s\n", jobData.OverallStatus, jobName)
-				fmt.Printf("- %s\n", jobData.GetJobURL(jobName))
-				fmt.Printf("- %s\n", jobData.Status)
-			}
-			if jobData.OverallStatus == testgrid.Failing {
-				// Filter sigs
-				sigRegex := regexp.MustCompile(`sig-[a-zA-Z]+`)
-				sigsInvolved := map[string]int{}
-				for i := range jobData.Tests {
-					sigs := sigRegex.FindAllString(jobData.Tests[i].TestName, -1)
-					for _, sig := range sigs {
-						sigsInvolved[sig]++
-					}
-				}
-				sigs := []string{}
-				for k := range sigsInvolved {
-					sigs = append(sigs, k)
-				}
-				fmt.Printf("- Currently %d test are failing\n", len(jobData.Tests))
-				fmt.Printf("- Sig's involved %v\n", sigs)
-			}
-		}
-	}
-
-	// if the short flag ist set, only print the short report otherwise print both the short & long report
-	for name := range *stats {
-		s := *stats
-		data := s[name]
-		if err := printShortReport(name, &data); err != nil {
-			return err
-		}
-		if !cfg.ShortReport {
-			printLongReport(name, &data)
-		}
-	}
-	return nil
 }

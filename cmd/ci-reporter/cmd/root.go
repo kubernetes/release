@@ -17,23 +17,27 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/google/go-github/v34/github"
-	"github.com/sirupsen/logrus"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"golang.org/x/oauth2"
-	"sigs.k8s.io/release-utils/env"
 )
 
 var rootCmd = &cobra.Command{
-	Use:    "reporter",
-	Short:  "Github and Testgrid report generator",
-	Long:   "CI-Signal reporter that generates github and testgrid reports.",
-	PreRun: setGithubConfig,
+	Use:   "reporter",
+	Short: "Github and Testgrid report generator",
+	Long:  "CI-Signal reporter that generates github and testgrid reports.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return RunReport(*cfg)
+		setGithubConfig(cmd, args)
+		// all available reporters are used by default that are used to generate the report
+		// CLI sub commands can be used to specify a specific reporter
+		selectedReporters := AllImplementedReporters
+		return RunReport(cfg, &selectedReporters)
 	},
 }
 
@@ -42,57 +46,163 @@ func Execute() error {
 	return rootCmd.Execute()
 }
 
-// ReporterConfig configuration that is getting injected into ci-signal report functions
-type ReporterConfig struct {
+// Config configuration that is getting injected into ci-signal report functions
+type Config struct {
 	GithubClient   *github.Client
 	GithubToken    string
 	ReleaseVersion string
 	ShortReport    bool
+	JSONOutput     bool
 }
 
-var cfg = &ReporterConfig{
+var cfg = &Config{
 	GithubClient:   &github.Client{},
 	GithubToken:    "",
 	ReleaseVersion: "",
 	ShortReport:    false,
+	JSONOutput:     false,
 }
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfg.ReleaseVersion, "release-version", "v", "", "Specify a Kubernetes release versions like '1.22' which will populate the report additionally")
 	rootCmd.PersistentFlags().BoolVarP(&cfg.ShortReport, "short", "s", false, "A short report for mails and slack")
-}
-
-func setGithubConfig(cmd *cobra.Command, args []string) {
-	// look for token in environment variables
-	cfg.GithubToken = env.Default("GITHUB_TOKEN", "")
-	if cfg.GithubToken == "" {
-		logrus.Fatal("Please specify your Github access token via the environment variable 'GITHUB_TOKEN' to generate a ci-report")
-		os.Exit(1)
-	}
-
-	// create a github client
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: cfg.GithubToken})
-	tc := oauth2.NewClient(ctx, ts)
-	cfg.GithubClient = github.NewClient(tc)
+	rootCmd.PersistentFlags().BoolVar(&cfg.JSONOutput, "json", false, "Report output in json format")
 }
 
 // RunReport used to execute
-func RunReport(cfg ReporterConfig) error {
-	githubReportData, err := GetGithubReportData(cfg)
-	if err != nil {
-		return err
-	}
-	PrintGithubReportData(githubReportData)
-
-	testgridReportData, err := GetTestgridReportData(cfg)
-	if err != nil {
-		return err
-	}
-	err = PrintTestgridReportData(cfg, &testgridReportData)
+func RunReport(cfg *Config, reporters *CIReporters) error {
+	// collect data from filtered reporters
+	reports, err := reporters.CollectReportDataFromReporters(cfg)
 	if err != nil {
 		return err
 	}
 
+	// visualize data
+	err = PrintReporterData(cfg, reports)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//
+// Generic reporter types
+//
+
+// CIReportDataFields used so specify multiple reports
+type CIReportDataFields []CIReportData
+
+// Marshal used to marshal CIReports into bytes
+func (d *CIReportDataFields) Marshal() ([]byte, error) {
+	return json.Marshal(d)
+}
+
+// CIReportData format of the ci report data that is being generated
+type CIReportData struct {
+	Info    CIReporterInfo    `json:"info"`
+	Records []*CIReportRecord `json:"records"`
+}
+
+// CIReporterInfo meta information about a reporter implementation
+type CIReporterInfo struct {
+	Name CIReporterName `json:"name"`
+}
+
+// CIReporterName identifying name of a reporter
+type CIReporterName string
+
+// CIReportRecord generic report data format
+type CIReportRecord struct {
+	ID               string   `json:"id"`
+	Title            string   `json:"title"`
+	URL              string   `json:"url"`
+	Category         string   `json:"category"`
+	Sigs             []string `json:"sigs"`
+	Status           string   `json:"status"`
+	CreatedTimestamp string   `json:"created_timestamp"`
+}
+
+//
+// Generic CIReporter interface and related functions
+//
+
+// CIReporter interface that is used to implement a new reporter
+type CIReporter interface {
+	// GetCIReporterHead sets meta information which is used to differentiate reporters
+	GetCIReporterHead() CIReporterInfo
+	// CollectReportData is used to request / collect all report data
+	CollectReportData(*Config) ([]*CIReportRecord, error)
+}
+
+// CIReporters used to specify multiple CIReports, type gets extended by helper functions to collect and visualize report data
+type CIReporters []CIReporter
+
+// AllImplementedReporters list of implemented reports that are used to generate ci-reports
+var AllImplementedReporters = CIReporters{GithubReporter{}, TestgridReporter{}}
+
+// SearchReporter used to filter a implemented reporter by name
+func SearchReporter(reporterName string) (CIReporter, error) {
+	var reporter CIReporter
+	reporterFound := false
+	for _, r := range AllImplementedReporters {
+		if strings.EqualFold(string(r.GetCIReporterHead().Name), reporterName) {
+			reporter = r
+			reporterFound = true
+			break
+		}
+	}
+	if !reporterFound {
+		return nil, errors.New("could not find a implemented reporter")
+	}
+	return reporter, nil
+}
+
+// CollectReportDataFromReporters used to collect data for multiple reporters
+func (r *CIReporters) CollectReportDataFromReporters(cfg *Config) (*CIReportDataFields, error) {
+	collectedReports := CIReportDataFields{}
+	for i := range *r {
+		reporters := *r
+		reporter := reporters[i]
+		reporterHead := reporter.GetCIReporterHead()
+		reportData, err := reporter.CollectReportData(cfg)
+		if err != nil {
+			return nil, err
+		}
+
+		collectedReports = append(collectedReports, CIReportData{
+			Info:    reporterHead,
+			Records: reportData,
+		})
+	}
+	return &collectedReports, nil
+}
+
+// PrintReporterData used to print report data
+func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
+	if cfg.JSONOutput {
+		// print report in json format
+		d, err := reports.Marshal()
+		if err != nil {
+			return nil
+		}
+		fmt.Print(string(d))
+	} else {
+		// print report in table format
+		for _, r := range *reports {
+			table := tablewriter.NewWriter(os.Stdout)
+			data := [][]string{}
+			for _, record := range r.Records {
+				data = append(data, []string{record.ID, record.Title, record.Category, record.Status, fmt.Sprintf("%v", record.Sigs), record.URL, record.CreatedTimestamp})
+			}
+			fmt.Printf("%s REPORT\n", strings.ToUpper(string(r.Info.Name)))
+			table.SetHeader([]string{"ID", "TITLE", "CATEGORY", "STATUS", "SIGS", "URL", "TS"})
+			table.SetFooter([]string{"", "", "", "", "", "RECORDS", fmt.Sprintf("%d", len(r.Records))})
+			table.SetBorder(false)
+			table.AppendBulk(data)
+			table.SetAutoMergeCells(true)
+			table.Render()
+		}
+	}
 	return nil
 }

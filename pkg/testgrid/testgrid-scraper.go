@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
@@ -161,7 +163,7 @@ type JobSummary struct {
 
 // GetJobURL used to get the testgrid job url
 func (j *JobSummary) GetJobURL(jobName JobName) string {
-	return fmt.Sprintf("https://testgrid.k8s.io/%s/summary#%s", j.DashboardName, jobName)
+	return fmt.Sprintf("https://testgrid.k8s.io/%s#%s", j.DashboardName, strings.ReplaceAll(string(jobName), " ", "%20"))
 }
 
 // Test contains information about tests if the status if the Job is failing
@@ -188,6 +190,31 @@ const (
 	// SigReleaseMasterBlocking one of the dashboard names that can be used to scrapo a testgrid summary
 	SigReleaseMasterBlocking DashboardName = "sig-release-master-blocking"
 )
+
+// FilterSigs used to filter sigs from failing tests
+func (j *JobSummary) FilterSigs() []string {
+	// Filter sigs
+	sigRegex := regexp.MustCompile(`sig-[a-zA-Z]+`)
+	sigsInvolved := map[string]int{}
+	for i := range j.Tests {
+		sigs := sigRegex.FindAllString(j.Tests[i].TestName, -1)
+		for _, sig := range sigs {
+			sigsInvolved[sig]++
+		}
+	}
+	sigs := []string{}
+	for k := range sigsInvolved {
+		sigs = append(sigs, k)
+	}
+	return sigs
+}
+
+// FilterSuccessRateForLastRuns used to parse last runs from test
+// example: 8 of 9 (88.9%) recent columns passed (296791 of 296793 or 100.0% cells) -> 8 of 9 (88.9%)
+func (j *JobSummary) FilterSuccessRateForLastRuns() string {
+	successRateForLastRunsRegex := regexp.MustCompile(`\d+\sof\s\d+\s\(\d+\.\d+%\)`)
+	return successRateForLastRunsRegex.FindString(j.Status)
+}
 
 // OverallStatus of a job in testgrid
 type OverallStatus string

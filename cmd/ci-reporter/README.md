@@ -10,7 +10,7 @@ It needs a GitHub token to be able to query the project board for CI signal. For
 
 ## Prerequisites
 
-- GoLang >=1.16
+-   GoLang >=1.16
 
 ## Run the report
 
@@ -31,11 +31,22 @@ CI-Signal reporter that generates github and testgrid reports.
 
 Usage:
   reporter [flags]
+  reporter [command]
+
+Available Commands:
+  completion  generate the autocompletion script for the specified shell
+  github      Github report generator
+  help        Help about any command
+  testgrid    Testgrid report generator
 
 Flags:
   -h, --help                     help for reporter
+      --json                     Report output in json format
   -v, --release-version string   Specify a Kubernetes release versions like '1.22' which will populate the report additionally
   -s, --short                    A short report for mails and slack
+
+Use "reporter [command] --help" for more information about a command.
+
 ```
 
 ## Rate limits
@@ -50,7 +61,7 @@ curl \
   https://api.github.com/rate_limit
 ```
 
-## Example output
+## Example table output
 
 ```
 GITHUB_TOKEN=xxx go run cmd/ci-reporter/main.go -s
