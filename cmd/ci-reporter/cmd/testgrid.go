@@ -38,6 +38,7 @@ var testgridCmd = &cobra.Command{
 var TestgridReporterName CIReporterName = "testgrid"
 
 func init() {
+	testgridCmd.Flags().StringVarP(&cfg.ReleaseVersion, "release-version", "v", "", "Specify a Kubernetes release versions like '1.22' which will populate the report additionally")
 	rootCmd.AddCommand(testgridCmd)
 }
 
@@ -59,15 +60,17 @@ func (r TestgridReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, err
 	for dashboardName, jobData := range testgridReportData {
 		for jobName := range jobData {
 			jobSummary := jobData[jobName]
-			records = append(records, &CIReportRecord{
-				ID:               string(jobName),
-				Title:            string(dashboardName),
-				URL:              jobSummary.GetJobURL(jobName),
-				Category:         string(jobSummary.OverallStatus),
-				Sigs:             jobSummary.FilterSigs(),
-				Status:           jobSummary.FilterSuccessRateForLastRuns(),
-				CreatedTimestamp: time.Unix(jobSummary.LastRunTimestamp, 0).Format("2006-01-02 15:04:05 CET"),
-			})
+			if !cfg.ShortReport || jobSummary.OverallStatus != testgrid.Passing {
+				records = append(records, &CIReportRecord{
+					ID:               string(jobName),
+					Title:            string(dashboardName),
+					URL:              jobSummary.GetJobURL(jobName),
+					Category:         string(jobSummary.OverallStatus),
+					Sigs:             jobSummary.FilterSigs(),
+					Status:           jobSummary.FilterSuccessRateForLastRuns(),
+					CreatedTimestamp: time.Unix(jobSummary.LastRunTimestamp, 0).Format("2006-01-02 15:04:05 CET"),
+				})
+			}
 		}
 	}
 	return records, nil

@@ -64,7 +64,7 @@ var cfg = &Config{
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&cfg.ReleaseVersion, "release-version", "v", "", "Specify a Kubernetes release versions like '1.22' which will populate the report additionally")
+	rootCmd.Flags().StringVarP(&cfg.ReleaseVersion, "release-version", "v", "", "Specify a Kubernetes release versions like '1.22' which will populate the report additionally")
 	rootCmd.PersistentFlags().BoolVarP(&cfg.ShortReport, "short", "s", false, "A short report for mails and slack")
 	rootCmd.PersistentFlags().BoolVar(&cfg.JSONOutput, "json", false, "Report output in json format")
 }
@@ -197,7 +197,16 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 			}
 			fmt.Printf("%s REPORT\n", strings.ToUpper(string(r.Info.Name)))
 			table.SetHeader([]string{"ID", "TITLE", "CATEGORY", "STATUS", "SIGS", "URL", "TS"})
-			table.SetFooter([]string{"", "", "", "", "", "RECORDS", fmt.Sprintf("%d", len(r.Records))})
+			countCategories := map[string]int{}
+			categoryIndex := 2
+			for i := range data {
+				countCategories[data[i][categoryIndex]]++
+			}
+			categoryCounts := ""
+			for category, categoryCount := range countCategories {
+				categoryCounts += fmt.Sprintf("%s:%d\n", category, categoryCount)
+			}
+			table.SetFooter([]string{fmt.Sprintf("Total: %d", len(data)), "", categoryCounts, "", "", "", ""})
 			table.SetBorder(false)
 			table.AppendBulk(data)
 			table.SetAutoMergeCells(true)
