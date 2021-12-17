@@ -186,12 +186,6 @@ dependencies:
     - path: images/k8s-cloud-builder/variants.yaml
       match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
-  - name: "k8s.gcr.io/build-image/kube-cross: dependents buster"
-    version: v1.23.0-go1.17.5-buster.0
-    refPaths:
-    - path: images/k8s-cloud-builder/variants.yaml
-      match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
-
   # Golang (next candidate)
   - name: "golang (next candidate)"
     version: 1.18beta1
@@ -231,13 +225,13 @@ dependencies:
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "k8s.gcr.io/build-image/kube-cross: config variant (next candidate)"
-    version: go1.17-bullseye
+    version: go1.18-bullseye
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "CONFIG: 'go\\d+.\\d+-bullseye'"
 
   - name: "k8s.gcr.io/build-image/kube-cross: dependents (next candidate)"
-    version: v1.24.0-go1.17.5-bullseye.0
+    version: v1.24.0-go1.18beta1-bullseye.0
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -369,7 +363,7 @@ dependencies:
       match: "OS_CODENAME: 'bullseye'"
 
   - name: "k8s.gcr.io/build-image/debian-base"
-    version: bullseye-v1.0.0
+    version: bullseye-v1.1.0
     refPaths:
     - path: images/build/debian-base/Makefile
       match: IMAGE_VERSION\ \?=\ bullseye-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -412,7 +406,7 @@ dependencies:
 
   # Base images (next candidate)
   - name: "k8s.gcr.io/build-image/debian-base (next candidate)"
-    version: bullseye-v1.0.0
+    version: bullseye-v1.1.0
     refPaths:
     - path: images/build/debian-base/variants.yaml
       match: "IMAGE_VERSION: 'bullseye-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"

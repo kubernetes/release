@@ -19,7 +19,7 @@ IMAGE ?= $(REGISTRY)/debian-base
 BUILD_IMAGE ?= debian-build
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= bullseye-v1.0.0
+IMAGE_VERSION ?= bullseye-v1.1.0
 CONFIG ?= bullseye
 
 TAR_FILE ?= rootfs.tar
