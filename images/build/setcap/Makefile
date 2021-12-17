@@ -18,7 +18,7 @@ REGISTRY?="gcr.io/k8s-staging-build-image"
 IMAGE=$(REGISTRY)/setcap
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= bullseye-v1.0.0
+IMAGE_VERSION ?= bullseye-v1.1.0
 CONFIG ?= bullseye
 DEBIAN_BASE_VERSION ?= bullseye-v1.1.0
 
