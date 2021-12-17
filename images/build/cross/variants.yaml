@@ -1,4 +1,14 @@
 variants:
+  v1.24-go1.18-bullseye:
+    CONFIG: 'go1.18-bullseye'
+    TYPE: 'default'
+    IMAGE_VERSION: 'v1.24.0-go1.18beta1-bullseye.0'
+    KUBERNETES_VERSION: 'v1.24.0'
+    GO_VERSION: '1.18beta1'
+    GO_MAJOR_VERSION: '1.18'
+    OS_CODENAME: 'bullseye'
+    REVISION: '0'
+    PROTOBUF_VERSION: '3.7.0'
   v1.24-go1.17-bullseye:
     CONFIG: 'go1.17-bullseye'
     TYPE: 'default'
@@ -17,16 +27,6 @@ variants:
     GO_VERSION: '1.17.5'
     GO_MAJOR_VERSION: '1.17'
     OS_CODENAME: 'bullseye'
-    REVISION: '0'
-    PROTOBUF_VERSION: '3.7.0'
-  v1.23-go1.17-buster:
-    CONFIG: 'go1.17-buster'
-    TYPE: 'default'
-    IMAGE_VERSION: 'v1.23.0-go1.17.5-buster.0'
-    KUBERNETES_VERSION: 'v1.23.0'
-    GO_VERSION: '1.17.5'
-    GO_MAJOR_VERSION: '1.17'
-    OS_CODENAME: 'buster'
     REVISION: '0'
     PROTOBUF_VERSION: '3.7.0'
   v1.22-go1.16-buster:
