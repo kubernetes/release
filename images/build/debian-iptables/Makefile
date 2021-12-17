@@ -20,7 +20,7 @@ IMAGE=$(REGISTRY)/debian-iptables
 TAG ?= $(shell git describe --tags --always --dirty)
 IMAGE_VERSION ?= bullseye-v1.1.0
 CONFIG ?= bullseye
-DEBIAN_BASE_VERSION ?= bullseye-v1.0.0
+DEBIAN_BASE_VERSION ?= bullseye-v1.1.0
 GORUNNER_VERSION ?= v2.3.1-go1.17.3-bullseye.0
 
 ARCH?=amd64
