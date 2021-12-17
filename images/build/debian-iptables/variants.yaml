@@ -2,10 +2,10 @@ variants:
   # Debian 11 - Kubernetes 1.23 and newer
   bullseye:
     CONFIG: 'bullseye'
-    IMAGE_VERSION: 'bullseye-v1.1.0'
-    DEBIAN_BASE_VERSION: 'bullseye-v1.0.0'
+    IMAGE_VERSION: 'bullseye-v1.2.0'
+    DEBIAN_BASE_VERSION: 'bullseye-v1.1.0'
   # Debian 10 - Kubernetes 1.22 and older
   buster:
     CONFIG: 'buster'
-    IMAGE_VERSION: 'buster-v1.7.0'
-    DEBIAN_BASE_VERSION: 'buster-v1.9.0'
+    IMAGE_VERSION: 'buster-v1.8.0'
+    DEBIAN_BASE_VERSION: 'buster-v1.10.0'
