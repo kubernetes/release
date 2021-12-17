@@ -188,15 +188,25 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 		}
 		fmt.Print(string(d))
 	} else {
-		// print report in table format
+		// print report in table format, (short table differs)
 		for _, r := range *reports {
+			fmt.Printf("\n%s REPORT\n", strings.ToUpper(string(r.Info.Name)))
 			table := tablewriter.NewWriter(os.Stdout)
 			data := [][]string{}
-			for _, record := range r.Records {
-				data = append(data, []string{record.ID, record.Title, record.Category, record.Status, fmt.Sprintf("%v", record.Sigs), record.URL, record.CreatedTimestamp})
+
+			// table in short version differs from regular table
+			if cfg.ShortReport {
+				table.SetHeader([]string{"ID", "TITLE", "CATEGORY", "STATUS"})
+				for _, record := range r.Records {
+					data = append(data, []string{record.ID, record.Title, record.Category, record.Status})
+				}
+			} else {
+				table.SetHeader([]string{"ID", "TITLE", "CATEGORY", "STATUS", "SIGS", "URL", "TS"})
+				for _, record := range r.Records {
+					data = append(data, []string{record.ID, record.Title, record.Category, record.Status, fmt.Sprintf("%v", record.Sigs), record.URL, record.CreatedTimestamp})
+				}
 			}
-			fmt.Printf("%s REPORT\n", strings.ToUpper(string(r.Info.Name)))
-			table.SetHeader([]string{"ID", "TITLE", "CATEGORY", "STATUS", "SIGS", "URL", "TS"})
+
 			countCategories := map[string]int{}
 			categoryIndex := 2
 			for i := range data {
@@ -206,7 +216,11 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 			for category, categoryCount := range countCategories {
 				categoryCounts += fmt.Sprintf("%s:%d\n", category, categoryCount)
 			}
-			table.SetFooter([]string{fmt.Sprintf("Total: %d", len(data)), "", categoryCounts, "", "", "", ""})
+			if cfg.ShortReport {
+				table.SetFooter([]string{fmt.Sprintf("Total: %d", len(data)), "", categoryCounts, ""})
+			} else {
+				table.SetFooter([]string{fmt.Sprintf("Total: %d", len(data)), "", categoryCounts, "", "", "", ""})
+			}
 			table.SetBorder(false)
 			table.AppendBulk(data)
 			table.SetAutoMergeCells(true)

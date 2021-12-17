@@ -62,8 +62,8 @@ func (r TestgridReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, err
 			jobSummary := jobData[jobName]
 			if !cfg.ShortReport || jobSummary.OverallStatus != testgrid.Passing {
 				records = append(records, &CIReportRecord{
-					ID:               string(jobName),
-					Title:            string(dashboardName),
+					ID:               string(dashboardName),
+					Title:            string(jobName),
 					URL:              jobSummary.GetJobURL(jobName),
 					Category:         string(jobSummary.OverallStatus),
 					Sigs:             jobSummary.FilterSigs(),
