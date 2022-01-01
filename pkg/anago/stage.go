@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -900,18 +899,11 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 	if err != nil {
 		return nil, errors.Wrap(err, "opening repository to check commit hash")
 	}
-	// TODO: When this PR merges and the commit is part of a release:
-	// https://github.com/kubernetes-sigs/release-sdk/pull/6
-	// and k/release is bumped, replace the commit logic with this line:
-	// commitSHA, err := repo.LastCommitSha()
-	logData, err := repo.ShowLastCommit()
+
+	// Get the k/k commit we are building
+	commitSHA, err := repo.LastCommitSha()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting last commit data")
-	}
-	re := regexp.MustCompile(`commit\s+([a-f0-9]{40})`)
-	commitSHA := re.FindString(logData)
-	if commitSHA == "" {
-		return nil, errors.New("Unable to find last commit sha in git output")
+		return nil, errors.Wrap(err, "getting last commit sha")
 	}
 
 	// Create the predicate to populate it with the current
