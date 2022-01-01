@@ -26,6 +26,7 @@ import (
 
 	"github.com/blang/semver"
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
+	slsa "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -926,19 +927,18 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 	// Some of these fields have yet to be checked to assign the
 	// correct values to them
 	// This is commented as the in-toto go port does not have it
-	// p.Metadata.BuildInvocationID: os.Getenv("BUILD_ID"),
-	p.Metadata.Completeness.Arguments = true // The arguments are complete as we know the from GCB
-	p.Metadata.Completeness.Materials = true // The materials are complete as we only use the github repo
+	p.Metadata.BuildInvocationID = os.Getenv("BUILD_ID")
+	p.Metadata.Completeness.Parameters = true // The parameters are complete as we know the from GCB
+	p.Metadata.Completeness.Materials = true  // The materials are complete as we only use the github repo
 	startTime := state.startTime.UTC()
 	endTime := time.Now().UTC()
 	p.Metadata.BuildStartedOn = &startTime
 	p.Metadata.BuildFinishedOn = &endTime
+	p.Invocation.ConfigSource.EntryPoint = "https://github.com/kubernetes/release/blob/master/gcb/stage/cloudbuild.yaml"
+	p.BuildType = "https://cloudbuild.googleapis.com/CloudBuildYaml@v1"
+	p.Invocation.Parameters = arguments
 
-	p.Recipe.Type = "https://cloudbuild.googleapis.com/CloudBuildYaml@v1"
-	p.Recipe.EntryPoint = "https://github.com/kubernetes/release/blob/master/gcb/stage/cloudbuild.yaml"
-	p.Recipe.Arguments = arguments
-
-	p.AddMaterial("git+https://github.com/kubernetes/kubernetes", intoto.DigestSet{"sha1": commitSHA})
+	p.AddMaterial("git+https://github.com/kubernetes/kubernetes", slsa.DigestSet{"sha1": commitSHA})
 
 	// Create the new attestation and attach the predicate
 	attestation = provenance.NewSLSAStatement()
