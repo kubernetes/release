@@ -22,7 +22,9 @@ import (
 	"testing"
 
 	"github.com/sendgrid/rest"
+	sendgridMail "github.com/sendgrid/sendgrid-go/helpers/mail"
 	"github.com/stretchr/testify/require"
+
 	"k8s.io/release/pkg/mail"
 	"k8s.io/release/pkg/mail/mailfakes"
 	it "k8s.io/release/pkg/testing"
@@ -266,4 +268,30 @@ func testRecipient(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSetGoogleGroupRecipients(t *testing.T) {
+	groups := []mail.GoogleGroup{
+		mail.KubernetesAnnounceGoogleGroup,
+		mail.KubernetesDevGoogleGroup,
+	}
+
+	expectedRecipients := []*sendgridMail.Email{
+		{
+			Address: "dev@kubernetes.io",
+			Name:    "dev",
+		},
+		{
+			Address: "kubernetes-announce@googlegroups.com",
+			Name:    "kubernetes-announce",
+		},
+	}
+
+	m := &mail.Sender{}
+	err := m.SetGoogleGroupRecipients(groups...)
+	require.NoError(t, err)
+
+	recipients := m.GetRecipients()
+	require.NotEmpty(t, recipients)
+	require.ElementsMatch(t, expectedRecipients, recipients)
 }

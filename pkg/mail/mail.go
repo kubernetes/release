@@ -33,7 +33,7 @@ type GoogleGroup string
 
 const (
 	KubernetesAnnounceGoogleGroup     GoogleGroup = "kubernetes-announce"
-	KubernetesDevGoogleGroup          GoogleGroup = "kubernetes-dev"
+	KubernetesDevGoogleGroup          GoogleGroup = "dev"
 	KubernetesAnnounceTestGoogleGroup GoogleGroup = "kubernetes-announce-test"
 )
 
@@ -200,7 +200,16 @@ func (s *Sender) SetRecipients(recipientArgs ...string) error {
 func (s *Sender) SetGoogleGroupRecipients(groups ...GoogleGroup) error {
 	args := []string{}
 	for _, group := range groups {
-		args = append(args, string(group), fmt.Sprintf("%s@googlegroups.com", group))
+		if group == "dev" {
+			args = append(args, string(group), fmt.Sprintf("%s@kubernetes.io", group))
+		} else {
+			args = append(args, string(group), fmt.Sprintf("%s@googlegroups.com", group))
+		}
 	}
 	return s.SetRecipients(args...)
+}
+
+// GetRecipients can be used to get the recipients
+func (s *Sender) GetRecipients() []*mail.Email {
+	return s.recipients
 }
