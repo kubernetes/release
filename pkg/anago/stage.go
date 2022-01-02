@@ -903,19 +903,16 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 	// Get the k/k commit we are building
 	commitSHA, err := repo.LastCommitSha()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting last commit sha")
+		return nil, errors.Wrap(err, "getting k/k build point")
 	}
 
 	// Create the predicate to populate it with the current
 	// run metadata:
 	p := provenance.NewSLSAPredicate()
 
-	// TODO: In regular runs, this will insert "master", we should
-	// record the git sha of the commit in k/release we are using.
-	p.Builder.ID = fmt.Sprintf(
-		"pkg:github/%s/%s@%s", os.Getenv("TOOL_ORG"),
-		os.Getenv("TOOL_REPO"), os.Getenv("TOOL_REF"),
-	)
+	// SLSA v02, builder ID is a TypeURI
+	p.Builder.ID = "https://git.k8s.io/release/docs/krel"
+
 	// Some of these fields have yet to be checked to assign the
 	// correct values to them
 	// This is commented as the in-toto go port does not have it
@@ -926,7 +923,7 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 	endTime := time.Now().UTC()
 	p.Metadata.BuildStartedOn = &startTime
 	p.Metadata.BuildFinishedOn = &endTime
-	p.Invocation.ConfigSource.EntryPoint = "https://github.com/kubernetes/release/blob/master/gcb/stage/cloudbuild.yaml"
+	p.Invocation.ConfigSource.EntryPoint = "https://git.k8s.io/release/gcb/stage/cloudbuild.yaml"
 	p.BuildType = "https://cloudbuild.googleapis.com/CloudBuildYaml@v1"
 	p.Invocation.Parameters = arguments
 
