@@ -20,12 +20,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
 	"github.com/blang/semver"
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
+	slsa "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -768,12 +768,12 @@ func (d *DefaultStage) GenerateBillOfMaterials() error {
 }
 
 func (d *DefaultStage) StageArtifacts() error {
-	// Generat the intoto attestation, reloaded with the current run data
+	// Generate the intoto attestation, reloaded with the current run data
 	statement, err := d.impl.GenerateAttestation(d.state, d.options)
 	if err != nil {
 		return errors.Wrap(err, "generating the provenance attestation")
 	}
-	// Init a the push options we will use
+	// Init push options for provenance document
 	pushBuildOptions := &build.Options{
 		Bucket:                     d.options.Bucket(),
 		Registry:                   d.options.ContainerRegistry(),
@@ -886,12 +886,12 @@ func (d *DefaultStage) StageArtifacts() error {
 func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *StageOptions) (attestation *provenance.Statement, err error) {
 	// Build the arguments RawMessage:
 	arguments := map[string]string{
-		"--type=":          options.ReleaseType,
-		"--branch=":        options.ReleaseBranch,
-		"--build-version=": options.BuildVersion,
+		"type":          options.ReleaseType,
+		"branch":        options.ReleaseBranch,
+		"build-version": options.BuildVersion,
 	}
 	if options.NoMock {
-		arguments["--nomock"] = "true"
+		arguments["nomock"] = "true"
 	}
 
 	// Fetch the last commit:
@@ -899,46 +899,35 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 	if err != nil {
 		return nil, errors.Wrap(err, "opening repository to check commit hash")
 	}
-	// TODO: When this PR merges and the commit is part of a release:
-	// https://github.com/kubernetes-sigs/release-sdk/pull/6
-	// and k/release is bumped, replace the commit logic with this line:
-	// commitSHA, err := repo.LastCommitSha()
-	logData, err := repo.ShowLastCommit()
+
+	// Get the k/k commit we are building
+	commitSHA, err := repo.LastCommitSha()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting last commit data")
-	}
-	re := regexp.MustCompile(`commit\s+([a-f0-9]{40})`)
-	commitSHA := re.FindString(logData)
-	if commitSHA == "" {
-		return nil, errors.New("Unable to find last commit sha in git output")
+		return nil, errors.Wrap(err, "getting k/k build point")
 	}
 
 	// Create the predicate to populate it with the current
 	// run metadata:
 	p := provenance.NewSLSAPredicate()
 
-	// TODO: In regular runs, this will insert "master", we should
-	// record the git sha of the commit in k/release we are using.
-	p.Builder.ID = fmt.Sprintf(
-		"pkg:github/%s/%s@%s", os.Getenv("TOOL_ORG"),
-		os.Getenv("TOOL_REPO"), os.Getenv("TOOL_REF"),
-	)
+	// SLSA v02, builder ID is a TypeURI
+	p.Builder.ID = "https://git.k8s.io/release/docs/krel"
+
 	// Some of these fields have yet to be checked to assign the
 	// correct values to them
 	// This is commented as the in-toto go port does not have it
-	// p.Metadata.BuildInvocationID: os.Getenv("BUILD_ID"),
-	p.Metadata.Completeness.Arguments = true // The arguments are complete as we know the from GCB
-	p.Metadata.Completeness.Materials = true // The materials are complete as we only use the github repo
+	p.Metadata.BuildInvocationID = os.Getenv("BUILD_ID")
+	p.Metadata.Completeness.Parameters = true // The parameters are complete as we know the from GCB
+	p.Metadata.Completeness.Materials = true  // The materials are complete as we only use the github repo
 	startTime := state.startTime.UTC()
 	endTime := time.Now().UTC()
 	p.Metadata.BuildStartedOn = &startTime
 	p.Metadata.BuildFinishedOn = &endTime
+	p.Invocation.ConfigSource.EntryPoint = "https://git.k8s.io/release/gcb/stage/cloudbuild.yaml"
+	p.BuildType = "https://cloudbuild.googleapis.com/CloudBuildYaml@v1"
+	p.Invocation.Parameters = arguments
 
-	p.Recipe.Type = "https://cloudbuild.googleapis.com/CloudBuildYaml@v1"
-	p.Recipe.EntryPoint = "https://github.com/kubernetes/release/blob/master/gcb/stage/cloudbuild.yaml"
-	p.Recipe.Arguments = arguments
-
-	p.AddMaterial("git+https://github.com/kubernetes/kubernetes", intoto.DigestSet{"sha1": commitSHA})
+	p.AddMaterial("git+https://github.com/kubernetes/kubernetes", slsa.DigestSet{"sha1": commitSHA})
 
 	// Create the new attestation and attach the predicate
 	attestation = provenance.NewSLSAStatement()
