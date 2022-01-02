@@ -768,12 +768,12 @@ func (d *DefaultStage) GenerateBillOfMaterials() error {
 }
 
 func (d *DefaultStage) StageArtifacts() error {
-	// Generat the intoto attestation, reloaded with the current run data
+	// Generate the intoto attestation, reloaded with the current run data
 	statement, err := d.impl.GenerateAttestation(d.state, d.options)
 	if err != nil {
 		return errors.Wrap(err, "generating the provenance attestation")
 	}
-	// Init a the push options we will use
+	// Init push options for provenance document
 	pushBuildOptions := &build.Options{
 		Bucket:                     d.options.Bucket(),
 		Registry:                   d.options.ContainerRegistry(),
