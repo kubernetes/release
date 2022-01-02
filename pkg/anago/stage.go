@@ -886,12 +886,12 @@ func (d *DefaultStage) StageArtifacts() error {
 func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *StageOptions) (attestation *provenance.Statement, err error) {
 	// Build the arguments RawMessage:
 	arguments := map[string]string{
-		"--type=":          options.ReleaseType,
-		"--branch=":        options.ReleaseBranch,
-		"--build-version=": options.BuildVersion,
+		"type":          options.ReleaseType,
+		"branch":        options.ReleaseBranch,
+		"build-version": options.BuildVersion,
 	}
 	if options.NoMock {
-		arguments["--nomock"] = "true"
+		arguments["nomock"] = "true"
 	}
 
 	// Fetch the last commit:
