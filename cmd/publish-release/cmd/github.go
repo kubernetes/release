@@ -28,7 +28,7 @@ import (
 )
 
 // releaseNotesCmd represents the subcommand for `krel release-notes`
-var githuPageCmd = &cobra.Command{
+var githubPageCmd = &cobra.Command{
 	Use:   "github",
 	Short: "Updates the github page of a release",
 	Long: `publish-release github
@@ -85,60 +85,60 @@ type githubPageCmdLineOptions struct {
 var ghPageOpts = &githubPageCmdLineOptions{}
 
 func init() {
-	githuPageCmd.PersistentFlags().StringVarP(
+	githubPageCmd.PersistentFlags().StringVarP(
 		&ghPageOpts.repo,
 		"repo",
 		"r",
 		"",
 		"repository slug containing the release page",
 	)
-	githuPageCmd.PersistentFlags().StringVar(
+	githubPageCmd.PersistentFlags().StringVar(
 		&ghPageOpts.template,
 		"template",
 		"",
 		"path to a custom page template",
 	)
-	githuPageCmd.PersistentFlags().StringVarP(
+	githubPageCmd.PersistentFlags().StringVarP(
 		&ghPageOpts.name,
 		"name",
 		"n",
 		"",
 		"name for the release",
 	)
-	githuPageCmd.PersistentFlags().StringSliceVarP(
+	githubPageCmd.PersistentFlags().StringSliceVarP(
 		&ghPageOpts.assets,
 		"asset",
 		"a",
 		[]string{},
 		"Path to asset file for the release. Can be specified multiple times.",
 	)
-	githuPageCmd.PersistentFlags().StringSliceVarP(
+	githubPageCmd.PersistentFlags().StringSliceVarP(
 		&ghPageOpts.substitutions,
 		"substitution",
 		"s",
 		[]string{},
 		"String substitution for the page template",
 	)
-	githuPageCmd.PersistentFlags().BoolVar(
+	githubPageCmd.PersistentFlags().BoolVar(
 		&ghPageOpts.noupdate,
 		"noupdate",
 		false,
 		"Fail if the release already exists",
 	)
-	githuPageCmd.PersistentFlags().BoolVar(
+	githubPageCmd.PersistentFlags().BoolVar(
 		&ghPageOpts.draft,
 		"draft",
 		false,
 		"Mark the release as a draft in GitHub so you can finish editing and publish it manually.",
 	)
-	githuPageCmd.PersistentFlags().BoolVar(
+	githubPageCmd.PersistentFlags().BoolVar(
 		&ghPageOpts.sbom,
 		"sbom",
 		true,
 		"Generate an SPDX bill of materials and attach it to the release",
 	)
 
-	githuPageCmd.PersistentFlags().StringVar(
+	githubPageCmd.PersistentFlags().StringVar(
 		&ghPageOpts.repoPath,
 		"repo-path",
 		".",
@@ -146,16 +146,16 @@ func init() {
 	)
 
 	for _, f := range []string{"template", "asset"} {
-		if err := githuPageCmd.MarkPersistentFlagFilename(f); err != nil {
+		if err := githubPageCmd.MarkPersistentFlagFilename(f); err != nil {
 			logrus.Error(err)
 		}
 	}
 
-	if err := githuPageCmd.MarkPersistentFlagRequired("repo"); err != nil {
+	if err := githubPageCmd.MarkPersistentFlagRequired("repo"); err != nil {
 		logrus.Error(err)
 	}
 
-	rootCmd.AddCommand(githuPageCmd)
+	rootCmd.AddCommand(githubPageCmd)
 }
 
 func getAssetsFromStrings(assetStrings []string) []announce.Asset {
