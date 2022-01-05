@@ -307,13 +307,19 @@ dependencies:
     - path: images/build/cross/variants.yaml
       match: "CONFIG: 'go\\d+.\\d+-buster'"
 
-  # golangci-lint
+  # golangci-lint-version
   - name: "golangci-lint"
     version: 1.43.0
     refPaths:
     - path: hack/verify-golangci-lint.sh
       match: VERSION=v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?
 
+  - name: "golangci-lint-checksum"
+    version: 294771225087ee48c8e0a45a99ac82ed8f9c6e9d384e692ab201986479c8594f
+    refPaths:
+    - path: hack/verify-golangci-lint.sh
+      match: INSTALL_CHECKSUM=(294771225087ee48c8e0a45a99ac82ed8f9c6e9d384e692ab201986479c8594f)
+      
   # Base images
   - name: "Debian: codename (default)"
     version: bullseye
