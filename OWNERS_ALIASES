@@ -31,7 +31,7 @@ aliases:
   ci-signal-reporter-reviewers:
     - leonardpahlke # 1.24 CI Signal Lead
     - voigt # 1.24 CI Signal Shadow
-    - lauralorenz # 1.24 CI Signal Lead
+    - lauralorenz # 1.24 CI Signal Shadow
     - shuheiktgw # 1.24 CI Signal Shadow
     - nivedita-coder # 1.24 CI Signal Shadow
   krel-approvers:
