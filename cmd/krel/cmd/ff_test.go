@@ -38,10 +38,8 @@ func TestFfFailedWithoutReleaseBranch(t *testing.T) {
 	s := newSUT(t)
 	defer s.cleanup(t)
 
-	ff := &fastforward.Options{}
-
 	// When
-	err := fastforward.Run(ff)
+	err := fastforward.New(&fastforward.Options{}).Run()
 	// Then
 	require.NotNil(t, err)
 }
@@ -55,7 +53,7 @@ func TestFfFailedNoReleaseBranch(t *testing.T) {
 	ffo.Branch = "not-a-release-branch"
 
 	// When
-	err := fastforward.Run(ffo)
+	err := fastforward.New(ffo).Run()
 
 	// Then
 	require.NotNil(t, err)
@@ -70,7 +68,7 @@ func TestFfFailedReleaseBranchDoesNotExist(t *testing.T) {
 	ffo.Branch = "release-1.999"
 
 	// When
-	err := fastforward.Run(ffo)
+	err := fastforward.New(ffo).Run()
 
 	// Then
 	require.NotNil(t, err)
@@ -85,7 +83,7 @@ func TestFfFailedOldReleaseBranch(t *testing.T) {
 	ffo.Branch = "release-1.17"
 
 	// When
-	err := fastforward.Run(ffo)
+	err := fastforward.New(ffo).Run()
 
 	// Then
 	require.NotNil(t, err)
@@ -100,7 +98,7 @@ func TestFfSuccessDryRun(t *testing.T) {
 	ffo.Branch = pseudoReleaseBranch
 
 	// When
-	err := fastforward.Run(ffo)
+	err := fastforward.New(ffo).Run()
 
 	// Then
 	require.Nil(t, err)
@@ -125,7 +123,7 @@ func TestFfSuccess(t *testing.T) {
 	ffo.NoMock = true
 
 	// When
-	err := fastforward.Run(ffo)
+	err := fastforward.New(ffo).Run()
 
 	// Then
 	require.Nil(t, err)

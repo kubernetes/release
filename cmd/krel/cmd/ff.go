@@ -53,7 +53,7 @@ as real push if the '--nomock' flag is specified.
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ffOpts.NoMock = rootOpts.nomock
-		return fastforward.Run(ffOpts)
+		return fastforward.New(ffOpts).Run()
 	},
 }
 
