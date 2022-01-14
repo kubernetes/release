@@ -81,7 +81,7 @@ func (r GithubReporter) GetCIReporterHead() CIReporterInfo {
 func (r GithubReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error) {
 	githubReportData, err := GetGithubReportData(*cfg)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getting GitHub report data")
 	}
 	records := []*CIReportRecord{}
 

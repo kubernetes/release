@@ -18,13 +18,13 @@ package cmd
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/google/go-github/v34/github"
 	"github.com/olekukonko/tablewriter"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -78,9 +78,8 @@ func RunReport(cfg *Config, reporters *CIReporters) error {
 	}
 
 	// visualize data
-	err = PrintReporterData(cfg, reports)
-	if err != nil {
-		return err
+	if err := PrintReporterData(cfg, reports); err != nil {
+		return errors.Wrap(err, "printing report data")
 	}
 
 	return nil

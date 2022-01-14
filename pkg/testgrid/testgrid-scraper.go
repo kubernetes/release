@@ -189,12 +189,13 @@ const (
 	SigReleaseMasterInforming DashboardName = "sig-release-master-informing"
 	// SigReleaseMasterBlocking one of the dashboard names that can be used to scrapo a testgrid summary
 	SigReleaseMasterBlocking DashboardName = "sig-release-master-blocking"
+	sigRegexStr              string        = "sig-[a-zA-Z]+"
 )
+
+var sigRegex = regexp.MustCompile(sigRegexStr)
 
 // FilterSigs used to filter sigs from failing tests
 func (j *JobSummary) FilterSigs() []string {
-	// Filter sigs
-	sigRegex := regexp.MustCompile(`sig-[a-zA-Z]+`)
 	sigsInvolved := map[string]int{}
 	for i := range j.Tests {
 		sigs := sigRegex.FindAllString(j.Tests[i].TestName, -1)
