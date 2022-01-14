@@ -81,7 +81,7 @@ func TestNewPatchRelease(t *testing.T) {
 
 		// Verify commit message
 		lastCommit := s.lastCommit(t, x.branch)
-		require.Contains(t, lastCommit, "Anago GCB <nobody@k8s.io>")
+		require.Contains(t, lastCommit, "Kubernetes Release Robot <k8s-release-robot@users.noreply.github.com>")
 		require.Contains(t, lastCommit, x.commitMessage)
 
 		// Verify changelog contents
@@ -113,7 +113,7 @@ func TestNewAlphaRelease(t *testing.T) {
 
 	// Verify commit message
 	lastCommit := s.lastCommit(t, git.DefaultBranch)
-	require.Contains(t, lastCommit, "Anago GCB <nobody@k8s.io>")
+	require.Contains(t, lastCommit, "Kubernetes Release Robot <k8s-release-robot@users.noreply.github.com>")
 	require.Contains(t, lastCommit, "Update directory for v1.18.0-alpha.3 release")
 
 	// Verify changelog contents
@@ -142,7 +142,7 @@ func TestNewAlpha1Release(t *testing.T) {
 
 	// Verify commit message
 	lastCommit := s.lastCommit(t, git.DefaultBranch)
-	require.Contains(t, lastCommit, "Anago GCB <nobody@k8s.io>")
+	require.Contains(t, lastCommit, "Kubernetes Release Robot <k8s-release-robot@users.noreply.github.com>")
 	require.Contains(t, lastCommit, "Update directory for v1.19.0-alpha.1 release")
 
 	// Verify changelog contents
@@ -212,7 +212,7 @@ func TestNewMinorRelease(t *testing.T) {
 
 		// Verify commit message
 		lastCommit := s.lastCommit(t, x.branch)
-		require.Contains(t, lastCommit, "Anago GCB <nobody@k8s.io>")
+		require.Contains(t, lastCommit, "Kubernetes Release Robot <k8s-release-robot@users.noreply.github.com>")
 		require.Contains(t, lastCommit, x.commitMessage)
 
 		// Verify changelog contents
