@@ -78,8 +78,35 @@ func TestRun(t *testing.T) {
 				require.Nil(t, err)
 			},
 		},
-		{ // failure no release branch provided
+		{ // success no release branch provided
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
+				return &Options{NonInteractive: true}
+			},
+			assert: func(err error) {
+				require.Nil(t, err)
+			},
+		},
+		{ // success no fast forward required
+			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
+				mock.RepoHasRemoteTagReturns(true, nil)
+				return &Options{}
+			},
+			assert: func(err error) {
+				require.Nil(t, err)
+			},
+		},
+		{ // failure on RepoLatestReleaseBranch
+			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
+				mock.RepoLatestReleaseBranchReturns("", errTest)
+				return &Options{}
+			},
+			assert: func(err error) {
+				require.NotNil(t, err)
+			},
+		},
+		{ // failure on RepoHasRemoteTag
+			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
+				mock.RepoHasRemoteTagReturns(false, errTest)
 				return &Options{}
 			},
 			assert: func(err error) {

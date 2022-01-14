@@ -62,6 +62,7 @@ func init() {
 	ffCmd.PersistentFlags().StringVar(&ffOpts.Branch, "branch", "", "branch")
 	ffCmd.PersistentFlags().StringVar(&ffOpts.MainRef, "ref", kgit.Remotify(kgit.DefaultBranch), "ref on the main branch")
 	ffCmd.PersistentFlags().BoolVar(&ffOpts.Cleanup, "cleanup", false, "cleanup the repository after the run")
+	ffCmd.PersistentFlags().BoolVar(&ffOpts.NonInteractive, "non-interactive", false, "do not require any user interaction")
 
 	rootCmd.AddCommand(ffCmd)
 }

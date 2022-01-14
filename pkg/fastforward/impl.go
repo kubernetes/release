@@ -40,6 +40,8 @@ type impl interface {
 	RepoDir(*git.Repo) string
 	Ask(string, string, int) (string, bool, error)
 	RepoPush(*git.Repo, string) error
+	RepoLatestReleaseBranch(*git.Repo) (string, error)
+	RepoHasRemoteTag(*git.Repo, string) (bool, error)
 }
 
 func (*defaultImpl) CloneOrOpenDefaultGitHubRepoSSH(repo string) (*git.Repo, error) {
@@ -96,4 +98,12 @@ func (*defaultImpl) Ask(q, e string, r int) (answer string, success bool, err er
 
 func (*defaultImpl) RepoPush(r *git.Repo, remoteBranch string) error {
 	return r.Push(remoteBranch)
+}
+
+func (*defaultImpl) RepoLatestReleaseBranch(r *git.Repo) (string, error) {
+	return r.LatestReleaseBranch()
+}
+
+func (*defaultImpl) RepoHasRemoteTag(r *git.Repo, tag string) (bool, error) {
+	return r.HasRemoteTag(tag)
 }

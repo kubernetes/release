@@ -18,6 +18,7 @@ package fastforward
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -64,12 +65,7 @@ Please only answer after you have validated the changes.`
 
 // Run starts the FastForward.
 func (f *FastForward) Run() error {
-	branch := f.options.Branch
-	if branch == "" {
-		return errors.New("please specify valid release branch")
-	}
-
-	logrus.Infof("Preparing to fast-forward %s onto the %s branch", f.options.MainRef, branch)
+	logrus.Infof("Preparing to fast-forward from %s", f.options.MainRef)
 	repo, err := f.CloneOrOpenDefaultGitHubRepoSSH(f.options.RepoPath)
 	if err != nil {
 		return errors.Wrap(err, "clone or open default GitHub repo")
@@ -80,18 +76,39 @@ func (f *FastForward) Run() error {
 		f.RepoSetDry(repo)
 	}
 
-	logrus.Infof("Checking if %q is a release branch", branch)
-	if isReleaseBranch := f.IsReleaseBranch(branch); !isReleaseBranch {
-		return errors.Errorf("%s is not a release branch", branch)
-	}
+	branch := f.options.Branch
+	if branch == "" {
+		logrus.Info("No release branch specified, finding the latest")
+		branch, err = f.RepoLatestReleaseBranch(repo)
+		if err != nil {
+			return errors.Wrap(err, "finding latest release branch")
+		}
 
-	logrus.Info("Checking if branch is available on the default remote")
-	branchExists, err := f.RepoHasRemoteBranch(repo, branch)
-	if err != nil {
-		return errors.Wrap(err, "checking if branch exists on the default remote")
-	}
-	if !branchExists {
-		return errors.New("branch does not exist on the default remote")
+		notRequired, err := f.noFastForwardRequired(repo, branch)
+		if err != nil {
+			return errors.Wrap(err, "check if fast forward is required")
+		}
+		if notRequired {
+			logrus.Infof(
+				"Fast forward not required because final tag already exists for latest release branch %s",
+				branch,
+			)
+			return nil
+		}
+	} else {
+		logrus.Infof("Checking if %q is a release branch", branch)
+		if isReleaseBranch := f.IsReleaseBranch(branch); !isReleaseBranch {
+			return errors.Errorf("%s is not a release branch", branch)
+		}
+
+		logrus.Info("Checking if branch is available on the default remote")
+		branchExists, err := f.RepoHasRemoteBranch(repo, branch)
+		if err != nil {
+			return errors.Wrap(err, "checking if branch exists on the default remote")
+		}
+		if !branchExists {
+			return errors.New("branch does not exist on the default remote")
+		}
 	}
 
 	if f.options.Cleanup {
@@ -221,4 +238,15 @@ func prepushMessage(gitRoot, branch, ref, releaseRev, headRev string) {
 		releaseRev,
 		headRev,
 	)
+}
+
+func (f *FastForward) noFastForwardRequired(repo *git.Repo, branch string) (bool, error) {
+	version := fmt.Sprintf("v%s.0", strings.TrimPrefix(branch, "release-"))
+
+	tagExists, err := f.RepoHasRemoteTag(repo, version)
+	if err != nil {
+		return false, errors.Wrapf(err, "finding remote tag %s", version)
+	}
+
+	return tagExists, nil
 }

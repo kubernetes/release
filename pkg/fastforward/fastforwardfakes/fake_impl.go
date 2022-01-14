@@ -141,6 +141,20 @@ type FakeImpl struct {
 		result1 bool
 		result2 error
 	}
+	RepoHasRemoteTagStub        func(*git.Repo, string) (bool, error)
+	repoHasRemoteTagMutex       sync.RWMutex
+	repoHasRemoteTagArgsForCall []struct {
+		arg1 *git.Repo
+		arg2 string
+	}
+	repoHasRemoteTagReturns struct {
+		result1 bool
+		result2 error
+	}
+	repoHasRemoteTagReturnsOnCall map[int]struct {
+		result1 bool
+		result2 error
+	}
 	RepoHeadStub        func(*git.Repo) (string, error)
 	repoHeadMutex       sync.RWMutex
 	repoHeadArgsForCall []struct {
@@ -151,6 +165,19 @@ type FakeImpl struct {
 		result2 error
 	}
 	repoHeadReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
+	RepoLatestReleaseBranchStub        func(*git.Repo) (string, error)
+	repoLatestReleaseBranchMutex       sync.RWMutex
+	repoLatestReleaseBranchArgsForCall []struct {
+		arg1 *git.Repo
+	}
+	repoLatestReleaseBranchReturns struct {
+		result1 string
+		result2 error
+	}
+	repoLatestReleaseBranchReturnsOnCall map[int]struct {
 		result1 string
 		result2 error
 	}
@@ -775,6 +802,71 @@ func (fake *FakeImpl) RepoHasRemoteBranchReturnsOnCall(i int, result1 bool, resu
 	}{result1, result2}
 }
 
+func (fake *FakeImpl) RepoHasRemoteTag(arg1 *git.Repo, arg2 string) (bool, error) {
+	fake.repoHasRemoteTagMutex.Lock()
+	ret, specificReturn := fake.repoHasRemoteTagReturnsOnCall[len(fake.repoHasRemoteTagArgsForCall)]
+	fake.repoHasRemoteTagArgsForCall = append(fake.repoHasRemoteTagArgsForCall, struct {
+		arg1 *git.Repo
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.RepoHasRemoteTagStub
+	fakeReturns := fake.repoHasRemoteTagReturns
+	fake.recordInvocation("RepoHasRemoteTag", []interface{}{arg1, arg2})
+	fake.repoHasRemoteTagMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeImpl) RepoHasRemoteTagCallCount() int {
+	fake.repoHasRemoteTagMutex.RLock()
+	defer fake.repoHasRemoteTagMutex.RUnlock()
+	return len(fake.repoHasRemoteTagArgsForCall)
+}
+
+func (fake *FakeImpl) RepoHasRemoteTagCalls(stub func(*git.Repo, string) (bool, error)) {
+	fake.repoHasRemoteTagMutex.Lock()
+	defer fake.repoHasRemoteTagMutex.Unlock()
+	fake.RepoHasRemoteTagStub = stub
+}
+
+func (fake *FakeImpl) RepoHasRemoteTagArgsForCall(i int) (*git.Repo, string) {
+	fake.repoHasRemoteTagMutex.RLock()
+	defer fake.repoHasRemoteTagMutex.RUnlock()
+	argsForCall := fake.repoHasRemoteTagArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeImpl) RepoHasRemoteTagReturns(result1 bool, result2 error) {
+	fake.repoHasRemoteTagMutex.Lock()
+	defer fake.repoHasRemoteTagMutex.Unlock()
+	fake.RepoHasRemoteTagStub = nil
+	fake.repoHasRemoteTagReturns = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImpl) RepoHasRemoteTagReturnsOnCall(i int, result1 bool, result2 error) {
+	fake.repoHasRemoteTagMutex.Lock()
+	defer fake.repoHasRemoteTagMutex.Unlock()
+	fake.RepoHasRemoteTagStub = nil
+	if fake.repoHasRemoteTagReturnsOnCall == nil {
+		fake.repoHasRemoteTagReturnsOnCall = make(map[int]struct {
+			result1 bool
+			result2 error
+		})
+	}
+	fake.repoHasRemoteTagReturnsOnCall[i] = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeImpl) RepoHead(arg1 *git.Repo) (string, error) {
 	fake.repoHeadMutex.Lock()
 	ret, specificReturn := fake.repoHeadReturnsOnCall[len(fake.repoHeadArgsForCall)]
@@ -834,6 +926,70 @@ func (fake *FakeImpl) RepoHeadReturnsOnCall(i int, result1 string, result2 error
 		})
 	}
 	fake.repoHeadReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImpl) RepoLatestReleaseBranch(arg1 *git.Repo) (string, error) {
+	fake.repoLatestReleaseBranchMutex.Lock()
+	ret, specificReturn := fake.repoLatestReleaseBranchReturnsOnCall[len(fake.repoLatestReleaseBranchArgsForCall)]
+	fake.repoLatestReleaseBranchArgsForCall = append(fake.repoLatestReleaseBranchArgsForCall, struct {
+		arg1 *git.Repo
+	}{arg1})
+	stub := fake.RepoLatestReleaseBranchStub
+	fakeReturns := fake.repoLatestReleaseBranchReturns
+	fake.recordInvocation("RepoLatestReleaseBranch", []interface{}{arg1})
+	fake.repoLatestReleaseBranchMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeImpl) RepoLatestReleaseBranchCallCount() int {
+	fake.repoLatestReleaseBranchMutex.RLock()
+	defer fake.repoLatestReleaseBranchMutex.RUnlock()
+	return len(fake.repoLatestReleaseBranchArgsForCall)
+}
+
+func (fake *FakeImpl) RepoLatestReleaseBranchCalls(stub func(*git.Repo) (string, error)) {
+	fake.repoLatestReleaseBranchMutex.Lock()
+	defer fake.repoLatestReleaseBranchMutex.Unlock()
+	fake.RepoLatestReleaseBranchStub = stub
+}
+
+func (fake *FakeImpl) RepoLatestReleaseBranchArgsForCall(i int) *git.Repo {
+	fake.repoLatestReleaseBranchMutex.RLock()
+	defer fake.repoLatestReleaseBranchMutex.RUnlock()
+	argsForCall := fake.repoLatestReleaseBranchArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeImpl) RepoLatestReleaseBranchReturns(result1 string, result2 error) {
+	fake.repoLatestReleaseBranchMutex.Lock()
+	defer fake.repoLatestReleaseBranchMutex.Unlock()
+	fake.RepoLatestReleaseBranchStub = nil
+	fake.repoLatestReleaseBranchReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImpl) RepoLatestReleaseBranchReturnsOnCall(i int, result1 string, result2 error) {
+	fake.repoLatestReleaseBranchMutex.Lock()
+	defer fake.repoLatestReleaseBranchMutex.Unlock()
+	fake.RepoLatestReleaseBranchStub = nil
+	if fake.repoLatestReleaseBranchReturnsOnCall == nil {
+		fake.repoLatestReleaseBranchReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.repoLatestReleaseBranchReturnsOnCall[i] = struct {
 		result1 string
 		result2 error
 	}{result1, result2}
@@ -1082,8 +1238,12 @@ func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	defer fake.repoDirMutex.RUnlock()
 	fake.repoHasRemoteBranchMutex.RLock()
 	defer fake.repoHasRemoteBranchMutex.RUnlock()
+	fake.repoHasRemoteTagMutex.RLock()
+	defer fake.repoHasRemoteTagMutex.RUnlock()
 	fake.repoHeadMutex.RLock()
 	defer fake.repoHeadMutex.RUnlock()
+	fake.repoLatestReleaseBranchMutex.RLock()
+	defer fake.repoLatestReleaseBranchMutex.RUnlock()
 	fake.repoMergeMutex.RLock()
 	defer fake.repoMergeMutex.RUnlock()
 	fake.repoMergeBaseMutex.RLock()
