@@ -22,12 +22,89 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 
 	"github.com/google/go-github/v34/github"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"golang.org/x/oauth2"
+	"sigs.k8s.io/release-utils/env"
 )
+
+var githubCmd = &cobra.Command{
+	Use:    "github",
+	Short:  "Github report generator",
+	Long:   "CI-Signal reporter that generates only a github report.",
+	PreRun: setGithubConfig,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return RunReport(cfg, &CIReporters{GithubReporter{}})
+	},
+}
+
+// look for token in environment variables & create a github client
+func setGithubConfig(cmd *cobra.Command, args []string) {
+	cfg.GithubToken = env.Default("GITHUB_TOKEN", "")
+	if cfg.GithubToken == "" {
+		logrus.Fatal("Please specify your Github access token via the environment variable 'GITHUB_TOKEN' to generate a ci-report")
+		os.Exit(1)
+	}
+
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: cfg.GithubToken})
+	tc := oauth2.NewClient(ctx, ts)
+	cfg.GithubClient = github.NewClient(tc)
+}
+
+// GithubReporterName used to identify github reporter
+var GithubReporterName CIReporterName = "github"
+
+func init() {
+	rootCmd.AddCommand(githubCmd)
+}
+
+//
+// GithubReporter implementation
+//
+
+// GithubReporter github CIReporter implementation
+type GithubReporter struct{}
+
+// GetCIReporterHead implementation from CIReporter
+func (r GithubReporter) GetCIReporterHead() CIReporterInfo {
+	return CIReporterInfo{Name: GithubReporterName}
+}
+
+// CollectReportData implementation from CIReporter
+func (r GithubReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error) {
+	githubReportData, err := GetGithubReportData(*cfg)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting GitHub report data")
+	}
+	records := []*CIReportRecord{}
+
+	for columnTitle, issues := range githubReportData {
+		for _, issue := range issues {
+			records = append(records, &CIReportRecord{
+				ID:       fmt.Sprintf("%d", issue.ID),
+				Title:    issue.Title,
+				URL:      issue.URL,
+				Category: string(columnTitle),
+				Sigs:     issue.Sigs,
+				// information not collected
+				Status:           "",
+				CreatedTimestamp: "",
+			})
+		}
+	}
+	return records, nil
+}
+
+//
+// Helper functions to collect github data
+//
 
 // This regex is getting used to identify sig lables on github issues
 var sigRegex = regexp.MustCompile(`sig/[a-zA-Z-]+`)
@@ -60,27 +137,39 @@ type (
 
 // GithubProjectBoardColumn specifies a github project board column
 type GithubProjectBoardColumn struct {
-	ColumnTitle ColumnTitle
-	ColumnID    ColumnID
+	ColumnTitle ColumnTitle `json:"column_title"`
+	ColumnID    ColumnID    `json:"column_id"`
 }
 
 // GithubReportData defines the github report data structure
 type GithubReportData map[ColumnTitle][]IssueOverview
 
+// Marshal used to marshal GithubReportData into bytes
+func (d *GithubReportData) Marshal() ([]byte, error) {
+	return json.Marshal(d)
+}
+
 // IssueOverview defines the data types of a github issue in github report data
 type IssueOverview struct {
 	// URL github issue url
-	URL string
+	URL string `json:"url"`
 	// ID github issue id
-	ID int64
+	ID int64 `json:"id"`
 	// Title github issue title
-	Title string
+	Title string `json:"title"`
 	// Sigs kubernetes sigs that are referenced via label
-	Sigs []string
+	Sigs []string `json:"sigs"`
+}
+
+type issueDetail struct {
+	Number  int64          `json:"number"`
+	HTMLURL string         `json:"html_url"`
+	Title   string         `json:"title"`
+	Labels  []github.Label `json:"labels,omitempty"`
 }
 
 // GetGithubReportData used to request the raw report data from github
-func GetGithubReportData(cfg ReporterConfig) (GithubReportData, error) {
+func GetGithubReportData(cfg Config) (GithubReportData, error) {
 	ciSignalProjectBoard := []GithubProjectBoardColumn{newColumn, underInvestigationColumn}
 
 	// if the short flag is not set observingColumn & resolvedColumn will be added to the report
@@ -99,20 +188,7 @@ func GetGithubReportData(cfg ReporterConfig) (GithubReportData, error) {
 	return githubReportData, nil
 }
 
-// PrintGithubReportData used to print github report data out to the console
-func PrintGithubReportData(reportData map[ColumnTitle][]IssueOverview) {
-	for columnTitle, issuesInColumn := range reportData {
-		if len(issuesInColumn) > 0 {
-			fmt.Println("\n" + columnTitle)
-			for _, issue := range issuesInColumn {
-				fmt.Printf("#%d %v\n - %s\n - %s\n", issue.ID, issue.Sigs, issue.Title, issue.URL)
-			}
-		}
-	}
-	fmt.Print("\n\n")
-}
-
-func getCardsFromColumn(cfg ReporterConfig, cardsID ColumnID) ([]IssueOverview, error) {
+func getCardsFromColumn(cfg Config, cardsID ColumnID) ([]IssueOverview, error) {
 	opt := &github.ProjectCardListOptions{}
 	cards, _, err := cfg.GithubClient.Projects.ListProjectCards(context.Background(), int64(cardsID), opt)
 	if err != nil {
@@ -143,14 +219,7 @@ func getCardsFromColumn(cfg ReporterConfig, cardsID ColumnID) ([]IssueOverview, 
 	return issues, nil
 }
 
-type issueDetail struct {
-	Number  int64          `json:"number"`
-	HTMLURL string         `json:"html_url"`
-	Title   string         `json:"title"`
-	Labels  []github.Label `json:"labels,omitempty"`
-}
-
-func getIssueDetail(cfg ReporterConfig, url string) (*issueDetail, error) {
+func getIssueDetail(cfg Config, url string) (*issueDetail, error) {
 	// Create a new request using http
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
