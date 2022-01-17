@@ -20,8 +20,6 @@ Individual tools can be installed via `go install k8s.io/release/cmd/$TOOL@lates
 - [Artifact Management](#artifact-management)
   - [`kpromo`](#kpromo)
   - [`kubepkg`](#kubepkg)
-  - [`cip-mm`](#cip-mm)
-  - [`gh2gcs`](#gh2gcs)
 - [End User](#end-user)
   - [`bom`](#bom)
   - [`release-notes`](#release-notes)
@@ -77,25 +75,6 @@ Status: In Progress
 Audience: [Release Managers][release-managers]
 
 Details: [Documentation](/cmd/kubepkg/README.md)
-
-### [`cip-mm`](https://sigs.k8s.io/promo-tools/cmd/cip-mm)
-
-Modify container image manifests for promotion.
-
-Status: In Progress
-
-Details: [Documentation](https://sigs.k8s.io/promo-tools/cmd/cip-mm/README.md)
-
-### [`gh2gcs`](https://sigs.k8s.io/promo-tools/cmd/gh2gcs)
-
-Upload GitHub release assets to Google Cloud Storage.
-
-Status: In Progress
-
-Audience: [Release Managers][release-managers] and subproject maintainers
-responsible for promoting container artifacts
-
-Details: [Documentation](https://sigs.k8s.io/promo-tools/cmd/gh2gcs/README.md)
 
 ## End User
 
