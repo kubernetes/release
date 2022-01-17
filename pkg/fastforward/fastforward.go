@@ -18,11 +18,16 @@ package fastforward
 
 import (
 	"fmt"
+	"net/url"
+	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"k8s.io/release/pkg/gcp/gcb"
+	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-sdk/git"
+	"sigs.k8s.io/release-sdk/github"
 )
 
 // Options is the main structure for configuring a fast forward.
@@ -32,6 +37,9 @@ type Options struct {
 
 	// MainRef is the git ref ot the base branch.
 	MainRef string
+
+	// Submit can be used to run inside of a new Google Cloud Build job.
+	Submit bool
 
 	// NonInteractive does not ask any questions if set to true.
 	NonInteractive bool
@@ -64,11 +72,19 @@ const pushUpstreamQuestion = `Are you ready to push the local branch fast-forwar
 Please only answer after you have validated the changes.`
 
 // Run starts the FastForward.
-func (f *FastForward) Run() error {
-	logrus.Infof("Preparing to fast-forward from %s", f.options.MainRef)
-	repo, err := f.CloneOrOpenDefaultGitHubRepoSSH(f.options.RepoPath)
+func (f *FastForward) Run() (err error) {
+	if f.options.Submit {
+		logrus.Info("Submitting GCB job")
+		options := gcb.NewDefaultOptions()
+		options.FastForward = true
+		options.NoMock = f.options.NoMock
+		options.Stream = true
+		return f.Submit(options)
+	}
+
+	repo, err := f.prepareRepo()
 	if err != nil {
-		return errors.Wrap(err, "clone or open default GitHub repo")
+		return errors.Wrap(err, "prepare repository")
 	}
 
 	if !f.options.NoMock {
@@ -83,6 +99,7 @@ func (f *FastForward) Run() error {
 		if err != nil {
 			return errors.Wrap(err, "finding latest release branch")
 		}
+		logrus.Infof("Found latest release branch: %s", branch)
 
 		notRequired, err := f.noFastForwardRequired(repo, branch)
 		if err != nil {
@@ -249,4 +266,44 @@ func (f *FastForward) noFastForwardRequired(repo *git.Repo, branch string) (bool
 	}
 
 	return tagExists, nil
+}
+
+func (f *FastForward) prepareRepo() (*git.Repo, error) {
+	logrus.Infof("Preparing to fast-forward from %s", f.options.MainRef)
+
+	token := f.EnvDefault(github.TokenEnvKey, "")
+	if token != "" {
+		logrus.Info("Found GitHub token, using it for repository interactions")
+		k8sOrg := release.GetK8sOrg()
+		k8sRepo := release.GetK8sRepo()
+
+		logrus.Info("Cloning repository by using HTTPs")
+		repo, err := f.CloneOrOpenGitHubRepo(f.options.RepoPath, k8sOrg, k8sRepo, false)
+		if err != nil {
+			return nil, errors.Wrap(err, "clone or open k/k GitHub repository")
+		}
+
+		if f.IsDefaultK8sUpstream() {
+			if err := f.RepoSetURL(repo, git.DefaultRemote, (&url.URL{
+				Scheme: "https",
+				User:   url.UserPassword("git", token),
+				Host:   "github.com",
+				Path:   filepath.Join(git.DefaultGithubOrg, git.DefaultGithubRepo),
+			}).String()); err != nil {
+				return nil, errors.Wrap(err, "changing git remote of repository")
+			}
+		} else {
+			logrus.Info("Using non-default k8s upstream, doing no git modifications")
+		}
+
+		return repo, nil
+	}
+
+	logrus.Info("Cloning repository by using SSH")
+	repo, err := f.CloneOrOpenDefaultGitHubRepoSSH(f.options.RepoPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "clone or open k/k GitHub repository")
+	}
+
+	return repo, nil
 }

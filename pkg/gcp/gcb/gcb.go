@@ -83,6 +83,7 @@ type Options struct {
 	NoMock       bool
 	Stage        bool
 	Release      bool
+	FastForward  bool
 	Stream       bool
 	BuildAtHead  bool
 	Branch       string
@@ -269,6 +270,8 @@ func (g *GCB) Submit() error {
 		jobType = "stage"
 	case g.options.Release:
 		jobType = "release"
+	case g.options.FastForward:
+		jobType = "fast-forward"
 	default:
 		return g.listJobs(g.options.Project, g.options.LastJobs)
 	}
@@ -324,6 +327,38 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef string) (map[string
 
 	gcbSubs["RELEASE_BRANCH"] = g.options.Branch
 
+	kc := kubecross.New()
+	kcVersionBranch, err := kc.ForBranch(g.options.Branch)
+	if err != nil {
+		// If the kubecross version is not set, we will get a 404 from GitHub.
+		// In that case, we do not err but use the latest version (unless we're on main branch)
+		if g.options.Branch == git.DefaultBranch || !strings.Contains(err.Error(), "404") {
+			return gcbSubs, errors.Wrap(err, "retrieve kube-cross version")
+		}
+		logrus.Infof("KubeCross version not set for %s, falling back to latest", g.options.Branch)
+	}
+
+	kcVersionLatest := kcVersionBranch
+	if g.options.Branch != git.DefaultBranch {
+		kcVersionLatest, err = kc.Latest()
+		if err != nil {
+			return gcbSubs, errors.Wrap(err, "retrieve latest kube-cross version")
+		}
+
+		// if kcVersionBranch is empty, the branch does not exist yet, we use
+		// the latest kubecross version
+		if kcVersionBranch == "" {
+			kcVersionBranch = kcVersionLatest
+		}
+	}
+	gcbSubs["KUBE_CROSS_VERSION"] = kcVersionBranch
+	gcbSubs["KUBE_CROSS_VERSION_LATEST"] = kcVersionLatest
+
+	// Stop here when doing a fast-forward
+	if g.options.FastForward {
+		return gcbSubs, nil
+	}
+
 	buildVersion := g.options.BuildVersion
 	if g.options.Release && buildVersion == "" {
 		return gcbSubs, errors.New("Build version must be specified when sending a release GCB run")
@@ -356,33 +391,6 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef string) (map[string
 	}
 
 	gcbSubs["BUILDVERSION"] = buildVersion
-
-	kc := kubecross.New()
-	kcVersionBranch, err := kc.ForBranch(g.options.Branch)
-	if err != nil {
-		// If the kubecross version is not set, we will get a 404 from GitHub.
-		// In that case, we do not err but use the latest version (unless we're on main branch)
-		if g.options.Branch == git.DefaultBranch || !strings.Contains(err.Error(), "404") {
-			return gcbSubs, errors.Wrap(err, "retrieve kube-cross version")
-		}
-		logrus.Infof("KubeCross version not set for %s, falling back to latest", g.options.Branch)
-	}
-
-	kcVersionLatest := kcVersionBranch
-	if g.options.Branch != git.DefaultBranch {
-		kcVersionLatest, err = kc.Latest()
-		if err != nil {
-			return gcbSubs, errors.Wrap(err, "retrieve latest kube-cross version")
-		}
-
-		// if kcVersionBranch is empty, the branch does not exist yet, we use
-		// the latest kubecross version
-		if kcVersionBranch == "" {
-			kcVersionBranch = kcVersionLatest
-		}
-	}
-	gcbSubs["KUBE_CROSS_VERSION"] = kcVersionBranch
-	gcbSubs["KUBE_CROSS_VERSION_LATEST"] = kcVersionLatest
 
 	buildVersionSemver, err := util.TagStringToSemver(buildVersion)
 	if err != nil {

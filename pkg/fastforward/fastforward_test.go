@@ -95,6 +95,59 @@ func TestRun(t *testing.T) {
 				require.Nil(t, err)
 			},
 		},
+		{ // success submit
+			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
+				return &Options{Submit: true}
+			},
+			assert: func(err error) {
+				require.Nil(t, err)
+			},
+		},
+		{ // success token
+			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
+				mock.IsReleaseBranchReturns(true)
+				mock.RepoHasRemoteBranchReturns(true, nil)
+				mock.EnvDefaultReturns("token")
+				return &Options{Branch: branch, NonInteractive: true}
+			},
+			assert: func(err error) {
+				require.Nil(t, err)
+			},
+		},
+		{ // failure with token on RepoSetURL
+			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
+				mock.IsReleaseBranchReturns(true)
+				mock.RepoHasRemoteBranchReturns(true, nil)
+				mock.EnvDefaultReturns("token")
+				mock.IsDefaultK8sUpstreamReturns(true)
+				mock.RepoSetURLReturns(errTest)
+				return &Options{Branch: branch, NonInteractive: true}
+			},
+			assert: func(err error) {
+				require.NotNil(t, err)
+			},
+		},
+		{ // failure with token on CloneOrOpenGitHubRepo
+			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
+				mock.IsReleaseBranchReturns(true)
+				mock.RepoHasRemoteBranchReturns(true, nil)
+				mock.EnvDefaultReturns("token")
+				mock.CloneOrOpenGitHubRepoReturns(nil, errTest)
+				return &Options{Branch: branch, NonInteractive: true}
+			},
+			assert: func(err error) {
+				require.NotNil(t, err)
+			},
+		},
+		{ // failure on Submit
+			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
+				mock.SubmitReturns(errTest)
+				return &Options{Submit: true}
+			},
+			assert: func(err error) {
+				require.NotNil(t, err)
+			},
+		},
 		{ // failure on RepoLatestReleaseBranch
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.RepoLatestReleaseBranchReturns("", errTest)
