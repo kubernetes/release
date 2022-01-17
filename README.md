@@ -64,7 +64,7 @@ Status: In Progress
 Audience: [Release Managers][release-managers] and subproject maintainers
 responsible for promoting file or container artifacts
 
-Details: [Documentation](https://sigs.k8s.io/promo-tools/cmd/kpromo/README.md)
+Details: [Documentation](https://sigs.k8s.io/promo-tools/README.md#kpromo)
 
 ### [`kubepkg`](/cmd/kubepkg)
 
