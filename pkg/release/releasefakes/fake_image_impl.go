@@ -19,6 +19,8 @@ package releasefakes
 
 import (
 	"sync"
+
+	"sigs.k8s.io/release-sdk/sign"
 )
 
 type FakeImageImpl struct {
@@ -60,6 +62,30 @@ type FakeImageImpl struct {
 	repoTagFromTarballReturnsOnCall map[int]struct {
 		result1 string
 		result2 error
+	}
+	SignImageStub        func(*sign.Signer, string) error
+	signImageMutex       sync.RWMutex
+	signImageArgsForCall []struct {
+		arg1 *sign.Signer
+		arg2 string
+	}
+	signImageReturns struct {
+		result1 error
+	}
+	signImageReturnsOnCall map[int]struct {
+		result1 error
+	}
+	VerifyImageStub        func(*sign.Signer, string) error
+	verifyImageMutex       sync.RWMutex
+	verifyImageArgsForCall []struct {
+		arg1 *sign.Signer
+		arg2 string
+	}
+	verifyImageReturns struct {
+		result1 error
+	}
+	verifyImageReturnsOnCall map[int]struct {
+		result1 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -256,6 +282,130 @@ func (fake *FakeImageImpl) RepoTagFromTarballReturnsOnCall(i int, result1 string
 	}{result1, result2}
 }
 
+func (fake *FakeImageImpl) SignImage(arg1 *sign.Signer, arg2 string) error {
+	fake.signImageMutex.Lock()
+	ret, specificReturn := fake.signImageReturnsOnCall[len(fake.signImageArgsForCall)]
+	fake.signImageArgsForCall = append(fake.signImageArgsForCall, struct {
+		arg1 *sign.Signer
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.SignImageStub
+	fakeReturns := fake.signImageReturns
+	fake.recordInvocation("SignImage", []interface{}{arg1, arg2})
+	fake.signImageMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeImageImpl) SignImageCallCount() int {
+	fake.signImageMutex.RLock()
+	defer fake.signImageMutex.RUnlock()
+	return len(fake.signImageArgsForCall)
+}
+
+func (fake *FakeImageImpl) SignImageCalls(stub func(*sign.Signer, string) error) {
+	fake.signImageMutex.Lock()
+	defer fake.signImageMutex.Unlock()
+	fake.SignImageStub = stub
+}
+
+func (fake *FakeImageImpl) SignImageArgsForCall(i int) (*sign.Signer, string) {
+	fake.signImageMutex.RLock()
+	defer fake.signImageMutex.RUnlock()
+	argsForCall := fake.signImageArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeImageImpl) SignImageReturns(result1 error) {
+	fake.signImageMutex.Lock()
+	defer fake.signImageMutex.Unlock()
+	fake.SignImageStub = nil
+	fake.signImageReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeImageImpl) SignImageReturnsOnCall(i int, result1 error) {
+	fake.signImageMutex.Lock()
+	defer fake.signImageMutex.Unlock()
+	fake.SignImageStub = nil
+	if fake.signImageReturnsOnCall == nil {
+		fake.signImageReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.signImageReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeImageImpl) VerifyImage(arg1 *sign.Signer, arg2 string) error {
+	fake.verifyImageMutex.Lock()
+	ret, specificReturn := fake.verifyImageReturnsOnCall[len(fake.verifyImageArgsForCall)]
+	fake.verifyImageArgsForCall = append(fake.verifyImageArgsForCall, struct {
+		arg1 *sign.Signer
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.VerifyImageStub
+	fakeReturns := fake.verifyImageReturns
+	fake.recordInvocation("VerifyImage", []interface{}{arg1, arg2})
+	fake.verifyImageMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeImageImpl) VerifyImageCallCount() int {
+	fake.verifyImageMutex.RLock()
+	defer fake.verifyImageMutex.RUnlock()
+	return len(fake.verifyImageArgsForCall)
+}
+
+func (fake *FakeImageImpl) VerifyImageCalls(stub func(*sign.Signer, string) error) {
+	fake.verifyImageMutex.Lock()
+	defer fake.verifyImageMutex.Unlock()
+	fake.VerifyImageStub = stub
+}
+
+func (fake *FakeImageImpl) VerifyImageArgsForCall(i int) (*sign.Signer, string) {
+	fake.verifyImageMutex.RLock()
+	defer fake.verifyImageMutex.RUnlock()
+	argsForCall := fake.verifyImageArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeImageImpl) VerifyImageReturns(result1 error) {
+	fake.verifyImageMutex.Lock()
+	defer fake.verifyImageMutex.Unlock()
+	fake.VerifyImageStub = nil
+	fake.verifyImageReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeImageImpl) VerifyImageReturnsOnCall(i int, result1 error) {
+	fake.verifyImageMutex.Lock()
+	defer fake.verifyImageMutex.Unlock()
+	fake.VerifyImageStub = nil
+	if fake.verifyImageReturnsOnCall == nil {
+		fake.verifyImageReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.verifyImageReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeImageImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -265,6 +415,10 @@ func (fake *FakeImageImpl) Invocations() map[string][][]interface{} {
 	defer fake.executeOutputMutex.RUnlock()
 	fake.repoTagFromTarballMutex.RLock()
 	defer fake.repoTagFromTarballMutex.RUnlock()
+	fake.signImageMutex.RLock()
+	defer fake.signImageMutex.RUnlock()
+	fake.verifyImageMutex.RLock()
+	defer fake.verifyImageMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

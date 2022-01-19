@@ -204,6 +204,32 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
+		{ // failure on sign image
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
+				tempDir := newImagesPath(t)
+				prepareImages(t, tempDir, mock)
+
+				mock.SignImageReturns(errors.New(""))
+
+				return tempDir, func() {
+					require.Nil(t, os.RemoveAll(tempDir))
+				}
+			},
+			shouldError: true,
+		},
+		{ // failure on sign manifest
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
+				tempDir := newImagesPath(t)
+				prepareImages(t, tempDir, mock)
+
+				mock.SignImageReturnsOnCall(10, errors.New(""))
+
+				return tempDir, func() {
+					require.Nil(t, os.RemoveAll(tempDir))
+				}
+			},
+			shouldError: true,
+		},
 	} {
 		sut := release.NewImages()
 		clientMock := &releasefakes.FakeImageImpl{}
@@ -279,6 +305,33 @@ func TestValidate(t *testing.T) {
 			prepare: func(*releasefakes.FakeImageImpl) (string, func()) {
 				tempDir, err := os.MkdirTemp("", "publish-test-")
 				require.Nil(t, err)
+				return tempDir, func() {
+					require.Nil(t, os.RemoveAll(tempDir))
+				}
+			},
+			shouldError: true,
+		},
+		{ // failure on signature verify of image
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
+				tempDir := newImagesPath(t)
+				prepareImages(t, tempDir, mock)
+
+				mock.VerifyImageReturns(errors.New(""))
+
+				return tempDir, func() {
+					require.Nil(t, os.RemoveAll(tempDir))
+				}
+			},
+			shouldError: true,
+		},
+		{ // failure on signature verify of manifest
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
+				tempDir := newImagesPath(t)
+				prepareImages(t, tempDir, mock)
+
+				mock.ExecuteOutputReturns("digest", nil)
+				mock.VerifyImageReturnsOnCall(10, errors.New(""))
+
 				return tempDir, func() {
 					require.Nil(t, os.RemoveAll(tempDir))
 				}
