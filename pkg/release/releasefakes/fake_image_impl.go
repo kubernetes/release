@@ -21,7 +21,7 @@ import (
 	"sync"
 )
 
-type FakeCommandClient struct {
+type FakeImageImpl struct {
 	ExecuteStub        func(string, ...string) error
 	executeMutex       sync.RWMutex
 	executeArgsForCall []struct {
@@ -65,7 +65,7 @@ type FakeCommandClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeCommandClient) Execute(arg1 string, arg2 ...string) error {
+func (fake *FakeImageImpl) Execute(arg1 string, arg2 ...string) error {
 	fake.executeMutex.Lock()
 	ret, specificReturn := fake.executeReturnsOnCall[len(fake.executeArgsForCall)]
 	fake.executeArgsForCall = append(fake.executeArgsForCall, struct {
@@ -85,26 +85,26 @@ func (fake *FakeCommandClient) Execute(arg1 string, arg2 ...string) error {
 	return fakeReturns.result1
 }
 
-func (fake *FakeCommandClient) ExecuteCallCount() int {
+func (fake *FakeImageImpl) ExecuteCallCount() int {
 	fake.executeMutex.RLock()
 	defer fake.executeMutex.RUnlock()
 	return len(fake.executeArgsForCall)
 }
 
-func (fake *FakeCommandClient) ExecuteCalls(stub func(string, ...string) error) {
+func (fake *FakeImageImpl) ExecuteCalls(stub func(string, ...string) error) {
 	fake.executeMutex.Lock()
 	defer fake.executeMutex.Unlock()
 	fake.ExecuteStub = stub
 }
 
-func (fake *FakeCommandClient) ExecuteArgsForCall(i int) (string, []string) {
+func (fake *FakeImageImpl) ExecuteArgsForCall(i int) (string, []string) {
 	fake.executeMutex.RLock()
 	defer fake.executeMutex.RUnlock()
 	argsForCall := fake.executeArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeCommandClient) ExecuteReturns(result1 error) {
+func (fake *FakeImageImpl) ExecuteReturns(result1 error) {
 	fake.executeMutex.Lock()
 	defer fake.executeMutex.Unlock()
 	fake.ExecuteStub = nil
@@ -113,7 +113,7 @@ func (fake *FakeCommandClient) ExecuteReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeCommandClient) ExecuteReturnsOnCall(i int, result1 error) {
+func (fake *FakeImageImpl) ExecuteReturnsOnCall(i int, result1 error) {
 	fake.executeMutex.Lock()
 	defer fake.executeMutex.Unlock()
 	fake.ExecuteStub = nil
@@ -127,7 +127,7 @@ func (fake *FakeCommandClient) ExecuteReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeCommandClient) ExecuteOutput(arg1 string, arg2 ...string) (string, error) {
+func (fake *FakeImageImpl) ExecuteOutput(arg1 string, arg2 ...string) (string, error) {
 	fake.executeOutputMutex.Lock()
 	ret, specificReturn := fake.executeOutputReturnsOnCall[len(fake.executeOutputArgsForCall)]
 	fake.executeOutputArgsForCall = append(fake.executeOutputArgsForCall, struct {
@@ -147,26 +147,26 @@ func (fake *FakeCommandClient) ExecuteOutput(arg1 string, arg2 ...string) (strin
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeCommandClient) ExecuteOutputCallCount() int {
+func (fake *FakeImageImpl) ExecuteOutputCallCount() int {
 	fake.executeOutputMutex.RLock()
 	defer fake.executeOutputMutex.RUnlock()
 	return len(fake.executeOutputArgsForCall)
 }
 
-func (fake *FakeCommandClient) ExecuteOutputCalls(stub func(string, ...string) (string, error)) {
+func (fake *FakeImageImpl) ExecuteOutputCalls(stub func(string, ...string) (string, error)) {
 	fake.executeOutputMutex.Lock()
 	defer fake.executeOutputMutex.Unlock()
 	fake.ExecuteOutputStub = stub
 }
 
-func (fake *FakeCommandClient) ExecuteOutputArgsForCall(i int) (string, []string) {
+func (fake *FakeImageImpl) ExecuteOutputArgsForCall(i int) (string, []string) {
 	fake.executeOutputMutex.RLock()
 	defer fake.executeOutputMutex.RUnlock()
 	argsForCall := fake.executeOutputArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeCommandClient) ExecuteOutputReturns(result1 string, result2 error) {
+func (fake *FakeImageImpl) ExecuteOutputReturns(result1 string, result2 error) {
 	fake.executeOutputMutex.Lock()
 	defer fake.executeOutputMutex.Unlock()
 	fake.ExecuteOutputStub = nil
@@ -176,7 +176,7 @@ func (fake *FakeCommandClient) ExecuteOutputReturns(result1 string, result2 erro
 	}{result1, result2}
 }
 
-func (fake *FakeCommandClient) ExecuteOutputReturnsOnCall(i int, result1 string, result2 error) {
+func (fake *FakeImageImpl) ExecuteOutputReturnsOnCall(i int, result1 string, result2 error) {
 	fake.executeOutputMutex.Lock()
 	defer fake.executeOutputMutex.Unlock()
 	fake.ExecuteOutputStub = nil
@@ -192,7 +192,7 @@ func (fake *FakeCommandClient) ExecuteOutputReturnsOnCall(i int, result1 string,
 	}{result1, result2}
 }
 
-func (fake *FakeCommandClient) RepoTagFromTarball(arg1 string) (string, error) {
+func (fake *FakeImageImpl) RepoTagFromTarball(arg1 string) (string, error) {
 	fake.repoTagFromTarballMutex.Lock()
 	ret, specificReturn := fake.repoTagFromTarballReturnsOnCall[len(fake.repoTagFromTarballArgsForCall)]
 	fake.repoTagFromTarballArgsForCall = append(fake.repoTagFromTarballArgsForCall, struct {
@@ -211,26 +211,26 @@ func (fake *FakeCommandClient) RepoTagFromTarball(arg1 string) (string, error) {
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeCommandClient) RepoTagFromTarballCallCount() int {
+func (fake *FakeImageImpl) RepoTagFromTarballCallCount() int {
 	fake.repoTagFromTarballMutex.RLock()
 	defer fake.repoTagFromTarballMutex.RUnlock()
 	return len(fake.repoTagFromTarballArgsForCall)
 }
 
-func (fake *FakeCommandClient) RepoTagFromTarballCalls(stub func(string) (string, error)) {
+func (fake *FakeImageImpl) RepoTagFromTarballCalls(stub func(string) (string, error)) {
 	fake.repoTagFromTarballMutex.Lock()
 	defer fake.repoTagFromTarballMutex.Unlock()
 	fake.RepoTagFromTarballStub = stub
 }
 
-func (fake *FakeCommandClient) RepoTagFromTarballArgsForCall(i int) string {
+func (fake *FakeImageImpl) RepoTagFromTarballArgsForCall(i int) string {
 	fake.repoTagFromTarballMutex.RLock()
 	defer fake.repoTagFromTarballMutex.RUnlock()
 	argsForCall := fake.repoTagFromTarballArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeCommandClient) RepoTagFromTarballReturns(result1 string, result2 error) {
+func (fake *FakeImageImpl) RepoTagFromTarballReturns(result1 string, result2 error) {
 	fake.repoTagFromTarballMutex.Lock()
 	defer fake.repoTagFromTarballMutex.Unlock()
 	fake.RepoTagFromTarballStub = nil
@@ -240,7 +240,7 @@ func (fake *FakeCommandClient) RepoTagFromTarballReturns(result1 string, result2
 	}{result1, result2}
 }
 
-func (fake *FakeCommandClient) RepoTagFromTarballReturnsOnCall(i int, result1 string, result2 error) {
+func (fake *FakeImageImpl) RepoTagFromTarballReturnsOnCall(i int, result1 string, result2 error) {
 	fake.repoTagFromTarballMutex.Lock()
 	defer fake.repoTagFromTarballMutex.Unlock()
 	fake.RepoTagFromTarballStub = nil
@@ -256,7 +256,7 @@ func (fake *FakeCommandClient) RepoTagFromTarballReturnsOnCall(i int, result1 st
 	}{result1, result2}
 }
 
-func (fake *FakeCommandClient) Invocations() map[string][][]interface{} {
+func (fake *FakeImageImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.executeMutex.RLock()
@@ -272,7 +272,7 @@ func (fake *FakeCommandClient) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeCommandClient) recordInvocation(key string, args []interface{}) {
+func (fake *FakeImageImpl) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
