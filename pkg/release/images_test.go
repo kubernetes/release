@@ -31,11 +31,11 @@ import (
 
 func TestPublish(t *testing.T) {
 	for _, tc := range []struct {
-		prepare     func(*releasefakes.FakeCommandClient) (buildPath string, cleanup func())
+		prepare     func(*releasefakes.FakeImageImpl) (buildPath string, cleanup func())
 		shouldError bool
 	}{
 		{ // success
-			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
@@ -46,7 +46,7 @@ func TestPublish(t *testing.T) {
 			shouldError: false,
 		},
 		{ // success skipping wrong dirs/files
-			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
@@ -69,7 +69,7 @@ func TestPublish(t *testing.T) {
 			shouldError: false,
 		},
 		{ // success no images
-			prepare: func(*releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(*releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				return tempDir, func() {
 					require.Nil(t, os.RemoveAll(tempDir))
@@ -78,7 +78,7 @@ func TestPublish(t *testing.T) {
 			shouldError: false,
 		},
 		{ // failure on docker load
-			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
@@ -91,7 +91,7 @@ func TestPublish(t *testing.T) {
 			shouldError: true,
 		},
 		{ // failure on docker tag
-			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
@@ -104,7 +104,7 @@ func TestPublish(t *testing.T) {
 			shouldError: true,
 		},
 		{ // failure on docker push
-			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
@@ -117,7 +117,7 @@ func TestPublish(t *testing.T) {
 			shouldError: true,
 		},
 		{ // failure on docker rmi
-			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
@@ -130,7 +130,7 @@ func TestPublish(t *testing.T) {
 			shouldError: true,
 		},
 		{ // failure on docker manifest create
-			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
@@ -143,7 +143,7 @@ func TestPublish(t *testing.T) {
 			shouldError: true,
 		},
 		{ // failure on docker manifest annotate
-			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
@@ -156,7 +156,7 @@ func TestPublish(t *testing.T) {
 			shouldError: true,
 		},
 		{ // failure on docker manifest push
-			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
@@ -169,7 +169,7 @@ func TestPublish(t *testing.T) {
 			shouldError: true,
 		},
 		{ // failure get repo tag from tarball
-			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
@@ -182,7 +182,7 @@ func TestPublish(t *testing.T) {
 			shouldError: true,
 		},
 		{ // failure wrong repo tag from tarball
-			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
@@ -195,7 +195,7 @@ func TestPublish(t *testing.T) {
 			shouldError: true,
 		},
 		{ // failure no images-path
-			prepare: func(*releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(*releasefakes.FakeImageImpl) (string, func()) {
 				tempDir, err := os.MkdirTemp("", "publish-test-")
 				require.Nil(t, err)
 				return tempDir, func() {
@@ -206,8 +206,8 @@ func TestPublish(t *testing.T) {
 		},
 	} {
 		sut := release.NewImages()
-		clientMock := &releasefakes.FakeCommandClient{}
-		sut.SetClient(clientMock)
+		clientMock := &releasefakes.FakeImageImpl{}
+		sut.SetImpl(clientMock)
 		buildPath, cleanup := tc.prepare(clientMock)
 
 		err := sut.Publish(release.GCRIOPathProd, "v1.18.9", buildPath)
@@ -222,11 +222,11 @@ func TestPublish(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	for _, tc := range []struct {
-		prepare     func(*releasefakes.FakeCommandClient) (buildPath string, cleanup func())
+		prepare     func(*releasefakes.FakeImageImpl) (buildPath string, cleanup func())
 		shouldError bool
 	}{
 		{ // success
-			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
@@ -239,7 +239,7 @@ func TestValidate(t *testing.T) {
 			shouldError: false,
 		},
 		{ // failure on crane call
-			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
@@ -252,7 +252,7 @@ func TestValidate(t *testing.T) {
 			shouldError: true,
 		},
 		{ // failure no digest
-			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
@@ -263,7 +263,7 @@ func TestValidate(t *testing.T) {
 			shouldError: true,
 		},
 		{ // failure on remote digest retrieval
-			prepare: func(mock *releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
@@ -276,7 +276,7 @@ func TestValidate(t *testing.T) {
 			shouldError: true,
 		},
 		{ // failure no images-path
-			prepare: func(*releasefakes.FakeCommandClient) (string, func()) {
+			prepare: func(*releasefakes.FakeImageImpl) (string, func()) {
 				tempDir, err := os.MkdirTemp("", "publish-test-")
 				require.Nil(t, err)
 				return tempDir, func() {
@@ -287,8 +287,8 @@ func TestValidate(t *testing.T) {
 		},
 	} {
 		sut := release.NewImages()
-		clientMock := &releasefakes.FakeCommandClient{}
-		sut.SetClient(clientMock)
+		clientMock := &releasefakes.FakeImageImpl{}
+		sut.SetImpl(clientMock)
 		buildPath, cleanup := tc.prepare(clientMock)
 
 		err := sut.Validate(release.GCRIOPathStaging, "v1.18.9", buildPath)
@@ -313,7 +313,7 @@ func newImagesPath(t *testing.T) string {
 	return tempDir
 }
 
-func prepareImages(t *testing.T, tempDir string, mock *releasefakes.FakeCommandClient) {
+func prepareImages(t *testing.T, tempDir string, mock *releasefakes.FakeImageImpl) {
 	c := 0
 	for _, arch := range []string{"amd64", "arm", "arm64"} {
 		archPath := filepath.Join(tempDir, release.ImagesPath, arch)
