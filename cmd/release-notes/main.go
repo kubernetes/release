@@ -336,7 +336,7 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 			return errors.Wrapf(err, "creating release note document")
 		}
 
-		markdown, err := doc.RenderMarkdownTemplate(opts.ReleaseBucket, opts.ReleaseTars, opts.GoTemplate)
+		markdown, err := doc.RenderMarkdownTemplate(opts.ReleaseBucket, opts.ReleaseTars, "", opts.GoTemplate)
 		if err != nil {
 			return errors.Wrapf(err, "rendering release note document with template")
 		}

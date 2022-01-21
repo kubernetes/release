@@ -16,6 +16,13 @@ limitations under the License.
 
 package document
 
+const ContainerImagesDescription = `### Container Images
+
+All container images are available as manifest lists and support the described
+architectures. It is also possible to pull a specific architecture directly by
+adding the "-$ARCH" suffix  to the container image name.
+`
+
 // defaultReleaseNotesTemplate is the text template for the default release notes.
 // k8s/release/cmd/release-notes uses text/template to render markdown
 // templates.
@@ -23,10 +30,10 @@ const defaultReleaseNotesTemplate = `
 {{- $CurrentRevision := .CurrentRevision -}}
 {{- $PreviousRevision := .PreviousRevision -}}
 
-{{if .Downloads}}
+{{if .FileDownloads}}
 ## Downloads for {{$CurrentRevision}}
 
-{{- with .Downloads.Source }}
+{{- with .FileDownloads.Source }}
 
 ### Source Code
 
@@ -35,7 +42,7 @@ filename | sha512 hash
 {{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
 {{end}}
 
-{{- with .Downloads.Client -}}
+{{- with .FileDownloads.Client -}}
 ### Client Binaries
 
 filename | sha512 hash
@@ -43,7 +50,7 @@ filename | sha512 hash
 {{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
 {{end}}
 
-{{- with .Downloads.Server -}}
+{{- with .FileDownloads.Server -}}
 ### Server Binaries
 
 filename | sha512 hash
@@ -51,7 +58,7 @@ filename | sha512 hash
 {{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
 {{end}}
 
-{{- with .Downloads.Node -}}
+{{- with .FileDownloads.Node -}}
 ### Node Binaries
 
 filename | sha512 hash

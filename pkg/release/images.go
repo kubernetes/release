@@ -90,7 +90,7 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 		releaseImagesPath, registry,
 	)
 
-	manifestImages, err := i.getManifestImages(
+	manifestImages, err := i.GetManifestImages(
 		registry, version, buildPath,
 		func(path, origTag, newTagWithArch string) error {
 			if err := i.Execute(
@@ -177,7 +177,7 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 	logrus.Infof("Validating image manifests in %s", registry)
 	version = i.normalizeVersion(version)
 
-	manifestImages, err := i.getManifestImages(
+	manifestImages, err := i.GetManifestImages(
 		registry, version, buildPath, nil,
 	)
 	if err != nil {
@@ -306,7 +306,9 @@ func (i *Images) Exists(registry, version string, fast bool) (bool, error) {
 	return true, nil
 }
 
-func (i *Images) getManifestImages(
+// GetManifestImages can be used to retrieve the map of built images and
+// architectures.
+func (i *Images) GetManifestImages(
 	registry, version, buildPath string,
 	forTarballFn func(path, origTag, newTagWithArch string) error,
 ) (map[string][]string, error) {

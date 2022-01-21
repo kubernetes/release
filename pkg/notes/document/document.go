@@ -28,18 +28,21 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"sigs.k8s.io/promo-tools/v3/image"
+	"sigs.k8s.io/release-utils/hash"
+
 	"k8s.io/release/pkg/cve"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/release"
-	"sigs.k8s.io/release-utils/hash"
 )
 
 // Document represents the underlying structure of a release notes document.
 type Document struct {
 	NotesWithActionRequired notes.Notes    `json:"action_required"`
 	Notes                   NoteCollection `json:"notes"`
-	Downloads               *FileMetadata  `json:"downloads"`
+	FileDownloads           *FileMetadata  `json:"downloads"`
+	ImageDownloads          *ImageMetadata `json:"images"`
 	CurrentRevision         string         `json:"release_tag"`
 	PreviousRevision        string
 	CVEList                 []cve.CVE
@@ -60,10 +63,10 @@ type FileMetadata struct {
 	Node []File
 }
 
-// fetchMetadata generates file metadata for k8s binaries in `dir`. Returns nil
-// if `dir` is not given or when there are no matching well known k8s binaries
-// in `dir`.
-func fetchMetadata(dir, urlPrefix, tag string) (*FileMetadata, error) {
+// fetchFileMetadata generates file metadata for k8s binaries in `dir`. Returns
+// nil if `dir` is not given or when there are no matching well known k8s
+// binaries in `dir`.
+func fetchFileMetadata(dir, urlPrefix, tag string) (*FileMetadata, error) {
 	if dir == "" {
 		return nil, nil
 	}
@@ -98,6 +101,36 @@ func fetchMetadata(dir, urlPrefix, tag string) (*FileMetadata, error) {
 	return fm, nil
 }
 
+func fetchImageMetadata(dir, tag string) (*ImageMetadata, error) {
+	if dir == "" {
+		return nil, nil
+	}
+	if tag == "" {
+		return nil, errors.New("release tag not specified")
+	}
+
+	manifests, err := release.NewImages().GetManifestImages(
+		image.ProdRegistry, tag, dir, nil,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "get manifest images")
+	}
+
+	if len(manifests) == 0 {
+		return nil, nil
+	}
+
+	res := ImageMetadata{}
+	for manifest, architectures := range manifests {
+		res = append(res, Image{
+			Name:          fmt.Sprintf("%s:%s", manifest, tag),
+			Architectures: architectures,
+		})
+	}
+
+	return &res, nil
+}
+
 // fileInfo fetches file metadata for files in `dir` matching `patterns`
 func fileInfo(dir string, patterns []string, urlPrefix, tag string) ([]File, error) {
 	var files []File
@@ -128,6 +161,15 @@ func fileInfo(dir string, patterns []string, urlPrefix, tag string) ([]File, err
 type File struct {
 	Checksum, Name, URL string
 }
+
+// Image is a released container image.
+type Image struct {
+	Name          string
+	Architectures []string
+}
+
+// ImageMetadata is a list of images.
+type ImageMetadata []Image
 
 // NoteCategory contains notes of the same `Kind` (i.e category).
 type NoteCategory struct {
@@ -286,14 +328,20 @@ func New(
 // RenderMarkdownTemplate renders a document using the golang template in
 // `templateSpec`. If `templateSpec` is set to `options.GoTemplateDefault`,
 // then it renders in the default template markdown format.
-func (d *Document) RenderMarkdownTemplate(bucket, fileDir, templateSpec string) (string, error) {
+func (d *Document) RenderMarkdownTemplate(bucket, tars, images, templateSpec string) (string, error) {
 	urlPrefix := release.URLPrefixForBucket(bucket)
 
-	fileMetadata, err := fetchMetadata(fileDir, urlPrefix, d.CurrentRevision)
+	fileMetadata, err := fetchFileMetadata(tars, urlPrefix, d.CurrentRevision)
 	if err != nil {
-		return "", errors.Wrap(err, "fetching downloads metadata")
+		return "", errors.Wrap(err, "fetching file downloads metadata")
 	}
-	d.Downloads = fileMetadata
+	d.FileDownloads = fileMetadata
+
+	imageMetadata, err := fetchImageMetadata(images, d.CurrentRevision)
+	if err != nil {
+		return "", errors.Wrap(err, "fetching image downloads metadata")
+	}
+	d.ImageDownloads = imageMetadata
 
 	goTemplate, err := d.template(templateSpec)
 	if err != nil {
@@ -352,24 +400,33 @@ func (d *Document) template(templateSpec string) (string, error) {
 
 // CreateDownloadsTable creates the markdown table with the links to the tarballs.
 // The function does nothing if the `tars` variable is empty.
-func CreateDownloadsTable(w io.Writer, bucket, tars, prevTag, newTag string) error {
+func CreateDownloadsTable(w io.Writer, bucket, tars, images, prevTag, newTag string) error {
 	if prevTag == "" || newTag == "" {
 		return errors.New("release tags not specified")
 	}
 
+	printChangelogSinceLine := func() {
+		fmt.Fprintf(w, "## Changelog since %s\n\n", prevTag)
+	}
+
 	urlPrefix := release.URLPrefixForBucket(bucket)
-	fileMetadata, err := fetchMetadata(tars, urlPrefix, newTag)
-	if fileMetadata == nil {
+	fileMetadata, err := fetchFileMetadata(tars, urlPrefix, newTag)
+	if err != nil {
+		return errors.Wrap(err, "fetching file downloads metadata")
+	}
+
+	imageMetadata, err := fetchImageMetadata(images, newTag)
+	if err != nil {
+		return errors.Wrap(err, "fetching image downloads metadata")
+	}
+
+	if fileMetadata == nil && imageMetadata == nil {
 		// If directory is empty, doesn't contain matching files, or is not
 		// given we will have a nil value. This is not an error in every
 		// context. Return early so we do not modify markdown.
 		fmt.Fprintf(w, "# %s\n\n", newTag)
-		fmt.Fprintf(w, "## Changelog since %s\n\n", prevTag)
+		printChangelogSinceLine()
 		return nil
-	}
-
-	if err != nil {
-		return errors.Wrap(err, "fetching downloads metadata")
 	}
 
 	fmt.Fprintf(w, "# %s\n\n", newTag)
@@ -377,31 +434,48 @@ func CreateDownloadsTable(w io.Writer, bucket, tars, prevTag, newTag string) err
 
 	fmt.Fprintf(w, "## Downloads for %s\n\n", newTag)
 
-	// Sort the files by their headers
-	headers := [4]string{
-		"Source Code", "Client Binaries", "Server Binaries", "Node Binaries",
-	}
-	files := map[string][]File{
-		headers[0]: fileMetadata.Source,
-		headers[1]: fileMetadata.Client,
-		headers[2]: fileMetadata.Server,
-		headers[3]: fileMetadata.Node,
-	}
-
-	for _, header := range headers {
-		if header != "" {
-			fmt.Fprintf(w, "### %s\n\n", header)
+	if fileMetadata != nil {
+		// Sort the files by their headers
+		headers := [4]string{
+			"Source Code", "Client Binaries", "Server Binaries", "Node Binaries",
 		}
-		fmt.Fprintln(w, "filename | sha512 hash")
-		fmt.Fprintln(w, "-------- | -----------")
+		files := map[string][]File{
+			headers[0]: fileMetadata.Source,
+			headers[1]: fileMetadata.Client,
+			headers[2]: fileMetadata.Server,
+			headers[3]: fileMetadata.Node,
+		}
 
-		for _, f := range files[header] {
-			fmt.Fprintf(w, "[%s](%s) | `%s`\n", f.Name, f.URL, f.Checksum)
+		for _, header := range headers {
+			if header != "" {
+				fmt.Fprintf(w, "### %s\n\n", header)
+			}
+			fmt.Fprintln(w, "filename | sha512 hash")
+			fmt.Fprintln(w, "-------- | -----------")
+
+			for _, f := range files[header] {
+				fmt.Fprintf(w, "[%s](%s) | `%s`\n", f.Name, f.URL, f.Checksum)
+			}
+			fmt.Fprintln(w, "")
+		}
+	}
+
+	if imageMetadata != nil {
+		fmt.Fprint(w, ContainerImagesDescription)
+		fmt.Fprintln(w, "name | architectures")
+		fmt.Fprintln(w, "---- | -------------")
+
+		for _, image := range *imageMetadata {
+			fmt.Fprintf(w,
+				"%s | %s\n",
+				image.Name,
+				strings.Join(image.Architectures, ", "),
+			)
 		}
 		fmt.Fprintln(w, "")
 	}
 
-	fmt.Fprintf(w, "## Changelog since %s\n\n", prevTag)
+	printChangelogSinceLine()
 	return nil
 }
 

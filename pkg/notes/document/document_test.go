@@ -65,7 +65,7 @@ func TestFileMetadata(t *testing.T) {
 		))
 	}
 
-	metadata, err := fetchMetadata(dir, "http://test.com", "test-release")
+	metadata, err := fetchFileMetadata(dir, "http://test.com", "test-release")
 	require.Nil(t, err)
 
 	expected := &FileMetadata{
@@ -151,7 +151,7 @@ func TestDocument_RenderMarkdownTemplateFailure(t *testing.T) {
 			}
 
 			doc := Document{}
-			_, err = doc.RenderMarkdownTemplate("", "", tt.templateSpec)
+			_, err = doc.RenderMarkdownTemplate("", "", "", tt.templateSpec)
 			require.Error(t, err, "Unexpected success")
 		})
 	}
@@ -167,7 +167,7 @@ func TestCreateDownloadsTable(t *testing.T) {
 	// When
 	output := &strings.Builder{}
 	require.Nil(t, CreateDownloadsTable(
-		output, release.ProductionBucket, dir, "v1.16.0", "v1.16.1",
+		output, release.ProductionBucket, dir, "", "v1.16.0", "v1.16.1",
 	))
 
 	// Then
@@ -514,7 +514,7 @@ func TestDocument_RenderMarkdownTemplate(t *testing.T) {
 			}
 
 			// When
-			got, err := doc.RenderMarkdownTemplate(release.ProductionBucket, dir, templateSpec)
+			got, err := doc.RenderMarkdownTemplate(release.ProductionBucket, dir, "", templateSpec)
 
 			// Then
 			require.NoError(t, err, "Unexpected error.")

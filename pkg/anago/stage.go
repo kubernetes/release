@@ -570,6 +570,10 @@ func (d *DefaultStage) GenerateChangelog() error {
 	if d.state.createReleaseBranch {
 		branch = git.DefaultBranch
 	}
+	buildDir := filepath.Join(
+		gitRoot,
+		fmt.Sprintf("%s-%s", release.BuildDir, d.state.versions.Prime()),
+	)
 	return d.impl.GenerateChangelog(&changelog.Options{
 		RepoPath:     gitRoot,
 		Tag:          d.state.versions.Prime(),
@@ -579,11 +583,8 @@ func (d *DefaultStage) GenerateChangelog() error {
 		JSONFile:     releaseNotesJSONFile,
 		Dependencies: true,
 		CloneCVEMaps: true,
-		Tars: filepath.Join(
-			gitRoot,
-			fmt.Sprintf("%s-%s", release.BuildDir, d.state.versions.Prime()),
-			release.ReleaseTarsPath,
-		),
+		Tars:         filepath.Join(buildDir, release.ReleaseTarsPath),
+		Images:       buildDir,
 	})
 }
 

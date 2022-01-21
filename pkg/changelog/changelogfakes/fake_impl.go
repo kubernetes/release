@@ -95,7 +95,7 @@ type FakeImpl struct {
 	commitReturnsOnCall map[int]struct {
 		result1 error
 	}
-	CreateDownloadsTableStub        func(io.Writer, string, string, string, string) error
+	CreateDownloadsTableStub        func(io.Writer, string, string, string, string, string) error
 	createDownloadsTableMutex       sync.RWMutex
 	createDownloadsTableArgsForCall []struct {
 		arg1 io.Writer
@@ -103,6 +103,7 @@ type FakeImpl struct {
 		arg3 string
 		arg4 string
 		arg5 string
+		arg6 string
 	}
 	createDownloadsTableReturns struct {
 		result1 error
@@ -255,13 +256,14 @@ type FakeImpl struct {
 		result1 []byte
 		result2 error
 	}
-	RenderMarkdownTemplateStub        func(*document.Document, string, string, string) (string, error)
+	RenderMarkdownTemplateStub        func(*document.Document, string, string, string, string) (string, error)
 	renderMarkdownTemplateMutex       sync.RWMutex
 	renderMarkdownTemplateArgsForCall []struct {
 		arg1 *document.Document
 		arg2 string
 		arg3 string
 		arg4 string
+		arg5 string
 	}
 	renderMarkdownTemplateReturns struct {
 		result1 string
@@ -697,7 +699,7 @@ func (fake *FakeImpl) CommitReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) CreateDownloadsTable(arg1 io.Writer, arg2 string, arg3 string, arg4 string, arg5 string) error {
+func (fake *FakeImpl) CreateDownloadsTable(arg1 io.Writer, arg2 string, arg3 string, arg4 string, arg5 string, arg6 string) error {
 	fake.createDownloadsTableMutex.Lock()
 	ret, specificReturn := fake.createDownloadsTableReturnsOnCall[len(fake.createDownloadsTableArgsForCall)]
 	fake.createDownloadsTableArgsForCall = append(fake.createDownloadsTableArgsForCall, struct {
@@ -706,13 +708,14 @@ func (fake *FakeImpl) CreateDownloadsTable(arg1 io.Writer, arg2 string, arg3 str
 		arg3 string
 		arg4 string
 		arg5 string
-	}{arg1, arg2, arg3, arg4, arg5})
+		arg6 string
+	}{arg1, arg2, arg3, arg4, arg5, arg6})
 	stub := fake.CreateDownloadsTableStub
 	fakeReturns := fake.createDownloadsTableReturns
-	fake.recordInvocation("CreateDownloadsTable", []interface{}{arg1, arg2, arg3, arg4, arg5})
+	fake.recordInvocation("CreateDownloadsTable", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6})
 	fake.createDownloadsTableMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3, arg4, arg5)
+		return stub(arg1, arg2, arg3, arg4, arg5, arg6)
 	}
 	if specificReturn {
 		return ret.result1
@@ -726,17 +729,17 @@ func (fake *FakeImpl) CreateDownloadsTableCallCount() int {
 	return len(fake.createDownloadsTableArgsForCall)
 }
 
-func (fake *FakeImpl) CreateDownloadsTableCalls(stub func(io.Writer, string, string, string, string) error) {
+func (fake *FakeImpl) CreateDownloadsTableCalls(stub func(io.Writer, string, string, string, string, string) error) {
 	fake.createDownloadsTableMutex.Lock()
 	defer fake.createDownloadsTableMutex.Unlock()
 	fake.CreateDownloadsTableStub = stub
 }
 
-func (fake *FakeImpl) CreateDownloadsTableArgsForCall(i int) (io.Writer, string, string, string, string) {
+func (fake *FakeImpl) CreateDownloadsTableArgsForCall(i int) (io.Writer, string, string, string, string, string) {
 	fake.createDownloadsTableMutex.RLock()
 	defer fake.createDownloadsTableMutex.RUnlock()
 	argsForCall := fake.createDownloadsTableArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5, argsForCall.arg6
 }
 
 func (fake *FakeImpl) CreateDownloadsTableReturns(result1 error) {
@@ -1460,7 +1463,7 @@ func (fake *FakeImpl) ReadFileReturnsOnCall(i int, result1 []byte, result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) RenderMarkdownTemplate(arg1 *document.Document, arg2 string, arg3 string, arg4 string) (string, error) {
+func (fake *FakeImpl) RenderMarkdownTemplate(arg1 *document.Document, arg2 string, arg3 string, arg4 string, arg5 string) (string, error) {
 	fake.renderMarkdownTemplateMutex.Lock()
 	ret, specificReturn := fake.renderMarkdownTemplateReturnsOnCall[len(fake.renderMarkdownTemplateArgsForCall)]
 	fake.renderMarkdownTemplateArgsForCall = append(fake.renderMarkdownTemplateArgsForCall, struct {
@@ -1468,13 +1471,14 @@ func (fake *FakeImpl) RenderMarkdownTemplate(arg1 *document.Document, arg2 strin
 		arg2 string
 		arg3 string
 		arg4 string
-	}{arg1, arg2, arg3, arg4})
+		arg5 string
+	}{arg1, arg2, arg3, arg4, arg5})
 	stub := fake.RenderMarkdownTemplateStub
 	fakeReturns := fake.renderMarkdownTemplateReturns
-	fake.recordInvocation("RenderMarkdownTemplate", []interface{}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("RenderMarkdownTemplate", []interface{}{arg1, arg2, arg3, arg4, arg5})
 	fake.renderMarkdownTemplateMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3, arg4)
+		return stub(arg1, arg2, arg3, arg4, arg5)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -1488,17 +1492,17 @@ func (fake *FakeImpl) RenderMarkdownTemplateCallCount() int {
 	return len(fake.renderMarkdownTemplateArgsForCall)
 }
 
-func (fake *FakeImpl) RenderMarkdownTemplateCalls(stub func(*document.Document, string, string, string) (string, error)) {
+func (fake *FakeImpl) RenderMarkdownTemplateCalls(stub func(*document.Document, string, string, string, string) (string, error)) {
 	fake.renderMarkdownTemplateMutex.Lock()
 	defer fake.renderMarkdownTemplateMutex.Unlock()
 	fake.RenderMarkdownTemplateStub = stub
 }
 
-func (fake *FakeImpl) RenderMarkdownTemplateArgsForCall(i int) (*document.Document, string, string, string) {
+func (fake *FakeImpl) RenderMarkdownTemplateArgsForCall(i int) (*document.Document, string, string, string, string) {
 	fake.renderMarkdownTemplateMutex.RLock()
 	defer fake.renderMarkdownTemplateMutex.RUnlock()
 	argsForCall := fake.renderMarkdownTemplateArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5
 }
 
 func (fake *FakeImpl) RenderMarkdownTemplateReturns(result1 string, result2 error) {

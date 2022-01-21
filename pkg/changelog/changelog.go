@@ -41,6 +41,7 @@ type Options struct {
 	Branch       string
 	Bucket       string
 	Tars         string
+	Images       string
 	HTMLFile     string
 	JSONFile     string
 	RecordDir    string
@@ -115,7 +116,7 @@ func (c *Changelog) Run() error {
 
 			if err := c.impl.CreateDownloadsTable(
 				downloadsTable, c.options.Bucket, c.options.Tars,
-				startRev, c.options.Tag,
+				c.options.Images, startRev, c.options.Tag,
 			); err != nil {
 				return errors.Wrapf(err, "create downloads table")
 			}
@@ -281,7 +282,7 @@ func (c *Changelog) generateReleaseNotes(
 	}
 
 	markdown, err = c.impl.RenderMarkdownTemplate(
-		doc, c.options.Bucket, c.options.Tars,
+		doc, c.options.Bucket, c.options.Tars, c.options.Images,
 		options.GoTemplateInline+releaseNotesTemplate,
 	)
 	if err != nil {
