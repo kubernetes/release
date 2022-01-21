@@ -1347,7 +1347,7 @@ func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.R
 	}()
 
 	// If the map was not modified, we don't make any changes
-	if string(changes) == output || string(changes) == "" {
+	if string(changes) == output || len(changes) == 0 {
 		logrus.Info("Release notes map was not modified")
 		return false, nil
 	}
@@ -1358,7 +1358,7 @@ func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.R
 	blankFile := true
 	for _, line := range lines {
 		// If only only one line is not blank/comment
-		if line != "---" && !re.Match([]byte(line)) {
+		if line != "---" && !re.MatchString(line) {
 			blankFile = false
 			break
 		}

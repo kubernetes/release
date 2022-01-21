@@ -303,7 +303,7 @@ func TestGatherNotes(t *testing.T) {
 				return func(_ context.Context, org, repo string, prID int) (*github.PullRequest, *github.Response, error) {
 					checkOrgRepo(t, org, repo)
 					if err := seenPRs.Mark(prID); err != nil {
-						t.Errorf("In GetPullRequest: %w", err)
+						t.Errorf("In GetPullRequest: %v", err)
 					}
 					return nil, nil, nil
 				}
