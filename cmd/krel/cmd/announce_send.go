@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	sendgridAPIKeyEnvKey = "SENDGRID_API_KEY"
+	sendgridAPIKeyEnvKey = "SENDGRID_API_KEY" // nolint: gosec
 	nameFlag             = "name"
 	emailFlag            = "email"
 )

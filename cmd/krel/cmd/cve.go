@@ -129,7 +129,7 @@ func writeNewCVE(opts *cveOptions) (err error) {
 		return errors.Wrap(err, "launching editor")
 	}
 
-	if string(changes) == string(oldFile) || string(changes) == "" {
+	if bytes.Equal(changes, oldFile) || len(changes) == 0 {
 		logrus.Info("CVE information not modified")
 		return nil
 	}
@@ -201,7 +201,7 @@ func editExistingCVE(opts *cveOptions) (err error) {
 		return errors.Wrap(err, "launching editor")
 	}
 
-	if string(changes) == string(oldFile) || string(changes) == "" {
+	if bytes.Equal(changes, oldFile) || len(changes) == 0 {
 		logrus.Info("CVE information not modified")
 		return nil
 	}
