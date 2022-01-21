@@ -47,7 +47,7 @@ func fileContains(t *testing.T, file, contains string) {
 }
 
 func TestChangelogNoArgumentsOrFlags(t *testing.T) {
-	err := changelog.New(changelogOptions).Run()
+	err := changelog.New(&changelog.Options{}).Run()
 	require.NotNil(t, err)
 }
 
