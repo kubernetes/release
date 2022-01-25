@@ -16,6 +16,8 @@ limitations under the License.
 
 package changelog
 
+import "k8s.io/release/pkg/notes/document"
+
 const (
 	// The default CHANGELOG directory inside the k/k repository.
 	RepoChangelogDir = "CHANGELOG"
@@ -28,10 +30,11 @@ const (
 {{- $PreviousRevision := .PreviousRevision -}}
 # {{$CurrentRevision}}
 
-{{if .Downloads}}
+{{if or .FileDownloads .ImageDownloads}}
 ## Downloads for {{$CurrentRevision}}
 
-{{- with .Downloads.Source }}
+{{if .FileDownloads}}
+{{- with .FileDownloads.Source }}
 
 ### Source Code
 
@@ -40,7 +43,7 @@ filename | sha512 hash
 {{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
 {{end}}
 
-{{- with .Downloads.Client -}}
+{{- with .FileDownloads.Client -}}
 ### Client Binaries
 
 filename | sha512 hash
@@ -48,7 +51,7 @@ filename | sha512 hash
 {{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
 {{end}}
 
-{{- with .Downloads.Server -}}
+{{- with .FileDownloads.Server -}}
 ### Server Binaries
 
 filename | sha512 hash
@@ -56,12 +59,23 @@ filename | sha512 hash
 {{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
 {{end}}
 
-{{- with .Downloads.Node -}}
+{{- with .FileDownloads.Node -}}
 ### Node Binaries
 
 filename | sha512 hash
 -------- | -----------
 {{range .}}[{{.Name}}]({{.URL}}) | {{.Checksum}}{{println}}{{end}}
+{{end -}}
+
+{{if .ImageDownloads}}
+{{- with .ImageDownloads -}}
+` + document.ContainerImagesDescription + `
+name | architectures
+---- | -------------
+{{range .}}{{.Name}} | {{ range $i, $a := .Architectures}}{{if $i}}, {{end}}{{$a}}{{end}}{{println}}{{end}}
+{{end -}}
+
+{{end -}}
 {{end -}}
 {{- end -}}
 ## Changelog since {{$PreviousRevision}}

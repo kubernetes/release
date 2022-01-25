@@ -52,7 +52,7 @@ type impl interface {
 	RevParse(repo *git.Repo, rev string) (string, error)
 	RevParseTag(repo *git.Repo, rev string) (string, error)
 	CreateDownloadsTable(
-		w io.Writer, bucket, tars, prevTag, newTag string,
+		w io.Writer, bucket, tars, images, prevTag, newTag string,
 	) error
 	LatestGitHubTagsPerBranch() (github.TagsPerBranch, error)
 	GenerateTOC(markdown string) (string, error)
@@ -66,7 +66,7 @@ type impl interface {
 		releaseNotes *notes.ReleaseNotes, previousRev, currentRev string,
 	) (*document.Document, error)
 	RenderMarkdownTemplate(
-		document *document.Document, bucket, fileDir, templateSpec string,
+		document *document.Document, bucket, tars, images, templateSpec string,
 	) (string, error)
 
 	// Used in `writeMarkdown()`
@@ -118,9 +118,9 @@ func (*defaultImpl) RevParseTag(repo *git.Repo, rev string) (string, error) {
 }
 
 func (*defaultImpl) CreateDownloadsTable(
-	w io.Writer, bucket, tars, prevTag, newTag string,
+	w io.Writer, bucket, tars, images, prevTag, newTag string,
 ) error {
-	return document.CreateDownloadsTable(w, bucket, tars, prevTag, newTag)
+	return document.CreateDownloadsTable(w, bucket, tars, images, prevTag, newTag)
 }
 
 func (*defaultImpl) LatestGitHubTagsPerBranch() (github.TagsPerBranch, error) {
@@ -160,9 +160,9 @@ func (*defaultImpl) NewDocument(
 }
 
 func (*defaultImpl) RenderMarkdownTemplate(
-	doc *document.Document, bucket, fileDir, templateSpec string,
+	doc *document.Document, bucket, tars, images, templateSpec string,
 ) (string, error) {
-	return doc.RenderMarkdownTemplate(bucket, fileDir, templateSpec)
+	return doc.RenderMarkdownTemplate(bucket, tars, images, templateSpec)
 }
 
 func (*defaultImpl) RepoDir(repo *git.Repo) string {

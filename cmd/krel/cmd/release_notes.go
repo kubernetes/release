@@ -926,7 +926,7 @@ func buildNotesResult(startTag string, releaseNotes *notes.ReleaseNotes) (*relea
 
 	// Create the markdown
 	markdown, err := doc.RenderMarkdownTemplate(
-		"", "", options.GoTemplateDefault,
+		"", "", "", options.GoTemplateDefault,
 	)
 	if err != nil {
 		return nil, errors.Wrapf(
