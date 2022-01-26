@@ -20,6 +20,7 @@ package fastforwardfakes
 import (
 	"sync"
 
+	"k8s.io/release/pkg/gcp/gcb"
 	"sigs.k8s.io/release-sdk/git"
 )
 
@@ -53,6 +54,44 @@ type FakeImpl struct {
 	cloneOrOpenDefaultGitHubRepoSSHReturnsOnCall map[int]struct {
 		result1 *git.Repo
 		result2 error
+	}
+	CloneOrOpenGitHubRepoStub        func(string, string, string, bool) (*git.Repo, error)
+	cloneOrOpenGitHubRepoMutex       sync.RWMutex
+	cloneOrOpenGitHubRepoArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 bool
+	}
+	cloneOrOpenGitHubRepoReturns struct {
+		result1 *git.Repo
+		result2 error
+	}
+	cloneOrOpenGitHubRepoReturnsOnCall map[int]struct {
+		result1 *git.Repo
+		result2 error
+	}
+	EnvDefaultStub        func(string, string) string
+	envDefaultMutex       sync.RWMutex
+	envDefaultArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	envDefaultReturns struct {
+		result1 string
+	}
+	envDefaultReturnsOnCall map[int]struct {
+		result1 string
+	}
+	IsDefaultK8sUpstreamStub        func() bool
+	isDefaultK8sUpstreamMutex       sync.RWMutex
+	isDefaultK8sUpstreamArgsForCall []struct {
+	}
+	isDefaultK8sUpstreamReturns struct {
+		result1 bool
+	}
+	isDefaultK8sUpstreamReturnsOnCall map[int]struct {
+		result1 bool
 	}
 	IsReleaseBranchStub        func(string) bool
 	isReleaseBranchMutex       sync.RWMutex
@@ -225,6 +264,30 @@ type FakeImpl struct {
 	repoSetDryArgsForCall []struct {
 		arg1 *git.Repo
 	}
+	RepoSetURLStub        func(*git.Repo, string, string) error
+	repoSetURLMutex       sync.RWMutex
+	repoSetURLArgsForCall []struct {
+		arg1 *git.Repo
+		arg2 string
+		arg3 string
+	}
+	repoSetURLReturns struct {
+		result1 error
+	}
+	repoSetURLReturnsOnCall map[int]struct {
+		result1 error
+	}
+	SubmitStub        func(*gcb.Options) error
+	submitMutex       sync.RWMutex
+	submitArgsForCall []struct {
+		arg1 *gcb.Options
+	}
+	submitReturns struct {
+		result1 error
+	}
+	submitReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -360,6 +423,188 @@ func (fake *FakeImpl) CloneOrOpenDefaultGitHubRepoSSHReturnsOnCall(i int, result
 		result1 *git.Repo
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeImpl) CloneOrOpenGitHubRepo(arg1 string, arg2 string, arg3 string, arg4 bool) (*git.Repo, error) {
+	fake.cloneOrOpenGitHubRepoMutex.Lock()
+	ret, specificReturn := fake.cloneOrOpenGitHubRepoReturnsOnCall[len(fake.cloneOrOpenGitHubRepoArgsForCall)]
+	fake.cloneOrOpenGitHubRepoArgsForCall = append(fake.cloneOrOpenGitHubRepoArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 bool
+	}{arg1, arg2, arg3, arg4})
+	stub := fake.CloneOrOpenGitHubRepoStub
+	fakeReturns := fake.cloneOrOpenGitHubRepoReturns
+	fake.recordInvocation("CloneOrOpenGitHubRepo", []interface{}{arg1, arg2, arg3, arg4})
+	fake.cloneOrOpenGitHubRepoMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeImpl) CloneOrOpenGitHubRepoCallCount() int {
+	fake.cloneOrOpenGitHubRepoMutex.RLock()
+	defer fake.cloneOrOpenGitHubRepoMutex.RUnlock()
+	return len(fake.cloneOrOpenGitHubRepoArgsForCall)
+}
+
+func (fake *FakeImpl) CloneOrOpenGitHubRepoCalls(stub func(string, string, string, bool) (*git.Repo, error)) {
+	fake.cloneOrOpenGitHubRepoMutex.Lock()
+	defer fake.cloneOrOpenGitHubRepoMutex.Unlock()
+	fake.CloneOrOpenGitHubRepoStub = stub
+}
+
+func (fake *FakeImpl) CloneOrOpenGitHubRepoArgsForCall(i int) (string, string, string, bool) {
+	fake.cloneOrOpenGitHubRepoMutex.RLock()
+	defer fake.cloneOrOpenGitHubRepoMutex.RUnlock()
+	argsForCall := fake.cloneOrOpenGitHubRepoArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+}
+
+func (fake *FakeImpl) CloneOrOpenGitHubRepoReturns(result1 *git.Repo, result2 error) {
+	fake.cloneOrOpenGitHubRepoMutex.Lock()
+	defer fake.cloneOrOpenGitHubRepoMutex.Unlock()
+	fake.CloneOrOpenGitHubRepoStub = nil
+	fake.cloneOrOpenGitHubRepoReturns = struct {
+		result1 *git.Repo
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImpl) CloneOrOpenGitHubRepoReturnsOnCall(i int, result1 *git.Repo, result2 error) {
+	fake.cloneOrOpenGitHubRepoMutex.Lock()
+	defer fake.cloneOrOpenGitHubRepoMutex.Unlock()
+	fake.CloneOrOpenGitHubRepoStub = nil
+	if fake.cloneOrOpenGitHubRepoReturnsOnCall == nil {
+		fake.cloneOrOpenGitHubRepoReturnsOnCall = make(map[int]struct {
+			result1 *git.Repo
+			result2 error
+		})
+	}
+	fake.cloneOrOpenGitHubRepoReturnsOnCall[i] = struct {
+		result1 *git.Repo
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImpl) EnvDefault(arg1 string, arg2 string) string {
+	fake.envDefaultMutex.Lock()
+	ret, specificReturn := fake.envDefaultReturnsOnCall[len(fake.envDefaultArgsForCall)]
+	fake.envDefaultArgsForCall = append(fake.envDefaultArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.EnvDefaultStub
+	fakeReturns := fake.envDefaultReturns
+	fake.recordInvocation("EnvDefault", []interface{}{arg1, arg2})
+	fake.envDefaultMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeImpl) EnvDefaultCallCount() int {
+	fake.envDefaultMutex.RLock()
+	defer fake.envDefaultMutex.RUnlock()
+	return len(fake.envDefaultArgsForCall)
+}
+
+func (fake *FakeImpl) EnvDefaultCalls(stub func(string, string) string) {
+	fake.envDefaultMutex.Lock()
+	defer fake.envDefaultMutex.Unlock()
+	fake.EnvDefaultStub = stub
+}
+
+func (fake *FakeImpl) EnvDefaultArgsForCall(i int) (string, string) {
+	fake.envDefaultMutex.RLock()
+	defer fake.envDefaultMutex.RUnlock()
+	argsForCall := fake.envDefaultArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeImpl) EnvDefaultReturns(result1 string) {
+	fake.envDefaultMutex.Lock()
+	defer fake.envDefaultMutex.Unlock()
+	fake.EnvDefaultStub = nil
+	fake.envDefaultReturns = struct {
+		result1 string
+	}{result1}
+}
+
+func (fake *FakeImpl) EnvDefaultReturnsOnCall(i int, result1 string) {
+	fake.envDefaultMutex.Lock()
+	defer fake.envDefaultMutex.Unlock()
+	fake.EnvDefaultStub = nil
+	if fake.envDefaultReturnsOnCall == nil {
+		fake.envDefaultReturnsOnCall = make(map[int]struct {
+			result1 string
+		})
+	}
+	fake.envDefaultReturnsOnCall[i] = struct {
+		result1 string
+	}{result1}
+}
+
+func (fake *FakeImpl) IsDefaultK8sUpstream() bool {
+	fake.isDefaultK8sUpstreamMutex.Lock()
+	ret, specificReturn := fake.isDefaultK8sUpstreamReturnsOnCall[len(fake.isDefaultK8sUpstreamArgsForCall)]
+	fake.isDefaultK8sUpstreamArgsForCall = append(fake.isDefaultK8sUpstreamArgsForCall, struct {
+	}{})
+	stub := fake.IsDefaultK8sUpstreamStub
+	fakeReturns := fake.isDefaultK8sUpstreamReturns
+	fake.recordInvocation("IsDefaultK8sUpstream", []interface{}{})
+	fake.isDefaultK8sUpstreamMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeImpl) IsDefaultK8sUpstreamCallCount() int {
+	fake.isDefaultK8sUpstreamMutex.RLock()
+	defer fake.isDefaultK8sUpstreamMutex.RUnlock()
+	return len(fake.isDefaultK8sUpstreamArgsForCall)
+}
+
+func (fake *FakeImpl) IsDefaultK8sUpstreamCalls(stub func() bool) {
+	fake.isDefaultK8sUpstreamMutex.Lock()
+	defer fake.isDefaultK8sUpstreamMutex.Unlock()
+	fake.IsDefaultK8sUpstreamStub = stub
+}
+
+func (fake *FakeImpl) IsDefaultK8sUpstreamReturns(result1 bool) {
+	fake.isDefaultK8sUpstreamMutex.Lock()
+	defer fake.isDefaultK8sUpstreamMutex.Unlock()
+	fake.IsDefaultK8sUpstreamStub = nil
+	fake.isDefaultK8sUpstreamReturns = struct {
+		result1 bool
+	}{result1}
+}
+
+func (fake *FakeImpl) IsDefaultK8sUpstreamReturnsOnCall(i int, result1 bool) {
+	fake.isDefaultK8sUpstreamMutex.Lock()
+	defer fake.isDefaultK8sUpstreamMutex.Unlock()
+	fake.IsDefaultK8sUpstreamStub = nil
+	if fake.isDefaultK8sUpstreamReturnsOnCall == nil {
+		fake.isDefaultK8sUpstreamReturnsOnCall = make(map[int]struct {
+			result1 bool
+		})
+	}
+	fake.isDefaultK8sUpstreamReturnsOnCall[i] = struct {
+		result1 bool
+	}{result1}
 }
 
 func (fake *FakeImpl) IsReleaseBranch(arg1 string) bool {
@@ -1217,6 +1462,130 @@ func (fake *FakeImpl) RepoSetDryArgsForCall(i int) *git.Repo {
 	return argsForCall.arg1
 }
 
+func (fake *FakeImpl) RepoSetURL(arg1 *git.Repo, arg2 string, arg3 string) error {
+	fake.repoSetURLMutex.Lock()
+	ret, specificReturn := fake.repoSetURLReturnsOnCall[len(fake.repoSetURLArgsForCall)]
+	fake.repoSetURLArgsForCall = append(fake.repoSetURLArgsForCall, struct {
+		arg1 *git.Repo
+		arg2 string
+		arg3 string
+	}{arg1, arg2, arg3})
+	stub := fake.RepoSetURLStub
+	fakeReturns := fake.repoSetURLReturns
+	fake.recordInvocation("RepoSetURL", []interface{}{arg1, arg2, arg3})
+	fake.repoSetURLMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeImpl) RepoSetURLCallCount() int {
+	fake.repoSetURLMutex.RLock()
+	defer fake.repoSetURLMutex.RUnlock()
+	return len(fake.repoSetURLArgsForCall)
+}
+
+func (fake *FakeImpl) RepoSetURLCalls(stub func(*git.Repo, string, string) error) {
+	fake.repoSetURLMutex.Lock()
+	defer fake.repoSetURLMutex.Unlock()
+	fake.RepoSetURLStub = stub
+}
+
+func (fake *FakeImpl) RepoSetURLArgsForCall(i int) (*git.Repo, string, string) {
+	fake.repoSetURLMutex.RLock()
+	defer fake.repoSetURLMutex.RUnlock()
+	argsForCall := fake.repoSetURLArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeImpl) RepoSetURLReturns(result1 error) {
+	fake.repoSetURLMutex.Lock()
+	defer fake.repoSetURLMutex.Unlock()
+	fake.RepoSetURLStub = nil
+	fake.repoSetURLReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeImpl) RepoSetURLReturnsOnCall(i int, result1 error) {
+	fake.repoSetURLMutex.Lock()
+	defer fake.repoSetURLMutex.Unlock()
+	fake.RepoSetURLStub = nil
+	if fake.repoSetURLReturnsOnCall == nil {
+		fake.repoSetURLReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.repoSetURLReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeImpl) Submit(arg1 *gcb.Options) error {
+	fake.submitMutex.Lock()
+	ret, specificReturn := fake.submitReturnsOnCall[len(fake.submitArgsForCall)]
+	fake.submitArgsForCall = append(fake.submitArgsForCall, struct {
+		arg1 *gcb.Options
+	}{arg1})
+	stub := fake.SubmitStub
+	fakeReturns := fake.submitReturns
+	fake.recordInvocation("Submit", []interface{}{arg1})
+	fake.submitMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeImpl) SubmitCallCount() int {
+	fake.submitMutex.RLock()
+	defer fake.submitMutex.RUnlock()
+	return len(fake.submitArgsForCall)
+}
+
+func (fake *FakeImpl) SubmitCalls(stub func(*gcb.Options) error) {
+	fake.submitMutex.Lock()
+	defer fake.submitMutex.Unlock()
+	fake.SubmitStub = stub
+}
+
+func (fake *FakeImpl) SubmitArgsForCall(i int) *gcb.Options {
+	fake.submitMutex.RLock()
+	defer fake.submitMutex.RUnlock()
+	argsForCall := fake.submitArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeImpl) SubmitReturns(result1 error) {
+	fake.submitMutex.Lock()
+	defer fake.submitMutex.Unlock()
+	fake.SubmitStub = nil
+	fake.submitReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeImpl) SubmitReturnsOnCall(i int, result1 error) {
+	fake.submitMutex.Lock()
+	defer fake.submitMutex.Unlock()
+	fake.SubmitStub = nil
+	if fake.submitReturnsOnCall == nil {
+		fake.submitReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.submitReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -1224,6 +1593,12 @@ func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	defer fake.askMutex.RUnlock()
 	fake.cloneOrOpenDefaultGitHubRepoSSHMutex.RLock()
 	defer fake.cloneOrOpenDefaultGitHubRepoSSHMutex.RUnlock()
+	fake.cloneOrOpenGitHubRepoMutex.RLock()
+	defer fake.cloneOrOpenGitHubRepoMutex.RUnlock()
+	fake.envDefaultMutex.RLock()
+	defer fake.envDefaultMutex.RUnlock()
+	fake.isDefaultK8sUpstreamMutex.RLock()
+	defer fake.isDefaultK8sUpstreamMutex.RUnlock()
 	fake.isReleaseBranchMutex.RLock()
 	defer fake.isReleaseBranchMutex.RUnlock()
 	fake.repoCheckoutMutex.RLock()
@@ -1252,6 +1627,10 @@ func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	defer fake.repoPushMutex.RUnlock()
 	fake.repoSetDryMutex.RLock()
 	defer fake.repoSetDryMutex.RUnlock()
+	fake.repoSetURLMutex.RLock()
+	defer fake.repoSetURLMutex.RUnlock()
+	fake.submitMutex.RLock()
+	defer fake.submitMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

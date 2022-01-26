@@ -17,7 +17,11 @@ limitations under the License.
 package fastforward
 
 import (
+	"k8s.io/release/pkg/gcp/gcb"
+	"k8s.io/release/pkg/release"
+
 	"sigs.k8s.io/release-sdk/git"
+	"sigs.k8s.io/release-utils/env"
 	"sigs.k8s.io/release-utils/util"
 )
 
@@ -42,6 +46,11 @@ type impl interface {
 	RepoPush(*git.Repo, string) error
 	RepoLatestReleaseBranch(*git.Repo) (string, error)
 	RepoHasRemoteTag(*git.Repo, string) (bool, error)
+	Submit(*gcb.Options) error
+	EnvDefault(string, string) string
+	CloneOrOpenGitHubRepo(string, string, string, bool) (*git.Repo, error)
+	IsDefaultK8sUpstream() bool
+	RepoSetURL(*git.Repo, string, string) error
 }
 
 func (*defaultImpl) CloneOrOpenDefaultGitHubRepoSSH(repo string) (*git.Repo, error) {
@@ -106,4 +115,24 @@ func (*defaultImpl) RepoLatestReleaseBranch(r *git.Repo) (string, error) {
 
 func (*defaultImpl) RepoHasRemoteTag(r *git.Repo, tag string) (bool, error) {
 	return r.HasRemoteTag(tag)
+}
+
+func (*defaultImpl) Submit(options *gcb.Options) error {
+	return gcb.New(options).Submit()
+}
+
+func (*defaultImpl) EnvDefault(key, def string) string {
+	return env.Default(key, def)
+}
+
+func (*defaultImpl) CloneOrOpenGitHubRepo(repoPath, owner, repo string, useSSH bool) (*git.Repo, error) {
+	return git.CloneOrOpenGitHubRepo(repoPath, owner, repo, useSSH)
+}
+
+func (*defaultImpl) IsDefaultK8sUpstream() bool {
+	return release.IsDefaultK8sUpstream()
+}
+
+func (*defaultImpl) RepoSetURL(r *git.Repo, remote, newURL string) error {
+	return r.SetURL(remote, newURL)
 }
