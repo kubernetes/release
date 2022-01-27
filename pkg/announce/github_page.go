@@ -48,16 +48,12 @@ const ghPageBody = `{{ if .Substitutions.logo }}
 {{ if .Substitutions.changelog }}
 See [the CHANGELOG]({{ .Substitutions.changelog }}) for more details.
 {{ end }}
-### Release Assets
+{{ if .Substitutions.ReleaseNotes }}
+### Release Notes
 
-{{ range .Assets }}
-<table>
-<tr><td colspan="2">{{ if .name }}<b>{{ .name }}: </b> {{ .filename }}{{else}}<b>{{ .filename }}</b>{{end}}</td><tr>
-<tr><td>SHA256</td><td>{{ .sha256 }}</td></tr>
-<tr><td>SHA512</td><td>{{ .sha512 }}</td></tr>
-</table>
+{{ .Substitutions.ReleaseNotes }}
+{{ end }}
 
-{{end}}
 `
 
 // GitHubPageOptions data for building the release page
@@ -98,6 +94,9 @@ type GitHubPageOptions struct {
 	// We can use a custom page template by spcifiying the path. The
 	// file is a go template file that renders markdown.
 	PageTemplate string
+
+	// File to read the release notes from
+	ReleaseNotesFile string
 
 	// We automatizally calculate most values, but more substitutions for
 	// the template can be supplied
@@ -206,6 +205,16 @@ func UpdateGitHubPage(opts *GitHubPageOptions) (err error) {
 	}{
 		Substitutions: opts.Substitutions,
 		Assets:        releaseAssets,
+	}
+
+	// If we have a release notes file defined and set a substitution
+	// entry for its contents
+	if opts.ReleaseNotesFile != "" {
+		rnData, err := os.ReadFile(opts.ReleaseNotesFile)
+		if err != nil {
+			return errors.Wrap(err, "reading release notes file")
+		}
+		subs.Substitutions["ReleaseNotes"] = string(rnData)
 	}
 
 	// Open the template file (if a custom)
