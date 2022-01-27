@@ -71,15 +71,16 @@ to the asset file:
 }
 
 type githubPageCmdLineOptions struct {
-	noupdate      bool
-	draft         bool
-	sbom          bool
-	name          string
-	repo          string
-	template      string
-	repoPath      string
-	substitutions []string
-	assets        []string
+	noupdate         bool
+	draft            bool
+	sbom             bool
+	name             string
+	repo             string
+	template         string
+	repoPath         string
+	ReleaseNotesFile string
+	substitutions    []string
+	assets           []string
 }
 
 var ghPageOpts = &githubPageCmdLineOptions{}
@@ -145,6 +146,13 @@ func init() {
 		"Path to the source code repository",
 	)
 
+	githubPageCmd.PersistentFlags().StringVar(
+		&ghPageOpts.ReleaseNotesFile,
+		"release-notes-file",
+		"",
+		"Path to a release notes markdown file to include in the release",
+	)
+
 	for _, f := range []string{"template", "asset"} {
 		if err := githubPageCmd.MarkPersistentFlagFilename(f); err != nil {
 			logrus.Error(err)
@@ -206,6 +214,7 @@ func runGithubPage(opts *githubPageCmdLineOptions) (err error) {
 		UpdateIfReleaseExists: !opts.noupdate,
 		Name:                  opts.name,
 		Draft:                 opts.draft,
+		ReleaseNotesFile:      opts.ReleaseNotesFile,
 	}
 
 	// Assign the repository data
