@@ -318,7 +318,7 @@ dependencies:
     version: 294771225087ee48c8e0a45a99ac82ed8f9c6e9d384e692ab201986479c8594f
     refPaths:
     - path: hack/verify-golangci-lint.sh
-      match: INSTALL_CHECKSUM=(294771225087ee48c8e0a45a99ac82ed8f9c6e9d384e692ab201986479c8594f)
+      match: INSTALL_CHECKSUM
       
   # Base images
   - name: "Debian: codename (default)"
