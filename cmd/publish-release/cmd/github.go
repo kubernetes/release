@@ -171,7 +171,7 @@ func getAssetsFromStrings(assetStrings []string) []announce.Asset {
 	for _, s := range assetStrings {
 		parts := strings.Split(s, ":")
 		l := ""
-		if len(parts) > 0 {
+		if len(parts) > 1 {
 			l = parts[1]
 		}
 		r = append(r, announce.Asset{
