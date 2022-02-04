@@ -188,7 +188,7 @@ dependencies:
 
   # Golang (next candidate)
   - name: "golang (next candidate)"
-    version: 1.18beta1
+    version: 1.18beta2
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
@@ -207,7 +207,7 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "k8s.gcr.io/build-image/go-runner (next candidate)"
-    version: v2.3.1-go1.18beta1-bullseye.0
+    version: v2.3.1-go1.18beta2-bullseye.0
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -219,7 +219,7 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "k8s.gcr.io/build-image/kube-cross (next candidate)"
-    version: v1.24.0-go1.18beta1-bullseye.0
+    version: v1.24.0-go1.18beta2-bullseye.0
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
