@@ -42,6 +42,17 @@ type FakeImpl struct {
 		result2 bool
 		result3 error
 	}
+	ChdirStub        func(string) error
+	chdirMutex       sync.RWMutex
+	chdirArgsForCall []struct {
+		arg1 string
+	}
+	chdirReturns struct {
+		result1 error
+	}
+	chdirReturnsOnCall map[int]struct {
+		result1 error
+	}
 	CloneOrOpenDefaultGitHubRepoSSHStub        func(string) (*git.Repo, error)
 	cloneOrOpenDefaultGitHubRepoSSHMutex       sync.RWMutex
 	cloneOrOpenDefaultGitHubRepoSSHArgsForCall []struct {
@@ -83,6 +94,17 @@ type FakeImpl struct {
 	envDefaultReturnsOnCall map[int]struct {
 		result1 string
 	}
+	ExistsStub        func(string) bool
+	existsMutex       sync.RWMutex
+	existsArgsForCall []struct {
+		arg1 string
+	}
+	existsReturns struct {
+		result1 bool
+	}
+	existsReturnsOnCall map[int]struct {
+		result1 bool
+	}
 	IsDefaultK8sUpstreamStub        func() bool
 	isDefaultK8sUpstreamMutex       sync.RWMutex
 	isDefaultK8sUpstreamArgsForCall []struct {
@@ -103,6 +125,31 @@ type FakeImpl struct {
 	}
 	isReleaseBranchReturnsOnCall map[int]struct {
 		result1 bool
+	}
+	MkdirTempStub        func(string, string) (string, error)
+	mkdirTempMutex       sync.RWMutex
+	mkdirTempArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	mkdirTempReturns struct {
+		result1 string
+		result2 error
+	}
+	mkdirTempReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
+	RemoveAllStub        func(string) error
+	removeAllMutex       sync.RWMutex
+	removeAllArgsForCall []struct {
+		arg1 string
+	}
+	removeAllReturns struct {
+		result1 error
+	}
+	removeAllReturnsOnCall map[int]struct {
+		result1 error
 	}
 	RepoCheckoutStub        func(*git.Repo, string, ...string) error
 	repoCheckoutMutex       sync.RWMutex
@@ -361,6 +408,67 @@ func (fake *FakeImpl) AskReturnsOnCall(i int, result1 string, result2 bool, resu
 	}{result1, result2, result3}
 }
 
+func (fake *FakeImpl) Chdir(arg1 string) error {
+	fake.chdirMutex.Lock()
+	ret, specificReturn := fake.chdirReturnsOnCall[len(fake.chdirArgsForCall)]
+	fake.chdirArgsForCall = append(fake.chdirArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.ChdirStub
+	fakeReturns := fake.chdirReturns
+	fake.recordInvocation("Chdir", []interface{}{arg1})
+	fake.chdirMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeImpl) ChdirCallCount() int {
+	fake.chdirMutex.RLock()
+	defer fake.chdirMutex.RUnlock()
+	return len(fake.chdirArgsForCall)
+}
+
+func (fake *FakeImpl) ChdirCalls(stub func(string) error) {
+	fake.chdirMutex.Lock()
+	defer fake.chdirMutex.Unlock()
+	fake.ChdirStub = stub
+}
+
+func (fake *FakeImpl) ChdirArgsForCall(i int) string {
+	fake.chdirMutex.RLock()
+	defer fake.chdirMutex.RUnlock()
+	argsForCall := fake.chdirArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeImpl) ChdirReturns(result1 error) {
+	fake.chdirMutex.Lock()
+	defer fake.chdirMutex.Unlock()
+	fake.ChdirStub = nil
+	fake.chdirReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeImpl) ChdirReturnsOnCall(i int, result1 error) {
+	fake.chdirMutex.Lock()
+	defer fake.chdirMutex.Unlock()
+	fake.ChdirStub = nil
+	if fake.chdirReturnsOnCall == nil {
+		fake.chdirReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.chdirReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeImpl) CloneOrOpenDefaultGitHubRepoSSH(arg1 string) (*git.Repo, error) {
 	fake.cloneOrOpenDefaultGitHubRepoSSHMutex.Lock()
 	ret, specificReturn := fake.cloneOrOpenDefaultGitHubRepoSSHReturnsOnCall[len(fake.cloneOrOpenDefaultGitHubRepoSSHArgsForCall)]
@@ -554,6 +662,67 @@ func (fake *FakeImpl) EnvDefaultReturnsOnCall(i int, result1 string) {
 	}{result1}
 }
 
+func (fake *FakeImpl) Exists(arg1 string) bool {
+	fake.existsMutex.Lock()
+	ret, specificReturn := fake.existsReturnsOnCall[len(fake.existsArgsForCall)]
+	fake.existsArgsForCall = append(fake.existsArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.ExistsStub
+	fakeReturns := fake.existsReturns
+	fake.recordInvocation("Exists", []interface{}{arg1})
+	fake.existsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeImpl) ExistsCallCount() int {
+	fake.existsMutex.RLock()
+	defer fake.existsMutex.RUnlock()
+	return len(fake.existsArgsForCall)
+}
+
+func (fake *FakeImpl) ExistsCalls(stub func(string) bool) {
+	fake.existsMutex.Lock()
+	defer fake.existsMutex.Unlock()
+	fake.ExistsStub = stub
+}
+
+func (fake *FakeImpl) ExistsArgsForCall(i int) string {
+	fake.existsMutex.RLock()
+	defer fake.existsMutex.RUnlock()
+	argsForCall := fake.existsArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeImpl) ExistsReturns(result1 bool) {
+	fake.existsMutex.Lock()
+	defer fake.existsMutex.Unlock()
+	fake.ExistsStub = nil
+	fake.existsReturns = struct {
+		result1 bool
+	}{result1}
+}
+
+func (fake *FakeImpl) ExistsReturnsOnCall(i int, result1 bool) {
+	fake.existsMutex.Lock()
+	defer fake.existsMutex.Unlock()
+	fake.ExistsStub = nil
+	if fake.existsReturnsOnCall == nil {
+		fake.existsReturnsOnCall = make(map[int]struct {
+			result1 bool
+		})
+	}
+	fake.existsReturnsOnCall[i] = struct {
+		result1 bool
+	}{result1}
+}
+
 func (fake *FakeImpl) IsDefaultK8sUpstream() bool {
 	fake.isDefaultK8sUpstreamMutex.Lock()
 	ret, specificReturn := fake.isDefaultK8sUpstreamReturnsOnCall[len(fake.isDefaultK8sUpstreamArgsForCall)]
@@ -665,6 +834,132 @@ func (fake *FakeImpl) IsReleaseBranchReturnsOnCall(i int, result1 bool) {
 	}
 	fake.isReleaseBranchReturnsOnCall[i] = struct {
 		result1 bool
+	}{result1}
+}
+
+func (fake *FakeImpl) MkdirTemp(arg1 string, arg2 string) (string, error) {
+	fake.mkdirTempMutex.Lock()
+	ret, specificReturn := fake.mkdirTempReturnsOnCall[len(fake.mkdirTempArgsForCall)]
+	fake.mkdirTempArgsForCall = append(fake.mkdirTempArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.MkdirTempStub
+	fakeReturns := fake.mkdirTempReturns
+	fake.recordInvocation("MkdirTemp", []interface{}{arg1, arg2})
+	fake.mkdirTempMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeImpl) MkdirTempCallCount() int {
+	fake.mkdirTempMutex.RLock()
+	defer fake.mkdirTempMutex.RUnlock()
+	return len(fake.mkdirTempArgsForCall)
+}
+
+func (fake *FakeImpl) MkdirTempCalls(stub func(string, string) (string, error)) {
+	fake.mkdirTempMutex.Lock()
+	defer fake.mkdirTempMutex.Unlock()
+	fake.MkdirTempStub = stub
+}
+
+func (fake *FakeImpl) MkdirTempArgsForCall(i int) (string, string) {
+	fake.mkdirTempMutex.RLock()
+	defer fake.mkdirTempMutex.RUnlock()
+	argsForCall := fake.mkdirTempArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeImpl) MkdirTempReturns(result1 string, result2 error) {
+	fake.mkdirTempMutex.Lock()
+	defer fake.mkdirTempMutex.Unlock()
+	fake.MkdirTempStub = nil
+	fake.mkdirTempReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImpl) MkdirTempReturnsOnCall(i int, result1 string, result2 error) {
+	fake.mkdirTempMutex.Lock()
+	defer fake.mkdirTempMutex.Unlock()
+	fake.MkdirTempStub = nil
+	if fake.mkdirTempReturnsOnCall == nil {
+		fake.mkdirTempReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.mkdirTempReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImpl) RemoveAll(arg1 string) error {
+	fake.removeAllMutex.Lock()
+	ret, specificReturn := fake.removeAllReturnsOnCall[len(fake.removeAllArgsForCall)]
+	fake.removeAllArgsForCall = append(fake.removeAllArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.RemoveAllStub
+	fakeReturns := fake.removeAllReturns
+	fake.recordInvocation("RemoveAll", []interface{}{arg1})
+	fake.removeAllMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeImpl) RemoveAllCallCount() int {
+	fake.removeAllMutex.RLock()
+	defer fake.removeAllMutex.RUnlock()
+	return len(fake.removeAllArgsForCall)
+}
+
+func (fake *FakeImpl) RemoveAllCalls(stub func(string) error) {
+	fake.removeAllMutex.Lock()
+	defer fake.removeAllMutex.Unlock()
+	fake.RemoveAllStub = stub
+}
+
+func (fake *FakeImpl) RemoveAllArgsForCall(i int) string {
+	fake.removeAllMutex.RLock()
+	defer fake.removeAllMutex.RUnlock()
+	argsForCall := fake.removeAllArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeImpl) RemoveAllReturns(result1 error) {
+	fake.removeAllMutex.Lock()
+	defer fake.removeAllMutex.Unlock()
+	fake.RemoveAllStub = nil
+	fake.removeAllReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeImpl) RemoveAllReturnsOnCall(i int, result1 error) {
+	fake.removeAllMutex.Lock()
+	defer fake.removeAllMutex.Unlock()
+	fake.RemoveAllStub = nil
+	if fake.removeAllReturnsOnCall == nil {
+		fake.removeAllReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.removeAllReturnsOnCall[i] = struct {
+		result1 error
 	}{result1}
 }
 
@@ -1591,16 +1886,24 @@ func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.askMutex.RLock()
 	defer fake.askMutex.RUnlock()
+	fake.chdirMutex.RLock()
+	defer fake.chdirMutex.RUnlock()
 	fake.cloneOrOpenDefaultGitHubRepoSSHMutex.RLock()
 	defer fake.cloneOrOpenDefaultGitHubRepoSSHMutex.RUnlock()
 	fake.cloneOrOpenGitHubRepoMutex.RLock()
 	defer fake.cloneOrOpenGitHubRepoMutex.RUnlock()
 	fake.envDefaultMutex.RLock()
 	defer fake.envDefaultMutex.RUnlock()
+	fake.existsMutex.RLock()
+	defer fake.existsMutex.RUnlock()
 	fake.isDefaultK8sUpstreamMutex.RLock()
 	defer fake.isDefaultK8sUpstreamMutex.RUnlock()
 	fake.isReleaseBranchMutex.RLock()
 	defer fake.isReleaseBranchMutex.RUnlock()
+	fake.mkdirTempMutex.RLock()
+	defer fake.mkdirTempMutex.RUnlock()
+	fake.removeAllMutex.RLock()
+	defer fake.removeAllMutex.RUnlock()
 	fake.repoCheckoutMutex.RLock()
 	defer fake.repoCheckoutMutex.RUnlock()
 	fake.repoCleanupMutex.RLock()

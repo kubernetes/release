@@ -17,6 +17,8 @@ limitations under the License.
 package fastforward
 
 import (
+	"os"
+
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/release"
 
@@ -51,6 +53,10 @@ type impl interface {
 	CloneOrOpenGitHubRepo(string, string, string, bool) (*git.Repo, error)
 	IsDefaultK8sUpstream() bool
 	RepoSetURL(*git.Repo, string, string) error
+	Chdir(string) error
+	RemoveAll(string) error
+	MkdirTemp(string, string) (string, error)
+	Exists(string) bool
 }
 
 func (*defaultImpl) CloneOrOpenDefaultGitHubRepoSSH(repo string) (*git.Repo, error) {
@@ -135,4 +141,20 @@ func (*defaultImpl) IsDefaultK8sUpstream() bool {
 
 func (*defaultImpl) RepoSetURL(r *git.Repo, remote, newURL string) error {
 	return r.SetURL(remote, newURL)
+}
+
+func (*defaultImpl) Chdir(dir string) error {
+	return os.Chdir(dir)
+}
+
+func (*defaultImpl) RemoveAll(path string) error {
+	return os.RemoveAll(path)
+}
+
+func (*defaultImpl) MkdirTemp(dir, pattern string) (string, error) {
+	return os.MkdirTemp(dir, pattern)
+}
+
+func (*defaultImpl) Exists(path string) bool {
+	return util.Exists(path)
 }

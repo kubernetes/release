@@ -74,6 +74,9 @@ Please only answer after you have validated the changes.`
 // Run starts the FastForward.
 func (f *FastForward) Run() (err error) {
 	if f.options.Submit {
+		if err := f.prepareToolRepo(); err != nil {
+			return errors.Wrap(err, "prepare tool repo")
+		}
 		logrus.Info("Submitting GCB job")
 		options := gcb.NewDefaultOptions()
 		options.FastForward = true
@@ -82,7 +85,7 @@ func (f *FastForward) Run() (err error) {
 		return f.Submit(options)
 	}
 
-	repo, err := f.prepareRepo()
+	repo, err := f.prepareKubernetesRepo()
 	if err != nil {
 		return errors.Wrap(err, "prepare repository")
 	}
@@ -268,7 +271,7 @@ func (f *FastForward) noFastForwardRequired(repo *git.Repo, branch string) (bool
 	return tagExists, nil
 }
 
-func (f *FastForward) prepareRepo() (*git.Repo, error) {
+func (f *FastForward) prepareKubernetesRepo() (*git.Repo, error) {
 	logrus.Infof("Preparing to fast-forward from %s", f.options.MainRef)
 
 	token := f.EnvDefault(github.TokenEnvKey, "")
@@ -306,4 +309,32 @@ func (f *FastForward) prepareRepo() (*git.Repo, error) {
 	}
 
 	return repo, nil
+}
+
+func (f *FastForward) prepareToolRepo() error {
+	if f.Exists(".git") {
+		return nil
+	}
+
+	logrus.Info("Not in a git repo, preparing k/release clone")
+
+	tmpPath, err := f.MkdirTemp("", "k-release-")
+	if err != nil {
+		return errors.Wrap(err, "create temp directory")
+	}
+	if err := f.RemoveAll(tmpPath); err != nil {
+		return errors.Wrap(err, "remove temp directory")
+	}
+	if _, err := f.CloneOrOpenGitHubRepo(
+		tmpPath,
+		release.DefaultToolOrg,
+		release.DefaultToolRepo,
+		false,
+	); err != nil {
+		return errors.Wrap(err, "clone tool repository")
+	}
+	if err := f.Chdir(tmpPath); err != nil {
+		return errors.Wrap(err, "change directory")
+	}
+	return nil
 }
