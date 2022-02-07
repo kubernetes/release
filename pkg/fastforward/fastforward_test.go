@@ -103,6 +103,55 @@ func TestRun(t *testing.T) {
 				require.Nil(t, err)
 			},
 		},
+		{ // success prepare tool repo
+			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
+				mock.ExistsReturns(false)
+				return &Options{Submit: true}
+			},
+			assert: func(err error) {
+				require.Nil(t, err)
+			},
+		},
+		{ // failure prepare tool repo on Chdir
+			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
+				mock.ExistsReturns(false)
+				mock.ChdirReturns(errTest)
+				return &Options{Submit: true}
+			},
+			assert: func(err error) {
+				require.NotNil(t, err)
+			},
+		},
+		{ // failure prepare tool repo on CloneOrOpenGitHubRepo
+			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
+				mock.ExistsReturns(false)
+				mock.CloneOrOpenGitHubRepoReturns(nil, errTest)
+				return &Options{Submit: true}
+			},
+			assert: func(err error) {
+				require.NotNil(t, err)
+			},
+		},
+		{ // failure prepare tool repo on RemoveAll
+			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
+				mock.ExistsReturns(false)
+				mock.RemoveAllReturns(errTest)
+				return &Options{Submit: true}
+			},
+			assert: func(err error) {
+				require.NotNil(t, err)
+			},
+		},
+		{ // failure prepare tool repo on mkdirtemp
+			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
+				mock.ExistsReturns(false)
+				mock.MkdirTempReturns("", errTest)
+				return &Options{Submit: true}
+			},
+			assert: func(err error) {
+				require.NotNil(t, err)
+			},
+		},
 		{ // success token
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.IsReleaseBranchReturns(true)
