@@ -50,8 +50,11 @@ type Options struct {
 	// Cleanup the repository after the run if set to true.
 	Cleanup bool
 
-	// RepoPa is the local path to the repository to be used.
+	// RepoPath is the local path to the repository to be used.
 	RepoPath string
+
+	// GCPProjectID is the GCP project to use to submit the job.
+	GCPProjectID string
 }
 
 // FastForward is the main structure of this package.
@@ -82,6 +85,7 @@ func (f *FastForward) Run() (err error) {
 		options.FastForward = true
 		options.NoMock = f.options.NoMock
 		options.Stream = true
+		options.Project = f.options.GCPProjectID
 		return f.Submit(options)
 	}
 
