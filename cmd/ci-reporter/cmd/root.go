@@ -55,7 +55,6 @@ type Config struct {
 	ReleaseVersion string
 	ShortReport    bool
 	JSONOutput     bool
-	MarkdownOutput bool
 	Filepath       string
 }
 
