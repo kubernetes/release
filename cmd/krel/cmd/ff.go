@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/release/pkg/fastforward"
+	"k8s.io/release/pkg/release"
 	kgit "sigs.k8s.io/release-sdk/git"
 )
 
@@ -72,6 +73,7 @@ func init() {
 	ffCmd.PersistentFlags().StringVar(&ffOpts.RepoPath, "repo", filepath.Join(os.TempDir(), "k8s"), "the local path to the repository to be used")
 	ffCmd.PersistentFlags().StringVar(&ffOpts.Branch, "branch", "", "branch")
 	ffCmd.PersistentFlags().StringVar(&ffOpts.MainRef, "ref", kgit.Remotify(kgit.DefaultBranch), "ref on the main branch")
+	ffCmd.PersistentFlags().StringVar(&ffOpts.GCPProjectID, "project-id", release.DefaultRelengStagingTestProject, "Google Cloud Porject to use to submit the job")
 	ffCmd.PersistentFlags().BoolVar(&ffOpts.Cleanup, "cleanup", false, "cleanup the repository after the run")
 	ffCmd.PersistentFlags().BoolVar(&ffOpts.NonInteractive, "non-interactive", false, "do not require any user interaction")
 	ffCmd.PersistentFlags().BoolVar(&ffOpts.Submit, "submit", false, "run inside of Google Cloud Build by submitting a new job")
