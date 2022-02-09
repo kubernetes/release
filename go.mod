@@ -36,7 +36,7 @@ require (
 	sigs.k8s.io/mdtoc v1.1.0
 	sigs.k8s.io/promo-tools/v3 v3.3.0
 	sigs.k8s.io/release-sdk v0.6.0
-	sigs.k8s.io/release-utils v0.4.0
+	sigs.k8s.io/release-utils v0.5.0
 	sigs.k8s.io/yaml v1.3.0
 	sigs.k8s.io/zeitgeist v0.3.0
 )
