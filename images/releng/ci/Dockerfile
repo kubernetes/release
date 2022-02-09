@@ -30,6 +30,18 @@ RUN apt-get update && \
         jq && \
     rm -rf /var/lib/apt/lists/*
 
+# install mage
+ARG MAGE_VERSION=1.12.1
+ARG MAGE_SHA=bed46f9f509fd515382a9113c683841f029e86a8f2357380bfe80b75768ff099
+RUN  \
+    MAGE_DOWNLOAD_FILE=mage_${MAGE_VERSION}_Linux-64bit.tar.gz && \
+    MAGE_DOWNLOAD_URL=https://github.com/magefile/mage/releases/download/v${MAGE_VERSION}/${MAGE_DOWNLOAD_FILE} && \
+    wget ${MAGE_DOWNLOAD_URL} && \
+    echo "$MAGE_SHA $MAGE_DOWNLOAD_FILE" | sha256sum -c - || exit 1 && \
+    tar -xzf $MAGE_DOWNLOAD_FILE -C /usr/bin/ mage && \
+    rm $MAGE_DOWNLOAD_FILE && \
+    mage --help
+
 # Some tests require a working git executable, so we configure a pseudo-user
 RUN git config --global user.name releng-ci-user && \
     git config --global user.email nobody@k8s.io
