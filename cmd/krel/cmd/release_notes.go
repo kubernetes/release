@@ -788,7 +788,7 @@ func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 
 	// Preclone the repo to be able to read branches and tags
 	logrus.Infof("Cloning %s/%s", git.DefaultGithubOrg, git.DefaultGithubRepo)
-	repo, err := git.CloneOrOpenDefaultGitHubRepoSSH(repoPath)
+	repo, err := git.CloneOrOpenGitHubRepo(repoPath, git.DefaultGithubOrg, git.DefaultGithubRepo, false)
 	if err != nil {
 		return "", errors.Wrap(err, "cloning default github repo")
 	}
