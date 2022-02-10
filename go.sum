@@ -945,8 +945,8 @@ github.com/secure-systems-lab/go-securesystemslib v0.3.0/go.mod h1:o8hhjkbNl2gOa
 github.com/securego/gosec v0.0.0-20200103095621-79fbf3af8d83/go.mod h1:vvbZ2Ae7AzSq3/kywjUDxSNq2SJ27RxCz2un0H3ePqE=
 github.com/sendgrid/rest v2.6.7+incompatible h1:VitKiUoCWxqUSezj7gHtG3tAjQPXElDcj6Gxflog6pA=
 github.com/sendgrid/rest v2.6.7+incompatible/go.mod h1:kXX7q3jZtJXK5c5qK83bSGMdV6tsOE70KbHoqJls4lE=
-github.com/sendgrid/sendgrid-go v3.10.5+incompatible h1:2f/d7odubrZMkwqSupQDU5ad1GkS8syopBapDazh5bM=
-github.com/sendgrid/sendgrid-go v3.10.5+incompatible/go.mod h1:QRQt+LX/NmgVEvmdRw0VT/QgUn499+iza2FnDca9fg8=
+github.com/sendgrid/sendgrid-go v3.11.0+incompatible h1:qxQFf21EMuIy3TvlEO7JVzwdXEJLaLwVRT4GFBKktic=
+github.com/sendgrid/sendgrid-go v3.11.0+incompatible/go.mod h1:QRQt+LX/NmgVEvmdRw0VT/QgUn499+iza2FnDca9fg8=
 github.com/sergi/go-diff v1.0.0/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=
 github.com/sergi/go-diff v1.1.0/go.mod h1:STckp+ISIX8hZLjrqAeVduY0gWCT9IjLuqbuNXdaHfM=
 github.com/sergi/go-diff v1.2.0 h1:XU+rvMAioB0UC3q1MFrIQy4Vo5/4VsRDQQXHsEya6xQ=
