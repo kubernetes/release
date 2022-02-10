@@ -86,6 +86,7 @@ func (f *FastForward) Run() (err error) {
 		options.NoMock = f.options.NoMock
 		options.Stream = true
 		options.Project = f.options.GCPProjectID
+		options.ScratchBucket = "gs://" + f.options.GCPProjectID + "-gcb"
 		return f.Submit(options)
 	}
 
