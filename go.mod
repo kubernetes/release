@@ -28,6 +28,7 @@ require (
 	github.com/spf13/cobra v1.3.0
 	github.com/spiegel-im-spiegel/go-cvss v0.4.0
 	github.com/stretchr/testify v1.7.0
+	github.com/tj/go-spin v1.1.0
 	github.com/yuin/goldmark v1.4.5
 	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f
 	google.golang.org/api v0.62.0

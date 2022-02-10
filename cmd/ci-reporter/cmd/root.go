@@ -21,11 +21,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/v34/github"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/tj/go-spin"
 )
 
 var rootCmd = &cobra.Command{
@@ -53,6 +55,7 @@ type Config struct {
 	ReleaseVersion string
 	ShortReport    bool
 	JSONOutput     bool
+	Filepath       string
 }
 
 var cfg = &Config{
@@ -61,16 +64,26 @@ var cfg = &Config{
 	ReleaseVersion: "",
 	ShortReport:    false,
 	JSONOutput:     false,
+	Filepath:       "",
 }
 
 func init() {
 	rootCmd.Flags().StringVarP(&cfg.ReleaseVersion, "release-version", "v", "", "Specify a Kubernetes release versions like '1.22' which will populate the report additionally")
 	rootCmd.PersistentFlags().BoolVarP(&cfg.ShortReport, "short", "s", false, "A short report for mails and slack")
 	rootCmd.PersistentFlags().BoolVar(&cfg.JSONOutput, "json", false, "Report output in json format")
+	rootCmd.PersistentFlags().StringVarP(&cfg.Filepath, "file", "f", "", "Specify a filepath to write the report to a file")
 }
 
 // RunReport used to execute
 func RunReport(cfg *Config, reporters *CIReporters) error {
+	go func() {
+		s := spin.New()
+		for {
+			fmt.Printf("\rloading data %s ", s.Next())
+			time.Sleep(100 * time.Millisecond)
+		}
+	}()
+
 	// collect data from filtered reporters
 	reports, err := reporters.CollectReportDataFromReporters(cfg)
 	if err != nil {
@@ -178,52 +191,84 @@ func (r *CIReporters) CollectReportDataFromReporters(cfg *Config) (*CIReportData
 }
 
 // PrintReporterData used to print report data
+// 1. Get a output stream to write the data to
+// 2. Write data to stream
+// 	2.1. Write data in JSON format if set so
+// 	2.2. Write data in table format
 func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
+	// Get a stream to write the data to (file stream / standard out stream)
+	var out *os.File
+	if cfg.Filepath != "" {
+		// open output file
+		fileOut, err := os.OpenFile(cfg.Filepath, os.O_WRONLY|os.O_CREATE, 0o666)
+		if err != nil {
+			return errors.Wrapf(err, "could not open or create a file at %s to write the ci signal report to", cfg.Filepath)
+		}
+		out = fileOut
+	} else {
+		out = os.Stdout
+	}
+	defer func() {
+		if err := out.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	// Write data to stream
 	if cfg.JSONOutput {
 		// print report in json format
 		d, err := reports.Marshal()
 		if err != nil {
-			return nil
+			return errors.Wrap(err, "could not marshal report data")
 		}
-		fmt.Print(string(d))
-	} else {
-		// print report in table format, (short table differs)
-		for _, r := range *reports {
-			fmt.Printf("\n%s REPORT\n", strings.ToUpper(string(r.Info.Name)))
-			table := tablewriter.NewWriter(os.Stdout)
-			data := [][]string{}
+		_, err = out.WriteString(string(d))
+		if err != nil {
+			return errors.Wrap(err, "could not write to output stream")
+		}
+		return nil
+	}
 
-			// table in short version differs from regular table
-			if cfg.ShortReport {
-				table.SetHeader([]string{"ID", "TITLE", "CATEGORY", "STATUS"})
-				for _, record := range r.Records {
-					data = append(data, []string{record.ID, record.Title, record.Category, record.Status})
-				}
-			} else {
-				table.SetHeader([]string{"ID", "TITLE", "CATEGORY", "STATUS", "SIGS", "URL", "TS"})
-				for _, record := range r.Records {
-					data = append(data, []string{record.ID, record.Title, record.Category, record.Status, fmt.Sprintf("%v", record.Sigs), record.URL, record.CreatedTimestamp})
-				}
-			}
+	// print report in table format, (short table differs)
+	for _, r := range *reports {
+		// write header
+		_, err := out.WriteString(fmt.Sprintf("\n%s REPORT\n\n", strings.ToUpper(string(r.Info.Name))))
+		if err != nil {
+			return errors.Wrap(err, "could not write to output stream")
+		}
 
-			countCategories := map[string]int{}
-			categoryIndex := 2
-			for i := range data {
-				countCategories[data[i][categoryIndex]]++
+		table := tablewriter.NewWriter(out)
+		data := [][]string{}
+
+		// table in short version differs from regular table
+		if cfg.ShortReport {
+			table.SetHeader([]string{"ID", "TITLE", "CATEGORY", "STATUS"})
+			for _, record := range r.Records {
+				data = append(data, []string{record.ID, record.Title, record.Category, record.Status})
 			}
-			categoryCounts := ""
-			for category, categoryCount := range countCategories {
-				categoryCounts += fmt.Sprintf("%s:%d\n", category, categoryCount)
+		} else {
+			table.SetHeader([]string{"ID", "TITLE", "CATEGORY", "STATUS", "SIGS", "URL", "TS"})
+			for _, record := range r.Records {
+				data = append(data, []string{record.ID, record.Title, record.Category, record.Status, fmt.Sprintf("%v", record.Sigs), record.URL, record.CreatedTimestamp})
 			}
-			if cfg.ShortReport {
-				table.SetFooter([]string{fmt.Sprintf("Total: %d", len(data)), "", categoryCounts, ""})
-			} else {
-				table.SetFooter([]string{fmt.Sprintf("Total: %d", len(data)), "", categoryCounts, "", "", "", ""})
-			}
-			table.SetBorder(false)
-			table.AppendBulk(data)
-			table.SetAutoMergeCells(true)
-			table.Render()
+		}
+		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
+		table.AppendBulk(data)
+		table.SetCenterSeparator("|")
+		table.SetAutoMergeCells(true)
+		table.Render()
+
+		// write a summary
+		countCategories := map[string]int{}
+		categoryIndex := 2
+		for i := range data {
+			countCategories[data[i][categoryIndex]]++
+		}
+		categoryCounts := ""
+		for category, categoryCount := range countCategories {
+			categoryCounts += fmt.Sprintf("%s:%d ", category, categoryCount)
+		}
+		if _, err := out.WriteString(fmt.Sprintf("\nSUMMARY - Total:%d %s\n", len(data), categoryCounts)); err != nil {
+			return errors.Wrap(err, "could not write to output stream")
 		}
 	}
 	return nil
