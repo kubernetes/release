@@ -19,27 +19,27 @@ SIG Release Slack thread:
 
 ### Work items for `gox.y.z`
 
-<!-- Example: https://github.com/kubernetes/release/pull/1732 -->
+<!-- Example: https://github.com/kubernetes/release/pull/2426 -->
 - [ ] `kube-cross` image update: 
 
-  <!-- Example: https://github.com/kubernetes/k8s.io/pull/1423 -->
+  <!-- Example: https://github.com/kubernetes/k8s.io/pull/3389 -->
   - [ ] image promotion: 
 
-<!-- Example: https://github.com/kubernetes/release/pull/1780 -->
+<!-- Example: https://github.com/kubernetes/release/pull/2426 -->
 - [ ] `go-runner` image update: 
 
-  <!-- Example: https://github.com/kubernetes/k8s.io/pull/1449 -->
+  <!-- Example: https://github.com/kubernetes/k8s.io/pull/3389 -->
   - [ ] image promotion: 
 
-<!-- Example: https://github.com/kubernetes/release/pull/1732 -->
+<!-- Example: https://github.com/kubernetes/release/pull/2426 -->
 - [ ] `releng-ci` image update: 
 
-  <!-- Example: https://github.com/kubernetes/k8s.io/pull/1423 -->
+  <!-- Example: https://github.com/kubernetes/k8s.io/pull/3389 -->
   - [ ] image promotion: 
 
 #### After kube-cross image promotion
 
-<!-- Example: https://github.com/kubernetes/kubernetes/pull/95776 -->
+<!-- Example: https://github.com/kubernetes/kubernetes/pull/108091 -->
 - [ ] kubernetes/kubernetes update (`master`): 
 
   Ensure the following have been updated within the PR:
@@ -47,17 +47,15 @@ SIG Release Slack thread:
   - [ ] kube-cross image
   - [ ] go-runner image
   - [ ] publishing bot rules
+  - [ ] test image
 
-#### After kubernetes/kubernetes has been updated
+#### After kubernetes/kubernetes (master) has been updated
 
-<!-- Example: https://github.com/kubernetes/release/pull/1784 -->
+<!-- Example: https://github.com/kubernetes/release/pull/2428 -->
 - [ ] `k8s-cloud-builder` image update: 
 
-<!-- Example: https://github.com/kubernetes/release/pull/1784 -->
+<!-- Example: https://github.com/kubernetes/release/pull/2428 -->
 - [ ] `k8s-ci-builder` image variants update: 
-
-<!-- Example: https://github.com/kubernetes/test-infra/pull/20038 -->
-- [ ] `kubekins`/`krte` image variants update: 
 
 ### Cherry picks
 
@@ -105,6 +103,17 @@ happened for the 1.20 and 1.19 Kubernetes release branches.
 -->
 - [ ] publishing bot rule updates for active Golang versions: 
 
+
+#### After kubernetes/kubernetes (release branches) has been updated
+
+<!-- Example: https://github.com/kubernetes/release/pull/2429 -->
+- [ ] `k8s-cloud-builder` image update: 
+
+<!-- Example: https://github.com/kubernetes/release/pull/2429 -->
+- [ ] `k8s-ci-builder` image variants update: 
+
+<!-- Example: https://github.com/kubernetes/test-infra/pull/25239 -->
+- [ ] `kubekins`/`krte` image variants update: 
 
 ### Follow-up items
 
