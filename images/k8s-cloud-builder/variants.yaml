@@ -7,10 +7,10 @@ variants:
     KUBE_CROSS_VERSION: 'v1.24.0-go1.17.7-bullseye.0'
   v1.23-cross1.17-bullseye:
     CONFIG: 'cross1.17'
-    KUBE_CROSS_VERSION: 'v1.23.0-go1.17.6-bullseye.0'
+    KUBE_CROSS_VERSION: 'v1.23.0-go1.17.7-bullseye.0'
   v1.22-cross1.16-buster:
     CONFIG: 'cross1.16'
-    KUBE_CROSS_VERSION: 'v1.22.0-go1.16.13-buster.0'
+    KUBE_CROSS_VERSION: 'v1.22.0-go1.16.14-buster.0'
   v1.21-cross1.16-buster:
     CONFIG: 'cross1.16'
-    KUBE_CROSS_VERSION: 'v1.21.0-go1.16.13-buster.0'
+    KUBE_CROSS_VERSION: 'v1.21.0-go1.16.14-buster.0'
