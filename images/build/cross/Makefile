@@ -36,7 +36,7 @@ TYPE ?= default
 
 # Build args
 BASEIMAGE ?= golang:$(GO_VERSION)-$(OS_CODENAME)
-PROTOBUF_VERSION ?= 3.7.0
+PROTOBUF_VERSION ?= 3.19.4
 
 IMAGE = $(REGISTRY)/$(IMGNAME)
 TAG ?= $(shell git describe --tags --always --dirty)
@@ -50,10 +50,10 @@ IMAGE_VERSION = $(KUBERNETES_VERSION)-$(BUILD_METADATA)
 # Ensure support for 'docker buildx' and 'docker manifest' commands
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
-# TODO: Support multi-arch kube-cross images for linux/arm linux/s390x
+# TODO: Support multi-arch kube-cross images for linux/arm
 #       Currently some of the components references in the Dockerfile are
-#       not supported in specific architectures (example etcd does not support s390x)
-PLATFORMS ?= linux/amd64 linux/arm64 linux/ppc64le #linux/arm linux/s390x
+#       not supported in specific architectures
+PLATFORMS ?= linux/amd64 linux/arm64 linux/ppc64le linux/s390x #linux/arm
 
 # for legacy images only build linux/amd64
 ifeq ($(TYPE), legacy)
