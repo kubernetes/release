@@ -25,13 +25,15 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
+
+	"k8s.io/release/cmd/schedule-builder/model"
 )
 
 //go:embed templates/*.tmpl
 var tpls embed.FS
 
 // runs with `--type=patch` to retrun the patch schedule
-func parseSchedule(patchSchedule PatchSchedule) string {
+func parseSchedule(patchSchedule model.PatchSchedule) string {
 	output := []string{}
 	output = append(output, "### Timeline\n")
 	for _, releaseSchedule := range patchSchedule.Schedules {
@@ -68,11 +70,11 @@ func parseSchedule(patchSchedule PatchSchedule) string {
 }
 
 // runs with `--type=release` to retrun the release cycle schedule
-func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
+func parseReleaseSchedule(releaseSchedule model.ReleaseSchedule) string {
 	type RelSched struct {
 		K8VersionWithDot    string
 		K8VersionWithoutDot string
-		Arr                 []Timeline
+		Arr                 []model.Timeline
 		TimelineOutput      string
 	}
 
@@ -80,7 +82,7 @@ func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 
 	relSched.K8VersionWithDot = releaseSchedule.Releases[0].Version
 	relSched.K8VersionWithoutDot = removeDotfromVersion(releaseSchedule.Releases[0].Version)
-	relSched.Arr = []Timeline{}
+	relSched.Arr = []model.Timeline{}
 	for _, releaseSchedule := range releaseSchedule.Releases {
 		for _, timeline := range releaseSchedule.Timeline {
 			if timeline.Tldr {
@@ -113,7 +115,7 @@ func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 	return scheduleOut
 }
 
-func patchReleaseInPreviousList(a string, previousPatches []PreviousPatches) bool {
+func patchReleaseInPreviousList(a string, previousPatches []model.PreviousPatches) bool {
 	for _, b := range previousPatches {
 		if b.Release == a {
 			return true
