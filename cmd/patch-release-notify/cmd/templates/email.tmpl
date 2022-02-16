@@ -1,0 +1,34 @@
+Hello Kubernetes Community!
+
+{{range .Releases}}
+The cherry-pick deadline for the {{ .Release }} branches is {{ .CherryPickDeadline }} EOD PT.
+{{end}}
+
+Here are some quick links to search for cherry-pick PRs:
+
+{{range .Releases}}
+  - release-{{ .Release }}: https://github.com/kubernetes/kubernetes/pulls?q=is%3Apr+is%3Aopen+base%3Arelease-{{ .Release }}+label%3Ado-not-merge%2Fcherry-pick-not-approved
+{{end}}
+
+
+For PRs that you intend to land for the upcoming patch sets, please
+ensure they have:
+- a release note in the PR description
+- /sig
+- /kind
+- /priority
+- /lgtm
+- /approve
+- passing tests
+
+Details on the cherry-pick process can be found here:
+https://git.k8s.io/community/contributors/devel/sig-release/cherry-picks.md
+
+We keep general info and up-to-date timelines for patch releases here:
+https://kubernetes.io/releases/patch-releases/#upcoming-monthly-releases
+
+If you have any questions for the Release Managers, please feel free to
+reach out to us at #release-management (Kubernetes Slack) or release-managers@kubernetes.io
+
+We wish everyone a happy and safe week!
+SIG-Release Team

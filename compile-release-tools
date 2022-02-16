@@ -22,6 +22,7 @@ RELEASE_TOOLS=(
   krel
   kubepkg
   schedule-builder
+  patch-release-notify
 )
 
 setup_env() {
