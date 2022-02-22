@@ -121,14 +121,40 @@ func fetchImageMetadata(dir, tag string) (*ImageMetadata, error) {
 	}
 
 	res := ImageMetadata{}
-	for manifest, architectures := range manifests {
+
+	// Link the images to their corresponding Google Cloud container registry
+	// location.
+	const linkBase = "https://console.cloud.google.com/gcr/images/k8s-artifacts-prod/us/"
+
+	for manifest, tempArchitectures := range manifests {
+		imageName := strings.TrimPrefix(manifest, image.ProdRegistry+"/")
+
+		architectures := []string{}
+		for _, architecture := range tempArchitectures {
+			architectures = append(
+				architectures,
+				markdownLink(architecture, linkBase+imageName+"-"+architecture),
+			)
+		}
+
 		res = append(res, Image{
-			Name:          fmt.Sprintf("%s:%s", manifest, tag),
+			Name: markdownLink(
+				fmt.Sprintf("%s:%s", manifest, tag),
+				linkBase+imageName,
+			),
 			Architectures: architectures,
 		})
 	}
 
+	sort.SliceStable(res, func(i, j int) bool {
+		return res[i].Name < res[j].Name
+	})
+
 	return &res, nil
+}
+
+func markdownLink(text, link string) string {
+	return fmt.Sprintf("[%s](%s)", text, link)
 }
 
 // fileInfo fetches file metadata for files in `dir` matching `patterns`
@@ -430,7 +456,8 @@ func CreateDownloadsTable(w io.Writer, bucket, tars, images, prevTag, newTag str
 	}
 
 	fmt.Fprintf(w, "# %s\n\n", newTag)
-	fmt.Fprintf(w, "[Documentation](https://docs.k8s.io)\n\n")
+	fmt.Fprint(w, markdownLink("Documentation", "https://docs.k8s.io"))
+	fmt.Fprintf(w, "\n\n")
 
 	fmt.Fprintf(w, "## Downloads for %s\n\n", newTag)
 
@@ -454,7 +481,8 @@ func CreateDownloadsTable(w io.Writer, bucket, tars, images, prevTag, newTag str
 			fmt.Fprintln(w, "-------- | -----------")
 
 			for _, f := range files[header] {
-				fmt.Fprintf(w, "[%s](%s) | `%s`\n", f.Name, f.URL, f.Checksum)
+				fmt.Fprint(w, markdownLink(f.Name, f.URL))
+				fmt.Fprintf(w, " | `%s`\n", f.Checksum)
 			}
 			fmt.Fprintln(w, "")
 		}

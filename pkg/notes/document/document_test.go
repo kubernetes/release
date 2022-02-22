@@ -18,6 +18,7 @@ package document
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,6 +28,7 @@ import (
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/release"
+	"sigs.k8s.io/release-utils/command"
 )
 
 func TestFileMetadata(t *testing.T) {
@@ -256,6 +258,37 @@ func setupTestDir(t *testing.T, dir string) {
 			filepath.Join(dir, file), []byte{1, 2, 3}, os.FileMode(0o644),
 		))
 	}
+	for _, arch := range []string{"amd64", "arm", "arm64", "ppc64le", "s390x"} {
+		archDir := filepath.Join(dir, release.ImagesPath, arch)
+		require.Nil(t, os.MkdirAll(archDir, fs.FileMode(0o755)))
+
+		for _, file := range []string{
+			fmt.Sprintf("conformance-%s.tar", arch),
+			"kube-apiserver.tar",
+			"kube-controller-manager.tar",
+			"kube-proxy.tar",
+			"kube-scheduler.tar",
+		} {
+			repoTagTarball(t,
+				filepath.Join(archDir, file),
+				"k8s.gcr.io/"+strings.TrimSuffix(file, ".tar")+":v1.16.0",
+			)
+		}
+	}
+}
+
+func repoTagTarball(t *testing.T, path, repoTag string) {
+	const manifestJSON = "manifest.json"
+	manifestJSONPath := filepath.Join(filepath.Dir(path), manifestJSON)
+	require.Nil(t, os.WriteFile(
+		manifestJSONPath,
+		[]byte(fmt.Sprintf(`[{"RepoTags": ["%s"]}]`, repoTag)),
+		os.FileMode(0o644),
+	))
+	require.Nil(t, command.NewWithWorkDir(filepath.Dir(path),
+		"tar", "cf", path, manifestJSON,
+	).RunSilentSuccess())
+	require.Nil(t, os.RemoveAll(manifestJSONPath))
 }
 
 func TestNew(t *testing.T) {
@@ -514,7 +547,7 @@ func TestDocument_RenderMarkdownTemplate(t *testing.T) {
 			}
 
 			// When
-			got, err := doc.RenderMarkdownTemplate(release.ProductionBucket, dir, "", templateSpec)
+			got, err := doc.RenderMarkdownTemplate(release.ProductionBucket, dir, dir, templateSpec)
 
 			// Then
 			require.NoError(t, err, "Unexpected error.")
