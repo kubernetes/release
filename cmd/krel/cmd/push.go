@@ -51,7 +51,7 @@ var pushBuildCmd = &cobra.Command{
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := runPushBuild(pushBuildOpts); err != nil {
-			return errors.Wrap(err, "Failed to run:")
+			return errors.Wrap(err, "failed to run")
 		}
 
 		return nil

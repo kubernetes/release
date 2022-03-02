@@ -50,7 +50,7 @@ var ciBuildCmd = &cobra.Command{
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := runCIBuild(ciBuildOpts); err != nil {
-			return errors.Wrap(err, "Failed to run:")
+			return errors.Wrap(err, "failed to run")
 		}
 
 		return nil

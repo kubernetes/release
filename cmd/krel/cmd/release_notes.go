@@ -443,7 +443,7 @@ func createDraftPR(repoPath, tag string) (err error) {
 		fmt.Println("  3. Submit a pull request to k/sig-release")
 		fmt.Println("\nYou can find your local copy here:")
 		fmt.Println(sigReleaseRepo.Dir())
-		fmt.Println(nl)
+		fmt.Print(nl + nl)
 		logrus.Warn("Changes were made locally, user needs to perform manual push and create pull request.")
 		return nil
 	}
