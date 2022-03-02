@@ -46,7 +46,7 @@ func (bi *Instance) Build() error {
 
 	if workingDirRelative != expectedDirRelative {
 		return errors.Errorf(
-			"Build was executed from the %s directory but must be run from the %s directory. Exiting...",
+			"build was executed from the %s directory but must be run from the %s directory, exiting",
 			workingDirRelative,
 			expectedDirRelative,
 		)
