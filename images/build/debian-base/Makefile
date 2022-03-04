@@ -26,7 +26,7 @@ TAR_FILE ?= rootfs.tar
 ARCH ?= amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 
-QEMUVERSION=5.2.0-2
+QEMUVERSION=6.1.0-8
 
 # This option is for running docker manifest command
 export DOCKER_CLI_EXPERIMENTAL := enabled
