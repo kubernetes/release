@@ -29,7 +29,7 @@ BASE_REGISTRY?=k8s.gcr.io/build-image
 BASEIMAGE?=$(BASE_REGISTRY)/debian-base-$(ARCH):$(DEBIAN_BASE_VERSION)
 
 # Build args
-QEMUVERSION=5.2.0-2
+QEMUVERSION=6.1.0-8
 
 # This option is for running docker manifest command
 export DOCKER_CLI_EXPERIMENTAL := enabled
