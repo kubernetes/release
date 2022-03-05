@@ -23,9 +23,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v34/github"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
+	"github.com/shurcooL/githubv4"
 	"github.com/spf13/cobra"
 	"github.com/tj/go-spin"
 )
@@ -50,7 +50,7 @@ func Execute() error {
 
 // Config configuration that is getting injected into ci-signal report functions
 type Config struct {
-	GithubClient   *github.Client
+	GithubClient   *githubv4.Client
 	GithubToken    string
 	ReleaseVersion string
 	ShortReport    bool
@@ -58,14 +58,7 @@ type Config struct {
 	Filepath       string
 }
 
-var cfg = &Config{
-	GithubClient:   &github.Client{},
-	GithubToken:    "",
-	ReleaseVersion: "",
-	ShortReport:    false,
-	JSONOutput:     false,
-	Filepath:       "",
-}
+var cfg = &Config{}
 
 func init() {
 	rootCmd.Flags().StringVarP(&cfg.ReleaseVersion, "release-version", "v", "", "Specify a Kubernetes release versions like '1.22' which will populate the report additionally")
@@ -126,13 +119,13 @@ type CIReporterName string
 
 // CIReportRecord generic report data format
 type CIReportRecord struct {
-	ID               string   `json:"id"`
-	Title            string   `json:"title"`
-	URL              string   `json:"url"`
-	Category         string   `json:"category"`
-	Sigs             []string `json:"sigs"`
-	Status           string   `json:"status"`
-	CreatedTimestamp string   `json:"created_timestamp"`
+	Title            string `json:"title"`
+	TestgridBoard    string `json:"testgrid_board"`
+	URL              string `json:"url"`
+	Status           string `json:"status"`
+	StatusDetails    string `json:"status_details"`
+	CreatedTimestamp string `json:"created_timestamp"`
+	UpdatedTimestamp string `json:"updated_timestamp"`
 }
 
 //
@@ -241,20 +234,25 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 
 		// table in short version differs from regular table
 		if cfg.ShortReport {
-			table.SetHeader([]string{"ID", "TITLE", "CATEGORY", "STATUS"})
+			table.SetHeader([]string{"TESTGRID BOARD", "TITLE", "STATUS", "STATUS DETAILS"})
 			for _, record := range r.Records {
-				data = append(data, []string{record.ID, record.Title, record.Category, record.Status})
+				data = append(data, []string{record.TestgridBoard, record.Title, record.Status, record.StatusDetails})
 			}
 		} else {
-			table.SetHeader([]string{"ID", "TITLE", "CATEGORY", "STATUS", "SIGS", "URL", "TS"})
+			table.SetHeader([]string{"TESTGRID BOARD", "TITLE", "STATUS", "STATUS DETAILS", "URL", "UPDATED AT"})
 			for _, record := range r.Records {
-				data = append(data, []string{record.ID, record.Title, record.Category, record.Status, fmt.Sprintf("%v", record.Sigs), record.URL, record.CreatedTimestamp})
+				data = append(data, []string{
+					record.TestgridBoard,
+					record.Title, record.Status,
+					record.StatusDetails,
+					record.URL,
+					strings.ReplaceAll(record.UpdatedTimestamp, "T00:00:00+00:00", ""),
+				})
 			}
 		}
 		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
 		table.AppendBulk(data)
 		table.SetCenterSeparator("|")
-		table.SetAutoMergeCells(true)
 		table.Render()
 
 		// write a summary
