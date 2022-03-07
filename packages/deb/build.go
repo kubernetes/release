@@ -43,7 +43,7 @@ const (
 
 	currentCNIVersion  = "0.8.7"
 	minimumCNIVersion  = "0.8.6"
-	criToolsVersion    = "1.19.0"
+	criToolsVersion    = "1.23.0"
 	pre180kubeadmconf  = "pre-1.8/10-kubeadm.conf"
 	pre1110kubeadmconf = "post-1.8/10-kubeadm.conf"
 	latestkubeadmconf  = "post-1.10/10-kubeadm.conf"
