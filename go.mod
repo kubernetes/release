@@ -42,8 +42,6 @@ require (
 	sigs.k8s.io/zeitgeist v0.3.0
 )
 
-require github.com/shurcooL/graphql v0.0.0-20200928012149-18c5c3165e3a // indirect
-
 require (
 	cloud.google.com/go v0.99.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
@@ -91,6 +89,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
+	github.com/shurcooL/graphql v0.0.0-20200928012149-18c5c3165e3a // indirect
 	github.com/spiegel-im-spiegel/errs v1.0.5 // indirect
 	github.com/xanzy/go-gitlab v0.43.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.0 // indirect

@@ -138,14 +138,6 @@ const (
 	UpdatedAtKey           = ciSignalProjectBoardKey("Updated At")
 )
 
-// type CiSignalProjectBoardStatusColumnName string
-
-// var ShortCiSignalProjectBoardStatusColumnNames = []CiSignalProjectBoardStatusColumnName{
-// 	CiSignalProjectBoardStatusColumnName("FAILING"),
-// 	CiSignalProjectBoardStatusColumnName("FLAKY"),
-// 	CiSignalProjectBoardStatusColumnName("OBSERVING"),
-// }
-
 // GitHubProjectBoardFieldSettings settings for a column of a github beta project board
 // --> | Testgrid Board | -> { ID: XXX, Name: Testgrid Board, ... }
 // This information is required to match the settings ID to the name since table entries ref. id
