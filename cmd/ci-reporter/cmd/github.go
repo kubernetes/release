@@ -19,15 +19,10 @@ package cmd
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
-	"regexp"
-	"strings"
 
-	"github.com/google/go-github/v34/github"
 	"github.com/pkg/errors"
+	"github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
@@ -52,10 +47,11 @@ func setGithubConfig(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: cfg.GithubToken})
-	tc := oauth2.NewClient(ctx, ts)
-	cfg.GithubClient = github.NewClient(tc)
+	src := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: cfg.GithubToken},
+	)
+	httpClient := oauth2.NewClient(context.Background(), src)
+	cfg.GithubClient = githubv4.NewClient(httpClient)
 }
 
 // GithubReporterName used to identify github reporter
@@ -79,25 +75,43 @@ func (r GithubReporter) GetCIReporterHead() CIReporterInfo {
 
 // CollectReportData implementation from CIReporter
 func (r GithubReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error) {
-	githubReportData, err := GetGithubReportData(*cfg)
+	// set filter configuration
+	fieldFilter := map[FilteredFieldName][]FilteredBlacklistVal{}
+	if cfg.ShortReport {
+		fieldFilter[FilteredFieldName("Status")] = []FilteredBlacklistVal{
+			FilteredBlacklistVal("RESOLVED"),
+			FilteredBlacklistVal("PASSING"),
+		}
+	}
+	if cfg.ReleaseVersion != "" {
+		fieldFilter[FilteredFieldName("K8s Release")] = []FilteredBlacklistVal{FilteredBlacklistVal(cfg.ReleaseVersion)}
+	}
+	// request github projectboard data
+	githubReportData, err := GetGithubReportData(*cfg, fieldFilter)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting GitHub report data")
 	}
 	records := []*CIReportRecord{}
 
-	for columnTitle, issues := range githubReportData {
-		for _, issue := range issues {
-			records = append(records, &CIReportRecord{
-				ID:       fmt.Sprintf("%d", issue.ID),
-				Title:    issue.Title,
-				URL:      issue.URL,
-				Category: string(columnTitle),
-				Sigs:     issue.Sigs,
-				// information not collected
-				Status:           "",
-				CreatedTimestamp: "",
-			})
+	for _, item := range githubReportData {
+		// set the URL to the Issue- / PR- URL if set
+		URL := ""
+		if issueURL, ok := item.Fields[fieldName(IssueURLKey)]; ok {
+			URL = string(issueURL)
 		}
+		if prURL, ok := item.Fields[fieldName(PullRequestURLKey)]; ok {
+			URL = string(prURL)
+		}
+		// add a new record to the report
+		records = append(records, &CIReportRecord{
+			Title:            item.Title,
+			TestgridBoard:    string(item.Fields[fieldName(TestgridBoardKey)]),
+			URL:              URL,
+			Status:           string(item.Fields[fieldName(StatusKey)]),
+			StatusDetails:    string(item.Fields[fieldName(CiSignalMemberKey)]),
+			CreatedTimestamp: string(item.Fields[fieldName(CreatedAtKey)]),
+			UpdatedTimestamp: string(item.Fields[fieldName(UpdatedAtKey)]),
+		})
 	}
 	return records, nil
 }
@@ -106,144 +120,177 @@ func (r GithubReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error
 // Helper functions to collect github data
 //
 
-// This regex is getting used to identify sig lables on github issues
-var sigRegex = regexp.MustCompile(`sig/[a-zA-Z-]+`)
+// This can be looked up using the API, see https://docs.github.com/en/issues/trying-out-the-new-projects-experience/using-the-api-to-manage-projects#finding-the-node-id-of-an-organization-project
+const ciSignalProjectBoardID = "PN_kwDOAM_34M4AAThW"
 
-var (
-	newColumn = GithubProjectBoardColumn{
-		ColumnTitle: "New/Not Yet Started",
-		ColumnID:    4212817,
-	}
-	underInvestigationColumn = GithubProjectBoardColumn{
-		ColumnTitle: "In flight",
-		ColumnID:    4212819,
-	}
-	observingColumn = GithubProjectBoardColumn{
-		ColumnTitle: "New/Not Yet Started",
-		ColumnID:    4212821,
-	}
-	resolvedColumn = GithubProjectBoardColumn{
-		ColumnTitle: "Resolved",
-		ColumnID:    6798858,
-	}
+type ciSignalProjectBoardKey string
+
+const (
+	// custom project board keys that get extracted via graphql
+	IssueURLKey       = ciSignalProjectBoardKey("Issue URL")
+	PullRequestURLKey = ciSignalProjectBoardKey("PullRequest URL")
+	// project board column headers
+	TestgridBoardKey       = ciSignalProjectBoardKey("Testgrid Board")
+	SlackDiscussionLinkKey = ciSignalProjectBoardKey("Slack discussion link")
+	StatusKey              = ciSignalProjectBoardKey("Status")
+	CiSignalMemberKey      = ciSignalProjectBoardKey("CI Signal Member")
+	CreatedAtKey           = ciSignalProjectBoardKey("Created At")
+	UpdatedAtKey           = ciSignalProjectBoardKey("Updated At")
 )
+
+// GitHubProjectBoardFieldSettings settings for a column of a github beta project board
+// --> | Testgrid Board | -> { ID: XXX, Name: Testgrid Board, ... }
+// This information is required to match the settings ID to the name since table entries ref. id
+type GitHubProjectBoardFieldSettings struct {
+	Width   string `json:"width"`
+	Options []struct {
+		ID       string `json:"id"`
+		Name     string `json:"name"`
+		NameHTML string `json:"name_html"`
+	} `json:"options"`
+}
+
+// This struct represents a graphql query
+// 	that is getting executed using the githubv4
+// 	graphql library: https://github.com/shurcooL/githubv4
+// 	for the GitHub graphql api, see: https://docs.github.com/en/issues/trying-out-the-new-projects-experience/using-the-api-to-manage-projects
+// ENHANCEMENT: filter via request, see: https://dgraph.io/docs/graphql/queries/search-filtering/
+type ciSignalProjectBoardGraphQLQuery struct {
+	Node struct {
+		ProjectNext struct {
+			// Fields information about the column headers of the project
+			// --> | Title | Testgrid Board | Testgrid URL | UpdatedAt | ... |
+			Fields struct {
+				Nodes []struct {
+					Name     string
+					Settings string
+				}
+			} `graphql:"fields(first: 100)"`
+			// Items board rows with content
+			Items struct {
+				Nodes []struct {
+					ID          string
+					Title       string
+					FieldValues struct {
+						Nodes []struct {
+							Value        string
+							ProjectField struct {
+								Name string
+							}
+						}
+					} `graphql:"fieldValues(first: 20)"`
+					Content struct {
+						Issue struct {
+							URL string
+						} `graphql:"... on Issue"`
+						PullRequest struct {
+							URL string
+						} `graphql:"... on PullRequest"`
+					}
+				}
+			} `graphql:"items(first: 100)"`
+		} `graphql:"... on ProjectNext"`
+	} `graphql:"node(id: $projectBoardID)"`
+}
 
 type (
-	// ColumnTitle title of a github project board column
-	ColumnTitle string
-	// ColumnID ID of a github project board column
-	ColumnID int64
+	fieldValue                  string
+	fieldName                   string
+	TransformedProjectBoardItem struct {
+		ID     string
+		Title  string
+		Fields map[fieldName]fieldValue
+	}
+
+	// Types for project board filtering
+	FilteredFieldName    string
+	FilteredBlacklistVal string
 )
 
-// GithubProjectBoardColumn specifies a github project board column
-type GithubProjectBoardColumn struct {
-	ColumnTitle ColumnTitle `json:"column_title"`
-	ColumnID    ColumnID    `json:"column_id"`
-}
-
-// GithubReportData defines the github report data structure
-type GithubReportData map[ColumnTitle][]IssueOverview
-
-// Marshal used to marshal GithubReportData into bytes
-func (d *GithubReportData) Marshal() ([]byte, error) {
-	return json.Marshal(d)
-}
-
-// IssueOverview defines the data types of a github issue in github report data
-type IssueOverview struct {
-	// URL github issue url
-	URL string `json:"url"`
-	// ID github issue id
-	ID int64 `json:"id"`
-	// Title github issue title
-	Title string `json:"title"`
-	// Sigs kubernetes sigs that are referenced via label
-	Sigs []string `json:"sigs"`
-}
-
-type issueDetail struct {
-	Number  int64          `json:"number"`
-	HTMLURL string         `json:"html_url"`
-	Title   string         `json:"title"`
-	Labels  []github.Label `json:"labels,omitempty"`
-}
-
 // GetGithubReportData used to request the raw report data from github
-func GetGithubReportData(cfg Config) (GithubReportData, error) {
-	ciSignalProjectBoard := []GithubProjectBoardColumn{newColumn, underInvestigationColumn}
-
-	// if the short flag is not set observingColumn & resolvedColumn will be added to the report
-	if !cfg.ShortReport {
-		ciSignalProjectBoard = append(ciSignalProjectBoard, observingColumn, resolvedColumn)
+func GetGithubReportData(cfg Config, fieldFilter map[FilteredFieldName][]FilteredBlacklistVal) ([]*TransformedProjectBoardItem, error) {
+	// lookup project board information
+	var queryCiSignalProjectBoard ciSignalProjectBoardGraphQLQuery
+	variablesProjectBoardFields := map[string]interface{}{
+		"projectBoardID": githubv4.ID(ciSignalProjectBoardID),
+	}
+	if err := cfg.GithubClient.Query(context.Background(), &queryCiSignalProjectBoard, variablesProjectBoardFields); err != nil {
+		return nil, err
 	}
 
-	githubReportData := map[ColumnTitle][]IssueOverview{}
-	for _, column := range ciSignalProjectBoard {
-		cards, err := getCardsFromColumn(cfg, column.ColumnID)
-		if err != nil {
+	// projectBoardFieldIDs hold input IDs of the project board to replace all IDs with names
+	// Example: The input "Testgrid Board" is of the type "select"
+	// 	to enter a value on the project board you can select of defined values
+	// 	every value gets an ID assigned, like this: "master-blocking" = 34u5h2l, "master-informing" = 438tz93
+	// 	the information that is looked up on each row references the ID which is cryptic to read
+	//
+	// 	Received row information: { Testgrid Board: 34u5h2l, ... }
+	// 	Transformed row information: { Testgrid Board: "master-blocking", ... }
+	type (
+		// verbose types
+		projectBoardFieldID   string
+		projectBoardFieldName string
+	)
+	projectBoardFieldIDs := map[projectBoardFieldID]projectBoardFieldName{}
+
+	// populate listOfSettingsIDs with IDs
+	for _, field := range queryCiSignalProjectBoard.Node.ProjectNext.Fields.Nodes {
+		var fieldSettings GitHubProjectBoardFieldSettings
+		if err := json.Unmarshal([]byte(field.Settings), &fieldSettings); err != nil {
 			return nil, err
 		}
-		githubReportData[column.ColumnTitle] = cards
-	}
-	return githubReportData, nil
-}
-
-func getCardsFromColumn(cfg Config, cardsID ColumnID) ([]IssueOverview, error) {
-	opt := &github.ProjectCardListOptions{}
-	cards, _, err := cfg.GithubClient.Projects.ListProjectCards(context.Background(), int64(cardsID), opt)
-	if err != nil {
-		return nil, errors.Wrap(err, "querying cards")
+		for _, option := range fieldSettings.Options {
+			projectBoardFieldIDs[projectBoardFieldID(option.ID)] = projectBoardFieldName(option.Name)
+		}
 	}
 
-	issues := []IssueOverview{}
-	for _, c := range cards {
-		issueDetail, err := getIssueDetail(cfg, *c.ContentURL)
-		if err != nil {
-			return nil, err
-		}
-
-		overview := IssueOverview{
-			URL:   issueDetail.HTMLURL,
-			ID:    issueDetail.Number,
-			Title: issueDetail.Title,
-		}
-		for _, v := range issueDetail.Labels {
-			sig := sigRegex.FindString(*v.Name)
-			if sig != "" {
-				sig = strings.Replace(sig, "/", " ", 1)
-				overview.Sigs = append(overview.Sigs, sig)
+	transformedProjectBoardItems := []*TransformedProjectBoardItem{}
+	for _, item := range queryCiSignalProjectBoard.Node.ProjectNext.Items.Nodes {
+		transFields := map[fieldName]fieldValue{}
+		itemBlacklisted := false
+		for _, field := range item.FieldValues.Nodes {
+			fieldVal := field.Value
+			// To check if the field value is blacklisted
+			// 	in the case of a ID stored in the field
+			//	this must be replaced first with the projectBoardFieldIDs map
+			if val, ok := projectBoardFieldIDs[projectBoardFieldID(field.Value)]; ok {
+				// ID detected replace ID with Name
+				fieldVal = string(val)
 			}
+			// check if field name is a filtered field
+			// with the filter map it is possible to filter the results
+			// example: "Status" field gets filtered with blacklist values, "RESOLVED"
+			// 	no "Status": "RESOLVED" items will be added to the output
+			if blacklistValues, filteredFieldFound := fieldFilter[FilteredFieldName(field.ProjectField.Name)]; filteredFieldFound {
+				// The field is a filtered field since it could be found in the fieldFilter map
+				// 	check if the value of the field is blacklisted
+				for _, bv := range blacklistValues {
+					if fieldVal == string(bv) {
+						itemBlacklisted = true
+						break
+					}
+				}
+				if itemBlacklisted {
+					break
+				}
+			}
+			transFields[fieldName(field.ProjectField.Name)] = fieldValue(fieldVal)
 		}
-		issues = append(issues, overview)
+		if itemBlacklisted {
+			continue
+		}
+		if item.Content.Issue.URL != "" {
+			transFields[fieldName("Issue URL")] = fieldValue(item.Content.Issue.URL)
+		}
+		if item.Content.PullRequest.URL != "" {
+			transFields[fieldName("PullRequest URL")] = fieldValue(item.Content.PullRequest.URL)
+		}
+		transformedProjectBoardItems = append(transformedProjectBoardItems, &TransformedProjectBoardItem{
+			ID:     item.ID,
+			Title:  item.Title,
+			Fields: transFields,
+		})
 	}
-	return issues, nil
-}
 
-func getIssueDetail(cfg Config, url string) (*issueDetail, error) {
-	// Create a new request using http
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating HTTP request")
-	}
-	// add authorization header to the req
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", cfg.GithubToken))
-
-	// Send req using http Client
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting card details from GitHub")
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, errors.Wrap(err, "reading GitHub response data")
-	}
-	var result issueDetail
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal GitHub response data")
-	}
-	return &result, nil
+	return transformedProjectBoardItems, nil
 }

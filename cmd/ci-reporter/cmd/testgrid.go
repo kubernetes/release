@@ -62,13 +62,13 @@ func (r TestgridReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, err
 			jobSummary := jobData[jobName]
 			if !cfg.ShortReport || jobSummary.OverallStatus != testgrid.Passing {
 				records = append(records, &CIReportRecord{
-					ID:               string(dashboardName),
+					TestgridBoard:    string(dashboardName),
 					Title:            string(jobName),
 					URL:              jobSummary.GetJobURL(jobName),
-					Category:         string(jobSummary.OverallStatus),
-					Sigs:             jobSummary.FilterSigs(),
-					Status:           jobSummary.FilterSuccessRateForLastRuns(),
+					Status:           string(jobSummary.OverallStatus),
+					StatusDetails:    jobSummary.FilterSuccessRateForLastRuns(),
 					CreatedTimestamp: time.Unix(jobSummary.LastRunTimestamp, 0).Format("2006-01-02 15:04:05 CET"),
+					UpdatedTimestamp: time.Unix(jobSummary.LastUpdateTimestamp, 0).Format("2006-01-02 15:04:05 CET"),
 				})
 			}
 		}
