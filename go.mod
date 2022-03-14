@@ -31,7 +31,7 @@ require (
 	github.com/spiegel-im-spiegel/go-cvss v1.0.0
 	github.com/stretchr/testify v1.7.0
 	github.com/tj/go-spin v1.1.0
-	github.com/yuin/goldmark v1.4.8
+	github.com/yuin/goldmark v1.4.10
 	golang.org/x/net v0.0.0-20220121210141-e204ce36a2ba
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 	google.golang.org/api v0.66.0
