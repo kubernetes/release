@@ -29,7 +29,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.4.0
 	github.com/spiegel-im-spiegel/go-cvss v1.0.0
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	github.com/tj/go-spin v1.1.0
 	github.com/yuin/goldmark v1.4.10
 	golang.org/x/net v0.0.0-20220121210141-e204ce36a2ba
