@@ -282,7 +282,7 @@ func repoTagTarball(t *testing.T, path, repoTag string) {
 	manifestJSONPath := filepath.Join(filepath.Dir(path), manifestJSON)
 	require.Nil(t, os.WriteFile(
 		manifestJSONPath,
-		[]byte(fmt.Sprintf(`[{"RepoTags": ["%s"]}]`, repoTag)),
+		[]byte(fmt.Sprintf(`[{"RepoTags": [%q]}]`, repoTag)),
 		os.FileMode(0o644),
 	))
 	require.Nil(t, command.NewWithWorkDir(filepath.Dir(path),

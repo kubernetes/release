@@ -101,6 +101,19 @@ type Overview struct {
 	StaleJobs   []JobName
 }
 
+//
+// Types that reflect from testgrid summary
+//
+
+// JobName type for testgrid jobs
+type JobName string
+
+// DashboardData used to store testgrid dashboards
+type DashboardData map[DashboardName]JobData
+
+// JobData used to store multiple TestgridJobs TestgridJobSummary
+type JobData map[JobName]JobSummary
+
 // Overview used to get an overview about a testgrid dashboard
 func (d *JobData) Overview() (Overview, error) {
 	overview := Overview{}
@@ -121,19 +134,6 @@ func (d *JobData) Overview() (Overview, error) {
 	}
 	return overview, nil
 }
-
-//
-// Types that reflect from testgrid summary
-//
-
-// JobName type for testgrid jobs
-type JobName string
-
-// DashboardData used to store testgrid dashboards
-type DashboardData map[DashboardName]JobData
-
-// JobData used to store multiple TestgridJobs TestgridJobSummary
-type JobData map[JobName]JobSummary
 
 // UnmarshalTestgridSummary used to unmarshal bytes into TestgridSummary
 func UnmarshalTestgridSummary(data []byte) (JobData, error) {
