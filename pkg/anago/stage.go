@@ -846,7 +846,7 @@ func (d *DefaultStage) StageArtifacts() error {
 		// Add artifacts to the attestation, this should get both release-images
 		// and gcs-stage directories in one call.
 		subjects, err = d.impl.GetOutputDirSubjects(
-			d.options, filepath.Join(buildDir), version,
+			d.options, buildDir, version,
 		)
 		if err != nil {
 			return errors.Wrapf(err, "adding provenance of release-images for version %s", version)
@@ -974,7 +974,8 @@ func (d *defaultStageImpl) PushAttestation(attestation *provenance.Statement, op
 // GetOutputDirSubjects reads the built artifacts and returns them
 // as intoto subjects. All paths are translated to their final path in the bucket
 func (d *defaultStageImpl) GetOutputDirSubjects(
-	options *StageOptions, path, version string) ([]intoto.Subject, error) {
+	options *StageOptions, path, version string,
+) ([]intoto.Subject, error) {
 	return release.NewProvenanceReader(&release.ProvenanceReaderOptions{
 		Bucket:       options.Bucket(),
 		BuildVersion: options.BuildVersion,
@@ -985,7 +986,8 @@ func (d *defaultStageImpl) GetOutputDirSubjects(
 // GetProvenanceSubjects returns artifacts as intoto subjects, normalized to
 // the staging bucket location
 func (d *defaultStageImpl) GetProvenanceSubjects(
-	options *StageOptions, path string) ([]intoto.Subject, error) {
+	options *StageOptions, path string,
+) ([]intoto.Subject, error) {
 	return release.NewProvenanceReader(&release.ProvenanceReaderOptions{
 		Bucket:       options.Bucket(),
 		BuildVersion: options.BuildVersion,

@@ -254,7 +254,7 @@ func (impl *defaultClientImplementation) CreateEmptyFile(cve string, opts *Clien
 	if err != nil {
 		return nil, errors.Wrap(err, "creating new map file")
 	}
-	if _, err := file.Write([]byte(newMapHeader)); err != nil {
+	if _, err := file.WriteString(newMapHeader); err != nil {
 		return nil, errors.Wrap(err, "writing empty CVE header")
 	}
 	if _, err := file.Write(yamlCode); err != nil {

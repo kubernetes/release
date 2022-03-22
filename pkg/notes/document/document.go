@@ -28,6 +28,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"sigs.k8s.io/promo-tools/v3/image"
 	"sigs.k8s.io/release-utils/hash"
 
@@ -538,5 +540,5 @@ func prettyKind(kind notes.Kind) string {
 	} else if kind == notes.KindOther {
 		return string(notes.KindOther)
 	}
-	return strings.Title(string(kind))
+	return cases.Title(language.English).String(string(kind))
 }

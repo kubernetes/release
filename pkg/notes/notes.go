@@ -37,6 +37,8 @@ import (
 	"github.com/nozzle/throttler"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"gopkg.in/yaml.v2"
 
 	"k8s.io/release/pkg/notes/options"
@@ -1032,7 +1034,7 @@ func prettySIG(sig string) string {
 		case "api", "aws", "cli", "gcp":
 			parts[i] = strings.ToUpper(part)
 		default:
-			parts[i] = strings.Title(part)
+			parts[i] = cases.Title(language.English).String(part)
 		}
 	}
 	return strings.Join(parts, " ")
