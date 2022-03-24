@@ -188,10 +188,9 @@ func processDashboards(testgridJobs []TestGridJob, date string, opts *TestGridOp
 		if err != nil {
 			return testgridJobs, errors.Wrapf(err, "failed to create the file %s", jobFile)
 		}
-		defer f.Close()
-		defer os.Remove(jobFile)
 
 		_, err = f.Write(content)
+		f.Close()
 		if err != nil {
 			return testgridJobs, errors.Wrapf(err, "failed to write the content to the file %s", jobFile)
 		}
@@ -202,6 +201,9 @@ func processDashboards(testgridJobs []TestGridJob, date string, opts *TestGridOp
 		gcs := object.NewGCS()
 		if err := gcs.CopyToRemote(jobFile, gcsPath); err != nil {
 			return testgridJobs, errors.Wrapf(err, "failed to upload the file %s to GCS bucket %s", jobFile, gcsPath)
+		}
+		if err := os.Remove(jobFile); err != nil {
+			return testgridJobs, errors.Wrapf(err, "remove jobfile")
 		}
 		testgridJobs[i].GCSLocation = fmt.Sprintf("https://storage.googleapis.com/%s", gcsPath)
 		logrus.Infof("Screenshot will be available for job %s at %s", job.JobName, testgridJobs[i].GCSLocation)

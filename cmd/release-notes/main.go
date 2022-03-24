@@ -159,10 +159,7 @@ func init() {
 		"format",
 		env.Default("FORMAT", options.FormatMarkdown),
 		fmt.Sprintf("The format for notes output (options: %s)",
-			strings.Join([]string{
-				options.FormatJSON,
-				options.FormatMarkdown,
-			}, ", "),
+			options.FormatJSON+", "+options.FormatMarkdown,
 		),
 	)
 

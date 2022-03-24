@@ -39,7 +39,7 @@ const (
 	workDirFlag           = "workdir"
 )
 
-const semVerRegex string = `^?([0-9]+)(\.[0-9]+)?(\.[0-9]+)`
+const semVerRegex string = `^?(\d+)(\.\d+)?(\.\d+)`
 
 const branchCreationMsg = `Kubernetes Community,
 <p>Kubernetes' {{ .Branch }} branch has been created.</p>

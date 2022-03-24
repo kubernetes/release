@@ -126,6 +126,7 @@ linters-settings:
       - caseOrder
       - codegenComment
       - commentedOutCode
+      - deferInLoop
       - deprecatedComment
       - dupArg
       - dupBranchBody
@@ -136,6 +137,7 @@ linters-settings:
       - evalOrder
       - exitAfterDefer
       - externalErrorReassign
+      - filepathJoin
       - flagDeref
       - flagName
       - mapKey
@@ -152,8 +154,6 @@ linters-settings:
       - truncateCmp
       - unnecessaryDefer
       - weakCond
-      # - deferInLoop
-      # - filepathJoin
 
       # Performance
       - appendCombine
@@ -185,15 +185,18 @@ linters-settings:
       - exposedSyncMutex
       - hexLiteral
       - httpNoBody
+      - ioutilDeprecated
       - methodExprCall
       - newDeref
       - octalLiteral
       - preferFilepathJoin
       - redundantSprint
       - regexpMust
+      - regexpSimplify
       - ruleguard
       - singleCaseSwitch
       - sloppyLen
+      - stringConcatSimplify
       - switchTrue
       - timeExprSimplify
       - tooManyResultsChecker
@@ -208,9 +211,6 @@ linters-settings:
       - wrapperFunc
       - yodaStyleExpr
       # - ifElseChain
-      # - ioutilDeprecated
-      # - regexpSimplify
-      # - stringConcatSimplify
       # - whyNoLint
 
       # Opinionated

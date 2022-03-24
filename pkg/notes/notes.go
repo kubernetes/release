@@ -366,10 +366,10 @@ func noteTextFromString(s string) (string, error) {
 	exps := []*regexp.Regexp{
 		// (?s) is needed for '.' to be matching on newlines, by default that's disabled
 		// we need to match ungreedy 'U', because after the notes a `docs` block can occur
-		regexp.MustCompile("(?sU)```release-note[s]?\\r\\n(?P<note>.+)\\r\\n```"),
-		regexp.MustCompile("(?sU)```dev-release-note[s]?\\r\\n(?P<note>.+)"),
+		regexp.MustCompile("(?sU)```release-notes?\\r\\n(?P<note>.+)\\r\\n```"),
+		regexp.MustCompile("(?sU)```dev-release-notes?\\r\\n(?P<note>.+)"),
 		regexp.MustCompile("(?sU)```\\r\\n(?P<note>.+)\\r\\n```"),
-		regexp.MustCompile("(?sU)```release-note[s]?\n(?P<note>.+)\n```"),
+		regexp.MustCompile("(?sU)```release-notes?\n(?P<note>.+)\n```"),
 	}
 
 	for _, exp := range exps {
@@ -396,7 +396,7 @@ func noteTextFromString(s string) (string, error) {
 }
 
 func DocumentationFromString(s string) []*Documentation {
-	regex := regexp.MustCompile("(?s)```docs[\\r]?\\n(?P<text>.+)[\\r]?\\n```")
+	regex := regexp.MustCompile("(?s)```docs\\r?\\n(?P<text>.+)\\r?\\n```")
 	match := regex.FindStringSubmatch(s)
 
 	if len(match) < 1 {
@@ -619,7 +619,7 @@ var noteExclusionFilters = []*regexp.Regexp{
 	// 'none','n/a','na' case insensitive with optional trailing
 	// whitespace, wrapped in ``` with/without release-note identifier
 	// the 'none','n/a','na' can also optionally be wrapped in quotes ' or "
-	regexp.MustCompile("(?i)```release-note[s]?\\s*('|\")?(none|n/a|na)?('|\")?\\s*```"),
+	regexp.MustCompile("(?i)```release-notes?\\s*('\")?(none|n/a|na)?('\")?\\s*```"),
 
 	// simple '/release-note-none' tag
 	regexp.MustCompile("/release-note-none"),

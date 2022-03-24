@@ -75,13 +75,13 @@ func TestBuiltWithBazel(t *testing.T) {
 	require.Nil(t, os.MkdirAll(filepath.Join(dockerTmpDir, BuildDir, ReleaseTarsPath), os.ModePerm))
 
 	// Create test files.
-	baseBazelFile := filepath.Join(baseTmpDir, "bazel-bin/build/release-tars/kubernetes.tar.gz")
+	baseBazelFile := filepath.Join(baseTmpDir, "bazel-bin", "build", "release-tars", "kubernetes.tar.gz")
 	require.Nil(t, os.WriteFile(
 		baseBazelFile,
 		[]byte("test"),
 		os.FileMode(0o644),
 	))
-	bazelFile := filepath.Join(bazelTmpDir, "bazel-bin/build/release-tars/kubernetes.tar.gz")
+	bazelFile := filepath.Join(bazelTmpDir, "bazel-bin", "build", "release-tars", "kubernetes.tar.gz")
 	require.Nil(t, os.WriteFile(
 		bazelFile,
 		[]byte("test"),
@@ -91,7 +91,7 @@ func TestBuiltWithBazel(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	baseDockerFile := filepath.Join(
-		baseTmpDir, BuildDir, "release-tars/kubernetes.tar.gz",
+		baseTmpDir, BuildDir, "release-tars", "kubernetes.tar.gz",
 	)
 	require.Nil(t, os.WriteFile(
 		baseDockerFile,
@@ -99,7 +99,7 @@ func TestBuiltWithBazel(t *testing.T) {
 		os.FileMode(0o644),
 	))
 	dockerFile := filepath.Join(
-		dockerTmpDir, BuildDir, "release-tars/kubernetes.tar.gz",
+		dockerTmpDir, BuildDir, "release-tars", "kubernetes.tar.gz",
 	)
 	require.Nil(t, os.WriteFile(
 		dockerFile,
@@ -408,7 +408,7 @@ func TestCopyBinaries(t *testing.T) {
 				require.Nil(t, err)
 
 				binDir := filepath.Join(
-					tempDir, "client/linux-amd64/kubernetes/client/bin",
+					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
 				)
 				require.Nil(t, os.MkdirAll(binDir, os.FileMode(0o755)))
 
@@ -424,7 +424,7 @@ func TestCopyBinaries(t *testing.T) {
 			validate: func(err error, testDir string) {
 				require.Nil(t, err)
 
-				binDir := filepath.Join(testDir, "bin/linux/amd64")
+				binDir := filepath.Join(testDir, "bin", "linux", "amd64")
 				require.FileExists(t, filepath.Join(binDir, "1"))
 				require.FileExists(t, filepath.Join(binDir, "2"))
 				require.FileExists(t, filepath.Join(binDir, "3"))
@@ -439,10 +439,10 @@ func TestCopyBinaries(t *testing.T) {
 				require.Nil(t, err)
 
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "client/linux-amd64/kubernetes/client/bin",
+					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
 				), os.FileMode(0o755)))
 
-				_, err = os.Create(filepath.Join(tempDir, "client/some-file"))
+				_, err = os.Create(filepath.Join(tempDir, "client", "some-file"))
 				require.Nil(t, err)
 
 				return tempDir, func() {
@@ -457,10 +457,10 @@ func TestCopyBinaries(t *testing.T) {
 				require.Nil(t, err)
 
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "client/linux-amd64/kubernetes/client/bin",
+					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
 				), os.FileMode(0o755)))
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "server/linux-amd64/kubernetes/server/bin",
+					tempDir, "server", "linux-amd64", "kubernetes", "server", "bin",
 				), os.FileMode(0o755)))
 
 				return tempDir, func() {
@@ -475,10 +475,10 @@ func TestCopyBinaries(t *testing.T) {
 				require.Nil(t, err)
 
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "client/linux-amd64/kubernetes/client/bin",
+					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
 				), os.FileMode(0o755)))
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "node/linux-amd64/kubernetes/node/bin",
+					tempDir, "node", "linux-amd64", "kubernetes", "node", "bin",
 				), os.FileMode(0o755)))
 
 				return tempDir, func() {
@@ -493,10 +493,10 @@ func TestCopyBinaries(t *testing.T) {
 				require.Nil(t, err)
 
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "client/linux-amd64/kubernetes/client/bin",
+					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
 				), os.FileMode(0o755)))
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "server/linux-amd64/kubernetes/wrong/bin",
+					tempDir, "server", "linux-amd64", "kubernetes", "wrong", "bin",
 				), os.FileMode(0o755)))
 
 				return tempDir, func() {
@@ -511,10 +511,10 @@ func TestCopyBinaries(t *testing.T) {
 				require.Nil(t, err)
 
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "client/linux-amd64/kubernetes/client/bin",
+					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
 				), os.FileMode(0o755)))
 				require.Nil(t, os.MkdirAll(filepath.Join(
-					tempDir, "node/linux-amd64/kubernetes/wrong/bin",
+					tempDir, "node", "linux-amd64", "kubernetes", "wrong", "bin",
 				), os.FileMode(0o755)))
 
 				return tempDir, func() {

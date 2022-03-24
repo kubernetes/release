@@ -521,7 +521,7 @@ func (d *DefaultRelease) CreateAnnouncement() error {
 	announceOpts := announce.NewOptions()
 
 	// Workdir is where the announce files will be saved
-	announceOpts.WithWorkDir(filepath.Join(workspaceDir, "/src"))
+	announceOpts.WithWorkDir(filepath.Join(workspaceDir, "src"))
 
 	// Get a semver from the prime tag
 	primeSemver, err := util.TagStringToSemver(d.state.versions.Prime())
