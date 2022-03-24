@@ -142,7 +142,7 @@ const (
 // --> | Testgrid Board | -> { ID: XXX, Name: Testgrid Board, ... }
 // This information is required to match the settings ID to the name since table entries ref. id
 type GitHubProjectBoardFieldSettings struct {
-	Width   string `json:"width"`
+	Width   int `json:"width"`
 	Options []struct {
 		ID       string `json:"id"`
 		Name     string `json:"name"`
