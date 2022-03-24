@@ -242,7 +242,6 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 				err, "write manifest to %s", manifestFile.Name(),
 			)
 		}
-		defer os.RemoveAll(manifestFile.Name())
 
 		for _, arch := range arches {
 			logrus.Infof(
@@ -269,6 +268,10 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 			}
 
 			logrus.Infof("Digest for %s on %s: %s", imageVersion, arch, digest)
+		}
+
+		if err := os.RemoveAll(manifestFile.Name()); err != nil {
+			return errors.Wrap(err, "remove manifest file")
 		}
 	}
 
@@ -310,7 +313,6 @@ func (i *Images) Exists(registry, version string, fast bool) (bool, error) {
 				err, "write manifest to %s", manifestFile.Name(),
 			)
 		}
-		defer os.RemoveAll(manifestFile.Name())
 
 		for _, arch := range arches {
 			logrus.Infof(
@@ -337,6 +339,10 @@ func (i *Images) Exists(registry, version string, fast bool) (bool, error) {
 			}
 
 			logrus.Infof("Digest for %s on %s: %s", imageVersion, arch, digest)
+		}
+
+		if err := os.RemoveAll(manifestFile.Name()); err != nil {
+			return false, errors.Wrap(err, "remove manifest file")
 		}
 	}
 

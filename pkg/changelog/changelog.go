@@ -301,9 +301,9 @@ func (c *Changelog) writeMarkdown(
 	)
 	writeFile := func(t, m string) error {
 		return c.impl.WriteFile(
-			changelogPath, []byte(strings.Join(
-				[]string{addTocMarkers(t), strings.TrimSpace(m)}, "\n",
-			)), os.FileMode(0o644),
+			changelogPath,
+			[]byte(addTocMarkers(t)+"\n"+strings.TrimSpace(m)),
+			os.FileMode(0o644),
 		)
 	}
 

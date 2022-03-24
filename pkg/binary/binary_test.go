@@ -129,8 +129,8 @@ func TestArch(t *testing.T) {
 func TestGetELFHeader(t *testing.T) {
 	for _, testBin := range GetTestHeaders() {
 		f := writeTestBinary(t, &testBin.Data)
-		defer os.Remove(f.Name())
 		header, err := binary.GetELFHeader(f.Name())
+		os.Remove(f.Name())
 		require.Nil(t, err)
 		if testBin.OS == "linux" {
 			require.NotNil(t, header)
@@ -144,8 +144,8 @@ func TestGetELFHeader(t *testing.T) {
 func TestGetMachOHeader(t *testing.T) {
 	for _, testBin := range GetTestHeaders() {
 		f := writeTestBinary(t, &testBin.Data)
-		defer os.Remove(f.Name())
 		header, err := binary.GetMachOHeader(f.Name())
+		os.Remove(f.Name())
 		require.Nil(t, err)
 		if testBin.OS == "darwin" {
 			require.NotNil(t, header)
@@ -159,8 +159,8 @@ func TestGetMachOHeader(t *testing.T) {
 func TestGetPEHeader(t *testing.T) {
 	for _, testBin := range GetTestHeaders() {
 		f := writeTestBinary(t, &testBin.Data)
-		defer os.Remove(f.Name())
 		header, err := binary.GetPEHeader(f.Name())
+		os.Remove(f.Name())
 		require.Nil(t, err)
 		if testBin.OS == "windows" {
 			require.NotNil(t, header, fmt.Sprintf("testing binary for %s/%s", testBin.OS, testBin.Arch))

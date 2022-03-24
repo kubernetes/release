@@ -90,12 +90,12 @@ var ExtraWindowsStageFiles = []stageFile{
 		required: true,
 	},
 	{
-		srcPath:  filepath.Join(release.WindowsLocalPath, "testonly/install-ssh.psm1"),
+		srcPath:  filepath.Join(release.WindowsLocalPath, "testonly", "install-ssh.psm1"),
 		dstPath:  extraDir + "/gce/windows/install-ssh.psm1",
 		required: true,
 	},
 	{
-		srcPath:  filepath.Join(release.WindowsLocalPath, "testonly/user-profile.psm1"),
+		srcPath:  filepath.Join(release.WindowsLocalPath, "testonly", "user-profile.psm1"),
 		dstPath:  extraDir + "/gce/windows/user-profile.psm1",
 		required: true,
 	},

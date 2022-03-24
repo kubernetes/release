@@ -198,7 +198,7 @@ func GenerateReleaseVersion(
 		if releaseType == ReleaseTypeOfficial {
 			releaseVersions.official = releaseVersions.prime
 			// Only primary branches get rc releases
-			if regexp.MustCompile(`^release-([0-9]{1,})\.([0-9]{1,})$`).MatchString(branch) {
+			if regexp.MustCompile(`^release-(\d+)\.(\d+)$`).MatchString(branch) {
 				releaseVersions.rc = fmt.Sprintf(
 					"v%d.%d.%d-rc.0", v.Major, v.Minor, v.Patch+1,
 				)

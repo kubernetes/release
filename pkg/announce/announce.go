@@ -190,6 +190,6 @@ func getGoVersion(tag string) (string, error) {
 		return "", errors.Wrap(err, "get go version")
 	}
 
-	versionRegex := regexp.MustCompile(`^?([0-9]+)(\.[0-9]+)?(\.[0-9]+)`)
+	versionRegex := regexp.MustCompile(`^?(\d+)(\.\d+)?(\.\d+)`)
 	return versionRegex.FindString(strings.TrimSpace(res.OutputTrimNL())), nil
 }

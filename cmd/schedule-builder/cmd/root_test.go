@@ -248,11 +248,11 @@ func TestRun(t *testing.T) {
 
 		tempDir, err := os.MkdirTemp("/tmp", "schedule-test")
 		require.Nil(t, err)
-		defer os.RemoveAll(tempDir)
 
 		tc.options.outputFile = fmt.Sprintf("%s/output-%d.md", tempDir, tcCount)
 
 		err = run(tc.options)
 		tc.expect(err, tc.options.outputFile)
+		require.Nil(t, os.RemoveAll(tempDir))
 	}
 }
