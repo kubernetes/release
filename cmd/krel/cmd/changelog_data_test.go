@@ -870,7 +870,7 @@ const minorReleaseExpectedContent = `# Changelog since v1.20.0
 
 PSP as an admission controller resource is being deprecated. Deployed PodSecurityPolicy's will keep working until version 1.25, their target removal from the codebase. A new feature, with a working title of "PSP replacement policy", is being developed in [KEP-2579](https://features.k8s.io/2579). To learn more, read [PodSecurityPolicy Deprecation: Past, Present, and Future](https://blog.k8s.io/2021/04/06/podsecuritypolicy-deprecation-past-present-and-future/).`
 
-// nolint: misspell
+// nolint:misspell // there is a spelling mistake in the notes
 const minorReleaseExpectedHTML = `<!DOCTYPE html>
 <html>
   <head>

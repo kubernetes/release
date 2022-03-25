@@ -1048,11 +1048,14 @@ func prettifySIGList(sigs []string) string {
 	sort.Strings(sigs)
 
 	for i, sig := range sigs {
-		if i == 0 {
+		switch i {
+		case 0:
 			sigList = fmt.Sprintf("SIG %s", prettySIG(sig))
-		} else if i == len(sigs)-1 {
+
+		case len(sigs) - 1:
 			sigList = fmt.Sprintf("%s and %s", sigList, prettySIG(sig))
-		} else {
+
+		default:
 			sigList = fmt.Sprintf("%s, %s", sigList, prettySIG(sig))
 		}
 	}

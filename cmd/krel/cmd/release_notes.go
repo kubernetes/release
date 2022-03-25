@@ -809,7 +809,7 @@ func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 		tagChoice = "previous patch release"
 	} else {
 		// From 1.20 the notes for the first alpha start from the previous minor
-		if len(tagVersion.Pre) == 2 &&
+		if len(tagVersion.Pre) == 2 && // nolint:gocritic // a switch case would not make it better
 			tagVersion.Pre[0].String() == "alpha" &&
 			tagVersion.Pre[1].VersionNum == 1 {
 			startTag = util.SemverToTagString(semver.Version{

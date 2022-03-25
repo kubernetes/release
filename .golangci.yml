@@ -185,6 +185,7 @@ linters-settings:
       - exposedSyncMutex
       - hexLiteral
       - httpNoBody
+      - ifElseChain
       - ioutilDeprecated
       - methodExprCall
       - newDeref
@@ -208,10 +209,9 @@ linters-settings:
       - unlambda
       - unslice
       - valSwap
+      - whyNoLint
       - wrapperFunc
       - yodaStyleExpr
-      # - ifElseChain
-      # - whyNoLint
 
       # Opinionated
       - builtinShadow
