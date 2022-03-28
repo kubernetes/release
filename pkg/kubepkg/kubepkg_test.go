@@ -17,11 +17,11 @@ limitations under the License.
 package kubepkg_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"k8s.io/release/pkg/kubepkg"

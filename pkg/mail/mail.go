@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/pkg/errors"
 	"github.com/sendgrid/rest"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
@@ -124,17 +123,17 @@ func (s *Sender) SetDefaultSender() error {
 	request := sendgrid.GetRequest(s.apiKey, "/v3/user/email", "")
 	response, err := s.apiClient.API(request)
 	if err != nil {
-		return errors.Wrap(err, "getting user email")
+		return fmt.Errorf("getting user email: %w", err)
 	}
 	if response.StatusCode != http.StatusOK {
-		return errors.Errorf("unable to get users email: %s", response.Body)
+		return fmt.Errorf("unable to get users email: %s", response.Body)
 	}
 	type email struct {
 		Email string `json:"email"`
 	}
 	emailResponse := &email{}
 	if err := json.Unmarshal([]byte(response.Body), emailResponse); err != nil {
-		return errors.Wrap(err, "decoding JSON response")
+		return fmt.Errorf("decoding JSON response: %w", err)
 	}
 	logrus.Infof("Using sender address: %s", emailResponse.Email)
 
@@ -142,10 +141,10 @@ func (s *Sender) SetDefaultSender() error {
 	request = sendgrid.GetRequest(s.apiKey, "/v3/user/profile", "")
 	response, err = s.apiClient.API(request)
 	if err != nil {
-		return errors.Wrap(err, "getting user profile")
+		return fmt.Errorf("getting user profile: %w", err)
 	}
 	if response.StatusCode != http.StatusOK {
-		return errors.Errorf("unable to get users profile: %s", response.Body)
+		return fmt.Errorf("unable to get users profile: %s", response.Body)
 	}
 	type profile struct {
 		FirstName string `json:"first_name"`
@@ -153,7 +152,7 @@ func (s *Sender) SetDefaultSender() error {
 	}
 	pr := profile{}
 	if err := json.Unmarshal([]byte(response.Body), &pr); err != nil {
-		return errors.Wrap(err, "decoding JSON response")
+		return fmt.Errorf("decoding JSON response: %w", err)
 	}
 
 	name := fmt.Sprintf("%s %s", pr.FirstName, pr.LastName)

@@ -17,11 +17,11 @@ limitations under the License.
 package anago
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/release"
@@ -96,17 +96,17 @@ func (o *Options) Validate(state *State) error {
 		o.ReleaseType != release.ReleaseTypeBeta &&
 		o.ReleaseType != release.ReleaseTypeRC &&
 		o.ReleaseType != release.ReleaseTypeOfficial {
-		return errors.Errorf("invalid release type: %s", o.ReleaseType)
+		return fmt.Errorf("invalid release type: %s", o.ReleaseType)
 	}
 
 	if !git.IsReleaseBranch(o.ReleaseBranch) {
-		return errors.Errorf("invalid release branch: %s", o.ReleaseBranch)
+		return fmt.Errorf("invalid release branch: %s", o.ReleaseBranch)
 	}
 
 	// Verify the build version is correct:
 	correct, err := release.IsValidReleaseBuild(o.BuildVersion)
 	if err != nil {
-		return errors.Wrap(err, "checking for a valid build version")
+		return fmt.Errorf("checking for a valid build version: %w", err)
 	}
 	if !correct {
 		return errors.New("invalid BuildVersion specified")
@@ -114,7 +114,7 @@ func (o *Options) Validate(state *State) error {
 
 	semverBuildVersion, err := util.TagStringToSemver(o.BuildVersion)
 	if err != nil {
-		return errors.Wrapf(err, "invalid build version: %s", o.BuildVersion)
+		return fmt.Errorf("invalid build version: %s: %w", o.BuildVersion, err)
 	}
 	state.semverBuildVersion = semverBuildVersion
 
@@ -206,7 +206,7 @@ func (s *StageOptions) String() string {
 // Validate if the options are correctly set.
 func (s *StageOptions) Validate(state *State) error {
 	if err := s.Options.Validate(state); err != nil {
-		return errors.Wrap(err, "validating generic options")
+		return fmt.Errorf("validating generic options: %w", err)
 	}
 	return nil
 }
@@ -230,7 +230,7 @@ func (s *Stage) SetClient(client stageClient) {
 func (s *Stage) Submit(stream bool) error {
 	logrus.Info("Submitting stage GCB job")
 	if err := s.client.Submit(stream); err != nil {
-		return errors.Wrap(err, "submit stage job")
+		return fmt.Errorf("submit stage job: %w", err)
 	}
 	return nil
 }
@@ -241,7 +241,7 @@ func (s *Stage) Run() error {
 	s.client.InitState()
 
 	if err := s.client.InitLogFile(); err != nil {
-		return errors.Wrap(err, "init log file")
+		return fmt.Errorf("init log file: %w", err)
 	}
 
 	logger := log.NewStepLogger(11)
@@ -249,57 +249,57 @@ func (s *Stage) Run() error {
 
 	logger.WithStep().Info("Validating options")
 	if err := s.client.ValidateOptions(); err != nil {
-		return errors.Wrap(err, "validate options")
+		return fmt.Errorf("validate options: %w", err)
 	}
 
 	logger.WithStep().Info("Checking prerequisites")
 	if err := s.client.CheckPrerequisites(); err != nil {
-		return errors.Wrap(err, "check prerequisites")
+		return fmt.Errorf("check prerequisites: %w", err)
 	}
 
 	logger.WithStep().Info("Checking release branch state")
 	if err := s.client.CheckReleaseBranchState(); err != nil {
-		return errors.Wrap(err, "check release branch state")
+		return fmt.Errorf("check release branch state: %w", err)
 	}
 
 	logger.WithStep().Info("Generating release version")
 	if err := s.client.GenerateReleaseVersion(); err != nil {
-		return errors.Wrap(err, "generate release version")
+		return fmt.Errorf("generate release version: %w", err)
 	}
 
 	logger.WithStep().Info("Preparing workspace")
 	if err := s.client.PrepareWorkspace(); err != nil {
-		return errors.Wrap(err, "prepare workspace")
+		return fmt.Errorf("prepare workspace: %w", err)
 	}
 
 	logger.WithStep().Info("Tagging repository")
 	if err := s.client.TagRepository(); err != nil {
-		return errors.Wrap(err, "tag repository")
+		return fmt.Errorf("tag repository: %w", err)
 	}
 
 	logger.WithStep().Info("Building release")
 	if err := s.client.Build(); err != nil {
-		return errors.Wrap(err, "build release")
+		return fmt.Errorf("build release: %w", err)
 	}
 
 	logger.WithStep().Info("Generating changelog")
 	if err := s.client.GenerateChangelog(); err != nil {
-		return errors.Wrap(err, "generate changelog")
+		return fmt.Errorf("generate changelog: %w", err)
 	}
 
 	logger.WithStep().Info("Verifying artifacts")
 	if err := s.client.VerifyArtifacts(); err != nil {
-		return errors.Wrap(err, "verifying artifacts")
+		return fmt.Errorf("verifying artifacts: %w", err)
 	}
 
 	logger.WithStep().Info("Generating bill of materials")
 	if err := s.client.GenerateBillOfMaterials(); err != nil {
-		return errors.Wrap(err, "generating sbom")
+		return fmt.Errorf("generating sbom: %w", err)
 	}
 
 	logger.WithStep().Info("Staging artifacts")
 	if err := s.client.StageArtifacts(); err != nil {
-		return errors.Wrap(err, "stage release artifacts")
+		return fmt.Errorf("stage release artifacts: %w", err)
 	}
 
 	logger.Info("Stage done")
@@ -338,7 +338,7 @@ func (r *ReleaseOptions) String() string {
 // Validate if the options are correctly set.
 func (r *ReleaseOptions) Validate(state *State) error {
 	if err := r.Options.Validate(state); err != nil {
-		return errors.Wrap(err, "validating generic options")
+		return fmt.Errorf("validating generic options: %w", err)
 	}
 	return nil
 }
@@ -362,7 +362,7 @@ func (r *Release) SetClient(client releaseClient) {
 func (r *Release) Submit(stream bool) error {
 	logrus.Info("Submitting release GCB job")
 	if err := r.client.Submit(stream); err != nil {
-		return errors.Wrap(err, "submit release job")
+		return fmt.Errorf("submit release job: %w", err)
 	}
 	return nil
 }
@@ -372,7 +372,7 @@ func (r *Release) Run() error {
 	r.client.InitState()
 
 	if err := r.client.InitLogFile(); err != nil {
-		return errors.Wrap(err, "init log file")
+		return fmt.Errorf("init log file: %w", err)
 	}
 
 	logger := log.NewStepLogger(11)
@@ -380,59 +380,59 @@ func (r *Release) Run() error {
 
 	logger.WithStep().Info("Validating options")
 	if err := r.client.ValidateOptions(); err != nil {
-		return errors.Wrap(err, "validate options")
+		return fmt.Errorf("validate options: %w", err)
 	}
 
 	logger.WithStep().Info("Checking prerequisites")
 	if err := r.client.CheckPrerequisites(); err != nil {
-		return errors.Wrap(err, "check prerequisites")
+		return fmt.Errorf("check prerequisites: %w", err)
 	}
 
 	logger.WithStep().Info("Checking release branch state")
 	if err := r.client.CheckReleaseBranchState(); err != nil {
-		return errors.Wrap(err, "check release branch state")
+		return fmt.Errorf("check release branch state: %w", err)
 	}
 
 	logger.WithStep().Info("Generating release version")
 	if err := r.client.GenerateReleaseVersion(); err != nil {
-		return errors.Wrap(err, "generate release version")
+		return fmt.Errorf("generate release version: %w", err)
 	}
 
 	logger.WithStep().Info("Preparing workspace")
 	if err := r.client.PrepareWorkspace(); err != nil {
-		return errors.Wrap(err, "prepare workspace")
+		return fmt.Errorf("prepare workspace: %w", err)
 	}
 
 	logger.WithStep().Info("Checking artifacts provenance")
 	if err := r.client.CheckProvenance(); err != nil {
 		// For now, we ony notify provenance errors as not to treat
 		// them as fatal while we finish testing SLSA compliance.
-		logrus.Warn(errors.Wrap(err, "checking provenance attestation"))
+		logrus.Warnf("Checking provenance attestation: %v", err)
 	}
 
 	logger.WithStep().Info("Pushing artifacts")
 	if err := r.client.PushArtifacts(); err != nil {
-		return errors.Wrap(err, "push artifacts")
+		return fmt.Errorf("push artifacts: %w", err)
 	}
 
 	logger.WithStep().Info("Pushing git objects")
 	if err := r.client.PushGitObjects(); err != nil {
-		return errors.Wrap(err, "push git objects")
+		return fmt.Errorf("push git objects: %w", err)
 	}
 
 	logger.WithStep().Info("Creating announcement")
 	if err := r.client.CreateAnnouncement(); err != nil {
-		return errors.Wrap(err, "create announcement")
+		return fmt.Errorf("create announcement: %w", err)
 	}
 
 	logger.WithStep().Info("Updating GitHub release page")
 	if err := r.client.UpdateGitHubPage(); err != nil {
-		return errors.Wrap(err, "updating github page")
+		return fmt.Errorf("updating github page: %w", err)
 	}
 
 	logger.WithStep().Info("Archiving release")
 	if err := r.client.Archive(); err != nil {
-		return errors.Wrap(err, "archive release")
+		return fmt.Errorf("archive release: %w", err)
 	}
 
 	logger.Info("Release done")

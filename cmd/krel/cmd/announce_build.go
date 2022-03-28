@@ -25,7 +25,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -177,7 +176,7 @@ func runBuildBranchAnnounce(opts *buildBranchAnnounceOptions, buildOpts *buildAn
 	if err := t.Execute(&annoucement, struct {
 		Branch string
 	}{opts.branch}); err != nil {
-		return errors.Wrap(err, "generating the announcement html file")
+		return fmt.Errorf("generating the announcement html file: %w", err)
 	}
 
 	announcementSubject := fmt.Sprintf("Kubernetes %s branch has been created", opts.branch)
@@ -187,7 +186,7 @@ func runBuildBranchAnnounce(opts *buildBranchAnnounceOptions, buildOpts *buildAn
 // runBuildReleaseAnnounce build the announcement file when creating a new Kubernetes release
 func runBuildReleaseAnnounce(opts *buildReleaseAnnounceOptions, buildOpts *buildAnnounceOptions, announceOpts *announceOptions) error {
 	if err := announceOpts.Validate(); err != nil {
-		return errors.Wrap(err, "validating annoucement send options")
+		return fmt.Errorf("validating annoucement send options: %w", err)
 	}
 
 	logrus.Info("Building release announcement for new release")
@@ -223,7 +222,7 @@ func runBuildReleaseAnnounce(opts *buildReleaseAnnounceOptions, buildOpts *build
 		filepath.Base(opts.changelogFilePath),
 		string(changelogHTML),
 	}); err != nil {
-		return errors.Wrap(err, "generating the announcement html file")
+		return fmt.Errorf("generating the announcement html file: %w", err)
 	}
 
 	announcementSubject := fmt.Sprintf("Kubernetes %s is live!", announceOpts.tag)
@@ -238,14 +237,14 @@ func (opts *buildAnnounceOptions) saveAnnouncement(announcementSubject string, a
 	logrus.Infof("Writing HTML file to %s", absOutputPath)
 	err := os.WriteFile(absOutputPath, annoucement.Bytes(), os.FileMode(0o644))
 	if err != nil {
-		return errors.Wrap(err, "saving announcement.html")
+		return fmt.Errorf("saving announcement.html: %w", err)
 	}
 
 	absOutputPath = filepath.Join(opts.workDir, "announcement-subject.txt")
 	logrus.Infof("Writing announcement subject to %s", absOutputPath)
 	err = os.WriteFile(absOutputPath, []byte(announcementSubject), os.FileMode(0o644))
 	if err != nil {
-		return errors.Wrap(err, "saving announcement-subject.txt")
+		return fmt.Errorf("saving announcement-subject.txt: %w", err)
 	}
 
 	logrus.Info("Kubernetes Announcement created.")
@@ -257,7 +256,7 @@ func getGoVersion() (string, error) {
 		"go", "version").
 		RunSilentSuccessOutput()
 	if err != nil {
-		return "", errors.Wrap(err, "get go version")
+		return "", fmt.Errorf("get go version: %w", err)
 	}
 
 	versionRegex := regexp.MustCompile(semVerRegex)

@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/pkg/errors"
 )
 
 // SummaryLookup this type is used if multiple testgrid summaries are getting requested concurrently
@@ -67,7 +66,7 @@ func ReqTestgridDashboardSummaries(dashboardNames []DashboardName) (DashboardDat
 	// Collect data from buffered channel
 	for lookups := range requestData(done, dashboardNames...) {
 		if lookups.Error != nil {
-			err = multierror.Append(err, errors.Wrapf(lookups.Error, "error requesting summary for dashboard %s", lookups.Dashboard))
+			err = multierror.Append(err, fmt.Errorf("error requesting summary for dashboard %s: %w", lookups.Dashboard, lookups.Error))
 		} else {
 			dashboardData[lookups.Dashboard] = lookups.Summary
 		}
@@ -79,16 +78,16 @@ func ReqTestgridDashboardSummaries(dashboardNames []DashboardName) (DashboardDat
 func ReqTestgridDashboardSummary(dashboardName DashboardName) (JobData, error) {
 	resp, err := http.Get(fmt.Sprintf("https://testgrid.k8s.io/%s/summary", dashboardName))
 	if err != nil {
-		return nil, errors.Wrap(err, "request remote content")
+		return nil, fmt.Errorf("request remote content: %w", err)
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errors.Wrap(err, "read response body")
+		return nil, fmt.Errorf("read response body: %w", err)
 	}
 	summary, err := UnmarshalTestgridSummary(body)
 	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal response body")
+		return nil, fmt.Errorf("unmarshal response body: %w", err)
 	}
 	return summary, nil
 }

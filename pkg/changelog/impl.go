@@ -17,13 +17,13 @@ limitations under the License.
 package changelog
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"text/template"
 
 	"github.com/blang/semver"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -229,19 +229,19 @@ func (*defaultImpl) Rm(repo *git.Repo, force bool, files ...string) error {
 func (*defaultImpl) CloneCVEData() (cveDir string, err error) {
 	tmpdir, err := os.MkdirTemp(os.TempDir(), "cve-maps-")
 	if err != nil {
-		return "", errors.Wrap(err, "creating temporary dir for CVE data")
+		return "", fmt.Errorf("creating temporary dir for CVE data: %w", err)
 	}
 
 	// Create a new GCS client
 	gcs := object.NewGCS()
 	remoteSrc, err := gcs.NormalizePath(object.GcsPrefix + filepath.Join(cve.Bucket, cve.Directory))
 	if err != nil {
-		return "", errors.Wrap(err, "normalizing cve bucket path")
+		return "", fmt.Errorf("normalizing cve bucket path: %w", err)
 	}
 
 	bucketExists, err := gcs.PathExists(remoteSrc)
 	if err != nil {
-		return "", errors.Wrap(err, "checking if CVE directory exists")
+		return "", fmt.Errorf("checking if CVE directory exists: %w", err)
 	}
 	if !bucketExists {
 		logrus.Warnf("CVE data maps not found in bucket location: %s", remoteSrc)
@@ -250,7 +250,7 @@ func (*defaultImpl) CloneCVEData() (cveDir string, err error) {
 
 	// Rsync the CVE files to the temp dir
 	if err := gcs.RsyncRecursive(remoteSrc, tmpdir); err != nil {
-		return "", errors.Wrap(err, "copying release directory to bucket")
+		return "", fmt.Errorf("copying release directory to bucket: %w", err)
 	}
 	logrus.Infof("Successfully synchronized CVE data maps from %s", remoteSrc)
 	return tmpdir, nil

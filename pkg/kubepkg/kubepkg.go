@@ -17,6 +17,7 @@ limitations under the License.
 package kubepkg
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,7 +27,6 @@ import (
 
 	"github.com/blang/semver"
 	gogithub "github.com/google/go-github/v39/github"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/kubepkg/options"
@@ -176,7 +176,7 @@ func (c *Client) ConstructBuilds() ([]Build, error) {
 		// TODO: Get package directory for any version once package definitions are broken out
 		packageTemplateDir := filepath.Join(c.options.TemplateDir(), string(c.options.BuildType()), pkg)
 		if _, err := os.Stat(packageTemplateDir); err != nil {
-			return nil, errors.Wrap(err, "finding package template dir")
+			return nil, fmt.Errorf("finding package template dir: %w", err)
 		}
 
 		b := &Build{
@@ -265,7 +265,7 @@ func (c *Client) buildPackage(build Build, packageDef *PackageDefinition, arch, 
 		logrus.Infof("Checking if user-supplied Kubernetes version (%s) is valid semver...", bc.KubernetesVersion)
 		kubeSemver, err := util.TagStringToSemver(bc.KubernetesVersion)
 		if err != nil {
-			return errors.Wrap(err, "user-supplied Kubernetes version is not valid semver")
+			return fmt.Errorf("user-supplied Kubernetes version is not valid semver: %w", err)
 		}
 
 		kubeVersionString := kubeSemver.String()
@@ -289,12 +289,12 @@ func (c *Client) buildPackage(build Build, packageDef *PackageDefinition, arch, 
 
 	bc.KubernetesVersion, err = c.GetKubernetesVersion(pd)
 	if err != nil {
-		return errors.Wrap(err, "getting Kubernetes version")
+		return fmt.Errorf("getting Kubernetes version: %w", err)
 	}
 
 	bc.DownloadLinkBase, err = c.GetDownloadLinkBase(pd)
 	if err != nil {
-		return errors.Wrap(err, "getting Kubernetes download link base")
+		return fmt.Errorf("getting Kubernetes download link base: %w", err)
 	}
 
 	logrus.Infof("Kubernetes download link base: %s", bc.DownloadLinkBase)
@@ -305,14 +305,14 @@ func (c *Client) buildPackage(build Build, packageDef *PackageDefinition, arch, 
 
 	bc.Version, err = c.GetPackageVersion(pd)
 	if err != nil {
-		return errors.Wrap(err, "getting package version")
+		return fmt.Errorf("getting package version: %w", err)
 	}
 
 	logrus.Infof("%s package version: %s", bc.Name, bc.Version)
 
 	bc.Dependencies, err = GetDependencies(pd)
 	if err != nil {
-		return errors.Wrap(err, "getting dependencies")
+		return fmt.Errorf("getting dependencies: %w", err)
 	}
 
 	bc.KubeadmKubeletConfigFile = kubeadmConf
@@ -321,12 +321,12 @@ func (c *Client) buildPackage(build Build, packageDef *PackageDefinition, arch, 
 
 	bc.CNIVersion, err = GetCNIVersion(pd)
 	if err != nil {
-		return errors.Wrap(err, "getting CNI version")
+		return fmt.Errorf("getting CNI version: %w", err)
 	}
 
 	bc.CNIDownloadLink, err = GetCNIDownloadLink(pd.Version, bc.GoArch)
 	if err != nil {
-		return errors.Wrap(err, "getting CNI download link")
+		return fmt.Errorf("getting CNI download link: %w", err)
 	}
 
 	logrus.Infof("Building %s package for %s/%s architecture...", bc.Package, bc.GoArch, bc.BuildArch)
@@ -374,7 +374,7 @@ func (c *Client) run(bc *buildConfig) error {
 			"--host-arch",
 			bc.BuildArch,
 		); err != nil {
-			return errors.Wrap(err, "running debian package build")
+			return fmt.Errorf("running debian package build: %w", err)
 		}
 
 		fileName := fmt.Sprintf(
@@ -389,18 +389,18 @@ func (c *Client) run(bc *buildConfig) error {
 		logrus.Infof("Using package destination path %s", dstPath)
 
 		if err := os.MkdirAll(filepath.Dir(dstPath), os.FileMode(0o777)); err != nil {
-			return errors.Wrapf(err, "creating %s", filepath.Dir(dstPath))
+			return fmt.Errorf("creating %s: %w", filepath.Dir(dstPath), err)
 		}
 
 		srcPath := filepath.Join(specDir, fileName)
 		input, err := c.impl.ReadFile(srcPath)
 		if err != nil {
-			return errors.Wrapf(err, "reading %s", srcPath)
+			return fmt.Errorf("reading %s: %w", srcPath, err)
 		}
 
 		err = c.impl.WriteFile(dstPath, input, os.FileMode(0o644))
 		if err != nil {
-			return errors.Wrapf(err, "writing file to %s", dstPath)
+			return fmt.Errorf("writing file to %s: %w", dstPath, err)
 		}
 
 		logrus.Infof("Successfully built %s", dstPath)
@@ -460,15 +460,15 @@ func GetCNIVersion(packageDef *PackageDefinition) (string, error) {
 	if packageDef.CNIVersion != "" {
 		cniSemVer, err := util.TagStringToSemver(packageDef.CNIVersion)
 		if err != nil {
-			return "", errors.Wrap(err, "parsing CNI version")
+			return "", fmt.Errorf("parsing CNI version: %w", err)
 		}
 		minCNISemVer, err := util.TagStringToSemver(MinimumCNIVersion)
 		if err != nil {
-			return "", errors.Wrap(err, "parsing CNI version")
+			return "", fmt.Errorf("parsing CNI version: %w", err)
 		}
 
 		if cniSemVer.LT(minCNISemVer) {
-			return "", errors.Errorf("specified CNI version (%s) cannot be lower than %s", packageDef.CNIVersion, MinimumCNIVersion)
+			return "", fmt.Errorf("specified CNI version (%s) cannot be lower than %s", packageDef.CNIVersion, MinimumCNIVersion)
 		}
 
 		logrus.Infof("Setting CNI version to %s", packageDef.CNIVersion)
@@ -539,12 +539,12 @@ func (c *Client) GetCRIToolsVersion(packageDef *PackageDefinition) (string, erro
 	for _, tag := range tags {
 		tagSemver, err := semver.Parse(tag)
 		if err != nil {
-			return "", errors.Wrap(err, "could not parse tag semver")
+			return "", fmt.Errorf("could not parse tag semver: %w", err)
 		}
 
 		criToolsSemver, err := semver.Parse(criToolsVersion)
 		if err != nil {
-			return "", errors.Wrap(err, "could not parse CRI tools semver")
+			return "", fmt.Errorf("could not parse CRI tools semver: %w", err)
 		}
 
 		if tagSemver.GTE(criToolsSemver) {
@@ -623,7 +623,7 @@ func getBuildArch(goArch string, buildType options.BuildType) string {
 
 func GetCNIDownloadLink(version, arch string) (string, error) {
 	if _, err := util.TagStringToSemver(version); err != nil {
-		return "", errors.Wrap(err, "parsing CNI version")
+		return "", fmt.Errorf("parsing CNI version: %w", err)
 	}
 
 	return fmt.Sprintf("https://storage.googleapis.com/k8s-artifacts-cni/release/v%s/cni-plugins-linux-%s-v%s.tgz", version, arch, version), nil
