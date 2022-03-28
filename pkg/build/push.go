@@ -18,6 +18,7 @@ package build
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,7 +26,6 @@ import (
 	"strings"
 
 	"cloud.google.com/go/storage"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/release"
@@ -105,7 +105,7 @@ var ExtraWindowsStageFiles = []stageFile{
 func (bi *Instance) Push() error {
 	version, err := bi.findLatestVersion()
 	if err != nil {
-		return errors.Wrap(err, "find latest version")
+		return fmt.Errorf("find latest version: %w", err)
 	}
 
 	if version == "" {
@@ -115,27 +115,27 @@ func (bi *Instance) Push() error {
 	logrus.Infof("Latest version is %s", version)
 
 	if err := bi.CheckReleaseBucket(); err != nil {
-		return errors.Wrap(err, "check release bucket access")
+		return fmt.Errorf("check release bucket access: %w", err)
 	}
 
 	if err := bi.StageLocalArtifacts(); err != nil {
-		return errors.Wrap(err, "staging local artifacts")
+		return fmt.Errorf("staging local artifacts: %w", err)
 	}
 
 	if err := bi.PushContainerImages(); err != nil {
-		return errors.Wrap(err, "push container images")
+		return fmt.Errorf("push container images: %w", err)
 	}
 
 	gcsDest, gcsDestErr := bi.getGCSBuildPath(version)
 	if gcsDestErr != nil {
-		return errors.Wrap(gcsDestErr, "get GCS destination")
+		return fmt.Errorf("get GCS destination: %w", gcsDestErr)
 	}
 
 	if err := bi.PushReleaseArtifacts(
 		filepath.Join(bi.opts.BuildDir, release.GCSStagePath, version),
 		gcsDest,
 	); err != nil {
-		return errors.Wrap(err, "push release artifacts")
+		return fmt.Errorf("push release artifacts: %w", err)
 	}
 
 	if !bi.opts.CI {
@@ -160,7 +160,7 @@ func (bi *Instance) Push() error {
 		bi.opts.PrivateBucket,
 		bi.opts.Fast,
 	); err != nil {
-		return errors.Wrap(err, "publish release")
+		return fmt.Errorf("publish release: %w", err)
 	}
 
 	return nil
@@ -171,13 +171,13 @@ func (bi *Instance) findLatestVersion() (latestVersion string, err error) {
 	if bi.opts.RepoRoot == "" {
 		bi.opts.RepoRoot, err = os.Getwd()
 		if err != nil {
-			return "", errors.Wrap(err, "get working directory")
+			return "", fmt.Errorf("get working directory: %w", err)
 		}
 	}
 
 	isBazel, err := release.BuiltWithBazel(bi.opts.RepoRoot)
 	if err != nil {
-		return "", errors.Wrap(err, "identify if release built with Bazel")
+		return "", fmt.Errorf("identify if release built with Bazel: %w", err)
 	}
 
 	latestVersion = bi.opts.Version
@@ -186,14 +186,14 @@ func (bi *Instance) findLatestVersion() (latestVersion string, err error) {
 			logrus.Info("Using Bazel build version")
 			version, err := release.ReadBazelVersion(bi.opts.RepoRoot)
 			if err != nil {
-				return "", errors.Wrap(err, "read Bazel build version")
+				return "", fmt.Errorf("read Bazel build version: %w", err)
 			}
 			latestVersion = version
 		} else {
 			logrus.Info("Using Dockerized build version")
 			version, err := release.ReadDockerizedVersion(bi.opts.RepoRoot)
 			if err != nil {
-				return "", errors.Wrap(err, "read Dockerized build version")
+				return "", fmt.Errorf("read Dockerized build version: %w", err)
 			}
 			latestVersion = version
 		}
@@ -203,18 +203,18 @@ func (bi *Instance) findLatestVersion() (latestVersion string, err error) {
 
 	valid, err := release.IsValidReleaseBuild(latestVersion)
 	if err != nil {
-		return "", errors.Wrap(
-			err, "determine if release build version is valid",
+		return "", fmt.Errorf(
+			"determine if release build version is valid: %w", err,
 		)
 	}
 	if !valid {
-		return "", errors.Errorf(
+		return "", fmt.Errorf(
 			"build version %s is not valid for release", latestVersion,
 		)
 	}
 
 	if bi.opts.CI && release.IsDirtyBuild(latestVersion) {
-		return "", errors.Errorf(
+		return "", fmt.Errorf(
 			"refusing to push dirty build %s with --ci flag given",
 			latestVersion,
 		)
@@ -261,15 +261,15 @@ func (bi *Instance) CheckReleaseBucket() error {
 
 	client, err := storage.NewClient(context.Background())
 	if err != nil {
-		return errors.Wrap(err,
+		return fmt.Errorf(
 			"fetching gcloud credentials, try running "+
-				`"gcloud auth application-default login"`,
+				`"gcloud auth application-default login": %w`, err,
 		)
 	}
 
 	bucket := client.Bucket(bi.opts.Bucket)
 	if bucket == nil {
-		return errors.Errorf(
+		return fmt.Errorf(
 			"identify specified bucket for artifacts: %s", bi.opts.Bucket,
 		)
 	}
@@ -280,10 +280,10 @@ func (bi *Instance) CheckReleaseBucket() error {
 		context.Background(), requiredGCSPerms,
 	)
 	if err != nil {
-		return errors.Wrap(err, "find release artifact bucket, try running `gcloud auth application-default login`")
+		return fmt.Errorf("find release artifact bucket, try running `gcloud auth application-default login`: %w", err)
 	}
 	if len(perms) != 1 {
-		return errors.Errorf(
+		return fmt.Errorf(
 			"GCP user must have at least %s permissions on bucket %s",
 			requiredGCSPerms, bi.opts.Bucket,
 		)
@@ -299,7 +299,7 @@ func (bi *Instance) StageLocalArtifacts() error {
 
 	logrus.Infof("Cleaning staging dir %s", stageDir)
 	if err := util.RemoveAndReplaceDir(stageDir); err != nil {
-		return errors.Wrap(err, "remove and replace GCS staging directory")
+		return fmt.Errorf("remove and replace GCS staging directory: %w", err)
 	}
 
 	// Copy release tarballs to local GCS staging directory for push
@@ -307,20 +307,20 @@ func (bi *Instance) StageLocalArtifacts() error {
 	if err := util.CopyDirContentsLocal(
 		filepath.Join(bi.opts.BuildDir, release.ReleaseTarsPath), stageDir,
 	); err != nil {
-		return errors.Wrap(err, "copy source directory into destination")
+		return fmt.Errorf("copy source directory into destination: %w", err)
 	}
 
 	if bi.opts.StageExtraFiles {
 		// Copy helpful GCP scripts to local GCS staging directory for push
 		logrus.Info("Copying extra GCP stage files")
 		if err := bi.copyStageFiles(stageDir, ExtraGcpStageFiles); err != nil {
-			return errors.Wrapf(err, "copy GCP stage files")
+			return fmt.Errorf("copy GCP stage files: %w", err)
 		}
 
 		// Copy helpful Windows scripts to local GCS staging directory for push
 		logrus.Info("Copying extra Windows stage files")
 		if err := bi.copyStageFiles(stageDir, ExtraWindowsStageFiles); err != nil {
-			return errors.Wrapf(err, "copy Windows stage files")
+			return fmt.Errorf("copy Windows stage files: %w", err)
 		}
 	}
 
@@ -333,7 +333,7 @@ func (bi *Instance) StageLocalArtifacts() error {
 			filepath.Join(bi.opts.BuildDir, release.ReleaseStagePath),
 			stageDir,
 		); err != nil {
-			return errors.Wrap(err, "stage binaries")
+			return fmt.Errorf("stage binaries: %w", err)
 		}
 	} else {
 		logrus.Infof(
@@ -349,14 +349,14 @@ func (bi *Instance) StageLocalArtifacts() error {
 		if err := util.CopyFileLocal(
 			sbom, filepath.Join(stageDir, filename), false,
 		); err != nil {
-			return errors.Wrapf(err, "copying SBOM manifests")
+			return fmt.Errorf("copying SBOM manifests: %w", err)
 		}
 	}
 
 	// Write the release checksums
 	logrus.Info("Writing checksums")
 	if err := release.WriteChecksums(stageDir); err != nil {
-		return errors.Wrap(err, "write checksums")
+		return fmt.Errorf("write checksums: %w", err)
 	}
 	return nil
 }
@@ -372,9 +372,7 @@ func (bi *Instance) copyStageFiles(stageDir string, files []stageFile) error {
 			if err := os.MkdirAll(
 				filepath.Dir(dstPath), os.FileMode(0o755),
 			); err != nil {
-				return errors.Wrapf(
-					err, "create destination path %s", file.dstPath,
-				)
+				return fmt.Errorf("create destination path %s: %w", file.dstPath, err)
 			}
 		}
 
@@ -382,7 +380,7 @@ func (bi *Instance) copyStageFiles(stageDir string, files []stageFile) error {
 			filepath.Join(bi.opts.BuildDir, file.srcPath),
 			dstPath, file.required,
 		); err != nil {
-			return errors.Wrapf(err, "copy stage file")
+			return fmt.Errorf("copy stage file: %w", err)
 		}
 	}
 
@@ -394,26 +392,28 @@ func (bi *Instance) copyStageFiles(stageDir string, files []stageFile) error {
 func (bi *Instance) PushReleaseArtifacts(srcPath, gcsPath string) error {
 	dstPath, dstPathErr := bi.objStore.NormalizePath(gcsPath)
 	if dstPathErr != nil {
-		return errors.Wrap(dstPathErr, "normalize GCS destination")
+		return fmt.Errorf("normalize GCS destination: %w", dstPathErr)
 	}
 
 	logrus.Infof("Pushing release artifacts from %s to %s", srcPath, dstPath)
 
 	finfo, err := os.Stat(srcPath)
 	if err != nil {
-		return errors.Wrap(err, "checking if source path is a directory")
+		return fmt.Errorf("checking if source path is a directory: %w", err)
 	}
 
 	// If we are handling a single file copy instead of rsync
 	if !finfo.IsDir() {
-		return errors.Wrap(
-			bi.objStore.CopyToRemote(srcPath, dstPath), "copying file to GCS",
-		)
+		if err := bi.objStore.CopyToRemote(srcPath, dstPath); err != nil {
+			return fmt.Errorf("copying file to GCS: %w", err)
+		}
+		return nil
 	}
 
-	return errors.Wrap(
-		bi.objStore.RsyncRecursive(srcPath, dstPath), "rsync artifacts to GCS",
-	)
+	if err := bi.objStore.RsyncRecursive(srcPath, dstPath); err != nil {
+		return fmt.Errorf("rsync artifacts to GCS: %w", err)
+	}
+	return nil
 }
 
 // PushContainerImages will publish container images into the set
@@ -431,7 +431,7 @@ func (bi *Instance) PushContainerImages() error {
 	if err := images.Publish(
 		bi.opts.Registry, bi.opts.Version, bi.opts.BuildDir,
 	); err != nil {
-		return errors.Wrap(err, "publish container images")
+		return fmt.Errorf("publish container images: %w", err)
 	}
 
 	if !bi.opts.ValidateRemoteImageDigests {
@@ -442,7 +442,7 @@ func (bi *Instance) PushContainerImages() error {
 	if err := images.Validate(
 		bi.opts.Registry, bi.opts.Version, bi.opts.BuildDir,
 	); err != nil {
-		return errors.Wrap(err, "validate container images")
+		return fmt.Errorf("validate container images: %w", err)
 	}
 
 	return nil
@@ -464,33 +464,33 @@ func (bi *Instance) CopyStagedFromGCS(stagedBucket, buildVersion string) error {
 
 	gcsSrc, gcsSrcErr := bi.objStore.NormalizePath(src)
 	if gcsSrcErr != nil {
-		return errors.Wrap(gcsSrcErr, "normalize GCS source")
+		return fmt.Errorf("normalize GCS source: %w", gcsSrcErr)
 	}
 
 	dst, dstErr := bi.objStore.NormalizePath(bi.opts.Bucket, "release", bi.opts.Version)
 	if dstErr != nil {
-		return errors.Wrap(dstErr, "normalize GCS destination")
+		return fmt.Errorf("normalize GCS destination: %w", dstErr)
 	}
 
 	logrus.Infof("Bucket to bucket rsync from %s to %s", gcsSrc, dst)
 	if err := bi.objStore.RsyncRecursive(gcsSrc, dst); err != nil {
-		return errors.Wrap(err, "copy stage to release bucket")
+		return fmt.Errorf("copy stage to release bucket: %w", err)
 	}
 
 	src = filepath.Join(src, release.KubernetesTar)
 	dst = filepath.Join(bi.opts.BuildDir, release.GCSStagePath, bi.opts.Version, release.KubernetesTar)
 	logrus.Infof("Copy kubernetes tarball %s to %s", src, dst)
 	if err := bi.objStore.CopyToLocal(src, dst); err != nil {
-		return errors.Wrapf(err, "copy to local")
+		return fmt.Errorf("copy to local: %w", err)
 	}
 
 	src = filepath.Join(gcsStageRoot, release.ImagesPath)
 	if err := os.MkdirAll(bi.opts.BuildDir, os.FileMode(0o755)); err != nil {
-		return errors.Wrap(err, "create dst dir")
+		return fmt.Errorf("create dst dir: %w", err)
 	}
 	logrus.Infof("Copy container images %s to %s", src, bi.opts.BuildDir)
 	if err := bi.objStore.CopyToLocal(src, bi.opts.BuildDir); err != nil {
-		return errors.Wrapf(err, "copy to local")
+		return fmt.Errorf("copy to local: %w", err)
 	}
 
 	return nil
@@ -504,13 +504,13 @@ func (bi *Instance) StageLocalSourceTree(workDir, buildVersion string) error {
 
 	exclude, err := regexp.Compile(fmt.Sprintf(`.*/%s-.*`, release.BuildDir))
 	if err != nil {
-		return errors.Wrap(err, "compile tarball exclude regex")
+		return fmt.Errorf("compile tarball exclude regex: %w", err)
 	}
 
 	if err := tar.Compress(
 		tarballPath, filepath.Join(workDir, "src"), exclude,
 	); err != nil {
-		return errors.Wrap(err, "create tarball")
+		return fmt.Errorf("create tarball: %w", err)
 	}
 
 	logrus.Infof("Uploading source tree tarball to GCS")
@@ -522,7 +522,7 @@ func (bi *Instance) StageLocalSourceTree(workDir, buildVersion string) error {
 		tarballPath,
 		filepath.Join(bi.opts.Bucket, release.StagePath, buildVersion, release.SourcesTar),
 	); err != nil {
-		return errors.Wrap(err, "copy tarball to GCS")
+		return fmt.Errorf("copy tarball to GCS: %w", err)
 	}
 
 	return nil
@@ -533,5 +533,8 @@ func (bi *Instance) StageLocalSourceTree(workDir, buildVersion string) error {
 func (bi *Instance) DeleteLocalSourceTarball(workDir string) error {
 	tarballPath := filepath.Join(workDir, release.SourcesTar)
 	logrus.Infof("Removing local source tree tarball " + tarballPath)
-	return errors.Wrap(os.RemoveAll(tarballPath), "remove local source tarball")
+	if err := os.RemoveAll(tarballPath); err != nil {
+		return fmt.Errorf("remove local source tarball: %w", err)
+	}
+	return nil
 }

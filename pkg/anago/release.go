@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 
 	"github.com/blang/semver"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/announce"
@@ -250,7 +249,7 @@ func (d *DefaultRelease) InitLogFile() error {
 	)
 	logFile := filepath.Join(os.TempDir(), "release.log")
 	if err := d.impl.ToFile(logFile); err != nil {
-		return errors.Wrap(err, "setup log file")
+		return fmt.Errorf("setup log file: %w", err)
 	}
 	d.state.logFile = logFile
 	logrus.Infof("Additionally logging to file %s", d.state.logFile)
@@ -285,7 +284,7 @@ func (d *defaultReleaseImpl) PushBranches(
 
 func (d *defaultReleaseImpl) PushMainBranch(pusher *release.GitObjectPusher) error {
 	if err := pusher.PushMain(); err != nil {
-		return errors.Wrap(err, "pushing changes in main branch")
+		return fmt.Errorf("pushing changes in main branch: %w", err)
 	}
 	return nil
 }
@@ -320,14 +319,14 @@ func (d *defaultReleaseImpl) NewGitPusher(
 ) (pusher *release.GitObjectPusher, err error) {
 	pusher, err = release.NewGitPusher(opts)
 	if err != nil {
-		return nil, errors.Wrap(err, "creating new git object pusher")
+		return nil, fmt.Errorf("creating new git object pusher: %w", err)
 	}
 	return pusher, nil
 }
 
 func (d *DefaultRelease) ValidateOptions() error {
 	if err := d.options.Validate(d.state.State); err != nil {
-		return errors.Wrap(err, "validating options")
+		return fmt.Errorf("validating options: %w", err)
 	}
 	return nil
 }
@@ -343,7 +342,7 @@ func (d *DefaultRelease) CheckReleaseBranchState() error {
 		d.state.semverBuildVersion,
 	)
 	if err != nil {
-		return errors.Wrap(err, "check if release branch needs creation")
+		return fmt.Errorf("check if release branch needs creation: %w", err)
 	}
 	d.state.createReleaseBranch = createReleaseBranch
 	return nil
@@ -357,7 +356,7 @@ func (d *DefaultRelease) GenerateReleaseVersion() error {
 		d.state.createReleaseBranch,
 	)
 	if err != nil {
-		return errors.Wrap(err, "generating versions for release")
+		return fmt.Errorf("generating versions for release: %w", err)
 	}
 	// Set the versions object in the state
 	d.state.versions = versions
@@ -368,7 +367,7 @@ func (d *DefaultRelease) PrepareWorkspace() error {
 	if err := d.impl.PrepareWorkspaceRelease(
 		d.options.BuildVersion, d.options.Bucket(),
 	); err != nil {
-		return errors.Wrap(err, "prepare workspace")
+		return fmt.Errorf("prepare workspace: %w", err)
 	}
 	return nil
 }
@@ -392,13 +391,13 @@ func (d *DefaultRelease) PushArtifacts() error {
 			ValidateRemoteImageDigests: true,
 		}
 		if err := d.impl.CheckReleaseBucket(pushBuildOptions); err != nil {
-			return errors.Wrap(err, "check release bucket access")
+			return fmt.Errorf("check release bucket access: %w", err)
 		}
 
 		if err := d.impl.CopyStagedFromGCS(
 			pushBuildOptions, bucket, d.options.BuildVersion,
 		); err != nil {
-			return errors.Wrap(err, "copy staged from GCS")
+			return fmt.Errorf("copy staged from GCS: %w", err)
 		}
 
 		// In an official nomock release, we want to ensure that container
@@ -414,13 +413,13 @@ func (d *DefaultRelease) PushArtifacts() error {
 		if err := d.impl.ValidateImages(
 			targetRegistry, version, buildDir,
 		); err != nil {
-			return errors.Wrap(err, "validate container images")
+			return fmt.Errorf("validate container images: %w", err)
 		}
 
 		if err := d.impl.PublishVersion(
 			"release", version, buildDir, bucket, gcsRoot, nil, false, false,
 		); err != nil {
-			return errors.Wrap(err, "publish release")
+			return fmt.Errorf("publish release: %w", err)
 		}
 	}
 
@@ -431,7 +430,7 @@ func (d *DefaultRelease) PushArtifacts() error {
 		objStore, d.options.Bucket(), gcsRoot,
 	)
 	if err != nil {
-		return errors.Wrap(err, "get GCS release root path")
+		return fmt.Errorf("get GCS release root path: %w", err)
 	}
 
 	gcsReleaseNotesPath := gcsReleaseRootPath + fmt.Sprintf(
@@ -443,7 +442,7 @@ func (d *DefaultRelease) PushArtifacts() error {
 		releaseNotesJSONFile,
 		gcsReleaseNotesPath,
 	); err != nil {
-		return errors.Wrap(err, "copy release notes to bucket")
+		return fmt.Errorf("copy release notes to bucket: %w", err)
 	}
 
 	for _, version := range d.state.versions.Ordered() {
@@ -454,7 +453,7 @@ func (d *DefaultRelease) PushArtifacts() error {
 				"/%s/provenance.json", version,
 			),
 		); err != nil {
-			return errors.Wrap(err, "copying provenance data to release bucket")
+			return fmt.Errorf("copying provenance data to release bucket: %w", err)
 		}
 	}
 
@@ -462,7 +461,7 @@ func (d *DefaultRelease) PushArtifacts() error {
 	if err := d.impl.PublishReleaseNotesIndex(
 		gcsReleaseRootPath, gcsReleaseNotesPath, d.state.versions.Prime(),
 	); err != nil {
-		return errors.Wrap(err, "publish release notes index")
+		return fmt.Errorf("publish release notes index: %w", err)
 	}
 
 	return nil
@@ -480,14 +479,14 @@ func (d *DefaultRelease) PushGitObjects() error {
 			RepoPath: gitRoot,
 		})
 	if err != nil {
-		return errors.Wrap(err, "getting git pusher from the release implementation")
+		return fmt.Errorf("getting git pusher from the release implementation: %w", err)
 	}
 
 	// The list of tags to be pushed to the remote repository.
 	// These come from the versions object created during
 	// GenerateReleaseVersion()
 	if err := d.impl.PushTags(pusher, d.state.versions.Ordered()); err != nil {
-		return errors.Wrap(err, "pushing release tags")
+		return fmt.Errorf("pushing release tags: %w", err)
 	}
 
 	// Determine which branches have to be pushed, except main
@@ -499,13 +498,13 @@ func (d *DefaultRelease) PushGitObjects() error {
 
 	// Call the release imprementation PushBranches() method
 	if err := d.impl.PushBranches(pusher, branchList); err != nil {
-		return errors.Wrap(err, "pushing branches to the remote repository")
+		return fmt.Errorf("pushing branches to the remote repository: %w", err)
 	}
 
 	// For files created on master with new branches and
 	// for $CHANGELOG_FILEPATH, update the main branch
 	if err := d.impl.PushMainBranch(pusher); err != nil {
-		return errors.Wrap(err, "pushing changes in main branch")
+		return fmt.Errorf("pushing changes in main branch: %w", err)
 	}
 
 	logrus.Infof(
@@ -526,7 +525,7 @@ func (d *DefaultRelease) CreateAnnouncement() error {
 	// Get a semver from the prime tag
 	primeSemver, err := util.TagStringToSemver(d.state.versions.Prime())
 	if err != nil {
-		return errors.Wrap(err, "parsing prime version into semver")
+		return fmt.Errorf("parsing prime version into semver: %w", err)
 	}
 
 	// The main tag we are releasing
@@ -542,7 +541,7 @@ func (d *DefaultRelease) CreateAnnouncement() error {
 
 	// Run the annoucement creation
 	if err := d.impl.CreateAnnouncement(announceOpts); err != nil {
-		return errors.Wrap(err, "creating the announcement")
+		return fmt.Errorf("creating the announcement: %w", err)
 	}
 
 	// Check if we are releasing is the initial minor (eg 1.20.0),
@@ -605,7 +604,7 @@ func (d *DefaultRelease) UpdateGitHubPage() error {
 	}
 	// Update the release page (or simply output it during mock)
 	if err := d.impl.UpdateGitHubPage(ghPageOpts); err != nil {
-		return errors.Wrap(err, "updating GitHub release page")
+		return fmt.Errorf("updating GitHub release page: %w", err)
 	}
 	return nil
 }
@@ -623,7 +622,7 @@ func (d *DefaultRelease) Archive() error {
 	}
 
 	if err := d.impl.ArchiveRelease(archiverOptions); err != nil {
-		return errors.Wrap(err, "running the release archival process")
+		return fmt.Errorf("running the release archival process: %w", err)
 	}
 
 	args := ""
@@ -652,12 +651,12 @@ func (d *defaultReleaseImpl) CheckStageProvenance(bucket, buildVersion string, v
 	})
 
 	if err := checker.CheckStageProvenance(buildVersion); err != nil {
-		return errors.Wrap(err, "checking provenance of staged artifacts")
+		return fmt.Errorf("checking provenance of staged artifacts: %w", err)
 	}
 
 	// Write the final, end-user attestations
 	if err := checker.GenerateFinalAttestation(buildVersion, versions); err != nil {
-		return errors.Wrap(err, "generating final SLSA attestations")
+		return fmt.Errorf("generating final SLSA attestations: %w", err)
 	}
 
 	return nil
