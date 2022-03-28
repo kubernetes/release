@@ -311,7 +311,7 @@ func New(
 		}
 
 		// TODO: Refactor the logic here and add testing.
-		if note.DuplicateKind {
+		if note.DuplicateKind { // nolint:gocritic // a switch case would not make it better
 			kind := mapKind(highestPriorityKind(note.Kinds))
 			if existing, ok := kindCategory[kind]; ok {
 				*existing.NoteEntries = append(*existing.NoteEntries, processNote(note.Markdown))
@@ -531,14 +531,20 @@ func mapKind(kind notes.Kind) notes.Kind {
 }
 
 func prettyKind(kind notes.Kind) string {
-	if kind == notes.KindAPIChange {
+	switch kind {
+	case notes.KindAPIChange:
 		return "API Change"
-	} else if kind == notes.KindFailingTest {
+
+	case notes.KindFailingTest:
 		return "Failing Test"
-	} else if kind == notes.KindBug {
+
+	case notes.KindBug:
 		return "Bug or Regression"
-	} else if kind == notes.KindOther {
+
+	case notes.KindOther:
 		return string(notes.KindOther)
+
+	default:
+		return cases.Title(language.English).String(string(kind))
 	}
-	return cases.Title(language.English).String(string(kind))
 }

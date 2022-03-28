@@ -128,21 +128,24 @@ func run(opts *options) error {
 
 	logrus.Info("Parsing the schedule...")
 
-	if opts.typeFile == "patch" {
+	switch opts.typeFile {
+	case "patch":
 		if err := yaml.UnmarshalStrict(data, &patchSchedule); err != nil {
 			return errors.Wrap(err, "failed to decode the file")
 		}
 
 		logrus.Info("Generating the markdown output...")
 		scheduleOut = parseSchedule(patchSchedule)
-	} else if opts.typeFile == "release" {
+
+	case "release":
 		if err := yaml.UnmarshalStrict(data, &releaseSchedule); err != nil {
 			return errors.Wrap(err, "failed to decode the file")
 		}
 
 		logrus.Info("Generating the markdown output...")
 		scheduleOut = parseReleaseSchedule(releaseSchedule)
-	} else {
+
+	default:
 		return errors.New("type must be either `release` or `patch`")
 	}
 

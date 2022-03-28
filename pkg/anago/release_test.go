@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// nolint: dupl
+// nolint:dupl // test duplications are fine
 package anago_test
 
 import (
