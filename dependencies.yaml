@@ -379,7 +379,7 @@ dependencies:
       match: "OS_CODENAME: 'bullseye'"
 
   - name: "k8s.gcr.io/build-image/debian-base"
-    version: bullseye-v1.1.0
+    version: bullseye-v1.2.0
     refPaths:
     - path: images/build/debian-base/Makefile
       match: IMAGE_VERSION\ \?=\ bullseye-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -422,7 +422,7 @@ dependencies:
 
   # Base images (next candidate)
   - name: "k8s.gcr.io/build-image/debian-base (next candidate)"
-    version: bullseye-v1.1.0
+    version: bullseye-v1.2.0
     refPaths:
     - path: images/build/debian-base/variants.yaml
       match: "IMAGE_VERSION: 'bullseye-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
