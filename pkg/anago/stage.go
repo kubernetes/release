@@ -741,7 +741,7 @@ func (d *DefaultStage) GenerateBillOfMaterials() error {
 	spdxDOC, err := d.impl.GenerateSourceTreeBOM(&spdx.DocGenerateOptions{
 		ProcessGoModules: true,
 		License:          LicenseIdentifier,
-		OutputFile:       "/tmp/kubernetes-source.spdx",
+		OutputFile:       filepath.Join(os.TempDir(), "kubernetes-source.spdx"),
 		Namespace:        "https://sbom.k8s.io/REPLACE/source", // This one gets replaced when writing to disk
 		ScanLicenses:     true,
 		Directories:      []string{gitRoot},
