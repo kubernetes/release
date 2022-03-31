@@ -26,6 +26,7 @@ import (
 	"github.com/blang/semver"
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	slsa "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/build"
@@ -330,7 +331,7 @@ func (d *defaultStageImpl) VerifyArtifacts(versions []string) error {
 
 	// Ensure binaries are of the correct architecture
 	if err := checker.CheckBinaryArchitectures(); err != nil {
-		return fmt.Errorf("checking binary architectures: %w", err)
+		return errors.Wrap(err, "checking binary architectures")
 	}
 
 	return nil
@@ -342,7 +343,7 @@ func (d *DefaultStage) InitLogFile() error {
 	)
 	logFile := filepath.Join(os.TempDir(), "stage.log")
 	if err := d.impl.ToFile(logFile); err != nil {
-		return fmt.Errorf("setup log file: %w", err)
+		return errors.Wrap(err, "setup log file")
 	}
 	d.state.logFile = logFile
 	logrus.Infof("Additionally logging to file %s", d.state.logFile)
@@ -355,7 +356,7 @@ func (d *DefaultStage) InitState() {
 
 func (d *DefaultStage) ValidateOptions() error {
 	if err := d.options.Validate(d.state.State); err != nil {
-		return fmt.Errorf("validating options: %w", err)
+		return errors.Wrap(err, "validating options")
 	}
 	return nil
 }
@@ -371,7 +372,7 @@ func (d *DefaultStage) CheckReleaseBranchState() error {
 		d.state.semverBuildVersion,
 	)
 	if err != nil {
-		return fmt.Errorf("check if release branch needs creation: %w", err)
+		return errors.Wrap(err, "check if release branch needs creation")
 	}
 	d.state.createReleaseBranch = createReleaseBranch
 	return nil
@@ -385,7 +386,7 @@ func (d *DefaultStage) GenerateReleaseVersion() error {
 		d.state.createReleaseBranch,
 	)
 	if err != nil {
-		return fmt.Errorf("generating release versions for stage: %w", err)
+		return errors.Wrap(err, "generating release versions for stage")
 	}
 	// Set the versions on the state
 	d.state.versions = versions
@@ -394,7 +395,7 @@ func (d *DefaultStage) GenerateReleaseVersion() error {
 
 func (d *DefaultStage) PrepareWorkspace() error {
 	if err := d.impl.PrepareWorkspaceStage(d.options.NoMock); err != nil {
-		return fmt.Errorf("prepare workspace: %w", err)
+		return errors.Wrap(err, "prepare workspace")
 	}
 	return nil
 }
@@ -402,7 +403,7 @@ func (d *DefaultStage) PrepareWorkspace() error {
 func (d *DefaultStage) TagRepository() error {
 	repo, err := d.impl.OpenRepo(gitRoot)
 	if err != nil {
-		return fmt.Errorf("open Kubernetes repository: %w", err)
+		return errors.Wrap(err, "open Kubernetes repository")
 	}
 
 	for _, version := range d.state.versions.Ordered() {
@@ -410,7 +411,7 @@ func (d *DefaultStage) TagRepository() error {
 
 		// Ensure that the tag not already exists
 		if _, err := d.impl.RevParseTag(repo, version); err == nil {
-			return fmt.Errorf("tag %s already exists", version)
+			return errors.Errorf("tag %s already exists", version)
 		}
 
 		// Usually the build version contains a commit we can reference. If
@@ -433,7 +434,7 @@ func (d *DefaultStage) TagRepository() error {
 				if err := d.impl.Checkout(
 					repo, "-b", d.options.ReleaseBranch, commit,
 				); err != nil {
-					return fmt.Errorf("create new release branch: %w", err)
+					return errors.Wrap(err, "create new release branch")
 				}
 			} else {
 				logrus.Infof(
@@ -441,13 +442,13 @@ func (d *DefaultStage) TagRepository() error {
 					version, git.DefaultBranch,
 				)
 				if err := d.impl.Checkout(repo, git.DefaultBranch); err != nil {
-					return fmt.Errorf("checkout %s branch: %w", git.DefaultBranch, err)
+					return errors.Wrapf(err, "checkout %s branch", git.DefaultBranch)
 				}
 			}
 		} else {
 			logrus.Infof("Checking out branch %s", d.options.ReleaseBranch)
 			if err := d.impl.Checkout(repo, d.options.ReleaseBranch); err != nil {
-				return fmt.Errorf("checking out branch %s: %w", d.options.ReleaseBranch, err)
+				return errors.Wrapf(err, "checking out branch %s", d.options.ReleaseBranch)
 			}
 		}
 
@@ -455,7 +456,7 @@ func (d *DefaultStage) TagRepository() error {
 		// then in detached head state.
 		branch, err := d.impl.CurrentBranch(repo)
 		if err != nil {
-			return fmt.Errorf("get current branch: %w", err)
+			return errors.Wrap(err, "get current branch")
 		}
 		if branch != "" {
 			logrus.Infof("Current branch is %s", branch)
@@ -494,7 +495,7 @@ func (d *DefaultStage) TagRepository() error {
 				repo,
 				fmt.Sprintf("Release commit for Kubernetes %s", version),
 			); err != nil {
-				return fmt.Errorf("create empty release commit: %w", err)
+				return errors.Wrap(err, "create empty release commit")
 			}
 		}
 
@@ -504,7 +505,7 @@ func (d *DefaultStage) TagRepository() error {
 		if branch != "" && !strings.HasPrefix(branch, "release-") {
 			logrus.Infof("Detaching HEAD at commit %s to create tag %s", commit, version)
 			if err := d.impl.Checkout(repo, commit); err != nil {
-				return fmt.Errorf("checkout release commit: %w", err)
+				return errors.Wrap(err, "checkout release commit")
 			}
 		}
 
@@ -514,7 +515,7 @@ func (d *DefaultStage) TagRepository() error {
 		if ref != release.DefaultK8sRef {
 			logrus.Infof("Merging custom ref: %s", ref)
 			if err := d.impl.Merge(repo, git.Remotify(ref)); err != nil {
-				return fmt.Errorf("merge k8s ref: %w", err)
+				return errors.Wrap(err, "merge k8s ref")
 			}
 		}
 
@@ -527,7 +528,7 @@ func (d *DefaultStage) TagRepository() error {
 				"Kubernetes %s release %s", d.options.ReleaseType, version,
 			),
 		); err != nil {
-			return fmt.Errorf("tag version: %w", err)
+			return errors.Wrap(err, "tag version")
 		}
 
 		// if we are working on master/main at this point, we are in
@@ -537,7 +538,7 @@ func (d *DefaultStage) TagRepository() error {
 		if branch != "" && !strings.HasPrefix(branch, "release-") {
 			logrus.Infof("Checking out %s to reattach HEAD", d.options.ReleaseBranch)
 			if err := d.impl.Checkout(repo, d.options.ReleaseBranch); err != nil {
-				return fmt.Errorf("checking out branch %s: %w", d.options.ReleaseBranch, err)
+				return errors.Wrapf(err, "checking out branch %s", d.options.ReleaseBranch)
 			}
 		}
 	}
@@ -547,13 +548,13 @@ func (d *DefaultStage) TagRepository() error {
 func (d *DefaultStage) Build() error {
 	// Log in to Docker Hub to avoid getting rate limited
 	if err := d.impl.DockerHubLogin(); err != nil {
-		return fmt.Errorf("loging into Docker Hub: %w", err)
+		return errors.Wrap(err, "loging into Docker Hub")
 	}
 
 	// Call MakeCross for each of the versions we are building
 	for _, version := range d.state.versions.Ordered() {
 		if err := d.impl.MakeCross(version); err != nil {
-			return fmt.Errorf("build artifacts: %w", err)
+			return errors.Wrap(err, "build artifacts")
 		}
 	}
 	return nil
@@ -591,20 +592,20 @@ func (d *DefaultStage) GenerateChangelog() error {
 func (d *defaultStageImpl) AddBinariesToSBOM(sbom *spdx.Document, version string) error {
 	binaries, err := d.ListBinaries(version)
 	if err != nil {
-		return fmt.Errorf("getting binaries list for %s: %w", version, err)
+		return errors.Wrapf(err, "Getting binaries list for %s", version)
 	}
 
 	// Add the binaries, taking care of their docs
 	for _, bin := range binaries {
 		file := spdx.NewFile()
 		if err := file.ReadSourceFile(bin.Path); err != nil {
-			return fmt.Errorf("reading binary sourcefile from %s: %w", bin.Path, err)
+			return errors.Wrapf(err, "reading binary sourcefile from %s", bin.Path)
 		}
 		file.Name = filepath.Join("bin", bin.Platform, bin.Arch, filepath.Base(bin.Path))
 		file.FileName = file.Name
 		file.LicenseConcluded = LicenseIdentifier
 		if err := sbom.AddFile(file); err != nil {
-			return fmt.Errorf("adding file to artifacts sbom: %w", err)
+			return errors.Wrap(err, "adding file to artifacts sbom")
 		}
 		file.AddRelationship(&spdx.Relationship{
 			FullRender:       false,
@@ -621,20 +622,20 @@ func (d *defaultStageImpl) AddBinariesToSBOM(sbom *spdx.Document, version string
 func (d *defaultStageImpl) AddTarfilesToSBOM(sbom *spdx.Document, version string) error {
 	tarballs, err := d.ListTarballs(version)
 	if err != nil {
-		return fmt.Errorf("listing release tarballs for %s: %w", version, err)
+		return errors.Wrapf(err, "listing release tarballs for %s", version)
 	}
 
 	// Once the initial doc is generated, add the tarfiles
 	for _, tar := range tarballs {
 		file := spdx.NewFile()
 		if err := file.ReadSourceFile(tar); err != nil {
-			return fmt.Errorf("reading tarball sourcefile from %s: %w", tar, err)
+			return errors.Wrapf(err, "reading tarball sourcefile from %s", tar)
 		}
 		file.Name = filepath.Base(tar)
 		file.LicenseConcluded = LicenseIdentifier
 		file.FileName = filepath.Base(tar)
 		if err := sbom.AddFile(file); err != nil {
-			return fmt.Errorf("adding file to artifacts sbom: %w", err)
+			return errors.Wrap(err, "adding file to artifacts sbom")
 		}
 		file.AddRelationship(&spdx.Relationship{
 			FullRender:       false,
@@ -655,7 +656,7 @@ func (d *defaultStageImpl) BuildBaseArtifactsSBOM(options *spdx.DocGenerateOptio
 func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 	images, err := d.ListImageArchives(version)
 	if err != nil {
-		return fmt.Errorf("getting artifacts list: %w", err)
+		return errors.Wrap(err, "getting artifacts list")
 	}
 
 	// Build the base artifacts sbom. We only pass it the images for
@@ -671,15 +672,15 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 		OutputFile:     filepath.Join(),
 	})
 	if err != nil {
-		return fmt.Errorf("generating base artifacts sbom for %s: %w", version, err)
+		return errors.Wrapf(err, "generating base artifacts sbom for %s", version)
 	}
 
 	// Add the binaries and tarballs
 	if err := d.AddBinariesToSBOM(doc, version); err != nil {
-		return fmt.Errorf("adding binaries to %s SBOM: %w", version, err)
+		return errors.Wrapf(err, "adding binaries to %s SBOM", version)
 	}
 	if err := d.AddTarfilesToSBOM(doc, version); err != nil {
-		return fmt.Errorf("adding tarballs to %s SBOM: %w", version, err)
+		return errors.Wrapf(err, "adding tarballs to %s SBOM", version)
 	}
 
 	// Reference the source code SBOM as external document
@@ -690,7 +691,7 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 	if err := extRef.ReadSourceFile(
 		filepath.Join(os.TempDir(), fmt.Sprintf("source-bom-%s.spdx", version)),
 	); err != nil {
-		return fmt.Errorf("reading the source file as external reference: %w", err)
+		return errors.Wrap(err, "reading the source file as external reference")
 	}
 	doc.ExternalDocRefs = append(doc.ExternalDocRefs, extRef)
 
@@ -707,7 +708,7 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 
 	// Write the Releas Artifacts SBOM to disk
 	if err := doc.Write(filepath.Join(os.TempDir(), fmt.Sprintf("release-bom-%s.spdx", version))); err != nil {
-		return fmt.Errorf("writing artifacts SBOM for %s: %w", version, err)
+		return errors.Wrapf(err, "writing artifacts SBOM for %s", version)
 	}
 	return nil
 }
@@ -717,7 +718,7 @@ func (d *defaultStageImpl) GenerateSourceTreeBOM(
 ) (*spdx.Document, error) {
 	logrus.Info("Generating Kubernetes source SBOM file")
 	doc, err := spdx.NewDocBuilder().Generate(options)
-	return doc, fmt.Errorf("generating kubernetes source code SBOM: %w", err)
+	return doc, errors.Wrap(err, "Generating kubernetes source code SBOM")
 }
 
 // WriteSourceBOM takes a source code SBOM and writes it into a file, updating
@@ -727,10 +728,10 @@ func (d *defaultStageImpl) WriteSourceBOM(
 ) error {
 	spdxDoc.Namespace = fmt.Sprintf("https://sbom.k8s.io/%s/source", version)
 	spdxDoc.Name = fmt.Sprintf("kubernetes-%s", version)
-	if err := spdxDoc.Write(filepath.Join(os.TempDir(), fmt.Sprintf("source-bom-%s.spdx", version))); err != nil {
-		return fmt.Errorf("writing the source code SBOM: %w", err)
-	}
-	return nil
+	return errors.Wrap(
+		spdxDoc.Write(filepath.Join(os.TempDir(), fmt.Sprintf("source-bom-%s.spdx", version))),
+		"writing the source code SBOM",
+	)
 }
 
 func (d *DefaultStage) GenerateBillOfMaterials() error {
@@ -747,7 +748,7 @@ func (d *DefaultStage) GenerateBillOfMaterials() error {
 		Directories:      []string{gitRoot},
 	})
 	if err != nil {
-		return fmt.Errorf("generating the kubernetes source SBOM: %w", err)
+		return errors.Wrap(err, "generating the kubernetes source SBOM")
 	}
 
 	// We generate an artifacts sbom for each of the versions
@@ -755,12 +756,12 @@ func (d *DefaultStage) GenerateBillOfMaterials() error {
 	for _, version := range d.state.versions.Ordered() {
 		// Render the common source SBOM for this version
 		if err := d.impl.WriteSourceBOM(spdxDOC, version); err != nil {
-			return fmt.Errorf("writing SBOM for version %s: %w", version, err)
+			return errors.Wrapf(err, "writing SBOM for version %s", version)
 		}
 
 		// Render the artifacts SBOM for version
 		if err := d.impl.GenerateVersionArtifactsBOM(version); err != nil {
-			return fmt.Errorf("generating SBOM for version %s: %w", version, err)
+			return errors.Wrapf(err, "generating SBOM for version %s", version)
 		}
 	}
 
@@ -771,7 +772,7 @@ func (d *DefaultStage) StageArtifacts() error {
 	// Generate the intoto attestation, reloaded with the current run data
 	statement, err := d.impl.GenerateAttestation(d.state, d.options)
 	if err != nil {
-		return fmt.Errorf("generating the provenance attestation: %w", err)
+		return errors.Wrap(err, "generating the provenance attestation")
 	}
 	// Init push options for provenance document
 	pushBuildOptions := &build.Options{
@@ -781,7 +782,7 @@ func (d *DefaultStage) StageArtifacts() error {
 		ValidateRemoteImageDigests: true,
 	}
 	if err := d.impl.CheckReleaseBucket(pushBuildOptions); err != nil {
-		return fmt.Errorf("check release bucket access: %w", err)
+		return errors.Wrap(err, "check release bucket access")
 	}
 
 	// Stage the local source tree
@@ -790,7 +791,7 @@ func (d *DefaultStage) StageArtifacts() error {
 		workspaceDir,
 		d.options.BuildVersion,
 	); err != nil {
-		return fmt.Errorf("staging local source tree: %w", err)
+		return errors.Wrap(err, "staging local source tree")
 	}
 
 	// Add the sources tarball to the attestation
@@ -798,7 +799,7 @@ func (d *DefaultStage) StageArtifacts() error {
 		d.options, filepath.Join(workspaceDir, release.SourcesTar),
 	)
 	if err != nil {
-		return fmt.Errorf("adding sources tarball to provenance attestation: %w", err)
+		return errors.Wrap(err, "adding sources tarball to provenance attestation")
 	}
 	statement.Subject = append(statement.Subject, subjects...)
 
@@ -813,7 +814,7 @@ func (d *DefaultStage) StageArtifacts() error {
 
 		// Stage local artifacts and write checksums
 		if err := d.impl.StageLocalArtifacts(pushBuildOptions); err != nil {
-			return fmt.Errorf("staging local artifacts: %w", err)
+			return errors.Wrap(err, "staging local artifacts")
 		}
 		gcsPath := filepath.Join(
 			d.options.Bucket(), release.StagePath, d.options.BuildVersion, version,
@@ -825,7 +826,7 @@ func (d *DefaultStage) StageArtifacts() error {
 			filepath.Join(buildDir, release.GCSStagePath, version),
 			filepath.Join(gcsPath, release.GCSStagePath, version),
 		); err != nil {
-			return fmt.Errorf("pushing release artifacts: %w", err)
+			return errors.Wrap(err, "pushing release artifacts")
 		}
 
 		// Push container release-images to GCS
@@ -834,12 +835,12 @@ func (d *DefaultStage) StageArtifacts() error {
 			filepath.Join(buildDir, release.ImagesPath),
 			filepath.Join(gcsPath, release.ImagesPath),
 		); err != nil {
-			return fmt.Errorf("pushing release artifacts: %w", err)
+			return errors.Wrap(err, "pushing release artifacts")
 		}
 
 		// Push container images into registry
 		if err := d.impl.PushContainerImages(pushBuildOptions); err != nil {
-			return fmt.Errorf("pushing container images: %w", err)
+			return errors.Wrap(err, "pushing container images")
 		}
 
 		// Add artifacts to the attestation, this should get both release-images
@@ -848,19 +849,19 @@ func (d *DefaultStage) StageArtifacts() error {
 			d.options, buildDir, version,
 		)
 		if err != nil {
-			return fmt.Errorf("adding provenance of release-images for version %s: %w", version, err)
+			return errors.Wrapf(err, "adding provenance of release-images for version %s", version)
 		}
 		statement.Subject = append(statement.Subject, subjects...)
 	}
 
 	// Push the attestation metadata file to the bucket
 	if err := d.impl.PushAttestation(statement, d.options); err != nil {
-		return fmt.Errorf("writing provenance metadata to disk: %w", err)
+		return errors.Wrap(err, "writing provenance metadata to disk")
 	}
 
 	// Delete the local source tarball
 	if err := d.impl.DeleteLocalSourceTarball(pushBuildOptions, workspaceDir); err != nil {
-		return fmt.Errorf("delete source tarball: %w", err)
+		return errors.Wrap(err, "delete source tarball")
 	}
 
 	args := ""
@@ -897,13 +898,13 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 	// Fetch the last commit:
 	repo, err := git.OpenRepo(gitRoot)
 	if err != nil {
-		return nil, fmt.Errorf("opening repository to check commit hash: %w", err)
+		return nil, errors.Wrap(err, "opening repository to check commit hash")
 	}
 
 	// Get the k/k commit we are building
 	commitSHA, err := repo.LastCommitSha()
 	if err != nil {
-		return nil, fmt.Errorf("getting k/k build point: %w", err)
+		return nil, errors.Wrap(err, "getting k/k build point")
 	}
 
 	// Create the predicate to populate it with the current
@@ -944,11 +945,11 @@ func (d *defaultStageImpl) PushAttestation(attestation *provenance.Statement, op
 	// Create a temporary file:
 	f, err := os.CreateTemp("", "provenance-")
 	if err != nil {
-		return fmt.Errorf("creating temp file for provenance metadata: %w", err)
+		return errors.Wrap(err, "creating temp file for provenance metadata")
 	}
 	// Write the provenance statement to disk:
 	if err := attestation.Write(f.Name()); err != nil {
-		return fmt.Errorf("writing provenance attestation to disk: %w", err)
+		return errors.Wrap(err, "writing provenance attestation to disk")
 	}
 
 	// TODO for SLSA2: Sign the attestation
@@ -960,14 +961,14 @@ func (d *defaultStageImpl) PushAttestation(attestation *provenance.Statement, op
 	}
 
 	if err := d.CheckReleaseBucket(pushBuildOptions); err != nil {
-		return fmt.Errorf("check release bucket access: %w", err)
+		return errors.Wrap(err, "check release bucket access")
 	}
 
 	// Push the provenance file to GCS
-	if err := d.PushReleaseArtifacts(pushBuildOptions, f.Name(), filepath.Join(gcsPath, release.ProvenanceFilename)); err != nil {
-		return fmt.Errorf("pushing provenance manifest: %w", err)
-	}
-	return nil
+	return errors.Wrap(
+		d.PushReleaseArtifacts(pushBuildOptions, f.Name(), filepath.Join(gcsPath, release.ProvenanceFilename)),
+		"pushing provenance manifest",
+	)
 }
 
 // GetOutputDirSubjects reads the built artifacts and returns them

@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -157,7 +158,7 @@ func run(buildType options.BuildType) error {
 	client := kubepkg.New(opts)
 	builds, err := client.ConstructBuilds()
 	if err != nil {
-		return fmt.Errorf("running kubepkg: %w", err)
+		return errors.Wrap(err, "running kubepkg")
 	}
 	return client.WalkBuilds(builds)
 }

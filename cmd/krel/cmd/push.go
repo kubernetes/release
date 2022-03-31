@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"k8s.io/release/pkg/build"
@@ -50,7 +51,7 @@ var pushBuildCmd = &cobra.Command{
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := runPushBuild(pushBuildOpts); err != nil {
-			return fmt.Errorf("failed to run: %w", err)
+			return errors.Wrap(err, "failed to run")
 		}
 
 		return nil

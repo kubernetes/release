@@ -19,7 +19,6 @@ package release
 import (
 	"crypto/sha256"
 	"crypto/sha512"
-	"errors"
 	"fmt"
 	"hash"
 	"io"
@@ -28,6 +27,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/promo-tools/v3/image"
@@ -255,13 +255,15 @@ func GetWorkspaceVersion() (string, error) {
 	workspaceStatusScript := "hack/print-workspace-status.sh"
 	_, workspaceStatusScriptStatErr := os.Stat(workspaceStatusScript)
 	if os.IsNotExist(workspaceStatusScriptStatErr) {
-		return "", fmt.Errorf("checking for workspace status script: %w", workspaceStatusScriptStatErr)
+		return "", errors.Wrapf(workspaceStatusScriptStatErr,
+			"checking for workspace status script",
+		)
 	}
 
 	logrus.Info("Getting workspace status")
 	workspaceStatusStream, getWorkspaceStatusErr := command.New(workspaceStatusScript).RunSuccessOutput()
 	if getWorkspaceStatusErr != nil {
-		return "", fmt.Errorf("getting workspace status: %w", getWorkspaceStatusErr)
+		return "", errors.Wrapf(getWorkspaceStatusErr, "getting workspace status")
 	}
 
 	workspaceStatus := workspaceStatusStream.Output()
@@ -291,7 +293,7 @@ func CopyBinaries(rootPath, targetPath string) error {
 	platformsPath := filepath.Join(rootPath, "client")
 	platformsAndArches, err := os.ReadDir(platformsPath)
 	if err != nil {
-		return fmt.Errorf("retrieve platforms from %s: %w", platformsPath, err)
+		return errors.Wrapf(err, "retrieve platforms from %s", platformsPath)
 	}
 
 	for _, platformArch := range platformsAndArches {
@@ -305,7 +307,7 @@ func CopyBinaries(rootPath, targetPath string) error {
 
 		split := strings.Split(platformArch.Name(), "-")
 		if len(split) != 2 {
-			return fmt.Errorf(
+			return errors.Errorf(
 				"expected `platform-arch` format for %s", platformArch.Name(),
 			)
 		}
@@ -331,7 +333,9 @@ func CopyBinaries(rootPath, targetPath string) error {
 		dst := filepath.Join(targetPath, "bin", platform, arch)
 		logrus.Infof("Copying server binaries from %s to %s", src, dst)
 		if err := util.CopyDirContentsLocal(src, dst); err != nil {
-			return fmt.Errorf("copy server binaries from %s to %s: %w", src, dst, err)
+			return errors.Wrapf(err,
+				"copy server binaries from %s to %s", src, dst,
+			)
 		}
 
 		// Copy node binaries if they exist and this isn't a 'server' platform
@@ -341,7 +345,9 @@ func CopyBinaries(rootPath, targetPath string) error {
 
 			logrus.Infof("Copying node binaries from %s to %s", src, dst)
 			if err := util.CopyDirContentsLocal(src, dst); err != nil {
-				return fmt.Errorf("copy node binaries from %s to %s: %w", src, dst, err)
+				return errors.Wrapf(err,
+					"copy node binaries from %s to %s", src, dst,
+				)
 			}
 		}
 	}
@@ -369,22 +375,22 @@ func WriteChecksums(rootPath string) error {
 
 				sha, err := rhash.ForFile(path, hasher)
 				if err != nil {
-					return fmt.Errorf("get hash from file: %w", err)
+					return errors.Wrap(err, "get hash from file")
 				}
 
 				files = append(files, fmt.Sprintf("%s  %s", sha, path))
 				return nil
 			},
 		); err != nil {
-			return "", fmt.Errorf("traversing root path %s: %w", rootPath, err)
+			return "", errors.Wrapf(err, "traversing root path %s", rootPath)
 		}
 
 		file, err := os.Create(fileName)
 		if err != nil {
-			return "", fmt.Errorf("create file %s: %w", fileName, err)
+			return "", errors.Wrapf(err, "create file %s", fileName)
 		}
 		if _, err := file.WriteString(strings.Join(files, "\n")); err != nil {
-			return "", fmt.Errorf("write to file %s: %w", fileName, err)
+			return "", errors.Wrapf(err, "write to file %s", fileName)
 		}
 
 		return file.Name(), nil
@@ -394,11 +400,11 @@ func WriteChecksums(rootPath string) error {
 	// We checksum everything except our checksum files, which we do next.
 	sha256SumsFile, err := createSHASums(sha256.New())
 	if err != nil {
-		return fmt.Errorf("create SHA256 sums: %w", err)
+		return errors.Wrap(err, "create SHA256 sums")
 	}
 	sha512SumsFile, err := createSHASums(sha512.New())
 	if err != nil {
-		return fmt.Errorf("create SHA512 sums: %w", err)
+		return errors.Wrap(err, "create SHA512 sums")
 	}
 
 	// After all the checksum files are generated, move them into the bucket
@@ -407,18 +413,18 @@ func WriteChecksums(rootPath string) error {
 		if err := util.CopyFileLocal(
 			file, filepath.Join(rootPath, file), true,
 		); err != nil {
-			return fmt.Errorf("move %s sums file to %s: %w", file, rootPath, err)
+			return errors.Wrapf(err, "move %s sums file to %s", file, rootPath)
 		}
 		if err := os.RemoveAll(file); err != nil {
-			return fmt.Errorf("remove file %s: %w", file, err)
+			return errors.Wrapf(err, "remove file %s", file)
 		}
 		return nil
 	}
 	if err := moveFile(sha256SumsFile); err != nil {
-		return fmt.Errorf("move SHA256 sums: %w", err)
+		return errors.Wrap(err, "move SHA256 sums")
 	}
 	if err := moveFile(sha512SumsFile); err != nil {
-		return fmt.Errorf("move SHA512 sums: %w", err)
+		return errors.Wrap(err, "move SHA512 sums")
 	}
 
 	logrus.Infof("Hashing files in %s", rootPath)
@@ -426,14 +432,14 @@ func WriteChecksums(rootPath string) error {
 	writeSHAFile := func(fileName string, hasher hash.Hash) error {
 		sha, err := rhash.ForFile(fileName, hasher)
 		if err != nil {
-			return fmt.Errorf("get hash from file: %w", err)
+			return errors.Wrap(err, "get hash from file")
 		}
 		shaFileName := fmt.Sprintf("%s.sha%d", fileName, hasher.Size()*8)
 
-		if err := os.WriteFile(shaFileName, []byte(sha), os.FileMode(0o644)); err != nil {
-			return fmt.Errorf("write SHA to file %s: %w", shaFileName, err)
-		}
-		return nil
+		return errors.Wrapf(
+			os.WriteFile(shaFileName, []byte(sha), os.FileMode(0o644)),
+			"write SHA to file %s", shaFileName,
+		)
 	}
 
 	if err := filepath.Walk(rootPath,
@@ -446,16 +452,16 @@ func WriteChecksums(rootPath string) error {
 			}
 
 			if err := writeSHAFile(path, sha256.New()); err != nil {
-				return fmt.Errorf("write %s.sha256: %w", file.Name(), err)
+				return errors.Wrapf(err, "write %s.sha256", file.Name())
 			}
 
 			if err := writeSHAFile(path, sha512.New()); err != nil {
-				return fmt.Errorf("write %s.sha512: %w", file.Name(), err)
+				return errors.Wrapf(err, "write %s.sha512", file.Name())
 			}
 			return nil
 		},
 	); err != nil {
-		return fmt.Errorf("traversing root path %s: %w", rootPath, err)
+		return errors.Wrapf(err, "traversing root path %s", rootPath)
 	}
 
 	return nil
@@ -485,7 +491,7 @@ func CreatePubBotBranchIssue(branchName string) error {
 		&github.NewIssueOptions{},
 	)
 	if err != nil {
-		return fmt.Errorf("creating publishing bot issue: %w", err)
+		return errors.Wrap(err, "creating publishing bot issue")
 	}
 	logrus.Infof("Publishing bot issue created #%d!", issue.GetNumber())
 	return nil
@@ -495,7 +501,7 @@ func CreatePubBotBranchIssue(branchName string) error {
 func DockerHubLogin() error {
 	// Check the environment  variable is set
 	if os.Getenv(DockerHubEnvKey) == "" {
-		return errors.New("unable to find docker token in the environment")
+		return errors.New("Unable to find docker token in the environment")
 	}
 	// Pipe the token into docker login
 	cmd := command.New(
@@ -505,7 +511,7 @@ func DockerHubLogin() error {
 	// Run docker login:
 	if err := cmd.RunSuccess(); err != nil {
 		errStr := strings.ReplaceAll(err.Error(), os.Getenv(DockerHubEnvKey), "**********")
-		return fmt.Errorf("%s: logging into Docker Hub", errStr)
+		return errors.Wrap(errors.New(errStr), "logging into Docker Hub")
 	}
 	logrus.Infof("User %s successfully logged into Docker Hub", DockerHubUserName)
 	return nil

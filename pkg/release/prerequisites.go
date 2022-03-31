@@ -17,9 +17,9 @@ limitations under the License.
 package release
 
 import (
-	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/sirupsen/logrus"
 
@@ -121,7 +121,7 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 	)
 
 	if !p.impl.CommandAvailable(commands...) {
-		return fmt.Errorf("not all commands available")
+		return errors.Errorf("not all commands available")
 	}
 
 	// Docker version checks
@@ -129,10 +129,10 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 	logrus.Infof("Verifying minimum Docker version %s", minVersion)
 	versionOutput, err := p.impl.DockerVersion()
 	if err != nil {
-		return fmt.Errorf("validate docker version: %w", err)
+		return errors.Wrap(err, "validate docker version")
 	}
 	if versionOutput < minVersion {
-		return fmt.Errorf(
+		return errors.Errorf(
 			"minimum docker version %s required, got %s",
 			minVersion, versionOutput,
 		)
@@ -143,7 +143,7 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 	if _, err := p.impl.GCloudOutput(
 		"config", "get-value", "project",
 	); err != nil {
-		return fmt.Errorf("no account authorized through gcloud: %w", err)
+		return errors.Wrap(err, "no account authorized through gcloud")
 	}
 
 	// GitHub checks
@@ -152,7 +152,7 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 			"Verifying that %s environemt variable is set", github.TokenEnvKey,
 		)
 		if !p.impl.IsEnvSet(github.TokenEnvKey) {
-			return fmt.Errorf("no %s env variable set", github.TokenEnvKey)
+			return errors.Errorf("no %s env variable set", github.TokenEnvKey)
 		}
 	}
 
@@ -163,11 +163,11 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 	)
 	res, err := p.impl.Usage(workdir)
 	if err != nil {
-		return fmt.Errorf("check available disk space: %w", err)
+		return errors.Wrap(err, "check available disk space")
 	}
 	diskSpaceGiB := res.Free / 1024 / 1024 / 1024
 	if diskSpaceGiB < minDiskSpaceGiB {
-		return fmt.Errorf(
+		return errors.Errorf(
 			"not enough disk space available. Got %dGiB, need at least %dGiB",
 			diskSpaceGiB, minDiskSpaceGiB,
 		)
@@ -176,7 +176,7 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 	// Git setup check
 	logrus.Info("Configuring git user and email")
 	if err := p.impl.ConfigureGlobalDefaultUserAndEmail(); err != nil {
-		return fmt.Errorf("configure git user and email: %w", err)
+		return errors.Wrap(err, "configure git user and email")
 	}
 
 	return nil

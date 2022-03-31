@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -137,7 +138,7 @@ func runRelease(options *anago.ReleaseOptions) error {
 		// Perform a local check of the specified options
 		// before launching a Cloud Build job:
 		if err := options.Validate(&anago.State{}); err != nil {
-			return fmt.Errorf("prechecking release options: %w", err)
+			return errors.Wrap(err, "prechecking release options")
 		}
 		return rel.Submit(stream)
 	}

@@ -17,9 +17,9 @@ limitations under the License.
 package cmd
 
 import (
-	"errors"
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -110,7 +110,7 @@ func init() {
 
 func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, rootOpts *rootOptions) error {
 	if err := announceRootOpts.Validate(); err != nil {
-		return fmt.Errorf("validating annoucement send options: %w", err)
+		return errors.Wrap(err, "validating annoucement send options")
 	}
 	logrus.Info("Retrieving release announcement from Google Cloud Bucket")
 
@@ -123,8 +123,8 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 
 	content, err := http.GetURLResponse(u, false)
 	if err != nil {
-		return fmt.Errorf(
-			"unable to retrieve release announcement form url: %s: %w", u, err,
+		return errors.Wrapf(err,
+			"unable to retrieve release announcement form url: %s", u,
 		)
 	}
 
@@ -135,7 +135,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 	}
 
 	if opts.sendgridAPIKey == "" {
-		return fmt.Errorf(
+		return errors.Errorf(
 			"$%s is not set", sendgridAPIKeyEnvKey,
 		)
 	}
@@ -145,12 +145,12 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 
 	if opts.name != "" && opts.email != "" {
 		if err := m.SetSender(opts.name, opts.email); err != nil {
-			return fmt.Errorf("unable to set mail sender: %w", err)
+			return errors.Wrap(err, "unable to set mail sender")
 		}
 	} else {
 		logrus.Info("Retrieving default sender from sendgrid API")
 		if err := m.SetDefaultSender(); err != nil {
-			return fmt.Errorf("setting default sender: %w", err)
+			return errors.Wrap(err, "setting default sender")
 		}
 	}
 
@@ -164,7 +164,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 	logrus.Infof("Using Google Groups as announcement target: %v", groups)
 
 	if err := m.SetGoogleGroupRecipients(groups...); err != nil {
-		return fmt.Errorf("unable to set mail recipients: %w", err)
+		return errors.Wrap(err, "unable to set mail recipients")
 	}
 
 	logrus.Info("Sending mail")
@@ -181,7 +181,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 
 	if yes {
 		if err := m.Send(content, subject); err != nil {
-			return fmt.Errorf("unable to send mail: %w", err)
+			return errors.Wrap(err, "unable to send mail")
 		}
 	}
 

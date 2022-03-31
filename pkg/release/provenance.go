@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/bom/pkg/provenance"
@@ -56,7 +57,7 @@ func (pc *ProvenanceChecker) CheckStageProvenance(buildVersion string) error {
 	// Init the local dir
 	h := sha1.New()
 	if _, err := h.Write([]byte(buildVersion)); err != nil {
-		return fmt.Errorf("creating dir: %w", err)
+		return errors.Wrap(err, "creating dir")
 	}
 	pc.options.StageDirectory = filepath.Join(pc.options.ScratchDirectory, fmt.Sprintf("%x", h.Sum(nil)))
 
@@ -66,23 +67,23 @@ func (pc *ProvenanceChecker) CheckStageProvenance(buildVersion string) error {
 		) + string(filepath.Separator),
 	)
 	if err != nil {
-		return fmt.Errorf("normalizing GCS stage path: %w", err)
+		return errors.Wrap(err, "normalizing GCS stage path")
 	}
 	// Download all the artifacts from the bucket
 	if err := pc.impl.downloadStagedArtifacts(pc.options, pc.objStore, gcsPath); err != nil {
-		return fmt.Errorf("downloading staged artifacts: %w", err)
+		return errors.Wrap(err, "downloading staged artifacts")
 	}
 
 	// Preprocess the attestation file. We have to rewrite the paths
 	// to strip the GCS prefix
 	statement, err := pc.impl.processAttestation(pc.options, buildVersion)
 	if err != nil {
-		return fmt.Errorf("processing provenance attestation: %w", err)
+		return errors.Wrap(err, "processing provenance attestation")
 	}
 
 	// Run the check of the artifacts
 	if err := pc.impl.checkProvenance(pc.options, statement); err != nil {
-		return fmt.Errorf("verifying provenance of staged artifacts: %w", err)
+		return errors.Wrap(err, "verifying provenance of staged artifacts")
 	}
 	logrus.Infof(
 		"Successfully verified provenance information of %d staged artifacts",
@@ -103,7 +104,7 @@ func (pc *ProvenanceChecker) GenerateFinalAttestation(buildVersion string, versi
 			),
 			statementPath, version,
 		); err != nil {
-			return fmt.Errorf("generating provenance data for %s: %w", version, err)
+			return errors.Wrapf(err, "generating provenance data for %s", version)
 		}
 	}
 	return nil
@@ -131,13 +132,13 @@ func (di *defaultProvenanceCheckerImpl) downloadStagedArtifacts(
 	logrus.Infof("Synching stage from %s to %s", path, opts.StageDirectory)
 	if !util.Exists(opts.StageDirectory) {
 		if err := os.MkdirAll(opts.StageDirectory, os.FileMode(0o755)); err != nil {
-			return fmt.Errorf("creating local working directory: %w", err)
+			return errors.Wrap(err, "creating local working directory")
 		}
 	}
-	if err := objStore.CopyToLocal(path, opts.StageDirectory); err != nil {
-		return fmt.Errorf("synching staged sources: %w", err)
-	}
-	return nil
+	return errors.Wrap(
+		objStore.CopyToLocal(path, opts.StageDirectory),
+		"synching staged sources",
+	)
 }
 
 // processAttestation
@@ -147,7 +148,7 @@ func (di *defaultProvenanceCheckerImpl) processAttestation(
 	// Load the downloaded statement
 	s, err = provenance.LoadStatement(filepath.Join(opts.StageDirectory, buildVersion, ProvenanceFilename))
 	if err != nil {
-		return nil, fmt.Errorf("loading staging provenance file: %w", err)
+		return nil, errors.Wrap(err, "loading staging provenance file")
 	}
 
 	// We've downloaded all artifacts, so to check we need to strip
@@ -170,10 +171,7 @@ func (di *defaultProvenanceCheckerImpl) processAttestation(
 func (di *defaultProvenanceCheckerImpl) checkProvenance(
 	opts *ProvenanceCheckerOptions, s *provenance.Statement,
 ) error {
-	if err := s.VerifySubjects(opts.StageDirectory); err != nil {
-		return fmt.Errorf("checking subjects in attestation: %w", err)
-	}
-	return nil
+	return errors.Wrap(s.VerifySubjects(opts.StageDirectory), "checking subjects in attestation")
 }
 
 func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(
@@ -181,7 +179,7 @@ func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(
 ) error {
 	doc, err := spdx.OpenDoc(sbom)
 	if err != nil {
-		return fmt.Errorf("parsing sbom for version %s from %s: %w", version, sbom, err)
+		return errors.Wrapf(err, "parsing sbom for version %s from %s", version, sbom)
 	}
 
 	slsaStatement := doc.ToProvenanceStatement(spdx.DefaultProvenanceOptions)
@@ -193,12 +191,14 @@ func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(
 		)
 	}
 	if err := slsaStatement.ClonePredicate(stageProvenance); err != nil {
-		return fmt.Errorf("cloning SLSA predicate from staging provenance: %s: %w", stageProvenance, err)
+		return errors.Wrapf(
+			err, "cloning SLSA predicate from staging provenance: %s", stageProvenance,
+		)
 	}
 	if err := slsaStatement.Write(
 		filepath.Join(os.TempDir(), fmt.Sprintf("provenance-%s.json", version)),
 	); err != nil {
-		return fmt.Errorf("writing final provenance attestation for %s: %w", version, err)
+		return errors.Wrapf(err, "writing final provenance attestation for %s", version)
 	}
 
 	return nil
@@ -253,16 +253,16 @@ func (di *defaultProvenanceReaderImpl) GetStagingSubjects(
 
 	info, err := os.Stat(path)
 	if err != nil {
-		return nil, fmt.Errorf("checking artifact path to generate provenance subjects: %w", err)
+		return nil, errors.Wrap(err, "checking artifact path to generate provenance subjects")
 	}
 
 	if info.IsDir() {
 		if err := dummy.ReadSubjectsFromDir(path); err != nil {
-			return nil, fmt.Errorf("generating provenance subject from file %s: %w", path, err)
+			return nil, errors.Wrapf(err, "generating provenance subject from file %s", path)
 		}
 	} else {
 		if err := dummy.AddSubjectFromFile(path); err != nil {
-			return nil, fmt.Errorf("generating provenance subject from file %s: %w", path, err)
+			return nil, errors.Wrapf(err, "generating provenance subject from file %s", path)
 		}
 	}
 
@@ -291,7 +291,7 @@ func (di *defaultProvenanceReaderImpl) GetBuildSubjects(
 	// translated.
 	dummy := provenance.NewSLSAStatement()
 	if err := dummy.ReadSubjectsFromDir(path); err != nil {
-		return nil, fmt.Errorf("reading output directory provenance subjects: %w", err)
+		return nil, errors.Wrap(err, "reading output directory provenance subjects")
 	}
 
 	// Cycle the subjects, translate the paths and copy them to the

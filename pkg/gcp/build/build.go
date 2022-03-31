@@ -17,7 +17,6 @@ limitations under the License.
 package build
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -29,6 +28,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/olekukonko/tablewriter"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/api/cloudbuild/v1"
@@ -82,7 +82,7 @@ func PrepareBuilds(o *Options) error {
 
 	if bazelWorkspace := os.Getenv("BUILD_WORKSPACE_DIRECTORY"); bazelWorkspace != "" {
 		if err := os.Chdir(bazelWorkspace); err != nil {
-			return fmt.Errorf("failed to chdir to bazel workspace (%s): %w", bazelWorkspace, err)
+			return errors.Wrapf(err, "failed to chdir to bazel workspace (%s)", bazelWorkspace)
 		}
 	}
 
@@ -97,7 +97,7 @@ func PrepareBuilds(o *Options) error {
 	// when the config directory is not the same as the build directory.
 	absConfigDir, absErr := filepath.Abs(o.ConfigDir)
 	if absErr != nil {
-		return fmt.Errorf("could not resolve absolute path for config directory: %w", absErr)
+		return errors.Wrapf(absErr, "could not resolve absolute path for config directory")
 	}
 
 	o.ConfigDir = absConfigDir
@@ -105,14 +105,14 @@ func PrepareBuilds(o *Options) error {
 
 	configDirErr := o.ValidateConfigDir()
 	if configDirErr != nil {
-		return fmt.Errorf("could not validate config directory: %w", configDirErr)
+		return errors.Wrapf(configDirErr, "could not validate config directory")
 	}
 
 	logrus.Infof("Config directory: %s", o.ConfigDir)
 
 	logrus.Infof("Changing to build directory: %s", o.BuildDir)
 	if err := os.Chdir(o.BuildDir); err != nil {
-		return fmt.Errorf("failed to chdir to build directory (%s): %w", o.BuildDir, err)
+		return errors.Wrapf(err, "failed to chdir to build directory (%s)", o.BuildDir)
 	}
 
 	return nil
@@ -143,7 +143,7 @@ func (o *Options) ValidateConfigDir() error {
 func (o *Options) uploadBuildDir(targetBucket string) (string, error) {
 	f, err := os.CreateTemp("", "")
 	if err != nil {
-		return "", fmt.Errorf("failed to create temp file: %w", err)
+		return "", errors.Wrapf(err, "failed to create temp file")
 	}
 	name := f.Name()
 	_ = f.Close()
@@ -151,7 +151,7 @@ func (o *Options) uploadBuildDir(targetBucket string) (string, error) {
 
 	logrus.Infof("Creating source tarball at %s...", name)
 	if err := tar.Compress(name, ".", regexp.MustCompile(".git")); err != nil {
-		return "", fmt.Errorf("create tarball: %w", err)
+		return "", errors.Wrap(err, "create tarball")
 	}
 
 	u := uuid.New()
@@ -161,7 +161,7 @@ func (o *Options) uploadBuildDir(targetBucket string) (string, error) {
 		name,
 		uploaded,
 	); err != nil {
-		return "", fmt.Errorf("upload files to GCS: %w", err)
+		return "", errors.Wrap(err, "upload files to GCS")
 	}
 
 	return uploaded, nil
@@ -228,9 +228,9 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 		}
 
 		if diskSizeInt > 1000 {
-			return errors.New("selected disk size must be no greater than 1000 GB")
+			return errors.New("Selected disk size must be no greater than 1000 GB")
 		} else if diskSizeInt <= 0 {
-			return errors.New("selected disk size must be greater than 0 GB")
+			return errors.New("Selected disk size must be greater than 0 GB")
 		}
 
 		diskSizeArg := fmt.Sprintf("--disk-size=%s", o.DiskSize)
@@ -243,7 +243,7 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 		p := path.Join(o.LogDir, strings.ReplaceAll(jobName, "/", "-")+".log")
 		f, err := os.Create(p)
 		if err != nil {
-			return fmt.Errorf("couldn't create %s: %w", p, err)
+			return errors.Wrapf(err, "couldn't create %s", p)
 		}
 
 		defer f.Close()
@@ -252,7 +252,7 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 
 	logrus.Infof("cloudbuild command to send to gcp: %s", cmd.String())
 	if err := cmd.RunSuccess(); err != nil {
-		return fmt.Errorf("error running %s: %w", cmd.String(), err)
+		return errors.Wrapf(err, "error running %s", cmd.String())
 	}
 
 	return nil
@@ -264,10 +264,10 @@ func getVariants(o *Options) (variants, error) {
 	content, err := os.ReadFile(path.Join(o.ConfigDir, "variants.yaml"))
 	if err != nil {
 		if !os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to load variants.yaml: %w", err)
+			return nil, errors.Wrapf(err, "failed to load variants.yaml")
 		}
 		if o.Variant != "" {
-			return nil, fmt.Errorf("no variants.yaml found, but a build variant (%q) was specified", o.Variant)
+			return nil, errors.Errorf("no variants.yaml found, but a build variant (%q) was specified", o.Variant)
 		}
 		return nil, nil
 	}
@@ -275,12 +275,12 @@ func getVariants(o *Options) (variants, error) {
 		Variants variants `json:"variants"`
 	}{}
 	if err := yaml.UnmarshalStrict(content, &v); err != nil {
-		return nil, fmt.Errorf("failed to read variants.yaml: %w", err)
+		return nil, errors.Wrapf(err, "failed to read variants.yaml")
 	}
 	if o.Variant != "" {
 		va, ok := v.Variants[o.Variant]
 		if !ok {
-			return nil, fmt.Errorf("requested variant %q, which is not present in variants.yaml", o.Variant)
+			return nil, errors.Errorf("requested variant %q, which is not present in variants.yaml", o.Variant)
 		}
 		return variants{o.Variant: va}, nil
 	}
@@ -294,7 +294,7 @@ func RunBuildJobs(o *Options) []error {
 			var err error
 			uploaded, err = o.uploadBuildDir(o.ScratchBucket + gcsSourceDir)
 			if err != nil {
-				return []error{fmt.Errorf("failed to upload source: %w", err)}
+				return []error{errors.Wrapf(err, "failed to upload source")}
 			}
 		}
 	} else {
@@ -341,7 +341,7 @@ func RunBuildJobs(o *Options) []error {
 			logrus.Infof("Starting job %q...", job)
 			if err := RunSingleJob(o, job, uploaded, tag, mergeMaps(extraSubs, vc)); err != nil {
 				logrus.Infof("Job %q failed: %v", job, err)
-				jobErrors = append(jobErrors, fmt.Errorf("job %q failed: %w", job, err))
+				jobErrors = append(jobErrors, errors.Wrapf(err, "job %q failed", job))
 			} else {
 				logrus.Infof("Job %q completed", job)
 			}
@@ -367,12 +367,12 @@ func ListJobs(project string, lastJobs int64) error {
 
 	service, err := cloudbuild.NewService(ctx, opts)
 	if err != nil {
-		return fmt.Errorf("failed to fetching gcloud credentials... try running \"gcloud auth application-default login\": %w", err)
+		return errors.Wrap(err, "failed to fetching gcloud credentials... try running \"gcloud auth application-default login\"")
 	}
 
 	req, err := service.Projects.Builds.List(project).PageSize(lastJobs).Do()
 	if err != nil {
-		return fmt.Errorf("failed to listing the builds: %w", err)
+		return errors.Wrap(err, "failed to listing the builds")
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
@@ -392,12 +392,12 @@ func GetJobsByTag(project, tagsFilter string) ([]*cloudbuild.Build, error) {
 
 	service, err := cloudbuild.NewService(ctx, opts)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetching gcloud credentials... try running \"gcloud auth application-default login\": %w", err)
+		return nil, errors.Wrap(err, "failed to fetching gcloud credentials... try running \"gcloud auth application-default login\"")
 	}
 
 	req, err := service.Projects.Builds.List(project).Filter(tagsFilter).PageSize(50).Do()
 	if err != nil {
-		return nil, fmt.Errorf("failed to listing the builds: %w", err)
+		return nil, errors.Wrap(err, "failed to listing the builds")
 	}
 
 	return req.Builds, nil

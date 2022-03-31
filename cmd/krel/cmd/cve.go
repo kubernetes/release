@@ -18,11 +18,10 @@ package cmd
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
 	"os"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -88,7 +87,7 @@ var argFunc = func(cmd *cobra.Command, args []string) error {
 	}
 	cveOpts.CVE = strings.ToUpper(args[0])
 	if err := cve.NewClient().CheckID(cveOpts.CVE); err != nil {
-		return fmt.Errorf("invalid CVE ID. Format must match %s", cve.CVEIDRegExp)
+		return errors.Errorf("invalid CVE ID. Format must match %s", cve.CVEIDRegExp)
 	}
 	return nil
 }
@@ -114,12 +113,12 @@ func writeNewCVE(opts *cveOptions) (err error) {
 
 	file, err := client.CreateEmptyMap(opts.CVE)
 	if err != nil {
-		return fmt.Errorf("creating new cve data map: %w", err)
+		return errors.Wrap(err, "creating new cve data map")
 	}
 
 	oldFile, err := os.ReadFile(file.Name())
 	if err != nil {
-		return fmt.Errorf("reading local copy of CVE entry: %w", err)
+		return errors.Wrap(err, "reading local copy of CVE entry")
 	}
 
 	kubeEditor := editor.NewDefaultEditor([]string{"KUBE_EDITOR", "EDITOR"})
@@ -127,7 +126,7 @@ func writeNewCVE(opts *cveOptions) (err error) {
 		"cve-datamap-", ".yaml", bytes.NewReader(oldFile),
 	)
 	if err != nil {
-		return fmt.Errorf("launching editor: %w", err)
+		return errors.Wrap(err, "launching editor")
 	}
 
 	if bytes.Equal(changes, oldFile) || len(changes) == 0 {
@@ -146,7 +145,7 @@ func writeCVEFiles(opts *cveOptions) error {
 	client := cve.NewClient()
 	for _, mapFile := range opts.mapFiles {
 		if err := client.Write(opts.CVE, mapFile); err != nil {
-			return fmt.Errorf("writing map file %s: %w", mapFile, err)
+			return errors.Wrapf(err, "writing map file %s", mapFile)
 		}
 	}
 	return nil
@@ -171,7 +170,7 @@ func editCVE(opts *cveOptions) (err error) {
 	// or we should first pull the data from the bucket
 	exists, err := client.EntryExists(opts.CVE)
 	if err != nil {
-		return fmt.Errorf("checking if cve entry exists: %w", err)
+		return errors.Wrap(err, "checking if cve entry exists")
 	}
 
 	if exists {
@@ -187,11 +186,11 @@ func editExistingCVE(opts *cveOptions) (err error) {
 	client := cve.NewClient()
 	file, err := client.CopyToTemp(opts.CVE)
 	if err != nil {
-		return fmt.Errorf("copying CVE entry for edting: %w", err)
+		return errors.Wrap(err, "copying CVE entry for edting")
 	}
 	oldFile, err := os.ReadFile(file.Name())
 	if err != nil {
-		return fmt.Errorf("reading local copy of CVE entry: %w", err)
+		return errors.Wrap(err, "reading local copy of CVE entry")
 	}
 
 	kubeEditor := editor.NewDefaultEditor([]string{"KUBE_EDITOR", "EDITOR"})
@@ -199,7 +198,7 @@ func editExistingCVE(opts *cveOptions) (err error) {
 		"cve-datamap-", ".yaml", bytes.NewReader(oldFile),
 	)
 	if err != nil {
-		return fmt.Errorf("launching editor: %w", err)
+		return errors.Wrap(err, "launching editor")
 	}
 
 	if bytes.Equal(changes, oldFile) || len(changes) == 0 {

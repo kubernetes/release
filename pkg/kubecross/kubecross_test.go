@@ -17,9 +17,9 @@ limitations under the License.
 package kubecross
 
 import (
-	"errors"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"k8s.io/release/pkg/kubecross/kubecrossfakes"

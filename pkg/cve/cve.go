@@ -17,10 +17,10 @@ limitations under the License.
 package cve
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 
+	"github.com/pkg/errors"
 	cvss "github.com/spiegel-im-spiegel/go-cvss/v3/metric"
 )
 
@@ -83,7 +83,7 @@ func (cve *CVE) Validate() error {
 	if _, ok := map[string]bool{
 		"None": true, "Low": true, "Medium": true, "High": true, "Critical": true,
 	}[cve.CVSSRating]; !ok {
-		return errors.New("invalid CVSS rating")
+		return errors.New("Invalid CVSS rating")
 	}
 
 	// Check vector string is not empty
@@ -94,7 +94,7 @@ func (cve *CVE) Validate() error {
 	// Parse the vector string to make sure it is well formed
 	bm, err := cvss.NewBase().Decode(cve.CVSSVector)
 	if err != nil {
-		return fmt.Errorf("parsing CVSS vector string: %w", err)
+		return errors.Wrap(err, "parsing CVSS vector string")
 	}
 	cve.CalcLink = fmt.Sprintf(
 		"https://www.first.org/cvss/calculator/%s#%s", bm.Ver.String(), cve.CVSSVector,
@@ -108,12 +108,12 @@ func (cve *CVE) Validate() error {
 	}
 
 	if err := ValidateID(cve.ID); err != nil {
-		return fmt.Errorf("checking CVE ID: %w", err)
+		return errors.Wrap(err, "checking CVE ID")
 	}
 
 	// Title and description must not be empty
 	if cve.Title == "" {
-		return errors.New("title missing from CVE data")
+		return errors.New("Title missing from CVE data")
 	}
 
 	if cve.Description == "" {

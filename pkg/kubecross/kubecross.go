@@ -19,6 +19,7 @@ package kubecross
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-sdk/git"
@@ -51,7 +52,7 @@ func (k *KubeCross) ForBranch(branch string) (string, error) {
 	url := fmt.Sprintf("%s/%s/%s", baseURL, branch, versionPath)
 	version, err := k.impl.GetURLResponse(url, true)
 	if err != nil {
-		return "", fmt.Errorf("get URL response: %w", err)
+		return "", errors.Wrap(err, "get URL response")
 	}
 
 	logrus.Infof("Retrieved kube-cross version: %s", version)
