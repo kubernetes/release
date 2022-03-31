@@ -17,10 +17,10 @@ limitations under the License.
 package build
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/gcp/auth"
@@ -36,7 +36,7 @@ func (bi *Instance) Build() error {
 		var dirErr error
 		workingDir, dirErr = os.Getwd()
 		if dirErr != nil {
-			return fmt.Errorf("getting working directory: %w", dirErr)
+			return errors.Wrapf(dirErr, "getting working directory")
 		}
 	}
 	logrus.Infof("Current working directory: %s", workingDir)
@@ -45,7 +45,7 @@ func (bi *Instance) Build() error {
 	expectedDirRelative := "kubernetes"
 
 	if workingDirRelative != expectedDirRelative {
-		return fmt.Errorf(
+		return errors.Errorf(
 			"build was executed from the %s directory but must be run from the %s directory, exiting",
 			workingDirRelative,
 			expectedDirRelative,
@@ -54,7 +54,7 @@ func (bi *Instance) Build() error {
 
 	buildExists, buildExistsErr := bi.checkBuildExists()
 	if buildExistsErr != nil {
-		return fmt.Errorf("checking if build exists: %w", buildExistsErr)
+		return errors.Wrapf(buildExistsErr, "checking if build exists")
 	}
 
 	if buildExists {
@@ -66,14 +66,14 @@ func (bi *Instance) Build() error {
 	// TODO: Should this be configurable?
 	envErr := os.Setenv("KUBE_RELEASE_RUN_TESTS", "n")
 	if envErr != nil {
-		return fmt.Errorf("setting 'KUBE_RELEASE_RUN_TESTS' to 'n': %w", envErr)
+		return errors.Wrapf(envErr, "setting 'KUBE_RELEASE_RUN_TESTS' to 'n'")
 	}
 
 	// Configure docker client for gcr.io authentication to allow communication
 	// with non-public registries.
 	if bi.opts.ConfigureDocker {
 		if configureErr := auth.ConfigureDocker(); configureErr != nil {
-			return fmt.Errorf("configuring docker auth: %w", configureErr)
+			return errors.Wrapf(configureErr, "configuring docker auth")
 		}
 	}
 
@@ -81,7 +81,7 @@ func (bi *Instance) Build() error {
 		"make",
 		"clean",
 	).RunSuccess(); cleanErr != nil {
-		return fmt.Errorf("running make clean: %w", cleanErr)
+		return errors.Wrapf(cleanErr, "running make clean")
 	}
 
 	// Create a Kubernetes build
@@ -94,7 +94,7 @@ func (bi *Instance) Build() error {
 		"make",
 		releaseType,
 	).RunSuccess(); buildErr != nil {
-		return fmt.Errorf("running make %s: %w", releaseType, buildErr)
+		return errors.Wrapf(buildErr, "running make %s", releaseType)
 	}
 
 	// Pushing the build
@@ -106,7 +106,7 @@ func (bi *Instance) Build() error {
 func (bi *Instance) checkBuildExists() (bool, error) {
 	version, getVersionErr := release.GetWorkspaceVersion()
 	if getVersionErr != nil {
-		return false, fmt.Errorf("getting workspace version: %w", getVersionErr)
+		return false, errors.Wrap(getVersionErr, "getting workspace version")
 	}
 
 	bi.opts.Version = version
@@ -117,17 +117,17 @@ func (bi *Instance) checkBuildExists() (bool, error) {
 
 	gcsBuildRoot, gcsBuildRootErr := bi.getGCSBuildPath(bi.opts.Version)
 	if gcsBuildRootErr != nil {
-		return false, fmt.Errorf("get GCS build root: %w", gcsBuildRootErr)
+		return false, errors.Wrap(gcsBuildRootErr, "get GCS build root")
 	}
 
 	kubernetesTar, kubernetesTarErr := bi.objStore.NormalizePath(gcsBuildRoot, release.KubernetesTar)
 	if kubernetesTarErr != nil {
-		return false, fmt.Errorf("get tarball path: %w", kubernetesTarErr)
+		return false, errors.Wrap(kubernetesTarErr, "get tarball path")
 	}
 
 	binPath, binPathErr := bi.objStore.NormalizePath(gcsBuildRoot, "bin")
 	if binPathErr != nil {
-		return false, fmt.Errorf("get binary path: %w", binPathErr)
+		return false, errors.Wrap(binPathErr, "get binary path")
 	}
 
 	gcsBuildPaths := []string{

@@ -17,11 +17,10 @@ limitations under the License.
 package options
 
 import (
-	"errors"
-	"fmt"
 	"os"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-sdk/git"
@@ -188,7 +187,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 	if ok {
 		o.githubToken = token
 	} else if o.ReplayDir == "" {
-		return fmt.Errorf(
+		return errors.Errorf(
 			"neither environment variable `%s` nor `replay` option is set",
 			github.TokenEnvKey,
 		)
@@ -220,7 +219,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 		if o.StartRev != "" && o.StartSHA == "" {
 			sha, err := repo.RevParseTag(o.StartRev)
 			if err != nil {
-				return fmt.Errorf("resolving %s: %w", o.StartRev, err)
+				return errors.Wrapf(err, "resolving %s", o.StartRev)
 			}
 			logrus.Infof("Using found start SHA: %s", sha)
 			o.StartSHA = sha
@@ -228,7 +227,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 		if o.EndRev != "" && o.EndSHA == "" {
 			sha, err := repo.RevParseTag(o.EndRev)
 			if err != nil {
-				return fmt.Errorf("resolving %s: %w", o.EndRev, err)
+				return errors.Wrapf(err, "resolving %s", o.EndRev)
 			}
 			logrus.Infof("Using found end SHA: %s", sha)
 			o.EndSHA = sha
@@ -249,7 +248,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 	}
 
 	if err := o.checkFormatOptions(); err != nil {
-		return fmt.Errorf("while checking format flags: %w", err)
+		return errors.Wrap(err, "while checking format flags")
 	}
 	return nil
 }
@@ -260,7 +259,7 @@ func (o *Options) checkFormatOptions() error {
 	logrus.Infof("Using output format: %s", o.Format)
 	if o.Format == FormatMarkdown && o.GoTemplate != GoTemplateDefault {
 		if !strings.HasPrefix(o.GoTemplate, GoTemplatePrefix) {
-			return fmt.Errorf("go template has to be prefixed with %q", GoTemplatePrefix)
+			return errors.Errorf("go template has to be prefixed with %q", GoTemplatePrefix)
 		}
 
 		templatePathOrOnline := strings.TrimPrefix(o.GoTemplate, GoTemplatePrefix)
@@ -268,10 +267,10 @@ func (o *Options) checkFormatOptions() error {
 		if !strings.HasPrefix(templatePathOrOnline, GoTemplatePrefixInline) {
 			fileStats, err := os.Stat(templatePathOrOnline)
 			if os.IsNotExist(err) {
-				return fmt.Errorf("could not find template file (%s)", templatePathOrOnline)
+				return errors.Errorf("could not find template file (%s)", templatePathOrOnline)
 			}
 			if fileStats.Size() == 0 {
-				return fmt.Errorf("template file %s is empty", templatePathOrOnline)
+				return errors.Errorf("template file %s is empty", templatePathOrOnline)
 			}
 		}
 	}
@@ -279,7 +278,7 @@ func (o *Options) checkFormatOptions() error {
 		return errors.New("go-template cannot be defined when in JSON mode")
 	}
 	if o.Format != FormatJSON && o.Format != FormatMarkdown {
-		return fmt.Errorf("invalid format: %s", o.Format)
+		return errors.Errorf("invalid format: %s", o.Format)
 	}
 	return nil
 }
@@ -361,7 +360,7 @@ func (o *Options) Client() (github.Client, error) {
 		gh, err = github.NewWithToken(o.githubToken)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("unable to create GitHub client: %w", err)
+		return nil, errors.Wrap(err, "unable to create GitHub client")
 	}
 
 	if o.RecordDir != "" {

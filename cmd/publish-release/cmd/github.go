@@ -17,11 +17,11 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/release/pkg/announce"
@@ -197,7 +197,7 @@ func runGithubPage(opts *githubPageCmdLineOptions) (err error) {
 			Tag:           commandLineOpts.tag,
 		})
 		if err != nil {
-			return fmt.Errorf("generating sbom: %w", err)
+			return errors.Wrap(err, "generating sbom")
 		}
 		opts.assets = append(opts.assets, sbom+":SPDX Software Bill of Materials (SBOM)")
 		// Delete the temporary sbom  when we're done
@@ -219,22 +219,22 @@ func runGithubPage(opts *githubPageCmdLineOptions) (err error) {
 
 	// Assign the repository data
 	if err := announceOpts.SetRepository(opts.repo); err != nil {
-		return fmt.Errorf("assigning the repository slug: %w", err)
+		return errors.Wrap(err, "assigning the repository slug")
 	}
 
 	// Assign the substitutions
 	if err := announceOpts.ParseSubstitutions(opts.substitutions); err != nil {
-		return fmt.Errorf("parsing template substitutions: %w", err)
+		return errors.Wrap(err, "parsing template substitutions")
 	}
 
 	// Read the csutom template data
 	if err := announceOpts.ReadTemplate(opts.template); err != nil {
-		return fmt.Errorf("reading the template file: %w", err)
+		return errors.Wrap(err, "reading the template file")
 	}
 
 	// Validate the options
 	if err := announceOpts.Validate(); err != nil {
-		return fmt.Errorf("validating options: %w", err)
+		return errors.Wrap(err, "validating options")
 	}
 
 	// Run the update process

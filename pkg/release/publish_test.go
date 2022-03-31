@@ -17,10 +17,10 @@ limitations under the License.
 package release_test
 
 import (
-	"errors"
 	"os"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/release/releasefakes"

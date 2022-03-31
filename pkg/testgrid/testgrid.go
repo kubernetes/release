@@ -17,11 +17,11 @@ limitations under the License.
 package testgrid
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/GoogleCloudPlatform/testgrid/config"
 	pb "github.com/GoogleCloudPlatform/testgrid/pb/config"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-utils/http"
@@ -63,13 +63,13 @@ func (t *TestGrid) SetClient(client Client) {
 func (t *TestGrid) BlockingTests(branch string) (tests []string, err error) {
 	conf, err := t.configFromURL(testgridConfigURL)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get config: %w", err)
+		return nil, errors.Wrap(err, "cannot get config")
 	}
 
 	dashboardName := "sig-" + branch + "-blocking"
 	dashboard := config.FindDashboard(dashboardName, conf)
 	if dashboard == nil {
-		return nil, fmt.Errorf("dashboard %s not found", dashboardName)
+		return nil, errors.Errorf("dashboard %s not found", dashboardName)
 	}
 
 	for _, tab := range dashboard.DashboardTab {
@@ -94,11 +94,11 @@ func (t *TestGrid) configFromURL(url string) (cfg *pb.Configuration, err error) 
 
 	response, err := t.client.GetURLResponse(url, false)
 	if err != nil {
-		return nil, fmt.Errorf("retrieving remote content: %w", err)
+		return nil, errors.Wrap(err, "retrieving remote content")
 	}
 
 	if _, err := tmpFile.WriteString(response); err != nil {
-		return nil, fmt.Errorf("writing response to file: %w", err)
+		return nil, errors.Wrap(err, "writing response to file")
 	}
 
 	return config.ReadPath(tmpFile.Name())

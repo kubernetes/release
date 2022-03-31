@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-sdk/gcli"
@@ -170,7 +171,7 @@ func (p *Publisher) PublishVersion(
 
 	sv, err := util.TagStringToSemver(version)
 	if err != nil {
-		return fmt.Errorf("invalid version %s", version)
+		return errors.Errorf("invalid version %s", version)
 	}
 
 	markerPath, markerPathErr := p.client.GetMarkerPath(
@@ -178,7 +179,7 @@ func (p *Publisher) PublishVersion(
 		gcsRoot,
 	)
 	if markerPathErr != nil {
-		return fmt.Errorf("get version marker path: %w", markerPathErr)
+		return errors.Wrap(markerPathErr, "get version marker path")
 	}
 
 	releasePath, releasePathErr := p.client.GetReleasePath(
@@ -188,13 +189,13 @@ func (p *Publisher) PublishVersion(
 		fast,
 	)
 	if releasePathErr != nil {
-		return fmt.Errorf("get release path: %w", releasePathErr)
+		return errors.Wrap(releasePathErr, "get release path")
 	}
 
 	// TODO: This should probably be a more thorough check of explicit files
 	// TODO: This should explicitly do a `gsutil ls` via gcs.PathExists
 	if err := p.client.GSUtil("ls", releasePath); err != nil {
-		return fmt.Errorf("release files don't exist at %s: %w", releasePath, err)
+		return errors.Wrapf(err, "release files don't exist at %s", releasePath)
 	}
 
 	var versionMarkers []string
@@ -225,7 +226,7 @@ func (p *Publisher) PublishVersion(
 			versionMarker, markerPath, version,
 		)
 		if err != nil {
-			return fmt.Errorf("verify latest update for %s: %w", versionMarker, err)
+			return errors.Wrapf(err, "verify latest update for %s", versionMarker)
 		}
 
 		// If there's a version that's above the one we're trying to release,
@@ -241,7 +242,7 @@ func (p *Publisher) PublishVersion(
 		if err := p.PublishToGcs(
 			versionMarker, buildDir, markerPath, version, privateBucket,
 		); err != nil {
-			return fmt.Errorf("publish release to GCS: %w", err)
+			return errors.Wrap(err, "publish release to GCS")
 		}
 	}
 
@@ -261,7 +262,7 @@ func (p *Publisher) VerifyLatestUpdate(
 
 	publishFileDst, publishFileDstErr := p.client.NormalizePath(markerPath, publishFile)
 	if publishFileDstErr != nil {
-		return false, fmt.Errorf("get marker file destination: %w", publishFileDstErr)
+		return false, errors.Wrap(publishFileDstErr, "get marker file destination")
 	}
 
 	// TODO: Should we add a object.`GCS` method for `gsutil cat`?
@@ -273,12 +274,12 @@ func (p *Publisher) VerifyLatestUpdate(
 
 	sv, err := util.TagStringToSemver(version)
 	if err != nil {
-		return false, fmt.Errorf("invalid version format %s", version)
+		return false, errors.Errorf("invalid version format %s", version)
 	}
 
 	gcsSemverVersion, err := util.TagStringToSemver(gcsVersion)
 	if err != nil {
-		return false, fmt.Errorf("invalid GCS version format %s", gcsVersion)
+		return false, errors.Errorf("invalid GCS version format %s", gcsVersion)
 	}
 
 	if sv.LTE(gcsSemverVersion) {
@@ -304,7 +305,7 @@ func (p *Publisher) PublishToGcs(
 	releaseStage := filepath.Join(buildDir, ReleaseStagePath)
 	publishFileDst, publishFileDstErr := p.client.NormalizePath(markerPath, publishFile)
 	if publishFileDstErr != nil {
-		return fmt.Errorf("get marker file destination: %w", publishFileDstErr)
+		return errors.Wrap(publishFileDstErr, "get marker file destination")
 	}
 
 	publicLink := fmt.Sprintf("%s/%s", URLPrefixForBucket(markerPath), publishFile)
@@ -314,14 +315,14 @@ func (p *Publisher) PublishToGcs(
 
 	uploadDir := filepath.Join(releaseStage, "upload")
 	if err := os.MkdirAll(uploadDir, os.FileMode(0o755)); err != nil {
-		return fmt.Errorf("create upload dir %s: %w", uploadDir, err)
+		return errors.Wrapf(err, "create upload dir %s", uploadDir)
 	}
 
 	latestFile := filepath.Join(uploadDir, "latest")
 	if err := os.WriteFile(
 		latestFile, []byte(version), os.FileMode(0o644),
 	); err != nil {
-		return fmt.Errorf("write latest version file: %w", err)
+		return errors.Wrap(err, "write latest version file")
 	}
 
 	if err := p.client.GSUtil(
@@ -332,7 +333,7 @@ func (p *Publisher) PublishToGcs(
 		latestFile,
 		publishFileDst,
 	); err != nil {
-		return fmt.Errorf("copy %s to %s: %w", latestFile, publishFileDst, err)
+		return errors.Wrapf(err, "copy %s to %s", latestFile, publishFileDst)
 	}
 
 	var content string
@@ -351,7 +352,7 @@ func (p *Publisher) PublishToGcs(
 				"acl", "ch", "-R", "-g", "all:R", publishFileDst,
 			)
 			if err != nil {
-				return fmt.Errorf("change %s permissions: %w", publishFileDst, err)
+				return errors.Wrapf(err, "change %s permissions", publishFileDst)
 			}
 			logrus.Infof("Making uploaded version file public: %s", aclOutput)
 		}
@@ -359,20 +360,20 @@ func (p *Publisher) PublishToGcs(
 		// If public, validate public link
 		response, err := p.client.GetURLResponse(publicLink)
 		if err != nil {
-			return fmt.Errorf("get content of %s: %w", publicLink, err)
+			return errors.Wrapf(err, "get content of %s", publicLink)
 		}
 		content = response
 	} else {
 		response, err := p.client.GSUtilOutput("cat", publicLink)
 		if err != nil {
-			return fmt.Errorf("get content of %s: %w", publicLink, err)
+			return errors.Wrapf(err, "get content of %s", publicLink)
 		}
 		content = response
 	}
 
 	logrus.Infof("Validating uploaded version file at %s", publicLink)
 	if version != content {
-		return fmt.Errorf(
+		return errors.Errorf(
 			"version %s it not equal response %s",
 			version, content,
 		)
@@ -393,18 +394,18 @@ func (p *Publisher) PublishReleaseNotesIndex(
 		gcsIndexRootPath, releaseNotesIndex,
 	)
 	if err != nil {
-		return fmt.Errorf("normalize index file: %w", err)
+		return errors.Wrap(err, "normalize index file")
 	}
 	logrus.Infof("Publishing release notes index %s", indexFilePath)
 
 	releaseNotesFilePath, err := p.client.NormalizePath(gcsReleaseNotesPath)
 	if err != nil {
-		return fmt.Errorf("normalize release notes file: %w", err)
+		return errors.Wrap(err, "normalize release notes file")
 	}
 
 	success, err := p.client.GSUtilStatus("-q", "stat", indexFilePath)
 	if err != nil {
-		return fmt.Errorf("run gcsutil stat: %w", err)
+		return errors.Wrap(err, "run gcsutil stat")
 	}
 
 	logrus.Info("Building release notes index")
@@ -414,7 +415,7 @@ func (p *Publisher) PublishReleaseNotesIndex(
 
 		tempDir, err := p.client.TempDir("", "release-notes-index-")
 		if err != nil {
-			return fmt.Errorf("create temp dir: %w", err)
+			return errors.Wrap(err, "create temp dir")
 		}
 		defer os.RemoveAll(tempDir)
 		tempIndexFile := filepath.Join(tempDir, releaseNotesIndex)
@@ -422,16 +423,16 @@ func (p *Publisher) PublishReleaseNotesIndex(
 		if err := p.client.CopyToLocal(
 			indexFilePath, tempIndexFile,
 		); err != nil {
-			return fmt.Errorf("copy index file to local: %w", err)
+			return errors.Wrap(err, "copy index file to local")
 		}
 
 		indexBytes, err := p.client.ReadFile(tempIndexFile)
 		if err != nil {
-			return fmt.Errorf("read local index file: %w", err)
+			return errors.Wrap(err, "read local index file")
 		}
 
 		if err := p.client.Unmarshal(indexBytes, &versions); err != nil {
-			return fmt.Errorf("unmarshal versions: %w", err)
+			return errors.Wrap(err, "unmarshal versions")
 		}
 	} else {
 		logrus.Info("Creating non existing release notes index file")
@@ -440,24 +441,24 @@ func (p *Publisher) PublishReleaseNotesIndex(
 
 	versionJSON, err := p.client.Marshal(versions)
 	if err != nil {
-		return fmt.Errorf("marshal version JSON: %w", err)
+		return errors.Wrap(err, "marshal version JSON")
 	}
 
 	logrus.Infof("Writing new release notes index: %s", string(versionJSON))
 	tempFile, err := p.client.TempFile("", "release-notes-index-")
 	if err != nil {
-		return fmt.Errorf("create temp file: %w", err)
+		return errors.Wrap(err, "create temp file")
 	}
 	defer os.Remove(tempFile.Name())
 	if _, err := tempFile.Write(versionJSON); err != nil {
-		return fmt.Errorf("write temp index: %w", err)
+		return errors.Wrap(err, "write temp index")
 	}
 
 	logrus.Info("Uploading release notes index")
 	if err := p.client.CopyToRemote(
 		tempFile.Name(), indexFilePath,
 	); err != nil {
-		return fmt.Errorf("upload index file: %w", err)
+		return errors.Wrap(err, "upload index file")
 	}
 
 	return nil

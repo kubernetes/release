@@ -18,12 +18,11 @@ package binary
 
 import (
 	"bufio"
-	"errors"
-	"fmt"
 	"io"
 	"os"
 	"unicode"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -73,7 +72,7 @@ func NewWithOptions(filePath string, opts *Options) (bin *Binary, err error) {
 	// Get the right implementation for the specified file
 	impl, err := getArchImplementation(filePath, opts)
 	if err != nil {
-		return nil, fmt.Errorf("getting arch implementation: %w", err)
+		return nil, errors.Wrap(err, "getting arch implementation")
 	}
 	bin.options.Path = filePath
 	bin.SetImplementation(impl)
@@ -86,7 +85,7 @@ func getArchImplementation(filePath string, opts *Options) (impl binaryImplement
 	// Check if we're dealing with a Linux binary
 	elf, err := NewELFBinary(filePath, opts)
 	if err != nil {
-		return nil, fmt.Errorf("checking if file is an ELF binary: %w", err)
+		return nil, errors.Wrap(err, "checking if file is an ELF binary")
 	}
 	if elf != nil {
 		return elf, nil
@@ -95,7 +94,7 @@ func getArchImplementation(filePath string, opts *Options) (impl binaryImplement
 	// Check if its a darwin binary
 	macho, err := NewMachOBinary(filePath, opts)
 	if err != nil {
-		return nil, fmt.Errorf("checking if file is a Mach-O binary: %w", err)
+		return nil, errors.Wrap(err, "checking if file is a Mach-O binary")
 	}
 	if macho != nil {
 		return macho, nil
@@ -104,7 +103,7 @@ func getArchImplementation(filePath string, opts *Options) (impl binaryImplement
 	// Finally we check to see if it's a windows binary
 	pe, err := NewPEBinary(filePath, opts)
 	if err != nil {
-		return nil, fmt.Errorf("checking if file is a windows PE binary: %w", err)
+		return nil, errors.Wrap(err, "checking if file is a windows PE binary")
 	}
 	if pe != nil {
 		return pe, nil
@@ -148,7 +147,7 @@ func (b *Binary) ContainsStrings(s ...string) (match bool, err error) {
 	// Open the binary
 	f, err := os.Open(b.options.Path)
 	if err != nil {
-		return match, fmt.Errorf("opening binary to search: %w", err)
+		return match, errors.Wrap(err, "opening binary to search")
 	}
 	defer f.Close()
 	terms := map[string]bool{}
@@ -164,7 +163,7 @@ func (b *Binary) ContainsStrings(s ...string) (match bool, err error) {
 		r, _, err := in.ReadRune()
 		if err != nil {
 			if err != io.EOF {
-				return match, fmt.Errorf("while reading binary data: %w", err)
+				return match, errors.Wrap(err, "while reading binary data")
 			}
 			return false, nil
 		}

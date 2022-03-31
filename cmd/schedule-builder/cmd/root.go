@@ -17,10 +17,10 @@ limitations under the License.
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -111,13 +111,13 @@ func initLogging(*cobra.Command, []string) error {
 
 func run(opts *options) error {
 	if err := opts.SetAndValidate(); err != nil {
-		return fmt.Errorf("validating schedule-path options: %w", err)
+		return errors.Wrap(err, "validating schedule-path options")
 	}
 
 	logrus.Infof("Reading the schedule file %s...", opts.configPath)
 	data, err := os.ReadFile(opts.configPath)
 	if err != nil {
-		return fmt.Errorf("failed to read the file: %w", err)
+		return errors.Wrap(err, "failed to read the file")
 	}
 
 	var (
@@ -131,7 +131,7 @@ func run(opts *options) error {
 	switch opts.typeFile {
 	case "patch":
 		if err := yaml.UnmarshalStrict(data, &patchSchedule); err != nil {
-			return fmt.Errorf("failed to decode the file: %w", err)
+			return errors.Wrap(err, "failed to decode the file")
 		}
 
 		logrus.Info("Generating the markdown output...")
@@ -139,7 +139,7 @@ func run(opts *options) error {
 
 	case "release":
 		if err := yaml.UnmarshalStrict(data, &releaseSchedule); err != nil {
-			return fmt.Errorf("failed to decode the file: %w", err)
+			return errors.Wrap(err, "failed to decode the file")
 		}
 
 		logrus.Info("Generating the markdown output...")
@@ -155,7 +155,7 @@ func run(opts *options) error {
 		// 0600 or less
 		err := os.WriteFile(opts.outputFile, []byte(scheduleOut), 0o644)
 		if err != nil {
-			return fmt.Errorf("failed to save schedule to the file: %w", err)
+			return errors.Wrap(err, "failed to save schedule to the file")
 		}
 		logrus.Info("File saved")
 	}
@@ -168,7 +168,7 @@ func (o *options) SetAndValidate() error {
 	logrus.Info("Validating schedule-path options...")
 
 	if o.configPath == "" {
-		return fmt.Errorf("need to set the config-path")
+		return errors.Errorf("need to set the config-path")
 	}
 
 	return nil

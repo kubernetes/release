@@ -17,12 +17,12 @@ limitations under the License.
 package gcb
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/cloudbuild/v1"
 
@@ -105,7 +105,7 @@ var status = map[string]string{
 func (h *History) Run() error {
 	from, to, err := h.parseDateRange()
 	if err != nil {
-		return fmt.Errorf("parse from and to dates: %w", err)
+		return errors.Wrap(err, "parse from and to dates")
 	}
 
 	logrus.Infof("Running history with the following options: %+v", h.opts)
@@ -115,7 +115,7 @@ func (h *History) Run() error {
 	)
 	jobs, err := h.impl.GetJobsByTag(h.opts.Project, tagFilter)
 	if err != nil {
-		return fmt.Errorf("get GCP build jobs by tag: %w", err)
+		return errors.Wrap(err, "get GCP build jobs by tag")
 	}
 
 	tableString := &strings.Builder{}
@@ -158,11 +158,11 @@ func (h *History) Run() error {
 		const layout = "2006-01-02T15:04:05.99Z"
 		tStart, err := h.impl.ParseTime(layout, start)
 		if err != nil {
-			return fmt.Errorf("parsing the start job time: %w", err)
+			return errors.Wrap(err, "parsing the start job time")
 		}
 		tEnd, err := h.impl.ParseTime(layout, end)
 		if err != nil {
-			return fmt.Errorf("parsing the end job time: %w", err)
+			return errors.Wrap(err, "parsing the end job time")
 		}
 		diff := tEnd.Sub(tStart)
 		out := time.Time{}.Add(diff)
@@ -195,7 +195,7 @@ func (h *History) parseDateRange() (from, to string, err error) {
 	)
 	timeStampFrom, err := h.impl.ParseTime(parseLayout, h.opts.DateFrom)
 	if err != nil {
-		return "", "", fmt.Errorf("convert date from: %w", err)
+		return "", "", errors.Wrapf(err, "convert date from")
 	}
 	from = timeStampFrom.Format(resultLayout)
 
@@ -209,7 +209,7 @@ func (h *History) parseDateRange() (from, to string, err error) {
 	} else {
 		timeStampTo, err := h.impl.ParseTime(parseLayout, h.opts.DateTo)
 		if err != nil {
-			return "", "", fmt.Errorf("convert date to: %w", err)
+			return "", "", errors.Wrapf(err, "convert date to")
 		}
 		// Set the ending date to midnight of the next day
 		dateTo := time.Date(

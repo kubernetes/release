@@ -21,7 +21,6 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha1" //nolint:gosec // used for file integrity checks, NOT security
-	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -36,6 +35,7 @@ import (
 
 	gogithub "github.com/google/go-github/v39/github"
 	"github.com/nozzle/throttler"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -215,7 +215,7 @@ type Gatherer struct {
 func NewGatherer(ctx context.Context, opts *options.Options) (*Gatherer, error) {
 	client, err := opts.Client()
 	if err != nil {
-		return nil, fmt.Errorf("unable to create notes client: %w", err)
+		return nil, errors.Wrap(err, "unable to create notes client")
 	}
 	return &Gatherer{
 		client:  client,
@@ -239,7 +239,7 @@ func GatherReleaseNotes(opts *options.Options) (*ReleaseNotes, error) {
 	logrus.Info("Gathering release notes")
 	gatherer, err := NewGatherer(context.Background(), opts)
 	if err != nil {
-		return nil, fmt.Errorf("retrieving notes gatherer: %w", err)
+		return nil, errors.Wrapf(err, "retrieving notes gatherer")
 	}
 
 	var releaseNotes *ReleaseNotes
@@ -251,7 +251,7 @@ func GatherReleaseNotes(opts *options.Options) (*ReleaseNotes, error) {
 		releaseNotes, err = gatherer.ListReleaseNotes()
 	}
 	if err != nil {
-		return nil, fmt.Errorf("listing release notes: %w", err)
+		return nil, errors.Wrapf(err, "listing release notes")
 	}
 	logrus.Infof("finished gathering release notes in %v", time.Since(startTime))
 
@@ -266,20 +266,20 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 	for _, initString := range g.options.MapProviderStrings {
 		provider, err := NewProviderFromInitString(initString)
 		if err != nil {
-			return nil, fmt.Errorf("while getting release notes map providers: %w", err)
+			return nil, errors.Wrap(err, "while getting release notes map providers")
 		}
 		mapProviders = append(mapProviders, provider)
 	}
 
 	commits, err := g.listCommits(g.options.Branch, g.options.StartSHA, g.options.EndSHA)
 	if err != nil {
-		return nil, fmt.Errorf("listing commits: %w", err)
+		return nil, errors.Wrap(err, "listing commits")
 	}
 
 	// Get the PRs into a temporary results set
 	resultsTemp, err := g.gatherNotes(commits)
 	if err != nil {
-		return nil, fmt.Errorf("gathering notes: %w", err)
+		return nil, errors.Wrap(err, "gathering notes")
 	}
 
 	// Cycle the results and add the complete notes, as well as those that
@@ -292,7 +292,9 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 			for _, provider := range mapProviders {
 				noteMaps, err := provider.GetMapsForPR(res.pullRequest.GetNumber())
 				if err != nil {
-					return nil, fmt.Errorf("checking if a map exists for PR %d: %w", res.pullRequest.GetNumber(), err)
+					return nil, errors.Wrapf(
+						err, "checking if a map exists for PR %d", res.pullRequest.GetNumber(),
+					)
 				}
 				if len(noteMaps) != 0 {
 					logrus.Infof(
@@ -340,12 +342,12 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 		for _, provider := range mapProviders {
 			noteMaps, err := provider.GetMapsForPR(result.pullRequest.GetNumber())
 			if err != nil {
-				return nil, fmt.Errorf("looking up note map: %w", err)
+				return nil, errors.Wrap(err, "Error while looking up note map")
 			}
 
 			for _, noteMap := range noteMaps {
 				if err := note.ApplyMap(noteMap, g.options.AddMarkdownLinks); err != nil {
-					return nil, fmt.Errorf("applying notemap for PR #%d: %w", result.pullRequest.GetNumber(), err)
+					return nil, errors.Wrapf(err, "applying notemap for PR #%d", result.pullRequest.GetNumber())
 				}
 			}
 		}
@@ -520,12 +522,12 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result) (*ReleaseNote, error) {
 func (g *Gatherer) listCommits(branch, start, end string) ([]*gogithub.RepositoryCommit, error) {
 	startCommit, _, err := g.client.GetCommit(g.context, g.options.GithubOrg, g.options.GithubRepo, start)
 	if err != nil {
-		return nil, fmt.Errorf("retrieve start commit: %w", err)
+		return nil, errors.Wrap(err, "retrieve start commit")
 	}
 
 	endCommit, _, err := g.client.GetCommit(g.context, g.options.GithubOrg, g.options.GithubRepo, end)
 	if err != nil {
-		return nil, fmt.Errorf("retrieve end commit: %w", err)
+		return nil, errors.Wrap(err, "retrieve end commit")
 	}
 
 	allCommits := &commitList{}
@@ -1150,7 +1152,7 @@ func (rn *ReleaseNote) ToNoteMap() (string, error) {
 
 	yamlCode, err := yaml.Marshal(&noteMap)
 	if err != nil {
-		return "", fmt.Errorf("marshalling release note to map: %w", err)
+		return "", errors.Wrap(err, "marshalling release note to map")
 	}
 
 	return string(yamlCode), nil
@@ -1161,7 +1163,7 @@ func (rn *ReleaseNote) ContentHash() (string, error) {
 	// Convert the note to a map
 	noteMap, err := rn.ToNoteMap()
 	if err != nil {
-		return "", fmt.Errorf("serializing note's content: %w", err)
+		return "", errors.Wrap(err, "serializing note's content")
 	}
 
 	//nolint:gosec // used for file integrity checks, NOT security
@@ -1169,7 +1171,7 @@ func (rn *ReleaseNote) ContentHash() (string, error) {
 	h := sha1.New()
 	_, err = h.Write([]byte(noteMap))
 	if err != nil {
-		return "", fmt.Errorf("calculating content hash from map: %w", err)
+		return "", errors.Wrap(err, "calculating content hash from map")
 	}
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }

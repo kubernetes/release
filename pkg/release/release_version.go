@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-sdk/regex"
@@ -130,7 +131,7 @@ func GenerateReleaseVersion(
 	// if branch == release+1, version is an alpha
 	v, err := util.TagStringToSemver(version)
 	if err != nil {
-		return nil, fmt.Errorf("invalid formatted version %s", version)
+		return nil, errors.Errorf("invalid formatted version %s", version)
 	}
 
 	var label string
@@ -153,15 +154,19 @@ func GenerateReleaseVersion(
 	if branchFromMaster { // nolint:gocritic // a switch case would not make it better
 		branchMatch := regex.BranchRegex.FindStringSubmatch(branch)
 		if len(branchMatch) < 3 {
-			return nil, fmt.Errorf("invalid formatted branch %s", branch)
+			return nil, errors.Errorf("invalid formatted branch %s", branch)
 		}
 		branchMajor, err := strconv.Atoi(branchMatch[1])
 		if err != nil {
-			return nil, fmt.Errorf("parsing branch major version %q to int: %w", branchMatch[1], err)
+			return nil, errors.Wrapf(
+				err, "parsing branch major version %q to int", branchMatch[1],
+			)
 		}
 		branchMinor, err := strconv.Atoi(branchMatch[2])
 		if err != nil {
-			return nil, fmt.Errorf("parsing branch minor version %q to int: %w", branchMatch[2], err)
+			return nil, errors.Wrapf(
+				err, "parsing branch minor version %q to int", branchMatch[2],
+			)
 		}
 		releaseBranch := struct{ major, minor int }{
 			major: branchMajor, minor: branchMinor,
@@ -232,7 +237,7 @@ func GenerateReleaseVersion(
 		// Concretely:
 		// We should not be able to cut x.y.z-alpha.N after x.y.z-beta.M
 		if label != ReleaseTypeAlpha {
-			return nil, fmt.Errorf(
+			return nil, errors.Errorf(
 				"cannot cut an alpha tag after a non-alpha release %s. %s",
 				version,
 				"please specify an allowed release type ('beta')",

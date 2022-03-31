@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -50,7 +51,7 @@ type MachOBinary struct {
 func NewMachOBinary(filePath string, opts *Options) (*MachOBinary, error) {
 	header, err := GetMachOHeader(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("trying to read a Mach-O header from file: %w", err)
+		return nil, errors.Wrap(err, "trying to read a Mach-O header from file")
 	}
 	if header == nil {
 		logrus.Debug("File is not a Mach-O binary")
@@ -126,14 +127,14 @@ func (machoh *MachOHeader) MachineType() string {
 func GetMachOHeader(path string) (*MachOHeader, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("opening binary for reading: %w", err)
+		return nil, errors.Wrap(err, "opening binary for reading")
 	}
 	defer f.Close()
 
 	reader := bufio.NewReader(f)
 	hBytes, err := reader.Peek(4)
 	if err != nil {
-		return nil, fmt.Errorf("reading the binary header: %w", err)
+		return nil, errors.Wrap(err, "reading the binary header")
 	}
 
 	var endianness binary.ByteOrder
@@ -161,10 +162,10 @@ func GetMachOHeader(path string) (*MachOHeader, error) {
 
 	header := &MachOHeader{}
 	if _, err := f.Seek(0, 0); err != nil {
-		return nil, fmt.Errorf("seeking to the start of the file: %w", err)
+		return nil, errors.Wrap(err, "seeking to the start of the file")
 	}
 	if err := binary.Read(f, endianness, header); err != nil {
-		return nil, fmt.Errorf("reading Mach-O header from binary file: %w", err)
+		return nil, errors.Wrap(err, "reading Mach-O header from binary file")
 	}
 	return header, nil
 }

@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/util"
@@ -80,7 +81,7 @@ func CreateForBranch(opts *Options) error {
 		fmt.Sprintf("Kubernetes %s branch has been created", opts.branch),
 		fmt.Sprintf(branchAnnouncement, opts.branch),
 	); err != nil {
-		return fmt.Errorf("creating branch announcement: %w", err)
+		return errors.Wrap(err, "creating branch announcement")
 	}
 
 	// TODO: When we create a new branch, we notify the publishing-bot folks by
@@ -99,7 +100,7 @@ func CreateForRelease(opts *Options) error {
 	if opts.changelogFile != "" {
 		changelogData, err := os.ReadFile(opts.changelogFile)
 		if err != nil {
-			return fmt.Errorf("reading changelog html file: %w", err)
+			return errors.Wrap(err, "reading changelog html file")
 		}
 		changelog = string(changelogData)
 	}
@@ -125,7 +126,7 @@ func CreateForRelease(opts *Options) error {
 			opts.changelogPath, filepath.Base(opts.changelogPath), opts.tag,
 		),
 	); err != nil {
-		return fmt.Errorf("creating release announcement: %w", err)
+		return errors.Wrap(err, "creating release announcement")
 	}
 
 	logrus.Infof("Release announcement created")
@@ -139,7 +140,9 @@ func create(workDir, subject, message string) error {
 	if err := os.WriteFile(
 		subjectFile, []byte(subject), 0o755,
 	); err != nil {
-		return fmt.Errorf("writing subject to file %s: %w", subjectFile, err)
+		return errors.Wrapf(
+			err, "writing subject to file %s", subjectFile,
+		)
 	}
 	logrus.Debugf("Wrote file %s", subjectFile)
 
@@ -149,7 +152,9 @@ func create(workDir, subject, message string) error {
 	if err := os.WriteFile(
 		announcementFile, []byte(message), 0o755,
 	); err != nil {
-		return fmt.Errorf("writing announcement to file %s: %w", announcementFile, err)
+		return errors.Wrapf(
+			err, "writing announcement to file %s", announcementFile,
+		)
 	}
 	logrus.Debugf("Wrote file %s", announcementFile)
 
@@ -163,7 +168,7 @@ func create(workDir, subject, message string) error {
 func getGoVersion(tag string) (string, error) {
 	semver, err := util.TagStringToSemver(tag)
 	if err != nil {
-		return "", fmt.Errorf("parse version tag: %w", err)
+		return "", errors.Wrap(err, "parse version tag")
 	}
 
 	branch := fmt.Sprintf("release-%d.%d", semver.Major, semver.Minor)
@@ -172,7 +177,7 @@ func getGoVersion(tag string) (string, error) {
 	if err != nil {
 		kubecrossVer, err = kc.Latest()
 		if err != nil {
-			return "", fmt.Errorf("get kubecross version: %w", err)
+			return "", errors.Wrap(err, "get kubecross version")
 		}
 	}
 
@@ -182,7 +187,7 @@ func getGoVersion(tag string) (string, error) {
 		"docker", "run", "--rm", kubecrossImg, "go", "version",
 	).RunSilentSuccessOutput()
 	if err != nil {
-		return "", fmt.Errorf("get go version: %w", err)
+		return "", errors.Wrap(err, "get go version")
 	}
 
 	versionRegex := regexp.MustCompile(`^?(\d+)(\.\d+)?(\.\d+)`)

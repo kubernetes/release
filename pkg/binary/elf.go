@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -47,7 +48,7 @@ type ELFHeader struct {
 func NewELFBinary(filePath string, opts *Options) (*ELFBinary, error) {
 	header, err := GetELFHeader(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("while trying to get ELF header from file: %w", err)
+		return nil, errors.Wrap(err, "while trying to get ELF header from file")
 	}
 	if header == nil {
 		logrus.Debug("file is not an ELF binary")
@@ -118,7 +119,7 @@ func (eh *ELFHeader) MachineType() string {
 func GetELFHeader(path string) (*ELFHeader, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("opening binary for reading: %w", err)
+		return nil, errors.Wrap(err, "opening binary for reading")
 	}
 	defer f.Close()
 
@@ -127,7 +128,7 @@ func GetELFHeader(path string) (*ELFHeader, error) {
 	reader := bufio.NewReader(f)
 	hBytes, err := reader.Peek(6)
 	if err != nil {
-		return nil, fmt.Errorf("reading the binary header: %w", err)
+		return nil, errors.Wrap(err, "reading the binary header")
 	}
 
 	logrus.StandardLogger().Debugf("Header bytes: %+v", hBytes)
@@ -148,15 +149,15 @@ func GetELFHeader(path string) (*ELFHeader, error) {
 		endianness = binary.BigEndian
 
 	default:
-		return nil, fmt.Errorf("invalid endianness specified in elf binary: %w", err)
+		return nil, errors.Wrap(err, "invalid endianness specified in elf binary")
 	}
 
 	header := &ELFHeader{}
 	if _, err := f.Seek(4, 0); err != nil {
-		return nil, fmt.Errorf("seeking past the ELF magic bytes: %w", err)
+		return nil, errors.Wrap(err, "seeking past the ELF magic bytes")
 	}
 	if err := binary.Read(f, endianness, header); err != nil {
-		return nil, fmt.Errorf("reading elf header from binary file: %w", err)
+		return nil, errors.Wrap(err, "reading elf header from binary file")
 	}
 	return header, nil
 }

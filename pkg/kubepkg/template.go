@@ -18,11 +18,11 @@ package kubepkg
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"path/filepath"
 	"text/template"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -68,13 +68,13 @@ func buildSpecs(bc *buildConfig, specDir string) (workItems []work, err error) {
 	for _, item := range workItems {
 		buf := bytes.Buffer{}
 		if err := item.t.Execute(&buf, bc); err != nil {
-			return nil, fmt.Errorf("executing template for %s: %w", item.src, err)
+			return nil, errors.Wrapf(err, "executing template for %s", item.src)
 		}
 
 		if err := os.WriteFile(
 			item.dst, buf.Bytes(), item.info.Mode(),
 		); err != nil {
-			return nil, fmt.Errorf("writing file %s: %w", item.dst, err)
+			return nil, errors.Wrapf(err, "writing file %s", item.dst)
 		}
 	}
 

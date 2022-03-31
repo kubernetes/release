@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-sdk/sign"
@@ -112,13 +113,13 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 			if err := i.Execute(
 				"docker", "load", "-qi", path,
 			); err != nil {
-				return fmt.Errorf("load container image: %w", err)
+				return errors.Wrap(err, "load container image")
 			}
 
 			if err := i.Execute(
 				"docker", "tag", origTag, newTagWithArch,
 			); err != nil {
-				return fmt.Errorf("tag container image: %w", err)
+				return errors.Wrap(err, "tag container image")
 			}
 
 			logrus.Infof("Pushing %s", newTagWithArch)
@@ -126,28 +127,28 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 			if err := i.Execute(
 				"gcloud", "docker", "--", "push", newTagWithArch,
 			); err != nil {
-				return fmt.Errorf("push container image: %w", err)
+				return errors.Wrap(err, "push container image")
 			}
 
 			if err := i.SignImage(i.signer, newTagWithArch); err != nil {
-				return fmt.Errorf("sign container image: %w", err)
+				return errors.Wrap(err, "sign container image")
 			}
 
 			if err := i.Execute(
 				"docker", "rmi", origTag, newTagWithArch,
 			); err != nil {
-				return fmt.Errorf("remove local container image: %w", err)
+				return errors.Wrap(err, "remove local container image")
 			}
 
 			return nil
 		},
 	)
 	if err != nil {
-		return fmt.Errorf("get manifest images: %w", err)
+		return errors.Wrap(err, "get manifest images")
 	}
 
 	if err := os.Setenv("DOCKER_CLI_EXPERIMENTAL", "enabled"); err != nil {
-		return fmt.Errorf("enable docker experimental CLI: %w", err)
+		return errors.Wrap(err, "enable docker experimental CLI")
 	}
 
 	for image, arches := range manifestImages {
@@ -164,7 +165,7 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 			[]string{"manifest", "create", "--amend", imageVersion},
 			manifests...,
 		)...); err != nil {
-			return fmt.Errorf("create manifest: %w", err)
+			return errors.Wrap(err, "create manifest")
 		}
 
 		for _, arch := range arches {
@@ -176,7 +177,7 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 				"docker", "manifest", "annotate", "--arch", arch,
 				imageVersion, fmt.Sprintf("%s-%s:%s", image, arch, version),
 			); err != nil {
-				return fmt.Errorf("annotate manifest with arch: %w", err)
+				return errors.Wrap(err, "annotate manifest with arch")
 			}
 		}
 
@@ -184,11 +185,11 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 		if err := i.Execute(
 			"docker", "manifest", "push", imageVersion, "--purge",
 		); err != nil {
-			return fmt.Errorf("push manifest: %w", err)
+			return errors.Wrap(err, "push manifest")
 		}
 
 		if err := i.SignImage(i.signer, imageVersion); err != nil {
-			return fmt.Errorf("sign manifest list: %w", err)
+			return errors.Wrap(err, "sign manifest list")
 		}
 	}
 
@@ -205,14 +206,14 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 		registry, version, buildPath,
 		func(_, _, image string) error {
 			logrus.Infof("Verifying that image is signed: %s", image)
-			if err := i.VerifyImage(i.signer, image); err != nil {
-				return fmt.Errorf("verify signed image: %w", err)
-			}
-			return nil
+			return errors.Wrap(
+				i.VerifyImage(i.signer, image),
+				"verify signed image",
+			)
 		},
 	)
 	if err != nil {
-		return fmt.Errorf("get manifest images: %w", err)
+		return errors.Wrap(err, "get manifest images")
 	}
 	logrus.Infof("Got manifest images %+v", manifestImages)
 
@@ -221,21 +222,25 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 
 		manifestBytes, err := crane.Manifest(imageVersion)
 		if err != nil {
-			return fmt.Errorf("get remote manifest from %s: %w", imageVersion, err)
+			return errors.Wrapf(
+				err, "get remote manifest from %s", imageVersion,
+			)
 		}
 
 		logrus.Info("Verifying that image manifest list is signed")
 		if err := i.VerifyImage(i.signer, imageVersion); err != nil {
-			return fmt.Errorf("verify signed manifest list: %w", err)
+			return errors.Wrap(err, "verify signed manifest list")
 		}
 
 		manifest := string(manifestBytes)
 		manifestFile, err := os.CreateTemp("", "manifest-")
 		if err != nil {
-			return fmt.Errorf("create temp file for manifest: %w", err)
+			return errors.Wrap(err, "create temp file for manifest")
 		}
 		if _, err := manifestFile.WriteString(manifest); err != nil {
-			return fmt.Errorf("write manifest to %s: %w", manifestFile.Name(), err)
+			return errors.Wrapf(
+				err, "write manifest to %s", manifestFile.Name(),
+			)
 		}
 
 		for _, arch := range arches {
@@ -249,11 +254,14 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 				manifestFile.Name(),
 			)
 			if err != nil {
-				return fmt.Errorf("get digest from manifest file %s for arch %s: %w", manifestFile.Name(), arch, err)
+				return errors.Wrapf(
+					err, "get digest from manifest file %s for arch %s",
+					manifestFile.Name(), arch,
+				)
 			}
 
 			if digest == "" {
-				return fmt.Errorf(
+				return errors.Errorf(
 					"could not find the image digest for %s on %s",
 					imageVersion, arch,
 				)
@@ -263,7 +271,7 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 		}
 
 		if err := os.RemoveAll(manifestFile.Name()); err != nil {
-			return fmt.Errorf("remove manifest file: %w", err)
+			return errors.Wrap(err, "remove manifest file")
 		}
 	}
 
@@ -290,16 +298,20 @@ func (i *Images) Exists(registry, version string, fast bool) (bool, error) {
 
 		manifestBytes, err := crane.Manifest(imageVersion)
 		if err != nil {
-			return false, fmt.Errorf("get remote manifest from %s: %w", imageVersion, err)
+			return false, errors.Wrapf(
+				err, "get remote manifest from %s", imageVersion,
+			)
 		}
 
 		manifest := string(manifestBytes)
 		manifestFile, err := os.CreateTemp("", "manifest-")
 		if err != nil {
-			return false, fmt.Errorf("create temp file for manifest: %w", err)
+			return false, errors.Wrap(err, "create temp file for manifest")
 		}
 		if _, err := manifestFile.WriteString(manifest); err != nil {
-			return false, fmt.Errorf("write manifest to %s: %w", manifestFile.Name(), err)
+			return false, errors.Wrapf(
+				err, "write manifest to %s", manifestFile.Name(),
+			)
 		}
 
 		for _, arch := range arches {
@@ -313,11 +325,14 @@ func (i *Images) Exists(registry, version string, fast bool) (bool, error) {
 				manifestFile.Name(),
 			)
 			if err != nil {
-				return false, fmt.Errorf("get digest from manifest file %s for arch %s: %w", manifestFile.Name(), arch, err)
+				return false, errors.Wrapf(
+					err, "get digest from manifest file %s for arch %s",
+					manifestFile.Name(), arch,
+				)
 			}
 
 			if digest == "" {
-				return false, fmt.Errorf(
+				return false, errors.Errorf(
 					"could not find the image digest for %s on %s",
 					imageVersion, arch,
 				)
@@ -327,7 +342,7 @@ func (i *Images) Exists(registry, version string, fast bool) (bool, error) {
 		}
 
 		if err := os.RemoveAll(manifestFile.Name()); err != nil {
-			return false, fmt.Errorf("remove manifest file: %w", err)
+			return false, errors.Wrap(err, "remove manifest file")
 		}
 	}
 
@@ -347,7 +362,7 @@ func (i *Images) GetManifestImages(
 
 	archPaths, err := os.ReadDir(releaseImagesPath)
 	if err != nil {
-		return nil, fmt.Errorf("read images path %s: %w", releaseImagesPath, err)
+		return nil, errors.Wrapf(err, "read images path %s", releaseImagesPath)
 	}
 
 	for _, archPath := range archPaths {
@@ -375,12 +390,12 @@ func (i *Images) GetManifestImages(
 
 				origTag, err := i.RepoTagFromTarball(path)
 				if err != nil {
-					return fmt.Errorf("getting repo tags for tarball: %w", err)
+					return errors.Wrap(err, "getting repo tags for tarball")
 				}
 
 				tagMatches := tagRegex.FindStringSubmatch(origTag)
 				if len(tagMatches) != 2 {
-					return fmt.Errorf(
+					return errors.Errorf(
 						"malformed tag %s in %s", origTag, path,
 					)
 				}
@@ -397,13 +412,13 @@ func (i *Images) GetManifestImages(
 					if err := forTarballFn(
 						path, origTag, newTagWithArch,
 					); err != nil {
-						return fmt.Errorf("executing tarball callback: %w", err)
+						return errors.Wrap(err, "executing tarball callback")
 					}
 				}
 				return nil
 			},
 		); err != nil {
-			return nil, fmt.Errorf("traversing path: %w", err)
+			return nil, errors.Wrap(err, "traversing path")
 		}
 	}
 	return manifestImages, nil

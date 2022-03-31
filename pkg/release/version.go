@@ -17,9 +17,9 @@ limitations under the License.
 package release
 
 import (
-	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-sdk/git"
@@ -107,7 +107,7 @@ func (v *Version) GetKubeVersionForBranch(versionType VersionType, branch string
 	version := ""
 	if branch != git.DefaultBranch {
 		if !git.IsReleaseBranch(branch) {
-			return "", fmt.Errorf("%s is not a valid release branch", branch)
+			return "", errors.Errorf("%s is not a valid release branch", branch)
 		}
 		version = strings.TrimPrefix(branch, "release-")
 	}
@@ -122,7 +122,7 @@ func (v *Version) kubeVersionFromURL(url string) (string, error) {
 	logrus.Infof("Retrieving Kubernetes build version from %s...", url)
 	version, httpErr := v.client.GetURLResponse(url)
 	if httpErr != nil {
-		return "", fmt.Errorf("retrieving kube version: %w", httpErr)
+		return "", errors.Wrap(httpErr, "retrieving kube version")
 	}
 
 	logrus.Infof("Retrieved Kubernetes version: %s", version)
