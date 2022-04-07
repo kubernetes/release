@@ -108,7 +108,7 @@ name of the repositories when generating both PRs in the same invacation.
 
 ## Important notes and issues
 
-- Make sure [git `author.email`](https://help.github.com/en/github/setting-up-and-managing-your-github-user-account/setting-your-commit-email-address)
+- Make sure [git `user.email`](https://help.github.com/en/github/setting-up-and-managing-your-github-user-account/setting-your-commit-email-address)
 matches the address you used to sign the CNCF's CLA. Otherwise the
 PR tests will fail.
 
