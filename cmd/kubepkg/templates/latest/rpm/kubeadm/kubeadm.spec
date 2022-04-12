@@ -11,9 +11,6 @@ Source1: 10-kubeadm.conf
 # TODO: Need to templatize dependencies
 BuildRequires: systemd
 BuildRequires: curl
-Requires: kubelet >= {{ index .Dependencies "kubelet" }}
-Requires: kubectl >= {{ index .Dependencies "kubectl" }}
-Requires: kubernetes-cni >= {{ index .Dependencies "kubernetes-cni" }}
 Requires: cri-tools >= {{ index .Dependencies "cri-tools" }}
 
 %description
