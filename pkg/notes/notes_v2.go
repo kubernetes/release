@@ -156,6 +156,7 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 	var err error
 	text := ""
 
+	//nolint:errcheck // if it errors out here, pr will be nil and we will continue on to try other pr numbers anyway
 	pr, _, _ := g.client.GetPullRequest(g.context, g.options.GithubOrg, g.options.GithubRepo, pair.PrNums[0])
 
 	// textPr _may_ not be the same as pr.
