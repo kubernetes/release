@@ -24,34 +24,28 @@ const patchReleaseExpectedTOC = `<!-- BEGIN MUNGE: GENERATED_TOC -->
 
 const patchReleaseExpectedContent = `## Changes by Kind
 
-### Feature
-
-- Azure: Add allow unsafe read from cache ([#83685](https://github.com/kubernetes/kubernetes/pull/83685), [@aramase](https://github.com/aramase)) [SIG Cloud Provider]
-
 ### Failing Test
 
 - Removed dependency on test/e2e/common from test/e2e/storage/testsuites ([#83776](https://github.com/kubernetes/kubernetes/pull/83776), [@avalluri](https://github.com/avalluri)) [SIG Testing]
 
 ### Bug or Regression
 
-- Add data cache flushing during unmount device for GCE-PD driver in Windows Server. ([#83591](https://github.com/kubernetes/kubernetes/pull/83591), [@jingxu97](https://github.com/jingxu97)) [SIG Storage and Windows]
-- Adds a metric apiserver_request_error_total to kube-apiserver. This metric tallies the number of request_errors encountered by verb, group, version, resource, subresource, scope, component, and code. ([#83427](https://github.com/kubernetes/kubernetes/pull/83427), [@logicalhan](https://github.com/logicalhan)) [SIG API Machinery and Instrumentation]
+- Add data cache flushing during unmount device for GCE-PD driver in Windows Server. ([#84474](https://github.com/kubernetes/kubernetes/pull/84474), [@jingxu97](https://github.com/jingxu97)) [SIG Storage and Windows]
+- Adds a metric apiserver_request_error_total to kube-apiserver. This metric tallies the number of request_errors encountered by verb, group, version, resource, subresource, scope, component, and code. ([#84215](https://github.com/kubernetes/kubernetes/pull/84215), [@RainbowMango](https://github.com/RainbowMango)) [SIG API Machinery]
 - Bumps metrics-server version to v0.3.6 for following bugfix:
   - Don't break metric storage when duplicate pod metrics encountered causing hpa to fail ([#84223](https://github.com/kubernetes/kubernetes/pull/84223), [@olagacek](https://github.com/olagacek)) [SIG Cluster Lifecycle]
 - CSI detach timeout increased from 10 seconds to 2 minutes ([#84321](https://github.com/kubernetes/kubernetes/pull/84321), [@cduchesne](https://github.com/cduchesne)) [SIG Storage]
-- Change kube-proxy's default node IP back to 127.0.0.1, if this is incorrect, please use --bind-address to set the correct address ([#84391](https://github.com/kubernetes/kubernetes/pull/84391), [@zouyee](https://github.com/zouyee)) [SIG Network]
 - Fix handling tombstones in pod-disruption-budged controller. ([#83951](https://github.com/kubernetes/kubernetes/pull/83951), [@zouyee](https://github.com/zouyee)) [SIG Apps]
-- Fix kubelet metrics gathering on non-English Windows hosts ([#84156](https://github.com/kubernetes/kubernetes/pull/84156), [@wawa0210](https://github.com/wawa0210)) [SIG Node and Windows]
+- Fix kubelet metrics gathering on non-English Windows hosts ([#84319](https://github.com/kubernetes/kubernetes/pull/84319), [@wawa0210](https://github.com/wawa0210)) [SIG Node]
 - Fixed an issue with informers missing an ` + "`Added`" + ` event if a recently deleted object was immediately recreated at the same time the informer dropped a watch and relisted. ([#83911](https://github.com/kubernetes/kubernetes/pull/83911), [@matte21](https://github.com/matte21)) [SIG API Machinery]
 - Fixed binding of block PersistentVolumes / PersistentVolumeClaims when BlockVolume feature is off. ([#84175](https://github.com/kubernetes/kubernetes/pull/84175), [@jsafrane](https://github.com/jsafrane)) [SIG Apps]
-- Fixed panic when accessing CustomResources of a CRD with x-kubernetes-int-or-string. ([#83789](https://github.com/kubernetes/kubernetes/pull/83789), [@sttts](https://github.com/sttts)) [SIG API Machinery]
 - Kube-apiserver: Fixed a regression accepting patch requests > 1MB ([#84963](https://github.com/kubernetes/kubernetes/pull/84963), [@liggitt](https://github.com/liggitt)) [SIG API Machinery and Testing]
 - Kube-apiserver: fixed a bug that could cause a goroutine leak if the apiserver encountered an encoding error serving a watch to a websocket watcher ([#84960](https://github.com/kubernetes/kubernetes/pull/84960), [@liggitt](https://github.com/liggitt)) [SIG API Machinery]
-- Kube-scheduler now fallbacks to emitting events using core/v1 Events when events.k8s.io/v1beta1 is disabled. ([#83692](https://github.com/kubernetes/kubernetes/pull/83692), [@yastij](https://github.com/yastij)) [SIG API Machinery, Apps, Scheduling and Testing]
-- Kubeadm: fix skipped etcd upgrade on secondary control-plane nodes when the command "kubeadm upgrade node" is used. ([#85024](https://github.com/kubernetes/kubernetes/pull/85024), [@neolit123](https://github.com/neolit123)) [SIG Cluster Lifecycle]
+- Kubeadm: fix skipped etcd upgrade on secondary control-plane nodes when the command "kubeadm upgrade node" is used. ([#85025](https://github.com/kubernetes/kubernetes/pull/85025), [@neolit123](https://github.com/neolit123)) [SIG Cluster Lifecycle]
 - Restores compatibility of kube-scheduler with clusters that do not enable the events.k8s.io/v1beta1 API ([#84465](https://github.com/kubernetes/kubernetes/pull/84465), [@yastij](https://github.com/yastij)) [SIG API Machinery and Scheduling]
-- Switched intstr.Type to sized integer to follow API guidelines and improve compatibility with proto libraries ([#83956](https://github.com/kubernetes/kubernetes/pull/83956), [@liggitt](https://github.com/liggitt)) [SIG API Machinery]
-- Update Cluster Autoscaler version to 1.16.2 (CA release docs: https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.16.2) ([#84038](https://github.com/kubernetes/kubernetes/pull/84038), [@losipiuk](https://github.com/losipiuk)) [SIG Cluster Lifecycle]
+- Switched intstr.Type to sized integer to follow API guidelines and improve compatibility with proto libraries ([#83973](https://github.com/kubernetes/kubernetes/pull/83973), [@liggitt](https://github.com/liggitt)) [SIG API Machinery]
+- Update Cluster Autoscaler version to 1.16.2 (CA release docs: https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.16.2) ([#84087](https://github.com/kubernetes/kubernetes/pull/84087), [@losipiuk](https://github.com/losipiuk)) [SIG Autoscaling]
+- Update to use go1.12.12 ([#84114](https://github.com/kubernetes/kubernetes/pull/84114), [@cblecker](https://github.com/cblecker)) [SIG Release and Testing]
 - Upgrade to etcd client 3.3.17 to fix bug where etcd client does not parse IPv6 addresses correctly when members are joining, and to fix bug where failover on multi-member etcd cluster fails certificate check on DNS mismatch ([#83968](https://github.com/kubernetes/kubernetes/pull/83968), [@jpbetz](https://github.com/jpbetz)) [SIG API Machinery and Cloud Provider]`
 
 const patchReleaseDeps = `## Dependencies
