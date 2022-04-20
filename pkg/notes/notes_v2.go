@@ -102,7 +102,7 @@ func (g *Gatherer) ListReleaseNotesV2() (*ReleaseNotes, error) {
 					if err := releaseNote.ApplyMap(noteMap, g.options.AddMarkdownLinks); err != nil {
 						logrus.WithFields(logrus.Fields{
 							"pr": releaseNote.PrNumber,
-						}).Errorf("ignore err: %v", err)
+						}).Debugf("ignore err: %v", err)
 					}
 				}
 				logrus.WithFields(logrus.Fields{
@@ -121,7 +121,7 @@ func (g *Gatherer) ListReleaseNotesV2() (*ReleaseNotes, error) {
 			logrus.WithFields(logrus.Fields{
 				"sha":    pair.Commit.Hash.String(),
 				"prNums": pair.PrNums,
-			}).Errorf("err: %v", err)
+			}).Debugf("err: %v", err)
 		}
 		bar.Increment()
 		t.Done(nil)
