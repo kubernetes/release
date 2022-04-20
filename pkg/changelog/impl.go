@@ -95,7 +95,10 @@ type impl interface {
 	CloneCVEData() (cveDir string, err error)
 }
 
-type defaultImpl struct{}
+type defaultImpl struct {
+	RecordDir string
+	ReplayDir string
+}
 
 func (*defaultImpl) TagStringToSemver(tag string) (semver.Version, error) {
 	return util.TagStringToSemver(tag)
@@ -123,8 +126,21 @@ func (*defaultImpl) CreateDownloadsTable(
 	return document.CreateDownloadsTable(w, bucket, tars, images, prevTag, newTag)
 }
 
-func (*defaultImpl) LatestGitHubTagsPerBranch() (github.TagsPerBranch, error) {
-	return github.New().LatestGitHubTagsPerBranch()
+func (i *defaultImpl) LatestGitHubTagsPerBranch() (github.TagsPerBranch, error) {
+	gh := github.New()
+
+	var c github.Client
+	switch {
+	case i.RecordDir != "":
+		c = github.NewRecorder(gh.Client(), i.RecordDir)
+	case i.ReplayDir != "":
+		c = github.NewReplayer(i.ReplayDir)
+	default:
+		c = gh.Client()
+	}
+	gh.SetClient(c)
+
+	return gh.LatestGitHubTagsPerBranch()
 }
 
 func (*defaultImpl) GenerateTOC(markdown string) (string, error) {

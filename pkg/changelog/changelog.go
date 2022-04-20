@@ -61,7 +61,10 @@ type Changelog struct {
 func New(opts *Options) *Changelog {
 	return &Changelog{
 		options: opts,
-		impl:    &defaultImpl{},
+		impl: &defaultImpl{
+			RecordDir: opts.RecordDir,
+			ReplayDir: opts.ReplayDir,
+		},
 	}
 }
 
