@@ -82,6 +82,16 @@ type FakeImpl struct {
 		result1 *git.Repo
 		result2 error
 	}
+	ConfigureGlobalDefaultUserAndEmailStub        func() error
+	configureGlobalDefaultUserAndEmailMutex       sync.RWMutex
+	configureGlobalDefaultUserAndEmailArgsForCall []struct {
+	}
+	configureGlobalDefaultUserAndEmailReturns struct {
+		result1 error
+	}
+	configureGlobalDefaultUserAndEmailReturnsOnCall map[int]struct {
+		result1 error
+	}
 	EnvDefaultStub        func(string, string) string
 	envDefaultMutex       sync.RWMutex
 	envDefaultArgsForCall []struct {
@@ -598,6 +608,59 @@ func (fake *FakeImpl) CloneOrOpenGitHubRepoReturnsOnCall(i int, result1 *git.Rep
 		result1 *git.Repo
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeImpl) ConfigureGlobalDefaultUserAndEmail() error {
+	fake.configureGlobalDefaultUserAndEmailMutex.Lock()
+	ret, specificReturn := fake.configureGlobalDefaultUserAndEmailReturnsOnCall[len(fake.configureGlobalDefaultUserAndEmailArgsForCall)]
+	fake.configureGlobalDefaultUserAndEmailArgsForCall = append(fake.configureGlobalDefaultUserAndEmailArgsForCall, struct {
+	}{})
+	stub := fake.ConfigureGlobalDefaultUserAndEmailStub
+	fakeReturns := fake.configureGlobalDefaultUserAndEmailReturns
+	fake.recordInvocation("ConfigureGlobalDefaultUserAndEmail", []interface{}{})
+	fake.configureGlobalDefaultUserAndEmailMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeImpl) ConfigureGlobalDefaultUserAndEmailCallCount() int {
+	fake.configureGlobalDefaultUserAndEmailMutex.RLock()
+	defer fake.configureGlobalDefaultUserAndEmailMutex.RUnlock()
+	return len(fake.configureGlobalDefaultUserAndEmailArgsForCall)
+}
+
+func (fake *FakeImpl) ConfigureGlobalDefaultUserAndEmailCalls(stub func() error) {
+	fake.configureGlobalDefaultUserAndEmailMutex.Lock()
+	defer fake.configureGlobalDefaultUserAndEmailMutex.Unlock()
+	fake.ConfigureGlobalDefaultUserAndEmailStub = stub
+}
+
+func (fake *FakeImpl) ConfigureGlobalDefaultUserAndEmailReturns(result1 error) {
+	fake.configureGlobalDefaultUserAndEmailMutex.Lock()
+	defer fake.configureGlobalDefaultUserAndEmailMutex.Unlock()
+	fake.ConfigureGlobalDefaultUserAndEmailStub = nil
+	fake.configureGlobalDefaultUserAndEmailReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeImpl) ConfigureGlobalDefaultUserAndEmailReturnsOnCall(i int, result1 error) {
+	fake.configureGlobalDefaultUserAndEmailMutex.Lock()
+	defer fake.configureGlobalDefaultUserAndEmailMutex.Unlock()
+	fake.ConfigureGlobalDefaultUserAndEmailStub = nil
+	if fake.configureGlobalDefaultUserAndEmailReturnsOnCall == nil {
+		fake.configureGlobalDefaultUserAndEmailReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.configureGlobalDefaultUserAndEmailReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeImpl) EnvDefault(arg1 string, arg2 string) string {
@@ -1892,6 +1955,8 @@ func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	defer fake.cloneOrOpenDefaultGitHubRepoSSHMutex.RUnlock()
 	fake.cloneOrOpenGitHubRepoMutex.RLock()
 	defer fake.cloneOrOpenGitHubRepoMutex.RUnlock()
+	fake.configureGlobalDefaultUserAndEmailMutex.RLock()
+	defer fake.configureGlobalDefaultUserAndEmailMutex.RUnlock()
 	fake.envDefaultMutex.RLock()
 	defer fake.envDefaultMutex.RUnlock()
 	fake.existsMutex.RLock()

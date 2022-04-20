@@ -275,6 +275,17 @@ func TestRun(t *testing.T) {
 				require.NotNil(t, err)
 			},
 		},
+		{ // failure on ConfigureGlobalDefaultUserAndEmail
+			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
+				mock.IsReleaseBranchReturns(true)
+				mock.RepoHasRemoteBranchReturns(true, nil)
+				mock.ConfigureGlobalDefaultUserAndEmailReturns(errTest)
+				return &Options{Branch: branch}
+			},
+			assert: func(err error) {
+				require.NotNil(t, err)
+			},
+		},
 		{ // failure on RepoMergeBase
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.IsReleaseBranchReturns(true)

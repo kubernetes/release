@@ -57,6 +57,7 @@ type impl interface {
 	RemoveAll(string) error
 	MkdirTemp(string, string) (string, error)
 	Exists(string) bool
+	ConfigureGlobalDefaultUserAndEmail() error
 }
 
 func (*defaultImpl) CloneOrOpenDefaultGitHubRepoSSH(repo string) (*git.Repo, error) {
@@ -157,4 +158,8 @@ func (*defaultImpl) MkdirTemp(dir, pattern string) (string, error) {
 
 func (*defaultImpl) Exists(path string) bool {
 	return util.Exists(path)
+}
+
+func (*defaultImpl) ConfigureGlobalDefaultUserAndEmail() error {
+	return git.ConfigureGlobalDefaultUserAndEmail()
 }
