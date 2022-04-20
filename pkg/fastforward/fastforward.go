@@ -203,6 +203,11 @@ func (f *FastForward) Run() (err error) {
 	}
 	logrus.Infof("Latest release branch revision is %s", releaseRev)
 
+	logrus.Info("Configuring git user and email")
+	if err := f.ConfigureGlobalDefaultUserAndEmail(); err != nil {
+		return errors.Wrap(err, "configure git user and email")
+	}
+
 	logrus.Info("Merging main branch changes into release branch")
 	if err := f.RepoMerge(repo, f.options.MainRef); err != nil {
 		return errors.Wrap(err, "merge main ref")
