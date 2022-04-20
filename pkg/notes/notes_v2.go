@@ -153,10 +153,10 @@ func (g *Gatherer) ListReleaseNotesV2() (*ReleaseNotes, error) {
 
 func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 	var prBody string
-	var text string = ""
 	var err error
+	text := ""
 
-	pr, _, err := g.client.GetPullRequest(g.context, g.options.GithubOrg, g.options.GithubRepo, pair.PrNums[0])
+	pr, _, _ := g.client.GetPullRequest(g.context, g.options.GithubOrg, g.options.GithubRepo, pair.PrNums[0])
 
 	// textPr _may_ not be the same as pr.
 	// In the event that they are not the same, it's because pr represent the cherry-pick PR without release notes
