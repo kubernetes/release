@@ -16,7 +16,7 @@ require (
 	github.com/in-toto/in-toto-golang v0.3.4-0.20211211042327-af1f9fb822bf
 	github.com/mattn/go-isatty v0.0.14
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.5.0
-	github.com/mitchellh/mapstructure v1.4.3
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pkg/errors v0.9.1
