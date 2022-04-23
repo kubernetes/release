@@ -107,8 +107,7 @@ func TestNewAlphaRelease(t *testing.T) {
 
 	// Then
 	// Verify local results
-	fileContains(t, "CHANGELOG-1.18.html", alphaReleaseExpectedHTMLHead)
-	fileContains(t, "CHANGELOG-1.18.html", alphaReleaseExpectedHTMLBottom)
+	fileContains(t, "CHANGELOG-1.18.html", alphaReleaseExpectedHTML)
 	require.Nil(t, os.RemoveAll("CHANGELOG-1.18.html"))
 
 	// Verify commit message

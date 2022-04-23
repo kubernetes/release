@@ -499,7 +499,7 @@ Drop support of heapster in kubectl top (<a href="https://github.com/kubernetes/
   </body>
 </html>`
 
-const alphaReleaseExpectedHTMLHead = `<!DOCTYPE html>
+const alphaReleaseExpectedHTML = `<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
@@ -518,9 +518,7 @@ const alphaReleaseExpectedHTMLHead = `<!DOCTYPE html>
   </head>
   <body>
     <h1>v1.18.0-alpha.3</h1>
-<h2>Changelog since `
-
-const alphaReleaseExpectedHTMLBottom = `
+<h2>Changelog since v1.18.0-alpha.2</h2>
 <h2>Changes by Kind</h2>
 <h3>Deprecation</h3>
 <ul>
