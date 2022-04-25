@@ -16,7 +16,7 @@
 
 # USAGE: stage-binary-and-deps.sh haproxy /opt/stage
 #
-# Stages $1 and it's dependencies + their copyright files to $2
+# Stages $1 and its dependencies + their copyright files to $2
 #
 # This is intended to be used in a multi-stage docker build with a distroless/base
 # or distroless/cc image.
