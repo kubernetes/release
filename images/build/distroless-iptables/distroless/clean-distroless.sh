@@ -14,18 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# USAGE: stage-binary-and-deps.sh haproxy /opt/stage
-#
-# Stages $1 and it's dependencies + their copyright files to $2
-#
-# This is intended to be used in a multi-stage docker build with a distroless/base
-# or distroless/cc image.
+# USAGE: clean-distroless.sh
 
 REMOVE="/usr/share/base-files
 /usr/share/man
 /usr/lib/*-linux-gnu/gconv/
-/usr/lib/*-linux-gnu/libcrypto.*
-/usr/lib/*-linux-gnu/libssl.*
 /usr/bin/c_rehash
 /usr/bin/openssl
 /iptables-wrapper-installer.sh
