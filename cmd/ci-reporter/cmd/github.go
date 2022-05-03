@@ -76,18 +76,18 @@ func (r GithubReporter) GetCIReporterHead() CIReporterInfo {
 // CollectReportData implementation from CIReporter
 func (r GithubReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error) {
 	// set filter configuration
-	fieldFilter := map[FilteredFieldName][]FilteredBlacklistVal{}
+	blackListFilter := map[FilteredFieldName][]FilteredListVal{}
+	whiteListFilter := map[FilteredFieldName][]FilteredListVal{
+		FilteredFieldName("view"): {"issue-tracking"},
+	}
 	if cfg.ShortReport {
-		fieldFilter[FilteredFieldName("Status")] = []FilteredBlacklistVal{
-			FilteredBlacklistVal("RESOLVED"),
-			FilteredBlacklistVal("PASSING"),
-		}
+		blackListFilter[FilteredFieldName("Status")] = []FilteredListVal{FilteredListVal("RESOLVED"), FilteredListVal("PASSING")}
 	}
 	if cfg.ReleaseVersion != "" {
-		fieldFilter[FilteredFieldName("K8s Release")] = []FilteredBlacklistVal{FilteredBlacklistVal(cfg.ReleaseVersion)}
+		whiteListFilter[FilteredFieldName("K8s Release")] = []FilteredListVal{FilteredListVal(cfg.ReleaseVersion)}
 	}
 	// request github projectboard data
-	githubReportData, err := GetGithubReportData(*cfg, fieldFilter)
+	githubReportData, err := GetGithubReportData(*cfg, blackListFilter, whiteListFilter)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting GitHub report data")
 	}
@@ -203,12 +203,12 @@ type (
 	}
 
 	// Types for project board filtering
-	FilteredFieldName    string
-	FilteredBlacklistVal string
+	FilteredFieldName string
+	FilteredListVal   string
 )
 
 // GetGithubReportData used to request the raw report data from github
-func GetGithubReportData(cfg Config, fieldFilter map[FilteredFieldName][]FilteredBlacklistVal) ([]*TransformedProjectBoardItem, error) {
+func GetGithubReportData(cfg Config, blackListFieldFilter, whiteListFieldFilter map[FilteredFieldName][]FilteredListVal) ([]*TransformedProjectBoardItem, error) {
 	// lookup project board information
 	var queryCiSignalProjectBoard ciSignalProjectBoardGraphQLQuery
 	variablesProjectBoardFields := map[string]interface{}{
@@ -233,7 +233,6 @@ func GetGithubReportData(cfg Config, fieldFilter map[FilteredFieldName][]Filtere
 	)
 	projectBoardFieldIDs := map[projectBoardFieldID]projectBoardFieldName{}
 
-	// populate listOfSettingsIDs with IDs
 	for _, field := range queryCiSignalProjectBoard.Node.ProjectNext.Fields.Nodes {
 		var fieldSettings GitHubProjectBoardFieldSettings
 		if err := json.Unmarshal([]byte(field.Settings), &fieldSettings); err != nil {
@@ -257,15 +256,27 @@ func GetGithubReportData(cfg Config, fieldFilter map[FilteredFieldName][]Filtere
 				// ID detected replace ID with Name
 				fieldVal = string(val)
 			}
-			// check if field name is a filtered field
-			// with the filter map it is possible to filter the results
-			// example: "Status" field gets filtered with blacklist values, "RESOLVED"
-			// 	no "Status": "RESOLVED" items will be added to the output
-			if blacklistValues, filteredFieldFound := fieldFilter[FilteredFieldName(field.ProjectField.Name)]; filteredFieldFound {
+
+			// filter out black listed values
+			if blacklistValues, filteredFieldFound := blackListFieldFilter[FilteredFieldName(field.ProjectField.Name)]; filteredFieldFound {
 				// The field is a filtered field since it could be found in the fieldFilter map
 				// 	check if the value of the field is blacklisted
 				for _, bv := range blacklistValues {
 					if fieldVal == string(bv) {
+						itemBlacklisted = true
+						break
+					}
+				}
+				if itemBlacklisted {
+					break
+				}
+			}
+			// filter for white listed values
+			if whitelistValues, filteredFieldFound := whiteListFieldFilter[FilteredFieldName(field.ProjectField.Name)]; filteredFieldFound {
+				// The field is a filtered field since it could be found in the fieldFilter map
+				// 	check if the value of the field is blacklisted
+				for _, bv := range whitelistValues {
+					if fieldVal != string(bv) {
 						itemBlacklisted = true
 						break
 					}
