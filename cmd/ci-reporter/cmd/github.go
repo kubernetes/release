@@ -76,18 +76,18 @@ func (r GithubReporter) GetCIReporterHead() CIReporterInfo {
 // CollectReportData implementation from CIReporter
 func (r GithubReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error) {
 	// set filter configuration
-	blackListFilter := map[FilteredFieldName][]FilteredListVal{}
-	whiteListFilter := map[FilteredFieldName][]FilteredListVal{
+	denyListFilter := map[FilteredFieldName][]FilteredListVal{}
+	allowListFilter := map[FilteredFieldName][]FilteredListVal{
 		FilteredFieldName("view"): {"issue-tracking"},
 	}
 	if cfg.ShortReport {
-		blackListFilter[FilteredFieldName("Status")] = []FilteredListVal{FilteredListVal("RESOLVED"), FilteredListVal("PASSING")}
+		denyListFilter[FilteredFieldName("Status")] = []FilteredListVal{FilteredListVal("RESOLVED"), FilteredListVal("PASSING")}
 	}
 	if cfg.ReleaseVersion != "" {
-		whiteListFilter[FilteredFieldName("K8s Release")] = []FilteredListVal{FilteredListVal(cfg.ReleaseVersion)}
+		allowListFilter[FilteredFieldName("K8s Release")] = []FilteredListVal{FilteredListVal(cfg.ReleaseVersion)}
 	}
 	// request github projectboard data
-	githubReportData, err := GetGithubReportData(*cfg, blackListFilter, whiteListFilter)
+	githubReportData, err := GetGithubReportData(*cfg, denyListFilter, allowListFilter)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting GitHub report data")
 	}
@@ -208,7 +208,7 @@ type (
 )
 
 // GetGithubReportData used to request the raw report data from github
-func GetGithubReportData(cfg Config, blackListFieldFilter, whiteListFieldFilter map[FilteredFieldName][]FilteredListVal) ([]*TransformedProjectBoardItem, error) {
+func GetGithubReportData(cfg Config, denyListFieldFilter, allowListFieldFilter map[FilteredFieldName][]FilteredListVal) ([]*TransformedProjectBoardItem, error) {
 	// lookup project board information
 	var queryCiSignalProjectBoard ciSignalProjectBoardGraphQLQuery
 	variablesProjectBoardFields := map[string]interface{}{
@@ -257,11 +257,11 @@ func GetGithubReportData(cfg Config, blackListFieldFilter, whiteListFieldFilter 
 				fieldVal = string(val)
 			}
 
-			// filter out black listed values
-			if blacklistValues, filteredFieldFound := blackListFieldFilter[FilteredFieldName(field.ProjectField.Name)]; filteredFieldFound {
+			// filter out deny listed values
+			if denyListValues, filteredFieldFound := denyListFieldFilter[FilteredFieldName(field.ProjectField.Name)]; filteredFieldFound {
 				// The field is a filtered field since it could be found in the fieldFilter map
 				// 	check if the value of the field is blacklisted
-				for _, bv := range blacklistValues {
+				for _, bv := range denyListValues {
 					if fieldVal == string(bv) {
 						itemBlacklisted = true
 						break
@@ -271,11 +271,11 @@ func GetGithubReportData(cfg Config, blackListFieldFilter, whiteListFieldFilter 
 					break
 				}
 			}
-			// filter for white listed values
-			if whitelistValues, filteredFieldFound := whiteListFieldFilter[FilteredFieldName(field.ProjectField.Name)]; filteredFieldFound {
+			// filter for allow listed values
+			if allowListValues, filteredFieldFound := allowListFieldFilter[FilteredFieldName(field.ProjectField.Name)]; filteredFieldFound {
 				// The field is a filtered field since it could be found in the fieldFilter map
 				// 	check if the value of the field is blacklisted
-				for _, bv := range whitelistValues {
+				for _, bv := range allowListValues {
 					if fieldVal != string(bv) {
 						itemBlacklisted = true
 						break
