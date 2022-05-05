@@ -80,6 +80,10 @@ func (g *GCB) SetReleaseClient(client Release) {
 
 type Options struct {
 	build.Options
+
+	// NonInteractive does not ask any questions if set to true.
+	NonInteractive bool
+
 	NoMock       bool
 	Stage        bool
 	Release      bool
@@ -219,17 +223,21 @@ func (g *GCB) Submit() error {
 	}
 
 	if g.options.NoMock {
-		// TODO: Consider a '--yes' flag so we can mock this
-		_, nomockSubmit, askErr := util.Ask(
-			fmt.Sprintf("Really submit a --nomock release job against the %s branch? (yes/no)", g.options.Branch),
-			"yes",
-			3,
-		)
-		if askErr != nil {
-			return askErr
+		submit := true
+
+		if !g.options.NonInteractive {
+			var err error
+			_, submit, err = util.Ask(
+				fmt.Sprintf("Really submit a --nomock release job against the %s branch? (yes/no)", g.options.Branch),
+				"yes",
+				3,
+			)
+			if err != nil {
+				return err
+			}
 		}
 
-		if nomockSubmit {
+		if submit {
 			gcbSubs["NOMOCK_TAG"] = "nomock"
 			gcbSubs["NOMOCK"] = fmt.Sprintf("--%s", gcbSubs["NOMOCK_TAG"])
 		}

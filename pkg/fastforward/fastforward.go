@@ -84,6 +84,7 @@ func (f *FastForward) Run() (err error) {
 		options := gcb.NewDefaultOptions()
 		options.FastForward = true
 		options.NoMock = f.options.NoMock
+		options.NonInteractive = f.options.NonInteractive
 		options.Stream = true
 		options.Project = f.options.GCPProjectID
 		options.ScratchBucket = "gs://" + f.options.GCPProjectID + "-gcb"
