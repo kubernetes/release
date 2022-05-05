@@ -61,7 +61,7 @@ type Config struct {
 var cfg = &Config{}
 
 func init() {
-	rootCmd.Flags().StringVarP(&cfg.ReleaseVersion, "release-version", "v", "", "Specify a Kubernetes release versions like '1.22' which will populate the report additionally")
+	rootCmd.PersistentFlags().StringVarP(&cfg.ReleaseVersion, "release-version", "v", "", "Specify a Kubernetes release versions like '1.22' which will populate the report additionally")
 	rootCmd.PersistentFlags().BoolVarP(&cfg.ShortReport, "short", "s", false, "A short report for mails and slack")
 	rootCmd.PersistentFlags().BoolVar(&cfg.JSONOutput, "json", false, "Report output in json format")
 	rootCmd.PersistentFlags().StringVarP(&cfg.Filepath, "file", "f", "", "Specify a filepath to write the report to a file")
