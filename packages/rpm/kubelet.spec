@@ -12,7 +12,7 @@
 %global KUBE_SEMVER %{semver %{KUBE_MAJOR} %{KUBE_MINOR} %{KUBE_PATCH}}
 
 %global CNI_VERSION 0.8.7
-%global CRI_TOOLS_VERSION 1.23.0
+%global CRI_TOOLS_VERSION 1.24.0
 
 Name: kubelet
 Version: %{KUBE_VERSION}
@@ -157,6 +157,9 @@ mv cni-plugins/* %{buildroot}/opt/cni/bin/
 
 
 %changelog
+* Thu May 5 2022 Sascha Grunert <sgrunert@redhat.com> - 1.24.0
+- Update cri-tools to v1.24.0
+
 * Mon Mar 7 2022 Sascha Grunert <sgrunert@redhat.com> - 1.23.4
 - Update cri-tools to v1.23.0
 
