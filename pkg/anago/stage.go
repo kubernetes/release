@@ -569,6 +569,31 @@ func (d *DefaultStage) VerifyArtifacts() error {
 }
 
 func (d *DefaultStage) GenerateChangelog() error {
+	repoPath := gitRoot
+
+	if !release.IsDefaultK8sUpstream() {
+		// We cannot guarantee that the k/k fork contains all release branches
+		// or tags, which is why we always default to the base k/k repository.
+		logrus.Info(
+			"Non default Kubernetes upstream used, " +
+				"cloning fresh default repository for changelog",
+		)
+
+		repo, err := git.CleanCloneGitHubRepo(
+			release.DefaultK8sOrg, release.DefaultK8sRepo, false,
+		)
+		if err != nil {
+			return fmt.Errorf("clone k/k repo: %w", err)
+		}
+		defer func() {
+			if err := repo.Cleanup(); err != nil {
+				logrus.Errorf("Unable to cleanup changelog repo: %v", err)
+			}
+		}()
+
+		repoPath = repo.Dir()
+	}
+
 	branch := d.options.ReleaseBranch
 	if d.state.createReleaseBranch {
 		branch = git.DefaultBranch
@@ -578,7 +603,7 @@ func (d *DefaultStage) GenerateChangelog() error {
 		fmt.Sprintf("%s-%s", release.BuildDir, d.state.versions.Prime()),
 	)
 	return d.impl.GenerateChangelog(&changelog.Options{
-		RepoPath:     gitRoot,
+		RepoPath:     repoPath,
 		Tag:          d.state.versions.Prime(),
 		Branch:       branch,
 		Bucket:       d.options.Bucket(),
