@@ -502,7 +502,10 @@ func (d *DefaultStage) TagRepository() error {
 		// If we are on master/main we do not create an empty commit,
 		// but we detach the head at the specified commit to avoid having
 		// commits merged between the BuildVersion commit and the tag:
-		if branch != "" && !strings.HasPrefix(branch, "release-") {
+		detachHead := release.IsDefaultK8sUpstream() &&
+			branch != "" &&
+			!strings.HasPrefix(branch, "release-")
+		if detachHead {
 			logrus.Infof("Detaching HEAD at commit %s to create tag %s", commit, version)
 			if err := d.impl.Checkout(repo, commit); err != nil {
 				return errors.Wrap(err, "checkout release commit")
@@ -535,7 +538,7 @@ func (d *DefaultStage) TagRepository() error {
 		// detached HEAD state. So we checkout the branch again.
 		// The next stage (build) will checkout the branch it needs, but
 		// let's not end this step with a detached HEAD
-		if branch != "" && !strings.HasPrefix(branch, "release-") {
+		if detachHead {
 			logrus.Infof("Checking out %s to reattach HEAD", d.options.ReleaseBranch)
 			if err := d.impl.Checkout(repo, d.options.ReleaseBranch); err != nil {
 				return errors.Wrapf(err, "checking out branch %s", d.options.ReleaseBranch)
