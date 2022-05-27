@@ -7,10 +7,10 @@ Release cycle as well as Kubernetes Release Cycles schedules ([like 1.23](https:
 
 ## Install
 
-The simplest way to install the `schedule-builder` CLI is via `go get`:
+The simplest way to install the `schedule-builder` CLI is via `go install`:
 
 ```
-$ go get k8s.io/release/cmd/schedule-builder
+$ go install k8s.io/release/cmd/schedule-builder@latest
 ```
 
 This will install `schedule-builder` to `$(go env GOPATH)/bin/schedule-builder`.
