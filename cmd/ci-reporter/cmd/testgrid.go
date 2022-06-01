@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -54,13 +55,8 @@ func (r TestgridReporter) GetCIReporterHead() CIReporterInfo {
 // CollectReportData implementation from CIReporter
 func (r TestgridReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error) {
 	testgridReportData, err := GetTestgridReportData(*cfg)
-	// if the report data could not get retrieved, log but do not break
 	if err != nil {
-		if len(testgridReportData) > 0 {
-			logrus.Infof("Could not retrieve data from some dashboards likely the %s branches have not yet been created", cfg.ReleaseVersion)
-		} else {
-			return nil, err
-		}
+		return nil, err
 	}
 	records := []*CIReportRecord{}
 	for dashboardName, jobData := range testgridReportData {
@@ -84,12 +80,24 @@ func (r TestgridReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, err
 
 // GetTestgridReportData used to request the raw report data from testgrid
 func GetTestgridReportData(cfg Config) (testgrid.DashboardData, error) {
-	testgridURLs := []testgrid.DashboardName{"sig-release-master-blocking", "sig-release-master-informing"}
+	testgridDashboardNames := []testgrid.DashboardName{"sig-release-master-blocking", "sig-release-master-informing"}
 	if cfg.ReleaseVersion != "" {
-		testgridURLs = append(testgridURLs, []testgrid.DashboardName{
+		testgridDashboardNames = append(testgridDashboardNames, []testgrid.DashboardName{
 			testgrid.DashboardName(fmt.Sprintf("sig-release-%s-blocking", cfg.ReleaseVersion)),
 			testgrid.DashboardName(fmt.Sprintf("sig-release-%s-informing", cfg.ReleaseVersion)),
 		}...)
 	}
-	return testgrid.ReqTestgridDashboardSummaries(testgridURLs)
+	dashboardData := testgrid.DashboardData{}
+	for i := range testgridDashboardNames {
+		d, err := testgrid.ReqTestgridDashboardSummary(testgridDashboardNames[i])
+		if err != nil {
+			if errors.Is(err, testgrid.TestgridDashboardNotFound) {
+				logrus.Warn("Dashboard %s not found", testgridDashboardNames[i])
+				continue
+			}
+			return nil, err
+		}
+		dashboardData[testgridDashboardNames[i]] = d
+	}
+	return dashboardData, nil
 }
