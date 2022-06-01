@@ -91,8 +91,8 @@ func GetTestgridReportData(cfg Config) (testgrid.DashboardData, error) {
 	for i := range testgridDashboardNames {
 		d, err := testgrid.ReqTestgridDashboardSummary(testgridDashboardNames[i])
 		if err != nil {
-			if errors.Is(err, testgrid.TestgridDashboardNotFound) {
-				logrus.Warn("Dashboard %s not found", testgridDashboardNames[i])
+			if errors.Is(err, testgrid.ErrDashboardNotFound) {
+				logrus.Warn(fmt.Sprintf("%v for project board %s", err.Error(), testgridDashboardNames[i]))
 				continue
 			}
 			return nil, err

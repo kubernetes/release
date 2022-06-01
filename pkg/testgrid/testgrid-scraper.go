@@ -75,9 +75,9 @@ func ReqTestgridDashboardSummaries(dashboardNames []DashboardName) (DashboardDat
 	return dashboardData, err
 }
 
-type DashboardNotFound error
+type NotFound error
 
-var TestgridDashboardNotFound DashboardNotFound = errors.New("testgrid dashboard not found")
+var ErrDashboardNotFound NotFound = errors.New("testgrid dashboard not found")
 
 // ReqTestgridDashboardSummary used to retrieve summary information about a testgrid dashboard
 func ReqTestgridDashboardSummary(dashboardName DashboardName) (JobData, error) {
@@ -91,7 +91,7 @@ func ReqTestgridDashboardSummary(dashboardName DashboardName) (JobData, error) {
 		return nil, errors.Wrap(err, "read response body")
 	}
 	if strings.Contains(string(body), fmt.Sprintf("Dashboard %s not found", dashboardName)) {
-		return nil, TestgridDashboardNotFound
+		return nil, ErrDashboardNotFound
 	}
 	summary, err := UnmarshalTestgridSummary(body)
 	if err != nil {
