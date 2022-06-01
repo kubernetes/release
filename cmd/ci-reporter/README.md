@@ -34,18 +34,25 @@ Usage:
   reporter [command]
 
 Available Commands:
-  completion  generate the autocompletion script for the specified shell
+  completion  Generate the autocompletion script for the specified shell
   github      Github report generator
   help        Help about any command
   testgrid    Testgrid report generator
 
 Flags:
+  -f, --file string              Specify a filepath to write the report to a file
   -h, --help                     help for reporter
       --json                     Report output in json format
   -v, --release-version string   Specify a Kubernetes release versions like '1.22' which will populate the report additionally
   -s, --short                    A short report for mails and slack
+```
 
-Use "reporter [command] --help" for more information about a command.
+### Command for generating the weekly Ci Signal Report 
+
+Replace `-v 1.25` with the current release cycle. 
+
+```bash
+$ go run cmd/ci-reporter/main.go -s -v 1.25
 ```
 
 ## Rate limits

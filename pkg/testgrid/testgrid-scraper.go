@@ -75,6 +75,10 @@ func ReqTestgridDashboardSummaries(dashboardNames []DashboardName) (DashboardDat
 	return dashboardData, err
 }
 
+type NotFound error
+
+var ErrDashboardNotFound NotFound = errors.New("testgrid dashboard not found")
+
 // ReqTestgridDashboardSummary used to retrieve summary information about a testgrid dashboard
 func ReqTestgridDashboardSummary(dashboardName DashboardName) (JobData, error) {
 	resp, err := http.Get(fmt.Sprintf("https://testgrid.k8s.io/%s/summary", dashboardName))
@@ -85,6 +89,9 @@ func ReqTestgridDashboardSummary(dashboardName DashboardName) (JobData, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Wrap(err, "read response body")
+	}
+	if strings.Contains(string(body), fmt.Sprintf("Dashboard %s not found", dashboardName)) {
+		return nil, ErrDashboardNotFound
 	}
 	summary, err := UnmarshalTestgridSummary(body)
 	if err != nil {

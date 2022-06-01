@@ -17,9 +17,11 @@ limitations under the License.
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/release/pkg/testgrid"
 )
@@ -78,12 +80,24 @@ func (r TestgridReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, err
 
 // GetTestgridReportData used to request the raw report data from testgrid
 func GetTestgridReportData(cfg Config) (testgrid.DashboardData, error) {
-	testgridURLs := []testgrid.DashboardName{"sig-release-master-blocking", "sig-release-master-informing"}
+	testgridDashboardNames := []testgrid.DashboardName{"sig-release-master-blocking", "sig-release-master-informing"}
 	if cfg.ReleaseVersion != "" {
-		testgridURLs = append(testgridURLs, []testgrid.DashboardName{
+		testgridDashboardNames = append(testgridDashboardNames, []testgrid.DashboardName{
 			testgrid.DashboardName(fmt.Sprintf("sig-release-%s-blocking", cfg.ReleaseVersion)),
 			testgrid.DashboardName(fmt.Sprintf("sig-release-%s-informing", cfg.ReleaseVersion)),
 		}...)
 	}
-	return testgrid.ReqTestgridDashboardSummaries(testgridURLs)
+	dashboardData := testgrid.DashboardData{}
+	for i := range testgridDashboardNames {
+		d, err := testgrid.ReqTestgridDashboardSummary(testgridDashboardNames[i])
+		if err != nil {
+			if errors.Is(err, testgrid.ErrDashboardNotFound) {
+				logrus.Warn(fmt.Sprintf("%v for project board %s", err.Error(), testgridDashboardNames[i]))
+				continue
+			}
+			return nil, err
+		}
+		dashboardData[testgridDashboardNames[i]] = d
+	}
+	return dashboardData, nil
 }
