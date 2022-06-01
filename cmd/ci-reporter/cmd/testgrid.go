@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/release/pkg/testgrid"
 )
@@ -53,8 +54,13 @@ func (r TestgridReporter) GetCIReporterHead() CIReporterInfo {
 // CollectReportData implementation from CIReporter
 func (r TestgridReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error) {
 	testgridReportData, err := GetTestgridReportData(*cfg)
+	// if the report data could not get retrieved, log but do not break
 	if err != nil {
-		return nil, err
+		if len(testgridReportData) > 0 {
+			logrus.Infof("Could not retrieve data from some dashboards likely the %s branches have not yet been created", cfg.ReleaseVersion)
+		} else {
+			return nil, err
+		}
 	}
 	records := []*CIReportRecord{}
 	for dashboardName, jobData := range testgridReportData {

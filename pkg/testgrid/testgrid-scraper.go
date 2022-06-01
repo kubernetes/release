@@ -86,6 +86,9 @@ func ReqTestgridDashboardSummary(dashboardName DashboardName) (JobData, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "read response body")
 	}
+	if strings.Contains(string(body), fmt.Sprintf("Dashboard %s not found", dashboardName)) {
+		return nil, fmt.Errorf("dashboard not found")
+	}
 	summary, err := UnmarshalTestgridSummary(body)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal response body")
