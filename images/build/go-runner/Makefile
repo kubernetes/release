@@ -21,7 +21,7 @@ GO_MAJOR_VERSION ?= 1.18
 REVISION ?= 0
 
 # Build args
-GO_VERSION ?= 1.18.2
+GO_VERSION ?= 1.18.3
 OS_CODENAME ?= bullseye
 DISTROLESS_IMAGE ?= static-debian11
 
