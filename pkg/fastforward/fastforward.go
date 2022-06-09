@@ -17,12 +17,12 @@ limitations under the License.
 package fastforward
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/release"
@@ -78,7 +78,7 @@ Please only answer after you have validated the changes.`
 func (f *FastForward) Run() (err error) {
 	if f.options.Submit {
 		if err := f.prepareToolRepo(); err != nil {
-			return errors.Wrap(err, "prepare tool repo")
+			return fmt.Errorf("prepare tool repo: %w", err)
 		}
 		logrus.Info("Submitting GCB job")
 		options := gcb.NewDefaultOptions()
@@ -93,7 +93,7 @@ func (f *FastForward) Run() (err error) {
 
 	repo, err := f.prepareKubernetesRepo()
 	if err != nil {
-		return errors.Wrap(err, "prepare repository")
+		return fmt.Errorf("prepare repository: %w", err)
 	}
 
 	if !f.options.NoMock {
@@ -106,13 +106,13 @@ func (f *FastForward) Run() (err error) {
 		logrus.Info("No release branch specified, finding the latest")
 		branch, err = f.RepoLatestReleaseBranch(repo)
 		if err != nil {
-			return errors.Wrap(err, "finding latest release branch")
+			return fmt.Errorf("finding latest release branch: %w", err)
 		}
 		logrus.Infof("Found latest release branch: %s", branch)
 
 		notRequired, err := f.noFastForwardRequired(repo, branch)
 		if err != nil {
-			return errors.Wrap(err, "check if fast forward is required")
+			return fmt.Errorf("check if fast forward is required: %w", err)
 		}
 		if notRequired {
 			logrus.Infof(
@@ -124,13 +124,13 @@ func (f *FastForward) Run() (err error) {
 	} else {
 		logrus.Infof("Checking if %q is a release branch", branch)
 		if isReleaseBranch := f.IsReleaseBranch(branch); !isReleaseBranch {
-			return errors.Errorf("%s is not a release branch", branch)
+			return fmt.Errorf("%s is not a release branch", branch)
 		}
 
 		logrus.Info("Checking if branch is available on the default remote")
 		branchExists, err := f.RepoHasRemoteBranch(repo, branch)
 		if err != nil {
-			return errors.Wrap(err, "checking if branch exists on the default remote")
+			return fmt.Errorf("checking if branch exists on the default remote: %w", err)
 		}
 		if !branchExists {
 			return errors.New("branch does not exist on the default remote")
@@ -147,7 +147,7 @@ func (f *FastForward) Run() (err error) {
 		// Restore the currently checked out branch afterwards
 		currentBranch, err := f.RepoCurrentBranch(repo)
 		if err != nil {
-			return errors.Wrap(err, "unable to retrieve current branch")
+			return fmt.Errorf("unable to retrieve current branch: %w", err)
 		}
 		defer func() {
 			if err := f.RepoCheckout(repo, currentBranch); err != nil {
@@ -158,13 +158,13 @@ func (f *FastForward) Run() (err error) {
 
 	logrus.Info("Checking out release branch")
 	if err := f.RepoCheckout(repo, branch); err != nil {
-		return errors.Wrapf(err, "checking out branch %s", branch)
+		return fmt.Errorf("checking out branch %s: %w", branch, err)
 	}
 
 	logrus.Infof("Finding merge base between %q and %q", git.DefaultBranch, branch)
 	mergeBase, err := f.RepoMergeBase(repo, git.DefaultBranch, branch)
 	if err != nil {
-		return errors.Wrap(err, "find merge base")
+		return fmt.Errorf("find merge base: %w", err)
 	}
 
 	// Verify the tags
@@ -176,7 +176,7 @@ func (f *FastForward) Run() (err error) {
 			WithTags(),
 	)
 	if err != nil {
-		return errors.Wrap(err, "describe latest main tag")
+		return fmt.Errorf("describe latest main tag: %w", err)
 	}
 	mergeBaseTag, err := f.RepoDescribe(
 		repo,
@@ -186,12 +186,12 @@ func (f *FastForward) Run() (err error) {
 			WithTags(),
 	)
 	if err != nil {
-		return errors.Wrap(err, "describe latest merge base tag")
+		return fmt.Errorf("describe latest merge base tag: %w", err)
 	}
 	logrus.Infof("Merge base tag is: %s", mergeBaseTag)
 
 	if mainTag != mergeBaseTag {
-		return errors.Errorf(
+		return fmt.Errorf(
 			"unable to fast forward: tag %q does not match %q",
 			mainTag, mergeBaseTag,
 		)
@@ -200,23 +200,23 @@ func (f *FastForward) Run() (err error) {
 
 	releaseRev, err := f.RepoHead(repo)
 	if err != nil {
-		return errors.Wrap(err, "get release rev")
+		return fmt.Errorf("get release rev: %w", err)
 	}
 	logrus.Infof("Latest release branch revision is %s", releaseRev)
 
 	logrus.Info("Configuring git user and email")
 	if err := f.ConfigureGlobalDefaultUserAndEmail(); err != nil {
-		return errors.Wrap(err, "configure git user and email")
+		return fmt.Errorf("configure git user and email: %w", err)
 	}
 
 	logrus.Info("Merging main branch changes into release branch")
 	if err := f.RepoMerge(repo, f.options.MainRef); err != nil {
-		return errors.Wrap(err, "merge main ref")
+		return fmt.Errorf("merge main ref: %w", err)
 	}
 
 	headRev, err := f.RepoHead(repo)
 	if err != nil {
-		return errors.Wrap(err, "get HEAD rev")
+		return fmt.Errorf("get HEAD rev: %w", err)
 	}
 
 	prepushMessage(f.RepoDir(repo), branch, f.options.MainRef, releaseRev, headRev)
@@ -227,14 +227,14 @@ func (f *FastForward) Run() (err error) {
 	} else {
 		_, pushUpstream, err = f.Ask(pushUpstreamQuestion, "yes", 3)
 		if err != nil {
-			return errors.Wrap(err, "ask upstream question")
+			return fmt.Errorf("ask upstream question: %w", err)
 		}
 	}
 
 	if pushUpstream {
 		logrus.Infof("Pushing %s branch", branch)
 		if err := f.RepoPush(repo, branch); err != nil {
-			return errors.Wrap(err, "push to repo")
+			return fmt.Errorf("push to repo: %w", err)
 		}
 	}
 
@@ -276,7 +276,7 @@ func (f *FastForward) noFastForwardRequired(repo *git.Repo, branch string) (bool
 
 	tagExists, err := f.RepoHasRemoteTag(repo, version)
 	if err != nil {
-		return false, errors.Wrapf(err, "finding remote tag %s", version)
+		return false, fmt.Errorf("finding remote tag %s: %w", version, err)
 	}
 
 	return tagExists, nil
@@ -294,7 +294,7 @@ func (f *FastForward) prepareKubernetesRepo() (*git.Repo, error) {
 		logrus.Info("Cloning repository by using HTTPs")
 		repo, err := f.CloneOrOpenGitHubRepo(f.options.RepoPath, k8sOrg, k8sRepo, false)
 		if err != nil {
-			return nil, errors.Wrap(err, "clone or open k/k GitHub repository")
+			return nil, fmt.Errorf("clone or open k/k GitHub repository: %w", err)
 		}
 
 		if f.IsDefaultK8sUpstream() {
@@ -304,7 +304,7 @@ func (f *FastForward) prepareKubernetesRepo() (*git.Repo, error) {
 				Host:   "github.com",
 				Path:   filepath.Join(git.DefaultGithubOrg, git.DefaultGithubRepo),
 			}).String()); err != nil {
-				return nil, errors.Wrap(err, "changing git remote of repository")
+				return nil, fmt.Errorf("changing git remote of repository: %w", err)
 			}
 		} else {
 			logrus.Info("Using non-default k8s upstream, doing no git modifications")
@@ -316,7 +316,7 @@ func (f *FastForward) prepareKubernetesRepo() (*git.Repo, error) {
 	logrus.Info("Cloning repository by using SSH")
 	repo, err := f.CloneOrOpenDefaultGitHubRepoSSH(f.options.RepoPath)
 	if err != nil {
-		return nil, errors.Wrap(err, "clone or open k/k GitHub repository")
+		return nil, fmt.Errorf("clone or open k/k GitHub repository: %w", err)
 	}
 
 	return repo, nil
@@ -331,10 +331,10 @@ func (f *FastForward) prepareToolRepo() error {
 
 	tmpPath, err := f.MkdirTemp("", "k-release-")
 	if err != nil {
-		return errors.Wrap(err, "create temp directory")
+		return fmt.Errorf("create temp directory: %w", err)
 	}
 	if err := f.RemoveAll(tmpPath); err != nil {
-		return errors.Wrap(err, "remove temp directory")
+		return fmt.Errorf("remove temp directory: %w", err)
 	}
 	if _, err := f.CloneOrOpenGitHubRepo(
 		tmpPath,
@@ -342,10 +342,10 @@ func (f *FastForward) prepareToolRepo() error {
 		release.DefaultToolRepo,
 		false,
 	); err != nil {
-		return errors.Wrap(err, "clone tool repository")
+		return fmt.Errorf("clone tool repository: %w", err)
 	}
 	if err := f.Chdir(tmpPath); err != nil {
-		return errors.Wrap(err, "change directory")
+		return fmt.Errorf("change directory: %w", err)
 	}
 	return nil
 }

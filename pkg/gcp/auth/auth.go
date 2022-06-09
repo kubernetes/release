@@ -17,9 +17,10 @@ limitations under the License.
 package auth
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"sigs.k8s.io/release-sdk/gcli"
 )
 
@@ -50,7 +51,7 @@ func ConfigureDocker() error {
 		"configure-docker",
 	)
 	if err != nil {
-		return errors.Wrapf(err, "running 'gcloud auth configure-docker'")
+		return fmt.Errorf("running 'gcloud auth configure-docker': %w", err)
 	}
 
 	return nil

@@ -17,10 +17,10 @@ limitations under the License.
 package cve
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
-	"github.com/pkg/errors"
 	cvss "github.com/spiegel-im-spiegel/go-cvss/v3/metric"
 )
 
@@ -94,7 +94,7 @@ func (cve *CVE) Validate() error {
 	// Parse the vector string to make sure it is well formed
 	bm, err := cvss.NewBase().Decode(cve.CVSSVector)
 	if err != nil {
-		return errors.Wrap(err, "parsing CVSS vector string")
+		return fmt.Errorf("parsing CVSS vector string: %w", err)
 	}
 	cve.CalcLink = fmt.Sprintf(
 		"https://www.first.org/cvss/calculator/%s#%s", bm.Ver.String(), cve.CVSSVector,
@@ -108,7 +108,7 @@ func (cve *CVE) Validate() error {
 	}
 
 	if err := ValidateID(cve.ID); err != nil {
-		return errors.Wrap(err, "checking CVE ID")
+		return fmt.Errorf("checking CVE ID: %w", err)
 	}
 
 	// Title and description must not be empty
