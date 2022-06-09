@@ -19,6 +19,7 @@ package gcb
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/gcp/auth"
@@ -165,7 +165,7 @@ func (o *Options) Validate() error {
 
 	if o.Branch == git.DefaultBranch {
 		if o.ReleaseType == release.ReleaseTypeRC || o.ReleaseType == release.ReleaseTypeOfficial {
-			return errors.Errorf("cannot cut a release candidate or an official release from %s", git.DefaultBranch)
+			return fmt.Errorf("cannot cut a release candidate or an official release from %s", git.DefaultBranch)
 		}
 	} else {
 		if o.ReleaseType == release.ReleaseTypeAlpha || o.ReleaseType == release.ReleaseTypeBeta {
@@ -187,7 +187,7 @@ func (o *Options) Validate() error {
 // Submit is the main method responsible for submitting release jobs to GCB.
 func (g *GCB) Submit() error {
 	if err := g.options.Validate(); err != nil {
-		return errors.Wrap(err, "validating GCB options")
+		return fmt.Errorf("validating GCB options: %w", err)
 	}
 
 	toolOrg := release.GetToolOrg()
@@ -195,15 +195,15 @@ func (g *GCB) Submit() error {
 	toolRef := release.GetToolRef()
 
 	if err := gcli.PreCheck(); err != nil {
-		return errors.Wrap(err, "pre-checking for GCP package usage")
+		return fmt.Errorf("pre-checking for GCP package usage: %w", err)
 	}
 
 	if err := g.repoClient.Open(); err != nil {
-		return errors.Wrap(err, "open release repo")
+		return fmt.Errorf("open release repo: %w", err)
 	}
 
 	if err := g.repoClient.CheckState(toolOrg, toolRepo, toolRef, g.options.NoMock); err != nil {
-		return errors.Wrap(err, "verifying repository state")
+		return fmt.Errorf("verifying repository state: %w", err)
 	}
 
 	logrus.Infof("Running GCB with the following options: %+v", g.options)
@@ -294,13 +294,14 @@ func (g *GCB) Submit() error {
 
 	version, err := g.repoClient.GetTag()
 	if err != nil {
-		return errors.Wrap(err, "getting current tag")
+		return fmt.Errorf("getting current tag: %w", err)
 	}
 
-	return errors.Wrap(
-		build.RunSingleJob(&g.options.Options, "", "", version, gcbSubs),
-		"run GCB job",
-	)
+	if err := build.RunSingleJob(&g.options.Options, "", "", version, gcbSubs); err != nil {
+		return fmt.Errorf("run GCB job: %w", err)
+	}
+
+	return nil
 }
 
 // SetGCBSubstitutions takes a set of `Options` and returns a map of GCB
@@ -341,7 +342,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef string) (map[string
 		// If the kubecross version is not set, we will get a 404 from GitHub.
 		// In that case, we do not err but use the latest version (unless we're on main branch)
 		if g.options.Branch == git.DefaultBranch || !strings.Contains(err.Error(), "404") {
-			return gcbSubs, errors.Wrap(err, "retrieve kube-cross version")
+			return gcbSubs, fmt.Errorf("retrieve kube-cross version: %w", err)
 		}
 		logrus.Infof("KubeCross version not set for %s, falling back to latest", g.options.Branch)
 	}
@@ -350,7 +351,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef string) (map[string
 	if g.options.Branch != git.DefaultBranch {
 		kcVersionLatest, err = kc.Latest()
 		if err != nil {
-			return gcbSubs, errors.Wrap(err, "retrieve latest kube-cross version")
+			return gcbSubs, fmt.Errorf("retrieve latest kube-cross version: %w", err)
 		}
 
 		// if kcVersionBranch is empty, the branch does not exist yet, we use
@@ -369,20 +370,18 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef string) (map[string
 
 	buildVersion := g.options.BuildVersion
 	if g.options.Release && buildVersion == "" {
-		return gcbSubs, errors.New("Build version must be specified when sending a release GCB run")
+		return gcbSubs, errors.New("build version must be specified when sending a release GCB run")
 	}
 
 	if g.options.Stage && g.options.BuildAtHead {
 		hash, err := git.LSRemoteExec(git.GetDefaultKubernetesRepoURL(), "rev-parse", g.options.Branch)
 		if err != nil {
-			return gcbSubs, errors.Wrapf(
-				err, "execute rev-parse for branch %s", g.options.Branch,
-			)
+			return gcbSubs, fmt.Errorf("execute rev-parse for branch %s: %w", g.options.Branch, err)
 		}
 
 		fields := strings.Fields(hash)
 		if len(fields) < 1 {
-			return gcbSubs, errors.Errorf("unexpected output: %s", hash)
+			return gcbSubs, fmt.Errorf("unexpected output: %s", hash)
 		}
 
 		buildVersion = fields[0]
@@ -402,25 +401,25 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef string) (map[string
 
 	buildVersionSemver, err := util.TagStringToSemver(buildVersion)
 	if err != nil {
-		return gcbSubs, errors.Wrap(err, "parse build version")
+		return gcbSubs, fmt.Errorf("parse build version: %w", err)
 	}
 
 	createBranch, err := g.releaseClient.NeedsCreation(
 		g.options.Branch, g.options.ReleaseType, buildVersionSemver,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "check if branch needs to be created")
+		return nil, fmt.Errorf("check if branch needs to be created: %w", err)
 	}
 	versions, err := g.releaseClient.GenerateReleaseVersion(
 		g.options.ReleaseType, buildVersion,
 		g.options.Branch, createBranch,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "generate release version")
+		return nil, fmt.Errorf("generate release version: %w", err)
 	}
 	primeSemver, err := util.TagStringToSemver(versions.Prime())
 	if err != nil {
-		return gcbSubs, errors.Wrap(err, "parse prime version")
+		return gcbSubs, fmt.Errorf("parse prime version: %w", err)
 	}
 
 	gcbSubs["MAJOR_VERSION_TAG"] = strconv.FormatUint(primeSemver.Major, 10)
