@@ -18,13 +18,13 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/olekukonko/tablewriter"
-	"github.com/pkg/errors"
 	"github.com/shurcooL/githubv4"
 	"github.com/spf13/cobra"
 	"github.com/tj/go-spin"
@@ -85,7 +85,7 @@ func RunReport(cfg *Config, reporters *CIReporters) error {
 
 	// visualize data
 	if err := PrintReporterData(cfg, reports); err != nil {
-		return errors.Wrap(err, "printing report data")
+		return fmt.Errorf("printing report data: %w", err)
 	}
 
 	return nil
@@ -195,7 +195,7 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 		// open output file
 		fileOut, err := os.OpenFile(cfg.Filepath, os.O_WRONLY|os.O_CREATE, 0o666)
 		if err != nil {
-			return errors.Wrapf(err, "could not open or create a file at %s to write the ci signal report to", cfg.Filepath)
+			return fmt.Errorf("could not open or create a file at %s to write the ci signal report to: %w", cfg.Filepath, err)
 		}
 		out = fileOut
 	} else {
@@ -212,11 +212,11 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 		// print report in json format
 		d, err := reports.Marshal()
 		if err != nil {
-			return errors.Wrap(err, "could not marshal report data")
+			return fmt.Errorf("could not marshal report data: %w", err)
 		}
 		_, err = out.WriteString(string(d))
 		if err != nil {
-			return errors.Wrap(err, "could not write to output stream")
+			return fmt.Errorf("could not write to output stream: %w", err)
 		}
 		return nil
 	}
@@ -226,7 +226,7 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 		// write header
 		_, err := out.WriteString(fmt.Sprintf("\n%s REPORT\n\n", strings.ToUpper(string(r.Info.Name))))
 		if err != nil {
-			return errors.Wrap(err, "could not write to output stream")
+			return fmt.Errorf("could not write to output stream: %w", err)
 		}
 
 		table := tablewriter.NewWriter(out)
@@ -266,7 +266,7 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 			categoryCounts += fmt.Sprintf("%s:%d ", category, categoryCount)
 		}
 		if _, err := out.WriteString(fmt.Sprintf("\nSUMMARY - Total:%d %s\n", len(data), categoryCounts)); err != nil {
-			return errors.Wrap(err, "could not write to output stream")
+			return fmt.Errorf("could not write to output stream: %w", err
 		}
 	}
 	return nil
