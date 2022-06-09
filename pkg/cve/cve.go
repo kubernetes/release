@@ -76,19 +76,19 @@ func (cve *CVE) ReadRawInterface(cvedata interface{}) error {
 func (cve *CVE) Validate() error {
 	// Verify that rating is defined and a known string
 	if cve.CVSSRating == "" {
-		return errors.New("CVSS rating missing from CVE data")
+		return errors.New("missing CVSS rating from CVE data")
 	}
 
 	// Check rating is a valid string
 	if _, ok := map[string]bool{
 		"None": true, "Low": true, "Medium": true, "High": true, "Critical": true,
 	}[cve.CVSSRating]; !ok {
-		return errors.New("Invalid CVSS rating")
+		return errors.New("invalid CVSS rating")
 	}
 
 	// Check vector string is not empty
 	if cve.CVSSVector == "" {
-		return errors.New("CVSS vector string missing from CVE data")
+		return errors.New("string CVSS vector missing from CVE data")
 	}
 
 	// Parse the vector string to make sure it is well formed
@@ -101,10 +101,10 @@ func (cve *CVE) Validate() error {
 	)
 
 	if cve.CVSSScore == 0 {
-		return errors.New("CVSS score missing from CVE data")
+		return errors.New("missing CVSS score from CVE data")
 	}
 	if cve.CVSSScore < 0 || cve.CVSSScore > 10 {
-		return errors.New("CVSS score out of range, should be 0.0 - 10.0")
+		return errors.New("out of range CVSS score, should be 0.0 - 10.0")
 	}
 
 	if err := ValidateID(cve.ID); err != nil {
@@ -113,11 +113,11 @@ func (cve *CVE) Validate() error {
 
 	// Title and description must not be empty
 	if cve.Title == "" {
-		return errors.New("Title missing from CVE data")
+		return errors.New("title missing from CVE data")
 	}
 
 	if cve.Description == "" {
-		return errors.New("CVE description missing from CVE data")
+		return errors.New("missing CVE description from CVE data")
 	}
 
 	return nil
@@ -126,12 +126,12 @@ func (cve *CVE) Validate() error {
 // ValidateID checks if a CVE IS string is valid
 func ValidateID(cveID string) error {
 	if cveID == "" {
-		return errors.New("CVE ID string is empty")
+		return errors.New("empty CVE ID string")
 	}
 
 	// Verify that the CVE ID is well formed
 	if !regexp.MustCompile(CVEIDRegExp).MatchString(cveID) {
-		return errors.New("CVS ID is not well formed")
+		return errors.New("not well formed CVS ID")
 	}
 
 	return nil

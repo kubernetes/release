@@ -228,9 +228,9 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 		}
 
 		if diskSizeInt > 1000 {
-			return errors.New("Selected disk size must be no greater than 1000 GB")
+			return errors.New("selected disk size must be no greater than 1000 GB")
 		} else if diskSizeInt <= 0 {
-			return errors.New("Selected disk size must be greater than 0 GB")
+			return errors.New("selected disk size must be greater than 0 GB")
 		}
 
 		diskSizeArg := fmt.Sprintf("--disk-size=%s", o.DiskSize)

@@ -371,7 +371,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef string) (map[string
 
 	buildVersion := g.options.BuildVersion
 	if g.options.Release && buildVersion == "" {
-		return gcbSubs, errors.New("Build version must be specified when sending a release GCB run")
+		return gcbSubs, errors.New("build version must be specified when sending a release GCB run")
 	}
 
 	if g.options.Stage && g.options.BuildAtHead {
