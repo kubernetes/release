@@ -302,7 +302,6 @@ func (g *GCB) Submit() error {
 	}
 
 	return nil
-
 }
 
 // SetGCBSubstitutions takes a set of `Options` and returns a map of GCB

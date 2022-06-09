@@ -234,7 +234,6 @@ func (c *Changelog) Run() error {
 	}
 
 	return nil
-
 }
 
 func (c *Changelog) generateReleaseNotes(
