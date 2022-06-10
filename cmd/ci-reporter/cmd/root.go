@@ -266,7 +266,7 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 			categoryCounts += fmt.Sprintf("%s:%d ", category, categoryCount)
 		}
 		if _, err := out.WriteString(fmt.Sprintf("\nSUMMARY - Total:%d %s\n", len(data), categoryCounts)); err != nil {
-			return fmt.Errorf("could not write to output stream: %w", err
+			return fmt.Errorf("could not write to output stream: %w", err)
 		}
 	}
 	return nil

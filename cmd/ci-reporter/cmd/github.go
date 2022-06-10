@@ -91,9 +91,8 @@ func (r GithubReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error
 	// request github projectboard data
 	githubReportData, err := GetGithubReportData(*cfg, denyListFilter, allowListFilter)
 	if err != nil {
-		return fmt.Errorf("getting GitHub report data: %w", err)
+		return nil, fmt.Errorf("getting GitHub report data: %w", err)
 	}
-	return nil
 	records := []*CIReportRecord{}
 
 	for _, item := range githubReportData {
