@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"os"
 	
-
 	
 	"github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
