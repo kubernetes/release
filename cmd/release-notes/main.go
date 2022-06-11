@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -284,12 +283,12 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 	if releaseNotesOpts.outputFile != "" {
 		output, err = os.OpenFile(releaseNotesOpts.outputFile, os.O_RDWR|os.O_CREATE, os.FileMode(0o644))
 		if err != nil {
-			return errors.Wrapf(err, "opening the supplied output file")
+			return fmt.Errorf("opening the supplied output file: %w", err)
 		}
 	} else {
 		output, err = os.CreateTemp("", "release-notes-")
 		if err != nil {
-			return errors.Wrapf(err, "creating a temporary file to write the release notes to")
+			return fmt.Errorf("creating a temporary file to write the release notes to: %w", err)
 		}
 	}
 
@@ -302,7 +301,7 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 
 		if len(byteValue) > 0 {
 			if err := json.Unmarshal(byteValue, &existingNotes); err != nil {
-				return errors.Wrapf(err, "unmarshalling existing notes")
+				return fmt.Errorf("unmarshalling existing notes: %w", err)
 			}
 		}
 
@@ -325,17 +324,17 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 		enc := json.NewEncoder(output)
 		enc.SetIndent("", "  ")
 		if err := enc.Encode(releaseNotes.ByPR()); err != nil {
-			return errors.Wrapf(err, "encoding JSON output")
+			return fmt.Errorf(err, "encoding JSON output: %w", err)
 		}
 	} else {
 		doc, err := document.New(releaseNotes, opts.StartRev, opts.EndRev)
 		if err != nil {
-			return errors.Wrapf(err, "creating release note document")
+			return fmt.Errorf(err, "creating release note document: %w", err)
 		}
 
 		markdown, err := doc.RenderMarkdownTemplate(opts.ReleaseBucket, opts.ReleaseTars, "", opts.GoTemplate)
 		if err != nil {
-			return errors.Wrapf(err, "rendering release note document with template")
+			return fmt.Errorf("rendering release note document with template: %w", err)
 		}
 
 		const nl = "\n"
@@ -348,7 +347,7 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 					url, opts.StartSHA, opts.EndSHA,
 				)
 				if err != nil {
-					return errors.Wrap(err, "generating dependency report")
+					return fmt.Errorf(err, "generating dependency report")
 				}
 				markdown += strings.Repeat(nl, 2) + deps
 			}
