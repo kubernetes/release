@@ -27,6 +27,8 @@ Individual tools can be installed via `go install k8s.io/release/cmd/$TOOL@lates
   - [`publish-release`](#publish-release)
 - [Legacy](#legacy)
   - [`push-build.sh`](#push-buildsh)
+- [Experimental](#experimental)
+  - [`rapture`](#rapture)
 - [Contributing](#contributing)
 
 **Each of the headings below links to a tool's location.**
@@ -118,6 +120,16 @@ Push a CI build of Kubernetes to Google Cloud Storage (GCS).
 Status: Deprecated (but still in use)
 
 Audience: [Release Managers][release-managers], Prowjobs
+
+## Experimental
+
+### [`rapture`](hack/rapture/)
+
+Build operating system packages (`.deb` and RPM)
+
+Status: Experimental (but already in use)
+
+Audience: [Release Managers][release-managers], Googlers participating in releases
 
 ## Contributing
 
