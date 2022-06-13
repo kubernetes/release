@@ -239,7 +239,7 @@ func GatherReleaseNotes(opts *options.Options) (*ReleaseNotes, error) {
 	logrus.Info("Gathering release notes")
 	gatherer, err := NewGatherer(context.Background(), opts)
 	if err != nil {
-		return nil, errors.Wrapf(err, "retrieving notes gatherer")
+		return nil, fmt.Errorf("retrieving notes gatherer: %w", err)
 	}
 
 	var releaseNotes *ReleaseNotes
@@ -293,8 +293,8 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 				noteMaps, err := provider.GetMapsForPR(res.pullRequest.GetNumber())
 				if err != nil {
 					return nil, fmt.Errorf(
-						"checking if a map exists for PR %d: %w", res.pullRequest.GetNumber(), err
-					)
+						"checking if a map exists for PR %d: %w", res.pullRequest.GetNumber(),
+						err)
 				}
 				if len(noteMaps) != 0 {
 					logrus.Infof(
@@ -342,7 +342,7 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 		for _, provider := range mapProviders {
 			noteMaps, err := provider.GetMapsForPR(result.pullRequest.GetNumber())
 			if err != nil {
-				return nil, fmt.Errorf("Error while looking up note map: %w", err)
+				return nil, fmt.Errorf("error while looking up note map: %w", err)
 			}
 
 			for _, noteMap := range noteMaps {
