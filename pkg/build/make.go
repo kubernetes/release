@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-sdk/git"
@@ -75,12 +74,12 @@ func (d *defaultMakeImpl) Rename(from, to string) error {
 func (m *Make) MakeCross(version string) error {
 	repo, err := m.impl.OpenRepo(".")
 	if err != nil {
-		return errors.Wrap(err, "open Kubernetes repository")
+		return fmt.Errorf("open Kubernetes repository: %w", err)
 	}
 
 	logrus.Infof("Checking out version %s", version)
 	if err := m.impl.Checkout(repo, version); err != nil {
-		return errors.Wrapf(err, "checking out version %s", version)
+		return fmt.Errorf("checking out version %s: %w", version, err)
 	}
 
 	// Unset the build memory requirement for parallel builds
@@ -95,13 +94,13 @@ func (m *Make) MakeCross(version string) error {
 		"cross-in-a-container",
 		fmt.Sprintf("KUBE_DOCKER_IMAGE_TAG=%s", version),
 	); err != nil {
-		return errors.Wrapf(err, "build version %s", version)
+		return fmt.Errorf("build version %s: %w", version, err)
 	}
 
 	newBuildDir := fmt.Sprintf("%s-%s", release.BuildDir, version)
 	logrus.Infof("Moving build output to %s", newBuildDir)
 	if err := m.impl.Rename(release.BuildDir, newBuildDir); err != nil {
-		return errors.Wrap(err, "move build output")
+		return fmt.Errorf("move build output: %w", err)
 	}
 
 	logrus.Info("Building package tarballs")
@@ -111,7 +110,7 @@ func (m *Make) MakeCross(version string) error {
 		fmt.Sprintf("KUBE_DOCKER_IMAGE_TAG=%s", version),
 		fmt.Sprintf("OUT_DIR=%s", newBuildDir),
 	); err != nil {
-		return errors.Wrap(err, "build package tarballs")
+		return fmt.Errorf("build package tarballs: %w", err)
 	}
 
 	return nil
