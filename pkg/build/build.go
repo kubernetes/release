@@ -17,7 +17,8 @@ limitations under the License.
 package build
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/release"
@@ -137,7 +138,7 @@ func (bi *Instance) getGCSBuildPath(version string) (string, error) {
 		bi.opts.Fast,
 	)
 	if err != nil {
-		return "", errors.Wrap(err, "get GCS release path")
+		return "", fmt.Errorf("get GCS release path: %w", err)
 	}
 
 	return buildPath, nil
