@@ -25,10 +25,10 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/release"
-	"k8s.io/release/pkg/version"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/log"
 	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/version"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
@@ -245,7 +245,8 @@ func (s *Stage) Run() error {
 	}
 
 	logger := log.NewStepLogger(11)
-	logger.Infof("Using krel version:\n%s", version.Get().String())
+	v := version.GetVersionInfo()
+	logger.Infof("Using krel version: %s", v.GitVersion)
 
 	logger.WithStep().Info("Validating options")
 	if err := s.client.ValidateOptions(); err != nil {
@@ -376,7 +377,8 @@ func (r *Release) Run() error {
 	}
 
 	logger := log.NewStepLogger(11)
-	logger.Infof("Using krel version:\n%s", version.Get().String())
+	v := version.GetVersionInfo()
+	logger.Infof("Using krel version: %s", v.GitVersion)
 
 	logger.WithStep().Info("Validating options")
 	if err := r.client.ValidateOptions(); err != nil {

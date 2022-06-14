@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/release-utils/log"
+	"sigs.k8s.io/release-utils/version"
 )
 
 const (
@@ -31,7 +32,8 @@ const (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use: "krel",
+	Use:   "krel",
+	Short: "The Kubernetes Release toolbox",
 	Long: `krel - The Kubernetes Release toolbox
 
 krel is the new golang based tool for managing releases. Target of krel is to
@@ -74,6 +76,8 @@ func init() {
 		"info",
 		fmt.Sprintf("the logging verbosity, either %s", log.LevelNames()),
 	)
+
+	rootCmd.AddCommand(version.WithFont("slant"))
 }
 
 func initLogging(*cobra.Command, []string) error {
