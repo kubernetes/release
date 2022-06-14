@@ -246,7 +246,7 @@ func (s *Stage) Run() error {
 
 	logger := log.NewStepLogger(11)
 	v := version.GetVersionInfo()
-	logger.Infof("Using krel version:\n%s", v.GitVersion)
+	logger.Infof("Using krel version: %s", v.GitVersion)
 
 	logger.WithStep().Info("Validating options")
 	if err := s.client.ValidateOptions(); err != nil {
@@ -378,7 +378,7 @@ func (r *Release) Run() error {
 
 	logger := log.NewStepLogger(11)
 	v := version.GetVersionInfo()
-	logger.Infof("Using krel version:\n%s", v.GitVersion)
+	logger.Infof("Using krel version: %s", v.GitVersion)
 
 	logger.WithStep().Info("Validating options")
 	if err := r.client.ValidateOptions(); err != nil {
