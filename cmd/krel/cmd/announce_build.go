@@ -250,14 +250,13 @@ func (opts *buildAnnounceOptions) saveAnnouncement(announcementSubject string, a
 	return nil
 }
 
-func (getGoVersion) (string, error) {
+func getGoVersion (string, error) {
 	cmdStatus, err := command.New(
 		"go", "version").
 		RunSilentSuccessOutput()
 	if err != nil {
 		return "", fmt.Errorf("get go version: %w", err)
 	}
-
 	versionRegex := regexp.MustCompile(semVerRegex)
 	return versionRegex.FindString(strings.TrimSpace(cmdStatus.Output())), nil
 }
