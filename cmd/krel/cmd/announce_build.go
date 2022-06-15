@@ -250,7 +250,7 @@ func (opts *buildAnnounceOptions) saveAnnouncement(announcementSubject string, a
 	return nil
 }
 
-func getGoVersion() (string, error) {
+func (getGoVersion) (string, error) {
 	cmdStatus, err := command.New(
 		"go", "version").
 		RunSilentSuccessOutput()
