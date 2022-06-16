@@ -19,9 +19,9 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -89,7 +89,7 @@ func (r GithubReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error
 	// request github projectboard data
 	githubReportData, err := GetGithubReportData(*cfg, denyListFilter, allowListFilter)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting GitHub report data")
+		return nil, fmt.Errorf("getting GitHub report data: %w", err)
 	}
 	records := []*CIReportRecord{}
 
