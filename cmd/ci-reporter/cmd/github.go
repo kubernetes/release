@@ -21,8 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	
-	
+
 	"github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
