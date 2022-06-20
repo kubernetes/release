@@ -22,7 +22,14 @@ it will file pull requests on your behalf to the proper kubernetes org repositor
 
 ## Installation
 
-After [installing krel](README.md#installation), you will need to [get a GitHub token](https://github.com/settings/tokens) to run the release-notes subcommand.
+After [installing krel](README.md#installation), you will need to [get a GitHub token](https://github.com/settings/tokens) to run the release-notes subcommand specifying only the `repo/public_repo` scope:
+
+- [ ] repo
+  - [ ] repo: status
+  - [ ] repo_deployment
+  - [X] public_repo
+  - [ ] repo:invite
+  - [ ] security_events
 
 If you want to generate the JSON patches for relnotes.k8s.io you will need to have [npm](https://www.npmjs.com/) and a recent version of [node.js](https://nodejs.org/) installed to run the JSON formatter.
 
