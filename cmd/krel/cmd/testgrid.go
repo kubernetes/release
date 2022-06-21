@@ -19,6 +19,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -28,7 +29,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -118,7 +118,7 @@ func runTestGridShot(opts *TestGridOptions) error {
 	logrus.Info("Starting krel testgrishot...")
 
 	if err := opts.Validate(); err != nil {
-		return errors.Wrap(err, "validating testgridshot options")
+		return fmt.Errorf("validating testgridshot options: %w", err)
 	}
 
 	testgridJobs := []TestGridJob{}
@@ -126,15 +126,13 @@ func runTestGridShot(opts *TestGridOptions) error {
 		testGridDashboard := fmt.Sprintf("%s/sig-release-%s-%s/summary", opts.testgridURL, opts.branch, board)
 		content, err := http.NewAgent().WithTimeout(30 * time.Second).Get(testGridDashboard)
 		if err != nil {
-			return errors.Wrapf(err,
-				"unable to retrieve release announcement form url: %s", testGridDashboard,
-			)
+			return fmt.Errorf("unable to retrieve release announcement form url: %s: %w", testGridDashboard, err)
 		}
 
 		var result map[string]interface{}
 		err = json.Unmarshal(content, &result)
 		if err != nil {
-			return errors.Wrap(err, "unable unmarshal the testgrid response")
+			return fmt.Errorf("unable unmarshal the testgrid response: %w", err)
 		}
 
 		testgridJobsTemp := []TestGridJob{}
@@ -142,7 +140,7 @@ func runTestGridShot(opts *TestGridOptions) error {
 			result := TestgridJobInfo{}
 			err = mapstructure.Decode(jobData, &result)
 			if err != nil {
-				return errors.Wrap(err, "decode testgrid data")
+				return fmt.Errorf("decode testgrid data: %w", err)
 			}
 
 			for _, state := range opts.states {
@@ -160,13 +158,13 @@ func runTestGridShot(opts *TestGridOptions) error {
 		dateNow := fmt.Sprintf("%s-%s", time.Now().UTC().Format(layoutISO), uuid.NewString())
 		testgridJobs, err = processDashboards(testgridJobs, dateNow, opts)
 		if err != nil {
-			return errors.Wrap(err, "processing the dashboards")
+			return fmt.Errorf("processing the dashboards: %w", err)
 		}
 	}
 
 	err := generateIssueComment(testgridJobs, opts)
 	if err != nil {
-		return errors.Wrap(err, "generating the GitHub issue comment")
+		return fmt.Errorf("generating the GitHub issue comment: %w", err)
 	}
 
 	return nil
@@ -180,19 +178,19 @@ func processDashboards(testgridJobs []TestGridJob, date string, opts *TestGridOp
 
 		content, err := http.NewAgent().WithTimeout(300 * time.Second).Get(rendertronURL)
 		if err != nil {
-			return testgridJobs, errors.Wrapf(err, "failed to get the testgrid screenshot")
+			return testgridJobs, fmt.Errorf("failed to get the testgrid screenshot: %w", err)
 		}
 
 		jobFile := fmt.Sprintf("/tmp/%s-%s-%s.jpg", job.DashboardName, strings.ReplaceAll(job.JobName, " ", "_"), job.Status)
 		f, err := os.Create(jobFile)
 		if err != nil {
-			return testgridJobs, errors.Wrapf(err, "failed to create the file %s", jobFile)
+			return testgridJobs, fmt.Errorf("failed to create the file %s: %w", jobFile, err)
 		}
 
 		_, err = f.Write(content)
 		f.Close()
 		if err != nil {
-			return testgridJobs, errors.Wrapf(err, "failed to write the content to the file %s", jobFile)
+			return testgridJobs, fmt.Errorf("failed to write the content to the file %s: %w", jobFile, err)
 		}
 		logrus.Infof("Screenshot saved for %s: %s", job.JobName, jobFile)
 
@@ -200,10 +198,10 @@ func processDashboards(testgridJobs []TestGridJob, date string, opts *TestGridOp
 
 		gcs := object.NewGCS()
 		if err := gcs.CopyToRemote(jobFile, gcsPath); err != nil {
-			return testgridJobs, errors.Wrapf(err, "failed to upload the file %s to GCS bucket %s", jobFile, gcsPath)
+			return testgridJobs, fmt.Errorf("failed to upload the file %s to GCS bucket %s: %w", jobFile, gcsPath, err)
 		}
 		if err := os.Remove(jobFile); err != nil {
-			return testgridJobs, errors.Wrapf(err, "remove jobfile")
+			return testgridJobs, fmt.Errorf("remove jobfile: %w", err)
 		}
 		testgridJobs[i].GCSLocation = fmt.Sprintf("https://storage.googleapis.com/%s", gcsPath)
 		logrus.Infof("Screenshot will be available for job %s at %s", job.JobName, testgridJobs[i].GCSLocation)
@@ -254,7 +252,7 @@ func generateIssueComment(testgridJobs []TestGridJob, opts *TestGridOptions) err
 
 		_, _, err := gh.Client().CreateComment(context.Background(), git.DefaultGithubOrg, k8sSigReleaseRepo, opts.gitHubIssue, strings.Join(output, "\n"))
 		if err != nil {
-			return errors.Wrap(err, "creating the GitHub comment")
+			return fmt.Errorf("creating the GitHub comment: %w", err)
 		}
 		logrus.Infof("Comment created in the GitHub Issue https://github.com/%s/%s/issues/%d. Thanks for using krel!", git.DefaultGithubOrg, k8sSigReleaseRepo, opts.gitHubIssue)
 	} else {
@@ -303,17 +301,17 @@ func (o *TestGridOptions) Validate() error {
 
 		issue, _, err := gh.Client().GetIssue(context.Background(), git.DefaultGithubOrg, k8sSigReleaseRepo, o.gitHubIssue)
 		if err != nil || issue == nil {
-			return errors.Wrapf(err, "getting the GitHub Issue %d", o.gitHubIssue)
+			return fmt.Errorf("getting the GitHub Issue %d: %w", o.gitHubIssue, err)
 		}
 
 		// The issue needs to be in open state
 		if issue.GetState() != "open" {
-			return errors.Errorf("GitHub Issue %d is %s needs to be a open issue", o.gitHubIssue, issue.GetState())
+			return fmt.Errorf("GitHub Issue %d is %s needs to be a open issue", o.gitHubIssue, issue.GetState())
 		}
 
 		// Should be a Issue and not a Pull Request
 		if issue.PullRequestLinks != nil {
-			return errors.New("This is a Pull Request and not a GitHub Issue")
+			return errors.New("this is a Pull Request and not a GitHub Issue")
 		}
 	}
 
