@@ -245,7 +245,7 @@ func (opts *buildAnnounceOptions) saveAnnouncement(announcementSubject string, a
 	err = os.WriteFile(absOutputPath, []byte(announcementSubject), os.FileMode(0o644))
 	if err != nil {
 		return fmt.Errorf("saving announcement-subject.txt: %w", err)
-
+	}
 	logrus.Info("Kubernetes Announcement created.")
 	return nil
 }
@@ -254,7 +254,7 @@ func getGoVersion() (string, error) {
 	cmdStatus, err := command.New(
 		"go", "version").
 		RunSilentSuccessOutput()
-	if err != nil { 
+	if err != nil {
 		return "", fmt.Errorf("get go version: %w", err)
 	}
 	versionRegex := regexp.MustCompile(semVerRegex)
