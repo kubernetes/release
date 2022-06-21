@@ -27,7 +27,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.22.5
 	github.com/shurcooL/githubv4 v0.0.0-20220115235240-a14260e6f8a2
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.5.0
 	github.com/spiegel-im-spiegel/go-cvss v1.0.0
 	github.com/stretchr/testify v1.7.4
 	github.com/tj/go-spin v1.1.0
