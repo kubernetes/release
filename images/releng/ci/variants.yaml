@@ -1,4 +1,9 @@
 variants:
+  go1.19-bullseye:
+    CONFIG: 'go1.19-bullseye'
+    GO_VERSION: '1.19beta1'
+    OS_CODENAME: 'bullseye'
+    REVISION: '0'
   go1.18-bullseye:
     CONFIG: 'go1.18-bullseye'
     GO_VERSION: '1.18.3'
