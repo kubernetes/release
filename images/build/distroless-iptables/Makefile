@@ -19,7 +19,7 @@ IMAGE=$(REGISTRY)/distroless-iptables
 
 TAG ?= $(shell git describe --tags --always --dirty)
 IMAGE_VERSION ?= v1.0.0
-CONFIG ?= distroless 
+CONFIG ?= distroless
 BASEIMAGE ?= debian:bullseye-slim
 GORUNNER_VERSION ?= v2.3.1-go1.17.3-bullseye.0
 
