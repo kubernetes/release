@@ -42,3 +42,27 @@ aliases:
   release-notes-approvers:
     - puerco
     - saschagrunert
+  sig-network-approvers:
+    - andrewsykim
+    - aojea
+    - bowei
+    - caseydavenport
+    - danwinship
+    - dcbw
+    - freehan
+    - khenidak
+    - mrhohn
+    - robscott
+    - thockin
+  sig-network-reviewers:
+    - andrewsykim
+    - aojea
+    - bowei
+    - caseydavenport
+    - danwinship
+    - dcbw
+    - freehan
+    - khenidak
+    - mrhohn
+    - robscott
+    - thockin

@@ -18,6 +18,4 @@ $ make all-push
 # ---> staging-k8s.gcr.io/distroless-iptables-s390x:TAG
 ```
 
-If you don't want to push the images, run `make build ARCH={target_arch}` or `make all-build` instead
-
-
+If you don't want to push the images, run `make build ARCH={target_arch}` or `make all-build` instead.

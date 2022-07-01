@@ -2,9 +2,11 @@
 
 approvers:
   - release-engineering-approvers
+  - sig-network-approvers
   - BenTheElder
 reviewers:
   - release-engineering-reviewers
+  - sig-network-reviewers
 
 emeritus_approvers:
   - bowei
