@@ -20,7 +20,7 @@ package gcbfakes
 import (
 	"sync"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/release"
 )

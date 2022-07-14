@@ -20,7 +20,7 @@ package anagofakes
 import (
 	"sync"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/in-toto/in-toto-golang/in_toto"
 
 	"k8s.io/release/pkg/anago"

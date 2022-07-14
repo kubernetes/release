@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	gogithub "github.com/google/go-github/v45/github"
 	"github.com/sirupsen/logrus"
 
