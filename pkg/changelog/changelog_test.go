@@ -20,7 +20,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/stretchr/testify/require"
 
 	"k8s.io/release/pkg/changelog"

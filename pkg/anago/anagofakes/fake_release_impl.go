@@ -20,7 +20,7 @@ package anagofakes
 import (
 	"sync"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"k8s.io/release/pkg/announce"
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/gcp/gcb"

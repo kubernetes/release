@@ -23,7 +23,7 @@ import (
 	"sync"
 	"text/template"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/yuin/goldmark/parser"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/document"
