@@ -1,7 +1,7 @@
 variants:
   default:
     CONFIG: default
-    GO_VERSION: '1.18.3'
+    GO_VERSION: '1.18.4'
     OS_CODENAME: 'bullseye'
   next:
     CONFIG: next
@@ -13,17 +13,13 @@ variants:
     OS_CODENAME: 'bullseye'
   '1.24':
     CONFIG: '1.24'
-    GO_VERSION: '1.18.3'
+    GO_VERSION: '1.18.4'
     OS_CODENAME: 'bullseye'
   '1.23':
     CONFIG: '1.23'
-    GO_VERSION: '1.17.11'
+    GO_VERSION: '1.17.12'
     OS_CODENAME: 'bullseye'
   '1.22':
     CONFIG: '1.22'
-    GO_VERSION: '1.16.15'
-    OS_CODENAME: 'buster'
-  '1.21':
-    CONFIG: '1.21'
     GO_VERSION: '1.16.15'
     OS_CODENAME: 'buster'
