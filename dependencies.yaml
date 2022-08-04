@@ -100,7 +100,7 @@ dependencies:
       match: go \d+.\d+
 
   - name: "golang: after kubernetes/kubernetes update"
-    version: 1.18.4
+    version: 1.18.5
     refPaths:
     - path: images/releng/k8s-ci-builder/Dockerfile
       match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-\${OS_CODENAME} AS builder
@@ -181,7 +181,7 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "k8s.gcr.io/build-image/kube-cross: dependents bullseye"
-    version: v1.25.0-go1.18.4-bullseye.0
+    version: v1.25.0-go1.18.5-bullseye.0
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -231,7 +231,7 @@ dependencies:
       match: "CONFIG: 'go\\d+.\\d+-bullseye'"
 
   - name: "k8s.gcr.io/build-image/kube-cross: dependents (next candidate)"
-    version: v1.25.0-go1.18.4-bullseye.0
+    version: v1.25.0-go1.18.5-bullseye.0
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -248,7 +248,7 @@ dependencies:
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
   - name: "golang: after kubernetes/kubernetes update (previous release branches: 1.24)"
-    version: 1.18.4
+    version: 1.18.5
     refPaths:
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -265,13 +265,13 @@ dependencies:
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
   - name: "golang: after kubernetes/kubernetes update (previous release branches: 1.23)"
-    version: 1.17.12
+    version: 1.17.13
     refPaths:
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
-  # Golang (previous release branches: 1.22, 1.21)
-  - name: "golang (previous release branches: 1.22, 1.21)"
+  # Golang (previous release branches: 1.22)
+  - name: "golang (previous release branches: 1.22)"
     version: 1.16.15
     refPaths:
     - path: images/build/cross/variants.yaml
@@ -281,7 +281,7 @@ dependencies:
     - path: images/releng/ci/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
-  - name: "golang: after kubernetes/kubernetes update (previous release branches: 1.22, 1.21)"
+  - name: "golang: after kubernetes/kubernetes update (previous release branches: 1.22)"
     version: 1.16.15
     refPaths:
     - path: images/releng/k8s-ci-builder/variants.yaml
