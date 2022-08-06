@@ -32,7 +32,7 @@ import (
 func githubClient(t *testing.T) (kgithub.Client, context.Context) {
 	_, tokenSet := os.LookupEnv(kgithub.TokenEnvKey)
 	if !tokenSet {
-		t.Skipf("%s is not set", kgithub.TokenEnvKey)
+		t.Skipf("%s environment variable is not set", kgithub.TokenEnvKey)
 	}
 
 	c := kgithub.New()

@@ -948,7 +948,7 @@ func (o *releaseNotesOptions) Validate() error {
 	// Check that we have a GitHub token set
 	token, isset := os.LookupEnv(github.TokenEnvKey)
 	if !isset || token == "" {
-		return errors.New("cannot generate release notes if GitHub token is not set")
+		return fmt.Errorf("cannot generate release notes if %s env variable is not set", github.TokenEnvKey)
 	}
 
 	// If a tag is defined, see if it is a valid semver tag
