@@ -294,7 +294,7 @@ func (o *TestGridOptions) Validate() error {
 	if o.gitHubIssue != -1 {
 		token, isSet := os.LookupEnv(github.TokenEnvKey)
 		if !isSet || token == "" {
-			return errors.New("cannot send the screenshots if GitHub token is not set")
+			return fmt.Errorf("cannot send the screenshots if %s environment variable is not set", github.TokenEnvKey)
 		}
 
 		gh := github.New()
