@@ -90,10 +90,8 @@ func (*defaultImageImpl) SignImage(signer *sign.Signer, reference string) error 
 }
 
 func (*defaultImageImpl) VerifyImage(signer *sign.Signer, reference string) error {
-	if _, err := signer.VerifyImage(reference); err != nil {
-		logrus.Warnf("signature verification failed on %s: %s", reference, err.Error())
-	}
-	return nil
+	_, err := signer.VerifyImage(reference)
+	return err
 }
 
 var tagRegex = regexp.MustCompile(`^.+/(.+):.+$`)
