@@ -101,7 +101,7 @@ func (c *Changelog) Run() error {
 
 	var markdown, jsonStr, startRev, endRev string
 	if tag.Patch == 0 {
-		if len(tag.Pre) == 0 { // nolint:gocritic // a switch case would not make it better
+		if len(tag.Pre) == 0 { //nolint:gocritic // a switch case would not make it better
 			// Still create the downloads table
 			downloadsTable := &bytes.Buffer{}
 			startTag := util.SemverToTagString(semver.Version{

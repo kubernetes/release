@@ -86,7 +86,8 @@ func (gp *GitObjectPusher) PushBranches(branchList []string) error {
 }
 
 // PushBranch pushes a branch to the repository
-//  this function is idempotent.
+//
+//	this function is idempotent.
 func (gp *GitObjectPusher) PushBranch(branchName string) error {
 	// Check if the branch name is correct
 	if err := gp.checkBranchName(branchName); err != nil {

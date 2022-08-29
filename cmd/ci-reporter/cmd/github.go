@@ -151,9 +151,11 @@ type GitHubProjectBoardFieldSettings struct {
 }
 
 // This struct represents a graphql query
-// 	that is getting executed using the githubv4
-// 	graphql library: https://github.com/shurcooL/githubv4
-// 	for the GitHub graphql api, see: https://docs.github.com/en/issues/trying-out-the-new-projects-experience/using-the-api-to-manage-projects
+//
+//	that is getting executed using the githubv4
+//	graphql library: https://github.com/shurcooL/githubv4
+//	for the GitHub graphql api, see: https://docs.github.com/en/issues/trying-out-the-new-projects-experience/using-the-api-to-manage-projects
+//
 // ENHANCEMENT: filter via request, see: https://dgraph.io/docs/graphql/queries/search-filtering/
 type ciSignalProjectBoardGraphQLQuery struct {
 	Node struct {

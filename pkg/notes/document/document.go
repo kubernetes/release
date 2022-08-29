@@ -311,7 +311,7 @@ func New(
 		}
 
 		// TODO: Refactor the logic here and add testing.
-		if note.DuplicateKind { // nolint:gocritic // a switch case would not make it better
+		if note.DuplicateKind { //nolint:gocritic // a switch case would not make it better
 			kind := mapKind(highestPriorityKind(note.Kinds))
 			if existing, ok := kindCategory[kind]; ok {
 				*existing.NoteEntries = append(*existing.NoteEntries, processNote(note.Markdown))

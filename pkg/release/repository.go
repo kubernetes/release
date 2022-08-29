@@ -40,6 +40,7 @@ func NewRepo() *Repo {
 }
 
 // Repository is an interface for interacting with a git repository
+//
 //counterfeiter:generate . Repository
 type Repository interface {
 	Describe(opts *git.DescribeOptions) (string, error)

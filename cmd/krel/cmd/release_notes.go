@@ -809,7 +809,7 @@ func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 		tagChoice = "previous patch release"
 	} else {
 		// From 1.20 the notes for the first alpha start from the previous minor
-		if len(tagVersion.Pre) == 2 && // nolint:gocritic // a switch case would not make it better
+		if len(tagVersion.Pre) == 2 && //nolint:gocritic // a switch case would not make it better
 			tagVersion.Pre[0].String() == "alpha" &&
 			tagVersion.Pre[1].VersionNum == 1 {
 			startTag = util.SemverToTagString(semver.Version{
@@ -1238,8 +1238,9 @@ func pointIfChanged(label string, var1, var2 interface{}) string {
 }
 
 // editReleaseNote opens the user's editor for them to update the note.
-//   In case of an editing error by the user, it returns shouldRetryEditing
-//   set to true to retry editing.
+//
+//	In case of an editing error by the user, it returns shouldRetryEditing
+//	set to true to retry editing.
 func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.ReleaseNote) (shouldRetryEditing bool, err error) {
 	// To edit the note, we will create a yaml file, with the changed fields
 	// active and we'll add the unaltered fields commented for the user to review

@@ -50,6 +50,7 @@ func (i *Images) SetImpl(impl imageImpl) {
 }
 
 // imageImpl is a client for working with container images.
+//
 //counterfeiter:generate . imageImpl
 type imageImpl interface {
 	Execute(cmd string, args ...string) error
