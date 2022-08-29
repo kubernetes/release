@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.18.5-bullseye
+FROM golang:1.19-bullseye
 
 RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get update -y \
