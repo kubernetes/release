@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	pb "github.com/GoogleCloudPlatform/testgrid/pb/config"
-	"github.com/golang/protobuf/proto" // nolint:staticcheck // this import was done on purpose
+	"github.com/golang/protobuf/proto" //nolint:staticcheck // this import was done on purpose
 	"github.com/stretchr/testify/require"
 
 	"k8s.io/release/pkg/testgrid"

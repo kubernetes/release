@@ -457,7 +457,8 @@ func (bi *Instance) PushContainerImages() error {
 
 // CopyStagedFromGCS copies artifacts from GCS and between buckets as needed.
 // TODO: Investigate if it's worthwhile to use any of the bi.objStore.Get*Path()
-//       functions here or create a new one to populate staging paths
+//
+//	functions here or create a new one to populate staging paths
 func (bi *Instance) CopyStagedFromGCS(stagedBucket, buildVersion string) error {
 	logrus.Info("Copy staged release artifacts from GCS")
 

@@ -53,6 +53,7 @@ func (p *Publisher) SetClient(client publisherClient) {
 }
 
 // publisherClient is a client for working with GCS
+//
 //counterfeiter:generate . publisherClient
 type publisherClient interface {
 	GSUtil(args ...string) error
@@ -149,8 +150,8 @@ func (d *defaultPublisher) CopyToRemote(local, remote string) error {
 // gcsRoot - The top-level GCS directory builds will be released to
 //
 // Expected destination format:
-//   gs://<bucket>/<gcsRoot>[/fast]/<version>
 //
+//	gs://<bucket>/<gcsRoot>[/fast]/<version>
 func (p *Publisher) PublishVersion(
 	buildType, version, buildDir, bucket, gcsRoot string,
 	extraVersionMarkers []string,

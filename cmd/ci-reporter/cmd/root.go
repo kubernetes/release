@@ -184,10 +184,10 @@ func (r *CIReporters) CollectReportDataFromReporters(cfg *Config) (*CIReportData
 }
 
 // PrintReporterData used to print report data
-// 1. Get a output stream to write the data to
-// 2. Write data to stream
-// 	2.1. Write data in JSON format if set so
-// 	2.2. Write data in table format
+//  1. Get a output stream to write the data to
+//  2. Write data to stream
+//     2.1. Write data in JSON format if set so
+//     2.2. Write data in table format
 func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 	// Get a stream to write the data to (file stream / standard out stream)
 	var out *os.File

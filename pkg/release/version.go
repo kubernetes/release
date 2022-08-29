@@ -32,6 +32,7 @@ type Version struct {
 }
 
 // VersionClient is a client for getting Kubernetes versions
+//
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //counterfeiter:generate . VersionClient
 type VersionClient interface {

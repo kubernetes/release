@@ -35,6 +35,7 @@ import (
 )
 
 // releaseClient is a client for release a previously staged release.
+//
 //counterfeiter:generate . releaseClient
 type releaseClient interface {
 	// Submit can be used to submit a Google Cloud Build (GCB) job.
@@ -120,6 +121,7 @@ func (d *DefaultRelease) SetState(state *ReleaseState) {
 type defaultReleaseImpl struct{}
 
 // releaseImpl is the implementation of the release client.
+//
 //counterfeiter:generate . releaseImpl
 type releaseImpl interface {
 	Submit(options *gcb.Options) error

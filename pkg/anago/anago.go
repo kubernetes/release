@@ -141,7 +141,7 @@ func (o *Options) ContainerRegistry() string {
 // it's state mutates as each step es executed
 type State struct {
 	// logFile is the internal logging file target.
-	logFile string // nolint:structcheck // it is used
+	logFile string
 
 	// semverBuildVersion is the parsed build version which is set after the
 	// validation.

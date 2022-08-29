@@ -39,6 +39,7 @@ import (
 )
 
 // stageClient is a client for staging releases.
+//
 //counterfeiter:generate . stageClient
 type stageClient interface {
 	// Submit can be used to submit a Google Cloud Build (GCB) job.
@@ -128,6 +129,7 @@ func (d *DefaultStage) State() *StageState {
 type defaultStageImpl struct{}
 
 // stageImpl is the implementation of the stage client.
+//
 //counterfeiter:generate . stageImpl
 type stageImpl interface {
 	Submit(options *gcb.Options) error

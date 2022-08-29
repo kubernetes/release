@@ -1064,7 +1064,8 @@ func prettifySIGList(sigs []string) string {
 }
 
 // ApplyMap Modifies the content of the release using information from
-//  a ReleaseNotesMap
+//
+//	a ReleaseNotesMap
 func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap, markdownLinks bool) error {
 	logrus.WithFields(logrus.Fields{
 		"pr": rn.PrNumber,
