@@ -47,7 +47,7 @@ dependencies:
 
   # cosign
   - name: "gcr.io/projectsigstore/cosign"
-    version: v1.11.0@sha256:31cd05ffd583a3dc8d3ef59cede98a0f6d8037e5d25379cb7767db3f838b27c0
+    version: v1.11.1@sha256:f9fd5a287a67f4b955d08062a966df10f9a600b6b8583fd367bce3f1f000a429
     refPaths:
     - path: images/build/go-runner/cloudbuild.yaml
       match: gcr.io/projectsigstore/cosign:v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?@sha256:[a-f0-9]{64}
@@ -59,7 +59,7 @@ dependencies:
 
   # Golang
   - name: "golang"
-    version: 1.18.5
+    version: 1.19
     refPaths:
     - path: Dockerfile-kubepkg
       match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bullseye|buster) AS builder
@@ -84,7 +84,7 @@ dependencies:
   # This entry is a stub of the major version to allow dependency checks to
   # pass when building Kubernetes using a pre-release of Golang.
   - name: "golang: 1.<major>"
-    version: 1.18
+    version: 1.19
     refPaths:
     - path: images/build/cross/Makefile
       match: GO_MAJOR_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -96,7 +96,7 @@ dependencies:
       match: "GO_MAJOR_VERSION: '\\d+.\\d+'"
 
   - name: "golang: go.mod"
-    version: 1.18
+    version: 1.19
     refPaths:
     - path: go.mod
       match: go \d+.\d+
@@ -133,7 +133,7 @@ dependencies:
   # - v1.100.0-go1.17-bullseye.0 satisfies SemVer regex, while:
   # - v1.100-go1.17-bullseye.0 does not
   - name: "Kubernetes version (stable.0)"
-    version: v1.24.0
+    version: v1.25.0
     refPaths:
     - path: images/build/cross/Makefile
       match: KUBERNETES_VERSION\ \?=\ v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
