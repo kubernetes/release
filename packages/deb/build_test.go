@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//nolint
+// nolint
 // This file is intended for legacy support and should not be linted
 package main
 
@@ -74,7 +74,7 @@ func TestGetKubeadmDependencies(t *testing.T) {
 				"kubectl (>= 1.19.0)",
 				"kubernetes-cni (>= 0.8.7)",
 				"${misc:Depends}",
-				"cri-tools (>= 1.24.2)",
+				"cri-tools (>= 1.25.0)",
 			},
 		},
 		{
@@ -85,7 +85,7 @@ func TestGetKubeadmDependencies(t *testing.T) {
 				"kubectl (>= 1.19.0)",
 				"kubernetes-cni (>= 0.8.7)",
 				"${misc:Depends}",
-				"cri-tools (>= 1.24.2)",
+				"cri-tools (>= 1.25.0)",
 			},
 		},
 	}

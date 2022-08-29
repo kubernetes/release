@@ -35,9 +35,15 @@ dependencies:
       match: MinimumCNIVersion\s+= "\d+\.\d+.\d+"
 
   # CRI Tools
-  # TODO(deps): Not active yet
-  #- name: "crictl"
-  #  version: 1.18.0
+  - name: "crictl"
+    version: 1.25.0
+    refPaths:
+    - path: packages/deb/build.go
+      match: criToolsVersion\s+= "\d+\.\d+.\d+"
+    - path: packages/deb/build_test.go
+      match: cri-tools \(>= \d+.\d+.\d+\)
+    - path: packages/rpm/kubelet.spec
+      match: CRI_TOOLS_VERSION \d+.\d+.\d+
 
   # cosign
   - name: "gcr.io/projectsigstore/cosign"

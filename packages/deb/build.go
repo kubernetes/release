@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//nolint
+// nolint
 // This file is intended for legacy support and should not be linted
 package main
 
@@ -43,7 +43,7 @@ const (
 
 	currentCNIVersion  = "0.8.7"
 	minimumCNIVersion  = "0.8.6"
-	criToolsVersion    = "1.24.2"
+	criToolsVersion    = "1.25.0"
 	pre180kubeadmconf  = "pre-1.8/10-kubeadm.conf"
 	pre1110kubeadmconf = "post-1.8/10-kubeadm.conf"
 	latestkubeadmconf  = "post-1.10/10-kubeadm.conf"
