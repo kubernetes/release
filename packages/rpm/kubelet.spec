@@ -11,7 +11,7 @@
 %define semver() (%1 * 256 * 256 + %2 * 256 + %3)
 %global KUBE_SEMVER %{semver %{KUBE_MAJOR} %{KUBE_MINOR} %{KUBE_PATCH}}
 
-%global CNI_VERSION 0.8.7
+%global CNI_VERSION 1.1.1
 %global CRI_TOOLS_VERSION 1.25.0
 
 Name: kubelet
@@ -157,6 +157,9 @@ mv cni-plugins/* %{buildroot}/opt/cni/bin/
 
 
 %changelog
+* Thu Aug 30 2022 Sascha Grunert <sgrunert@redhat.com> - 1.25.0
+- Update CNI plugins to v1.1.1
+
 * Thu Aug 29 2022 Sascha Grunert <sgrunert@redhat.com> - 1.25.0
 - Update cri-tools to v1.25.0
 
