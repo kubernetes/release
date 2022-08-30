@@ -41,7 +41,7 @@ const (
 	ChannelUnstable ChannelType = "unstable"
 	ChannelNightly  ChannelType = "nightly"
 
-	currentCNIVersion  = "0.8.7"
+	currentCNIVersion  = "1.1.1"
 	minimumCNIVersion  = "0.8.6"
 	criToolsVersion    = "1.25.0"
 	pre180kubeadmconf  = "pre-1.8/10-kubeadm.conf"
