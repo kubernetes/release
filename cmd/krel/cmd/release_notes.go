@@ -305,7 +305,7 @@ func createDraftPR(repoPath, tag string) (err error) {
 	}
 
 	// From v1.20.0 on we use the previous minor as a starting tag
-	// for the Release Notes draft because the branch is fast-rowarded now:
+	// for the Release Notes draft because the branch is fast-forwarded now:
 	start := util.SemverToTagString(semver.Version{
 		Major: tagVersion.Major,
 		Minor: tagVersion.Minor - 1,
@@ -952,9 +952,9 @@ func (o *releaseNotesOptions) Validate() error {
 	}
 
 	// If a tag is defined, see if it is a valid semver tag
-	_, err := util.TagStringToSemver(releaseNotesOpts.tag)
+	_, err := util.TagStringToSemver(o.tag)
 	if err != nil {
-		return fmt.Errorf("reading tag: %s: %w", releaseNotesOpts.tag, err)
+		return fmt.Errorf("reading tag: %s: %w", o.tag, err)
 	}
 
 	// Options for PR creation
