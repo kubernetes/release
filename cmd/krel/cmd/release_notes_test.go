@@ -69,9 +69,6 @@ func TestRunReleaseNotes(t *testing.T) {
 			err := rootCmd.Execute()
 			output := buf.String()
 
-			// fmt.Println("===> err:", err)
-			// fmt.Println("===> output:", output, "<===")
-
 			if tc.shouldError {
 				require.NotNil(t, err)
 				assert.Contains(t, output, tc.output)
