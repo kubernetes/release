@@ -24,9 +24,22 @@ import (
 	"testing"
 
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func commandInit() {
+	rootCmd.ResetCommands()
+	releaseNotesCmd.ResetCommands()
+}
+
+func initialize() *cobra.Command {
+	var c = rootCmd
+	Init()
+	commandInit()
+	return c
+}
 
 func TestRunReleaseNotes(t *testing.T) {
 	t.Setenv("GITHUB_TOKEN", "token")
@@ -63,10 +76,15 @@ func TestRunReleaseNotes(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			logrus.SetOutput(io.Discard)
 			buf := new(bytes.Buffer)
-			rootCmd.SetOut(buf)
-			rootCmd.SetErr(buf)
-			rootCmd.SetArgs(tc.args)
-			err := rootCmd.Execute()
+
+			c := initialize()
+			c.AddCommand(releaseNotesCmd)
+
+			c.SetOut(buf)
+			c.SetErr(buf)
+			c.SetArgs(tc.args)
+			err := c.Execute()
+
 			output := buf.String()
 
 			if tc.shouldError {

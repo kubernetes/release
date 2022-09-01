@@ -153,7 +153,9 @@ type sessionData struct {
 
 var releaseNotesOpts = &releaseNotesOptions{}
 
-func init() {
+func Init() {
+	releaseNotesCmd.ResetFlags()
+
 	releaseNotesCmd.PersistentFlags().StringVar(
 		&releaseNotesOpts.repoPath,
 		"repo",
@@ -224,6 +226,7 @@ func init() {
 
 func runReleaseNotes() (err error) {
 	var tag string
+	fmt.Println("---> releaseNotesOpts.tag:", releaseNotesOpts.tag)
 	if releaseNotesOpts.tag == "" {
 		tag, err = tryToFindLatestMinorTag()
 		if err != nil {
@@ -234,6 +237,7 @@ func runReleaseNotes() (err error) {
 		tag = releaseNotesOpts.tag
 	}
 
+	fmt.Println("---> releaseNotesOpts.userFork:", releaseNotesOpts.userFork)
 	if releaseNotesOpts.userFork != "" {
 		org, repo, err := git.ParseRepoSlug(releaseNotesOpts.userFork)
 		if err != nil {
@@ -254,6 +258,7 @@ func runReleaseNotes() (err error) {
 	}
 
 	// before running the generators, verify that the repositories are ready
+	fmt.Println("releaseNotesOpts.createWebsitePR:", releaseNotesOpts.createWebsitePR)
 	if releaseNotesOpts.createWebsitePR {
 		if err := github.VerifyFork(
 			websiteBranchPrefix+tag,
