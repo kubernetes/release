@@ -65,13 +65,6 @@ func TestRunReleaseNotes(t *testing.T) {
 			output:      "",
 			err:         fmt.Errorf("validating command line options: cannot generate the Release Notes PR without --fork"),
 		},
-		{
-			name:        "should fail since user doesn't have valid credentials",
-			args:        strings.Split("release-notes --create-draft-pr --fork=myuser", " "),
-			shouldError: true,
-			output:      "",
-			err:         fmt.Errorf("while checking kubernetes/sig-release fork: while checking if repository is a fork of kubernetes/sig-release: checking if repository is a fork: getting repository: GET https://api.github.com/repos/myuser/sig-release: 401 Bad credentials []"),
-		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			logrus.SetOutput(io.Discard)
