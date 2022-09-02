@@ -19,6 +19,7 @@ package cmd
 import (
 	"bytes"
 	"embed"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -29,7 +30,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -69,7 +69,7 @@ type options struct {
 var opts = &options{}
 
 const (
-	sendgridAPIKeyEnvKey = "SENDGRID_API_KEY" // nolint: gosec
+	sendgridAPIKeyEnvKey = "SENDGRID_API_KEY" //nolint:gosec // this will be provided via env vars
 	layout               = "2006-01-02"
 
 	schedulePathFlag = "schedule-path"
@@ -159,18 +159,18 @@ func initLogging(*cobra.Command, []string) error {
 
 func run(opts *options) error {
 	if err := opts.SetAndValidate(); err != nil {
-		return errors.Wrap(err, "validating schedule-path options")
+		return fmt.Errorf("validating schedule-path options: %w", err)
 	}
 
 	if opts.sendgridAPIKey == "" {
-		return errors.Errorf(
+		return fmt.Errorf(
 			"$%s is not set", sendgridAPIKeyEnvKey,
 		)
 	}
 
 	data, err := loadFileOrURL(opts.schedulePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to read the file")
+		return fmt.Errorf("failed to read the file: %w", err)
 	}
 
 	patchSchedule := &model.PatchSchedule{}
@@ -178,7 +178,7 @@ func run(opts *options) error {
 	logrus.Info("Parsing the schedule...")
 
 	if err := yaml.UnmarshalStrict(data, &patchSchedule); err != nil {
-		return errors.Wrap(err, "failed to decode the file")
+		return fmt.Errorf("failed to decode the file: %w", err)
 	}
 
 	output := &Template{}
@@ -188,7 +188,7 @@ func run(opts *options) error {
 	for _, patch := range patchSchedule.Schedules {
 		t, err := time.Parse(layout, patch.CherryPickDeadline)
 		if err != nil {
-			return errors.Wrap(err, "parsing schedule time")
+			return fmt.Errorf("parsing schedule time: %w", err)
 		}
 
 		currentTime := time.Now().UTC()
@@ -205,55 +205,56 @@ func run(opts *options) error {
 
 	tmpl, err := template.ParseFS(tpls, "templates/email.tmpl")
 	if err != nil {
-		return errors.Wrap(err, "parsing template")
+		return fmt.Errorf("parsing template: %w", err)
 	}
 
 	var tmplBytes bytes.Buffer
 	err = tmpl.Execute(&tmplBytes, output)
 	if err != nil {
-		return errors.Wrap(err, "parsing values to the template")
+		return fmt.Errorf("parsing values to the template: %w", err)
 	}
 
-	if shouldSendEmail {
-		if !opts.nomock {
-			logrus.Info("This is a mock only, will print out the email before sending to a test mailing list")
-			fmt.Println(tmplBytes.String())
-		}
+	if !shouldSendEmail {
+		logrus.Info("No email is needed to send")
+		return nil
+	}
 
-		logrus.Info("Preparing mail sender")
-		m := mail.NewSender(opts.sendgridAPIKey)
+	if !opts.nomock {
+		logrus.Info("This is a mock only, will print out the email before sending to a test mailing list")
+		fmt.Println(tmplBytes.String())
+	}
 
-		if opts.name != "" && opts.email != "" {
-			if err := m.SetSender(opts.name, opts.email); err != nil {
-				return errors.Wrap(err, "unable to set mail sender")
-			}
-		} else {
-			logrus.Info("Retrieving default sender from sendgrid API")
-			if err := m.SetDefaultSender(); err != nil {
-				return errors.Wrap(err, "setting default sender")
-			}
-		}
+	logrus.Info("Preparing mail sender")
+	m := mail.NewSender(opts.sendgridAPIKey)
 
-		groups := []mail.GoogleGroup{mail.KubernetesAnnounceTestGoogleGroup}
-		if opts.nomock {
-			groups = []mail.GoogleGroup{
-				mail.KubernetesDevGoogleGroup,
-			}
-		}
-		logrus.Infof("Using Google Groups as announcement target: %v", groups)
-
-		if err := m.SetGoogleGroupRecipients(groups...); err != nil {
-			return errors.Wrap(err, "unable to set mail recipients")
-		}
-
-		logrus.Info("Sending mail")
-		subject := "[Please Read] Patch Releases cherry-pick deadline"
-
-		if err := m.Send(tmplBytes.String(), subject); err != nil {
-			return errors.Wrap(err, "unable to send mail")
+	if opts.name != "" && opts.email != "" {
+		if err := m.SetSender(opts.name, opts.email); err != nil {
+			return fmt.Errorf("unable to set mail sender: %w", err)
 		}
 	} else {
-		logrus.Info("No email is needed to send")
+		logrus.Info("Retrieving default sender from sendgrid API")
+		if err := m.SetDefaultSender(); err != nil {
+			return fmt.Errorf("setting default sender: %w", err)
+		}
+	}
+
+	groups := []mail.GoogleGroup{mail.KubernetesAnnounceTestGoogleGroup}
+	if opts.nomock {
+		groups = []mail.GoogleGroup{
+			mail.KubernetesDevGoogleGroup,
+		}
+	}
+	logrus.Infof("Using Google Groups as announcement target: %v", groups)
+
+	if err := m.SetGoogleGroupRecipients(groups...); err != nil {
+		return fmt.Errorf("unable to set mail recipients: %w", err)
+	}
+
+	logrus.Info("Sending mail")
+	subject := "[Please Read] Patch Releases cherry-pick deadline"
+
+	if err := m.Send(tmplBytes.String(), subject); err != nil {
+		return fmt.Errorf("unable to send mail: %w", err)
 	}
 
 	return nil
@@ -264,7 +265,7 @@ func (o *options) SetAndValidate() error {
 	logrus.Info("Validating schedule-path options...")
 
 	if o.schedulePath == "" {
-		return errors.Errorf("need to set the schedule-path")
+		return errors.New("need to set the schedule-path")
 	}
 
 	return nil
