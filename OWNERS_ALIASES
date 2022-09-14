@@ -29,11 +29,11 @@ aliases:
     - MushuEE
     - spiffxp
   ci-signal-reporter-reviewers:
-    - leonardpahlke # 1.24 CI Signal Lead
-    - voigt # 1.24 CI Signal Shadow
-    - lauralorenz # 1.24 CI Signal Shadow
-    - shuheiktgw # 1.24 CI Signal Shadow
-    - nivedita-coder # 1.24 CI Signal Shadow
+    - Nivedita-coder # 1.26 CI Signal Lead
+    - shuheiktgw # 1.26 CI Signal Shadow
+    - mehabhalodiya # 1.26 CI Signal Shadow
+    - Namanl2001 # 1.26 CI Signal Shadow
+    - bharitwal # 1.26 CI Signal Shadow
   krel-approvers:
     - cpanato
     - puerco
