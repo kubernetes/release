@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"regexp"
 
-	cvss "github.com/spiegel-im-spiegel/go-cvss/v3/metric"
+	cvss "github.com/goark/go-cvss/v3/metric"
 )
 
 // CVE Information of a linked CVE vulnerability
