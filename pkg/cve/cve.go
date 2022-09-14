@@ -91,14 +91,25 @@ func (cve *CVE) Validate() error {
 		return errors.New("string CVSS vector missing from CVE data")
 	}
 
-	// Parse the vector string to make sure it is well formed
-	bm, err := cvss.NewBase().Decode(cve.CVSSVector)
-	if err != nil {
-		return fmt.Errorf("parsing CVSS vector string: %w", err)
+	if len(cve.CVSSVector) == 44 {
+		// Parse the vector string to make sure it is well formed
+		bm, err := cvss.NewBase().Decode(cve.CVSSVector)
+		if err != nil {
+			return fmt.Errorf("parsing CVSS vector string: %w", err)
+		}
+		cve.CalcLink = fmt.Sprintf(
+			"https://www.first.org/cvss/calculator/%s#%s", bm.Ver.String(), cve.CVSSVector,
+		)
+	} else {
+		// Parse the vector string to make sure it is well formed
+		bm, err := cvss.NewTemporal().Decode(cve.CVSSVector)
+		if err != nil {
+			return fmt.Errorf("parsing CVSS vector string: %w", err)
+		}
+		cve.CalcLink = fmt.Sprintf(
+			"https://www.first.org/cvss/calculator/%s#%s", bm.Ver.String(), cve.CVSSVector,
+		)
 	}
-	cve.CalcLink = fmt.Sprintf(
-		"https://www.first.org/cvss/calculator/%s#%s", bm.Ver.String(), cve.CVSSVector,
-	)
 
 	if cve.CVSSScore == 0 {
 		return errors.New("missing CVSS score from CVE data")
