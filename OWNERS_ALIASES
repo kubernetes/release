@@ -34,6 +34,11 @@ aliases:
     - mehabhalodiya # 1.26 CI Signal Shadow
     - Namanl2001 # 1.26 CI Signal Shadow
     - bharitwal # 1.26 CI Signal Shadow
+  reviewers:
+    - Debanitrkl
+    - RinkiyaKeDad
+    - RobertKielty
+    - leonardpahlke
   krel-approvers:
     - cpanato
     - puerco
