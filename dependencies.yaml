@@ -27,8 +27,6 @@ dependencies:
   - name: "CNI plugins: minimum version"
     version: 0.8.6
     refPaths:
-    - path: packages/deb/build.go
-      match: minimumCNIVersion\s+= "\d+\.\d+.\d+"
     - path: packages/rpm/kubelet.spec
       match: kubernetes-cni >= \d+\.\d+.\d+
     - path: pkg/kubepkg/kubepkg.go
