@@ -42,7 +42,6 @@ const (
 	ChannelNightly  ChannelType = "nightly"
 
 	currentCNIVersion  = "1.1.1"
-	minimumCNIVersion  = "0.8.6"
 	criToolsVersion    = "1.25.0"
 	pre180kubeadmconf  = "pre-1.8/10-kubeadm.conf"
 	pre1110kubeadmconf = "post-1.8/10-kubeadm.conf"
@@ -306,7 +305,7 @@ func getReleaseDownloadLinkBase(v version) (string, error) {
 }
 
 func getKubeadmDependencies(v version) (string, error) {
-	cniVersion, err := getCNIVersion(v)
+	cniVersion, err := getCNIVersion()
 	if err != nil {
 		return "", err
 	}
@@ -365,16 +364,7 @@ func getKubeadmKubeletConfigFile(v version) (string, error) {
 	return latestkubeadmconf, nil
 }
 
-func getCNIVersion(v version) (string, error) {
-	sv, err := semver.Make(v.Version)
-	if err != nil {
-		return "", err
-	}
-
-	if int(sv.Minor) <= 16 {
-		return minimumCNIVersion, nil
-	}
-
+func getCNIVersion() (string, error) {
 	return currentCNIVersion, nil
 }
 
@@ -457,19 +447,19 @@ func main() {
 			Distros: distros,
 			Versions: []version{
 				{
-					Version:  currentCNIVersion,
-					Revision: revision,
-					Channel:  ChannelStable,
+					GetVersion: getCNIVersion,
+					Revision:   revision,
+					Channel:    ChannelStable,
 				},
 				{
-					Version:  currentCNIVersion,
-					Revision: revision,
-					Channel:  ChannelUnstable,
+					GetVersion: getCNIVersion,
+					Revision:   revision,
+					Channel:    ChannelUnstable,
 				},
 				{
-					Version:  currentCNIVersion,
-					Revision: revision,
-					Channel:  ChannelNightly,
+					GetVersion: getCNIVersion,
+					Revision:   revision,
+					Channel:    ChannelNightly,
 				},
 			},
 		},
@@ -612,7 +602,7 @@ func main() {
 			log.Fatalf("error getting kubeadm dependencies: %v", err)
 		}
 
-		c.CNIVersion, err = getCNIVersion(v)
+		c.CNIVersion, err = getCNIVersion()
 		if err != nil {
 			log.Fatalf("error getting kubelet CNI Version: %v", err)
 		}
