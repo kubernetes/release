@@ -34,10 +34,7 @@ aliases:
     - mehabhalodiya # 1.26 CI Signal Shadow
     - Namanl2001 # 1.26 CI Signal Shadow
     - bharitwal # 1.26 CI Signal Shadow
-    - Debanitrkl
-    - RinkiyaKeDad
-    - RobertKielty
-    - leonardpahlke
+    - leonardpahlke # 1.26 Release Lead
   krel-approvers:
     - cpanato
     - puerco
