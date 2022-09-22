@@ -154,6 +154,7 @@ var (
 		"arm64",
 		"ppc64le",
 		"s390x",
+		"riscv64"
 	}
 
 	FastArchitectures = []string{
