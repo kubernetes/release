@@ -25,6 +25,9 @@ import (
 func TestRootCommand(t *testing.T) {
 	t.Setenv("GITHUB_TOKEN", "token")
 
+	rootCmd.ResetCommands()
+	rootCmd.ResetFlags()
+
 	err := rootCmd.Execute()
 	require.NoError(t, err)
 }
