@@ -48,7 +48,7 @@ to the asset file:
   --asset="_output/kubernetes-1.18.2-2.fc33.x86_64.rpm:RPM Package for amd64"
 
 Usage:
-  release-announce github [flags]
+  publish-release github [flags]
 
 Flags:
   -a, --asset strings          Path to asset file for the release. Can be specified multiple times.
