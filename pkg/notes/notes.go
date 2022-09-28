@@ -619,27 +619,15 @@ var noteExclusionFilters = []*regexp.Regexp{
 	// 'none','n/a','na' case insensitive with optional trailing
 	// whitespace, wrapped in ``` with/without release-note identifier
 	// the 'none','n/a','na' can also optionally be wrapped in quotes ' or "
-	regexp.MustCompile("(?i)```release-notes?\\s*('\")?(none|n/a|na)?('\")?\\s*```"),
+	regexp.MustCompile("(?i)```release-notes?\\s*('\")?(none|n/a|na)('\")?\\s*```"),
 
 	// simple '/release-note-none' tag
 	regexp.MustCompile("/release-note-none"),
 }
 
-// Similarly, now that the known not-release-notes are filtered out, we can
-// use some patterns to find actual release notes.
-var noteInclusionFilters = []*regexp.Regexp{
-	regexp.MustCompile("release-note"),
-	regexp.MustCompile("Does this PR introduce a user-facing change?"),
-}
-
 // MatchesExcludeFilter returns true if the string matches an excluded release note
 func MatchesExcludeFilter(msg string) bool {
 	return matchesFilter(msg, noteExclusionFilters)
-}
-
-// MatchesIncludeFilter returns true if the string matches an included release note
-func MatchesIncludeFilter(msg string) bool {
-	return matchesFilter(msg, noteInclusionFilters)
 }
 
 func matchesFilter(msg string, filters []*regexp.Regexp) bool {
@@ -732,12 +720,34 @@ func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, e
 			"Got PR #%d for commit: %s", pr.GetNumber(), commit.GetSHA(),
 		)
 
-		if MatchesIncludeFilter(prBody) {
+		// If we match exclusion filter (release-note-none), we don't look further,
+		// instead we return that PR. We return that PR because it might have a map,
+		// which is checked after this function returns
+		if MatchesExcludeFilter(prBody) {
+			res := &Result{commit: commit, pullRequest: pr}
+			logrus.Infof("PR #%d contains exclusion (release-note-none)", pr.GetNumber())
+
+			return res, nil
+		}
+
+		// If we didn't match the exclusion filter, try to extract the release note from the PR.
+		// If we can't extract the release note, consider that the PR is invalid and take the next one
+		s, err := noteTextFromString(prBody)
+		if err != nil {
+			logrus.Infof("PR #%d does not seem to contain a valid release note, skipping", pr.GetNumber())
+
+			continue
+		}
+
+		// If we found a valid release note, return the PR, otherwise, take the next one
+		if len(s) > 0 {
 			res := &Result{commit: commit, pullRequest: pr}
 			logrus.Infof("PR #%d seems to contain a release note", pr.GetNumber())
 			// Do not test further PRs for this commit as soon as one PR matched
 			return res, nil
 		}
+
+		logrus.Infof("PR #%d does not seem to contain a valid release note, skipping", pr.GetNumber())
 	}
 
 	return nil, nil

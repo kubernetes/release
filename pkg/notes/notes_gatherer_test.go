@@ -335,26 +335,23 @@ func TestGatherNotes(t *testing.T) {
 			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {
 				prsPerCall := [][]*github.PullRequest{
 					// explicitly excluded
-					{pullRequest(1, "something ```release-note N/a``` something")},
-					{pullRequest(2, "something ```release-note Na``` something")},
-					{pullRequest(3, "something ```release-note None ``` something")},
-					{pullRequest(4, "something ```release-note 'None' ``` something")},
+					{pullRequest(1, "something ```release-note\nN/a\n``` something")},
+					{pullRequest(2, "something ```release-note\nNa\n``` something")},
+					{pullRequest(3, "something ```release-note\nNone \n``` something")},
+					{pullRequest(4, "something ```release-note\n'None' \n``` something")},
 					{pullRequest(5, "something /release-note-none something")},
-					// explicitly included
-					{pullRequest(6, "something release-note something")},
-					{pullRequest(7, "something Does this PR introduce a user-facing change something")},
 					// multiple PRs
 					{ // first does no match, second one matches, rest is ignored
-						pullRequest(8, ""),
-						pullRequest(9, " Does this PR introduce a user-facing change"),
-						pullRequest(10, "does-not-matter--is-not-considered"),
+						pullRequest(6, ""),
+						pullRequest(7, " something ```release-note\nTest\n``` something"),
+						pullRequest(8, "does-not-matter--is-not-considered"),
 					},
 					// some other strange things
-					{pullRequest(11, "Does this PR introduce a user-facing chang")}, // matches despite the missing 'e'
-					{pullRequest(12, "release-note /release-note-none")},            // excluded, the exclusion filters take precedence
-					{pullRequest(13, "```release-note NAAAAAAAAAA```")},             // included, does not match the N/A filter, but the 'release-note' check
-					{pullRequest(14, "```release-note none something ```")},         // included, does not match the N/A filter, but the 'release-note' check
-					{pullRequest(15, "release-noteNOOOO")},                          // included
+					{pullRequest(9, "release-note /release-note-none")},       // excluded, the exclusion filters take precedence
+					{pullRequest(10, "```release-note\nNAAAAAAAAAA\n```")},    // included, does not match the N/A filter, but the 'release-note' check
+					{pullRequest(11, "```release-note\nnone something\n```")}, // included, does not match the N/A filter, but the 'release-note' check
+					// empty release note block shouldn't be matched
+					{pullRequest(12, "```release-note\n\n```")},
 				}
 				var callCount int64 = -1
 
@@ -370,7 +367,7 @@ func TestGatherNotes(t *testing.T) {
 			resultsChecker: func(t *testing.T, results []*Result) {
 				// there is not much we can check on the Result, as all the fields are
 				// unexported
-				expectedResultSize := 13
+				expectedResultSize := 9
 				if e, a := expectedResultSize, len(results); e != a {
 					t.Errorf("Expected the result to be of size %d, got %d", e, a)
 				}
