@@ -855,8 +855,8 @@ github.com/go-toolsmith/typep v1.0.2/go.mod h1:JSQCQMUPdRlMZFswiq3TGpNp1GMktqkR2
 github.com/go-xmlfmt/xmlfmt v0.0.0-20191208150333-d5b6f63a941b/go.mod h1:aUCEOzzezBEjDBbFBoSiya/gduyIiWYRP6CnSFIV8AM=
 github.com/goark/errs v1.1.0 h1:FKnyw4LVyRADIjM8Nj0Up6r0/y5cfADvZAd1E+tthXE=
 github.com/goark/errs v1.1.0/go.mod h1:TtaPEoadm2mzqzfXdkkfpN2xuniCFm2q4JH+c1qzaqw=
-github.com/goark/go-cvss v1.2.0 h1:UfXRZBO5CE31/uxbi8v+Rj3sJWSZrxKwlvStZ7Bm4pg=
-github.com/goark/go-cvss v1.2.0/go.mod h1:IQIHDqVqfWJ4O+cOp3BknQCBI3i1lOuPtWBR17aOcqM=
+github.com/goark/go-cvss v1.3.0 h1:MItNedK1j4B6r+HV5pwYFBA44rD0c1yfQCNqiHJ3tJE=
+github.com/goark/go-cvss v1.3.0/go.mod h1:IQIHDqVqfWJ4O+cOp3BknQCBI3i1lOuPtWBR17aOcqM=
 github.com/gobuffalo/attrs v0.0.0-20190224210810-a9411de4debd/go.mod h1:4duuawTqi2wkkpB4ePgWMaai6/Kc6WEz83bhFwpHzj0=
 github.com/gobuffalo/depgen v0.0.0-20190329151759-d478694a28d3/go.mod h1:3STtPUQYuzV0gBVOY3vy6CfMm/ljR4pABfrTeHNLHUY=
 github.com/gobuffalo/depgen v0.1.0/go.mod h1:+ifsuy7fhi15RWncXQQKjWS9JPkdah5sZvtHc2RXGlg=
