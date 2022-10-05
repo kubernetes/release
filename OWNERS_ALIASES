@@ -24,8 +24,7 @@ aliases:
     - thejoycekung # Release Manager Associate
     - wilsonehusin # Release Manager Associate
   build-admins:
-    - amwat
-    - BenTheElder
+    - BenjaminKazemi
     - MushuEE
     - spiffxp
   ci-signal-reporter-reviewers:
