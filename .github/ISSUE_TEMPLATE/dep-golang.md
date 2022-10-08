@@ -1,6 +1,7 @@
 ---
 name: Dependency update - Golang
 about: Create a tracking issue for updating Golang dependencies
+title: Dependency update - Golang 1.xy.z/1.xy.z
 labels: kind/feature, sig/release, area/release-eng, area/dependency
 
 ---
@@ -11,35 +12,38 @@ Golang dependencies.
 
 ### Tracking info
 
+<!-- Search query: https://github.com/kubernetes/release/issues?q=is%3Aissue+Dependency+update+-+Golang -->
+<!-- Example: https://github.com/kubernetes/release/issues/2694 -->
 Link to any previous tracking issue: 
 
+<!-- golang-announce mailing list: https://groups.google.com/g/golang-announce -->
 Golang mailing list announcement: 
 
 SIG Release Slack thread: 
 
-### Work items for `gox.y.z`
+### Work items
 
-<!-- Example: https://github.com/kubernetes/release/pull/2426 -->
+<!-- Example: https://github.com/kubernetes/release/pull/2696 -->
 - [ ] `kube-cross` image update: 
 
-  <!-- Example: https://github.com/kubernetes/k8s.io/pull/3389 -->
+  <!-- Example: https://github.com/kubernetes/k8s.io/pull/4312 -->
   - [ ] image promotion: 
 
-<!-- Example: https://github.com/kubernetes/release/pull/2426 -->
+<!-- Example: https://github.com/kubernetes/release/pull/2696 -->
 - [ ] `go-runner` image update: 
 
-  <!-- Example: https://github.com/kubernetes/k8s.io/pull/3389 -->
+  <!-- Example: https://github.com/kubernetes/k8s.io/pull/4313 -->
   - [ ] image promotion: 
 
-<!-- Example: https://github.com/kubernetes/release/pull/2426 -->
+<!-- Example: https://github.com/kubernetes/release/pull/2696 -->
 - [ ] `releng-ci` image update: 
 
-  <!-- Example: https://github.com/kubernetes/k8s.io/pull/3389 -->
+  <!-- Example: https://github.com/kubernetes/k8s.io/pull/4314 -->
   - [ ] image promotion: 
 
 #### After kube-cross image promotion
 
-<!-- Example: https://github.com/kubernetes/kubernetes/pull/108091 -->
+<!-- Example: https://github.com/kubernetes/kubernetes/pull/112900 -->
 - [ ] kubernetes/kubernetes update (`master`): 
 
   Ensure the following have been updated within the PR:
@@ -51,10 +55,10 @@ SIG Release Slack thread:
 
 #### After kubernetes/kubernetes (master) has been updated
 
-<!-- Example: https://github.com/kubernetes/release/pull/2428 -->
+<!-- Example: https://github.com/kubernetes/release/pull/2699 -->
 - [ ] `k8s-cloud-builder` image update: 
 
-<!-- Example: https://github.com/kubernetes/release/pull/2428 -->
+<!-- Example: https://github.com/kubernetes/release/pull/2699 -->
 - [ ] `k8s-ci-builder` image variants update: 
 
 ### Cherry picks
@@ -106,13 +110,13 @@ happened for the 1.20 and 1.19 Kubernetes release branches.
 
 #### After kubernetes/kubernetes (release branches) has been updated
 
-<!-- Example: https://github.com/kubernetes/release/pull/2429 -->
+<!-- Example: https://github.com/kubernetes/release/pull/2699 -->
 - [ ] `k8s-cloud-builder` image update: 
 
-<!-- Example: https://github.com/kubernetes/release/pull/2429 -->
+<!-- Example: https://github.com/kubernetes/release/pull/2699 -->
 - [ ] `k8s-ci-builder` image variants update: 
 
-<!-- Example: https://github.com/kubernetes/test-infra/pull/25239 -->
+<!-- Example: https://github.com/kubernetes/test-infra/pull/27712 -->
 - [ ] `kubekins`/`krte` image variants update: 
 
 ### Follow-up items
