@@ -18,7 +18,7 @@
 # In the long term, we want to develop a different process that non-Googlers
 # can perform.
 #
-# It builds and pushes both Debian and Red Hat packages, pausing for
+# It signs and pushes both Debian and Red Hat packages, pausing for
 # confirmation before promoting each repo to stable. It always sets the
 # package revision to 0, so you should only use it for a new minor or patch
 # release for which packages have never been pushed.
@@ -31,15 +31,10 @@
 # Example usage:
 #   git clone https://github.com/kubernetes/release.git
 #   cd release
-#   k8s-rapture.sh 1.6.12
+#   publish-packages.sh 1.6.12
+#
+# NOTE: this currently requires build-packages.sh to be run locally first.
 
-cat <<EOF >&2
-##### WARNING ##################################################################
-# This script is an early experiment. Use at your own risk!
-# In particular, I have no idea whether it will properly detect errors at
-# various stages. Take care to check all results for sanity.
-################################################################################
-EOF
 
 set -o errexit
 set -o nounset
@@ -54,76 +49,13 @@ fatal() {
   exit 1
 }
 
-# TODO(mehdy) checks:
-# 1. Check if on release repo
-# 2. Check for prod access
-# 3. Check if release repo up to date
-# 4. Check if rpm and any other required command exists
-
-# TODO(mehdy): Restructure the script into three phases:
-# P1 - Building RPMs and DEBs
-# P2 - Signing all packages
-# P3 - Publish them.
-
-# TODO(mehdy): Make the script rerunnable at any phase
-
-#############################################################################
-# Simple yes/no prompt
-#
-# @optparam default -n(default)/-y/-e (default to n, y or make (e)xplicit)
-# @param message
-askyorn () {
-  local yorn=z
-  local def=n
-  local msg="y/N"
-
-  case $1 in
-  -y) # yes default
-      def="y" msg="Y/n"
-      shift
-      ;;
-  -e) # Explicit
-      def="" msg="y/n"
-      shift
-      ;;
-  -n) shift
-      ;;
-  esac
-
-  while [[ $yorn != [yYnN] ]]; do
-    echo -n "$*? ($msg): "
-    read yorn
-    : ${yorn:=$def}
-  done
-
-  # Final test to set return code
-  [[ $yorn == [yY] ]]
-}
 
 [[ -n "$1" ]] || fatal "no version specified"
-
-askyorn "Continue RPMs and DEBs release for $1" || exit 1
-
 version="$1"
 release_dir="$(pwd)"
 
-### Debian
-
 publish_debs() {
-  local distro=xenial
-
-  log "Clearing output dir"
-  rm -rf packages/deb/bin
   cd packages/deb
-
-  log "Setting all Revisions to \"00\" in build.go"
-  sed -i -r -e 's/\b(Revision:\s*)"[0-9]{2}"/\1"00"/' build.go
-
-  log "Building debs for Kubernetes v${version}"
-  ./jenkins.sh --kube-version $version --distros $distro
-
-  log "Changing file owner from root to ${USER}"
-  sudo chown -R "${USER}" bin
 
   log "Removing local debs that already exist on the server"
   local debpath
@@ -153,29 +85,13 @@ publish_debs() {
   cd ${release_dir}
 }
 
-### Red Hat
-
 publish_rpms() {
   local distro=el7
   local keyfile
   local RPMDIR
 
-  log "Clearing output dir"
-  rm -rf packages/rpm/output
   cd packages/rpm
   RPMDIR="$(pwd)"
-
-  log "Setting version in kubelet.spec"
-  local vparts=(${version//./ })
-  sed -i -r \
-    -e "s/(%global\\s+KUBE_MAJOR\\s+)[0-9]+/\\1${vparts[0]}/" \
-    -e "s/(%global\\s+KUBE_MINOR\\s+)[0-9]+/\\1${vparts[1]}/" \
-    -e "s/(%global\\s+KUBE_PATCH\\s+)[0-9]+/\\1${vparts[2]}/" \
-    -e "s/(%global\\s+RPM_RELEASE\\s+)[0-9]+/\\10/" \
-    kubelet.spec
-
-  log "Building RPMs for Kubernetes v${version}"
-  ./docker-build.sh
 
   log "Signing RPMs"
   pushd /google/src/head/depot/google3/cloud/cluster/guest/cloud_rapture/rpmsign
