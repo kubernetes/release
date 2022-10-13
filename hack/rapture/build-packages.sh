@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2020 The Kubernetes Authors.
+# Copyright 2022 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+RELEASE_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
+
 log() {
   echo "$*" >&2
 }
@@ -37,15 +39,15 @@ fatal() {
 
 [[ -n "$1" ]] || fatal "no version specified"
 version="$1"
-release_dir="$(pwd)"
 
 
 build_debs() {
   local distro=xenial
 
   log "Clearing output dir"
-  rm -rf packages/deb/bin
-  cd packages/deb
+  DEBDIR="${RELEASE_ROOT:?}"/packages/deb
+  rm -rf "${DEBDIR:?}"/bin
+  cd "${DEBDIR:?}"
 
   log "Setting all Revisions to \"00\" in build.go"
   sed -i -r -e 's/\b(Revision:\s*)"[0-9]{2}"/\1"00"/' build.go
@@ -56,7 +58,7 @@ build_debs() {
   log "Changing file owner from root to ${USER}"
   sudo chown -R "${USER}" bin
 
-  cd ${release_dir}
+  cd "${RELEASE_ROOT:?}"
 }
 
 build_rpms() {
@@ -65,9 +67,9 @@ build_rpms() {
   local RPMDIR
 
   log "Clearing output dir"
-  rm -rf packages/rpm/output
-  cd packages/rpm
-  RPMDIR="$(pwd)"
+  RPMDIR="${RELEASE_ROOT:?}"/packages/rpm
+  rm -rf "${RPMDIR:?}"/output
+  cd "${RPMDIR:?}"
 
   log "Setting version in kubelet.spec"
   local vparts=(${version//./ })
@@ -80,6 +82,7 @@ build_rpms() {
 
   log "Building RPMs for Kubernetes v${version}"
   ./docker-build.sh
+  cd "${RELEASE_ROOT:?}"
 }
 
 build_debs

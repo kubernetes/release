@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2020 The Kubernetes Authors.
+# Copyright 2022 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,10 +35,11 @@
 #
 # NOTE: this currently requires build-packages.sh to be run locally first.
 
-
 set -o errexit
 set -o nounset
 set -o pipefail
+
+RELEASE_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 
 log() {
   echo "$*" >&2
@@ -52,10 +53,11 @@ fatal() {
 
 [[ -n "$1" ]] || fatal "no version specified"
 version="$1"
-release_dir="$(pwd)"
 
 publish_debs() {
-  cd packages/deb
+  local DEBDIR
+  DEBDIR="${RELEASE_ROOT:?}"/packages/deb
+  cd "${DEBDIR:?}"
 
   log "Removing local debs that already exist on the server"
   local debpath
@@ -82,7 +84,7 @@ publish_debs() {
   log "Promoting ${target} to stable"
   rapture --universe=cloud-apt settag "${target}" cloud-kubernetes-release.stable:true
 
-  cd ${release_dir}
+  cd "${RELEASE_ROOT:?}"
 }
 
 publish_rpms() {
@@ -90,8 +92,8 @@ publish_rpms() {
   local keyfile
   local RPMDIR
 
-  cd packages/rpm
-  RPMDIR="$(pwd)"
+  RPMDIR="${RELEASE_ROOT:?}"/packages/rpm
+  cd "${RPMDIR:?}"
 
   log "Signing RPMs"
   pushd /google/src/head/depot/google3/cloud/cluster/guest/cloud_rapture/rpmsign
@@ -157,6 +159,7 @@ publish_rpms() {
     log "Promoting ${target} to stable ${repo}"
     rapture --universe=cloud-yum settag "${target}" cloud-kubernetes-release.stable:true
   done
+  cd "${RELEASE_ROOT:?}"
 }
 
 publish_debs
