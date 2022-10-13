@@ -55,6 +55,7 @@ fatal() {
 version="$1"
 
 publish_debs() {
+  local distro=xenial
   local DEBDIR
   DEBDIR="${RELEASE_ROOT:?}"/packages/deb
   cd "${DEBDIR:?}"
