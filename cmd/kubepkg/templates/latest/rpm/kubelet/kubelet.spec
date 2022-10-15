@@ -6,6 +6,8 @@ Summary: Container cluster management
 License: ASL 2.0
 URL: https://kubernetes.io
 Source0: {{ .DownloadLinkBase }}/bin/linux/{{ .GoArch }}/kubelet
+Source1: kubelet.env
+Source2: kubelet.service
 
 BuildRequires: systemd
 BuildRequires: curl
@@ -23,18 +25,16 @@ The node agent of Kubernetes, the container cluster manager.
 
 %prep
 cp -p %SOURCE0 %{_builddir}/
-
-# TODO: Do we need these?
-#%autosetup
-#%build
-#%configure
-#%make_build
+cp -p %SOURCE1 %{_builddir}/
+cp -p %SOURCE2 %{_builddir}/
 
 %install
-# TODO: Do we need this?
-#rm -rf $RPM_BUILD_ROOT
-
 cd %{_builddir}
+mkdir -p %{buildroot}%{_unitdir}/kubelet.service.d/
+mkdir -p %{buildroot}%{_bindir}
+mkdir -p %{buildroot}/var/lib/kubelet/
+mkdir -p %{buildroot}%{_sysconfdir}/sysconfig/
+
 install -m 755 -d %{buildroot}%{_unitdir}
 install -m 755 -d %{buildroot}%{_unitdir}/kubelet.service.d/
 install -m 755 -d %{buildroot}%{_bindir}
@@ -43,9 +43,6 @@ install -p -m 755 -t %{buildroot}%{_bindir}/ kubelet
 install -p -m 644 -t %{buildroot}%{_unitdir}/ kubelet.service
 install -m 755 -d %{buildroot}%{_sysconfdir}/sysconfig/
 install -p -m 644 -T kubelet.env %{buildroot}%{_sysconfdir}/sysconfig/kubelet
-
-# TODO: Do we need this?
-#%make_install
 
 %files
 %{_bindir}/kubelet

@@ -14,23 +14,12 @@ BuildRequires: curl
 Command-line utility for interacting with a container runtime.
 
 %prep
-%setup -c -a 7 -T -n cri-tools
-
-# TODO: Do we need these?
-#%autosetup
-#%build
-#%configure
-#%make_build
+%setup -c -a 0 -T -n cri-tools
 
 %install
-# TODO: Do we need this?
-#rm -rf $RPM_BUILD_ROOT
-
 cd %{_builddir}
+mkdir -p %{buildroot}%{_bindir}
 install -p -m 755 -t %{buildroot}%{_bindir}/ cri-tools/crictl
-
-# TODO: Do we need this?
-#%make_install
 
 %files
 %{_bindir}/crictl

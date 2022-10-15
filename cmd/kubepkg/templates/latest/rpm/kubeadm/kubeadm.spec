@@ -23,23 +23,15 @@ Command-line utility for administering a Kubernetes cluster.
 cp -p %SOURCE0 %{_builddir}/
 cp -p %SOURCE1 %{_builddir}/
 
-# TODO: Do we need these?
-#%autosetup
-#%build
-#%configure
-#%make_build
-
 %install
-# TODO: Do we need this?
-#rm -rf $RPM_BUILD_ROOT
-
 cd %{_builddir}
+mkdir -p %{buildroot}%{_sysconfdir}/kubernetes/manifests/
+mkdir -p %{buildroot}%{_bindir}
+mkdir -p %{buildroot}%{_unitdir}/kubelet.service.d
+
 install -m 755 -d %{buildroot}%{_sysconfdir}/kubernetes/manifests/
 install -p -m 755 -t %{buildroot}%{_bindir}/ kubeadm
 install -p -m 644 -t %{buildroot}%{_unitdir}/kubelet.service.d/ 10-kubeadm.conf
-
-# TODO: Do we need this?
-#%make_install
 
 %files
 %{_bindir}/kubeadm
