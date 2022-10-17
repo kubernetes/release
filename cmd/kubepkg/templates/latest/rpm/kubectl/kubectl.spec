@@ -16,21 +16,11 @@ Command-line utility for interacting with a Kubernetes cluster.
 %prep
 cp -p %SOURCE0 %{_builddir}/
 
-# TODO: Do we need these?
-#%autosetup
-#%build
-#%configure
-#%make_build
-
 %install
-# TODO: Do we need this?
-#rm -rf $RPM_BUILD_ROOT
 
 cd %{_builddir}
+mkdir -p %{buildroot}/%{_bindir}
 install -p -m 755 -t %{buildroot}%{_bindir}/ kubectl
-
-# TODO: Do we need this?
-#%make_install
 
 %files
 %{_bindir}/kubectl

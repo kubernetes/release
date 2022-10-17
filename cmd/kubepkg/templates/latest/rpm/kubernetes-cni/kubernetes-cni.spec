@@ -15,25 +15,15 @@ Requires: kubelet
 Binaries required to provision container networking.
 
 %prep
-%setup -c -D -T -a 5 -n cni-plugins
-
-# TODO: Do we need these?
-#%autosetup
-#%build
-#%configure
-#%make_build
+%setup -c -D -T -a 0 -n cni-plugins
 
 %install
-# TODO: Do we need this?
-#rm -rf $RPM_BUILD_ROOT
-
 cd %{_builddir}
+mkdir -p %{buildroot}%{_sysconfdir}/cni/net.d/
+mkdir -p %{buildroot}/opt/cni/bin
 install -m 755 -d %{buildroot}%{_sysconfdir}/cni/net.d/
 install -m 755 -d %{buildroot}/opt/cni/bin
 mv cni-plugins/* %{buildroot}/opt/cni/bin/
-
-# TODO: Do we need this?
-#%make_install
 
 %files
 /opt/cni
