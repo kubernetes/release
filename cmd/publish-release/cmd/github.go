@@ -206,6 +206,7 @@ func getAssetsFromStrings(assetStrings []string) ([]announce.Asset, error) {
 			Label:    l,
 		})
 	}
+
 	return r, nil
 }
 
@@ -288,9 +289,17 @@ func runGithubPage(opts *githubPageCmdLineOptions) (err error) {
 		}
 	}
 
+	newAssets := make([]string, len(assets)+1)
+	for i, a := range assets {
+		newAssets[i] = a.ReadFrom
+	}
+
+	// add sbom to the path to upload
+	newAssets[len(assets)] = sbom
+
 	// Build the release page options
 	announceOpts := announce.GitHubPageOptions{
-		AssetFiles:            opts.assets,
+		AssetFiles:            newAssets,
 		Tag:                   commandLineOpts.tag,
 		NoMock:                commandLineOpts.nomock,
 		UpdateIfReleaseExists: !opts.noupdate,
