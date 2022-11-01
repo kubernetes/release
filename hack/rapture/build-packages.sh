@@ -36,10 +36,11 @@ fatal() {
   exit 1
 }
 
+version=${1:-""}
 
-[[ -n "$1" ]] || fatal "no version specified"
-version="$1"
-
+if [[ "$version" == "" ]]; then
+  fatal "no version specified"
+fi
 
 build_debs() {
   local distro=xenial
@@ -53,7 +54,7 @@ build_debs() {
   sed -i -r -e 's/\b(Revision:\s*)"[0-9]{2}"/\1"00"/' build.go
 
   log "Building debs for Kubernetes v${version}"
-  ./jenkins.sh --kube-version $version --distros $distro
+  ./jenkins.sh --kube-version "$version" --distros $distro
 
   log "Changing file owner from root to ${USER}"
   sudo chown -R "${USER}" bin
