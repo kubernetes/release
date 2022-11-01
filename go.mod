@@ -11,7 +11,7 @@ require (
 	github.com/goark/go-cvss v1.3.0
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-containerregistry v0.12.0
-	github.com/google/go-github/v45 v45.2.0
+	github.com/google/go-github/v47 v47.1.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/in-toto/in-toto-golang v0.3.4-0.20220709202702-fa494aaa0add
@@ -175,7 +175,7 @@ require (
 	github.com/google/certificate-transparency-go v1.1.3 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/go-github/v47 v47.1.0 // indirect
+	github.com/google/go-github/v45 v45.2.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/licenseclassifier/v2 v2.0.0 // indirect

@@ -34,7 +34,7 @@ import (
 	"time"
 	"unicode"
 
-	gogithub "github.com/google/go-github/v45/github"
+	gogithub "github.com/google/go-github/v47/github"
 	"github.com/nozzle/throttler"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/cases"
