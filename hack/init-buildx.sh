@@ -60,9 +60,9 @@ fi
 
 # Ensure qemu is in binfmt_misc
 # NOTE: Please always pin this to a digest for predictability/auditability
-# Last updated: 2021-10-11
+# Last updated: 2022-11-02
 if [ "$(uname)" == 'Linux' ]; then
-  docker run --rm --privileged tonistiigi/binfmt:qemu-v6.0.0@sha256:ce4d5a2a6ac4a189047fca2d71cbd901cc7beebacf538be95fccb3aca87cb2ec --install all
+  docker run --rm --privileged tonistiigi/binfmt:qemu-v7.0.0@sha256:66e11bea77a5ea9d6f0fe79b57cd2b189b5d15b93a2bdb925be22949232e4e55 --install all
 fi
 
 # Ensure we use a builder that can leverage it (the default on linux will not)
