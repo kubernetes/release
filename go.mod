@@ -36,7 +36,7 @@ require (
 	golang.org/x/text v0.4.0
 	google.golang.org/api v0.101.0
 	gopkg.in/yaml.v2 v2.4.0
-	sigs.k8s.io/bom v0.4.1-0.20221030162443-eaf47e5a8d36
+	sigs.k8s.io/bom v0.4.1
 	sigs.k8s.io/mdtoc v1.1.0
 	sigs.k8s.io/promo-tools/v3 v3.4.7
 	sigs.k8s.io/release-sdk v0.9.4-0.20221027144632-494c2916c784
