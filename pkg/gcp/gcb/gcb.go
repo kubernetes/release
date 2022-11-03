@@ -217,7 +217,16 @@ func (g *GCB) Submit() error {
 		g.options.Async = false
 	}
 
-	gcbSubs, gcbSubsErr := g.SetGCBSubstitutions(toolOrg, toolRepo, toolRef)
+	// build the GCS bucket string to be used to sign all the artifacts
+	bucketPrefix := release.BucketPrefix
+	gcsBucket := fmt.Sprintf("gs://%s", bucketPrefix)
+	if g.options.NoMock {
+		gcsBucket = strings.TrimSuffix(gcsBucket, "-")
+	} else {
+		gcsBucket = fmt.Sprintf("%s%s", gcsBucket, "gcb")
+	}
+
+	gcbSubs, gcbSubsErr := g.SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket)
 	if gcbSubs == nil || gcbSubsErr != nil {
 		return gcbSubsErr
 	}
@@ -245,8 +254,6 @@ func (g *GCB) Submit() error {
 		// TODO: Remove once cloudbuild.yaml doesn't strictly require vars to be set.
 		gcbSubs["NOMOCK_TAG"] = ""
 		gcbSubs["NOMOCK"] = ""
-
-		bucketPrefix := release.BucketPrefix
 
 		userBucket := fmt.Sprintf("%s%s", bucketPrefix, gcbSubs["GCP_USER_TAG"])
 		userBucketSetErr := os.Setenv("USER_BUCKET", userBucket)
@@ -306,7 +313,7 @@ func (g *GCB) Submit() error {
 
 // SetGCBSubstitutions takes a set of `Options` and returns a map of GCB
 // substitutions.
-func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef string) (map[string]string, error) {
+func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket string) (map[string]string, error) {
 	gcbSubs := map[string]string{}
 
 	gcbSubs["TOOL_ORG"] = toolOrg
@@ -426,6 +433,10 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef string) (map[string
 	gcbSubs["MINOR_VERSION_TAG"] = strconv.FormatUint(primeSemver.Minor, 10)
 	gcbSubs["PATCH_VERSION_TAG"] = strconv.FormatUint(primeSemver.Patch, 10)
 	gcbSubs["KUBERNETES_VERSION_TAG"] = primeSemver.String()
+
+	if g.options.Release {
+		gcbSubs["KUBERNETES_GCS_BUCKET"] = fmt.Sprintf("%s/stage/%s/%s/gcs-stage/%s", gcsBucket, buildVersion, primeSemver.String(), primeSemver.String())
+	}
 
 	return gcbSubs, nil
 }
