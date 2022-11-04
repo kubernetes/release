@@ -844,7 +844,7 @@ func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 	notesOptions.MapProviderStrings = releaseNotesOpts.mapProviders
 	notesOptions.AddMarkdownLinks = true
 
-	// If the the release for the tag we are using has a mapping directory,
+	// If the release for the tag we are using has a mapping directory,
 	// add it to the mapProviders array to read the edits from the release team:
 	mapsDir := filepath.Join(
 		sigReleaseRepo.Dir(), "releases",
