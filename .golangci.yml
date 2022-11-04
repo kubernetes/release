@@ -19,11 +19,11 @@ issues:
 linters:
   disable-all: true
   enable:
+    - asasalint
     - asciicheck
     - bidichk
     - bodyclose
     - contextcheck
-    - deadcode
     - decorder
     - depguard
     - dogsled
@@ -32,6 +32,7 @@ linters:
     - errcheck
     - errchkjson
     - errname
+    - execinquery
     - goconst
     - gocritic
     - gocyclo
@@ -49,31 +50,35 @@ linters:
     - grouper
     - importas
     - ineffassign
+    - loggercheck
     - makezero
     - misspell
     - nakedret
     - nolintlint
+    - nosprintfhostport
     - prealloc
     - predeclared
     - promlinter
+    - reassign
     - revive
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
-    - structcheck
     - stylecheck
     - tenv
+    - testableexamples
     - typecheck
     - unconvert
     - unparam
     - unused
-    - varcheck
+    - usestdlibvars
     - whitespace
     # - containedctx
     # - cyclop
+    # - dupword
     # - errorlint
     # - exhaustive
-    # - exhaustivestruct
+    # - exhaustruct
     # - exportloopref
     # - forbidigo
     # - forcetypeassert
@@ -85,7 +90,7 @@ linters:
     # - godot
     # - goerr113
     # - gomnd
-    # - ifshort
+    # - interfacebloat
     # - ireturn
     # - lll
     # - maintidx
@@ -94,6 +99,7 @@ linters:
     # - nilnil
     # - nlreturn
     # - noctx
+    # - nonamedreturns
     # - paralleltest
     # - tagliatelle
     # - testpackage
@@ -198,8 +204,11 @@ linters-settings:
       - singleCaseSwitch
       - sloppyLen
       - stringConcatSimplify
+      - stringsCompare
       - switchTrue
+      - timeCmpSimplify
       - timeExprSimplify
+      - todoCommentWithoutDetail
       - tooManyResultsChecker
       - typeAssertChain
       - typeDefFirst

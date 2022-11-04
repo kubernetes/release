@@ -348,13 +348,13 @@ dependencies:
 
   # golangci-lint-version
   - name: "golangci-lint"
-    version: 1.49.0
+    version: 1.50.1
     refPaths:
     - path: hack/verify-golangci-lint.sh
       match: VERSION=v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?
 
   - name: "golangci-lint-checksum"
-    version: 1c2edb726aad6bf7d260d95c370bd9ec0fb1a8651e6db6f77f250dd66067de0c
+    version: 8b4a114be66324f8d8b7d88100ebf4b37486a9b4274887d770bfe5271f7ba1a1
     refPaths:
     - path: hack/verify-golangci-lint.sh
       match: INSTALL_CHECKSUM

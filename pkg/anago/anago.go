@@ -368,7 +368,7 @@ func (r *Release) Submit(stream bool) error {
 	return nil
 }
 
-// Run for for `Release` struct finishes a previously staged release.
+// Run for `Release` struct finishes a previously staged release.
 func (r *Release) Run() error {
 	r.client.InitState()
 
