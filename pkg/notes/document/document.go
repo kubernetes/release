@@ -30,7 +30,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"sigs.k8s.io/promo-tools/v3/image"
 	"sigs.k8s.io/release-utils/hash"
 
 	"k8s.io/release/pkg/cve"
@@ -112,7 +111,7 @@ func fetchImageMetadata(dir, tag string) (*ImageMetadata, error) {
 	}
 
 	manifests, err := release.NewImages().GetManifestImages(
-		image.ProdRegistry, tag, dir, nil,
+		"registry.k8s.io", tag, dir, nil,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get manifest images: %w", err)
@@ -129,7 +128,7 @@ func fetchImageMetadata(dir, tag string) (*ImageMetadata, error) {
 	const linkBase = "https://console.cloud.google.com/gcr/images/k8s-artifacts-prod/us/"
 
 	for manifest, tempArchitectures := range manifests {
-		imageName := strings.TrimPrefix(manifest, image.ProdRegistry+"/")
+		imageName := strings.TrimPrefix(manifest, "registry.k8s.io/")
 
 		architectures := []string{}
 		for _, architecture := range tempArchitectures {

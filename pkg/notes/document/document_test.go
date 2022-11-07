@@ -271,7 +271,7 @@ func setupTestDir(t *testing.T, dir string) {
 		} {
 			repoTagTarball(t,
 				filepath.Join(archDir, file),
-				"k8s.gcr.io/"+strings.TrimSuffix(file, ".tar")+":v1.16.0",
+				"registry.k8s.io/"+strings.TrimSuffix(file, ".tar")+":v1.16.0",
 			)
 		}
 	}
