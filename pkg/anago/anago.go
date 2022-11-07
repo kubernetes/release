@@ -283,6 +283,11 @@ func (s *Stage) Run() error {
 		return fmt.Errorf("build release: %w", err)
 	}
 
+	logger.WithStep().Info("Building packages")
+	if err := s.client.BuildPackages(); err != nil {
+		return fmt.Errorf("build packages: %w", err)
+	}
+
 	logger.WithStep().Info("Generating changelog")
 	if err := s.client.GenerateChangelog(); err != nil {
 		return fmt.Errorf("generate changelog: %w", err)
@@ -420,6 +425,11 @@ func (r *Release) Run() error {
 	logger.WithStep().Info("Pushing git objects")
 	if err := r.client.PushGitObjects(); err != nil {
 		return fmt.Errorf("push git objects: %w", err)
+	}
+
+	logger.WithStep().Info("Releasing packages")
+	if err := r.client.ReleasePackages(); err != nil {
+		return fmt.Errorf("release packages: %w", err)
 	}
 
 	logger.WithStep().Info("Creating announcement")

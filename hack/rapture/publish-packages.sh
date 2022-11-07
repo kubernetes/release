@@ -40,6 +40,8 @@ set -o nounset
 set -o pipefail
 
 RELEASE_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
+DEBDIR="${RELEASE_ROOT:?}"/packages/deb
+RPMDIR="${RELEASE_ROOT:?}"/packages/rpm
 
 log() {
   echo "$*" >&2
@@ -54,10 +56,26 @@ fatal() {
 [[ -n "$1" ]] || fatal "no version specified"
 version="$1"
 
+download_packages() {
+  local bucket="gs://kubernetes-release/release"
+  log "Downloading packages from bucket $bucket"
+
+  declare -A locations=(
+    ["deb"]="$DEBDIR/bin"
+    ["rpm"]="$RPMDIR/output"
+  )
+
+  for package in "${!locations[@]}"; do
+    rm -rf "${locations[$package]}" || true
+    mkdir -p "${locations[$package]}"
+    gsutil -m cp -r "$bucket/v$version/$package/*" "${locations[$package]}"
+  done
+
+  log "Got all packages"
+}
+
 publish_debs() {
   local distro=xenial
-  local DEBDIR
-  DEBDIR="${RELEASE_ROOT:?}"/packages/deb
   cd "${DEBDIR:?}"
 
   log "Removing local debs that already exist on the server"
@@ -91,9 +109,7 @@ publish_debs() {
 publish_rpms() {
   local distro=el7
   local keyfile
-  local RPMDIR
 
-  RPMDIR="${RELEASE_ROOT:?}"/packages/rpm
   cd "${RPMDIR:?}"
 
   log "Signing RPMs"
@@ -163,5 +179,6 @@ publish_rpms() {
   cd "${RELEASE_ROOT:?}"
 }
 
+download_packages
 publish_debs
 publish_rpms

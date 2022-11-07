@@ -42,6 +42,8 @@ if [[ "$version" == "" ]]; then
   fatal "no version specified"
 fi
 
+USER=${USER:-$(id -u)}
+
 build_debs() {
   local distro=xenial
 
@@ -56,15 +58,16 @@ build_debs() {
   log "Building debs for Kubernetes v${version}"
   ./jenkins.sh --kube-version "$version" --distros $distro
 
-  log "Changing file owner from root to ${USER}"
-  sudo chown -R "${USER}" bin
+  if [[ $USER != 0 ]]; then
+    log "Changing file owner from root to ${USER}"
+    sudo chown -R "${USER}" bin
+  fi
 
   cd "${RELEASE_ROOT:?}"
 }
 
 build_rpms() {
   local distro=el7
-  local keyfile
   local RPMDIR
 
   log "Clearing output dir"

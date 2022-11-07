@@ -17,10 +17,14 @@ set -e
 
 docker build -t kubelet-rpm-builder .
 echo "Cleaning output directory..."
-sudo rm -rf output/*
+rm -rf output/*
 mkdir -p output
-docker run -ti --rm -v $PWD/output/:/root/rpmbuild/RPMS/ kubelet-rpm-builder $1
-sudo chown -R $USER $PWD/output
+docker run -i --rm -v $PWD/output/:/root/rpmbuild/RPMS/ kubelet-rpm-builder $1
+
+USER=${USER:-$(id -u)}
+if [[ $USER != 0 ]]; then
+  sudo chown -R "$USER" "$PWD/output"
+fi
 
 echo
 echo "----------------------------------------"
