@@ -27,6 +27,7 @@ import (
 	"k8s.io/release/pkg/announce"
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/gcp/gcb"
+	"k8s.io/release/pkg/packages"
 	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/object"
@@ -80,6 +81,9 @@ type releaseClient interface {
 	// PushGitObjects pushes the new tags and branches to the repository remote
 	// on GitHub.
 	PushGitObjects() error
+
+	// ReleasePackages pushes the deb and rpm packages to their final destination.
+	ReleasePackages() error
 
 	// CreateAnnouncement creates the release announcement mail and update the
 	// GitHub release page to contain the artifacts and their checksums.
@@ -144,6 +148,7 @@ type releaseImpl interface {
 		versionMarkers []string,
 		privateBucket, fast bool,
 	) error
+	ReleasePackages(string) error
 	CreateAnnouncement(
 		options *announce.Options,
 	) error
@@ -256,6 +261,10 @@ func (d *DefaultRelease) InitLogFile() error {
 	d.state.logFile = logFile
 	logrus.Infof("Additionally logging to file %s", d.state.logFile)
 	return nil
+}
+
+func (d *defaultReleaseImpl) ReleasePackages(version string) error {
+	return packages.New(version).Release()
 }
 
 func (d *defaultReleaseImpl) CreateAnnouncement(options *announce.Options) error {
@@ -513,6 +522,25 @@ func (d *DefaultRelease) PushGitObjects() error {
 		"Git objects push complete (%d branches, %d tags & main branch)",
 		len(d.state.versions.Ordered()), len(branchList),
 	)
+	return nil
+}
+
+// ReleasePackages pushes the deb and rpm packages to their final destination.
+func (d *DefaultRelease) ReleasePackages() error {
+	if !d.options.NoMock {
+		logrus.Info("Will not create any packages because we're running in mock mode")
+		return nil
+	}
+	version := d.state.versions.Official()
+	if version == "" {
+		logrus.Info("Will not create any packages for non-official releases")
+		return nil
+	}
+
+	if err := d.impl.ReleasePackages(version); err != nil {
+		return fmt.Errorf("release version %s: %w", version, err)
+	}
+
 	return nil
 }
 

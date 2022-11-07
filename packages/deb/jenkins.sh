@@ -23,4 +23,4 @@ declare -r BUILD_TAG="$(date '+%y%m%d%H%M%S')"
 declare -r IMG_NAME="debian-builder:${BUILD_TAG}"
 
 docker build -t "${IMG_NAME}" "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-docker run -it --rm -v "${PWD}/bin:/src/bin" "${IMG_NAME}" $@
+docker run -i --rm -v "${PWD}/bin:/src/bin" "${IMG_NAME}" $@

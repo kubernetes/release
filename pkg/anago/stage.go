@@ -31,6 +31,7 @@ import (
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/changelog"
 	"k8s.io/release/pkg/gcp/gcb"
+	"k8s.io/release/pkg/packages"
 	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/bom/pkg/provenance"
 	"sigs.k8s.io/bom/pkg/spdx"
@@ -81,6 +82,9 @@ type stageClient interface {
 	// Build runs 'make cross-in-a-container' by using the latest kubecross
 	// container image. This step also build all necessary release tarballs.
 	Build() error
+
+	// BuildPackages builds deb and rmp packages.
+	BuildPackages() error
 
 	// GenerateChangelog builds the CHANGELOG-x.y.md file and commits it
 	// into the local repository.
@@ -153,6 +157,7 @@ type stageImpl interface {
 	CheckReleaseBucket(options *build.Options) error
 	DockerHubLogin() error
 	MakeCross(version string) error
+	BuildPackages(version string) error
 	GenerateChangelog(options *changelog.Options) error
 	StageLocalSourceTree(
 		options *build.Options, workDir, buildVersion string,
@@ -248,6 +253,10 @@ func (d *defaultStageImpl) Merge(repo *git.Repo, rev string) error {
 
 func (d *defaultStageImpl) MakeCross(version string) error {
 	return build.NewMake().MakeCross(version)
+}
+
+func (d *defaultStageImpl) BuildPackages(version string) error {
+	return packages.New(version).Build()
 }
 
 func (d *defaultStageImpl) DockerHubLogin() error {
@@ -559,6 +568,16 @@ func (d *DefaultStage) Build() error {
 	for _, version := range d.state.versions.Ordered() {
 		if err := d.impl.MakeCross(version); err != nil {
 			return fmt.Errorf("build artifacts: %w", err)
+		}
+	}
+	return nil
+}
+
+// BuildPackages builds deb and rmp packages.
+func (d *DefaultStage) BuildPackages() error {
+	for _, version := range d.state.versions.Ordered() {
+		if err := d.impl.BuildPackages(version); err != nil {
+			return fmt.Errorf("build version %s: %w", version, err)
 		}
 	}
 	return nil

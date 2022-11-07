@@ -20,9 +20,8 @@ package anagofakes
 import (
 	"sync"
 
-	"github.com/blang/semver/v4"
+	semver "github.com/blang/semver/v4"
 	"github.com/in-toto/in-toto-golang/in_toto"
-
 	"k8s.io/release/pkg/anago"
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/changelog"
@@ -85,6 +84,17 @@ type FakeStageImpl struct {
 	buildBaseArtifactsSBOMReturnsOnCall map[int]struct {
 		result1 *spdx.Document
 		result2 error
+	}
+	BuildPackagesStub        func(string) error
+	buildPackagesMutex       sync.RWMutex
+	buildPackagesArgsForCall []struct {
+		arg1 string
+	}
+	buildPackagesReturns struct {
+		result1 error
+	}
+	buildPackagesReturnsOnCall map[int]struct {
+		result1 error
 	}
 	CheckPrerequisitesStub        func() error
 	checkPrerequisitesMutex       sync.RWMutex
@@ -761,6 +771,67 @@ func (fake *FakeStageImpl) BuildBaseArtifactsSBOMReturnsOnCall(i int, result1 *s
 		result1 *spdx.Document
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeStageImpl) BuildPackages(arg1 string) error {
+	fake.buildPackagesMutex.Lock()
+	ret, specificReturn := fake.buildPackagesReturnsOnCall[len(fake.buildPackagesArgsForCall)]
+	fake.buildPackagesArgsForCall = append(fake.buildPackagesArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.BuildPackagesStub
+	fakeReturns := fake.buildPackagesReturns
+	fake.recordInvocation("BuildPackages", []interface{}{arg1})
+	fake.buildPackagesMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) BuildPackagesCallCount() int {
+	fake.buildPackagesMutex.RLock()
+	defer fake.buildPackagesMutex.RUnlock()
+	return len(fake.buildPackagesArgsForCall)
+}
+
+func (fake *FakeStageImpl) BuildPackagesCalls(stub func(string) error) {
+	fake.buildPackagesMutex.Lock()
+	defer fake.buildPackagesMutex.Unlock()
+	fake.BuildPackagesStub = stub
+}
+
+func (fake *FakeStageImpl) BuildPackagesArgsForCall(i int) string {
+	fake.buildPackagesMutex.RLock()
+	defer fake.buildPackagesMutex.RUnlock()
+	argsForCall := fake.buildPackagesArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStageImpl) BuildPackagesReturns(result1 error) {
+	fake.buildPackagesMutex.Lock()
+	defer fake.buildPackagesMutex.Unlock()
+	fake.BuildPackagesStub = nil
+	fake.buildPackagesReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) BuildPackagesReturnsOnCall(i int, result1 error) {
+	fake.buildPackagesMutex.Lock()
+	defer fake.buildPackagesMutex.Unlock()
+	fake.BuildPackagesStub = nil
+	if fake.buildPackagesReturnsOnCall == nil {
+		fake.buildPackagesReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.buildPackagesReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeStageImpl) CheckPrerequisites() error {
@@ -2862,6 +2933,8 @@ func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	defer fake.branchNeedsCreationMutex.RUnlock()
 	fake.buildBaseArtifactsSBOMMutex.RLock()
 	defer fake.buildBaseArtifactsSBOMMutex.RUnlock()
+	fake.buildPackagesMutex.RLock()
+	defer fake.buildPackagesMutex.RUnlock()
 	fake.checkPrerequisitesMutex.RLock()
 	defer fake.checkPrerequisitesMutex.RUnlock()
 	fake.checkReleaseBucketMutex.RLock()

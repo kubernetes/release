@@ -32,6 +32,16 @@ type FakeStageClient struct {
 	buildReturnsOnCall map[int]struct {
 		result1 error
 	}
+	BuildPackagesStub        func() error
+	buildPackagesMutex       sync.RWMutex
+	buildPackagesArgsForCall []struct {
+	}
+	buildPackagesReturns struct {
+		result1 error
+	}
+	buildPackagesReturnsOnCall map[int]struct {
+		result1 error
+	}
 	CheckPrerequisitesStub        func() error
 	checkPrerequisitesMutex       sync.RWMutex
 	checkPrerequisitesArgsForCall []struct {
@@ -210,6 +220,59 @@ func (fake *FakeStageClient) BuildReturnsOnCall(i int, result1 error) {
 		})
 	}
 	fake.buildReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageClient) BuildPackages() error {
+	fake.buildPackagesMutex.Lock()
+	ret, specificReturn := fake.buildPackagesReturnsOnCall[len(fake.buildPackagesArgsForCall)]
+	fake.buildPackagesArgsForCall = append(fake.buildPackagesArgsForCall, struct {
+	}{})
+	stub := fake.BuildPackagesStub
+	fakeReturns := fake.buildPackagesReturns
+	fake.recordInvocation("BuildPackages", []interface{}{})
+	fake.buildPackagesMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageClient) BuildPackagesCallCount() int {
+	fake.buildPackagesMutex.RLock()
+	defer fake.buildPackagesMutex.RUnlock()
+	return len(fake.buildPackagesArgsForCall)
+}
+
+func (fake *FakeStageClient) BuildPackagesCalls(stub func() error) {
+	fake.buildPackagesMutex.Lock()
+	defer fake.buildPackagesMutex.Unlock()
+	fake.BuildPackagesStub = stub
+}
+
+func (fake *FakeStageClient) BuildPackagesReturns(result1 error) {
+	fake.buildPackagesMutex.Lock()
+	defer fake.buildPackagesMutex.Unlock()
+	fake.BuildPackagesStub = nil
+	fake.buildPackagesReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageClient) BuildPackagesReturnsOnCall(i int, result1 error) {
+	fake.buildPackagesMutex.Lock()
+	defer fake.buildPackagesMutex.Unlock()
+	fake.BuildPackagesStub = nil
+	if fake.buildPackagesReturnsOnCall == nil {
+		fake.buildPackagesReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.buildPackagesReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -887,6 +950,8 @@ func (fake *FakeStageClient) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.buildMutex.RLock()
 	defer fake.buildMutex.RUnlock()
+	fake.buildPackagesMutex.RLock()
+	defer fake.buildPackagesMutex.RUnlock()
 	fake.checkPrerequisitesMutex.RLock()
 	defer fake.checkPrerequisitesMutex.RUnlock()
 	fake.checkReleaseBranchStateMutex.RLock()
