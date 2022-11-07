@@ -568,5 +568,5 @@ func makeReleaseNote(kind notes.Kind, markdown string) *notes.ReleaseNote {
 func readFile(t *testing.T, path string) string {
 	b, err := os.ReadFile(path)
 	require.NoError(t, err, "Reading file %q", path)
-	return string(b)
+	return strings.TrimSpace(string(b))
 }
