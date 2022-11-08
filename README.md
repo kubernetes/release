@@ -137,4 +137,4 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how to contrib
 
 [kubernetes/kubernetes]: https://git.k8s.io/kubernetes
 [Branch Manager Handbook]: https://git.k8s.io/sig-release/release-engineering/role-handbooks/branch-manager.md
-[release-managers]: https://git.k8s.io/sig-release/release-managers.md
+[release-managers]: https://git.k8s.io/website/content/en/releases/release-managers.md
