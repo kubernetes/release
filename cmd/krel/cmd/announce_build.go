@@ -43,7 +43,7 @@ const semVerRegex string = `^?(\d+)(\.\d+)?(\.\d+)`
 const branchCreationMsg = `Kubernetes Community,
 <p>Kubernetes' {{ .Branch }} branch has been created.</p>
 <p>The release owner will be sending updates on how to interact with this branch shortly.  The <a href=https://git.k8s.io/community/contributors/devel/sig-release/cherry-picks.md target="_blank">Cherrypick Guide</a> has some general guidance on how things will proceed.</p>
-<p>Announced by your <a href=https://git.k8s.io/sig-release/release-managers.md target="_blank">Kubernetes Release Managers</a>.</p>
+<p>Announced by your <a href=https://kubernetes.io/releases/release-managers/ target="_blank">Kubernetes Release Managers</a>.</p>
 `
 
 const releaseAnnouncementMsg = `Kubernetes Community,

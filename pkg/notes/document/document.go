@@ -38,6 +38,8 @@ import (
 	"k8s.io/release/pkg/release"
 )
 
+const prodRegistry = "registry.k8s.io"
+
 // Document represents the underlying structure of a release notes document.
 type Document struct {
 	NotesWithActionRequired notes.Notes    `json:"action_required"`
@@ -111,7 +113,7 @@ func fetchImageMetadata(dir, tag string) (*ImageMetadata, error) {
 	}
 
 	manifests, err := release.NewImages().GetManifestImages(
-		"registry.k8s.io", tag, dir, nil,
+		prodRegistry, tag, dir, nil,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get manifest images: %w", err)
@@ -128,7 +130,7 @@ func fetchImageMetadata(dir, tag string) (*ImageMetadata, error) {
 	const linkBase = "https://console.cloud.google.com/gcr/images/k8s-artifacts-prod/us/"
 
 	for manifest, tempArchitectures := range manifests {
-		imageName := strings.TrimPrefix(manifest, "registry.k8s.io/")
+		imageName := strings.TrimPrefix(manifest, prodRegistry+"/")
 
 		architectures := []string{}
 		for _, architecture := range tempArchitectures {
