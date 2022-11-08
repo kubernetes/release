@@ -2,7 +2,7 @@
 
 _Author(s): Sumitran Raghunathan ([@sumitranr](https://github.com/sumitranr))_
 
-_Editor(s): Stephen Augustus ([@justaugustus](https://github.com/justaugustus))_
+_Editor(s): Stephen Augustus ([@justaugustus](https://github.com/justaugustus)), Sascha Grunert ([@saschagrunert](https://github.com/saschagrunert))_
 
 _Original document: [Building debs/rpms for Kubernetes
 ](https://docs.google.com/document/d/1PAN5tVJO_NMfHZmnk8mDQTwAbFHPky7JBgWJgckNjro/edit?usp=sharing)_
@@ -27,7 +27,7 @@ This guide outlines the process of building debs/rpms for Kubernetes minor and p
 
 ## Communication
 
-[Release Managers][release-managers] will reach out to the [Kubernetes Build Admins][kubernetes-build-admins] via the [Release Managers Google Group][release-managers-group] or [`#release-management`][release-management-slack] (for more synchronous communication) requesting help to build the debs and rpms.
+[Release Managers][release-managers] will reach out to the [Kubernetes Build Admins][kubernetes-build-admins] via the [Release Managers Google Group][release-managers-group] or [`#release-management`][release-management-slack] (for more synchronous communication) requesting help to publish the debs and rpms.
 
 Release Managers requesting debs/rpms should be sure to provide explicit details on the package name(s), version(s), and revision(s) they need built.
 
@@ -91,12 +91,20 @@ gcloud config set project kubernetes-release-test
 
 ### Build the Debs & RPMs
 
-The entire build process takes several hours. Once you are ready to begin, the debs and rpms can be built using [rapture][rapture].
+The debs and RPMs are build by using `krel release --nomock --type=official` in
+Google Cloud Build, which is executed by a [Release Manager][release-managers].
+This step places the debs and rpms in the production bucket, for example:
 
-`rapture` can be executed as follows:
+- https://console.cloud.google.com/storage/browser/kubernetes-release/release/v1.26.0/deb
+- https://console.cloud.google.com/storage/browser/kubernetes-release/release/v1.26.0/rpm
+
+[Kubernetes Build Admins][kubernetes-build-admins] have to publish those
+packages manually to ensure they are available on
+[apt.k8s.io](http://apt.k8s.io) as well as [yum.k8s.io](http://yum.k8s.io) by
+running:
 
 ```shell
-./hack/rapture/k8s-rapture.sh $VERSION
+./hack/rapture/publish-packages.sh 1.26.0
 ```
 
 #### Notes
@@ -177,12 +185,12 @@ If there is continued test failure on this dashboard without intervention from t
 [branch-manager-handbook]: https://github.com/kubernetes/sig-release/tree/master/release-engineering/role-handbooks/branch-manager.md
 [kubeadm-install]: https://kubernetes.io/docs/setup/independent/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl
 [kubernetes/release]: https://git.k8s.io/release
-[kubernetes-build-admins]:  https://github.com/kubernetes/sig-release/tree/master/release-managers.md#build-admins
+[kubernetes-build-admins]: https://kubernetes.io/releases/release-managers/#build-admins
 [rapture]: k8s-rapture.sh
 [rapture-readme]: https://g3doc.corp.google.com/cloud/kubernetes/g3doc/release/rapture.md?cl=head
 [release-engineering-dashboard]: https://testgrid.k8s.io/sig-release-releng-informing
 [release-management-slack]: https://kubernetes.slack.com/messages/CJH2GBF7Y
-[release-managers]: /release-managers.md#release-managers
+[release-managers]: https://kubernetes.io/releases/release-managers/#release-managers
 [release-managers-group]: https://groups.google.com/a/kubernetes.io/forum/#!forum/release-managers
 [release-team]: https://groups.google.com/forum/#!forum/kubernetes-release-team
 [security-release-process]: /security-release-process-documentation/security-release-process.md
