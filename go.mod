@@ -38,7 +38,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	sigs.k8s.io/bom v0.4.1
 	sigs.k8s.io/mdtoc v1.1.0
-	sigs.k8s.io/promo-tools/v3 v3.4.7
+	sigs.k8s.io/promo-tools/v3 v3.4.8
 	sigs.k8s.io/release-sdk v0.9.4-0.20221027144632-494c2916c784
 	sigs.k8s.io/release-utils v0.7.3
 	sigs.k8s.io/yaml v1.3.0
