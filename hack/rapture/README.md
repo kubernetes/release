@@ -104,7 +104,7 @@ packages manually to ensure they are available on
 running:
 
 ```shell
-./hack/rapture/publish-packages.sh 1.26.0
+./hack/rapture/publish-packages.sh $VERSION
 ```
 
 #### Notes
