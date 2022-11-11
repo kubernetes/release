@@ -351,9 +351,9 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 				}
 			}
 		}
-		if _, ok := dedupeCache[note.Text]; !ok {
+		if _, ok := dedupeCache[note.Markdown]; !ok {
 			notes.Set(note.PrNumber, note)
-			dedupeCache[note.Text] = struct{}{}
+			dedupeCache[note.Markdown] = struct{}{}
 		}
 	}
 	return notes, nil
