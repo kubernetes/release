@@ -3,7 +3,7 @@ module k8s.io/release
 go 1.19
 
 require (
-	cloud.google.com/go/storage v1.27.0
+	cloud.google.com/go/storage v1.28.0
 	github.com/GoogleCloudPlatform/testgrid v0.0.38
 	github.com/blang/semver/v4 v4.0.0
 	github.com/cheggaaa/pb/v3 v3.1.0
@@ -34,11 +34,11 @@ require (
 	golang.org/x/net v0.2.0
 	golang.org/x/oauth2 v0.2.0
 	golang.org/x/text v0.4.0
-	google.golang.org/api v0.101.0
+	google.golang.org/api v0.103.0
 	gopkg.in/yaml.v2 v2.4.0
 	sigs.k8s.io/bom v0.4.1
 	sigs.k8s.io/mdtoc v1.1.0
-	sigs.k8s.io/promo-tools/v3 v3.4.8
+	sigs.k8s.io/promo-tools/v3 v3.4.9
 	sigs.k8s.io/release-sdk v0.9.4-0.20221027144632-494c2916c784
 	sigs.k8s.io/release-utils v0.7.3
 	sigs.k8s.io/yaml v1.3.0
@@ -47,9 +47,10 @@ require (
 
 require (
 	bitbucket.org/creachadair/shell v0.0.7 // indirect
-	cloud.google.com/go v0.104.0 // indirect
-	cloud.google.com/go/compute v1.10.0 // indirect
-	cloud.google.com/go/iam v0.6.0 // indirect
+	cloud.google.com/go v0.105.0 // indirect
+	cloud.google.com/go/compute v1.12.1 // indirect
+	cloud.google.com/go/compute/metadata v0.2.1 // indirect
+	cloud.google.com/go/iam v0.7.0 // indirect
 	cuelang.org/go v0.4.3 // indirect
 	github.com/AliyunContainerService/ack-ram-tool/pkg/credentials/alibabacloudsdkgo/helper v0.2.0 // indirect
 	github.com/Azure/azure-sdk-for-go v67.0.0+incompatible // indirect
@@ -182,7 +183,7 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/trillian v1.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect
-	github.com/googleapis/gax-go/v2 v2.6.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
@@ -298,7 +299,7 @@ require (
 	go.etcd.io/etcd/tests/v3 v3.6.0-alpha.0 // indirect
 	go.etcd.io/etcd/v3 v3.6.0-alpha.0 // indirect
 	go.mongodb.org/mongo-driver v1.10.0 // indirect
-	go.opencensus.io v0.23.0 // indirect
+	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.30.0 // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.7.0 // indirect
@@ -321,7 +322,7 @@ require (
 	golang.org/x/tools v0.2.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20221018160656-63c7b68cfc55 // indirect
+	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c // indirect
 	google.golang.org/grpc v1.50.1 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/cheggaaa/pb.v1 v1.0.28 // indirect
