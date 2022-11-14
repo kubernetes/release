@@ -19,11 +19,13 @@ IMGNAME = go-runner
 APP_VERSION = $(shell cat VERSION)
 GO_MAJOR_VERSION ?= 1.19
 REVISION ?= 0
-
-# Build args
 GO_VERSION ?= 1.19.3
 OS_CODENAME ?= bullseye
+
+# Build args
+DISTROLESS_REGISTRY ?= gcr.io/distroless
 DISTROLESS_IMAGE ?= static-debian11
+BUILDER_IMAGE ?= golang:$(GO_VERSION)-$(OS_CODENAME)
 
 # Configuration
 CONFIG = go$(GO_MAJOR_VERSION)-$(OS_CODENAME)
@@ -50,6 +52,5 @@ build:
 clean:
 	rm go-runner
 
-BUILD_ARGS = --build-arg=GO_VERSION=$(GO_VERSION) \
-             --build-arg=OS_CODENAME=$(OS_CODENAME) \
-             --build-arg=DISTROLESS_IMAGE=$(DISTROLESS_IMAGE)
+BUILD_ARGS = --build-arg=BUILDER_IMAGE=$(BUILDER_IMAGE) \
+             --build-arg=DISTROLESS_IMAGE=$(DISTROLESS_REGISTRY)/$(DISTROLESS_IMAGE)

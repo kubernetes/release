@@ -13,11 +13,9 @@
 # limitations under the License.
 
 # Build the manager binary
-ARG GO_VERSION
-ARG OS_CODENAME
-# TODO(codename): Consider parameterizing in Makefile based on codename
 ARG DISTROLESS_IMAGE
-FROM golang:${GO_VERSION}-${OS_CODENAME} as builder
+ARG BUILDER_IMAGE
+FROM ${BUILDER_IMAGE} as builder
 WORKDIR /workspace
 
 # Copy the sources
@@ -52,7 +50,7 @@ RUN go build -ldflags '-s -w -buildid= -extldflags "-static"' \
     -o go-runner ${package}
 
 # Production image
-FROM gcr.io/distroless/${DISTROLESS_IMAGE}
+FROM ${DISTROLESS_IMAGE}
 LABEL maintainers="Kubernetes Authors"
 LABEL description="go based runner for distroless scenarios"
 WORKDIR /
