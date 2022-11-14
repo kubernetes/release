@@ -65,7 +65,7 @@ Contributors, the
 %s release notes and you may edit now as needed.
 <p><br><br>
 Published by your
-<a href=https://git.k8s.io/sig-release/release-managers.md>Kubernetes Release
+<a href=https://kubernetes.io/releases/release-managers/>Kubernetes Release
 Managers</a>.
 `
 

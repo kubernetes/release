@@ -52,7 +52,7 @@ const releaseAnnouncementMsg = `Kubernetes Community,
 <p><hr>{{ .ChangelogHTML }}<hr></p>
 
 <p><br>Contributors, the <a href=https://git.k8s.io/kubernetes/{{ .ChangelogFilePath }}/#{{ .StrippedTag }} target="_blank">{{ .ChangelogFileName }}</a> has been bootstrapped with {{ .Tag }} release notes and you may edit now as needed.</p>
-<p><br><br>Published by your <a href=https://git.k8s.io/sig-release/release-managers.md href target="_blank">Kubernetes Release Managers</a>.</p>
+<p><br><br>Published by your <a href=https://kubernetes.io/releases/release-managers/ href target="_blank">Kubernetes Release Managers</a>.</p>
 `
 
 // buildAnnounceCmd represents the subcommand for `krel announce build`
