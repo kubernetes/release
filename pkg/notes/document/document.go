@@ -30,7 +30,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"sigs.k8s.io/promo-tools/v3/image"
 	"sigs.k8s.io/release-utils/hash"
 
 	"k8s.io/release/pkg/cve"
@@ -38,6 +37,8 @@ import (
 	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/release"
 )
+
+const prodRegistry = "registry.k8s.io"
 
 // Document represents the underlying structure of a release notes document.
 type Document struct {
@@ -112,7 +113,7 @@ func fetchImageMetadata(dir, tag string) (*ImageMetadata, error) {
 	}
 
 	manifests, err := release.NewImages().GetManifestImages(
-		image.ProdRegistry, tag, dir, nil,
+		prodRegistry, tag, dir, nil,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get manifest images: %w", err)
@@ -129,7 +130,7 @@ func fetchImageMetadata(dir, tag string) (*ImageMetadata, error) {
 	const linkBase = "https://console.cloud.google.com/gcr/images/k8s-artifacts-prod/us/"
 
 	for manifest, tempArchitectures := range manifests {
-		imageName := strings.TrimPrefix(manifest, image.ProdRegistry+"/")
+		imageName := strings.TrimPrefix(manifest, prodRegistry+"/")
 
 		architectures := []string{}
 		for _, architecture := range tempArchitectures {

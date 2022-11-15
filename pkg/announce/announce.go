@@ -44,7 +44,7 @@ shortly. The <a href=https://git.k8s.io/community/contributors/devel/sig-release
 Guide</A> has some general guidance on how things will proceed.
 <p>
 Announced by your
-<a href=https://git.k8s.io/sig-release/release-managers.md>Kubernetes Release
+<a href=https://git.k8s.io/website/content/en/releases/release-managers.md>Kubernetes Release
 Managers</A>.
 `
 
@@ -65,7 +65,7 @@ Contributors, the
 %s release notes and you may edit now as needed.
 <p><br><br>
 Published by your
-<a href=https://kubernetes.io/releases/release-managers/>Kubernetes Release
+<a href=https://git.k8s.io/website/content/en/releases/release-managers.md>Kubernetes Release
 Managers</a>.
 `
 

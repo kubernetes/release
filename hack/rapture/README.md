@@ -185,7 +185,7 @@ If there is continued test failure on this dashboard without intervention from t
 [branch-manager-handbook]: https://github.com/kubernetes/sig-release/tree/master/release-engineering/role-handbooks/branch-manager.md
 [kubeadm-install]: https://kubernetes.io/docs/setup/independent/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl
 [kubernetes/release]: https://git.k8s.io/release
-[kubernetes-build-admins]: https://kubernetes.io/releases/release-managers/#build-admins
+[kubernetes-build-admins]:  https://git.k8s.io/website/content/en/releases/release-managers.md#build-admins
 [rapture]: k8s-rapture.sh
 [rapture-readme]: https://g3doc.corp.google.com/cloud/kubernetes/g3doc/release/rapture.md?cl=head
 [release-engineering-dashboard]: https://testgrid.k8s.io/sig-release-releng-informing

@@ -271,7 +271,7 @@ func setupTestDir(t *testing.T, dir string) {
 		} {
 			repoTagTarball(t,
 				filepath.Join(archDir, file),
-				"k8s.gcr.io/"+strings.TrimSuffix(file, ".tar")+":v1.16.0",
+				"registry.k8s.io/"+strings.TrimSuffix(file, ".tar")+":v1.16.0",
 			)
 		}
 	}
@@ -568,5 +568,5 @@ func makeReleaseNote(kind notes.Kind, markdown string) *notes.ReleaseNote {
 func readFile(t *testing.T, path string) string {
 	b, err := os.ReadFile(path)
 	require.NoError(t, err, "Reading file %q", path)
-	return string(b)
+	return strings.TrimSpace(string(b))
 }
