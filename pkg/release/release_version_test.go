@@ -43,11 +43,11 @@ func TestGenerateReleaseVersion(t *testing.T) {
 				require.Nil(t, err)
 				require.Equal(t, "v1.18.4", res.Prime())
 				require.Equal(t, "v1.18.4", res.Official())
-				require.Equal(t, "v1.18.5-rc.0", res.RC())
+				require.Empty(t, res.RC())
 				require.Empty(t, res.Beta())
 				require.Empty(t, res.Alpha())
 				require.Equal(t,
-					[]string{"v1.18.4", "v1.18.5-rc.0"},
+					[]string{"v1.18.4"},
 					res.Ordered(),
 				)
 			},
