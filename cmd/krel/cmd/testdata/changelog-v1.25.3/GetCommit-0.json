@@ -1,0 +1,34 @@
+{
+ "Result": {
+  "sha": "5835544ca568b757a8ecae5c153f317e5736700e",
+  "author": {
+   "date": "2022-09-21T14:25:45Z",
+   "name": "Kubernetes Release Robot",
+   "email": "k8s-release-robot@users.noreply.github.com"
+  },
+  "committer": {
+   "date": "2022-09-21T14:25:45Z",
+   "name": "Kubernetes Release Robot",
+   "email": "k8s-release-robot@users.noreply.github.com"
+  },
+  "message": "Release commit for Kubernetes v1.25.2",
+  "tree": {
+   "sha": "b9637f0f66ba5033b9bd3ab0fe5d2a82c8bbab26"
+  },
+  "parents": [
+   {
+    "sha": "a37c7fd921bafc1daaea1228f1ddde3ef039b6b8",
+    "html_url": "https://github.com/kubernetes/kubernetes/commit/a37c7fd921bafc1daaea1228f1ddde3ef039b6b8",
+    "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/a37c7fd921bafc1daaea1228f1ddde3ef039b6b8"
+   }
+  ],
+  "html_url": "https://github.com/kubernetes/kubernetes/commit/5835544ca568b757a8ecae5c153f317e5736700e",
+  "url": "https://api.github.com/repos/kubernetes/kubernetes/git/commits/5835544ca568b757a8ecae5c153f317e5736700e",
+  "verification": {
+   "verified": false,
+   "reason": "unsigned"
+  },
+  "node_id": "C_kwDOAToIktoAKDU4MzU1NDRjYTU2OGI3NTdhOGVjYWU1YzE1M2YzMTdlNTczNjcwMGU"
+ },
+ "LastPage": 0
+}
