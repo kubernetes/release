@@ -681,7 +681,7 @@ func (g *Gatherer) gatherNotes(commits []*gogithub.RepositoryCommit) (filtered [
 			commit.GetSHA(),
 		)
 
-		if g.options.ReplayDir == "" {
+		if g.options.ReplayDir == "" && g.options.RecordDir == "" {
 			go notesForCommit(commit)
 		} else {
 			// Ensure the same order like recorded
