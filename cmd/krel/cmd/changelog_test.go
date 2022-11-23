@@ -30,8 +30,10 @@ import (
 
 func (s *sut) getChangelogOptions(tag string) *changelog.Options {
 	return &changelog.Options{
-		RepoPath:     s.repo.Dir(),
+		// Uncomment to record data:
+		// RecordDir: filepath.Join(testDataDir, "changelog-"+tag),
 		ReplayDir:    filepath.Join(testDataDir, "changelog-"+tag),
+		RepoPath:     s.repo.Dir(),
 		Tag:          tag,
 		Tars:         ".",
 		Branch:       git.DefaultBranch,
@@ -56,8 +58,8 @@ func TestNewPatchRelease(t *testing.T) {
 	s := newSUT(t)
 	defer s.cleanup(t)
 
-	releaseBranch := "release-1.16"
-	co := s.getChangelogOptions("v1.16.3")
+	releaseBranch := "release-1.25"
+	co := s.getChangelogOptions("v1.25.3")
 	co.Branch = releaseBranch
 	co.Dependencies = true
 
@@ -67,14 +69,14 @@ func TestNewPatchRelease(t *testing.T) {
 
 	// Then
 	// Verify local results
-	fileContains(t, "CHANGELOG-1.16.html", patchReleaseExpectedHTML)
-	require.Nil(t, os.RemoveAll("CHANGELOG-1.16.html"))
+	fileContains(t, "CHANGELOG-1.25.html", patchReleaseExpectedHTML)
+	require.Nil(t, os.RemoveAll("CHANGELOG-1.25.html"))
 	for _, x := range []struct {
 		branch        string
 		commitMessage string
 	}{
-		{releaseBranch, "Update CHANGELOG/CHANGELOG-1.16.md for v1.16.3"},
-		{git.DefaultBranch, "Update directory for v1.16.3 release"},
+		{releaseBranch, "Update CHANGELOG/CHANGELOG-1.25.md for v1.25.3"},
+		{git.DefaultBranch, "Update directory for v1.25.3 release"},
 	} {
 		// Switch to the test branch
 		require.Nil(t, s.repo.Checkout(x.branch))
@@ -85,13 +87,12 @@ func TestNewPatchRelease(t *testing.T) {
 		require.Contains(t, lastCommit, x.commitMessage)
 
 		// Verify changelog contents
-		result, err := os.ReadFile(
-			filepath.Join(s.repo.Dir(), changelog.RepoChangelogDir, "CHANGELOG-1.16.md"),
-		)
+		changelogPath := filepath.Join(s.repo.Dir(), changelog.RepoChangelogDir, "CHANGELOG-1.25.md")
+		result, err := os.ReadFile(changelogPath)
+
 		require.Nil(t, err)
 		require.Contains(t, string(result), patchReleaseExpectedTOC)
 		require.Contains(t, string(result), patchReleaseExpectedContent)
-		require.Contains(t, string(result), patchReleaseDeps)
 	}
 }
 
