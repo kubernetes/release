@@ -1,6 +1,6 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 approvers:
-- build-admins
+  - build-admins
 reviewers:
-- build-admins
+  - build-admins
