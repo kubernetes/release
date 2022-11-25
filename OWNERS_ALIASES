@@ -26,13 +26,17 @@ aliases:
     - BenjaminKazemi
     - MushuEE
     - spiffxp
+  ci-signal-reporter-approvers:
+    - leonardpahlke
+    - palnabarun
   ci-signal-reporter-reviewers:
     - Nivedita-coder # 1.26 CI Signal Lead
     - shuheiktgw # 1.26 CI Signal Shadow
     - mehabhalodiya # 1.26 CI Signal Shadow
     - Namanl2001 # 1.26 CI Signal Shadow
     - bharitwal # 1.26 CI Signal Shadow
-    - leonardpahlke # 1.26 Release Lead
+    - leonardpahlke
+    - palnabarun
   krel-approvers:
     - cpanato
     - puerco
