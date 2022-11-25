@@ -30,13 +30,13 @@ aliases:
     - leonardpahlke
     - palnabarun
   ci-signal-reporter-reviewers:
-    - Nivedita-coder # 1.26 CI Signal Lead
-    - shuheiktgw # 1.26 CI Signal Shadow
-    - mehabhalodiya # 1.26 CI Signal Shadow
-    - Namanl2001 # 1.26 CI Signal Shadow
     - bharitwal # 1.26 CI Signal Shadow
     - leonardpahlke
+    - mehabhalodiya # 1.26 CI Signal Shadow
+    - Namanl2001 # 1.26 CI Signal Shadow
+    - Nivedita-coder # 1.26 CI Signal Lead
     - palnabarun
+    - shuheiktgw # 1.26 CI Signal Shadow
   krel-approvers:
     - cpanato
     - puerco
