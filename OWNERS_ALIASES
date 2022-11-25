@@ -20,22 +20,10 @@ aliases:
   release-engineering-reviewers:
     - ameukam # Release Manager Associate
     - cici37 # Release Manager Associate
-    - jimangel # Release Manager Associate
     - jrsapi # Release Manager Associate
-    - onlydole # Release Manager Associate
     - salaxander # Release Manager Associate
-    - sethmccombs # Release Manager Associate
-    - wilsonehusin # Release Manager Associate
-  build-admins:
-    - BenjaminKazemi
-    - MushuEE
-    - spiffxp
+  build-admins: []
   ci-signal-reporter-reviewers:
-    - Nivedita-coder # 1.26 CI Signal Lead
-    - shuheiktgw # 1.26 CI Signal Shadow
-    - mehabhalodiya # 1.26 CI Signal Shadow
-    - Namanl2001 # 1.26 CI Signal Shadow
-    - bharitwal # 1.26 CI Signal Shadow
     - leonardpahlke # 1.26 Release Lead
   krel-approvers:
     - cpanato
@@ -46,26 +34,6 @@ aliases:
     - puerco
     - saschagrunert
   sig-network-approvers:
-    - andrewsykim
-    - aojea
-    - bowei
-    - caseydavenport
-    - danwinship
-    - dcbw
-    - freehan
-    - khenidak
-    - mrhohn
     - robscott
-    - thockin
   sig-network-reviewers:
-    - andrewsykim
-    - aojea
-    - bowei
-    - caseydavenport
-    - danwinship
-    - dcbw
-    - freehan
-    - khenidak
-    - mrhohn
     - robscott
-    - thockin
