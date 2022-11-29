@@ -137,6 +137,11 @@ func runStage(options *anago.StageOptions) error {
 	options.NoMock = rootOpts.nomock
 	stage := anago.NewStage(options)
 	if submitJob {
+		// Perform a local check of the specified options before launching a
+		// Cloud Build job:
+		if err := options.Validate(&anago.State{}); err != nil {
+			return fmt.Errorf("prechecking stage options: %w", err)
+		}
 		return stage.Submit(stream)
 	}
 	return stage.Run()
