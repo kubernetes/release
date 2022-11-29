@@ -596,18 +596,6 @@ func (d *DefaultRelease) CreateAnnouncement() error {
 // UpdateGitHubPage Update the GitHub release page, uploading the
 // source code
 func (d *DefaultRelease) UpdateGitHubPage() error {
-	// Array of assets to be published in the release page
-	assetList := []string{
-		// Build the path to the kubernetes tar file:
-		filepath.Join(
-			gitRoot, // /workspace/src/k8s.io/kubernetes
-			fmt.Sprintf("%s-%s", release.BuildDir, d.state.versions.Prime()), // _output-v1.20.0-beta.3/
-			release.GCSStagePath,     // gcs-stage/
-			d.state.versions.Prime(), // v1.20.0-beta.3
-			release.KubernetesTar,    // kubernetes.tar.gz
-		) + ":Kubernetes Source Code",
-	}
-
 	// URL to the changelog:
 	changelogURL := fmt.Sprintf(
 		"https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-%d.%d.md",
@@ -617,7 +605,6 @@ func (d *DefaultRelease) UpdateGitHubPage() error {
 
 	// Build the options set for the GitHub page
 	ghPageOpts := &announce.GitHubPageOptions{
-		AssetFiles:            assetList,
 		Tag:                   d.state.versions.Prime(),
 		NoMock:                d.options.NoMock,
 		UpdateIfReleaseExists: true,
