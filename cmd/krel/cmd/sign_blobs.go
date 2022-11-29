@@ -123,16 +123,17 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 				strings.Contains(file, "README") || strings.Contains(file, "Makefile") {
 				continue
 			}
-			temp := strings.TrimPrefix(file, object.GcsPrefix)
-			err = gcsClient.CopyToLocal(file, tempDir)
+			destinationPath := strings.TrimPrefix(file, object.GcsPrefix)
+			localPath := filepath.Join(tempDir, filepath.Dir(destinationPath), filepath.Base(destinationPath))
+			err = gcsClient.CopyToLocal(file, localPath)
 			if err != nil {
 				return fmt.Errorf("copying file to sign: %w", err)
 			}
 
 			bundle = append(bundle, signingBundle{
-				destinationPathToCopy: filepath.Dir(temp),
-				fileToSign:            filepath.Base(temp),
-				fileLocalLocation:     fmt.Sprintf("%s/%s", tempDir, filepath.Base(temp)),
+				destinationPathToCopy: filepath.Dir(destinationPath),
+				fileToSign:            filepath.Base(destinationPath),
+				fileLocalLocation:     localPath,
 			})
 		}
 	} else {
