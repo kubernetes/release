@@ -21,12 +21,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/chromedp/chromedp"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
@@ -43,13 +43,12 @@ const (
 )
 
 type TestGridOptions struct {
-	branch        string
-	boards        []string
-	states        []string
-	bucket        string
-	testgridURL   string
-	renderTronURL string
-	gitHubIssue   int
+	branch      string
+	boards      []string
+	states      []string
+	bucket      string
+	testgridURL string
+	gitHubIssue int
 }
 
 var testGridOpts = &TestGridOptions{}
@@ -101,9 +100,6 @@ func init() {
 
 	testGridCmd.PersistentFlags().StringVar(&testGridOpts.testgridURL,
 		"testgrid-url", "https://testgrid.k8s.io", "The TestGrid URL")
-
-	testGridCmd.PersistentFlags().StringVar(&testGridOpts.renderTronURL,
-		"rendertron-url", "https://render-tron.appspot.com/screenshot", "The RenderTron URL service")
 
 	testGridCmd.PersistentFlags().IntVar(&testGridOpts.gitHubIssue,
 		"github-issue", -1, "The GitHub Issue for the release cut")
@@ -173,12 +169,9 @@ func runTestGridShot(opts *TestGridOptions) error {
 func processDashboards(testgridJobs []TestGridJob, date string, opts *TestGridOptions) ([]TestGridJob, error) {
 	for i, job := range testgridJobs {
 		testGridJobURL := fmt.Sprintf("%s/%s#%s&width=30", opts.testgridURL, job.DashboardName, job.JobName)
-		rendertronURL := fmt.Sprintf("%s/%s?width=3000&height=2500", opts.renderTronURL, url.PathEscape(testGridJobURL))
-		logrus.Infof("rendertronURL for %s: %s", testGridJobURL, rendertronURL)
-
-		content, err := http.NewAgent().WithTimeout(300 * time.Second).Get(rendertronURL)
+		screenshot, err := createScreenshot(testGridJobURL)
 		if err != nil {
-			return testgridJobs, fmt.Errorf("failed to get the testgrid screenshot: %w", err)
+			return testgridJobs, fmt.Errorf("creating screenshot of %q: %w", testGridJobURL, err)
 		}
 
 		jobFile := fmt.Sprintf("/tmp/%s-%s-%s.jpg", job.DashboardName, strings.ReplaceAll(job.JobName, " ", "_"), job.Status)
@@ -187,7 +180,7 @@ func processDashboards(testgridJobs []TestGridJob, date string, opts *TestGridOp
 			return testgridJobs, fmt.Errorf("failed to create the file %s: %w", jobFile, err)
 		}
 
-		_, err = f.Write(content)
+		_, err = f.Write(screenshot)
 		f.Close()
 		if err != nil {
 			return testgridJobs, fmt.Errorf("failed to write the content to the file %s: %w", jobFile, err)
@@ -208,6 +201,28 @@ func processDashboards(testgridJobs []TestGridJob, date string, opts *TestGridOp
 	}
 
 	return testgridJobs, nil
+}
+
+func createScreenshot(testGridJobURL string) ([]byte, error) {
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
+
+	var screenshot []byte
+
+	screenshotTasks := chromedp.Tasks{
+		chromedp.EmulateViewport(3000, 2500),
+		chromedp.Navigate(testGridJobURL),
+		chromedp.Sleep(5 * time.Second), // Give time to testgrid to load completely
+		chromedp.CaptureScreenshot(&screenshot),
+	}
+
+	if err := chromedp.Run(ctx, screenshotTasks); err != nil {
+		return nil, err
+	}
+
+	logrus.Infof("Successfully screenshotted testgrid dashboard %q", testGridJobURL)
+
+	return screenshot, nil
 }
 
 func generateIssueComment(testgridJobs []TestGridJob, opts *TestGridOptions) error {
