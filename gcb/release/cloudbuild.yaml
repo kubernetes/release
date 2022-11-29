@@ -93,7 +93,6 @@ tags:
 - ${_MINOR_VERSION_TAG}
 - ${_PATCH_VERSION_TAG}
 - ${_KUBERNETES_VERSION_TAG}
-- ${_KUBERNETES_GCS_BUCKET}
 
 options:
   machineType: N1_HIGHCPU_32
