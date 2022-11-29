@@ -89,7 +89,7 @@ func (o *Options) String() string {
 }
 
 // Validate if the options are correctly set.
-func (o *Options) Validate(state *State) error {
+func (o *Options) Validate() error {
 	logrus.Infof("Validating generic options: %s", o.String())
 
 	if o.ReleaseType != release.ReleaseTypeAlpha &&
@@ -103,6 +103,10 @@ func (o *Options) Validate(state *State) error {
 		return fmt.Errorf("invalid release branch: %s", o.ReleaseBranch)
 	}
 
+	return nil
+}
+
+func (o *Options) ValidateBuildVersion(state *State) error {
 	// Verify the build version is correct:
 	correct, err := release.IsValidReleaseBuild(o.BuildVersion)
 	if err != nil {
@@ -117,7 +121,6 @@ func (o *Options) Validate(state *State) error {
 		return fmt.Errorf("invalid build version: %s: %w", o.BuildVersion, err)
 	}
 	state.semverBuildVersion = semverBuildVersion
-
 	return nil
 }
 
@@ -205,9 +208,18 @@ func (s *StageOptions) String() string {
 
 // Validate if the options are correctly set.
 func (s *StageOptions) Validate(state *State) error {
-	if err := s.Options.Validate(state); err != nil {
+	if err := s.Options.Validate(); err != nil {
 		return fmt.Errorf("validating generic options: %w", err)
 	}
+
+	// build version is optional for staging, but if provided we should
+	// validate it.
+	if s.Options.BuildVersion != "" {
+		if err := s.Options.ValidateBuildVersion(state); err != nil {
+			return fmt.Errorf("validating build version")
+		}
+	}
+
 	return nil
 }
 
@@ -343,8 +355,11 @@ func (r *ReleaseOptions) String() string {
 
 // Validate if the options are correctly set.
 func (r *ReleaseOptions) Validate(state *State) error {
-	if err := r.Options.Validate(state); err != nil {
+	if err := r.Options.Validate(); err != nil {
 		return fmt.Errorf("validating generic options: %w", err)
+	}
+	if err := r.Options.ValidateBuildVersion(state); err != nil {
+		return fmt.Errorf("validating build version: %w", err)
 	}
 	return nil
 }
