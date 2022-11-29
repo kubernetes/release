@@ -52,6 +52,24 @@ steps:
   - "K8S_REPO=${_K8S_REPO}"
   - "K8S_REF=${_K8S_REF}"
   - GOOGLE_SERVICE_ACCOUNT_NAME=krel-staging@k8s-releng-prod.iam.gserviceaccount.com
+  args:
+  - "bin/krel"
+  - "sign""
+  - "blobs"
+  - "${_KUBERNETES_GCS_BUCKET}"
+  - "--log-level=${_LOG_LEVEL}"
+
+
+- name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
+  dir: "/workspace"
+  env:
+  - "TOOL_ORG=${_TOOL_ORG}"
+  - "TOOL_REPO=${_TOOL_REPO}"
+  - "TOOL_REF=${_TOOL_REF}"
+  - "K8S_ORG=${_K8S_ORG}"
+  - "K8S_REPO=${_K8S_REPO}"
+  - "K8S_REF=${_K8S_REF}"
+  - GOOGLE_SERVICE_ACCOUNT_NAME=krel-staging@k8s-releng-prod.iam.gserviceaccount.com
   secretEnv:
   - GITHUB_TOKEN
   args:
@@ -75,6 +93,7 @@ tags:
 - ${_MINOR_VERSION_TAG}
 - ${_PATCH_VERSION_TAG}
 - ${_KUBERNETES_VERSION_TAG}
+- ${_KUBERNETES_GCS_BUCKET}
 
 options:
   machineType: N1_HIGHCPU_32

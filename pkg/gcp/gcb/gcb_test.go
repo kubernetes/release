@@ -216,6 +216,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"MINOR_VERSION_TAG":      "33",
 				"PATCH_VERSION_TAG":      "7",
 				"KUBERNETES_VERSION_TAG": "1.33.7",
+				"KUBERNETES_GCS_BUCKET":  "gs://test-bucket/stage/v1.33.7/1.33.7/gcs-stage/1.33.7",
 				"K8S_ORG":                git.DefaultGithubOrg,
 				"K8S_REPO":               git.DefaultGithubRepo,
 				"K8S_REF":                git.DefaultRef,
@@ -400,7 +401,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		sut.SetReleaseClient(tc.releaseMock)
 
 		subs, err := sut.SetGCBSubstitutions(
-			tc.toolOrg, tc.toolRepo, tc.toolRef,
+			tc.toolOrg, tc.toolRepo, tc.toolRef, "gs://test-bucket",
 		)
 		require.Nil(t, err)
 
@@ -447,7 +448,7 @@ func TestSetGCBSubstitutionsFailure(t *testing.T) {
 		sut := gcb.New(tc.gcbOpts)
 		sut.SetRepoClient(tc.repoMock)
 		sut.SetVersionClient(tc.versionMock)
-		_, err := sut.SetGCBSubstitutions("", "", "")
+		_, err := sut.SetGCBSubstitutions("", "", "", "")
 		require.Error(t, err)
 	}
 }
