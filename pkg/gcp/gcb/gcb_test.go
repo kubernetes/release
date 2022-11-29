@@ -216,7 +216,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"MINOR_VERSION_TAG":      "33",
 				"PATCH_VERSION_TAG":      "7",
 				"KUBERNETES_VERSION_TAG": "1.33.7",
-				"KUBERNETES_GCS_BUCKET":  "gs://test-bucket/stage/v1.33.7/1.33.7/gcs-stage/1.33.7",
+				"KUBERNETES_GCS_BUCKET":  "gs://test-bucket/stage/v1.33.7/v1.33.7/gcs-stage/v1.33.7",
 				"K8S_ORG":                git.DefaultGithubOrg,
 				"K8S_REPO":               git.DefaultGithubRepo,
 				"K8S_REF":                git.DefaultRef,

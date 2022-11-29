@@ -435,7 +435,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket string) 
 	gcbSubs["KUBERNETES_VERSION_TAG"] = primeSemver.String()
 
 	if g.options.Release {
-		gcbSubs["KUBERNETES_GCS_BUCKET"] = fmt.Sprintf("%s/stage/%s/%s/gcs-stage/%s", gcsBucket, buildVersion, primeSemver.String(), primeSemver.String())
+		gcbSubs["KUBERNETES_GCS_BUCKET"] = fmt.Sprintf("%s/stage/%s/%s/gcs-stage/%s", gcsBucket, buildVersion, versions.Prime(), versions.Prime())
 	}
 
 	return gcbSubs, nil
