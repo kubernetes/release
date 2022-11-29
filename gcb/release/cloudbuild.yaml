@@ -54,7 +54,7 @@ steps:
   - GOOGLE_SERVICE_ACCOUNT_NAME=krel-staging@k8s-releng-prod.iam.gserviceaccount.com
   args:
   - "bin/krel"
-  - "sign""
+  - "sign"
   - "blobs"
   - "${_KUBERNETES_GCS_BUCKET}"
   - "--log-level=${_LOG_LEVEL}"
