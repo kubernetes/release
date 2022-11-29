@@ -231,7 +231,6 @@ func TestValidateOptions(t *testing.T) {
 			provided: &anago.Options{
 				ReleaseType:   release.ReleaseTypeAlpha,
 				ReleaseBranch: git.DefaultBranch,
-				BuildVersion:  "v1.20.0-beta.1.203+8f6ffb24df9896",
 			},
 			shouldError: false,
 		},
@@ -248,11 +247,79 @@ func TestValidateOptions(t *testing.T) {
 			},
 			shouldError: true,
 		},
+	} {
+		err := tc.provided.Validate()
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
+}
+
+func TestValidateBuildVersion(t *testing.T) {
+	for _, tc := range []struct {
+		provided    *anago.Options
+		shouldError bool
+	}{
+		{ // success
+			provided: &anago.Options{
+				ReleaseType:   release.ReleaseTypeAlpha,
+				ReleaseBranch: git.DefaultBranch,
+				BuildVersion:  "v1.20.0-beta.1.203+8f6ffb24df9896",
+			},
+			shouldError: false,
+		},
 		{ // invalid build version
 			provided: &anago.Options{
 				ReleaseType:   release.ReleaseTypeAlpha,
 				ReleaseBranch: git.DefaultBranch,
 				BuildVersion:  "invalid",
+			},
+			shouldError: true,
+		},
+	} {
+		state := anago.DefaultState()
+		err := tc.provided.ValidateBuildVersion(state)
+		if tc.shouldError {
+			require.NotNil(t, err)
+		} else {
+			require.Nil(t, err)
+		}
+	}
+}
+
+func TestStagingOptionsValidate(t *testing.T) {
+	for _, tc := range []struct {
+		provided    *anago.StageOptions
+		shouldError bool
+	}{
+		{ // valid build version should validate
+			provided: &anago.StageOptions{
+				&anago.Options{
+					ReleaseType:   release.ReleaseTypeAlpha,
+					ReleaseBranch: git.DefaultBranch,
+					BuildVersion:  "v1.20.0-beta.1.203+8f6ffb24df9896",
+				},
+			},
+			shouldError: false,
+		},
+		{ // empty build version should validate
+			provided: &anago.StageOptions{
+				&anago.Options{
+					ReleaseType:   release.ReleaseTypeAlpha,
+					ReleaseBranch: git.DefaultBranch,
+				},
+			},
+			shouldError: false,
+		},
+		{ // invalid build version should not validate
+			provided: &anago.StageOptions{
+				&anago.Options{
+					ReleaseType:   release.ReleaseTypeAlpha,
+					ReleaseBranch: git.DefaultBranch,
+					BuildVersion:  "decaf-bad",
+				},
 			},
 			shouldError: true,
 		},
