@@ -68,7 +68,7 @@ func init() {
 	signCmd.PersistentFlags().UintVar(
 		&singOpts.maxWorkers,
 		maxWorkersFlag,
-		100,
+		10,
 		"The amount of maximum workers for parallel executions",
 	)
 
