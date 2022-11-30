@@ -36,6 +36,8 @@ const (
 	outputPathFlag     = "output-path"
 	privateKeyPathFlag = "private-key-path"
 	publicKeyPathFlag  = "public-key-path"
+	sigExt             = ".sig"
+	certExt            = ".cert"
 )
 
 type signBlobOptions struct {
@@ -127,9 +129,10 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 				strings.HasSuffix(file, ":") || strings.HasSuffix(file, ".docker_tag") ||
 				strings.Contains(file, "SHA256SUMS") || strings.Contains(file, "SHA512SUMS") ||
 				strings.Contains(file, "README") || strings.Contains(file, "Makefile") ||
-				strings.HasSuffix(file, ".cert") || strings.HasSuffix(file, ".sig") || strings.HasSuffix(file, "pem") {
+				strings.HasSuffix(file, certExt) || strings.HasSuffix(file, sigExt) || strings.HasSuffix(file, ".pem") {
 				continue
 			}
+
 			destinationPath := strings.TrimPrefix(file, object.GcsPrefix)
 			localPath := filepath.Join(tempDir, filepath.Dir(destinationPath), filepath.Base(destinationPath))
 			err = gcsClient.CopyToLocal(file, localPath)
@@ -163,11 +166,11 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 			signerOpts.PrivateKeyPath = signBlobOpts.privateKeyPath
 			signerOpts.PublicKeyPath = signBlobOpts.publicKeyPath
 
-			signerOpts.OutputCertificatePath = fmt.Sprintf("%s/%s.cert", signBlobOpts.outputPath, fileBundle.fileToSign)
-			signerOpts.OutputSignaturePath = fmt.Sprintf("%s/%s.sig", signBlobOpts.outputPath, fileBundle.fileToSign)
+			signerOpts.OutputCertificatePath = fmt.Sprintf("%s/%s%s", signBlobOpts.outputPath, fileBundle.fileToSign, certExt)
+			signerOpts.OutputSignaturePath = fmt.Sprintf("%s/%s%s", signBlobOpts.outputPath, fileBundle.fileToSign, sigExt)
 			if signBlobOpts.outputPath == "" {
-				signerOpts.OutputCertificatePath = fmt.Sprintf("%s.cert", fileBundle.fileLocalLocation)
-				signerOpts.OutputSignaturePath = fmt.Sprintf("%s.sig", fileBundle.fileLocalLocation)
+				signerOpts.OutputCertificatePath = fmt.Sprintf("%s%s", fileBundle.fileLocalLocation, certExt)
+				signerOpts.OutputSignaturePath = fmt.Sprintf("%s%s", fileBundle.fileLocalLocation, sigExt)
 			}
 
 			signer := sign.New(signerOpts)
@@ -190,11 +193,11 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 	if isGCSBucket {
 		logrus.Info("Copying Certificates and Signatures back to the bucket...")
 		for _, fileBundle := range bundle {
-			certFiles := fmt.Sprintf("%s/%s.cert", signBlobOpts.outputPath, fileBundle.fileToSign)
-			signFiles := fmt.Sprintf("%s/%s.sig", signBlobOpts.outputPath, fileBundle.fileToSign)
+			certFiles := fmt.Sprintf("%s/%s%s", signBlobOpts.outputPath, fileBundle.fileToSign, certExt)
+			signFiles := fmt.Sprintf("%s/%s%s", signBlobOpts.outputPath, fileBundle.fileToSign, sigExt)
 			if signBlobOpts.outputPath == "" {
-				certFiles = fmt.Sprintf("%s.cert", fileBundle.fileLocalLocation)
-				signFiles = fmt.Sprintf("%s.sig", fileBundle.fileLocalLocation)
+				certFiles = fmt.Sprintf("%s%s", fileBundle.fileLocalLocation, certExt)
+				signFiles = fmt.Sprintf("%s%s", fileBundle.fileLocalLocation, sigExt)
 			}
 
 			logrus.Infof("Copying %s and %s...", certFiles, signFiles)
