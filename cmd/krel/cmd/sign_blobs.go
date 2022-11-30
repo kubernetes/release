@@ -201,7 +201,7 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 			}
 
 			logrus.Infof("Copying %s and %s...", certFiles, signFiles)
-			_, err = gcli.GSUtilOutput("cp", "-n", certFiles, signFiles, fmt.Sprintf("%s%s", object.GcsPrefix, fileBundle.destinationPathToCopy))
+			_, err = gcli.GSUtilOutput("cp", certFiles, signFiles, fmt.Sprintf("%s%s", object.GcsPrefix, fileBundle.destinationPathToCopy))
 			if err != nil {
 				return fmt.Errorf("copying certificates and signatures to the bucket: %w", err)
 			}
