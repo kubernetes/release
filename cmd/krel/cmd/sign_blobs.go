@@ -135,8 +135,7 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 
 			destinationPath := strings.TrimPrefix(file, object.GcsPrefix)
 			localPath := filepath.Join(tempDir, filepath.Dir(destinationPath), filepath.Base(destinationPath))
-			err = gcsClient.CopyToLocal(file, localPath)
-			if err != nil {
+			if err := gcsClient.CopyToLocal(file, localPath); err != nil {
 				return fmt.Errorf("copying file to sign: %w", err)
 			}
 
@@ -174,8 +173,7 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 			}
 
 			signer := sign.New(signerOpts)
-			_, err := signer.SignFile(fileBundle.fileLocalLocation)
-			if err != nil {
+			if _, err := signer.SignFile(fileBundle.fileLocalLocation); err != nil {
 				t.Done(fmt.Errorf("signing the file %s: %w", fileBundle.fileLocalLocation, err))
 				return
 			}
@@ -201,8 +199,9 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 			}
 
 			logrus.Infof("Copying %s and %s...", certFiles, signFiles)
-			_, err = gcli.GSUtilOutput("cp", certFiles, signFiles, fmt.Sprintf("%s%s", object.GcsPrefix, fileBundle.destinationPathToCopy))
-			if err != nil {
+			if _, err := gcli.GSUtilOutput(
+				"cp", certFiles, signFiles, fmt.Sprintf("%s%s", object.GcsPrefix, fileBundle.destinationPathToCopy),
+			); err != nil {
 				return fmt.Errorf("copying certificates and signatures to the bucket: %w", err)
 			}
 		}
