@@ -126,7 +126,8 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 			if strings.HasSuffix(file, ".sha256") || strings.HasSuffix(file, ".sha512") ||
 				strings.HasSuffix(file, ":") || strings.HasSuffix(file, ".docker_tag") ||
 				strings.Contains(file, "SHA256SUMS") || strings.Contains(file, "SHA512SUMS") ||
-				strings.Contains(file, "README") || strings.Contains(file, "Makefile") {
+				strings.Contains(file, "README") || strings.Contains(file, "Makefile") ||
+				strings.HasSuffix(file, ".cert") || strings.HasSuffix(file, ".sig") || strings.HasSuffix(file, "pem") {
 				continue
 			}
 			destinationPath := strings.TrimPrefix(file, object.GcsPrefix)
