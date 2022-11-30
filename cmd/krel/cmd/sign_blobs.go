@@ -92,11 +92,17 @@ func init() {
 	signCmd.AddCommand(signBlobCmd)
 }
 
-func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []string) error {
-	err := validateSignBlobsArgs(args)
-	if err != nil {
+func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []string) (err error) {
+	if err := validateSignBlobsArgs(args); err != nil {
 		return fmt.Errorf("blobs to be signed does not exist: %w", err)
 	}
+
+	var tempDir string
+	defer func() {
+		if tempDir != "" {
+			os.RemoveAll(tempDir)
+		}
+	}()
 
 	var bundle []signingBundle
 	isGCSBucket := false
@@ -104,7 +110,7 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 		// GCS Bucket remote location
 		isGCSBucket = true
 
-		tempDir, err := os.MkdirTemp("", "release-sign-blobs-")
+		tempDir, err = os.MkdirTemp("", "release-sign-blobs-")
 		if err != nil {
 			return fmt.Errorf("creating a temporary directory to save the files to be signed: %w", err)
 		}
