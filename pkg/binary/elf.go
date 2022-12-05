@@ -130,7 +130,7 @@ func GetELFHeader(path string) (*ELFHeader, error) {
 		return nil, fmt.Errorf("reading the binary header: %w", err)
 	}
 
-	logrus.StandardLogger().Debugf("Header bytes: %+v", hBytes)
+	logrus.Debugf("Header bytes: %+v", hBytes)
 
 	// Check we're dealing with an elf binary:
 	if string(hBytes[1:4]) != "ELF" {
