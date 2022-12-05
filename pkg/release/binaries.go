@@ -145,6 +145,15 @@ func (impl *defaultArtifactCheckerImpl) CheckVersionArch(
 				binData.Path, binData.Arch, binData.Platform, bin.Arch(), bin.OS(),
 			)
 		}
+
+		linkMode, err := bin.LinkMode()
+		if err != nil {
+			logrus.Warnf("Unable to get linkmode from binary %s: %v", binData.Path, err)
+		} else if linkMode == binary.LinkModeDynamic {
+			// TODO: fail hard if not all binaries are static (or unknown)
+			// Ref: https://github.com/kubernetes/release/issues/2786
+			logrus.Warnf("Binary is dynamically linked, which should be nothing we release: %s", binData.Path)
+		}
 	}
 	return nil
 }

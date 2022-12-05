@@ -178,3 +178,8 @@ func (macho *MachOBinary) Arch() string {
 func (macho *MachOBinary) OS() string {
 	return DARWIN
 }
+
+// LinkMode returns the linking mode of the binary.
+func (macho *MachOBinary) LinkMode() (LinkMode, error) {
+	return LinkModeUnknown, nil
+}

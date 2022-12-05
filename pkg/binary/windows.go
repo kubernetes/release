@@ -198,3 +198,8 @@ func (pe *PEBinary) Arch() string {
 func (pe *PEBinary) OS() string {
 	return WIN
 }
+
+// LinkMode returns the linking mode of the binary.
+func (pe *PEBinary) LinkMode() (LinkMode, error) {
+	return LinkModeUnknown, nil
+}
