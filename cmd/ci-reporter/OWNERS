@@ -1,4 +1,6 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
+approvers:
+  - ci-signal-reporter-approvers
 reviewers:
   - ci-signal-reporter-reviewers
