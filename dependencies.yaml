@@ -328,8 +328,26 @@ dependencies:
     - path: images/build/cross/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
+  - name: "k8s.gcr.io/build-image/kube-cross (previous release branches: 1.24+go1.19)"
+    version: v1.24.0-go1.19.4-bullseye.0
+    refPaths:
+    - path: images/build/cross/variants.yaml
+      match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
+
   - name: "k8s.gcr.io/build-image/kube-cross (previous release branches: 1.24)"
     version: v1.24.0-go1.18.9-bullseye.0
+    refPaths:
+    - path: images/build/cross/variants.yaml
+      match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
+
+  - name: "k8s.gcr.io/build-image/kube-cross (previous release branches: 1.23+go1.19)"
+    version: v1.23.0-go1.19.4-bullseye.0
+    refPaths:
+    - path: images/build/cross/variants.yaml
+      match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
+
+  - name: "k8s.gcr.io/build-image/kube-cross (previous release branches: 1.23+go1.18)"
+    version: v1.23.0-go1.18.9-bullseye.0
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
