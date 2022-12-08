@@ -28,3 +28,8 @@ we would use go-runner like so:
 The go-runner would then ensure that we run the `/usr/local/bin/kube-apiserver` with the 
 specified parameters and redirect stdout ONLY to the log file specified and ensure anything 
 logged to stderr also ends up in the log file.
+
+# Source code
+
+The source code of go-runner is maintained in
+https://github.com/kubernetes/kubernetes/tree/master/staging/src/k8s.io/component-base/logs/kube-log-runner

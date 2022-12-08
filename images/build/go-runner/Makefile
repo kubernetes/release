@@ -37,7 +37,7 @@ PLATFORMS ?= linux/amd64 linux/arm64 linux/arm linux/ppc64le linux/s390x
 
 HOST_GOOS ?= $(shell go env GOOS)
 HOST_GOARCH ?= $(shell go env GOARCH)
-GO_BUILD ?= go build
+GO_BUILD ?= GOBIN=$(shell pwd) go install k8s.io/component-base/logs/kube-log-runner
 
 .PHONY: all build clean
 
@@ -50,7 +50,7 @@ build:
 
 .PHONY: clean
 clean:
-	rm go-runner
+	rm -f kube-log-runner
 
 BUILD_ARGS = --build-arg=BUILDER_IMAGE=$(BUILDER_IMAGE) \
              --build-arg=DISTROLESS_IMAGE=$(DISTROLESS_REGISTRY)/$(DISTROLESS_IMAGE)

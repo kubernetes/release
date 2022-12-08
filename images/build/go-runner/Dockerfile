@@ -18,9 +18,9 @@ ARG BUILDER_IMAGE
 FROM ${BUILDER_IMAGE} as builder
 WORKDIR /workspace
 
-# Copy the sources
-COPY ./go-runner.go ./
-COPY ./go.* ./
+# Copy the module files which define the dependency for
+# the external kube-log-runner binary.
+COPY ./go.* ./*.go ./
 
 # Allow fallback to 'direct' for GOPROXY
 #
@@ -36,23 +36,38 @@ COPY ./go.* ./
 # ref: https://golang.org/doc/go1.15#go-command
 ENV GOPROXY="https://proxy.golang.org|direct"
 
+RUN go env
+RUN go version
+
+# Fix up the go.mod and go.sum for the current version of Go.
+# This is necessary because the source code only works with
+# recent Go, but the release repo wants to build also with
+# older Go.
+RUN set -x && \
+    go_version=$(go version | sed -e 's/go version go\([^ ]*\).*/\1/' -e 's/\([0-9]*\)\.\([0-9]*\)\.[0-9]*/\1.\2/') && \
+    echo Major Go version: ${go_version} && \
+    sed -i -e "s/^go .*/go ${go_version}/" go.mod
+RUN cat go.mod
+RUN go mod tidy
+
 # Build
-ARG package=.
+ARG package=k8s.io/component-base/logs/kube-log-runner
 ARG ARCH
 
 ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOARCH=${ARCH}
 
-RUN go env
-
-RUN go build -ldflags '-s -w -buildid= -extldflags "-static"' \
-    -o go-runner ${package}
+RUN GOBIN=`pwd` go install -ldflags '-s -w -buildid= -extldflags "-static"' \
+    ${package}
 
 # Production image
 FROM ${DISTROLESS_IMAGE}
 LABEL maintainers="Kubernetes Authors"
 LABEL description="go based runner for distroless scenarios"
 WORKDIR /
-COPY --from=builder /workspace/go-runner .
+
+# The image uses the traditional "go-runner" name because that is part of its
+# API.
+COPY --from=builder /workspace/kube-log-runner go-runner
 ENTRYPOINT ["/go-runner"]
