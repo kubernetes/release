@@ -266,6 +266,13 @@ func init() {
 		false,
 		"enable experimental implementation to list commits (ListReleaseNotesV2)",
 	)
+
+	cmd.PersistentFlags().StringSliceVar(
+		&opts.FilterKinds,
+		"filter-kinds",
+		[]string{},
+		"generate the release notes only if a set of specific kinds",
+	)
 }
 
 func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {

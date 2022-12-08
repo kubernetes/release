@@ -127,6 +127,9 @@ type Options struct {
 	// This is useful when the release notes are outputted to a file. When using the GitHub release page to publish release notes,
 	// this option should be set to false to take advantage of Github's autolinked references.
 	AddMarkdownLinks bool
+
+	// Filter kinds to show in the release notes
+	FilterKinds []string
 }
 
 type RevisionDiscoveryMode string

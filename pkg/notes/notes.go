@@ -328,6 +328,19 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 			}
 		}
 
+		toRemove := false
+		for _, filterKind := range g.options.FilterKinds {
+			if hasString(labelsWithPrefix(result.pullRequest, "kind"), filterKind) {
+				toRemove = false
+				break
+			}
+			toRemove = true
+		}
+
+		if toRemove {
+			continue
+		}
+
 		note, err := g.ReleaseNoteFromCommit(result)
 		if err != nil {
 			logrus.Errorf(

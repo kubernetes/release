@@ -320,7 +320,7 @@ func TestMatchesExcludeFilter(t *testing.T) {
 			shouldExclude: false,
 		},
 		{
-			input: `@kubernetes/sig-auth-pr-reviews 
+			input: `@kubernetes/sig-auth-pr-reviews
 /milestone v1.19
 /priority important-longterm
 /kind cleanup

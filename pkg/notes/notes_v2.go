@@ -151,6 +151,19 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 		return nil, nil
 	}
 
+	toRemove := false
+	for _, filterKind := range g.options.FilterKinds {
+		if hasString(labelsWithPrefix(pr, "kind"), filterKind) {
+			toRemove = false
+			break
+		}
+		toRemove = true
+	}
+
+	if toRemove {
+		return nil, nil
+	}
+
 	text, err := noteTextFromString(prBody)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
