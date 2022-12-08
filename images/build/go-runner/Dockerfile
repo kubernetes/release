@@ -18,8 +18,8 @@ ARG BUILDER_IMAGE
 FROM ${BUILDER_IMAGE} as builder
 WORKDIR /workspace
 
-# Copy the sources
-COPY ./go-runner.go ./
+# Copy the module files which define the dependency for
+# the external kube-log-runner binary.
 COPY ./go.* ./
 
 # Allow fallback to 'direct' for GOPROXY
@@ -37,7 +37,7 @@ COPY ./go.* ./
 ENV GOPROXY="https://proxy.golang.org|direct"
 
 # Build
-ARG package=.
+ARG package=k8s.io/component-base/logs/kube-log-runner
 ARG ARCH
 
 ENV CGO_ENABLED=0
@@ -45,14 +45,18 @@ ENV GOOS=linux
 ENV GOARCH=${ARCH}
 
 RUN go env
+RUN go version
 
-RUN go build -ldflags '-s -w -buildid= -extldflags "-static"' \
-    -o go-runner ${package}
+RUN GOBIN=`pwd` go install -ldflags '-s -w -buildid= -extldflags "-static"' \
+    ${package}
 
 # Production image
 FROM ${DISTROLESS_IMAGE}
 LABEL maintainers="Kubernetes Authors"
 LABEL description="go based runner for distroless scenarios"
 WORKDIR /
-COPY --from=builder /workspace/go-runner .
+
+# The image uses the traditional "go-runner" name because that is part of its
+# API.
+COPY --from=builder /workspace/kube-log-runner go-runner
 ENTRYPOINT ["/go-runner"]
