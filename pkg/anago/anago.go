@@ -256,7 +256,7 @@ func (s *Stage) Run() error {
 		return fmt.Errorf("init log file: %w", err)
 	}
 
-	logger := log.NewStepLogger(11)
+	logger := log.NewStepLogger(12)
 	v := version.GetVersionInfo()
 	logger.Infof("Using krel version: %s", v.GitVersion)
 
@@ -396,7 +396,7 @@ func (r *Release) Run() error {
 		return fmt.Errorf("init log file: %w", err)
 	}
 
-	logger := log.NewStepLogger(11)
+	logger := log.NewStepLogger(12)
 	v := version.GetVersionInfo()
 	logger.Infof("Using krel version: %s", v.GitVersion)
 
