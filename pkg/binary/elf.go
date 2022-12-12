@@ -18,6 +18,7 @@ package binary
 
 import (
 	"bufio"
+	debugelf "debug/elf"
 	"encoding/binary"
 	"fmt"
 	"os"
@@ -55,7 +56,8 @@ func NewELFBinary(filePath string, opts *Options) (*ELFBinary, error) {
 	}
 
 	return &ELFBinary{
-		Header: header,
+		Header:  header,
+		Options: opts,
 	}, nil
 }
 
@@ -169,4 +171,28 @@ func (elf *ELFBinary) Arch() string {
 // OS returns the GOOS label for the operating system
 func (elf *ELFBinary) OS() string {
 	return LINUX
+}
+
+// LinkMode returns the linking mode of the binary.
+func (elf *ELFBinary) LinkMode() (LinkMode, error) {
+	file, err := os.Open(elf.Options.Path)
+	if err != nil {
+		return LinkModeUnknown, fmt.Errorf("open binary path: %w", err)
+	}
+
+	elfFile, err := debugelf.NewFile(file)
+	if err != nil {
+		return LinkModeUnknown, fmt.Errorf("unable to parse elf: %w", err)
+	}
+
+	for _, programHeader := range elfFile.Progs {
+		// If the elf program header refers to an interpreter, then the binary
+		// is not statically linked. See `file` implementation reference:
+		// https://github.com/file/file/blob/FILE5_36/src/readelf.c#L1581
+		if programHeader.Type == debugelf.PT_INTERP {
+			return LinkModeDynamic, nil
+		}
+	}
+
+	return LinkModeStatic, nil
 }

@@ -19,6 +19,8 @@ package binaryfakes
 
 import (
 	"sync"
+
+	"k8s.io/release/pkg/binary"
 )
 
 type FakeBinaryImplementation struct {
@@ -31,6 +33,18 @@ type FakeBinaryImplementation struct {
 	}
 	archReturnsOnCall map[int]struct {
 		result1 string
+	}
+	LinkModeStub        func() (binary.LinkMode, error)
+	linkModeMutex       sync.RWMutex
+	linkModeArgsForCall []struct {
+	}
+	linkModeReturns struct {
+		result1 binary.LinkMode
+		result2 error
+	}
+	linkModeReturnsOnCall map[int]struct {
+		result1 binary.LinkMode
+		result2 error
 	}
 	OSStub        func() string
 	oSMutex       sync.RWMutex
@@ -99,6 +113,62 @@ func (fake *FakeBinaryImplementation) ArchReturnsOnCall(i int, result1 string) {
 	}{result1}
 }
 
+func (fake *FakeBinaryImplementation) LinkMode() (binary.LinkMode, error) {
+	fake.linkModeMutex.Lock()
+	ret, specificReturn := fake.linkModeReturnsOnCall[len(fake.linkModeArgsForCall)]
+	fake.linkModeArgsForCall = append(fake.linkModeArgsForCall, struct {
+	}{})
+	stub := fake.LinkModeStub
+	fakeReturns := fake.linkModeReturns
+	fake.recordInvocation("LinkMode", []interface{}{})
+	fake.linkModeMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeBinaryImplementation) LinkModeCallCount() int {
+	fake.linkModeMutex.RLock()
+	defer fake.linkModeMutex.RUnlock()
+	return len(fake.linkModeArgsForCall)
+}
+
+func (fake *FakeBinaryImplementation) LinkModeCalls(stub func() (binary.LinkMode, error)) {
+	fake.linkModeMutex.Lock()
+	defer fake.linkModeMutex.Unlock()
+	fake.LinkModeStub = stub
+}
+
+func (fake *FakeBinaryImplementation) LinkModeReturns(result1 binary.LinkMode, result2 error) {
+	fake.linkModeMutex.Lock()
+	defer fake.linkModeMutex.Unlock()
+	fake.LinkModeStub = nil
+	fake.linkModeReturns = struct {
+		result1 binary.LinkMode
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeBinaryImplementation) LinkModeReturnsOnCall(i int, result1 binary.LinkMode, result2 error) {
+	fake.linkModeMutex.Lock()
+	defer fake.linkModeMutex.Unlock()
+	fake.LinkModeStub = nil
+	if fake.linkModeReturnsOnCall == nil {
+		fake.linkModeReturnsOnCall = make(map[int]struct {
+			result1 binary.LinkMode
+			result2 error
+		})
+	}
+	fake.linkModeReturnsOnCall[i] = struct {
+		result1 binary.LinkMode
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeBinaryImplementation) OS() string {
 	fake.oSMutex.Lock()
 	ret, specificReturn := fake.oSReturnsOnCall[len(fake.oSArgsForCall)]
@@ -157,6 +227,8 @@ func (fake *FakeBinaryImplementation) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.archMutex.RLock()
 	defer fake.archMutex.RUnlock()
+	fake.linkModeMutex.RLock()
+	defer fake.linkModeMutex.RUnlock()
 	fake.oSMutex.RLock()
 	defer fake.oSMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

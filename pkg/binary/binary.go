@@ -56,13 +56,10 @@ type Options struct {
 	Path string
 }
 
-// DefaultOptions set of options
-var DefaultOptions = &Options{}
-
 // New creates a new binary instance.
 func New(filePath string) (bin *Binary, err error) {
 	// Get the right implementation for the specified file
-	return NewWithOptions(filePath, DefaultOptions)
+	return NewWithOptions(filePath, &Options{Path: filePath})
 }
 
 // NewWithOptions creates a new binary with the specified options
@@ -121,6 +118,9 @@ type binaryImplementation interface {
 
 	// GetOS Returns a string with the GOOS of the binary
 	OS() string
+
+	// LinkMode returns the linking mode of the binary.
+	LinkMode() (LinkMode, error)
 }
 
 // SetImplementation sets the implementation to handle this sort of executable
@@ -136,6 +136,20 @@ func (b *Binary) Arch() string {
 // OS returns a string with the GOOS label of the binary file
 func (b *Binary) OS() string {
 	return b.binaryImplementation.OS()
+}
+
+// LinkMode is the enum for all available linking modes.
+type LinkMode string
+
+const (
+	LinkModeUnknown LinkMode = "unknown"
+	LinkModeStatic  LinkMode = "static"
+	LinkModeDynamic LinkMode = "dynamic"
+)
+
+// LinkMode returns the linking mode of the binary.
+func (b *Binary) LinkMode() (LinkMode, error) {
+	return b.binaryImplementation.LinkMode()
 }
 
 // ContainsStrings searches the printable strings un a binary file
