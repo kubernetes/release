@@ -18,8 +18,11 @@ package fastforward
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"testing"
 
+	gogithub "github.com/google/go-github/v47/github"
 	"github.com/stretchr/testify/require"
 	"k8s.io/release/pkg/fastforward/fastforwardfakes"
 )
@@ -107,6 +110,23 @@ func TestRun(t *testing.T) {
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.ExistsReturns(false)
 				return &Options{Submit: true}
+			},
+			assert: func(err error) {
+				require.Nil(t, err)
+			},
+		},
+		{ // success release cut issue is open
+			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
+				mock.IsReleaseBranchReturns(true)
+				mock.RepoHasRemoteBranchReturns(true, nil)
+
+				title := fmt.Sprintf("Cut v%s.0 release", strings.TrimPrefix(branch, "release-"))
+				mock.ListIssuesReturns([]*gogithub.Issue{{Title: &title}}, nil)
+
+				// never called
+				mock.AskReturns("", true, errTest)
+
+				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
 				require.Nil(t, err)
@@ -224,7 +244,7 @@ func TestRun(t *testing.T) {
 				require.NotNil(t, err)
 			},
 		},
-		{ // failure not a rrlease branch
+		{ // failure not a release branch
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.IsReleaseBranchReturns(false)
 				return &Options{Branch: branch}
@@ -247,6 +267,17 @@ func TestRun(t *testing.T) {
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(false, nil)
+				return &Options{Branch: branch}
+			},
+			assert: func(err error) {
+				require.NotNil(t, err)
+			},
+		},
+		{ // failure on ListIssues
+			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
+				mock.IsReleaseBranchReturns(true)
+				mock.RepoHasRemoteBranchReturns(true, nil)
+				mock.ListIssuesReturns(nil, errTest)
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
