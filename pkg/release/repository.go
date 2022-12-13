@@ -161,20 +161,11 @@ func (r *Repo) CheckState(expOrg, expRepo, expRev string, nomock bool) error {
 	)
 
 	logrus.Info("Verifying remote HEAD commit")
-	args := []string{
-		"--heads",
-		foundRemote.Name(),
-		fmt.Sprintf("refs/heads/%s", branch),
-	}
+	ref := fmt.Sprintf("refs/heads/%s", branch)
 	if branch == "" {
-		args = []string{
-			"--tags",
-			"--heads",
-			foundRemote.Name(),
-			fmt.Sprintf("refs/tags/%s^{}", expRev),
-		}
+		ref = fmt.Sprintf("refs/tags/%s^{}", expRev)
 	}
-	lsRemoteOut, err := r.repo.LsRemote(args...)
+	lsRemoteOut, err := r.repo.LsRemote(foundRemote.Name(), ref)
 	if err != nil {
 		return fmt.Errorf("getting remote HEAD: %w", err)
 	}
