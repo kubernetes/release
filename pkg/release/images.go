@@ -22,9 +22,11 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"sigs.k8s.io/release-sdk/sign"
 	"sigs.k8s.io/release-utils/command"
@@ -182,9 +184,24 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 		}
 
 		logrus.Infof("Pushing manifest image %s", imageVersion)
-		if err := i.Execute(
-			"docker", "manifest", "push", imageVersion, "--purge",
-		); err != nil {
+		if err := wait.ExponentialBackoff(wait.Backoff{
+			Duration: time.Second,
+			Factor:   1.5,
+			Steps:    5,
+		}, func() (bool, error) {
+			if err := i.Execute("docker", "manifest", "push", imageVersion, "--purge"); err == nil {
+				return true, nil
+			} else if strings.Contains(err.Error(), "request canceled while waiting for connection") {
+				// The error is unfortunately not exported:
+				// https://github.com/golang/go/blob/dc04f3b/src/net/http/client.go#L720
+				// https://github.com/golang/go/blob/dc04f3b/src/net/http/transport.go#L2518
+				// ref: https://github.com/kubernetes/release/issues/2810
+				logrus.Info("Retrying manifest push")
+				return false, nil
+			}
+
+			return false, err
+		}); err != nil {
 			return fmt.Errorf("push manifest: %w", err)
 		}
 
