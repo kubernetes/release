@@ -110,6 +110,8 @@ linters:
     # - wrapcheck
     # - wsl
 linters-settings:
+  gocyclo:
+    min-complexity: 40
   godox:
     keywords:
       - BUG

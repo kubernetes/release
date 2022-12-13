@@ -22,7 +22,9 @@ import (
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/release"
 
+	gogithub "github.com/google/go-github/v47/github"
 	"sigs.k8s.io/release-sdk/git"
+	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-utils/env"
 	"sigs.k8s.io/release-utils/util"
 )
@@ -58,6 +60,7 @@ type impl interface {
 	MkdirTemp(string, string) (string, error)
 	Exists(string) bool
 	ConfigureGlobalDefaultUserAndEmail() error
+	ListIssues() ([]*gogithub.Issue, error)
 }
 
 func (*defaultImpl) CloneOrOpenDefaultGitHubRepoSSH(repo string) (*git.Repo, error) {
@@ -162,4 +165,10 @@ func (*defaultImpl) Exists(path string) bool {
 
 func (*defaultImpl) ConfigureGlobalDefaultUserAndEmail() error {
 	return git.ConfigureGlobalDefaultUserAndEmail()
+}
+
+func (*defaultImpl) ListIssues() ([]*gogithub.Issue, error) {
+	return github.New().ListIssues(
+		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, github.IssueStateOpen,
+	)
 }

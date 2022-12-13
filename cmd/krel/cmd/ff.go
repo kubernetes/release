@@ -50,6 +50,11 @@ verifies that the latest merge base tag is the same for the main and the
 release branch. This means that only the latest release branch can be fast
 forwarded.
 
+Additionally, krel lists all k/sig-release issues and searches for the
+one with the title "Cut vx.y.0 release". If that exists and is open, then
+krel will skip the fast-forward, because it may happen that a fast-forward
+produces merge conflicts in git when comparing with the already staged sources.
+
 krel merges the provided ref into the release branch and asks for a final
 confirmation if the push should really happen. The push will only be executed
 as real push if the '--nomock' flag is specified.

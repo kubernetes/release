@@ -137,6 +137,23 @@ func (f *FastForward) Run() (err error) {
 		}
 	}
 
+	issues, err := f.ListIssues()
+	if err != nil {
+		return fmt.Errorf(
+			"unable to list GitHub issues for %s/%s repo: %w",
+			git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, err)
+	}
+	title := fmt.Sprintf("Cut %s release", f.branchToVersion(branch))
+	for _, issue := range issues {
+		if issue.IsPullRequest() {
+			continue
+		}
+		if issue.GetTitle() == title {
+			logrus.Infof("Skipping fast forward: release cut issue is open: %s", issue.GetURL())
+			return nil
+		}
+	}
+
 	if f.options.Cleanup {
 		defer func() {
 			if err := f.RepoCleanup(repo); err != nil {
@@ -272,7 +289,7 @@ func prepushMessage(gitRoot, branch, ref, releaseRev, headRev string) {
 }
 
 func (f *FastForward) noFastForwardRequired(repo *git.Repo, branch string) (bool, error) {
-	version := fmt.Sprintf("v%s.0", strings.TrimPrefix(branch, "release-"))
+	version := f.branchToVersion(branch)
 
 	tagExists, err := f.RepoHasRemoteTag(repo, version)
 	if err != nil {
@@ -280,6 +297,10 @@ func (f *FastForward) noFastForwardRequired(repo *git.Repo, branch string) (bool
 	}
 
 	return tagExists, nil
+}
+
+func (f *FastForward) branchToVersion(branch string) string {
+	return fmt.Sprintf("v%s.0", strings.TrimPrefix(branch, "release-"))
 }
 
 func (f *FastForward) prepareKubernetesRepo() (*git.Repo, error) {

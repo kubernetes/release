@@ -20,6 +20,7 @@ package fastforwardfakes
 import (
 	"sync"
 
+	"github.com/google/go-github/v47/github"
 	"k8s.io/release/pkg/gcp/gcb"
 	"sigs.k8s.io/release-sdk/git"
 )
@@ -135,6 +136,18 @@ type FakeImpl struct {
 	}
 	isReleaseBranchReturnsOnCall map[int]struct {
 		result1 bool
+	}
+	ListIssuesStub        func() ([]*github.Issue, error)
+	listIssuesMutex       sync.RWMutex
+	listIssuesArgsForCall []struct {
+	}
+	listIssuesReturns struct {
+		result1 []*github.Issue
+		result2 error
+	}
+	listIssuesReturnsOnCall map[int]struct {
+		result1 []*github.Issue
+		result2 error
 	}
 	MkdirTempStub        func(string, string) (string, error)
 	mkdirTempMutex       sync.RWMutex
@@ -898,6 +911,62 @@ func (fake *FakeImpl) IsReleaseBranchReturnsOnCall(i int, result1 bool) {
 	fake.isReleaseBranchReturnsOnCall[i] = struct {
 		result1 bool
 	}{result1}
+}
+
+func (fake *FakeImpl) ListIssues() ([]*github.Issue, error) {
+	fake.listIssuesMutex.Lock()
+	ret, specificReturn := fake.listIssuesReturnsOnCall[len(fake.listIssuesArgsForCall)]
+	fake.listIssuesArgsForCall = append(fake.listIssuesArgsForCall, struct {
+	}{})
+	stub := fake.ListIssuesStub
+	fakeReturns := fake.listIssuesReturns
+	fake.recordInvocation("ListIssues", []interface{}{})
+	fake.listIssuesMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeImpl) ListIssuesCallCount() int {
+	fake.listIssuesMutex.RLock()
+	defer fake.listIssuesMutex.RUnlock()
+	return len(fake.listIssuesArgsForCall)
+}
+
+func (fake *FakeImpl) ListIssuesCalls(stub func() ([]*github.Issue, error)) {
+	fake.listIssuesMutex.Lock()
+	defer fake.listIssuesMutex.Unlock()
+	fake.ListIssuesStub = stub
+}
+
+func (fake *FakeImpl) ListIssuesReturns(result1 []*github.Issue, result2 error) {
+	fake.listIssuesMutex.Lock()
+	defer fake.listIssuesMutex.Unlock()
+	fake.ListIssuesStub = nil
+	fake.listIssuesReturns = struct {
+		result1 []*github.Issue
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImpl) ListIssuesReturnsOnCall(i int, result1 []*github.Issue, result2 error) {
+	fake.listIssuesMutex.Lock()
+	defer fake.listIssuesMutex.Unlock()
+	fake.ListIssuesStub = nil
+	if fake.listIssuesReturnsOnCall == nil {
+		fake.listIssuesReturnsOnCall = make(map[int]struct {
+			result1 []*github.Issue
+			result2 error
+		})
+	}
+	fake.listIssuesReturnsOnCall[i] = struct {
+		result1 []*github.Issue
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeImpl) MkdirTemp(arg1 string, arg2 string) (string, error) {
@@ -1965,6 +2034,8 @@ func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	defer fake.isDefaultK8sUpstreamMutex.RUnlock()
 	fake.isReleaseBranchMutex.RLock()
 	defer fake.isReleaseBranchMutex.RUnlock()
+	fake.listIssuesMutex.RLock()
+	defer fake.listIssuesMutex.RUnlock()
 	fake.mkdirTempMutex.RLock()
 	defer fake.mkdirTempMutex.RUnlock()
 	fake.removeAllMutex.RLock()
