@@ -14,8 +14,3 @@ variants:
     GO_VERSION: '1.17.13'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
-  go1.16-buster:
-    CONFIG: 'go1.16-buster'
-    GO_VERSION: '1.16.15'
-    OS_CODENAME: 'buster'
-    REVISION: '0'

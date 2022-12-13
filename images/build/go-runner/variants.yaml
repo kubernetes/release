@@ -23,11 +23,3 @@ variants:
     REVISION: '0'
     GO_VERSION: '1.17.13'
     DISTROLESS_IMAGE: 'static-debian11'
-  go1.16-buster:
-    CONFIG: 'go1.16-buster'
-    IMAGE_VERSION: 'v2.3.1-go1.16.15-buster.0'
-    GO_MAJOR_VERSION: '1.16'
-    OS_CODENAME: 'buster'
-    REVISION: '0'
-    GO_VERSION: '1.16.15'
-    DISTROLESS_IMAGE: 'static-debian10'
