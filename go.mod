@@ -36,6 +36,7 @@ require (
 	golang.org/x/text v0.5.0
 	google.golang.org/api v0.103.0
 	gopkg.in/yaml.v2 v2.4.0
+	k8s.io/apimachinery v0.26.0
 	sigs.k8s.io/bom v0.4.1
 	sigs.k8s.io/mdtoc v1.1.0
 	sigs.k8s.io/promo-tools/v3 v3.4.10
@@ -337,7 +338,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.10.0 // indirect
 	k8s.io/api v0.25.0 // indirect
-	k8s.io/apimachinery v0.26.0 // indirect
 	k8s.io/cli-runtime v0.25.0 // indirect
 	k8s.io/client-go v0.25.0 // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
