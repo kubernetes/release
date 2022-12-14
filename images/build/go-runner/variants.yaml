@@ -1,4 +1,12 @@
 variants:
+  go1.20-bullseye:
+    CONFIG: 'go1.20-bullseye'
+    IMAGE_VERSION: 'v2.3.1-go1.20rc1-bullseye.0'
+    GO_MAJOR_VERSION: '1.20'
+    OS_CODENAME: 'bullseye'
+    REVISION: '0'
+    GO_VERSION: '1.20rc1'
+    DISTROLESS_IMAGE: 'static-debian11'
   go1.19-bullseye:
     CONFIG: 'go1.19-bullseye'
     IMAGE_VERSION: 'v2.3.1-go1.19.4-bullseye.0'
@@ -23,11 +31,3 @@ variants:
     REVISION: '0'
     GO_VERSION: '1.17.13'
     DISTROLESS_IMAGE: 'static-debian11'
-  go1.16-buster:
-    CONFIG: 'go1.16-buster'
-    IMAGE_VERSION: 'v2.3.1-go1.16.15-buster.0'
-    GO_MAJOR_VERSION: '1.16'
-    OS_CODENAME: 'buster'
-    REVISION: '0'
-    GO_VERSION: '1.16.15'
-    DISTROLESS_IMAGE: 'static-debian10'
