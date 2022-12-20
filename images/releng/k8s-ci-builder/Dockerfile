@@ -17,7 +17,7 @@ ARG OS_CODENAME
 
 # The Golang version for the builder image should always be explicitly set to
 # the Golang version of the kubernetes/kubernetes active development branch
-FROM golang:1.18.9-${OS_CODENAME} AS builder
+FROM golang:1.19.4-${OS_CODENAME} AS builder
 
 WORKDIR /go/src/k8s.io/release
 
