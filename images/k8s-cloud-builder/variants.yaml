@@ -5,6 +5,9 @@ variants:
   v1.25-cross1.19-bullseye:
     CONFIG: 'cross1.19'
     KUBE_CROSS_VERSION: 'v1.25.0-go1.19.4-bullseye.0'
+  v1.24-cross1.19-bullseye:
+    CONFIG: 'cross1.19'
+    KUBE_CROSS_VERSION: 'v1.24.0-go1.19.4-bullseye.0'
   v1.24-cross1.18-bullseye:
     CONFIG: 'cross1.18'
     KUBE_CROSS_VERSION: 'v1.24.0-go1.18.9-bullseye.0'
