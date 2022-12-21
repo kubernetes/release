@@ -25,5 +25,5 @@ variants:
     OS_CODENAME: 'bullseye'
   '1.23':
     CONFIG: '1.23'
-    GO_VERSION: '1.17.13'
+    GO_VERSION: '1.19.4'
     OS_CODENAME: 'bullseye'
