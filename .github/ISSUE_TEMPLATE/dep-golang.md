@@ -52,6 +52,7 @@ SIG Release Slack thread:
   - [ ] go-runner image
   - [ ] publishing bot rules
   - [ ] test image
+  - [ ] `.go-version` file
 
 #### After kubernetes/kubernetes (master) has been updated
 
