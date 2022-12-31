@@ -21,7 +21,7 @@ COPY stage-binary-and-deps.sh /
 COPY stage-binaries-from-package.sh /
 COPY package-utils.sh /
 
-
+# TODO: /bin/sleep is used by a specific e2e test
 ARG STAGE_DIR="/opt/stage"
 RUN apt -y update && \
     apt -y install bash curl && \
@@ -40,8 +40,6 @@ RUN apt -y update && \
     /bin/rm \
     /bin/sleep \
     /usr/bin/wc
-
-# A comment on the above: /bin/sleep is used by a specific e2e test
 
 RUN curl -o "${STAGE_DIR}"/iptables-wrapper-installer.sh https://raw.githubusercontent.com/kubernetes-sigs/iptables-wrappers/v2/iptables-wrapper-installer.sh && \
     chmod +x "${STAGE_DIR}"/iptables-wrapper-installer.sh && \
