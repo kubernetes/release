@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	gogithub "github.com/google/go-github/v47/github"
+	gogithub "github.com/google/go-github/v48/github"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/kubepkg/options"

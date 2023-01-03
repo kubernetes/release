@@ -11,7 +11,7 @@ require (
 	github.com/goark/go-cvss v1.3.0
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-containerregistry v0.12.1
-	github.com/google/go-github/v47 v47.1.0
+	github.com/google/go-github/v48 v48.2.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/in-toto/in-toto-golang v0.3.4-0.20220709202702-fa494aaa0add
@@ -40,7 +40,7 @@ require (
 	sigs.k8s.io/bom v0.4.1
 	sigs.k8s.io/mdtoc v1.1.0
 	sigs.k8s.io/promo-tools/v3 v3.4.11
-	sigs.k8s.io/release-sdk v0.9.6
+	sigs.k8s.io/release-sdk v0.9.7
 	sigs.k8s.io/release-utils v0.7.3
 	sigs.k8s.io/yaml v1.3.0
 	sigs.k8s.io/zeitgeist v0.3.5
