@@ -1,7 +1,7 @@
 variants:
   go1.20-bullseye:
     CONFIG: 'go1.20-bullseye'
-    GO_VERSION: '1.20rc1'
+    GO_VERSION: '1.20rc2'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
   go1.19-bullseye:
