@@ -31,10 +31,12 @@ import (
 
 func TestPublish(t *testing.T) {
 	for _, tc := range []struct {
+		name        string
 		prepare     func(*releasefakes.FakeImageImpl) (buildPath string, cleanup func())
 		shouldError bool
 	}{
-		{ // success
+		{
+			name: "success",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -45,7 +47,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: false,
 		},
-		{ // success skipping wrong dirs/files
+		{
+			name: "success skipping wrong dirs/files",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -68,7 +71,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: false,
 		},
-		{ // success no images
+		{
+			name: "success no images",
 			prepare: func(*releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				return tempDir, func() {
@@ -77,7 +81,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: false,
 		},
-		{ // failure on docker load
+		{
+			name: "failure on docker load",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -90,7 +95,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure on docker tag
+		{
+			name: "failure on docker tag",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -103,7 +109,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure on docker push
+		{
+			name: "failure on docker push",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -116,7 +123,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure on docker rmi
+		{
+			name: "failure on docker rmi",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -129,7 +137,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure on docker manifest create
+		{
+			name: "failure on docker manifest create",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -142,7 +151,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure on docker manifest annotate
+		{
+			name: "failure on docker manifest annotate",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -155,7 +165,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure on docker manifest push
+		{
+			name: "failure on docker manifest push",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -168,7 +179,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure get repo tag from tarball
+		{
+			name: "failure get repo tag from tarball",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -181,7 +193,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure wrong repo tag from tarball
+		{
+			name: "failure wrong repo tag from tarball",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -194,7 +207,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure no images-path
+		{
+			name: "failure no images-path",
 			prepare: func(*releasefakes.FakeImageImpl) (string, func()) {
 				tempDir, err := os.MkdirTemp("", "publish-test-")
 				require.Nil(t, err)
@@ -204,7 +218,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure on sign image
+		{
+			name: "failure on sign image",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -217,7 +232,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure on sign manifest
+		{
+			name: "failure on sign manifest",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -236,7 +252,7 @@ func TestPublish(t *testing.T) {
 		sut.SetImpl(clientMock)
 		buildPath, cleanup := tc.prepare(clientMock)
 
-		err := sut.Publish(release.GCRIOPathProd, "v1.18.10", buildPath)
+		err := sut.Publish(release.GCRIOPathProd, "v1.18.9", buildPath)
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {
@@ -344,7 +360,7 @@ func TestValidate(t *testing.T) {
 		sut.SetImpl(clientMock)
 		buildPath, cleanup := tc.prepare(clientMock)
 
-		err := sut.Validate(release.GCRIOPathStaging, "v1.18.10", buildPath)
+		err := sut.Validate(release.GCRIOPathStaging, "v1.18.9", buildPath)
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {
@@ -382,7 +398,7 @@ func prepareImages(t *testing.T, tempDir string, mock *releasefakes.FakeImageImp
 			mock.RepoTagFromTarballReturnsOnCall(
 				c,
 				fmt.Sprintf(
-					"k8s.gcr.io/%s:v1.18.10",
+					"k8s.gcr.io/%s:v1.18.9",
 					strings.TrimSuffix(image, ".tar"),
 				),
 				nil,
