@@ -6,12 +6,12 @@ variants:
     REVISION: '0'
   go1.19-bullseye:
     CONFIG: 'go1.19-bullseye'
-    GO_VERSION: '1.19.4'
+    GO_VERSION: '1.19.5'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
   go1.18-bullseye:
     CONFIG: 'go1.18-bullseye'
-    GO_VERSION: '1.18.9'
+    GO_VERSION: '1.18.10'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
   go1.17-bullseye:
