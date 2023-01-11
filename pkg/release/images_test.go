@@ -236,7 +236,7 @@ func TestPublish(t *testing.T) {
 		sut.SetImpl(clientMock)
 		buildPath, cleanup := tc.prepare(clientMock)
 
-		err := sut.Publish(release.GCRIOPathProd, "v1.18.9", buildPath)
+		err := sut.Publish(release.GCRIOPathProd, "v1.18.10", buildPath)
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {
@@ -344,7 +344,7 @@ func TestValidate(t *testing.T) {
 		sut.SetImpl(clientMock)
 		buildPath, cleanup := tc.prepare(clientMock)
 
-		err := sut.Validate(release.GCRIOPathStaging, "v1.18.9", buildPath)
+		err := sut.Validate(release.GCRIOPathStaging, "v1.18.10", buildPath)
 		if tc.shouldError {
 			require.NotNil(t, err)
 		} else {
@@ -382,7 +382,7 @@ func prepareImages(t *testing.T, tempDir string, mock *releasefakes.FakeImageImp
 			mock.RepoTagFromTarballReturnsOnCall(
 				c,
 				fmt.Sprintf(
-					"k8s.gcr.io/%s:v1.18.9",
+					"k8s.gcr.io/%s:v1.18.10",
 					strings.TrimSuffix(image, ".tar"),
 				),
 				nil,

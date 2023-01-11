@@ -9,19 +9,19 @@ variants:
     DISTROLESS_IMAGE: 'static-debian11'
   go1.19-bullseye:
     CONFIG: 'go1.19-bullseye'
-    IMAGE_VERSION: 'v2.3.1-go1.19.4-bullseye.0'
+    IMAGE_VERSION: 'v2.3.1-go1.19.5-bullseye.0'
     GO_MAJOR_VERSION: '1.19'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
-    GO_VERSION: '1.19.4'
+    GO_VERSION: '1.19.5'
     DISTROLESS_IMAGE: 'static-debian11'
   go1.18-bullseye:
     CONFIG: 'go1.18-bullseye'
-    IMAGE_VERSION: 'v2.3.1-go1.18.9-bullseye.0'
+    IMAGE_VERSION: 'v2.3.1-go1.18.10-bullseye.0'
     GO_MAJOR_VERSION: '1.18'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
-    GO_VERSION: '1.18.9'
+    GO_VERSION: '1.18.10'
     DISTROLESS_IMAGE: 'static-debian11'
   go1.17-bullseye:
     CONFIG: 'go1.17-bullseye'
