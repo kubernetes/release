@@ -67,6 +67,7 @@ const patchReleaseExpectedContent = `# v1.25.3
 _Nothing has changed._
 
 ### Changed
+- github.com/google/cel-go: [v0.12.5 → v0.12.6](https://github.com/google/cel-go/compare/v0.12.5...v0.12.6)
 - github.com/stretchr/objx: [v0.2.0 → v0.4.0](https://github.com/stretchr/objx/compare/v0.2.0...v0.4.0)
 - github.com/stretchr/testify: [v1.7.0 → v1.8.0](https://github.com/stretchr/testify/compare/v1.7.0...v1.8.0)
 - go.uber.org/goleak: v1.1.10 → v1.2.0
@@ -134,6 +135,7 @@ const patchReleaseExpectedHTML = `<!DOCTYPE html>
 <p><em>Nothing has changed.</em></p>
 <h3>Changed</h3>
 <ul>
+<li>github.com/google/cel-go: <a href="https://github.com/google/cel-go/compare/v0.12.5...v0.12.6">v0.12.5 → v0.12.6</a></li>
 <li>github.com/stretchr/objx: <a href="https://github.com/stretchr/objx/compare/v0.2.0...v0.4.0">v0.2.0 → v0.4.0</a></li>
 <li>github.com/stretchr/testify: <a href="https://github.com/stretchr/testify/compare/v1.7.0...v1.8.0">v1.7.0 → v1.8.0</a></li>
 <li>go.uber.org/goleak: v1.1.10 → v1.2.0</li>
