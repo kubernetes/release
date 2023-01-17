@@ -44,7 +44,7 @@ const (
 	ChannelNightly ChannelType = "nightly"
 
 	minimumKubernetesVersion = "1.13.0"
-	CurrentCNIVersion        = "1.1.1"
+	CurrentCNIVersion        = "1.2.0"
 	MinimumCNIVersion        = "0.8.6"
 
 	kubeadmConf = "10-kubeadm.conf"
