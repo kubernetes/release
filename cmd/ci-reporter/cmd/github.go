@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -120,8 +119,9 @@ func (r GithubReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error
 // Helper functions to collect github data
 //
 
-// This can be looked up using the API, see https://docs.github.com/en/issues/trying-out-the-new-projects-experience/using-the-api-to-manage-projects#finding-the-node-id-of-an-organization-project
-const ciSignalProjectBoardID = "PN_kwDOAM_34M4AAThW"
+// This can be seen in the project's URL or looked up in the API
+const ciSignalProjectBoardNumber = 68
+const kubernetesOrganizationName = "kubernetes"
 
 type ciSignalProjectBoardKey string
 
@@ -138,18 +138,6 @@ const (
 	UpdatedAtKey           = ciSignalProjectBoardKey("Updated At")
 )
 
-// GitHubProjectBoardFieldSettings settings for a column of a github beta project board
-// --> | Testgrid Board | -> { ID: XXX, Name: Testgrid Board, ... }
-// This information is required to match the settings ID to the name since table entries ref. id
-type GitHubProjectBoardFieldSettings struct {
-	Width   int `json:"width"`
-	Options []struct {
-		ID       string `json:"id"`
-		Name     string `json:"name"`
-		NameHTML string `json:"name_html"`
-	} `json:"options"`
-}
-
 // This struct represents a graphql query
 //
 //	that is getting executed using the githubv4
@@ -157,42 +145,55 @@ type GitHubProjectBoardFieldSettings struct {
 //	for the GitHub graphql api, see: https://docs.github.com/en/issues/trying-out-the-new-projects-experience/using-the-api-to-manage-projects
 //
 // ENHANCEMENT: filter via request, see: https://dgraph.io/docs/graphql/queries/search-filtering/
+
+type (
+	TextValueFragment struct {
+		Text string
+		Field struct {
+			TextFieldNameFragment `graphql:"... on ProjectV2Field"`
+		}
+	}
+	TextFieldNameFragment struct {
+		Name string
+	}
+	SingleSelectFragment struct {
+		Name string
+		Field struct {
+			SingleSelectFieldNameFragment `graphql:"... on ProjectV2SingleSelectField"`
+		}
+	}
+	SingleSelectFieldNameFragment struct {
+		Name string
+	}
+)
+
 type ciSignalProjectBoardGraphQLQuery struct {
-	Node struct {
-		ProjectNext struct {
-			// Fields information about the column headers of the project
-			// --> | Title | Testgrid Board | Testgrid URL | UpdatedAt | ... |
-			Fields struct {
-				Nodes []struct {
-					Name     string
-					Settings string
-				}
-			} `graphql:"fields(first: 100)"`
+	Organization struct {
+		ProjectV2 struct {
 			// Items board rows with content
 			Items struct {
 				Nodes []struct {
 					ID          string
-					Title       string
 					FieldValues struct {
 						Nodes []struct {
-							Value        string
-							ProjectField struct {
-								Name string
+							TextValueFragment `graphql:"... on ProjectV2ItemFieldTextValue"`
+							SingleSelectFragment `graphql:"... on ProjectV2ItemFieldSingleSelectValue"`
 							}
-						}
 					} `graphql:"fieldValues(first: 20)"`
 					Content struct {
 						Issue struct {
 							URL string
+							Title string
 						} `graphql:"... on Issue"`
 						PullRequest struct {
 							URL string
+							Title string
 						} `graphql:"... on PullRequest"`
 					}
 				}
 			} `graphql:"items(first: 100)"`
-		} `graphql:"... on ProjectNext"`
-	} `graphql:"node(id: $projectBoardID)"`
+		} `graphql:"projectV2(number: $projectBoardNum)"`
+	} `graphql:"organization(login: $kubernetesOrganizationName)"`
 }
 
 type (
@@ -214,53 +215,28 @@ func GetGithubReportData(cfg Config, denyListFieldFilter, allowListFieldFilter m
 	// lookup project board information
 	var queryCiSignalProjectBoard ciSignalProjectBoardGraphQLQuery
 	variablesProjectBoardFields := map[string]interface{}{
-		"projectBoardID": githubv4.ID(ciSignalProjectBoardID),
+		"projectBoardNum": githubv4.Int(ciSignalProjectBoardNumber),
+		"kubernetesOrganizationName": githubv4.String(kubernetesOrganizationName),
 	}
 	if err := cfg.GithubClient.Query(context.Background(), &queryCiSignalProjectBoard, variablesProjectBoardFields); err != nil {
 		return nil, err
 	}
 
-	// projectBoardFieldIDs hold input IDs of the project board to replace all IDs with names
-	// Example: The input "Testgrid Board" is of the type "select"
-	// 	to enter a value on the project board you can select of defined values
-	// 	every value gets an ID assigned, like this: "master-blocking" = 34u5h2l, "master-informing" = 438tz93
-	// 	the information that is looked up on each row references the ID which is cryptic to read
-	//
-	// 	Received row information: { Testgrid Board: 34u5h2l, ... }
-	// 	Transformed row information: { Testgrid Board: "master-blocking", ... }
-	type (
-		// verbose types
-		projectBoardFieldID   string
-		projectBoardFieldName string
-	)
-	projectBoardFieldIDs := map[projectBoardFieldID]projectBoardFieldName{}
-
-	for _, field := range queryCiSignalProjectBoard.Node.ProjectNext.Fields.Nodes {
-		var fieldSettings GitHubProjectBoardFieldSettings
-		if err := json.Unmarshal([]byte(field.Settings), &fieldSettings); err != nil {
-			return nil, err
-		}
-		for _, option := range fieldSettings.Options {
-			projectBoardFieldIDs[projectBoardFieldID(option.ID)] = projectBoardFieldName(option.Name)
-		}
-	}
-
 	transformedProjectBoardItems := []*TransformedProjectBoardItem{}
-	for _, item := range queryCiSignalProjectBoard.Node.ProjectNext.Items.Nodes {
+	for _, item := range queryCiSignalProjectBoard.Organization.ProjectV2.Items.Nodes {
 		transFields := map[fieldName]fieldValue{}
 		itemBlacklisted := false
 		for _, field := range item.FieldValues.Nodes {
-			fieldVal := field.Value
-			// To check if the field value is blacklisted
-			// 	in the case of a ID stored in the field
-			//	this must be replaced first with the projectBoardFieldIDs map
-			if val, ok := projectBoardFieldIDs[projectBoardFieldID(field.Value)]; ok {
-				// ID detected replace ID with Name
-				fieldVal = string(val)
+			// TODO: this seems silly, probably better graphql aliasing possible
+			fieldVal := field.Text
+			fieldN := field.TextValueFragment.Field.Name
+			 if field.Name != "" {
+				fieldVal = field.Name
+				fieldN = field.SingleSelectFragment.Field.Name
 			}
 
 			// filter out deny listed values
-			if denyListValues, filteredFieldFound := denyListFieldFilter[FilteredFieldName(field.ProjectField.Name)]; filteredFieldFound {
+			if denyListValues, filteredFieldFound := denyListFieldFilter[FilteredFieldName(fieldN)]; filteredFieldFound {
 				// The field is a filtered field since it could be found in the fieldFilter map
 				// 	check if the value of the field is blacklisted
 				for _, bv := range denyListValues {
@@ -274,7 +250,7 @@ func GetGithubReportData(cfg Config, denyListFieldFilter, allowListFieldFilter m
 				}
 			}
 			// filter for allow listed values
-			if allowListValues, filteredFieldFound := allowListFieldFilter[FilteredFieldName(field.ProjectField.Name)]; filteredFieldFound {
+			if allowListValues, filteredFieldFound := allowListFieldFilter[FilteredFieldName(fieldN)]; filteredFieldFound {
 				// The field is a filtered field since it could be found in the fieldFilter map
 				// 	check if the value of the field is blacklisted
 				for _, bv := range allowListValues {
@@ -287,23 +263,30 @@ func GetGithubReportData(cfg Config, denyListFieldFilter, allowListFieldFilter m
 					break
 				}
 			}
-			transFields[fieldName(field.ProjectField.Name)] = fieldValue(fieldVal)
+			transFields[fieldName(fieldN)] = fieldValue(fieldVal)
 		}
 		if itemBlacklisted {
 			continue
 		}
+
+		// TODO: this also seems silly, i still feel better graphql aliasing is possible
 		if item.Content.Issue.URL != "" {
 			transFields[fieldName("Issue URL")] = fieldValue(item.Content.Issue.URL)
+		}
+		if item.Content.Issue.Title != "" {
+			transFields[fieldName("Title")]= fieldValue(item.Content.Issue.Title)
 		}
 		if item.Content.PullRequest.URL != "" {
 			transFields[fieldName("PullRequest URL")] = fieldValue(item.Content.PullRequest.URL)
 		}
+		if item.Content.PullRequest.Title != "" {
+			transFields[fieldName("Title")] = fieldValue(item.Content.PullRequest.Title)
+		}
 		transformedProjectBoardItems = append(transformedProjectBoardItems, &TransformedProjectBoardItem{
 			ID:     item.ID,
-			Title:  item.Title,
+			Title:  string(transFields["Title"]),
 			Fields: transFields,
 		})
 	}
-
 	return transformedProjectBoardItems, nil
 }
