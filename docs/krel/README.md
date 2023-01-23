@@ -22,7 +22,7 @@ Either Compile krel by running the `compile-release-tools` script from the root 
 ```
 Or
 
-Run the following command in the terminal :
+Run the following command in the terminal:
 
 ```
 go install k8s.io/release/cmd/krel@latest
