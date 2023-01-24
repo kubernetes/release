@@ -9,6 +9,7 @@ aliases:
     - saschagrunert # SIG Chair
     - Verolop # SIG Technical Lead
   release-engineering-approvers:
+    - cici37 # Release Manager
     - cpanato # subproject owner / Release Manager
     - jeremyrickard # subproject owner / Release Manager
     - justaugustus # subproject owner / Release Manager
@@ -19,7 +20,6 @@ aliases:
     - Verolop # subproject owner / Release Manager
   release-engineering-reviewers:
     - ameukam # Release Manager Associate
-    - cici37 # Release Manager Associate
     - jimangel # Release Manager Associate
     - jrsapi # Release Manager Associate
     - salaxander # Release Manager Associate
