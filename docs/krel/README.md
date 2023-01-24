@@ -15,10 +15,17 @@ Kubernetes Releases. This includes manually executed tasks like generating the R
 
 ## Installation
 
-Compile krel by running the `compile-release-tools` script from the root of this repo:
+Either Compile krel by running the `compile-release-tools` script from the root of this repo:
 
 ```shell
 ./compile-release-tools krel
+```
+Or
+
+Run the following command in the terminal:
+
+```
+go install k8s.io/release/cmd/krel@latest
 ```
 
 ## Usage:
