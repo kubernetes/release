@@ -15,7 +15,7 @@ dependencies:
 
   # CNI plugins
   - name: "CNI plugins"
-    version: 1.2.0
+    version: 1.1.1
     refPaths:
     - path: packages/deb/build.go
       match: currentCNIVersion\s+= "\d+\.\d+.\d+"
