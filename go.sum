@@ -628,8 +628,8 @@ github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0/go.mod h1:fyg78
 github.com/go-test/deep v1.0.8 h1:TDsG77qcSprGbC6vTN8OuXp5g+J+b5Pcguhf7Zt61VM=
 github.com/goark/errs v1.1.0 h1:FKnyw4LVyRADIjM8Nj0Up6r0/y5cfADvZAd1E+tthXE=
 github.com/goark/errs v1.1.0/go.mod h1:TtaPEoadm2mzqzfXdkkfpN2xuniCFm2q4JH+c1qzaqw=
-github.com/goark/go-cvss v1.3.0 h1:MItNedK1j4B6r+HV5pwYFBA44rD0c1yfQCNqiHJ3tJE=
-github.com/goark/go-cvss v1.3.0/go.mod h1:IQIHDqVqfWJ4O+cOp3BknQCBI3i1lOuPtWBR17aOcqM=
+github.com/goark/go-cvss v1.3.2 h1:AqDovQLcpDG5XQZtTq7zKbsi1aQxkpIUv3hwUAqdl3E=
+github.com/goark/go-cvss v1.3.2/go.mod h1:iYbpm38JATPe80YuIRvK3yo3foN2SOO9Oi/T93yERnc=
 github.com/gobuffalo/attrs v0.0.0-20190224210810-a9411de4debd/go.mod h1:4duuawTqi2wkkpB4ePgWMaai6/Kc6WEz83bhFwpHzj0=
 github.com/gobuffalo/depgen v0.0.0-20190329151759-d478694a28d3/go.mod h1:3STtPUQYuzV0gBVOY3vy6CfMm/ljR4pABfrTeHNLHUY=
 github.com/gobuffalo/depgen v0.1.0/go.mod h1:+ifsuy7fhi15RWncXQQKjWS9JPkdah5sZvtHc2RXGlg=
