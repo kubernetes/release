@@ -10,7 +10,7 @@ require (
 	github.com/go-git/go-git/v5 v5.5.2
 	github.com/goark/go-cvss v1.3.2
 	github.com/golang/protobuf v1.5.2
-	github.com/google/go-containerregistry v0.12.1
+	github.com/google/go-containerregistry v0.13.0
 	github.com/google/go-github/v48 v48.2.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
