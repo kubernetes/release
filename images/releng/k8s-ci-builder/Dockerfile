@@ -36,6 +36,9 @@ ARG IMAGE_ARG
 # arg that specifies the go version to install
 ARG GO_VERSION
 
+# arg that specifies docker-buildx version to install
+ARG DOCKER_BUILDX_VERSION=0.10.2
+
 # add envs:
 # - so we can debug with the image name:tag
 # - adding gsutil etc. to path (where we will install them)
@@ -107,6 +110,10 @@ RUN echo "Installing Packages ..." \
         && apt-get install -y --no-install-recommends docker-ce \
         && rm -rf /var/lib/apt/lists/* \
         && sed -i 's/cgroupfs_mount$/#cgroupfs_mount\n/' /etc/init.d/docker \
+    && echo "Installing Docker buildx ..." \
+        && mkdir -p /usr/libexec/docker/cli-plugins \
+        && curl -fsSLo /usr/libexec/docker/cli-plugins/docker-buildx https://github.com/docker/buildx/releases/download/v${DOCKER_BUILDX_VERSION}/buildx-v${DOCKER_BUILDX_VERSION}.linux-amd64 \
+        && chmod a+x /usr/libexec/docker/cli-plugins/docker-buildx \
     && echo "Ensuring Legacy Iptables ..." \
         && update-alternatives --set iptables /usr/sbin/iptables-legacy \
         && update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
