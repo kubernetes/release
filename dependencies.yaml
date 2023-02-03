@@ -479,3 +479,9 @@ dependencies:
       match: QEMUVERSION
     - path: images/build/debian-base/Makefile
       match: QEMUVERSION
+
+  - name: Docker buildx
+    version: 0.10.2
+    refPaths:
+    - path: images/releng/k8s-ci-builder/Dockerfile
+      match: DOCKER_BUILDX_VERSION
