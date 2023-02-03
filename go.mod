@@ -8,7 +8,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/cheggaaa/pb/v3 v3.1.0
 	github.com/go-git/go-git/v5 v5.5.2
-	github.com/goark/go-cvss v1.6.1
+	github.com/goark/go-cvss v1.6.3
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-containerregistry v0.13.0
 	github.com/google/go-github/v48 v48.2.0
