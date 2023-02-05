@@ -33,6 +33,8 @@ linters:
     - errchkjson
     - errname
     - execinquery
+    - ginkgolinter
+    - gocheckcompilerdirectives
     - goconst
     - gocritic
     - gocyclo
@@ -53,6 +55,7 @@ linters:
     - loggercheck
     - makezero
     - misspell
+    - musttag
     - nakedret
     - nolintlint
     - nosprintfhostport

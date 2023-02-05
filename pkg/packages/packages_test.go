@@ -96,6 +96,8 @@ func TestRelease(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			tc := tc
+
 			t.Parallel()
 
 			mock := &packagesfakes.FakeImpl{}
