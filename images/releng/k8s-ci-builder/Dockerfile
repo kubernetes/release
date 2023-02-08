@@ -76,6 +76,7 @@ RUN echo "Installing Packages ..." \
             kmod \
             lsb-release \
             mercurial \
+            net-tools \
             pkg-config \
             procps \
             python3 \
