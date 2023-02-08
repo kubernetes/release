@@ -32,7 +32,7 @@ BASE_REGISTRY?=k8s.gcr.io/build-image
 BASEIMAGE?=$(BASE_REGISTRY)/debian-base-$(ARCH):$(DEBIAN_BASE_VERSION)
 GORUNNERIMAGE?=$(BASE_REGISTRY)/go-runner:$(GORUNNER_VERSION)
 
-QEMUVERSION=6.1.0-8
+QEMUVERSION=7.2.0-1
 
 # This option is for running docker manifest command
 export DOCKER_CLI_EXPERIMENTAL := enabled
