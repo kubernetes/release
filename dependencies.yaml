@@ -471,7 +471,7 @@ dependencies:
       match: "name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{10}'"
 
   - name: qemu
-    version: 6.1.0-8
+    version: 7.2.0-1
     refPaths:
     - path: images/build/debian-iptables/Makefile
       match: QEMUVERSION
