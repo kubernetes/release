@@ -59,13 +59,3 @@ variants:
     OS_CODENAME: 'bullseye'
     REVISION: '0'
     PROTOBUF_VERSION: '3.19.4'
-  v1.23-go1.17-bullseye:
-    CONFIG: 'go1.17-bullseye'
-    TYPE: 'default'
-    IMAGE_VERSION: 'v1.23.0-go1.17.13-bullseye.0'
-    KUBERNETES_VERSION: 'v1.23.0'
-    GO_VERSION: '1.17.13'
-    GO_MAJOR_VERSION: '1.17'
-    OS_CODENAME: 'bullseye'
-    REVISION: '0'
-    PROTOBUF_VERSION: '3.19.4'
