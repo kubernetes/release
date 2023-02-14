@@ -42,7 +42,7 @@ for ARCH in ${ARCHS[@]}; do
   sed -i "s/\%global ARCH.*/\%global ARCH ${GOARCH}/" ${SRC_PATH}/kubelet.spec
   # Download sources if not already available
   cd ${SRC_PATH} && spectool -gf kubelet.spec
-  /usr/bin/rpmbuild --target ${RPMARCH} --define "_sourcedir ${SRC_PATH}" -bb ${SRC_PATH}/kubelet.spec
+  /usr/bin/rpmbuild --target ${RPMARCH} --define "_sourcedir ${SRC_PATH}" --define "_smp_build_ncpus 1" --define "__os_install_post %{nil}" -bb ${SRC_PATH}/kubelet.spec
   mkdir -p /root/rpmbuild/RPMS/${RPMARCH}
   createrepo -o /root/rpmbuild/RPMS/${RPMARCH}/ /root/rpmbuild/RPMS/${RPMARCH}
 done

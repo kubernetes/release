@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM fedora:24
+FROM fedora:36
 MAINTAINER Devan Goodwin <dgoodwin@redhat.com>
 
-RUN dnf install -y rpm-build rpmdevtools createrepo && dnf clean all
+RUN dnf install -y rpm-build rpmdevtools createrepo systemd && dnf clean all
 
 RUN rpmdev-setuptree
 
