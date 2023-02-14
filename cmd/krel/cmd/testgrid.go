@@ -21,20 +21,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github"
-	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/http"
 )
 
@@ -43,13 +39,12 @@ const (
 )
 
 type TestGridOptions struct {
-	branch        string
-	boards        []string
-	states        []string
-	bucket        string
-	testgridURL   string
-	renderTronURL string
-	gitHubIssue   int
+	branch      string
+	boards      []string
+	states      []string
+	bucket      string
+	testgridURL string
+	gitHubIssue int
 }
 
 var testGridOpts = &TestGridOptions{}
@@ -102,9 +97,6 @@ func init() {
 	testGridCmd.PersistentFlags().StringVar(&testGridOpts.testgridURL,
 		"testgrid-url", "https://testgrid.k8s.io", "The TestGrid URL")
 
-	testGridCmd.PersistentFlags().StringVar(&testGridOpts.renderTronURL,
-		"rendertron-url", "https://render-tron.appspot.com/screenshot", "The RenderTron URL service")
-
 	testGridCmd.PersistentFlags().IntVar(&testGridOpts.gitHubIssue,
 		"github-issue", -1, "The GitHub Issue for the release cut")
 
@@ -154,12 +146,6 @@ func runTestGridShot(opts *TestGridOptions) error {
 			}
 		}
 		testgridJobs = append(testgridJobs, testgridJobsTemp...)
-
-		dateNow := fmt.Sprintf("%s-%s", time.Now().UTC().Format(layoutISO), uuid.NewString())
-		testgridJobs, err = processDashboards(testgridJobs, dateNow, opts)
-		if err != nil {
-			return fmt.Errorf("processing the dashboards: %w", err)
-		}
 	}
 
 	err := generateIssueComment(testgridJobs, opts)
@@ -168,46 +154,6 @@ func runTestGridShot(opts *TestGridOptions) error {
 	}
 
 	return nil
-}
-
-func processDashboards(testgridJobs []TestGridJob, date string, opts *TestGridOptions) ([]TestGridJob, error) {
-	for i, job := range testgridJobs {
-		testGridJobURL := fmt.Sprintf("%s/%s#%s&width=30", opts.testgridURL, job.DashboardName, job.JobName)
-		rendertronURL := fmt.Sprintf("%s/%s?width=3000&height=2500", opts.renderTronURL, url.PathEscape(testGridJobURL))
-		logrus.Infof("rendertronURL for %s: %s", testGridJobURL, rendertronURL)
-
-		content, err := http.NewAgent().WithTimeout(300 * time.Second).Get(rendertronURL)
-		if err != nil {
-			return testgridJobs, fmt.Errorf("failed to get the testgrid screenshot: %w", err)
-		}
-
-		jobFile := fmt.Sprintf("/tmp/%s-%s-%s.jpg", job.DashboardName, strings.ReplaceAll(job.JobName, " ", "_"), job.Status)
-		f, err := os.Create(jobFile)
-		if err != nil {
-			return testgridJobs, fmt.Errorf("failed to create the file %s: %w", jobFile, err)
-		}
-
-		_, err = f.Write(content)
-		f.Close()
-		if err != nil {
-			return testgridJobs, fmt.Errorf("failed to write the content to the file %s: %w", jobFile, err)
-		}
-		logrus.Infof("Screenshot saved for %s: %s", job.JobName, jobFile)
-
-		gcsPath := filepath.Join(opts.bucket, "testgridshot", opts.branch, date, filepath.Base(jobFile))
-
-		gcs := object.NewGCS()
-		if err := gcs.CopyToRemote(jobFile, gcsPath); err != nil {
-			return testgridJobs, fmt.Errorf("failed to upload the file %s to GCS bucket %s: %w", jobFile, gcsPath, err)
-		}
-		if err := os.Remove(jobFile); err != nil {
-			return testgridJobs, fmt.Errorf("remove jobfile: %w", err)
-		}
-		testgridJobs[i].GCSLocation = fmt.Sprintf("https://storage.googleapis.com/%s", gcsPath)
-		logrus.Infof("Screenshot will be available for job %s at %s", job.JobName, testgridJobs[i].GCSLocation)
-	}
-
-	return testgridJobs, nil
 }
 
 func generateIssueComment(testgridJobs []TestGridJob, opts *TestGridOptions) error {
@@ -229,9 +175,9 @@ func generateIssueComment(testgridJobs []TestGridJob, opts *TestGridOptions) err
 				output = append(output,
 					fmt.Sprintf(
 						"<details><summary><tt>%[1]s</tt> %[2]s <a href=\"%[5]s/%[3]s#%[4]s&width=30\">%[3]s#%[4]s - TestGrid</a></summary><p>\n"+
-							"\n![%[3]s#%[4]s](%[6]s)\n\n"+
+							"\n%[3]s#%[4]s\n\n"+
 							"</p></details>",
-						timeNow, state, job.DashboardName, job.JobName, opts.testgridURL, job.GCSLocation),
+						timeNow, state, job.DashboardName, job.JobName, opts.testgridURL),
 				)
 
 				haveState = true
