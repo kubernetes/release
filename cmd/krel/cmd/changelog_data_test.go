@@ -72,10 +72,10 @@ _Nothing has changed._
 - github.com/stretchr/testify: [v1.7.0 → v1.8.0](https://github.com/stretchr/testify/compare/v1.7.0...v1.8.0)
 - go.uber.org/goleak: v1.1.10 → v1.2.0
 - golang.org/x/lint: 6edffad → 1621716
-- golang.org/x/net: a158d28 → v0.4.0
-- golang.org/x/sys: 8c9f86f → v0.3.0
-- golang.org/x/term: 03fcf44 → v0.3.0
-- golang.org/x/text: v0.3.7 → v0.5.0
+- golang.org/x/net: a158d28 → v0.7.0
+- golang.org/x/sys: 8c9f86f → v0.5.0
+- golang.org/x/term: 03fcf44 → v0.5.0
+- golang.org/x/text: v0.3.7 → v0.7.0
 - k8s.io/system-validators: v1.7.0 → v1.8.0
 - sigs.k8s.io/apiserver-network-proxy/konnectivity-client: v0.0.32 → v0.0.35
 
@@ -140,10 +140,10 @@ const patchReleaseExpectedHTML = `<!DOCTYPE html>
 <li>github.com/stretchr/testify: <a href="https://github.com/stretchr/testify/compare/v1.7.0...v1.8.0">v1.7.0 → v1.8.0</a></li>
 <li>go.uber.org/goleak: v1.1.10 → v1.2.0</li>
 <li>golang.org/x/lint: 6edffad → 1621716</li>
-<li>golang.org/x/net: a158d28 → v0.4.0</li>
-<li>golang.org/x/sys: 8c9f86f → v0.3.0</li>
-<li>golang.org/x/term: 03fcf44 → v0.3.0</li>
-<li>golang.org/x/text: v0.3.7 → v0.5.0</li>
+<li>golang.org/x/net: a158d28 → v0.7.0</li>
+<li>golang.org/x/sys: 8c9f86f → v0.5.0</li>
+<li>golang.org/x/term: 03fcf44 → v0.5.0</li>
+<li>golang.org/x/text: v0.3.7 → v0.7.0</li>
 <li>k8s.io/system-validators: v1.7.0 → v1.8.0</li>
 <li>sigs.k8s.io/apiserver-network-proxy/konnectivity-client: v0.0.32 → v0.0.35</li>
 </ul>
