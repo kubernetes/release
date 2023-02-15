@@ -15,11 +15,3 @@ variants:
     REVISION: '0'
     GO_VERSION: '1.19.5'
     DISTROLESS_IMAGE: 'static-debian11'
-  go1.18-bullseye:
-    CONFIG: 'go1.18-bullseye'
-    IMAGE_VERSION: 'v2.3.1-go1.18.10-bullseye.0'
-    GO_MAJOR_VERSION: '1.18'
-    OS_CODENAME: 'bullseye'
-    REVISION: '0'
-    GO_VERSION: '1.18.10'
-    DISTROLESS_IMAGE: 'static-debian11'

@@ -9,13 +9,3 @@ variants:
     GO_VERSION: '1.19.5'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
-  go1.18-bullseye:
-    CONFIG: 'go1.18-bullseye'
-    GO_VERSION: '1.18.10'
-    OS_CODENAME: 'bullseye'
-    REVISION: '0'
-  go1.17-bullseye:
-    CONFIG: 'go1.17-bullseye'
-    GO_VERSION: '1.17.13'
-    OS_CODENAME: 'bullseye'
-    REVISION: '0'
