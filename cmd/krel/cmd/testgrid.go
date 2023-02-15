@@ -68,8 +68,6 @@ const (
 
 	boardInforming = "informing"
 	boardBlocking  = "blocking"
-
-	layoutISO = "2006-01-02"
 )
 
 // testGridCmd represents the base command when called without any subcommands
