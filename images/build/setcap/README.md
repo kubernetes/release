@@ -15,11 +15,11 @@ Build and push images for all the architectures:
 
 ```console
 $ make all-push
-# ---> staging-k8s.gcr.io/setcap-amd64:TAG
-# ---> staging-k8s.gcr.io/setcap-arm:TAG
-# ---> staging-k8s.gcr.io/setcap-arm64:TAG
-# ---> staging-k8s.gcr.io/setcap-ppc64le:TAG
-# ---> staging-k8s.gcr.io/setcap-s390x:TAG
+# ---> gcr.io/k8s-staging-build-image/setcap-amd64:TAG
+# ---> gcr.io/k8s-staging-build-image/setcap-arm:TAG
+# ---> gcr.io/k8s-staging-build-image/setcap-arm64:TAG
+# ---> gcr.io/k8s-staging-build-image/setcap-ppc64le:TAG
+# ---> gcr.io/k8s-staging-build-image/setcap-s390x:TAG
 ```
 
 If you don't want to push the images, run `make sub-build-{target_arch}` or `make all-build` instead
