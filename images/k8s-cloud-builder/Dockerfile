@@ -13,7 +13,7 @@
 # limitations under the License.
 
 ARG KUBE_CROSS_VERSION
-FROM k8s.gcr.io/build-image/kube-cross:${KUBE_CROSS_VERSION}
+FROM registry.k8s.io/build-image/kube-cross:${KUBE_CROSS_VERSION}
 
 ##------------------------------------------------------------
 # global ARGs & ENVs
@@ -50,7 +50,7 @@ RUN apt-get -q update \
 # We want to get rid of python2, we want only python3
 #
 # Right now, the image chain looks like this:
-#  k8s-cloud-builder <- k8s.gcr.io/kube-cross:v1.13.4-1 <- golang:1.13.4 <- buildpack-deps:buster-scm <- debian:buster
+#  k8s-cloud-builder <- registry.k8s.io/kube-cross:v1.13.4-1 <- golang:1.13.4 <- buildpack-deps:buster-scm <- debian:buster
 # python2 comes in with buildpack-deps:buster-scm, because that image installs
 # mercurial which in turn has a hard dependency on python2
 RUN apt-get -qqy purge ".*python2.*" \

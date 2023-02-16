@@ -25,7 +25,7 @@ DEBIAN_BASE_VERSION ?= bullseye-v1.4.2
 ARCH?=amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 
-BASE_REGISTRY?=k8s.gcr.io/build-image
+BASE_REGISTRY?=registry.k8s.io/build-image
 BASEIMAGE?=$(BASE_REGISTRY)/debian-base-$(ARCH):$(DEBIAN_BASE_VERSION)
 
 # Build args

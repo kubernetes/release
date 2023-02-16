@@ -37,6 +37,7 @@ jobs:
             github.com:443
             index.docker.io:443
             k8s.gcr.io:443
+            registry.k8s.io:443
             sigstore-tuf-root.storage.googleapis.com:443
 
       - name: "Checkout code"
