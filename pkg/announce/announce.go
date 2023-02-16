@@ -184,7 +184,7 @@ func getGoVersion(tag string) (string, error) {
 		}
 	}
 
-	kubecrossImg := fmt.Sprintf("k8s.gcr.io/build-image/kube-cross:%s", kubecrossVer)
+	kubecrossImg := fmt.Sprintf("registry.k8s.io/build-image/kube-cross:%s", kubecrossVer)
 
 	res, err := command.New(
 		"docker", "run", "--rm", kubecrossImg, "go", "version",

@@ -26,7 +26,7 @@ GORUNNER_VERSION ?= v2.3.1-go1.19.1-bullseye.0
 ARCH?=amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
 
-BASE_REGISTRY?=k8s.gcr.io/build-image
+BASE_REGISTRY?=registry.k8s.io/build-image
 
 GORUNNERIMAGE?=$(BASE_REGISTRY)/go-runner:$(GORUNNER_VERSION)
 
