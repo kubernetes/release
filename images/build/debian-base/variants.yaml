@@ -2,4 +2,4 @@ variants:
   # Debian 11 - Kubernetes 1.23 and newer
   bullseye:
     CONFIG: 'bullseye'
-    IMAGE_VERSION: 'bullseye-v1.4.2'
+    IMAGE_VERSION: 'bullseye-v1.4.3'
