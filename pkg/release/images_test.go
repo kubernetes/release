@@ -382,7 +382,7 @@ func prepareImages(t *testing.T, tempDir string, mock *releasefakes.FakeImageImp
 			mock.RepoTagFromTarballReturnsOnCall(
 				c,
 				fmt.Sprintf(
-					"k8s.gcr.io/%s:v1.18.9",
+					"registry.k8s.io/%s:v1.18.9",
 					strings.TrimSuffix(image, ".tar"),
 				),
 				nil,
