@@ -3,7 +3,3 @@ variants:
   bullseye:
     CONFIG: 'bullseye'
     IMAGE_VERSION: 'bullseye-v1.4.2'
-  # Debian 10 - Kubernetes 1.22 and older
-  buster:
-    CONFIG: 'buster'
-    IMAGE_VERSION: 'buster-v1.10.0'
