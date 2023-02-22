@@ -148,7 +148,7 @@ const (
 
 type (
 	TextValueFragment struct {
-		Text string
+		Text  string
 		Field struct {
 			TextFieldNameFragment `graphql:"... on ProjectV2Field"`
 		}
@@ -157,7 +157,7 @@ type (
 		Name string
 	}
 	SingleSelectFragment struct {
-		Name string
+		Name  string
 		Field struct {
 			SingleSelectFieldNameFragment `graphql:"... on ProjectV2SingleSelectField"`
 		}
@@ -172,26 +172,31 @@ type ciSignalProjectBoardGraphQLQuery struct {
 		ProjectV2 struct {
 			// Items board rows with content
 			Items struct {
+				PageInfo struct {
+					HasNextPage bool
+					EndCursor   string
+					StartCursor string
+				}
 				Nodes []struct {
 					ID          string
 					FieldValues struct {
 						Nodes []struct {
-							TextValueFragment `graphql:"... on ProjectV2ItemFieldTextValue"`
+							TextValueFragment    `graphql:"... on ProjectV2ItemFieldTextValue"`
 							SingleSelectFragment `graphql:"... on ProjectV2ItemFieldSingleSelectValue"`
-							}
+						}
 					} `graphql:"fieldValues(first: 20)"`
 					Content struct {
 						Issue struct {
-							URL string
+							URL   string
 							Title string
 						} `graphql:"... on Issue"`
 						PullRequest struct {
-							URL string
+							URL   string
 							Title string
 						} `graphql:"... on PullRequest"`
 					}
 				}
-			} `graphql:"items(first: 100)"`
+			} `graphql:"items(first: 100 after: $cursor)"`
 		} `graphql:"projectV2(number: $projectBoardNum)"`
 	} `graphql:"organization(login: $kubernetesOrganizationName)"`
 }
@@ -212,81 +217,99 @@ type (
 
 // GetGithubReportData used to request the raw report data from github
 func GetGithubReportData(cfg Config, denyListFieldFilter, allowListFieldFilter map[FilteredFieldName][]FilteredListVal) ([]*TransformedProjectBoardItem, error) {
-	// lookup project board information
+	hasNextPage := true
+	var cursor string
 	var queryCiSignalProjectBoard ciSignalProjectBoardGraphQLQuery
-	variablesProjectBoardFields := map[string]interface{}{
-		"projectBoardNum": githubv4.Int(ciSignalProjectBoardNumber),
-		"kubernetesOrganizationName": githubv4.String(kubernetesOrganizationName),
-	}
-	if err := cfg.GithubClient.Query(context.Background(), &queryCiSignalProjectBoard, variablesProjectBoardFields); err != nil {
-		return nil, err
-	}
-
 	transformedProjectBoardItems := []*TransformedProjectBoardItem{}
-	for _, item := range queryCiSignalProjectBoard.Organization.ProjectV2.Items.Nodes {
-		transFields := map[fieldName]fieldValue{}
-		itemBlacklisted := false
-		for _, field := range item.FieldValues.Nodes {
-			// TODO: this seems silly, probably better graphql aliasing possible
-			fieldVal := field.Text
-			fieldN := field.TextValueFragment.Field.Name
-			 if field.Name != "" {
-				fieldVal = field.Name
-				fieldN = field.SingleSelectFragment.Field.Name
-			}
 
-			// filter out deny listed values
-			if denyListValues, filteredFieldFound := denyListFieldFilter[FilteredFieldName(fieldN)]; filteredFieldFound {
-				// The field is a filtered field since it could be found in the fieldFilter map
-				// 	check if the value of the field is blacklisted
-				for _, bv := range denyListValues {
-					if fieldVal == string(bv) {
-						itemBlacklisted = true
+	for hasNextPage {
+		// lookup project board information
+		variablesProjectBoardFields := map[string]interface{}{
+			"projectBoardNum":            githubv4.Int(ciSignalProjectBoardNumber),
+			"kubernetesOrganizationName": githubv4.String(kubernetesOrganizationName),
+			"cursor":                     githubv4.String(cursor),
+		}
+
+		if err := cfg.GithubClient.Query(context.Background(), &queryCiSignalProjectBoard, variablesProjectBoardFields); err != nil {
+			return nil, err
+		}
+
+		hasNextPage = queryCiSignalProjectBoard.Organization.ProjectV2.Items.PageInfo.HasNextPage
+		cursor = queryCiSignalProjectBoard.Organization.ProjectV2.Items.PageInfo.EndCursor
+
+		// until better graphql filtering, filter out allow and denylist in go
+		for _, item := range queryCiSignalProjectBoard.Organization.ProjectV2.Items.Nodes {
+			transFields := map[fieldName]fieldValue{}
+			itemBlacklisted := false
+			for _, field := range item.FieldValues.Nodes {
+				// TODO: better graphql aliasing for these fragments?
+				fieldVal := field.Text
+				fieldN := field.TextValueFragment.Field.Name
+				if fieldVal == "" {
+					fieldVal = field.Name
+					fieldN = field.SingleSelectFragment.Field.Name
+				}
+
+				// filter out deny listed values
+				if denyListValues, filteredFieldFound := denyListFieldFilter[FilteredFieldName(fieldN)]; filteredFieldFound {
+					// The field is a filtered field since it could be found in the fieldFilter map
+					// 	check if the value of the field is blacklisted
+					for _, bv := range denyListValues {
+						if fieldVal == string(bv) {
+							itemBlacklisted = true
+							break
+						}
+					}
+					if itemBlacklisted {
 						break
 					}
 				}
-				if itemBlacklisted {
-					break
-				}
-			}
-			// filter for allow listed values
-			if allowListValues, filteredFieldFound := allowListFieldFilter[FilteredFieldName(fieldN)]; filteredFieldFound {
-				// The field is a filtered field since it could be found in the fieldFilter map
-				// 	check if the value of the field is blacklisted
-				for _, bv := range allowListValues {
-					if fieldVal != string(bv) {
-						itemBlacklisted = true
+				// filter for allow listed values
+				if allowListValues, filteredFieldFound := allowListFieldFilter[FilteredFieldName(fieldN)]; filteredFieldFound {
+					// The field is a filtered field since it could be found in the fieldFilter map
+					// 	check if the value of the field is blacklisted
+					for _, bv := range allowListValues {
+						if fieldVal != string(bv) {
+							itemBlacklisted = true
+							break
+						}
+					}
+					if itemBlacklisted {
 						break
 					}
 				}
+
 				if itemBlacklisted {
 					break
 				}
-			}
-			transFields[fieldName(fieldN)] = fieldValue(fieldVal)
-		}
-		if itemBlacklisted {
-			continue
-		}
 
-		// TODO: this also seems silly, i still feel better graphql aliasing is possible
-		if item.Content.Issue.URL != "" {
-			transFields[fieldName("Issue URL")] = fieldValue(item.Content.Issue.URL)
+				transFields[fieldName(fieldN)] = fieldValue(fieldVal)
+
+			}
+
+			if itemBlacklisted {
+				continue
+			}
+
+			// TODO: better graphql aliasing for these fragments?
+			if item.Content.Issue.URL != "" {
+				transFields[fieldName("Issue URL")] = fieldValue(item.Content.Issue.URL)
+			}
+			if item.Content.Issue.Title != "" {
+				transFields[fieldName("Title")] = fieldValue(item.Content.Issue.Title)
+			}
+			if item.Content.PullRequest.URL != "" {
+				transFields[fieldName("PullRequest URL")] = fieldValue(item.Content.PullRequest.URL)
+			}
+			if item.Content.PullRequest.Title != "" {
+				transFields[fieldName("Title")] = fieldValue(item.Content.PullRequest.Title)
+			}
+			transformedProjectBoardItems = append(transformedProjectBoardItems, &TransformedProjectBoardItem{
+				ID:     item.ID,
+				Title:  string(transFields["Title"]),
+				Fields: transFields,
+			})
 		}
-		if item.Content.Issue.Title != "" {
-			transFields[fieldName("Title")]= fieldValue(item.Content.Issue.Title)
-		}
-		if item.Content.PullRequest.URL != "" {
-			transFields[fieldName("PullRequest URL")] = fieldValue(item.Content.PullRequest.URL)
-		}
-		if item.Content.PullRequest.Title != "" {
-			transFields[fieldName("Title")] = fieldValue(item.Content.PullRequest.Title)
-		}
-		transformedProjectBoardItems = append(transformedProjectBoardItems, &TransformedProjectBoardItem{
-			ID:     item.ID,
-			Title:  string(transFields["Title"]),
-			Fields: transFields,
-		})
 	}
 	return transformedProjectBoardItems, nil
 }
