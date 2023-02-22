@@ -54,6 +54,30 @@ SIG Release Slack thread:
   - [ ] test image
   - [ ] `.go-version` file
 
+#### After go-runner image promotion
+
+<!-- Example: https://github.com/kubernetes/release/pull/2920 -->
+- [ ] `debian-iptables` image update: 
+
+  <!-- Example: https://github.com/kubernetes/k8s.io/pull/3597 -->
+  - [ ] image promotion: 
+
+<!-- Example: https://github.com/kubernetes/release/pull/2920 -->
+- [ ] `distroless-iptables` image update: 
+
+  <!-- Example: https://github.com/kubernetes/k8s.io/pull/4263 -->
+  - [ ] image promotion: 
+
+#### After distroless-iptables image promotion
+
+<!-- Example: https://github.com/kubernetes/kubernetes/pull/112892 -->
+- [ ] kubernetes/kubernetes update (`master`): 
+
+  Ensure the following have been updated within the PR:
+
+  - [ ] distroless-iptables image
+  - [ ] test image
+
 #### After kubernetes/kubernetes (master) has been updated
 
 <!-- Example: https://github.com/kubernetes/release/pull/2699 -->
