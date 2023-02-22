@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
@@ -107,7 +108,7 @@ func (r GithubReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error
 			TestgridBoard:    string(item.Fields[fieldName(TestgridBoardKey)]),
 			URL:              URL,
 			Status:           string(item.Fields[fieldName(StatusKey)]),
-			StatusDetails:    string(item.Fields[fieldName(CiSignalMemberKey)]),
+			StatusDetails:    string(item.Fields[fieldName(LabelsKey)]),
 			CreatedTimestamp: string(item.Fields[fieldName(CreatedAtKey)]),
 			UpdatedTimestamp: string(item.Fields[fieldName(UpdatedAtKey)]),
 		})
@@ -134,6 +135,7 @@ const (
 	SlackDiscussionLinkKey = ciSignalProjectBoardKey("Slack discussion link")
 	StatusKey              = ciSignalProjectBoardKey("Status")
 	CiSignalMemberKey      = ciSignalProjectBoardKey("CI Signal Member")
+	LabelsKey              = ciSignalProjectBoardKey("Labels")
 	CreatedAtKey           = ciSignalProjectBoardKey("Created At")
 	UpdatedAtKey           = ciSignalProjectBoardKey("Updated At")
 )
@@ -187,8 +189,14 @@ type ciSignalProjectBoardGraphQLQuery struct {
 					} `graphql:"fieldValues(first: 20)"`
 					Content struct {
 						Issue struct {
-							URL   string
-							Title string
+							URL    string
+							Title  string
+							Labels struct {
+								TotalCount int
+								Nodes      []struct {
+									Name string
+								}
+							} `graphql:"labels(first:100)"`
 						} `graphql:"... on Issue"`
 						PullRequest struct {
 							URL   string
@@ -298,6 +306,15 @@ func GetGithubReportData(cfg Config, denyListFieldFilter, allowListFieldFilter m
 			if item.Content.Issue.Title != "" {
 				transFields[fieldName("Title")] = fieldValue(item.Content.Issue.Title)
 			}
+
+			if item.Content.Issue.Labels.TotalCount > 0 {
+				var labels []string
+				for _, node := range item.Content.Issue.Labels.Nodes {
+					labels = append(labels, node.Name)
+				}
+				transFields[fieldName("Labels")] = fieldValue(strings.Join(labels, ","))
+			}
+
 			if item.Content.PullRequest.URL != "" {
 				transFields[fieldName("PullRequest URL")] = fieldValue(item.Content.PullRequest.URL)
 			}
