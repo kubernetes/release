@@ -123,7 +123,6 @@ func (r GithubReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error
 // This can be seen in the project's URL or looked up in the API
 const ciSignalProjectBoardNumber = 68
 const kubernetesOrganizationName = "kubernetes"
-
 type ciSignalProjectBoardKey string
 
 const (
@@ -201,6 +200,12 @@ type ciSignalProjectBoardGraphQLQuery struct {
 						PullRequest struct {
 							URL   string
 							Title string
+							Labels struct {
+								TotalCount int
+								Nodes      []struct {
+									Name string
+								}
+							} `graphql:"labels(first:100)"`
 						} `graphql:"... on PullRequest"`
 					}
 				}
@@ -250,7 +255,7 @@ func GetGithubReportData(cfg Config, denyListFieldFilter, allowListFieldFilter m
 			transFields := map[fieldName]fieldValue{}
 			itemBlacklisted := false
 			for _, field := range item.FieldValues.Nodes {
-				// TODO: better graphql aliasing for these fragments?
+				// TODO: better graphql aliasing for these fragments instead of flipping between fragment types?
 				fieldVal := field.Text
 				fieldN := field.TextValueFragment.Field.Name
 				if fieldVal == "" {
@@ -299,7 +304,7 @@ func GetGithubReportData(cfg Config, denyListFieldFilter, allowListFieldFilter m
 				continue
 			}
 
-			// TODO: better graphql aliasing for these fragments?
+			// TODO: better graphql aliasing for these fragments instead of flipping between fragment types?
 			if item.Content.Issue.URL != "" {
 				transFields[fieldName("Issue URL")] = fieldValue(item.Content.Issue.URL)
 			}
@@ -321,6 +326,14 @@ func GetGithubReportData(cfg Config, denyListFieldFilter, allowListFieldFilter m
 			if item.Content.PullRequest.Title != "" {
 				transFields[fieldName("Title")] = fieldValue(item.Content.PullRequest.Title)
 			}
+			if item.Content.PullRequest.Labels.TotalCount > 0 {
+				var labels []string
+				for _, node := range item.Content.PullRequest.Labels.Nodes {
+					labels = append(labels, node.Name)
+				}
+				transFields[fieldName("Labels")] = fieldValue(strings.Join(labels, ","))
+			}
+
 			transformedProjectBoardItems = append(transformedProjectBoardItems, &TransformedProjectBoardItem{
 				ID:     item.ID,
 				Title:  string(transFields["Title"]),

@@ -72,56 +72,48 @@ curl \
 ```
 GITHUB_TOKEN=xxx go run cmd/ci-reporter/main.go -s
 GITHUB REPORT
-     ID    |                  TITLE                  |       CATEGORY        | STATUS
------------+-----------------------------------------+-----------------------+---------
-    100230 | [Flaky Test]                            | New/Not Yet Started   |
-           | [sig-cloud-provider-gcp] Nodes          |                       |
-           | [Disruptive] Resize [Slow]              |                       |
-           | should be able to delete nodes          |                       |
-    105677 | HPA Custom metrics tests are            |                       |
-           | failing                                 |                       |
-    106278 | New Windows kubelet stats               | In flight             |
-           | collection test flaking                 |                       |
-     98180 | [Flaky Test] [sig-apps]                 |                       |
-           | Deployment should run the               |                       |
-           | lifecycle of a Deployment               |                       |
-     97783 | Device manager for Windows              |                       |
-           | passes when run on cluster              |                       |
-           | that does not have a GPU but            |                       |
-           | cuases cascading errors                 |                       |
-    103742 | [Flaking Test] [sig-scalability]        |                       |
-           | restarting konnectivity-agent           |                       |
-           | (ci-kubernetes-e2e-gci-gce-scalability) |                       |
------------+-----------------------------------------+-----------------------+---------
-  TOTAL: 6 |                                           NEW/NOT YET STARTED:2 |
-           |                                                IN FLIGHT:4      |
------------+-----------------------------------------+-----------------------+---------
+
+|  TESTGRID BOARD  |               TITLE                |  STATUS   |                                 STATUS DETAILS                                  |
+|------------------|------------------------------------|-----------|---------------------------------------------------------------------------------|
+| master-blocking  | [Flaky Tests] Various              | OBSERVING | kind/flake,sig/testing,needs-triage                                             |
+|                  | sig-release-master-blocking        |           |                                                                                 |
+|                  | jobs with "Unknown: Build is       |           |                                                                                 |
+|                  | too old to process"                |           |                                                                                 |
+| master-informing | [Failing Test]                     | FLAKY     | sig/cluster-lifecycle,kind/flake,needs-triage                                   |
+|                  | periodic-conformance-main-k8s-main |           |                                                                                 |
+| master-informing | [Flaking Test]                     | FLAKY     | sig/storage,kind/flake,triage/accepted                                          |
+|                  | gce-cos-master-serial              |           |                                                                                 |
+| master-informing | [Flaky Test] [sig-windows]         | FLAKY     | priority/important-soon,kind/flake,sig/windows,lifecycle/rotten,triage/accepted |
+|                  | Services should be able to         |           |                                                                                 |
+|                  | create a functioning NodePort      |           |                                                                                 |
+|                  | service for Windows                |           |                                                                                 |
+| master-informing | [Flaky] HostProcess containers     | OBSERVING | kind/flake,sig/windows,needs-triage                                             |
+|                  | container stats validation         |           |                                                                                 |
+
+SUMMARY - Total:5 OBSERVING:2 FLAKY:3 
 
 TESTGRID REPORT
-               ID              |                  TITLE                  | CATEGORY  |      STATUS
--------------------------------+-----------------------------------------+-----------+--------------------
-  sig-release-master-blocking  | ci-kubernetes-unit                      | FLAKY     | 8 of 9 (88.9%)
-                               | gce-device-plugin-gpu-master            | FAILING   | 0 of 10 (0.0%)
-                               | gci-gce-ingress                         | FLAKY     | 8 of 10 (80.0%)
-                               | kind-master-parallel                    |           | 8 of 9 (88.9%)
-                               | integration-master                      |           |
-                               | verify-master                           |           | 9 of 9 (100.0%)
-  sig-release-master-informing | post-release-push-image-debian-base     |           | 0 of 1 (0.0%)
-                               | post-release-push-image-setcap          |           |
-                               | capg-conformance-main-ci-artifacts      |           | 10 of 10 (100.0%)
-                               | capg-conformance-v1beta1-ci-artifacts   |           | 8 of 10 (80.0%)
-                               | ci-crio-cgroupv1-node-e2e-conformance   |           | 9 of 10 (90.0%)
-                               | gce-ubuntu-master-default               | FAILING   | 0 of 9 (0.0%)
-                               | kubeadm-kinder-upgrade-1-23-latest      | FLAKY     | 8 of 9 (88.9%)
-                               | post-release-push-image-debian-iptables |           | 0 of 1 (0.0%)
-                               | aks-engine-windows-containerd-master    |           | 7 of 10 (70.0%)
-                               | post-release-push-image-go-runner       |           | 4 of 9 (44.4%)
-                               | gce-cos-master-slow                     |           | 8 of 10 (80.0%)
-                               | gce-master-scale-performance            |           | 9 of 10 (90.0%)
-                               | periodic-conformance-main-k8s-main      | FAILING   | 8 of 10 (80.0%)
--------------------------------+-----------------------------------------+-----------+--------------------
-           TOTAL: 19           |                                           FLAKY:16  |
-                               |                                           FAILING:3 |
-                               |                                                     |
--------------------------------+-----------------------------------------+-----------+--------------------
+
+|        TESTGRID BOARD        |                    TITLE                    | STATUS | STATUS DETAILS  |
+|------------------------------|---------------------------------------------|--------|-----------------|
+| sig-release-master-blocking  | gce-cos-master-scalability-100              | FLAKY  | 8 of 9 (88.9%)  |
+| sig-release-master-blocking  | integration-master                          | FLAKY  | 7 of 9 (77.8%)  |
+| sig-release-master-blocking  | ci-kubernetes-unit                          | FLAKY  | 8 of 10 (80.0%) |
+| sig-release-master-blocking  | gce-cos-master-reboot                       | FLAKY  | 8 of 9 (88.9%)  |
+| sig-release-master-blocking  | kind-master-parallel                        | FLAKY  | 8 of 9 (88.9%)  |
+| sig-release-master-blocking  | build-master                                | FLAKY  | 8 of 9 (88.9%)  |
+| sig-release-master-informing | gce-master-scale-correctness                | FLAKY  | 7 of 10 (70.0%) |
+| sig-release-master-informing | gce-master-scale-performance                | FLAKY  | 9 of 10 (90.0%) |
+| sig-release-master-informing | post-kubernetes-push-image-etcd             | FLAKY  | 1 of 2 (50.0%)  |
+| sig-release-master-informing | capz-windows-containerd-master              | FLAKY  | 8 of 10 (80.0%) |
+| sig-release-master-informing | gce-cos-master-serial                       | FLAKY  | 5 of 9 (55.6%)  |
+| sig-release-master-informing | kubeadm-kinder-latest                       | FLAKY  | 9 of 10 (90.0%) |
+| sig-release-master-informing | periodic-conformance-main-k8s-main          | FLAKY  | 4 of 10 (40.0%) |
+| sig-release-master-informing | post-release-push-image-distroless-iptables | FLAKY  | 2 of 3 (66.7%)  |
+| sig-release-master-informing | post-release-push-image-go-runner           | FLAKY  | 1 of 2 (50.0%)  |
+| sig-release-master-informing | capg-conformance-main-ci-artifacts          | FLAKY  | 8 of 9 (88.9%)  |
+| sig-release-master-informing | post-release-push-image-debian-iptables     | FLAKY  | 3 of 4 (75.0%)  |
+| sig-release-master-informing | post-release-push-image-kube-cross          | FLAKY  | 1 of 3 (33.3%)  |
+
+SUMMARY - Total:18 FLAKY:18 
 ```
