@@ -25,7 +25,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
-	slsa "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
+	"github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/common"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/build"
@@ -979,7 +979,7 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 	p.BuildType = "https://cloudbuild.googleapis.com/CloudBuildYaml@v1"
 	p.Invocation.Parameters = arguments
 
-	p.AddMaterial("git+https://github.com/kubernetes/kubernetes", slsa.DigestSet{"sha1": commitSHA})
+	p.AddMaterial("git+https://github.com/kubernetes/kubernetes", common.DigestSet{"sha1": commitSHA})
 
 	// Create the new attestation and attach the predicate
 	attestation = provenance.NewSLSAStatement()
