@@ -93,13 +93,8 @@ func (*defaultImageImpl) SignImage(signer *sign.Signer, reference string) error 
 }
 
 func (*defaultImageImpl) VerifyImage(signer *sign.Signer, reference string) error {
-	// TODO: bypassing this for now due to the fail in the promotion process
-	// that sign the images. We will release the Feb/2023 patch releases without full
-	// signatures but we will sign those in a near future in a deatached process
-	// revert this change when the patches are out
-	// _, err := signer.VerifyImage(reference)
-	// return err
-	return nil
+	_, err := signer.VerifyImage(reference)
+	return err
 }
 
 var tagRegex = regexp.MustCompile(`^.+/(.+):.+$`)
