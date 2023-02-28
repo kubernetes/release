@@ -204,32 +204,36 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure on sign image
-			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
-				tempDir := newImagesPath(t)
-				prepareImages(t, tempDir, mock)
-
-				mock.SignImageReturns(errors.New(""))
-
-				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
-				}
-			},
-			shouldError: true,
-		},
-		{ // failure on sign manifest
-			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
-				tempDir := newImagesPath(t)
-				prepareImages(t, tempDir, mock)
-
-				mock.SignImageReturnsOnCall(10, errors.New(""))
-
-				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
-				}
-			},
-			shouldError: true,
-		},
+		// TODO: bypassing this for now due to the fail in the promotion process
+		// that sign the images. We will release the Feb/2023 patch releases without full
+		// signatures but we will sign those in a near future in a deatached process
+		// revert this change when the patches are out
+		// { // failure on sign image
+		// 	prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
+		// 		tempDir := newImagesPath(t)
+		// 		prepareImages(t, tempDir, mock)
+		//
+		// 		mock.SignImageReturns(errors.New(""))
+		//
+		// 		return tempDir, func() {
+		// 			require.Nil(t, os.RemoveAll(tempDir))
+		// 		}
+		// 	},
+		// 	shouldError: true,
+		// },
+		// { // failure on sign manifest
+		// 	prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
+		// 		tempDir := newImagesPath(t)
+		// 		prepareImages(t, tempDir, mock)
+		//
+		// 		mock.SignImageReturnsOnCall(10, errors.New(""))
+		//
+		// 		return tempDir, func() {
+		// 			require.Nil(t, os.RemoveAll(tempDir))
+		// 		}
+		// 	},
+		// 	shouldError: true,
+		// },
 	} {
 		sut := release.NewImages()
 		clientMock := &releasefakes.FakeImageImpl{}
