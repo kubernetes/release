@@ -30,6 +30,7 @@ BASEIMAGE?=$(BASE_REGISTRY)/debian-base-$(ARCH):$(DEBIAN_BASE_VERSION)
 
 # Build args
 QEMUVERSION=7.2.0-1
+QEMUIMAGE ?= multiarch/qemu-user-static
 
 # This option is for running docker manifest command
 export DOCKER_CLI_EXPERIMENTAL := enabled
@@ -39,7 +40,7 @@ build:
 	umask 0022
 
 	# Enable execution of multi-architecture containers
-	docker run --rm --privileged multiarch/qemu-user-static:$(QEMUVERSION) --reset -p yes
+	docker run --rm --privileged $(QEMUIMAGE):$(QEMUVERSION) --reset -p yes
 	docker buildx version
 	BUILDER=$(shell docker buildx create --use)
 	docker buildx build \

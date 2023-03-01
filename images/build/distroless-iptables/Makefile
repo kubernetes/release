@@ -31,6 +31,7 @@ BASE_REGISTRY?=registry.k8s.io/build-image
 GORUNNERIMAGE?=$(BASE_REGISTRY)/go-runner:$(GORUNNER_VERSION)
 
 QEMUVERSION=6.1.0-8
+QEMUIMAGE ?= multiarch/qemu-user-static
 
 ifneq ($(ARCH), amd64)
 	SKIP_WRAPPER_CHECK=--no-sanity-check
@@ -46,7 +47,7 @@ build:
 	umask 0022
 
 	# Enable execution of multi-architecture containers
-	docker run --rm --privileged multiarch/qemu-user-static:$(QEMUVERSION) --reset -p yes
+	docker run --rm --privileged $(QEMUIMAGE):$(QEMUVERSION) --reset -p yes
 	docker buildx version
 	BUILDER=$(shell docker buildx create --use)
 	docker buildx build \
