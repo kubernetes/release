@@ -23,6 +23,4 @@ package internal
 import (
 	_ "github.com/maxbrunsfeld/counterfeiter/v6"
 	_ "github.com/psampaz/go-mod-outdated"
-
-	_ "sigs.k8s.io/zeitgeist"
 )
