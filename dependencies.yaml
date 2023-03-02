@@ -571,6 +571,8 @@ dependencies:
     refPaths:
     - path: images/build/debian-iptables/Makefile
       match: QEMUVERSION
+    - path: images/build/distroless-iptables/Makefile
+      match: QEMUVERSION
     - path: images/build/setcap/Makefile
       match: QEMUVERSION
     - path: images/build/debian-base/Makefile
