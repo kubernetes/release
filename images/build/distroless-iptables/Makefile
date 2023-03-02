@@ -30,7 +30,7 @@ BASE_REGISTRY?=registry.k8s.io/build-image
 
 GORUNNERIMAGE?=$(BASE_REGISTRY)/go-runner:$(GORUNNER_VERSION)
 
-QEMUVERSION=6.1.0-8
+QEMUVERSION=7.2.0-1
 QEMUIMAGE ?= multiarch/qemu-user-static
 
 ifneq ($(ARCH), amd64)
