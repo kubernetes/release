@@ -19,7 +19,7 @@ IMGNAME = go-runner
 APP_VERSION = $(shell cat VERSION)
 GO_MAJOR_VERSION ?= 1.20
 REVISION ?= 0
-GO_VERSION ?= 1.20.1
+GO_VERSION ?= 1.20.2
 OS_CODENAME ?= bullseye
 
 # Build args
