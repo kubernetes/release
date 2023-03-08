@@ -7,6 +7,25 @@ timeout: 14400s
 # outside of GCP Cloud KMS for the GCP project this encrypted resource was created for.
 # Seeing the base64-encoded encrypted blob here is not a security event for the project.
 #
+# Adding new keys to the existing default keyring `release` in the default
+# project `k8s-releng-prod` can be done by:
+# ```
+# gcloud kms keys create $KEY --project k8s-releng-prod --location global --keyring release --purpose encryption
+# ```
+#
+# After that, verify that the key is marked as "Available" there:
+# https://console.cloud.google.com/security/kms/keyring/manage/global/release/key?project=k8s-releng-prod
+#
+# Now encrypt any secret:
+# ```
+# echo -n my-secret > pw
+# gcloud kms encrypt --project k8s-releng-prod --location global --keyring release --key $KEY --plaintext-file pw --ciphertext-file pw.enc
+# base64 pw.enc -w0
+# ```
+#
+# Use the base64 output printed above as secretEnv value below. Then just
+# reference it via secretEnv in a step.
+#
 # More details on using encrypted resources on Google Cloud Build can be found here:
 # https://cloud.google.com/cloud-build/docs/securing-builds/use-encrypted-secrets-credentials
 #
