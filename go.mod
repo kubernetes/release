@@ -9,7 +9,7 @@ require (
 	github.com/cheggaaa/pb/v3 v3.1.2
 	github.com/go-git/go-git/v5 v5.6.0
 	github.com/goark/go-cvss v1.6.6
-	github.com/golang/protobuf v1.5.2
+	github.com/golang/protobuf v1.5.3
 	github.com/google/go-containerregistry v0.13.0
 	github.com/google/go-github/v48 v48.2.0
 	github.com/google/uuid v1.3.0
