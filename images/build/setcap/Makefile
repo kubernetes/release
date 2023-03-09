@@ -18,9 +18,9 @@ REGISTRY?="gcr.io/k8s-staging-build-image"
 IMAGE=$(REGISTRY)/setcap
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= bullseye-v1.4.1
+IMAGE_VERSION ?= bullseye-v1.4.2
 CONFIG ?= bullseye
-DEBIAN_BASE_VERSION ?= bullseye-v1.4.2
+DEBIAN_BASE_VERSION ?= bullseye-v1.4.3
 
 ARCH?=amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
