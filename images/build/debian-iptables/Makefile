@@ -21,7 +21,7 @@ TAG ?= $(shell git describe --tags --always --dirty)
 IMAGE_VERSION ?= bullseye-v1.5.3
 CONFIG ?= bullseye
 DEBIAN_BASE_VERSION ?= bullseye-v1.4.3
-GORUNNER_VERSION ?= v2.3.1-go1.19.6-bullseye.0
+GORUNNER_VERSION ?= v2.3.1-go1.19.7-bullseye.0
 
 ARCH?=amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
