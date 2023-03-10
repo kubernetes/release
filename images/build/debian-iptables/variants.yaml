@@ -4,3 +4,4 @@ variants:
     CONFIG: 'bullseye'
     IMAGE_VERSION: 'bullseye-v1.5.3'
     DEBIAN_BASE_VERSION: 'bullseye-v1.4.3'
+    GORUNNER_VERSION: 'v2.3.1-go1.20.2-bullseye.0'
