@@ -23,7 +23,3 @@ variants:
     CONFIG: '1.24'
     GO_VERSION: '1.19.7'
     OS_CODENAME: 'bullseye'
-  '1.23':
-    CONFIG: '1.23'
-    GO_VERSION: '1.19.7'
-    OS_CODENAME: 'bullseye'
