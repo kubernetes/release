@@ -18,10 +18,10 @@ REGISTRY?="gcr.io/k8s-staging-build-image"
 IMAGE=$(REGISTRY)/debian-iptables
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= bullseye-v1.5.3
+IMAGE_VERSION ?= bullseye-v1.5.4
 CONFIG ?= bullseye
 DEBIAN_BASE_VERSION ?= bullseye-v1.4.3
-GORUNNER_VERSION ?= v2.3.1-go1.19.7-bullseye.0
+GORUNNER_VERSION ?= v2.3.1-go1.20.2-bullseye.0
 
 ARCH?=amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
