@@ -260,26 +260,6 @@ dependencies:
     - path: images/build/cross/variants.yaml
       match: REVISION:\ '\d+'
 
-  - name: "registry.k8s.io/build-image/kube-cross (v1.23-go1.19)"
-    version: v1.23.0-go1.19.7-bullseye.0
-    refPaths:
-    - path: images/build/cross/variants.yaml
-      match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
-
-  - name: "registry.k8s.io/build-image/kube-cross: config variant (v1.23-go1.19)"
-    version: go1.19-bullseye
-    refPaths:
-    - path: images/build/cross/variants.yaml
-      match: "CONFIG: 'go\\d+.\\d+-bullseye'"
-
-  - name: "registry.k8s.io/build-image/kube-cross: image revision (v1.23-go1.19)"
-    version: 0
-    refPaths:
-    - path: images/build/cross/Makefile
-      match: REVISION \?= \d+
-    - path: images/build/cross/variants.yaml
-      match: REVISION:\ '\d+'
-
   - name: "registry.k8s.io/build-image/kube-cross: dependents k8s-cloud-builder (v1.27-cross1.20)"
     version: v1.27.0-go1.20.2-bullseye.0
     refPaths:
@@ -300,12 +280,6 @@ dependencies:
 
   - name: "registry.k8s.io/build-image/kube-cross: dependents k8s-cloud-builder (v1.24-cross1.20)"
     version: v1.24.0-go1.19.7-bullseye.0
-    refPaths:
-    - path: images/k8s-cloud-builder/variants.yaml
-      match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
-
-  - name: "registry.k8s.io/build-image/kube-cross: dependents k8s-cloud-builder (v1.23-cross1.20)"
-    version: v1.23.0-go1.19.7-bullseye.0
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -476,7 +450,7 @@ dependencies:
       match: "DEBIAN_BASE_VERSION: 'bullseye-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/debian-iptables"
-    version: bullseye-v1.5.3
+    version: bullseye-v1.5.4
     refPaths:
     - path: images/build/debian-iptables/Makefile
       match: IMAGE_VERSION\ \?=\ bullseye-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -490,7 +464,7 @@ dependencies:
       match: IMAGE_VERSION\ \?=\ v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
   - name: "registry.k8s.io/build-image/go-runner: dependents"
-    version: v2.3.1-go1.19.7-bullseye.0
+    version: v2.3.1-go1.20.2-bullseye.0
     refPaths:
     - path: images/build/debian-iptables/Makefile
       match: GORUNNER_VERSION \?= v\d+\.\d+\.\d+-go\d+.\d+(alpha|beta|rc)?\.?(\d+)?-bullseye\.\d+
@@ -521,7 +495,7 @@ dependencies:
       match: "DEBIAN_BASE_VERSION: 'bullseye-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/debian-iptables (next candidate)"
-    version: bullseye-v1.5.3
+    version: bullseye-v1.5.4
     refPaths:
     - path: images/build/debian-iptables/variants.yaml
       match: "IMAGE_VERSION: 'bullseye-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
