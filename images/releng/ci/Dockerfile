@@ -30,6 +30,30 @@ RUN apt-get update && \
         jq && \
     rm -rf /var/lib/apt/lists/*
 
+# install goreleaser
+ARG GORELEASER_VERSION=v1.16.0
+ARG GORELEASER_SHA=498193112465ba149b55684d75d40a94649b5ba031021e82d9aa3df420f7c5a6
+RUN  \
+    GORELEASER_DOWNLOAD_FILE=goreleaser_Linux_x86_64.tar.gz && \
+    GORELEASER_DOWNLOAD_URL=https://github.com/goreleaser/goreleaser/releases/download/${GORELEASER_VERSION}/${GORELEASER_DOWNLOAD_FILE} && \
+    wget ${GORELEASER_DOWNLOAD_URL} && \
+    echo "$GORELEASER_SHA $GORELEASER_DOWNLOAD_FILE" | sha256sum -c - || exit 1 && \
+    tar -xzf $GORELEASER_DOWNLOAD_FILE -C /usr/bin/ goreleaser && \
+    rm $GORELEASER_DOWNLOAD_FILE && \
+    goreleaser -v
+
+# install ko
+ARG KO_VERSION=v0.12.0
+ARG KO_SHA=05aa77182fa7c55386bd2a210fd41298542726f33bbfc9c549add3a66f7b90ad
+RUN  \
+    KO_DOWNLOAD_FILE=ko_${KO_VERSION#v}_Linux_x86_64.tar.gz && \
+    KO_DOWNLOAD_URL=https://github.com/ko-build/ko/releases/download/${KO_VERSION}/${KO_DOWNLOAD_FILE} && \
+    wget ${KO_DOWNLOAD_URL} && \
+    echo "$KO_SHA $KO_DOWNLOAD_FILE" | sha256sum -c - || exit 1 && \
+    tar -xzf $KO_DOWNLOAD_FILE -C /usr/bin/ ko && \
+    rm $KO_DOWNLOAD_FILE && \
+    ko version
+
 # Some tests require a working git executable, so we configure a pseudo-user
 RUN git config --global user.name releng-ci-user && \
     git config --global user.email nobody@k8s.io
