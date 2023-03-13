@@ -18,11 +18,13 @@ package packages
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/release-sdk/object"
-	"sigs.k8s.io/release-utils/util"
 
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/release/pkg/release"
 )
 
@@ -83,8 +85,27 @@ func (p *Packages) Release() error {
 		return fmt.Errorf("switch to k/release git root: %w", err)
 	}
 
+	semverVersion, err := p.impl.TagStringToSemver(p.version)
+	if err != nil {
+		return fmt.Errorf(" parse semver version %s: %w", p.version, err)
+	}
+
+	// We dropped support for the arm architecture in Kubernetes v1.27:
+	// https://github.com/kubernetes/kubernetes/pull/115742
+	//
+	// Means we have to add this workaround for currently supported release branches.
+	// TODO(saschagrunert): Remove when v1.26 goes end of life (planned 2024-02-28)
+	architectures := sets.New("amd64", "arm", "arm64", "ppc64le", "s390x")
+	const droppedArmInMinor = 27
+	if semverVersion.Minor >= droppedArmInMinor {
+		logrus.Info("Removing arm architecture from default set")
+		architectures.Delete("arm")
+	}
+	archList := architectures.UnsortedList()
+	sort.Strings(archList)
+
 	if err := p.impl.RunCommand(
-		scriptPath, util.TrimTagPrefix(p.version),
+		scriptPath, semverVersion.String(), strings.Join(archList, ","),
 	); err != nil {
 		return fmt.Errorf("run rapture: %w", err)
 	}

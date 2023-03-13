@@ -37,6 +37,7 @@ fatal() {
 }
 
 version=${1:-""}
+architectures=${2:-""}
 
 if [[ "$version" == "" ]]; then
   fatal "no version specified"
@@ -55,8 +56,8 @@ build_debs() {
   log "Setting all Revisions to \"00\" in build.go"
   sed -i -r -e 's/\b(Revision:\s*)"[0-9]{2}"/\1"00"/' build.go
 
-  log "Building debs for Kubernetes v${version}"
-  ./jenkins.sh --kube-version "$version" --distros $distro
+  log "Building debs for Kubernetes v${version} for ${architectures}"
+  ./jenkins.sh --kube-version "$version" --distros $distro --arch "$architectures"
 
   if [[ $USER != 0 ]]; then
     log "Changing file owner from root to ${USER}"
@@ -84,8 +85,8 @@ build_rpms() {
     -e "s/(%global\\s+RPM_RELEASE\\s+)[0-9]+/\\10/" \
     kubelet.spec
 
-  log "Building RPMs for Kubernetes v${version}"
-  ./docker-build.sh
+  log "Building RPMs for Kubernetes v${version} for ${architectures}"
+  ./docker-build.sh "$architectures"
   cd "${RELEASE_ROOT:?}"
 }
 

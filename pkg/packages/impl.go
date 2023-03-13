@@ -19,8 +19,10 @@ package packages
 import (
 	"os"
 
+	"github.com/blang/semver/v4"
 	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/command"
+	"sigs.k8s.io/release-utils/util"
 )
 
 type defaultImpl struct{}
@@ -31,6 +33,7 @@ type defaultImpl struct{}
 type impl interface {
 	Getwd() (string, error)
 	Chdir(string) error
+	TagStringToSemver(string) (semver.Version, error)
 	RunCommand(string, ...string) error
 	NormalizePath(*object.GCS, ...string) (string, error)
 	CopyToRemote(*object.GCS, string, string) error
@@ -42,6 +45,10 @@ func (*defaultImpl) Getwd() (dir string, err error) {
 
 func (*defaultImpl) Chdir(dir string) error {
 	return os.Chdir(dir)
+}
+
+func (*defaultImpl) TagStringToSemver(version string) (semver.Version, error) {
+	return util.TagStringToSemver(version)
 }
 
 func (*defaultImpl) RunCommand(cmd string, args ...string) error {

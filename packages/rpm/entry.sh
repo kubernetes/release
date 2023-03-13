@@ -25,16 +25,24 @@ if [ $# -gt 0 ]; then
 else
   #GOARCH/RPMARCH
   ARCHS=(
-    amd64/x86_64
-    arm/armhfp
-    arm64/aarch64
-    ppc64le/ppc64le
-    s390x/s390x
+    amd64
+    arm
+    arm64
+    ppc64le
+    s390x
   )
 fi
 
-for ARCH in ${ARCHS[@]}; do
-  IFS=/ read GOARCH RPMARCH<<< ${ARCH}; unset IFS;
+declare -A GOTORPMARCH=(
+    [amd64]=x86_64
+    [arm]=armhfp
+    [arm64]=aarch64
+    [ppc64le]=ppc64le
+    [s390x]=s390x
+)
+
+for GOARCH in "${ARCHS[@]}"; do
+  RPMARCH=${GOTORPMARCH[$GOARCH]}
   SRC_PATH="/root/rpmbuild/SOURCES/${RPMARCH}"
   mkdir -p ${SRC_PATH}
   cp -r /root/rpmbuild/SPECS/* ${SRC_PATH}

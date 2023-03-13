@@ -19,7 +19,10 @@ docker build -t kubelet-rpm-builder .
 echo "Cleaning output directory..."
 rm -rf output/*
 mkdir -p output
-docker run -i --rm -v $PWD/output/:/root/rpmbuild/RPMS/ kubelet-rpm-builder $1
+
+architectures=${1:-""}
+
+docker run -i --rm -v $PWD/output/:/root/rpmbuild/RPMS/ kubelet-rpm-builder "$architectures"
 
 USER=${USER:-$(id -u)}
 if [[ $USER != 0 ]]; then
