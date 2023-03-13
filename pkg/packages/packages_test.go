@@ -21,6 +21,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"k8s.io/release/pkg/packages"
@@ -66,6 +67,14 @@ func TestRelease(t *testing.T) {
 			},
 			assert: func(err error) { require.NotNil(t, err) },
 		},
+		{
+			name: "failure on TagStringToSemver",
+			prepare: func(mock *packagesfakes.FakeImpl) {
+				mock.TagStringToSemverReturns(semver.Version{}, errTest)
+			},
+			assert: func(err error) { require.NotNil(t, err) },
+		},
+
 		{
 			name: "failure on RunCommand",
 			prepare: func(mock *packagesfakes.FakeImpl) {
