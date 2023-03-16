@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -127,24 +127,24 @@ func runGenerateOBSSpecs(opts *options.Options) (err error) {
 
 	builder, err := client.ConstructPackageBuilder()
 	if err != nil {
-		return fmt.Errorf("running kubepkg: %w", err)
+		return fmt.Errorf("running krel obs: %w", err)
 	}
 
 	if err = client.ConstructPackageDefinitions(builder); err != nil {
-		return fmt.Errorf("running kubepkg: %w", err)
+		return fmt.Errorf("running krel obs: %w", err)
 	}
 
 	if err = client.BuildSpecs(builder); err != nil {
-		return fmt.Errorf("running kubepkg: %w", err)
+		return fmt.Errorf("running krel obs: %w", err)
 	}
 
 	if !opts.SpecOnly {
 		if err = client.DownloadAndArchiveBinaries(builder); err != nil {
-			return fmt.Errorf("running kubepkg: %w", err)
+			return fmt.Errorf("running krel obs: %w", err)
 		}
 	}
 
-	logrus.Infof("kubepkg done, files available in %s", opts.OutputDir)
+	logrus.Infof("krel obs done, files available in %s", opts.OutputDir)
 
 	return nil
 }

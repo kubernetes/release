@@ -194,7 +194,7 @@ func (c *Client) ConstructPackageBuilder() (*PackageBuilder, error) {
 	// of "+" with "-", so that we build with a valid Debian package version.
 	pb.KubernetesVersion = strings.Replace(pb.KubernetesVersion, "+", "-", 1)
 
-	logrus.Infof("Successfully constructed package builder!")
+	logrus.Info("Successfully constructed package builder!")
 
 	return pb, nil
 }
@@ -233,6 +233,6 @@ func (c *Client) ConstructPackageDefinitions(pkgBuilder *PackageBuilder) error {
 		pkgBuilder.Definitions = append(pkgBuilder.Definitions, pkgDef)
 	}
 
-	logrus.Infof("Successfully constructed package definitions!")
+	logrus.Info("Successfully constructed package definitions!")
 	return nil
 }
