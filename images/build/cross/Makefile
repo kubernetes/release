@@ -53,7 +53,7 @@ export DOCKER_CLI_EXPERIMENTAL=enabled
 # TODO: Support multi-arch kube-cross images for linux/arm
 #       Currently some of the components references in the Dockerfile are
 #       not supported in specific architectures
-PLATFORMS ?= linux/amd64 linux/arm64 linux/ppc64le linux/s390x #linux/arm
+PLATFORMS ?= linux/amd64 linux/arm64 linux/ppc64le linux/s390x linux/riscv64 #linux/arm
 
 # for legacy images only build linux/amd64
 ifeq ($(TYPE), legacy)

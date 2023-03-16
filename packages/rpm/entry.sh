@@ -30,6 +30,7 @@ else
     arm64
     ppc64le
     s390x
+    riscv64
   )
 fi
 
@@ -39,6 +40,7 @@ declare -A GOTORPMARCH=(
     [arm64]=aarch64
     [ppc64le]=ppc64le
     [s390x]=s390x
+    [riscv64]=riscv64
 )
 
 for GOARCH in "${ARCHS[@]}"; do

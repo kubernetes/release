@@ -33,7 +33,7 @@ BUILD_METADATA = go$(GO_VERSION)-$(OS_CODENAME).$(REVISION)
 
 IMAGE_VERSION = $(APP_VERSION)-$(BUILD_METADATA)
 
-PLATFORMS ?= linux/amd64 linux/arm64 linux/arm linux/ppc64le linux/s390x
+PLATFORMS ?= linux/amd64 linux/arm64 linux/arm linux/ppc64le linux/s390x linux/riscv64
 
 HOST_GOOS ?= $(shell go env GOOS)
 HOST_GOARCH ?= $(shell go env GOARCH)

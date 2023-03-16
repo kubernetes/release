@@ -21,7 +21,7 @@ TAG ?= $(shell git describe --tags --always --dirty)
 
 # TODO: Uncomment once all images using this Makefile can be built on all
 #       supported Kubernetes server platforms.
-#PLATFORMS ?= linux/amd64 linux/arm linux/arm64 linux/ppc64le linux/s390x
+#PLATFORMS ?= linux/amd64 linux/arm linux/arm64 linux/ppc64le linux/s390x linux/riscv64
 ARCHS = $(patsubst linux/%,%,$(PLATFORMS))
 
 # Ensure support for 'docker buildx' and 'docker manifest' commands

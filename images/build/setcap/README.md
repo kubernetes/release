@@ -20,6 +20,7 @@ $ make all-push
 # ---> gcr.io/k8s-staging-build-image/setcap-arm64:TAG
 # ---> gcr.io/k8s-staging-build-image/setcap-ppc64le:TAG
 # ---> gcr.io/k8s-staging-build-image/setcap-s390x:TAG
+# ---> gcr.io/k8s-staging-build-image/setcap-riscv64:TAG
 ```
 
 If you don't want to push the images, run `make sub-build-{target_arch}` or `make all-build` instead

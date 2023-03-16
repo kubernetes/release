@@ -36,6 +36,7 @@ ENV KUBE_CROSSPLATFORMS \
   linux/arm linux/arm64 \
   linux/ppc64le \
   linux/s390x \
+  linux/riscv64 \
   darwin/amd64 \
   windows/amd64 windows/386
 
@@ -71,7 +72,7 @@ RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
 fi
 
 RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
-  && if [ ${targetArch} = "arm64" ] || [ ${targetArch} = "ppc64le" ] || [ ${targetArch} = "s390x" ]; then \
+  && if [ ${targetArch} = "arm64" ] || [ ${targetArch} = "ppc64le" ] || [ ${targetArch} = "s390x" ] || [ ${targetArch} = "riscv64" ]; then \
     echo "deb http://ports.ubuntu.com/ubuntu-ports/ xenial main" > /etc/apt/sources.list.d/ports.list \
     && apt-key adv --no-tty --keyserver keyserver.ubuntu.com --recv-keys 40976EAF437D05B5 3B4FE6ACC0B21F32 \
     && apt-get update \
@@ -88,6 +89,8 @@ elif [ ${targetArch} = "ppc64le" ]; then \
   ZIPNAME="protoc-${PROTOBUF_VERSION}-linux-ppcle_64.zip"; \
 elif [ ${targetArch} = "s390x" ]; then \
   ZIPNAME="protoc-${PROTOBUF_VERSION}-linux-s390_64.zip"; \
+elif [ ${targetArch} = "riscv64" ]; then \
+  ZIPNAME="protoc-${PROTOBUF_VERSION}-linux-riscv_64.zip"; \
 fi \
   && mkdir /tmp/protoc && cd /tmp/protoc \
   && wget "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/${ZIPNAME}" \

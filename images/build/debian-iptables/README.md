@@ -16,6 +16,7 @@ $ make all-push
 # ---> gcr.io/k8s-staging-build-image/debian-iptables-arm64:TAG
 # ---> gcr.io/k8s-staging-build-image/debian-iptables-ppc64le:TAG
 # ---> gcr.io/k8s-staging-build-image/debian-iptables-s390x:TAG
+# ---> gcr.io/k8s-staging-build-image/debian-iptables-riscv64:TAG
 ```
 
 If you don't want to push the images, run `make build ARCH={target_arch}` or `make all-build` instead

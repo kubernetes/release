@@ -24,7 +24,7 @@ DEBIAN_BASE_VERSION ?= bullseye-v1.4.3
 GORUNNER_VERSION ?= v2.3.1-go1.20.2-bullseye.0
 
 ARCH?=amd64
-ALL_ARCH = amd64 arm arm64 ppc64le s390x
+ALL_ARCH = amd64 arm arm64 ppc64le s390x riscv64
 
 BASE_REGISTRY?=registry.k8s.io/build-image
 

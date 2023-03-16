@@ -25,6 +25,7 @@ PLATFORMS=(
     linux/arm64
     linux/ppc64le
     linux/s390x
+    linux/riscv64
     windows/amd64
     windows/386
     freebsd/amd64

@@ -24,7 +24,7 @@ CONFIG ?= bullseye
 
 TAR_FILE ?= rootfs.tar
 ARCH ?= amd64
-ALL_ARCH = amd64 arm arm64 ppc64le s390x
+ALL_ARCH = amd64 arm arm64 ppc64le s390x riscv64
 
 QEMUVERSION=7.2.0-1
 QEMUIMAGE ?= multiarch/qemu-user-static
@@ -51,6 +51,10 @@ endif
 ifeq ($(ARCH),s390x)
 	BASEIMAGE?=s390x/debian:$(CONFIG)-slim
 	QEMUARCH=s390x
+endif
+ifeq ($(ARCH),riscv64)
+	BASEIMAGE?=riscv64/debian:$(CONFIG)-slim
+	QEMUARCH=riscv64
 endif
 
 sub-build-%:
