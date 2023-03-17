@@ -208,12 +208,16 @@ func TestPushArtifacts(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // ValidateImages fails
-			prepare: func(mock *anagofakes.FakeReleaseImpl) {
-				mock.ValidateImagesReturns(err)
-			},
-			shouldError: true,
-		},
+		// TODO: bypassing this for now due to the fail in the promotion process
+		// that sign the images. We will release the Feb/2023 patch releases without full
+		// signatures but we will sign those in a near future in a deatached process
+		// revert this change when the patches are out
+		// { // ValidateImages fails
+		// 	prepare: func(mock *anagofakes.FakeReleaseImpl) {
+		// 		mock.ValidateImagesReturns(err)
+		// 	},
+		// 	shouldError: true,
+		// },
 		{ // PusblishVersion fails
 			prepare: func(mock *anagofakes.FakeReleaseImpl) {
 				mock.PublishVersionReturns(err)
