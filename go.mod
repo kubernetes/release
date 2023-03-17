@@ -7,7 +7,7 @@ require (
 	github.com/GoogleCloudPlatform/testgrid v0.0.38
 	github.com/blang/semver/v4 v4.0.0
 	github.com/cheggaaa/pb/v3 v3.1.2
-	github.com/go-git/go-git/v5 v5.6.0
+	github.com/go-git/go-git/v5 v5.6.1
 	github.com/goark/go-cvss v1.6.6
 	github.com/golang/protobuf v1.5.3
 	github.com/google/go-containerregistry v0.13.0
@@ -68,10 +68,10 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
-	github.com/ProtonMail/go-crypto v0.0.0-20221026131551-cf6655e29de4 // indirect
+	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
 	github.com/ThalesIgnite/crypto11 v1.2.5 // indirect
 	github.com/VividCortex/ewma v1.2.0 // indirect
-	github.com/acomagu/bufpipe v1.0.3 // indirect
+	github.com/acomagu/bufpipe v1.0.4 // indirect
 	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.4 // indirect
 	github.com/alibabacloud-go/cr-20160607 v1.0.1 // indirect
@@ -146,7 +146,7 @@ require (
 	github.com/go-chi/chi v4.1.2+incompatible // indirect
 	github.com/go-errors/errors v1.0.1 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
-	github.com/go-git/go-billy/v5 v5.4.0 // indirect
+	github.com/go-git/go-billy/v5 v5.4.1 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
