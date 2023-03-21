@@ -310,6 +310,13 @@ func TestIsValidReleaseBuild(t *testing.T) {
 				rErr: false,
 			},
 		},
+		"ValidForReleaseBranch": {
+			build: "v1.25.8-1+3a14fe1af239a0",
+			want: want{
+				r:    true,
+				rErr: false,
+			},
+		},
 		"ValidReleaseBuild": {
 			build: "v1.17.6.abcde",
 			want: want{
