@@ -53,6 +53,7 @@ jobs:
           storage.googleapis.com:443
           sum.golang.org:443
           uploads.github.com:443
+          objects.githubusercontent.com:443
 
     - name: Checkout repository
       uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v2
