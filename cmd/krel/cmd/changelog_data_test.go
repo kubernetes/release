@@ -77,7 +77,7 @@ _Nothing has changed._
 - golang.org/x/term: 03fcf44 → v0.5.0
 - golang.org/x/text: v0.3.7 → v0.7.0
 - k8s.io/system-validators: v1.7.0 → v1.8.0
-- sigs.k8s.io/apiserver-network-proxy/konnectivity-client: v0.0.32 → v0.0.35
+- sigs.k8s.io/apiserver-network-proxy/konnectivity-client: v0.0.32 → v0.0.36
 
 ### Removed
 _Nothing has changed._
@@ -145,7 +145,7 @@ const patchReleaseExpectedHTML = `<!DOCTYPE html>
 <li>golang.org/x/term: 03fcf44 → v0.5.0</li>
 <li>golang.org/x/text: v0.3.7 → v0.7.0</li>
 <li>k8s.io/system-validators: v1.7.0 → v1.8.0</li>
-<li>sigs.k8s.io/apiserver-network-proxy/konnectivity-client: v0.0.32 → v0.0.35</li>
+<li>sigs.k8s.io/apiserver-network-proxy/konnectivity-client: v0.0.32 → v0.0.36</li>
 </ul>
 <h3>Removed</h3>
 <p><em>Nothing has changed.</em></p>
