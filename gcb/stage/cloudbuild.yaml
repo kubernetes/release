@@ -99,7 +99,7 @@ tags:
 - ${_KUBERNETES_VERSION_TAG}
 
 options:
-  machineType: N1_HIGHCPU_32
+  machineType: E2_HIGHCPU_32
 
 substitutions:
   # _GIT_TAG will be filled with a git-based tag of the form vYYYYMMDD-hash, and
