@@ -3,7 +3,7 @@ module k8s.io/release
 go 1.19
 
 require (
-	cloud.google.com/go/storage v1.30.0
+	cloud.google.com/go/storage v1.30.1
 	github.com/GoogleCloudPlatform/testgrid v0.0.38
 	github.com/blang/semver/v4 v4.0.0
 	github.com/cheggaaa/pb/v3 v3.1.2
@@ -34,13 +34,13 @@ require (
 	golang.org/x/net v0.8.0
 	golang.org/x/oauth2 v0.6.0
 	golang.org/x/text v0.8.0
-	google.golang.org/api v0.113.0
+	google.golang.org/api v0.115.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apimachinery v0.26.3
 	sigs.k8s.io/bom v0.4.1
 	sigs.k8s.io/mdtoc v1.1.0
-	sigs.k8s.io/promo-tools/v3 v3.5.1
-	sigs.k8s.io/release-sdk v0.9.7
+	sigs.k8s.io/promo-tools/v3 v3.5.2
+	sigs.k8s.io/release-sdk v0.10.0
 	sigs.k8s.io/release-utils v0.7.3
 	sigs.k8s.io/yaml v1.3.0
 	sigs.k8s.io/zeitgeist v0.4.1
@@ -49,9 +49,9 @@ require (
 require (
 	bitbucket.org/creachadair/shell v0.0.7 // indirect
 	cloud.google.com/go v0.110.0 // indirect
-	cloud.google.com/go/compute v1.18.0 // indirect
+	cloud.google.com/go/compute v1.19.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	cloud.google.com/go/iam v0.13.0 // indirect
+	cloud.google.com/go/iam v1.0.0 // indirect
 	cuelang.org/go v0.4.3 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230106234847-43070de90fa1 // indirect
 	github.com/AliyunContainerService/ack-ram-tool/pkg/credentials/alibabacloudsdkgo/helper v0.2.0 // indirect
@@ -86,7 +86,7 @@ require (
 	github.com/alibabacloud-go/tea-xml v1.1.2 // indirect
 	github.com/aliyun/credentials-go v1.2.3 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
-	github.com/aws/aws-sdk-go v1.44.229 // indirect
+	github.com/aws/aws-sdk-go v1.44.236 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.17.5 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.18.14 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.14 // indirect
@@ -182,13 +182,14 @@ require (
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-github/v45 v45.2.0 // indirect
+	github.com/google/go-github/v50 v50.2.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/licenseclassifier/v2 v2.0.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/trillian v1.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
-	github.com/googleapis/gax-go/v2 v2.7.1 // indirect
+	github.com/googleapis/gax-go/v2 v2.8.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
@@ -204,7 +205,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jedisct1/go-minisign v0.0.0-20211028175153-1c139d1cc84b // indirect
-	github.com/jellydator/ttlcache/v3 v3.0.0 // indirect
+	github.com/jellydator/ttlcache/v3 v3.0.1 // indirect
 	github.com/jhump/protoreflect v1.14.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jonboulle/clockwork v0.3.0 // indirect
@@ -330,9 +331,9 @@ require (
 	golang.org/x/tools v0.7.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20230306155012-7f2fa6fef1f4 // indirect
-	google.golang.org/grpc v1.53.0 // indirect
-	google.golang.org/protobuf v1.29.1 // indirect
+	google.golang.org/genproto v0.0.0-20230331144136-dcfb400f0633 // indirect
+	google.golang.org/grpc v1.54.0 // indirect
+	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/cheggaaa/pb.v1 v1.0.28 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
