@@ -22,7 +22,7 @@ import (
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/release"
 
-	gogithub "github.com/google/go-github/v48/github"
+	gogithub "github.com/google/go-github/v50/github"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-utils/env"
