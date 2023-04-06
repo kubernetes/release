@@ -20,7 +20,7 @@ package fastforwardfakes
 import (
 	"sync"
 
-	"github.com/google/go-github/v48/github"
+	"github.com/google/go-github/v50/github"
 	"k8s.io/release/pkg/gcp/gcb"
 	"sigs.k8s.io/release-sdk/git"
 )

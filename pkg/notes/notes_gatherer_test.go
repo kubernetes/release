@@ -26,9 +26,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
-	"time"
 
-	"github.com/google/go-github/v48/github"
+	"github.com/google/go-github/v50/github"
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github/githubfakes"
@@ -43,7 +42,7 @@ func TestMain(m *testing.M) {
 func TestListCommits(t *testing.T) {
 	const always = -1
 
-	zeroTime := &time.Time{}
+	zeroTime := &github.Timestamp{}
 
 	type listCommitsReturnsList map[int]struct {
 		rc []*github.RepositoryCommit
