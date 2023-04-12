@@ -105,12 +105,19 @@ type GitHubPageOptions struct {
 	Substitutions map[string]string
 }
 
+type SBOMFormat string
+
+const (
+	FormatJSON     SBOMFormat = "json"
+	FormatTagValue SBOMFormat = "tag-value"
+)
+
 type SBOMOptions struct {
 	ReleaseName   string
 	Repo          string
 	RepoDirectory string
-	Tag           string // Version Tag
-	Format        string // "tag-value"  | "json"
+	Tag           string     // Version Tag
+	Format        SBOMFormat // "tag-value"  | "json"
 	Assets        []Asset
 }
 
@@ -173,12 +180,12 @@ func GenerateReleaseSBOM(opts *SBOMOptions) (string, error) {
 
 	var renderer serialize.Serializer
 	switch opts.Format {
-	case "json":
+	case FormatJSON:
 		renderer = &serialize.JSON{}
-	case "tag-value":
+	case FormatTagValue:
 		renderer = &serialize.TagValue{}
 	default:
-		return "", errors.New("invalid SBOM format, must be one of json, tag-value")
+		return "", fmt.Errorf("invalid SBOM format, must be one of %s, %s", FormatJSON, FormatTagValue)
 	}
 
 	markup, err := renderer.Serialize(doc)
