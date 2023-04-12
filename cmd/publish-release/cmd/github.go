@@ -154,7 +154,7 @@ func init() {
 	githubPageCmd.PersistentFlags().StringVar(
 		&ghPageOpts.sbomFormat,
 		"sbom-format",
-		"json",
+		string(announce.FormatJSON),
 		"format to use for the SBOM [json|tag-value]",
 	)
 	githubPageCmd.PersistentFlags().StringVar(
@@ -283,7 +283,7 @@ func runGithubPage(opts *githubPageCmdLineOptions) (err error) {
 			RepoDirectory: opts.repoPath,
 			Assets:        assets,
 			Tag:           commandLineOpts.tag,
-			Format:        opts.sbomFormat,
+			Format:        announce.SBOMFormat(opts.sbomFormat),
 		})
 		if err != nil {
 			return fmt.Errorf("generating sbom: %w", err)
