@@ -1302,8 +1302,8 @@ github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQD
 github.com/ryanuber/columnize v0.0.0-20160712163229-9b3edd62028f/go.mod h1:sm1tb6uqfes/u+d4ooFouqFdy9/2g9QGwK3SQygK0Ts=
 github.com/ryanuber/go-glob v1.0.0 h1:iQh3xXAumdQ+4Ufa5b25cRpC5TYKlno6hsv6Cb3pkBk=
 github.com/samuel/go-zookeeper v0.0.0-20190923202752-2cc03de413da/go.mod h1:gi+0XIa01GRL2eRQVjQkKGqKF3SF9vZR/HnPullcV2E=
-github.com/saschagrunert/go-modiff v1.3.2 h1:cLNySciTU7E4hbruACEOQuOlBMKsYdwU/6/819WoRUs=
-github.com/saschagrunert/go-modiff v1.3.2/go.mod h1:nAeJ4vd//iY9LSQlhMimjWq/MoAMFlvQrMw2DkORIdE=
+github.com/saschagrunert/go-modiff v1.3.3 h1:/mDhe5o7nkdLlA0stLn/iYcR834eHAJcT1sNNCo/OZA=
+github.com/saschagrunert/go-modiff v1.3.3/go.mod h1:nAeJ4vd//iY9LSQlhMimjWq/MoAMFlvQrMw2DkORIdE=
 github.com/sassoftware/go-rpmutils v0.0.0-20190420191620-a8f1baeba37b/go.mod h1:am+Fp8Bt506lA3Rk3QCmSqmYmLMnPDhdDUcosQCAx+I=
 github.com/sassoftware/go-rpmutils v0.1.1/go.mod h1:euhXULoBpvAxqrBHEyJS4Tsu3hHxUmQWNymxoJbzgUY=
 github.com/sassoftware/relic v0.0.0-20210427151427-dfb082b79b74 h1:sUNzanSKA9z/h8xXl+ZJoxIYZL0Qx306MmxqRrvUgr0=
