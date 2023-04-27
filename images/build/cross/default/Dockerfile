@@ -78,6 +78,12 @@ RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
     && apt-get install -y build-essential; \
 fi
 
+# To build amd64 from arm64 host platform, gcc-x86-64-linux-gnu is needed.
+RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
+  && if [ ${targetArch} = "arm64" ]; then \
+    apt-get install -y gcc-x86-64-linux-gnu; \
+fi
+
 ARG PROTOBUF_VERSION
 RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
   && if [ ${targetArch} = "amd64" ]; then \
