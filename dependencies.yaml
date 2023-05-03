@@ -450,7 +450,7 @@ dependencies:
       match: "DEBIAN_BASE_VERSION: 'bullseye-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/debian-iptables"
-    version: bullseye-v1.5.5
+    version: bullseye-v1.5.6
     refPaths:
     - path: images/build/debian-iptables/Makefile
       match: IMAGE_VERSION\ \?=\ bullseye-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -458,13 +458,13 @@ dependencies:
       match: "IMAGE_VERSION: 'bullseye-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/distroless-iptables"
-    version: v0.2.3
+    version: v0.2.4
     refPaths:
     - path: images/build/distroless-iptables/Makefile
       match: IMAGE_VERSION\ \?=\ v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
   - name: "registry.k8s.io/build-image/go-runner: dependents"
-    version: v2.3.1-go1.20.3-bullseye.0
+    version: v2.3.1-go1.20.4-bullseye.0
     refPaths:
     - path: images/build/debian-iptables/Makefile
       match: GORUNNER_VERSION \?= v\d+\.\d+\.\d+-go\d+.\d+(alpha|beta|rc)?\.?(\d+)?-bullseye\.\d+
@@ -495,7 +495,7 @@ dependencies:
       match: "DEBIAN_BASE_VERSION: 'bullseye-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/debian-iptables (next candidate)"
-    version: bullseye-v1.5.5
+    version: bullseye-v1.5.6
     refPaths:
     - path: images/build/debian-iptables/variants.yaml
       match: "IMAGE_VERSION: 'bullseye-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
