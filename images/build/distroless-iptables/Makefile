@@ -18,10 +18,10 @@ REGISTRY?="gcr.io/k8s-staging-build-image"
 IMAGE=$(REGISTRY)/distroless-iptables
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= v0.2.3
+IMAGE_VERSION ?= v0.2.4
 CONFIG ?= distroless
 BASEIMAGE ?= debian:bullseye-slim
-GORUNNER_VERSION ?= v2.3.1-go1.20.3-bullseye.0
+GORUNNER_VERSION ?= v2.3.1-go1.20.4-bullseye.0
 
 ARCH?=amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
