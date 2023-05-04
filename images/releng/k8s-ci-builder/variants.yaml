@@ -13,13 +13,13 @@ variants:
     OS_CODENAME: 'bullseye'
   '1.26':
     CONFIG: '1.26'
-    GO_VERSION: '1.19.8'
+    GO_VERSION: '1.19.9'
     OS_CODENAME: 'bullseye'
   '1.25':
     CONFIG: '1.25'
-    GO_VERSION: '1.19.8'
+    GO_VERSION: '1.19.9'
     OS_CODENAME: 'bullseye'
   '1.24':
     CONFIG: '1.24'
-    GO_VERSION: '1.19.8'
+    GO_VERSION: '1.19.9'
     OS_CODENAME: 'bullseye'
