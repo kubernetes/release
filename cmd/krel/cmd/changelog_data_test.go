@@ -64,18 +64,22 @@ const patchReleaseExpectedContent = `# v1.25.3
 ## Dependencies
 
 ### Added
-_Nothing has changed._
+- github.com/shurcooL/sanitized_anchor_name: [v1.0.0](https://github.com/shurcooL/sanitized_anchor_name/tree/v1.0.0)
 
 ### Changed
 - github.com/google/cel-go: [v0.12.5 → v0.12.6](https://github.com/google/cel-go/compare/v0.12.5...v0.12.6)
+- github.com/opencontainers/runc: [v1.1.3 → v1.1.6](https://github.com/opencontainers/runc/compare/v1.1.3...v1.1.6)
 - github.com/stretchr/objx: [v0.2.0 → v0.4.0](https://github.com/stretchr/objx/compare/v0.2.0...v0.4.0)
 - github.com/stretchr/testify: [v1.7.0 → v1.8.0](https://github.com/stretchr/testify/compare/v1.7.0...v1.8.0)
 - go.uber.org/goleak: v1.1.10 → v1.2.0
 - golang.org/x/lint: 6edffad → 1621716
-- golang.org/x/net: a158d28 → v0.7.0
-- golang.org/x/sys: 8c9f86f → v0.5.0
-- golang.org/x/term: 03fcf44 → v0.5.0
-- golang.org/x/text: v0.3.7 → v0.7.0
+- golang.org/x/mod: 86c51ed → v0.8.0
+- golang.org/x/net: a158d28 → v0.8.0
+- golang.org/x/sync: 886fb93 → v0.1.0
+- golang.org/x/sys: 8c9f86f → v0.6.0
+- golang.org/x/term: 03fcf44 → v0.6.0
+- golang.org/x/text: v0.3.7 → v0.8.0
+- golang.org/x/tools: v0.1.12 → v0.6.0
 - k8s.io/system-validators: v1.7.0 → v1.8.0
 - sigs.k8s.io/apiserver-network-proxy/konnectivity-client: v0.0.32 → v0.0.36
 
@@ -132,18 +136,24 @@ const patchReleaseExpectedHTML = `<!DOCTYPE html>
 </ul>
 <h2>Dependencies</h2>
 <h3>Added</h3>
-<p><em>Nothing has changed.</em></p>
+<ul>
+<li>github.com/shurcooL/sanitized_anchor_name: <a href="https://github.com/shurcooL/sanitized_anchor_name/tree/v1.0.0">v1.0.0</a></li>
+</ul>
 <h3>Changed</h3>
 <ul>
 <li>github.com/google/cel-go: <a href="https://github.com/google/cel-go/compare/v0.12.5...v0.12.6">v0.12.5 → v0.12.6</a></li>
+<li>github.com/opencontainers/runc: <a href="https://github.com/opencontainers/runc/compare/v1.1.3...v1.1.6">v1.1.3 → v1.1.6</a></li>
 <li>github.com/stretchr/objx: <a href="https://github.com/stretchr/objx/compare/v0.2.0...v0.4.0">v0.2.0 → v0.4.0</a></li>
 <li>github.com/stretchr/testify: <a href="https://github.com/stretchr/testify/compare/v1.7.0...v1.8.0">v1.7.0 → v1.8.0</a></li>
 <li>go.uber.org/goleak: v1.1.10 → v1.2.0</li>
 <li>golang.org/x/lint: 6edffad → 1621716</li>
-<li>golang.org/x/net: a158d28 → v0.7.0</li>
-<li>golang.org/x/sys: 8c9f86f → v0.5.0</li>
-<li>golang.org/x/term: 03fcf44 → v0.5.0</li>
-<li>golang.org/x/text: v0.3.7 → v0.7.0</li>
+<li>golang.org/x/mod: 86c51ed → v0.8.0</li>
+<li>golang.org/x/net: a158d28 → v0.8.0</li>
+<li>golang.org/x/sync: 886fb93 → v0.1.0</li>
+<li>golang.org/x/sys: 8c9f86f → v0.6.0</li>
+<li>golang.org/x/term: 03fcf44 → v0.6.0</li>
+<li>golang.org/x/text: v0.3.7 → v0.8.0</li>
+<li>golang.org/x/tools: v0.1.12 → v0.6.0</li>
 <li>k8s.io/system-validators: v1.7.0 → v1.8.0</li>
 <li>sigs.k8s.io/apiserver-network-proxy/konnectivity-client: v0.0.32 → v0.0.36</li>
 </ul>
