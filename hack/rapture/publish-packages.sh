@@ -57,7 +57,7 @@ fatal() {
 version="$1"
 
 download_packages() {
-  local bucket="gs://kubernetes-release/release"
+  local bucket="https://dl.k8s.io/release"
   log "Downloading packages from bucket $bucket"
 
   declare -A locations=(
@@ -68,7 +68,7 @@ download_packages() {
   for package in "${!locations[@]}"; do
     rm -rf "${locations[$package]}" || true
     mkdir -p "${locations[$package]}"
-    gsutil -m cp -r "$bucket/v$version/$package/*" "${locations[$package]}"
+    curl -L "$bucket/v$version/$package/*" -o "${locations[$package]}"
   done
 
   log "Got all packages"
