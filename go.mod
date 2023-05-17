@@ -41,7 +41,7 @@ require (
 	sigs.k8s.io/mdtoc v1.1.0
 	sigs.k8s.io/promo-tools/v3 v3.5.2
 	sigs.k8s.io/release-sdk v0.10.0
-	sigs.k8s.io/release-utils v0.7.3
+	sigs.k8s.io/release-utils v0.7.4
 	sigs.k8s.io/yaml v1.3.0
 	sigs.k8s.io/zeitgeist v0.4.1
 )
@@ -66,7 +66,7 @@ require (
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/BurntSushi/toml v1.2.1 // indirect
-	github.com/Masterminds/semver/v3 v3.2.0 // indirect
+	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
@@ -224,7 +224,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mmarkdown/mmark v2.0.40+incompatible // indirect
 	github.com/moby/locker v1.0.1 // indirect
-	github.com/moby/term v0.0.0-20221205130635-1aeaba878587 // indirect
+	github.com/moby/term v0.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
