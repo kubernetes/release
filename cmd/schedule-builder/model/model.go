@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package model
 
 // PatchSchedule main struct to hold the schedules
 type PatchSchedule struct {
@@ -32,6 +32,7 @@ type PreviousPatches struct {
 // Schedule struct to define the release schedule for a specific version
 type Schedule struct {
 	Release            string            `yaml:"release"`
+	ReleaseDate        string            `yaml:"releaseDate"`
 	Next               string            `yaml:"next"`
 	CherryPickDeadline string            `yaml:"cherryPickDeadline"`
 	TargetDate         string            `yaml:"targetDate"`

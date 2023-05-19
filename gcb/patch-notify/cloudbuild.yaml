@@ -1,0 +1,76 @@
+timeout: 14400s
+
+#### SECURITY NOTICE ####
+# Google Cloud Build (GCB) supports the usage of secrets for build requests.
+# Secrets appear within GCB configs as base64-encoded strings.
+# These secrets are GCP Cloud KMS-encrypted and cannot be decrypted by any human or system
+# outside of GCP Cloud KMS for the GCP project this encrypted resource was created for.
+# Seeing the base64-encoded encrypted blob here is not a security event for the project.
+#
+# More details on using encrypted resources on Google Cloud Build can be found here:
+# https://cloud.google.com/cloud-build/docs/securing-builds/use-encrypted-secrets-credentials
+#
+# (Please do not remove this security notice.)
+secrets:
+- kmsKeyName: projects/k8s-releng-prod/locations/global/keyRings/release/cryptoKeys/encrypt-0
+  secretEnv:
+    SENDGRID_API_KEY: CiQAIkWjMHgA5DO+n4mn2PjTt39Y8tyksfNsPzUPr9vXzmJj/hQSbwBLz1D+xN/e6YvhYL0ePeMcuuTEF+A/Pq3cT7/lk3YGD2NVKB6t6ZMtcwu1fFmFK7dmsybZsiqYy/tE0v45ElOHTOH9hjLfiKgsqLth/aB7nSH7f/7Z+P6aaHeVBLf4zKp2s1uGBOMZRZBNU3Lzeg==
+
+steps:
+- name: gcr.io/cloud-builders/git
+  dir: "go/src/k8s.io"
+  args:
+  - "clone"
+  - "https://github.com/${_TOOL_ORG}/${_TOOL_REPO}"
+
+- name: gcr.io/cloud-builders/git
+  dir: "go/src/k8s.io"
+  args:
+  - "clone"
+  - "https://github.com/kubernetes/website"
+
+- name: gcr.io/cloud-builders/git
+  entrypoint: "bash"
+  dir: "go/src/k8s.io/release"
+  args:
+  - '-c'
+  - |
+    git fetch
+    echo "Checking out ${_TOOL_REF}"
+    git checkout ${_TOOL_REF}
+
+- name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION_LATEST}
+  dir: "go/src/k8s.io/release"
+  env:
+  - "GOPATH=/workspace/go"
+  - "GOBIN=/workspace/bin"
+  args:
+  - "./compile-release-tools"
+  - "patch-release-notify"
+
+- name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
+  dir: "/workspace"
+  secretEnv:
+  - GITHUB_TOKEN
+  args:
+  - "bin/patch-release-notify"
+  - "--schedule-path"
+  - "go/src/k8s.io/website/data/releases/schedule.yaml"
+  - "--email"
+  - "release-managers@kubernetes.io"
+  - "--name"
+  - "Release Managers"
+  - "--days-to-alert"
+  - "3"
+
+tags:
+- ${_GCP_USER_TAG}
+- PATCH-RELEASE-NOTIFY
+
+options:
+  machineType: N1_HIGHCPU_32
+
+substitutions:
+  # _GIT_TAG will be filled with a git-based tag of the form vYYYYMMDD-hash, and
+  # can be used as a substitution
+  _GIT_TAG: '12345'

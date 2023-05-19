@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"k8s.io/release/cmd/schedule-builder/model"
 )
 
 const expectedPatchSchedule = `### Timeline
@@ -124,19 +126,19 @@ Please refer to the [release phases document](../release_phases.md).
 func TestParseSchedule(t *testing.T) {
 	testcases := []struct {
 		name     string
-		schedule PatchSchedule
+		schedule model.PatchSchedule
 	}{
 		{
 			name: "next patch is not in previous patch list",
-			schedule: PatchSchedule{
-				Schedules: []Schedule{
+			schedule: model.PatchSchedule{
+				Schedules: []model.Schedule{
 					{
 						Release:            "X.Y",
 						Next:               "X.Y.ZZZ",
 						CherryPickDeadline: "2020-06-12",
 						TargetDate:         "2020-06-17",
 						EndOfLifeDate:      "NOW",
-						PreviousPatches: []PreviousPatches{
+						PreviousPatches: []model.PreviousPatches{
 							{
 								Release:            "X.Y.XXX",
 								CherryPickDeadline: "2020-05-15",
@@ -155,15 +157,15 @@ func TestParseSchedule(t *testing.T) {
 		},
 		{
 			name: "next patch is in previous patch list",
-			schedule: PatchSchedule{
-				Schedules: []Schedule{
+			schedule: model.PatchSchedule{
+				Schedules: []model.Schedule{
 					{
 						Release:            "X.Y",
 						Next:               "X.Y.ZZZ",
 						CherryPickDeadline: "2020-06-12",
 						TargetDate:         "2020-06-17",
 						EndOfLifeDate:      "NOW",
-						PreviousPatches: []PreviousPatches{
+						PreviousPatches: []model.PreviousPatches{
 							{
 								Release:            "X.Y.ZZZ",
 								CherryPickDeadline: "2020-06-12",
@@ -197,15 +199,15 @@ func TestParseSchedule(t *testing.T) {
 func TestParseReleaseSchedule(t *testing.T) {
 	testcases := []struct {
 		name     string
-		schedule ReleaseSchedule
+		schedule model.ReleaseSchedule
 	}{
 		{
 			name: "test of release cycle of X.Y version",
-			schedule: ReleaseSchedule{
-				Releases: []Release{
+			schedule: model.ReleaseSchedule{
+				Releases: []model.Release{
 					{
 						Version: "X.Y",
-						Timeline: []Timeline{
+						Timeline: []model.Timeline{
 							{
 								What:     "Testing-A",
 								Who:      "tester",
