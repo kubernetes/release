@@ -143,7 +143,7 @@ func GenerateReleaseSBOM(opts *SBOMOptions) (string, error) {
 		return "", fmt.Errorf("generating initial SBOM: %w", err)
 	}
 
-	// Add the downlad location and version to the first
+	// Add the download location and version to the first
 	// SPDX package (which represents the repo)
 	for t := range doc.Packages {
 		doc.Packages[t].Version = opts.Tag

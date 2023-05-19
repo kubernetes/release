@@ -162,7 +162,7 @@ fi
 
 #### Notes
 - There will be a slight delay (< 5 min) after creating a fresh VM before you can start pulling the published packages.
-- Make sure you validate packages in accending order so that there are no conflicts with downgrade.
+- Make sure you validate packages in ascending order so that there are no conflicts with downgrade.
 
 ### Package verification tests
 

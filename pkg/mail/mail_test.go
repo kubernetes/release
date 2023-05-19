@@ -156,7 +156,7 @@ func testSend(t *testing.T) {
 	}{
 		"the token is used": {
 			apiKey:                 "some key",
-			sendgridSendResponse:   simpleRespons("", 202),
+			sendgridSendResponse:   simpleResponse("", 202),
 			expectedSendgridAPIKey: "some key",
 		},
 		"when #Send returns an error, bubble it up": {
@@ -167,7 +167,7 @@ func testSend(t *testing.T) {
 			expectedErr: "empty API response",
 		},
 		"when #Send returns an invalid status code, an error holding the API response is returned": {
-			sendgridSendResponse: simpleRespons("some API response", 500),
+			sendgridSendResponse: simpleResponse("some API response", 500),
 			expectedErr:          "some API response",
 		},
 	}
@@ -196,7 +196,7 @@ func testSend(t *testing.T) {
 	}
 }
 
-func simpleRespons(body string, code int) *rest.Response {
+func simpleResponse(body string, code int) *rest.Response {
 	return &rest.Response{Body: body, StatusCode: code}
 }
 

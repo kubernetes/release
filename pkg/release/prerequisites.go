@@ -150,7 +150,7 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 	// GitHub checks
 	if p.opts.CheckGitHubToken {
 		logrus.Infof(
-			"Verifying that %s environemt variable is set", github.TokenEnvKey,
+			"Verifying that %s environment variable is set", github.TokenEnvKey,
 		)
 		if !p.impl.IsEnvSet(github.TokenEnvKey) {
 			return fmt.Errorf("no %s env variable set", github.TokenEnvKey)

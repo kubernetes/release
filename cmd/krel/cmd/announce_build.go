@@ -114,7 +114,7 @@ func init() {
 		branchFlag,
 		"b",
 		"",
-		"set this flag when need to build the annoucement for the branch creation, ie. release-1.19",
+		"set this flag when need to build the announcement for the branch creation, ie. release-1.19",
 	)
 
 	buildReleaseAnnounceCmd.PersistentFlags().StringVarP(
@@ -138,7 +138,7 @@ func init() {
 		workDirFlag,
 		"",
 		"",
-		"working directory to store the annoucement files",
+		"working directory to store the announcement files",
 	)
 
 	if err := buildAnnounceCmd.MarkPersistentFlagRequired(workDirFlag); err != nil {
@@ -172,21 +172,21 @@ func runBuildBranchAnnounce(opts *buildBranchAnnounceOptions, buildOpts *buildAn
 	if err != nil {
 		return err
 	}
-	annoucement := bytes.Buffer{}
-	if err := t.Execute(&annoucement, struct {
+	announcement := bytes.Buffer{}
+	if err := t.Execute(&announcement, struct {
 		Branch string
 	}{opts.branch}); err != nil {
 		return fmt.Errorf("generating the announcement html file: %w", err)
 	}
 
 	announcementSubject := fmt.Sprintf("Kubernetes %s branch has been created", opts.branch)
-	return buildOpts.saveAnnouncement(announcementSubject, annoucement)
+	return buildOpts.saveAnnouncement(announcementSubject, announcement)
 }
 
 // runBuildReleaseAnnounce build the announcement file when creating a new Kubernetes release
 func runBuildReleaseAnnounce(opts *buildReleaseAnnounceOptions, buildOpts *buildAnnounceOptions, announceOpts *announceOptions) error {
 	if err := announceOpts.Validate(); err != nil {
-		return fmt.Errorf("validating annoucement send options: %w", err)
+		return fmt.Errorf("validating announcement send options: %w", err)
 	}
 
 	logrus.Info("Building release announcement for new release")
@@ -206,8 +206,8 @@ func runBuildReleaseAnnounce(opts *buildReleaseAnnounceOptions, buildOpts *build
 		return err
 	}
 
-	annoucement := bytes.Buffer{}
-	if err := t.Execute(&annoucement, struct {
+	announcement := bytes.Buffer{}
+	if err := t.Execute(&announcement, struct {
 		Tag               string
 		StrippedTag       string
 		GoVersion         string
@@ -227,15 +227,15 @@ func runBuildReleaseAnnounce(opts *buildReleaseAnnounceOptions, buildOpts *build
 
 	announcementSubject := fmt.Sprintf("Kubernetes %s is live!", announceOpts.tag)
 
-	return buildOpts.saveAnnouncement(announcementSubject, annoucement)
+	return buildOpts.saveAnnouncement(announcementSubject, announcement)
 }
 
-func (opts *buildAnnounceOptions) saveAnnouncement(announcementSubject string, annoucement bytes.Buffer) error {
+func (opts *buildAnnounceOptions) saveAnnouncement(announcementSubject string, announcement bytes.Buffer) error {
 	logrus.Info("Creating announcement files")
 
 	absOutputPath := filepath.Join(opts.workDir, "announcement.html")
 	logrus.Infof("Writing HTML file to %s", absOutputPath)
-	err := os.WriteFile(absOutputPath, annoucement.Bytes(), os.FileMode(0o644))
+	err := os.WriteFile(absOutputPath, announcement.Bytes(), os.FileMode(0o644))
 	if err != nil {
 		return fmt.Errorf("saving announcement.html: %w", err)
 	}

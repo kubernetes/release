@@ -546,7 +546,7 @@ func (d *DefaultRelease) ReleasePackages() error {
 
 // CreateAnnouncement creates the announcement.html file
 func (d *DefaultRelease) CreateAnnouncement() error {
-	// Buld the announcement options set
+	// Build the announcement options set
 	announceOpts := announce.NewOptions()
 
 	// Workdir is where the announce files will be saved
@@ -566,10 +566,10 @@ func (d *DefaultRelease) CreateAnnouncement() error {
 		fmt.Sprintf("CHANGELOG/CHANGELOG-%d.%d.md", primeSemver.Major, primeSemver.Minor),
 	)
 
-	// Pass the file path as a string to the annoucement options
+	// Pass the file path as a string to the announcement options
 	announceOpts.WithChangelogFile(releaseNotesHTMLFile)
 
-	// Run the annoucement creation
+	// Run the announcement creation
 	if err := d.impl.CreateAnnouncement(announceOpts); err != nil {
 		return fmt.Errorf("creating the announcement: %w", err)
 	}

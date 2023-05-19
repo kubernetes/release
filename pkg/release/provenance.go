@@ -305,8 +305,8 @@ func (di *defaultProvenanceReaderImpl) GetBuildSubjects(
 		}
 
 		// Now the tricky part. We need to re-append the version tag. Eg
-		// gcs-stage/v1.23.0-alpha.4/file.txt shoud be
-		// v1.23.0-alpha.4/gcs-stage/v1.23.0-alpha.4/file.txt shoud be
+		// gcs-stage/v1.23.0-alpha.4/file.txt should be
+		// v1.23.0-alpha.4/gcs-stage/v1.23.0-alpha.4/file.txt should be
 		subject.Name = object.GcsPrefix + filepath.Join(gcsPath, version, subject.Name)
 
 		newSubjects = append(newSubjects, subject)

@@ -23,7 +23,7 @@ URL_BASE=https://raw.githubusercontent.com/golangci/golangci-lint
 URL=$URL_BASE/$VERSION/install.sh
 # If you update the version above you might need to update the checksum
 # if it does not match. We say might because in the past the install script
-# has been unchanged even if there is a new verion of golangci-lint.
+# has been unchanged even if there is a new version of golangci-lint.
 # To obtain the checksum, download the install script and run the following
 # command:
 # > sha256sum <path-to-install-script>

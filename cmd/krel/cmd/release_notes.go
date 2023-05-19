@@ -793,7 +793,7 @@ func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 		return "", fmt.Errorf("cloning default github repo: %w", err)
 	}
 
-	// Chech if release branch already exists
+	// Check if release branch already exists
 	_, err = repo.RevParseTag(releaseBranch)
 	if err == nil {
 		logrus.Infof("Working on branch %s instead of %s", releaseBranch, git.DefaultBranch)
@@ -1098,7 +1098,7 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 		if err != nil {
 			return fmt.Errorf("getting the content hash for PR#%d: %w", pr, err)
 		}
-		// We'll skip editing if the Releas Note has been reviewed
+		// We'll skip editing if the Release Note has been reviewed
 		if _, ok := pullRequestChecklist[pr]; ok &&
 			// and if we chose not to edit all
 			continueFromLastSession &&

@@ -35,7 +35,7 @@ type Options struct {
 	// Branch is the release branch to be fast forwarded.
 	Branch string
 
-	// MainRef is the git ref ot the base branch.
+	// MainRef is the git ref of the base branch.
 	MainRef string
 
 	// Submit can be used to run inside of a new Google Cloud Build job.

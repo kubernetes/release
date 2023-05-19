@@ -184,7 +184,7 @@ func (gp *GitObjectPusher) PushTag(newTag string) (err error) {
 func (gp *GitObjectPusher) checkTagName(tagName string) error {
 	_, err := util.TagStringToSemver(tagName)
 	if err != nil {
-		return fmt.Errorf("tranforming tag into semver: %w", err)
+		return fmt.Errorf("transforming tag into semver: %w", err)
 	}
 	return nil
 }

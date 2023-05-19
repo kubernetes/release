@@ -30,7 +30,7 @@ import (
 //go:embed templates/*.tmpl
 var tpls embed.FS
 
-// runs with `--type=patch` to retrun the patch schedule
+// runs with `--type=patch` to return the patch schedule
 func parseSchedule(patchSchedule PatchSchedule) string {
 	output := []string{}
 	output = append(output, "### Timeline\n")
@@ -67,7 +67,7 @@ func parseSchedule(patchSchedule PatchSchedule) string {
 	return scheduleOut
 }
 
-// runs with `--type=release` to retrun the release cycle schedule
+// runs with `--type=release` to return the release cycle schedule
 func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 	type RelSched struct {
 		K8VersionWithDot    string

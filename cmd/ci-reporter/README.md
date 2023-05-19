@@ -88,7 +88,7 @@ GITHUB REPORT
      97783 | Device manager for Windows              |                       |
            | passes when run on cluster              |                       |
            | that does not have a GPU but            |                       |
-           | cuases cascading errors                 |                       |
+           | causes cascading errors                 |                       |
     103742 | [Flaking Test] [sig-scalability]        |                       |
            | restarting konnectivity-agent           |                       |
            | (ci-kubernetes-e2e-gci-gce-scalability) |                       |
