@@ -1,5 +1,3 @@
-%global debug_package %{nil}
-
 Name: kubeadm
 Version: {{ .Version }}
 Release: {{ .Revision }}
@@ -26,30 +24,37 @@ BuildRequires: systemd-rpm-macros
 %endif
 
 %description
-%{summary}.
+Command-line utility for administering a Kubernetes cluster.
 
 %prep
-%setup -q -c
+%setup -c -D -T -a 0 -n kubeadm
 
 %build
-# Nothing to build
 
 %install
-# Detect host arch
+
 KUBE_ARCH="$(uname -m)"
 
-# Install files
+cd %{_builddir}/kubeadm/
 mkdir -p %{buildroot}%{_bindir}
+mkdir -p %{buildroot}%{_sysconfdir}/kubernetes/manifests/
 mkdir -p %{buildroot}%{_unitdir}/kubelet.service.d/
 
-install -p -m 755 ${KUBE_ARCH}/kubeadm %{buildroot}%{_bindir}/kubeadm
-install -p -m 644 10-kubeadm.conf %{buildroot}%{_unitdir}/kubelet.service.d/10-kubeadm.conf
+install -p -m 755 -t %{buildroot}%{_bindir}/ ${KUBE_ARCH}/kubeadm
+install -m 755 -d %{buildroot}%{_sysconfdir}/kubernetes/manifests/
+install -p -m 644 -t %{buildroot}%{_unitdir}/kubelet.service.d/ 10-kubeadm.conf
 
 %files
 %{_bindir}/kubeadm
 %dir %{_unitdir}/kubelet.service.d
 %{_unitdir}/kubelet.service.d/10-kubeadm.conf
+
+%if "%{_vendor}" == "debbuild"
+%license %{_builddir}/kubeadm/LICENSE
+%doc %{_builddir}/kubeadm/README.md
+%else
 %license LICENSE
 %doc README.md
+%endif
 
 %changelog
