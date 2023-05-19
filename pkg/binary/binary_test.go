@@ -36,7 +36,7 @@ type TestHeader struct {
 
 // GetTestHeaders returns an array of test binary fragments. The base64 encoded data
 // corresponds to the first bytes (between 128 and 512) of the kubectl executables
-// of the Kubernetes v1.20.2 release. They are note meant to be the full excecutables,
+// of the Kubernetes v1.20.2 release. They are note meant to be the full executables,
 // only the first bytes to test the header analysis functions.
 func GetTestHeaders() []TestHeader {
 	return []TestHeader{

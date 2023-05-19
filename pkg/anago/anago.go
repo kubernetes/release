@@ -182,7 +182,7 @@ type StageState struct {
 	*State
 }
 
-// DefaultStageState createa a new default `ReleaseOptions`.
+// DefaultStageState create a new default `ReleaseOptions`.
 func DefaultStageState() *StageState {
 	return &StageState{
 		State: DefaultState(),
@@ -194,7 +194,7 @@ type StageOptions struct {
 	*Options
 }
 
-// DefaultStageOptions createa a new default `StageOptions`.
+// DefaultStageOptions create a new default `StageOptions`.
 func DefaultStageOptions() *StageOptions {
 	return &StageOptions{
 		Options: DefaultOptions(),
@@ -329,7 +329,7 @@ type ReleaseState struct {
 	*State
 }
 
-// DefaultReleaseState createa a new default `ReleaseOptions`.
+// DefaultReleaseState create a new default `ReleaseOptions`.
 func DefaultReleaseState() *ReleaseState {
 	return &ReleaseState{
 		State: DefaultState(),
@@ -341,7 +341,7 @@ type ReleaseOptions struct {
 	*Options
 }
 
-// DefaultReleaseOptions createa a new default `ReleaseOptions`.
+// DefaultReleaseOptions create a new default `ReleaseOptions`.
 func DefaultReleaseOptions() *ReleaseOptions {
 	return &ReleaseOptions{
 		Options: DefaultOptions(),
@@ -427,7 +427,7 @@ func (r *Release) Run() error {
 
 	logger.WithStep().Info("Checking artifacts provenance")
 	if err := r.client.CheckProvenance(); err != nil {
-		// For now, we ony notify provenance errors as not to treat
+		// For now, we only notify provenance errors as not to treat
 		// them as fatal while we finish testing SLSA compliance.
 		logrus.Warnf("Unable to check provenance attestation: %v", err)
 	}

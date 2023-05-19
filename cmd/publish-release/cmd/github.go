@@ -215,7 +215,7 @@ func getAssetsFromStrings(assetStrings []string) ([]announce.Asset, error) {
 func processRemoteAsset(urlString string) (path string, err error) {
 	u, err := url.Parse(urlString)
 	if err != nil {
-		return path, fmt.Errorf("parsin URL: %w", err)
+		return path, fmt.Errorf("parsing URL: %w", err)
 	}
 	if u.Scheme != "gs" {
 		return path, errors.New("only GCS objects are supported at this time")

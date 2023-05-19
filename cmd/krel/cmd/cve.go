@@ -158,7 +158,7 @@ func deleteCVE(opts *cveOptions) (err error) {
 	return client.Delete(opts.CVE)
 }
 
-// editCVE main edit funcion
+// editCVE main edit function
 func editCVE(opts *cveOptions) (err error) {
 	client := cve.NewClient()
 

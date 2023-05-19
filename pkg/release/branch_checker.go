@@ -77,7 +77,7 @@ func (r *BranchChecker) NeedsCreation(
 		logrus.Infof("Branch %s does not yet exist on remote location", branch)
 		if releaseType == ReleaseTypeOfficial {
 			return false, fmt.Errorf(
-				"can't do officials relases when creating a new branch",
+				"can't do officials releases when creating a new branch",
 			)
 		}
 		createReleaseBranch = true
