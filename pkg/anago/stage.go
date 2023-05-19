@@ -561,7 +561,7 @@ func (d *DefaultStage) TagRepository() error {
 func (d *DefaultStage) Build() error {
 	// Log in to Docker Hub to avoid getting rate limited
 	if err := d.impl.DockerHubLogin(); err != nil {
-		return fmt.Errorf("loging into Docker Hub: %w", err)
+		return fmt.Errorf("logging into Docker Hub: %w", err)
 	}
 
 	// Call MakeCross for each of the versions we are building
@@ -754,7 +754,7 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 		})
 	}
 
-	// Write the Releas Artifacts SBOM to disk
+	// Write the Release Artifacts SBOM to disk
 	if err := doc.Write(filepath.Join(os.TempDir(), fmt.Sprintf("release-bom-%s.spdx", version))); err != nil {
 		return fmt.Errorf("writing artifacts SBOM for %s: %w", version, err)
 	}

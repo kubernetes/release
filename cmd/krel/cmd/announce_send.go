@@ -110,7 +110,7 @@ func init() {
 
 func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, rootOpts *rootOptions) error {
 	if err := announceRootOpts.Validate(); err != nil {
-		return fmt.Errorf("validating annoucement send options: %w", err)
+		return fmt.Errorf("validating announcement send options: %w", err)
 	}
 	logrus.Info("Retrieving release announcement from Google Cloud Bucket")
 

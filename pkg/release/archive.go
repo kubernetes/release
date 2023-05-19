@@ -35,7 +35,7 @@ import (
 
 const (
 	archiveDirPrefix   = "anago-"  // Prefix for archive directories
-	archiveBucketPath  = "archive" // Archiv sibdirectory in bucket
+	archiveBucketPath  = "archive" // Archive sibdirectory in bucket
 	logsArchiveSubPath = "logs"    // Logs subdirectory
 )
 
@@ -285,7 +285,7 @@ func (a *defaultArchiverImpl) CopyReleaseLogs(
 func (a *defaultArchiverImpl) CopyReleaseToBucket(releaseBuildDir, archiveBucketPath string) error {
 	// TODO: Check if we have write access to the bucket?
 
-	// Create a GCS cliente to copy the release
+	// Create a GCS client to copy the release
 	gcs := object.NewGCS()
 	remoteDest, err := gcs.NormalizePath(archiveBucketPath)
 	if err != nil {

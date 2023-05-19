@@ -42,7 +42,7 @@ for release in $(curl -s https://api.github.com/repos/kubernetes/kubernetes/rele
 		# alpha, beta, rc releases should be ignored
 		echo "Unstable version ${release} ignored"
 	elif [[ "${release}" == "v1.20.3" ]]; then
-		# v1.20.3 was interrupted due to a conformance metada
+		# v1.20.3 was interrupted due to a conformance metadata
 		# problem. We ignore this release as no packages were
 		# published
 		#
