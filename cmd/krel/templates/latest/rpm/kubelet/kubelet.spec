@@ -1,7 +1,17 @@
+%global debug_package %{nil}
+
+%if 0%{?suse_version}
+# Needed for SUSE SLE 12 GA used to build s390x package
+## Use the right path for sharedstatedir
+%global _sharedstatedir %{_localstatedir}/lib
+## Use the right path for _fillupdir when not defined
+%{!?_fillupdir:%global _fillupdir %{_localstatedir}/adm/fillup-templates}
+%endif
+
 Name: kubelet
 Version: {{ .Version }}
 Release: {{ .Revision }}
-Summary: Container cluster management
+Summary: Node agent for Kubernetes clusters
 
 %if "%{_vendor}" == "debbuild"
 Group: net
@@ -38,54 +48,58 @@ Requires(post,postun): %fillup_prereq
 %endif
 
 %description
-The node agent of Kubernetes, the container cluster manager.
+%{summary}.
 
 %prep
-%setup -c -D -T -a 0 -n kubelet
+%setup -q -c
 
 %build
+# Nothing to build
 
 %install
-
+# Detect host arch
 KUBE_ARCH="$(uname -m)"
 
-cd %{_builddir}/kubelet/
-mkdir -p %{buildroot}%{_unitdir}/kubelet.service.d/
+# Install files
+mkdir -p %{buildroot}%{_unitdir}/
 mkdir -p %{buildroot}%{_bindir}/
-mkdir -p %{buildroot}/var/lib/kubelet/
+mkdir -p %{buildroot}%{_sharedstatedir}/kubelet/
+mkdir -p %{buildroot}%{_sysconfdir}/kubernetes/manifests/
 
-install -m 755 -d %{buildroot}%{_unitdir}
-install -m 755 -d %{buildroot}%{_unitdir}/kubelet.service.d/
-install -m 755 -d %{buildroot}%{_bindir}
-install -m 755 -d %{buildroot}/var/lib/kubelet/
-install -p -m 755 -t %{buildroot}%{_bindir}/ ${KUBE_ARCH}/kubelet
-install -p -m 644 -t %{buildroot}%{_unitdir}/ kubelet.service
+install -p -m 755 ${KUBE_ARCH}/kubelet %{buildroot}%{_bindir}/kubelet
+install -p -m 644 kubelet.service %{buildroot}%{_unitdir}/kubelet.service
+
+# Required because dpkg-deb doesn't keep empty directories
+%if "%{_vendor}" == "debbuild"
+touch %{buildroot}%{_sharedstatedir}/kubelet/.kubelet-keep
+touch %{buildroot}%{_sysconfdir}/kubernetes/manifests/.kubelet-keep
+%endif
 
 %if 0%{?suse_version}
 mkdir -p %{buildroot}%{_fillupdir}/
-install -m 644 -T kubelet.env %{buildroot}%{_fillupdir}/sysconfig.kubelet
+install -p -m 644 -T kubelet.env %{buildroot}%{_fillupdir}/sysconfig.kubelet
 %else
 mkdir -p %{buildroot}%{_sysconfdir}/sysconfig/
-install -m 755 -d %{buildroot}%{_sysconfdir}/sysconfig/
 install -p -m 644 -T kubelet.env %{buildroot}%{_sysconfdir}/sysconfig/kubelet
 %endif
 
 %files
 %{_bindir}/kubelet
 %{_unitdir}/kubelet.service
+%dir %{_sharedstatedir}/kubelet
+%dir %{_sysconfdir}/kubernetes
+%dir %{_sysconfdir}/kubernetes/manifests
+%if "%{_vendor}" == "debbuild"
+%{_sharedstatedir}/kubelet/.kubelet-keep
+%{_sysconfdir}/kubernetes/manifests/.kubelet-keep
+%endif
 %if 0%{?suse_version}
 %{_fillupdir}/sysconfig.kubelet
 %else
 %config(noreplace) %{_sysconfdir}/sysconfig/kubelet
 %endif
-
-%if "%{_vendor}" == "debbuild"
-%license %{_builddir}/kubelet/LICENSE
-%doc %{_builddir}/kubelet/README.md
-%else
 %license LICENSE
 %doc README.md
-%endif
 
 %preun
 %systemd_preun kubelet.service
