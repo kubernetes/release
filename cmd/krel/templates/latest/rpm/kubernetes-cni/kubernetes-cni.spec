@@ -1,4 +1,3 @@
-%global debug_package %{nil}
 %undefine _missing_build_ids_terminate_build
 
 Name: kubernetes-cni
@@ -18,36 +17,33 @@ Source0: %{name}_%{version}.orig.tar.gz
 Requires: kubelet
 
 %description
-%{summary}.
+Binaries required to provision container networking.
 
 %prep
-%setup -q -c
+%setup -c -D -T -a 0 -n cni-plugins
 
 %build
-# Nothing to build
 
 %install
-# Detect host arch
+
 KUBE_ARCH="$(uname -m)"
 
-# Install files
+cd %{_builddir}/cni-plugins/${KUBE_ARCH}/
 mkdir -p %{buildroot}/opt/cni/bin
 mkdir -p %{buildroot}%{_sysconfdir}/cni/net.d/
 
-cp -a ${KUBE_ARCH}/* %{buildroot}/opt/cni/bin/
-
-%if "%{_vendor}" == "debbuild"
-touch %{buildroot}%{_sysconfdir}/cni/net.d/.kubernetes-cni-keep
-%endif
+install -m 755 -d %{buildroot}%{_sysconfdir}/cni/net.d/
+install -m 755 -d %{buildroot}/opt/cni/bin
+mv ./* %{buildroot}/opt/cni/bin/
 
 %files
-/opt/cni/
-%dir %{_sysconfdir}/cni
-%dir %{_sysconfdir}/cni/net.d
+/opt/cni
 %if "%{_vendor}" == "debbuild"
-%{_sysconfdir}/cni/net.d/.kubernetes-cni-keep
-%endif
+%license %{_builddir}/cni-plugins/LICENSE
+%doc %{_builddir}/cni-plugins/README.md
+%else
 %license LICENSE
 %doc README.md
+%endif
 
 %changelog
