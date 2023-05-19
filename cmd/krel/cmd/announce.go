@@ -50,7 +50,7 @@ func init() {
 		"t",
 		"",
 		"built tag to be announced, will be used for fetching the "+
-			"announcement from the google cloud bucket and to create the annoucements file",
+			"announcement from the google cloud bucket and to create the announcements file",
 	)
 
 	announceCmd.PersistentFlags().BoolVarP(
