@@ -25,12 +25,12 @@ import (
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //counterfeiter:generate . impl
 type impl interface {
-	GetURLResponse(url string, trim bool) (string, error)
+	GetURLResponse(url string) (string, error)
 }
 
 type defaultImpl struct{}
 
-func (*defaultImpl) GetURLResponse(url string, trim bool) (string, error) {
+func (*defaultImpl) GetURLResponse(url string) (string, error) {
 	content, err := http.NewAgent().Get(url)
 	if err != nil {
 		return "", err

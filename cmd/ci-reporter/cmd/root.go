@@ -224,7 +224,7 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 	// print report in table format, (short table differs)
 	for _, r := range *reports {
 		// write header
-		_, err := out.WriteString(fmt.Sprintf("\n%s REPORT\n\n", strings.ToUpper(string(r.Info.Name))))
+		_, err := fmt.Fprintf(out, "\n%s REPORT\n\n", strings.ToUpper(string(r.Info.Name)))
 		if err != nil {
 			return fmt.Errorf("could not write to output stream: %w", err)
 		}
@@ -265,7 +265,7 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 		for category, categoryCount := range countCategories {
 			categoryCounts += fmt.Sprintf("%s:%d ", category, categoryCount)
 		}
-		if _, err := out.WriteString(fmt.Sprintf("\nSUMMARY - Total:%d %s\n", len(data), categoryCounts)); err != nil {
+		if _, err := fmt.Fprintf(out, "\nSUMMARY - Total:%d %s\n", len(data), categoryCounts); err != nil {
 			return fmt.Errorf("could not write to output stream: %w", err)
 		}
 	}

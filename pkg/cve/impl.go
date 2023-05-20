@@ -189,7 +189,7 @@ func (impl *defaultClientImplementation) CheckID(cveID string) error {
 
 // ValidateCVEData checks a cve map
 func (impl *defaultClientImplementation) ValidateCVEMap(
-	cveID, path string, opts *ClientOptions,
+	cveID, path string, _ *ClientOptions,
 ) (err error) {
 	// Parse the data map
 	maps, err := notes.ParseReleaseNotesMap(path)
@@ -225,7 +225,7 @@ func (impl *defaultClientImplementation) ValidateCVEMap(
 }
 
 // CreateEmptyFile creates an empty CVE map
-func (impl *defaultClientImplementation) CreateEmptyFile(cve string, opts *ClientOptions) (
+func (impl *defaultClientImplementation) CreateEmptyFile(cve string, _ *ClientOptions) (
 	file *os.File, err error,
 ) {
 	if err := impl.CheckID(cve); err != nil {
