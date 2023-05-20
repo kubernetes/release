@@ -33,6 +33,8 @@ type defaultImpl struct{}
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //counterfeiter:generate . impl
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt fastforwardfakes/fake_impl.go > fastforwardfakes/_fake_impl.go && mv fastforwardfakes/_fake_impl.go fastforwardfakes/fake_impl.go"
+
 type impl interface {
 	CloneOrOpenDefaultGitHubRepoSSH(string) (*git.Repo, error)
 	RepoSetDry(*git.Repo)

@@ -24,6 +24,7 @@ import (
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //counterfeiter:generate . impl
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt kubecrossfakes/fake_impl.go > kubecrossfakes/_fake_impl.go && mv kubecrossfakes/_fake_impl.go kubecrossfakes/fake_impl.go"
 type impl interface {
 	GetURLResponse(url string, trim bool) (string, error)
 }
