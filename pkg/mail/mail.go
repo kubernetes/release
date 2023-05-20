@@ -64,11 +64,13 @@ func (s *Sender) SetAPIClient(client APIClient) {
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //counterfeiter:generate . SendClient
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt mailfakes/fake_send_client.go > mailfakes/_fake_send_client.go && mv mailfakes/_fake_send_client.go mailfakes/fake_send_client.go"
 type SendClient interface {
 	Send(*mail.SGMailV3) (*rest.Response, error)
 }
 
 //counterfeiter:generate . APIClient
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt mailfakes/fake_apiclient.go > mailfakes/_fake_apiclient.go && mv mailfakes/_fake_apiclient.go mailfakes/fake_apiclient.go"
 type APIClient interface {
 	API(rest.Request) (*rest.Response, error)
 }

@@ -27,6 +27,7 @@ import (
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt buildfakes/fake_impl.go > buildfakes/_fake_impl.go && mv buildfakes/_fake_impl.go buildfakes/fake_impl.go"
 
 // Make is the main structure for building Kubernetes releases.
 type Make struct {

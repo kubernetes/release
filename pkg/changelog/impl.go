@@ -42,8 +42,9 @@ import (
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
-
 //counterfeiter:generate . impl
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt changelogfakes/fake_impl.go > changelogfakes/_fake_impl.go && mv changelogfakes/_fake_impl.go changelogfakes/fake_impl.go"
+
 type impl interface {
 	// Used in `Run()`
 	TagStringToSemver(tag string) (semver.Version, error)

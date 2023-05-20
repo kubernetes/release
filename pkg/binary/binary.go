@@ -28,6 +28,8 @@ import (
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt binaryfakes/fake_binary_implementation.go > binaryfakes/_fake_binary_implementation.go && mv binaryfakes/_fake_binary_implementation.go binaryfakes/fake_binary_implementation.go"
+
 const (
 	// GOOS labels
 	LINUX  = "linux"

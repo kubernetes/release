@@ -43,6 +43,7 @@ func New() *TestGrid {
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //counterfeiter:generate . Client
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt testgridfakes/fake_client.go > testgridfakes/_fake_client.go && mv testgridfakes/_fake_client.go testgridfakes/fake_client.go"
 type Client interface {
 	GetURLResponse(string, bool) (string, error)
 }

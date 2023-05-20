@@ -17,7 +17,11 @@ limitations under the License.
 package gcb
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
-
+//go:generate /usr/bin/env bash -c "cat ../../../hack/boilerplate/boilerplate.generatego.txt gcbfakes/fake_history_impl.go > gcbfakes/_fake_history_impl.go  && mv gcbfakes/_fake_history_impl.go gcbfakes/fake_history_impl.go"
+//go:generate /usr/bin/env bash -c "cat ../../../hack/boilerplate/boilerplate.generatego.txt gcbfakes/fake_list_jobs.go > gcbfakes/_fake_list_jobs.go  && mv gcbfakes/_fake_list_jobs.go gcbfakes/fake_list_jobs.go"
+//go:generate /usr/bin/env bash -c "cat ../../../hack/boilerplate/boilerplate.generatego.txt gcbfakes/fake_release.go > gcbfakes/_fake_release.go  && mv gcbfakes/_fake_release.go gcbfakes/fake_release.go"
+//go:generate /usr/bin/env bash -c "cat ../../../hack/boilerplate/boilerplate.generatego.txt gcbfakes/fake_repository.go > gcbfakes/_fake_repository.go  && mv gcbfakes/_fake_repository.go gcbfakes/fake_repository.go"
+//go:generate /usr/bin/env bash -c "cat ../../../hack/boilerplate/boilerplate.generatego.txt gcbfakes/fake_version.go > gcbfakes/_fake_version.go  && mv gcbfakes/_fake_version.go gcbfakes/fake_version.go"
 import (
 	"errors"
 	"fmt"

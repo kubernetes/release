@@ -103,6 +103,7 @@ type impl struct{}
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //counterfeiter:generate . Impl
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt kubepkgfakes/fake_impl.go > kubepkgfakes/_fake_impl.go && mv kubepkgfakes/_fake_impl.go kubepkgfakes/fake_impl.go"
 type Impl interface {
 	RunSuccessWithWorkDir(workDir, cmd string, args ...string) error
 	Releases(owner, repo string, includePrereleases bool) ([]*gogithub.RepositoryRelease, error)

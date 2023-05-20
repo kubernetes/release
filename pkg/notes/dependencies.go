@@ -35,6 +35,7 @@ func NewDependencies() *Dependencies {
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //counterfeiter:generate . MoDiff
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt notesfakes/fake_mo_diff.go > notesfakes/_fake_mo_diff.go && mv notesfakes/_fake_mo_diff.go notesfakes/fake_mo_diff.go"
 type MoDiff interface {
 	Run(*modiff.Config) (string, error)
 }
