@@ -30,8 +30,6 @@ import (
 
 var errTest = errors.New("")
 
-func TestBuild(t *testing.T) {}
-
 func TestRelease(t *testing.T) {
 	t.Parallel()
 	logrus.SetOutput(io.Discard)

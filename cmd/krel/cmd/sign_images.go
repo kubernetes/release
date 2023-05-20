@@ -36,7 +36,8 @@ func init() {
 	signCmd.AddCommand(signImagesCmd)
 }
 
-func runSignImages(signOpts *signOptions, args []string) error { //nolint:unparam // TODO: implement me :)
+// TODO: implement me :)
+func runSignImages(signOpts *signOptions, args []string) error { //nolint:revive,unparam // keeping the parameters for reference
 	logrus.Info("Not implemented")
 
 	return nil

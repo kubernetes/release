@@ -40,7 +40,7 @@ var githubCmd = &cobra.Command{
 }
 
 // look for token in environment variables & create a github client
-func setGithubConfig(cmd *cobra.Command, args []string) {
+func setGithubConfig(_ *cobra.Command, _ []string) {
 	cfg.GithubToken = env.Default("GITHUB_TOKEN", "")
 	if cfg.GithubToken == "" {
 		logrus.Fatal("Please specify your Github access token via the environment variable 'GITHUB_TOKEN' to generate a ci-report")

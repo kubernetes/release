@@ -92,7 +92,7 @@ func (*defaultImageImpl) SignImage(signer *sign.Signer, reference string) error 
 	return err
 }
 
-func (*defaultImageImpl) VerifyImage(signer *sign.Signer, reference string) error {
+func (*defaultImageImpl) VerifyImage(_ *sign.Signer, _ string) error {
 	// TODO: bypassing this for now due to the fail in the promotion process
 	// that sign the images. We will release the Feb/2023 patch releases without full
 	// signatures but we will sign those in a near future in a deatached process
