@@ -75,9 +75,10 @@ steps:
   - "bin/krel"
   - "sign"
   - "blobs"
-  - "${_KUBERNETES_GCS_BUCKET}"
+  - "--certificate-identity=${GOOGLE_SERVICE_ACCOUNT_NAME}"
+  - "--certificate-oidc-issuer=https://accounts.google.com"
   - "--log-level=${_LOG_LEVEL}"
-
+  - "${_KUBERNETES_GCS_BUCKET}"
 
 - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
   dir: "/workspace"
