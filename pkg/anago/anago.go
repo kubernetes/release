@@ -32,7 +32,10 @@ import (
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
-
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt anagofakes/fake_release_client.go > anagofakes/_fake_release_client.go && mv anagofakes/_fake_release_client.go anagofakes/fake_release_client.go"
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt anagofakes/fake_release_impl.go > anagofakes/_fake_release_impl.go && mv anagofakes/_fake_release_impl.go anagofakes/fake_release_impl.go"
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt anagofakes/fake_stage_client.go > anagofakes/_fake_stage_client.go && mv anagofakes/_fake_stage_client.go anagofakes/fake_stage_client.go"
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt anagofakes/fake_stage_impl.go > anagofakes/_fake_stage_impl.go && mv anagofakes/_fake_stage_impl.go anagofakes/fake_stage_impl.go"
 const (
 	// workspaceDir is the global directory where the stage and release process
 	// happens.
