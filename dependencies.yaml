@@ -94,7 +94,7 @@ dependencies:
       match: "GO_MAJOR_VERSION: '\\d+.\\d+'"
 
   - name: "golang: go.mod"
-    version: 1.19
+    version: 1.20
     refPaths:
     - path: go.mod
       match: go \d+.\d+
@@ -370,16 +370,10 @@ dependencies:
 
   # golangci-lint-version
   - name: "golangci-lint"
-    version: 1.51.0
+    version: v1.52
     refPaths:
-    - path: hack/verify-golangci-lint.sh
-      match: VERSION=v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?
-
-  - name: "golangci-lint-checksum"
-    version: 0e09dedc7e35f511b7924b885e50d7fe48eef25bec78c86f22f5b5abd24976cc
-    refPaths:
-    - path: hack/verify-golangci-lint.sh
-      match: INSTALL_CHECKSUM
+    - path: .github/workflows/lint.yml
+      match: "version: v\\d+.\\d+?\\.?(\\d+)?"
 
   # Base images
   - name: "Debian: codename (default)"

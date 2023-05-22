@@ -226,9 +226,9 @@ func (d *defaultReleaseImpl) ValidateImages(
 }
 
 func (d *defaultReleaseImpl) PublishVersion(
-	buildType, version, buildDir, bucket, gcsRoot string,
-	versionMarkers []string,
-	privateBucket, fast bool,
+	buildType, version, buildDir, bucket, gcsRoot string, //nolint: revive,gocritic
+	versionMarkers []string, //nolint: revive,gocritic
+	privateBucket, fast bool, //nolint: revive,gocritic
 ) error {
 	return release.
 		NewPublisher().

@@ -26,12 +26,12 @@ import (
 //counterfeiter:generate . impl
 //go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt kubecrossfakes/fake_impl.go > kubecrossfakes/_fake_impl.go && mv kubecrossfakes/_fake_impl.go kubecrossfakes/fake_impl.go"
 type impl interface {
-	GetURLResponse(url string, trim bool) (string, error)
+	GetURLResponse(url string) (string, error)
 }
 
 type defaultImpl struct{}
 
-func (*defaultImpl) GetURLResponse(url string, trim bool) (string, error) {
+func (*defaultImpl) GetURLResponse(url string) (string, error) {
 	content, err := http.NewAgent().Get(url)
 	if err != nil {
 		return "", err

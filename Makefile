@@ -33,9 +33,9 @@ verify-published-rpms: ## Ensure rpms have been published
 
 ##@ Verify
 
-.PHONY: verify verify-boilerplate verify-build verify-dependencies verify-golangci-lint verify-go-mod
+.PHONY: verify verify-boilerplate verify-build verify-dependencies verify-go-mod
 
-verify: release-tools verify-boilerplate verify-build verify-dependencies verify-golangci-lint verify-go-mod ## Runs verification scripts to ensure correct execution
+verify: release-tools verify-boilerplate verify-build verify-dependencies verify-go-mod ## Runs verification scripts to ensure correct execution
 
 verify-boilerplate: ## Runs the file header check
 	./hack/verify-boilerplate.sh
@@ -48,9 +48,6 @@ verify-dependencies: ## Runs zeitgeist to verify dependency versions
 
 verify-go-mod: ## Runs the go module linter
 	./hack/verify-go-mod.sh
-
-verify-golangci-lint: ## Runs all golang linters
-	./hack/verify-golangci-lint.sh
 
 ##@ Tests
 
