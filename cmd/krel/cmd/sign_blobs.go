@@ -33,11 +33,15 @@ import (
 )
 
 const (
-	outputPathFlag     = "output-path"
-	privateKeyPathFlag = "private-key-path"
-	publicKeyPathFlag  = "public-key-path"
-	sigExt             = ".sig"
-	certExt            = ".cert"
+	outputPathFlag           = "output-path"
+	privateKeyPathFlag       = "private-key-path"
+	publicKeyPathFlag        = "public-key-path"
+	certIdentityFlag         = "certificate-identity"
+	certIdentityRegexpFlag   = "certificate-identity-regexp"
+	certOidcIssuerFlag       = "certificate-oidc-issuer"
+	certOidcIssuerRegexpFlag = "certificate-oidc-issuer-regexp"
+	sigExt                   = ".sig"
+	certExt                  = ".cert"
 )
 
 type signBlobOptions struct {
@@ -45,6 +49,11 @@ type signBlobOptions struct {
 
 	privateKeyPath string
 	publicKeyPath  string
+
+	certOidcIssuer       string
+	certOidcIssuerRegexp string
+	certIdentity         string
+	certIdentityRegexp   string
 }
 
 type signingBundle struct {
@@ -89,6 +98,38 @@ func init() {
 		"",
 		"",
 		"path for the cosign public key",
+	)
+
+	signBlobCmd.PersistentFlags().StringVarP(
+		&signBlobOpts.certIdentity,
+		certIdentityFlag,
+		"",
+		"",
+		"The identity expected in a valid Fulcio certificate. Valid values include email address, DNS names, IP addresses, and URIs. Either --certificate-identity or --certificate-identity-regexp must be set for keyless flows.",
+	)
+
+	signBlobCmd.PersistentFlags().StringVarP(
+		&signBlobOpts.certIdentityRegexp,
+		certIdentityRegexpFlag,
+		"",
+		"",
+		"A regular expression alternative to --certificate-identity. Accepts the Go regular expression syntax described at https://golang.org/s/re2syntax. Either --certificate-identity or --certificate-identity-regexp must be set for keyless flows.",
+	)
+
+	signBlobCmd.PersistentFlags().StringVarP(
+		&signBlobOpts.certOidcIssuer,
+		certOidcIssuerFlag,
+		"",
+		"",
+		"The OIDC issuer expected in a valid Fulcio certificate, e.g. https://token.actions.githubusercontent.com or https://oauth2.sigstore.dev/auth. Either --certificate-oidc-issuer or --certificate-oidc-issuer-regexp must be set for keyless flows.",
+	)
+
+	signBlobCmd.PersistentFlags().StringVarP(
+		&signBlobOpts.certOidcIssuerRegexp,
+		certOidcIssuerRegexpFlag,
+		"",
+		"",
+		"A regular expression alternative to --certificate-oidc-issuer. Accepts the Go regular expression syntax described at https://golang.org/s/re2syntax. Either --certificate-oidc-issuer or --certificate-oidc-issuer-regexp must be set for keyless flows.",
 	)
 
 	signCmd.AddCommand(signBlobCmd)
@@ -171,6 +212,11 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 				signerOpts.OutputCertificatePath = fmt.Sprintf("%s%s", fileBundle.fileLocalLocation, certExt)
 				signerOpts.OutputSignaturePath = fmt.Sprintf("%s%s", fileBundle.fileLocalLocation, sigExt)
 			}
+
+			signerOpts.CertIdentity = signBlobOpts.certIdentity
+			signerOpts.CertIdentityRegexp = signBlobOpts.certIdentityRegexp
+			signerOpts.CertOidcIssuer = signBlobOpts.certOidcIssuer
+			signerOpts.CertOidcIssuerRegexp = signBlobOpts.certOidcIssuerRegexp
 
 			signer := sign.New(signerOpts)
 			if _, err := signer.SignFile(fileBundle.fileLocalLocation); err != nil {
