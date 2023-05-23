@@ -24,7 +24,9 @@ Source0: %{name}_%{version}.orig.tar.gz
 
 BuildRequires: systemd
 Requires: iptables >= 1.4.21
-Requires: kubernetes-cni >= {{ index .Dependencies "kubernetes-cni" }}
+{{ range $dep := .Metadata.Dependencies }}
+Requires: {{ $dep.Name }} {{ $dep.VersionConstraint }}
+{{- end }}
 %if "%{_vendor}" == "debbuild"
 Requires: iproute2
 Requires: mount
