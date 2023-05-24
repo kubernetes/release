@@ -64,13 +64,21 @@ const patchReleaseExpectedContent = `# v1.25.3
 ## Dependencies
 
 ### Added
+- github.com/a8m/tree: [10a5fd5](https://github.com/a8m/tree/tree/10a5fd5)
+- github.com/dougm/pretty: [2ee9d74](https://github.com/dougm/pretty/tree/2ee9d74)
+- github.com/rasky/go-xdr: [4930550](https://github.com/rasky/go-xdr/tree/4930550)
 - github.com/shurcooL/sanitized_anchor_name: [v1.0.0](https://github.com/shurcooL/sanitized_anchor_name/tree/v1.0.0)
+- github.com/vmware/vmw-guestinfo: [25eff15](https://github.com/vmware/vmw-guestinfo/tree/25eff15)
 
 ### Changed
 - github.com/google/cel-go: [v0.12.5 → v0.12.6](https://github.com/google/cel-go/compare/v0.12.5...v0.12.6)
+- github.com/google/uuid: [v1.1.2 → v1.3.0](https://github.com/google/uuid/compare/v1.1.2...v1.3.0)
+- github.com/kr/pretty: [v0.2.1 → v0.3.0](https://github.com/kr/pretty/compare/v0.2.1...v0.3.0)
 - github.com/opencontainers/runc: [v1.1.3 → v1.1.6](https://github.com/opencontainers/runc/compare/v1.1.3...v1.1.6)
+- github.com/rogpeppe/go-internal: [v1.3.0 → v1.6.1](https://github.com/rogpeppe/go-internal/compare/v1.3.0...v1.6.1)
 - github.com/stretchr/objx: [v0.2.0 → v0.4.0](https://github.com/stretchr/objx/compare/v0.2.0...v0.4.0)
 - github.com/stretchr/testify: [v1.7.0 → v1.8.0](https://github.com/stretchr/testify/compare/v1.7.0...v1.8.0)
+- github.com/vmware/govmomi: [v0.20.3 → v0.30.0](https://github.com/vmware/govmomi/compare/v0.20.3...v0.30.0)
 - go.uber.org/goleak: v1.1.10 → v1.2.0
 - golang.org/x/lint: 6edffad → 1621716
 - golang.org/x/mod: 86c51ed → v0.8.0
@@ -137,14 +145,22 @@ const patchReleaseExpectedHTML = `<!DOCTYPE html>
 <h2>Dependencies</h2>
 <h3>Added</h3>
 <ul>
+<li>github.com/a8m/tree: <a href="https://github.com/a8m/tree/tree/10a5fd5">10a5fd5</a></li>
+<li>github.com/dougm/pretty: <a href="https://github.com/dougm/pretty/tree/2ee9d74">2ee9d74</a></li>
+<li>github.com/rasky/go-xdr: <a href="https://github.com/rasky/go-xdr/tree/4930550">4930550</a></li>
 <li>github.com/shurcooL/sanitized_anchor_name: <a href="https://github.com/shurcooL/sanitized_anchor_name/tree/v1.0.0">v1.0.0</a></li>
+<li>github.com/vmware/vmw-guestinfo: <a href="https://github.com/vmware/vmw-guestinfo/tree/25eff15">25eff15</a></li>
 </ul>
 <h3>Changed</h3>
 <ul>
 <li>github.com/google/cel-go: <a href="https://github.com/google/cel-go/compare/v0.12.5...v0.12.6">v0.12.5 → v0.12.6</a></li>
+<li>github.com/google/uuid: <a href="https://github.com/google/uuid/compare/v1.1.2...v1.3.0">v1.1.2 → v1.3.0</a></li>
+<li>github.com/kr/pretty: <a href="https://github.com/kr/pretty/compare/v0.2.1...v0.3.0">v0.2.1 → v0.3.0</a></li>
 <li>github.com/opencontainers/runc: <a href="https://github.com/opencontainers/runc/compare/v1.1.3...v1.1.6">v1.1.3 → v1.1.6</a></li>
+<li>github.com/rogpeppe/go-internal: <a href="https://github.com/rogpeppe/go-internal/compare/v1.3.0...v1.6.1">v1.3.0 → v1.6.1</a></li>
 <li>github.com/stretchr/objx: <a href="https://github.com/stretchr/objx/compare/v0.2.0...v0.4.0">v0.2.0 → v0.4.0</a></li>
 <li>github.com/stretchr/testify: <a href="https://github.com/stretchr/testify/compare/v1.7.0...v1.8.0">v1.7.0 → v1.8.0</a></li>
+<li>github.com/vmware/govmomi: <a href="https://github.com/vmware/govmomi/compare/v0.20.3...v0.30.0">v0.20.3 → v0.30.0</a></li>
 <li>go.uber.org/goleak: v1.1.10 → v1.2.0</li>
 <li>golang.org/x/lint: 6edffad → 1621716</li>
 <li>golang.org/x/mod: 86c51ed → v0.8.0</li>
