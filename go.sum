@@ -179,8 +179,8 @@ github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkY
 github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef/go.mod h1:WaHUgvxTVq04UNunO+XhnAqY/wQc+bxr74GqbsZ/Jqw=
 github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 h1:DklsrG3dyBCFEj5IhUbnKptjxatkF07cF2ak3yi77so=
 github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2/go.mod h1:WaHUgvxTVq04UNunO+XhnAqY/wQc+bxr74GqbsZ/Jqw=
-github.com/aws/aws-sdk-go v1.44.259 h1:7yDn1dcv4DZFMKpu+2exIH5O6ipNj9qXrKfdMUaIJwY=
-github.com/aws/aws-sdk-go v1.44.259/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
+github.com/aws/aws-sdk-go v1.44.264 h1:5klL62ebn6uv3oJ0ixF7K12hKItj8lV3QqWeQPlkFSs=
+github.com/aws/aws-sdk-go v1.44.264/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
 github.com/aws/aws-sdk-go-v2 v1.7.1/go.mod h1:L5LuPC1ZgDr2xQS7AmIec/Jlc7O/Y1u2KxJyNVab250=
 github.com/aws/aws-sdk-go-v2 v1.14.0/go.mod h1:ZA3Y8V0LrlWj63MQAnRHgKf/5QB//LSZCPNWlWrNGLU=
 github.com/aws/aws-sdk-go-v2 v1.18.0 h1:882kkTpSFhdgYRKVZ/VCgf7sd0ru57p2JCxz4/oN5RY=
@@ -1622,8 +1622,8 @@ sigs.k8s.io/kustomize/kyaml v0.13.9 h1:Qz53EAaFFANyNgyOEJbT/yoIHygK40/ZcvU3rgry2
 sigs.k8s.io/kustomize/kyaml v0.13.9/go.mod h1:QsRbD0/KcU+wdk0/L0fIp2KLnohkVzs6fQ85/nOXac4=
 sigs.k8s.io/mdtoc v1.1.0 h1:q3YtqYzmC2e0hgLXRIOm7/QLuPux1CX3ZHCwlbABxZo=
 sigs.k8s.io/mdtoc v1.1.0/go.mod h1:QZLVEdHH2iNIR4uHAZyvFRtjloHgVItk8lo/mzCtq3w=
-sigs.k8s.io/promo-tools/v3 v3.5.2 h1:xYmYJb2/TXIHBq8rlQZx6C3ESsayiPjp+cMYAlSodEY=
-sigs.k8s.io/promo-tools/v3 v3.5.2/go.mod h1:AYQ3wu2ESWY4UQqHtRUXnzj7V9/gP11kRKoykVQ6Oek=
+sigs.k8s.io/promo-tools/v3 v3.6.0 h1:C2L08ezrWm1aZI8Emd3iZPZQserLPRgzuqQVxvI0PUI=
+sigs.k8s.io/promo-tools/v3 v3.6.0/go.mod h1:XJ3jy0hJYs+hWKt8XsLHFzGQV8PUtvllvbxjN/E5RXI=
 sigs.k8s.io/release-sdk v0.10.2-0.20230524072250-7a1939e26d37 h1:DhtwFRtycrBsEVnh4bGy+bp7agZGgHIubwMqcVXpkw4=
 sigs.k8s.io/release-sdk v0.10.2-0.20230524072250-7a1939e26d37/go.mod h1:M9qLqrA/ARzS2DfNkLOBxRnZ28GO4YFPcol/sgpr9qo=
 sigs.k8s.io/release-utils v0.7.4 h1:17LmJrydpUloTCtaoWj95uKlcrUp4h2A9Sa+ZL+lV9w=
