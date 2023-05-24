@@ -40,7 +40,7 @@ require (
 	sigs.k8s.io/bom v0.5.2-0.20230519223618-1ebaa9ce375f
 	sigs.k8s.io/mdtoc v1.1.0
 	sigs.k8s.io/promo-tools/v3 v3.5.2
-	sigs.k8s.io/release-sdk v0.10.2-0.20230519165031-e05cba7eb4d1
+	sigs.k8s.io/release-sdk v0.10.2-0.20230524072250-7a1939e26d37
 	sigs.k8s.io/release-utils v0.7.4
 	sigs.k8s.io/yaml v1.3.0
 	sigs.k8s.io/zeitgeist v0.4.1
