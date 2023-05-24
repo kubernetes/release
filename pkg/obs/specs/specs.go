@@ -201,13 +201,7 @@ func getMetadataWithVersionConstraint(packageName, packageVersion string, constr
 
 // getPackageSource gets the download link for artifacts for the given package.
 // This function runs template on sourceURLTemplate defined in the metadata manifest.
-func (c *Client) getPackageSource(
-	templateBaseURL,
-	baseURL,
-	packageName,
-	packageVersion,
-	packageArch,
-	channel string) (string, error) {
+func (c *Client) getPackageSource(templateBaseURL, baseURL, packageName, packageVersion, packageArch, channel string) (string, error) {
 	data := struct {
 		BaseURL        string
 		PackageName    string

@@ -17,6 +17,7 @@ limitations under the License.
 package specs
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -35,7 +36,7 @@ import (
 // This archive is used as a source for artifacts by OpenBuildService when building the package.
 func (c *Client) BuildArtifactsArchive(pkgDef *PackageDefinition) error {
 	if pkgDef == nil {
-		return fmt.Errorf("package definition cannot be nil")
+		return errors.New("package definition cannot be nil")
 	}
 
 	logrus.Infof("Downloading artifacts for %s %s...", pkgDef.Name, pkgDef.Version)
@@ -51,7 +52,7 @@ func (c *Client) BuildArtifactsArchive(pkgDef *PackageDefinition) error {
 			}
 		}
 
-		logrus.Debug("Saving downloaded artifacts to temporary location %s...", dlRootPath)
+		logrus.Debugf("Saving downloaded artifacts to temporary location %s...", dlRootPath)
 
 		var dlPath string
 		var dlTarGz bool

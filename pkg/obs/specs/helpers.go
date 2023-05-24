@@ -29,11 +29,7 @@ import (
 
 func isCoreKubernetesPackage(packageName string) bool {
 	switch packageName {
-	case options.PackageKubeadm:
-		fallthrough
-	case options.PackageKubectl:
-		fallthrough
-	case options.PackageKubelet:
+	case options.PackageKubeadm, options.PackageKubectl, options.PackageKubelet:
 		return true
 	default:
 		return false
