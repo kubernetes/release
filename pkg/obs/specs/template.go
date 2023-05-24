@@ -18,6 +18,7 @@ package specs
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -37,7 +38,7 @@ type work struct {
 // BuildSpecs creates spec file based on provided package definition.
 func (c *Client) BuildSpecs(pkgDef *PackageDefinition, specOnly bool) (err error) {
 	if pkgDef == nil {
-		return fmt.Errorf("package definition cannot be nil")
+		return errors.New("package definition cannot be nil")
 	}
 
 	workItems := []work{}

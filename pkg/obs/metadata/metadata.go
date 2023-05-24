@@ -17,6 +17,7 @@ limitations under the License.
 package metadata
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -24,7 +25,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// PackageMetadata is a struct that containts the following information about a package:
+// PackageMetadata is a struct that contains the following information about a package:
 // - URL from which to download artifacts needed to build the package
 // - Indicator if artifacts are packed in a .tar.gz archive
 // - Dependencies needed to install the package
@@ -54,7 +55,7 @@ type PackageMetadataList map[string][]PackageMetadata
 // LoadPackageMetadata loads metadata.yaml file from the given path.
 func LoadPackageMetadata(path string) (PackageMetadataList, error) {
 	if path == "" {
-		return nil, fmt.Errorf("path cannot be empty")
+		return nil, errors.New("path cannot be empty")
 	}
 
 	logrus.Infof("Loading metadata from %s...", path)

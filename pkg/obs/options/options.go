@@ -17,7 +17,7 @@ limitations under the License.
 package options
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -128,21 +128,21 @@ func New() *Options {
 // Validate verifies if all set options are valid
 func (o *Options) Validate() error {
 	if ok := isSupported("package", []string{o.Package}, supportedPackages); !ok {
-		return fmt.Errorf("selected package is not supported")
+		return errors.New("selected package is not supported")
 	}
 	if ok := isSupported("channel", []string{o.Channel}, supportedChannels); !ok {
-		return fmt.Errorf("selected channel is not supported")
+		return errors.New("selected channel is not supported")
 	}
 	if ok := isSupported("architectures", o.Architectures, supportedArchitectures); !ok {
-		return fmt.Errorf("architectures selection is not supported")
+		return errors.New("architectures selection is not supported")
 	}
 	if o.Revision == "" {
-		return fmt.Errorf("revision is required")
+		return errors.New("revision is required")
 	}
 
 	if o.SpecOutputPath != "" {
 		if _, err := os.Stat(o.SpecOutputPath); err != nil {
-			return fmt.Errorf("output dir doesn't exist")
+			return errors.New("output dir doesn't exist")
 		}
 	}
 
