@@ -14,10 +14,11 @@ License: Apache-2.0
 URL: https://kubernetes.io
 Source0: %{name}_%{version}.orig.tar.gz
 
-Requires: kubelet >= {{ index .Dependencies "kubelet" }}
-Requires: kubectl >= {{ index .Dependencies "kubectl" }}
-Requires: kubernetes-cni >= {{ index .Dependencies "kubernetes-cni" }}
-Requires: cri-tools >= {{ index .Dependencies "cri-tools" }}
+Require: kubectl >= {{ .Version }}
+Require: kubelet >= {{ .Version }}
+{{ range $dep := .Metadata.Dependencies }}
+Requires: {{ $dep.Name }} {{ $dep.VersionConstraint }}
+{{- end }}
 
 %if "%{_vendor}" == "debbuild"
 BuildRequires: systemd-deb-macros

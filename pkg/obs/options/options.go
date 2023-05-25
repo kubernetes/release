@@ -20,117 +20,139 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"reflect"
 
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-utils/util"
 )
 
+// Options defines options for the package building process.
 type Options struct {
-	// Type currently can be only "rpm".
-	Type PackageType
+	// Package is name of the package to build.
+	Package string
 
-	// KubernetesVersion is Kubernetes version to build packages for.
-	// If empty, krel will automatically take the latest version for
-	// the selected channel.
-	KubernetesVersion string
+	// Version is the package version.
+	// For kubelet, kubeadm, kubectl, this is Kubernetes version.
+	// For cri-tools, this is cri-tools version.
+	// For kubernetes-cni, this is cni-plugins version.
+	Version string
 
-	// Packages to build.
-	Packages []string
-
-	// Architectures to build for.
-	Architectures []string
-
-	// Channel is a release Channel that we're building packages for
-	// (e.g. release, testing, nightly).
-	Channel string
-
-	// Revision to use for building pac
+	// Revision is the package revision.
 	Revision string
 
-	// CNIVersion is cni-plugins version to use for kubernetes-cni package.
-	CNIVersion string
+	// Channel is a release Channel that we're building packages for.
+	// This can be one of: release, prerelease, nightly.
+	Channel string
 
-	// CRIToolsVersion is cri-tools version to use for the package.
-	CRIToolsVersion string
+	// Architectures to download binaries for.
+	// This can be one of: amd64, arm64, ppc64le, s390x.
+	Architectures []string
 
-	// ReleaseDownloadLinkBase is base URL for dl.k8s.io.
-	ReleaseDownloadLinkBase string
+	// PackageSourceBase is the base URL to download artifacts from.
+	PackageSourceBase string
 
-	// TemplateDir is a path to a directory with spec template files.
-	TemplateDir string
+	// SpecTemplatePath is a path to a directory with spec template files.
+	SpecTemplatePath string
 
-	// OutputDir is a path to a directory where to save spec files and archives.
-	OutputDir string
+	// SpecOutputPath is a path to a directory where to save spec files and archives.
+	SpecOutputPath string
 
 	// SpecOnly generates only spec files.
 	SpecOnly bool
 }
 
+const (
+	PackageCRITools      string = "cri-tools"
+	PackageKubeadm       string = "kubeadm"
+	PackageKubectl       string = "kubectl"
+	PackageKubelet       string = "kubelet"
+	PackageKubernetesCNI string = "kubernetes-cni"
+)
+
+const (
+	ChannelTypeRelease    string = "release"
+	ChannelTypePrerelease string = "prerelease"
+	ChannelTypeNightly    string = "nightly"
+)
+
+const (
+	ArchitectureAMD64 string = "amd64"
+	ArchitectureARM64 string = "arm64"
+	ArchitecturePPC64 string = "ppc64le"
+	ArchitectureS390X string = "s390x"
+)
+
 var (
 	supportedPackages = []string{
-		"kubelet", "kubectl", "kubeadm", "kubernetes-cni", "cri-tools",
+		PackageCRITools,
+		PackageKubeadm,
+		PackageKubectl,
+		PackageKubelet,
+		PackageKubernetesCNI,
 	}
 	supportedChannels = []string{
-		"release", "testing", "nightly",
+		ChannelTypeRelease,
+		ChannelTypePrerelease,
+		ChannelTypeNightly,
 	}
 	supportedArchitectures = []string{
-		"amd64", "arm", "arm64", "ppc64le", "s390x",
+		ArchitectureAMD64,
+		ArchitectureARM64,
+		ArchitecturePPC64,
+		ArchitectureS390X,
 	}
+	// TODO(xmudrii): Remove this.
 	defaultTemplateDir = filepath.Join(templateRootDir, "latest")
 )
 
 const (
 	templateRootDir = "cmd/krel/templates/"
 
-	DefaultReleaseDownloadLinkBase = "https://dl.k8s.io"
-	defaultChannel                 = "release"
-	defaultRevision                = "0"
-)
+	DefaultReleaseDownloadLinkBase  = "gs://kubernetes-release/release"
+	DefaultCNIDownloadLinkBase      = "gs://k8s-artifacts-cni/release"
+	DefaultCRIToolsDownloadLinkBase = "gs://k8s-artifacts-cri-tools/release"
 
-type PackageType string
-
-const (
-	PackageRPM PackageType = "rpm"
+	defaultChannel  = ChannelTypeRelease
+	defaultRevision = "0"
 )
 
 func New() *Options {
 	return &Options{
-		Type:                    PackageRPM,
-		Revision:                defaultRevision,
-		Packages:                supportedPackages,
-		Channel:                 defaultChannel,
-		Architectures:           supportedArchitectures,
-		ReleaseDownloadLinkBase: DefaultReleaseDownloadLinkBase,
-		TemplateDir:             defaultTemplateDir,
+		Revision:         defaultRevision,
+		Channel:          defaultChannel,
+		Architectures:    supportedArchitectures,
+		SpecTemplatePath: defaultTemplateDir,
 	}
 }
 
 // Validate verifies if all set options are valid
 func (o *Options) Validate() error {
-	if ok := isSupported(o.Packages, supportedPackages); !ok {
-		return errors.New("package selections are not supported")
+	if ok := isSupported("package", []string{o.Package}, supportedPackages); !ok {
+		return errors.New("selected package is not supported")
 	}
-	if ok := isSupported([]string{o.Channel}, supportedChannels); !ok {
-		return errors.New("channel selections are not supported")
+	if ok := isSupported("channel", []string{o.Channel}, supportedChannels); !ok {
+		return errors.New("selected channel is not supported")
 	}
-	if ok := isSupported(o.Architectures, supportedArchitectures); !ok {
-		return errors.New("architectures selections are not supported")
+	if ok := isSupported("architectures", o.Architectures, supportedArchitectures); !ok {
+		return errors.New("architectures selection is not supported")
 	}
-	if o.OutputDir != "" {
-		if _, err := os.Stat(o.OutputDir); err != nil {
+	if o.Revision == "" {
+		return errors.New("revision is required")
+	}
+
+	if o.SpecOutputPath != "" {
+		if _, err := os.Stat(o.SpecOutputPath); err != nil {
 			return errors.New("output dir doesn't exist")
 		}
 	}
 
 	// Replace the "+" with a "-" to make it semver-compliant
-	o.KubernetesVersion = util.TrimTagPrefix(o.KubernetesVersion)
+	o.Version = util.TrimTagPrefix(o.Version)
 
 	return nil
 }
 
-func isSupported(input, expected []string) bool {
+func isSupported(field string, input, expected []string) bool {
 	notSupported := []string{}
 
 	supported := false
@@ -144,16 +166,13 @@ func isSupported(input, expected []string) bool {
 		}
 
 		if !supported {
-			logrus.Infof(
-				"Adding %q (type: %v) to not supported", i, reflect.TypeOf(i),
-			)
 			notSupported = append(notSupported, i)
 		}
 	}
 
 	if len(notSupported) > 0 {
 		logrus.Infof(
-			"The following options are not supported: %v", notSupported,
+			"Flag %s has an unsupported option: %v", field, notSupported,
 		)
 		return false
 	}

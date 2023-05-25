@@ -35,55 +35,59 @@ type work struct {
 	pkgDef *PackageDefinition
 }
 
-// BuildSpecs creates spec files based on provided templates.
-func (c *Client) BuildSpecs(pkgBuilder *PackageBuilder) (err error) {
-	if pkgBuilder == nil {
-		return errors.New("package builder cannot be nil")
+// BuildSpecs creates spec file based on provided package definition.
+func (c *Client) BuildSpecs(pkgDef *PackageDefinition, specOnly bool) (err error) {
+	if pkgDef == nil {
+		return errors.New("package definition cannot be nil")
 	}
 
 	workItems := []work{}
 
-	for _, pkg := range pkgBuilder.Definitions {
-		tplDir := filepath.Join(pkgBuilder.TemplateDir, pkg.Name)
-		if _, err := os.Stat(tplDir); err != nil {
-			return fmt.Errorf("finding package template dir: %w", err)
-		}
+	tplDir := filepath.Join(pkgDef.SpecTemplatePath, pkgDef.Name)
+	if _, err := os.Stat(tplDir); err != nil {
+		return fmt.Errorf("building specs for %s: finding package template dir: %w", pkgDef.Name, err)
+	}
 
-		if err := filepath.Walk(tplDir, func(templateFile string, f os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-
-			specFile := filepath.Join(pkgBuilder.OutputDir, pkg.Name, templateFile[len(tplDir):])
-
-			if specFile == pkgBuilder.OutputDir {
-				return nil
-			}
-
-			if f.IsDir() {
-				return os.Mkdir(specFile, f.Mode())
-			}
-
-			t, err := template.
-				New("").
-				Option("missingkey=error").
-				ParseFiles(templateFile)
-			if err != nil {
-				return err
-			}
-
-			workItems = append(workItems, work{
-				src:    templateFile,
-				dst:    specFile,
-				t:      t.Templates()[0],
-				info:   f,
-				pkgDef: pkg,
-			})
-
-			return nil
-		}); err != nil {
+	if err := filepath.Walk(tplDir, func(templateFile string, f os.FileInfo, err error) error {
+		if err != nil {
 			return err
 		}
+
+		specFile := filepath.Join(pkgDef.SpecOutputPath, pkgDef.Name, templateFile[len(tplDir):])
+
+		if specFile == pkgDef.SpecOutputPath {
+			return nil
+		}
+
+		if f.IsDir() {
+			return os.Mkdir(specFile, f.Mode())
+		}
+		if filepath.Ext(templateFile) == ".spec" {
+			// Spec is intentionally saved outside package dir, which is later on archived
+			specFile = filepath.Join(pkgDef.SpecOutputPath, templateFile[len(tplDir):])
+		} else if specOnly && filepath.Ext(templateFile) != ".spec" {
+			return nil
+		}
+
+		t, err := template.
+			New("").
+			Option("missingkey=error").
+			ParseFiles(templateFile)
+		if err != nil {
+			return err
+		}
+
+		workItems = append(workItems, work{
+			src:    templateFile,
+			dst:    specFile,
+			t:      t.Templates()[0],
+			info:   f,
+			pkgDef: pkgDef,
+		})
+
+		return nil
+	}); err != nil {
+		return err
 	}
 
 	for _, item := range workItems {

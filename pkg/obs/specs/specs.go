@@ -17,34 +17,23 @@ limitations under the License.
 package specs
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 
+	"k8s.io/release/pkg/obs/metadata"
 	"k8s.io/release/pkg/obs/options"
 	"k8s.io/release/pkg/release"
 	khttp "sigs.k8s.io/release-utils/http"
 	"sigs.k8s.io/release-utils/util"
-)
-
-type ChannelType string
-
-const (
-	ChannelRelease ChannelType = "release"
-	ChannelTesting ChannelType = "testing"
-	ChannelNightly ChannelType = "nightly"
-)
-
-const (
-	minimumKubernetesVersion = "1.13.0"
-	kubernetesCNIPackage     = "kubernetes-cni"
-	criToolsPackage          = "cri-tools"
 )
 
 type Client struct {
@@ -82,158 +71,164 @@ func (i *impl) GetRequest(url string) (*http.Response, error) {
 	return khttp.NewAgent().WithTimeout(3 * time.Minute).GetRequest(url)
 }
 
-// PackageBuilder holds information about packages that we want to build.
-// That includes type (deb or rpm), channel (stable/pre-releases/nightly),
-// Kubernetes version, spec sources, and more.
-// This struct also holds definitions for all packages.
-type PackageBuilder struct {
-	Type          options.PackageType
-	Channel       ChannelType
-	Architectures []string
-
-	KubernetesVersion string
-	TemplateDir       string
-	OutputDir         string
-
-	Definitions []*PackageDefinition
-
-	DownloadLinkBase string
-}
-
-// PackageDefinition represents a concrete package. We store information such
-// as its name, version, revision, and more.
+// PackageDefinition represents a concrete package and stores package's name, version, and metadata.
 type PackageDefinition struct {
-	Name         string
-	Version      string
-	Revision     string
-	Dependencies map[string]string
+	Name       string
+	Version    string
+	Revision   string
+	Channel    string
+	Metadata   *metadata.PackageMetadata
+	Variations []PackageVariation
+
+	SpecTemplatePath string
+	SpecOutputPath   string
 }
 
-// ConstructPackageBuilder creates a new instance of PackageBuilder while
-// populating all required information.
-func (c *Client) ConstructPackageBuilder() (*PackageBuilder, error) {
-	logrus.Infof("Constructing package builder...")
+// PackageVariation is a variation of the same package. Variation currently represents a different architecture and
+// source for the given architecture.
+type PackageVariation struct {
+	Architecture string
+	Source       string
+}
+
+// ConstructPackageDefinition creates a new instance of PackageDefinition based on provided options.
+func (c *Client) ConstructPackageDefinition() (*PackageDefinition, error) {
+	logrus.Infof("Constructing package definition for %s %s...", c.options.Package, c.options.Version)
+
 	var err error
 
-	pb := &PackageBuilder{
-		Type:          c.options.Type,
-		Channel:       ChannelType(c.options.Channel),
-		Architectures: c.options.Architectures,
-		OutputDir:     c.options.OutputDir,
+	pkgDef := &PackageDefinition{
+		Name:       c.options.Package,
+		Version:    c.options.Version,
+		Revision:   c.options.Revision,
+		Channel:    c.options.Channel,
+		Variations: []PackageVariation{},
 
-		KubernetesVersion: c.options.KubernetesVersion,
-
-		Definitions: []*PackageDefinition{},
-
-		DownloadLinkBase: c.options.ReleaseDownloadLinkBase,
+		SpecTemplatePath: c.options.SpecTemplatePath,
+		SpecOutputPath:   c.options.SpecOutputPath,
 	}
 
-	// TODO: Get package directory for any version once package definitions are broken out
-	pb.TemplateDir = filepath.Join(c.options.TemplateDir, string(c.options.Type))
-	if _, err := os.Stat(pb.TemplateDir); err != nil {
+	// Check if input and output directories exist.
+	if _, err := os.Stat(pkgDef.SpecTemplatePath); err != nil {
 		return nil, fmt.Errorf("finding package template dir: %w", err)
 	}
+	if _, err := os.Stat(pkgDef.SpecOutputPath); err != nil {
+		return nil, fmt.Errorf("finding package output dir: %w", err)
+	}
 
-	// If output directory is not provided, create a temporary one.
-	if pb.OutputDir == "" {
-		pb.OutputDir, err = os.MkdirTemp("", "obs-")
+	logrus.Infof("Writing output to %s", pkgDef.SpecOutputPath)
+
+	// If Kubernetes version is provided, ensure that it is correct and determine the channel based on it.
+	// Otherwise, try to automatically determine the Kubernetes version based on provided channel.
+	if isCoreKubernetesPackage(pkgDef.Name) && pkgDef.Version != "" {
+		pkgDef.Channel, err = getKubernetesChannelForVersion(pkgDef.Version)
 		if err != nil {
-			return nil, fmt.Errorf("creating temporary dir: %w", err)
+			return nil, fmt.Errorf("getting kubernetes channel: %w", err)
 		}
-		c.options.OutputDir = pb.OutputDir
-	}
-
-	logrus.Infof("Writing output to %s", pb.OutputDir)
-
-	// If Kubernetes version is provided, ensure that it is correct and determine
-	// the channel based on it. Otherwise, try to automatically determine the
-	// Kubernetes version based on provided channel.
-	if pb.KubernetesVersion != "" {
-		logrus.Infof("Checking if user-supplied Kubernetes version is a valid semver...")
-		kubeSemver, err := util.TagStringToSemver(pb.KubernetesVersion)
+	} else if isCoreKubernetesPackage(pkgDef.Name) && pkgDef.Version == "" {
+		pkgDef.Version, err = c.getKubernetesVersionForChannel(pkgDef.Channel)
 		if err != nil {
-			return nil, fmt.Errorf("user-supplied kubernetes version is not valid semver: %w", err)
-		}
-
-		kubeVersionString := kubeSemver.String()
-		kubeVersionParts := strings.Split(kubeVersionString, ".")
-
-		switch {
-		case len(kubeVersionParts) > 4:
-			logrus.Info("User-supplied Kubernetes version is a CI version")
-			logrus.Info("Setting channel to nightly")
-			pb.Channel = ChannelNightly
-		case len(kubeVersionParts) == 4:
-			logrus.Info("User-supplied Kubernetes version is a pre-release version")
-			logrus.Info("Setting channel to testing")
-			pb.Channel = ChannelTesting
-		default:
-			logrus.Info("User-supplied Kubernetes version is a release version")
-			logrus.Info("Setting channel to release")
-			pb.Channel = ChannelRelease
+			return nil, fmt.Errorf("getting kubernetes version: %w", err)
 		}
 	}
 
-	// This function determines the Kubernetes version if it's not provided.
-	pb.KubernetesVersion, err = c.GetKubernetesVersion(pb.KubernetesVersion, pb.Channel)
-	if err != nil {
-		return nil, fmt.Errorf("getting kubernetes version: %w", err)
-	}
-
-	logrus.Infof("Using Kubernetes version %s", pb.KubernetesVersion)
-
-	// This function gets download link base depending on what channel are
-	// we using.
-	pb.DownloadLinkBase, err = c.GetDownloadLinkBase(pb.KubernetesVersion, pb.Channel)
-	if err != nil {
-		return nil, fmt.Errorf("getting kubernetes download link base: %w", err)
-	}
-
-	logrus.Infof("Kubernetes download link base: %s", pb.DownloadLinkBase)
-
+	pkgDef.Version = util.TrimTagPrefix(pkgDef.Version)
 	// For cases where a CI build version of Kubernetes is retrieved, replace instances
 	// of "+" with "-", so that we build with a valid Debian package version.
-	pb.KubernetesVersion = strings.Replace(pb.KubernetesVersion, "+", "-", 1)
+	pkgDef.Version = strings.Replace(pkgDef.Version, "+", "-", 1)
 
-	logrus.Info("Successfully constructed package builder!")
+	logrus.Infof("Using %s version %s/%s", pkgDef.Name, pkgDef.Channel, pkgDef.Version)
 
-	return pb, nil
+	// Get package metadata for the given package. Metadata includes information about package source and dependencies.
+	pkgDef.Metadata, err = getPackageMetadata(pkgDef.SpecTemplatePath, pkgDef.Name, pkgDef.Version)
+	if err != nil {
+		return nil, fmt.Errorf("getting metadata for %q: %w", pkgDef.Name, err)
+	}
+
+	// Create variation of the package for each architecture.
+	for _, arch := range c.options.Architectures {
+		sourceURL, err := c.getPackageSource(pkgDef.Metadata.SourceURLTemplate, c.options.PackageSourceBase, pkgDef.Name, pkgDef.Version, arch, pkgDef.Channel)
+		if err != nil {
+			return nil, fmt.Errorf("getting package source download link: %w", err)
+		}
+		pkgVar := PackageVariation{
+			Architecture: arch,
+			Source:       sourceURL,
+		}
+		pkgDef.Variations = append(pkgDef.Variations, pkgVar)
+	}
+
+	logrus.Infof("Successfully constructed package definition for %s %s!", pkgDef.Name, pkgDef.Version)
+
+	return pkgDef, nil
 }
 
-// ConstructPackageDefinitions creates instances of PackageDefinition based
-// on what packages we selected to build.
-func (c *Client) ConstructPackageDefinitions(pkgBuilder *PackageBuilder) error {
-	logrus.Infof("Constructing package definitions...")
-	var err error
-
-	if pkgBuilder == nil {
-		return errors.New("package builder cannot be nil")
+// getPackageMetadata gets metadata for the given package.
+// Metadata includes information about package source and dependencies, and is stored in a YAML manifest.
+func getPackageMetadata(templateDir, packageName, packageVersion string) (*metadata.PackageMetadata, error) {
+	m, err := metadata.LoadPackageMetadata(filepath.Join(templateDir, "metadata.yaml"))
+	if err != nil {
+		return nil, fmt.Errorf("getting metadata for %s: %w", packageName, err)
 	}
 
-	for _, pkg := range c.options.Packages {
-		pkgDef := &PackageDefinition{
-			Name:         pkg,
-			Revision:     c.options.Revision,
-			Dependencies: map[string]string{},
-		}
-
-		// Determine the package version.
-		pkgDef.Version, err = c.GetPackageVersion(pkgDef, pkgBuilder.KubernetesVersion)
-		if err != nil {
-			return fmt.Errorf("getting package %q version: %w", pkg, err)
-		}
-
-		logrus.Infof("%s package version: %s", pkgDef.Name, pkgDef.Version)
-
-		// Determine dependencies for given package.
-		pkgDef.Dependencies, err = GetDependencies(pkgDef)
-		if err != nil {
-			return fmt.Errorf("getting dependencies for %q: %w", pkg, err)
-		}
-
-		pkgBuilder.Definitions = append(pkgBuilder.Definitions, pkgDef)
+	deps, err := getMetadataWithVersionConstraint(packageName, packageVersion, m[packageName])
+	if err != nil {
+		return nil, fmt.Errorf("parsing metadata for %s: %w", packageName, err)
 	}
 
-	logrus.Info("Successfully constructed package definitions!")
-	return nil
+	return deps, nil
+}
+
+// getMetadataWithVersionConstraint parses metadata and takes metadata that matches the given version constraint.
+func getMetadataWithVersionConstraint(packageName, packageVersion string, constraintedMetadata []metadata.PackageMetadata) (*metadata.PackageMetadata, error) {
+	for _, m := range constraintedMetadata {
+		r, err := semver.ParseRange(m.VersionConstraint)
+		if err != nil {
+			return nil, fmt.Errorf("parsing semver range for package %s: %w", packageName, err)
+		}
+		kubeSemVer, err := util.TagStringToSemver(packageVersion)
+		if err != nil {
+			return nil, fmt.Errorf("parsing package version %s: %w", packageVersion, err)
+		}
+
+		if r(kubeSemVer) {
+			return &m, nil
+		}
+	}
+
+	return nil, fmt.Errorf("package %s is not defined in metadata.yaml file", packageName)
+}
+
+// getPackageSource gets the download link for artifacts for the given package.
+// This function runs template on sourceURLTemplate defined in the metadata manifest.
+func (c *Client) getPackageSource(templateBaseURL, baseURL, packageName, packageVersion, packageArch, channel string) (string, error) {
+	data := struct {
+		BaseURL        string
+		PackageName    string
+		PackageVersion string
+		Architecture   string
+		Channel        string
+	}{
+		BaseURL:        baseURL,
+		PackageName:    packageName,
+		PackageVersion: packageVersion,
+		Architecture:   packageArch,
+		Channel:        channel,
+	}
+
+	tpl, err := template.New("").Funcs(
+		template.FuncMap{
+			"KubernetesURL": c.getKubernetesDownloadLink(channel, baseURL, packageName, packageVersion, packageArch),
+		},
+	).Parse(templateBaseURL)
+	if err != nil {
+		return "", fmt.Errorf("getting download link base: creating template: %w", err)
+	}
+
+	var outBuf bytes.Buffer
+	if err := tpl.Execute(&outBuf, data); err != nil {
+		return "", fmt.Errorf("getting download link base: executing template: %w", err)
+	}
+
+	return outBuf.String(), nil
 }
