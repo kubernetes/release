@@ -41,6 +41,7 @@ RUN apt-get -q update \
         lsb-release \
         make \
         net-tools \
+        osc \
         pandoc \
         rsync \
         software-properties-common \
