@@ -43,6 +43,8 @@ commandTests:
   - yq
   # for multiarch support / cross building
   - gcc
+  # CLI for OpenBuildService (OBS)
+  - osc
   - arm-linux-gnueabihf-gcc
   - aarch64-linux-gnu-gcc
   - powerpc64le-linux-gnu-gcc
