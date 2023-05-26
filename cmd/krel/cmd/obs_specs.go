@@ -22,115 +22,99 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/obs/options"
 	"k8s.io/release/pkg/obs/specs"
 )
 
-var obsOpts = options.New()
+var specsOpts = specs.DefaultOptions()
 
 // obsSpecsCmd represents the subcommand for `krel obs specs`
 var obsSpecsCmd = &cobra.Command{
 	Use:           "specs",
-	Short:         "generate specs and binary archives",
+	Short:         "generate specs and artifacts archive",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runGenerateOBSSpecs(obsOpts)
+		return runGenerateOBSSpecs(specsOpts)
 	},
 }
 
 func init() {
 	obsSpecsCmd.PersistentFlags().StringVar(
-		&obsOpts.Package,
+		&specsOpts.Package,
 		"package",
-		obsOpts.Package,
+		specsOpts.Package,
 		"package to create specs and archives for",
 	)
 
 	obsSpecsCmd.PersistentFlags().StringVar(
-		&obsOpts.Channel,
-		"channel",
-		obsOpts.Channel,
-		"channel to create specs for",
-	)
-
-	obsSpecsCmd.PersistentFlags().StringSliceVar(
-		&obsOpts.Architectures,
-		"arch",
-		obsOpts.Architectures,
-		"architectures to download binaries for when creating the archive",
-	)
-
-	obsSpecsCmd.PersistentFlags().StringVar(
-		&obsOpts.Version,
+		&specsOpts.Version,
 		"version",
-		obsOpts.Version,
+		specsOpts.Version,
 		"package version",
 	)
 
 	obsSpecsCmd.PersistentFlags().StringVar(
-		&obsOpts.Revision,
+		&specsOpts.Revision,
 		"revision",
-		obsOpts.Revision,
+		specsOpts.Revision,
 		"package revision",
 	)
 
 	obsSpecsCmd.PersistentFlags().StringVar(
-		&obsOpts.PackageSourceBase,
+		&specsOpts.Channel,
+		"channel",
+		specsOpts.Channel,
+		"channel to create specs for",
+	)
+
+	obsSpecsCmd.PersistentFlags().StringSliceVar(
+		&specsOpts.Architectures,
+		"architectures",
+		specsOpts.Architectures,
+		"architectures to download binaries for when creating the archive",
+	)
+
+	obsSpecsCmd.PersistentFlags().StringVar(
+		&specsOpts.PackageSourceBase,
 		"package-source",
-		obsOpts.PackageSourceBase,
+		specsOpts.PackageSourceBase,
 		"source to download artifacts for package",
 	)
 
 	obsSpecsCmd.PersistentFlags().StringVar(
-		&obsOpts.SpecTemplatePath,
+		&specsOpts.SpecTemplatePath,
 		"template-dir",
-		obsOpts.SpecTemplatePath,
+		specsOpts.SpecTemplatePath,
 		"template directory containing spec files",
 	)
 
 	obsSpecsCmd.PersistentFlags().StringVar(
-		&obsOpts.SpecOutputPath,
+		&specsOpts.SpecOutputPath,
 		"output",
-		obsOpts.SpecOutputPath,
+		specsOpts.SpecOutputPath,
 		"output directory to store specs and archives",
 	)
 
 	obsSpecsCmd.PersistentFlags().BoolVar(
-		&obsOpts.SpecOnly,
+		&specsOpts.SpecOnly,
 		"spec-only",
-		obsOpts.SpecOnly,
+		specsOpts.SpecOnly,
 		"only create specs without downloading binaries and creating archives",
 	)
 
 	obsCmd.AddCommand(obsSpecsCmd)
 }
 
-func runGenerateOBSSpecs(opts *options.Options) (err error) {
-	logrus.Debugf("Using options: %+v", opts)
+func runGenerateOBSSpecs(opts *specs.Options) (err error) {
+	logrus.Debugf("Using options: %s", opts.String())
 
 	if err := opts.Validate(); err != nil {
 		return fmt.Errorf("running krel obs: %w", err)
 	}
 
-	client := specs.New(opts)
-
-	pkgDef, err := client.ConstructPackageDefinition()
-	if err != nil {
+	if err := specs.New(opts).Run(); err != nil {
 		return fmt.Errorf("running krel obs: %w", err)
 	}
-
-	if err = client.BuildSpecs(pkgDef, opts.SpecOnly); err != nil {
-		return fmt.Errorf("running krel obs: %w", err)
-	}
-
-	if !opts.SpecOnly {
-		if err = client.BuildArtifactsArchive(pkgDef); err != nil {
-			return fmt.Errorf("running krel obs: %w", err)
-		}
-	}
-
-	logrus.Infof("krel obs done, files available in %s", opts.SpecOutputPath)
 
 	return nil
 }

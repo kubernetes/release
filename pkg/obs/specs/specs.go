@@ -17,218 +17,147 @@ limitations under the License.
 package specs
 
 import (
-	"bytes"
+	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
-	"text/template"
-	"time"
 
-	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
-
-	"k8s.io/release/pkg/obs/metadata"
-	"k8s.io/release/pkg/obs/options"
-	"k8s.io/release/pkg/release"
-	khttp "sigs.k8s.io/release-utils/http"
+	"k8s.io/release/pkg/obs/consts"
 	"sigs.k8s.io/release-utils/util"
 )
 
-type Client struct {
-	options *options.Options
-	impl    Impl
-}
+// Options defines options for generating specs and artifacts archive for
+// the given package.
+type Options struct {
+	// Package is name of the package to generate specs and artifacts archive for.
+	Package string
 
-func New(o *options.Options) *Client {
-	return &Client{
-		options: o,
-		impl:    &impl{},
-	}
-}
+	// Version is the package version.
+	// For kubelet, kubeadm, kubectl, this is Kubernetes version.
+	// For cri-tools, this is cri-tools version.
+	// For kubernetes-cni, this is cni-plugins version.
+	Version string
 
-func (c *Client) SetImpl(impl Impl) {
-	c.impl = impl
-}
+	// Revision is the package revision.
+	Revision string
 
-type impl struct{}
+	// Architectures to download binaries for.
+	// This can be one of: amd64, arm64, ppc64le, s390x.
+	Architectures []string
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
-//counterfeiter:generate . Impl
-//go:generate /usr/bin/env bash -c "cat ../../../hack/boilerplate/boilerplate.generatego.txt specsfakes/fake_impl.go > specsfakes/_fake_impl.go && mv specsfakes/_fake_impl.go specsfakes/fake_impl.go"
-type Impl interface {
-	GetKubeVersion(versionType release.VersionType) (string, error)
-	GetRequest(url string) (*http.Response, error)
-}
+	// Channel is a release Channel that we're building packages for.
+	// It's used to determine the Kubernetes/package version if version is not
+	// explicitly provided.
+	// This can be one of: release, prerelease, nightly.
+	// Omit for non-core Kubernetes packages.
+	Channel string
 
-func (i *impl) GetKubeVersion(versionType release.VersionType) (string, error) {
-	return release.NewVersion().GetKubeVersion(versionType)
-}
+	// PackageSourceBase is the base URL to download artifacts from.
+	// Can be https:// or gs:// URL.
+	PackageSourceBase string
 
-func (i *impl) GetRequest(url string) (*http.Response, error) {
-	// TODO(xmudrii): Make timeout configurable.
-	return khttp.NewAgent().WithTimeout(3 * time.Minute).GetRequest(url)
-}
-
-// PackageDefinition represents a concrete package and stores package's name, version, and metadata.
-type PackageDefinition struct {
-	Name       string
-	Version    string
-	Revision   string
-	Channel    string
-	Metadata   *metadata.PackageMetadata
-	Variations []PackageVariation
-
+	// SpecTemplatePath is a path to a directory with spec template files.
 	SpecTemplatePath string
-	SpecOutputPath   string
+
+	// SpecOutputPath is a path to a directory where to save spec files and
+	// archives. The directory must exist before running the command.
+	SpecOutputPath string
+
+	// SpecOnly generates only spec files without the artifacts archive.
+	SpecOnly bool
 }
 
-// PackageVariation is a variation of the same package. Variation currently represents a different architecture and
-// source for the given architecture.
-type PackageVariation struct {
-	Architecture string
-	Source       string
-}
-
-// ConstructPackageDefinition creates a new instance of PackageDefinition based on provided options.
-func (c *Client) ConstructPackageDefinition() (*PackageDefinition, error) {
-	logrus.Infof("Constructing package definition for %s %s...", c.options.Package, c.options.Version)
-
-	var err error
-
-	pkgDef := &PackageDefinition{
-		Name:       c.options.Package,
-		Version:    c.options.Version,
-		Revision:   c.options.Revision,
-		Channel:    c.options.Channel,
-		Variations: []PackageVariation{},
-
-		SpecTemplatePath: c.options.SpecTemplatePath,
-		SpecOutputPath:   c.options.SpecOutputPath,
-	}
-
-	// Check if input and output directories exist.
-	if _, err := os.Stat(pkgDef.SpecTemplatePath); err != nil {
-		return nil, fmt.Errorf("finding package template dir: %w", err)
-	}
-	if _, err := os.Stat(pkgDef.SpecOutputPath); err != nil {
-		return nil, fmt.Errorf("finding package output dir: %w", err)
-	}
-
-	logrus.Infof("Writing output to %s", pkgDef.SpecOutputPath)
-
-	// If Kubernetes version is provided, ensure that it is correct and determine the channel based on it.
-	// Otherwise, try to automatically determine the Kubernetes version based on provided channel.
-	if isCoreKubernetesPackage(pkgDef.Name) && pkgDef.Version != "" {
-		pkgDef.Channel, err = getKubernetesChannelForVersion(pkgDef.Version)
-		if err != nil {
-			return nil, fmt.Errorf("getting kubernetes channel: %w", err)
-		}
-	} else if isCoreKubernetesPackage(pkgDef.Name) && pkgDef.Version == "" {
-		pkgDef.Version, err = c.getKubernetesVersionForChannel(pkgDef.Channel)
-		if err != nil {
-			return nil, fmt.Errorf("getting kubernetes version: %w", err)
-		}
-	}
-
-	pkgDef.Version = util.TrimTagPrefix(pkgDef.Version)
-	// For cases where a CI build version of Kubernetes is retrieved, replace instances
-	// of "+" with "-", so that we build with a valid Debian package version.
-	pkgDef.Version = strings.Replace(pkgDef.Version, "+", "-", 1)
-
-	logrus.Infof("Using %s version %s/%s", pkgDef.Name, pkgDef.Channel, pkgDef.Version)
-
-	// Get package metadata for the given package. Metadata includes information about package source and dependencies.
-	pkgDef.Metadata, err = getPackageMetadata(pkgDef.SpecTemplatePath, pkgDef.Name, pkgDef.Version)
-	if err != nil {
-		return nil, fmt.Errorf("getting metadata for %q: %w", pkgDef.Name, err)
-	}
-
-	// Create variation of the package for each architecture.
-	for _, arch := range c.options.Architectures {
-		sourceURL, err := c.getPackageSource(pkgDef.Metadata.SourceURLTemplate, c.options.PackageSourceBase, pkgDef.Name, pkgDef.Version, arch, pkgDef.Channel)
-		if err != nil {
-			return nil, fmt.Errorf("getting package source download link: %w", err)
-		}
-		pkgVar := PackageVariation{
-			Architecture: arch,
-			Source:       sourceURL,
-		}
-		pkgDef.Variations = append(pkgDef.Variations, pkgVar)
-	}
-
-	logrus.Infof("Successfully constructed package definition for %s %s!", pkgDef.Name, pkgDef.Version)
-
-	return pkgDef, nil
-}
-
-// getPackageMetadata gets metadata for the given package.
-// Metadata includes information about package source and dependencies, and is stored in a YAML manifest.
-func getPackageMetadata(templateDir, packageName, packageVersion string) (*metadata.PackageMetadata, error) {
-	m, err := metadata.LoadPackageMetadata(filepath.Join(templateDir, "metadata.yaml"))
-	if err != nil {
-		return nil, fmt.Errorf("getting metadata for %s: %w", packageName, err)
-	}
-
-	deps, err := getMetadataWithVersionConstraint(packageName, packageVersion, m[packageName])
-	if err != nil {
-		return nil, fmt.Errorf("parsing metadata for %s: %w", packageName, err)
-	}
-
-	return deps, nil
-}
-
-// getMetadataWithVersionConstraint parses metadata and takes metadata that matches the given version constraint.
-func getMetadataWithVersionConstraint(packageName, packageVersion string, constraintedMetadata []metadata.PackageMetadata) (*metadata.PackageMetadata, error) {
-	for _, m := range constraintedMetadata {
-		r, err := semver.ParseRange(m.VersionConstraint)
-		if err != nil {
-			return nil, fmt.Errorf("parsing semver range for package %s: %w", packageName, err)
-		}
-		kubeSemVer, err := util.TagStringToSemver(packageVersion)
-		if err != nil {
-			return nil, fmt.Errorf("parsing package version %s: %w", packageVersion, err)
-		}
-
-		if r(kubeSemVer) {
-			return &m, nil
-		}
-	}
-
-	return nil, fmt.Errorf("package %s is not defined in metadata.yaml file", packageName)
-}
-
-// getPackageSource gets the download link for artifacts for the given package.
-// This function runs template on sourceURLTemplate defined in the metadata manifest.
-func (c *Client) getPackageSource(templateBaseURL, baseURL, packageName, packageVersion, packageArch, channel string) (string, error) {
-	data := struct {
-		BaseURL        string
-		PackageName    string
-		PackageVersion string
-		Architecture   string
-		Channel        string
-	}{
-		BaseURL:        baseURL,
-		PackageName:    packageName,
-		PackageVersion: packageVersion,
-		Architecture:   packageArch,
-		Channel:        channel,
-	}
-
-	tpl, err := template.New("").Funcs(
-		template.FuncMap{
-			"KubernetesURL": c.getKubernetesDownloadLink(channel, baseURL, packageName, packageVersion, packageArch),
+// DefaultOptions returns a new Options instance.
+func DefaultOptions() *Options {
+	return &Options{
+		Revision: consts.DefaultRevision,
+		Architectures: []string{
+			consts.ArchitectureAMD64,
+			consts.ArchitectureARM64,
+			consts.ArchitecturePPC64,
+			consts.ArchitectureS390X,
 		},
-	).Parse(templateBaseURL)
+	}
+}
+
+// String returns a string representation for the `Options` type.
+func (o *Options) String() string {
+	return fmt.Sprintf(
+		"Package: %v, Version: %s-%s, Architectures: %s, Templates: %s, Output: %q",
+		o.Package, o.Version, o.Revision, o.Architectures, o.SpecTemplatePath, o.SpecOutputPath,
+	)
+}
+
+// Validate verifies if all parameters in the `Options` instance are valid.
+func (o *Options) Validate() error {
+	if _, err := os.Stat(filepath.Join(o.SpecTemplatePath, o.Package)); err != nil {
+		return fmt.Errorf("specs for package %s doesn't exist", o.Package)
+	}
+
+	if o.Version == "" && o.Channel == "" {
+		return errors.New("one of version or channel is required")
+	}
+	if o.Channel != "" {
+		if ok := consts.IsSupported("channel", []string{o.Channel}, consts.SupportedChannels); !ok {
+			return errors.New("selected channel is not supported")
+		}
+	}
+
+	if o.Revision == "" {
+		return errors.New("revision is required")
+	}
+
+	if ok := consts.IsSupported("architectures", o.Architectures, consts.SupportedArchitectures); !ok {
+		return errors.New("architectures selection is not supported")
+	}
+
+	if _, err := os.Stat(o.SpecTemplatePath); err != nil {
+		return errors.New("templates dir doesn't exist")
+	}
+	if _, err := os.Stat(o.SpecOutputPath); err != nil {
+		return errors.New("output dir doesn't exist")
+	}
+
+	// Replace the "+" with a "-" to make it semver-compliant
+	o.Version = util.TrimTagPrefix(o.Version)
+
+	return nil
+}
+
+type Specs struct {
+	options *Options
+	impl
+}
+
+func New(opts *Options) *Specs {
+	return &Specs{
+		options: opts,
+		impl:    &defaultImpl{},
+	}
+}
+
+func (s *Specs) SetImpl(impl impl) {
+	s.impl = impl
+}
+
+func (s *Specs) Run() error {
+	pkgDef, err := s.ConstructPackageDefinition()
 	if err != nil {
-		return "", fmt.Errorf("getting download link base: creating template: %w", err)
+		return fmt.Errorf("constructing package definition: %w", err)
 	}
 
-	var outBuf bytes.Buffer
-	if err := tpl.Execute(&outBuf, data); err != nil {
-		return "", fmt.Errorf("getting download link base: executing template: %w", err)
+	if err = s.BuildSpecs(pkgDef, s.options.SpecOnly); err != nil {
+		return fmt.Errorf("building specs: %w", err)
 	}
 
-	return outBuf.String(), nil
+	if !s.options.SpecOnly {
+		if err = s.BuildArtifactsArchive(pkgDef); err != nil {
+			return fmt.Errorf("building artifacts archive: %w", err)
+		}
+	} else {
+		logrus.Infof("Specs only option enabled, skipping artifacts archive for %s", s.options.Package)
+	}
+
+	return nil
 }

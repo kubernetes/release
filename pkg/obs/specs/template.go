@@ -36,7 +36,7 @@ type work struct {
 }
 
 // BuildSpecs creates spec file based on provided package definition.
-func (c *Client) BuildSpecs(pkgDef *PackageDefinition, specOnly bool) (err error) {
+func (s *Specs) BuildSpecs(pkgDef *PackageDefinition, specOnly bool) (err error) {
 	if pkgDef == nil {
 		return errors.New("package definition cannot be nil")
 	}
@@ -44,11 +44,11 @@ func (c *Client) BuildSpecs(pkgDef *PackageDefinition, specOnly bool) (err error
 	workItems := []work{}
 
 	tplDir := filepath.Join(pkgDef.SpecTemplatePath, pkgDef.Name)
-	if _, err := os.Stat(tplDir); err != nil {
+	if _, err := s.impl.Stat(tplDir); err != nil {
 		return fmt.Errorf("building specs for %s: finding package template dir: %w", pkgDef.Name, err)
 	}
 
-	if err := filepath.Walk(tplDir, func(templateFile string, f os.FileInfo, err error) error {
+	if err := s.impl.Walk(tplDir, func(templateFile string, f os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -60,7 +60,7 @@ func (c *Client) BuildSpecs(pkgDef *PackageDefinition, specOnly bool) (err error
 		}
 
 		if f.IsDir() {
-			return os.Mkdir(specFile, f.Mode())
+			return s.impl.Mkdir(specFile, f.Mode())
 		}
 		if filepath.Ext(templateFile) == ".spec" {
 			// Spec is intentionally saved outside package dir, which is later on archived
@@ -96,7 +96,7 @@ func (c *Client) BuildSpecs(pkgDef *PackageDefinition, specOnly bool) (err error
 			return fmt.Errorf("executing template for %s: %w", item.src, err)
 		}
 
-		if err := os.WriteFile(
+		if err := s.impl.WriteFile(
 			item.dst, buf.Bytes(), item.info.Mode(),
 		); err != nil {
 			return fmt.Errorf("writing file %s: %w", item.dst, err)
