@@ -22,22 +22,14 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/obs/options"
+	"k8s.io/release/pkg/obs/consts"
 	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-utils/util"
 )
 
-func isCoreKubernetesPackage(packageName string) bool {
-	switch packageName {
-	case options.PackageKubeadm, options.PackageKubectl, options.PackageKubelet:
-		return true
-	default:
-		return false
-	}
-}
-
-func getKubernetesChannelForVersion(kubernetesVersion string) (string, error) {
-	kubeSemver, err := util.TagStringToSemver(kubernetesVersion)
+// GetKubernetesChannelForVersion returns channel for the given Kubernetes version.
+func (s *Specs) GetKubernetesChannelForVersion(kubernetesVersion string) (string, error) {
+	kubeSemver, err := s.impl.TagStringToSemver(kubernetesVersion)
 	if err != nil {
 		return "", fmt.Errorf("user-supplied kubernetes version is not valid semver: %w", err)
 	}
@@ -48,46 +40,49 @@ func getKubernetesChannelForVersion(kubernetesVersion string) (string, error) {
 	switch {
 	case len(kubeVersionParts) > 4:
 		logrus.Info("User-supplied Kubernetes version is a CI version, using nightly channel")
-		return options.ChannelTypeNightly, nil
+		return consts.ChannelTypeNightly, nil
 	case len(kubeVersionParts) == 4:
 		logrus.Info("User-supplied Kubernetes version is a pre-release version, using testing channel")
-		return options.ChannelTypePrerelease, nil
+		return consts.ChannelTypePrerelease, nil
 	default:
 		logrus.Info("User-supplied Kubernetes version is a release version, using release channel")
-		return options.ChannelTypeRelease, nil
+		return consts.ChannelTypeRelease, nil
 	}
 }
 
-// getKuebrnetesVersion is used to determine the Kubernetes version based on
-// provided channel. If Kubernetes version is provided by the user, this
-// function does nothing.
-func (c *Client) getKubernetesVersionForChannel(channel string) (string, error) {
+// GetKubernetesVersionForChannel is used to determine the Kubernetes version
+// based on the provided channel.
+func (s *Specs) GetKubernetesVersionForChannel(channel string) (string, error) {
 	switch channel {
-	case options.ChannelTypePrerelease:
-		return c.impl.GetKubeVersion(release.VersionTypeStablePreRelease)
-	case options.ChannelTypeNightly:
-		return c.impl.GetKubeVersion(release.VersionTypeCILatestCross)
+	case consts.ChannelTypePrerelease:
+		return s.impl.GetKubeVersion(release.VersionTypeStablePreRelease)
+	case consts.ChannelTypeNightly:
+		return s.impl.GetKubeVersion(release.VersionTypeCILatestCross)
 	default:
-		return c.impl.GetKubeVersion(release.VersionTypeStable)
+		return s.impl.GetKubeVersion(release.VersionTypeStable)
 	}
 }
 
-func (c *Client) getKubernetesDownloadLink(channel, baseURL, name, version, arch string) func() (string, error) {
+// GetKubernetesDownloadLink gets the download link for Kubernetes packages
+// based on given options.
+func (s *Specs) GetKubernetesDownloadLink(channel, baseURL, name, version, arch string) func() (string, error) {
 	switch channel {
-	case options.ChannelTypeNightly:
+	case consts.ChannelTypeNightly:
 		return func() (string, error) {
-			return c.getKubernetesCIDownloadLink(baseURL, name, version, arch)
+			return s.GetKubernetesCIDownloadLink(baseURL, name, version, arch)
 		}
 	default:
 		return func() (string, error) {
-			return getKubernetesReleaseDownloadLink(baseURL, name, version, arch), nil
+			return s.GetKubernetesReleaseDownloadLink(baseURL, name, version, arch), nil
 		}
 	}
 }
 
-func getKubernetesReleaseDownloadLink(baseURL, name, version, arch string) string {
+// GetKubernetesReleaseDownloadLink gets the download link for release version
+// of Kubernetes.
+func (s *Specs) GetKubernetesReleaseDownloadLink(baseURL, name, version, arch string) string {
 	if baseURL == "" {
-		baseURL = options.DefaultReleaseDownloadLinkBase
+		baseURL = consts.DefaultReleaseDownloadLinkBase
 	}
 
 	return fmt.Sprintf(
@@ -99,14 +94,16 @@ func getKubernetesReleaseDownloadLink(baseURL, name, version, arch string) strin
 	)
 }
 
-func (c *Client) getKubernetesCIDownloadLink(baseURL, name, version, arch string) (string, error) {
+// GetKubernetesCIDownloadLink gets the download link for CI version of
+// Kubernetes.
+func (s *Specs) GetKubernetesCIDownloadLink(baseURL, name, version, arch string) (string, error) {
 	if baseURL == "" {
-		baseURL = options.DefaultReleaseDownloadLinkBase
+		baseURL = consts.DefaultReleaseDownloadLinkBase
 	}
 
 	if version == "" {
 		var err error
-		version, err = c.impl.GetKubeVersion(release.VersionTypeCILatestCross)
+		version, err = s.impl.GetKubeVersion(release.VersionTypeCILatestCross)
 		if err != nil {
 			return "", err
 		}
