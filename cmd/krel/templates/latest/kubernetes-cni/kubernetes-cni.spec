@@ -2,7 +2,7 @@
 %undefine _missing_build_ids_terminate_build
 
 Name: kubernetes-cni
-Version: {{ .Version }}
+Version: {{ .RPMVersion }}
 Release: {{ .Revision }}
 Summary: Binaries required to provision kubernetes container networking
 
