@@ -52,7 +52,7 @@ type stageClient interface {
 	// InitLogFile sets up the log file target.
 	InitLogFile() error
 
-	// Validate if the provided `ReleaseOptions` are correctly set.
+	// Validate if the provided `StageOptions` are correctly set.
 	ValidateOptions() error
 
 	// CheckPrerequisites verifies that a valid GITHUB_TOKEN environment
