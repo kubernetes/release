@@ -85,7 +85,7 @@ func (s *Specs) BuildArtifactsArchive(pkgDef *PackageDefinition) error {
 	logrus.Infof("Archiving artifacts for %s %s...", pkgDef.Name, pkgDef.Version)
 
 	archiveSrc := filepath.Join(pkgDef.SpecOutputPath, pkgDef.Name)
-	archiveDst := filepath.Join(pkgDef.SpecOutputPath, fmt.Sprintf("%s_%s.orig.tar.gz", pkgDef.Name, pkgDef.Version))
+	archiveDst := filepath.Join(pkgDef.SpecOutputPath, fmt.Sprintf("%s_%s.orig.tar.gz", pkgDef.Name, pkgDef.RPMVersion()))
 
 	if err := s.impl.Compress(archiveDst, archiveSrc); err != nil {
 		return fmt.Errorf("creating archive: %w", err)

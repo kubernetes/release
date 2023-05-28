@@ -2,7 +2,7 @@
 %undefine _missing_build_ids_terminate_build
 
 Name: cri-tools
-Version: {{ .Version }}
+Version: {{ .RPMVersion }}
 Release: {{ .Revision }}
 Summary: Command-line utility for interacting with a container runtime
 

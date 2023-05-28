@@ -9,7 +9,7 @@
 %endif
 
 Name: kubelet
-Version: {{ .Version }}
+Version: {{ .RPMVersion }}
 Release: {{ .Revision }}
 Summary: Node agent for Kubernetes clusters
 

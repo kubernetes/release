@@ -1,7 +1,7 @@
 %global debug_package %{nil}
 
 Name: kubectl
-Version: {{ .Version }}
+Version: {{ .RPMVersion }}
 Release: {{ .Revision }}
 Summary: Command-line utility for interacting with a Kubernetes cluster
 
