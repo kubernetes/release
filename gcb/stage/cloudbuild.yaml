@@ -35,6 +35,9 @@ secrets:
   secretEnv:
     GITHUB_TOKEN: CiQAIkWjMHZABAFJqEFQir1WipsO3rAGkhw1pwhp1er/m3px/kESUQBLz1D+hzzlrovRVuetP+sCqzjfKZl/iB0aiQIT36imOk8j7laYDZjprxGGQQQiUVaqYvstroJH3D53f4JKQHzXUvWziSSnhH3HFZz++RT/yQ==
     DOCKERHUB_TOKEN: CiQAIkWjMJDKU6Hu3pJIBf31dIl7xJQQEiccN7k1cCzGadGoT2gSTQBLz1D+uc9PMusYnFvXtJi25OqEUktDJs28d09jDyj9gcyTx9iX/JvOE3Dn2qnhrjwrUMk5bBhFjR7dHCr4mJgEVD5dXrd6yLGbDBu2
+# - kmsKeyName: projects/k8s-releng-prod/locations/global/keyRings/release/cryptoKeys/obs
+#   secretEnv:
+#     OBS_PASSWORD: CiQAXrrgPTLzLId8sRADEJYdBeOCBv7djdomvYV/9cdEbNKUBrMSPAA2Zz9jrArtxsYUKk1if2nZE6w0wPosrAKDpko8c/WErfYajTQ/yF88gZd3DdllDHmYzTqHCA0eLbie9A==
 
 steps:
 - name: gcr.io/cloud-builders/git
@@ -85,6 +88,29 @@ steps:
   - "--type=${_TYPE}"
   - "--branch=${_RELEASE_BRANCH}"
   - "--build-version=${_BUILDVERSION}"
+
+# - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
+#   dir: "/workspace"
+#   env:
+#   - "TOOL_ORG=${_TOOL_ORG}"
+#   - "TOOL_REPO=${_TOOL_REPO}"
+#   - "TOOL_REF=${_TOOL_REF}"
+#   - "BUILD_ID=${BUILD_ID}"
+#   - "K8S_ORG=${_K8S_ORG}"
+#   - "K8S_REPO=${_K8S_REPO}"
+#   - "K8S_REF=${_K8S_REF}"
+#   secretEnv:
+#   - OBS_PASSWORD
+#   args:
+#   - "bin/krel"
+#   - "obs"
+#   - "stage"
+#   - "--submit=false"
+#   - "${_NOMOCK}"
+#   - "--log-level=${_LOG_LEVEL}"
+#   - "--type=${_TYPE}"
+#   - "--branch=${_RELEASE_BRANCH}"
+#   - "--build-version=${_BUILDVERSION}"
 
 tags:
 - ${_GCP_USER_TAG}
