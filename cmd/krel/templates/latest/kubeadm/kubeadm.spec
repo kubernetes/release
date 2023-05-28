@@ -14,8 +14,6 @@ License: Apache-2.0
 URL: https://kubernetes.io
 Source0: %{name}_%{version}.orig.tar.gz
 
-Require: kubectl >= {{ .Version }}
-Require: kubelet >= {{ .Version }}
 {{ range $dep := .Metadata.Dependencies }}
 Requires: {{ $dep.Name }} {{ $dep.VersionConstraint }}
 {{- end }}
