@@ -166,7 +166,7 @@ type State struct {
 // DefaultState returns a new empty State
 func DefaultState() *State {
 	// The default state is empty, it will be initialized after ValidateOptions()
-	// runs in Stage/Release. It will change as the satege/release processes move forward
+	// runs in Stage/Release. It will change as the stage/release processes move forward
 	return &State{
 		startTime: time.Now(),
 	}
@@ -185,7 +185,7 @@ type StageState struct {
 	*State
 }
 
-// DefaultStageState create a new default `ReleaseOptions`.
+// DefaultStageState create a new default `StageState`.
 func DefaultStageState() *StageState {
 	return &StageState{
 		State: DefaultState(),
