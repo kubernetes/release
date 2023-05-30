@@ -41,7 +41,7 @@ require (
 	sigs.k8s.io/mdtoc v1.1.0
 	sigs.k8s.io/promo-tools/v3 v3.6.0
 	sigs.k8s.io/release-sdk v0.10.2-0.20230526102852-a20f93c51631
-	sigs.k8s.io/release-utils v0.7.5-0.20230526101452-f7d5a1fbd5ad
+	sigs.k8s.io/release-utils v0.7.5-0.20230529163343-ef81b7d025bc
 	sigs.k8s.io/yaml v1.3.0
 	sigs.k8s.io/zeitgeist v0.4.1
 )
