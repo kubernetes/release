@@ -75,7 +75,7 @@ steps:
   - "bin/krel"
   - "sign"
   - "blobs"
-  - "--certificate-identity=${GOOGLE_SERVICE_ACCOUNT_NAME}"
+  - "--certificate-identity=$${GOOGLE_SERVICE_ACCOUNT_NAME}"
   - "--certificate-oidc-issuer=https://accounts.google.com"
   - "--log-level=${_LOG_LEVEL}"
   - "${_KUBERNETES_GCS_BUCKET}"
