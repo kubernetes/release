@@ -27,14 +27,20 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/obs/options"
-	"sigs.k8s.io/release-sdk/object"
-	"sigs.k8s.io/release-utils/tar"
+	"k8s.io/release/pkg/obs/consts"
 )
 
-// BuildArtifactsArchive downloads and archives artifacts from the given package source for all selected architectures.
-// This archive is used as a source for artifacts by OpenBuildService when building the package.
-func (c *Client) BuildArtifactsArchive(pkgDef *PackageDefinition) error {
+var obsArchitectures = map[string]string{
+	"amd64":   "x86_64",
+	"arm64":   "aarch64",
+	"ppc64le": "ppc64le",
+	"s390x":   "s390x",
+}
+
+// BuildArtifactsArchive downloads and archives artifacts from the given
+// package source for all selected architectures. This archive is used as
+// a source for artifacts by OpenBuildService when building the package.
+func (s *Specs) BuildArtifactsArchive(pkgDef *PackageDefinition) error {
 	if pkgDef == nil {
 		return errors.New("package definition cannot be nil")
 	}
@@ -42,12 +48,13 @@ func (c *Client) BuildArtifactsArchive(pkgDef *PackageDefinition) error {
 	logrus.Infof("Downloading artifacts for %s %s...", pkgDef.Name, pkgDef.Version)
 
 	for _, pkgVar := range pkgDef.Variations {
-		logrus.Infof("Downloading %s %s (%s)...", pkgDef.Name, pkgDef.Version, pkgVar.Architecture)
+		arch := obsArchitectures[pkgVar.Architecture]
+		logrus.Infof("Downloading %s %s (%s)...", pkgDef.Name, pkgDef.Version, arch)
 
-		dlRootPath := filepath.Join(pkgDef.SpecOutputPath, pkgDef.Name, pkgVar.Architecture)
-		err := os.MkdirAll(dlRootPath, os.FileMode(0o755))
+		dlRootPath := filepath.Join(pkgDef.SpecOutputPath, pkgDef.Name, arch)
+		err := s.impl.MkdirAll(dlRootPath, os.FileMode(0o755))
 		if err != nil {
-			if !os.IsExist(err) {
+			if !s.impl.IsExist(err) {
 				return fmt.Errorf("creating directory to download %s: %w", pkgDef.Name, err)
 			}
 		}
@@ -57,21 +64,21 @@ func (c *Client) BuildArtifactsArchive(pkgDef *PackageDefinition) error {
 		var dlPath string
 		var dlTarGz bool
 		switch pkgDef.Name {
-		case options.PackageKubernetesCNI:
+		case consts.PackageKubernetesCNI:
 			dlPath = filepath.Join(dlRootPath, "kubernetes-cni.tar.gz")
 			dlTarGz = true
-		case options.PackageCRITools:
+		case consts.PackageCRITools:
 			dlPath = filepath.Join(dlRootPath, "cri-tools.tar.gz")
 			dlTarGz = true
 		default:
 			dlPath = filepath.Join(dlRootPath, pkgDef.Name)
 		}
 
-		if err := c.downloadArtifact(pkgVar.Source, dlPath, dlTarGz); err != nil {
+		if err := s.DownloadArtifact(pkgVar.Source, dlPath, dlTarGz); err != nil {
 			return fmt.Errorf("downloading artifacts: %w", err)
 		}
 
-		logrus.Infof("Successfully downloaded %s %s (%s).", pkgDef.Name, pkgDef.Version, pkgVar.Architecture)
+		logrus.Infof("Successfully downloaded %s %s (%s).", pkgDef.Name, pkgDef.Version, arch)
 	}
 
 	logrus.Infof("Download completed successfully for %s %s.", pkgDef.Name, pkgDef.Version)
@@ -80,10 +87,10 @@ func (c *Client) BuildArtifactsArchive(pkgDef *PackageDefinition) error {
 	archiveSrc := filepath.Join(pkgDef.SpecOutputPath, pkgDef.Name)
 	archiveDst := filepath.Join(pkgDef.SpecOutputPath, fmt.Sprintf("%s_%s.orig.tar.gz", pkgDef.Name, pkgDef.Version))
 
-	if err := tar.Compress(archiveDst, archiveSrc); err != nil {
+	if err := s.impl.Compress(archiveDst, archiveSrc); err != nil {
 		return fmt.Errorf("creating archive: %w", err)
 	}
-	if err := os.RemoveAll(archiveSrc); err != nil {
+	if err := s.impl.RemoveAll(archiveSrc); err != nil {
 		return fmt.Errorf("cleaning up archive source: %w", err)
 	}
 
@@ -92,25 +99,24 @@ func (c *Client) BuildArtifactsArchive(pkgDef *PackageDefinition) error {
 	return nil
 }
 
-// downloadArtifact is a wrapper function that runs appropriate download function depending if the package source URL scheme
-// is gs:// or https://
-func (c *Client) downloadArtifact(sourcePath, destPath string, extractTgz bool) error {
+// DownloadArtifact is a wrapper function that runs appropriate download
+// function depending if the package source URL scheme is gs:// or https://
+func (s *Specs) DownloadArtifact(sourcePath, destPath string, extractTgz bool) error {
 	if strings.HasPrefix(sourcePath, "gs://") {
-		return c.downloadArtifactFromGCS(sourcePath, destPath, extractTgz)
+		return s.DownloadArtifactFromGCS(sourcePath, destPath, extractTgz)
 	}
 
-	return c.downloadArtifactFromURL(sourcePath, destPath, extractTgz)
+	return s.DownloadArtifactFromURL(sourcePath, destPath, extractTgz)
 }
 
-// downloadArtifactFromGCS downloads the artifact from the given GCS bucket.
-func (c *Client) downloadArtifactFromGCS(sourcePath, destPath string, extractTgz bool) error {
-	gcsClient := object.NewGCS()
-	if err := gcsClient.CopyToLocal(sourcePath, destPath); err != nil {
+// DownloadArtifactFromGCS downloads the artifact from the given GCS bucket.
+func (s *Specs) DownloadArtifactFromGCS(sourcePath, destPath string, extractTgz bool) error {
+	if err := s.impl.GCSCopyToLocal(sourcePath, destPath); err != nil {
 		return fmt.Errorf("copying file to archive: %w", err)
 	}
 
 	if extractTgz {
-		if err := tar.Extract(destPath, filepath.Dir(destPath)); err != nil {
+		if err := s.impl.Extract(destPath, filepath.Dir(destPath)); err != nil {
 			return fmt.Errorf("extracting .tar.gz archive: %w", err)
 		}
 	}
@@ -119,14 +125,14 @@ func (c *Client) downloadArtifactFromGCS(sourcePath, destPath string, extractTgz
 }
 
 // downloadArtifactFromGCS downloads the artifact from the given URL.
-func (c *Client) downloadArtifactFromURL(downloadURL, destPath string, extractTgz bool) error {
-	out, err := os.Create(destPath)
+func (s *Specs) DownloadArtifactFromURL(downloadURL, destPath string, extractTgz bool) error {
+	out, err := s.impl.CreateFile(destPath)
 	if err != nil {
 		return fmt.Errorf("creating download destination file: %w", err)
 	}
 	defer out.Close()
 
-	resp, err := c.impl.GetRequest(downloadURL)
+	resp, err := s.impl.GetRequest(downloadURL)
 	if err != nil {
 		return fmt.Errorf("downloading artifact: %w", err)
 	}
@@ -141,10 +147,10 @@ func (c *Client) downloadArtifactFromURL(downloadURL, destPath string, extractTg
 	}
 
 	if extractTgz {
-		if err := tar.Extract(destPath, filepath.Dir(destPath)); err != nil {
+		if err := s.impl.Extract(destPath, filepath.Dir(destPath)); err != nil {
 			return fmt.Errorf("extracting .tar.gz archive: %w", err)
 		}
-		if err := os.Remove(destPath); err != nil {
+		if err := s.impl.RemoveFile(destPath); err != nil {
 			return fmt.Errorf("removing extracted archive: %w", err)
 		}
 	}
