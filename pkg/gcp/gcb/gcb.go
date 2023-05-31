@@ -389,6 +389,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket string) 
 	if g.options.OBSStage {
 		gcbSubs["SPEC_TEMPLATE_PATH"] = g.options.SpecTemplatePath
 		gcbSubs["PACKAGES"] = strings.Join(g.options.Packages, ",")
+		//nolint:gocritic // This needs some fixes that will be done in a follow-up
 		// gcbSubs["ARCHITECTURES"] = strings.Join(g.options.Architectures, ",")
 		gcbSubs["VERSION"] = g.options.Version
 		gcbSubs["PROJECT"] = g.options.Project
