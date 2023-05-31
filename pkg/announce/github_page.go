@@ -28,6 +28,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/bom/pkg/serialize"
 	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github"
@@ -104,11 +105,19 @@ type GitHubPageOptions struct {
 	Substitutions map[string]string
 }
 
+type SBOMFormat string
+
+const (
+	FormatJSON     SBOMFormat = "json"
+	FormatTagValue SBOMFormat = "tag-value"
+)
+
 type SBOMOptions struct {
 	ReleaseName   string
 	Repo          string
 	RepoDirectory string
-	Tag           string // Version Tag
+	Tag           string     // Version Tag
+	Format        SBOMFormat // "tag-value"  | "json"
 	Assets        []Asset
 }
 
@@ -169,7 +178,22 @@ func GenerateReleaseSBOM(opts *SBOMOptions) (string, error) {
 		}
 	}
 
-	if err := doc.Write(sbomFile); err != nil {
+	var renderer serialize.Serializer
+	switch opts.Format {
+	case FormatJSON:
+		renderer = &serialize.JSON{}
+	case FormatTagValue:
+		renderer = &serialize.TagValue{}
+	default:
+		return "", fmt.Errorf("invalid SBOM format, must be one of %s, %s", FormatJSON, FormatTagValue)
+	}
+
+	markup, err := renderer.Serialize(doc)
+	if err != nil {
+		return "", fmt.Errorf("serializing sbom: %w", err)
+	}
+
+	if err := os.WriteFile(sbomFile, []byte(markup), 0o600); err != nil {
 		return "", fmt.Errorf("writing sbom to disk: %w", err)
 	}
 

@@ -86,6 +86,7 @@ type githubPageCmdLineOptions struct {
 	noupdate         bool
 	draft            bool
 	sbom             bool
+	sbomFormat       string
 	name             string
 	repo             string
 	template         string
@@ -150,14 +151,18 @@ func init() {
 		true,
 		"Generate an SPDX bill of materials and attach it to the release",
 	)
-
+	githubPageCmd.PersistentFlags().StringVar(
+		&ghPageOpts.sbomFormat,
+		"sbom-format",
+		string(announce.FormatJSON),
+		"format to use for the SBOM [json|tag-value]",
+	)
 	githubPageCmd.PersistentFlags().StringVar(
 		&ghPageOpts.repoPath,
 		"repo-path",
 		".",
 		"Path to the source code repository",
 	)
-
 	githubPageCmd.PersistentFlags().StringVar(
 		&ghPageOpts.ReleaseNotesFile,
 		"release-notes-file",
@@ -278,6 +283,7 @@ func runGithubPage(opts *githubPageCmdLineOptions) (err error) {
 			RepoDirectory: opts.repoPath,
 			Assets:        assets,
 			Tag:           commandLineOpts.tag,
+			Format:        announce.SBOMFormat(opts.sbomFormat),
 		})
 		if err != nil {
 			return fmt.Errorf("generating sbom: %w", err)

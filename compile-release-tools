@@ -22,6 +22,8 @@ RELEASE_TOOLS=(
   krel
   kubepkg
   schedule-builder
+  publish-release
+  release-notes
 )
 
 setup_env() {
