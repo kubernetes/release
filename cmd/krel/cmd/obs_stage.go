@@ -63,9 +63,7 @@ submit a Google Cloud Build (GCB) job which does:
 	},
 }
 
-var (
-	obsStageOptions = obs.DefaultStageOptions()
-)
+var obsStageOptions = obs.DefaultStageOptions()
 
 const (
 	obsBuildVersionFlag     = "build-version"
