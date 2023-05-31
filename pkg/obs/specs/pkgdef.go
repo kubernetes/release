@@ -51,6 +51,14 @@ type PackageVariation struct {
 	Source       string
 }
 
+// RPMVersion returns version that's escaped to be a valid RPM package
+// version. This function currently replaces "-" with "~" as described in
+// the following document:
+// https://docs.fedoraproject.org/en-US/packaging-guidelines/Versioning/#_handling_non_sorting_versions_with_tilde_dot_and_caret
+func (p *PackageDefinition) RPMVersion() string {
+	return strings.ReplaceAll(p.Version, "-", "~")
+}
+
 // ConstructPackageDefinition creates a new instance of PackageDefinition based
 // on provided options.
 func (s *Specs) ConstructPackageDefinition() (*PackageDefinition, error) {
