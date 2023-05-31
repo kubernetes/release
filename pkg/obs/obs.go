@@ -34,6 +34,10 @@ import (
 	"sigs.k8s.io/release-utils/version"
 )
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt obsfakes/fake_prerequisites_checker_impl.go > obsfakes/_fake_prerequisites_checker_impl.go && mv obsfakes/_fake_prerequisites_checker_impl.go obsfakes/fake_prerequisites_checker_impl.go"
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt obsfakes/fake_stage_client.go > obsfakes/_fake_stage_client.go && mv obsfakes/_fake_stage_client.go obsfakes/fake_stage_client.go"
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt obsfakes/fake_stage_impl.go > obsfakes/_fake_stage_impl.go && mv obsfakes/_fake_stage_impl.go obsfakes/fake_stage_impl.go"
 const (
 	// OBSKubernetesProject is name of the organization/project on openSUSE's
 	// OBS instance where packages are built and published.
