@@ -60,9 +60,7 @@ submit a Google Cloud Build (GCB) job which does:
 	},
 }
 
-var (
-	obsReleaseOptions = obs.DefaultReleaseOptions()
-)
+var obsReleaseOptions = obs.DefaultReleaseOptions()
 
 func init() {
 	obsReleaseCmd.PersistentFlags().
@@ -138,14 +136,14 @@ func init() {
 
 func runOBSRelease(options *obs.ReleaseOptions) error {
 	options.NoMock = rootOpts.nomock
-	release := obs.NewRelease(options)
+	obsRelease := obs.NewRelease(options)
 	if submitJob {
 		// Perform a local check of the specified options before launching a
 		// Cloud Build job:
 		if err := options.Validate(&obs.State{}, true); err != nil {
 			return fmt.Errorf("prechecking release options: %w", err)
 		}
-		return release.Submit(stream)
+		return obsRelease.Submit(stream)
 	}
-	return release.Run()
+	return obsRelease.Run()
 }
