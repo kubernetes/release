@@ -31,13 +31,9 @@ timeout: 14400s
 #
 # (Please do not remove this security notice.)
 secrets:
-- kmsKeyName: projects/k8s-releng-prod/locations/global/keyRings/release/cryptoKeys/encrypt-0
+- kmsKeyName: projects/k8s-releng-prod/locations/global/keyRings/release/cryptoKeys/obs
   secretEnv:
-    GITHUB_TOKEN: CiQAIkWjMHZABAFJqEFQir1WipsO3rAGkhw1pwhp1er/m3px/kESUQBLz1D+hzzlrovRVuetP+sCqzjfKZl/iB0aiQIT36imOk8j7laYDZjprxGGQQQiUVaqYvstroJH3D53f4JKQHzXUvWziSSnhH3HFZz++RT/yQ==
-    DOCKERHUB_TOKEN: CiQAIkWjMJDKU6Hu3pJIBf31dIl7xJQQEiccN7k1cCzGadGoT2gSTQBLz1D+uc9PMusYnFvXtJi25OqEUktDJs28d09jDyj9gcyTx9iX/JvOE3Dn2qnhrjwrUMk5bBhFjR7dHCr4mJgEVD5dXrd6yLGbDBu2
-# - kmsKeyName: projects/k8s-releng-prod/locations/global/keyRings/release/cryptoKeys/obs
-#   secretEnv:
-#     OBS_PASSWORD: CiQAXrrgPTLzLId8sRADEJYdBeOCBv7djdomvYV/9cdEbNKUBrMSPAA2Zz9jrArtxsYUKk1if2nZE6w0wPosrAKDpko8c/WErfYajTQ/yF88gZd3DdllDHmYzTqHCA0eLbie9A==
+    OBS_PASSWORD: CiQAXrrgPTLzLId8sRADEJYdBeOCBv7djdomvYV/9cdEbNKUBrMSPAA2Zz9jrArtxsYUKk1if2nZE6w0wPosrAKDpko8c/WErfYajTQ/yF88gZd3DdllDHmYzTqHCA0eLbie9A==
 
 steps:
 - name: gcr.io/cloud-builders/git
@@ -75,54 +71,34 @@ steps:
   - "K8S_ORG=${_K8S_ORG}"
   - "K8S_REPO=${_K8S_REPO}"
   - "K8S_REF=${_K8S_REF}"
-  - GOOGLE_SERVICE_ACCOUNT_NAME=krel-staging@k8s-releng-prod.iam.gserviceaccount.com
   secretEnv:
-  - GITHUB_TOKEN
-  - DOCKERHUB_TOKEN
+  - OBS_PASSWORD
   args:
   - "bin/krel"
+  - "obs"
   - "stage"
   - "--submit=false"
   - "${_NOMOCK}"
   - "--log-level=${_LOG_LEVEL}"
-  - "--type=${_TYPE}"
-  - "--branch=${_RELEASE_BRANCH}"
-  - "--build-version=${_BUILDVERSION}"
-
-# - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
-#   dir: "/workspace"
-#   env:
-#   - "TOOL_ORG=${_TOOL_ORG}"
-#   - "TOOL_REPO=${_TOOL_REPO}"
-#   - "TOOL_REF=${_TOOL_REF}"
-#   - "BUILD_ID=${BUILD_ID}"
-#   - "K8S_ORG=${_K8S_ORG}"
-#   - "K8S_REPO=${_K8S_REPO}"
-#   - "K8S_REF=${_K8S_REF}"
-#   secretEnv:
-#   - OBS_PASSWORD
-#   args:
-#   - "bin/krel"
-#   - "obs"
-#   - "stage"
-#   - "--submit=false"
-#   - "${_NOMOCK}"
-#   - "--log-level=${_LOG_LEVEL}"
-#   - "--type=${_TYPE}"
-#   - "--branch=${_RELEASE_BRANCH}"
-#   - "--build-version=${_BUILDVERSION}"
+  - "--template-dir=${_SPEC_TEMPLATE_PATH}"
+  - "--packages=${_PACKAGES}"
+  # TODO(xmudrii) - followup: solve problem with delimiter
+  # - "--architectures=${_ARCHITECTURES}"
+  - "--version=${_VERSION}"
+  - "--project=${_PROJECT}"
+  - "--source=${_PACKAGE_SOURCE}"
 
 tags:
 - ${_GCP_USER_TAG}
-- ${_RELEASE_BRANCH}
 - ${_NOMOCK_TAG}
-- STAGE
+- OBS_STAGE
 - ${_GIT_TAG}
+- ${_RELEASE_BRANCH}
 - ${_TYPE_TAG}
-- ${_MAJOR_VERSION_TAG}
-- ${_MINOR_VERSION_TAG}
-- ${_PATCH_VERSION_TAG}
-- ${_KUBERNETES_VERSION_TAG}
+- ${_TYPE}
+- ${_PACKAGES}
+- ${_VERSION}
+- ${_PROJECT_TAG}
 
 options:
   machineType: E2_HIGHCPU_32

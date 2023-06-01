@@ -100,6 +100,16 @@ type Options struct {
 	GcpUser      string
 	LogLevel     string
 	LastJobs     int64
+
+	// OpenBuildService parameters
+	OBSStage         bool
+	OBSRelease       bool
+	SpecTemplatePath string
+	Packages         []string
+	Version          string
+	Architectures    []string
+	Project          string
+	PackageSource    string
 }
 
 // NewDefaultOptions returns a new default `*Options` instance.
@@ -291,6 +301,8 @@ func (g *GCB) Submit() error {
 		jobType = "release"
 	case g.options.FastForward:
 		jobType = "fast-forward"
+	case g.options.OBSStage:
+		jobType = "obs-stage"
 	default:
 		return g.listJobs(g.options.Project, g.options.LastJobs)
 	}
@@ -374,7 +386,21 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket string) 
 	gcbSubs["KUBE_CROSS_VERSION"] = kcVersionBranch
 	gcbSubs["KUBE_CROSS_VERSION_LATEST"] = kcVersionLatest
 
-	// Stop here when doing a fast-forward
+	if g.options.OBSStage {
+		gcbSubs["SPEC_TEMPLATE_PATH"] = g.options.SpecTemplatePath
+		gcbSubs["PACKAGES"] = strings.Join(g.options.Packages, ",")
+		//nolint:gocritic // This needs some fixes that will be done in a follow-up
+		// gcbSubs["ARCHITECTURES"] = strings.Join(g.options.Architectures, ",")
+		gcbSubs["VERSION"] = g.options.Version
+		gcbSubs["PROJECT"] = g.options.Project
+		gcbSubs["PROJECT_TAG"] = strings.ReplaceAll(g.options.Project, ":", "-")
+		gcbSubs["PACKAGE_SOURCE"] = g.options.PackageSource
+
+		// Stop here when doing OBS operations
+		return gcbSubs, nil
+	}
+
+	// Stop here when doing a fast-forward or OBS operations
 	if g.options.FastForward {
 		return gcbSubs, nil
 	}
