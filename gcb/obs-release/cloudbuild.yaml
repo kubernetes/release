@@ -31,12 +31,9 @@ timeout: 14400s
 #
 # (Please do not remove this security notice.)
 secrets:
-- kmsKeyName: projects/k8s-releng-prod/locations/global/keyRings/release/cryptoKeys/encrypt-0
+- kmsKeyName: projects/k8s-releng-prod/locations/global/keyRings/release/cryptoKeys/obs
   secretEnv:
-    GITHUB_TOKEN: CiQAIkWjMODH+TR8+6KmsAValHBKkX2PjVWSzyNdScGCIl0rBlYSUQBLz1D++mrhyd+wXohoQEGDuyQHvFzQyT7NEvI2BR/WBmnu1S9+E5GgER8OOnaQg+dGEMrYzEQIiTOB8WPxU7ecsIyo0AuegcBH24dj9L2tDw==
-# - kmsKeyName: projects/k8s-releng-prod/locations/global/keyRings/release/cryptoKeys/obs
-#   secretEnv:
-#     OBS_PASSWORD: CiQAXrrgPTLzLId8sRADEJYdBeOCBv7djdomvYV/9cdEbNKUBrMSPAA2Zz9jrArtxsYUKk1if2nZE6w0wPosrAKDpko8c/WErfYajTQ/yF88gZd3DdllDHmYzTqHCA0eLbie9A==
+    OBS_PASSWORD: CiQAXrrgPTLzLId8sRADEJYdBeOCBv7djdomvYV/9cdEbNKUBrMSPAA2Zz9jrArtxsYUKk1if2nZE6w0wPosrAKDpko8c/WErfYajTQ/yF88gZd3DdllDHmYzTqHCA0eLbie9A==
 
 steps:
 - name: gcr.io/cloud-builders/git
@@ -73,71 +70,28 @@ steps:
   - "K8S_ORG=${_K8S_ORG}"
   - "K8S_REPO=${_K8S_REPO}"
   - "K8S_REF=${_K8S_REF}"
-  - GOOGLE_SERVICE_ACCOUNT_NAME=krel-staging@k8s-releng-prod.iam.gserviceaccount.com
-  args:
-  - "bin/krel"
-  - "sign"
-  - "blobs"
-  - "--certificate-identity=krel-staging@k8s-releng-prod.iam.gserviceaccount.com"
-  - "--certificate-oidc-issuer=https://accounts.google.com"
-  - "--log-level=${_LOG_LEVEL}"
-  - "${_KUBERNETES_GCS_BUCKET}"
-
-- name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
-  dir: "/workspace"
-  env:
-  - "TOOL_ORG=${_TOOL_ORG}"
-  - "TOOL_REPO=${_TOOL_REPO}"
-  - "TOOL_REF=${_TOOL_REF}"
-  - "K8S_ORG=${_K8S_ORG}"
-  - "K8S_REPO=${_K8S_REPO}"
-  - "K8S_REF=${_K8S_REF}"
-  - GOOGLE_SERVICE_ACCOUNT_NAME=krel-staging@k8s-releng-prod.iam.gserviceaccount.com
   secretEnv:
-  - GITHUB_TOKEN
+  - OBS_PASSWORD
   args:
   - "bin/krel"
+  - "obs"
   - "release"
   - "--submit=false"
   - "${_NOMOCK}"
   - "--log-level=${_LOG_LEVEL}"
-  - "--type=${_TYPE}"
-  - "--branch=${_RELEASE_BRANCH}"
-  - "--build-version=${_BUILDVERSION}"
-
-# - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
-#   dir: "/workspace"
-#   env:
-#   - "TOOL_ORG=${_TOOL_ORG}"
-#   - "TOOL_REPO=${_TOOL_REPO}"
-#   - "TOOL_REF=${_TOOL_REF}"
-#   - "K8S_ORG=${_K8S_ORG}"
-#   - "K8S_REPO=${_K8S_REPO}"
-#   - "K8S_REF=${_K8S_REF}"
-#   secretEnv:
-#   - OBS_PASSWORD
-#   args:
-#   - "bin/krel"
-#   - "obs"
-#   - "release"
-#   - "--submit=false"
-#   - "${_NOMOCK}"
-#   - "--log-level=${_LOG_LEVEL}"
-#   - "--type=${_TYPE}"
-#   - "--branch=${_RELEASE_BRANCH}"
-#   - "--build-version=${_BUILDVERSION}"
+  - "--packages=${_PACKAGES}"
+  - "--project=${_PROJECT}"
 
 tags:
 - ${_GCP_USER_TAG}
-- ${_RELEASE_BRANCH}
 - ${_NOMOCK_TAG}
-- RELEASE
+- OBS_RELEASE
 - ${_GIT_TAG}
+- ${_RELEASE_BRANCH}
 - ${_TYPE_TAG}
-- ${_MAJOR_VERSION_TAG}
-- ${_MINOR_VERSION_TAG}
-- ${_PATCH_VERSION_TAG}
-- ${_KUBERNETES_VERSION_TAG}
+- ${_TYPE}
+- ${_PACKAGES}
+- ${_PROJECT_TAG}
 
 options:
   machineType: E2_HIGHCPU_32
