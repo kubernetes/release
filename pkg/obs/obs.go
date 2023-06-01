@@ -38,6 +38,8 @@ import (
 //go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt obsfakes/fake_prerequisites_checker_impl.go > obsfakes/_fake_prerequisites_checker_impl.go && mv obsfakes/_fake_prerequisites_checker_impl.go obsfakes/fake_prerequisites_checker_impl.go"
 //go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt obsfakes/fake_stage_client.go > obsfakes/_fake_stage_client.go && mv obsfakes/_fake_stage_client.go obsfakes/fake_stage_client.go"
 //go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt obsfakes/fake_stage_impl.go > obsfakes/_fake_stage_impl.go && mv obsfakes/_fake_stage_impl.go obsfakes/fake_stage_impl.go"
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt obsfakes/fake_release_client.go > obsfakes/_fake_release_client.go && mv obsfakes/_fake_release_client.go obsfakes/fake_release_client.go"
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt obsfakes/fake_release_impl.go > obsfakes/_fake_release_impl.go && mv obsfakes/_fake_release_impl.go obsfakes/fake_release_impl.go"
 const (
 	// OBSKubernetesProject is name of the organization/project on openSUSE's
 	// OBS instance where packages are built and published.
@@ -219,9 +221,6 @@ func (o *Options) Validate(submit bool) error {
 			return errors.New("build version is required")
 		}
 	} else if foundManualOption {
-		if o.Version == "" {
-			return errors.New("version is required")
-		}
 		if o.Project == "" {
 			return errors.New("project is required")
 		}
@@ -302,7 +301,7 @@ func DefaultState() *State {
 	}
 }
 
-// StageState holds the stage/release process state
+// StageState holds the stage process state
 type StageState struct {
 	*State
 }
@@ -341,6 +340,10 @@ func (s *StageOptions) Validate(state *State, submit bool) error {
 		if err := s.Options.ValidateBuildVersion(state); err != nil {
 			return fmt.Errorf("validating build version")
 		}
+	} else if s.Options.Version == "" {
+		// Version is required only for stage,
+		// release step only publishes what has been already built.
+		return errors.New("version is required")
 	}
 
 	if s.Options.ReleaseType != "" || s.Options.ReleaseBranch != "" || s.Options.BuildVersion != "" {
@@ -429,6 +432,133 @@ func (s *Stage) Run() error {
 	logger.WithStep().Info("Pushing packages to OBS")
 	if err := s.client.Push(); err != nil {
 		return fmt.Errorf("pushing packages to obs: %w", err)
+	}
+
+	return nil
+}
+
+// ReleaseState holds the release process state
+type ReleaseState struct {
+	*State
+}
+
+// DefaultReleaseState create a new default `ReleaseOptions`.
+func DefaultReleaseState() *ReleaseState {
+	return &ReleaseState{
+		State: DefaultState(),
+	}
+}
+
+// ReleaseOptions contains the options for running `Release`.
+type ReleaseOptions struct {
+	*Options
+}
+
+// DefaultReleaseOptions create a new default `ReleaseOptions`.
+func DefaultReleaseOptions() *ReleaseOptions {
+	return &ReleaseOptions{
+		Options: DefaultOptions(),
+	}
+}
+
+// String returns a string representation for the `ReleaseOptions` type.
+func (r *ReleaseOptions) String() string {
+	return r.Options.String()
+}
+
+// Validate if the options are correctly set.
+func (r *ReleaseOptions) Validate(state *State, submit bool) error {
+	if err := r.Options.Validate(submit); err != nil {
+		return fmt.Errorf("validating generic options: %w", err)
+	}
+
+	if r.Options.BuildVersion != "" {
+		if err := r.Options.ValidateBuildVersion(state); err != nil {
+			return fmt.Errorf("validating build version: %w", err)
+		}
+	}
+
+	if r.Options.Version != "" {
+		return errors.New("specifying version is not supported for release")
+	}
+
+	if r.Options.ReleaseType != "" || r.Options.ReleaseBranch != "" || r.Options.BuildVersion != "" {
+		state.corePackages = true
+	}
+
+	return nil
+}
+
+// Release is the structure to be used for releasing staged OBS builds.
+type Release struct {
+	client releaseClient
+}
+
+// NewRelease creates a new `Release` instance.
+func NewRelease(options *ReleaseOptions) *Release {
+	return &Release{NewDefaultRelease(options)}
+}
+
+// SetClient can be used to set the internal stage client.
+func (r *Release) SetClient(client releaseClient) {
+	r.client = client
+}
+
+// Submit can be used to submit a releasing Google Cloud Build (GCB) job.
+func (r *Release) Submit(stream bool) error {
+	logrus.Info("Submitting release GCB job")
+	if err := r.client.Submit(stream); err != nil {
+		return fmt.Errorf("submit release job: %w", err)
+	}
+	return nil
+}
+
+// Run for `Release` struct finishes a previously staged release.
+func (r *Release) Run() error {
+	r.client.InitState()
+
+	logger := log.NewStepLogger(8)
+	v := version.GetVersionInfo()
+	logger.Infof("Using krel version: %s", v.GitVersion)
+
+	logger.WithStep().Info("Validating options")
+	if err := r.client.ValidateOptions(); err != nil {
+		return fmt.Errorf("validating options: %w", err)
+	}
+
+	logger.WithStep().Info("Initializing OBS root and config")
+	if err := r.client.InitOBSRoot(); err != nil {
+		return fmt.Errorf("initializing obs root: %w", err)
+	}
+
+	logger.WithStep().Info("Checking prerequisites")
+	if err := r.client.CheckPrerequisites(); err != nil {
+		return fmt.Errorf("check prerequisites: %w", err)
+	}
+
+	logger.WithStep().Info("Checking release branch state")
+	if err := r.client.CheckReleaseBranchState(); err != nil {
+		return fmt.Errorf("checking release branch state: %w", err)
+	}
+
+	logger.WithStep().Info("Generating release version")
+	if err := r.client.GenerateReleaseVersion(); err != nil {
+		return fmt.Errorf("generating release version: %w", err)
+	}
+
+	logger.WithStep().Info("Generating OBS project name")
+	if err := r.client.GenerateOBSProject(); err != nil {
+		return fmt.Errorf("generating obs project name: %w", err)
+	}
+
+	logger.WithStep().Info("Checking out OBS project")
+	if err := r.client.CheckoutOBSProject(); err != nil {
+		return fmt.Errorf("checking out obs project: %w", err)
+	}
+
+	logger.WithStep().Info("Releasing packages to OBS")
+	if err := r.client.ReleasePackages(); err != nil {
+		return fmt.Errorf("releasing packages: %w", err)
 	}
 
 	return nil
