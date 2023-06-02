@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import (
 	"k8s.io/release/pkg/release"
 )
 
-// stageCmd represents the subcommand for `krel stage`
+// obsStageCmd represents the subcommand for `krel obs stage`
 var obsStageCmd = &cobra.Command{
 	Use:   "stage",
 	Short: "Stage packages for a new Kubernetes version or Kubernetes subproject",

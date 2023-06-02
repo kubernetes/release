@@ -303,6 +303,8 @@ func (g *GCB) Submit() error {
 		jobType = "fast-forward"
 	case g.options.OBSStage:
 		jobType = "obs-stage"
+	case g.options.OBSRelease:
+		jobType = "obs-release"
 	default:
 		return g.listJobs(g.options.Project, g.options.LastJobs)
 	}
@@ -386,7 +388,8 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket string) 
 	gcbSubs["KUBE_CROSS_VERSION"] = kcVersionBranch
 	gcbSubs["KUBE_CROSS_VERSION_LATEST"] = kcVersionLatest
 
-	if g.options.OBSStage {
+	switch {
+	case g.options.OBSStage:
 		gcbSubs["SPEC_TEMPLATE_PATH"] = g.options.SpecTemplatePath
 		gcbSubs["PACKAGES"] = strings.Join(g.options.Packages, ",")
 		//nolint:gocritic // This needs some fixes that will be done in a follow-up
@@ -396,12 +399,17 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket string) 
 		gcbSubs["PROJECT_TAG"] = strings.ReplaceAll(g.options.Project, ":", "-")
 		gcbSubs["PACKAGE_SOURCE"] = g.options.PackageSource
 
-		// Stop here when doing OBS operations
+		// Stop here when doing OBS stage
 		return gcbSubs, nil
-	}
+	case g.options.OBSRelease:
+		gcbSubs["PACKAGES"] = strings.Join(g.options.Packages, ",")
+		gcbSubs["PROJECT"] = g.options.Project
+		gcbSubs["PROJECT_TAG"] = strings.ReplaceAll(g.options.Project, ":", "-")
 
-	// Stop here when doing a fast-forward or OBS operations
-	if g.options.FastForward {
+		// Stop here when doing OBS release
+		return gcbSubs, nil
+	case g.options.FastForward:
+		// Stop here when doing a fast-forward
 		return gcbSubs, nil
 	}
 
