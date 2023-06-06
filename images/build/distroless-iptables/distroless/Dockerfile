@@ -24,6 +24,7 @@ COPY package-utils.sh /
 # TODO: /bin/sleep is used by a specific e2e test
 ARG STAGE_DIR="/opt/stage"
 RUN apt -y update && \
+    apt -y dist-upgrade && \
     apt -y install bash curl && \
     mkdir -p "${STAGE_DIR}" && \
     /stage-binaries-from-package.sh "${STAGE_DIR}" conntrack \
