@@ -65,7 +65,7 @@ var (
 		"release", "testing", "nightly",
 	}
 	supportedArchitectures = []string{
-		"amd64", "arm", "arm64", "ppc64le", "s390x",
+		"amd64", "arm64", "ppc64le", "s390x",
 	}
 	latestTemplateDir = filepath.Join(templateRootDir, "latest")
 )
