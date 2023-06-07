@@ -34,9 +34,9 @@ secrets:
 - kmsKeyName: projects/k8s-releng-prod/locations/global/keyRings/release/cryptoKeys/encrypt-0
   secretEnv:
     GITHUB_TOKEN: CiQAIkWjMODH+TR8+6KmsAValHBKkX2PjVWSzyNdScGCIl0rBlYSUQBLz1D++mrhyd+wXohoQEGDuyQHvFzQyT7NEvI2BR/WBmnu1S9+E5GgER8OOnaQg+dGEMrYzEQIiTOB8WPxU7ecsIyo0AuegcBH24dj9L2tDw==
-# - kmsKeyName: projects/k8s-releng-prod/locations/global/keyRings/release/cryptoKeys/obs
-#   secretEnv:
-#     OBS_PASSWORD: CiQAXrrgPTLzLId8sRADEJYdBeOCBv7djdomvYV/9cdEbNKUBrMSPAA2Zz9jrArtxsYUKk1if2nZE6w0wPosrAKDpko8c/WErfYajTQ/yF88gZd3DdllDHmYzTqHCA0eLbie9A==
+- kmsKeyName: projects/k8s-releng-prod/locations/global/keyRings/release/cryptoKeys/obs
+  secretEnv:
+    OBS_PASSWORD: CiQAXrrgPTLzLId8sRADEJYdBeOCBv7djdomvYV/9cdEbNKUBrMSPAA2Zz9jrArtxsYUKk1if2nZE6w0wPosrAKDpko8c/WErfYajTQ/yF88gZd3DdllDHmYzTqHCA0eLbie9A==
 
 steps:
 - name: gcr.io/cloud-builders/git
@@ -105,27 +105,27 @@ steps:
   - "--branch=${_RELEASE_BRANCH}"
   - "--build-version=${_BUILDVERSION}"
 
-# - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
-#   dir: "/workspace"
-#   env:
-#   - "TOOL_ORG=${_TOOL_ORG}"
-#   - "TOOL_REPO=${_TOOL_REPO}"
-#   - "TOOL_REF=${_TOOL_REF}"
-#   - "K8S_ORG=${_K8S_ORG}"
-#   - "K8S_REPO=${_K8S_REPO}"
-#   - "K8S_REF=${_K8S_REF}"
-#   secretEnv:
-#   - OBS_PASSWORD
-#   args:
-#   - "bin/krel"
-#   - "obs"
-#   - "release"
-#   - "--submit=false"
-#   - "${_NOMOCK}"
-#   - "--log-level=${_LOG_LEVEL}"
-#   - "--type=${_TYPE}"
-#   - "--branch=${_RELEASE_BRANCH}"
-#   - "--build-version=${_BUILDVERSION}"
+- name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
+  dir: "/workspace"
+  env:
+  - "TOOL_ORG=${_TOOL_ORG}"
+  - "TOOL_REPO=${_TOOL_REPO}"
+  - "TOOL_REF=${_TOOL_REF}"
+  - "K8S_ORG=${_K8S_ORG}"
+  - "K8S_REPO=${_K8S_REPO}"
+  - "K8S_REF=${_K8S_REF}"
+  secretEnv:
+  - OBS_PASSWORD
+  args:
+  - "bin/krel"
+  - "obs"
+  - "release"
+  - "--submit=false"
+  - "${_NOMOCK}"
+  - "--log-level=${_LOG_LEVEL}"
+  - "--type=${_TYPE}"
+  - "--branch=${_RELEASE_BRANCH}"
+  - "--build-version=${_BUILDVERSION}"
 
 tags:
 - ${_GCP_USER_TAG}
