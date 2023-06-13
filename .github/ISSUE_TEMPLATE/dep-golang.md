@@ -54,6 +54,11 @@ SIG Release Slack thread:
   - [ ] test image
   - [ ] `.go-version` file
 
+
+> **Note**
+> This update may require an update to go.sum files, for example: https://github.com/kubernetes/kubernetes/pull/118507
+> This will require an API Review approval.
+
 #### After go-runner image promotion
 
 <!-- Example: https://github.com/kubernetes/release/pull/2920 -->
