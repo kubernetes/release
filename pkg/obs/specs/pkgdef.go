@@ -21,7 +21,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"text/template"
+
+	template "github.com/google/safetext/yamltemplate"
 
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"

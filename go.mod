@@ -12,6 +12,7 @@ require (
 	github.com/golang/protobuf v1.5.3
 	github.com/google/go-containerregistry v0.15.2
 	github.com/google/go-github/v50 v50.2.0
+	github.com/google/safetext v0.0.0-20230106111101-7156a760e523
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/in-toto/in-toto-golang v0.9.0
