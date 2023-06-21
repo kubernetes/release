@@ -79,6 +79,7 @@ type stringList []string
 func (ss *stringList) String() string {
 	return strings.Join(*ss, ",")
 }
+
 func (ss *stringList) Set(v string) error {
 	*ss = strings.Split(v, ",")
 	return nil
@@ -206,7 +207,7 @@ func (c cfg) run() error {
 	dstParts := []string{"bin", string(c.Channel), c.DistroName}
 
 	dstPath := filepath.Join(dstParts...)
-	os.MkdirAll(dstPath, 0777)
+	os.MkdirAll(dstPath, 0o777)
 
 	fileName := fmt.Sprintf("%s_%s-%s_%s.deb", c.Package, c.Version, c.Revision, c.DebArch)
 	err = runCommand("", "mv", filepath.Join("/tmp", fileName), dstPath)
