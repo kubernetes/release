@@ -383,10 +383,11 @@ dependencies:
       match: OS_CODENAME\ \?=\ bullseye
     - path: images/build/cross/variants.yaml
       match: "OS_CODENAME: 'bullseye'"
-    - path: images/build/debian-base/Makefile
-      match: CONFIG\ \?=\ bullseye
-    - path: images/build/debian-base/variants.yaml
-      match: "CONFIG: 'bullseye'"
+    # TODO: revert once all images are on bookworm
+    # - path: images/build/debian-base/Makefile
+    #   match: CONFIG\ \?=\ bullseye
+    # - path: images/build/debian-base/variants.yaml
+    #   match: "CONFIG: 'bullseye'"
     - path: images/build/debian-iptables/Makefile
       match: CONFIG\ \?=\ bullseye
     - path: images/build/debian-iptables/variants.yaml
@@ -410,26 +411,27 @@ dependencies:
       match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-bullseye
 
   - name: "Debian: codename (next candidate)"
-    version: bullseye
+    version: bookworm
     refPaths:
-    - path: images/build/cross/variants.yaml
-      match: "OS_CODENAME: 'bullseye'"
+    # TODO: revert once all images are on bookworm
+    # - path: images/build/cross/variants.yaml
+    #   match: "OS_CODENAME: 'bullseye'"
     - path: images/build/debian-base/variants.yaml
-      match: "CONFIG: 'bullseye'"
-    - path: images/build/go-runner/variants.yaml
-      match: "OS_CODENAME: 'bullseye'"
-    - path: images/releng/ci/variants.yaml
-      match: "OS_CODENAME: 'bullseye'"
-    - path: images/releng/k8s-ci-builder/variants.yaml
-      match: "OS_CODENAME: 'bullseye'"
+      match: "CONFIG: 'bookworm'"
+    # - path: images/build/go-runner/variants.yaml
+    #   match: "OS_CODENAME: 'bullseye'"
+    # - path: images/releng/ci/variants.yaml
+    #   match: "OS_CODENAME: 'bullseye'"
+    # - path: images/releng/k8s-ci-builder/variants.yaml
+    #   match: "OS_CODENAME: 'bullseye'"
 
   - name: "registry.k8s.io/build-image/debian-base"
-    version: bullseye-v1.4.3
+    version: bookworm-v1.0.0
     refPaths:
     - path: images/build/debian-base/Makefile
-      match: IMAGE_VERSION\ \?=\ bullseye-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
+      match: IMAGE_VERSION\ \?=\ bookworm-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
     - path: images/build/debian-base/variants.yaml
-      match: "IMAGE_VERSION: 'bullseye-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
+      match: "IMAGE_VERSION: 'bookworm-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/debian-base: dependents"
     version: bullseye-v1.4.3
@@ -475,10 +477,10 @@ dependencies:
 
   # Base images (next candidate)
   - name: "registry.k8s.io/build-image/debian-base (next candidate)"
-    version: bullseye-v1.4.3
+    version: bookworm-v1.0.0
     refPaths:
     - path: images/build/debian-base/variants.yaml
-      match: "IMAGE_VERSION: 'bullseye-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
+      match: "IMAGE_VERSION: 'bookworm-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/debian-base: dependents (next candidate)"
     version: bullseye-v1.4.3

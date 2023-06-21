@@ -19,8 +19,8 @@ IMAGE ?= $(REGISTRY)/debian-base
 BUILD_IMAGE ?= debian-build
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= bullseye-v1.4.3
-CONFIG ?= bullseye
+IMAGE_VERSION ?= bookworm-v1.0.0
+CONFIG ?= bookworm
 
 TAR_FILE ?= rootfs.tar
 ARCH ?= amd64
