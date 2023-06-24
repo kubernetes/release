@@ -1,7 +1,7 @@
 # See https://github.com/kubernetes/test-infra/blob/master/config/jobs/image-pushing/README.md for more details on image pushing process
 
 # this must be specified in seconds. If omitted, defaults to 600s (10 mins)
-timeout: 1200s
+timeout: 3600s
 
 # this prevents errors if you don't use both _GIT_TAG and _PULL_BASE_REF,
 # or any new substitutions added in the future.
@@ -10,16 +10,14 @@ options:
   machineType: 'N1_HIGHCPU_8'
 
 steps:
-  - name: 'gcr.io/projectsigstore/cosign:v2.0.2@sha256:a95d7c4ab27e48aaf89253e0703014709129f010578be809b6c95ccee908fa1b'
+  - name: 'ghcr.io/sigstore/cosign/cosign:v2.1.1@sha256:411ace177097a33cb2ee74028a87ffdcb70965003cd1378c1ec7bf9f9dec9359'
     dir: ./images/build/go-runner
     env:
       - TUF_ROOT=/tmp
     args:
       - 'verify'
-      - '--certificate-oidc-issuer'
-      - 'https://accounts.google.com'
-      - '--certificate-identity'
-      - 'keyless@distroless.iam.gserviceaccount.com'
+      - '--certificate-oidc-issuer=https://accounts.google.com'
+      - '--certificate-identity=keyless@distroless.iam.gserviceaccount.com'
       - 'gcr.io/distroless/$_DISTROLESS_IMAGE'
 
   - name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v20210917-12df099d55'
