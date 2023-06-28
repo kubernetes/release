@@ -71,6 +71,7 @@ const patchReleaseExpectedContent = `# v1.25.3
 - github.com/vmware/vmw-guestinfo: [25eff15](https://github.com/vmware/vmw-guestinfo/tree/25eff15)
 
 ### Changed
+- github.com/google/cadvisor: [v0.45.0 → v0.45.1](https://github.com/google/cadvisor/compare/v0.45.0...v0.45.1)
 - github.com/google/cel-go: [v0.12.5 → v0.12.6](https://github.com/google/cel-go/compare/v0.12.5...v0.12.6)
 - github.com/google/uuid: [v1.1.2 → v1.3.0](https://github.com/google/uuid/compare/v1.1.2...v1.3.0)
 - github.com/kr/pretty: [v0.2.1 → v0.3.0](https://github.com/kr/pretty/compare/v0.2.1...v0.3.0)
@@ -153,6 +154,7 @@ const patchReleaseExpectedHTML = `<!DOCTYPE html>
 </ul>
 <h3>Changed</h3>
 <ul>
+<li>github.com/google/cadvisor: <a href="https://github.com/google/cadvisor/compare/v0.45.0...v0.45.1">v0.45.0 → v0.45.1</a></li>
 <li>github.com/google/cel-go: <a href="https://github.com/google/cel-go/compare/v0.12.5...v0.12.6">v0.12.5 → v0.12.6</a></li>
 <li>github.com/google/uuid: <a href="https://github.com/google/uuid/compare/v1.1.2...v1.3.0">v1.1.2 → v1.3.0</a></li>
 <li>github.com/kr/pretty: <a href="https://github.com/kr/pretty/compare/v0.2.1...v0.3.0">v0.2.1 → v0.3.0</a></li>
