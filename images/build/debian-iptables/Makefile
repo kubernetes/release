@@ -18,9 +18,9 @@ REGISTRY?="gcr.io/k8s-staging-build-image"
 IMAGE=$(REGISTRY)/debian-iptables
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= bullseye-v1.5.7
-CONFIG ?= bullseye
-DEBIAN_BASE_VERSION ?= bullseye-v1.4.3
+IMAGE_VERSION ?= bookworm-v1.0.0
+CONFIG ?= bookworm
+DEBIAN_BASE_VERSION ?= bookworm-v1.0.0
 GORUNNER_VERSION ?= v2.3.1-go1.20.5-bullseye.0
 
 ARCH?=amd64
