@@ -19,6 +19,3 @@ $ make all-push
 ```
 
 If you don't want to push the images, run `make build ARCH={target_arch}` or `make all-build` instead
-
-
-[![Analytics](https://kubernetes-site.appspot.com/UA-36037335-10/GitHub/build/debian-iptables/README.md?pixel)]()
