@@ -151,13 +151,13 @@ dependencies:
       match: REVISION:\ '\d+'
 
   # go-runner
-  - name: "registry.k8s.io/build-image/go-runner (go1.21-bullseye)"
-    version: v2.3.1-go1.21rc2-bullseye.0
+  - name: "registry.k8s.io/build-image/go-runner (go1.21-bookworm)"
+    version: v2.3.1-go1.21rc2-bookworm.0
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
-  - name: "registry.k8s.io/build-image/go-runner: image revision (go1.21-bullseye)"
+  - name: "registry.k8s.io/build-image/go-runner: image revision (go1.21-bookworm)"
     version: 0
     refPaths:
     - path: images/build/go-runner/Makefile
@@ -165,13 +165,13 @@ dependencies:
     - path: images/build/go-runner/variants.yaml
       match: REVISION:\ '\d+'
 
-  - name: "registry.k8s.io/build-image/go-runner (go1.20-bullseye)"
-    version: v2.3.1-go1.20.5-bullseye.0
+  - name: "registry.k8s.io/build-image/go-runner (go1.20-bookworm)"
+    version: v2.3.1-go1.20.5-bookworm.0
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
-  - name: "registry.k8s.io/build-image/go-runner: image revision (go1.20-bullseye)"
+  - name: "registry.k8s.io/build-image/go-runner: image revision (go1.20-bookworm)"
     version: 0
     refPaths:
     - path: images/build/go-runner/Makefile
@@ -179,13 +179,13 @@ dependencies:
     - path: images/build/go-runner/variants.yaml
       match: REVISION:\ '\d+'
 
-  - name: "registry.k8s.io/build-image/go-runner (go1.19-bullseye)"
-    version: v2.3.1-go1.19.10-bullseye.0
+  - name: "registry.k8s.io/build-image/go-runner (go1.19-bookworm)"
+    version: v2.3.1-go1.19.10-bookworm.0
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
-  - name: "registry.k8s.io/build-image/go-runner: image revision (go1.19-bullseye)"
+  - name: "registry.k8s.io/build-image/go-runner: image revision (go1.19-bookworm)"
     version: 0
     refPaths:
     - path: images/build/go-runner/Makefile
@@ -427,10 +427,11 @@ dependencies:
     - path: images/build/debian-iptables/variants.yaml
       match: "CONFIG: 'bullseye'"
     # Must match distroless Debian version as well
-    - path: images/build/go-runner/Makefile
-      match: OS_CODENAME\ \?=\ bullseye
-    - path: images/build/go-runner/variants.yaml
-      match: "OS_CODENAME: 'bullseye'"
+    # TODO: revert once all images are on bookworm
+    # - path: images/build/go-runner/Makefile
+    #   match: OS_CODENAME\ \?=\ bullseye
+    # - path: images/build/go-runner/variants.yaml
+    #   match: "OS_CODENAME: 'bullseye'"
     - path: images/build/setcap/Makefile
       match: CONFIG\ \?=\ bullseye
     - path: images/build/setcap/variants.yaml
