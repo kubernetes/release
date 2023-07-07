@@ -25,7 +25,6 @@ linters:
     - bodyclose
     - contextcheck
     - decorder
-    - depguard
     - dogsled
     - dupl
     - durationcheck
