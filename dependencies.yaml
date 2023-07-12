@@ -436,8 +436,8 @@ dependencies:
     #  match: CONFIG\ \?=\ bullseye
     # - path: images/build/setcap/variants.yaml
     #   match: "CONFIG: 'bullseye'"
-    - path: images/releng/ci/variants.yaml
-      match: "OS_CODENAME: 'bullseye'"
+    # - path: images/releng/ci/variants.yaml
+    #   match: "OS_CODENAME: 'bullseye'"
     - path: images/releng/k8s-ci-builder/Makefile
       match: OS_CODENAME\ \?=\ bullseye
     - path: images/releng/k8s-ci-builder/variants.yaml
