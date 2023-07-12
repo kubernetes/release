@@ -1,6 +1,0 @@
-variants:
-  bookworm:
-    CONFIG: 'bookworm'
-    IMAGE_VERSION: 'bookworm-v1.0.0'
-    DEBIAN_BASE_VERSION: 'bookworm-v1.0.0'
-    GORUNNER_VERSION: 'v2.3.1-go1.20.5-bullseye.0'
