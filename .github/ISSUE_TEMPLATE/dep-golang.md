@@ -62,12 +62,6 @@ SIG Release Slack thread:
 #### After go-runner image promotion
 
 <!-- Example: https://github.com/kubernetes/release/pull/2920 -->
-- [ ] `debian-iptables` image update: 
-
-  <!-- Example: https://github.com/kubernetes/k8s.io/pull/3597 -->
-  - [ ] image promotion: 
-
-<!-- Example: https://github.com/kubernetes/release/pull/2920 -->
 - [ ] `distroless-iptables` image update: 
 
   <!-- Example: https://github.com/kubernetes/k8s.io/pull/4263 -->
