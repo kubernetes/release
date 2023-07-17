@@ -78,7 +78,7 @@ RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
     && apt-get install -y build-essential; \
 fi
 
-ARG PROTOBUF_VERSION
+ENV PROTOBUF_VERSION 23.4
 RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
   && if [ ${targetArch} = "amd64" ]; then \
   ZIPNAME="protoc-${PROTOBUF_VERSION}-linux-x86_64.zip"; \
