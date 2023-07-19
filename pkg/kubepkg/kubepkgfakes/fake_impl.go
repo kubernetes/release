@@ -21,7 +21,7 @@ import (
 	"io/fs"
 	"sync"
 
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v53/github"
 	"k8s.io/release/pkg/kubepkg"
 	"k8s.io/release/pkg/release"
 )
