@@ -27,8 +27,9 @@ RUN apt-get update && \
         bsdmainutils \
         build-essential \
         google-cloud-sdk \
-        jq && \
-    rm -rf /var/lib/apt/lists/*
+        jq \
+        rpmlint \
+    && rm -rf /var/lib/apt/lists/*
 
 # install goreleaser
 ARG GORELEASER_VERSION=v1.19.2
