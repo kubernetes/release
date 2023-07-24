@@ -1,0 +1,5 @@
+# Ignore "suse-filelist-forbidden-sysconfig" because we can't use "fillup" in
+# our specs. That's because we want to build on SUSE Linux, but use resulting
+# packages on other RPM-based operating systems. This is not possible if
+# "fillup" is used.
+setBadness('suse-filelist-forbidden-sysconfig', 0)
