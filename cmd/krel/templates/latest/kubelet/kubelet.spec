@@ -1,13 +1,5 @@
 %global debug_package %{nil}
 
-%if 0%{?suse_version}
-# Needed for SUSE SLE 12 GA used to build s390x package
-## Use the right path for sharedstatedir
-%global _sharedstatedir %{_localstatedir}/lib
-## Use the right path for _fillupdir when not defined
-%{!?_fillupdir:%global _fillupdir %{_localstatedir}/adm/fillup-templates}
-%endif
-
 Name: kubelet
 Version: {{ .RPMVersion }}
 Release: {{ .Revision }}
@@ -21,6 +13,7 @@ Packager: Kubernetes Authors <dev@kubernetes.io>
 License: Apache-2.0
 URL: https://kubernetes.io
 Source0: %{name}_%{version}.orig.tar.gz
+Source1: %{name}.rpmlintrc
 
 BuildRequires: systemd
 Requires: iptables >= 1.4.21
@@ -43,10 +36,6 @@ Requires: conntrack
 BuildRequires: systemd-deb-macros
 %else
 BuildRequires: systemd-rpm-macros
-%endif
-
-%if 0%{?suse_version}
-Requires(post,postun): %fillup_prereq
 %endif
 
 %description
@@ -77,13 +66,8 @@ touch %{buildroot}%{_sharedstatedir}/kubelet/.kubelet-keep
 touch %{buildroot}%{_sysconfdir}/kubernetes/manifests/.kubelet-keep
 %endif
 
-%if 0%{?suse_version}
-mkdir -p %{buildroot}%{_fillupdir}/
-install -p -m 644 -T kubelet.env %{buildroot}%{_fillupdir}/sysconfig.kubelet
-%else
 mkdir -p %{buildroot}%{_sysconfdir}/sysconfig/
 install -p -m 644 -T kubelet.env %{buildroot}%{_sysconfdir}/sysconfig/kubelet
-%endif
 
 %files
 %{_bindir}/kubelet
@@ -95,11 +79,7 @@ install -p -m 644 -T kubelet.env %{buildroot}%{_sysconfdir}/sysconfig/kubelet
 %{_sharedstatedir}/kubelet/.kubelet-keep
 %{_sysconfdir}/kubernetes/manifests/.kubelet-keep
 %endif
-%if 0%{?suse_version}
-%{_fillupdir}/sysconfig.kubelet
-%else
 %config(noreplace) %{_sysconfdir}/sysconfig/kubelet
-%endif
 %license LICENSE
 %doc README.md
 
@@ -107,9 +87,6 @@ install -p -m 644 -T kubelet.env %{buildroot}%{_sysconfdir}/sysconfig/kubelet
 %systemd_preun kubelet.service
 
 %post
-%if 0%{?suse_version}
-%fillup_only kubelet
-%endif
 %systemd_post kubelet.service
 
 %postun
