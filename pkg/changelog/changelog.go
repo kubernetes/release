@@ -30,6 +30,7 @@ import (
 
 	"k8s.io/release/pkg/notes/options"
 	"sigs.k8s.io/release-sdk/git"
+	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-utils/util"
 )
 
@@ -137,9 +138,16 @@ func (c *Changelog) Run() error {
 			markdown, jsonStr, err = c.generateReleaseNotes(branch, startRev, endRev)
 		} else {
 			// New minor alpha, beta and rc releases get generated notes
-			latestTags, tErr := c.impl.LatestGitHubTagsPerBranch()
-			if tErr != nil {
-				return fmt.Errorf("get latest GitHub tags: %w", tErr)
+
+			var latestTags github.TagsPerBranch
+			if c.options.ReplayDir != "" {
+				// Do not access the API on replay
+				latestTags = github.TagsPerBranch{branch: c.options.Tag}
+			} else {
+				latestTags, err = c.impl.LatestGitHubTagsPerBranch()
+				if err != nil {
+					return fmt.Errorf("get latest GitHub tags: %w", err)
+				}
 			}
 
 			if startTag, ok := latestTags[branch]; ok {
