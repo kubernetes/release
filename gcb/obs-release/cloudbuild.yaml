@@ -80,7 +80,7 @@ steps:
   - "${_NOMOCK}"
   - "--log-level=${_LOG_LEVEL}"
   - "--packages=${_PACKAGES}"
-  - "--project=${_PROJECT}"
+  - "--project=${_OBS_PROJECT}"
 
 tags:
 - ${_GCP_USER_TAG}
@@ -91,7 +91,7 @@ tags:
 - ${_TYPE_TAG}
 - ${_TYPE}
 - ${_PACKAGES}
-- ${_PROJECT_TAG}
+- ${_OBS_PROJECT_TAG}
 
 options:
   machineType: E2_HIGHCPU_32
