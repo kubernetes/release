@@ -85,7 +85,7 @@ steps:
   # TODO(xmudrii) - followup: solve problem with delimiter
   # - "--architectures=${_ARCHITECTURES}"
   - "--version=${_VERSION}"
-  - "--project=${_PROJECT}"
+  - "--project=${_OBS_PROJECT}"
   - "--source=${_PACKAGE_SOURCE}"
 
 tags:
@@ -98,7 +98,7 @@ tags:
 - ${_TYPE}
 - ${_PACKAGES}
 - ${_VERSION}
-- ${_PROJECT_TAG}
+- ${_OBS_PROJECT_TAG}
 
 options:
   machineType: E2_HIGHCPU_32
