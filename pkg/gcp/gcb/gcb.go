@@ -108,7 +108,7 @@ type Options struct {
 	Packages         []string
 	Version          string
 	Architectures    []string
-	Project          string
+	OBSProject       string
 	PackageSource    string
 }
 
@@ -395,16 +395,16 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket string) 
 		//nolint:gocritic // This needs some fixes that will be done in a follow-up
 		// gcbSubs["ARCHITECTURES"] = strings.Join(g.options.Architectures, ",")
 		gcbSubs["VERSION"] = g.options.Version
-		gcbSubs["PROJECT"] = g.options.Project
-		gcbSubs["PROJECT_TAG"] = strings.ReplaceAll(g.options.Project, ":", "-")
+		gcbSubs["OBS_PROJECT"] = g.options.OBSProject
+		gcbSubs["OBS_PROJECT_TAG"] = strings.ReplaceAll(g.options.OBSProject, ":", "-")
 		gcbSubs["PACKAGE_SOURCE"] = g.options.PackageSource
 
 		// Stop here when doing OBS stage
 		return gcbSubs, nil
 	case g.options.OBSRelease:
 		gcbSubs["PACKAGES"] = strings.Join(g.options.Packages, ",")
-		gcbSubs["PROJECT"] = g.options.Project
-		gcbSubs["PROJECT_TAG"] = strings.ReplaceAll(g.options.Project, ":", "-")
+		gcbSubs["OBS_PROJECT"] = g.options.OBSProject
+		gcbSubs["OBS_PROJECT_TAG"] = strings.ReplaceAll(g.options.OBSProject, ":", "-")
 
 		// Stop here when doing OBS release
 		return gcbSubs, nil
