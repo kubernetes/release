@@ -171,7 +171,7 @@ func (d *DefaultRelease) Submit(stream bool) error {
 	// Required to determine kube-cross version
 	options.Branch = d.options.ReleaseBranch
 	options.Packages = d.options.Packages
-	options.Project = d.options.Project
+	options.OBSProject = d.options.Project
 
 	return d.impl.Submit(options)
 }
