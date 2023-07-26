@@ -227,7 +227,7 @@ func (d *DefaultStage) Submit(stream bool) error {
 	options.Packages = d.options.Packages
 	options.Architectures = d.options.Architectures
 	options.Version = d.options.Version
-	options.Project = d.options.Project
+	options.OBSProject = d.options.Project
 	options.PackageSource = d.options.PackageSource
 
 	return d.impl.Submit(options)
