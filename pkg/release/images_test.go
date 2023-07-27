@@ -24,17 +24,21 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/release/releasefakes"
 )
 
 func TestPublish(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
+		name        string
 		prepare     func(*releasefakes.FakeImageImpl) (buildPath string, cleanup func())
 		shouldError bool
 	}{
-		{ // success
+		{
+			name: "success",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -45,7 +49,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: false,
 		},
-		{ // success skipping wrong dirs/files
+		{
+			name: "success skipping wrong dirs/files",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -68,7 +73,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: false,
 		},
-		{ // success no images
+		{
+			name: "success no images",
 			prepare: func(*releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				return tempDir, func() {
@@ -77,7 +83,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: false,
 		},
-		{ // failure on docker load
+		{
+			name: "failure on docker load",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -90,7 +97,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure on docker tag
+		{
+			name: "failure on docker tag",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -103,7 +111,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure on docker push
+		{
+			name: "failure on docker push",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -116,7 +125,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure on docker rmi
+		{
+			name: "failure on docker rmi",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -129,7 +139,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure on docker manifest create
+		{
+			name: "failure on docker manifest create",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -142,7 +153,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure on docker manifest annotate
+		{
+			name: "failure on docker manifest annotate",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -155,12 +167,21 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure on docker manifest push
+		{
+			name: "failure on docker manifest push",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
-				mock.ExecuteReturnsOnCall(40, errors.New(""))
+				i := 0
+				mock.ExecuteCalls(func(cmd string, args ...string) error {
+					// There is an ExponentialBackoff which we have to overcome
+					if i == 40 {
+						return errors.New("")
+					}
+					i++
+					return nil
+				})
 
 				return tempDir, func() {
 					require.Nil(t, os.RemoveAll(tempDir))
@@ -168,7 +189,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure get repo tag from tarball
+		{
+			name: "failure get repo tag from tarball",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -181,7 +203,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure wrong repo tag from tarball
+		{
+			name: "failure wrong repo tag from tarball",
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
@@ -194,7 +217,8 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure no images-path
+		{
+			name: "failure no images-path",
 			prepare: func(*releasefakes.FakeImageImpl) (string, func()) {
 				tempDir, err := os.MkdirTemp("", "publish-test-")
 				require.Nil(t, err)
@@ -204,49 +228,56 @@ func TestPublish(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		// TODO: bypassing this for now due to the fail in the promotion process
-		// that sign the images. We will release the Feb/2023 patch releases without full
-		// signatures but we will sign those in a near future in a deatached process
-		// revert this change when the patches are out
-		// { // failure on sign image
-		// 	prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
-		// 		tempDir := newImagesPath(t)
-		// 		prepareImages(t, tempDir, mock)
-		//
-		// 		mock.SignImageReturns(errors.New(""))
-		//
-		// 		return tempDir, func() {
-		// 			require.Nil(t, os.RemoveAll(tempDir))
-		// 		}
-		// 	},
-		// 	shouldError: true,
-		// },
-		// { // failure on sign manifest
-		// 	prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
-		// 		tempDir := newImagesPath(t)
-		// 		prepareImages(t, tempDir, mock)
-		//
-		// 		mock.SignImageReturnsOnCall(10, errors.New(""))
-		//
-		// 		return tempDir, func() {
-		// 			require.Nil(t, os.RemoveAll(tempDir))
-		// 		}
-		// 	},
-		// 	shouldError: true,
-		// },
-	} {
-		sut := release.NewImages()
-		clientMock := &releasefakes.FakeImageImpl{}
-		sut.SetImpl(clientMock)
-		buildPath, cleanup := tc.prepare(clientMock)
+		{
+			name: "failure on sign image",
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
+				tempDir := newImagesPath(t)
+				prepareImages(t, tempDir, mock)
 
-		err := sut.Publish(release.GCRIOPathProd, "v1.18.9", buildPath)
-		if tc.shouldError {
-			require.NotNil(t, err)
-		} else {
-			require.Nil(t, err)
-		}
-		cleanup()
+				mock.SignImageReturns(errors.New(""))
+
+				return tempDir, func() {
+					require.Nil(t, os.RemoveAll(tempDir))
+				}
+			},
+			shouldError: true,
+		},
+		{
+			name: "failure on sign manifest",
+			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
+				tempDir := newImagesPath(t)
+				prepareImages(t, tempDir, mock)
+
+				mock.SignImageReturnsOnCall(10, errors.New(""))
+
+				return tempDir, func() {
+					require.Nil(t, os.RemoveAll(tempDir))
+				}
+			},
+			shouldError: true,
+		},
+	} {
+		prepare := tc.prepare
+		shouldError := tc.shouldError
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			sut := release.NewImages()
+			clientMock := &releasefakes.FakeImageImpl{}
+			sut.SetImpl(clientMock)
+
+			buildPath, cleanup := prepare(clientMock)
+			defer cleanup()
+
+			err := sut.Publish(release.GCRIOPathProd, "v1.18.9", buildPath)
+
+			if shouldError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
 	}
 }
 
