@@ -24,6 +24,6 @@ kubelet:
       - name: kubernetes-cni
         versionConstraint: ">= 1.2.0"
 kubernetes-cni:
-  - versionConstraint: ">= 1.0.0"
+  - versionConstraint: ">= 0.8.7"
     sourceURLTemplate: "gs://k8s-artifacts-cni/release/v{{ .PackageVersion }}/cni-plugins-linux-{{ .Architecture }}-v{{ .PackageVersion }}.tgz"
     sourceTarGz: true
