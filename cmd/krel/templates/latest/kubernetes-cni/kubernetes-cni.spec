@@ -15,8 +15,6 @@ License: Apache-2.0
 URL: https://kubernetes.io
 Source0: %{name}_%{version}.orig.tar.gz
 
-Requires: kubelet
-
 %description
 %{summary}.
 
