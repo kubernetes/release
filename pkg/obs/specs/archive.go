@@ -119,6 +119,9 @@ func (s *Specs) DownloadArtifactFromGCS(sourcePath, destPath string, extractTgz 
 		if err := s.impl.Extract(destPath, filepath.Dir(destPath)); err != nil {
 			return fmt.Errorf("extracting .tar.gz archive: %w", err)
 		}
+		if err := s.impl.RemoveFile(destPath); err != nil {
+			return fmt.Errorf("removing extracted archive: %w", err)
+		}
 	}
 
 	return nil
