@@ -16,7 +16,7 @@ Source0: %{name}_%{version}.orig.tar.gz
 
 {{ range $dep := .Metadata.Dependencies }}
 Requires: {{ $dep.Name }} {{ $dep.VersionConstraint }}
-{{- end }}
+{{ end }}
 
 %if "%{_vendor}" == "debbuild"
 BuildRequires: systemd-deb-macros
