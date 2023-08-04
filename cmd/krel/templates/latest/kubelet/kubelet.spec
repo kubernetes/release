@@ -19,7 +19,7 @@ BuildRequires: systemd
 Requires: iptables >= 1.4.21
 {{ range $dep := .Metadata.Dependencies }}
 Requires: {{ $dep.Name }} {{ $dep.VersionConstraint }}
-{{- end }}
+{{ end }}
 %if "%{_vendor}" == "debbuild"
 Requires: iproute2
 Requires: mount

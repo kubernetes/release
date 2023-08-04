@@ -3,26 +3,85 @@ cri-tools:
     sourceURLTemplate: "gs://k8s-artifacts-cri-tools/release/v{{ .PackageVersion }}/crictl-v{{ .PackageVersion }}-linux-{{ .Architecture }}.tar.gz"
     sourceTarGz: true
 kubeadm:
-  - versionConstraint: ">= 1.0.0"
+  - versionConstraint: ">= 1.24.0 < 1.24.2"
     sourceURLTemplate: "{{ KubernetesURL }}"
     dependencies:
       - name: kubelet
-        versionConstraint: ">= 1.13.0"
+        versionConstraint: ">= 1.19.0"
       - name: kubectl
-        versionConstraint: ">= 1.13.0"
+        versionConstraint: ">= 1.19.0"
       - name: kubernetes-cni
-        versionConstraint: ">= 1.2.0"
+        versionConstraint: ">= 0.8.7"
       - name: cri-tools
-        versionConstraint: ">= 1.26.0"
+        versionConstraint: ">= 1.23.0"
+  - versionConstraint: ">= 1.24.2 < 1.24.5"
+    sourceURLTemplate: "{{ KubernetesURL }}"
+    dependencies:
+      - name: kubelet
+        versionConstraint: ">= 1.19.0"
+      - name: kubectl
+        versionConstraint: ">= 1.19.0"
+      - name: kubernetes-cni
+        versionConstraint: ">= 0.8.7"
+      - name: cri-tools
+        versionConstraint: ">= 1.24.2"
+  - versionConstraint: ">= 1.24.5 < 1.25.0"
+    sourceURLTemplate: "{{ KubernetesURL }}"
+    dependencies:
+      - name: kubelet
+        versionConstraint: ">= 1.19.0"
+      - name: kubectl
+        versionConstraint: ">= 1.19.0"
+      - name: kubernetes-cni
+        versionConstraint: ">= 1.1.1"
+      - name: cri-tools
+        versionConstraint: ">= 1.25.0"
+  - versionConstraint: "1.25.0"
+    sourceURLTemplate: "{{ KubernetesURL }}"
+    dependencies:
+      - name: kubelet
+        versionConstraint: ">= 1.19.0"
+      - name: kubectl
+        versionConstraint: ">= 1.19.0"
+      - name: kubernetes-cni
+        versionConstraint: ">= 0.8.7"
+      - name: cri-tools
+        versionConstraint: ">= 1.24.2"
+  - versionConstraint: ">= 1.25.1"
+    sourceURLTemplate: "{{ KubernetesURL }}"
+    dependencies:
+      - name: kubelet
+        versionConstraint: ">= 1.19.0"
+      - name: kubectl
+        versionConstraint: ">= 1.19.0"
+      - name: kubernetes-cni
+        versionConstraint: ">= 1.1.1"
+      - name: cri-tools
+        versionConstraint: ">= 1.25.0"
 kubectl:
   - versionConstraint: ">= 1.0.0"
     sourceURLTemplate: "{{ KubernetesURL }}"
 kubelet:
-  - versionConstraint: ">= 1.0.0"
+  - versionConstraint: ">= 1.24.0 < 1.24.5"
     sourceURLTemplate: "{{ KubernetesURL }}"
     dependencies:
       - name: kubernetes-cni
-        versionConstraint: ">= 1.2.0"
+        versionConstraint: ">= 0.8.7"
+  - versionConstraint: ">= 1.24.5 < 1.25.0"
+    sourceURLTemplate: "{{ KubernetesURL }}"
+    dependencies:
+      - name: kubernetes-cni
+        versionConstraint: ">= 1.1.1"
+  - versionConstraint: "1.25.0"
+    sourceURLTemplate: "{{ KubernetesURL }}"
+    dependencies:
+      - name: kubernetes-cni
+        versionConstraint: ">= 0.8.7"
+  - versionConstraint: ">= 1.25.1"
+    sourceURLTemplate: "{{ KubernetesURL }}"
+    dependencies:
+      - name: kubernetes-cni
+        versionConstraint: ">= 1.1.1"
 kubernetes-cni:
   - versionConstraint: ">= 0.8.7"
     sourceURLTemplate: "gs://k8s-artifacts-cni/release/v{{ .PackageVersion }}/cni-plugins-linux-{{ .Architecture }}-v{{ .PackageVersion }}.tgz"
