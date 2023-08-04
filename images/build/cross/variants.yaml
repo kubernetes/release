@@ -2,9 +2,9 @@ variants:
   v1.28-go1.21-bookworm:
     CONFIG: 'go1.21-bookworm'
     TYPE: 'default'
-    IMAGE_VERSION: 'v1.28.0-go1.21rc3-bookworm.0'
+    IMAGE_VERSION: 'v1.28.0-go1.21rc4-bookworm.0'
     KUBERNETES_VERSION: 'v1.28.0'
-    GO_VERSION: '1.21rc3'
+    GO_VERSION: '1.21rc4'
     GO_MAJOR_VERSION: '1.21'
     OS_CODENAME: 'bookworm'
     REVISION: '0'
