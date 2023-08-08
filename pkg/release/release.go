@@ -130,7 +130,7 @@ const (
 	ArchivePath = "archive"
 
 	// Publishing bot issue repository
-	PubBotRepoOrg  = "k8s-release-robot"
+	PubBotRepoOrg  = "kubernetes"
 	PubBotRepoName = "sig-release"
 
 	DockerHubEnvKey   = "DOCKERHUB_TOKEN" // Env var containing the docker key
@@ -475,6 +475,7 @@ func CreatePubBotBranchIssue(branchName string) error {
 	issueBody += "Please update the publishing-bot's configuration to also publish this new branch.\n\n"
 	issueBody += "/sig release\n"
 	issueBody += "/area release-eng\n"
+	issueBody += "/assign @kubernetes/release-managers\n"
 	issueBody += "/milestone v" + strings.TrimPrefix(branchName, "release-") + "\n"
 
 	// Create the issue on GitHub
