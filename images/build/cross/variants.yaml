@@ -8,6 +8,7 @@ variants:
     GO_MAJOR_VERSION: '1.21'
     OS_CODENAME: 'bookworm'
     REVISION: '0'
+    PROTOBUF_VERSION: '3.19.4'
   v1.27-go1.20-bullseye:
     CONFIG: 'go1.20-bullseye'
     TYPE: 'default'
@@ -17,6 +18,7 @@ variants:
     GO_MAJOR_VERSION: '1.20'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
+    PROTOBUF_VERSION: '3.19.4'
   v1.26-go1.20-bullseye:
     CONFIG: 'go1.20-bullseye'
     TYPE: 'default'
@@ -26,6 +28,7 @@ variants:
     GO_MAJOR_VERSION: '1.20'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
+    PROTOBUF_VERSION: '3.19.4'
   v1.25-go1.20-bullseye:
     CONFIG: 'go1.20-bullseye'
     TYPE: 'default'
@@ -35,6 +38,7 @@ variants:
     GO_MAJOR_VERSION: '1.20'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
+    PROTOBUF_VERSION: '3.19.4'
   v1.24-go1.20-bullseye:
     CONFIG: 'go1.20-bullseye'
     TYPE: 'default'
@@ -44,3 +48,4 @@ variants:
     GO_MAJOR_VERSION: '1.20'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
+    PROTOBUF_VERSION: '3.19.4'
