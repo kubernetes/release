@@ -1,11 +1,11 @@
 variants:
   go1.21-bullseye:
     CONFIG: 'go1.21-bullseye'
-    IMAGE_VERSION: 'v2.3.1-go1.21rc4-bullseye.0'
+    IMAGE_VERSION: 'v2.3.1-go1.21.0-bullseye.0'
     GO_MAJOR_VERSION: '1.21'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
-    GO_VERSION: '1.21rc4'
+    GO_VERSION: '1.21.0'
     DISTROLESS_IMAGE: 'static-debian11'
   go1.20-bullseye:
     CONFIG: 'go1.20-bullseye'
