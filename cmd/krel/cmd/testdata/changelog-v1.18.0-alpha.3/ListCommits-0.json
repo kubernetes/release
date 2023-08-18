@@ -4577,7 +4577,7 @@
      "name": "GitHub",
      "email": "noreply@github.com"
     },
-    "message": "Reduce default CPU requirement for konnectivity server\n\nOur network proxy [e2e job](https://k8s-testgrid.appspot.com/sig-api-machinery-network-proxy#ci-kubernetes-e2e-gci-gce-network-proxy) is failing because we are requesting more resources than available on the system. \r\n\r\nThe test clusters are consuming exactly 970m CPU resources without the konnectivity-server pod. Requesting 40m exceeds the 1000m limit and causes all tests to fail.",
+    "message": "Reduce default CPU requirement for konnectivity server\n\nOur network proxy [e2e job](https://testgrid.k8s.io/sig-api-machinery-network-proxy#ci-kubernetes-e2e-gci-gce-network-proxy) is failing because we are requesting more resources than available on the system. \r\n\r\nThe test clusters are consuming exactly 970m CPU resources without the konnectivity-server pod. Requesting 40m exceeds the 1000m limit and causes all tests to fail.",
     "tree": {
      "sha": "0f548fba2f123336c44682f1affbb2034f45746a"
     },
@@ -4586,7 +4586,7 @@
      "verified": true,
      "reason": "valid",
      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJeNHXBCRBK7hj4Ov3rIwAAdHIIABrdbBjW8GmkA+CTliKNP6Vw\nflzCVkZB+mNn0A1/qrVNiUOg7gFwC0k49dbzJIh9zjjnB+K1AyP+O5vHAbipP9A/\nr8zHXnwshm5fAADiZGkI0IEn/zOYgWUxB6FVLHWfMPnH+EugTpf6iwkZQp4CKA/n\n/I303KG6pILMSJGWAEByDAgF5aJ44uI103R+e5oTEKZPtSy+IyQrsTHflgK/kdVK\nqe7OnaR18y95P5QPT3RjHnJGvImi/aFgkvSoVSuDFZDVcoMWHr4DYJTU1xclB1Xh\n2ZxfhaMzcKa9kb6C2VogUdJnjcCXLd7tBW9ddQB1dub0VOsO2I2rU2iV7UQaWi4=\n=sVQF\n-----END PGP SIGNATURE-----\n",
-     "payload": "tree 0f548fba2f123336c44682f1affbb2034f45746a\nparent b1aff7832d8ed78a013f5e0e4b9dc582734d622d\nauthor Jeffrey Ying \u003cjeffrey.ying86@live.com\u003e 1580496321 -0800\ncommitter GitHub \u003cnoreply@github.com\u003e 1580496321 -0800\n\nReduce default CPU requirement for konnectivity server\n\nOur network proxy [e2e job](https://k8s-testgrid.appspot.com/sig-api-machinery-network-proxy#ci-kubernetes-e2e-gci-gce-network-proxy) is failing because we are requesting more resources than available on the system. \r\n\r\nThe test clusters are consuming exactly 970m CPU resources without the konnectivity-server pod. Requesting 40m exceeds the 1000m limit and causes all tests to fail."
+     "payload": "tree 0f548fba2f123336c44682f1affbb2034f45746a\nparent b1aff7832d8ed78a013f5e0e4b9dc582734d622d\nauthor Jeffrey Ying \u003cjeffrey.ying86@live.com\u003e 1580496321 -0800\ncommitter GitHub \u003cnoreply@github.com\u003e 1580496321 -0800\n\nReduce default CPU requirement for konnectivity server\n\nOur network proxy [e2e job](https://testgrid.k8s.io/sig-api-machinery-network-proxy#ci-kubernetes-e2e-gci-gce-network-proxy) is failing because we are requesting more resources than available on the system. \r\n\r\nThe test clusters are consuming exactly 970m CPU resources without the konnectivity-server pod. Requesting 40m exceeds the 1000m limit and causes all tests to fail."
     },
     "comment_count": 0
    },
