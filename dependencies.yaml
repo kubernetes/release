@@ -57,12 +57,12 @@ dependencies:
 
   # Golang
   - name: "golang"
-    version: 1.20.7
+    version: 1.21
     refPaths:
     - path: Dockerfile-kubepkg
-      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bullseye|buster) AS builder
+      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bookworm|bullseye) AS builder
     - path: Dockerfile-kubepkg-rpm
-      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bullseye|buster) AS builder
+      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bookworm|bullseye) AS builder
     - path: images/build/cross/Makefile
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
     - path: images/build/cross/variants.yaml
@@ -74,7 +74,7 @@ dependencies:
     - path: images/releng/ci/variants.yaml
       match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
     - path: packages/deb/Dockerfile
-      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-bullseye
+      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bookworm|bullseye)
 
   # Golang pre-releases are denoted as `1.y<pre-release stage>.z`
   # Example: go1.17rc1
@@ -82,7 +82,7 @@ dependencies:
   # This entry is a stub of the major version to allow dependency checks to
   # pass when building Kubernetes using a pre-release of Golang.
   - name: "golang: 1.<major>"
-    version: 1.20
+    version: 1.21
     refPaths:
     - path: images/build/cross/Makefile
       match: GO_MAJOR_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -129,7 +129,7 @@ dependencies:
   # - v1.100.0-go1.17-bullseye.0 satisfies SemVer regex, while:
   # - v1.100-go1.17-bullseye.0 does not
   - name: "Kubernetes version (stable.0)"
-    version: v1.27.0
+    version: v1.28.0
     refPaths:
     - path: images/build/cross/Makefile
       match: KUBERNETES_VERSION\ \?=\ v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -137,7 +137,7 @@ dependencies:
       match: "KUBERNETES_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "Kubernetes version (next candidate.0)"
-    version: v1.27.0
+    version: v1.28.0
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "KUBERNETES_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -150,7 +150,7 @@ dependencies:
 
   # go-runner
   - name: "registry.k8s.io/build-image/go-runner (go1.21-bullseye)"
-    version: v2.3.1-go1.21rc4-bullseye.0
+    version: v2.3.1-go1.21.0-bullseye.0
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -187,7 +187,7 @@ dependencies:
 
   # kube-cross
   - name: "registry.k8s.io/build-image/kube-cross (v1.28-go1.21)"
-    version: v1.28.0-go1.21rc4-bookworm.0
+    version: v1.28.0-go1.21.0-bookworm.0
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -318,7 +318,7 @@ dependencies:
 
   # Golang (next candidate)
   - name: "golang (next candidate)"
-    version: 1.21rc4
+    version: 1.21
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
@@ -408,11 +408,18 @@ dependencies:
       match: "version: v\\d+.\\d+?\\.?(\\d+)?"
 
   # Base images
+  # split until all are set to bookworm
+  - name: "Debian: codename (bookworm)"
+    version: bookworm
+    refPaths:
+    - path: images/build/cross/Makefile
+      match: OS_CODENAME\ \?=\ bookworm
+    - path: packages/deb/Dockerfile
+      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-bookworm
+
   - name: "Debian: codename (default)"
     version: bullseye
     refPaths:
-    - path: images/build/cross/Makefile
-      match: OS_CODENAME\ \?=\ bullseye
     - path: images/build/cross/variants.yaml
       match: "OS_CODENAME: 'bullseye'"
     # TODO: revert once all images are on bookworm
@@ -436,8 +443,7 @@ dependencies:
       match: OS_CODENAME\ \?=\ bullseye
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: "OS_CODENAME: 'bullseye'"
-    - path: packages/deb/Dockerfile
-      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-bullseye
+
 
   - name: "Debian: codename (next candidate)"
     version: bookworm
