@@ -25,14 +25,11 @@ Source0: %{name}_%{version}.orig.tar.gz
 # Nothing to build
 
 %install
-# Detect host arch
-KUBE_ARCH="$(uname -m)"
-
 # Install files
 mkdir -p %{buildroot}/opt/cni/bin
 mkdir -p %{buildroot}%{_sysconfdir}/cni/net.d/
 
-cp -a ${KUBE_ARCH}/* %{buildroot}/opt/cni/bin/
+cp -a %{_arch}/* %{buildroot}/opt/cni/bin/
 
 %if "%{_vendor}" == "debbuild"
 touch %{buildroot}%{_sysconfdir}/cni/net.d/.kubernetes-cni-keep

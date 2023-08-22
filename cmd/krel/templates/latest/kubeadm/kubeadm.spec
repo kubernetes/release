@@ -34,14 +34,11 @@ BuildRequires: systemd-rpm-macros
 # Nothing to build
 
 %install
-# Detect host arch
-KUBE_ARCH="$(uname -m)"
-
 # Install files
 mkdir -p %{buildroot}%{_bindir}
 mkdir -p %{buildroot}%{_unitdir}/kubelet.service.d/
 
-install -p -m 755 ${KUBE_ARCH}/kubeadm %{buildroot}%{_bindir}/kubeadm
+install -p -m 755 %{_arch}/kubeadm %{buildroot}%{_bindir}/kubeadm
 install -p -m 644 10-kubeadm.conf %{buildroot}%{_unitdir}/kubelet.service.d/10-kubeadm.conf
 
 %files

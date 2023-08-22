@@ -48,16 +48,13 @@ BuildRequires: systemd-rpm-macros
 # Nothing to build
 
 %install
-# Detect host arch
-KUBE_ARCH="$(uname -m)"
-
 # Install files
 mkdir -p %{buildroot}%{_unitdir}/
 mkdir -p %{buildroot}%{_bindir}/
 mkdir -p %{buildroot}%{_sharedstatedir}/kubelet/
 mkdir -p %{buildroot}%{_sysconfdir}/kubernetes/manifests/
 
-install -p -m 755 ${KUBE_ARCH}/kubelet %{buildroot}%{_bindir}/kubelet
+install -p -m 755 %{_arch}/kubelet %{buildroot}%{_bindir}/kubelet
 install -p -m 644 kubelet.service %{buildroot}%{_unitdir}/kubelet.service
 
 # Required because dpkg-deb doesn't keep empty directories

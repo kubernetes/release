@@ -24,12 +24,9 @@ Source0: %{name}_%{version}.orig.tar.gz
 # Nothing to build
 
 %install
-# Detect host arch
-KUBE_ARCH="$(uname -m)"
-
 # Install binaries
 mkdir -p %{buildroot}%{_bindir}
-install -p -m 755 ${KUBE_ARCH}/kubectl %{buildroot}%{_bindir}/kubectl
+install -p -m 755 %{_arch}/kubectl %{buildroot}%{_bindir}/kubectl
 
 %files
 %{_bindir}/kubectl
