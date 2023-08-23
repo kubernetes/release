@@ -121,5 +121,4 @@ Check out the rendering of 1.11's release notes [here](https://gist.github.com/m
 Right now the tool can output release notes in Markdown and JSON. The tool
 also supports arbitrary formats using go-templates. The template has access
 to fields in the `Document` struct. For an example, see the default markdown
-template (`pkg/notes/internal/template.go`) used to render the stock format.
-
+template ([pkg/notes/document/template.go](../../pkg/notes/document/template.go)) used to render the stock format.
