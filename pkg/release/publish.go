@@ -282,7 +282,17 @@ func (p *Publisher) VerifyLatestUpdate(
 		return false, fmt.Errorf("invalid GCS version format %s", gcsVersion)
 	}
 
-	if sv.LTE(gcsSemverVersion) {
+	// The version format that we use is:
+	//   - Stable: "v<major>.<minor>.<patch>-<number-of-commits>+<build-number>"
+	//   - Prerelease: "v<major>.<minor>.<patch>-<prerelease>.<number-of-commits>+<build-number>"
+	// blang/semver library considers "-<number-of-commits>" part as the prerelease part even though
+	// the version is stable. This is causing issues when we're supposed to bump the version marker
+	// from rc to stable.
+	// blang/semver models prerelease as a slice of prereleases, so stable releases
+	// are going to have one element (the number of commits), and prereleases are going to have three elements
+	// (alpha/beta/rc, number of prerelease, number of commits).
+	// We can use this to determine when we're switching from rc to stable and act accordingly.
+	if sv.LTE(gcsSemverVersion) && len(sv.Pre) >= len(gcsSemverVersion.Pre) {
 		logrus.Infof(
 			"Not updating version, because %s <= %s", version, gcsVersion,
 		)
