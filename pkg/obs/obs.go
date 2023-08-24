@@ -114,7 +114,7 @@ type Options struct {
 
 	/**
 	* Parameters used for non-core packages.
-	* Core packages are: kubeadm, kubectl, kubelet, cri-tools, kubernetes-cni.
+	* Non-core packages are: cri-o
 	**/
 
 	// Version of packages to build. Same version is used for all provided

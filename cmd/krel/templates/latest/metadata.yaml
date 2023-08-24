@@ -2,6 +2,10 @@ cri-tools:
   - versionConstraint: ">= 1.0.0"
     sourceURLTemplate: "gs://k8s-artifacts-cri-tools/release/v{{ .PackageVersion }}/crictl-v{{ .PackageVersion }}-linux-{{ .Architecture }}.tar.gz"
     sourceTarGz: true
+cri-o:
+  - versionConstraint: ">= 1.28.0"
+    sourceURLTemplate: "gs://cri-o/artifacts/cri-o.{{ .Architecture }}.v{{ .PackageVersion }}.tar.gz"
+    sourceTarGz: true
 kubeadm:
   - versionConstraint: ">= 1.24.0 < 1.24.2"
     sourceURLTemplate: "{{ KubernetesURL }}"

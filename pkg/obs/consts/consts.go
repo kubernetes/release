@@ -20,6 +20,7 @@ import "github.com/sirupsen/logrus"
 
 const (
 	PackageCRITools      string = "cri-tools"
+	PackageCRIO          string = "cri-o"
 	PackageKubeadm       string = "kubeadm"
 	PackageKubectl       string = "kubectl"
 	PackageKubelet       string = "kubelet"

@@ -70,6 +70,9 @@ func (s *Specs) BuildArtifactsArchive(pkgDef *PackageDefinition) error {
 		case consts.PackageCRITools:
 			dlPath = filepath.Join(dlRootPath, "cri-tools.tar.gz")
 			dlTarGz = true
+		case consts.PackageCRIO:
+			dlPath = filepath.Join(dlRootPath, "cri-o.tar.gz")
+			dlTarGz = true
 		default:
 			dlPath = filepath.Join(dlRootPath, pkgDef.Name)
 		}
