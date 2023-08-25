@@ -327,7 +327,6 @@ func TestPublishReleaseNotesIndex(t *testing.T) {
 }
 
 func TestVerifyLatestUpdate(t *testing.T) {
-	// err := errors.New("")
 	for _, tc := range []struct {
 		prepare     func(*releasefakes.FakePublisherClient, string)
 		version     string
@@ -337,7 +336,7 @@ func TestVerifyLatestUpdate(t *testing.T) {
 	}{
 		{ // success same version
 			prepare: func(mock *releasefakes.FakePublisherClient, gcsVersion string) {
-				mock.NormalizePath("", "")
+				mock.NormalizePathReturns("", nil)
 				mock.GSUtilOutputReturns(gcsVersion, nil)
 			},
 			version:     "v1.24.0",
@@ -348,7 +347,7 @@ func TestVerifyLatestUpdate(t *testing.T) {
 
 		{ // success version > gcsVersion (patch)
 			prepare: func(mock *releasefakes.FakePublisherClient, gcsVersion string) {
-				mock.NormalizePath("", "")
+				mock.NormalizePathReturns("", nil)
 				mock.GSUtilOutputReturns(gcsVersion, nil)
 			},
 			version:     "v1.24.1",
@@ -358,7 +357,7 @@ func TestVerifyLatestUpdate(t *testing.T) {
 		},
 		{ // success version < gcsVersion (patch)
 			prepare: func(mock *releasefakes.FakePublisherClient, gcsVersion string) {
-				mock.NormalizePath("", "")
+				mock.NormalizePathReturns("", nil)
 				mock.GSUtilOutputReturns(gcsVersion, nil)
 			},
 			version:     "v1.24.0",
@@ -369,7 +368,7 @@ func TestVerifyLatestUpdate(t *testing.T) {
 
 		{ // success version > gcsVersion (minor)
 			prepare: func(mock *releasefakes.FakePublisherClient, gcsVersion string) {
-				mock.NormalizePath("", "")
+				mock.NormalizePathReturns("", nil)
 				mock.GSUtilOutputReturns(gcsVersion, nil)
 			},
 			version:     "v1.25.0",
@@ -379,7 +378,7 @@ func TestVerifyLatestUpdate(t *testing.T) {
 		},
 		{ // success version < gcsVersion (minor)
 			prepare: func(mock *releasefakes.FakePublisherClient, gcsVersion string) {
-				mock.NormalizePath("", "")
+				mock.NormalizePathReturns("", nil)
 				mock.GSUtilOutputReturns(gcsVersion, nil)
 			},
 			version:     "v1.23.0",
@@ -390,7 +389,7 @@ func TestVerifyLatestUpdate(t *testing.T) {
 
 		{ // success version = gcsVersion (with build version)
 			prepare: func(mock *releasefakes.FakePublisherClient, gcsVersion string) {
-				mock.NormalizePath("", "")
+				mock.NormalizePathReturns("", nil)
 				mock.GSUtilOutputReturns(gcsVersion, nil)
 			},
 			version:     "v1.28.0-7+c4e17abb04728e",
@@ -400,7 +399,7 @@ func TestVerifyLatestUpdate(t *testing.T) {
 		},
 		{ // success version > gcsVersion (with build version)
 			prepare: func(mock *releasefakes.FakePublisherClient, gcsVersion string) {
-				mock.NormalizePath("", "")
+				mock.NormalizePathReturns("", nil)
 				mock.GSUtilOutputReturns(gcsVersion, nil)
 			},
 			version:     "v1.28.0-9+aaaaaabb04728e",
@@ -410,7 +409,7 @@ func TestVerifyLatestUpdate(t *testing.T) {
 		},
 		{ // success version < gcsVersion (with build version)
 			prepare: func(mock *releasefakes.FakePublisherClient, gcsVersion string) {
-				mock.NormalizePath("", "")
+				mock.NormalizePathReturns("", nil)
 				mock.GSUtilOutputReturns(gcsVersion, nil)
 			},
 			version:     "v1.28.0-7+c4e17abb04728e",
@@ -420,7 +419,7 @@ func TestVerifyLatestUpdate(t *testing.T) {
 		},
 		{ // success version > gcsVersion (with build version)
 			prepare: func(mock *releasefakes.FakePublisherClient, gcsVersion string) {
-				mock.NormalizePath("", "")
+				mock.NormalizePathReturns("", nil)
 				mock.GSUtilOutputReturns(gcsVersion, nil)
 			},
 			version:     "v1.28.1-1+aaaaaabb04728e",
@@ -430,7 +429,7 @@ func TestVerifyLatestUpdate(t *testing.T) {
 		},
 		{ // success version = gcsVersion (with build version, prerelease)
 			prepare: func(mock *releasefakes.FakePublisherClient, gcsVersion string) {
-				mock.NormalizePath("", "")
+				mock.NormalizePathReturns("", nil)
 				mock.GSUtilOutputReturns(gcsVersion, nil)
 			},
 			version:     "v1.28.0-rc.1.9+3fb5377b25ec51",
@@ -440,7 +439,7 @@ func TestVerifyLatestUpdate(t *testing.T) {
 		},
 		{ // success version > gcsVersion (with build version, prerelease)
 			prepare: func(mock *releasefakes.FakePublisherClient, gcsVersion string) {
-				mock.NormalizePath("", "")
+				mock.NormalizePathReturns("", nil)
 				mock.GSUtilOutputReturns(gcsVersion, nil)
 			},
 			version:     "v1.28.0-rc.1.10+3fb5377b25ec51",
@@ -450,7 +449,7 @@ func TestVerifyLatestUpdate(t *testing.T) {
 		},
 		{ // success version < gcsVersion (with build version, prerelease)
 			prepare: func(mock *releasefakes.FakePublisherClient, gcsVersion string) {
-				mock.NormalizePath("", "")
+				mock.NormalizePathReturns("", nil)
 				mock.GSUtilOutputReturns(gcsVersion, nil)
 			},
 			version:     "v1.28.0-rc.1.9+3fb5377b25ec51",
@@ -460,7 +459,7 @@ func TestVerifyLatestUpdate(t *testing.T) {
 		},
 		{ // success version < gcsVersion (with build version, prerelease)
 			prepare: func(mock *releasefakes.FakePublisherClient, gcsVersion string) {
-				mock.NormalizePath("", "")
+				mock.NormalizePathReturns("", nil)
 				mock.GSUtilOutputReturns(gcsVersion, nil)
 			},
 			version:     "v1.28.0-beta.1.9+3fb5377b25ec51",
@@ -470,7 +469,7 @@ func TestVerifyLatestUpdate(t *testing.T) {
 		},
 		{ // success version > gcsVersion (with build version, prerelease)
 			prepare: func(mock *releasefakes.FakePublisherClient, gcsVersion string) {
-				mock.NormalizePath("", "")
+				mock.NormalizePathReturns("", nil)
 				mock.GSUtilOutputReturns(gcsVersion, nil)
 			},
 			version:     "v1.28.0-rc.1.9+3fb5377b25ec51",
@@ -480,7 +479,7 @@ func TestVerifyLatestUpdate(t *testing.T) {
 		},
 		{ // success version > gcsVersion (with build version, stable and prerelease)
 			prepare: func(mock *releasefakes.FakePublisherClient, gcsVersion string) {
-				mock.NormalizePath("", "")
+				mock.NormalizePathReturns("", nil)
 				mock.GSUtilOutputReturns(gcsVersion, nil)
 			},
 			version:     "v1.28.0-7+c4e17abb04728e",
