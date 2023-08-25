@@ -372,7 +372,7 @@ func WriteChecksums(rootPath string) error {
 					return fmt.Errorf("get hash from file: %w", err)
 				}
 
-				files = append(files, fmt.Sprintf("%s  %s", sha, path))
+				files = append(files, fmt.Sprintf("%s  %s", sha, strings.TrimPrefix(path, rootPath+"/")))
 				return nil
 			},
 		); err != nil {
