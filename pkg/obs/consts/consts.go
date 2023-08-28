@@ -57,6 +57,7 @@ var (
 const (
 	DefaultReleaseDownloadLinkBase = "gs://kubernetes-release/release"
 	DefaultRevision                = "0"
+	DefaultSpecTemplatePath        = "cmd/krel/templates/latest"
 )
 
 func IsSupported(field string, input, expected []string) bool {

@@ -78,6 +78,9 @@ func DefaultOptions() *Options {
 			consts.ArchitecturePPC64,
 			consts.ArchitectureS390X,
 		},
+		Channel:          consts.ChannelTypeRelease,
+		SpecOutputPath:   ".",
+		SpecTemplatePath: consts.DefaultSpecTemplatePath,
 	}
 }
 

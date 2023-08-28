@@ -58,7 +58,7 @@ const (
 
 	// defaultSpecTemplatePath is path inside Google Cloud Build where package
 	// specs for kubeadm, kubectl, and kubelet are located.
-	defaultSpecTemplatePath = workspaceDir + "/go/src/k8s.io/release/cmd/krel/templates/latest"
+	defaultSpecTemplatePath = workspaceDir + "/go/src/k8s.io/release/" + consts.DefaultSpecTemplatePath
 
 	// obsRoot is path inside Google Cloud Build where OBS project and packages
 	// are checked out.
