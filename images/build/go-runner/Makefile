@@ -20,11 +20,11 @@ APP_VERSION = $(shell cat VERSION)
 GO_MAJOR_VERSION ?= 1.21
 REVISION ?= 0
 GO_VERSION ?= 1.21.0
-OS_CODENAME ?= bullseye
+OS_CODENAME ?= bookworm
 
 # Build args
 DISTROLESS_REGISTRY ?= gcr.io/distroless
-DISTROLESS_IMAGE ?= static-debian11
+DISTROLESS_IMAGE ?= static-debian12
 BUILDER_IMAGE ?= golang:$(GO_VERSION)-$(OS_CODENAME)
 
 # Configuration
