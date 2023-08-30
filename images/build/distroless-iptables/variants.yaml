@@ -1,5 +1,5 @@
 variants:
   distroless:
     CONFIG: 'distroless'
-    IMAGE_VERSION: 'v0.2.7'
+    IMAGE_VERSION: 'v0.3.0'
     GORUNNER_VERSION: 'v2.3.1-go1.21.0-bookworm.0'
