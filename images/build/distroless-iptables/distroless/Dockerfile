@@ -52,7 +52,7 @@ FROM ${GORUNNERIMAGE} as gorunner
 
 # We need to use distroless:base here as tzdata, glibc and some other base packages
 # are required
-FROM gcr.io/distroless/base as intermediate
+FROM gcr.io/distroless/base-debian12 as intermediate
 
 ARG SKIP_WRAPPER_CHECK
 

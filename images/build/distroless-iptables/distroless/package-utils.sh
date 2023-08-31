@@ -30,13 +30,19 @@ package_to_copyright() {
 # stage_file stages the filepath $1 to $2, following symlinks
 # and staging copyrights
 stage_file() {
-    cp -a --parents "${1}" "${2}"
+    # /lib is a symlink to /usr/lib in debian 12, means we just stick to
+    # /usr/lib for all libraries to avoid separating symlinks with the actual binaries
+    from="${1}"
+    if [[ $from = /lib/*  ]]; then
+        from="/usr$from"
+    fi
+    cp -a --parents "${from}" "${2}"
     # recursively follow symlinks
-    if [[ -L "${1}" ]]; then
-        stage_file "$(cd "$(dirname "${1}")" || exit; realpath -s "$(readlink "${1}")")" "${2}"
+    if [[ -L "${from}" ]]; then
+        stage_file "$(cd "$(dirname "${from}")" || exit; realpath -s "$(readlink "${from}")")" "${2}"
     fi
     # get the package so we can stage package metadata as well
-    package="$(file_to_package "${1}")"
+    package="$(file_to_package "${from}")"
 
     # files like /usr/lib/x86_64-linux-gnu/libc.so.6 will return no package
     if [[ "$package" != "" ]]; then
