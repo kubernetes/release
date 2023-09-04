@@ -34,7 +34,7 @@ require (
 	github.com/yuin/goldmark v1.5.6
 	golang.org/x/net v0.14.0
 	golang.org/x/oauth2 v0.11.0
-	golang.org/x/text v0.12.0
+	golang.org/x/text v0.13.0
 	google.golang.org/api v0.128.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apimachinery v0.27.4
