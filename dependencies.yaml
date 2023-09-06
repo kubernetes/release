@@ -187,16 +187,16 @@ dependencies:
 
   # kube-cross
   - name: "registry.k8s.io/build-image/kube-cross (v1.29-go1.21)"
-    version: v1.29.0-go1.21.0-bookworm.0
+    version: v1.29.0-go1.21.0-bullseye.0
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/kube-cross: config variant (v1.29-go1.21)"
-    version: go1.21-bookworm
+    version: go1.21-bullseye
     refPaths:
     - path: images/build/cross/variants.yaml
-      match: "CONFIG: 'go\\d+.\\d+-bookworm'"
+      match: "CONFIG: 'go\\d+.\\d+-bullseye'"
 
   - name: "registry.k8s.io/build-image/kube-cross: image revision (v1.29-go1.21)"
     version: 0
@@ -338,10 +338,10 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "registry.k8s.io/build-image/kube-cross: config variant (next candidate)"
-    version: go1.21-bookworm
+    version: go1.21-bullseye
     refPaths:
     - path: images/build/cross/variants.yaml
-      match: "CONFIG: 'go\\d+.\\d+-bookworm'"
+      match: "CONFIG: 'go\\d+.\\d+-bullseye'"
 
   # Golang (previous release branches: 1.28)
   - name: "golang (previous release branches: 1.28)"
@@ -409,14 +409,14 @@ dependencies:
       match: "version: v\\d+.\\d+?\\.?(\\d+)?"
 
   # Base images
-  # split until all are set to bookworm
-  - name: "Debian: codename (bookworm)"
-    version: bookworm
+  # # Use bullseye for kube-cross to achieve maximum glibc compatibility.
+  - name: "Debian: codename (bullseye)"
+    version: bullseye
     refPaths:
     - path: images/build/cross/Makefile
-      match: OS_CODENAME\ \?=\ bookworm
+      match: OS_CODENAME\ \?=\ bullseye
     - path: packages/deb/Dockerfile
-      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-bookworm
+      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-bullseye
 
   - name: "Debian: codename (default)"
     version: bullseye
