@@ -1,12 +1,12 @@
 variants:
-  v1.29-go1.21-bookworm:
-    CONFIG: 'go1.21-bookworm'
+  v1.29-go1.21-bullseye:
+    CONFIG: 'go1.21-bullseye'
     TYPE: 'default'
-    IMAGE_VERSION: 'v1.29.0-go1.21.0-bookworm.0'
+    IMAGE_VERSION: 'v1.29.0-go1.21.0-bullseye.0'
     KUBERNETES_VERSION: 'v1.29.0'
     GO_VERSION: '1.21.0'
     GO_MAJOR_VERSION: '1.21'
-    OS_CODENAME: 'bookworm'
+    OS_CODENAME: 'bullseye'
     REVISION: '0'
   v1.28-go1.20-bullseye:
     CONFIG: 'go1.20-bullseye'

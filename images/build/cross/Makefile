@@ -30,7 +30,7 @@ IMGNAME = kube-cross
 KUBERNETES_VERSION ?= v1.29.0
 GO_VERSION ?= 1.21.0
 GO_MAJOR_VERSION ?= 1.21
-OS_CODENAME ?= bookworm
+OS_CODENAME ?= bullseye
 REVISION ?= 0
 TYPE ?= default
 
