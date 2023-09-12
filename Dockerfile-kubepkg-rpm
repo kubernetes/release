@@ -23,7 +23,7 @@ COPY . .
 RUN go build -o . ./cmd/kubepkg/...
 
 
-FROM fedora:30
+FROM fedora:39
 
 RUN dnf install -y \
       rpm-build \
