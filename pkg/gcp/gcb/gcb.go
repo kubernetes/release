@@ -42,6 +42,10 @@ import (
 	"sigs.k8s.io/release-utils/util"
 )
 
+// StringSliceSeparator is the separator used for passing string slices as GCB
+// substitutions.
+const StringSliceSeparator = "..."
+
 // GCB is the main structure of this package.
 type GCB struct {
 	options        *Options
@@ -391,9 +395,8 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket string) 
 	switch {
 	case g.options.OBSStage:
 		gcbSubs["SPEC_TEMPLATE_PATH"] = g.options.SpecTemplatePath
-		gcbSubs["PACKAGES"] = strings.Join(g.options.Packages, ",")
-		//nolint:gocritic // This needs some fixes that will be done in a follow-up
-		// gcbSubs["ARCHITECTURES"] = strings.Join(g.options.Architectures, ",")
+		gcbSubs["PACKAGES"] = strings.Join(g.options.Packages, StringSliceSeparator)
+		gcbSubs["ARCHITECTURES"] = strings.Join(g.options.Architectures, StringSliceSeparator)
 		gcbSubs["VERSION"] = g.options.Version
 		gcbSubs["OBS_PROJECT"] = g.options.OBSProject
 		gcbSubs["OBS_PROJECT_TAG"] = strings.ReplaceAll(g.options.OBSProject, ":", "-")
@@ -402,7 +405,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket string) 
 		// Stop here when doing OBS stage
 		return gcbSubs, nil
 	case g.options.OBSRelease:
-		gcbSubs["PACKAGES"] = strings.Join(g.options.Packages, ",")
+		gcbSubs["PACKAGES"] = strings.Join(g.options.Packages, StringSliceSeparator)
 		gcbSubs["OBS_PROJECT"] = g.options.OBSProject
 		gcbSubs["OBS_PROJECT_TAG"] = strings.ReplaceAll(g.options.OBSProject, ":", "-")
 

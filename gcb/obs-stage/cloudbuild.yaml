@@ -82,8 +82,7 @@ steps:
   - "--log-level=${_LOG_LEVEL}"
   - "--template-dir=${_SPEC_TEMPLATE_PATH}"
   - "--packages=${_PACKAGES}"
-  # TODO(xmudrii) - followup: solve problem with delimiter
-  # - "--architectures=${_ARCHITECTURES}"
+  - "--architectures=${_ARCHITECTURES}"
   - "--version=${_VERSION}"
   - "--project=${_OBS_PROJECT}"
   - "--source=${_PACKAGE_SOURCE}"
@@ -97,6 +96,7 @@ tags:
 - ${_TYPE_TAG}
 - ${_TYPE}
 - ${_PACKAGES}
+- ${_ARCHITECTURES}
 - ${_VERSION}
 - ${_OBS_PROJECT_TAG}
 
