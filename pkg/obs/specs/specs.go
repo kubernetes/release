@@ -35,8 +35,7 @@ type Options struct {
 
 	// Version is the package version.
 	// For kubelet, kubeadm, kubectl, this is Kubernetes version.
-	// For cri-tools, this is cri-tools version.
-	// For kubernetes-cni, this is cni-plugins version.
+	// For cri-tools, kubernetes-cni and cri-o, this is their corresponding version.
 	Version string
 
 	// Revision is the package revision.
