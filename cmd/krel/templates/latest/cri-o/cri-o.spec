@@ -15,6 +15,8 @@ License: Apache-2.0
 URL: https://kubernetes.io
 Source0: %{name}_%{version}.orig.tar.gz
 BuildRequires: sed
+Requires: iptables
+Requires: kubernetes-cni
 
 %description
 %{summary}.
