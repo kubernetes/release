@@ -30,6 +30,9 @@ Requires: kubernetes-cni
 %install
 %define archive_root "$(uname -m)"/cri-o
 
+# Directories
+install -dp %{buildroot}%{_sharedstatedir}/crio
+
 # Binaries
 install -dp %{buildroot}%{_bindir}
 install -p -m 755 %{archive_root}/bin/crio %{buildroot}%{_bindir}/crio
@@ -73,6 +76,10 @@ install -D -m 644 -t %{buildroot}%{_mandir}/man5 %{archive_root}/man/crio.conf.d
 install -D -m 644 -t %{buildroot}%{_mandir}/man8 %{archive_root}/man/crio.8
 
 %files
+
+# Directories
+%dir %{_sharedstatedir}/crio
+
 # Binaries
 %{_bindir}/crio
 %{_bindir}/conmon
