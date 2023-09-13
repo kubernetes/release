@@ -23,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/obs"
 	"k8s.io/release/pkg/release"
 )
@@ -115,7 +116,7 @@ func init() {
 		)
 
 	obsStageCmd.PersistentFlags().
-		StringArrayVar(
+		StringSliceVar(
 			&obsStageOptions.Packages,
 			obsPackagesFlag,
 			obsStageOptions.Packages,
@@ -123,7 +124,7 @@ func init() {
 		)
 
 	obsStageCmd.PersistentFlags().
-		StringArrayVar(
+		StringSliceVar(
 			&obsStageOptions.Architectures,
 			obsArchitecturesFlag,
 			obsStageOptions.Architectures,
@@ -181,6 +182,23 @@ func init() {
 
 func runOBSStage(options *obs.StageOptions) error {
 	options.NoMock = rootOpts.nomock
+
+	// Allow submitting packages and architectures separated by the string
+	// slice separator. This allows us to pass the GCB substitution, which
+	// already uses comma as default separator.
+	// We cannot use the GCB separator substitution (see `gcloud topic
+	// escaping`) because GCB complains that a 'build tag must match format
+	// "^[\\w][\\w.-]{0,127}$"'.
+	archSplit := strings.Split(options.Architectures[0], gcb.StringSliceSeparator)
+	if len(archSplit) > 1 {
+		options.Architectures = archSplit
+	}
+
+	packageSplit := strings.Split(options.Packages[0], gcb.StringSliceSeparator)
+	if len(packageSplit) > 1 {
+		options.Packages = packageSplit
+	}
+
 	stage := obs.NewStage(options)
 	if submitJob {
 		// Perform a local check of the specified options before launching a
