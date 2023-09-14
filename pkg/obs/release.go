@@ -104,7 +104,7 @@ type defaultReleaseImpl struct{}
 //counterfeiter:generate . releaseImpl
 type releaseImpl interface {
 	Submit(options *gcb.Options) error
-	CheckPrerequisites() error
+	CheckPrerequisites(workspaceDir string) error
 	MkdirAll(path string) error
 	GenerateReleaseVersion(
 		releaseType, version, branch string, branchFromMaster bool,
@@ -113,15 +113,15 @@ type releaseImpl interface {
 		branch, releaseType string, buildVersion semver.Version,
 	) (bool, error)
 	CreateOBSConfigFile(username, password string) error
-	CheckoutProject(project string) error
-	ReleasePackage(project, packageName string) error
+	CheckoutProject(workspaceDir, project string) error
+	ReleasePackage(workspaceDir, project, packageName string) error
 }
 
 func (d *defaultReleaseImpl) Submit(options *gcb.Options) error {
 	return gcb.New(options).Submit()
 }
 
-func (d *defaultReleaseImpl) CheckPrerequisites() error {
+func (d *defaultReleaseImpl) CheckPrerequisites(workspaceDir string) error {
 	return NewPrerequisitesChecker().Run(workspaceDir)
 }
 
@@ -152,14 +152,14 @@ func (d *defaultReleaseImpl) CreateOBSConfigFile(username, password string) erro
 }
 
 // CheckoutProject runs `osc checkout` in the project directory.
-func (d *defaultReleaseImpl) CheckoutProject(project string) error {
+func (d *defaultReleaseImpl) CheckoutProject(workspaceDir, project string) error {
 	// TODO(xmudrii) - followup: figure out how to stream output.
-	return osc.OSC(obsRoot, "checkout", project)
+	return osc.OSC(filepath.Join(workspaceDir, obsRoot), "checkout", project)
 }
 
 // ReleasePackage runs `osc release` in the package directory.
-func (d *defaultReleaseImpl) ReleasePackage(project, packageName string) error {
-	return osc.OSC(filepath.Join(obsRoot, project, packageName), "release")
+func (d *defaultReleaseImpl) ReleasePackage(workspaceDir, project, packageName string) error {
+	return osc.OSC(filepath.Join(workspaceDir, obsRoot, project, packageName), "release")
 }
 
 func (d *DefaultRelease) Submit(stream bool) error {
@@ -207,7 +207,7 @@ func (d *DefaultRelease) ValidateOptions() error {
 // CheckPrerequisites checks if all prerequisites for the release process
 // are met.
 func (d *DefaultRelease) CheckPrerequisites() error {
-	return d.impl.CheckPrerequisites()
+	return d.impl.CheckPrerequisites(d.options.Workspace)
 }
 
 func (d *DefaultRelease) CheckReleaseBranchState() error {
@@ -280,7 +280,7 @@ func (d *DefaultRelease) GenerateOBSProject() error {
 
 // CheckoutOBSProject checks out the OBS project.
 func (d *DefaultRelease) CheckoutOBSProject() error {
-	if err := d.impl.CheckoutProject(d.state.obsProject); err != nil {
+	if err := d.impl.CheckoutProject(d.options.Workspace, d.state.obsProject); err != nil {
 		return fmt.Errorf("checking out obs project: %w", err)
 	}
 
@@ -297,7 +297,7 @@ func (d *DefaultRelease) ReleasePackages() error {
 	}
 
 	for _, pkg := range d.options.Packages {
-		if err := d.impl.ReleasePackage(d.state.obsProject, pkg); err != nil {
+		if err := d.impl.ReleasePackage(d.options.Workspace, d.state.obsProject, pkg); err != nil {
 			return fmt.Errorf("releasing package %s from project %s: %w", pkg, d.state.obsProject, err)
 		}
 	}

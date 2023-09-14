@@ -107,9 +107,9 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 
 	// osc checks
 	logrus.Info("Verifying OpenBuildService access")
-	ver, err := p.impl.OSCOutput("--version")
+	ver, err := p.impl.OSCOutput("version")
 	if err != nil {
-		return fmt.Errorf("running osc --version: %w", err)
+		return fmt.Errorf("running osc version: %w", err)
 	}
 	logrus.Infof("Using osc version: %s", ver)
 

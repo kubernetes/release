@@ -54,15 +54,15 @@ const (
 
 	// workspaceDir is the global directory where the stage and release process
 	// happens.
-	workspaceDir = "/workspace"
+	defaultWorkspaceDir = "/workspace"
 
 	// defaultSpecTemplatePath is path inside Google Cloud Build where package
 	// specs for kubeadm, kubectl, and kubelet are located.
-	defaultSpecTemplatePath = workspaceDir + "/go/src/k8s.io/release/" + consts.DefaultSpecTemplatePath
+	defaultSpecTemplatePath = defaultWorkspaceDir + "/go/src/k8s.io/release/" + consts.DefaultSpecTemplatePath
 
 	// obsRoot is path inside Google Cloud Build where OBS project and packages
 	// are checked out.
-	obsRoot = workspaceDir + "/src/obs"
+	obsRoot = "/src/obs"
 
 	// obsAPIURL is the URL of openSUSE's OpenBuildService instance.
 	obsAPIURL = "https://api.opensuse.org"
@@ -78,6 +78,9 @@ const (
 // Options are settings which will be used by `StageOptions` as well as
 // `ReleaseOptions`.
 type Options struct {
+	// Workspace is the root workspace.
+	Workspace string
+
 	// Run the whole process in non-mocked mode. Which means that it doesn't
 	// push specs and artifacts to OpenBuildService.
 	NoMock bool
@@ -150,6 +153,7 @@ func DefaultOptions() *Options {
 			consts.ArchitectureS390X,
 		},
 		SpecTemplatePath: defaultSpecTemplatePath,
+		Workspace:        defaultWorkspaceDir,
 	}
 }
 

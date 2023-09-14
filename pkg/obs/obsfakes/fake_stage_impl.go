@@ -27,11 +27,12 @@ import (
 )
 
 type FakeStageImpl struct {
-	AddRemoveChangesStub        func(string, string) error
+	AddRemoveChangesStub        func(string, string, string) error
 	addRemoveChangesMutex       sync.RWMutex
 	addRemoveChangesArgsForCall []struct {
 		arg1 string
 		arg2 string
+		arg3 string
 	}
 	addRemoveChangesReturns struct {
 		result1 error
@@ -54,9 +55,10 @@ type FakeStageImpl struct {
 		result1 bool
 		result2 error
 	}
-	CheckPrerequisitesStub        func() error
+	CheckPrerequisitesStub        func(string) error
 	checkPrerequisitesMutex       sync.RWMutex
 	checkPrerequisitesArgsForCall []struct {
+		arg1 string
 	}
 	checkPrerequisitesReturns struct {
 		result1 error
@@ -64,10 +66,11 @@ type FakeStageImpl struct {
 	checkPrerequisitesReturnsOnCall map[int]struct {
 		result1 error
 	}
-	CheckoutProjectStub        func(string) error
+	CheckoutProjectStub        func(string, string) error
 	checkoutProjectMutex       sync.RWMutex
 	checkoutProjectArgsForCall []struct {
 		arg1 string
+		arg2 string
 	}
 	checkoutProjectReturns struct {
 		result1 error
@@ -75,12 +78,13 @@ type FakeStageImpl struct {
 	checkoutProjectReturnsOnCall map[int]struct {
 		result1 error
 	}
-	CommitChangesStub        func(string, string, string) error
+	CommitChangesStub        func(string, string, string, string) error
 	commitChangesMutex       sync.RWMutex
 	commitChangesArgsForCall []struct {
 		arg1 string
 		arg2 string
 		arg3 string
+		arg4 string
 	}
 	commitChangesReturns struct {
 		result1 error
@@ -164,19 +168,20 @@ type FakeStageImpl struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStageImpl) AddRemoveChanges(arg1 string, arg2 string) error {
+func (fake *FakeStageImpl) AddRemoveChanges(arg1 string, arg2 string, arg3 string) error {
 	fake.addRemoveChangesMutex.Lock()
 	ret, specificReturn := fake.addRemoveChangesReturnsOnCall[len(fake.addRemoveChangesArgsForCall)]
 	fake.addRemoveChangesArgsForCall = append(fake.addRemoveChangesArgsForCall, struct {
 		arg1 string
 		arg2 string
-	}{arg1, arg2})
+		arg3 string
+	}{arg1, arg2, arg3})
 	stub := fake.AddRemoveChangesStub
 	fakeReturns := fake.addRemoveChangesReturns
-	fake.recordInvocation("AddRemoveChanges", []interface{}{arg1, arg2})
+	fake.recordInvocation("AddRemoveChanges", []interface{}{arg1, arg2, arg3})
 	fake.addRemoveChangesMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -190,17 +195,17 @@ func (fake *FakeStageImpl) AddRemoveChangesCallCount() int {
 	return len(fake.addRemoveChangesArgsForCall)
 }
 
-func (fake *FakeStageImpl) AddRemoveChangesCalls(stub func(string, string) error) {
+func (fake *FakeStageImpl) AddRemoveChangesCalls(stub func(string, string, string) error) {
 	fake.addRemoveChangesMutex.Lock()
 	defer fake.addRemoveChangesMutex.Unlock()
 	fake.AddRemoveChangesStub = stub
 }
 
-func (fake *FakeStageImpl) AddRemoveChangesArgsForCall(i int) (string, string) {
+func (fake *FakeStageImpl) AddRemoveChangesArgsForCall(i int) (string, string, string) {
 	fake.addRemoveChangesMutex.RLock()
 	defer fake.addRemoveChangesMutex.RUnlock()
 	argsForCall := fake.addRemoveChangesArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeStageImpl) AddRemoveChangesReturns(result1 error) {
@@ -292,17 +297,18 @@ func (fake *FakeStageImpl) BranchNeedsCreationReturnsOnCall(i int, result1 bool,
 	}{result1, result2}
 }
 
-func (fake *FakeStageImpl) CheckPrerequisites() error {
+func (fake *FakeStageImpl) CheckPrerequisites(arg1 string) error {
 	fake.checkPrerequisitesMutex.Lock()
 	ret, specificReturn := fake.checkPrerequisitesReturnsOnCall[len(fake.checkPrerequisitesArgsForCall)]
 	fake.checkPrerequisitesArgsForCall = append(fake.checkPrerequisitesArgsForCall, struct {
-	}{})
+		arg1 string
+	}{arg1})
 	stub := fake.CheckPrerequisitesStub
 	fakeReturns := fake.checkPrerequisitesReturns
-	fake.recordInvocation("CheckPrerequisites", []interface{}{})
+	fake.recordInvocation("CheckPrerequisites", []interface{}{arg1})
 	fake.checkPrerequisitesMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -316,10 +322,17 @@ func (fake *FakeStageImpl) CheckPrerequisitesCallCount() int {
 	return len(fake.checkPrerequisitesArgsForCall)
 }
 
-func (fake *FakeStageImpl) CheckPrerequisitesCalls(stub func() error) {
+func (fake *FakeStageImpl) CheckPrerequisitesCalls(stub func(string) error) {
 	fake.checkPrerequisitesMutex.Lock()
 	defer fake.checkPrerequisitesMutex.Unlock()
 	fake.CheckPrerequisitesStub = stub
+}
+
+func (fake *FakeStageImpl) CheckPrerequisitesArgsForCall(i int) string {
+	fake.checkPrerequisitesMutex.RLock()
+	defer fake.checkPrerequisitesMutex.RUnlock()
+	argsForCall := fake.checkPrerequisitesArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeStageImpl) CheckPrerequisitesReturns(result1 error) {
@@ -345,18 +358,19 @@ func (fake *FakeStageImpl) CheckPrerequisitesReturnsOnCall(i int, result1 error)
 	}{result1}
 }
 
-func (fake *FakeStageImpl) CheckoutProject(arg1 string) error {
+func (fake *FakeStageImpl) CheckoutProject(arg1 string, arg2 string) error {
 	fake.checkoutProjectMutex.Lock()
 	ret, specificReturn := fake.checkoutProjectReturnsOnCall[len(fake.checkoutProjectArgsForCall)]
 	fake.checkoutProjectArgsForCall = append(fake.checkoutProjectArgsForCall, struct {
 		arg1 string
-	}{arg1})
+		arg2 string
+	}{arg1, arg2})
 	stub := fake.CheckoutProjectStub
 	fakeReturns := fake.checkoutProjectReturns
-	fake.recordInvocation("CheckoutProject", []interface{}{arg1})
+	fake.recordInvocation("CheckoutProject", []interface{}{arg1, arg2})
 	fake.checkoutProjectMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -370,17 +384,17 @@ func (fake *FakeStageImpl) CheckoutProjectCallCount() int {
 	return len(fake.checkoutProjectArgsForCall)
 }
 
-func (fake *FakeStageImpl) CheckoutProjectCalls(stub func(string) error) {
+func (fake *FakeStageImpl) CheckoutProjectCalls(stub func(string, string) error) {
 	fake.checkoutProjectMutex.Lock()
 	defer fake.checkoutProjectMutex.Unlock()
 	fake.CheckoutProjectStub = stub
 }
 
-func (fake *FakeStageImpl) CheckoutProjectArgsForCall(i int) string {
+func (fake *FakeStageImpl) CheckoutProjectArgsForCall(i int) (string, string) {
 	fake.checkoutProjectMutex.RLock()
 	defer fake.checkoutProjectMutex.RUnlock()
 	argsForCall := fake.checkoutProjectArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeStageImpl) CheckoutProjectReturns(result1 error) {
@@ -406,20 +420,21 @@ func (fake *FakeStageImpl) CheckoutProjectReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeStageImpl) CommitChanges(arg1 string, arg2 string, arg3 string) error {
+func (fake *FakeStageImpl) CommitChanges(arg1 string, arg2 string, arg3 string, arg4 string) error {
 	fake.commitChangesMutex.Lock()
 	ret, specificReturn := fake.commitChangesReturnsOnCall[len(fake.commitChangesArgsForCall)]
 	fake.commitChangesArgsForCall = append(fake.commitChangesArgsForCall, struct {
 		arg1 string
 		arg2 string
 		arg3 string
-	}{arg1, arg2, arg3})
+		arg4 string
+	}{arg1, arg2, arg3, arg4})
 	stub := fake.CommitChangesStub
 	fakeReturns := fake.commitChangesReturns
-	fake.recordInvocation("CommitChanges", []interface{}{arg1, arg2, arg3})
+	fake.recordInvocation("CommitChanges", []interface{}{arg1, arg2, arg3, arg4})
 	fake.commitChangesMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3)
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1
@@ -433,17 +448,17 @@ func (fake *FakeStageImpl) CommitChangesCallCount() int {
 	return len(fake.commitChangesArgsForCall)
 }
 
-func (fake *FakeStageImpl) CommitChangesCalls(stub func(string, string, string) error) {
+func (fake *FakeStageImpl) CommitChangesCalls(stub func(string, string, string, string) error) {
 	fake.commitChangesMutex.Lock()
 	defer fake.commitChangesMutex.Unlock()
 	fake.CommitChangesStub = stub
 }
 
-func (fake *FakeStageImpl) CommitChangesArgsForCall(i int) (string, string, string) {
+func (fake *FakeStageImpl) CommitChangesArgsForCall(i int) (string, string, string, string) {
 	fake.commitChangesMutex.RLock()
 	defer fake.commitChangesMutex.RUnlock()
 	argsForCall := fake.commitChangesArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
 func (fake *FakeStageImpl) CommitChangesReturns(result1 error) {
