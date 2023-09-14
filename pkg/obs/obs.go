@@ -73,6 +73,10 @@ const (
 	// OBSPasswordKey is name of the environment variable with password for
 	// Kubernetes Release Bot account.
 	OBSPasswordKey = "OBS_PASSWORD"
+
+	// OBSUsernameKey is name of the environment variable containing the
+	// username for the OBS account. If empty, obsK8sUsername will be used.
+	OBSUsernameKey = "OBS_USERNAME"
 )
 
 // Options are settings which will be used by `StageOptions` as well as

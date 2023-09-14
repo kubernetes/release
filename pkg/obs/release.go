@@ -189,7 +189,12 @@ func (d *DefaultRelease) InitOBSRoot() error {
 		return fmt.Errorf("%s environment variable not set", OBSPasswordKey)
 	}
 
-	if err := d.impl.CreateOBSConfigFile(obsK8sUsername, password); err != nil {
+	username := os.Getenv(OBSUsernameKey)
+	if username == "" {
+		username = obsK8sUsername
+	}
+
+	if err := d.impl.CreateOBSConfigFile(username, password); err != nil {
 		return fmt.Errorf("creating obs config file: %w", err)
 	}
 
