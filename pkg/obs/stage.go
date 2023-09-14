@@ -118,7 +118,7 @@ type defaultStageImpl struct{}
 //counterfeiter:generate . stageImpl
 type stageImpl interface {
 	Submit(options *gcb.Options) error
-	CheckPrerequisites() error
+	CheckPrerequisites(workspaceDir string) error
 	MkdirAll(path string) error
 	RemovePackageFiles(path string) error
 	GenerateReleaseVersion(
@@ -129,16 +129,16 @@ type stageImpl interface {
 	) (bool, error)
 	GenerateSpecsAndArtifacts(options *specs.Options) error
 	CreateOBSConfigFile(username, password string) error
-	CheckoutProject(project string) error
-	AddRemoveChanges(project, packageName string) error
-	CommitChanges(project, packageName, message string) error
+	CheckoutProject(workspaceDir, project string) error
+	AddRemoveChanges(workspaceDir, project, packageName string) error
+	CommitChanges(workspaceDir, project, packageName, message string) error
 }
 
 func (d *defaultStageImpl) Submit(options *gcb.Options) error {
 	return gcb.New(options).Submit()
 }
 
-func (d *defaultStageImpl) CheckPrerequisites() error {
+func (d *defaultStageImpl) CheckPrerequisites(workspaceDir string) error {
 	return NewPrerequisitesChecker().Run(workspaceDir)
 }
 
@@ -197,21 +197,21 @@ func (d *defaultStageImpl) CreateOBSConfigFile(username, password string) error 
 }
 
 // CheckoutProject runs `osc checkout` in the project directory.
-func (d *defaultStageImpl) CheckoutProject(project string) error {
+func (d *defaultStageImpl) CheckoutProject(workspaceDir, project string) error {
 	// TODO(xmudrii) - followup: figure out how to stream output.
-	return osc.OSC(obsRoot, "checkout", project)
+	return osc.OSC(filepath.Join(workspaceDir, obsRoot), "checkout", project)
 }
 
 // AddRemovePackage run `osc addremove` in the project directory.
-func (d *defaultStageImpl) AddRemoveChanges(project, packageName string) error {
+func (d *defaultStageImpl) AddRemoveChanges(workspaceDir, project, packageName string) error {
 	// TODO(xmudrii) - followup: figure out how to stream output.
-	return osc.OSC(filepath.Join(obsRoot, project, packageName), "addremove")
+	return osc.OSC(filepath.Join(workspaceDir, obsRoot, project, packageName), "addremove")
 }
 
 // CommitChanges runs `osc commit` in the package directory.
-func (d *defaultStageImpl) CommitChanges(project, packageName, message string) error {
+func (d *defaultStageImpl) CommitChanges(workspaceDir, project, packageName, message string) error {
 	// TODO(xmudrii) - followup: figure out how to stream output.
-	return osc.OSC(filepath.Join(obsRoot, project, packageName), "commit", "-m", message)
+	return osc.OSC(filepath.Join(workspaceDir, obsRoot, project, packageName), "commit", "-m", message)
 }
 
 func (d *DefaultStage) Submit(stream bool) error {
@@ -248,7 +248,7 @@ func (d *DefaultStage) InitOBSRoot() error {
 		return fmt.Errorf("creating obs config file: %w", err)
 	}
 
-	return d.impl.MkdirAll(obsRoot)
+	return d.impl.MkdirAll(filepath.Join(d.options.Workspace, obsRoot))
 }
 
 // ValidateOptions validates the stage options.
@@ -262,7 +262,7 @@ func (d *DefaultStage) ValidateOptions() error {
 // CheckPrerequisites checks if all prerequisites for the stage process
 // are met.
 func (d *DefaultStage) CheckPrerequisites() error {
-	return d.impl.CheckPrerequisites()
+	return d.impl.CheckPrerequisites(d.options.Workspace)
 }
 
 func (d *DefaultStage) CheckReleaseBranchState() error {
@@ -348,7 +348,7 @@ func (d *DefaultStage) GenerateOBSProject() error {
 
 // CheckoutOBSProject checks out the OBS project.
 func (d *DefaultStage) CheckoutOBSProject() error {
-	if err := d.impl.CheckoutProject(d.state.obsProject); err != nil {
+	if err := d.impl.CheckoutProject(d.options.Workspace, d.state.obsProject); err != nil {
 		return fmt.Errorf("checking out obs project: %w", err)
 	}
 
@@ -368,7 +368,7 @@ func (d *DefaultStage) GeneratePackageArtifacts() error {
 			opts.PackageSourceBase = fmt.Sprintf("gs://%s/stage/%s/%s/gcs-stage", d.options.Bucket(), d.options.BuildVersion, d.state.versions.Prime())
 		}
 		opts.SpecTemplatePath = d.options.SpecTemplatePath
-		opts.SpecOutputPath = filepath.Join(obsRoot, d.state.obsProject, pkg)
+		opts.SpecOutputPath = filepath.Join(d.options.Workspace, obsRoot, d.state.obsProject, pkg)
 
 		if err := d.impl.RemovePackageFiles(opts.SpecOutputPath); err != nil {
 			return fmt.Errorf("cleaning up package %s directory: %w", pkg, err)
@@ -391,11 +391,11 @@ func (d *DefaultStage) Push() error {
 	}
 
 	for _, pkg := range d.options.Packages {
-		if err := d.impl.AddRemoveChanges(d.state.obsProject, pkg); err != nil {
+		if err := d.impl.AddRemoveChanges(d.options.Workspace, d.state.obsProject, pkg); err != nil {
 			return fmt.Errorf("adding/removing package files: %w", err)
 		}
 
-		if err := d.impl.CommitChanges(d.state.obsProject, pkg, d.state.packageVersion); err != nil {
+		if err := d.impl.CommitChanges(d.options.Workspace, d.state.obsProject, pkg, d.state.packageVersion); err != nil {
 			return fmt.Errorf("committing packages: %w", err)
 		}
 	}

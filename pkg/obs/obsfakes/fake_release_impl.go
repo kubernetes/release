@@ -41,9 +41,10 @@ type FakeReleaseImpl struct {
 		result1 bool
 		result2 error
 	}
-	CheckPrerequisitesStub        func() error
+	CheckPrerequisitesStub        func(string) error
 	checkPrerequisitesMutex       sync.RWMutex
 	checkPrerequisitesArgsForCall []struct {
+		arg1 string
 	}
 	checkPrerequisitesReturns struct {
 		result1 error
@@ -51,10 +52,11 @@ type FakeReleaseImpl struct {
 	checkPrerequisitesReturnsOnCall map[int]struct {
 		result1 error
 	}
-	CheckoutProjectStub        func(string) error
+	CheckoutProjectStub        func(string, string) error
 	checkoutProjectMutex       sync.RWMutex
 	checkoutProjectArgsForCall []struct {
 		arg1 string
+		arg2 string
 	}
 	checkoutProjectReturns struct {
 		result1 error
@@ -101,11 +103,12 @@ type FakeReleaseImpl struct {
 	mkdirAllReturnsOnCall map[int]struct {
 		result1 error
 	}
-	ReleasePackageStub        func(string, string) error
+	ReleasePackageStub        func(string, string, string) error
 	releasePackageMutex       sync.RWMutex
 	releasePackageArgsForCall []struct {
 		arg1 string
 		arg2 string
+		arg3 string
 	}
 	releasePackageReturns struct {
 		result1 error
@@ -194,17 +197,18 @@ func (fake *FakeReleaseImpl) BranchNeedsCreationReturnsOnCall(i int, result1 boo
 	}{result1, result2}
 }
 
-func (fake *FakeReleaseImpl) CheckPrerequisites() error {
+func (fake *FakeReleaseImpl) CheckPrerequisites(arg1 string) error {
 	fake.checkPrerequisitesMutex.Lock()
 	ret, specificReturn := fake.checkPrerequisitesReturnsOnCall[len(fake.checkPrerequisitesArgsForCall)]
 	fake.checkPrerequisitesArgsForCall = append(fake.checkPrerequisitesArgsForCall, struct {
-	}{})
+		arg1 string
+	}{arg1})
 	stub := fake.CheckPrerequisitesStub
 	fakeReturns := fake.checkPrerequisitesReturns
-	fake.recordInvocation("CheckPrerequisites", []interface{}{})
+	fake.recordInvocation("CheckPrerequisites", []interface{}{arg1})
 	fake.checkPrerequisitesMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -218,10 +222,17 @@ func (fake *FakeReleaseImpl) CheckPrerequisitesCallCount() int {
 	return len(fake.checkPrerequisitesArgsForCall)
 }
 
-func (fake *FakeReleaseImpl) CheckPrerequisitesCalls(stub func() error) {
+func (fake *FakeReleaseImpl) CheckPrerequisitesCalls(stub func(string) error) {
 	fake.checkPrerequisitesMutex.Lock()
 	defer fake.checkPrerequisitesMutex.Unlock()
 	fake.CheckPrerequisitesStub = stub
+}
+
+func (fake *FakeReleaseImpl) CheckPrerequisitesArgsForCall(i int) string {
+	fake.checkPrerequisitesMutex.RLock()
+	defer fake.checkPrerequisitesMutex.RUnlock()
+	argsForCall := fake.checkPrerequisitesArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeReleaseImpl) CheckPrerequisitesReturns(result1 error) {
@@ -247,18 +258,19 @@ func (fake *FakeReleaseImpl) CheckPrerequisitesReturnsOnCall(i int, result1 erro
 	}{result1}
 }
 
-func (fake *FakeReleaseImpl) CheckoutProject(arg1 string) error {
+func (fake *FakeReleaseImpl) CheckoutProject(arg1 string, arg2 string) error {
 	fake.checkoutProjectMutex.Lock()
 	ret, specificReturn := fake.checkoutProjectReturnsOnCall[len(fake.checkoutProjectArgsForCall)]
 	fake.checkoutProjectArgsForCall = append(fake.checkoutProjectArgsForCall, struct {
 		arg1 string
-	}{arg1})
+		arg2 string
+	}{arg1, arg2})
 	stub := fake.CheckoutProjectStub
 	fakeReturns := fake.checkoutProjectReturns
-	fake.recordInvocation("CheckoutProject", []interface{}{arg1})
+	fake.recordInvocation("CheckoutProject", []interface{}{arg1, arg2})
 	fake.checkoutProjectMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -272,17 +284,17 @@ func (fake *FakeReleaseImpl) CheckoutProjectCallCount() int {
 	return len(fake.checkoutProjectArgsForCall)
 }
 
-func (fake *FakeReleaseImpl) CheckoutProjectCalls(stub func(string) error) {
+func (fake *FakeReleaseImpl) CheckoutProjectCalls(stub func(string, string) error) {
 	fake.checkoutProjectMutex.Lock()
 	defer fake.checkoutProjectMutex.Unlock()
 	fake.CheckoutProjectStub = stub
 }
 
-func (fake *FakeReleaseImpl) CheckoutProjectArgsForCall(i int) string {
+func (fake *FakeReleaseImpl) CheckoutProjectArgsForCall(i int) (string, string) {
 	fake.checkoutProjectMutex.RLock()
 	defer fake.checkoutProjectMutex.RUnlock()
 	argsForCall := fake.checkoutProjectArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeReleaseImpl) CheckoutProjectReturns(result1 error) {
@@ -498,19 +510,20 @@ func (fake *FakeReleaseImpl) MkdirAllReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeReleaseImpl) ReleasePackage(arg1 string, arg2 string) error {
+func (fake *FakeReleaseImpl) ReleasePackage(arg1 string, arg2 string, arg3 string) error {
 	fake.releasePackageMutex.Lock()
 	ret, specificReturn := fake.releasePackageReturnsOnCall[len(fake.releasePackageArgsForCall)]
 	fake.releasePackageArgsForCall = append(fake.releasePackageArgsForCall, struct {
 		arg1 string
 		arg2 string
-	}{arg1, arg2})
+		arg3 string
+	}{arg1, arg2, arg3})
 	stub := fake.ReleasePackageStub
 	fakeReturns := fake.releasePackageReturns
-	fake.recordInvocation("ReleasePackage", []interface{}{arg1, arg2})
+	fake.recordInvocation("ReleasePackage", []interface{}{arg1, arg2, arg3})
 	fake.releasePackageMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -524,17 +537,17 @@ func (fake *FakeReleaseImpl) ReleasePackageCallCount() int {
 	return len(fake.releasePackageArgsForCall)
 }
 
-func (fake *FakeReleaseImpl) ReleasePackageCalls(stub func(string, string) error) {
+func (fake *FakeReleaseImpl) ReleasePackageCalls(stub func(string, string, string) error) {
 	fake.releasePackageMutex.Lock()
 	defer fake.releasePackageMutex.Unlock()
 	fake.ReleasePackageStub = stub
 }
 
-func (fake *FakeReleaseImpl) ReleasePackageArgsForCall(i int) (string, string) {
+func (fake *FakeReleaseImpl) ReleasePackageArgsForCall(i int) (string, string, string) {
 	fake.releasePackageMutex.RLock()
 	defer fake.releasePackageMutex.RUnlock()
 	argsForCall := fake.releasePackageArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeReleaseImpl) ReleasePackageReturns(result1 error) {

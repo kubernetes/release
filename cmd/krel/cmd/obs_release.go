@@ -65,6 +65,14 @@ var obsReleaseOptions = obs.DefaultReleaseOptions()
 func init() {
 	obsReleaseCmd.PersistentFlags().
 		StringVar(
+			&obsReleaseOptions.Workspace,
+			"workspace",
+			obsReleaseOptions.Workspace,
+			"Workspace directory for running krel obs",
+		)
+
+	obsReleaseCmd.PersistentFlags().
+		StringVar(
 			&obsReleaseOptions.ReleaseType,
 			"type",
 			obsReleaseOptions.ReleaseType,

@@ -79,6 +79,14 @@ const (
 func init() {
 	obsStageCmd.PersistentFlags().
 		StringVar(
+			&obsStageOptions.Workspace,
+			"workspace",
+			obsStageOptions.Workspace,
+			"Workspace directory for running krel obs",
+		)
+
+	obsStageCmd.PersistentFlags().
+		StringVar(
 			&obsStageOptions.ReleaseType,
 			"type",
 			obsStageOptions.ReleaseType,
