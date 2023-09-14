@@ -193,7 +193,7 @@ func (d *DefaultRelease) InitOBSRoot() error {
 		return fmt.Errorf("creating obs config file: %w", err)
 	}
 
-	return d.impl.MkdirAll(obsRoot)
+	return d.impl.MkdirAll(filepath.Join(d.options.Workspace, obsRoot))
 }
 
 // ValidateOptions validates the release options.

@@ -111,6 +111,14 @@ func init() {
 
 	obsReleaseCmd.PersistentFlags().
 		StringVar(
+			&obsReleaseOptions.SpecTemplatePath,
+			obsSpecTemplatePathFlag,
+			obsReleaseOptions.SpecTemplatePath,
+			"Path to a directory containing templates for specs",
+		)
+
+	obsReleaseCmd.PersistentFlags().
+		StringVar(
 			&obsReleaseOptions.Project,
 			obsProjectFlag,
 			obsReleaseOptions.Project,
