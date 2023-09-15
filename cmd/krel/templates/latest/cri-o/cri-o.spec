@@ -8,6 +8,8 @@ Summary: Open Container Initiative-based implementation of Kubernetes Container 
 
 %if "%{_vendor}" == "debbuild"
 Group: admin
+# The _unitdir macro does not exist on debbuild
+%define _unitdir %{_prefix}/lib/systemd/system
 %endif
 
 Packager: Kubernetes Authors <dev@kubernetes.io>
