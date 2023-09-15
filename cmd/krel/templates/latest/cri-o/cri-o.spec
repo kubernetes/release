@@ -55,6 +55,7 @@ install -D -m 644 -t %{buildroot}%{_datadir}/zsh/site-functions %{archive_root}/
 # Configurations
 install -dp %{buildroot}%{_sysconfdir}/containers
 install -p -m 644 %{archive_root}/contrib/policy.json %{buildroot}%{_sysconfdir}/containers/policy.json
+install -p -m 644 %{archive_root}/contrib/registries.conf %{buildroot}%{_sysconfdir}/containers/registries.conf
 
 install -p -m 644 %{archive_root}/etc/crictl.yaml %{buildroot}%{_sysconfdir}/crictl.yaml
 
@@ -100,6 +101,7 @@ install -D -m 644 -t %{buildroot}%{_mandir}/man8 %{archive_root}/man/crio.8
 # Configurations
 %dir %{_sysconfdir}/containers
 %config(noreplace) %{_sysconfdir}/containers/policy.json
+%config(noreplace) %{_sysconfdir}/containers/registries.conf
 %config(noreplace) %{_sysconfdir}/crictl.yaml
 %dir %{_sysconfdir}/cni
 %dir %{_sysconfdir}/cni/net.d
