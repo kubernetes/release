@@ -47,7 +47,7 @@ Before running `krel release-notes` export your GitHub token to \$GITHUB_TOKEN:
 ```
 Flags:
       --create-draft-pr     update the Release Notes draft and create a PR in k/sig-release
-      --create-website-pr   patch the relnotes.k8s.io sources and generate a PR with the changes
+      --create-website-pr   [DEPRECATED] patch the relnotes.k8s.io sources and generate a PR with the changes
       --dependencies        add dependency report (default true)
       --fix                 fix release notes
       --fork string         the user's fork in the form org/repo. Used to submit Pull Requests for the website and draft

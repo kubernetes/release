@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -32,8 +33,6 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
-
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/document"
 	"k8s.io/release/pkg/notes/options"
@@ -180,7 +179,7 @@ func init() {
 		&releaseNotesOpts.createWebsitePR,
 		"create-website-pr",
 		false,
-		"patch the relnotes.k8s.io sources and generate a PR with the changes",
+		"[DEPRECATED] patch the relnotes.k8s.io sources and generate a PR with the changes",
 	)
 
 	releaseNotesCmd.PersistentFlags().StringSliceVarP(
