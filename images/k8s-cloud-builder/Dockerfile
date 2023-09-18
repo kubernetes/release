@@ -41,7 +41,6 @@ RUN apt-get -q update \
         lsb-release \
         make \
         net-tools \
-        osc \
         pandoc \
         rsync \
         software-properties-common \
@@ -65,6 +64,7 @@ RUN apt-get -qqy purge ".*python2.*" \
 RUN pip3 install --no-cache-dir \
       # for gcloud https://cloud.google.com/storage/docs/gsutil/addlhelp/CRC32CandInstallingcrcmod
       crcmod \
+      osc \
       yq
 
 # common::set_cloud_binaries() looks for it in this path
