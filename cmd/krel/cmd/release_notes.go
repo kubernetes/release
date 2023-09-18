@@ -180,7 +180,7 @@ func init() {
 		&releaseNotesOpts.createWebsitePR,
 		"create-website-pr",
 		false,
-		"patch the relnotes.k8s.io sources and generate a PR with the changes",
+		"[DEPRECATED] patch the relnotes.k8s.io sources and generate a PR with the changes",
 	)
 
 	releaseNotesCmd.PersistentFlags().StringSliceVarP(
