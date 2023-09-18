@@ -20,6 +20,7 @@ Requires: {{ $dep.Name }} {{ $dep.VersionConstraint }}
 
 %if "%{_vendor}" == "debbuild"
 BuildRequires: systemd-deb-macros
+BuildRequires: sed
 %else
 BuildRequires: systemd-rpm-macros
 %endif
@@ -40,6 +41,10 @@ KUBE_ARCH="$(uname -m)"
 # Install files
 mkdir -p %{buildroot}%{_bindir}
 mkdir -p %{buildroot}%{_unitdir}/kubelet.service.d/
+
+%if "%{_vendor}" == "debbuild"
+sed -i 's;/etc/sysconfig/kubelet;/etc/default/kubelet;g' 10-kubeadm.conf
+%endif
 
 install -p -m 755 ${KUBE_ARCH}/kubeadm %{buildroot}%{_bindir}/kubeadm
 install -p -m 644 10-kubeadm.conf %{buildroot}%{_unitdir}/kubelet.service.d/10-kubeadm.conf
