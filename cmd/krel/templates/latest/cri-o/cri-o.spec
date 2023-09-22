@@ -15,13 +15,11 @@ BuildRequires: sed
 Group: admin
 # The _unitdir macro does not exist on debbuild
 %define _unitdir %{_prefix}/lib/systemd/system
-Requires: golang-github-containers-common
+Replaces: conmon, crun, golang-github-containers-common
 %else
-Requires: containers-common
+Conflicts: conmon, crun, containers-common
 %endif
 
-Requires: conmon
-Requires: crun
 Requires: iptables
 Requires: kubernetes-cni
 
@@ -44,6 +42,8 @@ install -dp %{buildroot}%{_sharedstatedir}/crio
 install -dp %{buildroot}%{_bindir}
 install -p -m 755 %{archive_root}/bin/crio %{buildroot}%{_bindir}/crio
 install -p -m 755 %{archive_root}/bin/pinns %{buildroot}%{_bindir}/pinns
+install -p -m 755 %{archive_root}/bin/crun %{buildroot}%{_bindir}/crun
+install -p -m 755 %{archive_root}/bin/conmon %{buildroot}%{_bindir}/conmon
 
 # Completions
 install -d -m 755 %{buildroot}%{_datadir}/bash-completion/completions
@@ -56,7 +56,9 @@ install -d -m 755 %{buildroot}%{_datadir}/zsh/site-functions
 install -D -m 644 -t %{buildroot}%{_datadir}/zsh/site-functions %{archive_root}/completions/zsh/_crio
 
 # Configurations
-install -dp %{buildroot}%{_sysconfdir}
+install -dp %{buildroot}%{_sysconfdir}/containers
+install -p -m 644 %{archive_root}/contrib/policy.json %{buildroot}%{_sysconfdir}/containers/policy.json
+install -p -m 644 %{archive_root}/contrib/registries.conf %{buildroot}%{_sysconfdir}/containers/registries.conf
 install -p -m 644 %{archive_root}/etc/crictl.yaml %{buildroot}%{_sysconfdir}/crictl.yaml
 
 install -dp %{buildroot}%{_sysconfdir}/crio/crio.conf.d
@@ -86,6 +88,8 @@ install -D -m 644 -t %{buildroot}%{_mandir}/man8 %{archive_root}/man/crio.8
 # Binaries
 %{_bindir}/crio
 %{_bindir}/pinns
+%{_bindir}/conmon
+%{_bindir}/crun
 
 # Completions
 %{_datadir}/bash-completion/completions/crio
@@ -97,6 +101,9 @@ install -D -m 644 -t %{buildroot}%{_mandir}/man8 %{archive_root}/man/crio.8
 %{_datadir}/zsh/site-functions/_crio
 
 # Configurations
+%dir %{_sysconfdir}/containers
+%config(noreplace) %{_sysconfdir}/containers/policy.json
+%config(noreplace) %{_sysconfdir}/containers/registries.conf
 %config(noreplace) %{_sysconfdir}/crictl.yaml
 %dir %{_sysconfdir}/cni
 %dir %{_sysconfdir}/cni/net.d
