@@ -35,7 +35,7 @@ Requires: kubernetes-cni
 %install
 %define archive_root "$(uname -m)"/cri-o
 cp %{archive_root}/LICENSE .
-cp g{archive_root}/README.md .
+cp %{archive_root}/README.md .
 
 # Directories
 install -dp %{buildroot}%{_sharedstatedir}/crio
