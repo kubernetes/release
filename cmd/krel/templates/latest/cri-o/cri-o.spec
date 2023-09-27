@@ -21,7 +21,7 @@ Conflicts: conmon, crun, containers-common
 %endif
 
 Requires: iptables
-Requires: kubernetes-cni
+Requires: kubernetes-cni or containernetworking-plugins
 
 %description
 %{summary}.
