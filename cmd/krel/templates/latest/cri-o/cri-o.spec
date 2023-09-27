@@ -18,12 +18,13 @@ Group: admin
 # The _unitdir macro does not exist on debbuild
 %define _unitdir %{_prefix}/lib/systemd/system
 Replaces: conmon, crun, golang-github-containers-common
+Requires: kubernetes-cni or containernetworking-plugins
 %else
 Conflicts: conmon, crun, containers-common
+Recommends: kubernetes-cni
 %endif
 
 Requires: iptables
-Requires: kubernetes-cni or containernetworking-plugins
 
 %description
 %{summary}.
