@@ -15,11 +15,13 @@ BuildRequires: systemd
 
 %if "%{_vendor}" == "debbuild"
 Group: admin
+BuildRequires: systemd-deb-macros
 # The _unitdir macro does not exist on debbuild
 %define _unitdir %{_prefix}/lib/systemd/system
 Replaces: conmon, crun, golang-github-containers-common
 Requires: kubernetes-cni or containernetworking-plugins
 %else
+BuildRequires: systemd-rpm-macros
 Conflicts: conmon, crun, containers-common
 Recommends: kubernetes-cni
 %endif
@@ -85,15 +87,6 @@ install -D -m 644 -t %{buildroot}%{_mandir}/man5 %{archive_root}/man/crio.conf.5
 install -D -m 644 -t %{buildroot}%{_mandir}/man5 %{archive_root}/man/crio.conf.d.5
 install -D -m 644 -t %{buildroot}%{_mandir}/man8 %{archive_root}/man/crio.8
 
-%if "%{_vendor}" == "debbuild"
-# We cannot use the %systemd_ macros here because debbuild does not support them.
-%pre
-/usr/bin/systemctl stop crio.service >/dev/null 2>&1 ||:
-
-%post
-/usr/bin/systemctl daemon-reload
-/usr/bin/systemctl enable --now crio.service
-%else
 %post
 %systemd_post crio.service
 
@@ -102,7 +95,6 @@ install -D -m 644 -t %{buildroot}%{_mandir}/man8 %{archive_root}/man/crio.8
 
 %postun
 %systemd_postun_with_restart crio.service
-%endif
 
 %files
 
