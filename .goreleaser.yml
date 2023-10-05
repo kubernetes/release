@@ -36,14 +36,9 @@ builds:
       - arm64
 
 archives:
-  - id: krel
-    format: binary
+  - format: binary
+    name_template: "{{ .Binary }}"
     allow_different_binary_count: true
-    name_template: krel-{{ .Arch }}-{{ .Os }}
-  - id: release-notes
-    format: binary
-    allow_different_binary_count: true
-    name_template: release-notes-{{ .Arch }}-{{ .Os }}
 
 signs:
   - id: keyless
