@@ -26,7 +26,7 @@ builds:
       - arm64
   - id: release-notes
     no_unique_dist_dir: true
-    main: ./cmd/publish-release
+    main: ./cmd/release-notes
     binary: release-notes-{{ .Arch }}-{{ .Os }}
     goos:
       - linux
