@@ -92,6 +92,8 @@ dependencies:
       match: GO_MAJOR_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
     - path: images/build/go-runner/variants.yaml
       match: "GO_MAJOR_VERSION: '\\d+.\\d+'"
+    - path: .github/workflows/release.yml
+      match: "go-version: '\\d+.\\d+'"
 
   - name: "golang: go.mod"
     version: 1.20
