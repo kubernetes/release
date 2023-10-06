@@ -131,6 +131,16 @@ type FakeStageClient struct {
 	validateOptionsReturnsOnCall map[int]struct {
 		result1 error
 	}
+	WaitStub        func() error
+	waitMutex       sync.RWMutex
+	waitArgsForCall []struct {
+	}
+	waitReturns struct {
+		result1 error
+	}
+	waitReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -721,6 +731,59 @@ func (fake *FakeStageClient) ValidateOptionsReturnsOnCall(i int, result1 error) 
 	}{result1}
 }
 
+func (fake *FakeStageClient) Wait() error {
+	fake.waitMutex.Lock()
+	ret, specificReturn := fake.waitReturnsOnCall[len(fake.waitArgsForCall)]
+	fake.waitArgsForCall = append(fake.waitArgsForCall, struct {
+	}{})
+	stub := fake.WaitStub
+	fakeReturns := fake.waitReturns
+	fake.recordInvocation("Wait", []interface{}{})
+	fake.waitMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageClient) WaitCallCount() int {
+	fake.waitMutex.RLock()
+	defer fake.waitMutex.RUnlock()
+	return len(fake.waitArgsForCall)
+}
+
+func (fake *FakeStageClient) WaitCalls(stub func() error) {
+	fake.waitMutex.Lock()
+	defer fake.waitMutex.Unlock()
+	fake.WaitStub = stub
+}
+
+func (fake *FakeStageClient) WaitReturns(result1 error) {
+	fake.waitMutex.Lock()
+	defer fake.waitMutex.Unlock()
+	fake.WaitStub = nil
+	fake.waitReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageClient) WaitReturnsOnCall(i int, result1 error) {
+	fake.waitMutex.Lock()
+	defer fake.waitMutex.Unlock()
+	fake.WaitStub = nil
+	if fake.waitReturnsOnCall == nil {
+		fake.waitReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.waitReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeStageClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -748,6 +811,8 @@ func (fake *FakeStageClient) Invocations() map[string][][]interface{} {
 	defer fake.submitMutex.RUnlock()
 	fake.validateOptionsMutex.RLock()
 	defer fake.validateOptionsMutex.RUnlock()
+	fake.waitMutex.RLock()
+	defer fake.waitMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
