@@ -74,6 +74,7 @@ const (
 	obsVersionFlag          = "version"
 	obsProjectFlag          = "project"
 	obsSourceFlag           = "source"
+	obsWaitFlag             = "wait"
 )
 
 func init() {
@@ -177,6 +178,14 @@ func init() {
 			streamFlag,
 			false,
 			"Run the Google Cloud Build job synchronously",
+		)
+
+	obsStageCmd.PersistentFlags().
+		BoolVar(
+			&obsStageOptions.Wait,
+			obsWaitFlag,
+			false,
+			"Wait for the OBS build results to succeed",
 		)
 
 	for _, flag := range []string{buildVersionFlag, submitJobFlag} {

@@ -140,6 +140,9 @@ type Options struct {
 	// Mutually exclusive with `ReleaseType`, `ReleaseBranch`, and
 	// `BuildVersion`.
 	PackageSource string
+
+	// Wait can be used to wait for the OBS build results.
+	Wait bool
 }
 
 // DefaultOptions returns a new `Options` instance.
@@ -440,6 +443,11 @@ func (s *Stage) Run() error {
 	logger.WithStep().Info("Pushing packages to OBS")
 	if err := s.client.Push(); err != nil {
 		return fmt.Errorf("pushing packages to obs: %w", err)
+	}
+
+	logger.WithStep().Info("Waiting for OBS build results if required")
+	if err := s.client.Wait(); err != nil {
+		return fmt.Errorf("wait for OBS build results: %w", err)
 	}
 
 	return nil

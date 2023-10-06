@@ -29,6 +29,7 @@ import (
 	"k8s.io/release/pkg/obs/specs"
 	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-sdk/osc"
+	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/util"
 )
 
@@ -80,6 +81,9 @@ type stageClient interface {
 	// Push pushes the package (spec file and archive) to OBS which triggers
 	// the build.
 	Push() error
+
+	// Wait waits for the OBS build results to succeed.
+	Wait() error
 }
 
 // DefaultStage is the default staging implementation used in production.
@@ -132,6 +136,7 @@ type stageImpl interface {
 	CheckoutProject(workspaceDir, project string) error
 	AddRemoveChanges(workspaceDir, project, packageName string) error
 	CommitChanges(workspaceDir, project, packageName, message string) error
+	Wait(project, packageName string) error
 }
 
 func (d *defaultStageImpl) Submit(options *gcb.Options) error {
@@ -214,6 +219,11 @@ func (d *defaultStageImpl) CommitChanges(workspaceDir, project, packageName, mes
 	return osc.OSC(filepath.Join(workspaceDir, obsRoot, project, packageName), "commit", "-m", message)
 }
 
+// Wait runs `osc results -w` for the package.
+func (d *defaultStageImpl) Wait(project, packageName string) error {
+	return command.New(osc.OSCExecutable, "results", fmt.Sprintf("%s/%s", project, packageName), "-w").RunSuccess()
+}
+
 func (d *DefaultStage) Submit(stream bool) error {
 	options := gcb.NewDefaultOptions()
 
@@ -229,6 +239,7 @@ func (d *DefaultStage) Submit(stream bool) error {
 	options.Version = d.options.Version
 	options.OBSProject = d.options.Project
 	options.PackageSource = d.options.PackageSource
+	options.OBSWait = d.options.Wait
 
 	return d.impl.Submit(options)
 }
@@ -402,6 +413,36 @@ func (d *DefaultStage) Push() error {
 
 		if err := d.impl.CommitChanges(d.options.Workspace, d.state.obsProject, pkg, d.state.packageVersion); err != nil {
 			return fmt.Errorf("committing packages: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// Wait waits for the OBS build results to succeed.
+func (d *DefaultStage) Wait() error {
+	if !d.options.NoMock {
+		logrus.Info("Running stage in mock, skipping waiting for OBS")
+		return nil
+	}
+
+	const retries = 3
+	for _, pkg := range d.options.Packages {
+		var tryError error
+
+		for try := 0; try < retries; try++ {
+			logrus.Infof("Waiting for package: %s (try %d)", pkg, try)
+
+			tryError = d.impl.Wait(d.state.obsProject, pkg)
+			if tryError == nil {
+				break
+			}
+
+			logrus.Errorf("Unable to wait for package %s: %v", pkg, tryError)
+		}
+
+		if tryError != nil {
+			return fmt.Errorf("wait for package %s: %w", pkg, tryError)
 		}
 	}
 
