@@ -18,6 +18,7 @@ steps:
       - IMAGE_VERSION=$_IMAGE_VERSION
       - CONFIG=$_CONFIG
       - GORUNNER_VERSION=$_GORUNNER_VERSION
+      - BASEIMAGE=$_BASEIMAGE
       - HOME=/root  # for docker buildx
     args:
     - -c
@@ -33,6 +34,7 @@ substitutions:
   _IMAGE_VERSION: 'v0.0.0'
   _CONFIG: 'codename'
   _GORUNNER_VERSION: 'v0.0.0'
+  _BASEIMAGE: 'fakedebian:fake-slim'
   _REGISTRY: 'fake.repository/registry-name'
 
 tags:
