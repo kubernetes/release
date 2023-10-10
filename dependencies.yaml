@@ -13,36 +13,6 @@ dependencies:
     - path: hack/verify-dependencies.sh
       match: VERSION=(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?
 
-  # CNI plugins
-  - name: "CNI plugins"
-    version: 1.1.1
-    refPaths:
-    - path: packages/deb/build.go
-      match: currentCNIVersion\s+= "\d+\.\d+.\d+"
-    - path: packages/rpm/kubelet.spec
-      match: \%global CNI_VERSION \d+\.\d+.\d+
-    - path: pkg/kubepkg/kubepkg.go
-      match: CurrentCNIVersion\s+= "\d+\.\d+.\d+"
-
-  - name: "CNI plugins: minimum version"
-    version: 0.8.6
-    refPaths:
-    - path: packages/rpm/kubelet.spec
-      match: kubernetes-cni >= \d+\.\d+.\d+
-    - path: pkg/kubepkg/kubepkg.go
-      match: MinimumCNIVersion\s+= "\d+\.\d+.\d+"
-
-  # CRI Tools
-  - name: "crictl"
-    version: 1.25.0
-    refPaths:
-    - path: packages/deb/build.go
-      match: criToolsVersion\s+= "\d+\.\d+.\d+"
-    - path: packages/deb/build_test.go
-      match: cri-tools \(>= \d+.\d+.\d+\)
-    - path: packages/rpm/kubelet.spec
-      match: CRI_TOOLS_VERSION \d+.\d+.\d+
-
   # cosign
   - name: "ghcr.io/sigstore/cosign/cosign"
     version: v2.2.0@sha256:280b47054876d415f66a279e666e35157cae6881f3538599710290c70bb75369
@@ -59,10 +29,6 @@ dependencies:
   - name: "golang"
     version: 1.21.2
     refPaths:
-    - path: Dockerfile-kubepkg
-      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bookworm|bullseye) AS builder
-    - path: Dockerfile-kubepkg-rpm
-      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bookworm|bullseye) AS builder
     - path: images/build/cross/Makefile
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
     - path: images/build/cross/variants.yaml
@@ -73,8 +39,6 @@ dependencies:
       match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
     - path: images/releng/ci/variants.yaml
       match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
-    - path: packages/deb/Dockerfile
-      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-(bookworm|bullseye)
 
   # Golang pre-releases are denoted as `1.y<pre-release stage>.z`
   # Example: go1.17rc1
@@ -101,8 +65,6 @@ dependencies:
     - path: go.mod
       match: go \d+.\d+
     - path: images/build/go-runner/go.mod
-      match: go \d+.\d+
-    - path: packages/deb/go.mod
       match: go \d+.\d+
 
   - name: "golang: after kubernetes/kubernetes update"
@@ -445,8 +407,6 @@ dependencies:
     refPaths:
     - path: images/build/cross/Makefile
       match: OS_CODENAME\ \?=\ bullseye
-    - path: packages/deb/Dockerfile
-      match: FROM golang:\d+.\d+(alpha|beta|rc)?\.?(\d+)-bullseye
 
   - name: "Debian: codename (default)"
     version: bullseye

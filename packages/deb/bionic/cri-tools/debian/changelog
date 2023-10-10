@@ -1,5 +1,0 @@
-cri-tools ({{ .Version }}-{{ .Revision }}) {{ .DistroName }} {{ .Arch }}; urgency=optional
-
-  * https://github.com/kubernetes-sigs/cri-tools/releases/tag/v{{ .Version }}
-
- -- Kubernetes Authors <kubernetes-dev@googlegroups.com>  {{ date }}

@@ -21,16 +21,6 @@ SHELL:=/usr/bin/env bash
 COLOR:=\\033[36m
 NOCOLOR:=\\033[0m
 
-##@ Package
-
-.PHONY: verify-published-debs verify-published-rpms
-
-verify-published-debs: ## Ensure debs have been published
-	./hack/packages/verify-published.sh debs
-
-verify-published-rpms: ## Ensure rpms have been published
-	./hack/packages/verify-published.sh rpms
-
 ##@ Verify
 
 .PHONY: verify verify-boilerplate verify-build verify-dependencies verify-go-mod
