@@ -20,7 +20,6 @@ Individual tools can be installed via `go install k8s.io/release/cmd/$TOOL@lates
   - [`schedule-builder`](#schedule-builder)
 - [Artifact Management](#artifact-management)
   - [`kpromo`](#kpromo)
-  - [`kubepkg`](#kubepkg)
 - [End User](#end-user)
   - [`bom`](#bom)
   - [`release-notes`](#release-notes)
@@ -28,8 +27,6 @@ Individual tools can be installed via `go install k8s.io/release/cmd/$TOOL@lates
   - [`publish-release`](#publish-release)
 - [Legacy](#legacy)
   - [`push-build.sh`](#push-buildsh)
-- [Experimental](#experimental)
-  - [`rapture`](#rapture)
 - [Contributing](#contributing)
 
 **Each of the headings below links to a tool's location.**
@@ -100,16 +97,6 @@ responsible for promoting file or container artifacts
 
 Details: [Documentation](https://sigs.k8s.io/promo-tools/README.md#kpromo)
 
-### [`kubepkg`](/cmd/kubepkg)
-
-Create Kubernetes deb/rpm packages.
-
-Status: In Progress
-
-Audience: [Release Managers][release-managers]
-
-Details: [Documentation](/cmd/kubepkg/README.md)
-
 ## End User
 
 ### [`bom`](https://sigs.k8s.io/bom)
@@ -152,16 +139,6 @@ Push a CI build of Kubernetes to Google Cloud Storage (GCS).
 Status: Deprecated (but still in use)
 
 Audience: [Release Managers][release-managers], Prowjobs
-
-## Experimental
-
-### [`rapture`](hack/rapture/)
-
-Build operating system packages (`.deb` and RPM)
-
-Status: Experimental (but already in use)
-
-Audience: [Release Managers][release-managers], Googlers participating in releases
 
 ## Contributing
 

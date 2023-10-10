@@ -126,16 +126,6 @@ type FakeReleaseClient struct {
 	pushGitObjectsReturnsOnCall map[int]struct {
 		result1 error
 	}
-	ReleasePackagesStub        func() error
-	releasePackagesMutex       sync.RWMutex
-	releasePackagesArgsForCall []struct {
-	}
-	releasePackagesReturns struct {
-		result1 error
-	}
-	releasePackagesReturnsOnCall map[int]struct {
-		result1 error
-	}
 	SubmitStub        func(bool) error
 	submitMutex       sync.RWMutex
 	submitArgsForCall []struct {
@@ -725,59 +715,6 @@ func (fake *FakeReleaseClient) PushGitObjectsReturnsOnCall(i int, result1 error)
 	}{result1}
 }
 
-func (fake *FakeReleaseClient) ReleasePackages() error {
-	fake.releasePackagesMutex.Lock()
-	ret, specificReturn := fake.releasePackagesReturnsOnCall[len(fake.releasePackagesArgsForCall)]
-	fake.releasePackagesArgsForCall = append(fake.releasePackagesArgsForCall, struct {
-	}{})
-	stub := fake.ReleasePackagesStub
-	fakeReturns := fake.releasePackagesReturns
-	fake.recordInvocation("ReleasePackages", []interface{}{})
-	fake.releasePackagesMutex.Unlock()
-	if stub != nil {
-		return stub()
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fakeReturns.result1
-}
-
-func (fake *FakeReleaseClient) ReleasePackagesCallCount() int {
-	fake.releasePackagesMutex.RLock()
-	defer fake.releasePackagesMutex.RUnlock()
-	return len(fake.releasePackagesArgsForCall)
-}
-
-func (fake *FakeReleaseClient) ReleasePackagesCalls(stub func() error) {
-	fake.releasePackagesMutex.Lock()
-	defer fake.releasePackagesMutex.Unlock()
-	fake.ReleasePackagesStub = stub
-}
-
-func (fake *FakeReleaseClient) ReleasePackagesReturns(result1 error) {
-	fake.releasePackagesMutex.Lock()
-	defer fake.releasePackagesMutex.Unlock()
-	fake.ReleasePackagesStub = nil
-	fake.releasePackagesReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeReleaseClient) ReleasePackagesReturnsOnCall(i int, result1 error) {
-	fake.releasePackagesMutex.Lock()
-	defer fake.releasePackagesMutex.Unlock()
-	fake.ReleasePackagesStub = nil
-	if fake.releasePackagesReturnsOnCall == nil {
-		fake.releasePackagesReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.releasePackagesReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
 func (fake *FakeReleaseClient) Submit(arg1 bool) error {
 	fake.submitMutex.Lock()
 	ret, specificReturn := fake.submitReturnsOnCall[len(fake.submitArgsForCall)]
@@ -970,8 +907,6 @@ func (fake *FakeReleaseClient) Invocations() map[string][][]interface{} {
 	defer fake.pushArtifactsMutex.RUnlock()
 	fake.pushGitObjectsMutex.RLock()
 	defer fake.pushGitObjectsMutex.RUnlock()
-	fake.releasePackagesMutex.RLock()
-	defer fake.releasePackagesMutex.RUnlock()
 	fake.submitMutex.RLock()
 	defer fake.submitMutex.RUnlock()
 	fake.updateGitHubPageMutex.RLock()

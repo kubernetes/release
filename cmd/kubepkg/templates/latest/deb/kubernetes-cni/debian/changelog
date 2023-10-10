@@ -1,6 +1,0 @@
-kubernetes-cni ({{ .Version }}-{{ .Revision }}) {{ .Channel }}; urgency=medium
-
-  * https://git.k8s.io/kubernetes/CHANGELOG/README.md
-
- -- Kubernetes Authors <kubernetes-dev@googlegroups.com>  {{ date }}
-

@@ -324,40 +324,6 @@ func TestSubmitReleaseImpl(t *testing.T) {
 	}
 }
 
-func TestReleasePackages(t *testing.T) {
-	for _, tc := range []struct {
-		prepare     func(*anagofakes.FakeReleaseImpl)
-		shouldError bool
-	}{
-		{ // success
-			prepare:     func(*anagofakes.FakeReleaseImpl) {},
-			shouldError: false,
-		},
-		{ // ReleasePackages failed
-			prepare: func(mock *anagofakes.FakeReleaseImpl) {
-				mock.ReleasePackagesReturns(err)
-			},
-			shouldError: true,
-		},
-	} {
-		opts := anago.DefaultReleaseOptions()
-		opts.NoMock = true
-		sut := anago.NewDefaultRelease(opts)
-		sut.SetState(
-			generateTestingReleaseState(&testStateParameters{versionsTag: &testVersionTag}),
-		)
-		mock := &anagofakes.FakeReleaseImpl{}
-		tc.prepare(mock)
-		sut.SetImpl(mock)
-		err := sut.ReleasePackages()
-		if tc.shouldError {
-			require.NotNil(t, err)
-		} else {
-			require.Nil(t, err)
-		}
-	}
-}
-
 func TestCreateAnnouncement(t *testing.T) {
 	for _, tc := range []struct {
 		prepare     func(*anagofakes.FakeReleaseImpl)
