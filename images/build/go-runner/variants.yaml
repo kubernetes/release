@@ -1,17 +1,17 @@
 variants:
   go1.21-bookworm:
     CONFIG: 'go1.21-bookworm'
-    IMAGE_VERSION: 'v2.3.1-go1.21.2-bookworm.0'
+    IMAGE_VERSION: 'v2.3.1-go1.21.3-bookworm.0'
     GO_MAJOR_VERSION: '1.21'
     OS_CODENAME: 'bookworm'
     REVISION: '0'
-    GO_VERSION: '1.21.2'
+    GO_VERSION: '1.21.3'
     DISTROLESS_IMAGE: 'static-debian12'
   go1.20-bullseye:
     CONFIG: 'go1.20-bullseye'
-    IMAGE_VERSION: 'v2.3.1-go1.20.9-bullseye.0'
+    IMAGE_VERSION: 'v2.3.1-go1.20.10-bullseye.0'
     GO_MAJOR_VERSION: '1.20'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
-    GO_VERSION: '1.20.9'
+    GO_VERSION: '1.20.10'
     DISTROLESS_IMAGE: 'static-debian11'
