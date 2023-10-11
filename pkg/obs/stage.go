@@ -421,6 +421,11 @@ func (d *DefaultStage) Push() error {
 
 // Wait waits for the OBS build results to succeed.
 func (d *DefaultStage) Wait() error {
+	if !d.options.Wait {
+		logrus.Info("Will not wait for the OBS build results")
+		return nil
+	}
+
 	if !d.options.NoMock {
 		logrus.Info("Running stage in mock, skipping waiting for OBS")
 		return nil
