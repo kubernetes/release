@@ -184,7 +184,7 @@ func init() {
 		BoolVar(
 			&obsStageOptions.Wait,
 			obsWaitFlag,
-			false,
+			true,
 			"Wait for the OBS build results to succeed",
 		)
 
