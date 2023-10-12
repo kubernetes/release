@@ -31,6 +31,7 @@ RUN apt -y update && \
     ebtables    \
     ipset       \
     iptables    \
+    nftables    \
     kmod        && \
     `# below binaries and dash are used by iptables-wrapper-installer.sh` \
     /stage-binary-and-deps.sh "${STAGE_DIR}" /bin/dash \

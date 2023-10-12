@@ -18,7 +18,7 @@ REGISTRY?="gcr.io/k8s-staging-build-image"
 IMAGE=$(REGISTRY)/distroless-iptables
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= v0.3.3
+IMAGE_VERSION ?= v0.4.0
 CONFIG ?= distroless
 BASEIMAGE ?= debian:bookworm-slim
 GORUNNER_VERSION ?= v2.3.1-go1.21.2-bookworm.0
