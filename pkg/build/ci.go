@@ -90,10 +90,11 @@ func (bi *Instance) Build() error {
 		releaseType = "quick-release"
 	}
 
-	if buildErr := command.New(
-		"make",
-		releaseType,
-	).RunSuccess(); buildErr != nil {
+	cmd := command.New("make", releaseType)
+	if bi.opts.KubeBuildPlatforms != "" {
+		cmd.Env(fmt.Sprintf("KUBE_BUILD_PLATFORMS=%s", bi.opts.KubeBuildPlatforms))
+	}
+	if buildErr := cmd.RunSuccess(); buildErr != nil {
 		return fmt.Errorf("running make %s: %w", releaseType, buildErr)
 	}
 

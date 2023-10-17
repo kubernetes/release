@@ -105,7 +105,7 @@ type Options struct {
 	// with non-public registries.
 	ConfigureDocker bool
 
-	// Specifies a fast build (linux/amd64 only).
+	// Specifies a fast build.
 	Fast bool
 
 	// Do not exit error if the build already exists on the GCS path.
@@ -123,6 +123,9 @@ type Options struct {
 	// Stage additional files defined by `ExtraGcpStageFiles` and
 	// `ExtraWindowsStageFiles`, otherwise they will be skipped.
 	StageExtraFiles bool
+
+	// This sets the KUBE_BUILD_PLATFORMS value for make release/quick-release commands
+	KubeBuildPlatforms string
 }
 
 // TODO: Refactor so that version is not required as a parameter
