@@ -18,7 +18,7 @@ jobs:
           go-version: '1.21'
           check-latest: true
       - uses: sigstore/cosign-installer@11086d25041f77fe8fe7b9ea4e48e3b9192b8f19 # v3.1.2
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v3.5.2
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v3.5.2
         with:
           fetch-depth: 1
       - name: Build and publish release
