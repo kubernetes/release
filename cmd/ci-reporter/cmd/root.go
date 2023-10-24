@@ -214,7 +214,7 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 		if err != nil {
 			return fmt.Errorf("could not marshal report data: %w", err)
 		}
-		_, err = out.WriteString(string(d))
+		_, err = out.Write(d)
 		if err != nil {
 			return fmt.Errorf("could not write to output stream: %w", err)
 		}

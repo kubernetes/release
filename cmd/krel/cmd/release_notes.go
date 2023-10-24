@@ -26,6 +26,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1284,21 +1285,21 @@ func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.R
 		numChanges++
 	}
 
-	if fmt.Sprint(originalNote.Feature) == fmt.Sprint(modifiedNote.Feature) {
+	if strconv.FormatBool(originalNote.Feature) == strconv.FormatBool(modifiedNote.Feature) {
 		unalteredFields.ReleaseNote.Feature = &originalNote.Feature
 	} else {
 		modifiedFields.ReleaseNote.Feature = &modifiedNote.Feature
 		numChanges++
 	}
 
-	if fmt.Sprint(originalNote.ActionRequired) == fmt.Sprint(modifiedNote.ActionRequired) {
+	if strconv.FormatBool(originalNote.ActionRequired) == strconv.FormatBool(modifiedNote.ActionRequired) {
 		unalteredFields.ReleaseNote.ActionRequired = &originalNote.ActionRequired
 	} else {
 		modifiedFields.ReleaseNote.ActionRequired = &modifiedNote.ActionRequired
 		numChanges++
 	}
 
-	if fmt.Sprint(originalNote.DoNotPublish) == fmt.Sprint(modifiedNote.DoNotPublish) {
+	if strconv.FormatBool(originalNote.DoNotPublish) == strconv.FormatBool(modifiedNote.DoNotPublish) {
 		unalteredFields.ReleaseNote.DoNotPublish = &originalNote.DoNotPublish
 	} else {
 		modifiedFields.ReleaseNote.DoNotPublish = &modifiedNote.DoNotPublish

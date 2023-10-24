@@ -18,6 +18,7 @@ package release
 
 import (
 	"crypto/sha1" //nolint:gosec // used for file integrity checks, NOT security
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -58,7 +59,7 @@ func (pc *ProvenanceChecker) CheckStageProvenance(buildVersion string) error {
 	if _, err := h.Write([]byte(buildVersion)); err != nil {
 		return fmt.Errorf("creating dir: %w", err)
 	}
-	pc.options.StageDirectory = filepath.Join(pc.options.ScratchDirectory, fmt.Sprintf("%x", h.Sum(nil)))
+	pc.options.StageDirectory = filepath.Join(pc.options.ScratchDirectory, hex.EncodeToString(h.Sum(nil)))
 
 	gcsPath, err := pc.objStore.NormalizePath(
 		object.GcsPrefix + filepath.Join(

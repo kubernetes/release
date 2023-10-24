@@ -402,7 +402,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket string) 
 		gcbSubs["OBS_PROJECT"] = g.options.OBSProject
 		gcbSubs["OBS_PROJECT_TAG"] = strings.ReplaceAll(g.options.OBSProject, ":", "-")
 		gcbSubs["PACKAGE_SOURCE"] = g.options.PackageSource
-		gcbSubs["WAIT"] = fmt.Sprint(g.options.OBSWait)
+		gcbSubs["WAIT"] = strconv.FormatBool(g.options.OBSWait)
 
 		// Stop here when doing OBS stage
 		return gcbSubs, nil

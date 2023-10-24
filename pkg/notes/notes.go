@@ -21,6 +21,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha1" //nolint:gosec // used for file integrity checks, NOT security
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -1184,7 +1185,7 @@ func (rn *ReleaseNote) ContentHash() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("calculating content hash from map: %w", err)
 	}
-	return fmt.Sprintf("%x", h.Sum(nil)), nil
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // capitalizeString returns a capitalized string of the input string
