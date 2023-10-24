@@ -73,8 +73,8 @@ func (t *TestGrid) BlockingTests(branch string) (tests []string, err error) {
 		return nil, fmt.Errorf("dashboard %s not found", dashboardName)
 	}
 
-	for _, tab := range dashboard.DashboardTab {
-		tests = append(tests, tab.TestGroupName)
+	for _, tab := range dashboard.GetDashboardTab() {
+		tests = append(tests, tab.GetTestGroupName())
 	}
 
 	return tests, nil

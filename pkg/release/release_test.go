@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -561,7 +562,7 @@ func TestWriteChecksums(t *testing.T) {
 				rootSHAs := []byte{1, 2, 4, 8, 16, 32, 64, 128}
 				for i, v := range rootSHAs {
 					require.Nil(t, os.WriteFile(
-						filepath.Join(tempDir, fmt.Sprintf("%d", i)),
+						filepath.Join(tempDir, strconv.Itoa(i)),
 						[]byte{v}, os.FileMode(0o644),
 					))
 				}
@@ -570,7 +571,7 @@ func TestWriteChecksums(t *testing.T) {
 				require.Nil(t, os.MkdirAll(subTempDir, os.FileMode(0o755)))
 				for i, v := range []byte{1, 2} {
 					require.Nil(t, os.WriteFile(
-						filepath.Join(subTempDir, fmt.Sprintf("%d", i+len(rootSHAs))),
+						filepath.Join(subTempDir, strconv.Itoa(i+len(rootSHAs))),
 						[]byte{v}, os.FileMode(0o644),
 					))
 				}

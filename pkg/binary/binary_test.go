@@ -128,6 +128,7 @@ func TestArch(t *testing.T) {
 
 func TestGetELFHeader(t *testing.T) {
 	for _, testBin := range GetTestHeaders() {
+		testBin := testBin
 		f := writeTestBinary(t, &testBin.Data)
 		header, err := binary.GetELFHeader(f.Name())
 		os.Remove(f.Name())
@@ -143,6 +144,7 @@ func TestGetELFHeader(t *testing.T) {
 
 func TestGetMachOHeader(t *testing.T) {
 	for _, testBin := range GetTestHeaders() {
+		testBin := testBin
 		f := writeTestBinary(t, &testBin.Data)
 		header, err := binary.GetMachOHeader(f.Name())
 		os.Remove(f.Name())
@@ -158,6 +160,7 @@ func TestGetMachOHeader(t *testing.T) {
 
 func TestGetPEHeader(t *testing.T) {
 	for _, testBin := range GetTestHeaders() {
+		testBin := testBin
 		f := writeTestBinary(t, &testBin.Data)
 		header, err := binary.GetPEHeader(f.Name())
 		os.Remove(f.Name())

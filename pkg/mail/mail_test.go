@@ -125,9 +125,9 @@ func TestSetDefaultSender(t *testing.T) {
 func TestMailSender(t *testing.T) {
 	t.Parallel()
 
-	it.Run(t, "SetRecipients", testRecipient)
-	it.Run(t, "SetSender", testSender)
-	it.Run(t, "Send", testSend)
+	it.Run(t, "SetRecipients", recipientTest)
+	it.Run(t, "SetSender", senderTest)
+	it.Run(t, "Send", sendTest)
 
 	it.Run(t, "main", func(t *testing.T) {
 		m := mail.NewSender("")
@@ -143,7 +143,7 @@ func TestMailSender(t *testing.T) {
 	})
 }
 
-func testSend(t *testing.T) {
+func sendTest(t *testing.T) {
 	tests := map[string]struct {
 		sendgridSendResponse *rest.Response
 		sendgridSendErr      error
@@ -200,7 +200,7 @@ func simpleResponse(body string, code int) *rest.Response {
 	return &rest.Response{Body: body, StatusCode: code}
 }
 
-func testSender(t *testing.T) {
+func senderTest(t *testing.T) {
 	tests := map[string]struct {
 		senderName  string
 		senderEmail string
@@ -227,7 +227,7 @@ func testSender(t *testing.T) {
 	}
 }
 
-func testRecipient(t *testing.T) {
+func recipientTest(t *testing.T) {
 	tests := map[string]struct {
 		recipientArgs [][]string
 		expectedErr   string

@@ -165,6 +165,7 @@ func TestGenerateReleaseVersionRelease(t *testing.T) {
 			shouldError: true,
 		},
 	} {
+		tc := tc
 		opts := anago.DefaultReleaseOptions()
 
 		sut := anago.NewDefaultRelease(opts)
