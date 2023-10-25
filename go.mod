@@ -43,7 +43,7 @@ require (
 	sigs.k8s.io/promo-tools/v3 v3.6.0
 	sigs.k8s.io/release-sdk v0.10.3
 	sigs.k8s.io/release-utils v0.7.5
-	sigs.k8s.io/yaml v1.3.0
+	sigs.k8s.io/yaml v1.4.0
 )
 
 require (
