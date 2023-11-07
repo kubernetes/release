@@ -35,12 +35,3 @@ variants:
     GO_MAJOR_VERSION: '1.20'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
-  v1.25-go1.20-bullseye:
-    CONFIG: 'go1.20-bullseye'
-    TYPE: 'default'
-    IMAGE_VERSION: 'v1.25.0-go1.20.11-bullseye.0'
-    KUBERNETES_VERSION: 'v1.25.0'
-    GO_VERSION: '1.20.11'
-    GO_MAJOR_VERSION: '1.20'
-    OS_CODENAME: 'bullseye'
-    REVISION: '0'
