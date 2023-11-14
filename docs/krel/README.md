@@ -15,16 +15,21 @@ Kubernetes Releases. This includes manually executed tasks like generating the R
 
 ## Installation
 
-Either Compile krel by running the `compile-release-tools` script from the root of this repo:
+Either download the latest version of `krel` by using the `hack/get-krel` script:
+
+```shell
+./hack/get-krel
+```
+
+Or compile `krel` by running the `compile-release-tools` script from the root of this repo:
 
 ```shell
 ./compile-release-tools krel
 ```
-Or
 
-Run the following command in the terminal:
+Or run the following command in the terminal:
 
-```
+```shell
 go install k8s.io/release/cmd/krel@latest
 ```
 

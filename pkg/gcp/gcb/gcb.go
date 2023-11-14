@@ -377,21 +377,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket string) 
 		logrus.Infof("KubeCross version not set for %s, falling back to latest", g.options.Branch)
 	}
 
-	kcVersionLatest := kcVersionBranch
-	if g.options.Branch != git.DefaultBranch {
-		kcVersionLatest, err = kc.Latest()
-		if err != nil {
-			return gcbSubs, fmt.Errorf("retrieve latest kube-cross version: %w", err)
-		}
-
-		// if kcVersionBranch is empty, the branch does not exist yet, we use
-		// the latest kubecross version
-		if kcVersionBranch == "" {
-			kcVersionBranch = kcVersionLatest
-		}
-	}
 	gcbSubs["KUBE_CROSS_VERSION"] = kcVersionBranch
-	gcbSubs["KUBE_CROSS_VERSION_LATEST"] = kcVersionLatest
 
 	switch {
 	case g.options.OBSStage:
