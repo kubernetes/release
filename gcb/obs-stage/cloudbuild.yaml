@@ -52,14 +52,12 @@ steps:
     echo "Checking out ${_TOOL_REF}"
     git checkout ${_TOOL_REF}
 
-- name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION_LATEST}
-  dir: "go/src/k8s.io/release"
+- name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
+  dir: go/src/k8s.io/release
   env:
-  - "GOPATH=/workspace/go"
-  - "GOBIN=/workspace/bin"
+  - KREL_OUTPUT_PATH=/workspace/bin/krel
   args:
-  - "./compile-release-tools"
-  - "krel"
+  - ./hack/get-krel
 
 - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
   dir: "/workspace"
