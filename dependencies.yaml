@@ -20,11 +20,6 @@ dependencies:
     - path: images/build/go-runner/cloudbuild.yaml
       match: ghcr.io/sigstore/cosign/cosign:v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?@sha256:[a-f0-9]{64}
 
-  # Docker
-  # TODO(deps): Not active yet
-  #- name: "docker"
-  #  version: 19.03
-
   # Golang
   - name: "golang"
     version: 1.21.4
@@ -358,55 +353,39 @@ dependencies:
       match: "version: v\\d+.\\d+?\\.?(\\d+)?"
 
   # Base images
-  # # Use bullseye for kube-cross to achieve maximum glibc compatibility.
+  # Use bullseye for kube-cross to achieve maximum glibc compatibility.
   - name: "Debian: codename (bullseye)"
     version: bullseye
     refPaths:
     - path: images/build/cross/Makefile
       match: OS_CODENAME\ \?=\ bullseye
-
-  - name: "Debian: codename (default)"
-    version: bullseye
-    refPaths:
     - path: images/build/cross/variants.yaml
       match: "OS_CODENAME: 'bullseye'"
-    # TODO: revert once all images are on bookworm
-    # - path: images/build/debian-base/Makefile
-    #   match: CONFIG\ \?=\ bullseye
-    # - path: images/build/debian-base/variants.yaml
-    #   match: "CONFIG: 'bullseye'"
-    # Must match distroless Debian version as well
-    # - path: images/build/go-runner/Makefile
-    #   match: OS_CODENAME\ \?=\ bullseye
+      # We keep them around for backwards compatibility and release branches.
     - path: images/build/go-runner/variants.yaml
       match: "OS_CODENAME: 'bullseye'"
-    # TODO: revert once all images are on bookworm
-    # - path: images/build/setcap/Makefile
-    #  match: CONFIG\ \?=\ bullseye
-    # - path: images/build/setcap/variants.yaml
-    #   match: "CONFIG: 'bullseye'"
-    # - path: images/releng/ci/variants.yaml
-    #   match: "OS_CODENAME: 'bullseye'"
     - path: images/releng/k8s-ci-builder/Makefile
       match: OS_CODENAME\ \?=\ bullseye
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: "OS_CODENAME: 'bullseye'"
 
-
-  - name: "Debian: codename (next candidate)"
+  - name: "Debian: codename (default)"
     version: bookworm
     refPaths:
-    # TODO: revert once all images are on bookworm
-    # - path: images/build/cross/variants.yaml
-    #   match: "OS_CODENAME: 'bullseye'"
+    - path: images/build/debian-base/Makefile
+      match: CONFIG\ \?=\ bookworm
     - path: images/build/debian-base/variants.yaml
       match: "CONFIG: 'bookworm'"
-    # - path: images/build/go-runner/variants.yaml
-    #   match: "OS_CODENAME: 'bullseye'"
-    # - path: images/releng/ci/variants.yaml
-    #   match: "OS_CODENAME: 'bullseye'"
-    # - path: images/releng/k8s-ci-builder/variants.yaml
-    #   match: "OS_CODENAME: 'bullseye'"
+    - path: images/build/go-runner/Makefile
+      match: OS_CODENAME\ \?=\ bookworm
+    - path: images/build/setcap/Makefile
+      match: CONFIG\ \?=\ bookworm
+    - path: images/build/setcap/variants.yaml
+      match: "CONFIG: 'bookworm'"
+    - path: images/releng/ci/variants.yaml
+      match: "OS_CODENAME: 'bookworm'"
+    - path: images/releng/k8s-ci-builder/variants.yaml
+      match: "OS_CODENAME: 'bookworm'"
 
   - name: "registry.k8s.io/build-image/debian-base"
     version: bookworm-v1.0.0
