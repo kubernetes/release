@@ -18,7 +18,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-VERSION=0.4.1
+VERSION=0.4.3
 
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 BIN_PATH="$REPO_ROOT/bin"
@@ -27,7 +27,7 @@ ZEITGEIST_BIN="$BIN_PATH/zeitgeist"
 if [[ ! -f "$ZEITGEIST_BIN" ]]; then
     mkdir -p "$BIN_PATH"
     curl -sSfL -o "$ZEITGEIST_BIN" \
-        https://github.com/kubernetes-sigs/zeitgeist/releases/download/v$VERSION/zeitgeist_${VERSION}_linux_amd64
+        https://github.com/kubernetes-sigs/zeitgeist/releases/download/v$VERSION/zeitgeist-amd64-linux
     chmod +x "$ZEITGEIST_BIN"
 fi
 
