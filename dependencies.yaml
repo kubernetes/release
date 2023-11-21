@@ -55,7 +55,7 @@ dependencies:
       match: "go-version: '\\d+.\\d+'"
 
   - name: "golang: go.mod"
-    version: 1.20
+    version: 1.21
     refPaths:
     - path: go.mod
       match: go \d+.\d+
