@@ -27,7 +27,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v56/github"
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github/githubfakes"
@@ -235,7 +235,7 @@ func TestListCommits(t *testing.T) {
 
 func TestGatherNotes(t *testing.T) {
 	type getPullRequestStub func(context.Context, string, string, int) (*github.PullRequest, *github.Response, error)
-	type listPullRequestsWithCommitStub func(context.Context, string, string, string, *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error)
+	type listPullRequestsWithCommitStub func(context.Context, string, string, string, *github.ListOptions) ([]*github.PullRequest, *github.Response, error)
 
 	tests := map[string]struct {
 		// listPullRequestsWithCommitStubber is a function that needs to return
@@ -276,7 +276,7 @@ func TestGatherNotes(t *testing.T) {
 				repoCommit("some-random-sha", "some-random-commit-msg"),
 			},
 			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {
-				return func(_ context.Context, org, repo, sha string, _ *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+				return func(_ context.Context, org, repo, sha string, _ *github.ListOptions) ([]*github.PullRequest, *github.Response, error) {
 					checkOrgRepo(t, org, repo)
 					if e, a := "some-random-sha", sha; e != a {
 						t.Errorf("Expected ListPullRequestsWithCommit(...) to be called for SHA '%s', have been called for '%s'", e, a)
@@ -312,7 +312,7 @@ func TestGatherNotes(t *testing.T) {
 		"when GetPullRequest(...) returns an error": {
 			commitList: []*github.RepositoryCommit{repoCommit("some-sha", "some #123 thing")},
 			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {
-				return func(_ context.Context, _, _, _ string, _ *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+				return func(_ context.Context, _, _, _ string, _ *github.ListOptions) ([]*github.PullRequest, *github.Response, error) {
 					return nil, nil, fmt.Errorf("some-error-from-get-pull-request")
 				}
 			},
@@ -322,7 +322,7 @@ func TestGatherNotes(t *testing.T) {
 		"when ListPullRequestsWithCommit(...) returns an error": {
 			commitList: []*github.RepositoryCommit{repoCommit("some-sha", "some-msg")},
 			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {
-				return func(_ context.Context, _, _, _ string, _ *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+				return func(_ context.Context, _, _, _ string, _ *github.ListOptions) ([]*github.PullRequest, *github.Response, error) {
 					return nil, nil, fmt.Errorf("some-error-from-list-pull-requests-with-commit")
 				}
 			},
@@ -354,7 +354,7 @@ func TestGatherNotes(t *testing.T) {
 				}
 				var callCount int64 = -1
 
-				return func(_ context.Context, _, _, _ string, _ *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+				return func(_ context.Context, _, _, _ string, _ *github.ListOptions) ([]*github.PullRequest, *github.Response, error) {
 					callCount := int(atomic.AddInt64(&callCount, 1))
 					if a, e := callCount+1, len(prsPerCall); a > e {
 						return nil, &github.Response{}, nil
