@@ -393,7 +393,7 @@ func (s *Stage) Submit(stream bool) error {
 func (s *Stage) Run() error {
 	s.client.InitState()
 
-	logger := log.NewStepLogger(10)
+	logger := log.NewStepLogger(11)
 	v := version.GetVersionInfo()
 	logger.Infof("Using krel version: %s", v.GitVersion)
 
