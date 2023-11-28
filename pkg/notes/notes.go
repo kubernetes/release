@@ -35,7 +35,7 @@ import (
 	"time"
 	"unicode"
 
-	gogithub "github.com/google/go-github/v53/github"
+	gogithub "github.com/google/go-github/v56/github"
 	"github.com/nozzle/throttler"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/cases"
@@ -911,12 +911,9 @@ func canWaitAndRetry(r *gogithub.Response, err error) bool {
 
 // prsForCommitFromSHA retrieves the PR numbers for a commit given its sha
 func (g *Gatherer) prsForCommitFromSHA(sha string) (prs []*gogithub.PullRequest, err error) {
-	plo := &gogithub.PullRequestListOptions{
-		State: "closed",
-		ListOptions: gogithub.ListOptions{
-			Page:    1,
-			PerPage: 100,
-		},
+	plo := &gogithub.ListOptions{
+		Page:    1,
+		PerPage: 100,
 	}
 
 	prs = []*gogithub.PullRequest{}
@@ -936,12 +933,18 @@ func (g *Gatherer) prsForCommitFromSHA(sha string) (prs []*gogithub.PullRequest,
 				break
 			}
 		}
-		prs = append(prs, pResult...)
+
+		for _, result := range pResult {
+			if result.GetState() == "closed" {
+				prs = append(prs, result)
+			}
+		}
+
 		if resp.NextPage == 0 {
 			break
 		}
-		plo.ListOptions.Page++
-		if plo.ListOptions.Page > resp.LastPage {
+		plo.Page++
+		if plo.Page > resp.LastPage {
 			break
 		}
 	}
