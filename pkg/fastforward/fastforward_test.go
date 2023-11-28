@@ -22,7 +22,7 @@ import (
 	"strings"
 	"testing"
 
-	gogithub "github.com/google/go-github/v53/github"
+	gogithub "github.com/google/go-github/v56/github"
 	"github.com/stretchr/testify/require"
 	"k8s.io/release/pkg/fastforward/fastforwardfakes"
 )

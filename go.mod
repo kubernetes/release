@@ -11,7 +11,7 @@ require (
 	github.com/goark/go-cvss v1.6.6
 	github.com/golang/protobuf v1.5.3
 	github.com/google/go-containerregistry v0.16.1
-	github.com/google/go-github/v53 v53.2.0
+	github.com/google/go-github/v56 v56.0.0
 	github.com/google/safetext v0.0.0-20230106111101-7156a760e523
 	github.com/google/uuid v1.4.0
 	github.com/hashicorp/go-multierror v1.1.1
@@ -41,7 +41,7 @@ require (
 	sigs.k8s.io/bom v0.5.2-0.20230519223618-1ebaa9ce375f
 	sigs.k8s.io/mdtoc v1.1.0
 	sigs.k8s.io/promo-tools/v3 v3.6.0
-	sigs.k8s.io/release-sdk v0.10.3
+	sigs.k8s.io/release-sdk v0.10.4
 	sigs.k8s.io/release-utils v0.7.7
 	sigs.k8s.io/yaml v1.4.0
 )

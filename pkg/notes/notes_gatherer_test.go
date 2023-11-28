@@ -27,7 +27,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v56/github"
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github/githubfakes"
@@ -235,7 +235,7 @@ func TestListCommits(t *testing.T) {
 
 func TestGatherNotes(t *testing.T) {
 	type getPullRequestStub func(context.Context, string, string, int) (*github.PullRequest, *github.Response, error)
-	type listPullRequestsWithCommitStub func(context.Context, string, string, string, *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error)
+	type listPullRequestsWithCommitStub func(context.Context, string, string, string, *github.ListOptions) ([]*github.PullRequest, *github.Response, error)
 
 	tests := map[string]struct {
 		// listPullRequestsWithCommitStubber is a function that needs to return
@@ -276,7 +276,7 @@ func TestGatherNotes(t *testing.T) {
 				repoCommit("some-random-sha", "some-random-commit-msg"),
 			},
 			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {
-				return func(_ context.Context, org, repo, sha string, _ *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+				return func(_ context.Context, org, repo, sha string, _ *github.ListOptions) ([]*github.PullRequest, *github.Response, error) {
 					checkOrgRepo(t, org, repo)
 					if e, a := "some-random-sha", sha; e != a {
 						t.Errorf("Expected ListPullRequestsWithCommit(...) to be called for SHA '%s', have been called for '%s'", e, a)
@@ -312,7 +312,7 @@ func TestGatherNotes(t *testing.T) {
 		"when GetPullRequest(...) returns an error": {
 			commitList: []*github.RepositoryCommit{repoCommit("some-sha", "some #123 thing")},
 			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {
-				return func(_ context.Context, _, _, _ string, _ *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+				return func(_ context.Context, _, _, _ string, _ *github.ListOptions) ([]*github.PullRequest, *github.Response, error) {
 					return nil, nil, fmt.Errorf("some-error-from-get-pull-request")
 				}
 			},
@@ -322,7 +322,7 @@ func TestGatherNotes(t *testing.T) {
 		"when ListPullRequestsWithCommit(...) returns an error": {
 			commitList: []*github.RepositoryCommit{repoCommit("some-sha", "some-msg")},
 			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {
-				return func(_ context.Context, _, _, _ string, _ *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+				return func(_ context.Context, _, _, _ string, _ *github.ListOptions) ([]*github.PullRequest, *github.Response, error) {
 					return nil, nil, fmt.Errorf("some-error-from-list-pull-requests-with-commit")
 				}
 			},
@@ -334,27 +334,28 @@ func TestGatherNotes(t *testing.T) {
 			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {
 				prsPerCall := [][]*github.PullRequest{
 					// explicitly excluded
-					{pullRequest(1, "something ```release-note\nN/a\n``` something")},
-					{pullRequest(2, "something ```release-note\nNa\n``` something")},
-					{pullRequest(3, "something ```release-note\nNone \n``` something")},
-					{pullRequest(4, "something ```release-note\n'None' \n``` something")},
-					{pullRequest(5, "something /release-note-none something")},
+					{pullRequest(1, "something ```release-note\nN/a\n``` something", "closed")},
+					{pullRequest(2, "something ```release-note\nNa\n``` something", "closed")},
+					{pullRequest(3, "something ```release-note\nNone \n``` something", "closed")},
+					{pullRequest(4, "something ```release-note\n'None' \n``` something", "closed")},
+					{pullRequest(5, "something /release-note-none something", "closed")},
 					// multiple PRs
 					{ // first does no match, second one matches, rest is ignored
-						pullRequest(6, ""),
-						pullRequest(7, " something ```release-note\nTest\n``` something"),
-						pullRequest(8, "does-not-matter--is-not-considered"),
+						pullRequest(6, "", "closed"),
+						pullRequest(7, " something ```release-note\nTest\n``` something", "closed"),
+						pullRequest(8, "does-not-matter--is-not-considered", "closed"),
 					},
 					// some other strange things
-					{pullRequest(9, "release-note /release-note-none")},       // excluded, the exclusion filters take precedence
-					{pullRequest(10, "```release-note\nNAAAAAAAAAA\n```")},    // included, does not match the N/A filter, but the 'release-note' check
-					{pullRequest(11, "```release-note\nnone something\n```")}, // included, does not match the N/A filter, but the 'release-note' check
+					{pullRequest(9, "release-note /release-note-none", "closed")},       // excluded, the exclusion filters take precedence
+					{pullRequest(10, "```release-note\nNAAAAAAAAAA\n```", "closed")},    // included, does not match the N/A filter, but the 'release-note' check
+					{pullRequest(11, "```release-note\nnone something\n```", "closed")}, // included, does not match the N/A filter, but the 'release-note' check
 					// empty release note block shouldn't be matched
-					{pullRequest(12, "```release-note\n\n```")},
+					{pullRequest(12, "```release-note\n\n```", "closed")},
+					{pullRequest(13, "```release-note\n\n```", "open")},
 				}
 				var callCount int64 = -1
 
-				return func(_ context.Context, _, _, _ string, _ *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+				return func(_ context.Context, _, _, _ string, _ *github.ListOptions) ([]*github.PullRequest, *github.Response, error) {
 					callCount := int(atomic.AddInt64(&callCount, 1))
 					if a, e := callCount+1, len(prsPerCall); a > e {
 						return nil, &github.Response{}, nil
@@ -407,10 +408,11 @@ func TestGatherNotes(t *testing.T) {
 	}
 }
 
-func pullRequest(id int, msg string) *github.PullRequest {
+func pullRequest(id int, msg, state string) *github.PullRequest {
 	return &github.PullRequest{
 		Body:   strPtr(msg),
 		Number: intPtr(id),
+		State:  strPtr(state),
 	}
 }
 
