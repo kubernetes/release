@@ -104,7 +104,10 @@ func TestHistoryRun(t *testing.T) {
 					{
 						Tags: []string{"RELEASE"},
 						Timing: map[string]cloudbuild.TimeSpan{
-							"BUILD": {StartTime: "wrong"},
+							"BUILD": {
+								StartTime: "wrong",
+								EndTime:   "2020-10-10",
+							},
 						},
 					},
 				}, nil)
@@ -121,7 +124,10 @@ func TestHistoryRun(t *testing.T) {
 					{
 						Tags: []string{"STAGE"},
 						Timing: map[string]cloudbuild.TimeSpan{
-							"BUILD": {EndTime: "wrong"},
+							"BUILD": {
+								StartTime: "2020-10-10",
+								EndTime:   "wrong",
+							},
 						},
 						Substitutions: map[string]string{"_NOMOCK": "true"},
 					},
