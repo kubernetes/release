@@ -154,6 +154,11 @@ func (h *History) Run() error {
 		end := job.Timing["BUILD"].EndTime
 		logs := job.LogUrl
 
+		if start == "" || end == "" {
+			logrus.Infof("Skipping unfinished job from %s with ID: %s", job.CreateTime, job.Id)
+			continue
+		}
+
 		// Calculate the duration of the job
 		const layout = "2006-01-02T15:04:05.99Z"
 		tStart, err := h.impl.ParseTime(layout, start)
