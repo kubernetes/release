@@ -13,7 +13,7 @@ require (
 	github.com/google/go-containerregistry v0.17.0
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/safetext v0.0.0-20230106111101-7156a760e523
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/in-toto/in-toto-golang v0.9.0
 	github.com/mattn/go-isatty v0.0.20
