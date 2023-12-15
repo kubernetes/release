@@ -546,9 +546,9 @@ func (d *DefaultRelease) CreateAnnouncement() error {
 		return fmt.Errorf("creating the announcement: %w", err)
 	}
 
-	// Check if we are releasing is the initial minor (eg 1.20.0),
+	// Check if we are releasing the initial rc release (eg 1.20.0-rc.0),
 	// and we are working on a release-M.m branch
-	if primeSemver.Patch == 0 && len(primeSemver.Pre) == 0 &&
+	if primeSemver.Patch == 0 && d.options.ReleaseType == release.ReleaseTypeRC &&
 		d.options.ReleaseBranch != git.DefaultBranch {
 		if d.options.NoMock {
 			// Create the publishing bot issue
