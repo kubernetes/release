@@ -13,7 +13,7 @@ Golang dependencies.
 ### Tracking info
 
 <!-- Search query: https://github.com/kubernetes/release/issues?q=is%3Aissue+Dependency+update+-+Golang -->
-<!-- Example: https://github.com/kubernetes/release/issues/2694 -->
+<!-- Example: https://github.com/kubernetes/release/issues/3383 -->
 Link to any previous tracking issue: 
 
 <!-- golang-announce mailing list: https://groups.google.com/g/golang-announce -->
@@ -23,67 +23,51 @@ SIG Release Slack thread:
 
 ### Work items
 
-<!-- Example: https://github.com/kubernetes/release/pull/2696 -->
-- [ ] `kube-cross` image update: 
+<!-- Example: https://github.com/kubernetes/release/pull/3388 -->
+- [ ] `kube-cross`, `go-runner`, `releng-ci` image updates: 
 
-  <!-- Example: https://github.com/kubernetes/k8s.io/pull/4312 -->
+  <!-- Example: https://github.com/kubernetes/k8s.io/pull/6153 -->
+  - [ ] `kube-cross` image promotion: 
+
+  <!-- Example: https://github.com/kubernetes/k8s.io/pull/6154 -->
+  - [ ] `go-runner` image promotion: 
+
+  <!-- Example: https://github.com/kubernetes/k8s.io/pull/6155 -->
+  - [ ] `releng-ci` image promotion: 
+
+#### After go-runner image promotion
+
+<!-- Example: https://github.com/kubernetes/release/pull/3389 -->
+- [ ] `distroless-iptables` image update: 
+
+  <!-- Example: https://github.com/kubernetes/k8s.io/pull/6164 -->
   - [ ] image promotion: 
 
-<!-- Example: https://github.com/kubernetes/release/pull/2696 -->
-- [ ] `go-runner` image update: 
+#### After kube-cross and distroless-iptables image promotions
 
-  <!-- Example: https://github.com/kubernetes/k8s.io/pull/4313 -->
-  - [ ] image promotion: 
-
-<!-- Example: https://github.com/kubernetes/release/pull/2696 -->
-- [ ] `releng-ci` image update: 
-
-  <!-- Example: https://github.com/kubernetes/k8s.io/pull/4314 -->
-  - [ ] image promotion: 
-
-#### After kube-cross image promotion
-
-<!-- Example: https://github.com/kubernetes/kubernetes/pull/112900 -->
+<!-- Example: https://github.com/kubernetes/kubernetes/pull/122201 -->
 - [ ] kubernetes/kubernetes update (`master`): 
 
   Ensure the following have been updated within the PR:
 
+  - [ ] `.go-version` file
   - [ ] kube-cross image
   - [ ] go-runner image
+  - [ ] distroless-iptables image
   - [ ] publishing bot rules
   - [ ] test image
-  - [ ] `.go-version` file
-
 
 > **Note**
 > This update may require an update to go.sum files, for example: https://github.com/kubernetes/kubernetes/pull/118507
 > This will require an API Review approval.
 
-#### After go-runner image promotion
-
-<!-- Example: https://github.com/kubernetes/release/pull/2920 -->
-- [ ] `distroless-iptables` image update: 
-
-  <!-- Example: https://github.com/kubernetes/k8s.io/pull/4263 -->
-  - [ ] image promotion: 
-
-#### After distroless-iptables image promotion
-
-<!-- Example: https://github.com/kubernetes/kubernetes/pull/112892 -->
-- [ ] kubernetes/kubernetes update (`master`): 
-
-  Ensure the following have been updated within the PR:
-
-  - [ ] distroless-iptables image
-  - [ ] test image
-
 #### After kubernetes/kubernetes (master) has been updated
 
-<!-- Example: https://github.com/kubernetes/release/pull/2699 -->
-- [ ] `k8s-cloud-builder` image update: 
+<!-- Example: https://github.com/kubernetes/release/pull/3390 -->
+- [ ] `k8s-cloud-builder` and `k8s-ci-builder` image updates: 
 
-<!-- Example: https://github.com/kubernetes/release/pull/2699 -->
-- [ ] `k8s-ci-builder` image variants update: 
+<!-- Example: https://github.com/kubernetes/test-infra/pull/31387 -->
+- [ ] `kubekins`/`krte` image variants update: 
 
 ### Cherry picks
 
@@ -107,9 +91,9 @@ In this case, we would only cherry pick the go1.15.5 to the `release-1.19`
 branch, since it is the only other branch with a go1.15 minor version on it.
 -->
 
-- [ ] Kubernetes x.y-1: 
-- [ ] Kubernetes x.y-2: 
-- [ ] Kubernetes x.y-3: 
+- [ ] Kubernetes 1.y-1: 
+- [ ] Kubernetes 1.y-2: 
+- [ ] Kubernetes 1.y-3: 
 
 <!--
   If the Golang version of the active development branch (`master`) is newer than
@@ -127,21 +111,18 @@ go1.16.7, there's no action required for staging repositories using go1.16.
   However, for staging repository branches using go1.15, the `master` branch's
 publishing bot rules need to be updated to learn about the Golang update that
 happened for the 1.20 and 1.19 Kubernetes release branches.
-  PR: https://github.com/kubernetes/kubernetes/pull/104226
+  PR: https://github.com/kubernetes/kubernetes/pull/122299
 -->
 - [ ] publishing bot rule updates for active Golang versions: 
 
 
 #### After kubernetes/kubernetes (release branches) has been updated
 
-<!-- Example: https://github.com/kubernetes/release/pull/2699 -->
-- [ ] `k8s-cloud-builder` image update: 
+<!-- Example: https://github.com/kubernetes/release/pull/3394 -->
+- [ ] `k8s-cloud-builder` and `k8s-ci-builder` image updates: 
 
-<!-- Example: https://github.com/kubernetes/release/pull/2699 -->
-- [ ] `k8s-ci-builder` image variants update: 
-
-<!-- Example: https://github.com/kubernetes/test-infra/pull/27712 -->
-- [ ] `kubekins`/`krte` image variants update: 
+<!-- Example: https://github.com/kubernetes/test-infra/pull/31398 -->
+- [ ] `kubekins`/`krte` image updates: 
 
 ### Follow-up items
 
