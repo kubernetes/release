@@ -151,6 +151,29 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 	return nil
 }
 
+// hackDefaultSubcommand is a utility function that hacks the "generate"
+// subcommand as default to avoid breaking compatibility with previoud
+// versions of release-notes.
+func hackDefaultSubcommand(cmd *cobra.Command) {
+	if len(os.Args) <= 1 {
+		return
+	}
+	scmd := os.Args[1]
+
+	// We accept --version and "completion"
+	if scmd == "completion" || scmd == "--version" || scmd == "--help" {
+		return
+	}
+
+	// Check if the first arg corresponds to a registered subcommand
+	for _, command := range cmd.Commands() {
+		if command.Use == scmd {
+			return
+		}
+	}
+	os.Args = append([]string{os.Args[0], "generate"}, os.Args[1:]...)
+}
+
 func main() {
 	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
 	logrus.AddHook(log.NewFilenameHook())
@@ -163,6 +186,8 @@ func main() {
 	}
 
 	addGenerate(cmd)
+
+	hackDefaultSubcommand(cmd)
 
 	if err := cmd.Execute(); err != nil {
 		logrus.Fatal(err)

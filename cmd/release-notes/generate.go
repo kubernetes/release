@@ -244,7 +244,7 @@ func addGenerateFlags(subcommand *cobra.Command) {
 func addGenerate(parent *cobra.Command) {
 	// Create the cobra command
 	generateCmd := &cobra.Command{
-		Short:         "Generate release notes from GitHub pull request data",
+		Short:         "Generate release notes from GitHub pull request data (default)",
 		Use:           "generate",
 		SilenceUsage:  true,
 		SilenceErrors: true,
