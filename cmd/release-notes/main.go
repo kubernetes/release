@@ -155,22 +155,21 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 // subcommand as default to avoid breaking compatibility with previoud
 // versions of release-notes.
 func hackDefaultSubcommand(cmd *cobra.Command) {
-	if len(os.Args) <= 1 {
-		return
-	}
-	scmd := os.Args[1]
-
-	// We accept --version and "completion"
-	if scmd == "completion" || scmd == "--version" || scmd == "--help" {
-		return
-	}
-
-	// Check if the first arg corresponds to a registered subcommand
-	for _, command := range cmd.Commands() {
-		if command.Use == scmd {
+	if len(os.Args) > 1 {
+		// We accept --version and "completion"
+		if os.Args[1] == "completion" || os.Args[1] == "--version" || os.Args[1] == "--help" {
 			return
 		}
+
+		// Check if the first arg corresponds to a registered subcommand
+		for _, command := range cmd.Commands() {
+			if command.Use == os.Args[1] {
+				return
+			}
+		}
 	}
+
+	logrus.Warn("No subcommand specified, running \"generate\" ")
 	os.Args = append([]string{os.Args[0], "generate"}, os.Args[1:]...)
 }
 
@@ -186,6 +185,7 @@ func main() {
 	}
 
 	addGenerate(cmd)
+	addCheckPR(cmd)
 
 	hackDefaultSubcommand(cmd)
 
