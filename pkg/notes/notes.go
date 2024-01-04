@@ -701,6 +701,68 @@ func (g *Gatherer) gatherNotes(commits []*gogithub.RepositoryCommit) (filtered [
 	return allResults.List(), nil
 }
 
+// ReleaseNoteForPullRequest returns a release note from a pull request number.
+// If the release note is blank or
+func (g *Gatherer) ReleaseNoteForPullRequest(prNr int) (*ReleaseNote, error) {
+	pr, _, err := g.client.GetPullRequest(g.context, g.options.GithubOrg, g.options.GithubRepo, prNr)
+	if err != nil {
+		return nil, fmt.Errorf("reading PR from GitHub: %w", err)
+	}
+	prBody := pr.GetBody()
+
+	// This will be true when the release note is NONE or the flag is set
+	var doNotPublish bool
+
+	// If we match exclusion filter (release-note-none), we don't look further,
+	// instead we return that PR. We return that PR because it might have a map,
+	// which is checked after this function returns
+	if MatchesExcludeFilter(prBody) || len(labelsWithPrefix(pr, "release-note-none")) > 0 {
+		doNotPublish = true
+	}
+
+	// If we didn't match the exclusion filter, try to extract the release note from the PR.
+	// If we can't extract the release note, consider that the PR is invalid and take the next one
+	s, err := noteTextFromString(prBody)
+	if err != nil && !doNotPublish {
+		return nil, fmt.Errorf("PR #%d does not seem to contain a valid release note: %w", pr.GetNumber(), err)
+	}
+
+	// If we found a valid release note, return the PR, otherwise, take the next one
+	if s == "" && !doNotPublish {
+		return nil, fmt.Errorf("PR #%d does not seem to contain a valid release note", pr.GetNumber())
+	}
+
+	if doNotPublish {
+		s = ""
+	}
+
+	// Create the release notes object
+	note := &ReleaseNote{
+		Text:           s,
+		Markdown:       s,
+		Documentation:  []*Documentation{},
+		Author:         *pr.GetUser().Login,
+		AuthorURL:      fmt.Sprintf("%s%s", g.options.GithubBaseURL, *pr.GetUser().Login),
+		PrURL:          fmt.Sprintf("%s%s/%s/pull/%d", g.options.GithubBaseURL, g.options.GithubOrg, g.options.GithubRepo, prNr),
+		PrNumber:       prNr,
+		SIGs:           labelsWithPrefix(pr, "sig"),
+		Kinds:          labelsWithPrefix(pr, "kind"),
+		Areas:          labelsWithPrefix(pr, "area"),
+		Feature:        false,
+		Duplicate:      false,
+		DuplicateKind:  false,
+		ActionRequired: false,
+		DoNotPublish:   doNotPublish,
+		DataFields:     map[string]ReleaseNotesDataField{},
+	}
+
+	if s != "" {
+		logrus.Infof("PR #%d seems to contain a release note", pr.GetNumber())
+	}
+
+	return note, nil
+}
+
 func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, error) {
 	prs, err := g.prsFromCommit(commit)
 	if err != nil {
