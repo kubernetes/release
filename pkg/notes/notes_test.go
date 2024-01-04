@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"k8s.io/release/pkg/notes/options"
 
 	kgithub "sigs.k8s.io/release-sdk/github"
 )
@@ -500,5 +501,61 @@ func TestCapitalizeString(t *testing.T) {
 	} {
 		result := capitalizeString(tc.input)
 		require.Equal(t, tc.expected, result)
+	}
+}
+
+func TestReleaseNoteForPullRequest(t *testing.T) {
+	g, err := NewGatherer(context.Background(), &options.Options{
+		GithubBaseURL: kgithub.GitHubURL,
+		GithubOrg:     DefaultOrg,
+		GithubRepo:    "release",
+	})
+	require.NoError(t, err)
+	for _, tc := range []struct {
+		name         string
+		prNr         int
+		expectedNote string
+		notPublish   bool
+		shouldErr    bool
+	}{
+		{
+			name:         "Normal Release Note",
+			prNr:         3378,
+			expectedNote: "Fixed wrong amount of logger steps for `krel obs`.",
+			notPublish:   false,
+			shouldErr:    false,
+		},
+		{
+			name:         "tagged release-note-none",
+			prNr:         3398,
+			expectedNote: "",
+			notPublish:   true,
+			shouldErr:    false,
+		},
+		{
+			name:       "NONE release note",
+			prNr:       3401,
+			notPublish: true,
+			shouldErr:  false,
+		},
+		{
+			name:      "Not a PR",
+			prNr:      3403,
+			shouldErr: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			note, err := g.ReleaseNoteForPullRequest(tc.prNr)
+			if tc.shouldErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, note)
+			if tc.notPublish {
+				require.True(t, note.DoNotPublish)
+			}
+			require.Equal(t, tc.expectedNote, note.Markdown)
+		})
 	}
 }
