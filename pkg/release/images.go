@@ -298,6 +298,10 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 // existence of a local build directory. Used in CI builds to quickly validate
 // if a build is actually required.
 func (i *Images) Exists(registry, version string, fast bool) (bool, error) {
+	if registry == "" {
+		logrus.Info("no image registry was supplied, assuming no images are being pushed")
+		return true, nil
+	}
 	logrus.Infof("Validating image manifests in %s", registry)
 	version = i.normalizeVersion(version)
 

@@ -139,12 +139,14 @@ func (bi *Instance) checkBuildExists() (bool, error) {
 
 	// TODO: Do we need to handle the errors more effectively?
 	existErrors := []error{}
+	foundItems := 0
 	for _, path := range gcsBuildPaths {
 		logrus.Infof("Checking if GCS build path (%s) exists", path)
 		exists, existErr := bi.objStore.PathExists(path)
 		if existErr != nil || !exists {
 			existErrors = append(existErrors, existErr)
 		}
+		foundItems++
 	}
 
 	images := release.NewImages()
@@ -152,8 +154,9 @@ func (bi *Instance) checkBuildExists() (bool, error) {
 	if imagesExistErr != nil {
 		existErrors = append(existErrors, imagesExistErr)
 	}
-
-	if imagesExist && len(existErrors) == 0 {
+	// we are expecting atleast 3 items to be found; /version folder, kubernetes.tgz and /version/bin folder
+	// if bi.opts.AllowDup is false, we want to return this function as true
+	if imagesExist && len(existErrors) == 0 && foundItems >= 3 && !bi.opts.AllowDup {
 		logrus.Infof("Build already exists. Exiting...")
 		return true, nil
 	}
