@@ -84,7 +84,7 @@ type FakePublisherClient struct {
 		result1 bool
 		result2 error
 	}
-	GetMarkerPathStub        func(string, string) (string, error)
+	GetMarkerPathStub        func(string, string, bool) (string, error)
 	getMarkerPathMutex       sync.RWMutex
 	getMarkerPathArgsForCall []struct {
 		arg1 string
@@ -523,7 +523,7 @@ func (fake *FakePublisherClient) GSUtilStatusReturnsOnCall(i int, result1 bool, 
 	}{result1, result2}
 }
 
-func (fake *FakePublisherClient) GetMarkerPath(arg1 string, arg2 string) (string, error) {
+func (fake *FakePublisherClient) GetMarkerPath(arg1 string, arg2 string, arg3 bool) (string, error) {
 	fake.getMarkerPathMutex.Lock()
 	ret, specificReturn := fake.getMarkerPathReturnsOnCall[len(fake.getMarkerPathArgsForCall)]
 	fake.getMarkerPathArgsForCall = append(fake.getMarkerPathArgsForCall, struct {
@@ -535,7 +535,7 @@ func (fake *FakePublisherClient) GetMarkerPath(arg1 string, arg2 string) (string
 	fake.recordInvocation("GetMarkerPath", []interface{}{arg1, arg2})
 	fake.getMarkerPathMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -549,7 +549,7 @@ func (fake *FakePublisherClient) GetMarkerPathCallCount() int {
 	return len(fake.getMarkerPathArgsForCall)
 }
 
-func (fake *FakePublisherClient) GetMarkerPathCalls(stub func(string, string) (string, error)) {
+func (fake *FakePublisherClient) GetMarkerPathCalls(stub func(string, string, bool) (string, error)) {
 	fake.getMarkerPathMutex.Lock()
 	defer fake.getMarkerPathMutex.Unlock()
 	fake.GetMarkerPathStub = stub

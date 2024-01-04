@@ -61,7 +61,7 @@ type publisherClient interface {
 	GSUtilStatus(args ...string) (bool, error)
 	GetURLResponse(url string) (string, error)
 	GetReleasePath(bucket, gcsRoot, version string, fast bool) (string, error)
-	GetMarkerPath(bucket, gcsRoot string) (string, error)
+	GetMarkerPath(bucket, gcsRoot string, fast bool) (string, error)
 	NormalizePath(pathParts ...string) (string, error)
 	TempDir(dir, pattern string) (name string, err error)
 	CopyToLocal(remote, local string) error
@@ -103,9 +103,9 @@ func (d *defaultPublisher) GetReleasePath(
 }
 
 func (d *defaultPublisher) GetMarkerPath(
-	bucket, gcsRoot string,
+	bucket, gcsRoot string, fast bool,
 ) (string, error) {
-	return d.objStore.GetMarkerPath(bucket, gcsRoot)
+	return d.objStore.GetMarkerPath(bucket, gcsRoot, fast)
 }
 
 func (d *defaultPublisher) NormalizePath(pathParts ...string) (string, error) {
@@ -177,6 +177,7 @@ func (p *Publisher) PublishVersion(
 	markerPath, markerPathErr := p.client.GetMarkerPath(
 		bucket,
 		gcsRoot,
+		fast,
 	)
 	if markerPathErr != nil {
 		return fmt.Errorf("get version marker path: %w", markerPathErr)
