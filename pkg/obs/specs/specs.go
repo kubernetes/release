@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
-	"k8s.io/release/pkg/obs/consts"
+	"k8s.io/release/pkg/consts"
 	"sigs.k8s.io/release-utils/util"
 )
 

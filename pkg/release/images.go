@@ -27,6 +27,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/release/pkg/consts"
 
 	"sigs.k8s.io/release-sdk/sign"
 	"sigs.k8s.io/release-utils/command"
@@ -307,9 +308,9 @@ func (i *Images) Exists(registry, version string, fast bool) (bool, error) {
 
 	manifestImages := ManifestImages
 
-	arches := SupportedArchitectures
+	arches := consts.SupportedArchitectures
 	if fast {
-		arches = FastArchitectures
+		arches = consts.FastArchitectures
 	}
 
 	for _, image := range manifestImages {

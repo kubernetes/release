@@ -139,27 +139,14 @@ const (
 	ProvenanceFilename = "provenance.json" // Name of the SLSA provenance file (used in stage and release)
 )
 
-var (
-	ManifestImages = []string{
-		"conformance",
-		"kube-apiserver",
-		"kube-controller-manager",
-		"kube-proxy",
-		"kube-scheduler",
-	}
-
-	SupportedArchitectures = []string{
-		"amd64",
-		"arm",
-		"arm64",
-		"ppc64le",
-		"s390x",
-	}
-
-	FastArchitectures = []string{
-		"amd64",
-	}
-)
+var ManifestImages = []string{
+	"conformance",
+	"kube-apiserver",
+	"kube-controller-manager",
+	"kube-proxy",
+	"kube-scheduler",
+	"kubectl",
+}
 
 // GetToolOrg checks if the 'TOOL_ORG' environment variable is set.
 // If 'TOOL_ORG' is non-empty, it returns the value. Otherwise, it returns DefaultToolOrg.

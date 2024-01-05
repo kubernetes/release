@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"k8s.io/release/pkg/consts"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/release"
@@ -53,14 +54,13 @@ func TestFileMetadata(t *testing.T) {
 		"kubernetes-client-linux-s390x.tar.gz",
 		"kubernetes-client-windows-386.tar.gz",
 		"kubernetes-client-windows-amd64.tar.gz",
+		"kubernetes-client-windows-arm64.tar.gz",
 		"kubernetes-node-linux-amd64.tar.gz",
-		"kubernetes-node-linux-arm.tar.gz",
 		"kubernetes-node-linux-arm64.tar.gz",
 		"kubernetes-node-linux-ppc64le.tar.gz",
 		"kubernetes-node-linux-s390x.tar.gz",
 		"kubernetes-node-windows-amd64.tar.gz",
 		"kubernetes-server-linux-amd64.tar.gz",
-		"kubernetes-server-linux-arm.tar.gz",
 		"kubernetes-server-linux-arm64.tar.gz",
 		"kubernetes-server-linux-ppc64le.tar.gz",
 		"kubernetes-server-linux-s390x.tar.gz",
@@ -91,17 +91,16 @@ func TestFileMetadata(t *testing.T) {
 			{Checksum: checksum, Name: "kubernetes-client-linux-s390x.tar.gz", URL: "http://test.com/test-release/kubernetes-client-linux-s390x.tar.gz"},
 			{Checksum: checksum, Name: "kubernetes-client-windows-386.tar.gz", URL: "http://test.com/test-release/kubernetes-client-windows-386.tar.gz"},
 			{Checksum: checksum, Name: "kubernetes-client-windows-amd64.tar.gz", URL: "http://test.com/test-release/kubernetes-client-windows-amd64.tar.gz"},
+			{Checksum: checksum, Name: "kubernetes-client-windows-arm64.tar.gz", URL: "http://test.com/test-release/kubernetes-client-windows-arm64.tar.gz"},
 		},
 		Server: []File{
 			{Checksum: checksum, Name: "kubernetes-server-linux-amd64.tar.gz", URL: "http://test.com/test-release/kubernetes-server-linux-amd64.tar.gz"},
-			{Checksum: checksum, Name: "kubernetes-server-linux-arm.tar.gz", URL: "http://test.com/test-release/kubernetes-server-linux-arm.tar.gz"},
 			{Checksum: checksum, Name: "kubernetes-server-linux-arm64.tar.gz", URL: "http://test.com/test-release/kubernetes-server-linux-arm64.tar.gz"},
 			{Checksum: checksum, Name: "kubernetes-server-linux-ppc64le.tar.gz", URL: "http://test.com/test-release/kubernetes-server-linux-ppc64le.tar.gz"},
 			{Checksum: checksum, Name: "kubernetes-server-linux-s390x.tar.gz", URL: "http://test.com/test-release/kubernetes-server-linux-s390x.tar.gz"},
 		},
 		Node: []File{
 			{Checksum: checksum, Name: "kubernetes-node-linux-amd64.tar.gz", URL: "http://test.com/test-release/kubernetes-node-linux-amd64.tar.gz"},
-			{Checksum: checksum, Name: "kubernetes-node-linux-arm.tar.gz", URL: "http://test.com/test-release/kubernetes-node-linux-arm.tar.gz"},
 			{Checksum: checksum, Name: "kubernetes-node-linux-arm64.tar.gz", URL: "http://test.com/test-release/kubernetes-node-linux-arm64.tar.gz"},
 			{Checksum: checksum, Name: "kubernetes-node-linux-ppc64le.tar.gz", URL: "http://test.com/test-release/kubernetes-node-linux-ppc64le.tar.gz"},
 			{Checksum: checksum, Name: "kubernetes-node-linux-s390x.tar.gz", URL: "http://test.com/test-release/kubernetes-node-linux-s390x.tar.gz"},
@@ -174,60 +173,59 @@ func TestCreateDownloadsTable(t *testing.T) {
 	// When
 	output := &strings.Builder{}
 	require.Nil(t, CreateDownloadsTable(
-		output, release.ProductionBucket, dir, "", "v1.16.0", "v1.16.1",
+		output, release.ProductionBucket, dir, "", "v1.28.0", "v1.28.1",
 	))
 
 	// Then
-	require.Equal(t, `# v1.16.1
+	require.Equal(t, `# v1.28.1
 
 [Documentation](https://docs.k8s.io)
 
-## Downloads for v1.16.1
+## Downloads for v1.28.1
 
 ### Source Code
 
 filename | sha512 hash
 -------- | -----------
-[kubernetes.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes.tar.gz) | `+codeChecksum+`
-[kubernetes-src.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-src.tar.gz) | `+codeChecksum+`
+[kubernetes.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes.tar.gz) | `+codeChecksum+`
+[kubernetes-src.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-src.tar.gz) | `+codeChecksum+`
 
 ### Client Binaries
 
 filename | sha512 hash
 -------- | -----------
-[kubernetes-client-darwin-386.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-client-darwin-386.tar.gz) | `+codeChecksum+`
-[kubernetes-client-darwin-amd64.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-client-darwin-amd64.tar.gz) | `+codeChecksum+`
-[kubernetes-client-linux-386.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-client-linux-386.tar.gz) | `+codeChecksum+`
-[kubernetes-client-linux-amd64.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-client-linux-amd64.tar.gz) | `+codeChecksum+`
-[kubernetes-client-linux-arm.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-client-linux-arm.tar.gz) | `+codeChecksum+`
-[kubernetes-client-linux-arm64.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-client-linux-arm64.tar.gz) | `+codeChecksum+`
-[kubernetes-client-linux-ppc64le.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-client-linux-ppc64le.tar.gz) | `+codeChecksum+`
-[kubernetes-client-linux-s390x.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-client-linux-s390x.tar.gz) | `+codeChecksum+`
-[kubernetes-client-windows-386.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-client-windows-386.tar.gz) | `+codeChecksum+`
-[kubernetes-client-windows-amd64.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-client-windows-amd64.tar.gz) | `+codeChecksum+`
+[kubernetes-client-darwin-386.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-client-darwin-386.tar.gz) | `+codeChecksum+`
+[kubernetes-client-darwin-amd64.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-client-darwin-amd64.tar.gz) | `+codeChecksum+`
+[kubernetes-client-linux-386.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-client-linux-386.tar.gz) | `+codeChecksum+`
+[kubernetes-client-linux-amd64.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-client-linux-amd64.tar.gz) | `+codeChecksum+`
+[kubernetes-client-linux-arm.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-client-linux-arm.tar.gz) | `+codeChecksum+`
+[kubernetes-client-linux-arm64.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-client-linux-arm64.tar.gz) | `+codeChecksum+`
+[kubernetes-client-linux-ppc64le.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-client-linux-ppc64le.tar.gz) | `+codeChecksum+`
+[kubernetes-client-linux-s390x.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-client-linux-s390x.tar.gz) | `+codeChecksum+`
+[kubernetes-client-windows-386.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-client-windows-386.tar.gz) | `+codeChecksum+`
+[kubernetes-client-windows-amd64.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-client-windows-amd64.tar.gz) | `+codeChecksum+`
+[kubernetes-client-windows-arm64.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-client-windows-arm64.tar.gz) | `+codeChecksum+`
 
 ### Server Binaries
 
 filename | sha512 hash
 -------- | -----------
-[kubernetes-server-linux-amd64.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-server-linux-amd64.tar.gz) | `+codeChecksum+`
-[kubernetes-server-linux-arm.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-server-linux-arm.tar.gz) | `+codeChecksum+`
-[kubernetes-server-linux-arm64.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-server-linux-arm64.tar.gz) | `+codeChecksum+`
-[kubernetes-server-linux-ppc64le.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-server-linux-ppc64le.tar.gz) | `+codeChecksum+`
-[kubernetes-server-linux-s390x.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-server-linux-s390x.tar.gz) | `+codeChecksum+`
+[kubernetes-server-linux-amd64.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-server-linux-amd64.tar.gz) | `+codeChecksum+`
+[kubernetes-server-linux-arm64.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-server-linux-arm64.tar.gz) | `+codeChecksum+`
+[kubernetes-server-linux-ppc64le.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-server-linux-ppc64le.tar.gz) | `+codeChecksum+`
+[kubernetes-server-linux-s390x.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-server-linux-s390x.tar.gz) | `+codeChecksum+`
 
 ### Node Binaries
 
 filename | sha512 hash
 -------- | -----------
-[kubernetes-node-linux-amd64.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-node-linux-amd64.tar.gz) | `+codeChecksum+`
-[kubernetes-node-linux-arm.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-node-linux-arm.tar.gz) | `+codeChecksum+`
-[kubernetes-node-linux-arm64.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-node-linux-arm64.tar.gz) | `+codeChecksum+`
-[kubernetes-node-linux-ppc64le.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-node-linux-ppc64le.tar.gz) | `+codeChecksum+`
-[kubernetes-node-linux-s390x.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-node-linux-s390x.tar.gz) | `+codeChecksum+`
-[kubernetes-node-windows-amd64.tar.gz](https://dl.k8s.io/v1.16.1/kubernetes-node-windows-amd64.tar.gz) | `+codeChecksum+`
+[kubernetes-node-linux-amd64.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-node-linux-amd64.tar.gz) | `+codeChecksum+`
+[kubernetes-node-linux-arm64.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-node-linux-arm64.tar.gz) | `+codeChecksum+`
+[kubernetes-node-linux-ppc64le.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-node-linux-ppc64le.tar.gz) | `+codeChecksum+`
+[kubernetes-node-linux-s390x.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-node-linux-s390x.tar.gz) | `+codeChecksum+`
+[kubernetes-node-windows-amd64.tar.gz](https://dl.k8s.io/v1.28.1/kubernetes-node-windows-amd64.tar.gz) | `+codeChecksum+`
 
-## Changelog since v1.16.0
+## Changelog since v1.28.0
 
 `, output.String())
 }
@@ -245,14 +243,13 @@ func setupTestDir(t *testing.T, dir string) {
 		"kubernetes-client-linux-s390x.tar.gz",
 		"kubernetes-client-windows-386.tar.gz",
 		"kubernetes-client-windows-amd64.tar.gz",
+		"kubernetes-client-windows-arm64.tar.gz",
 		"kubernetes-node-linux-amd64.tar.gz",
-		"kubernetes-node-linux-arm.tar.gz",
 		"kubernetes-node-linux-arm64.tar.gz",
 		"kubernetes-node-linux-ppc64le.tar.gz",
 		"kubernetes-node-linux-s390x.tar.gz",
 		"kubernetes-node-windows-amd64.tar.gz",
 		"kubernetes-server-linux-amd64.tar.gz",
-		"kubernetes-server-linux-arm.tar.gz",
 		"kubernetes-server-linux-arm64.tar.gz",
 		"kubernetes-server-linux-ppc64le.tar.gz",
 		"kubernetes-server-linux-s390x.tar.gz",
@@ -263,7 +260,7 @@ func setupTestDir(t *testing.T, dir string) {
 			filepath.Join(dir, file), []byte{1, 2, 3}, os.FileMode(0o644),
 		))
 	}
-	for _, arch := range []string{"amd64", "arm", "arm64", "ppc64le", "s390x"} {
+	for _, arch := range []string{consts.ArchitectureAMD64, consts.ArchitectureARM64, consts.ArchitecturePPC64, consts.ArchitectureS390X} {
 		archDir := filepath.Join(dir, release.ImagesPath, arch)
 		require.Nil(t, os.MkdirAll(archDir, fs.FileMode(0o755)))
 
@@ -273,6 +270,7 @@ func setupTestDir(t *testing.T, dir string) {
 			"kube-controller-manager.tar",
 			"kube-proxy.tar",
 			"kube-scheduler.tar",
+			"kubectl.tar",
 		} {
 			repoTagTarball(t,
 				filepath.Join(archDir, file),
@@ -523,7 +521,7 @@ func TestDocument_RenderMarkdownTemplate(t *testing.T) {
 			testNotes.Set(11, duplicate)
 			testNotes.Set(12, actionNeeded)
 
-			doc, err := New(testNotes, "v1.16.0", "v1.16.1")
+			doc, err := New(testNotes, "v1.16.0", "v1.28.1")
 			require.NoError(t, err, "Creating test document.")
 
 			templateSpec := tt.templateSpec

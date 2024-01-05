@@ -23,6 +23,7 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
+	"k8s.io/release/pkg/consts"
 )
 
 // PEFileHeader captures the header information of the executable
@@ -80,18 +81,18 @@ func (peh *PEHeader) MachineType() string {
 	switch peh.Machine {
 	// IMAGE_FILE_MACHINE_AMD64     = 0x8664
 	case 0x8664:
-		return AMD64
+		return consts.ArchitectureAMD64
 	// IMAGE_FILE_MACHINE_ARM       = 0x1c0
 	case 0x1c0:
-		return ARM
+		return consts.ArchitectureARM
 	// IMAGE_FILE_MACHINE_ARMNT     = 0x1c4
 	// IMAGE_FILE_MACHINE_ARM64     = 0xaa64
 	case 0xaa64:
-		return ARM64
+		return consts.ArchitectureARM64
 	// IMAGE_FILE_MACHINE_EBC       = 0xebc
 	// IMAGE_FILE_MACHINE_I386      = 0x14c
 	case 0x14c:
-		return I386
+		return consts.ArchitectureI386
 	// IMAGE_FILE_MACHINE_IA64      = 0x200
 	// IMAGE_FILE_MACHINE_M32R      = 0x9041
 	// IMAGE_FILE_MACHINE_MIPS16    = 0x266
@@ -107,7 +108,7 @@ func (peh *PEHeader) MachineType() string {
 	// IMAGE_FILE_MACHINE_THUMB     = 0x1c2
 	// IMAGE_FILE_MACHINE_WCEMIPSV2 = 0x169
 	case 0x1f0:
-		return PPC
+		return consts.ArchitecturePPC
 	}
 
 	logrus.Warn("Could not determine architecture type")
