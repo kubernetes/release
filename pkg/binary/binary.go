@@ -35,16 +35,6 @@ const (
 	LINUX  = "linux"
 	DARWIN = "darwin"
 	WIN    = "windows"
-
-	// GOARCH Architecture labels
-	I386    = "386"
-	AMD64   = "amd64"
-	ARM     = "arm"
-	ARM64   = "arm64"
-	PPC     = "ppc"
-	PPC64LE = "ppc64le"
-	S390    = "s390x"
-	RISCV   = "riscv"
 )
 
 // Binary is the base type of the package. It abstracts a binary executable

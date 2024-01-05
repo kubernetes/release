@@ -27,7 +27,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/obs/consts"
+	"k8s.io/release/pkg/consts"
 )
 
 var obsArchitectures = map[string]string{

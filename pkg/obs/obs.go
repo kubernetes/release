@@ -26,7 +26,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/obs/consts"
+	"k8s.io/release/pkg/consts"
 	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/log"

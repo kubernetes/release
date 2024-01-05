@@ -34,10 +34,14 @@ const (
 )
 
 const (
+	ArchitectureI386  string = "386"
 	ArchitectureAMD64 string = "amd64"
+	ArchitectureARM   string = "arm"
 	ArchitectureARM64 string = "arm64"
+	ArchitecturePPC   string = "ppc"
 	ArchitecturePPC64 string = "ppc64le"
 	ArchitectureS390X string = "s390x"
+	ArchitectureRISCV string = "riscv"
 )
 
 var (
@@ -52,6 +56,9 @@ var (
 		ArchitectureARM64,
 		ArchitecturePPC64,
 		ArchitectureS390X,
+	}
+	FastArchitectures = []string{
+		ArchitectureAMD64,
 	}
 )
 

@@ -23,6 +23,7 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
+	"k8s.io/release/pkg/consts"
 )
 
 const (
@@ -100,22 +101,22 @@ func (machoh *MachOHeader) MachineType() string {
 	switch machoh.CPU {
 	// CPU_TYPE_I386 / ((cpu_type_t) 7)
 	case 7:
-		return I386
+		return consts.ArchitectureI386
 	// CPU_TYPE_X86_64 / ((cpu_type_t) (CPU_TYPE_I386 | CPU_ARCH_ABI64))
 	case 16777223:
-		return AMD64
+		return consts.ArchitectureAMD64
 	// CPU_TYPE_POWERPC / ((cpu_type_t) 18)
 	case 18:
-		return PPC
+		return consts.ArchitecturePPC
 	// CPU_TYPE_POWERPC64 / ((cpu_type_t)(CPU_TYPE_POWERPC | CPU_ARCH_ABI64))
 	case 16777234:
-		return PPC64LE
+		return consts.ArchitecturePPC64
 	// CPU_TYPE_ARM / ((cpu_type_t) 12)
 	case 12:
-		return ARM
+		return consts.ArchitectureARM
 	// ARM 64-bits (ARMv8/Aarch64) (not in source)
 	case 16777228:
-		return ARM64
+		return consts.ArchitectureARM64
 	}
 
 	logrus.Warnf("Unable to interpret machine type from mach-o header value %d", machoh.CPU)

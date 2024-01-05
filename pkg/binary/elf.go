@@ -24,6 +24,7 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
+	"k8s.io/release/pkg/consts"
 )
 
 // ELFBinary abstracts a binary in ELF format
@@ -84,7 +85,7 @@ func (eh *ELFHeader) MachineType() string {
 	// 0x02	SPARC
 	// 0x03	x86
 	case 0x03:
-		return I386
+		return consts.ArchitectureI386
 	// 0x06	Intel MCU
 	// 0x07	Intel 80860
 	// 0x08	MIPS
@@ -92,25 +93,25 @@ func (eh *ELFHeader) MachineType() string {
 	// 0x0A	MIPS RS3000 Little-endian
 	// 0x14	PowerPC
 	case 0x14:
-		return PPC
+		return consts.ArchitecturePPC
 	// 0x15	PowerPC (64-bit)
 	case 0x15:
-		return PPC64LE
+		return consts.ArchitecturePPC64
 	// 0x16	S390, including S390x
 	case 0x16:
-		return S390
+		return consts.ArchitectureS390X
 	// 0x28	ARM (up to ARMv7/Aarch32)
 	case 0x28:
-		return ARM
+		return consts.ArchitectureARM
 	// 0x3E	amd64
 	case 0x3e:
-		return AMD64
+		return consts.ArchitectureAMD64
 	// 0xB7	ARM 64-bits (ARMv8/Aarch64)
 	case 0xb7:
-		return ARM64
+		return consts.ArchitectureARM64
 	// 0xF3	RISC-V
 	case 0xF3:
-		return RISCV
+		return consts.ArchitectureRISCV
 	}
 	logrus.Warn("Unknown machine type in elf binary")
 	return "arch unknown"
