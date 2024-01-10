@@ -22,7 +22,7 @@ dependencies:
 
   # Golang
   - name: "golang"
-    version: 1.21.5
+    version: 1.21.6
     refPaths:
     - path: images/build/cross/Makefile
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -88,7 +88,7 @@ dependencies:
   # - v1.100.0-go1.17-bullseye.0 satisfies SemVer regex, while:
   # - v1.100-go1.17-bullseye.0 does not
   - name: "Kubernetes version (stable.0)"
-    version: v1.29.0
+    version: v1.30.0
     refPaths:
     - path: images/build/cross/Makefile
       match: KUBERNETES_VERSION\ \?=\ v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -96,7 +96,7 @@ dependencies:
       match: "KUBERNETES_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "Kubernetes version (next candidate.0)"
-    version: v1.29.0
+    version: v1.30.0
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "KUBERNETES_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -109,7 +109,7 @@ dependencies:
 
   # go-runner
   - name: "registry.k8s.io/build-image/go-runner (go1.21-bookworm)"
-    version: v2.3.1-go1.21.5-bookworm.0
+    version: v2.3.1-go1.21.6-bookworm.0
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -123,7 +123,7 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "registry.k8s.io/build-image/go-runner (go1.20-bullseye)"
-    version: v2.3.1-go1.20.12-bullseye.0
+    version: v2.3.1-go1.20.13-bullseye.0
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -145,8 +145,29 @@ dependencies:
       match: REVISION:\ '\d+'
 
   # kube-cross
+  - name: "registry.k8s.io/build-image/kube-cross (v1.30-go1.21)"
+    version: v1.30.0-go1.21.6-bullseye.0
+    refPaths:
+    - path: images/build/cross/variants.yaml
+      match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
+
+  - name: "registry.k8s.io/build-image/kube-cross: config variant (v1.30-go1.21)"
+    version: go1.21-bullseye
+    refPaths:
+    - path: images/build/cross/variants.yaml
+      match: "CONFIG: 'go\\d+.\\d+-bullseye'"
+
+  - name: "registry.k8s.io/build-image/kube-cross: image revision (v1.30-go1.21)"
+    version: 0
+    refPaths:
+    - path: images/build/cross/Makefile
+      match: REVISION \?= \d+
+    - path: images/build/cross/variants.yaml
+      match: REVISION:\ '\d+'
+
+
   - name: "registry.k8s.io/build-image/kube-cross (v1.29-go1.21)"
-    version: v1.29.0-go1.21.5-bullseye.0
+    version: v1.29.0-go1.21.6-bullseye.0
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -166,7 +187,7 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "registry.k8s.io/build-image/kube-cross (v1.28-go1.20)"
-    version: v1.28.0-go1.20.12-bullseye.0
+    version: v1.28.0-go1.20.13-bullseye.0
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -186,7 +207,7 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "registry.k8s.io/build-image/kube-cross (v1.27-go1.20)"
-    version: v1.27.0-go1.20.12-bullseye.0
+    version: v1.27.0-go1.20.13-bullseye.0
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -206,7 +227,7 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "registry.k8s.io/build-image/kube-cross (v1.26-go1.20)"
-    version: v1.26.0-go1.20.12-bullseye.0
+    version: v1.26.0-go1.20.13-bullseye.0
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -281,9 +302,26 @@ dependencies:
     - path: images/build/cross/variants.yaml
       match: "CONFIG: 'go\\d+.\\d+-bullseye'"
 
+  # Golang (previous release branches: 1.29)
+  - name: "golang (previous release branches: 1.28)"
+    version: 1.21.6
+    refPaths:
+    - path: images/build/cross/variants.yaml
+      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+    - path: images/build/go-runner/variants.yaml
+      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+    - path: images/releng/ci/variants.yaml
+      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+
+  - name: "golang: after kubernetes/kubernetes update (previous release branches: 1.29)"
+    version: 1.21.5
+    refPaths:
+    - path: images/releng/k8s-ci-builder/variants.yaml
+      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+
   # Golang (previous release branches: 1.28)
   - name: "golang (previous release branches: 1.28)"
-    version: 1.20.12
+    version: 1.20.13
     refPaths:
     - path: images/build/cross/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -306,7 +344,7 @@ dependencies:
 
   # Golang (previous release branches: 1.27)
   - name: "golang (previous release branches: 1.27)"
-    version: 1.20.12
+    version: 1.20.13
     refPaths:
     - path: images/build/cross/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -323,7 +361,7 @@ dependencies:
 
   # Golang (previous release branches: 1.26)
   - name: "golang (previous release branches: 1.26)"
-    version: 1.20.12
+    version: 1.20.13
     refPaths:
     - path: images/build/cross/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
