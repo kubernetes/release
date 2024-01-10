@@ -19,7 +19,7 @@ IMGNAME = go-runner
 APP_VERSION = $(shell cat VERSION)
 GO_MAJOR_VERSION ?= 1.21
 REVISION ?= 0
-GO_VERSION ?= 1.21.5
+GO_VERSION ?= 1.21.6
 OS_CODENAME ?= bookworm
 
 # Build args
