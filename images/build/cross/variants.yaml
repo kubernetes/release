@@ -1,4 +1,13 @@
 variants:
+  v1.30-go1.22-bullseye:
+    CONFIG: 'go1.22-bullseye'
+    TYPE: 'default'
+    IMAGE_VERSION: 'v1.30.0-go1.22rc1-bullseye.0'
+    KUBERNETES_VERSION: 'v1.30.0'
+    GO_VERSION: '1.22rc1'
+    GO_MAJOR_VERSION: '1.22'
+    OS_CODENAME: 'bullseye'
+    REVISION: '0'
   v1.30-go1.21-bullseye:
     CONFIG: 'go1.21-bullseye'
     TYPE: 'default'
