@@ -108,6 +108,20 @@ dependencies:
       match: REVISION:\ '\d+'
 
   # go-runner
+  - name: "registry.k8s.io/build-image/go-runner (go1.22-bookworm)"
+    version: v2.3.1-go1.22rc1-bookworm.0
+    refPaths:
+    - path: images/build/go-runner/variants.yaml
+      match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
+
+  - name: "registry.k8s.io/build-image/go-runner: image revision (go1.22-bookworm)"
+    version: 0
+    refPaths:
+    - path: images/build/go-runner/Makefile
+      match: REVISION \?= \d+
+    - path: images/build/go-runner/variants.yaml
+      match: REVISION:\ '\d+'
+
   - name: "registry.k8s.io/build-image/go-runner (go1.21-bookworm)"
     version: v2.3.1-go1.21.6-bookworm.0
     refPaths:
@@ -145,6 +159,26 @@ dependencies:
       match: REVISION:\ '\d+'
 
   # kube-cross
+  - name: "registry.k8s.io/build-image/kube-cross (v1.30-go1.22)"
+    version: v1.30.0-go1.22rc1-bullseye.0
+    refPaths:
+    - path: images/build/cross/variants.yaml
+      match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
+
+  - name: "registry.k8s.io/build-image/kube-cross: config variant (v1.30-go1.22)"
+    version: go1.22-bullseye
+    refPaths:
+    - path: images/build/cross/variants.yaml
+      match: "CONFIG: 'go\\d+.\\d+-bullseye'"
+
+  - name: "registry.k8s.io/build-image/kube-cross: image revision (v1.30-go1.22)"
+    version: 0
+    refPaths:
+    - path: images/build/cross/Makefile
+      match: REVISION \?= \d+
+    - path: images/build/cross/variants.yaml
+      match: REVISION:\ '\d+'
+
   - name: "registry.k8s.io/build-image/kube-cross (v1.30-go1.21)"
     version: v1.30.0-go1.21.6-bullseye.0
     refPaths:
@@ -278,7 +312,7 @@ dependencies:
 
   # Golang (next candidate)
   - name: "golang (next candidate)"
-    version: 1.21
+    version: 1.22rc1
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
@@ -297,7 +331,7 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "registry.k8s.io/build-image/kube-cross: config variant (next candidate)"
-    version: go1.21-bullseye
+    version: go1.22-bullseye
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "CONFIG: 'go\\d+.\\d+-bullseye'"
