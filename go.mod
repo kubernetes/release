@@ -41,7 +41,7 @@ require (
 	sigs.k8s.io/bom v0.5.2-0.20230519223618-1ebaa9ce375f
 	sigs.k8s.io/mdtoc v1.1.0
 	sigs.k8s.io/promo-tools/v3 v3.6.0
-	sigs.k8s.io/release-sdk v0.10.5-0.20231219191353-f1467e0b1393
+	sigs.k8s.io/release-sdk v0.11.0
 	sigs.k8s.io/release-utils v0.7.7
 	sigs.k8s.io/yaml v1.4.0
 )
@@ -160,6 +160,7 @@ require (
 	github.com/google/gnostic-models v0.6.9-0.20230804172637-c7be7c783f49 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-github/v55 v55.0.0 // indirect
+	github.com/google/go-github/v58 v58.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/licenseclassifier/v2 v2.0.0 // indirect
@@ -228,7 +229,7 @@ require (
 	github.com/sigstore/cosign/v2 v2.2.2 // indirect
 	github.com/sigstore/fulcio v1.4.3 // indirect
 	github.com/sigstore/rekor v1.3.4 // indirect
-	github.com/sigstore/sigstore v1.8.0 // indirect
+	github.com/sigstore/sigstore v1.8.1 // indirect
 	github.com/sigstore/timestamp-authority v1.2.0 // indirect
 	github.com/skeema/knownhosts v1.2.1 // indirect
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 // indirect
