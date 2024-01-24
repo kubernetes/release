@@ -25,7 +25,7 @@ TAG ?= $(shell git describe --tags --always --dirty)
 
 # Build args
 GO_VERSION ?= 1.21.6
-OS_CODENAME ?= bullseye
+OS_CODENAME ?= bookworm
 IMAGE_ARG ?= $(IMAGE):$(TAG)-$(CONFIG)
 
 BUILD_ARGS = --build-arg=GO_VERSION=$(GO_VERSION) \

@@ -436,10 +436,6 @@ dependencies:
       # We keep them around for backwards compatibility and release branches.
     - path: images/build/go-runner/variants.yaml
       match: "OS_CODENAME: 'bullseye'"
-    - path: images/releng/k8s-ci-builder/Makefile
-      match: OS_CODENAME\ \?=\ bullseye
-    - path: images/releng/k8s-ci-builder/variants.yaml
-      match: "OS_CODENAME: 'bullseye'"
 
   - name: "Debian: codename (default)"
     version: bookworm
@@ -458,6 +454,8 @@ dependencies:
       match: "OS_CODENAME: 'bookworm'"
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: "OS_CODENAME: 'bookworm'"
+    - path: images/releng/k8s-ci-builder/Makefile
+      match: OS_CODENAME\ \?=\ bookworm
 
   - name: "registry.k8s.io/build-image/debian-base"
     version: bookworm-v1.0.0
