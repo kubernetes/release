@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	gogit "github.com/go-git/go-git/v5"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -121,18 +122,20 @@ permissions to your fork of k/sig-release and k-sigs/release-notes.`,
 }
 
 type releaseNotesOptions struct {
-	repoPath           string
-	tag                string
-	userFork           string
 	createDraftPR      bool
 	createWebsitePR    bool
 	fixNotes           bool
 	listReleaseNotesV2 bool
+	interactiveMode    bool
+	updateRepo         bool
+	useSSH             bool
+	repoPath           string
+	tag                string
+	userFork           string
 	websiteRepo        string
-	mapProviders       []string
 	githubOrg          string
 	draftRepo          string
-	interactiveMode    bool
+	mapProviders       []string
 }
 
 type releaseNotesResult struct {
@@ -218,6 +221,22 @@ func init() {
 		"interactiveMode",
 		true,
 		"interactive mode, ask before creating the PR",
+	)
+
+	releaseNotesCmd.PersistentFlags().BoolVarP(
+		&releaseNotesOpts.useSSH,
+		"use-ssh",
+		"",
+		true,
+		"use ssh to clone the repository, if false will use https (default: true)",
+	)
+
+	releaseNotesCmd.PersistentFlags().BoolVarP(
+		&releaseNotesOpts.updateRepo,
+		"update-repo",
+		"",
+		true,
+		"update the cloned repository to fetch any upstream change (default: true)",
 	)
 
 	rootCmd.AddCommand(releaseNotesCmd)
@@ -348,10 +367,13 @@ func createDraftPR(repoPath, tag string) (err error) {
 	branchname := draftBranchPrefix + tag
 
 	// Prepare the fork of k/sig-release
+	opts := &gogit.CloneOptions{}
 	sigReleaseRepo, err := github.PrepareFork(
 		branchname,
 		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
 		releaseNotesOpts.githubOrg, releaseNotesOpts.draftRepo,
+		releaseNotesOpts.useSSH, releaseNotesOpts.updateRepo,
+		opts,
 	)
 	if err != nil {
 		return fmt.Errorf("preparing local fork of kubernetes/sig-release: %w", err)
@@ -658,9 +680,13 @@ func createWebsitePR(repoPath, tag string) (err error) {
 	branchname := websiteBranchPrefix + tag
 
 	// checkout kubernetes-sigs/release-notes
+	opts := &gogit.CloneOptions{}
 	k8sSigsRepo, err := github.PrepareFork(
-		branchname, defaultKubernetesSigsOrg,
-		defaultKubernetesSigsRepo, releaseNotesOpts.githubOrg, releaseNotesOpts.websiteRepo,
+		branchname,
+		defaultKubernetesSigsOrg, defaultKubernetesSigsRepo,
+		releaseNotesOpts.githubOrg, releaseNotesOpts.websiteRepo,
+		releaseNotesOpts.useSSH, releaseNotesOpts.updateRepo,
+		opts,
 	)
 	if err != nil {
 		return fmt.Errorf("preparing local fork branch: %w", err)
@@ -767,8 +793,9 @@ func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 	}
 
 	logrus.Info("Cloning kubernetes/sig-release to read mapping files")
+	opts := &gogit.CloneOptions{}
 	sigReleaseRepo, err := git.CleanCloneGitHubRepo(
-		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, false,
+		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, false, true, opts,
 	)
 	if err != nil {
 		return "", fmt.Errorf("performing clone of k/sig-release: %w", err)

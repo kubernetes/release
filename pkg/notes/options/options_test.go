@@ -206,7 +206,8 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.Nil(t, os.RemoveAll(cloneTempDir))
 
 	// Provide a system under test inside the test repo
-	sut, err := kgit.CloneOrOpenRepo("", bareTempDir, false)
+	opts := &git.CloneOptions{}
+	sut, err := kgit.CloneOrOpenRepo("", bareTempDir, false, false, opts)
 	require.Nil(t, err)
 	require.Nil(t, command.NewWithWorkDir(
 		sut.Dir(), "git", "checkout", branchName,

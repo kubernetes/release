@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	gogit "github.com/go-git/go-git/v5"
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	slsa "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
 	"github.com/sirupsen/logrus"
@@ -580,8 +581,9 @@ func (d *DefaultStage) GenerateChangelog() error {
 				"cloning fresh default repository for changelog",
 		)
 
+		opts := &gogit.CloneOptions{}
 		repo, err := git.CleanCloneGitHubRepo(
-			release.DefaultK8sOrg, release.DefaultK8sRepo, false,
+			release.DefaultK8sOrg, release.DefaultK8sRepo, false, true, opts,
 		)
 		if err != nil {
 			return fmt.Errorf("clone k/k repo: %w", err)
