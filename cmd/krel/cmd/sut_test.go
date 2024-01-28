@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	gogit "github.com/go-git/go-git/v5"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/release-sdk/git"
@@ -107,7 +108,8 @@ func newSUT(t *testing.T) *sut {
 	repoDir := filepath.Join(tempDir, fmt.Sprintf("test-%d", now))
 	require.Nil(t, command.New("cp", "-r", baseDir, repoDir).RunSuccess())
 
-	repo, err := git.CloneOrOpenRepo(repoDir, url, false)
+	opts := &gogit.CloneOptions{}
+	repo, err := git.CloneOrOpenRepo(repoDir, url, false, false, opts)
 	require.Nil(t, err)
 
 	// Adapt the settings
