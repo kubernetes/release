@@ -63,7 +63,13 @@ SIG Release Slack thread:
 
 #### After kubernetes/kubernetes (master) has been updated
 
-<!-- Example: https://github.com/kubernetes/release/pull/3390 -->
+<!--
+Notice: Always use the oldest supported distribution release (Debian bullseye as
+time of writing) to achieve maximum glibc compatibility of the kubelet. Other
+images can use the latest available release.
+
+Example: https://github.com/kubernetes/release/pull/3390
+-->
 - [ ] `k8s-cloud-builder` and `k8s-ci-builder` image updates: 
 
 <!-- Example: https://github.com/kubernetes/test-infra/pull/31387 -->
@@ -118,7 +124,13 @@ happened for the 1.20 and 1.19 Kubernetes release branches.
 
 #### After kubernetes/kubernetes (release branches) has been updated
 
-<!-- Example: https://github.com/kubernetes/release/pull/3394 -->
+<!--
+Notice: Always use the oldest supported distribution release (Debian bullseye as
+time of writing) to achieve maximum glibc compatibility of the kubelet. Other
+images can use the latest available release.
+
+Example: https://github.com/kubernetes/release/pull/3394
+-->
 - [ ] `k8s-cloud-builder` and `k8s-ci-builder` image updates: 
 
 <!-- Example: https://github.com/kubernetes/test-infra/pull/31398 -->
