@@ -125,9 +125,9 @@ func fetchImageMetadata(dir, tag string) (*ImageMetadata, error) {
 
 	res := ImageMetadata{}
 
-	// Link the images to their corresponding Google Cloud container registry
+	// Link the images to their corresponding Google Cloud artifact registry
 	// location.
-	const linkBase = "https://console.cloud.google.com/gcr/images/k8s-artifacts-prod/us/"
+	const linkBase = "https://console.cloud.google.com/artifacts/docker/k8s-artifacts-prod/southamerica-east1/images/"
 
 	for manifest, tempArchitectures := range manifests {
 		imageName := strings.TrimPrefix(manifest, prodRegistry+"/")
