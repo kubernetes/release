@@ -753,8 +753,8 @@ github.com/sagikazarmark/locafero v0.3.0 h1:zT7VEGWC2DTflmccN/5T1etyKvxSxpHsjb9c
 github.com/sagikazarmark/locafero v0.3.0/go.mod h1:w+v7UsPNFwzF1cHuOajOOzoq4U7v/ig1mpRjqV+Bu1U=
 github.com/sagikazarmark/slog-shim v0.1.0 h1:diDBnUNK9N/354PgrxMywXnAwEr1QZcOr6gto+ugjYE=
 github.com/sagikazarmark/slog-shim v0.1.0/go.mod h1:SrcSrq8aKtyuqEI1uvTDTK1arOWRIczQRv+GVI1AkeQ=
-github.com/saschagrunert/go-modiff v1.3.3 h1:/mDhe5o7nkdLlA0stLn/iYcR834eHAJcT1sNNCo/OZA=
-github.com/saschagrunert/go-modiff v1.3.3/go.mod h1:nAeJ4vd//iY9LSQlhMimjWq/MoAMFlvQrMw2DkORIdE=
+github.com/saschagrunert/go-modiff v1.3.4 h1:ApDLxZaGOuZ4p2H+7pZGf16UhCcZQcgPGCjn8T9DUPA=
+github.com/saschagrunert/go-modiff v1.3.4/go.mod h1:yWSOFnT8wQIzUMsVflHmkL1qYHk+WLcjzGoeAjqjRXM=
 github.com/sassoftware/relic v7.2.1+incompatible h1:Pwyh1F3I0r4clFJXkSI8bOyJINGqpgjJU3DYAZeI05A=
 github.com/sassoftware/relic v7.2.1+incompatible/go.mod h1:CWfAxv73/iLZ17rbyhIEq3K9hs5w6FpNMdUT//qR+zk=
 github.com/sassoftware/relic/v7 v7.6.1 h1:O5s8ewCgq5QYNpv45dK4u6IpBmDM9RIcsbf/G1uXepQ=

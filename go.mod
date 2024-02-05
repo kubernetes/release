@@ -22,7 +22,7 @@ require (
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/psampaz/go-mod-outdated v0.9.0
-	github.com/saschagrunert/go-modiff v1.3.3
+	github.com/saschagrunert/go-modiff v1.3.4
 	github.com/sendgrid/rest v2.6.9+incompatible
 	github.com/sendgrid/sendgrid-go v3.14.0+incompatible
 	github.com/shirou/gopsutil/v3 v3.24.1
