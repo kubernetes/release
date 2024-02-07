@@ -480,7 +480,7 @@ dependencies:
       match: "IMAGE_VERSION: 'bookworm-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/debian-base: dependents"
-    version: bookworm-v1.0.0
+    version: bookworm-v1.0.1
     refPaths:
     - path: images/build/setcap/Makefile
       match: DEBIAN_BASE_VERSION\ \?=\ bookworm-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -502,7 +502,7 @@ dependencies:
       match: GORUNNER_VERSION \?= v\d+\.\d+\.\d+-go\d+.\d+(alpha|beta|rc)?\.?(\d+)?-bookworm\.\d+
 
   - name: "registry.k8s.io/build-image/setcap"
-    version: bookworm-v1.0.0
+    version: bookworm-v1.0.1
     refPaths:
     - path: images/build/setcap/Makefile
       match: IMAGE_VERSION\ \?=\ bookworm-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -517,13 +517,13 @@ dependencies:
       match: "IMAGE_VERSION: 'bookworm-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/debian-base: dependents (next candidate)"
-    version: bookworm-v1.0.0
+    version: bookworm-v1.0.1
     refPaths:
     - path: images/build/setcap/variants.yaml
       match: "DEBIAN_BASE_VERSION: 'bookworm-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/setcap (next candidate)"
-    version: bookworm-v1.0.0
+    version: bookworm-v1.0.1
     refPaths:
     - path: images/build/setcap/variants.yaml
       match: "IMAGE_VERSION: 'bookworm-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
