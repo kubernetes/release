@@ -17,9 +17,9 @@ include $(CURDIR)/../../Makefile.common-image
 
 IMGNAME = go-runner
 APP_VERSION = $(shell cat VERSION)
-GO_MAJOR_VERSION ?= 1.21
+GO_MAJOR_VERSION ?= 1.22
 REVISION ?= 0
-GO_VERSION ?= 1.21.7
+GO_VERSION ?= 1.22
 OS_CODENAME ?= bookworm
 
 # Build args
