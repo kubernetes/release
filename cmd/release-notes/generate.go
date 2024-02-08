@@ -18,8 +18,6 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -120,7 +118,7 @@ func addGenerateFlags(subcommand *cobra.Command) {
 	subcommand.PersistentFlags().StringVar(
 		&opts.RepoPath,
 		"repo-path",
-		env.Default("REPO_PATH", filepath.Join(os.TempDir(), "k8s-repo")),
+		env.Default("REPO_PATH", ""),
 		"Path to a local Kubernetes repository, used only for tag discovery.",
 	)
 
