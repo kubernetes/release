@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -192,6 +193,11 @@ func (o *Options) ValidateAndFinish() (err error) {
 			"neither environment variable `%s` nor `replay` option is set",
 			github.TokenEnvKey,
 		)
+	}
+
+	// Set RepoPath to <tempdir>/<gh-org>-<gh-repo> if empty
+	if o.RepoPath == "" {
+		o.RepoPath = filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s", o.GithubOrg, o.GithubRepo))
 	}
 
 	// Check if we want to automatically discover the revisions
