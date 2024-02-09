@@ -406,6 +406,9 @@ dependencies:
       match: OS_CODENAME\ \?=\ bullseye
     - path: images/build/cross/variants.yaml
       match: "OS_CODENAME: 'bullseye'"
+      # We keep them around for backwards compatibility and release branches.
+    - path: images/build/go-runner/variants.yaml
+      match: "OS_CODENAME: 'bullseye'"
     - path: images/releng/k8s-ci-builder/Makefile
       match: OS_CODENAME\ \?=\ bullseye
     - path: images/releng/k8s-ci-builder/variants.yaml

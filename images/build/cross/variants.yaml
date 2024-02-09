@@ -27,7 +27,7 @@ variants:
     OS_CODENAME: 'bullseye'
     REVISION: '0'
   v1.27-go1.21-bullseye:
-    CONFIG: 'go1.20-bullseye'
+    CONFIG: 'go1.21-bullseye'
     TYPE: 'default'
     IMAGE_VERSION: 'v1.27.0-go1.21.7-bullseye.0'
     KUBERNETES_VERSION: 'v1.27.0'
@@ -36,7 +36,7 @@ variants:
     OS_CODENAME: 'bullseye'
     REVISION: '0'
   v1.26-go1.21-bullseye:
-    CONFIG: 'go1.20-bullseye'
+    CONFIG: 'go1.21-bullseye'
     TYPE: 'default'
     IMAGE_VERSION: 'v1.26.0-go1.21.7-bullseye.0'
     KUBERNETES_VERSION: 'v1.26.0'
