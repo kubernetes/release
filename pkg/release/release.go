@@ -51,7 +51,7 @@ const (
 	DefaultK8sRef  = git.DefaultRef
 
 	// TODO(vdf): Need to reference K8s Infra project here
-	DefaultKubernetesStagingProject = "kubernetes-release-test"
+	DefaultKubernetesStagingProject = "k8s-release"
 	DefaultRelengStagingTestProject = "k8s-staging-releng-test"
 	DefaultRelengStagingProject     = "k8s-staging-releng"
 	DefaultDiskSize                 = "500"
@@ -100,7 +100,7 @@ const (
 	CIBucketK8sInfra = "k8s-release-dev"
 
 	// TestBucket is the default bucket for mocked Kubernetes releases
-	TestBucket = "kubernetes-release-gcb"
+	TestBucket = "k8s-release-gcb"
 
 	// ProductionBucket is the default bucket for Kubernetes releases
 	ProductionBucket = "kubernetes-release"
