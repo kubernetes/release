@@ -75,7 +75,9 @@ Google Cloud Build job.
 }
 
 func init() {
-	ffCmd.PersistentFlags().StringVar(&ffOpts.RepoPath, "repo", filepath.Join(os.TempDir(), "k8s"), "the local path to the repository to be used")
+	ffCmd.PersistentFlags().StringVar(&ffOpts.RepoPath, "repo-path", filepath.Join(os.TempDir(), "k8s"), "the local path to the repository to be used")
+	ffCmd.PersistentFlags().StringVar(&ffOpts.GitHubOrg, "github-org", release.GetK8sOrg(), "the GitHub Organization to be used do the initial clone")
+	ffCmd.PersistentFlags().StringVar(&ffOpts.GitHubRepo, "github-repo", release.GetK8sRepo(), "the GitHub Repository to be used do the initial clone")
 	ffCmd.PersistentFlags().StringVar(&ffOpts.Branch, "branch", "", "branch")
 	ffCmd.PersistentFlags().StringVar(&ffOpts.MainRef, "ref", kgit.Remotify(kgit.DefaultBranch), "ref on the main branch")
 	ffCmd.PersistentFlags().StringVar(&ffOpts.GCPProjectID, "project-id", release.DefaultRelengStagingTestProject, "Google Cloud Project to use to submit the job")

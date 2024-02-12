@@ -32,6 +32,12 @@ import (
 
 // Options is the main structure for configuring a fast forward.
 type Options struct {
+	// GitHubOrg is the GitHub Organization to be used do the initial clone.
+	GitHubOrg string
+
+	// GitHubRepo is the GitHub Repository to be used do the initial clone.
+	GitHubRepo string
+
 	// Branch is the release branch to be fast forwarded.
 	Branch string
 
@@ -91,7 +97,7 @@ func (f *FastForward) Run() (err error) {
 		return f.Submit(options)
 	}
 
-	repo, err := f.prepareKubernetesRepo()
+	repo, err := f.prepareFastForwardRepo()
 	if err != nil {
 		return fmt.Errorf("prepare repository: %w", err)
 	}
@@ -236,7 +242,7 @@ func (f *FastForward) Run() (err error) {
 		return fmt.Errorf("get HEAD rev: %w", err)
 	}
 
-	prepushMessage(f.RepoDir(repo), branch, f.options.MainRef, releaseRev, headRev)
+	prepushMessage(f.RepoDir(repo), f.options.GitHubOrg, f.options.GitHubRepo, branch, f.options.MainRef, releaseRev, headRev)
 
 	pushUpstream := false
 	if f.options.NonInteractive {
@@ -258,7 +264,7 @@ func (f *FastForward) Run() (err error) {
 	return nil
 }
 
-func prepushMessage(gitRoot, branch, ref, releaseRev, headRev string) {
+func prepushMessage(gitRoot, org, repo, branch, ref, releaseRev, headRev string) {
 	fmt.Printf(`Go look around in %s to make sure things look okay before pushing…
 	
 	Check for files left uncommitted using:
@@ -281,8 +287,8 @@ func prepushMessage(gitRoot, branch, ref, releaseRev, headRev string) {
 		gitRoot,
 		git.Remotify(branch),
 		ref,
-		git.DefaultGithubOrg,
-		git.DefaultGithubRepo,
+		org,
+		repo,
 		releaseRev,
 		headRev,
 	)
@@ -303,41 +309,40 @@ func (f *FastForward) branchToVersion(branch string) string {
 	return fmt.Sprintf("v%s.0", strings.TrimPrefix(branch, "release-"))
 }
 
-func (f *FastForward) prepareKubernetesRepo() (*git.Repo, error) {
-	logrus.Infof("Preparing to fast-forward from %s", f.options.MainRef)
+func (f *FastForward) prepareFastForwardRepo() (*git.Repo, error) {
+	logrus.Infof("Preparing to %s/%s fast-forward from %s", f.options.GitHubOrg, f.options.GitHubRepo, f.options.MainRef)
 
 	token := f.EnvDefault(github.TokenEnvKey, "")
+
+	useSSH := true
+	stringMsg := "using SSH"
+	if token != "" {
+		useSSH = false
+		stringMsg = "using HTTPs"
+	}
+
+	logrus.Infof("Cloning repository %s/%s %s", f.options.GitHubOrg, f.options.GitHubRepo, stringMsg)
+	repo, err := f.CloneOrOpenGitHubRepo(f.options.RepoPath, f.options.GitHubOrg, f.options.GitHubRepo, useSSH)
+	if err != nil {
+		return nil, fmt.Errorf("clone or open %s/%s GitHub repository: %w",
+			f.options.GitHubOrg, f.options.GitHubRepo, err,
+		)
+	}
+
 	if token != "" {
 		logrus.Info("Found GitHub token, using it for repository interactions")
-		k8sOrg := release.GetK8sOrg()
-		k8sRepo := release.GetK8sRepo()
-
-		logrus.Info("Cloning repository by using HTTPs")
-		repo, err := f.CloneOrOpenGitHubRepo(f.options.RepoPath, k8sOrg, k8sRepo, false)
-		if err != nil {
-			return nil, fmt.Errorf("clone or open k/k GitHub repository: %w", err)
-		}
-
 		if f.IsDefaultK8sUpstream() {
 			if err := f.RepoSetURL(repo, git.DefaultRemote, (&url.URL{
 				Scheme: "https",
 				User:   url.UserPassword("git", token),
 				Host:   "github.com",
-				Path:   filepath.Join(git.DefaultGithubOrg, git.DefaultGithubRepo),
+				Path:   filepath.Join(f.options.GitHubOrg, f.options.GitHubRepo),
 			}).String()); err != nil {
 				return nil, fmt.Errorf("changing git remote of repository: %w", err)
 			}
 		} else {
 			logrus.Info("Using non-default k8s upstream, doing no git modifications")
 		}
-
-		return repo, nil
-	}
-
-	logrus.Info("Cloning repository by using SSH")
-	repo, err := f.CloneOrOpenDefaultGitHubRepoSSH(f.options.RepoPath)
-	if err != nil {
-		return nil, fmt.Errorf("clone or open k/k GitHub repository: %w", err)
 	}
 
 	return repo, nil
@@ -368,5 +373,6 @@ func (f *FastForward) prepareToolRepo() error {
 	if err := f.Chdir(tmpPath); err != nil {
 		return fmt.Errorf("change directory: %w", err)
 	}
+
 	return nil
 }

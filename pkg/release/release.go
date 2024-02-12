@@ -188,7 +188,6 @@ func GetK8sRef() string {
 // GetK8sRef() point to their default values.
 func IsDefaultK8sUpstream() bool {
 	return GetK8sOrg() == DefaultK8sOrg &&
-		GetK8sRepo() == DefaultK8sRepo &&
 		GetK8sRef() == DefaultK8sRef
 }
 
