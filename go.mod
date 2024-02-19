@@ -10,7 +10,6 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/cheggaaa/pb/v3 v3.1.7
 	github.com/go-git/go-git/v5 v5.16.2
-	github.com/goark/go-cvss v1.6.7
 	github.com/golang/protobuf v1.5.4
 	github.com/google/go-containerregistry v0.20.6
 	github.com/google/go-github/v72 v72.0.0
@@ -22,6 +21,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481
 	github.com/olekukonko/tablewriter v0.0.5
+	github.com/pandatix/go-cvss v0.6.2
 	github.com/psampaz/go-mod-outdated v0.9.0
 	github.com/saschagrunert/go-modiff v1.3.5
 	github.com/sendgrid/rest v2.6.9+incompatible
@@ -168,7 +168,6 @@ require (
 	github.com/go-openapi/validate v0.24.0 // indirect
 	github.com/go-piv/piv-go/v2 v2.3.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
-	github.com/goark/errs v1.3.2 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
