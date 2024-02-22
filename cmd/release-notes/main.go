@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/mdtoc/pkg/mdtoc"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/log"
+	"sigs.k8s.io/release-utils/version"
 )
 
 type releaseNotesOptions struct {
@@ -156,8 +157,7 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 // versions of release-notes.
 func hackDefaultSubcommand(cmd *cobra.Command) {
 	if len(os.Args) > 1 {
-		// We accept --version and "completion"
-		if os.Args[1] == "completion" || os.Args[1] == "--version" || os.Args[1] == "--help" {
+		if os.Args[1] == "completion" {
 			return
 		}
 
@@ -186,6 +186,8 @@ func main() {
 
 	addGenerate(cmd)
 	addCheckPR(cmd)
+
+	cmd.AddCommand(version.WithFont("slant"))
 
 	hackDefaultSubcommand(cmd)
 
