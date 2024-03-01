@@ -58,7 +58,7 @@ kubeadm:
         versionConstraint: ">= 1.1.1"
       - name: cri-tools
         versionConstraint: ">= 1.25.0"
-  - versionConstraint: ">= 1.28.0"
+  - versionConstraint: ">= 1.28.0 < 1.30.0"
     sourceURLTemplate: "{{ KubernetesURL }}"
     dependencies:
       - name: kubelet
@@ -69,6 +69,11 @@ kubeadm:
         versionConstraint: ">= 1.2.0"
       - name: cri-tools
         versionConstraint: ">= 1.28.0"
+  - versionConstraint: ">= 1.30.0"
+    sourceURLTemplate: "{{ KubernetesURL }}"
+    dependencies:
+      - name: cri-tools
+        versionConstraint: ">= 1.30.0"
 kubectl:
   - versionConstraint: ">= 1.0.0"
     sourceURLTemplate: "{{ KubernetesURL }}"
