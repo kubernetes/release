@@ -527,3 +527,9 @@ dependencies:
     refPaths:
     - path: images/releng/k8s-ci-builder/Dockerfile
       match: DOCKER_BUILDX_VERSION
+
+  - name: Crane
+    version: v0.19.1
+    refPaths:
+    - path: push-build.sh
+      match: CRANE_VERSION
