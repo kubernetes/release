@@ -18,7 +18,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-VERSION=0.4.3
+VERSION=0.4.4
 
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 BIN_PATH="$REPO_ROOT/bin"
