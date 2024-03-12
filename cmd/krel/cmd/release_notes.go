@@ -1401,7 +1401,6 @@ func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.R
 	// Verify that the new yaml is valid and can be serialized back into a Map
 	testMap := notes.ReleaseNotesMap{}
 	err = yaml.Unmarshal(changes, &testMap)
-
 	if err != nil {
 		logrus.Error("The YAML code has errors")
 		return true, fmt.Errorf("while verifying if changes are a valid map: %w", err)
