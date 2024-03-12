@@ -803,7 +803,7 @@ func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, e
 		}
 
 		// If we found a valid release note, return the PR, otherwise, take the next one
-		if len(s) > 0 {
+		if s != "" {
 			res := &Result{commit: commit, pullRequest: pr}
 			logrus.Infof("PR #%d seems to contain a release note", pr.GetNumber())
 			// Do not test further PRs for this commit as soon as one PR matched

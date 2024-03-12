@@ -61,7 +61,6 @@ linters:
     - nakedret
     - nolintlint
     - nosprintfhostport
-    - perfsprint
     - prealloc
     - predeclared
     - promlinter
@@ -70,6 +69,7 @@ linters:
     - revive
     - rowserrcheck
     - sloglint
+    - spancheck
     - sqlclosecheck
     - staticcheck
     - stylecheck
@@ -113,8 +113,9 @@ linters:
     # - noctx
     # - nonamedreturns
     # - paralleltest
-    # - testifylint
+    # - perfsprint
     # - tagliatelle
+    # - testifylint
     # - testpackage
     # - thelper
     # - tparallel
@@ -123,6 +124,10 @@ linters:
     # - wrapcheck
     # - wsl
 linters-settings:
+  revive:
+    rules:
+      - name: unused-parameter
+        disabled: true
   gocyclo:
     min-complexity: 40
   godox:
@@ -144,6 +149,7 @@ linters-settings:
       - badLock
       - badRegexp
       - badSorting
+      - badSyncOnceFunc
       - boolExprSimplify
       - builtinShadow
       - builtinShadowDecl
@@ -209,7 +215,6 @@ linters-settings:
       - sliceClear
       - sloppyLen
       - sloppyReassign
-      - sloppyTestFuncName
       - sloppyTypeAssert
       - sortSlice
       - sprintfQuotedString
@@ -219,7 +224,6 @@ linters-settings:
       - stringsCompare
       - switchTrue
       - syncMapLoadAndDelete
-      - timeCmpSimplify
       - timeExprSimplify
       - todoCommentWithoutDetail
       - tooManyResultsChecker
