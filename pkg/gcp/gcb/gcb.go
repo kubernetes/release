@@ -95,18 +95,20 @@ type Options struct {
 	// NonInteractive does not ask any questions if set to true.
 	NonInteractive bool
 
-	NoMock       bool
-	Stage        bool
-	Release      bool
-	FastForward  bool
-	Stream       bool
-	BuildAtHead  bool
-	Branch       string
-	ReleaseType  string
-	BuildVersion string
-	GcpUser      string
-	LogLevel     string
-	LastJobs     int64
+	NoMock        bool
+	Stage         bool
+	Release       bool
+	FastForward   bool
+	Stream        bool
+	BuildAtHead   bool
+	Branch        string
+	ReleaseType   string
+	BuildVersion  string
+	GcpUser       string
+	LogLevel      string
+	CustomK8SRepo string
+	CustomK8sOrg  string
+	LastJobs      int64
 
 	// OpenBuildService parameters
 	OBSStage         bool
@@ -360,7 +362,15 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket string) 
 	gcbSubs["TOOL_REF"] = toolRef
 
 	gcbSubs["K8S_ORG"] = release.GetK8sOrg()
+	if g.options.CustomK8sOrg != "" {
+		gcbSubs["K8S_ORG"] = g.options.CustomK8sOrg
+	}
+
 	gcbSubs["K8S_REPO"] = release.GetK8sRepo()
+	if g.options.CustomK8SRepo != "" {
+		gcbSubs["K8S_REPO"] = g.options.CustomK8SRepo
+	}
+
 	gcbSubs["K8S_REF"] = release.GetK8sRef()
 
 	gcpUser := g.options.GcpUser
