@@ -81,6 +81,7 @@ linters:
     - unparam
     - unused
     - usestdlibvars
+    - wastedassign
     - whitespace
     - zerologlint
     # - containedctx
@@ -120,7 +121,6 @@ linters:
     # - thelper
     # - tparallel
     # - varnamelen
-    # - wastedassign
     # - wrapcheck
     # - wsl
 linters-settings:

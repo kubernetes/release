@@ -1122,7 +1122,6 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 	// Cycle all gathered release notes
 	for pr, note := range releaseNotes.ByPR() {
 		contentHash, err := note.ContentHash()
-		noteReviewed := false
 		if err != nil {
 			return fmt.Errorf("getting the content hash for PR#%d: %w", pr, err)
 		}
@@ -1190,7 +1189,7 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 			return fmt.Errorf("while asking to edit release note: %w", err)
 		}
 
-		noteReviewed = true
+		noteReviewed := true
 		if choice {
 			for {
 				retry, err := editReleaseNote(pr, workDir, originalNote, note)
