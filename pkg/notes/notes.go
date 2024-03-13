@@ -254,7 +254,7 @@ func GatherReleaseNotes(opts *options.Options) (*ReleaseNotes, error) {
 	if err != nil {
 		return nil, fmt.Errorf("listing release notes: %w", err)
 	}
-	logrus.Infof("finished gathering release notes in %v", time.Since(startTime))
+	logrus.Infof("Finished gathering release notes in %v", time.Since(startTime))
 
 	return releaseNotes, nil
 }

@@ -37,7 +37,7 @@ type MapProvider interface {
 // NewProviderFromInitString creates a new map provider from an initialization string
 func NewProviderFromInitString(initString string) (MapProvider, error) {
 	// If init string starts with gs:// return a CloudStorageProvider
-	if initString[0:5] == object.GcsPrefix {
+	if len(initString) >= 5 && initString[0:5] == object.GcsPrefix {
 		// Currently for illustration purposes
 		return nil, errors.New("CloudStorageProvider is not yet implemented")
 	}
