@@ -136,6 +136,9 @@ type ReleaseNote struct {
 
 	// DataFields a key indexed map of data fields
 	DataFields map[string]ReleaseNotesDataField `json:"-"`
+
+	// IsMapped is set if the note got modified from a map
+	IsMapped bool `json:"is_mapped,omitempty"`
 }
 
 type Documentation struct {
@@ -1146,6 +1149,8 @@ func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap, markdownLinks bool) er
 	logrus.WithFields(logrus.Fields{
 		"pr": rn.PrNumber,
 	}).Debugf("Applying map to note")
+	rn.IsMapped = true
+
 	reRenderMarkdown := false
 	if noteMap.ReleaseNote.Author != nil {
 		rn.Author = *noteMap.ReleaseNote.Author
