@@ -71,9 +71,8 @@ const (
 func IsSupported(field string, input, expected []string) bool {
 	notSupported := []string{}
 
-	supported := false
 	for _, i := range input {
-		supported = false
+		supported := false
 		for _, j := range expected {
 			if i == j {
 				supported = true

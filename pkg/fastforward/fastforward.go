@@ -244,10 +244,8 @@ func (f *FastForward) Run() (err error) {
 
 	prepushMessage(f.RepoDir(repo), f.options.GitHubOrg, f.options.GitHubRepo, branch, f.options.MainRef, releaseRev, headRev)
 
-	pushUpstream := false
-	if f.options.NonInteractive {
-		pushUpstream = true
-	} else {
+	pushUpstream := f.options.NonInteractive
+	if !pushUpstream {
 		_, pushUpstream, err = f.Ask(pushUpstreamQuestion, "yes", 3)
 		if err != nil {
 			return fmt.Errorf("ask upstream question: %w", err)
