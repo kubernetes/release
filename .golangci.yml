@@ -32,6 +32,7 @@ linters:
     - errchkjson
     - errname
     - execinquery
+    - exportloopref
     - ginkgolinter
     - gocheckcompilerdirectives
     - gochecksumtype
@@ -91,7 +92,6 @@ linters:
     # - errorlint
     # - exhaustive
     # - exhaustruct
-    # - exportloopref
     # - forbidigo
     # - forcetypeassert
     # - funlen
