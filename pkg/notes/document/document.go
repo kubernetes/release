@@ -307,7 +307,7 @@ func New(
 		}
 
 		if note.DoNotPublish {
-			logrus.Debugf("skipping PR %d as (marked to not be published)", pr)
+			logrus.Debugf("Skipping PR %d as (marked to not be published)", pr)
 			continue
 		}
 
