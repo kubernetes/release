@@ -75,6 +75,8 @@ steps:
   - "fast-forward"
   - "--log-level=${_LOG_LEVEL}"
   - "--non-interactive"
+  - "--github-org=${_K8S_ORG}"
+  - "--github-repo=${_K8S_REPO}"
   - "${_NOMOCK}"
 
 tags:
@@ -84,6 +86,8 @@ tags:
 - ${_GIT_TAG}
 - ${_RELEASE_BRANCH}
 - ${_TYPE_TAG}
+- ${_K8S_ORG}
+- ${_K8S_REPO}
 - ${_TYPE}
 
 options:

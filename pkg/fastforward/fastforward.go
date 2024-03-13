@@ -94,6 +94,8 @@ func (f *FastForward) Run() (err error) {
 		options.Stream = true
 		options.Project = f.options.GCPProjectID
 		options.ScratchBucket = "gs://" + f.options.GCPProjectID + "-gcb"
+		options.CustomK8SRepo = f.options.GitHubRepo
+		options.CustomK8sOrg = f.options.GitHubOrg
 		return f.Submit(options)
 	}
 
