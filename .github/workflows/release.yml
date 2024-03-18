@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: '1.21'
+          go-version: '1.22'
           check-latest: true
       - uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
       - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v3.5.2
@@ -32,7 +32,7 @@ jobs:
         uses: goreleaser/goreleaser-action@7ec5c2b0c6cdda6e8bbb49444bc797dd33d74dd8 # v5.0.0
         if: "!contains(github.ref, 'refs/tags')"
         with:
-          args: release --clean --snapshot --skip sign
+          args: release --clean --snapshot --skip=sign
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
