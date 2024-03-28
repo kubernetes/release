@@ -20,8 +20,12 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
-	cvss "github.com/goark/go-cvss/v3/metric"
+	gocvss20 "github.com/pandatix/go-cvss/20"
+	gocvss30 "github.com/pandatix/go-cvss/30"
+	gocvss31 "github.com/pandatix/go-cvss/31"
+	gocvss40 "github.com/pandatix/go-cvss/40"
 )
 
 // CVE Information of a linked CVE vulnerability
@@ -91,19 +95,41 @@ func (cve *CVE) Validate() (err error) {
 		return errors.New("string CVSS vector missing from CVE data")
 	}
 
-	var bm cvss.Metrics
-	// Parse the vector string to make sure it is well formed
-	if len(cve.CVSSVector) == 44 {
-		bm, err = cvss.NewBase().Decode(cve.CVSSVector)
-	} else {
-		bm, err = cvss.NewTemporal().Decode(cve.CVSSVector)
+	switch {
+	default: // CVSS v2.0 has no prefix
+		_, err := gocvss20.ParseVector(cve.CVSSVector)
+		if err != nil {
+			return fmt.Errorf("parsing CVSS vector string: %w", err)
+		}
+		// FIRST ORG has no calculator for CVSS v2.0
+
+	case strings.HasPrefix(cve.CVSSVector, "CVSS:3.0"):
+		_, err := gocvss30.ParseVector(cve.CVSSVector)
+		if err != nil {
+			return fmt.Errorf("parsing CVSS vector string: %w", err)
+		}
+		cve.CalcLink = fmt.Sprintf(
+			"https://www.first.org/cvss/calculator/3.0#%s", cve.CVSSVector,
+		)
+
+	case strings.HasPrefix(cve.CVSSVector, "CVSS:3.1"):
+		_, err := gocvss31.ParseVector(cve.CVSSVector)
+		if err != nil {
+			return fmt.Errorf("parsing CVSS vector string: %w", err)
+		}
+		cve.CalcLink = fmt.Sprintf(
+			"https://www.first.org/cvss/calculator/3.1#%s", cve.CVSSVector,
+		)
+
+	case strings.HasPrefix(cve.CVSSVector, "CVSS:4.0"):
+		_, err := gocvss40.ParseVector(cve.CVSSVector)
+		if err != nil {
+			return fmt.Errorf("parsing CVSS vector string: %w", err)
+		}
+		cve.CalcLink = fmt.Sprintf(
+			"https://www.first.org/cvss/calculator/4.0#%s", cve.CVSSVector,
+		)
 	}
-	if err != nil {
-		return fmt.Errorf("parsing CVSS vector string: %w", err)
-	}
-	cve.CalcLink = fmt.Sprintf(
-		"https://www.first.org/cvss/calculator/%s#%s", bm.BaseMetrics().Ver.String(), cve.CVSSVector,
-	)
 
 	if cve.CVSSScore == 0 {
 		return errors.New("missing CVSS score from CVE data")
