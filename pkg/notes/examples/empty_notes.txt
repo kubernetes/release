@@ -1,0 +1,23 @@
+#### What type of PR is this?
+
+/kind cleanup
+#### What this PR does / why we need it:
+
+     * updates opencontainers/selinux to v1.11.0
+
+
+#### Which issue(s) this PR fixes:
+
+Fixes #
+#### Special notes for your reviewer:
+#### Does this PR introduce a user-facing change?
+
+```
+
+```
+
+#### Additional documentation e.g., KEPs (Kubernetes Enhancement Proposals), usage docs, etc.:
+
+```
+
+```
