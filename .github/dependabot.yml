@@ -3,7 +3,7 @@ updates:
   - package-ecosystem: gomod
     directory: "/"
     schedule:
-      interval: daily
+      interval: "daily"
     labels:
       - "area/dependency"
       - "release-note-none"

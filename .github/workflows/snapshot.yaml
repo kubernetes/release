@@ -1,18 +1,15 @@
 ---
-name: release
+name: test-snapshot-release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     permissions:
-      id-token: write
-      contents: write
+      contents: read
 
     steps:
       - name: Harden Runner
@@ -32,13 +29,10 @@ jobs:
           go-version: '1.22'
           check-latest: true
 
-      - uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
-
-      - name: Build and publish release
+      - name: Test release build
         uses: goreleaser/goreleaser-action@7ec5c2b0c6cdda6e8bbb49444bc797dd33d74dd8 # v5.0.0
-        if: contains(github.ref, 'refs/tags')
         with:
-          args: release --clean
+          args: release --clean --snapshot --skip=sign
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
