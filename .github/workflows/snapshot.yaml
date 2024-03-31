@@ -4,12 +4,12 @@ name: test-snapshot-release
 on:
   pull_request:
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+permissions:
+  contents: read
 
-    permissions:
-      contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
 
     steps:
       - name: Harden Runner
@@ -29,6 +29,9 @@ jobs:
           go-version: '1.22'
           check-latest: true
 
+      - name: Install bom
+        uses: kubernetes-sigs/release-actions/setup-bom@841d76a188a7c121231a863572e27012805715a2 # v0.1.4
+
       - name: Test release build
         uses: goreleaser/goreleaser-action@7ec5c2b0c6cdda6e8bbb49444bc797dd33d74dd8 # v5.0.0
         with:
@@ -36,7 +39,47 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: check binary
+        run: |
+          ./dist/krel-amd64-linux version
+          ./dist/publish-release-amd64-linux help
+          ./dist/release-notes-amd64-linux version
+
       - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
           name: artifacts
           path: dist/*
+
+  attestation:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    needs:
+      - snapshot
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          disable-sudo: true
+          egress-policy: audit
+
+      - name: Check out code onto GOPATH
+        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+        with:
+          fetch-depth: 1
+
+      - name: Install tejolote
+        uses: kubernetes-sigs/release-actions/setup-tejolote@841d76a188a7c121231a863572e27012805715a2 # v0.1.4
+
+      - run: |
+          tejolote attest github://kubernetes/release/"${GITHUB_RUN_ID}" --output release.intoto.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        with:
+          name: release.intoto.json
+          path: ./release.intoto.json

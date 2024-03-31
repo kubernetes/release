@@ -6,8 +6,11 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: read
+
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
 
     permissions:
@@ -34,6 +37,9 @@ jobs:
 
       - uses: sigstore/cosign-installer@e1523de7571e31dbe865fd2e80c5c7c23ae71eb4 # v3.4.0
 
+      - name: Install bom
+        uses: kubernetes-sigs/release-actions/setup-bom@841d76a188a7c121231a863572e27012805715a2 # v0.1.4
+
       - name: Build and publish release
         uses: goreleaser/goreleaser-action@7ec5c2b0c6cdda6e8bbb49444bc797dd33d74dd8 # v5.0.0
         if: contains(github.ref, 'refs/tags')
@@ -46,3 +52,46 @@ jobs:
         with:
           name: artifacts
           path: dist/*
+
+  attestation:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: write
+
+    needs:
+      - release
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          disable-sudo: true
+          egress-policy: audit
+
+      - name: Check out code onto GOPATH
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 1
+
+      - name: Set tag output
+        id: tag
+        run: echo "tag_name=${GITHUB_REF#refs/*/}" >> "$GITHUB_OUTPUT"
+
+      - name: Install tejolote
+        uses: kubernetes-sigs/release-actions/setup-tejolote@841d76a188a7c121231a863572e27012805715a2 # v0.1.4
+
+      - run: |
+          tejolote attest --artifacts github://kubernetes/release/${{ steps.tag.outputs.tag_name }} github://kubernetes/release/"${GITHUB_RUN_ID}" --output release.intoto.json --sign
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release
+        uses: softprops/action-gh-release@9d7c94cfd0a1f3ed45544c887983e9fa900f0564 # v2.0.4
+        with:
+          files: release.intoto.json
+          tag_name: "${{ steps.tag.outputs.tag_name }}"
+          token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_REPOSITORY: kubernetes/release

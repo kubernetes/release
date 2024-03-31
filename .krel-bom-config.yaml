@@ -1,0 +1,27 @@
+---
+license: Apache-2.0
+name: krel
+creator:
+ person: The Kubernetes Authors
+ tool: krel
+
+artifacts:
+  - type: file
+    source: krel-amd64-darwin
+    license: Apache-2.0
+    gomodules: true
+
+  - type: file
+    source: krel-amd64-linux
+    license: Apache-2.0
+    gomodules: true
+
+  - type: file
+    source: krel-arm64-darwin
+    license: Apache-2.0
+    gomodules: true
+
+  - type: file
+    source: krel-arm64-linux
+    license: Apache-2.0
+    gomodules: true

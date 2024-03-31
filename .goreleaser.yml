@@ -60,6 +60,55 @@ signs:
     args: ["sign-blob", "--output-signature", "${artifact}.sig", "--output-certificate", "${artifact}.pem", "${artifact}"]
     artifacts: all
 
+sboms:
+  - id: krel
+    cmd: bom
+    args:
+      - generate
+      - "--output"
+      - "krel-bom.json.spdx"
+      - "-d"
+      - "../"
+      - "-c"
+      - "../.krel-bom-config.yaml"
+      - "--format"
+      - "json"
+    artifacts: any
+    documents:
+      - "krel-bom.json.spdx"
+
+  - id: release-notes
+    cmd: bom
+    args:
+      - generate
+      - "--output"
+      - "release-notes-bom.json.spdx"
+      - "-d"
+      - "../"
+      - "-c"
+      - "../.release-notes-bom-config.yaml"
+      - "--format"
+      - "json"
+    artifacts: any
+    documents:
+      - "release-notes-bom.json.spdx"
+
+  - id: publish-release
+    cmd: bom
+    args:
+      - generate
+      - "--output"
+      - "publish-release-bom.json.spdx"
+      - "-d"
+      - "../"
+      - "-c"
+      - "../.publish-release-bom-config.yaml"
+      - "--format"
+      - "json"
+    artifacts: any
+    documents:
+      - "publish-release-bom.json.spdx"
+
 checksum:
   name_template: 'checksums.txt'
 
