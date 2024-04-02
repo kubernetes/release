@@ -1154,6 +1154,7 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 			ActionRequired: note.ActionRequired,
 			Documentation:  note.Documentation,
 			DoNotPublish:   note.DoNotPublish,
+			PRBody:         note.PRBody,
 		}
 
 		if noteMaps != nil {
@@ -1409,6 +1410,8 @@ func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.R
 		logrus.Error("The yaml code does not have a PR number")
 		return true, errors.New("invalid map: the YAML code did not have a PR number")
 	}
+
+	testMap.PRBody = &originalNote.PRBody
 
 	// Remarshall the newyaml to save only the new values
 	newYAML, err := yaml.Marshal(testMap)

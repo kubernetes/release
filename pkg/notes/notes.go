@@ -37,6 +37,7 @@ import (
 
 	gogithub "github.com/google/go-github/v58/github"
 	"github.com/nozzle/throttler"
+	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -139,6 +140,9 @@ type ReleaseNote struct {
 
 	// IsMapped is set if the note got modified from a map
 	IsMapped bool `json:"is_mapped,omitempty"`
+
+	// PRBody is the full PR body of the release note
+	PRBody string `json:"pr_body,omitempty"`
 }
 
 type Documentation struct {
@@ -518,6 +522,7 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result) (*ReleaseNote, error) {
 		DuplicateKind:  isDuplicateKind,
 		ActionRequired: labelExactMatch(pr, "release-note-action-required"),
 		DoNotPublish:   labelExactMatch(pr, "release-note-none"),
+		PRBody:         prBody,
 	}, nil
 }
 
@@ -757,6 +762,7 @@ func (g *Gatherer) ReleaseNoteForPullRequest(prNr int) (*ReleaseNote, error) {
 		ActionRequired: false,
 		DoNotPublish:   doNotPublish,
 		DataFields:     map[string]ReleaseNotesDataField{},
+		PRBody:         prBody,
 	}
 
 	if s != "" {
@@ -1151,6 +1157,14 @@ func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap, markdownLinks bool) er
 	}).Debugf("Applying map to note")
 	rn.IsMapped = true
 
+	if noteMap.PRBody != nil && rn.PRBody != "" && rn.PRBody != *noteMap.PRBody {
+		logrus.Warnf("Original PR body of release note mapping changed for PR: #%d", rn.PrNumber)
+
+		dmp := diffmatchpatch.New()
+		diffs := dmp.DiffMain(rn.PRBody, *noteMap.PRBody, false)
+		logrus.Warnf("The diff between actual release note body and mapped one is:\n%s", dmp.DiffPrettyText(diffs))
+	}
+
 	reRenderMarkdown := false
 	if noteMap.ReleaseNote.Author != nil {
 		rn.Author = *noteMap.ReleaseNote.Author
@@ -1231,6 +1245,7 @@ func (rn *ReleaseNote) ToNoteMap() (string, error) {
 	noteMap.ReleaseNote.Feature = &rn.Feature
 	noteMap.ReleaseNote.ActionRequired = &rn.ActionRequired
 	noteMap.ReleaseNote.DoNotPublish = &rn.DoNotPublish
+	noteMap.PRBody = &rn.PRBody
 
 	yamlCode, err := yaml.Marshal(&noteMap)
 	if err != nil {
