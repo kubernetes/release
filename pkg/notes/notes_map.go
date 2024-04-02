@@ -117,6 +117,9 @@ type ReleaseNotesMap struct {
 	} `json:"releasenote"`
 
 	DataFields map[string]ReleaseNotesDataField `json:"datafields,omitempty" yaml:"datafields,omitempty"`
+
+	// PRBody is the full original PR body.
+	PRBody *string `json:"pr_body,omitempty" yaml:"pr_body,omitempty"`
 }
 
 // ReleaseNotesDataField extra data added to a release note
