@@ -1,0 +1,27 @@
+---
+license: Apache-2.0
+name: publish-release
+creator:
+ person: The Kubernetes Authors
+ tool: publish-release
+
+artifacts:
+  - type: file
+    source: publish-release-amd64-darwin
+    license: Apache-2.0
+    gomodules: true
+
+  - type: file
+    source: publish-release-amd64-linux
+    license: Apache-2.0
+    gomodules: true
+
+  - type: file
+    source: publish-release-arm64-darwin
+    license: Apache-2.0
+    gomodules: true
+
+  - type: file
+    source: publish-release-arm64-linux
+    license: Apache-2.0
+    gomodules: true

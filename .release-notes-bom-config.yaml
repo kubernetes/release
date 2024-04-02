@@ -1,0 +1,27 @@
+---
+license: Apache-2.0
+name: release-notes
+creator:
+ person: The Kubernetes Authors
+ tool: release-notes
+
+artifacts:
+  - type: file
+    source: release-notes-amd64-darwin
+    license: Apache-2.0
+    gomodules: true
+
+  - type: file
+    source: release-notes-amd64-linux
+    license: Apache-2.0
+    gomodules: true
+
+  - type: file
+    source: release-notes-arm64-darwin
+    license: Apache-2.0
+    gomodules: true
+
+  - type: file
+    source: release-notes-arm64-linux
+    license: Apache-2.0
+    gomodules: true
