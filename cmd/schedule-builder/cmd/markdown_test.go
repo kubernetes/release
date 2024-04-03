@@ -18,9 +18,13 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"sigs.k8s.io/yaml"
 )
 
 const expectedPatchSchedule = `### Timeline
@@ -121,7 +125,7 @@ Please refer to the [release phases document](../release_phases.md).
 [release phases document]: ../release_phases.md
 `
 
-func TestParseSchedule(t *testing.T) {
+func TestParsePatchSchedule(t *testing.T) {
 	testcases := []struct {
 		name     string
 		schedule PatchSchedule
@@ -129,7 +133,7 @@ func TestParseSchedule(t *testing.T) {
 		{
 			name: "next patch is not in previous patch list",
 			schedule: PatchSchedule{
-				Schedules: []Schedule{
+				Schedules: []*Schedule{
 					{
 						Release: "X.Y",
 						Next: &PatchRelease{
@@ -139,7 +143,7 @@ func TestParseSchedule(t *testing.T) {
 						},
 						EndOfLifeDate:            "NOW",
 						MaintenanceModeStartDate: "THEN",
-						PreviousPatches: []PatchRelease{
+						PreviousPatches: []*PatchRelease{
 							{
 								Release:            "X.Y.XXX",
 								CherryPickDeadline: "2020-05-15",
@@ -159,7 +163,7 @@ func TestParseSchedule(t *testing.T) {
 		{
 			name: "next patch is in previous patch list",
 			schedule: PatchSchedule{
-				Schedules: []Schedule{
+				Schedules: []*Schedule{
 					{
 						Release: "X.Y",
 						Next: &PatchRelease{
@@ -169,7 +173,7 @@ func TestParseSchedule(t *testing.T) {
 						},
 						EndOfLifeDate:            "NOW",
 						MaintenanceModeStartDate: "THEN",
-						PreviousPatches: []PatchRelease{
+						PreviousPatches: []*PatchRelease{
 							{
 								Release:            "X.Y.ZZZ",
 								CherryPickDeadline: "2020-06-12",
@@ -195,7 +199,7 @@ func TestParseSchedule(t *testing.T) {
 
 	for _, tc := range testcases {
 		fmt.Printf("Test case: %s\n", tc.name)
-		out := parseSchedule(tc.schedule)
+		out := parsePatchSchedule(tc.schedule)
 		require.Equal(t, out, expectedPatchSchedule)
 	}
 }
@@ -317,5 +321,86 @@ func TestParseReleaseSchedule(t *testing.T) {
 		fmt.Printf("Test case: %s\n", tc.name)
 		out := parseReleaseSchedule(tc.schedule)
 		require.Equal(t, out, expectedReleaseSchedule)
+	}
+}
+
+func TestUpdatePatchSchedule(t *testing.T) {
+	for _, tc := range []struct {
+		name                            string
+		refTime                         time.Time
+		givenSchedule, expectedSchedule PatchSchedule
+	}{
+		{
+			name:    "succeed to update the schedule",
+			refTime: time.Date(2024, 4, 3, 0, 0, 0, 0, time.UTC),
+			givenSchedule: PatchSchedule{
+				Schedules: []*Schedule{
+					{ // Needs multiple updates
+						Release: "1.30",
+						Next: &PatchRelease{
+							Release:            "1.30.1",
+							CherryPickDeadline: "2024-01-05",
+							TargetDate:         "2024-01-09",
+						},
+						EndOfLifeDate:            "2025-01-01",
+						MaintenanceModeStartDate: "2024-12-01",
+					},
+					{ // EOL
+						Release:       "1.20",
+						EndOfLifeDate: "2023-01-01",
+					},
+				},
+			},
+			expectedSchedule: PatchSchedule{
+				Schedules: []*Schedule{
+					{
+						Release: "1.30",
+						Next: &PatchRelease{
+							Release:            "1.30.4",
+							CherryPickDeadline: "2024-04-05",
+							TargetDate:         "2024-04-09",
+						},
+						EndOfLifeDate:            "2025-01-01",
+						MaintenanceModeStartDate: "2024-12-01",
+						PreviousPatches: []*PatchRelease{
+							{
+								Release:            "1.30.3",
+								CherryPickDeadline: "2024-03-08",
+								TargetDate:         "2024-03-12",
+							},
+							{
+								Release:            "1.30.2",
+								CherryPickDeadline: "2024-02-09",
+								TargetDate:         "2024-02-13",
+							},
+							{
+								Release:            "1.30.1",
+								CherryPickDeadline: "2024-01-05",
+								TargetDate:         "2024-01-09",
+							},
+						},
+					},
+					{
+						Release:       "1.20",
+						EndOfLifeDate: "2023-01-01",
+					},
+				},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			file, err := os.CreateTemp("", "schedule-")
+			require.NoError(t, err)
+			require.NoError(t, file.Close())
+
+			require.NoError(t, updatePatchSchedule(tc.refTime, tc.givenSchedule, file.Name()))
+
+			yamlBytes, err := os.ReadFile(file.Name())
+			require.NoError(t, err)
+			res := PatchSchedule{}
+			require.NoError(t, yaml.UnmarshalStrict(yamlBytes, &res))
+
+			assert.Equal(t, tc.expectedSchedule, res)
+		})
 	}
 }
