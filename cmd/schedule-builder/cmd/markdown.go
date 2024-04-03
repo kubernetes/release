@@ -20,18 +20,22 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"os"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
+	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/yaml"
 )
 
 //go:embed templates/*.tmpl
 var tpls embed.FS
 
 // runs with `--type=patch` to return the patch schedule
-func parseSchedule(patchSchedule PatchSchedule) string {
+func parsePatchSchedule(patchSchedule PatchSchedule) string {
 	output := []string{}
 	output = append(output, "### Timeline\n")
 	for _, releaseSchedule := range patchSchedule.Schedules {
@@ -65,8 +69,6 @@ func parseSchedule(patchSchedule PatchSchedule) string {
 	scheduleOut := strings.Join(output, "\n")
 
 	logrus.Info("Schedule parsed")
-	println(scheduleOut)
-
 	return scheduleOut
 }
 
@@ -108,15 +110,13 @@ func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 		relSched.TimelineOutput = tableString.String()
 	}
 
-	scheduleOut := ProcessFile("templates/rel-schedule.tmpl", relSched)
+	scheduleOut := processFile("templates/rel-schedule.tmpl", relSched)
 
 	logrus.Info("Release Schedule parsed")
-	println(scheduleOut)
-
 	return scheduleOut
 }
 
-func patchReleaseInPreviousList(a string, previousPatches []PatchRelease) bool {
+func patchReleaseInPreviousList(a string, previousPatches []*PatchRelease) bool {
 	for _, b := range previousPatches {
 		if b.Release == a {
 			return true
@@ -141,10 +141,95 @@ func process(t *template.Template, vars interface{}) string {
 	return tmplBytes.String()
 }
 
-func ProcessFile(fileName string, vars interface{}) string {
+func processFile(fileName string, vars interface{}) string {
 	tmpl, err := template.ParseFS(tpls, fileName)
 	if err != nil {
 		panic(err)
 	}
 	return process(tmpl, vars)
+}
+
+func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, filePath string) error {
+	const refDate = "2006-01-02"
+
+	for _, schedule := range schedule.Schedules {
+		for {
+			eolDate, err := time.Parse(refDate, schedule.EndOfLifeDate)
+			if err != nil {
+				return fmt.Errorf("parse end of life date: %w", err)
+			}
+
+			if refTime.After(eolDate) {
+				logrus.Infof("Skipping end of life release: %s", schedule.Release)
+				break
+			}
+
+			targetDate, err := time.Parse(refDate, schedule.Next.TargetDate)
+			if err != nil {
+				return fmt.Errorf("parse target date: %w", err)
+			}
+
+			if targetDate.After(refTime) {
+				break
+			}
+
+			// Copy the release to the previousPatches section
+			schedule.PreviousPatches = append([]*PatchRelease{schedule.Next}, schedule.PreviousPatches...)
+
+			// Create a new next release
+			nextReleaseVersion, err := util.TagStringToSemver(schedule.Next.Release)
+			if err != nil {
+				return fmt.Errorf("parse semver version: %w", err)
+			}
+			if err := nextReleaseVersion.IncrementPatch(); err != nil {
+				return fmt.Errorf("increment patch version: %w", err)
+			}
+
+			cherryPickDeadline, err := time.Parse(refDate, schedule.Next.CherryPickDeadline)
+			if err != nil {
+				return fmt.Errorf("parse cherry pick deadline: %w", err)
+			}
+			cherryPickDeadlinePlusOneMonth := cherryPickDeadline.AddDate(0, 1, 0)
+			cherryPickDay := firstFriday(cherryPickDeadlinePlusOneMonth)
+			newCherryPickDeadline := time.Date(cherryPickDeadlinePlusOneMonth.Year(), cherryPickDeadlinePlusOneMonth.Month(), cherryPickDay, 0, 0, 0, 0, time.UTC)
+
+			targetDatePlusOneMonth := targetDate.AddDate(0, 1, 0)
+			targetDateDay := secondTuesday(targetDatePlusOneMonth)
+			newTargetDate := time.Date(targetDatePlusOneMonth.Year(), targetDatePlusOneMonth.Month(), targetDateDay, 0, 0, 0, 0, time.UTC)
+
+			schedule.Next = &PatchRelease{
+				Release:            nextReleaseVersion.String(),
+				CherryPickDeadline: newCherryPickDeadline.Format(refDate),
+				TargetDate:         newTargetDate.Format(refDate),
+			}
+
+			logrus.Infof("Adding release schedule: %+v", schedule.Next)
+		}
+	}
+
+	yamlBytes, err := yaml.Marshal(schedule)
+	if err != nil {
+		return fmt.Errorf("marshal schedule YAML: %w", err)
+	}
+
+	//nolint:gocritic,gosec
+	if err := os.WriteFile(filePath, yamlBytes, 0o644); err != nil {
+		return fmt.Errorf("write schedule YAML: %w", err)
+	}
+
+	logrus.Infof("Wrote schedule YAML to: %v", filePath)
+	return nil
+}
+
+func secondTuesday(t time.Time) int {
+	return firstMonday(t) + 8
+}
+
+func firstFriday(t time.Time) int {
+	return firstMonday(t) + 4
+}
+
+func firstMonday(from time.Time) int {
+	t := time.Date(from.Year(), from.Month(), 1, 0, 0, 0, 0, time.UTC)
+	return (8-int(t.Weekday()))%7 + 1
 }

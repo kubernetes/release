@@ -16,27 +16,27 @@ limitations under the License.
 
 package cmd
 
-// PatchSchedule main struct to hold the schedules
+// PatchSchedule main struct to hold the schedules.
 type PatchSchedule struct {
-	Schedules []Schedule `yaml:"schedules"`
+	Schedules []*Schedule `json:"schedules,omitempty" yaml:"schedules,omitempty"`
 }
 
-// PatchRelease struct to define the patch schedules
+// PatchRelease struct to define the patch schedules.
 type PatchRelease struct {
-	Release            string `yaml:"release"`
-	CherryPickDeadline string `yaml:"cherryPickDeadline"`
-	TargetDate         string `yaml:"targetDate"`
-	Note               string `yaml:"note"`
+	Release            string `json:"release,omitempty"            yaml:"release,omitempty"`
+	CherryPickDeadline string `json:"cherryPickDeadline,omitempty" yaml:"cherryPickDeadline,omitempty"`
+	TargetDate         string `json:"targetDate,omitempty"         yaml:"targetDate,omitempty"`
+	Note               string `json:"note,omitempty"               yaml:"note,omitempty"`
 }
 
-// Schedule struct to define the release schedule for a specific version
+// Schedule struct to define the release schedule for a specific version.
 type Schedule struct {
-	Release                  string         `yaml:"release"`
-	ReleaseDate              string         `yaml:"releaseDate"`
-	Next                     *PatchRelease  `yaml:"next"`
-	EndOfLifeDate            string         `yaml:"endOfLifeDate"`
-	MaintenanceModeStartDate string         `yaml:"maintenanceModeStartDate"`
-	PreviousPatches          []PatchRelease `yaml:"previousPatches"`
+	Release                  string          `json:"release,omitempty"                  yaml:"release,omitempty"`
+	ReleaseDate              string          `json:"releaseDate,omitempty"              yaml:"releaseDate,omitempty"`
+	Next                     *PatchRelease   `json:"next,omitempty"                     yaml:"next,omitempty"`
+	EndOfLifeDate            string          `json:"endOfLifeDate,omitempty"            yaml:"endOfLifeDate,omitempty"`
+	MaintenanceModeStartDate string          `json:"maintenanceModeStartDate,omitempty" yaml:"maintenanceModeStartDate,omitempty"`
+	PreviousPatches          []*PatchRelease `json:"previousPatches,omitempty"          yaml:"previousPatches,omitempty"`
 }
 
 type ReleaseSchedule struct {

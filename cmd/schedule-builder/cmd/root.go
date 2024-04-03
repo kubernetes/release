@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -45,6 +46,7 @@ type options struct {
 	outputFile string
 	logLevel   string
 	typeFile   string
+	update     bool
 }
 
 var opts = &options{}
@@ -53,6 +55,7 @@ const (
 	configPathFlag = "config-path"
 	outputFileFlag = "output-file"
 	typeFlag       = "type"
+	updateFlag     = "update"
 	typePatch      = "patch"
 	typeRelease    = "release"
 )
@@ -102,6 +105,14 @@ func init() {
 		fmt.Sprintf("type of file to be produced - release cycle schedule or patch schedule. To be set to '%s' or '%s' and respective yaml needs to be supplied with '--%s'", typeRelease, typePatch, configPathFlag),
 	)
 
+	rootCmd.PersistentFlags().BoolVarP(
+		&opts.update,
+		updateFlag,
+		"u",
+		false,
+		fmt.Sprintf("update the '--%s' based on the latest available data (or date). Right now only supported if '--%s' is set to '%s'", configPathFlag, typeFlag, typePatch),
+	)
+
 	for _, flag := range requiredFlags {
 		if err := rootCmd.MarkPersistentFlagRequired(flag); err != nil {
 			logrus.Fatal(err)
@@ -115,10 +126,10 @@ func initLogging(*cobra.Command, []string) error {
 
 func run(opts *options) error {
 	if err := opts.SetAndValidate(); err != nil {
-		return fmt.Errorf("validating schedule-path options: %w", err)
+		return fmt.Errorf("validating options: %w", err)
 	}
 
-	logrus.Infof("Reading the schedule file %s...", opts.configPath)
+	logrus.Infof("Reading schedule file: %s", opts.configPath)
 	data, err := os.ReadFile(opts.configPath)
 	if err != nil {
 		return fmt.Errorf("failed to read the file: %w", err)
@@ -130,35 +141,43 @@ func run(opts *options) error {
 		scheduleOut     string
 	)
 
-	logrus.Info("Parsing the schedule...")
+	logrus.Info("Parsing schedule")
 
 	switch opts.typeFile {
-	case "patch":
+	case typePatch:
 		if err := yaml.UnmarshalStrict(data, &patchSchedule); err != nil {
 			return fmt.Errorf("failed to decode the file: %w", err)
 		}
 
-		logrus.Info("Generating the markdown output...")
-		scheduleOut = parseSchedule(patchSchedule)
+		if opts.update {
+			logrus.Info("Updating schedule")
+			if err := updatePatchSchedule(time.Now(), patchSchedule, opts.configPath); err != nil {
+				return fmt.Errorf("update patch schedule: %w", err)
+			}
+		} else {
+			logrus.Infof("Generating markdown output for type %q", typePatch)
+			scheduleOut = parsePatchSchedule(patchSchedule)
+			println(scheduleOut)
+		}
 
-	case "release":
+	case typeRelease:
 		if err := yaml.UnmarshalStrict(data, &releaseSchedule); err != nil {
 			return fmt.Errorf("failed to decode the file: %w", err)
 		}
 
-		logrus.Info("Generating the markdown output...")
+		logrus.Infof("Generating markdown output for type %q", typeRelease)
 		scheduleOut = parseReleaseSchedule(releaseSchedule)
+		println(scheduleOut)
 
 	default:
 		return fmt.Errorf("type must be either %q or %q", typeRelease, typePatch)
 	}
 
-	if opts.outputFile != "" {
-		logrus.Infof("Saving schedule to a file %s.", opts.outputFile)
+	if opts.outputFile != "" && scheduleOut != "" {
+		logrus.Infof("Saving schedule to file: %s", opts.outputFile)
 		//nolint:gosec // TODO(gosec): G306: Expect WriteFile permissions to be
 		// 0600 or less
-		err := os.WriteFile(opts.outputFile, []byte(scheduleOut), 0o644)
-		if err != nil {
+		if err := os.WriteFile(opts.outputFile, []byte(scheduleOut), 0o644); err != nil {
 			return fmt.Errorf("failed to save schedule to the file: %w", err)
 		}
 		logrus.Info("File saved")
@@ -169,10 +188,14 @@ func run(opts *options) error {
 
 // SetAndValidate sets some default options and verifies if options are valid
 func (o *options) SetAndValidate() error {
-	logrus.Info("Validating schedule-path options...")
+	logrus.Info("Validating options")
 
 	if o.configPath == "" {
 		return fmt.Errorf("need to set the '--%s' flag", configPathFlag)
+	}
+
+	if o.update && o.typeFile != typePatch {
+		return fmt.Errorf("'--%s' is only supported for '--%s=%s', not '%s'", updateFlag, typeFlag, typePatch, o.typeFile)
 	}
 
 	return nil
