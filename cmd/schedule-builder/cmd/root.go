@@ -58,7 +58,6 @@ const (
 
 var requiredFlags = []string{
 	configPathFlag,
-	typeFlag,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

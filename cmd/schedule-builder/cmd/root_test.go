@@ -35,7 +35,7 @@ const expectedPatchOut = `### Timeline
 
 Next patch release is **1.18.4**
 
-End of Life for **1.18** is **TBD**
+**1.18** enters maintenance mode on **TBD** and End of Life is on **TBD**.
 
 | PATCH RELEASE | CHERRY PICK DEADLINE | TARGET DATE | NOTE |
 |---------------|----------------------|-------------|------|
@@ -47,7 +47,7 @@ End of Life for **1.18** is **TBD**
 
 Next patch release is **1.17.7**
 
-End of Life for **1.17** is **TBD**
+**1.17** enters maintenance mode on **TBD** and End of Life is on **TBD**.
 
 | PATCH RELEASE | CHERRY PICK DEADLINE | TARGET DATE | NOTE |
 |---------------|----------------------|-------------|------|
@@ -58,7 +58,7 @@ End of Life for **1.17** is **TBD**
 
 Next patch release is **1.16.11**
 
-End of Life for **1.16** is **TBD**
+**1.16** enters maintenance mode on **TBD** and End of Life is on **TBD**.
 
 | PATCH RELEASE | CHERRY PICK DEADLINE | TARGET DATE | NOTE |
 |---------------|----------------------|-------------|------|

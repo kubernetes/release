@@ -36,8 +36,11 @@ func parseSchedule(patchSchedule PatchSchedule) string {
 	output = append(output, "### Timeline\n")
 	for _, releaseSchedule := range patchSchedule.Schedules {
 		output = append(output, fmt.Sprintf("### %s\n", releaseSchedule.Release),
-			fmt.Sprintf("Next patch release is **%s**\n", releaseSchedule.Next),
-			fmt.Sprintf("End of Life for **%s** is **%s**\n", releaseSchedule.Release, releaseSchedule.EndOfLifeDate))
+			fmt.Sprintf("Next patch release is **%s**\n", releaseSchedule.Next.Release),
+			fmt.Sprintf("**%s** enters maintenance mode on **%s** and End of Life is on **%s**.\n",
+				releaseSchedule.Release, releaseSchedule.MaintenanceModeStartDate, releaseSchedule.EndOfLifeDate,
+			),
+		)
 
 		tableString := &strings.Builder{}
 		table := tablewriter.NewWriter(tableString)
@@ -45,8 +48,8 @@ func parseSchedule(patchSchedule PatchSchedule) string {
 		table.SetHeader([]string{"Patch Release", "Cherry Pick Deadline", "Target Date", "Note"})
 
 		// Check if the next patch release is in the Previous Patch list, if yes dont read in the output
-		if !patchReleaseInPreviousList(releaseSchedule.Next, releaseSchedule.PreviousPatches) {
-			table.Append([]string{strings.TrimSpace(releaseSchedule.Next), strings.TrimSpace(releaseSchedule.CherryPickDeadline), strings.TrimSpace(releaseSchedule.TargetDate), ""})
+		if !patchReleaseInPreviousList(releaseSchedule.Next.Release, releaseSchedule.PreviousPatches) {
+			table.Append([]string{strings.TrimSpace(releaseSchedule.Next.Release), strings.TrimSpace(releaseSchedule.Next.CherryPickDeadline), strings.TrimSpace(releaseSchedule.Next.TargetDate), ""})
 		}
 
 		for _, previous := range releaseSchedule.PreviousPatches {
@@ -113,7 +116,7 @@ func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 	return scheduleOut
 }
 
-func patchReleaseInPreviousList(a string, previousPatches []PreviousPatches) bool {
+func patchReleaseInPreviousList(a string, previousPatches []PatchRelease) bool {
 	for _, b := range previousPatches {
 		if b.Release == a {
 			return true
