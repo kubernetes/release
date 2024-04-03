@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
@@ -32,7 +31,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:               "schedule-builder --config-path path/to/schedule.yaml --type <release>/or/<patch>[--output-file <filename.md>]",
 	Short:             "schedule-builder generate a human readable format of the Kubernetes release schedule",
-	Example:           "schedule-builder --config-path /home/user/kubernetes/sig-release/releases/schedule.yaml --type patch",
+	Example:           "schedule-builder --config-path /home/user/kubernetes/sig-release/releases/schedule.yaml --type release",
 	SilenceUsage:      true,
 	SilenceErrors:     true,
 	PersistentPreRunE: initLogging,
@@ -54,6 +53,8 @@ const (
 	configPathFlag = "config-path"
 	outputFileFlag = "output-file"
 	typeFlag       = "type"
+	typePatch      = "patch"
+	typeRelease    = "release"
 )
 
 var requiredFlags = []string{
@@ -69,32 +70,36 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(
+	rootCmd.PersistentFlags().StringVarP(
 		&opts.configPath,
 		configPathFlag,
+		"c",
 		"",
 		"path where can find the schedule.yaml file",
 	)
 
-	rootCmd.PersistentFlags().StringVar(
+	rootCmd.PersistentFlags().StringVarP(
 		&opts.outputFile,
 		outputFileFlag,
+		"o",
 		"",
-		"name of the file that save the schedule to. If not set it will just output to the stdout.",
+		"name of the file that save the schedule to. If not set, it will just output to the stdout",
 	)
 
-	rootCmd.PersistentFlags().StringVar(
+	rootCmd.PersistentFlags().StringVarP(
 		&opts.logLevel,
 		"log-level",
+		"l",
 		"info",
 		fmt.Sprintf("the logging verbosity, either %s", log.LevelNames()),
 	)
 
-	rootCmd.PersistentFlags().StringVar(
+	rootCmd.PersistentFlags().StringVarP(
 		&opts.typeFile,
 		typeFlag,
+		"t",
 		"patch",
-		"type of file to be produced - release cycle schedule or patch schedule. To be set to `release` or `patch` and respective yaml needs to be supplied with --config-path",
+		fmt.Sprintf("type of file to be produced - release cycle schedule or patch schedule. To be set to '%s' or '%s' and respective yaml needs to be supplied with '--%s'", typeRelease, typePatch, configPathFlag),
 	)
 
 	for _, flag := range requiredFlags {
@@ -145,7 +150,7 @@ func run(opts *options) error {
 		scheduleOut = parseReleaseSchedule(releaseSchedule)
 
 	default:
-		return errors.New("type must be either `release` or `patch`")
+		return fmt.Errorf("type must be either %q or %q", typeRelease, typePatch)
 	}
 
 	if opts.outputFile != "" {
@@ -167,7 +172,7 @@ func (o *options) SetAndValidate() error {
 	logrus.Info("Validating schedule-path options...")
 
 	if o.configPath == "" {
-		return fmt.Errorf("need to set the config-path")
+		return fmt.Errorf("need to set the '--%s' flag", configPathFlag)
 	}
 
 	return nil
