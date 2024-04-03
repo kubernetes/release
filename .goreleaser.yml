@@ -47,6 +47,17 @@ builds:
       - amd64
       - arm64
 
+  - id: schedule-builder
+    no_unique_dist_dir: true
+    main: ./cmd/schedule-builder
+    binary: schedule-builder-{{ .Arch }}-{{ .Os }}
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
 archives:
   - format: binary
     name_template: "{{ .Binary }}"
@@ -108,6 +119,22 @@ sboms:
     artifacts: any
     documents:
       - "publish-release-bom.json.spdx"
+
+  - id: schedule-builder
+    cmd: bom
+    args:
+      - generate
+      - "--output"
+      - "schedule-builder-bom.json.spdx"
+      - "-d"
+      - "../"
+      - "-c"
+      - "../.schedule-builder-bom-config.yaml"
+      - "--format"
+      - "json"
+    artifacts: any
+    documents:
+      - "schedule-builder-bom.json.spdx"
 
 checksum:
   name_template: 'checksums.txt'

@@ -1,0 +1,27 @@
+---
+license: Apache-2.0
+name: schedule-builder
+creator:
+ person: The Kubernetes Authors
+ tool: schedule-builder
+
+artifacts:
+  - type: file
+    source: schedule-builder-amd64-darwin
+    license: Apache-2.0
+    gomodules: true
+
+  - type: file
+    source: schedule-builder-amd64-linux
+    license: Apache-2.0
+    gomodules: true
+
+  - type: file
+    source: schedule-builder-arm64-darwin
+    license: Apache-2.0
+    gomodules: true
+
+  - type: file
+    source: schedule-builder-arm64-linux
+    license: Apache-2.0
+    gomodules: true
