@@ -21,8 +21,8 @@ type PatchSchedule struct {
 	Schedules []Schedule `yaml:"schedules"`
 }
 
-// PreviousPatches struct to define the old patch schedules
-type PreviousPatches struct {
+// PatchRelease struct to define the patch schedules
+type PatchRelease struct {
 	Release            string `yaml:"release"`
 	CherryPickDeadline string `yaml:"cherryPickDeadline"`
 	TargetDate         string `yaml:"targetDate"`
@@ -31,12 +31,12 @@ type PreviousPatches struct {
 
 // Schedule struct to define the release schedule for a specific version
 type Schedule struct {
-	Release            string            `yaml:"release"`
-	Next               string            `yaml:"next"`
-	CherryPickDeadline string            `yaml:"cherryPickDeadline"`
-	TargetDate         string            `yaml:"targetDate"`
-	EndOfLifeDate      string            `yaml:"endOfLifeDate"`
-	PreviousPatches    []PreviousPatches `yaml:"previousPatches"`
+	Release                  string         `yaml:"release"`
+	ReleaseDate              string         `yaml:"releaseDate"`
+	Next                     *PatchRelease  `yaml:"next"`
+	EndOfLifeDate            string         `yaml:"endOfLifeDate"`
+	MaintenanceModeStartDate string         `yaml:"maintenanceModeStartDate"`
+	PreviousPatches          []PatchRelease `yaml:"previousPatches"`
 }
 
 type ReleaseSchedule struct {

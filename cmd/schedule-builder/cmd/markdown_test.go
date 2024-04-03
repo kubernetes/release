@@ -29,7 +29,7 @@ const expectedPatchSchedule = `### Timeline
 
 Next patch release is **X.Y.ZZZ**
 
-End of Life for **X.Y** is **NOW**
+**X.Y** enters maintenance mode on **THEN** and End of Life is on **NOW**.
 
 | PATCH RELEASE | CHERRY PICK DEADLINE | TARGET DATE | NOTE |
 |---------------|----------------------|-------------|------|
@@ -131,12 +131,15 @@ func TestParseSchedule(t *testing.T) {
 			schedule: PatchSchedule{
 				Schedules: []Schedule{
 					{
-						Release:            "X.Y",
-						Next:               "X.Y.ZZZ",
-						CherryPickDeadline: "2020-06-12",
-						TargetDate:         "2020-06-17",
-						EndOfLifeDate:      "NOW",
-						PreviousPatches: []PreviousPatches{
+						Release: "X.Y",
+						Next: &PatchRelease{
+							Release:            "X.Y.ZZZ",
+							CherryPickDeadline: "2020-06-12",
+							TargetDate:         "2020-06-17",
+						},
+						EndOfLifeDate:            "NOW",
+						MaintenanceModeStartDate: "THEN",
+						PreviousPatches: []PatchRelease{
 							{
 								Release:            "X.Y.XXX",
 								CherryPickDeadline: "2020-05-15",
@@ -158,12 +161,15 @@ func TestParseSchedule(t *testing.T) {
 			schedule: PatchSchedule{
 				Schedules: []Schedule{
 					{
-						Release:            "X.Y",
-						Next:               "X.Y.ZZZ",
-						CherryPickDeadline: "2020-06-12",
-						TargetDate:         "2020-06-17",
-						EndOfLifeDate:      "NOW",
-						PreviousPatches: []PreviousPatches{
+						Release: "X.Y",
+						Next: &PatchRelease{
+							Release:            "X.Y.ZZZ",
+							CherryPickDeadline: "2020-06-12",
+							TargetDate:         "2020-06-17",
+						},
+						EndOfLifeDate:            "NOW",
+						MaintenanceModeStartDate: "THEN",
+						PreviousPatches: []PatchRelease{
 							{
 								Release:            "X.Y.ZZZ",
 								CherryPickDeadline: "2020-06-12",
