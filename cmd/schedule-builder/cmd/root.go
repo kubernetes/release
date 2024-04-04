@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/release-utils/log"
+	"sigs.k8s.io/release-utils/version"
 	"sigs.k8s.io/yaml"
 )
 
@@ -47,6 +48,7 @@ type options struct {
 	logLevel   string
 	typeFile   string
 	update     bool
+	version    bool
 }
 
 var opts = &options{}
@@ -56,13 +58,10 @@ const (
 	outputFileFlag = "output-file"
 	typeFlag       = "type"
 	updateFlag     = "update"
+	versionFlag    = "version"
 	typePatch      = "patch"
 	typeRelease    = "release"
 )
-
-var requiredFlags = []string{
-	configPathFlag,
-}
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
@@ -113,11 +112,13 @@ func init() {
 		fmt.Sprintf("update the '--%s' based on the latest available data (or date). Right now only supported if '--%s' is set to '%s'", configPathFlag, typeFlag, typePatch),
 	)
 
-	for _, flag := range requiredFlags {
-		if err := rootCmd.MarkPersistentFlagRequired(flag); err != nil {
-			logrus.Fatal(err)
-		}
-	}
+	rootCmd.PersistentFlags().BoolVarP(
+		&opts.version,
+		versionFlag,
+		"v",
+		false,
+		"print the version and exit",
+	)
 }
 
 func initLogging(*cobra.Command, []string) error {
@@ -125,6 +126,12 @@ func initLogging(*cobra.Command, []string) error {
 }
 
 func run(opts *options) error {
+	if opts.version {
+		info := version.GetVersionInfo()
+		fmt.Print(info.String())
+		return nil
+	}
+
 	if err := opts.SetAndValidate(); err != nil {
 		return fmt.Errorf("validating options: %w", err)
 	}
