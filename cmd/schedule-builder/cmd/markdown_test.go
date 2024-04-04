@@ -366,6 +366,9 @@ func TestUpdatePatchSchedule(t *testing.T) {
 						EndOfLifeDate:            "2025-01-01",
 						MaintenanceModeStartDate: "2024-12-01",
 					},
+					{ // next not set
+						Release: "1.29",
+					},
 					{ // EOL
 						Release:       "1.20",
 						EndOfLifeDate: "2023-01-01",
@@ -422,6 +425,9 @@ func TestUpdatePatchSchedule(t *testing.T) {
 								TargetDate:         "2024-01-09",
 							},
 						},
+					},
+					{
+						Release: "1.29",
 					},
 				},
 				UpcomingReleases: []*PatchRelease{

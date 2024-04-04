@@ -173,6 +173,11 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 	removeSchedules := []int{}
 	for i, sched := range schedule.Schedules {
 		for {
+			if sched.Next == nil {
+				logrus.Warnf("Next release not set for %s, skipping", sched.Release)
+				break
+			}
+
 			eolDate, err := time.Parse(refDate, sched.EndOfLifeDate)
 			if err != nil {
 				return fmt.Errorf("parse end of life date: %w", err)
