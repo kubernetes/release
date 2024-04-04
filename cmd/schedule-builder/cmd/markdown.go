@@ -37,7 +37,25 @@ var tpls embed.FS
 // runs with `--type=patch` to return the patch schedule
 func parsePatchSchedule(patchSchedule PatchSchedule) string {
 	output := []string{}
+
+	if len(patchSchedule.UpcomingReleases) > 0 {
+		output = append(output, "### Upcoming Monthly Releases\n")
+		tableString := &strings.Builder{}
+		table := tablewriter.NewWriter(tableString)
+		table.SetAutoWrapText(false)
+		table.SetHeader([]string{"Monthly Patch Release", "Cherry Pick Deadline", "Target Date"})
+		for _, upcoming := range patchSchedule.UpcomingReleases {
+			table.Append([]string{strings.TrimSpace(upcoming.Release), strings.TrimSpace(upcoming.CherryPickDeadline), strings.TrimSpace(upcoming.TargetDate)})
+		}
+		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
+		table.SetCenterSeparator("|")
+		table.Render()
+
+		output = append(output, tableString.String())
+	}
+
 	output = append(output, "### Timeline\n")
+
 	for _, releaseSchedule := range patchSchedule.Schedules {
 		output = append(output, fmt.Sprintf("### %s\n", releaseSchedule.Release),
 			fmt.Sprintf("Next patch release is **%s**\n", releaseSchedule.Next.Release),
@@ -206,6 +224,46 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, filePath str
 			logrus.Infof("Adding release schedule: %+v", schedule.Next)
 		}
 	}
+
+	newUpcomingReleases := []*PatchRelease{}
+	latestDate := refTime
+	for _, upcomingRelease := range schedule.UpcomingReleases {
+		upcomingTargetDate, err := time.Parse(refDate, upcomingRelease.TargetDate)
+		if err != nil {
+			return fmt.Errorf("parse upcoming release target date: %w", err)
+		}
+
+		if refTime.After(upcomingTargetDate) {
+			logrus.Infof("Skipping outdated upcoming release for %s (%s)", upcomingRelease.Release, upcomingRelease.TargetDate)
+			continue
+		}
+
+		logrus.Infof("Using existing upcoming release for %s (%s)", upcomingRelease.Release, upcomingRelease.TargetDate)
+		newUpcomingReleases = append(newUpcomingReleases, upcomingRelease)
+		latestDate = upcomingTargetDate
+	}
+	for {
+		if len(newUpcomingReleases) >= 3 {
+			logrus.Infof("Got 3 new upcoming releases, not adding any more")
+			break
+		}
+
+		latestDate = latestDate.AddDate(0, 1, 0)
+		cherryPickDay := firstFriday(latestDate)
+		targetDateDay := secondTuesday(latestDate)
+		nextCherryPickDeadline := time.Date(latestDate.Year(), latestDate.Month(), cherryPickDay, 0, 0, 0, 0, time.UTC)
+		nextTargetDate := time.Date(latestDate.Year(), latestDate.Month(), targetDateDay, 0, 0, 0, 0, time.UTC)
+
+		releaseName := nextTargetDate.Format("January 2006")
+		logrus.Infof("Adding new upcoming release for %s", releaseName)
+
+		newUpcomingReleases = append(newUpcomingReleases, &PatchRelease{
+			Release:            releaseName,
+			CherryPickDeadline: nextCherryPickDeadline.Format(refDate),
+			TargetDate:         nextTargetDate.Format(refDate),
+		})
+	}
+	schedule.UpcomingReleases = newUpcomingReleases
 
 	yamlBytes, err := yaml.Marshal(schedule)
 	if err != nil {

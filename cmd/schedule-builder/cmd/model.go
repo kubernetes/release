@@ -18,7 +18,8 @@ package cmd
 
 // PatchSchedule main struct to hold the schedules.
 type PatchSchedule struct {
-	Schedules []*Schedule `json:"schedules,omitempty" yaml:"schedules,omitempty"`
+	UpcomingReleases []*PatchRelease `json:"upcoming_releases,omitempty" yaml:"upcoming_releases,omitempty"`
+	Schedules        []*Schedule     `json:"schedules,omitempty"         yaml:"schedules,omitempty"`
 }
 
 // PatchRelease struct to define the patch schedules.
