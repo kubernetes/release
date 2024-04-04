@@ -27,7 +27,13 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-const expectedPatchSchedule = `### Timeline
+const expectedPatchSchedule = `### Upcoming Monthly Releases
+
+| MONTHLY PATCH RELEASE | CHERRY PICK DEADLINE | TARGET DATE |
+|-----------------------|----------------------|-------------|
+| June 2020             | 2020-06-12           | 2020-06-17  |
+
+### Timeline
 
 ### X.Y
 
@@ -158,6 +164,13 @@ func TestParsePatchSchedule(t *testing.T) {
 						},
 					},
 				},
+				UpcomingReleases: []*PatchRelease{
+					{
+						Release:            "June 2020",
+						CherryPickDeadline: "2020-06-12",
+						TargetDate:         "2020-06-17",
+					},
+				},
 			},
 		},
 		{
@@ -191,6 +204,13 @@ func TestParsePatchSchedule(t *testing.T) {
 								TargetDate:         "2020-04-16",
 							},
 						},
+					},
+				},
+				UpcomingReleases: []*PatchRelease{
+					{
+						Release:            "June 2020",
+						CherryPickDeadline: "2020-06-12",
+						TargetDate:         "2020-06-17",
 					},
 				},
 			},
@@ -350,6 +370,23 @@ func TestUpdatePatchSchedule(t *testing.T) {
 						EndOfLifeDate: "2023-01-01",
 					},
 				},
+				UpcomingReleases: []*PatchRelease{
+					{
+						Release:            "March 2024",
+						CherryPickDeadline: "2024-03-08",
+						TargetDate:         "2024-03-13",
+					},
+					{
+						Release:            "April 2024",
+						CherryPickDeadline: "2024-04-12",
+						TargetDate:         "2024-04-17",
+					},
+					{
+						Release:            "May 2024",
+						CherryPickDeadline: "2024-05-10",
+						TargetDate:         "2024-05-14",
+					},
+				},
 			},
 			expectedSchedule: PatchSchedule{
 				Schedules: []*Schedule{
@@ -383,6 +420,23 @@ func TestUpdatePatchSchedule(t *testing.T) {
 					{
 						Release:       "1.20",
 						EndOfLifeDate: "2023-01-01",
+					},
+				},
+				UpcomingReleases: []*PatchRelease{
+					{
+						Release:            "April 2024",
+						CherryPickDeadline: "2024-04-12",
+						TargetDate:         "2024-04-17",
+					},
+					{
+						Release:            "May 2024",
+						CherryPickDeadline: "2024-05-10",
+						TargetDate:         "2024-05-14",
+					},
+					{
+						Release:            "June 2024",
+						CherryPickDeadline: "2024-06-07",
+						TargetDate:         "2024-06-11",
 					},
 				},
 			},
