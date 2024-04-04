@@ -40,6 +40,19 @@ type Schedule struct {
 	PreviousPatches          []*PatchRelease `json:"previousPatches,omitempty"          yaml:"previousPatches,omitempty"`
 }
 
+// EolBranches is main struct to hold the end of life branches.
+type EolBranches struct {
+	Branches []*EolBranch `json:"branches,omitempty" yaml:"branches,omitempty"`
+}
+
+// EolBranch struct to define the end of life release branches.
+type EolBranch struct {
+	Release           string `json:"release,omitempty"           yaml:"release,omitempty"`
+	FinalPatchRelease string `json:"finalPatchRelease,omitempty" yaml:"finalPatchRelease,omitempty"`
+	EndOfLifeDate     string `json:"endOfLifeDate,omitempty"     yaml:"endOfLifeDate,omitempty"`
+	Note              string `json:"note,omitempty"              yaml:"note,omitempty"`
+}
+
 type ReleaseSchedule struct {
 	Releases []Release `yaml:"releases"`
 }

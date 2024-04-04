@@ -167,22 +167,34 @@ func processFile(fileName string, vars interface{}) string {
 	return process(tmpl, vars)
 }
 
-func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, filePath string) error {
+func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches EolBranches, filePath, eolFilePath string) error {
 	const refDate = "2006-01-02"
 
-	for _, schedule := range schedule.Schedules {
+	removeSchedules := []int{}
+	for i, sched := range schedule.Schedules {
 		for {
-			eolDate, err := time.Parse(refDate, schedule.EndOfLifeDate)
+			eolDate, err := time.Parse(refDate, sched.EndOfLifeDate)
 			if err != nil {
 				return fmt.Errorf("parse end of life date: %w", err)
 			}
 
 			if refTime.After(eolDate) {
-				logrus.Infof("Skipping end of life release: %s", schedule.Release)
+				if eolFilePath == "" {
+					logrus.Infof("Skipping end of life release: %s", sched.Release)
+					break
+				}
+
+				logrus.Infof("Moving %s to end of life", sched.Release)
+				eolBranches.Branches = append([]*EolBranch{{
+					Release:           sched.Release,
+					FinalPatchRelease: sched.Next.Release,
+					EndOfLifeDate:     sched.Next.TargetDate,
+				}}, eolBranches.Branches...)
+				removeSchedules = append(removeSchedules, i)
 				break
 			}
 
-			targetDate, err := time.Parse(refDate, schedule.Next.TargetDate)
+			targetDate, err := time.Parse(refDate, sched.Next.TargetDate)
 			if err != nil {
 				return fmt.Errorf("parse target date: %w", err)
 			}
@@ -192,10 +204,10 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, filePath str
 			}
 
 			// Copy the release to the previousPatches section
-			schedule.PreviousPatches = append([]*PatchRelease{schedule.Next}, schedule.PreviousPatches...)
+			sched.PreviousPatches = append([]*PatchRelease{sched.Next}, sched.PreviousPatches...)
 
 			// Create a new next release
-			nextReleaseVersion, err := util.TagStringToSemver(schedule.Next.Release)
+			nextReleaseVersion, err := util.TagStringToSemver(sched.Next.Release)
 			if err != nil {
 				return fmt.Errorf("parse semver version: %w", err)
 			}
@@ -203,7 +215,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, filePath str
 				return fmt.Errorf("increment patch version: %w", err)
 			}
 
-			cherryPickDeadline, err := time.Parse(refDate, schedule.Next.CherryPickDeadline)
+			cherryPickDeadline, err := time.Parse(refDate, sched.Next.CherryPickDeadline)
 			if err != nil {
 				return fmt.Errorf("parse cherry pick deadline: %w", err)
 			}
@@ -215,15 +227,30 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, filePath str
 			targetDateDay := secondTuesday(targetDatePlusOneMonth)
 			newTargetDate := time.Date(targetDatePlusOneMonth.Year(), targetDatePlusOneMonth.Month(), targetDateDay, 0, 0, 0, 0, time.UTC)
 
-			schedule.Next = &PatchRelease{
+			sched.Next = &PatchRelease{
 				Release:            nextReleaseVersion.String(),
 				CherryPickDeadline: newCherryPickDeadline.Format(refDate),
 				TargetDate:         newTargetDate.Format(refDate),
 			}
 
-			logrus.Infof("Adding release schedule: %+v", schedule.Next)
+			logrus.Infof("Adding release schedule: %+v", sched.Next)
 		}
 	}
+
+	newSchedules := []*Schedule{}
+	for i, sched := range schedule.Schedules {
+		appendItem := true
+		for _, k := range removeSchedules {
+			if i == k {
+				appendItem = false
+				break
+			}
+		}
+		if appendItem {
+			newSchedules = append(newSchedules, sched)
+		}
+	}
+	schedule.Schedules = newSchedules
 
 	newUpcomingReleases := []*PatchRelease{}
 	latestDate := refTime
@@ -273,6 +300,20 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, filePath str
 	//nolint:gocritic,gosec
 	if err := os.WriteFile(filePath, yamlBytes, 0o644); err != nil {
 		return fmt.Errorf("write schedule YAML: %w", err)
+	}
+
+	if eolFilePath != "" {
+		logrus.Infof("Writing end of life branches: %s", eolFilePath)
+
+		yamlBytes, err := yaml.Marshal(eolBranches)
+		if err != nil {
+			return fmt.Errorf("marshal end of life YAML: %w", err)
+		}
+
+		//nolint:gocritic,gosec
+		if err := os.WriteFile(eolFilePath, yamlBytes, 0o644); err != nil {
+			return fmt.Errorf("write end of life YAML: %w", err)
+		}
 	}
 
 	logrus.Infof("Wrote schedule YAML to: %v", filePath)
