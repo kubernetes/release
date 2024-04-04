@@ -43,24 +43,26 @@ var rootCmd = &cobra.Command{
 }
 
 type options struct {
-	configPath string
-	outputFile string
-	logLevel   string
-	typeFile   string
-	update     bool
-	version    bool
+	configPath    string
+	eolConfigPath string
+	outputFile    string
+	logLevel      string
+	typeFile      string
+	update        bool
+	version       bool
 }
 
 var opts = &options{}
 
 const (
-	configPathFlag = "config-path"
-	outputFileFlag = "output-file"
-	typeFlag       = "type"
-	updateFlag     = "update"
-	versionFlag    = "version"
-	typePatch      = "patch"
-	typeRelease    = "release"
+	configPathFlag    = "config-path"
+	eolConfigPathFlag = "eol-config-path"
+	outputFileFlag    = "output-file"
+	typeFlag          = "type"
+	updateFlag        = "update"
+	versionFlag       = "version"
+	typePatch         = "patch"
+	typeRelease       = "release"
 )
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -78,6 +80,14 @@ func init() {
 		"c",
 		"",
 		"path where can find the schedule.yaml file",
+	)
+
+	rootCmd.PersistentFlags().StringVarP(
+		&opts.eolConfigPath,
+		eolConfigPathFlag,
+		"e",
+		"",
+		"path where can find the eol.yaml file for updating end of life releases",
 	)
 
 	rootCmd.PersistentFlags().StringVarP(
@@ -145,6 +155,7 @@ func run(opts *options) error {
 	var (
 		patchSchedule   PatchSchedule
 		releaseSchedule ReleaseSchedule
+		eolBranches     EolBranches
 		scheduleOut     string
 	)
 
@@ -153,12 +164,29 @@ func run(opts *options) error {
 	switch opts.typeFile {
 	case typePatch:
 		if err := yaml.UnmarshalStrict(data, &patchSchedule); err != nil {
-			return fmt.Errorf("failed to decode the file: %w", err)
+			return fmt.Errorf("failed to decode patch schedule: %w", err)
+		}
+
+		if opts.eolConfigPath != "" {
+			data, err := os.ReadFile(opts.eolConfigPath)
+			if err != nil {
+				return fmt.Errorf("failed to read end of life config path: %w", err)
+			}
+
+			if err := yaml.UnmarshalStrict(data, &eolBranches); err != nil {
+				return fmt.Errorf("failed to decode end of life branches: %w", err)
+			}
 		}
 
 		if opts.update {
 			logrus.Info("Updating schedule")
-			if err := updatePatchSchedule(time.Now(), patchSchedule, opts.configPath); err != nil {
+			if err := updatePatchSchedule(
+				time.Now(),
+				patchSchedule,
+				eolBranches,
+				opts.configPath,
+				opts.eolConfigPath,
+			); err != nil {
 				return fmt.Errorf("update patch schedule: %w", err)
 			}
 		} else {

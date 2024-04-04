@@ -349,6 +349,7 @@ func TestUpdatePatchSchedule(t *testing.T) {
 		name                            string
 		refTime                         time.Time
 		givenSchedule, expectedSchedule PatchSchedule
+		expectedEolBranches             EolBranches
 	}{
 		{
 			name:    "succeed to update the schedule",
@@ -368,6 +369,11 @@ func TestUpdatePatchSchedule(t *testing.T) {
 					{ // EOL
 						Release:       "1.20",
 						EndOfLifeDate: "2023-01-01",
+						Next: &PatchRelease{
+							Release:            "1.20.10",
+							CherryPickDeadline: "2023-12-08",
+							TargetDate:         "2023-12-12",
+						},
 					},
 				},
 				UpcomingReleases: []*PatchRelease{
@@ -417,10 +423,6 @@ func TestUpdatePatchSchedule(t *testing.T) {
 							},
 						},
 					},
-					{
-						Release:       "1.20",
-						EndOfLifeDate: "2023-01-01",
-					},
 				},
 				UpcomingReleases: []*PatchRelease{
 					{
@@ -440,21 +442,41 @@ func TestUpdatePatchSchedule(t *testing.T) {
 					},
 				},
 			},
+			expectedEolBranches: EolBranches{
+				Branches: []*EolBranch{
+					{
+						Release:           "1.20",
+						FinalPatchRelease: "1.20.10",
+						EndOfLifeDate:     "2023-12-12",
+					},
+				},
+			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			file, err := os.CreateTemp("", "schedule-")
+			scheduleFile, err := os.CreateTemp("", "schedule-")
 			require.NoError(t, err)
-			require.NoError(t, file.Close())
+			require.NoError(t, scheduleFile.Close())
 
-			require.NoError(t, updatePatchSchedule(tc.refTime, tc.givenSchedule, file.Name()))
-
-			yamlBytes, err := os.ReadFile(file.Name())
+			eolFile, err := os.CreateTemp("", "eol-")
 			require.NoError(t, err)
-			res := PatchSchedule{}
-			require.NoError(t, yaml.UnmarshalStrict(yamlBytes, &res))
+			require.NoError(t, eolFile.Close())
 
-			assert.Equal(t, tc.expectedSchedule, res)
+			require.NoError(t, updatePatchSchedule(tc.refTime, tc.givenSchedule, EolBranches{}, scheduleFile.Name(), eolFile.Name()))
+
+			scheduleYamlBytes, err := os.ReadFile(scheduleFile.Name())
+			require.NoError(t, err)
+			patchRes := PatchSchedule{}
+			require.NoError(t, yaml.UnmarshalStrict(scheduleYamlBytes, &patchRes))
+
+			assert.Equal(t, tc.expectedSchedule, patchRes)
+
+			eolYamlBytes, err := os.ReadFile(eolFile.Name())
+			require.NoError(t, err)
+			eolRes := EolBranches{}
+			require.NoError(t, yaml.UnmarshalStrict(eolYamlBytes, &eolRes))
+
+			assert.Equal(t, tc.expectedEolBranches, eolRes)
 		})
 	}
 }
