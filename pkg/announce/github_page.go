@@ -28,6 +28,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/bom/pkg/serialize"
 	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/git"
@@ -291,19 +292,39 @@ func UpdateGitHubPage(opts *GitHubPageOptions) (err error) {
 		return errors.New("tag not found while trying to publish release page")
 	}
 
-	// Get the release we are looking for
-	releases, err := gh.Releases(opts.Owner, opts.Repo, true)
+	// Get the release we are looking for. We only need to fetch prereleases
+	// if the release is a prerelease. If we don't filter them out, comparing
+	// e.g. v1.30.0-rc.0 with v1.29.4 will incorrectly determine that v1.29.4
+	// is *not* the latest (stable) release.
+	releases, err := gh.Releases(opts.Owner, opts.Repo, isPrerelease)
 	if err != nil {
 		return fmt.Errorf("listing the repositories releases: %w", err)
 	}
 
-	// Does the release exist yet?
+	// Does the release exist yet and should it be marked as latest?
 	var releaseID int64
 	commitish := ""
+	// No pre-release should ever be marked as "latest"
+	markAsLatest := !isPrerelease
+
 	for _, release := range releases {
 		if release.GetTagName() == opts.Tag {
 			releaseID = release.GetID()
 			commitish = release.GetTargetCommitish()
+		} else if markAsLatest {
+			// If this release is not identical to the one being cut right now,
+			// we will check if *our* release is lower than the release from the loop.
+			// If the first page of releases does not include a release that is
+			// greater than *our* release, we can assume that ours will be the
+			// latest release right now.
+			releaseSemver, err := util.TagStringToSemver(release.GetTagName())
+			if err != nil {
+				return fmt.Errorf("parsing existing release tags as semver: %w", err)
+			}
+
+			if semver.LE(releaseSemver) {
+				markAsLatest = false
+			}
 		}
 	}
 
@@ -319,11 +340,19 @@ func UpdateGitHubPage(opts *GitHubPageOptions) (err error) {
 	// Post release data
 	logrus.Infof("%s the %s release on github...", releaseVerb, opts.Tag)
 
+	ghOpts := &github.UpdateReleasePageOptions{
+		Name:       &opts.Name,
+		Body:       ptr.To(output.String()),
+		Draft:      &opts.Draft,
+		Prerelease: &isPrerelease,
+		Latest:     ptr.To(markAsLatest),
+	}
+
 	// Call GitHub to set the release page
-	release, err := gh.UpdateReleasePage(
+	release, err := gh.UpdateReleasePageWithOptions(
 		opts.Owner, opts.Repo, releaseID,
-		opts.Tag, commitish, opts.Name, output.String(),
-		opts.Draft, isPrerelease,
+		opts.Tag, commitish,
+		ghOpts,
 	)
 	if err != nil {
 		return fmt.Errorf("updating the release on GitHub: %w", err)
