@@ -1,6 +1,7 @@
 module k8s.io/release
 
 go 1.21
+toolchain go1.22.1
 
 require (
 	cloud.google.com/go/storage v1.33.0
@@ -8,7 +9,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/cheggaaa/pb/v3 v3.1.5
 	github.com/go-git/go-git/v5 v5.12.0
-	github.com/goark/go-cvss v1.6.6
+	github.com/goark/go-cvss v1.6.7
 	github.com/golang/protobuf v1.5.4
 	github.com/google/go-containerregistry v0.19.1
 	github.com/google/go-github/v58 v58.0.0
@@ -43,7 +44,7 @@ require (
 	sigs.k8s.io/mdtoc v1.3.0
 	sigs.k8s.io/promo-tools/v3 v3.6.0
 	sigs.k8s.io/release-sdk v0.11.0
-	sigs.k8s.io/release-utils v0.8.0
+	sigs.k8s.io/release-utils v0.8.1
 	sigs.k8s.io/yaml v1.4.0
 )
 
