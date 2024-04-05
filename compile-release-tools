@@ -32,6 +32,7 @@ setup_env() {
     if [ -n "${GOBIN:-}" ]; then
       export RELEASE_TOOL_BIN="${GOBIN}"
     else
+      GOPATH=$(go env GOPATH)
       export RELEASE_TOOL_BIN="${GOPATH}/bin"
     fi
   fi
