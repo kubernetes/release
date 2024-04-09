@@ -34,7 +34,7 @@ require (
 	github.com/tj/go-spin v1.1.0
 	github.com/yuin/goldmark v1.7.1
 	golang.org/x/net v0.24.0
-	golang.org/x/oauth2 v0.18.0
+	golang.org/x/oauth2 v0.19.0
 	golang.org/x/text v0.14.0
 	google.golang.org/api v0.152.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -278,7 +278,6 @@ require (
 	golang.org/x/tools v0.17.0 // indirect
 	golang.org/x/tools/go/vcs v0.1.0-deprecated // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
-	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20231106174013-bbf56f31fb17 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231106174013-bbf56f31fb17 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231120223509-83a465c0220f // indirect
