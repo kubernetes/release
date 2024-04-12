@@ -20,14 +20,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strings"
 
 	"github.com/sirupsen/logrus"
-	"sigs.k8s.io/release-utils/command"
-	"sigs.k8s.io/release-utils/util"
-
-	"k8s.io/release/pkg/kubecross"
 )
 
 const (
@@ -69,16 +63,29 @@ Published by your
 Managers</a>.
 `
 
-func CreateForBranch(opts *Options) error {
+type Announce struct {
+	options *Options
+	impl
+}
+
+// NewAnnounce returns a new Announce instance.
+func NewAnnounce(opts *Options) *Announce {
+	return &Announce{
+		impl:    &defaultImpl{},
+		options: opts,
+	}
+}
+
+func (a *Announce) CreateForBranch() error {
 	logrus.Infof(
 		"Creating %s branch announcement in %s",
-		opts.branch, opts.workDir,
+		a.options.branch, a.options.workDir,
 	)
 
-	if err := create(
-		opts.workDir,
-		fmt.Sprintf("Kubernetes %s branch has been created", opts.branch),
-		fmt.Sprintf(branchAnnouncement, opts.branch),
+	if err := a.impl.create(
+		a.options.workDir,
+		fmt.Sprintf("Kubernetes %s branch has been created", a.options.branch),
+		fmt.Sprintf(branchAnnouncement, a.options.branch),
 	); err != nil {
 		return fmt.Errorf("creating branch announcement: %w", err)
 	}
@@ -90,14 +97,14 @@ func CreateForBranch(opts *Options) error {
 	return nil
 }
 
-func CreateForRelease(opts *Options) error {
-	logrus.Infof("Creating %s announcement in %s", opts.tag, opts.workDir)
+func (a *Announce) CreateForRelease() error {
+	logrus.Infof("Creating %s announcement in %s", a.options.tag, a.options.workDir)
 
 	changelog := ""
 
 	// Read the changelog from the specified file if we got one
-	if opts.changelogFile != "" {
-		changelogData, err := os.ReadFile(opts.changelogFile)
+	if a.options.changelogFile != "" {
+		changelogData, err := os.ReadFile(a.options.changelogFile)
 		if err != nil {
 			return fmt.Errorf("reading changelog html file: %w", err)
 		}
@@ -105,24 +112,24 @@ func CreateForRelease(opts *Options) error {
 	}
 
 	// ... unless it is overridden by passing the HTML directly
-	if opts.changelogHTML != "" {
-		changelog = opts.changelogHTML
+	if a.options.changelogHTML != "" {
+		changelog = a.options.changelogHTML
 	}
 
-	logrus.Infof("Trying to get the Go version used to build %s...", opts.tag)
-	goVersion, err := getGoVersion(opts.tag)
+	logrus.Infof("Trying to get the Go version used to build %s...", a.options.tag)
+	goVersion, err := a.impl.getGoVersion(a.options.tag)
 	if err != nil {
 		return err
 	}
 	logrus.Infof("Found the following Go version: %s", goVersion)
 
-	if err := create(
-		opts.workDir,
-		fmt.Sprintf("Kubernetes %s is live!", opts.tag),
+	if err := a.impl.create(
+		a.options.workDir,
+		fmt.Sprintf("Kubernetes %s is live!", a.options.tag),
 		fmt.Sprintf(releaseAnnouncement,
-			opts.tag, goVersion, opts.changelogPath,
-			filepath.Base(opts.changelogPath), opts.tag, changelog,
-			opts.changelogPath, filepath.Base(opts.changelogPath), opts.tag,
+			a.options.tag, goVersion, a.options.changelogPath,
+			filepath.Base(a.options.changelogPath), a.options.tag, changelog,
+			a.options.changelogPath, filepath.Base(a.options.changelogPath), a.options.tag,
 		),
 	); err != nil {
 		return fmt.Errorf("creating release announcement: %w", err)
@@ -130,69 +137,4 @@ func CreateForRelease(opts *Options) error {
 
 	logrus.Infof("Release announcement created")
 	return nil
-}
-
-func create(workDir, subject, message string) error {
-	subjectFile := filepath.Join(workDir, subjectFile)
-	//nolint:gosec // TODO(gosec): G306: Expect WriteFile permissions to be
-	// 0600 or less
-	if err := os.WriteFile(
-		subjectFile, []byte(subject), 0o755,
-	); err != nil {
-		return fmt.Errorf(
-			"writing subject to file %s: %w",
-			subjectFile,
-			err,
-		)
-	}
-	logrus.Debugf("Wrote file %s", subjectFile)
-
-	announcementFile := filepath.Join(workDir, announcementFile)
-	//nolint:gosec // TODO(gosec): G306: Expect WriteFile permissions to be
-	// 0600 or less
-	if err := os.WriteFile(
-		announcementFile, []byte(message), 0o755,
-	); err != nil {
-		return fmt.Errorf(
-			"writing announcement to file %s: %w",
-			announcementFile,
-			err,
-		)
-	}
-	logrus.Debugf("Wrote file %s", announcementFile)
-
-	return nil
-}
-
-// getGoVersion runs kube-cross container and go version inside it.
-// We're running kube-cross container because it's not guaranteed that
-// k8s-cloud-builder container will be running the same Go version as
-// the kube-cross container used to build the release.
-func getGoVersion(tag string) (string, error) {
-	semver, err := util.TagStringToSemver(tag)
-	if err != nil {
-		return "", fmt.Errorf("parse version tag: %w", err)
-	}
-
-	branch := fmt.Sprintf("release-%d.%d", semver.Major, semver.Minor)
-	kc := kubecross.New()
-	kubecrossVer, err := kc.ForBranch(branch)
-	if err != nil {
-		kubecrossVer, err = kc.Latest()
-		if err != nil {
-			return "", fmt.Errorf("get kubecross version: %w", err)
-		}
-	}
-
-	kubecrossImg := fmt.Sprintf("registry.k8s.io/build-image/kube-cross:%s", kubecrossVer)
-
-	res, err := command.New(
-		"docker", "run", "--rm", kubecrossImg, "go", "version",
-	).RunSilentSuccessOutput()
-	if err != nil {
-		return "", fmt.Errorf("get go version: %w", err)
-	}
-
-	versionRegex := regexp.MustCompile(`^?(\d+)(\.\d+)?(\.\d+)`)
-	return versionRegex.FindString(strings.TrimSpace(res.OutputTrimNL())), nil
 }

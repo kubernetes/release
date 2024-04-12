@@ -260,7 +260,7 @@ func (d *DefaultRelease) InitLogFile() error {
 
 func (d *defaultReleaseImpl) CreateAnnouncement(options *announce.Options) error {
 	// Create the announcement
-	return announce.CreateForRelease(options)
+	return announce.NewAnnounce(options).CreateForRelease()
 }
 
 func (d *defaultReleaseImpl) ArchiveRelease(options *release.ArchiverOptions) error {
