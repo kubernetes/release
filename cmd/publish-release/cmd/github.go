@@ -336,5 +336,5 @@ func runGithubPage(opts *githubPageCmdLineOptions) (err error) {
 	}
 
 	// Run the update process
-	return github.UpdateGitHubPage(&ghOpts)
+	return github.NewGitHub(&ghOpts).UpdateGitHubPage()
 }

@@ -270,7 +270,7 @@ func (d *defaultReleaseImpl) ArchiveRelease(options *release.ArchiverOptions) er
 }
 
 func (d *defaultReleaseImpl) UpdateGitHubPage(options *github.Options) error {
-	return github.UpdateGitHubPage(options)
+	return github.NewGitHub(options).UpdateGitHubPage()
 }
 
 func (d *defaultReleaseImpl) PushTags(

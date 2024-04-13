@@ -22,28 +22,38 @@ import (
 	"fmt"
 	"html/template"
 	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/release-sdk/github"
-	"sigs.k8s.io/release-utils/hash"
 	"sigs.k8s.io/release-utils/util"
 )
 
+type GitHub struct {
+	options *Options
+	impl
+}
+
+// NewGitHub returns a new GitHub instance.
+func NewGitHub(opts *Options) *GitHub {
+	return &GitHub{
+		impl:    &defaultImpl{},
+		options: opts,
+	}
+}
+
 // UpdateGitHubPage updates a github page with data from the release
-func UpdateGitHubPage(opts *Options) (err error) {
+func (g *GitHub) UpdateGitHubPage() (err error) {
 	token := os.Getenv(github.TokenEnvKey)
 	if token == "" {
 		return errors.New("cannot update release page without a GitHub token")
 	}
 
-	gh := github.New()
+	gh := g.impl.github()
 	releaseVerb := "Posting"
-	semver, err := util.TagStringToSemver(opts.Tag)
+	semver, err := util.TagStringToSemver(g.options.Tag)
 	if err != nil {
 		return fmt.Errorf("parsing semver from tag: %w", err)
 	}
@@ -56,7 +66,7 @@ func UpdateGitHubPage(opts *Options) (err error) {
 	}
 
 	// Process the specified assets
-	releaseAssets, err := processAssetFiles(opts.AssetFiles)
+	releaseAssets, err := g.impl.processAssetFiles(g.options.AssetFiles)
 	if err != nil {
 		return fmt.Errorf("processing the asset file list: %w", err)
 	}
@@ -66,14 +76,14 @@ func UpdateGitHubPage(opts *Options) (err error) {
 		Substitutions map[string]string
 		Assets        []map[string]string
 	}{
-		Substitutions: opts.Substitutions,
+		Substitutions: g.options.Substitutions,
 		Assets:        releaseAssets,
 	}
 
 	// If we have a release notes file defined and set a substitution
 	// entry for its contents
-	if opts.ReleaseNotesFile != "" {
-		rnData, err := os.ReadFile(opts.ReleaseNotesFile)
+	if g.options.ReleaseNotesFile != "" {
+		rnData, err := os.ReadFile(g.options.ReleaseNotesFile)
 		if err != nil {
 			return fmt.Errorf("reading release notes file: %w", err)
 		}
@@ -82,9 +92,9 @@ func UpdateGitHubPage(opts *Options) (err error) {
 
 	// Open the template file (if a custom)
 	templateText := ghPageBody
-	if opts.PageTemplate != "" {
-		logrus.Debugf("Using custom page template %s", opts.PageTemplate)
-		templateText = opts.PageTemplate
+	if g.options.PageTemplate != "" {
+		logrus.Debugf("Using custom page template %s", g.options.PageTemplate)
+		templateText = g.options.PageTemplate
 	}
 	// Parse the template we will use to build the release page
 	tmpl, err := template.New("GitHubPage").Parse(templateText)
@@ -101,7 +111,7 @@ func UpdateGitHubPage(opts *Options) (err error) {
 
 	// If we are in mock, we write it to stdout and exit. All checks
 	// performed to the repo are skipped as the tag may not exist yet.
-	if !opts.NoMock {
+	if !g.options.NoMock {
 		logrus.Info("Mock mode, outputting the release page")
 		_, err := os.Stdout.Write(output.Bytes())
 		if err != nil {
@@ -114,12 +124,12 @@ func UpdateGitHubPage(opts *Options) (err error) {
 	// non-draft release posts to github create a tag.  We don't want to
 	// create any tags on the repo this way. The tag should already exist
 	// as a result of the release process.
-	tagFound, err := gh.TagExists(opts.Owner, opts.Repo, opts.Tag)
+	tagFound, err := gh.TagExists(g.options.Owner, g.options.Repo, g.options.Tag)
 	if err != nil {
 		return fmt.Errorf("checking if the tag already exists in GitHub: %w", err)
 	}
 	if !tagFound {
-		logrus.Warnf("The %s tag doesn't exist yet on GitHub.", opts.Tag)
+		logrus.Warnf("The %s tag doesn't exist yet on GitHub.", g.options.Tag)
 		logrus.Warnf("That can't be good.")
 		logrus.Warnf("We certainly cannot publish a release without a tag.")
 		return errors.New("tag not found while trying to publish release page")
@@ -129,7 +139,7 @@ func UpdateGitHubPage(opts *Options) (err error) {
 	// if the release is a prerelease. If we don't filter them out, comparing
 	// e.g. v1.30.0-rc.0 with v1.29.4 will incorrectly determine that v1.29.4
 	// is *not* the latest (stable) release.
-	releases, err := gh.Releases(opts.Owner, opts.Repo, isPrerelease)
+	releases, err := gh.Releases(g.options.Owner, g.options.Repo, isPrerelease)
 	if err != nil {
 		return fmt.Errorf("listing the repositories releases: %w", err)
 	}
@@ -141,7 +151,7 @@ func UpdateGitHubPage(opts *Options) (err error) {
 	markAsLatest := !isPrerelease
 
 	for _, release := range releases {
-		if release.GetTagName() == opts.Tag {
+		if release.GetTagName() == g.options.Tag {
 			releaseID = release.GetID()
 			commitish = release.GetTargetCommitish()
 		} else if markAsLatest {
@@ -162,29 +172,29 @@ func UpdateGitHubPage(opts *Options) (err error) {
 	}
 
 	if releaseID != 0 {
-		logrus.Warnf("The %s is already published on github.", opts.Tag)
-		if !opts.UpdateIfReleaseExists {
-			return errors.New("release " + opts.Tag + " already exists. Left intact")
+		logrus.Warnf("The %s is already published on github.", g.options.Tag)
+		if !g.options.UpdateIfReleaseExists {
+			return errors.New("release " + g.options.Tag + " already exists. Left intact")
 		}
 		logrus.Infof("Using release id %d to update existing release.", releaseID)
 		releaseVerb = "Updating"
 	}
 
 	// Post release data
-	logrus.Infof("%s the %s release on github...", releaseVerb, opts.Tag)
+	logrus.Infof("%s the %s release on github...", releaseVerb, g.options.Tag)
 
 	ghOpts := &github.UpdateReleasePageOptions{
-		Name:       &opts.Name,
+		Name:       &g.options.Name,
 		Body:       ptr.To(output.String()),
-		Draft:      &opts.Draft,
+		Draft:      &g.options.Draft,
 		Prerelease: &isPrerelease,
 		Latest:     ptr.To(markAsLatest),
 	}
 
 	// Call GitHub to set the release page
 	release, err := gh.UpdateReleasePageWithOptions(
-		opts.Owner, opts.Repo, releaseID,
-		opts.Tag, commitish,
+		g.options.Owner, g.options.Repo, releaseID,
+		g.options.Tag, commitish,
 		ghOpts,
 	)
 	if err != nil {
@@ -196,7 +206,7 @@ func UpdateGitHubPage(opts *Options) (err error) {
 	// in the API right away , sleep 3 secs and retry 3 times.
 	for checkAttempts := 3; checkAttempts >= 0; checkAttempts-- {
 		releaseFound := false
-		releases, err = gh.Releases(opts.Owner, opts.Repo, true)
+		releases, err = gh.Releases(g.options.Owner, g.options.Repo, true)
 		if err != nil {
 			return fmt.Errorf("listing releases in repository: %w", err)
 		}
@@ -219,62 +229,21 @@ func UpdateGitHubPage(opts *Options) (err error) {
 	}
 
 	// Delete any assets reviously uploaded
-	if err := deleteReleaseAssets(gh, opts.Owner, opts.Repo, release.GetID()); err != nil {
+	if err := deleteReleaseAssets(gh, g.options.Owner, g.options.Repo, release.GetID()); err != nil {
 		return fmt.Errorf("deleting the existing release assets: %w", err)
 	}
 
 	// publish binary
 	for _, assetData := range releaseAssets {
 		logrus.Infof("Uploading %s as release asset", assetData["realpath"])
-		asset, err := gh.UploadReleaseAsset(opts.Owner, opts.Repo, release.GetID(), assetData["rawpath"])
+		asset, err := gh.UploadReleaseAsset(g.options.Owner, g.options.Repo, release.GetID(), assetData["rawpath"])
 		if err != nil {
 			return fmt.Errorf("uploading %s to the release: %w", assetData["realpath"], err)
 		}
 		logrus.Info("Successfully uploaded asset #", asset.GetID())
 	}
-	logrus.Infof("Release %s published on GitHub", opts.Tag)
+	logrus.Infof("Release %s published on GitHub", g.options.Tag)
 	return nil
-}
-
-// processAssetFiles reads the command line strings and returns
-// a map holding the needed info from the asset files
-func processAssetFiles(assetFiles []string) (releaseAssets []map[string]string, err error) {
-	// Check all asset files and get their hashes
-	for _, path := range assetFiles {
-		assetData := map[string]string{
-			"rawpath": path,
-			"name":    "",
-		}
-		// Check if asset path has a label
-		if strings.Contains(path, ":") {
-			p := strings.SplitN(path, ":", 2)
-			if len(p) == 2 {
-				path = p[0]
-				assetData["name"] = p[1]
-			}
-		}
-
-		logrus.Debugf("Checking asset file %s", path)
-
-		// Verify path exists
-		if !util.Exists(path) {
-			return nil, errors.New("unable to render release page, asset file does not exist")
-		}
-
-		assetData["realpath"] = path
-		assetData["filename"] = filepath.Base(path)
-
-		fileHashes, err := getFileHashes(path)
-		if err != nil {
-			return nil, fmt.Errorf("getting the hashes: %w", err)
-		}
-
-		assetData["sha512"] = fileHashes["512"]
-		assetData["sha256"] = fileHashes["256"]
-
-		releaseAssets = append(releaseAssets, assetData)
-	}
-	return releaseAssets, nil
 }
 
 func deleteReleaseAssets(gh *github.GitHub, owner, repo string, releaseID int64) error {
@@ -297,19 +266,4 @@ func deleteReleaseAssets(gh *github.GitHub, owner, repo string, releaseID int64)
 		}
 	}
 	return nil
-}
-
-// getFileHashes obtains a file's sha256 and 512
-func getFileHashes(path string) (hashes map[string]string, err error) {
-	sha256, err := hash.SHA256ForFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("get sha256: %w", err)
-	}
-
-	sha512, err := hash.SHA512ForFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("get sha512: %w", err)
-	}
-
-	return map[string]string{"256": sha256, "512": sha512}, nil
 }
