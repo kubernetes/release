@@ -89,6 +89,7 @@ type FakePublisherClient struct {
 	getMarkerPathArgsForCall []struct {
 		arg1 string
 		arg2 string
+		arg3 bool
 	}
 	getMarkerPathReturns struct {
 		result1 string
@@ -529,10 +530,11 @@ func (fake *FakePublisherClient) GetMarkerPath(arg1 string, arg2 string, arg3 bo
 	fake.getMarkerPathArgsForCall = append(fake.getMarkerPathArgsForCall, struct {
 		arg1 string
 		arg2 string
-	}{arg1, arg2})
+		arg3 bool
+	}{arg1, arg2, arg3})
 	stub := fake.GetMarkerPathStub
 	fakeReturns := fake.getMarkerPathReturns
-	fake.recordInvocation("GetMarkerPath", []interface{}{arg1, arg2})
+	fake.recordInvocation("GetMarkerPath", []interface{}{arg1, arg2, arg3})
 	fake.getMarkerPathMutex.Unlock()
 	if stub != nil {
 		return stub(arg1, arg2, arg3)
@@ -555,11 +557,11 @@ func (fake *FakePublisherClient) GetMarkerPathCalls(stub func(string, string, bo
 	fake.GetMarkerPathStub = stub
 }
 
-func (fake *FakePublisherClient) GetMarkerPathArgsForCall(i int) (string, string) {
+func (fake *FakePublisherClient) GetMarkerPathArgsForCall(i int) (string, string, bool) {
 	fake.getMarkerPathMutex.RLock()
 	defer fake.getMarkerPathMutex.RUnlock()
 	argsForCall := fake.getMarkerPathArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakePublisherClient) GetMarkerPathReturns(result1 string, result2 error) {
