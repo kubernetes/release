@@ -22,6 +22,7 @@ import (
 
 	semver "github.com/blang/semver/v4"
 	"k8s.io/release/pkg/announce"
+	"k8s.io/release/pkg/announce/github"
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/release"
@@ -280,10 +281,10 @@ type FakeReleaseImpl struct {
 	toFileReturnsOnCall map[int]struct {
 		result1 error
 	}
-	UpdateGitHubPageStub        func(*announce.GitHubPageOptions) error
+	UpdateGitHubPageStub        func(*github.Options) error
 	updateGitHubPageMutex       sync.RWMutex
 	updateGitHubPageArgsForCall []struct {
-		arg1 *announce.GitHubPageOptions
+		arg1 *github.Options
 	}
 	updateGitHubPageReturns struct {
 		result1 error
@@ -1571,11 +1572,11 @@ func (fake *FakeReleaseImpl) ToFileReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeReleaseImpl) UpdateGitHubPage(arg1 *announce.GitHubPageOptions) error {
+func (fake *FakeReleaseImpl) UpdateGitHubPage(arg1 *github.Options) error {
 	fake.updateGitHubPageMutex.Lock()
 	ret, specificReturn := fake.updateGitHubPageReturnsOnCall[len(fake.updateGitHubPageArgsForCall)]
 	fake.updateGitHubPageArgsForCall = append(fake.updateGitHubPageArgsForCall, struct {
-		arg1 *announce.GitHubPageOptions
+		arg1 *github.Options
 	}{arg1})
 	stub := fake.UpdateGitHubPageStub
 	fakeReturns := fake.updateGitHubPageReturns
@@ -1596,13 +1597,13 @@ func (fake *FakeReleaseImpl) UpdateGitHubPageCallCount() int {
 	return len(fake.updateGitHubPageArgsForCall)
 }
 
-func (fake *FakeReleaseImpl) UpdateGitHubPageCalls(stub func(*announce.GitHubPageOptions) error) {
+func (fake *FakeReleaseImpl) UpdateGitHubPageCalls(stub func(*github.Options) error) {
 	fake.updateGitHubPageMutex.Lock()
 	defer fake.updateGitHubPageMutex.Unlock()
 	fake.UpdateGitHubPageStub = stub
 }
 
-func (fake *FakeReleaseImpl) UpdateGitHubPageArgsForCall(i int) *announce.GitHubPageOptions {
+func (fake *FakeReleaseImpl) UpdateGitHubPageArgsForCall(i int) *github.Options {
 	fake.updateGitHubPageMutex.RLock()
 	defer fake.updateGitHubPageMutex.RUnlock()
 	argsForCall := fake.updateGitHubPageArgsForCall[i]
