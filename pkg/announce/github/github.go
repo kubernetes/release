@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Kubernetes Authors.
+Copyright 2024 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package announce
+package github
 
 import (
 	"bytes"
@@ -29,180 +29,13 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/bom/pkg/serialize"
-	"sigs.k8s.io/bom/pkg/spdx"
-	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-utils/hash"
 	"sigs.k8s.io/release-utils/util"
 )
 
-const (
-	sbomFileName      = "sbom.spdx"
-	assetDownloadPath = "/releases/download/"
-)
-
-// ghPageBody is a generic template to build the GitHub
-// rekease page.
-const ghPageBody = `{{ if .Substitutions.logo }}
-![Logo]({{ .Substitutions.logo }} "Logo")
-{{ end }}
-{{ .Substitutions.intro }}
-{{ if .Substitutions.changelog }}
-See [the CHANGELOG]({{ .Substitutions.changelog }}) for more details.
-{{ end }}
-{{ if .Substitutions.ReleaseNotes }}
-### Release Notes
-
-{{ .Substitutions.ReleaseNotes }}
-{{ end }}
-
-`
-
-// GitHubPageOptions data for building the release page
-type GitHubPageOptions struct {
-	// ReleaseType indicates if we are dealing with an alpha,
-	// beta, rc or official
-	ReleaseType string
-
-	// AssetFiles is a list of paths of files to be uploaded
-	// as assets of this release
-	AssetFiles []string
-
-	// Tag is the release the github page will be edited
-	Tag string
-
-	// The release can have a name
-	Name string
-
-	// Owner GitHub organization which owns the repository
-	Owner string
-
-	// Name of the repository where we will publish the
-	// release page. The specified tag has to exist there already
-	Repo string
-
-	// Run the whole process in non-mocked mode. Which means that it uses
-	// production remote locations for storing artifacts and modifying git
-	// repositories.
-	NoMock bool
-
-	// Create a draft release
-	Draft bool
-
-	// If the release exists, we do not overwrite the release page
-	// unless specified so.
-	UpdateIfReleaseExists bool
-
-	// We can use a custom page template by spcifiying the path. The
-	// file is a go template file that renders markdown.
-	PageTemplate string
-
-	// File to read the release notes from
-	ReleaseNotesFile string
-
-	// We automatizally calculate most values, but more substitutions for
-	// the template can be supplied
-	Substitutions map[string]string
-}
-
-type SBOMFormat string
-
-const (
-	FormatJSON     SBOMFormat = "json"
-	FormatTagValue SBOMFormat = "tag-value"
-)
-
-type SBOMOptions struct {
-	ReleaseName   string
-	Repo          string
-	RepoDirectory string
-	Tag           string     // Version Tag
-	Format        SBOMFormat // "tag-value"  | "json"
-	Assets        []Asset
-}
-
-type Asset struct {
-	Path     string // Path where the artifact will be listed
-	ReadFrom string // LocalPath to read the information
-	Label    string // Label for the asset
-}
-
-// GenerateReleaseSBOM creates an SBOM describing the release
-func GenerateReleaseSBOM(opts *SBOMOptions) (string, error) {
-	// Create a temporary file to write the sbom
-	dir, err := os.MkdirTemp("", "project-sbom-")
-	if err != nil {
-		return "", fmt.Errorf("creating temporary directory to write sbom: %w", err)
-	}
-
-	sbomFile := filepath.Join(dir, sbomFileName)
-	logrus.Infof("SBOM will be temporarily written to %s", sbomFile)
-
-	builder := spdx.NewDocBuilder()
-	builderOpts := &spdx.DocGenerateOptions{
-		ProcessGoModules: true,
-		ScanLicenses:     true,
-		Name:             opts.ReleaseName,
-		Namespace:        github.GitHubURL + opts.Repo + "@" + opts.Tag,
-		Directories:      []string{opts.RepoDirectory},
-	}
-
-	doc, err := builder.Generate(builderOpts)
-	if err != nil {
-		return "", fmt.Errorf("generating initial SBOM: %w", err)
-	}
-
-	// Add the download location and version to the first
-	// SPDX package (which represents the repo)
-	for t := range doc.Packages {
-		doc.Packages[t].Version = opts.Tag
-		doc.Packages[t].DownloadLocation = "git+" + github.GitHubURL + opts.Repo + "@" + opts.Tag
-		break
-	}
-
-	// List all artifacts and add them
-	spdxClient := spdx.NewSPDX()
-	for _, f := range opts.Assets {
-		logrus.Infof("Adding file %s to SBOM", f.Path)
-		spdxFile, err := spdxClient.FileFromPath(f.ReadFrom)
-		if err != nil {
-			return "", fmt.Errorf("adding %s to SBOM: %w", f.ReadFrom, err)
-		}
-		spdxFile.Name = f.Path
-		spdxFile.BuildID() // This is a boog in the spdx pkg, we have to call manually
-		spdxFile.DownloadLocation = github.GitHubURL + filepath.Join(
-			opts.Repo, assetDownloadPath, opts.Tag, f.Path,
-		)
-		if err := doc.AddFile(spdxFile); err != nil {
-			return "", fmt.Errorf("adding %s as SPDX file to SBOM: %w", f.ReadFrom, err)
-		}
-	}
-
-	var renderer serialize.Serializer
-	switch opts.Format {
-	case FormatJSON:
-		renderer = &serialize.JSON{}
-	case FormatTagValue:
-		renderer = &serialize.TagValue{}
-	default:
-		return "", fmt.Errorf("invalid SBOM format, must be one of %s, %s", FormatJSON, FormatTagValue)
-	}
-
-	markup, err := renderer.Serialize(doc)
-	if err != nil {
-		return "", fmt.Errorf("serializing sbom: %w", err)
-	}
-
-	if err := os.WriteFile(sbomFile, []byte(markup), 0o600); err != nil {
-		return "", fmt.Errorf("writing sbom to disk: %w", err)
-	}
-
-	return sbomFile, nil
-}
-
 // UpdateGitHubPage updates a github page with data from the release
-func UpdateGitHubPage(opts *GitHubPageOptions) (err error) {
+func UpdateGitHubPage(opts *Options) (err error) {
 	token := os.Getenv(github.TokenEnvKey)
 	if token == "" {
 		return errors.New("cannot update release page without a GitHub token")
@@ -479,65 +312,4 @@ func getFileHashes(path string) (hashes map[string]string, err error) {
 	}
 
 	return map[string]string{"256": sha256, "512": sha512}, nil
-}
-
-// Validate the GitHub page options to ensure they are correct
-func (o *GitHubPageOptions) Validate() error {
-	// TODO: Check that the tag is well formed
-	if o.Tag == "" {
-		return errors.New("cannot update github page without a tag")
-	}
-	if o.Repo == "" {
-		return errors.New("cannot update github page, repository not defined")
-	}
-	if o.Owner == "" {
-		return errors.New("cannot update github page, github organization not defined")
-	}
-
-	return nil
-}
-
-// ParseSubstitutions gets a slice of strings with the substitutions
-// for the template and parses it as Substitutions in the options
-func (o *GitHubPageOptions) ParseSubstitutions(subs []string) error {
-	o.Substitutions = map[string]string{}
-	for _, sString := range subs {
-		p := strings.SplitN(sString, ":", 2)
-		if len(p) != 2 || p[0] == "" {
-			return errors.New("substitution value not well formed: " + sString)
-		}
-		o.Substitutions[p[0]] = p[1]
-	}
-	return nil
-}
-
-// SetRepository takes a repository slug in the form org/repo,
-// paeses it and assigns the values to the options
-func (o *GitHubPageOptions) SetRepository(repoSlug string) error {
-	org, repo, err := git.ParseRepoSlug(repoSlug)
-	if err != nil {
-		return fmt.Errorf("parsing repository slug: %w", err)
-	}
-	o.Owner = org
-	o.Repo = repo
-	return nil
-}
-
-// ReadTemplate reads a custom template from a file and sets
-// the PageTemplate option with its content
-func (o *GitHubPageOptions) ReadTemplate(templatePath string) error {
-	// If path is empty, no custom template will be used
-	if templatePath == "" {
-		o.PageTemplate = ""
-		return nil
-	}
-
-	// Otherwise, read a custom template from a file
-	templateData, err := os.ReadFile(templatePath)
-	if err != nil {
-		return fmt.Errorf("reading page template text: %w", err)
-	}
-	logrus.Infof("Using custom template from %s", templatePath)
-	o.PageTemplate = string(templateData)
-	return nil
 }
