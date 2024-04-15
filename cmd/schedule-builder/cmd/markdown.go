@@ -286,11 +286,9 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 		nextCherryPickDeadline := time.Date(latestDate.Year(), latestDate.Month(), cherryPickDay, 0, 0, 0, 0, time.UTC)
 		nextTargetDate := time.Date(latestDate.Year(), latestDate.Month(), targetDateDay, 0, 0, 0, 0, time.UTC)
 
-		releaseName := nextTargetDate.Format("January 2006")
-		logrus.Infof("Adding new upcoming release for %s", releaseName)
+		logrus.Infof("Adding new upcoming release for %s", nextTargetDate.Format("January 2006"))
 
 		newUpcomingReleases = append(newUpcomingReleases, &PatchRelease{
-			Release:            releaseName,
 			CherryPickDeadline: nextCherryPickDeadline.Format(refDate),
 			TargetDate:         nextTargetDate.Format(refDate),
 		})
