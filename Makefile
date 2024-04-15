@@ -114,9 +114,11 @@ update-deps-go: ## Update all golang dependencies for this repo
 update-mocks: ## Update all generated mocks
 	go generate ./...
 	for f in $(shell find . -name fake_*.go); do \
-		cp hack/boilerplate/boilerplate.generatego.txt tmp ;\
-		cat $$f >> tmp ;\
-		mv tmp $$f ;\
+		if ! grep -q "^`cat hack/boilerplate/boilerplate.generatego.txt`" $$f; then \
+			cp hack/boilerplate/boilerplate.generatego.txt tmp ;\
+			cat $$f >> tmp ;\
+			mv tmp $$f ;\
+		fi \
 	done
 
 ##@ Helpers
