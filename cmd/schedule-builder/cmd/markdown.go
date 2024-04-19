@@ -45,7 +45,16 @@ func parsePatchSchedule(patchSchedule PatchSchedule) string {
 		table.SetAutoWrapText(false)
 		table.SetHeader([]string{"Monthly Patch Release", "Cherry Pick Deadline", "Target Date"})
 		for _, upcoming := range patchSchedule.UpcomingReleases {
-			table.Append([]string{strings.TrimSpace(upcoming.Release), strings.TrimSpace(upcoming.CherryPickDeadline), strings.TrimSpace(upcoming.TargetDate)})
+			targetDate, err := time.Parse(refDate, upcoming.TargetDate)
+			if err != nil {
+				logrus.Errorf("Unable to parse upcoming target date %q: %v", upcoming.TargetDate, err)
+				continue
+			}
+			table.Append([]string{
+				targetDate.Format(refDateMonthly),
+				strings.TrimSpace(upcoming.CherryPickDeadline),
+				strings.TrimSpace(upcoming.TargetDate),
+			})
 		}
 		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
 		table.SetCenterSeparator("|")
@@ -167,9 +176,12 @@ func processFile(fileName string, vars interface{}) string {
 	return process(tmpl, vars)
 }
 
-func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches EolBranches, filePath, eolFilePath string) error {
-	const refDate = "2006-01-02"
+const (
+	refDate        = "2006-01-02"
+	refDateMonthly = "January 2006"
+)
 
+func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches EolBranches, filePath, eolFilePath string) error {
 	removeSchedules := []int{}
 	for i, sched := range schedule.Schedules {
 		for {
@@ -286,7 +298,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 		nextCherryPickDeadline := time.Date(latestDate.Year(), latestDate.Month(), cherryPickDay, 0, 0, 0, 0, time.UTC)
 		nextTargetDate := time.Date(latestDate.Year(), latestDate.Month(), targetDateDay, 0, 0, 0, 0, time.UTC)
 
-		logrus.Infof("Adding new upcoming release for %s", nextTargetDate.Format("January 2006"))
+		logrus.Infof("Adding new upcoming release for %s", nextTargetDate.Format(refDateMonthly))
 
 		newUpcomingReleases = append(newUpcomingReleases, &PatchRelease{
 			CherryPickDeadline: nextCherryPickDeadline.Format(refDate),

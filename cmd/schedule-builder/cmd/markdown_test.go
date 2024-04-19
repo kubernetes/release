@@ -31,7 +31,7 @@ const expectedPatchSchedule = `### Upcoming Monthly Releases
 
 | MONTHLY PATCH RELEASE | CHERRY PICK DEADLINE | TARGET DATE |
 |-----------------------|----------------------|-------------|
-|                       | 2020-06-12           | 2020-06-17  |
+| June 2020             | 2020-06-12           | 2020-06-17  |
 
 ### Timeline
 
