@@ -33,7 +33,7 @@ type defaultImpl struct{}
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //counterfeiter:generate . impl
-//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt announcefakes/fake_impl.go > announcefakes/_fake_impl.go && mv announcefakes/_fake_impl.go announcefakes/fake_impl.go"
+//go:generate /usr/bin/env bash -c "cat ../../../hack/boilerplate/boilerplate.generatego.txt githubfakes/fake_impl.go > githubfakes/_fake_impl.go && mv githubfakes/_fake_impl.go githubfakes/fake_impl.go"
 
 type impl interface {
 	github() *githubsdk.GitHub
