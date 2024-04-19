@@ -270,7 +270,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 			continue
 		}
 
-		logrus.Infof("Using existing upcoming release for %s (%s)", upcomingRelease.Release, upcomingRelease.TargetDate)
+		logrus.Infof("Using existing upcoming release for %s", upcomingRelease.TargetDate)
 		newUpcomingReleases = append(newUpcomingReleases, upcomingRelease)
 		latestDate = upcomingTargetDate
 	}
