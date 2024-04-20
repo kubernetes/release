@@ -44,7 +44,12 @@ func NewGitHub(opts *Options) *GitHub {
 	}
 }
 
-// UpdateGitHubPage updates a github page with data from the release
+// SetImplementation sets the implementation to handle file operations and GitHub client.
+func (g *GitHub) SetImplementation(i impl) {
+	g.impl = i
+}
+
+// UpdateGitHubPage updates a github page with data from the release.
 func (g *GitHub) UpdateGitHubPage() (err error) {
 	token := os.Getenv(github.TokenEnvKey)
 	if token == "" {

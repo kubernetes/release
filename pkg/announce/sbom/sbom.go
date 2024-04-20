@@ -18,7 +18,6 @@ package sbom
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
@@ -28,24 +27,40 @@ import (
 	"sigs.k8s.io/release-sdk/github"
 )
 
-// GenerateReleaseSBOM creates an SBOM describing the release
-func GenerateReleaseSBOM(opts *Options) (string, error) {
-	// Create a temporary file to write the sbom
-	dir, err := os.MkdirTemp("", "project-sbom-")
-	if err != nil {
-		return "", fmt.Errorf("creating temporary directory to write sbom: %w", err)
-	}
+type SBOM struct {
+	options *Options
+	impl
+}
 
-	sbomFile := filepath.Join(dir, sbomFileName)
+// NewGitHub returns a new GitHub instance.
+func NewSBOM(opts *Options) *SBOM {
+	return &SBOM{
+		impl:    &defaultImpl{},
+		options: opts,
+	}
+}
+
+// SetImplementation sets the implementation to handle file operations and SPDX.
+func (s *SBOM) SetImplementation(i impl) {
+	s.impl = i
+}
+
+// Generate creates an SBOM describing the release.
+func (s *SBOM) Generate() (string, error) {
+	// Create a temporary file to write the sbom
+	sbomFile, err := s.impl.tmpFile()
+	if err != nil {
+		return "", fmt.Errorf("setting up temporary file for SBOM: %w", err)
+	}
 	logrus.Infof("SBOM will be temporarily written to %s", sbomFile)
 
-	builder := spdx.NewDocBuilder()
+	builder := s.impl.docBuilder()
 	builderOpts := &spdx.DocGenerateOptions{
 		ProcessGoModules: true,
 		ScanLicenses:     true,
-		Name:             opts.ReleaseName,
-		Namespace:        github.GitHubURL + opts.Repo + "@" + opts.Tag,
-		Directories:      []string{opts.RepoDirectory},
+		Name:             s.options.ReleaseName,
+		Namespace:        github.GitHubURL + s.options.Repo + "@" + s.options.Tag,
+		Directories:      []string{s.options.RepoDirectory},
 	}
 
 	doc, err := builder.Generate(builderOpts)
@@ -56,14 +71,14 @@ func GenerateReleaseSBOM(opts *Options) (string, error) {
 	// Add the download location and version to the first
 	// SPDX package (which represents the repo)
 	for t := range doc.Packages {
-		doc.Packages[t].Version = opts.Tag
-		doc.Packages[t].DownloadLocation = "git+" + github.GitHubURL + opts.Repo + "@" + opts.Tag
+		doc.Packages[t].Version = s.options.Tag
+		doc.Packages[t].DownloadLocation = "git+" + github.GitHubURL + s.options.Repo + "@" + s.options.Tag
 		break
 	}
 
 	// List all artifacts and add them
-	spdxClient := spdx.NewSPDX()
-	for _, f := range opts.Assets {
+	spdxClient := s.impl.spdxClient()
+	for _, f := range s.options.Assets {
 		logrus.Infof("Adding file %s to SBOM", f.Path)
 		spdxFile, err := spdxClient.FileFromPath(f.ReadFrom)
 		if err != nil {
@@ -72,7 +87,7 @@ func GenerateReleaseSBOM(opts *Options) (string, error) {
 		spdxFile.Name = f.Path
 		spdxFile.BuildID() // This is a boog in the spdx pkg, we have to call manually
 		spdxFile.DownloadLocation = github.GitHubURL + filepath.Join(
-			opts.Repo, assetDownloadPath, opts.Tag, f.Path,
+			s.options.Repo, assetDownloadPath, s.options.Tag, f.Path,
 		)
 		if err := doc.AddFile(spdxFile); err != nil {
 			return "", fmt.Errorf("adding %s as SPDX file to SBOM: %w", f.ReadFrom, err)
@@ -80,7 +95,7 @@ func GenerateReleaseSBOM(opts *Options) (string, error) {
 	}
 
 	var renderer serialize.Serializer
-	switch opts.Format {
+	switch s.options.Format {
 	case FormatJSON:
 		renderer = &serialize.JSON{}
 	case FormatTagValue:
@@ -94,7 +109,7 @@ func GenerateReleaseSBOM(opts *Options) (string, error) {
 		return "", fmt.Errorf("serializing sbom: %w", err)
 	}
 
-	if err := os.WriteFile(sbomFile, []byte(markup), 0o600); err != nil {
+	if err := s.impl.writeFile(sbomFile, []byte(markup)); err != nil {
 		return "", fmt.Errorf("writing sbom to disk: %w", err)
 	}
 

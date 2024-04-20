@@ -278,14 +278,14 @@ func runGithubPage(opts *githubPageCmdLineOptions) (err error) {
 	sbomStr := ""
 	if opts.sbom {
 		// Generate the assets file
-		sbomStr, err = sbom.GenerateReleaseSBOM(&sbom.Options{
+		sbomStr, err = sbom.NewSBOM(&sbom.Options{
 			ReleaseName:   opts.name,
 			Repo:          opts.repo,
 			RepoDirectory: opts.repoPath,
 			Assets:        assets,
 			Tag:           commandLineOpts.tag,
 			Format:        sbom.SBOMFormat(opts.sbomFormat),
-		})
+		}).Generate()
 		if err != nil {
 			return fmt.Errorf("generating sbom: %w", err)
 		}
