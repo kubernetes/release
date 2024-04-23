@@ -179,6 +179,12 @@ func processFile(fileName string, vars interface{}) string {
 const (
 	refDate        = "2006-01-02"
 	refDateMonthly = "January 2006"
+	markdownHelp   = `# Use "schedule-builder" to maintain this file:
+# https://github.com/kubernetes/release/tree/master/cmd/schedule-builder
+# For example by running:
+# schedule-builder -uc data/releases/schedule.yaml -e data/releases/eol.yaml
+---
+`
 )
 
 func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches EolBranches, filePath, eolFilePath string) error {
@@ -311,6 +317,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 	if err != nil {
 		return fmt.Errorf("marshal schedule YAML: %w", err)
 	}
+	yamlBytes = append([]byte(markdownHelp), yamlBytes...)
 
 	//nolint:gocritic,gosec
 	if err := os.WriteFile(filePath, yamlBytes, 0o644); err != nil {
@@ -324,6 +331,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 		if err != nil {
 			return fmt.Errorf("marshal end of life YAML: %w", err)
 		}
+		yamlBytes = append([]byte(markdownHelp), yamlBytes...)
 
 		//nolint:gocritic,gosec
 		if err := os.WriteFile(eolFilePath, yamlBytes, 0o644); err != nil {
