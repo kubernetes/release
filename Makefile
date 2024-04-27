@@ -23,9 +23,9 @@ NOCOLOR:=\\033[0m
 
 ##@ Verify
 
-.PHONY: verify verify-boilerplate verify-build verify-dependencies verify-go-mod
+.PHONY: verify verify-boilerplate verify-build verify-dependencies verify-go-mod verify-package-specs
 
-verify: release-tools verify-boilerplate verify-build verify-dependencies verify-go-mod ## Runs verification scripts to ensure correct execution
+verify: release-tools verify-boilerplate verify-build verify-dependencies verify-go-mod verify-package-specs ## Runs verification scripts to ensure correct execution
 
 verify-boilerplate: ## Runs the file header check
 	./hack/verify-boilerplate.sh
@@ -38,6 +38,9 @@ verify-dependencies: ## Runs zeitgeist to verify dependency versions
 
 verify-go-mod: ## Runs the go module linter
 	./hack/verify-go-mod.sh
+
+verify-package-specs: ## Runs the rpmlint on package specs
+	./hack/verify-package-specs.sh
 
 ##@ Tests
 
