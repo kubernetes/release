@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/announce"
+	"k8s.io/release/pkg/announce/github"
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/release"
@@ -147,7 +148,7 @@ type releaseImpl interface {
 	CreateAnnouncement(
 		options *announce.Options,
 	) error
-	UpdateGitHubPage(options *announce.GitHubPageOptions) error
+	UpdateGitHubPage(options *github.Options) error
 	PushTags(pusher *release.GitObjectPusher, tagList []string) error
 	PushBranches(pusher *release.GitObjectPusher, branchList []string) error
 	PushMainBranch(pusher *release.GitObjectPusher) error
@@ -260,7 +261,7 @@ func (d *DefaultRelease) InitLogFile() error {
 
 func (d *defaultReleaseImpl) CreateAnnouncement(options *announce.Options) error {
 	// Create the announcement
-	return announce.CreateForRelease(options)
+	return announce.NewAnnounce(options).CreateForRelease()
 }
 
 func (d *defaultReleaseImpl) ArchiveRelease(options *release.ArchiverOptions) error {
@@ -268,8 +269,8 @@ func (d *defaultReleaseImpl) ArchiveRelease(options *release.ArchiverOptions) er
 	return release.NewArchiver(options).ArchiveRelease()
 }
 
-func (d *defaultReleaseImpl) UpdateGitHubPage(options *announce.GitHubPageOptions) error {
-	return announce.UpdateGitHubPage(options)
+func (d *defaultReleaseImpl) UpdateGitHubPage(options *github.Options) error {
+	return github.NewGitHub(options).UpdateGitHubPage()
 }
 
 func (d *defaultReleaseImpl) PushTags(
@@ -576,7 +577,7 @@ func (d *DefaultRelease) UpdateGitHubPage() error {
 	)
 
 	// Build the options set for the GitHub page
-	ghPageOpts := &announce.GitHubPageOptions{
+	ghPageOpts := &github.Options{
 		Tag:                   d.state.versions.Prime(),
 		NoMock:                d.options.NoMock,
 		UpdateIfReleaseExists: true,

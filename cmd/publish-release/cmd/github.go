@@ -31,7 +31,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"google.golang.org/api/option"
-	"k8s.io/release/pkg/announce"
+	"k8s.io/release/pkg/announce/github"
+	"k8s.io/release/pkg/announce/sbom"
 )
 
 // releaseNotesCmd represents the subcommand for `krel release-notes`
@@ -154,7 +155,7 @@ func init() {
 	githubPageCmd.PersistentFlags().StringVar(
 		&ghPageOpts.sbomFormat,
 		"sbom-format",
-		string(announce.FormatJSON),
+		string(sbom.FormatJSON),
 		"format to use for the SBOM [json|tag-value]",
 	)
 	githubPageCmd.PersistentFlags().StringVar(
@@ -183,8 +184,8 @@ func init() {
 	rootCmd.AddCommand(githubPageCmd)
 }
 
-func getAssetsFromStrings(assetStrings []string) ([]announce.Asset, error) {
-	r := []announce.Asset{}
+func getAssetsFromStrings(assetStrings []string) ([]sbom.Asset, error) {
+	r := []sbom.Asset{}
 	var isBucket bool
 	for _, s := range assetStrings {
 		isBucket = false
@@ -205,7 +206,7 @@ func getAssetsFromStrings(assetStrings []string) ([]announce.Asset, error) {
 			}
 			parts[0] = path
 		}
-		r = append(r, announce.Asset{
+		r = append(r, sbom.Asset{
 			Path:     filepath.Base(parts[0]),
 			ReadFrom: parts[0],
 			Label:    l,
@@ -274,24 +275,24 @@ func runGithubPage(opts *githubPageCmdLineOptions) (err error) {
 	if err != nil {
 		return fmt.Errorf("getting assets: %w", err)
 	}
-	sbom := ""
+	sbomStr := ""
 	if opts.sbom {
 		// Generate the assets file
-		sbom, err = announce.GenerateReleaseSBOM(&announce.SBOMOptions{
+		sbomStr, err = sbom.NewSBOM(&sbom.Options{
 			ReleaseName:   opts.name,
 			Repo:          opts.repo,
 			RepoDirectory: opts.repoPath,
 			Assets:        assets,
 			Tag:           commandLineOpts.tag,
-			Format:        announce.SBOMFormat(opts.sbomFormat),
-		})
+			Format:        sbom.SBOMFormat(opts.sbomFormat),
+		}).Generate()
 		if err != nil {
 			return fmt.Errorf("generating sbom: %w", err)
 		}
-		opts.assets = append(opts.assets, sbom+":SPDX Software Bill of Materials (SBOM)")
+		opts.assets = append(opts.assets, sbomStr+":SPDX Software Bill of Materials (SBOM)")
 		// Delete the temporary sbom  when we're done
 		if commandLineOpts.nomock {
-			defer os.Remove(sbom)
+			defer os.Remove(sbomStr)
 		}
 	}
 
@@ -301,10 +302,10 @@ func runGithubPage(opts *githubPageCmdLineOptions) (err error) {
 	}
 
 	// add sbom to the path to upload
-	newAssets[len(assets)] = sbom
+	newAssets[len(assets)] = sbomStr
 
 	// Build the release page options
-	announceOpts := announce.GitHubPageOptions{
+	ghOpts := github.Options{
 		AssetFiles:            newAssets,
 		Tag:                   commandLineOpts.tag,
 		NoMock:                commandLineOpts.nomock,
@@ -315,25 +316,25 @@ func runGithubPage(opts *githubPageCmdLineOptions) (err error) {
 	}
 
 	// Assign the repository data
-	if err := announceOpts.SetRepository(opts.repo); err != nil {
+	if err := ghOpts.SetRepository(opts.repo); err != nil {
 		return fmt.Errorf("assigning the repository slug: %w", err)
 	}
 
 	// Assign the substitutions
-	if err := announceOpts.ParseSubstitutions(opts.substitutions); err != nil {
+	if err := ghOpts.ParseSubstitutions(opts.substitutions); err != nil {
 		return fmt.Errorf("parsing template substitutions: %w", err)
 	}
 
 	// Read the csutom template data
-	if err := announceOpts.ReadTemplate(opts.template); err != nil {
+	if err := ghOpts.ReadTemplate(opts.template); err != nil {
 		return fmt.Errorf("reading the template file: %w", err)
 	}
 
 	// Validate the options
-	if err := announceOpts.Validate(); err != nil {
+	if err := ghOpts.Validate(); err != nil {
 		return fmt.Errorf("validating options: %w", err)
 	}
 
 	// Run the update process
-	return announce.UpdateGitHubPage(&announceOpts)
+	return github.NewGitHub(&ghOpts).UpdateGitHubPage()
 }
