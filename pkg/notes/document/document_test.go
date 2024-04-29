@@ -537,7 +537,7 @@ func TestDocument_RenderMarkdownTemplate(t *testing.T) {
 				if tt.userTemplate {
 					// Write out the default template to simulate reading an actual template.
 					p := filepath.Join(dir, strings.Split(tt.templateSpec, ":")[1])
-					templateSpec = fmt.Sprintf("go-template:%s", p)
+					templateSpec = "go-template:" + p
 
 					require.NoError(
 						t,

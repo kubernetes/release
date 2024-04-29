@@ -495,7 +495,7 @@ func (d *DefaultStage) TagRepository() error {
 			logrus.Infof("Creating empty release commit for tag %s", version)
 			if err := d.impl.CommitEmpty(
 				repo,
-				fmt.Sprintf("Release commit for Kubernetes %s", version),
+				"Release commit for Kubernetes "+version,
 			); err != nil {
 				return fmt.Errorf("create empty release commit: %w", err)
 			}
@@ -641,7 +641,7 @@ func (d *defaultStageImpl) AddBinariesToSBOM(sbom *spdx.Document, version string
 		file.AddRelationship(&spdx.Relationship{
 			FullRender:       false,
 			PeerReference:    "SPDXRef-Package-kubernetes",
-			PeerExtReference: fmt.Sprintf("kubernetes-%s", version),
+			PeerExtReference: "kubernetes-" + version,
 			Comment:          "Source code",
 			Type:             spdx.GENERATED_FROM,
 		})
@@ -671,7 +671,7 @@ func (d *defaultStageImpl) AddTarfilesToSBOM(sbom *spdx.Document, version string
 		file.AddRelationship(&spdx.Relationship{
 			FullRender:       false,
 			PeerReference:    "SPDXRef-Package-kubernetes",
-			PeerExtReference: fmt.Sprintf("kubernetes-%s", version),
+			PeerExtReference: "kubernetes-" + version,
 			Comment:          "Source code",
 			Type:             spdx.GENERATED_FROM,
 		})
@@ -693,7 +693,7 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 	// Build the base artifacts sbom. We only pass it the images for
 	// now as the binaries and tarballs need more processing
 	doc, err := d.BuildBaseArtifactsSBOM(&spdx.DocGenerateOptions{
-		Name:           fmt.Sprintf("Kubernetes Release %s", version),
+		Name:           "Kubernetes Release " + version,
 		AnalyseLayers:  false,
 		OnlyDirectDeps: false,
 		License:        LicenseIdentifier,
@@ -716,7 +716,7 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 
 	// Reference the source code SBOM as external document
 	extRef := spdx.ExternalDocumentRef{
-		ID:  fmt.Sprintf("kubernetes-%s", version),
+		ID:  "kubernetes-" + version,
 		URI: fmt.Sprintf("https://sbom.k8s.io/%s/source", version),
 	}
 	if err := extRef.ReadSourceFile(
@@ -731,7 +731,7 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 		pkg.AddRelationship(&spdx.Relationship{
 			FullRender:       false,
 			PeerReference:    "SPDXRef-Package-kubernetes",
-			PeerExtReference: fmt.Sprintf("kubernetes-%s", version),
+			PeerExtReference: "kubernetes-" + version,
 			Comment:          "Source code",
 			Type:             spdx.GENERATED_FROM,
 		})
@@ -761,7 +761,7 @@ func (d *defaultStageImpl) WriteSourceBOM(
 	spdxDoc *spdx.Document, version string,
 ) error {
 	spdxDoc.Namespace = fmt.Sprintf("https://sbom.k8s.io/%s/source", version)
-	spdxDoc.Name = fmt.Sprintf("kubernetes-%s", version)
+	spdxDoc.Name = "kubernetes-" + version
 	if err := spdxDoc.Write(filepath.Join(os.TempDir(), fmt.Sprintf("source-bom-%s.spdx", version))); err != nil {
 		return fmt.Errorf("writing the source code SBOM: %w", err)
 	}

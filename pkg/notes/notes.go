@@ -1135,7 +1135,7 @@ func prettifySIGList(sigs []string) string {
 	for i, sig := range sigs {
 		switch i {
 		case 0:
-			sigList = fmt.Sprintf("SIG %s", prettySIG(sig))
+			sigList = "SIG " + prettySIG(sig)
 
 		case len(sigs) - 1:
 			sigList = fmt.Sprintf("%s and %s", sigList, prettySIG(sig))

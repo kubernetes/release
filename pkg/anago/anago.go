@@ -219,7 +219,7 @@ func (s *StageOptions) Validate(state *State) error {
 	// validate it.
 	if s.Options.BuildVersion != "" {
 		if err := s.Options.ValidateBuildVersion(state); err != nil {
-			return fmt.Errorf("validating build version")
+			return errors.New("validating build version")
 		}
 	}
 

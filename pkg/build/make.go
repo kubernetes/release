@@ -93,7 +93,7 @@ func (m *Make) MakeCross(version string) error {
 	if err := m.impl.Command(
 		"make",
 		"cross-in-a-container",
-		fmt.Sprintf("KUBE_DOCKER_IMAGE_TAG=%s", version),
+		"KUBE_DOCKER_IMAGE_TAG="+version,
 	); err != nil {
 		return fmt.Errorf("build version %s: %w", version, err)
 	}
@@ -108,8 +108,8 @@ func (m *Make) MakeCross(version string) error {
 	if err := m.impl.Command(
 		"make",
 		"package-tarballs",
-		fmt.Sprintf("KUBE_DOCKER_IMAGE_TAG=%s", version),
-		fmt.Sprintf("OUT_DIR=%s", newBuildDir),
+		"KUBE_DOCKER_IMAGE_TAG="+version,
+		"OUT_DIR="+newBuildDir,
 	); err != nil {
 		return fmt.Errorf("build package tarballs: %w", err)
 	}

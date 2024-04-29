@@ -18,6 +18,7 @@ package mail
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -166,7 +167,7 @@ func (s *Sender) SetDefaultSender() error {
 
 func (s *Sender) SetSender(name, email string) error {
 	if email == "" {
-		return fmt.Errorf("email must not be empty")
+		return errors.New("email must not be empty")
 	}
 	s.sender = mail.NewEmail(name, email)
 	logrus.WithField("sender", s.sender).Debugf("Sender set")
@@ -177,7 +178,7 @@ func (s *Sender) SetRecipients(recipientArgs ...string) error {
 	l := len(recipientArgs)
 
 	if l%2 != 0 {
-		return fmt.Errorf("must be called with alternating recipient's names and email addresses")
+		return errors.New("must be called with alternating recipient's names and email addresses")
 	}
 
 	recipients := make([]*mail.Email, l/2)
@@ -186,7 +187,7 @@ func (s *Sender) SetRecipients(recipientArgs ...string) error {
 		name := recipientArgs[i*2]
 		email := recipientArgs[i*2+1]
 		if email == "" {
-			return fmt.Errorf("email must not be empty")
+			return errors.New("email must not be empty")
 		}
 		recipients[i] = mail.NewEmail(name, email)
 	}
