@@ -161,7 +161,7 @@ func (r *Repo) CheckState(expOrg, expRepo, expRev string, nomock bool) error {
 	)
 
 	logrus.Info("Verifying remote HEAD commit")
-	ref := fmt.Sprintf("refs/heads/%s", branch)
+	ref := "refs/heads/" + branch
 	if branch == "" {
 		ref = fmt.Sprintf("refs/tags/%s^{}", expRev)
 	}

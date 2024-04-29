@@ -17,6 +17,7 @@ limitations under the License.
 package notes
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -257,7 +258,7 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 		return nil, fmt.Errorf("finding shared commits: %w", err)
 	}
 	if len(lastSharedCommits) == 0 {
-		return nil, fmt.Errorf("no shared commits between the provided SHAs")
+		return nil, errors.New("no shared commits between the provided SHAs")
 	}
 	logrus.Debugf("found merge base in %v", time.Since(startTime))
 

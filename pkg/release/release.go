@@ -264,7 +264,7 @@ func GetWorkspaceVersion() (string, error) {
 // URLPrefixForBucket returns the URL prefix for the provided bucket string
 func URLPrefixForBucket(bucket string) string {
 	bucket = strings.TrimPrefix(bucket, object.GcsPrefix)
-	urlPrefix := fmt.Sprintf("https://storage.googleapis.com/%s", bucket)
+	urlPrefix := "https://storage.googleapis.com/" + bucket
 	if bucket == ProductionBucket {
 		urlPrefix = ProductionBucketURL
 	}
@@ -486,7 +486,7 @@ func DockerHubLogin() error {
 	}
 	// Pipe the token into docker login
 	cmd := command.New(
-		"docker", "login", fmt.Sprintf("--username=%s", DockerHubUserName),
+		"docker", "login", "--username="+DockerHubUserName,
 		"--password", os.Getenv(DockerHubEnvKey),
 	)
 	// Run docker login:

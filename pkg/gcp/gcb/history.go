@@ -146,7 +146,7 @@ func (h *History) Run() error {
 			command = fmt.Sprintf("%s %s`", command, job.Substitutions["_NOMOCK"])
 			mock = ""
 		} else {
-			command = fmt.Sprintf("%s`", command)
+			command += "`"
 			mock = "mock "
 		}
 

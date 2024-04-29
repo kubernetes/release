@@ -92,7 +92,7 @@ func (bi *Instance) Build() error {
 
 	cmd := command.New("make", releaseType)
 	if bi.opts.KubeBuildPlatforms != "" {
-		cmd.Env(fmt.Sprintf("KUBE_BUILD_PLATFORMS=%s", bi.opts.KubeBuildPlatforms))
+		cmd.Env("KUBE_BUILD_PLATFORMS=" + bi.opts.KubeBuildPlatforms)
 	}
 	if buildErr := cmd.RunSuccess(); buildErr != nil {
 		return fmt.Errorf("running make %s: %w", releaseType, buildErr)

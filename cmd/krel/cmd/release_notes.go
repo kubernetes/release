@@ -511,7 +511,7 @@ func createDraftPR(repoPath, tag string) (err error) {
 	pr, err := gh.CreatePullRequest(
 		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, git.DefaultBranch,
 		fmt.Sprintf("%s:%s", releaseNotesOpts.githubOrg, branchname),
-		fmt.Sprintf("Update release notes draft to version %s", tag), prBody,
+		"Update release notes draft to version "+tag, prBody,
 	)
 	if err != nil {
 		logrus.Warnf("An error has occurred while creating the pull request for %s", tag)
@@ -608,7 +608,7 @@ func addReferenceToAssetsFile(repoPath, newJSONFile string) error {
 	fileIsReferenced := false
 	for scanner.Scan() {
 		// Check if the assets file already has the json notes referenced:
-		if strings.Contains(scanner.Text(), fmt.Sprintf("assets/%s", newJSONFile)) {
+		if strings.Contains(scanner.Text(), "assets/"+newJSONFile) {
 			logrus.Warnf("File %s is already referenced in assets.ts", newJSONFile)
 			fileIsReferenced = true
 			break
@@ -725,7 +725,7 @@ func createWebsitePR(repoPath, tag string) (err error) {
 		return fmt.Errorf("adding release notes draft to staging area: %w", err)
 	}
 
-	if err := k8sSigsRepo.UserCommit(fmt.Sprintf("Patch relnotes.k8s.io with release %s", tag)); err != nil {
+	if err := k8sSigsRepo.UserCommit("Patch relnotes.k8s.io with release " + tag); err != nil {
 		return fmt.Errorf("error creating commit in %s/%s: %w", releaseNotesOpts.githubOrg, releaseNotesOpts.websiteRepo, err)
 	}
 
@@ -747,7 +747,7 @@ func createWebsitePR(repoPath, tag string) (err error) {
 	pr, err := gh.CreatePullRequest(
 		defaultKubernetesSigsOrg, defaultKubernetesSigsRepo, git.DefaultBranch,
 		fmt.Sprintf("%s:%s", releaseNotesOpts.githubOrg, branchname),
-		fmt.Sprintf("Patch relnotes.k8s.io to release %s", tag),
+		"Patch relnotes.k8s.io to release "+tag,
 		fmt.Sprintf("Automated patch to update relnotes.k8s.io to k/k version `%s` ", tag),
 	)
 	if err != nil {
@@ -1454,7 +1454,7 @@ func confirmWithUser(opts *releaseNotesOptions, question string) bool {
 	if !opts.interactiveMode {
 		return true
 	}
-	_, success, err := util.Ask(fmt.Sprintf("%s (Y/n)", question), "y:Y:yes|n:N:no|y", 10)
+	_, success, err := util.Ask(question+" (Y/n)", "y:Y:yes|n:N:no|y", 10)
 	if err != nil {
 		logrus.Error(err)
 		if err.(util.UserInputError).IsCtrlC() {

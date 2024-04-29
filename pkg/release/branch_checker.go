@@ -17,6 +17,7 @@ limitations under the License.
 package release
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/blang/semver/v4"
@@ -61,7 +62,7 @@ func (r *BranchChecker) NeedsCreation(
 
 	output, err := r.impl.LSRemoteExec(
 		git.GetRepoURL(GetK8sOrg(), GetK8sRepo(), false),
-		fmt.Sprintf("refs/heads/%s", branch),
+		"refs/heads/"+branch,
 	)
 	if err != nil {
 		return false, fmt.Errorf(
@@ -76,9 +77,7 @@ func (r *BranchChecker) NeedsCreation(
 	} else {
 		logrus.Infof("Branch %s does not yet exist on remote location", branch)
 		if releaseType == ReleaseTypeOfficial {
-			return false, fmt.Errorf(
-				"can't do officials releases when creating a new branch",
-			)
+			return false, errors.New("can't do officials releases when creating a new branch")
 		}
 		createReleaseBranch = true
 	}

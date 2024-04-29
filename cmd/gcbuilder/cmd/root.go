@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -67,7 +66,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&buildOpts.NoSource, "no-source", false, "If true, no source will be uploaded with this build.")
 	rootCmd.PersistentFlags().StringVar(&buildOpts.Variant, "variant", "", "If specified, build only the given variant. An error if no variants are defined.")
 	rootCmd.PersistentFlags().StringVar(&buildOpts.EnvPassthrough, "env-passthrough", "", "Comma-separated list of specified environment variables to be passed to GCB as substitutions with an _ prefix. If the variable doesn't exist, the substitution will exist but be empty.")
-	rootCmd.PersistentFlags().StringVar(&rootOpts.logLevel, "log-level", "info", fmt.Sprintf("the logging verbosity, either %s", log.LevelNames()))
+	rootCmd.PersistentFlags().StringVar(&rootOpts.logLevel, "log-level", "info", "the logging verbosity, either "+log.LevelNames())
 
 	buildOpts.ConfigDir = strings.TrimSuffix(buildOpts.ConfigDir, "/")
 }

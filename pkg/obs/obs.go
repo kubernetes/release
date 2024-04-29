@@ -349,7 +349,7 @@ func (s *StageOptions) Validate(state *State, submit bool) error {
 
 	if s.Options.BuildVersion != "" {
 		if err := s.Options.ValidateBuildVersion(state); err != nil {
-			return fmt.Errorf("validating build version")
+			return errors.New("validating build version")
 		}
 	} else if s.Options.Version == "" {
 		// Version is required only for stage,

@@ -284,7 +284,7 @@ func (g *GCB) Submit() error {
 
 	// build the GCS bucket string to be used to sign all the artifacts
 	bucketPrefix := release.BucketPrefix
-	gcsBucket := fmt.Sprintf("gs://%s", bucketPrefix)
+	gcsBucket := "gs://" + bucketPrefix
 	if g.options.NoMock {
 		gcsBucket = strings.TrimSuffix(gcsBucket, "-")
 	} else {
@@ -313,7 +313,7 @@ func (g *GCB) Submit() error {
 
 		if submit {
 			gcbSubs["NOMOCK_TAG"] = "nomock"
-			gcbSubs["NOMOCK"] = fmt.Sprintf("--%s", gcbSubs["NOMOCK_TAG"])
+			gcbSubs["NOMOCK"] = "--" + gcbSubs["NOMOCK_TAG"]
 		}
 	} else {
 		// TODO: Remove once cloudbuild.yaml doesn't strictly require vars to be set.

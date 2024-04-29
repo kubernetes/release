@@ -48,22 +48,22 @@ type checkPROptions struct {
 func (o *checkPROptions) ValidateAndFinish() error {
 	var lenErr, prNrErr, orgErr, repoErr error
 	if len(o.PullRequests) == 0 {
-		lenErr = fmt.Errorf("no pull requests numbers specified")
+		lenErr = errors.New("no pull requests numbers specified")
 	}
 
 	for _, n := range o.PullRequests {
 		if n == 0 {
-			prNrErr = fmt.Errorf("invalid pull request number (must be an integer larger than 0)")
+			prNrErr = errors.New("invalid pull request number (must be an integer larger than 0)")
 			break
 		}
 	}
 
 	if o.GithubOrg == "" {
-		orgErr = fmt.Errorf("no GitHub organization specified")
+		orgErr = errors.New("no GitHub organization specified")
 	}
 
 	if o.GithubRepo == "" {
-		orgErr = fmt.Errorf("no GitHub repository specified")
+		orgErr = errors.New("no GitHub repository specified")
 	}
 
 	return errors.Join(

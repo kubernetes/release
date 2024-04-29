@@ -103,7 +103,7 @@ func init() {
 		"log-level",
 		"l",
 		"info",
-		fmt.Sprintf("the logging verbosity, either %s", log.LevelNames()),
+		"the logging verbosity, either "+log.LevelNames(),
 	)
 
 	rootCmd.PersistentFlags().StringVarP(

@@ -18,7 +18,6 @@ package mail_test
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/sendgrid/rest"
@@ -160,7 +159,7 @@ func sendTest(t *testing.T) {
 			expectedSendgridAPIKey: "some key",
 		},
 		"when #Send returns an error, bubble it up": {
-			sendgridSendErr: fmt.Errorf("some sendgrid err"),
+			sendgridSendErr: errors.New("some sendgrid err"),
 			expectedErr:     "some sendgrid err",
 		},
 		"when #Send returns an empty response, an error is returned": {

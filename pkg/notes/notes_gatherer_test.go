@@ -18,6 +18,7 @@ package notes
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -131,7 +132,7 @@ func TestListCommits(t *testing.T) {
 		},
 		"http error on GetCommit(...)": {
 			getCommitReturns: getCommitReturnsList{always: {
-				e: fmt.Errorf("some err on GetCommit"),
+				e: errors.New("some err on GetCommit"),
 			}},
 			expectedGetCommitCallCount: 1,
 			expectedErrMsg:             "some err on GetCommit",
@@ -142,7 +143,7 @@ func TestListCommits(t *testing.T) {
 					c: &github.Commit{Committer: &github.CommitAuthor{Date: zeroTime}},
 				},
 				1: {
-					e: fmt.Errorf("some err on 2nd GetCommit"),
+					e: errors.New("some err on 2nd GetCommit"),
 				},
 			},
 			expectedGetCommitCallCount: 2,
@@ -153,7 +154,7 @@ func TestListCommits(t *testing.T) {
 				c: &github.Commit{Committer: &github.CommitAuthor{Date: zeroTime}},
 			}},
 			listCommitsReturns: listCommitsReturnsList{always: {
-				e: fmt.Errorf("some err on ListCommits"),
+				e: errors.New("some err on ListCommits"),
 			}},
 			expectedGetCommitCallCount:      2,
 			expectedListCommitsMaxCallCount: 1,
@@ -169,7 +170,7 @@ func TestListCommits(t *testing.T) {
 					r:  response(200, 100),
 				},
 				2: {
-					e: fmt.Errorf("some err on a random ListCommits call"),
+					e: errors.New("some err on a random ListCommits call"),
 				},
 			},
 			expectedGetCommitCallCount:      2,
@@ -313,7 +314,7 @@ func TestGatherNotes(t *testing.T) {
 			commitList: []*github.RepositoryCommit{repoCommit("some-sha", "some #123 thing")},
 			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {
 				return func(_ context.Context, _, _, _ string, _ *github.ListOptions) ([]*github.PullRequest, *github.Response, error) {
-					return nil, nil, fmt.Errorf("some-error-from-get-pull-request")
+					return nil, nil, errors.New("some-error-from-get-pull-request")
 				}
 			},
 			expectedListPullRequestsWithCommitCallCount: 1,
@@ -323,7 +324,7 @@ func TestGatherNotes(t *testing.T) {
 			commitList: []*github.RepositoryCommit{repoCommit("some-sha", "some-msg")},
 			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {
 				return func(_ context.Context, _, _, _ string, _ *github.ListOptions) ([]*github.PullRequest, *github.Response, error) {
-					return nil, nil, fmt.Errorf("some-error-from-list-pull-requests-with-commit")
+					return nil, nil, errors.New("some-error-from-list-pull-requests-with-commit")
 				}
 			},
 			expectedListPullRequestsWithCommitCallCount: 1,

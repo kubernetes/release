@@ -233,7 +233,7 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 			return errors.New("selected disk size must be greater than 0 GB")
 		}
 
-		diskSizeArg := fmt.Sprintf("--disk-size=%s", o.DiskSize)
+		diskSizeArg := "--disk-size=" + o.DiskSize
 		args = append(args, diskSizeArg)
 	}
 

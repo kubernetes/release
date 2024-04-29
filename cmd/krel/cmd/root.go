@@ -17,8 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -74,7 +72,7 @@ func init() {
 		&rootOpts.logLevel,
 		"log-level",
 		"info",
-		fmt.Sprintf("the logging verbosity, either %s", log.LevelNames()),
+		"the logging verbosity, either "+log.LevelNames(),
 	)
 
 	rootCmd.AddCommand(version.WithFont("slant"))
