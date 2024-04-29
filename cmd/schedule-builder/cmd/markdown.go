@@ -22,8 +22,10 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"text/template"
 	"time"
+
+	// Mark text/template as not to be checked for producing yaml.
+	"text/template" // NOLINT
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
