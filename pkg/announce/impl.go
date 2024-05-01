@@ -37,11 +37,12 @@ type defaultImpl struct{}
 //go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt announcefakes/fake_impl.go > announcefakes/_fake_impl.go && mv announcefakes/_fake_impl.go announcefakes/fake_impl.go"
 
 type impl interface {
-	create(workDir, subject, message string) error
-	getGoVersion(tag string) (string, error)
+	Create(workDir, subject, message string) error
+	GetGoVersion(tag string) (string, error)
+	ReadChangelogFile(file string) ([]byte, error)
 }
 
-func (i *defaultImpl) create(workDir, subject, message string) error {
+func (i *defaultImpl) Create(workDir, subject, message string) error {
 	subjectFile := filepath.Join(workDir, subjectFile)
 	//nolint:gosec // TODO(gosec): G306: Expect WriteFile permissions to be
 	// 0600 or less
@@ -73,11 +74,11 @@ func (i *defaultImpl) create(workDir, subject, message string) error {
 	return nil
 }
 
-// getGoVersion runs kube-cross container and go version inside it.
+// GetGoVersion runs kube-cross container and go version inside it.
 // We're running kube-cross container because it's not guaranteed that
 // k8s-cloud-builder container will be running the same Go version as
 // the kube-cross container used to build the release.
-func (i *defaultImpl) getGoVersion(tag string) (string, error) {
+func (i *defaultImpl) GetGoVersion(tag string) (string, error) {
 	semver, err := util.TagStringToSemver(tag)
 	if err != nil {
 		return "", fmt.Errorf("parse version tag: %w", err)
@@ -104,4 +105,8 @@ func (i *defaultImpl) getGoVersion(tag string) (string, error) {
 
 	versionRegex := regexp.MustCompile(`^?(\d+)(\.\d+)?(\.\d+)`)
 	return versionRegex.FindString(strings.TrimSpace(res.OutputTrimNL())), nil
+}
+
+func (i *defaultImpl) ReadChangelogFile(file string) ([]byte, error) {
+	return os.ReadFile(file)
 }

@@ -17,8 +17,8 @@ limitations under the License.
 package announce
 
 import (
+	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
@@ -76,13 +76,18 @@ func NewAnnounce(opts *Options) *Announce {
 	}
 }
 
+// SetImplementation sets the implementation to handle file operations.
+func (a *Announce) SetImplementation(i impl) {
+	a.impl = i
+}
+
 func (a *Announce) CreateForBranch() error {
 	logrus.Infof(
 		"Creating %s branch announcement in %s",
 		a.options.branch, a.options.workDir,
 	)
 
-	if err := a.impl.create(
+	if err := a.impl.Create(
 		a.options.workDir,
 		fmt.Sprintf("Kubernetes %s branch has been created", a.options.branch),
 		fmt.Sprintf(branchAnnouncement, a.options.branch),
@@ -104,9 +109,12 @@ func (a *Announce) CreateForRelease() error {
 
 	// Read the changelog from the specified file if we got one
 	if a.options.changelogFile != "" {
-		changelogData, err := os.ReadFile(a.options.changelogFile)
+		changelogData, err := a.impl.ReadChangelogFile(a.options.changelogFile)
 		if err != nil {
 			return fmt.Errorf("reading changelog html file: %w", err)
+		}
+		if len(changelogData) == 0 {
+			return fmt.Errorf("verifying that changelog html file '%s' is not empty", a.options.changelogFile)
 		}
 		changelog = string(changelogData)
 	}
@@ -117,13 +125,16 @@ func (a *Announce) CreateForRelease() error {
 	}
 
 	logrus.Infof("Trying to get the Go version used to build %s...", a.options.tag)
-	goVersion, err := a.impl.getGoVersion(a.options.tag)
+	goVersion, err := a.impl.GetGoVersion(a.options.tag)
 	if err != nil {
 		return err
 	}
+	if goVersion == "" {
+		return errors.New("verifying Go version is not empty")
+	}
 	logrus.Infof("Found the following Go version: %s", goVersion)
 
-	if err := a.impl.create(
+	if err := a.impl.Create(
 		a.options.workDir,
 		fmt.Sprintf("Kubernetes %s is live!", a.options.tag),
 		fmt.Sprintf(releaseAnnouncement,
