@@ -22,7 +22,7 @@ import (
 )
 
 type FakeImpl struct {
-	createStub        func(string, string, string) error
+	CreateStub        func(string, string, string) error
 	createMutex       sync.RWMutex
 	createArgsForCall []struct {
 		arg1 string
@@ -35,7 +35,7 @@ type FakeImpl struct {
 	createReturnsOnCall map[int]struct {
 		result1 error
 	}
-	getGoVersionStub        func(string) (string, error)
+	GetGoVersionStub        func(string) (string, error)
 	getGoVersionMutex       sync.RWMutex
 	getGoVersionArgsForCall []struct {
 		arg1 string
@@ -48,11 +48,24 @@ type FakeImpl struct {
 		result1 string
 		result2 error
 	}
+	ReadChangelogFileStub        func(string) ([]byte, error)
+	readChangelogFileMutex       sync.RWMutex
+	readChangelogFileArgsForCall []struct {
+		arg1 string
+	}
+	readChangelogFileReturns struct {
+		result1 []byte
+		result2 error
+	}
+	readChangelogFileReturnsOnCall map[int]struct {
+		result1 []byte
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeImpl) create(arg1 string, arg2 string, arg3 string) error {
+func (fake *FakeImpl) Create(arg1 string, arg2 string, arg3 string) error {
 	fake.createMutex.Lock()
 	ret, specificReturn := fake.createReturnsOnCall[len(fake.createArgsForCall)]
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
@@ -60,9 +73,9 @@ func (fake *FakeImpl) create(arg1 string, arg2 string, arg3 string) error {
 		arg2 string
 		arg3 string
 	}{arg1, arg2, arg3})
-	stub := fake.createStub
+	stub := fake.CreateStub
 	fakeReturns := fake.createReturns
-	fake.recordInvocation("create", []interface{}{arg1, arg2, arg3})
+	fake.recordInvocation("Create", []interface{}{arg1, arg2, arg3})
 	fake.createMutex.Unlock()
 	if stub != nil {
 		return stub(arg1, arg2, arg3)
@@ -82,7 +95,7 @@ func (fake *FakeImpl) CreateCallCount() int {
 func (fake *FakeImpl) CreateCalls(stub func(string, string, string) error) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
-	fake.createStub = stub
+	fake.CreateStub = stub
 }
 
 func (fake *FakeImpl) CreateArgsForCall(i int) (string, string, string) {
@@ -95,7 +108,7 @@ func (fake *FakeImpl) CreateArgsForCall(i int) (string, string, string) {
 func (fake *FakeImpl) CreateReturns(result1 error) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
-	fake.createStub = nil
+	fake.CreateStub = nil
 	fake.createReturns = struct {
 		result1 error
 	}{result1}
@@ -104,7 +117,7 @@ func (fake *FakeImpl) CreateReturns(result1 error) {
 func (fake *FakeImpl) CreateReturnsOnCall(i int, result1 error) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
-	fake.createStub = nil
+	fake.CreateStub = nil
 	if fake.createReturnsOnCall == nil {
 		fake.createReturnsOnCall = make(map[int]struct {
 			result1 error
@@ -115,15 +128,15 @@ func (fake *FakeImpl) CreateReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) getGoVersion(arg1 string) (string, error) {
+func (fake *FakeImpl) GetGoVersion(arg1 string) (string, error) {
 	fake.getGoVersionMutex.Lock()
 	ret, specificReturn := fake.getGoVersionReturnsOnCall[len(fake.getGoVersionArgsForCall)]
 	fake.getGoVersionArgsForCall = append(fake.getGoVersionArgsForCall, struct {
 		arg1 string
 	}{arg1})
-	stub := fake.getGoVersionStub
+	stub := fake.GetGoVersionStub
 	fakeReturns := fake.getGoVersionReturns
-	fake.recordInvocation("getGoVersion", []interface{}{arg1})
+	fake.recordInvocation("GetGoVersion", []interface{}{arg1})
 	fake.getGoVersionMutex.Unlock()
 	if stub != nil {
 		return stub(arg1)
@@ -143,7 +156,7 @@ func (fake *FakeImpl) GetGoVersionCallCount() int {
 func (fake *FakeImpl) GetGoVersionCalls(stub func(string) (string, error)) {
 	fake.getGoVersionMutex.Lock()
 	defer fake.getGoVersionMutex.Unlock()
-	fake.getGoVersionStub = stub
+	fake.GetGoVersionStub = stub
 }
 
 func (fake *FakeImpl) GetGoVersionArgsForCall(i int) string {
@@ -156,7 +169,7 @@ func (fake *FakeImpl) GetGoVersionArgsForCall(i int) string {
 func (fake *FakeImpl) GetGoVersionReturns(result1 string, result2 error) {
 	fake.getGoVersionMutex.Lock()
 	defer fake.getGoVersionMutex.Unlock()
-	fake.getGoVersionStub = nil
+	fake.GetGoVersionStub = nil
 	fake.getGoVersionReturns = struct {
 		result1 string
 		result2 error
@@ -166,7 +179,7 @@ func (fake *FakeImpl) GetGoVersionReturns(result1 string, result2 error) {
 func (fake *FakeImpl) GetGoVersionReturnsOnCall(i int, result1 string, result2 error) {
 	fake.getGoVersionMutex.Lock()
 	defer fake.getGoVersionMutex.Unlock()
-	fake.getGoVersionStub = nil
+	fake.GetGoVersionStub = nil
 	if fake.getGoVersionReturnsOnCall == nil {
 		fake.getGoVersionReturnsOnCall = make(map[int]struct {
 			result1 string
@@ -179,6 +192,70 @@ func (fake *FakeImpl) GetGoVersionReturnsOnCall(i int, result1 string, result2 e
 	}{result1, result2}
 }
 
+func (fake *FakeImpl) ReadChangelogFile(arg1 string) ([]byte, error) {
+	fake.readChangelogFileMutex.Lock()
+	ret, specificReturn := fake.readChangelogFileReturnsOnCall[len(fake.readChangelogFileArgsForCall)]
+	fake.readChangelogFileArgsForCall = append(fake.readChangelogFileArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.ReadChangelogFileStub
+	fakeReturns := fake.readChangelogFileReturns
+	fake.recordInvocation("ReadChangelogFile", []interface{}{arg1})
+	fake.readChangelogFileMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeImpl) ReadChangelogFileCallCount() int {
+	fake.readChangelogFileMutex.RLock()
+	defer fake.readChangelogFileMutex.RUnlock()
+	return len(fake.readChangelogFileArgsForCall)
+}
+
+func (fake *FakeImpl) ReadChangelogFileCalls(stub func(string) ([]byte, error)) {
+	fake.readChangelogFileMutex.Lock()
+	defer fake.readChangelogFileMutex.Unlock()
+	fake.ReadChangelogFileStub = stub
+}
+
+func (fake *FakeImpl) ReadChangelogFileArgsForCall(i int) string {
+	fake.readChangelogFileMutex.RLock()
+	defer fake.readChangelogFileMutex.RUnlock()
+	argsForCall := fake.readChangelogFileArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeImpl) ReadChangelogFileReturns(result1 []byte, result2 error) {
+	fake.readChangelogFileMutex.Lock()
+	defer fake.readChangelogFileMutex.Unlock()
+	fake.ReadChangelogFileStub = nil
+	fake.readChangelogFileReturns = struct {
+		result1 []byte
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImpl) ReadChangelogFileReturnsOnCall(i int, result1 []byte, result2 error) {
+	fake.readChangelogFileMutex.Lock()
+	defer fake.readChangelogFileMutex.Unlock()
+	fake.ReadChangelogFileStub = nil
+	if fake.readChangelogFileReturnsOnCall == nil {
+		fake.readChangelogFileReturnsOnCall = make(map[int]struct {
+			result1 []byte
+			result2 error
+		})
+	}
+	fake.readChangelogFileReturnsOnCall[i] = struct {
+		result1 []byte
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -186,6 +263,8 @@ func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	defer fake.createMutex.RUnlock()
 	fake.getGoVersionMutex.RLock()
 	defer fake.getGoVersionMutex.RUnlock()
+	fake.readChangelogFileMutex.RLock()
+	defer fake.readChangelogFileMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
