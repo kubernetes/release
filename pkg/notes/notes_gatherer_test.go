@@ -210,8 +210,8 @@ func TestListCommits(t *testing.T) {
 
 			checkCallCount(t, "GetCommits(...)", tc.expectedGetCommitCallCount, client.GetCommitCallCount())
 
-			if min, max, a := tc.expectedListCommitsMinCallCount, tc.expectedListCommitsMaxCallCount, client.ListCommitsCallCount(); a < min || a > max {
-				t.Errorf("Expected ListCommits(...) to be called between %d and %d times, got called %d times", min, max, a)
+			if minCallCount, maxCallCount, a := tc.expectedListCommitsMinCallCount, tc.expectedListCommitsMaxCallCount, client.ListCommitsCallCount(); a < minCallCount || a > maxCallCount {
+				t.Errorf("Expected ListCommits(...) to be called between %d and %d times, got called %d times", minCallCount, maxCallCount, a)
 			}
 
 			if a, e := len(commits), tc.expectedCommitCount; a != e {
