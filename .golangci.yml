@@ -23,7 +23,9 @@ linters:
     - asciicheck
     - bidichk
     - bodyclose
+    - canonicalheader
     - contextcheck
+    - copyloopvar
     - decorder
     - dogsled
     - dupl
@@ -31,8 +33,8 @@ linters:
     - errcheck
     - errchkjson
     - errname
-    - execinquery
     - exportloopref
+    - fatcontext
     - ginkgolinter
     - gocheckcompilerdirectives
     - gochecksumtype
@@ -54,6 +56,7 @@ linters:
     - grouper
     - importas
     - ineffassign
+    - intrange
     - loggercheck
     - makezero
     - mirror
@@ -90,6 +93,7 @@ linters:
     # - cyclop
     # - depguard
     # - dupword
+    # - err113
     # - errorlint
     # - exhaustive
     # - exhaustruct
@@ -101,13 +105,12 @@ linters:
     # - gochecknoinits
     # - gocognit
     # - godot
-    # - goerr113
-    # - gomnd
     # - inamedparam
     # - interfacebloat
     # - ireturn
     # - lll
     # - maintidx
+    # - mnd
     # - nestif
     # - nilerr
     # - nilnil
