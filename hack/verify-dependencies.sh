@@ -18,16 +18,30 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-VERSION=0.4.4
+VERSION=0.5.3
 
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 BIN_PATH="$REPO_ROOT/bin"
 ZEITGEIST_BIN="$BIN_PATH/zeitgeist"
 
+# Get the architecture
+arch=$(uname -m | tr '[:upper:]' '[:lower:]')
+# Convert x86_64 to amd64
+if [ "$arch" = "x86_64" ]; then
+    arch="amd64"
+fi
+
+# Get the platform
+platform=$(uname -s | tr '[:upper:]' '[:lower:]')
+
+echo "Architecture: $arch"
+echo "Platform: $platform"
+
 if [[ ! -f "$ZEITGEIST_BIN" ]]; then
+    echo "Installing zeitgeist"
     mkdir -p "$BIN_PATH"
     curl -sSfL -o "$ZEITGEIST_BIN" \
-        https://github.com/kubernetes-sigs/zeitgeist/releases/download/v$VERSION/zeitgeist-amd64-linux
+        https://github.com/kubernetes-sigs/zeitgeist/releases/download/v$VERSION/zeitgeist-"$arch"-"$platform"
     chmod +x "$ZEITGEIST_BIN"
 fi
 
