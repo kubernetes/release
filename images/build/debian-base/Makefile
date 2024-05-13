@@ -19,7 +19,7 @@ IMAGE ?= $(REGISTRY)/debian-base
 BUILD_IMAGE ?= debian-build
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= bookworm-v1.0.2
+IMAGE_VERSION ?= bookworm-v1.0.3
 CONFIG ?= bookworm
 
 TAR_FILE ?= rootfs.tar
