@@ -1,9 +1,14 @@
 # Schedule Builder
 
-This simple tool has the objective to parse the yaml file located in
-[k/website](https://github.com/kubernetes/website/blob/main/data/releases/schedule.yaml),
-which shows the scheduled and past patch releases of the current Kubernetes
-Release cycle as well as Kubernetes Release Cycles schedules ([like 1.23](https://github.com/kubernetes/sig-release/blob/master/releases/release-1.23/README.md)) in machine readable format.
+This simple tool has the objective to parse and update the following YAML files
+located in [k/website](https://github.com/kubernetes/website):
+
+- https://github.com/kubernetes/website/blob/main/data/releases/schedule.yaml
+- https://github.com/kubernetes/website/blob/main/data/releases/eol.yaml
+
+Those show the scheduled and past patch releases of the current Kubernetes
+Release cycle as well as Kubernetes Release Cycles schedules in machine readable
+format.
 
 ## Install
 
@@ -19,7 +24,7 @@ Also if you have the `kubernetes/release` cloned you can run the `make release-t
 
 ## Usage
 
-To run this tool you can just do, assuming you have cloned both `website` and `release` repositories, like
+Assuming you have cloned the `k/website` and `k/release` repositories, like:
 
 ```
 .
@@ -28,9 +33,35 @@ To run this tool you can just do, assuming you have cloned both `website` and `r
 |   +-- website
 ```
 
-### For Patch Release Schedule
+### Updating `schedule.yaml` and `eol.yaml`
+
+To update both files, run:
+
 ```bash
-$ schedule-builder --config-path ../website/data/releases/schedule.yaml --type patch
+schedule-builder -uc ../website/data/releases/schedule.yaml -e ../website/data/releases/eol.yaml
+```
+
+The output should look similar to this:
+
+```
+INFO Validating options
+INFO Reading schedule file: ../website/data/releases/schedule.yaml
+INFO Parsing schedule
+INFO Updating schedule
+INFO Using existing upcoming release for 2024-05-14
+INFO Using existing upcoming release for 2024-06-11
+INFO Using existing upcoming release for 2024-07-09
+INFO Got 3 new upcoming releases, not adding any more
+INFO Writing end of life branches: ../website/data/releases/eol.yaml
+INFO Wrote schedule YAML to: ../website/data/releases/schedule.yaml
+```
+
+You can now propose the changeset as a new k/website PR for further review.
+
+### For Patch Release Schedule
+
+```bash
+schedule-builder --config-path ../website/data/releases/schedule.yaml --type patch
 ```
 
 The output will be something similar to this
@@ -89,9 +120,11 @@ End of Life for **1.16** is **TBD**
 ```
 
 ### For Release Cycle Schedule
+
 ```bash
-$ schedule-builder --config-path testdata/rel-schedule.yaml --type release
+schedule-builder --config-path testdata/rel-schedule.yaml --type release
 ```
+
 The output will be something similar to this
 
 ```
