@@ -21,6 +21,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/blang/semver/v4"
 	"github.com/stretchr/testify/require"
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/release/releasefakes"
@@ -323,5 +324,56 @@ func TestPublishReleaseNotesIndex(t *testing.T) {
 		} else {
 			require.Nil(t, err)
 		}
+	}
+}
+
+func TestIsUpToDate(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name, oldVersion, newVersion string
+		expected                     bool
+	}{
+		{
+			name:       "Final version after RC",
+			oldVersion: "1.30.0-rc.2.10+00000000000000",
+			newVersion: "1.30.0-11+00000000000000",
+			expected:   false,
+		},
+		{
+			name:       "More commits",
+			oldVersion: "1.30.0-10+00000000000000",
+			newVersion: "1.30.0-11+00000000000000",
+			expected:   false,
+		},
+		{
+			name:       "Newer release",
+			oldVersion: "1.29.0-0+00000000000000",
+			newVersion: "1.29.1-0+00000000000000",
+			expected:   false,
+		},
+		{
+			name:       "Counter reset after RC",
+			oldVersion: "1.30.0-rc.2.10+00000000000000",
+			newVersion: "1.30.0-1+00000000000000",
+			expected:   false,
+		},
+		{
+			name:       "Patch after newer RC (artificial corner case)",
+			oldVersion: "1.29.0-rc.0.20+00000000000000",
+			newVersion: "1.28.1-2+00000000000000",
+			expected:   true,
+		},
+	} {
+		oldVersion := semver.MustParse(tc.oldVersion)
+		newVersion := semver.MustParse(tc.newVersion)
+		expected := tc.expected
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			res := release.IsUpToDate(oldVersion, newVersion)
+			require.Equal(t, expected, res)
+		})
 	}
 }

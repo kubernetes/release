@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-sdk/gcli"
@@ -283,7 +284,7 @@ func (p *Publisher) VerifyLatestUpdate(
 		return false, fmt.Errorf("invalid GCS version format %s", gcsVersion)
 	}
 
-	if sv.LTE(gcsSemverVersion) {
+	if IsUpToDate(gcsSemverVersion, sv) {
 		logrus.Infof(
 			"Not updating version, because %s <= %s", version, gcsVersion,
 		)
@@ -292,6 +293,32 @@ func (p *Publisher) VerifyLatestUpdate(
 
 	logrus.Infof("Updating version, because %s > %s", version, gcsVersion)
 	return true, nil
+}
+
+func IsUpToDate(oldVersion, newVersion semver.Version) bool {
+	oldPre := oldVersion.Pre
+	newPre := newVersion.Pre
+
+	oldStrippedPre := semver.Version{Major: oldVersion.Major, Minor: oldVersion.Minor, Patch: oldVersion.Patch}
+	newStrippedPre := semver.Version{Major: newVersion.Major, Minor: newVersion.Minor, Patch: newVersion.Patch}
+
+	// Verfy specific use case in our tagging logic:
+	// 1.30.0-rc.2.10+00000000000000
+	// needs to be considered lower than
+	// 1.30.0-11+00000000000000
+	// which is not given by newVersion.LTE(oldVersion) below.
+	if len(oldPre) == 3 && // [rc 2 10]
+		oldPre[0].String() == "rc" &&
+		len(newPre) == 1 && // [11]
+		newPre[0].IsNum &&
+		// For example when:
+		// oldVersion: 1.29.0-rc.0.20+00000000000000
+		// newVersion: 1.28.1-2+00000000000000
+		newStrippedPre.GE(oldStrippedPre) {
+		return false
+	}
+
+	return newVersion.LTE(oldVersion)
 }
 
 // PublishToGcs publishes a release to GCS
