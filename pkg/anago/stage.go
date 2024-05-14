@@ -413,7 +413,7 @@ func (d *DefaultStage) TagRepository() error {
 
 		// Ensure that the tag not already exists
 		if _, err := d.impl.RevParseTag(repo, version); err == nil {
-			return fmt.Errorf("tag %s already exists: %w", version, err)
+			return fmt.Errorf("tag %s already exists", version)
 		}
 
 		// Usually the build version contains a commit we can reference. If
