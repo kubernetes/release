@@ -66,8 +66,13 @@ touch %{buildroot}%{_sharedstatedir}/kubelet/.kubelet-keep
 touch %{buildroot}%{_sysconfdir}/kubernetes/manifests/.kubelet-keep
 %endif
 
+%if "%{_vendor}" == "debbuild"
+mkdir -p %{buildroot}%{_sysconfdir}/default/
+install -p -m 644 -T kubelet.env %{buildroot}%{_sysconfdir}/default/kubelet
+%else
 mkdir -p %{buildroot}%{_sysconfdir}/sysconfig/
 install -p -m 644 -T kubelet.env %{buildroot}%{_sysconfdir}/sysconfig/kubelet
+%endif
 
 %files
 %{_bindir}/kubelet
@@ -78,8 +83,10 @@ install -p -m 644 -T kubelet.env %{buildroot}%{_sysconfdir}/sysconfig/kubelet
 %if "%{_vendor}" == "debbuild"
 %{_sharedstatedir}/kubelet/.kubelet-keep
 %{_sysconfdir}/kubernetes/manifests/.kubelet-keep
-%endif
+%config(noreplace) %{_sysconfdir}/default/kubelet
+%else
 %config(noreplace) %{_sysconfdir}/sysconfig/kubelet
+%endif
 %license LICENSE
 %doc README.md
 
