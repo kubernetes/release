@@ -26,6 +26,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/yaml"
+
+	"k8s.io/release/cmd/schedule-builder/model"
 )
 
 const expectedPatchSchedule = `### Upcoming Monthly Releases
@@ -135,22 +137,22 @@ Please refer to the [release phases document](../release_phases.md).
 func TestParsePatchSchedule(t *testing.T) {
 	testcases := []struct {
 		name     string
-		schedule PatchSchedule
+		schedule model.PatchSchedule
 	}{
 		{
 			name: "next patch is not in previous patch list",
-			schedule: PatchSchedule{
-				Schedules: []*Schedule{
+			schedule: model.PatchSchedule{
+				Schedules: []*model.Schedule{
 					{
 						Release: "X.Y",
-						Next: &PatchRelease{
+						Next: &model.PatchRelease{
 							Release:            "X.Y.ZZZ",
 							CherryPickDeadline: "2020-06-12",
 							TargetDate:         "2020-06-17",
 						},
 						EndOfLifeDate:            "NOW",
 						MaintenanceModeStartDate: "THEN",
-						PreviousPatches: []*PatchRelease{
+						PreviousPatches: []*model.PatchRelease{
 							{
 								Release:            "X.Y.XXX",
 								CherryPickDeadline: "2020-05-15",
@@ -165,7 +167,7 @@ func TestParsePatchSchedule(t *testing.T) {
 						},
 					},
 				},
-				UpcomingReleases: []*PatchRelease{
+				UpcomingReleases: []*model.PatchRelease{
 					{
 						CherryPickDeadline: "2020-06-12",
 						TargetDate:         "2020-06-17",
@@ -175,18 +177,18 @@ func TestParsePatchSchedule(t *testing.T) {
 		},
 		{
 			name: "next patch is in previous patch list",
-			schedule: PatchSchedule{
-				Schedules: []*Schedule{
+			schedule: model.PatchSchedule{
+				Schedules: []*model.Schedule{
 					{
 						Release: "X.Y",
-						Next: &PatchRelease{
+						Next: &model.PatchRelease{
 							Release:            "X.Y.ZZZ",
 							CherryPickDeadline: "2020-06-12",
 							TargetDate:         "2020-06-17",
 						},
 						EndOfLifeDate:            "NOW",
 						MaintenanceModeStartDate: "THEN",
-						PreviousPatches: []*PatchRelease{
+						PreviousPatches: []*model.PatchRelease{
 							{
 								Release:            "X.Y.ZZZ",
 								CherryPickDeadline: "2020-06-12",
@@ -206,7 +208,7 @@ func TestParsePatchSchedule(t *testing.T) {
 						},
 					},
 				},
-				UpcomingReleases: []*PatchRelease{
+				UpcomingReleases: []*model.PatchRelease{
 					{
 						CherryPickDeadline: "2020-06-12",
 						TargetDate:         "2020-06-17",
@@ -226,15 +228,15 @@ func TestParsePatchSchedule(t *testing.T) {
 func TestParseReleaseSchedule(t *testing.T) {
 	testcases := []struct {
 		name     string
-		schedule ReleaseSchedule
+		schedule model.ReleaseSchedule
 	}{
 		{
 			name: "test of release cycle of X.Y version",
-			schedule: ReleaseSchedule{
-				Releases: []Release{
+			schedule: model.ReleaseSchedule{
+				Releases: []model.Release{
 					{
 						Version: "X.Y",
-						Timeline: []Timeline{
+						Timeline: []model.Timeline{
 							{
 								What:     "Testing-A",
 								Who:      "tester",
@@ -347,17 +349,17 @@ func TestUpdatePatchSchedule(t *testing.T) {
 	for _, tc := range []struct {
 		name                            string
 		refTime                         time.Time
-		givenSchedule, expectedSchedule PatchSchedule
-		expectedEolBranches             EolBranches
+		givenSchedule, expectedSchedule model.PatchSchedule
+		expectedEolBranches             model.EolBranches
 	}{
 		{
 			name:    "succeed to update the schedule",
 			refTime: time.Date(2024, 4, 3, 0, 0, 0, 0, time.UTC),
-			givenSchedule: PatchSchedule{
-				Schedules: []*Schedule{
+			givenSchedule: model.PatchSchedule{
+				Schedules: []*model.Schedule{
 					{ // Needs multiple updates
 						Release: "1.30",
-						Next: &PatchRelease{
+						Next: &model.PatchRelease{
 							Release:            "1.30.1",
 							CherryPickDeadline: "2024-01-05",
 							TargetDate:         "2024-01-09",
@@ -371,14 +373,14 @@ func TestUpdatePatchSchedule(t *testing.T) {
 					{ // EOL
 						Release:       "1.20",
 						EndOfLifeDate: "2023-01-01",
-						Next: &PatchRelease{
+						Next: &model.PatchRelease{
 							Release:            "1.20.10",
 							CherryPickDeadline: "2023-12-08",
 							TargetDate:         "2023-12-12",
 						},
 					},
 				},
-				UpcomingReleases: []*PatchRelease{
+				UpcomingReleases: []*model.PatchRelease{
 					{
 						CherryPickDeadline: "2024-03-08",
 						TargetDate:         "2024-03-12",
@@ -393,18 +395,18 @@ func TestUpdatePatchSchedule(t *testing.T) {
 					},
 				},
 			},
-			expectedSchedule: PatchSchedule{
-				Schedules: []*Schedule{
+			expectedSchedule: model.PatchSchedule{
+				Schedules: []*model.Schedule{
 					{
 						Release: "1.30",
-						Next: &PatchRelease{
+						Next: &model.PatchRelease{
 							Release:            "1.30.4",
 							CherryPickDeadline: "2024-04-12",
 							TargetDate:         "2024-04-17",
 						},
 						EndOfLifeDate:            "2025-01-01",
 						MaintenanceModeStartDate: "2024-12-01",
-						PreviousPatches: []*PatchRelease{
+						PreviousPatches: []*model.PatchRelease{
 							{
 								Release:            "1.30.3",
 								CherryPickDeadline: "2024-03-08",
@@ -426,7 +428,7 @@ func TestUpdatePatchSchedule(t *testing.T) {
 						Release: "1.29",
 					},
 				},
-				UpcomingReleases: []*PatchRelease{
+				UpcomingReleases: []*model.PatchRelease{
 					{
 						CherryPickDeadline: "2024-04-12",
 						TargetDate:         "2024-04-17",
@@ -441,8 +443,8 @@ func TestUpdatePatchSchedule(t *testing.T) {
 					},
 				},
 			},
-			expectedEolBranches: EolBranches{
-				Branches: []*EolBranch{
+			expectedEolBranches: model.EolBranches{
+				Branches: []*model.EolBranch{
 					{
 						Release:           "1.20",
 						FinalPatchRelease: "1.20.10",
@@ -461,20 +463,18 @@ func TestUpdatePatchSchedule(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, eolFile.Close())
 
-			require.NoError(t, updatePatchSchedule(tc.refTime, tc.givenSchedule, EolBranches{}, scheduleFile.Name(), eolFile.Name()))
+			require.NoError(t, updatePatchSchedule(tc.refTime, tc.givenSchedule, model.EolBranches{}, scheduleFile.Name(), eolFile.Name()))
 
 			scheduleYamlBytes, err := os.ReadFile(scheduleFile.Name())
 			require.NoError(t, err)
-
-			patchRes := PatchSchedule{}
+			patchRes := model.PatchSchedule{}
 			require.NoError(t, yaml.UnmarshalStrict(scheduleYamlBytes, &patchRes))
 
 			assert.Equal(t, tc.expectedSchedule, patchRes)
 
 			eolYamlBytes, err := os.ReadFile(eolFile.Name())
 			require.NoError(t, err)
-
-			eolRes := EolBranches{}
+			eolRes := model.EolBranches{}
 			require.NoError(t, yaml.UnmarshalStrict(eolYamlBytes, &eolRes))
 
 			assert.Equal(t, tc.expectedEolBranches, eolRes)

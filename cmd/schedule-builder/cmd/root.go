@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"k8s.io/release/cmd/schedule-builder/model"
 	"sigs.k8s.io/release-utils/log"
 	"sigs.k8s.io/release-utils/version"
 	"sigs.k8s.io/yaml"
@@ -155,9 +156,9 @@ func run(opts *options) error {
 	}
 
 	var (
-		patchSchedule   PatchSchedule
-		releaseSchedule ReleaseSchedule
-		eolBranches     EolBranches
+		patchSchedule   model.PatchSchedule
+		releaseSchedule model.ReleaseSchedule
+		eolBranches     model.EolBranches
 		scheduleOut     string
 	)
 
