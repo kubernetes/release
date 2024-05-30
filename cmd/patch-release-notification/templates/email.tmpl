@@ -7,7 +7,7 @@
 {{end}}
 <br><p>Here are some quick links to search for cherry-pick PRs:</p>
 {{range .Releases}}
-<p> - release-{{ .Release }}: https://github.com/kubernetes/kubernetes/pulls?q=is%3Apr+is%3Aopen+base%3Arelease-{{ .Release }}+label%3Ado-not-merge%2Fcherry-pick-not-approved</p>
+<p> - <a href="https://github.com/kubernetes/kubernetes/pulls?q=is%3Apr+is%3Aopen+base%3Arelease-{{ .Release }}+label%3Ado-not-merge%2Fcherry-pick-not-approved">Check PRs for release-{{ .Release }}</a></p>
 {{end}}
 <br>
 <p>For PRs that you intend to land for the upcoming patch sets, please
@@ -18,7 +18,7 @@ ensure they have:</p>
 <p> - /priority</p>
 <p> - /lgtm</p>
 <p> - /approve</p>
-<p> - passing tests</p>
+<p> - passing tests and not on hold.</p>
 <br>
 <p>Details on the cherry-pick process can be found here:</p>
 <p>https://git.k8s.io/community/contributors/devel/sig-release/cherry-picks.md</p>
@@ -27,6 +27,6 @@ ensure they have:</p>
 <p>If you have any questions for the Release Managers, please feel free to
 reach out to us at #release-management (Kubernetes Slack) or release-managers@kubernetes.io</p><br>
 <p>We wish everyone a happy and safe week!</p>
-<p>SIG-Release Team</p>
+<p>SIG Release Team</p>
 </body>
 </html>

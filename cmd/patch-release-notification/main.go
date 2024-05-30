@@ -22,7 +22,6 @@ import (
 	"embed"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"net/http"
 	"os"
@@ -91,7 +90,7 @@ func getConfig() (*Config, error) {
 	return &c, nil
 }
 
-func New(ctx context.Context) (*Options, error) {
+func NewOptions(ctx context.Context) (*Options, error) {
 	config, err := getConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config: %w", err)
@@ -102,7 +101,6 @@ func New(ctx context.Context) (*Options, error) {
 		Region: aws.String(config.AWSRegion),
 	})
 	if err != nil {
-		log.Println("Error occurred while creating aws session", err)
 		return nil, err
 	}
 
@@ -114,7 +112,7 @@ func New(ctx context.Context) (*Options, error) {
 }
 
 func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) { //nolint: gocritic
-	o, err := New(ctx)
+	o, err := NewOptions(ctx)
 	if err != nil {
 		return events.APIGatewayProxyResponse{
 			Body:       `{"status": "nok"}`,
@@ -122,12 +120,13 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 		}, err
 	}
 
+	logrus.Infof("Will pull the patch release schedule from: %s", o.Config.SchedulePath)
 	data, err := loadFileOrURL(o.Config.SchedulePath)
 	if err != nil {
 		return events.APIGatewayProxyResponse{
 			Body:       `{"status": "nok"}`,
 			StatusCode: http.StatusInternalServerError,
-		}, fmt.Errorf("failed to read the file: %w", err)
+		}, fmt.Errorf("reading the file: %w", err)
 	}
 
 	patchSchedule := &model.PatchSchedule{}
@@ -138,7 +137,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 		return events.APIGatewayProxyResponse{
 			Body:       `{"status": "nok"}`,
 			StatusCode: http.StatusInternalServerError,
-		}, fmt.Errorf("failed to decode the file: %w", err)
+		}, fmt.Errorf("decoding the file: %w", err)
 	}
 
 	output := &Template{}
@@ -157,7 +156,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 		currentTime := time.Now().UTC()
 		days := t.Sub(currentTime).Hours() / 24
 		intDay, _ := math.Modf(days)
-		logrus.Infof("cherry pick deadline: %d, days to alert: %d", int(intDay), o.Config.DaysToAlert)
+		logrus.Infof("Cherry pick deadline: %d, days to alert: %d", int(intDay), o.Config.DaysToAlert)
 		if int(intDay) == o.Config.DaysToAlert {
 			output.Releases = append(output.Releases, TemplateRelease{
 				Release:            patch.Release,
@@ -165,6 +164,14 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 			})
 			shouldSendEmail = true
 		}
+	}
+
+	if !shouldSendEmail {
+		logrus.Info("No email is needed to send")
+		return events.APIGatewayProxyResponse{
+			Body:       `{"status": "ok"}`,
+			StatusCode: http.StatusOK,
+		}, nil
 	}
 
 	tmpl, err := template.ParseFS(tpls, "templates/email.tmpl")
@@ -181,19 +188,11 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 		return events.APIGatewayProxyResponse{
 			Body:       `{"status": "nok"}`,
 			StatusCode: http.StatusInternalServerError,
-		}, fmt.Errorf("parsing values to the template: %w", err)
-	}
-
-	if !shouldSendEmail {
-		logrus.Info("No email is needed to send")
-		return events.APIGatewayProxyResponse{
-			Body:       `{"status": "ok"}`,
-			StatusCode: http.StatusOK,
-		}, nil
+		}, fmt.Errorf("executing the template: %w", err)
 	}
 
 	logrus.Info("Sending mail")
-	subject := "[Please Read] Patch Releases cherry-pick deadline"
+	subject := "[Please Read] Upcoming Patch Releases Cherry-Pick Deadline for Kubernetes"
 	fromEmail := o.Config.FromEmail
 
 	recipient := Recipient{
@@ -212,7 +211,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 		return events.APIGatewayProxyResponse{
 			Body:       `{"status": "nok"}`,
 			StatusCode: http.StatusInternalServerError,
-		}, fmt.Errorf("parsing values to the template: %w", err)
+		}, fmt.Errorf("sending the email: %w", err)
 	}
 
 	return events.APIGatewayProxyResponse{
@@ -239,9 +238,6 @@ func (o *Options) SendEmailRawSES(messageBody, subject, fromEmail string, recipi
 		recipient := r
 		recipients = append(recipients, &recipient)
 	}
-
-	// Set to emails
-	msg.SetHeader("To", recipient.toEmails...)
 
 	// cc mails mentioned
 	if len(recipient.ccEmails) != 0 {
@@ -275,7 +271,7 @@ func (o *Options) SendEmailRawSES(messageBody, subject, fromEmail string, recipi
 	var emailRaw bytes.Buffer
 	_, err := msg.WriteTo(&emailRaw)
 	if err != nil {
-		log.Printf("failed to write mail: %v\n", err)
+		logrus.Errorf("Failed to write mail: %v", err)
 		return err
 	}
 
@@ -287,11 +283,11 @@ func (o *Options) SendEmailRawSES(messageBody, subject, fromEmail string, recipi
 	// send raw email
 	_, err = svc.SendRawEmail(input)
 	if err != nil {
-		log.Println("Error sending mail - ", err)
+		logrus.Errorf("Error sending mail - %v", err)
 		return err
 	}
 
-	log.Println("Email sent successfully to: ", recipient.toEmails)
+	logrus.Infof("Email sent successfully to: %q", recipient.toEmails)
 	return nil
 }
 
@@ -314,5 +310,6 @@ func loadFileOrURL(fileRef string) ([]byte, error) {
 			return nil, err
 		}
 	}
+
 	return raw, nil
 }
