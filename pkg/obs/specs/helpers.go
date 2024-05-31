@@ -113,3 +113,29 @@ func (s *Specs) GetKubernetesCIDownloadLink(baseURL, name, version, arch string)
 		"%s/ci/%s/bin/linux/%s/%s",
 		baseURL, util.AddTagPrefix(version), arch, name), nil
 }
+
+// GetCRIToolsVersion gets the latest cri-tools version from GitHub.
+func (s *Specs) GetCRIToolsVersion() (string, error) {
+	return s.getLatestVersionGitHub("kubernetes-sigs", "cri-tools")
+}
+
+// GetCNIPluginsVersion gets the latest CNI plugins version from GitHub.
+func (s *Specs) GetCNIPluginsVersion() (string, error) {
+	return s.getLatestVersionGitHub("containernetworking", "plugins")
+}
+
+func (s *Specs) getLatestVersionGitHub(org, repo string) (string, error) {
+	baseURL := fmt.Sprintf("https://github.com/%s/%s/releases", org, repo)
+
+	resp, err := s.impl.HeadRequest(baseURL + "/latest")
+	if err != nil {
+		return "", fmt.Errorf("sending head request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	return strings.ReplaceAll(
+		resp.Request.URL.String(),
+		baseURL+"/tag/",
+		"",
+	), nil
+}

@@ -40,6 +40,7 @@ type defaultImpl struct{}
 type impl interface {
 	GetKubeVersion(versionType release.VersionType) (string, error)
 	GetRequest(url string) (*http.Response, error)
+	HeadRequest(url string) (*http.Response, error)
 	CreateFile(name string) (*os.File, error)
 	WriteFile(name string, data []byte, perm os.FileMode) error
 	Mkdir(path string, perm os.FileMode) error
@@ -63,6 +64,10 @@ func (d *defaultImpl) GetKubeVersion(versionType release.VersionType) (string, e
 
 func (d *defaultImpl) GetRequest(url string) (*http.Response, error) {
 	return khttp.NewAgent().WithTimeout(3 * time.Minute).GetRequest(url)
+}
+
+func (d *defaultImpl) HeadRequest(url string) (*http.Response, error) {
+	return khttp.NewAgent().WithTimeout(3 * time.Minute).HeadRequest(url)
 }
 
 func (d *defaultImpl) CreateFile(name string) (*os.File, error) {
