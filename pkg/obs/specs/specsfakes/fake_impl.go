@@ -107,6 +107,19 @@ type FakeImpl struct {
 		result1 *http.Response
 		result2 error
 	}
+	HeadRequestStub        func(string) (*http.Response, error)
+	headRequestMutex       sync.RWMutex
+	headRequestArgsForCall []struct {
+		arg1 string
+	}
+	headRequestReturns struct {
+		result1 *http.Response
+		result2 error
+	}
+	headRequestReturnsOnCall map[int]struct {
+		result1 *http.Response
+		result2 error
+	}
 	IsExistStub        func(error) bool
 	isExistMutex       sync.RWMutex
 	isExistArgsForCall []struct {
@@ -617,6 +630,70 @@ func (fake *FakeImpl) GetRequestReturnsOnCall(i int, result1 *http.Response, res
 		})
 	}
 	fake.getRequestReturnsOnCall[i] = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImpl) HeadRequest(arg1 string) (*http.Response, error) {
+	fake.headRequestMutex.Lock()
+	ret, specificReturn := fake.headRequestReturnsOnCall[len(fake.headRequestArgsForCall)]
+	fake.headRequestArgsForCall = append(fake.headRequestArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.HeadRequestStub
+	fakeReturns := fake.headRequestReturns
+	fake.recordInvocation("HeadRequest", []interface{}{arg1})
+	fake.headRequestMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeImpl) HeadRequestCallCount() int {
+	fake.headRequestMutex.RLock()
+	defer fake.headRequestMutex.RUnlock()
+	return len(fake.headRequestArgsForCall)
+}
+
+func (fake *FakeImpl) HeadRequestCalls(stub func(string) (*http.Response, error)) {
+	fake.headRequestMutex.Lock()
+	defer fake.headRequestMutex.Unlock()
+	fake.HeadRequestStub = stub
+}
+
+func (fake *FakeImpl) HeadRequestArgsForCall(i int) string {
+	fake.headRequestMutex.RLock()
+	defer fake.headRequestMutex.RUnlock()
+	argsForCall := fake.headRequestArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeImpl) HeadRequestReturns(result1 *http.Response, result2 error) {
+	fake.headRequestMutex.Lock()
+	defer fake.headRequestMutex.Unlock()
+	fake.HeadRequestStub = nil
+	fake.headRequestReturns = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImpl) HeadRequestReturnsOnCall(i int, result1 *http.Response, result2 error) {
+	fake.headRequestMutex.Lock()
+	defer fake.headRequestMutex.Unlock()
+	fake.HeadRequestStub = nil
+	if fake.headRequestReturnsOnCall == nil {
+		fake.headRequestReturnsOnCall = make(map[int]struct {
+			result1 *http.Response
+			result2 error
+		})
+	}
+	fake.headRequestReturnsOnCall[i] = struct {
 		result1 *http.Response
 		result2 error
 	}{result1, result2}
@@ -1327,6 +1404,8 @@ func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	defer fake.getKubeVersionMutex.RUnlock()
 	fake.getRequestMutex.RLock()
 	defer fake.getRequestMutex.RUnlock()
+	fake.headRequestMutex.RLock()
+	defer fake.headRequestMutex.RUnlock()
 	fake.isExistMutex.RLock()
 	defer fake.isExistMutex.RUnlock()
 	fake.loadPackageMetadataMutex.RLock()

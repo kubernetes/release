@@ -82,15 +82,26 @@ func (s *Specs) ConstructPackageDefinition() (*PackageDefinition, error) {
 
 	// If Kubernetes version is provided, ensure that it is correct and determine the channel based on it.
 	// Otherwise, try to automatically determine the Kubernetes version based on provided channel.
-	if consts.IsCoreKubernetesPackage(pkgDef.Name) && pkgDef.Version != "" {
+	switch {
+	case consts.IsCoreKubernetesPackage(pkgDef.Name) && pkgDef.Version != "":
 		pkgDef.Channel, err = s.GetKubernetesChannelForVersion(pkgDef.Version)
 		if err != nil {
 			return nil, fmt.Errorf("getting kubernetes channel: %w", err)
 		}
-	} else if consts.IsCoreKubernetesPackage(pkgDef.Name) && pkgDef.Version == "" {
+	case consts.IsCoreKubernetesPackage(pkgDef.Name) && pkgDef.Version == "":
 		pkgDef.Version, err = s.GetKubernetesVersionForChannel(pkgDef.Channel)
 		if err != nil {
 			return nil, fmt.Errorf("getting kubernetes version: %w", err)
+		}
+	case pkgDef.Name == consts.PackageCRITools && pkgDef.Version == "":
+		pkgDef.Version, err = s.GetCRIToolsVersion()
+		if err != nil {
+			return nil, fmt.Errorf("getting cri-tools version: %w", err)
+		}
+	case pkgDef.Name == consts.PackageKubernetesCNI && pkgDef.Version == "":
+		pkgDef.Version, err = s.GetCNIPluginsVersion()
+		if err != nil {
+			return nil, fmt.Errorf("getting cni plugins version: %w", err)
 		}
 	}
 
