@@ -7,5 +7,5 @@ variants:
   # Debian 12 - Kubernetes 1.28 and newer
   bookworm:
     CONFIG: 'bookworm'
-    IMAGE_VERSION: 'bookworm-v1.0.2'
-    DEBIAN_BASE_VERSION: 'bookworm-v1.0.2'
+    IMAGE_VERSION: 'bookworm-v1.0.3'
+    DEBIAN_BASE_VERSION: 'bookworm-v1.0.3'
