@@ -70,6 +70,11 @@ type Options struct {
 	// valid git revision. Should not be used together with EndSHA.
 	EndRev string
 
+	// SkipFirstCommit skips the first commit if StartRev is being used. This
+	// is useful if StartRev is a tag which should not be included in the
+	// release notes.
+	SkipFirstCommit bool
+
 	// Format specifies the format of the release notes. Can be either
 	// `json` or `markdown`.
 	Format string
@@ -217,6 +222,10 @@ func (o *Options) ValidateAndFinish() (err error) {
 		return errors.New("the ending commit hash must be set via --end-sha, $END_SHA, --end-rev or $END_REV")
 	}
 
+	if o.SkipFirstCommit && o.StartRev == "" {
+		return errors.New("--skip-first-commit/-s can be only used together with --start-rev")
+	}
+
 	// Check if we have to parse a revision
 	if (o.StartRev != "" && o.StartSHA == "") || (o.EndRev != "" && o.EndSHA == "") {
 		repo, err := o.repo()
@@ -228,6 +237,15 @@ func (o *Options) ValidateAndFinish() (err error) {
 			if err != nil {
 				return fmt.Errorf("resolving %s: %w", o.StartRev, err)
 			}
+
+			if o.SkipFirstCommit {
+				logrus.Infof("Skipping first commit: %s", sha)
+				sha, err = repo.NextCommit(sha, git.DefaultRemote+"/"+o.Branch)
+				if err != nil {
+					return fmt.Errorf("getting the next repo commit: %w", err)
+				}
+			}
+
 			logrus.Infof("Using found start SHA: %s", sha)
 			o.StartSHA = sha
 		}

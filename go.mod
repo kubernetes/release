@@ -11,7 +11,7 @@ require (
 	github.com/goark/go-cvss v1.6.6
 	github.com/golang/protobuf v1.5.4
 	github.com/google/go-containerregistry v0.19.1
-	github.com/google/go-github/v58 v58.0.0
+	github.com/google/go-github/v60 v60.0.0
 	github.com/google/safetext v0.0.0-20230106111101-7156a760e523
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
@@ -34,24 +34,23 @@ require (
 	github.com/tj/go-spin v1.1.0
 	github.com/yuin/goldmark v1.7.1
 	golang.org/x/net v0.25.0
-	golang.org/x/oauth2 v0.19.0
+	golang.org/x/oauth2 v0.21.0
 	golang.org/x/text v0.15.0
 	google.golang.org/api v0.172.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/apimachinery v0.29.3
+	k8s.io/apimachinery v0.29.4
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0
 	sigs.k8s.io/bom v0.6.0
 	sigs.k8s.io/mdtoc v1.3.0
 	sigs.k8s.io/promo-tools/v3 v3.6.0
-	sigs.k8s.io/release-sdk v0.11.0
+	sigs.k8s.io/release-sdk v0.12.0
 	sigs.k8s.io/release-utils v0.8.3-0.20240529125243-e30fa4b6f720
 	sigs.k8s.io/yaml v1.4.0
 )
 
 require (
 	cloud.google.com/go v0.112.1 // indirect
-	cloud.google.com/go/compute v1.25.0 // indirect
-	cloud.google.com/go/compute/metadata v0.2.3 // indirect
+	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
 	cuelabs.dev/go/oci/ociregistry v0.0.0-20240314152124-224736b49f2e // indirect
 	cuelang.org/go v0.8.1 // indirect
@@ -235,7 +234,7 @@ require (
 	github.com/sigstore/cosign/v2 v2.2.4 // indirect
 	github.com/sigstore/fulcio v1.4.5 // indirect
 	github.com/sigstore/rekor v1.3.6 // indirect
-	github.com/sigstore/sigstore v1.8.3 // indirect
+	github.com/sigstore/sigstore v1.8.4 // indirect
 	github.com/sigstore/timestamp-authority v1.2.2 // indirect
 	github.com/skeema/knownhosts v1.2.2 // indirect
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 // indirect

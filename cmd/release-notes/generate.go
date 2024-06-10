@@ -113,6 +113,17 @@ func addGenerateFlags(subcommand *cobra.Command) {
 		"The git revision to end at. Can be used as alternative to end-sha.",
 	)
 
+	// SkipFirstCommit skips the first commit if StartRev is being used. This
+	// is useful if StartRev is a tag which should not be included in the
+	// release notes.
+	subcommand.PersistentFlags().BoolVarP(
+		&opts.SkipFirstCommit,
+		"skip-first-commit",
+		"s",
+		env.IsSet("SKIP_FIRST_COMMIT"),
+		"Skip the first commit if --start-rev is being used. This is useful if the --start-rev is a tag which should not be included in the release notes.",
+	)
+
 	// repoPath contains the path to a local Kubernetes repository to avoid the
 	// delay during git clone
 	subcommand.PersistentFlags().StringVar(
