@@ -83,7 +83,6 @@ container: check-env init-docker-buildx
 			--tag $(IMAGE)-$${platform##*/}:latest-$(CONFIG)-$(TYPE) \
 			--build-arg=BASEIMAGE=$(BASEIMAGE) \
 			--build-arg=PROTOBUF_VERSION=$(PROTOBUF_VERSION) \
-			--build-arg=ETCD_VERSION=$(ETCD_VERSION) \
 			--file $(TYPE)/Dockerfile \
 			.; \
 	done

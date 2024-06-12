@@ -20,7 +20,6 @@ steps:
     - OS_CODENAME=$_OS_CODENAME
     - REVISION=$_REVISION
     - PROTOBUF_VERSION=$_PROTOBUF_VERSION
-    - ETCD_VERSION=$_ETCD_VERSION
     - REGISTRY=$_REGISTRY
     # default cloudbuild has HOME=/builder/home and docker buildx is in /root/.docker/cli-plugins/docker-buildx
     # set the home to /root explicitly to if using docker buildx
@@ -45,7 +44,6 @@ substitutions:
   _OS_CODENAME: 'codename'
   _REVISION: '0'
   _PROTOBUF_VERSION: '0.0.0'
-  _ETCD_VERSION: 'v0.0.0'
   _REGISTRY: 'fake.repository/registry-name'
 
 tags:
@@ -61,7 +59,6 @@ tags:
 - ${_IMAGE_VERSION}
 - ${_REVISION}
 - ${_PROTOBUF_VERSION}
-- ${_ETCD_VERSION}
 
 images:
   - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_IMAGE_VERSION'
