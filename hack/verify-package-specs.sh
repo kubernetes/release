@@ -49,15 +49,20 @@ cd "${WORK_DIR}"
 
 dir_path="${REPO_ROOT}/cmd/krel/templates/latest"
 if [[ -d  ${dir_path} ]]; then
-  dir_names=$(find "${dir_path}" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
+  package_names=$(find "${dir_path}" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
 
   echo "Directory names in ${dir_path}:"
-  echo "${dir_names}"
+  echo "${package_names}"
 
-  for dir_name in ${dir_names}; do
-    echo "Processing Package: ${dir_name}"
-    krel obs specs --spec-only --package="${dir_name}" --template-dir="${dir_path}"
-    rpmlint "${dir_name}".spec -r "${dir_name}".rpmlintrc -v
+  for package_name in ${package_names}; do
+    echo "Processing Package: ${package_name}"
+    krel obs specs --spec-only --package="${package_name}" --template-dir="${dir_path}"
+
+    rpmlintrcArgs=''
+    if [[ -f "${package_name}.rpmlintrc" ]]; then
+      rpmlintrcArgs="-r=${package_name}.rpmlintrc"
+    fi
+    rpmlint "${package_name}".spec "${rpmlintrcArgs}" -v
   done
 else
   echo "Directory ${dir_path} does not exist."
