@@ -115,7 +115,7 @@ func TestOverviewPos(t *testing.T) {
 	}
 	data := JobData{}
 	for _, jobDef := range jobGeneratorDef {
-		for i := 0; i < jobDef.amountOfJobs; i++ {
+		for i := range jobDef.amountOfJobs {
 			data[JobName(fmt.Sprintf("%s-%d", jobDef.overallStatus, i))] = JobSummary{
 				OverallStatus: jobDef.overallStatus,
 				DashboardName: "sample-dashboard",

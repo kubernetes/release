@@ -91,10 +91,10 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 				return err
 			}
 
-			for i := 0; i < len(existingNotes); i++ {
-				pr := existingNotes[i].PrNumber
+			for _, existingNote := range existingNotes {
+				pr := existingNote.PrNumber
 				if releaseNotes.Get(pr) == nil {
-					releaseNotes.Set(pr, existingNotes[i])
+					releaseNotes.Set(pr, existingNote)
 				}
 			}
 		}

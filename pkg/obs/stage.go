@@ -435,7 +435,7 @@ func (d *DefaultStage) Wait() error {
 	for _, pkg := range d.options.Packages {
 		var tryError error
 
-		for try := 0; try < retries; try++ {
+		for try := range retries {
 			logrus.Infof("Waiting for package: %s (try %d)", pkg, try)
 
 			tryError = d.impl.Wait(d.state.obsProject, pkg)
