@@ -14,9 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
-set -u
+set -o errexit
+set -o nounset
 set -o pipefail
+
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 find . -type f -name '*_test.sh' -print0 | xargs -0 -n1 /usr/bin/env bash
