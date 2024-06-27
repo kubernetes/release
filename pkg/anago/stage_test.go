@@ -170,7 +170,6 @@ func TestGenerateReleaseVersionStage(t *testing.T) {
 			shouldError: true,
 		},
 	} {
-		tc := tc
 		opts := anago.DefaultStageOptions()
 		sut := anago.NewDefaultStage(opts)
 

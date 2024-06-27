@@ -219,13 +219,13 @@ func TestListCommits(t *testing.T) {
 			}
 
 			if val := tc.getCommitArgValidator; val != nil {
-				for i := 0; i < client.GetCommitCallCount(); i++ {
+				for i := range client.GetCommitCallCount() {
 					ctx, org, repo, rev := client.GetCommitArgsForCall(i)
 					val(t, i, ctx, org, repo, rev)
 				}
 			}
 			if val := tc.listCommitsArgValidator; val != nil {
-				for i := 0; i < client.ListCommitsCallCount(); i++ {
+				for i := range client.ListCommitsCallCount() {
 					ctx, org, repo, clo := client.ListCommitsArgsForCall(i)
 					val(t, i, ctx, org, repo, clo)
 				}

@@ -1,6 +1,6 @@
 module k8s.io/release
 
-go 1.21
+go 1.22.4
 
 require (
 	cloud.google.com/go/storage v1.39.1
@@ -8,9 +8,9 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/cheggaaa/pb/v3 v3.1.5
 	github.com/go-git/go-git/v5 v5.12.0
-	github.com/goark/go-cvss v1.6.6
+	github.com/goark/go-cvss v1.6.7
 	github.com/golang/protobuf v1.5.4
-	github.com/google/go-containerregistry v0.19.1
+	github.com/google/go-containerregistry v0.19.2
 	github.com/google/go-github/v60 v60.0.0
 	github.com/google/safetext v0.0.0-20230106111101-7156a760e523
 	github.com/google/uuid v1.6.0
@@ -26,13 +26,13 @@ require (
 	github.com/sendgrid/rest v2.6.9+incompatible
 	github.com/sendgrid/sendgrid-go v3.14.0+incompatible
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3
-	github.com/shirou/gopsutil/v3 v3.24.3
+	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/shurcooL/githubv4 v0.0.0-20220115235240-a14260e6f8a2
 	github.com/sirupsen/logrus v1.9.3
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/tj/go-spin v1.1.0
-	github.com/yuin/goldmark v1.7.1
+	github.com/yuin/goldmark v1.7.4
 	golang.org/x/net v0.25.0
 	golang.org/x/oauth2 v0.21.0
 	golang.org/x/text v0.15.0

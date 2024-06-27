@@ -425,7 +425,7 @@ func TestApplyMap(t *testing.T) {
 		case []interface{}:
 			actualVal := reflect.Indirect(reflectedNote).FieldByName(property)
 			actualSlice := make([]string, 0)
-			for i := 0; i < actualVal.Len(); i++ {
+			for i := range actualVal.Len() {
 				actualSlice = append(actualSlice, actualVal.Index(i).String())
 			}
 			require.ElementsMatchf(t, expectedValue, actualSlice, "Failed %s", testName)

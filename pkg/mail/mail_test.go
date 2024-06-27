@@ -172,8 +172,6 @@ func sendTest(t *testing.T) {
 	}
 
 	for name, tc := range tests {
-		tc := tc
-
 		it.Run(t, name, func(t *testing.T) {
 			m := mail.NewSender(tc.apiKey)
 
@@ -217,7 +215,6 @@ func senderTest(t *testing.T) {
 	}
 
 	for name, tc := range tests {
-		tc := tc
 		it.Run(t, name, func(t *testing.T) {
 			m := &mail.Sender{}
 			err := m.SetSender(tc.senderName, tc.senderEmail)
@@ -255,8 +252,6 @@ func recipientTest(t *testing.T) {
 	}
 
 	for name, tc := range tests {
-		tc := tc
-
 		it.Run(t, name, func(t *testing.T) {
 			for _, args := range tc.recipientArgs {
 				it.Run(t, "", func(t *testing.T) {
