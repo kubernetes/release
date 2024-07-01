@@ -77,6 +77,7 @@ steps:
   secretEnv:
   - GITHUB_TOKEN
   - DOCKERHUB_TOKEN
+  serviceAccount: 'projects/k8s-release/serviceAccounts/k8s-relase-sa@k8s-release.iam.gserviceaccount.com'
   args:
   - "bin/krel"
   - "stage"
