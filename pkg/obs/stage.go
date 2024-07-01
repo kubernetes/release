@@ -29,7 +29,6 @@ import (
 	"k8s.io/release/pkg/obs/specs"
 	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-sdk/osc"
-	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/util"
 )
 
@@ -219,9 +218,9 @@ func (d *defaultStageImpl) CommitChanges(workspaceDir, project, packageName, mes
 	return osc.OSC(filepath.Join(workspaceDir, obsRoot, project, packageName), "commit", "-m", message)
 }
 
-// Wait runs `osc results -w` for the package.
+// Wait runs `osc results -w -F` for the package.
 func (d *defaultStageImpl) Wait(project, packageName string) error {
-	return command.New(osc.OSCExecutable, "results", fmt.Sprintf("%s/%s", project, packageName), "-w").RunSuccess()
+	return osc.WaitResults(project, packageName)
 }
 
 func (d *DefaultStage) Submit(stream bool) error {
