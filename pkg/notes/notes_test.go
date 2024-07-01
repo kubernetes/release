@@ -18,6 +18,7 @@ package notes
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"net/url"
 	"os"
@@ -301,6 +302,9 @@ func TestNoteTextFromString(t *testing.T) {
 	}
 }
 
+//go:embed examples/empty_notes.txt
+var emptyNotes string
+
 func TestMatchesExcludeFilter(t *testing.T) {
 	for _, tc := range []struct {
 		input         string
@@ -327,24 +331,28 @@ func TestMatchesExcludeFilter(t *testing.T) {
 			shouldExclude: false,
 		},
 		{
-			input: `@kubernetes/sig-auth-pr-reviews 
-/milestone v1.19
-/priority important-longterm
-/kind cleanup
-/kind deprecation
-
-xref: #81126
-xref: #81152
-xref: https://github.com/kubernetes/website/pull/19630
-
-` + mdSep + `release-note
-Action Required: Support for basic authentication via the --basic-auth-file flag has been removed.  Users should migrate to --token-auth-file for similar functionality.
-` + mdSep + `
-
-` + mdSep + `docs
-Removed "Static Password File" section from https://kubernetes.io/docs/reference/access-authn-authz/authentication/#static-password-file
-https://github.com/kubernetes/website/pull/19630
-` + mdSep,
+			input:         emptyNotes,
+			shouldExclude: true,
+		},
+		{
+			input: `@kubernetes/sig-auth-pr-reviews
+		/milestone v1.19
+		/priority important-longterm
+		/kind cleanup
+		/kind deprecation
+		
+		xref: #81126
+		xref: #81152
+		xref: https://github.com/kubernetes/website/pull/19630
+		
+		` + mdSep + `release-note
+		Action Required: Support for basic authentication via the --basic-auth-file flag has been removed.  Users should migrate to --token-auth-file for similar functionality.
+		` + mdSep + `
+		
+		` + mdSep + `docs
+		Removed "Static Password File" section from https://kubernetes.io/docs/reference/access-authn-authz/authentication/#static-password-file
+		https://github.com/kubernetes/website/pull/19630
+		` + mdSep,
 			shouldExclude: false,
 		},
 	} {
