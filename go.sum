@@ -382,10 +382,6 @@ github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 h1:tfuBGBXKqDEe
 github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572/go.mod h1:9Pwr4B2jHnOSGXyyzV8ROjYa2ojvAY6HCGYYfMoC3Ls=
 github.com/go-test/deep v1.1.0 h1:WOcxcdHcvdgThNXjw0t76K42FXTU7HpNQWHpA2HHNlg=
 github.com/go-test/deep v1.1.0/go.mod h1:5C2ZWiW0ErCdrYzpqxLbTX7MG14M9iiw8DgHncVwcsE=
-github.com/goark/errs v1.3.2 h1:ifccNe1aK7Xezt4XVYwHUqalmnfhuphnEvh3FshCReQ=
-github.com/goark/errs v1.3.2/go.mod h1:ZsQucxaDFVfSB8I99j4bxkDRfNOrlKINwg72QMuRWKw=
-github.com/goark/go-cvss v1.6.7 h1:9R/cx8+lv17uFS1RKYNmEfYqEJwWgF26F4g7hK38jEw=
-github.com/goark/go-cvss v1.6.7/go.mod h1:qsmYCGTQnQqW/Lq1Z3lRCEarKD++nx7C+KgsG05MhDA=
 github.com/gobwas/glob v0.2.3 h1:A4xDbljILXROh+kObIiy5kIaPYD8e96x1tgBhUI5J+Y=
 github.com/gobwas/glob v0.2.3/go.mod h1:d3Ez4x06l9bZtSvzIay5+Yzi0fmZzPgnTbPcKjJAkT8=
 github.com/godbus/dbus/v5 v5.1.0 h1:4KLkAxT3aOY8Li4FRJe/KvhoNFFxo0m6fNuFUO8QJUk=
@@ -667,6 +663,8 @@ github.com/opentracing/opentracing-go v1.2.0 h1:uEJPy/1a5RIPAJ0Ov+OIO8OxWu77jEv+
 github.com/opentracing/opentracing-go v1.2.0/go.mod h1:GxEUsuufX4nBwe+T+Wl9TAgYrxe9dPLANfrWvHYVTgc=
 github.com/package-url/packageurl-go v0.1.2 h1:0H2DQt6DHd/NeRlVwW4EZ4oEI6Bn40XlNPRqegcxuo4=
 github.com/package-url/packageurl-go v0.1.2/go.mod h1:uQd4a7Rh3ZsVg5j0lNyAfyxIeGde9yrlhjF78GzeW0c=
+github.com/pandatix/go-cvss v0.6.2 h1:TFiHlzUkT67s6UkelHmK6s1INKVUG7nlKYiWWDTITGI=
+github.com/pandatix/go-cvss v0.6.2/go.mod h1:jDXYlQBZrc8nvrMUVVvTG8PhmuShOnKrxP53nOFkt8Q=
 github.com/pborman/uuid v1.2.1 h1:+ZZIw58t/ozdjRaXh/3awHfmWRbzYxJoAdNJxe/3pvw=
 github.com/pborman/uuid v1.2.1/go.mod h1:X/NO0urCmaxf9VXbdlT7C2Yzkj2IKimNn4k+gtPdI/k=
 github.com/pelletier/go-toml/v2 v2.1.0 h1:FnwAJ4oYMvbT/34k9zzHuZNrhlz48GB3/s6at6/MHO4=
