@@ -22,11 +22,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/gcp/build"
 	"sigs.k8s.io/release-utils/log"
+
+	"k8s.io/release/pkg/gcp/build"
 )
 
-// rootCmd represents the base command when called without any subcommands
+// rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
 	Use:               "gcbuilder",
 	Short:             "gcbuilder",

@@ -46,7 +46,7 @@ func (m *moDiff) Run(config *modiff.Config) (string, error) {
 	return modiff.Run(config)
 }
 
-// SetMoDiff can be used to set the internal MoDiff implementation
+// SetMoDiff can be used to set the internal MoDiff implementation.
 func (d *Dependencies) SetMoDiff(moDiff MoDiff) {
 	d.moDiff = moDiff
 }

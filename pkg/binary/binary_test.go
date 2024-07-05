@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	"k8s.io/release/pkg/binary"
 	"k8s.io/release/pkg/binary/binaryfakes"
 )
@@ -91,12 +92,12 @@ func GetTestHeaders() []TestHeader {
 	}
 }
 
-// writeTestBinary Writes a test binary and returns the path
-func writeTestBinary(t *testing.T, base64Data *string) *os.File {
+// writeTestBinary Writes a test binary and returns the path.
+func writeTestBinary(t *testing.T, base64Data string) *os.File {
 	f, err := os.CreateTemp("", "test-binary-")
 	require.Nil(t, err)
 
-	binData, err := base64.StdEncoding.DecodeString(*base64Data)
+	binData, err := base64.StdEncoding.DecodeString(base64Data)
 	require.Nil(t, err)
 
 	_, err = f.Write(binData)
@@ -128,7 +129,7 @@ func TestArch(t *testing.T) {
 
 func TestGetELFHeader(t *testing.T) {
 	for _, testBin := range GetTestHeaders() {
-		f := writeTestBinary(t, &testBin.Data)
+		f := writeTestBinary(t, testBin.Data)
 		header, err := binary.GetELFHeader(f.Name())
 		os.Remove(f.Name())
 		require.Nil(t, err)
@@ -143,7 +144,7 @@ func TestGetELFHeader(t *testing.T) {
 
 func TestGetMachOHeader(t *testing.T) {
 	for _, testBin := range GetTestHeaders() {
-		f := writeTestBinary(t, &testBin.Data)
+		f := writeTestBinary(t, testBin.Data)
 		header, err := binary.GetMachOHeader(f.Name())
 		os.Remove(f.Name())
 		require.Nil(t, err)
@@ -158,7 +159,7 @@ func TestGetMachOHeader(t *testing.T) {
 
 func TestGetPEHeader(t *testing.T) {
 	for _, testBin := range GetTestHeaders() {
-		f := writeTestBinary(t, &testBin.Data)
+		f := writeTestBinary(t, testBin.Data)
 		header, err := binary.GetPEHeader(f.Name())
 		os.Remove(f.Name())
 		require.Nil(t, err)

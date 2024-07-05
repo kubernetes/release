@@ -28,10 +28,11 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/notes/options"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-utils/util"
+
+	"k8s.io/release/pkg/notes/options"
 )
 
 // Options are the main settings for generating the changelog.

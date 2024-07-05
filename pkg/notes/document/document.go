@@ -30,6 +30,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
 	"sigs.k8s.io/release-utils/hash"
 
 	"k8s.io/release/pkg/cve"
@@ -160,7 +161,7 @@ func markdownLink(text, link string) string {
 	return fmt.Sprintf("[%s](%s)", text, link)
 }
 
-// fileInfo fetches file metadata for files in `dir` matching `patterns`
+// fileInfo fetches file metadata for files in `dir` matching `patterns`.
 func fileInfo(dir string, patterns []string, urlPrefix, tag string) ([]File, error) {
 	var files []File
 	for _, pattern := range patterns {
@@ -248,7 +249,7 @@ var kindMap = map[notes.Kind]notes.Kind{
 }
 
 // GatherReleaseNotesDocument creates a new gatherer and collects the release
-// notes into a fresh document
+// notes into a fresh document.
 func GatherReleaseNotesDocument(
 	opts *options.Options, previousRev, currentRev string,
 ) (*Document, error) {
@@ -265,7 +266,7 @@ func GatherReleaseNotesDocument(
 	return doc, nil
 }
 
-// New assembles an organized document from an unorganized set of release notes
+// New assembles an organized document from an unorganized set of release notes.
 func New(
 	releaseNotes *notes.ReleaseNotes,
 	previousRev, currentRev string,
@@ -393,7 +394,7 @@ func (d *Document) RenderMarkdownTemplate(bucket, tars, images, templateSpec str
 // template returns either the default template, a template from file or an
 // inline string template. The `templateSpec` must be in the format of
 // `go-template:{default|path/to/template.ext}` or
-// `go-template:inline:string`
+// `go-template:inline:string`.
 func (d *Document) template(templateSpec string) (string, error) {
 	if templateSpec == options.GoTemplateDefault {
 		return defaultReleaseNotesTemplate, nil

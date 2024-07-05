@@ -24,16 +24,17 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
+
 	"k8s.io/release/pkg/consts"
 )
 
-// ELFBinary abstracts a binary in ELF format
+// ELFBinary abstracts a binary in ELF format.
 type ELFBinary struct {
 	Header  *ELFHeader
 	Options *Options
 }
 
-// ELFHeader abstracts the data we need from the elf header
+// ELFHeader abstracts the data we need from the elf header.
 type ELFHeader struct {
 	WordFlag   uint8    // Flag: 32 or 64 bit binary
 	_          uint8    // byte order
@@ -45,7 +46,7 @@ type ELFHeader struct {
 	EMachine   uint16   // Machine architecture
 }
 
-// NewELFBinary opens a file and returns an ELF binary if it is one
+// NewELFBinary opens a file and returns an ELF binary if it is one.
 func NewELFBinary(filePath string, opts *Options) (*ELFBinary, error) {
 	header, err := GetELFHeader(filePath)
 	if err != nil {
@@ -62,12 +63,12 @@ func NewELFBinary(filePath string, opts *Options) (*ELFBinary, error) {
 	}, nil
 }
 
-// String returns the relevant info of the header as a string
+// String returns the relevant info of the header as a string.
 func (eh *ELFHeader) String() string {
 	return fmt.Sprintf("%s %dbit", eh.MachineType(), eh.WordLength())
 }
 
-// WordLength returns either 32 or 64 for 32bit or 64 bit architectures
+// WordLength returns either 32 or 64 for 32bit or 64 bit architectures.
 func (eh *ELFHeader) WordLength() int {
 	if eh.WordFlag == 1 {
 		return 32
@@ -79,7 +80,7 @@ func (eh *ELFHeader) WordLength() int {
 	return 0
 }
 
-// MachineType returns a string with the architecture moniker
+// MachineType returns a string with the architecture moniker.
 func (eh *ELFHeader) MachineType() string {
 	switch eh.EMachine {
 	// 0x02	SPARC
@@ -117,7 +118,7 @@ func (eh *ELFHeader) MachineType() string {
 	return "arch unknown"
 }
 
-// GetELFHeader returns the header if the binary is and EF binary
+// GetELFHeader returns the header if the binary is and EF binary.
 func GetELFHeader(path string) (*ELFHeader, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -164,12 +165,12 @@ func GetELFHeader(path string) (*ELFHeader, error) {
 	return header, nil
 }
 
-// Arch return the GOOS label of the binary
+// Arch return the GOOS label of the binary.
 func (elf *ELFBinary) Arch() string {
 	return elf.Header.MachineType()
 }
 
-// OS returns the GOOS label for the operating system
+// OS returns the GOOS label for the operating system.
 func (elf *ELFBinary) OS() string {
 	return LINUX
 }

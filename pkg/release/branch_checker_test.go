@@ -23,9 +23,10 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/stretchr/testify/require"
 
+	"sigs.k8s.io/release-sdk/git"
+
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/release/releasefakes"
-	"sigs.k8s.io/release-sdk/git"
 )
 
 func TestNeedsCreation(t *testing.T) {

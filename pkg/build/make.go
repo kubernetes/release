@@ -21,9 +21,11 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
-	"k8s.io/release/pkg/release"
+
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/command"
+
+	"k8s.io/release/pkg/release"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate

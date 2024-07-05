@@ -21,8 +21,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-sdk/object"
+
+	"k8s.io/release/pkg/release"
 )
 
 var DefaultExtraVersionMarkers = []string{}
@@ -34,7 +35,7 @@ type Instance struct {
 }
 
 // NewInstance can be used to create a new build `Instance`.
-// TODO: Prefer functional options here instead
+// TODO: Prefer functional options here instead.
 func NewInstance(opts *Options) *Instance {
 	instance := &Instance{
 		opts:     opts,
@@ -128,7 +129,7 @@ type Options struct {
 	KubeBuildPlatforms string
 }
 
-// TODO: Refactor so that version is not required as a parameter
+// TODO: Refactor so that version is not required as a parameter.
 func (bi *Instance) getGCSBuildPath(version string) (string, error) {
 	if bi.opts.Bucket == "" {
 		bi.setBucket()

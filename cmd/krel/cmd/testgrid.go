@@ -70,7 +70,7 @@ const (
 	boardBlocking  = "blocking"
 )
 
-// testGridCmd represents the base command when called without any subcommands
+// testGridCmd represents the base command when called without any subcommands.
 var testGridCmd = &cobra.Command{
 	Use:           "testgridshot --branch <release-branch>",
 	Short:         "Take a screenshot of the testgrid dashboards",

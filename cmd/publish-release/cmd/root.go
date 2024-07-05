@@ -19,6 +19,7 @@ package cmd
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
 	"sigs.k8s.io/release-utils/log"
 )
 
@@ -65,7 +66,7 @@ func init() {
 	)
 }
 
-// Execute builds the command
+// Execute builds the command.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		logrus.Fatal(err)

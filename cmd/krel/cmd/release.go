@@ -23,12 +23,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"sigs.k8s.io/release-sdk/github"
+
 	"k8s.io/release/pkg/anago"
 	"k8s.io/release/pkg/release"
-	"sigs.k8s.io/release-sdk/github"
 )
 
-// releaseCmd represents the subcommand for `krel release`
+// releaseCmd represents the subcommand for `krel release`.
 var releaseCmd = &cobra.Command{
 	Use:   "release",
 	Short: "Release a staged Kubernetes version",

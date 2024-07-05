@@ -151,7 +151,7 @@ func PrepareWorkspaceRelease(directory, buildVersion, bucket string) error {
 	return nil
 }
 
-// ListBuildBinaries returns a list of binaries
+// ListBuildBinaries returns a list of binaries.
 func ListBuildBinaries(gitroot, version string) (list []struct{ Path, Platform, Arch string }, err error) {
 	list = []struct {
 		Path     string
@@ -257,7 +257,7 @@ func ListBuildBinaries(gitroot, version string) (list []struct{ Path, Platform, 
 	return list, nil
 }
 
-// ListBuildTarballs returns a list of the client, node server and other tarballs
+// ListBuildTarballs returns a list of the client, node server and other tarballs.
 func ListBuildTarballs(gitroot, version string) (tarList []string, err error) {
 	tarsPath := filepath.Join(
 		gitroot, fmt.Sprintf("%s-%s", BuildDir, version), ReleaseTarsPath,
@@ -284,7 +284,7 @@ func ListBuildTarballs(gitroot, version string) (tarList []string, err error) {
 	return tarList, nil
 }
 
-// ListBuildImages returns a slice with paths to all images produced by the build
+// ListBuildImages returns a slice with paths to all images produced by the build.
 func ListBuildImages(gitroot, version string) (imageList []string, err error) {
 	imageList = []string{}
 	buildDir := filepath.Join(

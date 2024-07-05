@@ -29,14 +29,15 @@ import (
 	slsa "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/build"
-	"k8s.io/release/pkg/changelog"
-	"k8s.io/release/pkg/gcp/gcb"
-	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/bom/pkg/provenance"
 	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/log"
+
+	"k8s.io/release/pkg/build"
+	"k8s.io/release/pkg/changelog"
+	"k8s.io/release/pkg/gcp/gcb"
+	"k8s.io/release/pkg/release"
 )
 
 // stageClient is a client for staging releases.
@@ -116,7 +117,7 @@ func (d *DefaultStage) SetImpl(impl stageImpl) {
 }
 
 // SetState fixes the current state. Mainly used for passing
-// arbitrary values during testing
+// arbitrary values during testing.
 func (d *DefaultStage) SetState(state *StageState) {
 	d.state = state
 }
@@ -304,23 +305,23 @@ func (d *DefaultStage) Submit(stream bool) error {
 }
 
 // ListBinaries returns a list of all the binaries obtained
-// from the build with platform and arch details
+// from the build with platform and arch details.
 func (d *defaultStageImpl) ListBinaries(version string) (list []struct{ Path, Platform, Arch string }, err error) {
 	return release.ListBuildBinaries(gitRoot, version)
 }
 
 // ListImageArchives returns a list of the image archives produced
-// fior the specified version
+// fior the specified version.
 func (d *defaultStageImpl) ListImageArchives(version string) ([]string, error) {
 	return release.ListBuildImages(gitRoot, version)
 }
 
-// ListTarballs returns the produced tarballs produced for this version
+// ListTarballs returns the produced tarballs produced for this version.
 func (d *defaultStageImpl) ListTarballs(version string) ([]string, error) {
 	return release.ListBuildTarballs(gitRoot, version)
 }
 
-// VerifyArtifacts check the artifacts produced are correct
+// VerifyArtifacts check the artifacts produced are correct.
 func (d *defaultStageImpl) VerifyArtifacts(versions []string) error {
 	// Create a new artifact checker to verify the consistency of
 	// the produced artifacts.
@@ -565,7 +566,7 @@ func (d *DefaultStage) Build() error {
 	return nil
 }
 
-// VerifyArtifacts checks the artifacts to ensure they are correct
+// VerifyArtifacts checks the artifacts to ensure they are correct.
 func (d *DefaultStage) VerifyArtifacts() error {
 	return d.impl.VerifyArtifacts(d.state.versions.Ordered())
 }
@@ -619,7 +620,7 @@ func (d *DefaultStage) GenerateChangelog() error {
 	})
 }
 
-// AddBinariesToSBOM reads the produced "naked" binaries and adds them to the sbom
+// AddBinariesToSBOM reads the produced "naked" binaries and adds them to the sbom.
 func (d *defaultStageImpl) AddBinariesToSBOM(sbom *spdx.Document, version string) error {
 	binaries, err := d.ListBinaries(version)
 	if err != nil {
@@ -649,7 +650,7 @@ func (d *defaultStageImpl) AddBinariesToSBOM(sbom *spdx.Document, version string
 	return nil
 }
 
-// AddImagesToSBOM reads the image archives from disk and adds them to the sbom
+// AddImagesToSBOM reads the image archives from disk and adds them to the sbom.
 func (d *defaultStageImpl) AddTarfilesToSBOM(sbom *spdx.Document, version string) error {
 	tarballs, err := d.ListTarballs(version)
 	if err != nil {
@@ -756,7 +757,7 @@ func (d *defaultStageImpl) GenerateSourceTreeBOM(
 }
 
 // WriteSourceBOM takes a source code SBOM and writes it into a file, updating
-// its Namespace to match the final destination
+// its Namespace to match the final destination.
 func (d *defaultStageImpl) WriteSourceBOM(
 	spdxDoc *spdx.Document, version string,
 ) error {
@@ -917,7 +918,7 @@ func (d *DefaultStage) StageArtifacts() error {
 }
 
 // GenerateAttestation creates a provenance attestation with its predicate
-// preloaded with the current krel run information
+// preloaded with the current krel run information.
 func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *StageOptions) (attestation *provenance.Statement, err error) {
 	// Build the arguments RawMessage:
 	arguments := map[string]string{
@@ -1007,7 +1008,7 @@ func (d *defaultStageImpl) PushAttestation(attestation *provenance.Statement, op
 }
 
 // GetOutputDirSubjects reads the built artifacts and returns them
-// as intoto subjects. All paths are translated to their final path in the bucket
+// as intoto subjects. All paths are translated to their final path in the bucket.
 func (d *defaultStageImpl) GetOutputDirSubjects(
 	options *StageOptions, path, version string,
 ) ([]intoto.Subject, error) {
@@ -1019,7 +1020,7 @@ func (d *defaultStageImpl) GetOutputDirSubjects(
 }
 
 // GetProvenanceSubjects returns artifacts as intoto subjects, normalized to
-// the staging bucket location
+// the staging bucket location.
 func (d *defaultStageImpl) GetProvenanceSubjects(
 	options *StageOptions, path string,
 ) ([]intoto.Subject, error) {

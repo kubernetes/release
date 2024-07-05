@@ -35,7 +35,7 @@ type Options struct {
 	changelogFile string
 }
 
-// NewOptions can be used to create a new Options instance
+// NewOptions can be used to create a new Options instance.
 func NewOptions() *Options {
 	return &Options{}
 }

@@ -45,7 +45,7 @@ func (i *defaultImpl) github() *githubsdk.GitHub {
 }
 
 // processAssetFiles reads the command line strings and returns
-// a map holding the needed info from the asset files
+// a map holding the needed info from the asset files.
 func (i *defaultImpl) processAssetFiles(assetFiles []string) (releaseAssets []map[string]string, err error) {
 	// Check all asset files and get their hashes
 	for _, path := range assetFiles {
@@ -85,7 +85,7 @@ func (i *defaultImpl) processAssetFiles(assetFiles []string) (releaseAssets []ma
 	return releaseAssets, nil
 }
 
-// getFileHashes obtains a file's sha256 and 512
+// getFileHashes obtains a file's sha256 and 512.
 func getFileHashes(path string) (hashes map[string]string, err error) {
 	sha256, err := hash.SHA256ForFile(path)
 	if err != nil {

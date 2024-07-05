@@ -23,8 +23,10 @@ import (
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
-	"k8s.io/release/pkg/consts"
+
 	"sigs.k8s.io/release-utils/util"
+
+	"k8s.io/release/pkg/consts"
 )
 
 // Options defines options for generating specs and artifacts archive for

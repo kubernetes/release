@@ -27,7 +27,7 @@ import (
 
 var specsOpts = specs.DefaultOptions()
 
-// obsSpecsCmd represents the subcommand for `krel obs specs`
+// obsSpecsCmd represents the subcommand for `krel obs specs`.
 var obsSpecsCmd = &cobra.Command{
 	Use:           "specs",
 	Short:         "generate specs and artifacts archive",

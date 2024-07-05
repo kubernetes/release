@@ -103,7 +103,7 @@ func (s *Specs) BuildArtifactsArchive(pkgDef *PackageDefinition) error {
 }
 
 // DownloadArtifact is a wrapper function that runs appropriate download
-// function depending if the package source URL scheme is gs:// or https://
+// function depending if the package source URL scheme is gs:// or https://.
 func (s *Specs) DownloadArtifact(sourcePath, destPath string, extractTgz bool) error {
 	if strings.HasPrefix(sourcePath, "gs://") {
 		return s.DownloadArtifactFromGCS(sourcePath, destPath, extractTgz)

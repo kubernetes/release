@@ -32,7 +32,7 @@ type announceOptions struct {
 
 var announceOpts = &announceOptions{}
 
-// announceCmd represents the subcommand for `krel announce`
+// announceCmd represents the subcommand for `krel announce`.
 var announceCmd = &cobra.Command{
 	Use:           "announce",
 	Short:         "Build and announce Kubernetes releases",

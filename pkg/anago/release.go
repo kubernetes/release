@@ -24,15 +24,16 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/release-sdk/git"
+	"sigs.k8s.io/release-sdk/object"
+	"sigs.k8s.io/release-utils/log"
+	"sigs.k8s.io/release-utils/util"
+
 	"k8s.io/release/pkg/announce"
 	"k8s.io/release/pkg/announce/github"
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/release"
-	"sigs.k8s.io/release-sdk/git"
-	"sigs.k8s.io/release-sdk/object"
-	"sigs.k8s.io/release-utils/log"
-	"sigs.k8s.io/release-utils/util"
 )
 
 // releaseClient is a client for release a previously staged release.
@@ -113,7 +114,7 @@ func (d *DefaultRelease) SetImpl(impl releaseImpl) {
 }
 
 // SetState fixes the current state. Mainly used for passing
-// arbitrary values during testing
+// arbitrary values during testing.
 func (d *DefaultRelease) SetState(state *ReleaseState) {
 	d.state = state
 }
@@ -316,7 +317,7 @@ func (d *defaultReleaseImpl) CreatePubBotBranchIssue(branchName string) error {
 	return release.CreatePubBotBranchIssue(branchName)
 }
 
-// NewGitPusher returns a new instance of the git pusher to reuse
+// NewGitPusher returns a new instance of the git pusher to reuse.
 func (d *defaultReleaseImpl) NewGitPusher(
 	opts *release.GitObjectPusherOptions,
 ) (pusher *release.GitObjectPusher, err error) {
@@ -472,7 +473,7 @@ func (d *DefaultRelease) PushArtifacts() error {
 
 // PushGitObjects uploads to the remote repository the release's tags and branches.
 // Internally, this function calls the release implementation's PushTags,
-// PushBranches and PushMainBranch methods
+// PushBranches and PushMainBranch methods.
 func (d *DefaultRelease) PushGitObjects() error {
 	// Build the git object pusher
 	pusher, err := d.impl.NewGitPusher(
@@ -517,7 +518,7 @@ func (d *DefaultRelease) PushGitObjects() error {
 	return nil
 }
 
-// CreateAnnouncement creates the announcement.html file
+// CreateAnnouncement creates the announcement.html file.
 func (d *DefaultRelease) CreateAnnouncement() error {
 	// Build the announcement options set
 	announceOpts := announce.NewOptions()
@@ -567,7 +568,7 @@ func (d *DefaultRelease) CreateAnnouncement() error {
 }
 
 // UpdateGitHubPage Update the GitHub release page, uploading the
-// source code
+// source code.
 func (d *DefaultRelease) UpdateGitHubPage() error {
 	// URL to the changelog:
 	changelogURL := fmt.Sprintf(
@@ -600,7 +601,7 @@ func (d *DefaultRelease) UpdateGitHubPage() error {
 }
 
 // Archive stores the release artifact in a bucket along with
-// its logs for long term conservation
+// its logs for long term conservation.
 func (d *DefaultRelease) Archive() error {
 	// Create a new options set for the release archiver
 	archiverOptions := &release.ArchiverOptions{

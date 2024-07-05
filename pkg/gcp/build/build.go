@@ -34,12 +34,13 @@ import (
 	"google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/option"
 
-	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-sdk/gcli"
 	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/tar"
 	"sigs.k8s.io/yaml"
+
+	"k8s.io/release/pkg/release"
 )
 
 const (

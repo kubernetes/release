@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
+
 	"k8s.io/release/cmd/ci-reporter/cmd"
 )
 

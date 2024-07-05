@@ -23,6 +23,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
 	"k8s.io/release/pkg/testgrid"
 )
 
@@ -36,7 +37,7 @@ var testgridCmd = &cobra.Command{
 	},
 }
 
-// TestgridReporterName used to identify github reporter
+// TestgridReporterName used to identify github reporter.
 var TestgridReporterName CIReporterName = "testgrid"
 
 func init() {
@@ -44,15 +45,15 @@ func init() {
 	rootCmd.AddCommand(testgridCmd)
 }
 
-// TestgridReporter github CIReporter implementation
+// TestgridReporter github CIReporter implementation.
 type TestgridReporter struct{}
 
-// GetCIReporterHead implementation from CIReporter
+// GetCIReporterHead implementation from CIReporter.
 func (r TestgridReporter) GetCIReporterHead() CIReporterInfo {
 	return CIReporterInfo{Name: TestgridReporterName}
 }
 
-// CollectReportData implementation from CIReporter
+// CollectReportData implementation from CIReporter.
 func (r TestgridReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error) {
 	testgridReportData, err := GetTestgridReportData(*cfg)
 	if err != nil {
@@ -78,7 +79,7 @@ func (r TestgridReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, err
 	return records, nil
 }
 
-// GetTestgridReportData used to request the raw report data from testgrid
+// GetTestgridReportData used to request the raw report data from testgrid.
 func GetTestgridReportData(cfg Config) (testgrid.DashboardData, error) {
 	testgridDashboardNames := []testgrid.DashboardName{"sig-release-master-blocking", "sig-release-master-informing"}
 	if cfg.ReleaseVersion != "" {

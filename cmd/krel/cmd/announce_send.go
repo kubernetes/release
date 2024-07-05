@@ -23,11 +23,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/mail"
-	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-utils/env"
 	"sigs.k8s.io/release-utils/http"
 	"sigs.k8s.io/release-utils/util"
+
+	"k8s.io/release/pkg/mail"
+	"k8s.io/release/pkg/release"
 )
 
 const (
@@ -36,7 +37,7 @@ const (
 	emailFlag            = "email"
 )
 
-// announceCmd represents the subcommand for `krel announce`
+// announceCmd represents the subcommand for `krel announce`.
 var sendAnnounceCmd = &cobra.Command{
 	Use:   "send",
 	Short: "Announce Kubernetes releases",

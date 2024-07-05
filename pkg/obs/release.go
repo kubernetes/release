@@ -24,10 +24,11 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/gcp/gcb"
-	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-sdk/osc"
 	"sigs.k8s.io/release-utils/util"
+
+	"k8s.io/release/pkg/gcp/gcb"
+	"k8s.io/release/pkg/release"
 )
 
 // releaseClient is a client for release a previously staged release.
@@ -91,7 +92,7 @@ func (d *DefaultRelease) SetImpl(impl releaseImpl) {
 }
 
 // SetState fixes the current state. Mainly used for passing
-// arbitrary values during testing
+// arbitrary values during testing.
 func (d *DefaultRelease) SetState(state *ReleaseState) {
 	d.state = state
 }

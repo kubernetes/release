@@ -23,11 +23,12 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/util"
 )
 
-// GitObjectPusher is an object that pushes things to a gitrepo
+// GitObjectPusher is an object that pushes things to a gitrepo.
 type GitObjectPusher struct {
 	repo git.Repo
 	opts *GitObjectPusherOptions
@@ -35,7 +36,7 @@ type GitObjectPusher struct {
 
 var dryRunLabel = map[bool]string{true: " --dry-run", false: ""}
 
-// GitObjectPusherOptions struct to hold the pusher options
+// GitObjectPusherOptions struct to hold the pusher options.
 type GitObjectPusherOptions struct {
 	// Flago simulate pushes, passes --dry-run to git
 	DryRun bool
@@ -47,7 +48,7 @@ type GitObjectPusherOptions struct {
 	RepoPath string
 }
 
-// NewGitPusher returns a new git object pusher
+// NewGitPusher returns a new git object pusher.
 func NewGitPusher(opts *GitObjectPusherOptions) (*GitObjectPusher, error) {
 	repo, err := git.OpenRepo(opts.RepoPath)
 	if err != nil {
@@ -74,7 +75,7 @@ func NewGitPusher(opts *GitObjectPusherOptions) (*GitObjectPusher, error) {
 	}, nil
 }
 
-// PushBranches Convenience method to push a list of branches
+// PushBranches Convenience method to push a list of branches.
 func (gp *GitObjectPusher) PushBranches(branchList []string) error {
 	for _, branchName := range branchList {
 		if err := gp.PushBranch(branchName); err != nil {
@@ -121,7 +122,7 @@ func (gp *GitObjectPusher) PushBranch(branchName string) error {
 	return nil
 }
 
-// PushTags convenience method to push a list of tags to the remote repo
+// PushTags convenience method to push a list of tags to the remote repo.
 func (gp *GitObjectPusher) PushTags(tagList []string) (err error) {
 	for _, tag := range tagList {
 		if err := gp.PushTag(tag); err != nil {
@@ -132,7 +133,7 @@ func (gp *GitObjectPusher) PushTags(tagList []string) (err error) {
 	return nil
 }
 
-// PushTag pushes a tag to the master repo
+// PushTag pushes a tag to the master repo.
 func (gp *GitObjectPusher) PushTag(newTag string) (err error) {
 	// Verify that the tag is a valid tag
 	if err := gp.checkTagName(newTag); err != nil {
@@ -180,7 +181,7 @@ func (gp *GitObjectPusher) PushTag(newTag string) (err error) {
 	return nil
 }
 
-// checkTagName verifies that the specified tag name is valid
+// checkTagName verifies that the specified tag name is valid.
 func (gp *GitObjectPusher) checkTagName(tagName string) error {
 	_, err := util.TagStringToSemver(tagName)
 	if err != nil {
@@ -189,7 +190,7 @@ func (gp *GitObjectPusher) checkTagName(tagName string) error {
 	return nil
 }
 
-// checkBranchName verifies that the branch name is valid
+// checkBranchName verifies that the branch name is valid.
 func (gp *GitObjectPusher) checkBranchName(branchName string) error {
 	if !strings.HasPrefix(branchName, "release-") {
 		return errors.New("branch name has to start with release-")
@@ -203,7 +204,7 @@ func (gp *GitObjectPusher) checkBranchName(branchName string) error {
 	return nil
 }
 
-// PushMain pushes the main branch to the origin
+// PushMain pushes the main branch to the origin.
 func (gp *GitObjectPusher) PushMain() error {
 	logrus.Infof("Checkout %s branch to push objects", git.DefaultBranch)
 	if err := gp.repo.Checkout(git.DefaultBranch); err != nil {

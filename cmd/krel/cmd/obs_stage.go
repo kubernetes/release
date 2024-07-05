@@ -28,7 +28,7 @@ import (
 	"k8s.io/release/pkg/release"
 )
 
-// obsStageCmd represents the subcommand for `krel obs stage`
+// obsStageCmd represents the subcommand for `krel obs stage`.
 var obsStageCmd = &cobra.Command{
 	Use:   "stage",
 	Short: "Stage packages for a new Kubernetes version or Kubernetes subproject",

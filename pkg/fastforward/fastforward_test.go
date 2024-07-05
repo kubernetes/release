@@ -24,6 +24,7 @@ import (
 
 	gogithub "github.com/google/go-github/v60/github"
 	"github.com/stretchr/testify/require"
+
 	"k8s.io/release/pkg/fastforward/fastforwardfakes"
 )
 

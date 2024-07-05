@@ -26,13 +26,14 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/notes"
-	"k8s.io/release/pkg/notes/document"
-	"k8s.io/release/pkg/notes/options"
 	"sigs.k8s.io/mdtoc/pkg/mdtoc"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/log"
 	"sigs.k8s.io/release-utils/version"
+
+	"k8s.io/release/pkg/notes"
+	"k8s.io/release/pkg/notes/document"
+	"k8s.io/release/pkg/notes/options"
 )
 
 type releaseNotesOptions struct {

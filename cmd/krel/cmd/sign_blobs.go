@@ -64,7 +64,7 @@ type signingBundle struct {
 
 var signBlobOpts = &signBlobOptions{}
 
-// signBlobCmd represents the subcommand for `krel sign blobs`
+// signBlobCmd represents the subcommand for `krel sign blobs`.
 var signBlobCmd = &cobra.Command{
 	Use:           "blobs",
 	Short:         "Sign blobs",

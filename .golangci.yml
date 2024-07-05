@@ -35,12 +35,14 @@ linters:
     - errname
     - exportloopref
     - fatcontext
+    - gci
     - ginkgolinter
     - gocheckcompilerdirectives
     - gochecksumtype
     - goconst
     - gocritic
     - gocyclo
+    - godot
     - godox
     - gofmt
     - gofumpt
@@ -100,11 +102,9 @@ linters:
     # - forbidigo
     # - forcetypeassert
     # - funlen
-    # - gci
     # - gochecknoglobals
     # - gochecknoinits
     # - gocognit
-    # - godot
     # - inamedparam
     # - interfacebloat
     # - ireturn
@@ -127,6 +127,13 @@ linters:
     # - wrapcheck
     # - wsl
 linters-settings:
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(k8s.io)
+      - prefix(sigs.k8s.io)
+      - localmodule
   revive:
     rules:
       - name: unused-parameter

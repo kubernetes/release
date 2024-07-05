@@ -36,44 +36,45 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
-	"k8s.io/release/pkg/notes"
-	"k8s.io/release/pkg/notes/document"
-	"k8s.io/release/pkg/notes/options"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/editor"
 	"sigs.k8s.io/release-utils/util"
+
+	"k8s.io/release/pkg/notes"
+	"k8s.io/release/pkg/notes/document"
+	"k8s.io/release/pkg/notes/options"
 )
 
 const (
-	// draftMarkdownFile filename for the release notes draft
+	// draftMarkdownFile filename for the release notes draft.
 	draftMarkdownFile = "release-notes-draft.md"
-	// draftJSONFile is the json version of the release notes
+	// draftJSONFile is the json version of the release notes.
 	draftJSONFile = "release-notes-draft.json"
-	// serviceDirectory is where we keep the files used to generate the notes
+	// serviceDirectory is where we keep the files used to generate the notes.
 	releaseNotesWorkDir = "release-notes"
-	// mapsMainDirectory is where we will save the release notes maps
+	// mapsMainDirectory is where we will save the release notes maps.
 	mapsMainDirectory = "maps"
-	// mapsCVEDirectory holds the maps with CVE data
+	// mapsCVEDirectory holds the maps with CVE data.
 	mapsCVEDirectory = "cve"
-	// Directory where session editing files are stored
+	// Directory where session editing files are stored.
 	mapsSessionDirectory = "sessions"
-	// The themes directory holds the maps for the release notes major themes
+	// The themes directory holds the maps for the release notes major themes.
 	mapsThemesDirectory = "themes"
-	// defaultKubernetesSigsOrg GitHub org owner of the release-notes repo
+	// defaultKubernetesSigsOrg GitHub org owner of the release-notes repo.
 	defaultKubernetesSigsOrg = "kubernetes-sigs"
-	// defaultKubernetesSigsRepo relnotes.k8s.io repository name
+	// defaultKubernetesSigsRepo relnotes.k8s.io repository name.
 	defaultKubernetesSigsRepo = "release-notes"
-	// userForkName The name we will give to the user's remote when adding it to repos
+	// userForkName The name we will give to the user's remote when adding it to repos.
 	userForkName = github.UserForkName
-	// assetsFilePath Path to the assets.ts file
+	// assetsFilePath Path to the assets.ts file.
 	assetsFilePath = "src/environments/assets.ts"
-	// websiteBranchPrefix name of the website branch in the user's fork
+	// websiteBranchPrefix name of the website branch in the user's fork.
 	websiteBranchPrefix = "release-notes-json-"
-	// draftBranchPrefix name of the draft branch in the user's fork
+	// draftBranchPrefix name of the draft branch in the user's fork.
 	draftBranchPrefix = "release-notes-draft-"
-	// Editing instructions for notemaps
+	// Editing instructions for notemaps.
 	mapEditingInstructions = `# This is the current map for this Pull Request.
 # The original note content is commented out, if you need to
 # change a field, remove the comment and change the value.
@@ -82,7 +83,7 @@ const (
 #`
 )
 
-// releaseNotesCmd represents the subcommand for `krel release-notes`
+// releaseNotesCmd represents the subcommand for `krel release-notes`.
 var releaseNotesCmd = &cobra.Command{
 	Use:   "release-notes",
 	Short: "The subcommand of choice for the Release Notes subteam of SIG Release",
@@ -143,7 +144,7 @@ type releaseNotesResult struct {
 	json     string
 }
 
-// A datatype to record a notes repair session
+// A datatype to record a notes repair session.
 type sessionData struct {
 	UserEmail    string `json:"mail"`
 	UserName     string `json:"name"`
@@ -317,7 +318,7 @@ func runReleaseNotes() (err error) {
 	return nil
 }
 
-// createDraftPR pushes the release notes draft to the users fork
+// createDraftPR pushes the release notes draft to the users fork.
 func createDraftPR(repoPath, tag string) (err error) {
 	tagVersion, err := util.TagStringToSemver(tag)
 	if err != nil {
@@ -589,7 +590,7 @@ func createDraftCommit(repo *git.Repo, releasePath, commitMessage string) error 
 	return nil
 }
 
-// addReferenceToAssetsFile adds a new entry in the assets.ts file in repoPath to include newJsonFile
+// addReferenceToAssetsFile adds a new entry in the assets.ts file in repoPath to include newJsonFile.
 func addReferenceToAssetsFile(repoPath, newJSONFile string) error {
 	// Full  filesystem path to the assets.ts file
 	assetsFullPath := filepath.Join(repoPath, assetsFilePath)
@@ -641,7 +642,7 @@ func addReferenceToAssetsFile(repoPath, newJSONFile string) error {
 	return nil
 }
 
-// processJSONOutput Runs NPM prettier inside repoPath to format the JSON output
+// processJSONOutput Runs NPM prettier inside repoPath to format the JSON output.
 func processJSONOutput(repoPath string) error {
 	npmpath, err := exec.LookPath("npm")
 	if err != nil {
@@ -663,7 +664,7 @@ func processJSONOutput(repoPath string) error {
 	return nil
 }
 
-// createWebsitePR creates the JSON version of the release notes and pushes them to a user fork
+// createWebsitePR creates the JSON version of the release notes and pushes them to a user fork.
 func createWebsitePR(repoPath, tag string) (err error) {
 	_, err = util.TagStringToSemver(tag)
 	if err != nil {
@@ -765,7 +766,7 @@ func createWebsitePR(repoPath, tag string) (err error) {
 }
 
 // tryToFindLatestMinorTag looks-up the default k/k remote to find the latest
-// non final version
+// non final version.
 func tryToFindLatestMinorTag() (string, error) {
 	url := git.GetDefaultKubernetesRepoURL()
 	status, err := command.New(
@@ -783,7 +784,7 @@ func tryToFindLatestMinorTag() (string, error) {
 }
 
 // releaseNotesJSON generate the release notes for a specific tag and returns
-// them as JSON blob
+// them as JSON blob.
 func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 	logrus.Infof("Generating release notes for tag %s", tag)
 
@@ -912,7 +913,7 @@ func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 	return string(j), err
 }
 
-// gatherNotesFrom gathers all the release notes from the specified startTag up to --tag
+// gatherNotesFrom gathers all the release notes from the specified startTag up to --tag.
 func gatherNotesFrom(repoPath, startTag string) (*notes.ReleaseNotes, error) {
 	logrus.Infof("Gathering release notes from %s to %s", startTag, releaseNotesOpts.tag)
 
@@ -971,7 +972,7 @@ func buildNotesResult(startTag string, releaseNotes *notes.ReleaseNotes) (*relea
 	return &releaseNotesResult{markdown: markdown, json: string(j)}, nil
 }
 
-// Validate checks if passed cmdline options are sane
+// Validate checks if passed cmdline options are sane.
 func (o *releaseNotesOptions) Validate() error {
 	// Check that we have a GitHub token set
 	token, isset := os.LookupEnv(github.TokenEnvKey)
@@ -995,7 +996,7 @@ func (o *releaseNotesOptions) Validate() error {
 	return nil
 }
 
-// Save the session to a file
+// Save the session to a file.
 func (sd *sessionData) Save() error {
 	if sd.Date == 0 {
 		return errors.New("unable to save session, date is note defined")
@@ -1017,7 +1018,7 @@ func (sd *sessionData) Save() error {
 	return nil
 }
 
-// readFixSessions reads all the previous fixing data
+// readFixSessions reads all the previous fixing data.
 func readFixSessions(sessionPath string) (pullRequestChecklist map[int]string, err error) {
 	files, err := os.ReadDir(sessionPath)
 	if err != nil {
@@ -1053,7 +1054,7 @@ func readFixSessions(sessionPath string) (pullRequestChecklist map[int]string, e
 	return pullRequestChecklist, nil
 }
 
-// Do the fix process for the current tag
+// Do the fix process for the current tag.
 func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 	// Get data to record the session
 	userEmail, err := git.GetUserEmail()
@@ -1235,7 +1236,7 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 	return nil
 }
 
-// Check two values and print a prefix if they are different
+// Check two values and print a prefix if they are different.
 func pointIfChanged(label string, var1, var2 interface{}) string {
 	changed := false
 	// Check if alues are string
@@ -1430,7 +1431,7 @@ func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.R
 	return false, nil
 }
 
-// createNotesWorkDir creates the release notes working directory
+// createNotesWorkDir creates the release notes working directory.
 func createNotesWorkDir(releaseDir string) error {
 	// Check that the working tree is complete:
 	for _, dirPath := range []string{
@@ -1449,7 +1450,7 @@ func createNotesWorkDir(releaseDir string) error {
 	return nil
 }
 
-// confirmWithUser avoid running when a users chooses n in interactive mode
+// confirmWithUser avoid running when a users chooses n in interactive mode.
 func confirmWithUser(opts *releaseNotesOptions, question string) bool {
 	if !opts.interactiveMode {
 		return true

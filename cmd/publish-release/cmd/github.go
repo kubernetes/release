@@ -31,11 +31,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"google.golang.org/api/option"
+
 	"k8s.io/release/pkg/announce/github"
 	"k8s.io/release/pkg/announce/sbom"
 )
 
-// releaseNotesCmd represents the subcommand for `krel release-notes`
+// releaseNotesCmd represents the subcommand for `krel release-notes`.
 var githubPageCmd = &cobra.Command{
 	Use:   "github",
 	Short: "Updates the github page of a release",
@@ -217,7 +218,7 @@ func getAssetsFromStrings(assetStrings []string) ([]sbom.Asset, error) {
 }
 
 // processRemoteAsset gets an object from a bucket and gets it ready for upload
-// as an asset of the github release
+// as an asset of the github release.
 func processRemoteAsset(urlString string) (path string, err error) {
 	u, err := url.Parse(urlString)
 	if err != nil {

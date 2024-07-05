@@ -28,9 +28,10 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-utils/tar"
 	"sigs.k8s.io/release-utils/util"
+
+	"k8s.io/release/pkg/release"
 )
 
 type stageFile struct {
@@ -295,7 +296,7 @@ func (bi *Instance) CheckReleaseBucket() error {
 	return nil
 }
 
-// StageLocalArtifacts locally stages the release artifacts
+// StageLocalArtifacts locally stages the release artifacts.
 func (bi *Instance) StageLocalArtifacts() error {
 	logrus.Info("Staging local artifacts")
 	stageDir := filepath.Join(bi.opts.BuildDir, release.GCSStagePath, bi.opts.Version)
@@ -537,7 +538,7 @@ func (bi *Instance) StageLocalSourceTree(workDir, buildVersion string) error {
 }
 
 // DeleteLocalSourceTarball the deletion of the tarball is now decoupled from
-// StageLocalSourceTree to be able to use it during the anago.stage function
+// StageLocalSourceTree to be able to use it during the anago.stage function.
 func (bi *Instance) DeleteLocalSourceTarball(workDir string) error {
 	tarballPath := filepath.Join(workDir, release.SourcesTar)
 	logrus.Infof("Removing local source tree tarball " + tarballPath)

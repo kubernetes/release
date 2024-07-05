@@ -29,12 +29,12 @@ import (
 
 const testgridConfigURL = "https://storage.googleapis.com/k8s-testgrid/config"
 
-// TestGrid is the default test grid client
+// TestGrid is the default test grid client.
 type TestGrid struct {
 	client Client
 }
 
-// New creates a new TestGrid
+// New creates a new TestGrid.
 func New() *TestGrid {
 	return &TestGrid{
 		&testGridClient{},
@@ -54,13 +54,13 @@ func (t *testGridClient) GetURLResponse(url string, trim bool) (string, error) {
 	return http.GetURLResponse(url, trim)
 }
 
-// SetClient can be used to set the internal HTTP client
+// SetClient can be used to set the internal HTTP client.
 func (t *TestGrid) SetClient(client Client) {
 	t.client = client
 }
 
 // BlockingTests returns the blocking tests for the provided branch name or an
-// error if those are not available
+// error if those are not available.
 func (t *TestGrid) BlockingTests(branch string) (tests []string, err error) {
 	conf, err := t.configFromURL(testgridConfigURL)
 	if err != nil {

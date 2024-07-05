@@ -24,11 +24,12 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/log"
 	"sigs.k8s.io/release-utils/util"
 	"sigs.k8s.io/release-utils/version"
+
+	"k8s.io/release/pkg/release"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
@@ -44,13 +45,13 @@ const (
 	// gitRoot is the local repository root of k/k.
 	gitRoot = workspaceDir + "/src/k8s.io/kubernetes"
 
-	// releaseNotesHTMLFile is the name of the release notes in HTML
+	// releaseNotesHTMLFile is the name of the release notes in HTML.
 	releaseNotesHTMLFile = workspaceDir + "/src/release-notes.html"
 
-	// releaseNotesJSONFile is the file containing the release notes in json format
+	// releaseNotesJSONFile is the file containing the release notes in json format.
 	releaseNotesJSONFile = workspaceDir + "/src/release-notes.json"
 
-	// The default license for all artifacts
+	// The default license for all artifacts.
 	LicenseIdentifier = "Apache-2.0"
 )
 
@@ -144,7 +145,7 @@ func (o *Options) ContainerRegistry() string {
 }
 
 // State holds all inferred and calculated values from the release process
-// it's state mutates as each step es executed
+// it's state mutates as each step es executed.
 type State struct {
 	// logFile is the internal logging file target.
 	logFile string
@@ -163,7 +164,7 @@ type State struct {
 	startTime time.Time
 }
 
-// DefaultState returns a new empty State
+// DefaultState returns a new empty State.
 func DefaultState() *State {
 	// The default state is empty, it will be initialized after ValidateOptions()
 	// runs in Stage/Release. It will change as the stage/release processes move forward
@@ -180,7 +181,7 @@ func (s *State) SetVersions(versions *release.Versions) {
 	s.versions = versions
 }
 
-// StageState holds the release process state
+// StageState holds the release process state.
 type StageState struct {
 	*State
 }
@@ -322,7 +323,7 @@ func (s *Stage) Run() error {
 	return nil
 }
 
-// ReleaseState holds the release process state
+// ReleaseState holds the release process state.
 type ReleaseState struct {
 	*State
 }

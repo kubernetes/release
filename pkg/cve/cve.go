@@ -24,7 +24,7 @@ import (
 	cvss "github.com/goark/go-cvss/v3/metric"
 )
 
-// CVE Information of a linked CVE vulnerability
+// CVE Information of a linked CVE vulnerability.
 type CVE struct {
 	ID            string  `json:"id"                 yaml:"id"`                 // CVE ID, eg CVE-2019-1010260
 	Title         string  `json:"title"              yaml:"title"`              // Title of the vulnerability
@@ -38,7 +38,7 @@ type CVE struct {
 }
 
 // ReadRawInterface populates the CVE data struct from the raw array
-// as returned by the YAML parser
+// as returned by the YAML parser.
 func (cve *CVE) ReadRawInterface(cvedata interface{}) error {
 	if val, ok := cvedata.(map[interface{}]interface{})["id"].(string); ok {
 		cve.ID = val
@@ -72,7 +72,7 @@ func (cve *CVE) ReadRawInterface(cvedata interface{}) error {
 	return nil
 }
 
-// Validate checks the data defined in a CVE map is complete and valid
+// Validate checks the data defined in a CVE map is complete and valid.
 func (cve *CVE) Validate() (err error) {
 	// Verify that rating is defined and a known string
 	if cve.CVSSRating == "" {
@@ -128,7 +128,7 @@ func (cve *CVE) Validate() (err error) {
 	return nil
 }
 
-// ValidateID checks if a CVE IS string is valid
+// ValidateID checks if a CVE IS string is valid.
 func ValidateID(cveID string) error {
 	if cveID == "" {
 		return errors.New("empty CVE ID string")

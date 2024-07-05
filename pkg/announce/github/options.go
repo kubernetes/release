@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/release-sdk/git"
 )
 
-// Options data for building the release page
+// Options data for building the release page.
 type Options struct {
 	// ReleaseType indicates if we are dealing with an alpha,
 	// beta, rc or official
@@ -74,7 +74,7 @@ type Options struct {
 	Substitutions map[string]string
 }
 
-// Validate the GitHub page options to ensure they are correct
+// Validate the GitHub page options to ensure they are correct.
 func (o *Options) Validate() error {
 	// TODO: Check that the tag is well formed
 	if o.Tag == "" {
@@ -91,7 +91,7 @@ func (o *Options) Validate() error {
 }
 
 // ParseSubstitutions gets a slice of strings with the substitutions
-// for the template and parses it as Substitutions in the options
+// for the template and parses it as Substitutions in the options.
 func (o *Options) ParseSubstitutions(subs []string) error {
 	o.Substitutions = map[string]string{}
 	for _, sString := range subs {
@@ -105,7 +105,7 @@ func (o *Options) ParseSubstitutions(subs []string) error {
 }
 
 // SetRepository takes a repository slug in the form org/repo,
-// paeses it and assigns the values to the options
+// paeses it and assigns the values to the options.
 func (o *Options) SetRepository(repoSlug string) error {
 	org, repo, err := git.ParseRepoSlug(repoSlug)
 	if err != nil {
@@ -117,7 +117,7 @@ func (o *Options) SetRepository(repoSlug string) error {
 }
 
 // ReadTemplate reads a custom template from a file and sets
-// the PageTemplate option with its content
+// the PageTemplate option with its content.
 func (o *Options) ReadTemplate(templatePath string) error {
 	// If path is empty, no custom template will be used
 	if templatePath == "" {

@@ -28,17 +28,18 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
-	"sigs.k8s.io/mdtoc/pkg/mdtoc"
 
-	"k8s.io/release/pkg/cve"
-	"k8s.io/release/pkg/notes"
-	"k8s.io/release/pkg/notes/document"
-	"k8s.io/release/pkg/notes/options"
+	"sigs.k8s.io/mdtoc/pkg/mdtoc"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/http"
 	"sigs.k8s.io/release-utils/util"
+
+	"k8s.io/release/pkg/cve"
+	"k8s.io/release/pkg/notes"
+	"k8s.io/release/pkg/notes/document"
+	"k8s.io/release/pkg/notes/options"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
@@ -226,7 +227,7 @@ func (*defaultImpl) Rm(repo *git.Repo, force bool, files ...string) error {
 	return repo.Rm(force, files...)
 }
 
-// CloneCVEData copies the CVE data maps from the release bucket
+// CloneCVEData copies the CVE data maps from the release bucket.
 func (*defaultImpl) CloneCVEData() (cveDir string, err error) {
 	tmpdir, err := os.MkdirTemp(os.TempDir(), "cve-maps-")
 	if err != nil {

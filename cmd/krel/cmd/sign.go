@@ -38,7 +38,7 @@ type signOptions struct {
 
 var singOpts = &signOptions{}
 
-// signCmd represents the subcommand for `krel sign`
+// signCmd represents the subcommand for `krel sign`.
 var signCmd = &cobra.Command{
 	Use:           "sign",
 	Short:         "sign images and blobs",

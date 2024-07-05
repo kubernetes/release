@@ -50,7 +50,7 @@ const (
 	DefaultK8sRepo = git.DefaultGithubRepo
 	DefaultK8sRef  = git.DefaultRef
 
-	// TODO(vdf): Need to reference K8s Infra project here
+	// TODO(vdf): Need to reference K8s Infra project here.
 	DefaultKubernetesStagingProject = "kubernetes-release-test"
 	DefaultRelengStagingTestProject = "k8s-staging-releng-test"
 	DefaultRelengStagingProject     = "k8s-staging-releng"
@@ -65,13 +65,13 @@ const (
 
 	KubernetesTar = "kubernetes.tar.gz"
 
-	// Staged source code tarball of Kubernetes
+	// Staged source code tarball of Kubernetes.
 	SourcesTar = "src.tar.gz"
 
-	// Root path on the bucket for staged artifacts
+	// Root path on the bucket for staged artifacts.
 	StagePath = "stage"
 
-	// Path where the release container images are stored
+	// Path where the release container images are stored.
 	ImagesPath = "release-images"
 
 	// GCSStagePath is the directory where release artifacts are staged before
@@ -93,31 +93,31 @@ const (
 	// WindowsLocalPath is the directory where Windows GCE scripts are created.
 	WindowsLocalPath = ReleaseStagePath + "/full/kubernetes/cluster/gce/windows"
 
-	// CIBucketLegacy is the default bucket for Kubernetes CI releases
+	// CIBucketLegacy is the default bucket for Kubernetes CI releases.
 	CIBucketLegacy = "kubernetes-release-dev"
 
-	// CIBucketK8sInfra is the community infra bucket for Kubernetes CI releases
+	// CIBucketK8sInfra is the community infra bucket for Kubernetes CI releases.
 	CIBucketK8sInfra = "k8s-release-dev"
 
-	// TestBucket is the default bucket for mocked Kubernetes releases
+	// TestBucket is the default bucket for mocked Kubernetes releases.
 	TestBucket = "kubernetes-release-gcb"
 
-	// ProductionBucket is the default bucket for Kubernetes releases
+	// ProductionBucket is the default bucket for Kubernetes releases.
 	ProductionBucket = "kubernetes-release"
 
-	// ProductionBucketURL is the url for the ProductionBucket
+	// ProductionBucketURL is the url for the ProductionBucket.
 	ProductionBucketURL = "https://dl.k8s.io"
 
-	// Production registry root URL
+	// Production registry root URL.
 	GCRIOPathProd = image.ProdRegistry
 
-	// Staging registry root URL prefix
+	// Staging registry root URL prefix.
 	GCRIOPathStagingPrefix = image.StagingRepoPrefix
 
-	// Staging registry root URL
+	// Staging registry root URL.
 	GCRIOPathStaging = GCRIOPathStagingPrefix + image.StagingRepoSuffix
 
-	// Mock staging registry root URL
+	// Mock staging registry root URL.
 	GCRIOPathMock = GCRIOPathStaging + "/mock"
 
 	// BuildDir is the default build output directory.
@@ -126,10 +126,10 @@ const (
 	// The default bazel build directory.
 	BazelBuildDir = "bazel-bin/build"
 
-	// Archive path is the root path in the bucket where releases are archived
+	// Archive path is the root path in the bucket where releases are archived.
 	ArchivePath = "archive"
 
-	// Publishing bot issue repository
+	// Publishing bot issue repository.
 	PubBotRepoOrg  = "kubernetes"
 	PubBotRepoName = "sig-release"
 
@@ -261,7 +261,7 @@ func GetWorkspaceVersion() (string, error) {
 	return version, nil
 }
 
-// URLPrefixForBucket returns the URL prefix for the provided bucket string
+// URLPrefixForBucket returns the URL prefix for the provided bucket string.
 func URLPrefixForBucket(bucket string) string {
 	bucket = strings.TrimPrefix(bucket, object.GcsPrefix)
 	urlPrefix := "https://storage.googleapis.com/" + bucket
@@ -447,7 +447,7 @@ func WriteChecksums(rootPath string) error {
 	return nil
 }
 
-// CreatePubBotBranchIssue creates an issue on GitHub to notify
+// CreatePubBotBranchIssue creates an issue on GitHub to notify.
 func CreatePubBotBranchIssue(branchName string) error {
 	// Check the GH token is set
 	if os.Getenv(github.TokenEnvKey) == "" {
@@ -478,7 +478,7 @@ func CreatePubBotBranchIssue(branchName string) error {
 	return nil
 }
 
-// Calls docker login to log into docker hub using a token from the environment
+// Calls docker login to log into docker hub using a token from the environment.
 func DockerHubLogin() error {
 	// Check the environment  variable is set
 	if os.Getenv(DockerHubEnvKey) == "" {

@@ -21,8 +21,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-sdk/object"
+
+	"k8s.io/release/pkg/release"
 )
 
 const (
@@ -34,7 +35,7 @@ const (
 # and exit to publish. If you need to cancel don't save the file or delete
 # everything, save and exit.
 `
-	// Regexp to check CVE IDs
+	// Regexp to check CVE IDs.
 	CVEIDRegExp = `^CVE-\d{4}-\d+$`
 )
 
@@ -60,7 +61,7 @@ func NewClient() *Client {
 	}
 }
 
-// Write writes a map to the bucket
+// Write writes a map to the bucket.
 func (c *Client) Write(cve, mapPath string) error {
 	if err := c.impl.CheckID(cve); err != nil {
 		return fmt.Errorf("checking CVE identifier: %w", err)
@@ -85,12 +86,12 @@ func (c *Client) Write(cve, mapPath string) error {
 	return nil
 }
 
-// CheckID checks a CVE ID to verify it is well formed
+// CheckID checks a CVE ID to verify it is well formed.
 func (c *Client) CheckID(cve string) error {
 	return c.impl.CheckID(cve)
 }
 
-// Delete removes a CVE entry from the security bucket location
+// Delete removes a CVE entry from the security bucket location.
 func (c *Client) Delete(cve string) error {
 	if err := c.impl.CheckID(cve); err != nil {
 		return fmt.Errorf("checking CVE identifier: %w", err)
@@ -103,17 +104,17 @@ func (c *Client) Delete(cve string) error {
 	)
 }
 
-// CopyToTemp copies a CVE entry into a temporary local file
+// CopyToTemp copies a CVE entry into a temporary local file.
 func (c *Client) CopyToTemp(cve string) (file *os.File, err error) {
 	return c.impl.CopyToTemp(cve, &c.options)
 }
 
-// CreateEmptyMap creates a new, empty CVE data map
+// CreateEmptyMap creates a new, empty CVE data map.
 func (c *Client) CreateEmptyMap(cve string) (file *os.File, err error) {
 	return c.impl.CreateEmptyFile(cve, &c.options)
 }
 
-// List return a list iof existing CVE entries
+// List return a list iof existing CVE entries.
 func (c *Client) EntryExists(cveID string) (bool, error) {
 	return c.impl.EntryExists(cveID, &c.options)
 }

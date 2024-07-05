@@ -23,9 +23,10 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/stretchr/testify/require"
 
+	"sigs.k8s.io/release-utils/util"
+
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/release/releasefakes"
-	"sigs.k8s.io/release-utils/util"
 )
 
 func newVersionSUT() (*release.Version, *releasefakes.FakeVersionClient) {

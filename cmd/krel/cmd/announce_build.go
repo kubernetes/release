@@ -55,7 +55,7 @@ const releaseAnnouncementMsg = `Kubernetes Community,
 <p><br><br>Published by your <a href=hhttps://git.k8s.io/website/content/en/releases/release-managers.md href target="_blank">Kubernetes Release Managers</a>.</p>
 `
 
-// buildAnnounceCmd represents the subcommand for `krel announce build`
+// buildAnnounceCmd represents the subcommand for `krel announce build`.
 var buildAnnounceCmd = &cobra.Command{
 	Use:           "build",
 	Short:         "Build the announcement Kubernetes releases",
@@ -164,7 +164,7 @@ func init() {
 	announceCmd.AddCommand(buildAnnounceCmd)
 }
 
-// runBuildBranchAnnounce build the announcement file when creating the Kubernetes release branch
+// runBuildBranchAnnounce build the announcement file when creating the Kubernetes release branch.
 func runBuildBranchAnnounce(opts *buildBranchAnnounceOptions, buildOpts *buildAnnounceOptions) error {
 	logrus.Info("Building release announcement for branch creation")
 
@@ -183,7 +183,7 @@ func runBuildBranchAnnounce(opts *buildBranchAnnounceOptions, buildOpts *buildAn
 	return buildOpts.saveAnnouncement(announcementSubject, announcement)
 }
 
-// runBuildReleaseAnnounce build the announcement file when creating a new Kubernetes release
+// runBuildReleaseAnnounce build the announcement file when creating a new Kubernetes release.
 func runBuildReleaseAnnounce(opts *buildReleaseAnnounceOptions, buildOpts *buildAnnounceOptions, announceOpts *announceOptions) error {
 	if err := announceOpts.Validate(); err != nil {
 		return fmt.Errorf("validating announcement send options: %w", err)
