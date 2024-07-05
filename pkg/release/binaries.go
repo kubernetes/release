@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
+
 	"k8s.io/release/pkg/binary"
 )
 
@@ -50,7 +51,7 @@ func (ac *ArtifactChecker) Options() *ArtifactCheckerOptions {
 }
 
 // CheckBinaryTags checks that the binaries produced in the release are
-// correctly tagged with the semver string
+// correctly tagged with the semver string.
 func (ac *ArtifactChecker) CheckBinaryTags() error {
 	for _, tag := range ac.opts.Versions {
 		if err := ac.impl.CheckVersionTags(ac.opts, tag); err != nil {
@@ -61,7 +62,7 @@ func (ac *ArtifactChecker) CheckBinaryTags() error {
 }
 
 // CheckBinaryArchitectures ensures all the artifacts produced in each
-// release are of the right architecture
+// release are of the right architecture.
 func (ac *ArtifactChecker) CheckBinaryArchitectures() error {
 	for _, tag := range ac.opts.Versions {
 		if err := ac.impl.CheckVersionArch(ac.opts, tag); err != nil {
@@ -79,7 +80,7 @@ type artifactCheckerImplementation interface {
 
 type defaultArtifactCheckerImpl struct{}
 
-// ListReleaseBinaries lists a release's binaries, with expected platform
+// ListReleaseBinaries lists a release's binaries, with expected platform.
 func (impl *defaultArtifactCheckerImpl) ListReleaseBinaries(
 	opts *ArtifactCheckerOptions, version string,
 ) (
@@ -89,7 +90,7 @@ func (impl *defaultArtifactCheckerImpl) ListReleaseBinaries(
 }
 
 // CheckVersionTags checks the binaries of a release to verify they have
-// the correct version tag
+// the correct version tag.
 func (impl *defaultArtifactCheckerImpl) CheckVersionTags(
 	opts *ArtifactCheckerOptions, version string,
 ) error {

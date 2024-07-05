@@ -24,9 +24,10 @@ import (
 	"github.com/golang/protobuf/proto" //nolint:staticcheck // this import was done on purpose
 	"github.com/stretchr/testify/require"
 
+	"sigs.k8s.io/release-sdk/git"
+
 	"k8s.io/release/pkg/testgrid"
 	"k8s.io/release/pkg/testgrid/testgridfakes"
-	"sigs.k8s.io/release-sdk/git"
 )
 
 func newSut() (*testgrid.TestGrid, *testgridfakes.FakeClient) {

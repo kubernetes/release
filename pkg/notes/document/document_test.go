@@ -25,11 +25,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"sigs.k8s.io/release-utils/command"
+
 	"k8s.io/release/pkg/consts"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/release"
-	"sigs.k8s.io/release-utils/command"
 )
 
 const (

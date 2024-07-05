@@ -29,7 +29,6 @@ import (
 	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/tar"
-
 	"sigs.k8s.io/release-utils/util"
 )
 
@@ -40,23 +39,23 @@ const (
 )
 
 // Archiver stores the release build directory in a bucket
-// along with it's logs
+// along with it's logs.
 type Archiver struct {
 	impl archiverImpl
 	opts *ArchiverOptions
 }
 
-// NewArchiver create a new archiver with the default implementation
+// NewArchiver create a new archiver with the default implementation.
 func NewArchiver(opts *ArchiverOptions) *Archiver {
 	return &Archiver{&defaultArchiverImpl{}, opts}
 }
 
-// SetImpl changes the archiver implementation
+// SetImpl changes the archiver implementation.
 func (archiver *Archiver) SetImpl(impl archiverImpl) {
 	archiver.impl = impl
 }
 
-// ArchiverOptions set the options used when archiving a release
+// ArchiverOptions set the options used when archiving a release.
 type ArchiverOptions struct {
 	ReleaseBuildDir string // Build directory that will be archived
 	LogFile         string // Log file to process and include in the archive
@@ -65,7 +64,7 @@ type ArchiverOptions struct {
 	Bucket          string // Bucket we will use to archive and read staged data
 }
 
-// ArchiveBucketPath returns the bucket path we the release will be stored
+// ArchiveBucketPath returns the bucket path we the release will be stored.
 func (o *ArchiverOptions) ArchiveBucketPath() string {
 	// local archive_bucket="gs://$RELEASE_BUCKET/archive"
 	if o.Bucket == "" || o.PrimeVersion == "" {
@@ -83,7 +82,7 @@ func (o *ArchiverOptions) ArchiveBucketPath() string {
 }
 
 // Validate checks if the set values are correct and complete to
-// start running the archival process
+// start running the archival process.
 func (o *ArchiverOptions) Validate() error {
 	if o.LogFile == "" {
 		return errors.New("release log file was not specified")
@@ -130,7 +129,7 @@ type archiverImpl interface {
 type defaultArchiverImpl struct{}
 
 // ArchiveRelease stores the release directory and logs in a GCP
-// bucket for archival purposes. Log files are sanitized and made private
+// bucket for archival purposes. Log files are sanitized and made private.
 func (archiver *Archiver) ArchiveRelease() error {
 	// Verify options are complete
 	if err := archiver.impl.ValidateOptions(archiver.opts); err != nil {
@@ -192,7 +191,7 @@ func (archiver *Archiver) ArchiveRelease() error {
 	return nil
 }
 
-// validateOptions runs the options validation
+// validateOptions runs the options validation.
 func (a *defaultArchiverImpl) ValidateOptions(o *ArchiverOptions) error {
 	if err := o.Validate(); err != nil {
 		return fmt.Errorf("validating options: %w", err)
@@ -200,7 +199,7 @@ func (a *defaultArchiverImpl) ValidateOptions(o *ArchiverOptions) error {
 	return nil
 }
 
-// makeFilesPrivate updates the ACL on all files in a directory
+// makeFilesPrivate updates the ACL on all files in a directory.
 func (a *defaultArchiverImpl) MakeFilesPrivate(archiveBucketPath string) error {
 	logrus.Infof("Ensure PRIVATE ACL on %s/*", archiveBucketPath)
 	gcs := object.NewGCS()
@@ -281,7 +280,7 @@ func (a *defaultArchiverImpl) CopyReleaseLogs(
 	return nil
 }
 
-// copyReleaseToBucket Copies the release directory to the specified bucket location
+// copyReleaseToBucket Copies the release directory to the specified bucket location.
 func (a *defaultArchiverImpl) CopyReleaseToBucket(releaseBuildDir, archiveBucketPath string) error {
 	// TODO: Check if we have write access to the bucket?
 
@@ -311,7 +310,7 @@ func (a *defaultArchiverImpl) CopyReleaseToBucket(releaseBuildDir, archiveBucket
 	return nil
 }
 
-// GetLogFiles reads a directory and returns the files that are anago logs
+// GetLogFiles reads a directory and returns the files that are anago logs.
 func (a *defaultArchiverImpl) GetLogFiles(logsDir string) ([]string, error) {
 	logFiles := []string{}
 	tmpContents, err := os.ReadDir(logsDir)
@@ -328,7 +327,7 @@ func (a *defaultArchiverImpl) GetLogFiles(logsDir string) ([]string, error) {
 }
 
 // CleanStagedBuilds removes all past staged builds from the same
-// Major.Minor version we are running now
+// Major.Minor version we are running now.
 func (a *defaultArchiverImpl) CleanStagedBuilds(bucketPath, buildVersion string) error {
 	// Build the prefix we will be looking for
 	semver, err := util.TagStringToSemver(buildVersion)

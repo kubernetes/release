@@ -25,9 +25,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"k8s.io/release/pkg/notes/options"
 
 	kgithub "sigs.k8s.io/release-sdk/github"
+
+	"k8s.io/release/pkg/notes/options"
 )
 
 const (

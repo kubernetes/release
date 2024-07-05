@@ -21,11 +21,13 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"sigs.k8s.io/release-sdk/git"
+	"sigs.k8s.io/release-utils/env"
+
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/options"
 	"k8s.io/release/pkg/release"
-	"sigs.k8s.io/release-sdk/git"
-	"sigs.k8s.io/release-utils/env"
 )
 
 func addGenerateFlags(subcommand *cobra.Command) {

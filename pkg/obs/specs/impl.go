@@ -24,12 +24,14 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"k8s.io/release/pkg/obs/metadata"
-	"k8s.io/release/pkg/release"
+
 	"sigs.k8s.io/release-sdk/object"
 	khttp "sigs.k8s.io/release-utils/http"
 	"sigs.k8s.io/release-utils/tar"
 	"sigs.k8s.io/release-utils/util"
+
+	"k8s.io/release/pkg/obs/metadata"
+	"k8s.io/release/pkg/release"
 )
 
 type defaultImpl struct{}

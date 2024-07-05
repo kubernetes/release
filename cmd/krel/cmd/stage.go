@@ -23,12 +23,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"sigs.k8s.io/release-sdk/github"
+
 	"k8s.io/release/pkg/anago"
 	"k8s.io/release/pkg/release"
-	"sigs.k8s.io/release-sdk/github"
 )
 
-// stageCmd represents the subcommand for `krel stage`
+// stageCmd represents the subcommand for `krel stage`.
 var stageCmd = &cobra.Command{
 	Use:   "stage",
 	Short: "Stage a new Kubernetes version",

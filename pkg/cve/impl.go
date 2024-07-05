@@ -29,8 +29,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
-	"k8s.io/release/pkg/notes"
 	"sigs.k8s.io/release-sdk/object"
+
+	"k8s.io/release/pkg/notes"
 )
 
 //counterfeiter:generate . ClientImplementation
@@ -46,11 +47,11 @@ type ClientImplementation interface {
 	EntryExists(string, *ClientOptions) (bool, error)
 }
 
-// defaultClientImplementation
+// defaultClientImplementation.
 type defaultClientImplementation struct{}
 
 // CheckBucketWriteAccess verifies if the current user has writeaccess to the bucket
-// adapted from the build pkg
+// adapted from the build pkg.
 func (impl *defaultClientImplementation) CheckBucketWriteAccess(opts *ClientOptions) error {
 	logrus.Infof("Checking bucket %s for write permissions", opts.Bucket)
 
@@ -88,7 +89,7 @@ func (impl *defaultClientImplementation) CheckBucketWriteAccess(opts *ClientOpti
 	return nil
 }
 
-// Delete file erases a file from the CVE bucket location
+// Delete file erases a file from the CVE bucket location.
 func (impl *defaultClientImplementation) DeleteFile(
 	path string, opts *ClientOptions,
 ) error {
@@ -116,7 +117,7 @@ func (impl *defaultClientImplementation) DeleteFile(
 	return gcs.DeletePath(path)
 }
 
-// CopyToTemp copies a CVE map file into a temporary file for editing
+// CopyToTemp copies a CVE map file into a temporary file for editing.
 func (impl *defaultClientImplementation) CopyToTemp(
 	cve string, opts *ClientOptions,
 ) (*os.File, error) {
@@ -135,7 +136,7 @@ func (impl *defaultClientImplementation) CopyToTemp(
 	return os.Open(filepath.Join(dir, cve+mapExt))
 }
 
-// CopyFile copies a file into the CVE location in the bucket
+// CopyFile copies a file into the CVE location in the bucket.
 func (impl *defaultClientImplementation) CopyFile(
 	src, dest string, opts *ClientOptions,
 ) error {
@@ -162,7 +163,7 @@ func (impl *defaultClientImplementation) CopyFile(
 	return nil
 }
 
-// CheckBucketPath checks if a path is inside the cve location
+// CheckBucketPath checks if a path is inside the cve location.
 func (impl *defaultClientImplementation) CheckBucketPath(
 	path string, opts *ClientOptions,
 ) error {
@@ -179,7 +180,7 @@ func (impl *defaultClientImplementation) CheckBucketPath(
 	return nil
 }
 
-// CheckID checks if a string is a weel formed CVE identifier
+// CheckID checks if a string is a weel formed CVE identifier.
 func (impl *defaultClientImplementation) CheckID(cveID string) error {
 	if regexp.MustCompile(CVEIDRegExp).MatchString(cveID) {
 		return nil
@@ -187,7 +188,7 @@ func (impl *defaultClientImplementation) CheckID(cveID string) error {
 	return errors.New("invalid CVE identifier")
 }
 
-// ValidateCVEData checks a cve map
+// ValidateCVEData checks a cve map.
 func (impl *defaultClientImplementation) ValidateCVEMap(
 	cveID, path string, _ *ClientOptions,
 ) (err error) {
@@ -224,7 +225,7 @@ func (impl *defaultClientImplementation) ValidateCVEMap(
 	return nil
 }
 
-// CreateEmptyFile creates an empty CVE map
+// CreateEmptyFile creates an empty CVE map.
 func (impl *defaultClientImplementation) CreateEmptyFile(cve string, _ *ClientOptions) (
 	file *os.File, err error,
 ) {
@@ -265,7 +266,7 @@ func (impl *defaultClientImplementation) CreateEmptyFile(cve string, _ *ClientOp
 	return file, nil
 }
 
-// EntryExists returns true if a CVE already exists
+// EntryExists returns true if a CVE already exists.
 func (impl *defaultClientImplementation) EntryExists(
 	cveID string, opts *ClientOptions,
 ) (exists bool, err error) {

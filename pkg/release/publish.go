@@ -32,12 +32,12 @@ import (
 	"sigs.k8s.io/release-utils/util"
 )
 
-// Publisher is the structure for publishing anything release related
+// Publisher is the structure for publishing anything release related.
 type Publisher struct {
 	client publisherClient
 }
 
-// NewPublisher creates a new Publisher instance
+// NewPublisher creates a new Publisher instance.
 func NewPublisher() *Publisher {
 	objStore := *object.NewGCS()
 	objStore.SetOptions(
@@ -48,7 +48,7 @@ func NewPublisher() *Publisher {
 	}
 }
 
-// SetClient can be used to set the internal publisher client
+// SetClient can be used to set the internal publisher client.
 func (p *Publisher) SetClient(client publisherClient) {
 	p.client = client
 }
@@ -256,7 +256,7 @@ func (p *Publisher) PublishVersion(
 // version does not exist or needs to be updated.
 // publishFile - the version marker to look for
 // markerPath - the GCS path to search for the version marker in
-// version - release version
+// version - release version.
 func (p *Publisher) VerifyLatestUpdate(
 	publishFile, markerPath, version string,
 ) (needsUpdate bool, err error) {
@@ -325,7 +325,7 @@ func IsUpToDate(oldVersion, newVersion semver.Version) bool {
 // publishFile - the GCS location to look in
 // buildDir - build output directory
 // markerPath - the GCS path to publish a version marker to
-// version - release version
+// version - release version.
 func (p *Publisher) PublishToGcs(
 	publishFile, buildDir, markerPath, version string,
 	privateBucket bool,

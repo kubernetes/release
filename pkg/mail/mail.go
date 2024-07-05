@@ -28,7 +28,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GoogleGroup is a simple google group representation
+// GoogleGroup is a simple google group representation.
 type GoogleGroup string
 
 const (
@@ -53,12 +53,12 @@ func NewSender(apiKey string) *Sender {
 	}
 }
 
-// SetSendClient can be used to set the sendgrid sender client
+// SetSendClient can be used to set the sendgrid sender client.
 func (s *Sender) SetSendClient(client SendClient) {
 	s.sendClient = client
 }
 
-// SetSendClient can be used to set the sendgrid API client
+// SetSendClient can be used to set the sendgrid API client.
 func (s *Sender) SetAPIClient(client APIClient) {
 	s.apiClient = client
 }
@@ -198,7 +198,7 @@ func (s *Sender) SetRecipients(recipientArgs ...string) error {
 	return nil
 }
 
-// SetGoogleGroupRecipient can be used to set multiple Google Groups as recipient
+// SetGoogleGroupRecipient can be used to set multiple Google Groups as recipient.
 func (s *Sender) SetGoogleGroupRecipients(groups ...GoogleGroup) error {
 	args := []string{}
 	for _, group := range groups {
@@ -211,7 +211,7 @@ func (s *Sender) SetGoogleGroupRecipients(groups ...GoogleGroup) error {
 	return s.SetRecipients(args...)
 }
 
-// GetRecipients can be used to get the recipients
+// GetRecipients can be used to get the recipients.
 func (s *Sender) GetRecipients() []*mail.Email {
 	return s.recipients
 }

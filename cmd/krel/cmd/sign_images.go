@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// signImagesCmd represents the subcommand for `krel sign images`
+// signImagesCmd represents the subcommand for `krel sign images`.
 var signImagesCmd = &cobra.Command{
 	Use:           "images",
 	Short:         "Sign images",
@@ -36,7 +36,7 @@ func init() {
 	signCmd.AddCommand(signImagesCmd)
 }
 
-// TODO: implement me :)
+// TODO: implement me :).
 func runSignImages(signOpts *signOptions, args []string) error { //nolint:unparam // keeping the parameters for reference
 	logrus.Info("Not implemented")
 

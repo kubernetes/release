@@ -44,14 +44,14 @@ func NewProvenanceChecker(opts *ProvenanceCheckerOptions) *ProvenanceChecker {
 	return p
 }
 
-// ProvenanceChecker
+// ProvenanceChecker is the main structure to check the provenance.
 type ProvenanceChecker struct {
 	objStore *object.GCS
 	options  *ProvenanceCheckerOptions
 	impl     provenanceCheckerImplementation
 }
 
-// CheckStageProvenance
+// CheckStageProvenance validates the provenance for the provided build version.
 func (pc *ProvenanceChecker) CheckStageProvenance(buildVersion string) error {
 	//nolint:gosec // used for file integrity checks, NOT security
 	// Init the local dir
@@ -93,7 +93,7 @@ func (pc *ProvenanceChecker) CheckStageProvenance(buildVersion string) error {
 }
 
 // GenerateFinalAttestation combines the stage provenance attestation
-// with a release sbom to create the end-user provenance atteatation
+// with a release sbom to create the end-user provenance atteatation.
 func (pc *ProvenanceChecker) GenerateFinalAttestation(buildVersion string, versions *Versions) error {
 	statementPath := filepath.Join(pc.options.StageDirectory, buildVersion, ProvenanceFilename)
 	for _, version := range versions.Ordered() {
@@ -125,7 +125,7 @@ type provenanceCheckerImplementation interface {
 
 type defaultProvenanceCheckerImpl struct{}
 
-// downloadReleaseArtifacts sybc
+// downloadReleaseArtifacts sybc.
 func (di *defaultProvenanceCheckerImpl) downloadStagedArtifacts(
 	opts *ProvenanceCheckerOptions, objStore *object.GCS, path string,
 ) error {
@@ -141,7 +141,7 @@ func (di *defaultProvenanceCheckerImpl) downloadStagedArtifacts(
 	return nil
 }
 
-// processAttestation
+// processAttestation.
 func (di *defaultProvenanceCheckerImpl) processAttestation(
 	opts *ProvenanceCheckerOptions, buildVersion string,
 ) (s *provenance.Statement, err error) {
@@ -229,7 +229,7 @@ type ProvenanceReaderOptions struct {
 }
 
 // GetBuildSubjects returns all artifacts in the output directory
-// as intoto subjects, ready to add to the attestation
+// as intoto subjects, ready to add to the attestation.
 func (pr *ProvenanceReader) GetBuildSubjects(path, version string) ([]intoto.Subject, error) {
 	return pr.impl.GetBuildSubjects(pr.options, path, version)
 }

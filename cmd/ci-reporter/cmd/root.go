@@ -48,7 +48,7 @@ func Execute() error {
 	return rootCmd.Execute()
 }
 
-// Config configuration that is getting injected into ci-signal report functions
+// Config configuration that is getting injected into ci-signal report functions.
 type Config struct {
 	GithubClient   *githubv4.Client
 	GithubToken    string
@@ -67,7 +67,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfg.Filepath, "file", "f", "", "Specify a filepath to write the report to a file")
 }
 
-// RunReport used to execute
+// RunReport used to execute.
 func RunReport(cfg *Config, reporters *CIReporters) error {
 	go func() {
 		s := spin.New()
@@ -95,29 +95,29 @@ func RunReport(cfg *Config, reporters *CIReporters) error {
 // Generic reporter types
 //
 
-// CIReportDataFields used so specify multiple reports
+// CIReportDataFields used so specify multiple reports.
 type CIReportDataFields []CIReportData
 
-// Marshal used to marshal CIReports into bytes
+// Marshal used to marshal CIReports into bytes.
 func (d *CIReportDataFields) Marshal() ([]byte, error) {
 	return json.Marshal(d)
 }
 
-// CIReportData format of the ci report data that is being generated
+// CIReportData format of the ci report data that is being generated.
 type CIReportData struct {
 	Info    CIReporterInfo    `json:"info"`
 	Records []*CIReportRecord `json:"records"`
 }
 
-// CIReporterInfo meta information about a reporter implementation
+// CIReporterInfo meta information about a reporter implementation.
 type CIReporterInfo struct {
 	Name CIReporterName `json:"name"`
 }
 
-// CIReporterName identifying name of a reporter
+// CIReporterName identifying name of a reporter.
 type CIReporterName string
 
-// CIReportRecord generic report data format
+// CIReportRecord generic report data format.
 type CIReportRecord struct {
 	Title            string `json:"title"`
 	TestgridBoard    string `json:"testgrid_board"`
@@ -132,7 +132,7 @@ type CIReportRecord struct {
 // Generic CIReporter interface and related functions
 //
 
-// CIReporter interface that is used to implement a new reporter
+// CIReporter interface that is used to implement a new reporter.
 type CIReporter interface {
 	// GetCIReporterHead sets meta information which is used to differentiate reporters
 	GetCIReporterHead() CIReporterInfo
@@ -140,13 +140,13 @@ type CIReporter interface {
 	CollectReportData(*Config) ([]*CIReportRecord, error)
 }
 
-// CIReporters used to specify multiple CIReports, type gets extended by helper functions to collect and visualize report data
+// CIReporters used to specify multiple CIReports, type gets extended by helper functions to collect and visualize report data.
 type CIReporters []CIReporter
 
-// AllImplementedReporters list of implemented reports that are used to generate ci-reports
+// AllImplementedReporters list of implemented reports that are used to generate ci-reports.
 var AllImplementedReporters = CIReporters{GithubReporter{}, TestgridReporter{}}
 
-// SearchReporter used to filter a implemented reporter by name
+// SearchReporter used to filter a implemented reporter by name.
 func SearchReporter(reporterName string) (CIReporter, error) {
 	var reporter CIReporter
 	reporterFound := false
@@ -163,7 +163,7 @@ func SearchReporter(reporterName string) (CIReporter, error) {
 	return reporter, nil
 }
 
-// CollectReportDataFromReporters used to collect data for multiple reporters
+// CollectReportDataFromReporters used to collect data for multiple reporters.
 func (r *CIReporters) CollectReportDataFromReporters(cfg *Config) (*CIReportDataFields, error) {
 	collectedReports := CIReportDataFields{}
 	for i := range *r {

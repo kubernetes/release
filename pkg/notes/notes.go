@@ -43,8 +43,9 @@ import (
 	"golang.org/x/text/language"
 	"gopkg.in/yaml.v2"
 
-	"k8s.io/release/pkg/notes/options"
 	"sigs.k8s.io/release-sdk/github"
+
+	"k8s.io/release/pkg/notes/options"
 )
 
 var (
@@ -58,7 +59,7 @@ const (
 	DefaultRepo = "kubernetes"
 
 	// maxParallelRequests is the maximum parallel requests we shall make to the
-	// GitHub API
+	// GitHub API.
 	maxParallelRequests = 10
 )
 
@@ -164,13 +165,13 @@ const (
 	DocTypeOfficial DocType = "official"
 )
 
-// ReleaseNotes is the main struct for collecting release notes
+// ReleaseNotes is the main struct for collecting release notes.
 type ReleaseNotes struct {
 	byPR    ReleaseNotesByPR
 	history ReleaseNotesHistory
 }
 
-// NewReleaseNotes can be used to create a new empty ReleaseNotes struct
+// NewReleaseNotes can be used to create a new empty ReleaseNotes struct.
 func NewReleaseNotes() *ReleaseNotes {
 	return &ReleaseNotes{
 		byPR: make(ReleaseNotesByPR),
@@ -183,25 +184,25 @@ func NewReleaseNotes() *ReleaseNotes {
 // the old entries with the new ones efficiently.
 type ReleaseNotesByPR map[int]*ReleaseNote
 
-// ReleaseNotesHistory is the sorted list of PRs in the commit history
+// ReleaseNotesHistory is the sorted list of PRs in the commit history.
 type ReleaseNotesHistory []int
 
-// History returns the ReleaseNotesHistory for the ReleaseNotes
+// History returns the ReleaseNotesHistory for the ReleaseNotes.
 func (r *ReleaseNotes) History() ReleaseNotesHistory {
 	return r.history
 }
 
-// ByPR returns the ReleaseNotesByPR for the ReleaseNotes
+// ByPR returns the ReleaseNotesByPR for the ReleaseNotes.
 func (r *ReleaseNotes) ByPR() ReleaseNotesByPR {
 	return r.byPR
 }
 
-// Get returns the ReleaseNote for the provided prNumber
+// Get returns the ReleaseNote for the provided prNumber.
 func (r *ReleaseNotes) Get(prNumber int) *ReleaseNote {
 	return r.byPR[prNumber]
 }
 
-// Set can be used to set a release note for the provided prNumber
+// Set can be used to set a release note for the provided prNumber.
 func (r *ReleaseNotes) Set(prNumber int, note *ReleaseNote) {
 	r.byPR[prNumber] = note
 	r.history = append(r.history, prNumber)
@@ -219,7 +220,7 @@ type Gatherer struct {
 	MapProviders []*MapProvider
 }
 
-// NewGatherer creates a new notes gatherer
+// NewGatherer creates a new notes gatherer.
 func NewGatherer(ctx context.Context, opts *options.Options) (*Gatherer, error) {
 	client, err := opts.Client()
 	if err != nil {
@@ -232,7 +233,7 @@ func NewGatherer(ctx context.Context, opts *options.Options) (*Gatherer, error) 
 	}, nil
 }
 
-// NewGathererWithClient creates a new notes gatherer with a specific client
+// NewGathererWithClient creates a new notes gatherer with a specific client.
 func NewGathererWithClient(ctx context.Context, c github.Client) *Gatherer {
 	return &Gatherer{
 		client:  c,
@@ -242,7 +243,7 @@ func NewGathererWithClient(ctx context.Context, c github.Client) *Gatherer {
 }
 
 // GatherReleaseNotes creates a new gatherer and collects the release notes
-// afterwards
+// afterwards.
 func GatherReleaseNotes(opts *options.Options) (*ReleaseNotes, error) {
 	logrus.Info("Gathering release notes")
 	gatherer, err := NewGatherer(context.Background(), opts)
@@ -443,7 +444,7 @@ func DocumentationFromString(s string) []*Documentation {
 	return result
 }
 
-// classifyURL returns the correct DocType for the given url
+// classifyURL returns the correct DocType for the given url.
 func classifyURL(u *url.URL) DocType {
 	// Kubernetes Enhancement Proposals (KEPs)
 	if strings.Contains(u.Host, "github.com") &&
@@ -634,7 +635,7 @@ var noteExclusionFilters = []*regexp.Regexp{
 	regexp.MustCompile("/release-note-none"),
 }
 
-// MatchesExcludeFilter returns true if the string matches an excluded release note
+// MatchesExcludeFilter returns true if the string matches an excluded release note.
 func MatchesExcludeFilter(msg string) bool {
 	return matchesFilter(msg, noteExclusionFilters)
 }
@@ -710,7 +711,7 @@ func (g *Gatherer) gatherNotes(commits []*gogithub.RepositoryCommit) (filtered [
 }
 
 // ReleaseNoteForPullRequest returns a release note from a pull request number.
-// If the release note is blank or
+// If the release note is blank or.
 func (g *Gatherer) ReleaseNoteForPullRequest(prNr int) (*ReleaseNote, error) {
 	pr, _, err := g.client.GetPullRequest(g.context, g.options.GithubOrg, g.options.GithubRepo, prNr)
 	if err != nil {
@@ -870,7 +871,7 @@ func labelsWithPrefix(pr *gogithub.PullRequest, prefix string) []string {
 	return labels
 }
 
-// labelExactMatch indicates whether or not a matching label was found on PR
+// labelExactMatch indicates whether or not a matching label was found on PR.
 func labelExactMatch(pr *gogithub.PullRequest, labelToFind string) bool {
 	for _, label := range pr.Labels {
 		if *label.Name == labelToFind {
@@ -911,7 +912,7 @@ func dashify(note string) string {
 	return re.ReplaceAllString(note, "$1- ")
 }
 
-// unlist transforms a single markdown list entry to a flat note entry
+// unlist transforms a single markdown list entry to a flat note entry.
 func unlist(note string) string {
 	if !strings.HasPrefix(note, listPrefix) {
 		return note
@@ -957,7 +958,7 @@ func hasString(a []string, x string) bool {
 	return false
 }
 
-// canWaitAndRetry retruen true if the gatherer hit the GitHub API secondary rate limit
+// canWaitAndRetry retruen true if the gatherer hit the GitHub API secondary rate limit.
 func canWaitAndRetry(r *gogithub.Response, err error) bool {
 	// If we hit the secondary rate limit...
 	if r == nil {
@@ -980,7 +981,7 @@ func canWaitAndRetry(r *gogithub.Response, err error) bool {
 	return false
 }
 
-// prsForCommitFromSHA retrieves the PR numbers for a commit given its sha
+// prsForCommitFromSHA retrieves the PR numbers for a commit given its sha.
 func (g *Gatherer) prsForCommitFromSHA(sha string) (prs []*gogithub.PullRequest, err error) {
 	plo := &gogithub.ListOptions{
 		Page:    1,
@@ -1105,7 +1106,7 @@ func prForRegex(regex *regexp.Regexp, commitMessage string) int {
 }
 
 // prettySIG takes a sig name as parsed by the `sig-foo` label and returns a
-// "pretty" version of it that can be printed in documents
+// "pretty" version of it that can be printed in documents.
 func prettySIG(sig string) string {
 	parts := strings.Split(sig, "-")
 	for i, part := range parts {
@@ -1229,7 +1230,7 @@ func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap, markdownLinks bool) er
 	return nil
 }
 
-// ToNoteMap returns the note's content as YAML code for use in a notemap
+// ToNoteMap returns the note's content as YAML code for use in a notemap.
 func (rn *ReleaseNote) ToNoteMap() (string, error) {
 	noteMap := &ReleaseNotesMap{
 		PR:     rn.PrNumber,
@@ -1255,7 +1256,7 @@ func (rn *ReleaseNote) ToNoteMap() (string, error) {
 	return string(yamlCode), nil
 }
 
-// ContentHash returns a sha1 hash derived from the note's content
+// ContentHash returns a sha1 hash derived from the note's content.
 func (rn *ReleaseNote) ContentHash() (string, error) {
 	// Convert the note to a map
 	noteMap, err := rn.ToNoteMap()
@@ -1273,7 +1274,7 @@ func (rn *ReleaseNote) ContentHash() (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-// capitalizeString returns a capitalized string of the input string
+// capitalizeString returns a capitalized string of the input string.
 func capitalizeString(s string) string {
 	r := []rune(s)
 	r[0] = unicode.ToUpper(r[0])

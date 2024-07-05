@@ -25,11 +25,12 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/release-sdk/osc"
+	"sigs.k8s.io/release-utils/util"
+
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/obs/specs"
 	"k8s.io/release/pkg/release"
-	"sigs.k8s.io/release-sdk/osc"
-	"sigs.k8s.io/release-utils/util"
 )
 
 // stageClient is a client for staging releases.
@@ -103,7 +104,7 @@ func (d *DefaultStage) SetImpl(impl stageImpl) {
 }
 
 // SetState fixes the current state. Mainly used for passing
-// arbitrary values during testing
+// arbitrary values during testing.
 func (d *DefaultStage) SetState(state *StageState) {
 	d.state = state
 }

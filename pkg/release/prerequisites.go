@@ -38,7 +38,7 @@ type PrerequisitesChecker struct {
 	opts *PrerequisitesCheckerOptions
 }
 
-// Type prerequisites checker
+// Type prerequisites checker.
 type PrerequisitesCheckerOptions struct {
 	CheckGitHubToken bool
 }
@@ -55,7 +55,7 @@ func NewPrerequisitesChecker() *PrerequisitesChecker {
 	}
 }
 
-// Options return the options from the prereq checker
+// Options return the options from the prereq checker.
 func (p *PrerequisitesChecker) Options() *PrerequisitesCheckerOptions {
 	return p.opts
 }

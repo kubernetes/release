@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
+
 	"sigs.k8s.io/release-utils/env"
 )
 
@@ -39,7 +40,7 @@ var githubCmd = &cobra.Command{
 	},
 }
 
-// look for token in environment variables & create a github client
+// look for token in environment variables & create a github client.
 func setGithubConfig(_ *cobra.Command, _ []string) {
 	cfg.GithubToken = env.Default("GITHUB_TOKEN", "")
 	if cfg.GithubToken == "" {
@@ -54,7 +55,7 @@ func setGithubConfig(_ *cobra.Command, _ []string) {
 	cfg.GithubClient = githubv4.NewClient(httpClient)
 }
 
-// GithubReporterName used to identify github reporter
+// GithubReporterName used to identify github reporter.
 var GithubReporterName CIReporterName = "github"
 
 func init() {
@@ -65,15 +66,15 @@ func init() {
 // GithubReporter implementation
 //
 
-// GithubReporter github CIReporter implementation
+// GithubReporter github CIReporter implementation.
 type GithubReporter struct{}
 
-// GetCIReporterHead implementation from CIReporter
+// GetCIReporterHead implementation from CIReporter.
 func (r GithubReporter) GetCIReporterHead() CIReporterInfo {
 	return CIReporterInfo{Name: GithubReporterName}
 }
 
-// CollectReportData implementation from CIReporter
+// CollectReportData implementation from CIReporter.
 func (r GithubReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error) {
 	// set filter configuration
 	denyListFilter := map[FilteredFieldName][]FilteredListVal{}
@@ -126,10 +127,10 @@ const ciSignalProjectBoardID = "PN_kwDOAM_34M4AAThW"
 type ciSignalProjectBoardKey string
 
 const (
-	// custom project board keys that get extracted via graphql
+	// custom project board keys that get extracted via graphql.
 	IssueURLKey       = ciSignalProjectBoardKey("Issue URL")
 	PullRequestURLKey = ciSignalProjectBoardKey("PullRequest URL")
-	// project board column headers
+	// project board column headers.
 	TestgridBoardKey       = ciSignalProjectBoardKey("Testgrid Board")
 	SlackDiscussionLinkKey = ciSignalProjectBoardKey("Slack discussion link")
 	StatusKey              = ciSignalProjectBoardKey("Status")
@@ -140,7 +141,7 @@ const (
 
 // GitHubProjectBoardFieldSettings settings for a column of a github beta project board
 // --> | Testgrid Board | -> { ID: XXX, Name: Testgrid Board, ... }
-// This information is required to match the settings ID to the name since table entries ref. id
+// This information is required to match the settings ID to the name since table entries ref. id.
 type GitHubProjectBoardFieldSettings struct {
 	Width   int `json:"width"`
 	Options []struct {
@@ -204,12 +205,12 @@ type (
 		Fields map[fieldName]fieldValue
 	}
 
-	// Types for project board filtering
+	// Types for project board filtering.
 	FilteredFieldName string
 	FilteredListVal   string
 )
 
-// GetGithubReportData used to request the raw report data from github
+// GetGithubReportData used to request the raw report data from github.
 func GetGithubReportData(cfg Config, denyListFieldFilter, allowListFieldFilter map[FilteredFieldName][]FilteredListVal) ([]*TransformedProjectBoardItem, error) {
 	// lookup project board information
 	var queryCiSignalProjectBoard ciSignalProjectBoardGraphQLQuery

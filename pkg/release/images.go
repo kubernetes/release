@@ -26,11 +26,13 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/sirupsen/logrus"
+
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/release/pkg/consts"
 
 	"sigs.k8s.io/release-sdk/sign"
 	"sigs.k8s.io/release-utils/command"
+
+	"k8s.io/release/pkg/consts"
 )
 
 // Images is a wrapper around container image related functionality.
@@ -39,7 +41,7 @@ type Images struct {
 	signer *sign.Signer
 }
 
-// NewImages creates a new Images instance
+// NewImages creates a new Images instance.
 func NewImages() *Images {
 	return &Images{
 		imageImpl: &defaultImageImpl{},
@@ -105,7 +107,7 @@ func (*defaultImageImpl) VerifyImage(_ *sign.Signer, _ string) error {
 
 var tagRegex = regexp.MustCompile(`^.+/(.+):.+$`)
 
-// PublishImages releases container images to the provided target registry
+// PublishImages releases container images to the provided target registry.
 func (i *Images) Publish(registry, version, buildPath string) error {
 	version = i.normalizeVersion(version)
 

@@ -34,15 +34,16 @@ import (
 	gogit "github.com/go-git/go-git/v5"
 	"github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/release-sdk/gcli"
+	"sigs.k8s.io/release-sdk/git"
+	"sigs.k8s.io/release-utils/util"
+	utilsversion "sigs.k8s.io/release-utils/version"
+
 	"k8s.io/release/gcb"
 	"k8s.io/release/pkg/gcp/auth"
 	"k8s.io/release/pkg/gcp/build"
 	"k8s.io/release/pkg/kubecross"
 	"k8s.io/release/pkg/release"
-	"sigs.k8s.io/release-sdk/gcli"
-	"sigs.k8s.io/release-sdk/git"
-	"sigs.k8s.io/release-utils/util"
-	utilsversion "sigs.k8s.io/release-utils/version"
 )
 
 // StringSliceSeparator is the separator used for passing string slices as GCB
@@ -508,7 +509,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket string) 
 	return gcbSubs, nil
 }
 
-// listJobs lists recent GCB jobs run in the specified project
+// listJobs lists recent GCB jobs run in the specified project.
 func (g *GCB) listJobs(project string, lastJobs int64) error {
 	if lastJobs < 0 {
 		logrus.Infof("--list-jobs was set to a negative number, defaulting to 5")

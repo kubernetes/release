@@ -19,14 +19,15 @@ package fastforward
 import (
 	"os"
 
-	"k8s.io/release/pkg/gcp/gcb"
-	"k8s.io/release/pkg/release"
-
 	gogithub "github.com/google/go-github/v60/github"
+
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-utils/env"
 	"sigs.k8s.io/release-utils/util"
+
+	"k8s.io/release/pkg/gcp/gcb"
+	"k8s.io/release/pkg/release"
 )
 
 type defaultImpl struct{}

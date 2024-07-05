@@ -30,6 +30,7 @@ import (
 
 	"github.com/google/go-github/v60/github"
 	"github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github/githubfakes"
 )

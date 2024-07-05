@@ -21,8 +21,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/fastforward"
 	"sigs.k8s.io/release-sdk/git"
+
+	"k8s.io/release/pkg/fastforward"
 )
 
 func (s *sut) getFfOptions() *fastforward.Options {

@@ -26,11 +26,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/pkg/cve"
 	"sigs.k8s.io/release-utils/editor"
+
+	"k8s.io/release/pkg/cve"
 )
 
-// releaseNotesCmd represents the subcommand for `krel release-notes`
+// releaseNotesCmd represents the subcommand for `krel release-notes`.
 var cveCmd = &cobra.Command{
 	Use:   "cve",
 	Short: "Add and edit CVE information",
@@ -108,7 +109,7 @@ func init() {
 	rootCmd.AddCommand(cveCmd)
 }
 
-// writeNewCVE opens an editor to edit a new CVE entry interactively
+// writeNewCVE opens an editor to edit a new CVE entry interactively.
 func writeNewCVE(opts *cveOptions) (err error) {
 	client := cve.NewClient()
 
@@ -141,7 +142,7 @@ func writeNewCVE(opts *cveOptions) (err error) {
 	return client.Write(opts.CVE, tempFilePath)
 }
 
-// writeCVEFiles handles non interactive file writes
+// writeCVEFiles handles non interactive file writes.
 func writeCVEFiles(opts *cveOptions) error {
 	client := cve.NewClient()
 	for _, mapFile := range opts.mapFiles {
@@ -152,13 +153,13 @@ func writeCVEFiles(opts *cveOptions) error {
 	return nil
 }
 
-// deleteCVE removes an existing map file
+// deleteCVE removes an existing map file.
 func deleteCVE(opts *cveOptions) (err error) {
 	client := cve.NewClient()
 	return client.Delete(opts.CVE)
 }
 
-// editCVE main edit function
+// editCVE main edit function.
 func editCVE(opts *cveOptions) (err error) {
 	client := cve.NewClient()
 
@@ -182,7 +183,7 @@ func editCVE(opts *cveOptions) (err error) {
 }
 
 // editExistingCVE loads an existing map from the bucket and opens is
-// in the user's default editor
+// in the user's default editor.
 func editExistingCVE(opts *cveOptions) (err error) {
 	client := cve.NewClient()
 	file, err := client.CopyToTemp(opts.CVE)

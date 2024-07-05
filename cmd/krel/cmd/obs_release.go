@@ -27,7 +27,7 @@ import (
 	"k8s.io/release/pkg/release"
 )
 
-// obsReleaseCmd represents the subcommand for `krel obs release`
+// obsReleaseCmd represents the subcommand for `krel obs release`.
 var obsReleaseCmd = &cobra.Command{
 	Use:   "release",
 	Short: "Release packages for a new Kubernetes version or Kubernetes subproject",

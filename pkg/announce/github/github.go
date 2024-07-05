@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/utils/ptr"
+
 	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-utils/util"
 )

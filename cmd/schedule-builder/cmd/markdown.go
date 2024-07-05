@@ -22,13 +22,12 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"text/template" // NOLINT // Mark text/template as not to be checked for producing yaml.
 	"time"
-
-	// Mark text/template as not to be checked for producing yaml.
-	"text/template" // NOLINT
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/release-utils/util"
 	"sigs.k8s.io/yaml"
 )
@@ -36,7 +35,7 @@ import (
 //go:embed templates/*.tmpl
 var tpls embed.FS
 
-// runs with `--type=patch` to return the patch schedule
+// runs with `--type=patch` to return the patch schedule.
 func parsePatchSchedule(patchSchedule PatchSchedule) string {
 	output := []string{}
 
@@ -101,7 +100,7 @@ func parsePatchSchedule(patchSchedule PatchSchedule) string {
 	return scheduleOut
 }
 
-// runs with `--type=release` to return the release cycle schedule
+// runs with `--type=release` to return the release cycle schedule.
 func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 	type RelSched struct {
 		K8VersionWithDot    string

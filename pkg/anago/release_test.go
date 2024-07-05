@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	"k8s.io/release/pkg/anago"
 	"k8s.io/release/pkg/anago/anagofakes"
 	"k8s.io/release/pkg/release"
@@ -168,9 +169,10 @@ func TestGenerateReleaseVersionRelease(t *testing.T) {
 		opts := anago.DefaultReleaseOptions()
 
 		sut := anago.NewDefaultRelease(opts)
+		createReleaseBranch := tc.createReleaseBranch
 		sut.SetState(
 			generateTestingReleaseState(&testStateParameters{
-				createReleaseBranch: &tc.createReleaseBranch,
+				createReleaseBranch: &createReleaseBranch,
 			}),
 		)
 

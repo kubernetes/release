@@ -26,12 +26,13 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/pkg/consts"
-	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/log"
 	"sigs.k8s.io/release-utils/util"
 	"sigs.k8s.io/release-utils/version"
+
+	"k8s.io/release/pkg/consts"
+	"k8s.io/release/pkg/release"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
@@ -268,7 +269,7 @@ func (o *Options) Bucket() string {
 }
 
 // State holds all inferred and calculated values from the stage/release
-// process, it's state mutates as each step es executed
+// process, it's state mutates as each step es executed.
 type State struct {
 	// corePackages is an indicator if we're releasing core/Kubernetes
 	// packages. This is set upon validation.
@@ -303,7 +304,7 @@ type State struct {
 	startTime time.Time
 }
 
-// DefaultState returns a new empty State
+// DefaultState returns a new empty State.
 func DefaultState() *State {
 	// The default state is empty, it will be initialized after ValidateOptions()
 	// runs in Stage/Release. It will change as the stage/release processes move forward
@@ -312,7 +313,7 @@ func DefaultState() *State {
 	}
 }
 
-// StageState holds the stage process state
+// StageState holds the stage process state.
 type StageState struct {
 	*State
 }
@@ -453,7 +454,7 @@ func (s *Stage) Run() error {
 	return nil
 }
 
-// ReleaseState holds the release process state
+// ReleaseState holds the release process state.
 type ReleaseState struct {
 	*State
 }

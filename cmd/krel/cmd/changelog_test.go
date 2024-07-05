@@ -24,8 +24,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/changelog"
 	"sigs.k8s.io/release-sdk/git"
+
+	"k8s.io/release/pkg/changelog"
 )
 
 func (s *sut) getChangelogOptions(tag string) *changelog.Options {

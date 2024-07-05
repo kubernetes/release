@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// rootCmd represents the base command when called without any subcommands
+// rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
 	Use:               "schedule-builder --config-path path/to/schedule.yaml --type <release>/or/<patch>[--output-file <filename.md>]",
 	Short:             "schedule-builder generate a human readable format of the Kubernetes release schedule",
@@ -221,7 +221,7 @@ func run(opts *options) error {
 	return nil
 }
 
-// SetAndValidate sets some default options and verifies if options are valid
+// SetAndValidate sets some default options and verifies if options are valid.
 func (o *options) SetAndValidate() error {
 	logrus.Info("Validating options")
 

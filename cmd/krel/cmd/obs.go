@@ -20,7 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// obsCmd represents the subcommand for `krel obs`
+// obsCmd represents the subcommand for `krel obs`.
 var obsCmd = &cobra.Command{
 	Use:           "obs",
 	Short:         "interact with open build service",

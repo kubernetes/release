@@ -22,9 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	template "github.com/google/safetext/yamltemplate"
-
 	"github.com/blang/semver/v4"
+	template "github.com/google/safetext/yamltemplate"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/release/pkg/consts"

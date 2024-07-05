@@ -24,8 +24,6 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/release/pkg/notes/options"
-
 	"github.com/cheggaaa/pb/v3"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -33,6 +31,8 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/nozzle/throttler"
 	"github.com/sirupsen/logrus"
+
+	"k8s.io/release/pkg/notes/options"
 )
 
 type commitPrPair struct {

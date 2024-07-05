@@ -26,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/release/releasefakes"
 )

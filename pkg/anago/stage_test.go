@@ -23,12 +23,13 @@ import (
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/stretchr/testify/require"
 
-	"k8s.io/release/pkg/anago"
-	"k8s.io/release/pkg/anago/anagofakes"
-	"k8s.io/release/pkg/release"
 	"sigs.k8s.io/bom/pkg/provenance"
 	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/git"
+
+	"k8s.io/release/pkg/anago"
+	"k8s.io/release/pkg/anago/anagofakes"
+	"k8s.io/release/pkg/release"
 )
 
 func generateTestingStageState(params *testStateParameters) *anago.StageState {
@@ -173,9 +174,10 @@ func TestGenerateReleaseVersionStage(t *testing.T) {
 		opts := anago.DefaultStageOptions()
 		sut := anago.NewDefaultStage(opts)
 
+		createReleaseBranch := tc.createReleaseBranch
 		sut.SetState(
 			generateTestingStageState(&testStateParameters{
-				createReleaseBranch: &tc.createReleaseBranch,
+				createReleaseBranch: &createReleaseBranch,
 			}),
 		)
 

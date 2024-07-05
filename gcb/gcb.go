@@ -24,7 +24,7 @@ import (
 	"k8s.io/release/pkg/gcp/build"
 )
 
-// All available job types
+// All available job types.
 const (
 	JobTypeStage       = "stage"
 	JobTypeRelease     = "release"

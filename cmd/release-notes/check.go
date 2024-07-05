@@ -23,9 +23,11 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+
+	"sigs.k8s.io/release-utils/env"
+
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/options"
-	"sigs.k8s.io/release-utils/env"
 )
 
 const (

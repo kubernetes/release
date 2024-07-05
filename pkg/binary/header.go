@@ -16,7 +16,7 @@ limitations under the License.
 
 package binary
 
-// Header is a struct that captures the header of a binary executable
+// Header is a struct that captures the header of a binary executable.
 type Header interface {
 	MachineType() string
 	String() string

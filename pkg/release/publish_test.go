@@ -23,6 +23,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/stretchr/testify/require"
+
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/release/releasefakes"
 )

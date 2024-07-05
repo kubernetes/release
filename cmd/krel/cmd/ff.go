@@ -23,14 +23,15 @@ import (
 
 	"github.com/spf13/cobra"
 
+	kgit "sigs.k8s.io/release-sdk/git"
+
 	"k8s.io/release/pkg/fastforward"
 	"k8s.io/release/pkg/release"
-	kgit "sigs.k8s.io/release-sdk/git"
 )
 
 var ffOpts = &fastforward.Options{}
 
-// ffCmd represents the base command when called without any subcommands
+// ffCmd represents the base command when called without any subcommands.
 var ffCmd = &cobra.Command{
 	Use:     "fast-forward --branch <release-branch> [--ref <main-ref>] [--nomock] [--cleanup]",
 	Short:   "Fast forward a Kubernetes release branch",

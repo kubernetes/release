@@ -23,6 +23,7 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
+
 	"k8s.io/release/pkg/consts"
 )
 
@@ -34,20 +35,20 @@ const (
 	MachOFat       uint32 = 0xcafebabe // Universal Binary
 )
 
-// MachOHeader is a structure to capture the data we need from the binary header
+// MachOHeader is a structure to capture the data we need from the binary header.
 type MachOHeader struct {
 	Magic  uint32
 	CPU    uint32
 	SubCPU uint32
 }
 
-// MachOBinary is an abstraction for a Mach-O executable
+// MachOBinary is an abstraction for a Mach-O executable.
 type MachOBinary struct {
 	Header  *MachOHeader
 	Options *Options
 }
 
-// NewMachOBinary returns a Mach-O binary if the specified file is one
+// NewMachOBinary returns a Mach-O binary if the specified file is one.
 func NewMachOBinary(filePath string, opts *Options) (*MachOBinary, error) {
 	header, err := GetMachOHeader(filePath)
 	if err != nil {
@@ -63,12 +64,12 @@ func NewMachOBinary(filePath string, opts *Options) (*MachOBinary, error) {
 	}, nil
 }
 
-// String returns the header information as a string
+// String returns the header information as a string.
 func (machoh *MachOHeader) String() string {
 	return fmt.Sprintf("%s %dbit", machoh.MachineType(), machoh.WordLength())
 }
 
-// WordLength returns an integer indicating if this is a 32 or 64bit binary
+// WordLength returns an integer indicating if this is a 32 or 64bit binary.
 func (machoh *MachOHeader) WordLength() int {
 	switch machoh.Magic {
 	case MachO32Magic:
@@ -85,7 +86,7 @@ func (machoh *MachOHeader) WordLength() int {
 	return 0
 }
 
-// MachineType returns the architecture as a GOARCH label
+// MachineType returns the architecture as a GOARCH label.
 func (machoh *MachOHeader) MachineType() string {
 	// Interpret the header byte defining the CPU arch. Defined here:
 	// https://opensource.apple.com/source/cctools/cctools-836/include/mach/machine.h
@@ -123,7 +124,7 @@ func (machoh *MachOHeader) MachineType() string {
 	return ""
 }
 
-// GetMachOHeader returns a struct with the executable header information
+// GetMachOHeader returns a struct with the executable header information.
 func GetMachOHeader(path string) (*MachOHeader, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -170,12 +171,12 @@ func GetMachOHeader(path string) (*MachOHeader, error) {
 	return header, nil
 }
 
-// Arch returns a string with the GOARCH label of the file
+// Arch returns a string with the GOARCH label of the file.
 func (macho *MachOBinary) Arch() string {
 	return macho.Header.MachineType()
 }
 
-// OS returns a string with the GOOS label of the binary file
+// OS returns a string with the GOOS label of the binary file.
 func (macho *MachOBinary) OS() string {
 	return DARWIN
 }

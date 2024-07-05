@@ -28,7 +28,7 @@ const (
 	nl = "\n"
 )
 
-// rootCmd represents the base command when called without any subcommands
+// rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
 	Use:   "krel",
 	Short: "The Kubernetes Release toolbox",

@@ -22,6 +22,7 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/yaml"
 )
 

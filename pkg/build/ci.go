@@ -23,9 +23,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/release-utils/command"
+
 	"k8s.io/release/pkg/gcp/auth"
 	"k8s.io/release/pkg/release"
-	"sigs.k8s.io/release-utils/command"
 )
 
 // Build starts a Kubernetes build with the options defined in the build

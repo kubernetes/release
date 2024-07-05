@@ -30,7 +30,7 @@ import (
 )
 
 // Options is the global options structure which can be used to build release
-// notes generator options
+// notes generator options.
 type Options struct {
 	// GithubBaseURL specifies the Github base URL.
 	GithubBaseURL string
@@ -155,7 +155,7 @@ const (
 	GoTemplateInline       = GoTemplatePrefix + GoTemplatePrefixInline
 )
 
-// New creates a new Options instance with the default values
+// New creates a new Options instance with the default values.
 func New() *Options {
 	return &Options{
 		DiscoverMode:       RevisionDiscoveryModeNONE,
@@ -278,7 +278,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 	return nil
 }
 
-// checkFormatOptions verifies that template related options are sane
+// checkFormatOptions verifies that template related options are sane.
 func (o *Options) checkFormatOptions() error {
 	// Validate the output format and template
 	logrus.Infof("Using output format: %s", o.Format)
