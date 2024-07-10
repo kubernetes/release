@@ -41,7 +41,7 @@ require (
 	k8s.io/apimachinery v0.30.2
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0
 	sigs.k8s.io/bom v0.6.0
-	sigs.k8s.io/mdtoc v1.3.0
+	sigs.k8s.io/mdtoc v1.4.0
 	sigs.k8s.io/promo-tools/v3 v3.6.0
 	sigs.k8s.io/release-sdk v0.12.1
 	sigs.k8s.io/release-utils v0.8.3
