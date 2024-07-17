@@ -2,9 +2,9 @@ variants:
   v1.31-go1.23-bullseye:
     CONFIG: 'go1.23-bullseye'
     TYPE: 'default'
-    IMAGE_VERSION: 'v1.31.0-go1.23rc1-bullseye.0'
+    IMAGE_VERSION: 'v1.31.0-go1.23rc2-bullseye.0'
     KUBERNETES_VERSION: 'v1.31.0'
-    GO_VERSION: '1.23rc1'
+    GO_VERSION: '1.23rc2'
     GO_MAJOR_VERSION: '1.23'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
