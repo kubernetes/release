@@ -354,30 +354,10 @@ https://github.com/kubernetes/website/pull/19630
 	}
 }
 
-func TestApplyMap(t *testing.T) {
-	makeNewNote := func() ReleaseNote {
-		return ReleaseNote{
-			Commit:   "078b355da3cf56668ca1a8a5e36f2b3b52ff1bd8",
-			Text:     "[ACTION REQUIRED] scheduler alpha metrics binding_duration_seconds and scheduling_algorithm_preemption_evaluation_seconds are deprecated, Both of those metrics are now covered as part of framework_extension_point_duration_seconds, the former as a PostFilter the latter and a Bind plugin. The plan is to remove both in 1.21",
-			Markdown: "[ACTION REQUIRED] scheduler alpha metrics binding_duration_seconds and scheduling_algorithm_preemption_evaluation_seconds are deprecated, Both of those metrics are now covered as part of framework_extension_point_duration_seconds, the former as a PostFilter the latter and a Bind plugin. The plan is to remove both in 1.21",
-			// Documentation:  documentation,
-			Author:         "arghya88",
-			AuthorURL:      "https://github.com/arghya88",
-			PrURL:          "https://github.com/kubernetes/kubernetes/pull/95001",
-			PrNumber:       95000,
-			SIGs:           []string{"instrumentation", "scheduling"},
-			Kinds:          []string{"deprecation", "feature"},
-			Areas:          []string{},
-			Feature:        true,
-			Duplicate:      false,
-			DuplicateKind:  false,
-			ActionRequired: true,
-		}
-	}
-
+func testApplyMapHelper(t *testing.T, testDir string, makeNewNote func() *ReleaseNote) {
 	reflectedOriginalNote := reflect.ValueOf(makeNewNote())
 
-	mp, err := NewProviderFromInitString("maps/testdata/unit/")
+	mp, err := NewProviderFromInitString(testDir)
 	require.Nil(t, err)
 
 	// Read the maps from out test directory
@@ -422,8 +402,8 @@ func TestApplyMap(t *testing.T) {
 			actualVal := reflect.Indirect(reflectedNote).FieldByName(property).String()
 			require.Equalf(t, expectedValue, actualVal, "Failed %s", testName)
 			require.NotEqualf(t, expectedValue, originalVal.String(), "Failed %s", testName)
-		// Handle string slice cases
 		case []interface{}:
+			// Handle string slice cases
 			actualVal := reflect.Indirect(reflectedNote).FieldByName(property)
 			actualSlice := make([]string, 0)
 			for i := range actualVal.Len() {
@@ -431,12 +411,57 @@ func TestApplyMap(t *testing.T) {
 			}
 			require.ElementsMatchf(t, expectedValue, actualSlice, "Failed %s", testName)
 		default:
-			require.FailNowf(
-				t, "Unknown case", "Unable to handle case for %s %T",
-				property, testcase.(map[interface{}]interface{})["expected"],
-			)
+			require.FailNowf(t, "Unknown case", "Unable to handle case for %s %T", property, expectedValue)
 		}
 	}
+}
+
+func TestApplyMap(t *testing.T) {
+	makeNewNote := func() *ReleaseNote {
+		return &ReleaseNote{
+			Commit:   "078b355da3cf56668ca1a8a5e36f2b3b52ff1bd8",
+			Text:     "[ACTION REQUIRED] scheduler alpha metrics binding_duration_seconds and scheduling_algorithm_preemption_evaluation_seconds are deprecated, Both of those metrics are now covered as part of framework_extension_point_duration_seconds, the former as a PostFilter the latter and a Bind plugin. The plan is to remove both in 1.21",
+			Markdown: "[ACTION REQUIRED] scheduler alpha metrics binding_duration_seconds and scheduling_algorithm_preemption_evaluation_seconds are deprecated, Both of those metrics are now covered as part of framework_extension_point_duration_seconds, the former as a PostFilter the latter and a Bind plugin. The plan is to remove both in 1.21",
+			// Documentation:  documentation,
+			Author:         "arghya88",
+			AuthorURL:      "https://github.com/arghya88",
+			PrURL:          "https://github.com/kubernetes/kubernetes/pull/95001",
+			PrNumber:       95000,
+			SIGs:           []string{"instrumentation", "scheduling"},
+			Kinds:          []string{"deprecation", "feature"},
+			Areas:          []string{},
+			Feature:        true,
+			Duplicate:      false,
+			DuplicateKind:  false,
+			ActionRequired: true,
+		}
+	}
+
+	testApplyMapHelper(t, "maps/testdata/applymap-unit-test/", makeNewNote)
+}
+
+func TestApplyMapNoSigs(t *testing.T) {
+	makeNewNote := func() *ReleaseNote {
+		return &ReleaseNote{
+			Commit:   "078b355da3cf56668ca1a8a5e36f2b3b52ff1bd8",
+			Text:     "[ACTION REQUIRED] scheduler alpha metrics binding_duration_seconds and scheduling_algorithm_preemption_evaluation_seconds are deprecated, Both of those metrics are now covered as part of framework_extension_point_duration_seconds, the former as a PostFilter the latter and a Bind plugin. The plan is to remove both in 1.21",
+			Markdown: "[ACTION REQUIRED] scheduler alpha metrics binding_duration_seconds and scheduling_algorithm_preemption_evaluation_seconds are deprecated, Both of those metrics are now covered as part of framework_extension_point_duration_seconds, the former as a PostFilter the latter and a Bind plugin. The plan is to remove both in 1.21",
+			// Documentation:  documentation,
+			Author:         "arghya88",
+			AuthorURL:      "https://github.com/arghya88",
+			PrURL:          "https://github.com/kubernetes/kubernetes/pull/95001",
+			PrNumber:       95000,
+			SIGs:           []string{},
+			Kinds:          []string{"deprecation", "feature"},
+			Areas:          []string{},
+			Feature:        true,
+			Duplicate:      false,
+			DuplicateKind:  false,
+			ActionRequired: true,
+		}
+	}
+
+	testApplyMapHelper(t, "maps/testdata/no-sigs-unit-test/", makeNewNote)
 }
 
 func TestDashify(t *testing.T) {
