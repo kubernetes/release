@@ -48,3 +48,12 @@ datafields:
     - kubectl
     - apiserver
     name: "Modifying release note areas"
+---
+pr: 95000
+releasenote:
+  text: "This test string has been modified"
+datafields:
+  testcase:
+    property: "Markdown"
+    expected: "This test string has been modified (#95000, @arghya88) [SIG Instrumentation and Scheduling]"
+    name: "Modifying release note markdown"

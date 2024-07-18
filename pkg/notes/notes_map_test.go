@@ -46,7 +46,7 @@ func TestNewProviderFromInitString(t *testing.T) {
 func TestParseReleaseNotesMap(t *testing.T) {
 	maps, err := ParseReleaseNotesMap("maps/testdata/unit/maps.yaml")
 	require.Nil(t, err)
-	require.GreaterOrEqual(t, 5, len(*maps))
+	require.GreaterOrEqual(t, 6, len(*maps))
 
 	maps, err = ParseReleaseNotesMap("maps/testdata/fullmap.yaml")
 	require.Nil(t, err)
@@ -59,7 +59,7 @@ func TestGetMapsForPR(t *testing.T) {
 
 	maps, err := provider.GetMapsForPR(95000)
 	require.Nil(t, err)
-	require.GreaterOrEqual(t, 5, len(maps))
+	require.GreaterOrEqual(t, 6, len(maps))
 
 	maps, err = provider.GetMapsForPR(123)
 	require.Nil(t, err)
