@@ -478,7 +478,8 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result) (*ReleaseNote, error) {
 	authorURL := pr.GetUser().GetHTMLURL()
 	prURL := pr.GetHTMLURL()
 	isFeature := hasString(labelsWithPrefix(pr, "kind"), "feature")
-	noteSuffix := prettifySIGList(labelsWithPrefix(pr, "sig"))
+	sigLabels := labelsWithPrefix(pr, "sig")
+	noteSuffix := prettifySIGList(sigLabels)
 
 	isDuplicateSIG := false
 	if len(labelsWithPrefix(pr, "sig")) > 1 {
@@ -515,7 +516,7 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result) (*ReleaseNote, error) {
 		AuthorURL:      authorURL,
 		PrURL:          prURL,
 		PrNumber:       pr.GetNumber(),
-		SIGs:           labelsWithPrefix(pr, "sig"),
+		SIGs:           sigLabels,
 		Kinds:          labelsWithPrefix(pr, "kind"),
 		Areas:          labelsWithPrefix(pr, "area"),
 		Feature:        isFeature,
@@ -1223,6 +1224,11 @@ func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap, markdownLinks bool) er
 		if markdownLinks {
 			markdown = fmt.Sprintf("%s ([#%d](%s), [@%s](%s))",
 				indented, rn.PrNumber, rn.PrURL, rn.Author, rn.AuthorURL)
+		}
+		// Add sig labels to markdown
+		if rn.SIGs != nil {
+			noteSuffix := prettifySIGList(rn.SIGs)
+			markdown = fmt.Sprintf("%s [%s]", markdown, noteSuffix)
 		}
 		// Uppercase the first character of the markdown to make it look uniform
 		rn.Markdown = capitalizeString(markdown)

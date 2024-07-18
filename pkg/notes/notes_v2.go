@@ -167,7 +167,8 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 	authorURL := pr.GetUser().GetHTMLURL()
 	prURL := pr.GetHTMLURL()
 	isFeature := hasString(labelsWithPrefix(pr, "kind"), "feature")
-	noteSuffix := prettifySIGList(labelsWithPrefix(pr, "sig"))
+	sigLabels := labelsWithPrefix(pr, "sig")
+	noteSuffix := prettifySIGList(sigLabels)
 
 	isDuplicateSIG := false
 	if len(labelsWithPrefix(pr, "sig")) > 1 {
@@ -204,7 +205,7 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 		AuthorURL:      authorURL,
 		PrURL:          prURL,
 		PrNumber:       pr.GetNumber(),
-		SIGs:           labelsWithPrefix(pr, "sig"),
+		SIGs:           sigLabels,
 		Kinds:          labelsWithPrefix(pr, "kind"),
 		Areas:          labelsWithPrefix(pr, "area"),
 		Feature:        isFeature,
