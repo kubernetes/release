@@ -863,7 +863,7 @@ func (g *Gatherer) prsFromCommit(commit *gogithub.RepositoryCommit) (
 // advantage of this to contextualize release note generation with the kind, sig,
 // area, etc labels.
 func labelsWithPrefix(pr *gogithub.PullRequest, prefix string) []string {
-	labels := []string{}
+	var labels []string
 	for _, label := range pr.Labels {
 		if strings.HasPrefix(*label.Name, prefix) {
 			labels = append(labels, strings.TrimPrefix(*label.Name, prefix+"/"))
@@ -1226,7 +1226,7 @@ func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap, markdownLinks bool) er
 				indented, rn.PrNumber, rn.PrURL, rn.Author, rn.AuthorURL)
 		}
 		// Add sig labels to markdown
-		if rn.SIGs != nil {
+		if len(rn.SIGs) > 1 {
 			markdown = fmt.Sprintf("%s [%s]", markdown, prettifySIGList(rn.SIGs))
 		}
 		// Uppercase the first character of the markdown to make it look uniform

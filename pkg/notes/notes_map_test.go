@@ -27,7 +27,7 @@ func TestNewProviderFromInitString(t *testing.T) {
 		initString   string
 		returnsError bool
 	}{
-		{initString: "maps/testdata/unit/", returnsError: false},
+		{initString: "maps/testdata/applymap-unit-test/", returnsError: false},
 		{initString: "/this/shoud/not/really.exist/as/a/d33rect0ree", returnsError: true},
 		{initString: "gs://bucket-name/map/path/", returnsError: true},
 		{initString: "github://kubernetes/sig-release/maps", returnsError: true},
@@ -44,7 +44,7 @@ func TestNewProviderFromInitString(t *testing.T) {
 }
 
 func TestParseReleaseNotesMap(t *testing.T) {
-	maps, err := ParseReleaseNotesMap("maps/testdata/unit/maps.yaml")
+	maps, err := ParseReleaseNotesMap("maps/testdata/applymap-unit-test/maps.yaml")
 	require.Nil(t, err)
 	require.GreaterOrEqual(t, 6, len(*maps))
 
@@ -59,7 +59,7 @@ func TestGetMapsForPR(t *testing.T) {
 
 	maps, err := provider.GetMapsForPR(95000)
 	require.Nil(t, err)
-	require.GreaterOrEqual(t, 6, len(maps))
+	require.GreaterOrEqual(t, 7, len(maps))
 
 	maps, err = provider.GetMapsForPR(123)
 	require.Nil(t, err)
