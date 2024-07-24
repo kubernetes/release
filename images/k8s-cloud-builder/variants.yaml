@@ -1,4 +1,8 @@
 variants:
+  v1.31-cross1.23-bullseye:
+    CONFIG: 'cross1.23'
+    KUBE_CROSS_VERSION: 'v1.31.0-go1.23rc2-bullseye.0'
+  # TODO: remove this after upgrade to Go 1.23 is finalized and there's on risk of reverting
   v1.31-cross1.22-bullseye:
     CONFIG: 'cross1.22'
     KUBE_CROSS_VERSION: 'v1.31.0-go1.22.5-bullseye.0'
