@@ -17,6 +17,7 @@ limitations under the License.
 package release
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
@@ -41,7 +42,11 @@ type VersionClient interface {
 type versionClient struct{}
 
 func (*versionClient) GetURLResponse(url string) (string, error) {
-	return http.GetURLResponse(url, true)
+	c, err := http.NewAgent().Get(url)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes.TrimSpace(c)), nil
 }
 
 // VersionType is a simple wrapper around a Kubernetes release version.

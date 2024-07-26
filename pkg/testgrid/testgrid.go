@@ -45,13 +45,13 @@ func New() *TestGrid {
 //counterfeiter:generate . Client
 //go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt testgridfakes/fake_client.go > testgridfakes/_fake_client.go && mv testgridfakes/_fake_client.go testgridfakes/fake_client.go"
 type Client interface {
-	GetURLResponse(string, bool) (string, error)
+	GetURLResponse(string) ([]byte, error)
 }
 
 type testGridClient struct{}
 
-func (t *testGridClient) GetURLResponse(url string, trim bool) (string, error) {
-	return http.GetURLResponse(url, trim)
+func (t *testGridClient) GetURLResponse(url string) ([]byte, error) {
+	return http.NewAgent().Get(url)
 }
 
 // SetClient can be used to set the internal HTTP client.
@@ -93,12 +93,12 @@ func (t *TestGrid) configFromURL(url string) (cfg *pb.Configuration, err error) 
 		}
 	}()
 
-	response, err := t.client.GetURLResponse(url, false)
+	response, err := t.client.GetURLResponse(url)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving remote content: %w", err)
 	}
 
-	if _, err := tmpFile.WriteString(response); err != nil {
+	if _, err := tmpFile.Write(response); err != nil {
 		return nil, fmt.Errorf("writing response to file: %w", err)
 	}
 

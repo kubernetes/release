@@ -24,37 +24,35 @@ import (
 )
 
 type FakeClient struct {
-	GetURLResponseStub        func(string, bool) (string, error)
+	GetURLResponseStub        func(string) ([]byte, error)
 	getURLResponseMutex       sync.RWMutex
 	getURLResponseArgsForCall []struct {
 		arg1 string
-		arg2 bool
 	}
 	getURLResponseReturns struct {
-		result1 string
+		result1 []byte
 		result2 error
 	}
 	getURLResponseReturnsOnCall map[int]struct {
-		result1 string
+		result1 []byte
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClient) GetURLResponse(arg1 string, arg2 bool) (string, error) {
+func (fake *FakeClient) GetURLResponse(arg1 string) ([]byte, error) {
 	fake.getURLResponseMutex.Lock()
 	ret, specificReturn := fake.getURLResponseReturnsOnCall[len(fake.getURLResponseArgsForCall)]
 	fake.getURLResponseArgsForCall = append(fake.getURLResponseArgsForCall, struct {
 		arg1 string
-		arg2 bool
-	}{arg1, arg2})
+	}{arg1})
 	stub := fake.GetURLResponseStub
 	fakeReturns := fake.getURLResponseReturns
-	fake.recordInvocation("GetURLResponse", []interface{}{arg1, arg2})
+	fake.recordInvocation("GetURLResponse", []interface{}{arg1})
 	fake.getURLResponseMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -68,41 +66,41 @@ func (fake *FakeClient) GetURLResponseCallCount() int {
 	return len(fake.getURLResponseArgsForCall)
 }
 
-func (fake *FakeClient) GetURLResponseCalls(stub func(string, bool) (string, error)) {
+func (fake *FakeClient) GetURLResponseCalls(stub func(string) ([]byte, error)) {
 	fake.getURLResponseMutex.Lock()
 	defer fake.getURLResponseMutex.Unlock()
 	fake.GetURLResponseStub = stub
 }
 
-func (fake *FakeClient) GetURLResponseArgsForCall(i int) (string, bool) {
+func (fake *FakeClient) GetURLResponseArgsForCall(i int) string {
 	fake.getURLResponseMutex.RLock()
 	defer fake.getURLResponseMutex.RUnlock()
 	argsForCall := fake.getURLResponseArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1
 }
 
-func (fake *FakeClient) GetURLResponseReturns(result1 string, result2 error) {
+func (fake *FakeClient) GetURLResponseReturns(result1 []byte, result2 error) {
 	fake.getURLResponseMutex.Lock()
 	defer fake.getURLResponseMutex.Unlock()
 	fake.GetURLResponseStub = nil
 	fake.getURLResponseReturns = struct {
-		result1 string
+		result1 []byte
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeClient) GetURLResponseReturnsOnCall(i int, result1 string, result2 error) {
+func (fake *FakeClient) GetURLResponseReturnsOnCall(i int, result1 []byte, result2 error) {
 	fake.getURLResponseMutex.Lock()
 	defer fake.getURLResponseMutex.Unlock()
 	fake.GetURLResponseStub = nil
 	if fake.getURLResponseReturnsOnCall == nil {
 		fake.getURLResponseReturnsOnCall = make(map[int]struct {
-			result1 string
+			result1 []byte
 			result2 error
 		})
 	}
 	fake.getURLResponseReturnsOnCall[i] = struct {
-		result1 string
+		result1 []byte
 		result2 error
 	}{result1, result2}
 }

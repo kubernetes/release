@@ -122,7 +122,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 	)
 	logrus.Infof("Using announcement remote URL: %s", u)
 
-	content, err := http.GetURLResponse(u, false)
+	content, err := http.NewAgent().Get(u)
 	if err != nil {
 		return fmt.Errorf(
 			"unable to retrieve release announcement form url: %s: %w", u, err,
@@ -181,7 +181,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 	}
 
 	if yes {
-		if err := m.Send(content, subject); err != nil {
+		if err := m.Send(string(content), subject); err != nil {
 			return fmt.Errorf("unable to send mail: %w", err)
 		}
 	}

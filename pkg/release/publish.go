@@ -17,6 +17,7 @@ limitations under the License.
 package release
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -94,7 +95,11 @@ func (*defaultPublisher) GSUtilStatus(args ...string) (bool, error) {
 }
 
 func (*defaultPublisher) GetURLResponse(url string) (string, error) {
-	return http.GetURLResponse(url, true)
+	c, err := http.NewAgent().Get(url)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes.TrimSpace(c)), nil
 }
 
 func (d *defaultPublisher) GetReleasePath(
