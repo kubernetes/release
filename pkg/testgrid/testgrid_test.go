@@ -50,7 +50,7 @@ func TestBlockingTestsSuccess(t *testing.T) {
 		}},
 	})
 	require.Nil(t, err)
-	client.GetURLResponseReturns(string(httpRes), nil)
+	client.GetURLResponseReturns(httpRes, nil)
 
 	// When
 	res, err := sut.BlockingTests(git.DefaultBranch)
@@ -65,7 +65,7 @@ func TestBlockingTestsSuccess(t *testing.T) {
 func TestBlockingTestsFailureDashboardNotFound(t *testing.T) {
 	// Given
 	sut, client := newSut()
-	client.GetURLResponseReturns("", nil)
+	client.GetURLResponseReturns(nil, nil)
 
 	// When
 	res, err := sut.BlockingTests("")
@@ -78,7 +78,7 @@ func TestBlockingTestsFailureDashboardNotFound(t *testing.T) {
 func TestBlockingTestsFailureHTTP(t *testing.T) {
 	// Given
 	sut, client := newSut()
-	client.GetURLResponseReturns("", errors.New(""))
+	client.GetURLResponseReturns(nil, errors.New(""))
 
 	// When
 	res, err := sut.BlockingTests("")
