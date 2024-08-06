@@ -68,9 +68,10 @@ func init() {
 		"run the command to target the production environment",
 	)
 
-	rootCmd.PersistentFlags().StringVar(
+	rootCmd.PersistentFlags().StringVarP(
 		&rootOpts.logLevel,
 		"log-level",
+		"l",
 		"info",
 		"the logging verbosity, either "+log.LevelNames(),
 	)
