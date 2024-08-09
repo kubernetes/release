@@ -280,7 +280,7 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 		}
 
 		// Find and collect PR number from commit message
-		prNums, err := prsNumForCommitFromMessage(commitPointer.Message)
+		prNum, err := prNumForCommitFromMessage(commitPointer.Message)
 		if err == errNoPRIDFoundInCommitMessage {
 			logrus.WithFields(logrus.Fields{
 				"sha": hashString,
@@ -301,11 +301,11 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 		}
 		logrus.WithFields(logrus.Fields{
 			"sha": hashString,
-			"prs": prNums,
+			"pr":  prNum,
 		}).Debug("found PR from commit")
 
 		// Only taking the first one, assuming they are merged by Prow
-		pairs = append(pairs, &commitPrPair{Commit: commitPointer, PrNum: prNums[0]})
+		pairs = append(pairs, &commitPrPair{Commit: commitPointer, PrNum: prNum})
 
 		// Advance pointer based on left parent
 		hashPointer = commitPointer.ParentHashes[0]
