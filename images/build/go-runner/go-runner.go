@@ -26,12 +26,19 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
-	logFilePath    = flag.String("log-file", "", "If non-empty, save stdout to this file")
-	alsoToStdOut   = flag.Bool("also-stdout", false, "useful with log-file, log to standard output as well as the log file")
-	redirectStderr = flag.Bool("redirect-stderr", true, "treat stderr same as stdout")
+	logFilePath       = flag.String("log-file", "", "If non-empty, save stdout to this file")
+	alsoToStdOut      = flag.Bool("also-stdout", false, "useful with log-file, log to standard output as well as the log file")
+	redirectStderr    = flag.Bool("redirect-stderr", true, "treat stderr same as stdout")
+	logRotate         = flag.Bool("log-rotate", false, "allow go-runner to handle log rotation")
+	logMaxSize        = flag.Int("log-maxsize", 100, "The maximum size in megabytes of the log file before it gets rotated")
+	logMaxAge         = flag.Int("log-maxage", 0, "The maximum number of days to retain old log files based on the timestamp encoded in their filename")
+	logMaxBackups     = flag.Int("log-maxbackup", 1, "The maximum number of old log files to retain. Setting a value of 0 will mean there's no restriction on the number of files")
+	logBackupCompress = flag.Bool("log-compress", false, "If set, the rotated log files will be compressed using gzip")
 )
 
 func main() {
@@ -46,6 +53,7 @@ func configureAndRun() error {
 	var (
 		outputStream io.Writer = os.Stdout
 		errStream    io.Writer = os.Stderr
+		logFile      io.Writer
 	)
 
 	args := flag.Args()
@@ -54,9 +62,23 @@ func configureAndRun() error {
 	}
 
 	if logFilePath != nil && *logFilePath != "" {
-		logFile, err := os.OpenFile(*logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-		if err != nil {
-			return fmt.Errorf("failed to create log file %v: %w", *logFilePath, err)
+
+		if *logRotate {
+			logger := &lumberjack.Logger{
+				Filename:   *logFilePath,
+				MaxSize:    *logMaxSize,        // megabytes
+				MaxBackups: *logMaxBackups,     // log file retain count
+				MaxAge:     *logMaxAge,         // days
+				Compress:   *logBackupCompress, // disabled by default
+			}
+			defer logger.Close()
+			logFile = logger
+		} else {
+			file, err := os.OpenFile(*logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+			if err != nil {
+				return fmt.Errorf("failed to create log file %v: %w", *logFilePath, err)
+			}
+			logFile = file
 		}
 		if *alsoToStdOut {
 			outputStream = io.MultiWriter(os.Stdout, logFile)
