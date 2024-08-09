@@ -1348,6 +1348,29 @@ release::gcs::publish () {
   fi
 }
 
+ensure_crane_exists () {
+  if ! command -v crane &> /dev/null; then
+    echo "Installing crane..."
+    CRANE_VERSION="v0.19.1"
+    BASE_URL="https://github.com/google/go-containerregistry/releases/download"
+    TAR_NAME="go-containerregistry_Linux_$(uname -p).tar.gz"
+
+    curl --fail --retry 10 -sL "${BASE_URL}/${CRANE_VERSION}/${TAR_NAME}" -o "${TMPDIR}/go-containerregistry.tar.gz"
+
+    # Fetch the checksum and verify it.
+    expected="$(curl --fail --retry 10 -sL ${BASE_URL}/${CRANE_VERSION}/checksums.txt -o - | grep ${TAR_NAME} | cut -d ' ' -f 1)"
+    actual="$(shasum -a256 ${TMPDIR}/go-containerregistry.tar.gz | cut -d ' ' -f 1)"
+    if [[ "${expected}" != "${actual}" ]]; then
+      logecho "Crane checksums do not match. Expected: ${expected}, actual: ${actual}"
+      return 1
+    fi
+
+    # Add crane.
+    sudo tar -zxvf "${TMPDIR}/go-containerregistry.tar.gz" -C /usr/local/bin/ crane
+    rm "${TMPDIR}/go-containerregistry.tar.gz"
+  fi
+}
+
 ###############################################################################
 # Releases all docker images to a docker registry using the docker tarfiles.
 #
@@ -1370,6 +1393,8 @@ release::docker::release () {
 
   common::argc_validate 3
 
+  ensure_crane_exists
+
   logecho "Send docker containers from release-images to $push_registry..."
 
   mapfile -t arches < <(find "${release_images}" -maxdepth 1 -mindepth 1 -type d -exec basename {} \;)
@@ -1388,16 +1413,10 @@ release::docker::release () {
       new_tag_with_arch=("$new_tag-$arch:$version")
       manifest_images["${new_tag}"]+=" $arch"
 
-      logrun docker load -qi $tarfile
-      logrun docker tag $orig_tag ${new_tag_with_arch}
       logecho -n "Pushing ${new_tag_with_arch}: "
-      # TODO: Use docker direct when fixed later
-      #logrun -r 5 -s docker push "${new_tag_with_arch}" || return 1
-      logrun -r 5 -s $GCLOUD docker -- push "${new_tag_with_arch}" || return 1
-      if [[ "${PURGE_IMAGES:-yes}" == "yes" ]] ; then
-        logrun docker rmi $orig_tag ${new_tag_with_arch} || true
-      fi
-
+      # We don't need to load the image when pushing it with crane.
+      # This will also allow us to push any Windows images we might have.
+      logrun -r 5 -s crane push $tarfile "${new_tag_with_arch}" || return 1
     done
   done
 
