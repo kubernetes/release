@@ -1,0 +1,44 @@
+SkipHealthzCheck snuck in there while I was working on the test for #123003, but is ultimately not necessary to test the functionality. Somehow it merged despite failing the goroutine leak check fairly often on my machine
+
+skipping healthz check resulted in leaking goroutines from poststarthooks sometimes when running TestCRDsOnStartup. Manually tested with stress that it no longer flakes (and that it did flake before).
+
+before:
+
+```
+1m0s: 8 runs so far, 8 failures (100.00%)
+1m5s: 8 runs so far, 8 failures (100.00%)
+1m10s: 8 runs so far, 8 failures (100.00%)
+1m15s: 8 runs so far, 8 failures (100.00%)
+```
+
+after
+
+```
+30s: 3 runs so far, 0 failures
+35s: 5 runs so far, 0 failures
+40s: 13 runs so far, 0 failures
+45s: 13 runs so far, 0 failures
+50s: 13 runs so far, 0 failures
+55s: 13 runs so far, 0 failures
+1m0s: 15 runs so far, 0 failures
+```
+
+#### What type of PR is this?
+
+/kind cleanup /kind failing-test /kind flake
+#### What this PR does / why we need it:
+#### Which issue(s) this PR fixes:
+
+Fixes #
+#### Special notes for your reviewer:
+#### Does this PR introduce a user-facing change?
+
+```
+
+```
+
+#### Additional documentation e.g., KEPs (Kubernetes Enhancement Proposals), usage docs, etc.:
+
+```
+
+```
