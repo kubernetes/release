@@ -74,6 +74,8 @@ kubeadm:
     dependencies:
       - name: cri-tools
         versionConstraint: ">= 1.30.0"
+  - versionConstraint: ">= 1.32.0"
+    sourceURLTemplate: "{{ KubernetesURL }}"
 kubectl:
   - versionConstraint: ">= 1.0.0"
     sourceURLTemplate: "{{ KubernetesURL }}"
