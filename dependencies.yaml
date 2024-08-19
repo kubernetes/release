@@ -418,7 +418,7 @@ dependencies:
 
   # golangci-lint-version
   - name: "golangci-lint"
-    version: v1.59
+    version: v1.60
     refPaths:
     - path: .github/workflows/lint.yml
       match: "version: v\\d+.\\d+?\\.?(\\d+)?"

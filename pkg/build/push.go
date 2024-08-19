@@ -541,7 +541,7 @@ func (bi *Instance) StageLocalSourceTree(workDir, buildVersion string) error {
 // StageLocalSourceTree to be able to use it during the anago.stage function.
 func (bi *Instance) DeleteLocalSourceTarball(workDir string) error {
 	tarballPath := filepath.Join(workDir, release.SourcesTar)
-	logrus.Infof("Removing local source tree tarball " + tarballPath)
+	logrus.Info("Removing local source tree tarball " + tarballPath)
 	if err := os.RemoveAll(tarballPath); err != nil {
 		return fmt.Errorf("remove local source tarball: %w", err)
 	}
