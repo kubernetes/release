@@ -1,7 +1,7 @@
 ---
 run:
   concurrency: 6
-  timeout: 5m
+  timeout: 15m
 issues:
   exclude-rules:
     # counterfeiter fakes are usually named 'fake_<something>.go'
