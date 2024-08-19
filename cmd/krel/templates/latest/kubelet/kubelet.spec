@@ -23,14 +23,15 @@ Requires: {{ $dep.Name }} {{ $dep.VersionConstraint }}
 %if "%{_vendor}" == "debbuild"
 Requires: iproute2
 Requires: mount
+Requires: conntrack
 %else
 Requires: iproute
+Requires: conntrack-tools
 %endif
 Requires: socat
 Requires: util-linux
 Requires: ethtool
 Requires: ebtables
-Requires: conntrack
 
 %if "%{_vendor}" == "debbuild"
 BuildRequires: systemd-deb-macros
