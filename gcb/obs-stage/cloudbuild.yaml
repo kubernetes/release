@@ -56,6 +56,9 @@ steps:
   dir: go/src/k8s.io/release
   env:
   - KREL_OUTPUT_PATH=/workspace/bin/krel
+  - "TOOL_ORG=${_TOOL_ORG}"
+  - "TOOL_REPO=${_TOOL_REPO}"
+  - "TOOL_REF=${_TOOL_REF}"
   args:
   - ./hack/get-krel
 
