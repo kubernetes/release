@@ -29,6 +29,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/release-utils/command"
+
+	"k8s.io/release/pkg/announce"
 )
 
 const (
@@ -240,7 +242,7 @@ func (opts *buildAnnounceOptions) saveAnnouncement(announcementSubject string, a
 		return fmt.Errorf("saving announcement.html: %w", err)
 	}
 
-	absOutputPath = filepath.Join(opts.workDir, "announcement-subject.txt")
+	absOutputPath = filepath.Join(opts.workDir, announce.SubjectFile)
 	logrus.Infof("Writing announcement subject to %s", absOutputPath)
 	err = os.WriteFile(absOutputPath, []byte(announcementSubject), os.FileMode(0o644))
 	if err != nil {

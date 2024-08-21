@@ -90,10 +90,6 @@ type releaseClient interface {
 	// UpdateGitHubPage updates the GitHub release page to with the source code
 	// and release information.
 	UpdateGitHubPage() error
-
-	// Archive copies the release process logs to a bucket and sets private
-	// permissions on it.
-	Archive() error
 }
 
 // DefaultRelease is the default staging implementation used in production.
@@ -154,7 +150,6 @@ type releaseImpl interface {
 	PushBranches(pusher *release.GitObjectPusher, branchList []string) error
 	PushMainBranch(pusher *release.GitObjectPusher) error
 	NewGitPusher(opts *release.GitObjectPusherOptions) (*release.GitObjectPusher, error)
-	ArchiveRelease(options *release.ArchiverOptions) error
 	NormalizePath(store object.Store, pathParts ...string) (string, error)
 	CopyToRemote(store object.Store, src, gcsPath string) error
 	PublishReleaseNotesIndex(
@@ -263,11 +258,6 @@ func (d *DefaultRelease) InitLogFile() error {
 func (d *defaultReleaseImpl) CreateAnnouncement(options *announce.Options) error {
 	// Create the announcement
 	return announce.NewAnnounce(options).CreateForRelease()
-}
-
-func (d *defaultReleaseImpl) ArchiveRelease(options *release.ArchiverOptions) error {
-	// Create a new release archiver
-	return release.NewArchiver(options).ArchiveRelease()
 }
 
 func (d *defaultReleaseImpl) UpdateGitHubPage(options *github.Options) error {
@@ -427,7 +417,7 @@ func (d *DefaultRelease) PushArtifacts() error {
 		}
 	}
 
-	logrus.Info("Publishing release notes JSON")
+	logrus.Info("Publishing release notes JSON and announcement")
 	objStore := object.NewGCS()
 	objStore.SetOptions(objStore.WithNoClobber(false))
 	gcsReleaseRootPath, err := d.impl.NormalizePath(
@@ -441,12 +431,18 @@ func (d *DefaultRelease) PushArtifacts() error {
 		"/%s/release-notes.json", d.state.versions.Prime(),
 	)
 
-	if err := d.impl.CopyToRemote(
-		objStore,
-		releaseNotesJSONFile,
-		gcsReleaseNotesPath,
-	); err != nil {
-		return fmt.Errorf("copy release notes to bucket: %w", err)
+	for from, to := range map[string]string{
+		releaseNotesJSONFile:    gcsReleaseNotesPath,
+		announcementHTMLFile:    gcsReleaseRootPath + fmt.Sprintf("/%s/%s", d.state.versions.Prime(), announce.AnnouncementFile),
+		announcementSubjectFile: gcsReleaseRootPath + fmt.Sprintf("/%s/%s", d.state.versions.Prime(), announce.SubjectFile),
+	} {
+		if err := d.impl.CopyToRemote(
+			objStore,
+			from,
+			to,
+		); err != nil {
+			return fmt.Errorf("copy file notes to bucket: %w", err)
+		}
 	}
 
 	for _, version := range d.state.versions.Ordered() {
@@ -564,6 +560,17 @@ func (d *DefaultRelease) CreateAnnouncement() error {
 			logrus.Info("Not creating publishing bot issue in mock release")
 		}
 	}
+
+	args := ""
+	if d.options.NoMock {
+		args += " --nomock"
+	}
+	args += " --tag=" + d.state.versions.Prime()
+
+	logrus.Infof(
+		"To announce this release, run:\n\n$ krel announce send%s", args,
+	)
+
 	return nil
 }
 
@@ -597,35 +604,6 @@ func (d *DefaultRelease) UpdateGitHubPage() error {
 	if err := d.impl.UpdateGitHubPage(ghPageOpts); err != nil {
 		return fmt.Errorf("updating GitHub release page: %w", err)
 	}
-	return nil
-}
-
-// Archive stores the release artifact in a bucket along with
-// its logs for long term conservation.
-func (d *DefaultRelease) Archive() error {
-	// Create a new options set for the release archiver
-	archiverOptions := &release.ArchiverOptions{
-		ReleaseBuildDir: filepath.Join(workspaceDir, "src"),
-		LogFile:         d.state.logFile,
-		BuildVersion:    d.options.BuildVersion,
-		PrimeVersion:    d.state.versions.Prime(),
-		Bucket:          d.options.Bucket(),
-	}
-
-	if err := d.impl.ArchiveRelease(archiverOptions); err != nil {
-		return fmt.Errorf("running the release archival process: %w", err)
-	}
-
-	args := ""
-	if d.options.NoMock {
-		args += " --nomock"
-	}
-	args += " --tag=" + d.state.versions.Prime()
-
-	logrus.Infof(
-		"To announce this release, run:\n\n$ krel announce send%s", args,
-	)
-
 	return nil
 }
 

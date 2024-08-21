@@ -126,9 +126,6 @@ const (
 	// The default bazel build directory.
 	BazelBuildDir = "bazel-bin/build"
 
-	// Archive path is the root path in the bucket where releases are archived.
-	ArchivePath = "archive"
-
 	// Publishing bot issue repository.
 	PubBotRepoOrg  = "kubernetes"
 	PubBotRepoName = "sig-release"

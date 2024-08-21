@@ -25,8 +25,11 @@ import (
 )
 
 const (
-	announcementFile = "announcement.html"
-	subjectFile      = "announcement-subject.txt"
+	// AnnouncementFile is the default announcement HTML file.
+	AnnouncementFile = "announcement.html"
+
+	// SubjectFile is the default subject file for the announcement.
+	SubjectFile = "announcement-subject.txt"
 )
 
 const branchAnnouncement = `Kubernetes Community,

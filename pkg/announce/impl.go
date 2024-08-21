@@ -44,7 +44,7 @@ type impl interface {
 }
 
 func (i *defaultImpl) Create(workDir, subject, message string) error {
-	subjectFile := filepath.Join(workDir, subjectFile)
+	subjectFile := filepath.Join(workDir, SubjectFile)
 	//nolint:gosec // TODO(gosec): G306: Expect WriteFile permissions to be
 	// 0600 or less
 	if err := os.WriteFile(
@@ -58,7 +58,7 @@ func (i *defaultImpl) Create(workDir, subject, message string) error {
 	}
 	logrus.Debugf("Wrote file %s", subjectFile)
 
-	announcementFile := filepath.Join(workDir, announcementFile)
+	announcementFile := filepath.Join(workDir, AnnouncementFile)
 	//nolint:gosec // TODO(gosec): G306: Expect WriteFile permissions to be
 	// 0600 or less
 	if err := os.WriteFile(

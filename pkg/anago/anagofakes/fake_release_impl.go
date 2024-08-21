@@ -30,17 +30,6 @@ import (
 )
 
 type FakeReleaseImpl struct {
-	ArchiveReleaseStub        func(*release.ArchiverOptions) error
-	archiveReleaseMutex       sync.RWMutex
-	archiveReleaseArgsForCall []struct {
-		arg1 *release.ArchiverOptions
-	}
-	archiveReleaseReturns struct {
-		result1 error
-	}
-	archiveReleaseReturnsOnCall map[int]struct {
-		result1 error
-	}
 	BranchNeedsCreationStub        func(string, string, semver.Version) (bool, error)
 	branchNeedsCreationMutex       sync.RWMutex
 	branchNeedsCreationArgsForCall []struct {
@@ -307,67 +296,6 @@ type FakeReleaseImpl struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
-}
-
-func (fake *FakeReleaseImpl) ArchiveRelease(arg1 *release.ArchiverOptions) error {
-	fake.archiveReleaseMutex.Lock()
-	ret, specificReturn := fake.archiveReleaseReturnsOnCall[len(fake.archiveReleaseArgsForCall)]
-	fake.archiveReleaseArgsForCall = append(fake.archiveReleaseArgsForCall, struct {
-		arg1 *release.ArchiverOptions
-	}{arg1})
-	stub := fake.ArchiveReleaseStub
-	fakeReturns := fake.archiveReleaseReturns
-	fake.recordInvocation("ArchiveRelease", []interface{}{arg1})
-	fake.archiveReleaseMutex.Unlock()
-	if stub != nil {
-		return stub(arg1)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fakeReturns.result1
-}
-
-func (fake *FakeReleaseImpl) ArchiveReleaseCallCount() int {
-	fake.archiveReleaseMutex.RLock()
-	defer fake.archiveReleaseMutex.RUnlock()
-	return len(fake.archiveReleaseArgsForCall)
-}
-
-func (fake *FakeReleaseImpl) ArchiveReleaseCalls(stub func(*release.ArchiverOptions) error) {
-	fake.archiveReleaseMutex.Lock()
-	defer fake.archiveReleaseMutex.Unlock()
-	fake.ArchiveReleaseStub = stub
-}
-
-func (fake *FakeReleaseImpl) ArchiveReleaseArgsForCall(i int) *release.ArchiverOptions {
-	fake.archiveReleaseMutex.RLock()
-	defer fake.archiveReleaseMutex.RUnlock()
-	argsForCall := fake.archiveReleaseArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeReleaseImpl) ArchiveReleaseReturns(result1 error) {
-	fake.archiveReleaseMutex.Lock()
-	defer fake.archiveReleaseMutex.Unlock()
-	fake.ArchiveReleaseStub = nil
-	fake.archiveReleaseReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeReleaseImpl) ArchiveReleaseReturnsOnCall(i int, result1 error) {
-	fake.archiveReleaseMutex.Lock()
-	defer fake.archiveReleaseMutex.Unlock()
-	fake.ArchiveReleaseStub = nil
-	if fake.archiveReleaseReturnsOnCall == nil {
-		fake.archiveReleaseReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.archiveReleaseReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
 }
 
 func (fake *FakeReleaseImpl) BranchNeedsCreation(arg1 string, arg2 string, arg3 semver.Version) (bool, error) {
@@ -1699,8 +1627,6 @@ func (fake *FakeReleaseImpl) ValidateImagesReturnsOnCall(i int, result1 error) {
 func (fake *FakeReleaseImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.archiveReleaseMutex.RLock()
-	defer fake.archiveReleaseMutex.RUnlock()
 	fake.branchNeedsCreationMutex.RLock()
 	defer fake.branchNeedsCreationMutex.RUnlock()
 	fake.checkPrerequisitesMutex.RLock()

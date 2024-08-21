@@ -117,7 +117,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 
 	tag := util.AddTagPrefix(announceRootOpts.tag)
 	u := fmt.Sprintf(
-		"%s/archive/anago-%s/announcement.html",
+		"%s/release/%s/announcement.html",
 		release.URLPrefixForBucket(release.ProductionBucket), tag,
 	)
 	logrus.Infof("Using announcement remote URL: %s", u)
