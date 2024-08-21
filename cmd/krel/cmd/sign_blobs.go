@@ -196,7 +196,7 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 		}
 	}
 
-	t := throttler.New(int(signOpts.maxWorkers), len(bundle))
+	t := throttler.New(int(signOpts.maxWorkers), len(bundle)) //nolint:gosec // overlow is highly unlikely
 	for _, fileBundle := range bundle {
 		go func(fileBundle signingBundle) {
 			logrus.Infof("Signing %s...", fileBundle.fileToSign)
