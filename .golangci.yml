@@ -33,7 +33,6 @@ linters:
     - errcheck
     - errchkjson
     - errname
-    - exportloopref
     - fatcontext
     - gci
     - ginkgolinter
