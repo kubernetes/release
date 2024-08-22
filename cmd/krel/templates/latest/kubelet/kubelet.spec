@@ -28,10 +28,8 @@ Requires: conntrack
 Requires: iproute
 Requires: conntrack-tools
 %endif
-Requires: socat
 Requires: util-linux
 Requires: ethtool
-Requires: ebtables
 
 %if "%{_vendor}" == "debbuild"
 BuildRequires: systemd-deb-macros
