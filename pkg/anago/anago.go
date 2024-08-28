@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/release-utils/util"
 	"sigs.k8s.io/release-utils/version"
 
+	"k8s.io/release/pkg/announce"
 	"k8s.io/release/pkg/release"
 )
 
@@ -50,6 +51,12 @@ const (
 
 	// releaseNotesJSONFile is the file containing the release notes in json format.
 	releaseNotesJSONFile = workspaceDir + "/src/release-notes.json"
+
+	// announcementHTMLFile is the file containing the release announcement in HTML format.
+	announcementHTMLFile = workspaceDir + "/src/" + announce.AnnouncementFile
+
+	// announcementSubjectFile is the file containing the release announcement subject.
+	announcementSubjectFile = workspaceDir + "/src/" + announce.SubjectFile
 
 	// The default license for all artifacts.
 	LicenseIdentifier = "Apache-2.0"
@@ -395,7 +402,7 @@ func (r *Release) Run() error {
 		return fmt.Errorf("init log file: %w", err)
 	}
 
-	logger := log.NewStepLogger(12)
+	logger := log.NewStepLogger(11)
 	v := version.GetVersionInfo()
 	logger.Infof("Using krel version: %s", v.GitVersion)
 
@@ -431,6 +438,11 @@ func (r *Release) Run() error {
 		logrus.Warnf("Unable to check provenance attestation: %v", err)
 	}
 
+	logger.WithStep().Info("Creating announcement")
+	if err := r.client.CreateAnnouncement(); err != nil {
+		return fmt.Errorf("create announcement: %w", err)
+	}
+
 	logger.WithStep().Info("Pushing artifacts")
 	if err := r.client.PushArtifacts(); err != nil {
 		return fmt.Errorf("push artifacts: %w", err)
@@ -441,19 +453,9 @@ func (r *Release) Run() error {
 		return fmt.Errorf("push git objects: %w", err)
 	}
 
-	logger.WithStep().Info("Creating announcement")
-	if err := r.client.CreateAnnouncement(); err != nil {
-		return fmt.Errorf("create announcement: %w", err)
-	}
-
 	logger.WithStep().Info("Updating GitHub release page")
 	if err := r.client.UpdateGitHubPage(); err != nil {
 		return fmt.Errorf("updating github page: %w", err)
-	}
-
-	logger.WithStep().Info("Archiving release")
-	if err := r.client.Archive(); err != nil {
-		return fmt.Errorf("archive release: %w", err)
 	}
 
 	logger.Info("Release done")

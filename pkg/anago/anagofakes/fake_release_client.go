@@ -22,16 +22,6 @@ import (
 )
 
 type FakeReleaseClient struct {
-	ArchiveStub        func() error
-	archiveMutex       sync.RWMutex
-	archiveArgsForCall []struct {
-	}
-	archiveReturns struct {
-		result1 error
-	}
-	archiveReturnsOnCall map[int]struct {
-		result1 error
-	}
 	CheckPrerequisitesStub        func() error
 	checkPrerequisitesMutex       sync.RWMutex
 	checkPrerequisitesArgsForCall []struct {
@@ -159,59 +149,6 @@ type FakeReleaseClient struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
-}
-
-func (fake *FakeReleaseClient) Archive() error {
-	fake.archiveMutex.Lock()
-	ret, specificReturn := fake.archiveReturnsOnCall[len(fake.archiveArgsForCall)]
-	fake.archiveArgsForCall = append(fake.archiveArgsForCall, struct {
-	}{})
-	stub := fake.ArchiveStub
-	fakeReturns := fake.archiveReturns
-	fake.recordInvocation("Archive", []interface{}{})
-	fake.archiveMutex.Unlock()
-	if stub != nil {
-		return stub()
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fakeReturns.result1
-}
-
-func (fake *FakeReleaseClient) ArchiveCallCount() int {
-	fake.archiveMutex.RLock()
-	defer fake.archiveMutex.RUnlock()
-	return len(fake.archiveArgsForCall)
-}
-
-func (fake *FakeReleaseClient) ArchiveCalls(stub func() error) {
-	fake.archiveMutex.Lock()
-	defer fake.archiveMutex.Unlock()
-	fake.ArchiveStub = stub
-}
-
-func (fake *FakeReleaseClient) ArchiveReturns(result1 error) {
-	fake.archiveMutex.Lock()
-	defer fake.archiveMutex.Unlock()
-	fake.ArchiveStub = nil
-	fake.archiveReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeReleaseClient) ArchiveReturnsOnCall(i int, result1 error) {
-	fake.archiveMutex.Lock()
-	defer fake.archiveMutex.Unlock()
-	fake.ArchiveStub = nil
-	if fake.archiveReturnsOnCall == nil {
-		fake.archiveReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.archiveReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
 }
 
 func (fake *FakeReleaseClient) CheckPrerequisites() error {
@@ -885,8 +822,6 @@ func (fake *FakeReleaseClient) ValidateOptionsReturnsOnCall(i int, result1 error
 func (fake *FakeReleaseClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.archiveMutex.RLock()
-	defer fake.archiveMutex.RUnlock()
 	fake.checkPrerequisitesMutex.RLock()
 	defer fake.checkPrerequisitesMutex.RUnlock()
 	fake.checkProvenanceMutex.RLock()
