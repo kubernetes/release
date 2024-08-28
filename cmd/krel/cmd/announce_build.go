@@ -29,8 +29,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/release-utils/command"
-
-	"k8s.io/release/pkg/announce"
 )
 
 const (
@@ -181,8 +179,7 @@ func runBuildBranchAnnounce(opts *buildBranchAnnounceOptions, buildOpts *buildAn
 		return fmt.Errorf("generating the announcement html file: %w", err)
 	}
 
-	announcementSubject := fmt.Sprintf("Kubernetes %s branch has been created", opts.branch)
-	return buildOpts.saveAnnouncement(announcementSubject, announcement)
+	return buildOpts.saveAnnouncement(announcement)
 }
 
 // runBuildReleaseAnnounce build the announcement file when creating a new Kubernetes release.
@@ -227,12 +224,10 @@ func runBuildReleaseAnnounce(opts *buildReleaseAnnounceOptions, buildOpts *build
 		return fmt.Errorf("generating the announcement html file: %w", err)
 	}
 
-	announcementSubject := fmt.Sprintf("Kubernetes %s is live!", announceOpts.tag)
-
-	return buildOpts.saveAnnouncement(announcementSubject, announcement)
+	return buildOpts.saveAnnouncement(announcement)
 }
 
-func (opts *buildAnnounceOptions) saveAnnouncement(announcementSubject string, announcement bytes.Buffer) error {
+func (opts *buildAnnounceOptions) saveAnnouncement(announcement bytes.Buffer) error {
 	logrus.Info("Creating announcement files")
 
 	absOutputPath := filepath.Join(opts.workDir, "announcement.html")
@@ -242,12 +237,6 @@ func (opts *buildAnnounceOptions) saveAnnouncement(announcementSubject string, a
 		return fmt.Errorf("saving announcement.html: %w", err)
 	}
 
-	absOutputPath = filepath.Join(opts.workDir, announce.SubjectFile)
-	logrus.Infof("Writing announcement subject to %s", absOutputPath)
-	err = os.WriteFile(absOutputPath, []byte(announcementSubject), os.FileMode(0o644))
-	if err != nil {
-		return fmt.Errorf("saving announcement-subject.txt: %w", err)
-	}
 	logrus.Info("Kubernetes Announcement created.")
 	return nil
 }

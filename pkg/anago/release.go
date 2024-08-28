@@ -432,9 +432,8 @@ func (d *DefaultRelease) PushArtifacts() error {
 	)
 
 	for from, to := range map[string]string{
-		releaseNotesJSONFile:    gcsReleaseNotesPath,
-		announcementHTMLFile:    gcsReleaseRootPath + fmt.Sprintf("/%s/%s", d.state.versions.Prime(), announce.AnnouncementFile),
-		announcementSubjectFile: gcsReleaseRootPath + fmt.Sprintf("/%s/%s", d.state.versions.Prime(), announce.SubjectFile),
+		releaseNotesJSONFile: gcsReleaseNotesPath,
+		announcementHTMLFile: gcsReleaseRootPath + fmt.Sprintf("/%s/%s", d.state.versions.Prime(), announce.AnnouncementFile),
 	} {
 		if err := d.impl.CopyToRemote(
 			objStore,

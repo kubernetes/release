@@ -17,8 +17,8 @@ limitations under the License.
 package announce
 
 type Options struct {
-	// workDir is the directory where announcement.html and
-	// announcement-subject.txt will be written
+	// workDir is the directory where announcement.html
+	// will be written
 	workDir string
 	// Release tag we will build the announcement for
 	tag    string

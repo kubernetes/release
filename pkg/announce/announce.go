@@ -24,13 +24,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	// AnnouncementFile is the default announcement HTML file.
-	AnnouncementFile = "announcement.html"
-
-	// SubjectFile is the default subject file for the announcement.
-	SubjectFile = "announcement-subject.txt"
-)
+// AnnouncementFile is the default announcement HTML file.
+const AnnouncementFile = "announcement.html"
 
 const branchAnnouncement = `Kubernetes Community,
 <p>
@@ -92,7 +87,6 @@ func (a *Announce) CreateForBranch() error {
 
 	if err := a.impl.Create(
 		a.options.workDir,
-		fmt.Sprintf("Kubernetes %s branch has been created", a.options.branch),
 		fmt.Sprintf(branchAnnouncement, a.options.branch),
 	); err != nil {
 		return fmt.Errorf("creating branch announcement: %w", err)
@@ -139,7 +133,6 @@ func (a *Announce) CreateForRelease() error {
 
 	if err := a.impl.Create(
 		a.options.workDir,
-		fmt.Sprintf("Kubernetes %s is live!", a.options.tag),
 		fmt.Sprintf(releaseAnnouncement,
 			a.options.tag, goVersion, a.options.changelogPath,
 			filepath.Base(a.options.changelogPath), a.options.tag, changelog,
