@@ -22,12 +22,11 @@ import (
 )
 
 type FakeImpl struct {
-	CreateStub        func(string, string, string) error
+	CreateStub        func(string, string) error
 	createMutex       sync.RWMutex
 	createArgsForCall []struct {
 		arg1 string
 		arg2 string
-		arg3 string
 	}
 	createReturns struct {
 		result1 error
@@ -65,20 +64,19 @@ type FakeImpl struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeImpl) Create(arg1 string, arg2 string, arg3 string) error {
+func (fake *FakeImpl) Create(arg1 string, arg2 string) error {
 	fake.createMutex.Lock()
 	ret, specificReturn := fake.createReturnsOnCall[len(fake.createArgsForCall)]
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
 		arg1 string
 		arg2 string
-		arg3 string
-	}{arg1, arg2, arg3})
+	}{arg1, arg2})
 	stub := fake.CreateStub
 	fakeReturns := fake.createReturns
-	fake.recordInvocation("Create", []interface{}{arg1, arg2, arg3})
+	fake.recordInvocation("Create", []interface{}{arg1, arg2})
 	fake.createMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -92,17 +90,17 @@ func (fake *FakeImpl) CreateCallCount() int {
 	return len(fake.createArgsForCall)
 }
 
-func (fake *FakeImpl) CreateCalls(stub func(string, string, string) error) {
+func (fake *FakeImpl) CreateCalls(stub func(string, string) error) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
 	fake.CreateStub = stub
 }
 
-func (fake *FakeImpl) CreateArgsForCall(i int) (string, string, string) {
+func (fake *FakeImpl) CreateArgsForCall(i int) (string, string) {
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
 	argsForCall := fake.createArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeImpl) CreateReturns(result1 error) {

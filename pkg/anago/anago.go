@@ -55,9 +55,6 @@ const (
 	// announcementHTMLFile is the file containing the release announcement in HTML format.
 	announcementHTMLFile = workspaceDir + "/src/" + announce.AnnouncementFile
 
-	// announcementSubjectFile is the file containing the release announcement subject.
-	announcementSubjectFile = workspaceDir + "/src/" + announce.SubjectFile
-
 	// The default license for all artifacts.
 	LicenseIdentifier = "Apache-2.0"
 )

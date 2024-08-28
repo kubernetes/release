@@ -38,26 +38,12 @@ type defaultImpl struct{}
 //go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt announcefakes/fake_impl.go > announcefakes/_fake_impl.go && mv announcefakes/_fake_impl.go announcefakes/fake_impl.go"
 
 type impl interface {
-	Create(workDir, subject, message string) error
+	Create(workDir, message string) error
 	GetGoVersion(tag string) (string, error)
 	ReadChangelogFile(file string) ([]byte, error)
 }
 
-func (i *defaultImpl) Create(workDir, subject, message string) error {
-	subjectFile := filepath.Join(workDir, SubjectFile)
-	//nolint:gosec // TODO(gosec): G306: Expect WriteFile permissions to be
-	// 0600 or less
-	if err := os.WriteFile(
-		subjectFile, []byte(subject), 0o755,
-	); err != nil {
-		return fmt.Errorf(
-			"writing subject to file %s: %w",
-			subjectFile,
-			err,
-		)
-	}
-	logrus.Debugf("Wrote file %s", subjectFile)
-
+func (i *defaultImpl) Create(workDir, message string) error {
 	announcementFile := filepath.Join(workDir, AnnouncementFile)
 	//nolint:gosec // TODO(gosec): G306: Expect WriteFile permissions to be
 	// 0600 or less
