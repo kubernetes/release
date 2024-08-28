@@ -20,29 +20,51 @@ SHELL:=/usr/bin/env bash
 
 COLOR:=\\033[36m
 NOCOLOR:=\\033[0m
+HELP_WIDTH:=20
 
-##@ Verify
+.PHONY: help
+help:  ## Display this help
+	@awk \
+		-v "col=${COLOR}" -v "nocol=${NOCOLOR}" \
+		' \
+			BEGIN { \
+				FS = ":.*##" ; \
+				printf "\nUsage:\n  make %s<target>%s\n", col, nocol \
+			} \
+			/^[a-zA-Z_-]+:.*?##/ { \
+				printf "  %s%-${HELP_WIDTH}s%s %s\n", col, $$1, nocol, $$2 \
+			} \
+			/^##@/ { \
+				printf "\n%s\n", substr($$0, 5) \
+			} \
+		' $(MAKEFILE_LIST)
 
-.PHONY: verify verify-boilerplate verify-build verify-dependencies verify-go-mod verify-package-specs
+##@ Verify:
 
+.PHONY: verify
 verify: release-tools verify-boilerplate verify-build verify-dependencies verify-go-mod verify-package-specs ## Runs verification scripts to ensure correct execution
 
+.PHONY: verify-boilerplate
 verify-boilerplate: ## Runs the file header check
 	./hack/verify-boilerplate.sh
 
+.PHONY: verify-build
 verify-build: ## Builds the project for a chosen set of platforms
 	./hack/verify-build.sh
 
+.PHONY: verify-dependencies
 verify-dependencies: ## Runs zeitgeist to verify dependency versions
 	./hack/verify-dependencies.sh
 
+.PHONY: verify-go-mod
 verify-go-mod: ## Runs the go module linter
 	./hack/verify-go-mod.sh
 
+.PHONY: verify-package-specs
 verify-package-specs: ## Runs the rpmlint on package specs
 	./hack/verify-package-specs.sh
 
-##@ Tests
+##@ Tests:
 
 .PHONY: test
 test: test-go-unit test-sh ## Runs unit tests to ensure correct execution
@@ -59,22 +81,19 @@ test-go-integration: ## Runs golang integration tests
 test-sh: ## Runs all shellscript tests
 	./hack/test-sh.sh
 
-##@ Tools
+##@ Tools:
 
 RELEASE_TOOLS ?=
 
 .PHONY: release-tools
-
 release-tools: ## Compiles a set of release tools, specified by $RELEASE_TOOLS
 	./compile-release-tools $(RELEASE_TOOLS)
 
-##@ Images
+##@ Images:
+
+images := k8s-cloud-builder
 
 .PHONY: update-images
-
-images := \
-	k8s-cloud-builder
-
 update-images: $(addprefix image-,$(images)) ## Update all images in ./images/
 image-%:
 	$(eval img := $(subst image-,,$@))
@@ -97,15 +116,16 @@ local-image-run: ## Run a locally build image to use the tools of this repositor
 		-w /go/src/k8s.io/release \
 		$(LOCALIMAGE_NAME) bash
 
-##@ Dependencies
+##@ Dependencies:
 
-.SILENT: update-deps update-deps-go update-mocks
-.PHONY:  update-deps update-deps-go update-mocks
-
+.SILENT: update-deps
+.PHONY:  update-deps
 update-deps: update-deps-go ## Update all dependencies for this repo
 	echo -e "${COLOR}Commit/PR the following changes:${NOCOLOR}"
 	git status --short
 
+.SILENT: update-deps-go
+.PHONY:  update-deps-go
 update-deps-go: GO111MODULE=on
 update-deps-go: ## Update all golang dependencies for this repo
 	go get -u -t ./...
@@ -114,6 +134,8 @@ update-deps-go: ## Update all golang dependencies for this repo
 	$(MAKE) test-go-unit
 	./hack/update-all.sh
 
+.SILENT: update-mocks
+.PHONY:  update-mocks
 update-mocks: ## Update all generated mocks
 	go generate ./...
 	for f in $(shell find . -name fake_*.go); do \
@@ -123,23 +145,3 @@ update-mocks: ## Update all generated mocks
 			mv tmp $$f ;\
 		fi \
 	done
-
-##@ Helpers
-
-.PHONY: help
-
-help:  ## Display this help
-	@awk \
-		-v "col=${COLOR}" -v "nocol=${NOCOLOR}" \
-		' \
-			BEGIN { \
-				FS = ":.*##" ; \
-				printf "\nUsage:\n  make %s<target>%s\n", col, nocol \
-			} \
-			/^[a-zA-Z_-]+:.*?##/ { \
-				printf "  %s%-15s%s %s\n", col, $$1, nocol, $$2 \
-			} \
-			/^##@/ { \
-				printf "\n%s%s%s\n", col, substr($$0, 5), nocol \
-			} \
-		' $(MAKEFILE_LIST)
