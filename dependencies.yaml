@@ -117,7 +117,7 @@ dependencies:
 
   # go-runner
   - name: "registry.k8s.io/build-image/go-runner (go1.23-bookworm)"
-    version: v2.3.1-go1.23rc2-bookworm.0
+    version: v2.3.1-go1.23.0-bookworm.0
     refPaths:
     - path: images/build/go-runner/variants.yaml
       match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -146,7 +146,7 @@ dependencies:
 
   # kube-cross
   - name: "registry.k8s.io/build-image/kube-cross (v1.31-go1.23)"
-    version: v1.31.0-go1.23rc2-bullseye.0
+    version: v1.31.0-go1.23.0-bullseye.0
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -246,26 +246,6 @@ dependencies:
     - path: images/build/cross/variants.yaml
       match: REVISION:\ '\d+'
 
-  - name: "registry.k8s.io/build-image/kube-cross (v1.27-go1.22)"
-    version: v1.27.0-go1.22.6-bullseye.0
-    refPaths:
-    - path: images/build/cross/variants.yaml
-      match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
-
-  - name: "registry.k8s.io/build-image/kube-cross: config variant (v1.27-go1.22)"
-    version: go1.22-bullseye
-    refPaths:
-    - path: images/build/cross/variants.yaml
-      match: "CONFIG: 'go\\d+.\\d+-bullseye'"
-
-  - name: "registry.k8s.io/build-image/kube-cross: image revision (v1.27-go1.22)"
-    version: 0
-    refPaths:
-    - path: images/build/cross/Makefile
-      match: REVISION \?= \d+
-    - path: images/build/cross/variants.yaml
-      match: REVISION:\ '\d+'
-
   - name: "registry.k8s.io/build-image/kube-cross: dependents k8s-cloud-builder (v1.31-cross1.23)"
     version: v1.31.0-go1.23rc2-bullseye.0
     refPaths:
@@ -311,7 +291,7 @@ dependencies:
 
   # Golang (next candidate)
   - name: "golang (next candidate)"
-    version: 1.23rc2
+    version: 1.23.0
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
@@ -319,8 +299,9 @@ dependencies:
       match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
     - path: images/releng/ci/variants.yaml
       match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
-    - path: images/releng/k8s-ci-builder/variants.yaml
-      match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
+    # TODO: uncomment when we build the k8s-ci-builder with 1.23.0
+    # - path: images/releng/k8s-ci-builder/variants.yaml
+    #   match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
 
   # Golang images (next candidate)
   - name: "gcr.io/k8s-staging-releng/releng-ci: image revision (next candidate)"
