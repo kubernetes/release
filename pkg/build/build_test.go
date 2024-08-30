@@ -36,22 +36,11 @@ func TestBuildDirFromRepoRoot(t *testing.T) {
 			},
 			expectedBuildDir: "_output",
 		},
-		{
-			name: "non-empty repoRoot, bazel",
-			instance: &Instance{
-				opts: &Options{
-					Version:  "fakeVersion",
-					RepoRoot: "/fake/repo/root",
-				},
-			},
-			isBazel:          true,
-			expectedBuildDir: "/fake/repo/root/bazel-bin/build",
-		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			setupBuildDir(tc.instance, tc.isBazel)
+			setupBuildDir(tc.instance)
 			if tc.instance.opts.BuildDir != tc.expectedBuildDir {
 				t.Errorf("buildDir mismatched, got: %v, want: %v", tc.instance.opts.BuildDir, tc.expectedBuildDir)
 			}

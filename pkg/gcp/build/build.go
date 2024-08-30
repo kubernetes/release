@@ -81,12 +81,6 @@ func PrepareBuilds(o *Options) error {
 		return errors.New("expected a config directory to be provided")
 	}
 
-	if bazelWorkspace := os.Getenv("BUILD_WORKSPACE_DIRECTORY"); bazelWorkspace != "" {
-		if err := os.Chdir(bazelWorkspace); err != nil {
-			return fmt.Errorf("failed to chdir to bazel workspace (%s): %w", bazelWorkspace, err)
-		}
-	}
-
 	if o.BuildDir == "" {
 		o.BuildDir = o.ConfigDir
 	}

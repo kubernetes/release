@@ -123,9 +123,6 @@ const (
 	// BuildDir is the default build output directory.
 	BuildDir = "_output"
 
-	// The default bazel build directory.
-	BazelBuildDir = "bazel-bin/build"
-
 	// Publishing bot issue repository.
 	PubBotRepoOrg  = "kubernetes"
 	PubBotRepoName = "sig-release"
@@ -186,25 +183,6 @@ func GetK8sRef() string {
 func IsDefaultK8sUpstream() bool {
 	return GetK8sOrg() == DefaultK8sOrg &&
 		GetK8sRef() == DefaultK8sRef
-}
-
-// BuiltWithBazel determines whether the most recent Kubernetes release was built with Bazel.
-func BuiltWithBazel(workDir string) (bool, error) {
-	bazelBuild := filepath.Join(workDir, BazelBuildDir, ReleaseTarsPath, KubernetesTar)
-	dockerBuild := filepath.Join(workDir, BuildDir, ReleaseTarsPath, KubernetesTar)
-	return util.MoreRecent(bazelBuild, dockerBuild)
-}
-
-// ReadBazelVersion reads the version from a Bazel build.
-func ReadBazelVersion(workDir string) (string, error) {
-	version, err := os.ReadFile(filepath.Join(workDir, "bazel-bin", "version"))
-	if os.IsNotExist(err) {
-		// The check for version in bazel-genfiles can be removed once everyone is
-		// off of versions before 0.25.0.
-		// https://github.com/bazelbuild/bazel/issues/8651
-		version, err = os.ReadFile(filepath.Join(workDir, "bazel-genfiles", "version"))
-	}
-	return string(version), err
 }
 
 // ReadDockerizedVersion reads the version from a Dockerized Kubernetes build.
