@@ -63,7 +63,7 @@ var (
 )
 
 const (
-	DefaultReleaseDownloadLinkBase = "gs://kubernetes-release/release"
+	DefaultReleaseDownloadLinkBase = "https://dl.k8s.io/release"
 	DefaultRevision                = "0"
 	DefaultSpecTemplatePath        = "cmd/krel/templates/latest"
 )
