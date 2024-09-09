@@ -103,7 +103,8 @@ const (
 	TestBucket = "kubernetes-release-gcb"
 
 	// ProductionBucket is the default bucket for Kubernetes releases.
-	ProductionBucket = "kubernetes-release"
+	// Owned by SIG k8s Infra: https://git.k8s.io/community/sig-k8s-infra
+	ProductionBucket = "767373bbdcb8270361b96548387bf2a9ad0d48758c35"
 
 	// ProductionBucketURL is the url for the ProductionBucket.
 	ProductionBucketURL = "https://dl.k8s.io"
