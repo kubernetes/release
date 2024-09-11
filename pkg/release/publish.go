@@ -371,25 +371,6 @@ func (p *Publisher) PublishToGcs(
 
 	var content string
 	if !privateBucket {
-		// New Kubernetes infra buckets, like k8s-staging-kubernetes, have a
-		// bucket-only ACL policy set, which means attempting to set the ACL on
-		// an object will fail. We should skip this ACL change in those
-		// instances, as new buckets already default to being publicly
-		// readable.
-		//
-		// Ref:
-		// - https://cloud.google.com/storage/docs/bucket-policy-only
-		// - https://github.com/kubernetes/release/issues/904
-		if !strings.HasPrefix(markerPath, object.GcsPrefix+"k8s-") {
-			aclOutput, err := p.client.GSUtilOutput(
-				"acl", "ch", "-R", "-g", "all:R", publishFileDst,
-			)
-			if err != nil {
-				return fmt.Errorf("change %s permissions: %w", publishFileDst, err)
-			}
-			logrus.Infof("Making uploaded version file public: %s", aclOutput)
-		}
-
 		// If public, validate public link
 		response, err := p.client.GetURLResponse(publicLink)
 		if err != nil {
