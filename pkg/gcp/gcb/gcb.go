@@ -284,12 +284,9 @@ func (g *GCB) Submit() error {
 	}
 
 	// build the GCS bucket string to be used to sign all the artifacts
-	bucketPrefix := release.BucketPrefix
-	gcsBucket := "gs://" + bucketPrefix
+	gcsBucket := "gs://" + release.TestBucket
 	if g.options.NoMock {
-		gcsBucket = strings.TrimSuffix(gcsBucket, "-")
-	} else {
-		gcsBucket = fmt.Sprintf("%s%s", gcsBucket, "gcb")
+		gcsBucket = strings.ReplaceAll(gcsBucket, release.TestBucket, release.ProductionBucket)
 	}
 
 	gcbSubs, gcbSubsErr := g.SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket)
@@ -321,14 +318,13 @@ func (g *GCB) Submit() error {
 		gcbSubs["NOMOCK_TAG"] = ""
 		gcbSubs["NOMOCK"] = ""
 
-		userBucket := fmt.Sprintf("%s%s", bucketPrefix, gcbSubs["GCP_USER_TAG"])
+		userBucket := strings.ReplaceAll(release.TestBucket, "gcb", gcbSubs["GCP_USER_TAG"])
 		userBucketSetErr := os.Setenv("USER_BUCKET", userBucket)
 		if userBucketSetErr != nil {
 			return userBucketSetErr
 		}
 
-		testBucket := fmt.Sprintf("%s%s", bucketPrefix, "gcb")
-		testBucketSetErr := os.Setenv("BUCKET", testBucket)
+		testBucketSetErr := os.Setenv("BUCKET", release.TestBucket)
 		if testBucketSetErr != nil {
 			return testBucketSetErr
 		}
