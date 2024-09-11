@@ -223,12 +223,12 @@ func TestGetPRNumberFromCommitMessage(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pr, err := prNumForCommitFromMessage(tc.commitMessage)
+			prs, err := prsNumForCommitFromMessage(tc.commitMessage)
 			if err != nil {
 				t.Fatalf("Expected no error to occur but got %v", err)
 			}
-			if pr != tc.expectedPRNumber {
-				t.Errorf("Expected PR number to be %d but was %d", tc.expectedPRNumber, pr)
+			if prs[0] != tc.expectedPRNumber {
+				t.Errorf("Expected PR number to be %d but was %d", tc.expectedPRNumber, prs[0])
 			}
 		})
 	}

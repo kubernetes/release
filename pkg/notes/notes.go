@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -1031,25 +1032,26 @@ func (g *Gatherer) prsForCommitFromSHA(sha string) (prs []*gogithub.PullRequest,
 }
 
 func (g *Gatherer) prsForCommitFromMessage(commitMessage string) (prs []*gogithub.PullRequest, err error) {
-	mainPrNum, err := prNumForCommitFromMessage(commitMessage)
+	prsNum, err := prsNumForCommitFromMessage(commitMessage)
 	if err != nil {
 		return nil, err
 	}
 
-	// Given the PR number that we've now converted to an integer, get the PR from
-	// the API
-	mainPr, err := g.getPr(mainPrNum)
-	if err != nil {
-		return prs, err
-	}
+	for _, prNum := range prsNum {
+		// Given the PR number that we've now converted to an integer, get the PR from
+		// the API
+		pr, err := g.getPr(prNum)
+		if err != nil {
+			return prs, err
+		}
+		prs = append(prs, pr)
 
-	prs = append(prs, mainPr)
-
-	originPrNum, origPrErr := originPrNumFromPr(mainPr)
-	if origPrErr == nil {
-		originPr, err := g.getPr(originPrNum)
-		if err == nil {
-			prs = append(prs, originPr)
+		originPrNum, origPrErr := originPrNumFromPr(pr)
+		if origPrErr == nil && slices.Index(prsNum, originPrNum) == -1 {
+			originPr, err := g.getPr(originPrNum)
+			if err == nil {
+				prs = append(prs, originPr)
+			}
 		}
 	}
 
@@ -1074,25 +1076,34 @@ var (
 	// stops being true, this definitely won't work anymore.
 	regexMergedPR = regexp.MustCompile(`Merge pull request #(?P<number>\d+)`)
 
-	// If the PR was squash merged, the regexp is different
+	// If the PR was squash merged, the regexp is different.
 	regexSquashPR = regexp.MustCompile(`\(#(?P<number>\d+)\)`)
 
-	// The branch name created by "hack/cherry_pick_pull.sh"
+	// The branch name created by "hack/cherry_pick_pull.sh".
 	regexHackBranch = regexp.MustCompile(`automated-cherry-pick-of-#(?P<number>\d+)`)
 
-	// The branch name created by k8s-infra-cherrypick-robot
+	// The branch name created by k8s-infra-cherrypick-robot.
 	regexProwBranch = regexp.MustCompile(`cherry-pick-(?P<number>\d+)-to`)
 )
 
-func prNumForCommitFromMessage(commitMessage string) (prs int, err error) {
+func prsNumForCommitFromMessage(commitMessage string) (prs []int, err error) {
 	if pr := prForRegex(regexMergedPR, commitMessage); pr != 0 {
-		return pr, nil
+		prs = append(prs, pr)
 	}
 
 	if pr := prForRegex(regexSquashPR, commitMessage); pr != 0 {
-		return pr, nil
+		prs = append(prs, pr)
 	}
-	return 0, errNoPRIDFoundInCommitMessage
+
+	if pr := prForRegex(regexHackBranch, commitMessage); pr != 0 {
+		prs = append(prs, pr)
+	}
+
+	if len(prs) == 0 {
+		return nil, errNoPRIDFoundInCommitMessage
+	} else {
+		return prs, nil
+	}
 }
 
 func originPrNumFromPr(pr *gogithub.PullRequest) (origPRNum int, err error) {

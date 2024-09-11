@@ -291,10 +291,15 @@ func TestGatherNotes(t *testing.T) {
 		"when commit messages hold PR numbers, we use those and don't query to get a list of PRs for a SHA": {
 			commitList: []*github.RepositoryCommit{
 				repoCommit("123", "there is the message Merge pull request #123 somewhere in the middle"),
-				repoCommit("124", "and lastly in parens (#124) yeah"),
+				repoCommit("124", "some automated-cherry-pick-of-#124 can be found too"),
+				repoCommit("125", "and lastly in parens (#125) yeah"),
+				repoCommit("126", `all three together
+					some Merge pull request #126 and
+					another automated-cherry-pick-of-#127 with
+					a thing (#128) in parens`),
 			},
 			getPullRequestStubber: func(t *testing.T) getPullRequestStub {
-				seenPRs := newIntsRecorder(123, 124)
+				seenPRs := newIntsRecorder(123, 124, 125, 126, 127, 128)
 
 				return func(_ context.Context, org, repo string, prID int) (*github.PullRequest, *github.Response, error) {
 					checkOrgRepo(t, org, repo)
@@ -304,7 +309,7 @@ func TestGatherNotes(t *testing.T) {
 					return nil, nil, nil
 				}
 			},
-			expectedGetPullRequestCallCount: 2,
+			expectedGetPullRequestCallCount: 6,
 		},
 
 		"when the PR is a cherry pick": {
