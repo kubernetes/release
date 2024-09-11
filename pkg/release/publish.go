@@ -341,10 +341,12 @@ func (p *Publisher) PublishToGcs(
 		return fmt.Errorf("get marker file destination: %w", publishFileDstErr)
 	}
 
+	logrus.Infof("Using marker path: %s", markerPath)
 	publicLink := fmt.Sprintf("%s/%s", URLPrefixForBucket(markerPath), publishFile)
-	if strings.HasPrefix(markerPath, ProductionBucket) {
-		publicLink = fmt.Sprintf("%s/%s", ProductionBucketURL, publishFile)
+	if strings.HasSuffix(markerPath, ProductionBucket+"/release") {
+		publicLink = fmt.Sprintf("%s/release/%s", ProductionBucketURL, publishFile)
 	}
+	logrus.Infof("Using public link: %s", publicLink)
 
 	uploadDir := filepath.Join(releaseStage, "upload")
 	if err := os.MkdirAll(uploadDir, os.FileMode(0o755)); err != nil {

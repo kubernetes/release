@@ -33,18 +33,18 @@ KREL_OUTPUT_PATH=${KREL_OUTPUT_PATH:-bin/krel}
 echo "Using output path: $KREL_OUTPUT_PATH"
 mkdir -p "$(dirname "$KREL_OUTPUT_PATH")"
 
-if [[ "$TOOL_ORG" == "$DEFAULT_TOOL_ORG" && "$TOOL_REPO" == "$DEFAULT_TOOL_REPO" && "$TOOL_REF" == "$DEFAULT_TOOL_REF" ]]; then
-    LATEST_RELEASE=$(curl_retry https://api.github.com/repos/kubernetes/release/releases/latest | jq -r .tag_name)
-    echo "Using krel release: $LATEST_RELEASE"
-
-    echo "Downloading krel from GCB bucket…"
-    GCB_URL="https://storage.googleapis.com/k8s-artifacts-sig-release/kubernetes/release/$LATEST_RELEASE/krel-amd64-linux"
-    curl_retry "$GCB_URL" -o "$KREL_OUTPUT_PATH"
-    chmod +x "$KREL_OUTPUT_PATH"
-else
-    echo "Building krel from sources"
-    go build -o "$KREL_OUTPUT_PATH" ./cmd/krel
-fi
+#if [[ "$TOOL_ORG" == "$DEFAULT_TOOL_ORG" && "$TOOL_REPO" == "$DEFAULT_TOOL_REPO" && "$TOOL_REF" == "$DEFAULT_TOOL_REF" ]]; then
+#    LATEST_RELEASE=$(curl_retry https://api.github.com/repos/kubernetes/release/releases/latest | jq -r .tag_name)
+#    echo "Using krel release: $LATEST_RELEASE"
+#
+#    echo "Downloading krel from GCB bucket…"
+#    GCB_URL="https://storage.googleapis.com/k8s-artifacts-sig-release/kubernetes/release/$LATEST_RELEASE/krel-amd64-linux"
+#    curl_retry "$GCB_URL" -o "$KREL_OUTPUT_PATH"
+#    chmod +x "$KREL_OUTPUT_PATH"
+#else
+echo "Building krel from sources"
+go build -o "$KREL_OUTPUT_PATH" ./cmd/krel
+#fi
 
 echo "Done, output of 'krel version':"
 "$KREL_OUTPUT_PATH" version
