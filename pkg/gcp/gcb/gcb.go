@@ -218,6 +218,7 @@ func (g *GCB) Submit() error {
 	toolOrg := release.GetToolOrg()
 	toolRepo := release.GetToolRepo()
 	toolRef := release.GetToolRef()
+	forceBuildKrel := release.GetForceBuildKrel()
 
 	if err := gcli.PreCheck(); err != nil {
 		return fmt.Errorf("pre-checking for GCP package usage: %w", err)
@@ -289,7 +290,7 @@ func (g *GCB) Submit() error {
 		gcsBucket = strings.ReplaceAll(gcsBucket, release.TestBucket, release.ProductionBucket)
 	}
 
-	gcbSubs, gcbSubsErr := g.SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket)
+	gcbSubs, gcbSubsErr := g.SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket, forceBuildKrel)
 	if gcbSubs == nil || gcbSubsErr != nil {
 		return gcbSubsErr
 	}
@@ -351,12 +352,13 @@ func (g *GCB) Submit() error {
 
 // SetGCBSubstitutions takes a set of `Options` and returns a map of GCB
 // substitutions.
-func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket string) (map[string]string, error) {
+func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket, forceBuildKrel string) (map[string]string, error) {
 	gcbSubs := map[string]string{}
 
 	gcbSubs["TOOL_ORG"] = toolOrg
 	gcbSubs["TOOL_REPO"] = toolRepo
 	gcbSubs["TOOL_REF"] = toolRef
+	gcbSubs["FORCE_BUILD_KREL"] = forceBuildKrel
 
 	gcbSubs["K8S_ORG"] = release.GetK8sOrg()
 	if g.options.CustomK8sOrg != "" {

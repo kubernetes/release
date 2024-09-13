@@ -159,6 +159,13 @@ func GetToolRef() string {
 	return env.Default("TOOL_REF", DefaultToolRef)
 }
 
+// GetForceBuildKrel checks if the 'FORCE_BUILD_KREL' environment variable is
+// set.  If 'FORCE_BUILD_KREL' is non-empty, it returns the value. Otherwise,
+// it returns "false".
+func GetForceBuildKrel() string {
+	return env.Default("FORCE_BUILD_KREL", "false")
+}
+
 // GetK8sOrg checks if the 'K8S_ORG' environment variable is set.
 // If 'K8S_ORG' is non-empty, it returns the value. Otherwise, it returns DefaultK8sOrg.
 func GetK8sOrg() string {
