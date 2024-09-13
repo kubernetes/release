@@ -17,6 +17,7 @@
 set -o errexit
 set -o nounset
 set -o pipefail
+set -x
 
 curl_retry() {
     curl -sSfL --retry 5 --retry-delay 3 "$@"
@@ -29,11 +30,18 @@ DEFAULT_TOOL_REF=master
 TOOL_ORG=${TOOL_ORG:-${DEFAULT_TOOL_ORG}}
 TOOL_REPO=${TOOL_REPO:-${DEFAULT_TOOL_REPO}}
 TOOL_REF=${TOOL_REF:-${DEFAULT_TOOL_REF}}
+
+FORCE_BUILD_KREL=${FORCE_BUILD_KREL:-false}
+
 KREL_OUTPUT_PATH=${KREL_OUTPUT_PATH:-bin/krel}
 echo "Using output path: $KREL_OUTPUT_PATH"
 mkdir -p "$(dirname "$KREL_OUTPUT_PATH")"
 
-if [[ "$TOOL_ORG" == "$DEFAULT_TOOL_ORG" && "$TOOL_REPO" == "$DEFAULT_TOOL_REPO" && "$TOOL_REF" == "$DEFAULT_TOOL_REF" ]]; then
+if [[ "$FORCE_BUILD_KREL" == false &&
+    "$TOOL_ORG" == "$DEFAULT_TOOL_ORG" &&
+    "$TOOL_REPO" == "$DEFAULT_TOOL_REPO" &&
+    "$TOOL_REF" == "$DEFAULT_TOOL_REF" ]]; then
+
     LATEST_RELEASE=$(curl_retry https://api.github.com/repos/kubernetes/release/releases/latest | jq -r .tag_name)
     echo "Using krel release: $LATEST_RELEASE"
 

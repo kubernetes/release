@@ -62,6 +62,7 @@ steps:
   - "TOOL_ORG=${_TOOL_ORG}"
   - "TOOL_REPO=${_TOOL_REPO}"
   - "TOOL_REF=${_TOOL_REF}"
+  - "FORCE_BUILD_KREL=${_FORCE_BUILD_KREL}"
   args:
   - ./hack/get-krel
 
