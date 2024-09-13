@@ -285,7 +285,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 		}
 
 		if refTime.After(upcomingTargetDate) {
-			logrus.Infof("Skipping outdated upcoming release for %s (%s)", upcomingRelease.Release, upcomingRelease.TargetDate)
+			logrus.Infof("Skipping outdated upcoming release for %s", upcomingRelease.TargetDate)
 			continue
 		}
 
