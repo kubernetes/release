@@ -360,6 +360,7 @@ func (p *Publisher) PublishToGcs(
 		return fmt.Errorf("write latest version file: %w", err)
 	}
 
+	logrus.Infof("Running `gsutil cp` from %s to: %s", latestFile, publishFileDst)
 	if err := p.client.GSUtil(
 		"-m",
 		"-h", "Content-Type:text/plain",
@@ -374,20 +375,22 @@ func (p *Publisher) PublishToGcs(
 	var content string
 	if !privateBucket {
 		// If public, validate public link
+		logrus.Infof("Validating uploaded version file using HTTP at %s", publicLink)
 		response, err := p.client.GetURLResponse(publicLink)
 		if err != nil {
 			return fmt.Errorf("get content of %s: %w", publicLink, err)
 		}
 		content = response
 	} else {
-		response, err := p.client.GSUtilOutput("cat", publicLink)
+		// Use the private location
+		logrus.Infof("Validating uploaded version file using `gsutil cat` at %s", publishFileDst)
+		response, err := p.client.GSUtilOutput("cat", publishFileDst)
 		if err != nil {
-			return fmt.Errorf("get content of %s: %w", publicLink, err)
+			return fmt.Errorf("get content of %s: %w", publishFileDst, err)
 		}
 		content = response
 	}
 
-	logrus.Infof("Validating uploaded version file at %s", publicLink)
 	if version != content {
 		return fmt.Errorf(
 			"version %s it not equal response %s",
