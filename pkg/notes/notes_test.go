@@ -328,25 +328,63 @@ func TestMatchesExcludeFilter(t *testing.T) {
 			shouldExclude: false,
 		},
 		{
-			input: `@kubernetes/sig-auth-pr-reviews 
-/milestone v1.19
-/priority important-longterm
-/kind cleanup
-/kind deprecation
+			input: `@kubernetes/sig-auth-pr-reviews
+		/milestone v1.19
+		/priority important-longterm
+		/kind cleanup
+		/kind deprecation
+		
+		xref: #81126
+		xref: #81152
+		xref: https://github.com/kubernetes/website/pull/19630
+		
+		` + mdSep + `release-note
+		Action Required: Support for basic authentication via the --basic-auth-file flag has been removed.  Users should migrate to --token-auth-file for similar functionality.
+		` + mdSep + `
+		
+		` + mdSep + `docs
+		Removed "Static Password File" section from https://kubernetes.io/docs/reference/access-authn-authz/authentication/#static-password-file
+		https://github.com/kubernetes/website/pull/19630
+		` + mdSep,
+			shouldExclude: false,
+		},
+		{
+			input: `
+#### Does this PR introduce a user-facing change?
+<!--
+If no, just write "NONE" in the release-note block below.
+If yes, a release note is required:
+Enter your extended release note in the block below. If the PR requires additional action from users switching to the new release, include the string "action required".
 
-xref: #81126
-xref: #81152
-xref: https://github.com/kubernetes/website/pull/19630
-
+For more information on release notes see: https://git.k8s.io/community/contributors/guide/release-notes.md
+-->
 ` + mdSep + `release-note
-Action Required: Support for basic authentication via the --basic-auth-file flag has been removed.  Users should migrate to --token-auth-file for similar functionality.
+
 ` + mdSep + `
 
+#### Additional documentation e.g., KEPs (Kubernetes Enhancement Proposals), usage docs, etc.:
+
+<!--
+This section can be blank if this pull request does not require a release note.
+
+When adding links which point to resources within git repositories, like
+KEPs or supporting documentation, please reference a specific commit and avoid
+linking directly to the master branch. This ensures that links reference a
+specific point in time, rather than a document that may change over time.
+
+See here for guidance on getting permanent links to files: https://help.github.com/en/articles/getting-permanent-links-to-files
+
+Please use the following format for linking documentation:
+- [KEP]: <link>
+- [Usage]: <link>
+- [Other doc]: <link>
+-->
 ` + mdSep + `docs
-Removed "Static Password File" section from https://kubernetes.io/docs/reference/access-authn-authz/authentication/#static-password-file
-https://github.com/kubernetes/website/pull/19630
-` + mdSep,
-			shouldExclude: false,
+
+` + mdSep + `
+
+`,
+			shouldExclude: true,
 		},
 	} {
 		res := MatchesExcludeFilter(tc.input)

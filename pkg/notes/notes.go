@@ -627,13 +627,16 @@ func (l *commitList) List() []*gogithub.RepositoryCommit {
 // that do NOT contain release notes. Notably, this is all of the variations of
 // "release note none" that appear in the commit log.
 var noteExclusionFilters = []*regexp.Regexp{
-	// 'none','n/a','na' case insensitive with optional trailing
+	// 'none','n/a','na' case-insensitive with optional trailing
 	// whitespace, wrapped in ``` with/without release-note identifier
 	// the 'none','n/a','na' can also optionally be wrapped in quotes ' or "
 	regexp.MustCompile("(?i)```release-notes?\\s*('\")?(none|n/a|na)('\")?\\s*```"),
 
 	// simple '/release-note-none' tag
 	regexp.MustCompile("/release-note-none"),
+
+	// Matches "release-notes" block with no meaningful content (ex. only whitespace, empty, just newlines)
+	regexp.MustCompile("(?i)```release-notes?\\s*```\\s*"),
 }
 
 // MatchesExcludeFilter returns true if the string matches an excluded release note.
