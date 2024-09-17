@@ -372,6 +372,16 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 // may contain the commit message, the PR description, etc.
 // This is generally the content inside the ```release-note ``` stanza.
 func noteTextFromString(s string) (string, error) {
+	// check release note is not empty
+	// Matches "release-notes" block with no meaningful content (ex. only whitespace, empty, just newlines)
+	emptyExps := []*regexp.Regexp{
+		regexp.MustCompile("(?i)```release-notes?\\s*```\\s*"),
+	}
+
+	if matchesFilter(s, emptyExps) {
+		return "", errors.New("empty release note")
+	}
+
 	exps := []*regexp.Regexp{
 		// (?s) is needed for '.' to be matching on newlines, by default that's disabled
 		// we need to match ungreedy 'U', because after the notes a `docs` block can occur
@@ -634,9 +644,6 @@ var noteExclusionFilters = []*regexp.Regexp{
 
 	// simple '/release-note-none' tag
 	regexp.MustCompile("/release-note-none"),
-
-	// Matches "release-notes" block with no meaningful content (ex. only whitespace, empty, just newlines)
-	regexp.MustCompile("(?i)```release-notes?\\s*```\\s*"),
 }
 
 // MatchesExcludeFilter returns true if the string matches an excluded release note.

@@ -297,6 +297,16 @@ func TestNoteTextFromString(t *testing.T) {
 				require.Equal(t, "item\nitem\n- item\n  item", res)
 			},
 		},
+		{
+			noteBlock(
+				"",
+			),
+			func(res string, err error) {
+				require.NotNil(t, err)
+				require.Contains(t, err.Error(), "empty release note")
+				require.Equal(t, "", res)
+			},
+		},
 	} {
 		tc.expect(noteTextFromString(tc.input))
 	}
@@ -384,7 +394,7 @@ Please use the following format for linking documentation:
 ` + mdSep + `
 
 `,
-			shouldExclude: true,
+			shouldExclude: false, // noteTextFromString will catch empty release notes
 		},
 	} {
 		res := MatchesExcludeFilter(tc.input)
