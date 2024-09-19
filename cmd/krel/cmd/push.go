@@ -97,10 +97,7 @@ func init() {
 		&pushBuildOpts.BuildDir,
 		"buildDir",
 		release.BuildDir,
-		fmt.Sprintf(
-			"Specify an alternate build directory (defaults to '%s')",
-			release.BuildDir,
-		),
+		"Specify an alternate build directory",
 	)
 
 	// TODO: Switch to "--registry" once CI no longer uses it
@@ -144,6 +141,13 @@ func init() {
 		"validate-images",
 		false,
 		"Validate that the remote image digests exists",
+	)
+
+	pushBuildCmd.PersistentFlags().StringVar(
+		&pushBuildOpts.RepoRoot,
+		"repo-root",
+		"",
+		"Specify an alternate Kubernetes repository directory",
 	)
 
 	rootCmd.AddCommand(pushBuildCmd)
