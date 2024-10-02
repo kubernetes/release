@@ -372,6 +372,16 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 // may contain the commit message, the PR description, etc.
 // This is generally the content inside the ```release-note ``` stanza.
 func noteTextFromString(s string) (string, error) {
+	// check release note is not empty
+	// Matches "release-notes" block with no meaningful content (ex. only whitespace, empty, just newlines)
+	emptyExps := []*regexp.Regexp{
+		regexp.MustCompile("(?i)```release-notes?\\s*```\\s*"),
+	}
+
+	if matchesFilter(s, emptyExps) {
+		return "", errors.New("empty release note")
+	}
+
 	exps := []*regexp.Regexp{
 		// (?s) is needed for '.' to be matching on newlines, by default that's disabled
 		// we need to match ungreedy 'U', because after the notes a `docs` block can occur
@@ -627,7 +637,7 @@ func (l *commitList) List() []*gogithub.RepositoryCommit {
 // that do NOT contain release notes. Notably, this is all of the variations of
 // "release note none" that appear in the commit log.
 var noteExclusionFilters = []*regexp.Regexp{
-	// 'none','n/a','na' case insensitive with optional trailing
+	// 'none','n/a','na' case-insensitive with optional trailing
 	// whitespace, wrapped in ``` with/without release-note identifier
 	// the 'none','n/a','na' can also optionally be wrapped in quotes ' or "
 	regexp.MustCompile("(?i)```release-notes?\\s*('\")?(none|n/a|na)('\")?\\s*```"),

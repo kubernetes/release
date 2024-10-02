@@ -351,9 +351,11 @@ func TestGatherNotes(t *testing.T) {
 					{pullRequest(9, "release-note /release-note-none", "closed")},       // excluded, the exclusion filters take precedence
 					{pullRequest(10, "```release-note\nNAAAAAAAAAA\n```", "closed")},    // included, does not match the N/A filter, but the 'release-note' check
 					{pullRequest(11, "```release-note\nnone something\n```", "closed")}, // included, does not match the N/A filter, but the 'release-note' check
-					// empty release note block shouldn't be matched
+					// empty release note block should skipped because noteTextFromString returns an error
 					{pullRequest(12, "```release-note\n\n```", "closed")},
-					{pullRequest(13, "```release-note\n\n```", "open")},
+					{pullRequest(13, "```release-note```", "closed")},
+					{pullRequest(14, "```release-note ```", "closed")},
+					{pullRequest(15, "```release-note\n\n```", "open")},
 				}
 				var callCount int64 = -1
 
