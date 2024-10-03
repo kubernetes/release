@@ -1,20 +1,20 @@
 variants:
   v1.32-cross1.23-bullseye:
     CONFIG: 'cross1.23'
-    KUBE_CROSS_VERSION: 'v1.32.0-go1.23.0-bullseye.0'
+    KUBE_CROSS_VERSION: 'v1.32.0-go1.23.1-bullseye.0'
   v1.31-cross1.23-bullseye:
     CONFIG: 'cross1.23'
-    KUBE_CROSS_VERSION: 'v1.31.0-go1.23.0-bullseye.0'
+    KUBE_CROSS_VERSION: 'v1.31.0-go1.23.1-bullseye.0'
   # TODO: remove this after upgrade to Go 1.23 is finalized and there's on risk of reverting
   v1.31-cross1.22-bullseye:
     CONFIG: 'cross1.22'
-    KUBE_CROSS_VERSION: 'v1.31.0-go1.22.6-bullseye.0'
+    KUBE_CROSS_VERSION: 'v1.31.0-go1.22.7-bullseye.0'
   v1.30-cross1.22-bullseye:
     CONFIG: 'cross1.22'
-    KUBE_CROSS_VERSION: 'v1.30.0-go1.22.6-bullseye.0'
+    KUBE_CROSS_VERSION: 'v1.30.0-go1.22.7-bullseye.0'
   v1.29-cross1.22-bullseye:
     CONFIG: 'cross1.21'
-    KUBE_CROSS_VERSION: 'v1.29.0-go1.22.6-bullseye.0'
+    KUBE_CROSS_VERSION: 'v1.29.0-go1.22.7-bullseye.0'
   v1.28-cross1.22-bullseye:
     CONFIG: 'cross1.20'
-    KUBE_CROSS_VERSION: 'v1.28.0-go1.22.6-bullseye.0'
+    KUBE_CROSS_VERSION: 'v1.28.0-go1.22.7-bullseye.0'
