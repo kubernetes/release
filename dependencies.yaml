@@ -53,19 +53,13 @@ dependencies:
       match: "GO_MAJOR_VERSION: '\\d+.\\d+'"
 
   - name: "golang: 1.<major> (github workflows)"
-    version: 1.23
+    version: 1.22
     refPaths:
     - path: .github/workflows/release.yml
       match: "go-version: '\\d+.\\d+'"
-    - path: .github/workflows/snapshot.yaml
-      match: "go-version: '\\d+.\\d+'"
-    - path: .github/workflows/lint.yml
-      match: "go-version: '\\d+.\\d+'"
-    - path: .github/workflows/codeql-analysis.yml
-      match: "go-version: '\\d+.\\d+'"
 
   - name: "golang: go.mod"
-    version: 1.23
+    version: 1.22
     refPaths:
     - path: go.mod
       match: go \d+.\d+
@@ -388,7 +382,7 @@ dependencies:
 
   # golangci-lint-version
   - name: "golangci-lint"
-    version: v1.61
+    version: v1.60
     refPaths:
     - path: .github/workflows/lint.yml
       match: "version: v\\d+.\\d+?\\.?(\\d+)?"
