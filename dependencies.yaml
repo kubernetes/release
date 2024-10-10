@@ -71,7 +71,7 @@ dependencies:
       match: go \d+.\d+
 
   - name: "golang: after kubernetes/kubernetes update"
-    version: 1.23.0
+    version: 1.23.1
     refPaths:
     - path: images/releng/k8s-ci-builder/Makefile
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -247,38 +247,38 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "registry.k8s.io/build-image/kube-cross: dependents k8s-cloud-builder (v1.32-cross1.23)"
-    version: v1.32.0-go1.23.0-bullseye.0
+    version: v1.32.0-go1.23.1-bullseye.0
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/kube-cross: dependents k8s-cloud-builder (v1.31-cross1.23)"
-    version: v1.31.0-go1.23.0-bullseye.0
+    version: v1.31.0-go1.23.1-bullseye.0
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   # TODO: remove this after upgrade to Go 1.23 is finalized and there's on risk of reverting
   - name: "registry.k8s.io/build-image/kube-cross: dependents k8s-cloud-builder (v1.31-cross1.22)"
-    version: v1.31.0-go1.22.6-bullseye.0
+    version: v1.31.0-go1.22.7-bullseye.0
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/kube-cross: dependents k8s-cloud-builder (v1.30-cross1.22)"
-    version: v1.30.0-go1.22.6-bullseye.0
+    version: v1.30.0-go1.22.7-bullseye.0
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/kube-cross: dependents k8s-cloud-builder (v1.29-cross1.22)"
-    version: v1.29.0-go1.22.6-bullseye.0
+    version: v1.29.0-go1.22.7-bullseye.0
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/kube-cross: dependents k8s-cloud-builder (v1.28-cross1.22)"
-    version: v1.28.0-go1.22.6-bullseye.0
+    version: v1.28.0-go1.22.7-bullseye.0
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -328,7 +328,7 @@ dependencies:
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
   - name: "golang: after kubernetes/kubernetes update (previous release branches: 1.30)"
-    version: 1.22.6
+    version: 1.22.7
     refPaths:
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -345,7 +345,7 @@ dependencies:
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
   - name: "golang: after kubernetes/kubernetes update (previous release branches: 1.29)"
-    version: 1.22.6
+    version: 1.22.7
     refPaths:
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -368,7 +368,7 @@ dependencies:
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
   - name: "golang: after kubernetes/kubernetes update (previous release branches: 1.28)"
-    version: 1.22.6
+    version: 1.22.7
     refPaths:
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
