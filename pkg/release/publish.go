@@ -402,11 +402,23 @@ func (p *Publisher) PublishToGcs(
 	return nil
 }
 
+func gcsPathToPublisURL(gcsPath string) (string, error) {
+	const pathSep = "/"
+	split := strings.Split(strings.TrimPrefix(gcsPath, object.GcsPrefix), pathSep)
+	if len(split) < 2 {
+		return "", fmt.Errorf("invalid GCS path: %s", gcsPath)
+	}
+	return URLPrefixForBucket(split[0]) + pathSep + strings.Join(split[1:], pathSep), nil
+}
+
 // PublishReleaseNotesIndex updates or creates the release notes index JSON at
 // the target `gcsIndexRootPath`.
 func (p *Publisher) PublishReleaseNotesIndex(
 	gcsIndexRootPath, gcsReleaseNotesPath, version string,
 ) error {
+	logrus.Infof("Using index root path: %s", gcsIndexRootPath)
+	logrus.Infof("Using GCS release notes path: %s", gcsReleaseNotesPath)
+
 	const releaseNotesIndex = "/release-notes-index.json"
 
 	indexFilePath, err := p.client.NormalizePath(
@@ -416,11 +428,6 @@ func (p *Publisher) PublishReleaseNotesIndex(
 		return fmt.Errorf("normalize index file: %w", err)
 	}
 	logrus.Infof("Publishing release notes index %s", indexFilePath)
-
-	releaseNotesFilePath, err := p.client.NormalizePath(gcsReleaseNotesPath)
-	if err != nil {
-		return fmt.Errorf("normalize release notes file: %w", err)
-	}
 
 	success, err := p.client.GSUtilStatus("-q", "stat", indexFilePath)
 	if err != nil {
@@ -456,7 +463,16 @@ func (p *Publisher) PublishReleaseNotesIndex(
 	} else {
 		logrus.Info("Creating non existing release notes index file")
 	}
-	versions[version] = releaseNotesFilePath
+	versions[version] = gcsReleaseNotesPath
+
+	// Fixup the index to only use public URLS
+	for v, releaseNotesPath := range versions {
+		releaseNotesPublicURL, err := gcsPathToPublisURL(releaseNotesPath)
+		if err != nil {
+			return fmt.Errorf("get publish URL from release notes GCS path: %w", err)
+		}
+		versions[v] = releaseNotesPublicURL
+	}
 
 	versionJSON, err := p.client.Marshal(versions)
 	if err != nil {

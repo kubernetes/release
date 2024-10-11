@@ -246,7 +246,8 @@ func GetWorkspaceVersion() (string, error) {
 func URLPrefixForBucket(bucket string) string {
 	bucket = strings.TrimPrefix(bucket, object.GcsPrefix)
 	urlPrefix := "https://storage.googleapis.com/" + bucket
-	if bucket == ProductionBucket {
+	const legacyBucket = "kubernetes-release"
+	if bucket == ProductionBucket || bucket == legacyBucket {
 		urlPrefix = ProductionBucketURL
 	}
 	return urlPrefix
