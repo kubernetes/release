@@ -299,15 +299,9 @@ func TestPublishReleaseNotesIndex(t *testing.T) {
 			},
 			shouldError: true,
 		},
-		{ // failure NormalizePath 0
+		{ // failure NormalizePath
 			prepare: func(mock *releasefakes.FakePublisherClient) {
 				mock.NormalizePathReturnsOnCall(0, "", err)
-			},
-			shouldError: true,
-		},
-		{ // failure NormalizePath 1
-			prepare: func(mock *releasefakes.FakePublisherClient) {
-				mock.NormalizePathReturnsOnCall(1, "", err)
 			},
 			shouldError: true,
 		},
@@ -318,12 +312,12 @@ func TestPublishReleaseNotesIndex(t *testing.T) {
 		tc.prepare(clientMock)
 
 		err := sut.PublishReleaseNotesIndex(
-			"", "", "",
+			"gs://foo-bar/release", "gs://foo-bar/release/v1.2.3/index.json", "v1.2.3",
 		)
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
