@@ -853,8 +853,8 @@ github.com/yuin/goldmark v1.1.30/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
-github.com/yuin/goldmark v1.7.4 h1:BDXOHExt+A7gwPCJgPIIq7ENvceR7we7rOS9TNoLZeg=
-github.com/yuin/goldmark v1.7.4/go.mod h1:uzxRWxtg69N339t3louHJ7+O03ezfj6PlliRlaOzY1E=
+github.com/yuin/goldmark v1.7.6 h1:cZgJxVh5mL5cu8KOnwxvFJy5TFB0BHUskZZyq7TYbDg=
+github.com/yuin/goldmark v1.7.6/go.mod h1:uzxRWxtg69N339t3louHJ7+O03ezfj6PlliRlaOzY1E=
 github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo0=
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
 github.com/zalando/go-keyring v0.2.3 h1:v9CUu9phlABObO4LPWycf+zwMG7nlbb3t/B5wa97yms=
@@ -1318,8 +1318,8 @@ sigs.k8s.io/promo-tools/v3 v3.6.0 h1:C2L08ezrWm1aZI8Emd3iZPZQserLPRgzuqQVxvI0PUI
 sigs.k8s.io/promo-tools/v3 v3.6.0/go.mod h1:XJ3jy0hJYs+hWKt8XsLHFzGQV8PUtvllvbxjN/E5RXI=
 sigs.k8s.io/release-sdk v0.12.1 h1:/Q+yWpl33EnFx1b7xh6FnbioWSRUTrVkigL4KZVTrkU=
 sigs.k8s.io/release-sdk v0.12.1/go.mod h1:nnB4tt1g0VXMUCIYzDzPVqNI896OQrWipE6WbyZ6FSk=
-sigs.k8s.io/release-utils v0.8.4 h1:4QVr3UgbyY/d9p74LBhg0njSVQofUsAZqYOzVZBhdBw=
-sigs.k8s.io/release-utils v0.8.4/go.mod h1:m1bHfscTemQp+z+pLCZnkXih9n0+WukIUU70n6nFnU0=
+sigs.k8s.io/release-utils v0.8.5 h1:FUtFqEAN621gSXv0L7kHyWruBeS7TUU9aWf76olX7uQ=
+sigs.k8s.io/release-utils v0.8.5/go.mod h1:qsm5bdxdgoHkD8HsXpgme2/c3mdsNaiV53Sz2HmKeJA=
 sigs.k8s.io/structured-merge-diff/v4 v4.4.1 h1:150L+0vs/8DA78h1u02ooW1/fFq/Lwr+sGiqlzvrtq4=
 sigs.k8s.io/structured-merge-diff/v4 v4.4.1/go.mod h1:N8hJocpFajUSSeSJ9bOZ77VzejKZaXsTtZo4/u7Io08=
 sigs.k8s.io/yaml v1.1.0/go.mod h1:UJmg0vDUVViEyp3mgSv9WPwZCDxu4rQW1olrI1uml+o=
