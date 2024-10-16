@@ -71,7 +71,7 @@ dependencies:
       match: go \d+.\d+
 
   - name: "golang: after kubernetes/kubernetes update"
-    version: 1.23.0
+    version: 1.23.2
     refPaths:
     - path: images/releng/k8s-ci-builder/Makefile
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -247,7 +247,7 @@ dependencies:
       match: REVISION:\ '\d+'
 
   - name: "registry.k8s.io/build-image/kube-cross: dependents k8s-cloud-builder (v1.32-cross1.23)"
-    version: v1.32.0-go1.23.0-bullseye.0
+    version: v1.32.0-go1.23.2-bullseye.0
     refPaths:
     - path: images/k8s-cloud-builder/variants.yaml
       match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
