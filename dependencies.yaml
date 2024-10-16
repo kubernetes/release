@@ -20,9 +20,9 @@ dependencies:
     - path: images/build/go-runner/cloudbuild.yaml
       match: ghcr.io/sigstore/cosign/cosign:v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?-dev@sha256:[a-f0-9]{64}
 
-  # Golang
-  - name: "golang"
-    version: 1.22.8
+  # Golang (for images, latest)
+  - name: "golang (latest)"
+    version: 1.23.2
     refPaths:
     - path: images/build/cross/Makefile
       match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -34,23 +34,36 @@ dependencies:
       match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
     - path: images/releng/ci/variants.yaml
       match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
+  
+  # Golang (for images, previous)
+  - name: "golang (previous)"
+    version: 1.22.8
+    refPaths:
+    - path: images/build/cross/variants.yaml
+      match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
+    - path: images/build/go-runner/variants.yaml
+      match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
+    - path: images/releng/ci/variants.yaml
+      match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
 
-  # Golang pre-releases are denoted as `1.y<pre-release stage>.z`
+  # Golang pre-releases are denoted as `1.y<pre-release stage>`
   # Example: go1.17rc1
   #
   # This entry is a stub of the major version to allow dependency checks to
   # pass when building Kubernetes using a pre-release of Golang.
-  - name: "golang: 1.<major>"
-    version: 1.22
-    refPaths:
-    - path: images/build/cross/Makefile
-      match: GO_MAJOR_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
-    - path: images/build/cross/variants.yaml
-      match: "GO_MAJOR_VERSION: '\\d+.\\d+'"
-    - path: images/build/go-runner/Makefile
-      match: GO_MAJOR_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
-    - path: images/build/go-runner/variants.yaml
-      match: "GO_MAJOR_VERSION: '\\d+.\\d+'"
+  # - name: "golang (upcoming): 1.<major><pre-releaste stage>"
+  #   version: 1.24rc1
+  #   refPaths:
+  #   - path: images/build/cross/Makefile
+  #     match: GO_MAJOR_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+  #   - path: images/build/cross/variants.yaml
+  #     match: "GO_MAJOR_VERSION: '\\d+.\\d+'"
+  #   - path: images/build/go-runner/Makefile
+  #     match: GO_MAJOR_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+  #   - path: images/build/go-runner/variants.yaml
+  #     match: "GO_MAJOR_VERSION: '\\d+.\\d+'"
+  #   - path: images/releng/ci/variants.yaml
+  #     match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
 
   - name: "golang: 1.<major> (github workflows)"
     version: 1.23
@@ -69,14 +82,6 @@ dependencies:
     refPaths:
     - path: images/build/go-runner/go.mod
       match: go \d+.\d+
-
-  - name: "golang: after kubernetes/kubernetes update"
-    version: 1.23.2
-    refPaths:
-    - path: images/releng/k8s-ci-builder/Makefile
-      match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
-    - path: images/releng/k8s-ci-builder/variants.yaml
-      match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
 
   - name: "go-runner"
     version: v2.3.1
@@ -104,12 +109,27 @@ dependencies:
       match: "KUBERNETES_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "Kubernetes version (next candidate.0)"
-    version: v1.31.0
+    version: v1.32.0
     refPaths:
     - path: images/build/cross/variants.yaml
       match: "KUBERNETES_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
+  # releng-ci
   - name: "gcr.io/k8s-staging-releng/releng-ci: image revision"
+    version: 0
+    refPaths:
+    - path: images/releng/ci/variants.yaml
+      match: REVISION:\ '\d+'
+
+  # releng-ci (next candidate, to be used when changing revision)
+  - name: "gcr.io/k8s-staging-releng/releng-ci: image revision (next candidate)"
+    version: 0
+    refPaths:
+    - path: images/releng/ci/variants.yaml
+      match: REVISION:\ '\d+'
+  
+  # releng-ci (for previous release branches)
+  - name: "gcr.io/k8s-staging-releng/releng-ci: image revision (for previous release branches)"
     version: 0
     refPaths:
     - path: images/releng/ci/variants.yaml
@@ -144,7 +164,15 @@ dependencies:
     - path: images/build/go-runner/variants.yaml
       match: REVISION:\ '\d+'
 
-  # kube-cross
+  # kube-cross (to be updated before updating kubernetes/kubernetes)
+  # Next candidate
+  # - name: "registry.k8s.io/build-image/kube-cross: config variant (next candidate)"
+  #   version: go1.24rc1-bullseye
+  #   refPaths:
+  #   - path: images/build/cross/variants.yaml
+  #     match: "CONFIG: 'go\\d+.\\d+-bullseye'"
+
+  # Kubernetes v1.31
   - name: "registry.k8s.io/build-image/kube-cross (v1.31-go1.23)"
     version: v1.31.0-go1.23.2-bullseye.0
     refPaths:
@@ -165,6 +193,7 @@ dependencies:
     - path: images/build/cross/variants.yaml
       match: REVISION:\ '\d+'
 
+  # Kubernetes v1.31 (Go 1.22)
   - name: "registry.k8s.io/build-image/kube-cross (v1.31-go1.22)"
     version: v1.31.0-go1.22.8-bullseye.0
     refPaths:
@@ -185,7 +214,7 @@ dependencies:
     - path: images/build/cross/variants.yaml
       match: REVISION:\ '\d+'
 
-
+  # Kubernetes v1.30
   - name: "registry.k8s.io/build-image/kube-cross (v1.30-go1.22)"
     version: v1.30.0-go1.22.8-bullseye.0
     refPaths:
@@ -206,6 +235,7 @@ dependencies:
     - path: images/build/cross/variants.yaml
       match: REVISION:\ '\d+'
 
+  # Kubernetes v1.29
   - name: "registry.k8s.io/build-image/kube-cross (v1.29-go1.22)"
     version: v1.29.0-go1.22.8-bullseye.0
     refPaths:
@@ -226,6 +256,7 @@ dependencies:
     - path: images/build/cross/variants.yaml
       match: REVISION:\ '\d+'
 
+  # Kubernetes v1.28
   - name: "registry.k8s.io/build-image/kube-cross (v1.28-go1.22)"
     version: v1.28.0-go1.22.8-bullseye.0
     refPaths:
@@ -246,6 +277,7 @@ dependencies:
     - path: images/build/cross/variants.yaml
       match: REVISION:\ '\d+'
 
+  # kube-cross (to be updated after updating kubernetes/kubernetes)
   - name: "registry.k8s.io/build-image/kube-cross: dependents k8s-cloud-builder (v1.32-cross1.23)"
     version: v1.32.0-go1.23.2-bullseye.0
     refPaths:
@@ -283,102 +315,49 @@ dependencies:
     - path: images/k8s-cloud-builder/variants.yaml
       match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
+  # protobuf
   - name: "registry.k8s.io/build-image/kube-cross: protobuf version"
     version: 23.4
     refPaths:
     - path: images/build/cross/default/Dockerfile
       match: "PROTOBUF_VERSION [0-9]+\\.[0-9]+"
 
-  # Golang (next candidate)
-  - name: "golang (next candidate)"
+  # Golang (current release branch: master)
+  - name: "golang: after kubernetes/kubernetes update (master)"
     version: 1.23.2
     refPaths:
-    - path: images/build/cross/variants.yaml
+    - path: images/releng/k8s-ci-builder/Makefile
+      match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+    - path: images/releng/k8s-ci-builder/variants.yaml
       match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
-    - path: images/build/go-runner/variants.yaml
-      match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
-    - path: images/releng/ci/variants.yaml
-      match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
-    # TODO: uncomment when we build the k8s-ci-builder with 1.23.0
-    # - path: images/releng/k8s-ci-builder/variants.yaml
-    #   match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
 
-  # Golang images (next candidate)
-  - name: "gcr.io/k8s-staging-releng/releng-ci: image revision (next candidate)"
-    version: 0
+  # Golang (previous release branch: 1.31)
+  - name: "golang: after kubernetes/kubernetes update (previous release branches: 1.31)"
+    version: 1.22.6
     refPaths:
-    - path: images/releng/ci/variants.yaml
-      match: REVISION:\ '\d+'
-
-  - name: "registry.k8s.io/build-image/kube-cross: config variant (next candidate)"
-    version: go1.23-bullseye
-    refPaths:
-    - path: images/build/cross/variants.yaml
-      match: "CONFIG: 'go\\d+.\\d+-bullseye'"
-
-  # Golang (previous release branches: 1.30)
-  - name: "golang (previous release branches: 1.30)"
-    version: 1.22.8
-    refPaths:
-    - path: images/build/cross/variants.yaml
-      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
-    - path: images/build/go-runner/variants.yaml
-      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
-    - path: images/releng/ci/variants.yaml
+    - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
+  # Golang (previous release branch: 1.30)
   - name: "golang: after kubernetes/kubernetes update (previous release branches: 1.30)"
     version: 1.22.6
     refPaths:
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
-  # Golang (previous release branches: 1.29)
-  - name: "golang (previous release branches: 1.29)"
-    version: 1.22.8
-    refPaths:
-    - path: images/build/cross/variants.yaml
-      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
-    - path: images/build/go-runner/variants.yaml
-      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
-    - path: images/releng/ci/variants.yaml
-      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
-
+  # Golang (previous release branch: 1.29)
   - name: "golang: after kubernetes/kubernetes update (previous release branches: 1.29)"
     version: 1.22.6
     refPaths:
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
-  # Golang (previous release branches: 1.28)
-  - name: "golang (previous release branches: 1.28)"
-    version: 1.22.8
-    refPaths:
-    - path: images/build/cross/variants.yaml
-      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
-    - path: images/build/go-runner/variants.yaml
-      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
-    - path: images/releng/ci/variants.yaml
-      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
-
-  - name: "golang: after kubernetes/kubernetes update (previous release branches: master)"
-    version: 1.22
-    refPaths:
-    - path: images/releng/k8s-ci-builder/variants.yaml
-      match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
-
+  # Golang (previous release branch: 1.28)
   - name: "golang: after kubernetes/kubernetes update (previous release branches: 1.28)"
     version: 1.22.6
     refPaths:
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
-
-  # Golang images (for previous release branches)
-  - name: "gcr.io/k8s-staging-releng/releng-ci: image revision (for previous release branches)"
-    version: 0
-    refPaths:
-    - path: images/releng/ci/variants.yaml
-      match: REVISION:\ '\d+'
 
   # golangci-lint-version
   - name: "golangci-lint"
