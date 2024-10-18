@@ -311,6 +311,77 @@ func TestGatherNotes(t *testing.T) {
 			},
 			expectedGetPullRequestCallCount: 6,
 		},
+
+		"when the PR is a cherry pick": {
+			commitList: []*github.RepositoryCommit{
+				repoCommit("125", "Merge a prow cherry-pick (#125)"),
+				repoCommit("126", "Merge hack cherry-pick (#126)"),
+				repoCommit("127", "Merge hack cherry-pick (#127)"),
+			},
+			getPullRequestStubber: func(t *testing.T) getPullRequestStub {
+				seenPRs := newIntsRecorder(122, 123, 124, 125, 126, 127)
+				prsMap := map[int]*github.PullRequest{
+					122: {
+						Number: intPtr(122),
+						Body:   strPtr("122\n```release-note\nfrom 122\n```\n"),
+					},
+					123: {
+						Number: intPtr(123),
+						Body:   strPtr("123\n```release-note\nfrom 123\n```\n"),
+					},
+					124: {
+						Number: intPtr(124),
+						Body:   strPtr("124\n```release-note\nfrom 124\n```\n"),
+					},
+					125: {
+						Number: intPtr(125),
+						Body:   strPtr("No release note"),
+						Head: &github.PullRequestBranch{
+							Label: strPtr("k8s-infra-cherrypick-robot:cherry-pick-122-to-release-0.x"),
+						},
+					},
+					126: {
+						Number: intPtr(126),
+						Body:   strPtr("Empty release note\n```release-note\n\n```\n"),
+						Head: &github.PullRequestBranch{
+							Label: strPtr("fork:automated-cherry-pick-of-#123-upstream-release-0.x"),
+						},
+					},
+					127: {
+						Number: intPtr(127),
+						Body:   strPtr("127\n```release-note\nfrom 127\n```\n"),
+						Head: &github.PullRequestBranch{
+							Label: strPtr("fork:automated-cherry-pick-of-#124-upstream-release-0.x"),
+						},
+					},
+				}
+				return func(_ context.Context, org, repo string, prID int) (*github.PullRequest, *github.Response, error) {
+					checkOrgRepo(t, org, repo)
+					if err := seenPRs.Mark(prID); err != nil {
+						t.Errorf("In GetPullRequest: %v", err)
+					}
+					return prsMap[prID], nil, nil
+				}
+			},
+			resultsChecker: func(t *testing.T, results []*Result) {
+				expectMap := map[string]int{
+					"125": 122,
+					"126": 123,
+					"127": 127,
+				}
+
+				for _, result := range results {
+					expected, found := expectMap[*result.commit.SHA]
+					if !found {
+						t.Errorf("Unexpected SHA %s", *result.commit.SHA)
+					}
+					if expected != *result.pullRequest.Number {
+						t.Errorf("Expecting %d got %d for SHA %s", expected, *result.pullRequest.Number, *result.commit.SHA)
+					}
+				}
+			},
+			expectedGetPullRequestCallCount: 6,
+		},
 		"when GetPullRequest(...) returns an error": {
 			commitList: []*github.RepositoryCommit{repoCommit("some-sha", "some #123 thing")},
 			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {

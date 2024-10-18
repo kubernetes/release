@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -50,6 +51,7 @@ import (
 
 var (
 	errNoPRIDFoundInCommitMessage       = errors.New("no PR IDs found in the commit message")
+	errNoOriginPRIDFoundInPR            = errors.New("no origin PR IDs found in the PR")
 	errNoPRFoundForCommitSHA            = errors.New("no PR found for this commit")
 	apiSleepTime                  int64 = 60
 )
@@ -1044,55 +1046,91 @@ func (g *Gatherer) prsForCommitFromMessage(commitMessage string) (prs []*gogithu
 	if err != nil {
 		return nil, err
 	}
-	var res *gogithub.PullRequest
-	var resp *gogithub.Response
 
-	for _, pr := range prsNum {
+	for _, prNum := range prsNum {
 		// Given the PR number that we've now converted to an integer, get the PR from
 		// the API
-		for {
-			res, resp, err = g.client.GetPullRequest(g.context, g.options.GithubOrg, g.options.GithubRepo, pr)
-			if err != nil {
-				if !canWaitAndRetry(resp, err) {
-					return nil, err
-				}
-			} else {
-				break
+		pr, err := g.getPr(prNum)
+		if err != nil {
+			return prs, err
+		}
+		prs = append(prs, pr)
+
+		originPrNum, origPrErr := originPrNumFromPr(pr)
+		if origPrErr == nil && slices.Index(prsNum, originPrNum) == -1 {
+			originPr, err := g.getPr(originPrNum)
+			if err == nil {
+				prs = append(prs, originPr)
 			}
 		}
-		prs = append(prs, res)
 	}
 
 	return prs, err
 }
 
-func prsNumForCommitFromMessage(commitMessage string) (prs []int, err error) {
+func (g *Gatherer) getPr(prNum int) (*gogithub.PullRequest, error) {
+	for {
+		res, resp, err := g.client.GetPullRequest(g.context, g.options.GithubOrg, g.options.GithubRepo, prNum)
+		if err != nil {
+			if !canWaitAndRetry(resp, err) {
+				return nil, err
+			}
+		} else {
+			return res, err
+		}
+	}
+}
+
+var (
 	// Thankfully k8s-merge-robot commits the PR number consistently. If this ever
 	// stops being true, this definitely won't work anymore.
-	regex := regexp.MustCompile(`Merge pull request #(?P<number>\d+)`)
-	pr := prForRegex(regex, commitMessage)
-	if pr != 0 {
+	regexMergedPR = regexp.MustCompile(`Merge pull request #(?P<number>\d+)`)
+
+	// If the PR was squash merged, the regexp is different.
+	regexSquashPR = regexp.MustCompile(`\(#(?P<number>\d+)\)`)
+
+	// The branch name created by "hack/cherry_pick_pull.sh".
+	regexHackBranch = regexp.MustCompile(`automated-cherry-pick-of-#(?P<number>\d+)`)
+
+	// The branch name created by k8s-infra-cherrypick-robot.
+	regexProwBranch = regexp.MustCompile(`cherry-pick-(?P<number>\d+)-to`)
+)
+
+func prsNumForCommitFromMessage(commitMessage string) (prs []int, err error) {
+	if pr := prForRegex(regexMergedPR, commitMessage); pr != 0 {
 		prs = append(prs, pr)
 	}
 
-	regex = regexp.MustCompile(`automated-cherry-pick-of-#(?P<number>\d+)`)
-	pr = prForRegex(regex, commitMessage)
-	if pr != 0 {
+	if pr := prForRegex(regexSquashPR, commitMessage); pr != 0 {
 		prs = append(prs, pr)
 	}
 
-	// If the PR was squash merged, the regexp is different
-	regex = regexp.MustCompile(`\(#(?P<number>\d+)\)`)
-	pr = prForRegex(regex, commitMessage)
-	if pr != 0 {
+	if pr := prForRegex(regexHackBranch, commitMessage); pr != 0 {
 		prs = append(prs, pr)
 	}
 
-	if prs == nil {
+	if len(prs) == 0 {
 		return nil, errNoPRIDFoundInCommitMessage
+	} else {
+		return prs, nil
+	}
+}
+
+func originPrNumFromPr(pr *gogithub.PullRequest) (origPRNum int, err error) {
+	if pr == nil || pr.Head == nil || pr.Head.Label == nil {
+		return 0, errNoOriginPRIDFoundInPR
+	}
+	origPRNum = prForRegex(regexHackBranch, *pr.Head.Label)
+	if origPRNum != 0 {
+		return origPRNum, nil
 	}
 
-	return prs, nil
+	origPRNum = prForRegex(regexProwBranch, *pr.Head.Label)
+	if origPRNum != 0 {
+		return origPRNum, nil
+	}
+
+	return 0, errNoOriginPRIDFoundInPR
 }
 
 func prForRegex(regex *regexp.Regexp, commitMessage string) int {
