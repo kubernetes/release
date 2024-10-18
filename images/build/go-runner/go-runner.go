@@ -46,6 +46,7 @@ func configureAndRun() error {
 	var (
 		outputStream io.Writer = os.Stdout
 		errStream    io.Writer = os.Stderr
+		err          error
 	)
 
 	args := flag.Args()
@@ -79,7 +80,11 @@ func configureAndRun() error {
 	cmd.Stderr = errStream
 
 	log.Printf("Running command:\n%v", cmdInfo(cmd))
-	err := cmd.Start()
+	if cmd.Stdout == os.Stdout && cmd.Stderr == os.Stderr {
+		err = syscall.Exec(cmd.Path, cmd.Args, syscall.Environ())
+	} else {
+		err = cmd.Start()
+	}
 	if err != nil {
 		return fmt.Errorf("starting command: %w", err)
 	}
