@@ -131,7 +131,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 
 	if announceRootOpts.printOnly {
 		logrus.Infof("The email content is:")
-		fmt.Print(content)
+		fmt.Print(string(content))
 		return nil
 	}
 
