@@ -1,6 +1,6 @@
 module k8s.io/release
 
-go 1.22.4
+go 1.22.8
 
 require (
 	cloud.google.com/go/storage v1.39.1
@@ -32,7 +32,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/tj/go-spin v1.1.0
-	github.com/yuin/goldmark v1.7.4
+	github.com/yuin/goldmark v1.7.8
 	golang.org/x/net v0.30.0
 	golang.org/x/oauth2 v0.23.0
 	golang.org/x/text v0.19.0
