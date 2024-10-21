@@ -15,7 +15,7 @@ dependencies:
 
   # cosign
   - name: "ghcr.io/sigstore/cosign/cosign"
-    version: v2.2.2-dev@sha256:1a49e2f6cf3580935863d9d8d46066db9aad3dbd673ca24cb83d143221c6e64b
+    version: v2.2.4-dev@sha256:13efd4c62710d75f07d12d8aad36a8657eeffd4f5f3a40bcbc207d8aafa67d41
     refPaths:
     - path: images/build/go-runner/cloudbuild.yaml
       match: ghcr.io/sigstore/cosign/cosign:v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?-dev@sha256:[a-f0-9]{64}
@@ -37,7 +37,7 @@ dependencies:
       match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
     - path: images/releng/ci/variants.yaml
       match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
-  
+
   # Golang (for images, previous stable)
   # To be updated before kubernetes/kubernetes update
   - name: "golang (previous)"
@@ -126,7 +126,7 @@ dependencies:
     refPaths:
     - path: images/releng/ci/variants.yaml
       match: REVISION:\ '\d+'
-  
+
   # releng-ci (previous release branches)
   - name: "gcr.io/k8s-staging-releng/releng-ci: image revision (previous release branches)"
     version: 0
