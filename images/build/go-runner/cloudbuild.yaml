@@ -49,7 +49,7 @@ substitutions:
   _PULL_BASE_REF: 'dev'
   _CONFIG: 'go-major-codename'
   _IMAGE_VERSION: 'v0.0.0-go0.0.0-codename.0'
-  _GO_MAJOR_VERSION: '1.16'
+  _GO_MAJOR_VERSION: '1.22'
   _OS_CODENAME: 'codename'
   _REVISION: '0'
   _GO_VERSION: '0.0.0'
