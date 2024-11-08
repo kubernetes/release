@@ -41,7 +41,7 @@ jobs:
         uses: kubernetes-sigs/release-actions/setup-bom@a69972745f85aab4ba5d6c681e2a0e7f73eaff2b # v0.3.0
 
       - name: Build and publish release
-        uses: goreleaser/goreleaser-action@286f3b13b1b49da4ac219696163fb8c1c93e1200 # v6.0.0
+        uses: goreleaser/goreleaser-action@9ed2f89a662bf1735a48bc8557fd212fa902bebf # v6.1.0
         if: contains(github.ref, 'refs/tags')
         with:
           args: release --clean
