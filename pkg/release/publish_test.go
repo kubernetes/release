@@ -372,3 +372,31 @@ func TestIsUpToDate(t *testing.T) {
 		})
 	}
 }
+
+func TestFixPublicReleaseNotesURL(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		input, expected string
+	}{
+		"should not affect correct URL": {
+			input:    "https://dl.k8s.io/release/v1.32.0-beta.0/release-notes.json",
+			expected: "https://dl.k8s.io/release/v1.32.0-beta.0/release-notes.json",
+		},
+		"should fix wrong URL with 1 prefix": {
+			input:    "https://storage.googleapis.com/https://dl.k8s.io/release/v1.32.0-alpha.3/release-notes.json",
+			expected: "https://dl.k8s.io/release/v1.32.0-alpha.3/release-notes.json",
+		},
+		"should fix wrong URL with multiple prefixes": {
+			input:    "https://storage.googleapis.com/https://storage.googleapis.com/https://dl.k8s.io/release/v1.28.1/release-notes.json",
+			expected: "https://dl.k8s.io/release/v1.28.1/release-notes.json",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			res := release.FixPublicReleaseNotesURL(tc.input)
+			require.Equal(t, tc.expected, res)
+		})
+	}
+}
