@@ -402,13 +402,14 @@ func (p *Publisher) PublishToGcs(
 	return nil
 }
 
-func gcsPathToPublisURL(gcsPath string) (string, error) {
-	const pathSep = "/"
-	split := strings.Split(strings.TrimPrefix(gcsPath, object.GcsPrefix), pathSep)
-	if len(split) < 2 {
-		return "", fmt.Errorf("invalid GCS path: %s", gcsPath)
+// TODO: remove this function once https://cdn.dl.k8s.io/release/release-notes-index.json
+// is fixed.
+func FixPublicReleaseNotesURL(gcsPath string) string {
+	const prefix = "https://storage.googleapis.com/"
+	for strings.HasPrefix(gcsPath, prefix) {
+		gcsPath = strings.TrimPrefix(gcsPath, prefix)
 	}
-	return URLPrefixForBucket(split[0]) + pathSep + strings.Join(split[1:], pathSep), nil
+	return gcsPath
 }
 
 // PublishReleaseNotesIndex updates or creates the release notes index JSON at
@@ -467,11 +468,7 @@ func (p *Publisher) PublishReleaseNotesIndex(
 
 	// Fixup the index to only use public URLS
 	for v, releaseNotesPath := range versions {
-		releaseNotesPublicURL, err := gcsPathToPublisURL(releaseNotesPath)
-		if err != nil {
-			return fmt.Errorf("get publish URL from release notes GCS path: %w", err)
-		}
-		versions[v] = releaseNotesPublicURL
+		versions[v] = FixPublicReleaseNotesURL(releaseNotesPath)
 	}
 
 	versionJSON, err := p.client.Marshal(versions)
