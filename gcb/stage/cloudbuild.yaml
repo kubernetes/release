@@ -78,6 +78,7 @@ steps:
   - "K8S_REPO=${_K8S_REPO}"
   - "K8S_REF=${_K8S_REF}"
   - GOOGLE_SERVICE_ACCOUNT_NAME=krel-staging@k8s-releng-prod.iam.gserviceaccount.com
+  - "KUBE_PARALLEL_BUILD_MEMORY=64"
   secretEnv:
   - GITHUB_TOKEN
   - DOCKERHUB_TOKEN
