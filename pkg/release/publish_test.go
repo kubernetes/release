@@ -383,13 +383,9 @@ func TestFixPublicReleaseNotesURL(t *testing.T) {
 			input:    "https://dl.k8s.io/release/v1.32.0-beta.0/release-notes.json",
 			expected: "https://dl.k8s.io/release/v1.32.0-beta.0/release-notes.json",
 		},
-		"should fix wrong URL with 1 prefix": {
-			input:    "https://storage.googleapis.com/https://dl.k8s.io/release/v1.32.0-alpha.3/release-notes.json",
-			expected: "https://dl.k8s.io/release/v1.32.0-alpha.3/release-notes.json",
-		},
-		"should fix wrong URL with multiple prefixes": {
-			input:    "https://storage.googleapis.com/https://storage.googleapis.com/https://dl.k8s.io/release/v1.28.1/release-notes.json",
-			expected: "https://dl.k8s.io/release/v1.28.1/release-notes.json",
+		"should fix URL referring to production bucket": {
+			input:    "gs://767373bbdcb8270361b96548387bf2a9ad0d48758c35/release/v1.29.11/release-notes.json",
+			expected: "https://dl.k8s.io/release/v1.29.11/release-notes.json",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
