@@ -402,12 +402,10 @@ func (p *Publisher) PublishToGcs(
 	return nil
 }
 
-// TODO: remove this function once https://cdn.dl.k8s.io/release/release-notes-index.json
-// is fixed.
 func FixPublicReleaseNotesURL(gcsPath string) string {
-	const prefix = "https://storage.googleapis.com/"
-	for strings.HasPrefix(gcsPath, prefix) {
-		gcsPath = strings.TrimPrefix(gcsPath, prefix)
+	const prefix = "gs://" + ProductionBucket
+	if strings.HasPrefix(gcsPath, prefix) {
+		gcsPath = ProductionBucketURL + strings.TrimPrefix(gcsPath, prefix)
 	}
 	return gcsPath
 }
