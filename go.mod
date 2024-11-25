@@ -30,7 +30,7 @@ require (
 	github.com/shurcooL/githubv4 v0.0.0-20220115235240-a14260e6f8a2
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.1
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/tj/go-spin v1.1.0
 	github.com/yuin/goldmark v1.7.8
 	golang.org/x/net v0.31.0
