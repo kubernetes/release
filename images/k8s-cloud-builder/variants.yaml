@@ -1,7 +1,7 @@
 variants:
   v1.32-cross1.23-bullseye:
     CONFIG: 'cross1.23'
-    KUBE_CROSS_VERSION: 'v1.32.0-go1.23.2-bullseye.0'
+    KUBE_CROSS_VERSION: 'v1.32.0-go1.23.3-bullseye.0'
   v1.31-cross1.23-bullseye:
     CONFIG: 'cross1.23'
     KUBE_CROSS_VERSION: 'v1.31.0-go1.23.2-bullseye.0'
