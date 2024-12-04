@@ -545,7 +545,10 @@ func (d *DefaultRelease) CreateAnnouncement() error {
 
 	// Check if we are releasing the initial rc release (eg 1.20.0-rc.0),
 	// and we are working on a release-M.m branch
-	if primeSemver.Patch == 0 && d.options.ReleaseType == release.ReleaseTypeRC &&
+	if primeSemver.Patch == 0 &&
+		len(primeSemver.Pre) == 2 &&
+		primeSemver.Pre[0].String() == "rc" &&
+		primeSemver.Pre[1].VersionNum == 0 &&
 		d.options.ReleaseBranch != git.DefaultBranch {
 		if d.options.NoMock {
 			// Create the publishing bot issue
