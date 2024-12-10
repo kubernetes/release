@@ -1184,7 +1184,8 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 		_, choice, err := util.Ask(fmt.Sprintf("\n- Fix note for PR #%d? (y/N)", note.PrNumber), "y:Y:yes|n:N:no|n", 10)
 		if err != nil {
 			// If the user cancelled with ctr+c exit and continue the PR flow
-			if err.(util.UserInputError).IsCtrlC() {
+			var userInputErr util.UserInputError
+			if errors.As(err, &userInputErr) && userInputErr.IsCtrlC() {
 				logrus.Info("Input cancelled, exiting edit flow")
 				return nil
 			}
@@ -1240,8 +1241,10 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 func pointIfChanged(label string, var1, var2 interface{}) string {
 	changed := false
 	// Check if alues are string
-	if _, ok := var1.(string); ok {
-		if var1.(string) != var2.(string) {
+	var1String, ok1 := var1.(string)
+	var2String, ok2 := var2.(string)
+	if ok1 && ok2 {
+		if var1String != var2String {
 			changed = true
 		}
 	}
@@ -1253,9 +1256,11 @@ func pointIfChanged(label string, var1, var2 interface{}) string {
 		}
 	}
 
-	// Check if string slices
-	if _, ok := var1.(bool); ok {
-		if var1.(bool) != var2.(bool) {
+	// Check if bools
+	var1Bool, ok1 := var1.(bool)
+	var2Bool, ok2 := var2.(bool)
+	if ok1 && ok2 {
+		if var1Bool != var2Bool {
 			changed = true
 		}
 	}
@@ -1458,9 +1463,12 @@ func confirmWithUser(opts *releaseNotesOptions, question string) bool {
 	_, success, err := util.Ask(question+" (Y/n)", "y:Y:yes|n:N:no|y", 10)
 	if err != nil {
 		logrus.Error(err)
-		if err.(util.UserInputError).IsCtrlC() {
+
+		var userInputErr util.UserInputError
+		if errors.As(err, &userInputErr) && userInputErr.IsCtrlC() {
 			os.Exit(1)
 		}
+
 		return false
 	}
 	if success {

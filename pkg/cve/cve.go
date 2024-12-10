@@ -65,7 +65,9 @@ func (cve *CVE) ReadRawInterface(cvedata interface{}) error {
 	if val, ok := cvedata.(map[interface{}]interface{})["linkedPRs"].([]interface{}); ok {
 		cve.LinkedPRs = []int{}
 		for _, prid := range val {
-			cve.LinkedPRs = append(cve.LinkedPRs, prid.(int))
+			if prid, ok := prid.(int); ok {
+				cve.LinkedPRs = append(cve.LinkedPRs, prid)
+			}
 		}
 	}
 
