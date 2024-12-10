@@ -23,7 +23,7 @@ const ghPageBody = `{{ if .Substitutions.logo }}
 {{ end }}
 {{ .Substitutions.intro }}
 {{ if .Substitutions.changelog }}
-See [the CHANGELOG]({{ .Substitutions.changelog }}) for more details.
+See the [CHANGELOG]({{ .Substitutions.changelog }}) for more details.
 {{ end }}
 {{ if .Substitutions.ReleaseNotes }}
 ### Release Notes
