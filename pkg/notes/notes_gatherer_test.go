@@ -42,6 +42,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestListCommits(t *testing.T) {
+	t.Parallel()
 	const always = -1
 
 	zeroTime := &github.Timestamp{}
@@ -236,6 +237,7 @@ func TestListCommits(t *testing.T) {
 }
 
 func TestGatherNotes(t *testing.T) {
+	t.Parallel()
 	type getPullRequestStub func(context.Context, string, string, int) (*github.PullRequest, *github.Response, error)
 	type listPullRequestsWithCommitStub func(context.Context, string, string, string, *github.ListOptions) ([]*github.PullRequest, *github.Response, error)
 

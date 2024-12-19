@@ -276,6 +276,7 @@ func (p *Publisher) VerifyLatestUpdate(
 	gcsVersion, err := p.client.GSUtilOutput("cat", publishFileDst)
 	if err != nil {
 		logrus.Infof("%s does not exist but will be created", publishFileDst)
+		//nolint:nilerr // returning nil is intentional
 		return true, nil
 	}
 

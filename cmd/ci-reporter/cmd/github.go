@@ -36,7 +36,7 @@ var githubCmd = &cobra.Command{
 	Long:   "CI-Signal reporter that generates only a github report.",
 	PreRun: setGithubConfig,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return RunReport(cfg, &CIReporters{GithubReporter{}})
+		return RunReport(cmd.Context(), cfg, &CIReporters{GithubReporter{}})
 	},
 }
 
@@ -75,7 +75,7 @@ func (r GithubReporter) GetCIReporterHead() CIReporterInfo {
 }
 
 // CollectReportData implementation from CIReporter.
-func (r GithubReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error) {
+func (r GithubReporter) CollectReportData(ctx context.Context, cfg *Config) ([]*CIReportRecord, error) {
 	// set filter configuration
 	denyListFilter := map[FilteredFieldName][]FilteredListVal{}
 	allowListFilter := map[FilteredFieldName][]FilteredListVal{
@@ -88,7 +88,7 @@ func (r GithubReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error
 		allowListFilter[FilteredFieldName("K8s Release")] = []FilteredListVal{FilteredListVal(cfg.ReleaseVersion)}
 	}
 	// request github projectboard data
-	githubReportData, err := GetGithubReportData(*cfg, denyListFilter, allowListFilter)
+	githubReportData, err := GetGithubReportData(ctx, *cfg, denyListFilter, allowListFilter)
 	if err != nil {
 		return nil, fmt.Errorf("getting GitHub report data: %w", err)
 	}
@@ -211,13 +211,13 @@ type (
 )
 
 // GetGithubReportData used to request the raw report data from github.
-func GetGithubReportData(cfg Config, denyListFieldFilter, allowListFieldFilter map[FilteredFieldName][]FilteredListVal) ([]*TransformedProjectBoardItem, error) {
+func GetGithubReportData(ctx context.Context, cfg Config, denyListFieldFilter, allowListFieldFilter map[FilteredFieldName][]FilteredListVal) ([]*TransformedProjectBoardItem, error) {
 	// lookup project board information
 	var queryCiSignalProjectBoard ciSignalProjectBoardGraphQLQuery
 	variablesProjectBoardFields := map[string]interface{}{
 		"projectBoardID": githubv4.ID(ciSignalProjectBoardID),
 	}
-	if err := cfg.GithubClient.Query(context.Background(), &queryCiSignalProjectBoard, variablesProjectBoardFields); err != nil {
+	if err := cfg.GithubClient.Query(ctx, &queryCiSignalProjectBoard, variablesProjectBoardFields); err != nil {
 		return nil, err
 	}
 

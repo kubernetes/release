@@ -24,6 +24,7 @@ linters:
     - bidichk
     - bodyclose
     - canonicalheader
+    - containedctx
     - contextcheck
     - copyloopvar
     - decorder
@@ -33,7 +34,10 @@ linters:
     - errcheck
     - errchkjson
     - errname
+    - errorlint
+    - exhaustive
     - fatcontext
+    - forcetypeassert
     - gci
     - ginkgolinter
     - gocheckcompilerdirectives
@@ -65,6 +69,8 @@ linters:
     - misspell
     - musttag
     - nakedret
+    - nilerr
+    - noctx
     - nolintlint
     - nosprintfhostport
     - perfsprint
@@ -85,6 +91,7 @@ linters:
     - tenv
     - testableexamples
     - testifylint
+    - tparallel
     - typecheck
     - unconvert
     - unparam
@@ -93,16 +100,12 @@ linters:
     - wastedassign
     - whitespace
     - zerologlint
-    # - containedctx
     # - cyclop
     # - depguard
     # - dupword
     # - err113
-    # - errorlint
-    # - exhaustive
     # - exhaustruct
     # - forbidigo
-    # - forcetypeassert
     # - funlen
     # - gochecknoglobals
     # - gochecknoinits
@@ -114,16 +117,13 @@ linters:
     # - maintidx
     # - mnd
     # - nestif
-    # - nilerr
     # - nilnil
     # - nlreturn
-    # - noctx
     # - nonamedreturns
     # - paralleltest
     # - tagliatelle
     # - testpackage
     # - thelper
-    # - tparallel
     # - varnamelen
     # - wrapcheck
     # - wsl

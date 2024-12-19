@@ -281,7 +281,7 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 
 		// Find and collect PR number from commit message
 		prNums, err := prsNumForCommitFromMessage(commitPointer.Message)
-		if err == errNoPRIDFoundInCommitMessage {
+		if errors.Is(err, errNoPRIDFoundInCommitMessage) {
 			logrus.WithFields(logrus.Fields{
 				"sha": hashString,
 			}).Debug("no associated PR found")

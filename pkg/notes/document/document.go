@@ -533,6 +533,7 @@ func mapKind(kind notes.Kind) notes.Kind {
 }
 
 func prettyKind(kind notes.Kind) string {
+	//nolint:exhaustive // all cases are covered by default
 	switch kind {
 	case notes.KindAPIChange:
 		return "API Change"

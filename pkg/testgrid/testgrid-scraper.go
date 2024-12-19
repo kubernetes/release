@@ -17,6 +17,7 @@ limitations under the License.
 package testgrid
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -37,14 +38,14 @@ type SummaryLookup struct {
 
 // ReqTestgridDashboardSummaries this function requests multiple testgrid summaries concurrently
 // This function implements a concurrency pattern to send http requests concurrently.
-func ReqTestgridDashboardSummaries(dashboardNames []DashboardName) (DashboardData, error) {
+func ReqTestgridDashboardSummaries(ctx context.Context, dashboardNames []DashboardName) (DashboardData, error) {
 	// Worker
 	requestData := func(done <-chan interface{}, dashboardNames ...DashboardName) <-chan SummaryLookup {
 		summaryLookups := make(chan SummaryLookup)
 		go func() {
 			defer close(summaryLookups)
 			for _, dashboardName := range dashboardNames {
-				summary, err := ReqTestgridDashboardSummary(dashboardName)
+				summary, err := ReqTestgridDashboardSummary(ctx, dashboardName)
 				select {
 				case <-done:
 					return
@@ -80,8 +81,15 @@ type NotFound error
 var ErrDashboardNotFound NotFound = errors.New("testgrid dashboard not found")
 
 // ReqTestgridDashboardSummary used to retrieve summary information about a testgrid dashboard.
-func ReqTestgridDashboardSummary(dashboardName DashboardName) (JobData, error) {
-	resp, err := http.Get(fmt.Sprintf("https://testgrid.k8s.io/%s/summary", dashboardName))
+func ReqTestgridDashboardSummary(ctx context.Context, dashboardName DashboardName) (JobData, error) {
+	url := fmt.Sprintf("https://testgrid.k8s.io/%s/summary", dashboardName)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("create new request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("request remote content: %w", err)
 	}
