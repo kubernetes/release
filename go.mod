@@ -1,6 +1,7 @@
 module k8s.io/release
 
-go 1.23
+go 1.23.3
+
 require (
 	cloud.google.com/go/storage v1.39.1
 	github.com/GoogleCloudPlatform/testgrid v0.0.38
