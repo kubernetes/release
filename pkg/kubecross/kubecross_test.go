@@ -35,7 +35,7 @@ func TestLatest(t *testing.T) {
 				mock.GetURLResponseReturns("test", nil)
 			},
 			expect: func(res string, err error) {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.Equal(t, "test", res)
 			},
 		},
@@ -44,7 +44,7 @@ func TestLatest(t *testing.T) {
 				mock.GetURLResponseReturns("", errors.New(""))
 			},
 			expect: func(res string, err error) {
-				require.NotNil(t, err)
+				require.Error(t, err)
 				require.Empty(t, res)
 			},
 		},
@@ -70,7 +70,7 @@ func TestForBranch(t *testing.T) {
 				mock.GetURLResponseReturns("test", nil)
 			},
 			expect: func(res string, err error) {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.Equal(t, "test", res)
 			},
 		},
@@ -79,7 +79,7 @@ func TestForBranch(t *testing.T) {
 				mock.GetURLResponseReturns("", errors.New(""))
 			},
 			expect: func(res string, err error) {
-				require.NotNil(t, err)
+				require.Error(t, err)
 				require.Empty(t, res)
 			},
 		},

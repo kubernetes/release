@@ -42,7 +42,7 @@ const (
 func TestFileMetadata(t *testing.T) {
 	// Given
 	dir, err := os.MkdirTemp("", "")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
 	for _, file := range []string{
@@ -69,13 +69,13 @@ func TestFileMetadata(t *testing.T) {
 		"kubernetes-src.tar.gz",
 		"kubernetes.tar.gz",
 	} {
-		require.Nil(t, os.WriteFile(
+		require.NoError(t, os.WriteFile(
 			filepath.Join(dir, file), []byte{1, 2, 3}, os.FileMode(0o644),
 		))
 	}
 
 	metadata, err := fetchFileMetadata(dir, "http://test.com", "test-release")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	expected := &FileMetadata{
 		Source: []File{
@@ -109,7 +109,7 @@ func TestFileMetadata(t *testing.T) {
 			{Checksum: checksum, Name: "kubernetes-node-windows-amd64.tar.gz", URL: "http://test.com/test-release/kubernetes-node-windows-amd64.tar.gz"},
 		},
 	}
-	require.Equal(t, metadata, expected)
+	require.Equal(t, expected, metadata)
 }
 
 func TestDocument_RenderMarkdownTemplateFailure(t *testing.T) {
@@ -147,7 +147,7 @@ func TestDocument_RenderMarkdownTemplateFailure(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			dir, err := os.MkdirTemp("", "")
-			require.Nil(t, err)
+			require.NoError(t, err)
 			defer os.RemoveAll(dir)
 
 			if tt.templateExist {
@@ -155,7 +155,7 @@ func TestDocument_RenderMarkdownTemplateFailure(t *testing.T) {
 				p := filepath.Join(dir, fileName)
 				//nolint:gosec // TODO(gosec): G306: Expect WriteFile
 				// permissions to be 0600 or less
-				require.Nil(t, os.WriteFile(p, []byte(tt.templateContents), 0o664))
+				require.NoError(t, os.WriteFile(p, []byte(tt.templateContents), 0o664))
 			}
 
 			doc := Document{}
@@ -168,13 +168,13 @@ func TestDocument_RenderMarkdownTemplateFailure(t *testing.T) {
 func TestCreateDownloadsTable(t *testing.T) {
 	// Given
 	dir, err := os.MkdirTemp("", "")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 	setupTestDir(t, dir)
 
 	// When
 	output := &strings.Builder{}
-	require.Nil(t, CreateDownloadsTable(
+	require.NoError(t, CreateDownloadsTable(
 		output, release.ProductionBucket, dir, "", "v1.28.0", "v1.28.1",
 	))
 
@@ -258,13 +258,13 @@ func setupTestDir(t *testing.T, dir string) {
 		"kubernetes-src.tar.gz",
 		"kubernetes.tar.gz",
 	} {
-		require.Nil(t, os.WriteFile(
+		require.NoError(t, os.WriteFile(
 			filepath.Join(dir, file), []byte{1, 2, 3}, os.FileMode(0o644),
 		))
 	}
 	for _, arch := range []string{consts.ArchitectureAMD64, consts.ArchitectureARM64, consts.ArchitecturePPC64, consts.ArchitectureS390X} {
 		archDir := filepath.Join(dir, release.ImagesPath, arch)
-		require.Nil(t, os.MkdirAll(archDir, fs.FileMode(0o755)))
+		require.NoError(t, os.MkdirAll(archDir, fs.FileMode(0o755)))
 
 		for _, file := range []string{
 			fmt.Sprintf("conformance-%s.tar", arch),
@@ -285,15 +285,15 @@ func setupTestDir(t *testing.T, dir string) {
 func repoTagTarball(t *testing.T, path, repoTag string) {
 	const manifestJSON = "manifest.json"
 	manifestJSONPath := filepath.Join(filepath.Dir(path), manifestJSON)
-	require.Nil(t, os.WriteFile(
+	require.NoError(t, os.WriteFile(
 		manifestJSONPath,
 		[]byte(fmt.Sprintf(`[{"RepoTags": [%q]}]`, repoTag)),
 		os.FileMode(0o644),
 	))
-	require.Nil(t, command.NewWithWorkDir(filepath.Dir(path),
+	require.NoError(t, command.NewWithWorkDir(filepath.Dir(path),
 		"tar", "cf", path, manifestJSON,
 	).RunSilentSuccess())
-	require.Nil(t, os.RemoveAll(manifestJSONPath))
+	require.NoError(t, os.RemoveAll(manifestJSONPath))
 }
 
 func TestNew(t *testing.T) {
@@ -463,7 +463,7 @@ func TestNew(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.getNotes(), "", "")
 			require.NoError(t, err)
-			require.Equal(t, got, tt.want, "Unexpected return.")
+			require.Equal(t, tt.want, got, "Unexpected return.")
 		})
 	}
 }

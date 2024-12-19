@@ -60,14 +60,14 @@ func TestPublishVersion(t *testing.T) {
 			fast:    true,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
 				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				mock.GSUtilOutputReturnsOnCall(0, olderTestVersion, nil)
 				mock.GSUtilOutputReturnsOnCall(1, testVersion, nil)
 				mock.GetURLResponseReturns(testVersion, nil)
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: false,
@@ -78,12 +78,12 @@ func TestPublishVersion(t *testing.T) {
 			fast:    true,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
 				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				mock.GetMarkerPathReturns("", err)
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -95,13 +95,13 @@ func TestPublishVersion(t *testing.T) {
 			privateBucket: true,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
 				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				mockVersionMarkers(mock)
 				mock.GSUtilOutputReturnsOnCall(5, testVersion, nil)
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: false,
@@ -113,13 +113,13 @@ func TestPublishVersion(t *testing.T) {
 			privateBucket: true,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
 				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				mockVersionMarkers(mock)
 				mock.GSUtilOutputReturnsOnCall(5, "", errors.New(""))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -131,13 +131,13 @@ func TestPublishVersion(t *testing.T) {
 			privateBucket: true,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
 				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				mockVersionMarkers(mock)
 				mock.GSUtilOutputReturnsOnCall(5, "wrong", nil)
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -149,13 +149,13 @@ func TestPublishVersion(t *testing.T) {
 			privateBucket: false,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
 				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				mockVersionMarkers(mock)
 				mock.GetURLResponseReturns(testVersion, nil)
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: false,
@@ -167,12 +167,12 @@ func TestPublishVersion(t *testing.T) {
 			privateBucket: false,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
 				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 				mockVersionMarkers(mock)
 				mock.GetURLResponseReturns("", errors.New(""))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -184,12 +184,12 @@ func TestPublishVersion(t *testing.T) {
 			privateBucket: false,
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
 				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				mock.GSUtilReturnsOnCall(0, errors.New(""))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -200,10 +200,10 @@ func TestPublishVersion(t *testing.T) {
 			version: "wrong",
 			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
 				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -219,9 +219,9 @@ func TestPublishVersion(t *testing.T) {
 			nil, tc.privateBucket, tc.fast,
 		)
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 		cleanup()
 	}

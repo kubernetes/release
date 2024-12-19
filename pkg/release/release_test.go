@@ -52,7 +52,7 @@ func TestGetToolRefSuccess(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
-		require.Nil(t, os.Setenv("TOOL_REF", tc.ref))
+		require.NoError(t, os.Setenv("TOOL_REF", tc.ref))
 
 		actual := GetToolRef()
 		require.Equal(t, tc.expected, actual)
@@ -61,35 +61,35 @@ func TestGetToolRefSuccess(t *testing.T) {
 
 func TestReadDockerVersion(t *testing.T) {
 	baseTmpDir, err := os.MkdirTemp("", "ahhh")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	release := "kubernetes"
 	version := "1.1.1"
 	versionBytes := []byte("1.1.1\n")
 
 	// Build directories.
-	require.Nil(t, os.MkdirAll(filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, release), os.ModePerm))
+	require.NoError(t, os.MkdirAll(filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, release), os.ModePerm))
 
 	var b bytes.Buffer
 
 	// Create version file
 	err = os.WriteFile(filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, "kubernetes", "version"), versionBytes, os.FileMode(0o644))
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Create a zip archive.
 	gz := gzip.NewWriter(&b)
 	tw := tar.NewWriter(gz)
-	require.Nil(t, tw.WriteHeader(&tar.Header{
+	require.NoError(t, tw.WriteHeader(&tar.Header{
 		Name: "kubernetes/version",
 		Size: int64(len(versionBytes)),
 	}))
 	versionFile, err := os.Open(filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, "kubernetes", "version"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	_, err = io.Copy(tw, versionFile)
-	require.Nil(t, err)
-	require.Nil(t, tw.Close())
-	require.Nil(t, gz.Close())
-	require.Nil(t, os.WriteFile(
+	require.NoError(t, err)
+	require.NoError(t, tw.Close())
+	require.NoError(t, gz.Close())
+	require.NoError(t, os.WriteFile(
 		filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, KubernetesTar),
 		b.Bytes(),
 		os.FileMode(0o644),
@@ -233,7 +233,7 @@ func TestIsDirtyBuild(t *testing.T) {
 
 func cleanupTmps(t *testing.T, dir ...string) {
 	for _, each := range dir {
-		require.Nil(t, os.RemoveAll(each))
+		require.NoError(t, os.RemoveAll(each))
 	}
 }
 
@@ -241,7 +241,7 @@ func TestURLPrefixForBucket(t *testing.T) {
 	for _, bucket := range []string{"bucket", "", ProductionBucket} {
 		res := URLPrefixForBucket(bucket)
 		parsed, err := url.Parse(res)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, parsed)
 	}
 }
@@ -254,127 +254,127 @@ func TestCopyBinaries(t *testing.T) {
 		{ // success client
 			prepare: func() (string, func()) {
 				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				binDir := filepath.Join(
 					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
 				)
-				require.Nil(t, os.MkdirAll(binDir, os.FileMode(0o755)))
+				require.NoError(t, os.MkdirAll(binDir, os.FileMode(0o755)))
 
 				for _, f := range []string{"1", "2", "3"} {
 					_, err = os.Create(filepath.Join(binDir, f))
-					require.Nil(t, err)
+					require.NoError(t, err)
 				}
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			validate: func(err error, testDir string) {
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				binDir := filepath.Join(testDir, "bin", "linux", "amd64")
 				require.FileExists(t, filepath.Join(binDir, "1"))
 				require.FileExists(t, filepath.Join(binDir, "2"))
 				require.FileExists(t, filepath.Join(binDir, "3"))
 				dirContent, err := os.ReadDir(binDir)
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.Len(t, dirContent, 3)
 			},
 		},
 		{ // success client skip non-dir
 			prepare: func() (string, func()) {
 				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
-				require.Nil(t, os.MkdirAll(filepath.Join(
+				require.NoError(t, os.MkdirAll(filepath.Join(
 					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
 				), os.FileMode(0o755)))
 
 				_, err = os.Create(filepath.Join(tempDir, "client", "some-file"))
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
-			validate: func(err error, _ string) { require.Nil(t, err) },
+			validate: func(err error, _ string) { require.NoError(t, err) },
 		},
 		{ // success server
 			prepare: func() (string, func()) {
 				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
-				require.Nil(t, os.MkdirAll(filepath.Join(
+				require.NoError(t, os.MkdirAll(filepath.Join(
 					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
 				), os.FileMode(0o755)))
-				require.Nil(t, os.MkdirAll(filepath.Join(
+				require.NoError(t, os.MkdirAll(filepath.Join(
 					tempDir, "server", "linux-amd64", "kubernetes", "server", "bin",
 				), os.FileMode(0o755)))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
-			validate: func(err error, _ string) { require.Nil(t, err) },
+			validate: func(err error, _ string) { require.NoError(t, err) },
 		},
 		{ // success node
 			prepare: func() (string, func()) {
 				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
-				require.Nil(t, os.MkdirAll(filepath.Join(
+				require.NoError(t, os.MkdirAll(filepath.Join(
 					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
 				), os.FileMode(0o755)))
-				require.Nil(t, os.MkdirAll(filepath.Join(
+				require.NoError(t, os.MkdirAll(filepath.Join(
 					tempDir, "node", "linux-amd64", "kubernetes", "node", "bin",
 				), os.FileMode(0o755)))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
-			validate: func(err error, _ string) { require.Nil(t, err) },
+			validate: func(err error, _ string) { require.NoError(t, err) },
 		},
 		{ // failure wrong server dir
 			prepare: func() (string, func()) {
 				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
-				require.Nil(t, os.MkdirAll(filepath.Join(
+				require.NoError(t, os.MkdirAll(filepath.Join(
 					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
 				), os.FileMode(0o755)))
-				require.Nil(t, os.MkdirAll(filepath.Join(
+				require.NoError(t, os.MkdirAll(filepath.Join(
 					tempDir, "server", "linux-amd64", "kubernetes", "wrong", "bin",
 				), os.FileMode(0o755)))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
-			validate: func(err error, _ string) { require.NotNil(t, err) },
+			validate: func(err error, _ string) { require.Error(t, err) },
 		},
 		{ // failure wrong node dir
 			prepare: func() (string, func()) {
 				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
-				require.Nil(t, os.MkdirAll(filepath.Join(
+				require.NoError(t, os.MkdirAll(filepath.Join(
 					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
 				), os.FileMode(0o755)))
-				require.Nil(t, os.MkdirAll(filepath.Join(
+				require.NoError(t, os.MkdirAll(filepath.Join(
 					tempDir, "node", "linux-amd64", "kubernetes", "wrong", "bin",
 				), os.FileMode(0o755)))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
-			validate: func(err error, _ string) { require.NotNil(t, err) },
+			validate: func(err error, _ string) { require.Error(t, err) },
 		},
 		{ // empty dirs should error
 			prepare:  func() (string, func()) { return "", func() {} },
-			validate: func(err error, _ string) { require.NotNil(t, err) },
+			validate: func(err error, _ string) { require.Error(t, err) },
 		},
 	} {
 		// Given
@@ -398,31 +398,31 @@ func TestWriteChecksums(t *testing.T) {
 		{ // success
 			prepare: func() (rootPath string, cleanup func()) {
 				tempDir, err := os.MkdirTemp("", "write-checksum-test-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				rootSHAs := []byte{1, 2, 4, 8, 16, 32, 64, 128}
 				for i, v := range rootSHAs {
-					require.Nil(t, os.WriteFile(
+					require.NoError(t, os.WriteFile(
 						filepath.Join(tempDir, strconv.Itoa(i)),
 						[]byte{v}, os.FileMode(0o644),
 					))
 				}
 
 				subTempDir := filepath.Join(tempDir, "test")
-				require.Nil(t, os.MkdirAll(subTempDir, os.FileMode(0o755)))
+				require.NoError(t, os.MkdirAll(subTempDir, os.FileMode(0o755)))
 				for i, v := range []byte{1, 2} {
-					require.Nil(t, os.WriteFile(
+					require.NoError(t, os.WriteFile(
 						filepath.Join(subTempDir, strconv.Itoa(i+len(rootSHAs))),
 						[]byte{v}, os.FileMode(0o644),
 					))
 				}
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			validate: func(err error, rootPath string) {
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				type shaValue struct{ sha, path string }
 				for digest, shas := range map[int][]shaValue{
@@ -452,7 +452,7 @@ func TestWriteChecksums(t *testing.T) {
 					},
 				} {
 					shaSums, err := os.ReadFile(filepath.Join(rootPath, fmt.Sprintf("SHA%dSUMS", digest)))
-					require.Nil(t, err)
+					require.NoError(t, err)
 
 					for _, expectedSha := range shas {
 						require.Contains(t, string(shaSums), expectedSha.sha)
@@ -460,7 +460,7 @@ func TestWriteChecksums(t *testing.T) {
 						sha, err := os.ReadFile(filepath.Join(
 							rootPath, fmt.Sprintf("%s.sha%d", expectedSha.path, digest),
 						))
-						require.Nil(t, err)
+						require.NoError(t, err)
 						require.Equal(t, expectedSha.sha, string(sha))
 					}
 				}
@@ -470,26 +470,26 @@ func TestWriteChecksums(t *testing.T) {
 		{ // success no content
 			prepare: func() (rootPath string, cleanup func()) {
 				tempDir, err := os.MkdirTemp("", "write-checksum-test-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			validate: func(err error, _ string) {
-				require.Nil(t, err)
+				require.NoError(t, err)
 			},
 		},
 		{ // failure dir not existing
 			prepare: func() (rootPath string, cleanup func()) {
 				tempDir, err := os.MkdirTemp("", "write-checksum-test-")
-				require.Nil(t, err)
-				require.Nil(t, os.RemoveAll(tempDir))
+				require.NoError(t, err)
+				require.NoError(t, os.RemoveAll(tempDir))
 
 				return tempDir, func() {}
 			},
 			validate: func(err error, _ string) {
-				require.NotNil(t, err)
+				require.Error(t, err)
 			},
 		},
 	} {

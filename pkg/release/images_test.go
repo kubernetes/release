@@ -45,7 +45,7 @@ func TestPublish(t *testing.T) {
 				prepareImages(t, tempDir, mock)
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: false,
@@ -57,19 +57,19 @@ func TestPublish(t *testing.T) {
 				prepareImages(t, tempDir, mock)
 
 				// arch is not a directory, should be just skipped
-				require.Nil(t, os.WriteFile(
+				require.NoError(t, os.WriteFile(
 					filepath.Join(tempDir, release.ImagesPath, "wrong"),
 					[]byte{}, os.FileMode(0o644),
 				))
 
 				// image is no tarball, should be just skipped
-				require.Nil(t, os.WriteFile(
+				require.NoError(t, os.WriteFile(
 					filepath.Join(tempDir, release.ImagesPath, "amd64", "no-tar"),
 					[]byte{}, os.FileMode(0o644),
 				))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: false,
@@ -79,7 +79,7 @@ func TestPublish(t *testing.T) {
 			prepare: func(*releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: false,
@@ -93,7 +93,7 @@ func TestPublish(t *testing.T) {
 				mock.ExecuteReturnsOnCall(0, errors.New(""))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -107,7 +107,7 @@ func TestPublish(t *testing.T) {
 				mock.ExecuteReturnsOnCall(1, errors.New(""))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -121,7 +121,7 @@ func TestPublish(t *testing.T) {
 				mock.ExecuteReturnsOnCall(2, errors.New(""))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -135,7 +135,7 @@ func TestPublish(t *testing.T) {
 				mock.ExecuteReturnsOnCall(3, errors.New(""))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -149,7 +149,7 @@ func TestPublish(t *testing.T) {
 				mock.ExecuteReturnsOnCall(36, errors.New(""))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -163,7 +163,7 @@ func TestPublish(t *testing.T) {
 				mock.ExecuteReturnsOnCall(37, errors.New(""))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -185,7 +185,7 @@ func TestPublish(t *testing.T) {
 				})
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -199,7 +199,7 @@ func TestPublish(t *testing.T) {
 				mock.RepoTagFromTarballReturnsOnCall(3, "", errors.New(""))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -213,7 +213,7 @@ func TestPublish(t *testing.T) {
 				mock.RepoTagFromTarballReturnsOnCall(3, "wrong-tag", nil)
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -222,9 +222,9 @@ func TestPublish(t *testing.T) {
 			name: "failure no images-path",
 			prepare: func(*releasefakes.FakeImageImpl) (string, func()) {
 				tempDir, err := os.MkdirTemp("", "publish-test-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -238,7 +238,7 @@ func TestPublish(t *testing.T) {
 				mock.SignImageReturns(errors.New(""))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -252,7 +252,7 @@ func TestPublish(t *testing.T) {
 				mock.SignImageReturnsOnCall(10, errors.New(""))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -295,7 +295,7 @@ func TestValidate(t *testing.T) {
 				mock.ExecuteOutputReturns("digest", nil)
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: false,
@@ -308,7 +308,7 @@ func TestValidate(t *testing.T) {
 				mock.ExecuteOutputReturnsOnCall(1, "", errors.New(""))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -319,7 +319,7 @@ func TestValidate(t *testing.T) {
 				prepareImages(t, tempDir, mock)
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -332,7 +332,7 @@ func TestValidate(t *testing.T) {
 				mock.ExecuteOutputReturns("", errors.New(""))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -340,9 +340,9 @@ func TestValidate(t *testing.T) {
 		{ // failure no images-path
 			prepare: func(*releasefakes.FakeImageImpl) (string, func()) {
 				tempDir, err := os.MkdirTemp("", "publish-test-")
-				require.Nil(t, err)
+				require.NoError(t, err)
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -355,7 +355,7 @@ func TestValidate(t *testing.T) {
 				mock.VerifyImageReturns(errors.New(""))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -369,7 +369,7 @@ func TestValidate(t *testing.T) {
 				mock.VerifyImageReturnsOnCall(10, errors.New(""))
 
 				return tempDir, func() {
-					require.Nil(t, os.RemoveAll(tempDir))
+					require.NoError(t, os.RemoveAll(tempDir))
 				}
 			},
 			shouldError: true,
@@ -382,9 +382,9 @@ func TestValidate(t *testing.T) {
 
 		err := sut.Validate(release.GCRIOPathStaging, "v1.18.9", buildPath)
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 		cleanup()
 	}
@@ -392,9 +392,9 @@ func TestValidate(t *testing.T) {
 
 func newImagesPath(t *testing.T) string {
 	tempDir, err := os.MkdirTemp("", "publish-test-")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
-	require.Nil(t, os.MkdirAll(
+	require.NoError(t, os.MkdirAll(
 		filepath.Join(tempDir, release.ImagesPath),
 		os.FileMode(0o755),
 	))
@@ -406,12 +406,12 @@ func prepareImages(t *testing.T, tempDir string, mock *releasefakes.FakeImageImp
 	c := 0
 	for _, arch := range []string{"amd64", "arm", "arm64"} {
 		archPath := filepath.Join(tempDir, release.ImagesPath, arch)
-		require.Nil(t, os.MkdirAll(archPath, os.FileMode(0o755)))
+		require.NoError(t, os.MkdirAll(archPath, os.FileMode(0o755)))
 
 		for _, image := range []string{
 			"conformance-amd64.tar", "kube-apiserver.tar", "kube-proxy.tar",
 		} {
-			require.Nil(t, os.WriteFile(
+			require.NoError(t, os.WriteFile(
 				filepath.Join(archPath, image),
 				[]byte{}, os.FileMode(0o644),
 			))

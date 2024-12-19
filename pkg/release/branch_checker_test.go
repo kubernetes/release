@@ -100,10 +100,10 @@ func TestNeedsCreation(t *testing.T) {
 
 		res, err := sut.NeedsCreation(tc.branch, tc.releaseType, tc.buildVersion)
 		if tc.shouldErr {
-			require.NotNil(t, err)
+			require.Error(t, err)
 			require.False(t, res)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.Equal(t, tc.shouldReturn, res)
 		}
 	}

@@ -109,9 +109,9 @@ func TestSubmitList(t *testing.T) {
 		err := sut.Submit()
 
 		if tc.expectedErr {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -416,7 +416,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 		subs, err := sut.SetGCBSubstitutions(
 			tc.toolOrg, tc.toolRepo, tc.toolRef, "gs://test-bucket", tc.forceBuildKrel,
 		)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		actual := dropDynamicSubstitutions(subs)
 		require.Equal(t, tc.expected, actual)
@@ -518,7 +518,7 @@ func TestValidateSuccess(t *testing.T) {
 		t.Logf("Test case: %s", tc.name)
 
 		err := tc.gcbOpts.Validate()
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}
 }
 

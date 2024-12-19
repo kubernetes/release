@@ -219,7 +219,7 @@ func TestParsePatchSchedule(t *testing.T) {
 	for _, tc := range testcases {
 		fmt.Printf("Test case: %s\n", tc.name)
 		out := parsePatchSchedule(tc.schedule)
-		require.Equal(t, out, expectedPatchSchedule)
+		require.Equal(t, expectedPatchSchedule, out)
 	}
 }
 
@@ -339,7 +339,7 @@ func TestParseReleaseSchedule(t *testing.T) {
 	for _, tc := range testcases {
 		fmt.Printf("Test case: %s\n", tc.name)
 		out := parseReleaseSchedule(tc.schedule)
-		require.Equal(t, out, expectedReleaseSchedule)
+		require.Equal(t, expectedReleaseSchedule, out)
 	}
 }
 

@@ -49,14 +49,14 @@ func TestBlockingTestsSuccess(t *testing.T) {
 			},
 		}},
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	client.GetURLResponseReturns(httpRes, nil)
 
 	// When
 	res, err := sut.BlockingTests(git.DefaultBranch)
 
 	// Then
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Len(t, res, 2)
 	require.Equal(t, "first", res[0])
 	require.Equal(t, "second", res[1])
@@ -71,7 +71,7 @@ func TestBlockingTestsFailureDashboardNotFound(t *testing.T) {
 	res, err := sut.BlockingTests("")
 
 	// Then
-	require.NotNil(t, err)
+	require.Error(t, err)
 	require.Nil(t, res)
 }
 
@@ -84,6 +84,6 @@ func TestBlockingTestsFailureHTTP(t *testing.T) {
 	res, err := sut.BlockingTests("")
 
 	// Then
-	require.NotNil(t, err)
+	require.Error(t, err)
 	require.Nil(t, res)
 }

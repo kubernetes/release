@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRunValidateReleaseNotes(t *testing.T) {
@@ -28,30 +28,30 @@ func TestRunValidateReleaseNotes(t *testing.T) {
 
 	// Valid YAML returns no error
 	err := runValidateReleaseNotes(filepath.Join(testDataPath, "valid.yaml"))
-	assert.NoError(t, err, "Expected no error for valid YAML file")
+	require.NoError(t, err, "Expected no error for valid YAML file")
 
 	// Try a non-existent path
 	err = runValidateReleaseNotes("nonexistent/path")
-	assert.Error(t, err, "Expected error for non-existent path")
-	assert.Contains(t, err.Error(), "does not exist", "Error should be about non-existent path")
+	require.Error(t, err, "Expected error for non-existent path")
+	require.Contains(t, err.Error(), "does not exist", "Error should be about non-existent path")
 
 	// Missing punctuation YAML returns error
 	err = runValidateReleaseNotes(filepath.Join(testDataPath, "missing-punctuation.yaml"))
-	assert.Error(t, err, "Expected error for missing punctuation YAML file")
-	assert.Contains(t, err.Error(), "field does not end with valid punctuation", "Error should be about missing punctuation")
+	require.Error(t, err, "Expected error for missing punctuation YAML file")
+	require.Contains(t, err.Error(), "field does not end with valid punctuation", "Error should be about missing punctuation")
 
 	// Try invalid yaml starting with "`"
 	err = runValidateReleaseNotes(filepath.Join(testDataPath, "invalid-yaml-start.yaml"))
-	assert.Error(t, err, "Expected error for invalid yaml")
-	assert.Contains(t, err.Error(), "YAML unmarshaling testdata/validation-data/invalid-yaml-start", "Error should be about invalid yaml")
+	require.Error(t, err, "Expected error for invalid yaml")
+	require.Contains(t, err.Error(), "YAML unmarshaling testdata/validation-data/invalid-yaml-start", "Error should be about invalid yaml")
 
 	// Try invalid multi line yaml
 	err = runValidateReleaseNotes(filepath.Join(testDataPath, "invalid-multi-line.yaml"))
-	assert.Error(t, err, "Expected error for invalid yaml")
-	assert.Contains(t, err.Error(), "YAML unmarshaling testdata/validation-data/invalid-multi-line.yaml", "Error should be about invalid yaml")
+	require.Error(t, err, "Expected error for invalid yaml")
+	require.Contains(t, err.Error(), "YAML unmarshaling testdata/validation-data/invalid-multi-line.yaml", "Error should be about invalid yaml")
 
 	// Try invalid indent
 	err = runValidateReleaseNotes(filepath.Join(testDataPath, "invalid-indent.yaml"))
-	assert.Error(t, err, "Expected error for invalid yaml")
-	assert.Contains(t, err.Error(), "YAML unmarshaling testdata/validation-data/invalid-indent.yaml", "Error should be about invalid yaml")
+	require.Error(t, err, "Expected error for invalid yaml")
+	require.Contains(t, err.Error(), "YAML unmarshaling testdata/validation-data/invalid-indent.yaml", "Error should be about invalid yaml")
 }

@@ -26,13 +26,13 @@ import (
 
 func TestContainsString(t *testing.T) {
 	tmpfile, err := os.CreateTemp("", "")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer os.Remove(tmpfile.Name())
 
 	// Decode a fragment of kubectl into a temporary file:
 	binData, err := base64.StdEncoding.DecodeString(kubectlFragment)
-	require.Nil(t, err)
-	require.Nil(t, os.WriteFile(tmpfile.Name(), binData, os.FileMode(0o644)))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(tmpfile.Name(), binData, os.FileMode(0o644)))
 	bin := Binary{
 		options: &Options{
 			Path: tmpfile.Name(),
@@ -43,12 +43,12 @@ func TestContainsString(t *testing.T) {
 	// is located. The function should find it:
 	cont, err := bin.ContainsStrings("v1.20.2")
 	require.True(t, cont)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// It should not, however, find a substring of the tag:
 	cont, err = bin.ContainsStrings("1.20.2")
 	require.False(t, cont)
-	require.Nil(t, err)
+	require.NoError(t, err)
 }
 
 var kubectlFragment = `nxsirlx0QAAAAAAA0HZAFANwVyHQekA7vuLSGA57QHEaitUNKXtAY+ef53SofUDqSbATP1Z+QGgo

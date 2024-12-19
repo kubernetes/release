@@ -79,7 +79,7 @@ func TestDependencyChangesSuccess(t *testing.T) {
 	sut.SetMoDiff(moDiff)
 
 	res, err := sut.Changes("v1.17.0", "v1.18.0")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, expected, res)
 }
 
@@ -90,6 +90,6 @@ func TestDependencyChangesFailure(t *testing.T) {
 	sut.SetMoDiff(moDiff)
 
 	res, err := sut.Changes("v1.17.0", "v1.18.0")
-	require.NotNil(t, err)
+	require.Error(t, err)
 	require.Empty(t, res)
 }

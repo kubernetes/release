@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -37,7 +38,7 @@ func TestRequestTestgridSummaryPos(t *testing.T) {
 		summary, err := ReqTestgridDashboardSummary(dashboardName)
 
 		// Then
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, summary)
 		for _, jobs := range summary {
 			assert.Equal(t, dashboardName, jobs.DashboardName)
@@ -54,7 +55,7 @@ func TestRequestTestgridSummaryNeg(t *testing.T) {
 		summary, err := ReqTestgridDashboardSummary(dashboardName)
 
 		// Then
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, summary)
 	}
 }
@@ -67,7 +68,7 @@ func TestRequestTestgridSummariesPos(t *testing.T) {
 	data, err := ReqTestgridDashboardSummaries(posDashboardNames)
 
 	// Then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, len(posDashboardNames), len(data))
 }
 
@@ -79,7 +80,7 @@ func TestRequestTestgridSummariesNeg(t *testing.T) {
 	data, err := ReqTestgridDashboardSummaries(negDashboardNames)
 
 	// Then
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Empty(t, data)
 }
 
@@ -91,7 +92,7 @@ func TestRequestTestgridSummariesPosNeg(t *testing.T) {
 	data, err := ReqTestgridDashboardSummaries(append(negDashboardNames, posDashboardNames...))
 
 	// Then
-	assert.Error(t, err, "an error should be returned as not all dashboard name references are correct")
+	require.Error(t, err, "an error should be returned as not all dashboard name references are correct")
 	assert.NotEmpty(t, data, "response shouldn't be empty because valid data das been added alongside faulty data - the correct data should be getting processed nonetheless")
 	assert.Equal(t, len(posDashboardNames), len(data))
 }
@@ -127,11 +128,11 @@ func TestOverviewPos(t *testing.T) {
 	o, err := data.Overview()
 
 	// Then
-	assert.NoError(t, err)
-	assert.Equal(t, failingJobs, len(o.FailingJobs))
-	assert.Equal(t, flakyJobs, len(o.FlakyJobs))
-	assert.Equal(t, passingJobs, len(o.PassingJobs))
-	assert.Equal(t, staleJobs, len(o.StaleJobs))
+	require.NoError(t, err)
+	assert.Len(t, o.FailingJobs, failingJobs)
+	assert.Len(t, o.FlakyJobs, flakyJobs)
+	assert.Len(t, o.PassingJobs, passingJobs)
+	assert.Len(t, o.StaleJobs, staleJobs)
 }
 
 func TestOverviewNeg(t *testing.T) {
@@ -143,7 +144,7 @@ func TestOverviewNeg(t *testing.T) {
 		o, err := s.Overview()
 
 		// Then
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Empty(t, o)
 	}
 }

@@ -39,15 +39,15 @@ type sut struct {
 
 func newSUT(t *testing.T) *sut {
 	dir, err := os.MkdirTemp("", "k8s-test-")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	_, err = gogit.PlainInit(dir, false)
-	require.Nil(t, err)
-	require.Nil(t, os.Chdir(dir))
+	require.NoError(t, err)
+	require.NoError(t, os.Chdir(dir))
 
 	repo := release.NewRepo()
 	err = repo.Open()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, repo)
 
 	mock := &releasefakes.FakeRepository{}
@@ -56,7 +56,7 @@ func newSUT(t *testing.T) *sut {
 }
 
 func (s *sut) cleanup() {
-	require.Nil(s.t, os.RemoveAll(s.dir))
+	require.NoError(s.t, os.RemoveAll(s.dir))
 }
 
 func TestGetTagSuccess(t *testing.T) {
@@ -69,7 +69,7 @@ func TestGetTagSuccess(t *testing.T) {
 	tag, err := sut.repo.GetTag()
 
 	// Then
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Contains(t, tag, "v1.0.0")
 }
 
@@ -83,7 +83,7 @@ func TestGetTagFailure(t *testing.T) {
 	tag, err := sut.repo.GetTag()
 
 	// Then
-	require.NotNil(t, err)
+	require.Error(t, err)
 	require.Empty(t, tag)
 }
 
@@ -103,7 +103,7 @@ func TestCheckStateSuccess(t *testing.T) {
 	err := sut.repo.CheckState("org", "repo", "branch", false)
 
 	// Then
-	require.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestCheckStateFailedNoRemoteFound(t *testing.T) {
@@ -119,7 +119,7 @@ func TestCheckStateFailedNoRemoteFound(t *testing.T) {
 	err := sut.repo.CheckState("org", "repo", "branch", false)
 
 	// Then
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestCheckStateFailedRemoteFailed(t *testing.T) {
@@ -133,7 +133,7 @@ func TestCheckStateFailedRemoteFailed(t *testing.T) {
 	err := sut.repo.CheckState("org", "repo", "branch", false)
 
 	// Then
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestCheckStateFailedWrongBranch(t *testing.T) {
@@ -146,7 +146,7 @@ func TestCheckStateFailedWrongBranch(t *testing.T) {
 	err := sut.repo.CheckState("org", "repo", "branch", false)
 
 	// Then
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestCheckStateFailedBranchFailed(t *testing.T) {
@@ -159,7 +159,7 @@ func TestCheckStateFailedBranchFailed(t *testing.T) {
 	err := sut.repo.CheckState("org", "repo", "branch", false)
 
 	// Then
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestCheckStateFailedLsRemote(t *testing.T) {
@@ -176,7 +176,7 @@ func TestCheckStateFailedLsRemote(t *testing.T) {
 	err := sut.repo.CheckState("org", "repo", "branch", false)
 
 	// Then
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestCheckStateFailedBranchHeadRetrievalFails(t *testing.T) {
@@ -194,7 +194,7 @@ func TestCheckStateFailedBranchHeadRetrievalFails(t *testing.T) {
 	err := sut.repo.CheckState("org", "repo", "branch", false)
 
 	// Then
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestCheckStateFailedBranchHeadRetrievalNotEqual(t *testing.T) {
@@ -212,5 +212,5 @@ func TestCheckStateFailedBranchHeadRetrievalNotEqual(t *testing.T) {
 	err := sut.repo.CheckState("org", "repo", "branch", false)
 
 	// Then
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
