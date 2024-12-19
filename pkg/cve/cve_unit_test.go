@@ -36,20 +36,20 @@ func TestCVEValidation(t *testing.T) {
 	}
 
 	// As is, the CVE should validate
-	require.Nil(t, cve.Validate())
+	require.NoError(t, cve.Validate())
 
 	// Check each value
 	sut = cve
 	sut.ID = "CVE-123"
-	require.NotNil(t, sut.Validate(), "checking cve id")
+	require.Error(t, sut.Validate(), "checking cve id")
 
 	sut = cve
 	sut.Title = ""
-	require.NotNil(t, sut.Validate(), "checking title")
+	require.Error(t, sut.Validate(), "checking title")
 
 	sut = cve
 	sut.Description = ""
-	require.NotNil(t, sut.Validate(), "checking description")
+	require.Error(t, sut.Validate(), "checking description")
 
 	sut = cve
 	for _, testVector := range []string{
@@ -58,7 +58,7 @@ func TestCVEValidation(t *testing.T) {
 		"CVSS:3.1/AV:N/AC:Á/PR:H/UI:R/S:U/C:H/I:H/A:H", //  invalid value
 	} {
 		sut.CVSSVector = testVector // too short
-		require.NotNil(t, sut.Validate(), "checking vector string")
+		require.Error(t, sut.Validate(), "checking vector string")
 	}
 
 	sut = cve
@@ -68,7 +68,7 @@ func TestCVEValidation(t *testing.T) {
 		10.1, // over
 	} {
 		sut.CVSSScore = testScore
-		require.NotNil(t, sut.Validate(), "checking vector string")
+		require.Error(t, sut.Validate(), "checking vector string")
 	}
 
 	sut = cve
@@ -86,9 +86,9 @@ func TestCVEValidation(t *testing.T) {
 	} {
 		sut.CVSSRating = tc.Value // too short
 		if tc.Valid {
-			require.Nil(t, sut.Validate(), "checking valid rating string")
+			require.NoError(t, sut.Validate(), "checking valid rating string")
 		} else {
-			require.NotNil(t, sut.Validate(), "checking invalid rating string")
+			require.Error(t, sut.Validate(), "checking invalid rating string")
 		}
 	}
 }

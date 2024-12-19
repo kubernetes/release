@@ -71,12 +71,12 @@ func TestGetKubeVersionSuccess(t *testing.T) {
 		tc.behavior(client)
 
 		tag, err := sut.GetKubeVersion(tc.versionType)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		s, err := util.TagStringToSemver(tag)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
-		require.EqualValues(t, s.Major, 1)
+		require.EqualValues(t, 1, s.Major)
 		tc.assertion(s)
 	}
 }
@@ -110,7 +110,7 @@ func TestGetKubeVersionForBranchSuccess(t *testing.T) {
 
 		actual, err := sut.GetKubeVersionForBranch(tc.versionType, tc.branch)
 
-		require.Nil(t, err, string(tc.versionType))
+		require.NoError(t, err, string(tc.versionType))
 		require.Equal(t, tc.expected, actual)
 	}
 }
@@ -135,7 +135,7 @@ func TestGetKubeVersionForBranchFailure(t *testing.T) {
 		tc.behavior(client)
 
 		_, err := sut.GetKubeVersionForBranch(tc.versionType, tc.branch)
-		require.NotNil(t, err, string(tc.versionType))
+		require.Error(t, err, string(tc.versionType))
 	}
 }
 

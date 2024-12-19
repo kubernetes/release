@@ -54,51 +54,51 @@ func newSUT(t *testing.T) *sut {
 
 	// A local k/k repo will be our test base
 	tempDir := filepath.Join(os.TempDir(), "k8s-test")
-	require.Nil(t, os.MkdirAll(tempDir, 0o755))
+	require.NoError(t, os.MkdirAll(tempDir, 0o755))
 
 	// The bare repo which is the pseudo remote base
 	bareDir := filepath.Join(tempDir, "bare")
 	const url = "https://github.com/kubernetes/kubernetes"
 	if _, err := os.Stat(bareDir); os.IsNotExist(err) {
-		require.Nil(t,
+		require.NoError(t,
 			command.New("git", "clone", "--bare", url, bareDir).RunSuccess(),
 		)
 	}
 
 	now := time.Now().Unix()
 	bareCopyDir := filepath.Join(tempDir, fmt.Sprintf("bare-%d", now))
-	require.Nil(t, command.New("cp", "-r", bareDir, bareCopyDir).RunSuccess())
+	require.NoError(t, command.New("cp", "-r", bareDir, bareCopyDir).RunSuccess())
 
 	// The base repo where every test case is inherited
 	baseDir := filepath.Join(tempDir, fmt.Sprintf("base-%d", now))
 
 	// Clone the repo from the bare, which is safe to modify
-	require.Nil(t,
+	require.NoError(t,
 		command.New("git", "clone", bareCopyDir, baseDir).RunSuccess(),
 	)
 
 	// Modify the bare repo with test content
-	require.Nil(t,
+	require.NoError(t,
 		command.NewWithWorkDir(baseDir,
 			"git", "checkout", "-b", pseudoReleaseBranch,
 		).RunSuccess(),
 	)
-	require.Nil(t,
+	require.NoError(t,
 		command.NewWithWorkDir(baseDir,
 			"git", "push", "-u", git.DefaultRemote, pseudoReleaseBranch,
 		).RunSuccess(),
 	)
-	require.Nil(t,
+	require.NoError(t,
 		command.NewWithWorkDir(baseDir,
 			"git", "checkout", git.DefaultBranch,
 		).RunSuccess(),
 	)
-	require.Nil(t,
+	require.NoError(t,
 		command.NewWithWorkDir(baseDir,
 			"git", "commit", "--allow-empty", "-m", testCommitMessage,
 		).RunSuccess(),
 	)
-	require.Nil(t,
+	require.NoError(t,
 		command.NewWithWorkDir(baseDir,
 			"git", "push",
 		).RunSuccess(),
@@ -106,25 +106,25 @@ func newSUT(t *testing.T) *sut {
 
 	// The sut repo dir
 	repoDir := filepath.Join(tempDir, fmt.Sprintf("test-%d", now))
-	require.Nil(t, command.New("cp", "-r", baseDir, repoDir).RunSuccess())
+	require.NoError(t, command.New("cp", "-r", baseDir, repoDir).RunSuccess())
 
 	opts := &gogit.CloneOptions{}
 	repo, err := git.CloneOrOpenRepo(repoDir, url, false, false, opts)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Adapt the settings
 	return &sut{repo, baseDir, bareCopyDir, tempDir}
 }
 
 func (s *sut) cleanup(t *testing.T) {
-	require.Nil(t, os.RemoveAll(s.repo.Dir()))
-	require.Nil(t, os.RemoveAll(s.baseDir))
-	require.Nil(t, os.RemoveAll(s.bareCopyDir))
+	require.NoError(t, os.RemoveAll(s.repo.Dir()))
+	require.NoError(t, os.RemoveAll(s.baseDir))
+	require.NoError(t, os.RemoveAll(s.bareCopyDir))
 }
 
 func (s *sut) lastCommit(t *testing.T, branch string) string {
 	res, err := command.NewWithWorkDir(s.repo.Dir(),
 		"git", "log", "-1", branch).RunSilentSuccessOutput()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	return res.OutputTrimNL()
 }

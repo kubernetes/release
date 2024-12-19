@@ -80,9 +80,9 @@ func TestCreateForBranch(t *testing.T) {
 
 			err := an.CreateForBranch()
 			if tc.shouldError {
-				require.NotNil(t, err)
+				require.Error(t, err)
 			} else {
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -167,9 +167,9 @@ func TestCreateForRelease(t *testing.T) {
 
 			err := an.CreateForRelease()
 			if tc.shouldError {
-				require.NotNil(t, err)
+				require.Error(t, err)
 			} else {
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

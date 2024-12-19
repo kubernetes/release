@@ -18,7 +18,6 @@ package binary_test
 
 import (
 	"encoding/base64"
-	"fmt"
 	"os"
 	"testing"
 
@@ -95,16 +94,16 @@ func GetTestHeaders() []TestHeader {
 // writeTestBinary Writes a test binary and returns the path.
 func writeTestBinary(t *testing.T, base64Data string) *os.File {
 	f, err := os.CreateTemp("", "test-binary-")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	binData, err := base64.StdEncoding.DecodeString(base64Data)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	_, err = f.Write(binData)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	_, err = f.Seek(0, 0)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	return f
 }
@@ -132,7 +131,7 @@ func TestGetELFHeader(t *testing.T) {
 		f := writeTestBinary(t, testBin.Data)
 		header, err := binary.GetELFHeader(f.Name())
 		os.Remove(f.Name())
-		require.Nil(t, err)
+		require.NoError(t, err)
 		if testBin.OS == "linux" {
 			require.NotNil(t, header)
 			require.Equal(t, testBin.Bits, header.WordLength())
@@ -147,7 +146,7 @@ func TestGetMachOHeader(t *testing.T) {
 		f := writeTestBinary(t, testBin.Data)
 		header, err := binary.GetMachOHeader(f.Name())
 		os.Remove(f.Name())
-		require.Nil(t, err)
+		require.NoError(t, err)
 		if testBin.OS == "darwin" {
 			require.NotNil(t, header)
 			require.Equal(t, testBin.Bits, header.WordLength())
@@ -162,9 +161,9 @@ func TestGetPEHeader(t *testing.T) {
 		f := writeTestBinary(t, testBin.Data)
 		header, err := binary.GetPEHeader(f.Name())
 		os.Remove(f.Name())
-		require.Nil(t, err)
+		require.NoError(t, err)
 		if testBin.OS == "windows" {
-			require.NotNil(t, header, fmt.Sprintf("testing binary for %s/%s", testBin.OS, testBin.Arch))
+			require.NotNil(t, header, "testing binary for %s/%s", testBin.OS, testBin.Arch)
 			require.Equal(t, testBin.Bits, header.WordLength())
 		} else {
 			require.Nil(t, header)

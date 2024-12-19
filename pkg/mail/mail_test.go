@@ -47,7 +47,7 @@ func TestSetDefaultSender(t *testing.T) {
 					Body:       `{"first_name": "Firstname", "last_name": "Lastname"}`,
 				}, nil)
 			},
-			expect: func(err error, desc string) { require.Nil(t, err, desc) },
+			expect: func(err error, desc string) { require.NoError(t, err, desc) },
 		},
 		{
 			description: "Should fail with wrong JSON in second response",
@@ -61,7 +61,7 @@ func TestSetDefaultSender(t *testing.T) {
 					Body:       "wrong-json",
 				}, nil)
 			},
-			expect: func(err error, desc string) { require.NotNil(t, err, desc) },
+			expect: func(err error, desc string) { require.Error(t, err, desc) },
 		},
 		{
 			description: "Should fail with wrong status code in second response",
@@ -72,7 +72,7 @@ func TestSetDefaultSender(t *testing.T) {
 				}, nil)
 				c.APIReturnsOnCall(1, &rest.Response{StatusCode: 400}, nil)
 			},
-			expect: func(err error, desc string) { require.NotNil(t, err, desc) },
+			expect: func(err error, desc string) { require.Error(t, err, desc) },
 		},
 		{
 			description: "Should fail with failing second response",
@@ -83,7 +83,7 @@ func TestSetDefaultSender(t *testing.T) {
 				}, nil)
 				c.APIReturnsOnCall(1, nil, errors.New(""))
 			},
-			expect: func(err error, desc string) { require.NotNil(t, err, desc) },
+			expect: func(err error, desc string) { require.Error(t, err, desc) },
 		},
 		{
 			description: "Should fail with wrong JSON in first response",
@@ -93,21 +93,21 @@ func TestSetDefaultSender(t *testing.T) {
 					Body:       "wrong-json",
 				}, nil)
 			},
-			expect: func(err error, desc string) { require.NotNil(t, err, desc) },
+			expect: func(err error, desc string) { require.Error(t, err, desc) },
 		},
 		{
 			description: "Should fail with wrong status code in first response",
 			prep: func(c *mailfakes.FakeAPIClient) {
 				c.APIReturnsOnCall(0, &rest.Response{StatusCode: 400}, nil)
 			},
-			expect: func(err error, desc string) { require.NotNil(t, err, desc) },
+			expect: func(err error, desc string) { require.Error(t, err, desc) },
 		},
 		{
 			description: "Should fail with failing first response",
 			prep: func(c *mailfakes.FakeAPIClient) {
 				c.APIReturnsOnCall(0, nil, errors.New(""))
 			},
-			expect: func(err error, desc string) { require.NotNil(t, err, desc) },
+			expect: func(err error, desc string) { require.Error(t, err, desc) },
 		},
 	} {
 		m := mail.NewSender("")

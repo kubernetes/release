@@ -125,9 +125,9 @@ func TestRunStage(t *testing.T) {
 
 		err := sut.Run()
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -211,9 +211,9 @@ func TestRunRelease(t *testing.T) {
 
 		err := sut.Run()
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -246,9 +246,9 @@ func TestValidateOptions(t *testing.T) {
 	} {
 		err := tc.provided.Validate()
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -278,9 +278,9 @@ func TestValidateBuildVersion(t *testing.T) {
 		state := anago.DefaultState()
 		err := tc.provided.ValidateBuildVersion(state)
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -323,9 +323,9 @@ func TestStagingOptionsValidate(t *testing.T) {
 		state := anago.DefaultState()
 		err := tc.provided.Validate(state)
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -356,9 +356,9 @@ func TestSubmitStage(t *testing.T) {
 
 		err := sut.Submit(false)
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -389,9 +389,9 @@ func TestSubmitRelease(t *testing.T) {
 
 		err := sut.Submit(false)
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }

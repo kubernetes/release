@@ -68,9 +68,9 @@ func TestInitLogFileRelease(t *testing.T) {
 
 		err := sut.InitLogFile()
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -104,9 +104,9 @@ func TestCheckPrerequisitesRelease(t *testing.T) {
 
 		err := sut.CheckPrerequisites()
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -140,9 +140,9 @@ func TestCheckReleaseBranchStateRelease(t *testing.T) {
 
 		err := sut.CheckReleaseBranchState()
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -182,9 +182,9 @@ func TestGenerateReleaseVersionRelease(t *testing.T) {
 
 		err := sut.GenerateReleaseVersion()
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -259,9 +259,9 @@ func TestPushArtifacts(t *testing.T) {
 
 		err := sut.PushArtifacts()
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -289,9 +289,9 @@ func TestPrepareWorkspaceRelease(t *testing.T) {
 		sut.SetImpl(mock)
 		err := sut.PrepareWorkspace()
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -319,9 +319,9 @@ func TestSubmitReleaseImpl(t *testing.T) {
 		sut.SetImpl(mock)
 		err := sut.Submit(false)
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -352,9 +352,9 @@ func TestCreateAnnouncement(t *testing.T) {
 		sut.SetImpl(mock)
 		err := sut.CreateAnnouncement()
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -403,9 +403,9 @@ func TestPushGitObjects(t *testing.T) {
 		sut.SetImpl(mock)
 		err := sut.PushGitObjects()
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -436,9 +436,9 @@ func TestUpdateGitHubPage(t *testing.T) {
 		sut.SetImpl(mock)
 		err := sut.UpdateGitHubPage()
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -469,9 +469,9 @@ func TestCheckProvenance(t *testing.T) {
 		sut.SetImpl(mock)
 		err := sut.CheckProvenance()
 		if tc.shouldError {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }

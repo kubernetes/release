@@ -84,6 +84,7 @@ linters:
     - tagalign
     - tenv
     - testableexamples
+    - testifylint
     - typecheck
     - unconvert
     - unparam
@@ -120,7 +121,6 @@ linters:
     # - nonamedreturns
     # - paralleltest
     # - tagliatelle
-    # - testifylint
     # - testpackage
     # - thelper
     # - tparallel

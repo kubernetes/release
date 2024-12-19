@@ -42,7 +42,7 @@ func TestFfFailedWithoutReleaseBranch(t *testing.T) {
 	// When
 	err := fastforward.New(&fastforward.Options{}).Run()
 	// Then
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestFfFailedNoReleaseBranch(t *testing.T) {
@@ -57,7 +57,7 @@ func TestFfFailedNoReleaseBranch(t *testing.T) {
 	err := fastforward.New(ffo).Run()
 
 	// Then
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestFfFailedReleaseBranchDoesNotExist(t *testing.T) {
@@ -72,7 +72,7 @@ func TestFfFailedReleaseBranchDoesNotExist(t *testing.T) {
 	err := fastforward.New(ffo).Run()
 
 	// Then
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestFfFailedOldReleaseBranch(t *testing.T) {
@@ -87,7 +87,7 @@ func TestFfFailedOldReleaseBranch(t *testing.T) {
 	err := fastforward.New(ffo).Run()
 
 	// Then
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestFfSuccessDryRun(t *testing.T) {
@@ -102,7 +102,7 @@ func TestFfSuccessDryRun(t *testing.T) {
 	err := fastforward.New(ffo).Run()
 
 	// Then
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Local should contain the commit
 	lastLocalCommit := s.lastCommit(t, pseudoReleaseBranch)
@@ -127,7 +127,7 @@ func TestFfSuccess(t *testing.T) {
 	err := fastforward.New(ffo).Run()
 
 	// Then
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Local should contain the commit
 	lastLocalCommit := s.lastCommit(t, pseudoReleaseBranch)

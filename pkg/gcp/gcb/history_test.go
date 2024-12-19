@@ -144,9 +144,9 @@ func TestHistoryRun(t *testing.T) {
 
 		err := sut.Run()
 		if tc.shouldErr {
-			require.NotNil(t, err)
+			require.Error(t, err)
 		} else {
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 }

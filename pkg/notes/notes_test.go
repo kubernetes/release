@@ -104,7 +104,7 @@ func TestDocumentationFromString(t *testing.T) {
 			description2, url2,
 		),
 	)
-	require.Equal(t, 2, len(result))
+	require.Len(t, result, 2)
 	require.Equal(t, expectedDescription1, result[0].Description)
 	require.Equal(t, url1, result[0].URL)
 	require.Equal(t, expectedDescription2, result[1].Description)
@@ -117,7 +117,7 @@ func TestDocumentationFromString(t *testing.T) {
 			description2, url2,
 		),
 	)
-	require.Equal(t, 2, len(result))
+	require.Len(t, result, 2)
 	require.Equal(t, expectedDescription1, result[0].Description)
 	require.Equal(t, url1, result[0].URL)
 	require.Equal(t, DocTypeKEP, result[0].Type)
@@ -132,7 +132,7 @@ func TestDocumentationFromString(t *testing.T) {
 			description2, url2,
 		),
 	)
-	require.Equal(t, 2, len(result))
+	require.Len(t, result, 2)
 	require.Equal(t, expectedDescription1, result[0].Description)
 	require.Equal(t, url1, result[0].URL)
 	require.Equal(t, DocTypeKEP, result[0].Type)
@@ -144,7 +144,7 @@ func TestDocumentationFromString(t *testing.T) {
 	result = DocumentationFromString(
 		fmt.Sprintf(docsBlock+"\r\n%s%s\r\n"+mdSep, description1, url1),
 	)
-	require.Equal(t, 1, len(result))
+	require.Len(t, result, 1)
 	require.Equal(t, expectedDescription1, result[0].Description)
 	require.Equal(t, url1, result[0].URL)
 
@@ -152,7 +152,7 @@ func TestDocumentationFromString(t *testing.T) {
 	result = DocumentationFromString(
 		fmt.Sprintf(docsBlock+"\r\n * %s%s\r\n"+mdSep, description1, url1),
 	)
-	require.Equal(t, 1, len(result))
+	require.Len(t, result, 1)
 	require.Equal(t, expectedDescription1, result[0].Description)
 	require.Equal(t, url1, result[0].URL)
 
@@ -160,7 +160,7 @@ func TestDocumentationFromString(t *testing.T) {
 	result = DocumentationFromString(
 		fmt.Sprintf(docsBlock+"\r\n - %s%s\r\n"+mdSep, description1, url1),
 	)
-	require.Equal(t, 1, len(result))
+	require.Len(t, result, 1)
 	require.Equal(t, expectedDescription1, result[0].Description)
 	require.Equal(t, url1, result[0].URL)
 
@@ -168,7 +168,7 @@ func TestDocumentationFromString(t *testing.T) {
 	result = DocumentationFromString(
 		fmt.Sprintf(docsBlock+"\n%s%s\n"+mdSep, description1, url1),
 	)
-	require.Equal(t, 1, len(result))
+	require.Len(t, result, 1)
 	require.Equal(t, expectedDescription1, result[0].Description)
 	require.Equal(t, url1, result[0].URL)
 
@@ -176,7 +176,7 @@ func TestDocumentationFromString(t *testing.T) {
 	result = DocumentationFromString(
 		fmt.Sprintf(docsBlock+"\n%s\n"+mdSep, url1),
 	)
-	require.Equal(t, 1, len(result))
+	require.Len(t, result, 1)
 	require.Equal(t, "", result[0].Description)
 	require.Equal(t, url1, result[0].URL)
 }
@@ -184,21 +184,21 @@ func TestDocumentationFromString(t *testing.T) {
 func TestClassifyURL(t *testing.T) {
 	// A KEP
 	u, err := url.Parse("http://github.com/kubernetes/enhancements/blob/master/keps/sig-cli/kubectl-staging.md")
-	require.Equal(t, err, nil)
+	require.NoError(t, err)
 	result := classifyURL(u)
-	require.Equal(t, result, DocTypeKEP)
+	require.Equal(t, DocTypeKEP, result)
 
 	// An official documentation
 	u, err = url.Parse("https://kubernetes.io/docs/concepts/#kubernetes-objects")
-	require.Equal(t, err, nil)
+	require.NoError(t, err)
 	result = classifyURL(u)
-	require.Equal(t, result, DocTypeOfficial)
+	require.Equal(t, DocTypeOfficial, result)
 
 	// An external documentation
 	u, err = url.Parse("https://google.com/")
-	require.Equal(t, err, nil)
+	require.NoError(t, err)
 	result = classifyURL(u)
-	require.Equal(t, result, DocTypeExternal)
+	require.Equal(t, DocTypeExternal, result)
 }
 
 func TestGetPRNumberFromCommitMessage(t *testing.T) {
@@ -261,21 +261,21 @@ func TestNoteTextFromString(t *testing.T) {
 		{
 			noteBlock("test"),
 			func(res string, err error) {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.Equal(t, "test", res)
 			},
 		},
 		{
 			noteBlock("test\ntest\ntest"),
 			func(res string, err error) {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.Equal(t, "test\ntest\ntest", res)
 			},
 		},
 		{
 			noteBlock("Action Required: test"),
 			func(res string, err error) {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.Equal(t, "test", res)
 			},
 		},
@@ -284,7 +284,7 @@ func TestNoteTextFromString(t *testing.T) {
 				"- item\n  item\n  item",
 			),
 			func(res string, err error) {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.Equal(t, "item\nitem\nitem", res)
 			},
 		},
@@ -293,7 +293,7 @@ func TestNoteTextFromString(t *testing.T) {
 				"- item\n  item\n- item\n  item",
 			),
 			func(res string, err error) {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.Equal(t, "item\nitem\n- item\n  item", res)
 			},
 		},
@@ -302,7 +302,7 @@ func TestNoteTextFromString(t *testing.T) {
 				"",
 			),
 			func(res string, err error) {
-				require.NotNil(t, err)
+				require.Error(t, err)
 				require.Contains(t, err.Error(), "empty release note")
 				require.Equal(t, "", res)
 			},
@@ -406,18 +406,18 @@ func testApplyMapHelper(t *testing.T, testDir string, makeNewNote func() *Releas
 	reflectedOriginalNote := reflect.ValueOf(makeNewNote())
 
 	mp, err := NewProviderFromInitString(testDir)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Read the maps from out test directory
 	testMaps, err := mp.GetMapsForPR(95000)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	lastProp := ""
 
 	for _, testMap := range testMaps {
 		testNote := makeNewNote()
 
 		// Check that the map application does note return error
-		require.Nil(t, testNote.ApplyMap(testMap, false))
+		require.NoError(t, testNote.ApplyMap(testMap, false))
 
 		reflectedNote := reflect.ValueOf(testNote)
 

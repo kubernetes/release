@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"k8s.io/release/gcb/gcbfakes"
 	"k8s.io/release/pkg/gcp/build"
@@ -51,7 +52,7 @@ func TestDirForJobType(t *testing.T) {
 				})
 			},
 			assert: func(dir string, err error) {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, testDir, dir)
 			},
 		},
@@ -67,7 +68,7 @@ func TestDirForJobType(t *testing.T) {
 				})
 			},
 			assert: func(dir string, err error) {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, testDir, dir)
 			},
 		},
@@ -83,7 +84,7 @@ func TestDirForJobType(t *testing.T) {
 				})
 			},
 			assert: func(dir string, err error) {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, testDir, dir)
 			},
 		},
@@ -99,7 +100,7 @@ func TestDirForJobType(t *testing.T) {
 				})
 			},
 			assert: func(dir string, err error) {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, testDir, dir)
 			},
 		},
@@ -115,7 +116,7 @@ func TestDirForJobType(t *testing.T) {
 				})
 			},
 			assert: func(dir string, err error) {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, testDir, dir)
 			},
 		},
@@ -126,7 +127,7 @@ func TestDirForJobType(t *testing.T) {
 				mock.MkdirTempReturns("", errTest)
 			},
 			assert: func(dir string, err error) {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Empty(t, dir)
 			},
 		},
@@ -138,7 +139,7 @@ func TestDirForJobType(t *testing.T) {
 				mock.WriteFileReturns(errTest)
 			},
 			assert: func(dir string, err error) {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Empty(t, dir)
 			},
 		},
@@ -149,7 +150,7 @@ func TestDirForJobType(t *testing.T) {
 				mock.MkdirTempReturns(testDir, nil)
 			},
 			assert: func(dir string, err error) {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Empty(t, dir)
 			},
 		},
