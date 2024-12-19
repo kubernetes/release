@@ -1,0 +1,16 @@
+# See https://cloud.google.com/cloud-build/docs/build-configCloudBu
+timeout: 1200s
+options:
+  substitution_option: ALLOW_LOOSE
+steps:
+  - name:  'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v20230522-312425ae46'
+    entrypoint: bash
+    env:
+      - DOCKER_CLI_EXPERIMENTAL=enabled
+      - HOME/root
+    args:
+    - '-c'
+    - |
+      gcloud auth configure-docker
+      make image_build
+      make image_push
