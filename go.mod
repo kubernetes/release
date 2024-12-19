@@ -1,7 +1,6 @@
 module k8s.io/release
 
-go 1.22.8
-toolchain go1.23.4
+go 1.23
 
 require (
 	cloud.google.com/go/storage v1.39.1
