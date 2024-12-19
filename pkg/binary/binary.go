@@ -169,7 +169,7 @@ func (b *Binary) ContainsStrings(s ...string) (match bool, err error) {
 		// Read each rune from the binary file
 		r, _, err := in.ReadRune()
 		if err != nil {
-			if err != io.EOF {
+			if !errors.Is(err, io.EOF) {
 				return match, fmt.Errorf("while reading binary data: %w", err)
 			}
 			return false, nil

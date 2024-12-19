@@ -156,6 +156,8 @@ func TestDirForJobType(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			mock := &gcbfakes.FakeImpl{}
 			sut := New()
 			sut.impl = mock

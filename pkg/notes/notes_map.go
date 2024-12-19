@@ -68,7 +68,7 @@ func ParseReleaseNotesMap(mapPath string) (*[]ReleaseNotesMap, error) {
 
 	for {
 		noteMap := ReleaseNotesMap{}
-		if err := decoder.Decode(&noteMap); err == io.EOF {
+		if err := decoder.Decode(&noteMap); errors.Is(err, io.EOF) {
 			break
 		} else if err != nil {
 			return nil, fmt.Errorf("decoding note map: %w", err)

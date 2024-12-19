@@ -28,6 +28,7 @@ import (
 	"github.com/shurcooL/githubv4"
 	"github.com/spf13/cobra"
 	"github.com/tj/go-spin"
+	"golang.org/x/net/context"
 )
 
 var rootCmd = &cobra.Command{
@@ -39,7 +40,7 @@ var rootCmd = &cobra.Command{
 		// all available reporters are used by default that are used to generate the report
 		// CLI sub commands can be used to specify a specific reporter
 		selectedReporters := AllImplementedReporters
-		return RunReport(cfg, &selectedReporters)
+		return RunReport(cmd.Context(), cfg, &selectedReporters)
 	},
 }
 
@@ -68,7 +69,7 @@ func init() {
 }
 
 // RunReport used to execute.
-func RunReport(cfg *Config, reporters *CIReporters) error {
+func RunReport(ctx context.Context, cfg *Config, reporters *CIReporters) error {
 	go func() {
 		s := spin.New()
 		for {
@@ -78,7 +79,7 @@ func RunReport(cfg *Config, reporters *CIReporters) error {
 	}()
 
 	// collect data from filtered reporters
-	reports, err := reporters.CollectReportDataFromReporters(cfg)
+	reports, err := reporters.CollectReportDataFromReporters(ctx, cfg)
 	if err != nil {
 		return err
 	}
@@ -137,7 +138,7 @@ type CIReporter interface {
 	// GetCIReporterHead sets meta information which is used to differentiate reporters
 	GetCIReporterHead() CIReporterInfo
 	// CollectReportData is used to request / collect all report data
-	CollectReportData(*Config) ([]*CIReportRecord, error)
+	CollectReportData(context.Context, *Config) ([]*CIReportRecord, error)
 }
 
 // CIReporters used to specify multiple CIReports, type gets extended by helper functions to collect and visualize report data.
@@ -147,7 +148,7 @@ type CIReporters []CIReporter
 var AllImplementedReporters = CIReporters{GithubReporter{}, TestgridReporter{}}
 
 // SearchReporter used to filter a implemented reporter by name.
-func SearchReporter(reporterName string) (CIReporter, error) {
+func SearchReporter(ctx context.Context, reporterName string) (CIReporter, error) {
 	var reporter CIReporter
 	reporterFound := false
 	for _, r := range AllImplementedReporters {
@@ -164,13 +165,13 @@ func SearchReporter(reporterName string) (CIReporter, error) {
 }
 
 // CollectReportDataFromReporters used to collect data for multiple reporters.
-func (r *CIReporters) CollectReportDataFromReporters(cfg *Config) (*CIReportDataFields, error) {
+func (r *CIReporters) CollectReportDataFromReporters(ctx context.Context, cfg *Config) (*CIReportDataFields, error) {
 	collectedReports := CIReportDataFields{}
 	for i := range *r {
 		reporters := *r
 		reporter := reporters[i]
 		reporterHead := reporter.GetCIReporterHead()
-		reportData, err := reporter.CollectReportData(cfg)
+		reportData, err := reporter.CollectReportData(ctx, cfg)
 		if err != nil {
 			return nil, err
 		}

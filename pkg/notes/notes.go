@@ -215,7 +215,7 @@ type Result struct {
 
 type Gatherer struct {
 	client       github.Client
-	context      context.Context
+	context      context.Context //nolint:containedctx // contained context is intentional
 	options      *options.Options
 	MapProviders []*MapProvider
 }
@@ -787,7 +787,7 @@ func (g *Gatherer) ReleaseNoteForPullRequest(prNr int) (*ReleaseNote, error) {
 func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, error) {
 	prs, err := g.prsFromCommit(commit)
 	if err != nil {
-		if err == errNoPRIDFoundInCommitMessage || err == errNoPRFoundForCommitSHA {
+		if errors.Is(err, errNoPRIDFoundInCommitMessage) || errors.Is(err, errNoPRFoundForCommitSHA) {
 			logrus.Debugf(
 				"No matches found when parsing PR from commit SHA %s",
 				commit.GetSHA(),

@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -33,7 +34,7 @@ var testgridCmd = &cobra.Command{
 	Long:   "CI-Signal reporter that generates only a testgrid report.",
 	PreRun: setGithubConfig,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return RunReport(cfg, &CIReporters{TestgridReporter{}})
+		return RunReport(cmd.Context(), cfg, &CIReporters{TestgridReporter{}})
 	},
 }
 
@@ -54,8 +55,8 @@ func (r TestgridReporter) GetCIReporterHead() CIReporterInfo {
 }
 
 // CollectReportData implementation from CIReporter.
-func (r TestgridReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, error) {
-	testgridReportData, err := GetTestgridReportData(*cfg)
+func (r TestgridReporter) CollectReportData(ctx context.Context, cfg *Config) ([]*CIReportRecord, error) {
+	testgridReportData, err := GetTestgridReportData(ctx, *cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +81,7 @@ func (r TestgridReporter) CollectReportData(cfg *Config) ([]*CIReportRecord, err
 }
 
 // GetTestgridReportData used to request the raw report data from testgrid.
-func GetTestgridReportData(cfg Config) (testgrid.DashboardData, error) {
+func GetTestgridReportData(ctx context.Context, cfg Config) (testgrid.DashboardData, error) {
 	testgridDashboardNames := []testgrid.DashboardName{"sig-release-master-blocking", "sig-release-master-informing"}
 	if cfg.ReleaseVersion != "" {
 		testgridDashboardNames = append(testgridDashboardNames, []testgrid.DashboardName{
@@ -90,7 +91,7 @@ func GetTestgridReportData(cfg Config) (testgrid.DashboardData, error) {
 	}
 	dashboardData := testgrid.DashboardData{}
 	for i := range testgridDashboardNames {
-		d, err := testgrid.ReqTestgridDashboardSummary(testgridDashboardNames[i])
+		d, err := testgrid.ReqTestgridDashboardSummary(ctx, testgridDashboardNames[i])
 		if err != nil {
 			if errors.Is(err, testgrid.ErrDashboardNotFound) {
 				logrus.Warn(fmt.Sprintf("%v for project board %s", err.Error(), testgridDashboardNames[i]))
