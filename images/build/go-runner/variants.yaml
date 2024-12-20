@@ -1,17 +1,17 @@
 variants:
   go1.23-bookworm:
     CONFIG: 'go1.23-bookworm'
-    IMAGE_VERSION: 'v2.4.0-go1.23.3-bookworm.0'
+    IMAGE_VERSION: 'v2.4.0-go1.23.4-bookworm.0'
     GO_MAJOR_VERSION: '1.23'
     OS_CODENAME: 'bookworm'
     REVISION: '0'
-    GO_VERSION: '1.23.3'
+    GO_VERSION: '1.23.4'
     DISTROLESS_IMAGE: 'static-debian12'
   go1.22-bookworm:
     CONFIG: 'go1.22-bookworm'
-    IMAGE_VERSION: 'v2.4.0-go1.22.9-bookworm.0'
+    IMAGE_VERSION: 'v2.4.0-go1.22.10-bookworm.0'
     GO_MAJOR_VERSION: '1.22'
     OS_CODENAME: 'bookworm'
     REVISION: '0'
-    GO_VERSION: '1.22.9'
+    GO_VERSION: '1.22.10'
     DISTROLESS_IMAGE: 'static-debian12'
