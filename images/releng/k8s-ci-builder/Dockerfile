@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG GO_VERSION
+ARG GO_VERSION_TOOLING
 ARG OS_CODENAME
 
 # The Release Tooling can be compiled with a different version of Go than the

@@ -23,6 +23,7 @@ steps:
       - PULL_BASE_REF=${_PULL_BASE_REF}
       - CONFIG=${_CONFIG}
       - GO_VERSION=${_GO_VERSION}
+      - GO_VERSION_TOOLING=${_GO_VERSION_TOOLING}
       - OS_CODENAME=${_OS_CODENAME}
     args:
       - '-c'
