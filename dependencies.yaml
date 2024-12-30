@@ -391,6 +391,47 @@ dependencies:
     - path: images/releng/k8s-ci-builder/variants.yaml
       match: \d+.\d+(alpha|beta|rc)?\.?(\d+)?
 
+  # k8s-ci-builder
+  - name: "golang: releng tooling for k8s-ci-builder (master)"
+    version: 1.23.4
+    refPaths:
+    - path: images/releng/k8s-ci-builder/Makefile
+      match: GO_VERSION_TOOLING\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+    - path: images/releng/k8s-ci-builder/variants.yaml
+      match: "GO_VERSION_TOOLING: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
+
+  - name: "golang: releng tooling for k8s-ci-builder (previous release branches: 1.32)"
+    version: 1.23.4
+    refPaths:
+    - path: images/releng/k8s-ci-builder/Makefile
+      match: GO_VERSION_TOOLING\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+    - path: images/releng/k8s-ci-builder/variants.yaml
+      match: "GO_VERSION_TOOLING: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
+
+  - name: "golang: releng tooling for k8s-ci-builder (previous release branches: 1.31)"
+    version: 1.23.4
+    refPaths:
+    - path: images/releng/k8s-ci-builder/Makefile
+      match: GO_VERSION_TOOLING\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+    - path: images/releng/k8s-ci-builder/variants.yaml
+      match: "GO_VERSION_TOOLING: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
+
+  - name: "golang: releng tooling for k8s-ci-builder (previous release branches: 1.30)"
+    version: 1.23.4
+    refPaths:
+    - path: images/releng/k8s-ci-builder/Makefile
+      match: GO_VERSION_TOOLING\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+    - path: images/releng/k8s-ci-builder/variants.yaml
+      match: "GO_VERSION_TOOLING: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
+
+  - name: "golang: releng tooling for k8s-ci-builder (previous release branches: 1.29)"
+    version: 1.23.4
+    refPaths:
+    - path: images/releng/k8s-ci-builder/Makefile
+      match: GO_VERSION_TOOLING\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
+    - path: images/releng/k8s-ci-builder/variants.yaml
+      match: "GO_VERSION_TOOLING: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
+
   # golangci-lint-version
   - name: "golangci-lint"
     version: v1.62
