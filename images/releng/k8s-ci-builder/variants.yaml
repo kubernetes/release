@@ -5,7 +5,7 @@ variants:
     OS_CODENAME: 'bullseye'
   next:
     CONFIG: next
-    GO_VERSION: '1.23.3'
+    GO_VERSION: '1.24rc1'
     OS_CODENAME: 'bookworm'
   '1.32':
     CONFIG: '1.32'
