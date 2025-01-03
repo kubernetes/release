@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG GO_VERSION
+ARG GO_VERSION_TOOLING
 ARG OS_CODENAME
 
-# The Golang version for the builder image should always be explicitly set to
-# the Golang version of the kubernetes/kubernetes active development branch
-FROM golang:${GO_VERSION}-${OS_CODENAME} AS builder
+# The Release Tooling can be compiled with a different version of Go than the
+# the Go version used in the kubernetes/kubernetes active development branch.
+FROM golang:${GO_VERSION_TOOLING}-${OS_CODENAME} AS builder
 
 WORKDIR /go/src/k8s.io/release
 
@@ -33,7 +33,8 @@ FROM debian:${OS_CODENAME}
 # arg that specifies the image name (for debugging)
 ARG IMAGE_ARG
 
-# arg that specifies the go version to install
+# The Golang version for the builder image should always be explicitly set to
+# the Golang version of the kubernetes/kubernetes active development branch
 ARG GO_VERSION
 
 # arg that specifies docker-buildx version to install
