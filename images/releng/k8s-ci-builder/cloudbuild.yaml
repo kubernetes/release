@@ -15,20 +15,21 @@ steps:
     entrypoint: 'bash'
     dir: ./images/releng/k8s-ci-builder
     env:
-    - DOCKER_CLI_EXPERIMENTAL=enabled
-    - REGISTRY=$_REGISTRY
-    - IMAGE_ARG='$_REGISTRY/k8s-ci-builder:${_GIT_TAG}-${_CONFIG}'
-    - HOME=/root
-    - TAG=${_GIT_TAG}
-    - PULL_BASE_REF=${_PULL_BASE_REF}
-    - CONFIG=${_CONFIG}
-    - GO_VERSION=${_GO_VERSION}
-    - OS_CODENAME=${_OS_CODENAME}
+      - DOCKER_CLI_EXPERIMENTAL=enabled
+      - REGISTRY=$_REGISTRY
+      - IMAGE_ARG='$_REGISTRY/k8s-ci-builder:${_GIT_TAG}-${_CONFIG}'
+      - HOME=/root
+      - TAG=${_GIT_TAG}
+      - PULL_BASE_REF=${_PULL_BASE_REF}
+      - CONFIG=${_CONFIG}
+      - GO_VERSION=${_GO_VERSION}
+      - GO_VERSION_TOOLING=${_GO_VERSION_TOOLING}
+      - OS_CODENAME=${_OS_CODENAME}
     args:
-    - '-c'
-    - |
-      gcloud auth configure-docker \
-      && make push
+      - '-c'
+      - |
+        gcloud auth configure-docker \
+        && make push
 
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
@@ -37,16 +38,18 @@ substitutions:
   _PULL_BASE_REF: 'dev'
   _CONFIG: 'config'
   _GO_VERSION: '0.0.0'
+  _GO_VERSION_TOOLING: '0.0.0'
   _OS_CODENAME: 'codename'
   _REGISTRY: 'fake.repository/registry-name'
 
 tags:
-- 'k8s-ci-builder'
-- ${_GIT_TAG}
-- ${_PULL_BASE_REF}
-- ${_CONFIG}
-- ${_GO_VERSION}
-- ${_OS_CODENAME}
+  - 'k8s-ci-builder'
+  - ${_GIT_TAG}
+  - ${_PULL_BASE_REF}
+  - ${_CONFIG}
+  - ${_GO_VERSION}
+  - ${_GO_VERSION_TOOLING}
+  - ${_OS_CODENAME}
 
 images:
   - 'gcr.io/$PROJECT_ID/k8s-ci-builder:${_CONFIG}'
