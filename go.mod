@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/storage v1.39.1
 	github.com/GoogleCloudPlatform/testgrid v0.0.38
 	github.com/blang/semver/v4 v4.0.0
-	github.com/cheggaaa/pb/v3 v3.1.5
+	github.com/cheggaaa/pb/v3 v3.1.6
 	github.com/go-git/go-git/v5 v5.13.1
 	github.com/goark/go-cvss v1.6.7
 	github.com/golang/protobuf v1.5.4
@@ -129,7 +129,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/emicklei/proto v1.12.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
-	github.com/fatih/color v1.16.0 // indirect
+	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fvbommel/sortorder v1.0.1 // indirect
@@ -191,8 +191,8 @@ require (
 	github.com/letsencrypt/boulder v0.0.0-20231026200631-000cd05d5491 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-runewidth v0.0.15 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
+	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/miekg/pkcs11 v1.1.1 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
