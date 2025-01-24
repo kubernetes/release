@@ -221,11 +221,7 @@ func TestPublish(t *testing.T) {
 		{
 			name: "failure no images-path",
 			prepare: func(*releasefakes.FakeImageImpl) (string, func()) {
-				tempDir, err := os.MkdirTemp("", "publish-test-")
-				require.NoError(t, err)
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
+				return t.TempDir(), func() {}
 			},
 			shouldError: true,
 		},
@@ -339,11 +335,7 @@ func TestValidate(t *testing.T) {
 		},
 		{ // failure no images-path
 			prepare: func(*releasefakes.FakeImageImpl) (string, func()) {
-				tempDir, err := os.MkdirTemp("", "publish-test-")
-				require.NoError(t, err)
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
+				return t.TempDir(), func() {}
 			},
 			shouldError: true,
 		},
@@ -391,8 +383,7 @@ func TestValidate(t *testing.T) {
 }
 
 func newImagesPath(t *testing.T) string {
-	tempDir, err := os.MkdirTemp("", "publish-test-")
-	require.NoError(t, err)
+	tempDir := t.TempDir()
 
 	require.NoError(t, os.MkdirAll(
 		filepath.Join(tempDir, release.ImagesPath),

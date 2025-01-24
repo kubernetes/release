@@ -43,12 +43,10 @@ func TestPublishVersion(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		bucket  string
-		gcsRoot string
-		version string
-		prepare func(
-			*releasefakes.FakePublisherClient,
-		) (buildDir string, cleanup func())
+		bucket        string
+		gcsRoot       string
+		version       string
+		prepare       func(*releasefakes.FakePublisherClient)
 		privateBucket bool
 		fast          bool
 		shouldError   bool
@@ -58,34 +56,17 @@ func TestPublishVersion(t *testing.T) {
 			gcsRoot: "release",
 			version: testVersion,
 			fast:    true,
-			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.NoError(t, err)
-
+			prepare: func(mock *releasefakes.FakePublisherClient) {
 				mock.GSUtilOutputReturnsOnCall(0, olderTestVersion, nil)
 				mock.GSUtilOutputReturnsOnCall(1, testVersion, nil)
 				mock.GetURLResponseReturns(testVersion, nil)
-
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
 			},
 			shouldError: false,
 		},
 		{ // failure GetMarkerPath
-			bucket:  release.ProductionBucket,
-			version: testVersion,
-			fast:    true,
-			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.NoError(t, err)
-
-				mock.GetMarkerPathReturns("", err)
-
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
-			},
+			bucket:      release.ProductionBucket,
+			version:     testVersion,
+			fast:        true,
 			shouldError: true,
 		},
 		{ // success update on private bucket
@@ -93,16 +74,9 @@ func TestPublishVersion(t *testing.T) {
 			gcsRoot:       "release",
 			version:       testVersion,
 			privateBucket: true,
-			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.NoError(t, err)
-
+			prepare: func(mock *releasefakes.FakePublisherClient) {
 				mockVersionMarkers(mock)
 				mock.GSUtilOutputReturnsOnCall(5, testVersion, nil)
-
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
 			},
 			shouldError: false,
 		},
@@ -111,16 +85,9 @@ func TestPublishVersion(t *testing.T) {
 			gcsRoot:       "release",
 			version:       testVersion,
 			privateBucket: true,
-			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.NoError(t, err)
-
+			prepare: func(mock *releasefakes.FakePublisherClient) {
 				mockVersionMarkers(mock)
 				mock.GSUtilOutputReturnsOnCall(5, "", errors.New(""))
-
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
 			},
 			shouldError: true,
 		},
@@ -129,16 +96,9 @@ func TestPublishVersion(t *testing.T) {
 			gcsRoot:       "release",
 			version:       testVersion,
 			privateBucket: true,
-			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.NoError(t, err)
-
+			prepare: func(mock *releasefakes.FakePublisherClient) {
 				mockVersionMarkers(mock)
 				mock.GSUtilOutputReturnsOnCall(5, "wrong", nil)
-
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
 			},
 			shouldError: true,
 		},
@@ -147,16 +107,9 @@ func TestPublishVersion(t *testing.T) {
 			gcsRoot:       "release",
 			version:       testVersion,
 			privateBucket: false,
-			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.NoError(t, err)
-
+			prepare: func(mock *releasefakes.FakePublisherClient) {
 				mockVersionMarkers(mock)
 				mock.GetURLResponseReturns(testVersion, nil)
-
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
 			},
 			shouldError: false,
 		},
@@ -165,15 +118,9 @@ func TestPublishVersion(t *testing.T) {
 			gcsRoot:       "release",
 			version:       testVersion,
 			privateBucket: false,
-			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.NoError(t, err)
+			prepare: func(mock *releasefakes.FakePublisherClient) {
 				mockVersionMarkers(mock)
 				mock.GetURLResponseReturns("", errors.New(""))
-
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
 			},
 			shouldError: true,
 		},
@@ -182,40 +129,27 @@ func TestPublishVersion(t *testing.T) {
 			gcsRoot:       "release",
 			version:       testVersion,
 			privateBucket: false,
-			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.NoError(t, err)
-
+			prepare: func(mock *releasefakes.FakePublisherClient) {
 				mock.GSUtilReturnsOnCall(0, errors.New(""))
-
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
 			},
 			shouldError: true,
 		},
 		{ // failure no semver version
-			bucket:  release.ProductionBucket,
-			gcsRoot: "release",
-			version: "wrong",
-			prepare: func(mock *releasefakes.FakePublisherClient) (string, func()) {
-				tempDir, err := os.MkdirTemp("", "publish-version-test-")
-				require.NoError(t, err)
-
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
-			},
+			bucket:      release.ProductionBucket,
+			gcsRoot:     "release",
+			version:     "wrong",
 			shouldError: true,
 		},
 	} {
 		sut := release.NewPublisher()
 		clientMock := &releasefakes.FakePublisherClient{}
 		sut.SetClient(clientMock)
-		buildDir, cleanup := tc.prepare(clientMock)
+		if tc.prepare != nil {
+			tc.prepare(clientMock)
+		}
 
 		err := sut.PublishVersion(
-			"release", tc.version, buildDir, tc.bucket, tc.gcsRoot,
+			"release", tc.version, t.TempDir(), tc.bucket, tc.gcsRoot,
 			nil, tc.privateBucket, tc.fast,
 		)
 		if tc.shouldError {
@@ -223,7 +157,6 @@ func TestPublishVersion(t *testing.T) {
 		} else {
 			require.NoError(t, err)
 		}
-		cleanup()
 	}
 }
 

@@ -93,7 +93,7 @@ func GetTestHeaders() []TestHeader {
 
 // writeTestBinary Writes a test binary and returns the path.
 func writeTestBinary(t *testing.T, base64Data string) *os.File {
-	f, err := os.CreateTemp("", "test-binary-")
+	f, err := os.CreateTemp(t.TempDir(), "test-binary-")
 	require.NoError(t, err)
 
 	binData, err := base64.StdEncoding.DecodeString(base64Data)

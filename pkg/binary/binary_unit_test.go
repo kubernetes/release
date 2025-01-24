@@ -25,7 +25,7 @@ import (
 )
 
 func TestContainsString(t *testing.T) {
-	tmpfile, err := os.CreateTemp("", "")
+	tmpfile, err := os.CreateTemp(t.TempDir(), "")
 	require.NoError(t, err)
 	defer os.Remove(tmpfile.Name())
 
