@@ -41,9 +41,7 @@ const (
 
 func TestFileMetadata(t *testing.T) {
 	// Given
-	dir, err := os.MkdirTemp("", "")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	for _, file := range []string{
 		"kubernetes-client-darwin-386.tar.gz",
@@ -146,9 +144,7 @@ func TestDocument_RenderMarkdownTemplateFailure(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dir, err := os.MkdirTemp("", "")
-			require.NoError(t, err)
-			defer os.RemoveAll(dir)
+			dir := t.TempDir()
 
 			if tt.templateExist {
 				fileName := strings.Split(tt.templateSpec, ":")[1]
@@ -159,7 +155,7 @@ func TestDocument_RenderMarkdownTemplateFailure(t *testing.T) {
 			}
 
 			doc := Document{}
-			_, err = doc.RenderMarkdownTemplate("", "", "", tt.templateSpec)
+			_, err := doc.RenderMarkdownTemplate("", "", "", tt.templateSpec)
 			require.Error(t, err, "Unexpected success")
 		})
 	}
@@ -167,9 +163,7 @@ func TestDocument_RenderMarkdownTemplateFailure(t *testing.T) {
 
 func TestCreateDownloadsTable(t *testing.T) {
 	// Given
-	dir, err := os.MkdirTemp("", "")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 	setupTestDir(t, dir)
 
 	// When
@@ -529,9 +523,7 @@ func TestDocument_RenderMarkdownTemplate(t *testing.T) {
 			templateSpec := tt.templateSpec
 			var dir string
 			if tt.hasDownloads || tt.userTemplate {
-				dir, err = os.MkdirTemp("", "")
-				require.NoError(t, err, "Creating tmpDir")
-				defer os.RemoveAll(dir)
+				dir = t.TempDir()
 
 				setupTestDir(t, dir)
 

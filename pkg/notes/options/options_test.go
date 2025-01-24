@@ -92,16 +92,14 @@ func newTestOptions(t *testing.T) *testOptions {
 //     First commit
 func newTestRepo(t *testing.T) *testRepo {
 	// Setup the bare repo as base
-	bareTempDir, err := os.MkdirTemp("", "k8s-test-bare-")
-	require.NoError(t, err)
+	bareTempDir := t.TempDir()
 
 	bareRepo, err := git.PlainInit(bareTempDir, true)
 	require.NoError(t, err)
 	require.NotNil(t, bareRepo)
 
 	// Clone from the bare to be able to add our test data
-	cloneTempDir, err := os.MkdirTemp("", "k8s-test-clone-")
-	require.NoError(t, err)
+	cloneTempDir := t.TempDir()
 	cloneRepo, err := git.PlainInit(cloneTempDir, false)
 	require.NoError(t, err)
 

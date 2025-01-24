@@ -60,8 +60,7 @@ func TestGetToolRefSuccess(t *testing.T) {
 }
 
 func TestReadDockerVersion(t *testing.T) {
-	baseTmpDir, err := os.MkdirTemp("", "ahhh")
-	require.NoError(t, err)
+	baseTmpDir := t.TempDir()
 
 	release := "kubernetes"
 	version := "1.1.1"
@@ -73,7 +72,7 @@ func TestReadDockerVersion(t *testing.T) {
 	var b bytes.Buffer
 
 	// Create version file
-	err = os.WriteFile(filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, "kubernetes", "version"), versionBytes, os.FileMode(0o644))
+	err := os.WriteFile(filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, "kubernetes", "version"), versionBytes, os.FileMode(0o644))
 	require.NoError(t, err)
 
 	// Create a zip archive.
@@ -94,8 +93,6 @@ func TestReadDockerVersion(t *testing.T) {
 		b.Bytes(),
 		os.FileMode(0o644),
 	))
-
-	defer cleanupTmps(t, baseTmpDir)
 
 	type args struct {
 		path string
@@ -231,12 +228,6 @@ func TestIsDirtyBuild(t *testing.T) {
 	}
 }
 
-func cleanupTmps(t *testing.T, dir ...string) {
-	for _, each := range dir {
-		require.NoError(t, os.RemoveAll(each))
-	}
-}
-
 func TestURLPrefixForBucket(t *testing.T) {
 	for _, bucket := range []string{"bucket", "", ProductionBucket} {
 		res := URLPrefixForBucket(bucket)
@@ -248,13 +239,12 @@ func TestURLPrefixForBucket(t *testing.T) {
 
 func TestCopyBinaries(t *testing.T) {
 	for _, tc := range []struct {
-		prepare  func() (rootPath string, cleanup func())
+		prepare  func() (rootPath string)
 		validate func(error, string)
 	}{
 		{ // success client
-			prepare: func() (string, func()) {
-				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
-				require.NoError(t, err)
+			prepare: func() string {
+				tempDir := t.TempDir()
 
 				binDir := filepath.Join(
 					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
@@ -262,13 +252,11 @@ func TestCopyBinaries(t *testing.T) {
 				require.NoError(t, os.MkdirAll(binDir, os.FileMode(0o755)))
 
 				for _, f := range []string{"1", "2", "3"} {
-					_, err = os.Create(filepath.Join(binDir, f))
+					_, err := os.Create(filepath.Join(binDir, f))
 					require.NoError(t, err)
 				}
 
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
+				return tempDir
 			},
 			validate: func(err error, testDir string) {
 				require.NoError(t, err)
@@ -283,27 +271,23 @@ func TestCopyBinaries(t *testing.T) {
 			},
 		},
 		{ // success client skip non-dir
-			prepare: func() (string, func()) {
-				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
-				require.NoError(t, err)
+			prepare: func() string {
+				tempDir := t.TempDir()
 
 				require.NoError(t, os.MkdirAll(filepath.Join(
 					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
 				), os.FileMode(0o755)))
 
-				_, err = os.Create(filepath.Join(tempDir, "client", "some-file"))
+				_, err := os.Create(filepath.Join(tempDir, "client", "some-file"))
 				require.NoError(t, err)
 
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
+				return tempDir
 			},
 			validate: func(err error, _ string) { require.NoError(t, err) },
 		},
 		{ // success server
-			prepare: func() (string, func()) {
-				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
-				require.NoError(t, err)
+			prepare: func() string {
+				tempDir := t.TempDir()
 
 				require.NoError(t, os.MkdirAll(filepath.Join(
 					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
@@ -312,16 +296,13 @@ func TestCopyBinaries(t *testing.T) {
 					tempDir, "server", "linux-amd64", "kubernetes", "server", "bin",
 				), os.FileMode(0o755)))
 
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
+				return tempDir
 			},
 			validate: func(err error, _ string) { require.NoError(t, err) },
 		},
 		{ // success node
-			prepare: func() (string, func()) {
-				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
-				require.NoError(t, err)
+			prepare: func() string {
+				tempDir := t.TempDir()
 
 				require.NoError(t, os.MkdirAll(filepath.Join(
 					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
@@ -330,16 +311,13 @@ func TestCopyBinaries(t *testing.T) {
 					tempDir, "node", "linux-amd64", "kubernetes", "node", "bin",
 				), os.FileMode(0o755)))
 
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
+				return tempDir
 			},
 			validate: func(err error, _ string) { require.NoError(t, err) },
 		},
 		{ // failure wrong server dir
-			prepare: func() (string, func()) {
-				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
-				require.NoError(t, err)
+			prepare: func() string {
+				tempDir := t.TempDir()
 
 				require.NoError(t, os.MkdirAll(filepath.Join(
 					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
@@ -348,16 +326,13 @@ func TestCopyBinaries(t *testing.T) {
 					tempDir, "server", "linux-amd64", "kubernetes", "wrong", "bin",
 				), os.FileMode(0o755)))
 
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
+				return tempDir
 			},
 			validate: func(err error, _ string) { require.Error(t, err) },
 		},
 		{ // failure wrong node dir
-			prepare: func() (string, func()) {
-				tempDir, err := os.MkdirTemp("", "test-copy-binaries-")
-				require.NoError(t, err)
+			prepare: func() string {
+				tempDir := t.TempDir()
 
 				require.NoError(t, os.MkdirAll(filepath.Join(
 					tempDir, "client", "linux-amd64", "kubernetes", "client", "bin",
@@ -366,19 +341,17 @@ func TestCopyBinaries(t *testing.T) {
 					tempDir, "node", "linux-amd64", "kubernetes", "wrong", "bin",
 				), os.FileMode(0o755)))
 
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
+				return tempDir
 			},
 			validate: func(err error, _ string) { require.Error(t, err) },
 		},
 		{ // empty dirs should error
-			prepare:  func() (string, func()) { return "", func() {} },
+			prepare:  func() string { return "" },
 			validate: func(err error, _ string) { require.Error(t, err) },
 		},
 	} {
 		// Given
-		rootPath, cleanup := tc.prepare()
+		rootPath := tc.prepare()
 		stageDir := filepath.Join(rootPath, StagePath)
 
 		// When
@@ -386,19 +359,17 @@ func TestCopyBinaries(t *testing.T) {
 
 		// Then
 		tc.validate(err, stageDir)
-		cleanup()
 	}
 }
 
 func TestWriteChecksums(t *testing.T) {
 	for _, tc := range []struct {
-		prepare  func() (rootPath string, cleanup func())
+		prepare  func() (rootPath string)
 		validate func(err error, rootPath string)
 	}{
 		{ // success
-			prepare: func() (rootPath string, cleanup func()) {
-				tempDir, err := os.MkdirTemp("", "write-checksum-test-")
-				require.NoError(t, err)
+			prepare: func() (rootPath string) {
+				tempDir := t.TempDir()
 
 				rootSHAs := []byte{1, 2, 4, 8, 16, 32, 64, 128}
 				for i, v := range rootSHAs {
@@ -417,9 +388,7 @@ func TestWriteChecksums(t *testing.T) {
 					))
 				}
 
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
+				return tempDir
 			},
 			validate: func(err error, rootPath string) {
 				require.NoError(t, err)
@@ -468,25 +437,18 @@ func TestWriteChecksums(t *testing.T) {
 		},
 
 		{ // success no content
-			prepare: func() (rootPath string, cleanup func()) {
-				tempDir, err := os.MkdirTemp("", "write-checksum-test-")
-				require.NoError(t, err)
-
-				return tempDir, func() {
-					require.NoError(t, os.RemoveAll(tempDir))
-				}
+			prepare: func() (rootPath string) {
+				return t.TempDir()
 			},
 			validate: func(err error, _ string) {
 				require.NoError(t, err)
 			},
 		},
 		{ // failure dir not existing
-			prepare: func() (rootPath string, cleanup func()) {
-				tempDir, err := os.MkdirTemp("", "write-checksum-test-")
-				require.NoError(t, err)
+			prepare: func() (rootPath string) {
+				tempDir := t.TempDir()
 				require.NoError(t, os.RemoveAll(tempDir))
-
-				return tempDir, func() {}
+				return tempDir
 			},
 			validate: func(err error, _ string) {
 				require.Error(t, err)
@@ -494,13 +456,12 @@ func TestWriteChecksums(t *testing.T) {
 		},
 	} {
 		// Given
-		rootPath, cleanup := tc.prepare()
+		rootPath := tc.prepare()
 
 		// When
 		err := WriteChecksums(rootPath)
 
 		// Then
 		tc.validate(err, rootPath)
-		cleanup()
 	}
 }

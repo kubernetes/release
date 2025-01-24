@@ -246,13 +246,11 @@ func TestRun(t *testing.T) {
 	for tcCount, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
 
-		tempDir, err := os.MkdirTemp("/tmp", "schedule-test")
-		require.NoError(t, err)
+		tempDir := t.TempDir()
 
 		tc.options.outputFile = fmt.Sprintf("%s/output-%d.md", tempDir, tcCount)
 
-		err = run(tc.options)
+		err := run(tc.options)
 		tc.expect(err, tc.options.outputFile)
-		require.NoError(t, os.RemoveAll(tempDir))
 	}
 }

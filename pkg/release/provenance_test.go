@@ -29,9 +29,7 @@ import (
 
 func TestGetBuildSubjects(t *testing.T) {
 	// create a test dir with stuff
-	dir, err := os.MkdirTemp("", "provenance-test-")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 	require.NoError(t, os.Mkdir(filepath.Join(dir, ImagesPath), os.FileMode(0o755)))
 
 	testFiles := map[string]struct {
@@ -80,9 +78,7 @@ func TestGetBuildSubjects(t *testing.T) {
 
 func TestGetStagingSubjects(t *testing.T) {
 	// create a test dir with stuff
-	dir, err := os.MkdirTemp("", "provenance-test-")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 	require.NoError(t, os.Mkdir(filepath.Join(dir, "second"), os.FileMode(0o755)))
 
 	testFiles := map[string]struct {

@@ -38,10 +38,9 @@ type sut struct {
 }
 
 func newSUT(t *testing.T) *sut {
-	dir, err := os.MkdirTemp("", "k8s-test-")
-	require.NoError(t, err)
+	dir := t.TempDir()
 
-	_, err = gogit.PlainInit(dir, false)
+	_, err := gogit.PlainInit(dir, false)
 	require.NoError(t, err)
 	require.NoError(t, os.Chdir(dir))
 
@@ -55,14 +54,9 @@ func newSUT(t *testing.T) *sut {
 	return &sut{repo, mock, dir, t}
 }
 
-func (s *sut) cleanup() {
-	require.NoError(s.t, os.RemoveAll(s.dir))
-}
-
 func TestGetTagSuccess(t *testing.T) {
 	// Given
 	sut := newSUT(t)
-	defer sut.cleanup()
 	sut.mock.DescribeReturns("v1.0.0", nil)
 
 	// When
@@ -76,7 +70,6 @@ func TestGetTagSuccess(t *testing.T) {
 func TestGetTagFailure(t *testing.T) {
 	// Given
 	sut := newSUT(t)
-	defer sut.cleanup()
 	sut.mock.DescribeReturns("", errors.New(""))
 
 	// When
@@ -90,7 +83,6 @@ func TestGetTagFailure(t *testing.T) {
 func TestCheckStateSuccess(t *testing.T) {
 	// Given
 	sut := newSUT(t)
-	defer sut.cleanup()
 	sut.mock.CurrentBranchReturns("branch", nil)
 	sut.mock.RemotesReturns([]*git.Remote{
 		git.NewRemote("origin", []string{"github.com:org/repo"}),
@@ -109,7 +101,6 @@ func TestCheckStateSuccess(t *testing.T) {
 func TestCheckStateFailedNoRemoteFound(t *testing.T) {
 	// Given
 	sut := newSUT(t)
-	defer sut.cleanup()
 	sut.mock.CurrentBranchReturns("branch", nil)
 	sut.mock.RemotesReturns([]*git.Remote{
 		git.NewRemote("origin", []string{"some-other-url"}),
@@ -125,7 +116,6 @@ func TestCheckStateFailedNoRemoteFound(t *testing.T) {
 func TestCheckStateFailedRemoteFailed(t *testing.T) {
 	// Given
 	sut := newSUT(t)
-	defer sut.cleanup()
 	sut.mock.CurrentBranchReturns("branch", nil)
 	sut.mock.RemotesReturns(nil, errors.New(""))
 
@@ -139,7 +129,6 @@ func TestCheckStateFailedRemoteFailed(t *testing.T) {
 func TestCheckStateFailedWrongBranch(t *testing.T) {
 	// Given
 	sut := newSUT(t)
-	defer sut.cleanup()
 	sut.mock.CurrentBranchReturns("wrong", nil)
 
 	// When
@@ -152,7 +141,6 @@ func TestCheckStateFailedWrongBranch(t *testing.T) {
 func TestCheckStateFailedBranchFailed(t *testing.T) {
 	// Given
 	sut := newSUT(t)
-	defer sut.cleanup()
 	sut.mock.CurrentBranchReturns("", errors.New(""))
 
 	// When
@@ -165,7 +153,6 @@ func TestCheckStateFailedBranchFailed(t *testing.T) {
 func TestCheckStateFailedLsRemote(t *testing.T) {
 	// Given
 	sut := newSUT(t)
-	defer sut.cleanup()
 	sut.mock.CurrentBranchReturns("branch", nil)
 	sut.mock.RemotesReturns([]*git.Remote{
 		git.NewRemote("origin", []string{"github.com:org/repo"}),
@@ -182,7 +169,6 @@ func TestCheckStateFailedLsRemote(t *testing.T) {
 func TestCheckStateFailedBranchHeadRetrievalFails(t *testing.T) {
 	// Given
 	sut := newSUT(t)
-	defer sut.cleanup()
 	sut.mock.CurrentBranchReturns("branch", nil)
 	sut.mock.RemotesReturns([]*git.Remote{
 		git.NewRemote("origin", []string{"github.com:org/repo"}),
@@ -200,7 +186,6 @@ func TestCheckStateFailedBranchHeadRetrievalFails(t *testing.T) {
 func TestCheckStateFailedBranchHeadRetrievalNotEqual(t *testing.T) {
 	// Given
 	sut := newSUT(t)
-	defer sut.cleanup()
 	sut.mock.CurrentBranchReturns("branch", nil)
 	sut.mock.RemotesReturns([]*git.Remote{
 		git.NewRemote("origin", []string{"github.com:org/repo"}),

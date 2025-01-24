@@ -453,11 +453,11 @@ func TestUpdatePatchSchedule(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			scheduleFile, err := os.CreateTemp("", "schedule-")
+			scheduleFile, err := os.CreateTemp(t.TempDir(), "schedule-")
 			require.NoError(t, err)
 			require.NoError(t, scheduleFile.Close())
 
-			eolFile, err := os.CreateTemp("", "eol-")
+			eolFile, err := os.CreateTemp(t.TempDir(), "eol-")
 			require.NoError(t, err)
 			require.NoError(t, eolFile.Close())
 
