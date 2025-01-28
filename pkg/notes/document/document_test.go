@@ -256,6 +256,7 @@ func setupTestDir(t *testing.T, dir string) {
 			filepath.Join(dir, file), []byte{1, 2, 3}, os.FileMode(0o644),
 		))
 	}
+
 	for _, arch := range []string{consts.ArchitectureAMD64, consts.ArchitectureARM64, consts.ArchitecturePPC64, consts.ArchitectureS390X} {
 		archDir := filepath.Join(dir, release.ImagesPath, arch)
 		require.NoError(t, os.MkdirAll(archDir, fs.FileMode(0o755)))
@@ -301,6 +302,7 @@ func TestNew(t *testing.T) {
 			func() *notes.ReleaseNotes {
 				n := notes.NewReleaseNotes()
 				n.Set(0, makeReleaseNote("", "No one gave me a kind"))
+
 				return n
 			},
 			&Document{
@@ -320,6 +322,7 @@ func TestNew(t *testing.T) {
 				n.Set(0, makeReleaseNote(notes.KindDeprecation, "C"))
 				n.Set(1, makeReleaseNote(notes.KindDeprecation, "B"))
 				n.Set(2, makeReleaseNote(notes.KindDeprecation, "A"))
+
 				return n
 			},
 			&Document{
@@ -339,6 +342,7 @@ func TestNew(t *testing.T) {
 				n.Set(0, makeReleaseNote(notes.KindFeature, "C"))
 				n.Set(1, makeReleaseNote(notes.KindAPIChange, "B"))
 				n.Set(2, makeReleaseNote(notes.KindDeprecation, "A"))
+
 				return n
 			},
 			&Document{
@@ -368,6 +372,7 @@ func TestNew(t *testing.T) {
 				n.Set(2, makeReleaseNote(notes.KindBug, "* single star"))
 				n.Set(3, makeReleaseNote(notes.KindBug, "** double star"))
 				n.Set(4, makeReleaseNote(notes.KindBug, "- --someflag"))
+
 				return n
 			},
 			&Document{
@@ -398,6 +403,7 @@ func TestNew(t *testing.T) {
 						ActionRequired: false,
 					},
 				)
+
 				return n
 			},
 			&Document{
@@ -422,6 +428,7 @@ func TestNew(t *testing.T) {
 						ActionRequired: false,
 					},
 				)
+
 				return n
 			},
 			&Document{
@@ -440,6 +447,7 @@ func TestNew(t *testing.T) {
 				n := notes.NewReleaseNotes()
 				n.Set(0, makeReleaseNote(notes.KindCleanup, "PR#1"))
 				n.Set(1, makeReleaseNote(notes.KindFlake, "PR#2"))
+
 				return n
 			},
 			&Document{
@@ -514,6 +522,7 @@ func TestDocument_RenderMarkdownTemplate(t *testing.T) {
 
 			actionNeeded := makeReleaseNote(notes.KindAPIChange, "Action required note.")
 			actionNeeded.ActionRequired = true
+
 			testNotes.Set(11, duplicate)
 			testNotes.Set(12, actionNeeded)
 
@@ -521,6 +530,7 @@ func TestDocument_RenderMarkdownTemplate(t *testing.T) {
 			require.NoError(t, err, "Creating test document.")
 
 			templateSpec := tt.templateSpec
+
 			var dir string
 			if tt.hasDownloads || tt.userTemplate {
 				dir = t.TempDir()
@@ -559,11 +569,13 @@ func makeReleaseNote(kind notes.Kind, markdown string) *notes.ReleaseNote {
 	if kind != "" {
 		n.Kinds = []string{string(kind)}
 	}
+
 	return n
 }
 
 func readFile(t *testing.T, path string) string {
 	b, err := os.ReadFile(path)
 	require.NoError(t, err, "Reading file %q", path)
+
 	return strings.TrimSpace(string(b))
 }

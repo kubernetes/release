@@ -27,6 +27,7 @@ import (
 func TestPROptsValidateAndFinish(t *testing.T) {
 	testOrg := "testOrg"
 	testRepo := "testRepo"
+
 	for _, tc := range []struct {
 		name    string
 		sut     checkPROptions

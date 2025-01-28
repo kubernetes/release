@@ -102,6 +102,7 @@ func (o *Options) Validate() error {
 	if o.Version == "" && o.Channel == "" {
 		return errors.New("one of version or channel is required")
 	}
+
 	if o.Channel != "" {
 		if ok := consts.IsSupported("channel", []string{o.Channel}, consts.SupportedChannels); !ok {
 			return errors.New("selected channel is not supported")
@@ -119,6 +120,7 @@ func (o *Options) Validate() error {
 	if _, err := os.Stat(o.SpecTemplatePath); err != nil {
 		return errors.New("templates dir doesn't exist")
 	}
+
 	if _, err := os.Stat(o.SpecOutputPath); err != nil {
 		return errors.New("output dir doesn't exist")
 	}

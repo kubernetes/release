@@ -52,8 +52,10 @@ func NewELFBinary(filePath string, opts *Options) (*ELFBinary, error) {
 	if err != nil {
 		return nil, fmt.Errorf("while trying to get ELF header from file: %w", err)
 	}
+
 	if header == nil {
 		logrus.Debug("file is not an ELF binary")
+
 		return nil, nil
 	}
 
@@ -73,10 +75,13 @@ func (eh *ELFHeader) WordLength() int {
 	if eh.WordFlag == 1 {
 		return 32
 	}
+
 	if eh.WordFlag == 2 {
 		return 64
 	}
+
 	logrus.Warn("Cannot determine if ELF binary is 32 or 64 bit")
+
 	return 0
 }
 
@@ -114,7 +119,9 @@ func (eh *ELFHeader) MachineType() string {
 	case 0xF3:
 		return consts.ArchitectureRISCV
 	}
+
 	logrus.Warn("Unknown machine type in elf binary")
+
 	return "arch unknown"
 }
 
@@ -129,6 +136,7 @@ func GetELFHeader(path string) (*ELFHeader, error) {
 	// Read the first 20 bytes of the binary, just enough of the
 	// header for us to get the info we need:
 	reader := bufio.NewReader(f)
+
 	hBytes, err := reader.Peek(6)
 	if err != nil {
 		return nil, fmt.Errorf("reading the binary header: %w", err)
@@ -139,11 +147,13 @@ func GetELFHeader(path string) (*ELFHeader, error) {
 	// Check we're dealing with an elf binary:
 	if string(hBytes[1:4]) != "ELF" {
 		logrus.Debug("Binary is not an ELF executable")
+
 		return nil, nil
 	}
 
 	// Check if binary byte order is big or little endian
 	var endianness binary.ByteOrder
+
 	switch hBytes[5] {
 	case 1:
 		endianness = binary.LittleEndian
@@ -156,12 +166,15 @@ func GetELFHeader(path string) (*ELFHeader, error) {
 	}
 
 	header := &ELFHeader{}
+
 	if _, err := f.Seek(4, 0); err != nil {
 		return nil, fmt.Errorf("seeking past the ELF magic bytes: %w", err)
 	}
+
 	if err := binary.Read(f, endianness, header); err != nil {
 		return nil, fmt.Errorf("reading elf header from binary file: %w", err)
 	}
+
 	return header, nil
 }
 

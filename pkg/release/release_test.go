@@ -82,6 +82,7 @@ func TestReadDockerVersion(t *testing.T) {
 		Name: "kubernetes/version",
 		Size: int64(len(versionBytes)),
 	}))
+
 	versionFile, err := os.Open(filepath.Join(baseTmpDir, BuildDir, ReleaseTarsPath, "kubernetes", "version"))
 	require.NoError(t, err)
 	_, err = io.Copy(tw, versionFile)
@@ -97,10 +98,12 @@ func TestReadDockerVersion(t *testing.T) {
 	type args struct {
 		path string
 	}
+
 	type want struct {
 		r    string
 		rErr bool
 	}
+
 	cases := map[string]struct {
 		args args
 		want want
@@ -138,6 +141,7 @@ func TestIsValidReleaseBuild(t *testing.T) {
 		r    bool
 		rErr bool
 	}
+
 	cases := map[string]struct {
 		build string
 		want  want
@@ -448,6 +452,7 @@ func TestWriteChecksums(t *testing.T) {
 			prepare: func() (rootPath string) {
 				tempDir := t.TempDir()
 				require.NoError(t, os.RemoveAll(tempDir))
+
 				return tempDir
 			},
 			validate: func(err error, _ string) {

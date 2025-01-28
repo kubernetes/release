@@ -88,6 +88,7 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 			if err := output.Truncate(0); err != nil {
 				return err
 			}
+
 			if _, err := output.Seek(0, 0); err != nil {
 				return err
 			}
@@ -102,6 +103,7 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 
 		enc := json.NewEncoder(output)
 		enc.SetIndent("", "  ")
+
 		if err := enc.Encode(releaseNotes.ByPR()); err != nil {
 			return fmt.Errorf("encoding JSON output: %w", err)
 		}
@@ -117,17 +119,20 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 		}
 
 		const nl = "\n"
+
 		if releaseNotesOpts.dependencies {
 			if opts.StartSHA == opts.EndSHA {
 				logrus.Info("Skipping dependency report because start and end SHA are the same")
 			} else {
 				url := git.GetRepoURL(opts.GithubOrg, opts.GithubRepo, false)
+
 				deps, err := notes.NewDependencies().ChangesForURL(
 					url, opts.StartSHA, opts.EndSHA,
 				)
 				if err != nil {
 					return fmt.Errorf("generating dependency report: %w", err)
 				}
+
 				markdown += strings.Repeat(nl, 2) + deps
 			}
 		}
@@ -141,6 +146,7 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 			if err != nil {
 				return fmt.Errorf("generating table of contents: %w", err)
 			}
+
 			markdown = toc + nl + markdown
 		}
 
@@ -150,6 +156,7 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 	}
 
 	logrus.Infof("Release notes written to file: %s", output.Name())
+
 	return nil
 }
 
@@ -171,6 +178,7 @@ func hackDefaultSubcommand(cmd *cobra.Command) {
 	}
 
 	logrus.Warn("No subcommand specified, running \"generate\" ")
+
 	os.Args = append([]string{os.Args[0], "generate"}, os.Args[1:]...)
 }
 

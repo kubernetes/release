@@ -33,7 +33,6 @@ var (
 func TestRequestTestgridSummaryPos(t *testing.T) {
 	// Given
 	// positive dashboard names
-
 	for _, dashboardName := range posDashboardNames {
 		// When
 		summary, err := ReqTestgridDashboardSummary(context.Background(), dashboardName)
@@ -41,6 +40,7 @@ func TestRequestTestgridSummaryPos(t *testing.T) {
 		// Then
 		require.NoError(t, err)
 		assert.NotNil(t, summary)
+
 		for _, jobs := range summary {
 			assert.Equal(t, dashboardName, jobs.DashboardName)
 		}
@@ -50,7 +50,6 @@ func TestRequestTestgridSummaryPos(t *testing.T) {
 func TestRequestTestgridSummaryNeg(t *testing.T) {
 	// Given
 	// negative dashboard names
-
 	for _, dashboardName := range negDashboardNames {
 		// When
 		summary, err := ReqTestgridDashboardSummary(context.Background(), dashboardName)
@@ -64,7 +63,6 @@ func TestRequestTestgridSummaryNeg(t *testing.T) {
 func TestRequestTestgridSummariesPos(t *testing.T) {
 	// Given
 	// positive dashboard names
-
 	// When
 	data, err := ReqTestgridDashboardSummaries(context.Background(), posDashboardNames)
 
@@ -76,7 +74,6 @@ func TestRequestTestgridSummariesPos(t *testing.T) {
 func TestRequestTestgridSummariesNeg(t *testing.T) {
 	// Given
 	// negative dashboard names
-
 	// When
 	data, err := ReqTestgridDashboardSummaries(context.Background(), negDashboardNames)
 
@@ -88,7 +85,6 @@ func TestRequestTestgridSummariesNeg(t *testing.T) {
 func TestRequestTestgridSummariesPosNeg(t *testing.T) {
 	// Given
 	// Request positive and negative dashboard names, expect to get an error and receive positive dashboard name summaries
-
 	// When
 	data, err := ReqTestgridDashboardSummaries(context.Background(), append(negDashboardNames, posDashboardNames...))
 
@@ -116,6 +112,7 @@ func TestOverviewPos(t *testing.T) {
 		{amountOfJobs: staleJobs, overallStatus: Stale},
 	}
 	data := JobData{}
+
 	for _, jobDef := range jobGeneratorDef {
 		for i := range jobDef.amountOfJobs {
 			data[JobName(fmt.Sprintf("%s-%d", jobDef.overallStatus, i))] = JobSummary{

@@ -114,6 +114,7 @@ permissions to your fork of k/sig-release and k-sigs/release-notes.`,
 				return err
 			}
 		}
+
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -250,6 +251,7 @@ func runReleaseNotes() (err error) {
 		if err != nil {
 			return fmt.Errorf("unable to find latest minor tag: %w", err)
 		}
+
 		releaseNotesOpts.tag = tag
 	} else {
 		tag = releaseNotesOpts.tag
@@ -260,6 +262,7 @@ func runReleaseNotes() (err error) {
 		if err != nil {
 			return fmt.Errorf("parsing the user's fork: %w", err)
 		}
+
 		releaseNotesOpts.githubOrg = org
 		releaseNotesOpts.websiteRepo, releaseNotesOpts.draftRepo = repo, repo
 		// If the slug did not have a repo, use the defaults
@@ -369,6 +372,7 @@ func createDraftPR(repoPath, tag string) (err error) {
 
 	// Prepare the fork of k/sig-release
 	opts := &gogit.CloneOptions{}
+
 	sigReleaseRepo, err := github.PrepareFork(
 		branchname,
 		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
@@ -411,11 +415,13 @@ func createDraftPR(repoPath, tag string) (err error) {
 		if err != nil {
 			return fmt.Errorf("creating release notes draft: %w", err)
 		}
+
 		for _, note := range releaseNotes.ByPR() {
 			maps, err := rnMapProvider.GetMapsForPR(note.PrNumber)
 			if err != nil {
 				return fmt.Errorf("while getting maps for PR #%d: %w", note.PrNumber, err)
 			}
+
 			for _, noteMap := range maps {
 				if err := note.ApplyMap(noteMap, true); err != nil {
 					return fmt.Errorf("applying note maps to PR #%d: %w", note.PrNumber, err)
@@ -440,6 +446,7 @@ func createDraftPR(repoPath, tag string) (err error) {
 	if err != nil {
 		return fmt.Errorf("writing release notes draft: %w", err)
 	}
+
 	logrus.Infof("Release Notes Markdown Draft written to %s", filepath.Join(releaseDir, releaseNotesWorkDir, draftMarkdownFile))
 
 	// Write the JSON file of the current notes
@@ -449,6 +456,7 @@ func createDraftPR(repoPath, tag string) (err error) {
 	if err != nil {
 		return fmt.Errorf("writing release notes json file: %w", err)
 	}
+
 	logrus.Infof("Release Notes JSON version written to %s", filepath.Join(releaseDir, releaseNotesWorkDir, draftJSONFile))
 
 	// If we are in interactive mode, ask before continuing
@@ -469,6 +477,7 @@ func createDraftPR(repoPath, tag string) (err error) {
 		fmt.Println(sigReleaseRepo.Dir())
 		fmt.Print(nl + nl)
 		logrus.Warn("Changes were made locally, user needs to perform manual push and create pull request.")
+
 		return nil
 	}
 
@@ -487,6 +496,7 @@ func createDraftPR(repoPath, tag string) (err error) {
 
 	// push to the user's remote
 	logrus.Infof("Pushing modified release notes draft to %s/%s", releaseNotesOpts.githubOrg, releaseNotesOpts.draftRepo)
+
 	if err := sigReleaseRepo.PushToRemote(userForkName, branchname); err != nil {
 		return fmt.Errorf("pushing %s to remote: %w", userForkName, err)
 	}
@@ -517,8 +527,10 @@ func createDraftPR(repoPath, tag string) (err error) {
 	if err != nil {
 		logrus.Warnf("An error has occurred while creating the pull request for %s", tag)
 		logrus.Warn("While the PR failed, the release notes draft was generated and submitted to your fork")
+
 		return fmt.Errorf("creating the pull request: %w", err)
 	}
+
 	logrus.Infof(
 		"Successfully created PR: %s%s/%s/pull/%d",
 		github.GitHubURL, git.DefaultGithubOrg,
@@ -570,9 +582,11 @@ func createDraftCommit(repo *git.Repo, releasePath, commitMessage string) error 
 			// Check if there are any files to commit
 			matches, err := filepath.Glob(filepath.Join(repo.Dir(), dirData.Path, "*"+dirData.Ext))
 			logrus.Debugf("Adding %d %s from %s to commit", len(matches), dirData.Name, dirData.Path)
+
 			if err != nil {
 				return fmt.Errorf("checking for %s files in %s: %w", dirData.Ext, dirData.Path, err)
 			}
+
 			if len(matches) > 0 {
 				if err := repo.Add(filepath.Join(dirData.Path, "*"+dirData.Ext)); err != nil {
 					return fmt.Errorf("adding %s to staging area: %w", dirData.Name, err)
@@ -587,6 +601,7 @@ func createDraftCommit(repo *git.Repo, releasePath, commitMessage string) error 
 	if err := repo.UserCommit(commitMessage); err != nil {
 		return fmt.Errorf("creating commit in %s/%s: %w", releaseNotesOpts.githubOrg, releaseNotesOpts.draftRepo, err)
 	}
+
 	return nil
 }
 
@@ -604,14 +619,19 @@ func addReferenceToAssetsFile(repoPath, newJSONFile string) error {
 	logrus.Infof("Writing json reference to %s in %s", newJSONFile, assetsFullPath)
 
 	scanner := bufio.NewScanner(file)
+
 	var assetsBuffer bytes.Buffer
+
 	assetsFileWasModified := false
 	fileIsReferenced := false
+
 	for scanner.Scan() {
 		// Check if the assets file already has the json notes referenced:
 		if strings.Contains(scanner.Text(), "assets/"+newJSONFile) {
 			logrus.Warnf("File %s is already referenced in assets.ts", newJSONFile)
+
 			fileIsReferenced = true
+
 			break
 		}
 
@@ -620,12 +640,14 @@ func addReferenceToAssetsFile(repoPath, newJSONFile string) error {
 		// Add the current version right after the array export
 		if strings.Contains(scanner.Text(), "export const assets =") {
 			assetsBuffer.WriteString(fmt.Sprintf("  'assets/%s',\n", newJSONFile))
+
 			assetsFileWasModified = true
 		}
 	}
 
 	if fileIsReferenced {
 		logrus.Infof("Not modifying assets.ts since it already has a reference to %s", newJSONFile)
+
 		return nil
 	}
 
@@ -651,12 +673,14 @@ func processJSONOutput(repoPath string) error {
 
 	// run npm install
 	logrus.Info("Installing npm modules, this can take a while")
+
 	if err := command.NewWithWorkDir(repoPath, npmpath, "install").RunSuccess(); err != nil {
 		return fmt.Errorf("running npm install in kubernetes-sigs/release-notes: %w", err)
 	}
 
 	// run npm prettier
 	logrus.Info("Running npm prettier...")
+
 	if err := command.NewWithWorkDir(repoPath, npmpath, "run", "prettier").RunSuccess(); err != nil {
 		return fmt.Errorf("running npm prettier in kubernetes-sigs/release-notes: %w", err)
 	}
@@ -682,6 +706,7 @@ func createWebsitePR(repoPath, tag string) (err error) {
 
 	// checkout kubernetes-sigs/release-notes
 	opts := &gogit.CloneOptions{}
+
 	k8sSigsRepo, err := github.PrepareFork(
 		branchname,
 		defaultKubernetesSigsOrg, defaultKubernetesSigsRepo,
@@ -692,6 +717,7 @@ func createWebsitePR(repoPath, tag string) (err error) {
 	if err != nil {
 		return fmt.Errorf("preparing local fork branch: %w", err)
 	}
+
 	defer func() {
 		if e := k8sSigsRepo.Cleanup(); e != nil {
 			err = fmt.Errorf("cleaning up k/sigs repo: %w", e)
@@ -706,6 +732,7 @@ func createWebsitePR(repoPath, tag string) (err error) {
 	// generate the notes
 	jsonNotesPath := filepath.Join("src", "assets", jsonNotesFilename)
 	logrus.Debugf("Release notes json file will be written to %s", filepath.Join(k8sSigsRepo.Dir(), jsonNotesPath))
+
 	if err := os.WriteFile(
 		filepath.Join(k8sSigsRepo.Dir(), jsonNotesPath), []byte(jsonStr), os.FileMode(0o644),
 	); err != nil {
@@ -732,6 +759,7 @@ func createWebsitePR(repoPath, tag string) (err error) {
 
 	// push to the user's fork
 	logrus.Infof("Pushing website changes to %s/%s", releaseNotesOpts.githubOrg, releaseNotesOpts.websiteRepo)
+
 	if err := k8sSigsRepo.PushToRemote(userForkName, branchname); err != nil {
 		return fmt.Errorf("pushing %s to %s/%s: %w", userForkName, releaseNotesOpts.githubOrg, releaseNotesOpts.websiteRepo, err)
 	}
@@ -754,6 +782,7 @@ func createWebsitePR(repoPath, tag string) (err error) {
 	if err != nil {
 		logrus.Warnf("An error has occurred while creating the pull request for %s", tag)
 		logrus.Warn("While the PR failed, the release notes where generated and submitted to your fork")
+
 		return fmt.Errorf("creating the pull request: %w", err)
 	}
 
@@ -762,6 +791,7 @@ func createWebsitePR(repoPath, tag string) (err error) {
 		github.GitHubURL, defaultKubernetesSigsOrg,
 		defaultKubernetesSigsRepo, pr.GetNumber(),
 	)
+
 	return err
 }
 
@@ -769,6 +799,7 @@ func createWebsitePR(repoPath, tag string) (err error) {
 // non final version.
 func tryToFindLatestMinorTag() (string, error) {
 	url := git.GetDefaultKubernetesRepoURL()
+
 	status, err := command.New(
 		"git", "ls-remote", "--sort=v:refname",
 		"--tags", url,
@@ -794,13 +825,16 @@ func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 	}
 
 	logrus.Info("Cloning kubernetes/sig-release to read mapping files")
+
 	opts := &gogit.CloneOptions{}
+
 	sigReleaseRepo, err := git.CleanCloneGitHubRepo(
 		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, false, true, opts,
 	)
 	if err != nil {
 		return "", fmt.Errorf("performing clone of k/sig-release: %w", err)
 	}
+
 	defer func() {
 		if e := sigReleaseRepo.Cleanup(); e != nil {
 			err = sigReleaseRepo.Cleanup()
@@ -817,6 +851,7 @@ func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 
 	// Preclone the repo to be able to read branches and tags
 	logrus.Infof("Cloning %s/%s", git.DefaultGithubOrg, git.DefaultGithubRepo)
+
 	repo, err := git.CloneOrOpenGitHubRepo(repoPath, git.DefaultGithubOrg, git.DefaultGithubRepo, false)
 	if err != nil {
 		return "", fmt.Errorf("cloning default github repo: %w", err)
@@ -858,9 +893,11 @@ func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 			if err != nil {
 				return "", fmt.Errorf("getting previous tag from branch: %w", err)
 			}
+
 			tagChoice = "previous tag"
 		}
 	}
+
 	logrus.Infof("Using start tag %v from %s", startTag, tagChoice)
 	logrus.Infof("Using end tag %v", tag)
 
@@ -901,6 +938,7 @@ func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 	if err != nil {
 		return "", fmt.Errorf("creating release note document: %w", err)
 	}
+
 	doc.PreviousRevision = startTag
 	doc.CurrentRevision = tag
 
@@ -950,6 +988,7 @@ func buildNotesResult(startTag string, releaseNotes *notes.ReleaseNotes) (*relea
 	if err != nil {
 		return nil, fmt.Errorf("creating release note document: %w", err)
 	}
+
 	doc.PreviousRevision = startTag
 	doc.CurrentRevision = releaseNotesOpts.tag
 
@@ -1001,6 +1040,7 @@ func (sd *sessionData) Save() error {
 	if sd.Date == 0 {
 		return errors.New("unable to save session, date is note defined")
 	}
+
 	if sd.Path == "" {
 		return errors.New("unable to save session, path is not defined")
 	}
@@ -1015,6 +1055,7 @@ func (sd *sessionData) Save() error {
 		jsonData, os.FileMode(0o644)); err != nil {
 		return fmt.Errorf("writing session data to disk: %w", err)
 	}
+
 	return nil
 }
 
@@ -1024,6 +1065,7 @@ func readFixSessions(sessionPath string) (pullRequestChecklist map[int]string, e
 	if err != nil {
 		return nil, fmt.Errorf("reading working directory: %w", err)
 	}
+
 	pullRequestList := make([]struct {
 		Number int    `json:"nr"`
 		Hash   string `json:"hash"`
@@ -1032,15 +1074,19 @@ func readFixSessions(sessionPath string) (pullRequestChecklist map[int]string, e
 	// Look in the work dir for all json files
 	for _, fileData := range files {
 		currentSession := &sessionData{}
+
 		if strings.HasSuffix(fileData.Name(), ".json") {
 			logrus.Debugf("Reading session data from %s", fileData.Name())
+
 			jsonData, err := os.ReadFile(filepath.Join(sessionPath, fileData.Name()))
 			if err != nil {
 				return nil, fmt.Errorf("reading session data from %s: %w", fileData.Name(), err)
 			}
+
 			if err := json.Unmarshal(jsonData, currentSession); err != nil {
 				return nil, fmt.Errorf("unmarshalling session data in %s: %w", fileData.Name(), err)
 			}
+
 			pullRequestList = append(pullRequestList, currentSession.PullRequests...)
 		}
 	}
@@ -1050,7 +1096,9 @@ func readFixSessions(sessionPath string) (pullRequestChecklist map[int]string, e
 	for _, pr := range pullRequestList {
 		pullRequestChecklist[pr.Number] = pr.Hash
 	}
+
 	logrus.Infof("Read %d PR reviews from previous sessions", len(pullRequestList))
+
 	return pullRequestChecklist, nil
 }
 
@@ -1061,6 +1109,7 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 	if err != nil {
 		return fmt.Errorf("getting local user's email: %w", err)
 	}
+
 	userName, err := git.GetUserName()
 	if err != nil {
 		return fmt.Errorf("getting local user's name: %w", err)
@@ -1106,6 +1155,7 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 	} else {
 		_, _, err = util.Ask("Press enter to start editing", "y:Y:yes|n:N:no|y", 10)
 	}
+
 	if err != nil {
 		return fmt.Errorf("asking to retrieve last session: %w", err)
 	}
@@ -1133,12 +1183,15 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 			// and if the not has not been modified in GutHub
 			contentHash == pullRequestChecklist[pr] {
 			logrus.Debugf("Pull Request %d already reviewed", pr)
+
 			continue
 		}
+
 		title := fmt.Sprintf("Release Note for PR %d:", pr)
 		fmt.Println(nl + title)
 		fmt.Println(strings.Repeat("=", len(title)))
 		fmt.Printf("Pull Request URL: %skubernetes/kubernetes/pull/%d%s", github.GitHubURL, pr, nl)
+
 		noteMaps, err := provider.GetMapsForPR(pr)
 		if err != nil {
 			return fmt.Errorf("while getting map for PR #%d: %w", pr, err)
@@ -1160,6 +1213,7 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 
 		if noteMaps != nil {
 			fmt.Println("✨ Note contents was previously modified with a map")
+
 			for _, noteMap := range noteMaps {
 				if err := note.ApplyMap(noteMap, true); err != nil {
 					return fmt.Errorf("applying notemap for PR #%d: %w", pr, err)
@@ -1187,12 +1241,15 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 			var userInputErr util.UserInputError
 			if errors.As(err, &userInputErr) && userInputErr.IsCtrlC() {
 				logrus.Info("Input cancelled, exiting edit flow")
+
 				return nil
 			}
+
 			return fmt.Errorf("while asking to edit release note: %w", err)
 		}
 
 		noteReviewed := true
+
 		if choice {
 			for {
 				retry, err := editReleaseNote(pr, workDir, originalNote, note)
@@ -1202,6 +1259,7 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 				// If it's a user error (like yaml error) we can try again
 				if retry {
 					logrus.Error(err)
+
 					_, retryEditingChoice, err := util.Ask(
 						fmt.Sprintf("\n- An error occurred while editing PR #%d. Try again?", note.PrNumber),
 						"y:yes|n:no", 10,
@@ -1212,6 +1270,7 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 					// If user chooses not to fix the faulty yaml, do not mark as fixed
 					if !retryEditingChoice {
 						noteReviewed = false
+
 						break
 					}
 				} else {
@@ -1222,6 +1281,7 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 		// If the note was reviewed, add the PR to the session file:
 		if noteReviewed {
 			pullRequestChecklist[note.PrNumber] = contentHash
+
 			session.PullRequests = append(session.PullRequests, struct {
 				Number int    `json:"nr"`
 				Hash   string `json:"hash"`
@@ -1234,6 +1294,7 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -1243,6 +1304,7 @@ func pointIfChanged(label string, var1, var2 interface{}) string {
 	// Check if alues are string
 	var1String, ok1 := var1.(string)
 	var2String, ok2 := var2.(string)
+
 	if ok1 && ok2 {
 		if var1String != var2String {
 			changed = true
@@ -1259,6 +1321,7 @@ func pointIfChanged(label string, var1, var2 interface{}) string {
 	// Check if bools
 	var1Bool, ok1 := var1.(bool)
 	var2Bool, ok2 := var2.(bool)
+
 	if ok1 && ok2 {
 		if var1Bool != var2Bool {
 			changed = true
@@ -1268,6 +1331,7 @@ func pointIfChanged(label string, var1, var2 interface{}) string {
 	if changed {
 		return fmt.Sprintf(" >> %s:", label)
 	}
+
 	return fmt.Sprintf("    %s:", label)
 }
 
@@ -1278,7 +1342,6 @@ func pointIfChanged(label string, var1, var2 interface{}) string {
 func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.ReleaseNote) (shouldRetryEditing bool, err error) {
 	// To edit the note, we will create a yaml file, with the changed fields
 	// active and we'll add the unaltered fields commented for the user to review
-
 	modifiedFields := &notes.ReleaseNotesMap{PR: pr}
 	unalteredFields := &notes.ReleaseNotesMap{PR: pr}
 	numChanges := 0
@@ -1352,6 +1415,7 @@ func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.R
 		if err != nil {
 			return false, fmt.Errorf("marshalling release note to map: %w", err)
 		}
+
 		output += "# " + strings.ReplaceAll(string(yamlCode), "\n", "\n# ")
 	} else {
 		// ... otherwise build a mixed map with the changes and the original
@@ -1365,10 +1429,12 @@ func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.R
 		if err != nil {
 			return false, fmt.Errorf("marshalling release note to map: %w", err)
 		}
+
 		output += string(yamlCode) + " # " + strings.ReplaceAll(string(unalteredYAML), "\n", "\n # ")
 	}
 
 	kubeEditor := editor.NewDefaultEditor([]string{"KUBE_EDITOR", "EDITOR"})
+
 	changes, tempFilePath, err := kubeEditor.LaunchTempFile("release-notes-map-", ".yaml", bytes.NewReader([]byte(output)))
 	if err != nil {
 		return false, fmt.Errorf("while launching editor: %w", err)
@@ -1384,6 +1450,7 @@ func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.R
 	// If the map was not modified, we don't make any changes
 	if string(changes) == output || len(changes) == 0 {
 		logrus.Info("Release notes map was not modified")
+
 		return false, nil
 	}
 
@@ -1391,29 +1458,35 @@ func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.R
 	lines := strings.Split(string(changes), "\n")
 	re := regexp.MustCompile(`^\s*#|^\s*$`)
 	blankFile := true
+
 	for _, line := range lines {
 		// If only only one line is not blank/comment
 		if line != "---" && !re.MatchString(line) {
 			blankFile = false
+
 			break
 		}
 	}
 
 	if blankFile {
 		logrus.Info("YAML mapfile is blank, ignoring")
+
 		return false, nil
 	}
 
 	// Verify that the new yaml is valid and can be serialized back into a Map
 	testMap := notes.ReleaseNotesMap{}
+
 	err = yaml.Unmarshal(changes, &testMap)
 	if err != nil {
 		logrus.Error("The YAML code has errors")
+
 		return true, fmt.Errorf("while verifying if changes are a valid map: %w", err)
 	}
 
 	if testMap.PR == 0 {
 		logrus.Error("The yaml code does not have a PR number")
+
 		return true, errors.New("invalid map: the YAML code did not have a PR number")
 	}
 
@@ -1427,9 +1500,11 @@ func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.R
 
 	// Write the new map, removing the instructions
 	mapPath := filepath.Join(workDir, mapsMainDirectory, fmt.Sprintf("pr-%d-map.yaml", pr))
+
 	err = os.WriteFile(mapPath, newYAML, os.FileMode(0o644))
 	if err != nil {
 		logrus.Errorf("Error writing map to %s: %s", mapPath, err)
+
 		return true, fmt.Errorf("writing modified release note map: %w", err)
 	}
 
@@ -1452,6 +1527,7 @@ func createNotesWorkDir(releaseDir string) error {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -1460,6 +1536,7 @@ func confirmWithUser(opts *releaseNotesOptions, question string) bool {
 	if !opts.interactiveMode {
 		return true
 	}
+
 	_, success, err := util.Ask(question+" (Y/n)", "y:Y:yes|n:N:no|y", 10)
 	if err != nil {
 		logrus.Error(err)
@@ -1471,8 +1548,10 @@ func confirmWithUser(opts *releaseNotesOptions, question string) bool {
 
 		return false
 	}
+
 	if success {
 		return true
 	}
+
 	return false
 }

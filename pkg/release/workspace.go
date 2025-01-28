@@ -68,8 +68,10 @@ func PrepareWorkspaceStage(directory string, noMock bool) error {
 	// is something goes wrong.
 	s := spdx.NewSPDX()
 	logrus.Infof("Caching SPDX license set to %s", s.Options().LicenseCacheDir)
+
 	doptions := license.DefaultDownloaderOpts
 	doptions.CacheDir = s.Options().LicenseCacheDir
+
 	downloader, err := license.NewDownloaderWithOptions(doptions)
 	if err != nil {
 		return fmt.Errorf("creating license downloader: %w", err)
@@ -105,10 +107,12 @@ func PrepareWorkspaceStage(directory string, noMock bool) error {
 func PrepareWorkspaceRelease(directory, buildVersion, bucket string) error {
 	logrus.Infof("Preparing workspace for release in %s", directory)
 	logrus.Infof("Searching for staged %s on %s", SourcesTar, bucket)
+
 	tempDir, err := os.MkdirTemp("", "staged-")
 	if err != nil {
 		return fmt.Errorf("create staged sources temp dir: %w", err)
 	}
+
 	defer os.RemoveAll(tempDir)
 
 	// On `release`, we lookup the staged sources and use them directly
@@ -117,11 +121,13 @@ func PrepareWorkspaceRelease(directory, buildVersion, bucket string) error {
 
 	gcs := object.NewGCS()
 	gcs.WithAllowMissing(false)
+
 	if err := gcs.CopyToLocal(src, dst); err != nil {
 		return fmt.Errorf("copying staged sources from GCS: %w", err)
 	}
 
 	logrus.Info("Got staged sources, extracting archive")
+
 	if err := tar.Extract(
 		dst, strings.TrimSuffix(directory, "/src/k8s.io/kubernetes"),
 	); err != nil {
@@ -163,11 +169,14 @@ func ListBuildBinaries(gitroot, version string) (list []struct{ Path, Platform, 
 	)
 
 	rootPath := filepath.Join(buildDir, ReleaseStagePath)
+
 	platformsPath := filepath.Join(rootPath, "client")
 	if !util.Exists(platformsPath) {
 		logrus.Infof("Not adding binaries as %s was not found", platformsPath)
+
 		return list, nil
 	}
+
 	platformsAndArches, err := os.ReadDir(platformsPath)
 	if err != nil {
 		return nil, fmt.Errorf("retrieve platforms from %s: %w", platformsPath, err)
@@ -179,6 +188,7 @@ func ListBuildBinaries(gitroot, version string) (list []struct{ Path, Platform, 
 				"Skipping platform and arch %q because it's not a directory",
 				platformArch.Name(),
 			)
+
 			continue
 		}
 
@@ -223,6 +233,7 @@ func ListBuildBinaries(gitroot, version string) (list []struct{ Path, Platform, 
 					Platform string
 					Arch     string
 				}{path, platform, arch})
+
 				return nil
 			},
 		); err != nil {
@@ -247,6 +258,7 @@ func ListBuildBinaries(gitroot, version string) (list []struct{ Path, Platform, 
 						Platform string
 						Arch     string
 					}{path, platform, arch})
+
 					return nil
 				},
 			); err != nil {
@@ -254,6 +266,7 @@ func ListBuildBinaries(gitroot, version string) (list []struct{ Path, Platform, 
 			}
 		}
 	}
+
 	return list, nil
 }
 
@@ -264,6 +277,7 @@ func ListBuildTarballs(gitroot, version string) (tarList []string, err error) {
 	)
 
 	tarList = []string{}
+
 	if err := filepath.Walk(tarsPath,
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
@@ -276,11 +290,13 @@ func ListBuildTarballs(gitroot, version string) (tarList []string, err error) {
 			if strings.HasSuffix(path, "tar.gz") {
 				tarList = append(tarList, path)
 			}
+
 			return nil
 		},
 	); err != nil {
 		return nil, fmt.Errorf("gathering tarfiles binaries from %s: %w", tarsPath, err)
 	}
+
 	return tarList, nil
 }
 
@@ -295,19 +311,23 @@ func ListBuildImages(gitroot, version string) (imageList []string, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("opening images directory: %w", err)
 	}
+
 	for _, arch := range arches {
 		if !arch.IsDir() {
 			continue
 		}
+
 		images, err := os.ReadDir(filepath.Join(buildDir, ImagesPath, arch.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("opening %s images directory: %w", arch.Name(), err)
 		}
+
 		for _, tarball := range images {
 			imageList = append(
 				imageList, filepath.Join(buildDir, ImagesPath, arch.Name(), tarball.Name()),
 			)
 		}
 	}
+
 	return imageList, nil
 }

@@ -225,6 +225,7 @@ func (g *GCB) Submit() error {
 	}
 
 	var jobType string
+
 	switch {
 	// TODO: Consider a '--validate' flag to validate the GCB config without submitting
 	case g.options.Stage:
@@ -242,6 +243,7 @@ func (g *GCB) Submit() error {
 	}
 
 	version := utilsversion.GetVersionInfo().GitVersion
+
 	if err := g.repoClient.Open(); errors.Is(err, gogit.ErrRepositoryNotExists) {
 		// Use the embedded cloudbuild files
 		configDir, err := gcb.New().DirForJobType(jobType)
@@ -300,6 +302,7 @@ func (g *GCB) Submit() error {
 
 		if !g.options.NonInteractive {
 			var err error
+
 			_, submit, err = util.Ask(
 				fmt.Sprintf("Really submit a --nomock release job against the %s branch? (yes/no)", g.options.Branch),
 				"yes",
@@ -320,6 +323,7 @@ func (g *GCB) Submit() error {
 		gcbSubs["NOMOCK"] = ""
 
 		userBucket := strings.ReplaceAll(release.TestBucket, "gcb", gcbSubs["GCP_USER_TAG"])
+
 		userBucketSetErr := os.Setenv("USER_BUCKET", userBucket)
 		if userBucketSetErr != nil {
 			return userBucketSetErr
@@ -332,6 +336,7 @@ func (g *GCB) Submit() error {
 	}
 
 	logrus.Info("Listing GCB substitutions prior to build submission...")
+
 	for k, v := range gcbSubs {
 		logrus.Infof("%s: %s", k, v)
 	}
@@ -375,6 +380,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket, forceBu
 	gcpUser := g.options.GcpUser
 	if gcpUser == "" {
 		var gcpUserErr error
+
 		gcpUser, gcpUserErr = auth.GetCurrentGCPUser()
 		if gcpUserErr != nil {
 			return gcbSubs, gcpUserErr
@@ -392,6 +398,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket, forceBu
 	gcbSubs["RELEASE_BRANCH"] = g.options.Branch
 
 	kc := kubecross.New()
+
 	kcVersionBranch, err := kc.ForBranch(g.options.Branch)
 	if err != nil {
 		// If the kubecross version is not set, we will get a 404 from GitHub.
@@ -399,6 +406,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket, forceBu
 		if g.options.Branch == git.DefaultBranch || !strings.Contains(err.Error(), "404") {
 			return gcbSubs, fmt.Errorf("retrieve kube-cross version: %w", err)
 		}
+
 		logrus.Infof("KubeCross version not set for %s, falling back to latest", g.options.Branch)
 	}
 
@@ -414,6 +422,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket, forceBu
 			kcVersionBranch = kcVersionLatest
 		}
 	}
+
 	gcbSubs["KUBE_CROSS_VERSION"] = kcVersionBranch
 
 	switch {
@@ -462,6 +471,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket, forceBu
 
 	if buildVersion == "" {
 		var versionErr error
+
 		buildVersion, versionErr = g.versionClient.GetKubeVersionForBranch(
 			release.VersionTypeCILatest, g.options.Branch,
 		)
@@ -483,6 +493,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket, forceBu
 	if err != nil {
 		return nil, fmt.Errorf("check if branch needs to be created: %w", err)
 	}
+
 	versions, err := g.releaseClient.GenerateReleaseVersion(
 		g.options.ReleaseType, buildVersion,
 		g.options.Branch, createBranch,
@@ -490,6 +501,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket, forceBu
 	if err != nil {
 		return nil, fmt.Errorf("generate release version: %w", err)
 	}
+
 	primeSemver, err := util.TagStringToSemver(versions.Prime())
 	if err != nil {
 		return gcbSubs, fmt.Errorf("parse prime version: %w", err)
@@ -511,9 +523,11 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket, forceBu
 func (g *GCB) listJobs(project string, lastJobs int64) error {
 	if lastJobs < 0 {
 		logrus.Infof("--list-jobs was set to a negative number, defaulting to 5")
+
 		lastJobs = 5
 	}
 
 	logrus.Infof("Listing last %d GCB jobs:", lastJobs)
+
 	return g.listJobsClient.ListJobs(project, lastJobs)
 }

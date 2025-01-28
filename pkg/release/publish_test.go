@@ -144,6 +144,7 @@ func TestPublishVersion(t *testing.T) {
 		sut := release.NewPublisher()
 		clientMock := &releasefakes.FakePublisherClient{}
 		sut.SetClient(clientMock)
+
 		if tc.prepare != nil {
 			tc.prepare(clientMock)
 		}
@@ -162,6 +163,7 @@ func TestPublishVersion(t *testing.T) {
 
 func TestPublishReleaseNotesIndex(t *testing.T) {
 	err := errors.New("")
+
 	for _, tc := range []struct {
 		prepare     func(*releasefakes.FakePublisherClient)
 		shouldError bool

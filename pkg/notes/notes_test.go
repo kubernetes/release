@@ -44,6 +44,7 @@ func githubClient(t *testing.T) (kgithub.Client, context.Context) {
 	}
 
 	c := kgithub.New()
+
 	return c.Client(), context.Background()
 }
 
@@ -185,18 +186,21 @@ func TestClassifyURL(t *testing.T) {
 	// A KEP
 	u, err := url.Parse("http://github.com/kubernetes/enhancements/blob/master/keps/sig-cli/kubectl-staging.md")
 	require.NoError(t, err)
+
 	result := classifyURL(u)
 	require.Equal(t, DocTypeKEP, result)
 
 	// An official documentation
 	u, err = url.Parse("https://kubernetes.io/docs/concepts/#kubernetes-objects")
 	require.NoError(t, err)
+
 	result = classifyURL(u)
 	require.Equal(t, DocTypeOfficial, result)
 
 	// An external documentation
 	u, err = url.Parse("https://google.com/")
 	require.NoError(t, err)
+
 	result = classifyURL(u)
 	require.Equal(t, DocTypeExternal, result)
 }
@@ -227,6 +231,7 @@ func TestGetPRNumberFromCommitMessage(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Expected no error to occur but got %v", err)
 			}
+
 			if prs[0] != tc.expectedPRNumber {
 				t.Errorf("Expected PR number to be %d but was %d", tc.expectedPRNumber, prs[0])
 			}
@@ -411,6 +416,7 @@ func testApplyMapHelper(t *testing.T, testDir string, makeNewNote func() *Releas
 	// Read the maps from out test directory
 	testMaps, err := mp.GetMapsForPR(95000)
 	require.NoError(t, err)
+
 	lastProp := ""
 
 	for _, testMap := range testMaps {
@@ -454,9 +460,11 @@ func testApplyMapHelper(t *testing.T, testDir string, makeNewNote func() *Releas
 			// Handle string slice cases
 			actualVal := reflect.Indirect(reflectedNote).FieldByName(property)
 			actualSlice := make([]string, 0)
+
 			for i := range actualVal.Len() {
 				actualSlice = append(actualSlice, actualVal.Index(i).String())
 			}
+
 			require.ElementsMatchf(t, expectedValue, actualSlice, "Failed %s", testName)
 		default:
 			require.FailNowf(t, "Unknown case", "Unable to handle case for %s %T", property, expectedValue)
@@ -585,6 +593,7 @@ func TestReleaseNoteForPullRequest(t *testing.T) {
 		GithubRepo:    "release",
 	})
 	require.NoError(t, err)
+
 	for _, tc := range []struct {
 		name         string
 		prNr         int
@@ -622,13 +631,17 @@ func TestReleaseNoteForPullRequest(t *testing.T) {
 			note, err := g.ReleaseNoteForPullRequest(tc.prNr)
 			if tc.shouldErr {
 				require.Error(t, err)
+
 				return
 			}
+
 			require.NoError(t, err)
 			require.NotNil(t, note)
+
 			if tc.notPublish {
 				require.True(t, note.DoNotPublish)
 			}
+
 			require.Equal(t, tc.expectedNote, note.Markdown)
 		})
 	}

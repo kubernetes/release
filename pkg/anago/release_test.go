@@ -36,6 +36,7 @@ func generateTestingReleaseState(params *testStateParameters) *anago.ReleaseStat
 	if params.createReleaseBranch != nil {
 		state.SetCreateReleaseBranch(*params.createReleaseBranch)
 	}
+
 	return state
 }
 
@@ -287,6 +288,7 @@ func TestPrepareWorkspaceRelease(t *testing.T) {
 		mock := &anagofakes.FakeReleaseImpl{}
 		tc.prepare(mock)
 		sut.SetImpl(mock)
+
 		err := sut.PrepareWorkspace()
 		if tc.shouldError {
 			require.Error(t, err)
@@ -317,6 +319,7 @@ func TestSubmitReleaseImpl(t *testing.T) {
 		mock := &anagofakes.FakeReleaseImpl{}
 		tc.prepare(mock)
 		sut.SetImpl(mock)
+
 		err := sut.Submit(false)
 		if tc.shouldError {
 			require.Error(t, err)
@@ -347,9 +350,11 @@ func TestCreateAnnouncement(t *testing.T) {
 		sut.SetState(
 			generateTestingReleaseState(&testStateParameters{versionsTag: &testVersionTag}),
 		)
+
 		mock := &anagofakes.FakeReleaseImpl{}
 		tc.prepare(mock)
 		sut.SetImpl(mock)
+
 		err := sut.CreateAnnouncement()
 		if tc.shouldError {
 			require.Error(t, err)
@@ -398,9 +403,11 @@ func TestPushGitObjects(t *testing.T) {
 		sut.SetState(
 			generateTestingReleaseState(&testStateParameters{versionsTag: &testVersionTag}),
 		)
+
 		mock := &anagofakes.FakeReleaseImpl{}
 		tc.prepare(mock)
 		sut.SetImpl(mock)
+
 		err := sut.PushGitObjects()
 		if tc.shouldError {
 			require.Error(t, err)
@@ -431,9 +438,11 @@ func TestUpdateGitHubPage(t *testing.T) {
 		sut.SetState(
 			generateTestingReleaseState(&testStateParameters{versionsTag: &testVersionTag}),
 		)
+
 		mock := &anagofakes.FakeReleaseImpl{}
 		tc.prepare(mock)
 		sut.SetImpl(mock)
+
 		err := sut.UpdateGitHubPage()
 		if tc.shouldError {
 			require.Error(t, err)
@@ -464,9 +473,11 @@ func TestCheckProvenance(t *testing.T) {
 		sut.SetState(
 			generateTestingReleaseState(&testStateParameters{versionsTag: &testVersionTag}),
 		)
+
 		mock := &anagofakes.FakeReleaseImpl{}
 		tc.prepare(mock)
 		sut.SetImpl(mock)
+
 		err := sut.CheckProvenance()
 		if tc.shouldError {
 			require.Error(t, err)

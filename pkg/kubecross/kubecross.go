@@ -49,11 +49,13 @@ func (k *KubeCross) ForBranch(branch string) (string, error) {
 	)
 
 	url := fmt.Sprintf("%s/%s/%s", baseURL, branch, versionPath)
+
 	version, err := k.impl.GetURLResponse(url)
 	if err != nil {
 		return "", fmt.Errorf("get URL response: %w", err)
 	}
 
 	logrus.Infof("Retrieved kube-cross version: %s", version)
+
 	return version, nil
 }

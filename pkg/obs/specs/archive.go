@@ -52,6 +52,7 @@ func (s *Specs) BuildArtifactsArchive(pkgDef *PackageDefinition) error {
 		logrus.Infof("Downloading %s %s (%s)...", pkgDef.Name, pkgDef.Version, arch)
 
 		dlRootPath := filepath.Join(pkgDef.SpecOutputPath, pkgDef.Name, arch)
+
 		err := s.impl.MkdirAll(dlRootPath, os.FileMode(0o755))
 		if err != nil {
 			if !s.impl.IsExist(err) {
@@ -62,7 +63,9 @@ func (s *Specs) BuildArtifactsArchive(pkgDef *PackageDefinition) error {
 		logrus.Debugf("Saving downloaded artifacts to temporary location %s...", dlRootPath)
 
 		var dlPath string
+
 		var dlTarGz bool
+
 		switch pkgDef.Name {
 		case consts.PackageKubernetesCNI:
 			dlPath = filepath.Join(dlRootPath, "kubernetes-cni.tar.gz")
@@ -93,6 +96,7 @@ func (s *Specs) BuildArtifactsArchive(pkgDef *PackageDefinition) error {
 	if err := s.impl.Compress(archiveDst, archiveSrc); err != nil {
 		return fmt.Errorf("creating archive: %w", err)
 	}
+
 	if err := s.impl.RemoveAll(archiveSrc); err != nil {
 		return fmt.Errorf("cleaning up archive source: %w", err)
 	}
@@ -122,6 +126,7 @@ func (s *Specs) DownloadArtifactFromGCS(sourcePath, destPath string, extractTgz 
 		if err := s.impl.Extract(destPath, filepath.Dir(destPath)); err != nil {
 			return fmt.Errorf("extracting .tar.gz archive: %w", err)
 		}
+
 		if err := s.impl.RemoveFile(destPath); err != nil {
 			return fmt.Errorf("removing extracted archive: %w", err)
 		}
@@ -142,9 +147,11 @@ func (s *Specs) DownloadArtifactFromURL(downloadURL, destPath string, extractTgz
 	if err != nil {
 		return fmt.Errorf("downloading artifact: %w", err)
 	}
+
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("downloading artifact: status code %d", resp.StatusCode)
 	}
+
 	defer resp.Body.Close()
 
 	_, err = io.Copy(out, resp.Body)
@@ -156,6 +163,7 @@ func (s *Specs) DownloadArtifactFromURL(downloadURL, destPath string, extractTgz
 		if err := s.impl.Extract(destPath, filepath.Dir(destPath)); err != nil {
 			return fmt.Errorf("extracting .tar.gz archive: %w", err)
 		}
+
 		if err := s.impl.RemoveFile(destPath); err != nil {
 			return fmt.Errorf("removing extracted archive: %w", err)
 		}

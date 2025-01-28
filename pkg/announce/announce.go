@@ -96,6 +96,7 @@ func (a *Announce) CreateForBranch() error {
 	// creating an issue for them (see anago)
 
 	logrus.Infof("Branch announcement created")
+
 	return nil
 }
 
@@ -110,9 +111,11 @@ func (a *Announce) CreateForRelease() error {
 		if err != nil {
 			return fmt.Errorf("reading changelog html file: %w", err)
 		}
+
 		if len(changelogData) == 0 {
 			return fmt.Errorf("verifying that changelog html file '%s' is not empty", a.options.changelogFile)
 		}
+
 		changelog = string(changelogData)
 	}
 
@@ -122,13 +125,16 @@ func (a *Announce) CreateForRelease() error {
 	}
 
 	logrus.Infof("Trying to get the Go version used to build %s...", a.options.tag)
+
 	goVersion, err := a.impl.GetGoVersion(a.options.tag)
 	if err != nil {
 		return err
 	}
+
 	if goVersion == "" {
 		return errors.New("verifying Go version is not empty")
 	}
+
 	logrus.Infof("Found the following Go version: %s", goVersion)
 
 	if err := a.impl.Create(
@@ -143,5 +149,6 @@ func (a *Announce) CreateForRelease() error {
 	}
 
 	logrus.Infof("Release announcement created")
+
 	return nil
 }

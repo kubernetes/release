@@ -56,6 +56,7 @@ func (i *defaultImpl) Create(workDir, message string) error {
 			err,
 		)
 	}
+
 	logrus.Debugf("Wrote file %s", announcementFile)
 
 	return nil
@@ -73,6 +74,7 @@ func (i *defaultImpl) GetGoVersion(tag string) (string, error) {
 
 	branch := fmt.Sprintf("release-%d.%d", semver.Major, semver.Minor)
 	kc := kubecross.New()
+
 	kubecrossVer, err := kc.ForBranch(branch)
 	if err != nil {
 		kubecrossVer, err = kc.Latest()
@@ -91,6 +93,7 @@ func (i *defaultImpl) GetGoVersion(tag string) (string, error) {
 	}
 
 	versionRegex := regexp.MustCompile(`^?(\d+)(\.\d+)?(\.\d+)`)
+
 	return versionRegex.FindString(strings.TrimSpace(res.OutputTrimNL())), nil
 }
 

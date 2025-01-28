@@ -69,6 +69,7 @@ func (t *TestGrid) BlockingTests(branch string) (tests []string, err error) {
 
 	dashboardName := "sig-" + branch + "-blocking"
 	dashboard := config.FindDashboard(dashboardName, conf)
+
 	if dashboard == nil {
 		return nil, fmt.Errorf("dashboard %s not found", dashboardName)
 	}
@@ -87,6 +88,7 @@ func (t *TestGrid) configFromURL(url string) (cfg *pb.Configuration, err error) 
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() {
 		if err == nil {
 			err = os.Remove(tmpFile.Name())

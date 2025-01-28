@@ -187,15 +187,19 @@ func init() {
 
 func getAssetsFromStrings(assetStrings []string) ([]sbom.Asset, error) {
 	r := []sbom.Asset{}
+
 	var isBucket bool
 	for _, s := range assetStrings {
 		isBucket = false
+
 		if strings.HasPrefix(s, "gs:") {
 			s = strings.TrimPrefix(s, "gs:")
 			isBucket = true
 		}
+
 		parts := strings.Split(s, ":")
 		l := ""
+
 		if len(parts) > 1 {
 			l = parts[1]
 		}
@@ -205,8 +209,10 @@ func getAssetsFromStrings(assetStrings []string) ([]sbom.Asset, error) {
 			if err != nil {
 				return nil, fmt.Errorf("downloading remote asset: %w", err)
 			}
+
 			parts[0] = path
 		}
+
 		r = append(r, sbom.Asset{
 			Path:     filepath.Base(parts[0]),
 			ReadFrom: parts[0],
@@ -224,6 +230,7 @@ func processRemoteAsset(urlString string) (path string, err error) {
 	if err != nil {
 		return path, fmt.Errorf("parsing URL: %w", err)
 	}
+
 	if u.Scheme != "gs" {
 		return path, errors.New("only GCS objects are supported at this time")
 	}
@@ -234,10 +241,12 @@ func processRemoteAsset(urlString string) (path string, err error) {
 	}
 
 	ctx := context.Background()
+
 	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
 	if err != nil {
 		return path, fmt.Errorf("creating storage client: %w", err)
 	}
+
 	defer client.Close()
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*50)
@@ -276,6 +285,7 @@ func runGithubPage(opts *githubPageCmdLineOptions) (err error) {
 	if err != nil {
 		return fmt.Errorf("getting assets: %w", err)
 	}
+
 	sbomStr := ""
 	if opts.sbom {
 		// Generate the assets file
@@ -290,6 +300,7 @@ func runGithubPage(opts *githubPageCmdLineOptions) (err error) {
 		if err != nil {
 			return fmt.Errorf("generating sbom: %w", err)
 		}
+
 		opts.assets = append(opts.assets, sbomStr+":SPDX Software Bill of Materials (SBOM)")
 		// Delete the temporary sbom  when we're done
 		if commandLineOpts.nomock {

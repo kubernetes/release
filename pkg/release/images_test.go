@@ -33,6 +33,7 @@ import (
 
 func TestPublish(t *testing.T) {
 	t.Parallel()
+
 	for _, tc := range []struct {
 		name        string
 		prepare     func(*releasefakes.FakeImageImpl) (buildPath string, cleanup func())
@@ -78,6 +79,7 @@ func TestPublish(t *testing.T) {
 			name: "success no images",
 			prepare: func(*releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
+
 				return tempDir, func() {
 					require.NoError(t, os.RemoveAll(tempDir))
 				}
@@ -181,6 +183,7 @@ func TestPublish(t *testing.T) {
 						return errors.New("")
 					}
 					i++
+
 					return nil
 				})
 
@@ -378,6 +381,7 @@ func TestValidate(t *testing.T) {
 		} else {
 			require.NoError(t, err)
 		}
+
 		cleanup()
 	}
 }
@@ -395,6 +399,7 @@ func newImagesPath(t *testing.T) string {
 
 func prepareImages(t *testing.T, tempDir string, mock *releasefakes.FakeImageImpl) {
 	c := 0
+
 	for _, arch := range []string{"amd64", "arm", "arm64"} {
 		archPath := filepath.Join(tempDir, release.ImagesPath, arch)
 		require.NoError(t, os.MkdirAll(archPath, os.FileMode(0o755)))
@@ -414,6 +419,7 @@ func prepareImages(t *testing.T, tempDir string, mock *releasefakes.FakeImageImp
 				),
 				nil,
 			)
+
 			c++
 		}
 	}

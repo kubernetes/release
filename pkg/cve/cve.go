@@ -43,27 +43,34 @@ func (cve *CVE) ReadRawInterface(cvedata interface{}) error {
 	if val, ok := cvedata.(map[interface{}]interface{})["id"].(string); ok {
 		cve.ID = val
 	}
+
 	if val, ok := cvedata.(map[interface{}]interface{})["title"].(string); ok {
 		cve.Title = val
 	}
+
 	if val, ok := cvedata.(map[interface{}]interface{})["issue"].(string); ok {
 		cve.TrackingIssue = val
 	}
+
 	if val, ok := cvedata.(map[interface{}]interface{})["vector"].(string); ok {
 		cve.CVSSVector = val
 	}
+
 	if val, ok := cvedata.(map[interface{}]interface{})["score"].(float64); ok {
 		cve.CVSSScore = float32(val)
 	}
+
 	if val, ok := cvedata.(map[interface{}]interface{})["rating"].(string); ok {
 		cve.CVSSRating = val
 	}
+
 	if val, ok := cvedata.(map[interface{}]interface{})["description"].(string); ok {
 		cve.Description = val
 	}
 	// Linked PRs is a list of the PR IDs
 	if val, ok := cvedata.(map[interface{}]interface{})["linkedPRs"].([]interface{}); ok {
 		cve.LinkedPRs = []int{}
+
 		for _, prid := range val {
 			if prid, ok := prid.(int); ok {
 				cve.LinkedPRs = append(cve.LinkedPRs, prid)
@@ -100,9 +107,11 @@ func (cve *CVE) Validate() (err error) {
 	} else {
 		bm, err = cvss.NewTemporal().Decode(cve.CVSSVector)
 	}
+
 	if err != nil {
 		return fmt.Errorf("parsing CVSS vector string: %w", err)
 	}
+
 	cve.CalcLink = fmt.Sprintf(
 		"https://www.first.org/cvss/calculator/%s#%s", bm.BaseMetrics().Ver.String(), cve.CVSSVector,
 	)
@@ -110,6 +119,7 @@ func (cve *CVE) Validate() (err error) {
 	if cve.CVSSScore == 0 {
 		return errors.New("missing CVSS score from CVE data")
 	}
+
 	if cve.CVSSScore < 0 || cve.CVSSScore > 10 {
 		return errors.New("out of range CVSS score, should be 0.0 - 10.0")
 	}

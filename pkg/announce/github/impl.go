@@ -82,6 +82,7 @@ func (i *defaultImpl) processAssetFiles(assetFiles []string) (releaseAssets []ma
 
 		releaseAssets = append(releaseAssets, assetData)
 	}
+
 	return releaseAssets, nil
 }
 

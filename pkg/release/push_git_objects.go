@@ -56,6 +56,7 @@ func NewGitPusher(opts *GitObjectPusherOptions) (*GitObjectPusher, error) {
 	}
 
 	logrus.Infof("Checkout %s branch to push objects", git.DefaultBranch)
+
 	if err := repo.Checkout(git.DefaultBranch); err != nil {
 		return nil, fmt.Errorf("checking out %s branch: %w", git.DefaultBranch, err)
 	}
@@ -82,7 +83,9 @@ func (gp *GitObjectPusher) PushBranches(branchList []string) error {
 			return fmt.Errorf("pushing %s branch: %w", branchName, err)
 		}
 	}
+
 	logrus.Infof("Successfully pushed %d branches", len(branchList))
+
 	return nil
 }
 
@@ -100,12 +103,14 @@ func (gp *GitObjectPusher) PushBranch(branchName string) error {
 	if err != nil {
 		return fmt.Errorf("checking if branch already exists locally: %w", err)
 	}
+
 	if !branchExists {
 		return fmt.Errorf("unable to push branch %s, it does not exist in the local repo", branchName)
 	}
 
 	// Checkout the branch before merging
 	logrus.Infof("Checking out branch %s to merge upstream changes", branchName)
+
 	if err := gp.repo.Checkout(branchName); err != nil {
 		return fmt.Errorf("checking out branch %s: %w", git.Remotify(branchName), err)
 	}
@@ -115,10 +120,13 @@ func (gp *GitObjectPusher) PushBranch(branchName string) error {
 	}
 
 	logrus.Infof("Pushing%s %s branch:", dryRunLabel[gp.opts.DryRun], branchName)
+
 	if err := gp.repo.Push(branchName); err != nil {
 		return fmt.Errorf("pushing branch %s: %w", branchName, err)
 	}
+
 	logrus.Infof("Branch %s pushed successfully", branchName)
+
 	return nil
 }
 
@@ -129,7 +137,9 @@ func (gp *GitObjectPusher) PushTags(tagList []string) (err error) {
 			return fmt.Errorf("while pushing %s tag: %w", tag, err)
 		}
 	}
+
 	logrus.Infof("Pushed %d tags to the remote repo", len(tagList))
+
 	return nil
 }
 
@@ -148,12 +158,15 @@ func (gp *GitObjectPusher) PushTag(newTag string) (err error) {
 
 	// verify that the tag exists locally before trying to push
 	tagExists := false
+
 	for _, tag := range currentTags {
 		if tag == newTag {
 			tagExists = true
+
 			break
 		}
 	}
+
 	if !tagExists {
 		return fmt.Errorf("unable to push tag %s, it does not exist in the repo yet", newTag)
 	}
@@ -167,6 +180,7 @@ func (gp *GitObjectPusher) PushTag(newTag string) (err error) {
 	// If the tag already exists in the remote, we return success
 	if tagExists {
 		logrus.Infof("Tag %s already exists in remote. Noop.", newTag)
+
 		return nil
 	}
 
@@ -178,6 +192,7 @@ func (gp *GitObjectPusher) PushTag(newTag string) (err error) {
 	}
 
 	logrus.Infof("Successfully pushed tag %s", newTag)
+
 	return nil
 }
 
@@ -187,6 +202,7 @@ func (gp *GitObjectPusher) checkTagName(tagName string) error {
 	if err != nil {
 		return fmt.Errorf("transforming tag into semver: %w", err)
 	}
+
 	return nil
 }
 
@@ -195,18 +211,21 @@ func (gp *GitObjectPusher) checkBranchName(branchName string) error {
 	if !strings.HasPrefix(branchName, "release-") {
 		return errors.New("branch name has to start with release-")
 	}
+
 	versionTag := strings.TrimPrefix(branchName, "release-")
 	// Add .0 and check is we get a valid semver
 	_, err := semver.Parse(versionTag + ".0")
 	if err != nil {
 		return fmt.Errorf("parsing semantic version in branchname: %w", err)
 	}
+
 	return nil
 }
 
 // PushMain pushes the main branch to the origin.
 func (gp *GitObjectPusher) PushMain() error {
 	logrus.Infof("Checkout %s branch to push objects", git.DefaultBranch)
+
 	if err := gp.repo.Checkout(git.DefaultBranch); err != nil {
 		return fmt.Errorf("checking out %s branch: %w", git.DefaultBranch, err)
 	}
@@ -216,6 +235,7 @@ func (gp *GitObjectPusher) PushMain() error {
 	if err != nil {
 		return fmt.Errorf("while reading the repository status: %w", err)
 	}
+
 	if status.String() == "" {
 		logrus.Info("Repository status: no modified paths")
 	} else {
@@ -227,6 +247,7 @@ func (gp *GitObjectPusher) PushMain() error {
 	if err != nil {
 		return fmt.Errorf("getting last commit data from log: %w", err)
 	}
+
 	logrus.Info(lastLog)
 
 	logrus.Info("Rebase master branch")
@@ -246,6 +267,7 @@ func (gp *GitObjectPusher) PushMain() error {
 	if err := gp.repo.Push(git.DefaultBranch); err != nil {
 		return fmt.Errorf("pushing %s branch: %w", git.DefaultBranch, err)
 	}
+
 	return nil
 }
 
@@ -255,6 +277,7 @@ func (gp *GitObjectPusher) mergeRemoteIfRequired(branch string) error {
 	logrus.Infof("Merging %s branch if required", branch)
 
 	logrus.Infof("Fetching from %s", git.DefaultRemote)
+
 	if _, err := gp.repo.FetchRemote(git.DefaultRemote); err != nil {
 		return fmt.Errorf("fetch remote: %w", err)
 	}
@@ -267,14 +290,17 @@ func (gp *GitObjectPusher) mergeRemoteIfRequired(branch string) error {
 			err,
 		)
 	}
+
 	if !branchExists {
 		logrus.Infof(
 			"Git repository does not have remote branch %s, not attempting merge", branch,
 		)
+
 		return nil
 	}
 
 	logrus.Infof("Merging %s branch", branch)
+
 	if err := gp.repo.Merge(branch); err != nil {
 		return fmt.Errorf(
 			"merging remote branch %s to local repo: %w",
@@ -284,5 +310,6 @@ func (gp *GitObjectPusher) mergeRemoteIfRequired(branch string) error {
 	}
 
 	logrus.Info("Local branch is now up to date")
+
 	return nil
 }

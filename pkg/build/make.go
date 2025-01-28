@@ -81,11 +81,13 @@ func (m *Make) MakeCross(version string) error {
 	}
 
 	logrus.Infof("Checking out version %s", version)
+
 	if err := m.impl.Checkout(repo, version); err != nil {
 		return fmt.Errorf("checking out version %s: %w", version, err)
 	}
 
 	logrus.Info("Building binaries")
+
 	if err := m.impl.Command(
 		"make",
 		"cross-in-a-container",
@@ -96,11 +98,13 @@ func (m *Make) MakeCross(version string) error {
 
 	newBuildDir := fmt.Sprintf("%s-%s", release.BuildDir, version)
 	logrus.Infof("Moving build output to %s", newBuildDir)
+
 	if err := m.impl.Rename(release.BuildDir, newBuildDir); err != nil {
 		return fmt.Errorf("move build output: %w", err)
 	}
 
 	logrus.Info("Building package tarballs")
+
 	if err := m.impl.Command(
 		"make",
 		"package-tarballs",

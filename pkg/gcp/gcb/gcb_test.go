@@ -36,12 +36,14 @@ func mockRepo() gcb.Repository {
 	mock.OpenReturns(nil)
 	mock.CheckStateReturns(nil)
 	mock.GetTagReturns("v1.0.0-20201010", nil)
+
 	return mock
 }
 
 func mockVersion(version string) gcb.Version {
 	mock := &gcbfakes.FakeVersion{}
 	mock.GetKubeVersionForBranchReturns(version, nil)
+
 	return mock
 }
 
@@ -50,6 +52,7 @@ func mockRelease(version string) gcb.Release {
 	mock.GenerateReleaseVersionReturns(
 		release.NewReleaseVersions(version, "", "", "", ""), nil,
 	)
+
 	return mock
 }
 
@@ -90,6 +93,7 @@ func TestSubmitList(t *testing.T) {
 			listJobsMock: func() gcb.ListJobs {
 				m := &gcbfakes.FakeListJobs{}
 				m.ListJobsReturns(errors.New(""))
+
 				return m
 			}(),
 			releaseMock: mockRelease("v1.17.0"),
@@ -441,6 +445,7 @@ func TestSetGCBSubstitutionsFailure(t *testing.T) {
 			versionMock: func() gcb.Version {
 				m := &gcbfakes.FakeVersion{}
 				m.GetKubeVersionForBranchReturns("", errors.New(""))
+
 				return m
 			}(),
 		},

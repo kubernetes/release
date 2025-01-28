@@ -120,6 +120,7 @@ func (o *Options) ValidateBuildVersion(state *State) error {
 	if err != nil {
 		return fmt.Errorf("checking for a valid build version: %w", err)
 	}
+
 	if !correct {
 		return errors.New("invalid BuildVersion specified")
 	}
@@ -128,7 +129,9 @@ func (o *Options) ValidateBuildVersion(state *State) error {
 	if err != nil {
 		return fmt.Errorf("invalid build version: %s: %w", o.BuildVersion, err)
 	}
+
 	state.semverBuildVersion = semverBuildVersion
+
 	return nil
 }
 
@@ -137,6 +140,7 @@ func (o *Options) Bucket() string {
 	if o.NoMock {
 		return release.ProductionBucket
 	}
+
 	return release.TestBucket
 }
 
@@ -145,6 +149,7 @@ func (o *Options) ContainerRegistry() string {
 	if o.NoMock {
 		return release.GCRIOPathStaging
 	}
+
 	return release.GCRIOPathMock
 }
 
@@ -249,9 +254,11 @@ func (s *Stage) SetClient(client stageClient) {
 // Submit can be used to submit a staging Google Cloud Build (GCB) job.
 func (s *Stage) Submit(stream bool) error {
 	logrus.Info("Submitting stage GCB job")
+
 	if err := s.client.Submit(stream); err != nil {
 		return fmt.Errorf("submit stage job: %w", err)
 	}
+
 	return nil
 }
 
@@ -269,61 +276,73 @@ func (s *Stage) Run() error {
 	logger.Infof("Using krel version: %s", v.GitVersion)
 
 	logger.WithStep().Info("Validating options")
+
 	if err := s.client.ValidateOptions(); err != nil {
 		return fmt.Errorf("validate options: %w", err)
 	}
 
 	logger.WithStep().Info("Checking prerequisites")
+
 	if err := s.client.CheckPrerequisites(); err != nil {
 		return fmt.Errorf("check prerequisites: %w", err)
 	}
 
 	logger.WithStep().Info("Checking release branch state")
+
 	if err := s.client.CheckReleaseBranchState(); err != nil {
 		return fmt.Errorf("check release branch state: %w", err)
 	}
 
 	logger.WithStep().Info("Generating release version")
+
 	if err := s.client.GenerateReleaseVersion(); err != nil {
 		return fmt.Errorf("generate release version: %w", err)
 	}
 
 	logger.WithStep().Info("Preparing workspace")
+
 	if err := s.client.PrepareWorkspace(); err != nil {
 		return fmt.Errorf("prepare workspace: %w", err)
 	}
 
 	logger.WithStep().Info("Tagging repository")
+
 	if err := s.client.TagRepository(); err != nil {
 		return fmt.Errorf("tag repository: %w", err)
 	}
 
 	logger.WithStep().Info("Building release")
+
 	if err := s.client.Build(); err != nil {
 		return fmt.Errorf("build release: %w", err)
 	}
 
 	logger.WithStep().Info("Generating changelog")
+
 	if err := s.client.GenerateChangelog(); err != nil {
 		return fmt.Errorf("generate changelog: %w", err)
 	}
 
 	logger.WithStep().Info("Verifying artifacts")
+
 	if err := s.client.VerifyArtifacts(); err != nil {
 		return fmt.Errorf("verifying artifacts: %w", err)
 	}
 
 	logger.WithStep().Info("Generating bill of materials")
+
 	if err := s.client.GenerateBillOfMaterials(); err != nil {
 		return fmt.Errorf("generating sbom: %w", err)
 	}
 
 	logger.WithStep().Info("Staging artifacts")
+
 	if err := s.client.StageArtifacts(); err != nil {
 		return fmt.Errorf("stage release artifacts: %w", err)
 	}
 
 	logger.Info("Stage done")
+
 	return nil
 }
 
@@ -361,9 +380,11 @@ func (r *ReleaseOptions) Validate(state *State) error {
 	if err := r.Options.Validate(); err != nil {
 		return fmt.Errorf("validating generic options: %w", err)
 	}
+
 	if err := r.Options.ValidateBuildVersion(state); err != nil {
 		return fmt.Errorf("validating build version: %w", err)
 	}
+
 	return nil
 }
 
@@ -385,9 +406,11 @@ func (r *Release) SetClient(client releaseClient) {
 // Submit can be used to submit a releasing Google Cloud Build (GCB) job.
 func (r *Release) Submit(stream bool) error {
 	logrus.Info("Submitting release GCB job")
+
 	if err := r.client.Submit(stream); err != nil {
 		return fmt.Errorf("submit release job: %w", err)
 	}
+
 	return nil
 }
 
@@ -404,31 +427,37 @@ func (r *Release) Run() error {
 	logger.Infof("Using krel version: %s", v.GitVersion)
 
 	logger.WithStep().Info("Validating options")
+
 	if err := r.client.ValidateOptions(); err != nil {
 		return fmt.Errorf("validate options: %w", err)
 	}
 
 	logger.WithStep().Info("Checking prerequisites")
+
 	if err := r.client.CheckPrerequisites(); err != nil {
 		return fmt.Errorf("check prerequisites: %w", err)
 	}
 
 	logger.WithStep().Info("Checking release branch state")
+
 	if err := r.client.CheckReleaseBranchState(); err != nil {
 		return fmt.Errorf("check release branch state: %w", err)
 	}
 
 	logger.WithStep().Info("Generating release version")
+
 	if err := r.client.GenerateReleaseVersion(); err != nil {
 		return fmt.Errorf("generate release version: %w", err)
 	}
 
 	logger.WithStep().Info("Preparing workspace")
+
 	if err := r.client.PrepareWorkspace(); err != nil {
 		return fmt.Errorf("prepare workspace: %w", err)
 	}
 
 	logger.WithStep().Info("Checking artifacts provenance")
+
 	if err := r.client.CheckProvenance(); err != nil {
 		// For now, we only notify provenance errors as not to treat
 		// them as fatal while we finish testing SLSA compliance.
@@ -436,25 +465,30 @@ func (r *Release) Run() error {
 	}
 
 	logger.WithStep().Info("Creating announcement")
+
 	if err := r.client.CreateAnnouncement(); err != nil {
 		return fmt.Errorf("create announcement: %w", err)
 	}
 
 	logger.WithStep().Info("Pushing artifacts")
+
 	if err := r.client.PushArtifacts(); err != nil {
 		return fmt.Errorf("push artifacts: %w", err)
 	}
 
 	logger.WithStep().Info("Pushing git objects")
+
 	if err := r.client.PushGitObjects(); err != nil {
 		return fmt.Errorf("push git objects: %w", err)
 	}
 
 	logger.WithStep().Info("Updating GitHub release page")
+
 	if err := r.client.UpdateGitHubPage(); err != nil {
 		return fmt.Errorf("updating github page: %w", err)
 	}
 
 	logger.Info("Release done")
+
 	return nil
 }

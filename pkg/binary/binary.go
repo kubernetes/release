@@ -64,8 +64,10 @@ func NewWithOptions(filePath string, opts *Options) (bin *Binary, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("getting arch implementation: %w", err)
 	}
+
 	bin.options.Path = filePath
 	bin.SetImplementation(impl)
+
 	return bin, nil
 }
 
@@ -77,6 +79,7 @@ func getArchImplementation(filePath string, opts *Options) (impl binaryImplement
 	if err != nil {
 		return nil, fmt.Errorf("checking if file is an ELF binary: %w", err)
 	}
+
 	if elf != nil {
 		return elf, nil
 	}
@@ -86,6 +89,7 @@ func getArchImplementation(filePath string, opts *Options) (impl binaryImplement
 	if err != nil {
 		return nil, fmt.Errorf("checking if file is a Mach-O binary: %w", err)
 	}
+
 	if macho != nil {
 		return macho, nil
 	}
@@ -95,11 +99,13 @@ func getArchImplementation(filePath string, opts *Options) (impl binaryImplement
 	if err != nil {
 		return nil, fmt.Errorf("checking if file is a windows PE binary: %w", err)
 	}
+
 	if pe != nil {
 		return pe, nil
 	}
 
 	logrus.Warnf("File is not a known executable: %s", filePath)
+
 	return nil, errors.New("file is not an executable or is an unknown format")
 }
 
@@ -156,7 +162,9 @@ func (b *Binary) ContainsStrings(s ...string) (match bool, err error) {
 	if err != nil {
 		return match, fmt.Errorf("opening binary to search: %w", err)
 	}
+
 	defer f.Close()
+
 	terms := map[string]bool{}
 	for _, s := range s {
 		terms[s] = true
@@ -172,6 +180,7 @@ func (b *Binary) ContainsStrings(s ...string) (match bool, err error) {
 			if !errors.Is(err, io.EOF) {
 				return match, fmt.Errorf("while reading binary data: %w", err)
 			}
+
 			return false, nil
 		}
 		// If the char is not printable, we assume the string ended
@@ -179,11 +188,14 @@ func (b *Binary) ContainsStrings(s ...string) (match bool, err error) {
 		if !unicode.IsPrint(r) {
 			delete(terms, string(runes))
 			runes = []rune{}
+
 			if len(terms) == 0 {
 				return true, nil
 			}
+
 			continue
 		}
+
 		runes = append(runes, r)
 	}
 }

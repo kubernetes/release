@@ -187,6 +187,7 @@ func (d *defaultReleaseImpl) PrepareWorkspaceRelease(
 	); err != nil {
 		return err
 	}
+
 	return os.Chdir(gitRoot)
 }
 
@@ -235,6 +236,7 @@ func (d *DefaultRelease) Submit(stream bool) error {
 	options.Branch = d.options.ReleaseBranch
 	options.ReleaseType = d.options.ReleaseType
 	options.BuildVersion = d.options.BuildVersion
+
 	return d.impl.Submit(options)
 }
 
@@ -246,12 +248,15 @@ func (d *DefaultRelease) InitLogFile() error {
 	logrus.SetFormatter(
 		&logrus.TextFormatter{FullTimestamp: true, ForceColors: true},
 	)
+
 	logFile := filepath.Join(os.TempDir(), "release.log")
 	if err := d.impl.ToFile(logFile); err != nil {
 		return fmt.Errorf("setup log file: %w", err)
 	}
+
 	d.state.logFile = logFile
 	logrus.Infof("Additionally logging to file %s", d.state.logFile)
+
 	return nil
 }
 
@@ -280,6 +285,7 @@ func (d *defaultReleaseImpl) PushMainBranch(pusher *release.GitObjectPusher) err
 	if err := pusher.PushMain(); err != nil {
 		return fmt.Errorf("pushing changes in main branch: %w", err)
 	}
+
 	return nil
 }
 
@@ -315,6 +321,7 @@ func (d *defaultReleaseImpl) NewGitPusher(
 	if err != nil {
 		return nil, fmt.Errorf("creating new git object pusher: %w", err)
 	}
+
 	return pusher, nil
 }
 
@@ -322,6 +329,7 @@ func (d *DefaultRelease) ValidateOptions() error {
 	if err := d.options.Validate(d.state.State); err != nil {
 		return fmt.Errorf("validating options: %w", err)
 	}
+
 	return nil
 }
 
@@ -338,7 +346,9 @@ func (d *DefaultRelease) CheckReleaseBranchState() error {
 	if err != nil {
 		return fmt.Errorf("check if release branch needs creation: %w", err)
 	}
+
 	d.state.createReleaseBranch = createReleaseBranch
+
 	return nil
 }
 
@@ -354,6 +364,7 @@ func (d *DefaultRelease) GenerateReleaseVersion() error {
 	}
 	// Set the versions object in the state
 	d.state.versions = versions
+
 	return nil
 }
 
@@ -363,6 +374,7 @@ func (d *DefaultRelease) PrepareWorkspace() error {
 	); err != nil {
 		return fmt.Errorf("prepare workspace: %w", err)
 	}
+
 	return nil
 }
 
@@ -376,6 +388,7 @@ func (d *DefaultRelease) PushArtifacts() error {
 		)
 		bucket := d.options.Bucket()
 		containerRegistry := d.options.ContainerRegistry()
+
 		pushBuildOptions := &build.Options{
 			Bucket:                     bucket,
 			BuildDir:                   buildDir,
@@ -418,8 +431,10 @@ func (d *DefaultRelease) PushArtifacts() error {
 	}
 
 	logrus.Info("Publishing release notes JSON and announcement")
+
 	objStore := object.NewGCS()
 	objStore.SetOptions(objStore.WithNoClobber(false))
+
 	gcsReleaseRootPath, err := d.impl.NormalizePath(
 		objStore, d.options.Bucket(), gcsRoot,
 	)
@@ -457,6 +472,7 @@ func (d *DefaultRelease) PushArtifacts() error {
 	}
 
 	logrus.Info("Publishing updated release notes index")
+
 	if err := d.impl.PublishReleaseNotesIndex(
 		gcsReleaseRootPath, gcsReleaseNotesPath, d.state.versions.Prime(),
 	); err != nil {
@@ -510,6 +526,7 @@ func (d *DefaultRelease) PushGitObjects() error {
 		"Git objects push complete (%d branches, %d tags & main branch)",
 		len(d.state.versions.Ordered()), len(branchList),
 	)
+
 	return nil
 }
 
@@ -567,6 +584,7 @@ func (d *DefaultRelease) CreateAnnouncement() error {
 	if d.options.NoMock {
 		args += " --nomock"
 	}
+
 	args += " --tag=" + d.state.versions.Prime()
 
 	logrus.Infof(
@@ -606,6 +624,7 @@ func (d *DefaultRelease) UpdateGitHubPage() error {
 	if err := d.impl.UpdateGitHubPage(ghPageOpts); err != nil {
 		return fmt.Errorf("updating GitHub release page: %w", err)
 	}
+
 	return nil
 }
 

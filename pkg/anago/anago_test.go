@@ -276,6 +276,7 @@ func TestValidateBuildVersion(t *testing.T) {
 		},
 	} {
 		state := anago.DefaultState()
+
 		err := tc.provided.ValidateBuildVersion(state)
 		if tc.shouldError {
 			require.Error(t, err)
@@ -321,6 +322,7 @@ func TestStagingOptionsValidate(t *testing.T) {
 		},
 	} {
 		state := anago.DefaultState()
+
 		err := tc.provided.Validate(state)
 		if tc.shouldError {
 			require.Error(t, err)

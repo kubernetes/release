@@ -186,6 +186,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 	// Recover for replay if needed
 	if o.ReplayDir != "" {
 		logrus.Info("Using replay mode")
+
 		return nil
 	}
 
@@ -232,6 +233,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 		if err != nil {
 			return err
 		}
+
 		if o.StartRev != "" && o.StartSHA == "" {
 			sha, err := repo.RevParseTag(o.StartRev)
 			if err != nil {
@@ -240,6 +242,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 
 			if o.SkipFirstCommit {
 				logrus.Infof("Skipping first commit: %s", sha)
+
 				sha, err = repo.NextCommit(sha, git.DefaultRemote+"/"+o.Branch)
 				if err != nil {
 					return fmt.Errorf("getting the next repo commit: %w", err)
@@ -249,11 +252,13 @@ func (o *Options) ValidateAndFinish() (err error) {
 			logrus.Infof("Using found start SHA: %s", sha)
 			o.StartSHA = sha
 		}
+
 		if o.EndRev != "" && o.EndSHA == "" {
 			sha, err := repo.RevParseTag(o.EndRev)
 			if err != nil {
 				return fmt.Errorf("resolving %s: %w", o.EndRev, err)
 			}
+
 			logrus.Infof("Using found end SHA: %s", sha)
 			o.EndSHA = sha
 		}
@@ -262,6 +267,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 	// Create the record dir
 	if o.RecordDir != "" {
 		logrus.Info("Using record mode")
+
 		if err := os.MkdirAll(o.RecordDir, os.FileMode(0o755)); err != nil {
 			return err
 		}
@@ -275,6 +281,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 	if err := o.checkFormatOptions(); err != nil {
 		return fmt.Errorf("while checking format flags: %w", err)
 	}
+
 	return nil
 }
 
@@ -282,6 +289,7 @@ func (o *Options) ValidateAndFinish() (err error) {
 func (o *Options) checkFormatOptions() error {
 	// Validate the output format and template
 	logrus.Infof("Using output format: %s", o.Format)
+
 	if o.Format == FormatMarkdown && o.GoTemplate != GoTemplateDefault {
 		if !strings.HasPrefix(o.GoTemplate, GoTemplatePrefix) {
 			return fmt.Errorf("go template has to be prefixed with %q", GoTemplatePrefix)
@@ -294,17 +302,21 @@ func (o *Options) checkFormatOptions() error {
 			if os.IsNotExist(err) {
 				return fmt.Errorf("could not find template file (%s)", templatePathOrOnline)
 			}
+
 			if fileStats.Size() == 0 {
 				return fmt.Errorf("template file %s is empty", templatePathOrOnline)
 			}
 		}
 	}
+
 	if o.Format == FormatJSON && o.GoTemplate != GoTemplateDefault {
 		return errors.New("go-template cannot be defined when in JSON mode")
 	}
+
 	if o.Format != FormatJSON && o.Format != FormatMarkdown {
 		return fmt.Errorf("invalid format: %s", o.Format)
 	}
+
 	return nil
 }
 
@@ -315,6 +327,7 @@ func (o *Options) resolveDiscoverMode() error {
 	}
 
 	var result git.DiscoverResult
+
 	switch o.DiscoverMode {
 	case RevisionDiscoveryModeMergeBaseToLatest:
 		result, err = repo.LatestReleaseBranchMergeBaseToLatest()
@@ -360,9 +373,11 @@ func (o *Options) repo() (repo *git.Repo, err error) {
 		logrus.Infof("Re-using local repo %s", o.RepoPath)
 		repo, err = git.OpenRepo(o.RepoPath)
 	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	return repo, nil
 }
 
@@ -377,6 +392,7 @@ func (o *Options) Client() (github.Client, error) {
 	}
 
 	var gh *github.GitHub
+
 	var err error
 	// Create a real GitHub API client
 	if o.GithubBaseURL != "" && o.GithubUploadURL != "" {
@@ -384,6 +400,7 @@ func (o *Options) Client() (github.Client, error) {
 	} else {
 		gh, err = github.NewWithToken(o.githubToken)
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("unable to create GitHub client: %w", err)
 	}

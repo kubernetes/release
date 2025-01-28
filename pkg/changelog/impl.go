@@ -212,6 +212,7 @@ func (*defaultImpl) GetURLResponse(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return string(content), nil
 }
 
@@ -236,6 +237,7 @@ func (*defaultImpl) CloneCVEData() (cveDir string, err error) {
 
 	// Create a new GCS client
 	gcs := object.NewGCS()
+
 	remoteSrc, err := gcs.NormalizePath(object.GcsPrefix + filepath.Join(cve.Bucket, cve.Directory))
 	if err != nil {
 		return "", fmt.Errorf("normalizing cve bucket path: %w", err)
@@ -245,8 +247,10 @@ func (*defaultImpl) CloneCVEData() (cveDir string, err error) {
 	if err != nil {
 		return "", fmt.Errorf("checking if CVE directory exists: %w", err)
 	}
+
 	if !bucketExists {
 		logrus.Warnf("CVE data maps not found in bucket location: %s", remoteSrc)
+
 		return "", nil
 	}
 
@@ -254,6 +258,8 @@ func (*defaultImpl) CloneCVEData() (cveDir string, err error) {
 	if err := gcs.RsyncRecursive(remoteSrc, tmpdir); err != nil {
 		return "", fmt.Errorf("copying release directory to bucket: %w", err)
 	}
+
 	logrus.Infof("Successfully synchronized CVE data maps from %s", remoteSrc)
+
 	return tmpdir, nil
 }

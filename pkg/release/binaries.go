@@ -58,6 +58,7 @@ func (ac *ArtifactChecker) CheckBinaryTags() error {
 			return fmt.Errorf("checking tags in %s binaries: %w", tag, err)
 		}
 	}
+
 	return nil
 }
 
@@ -69,6 +70,7 @@ func (ac *ArtifactChecker) CheckBinaryArchitectures() error {
 			return fmt.Errorf("checking tags in %s binaries: %w", tag, err)
 		}
 	}
+
 	return nil
 }
 
@@ -98,7 +100,9 @@ func (impl *defaultArtifactCheckerImpl) CheckVersionTags(
 	if err != nil {
 		return fmt.Errorf("listing binaries for release %s: %w", version, err)
 	}
+
 	logrus.Infof("Checking %d binaries for tag %s", len(binaries), version)
+
 	for _, binData := range binaries {
 		bin, err := binary.New(binData.Path)
 		if err != nil {
@@ -115,12 +119,14 @@ func (impl *defaultArtifactCheckerImpl) CheckVersionTags(
 		if err != nil {
 			return fmt.Errorf("scanning binary %s: %w", binData.Path, err)
 		}
+
 		if !contains {
 			return fmt.Errorf(
 				"tag %s not found in produced binary: %s ", version, binData.Path,
 			)
 		}
 	}
+
 	return nil
 }
 
@@ -133,7 +139,9 @@ func (impl *defaultArtifactCheckerImpl) CheckVersionArch(
 	if err != nil {
 		return fmt.Errorf("listing binaries for release %s: %w", version, err)
 	}
+
 	logrus.Infof("Ensuring architecture of %d binaries for version %s", len(binaries), version)
+
 	for _, binData := range binaries {
 		bin, err := binary.New(binData.Path)
 		if err != nil {
@@ -156,5 +164,6 @@ func (impl *defaultArtifactCheckerImpl) CheckVersionArch(
 			logrus.Warnf("Binary is dynamically linked, which should be nothing we release: %s", binData.Path)
 		}
 	}
+
 	return nil
 }

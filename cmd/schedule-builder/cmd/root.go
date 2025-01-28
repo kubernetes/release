@@ -139,6 +139,7 @@ func run(opts *options) error {
 	if opts.version {
 		info := version.GetVersionInfo()
 		fmt.Print(info.String())
+
 		return nil
 	}
 
@@ -147,6 +148,7 @@ func run(opts *options) error {
 	}
 
 	logrus.Infof("Reading schedule file: %s", opts.configPath)
+
 	data, err := os.ReadFile(opts.configPath)
 	if err != nil {
 		return fmt.Errorf("failed to read the file: %w", err)
@@ -180,6 +182,7 @@ func run(opts *options) error {
 
 		if opts.update {
 			logrus.Info("Updating schedule")
+
 			if err := updatePatchSchedule(
 				time.Now(),
 				patchSchedule,
@@ -191,6 +194,7 @@ func run(opts *options) error {
 			}
 		} else {
 			logrus.Infof("Generating markdown output for type %q", typePatch)
+
 			scheduleOut = parsePatchSchedule(patchSchedule)
 			println(scheduleOut)
 		}
@@ -201,6 +205,7 @@ func run(opts *options) error {
 		}
 
 		logrus.Infof("Generating markdown output for type %q", typeRelease)
+
 		scheduleOut = parseReleaseSchedule(releaseSchedule)
 		println(scheduleOut)
 
@@ -215,6 +220,7 @@ func run(opts *options) error {
 		if err := os.WriteFile(opts.outputFile, []byte(scheduleOut), 0o644); err != nil {
 			return fmt.Errorf("failed to save schedule to the file: %w", err)
 		}
+
 		logrus.Info("File saved")
 	}
 

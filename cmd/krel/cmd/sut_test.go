@@ -58,7 +58,9 @@ func newSUT(t *testing.T) *sut {
 
 	// The bare repo which is the pseudo remote base
 	bareDir := filepath.Join(tempDir, "bare")
+
 	const url = "https://github.com/kubernetes/kubernetes"
+
 	if _, err := os.Stat(bareDir); os.IsNotExist(err) {
 		require.NoError(t,
 			command.New("git", "clone", "--bare", url, bareDir).RunSuccess(),
@@ -126,5 +128,6 @@ func (s *sut) lastCommit(t *testing.T, branch string) string {
 	res, err := command.NewWithWorkDir(s.repo.Dir(),
 		"git", "log", "-1", branch).RunSilentSuccessOutput()
 	require.NoError(t, err)
+
 	return res.OutputTrimNL()
 }

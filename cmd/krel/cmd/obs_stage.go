@@ -217,13 +217,16 @@ func runOBSStage(options *obs.StageOptions) error {
 	}
 
 	stage := obs.NewStage(options)
+
 	if submitJob {
 		// Perform a local check of the specified options before launching a
 		// Cloud Build job:
 		if err := options.Validate(&obs.State{}, true); err != nil {
 			return fmt.Errorf("prechecking stage options: %w", err)
 		}
+
 		return stage.Submit(stream)
 	}
+
 	return stage.Run()
 }

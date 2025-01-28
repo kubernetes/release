@@ -73,12 +73,14 @@ func (impl *defaultClientImplementation) CheckBucketWriteAccess(opts *ClientOpti
 
 	// Check if bucket exists and user has permissions
 	requiredGCSPerms := []string{"storage.objects.create"}
+
 	perms, err := bucket.IAM().TestPermissions(
 		context.Background(), requiredGCSPerms,
 	)
 	if err != nil {
 		return fmt.Errorf("getting bucket permissions: %w", err)
 	}
+
 	if len(perms) != 1 {
 		return fmt.Errorf(
 			"GCP user must have at least %s permissions on bucket %s",
@@ -96,24 +98,31 @@ func (impl *defaultClientImplementation) DeleteFile(
 	if err := impl.CheckBucketWriteAccess(opts); err != nil {
 		return fmt.Errorf("checking bucket permissions to delete data: %w", err)
 	}
+
 	gcs := object.NewGCS()
+
 	path, err := gcs.NormalizePath(path)
 	if err != nil {
 		return fmt.Errorf("normalizing bucket path: %w", err)
 	}
+
 	if err := impl.CheckBucketPath(path, opts); err != nil {
 		return fmt.Errorf("checking path to delete file: %w", err)
 	}
+
 	if !strings.HasSuffix(path, ".yaml") {
 		return errors.New("only yaml files can be deleted")
 	}
+
 	exists, err := gcs.PathExists(path)
 	if err != nil {
 		return fmt.Errorf("checking if cve entry exists: %w", err)
 	}
+
 	if !exists {
 		return errors.New("specified CVE entry not found")
 	}
+
 	return gcs.DeletePath(path)
 }
 
@@ -125,6 +134,7 @@ func (impl *defaultClientImplementation) CopyToTemp(
 	if err != nil {
 		return nil, fmt.Errorf("creating temp dir: %w", err)
 	}
+
 	gcs := object.NewGCS()
 	if err := gcs.CopyToLocal(
 		object.GcsPrefix+filepath.Join(
@@ -133,6 +143,7 @@ func (impl *defaultClientImplementation) CopyToTemp(
 	); err != nil {
 		return nil, fmt.Errorf("copying CVE %s to tempfile: %w", cve, err)
 	}
+
 	return os.Open(filepath.Join(dir, cve+mapExt))
 }
 
@@ -143,14 +154,17 @@ func (impl *defaultClientImplementation) CopyFile(
 	if err := impl.CheckBucketWriteAccess(opts); err != nil {
 		return fmt.Errorf("checking bucket permissions to copy data: %w", err)
 	}
+
 	gcs := object.NewGCS()
 	gcs.SetOptions(
 		gcs.WithNoClobber(false),
 	)
+
 	path, err := gcs.NormalizePath(dest)
 	if err != nil {
 		return fmt.Errorf("normalizing bucket path: %w", err)
 	}
+
 	if err := impl.CheckBucketPath(path, opts); err != nil {
 		return fmt.Errorf("checking path to copy file: %w", err)
 	}
@@ -168,15 +182,18 @@ func (impl *defaultClientImplementation) CheckBucketPath(
 	path string, opts *ClientOptions,
 ) error {
 	g := object.NewGCS()
+
 	path, err := g.NormalizePath(path)
 	if err != nil {
 		return fmt.Errorf("normalizing CVE bucket path: %w", err)
 	}
+
 	path = strings.TrimPrefix(path, object.GcsPrefix)
 
 	if !strings.HasPrefix(path, filepath.Join(opts.Bucket, opts.Directory)) {
 		return errors.New("invalid path, all paths must be in the cve location")
 	}
+
 	return nil
 }
 
@@ -185,6 +202,7 @@ func (impl *defaultClientImplementation) CheckID(cveID string) error {
 	if regexp.MustCompile(CVEIDRegExp).MatchString(cveID) {
 		return nil
 	}
+
 	return errors.New("invalid CVE identifier")
 }
 
@@ -209,6 +227,7 @@ func (impl *defaultClientImplementation) ValidateCVEMap(
 		if err := cvedata.ReadRawInterface(dataMap.DataFields["cve"]); err != nil {
 			return fmt.Errorf("reading CVE data from YAML file: %w", err)
 		}
+
 		if err := cvedata.Validate(); err != nil {
 			return fmt.Errorf("validating map #%d in file %s: %w", i, path, err)
 		}
@@ -222,6 +241,7 @@ func (impl *defaultClientImplementation) ValidateCVEMap(
 			)
 		}
 	}
+
 	return nil
 }
 
@@ -256,9 +276,11 @@ func (impl *defaultClientImplementation) CreateEmptyFile(cve string, _ *ClientOp
 	if err != nil {
 		return nil, fmt.Errorf("creating new map file: %w", err)
 	}
+
 	if _, err := file.WriteString(newMapHeader); err != nil {
 		return nil, fmt.Errorf("writing empty CVE header: %w", err)
 	}
+
 	if _, err := file.Write(yamlCode); err != nil {
 		return nil, fmt.Errorf("writing yaml code to file: %w", err)
 	}
@@ -286,5 +308,6 @@ func (impl *defaultClientImplementation) EntryExists(
 	if err != nil {
 		return exists, fmt.Errorf("checking if CVE entry already exists: %w", err)
 	}
+
 	return gcs.PathExists(path)
 }

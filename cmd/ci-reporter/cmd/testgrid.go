@@ -60,7 +60,9 @@ func (r TestgridReporter) CollectReportData(ctx context.Context, cfg *Config) ([
 	if err != nil {
 		return nil, err
 	}
+
 	records := []*CIReportRecord{}
+
 	for dashboardName, jobData := range testgridReportData {
 		for jobName := range jobData {
 			jobSummary := jobData[jobName]
@@ -77,6 +79,7 @@ func (r TestgridReporter) CollectReportData(ctx context.Context, cfg *Config) ([
 			}
 		}
 	}
+
 	return records, nil
 }
 
@@ -89,17 +92,23 @@ func GetTestgridReportData(ctx context.Context, cfg Config) (testgrid.DashboardD
 			testgrid.DashboardName(fmt.Sprintf("sig-release-%s-informing", cfg.ReleaseVersion)),
 		}...)
 	}
+
 	dashboardData := testgrid.DashboardData{}
+
 	for i := range testgridDashboardNames {
 		d, err := testgrid.ReqTestgridDashboardSummary(ctx, testgridDashboardNames[i])
 		if err != nil {
 			if errors.Is(err, testgrid.ErrDashboardNotFound) {
 				logrus.Warn(fmt.Sprintf("%v for project board %s", err.Error(), testgridDashboardNames[i]))
+
 				continue
 			}
+
 			return nil, err
 		}
+
 		dashboardData[testgridDashboardNames[i]] = d
 	}
+
 	return dashboardData, nil
 }

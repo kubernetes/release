@@ -40,6 +40,7 @@ var rootCmd = &cobra.Command{
 		// all available reporters are used by default that are used to generate the report
 		// CLI sub commands can be used to specify a specific reporter
 		selectedReporters := AllImplementedReporters
+
 		return RunReport(cmd.Context(), cfg, &selectedReporters)
 	},
 }
@@ -72,6 +73,7 @@ func init() {
 func RunReport(ctx context.Context, cfg *Config, reporters *CIReporters) error {
 	go func() {
 		s := spin.New()
+
 		for {
 			fmt.Printf("\rloading data %s ", s.Next())
 			time.Sleep(100 * time.Millisecond)
@@ -150,27 +152,34 @@ var AllImplementedReporters = CIReporters{GithubReporter{}, TestgridReporter{}}
 // SearchReporter used to filter a implemented reporter by name.
 func SearchReporter(ctx context.Context, reporterName string) (CIReporter, error) {
 	var reporter CIReporter
+
 	reporterFound := false
+
 	for _, r := range AllImplementedReporters {
 		if strings.EqualFold(string(r.GetCIReporterHead().Name), reporterName) {
 			reporter = r
 			reporterFound = true
+
 			break
 		}
 	}
+
 	if !reporterFound {
 		return nil, errors.New("could not find a implemented reporter")
 	}
+
 	return reporter, nil
 }
 
 // CollectReportDataFromReporters used to collect data for multiple reporters.
 func (r *CIReporters) CollectReportDataFromReporters(ctx context.Context, cfg *Config) (*CIReportDataFields, error) {
 	collectedReports := CIReportDataFields{}
+
 	for i := range *r {
 		reporters := *r
 		reporter := reporters[i]
 		reporterHead := reporter.GetCIReporterHead()
+
 		reportData, err := reporter.CollectReportData(ctx, cfg)
 		if err != nil {
 			return nil, err
@@ -181,6 +190,7 @@ func (r *CIReporters) CollectReportDataFromReporters(ctx context.Context, cfg *C
 			Records: reportData,
 		})
 	}
+
 	return &collectedReports, nil
 }
 
@@ -192,16 +202,19 @@ func (r *CIReporters) CollectReportDataFromReporters(ctx context.Context, cfg *C
 func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 	// Get a stream to write the data to (file stream / standard out stream)
 	var out *os.File
+
 	if cfg.Filepath != "" {
 		// open output file
 		fileOut, err := os.OpenFile(cfg.Filepath, os.O_WRONLY|os.O_CREATE, 0o666)
 		if err != nil {
 			return fmt.Errorf("could not open or create a file at %s to write the ci signal report to: %w", cfg.Filepath, err)
 		}
+
 		out = fileOut
 	} else {
 		out = os.Stdout
 	}
+
 	defer func() {
 		if err := out.Close(); err != nil {
 			panic(err)
@@ -215,10 +228,12 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 		if err != nil {
 			return fmt.Errorf("could not marshal report data: %w", err)
 		}
+
 		_, err = out.Write(d)
 		if err != nil {
 			return fmt.Errorf("could not write to output stream: %w", err)
 		}
+
 		return nil
 	}
 
@@ -236,11 +251,13 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 		// table in short version differs from regular table
 		if cfg.ShortReport {
 			table.SetHeader([]string{"TESTGRID BOARD", "TITLE", "STATUS", "STATUS DETAILS"})
+
 			for _, record := range r.Records {
 				data = append(data, []string{record.TestgridBoard, record.Title, record.Status, record.StatusDetails})
 			}
 		} else {
 			table.SetHeader([]string{"TESTGRID BOARD", "TITLE", "STATUS", "STATUS DETAILS", "URL", "UPDATED AT"})
+
 			for _, record := range r.Records {
 				data = append(data, []string{
 					record.TestgridBoard,
@@ -251,6 +268,7 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 				})
 			}
 		}
+
 		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
 		table.AppendBulk(data)
 		table.SetCenterSeparator("|")
@@ -259,16 +277,20 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 		// write a summary
 		countCategories := map[string]int{}
 		categoryIndex := 2
+
 		for i := range data {
 			countCategories[data[i][categoryIndex]]++
 		}
+
 		categoryCounts := ""
 		for category, categoryCount := range countCategories {
 			categoryCounts += fmt.Sprintf("%s:%d ", category, categoryCount)
 		}
+
 		if _, err := fmt.Fprintf(out, "\nSUMMARY - Total:%d %s\n", len(data), categoryCounts); err != nil {
 			return fmt.Errorf("could not write to output stream: %w", err)
 		}
 	}
+
 	return nil
 }

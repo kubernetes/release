@@ -44,6 +44,7 @@ func TestRun(t *testing.T) {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.AskReturns("", true, nil)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -54,6 +55,7 @@ func TestRun(t *testing.T) {
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(true, nil)
+
 				return &Options{Branch: branch, NonInteractive: true}
 			},
 			assert: func(err error) {
@@ -65,6 +67,7 @@ func TestRun(t *testing.T) {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.RepoCheckoutReturnsOnCall(1, errTest)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -76,6 +79,7 @@ func TestRun(t *testing.T) {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.RepoCleanupReturns(errTest)
+
 				return &Options{Branch: branch, Cleanup: true}
 			},
 			assert: func(err error) {
@@ -93,6 +97,7 @@ func TestRun(t *testing.T) {
 		{ // success no fast forward required
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.RepoHasRemoteTagReturns(true, nil)
+
 				return &Options{}
 			},
 			assert: func(err error) {
@@ -110,6 +115,7 @@ func TestRun(t *testing.T) {
 		{ // success prepare tool repo
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.ExistsReturns(false)
+
 				return &Options{Submit: true}
 			},
 			assert: func(err error) {
@@ -137,6 +143,7 @@ func TestRun(t *testing.T) {
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.ExistsReturns(false)
 				mock.ChdirReturns(errTest)
+
 				return &Options{Submit: true}
 			},
 			assert: func(err error) {
@@ -147,6 +154,7 @@ func TestRun(t *testing.T) {
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.ExistsReturns(false)
 				mock.CloneOrOpenGitHubRepoReturns(nil, errTest)
+
 				return &Options{Submit: true}
 			},
 			assert: func(err error) {
@@ -157,6 +165,7 @@ func TestRun(t *testing.T) {
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.ExistsReturns(false)
 				mock.RemoveAllReturns(errTest)
+
 				return &Options{Submit: true}
 			},
 			assert: func(err error) {
@@ -167,6 +176,7 @@ func TestRun(t *testing.T) {
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.ExistsReturns(false)
 				mock.MkdirTempReturns("", errTest)
+
 				return &Options{Submit: true}
 			},
 			assert: func(err error) {
@@ -178,6 +188,7 @@ func TestRun(t *testing.T) {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.EnvDefaultReturns("token")
+
 				return &Options{Branch: branch, NonInteractive: true}
 			},
 			assert: func(err error) {
@@ -191,6 +202,7 @@ func TestRun(t *testing.T) {
 				mock.EnvDefaultReturns("token")
 				mock.IsDefaultK8sUpstreamReturns(true)
 				mock.RepoSetURLReturns(errTest)
+
 				return &Options{Branch: branch, NonInteractive: true}
 			},
 			assert: func(err error) {
@@ -203,6 +215,7 @@ func TestRun(t *testing.T) {
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.EnvDefaultReturns("token")
 				mock.CloneOrOpenGitHubRepoReturns(nil, errTest)
+
 				return &Options{Branch: branch, NonInteractive: true}
 			},
 			assert: func(err error) {
@@ -212,6 +225,7 @@ func TestRun(t *testing.T) {
 		{ // failure on Submit
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.SubmitReturns(errTest)
+
 				return &Options{Submit: true}
 			},
 			assert: func(err error) {
@@ -221,6 +235,7 @@ func TestRun(t *testing.T) {
 		{ // failure on RepoLatestReleaseBranch
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.RepoLatestReleaseBranchReturns("", errTest)
+
 				return &Options{}
 			},
 			assert: func(err error) {
@@ -230,6 +245,7 @@ func TestRun(t *testing.T) {
 		{ // failure on RepoHasRemoteTag
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.RepoHasRemoteTagReturns(false, errTest)
+
 				return &Options{}
 			},
 			assert: func(err error) {
@@ -239,6 +255,7 @@ func TestRun(t *testing.T) {
 		{ // failure on CloneOrOpenDefaultGitHubRepoSSH
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.CloneOrOpenDefaultGitHubRepoSSHReturns(nil, errTest)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -248,6 +265,7 @@ func TestRun(t *testing.T) {
 		{ // failure not a release branch
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.IsReleaseBranchReturns(false)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -258,6 +276,7 @@ func TestRun(t *testing.T) {
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(false, errTest)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -268,6 +287,7 @@ func TestRun(t *testing.T) {
 			prepare: func(mock *fastforwardfakes.FakeImpl) *Options {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(false, nil)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -279,6 +299,7 @@ func TestRun(t *testing.T) {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.ListIssuesReturns(nil, errTest)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -290,6 +311,7 @@ func TestRun(t *testing.T) {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.RepoCurrentBranchReturns("", errTest)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -301,6 +323,7 @@ func TestRun(t *testing.T) {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.RepoCheckoutReturnsOnCall(0, errTest)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -312,6 +335,7 @@ func TestRun(t *testing.T) {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.ConfigureGlobalDefaultUserAndEmailReturns(errTest)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -323,6 +347,7 @@ func TestRun(t *testing.T) {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.RepoMergeBaseReturns("", errTest)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -334,6 +359,7 @@ func TestRun(t *testing.T) {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.RepoDescribeReturnsOnCall(0, "", errTest)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -345,6 +371,7 @@ func TestRun(t *testing.T) {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.RepoDescribeReturnsOnCall(1, "", errTest)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -356,6 +383,7 @@ func TestRun(t *testing.T) {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.RepoDescribeReturnsOnCall(0, "test", nil)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -367,6 +395,7 @@ func TestRun(t *testing.T) {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.RepoHeadReturnsOnCall(0, "", errTest)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -378,6 +407,7 @@ func TestRun(t *testing.T) {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.RepoMergeReturns(errTest)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -389,6 +419,7 @@ func TestRun(t *testing.T) {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.RepoHeadReturnsOnCall(1, "", errTest)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -400,6 +431,7 @@ func TestRun(t *testing.T) {
 				mock.IsReleaseBranchReturns(true)
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.AskReturns("", false, errTest)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {
@@ -412,6 +444,7 @@ func TestRun(t *testing.T) {
 				mock.RepoHasRemoteBranchReturns(true, nil)
 				mock.AskReturns("", true, nil)
 				mock.RepoPushReturns(errTest)
+
 				return &Options{Branch: branch}
 			},
 			assert: func(err error) {

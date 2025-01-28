@@ -36,5 +36,6 @@ func (*defaultImpl) GetURLResponse(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return string(bytes.TrimSpace(content)), nil
 }

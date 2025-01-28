@@ -100,6 +100,7 @@ func runValidateReleaseNotes(releaseNotesPath string) (err error) {
 
 			fmt.Printf("YAML file %s is valid.\n", path)
 		}
+
 		return nil
 	})
 	if err != nil {
@@ -107,6 +108,7 @@ func runValidateReleaseNotes(releaseNotesPath string) (err error) {
 	}
 
 	fmt.Println("All release notes are valid.")
+
 	return nil
 }
 
@@ -139,6 +141,7 @@ func ValidateYamlMap(filePath string) error {
 	}
 
 	fmt.Printf("File %s is valid YAML.\n", filePath)
+
 	return nil
 }
 

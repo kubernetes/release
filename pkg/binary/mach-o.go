@@ -54,10 +54,13 @@ func NewMachOBinary(filePath string, opts *Options) (*MachOBinary, error) {
 	if err != nil {
 		return nil, fmt.Errorf("trying to read a Mach-O header from file: %w", err)
 	}
+
 	if header == nil {
 		logrus.Debug("File is not a Mach-O binary")
+
 		return nil, nil
 	}
+
 	return &MachOBinary{
 		Header:  header,
 		Options: opts,
@@ -83,6 +86,7 @@ func (machoh *MachOHeader) WordLength() int {
 	case MachOFat:
 		return 0
 	}
+
 	return 0
 }
 
@@ -90,7 +94,6 @@ func (machoh *MachOHeader) WordLength() int {
 func (machoh *MachOHeader) MachineType() string {
 	// Interpret the header byte defining the CPU arch. Defined here:
 	// https://opensource.apple.com/source/cctools/cctools-836/include/mach/machine.h
-
 	// Universal Binaries can support many architectures in the same file.
 	if machoh.Magic == MachOFat {
 		return "FAT"
@@ -121,6 +124,7 @@ func (machoh *MachOHeader) MachineType() string {
 	}
 
 	logrus.Warnf("Unable to interpret machine type from mach-o header value %d", machoh.CPU)
+
 	return ""
 }
 
@@ -133,41 +137,52 @@ func GetMachOHeader(path string) (*MachOHeader, error) {
 	defer f.Close()
 
 	reader := bufio.NewReader(f)
+
 	hBytes, err := reader.Peek(4)
 	if err != nil {
 		return nil, fmt.Errorf("reading the binary header: %w", err)
 	}
 
 	var endianness binary.ByteOrder
+
 	magic := binary.BigEndian.Uint32(hBytes)
 	switch magic {
 	case MachO32Magic:
 		logrus.Info("Mach-O 32bit")
+
 		endianness = binary.BigEndian
 	case MachO64Magic:
 		logrus.Info("Mach-O 64bit")
+
 		endianness = binary.BigEndian
 	case MachO32LIMagic:
 		logrus.Info("Mach-O 32bit Little Endian")
+
 		endianness = binary.LittleEndian
 	case MachO64LIMagic:
 		logrus.Info("Mach-O 64bit Little Endian")
+
 		endianness = binary.LittleEndian
 	case MachOFat:
 		logrus.Info("Mach-O Universal Binary")
+
 		endianness = binary.BigEndian
 	default:
 		logrus.Debug("File is not a Mach-O binary")
+
 		return nil, nil
 	}
 
 	header := &MachOHeader{}
+
 	if _, err := f.Seek(0, 0); err != nil {
 		return nil, fmt.Errorf("seeking to the start of the file: %w", err)
 	}
+
 	if err := binary.Read(f, endianness, header); err != nil {
 		return nil, fmt.Errorf("reading Mach-O header from binary file: %w", err)
 	}
+
 	return header, nil
 }
 

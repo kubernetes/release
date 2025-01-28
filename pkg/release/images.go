@@ -76,6 +76,7 @@ func (*defaultImageImpl) ExecuteOutput(cmd string, args ...string) (string, erro
 	if err != nil {
 		return "", err
 	}
+
 	return res.OutputTrimNL(), nil
 }
 
@@ -87,11 +88,13 @@ func (*defaultImageImpl) RepoTagFromTarball(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return tagOutput.OutputTrimNL(), nil
 }
 
 func (*defaultImageImpl) SignImage(signer *sign.Signer, reference string) error {
 	_, err := signer.SignImage(reference)
+
 	return err
 }
 
@@ -171,6 +174,7 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 				fmt.Sprintf("%s-%s:%s", image, arch, version),
 			)
 		}
+
 		if err := i.Execute("docker", append(
 			[]string{"manifest", "create", "--amend", imageVersion},
 			manifests...,
@@ -183,6 +187,7 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 				"Annotating %s-%s:%s with --arch %s",
 				image, arch, version, arch,
 			)
+
 			if err := i.Execute(
 				"docker", "manifest", "annotate", "--arch", arch,
 				imageVersion, fmt.Sprintf("%s-%s:%s", image, arch, version),
@@ -192,6 +197,7 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 		}
 
 		logrus.Infof("Pushing manifest image %s", imageVersion)
+
 		if err := wait.ExponentialBackoff(wait.Backoff{
 			Duration: time.Second,
 			Factor:   1.5,
@@ -205,6 +211,7 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 				// https://github.com/golang/go/blob/dc04f3b/src/net/http/transport.go#L2518
 				// ref: https://github.com/kubernetes/release/issues/2810
 				logrus.Info("Retrying manifest push")
+
 				return false, nil
 			}
 
@@ -225,21 +232,25 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 // registry.
 func (i *Images) Validate(registry, version, buildPath string) error {
 	logrus.Infof("Validating image manifests in %s", registry)
+
 	version = i.normalizeVersion(version)
 
 	manifestImages, err := i.GetManifestImages(
 		registry, version, buildPath,
 		func(_, _, image string) error {
 			logrus.Infof("Verifying that image is signed: %s", image)
+
 			if err := i.VerifyImage(i.signer, image); err != nil {
 				return fmt.Errorf("verify signed image: %w", err)
 			}
+
 			return nil
 		},
 	)
 	if err != nil {
 		return fmt.Errorf("get manifest images: %w", err)
 	}
+
 	logrus.Infof("Got manifest images %+v", manifestImages)
 
 	for image, arches := range manifestImages {
@@ -251,15 +262,18 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 		}
 
 		logrus.Info("Verifying that image manifest list is signed")
+
 		if err := i.VerifyImage(i.signer, imageVersion); err != nil {
 			return fmt.Errorf("verify signed manifest list: %w", err)
 		}
 
 		manifest := string(manifestBytes)
+
 		manifestFile, err := os.CreateTemp("", "manifest-")
 		if err != nil {
 			return fmt.Errorf("create temp file for manifest: %w", err)
 		}
+
 		if _, err := manifestFile.WriteString(manifest); err != nil {
 			return fmt.Errorf("write manifest to %s: %w", manifestFile.Name(), err)
 		}
@@ -303,9 +317,12 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 func (i *Images) Exists(registry, version string, fast bool) (bool, error) {
 	if registry == "" {
 		logrus.Info("no image registry was supplied, assuming no images are being pushed")
+
 		return true, nil
 	}
+
 	logrus.Infof("Validating image manifests in %s", registry)
+
 	version = i.normalizeVersion(version)
 
 	manifestImages := ManifestImages
@@ -324,10 +341,12 @@ func (i *Images) Exists(registry, version string, fast bool) (bool, error) {
 		}
 
 		manifest := string(manifestBytes)
+
 		manifestFile, err := os.CreateTemp("", "manifest-")
 		if err != nil {
 			return false, fmt.Errorf("create temp file for manifest: %w", err)
 		}
+
 		if _, err := manifestFile.WriteString(manifest); err != nil {
 			return false, fmt.Errorf("write manifest to %s: %w", manifestFile.Name(), err)
 		}
@@ -384,6 +403,7 @@ func (i *Images) GetManifestImages(
 		arch := archPath.Name()
 		if !archPath.IsDir() {
 			logrus.Infof("Skipping %s because it's not a directory", arch)
+
 			continue
 		}
 
@@ -400,6 +420,7 @@ func (i *Images) GetManifestImages(
 				fileName := info.Name()
 				if !strings.HasSuffix(fileName, ".tar") {
 					logrus.Infof("Skipping non-tarball %s", fileName)
+
 					return nil
 				}
 
@@ -430,12 +451,14 @@ func (i *Images) GetManifestImages(
 						return fmt.Errorf("executing tarball callback: %w", err)
 					}
 				}
+
 				return nil
 			},
 		); err != nil {
 			return nil, fmt.Errorf("traversing path: %w", err)
 		}
 	}
+
 	return manifestImages, nil
 }
 

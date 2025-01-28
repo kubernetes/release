@@ -111,6 +111,7 @@ func writeTestBinary(t *testing.T, base64Data string) *os.File {
 func TestOS(t *testing.T) {
 	mock := &binaryfakes.FakeBinaryImplementation{}
 	mock.OSReturns("darwin")
+
 	sut := &binary.Binary{}
 	sut.SetImplementation(mock)
 
@@ -120,6 +121,7 @@ func TestOS(t *testing.T) {
 func TestArch(t *testing.T) {
 	mock := &binaryfakes.FakeBinaryImplementation{}
 	mock.ArchReturns("amd64")
+
 	sut := &binary.Binary{}
 	sut.SetImplementation(mock)
 
@@ -132,6 +134,7 @@ func TestGetELFHeader(t *testing.T) {
 		header, err := binary.GetELFHeader(f.Name())
 		os.Remove(f.Name())
 		require.NoError(t, err)
+
 		if testBin.OS == "linux" {
 			require.NotNil(t, header)
 			require.Equal(t, testBin.Bits, header.WordLength())
@@ -147,6 +150,7 @@ func TestGetMachOHeader(t *testing.T) {
 		header, err := binary.GetMachOHeader(f.Name())
 		os.Remove(f.Name())
 		require.NoError(t, err)
+
 		if testBin.OS == "darwin" {
 			require.NotNil(t, header)
 			require.Equal(t, testBin.Bits, header.WordLength())
@@ -162,6 +166,7 @@ func TestGetPEHeader(t *testing.T) {
 		header, err := binary.GetPEHeader(f.Name())
 		os.Remove(f.Name())
 		require.NoError(t, err)
+
 		if testBin.OS == "windows" {
 			require.NotNil(t, header, "testing binary for %s/%s", testBin.OS, testBin.Arch)
 			require.Equal(t, testBin.Bits, header.WordLength())

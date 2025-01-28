@@ -114,6 +114,7 @@ func (h *History) Run() error {
 	tagFilter := fmt.Sprintf(
 		"tags=%q create_time>%q create_time<%q", h.opts.Branch, from, to,
 	)
+
 	jobs, err := h.impl.GetJobsByTag(h.opts.Project, tagFilter)
 	if err != nil {
 		return fmt.Errorf("get GCP build jobs by tag: %w", err)
@@ -124,12 +125,15 @@ func (h *History) Run() error {
 	table.SetAutoWrapText(false)
 
 	table.SetHeader([]string{"Step", "Command", "Link", "Start", "Duration", "Succeeded?"})
+
 	for i := len(jobs) - 1; i >= 0; i-- {
 		job := jobs[i]
 		subcommand := ""
+
 		for _, tag := range job.Tags {
 			if tag == "RELEASE" || tag == "STAGE" {
 				subcommand = strings.ToLower(tag)
+
 				break
 			}
 		}
@@ -143,6 +147,7 @@ func (h *History) Run() error {
 		)
 
 		var mock string
+
 		if job.Substitutions["_NOMOCK"] != "" {
 			command = fmt.Sprintf("%s %s`", command, job.Substitutions["_NOMOCK"])
 			mock = ""
@@ -157,19 +162,23 @@ func (h *History) Run() error {
 
 		if start == "" || end == "" {
 			logrus.Infof("Skipping unfinished job from %s with ID: %s", job.CreateTime, job.Id)
+
 			continue
 		}
 
 		// Calculate the duration of the job
 		const layout = "2006-01-02T15:04:05.99Z"
+
 		tStart, err := h.impl.ParseTime(layout, start)
 		if err != nil {
 			return fmt.Errorf("parsing the start job time: %w", err)
 		}
+
 		tEnd, err := h.impl.ParseTime(layout, end)
 		if err != nil {
 			return fmt.Errorf("parsing the end job time: %w", err)
 		}
+
 		diff := tEnd.Sub(tStart)
 		out := time.Time{}.Add(diff)
 
@@ -187,6 +196,7 @@ func (h *History) Run() error {
 	table.Render()
 
 	fmt.Print(tableString.String())
+
 	return nil
 }
 
@@ -199,10 +209,12 @@ func (h *History) parseDateRange() (from, to string, err error) {
 		parseLayout  = "2006-01-02"
 		resultLayout = "2006-01-02T15:04:05.000Z"
 	)
+
 	timeStampFrom, err := h.impl.ParseTime(parseLayout, h.opts.DateFrom)
 	if err != nil {
 		return "", "", fmt.Errorf("convert date from: %w", err)
 	}
+
 	from = timeStampFrom.Format(resultLayout)
 
 	if h.opts.DateTo == "" {

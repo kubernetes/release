@@ -34,6 +34,7 @@ func newSut() (*testgrid.TestGrid, *testgridfakes.FakeClient) {
 	client := &testgridfakes.FakeClient{}
 	sut := testgrid.New()
 	sut.SetClient(client)
+
 	return sut, client
 }
 

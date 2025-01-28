@@ -72,6 +72,7 @@ func TestNewPatchRelease(t *testing.T) {
 	// Verify local results
 	fileContains(t, "CHANGELOG-1.25.html", patchReleaseExpectedHTML)
 	require.NoError(t, os.RemoveAll("CHANGELOG-1.25.html"))
+
 	for _, x := range []struct {
 		branch        string
 		commitMessage string
@@ -202,6 +203,7 @@ func TestNewMinorRelease(t *testing.T) {
 
 	fileContains(t, "CHANGELOG-1.21.html", minorReleaseExpectedHTML)
 	require.NoError(t, os.RemoveAll("CHANGELOG-1.21.html"))
+
 	for _, x := range []struct {
 		branch        string
 		commitMessage string

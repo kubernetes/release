@@ -76,11 +76,14 @@ func (r *BranchChecker) NeedsCreation(
 		logrus.Infof("Branch %s does already exist on remote location", branch)
 	} else {
 		logrus.Infof("Branch %s does not yet exist on remote location", branch)
+
 		if releaseType == ReleaseTypeOfficial {
 			return false, errors.New("can't do officials releases when creating a new branch")
 		}
+
 		createReleaseBranch = true
 	}
+
 	logrus.Infof("Release branch needs to be created: %v", createReleaseBranch)
 
 	if branch == git.DefaultBranch {

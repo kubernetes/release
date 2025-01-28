@@ -117,6 +117,7 @@ func TestGetStagingSubjects(t *testing.T) {
 	for _, sub := range subjects {
 		filename := filepath.Base(sub.Name)
 		require.NotEmpty(t, filename)
+
 		_, ok := testFiles[filepath.Join("second", filename)]
 		if filename == SourcesTar {
 			require.False(t, ok)

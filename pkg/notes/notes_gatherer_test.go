@@ -43,6 +43,7 @@ func TestMain(m *testing.M) {
 
 func TestListCommits(t *testing.T) {
 	t.Parallel()
+
 	const always = -1
 
 	zeroTime := &github.Timestamp{}
@@ -52,6 +53,7 @@ func TestListCommits(t *testing.T) {
 		r  *github.Response
 		e  error
 	}
+
 	type getCommitReturnsList map[int]struct {
 		c *github.Commit
 		r *github.Response
@@ -185,6 +187,7 @@ func TestListCommits(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			tc := tc
+
 			t.Parallel()
 
 			client := &githubfakes.FakeClient{}
@@ -226,6 +229,7 @@ func TestListCommits(t *testing.T) {
 					val(t, i, ctx, org, repo, rev)
 				}
 			}
+
 			if val := tc.listCommitsArgValidator; val != nil {
 				for i := range client.ListCommitsCallCount() {
 					ctx, org, repo, clo := client.ListCommitsArgsForCall(i)
@@ -238,7 +242,9 @@ func TestListCommits(t *testing.T) {
 
 func TestGatherNotes(t *testing.T) {
 	t.Parallel()
+
 	type getPullRequestStub func(context.Context, string, string, int) (*github.PullRequest, *github.Response, error)
+
 	type listPullRequestsWithCommitStub func(context.Context, string, string, string, *github.ListOptions) ([]*github.PullRequest, *github.Response, error)
 
 	tests := map[string]struct {
@@ -285,6 +291,7 @@ func TestGatherNotes(t *testing.T) {
 					if e, a := "some-random-sha", sha; e != a {
 						t.Errorf("Expected ListPullRequestsWithCommit(...) to be called for SHA '%s', have been called for '%s'", e, a)
 					}
+
 					return nil, &github.Response{}, nil
 				}
 			},
@@ -308,6 +315,7 @@ func TestGatherNotes(t *testing.T) {
 					if err := seenPRs.Mark(prID); err != nil {
 						t.Errorf("In GetPullRequest: %v", err)
 					}
+
 					return nil, nil, nil
 				}
 			},
@@ -366,6 +374,7 @@ func TestGatherNotes(t *testing.T) {
 					if a, e := callCount+1, len(prsPerCall); a > e {
 						return nil, &github.Response{}, nil
 					}
+
 					return prsPerCall[callCount], &github.Response{}, nil
 				}
 			},
@@ -384,14 +393,17 @@ func TestGatherNotes(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			tc := tc
+
 			t.Parallel()
 
 			client := &githubfakes.FakeClient{}
 
 			gatherer := NewGathererWithClient(context.Background(), client)
+
 			if stubber := tc.listPullRequestsWithCommitStubber; stubber != nil {
 				client.ListPullRequestsWithCommitStub = stubber(t)
 			}
+
 			if stubber := tc.getPullRequestStubber; stubber != nil {
 				client.GetPullRequestStub = stubber(t)
 			}
@@ -470,10 +482,13 @@ func (s *intsRecorder) Mark(what int) error {
 	if !ok {
 		return fmt.Errorf("Expected not to get a request to mark %d as seen", what)
 	}
+
 	if seen {
 		return fmt.Errorf("Expected to mark %d as seen only once", what)
 	}
+
 	s.seen[what] = true
+
 	return nil
 }
 
@@ -494,6 +509,7 @@ func checkOrgRepo(t *testing.T, org, repo string) {
 	if org != git.DefaultGithubOrg {
 		t.Errorf("Expected to be called with '%s' as an org, got: %s", git.DefaultGithubOrg, org)
 	}
+
 	if repo != git.DefaultGithubRepo {
 		t.Errorf("Expected to be called with '%s' as a repo, got: %s", git.DefaultGithubRepo, repo)
 	}
@@ -506,11 +522,13 @@ func checkErrMsg(t *testing.T, err error, expectedMsg string) {
 		if err != nil {
 			t.Errorf("Expected no error, got: %#v", err)
 		}
+
 		return
 	}
 
 	if err == nil {
 		t.Errorf("Expected error, but got none")
+
 		return
 	}
 
@@ -527,5 +545,6 @@ func response(statusCode, lastPage int) *github.Response {
 			StatusCode: statusCode,
 		},
 	}
+
 	return res
 }

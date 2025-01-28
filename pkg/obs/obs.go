@@ -205,6 +205,7 @@ func (o *Options) Validate(submit bool) error {
 	if o.ReleaseType != "" || o.ReleaseBranch != "" || o.BuildVersion != "" {
 		foundK8sOption = true
 	}
+
 	if o.Project != "" || o.PackageSource != "" || o.Version != "" {
 		foundManualOption = true
 	}
@@ -212,6 +213,7 @@ func (o *Options) Validate(submit bool) error {
 	if foundK8sOption && foundManualOption {
 		return errors.New("kubernetes and manual options are mutually exclusive")
 	}
+
 	if !foundK8sOption && !foundManualOption {
 		return errors.New("one of kubernetes or manual options are required")
 	}
@@ -248,6 +250,7 @@ func (o *Options) ValidateBuildVersion(state *State) error {
 	if err != nil {
 		return fmt.Errorf("checking for a valid build version: %w", err)
 	}
+
 	if !correct {
 		return errors.New("invalid BuildVersion specified")
 	}
@@ -256,7 +259,9 @@ func (o *Options) ValidateBuildVersion(state *State) error {
 	if err != nil {
 		return fmt.Errorf("invalid build version: %s: %w", o.BuildVersion, err)
 	}
+
 	state.semverBuildVersion = semverBuildVersion
+
 	return nil
 }
 
@@ -265,6 +270,7 @@ func (o *Options) Bucket() string {
 	if o.NoMock {
 		return release.ProductionBucket
 	}
+
 	return release.TestBucket
 }
 
@@ -383,9 +389,11 @@ func (s *Stage) SetClient(client stageClient) {
 // Submit can be used to submit a staging Google Cloud Build (GCB) job.
 func (s *Stage) Submit(stream bool) error {
 	logrus.Info("Submitting OBS stage GCB job")
+
 	if err := s.client.Submit(stream); err != nil {
 		return fmt.Errorf("submit obs stage job: %w", err)
 	}
+
 	return nil
 }
 
@@ -399,26 +407,31 @@ func (s *Stage) Run() error {
 	logger.Infof("Using krel version: %s", v.GitVersion)
 
 	logger.WithStep().Info("Validating options")
+
 	if err := s.client.ValidateOptions(); err != nil {
 		return fmt.Errorf("validating options: %w", err)
 	}
 
 	logger.WithStep().Info("Initializing OBS root and config")
+
 	if err := s.client.InitOBSRoot(); err != nil {
 		return fmt.Errorf("initializing obs root: %w", err)
 	}
 
 	logger.WithStep().Info("Checking prerequisites")
+
 	if err := s.client.CheckPrerequisites(); err != nil {
 		return fmt.Errorf("check prerequisites: %w", err)
 	}
 
 	logger.WithStep().Info("Checking release branch state")
+
 	if err := s.client.CheckReleaseBranchState(); err != nil {
 		return fmt.Errorf("checking release branch state: %w", err)
 	}
 
 	logger.WithStep().Info("Generating release version")
+
 	if err := s.client.GenerateReleaseVersion(); err != nil {
 		return fmt.Errorf("generating release version: %w", err)
 	}
@@ -427,26 +440,31 @@ func (s *Stage) Run() error {
 	s.client.GeneratePackageVersion()
 
 	logger.WithStep().Info("Generating OBS project name")
+
 	if err := s.client.GenerateOBSProject(); err != nil {
 		return fmt.Errorf("generating obs project name: %w", err)
 	}
 
 	logger.WithStep().Info("Checking out OBS project")
+
 	if err := s.client.CheckoutOBSProject(); err != nil {
 		return fmt.Errorf("checking out obs project: %w", err)
 	}
 
 	logger.WithStep().Info("Generating spec files and artifact archives")
+
 	if err := s.client.GeneratePackageArtifacts(); err != nil {
 		return fmt.Errorf("generating package artifacts: %w", err)
 	}
 
 	logger.WithStep().Info("Pushing packages to OBS")
+
 	if err := s.client.Push(); err != nil {
 		return fmt.Errorf("pushing packages to obs: %w", err)
 	}
 
 	logger.WithStep().Info("Waiting for OBS build results if required")
+
 	if err := s.client.Wait(); err != nil {
 		return fmt.Errorf("wait for OBS build results: %w", err)
 	}
@@ -524,9 +542,11 @@ func (r *Release) SetClient(client releaseClient) {
 // Submit can be used to submit a releasing Google Cloud Build (GCB) job.
 func (r *Release) Submit(stream bool) error {
 	logrus.Info("Submitting release GCB job")
+
 	if err := r.client.Submit(stream); err != nil {
 		return fmt.Errorf("submit release job: %w", err)
 	}
+
 	return nil
 }
 
@@ -539,41 +559,49 @@ func (r *Release) Run() error {
 	logger.Infof("Using krel version: %s", v.GitVersion)
 
 	logger.WithStep().Info("Validating options")
+
 	if err := r.client.ValidateOptions(); err != nil {
 		return fmt.Errorf("validating options: %w", err)
 	}
 
 	logger.WithStep().Info("Initializing OBS root and config")
+
 	if err := r.client.InitOBSRoot(); err != nil {
 		return fmt.Errorf("initializing obs root: %w", err)
 	}
 
 	logger.WithStep().Info("Checking prerequisites")
+
 	if err := r.client.CheckPrerequisites(); err != nil {
 		return fmt.Errorf("check prerequisites: %w", err)
 	}
 
 	logger.WithStep().Info("Checking release branch state")
+
 	if err := r.client.CheckReleaseBranchState(); err != nil {
 		return fmt.Errorf("checking release branch state: %w", err)
 	}
 
 	logger.WithStep().Info("Generating release version")
+
 	if err := r.client.GenerateReleaseVersion(); err != nil {
 		return fmt.Errorf("generating release version: %w", err)
 	}
 
 	logger.WithStep().Info("Generating OBS project name")
+
 	if err := r.client.GenerateOBSProject(); err != nil {
 		return fmt.Errorf("generating obs project name: %w", err)
 	}
 
 	logger.WithStep().Info("Checking out OBS project")
+
 	if err := r.client.CheckoutOBSProject(); err != nil {
 		return fmt.Errorf("checking out obs project: %w", err)
 	}
 
 	logger.WithStep().Info("Releasing packages to OBS")
+
 	if err := r.client.ReleasePackages(); err != nil {
 		return fmt.Errorf("releasing packages: %w", err)
 	}

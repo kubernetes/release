@@ -81,9 +81,11 @@ func (r GithubReporter) CollectReportData(ctx context.Context, cfg *Config) ([]*
 	allowListFilter := map[FilteredFieldName][]FilteredListVal{
 		FilteredFieldName("view"): {"issue-tracking"},
 	}
+
 	if cfg.ShortReport {
 		denyListFilter[FilteredFieldName("Status")] = []FilteredListVal{FilteredListVal("RESOLVED"), FilteredListVal("PASSING")}
 	}
+
 	if cfg.ReleaseVersion != "" {
 		allowListFilter[FilteredFieldName("K8s Release")] = []FilteredListVal{FilteredListVal(cfg.ReleaseVersion)}
 	}
@@ -92,6 +94,7 @@ func (r GithubReporter) CollectReportData(ctx context.Context, cfg *Config) ([]*
 	if err != nil {
 		return nil, fmt.Errorf("getting GitHub report data: %w", err)
 	}
+
 	records := []*CIReportRecord{}
 
 	for _, item := range githubReportData {
@@ -100,6 +103,7 @@ func (r GithubReporter) CollectReportData(ctx context.Context, cfg *Config) ([]*
 		if issueURL, ok := item.Fields[fieldName(IssueURLKey)]; ok {
 			URL = string(issueURL)
 		}
+
 		if prURL, ok := item.Fields[fieldName(PullRequestURLKey)]; ok {
 			URL = string(prURL)
 		}
@@ -114,6 +118,7 @@ func (r GithubReporter) CollectReportData(ctx context.Context, cfg *Config) ([]*
 			UpdatedTimestamp: string(item.Fields[fieldName(UpdatedAtKey)]),
 		})
 	}
+
 	return records, nil
 }
 
@@ -214,6 +219,7 @@ type (
 func GetGithubReportData(ctx context.Context, cfg Config, denyListFieldFilter, allowListFieldFilter map[FilteredFieldName][]FilteredListVal) ([]*TransformedProjectBoardItem, error) {
 	// lookup project board information
 	var queryCiSignalProjectBoard ciSignalProjectBoardGraphQLQuery
+
 	variablesProjectBoardFields := map[string]interface{}{
 		"projectBoardID": githubv4.ID(ciSignalProjectBoardID),
 	}
@@ -234,6 +240,7 @@ func GetGithubReportData(ctx context.Context, cfg Config, denyListFieldFilter, a
 		projectBoardFieldID   string
 		projectBoardFieldName string
 	)
+
 	projectBoardFieldIDs := map[projectBoardFieldID]projectBoardFieldName{}
 
 	for _, field := range queryCiSignalProjectBoard.Node.ProjectNext.Fields.Nodes {
@@ -241,15 +248,18 @@ func GetGithubReportData(ctx context.Context, cfg Config, denyListFieldFilter, a
 		if err := json.Unmarshal([]byte(field.Settings), &fieldSettings); err != nil {
 			return nil, err
 		}
+
 		for _, option := range fieldSettings.Options {
 			projectBoardFieldIDs[projectBoardFieldID(option.ID)] = projectBoardFieldName(option.Name)
 		}
 	}
 
 	transformedProjectBoardItems := []*TransformedProjectBoardItem{}
+
 	for _, item := range queryCiSignalProjectBoard.Node.ProjectNext.Items.Nodes {
 		transFields := map[fieldName]fieldValue{}
 		itemBlacklisted := false
+
 		for _, field := range item.FieldValues.Nodes {
 			fieldVal := field.Value
 			// To check if the field value is blacklisted
@@ -267,9 +277,11 @@ func GetGithubReportData(ctx context.Context, cfg Config, denyListFieldFilter, a
 				for _, bv := range denyListValues {
 					if fieldVal == string(bv) {
 						itemBlacklisted = true
+
 						break
 					}
 				}
+
 				if itemBlacklisted {
 					break
 				}
@@ -281,24 +293,31 @@ func GetGithubReportData(ctx context.Context, cfg Config, denyListFieldFilter, a
 				for _, bv := range allowListValues {
 					if fieldVal != string(bv) {
 						itemBlacklisted = true
+
 						break
 					}
 				}
+
 				if itemBlacklisted {
 					break
 				}
 			}
+
 			transFields[fieldName(field.ProjectField.Name)] = fieldValue(fieldVal)
 		}
+
 		if itemBlacklisted {
 			continue
 		}
+
 		if item.Content.Issue.URL != "" {
 			transFields[fieldName("Issue URL")] = fieldValue(item.Content.Issue.URL)
 		}
+
 		if item.Content.PullRequest.URL != "" {
 			transFields[fieldName("PullRequest URL")] = fieldValue(item.Content.PullRequest.URL)
 		}
+
 		transformedProjectBoardItems = append(transformedProjectBoardItems, &TransformedProjectBoardItem{
 			ID:     item.ID,
 			Title:  item.Title,

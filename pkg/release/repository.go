@@ -59,11 +59,14 @@ func (r *Repo) Open() error {
 	if err != nil {
 		return fmt.Errorf("getting current working directory: %w", err)
 	}
+
 	repo, err := git.OpenRepo(dir)
 	if err != nil {
 		return fmt.Errorf("opening release repository: %w", err)
 	}
+
 	r.repo = repo
+
 	return nil
 }
 
@@ -83,7 +86,9 @@ func (r *Repo) GetTag() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("running git describe: %w", err)
 	}
+
 	t := time.Now().Format("20060102")
+
 	return fmt.Sprintf("%s-%s", describeOutput, t), nil
 }
 
@@ -95,11 +100,13 @@ func (r *Repo) CheckState(expOrg, expRepo, expRev string, nomock bool) error {
 	if err != nil {
 		return fmt.Errorf("checking if repository is dirty: %w", err)
 	}
+
 	if dirty {
 		return errors.New(
 			"repository is dirty, please commit and push your changes",
 		)
 	}
+
 	logrus.Info("Repository is in clean state")
 
 	branch, err := r.repo.CurrentBranch()
@@ -134,24 +141,30 @@ func (r *Repo) CheckState(expOrg, expRepo, expRev string, nomock bool) error {
 	if err != nil {
 		return fmt.Errorf("retrieving repository remotes: %w", err)
 	}
+
 	var foundRemote *git.Remote
+
 	for _, remote := range remotes {
 		for _, url := range remote.URLs() {
 			if strings.Contains(url, filepath.Join(expOrg, expRepo)) {
 				foundRemote = remote
+
 				break
 			}
 		}
+
 		if foundRemote != nil {
 			break
 		}
 	}
+
 	if foundRemote == nil {
 		return fmt.Errorf(
 			"unable to find remote matching organization %q and repository %q",
 			expOrg, expRepo,
 		)
 	}
+
 	logrus.Infof(
 		"Found matching organization %q and repository %q in remote: %s (%s)",
 		expOrg,
@@ -161,28 +174,34 @@ func (r *Repo) CheckState(expOrg, expRepo, expRev string, nomock bool) error {
 	)
 
 	logrus.Info("Verifying remote HEAD commit")
+
 	ref := "refs/heads/" + branch
 	if branch == "" {
 		ref = fmt.Sprintf("refs/tags/%s^{}", expRev)
 	}
+
 	lsRemoteOut, err := r.repo.LsRemote(foundRemote.Name(), ref)
 	if err != nil {
 		return fmt.Errorf("getting remote HEAD: %w", err)
 	}
+
 	fields := strings.Fields(lsRemoteOut)
 	if len(fields) < 1 {
 		return fmt.Errorf("unexpected output: %s", lsRemoteOut)
 	}
+
 	commit := fields[0]
 	logrus.Infof("Got remote commit: %s", commit)
 
 	logrus.Info("Verifying that remote commit is equal to the local one")
+
 	if head != commit {
 		return fmt.Errorf(
 			"local HEAD (%s) is not equal to latest remote commit (%s)",
 			head, commit,
 		)
 	}
+
 	logrus.Info("Repository is up-to-date")
 
 	return nil
