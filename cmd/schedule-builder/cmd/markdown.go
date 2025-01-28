@@ -45,18 +45,22 @@ func parsePatchSchedule(patchSchedule PatchSchedule) string {
 		table := tablewriter.NewWriter(tableString)
 		table.SetAutoWrapText(false)
 		table.SetHeader([]string{"Monthly Patch Release", "Cherry Pick Deadline", "Target Date"})
+
 		for _, upcoming := range patchSchedule.UpcomingReleases {
 			targetDate, err := time.Parse(refDate, upcoming.TargetDate)
 			if err != nil {
 				logrus.Errorf("Unable to parse upcoming target date %q: %v", upcoming.TargetDate, err)
+
 				continue
 			}
+
 			table.Append([]string{
 				targetDate.Format(refDateMonthly),
 				strings.TrimSpace(upcoming.CherryPickDeadline),
 				strings.TrimSpace(upcoming.TargetDate),
 			})
 		}
+
 		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
 		table.SetCenterSeparator("|")
 		table.Render()
@@ -87,6 +91,7 @@ func parsePatchSchedule(patchSchedule PatchSchedule) string {
 		for _, previous := range releaseSchedule.PreviousPatches {
 			table.Append([]string{strings.TrimSpace(previous.Release), strings.TrimSpace(previous.CherryPickDeadline), strings.TrimSpace(previous.TargetDate), strings.TrimSpace(previous.Note)})
 		}
+
 		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
 		table.SetCenterSeparator("|")
 		table.Render()
@@ -97,6 +102,7 @@ func parsePatchSchedule(patchSchedule PatchSchedule) string {
 	scheduleOut := strings.Join(output, "\n")
 
 	logrus.Info("Schedule parsed")
+
 	return scheduleOut
 }
 
@@ -114,6 +120,7 @@ func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 	relSched.K8VersionWithDot = releaseSchedule.Releases[0].Version
 	relSched.K8VersionWithoutDot = removeDotfromVersion(releaseSchedule.Releases[0].Version)
 	relSched.Arr = []Timeline{}
+
 	for _, releaseSchedule := range releaseSchedule.Releases {
 		for _, timeline := range releaseSchedule.Timeline {
 			if timeline.Tldr {
@@ -121,6 +128,7 @@ func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 			}
 		}
 	}
+
 	for _, releaseSchedule := range releaseSchedule.Releases {
 		tableString := &strings.Builder{}
 		table := tablewriter.NewWriter(tableString)
@@ -141,6 +149,7 @@ func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 	scheduleOut := processFile("templates/rel-schedule.tmpl", relSched)
 
 	logrus.Info("Release Schedule parsed")
+
 	return scheduleOut
 }
 
@@ -150,6 +159,7 @@ func patchReleaseInPreviousList(a string, previousPatches []*PatchRelease) bool 
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -166,6 +176,7 @@ func process(t *template.Template, vars interface{}) string {
 	if err != nil {
 		panic(err)
 	}
+
 	return tmplBytes.String()
 }
 
@@ -174,6 +185,7 @@ func processFile(fileName string, vars interface{}) string {
 	if err != nil {
 		panic(err)
 	}
+
 	return process(tmpl, vars)
 }
 
@@ -190,10 +202,12 @@ const (
 
 func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches EolBranches, filePath, eolFilePath string) error {
 	removeSchedules := []int{}
+
 	for i, sched := range schedule.Schedules {
 		for {
 			if sched.Next == nil {
 				logrus.Warnf("Next release not set for %s, skipping", sched.Release)
+
 				break
 			}
 
@@ -205,6 +219,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 			if refTime.After(eolDate) {
 				if eolFilePath == "" {
 					logrus.Infof("Skipping end of life release: %s", sched.Release)
+
 					break
 				}
 
@@ -214,7 +229,9 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 					FinalPatchRelease: sched.Next.Release,
 					EndOfLifeDate:     sched.Next.TargetDate,
 				}}, eolBranches.Branches...)
+
 				removeSchedules = append(removeSchedules, i)
+
 				break
 			}
 
@@ -235,6 +252,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 			if err != nil {
 				return fmt.Errorf("parse semver version: %w", err)
 			}
+
 			if err := nextReleaseVersion.IncrementPatch(); err != nil {
 				return fmt.Errorf("increment patch version: %w", err)
 			}
@@ -243,6 +261,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 			if err != nil {
 				return fmt.Errorf("parse cherry pick deadline: %w", err)
 			}
+
 			cherryPickDeadlinePlusOneMonth := cherryPickDeadline.AddDate(0, 1, 0)
 			cherryPickDay := firstFriday(cherryPickDeadlinePlusOneMonth)
 			newCherryPickDeadline := time.Date(cherryPickDeadlinePlusOneMonth.Year(), cherryPickDeadlinePlusOneMonth.Month(), cherryPickDay, 0, 0, 0, 0, time.UTC)
@@ -262,22 +281,28 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 	}
 
 	newSchedules := []*Schedule{}
+
 	for i, sched := range schedule.Schedules {
 		appendItem := true
+
 		for _, k := range removeSchedules {
 			if i == k {
 				appendItem = false
+
 				break
 			}
 		}
+
 		if appendItem {
 			newSchedules = append(newSchedules, sched)
 		}
 	}
+
 	schedule.Schedules = newSchedules
 
 	newUpcomingReleases := []*PatchRelease{}
 	latestDate := refTime
+
 	for _, upcomingRelease := range schedule.UpcomingReleases {
 		upcomingTargetDate, err := time.Parse(refDate, upcomingRelease.TargetDate)
 		if err != nil {
@@ -286,6 +311,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 
 		if refTime.After(upcomingTargetDate) {
 			logrus.Infof("Skipping outdated upcoming release for %s", upcomingRelease.TargetDate)
+
 			continue
 		}
 
@@ -293,9 +319,11 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 		newUpcomingReleases = append(newUpcomingReleases, upcomingRelease)
 		latestDate = upcomingTargetDate
 	}
+
 	for {
 		if len(newUpcomingReleases) >= 3 {
 			logrus.Infof("Got 3 new upcoming releases, not adding any more")
+
 			break
 		}
 
@@ -312,12 +340,14 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 			TargetDate:         nextTargetDate.Format(refDate),
 		})
 	}
+
 	schedule.UpcomingReleases = newUpcomingReleases
 
 	yamlBytes, err := yaml.Marshal(schedule)
 	if err != nil {
 		return fmt.Errorf("marshal schedule YAML: %w", err)
 	}
+
 	yamlBytes = append([]byte(markdownHelp), yamlBytes...)
 
 	//nolint:gocritic,gosec
@@ -332,6 +362,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 		if err != nil {
 			return fmt.Errorf("marshal end of life YAML: %w", err)
 		}
+
 		yamlBytes = append([]byte(markdownHelp), yamlBytes...)
 
 		//nolint:gocritic,gosec
@@ -341,6 +372,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 	}
 
 	logrus.Infof("Wrote schedule YAML to: %v", filePath)
+
 	return nil
 }
 
@@ -354,5 +386,6 @@ func firstFriday(t time.Time) int {
 
 func firstMonday(from time.Time) int {
 	t := time.Date(from.Year(), from.Month(), 1, 0, 0, 0, 0, time.UTC)
+
 	return (8-int(t.Weekday()))%7 + 1
 }

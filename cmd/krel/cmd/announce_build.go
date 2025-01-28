@@ -172,6 +172,7 @@ func runBuildBranchAnnounce(opts *buildBranchAnnounceOptions, buildOpts *buildAn
 	if err != nil {
 		return err
 	}
+
 	announcement := bytes.Buffer{}
 	if err := t.Execute(&announcement, struct {
 		Branch string
@@ -232,12 +233,14 @@ func (opts *buildAnnounceOptions) saveAnnouncement(announcement bytes.Buffer) er
 
 	absOutputPath := filepath.Join(opts.workDir, "announcement.html")
 	logrus.Infof("Writing HTML file to %s", absOutputPath)
+
 	err := os.WriteFile(absOutputPath, announcement.Bytes(), os.FileMode(0o644))
 	if err != nil {
 		return fmt.Errorf("saving announcement.html: %w", err)
 	}
 
 	logrus.Info("Kubernetes Announcement created.")
+
 	return nil
 }
 
@@ -248,6 +251,8 @@ func getGoVersion() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("get go version: %w", err)
 	}
+
 	versionRegex := regexp.MustCompile(semVerRegex)
+
 	return versionRegex.FindString(strings.TrimSpace(cmdStatus.Output())), nil
 }

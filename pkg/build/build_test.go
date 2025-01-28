@@ -22,6 +22,7 @@ import (
 
 func TestBuildDirFromRepoRoot(t *testing.T) {
 	t.Parallel()
+
 	testCases := []struct {
 		name             string
 		instance         *Instance
@@ -42,6 +43,7 @@ func TestBuildDirFromRepoRoot(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			setupBuildDir(tc.instance)
+
 			if tc.instance.opts.BuildDir != tc.expectedBuildDir {
 				t.Errorf("buildDir mismatched, got: %v, want: %v", tc.instance.opts.BuildDir, tc.expectedBuildDir)
 			}

@@ -104,6 +104,7 @@ func (*defaultPrerequisitesChecker) DockerVersion() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return res.OutputTrimNL(), err
 }
 
@@ -127,11 +128,14 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 
 	// Docker version checks
 	const minVersion = "18.06.0"
+
 	logrus.Infof("Verifying minimum Docker version %s", minVersion)
+
 	versionOutput, err := p.impl.DockerVersion()
 	if err != nil {
 		return fmt.Errorf("validate docker version: %w", err)
 	}
+
 	if versionOutput < minVersion {
 		return fmt.Errorf(
 			"minimum docker version %s required, got %s",
@@ -141,6 +145,7 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 
 	// Google Cloud checks
 	logrus.Info("Verifying Google Cloud access")
+
 	if _, err := p.impl.GCloudOutput(
 		"config", "get-value", "project",
 	); err != nil {
@@ -152,6 +157,7 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 		logrus.Infof(
 			"Verifying that %s environment variable is set", github.TokenEnvKey,
 		)
+
 		if !p.impl.IsEnvSet(github.TokenEnvKey) {
 			return fmt.Errorf("no %s env variable set", github.TokenEnvKey)
 		}
@@ -159,13 +165,16 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 
 	// Disk space check
 	const minDiskSpaceGiB = 100
+
 	logrus.Infof(
 		"Checking available disk space (%dGB) for %s", minDiskSpaceGiB, workdir,
 	)
+
 	res, err := p.impl.Usage(workdir)
 	if err != nil {
 		return fmt.Errorf("check available disk space: %w", err)
 	}
+
 	diskSpaceGiB := res.Free / 1024 / 1024 / 1024
 	if diskSpaceGiB < minDiskSpaceGiB {
 		return fmt.Errorf(
@@ -176,6 +185,7 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 
 	// Git setup check
 	logrus.Info("Configuring git user and email")
+
 	if err := p.impl.ConfigureGlobalDefaultUserAndEmail(); err != nil {
 		return fmt.Errorf("configure git user and email: %w", err)
 	}

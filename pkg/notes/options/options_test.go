@@ -57,6 +57,7 @@ type testRepo struct {
 func newTestOptions(t *testing.T) *testOptions {
 	testRepo := newTestRepo(t)
 	t.Setenv(github.TokenEnvKey, "token")
+
 	return &testOptions{
 		Options: &Options{
 			DiscoverMode: RevisionDiscoveryModeNONE,
@@ -105,6 +106,7 @@ func newTestRepo(t *testing.T) *testRepo {
 
 	// Add the test data set
 	const testFileName = "test-file"
+
 	require.NoError(t, os.WriteFile(
 		filepath.Join(cloneTempDir, testFileName),
 		[]byte("test-content"),
@@ -142,11 +144,13 @@ func newTestRepo(t *testing.T) *testRepo {
 	).RunSuccess())
 
 	const branchTestFileName = "branch-test-file"
+
 	require.NoError(t, os.WriteFile(
 		filepath.Join(cloneTempDir, branchTestFileName),
 		[]byte("test-content"),
 		os.FileMode(0o644),
 	))
+
 	_, err = worktree.Add(branchTestFileName)
 	require.NoError(t, err)
 
@@ -166,11 +170,13 @@ func newTestRepo(t *testing.T) *testRepo {
 	require.NoError(t, err)
 
 	const secondBranchTestFileName = "branch-test-file-2"
+
 	require.NoError(t, os.WriteFile(
 		filepath.Join(cloneTempDir, secondBranchTestFileName),
 		[]byte("test-content"),
 		os.FileMode(0o644),
 	))
+
 	_, err = worktree.Add(secondBranchTestFileName)
 	require.NoError(t, err)
 

@@ -41,6 +41,7 @@ func NewProvenanceChecker(opts *ProvenanceCheckerOptions) *ProvenanceChecker {
 	p.objStore.WithConcurrent(true)
 	p.objStore.WithRecursive(true)
 	p.impl = &defaultProvenanceCheckerImpl{}
+
 	return p
 }
 
@@ -59,6 +60,7 @@ func (pc *ProvenanceChecker) CheckStageProvenance(buildVersion string) error {
 	if _, err := h.Write([]byte(buildVersion)); err != nil {
 		return fmt.Errorf("creating dir: %w", err)
 	}
+
 	pc.options.StageDirectory = filepath.Join(pc.options.ScratchDirectory, hex.EncodeToString(h.Sum(nil)))
 
 	gcsPath, err := pc.objStore.NormalizePath(
@@ -85,10 +87,12 @@ func (pc *ProvenanceChecker) CheckStageProvenance(buildVersion string) error {
 	if err := pc.impl.checkProvenance(pc.options, statement); err != nil {
 		return fmt.Errorf("verifying provenance of staged artifacts: %w", err)
 	}
+
 	logrus.Infof(
 		"Successfully verified provenance information of %d staged artifacts",
 		len(statement.Subject),
 	)
+
 	return nil
 }
 
@@ -107,6 +111,7 @@ func (pc *ProvenanceChecker) GenerateFinalAttestation(buildVersion string, versi
 			return fmt.Errorf("generating provenance data for %s: %w", version, err)
 		}
 	}
+
 	return nil
 }
 
@@ -130,14 +135,17 @@ func (di *defaultProvenanceCheckerImpl) downloadStagedArtifacts(
 	opts *ProvenanceCheckerOptions, objStore *object.GCS, path string,
 ) error {
 	logrus.Infof("Synching stage from %s to %s", path, opts.StageDirectory)
+
 	if !util.Exists(opts.StageDirectory) {
 		if err := os.MkdirAll(opts.StageDirectory, os.FileMode(0o755)); err != nil {
 			return fmt.Errorf("creating local working directory: %w", err)
 		}
 	}
+
 	if err := objStore.CopyToLocal(path, opts.StageDirectory); err != nil {
 		return fmt.Errorf("synching staged sources: %w", err)
 	}
+
 	return nil
 }
 
@@ -164,7 +172,9 @@ func (di *defaultProvenanceCheckerImpl) processAttestation(
 		})
 		s.Subject[i].Name = strings.TrimPrefix(sub.Name, gcsPath)
 	}
+
 	s.Subject = newSubjects
+
 	return s, nil
 }
 
@@ -174,6 +184,7 @@ func (di *defaultProvenanceCheckerImpl) checkProvenance(
 	if err := s.VerifySubjects(opts.StageDirectory); err != nil {
 		return fmt.Errorf("checking subjects in attestation: %w", err)
 	}
+
 	return nil
 }
 
@@ -193,9 +204,11 @@ func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(
 			opts.StageBucket, "release", version, sub.Name,
 		)
 	}
+
 	if err := slsaStatement.ClonePredicate(stageProvenance); err != nil {
 		return fmt.Errorf("cloning SLSA predicate from staging provenance: %s: %w", stageProvenance, err)
 	}
+
 	if err := slsaStatement.Write(
 		filepath.Join(os.TempDir(), fmt.Sprintf("provenance-%s.json", version)),
 	); err != nil {
@@ -298,6 +311,7 @@ func (di *defaultProvenanceReaderImpl) GetBuildSubjects(
 	// Cycle the subjects, translate the paths and copy them to the
 	// real attestation:
 	newSubjects := []intoto.Subject{}
+
 	for _, subject := range dummy.Subject {
 		// If the artifact is not in the images or gcs-stage dir, skip
 		if !strings.HasPrefix(subject.Name, ImagesPath) &&
@@ -312,5 +326,6 @@ func (di *defaultProvenanceReaderImpl) GetBuildSubjects(
 
 		newSubjects = append(newSubjects, subject)
 	}
+
 	return newSubjects, nil
 }

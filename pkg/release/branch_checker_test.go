@@ -95,6 +95,7 @@ func TestNeedsCreation(t *testing.T) {
 	} {
 		mock := &releasefakes.FakeBranchCheckerImpl{}
 		sut := release.NewBranchChecker()
+
 		tc.prepare(mock)
 		sut.SetImpl(mock)
 

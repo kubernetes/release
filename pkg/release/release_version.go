@@ -83,18 +83,23 @@ func (r *Versions) Alpha() string {
 func (r *Versions) String() string {
 	sb := &strings.Builder{}
 	fmt.Fprintf(sb, "prime: %s", r.prime)
+
 	if r.official != "" {
 		fmt.Fprintf(sb, ", %s: %s", ReleaseTypeOfficial, r.official)
 	}
+
 	if r.rc != "" {
 		fmt.Fprintf(sb, ", %s: %s", ReleaseTypeRC, r.rc)
 	}
+
 	if r.beta != "" {
 		fmt.Fprintf(sb, ", %s: %s", ReleaseTypeBeta, r.beta)
 	}
+
 	if r.alpha != "" {
 		fmt.Fprintf(sb, ", %s: %s", ReleaseTypeAlpha, r.alpha)
 	}
+
 	return sb.String()
 }
 
@@ -103,15 +108,19 @@ func (r *Versions) Ordered() (versions []string) {
 	if r.Official() != "" {
 		versions = append(versions, r.Official())
 	}
+
 	if r.RC() != "" {
 		versions = append(versions, r.RC())
 	}
+
 	if r.Beta() != "" {
 		versions = append(versions, r.Beta())
 	}
+
 	if r.Alpha() != "" {
 		versions = append(versions, r.Alpha())
 	}
+
 	return versions
 }
 
@@ -139,6 +148,7 @@ func GenerateReleaseVersion(
 	}
 
 	var labelID uint64 = 1
+
 	labelIDAvailable := false
 	if len(v.Pre) > 1 && v.Pre[1].IsNum {
 		labelIDAvailable = true
@@ -149,19 +159,23 @@ func GenerateReleaseVersion(
 	// session/type Other labels such as alpha, beta, and rc are set as needed
 	// Index ordering is important here as it's how they are processed
 	releaseVersions := &Versions{}
+
 	if branchFromMaster { //nolint:gocritic // a switch case would not make it better
 		branchMatch := regex.BranchRegex.FindStringSubmatch(branch)
 		if len(branchMatch) < 3 {
 			return nil, fmt.Errorf("invalid formatted branch %s", branch)
 		}
+
 		branchMajor, err := strconv.Atoi(branchMatch[1])
 		if err != nil {
 			return nil, fmt.Errorf("parsing branch major version %q to int: %w", branchMatch[1], err)
 		}
+
 		branchMinor, err := strconv.Atoi(branchMatch[2])
 		if err != nil {
 			return nil, fmt.Errorf("parsing branch minor version %q to int: %w", branchMatch[2], err)
 		}
+
 		releaseBranch := struct{ major, minor int }{
 			major: branchMajor, minor: branchMinor,
 		}
@@ -187,6 +201,7 @@ func GenerateReleaseVersion(
 		if !labelIDAvailable {
 			patch++
 		}
+
 		releaseVersions.prime += fmt.Sprintf(".%d", patch)
 
 		if releaseType == ReleaseTypeOfficial {
@@ -239,5 +254,6 @@ func GenerateReleaseVersion(
 	}
 
 	logrus.Infof("Found release versions: %+v", releaseVersions.String())
+
 	return releaseVersions, nil
 }

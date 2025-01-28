@@ -150,6 +150,7 @@ func (bi *Instance) getGCSBuildPath(version string) (string, error) {
 
 func (bi *Instance) setBucket() {
 	bucket := bi.opts.Bucket
+
 	if bi.opts.Bucket == "" {
 		if bi.opts.CI {
 			// TODO: Remove this once all CI and release jobs run on K8s Infra

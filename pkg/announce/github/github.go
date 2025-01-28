@@ -59,6 +59,7 @@ func (g *GitHub) UpdateGitHubPage() (err error) {
 
 	gh := g.impl.github()
 	releaseVerb := "Posting"
+
 	semver, err := util.TagStringToSemver(g.options.Tag)
 	if err != nil {
 		return fmt.Errorf("parsing semver from tag: %w", err)
@@ -93,11 +94,13 @@ func (g *GitHub) UpdateGitHubPage() (err error) {
 		if err != nil {
 			return fmt.Errorf("reading release notes file: %w", err)
 		}
+
 		subs.Substitutions["ReleaseNotes"] = string(rnData)
 	}
 
 	// Open the template file (if a custom)
 	templateText := ghPageBody
+
 	if g.options.PageTemplate != "" {
 		logrus.Debugf("Using custom page template %s", g.options.PageTemplate)
 		templateText = g.options.PageTemplate
@@ -110,6 +113,7 @@ func (g *GitHub) UpdateGitHubPage() (err error) {
 
 	// Run the template to verify the output.
 	output := new(bytes.Buffer)
+
 	err = tmpl.Execute(output, subs)
 	if err != nil {
 		return fmt.Errorf("executing page template: %w", err)
@@ -119,10 +123,12 @@ func (g *GitHub) UpdateGitHubPage() (err error) {
 	// performed to the repo are skipped as the tag may not exist yet.
 	if !g.options.NoMock {
 		logrus.Info("Mock mode, outputting the release page")
+
 		_, err := os.Stdout.Write(output.Bytes())
 		if err != nil {
 			return fmt.Errorf("writing github page to stdout: %w", err)
 		}
+
 		return nil
 	}
 
@@ -134,10 +140,12 @@ func (g *GitHub) UpdateGitHubPage() (err error) {
 	if err != nil {
 		return fmt.Errorf("checking if the tag already exists in GitHub: %w", err)
 	}
+
 	if !tagFound {
 		logrus.Warnf("The %s tag doesn't exist yet on GitHub.", g.options.Tag)
 		logrus.Warnf("That can't be good.")
 		logrus.Warnf("We certainly cannot publish a release without a tag.")
+
 		return errors.New("tag not found while trying to publish release page")
 	}
 
@@ -152,6 +160,7 @@ func (g *GitHub) UpdateGitHubPage() (err error) {
 
 	// Does the release exist yet and should it be marked as latest?
 	var releaseID int64
+
 	commitish := ""
 	// No pre-release should ever be marked as "latest"
 	markAsLatest := !isPrerelease
@@ -179,10 +188,13 @@ func (g *GitHub) UpdateGitHubPage() (err error) {
 
 	if releaseID != 0 {
 		logrus.Warnf("The %s is already published on github.", g.options.Tag)
+
 		if !g.options.UpdateIfReleaseExists {
 			return errors.New("release " + g.options.Tag + " already exists. Left intact")
 		}
+
 		logrus.Infof("Using release id %d to update existing release.", releaseID)
+
 		releaseVerb = "Updating"
 	}
 
@@ -212,6 +224,7 @@ func (g *GitHub) UpdateGitHubPage() (err error) {
 	// in the API right away , sleep 3 secs and retry 3 times.
 	for checkAttempts := 3; checkAttempts >= 0; checkAttempts-- {
 		releaseFound := false
+
 		releases, err = gh.Releases(g.options.Owner, g.options.Repo, true)
 		if err != nil {
 			return fmt.Errorf("listing releases in repository: %w", err)
@@ -220,9 +233,11 @@ func (g *GitHub) UpdateGitHubPage() (err error) {
 		for _, testRelease := range releases {
 			if testRelease.GetID() == release.GetID() {
 				releaseFound = true
+
 				break
 			}
 		}
+
 		if releaseFound {
 			break
 		}
@@ -230,6 +245,7 @@ func (g *GitHub) UpdateGitHubPage() (err error) {
 		if checkAttempts == 0 {
 			return errors.New("release not found, even when call to github was successful")
 		}
+
 		logrus.Info("Release page not yet returned by the GitHub API, sleeping and retrying")
 		time.Sleep(3 * time.Second)
 	}
@@ -242,13 +258,17 @@ func (g *GitHub) UpdateGitHubPage() (err error) {
 	// publish binary
 	for _, assetData := range releaseAssets {
 		logrus.Infof("Uploading %s as release asset", assetData["realpath"])
+
 		asset, err := gh.UploadReleaseAsset(g.options.Owner, g.options.Repo, release.GetID(), assetData["rawpath"])
 		if err != nil {
 			return fmt.Errorf("uploading %s to the release: %w", assetData["realpath"], err)
 		}
+
 		logrus.Info("Successfully uploaded asset #", asset.GetID())
 	}
+
 	logrus.Infof("Release %s published on GitHub", g.options.Tag)
+
 	return nil
 }
 
@@ -259,17 +279,22 @@ func deleteReleaseAssets(gh *github.GitHub, owner, repo string, releaseID int64)
 	if err != nil {
 		return fmt.Errorf("while checking if the release already has assets: %w", err)
 	}
+
 	if len(currentAssets) == 0 {
 		logrus.Info("No assets found in release")
+
 		return nil
 	}
 
 	logrus.Warnf("Deleting %d release assets to upload the latest files", len(currentAssets))
+
 	for _, asset := range currentAssets {
 		logrus.Infof("Deleting %s", asset.GetName())
+
 		if err := gh.DeleteReleaseAsset(owner, repo, asset.GetID()); err != nil {
 			return fmt.Errorf("deleting existing release assets: %w", err)
 		}
 	}
+
 	return nil
 }

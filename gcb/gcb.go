@@ -69,6 +69,7 @@ func (c *CloudBuild) DirForJobType(jobType string) (string, error) {
 	}
 
 	var content []byte
+
 	switch jobType {
 	case JobTypeStage:
 		content = stageCloudBuild

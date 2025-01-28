@@ -72,6 +72,7 @@ linters:
     - nakedret
     - nilerr
     - nilnesserr
+    - nlreturn
     - noctx
     - nolintlint
     - nosprintfhostport
@@ -102,6 +103,7 @@ linters:
     - usetesting
     - wastedassign
     - whitespace
+    - wsl
     - zerologlint
     # - cyclop
     # - depguard
@@ -121,7 +123,6 @@ linters:
     # - mnd
     # - nestif
     # - nilnil
-    # - nlreturn
     # - nonamedreturns
     # - paralleltest
     # - tagliatelle
@@ -129,7 +130,6 @@ linters:
     # - thelper
     # - varnamelen
     # - wrapcheck
-    # - wsl
 linters-settings:
   gci:
     sections:

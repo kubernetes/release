@@ -24,6 +24,7 @@ import (
 
 func TestCVEValidation(t *testing.T) {
 	var sut CVE
+
 	cve := CVE{
 		ID:            "CVE-2020-8559",
 		Title:         "Privilege escalation from compromised node to cluster",

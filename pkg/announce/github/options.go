@@ -80,9 +80,11 @@ func (o *Options) Validate() error {
 	if o.Tag == "" {
 		return errors.New("cannot update github page without a tag")
 	}
+
 	if o.Repo == "" {
 		return errors.New("cannot update github page, repository not defined")
 	}
+
 	if o.Owner == "" {
 		return errors.New("cannot update github page, github organization not defined")
 	}
@@ -94,13 +96,16 @@ func (o *Options) Validate() error {
 // for the template and parses it as Substitutions in the options.
 func (o *Options) ParseSubstitutions(subs []string) error {
 	o.Substitutions = map[string]string{}
+
 	for _, sString := range subs {
 		p := strings.SplitN(sString, ":", 2)
 		if len(p) != 2 || p[0] == "" {
 			return errors.New("substitution value not well formed: " + sString)
 		}
+
 		o.Substitutions[p[0]] = p[1]
 	}
+
 	return nil
 }
 
@@ -111,8 +116,10 @@ func (o *Options) SetRepository(repoSlug string) error {
 	if err != nil {
 		return fmt.Errorf("parsing repository slug: %w", err)
 	}
+
 	o.Owner = org
 	o.Repo = repo
+
 	return nil
 }
 
@@ -122,6 +129,7 @@ func (o *Options) ReadTemplate(templatePath string) error {
 	// If path is empty, no custom template will be used
 	if templatePath == "" {
 		o.PageTemplate = ""
+
 		return nil
 	}
 
@@ -130,7 +138,10 @@ func (o *Options) ReadTemplate(templatePath string) error {
 	if err != nil {
 		return fmt.Errorf("reading page template text: %w", err)
 	}
+
 	logrus.Infof("Using custom template from %s", templatePath)
+
 	o.PageTemplate = string(templateData)
+
 	return nil
 }

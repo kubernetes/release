@@ -42,30 +42,36 @@ func NewOptions() *Options {
 
 func (o *Options) WithWorkDir(workDir string) *Options {
 	o.workDir = workDir
+
 	return o
 }
 
 func (o *Options) WithTag(tag string) *Options {
 	o.tag = tag
+
 	return o
 }
 
 func (o *Options) WithBranch(branch string) *Options {
 	o.branch = branch
+
 	return o
 }
 
 func (o *Options) WithChangelogPath(changelogPath string) *Options {
 	o.changelogPath = changelogPath
+
 	return o
 }
 
 func (o *Options) WithChangelogHTML(changelogHTML string) *Options {
 	o.changelogHTML = changelogHTML
+
 	return o
 }
 
 func (o *Options) WithChangelogFile(changelogFile string) *Options {
 	o.changelogFile = changelogFile
+
 	return o
 }

@@ -73,9 +73,11 @@ func IsSupported(field string, input, expected []string) bool {
 
 	for _, i := range input {
 		supported := false
+
 		for _, j := range expected {
 			if i == j {
 				supported = true
+
 				break
 			}
 		}
@@ -89,6 +91,7 @@ func IsSupported(field string, input, expected []string) bool {
 		logrus.Infof(
 			"Flag %s has an unsupported option: %v", field, notSupported,
 		)
+
 		return false
 	}
 

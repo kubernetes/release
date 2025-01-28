@@ -112,22 +112,27 @@ func runTestGridShot(opts *TestGridOptions) error {
 	}
 
 	testgridJobs := []TestGridJob{}
+
 	for _, board := range opts.boards {
 		testGridDashboard := fmt.Sprintf("%s/sig-release-%s-%s/summary", opts.testgridURL, opts.branch, board)
+
 		content, err := http.NewAgent().WithTimeout(30 * time.Second).Get(testGridDashboard)
 		if err != nil {
 			return fmt.Errorf("unable to retrieve release announcement form url: %s: %w", testGridDashboard, err)
 		}
 
 		var result map[string]interface{}
+
 		err = json.Unmarshal(content, &result)
 		if err != nil {
 			return fmt.Errorf("unable unmarshal the testgrid response: %w", err)
 		}
 
 		testgridJobsTemp := []TestGridJob{}
+
 		for jobName, jobData := range result {
 			result := TestgridJobInfo{}
+
 			err = mapstructure.Decode(jobData, &result)
 			if err != nil {
 				return fmt.Errorf("decode testgrid data: %w", err)
@@ -143,6 +148,7 @@ func runTestGridShot(opts *TestGridOptions) error {
 				}
 			}
 		}
+
 		testgridJobs = append(testgridJobs, testgridJobsTemp...)
 	}
 
@@ -160,14 +166,17 @@ func generateIssueComment(testgridJobs []TestGridJob, opts *TestGridOptions) err
 	output = append(output, fmt.Sprintf("<!-- ----[ issue comment ]---- -->\n### Testgrid dashboards for %s\n", opts.branch))
 
 	timeNow := time.Now().UTC()
+
 	for _, state := range opts.states {
 		output = append(output, fmt.Sprintf("Boards checked for %s:", state))
 		for _, board := range opts.boards {
 			output = append(output, fmt.Sprintf("- [sig-release-%[1]s-%[2]s](%[3]s/sig-release-%[1]s-%[2]s)", opts.branch, board, opts.testgridURL))
 		}
+
 		output = append(output, "\n")
 
 		haveState := false
+
 		for _, job := range testgridJobs {
 			if state == job.Status {
 				output = append(output,
@@ -198,6 +207,7 @@ func generateIssueComment(testgridJobs []TestGridJob, opts *TestGridOptions) err
 		if err != nil {
 			return fmt.Errorf("creating the GitHub comment: %w", err)
 		}
+
 		logrus.Infof("Comment created in the GitHub Issue https://github.com/%s/%s/issues/%d. Thanks for using krel!", git.DefaultGithubOrg, k8sSigReleaseRepo, opts.gitHubIssue)
 	} else {
 		logrus.Info("Please copy the lines below and paste in the Github Issue for the Release cut. Thanks for using krel!")

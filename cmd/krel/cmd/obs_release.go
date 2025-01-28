@@ -153,13 +153,16 @@ func init() {
 func runOBSRelease(options *obs.ReleaseOptions) error {
 	options.NoMock = rootOpts.nomock
 	obsRelease := obs.NewRelease(options)
+
 	if submitJob {
 		// Perform a local check of the specified options before launching a
 		// Cloud Build job:
 		if err := options.Validate(&obs.State{}, true); err != nil {
 			return fmt.Errorf("prechecking release options: %w", err)
 		}
+
 		return obsRelease.Submit(stream)
 	}
+
 	return obsRelease.Run()
 }

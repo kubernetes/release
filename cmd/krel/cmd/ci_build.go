@@ -58,7 +58,6 @@ var ciBuildCmd = &cobra.Command{
 
 func init() {
 	// Build options
-
 	ciBuildCmd.PersistentFlags().BoolVar(
 		&ciBuildOpts.Fast,
 		"fast",

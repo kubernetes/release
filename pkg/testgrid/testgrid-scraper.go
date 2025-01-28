@@ -44,6 +44,7 @@ func ReqTestgridDashboardSummaries(ctx context.Context, dashboardNames []Dashboa
 		summaryLookups := make(chan SummaryLookup)
 		go func() {
 			defer close(summaryLookups)
+
 			for _, dashboardName := range dashboardNames {
 				summary, err := ReqTestgridDashboardSummary(ctx, dashboardName)
 				select {
@@ -57,12 +58,15 @@ func ReqTestgridDashboardSummaries(ctx context.Context, dashboardNames []Dashboa
 				}
 			}
 		}()
+
 		return summaryLookups
 	}
 
 	done := make(chan interface{})
 	defer close(done)
+
 	dashboardData := DashboardData{}
+
 	var err error
 
 	// Collect data from buffered channel
@@ -73,6 +77,7 @@ func ReqTestgridDashboardSummaries(ctx context.Context, dashboardNames []Dashboa
 			dashboardData[lookups.Dashboard] = lookups.Summary
 		}
 	}
+
 	return dashboardData, err
 }
 
@@ -93,18 +98,23 @@ func ReqTestgridDashboardSummary(ctx context.Context, dashboardName DashboardNam
 	if err != nil {
 		return nil, fmt.Errorf("request remote content: %w", err)
 	}
+
 	defer resp.Body.Close()
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("read response body: %w", err)
 	}
+
 	if strings.Contains(string(body), fmt.Sprintf("Dashboard %s not found", dashboardName)) {
 		return nil, ErrDashboardNotFound
 	}
+
 	summary, err := UnmarshalTestgridSummary(body)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal response body: %w", err)
 	}
+
 	return summary, nil
 }
 
@@ -132,6 +142,7 @@ type JobData map[JobName]JobSummary
 // Overview used to get an overview about a testgrid dashboard.
 func (d *JobData) Overview() (Overview, error) {
 	overview := Overview{}
+
 	for job := range *d {
 		data := *d
 		switch data[job].OverallStatus {
@@ -147,6 +158,7 @@ func (d *JobData) Overview() (Overview, error) {
 			return Overview{}, fmt.Errorf("unrecognized job status: %s with summary info %v", data[job].OverallStatus, data[job])
 		}
 	}
+
 	return overview, nil
 }
 
@@ -154,6 +166,7 @@ func (d *JobData) Overview() (Overview, error) {
 func UnmarshalTestgridSummary(data []byte) (JobData, error) {
 	var r JobData
 	err := json.Unmarshal(data, &r)
+
 	return r, err
 }
 
@@ -212,16 +225,19 @@ var sigRegex = regexp.MustCompile(sigRegexStr)
 // FilterSigs used to filter sigs from failing tests.
 func (j *JobSummary) FilterSigs() []string {
 	sigsInvolved := map[string]int{}
+
 	for i := range j.Tests {
 		sigs := sigRegex.FindAllString(j.Tests[i].TestName, -1)
 		for _, sig := range sigs {
 			sigsInvolved[sig]++
 		}
 	}
+
 	sigs := []string{}
 	for k := range sigsInvolved {
 		sigs = append(sigs, k)
 	}
+
 	return sigs
 }
 
@@ -229,6 +245,7 @@ func (j *JobSummary) FilterSigs() []string {
 // example: 8 of 9 (88.9%) recent columns passed (296791 of 296793 or 100.0% cells) -> 8 of 9 (88.9%)
 func (j *JobSummary) FilterSuccessRateForLastRuns() string {
 	successRateForLastRunsRegex := regexp.MustCompile(`\d+\sof\s\d+\s\(\d+\.\d+%\)`)
+
 	return successRateForLastRunsRegex.FindString(j.Status)
 }
 

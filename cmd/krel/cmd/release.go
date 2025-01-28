@@ -142,7 +142,9 @@ func runRelease(options *anago.ReleaseOptions) error {
 		if err := options.Validate(&anago.State{}); err != nil {
 			return fmt.Errorf("prechecking release options: %w", err)
 		}
+
 		return rel.Submit(stream)
 	}
+
 	return rel.Run()
 }

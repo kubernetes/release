@@ -41,12 +41,15 @@ func (s *Specs) GetKubernetesChannelForVersion(kubernetesVersion string) (string
 	switch {
 	case len(kubeVersionParts) > 4:
 		logrus.Info("User-supplied Kubernetes version is a CI version, using nightly channel")
+
 		return consts.ChannelTypeNightly, nil
 	case len(kubeVersionParts) == 4:
 		logrus.Info("User-supplied Kubernetes version is a pre-release version, using testing channel")
+
 		return consts.ChannelTypePrerelease, nil
 	default:
 		logrus.Info("User-supplied Kubernetes version is a release version, using release channel")
+
 		return consts.ChannelTypeRelease, nil
 	}
 }
@@ -104,6 +107,7 @@ func (s *Specs) GetKubernetesCIDownloadLink(baseURL, name, version, arch string)
 
 	if version == "" {
 		var err error
+
 		version, err = s.impl.GetKubeVersion(release.VersionTypeCILatestCross)
 		if err != nil {
 			return "", err

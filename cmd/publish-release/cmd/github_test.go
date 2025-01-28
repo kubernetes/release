@@ -27,6 +27,7 @@ import (
 func TestProcessRemoteAsset(t *testing.T) {
 	// Remove the fefault app creds temporarily
 	const gacVar = "GOOGLE_APPLICATION_CREDENTIALS"
+
 	prev := os.Getenv(gacVar)
 	defer t.Setenv(gacVar, prev)
 	t.Setenv(gacVar, "")
@@ -37,6 +38,7 @@ func TestProcessRemoteAsset(t *testing.T) {
 			os.RemoveAll(f)
 		}
 	}()
+
 	path, err := processRemoteAsset("gs://kubernetes-release/release/v1.25.1/kubernetes.tar.gz.sha512")
 	require.NoError(t, err)
 	require.FileExists(t, path)

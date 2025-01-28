@@ -207,6 +207,7 @@ func (d *DefaultRelease) ValidateOptions() error {
 	if err := d.options.Validate(d.state.State, false); err != nil {
 		return fmt.Errorf("validating options: %w", err)
 	}
+
 	return nil
 }
 
@@ -231,7 +232,9 @@ func (d *DefaultRelease) CheckReleaseBranchState() error {
 	if err != nil {
 		return fmt.Errorf("check if release branch needs creation: %w", err)
 	}
+
 	d.state.createReleaseBranch = createReleaseBranch
+
 	return nil
 }
 
@@ -253,6 +256,7 @@ func (d *DefaultRelease) GenerateReleaseVersion() error {
 	}
 	// Set the versions on the state
 	d.state.versions = versions
+
 	return nil
 }
 

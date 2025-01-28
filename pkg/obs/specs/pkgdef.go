@@ -123,6 +123,7 @@ func (s *Specs) ConstructPackageDefinition() (*PackageDefinition, error) {
 		if err != nil {
 			return nil, fmt.Errorf("getting package source download link: %w", err)
 		}
+
 		pkgVar := PackageVariation{
 			Architecture: arch,
 			Source:       sourceURL,
@@ -160,6 +161,7 @@ func (s *Specs) GetMetadataWithVersionConstraint(packageName, packageVersion str
 		if err != nil {
 			return nil, fmt.Errorf("parsing semver range for package %s: %w", packageName, err)
 		}
+
 		kubeSemVer, err := s.impl.TagStringToSemver(packageVersion)
 		if err != nil {
 			return nil, fmt.Errorf("parsing package version %s: %w", packageVersion, err)

@@ -56,6 +56,7 @@ func (o *checkPROptions) ValidateAndFinish() error {
 	for _, n := range o.PullRequests {
 		if n == 0 {
 			prNrErr = errors.New("invalid pull request number (must be an integer larger than 0)")
+
 			break
 		}
 	}
@@ -176,6 +177,7 @@ To generate release notes from these blocks, use release-notes generate.
 
 			if len(errs) > 0 {
 				fmt.Fprintf(os.Stderr, "\nError Checking Release Notes:\n\n"+pullRequestGuidance)
+
 				return errors.Join(errs...)
 			}
 

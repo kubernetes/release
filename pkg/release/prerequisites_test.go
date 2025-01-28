@@ -29,6 +29,7 @@ import (
 
 func TestCheckPrerequisites(t *testing.T) {
 	err := errors.New("error")
+
 	for _, tc := range []struct {
 		prepare   func(*releasefakes.FakePrerequisitesCheckerImpl)
 		shouldErr bool
@@ -111,6 +112,7 @@ func TestCheckPrerequisites(t *testing.T) {
 	} {
 		mock := &releasefakes.FakePrerequisitesCheckerImpl{}
 		sut := release.NewPrerequisitesChecker()
+
 		tc.prepare(mock)
 		sut.SetImpl(mock)
 

@@ -44,6 +44,7 @@ func NewPublisher() *Publisher {
 	objStore.SetOptions(
 		objStore.WithNoClobber(false),
 	)
+
 	return &Publisher{
 		client: &defaultPublisher{&objStore},
 	}
@@ -91,6 +92,7 @@ func (*defaultPublisher) GSUtilStatus(args ...string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	return status.Success(), nil
 }
 
@@ -99,6 +101,7 @@ func (*defaultPublisher) GetURLResponse(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return string(bytes.TrimSpace(c)), nil
 }
 
@@ -164,6 +167,7 @@ func (p *Publisher) PublishVersion(
 	privateBucket, fast bool,
 ) error {
 	logrus.Info("Publishing version")
+
 	releaseType := "latest"
 
 	if buildType == "release" {
@@ -229,6 +233,7 @@ func (p *Publisher) PublishVersion(
 
 	for _, file := range versionMarkers {
 		versionMarker := file + ".txt"
+
 		needsUpdate, err := p.VerifyLatestUpdate(
 			versionMarker, markerPath, version,
 		)
@@ -243,6 +248,7 @@ func (p *Publisher) PublishVersion(
 				"Skipping %s for %s because it does not need to be updated",
 				versionMarker, version,
 			)
+
 			continue
 		}
 
@@ -294,10 +300,12 @@ func (p *Publisher) VerifyLatestUpdate(
 		logrus.Infof(
 			"Not updating version, because %s <= %s", version, gcsVersion,
 		)
+
 		return false, nil
 	}
 
 	logrus.Infof("Updating version, because %s > %s", version, gcsVersion)
+
 	return true, nil
 }
 
@@ -337,16 +345,19 @@ func (p *Publisher) PublishToGcs(
 	privateBucket bool,
 ) error {
 	releaseStage := filepath.Join(buildDir, ReleaseStagePath)
+
 	publishFileDst, publishFileDstErr := p.client.NormalizePath(markerPath, publishFile)
 	if publishFileDstErr != nil {
 		return fmt.Errorf("get marker file destination: %w", publishFileDstErr)
 	}
 
 	logrus.Infof("Using marker path: %s", markerPath)
+
 	publicLink := fmt.Sprintf("%s/%s", URLPrefixForBucket(markerPath), publishFile)
 	if strings.HasSuffix(markerPath, ProductionBucket+"/release") {
 		publicLink = fmt.Sprintf("%s/release/%s", ProductionBucketURL, publishFile)
 	}
+
 	logrus.Infof("Using public link: %s", publicLink)
 
 	uploadDir := filepath.Join(releaseStage, "upload")
@@ -362,6 +373,7 @@ func (p *Publisher) PublishToGcs(
 	}
 
 	logrus.Infof("Running `gsutil cp` from %s to: %s", latestFile, publishFileDst)
+
 	if err := p.client.GSUtil(
 		"-m",
 		"-h", "Content-Type:text/plain",
@@ -374,21 +386,26 @@ func (p *Publisher) PublishToGcs(
 	}
 
 	var content string
+
 	if !privateBucket {
 		// If public, validate public link
 		logrus.Infof("Validating uploaded version file using HTTP at %s", publicLink)
+
 		response, err := p.client.GetURLResponse(publicLink)
 		if err != nil {
 			return fmt.Errorf("get content of %s: %w", publicLink, err)
 		}
+
 		content = response
 	} else {
 		// Use the private location
 		logrus.Infof("Validating uploaded version file using `gsutil cat` at %s", publishFileDst)
+
 		response, err := p.client.GSUtilOutput("cat", publishFileDst)
 		if err != nil {
 			return fmt.Errorf("get content of %s: %w", publishFileDst, err)
 		}
+
 		content = response
 	}
 
@@ -400,6 +417,7 @@ func (p *Publisher) PublishToGcs(
 	}
 
 	logrus.Info("Version equals response")
+
 	return nil
 }
 
@@ -408,6 +426,7 @@ func FixPublicReleaseNotesURL(gcsPath string) string {
 	if strings.HasPrefix(gcsPath, prefix) {
 		gcsPath = ProductionBucketURL + strings.TrimPrefix(gcsPath, prefix)
 	}
+
 	return gcsPath
 }
 
@@ -427,6 +446,7 @@ func (p *Publisher) PublishReleaseNotesIndex(
 	if err != nil {
 		return fmt.Errorf("normalize index file: %w", err)
 	}
+
 	logrus.Infof("Publishing release notes index %s", indexFilePath)
 
 	success, err := p.client.GSUtilStatus("-q", "stat", indexFilePath)
@@ -435,7 +455,9 @@ func (p *Publisher) PublishReleaseNotesIndex(
 	}
 
 	logrus.Info("Building release notes index")
+
 	versions := make(map[string]string)
+
 	if success {
 		logrus.Info("Modifying existing release notes index file")
 
@@ -443,6 +465,7 @@ func (p *Publisher) PublishReleaseNotesIndex(
 		if err != nil {
 			return fmt.Errorf("create temp dir: %w", err)
 		}
+
 		defer os.RemoveAll(tempDir)
 		tempIndexFile := filepath.Join(tempDir, releaseNotesIndex)
 
@@ -463,6 +486,7 @@ func (p *Publisher) PublishReleaseNotesIndex(
 	} else {
 		logrus.Info("Creating non existing release notes index file")
 	}
+
 	versions[version] = gcsReleaseNotesPath
 
 	// Fixup the index to only use public URLS
@@ -476,16 +500,20 @@ func (p *Publisher) PublishReleaseNotesIndex(
 	}
 
 	logrus.Infof("Writing new release notes index: %s", string(versionJSON))
+
 	tempFile, err := p.client.TempFile("", "release-notes-index-")
 	if err != nil {
 		return fmt.Errorf("create temp file: %w", err)
 	}
+
 	defer os.Remove(tempFile.Name())
+
 	if _, err := tempFile.Write(versionJSON); err != nil {
 		return fmt.Errorf("write temp index: %w", err)
 	}
 
 	logrus.Info("Uploading release notes index")
+
 	if err := p.client.CopyToRemote(
 		tempFile.Name(), indexFilePath,
 	); err != nil {

@@ -51,6 +51,7 @@ func newSUT(t *testing.T) *sut {
 
 	mock := &releasefakes.FakeRepository{}
 	repo.SetRepo(mock)
+
 	return &sut{repo, mock, dir, t}
 }
 

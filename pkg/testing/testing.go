@@ -24,19 +24,25 @@ import (
 
 func CheckErr(t *testing.T, err error, expectedMsg string) {
 	t.Helper()
+
 	if expectedMsg == "" {
 		require.NoError(t, err)
+
 		return
 	}
+
 	require.EqualError(t, err, expectedMsg)
 }
 
 func CheckErrSub(t *testing.T, err error, expectedSubstring string) {
 	t.Helper()
+
 	if expectedSubstring == "" {
 		require.NoError(t, err)
+
 		return
 	}
+
 	require.Contains(t, err.Error(), expectedSubstring)
 }
 

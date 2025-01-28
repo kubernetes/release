@@ -107,16 +107,19 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 
 	// osc checks
 	logrus.Info("Verifying OpenBuildService access")
+
 	ver, err := p.impl.OSCOutput("version")
 	if err != nil {
 		return fmt.Errorf("running osc version: %w", err)
 	}
+
 	logrus.Infof("Using osc version: %s", ver)
 
 	user, err := p.impl.OSCOutput("whois")
 	if err != nil {
 		return fmt.Errorf("running osc whois: %w", err)
 	}
+
 	logrus.Infof("Using OpenBuildService user: %s", user)
 
 	// Environment checks
@@ -124,6 +127,7 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 		logrus.Infof(
 			"Verifying that %s environment variable is set", OBSPasswordKey,
 		)
+
 		if !p.impl.IsEnvSet(OBSPasswordKey) {
 			return fmt.Errorf("no %s env variable set", OBSPasswordKey)
 		}
@@ -131,13 +135,16 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 
 	// Disk space check
 	const minDiskSpaceGiB = 10
+
 	logrus.Infof(
 		"Checking available disk space (%dGB) for %s", minDiskSpaceGiB, workdir,
 	)
+
 	res, err := p.impl.Usage(workdir)
 	if err != nil {
 		return fmt.Errorf("check available disk space: %w", err)
 	}
+
 	diskSpaceGiB := res.Free / 1024 / 1024 / 1024
 	if diskSpaceGiB < minDiskSpaceGiB {
 		return fmt.Errorf(

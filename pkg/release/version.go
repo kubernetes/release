@@ -46,6 +46,7 @@ func (*versionClient) GetURLResponse(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return string(bytes.TrimSpace(c)), nil
 }
 
@@ -90,6 +91,7 @@ func (t VersionType) URL(version string) string {
 	if version != "" {
 		url += "-" + version
 	}
+
 	url += ".txt"
 
 	return url
@@ -98,6 +100,7 @@ func (t VersionType) URL(version string) string {
 // GetKubeVersion retrieves the version of the provided Kubernetes version type.
 func (v *Version) GetKubeVersion(versionType VersionType) (string, error) {
 	logrus.Infof("Retrieving Kubernetes release version for %s", versionType)
+
 	return v.kubeVersionFromURL(versionType.URL(""))
 }
 
@@ -110,12 +113,15 @@ func (v *Version) GetKubeVersionForBranch(versionType VersionType, branch string
 	)
 
 	version := ""
+
 	if branch != git.DefaultBranch {
 		if !git.IsReleaseBranch(branch) {
 			return "", fmt.Errorf("%s is not a valid release branch", branch)
 		}
+
 		version = strings.TrimPrefix(branch, "release-")
 	}
+
 	url := versionType.URL(version)
 
 	return v.kubeVersionFromURL(url)
@@ -125,11 +131,13 @@ func (v *Version) GetKubeVersionForBranch(versionType VersionType, branch string
 // ans strips the tag prefix if `stripTagPrefix` is `true`.
 func (v *Version) kubeVersionFromURL(url string) (string, error) {
 	logrus.Infof("Retrieving Kubernetes build version from %s...", url)
+
 	version, httpErr := v.client.GetURLResponse(url)
 	if httpErr != nil {
 		return "", fmt.Errorf("retrieving kube version: %w", httpErr)
 	}
 
 	logrus.Infof("Retrieved Kubernetes version: %s", version)
+
 	return version, nil
 }

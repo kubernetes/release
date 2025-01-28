@@ -169,6 +169,7 @@ func (d *defaultStageImpl) RemovePackageFiles(path string) error {
 		}
 
 		logrus.Infof("Removing path: %s", fullPath)
+
 		return os.RemoveAll(fullPath)
 	})
 }
@@ -272,6 +273,7 @@ func (d *DefaultStage) ValidateOptions() error {
 	if err := d.options.Validate(d.state.State, false); err != nil {
 		return fmt.Errorf("validating options: %w", err)
 	}
+
 	return nil
 }
 
@@ -296,7 +298,9 @@ func (d *DefaultStage) CheckReleaseBranchState() error {
 	if err != nil {
 		return fmt.Errorf("check if release branch needs creation: %w", err)
 	}
+
 	d.state.createReleaseBranch = createReleaseBranch
+
 	return nil
 }
 
@@ -318,6 +322,7 @@ func (d *DefaultStage) GenerateReleaseVersion() error {
 	}
 	// Set the versions on the state
 	d.state.versions = versions
+
 	return nil
 }
 
@@ -380,9 +385,11 @@ func (d *DefaultStage) GeneratePackageArtifacts() error {
 		opts.Version = d.state.packageVersion
 		opts.Architectures = d.options.Architectures
 		opts.PackageSourceBase = d.options.PackageSource
+
 		if d.state.corePackages {
 			opts.PackageSourceBase = fmt.Sprintf("gs://%s/stage/%s/%s/gcs-stage", d.options.Bucket(), d.options.BuildVersion, d.state.versions.Prime())
 		}
+
 		opts.SpecTemplatePath = d.options.SpecTemplatePath
 		opts.SpecOutputPath = filepath.Join(d.options.Workspace, obsRoot, d.state.obsProject, pkg)
 
@@ -423,15 +430,18 @@ func (d *DefaultStage) Push() error {
 func (d *DefaultStage) Wait() error {
 	if !d.options.Wait {
 		logrus.Info("Will not wait for the OBS build results")
+
 		return nil
 	}
 
 	if !d.options.NoMock {
 		logrus.Info("Running stage in mock, skipping waiting for OBS")
+
 		return nil
 	}
 
 	const retries = 3
+
 	for _, pkg := range d.options.Packages {
 		var tryError error
 

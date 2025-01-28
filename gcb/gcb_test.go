@@ -33,6 +33,7 @@ func TestDirForJobType(t *testing.T) {
 	t.Parallel()
 
 	const testDir = "testDir"
+
 	errTest := errors.New("test")
 
 	for _, tc := range []struct {
@@ -48,6 +49,7 @@ func TestDirForJobType(t *testing.T) {
 				mock.WriteFileCalls(func(name string, content []byte, mode fs.FileMode) error {
 					assert.Contains(t, string(content), "- STAGE")
 					assert.Equal(t, filepath.Join(testDir, build.DefaultCloudbuildFile), name)
+
 					return nil
 				})
 			},
@@ -64,6 +66,7 @@ func TestDirForJobType(t *testing.T) {
 				mock.WriteFileCalls(func(name string, content []byte, mode fs.FileMode) error {
 					assert.Contains(t, string(content), "- RELEASE")
 					assert.Equal(t, filepath.Join(testDir, build.DefaultCloudbuildFile), name)
+
 					return nil
 				})
 			},
@@ -80,6 +83,7 @@ func TestDirForJobType(t *testing.T) {
 				mock.WriteFileCalls(func(name string, content []byte, mode fs.FileMode) error {
 					assert.Contains(t, string(content), "- FAST_FORWARD")
 					assert.Equal(t, filepath.Join(testDir, build.DefaultCloudbuildFile), name)
+
 					return nil
 				})
 			},
@@ -96,6 +100,7 @@ func TestDirForJobType(t *testing.T) {
 				mock.WriteFileCalls(func(name string, content []byte, mode fs.FileMode) error {
 					assert.Contains(t, string(content), "- OBS_STAGE")
 					assert.Equal(t, filepath.Join(testDir, build.DefaultCloudbuildFile), name)
+
 					return nil
 				})
 			},
@@ -112,6 +117,7 @@ func TestDirForJobType(t *testing.T) {
 				mock.WriteFileCalls(func(name string, content []byte, mode fs.FileMode) error {
 					assert.Contains(t, string(content), "- OBS_RELEASE")
 					assert.Equal(t, filepath.Join(testDir, build.DefaultCloudbuildFile), name)
+
 					return nil
 				})
 			},

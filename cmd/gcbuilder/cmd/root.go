@@ -82,6 +82,7 @@ func run() error {
 	if len(buildErrors) != 0 {
 		logrus.Fatalf("Failed to run some build jobs: %v", buildErrors)
 	}
+
 	logrus.Info("Finished.")
 
 	return nil

@@ -52,6 +52,7 @@ func (s *SBOM) Generate() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("setting up temporary file for SBOM: %w", err)
 	}
+
 	logrus.Infof("SBOM will be temporarily written to %s", sbomFile)
 
 	builder := s.impl.docBuilder()
@@ -73,19 +74,24 @@ func (s *SBOM) Generate() (string, error) {
 	for t := range doc.Packages {
 		doc.Packages[t].Version = s.options.Tag
 		doc.Packages[t].DownloadLocation = "git+" + github.GitHubURL + s.options.Repo + "@" + s.options.Tag
+
 		break
 	}
 
 	// List all artifacts and add them
 	spdxClient := s.impl.spdxClient()
+
 	for _, f := range s.options.Assets {
 		logrus.Infof("Adding file %s to SBOM", f.Path)
+
 		spdxFile, err := spdxClient.FileFromPath(f.ReadFrom)
 		if err != nil {
 			return "", fmt.Errorf("adding %s to SBOM: %w", f.ReadFrom, err)
 		}
+
 		spdxFile.Name = f.Path
 		spdxFile.BuildID() // This is a boog in the spdx pkg, we have to call manually
+
 		spdxFile.DownloadLocation = github.GitHubURL + filepath.Join(
 			s.options.Repo, assetDownloadPath, s.options.Tag, f.Path,
 		)
@@ -95,6 +101,7 @@ func (s *SBOM) Generate() (string, error) {
 	}
 
 	var renderer serialize.Serializer
+
 	switch s.options.Format {
 	case FormatJSON:
 		renderer = &serialize.JSON{}

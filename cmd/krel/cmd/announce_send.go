@@ -113,6 +113,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 	if err := announceRootOpts.Validate(); err != nil {
 		return fmt.Errorf("validating announcement send options: %w", err)
 	}
+
 	logrus.Info("Retrieving release announcement from Google Cloud Bucket")
 
 	tag := util.AddTagPrefix(announceRootOpts.tag)
@@ -132,6 +133,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 	if announceRootOpts.printOnly {
 		logrus.Infof("The email content is:")
 		fmt.Print(string(content))
+
 		return nil
 	}
 
@@ -142,6 +144,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 	}
 
 	logrus.Info("Preparing mail sender")
+
 	m := mail.NewSender(opts.sendgridAPIKey)
 
 	if opts.name != "" && opts.email != "" {
@@ -150,6 +153,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 		}
 	} else {
 		logrus.Info("Retrieving default sender from sendgrid API")
+
 		if err := m.SetDefaultSender(); err != nil {
 			return fmt.Errorf("setting default sender: %w", err)
 		}
@@ -162,6 +166,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 			mail.KubernetesDevGoogleGroup,
 		}
 	}
+
 	logrus.Infof("Using Google Groups as announcement target: %v", groups)
 
 	if err := m.SetGoogleGroupRecipients(groups...); err != nil {
@@ -169,6 +174,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 	}
 
 	logrus.Info("Sending mail")
+
 	subject := fmt.Sprintf("Kubernetes %s is live!", tag)
 
 	yes := true

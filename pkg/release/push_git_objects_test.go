@@ -38,6 +38,7 @@ func getTestGitObjectPusher() (pusher *GitObjectPusher, repoPath string, err err
 	if err := command.NewWithWorkDir(
 		repoPath, "git", "init").RunSilentSuccess(); err != nil {
 		os.RemoveAll(repoPath)
+
 		return nil, repoPath, fmt.Errorf("initializing test repository: %w", err)
 	}
 
@@ -46,6 +47,7 @@ func getTestGitObjectPusher() (pusher *GitObjectPusher, repoPath string, err err
 		repoPath, "git", "commit", "--allow-empty", "-m", "Root commit",
 	).RunSilentSuccess(); err != nil {
 		os.RemoveAll(repoPath)
+
 		return nil, repoPath, fmt.Errorf("creating first commit: %w", err)
 	}
 
@@ -54,6 +56,7 @@ func getTestGitObjectPusher() (pusher *GitObjectPusher, repoPath string, err err
 	if err != nil {
 		return nil, repoPath, fmt.Errorf("listing branches in test repo: %w", err)
 	}
+
 	if !strings.Contains(out.Output(), git.DefaultBranch) {
 		if err := command.NewWithWorkDir(
 			repoPath, "git", "branch", git.DefaultBranch,
@@ -75,6 +78,7 @@ func TestCheckBranchName(t *testing.T) {
 	if repoPath != "" {
 		defer os.RemoveAll(repoPath)
 	}
+
 	require.NoError(t, err)
 
 	sampleBaranches := []struct {
@@ -99,6 +103,7 @@ func TestCheckTagName(t *testing.T) {
 	if repoPath != "" {
 		defer os.RemoveAll(repoPath)
 	}
+
 	require.NoError(t, err)
 
 	sampleTags := []struct {

@@ -41,6 +41,7 @@ func generateTestingStageState(params *testStateParameters) *anago.StageState {
 	if params.createReleaseBranch != nil {
 		state.SetCreateReleaseBranch(*params.createReleaseBranch)
 	}
+
 	return state
 }
 
@@ -184,6 +185,7 @@ func TestGenerateReleaseVersionStage(t *testing.T) {
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
 		sut.SetImpl(mock)
+
 		err := sut.GenerateReleaseVersion()
 		if tc.shouldError {
 			require.Error(t, err)
@@ -219,6 +221,7 @@ func TestPrepareWorkspaceStage(t *testing.T) {
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
 		sut.SetImpl(mock)
+
 		err := sut.PrepareWorkspace()
 		if tc.shouldError {
 			require.Error(t, err)
@@ -235,6 +238,7 @@ func TestTagRepository(t *testing.T) {
 	newBetaVersions := release.NewReleaseVersions(
 		"v1.20.0-beta.1", "", "", "v1.20.0-beta.1", "",
 	)
+
 	for _, tc := range []struct {
 		prepare             func(*anagofakes.FakeStageImpl)
 		versions            *release.Versions
@@ -593,6 +597,7 @@ func TestSubmitStageImpl(t *testing.T) {
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
 		sut.SetImpl(mock)
+
 		err := sut.Submit(false)
 		if tc.shouldError {
 			require.Error(t, err)
@@ -686,9 +691,11 @@ func TestGenerateBillOfMaterials(t *testing.T) {
 		sut.SetState(
 			generateTestingStageState(&testStateParameters{versionsTag: &testVersionTag}),
 		)
+
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
 		sut.SetImpl(mock)
+
 		err := sut.GenerateBillOfMaterials()
 		if tc.shouldError {
 			require.Error(t, err)
@@ -724,6 +731,7 @@ func TestVerifyArtifactsImpl(t *testing.T) {
 				&testStateParameters{versionsTag: &testVersionTag},
 			),
 		)
+
 		err := sut.VerifyArtifacts()
 		if tc.shouldError {
 			require.Error(t, err)

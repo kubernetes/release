@@ -30,6 +30,7 @@ import (
 
 func TestHistoryRun(t *testing.T) {
 	err := errors.New("error")
+
 	for _, tc := range []struct {
 		options   *gcb.HistoryOptions
 		prepare   func(*gcbfakes.FakeHistoryImpl)

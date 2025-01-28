@@ -32,6 +32,7 @@ import (
 
 func TestRun(t *testing.T) {
 	err := errors.New("")
+
 	for _, tc := range []struct {
 		prepare   func(*changelogfakes.FakeImpl, *changelog.Options)
 		shouldErr bool

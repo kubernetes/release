@@ -71,6 +71,7 @@ Google Cloud Build job.
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ffOpts.NoMock = rootOpts.nomock
+
 		return fastforward.New(ffOpts).Run()
 	},
 }
