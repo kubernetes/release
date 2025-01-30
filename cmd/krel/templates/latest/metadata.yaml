@@ -1,6 +1,6 @@
 cri-tools:
   - versionConstraint: ">= 1.0.0"
-    sourceURLTemplate: "gs://k8s-artifacts-cri-tools/release/v{{ .PackageVersion }}/crictl-v{{ .PackageVersion }}-linux-{{ .Architecture }}.tar.gz"
+    sourceURLTemplate: "https://github.com/kubernetes-sigs/cri-tools/releases/download/v{{ .PackageVersion }}/crictl-v{{ .PackageVersion }}-linux-{{ .Architecture }}.tar.gz"
     sourceTarGz: true
 kubeadm:
   - versionConstraint: ">= 1.24.0 < 1.24.2"
@@ -107,5 +107,5 @@ kubelet:
         versionConstraint: ">= 1.2.0"
 kubernetes-cni:
   - versionConstraint: ">= 0.8.7"
-    sourceURLTemplate: "gs://k8s-artifacts-cni/release/v{{ .PackageVersion }}/cni-plugins-linux-{{ .Architecture }}-v{{ .PackageVersion }}.tgz"
+    sourceURLTemplate: "https://github.com/containernetworking/plugins/releases/download/v{{ .PackageVersion }}/cni-plugins-linux-{{ .Architecture }}-v{{ .PackageVersion }}.tgz"
     sourceTarGz: true
