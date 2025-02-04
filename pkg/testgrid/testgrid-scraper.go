@@ -25,8 +25,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-
-	"github.com/hashicorp/go-multierror"
 )
 
 // SummaryLookup this type is used if multiple testgrid summaries are getting requested concurrently.
@@ -72,7 +70,7 @@ func ReqTestgridDashboardSummaries(ctx context.Context, dashboardNames []Dashboa
 	// Collect data from buffered channel
 	for lookups := range requestData(done, dashboardNames...) {
 		if lookups.Error != nil {
-			err = multierror.Append(err, fmt.Errorf("error requesting summary for dashboard %s: %w", lookups.Dashboard, lookups.Error))
+			err = errors.Join(err, fmt.Errorf("error requesting summary for dashboard %s: %w", lookups.Dashboard, lookups.Error))
 		} else {
 			dashboardData[lookups.Dashboard] = lookups.Summary
 		}
