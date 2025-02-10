@@ -522,7 +522,7 @@ func createDraftPR(repoPath, tag string) (err error) {
 	pr, err := gh.CreatePullRequest(
 		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, git.DefaultBranch,
 		fmt.Sprintf("%s:%s", releaseNotesOpts.githubOrg, branchname),
-		"Update release notes draft to version "+tag, prBody,
+		"Update release notes draft to version "+tag, prBody, false,
 	)
 	if err != nil {
 		logrus.Warnf("An error has occurred while creating the pull request for %s", tag)
@@ -777,7 +777,7 @@ func createWebsitePR(repoPath, tag string) (err error) {
 		defaultKubernetesSigsOrg, defaultKubernetesSigsRepo, git.DefaultBranch,
 		fmt.Sprintf("%s:%s", releaseNotesOpts.githubOrg, branchname),
 		"Patch relnotes.k8s.io to release "+tag,
-		fmt.Sprintf("Automated patch to update relnotes.k8s.io to k/k version `%s` ", tag),
+		fmt.Sprintf("Automated patch to update relnotes.k8s.io to k/k version `%s` ", tag), false,
 	)
 	if err != nil {
 		logrus.Warnf("An error has occurred while creating the pull request for %s", tag)
