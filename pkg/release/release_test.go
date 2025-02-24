@@ -52,7 +52,7 @@ func TestGetToolRefSuccess(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Logf("Test case: %s", tc.name)
-		require.NoError(t, os.Setenv("TOOL_REF", tc.ref))
+		t.Setenv("TOOL_REF", tc.ref)
 
 		actual := GetToolRef()
 		require.Equal(t, tc.expected, actual)
