@@ -308,13 +308,14 @@ func runGithubPage(opts *githubPageCmdLineOptions) (err error) {
 		}
 	}
 
-	newAssets := make([]string, len(assets)+1)
-	for i, a := range assets {
-		newAssets[i] = a.ReadFrom
+	var newAssets []string //nolint: prealloc,gocritic
+	for _, a := range assets {
+		newAssets = append(newAssets, a.ReadFrom)
 	}
-
 	// add sbom to the path to upload
-	newAssets[len(assets)] = sbomStr
+	if sbomStr != "" {
+		newAssets = append(newAssets, sbomStr)
+	}
 
 	// Build the release page options
 	ghOpts := github.Options{
