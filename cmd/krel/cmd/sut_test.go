@@ -49,7 +49,7 @@ func newSUT(t *testing.T) *sut {
 	// global .gitconfig. This means we're silently assuming that we're running
 	// inside a container with the actual $HOME of `/root`.
 	if !env.IsSet("HOME") {
-		os.Setenv("HOME", "/root")
+		t.Setenv("HOME", "/root")
 	}
 
 	// A local k/k repo will be our test base
