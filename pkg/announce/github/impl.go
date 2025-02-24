@@ -49,6 +49,10 @@ func (i *defaultImpl) github() *githubsdk.GitHub {
 func (i *defaultImpl) processAssetFiles(assetFiles []string) (releaseAssets []map[string]string, err error) {
 	// Check all asset files and get their hashes
 	for _, path := range assetFiles {
+		if path == "" {
+			continue
+		}
+
 		assetData := map[string]string{
 			"rawpath": path,
 			"name":    "",
