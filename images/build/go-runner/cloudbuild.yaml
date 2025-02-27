@@ -10,7 +10,7 @@ options:
   machineType: 'N1_HIGHCPU_8'
 
 steps:
-  - name: 'ghcr.io/sigstore/cosign/cosign:v2.4.2-dev@sha256:b69af124cb744c22eba955ebaf9514b42b1556811211e1cd744331350ccd815a'
+  - name: 'ghcr.io/sigstore/cosign/cosign:v2.4.3-dev@sha256:ed76c008e733aa64d257f754a02eb07b251525ea8dc08f40974baec317dea8c9'
     dir: ./images/build/go-runner
     env:
       - TUF_ROOT=/tmp
