@@ -1,8 +1,8 @@
 variants:
   default:
     CONFIG: default
-    GO_VERSION: '1.23.6'
-    GO_VERSION_TOOLING: '1.23.6'
+    GO_VERSION: '1.24.0'
+    GO_VERSION_TOOLING: '1.24.0'
     OS_CODENAME: 'bullseye'
   next:
     CONFIG: next
