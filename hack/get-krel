@@ -45,9 +45,9 @@ if [[ "$FORCE_BUILD_KREL" == false &&
     LATEST_RELEASE=$(curl_retry https://api.github.com/repos/kubernetes/release/releases/latest | jq -r .tag_name)
     echo "Using krel release: $LATEST_RELEASE"
 
-    echo "Downloading krel from GCB bucket…"
-    GCB_URL="https://storage.googleapis.com/k8s-artifacts-sig-release/kubernetes/release/$LATEST_RELEASE/krel-amd64-linux"
-    curl_retry "$GCB_URL" -o "$KREL_OUTPUT_PATH"
+    echo "Downloading krel from GitHub releases…"
+    GH_URL="https://github.com/kubernetes/release/releases/download/$LATEST_RELEASE/krel-amd64-linux"
+    curl_retry "$GH_URL" -o "$KREL_OUTPUT_PATH"
     chmod +x "$KREL_OUTPUT_PATH"
 else
     echo "Building krel from sources"
