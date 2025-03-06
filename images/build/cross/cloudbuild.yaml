@@ -59,8 +59,3 @@ tags:
 - ${_IMAGE_VERSION}
 - ${_REVISION}
 - ${_PROTOBUF_VERSION}
-
-images:
-  - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_IMAGE_VERSION'
-  - 'gcr.io/$PROJECT_ID/kube-cross-amd64:$_GIT_TAG-$_CONFIG-$_TYPE'
-  - 'gcr.io/$PROJECT_ID/kube-cross-amd64:latest-$_CONFIG-$_TYPE'
