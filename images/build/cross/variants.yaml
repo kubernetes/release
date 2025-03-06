@@ -8,6 +8,7 @@ variants:
     GO_MAJOR_VERSION: '1.24'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
+    PLATFORMS: 'linux/amd64 linux/arm64'
   v1.33-go1.23-bullseye:
     CONFIG: 'go1.23-bullseye'
     TYPE: 'default'
@@ -17,6 +18,17 @@ variants:
     GO_MAJOR_VERSION: '1.23'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
+    PLATFORMS: 'linux/amd64 linux/arm64'
+  v1.33-go1.23-bookworm:
+    CONFIG: 'go1.23-bookworm'
+    TYPE: 'default'
+    IMAGE_VERSION: 'v1.33.0-go1.23.6-bookworm.0'
+    KUBERNETES_VERSION: 'v1.33.0'
+    GO_VERSION: '1.23.6'
+    GO_MAJOR_VERSION: '1.23'
+    OS_CODENAME: 'bookworm'
+    REVISION: '0'
+    PLATFORMS: 'linux/ppc64le'
   v1.32-go1.23-bullseye:
     CONFIG: 'go1.23-bullseye'
     TYPE: 'default'
@@ -26,6 +38,7 @@ variants:
     GO_MAJOR_VERSION: '1.23'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
+    PLATFORMS: 'linux/amd64 linux/arm64'
   v1.31-go1.23-bullseye:
     CONFIG: 'go1.23-bullseye'
     TYPE: 'default'
@@ -35,6 +48,7 @@ variants:
     GO_MAJOR_VERSION: '1.23'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
+    PLATFORMS: 'linux/amd64 linux/arm64'
   v1.30-go1.23-bullseye:
     CONFIG: 'go1.23-bullseye'
     TYPE: 'default'
@@ -44,6 +58,7 @@ variants:
     GO_MAJOR_VERSION: '1.23'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
+    PLATFORMS: 'linux/amd64 linux/arm64'
   v1.29-go1.23-bullseye:
     CONFIG: 'go1.23-bullseye'
     TYPE: 'default'
@@ -53,3 +68,4 @@ variants:
     GO_MAJOR_VERSION: '1.23'
     OS_CODENAME: 'bullseye'
     REVISION: '0'
+    PLATFORMS: 'linux/amd64 linux/arm64'
