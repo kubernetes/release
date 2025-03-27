@@ -30,7 +30,7 @@ import (
 
 // GetKubernetesChannelForVersion returns channel for the given Kubernetes version.
 func (s *Specs) GetKubernetesChannelForVersion(kubernetesVersion string) (string, error) {
-	kubeSemver, err := s.impl.TagStringToSemver(kubernetesVersion)
+	kubeSemver, err := s.TagStringToSemver(kubernetesVersion)
 	if err != nil {
 		return "", fmt.Errorf("user-supplied kubernetes version is not valid semver: %w", err)
 	}
@@ -59,11 +59,11 @@ func (s *Specs) GetKubernetesChannelForVersion(kubernetesVersion string) (string
 func (s *Specs) GetKubernetesVersionForChannel(channel string) (string, error) {
 	switch channel {
 	case consts.ChannelTypePrerelease:
-		return s.impl.GetKubeVersion(release.VersionTypeStablePreRelease)
+		return s.GetKubeVersion(release.VersionTypeStablePreRelease)
 	case consts.ChannelTypeNightly:
-		return s.impl.GetKubeVersion(release.VersionTypeCILatestCross)
+		return s.GetKubeVersion(release.VersionTypeCILatestCross)
 	default:
-		return s.impl.GetKubeVersion(release.VersionTypeStable)
+		return s.GetKubeVersion(release.VersionTypeStable)
 	}
 }
 
@@ -108,7 +108,7 @@ func (s *Specs) GetKubernetesCIDownloadLink(baseURL, name, version, arch string)
 	if version == "" {
 		var err error
 
-		version, err = s.impl.GetKubeVersion(release.VersionTypeCILatestCross)
+		version, err = s.GetKubeVersion(release.VersionTypeCILatestCross)
 		if err != nil {
 			return "", err
 		}
@@ -132,7 +132,7 @@ func (s *Specs) GetCNIPluginsVersion() (string, error) {
 func (s *Specs) getLatestVersionGitHub(org, repo string) (string, error) {
 	baseURL := fmt.Sprintf("https://github.com/%s/%s/releases", org, repo)
 
-	resp, err := s.impl.HeadRequest(baseURL + "/latest")
+	resp, err := s.HeadRequest(baseURL + "/latest")
 	if err != nil {
 		return "", fmt.Errorf("sending head request: %w", err)
 	}

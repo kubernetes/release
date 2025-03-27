@@ -59,7 +59,7 @@ func TestGetBuildSubjects(t *testing.T) {
 	version := "v1.0"
 	subjects, err := impl.GetBuildSubjects(&opts, dir, version)
 	require.NoError(t, err)
-	require.Equal(t, len(testFiles), len(subjects))
+	require.Len(t, subjects, len(testFiles))
 
 	// Check the files have the bucket prefix:
 	gcsPath := filepath.Join(opts.Bucket, StagePath, opts.BuildVersion)
@@ -107,7 +107,7 @@ func TestGetStagingSubjects(t *testing.T) {
 	}
 	subjects, err := impl.GetStagingSubjects(&opts, dir)
 	require.NoError(t, err)
-	require.Equal(t, len(testFiles), len(subjects))
+	require.Len(t, subjects, len(testFiles))
 
 	// Check the files have the bucket prefix:
 	gcsPath := filepath.Join(opts.Bucket, StagePath, opts.BuildVersion)

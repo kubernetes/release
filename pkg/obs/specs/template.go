@@ -44,11 +44,11 @@ func (s *Specs) BuildSpecs(pkgDef *PackageDefinition, specOnly bool) (err error)
 	workItems := []work{}
 
 	tplDir := filepath.Join(pkgDef.SpecTemplatePath, pkgDef.Name)
-	if _, err := s.impl.Stat(tplDir); err != nil {
+	if _, err := s.Stat(tplDir); err != nil {
 		return fmt.Errorf("building specs for %s: finding package template dir: %w", pkgDef.Name, err)
 	}
 
-	if err := s.impl.Walk(tplDir, func(templateFile string, f os.FileInfo, err error) error {
+	if err := s.Walk(tplDir, func(templateFile string, f os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -60,7 +60,7 @@ func (s *Specs) BuildSpecs(pkgDef *PackageDefinition, specOnly bool) (err error)
 		}
 
 		if f.IsDir() {
-			return s.impl.Mkdir(specFile, f.Mode())
+			return s.Mkdir(specFile, f.Mode())
 		}
 		if filepath.Ext(templateFile) == ".spec" || filepath.Ext(templateFile) == ".rpmlintrc" {
 			// Spec is intentionally saved outside package dir, which is later on archived
@@ -97,7 +97,7 @@ func (s *Specs) BuildSpecs(pkgDef *PackageDefinition, specOnly bool) (err error)
 			return fmt.Errorf("executing template for %s: %w", item.src, err)
 		}
 
-		if err := s.impl.WriteFile(
+		if err := s.WriteFile(
 			item.dst, buf.Bytes(), item.info.Mode(),
 		); err != nil {
 			return fmt.Errorf("writing file %s: %w", item.dst, err)

@@ -204,9 +204,10 @@ func GenerateReleaseVersion(
 
 		releaseVersions.prime += fmt.Sprintf(".%d", patch)
 
-		if releaseType == ReleaseTypeOfficial {
+		switch releaseType {
+		case ReleaseTypeOfficial:
 			releaseVersions.official = releaseVersions.prime
-		} else if releaseType == ReleaseTypeRC {
+		case ReleaseTypeRC:
 			releaseVersions.rc = fmt.Sprintf(
 				"%s-rc.%d", releaseVersions.prime, labelID,
 			)

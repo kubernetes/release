@@ -516,15 +516,9 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result) (*ReleaseNote, error) {
 	sigLabels := labelsWithPrefix(pr, "sig")
 	noteSuffix := prettifySIGList(sigLabels)
 
-	isDuplicateSIG := false
-	if len(labelsWithPrefix(pr, "sig")) > 1 {
-		isDuplicateSIG = true
-	}
+	isDuplicateSIG := len(labelsWithPrefix(pr, "sig")) > 1
 
-	isDuplicateKind := false
-	if len(labelsWithPrefix(pr, "kind")) > 1 {
-		isDuplicateKind = true
-	}
+	isDuplicateKind := len(labelsWithPrefix(pr, "kind")) > 1
 
 	// TODO: Spin this to sep function
 	indented := strings.ReplaceAll(text, "\n", "\n  ")
@@ -622,7 +616,7 @@ func (g *Gatherer) listCommits(branch, start, end string) ([]*gogithub.Repositor
 
 	for page := 2; page <= resp.LastPage; page++ {
 		clo := clo
-		clo.ListOptions.Page = page
+		clo.Page = page
 
 		go func() {
 			commits, _, err := worker(&clo)

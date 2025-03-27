@@ -111,7 +111,7 @@ func TestListCommits(t *testing.T) {
 			},
 			listCommitsArgValidator: func(t *testing.T, callCount int, ctx context.Context, org, repo string, clo *github.CommitsListOptions) {
 				checkOrgRepo(t, org, repo)
-				if page, minimum, maximum := clo.ListOptions.Page, 1, 100; page < minimum || page > maximum {
+				if page, minimum, maximum := clo.Page, 1, 100; page < minimum || page > maximum {
 					t.Errorf("Expected page number to be between %d and %d, got: %d", minimum, maximum, page)
 				}
 				if a, e := clo.SHA, "the-branch"; a != e {

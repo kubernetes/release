@@ -354,17 +354,17 @@ func (s *StageOptions) Validate(state *State, submit bool) error {
 		return fmt.Errorf("validating generic options: %w", err)
 	}
 
-	if s.Options.BuildVersion != "" {
-		if err := s.Options.ValidateBuildVersion(state); err != nil {
+	if s.BuildVersion != "" {
+		if err := s.ValidateBuildVersion(state); err != nil {
 			return errors.New("validating build version")
 		}
-	} else if s.Options.Version == "" {
+	} else if s.Version == "" {
 		// Version is required only for stage,
 		// release step only publishes what has been already built.
 		return errors.New("version is required")
 	}
 
-	if s.Options.ReleaseType != "" || s.Options.ReleaseBranch != "" || s.Options.BuildVersion != "" {
+	if s.ReleaseType != "" || s.ReleaseBranch != "" || s.BuildVersion != "" {
 		state.corePackages = true
 	}
 
@@ -507,17 +507,17 @@ func (r *ReleaseOptions) Validate(state *State, submit bool) error {
 		return fmt.Errorf("validating generic options: %w", err)
 	}
 
-	if r.Options.BuildVersion != "" {
-		if err := r.Options.ValidateBuildVersion(state); err != nil {
+	if r.BuildVersion != "" {
+		if err := r.ValidateBuildVersion(state); err != nil {
 			return fmt.Errorf("validating build version: %w", err)
 		}
 	}
 
-	if r.Options.Version != "" {
+	if r.Version != "" {
 		return errors.New("specifying version is not supported for release")
 	}
 
-	if r.Options.ReleaseType != "" || r.Options.ReleaseBranch != "" || r.Options.BuildVersion != "" {
+	if r.ReleaseType != "" || r.ReleaseBranch != "" || r.BuildVersion != "" {
 		state.corePackages = true
 	}
 
