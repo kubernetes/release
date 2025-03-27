@@ -57,7 +57,7 @@ func (g *GitHub) UpdateGitHubPage() (err error) {
 		return errors.New("cannot update release page without a GitHub token")
 	}
 
-	gh := g.impl.github()
+	gh := g.github()
 	releaseVerb := "Posting"
 
 	semver, err := util.TagStringToSemver(g.options.Tag)
@@ -67,13 +67,10 @@ func (g *GitHub) UpdateGitHubPage() (err error) {
 
 	// Determine if this is a prerelase
 	// // [[ "$FLAGS_type" == official ]] && prerelease="false"
-	isPrerelease := false
-	if len(semver.Pre) > 0 {
-		isPrerelease = true
-	}
+	isPrerelease := len(semver.Pre) > 0
 
 	// Process the specified assets
-	releaseAssets, err := g.impl.processAssetFiles(g.options.AssetFiles)
+	releaseAssets, err := g.processAssetFiles(g.options.AssetFiles)
 	if err != nil {
 		return fmt.Errorf("processing the asset file list: %w", err)
 	}

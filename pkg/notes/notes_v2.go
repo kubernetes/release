@@ -176,15 +176,9 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 	sigLabels := labelsWithPrefix(pr, "sig")
 	noteSuffix := prettifySIGList(sigLabels)
 
-	isDuplicateSIG := false
-	if len(labelsWithPrefix(pr, "sig")) > 1 {
-		isDuplicateSIG = true
-	}
+	isDuplicateSIG := len(labelsWithPrefix(pr, "sig")) > 1
 
-	isDuplicateKind := false
-	if len(labelsWithPrefix(pr, "kind")) > 1 {
-		isDuplicateKind = true
-	}
+	isDuplicateKind := len(labelsWithPrefix(pr, "kind")) > 1
 
 	// TODO(wilsonehusin): extract / follow original in ReleasenoteFromCommit
 	indented := strings.ReplaceAll(text, "\n", "\n  ")

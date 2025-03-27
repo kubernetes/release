@@ -75,20 +75,20 @@ func (d *defaultMakeImpl) Rename(from, to string) error {
 // MakeCross cross compiles Kubernetes binaries for the provided `versions` and
 // `repoPath`.
 func (m *Make) MakeCross(version string) error {
-	repo, err := m.impl.OpenRepo(".")
+	repo, err := m.OpenRepo(".")
 	if err != nil {
 		return fmt.Errorf("open Kubernetes repository: %w", err)
 	}
 
 	logrus.Infof("Checking out version %s", version)
 
-	if err := m.impl.Checkout(repo, version); err != nil {
+	if err := m.Checkout(repo, version); err != nil {
 		return fmt.Errorf("checking out version %s: %w", version, err)
 	}
 
 	logrus.Info("Building binaries")
 
-	if err := m.impl.Command(
+	if err := m.Command(
 		"make",
 		"cross-in-a-container",
 		"KUBE_DOCKER_IMAGE_TAG="+version,
@@ -99,13 +99,13 @@ func (m *Make) MakeCross(version string) error {
 	newBuildDir := fmt.Sprintf("%s-%s", release.BuildDir, version)
 	logrus.Infof("Moving build output to %s", newBuildDir)
 
-	if err := m.impl.Rename(release.BuildDir, newBuildDir); err != nil {
+	if err := m.Rename(release.BuildDir, newBuildDir); err != nil {
 		return fmt.Errorf("move build output: %w", err)
 	}
 
 	logrus.Info("Building package tarballs")
 
-	if err := m.impl.Command(
+	if err := m.Command(
 		"make",
 		"package-tarballs",
 		"KUBE_DOCKER_IMAGE_TAG="+version,

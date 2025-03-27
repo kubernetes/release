@@ -48,14 +48,14 @@ func (s *SBOM) SetImplementation(i impl) {
 // Generate creates an SBOM describing the release.
 func (s *SBOM) Generate() (string, error) {
 	// Create a temporary file to write the sbom
-	sbomFile, err := s.impl.tmpFile()
+	sbomFile, err := s.tmpFile()
 	if err != nil {
 		return "", fmt.Errorf("setting up temporary file for SBOM: %w", err)
 	}
 
 	logrus.Infof("SBOM will be temporarily written to %s", sbomFile)
 
-	builder := s.impl.docBuilder()
+	builder := s.docBuilder()
 	builderOpts := &spdx.DocGenerateOptions{
 		ProcessGoModules: true,
 		ScanLicenses:     true,
@@ -79,7 +79,7 @@ func (s *SBOM) Generate() (string, error) {
 	}
 
 	// List all artifacts and add them
-	spdxClient := s.impl.spdxClient()
+	spdxClient := s.spdxClient()
 
 	for _, f := range s.options.Assets {
 		logrus.Infof("Adding file %s to SBOM", f.Path)
@@ -116,7 +116,7 @@ func (s *SBOM) Generate() (string, error) {
 		return "", fmt.Errorf("serializing sbom: %w", err)
 	}
 
-	if err := s.impl.writeFile(sbomFile, []byte(markup)); err != nil {
+	if err := s.writeFile(sbomFile, []byte(markup)); err != nil {
 		return "", fmt.Errorf("writing sbom to disk: %w", err)
 	}
 

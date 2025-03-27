@@ -178,7 +178,7 @@ func TestDocumentationFromString(t *testing.T) {
 		fmt.Sprintf(docsBlock+"\n%s\n"+mdSep, url1),
 	)
 	require.Len(t, result, 1)
-	require.Equal(t, "", result[0].Description)
+	require.Empty(t, result[0].Description)
 	require.Equal(t, url1, result[0].URL)
 }
 
@@ -309,7 +309,7 @@ func TestNoteTextFromString(t *testing.T) {
 			func(res string, err error) {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "empty release note")
-				require.Equal(t, "", res)
+				require.Empty(t, res)
 			},
 		},
 	} {

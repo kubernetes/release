@@ -53,9 +53,9 @@ func (s *Specs) BuildArtifactsArchive(pkgDef *PackageDefinition) error {
 
 		dlRootPath := filepath.Join(pkgDef.SpecOutputPath, pkgDef.Name, arch)
 
-		err := s.impl.MkdirAll(dlRootPath, os.FileMode(0o755))
+		err := s.MkdirAll(dlRootPath, os.FileMode(0o755))
 		if err != nil {
-			if !s.impl.IsExist(err) {
+			if !s.IsExist(err) {
 				return fmt.Errorf("creating directory to download %s: %w", pkgDef.Name, err)
 			}
 		}
@@ -93,11 +93,11 @@ func (s *Specs) BuildArtifactsArchive(pkgDef *PackageDefinition) error {
 	archiveSrc := filepath.Join(pkgDef.SpecOutputPath, pkgDef.Name)
 	archiveDst := filepath.Join(pkgDef.SpecOutputPath, fmt.Sprintf("%s_%s.orig.tar.gz", pkgDef.Name, pkgDef.RPMVersion()))
 
-	if err := s.impl.Compress(archiveDst, archiveSrc); err != nil {
+	if err := s.Compress(archiveDst, archiveSrc); err != nil {
 		return fmt.Errorf("creating archive: %w", err)
 	}
 
-	if err := s.impl.RemoveAll(archiveSrc); err != nil {
+	if err := s.RemoveAll(archiveSrc); err != nil {
 		return fmt.Errorf("cleaning up archive source: %w", err)
 	}
 
@@ -118,16 +118,16 @@ func (s *Specs) DownloadArtifact(sourcePath, destPath string, extractTgz bool) e
 
 // DownloadArtifactFromGCS downloads the artifact from the given GCS bucket.
 func (s *Specs) DownloadArtifactFromGCS(sourcePath, destPath string, extractTgz bool) error {
-	if err := s.impl.GCSCopyToLocal(sourcePath, destPath); err != nil {
+	if err := s.GCSCopyToLocal(sourcePath, destPath); err != nil {
 		return fmt.Errorf("copying file to archive: %w", err)
 	}
 
 	if extractTgz {
-		if err := s.impl.Extract(destPath, filepath.Dir(destPath)); err != nil {
+		if err := s.Extract(destPath, filepath.Dir(destPath)); err != nil {
 			return fmt.Errorf("extracting .tar.gz archive: %w", err)
 		}
 
-		if err := s.impl.RemoveFile(destPath); err != nil {
+		if err := s.RemoveFile(destPath); err != nil {
 			return fmt.Errorf("removing extracted archive: %w", err)
 		}
 	}
@@ -137,13 +137,13 @@ func (s *Specs) DownloadArtifactFromGCS(sourcePath, destPath string, extractTgz 
 
 // downloadArtifactFromGCS downloads the artifact from the given URL.
 func (s *Specs) DownloadArtifactFromURL(downloadURL, destPath string, extractTgz bool) error {
-	out, err := s.impl.CreateFile(destPath)
+	out, err := s.CreateFile(destPath)
 	if err != nil {
 		return fmt.Errorf("creating download destination file: %w", err)
 	}
 	defer out.Close()
 
-	resp, err := s.impl.GetRequest(downloadURL)
+	resp, err := s.GetRequest(downloadURL)
 	if err != nil {
 		return fmt.Errorf("downloading artifact: %w", err)
 	}
@@ -160,11 +160,11 @@ func (s *Specs) DownloadArtifactFromURL(downloadURL, destPath string, extractTgz
 	}
 
 	if extractTgz {
-		if err := s.impl.Extract(destPath, filepath.Dir(destPath)); err != nil {
+		if err := s.Extract(destPath, filepath.Dir(destPath)); err != nil {
 			return fmt.Errorf("extracting .tar.gz archive: %w", err)
 		}
 
-		if err := s.impl.RemoveFile(destPath); err != nil {
+		if err := s.RemoveFile(destPath); err != nil {
 			return fmt.Errorf("removing extracted archive: %w", err)
 		}
 	}

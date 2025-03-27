@@ -63,7 +63,7 @@ func New() *CloudBuild {
 // DirForJobType creates a temp directory containing the default cloudbuild
 // file for the provided job type.
 func (c *CloudBuild) DirForJobType(jobType string) (string, error) {
-	tempDir, err := c.impl.MkdirTemp("", "krel-cloudbuild-*")
+	tempDir, err := c.MkdirTemp("", "krel-cloudbuild-*")
 	if err != nil {
 		return "", fmt.Errorf("create temp cloudbuild dir: %w", err)
 	}
@@ -85,7 +85,7 @@ func (c *CloudBuild) DirForJobType(jobType string) (string, error) {
 		return "", fmt.Errorf("unknown job type: %s", jobType)
 	}
 
-	if err := c.impl.WriteFile(
+	if err := c.WriteFile(
 		filepath.Join(tempDir, build.DefaultCloudbuildFile),
 		content,
 		0o600,

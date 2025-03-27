@@ -104,7 +104,7 @@ func (s *Specs) ConstructPackageDefinition() (*PackageDefinition, error) {
 		}
 	}
 
-	pkgDef.Version = s.impl.TrimTagPrefix(pkgDef.Version)
+	pkgDef.Version = s.TrimTagPrefix(pkgDef.Version)
 	// For cases where a CI build version of Kubernetes is retrieved, replace instances
 	// of "+" with "-", so that we build with a valid Debian package version.
 	pkgDef.Version = strings.Replace(pkgDef.Version, "+", "-", 1)
@@ -140,7 +140,7 @@ func (s *Specs) ConstructPackageDefinition() (*PackageDefinition, error) {
 // Metadata includes information about package source and dependencies,
 // and is stored in a YAML manifest.
 func (s *Specs) GetPackageMetadata(templateDir, packageName, packageVersion string) (*metadata.PackageMetadata, error) {
-	m, err := s.impl.LoadPackageMetadata(filepath.Join(templateDir, "metadata.yaml"))
+	m, err := s.LoadPackageMetadata(filepath.Join(templateDir, "metadata.yaml"))
 	if err != nil {
 		return nil, fmt.Errorf("getting metadata for %s: %w", packageName, err)
 	}
@@ -162,7 +162,7 @@ func (s *Specs) GetMetadataWithVersionConstraint(packageName, packageVersion str
 			return nil, fmt.Errorf("parsing semver range for package %s: %w", packageName, err)
 		}
 
-		kubeSemVer, err := s.impl.TagStringToSemver(packageVersion)
+		kubeSemVer, err := s.TagStringToSemver(packageVersion)
 		if err != nil {
 			return nil, fmt.Errorf("parsing package version %s: %w", packageVersion, err)
 		}

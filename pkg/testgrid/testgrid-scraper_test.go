@@ -68,7 +68,7 @@ func TestRequestTestgridSummariesPos(t *testing.T) {
 
 	// Then
 	require.NoError(t, err)
-	assert.Equal(t, len(posDashboardNames), len(data))
+	assert.Len(t, data, len(posDashboardNames))
 }
 
 func TestRequestTestgridSummariesNeg(t *testing.T) {
@@ -91,7 +91,7 @@ func TestRequestTestgridSummariesPosNeg(t *testing.T) {
 	// Then
 	require.Error(t, err, "an error should be returned as not all dashboard name references are correct")
 	assert.NotEmpty(t, data, "response shouldn't be empty because valid data das been added alongside faulty data - the correct data should be getting processed nonetheless")
-	assert.Equal(t, len(posDashboardNames), len(data))
+	assert.Len(t, data, len(posDashboardNames))
 }
 
 type jobGeneratorDef struct {

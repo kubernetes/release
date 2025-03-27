@@ -85,7 +85,7 @@ func (a *Announce) CreateForBranch() error {
 		a.options.branch, a.options.workDir,
 	)
 
-	if err := a.impl.Create(
+	if err := a.Create(
 		a.options.workDir,
 		fmt.Sprintf(branchAnnouncement, a.options.branch),
 	); err != nil {
@@ -107,7 +107,7 @@ func (a *Announce) CreateForRelease() error {
 
 	// Read the changelog from the specified file if we got one
 	if a.options.changelogFile != "" {
-		changelogData, err := a.impl.ReadChangelogFile(a.options.changelogFile)
+		changelogData, err := a.ReadChangelogFile(a.options.changelogFile)
 		if err != nil {
 			return fmt.Errorf("reading changelog html file: %w", err)
 		}
@@ -126,7 +126,7 @@ func (a *Announce) CreateForRelease() error {
 
 	logrus.Infof("Trying to get the Go version used to build %s...", a.options.tag)
 
-	goVersion, err := a.impl.GetGoVersion(a.options.tag)
+	goVersion, err := a.GetGoVersion(a.options.tag)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func (a *Announce) CreateForRelease() error {
 
 	logrus.Infof("Found the following Go version: %s", goVersion)
 
-	if err := a.impl.Create(
+	if err := a.Create(
 		a.options.workDir,
 		fmt.Sprintf(releaseAnnouncement,
 			a.options.tag, goVersion, a.options.changelogPath,

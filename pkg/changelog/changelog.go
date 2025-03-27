@@ -73,7 +73,7 @@ func (c *Changelog) SetImpl(impl impl) {
 
 // Run starts the changelog generation.
 func (c *Changelog) Run() error {
-	tag, err := c.impl.TagStringToSemver(c.options.Tag)
+	tag, err := c.TagStringToSemver(c.options.Tag)
 	if err != nil {
 		return fmt.Errorf("parse tag %s: %w", c.options.Tag, err)
 	}
@@ -88,18 +88,18 @@ func (c *Changelog) Run() error {
 
 	logrus.Infof("Using local repository path %s", c.options.RepoPath)
 
-	repo, err := c.impl.OpenRepo(c.options.RepoPath)
+	repo, err := c.OpenRepo(c.options.RepoPath)
 	if err != nil {
 		return fmt.Errorf("open expected k/k repository %q: %w", c.options.RepoPath, err)
 	}
 
-	if currentBranch, err := c.impl.CurrentBranch(repo); err == nil {
+	if currentBranch, err := c.CurrentBranch(repo); err == nil {
 		logrus.Infof("We're currently on branch: %s", currentBranch)
 	}
 
 	remoteBranch := git.Remotify(branch)
 
-	head, err := c.impl.RevParseTag(repo, remoteBranch)
+	head, err := c.RevParseTag(repo, remoteBranch)
 	if err != nil {
 		return fmt.Errorf("get latest branch commit: %w", err)
 	}
@@ -119,7 +119,7 @@ func (c *Changelog) Run() error {
 			startRev = startTag
 			endRev = head
 
-			if err := c.impl.CreateDownloadsTable(
+			if err := c.CreateDownloadsTable(
 				downloadsTable, c.options.Bucket, c.options.Tars,
 				c.options.Images, startRev, c.options.Tag,
 			); err != nil {
@@ -150,7 +150,7 @@ func (c *Changelog) Run() error {
 				// Do not access the API on replay
 				latestTags = github.TagsPerBranch{branch: c.options.Tag}
 			} else {
-				latestTags, err = c.impl.LatestGitHubTagsPerBranch()
+				latestTags, err = c.LatestGitHubTagsPerBranch()
 				if err != nil {
 					return fmt.Errorf("get latest GitHub tags: %w", err)
 				}
@@ -173,7 +173,7 @@ func (c *Changelog) Run() error {
 		}
 	} else {
 		if c.options.CloneCVEMaps {
-			cveDir, err := c.impl.CloneCVEData()
+			cveDir, err := c.CloneCVEData()
 			if err != nil {
 				return fmt.Errorf("getting cve data maps: %w", err)
 			}
@@ -199,7 +199,7 @@ func (c *Changelog) Run() error {
 	if c.options.Dependencies {
 		logrus.Info("Generating dependency changes")
 
-		deps, err := c.impl.DependencyChanges(startRev, endRev)
+		deps, err := c.DependencyChanges(startRev, endRev)
 		if err != nil {
 			return fmt.Errorf("generate dependency changes: %w", err)
 		}
@@ -209,20 +209,20 @@ func (c *Changelog) Run() error {
 
 	logrus.Info("Generating TOC")
 
-	toc, err := c.impl.GenerateTOC(markdown)
+	toc, err := c.GenerateTOC(markdown)
 	if err != nil {
 		return fmt.Errorf("generate table of contents: %w", err)
 	}
 
 	// Restore the currently checked out branch
-	currentBranch, err := c.impl.CurrentBranch(repo)
+	currentBranch, err := c.CurrentBranch(repo)
 	if err != nil {
 		return fmt.Errorf("get current branch: %w", err)
 	}
 
 	if currentBranch != "" {
 		defer func() {
-			if err := c.impl.Checkout(repo, currentBranch); err != nil {
+			if err := c.Checkout(repo, currentBranch); err != nil {
 				logrus.Errorf("Restore branch %s: %v", currentBranch, err)
 			}
 		}()
@@ -230,7 +230,7 @@ func (c *Changelog) Run() error {
 
 	logrus.Infof("Checking out %s branch", git.DefaultBranch)
 
-	if err := c.impl.Checkout(repo, git.DefaultBranch); err != nil {
+	if err := c.Checkout(repo, git.DefaultBranch); err != nil {
 		return fmt.Errorf("checkout %s branch: %w", git.DefaultBranch, err)
 	}
 
@@ -285,16 +285,16 @@ func (c *Changelog) generateReleaseNotes(
 		)
 	}
 
-	if err := c.impl.ValidateAndFinish(notesOptions); err != nil {
+	if err := c.ValidateAndFinish(notesOptions); err != nil {
 		return "", "", fmt.Errorf("validating notes options: %w", err)
 	}
 
-	releaseNotes, err := c.impl.GatherReleaseNotes(notesOptions)
+	releaseNotes, err := c.GatherReleaseNotes(notesOptions)
 	if err != nil {
 		return "", "", fmt.Errorf("gather release notes: %w", err)
 	}
 
-	doc, err := c.impl.NewDocument(releaseNotes, startRev, c.options.Tag)
+	doc, err := c.NewDocument(releaseNotes, startRev, c.options.Tag)
 	if err != nil {
 		return "", "", fmt.Errorf("create release note document: %w", err)
 	}
@@ -304,7 +304,7 @@ func (c *Changelog) generateReleaseNotes(
 		return "", "", fmt.Errorf("build release notes JSON: %w", err)
 	}
 
-	markdown, err = c.impl.RenderMarkdownTemplate(
+	markdown, err = c.RenderMarkdownTemplate(
 		doc, c.options.Bucket, c.options.Tars, c.options.Images,
 		options.GoTemplateInline+releaseNotesTemplate,
 	)
@@ -319,11 +319,11 @@ func (c *Changelog) writeMarkdown(
 	repo *git.Repo, toc, markdown string, tag semver.Version,
 ) error {
 	changelogPath := filepath.Join(
-		c.impl.RepoDir(repo),
+		c.RepoDir(repo),
 		markdownChangelogFilename(tag),
 	)
 	writeFile := func(t, m string) error {
-		return c.impl.WriteFile(
+		return c.WriteFile(
 			changelogPath,
 			[]byte(addTocMarkers(t)+"\n"+strings.TrimSpace(m)),
 			os.FileMode(0o644),
@@ -331,7 +331,7 @@ func (c *Changelog) writeMarkdown(
 	}
 
 	// No changelog exists, simply write the content to a new one
-	if _, err := c.impl.Stat(changelogPath); os.IsNotExist(err) {
+	if _, err := c.Stat(changelogPath); os.IsNotExist(err) {
 		logrus.Infof("Changelog %q does not exist, creating it", changelogPath)
 
 		if err := c.adaptChangelogReadmeFile(repo, tag); err != nil {
@@ -344,7 +344,7 @@ func (c *Changelog) writeMarkdown(
 	// Changelog seems to exist, prepend the notes and re-generate the TOC
 	logrus.Infof("Adding new content to changelog file %s ", changelogPath)
 
-	content, err := c.impl.ReadFile(changelogPath)
+	content, err := c.ReadFile(changelogPath)
 	if err != nil {
 		return fmt.Errorf("read changelog file: %w", err)
 	}
@@ -361,7 +361,7 @@ func (c *Changelog) writeMarkdown(
 		"%s\n%s", markdown, string(content[(len(TocEnd)+tocEndIndex):]),
 	)
 
-	mergedTOC, err := c.impl.GenerateTOC(mergedMarkdown)
+	mergedTOC, err := c.GenerateTOC(mergedMarkdown)
 	if err != nil {
 		return fmt.Errorf("generate table of contents: %w", err)
 	}
@@ -407,30 +407,30 @@ func addTocMarkers(toc string) string {
 
 func (c *Changelog) writeHTML(tag semver.Version, markdown string) error {
 	content := &bytes.Buffer{}
-	if err := c.impl.MarkdownToHTML(markdown, content); err != nil {
+	if err := c.MarkdownToHTML(markdown, content); err != nil {
 		return fmt.Errorf("render HTML from markdown: %w", err)
 	}
 
-	t, err := c.impl.ParseHTMLTemplate(htmlTemplate)
+	t, err := c.ParseHTMLTemplate(htmlTemplate)
 	if err != nil {
 		return fmt.Errorf("parse HTML template: %w", err)
 	}
 
 	output := bytes.Buffer{}
-	if err := c.impl.TemplateExecute(t, &output, struct {
+	if err := c.TemplateExecute(t, &output, struct {
 		Title, Content string
 	}{util.SemverToTagString(tag), content.String()}); err != nil {
 		return fmt.Errorf("execute HTML template: %w", err)
 	}
 
-	absOutputPath, err := c.impl.Abs(c.htmlChangelogFilename(tag))
+	absOutputPath, err := c.Abs(c.htmlChangelogFilename(tag))
 	if err != nil {
 		return fmt.Errorf("get absolute file path: %w", err)
 	}
 
 	logrus.Infof("Writing HTML file to %s", absOutputPath)
 
-	if err := c.impl.WriteFile(absOutputPath, output.Bytes(), os.FileMode(0o644)); err != nil {
+	if err := c.WriteFile(absOutputPath, output.Bytes(), os.FileMode(0o644)); err != nil {
 		return fmt.Errorf("write template: %w", err)
 	}
 
@@ -438,14 +438,14 @@ func (c *Changelog) writeHTML(tag semver.Version, markdown string) error {
 }
 
 func (c *Changelog) writeJSON(tag semver.Version, jsonStr string) error {
-	absOutputPath, err := c.impl.Abs(c.jsonChangelogFilename(tag))
+	absOutputPath, err := c.Abs(c.jsonChangelogFilename(tag))
 	if err != nil {
 		return fmt.Errorf("get absolute file path: %w", err)
 	}
 
 	logrus.Infof("Writing JSON file to %s", absOutputPath)
 
-	if err := c.impl.WriteFile(absOutputPath, []byte(jsonStr), os.FileMode(0o644)); err != nil {
+	if err := c.WriteFile(absOutputPath, []byte(jsonStr), os.FileMode(0o644)); err != nil {
 		return fmt.Errorf("write JSON: %w", err)
 	}
 
@@ -465,7 +465,7 @@ func (c *Changelog) lookupRemoteReleaseNotes(
 	// Retrieve the markdown version
 	remoteMarkdown := remoteBase + "release-notes-draft.md"
 
-	markdownStr, err = c.impl.GetURLResponse(remoteMarkdown)
+	markdownStr, err = c.GetURLResponse(remoteMarkdown)
 	if err != nil {
 		return "", "", fmt.Errorf("fetch release notes markdown from remote: %s: %w", remoteMarkdown, err)
 	}
@@ -475,7 +475,7 @@ func (c *Changelog) lookupRemoteReleaseNotes(
 	// Retrieve the JSON version
 	remoteJSON := remoteBase + "release-notes-draft.json"
 
-	jsonStr, err = c.impl.GetURLResponse(remoteJSON)
+	jsonStr, err = c.GetURLResponse(remoteJSON)
 	if err != nil {
 		logrus.Warnf(
 			"Unable to fetch release notes JSON from remote %s: %v",
@@ -505,14 +505,14 @@ func (c *Changelog) commitChanges(
 	for _, filename := range changelogFiles {
 		logrus.Infof("Adding %s to repository", filename)
 
-		if err := c.impl.Add(repo, filename); err != nil {
+		if err := c.Add(repo, filename); err != nil {
 			return fmt.Errorf("add file %s to repository: %w", filename, err)
 		}
 	}
 
 	logrus.Info("Committing changes to main branch in repository")
 
-	if err := c.impl.Commit(repo, fmt.Sprintf(
+	if err := c.Commit(repo, fmt.Sprintf(
 		"CHANGELOG: Update directory for %s release", util.SemverToTagString(tag),
 	)); err != nil {
 		return fmt.Errorf("committing changes into repository: %w", err)
@@ -521,7 +521,7 @@ func (c *Changelog) commitChanges(
 	if branch != git.DefaultBranch {
 		logrus.Infof("Checking out %s branch", branch)
 		// Release branch modifications
-		if err := c.impl.Checkout(repo, branch); err != nil {
+		if err := c.Checkout(repo, branch); err != nil {
 			return fmt.Errorf("checking out release branch %s: %w", branch, err)
 		}
 
@@ -530,14 +530,14 @@ func (c *Changelog) commitChanges(
 			pattern := filepath.Join(RepoChangelogDir, "CHANGELOG-*.md")
 			logrus.Infof("Removing unnecessary %s files", pattern)
 
-			if err := c.impl.Rm(repo, true, pattern); err != nil {
+			if err := c.Rm(repo, true, pattern); err != nil {
 				return fmt.Errorf("removing %s files: %w", pattern, err)
 			}
 		}
 
 		logrus.Info("Checking out changelog from main branch")
 
-		if err := c.impl.Checkout(
+		if err := c.Checkout(
 			repo, git.DefaultBranch, releaseChangelog,
 		); err != nil {
 			return fmt.Errorf("check out main branch changelog: %w", err)
@@ -545,7 +545,7 @@ func (c *Changelog) commitChanges(
 
 		logrus.Info("Committing changes to release branch in repository")
 
-		if err := c.impl.Commit(repo, fmt.Sprintf(
+		if err := c.Commit(repo, fmt.Sprintf(
 			"Update %s for %s", releaseChangelog, util.SemverToTagString(tag),
 		)); err != nil {
 			return fmt.Errorf("committing changes into repository: %w", err)
@@ -560,7 +560,7 @@ func (c *Changelog) adaptChangelogReadmeFile(
 ) error {
 	targetFile := filepath.Join(repo.Dir(), RepoChangelogDir, "README.md")
 
-	readme, err := c.impl.ReadFile(targetFile)
+	readme, err := c.ReadFile(targetFile)
 	if err != nil {
 		return fmt.Errorf("read changelog README.md: %w", err)
 	}
@@ -585,7 +585,7 @@ func (c *Changelog) adaptChangelogReadmeFile(
 		res = append(res, line)
 	}
 
-	if err := c.impl.WriteFile(
+	if err := c.WriteFile(
 		targetFile, []byte(strings.Join(res, nl)+nl), os.FileMode(0o644)); err != nil {
 		return fmt.Errorf("write changelog README.md: %w", err)
 	}

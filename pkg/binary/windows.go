@@ -163,7 +163,7 @@ func GetPEHeader(path string) (*PEHeader, error) {
 			return nil, fmt.Errorf("reading the PE file header location: %w", err)
 		}
 
-		if !(sign[0] == 'P' && sign[1] == 'E' && sign[2] == 0 && sign[3] == 0) {
+		if sign[0] != 'P' || sign[1] != 'E' || sign[2] != 0 || sign[3] != 0 {
 			return nil, errors.New("invalid PE COFF file signature")
 		}
 

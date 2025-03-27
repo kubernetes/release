@@ -130,7 +130,7 @@ func (r *Repo) CheckState(expOrg, expRepo, expRev string, nomock bool) error {
 		return fmt.Errorf("revision %q expected but got %q", head, rev)
 	}
 
-	if nomock && !(expOrg == DefaultToolOrg && expRepo == DefaultToolRepo && expRev == DefaultToolRef) {
+	if nomock && (expOrg != DefaultToolOrg || expRepo != DefaultToolRepo || expRev != DefaultToolRef) {
 		return errors.New("disallow using anything other than kubernetes/release:master with nomock flag")
 	}
 

@@ -227,8 +227,8 @@ func (s *StageOptions) Validate(state *State) error {
 
 	// build version is optional for staging, but if provided we should
 	// validate it.
-	if s.Options.BuildVersion != "" {
-		if err := s.Options.ValidateBuildVersion(state); err != nil {
+	if s.BuildVersion != "" {
+		if err := s.ValidateBuildVersion(state); err != nil {
 			return errors.New("validating build version")
 		}
 	}
@@ -381,7 +381,7 @@ func (r *ReleaseOptions) Validate(state *State) error {
 		return fmt.Errorf("validating generic options: %w", err)
 	}
 
-	if err := r.Options.ValidateBuildVersion(state); err != nil {
+	if err := r.ValidateBuildVersion(state); err != nil {
 		return fmt.Errorf("validating build version: %w", err)
 	}
 
