@@ -832,7 +832,6 @@ func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, e
 		return nil, err
 	}
 
-	var res *Result
 	for _, pr := range prs {
 		prBody := pr.GetBody()
 
@@ -874,7 +873,7 @@ func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, e
 				}
 			}
 
-			res = &Result{commit: commit, pullRequest: pr}
+			res := &Result{commit: commit, pullRequest: pr}
 			logrus.Infof("PR #%d seems to contain a release note", pr.GetNumber())
 			// Do not test further PRs for this commit as soon as one PR matched
 			return res, nil
