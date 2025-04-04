@@ -860,31 +860,30 @@ func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, e
 		}
 
 		// If we found a valid release note, return the PR, otherwise, take the next one
-		if s == "" {
-			logrus.Infof("PR #%d does not seem to contain a valid release note, skipping", pr.GetNumber())
-			continue
-		}
+		if s != "" {
+			if isAutomatedCherryPickPR(pr) {
+				logrus.Infof("PR #%d seems to be an an automated cherry-pick, retrieving origin info", pr.GetNumber())
+				originPR, err := originPrNumFromPr(pr)
+				if err != nil {
+					return nil, err
+				}
 
-		if isAutomatedCherryPickPR(pr) {
-			logrus.Infof("PR #%d seems to be an an automated cherry-pick, retrieving origin info", pr.GetNumber())
-			originPR, err := originPrNumFromPr(pr)
-			if err != nil {
-				return nil, err
+				pr, err = g.getPr(originPR)
+				if err != nil {
+					return nil, err
+				}
 			}
 
-			pr, err = g.getPr(originPR)
-			if err != nil {
-				return nil, err
-			}
+			res = &Result{commit: commit, pullRequest: pr}
+			logrus.Infof("PR #%d seems to contain a release note", pr.GetNumber())
+			// Do not test further PRs for this commit as soon as one PR matched
+			return res, nil
 		}
 
-		res = &Result{commit: commit, pullRequest: pr}
-		logrus.Infof("PR #%d seems to contain a release note", pr.GetNumber())
-		// Do not test further PRs for this commit as soon as one PR matched
-		break
+		logrus.Infof("PR #%d does not seem to contain a valid release note, skipping", pr.GetNumber())
 	}
 
-	return res, nil
+	return nil, nil
 }
 
 func isAutomatedCherryPickPR(pr *gogithub.PullRequest) bool {
