@@ -861,7 +861,7 @@ func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, e
 		// If we found a valid release note, return the PR, otherwise, take the next one
 		if s != "" {
 			if isAutomatedCherryPickPR(pr) {
-				logrus.Infof("PR #%d seems to be an an automated cherry-pick, retrieving origin info", pr.GetNumber())
+				logrus.Infof("PR #%d seems to be an automated cherry-pick, retrieving origin info", pr.GetNumber())
 				originPR, err := originPrNumFromPr(pr)
 				if err != nil {
 					return nil, err
