@@ -1156,8 +1156,9 @@ func (g *Gatherer) getPr(prNum int) (*gogithub.PullRequest, error) {
 			if !canWaitAndRetry(resp, err) {
 				return nil, err
 			}
+		} else {
+			return res, nil
 		}
-		return res, err
 	}
 }
 
