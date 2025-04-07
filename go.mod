@@ -35,7 +35,7 @@ require (
 	github.com/tj/go-spin v1.1.0
 	github.com/yuin/goldmark v1.7.8
 	golang.org/x/net v0.38.0
-	golang.org/x/oauth2 v0.28.0
+	golang.org/x/oauth2 v0.29.0
 	golang.org/x/text v0.23.0
 	google.golang.org/api v0.221.0
 	gopkg.in/yaml.v2 v2.4.0
