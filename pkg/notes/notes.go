@@ -1136,6 +1136,13 @@ func prsNumForCommitFromMessage(commitMessage string) (prs []int, err error) {
 		prs = append(prs, pr)
 	}
 
+	regex = regexp.MustCompile(`\(#(?P<number>\d+)\)\s*\n\nThis reverts commit`)
+
+	pr = prForRegex(regex, commitMessage)
+	if pr != 0 {
+		prs = append(prs, pr)
+	}
+
 	// If the PR was squash merged, the regexp is different
 	regex = regexp.MustCompile(`\(#(?P<number>\d+)\)`)
 

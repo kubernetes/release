@@ -223,6 +223,14 @@ func TestGetPRNumberFromCommitMessage(t *testing.T) {
 			commitMessage:    "Add swapoff to centos so kubelet starts (#504)",
 			expectedPRNumber: 504,
 		},
+		{
+			name: "Get PR number from revert commit",
+			commitMessage: `Revert "some pr (#1000)" (#1234)
+
+
+This reverts commit abcdef1234567890abcdef1234567890abcdef12.`,
+			expectedPRNumber: 1234,
+		},
 	}
 
 	for _, tc := range testCases {
