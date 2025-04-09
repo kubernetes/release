@@ -863,15 +863,17 @@ func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, e
 			if isAutomatedCherryPickPR(pr) {
 				logrus.Infof("PR #%d seems to be an automated cherry-pick, retrieving origin info", pr.GetNumber())
 
-				originPR, err := originPrNumFromPr(pr)
+				originPRNum, err := originPrNumFromPr(pr)
 				if err != nil {
 					return nil, err
 				}
 
-				pr, err = g.getPr(originPR)
+				originPR, err := g.getPr(originPRNum)
 				if err != nil {
 					return nil, err
 				}
+
+				pr.User = originPR.GetUser()
 			}
 
 			res := &Result{commit: commit, pullRequest: pr}

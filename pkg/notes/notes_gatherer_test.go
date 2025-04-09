@@ -335,11 +335,6 @@ func TestGatherNotes(t *testing.T) {
 						User: &github.User{
 							Login: strPtr("test-user-a"),
 						},
-						Labels: []*github.Label{
-							{
-								Name: strPtr("kind/bug"),
-							},
-						},
 					},
 					123: {
 						Number: intPtr(123),
@@ -347,15 +342,10 @@ func TestGatherNotes(t *testing.T) {
 						User: &github.User{
 							Login: strPtr("test-user-b"),
 						},
-						Labels: []*github.Label{
-							{
-								Name: strPtr("kind/release"),
-							},
-						},
 					},
 					124: {
 						Number: intPtr(124),
-						Body:   strPtr("No release note"),
+						Body:   strPtr("124\n```release-note\nfrom 124\n```\n"),
 						User: &github.User{
 							Login: strPtr("k8s-infra-cherrypick-robot"),
 						},
@@ -376,20 +366,17 @@ func TestGatherNotes(t *testing.T) {
 			},
 			resultsChecker: func(t *testing.T, results []*Result) {
 				type pr struct {
-					num      int
-					author   string
-					kindName string
+					num    int
+					author string
 				}
 				expectMap := map[string]pr{
-					"122": {
-						num:      122,
-						author:   "test-user-a",
-						kindName: "kind/bug",
-					},
 					"123": {
-						num:      123,
-						author:   "test-user-b",
-						kindName: "kind/release",
+						num:    123,
+						author: "test-user-b",
+					},
+					"124": {
+						num:    124,
+						author: "test-user-a",
 					},
 				}
 
@@ -404,12 +391,9 @@ func TestGatherNotes(t *testing.T) {
 					if expected.author != *result.pullRequest.User.Login {
 						t.Errorf("Expecting %s got %s for SHA %s", expected.author, *result.pullRequest.User.Login, *result.commit.SHA)
 					}
-					if expected.kindName != *result.pullRequest.Labels[0].Name {
-						t.Errorf("Expecting %s got %s for SHA %s", expected.kindName, *result.pullRequest.Labels[0].Name, *result.commit.SHA)
-					}
 				}
 			},
-			expectedGetPullRequestCallCount: 2,
+			expectedGetPullRequestCallCount: 3,
 		},
 		"when GetPullRequest(...) returns an error": {
 			commitList: []*github.RepositoryCommit{repoCommit("some-sha", "some #123 thing")},
