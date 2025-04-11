@@ -51,8 +51,11 @@ import (
 var (
 	errNoPRIDFoundInCommitMessage       = errors.New("no PR IDs found in the commit message")
 	errNoPRFoundForCommitSHA            = errors.New("no PR found for this commit")
+	errNoOriginPRIDFoundInPR            = errors.New("no origin PR IDs found in the PR")
 	apiSleepTime                  int64 = 60
 )
+
+var regexK8sCherryPickBotBranch = regexp.MustCompile(`cherry-pick-(?P<number>\d+)-to`)
 
 const (
 	DefaultOrg  = "kubernetes"
@@ -62,6 +65,8 @@ const (
 	// GitHub API.
 	maxParallelRequests = 10
 )
+
+const k8sCherryPickBotUsername = "k8s-infra-cherrypick-robot"
 
 type (
 	Notes []string
@@ -855,6 +860,22 @@ func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, e
 
 		// If we found a valid release note, return the PR, otherwise, take the next one
 		if s != "" {
+			if isAutomatedCherryPickPR(pr) {
+				logrus.Infof("PR #%d seems to be an automated cherry-pick, retrieving origin info", pr.GetNumber())
+
+				originPRNum, err := originPrNumFromPr(pr)
+				if err != nil {
+					return nil, err
+				}
+
+				originPR, err := g.getPr(originPRNum)
+				if err != nil {
+					return nil, err
+				}
+
+				pr.User = originPR.GetUser()
+			}
+
 			res := &Result{commit: commit, pullRequest: pr}
 			logrus.Infof("PR #%d seems to contain a release note", pr.GetNumber())
 			// Do not test further PRs for this commit as soon as one PR matched
@@ -865,6 +886,27 @@ func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, e
 	}
 
 	return nil, nil
+}
+
+func isAutomatedCherryPickPR(pr *gogithub.PullRequest) bool {
+	if pr == nil || pr.GetUser() == nil {
+		return false
+	}
+
+	return pr.GetUser().GetLogin() == k8sCherryPickBotUsername
+}
+
+func originPrNumFromPr(pr *gogithub.PullRequest) (int, error) {
+	if pr == nil || pr.GetHead() == nil {
+		return 0, errNoOriginPRIDFoundInPR
+	}
+
+	originPR := prForRegex(regexK8sCherryPickBotBranch, pr.GetHead().GetLabel())
+	if originPR == 0 {
+		return 0, errNoOriginPRIDFoundInPR
+	}
+
+	return originPR, nil
 }
 
 type resultList struct {
@@ -1095,28 +1137,31 @@ func (g *Gatherer) prsForCommitFromMessage(commitMessage string) (prs []*gogithu
 		return nil, err
 	}
 
-	var res *gogithub.PullRequest
-
-	var resp *gogithub.Response
-
-	for _, pr := range prsNum {
+	for _, prNum := range prsNum {
 		// Given the PR number that we've now converted to an integer, get the PR from
 		// the API
-		for {
-			res, resp, err = g.client.GetPullRequest(g.context, g.options.GithubOrg, g.options.GithubRepo, pr)
-			if err != nil {
-				if !canWaitAndRetry(resp, err) {
-					return nil, err
-				}
-			} else {
-				break
-			}
+		pr, err := g.getPr(prNum)
+		if err != nil {
+			return prs, err
 		}
 
-		prs = append(prs, res)
+		prs = append(prs, pr)
 	}
 
 	return prs, err
+}
+
+func (g *Gatherer) getPr(prNum int) (*gogithub.PullRequest, error) {
+	for {
+		res, resp, err := g.client.GetPullRequest(g.context, g.options.GithubOrg, g.options.GithubRepo, prNum)
+		if err != nil {
+			if !canWaitAndRetry(resp, err) {
+				return nil, err
+			}
+		} else {
+			return res, nil
+		}
+	}
 }
 
 func prsNumForCommitFromMessage(commitMessage string) (prs []int, err error) {

@@ -321,6 +321,80 @@ func TestGatherNotes(t *testing.T) {
 			},
 			expectedGetPullRequestCallCount: 6,
 		},
+		"when the PR is a cherry pick": {
+			commitList: []*github.RepositoryCommit{
+				repoCommit("123", "Merge a regular commit (#123)"),
+				repoCommit("124", "Merge an automated cherry-pick (#124)"),
+			},
+			getPullRequestStubber: func(t *testing.T) getPullRequestStub {
+				seenPRs := newIntsRecorder(122, 123, 124)
+				prsMap := map[int]*github.PullRequest{
+					122: {
+						Number: intPtr(122),
+						Body:   strPtr("122\n```release-note\nfrom 122\n```\n"),
+						User: &github.User{
+							Login: strPtr("test-user-a"),
+						},
+					},
+					123: {
+						Number: intPtr(123),
+						Body:   strPtr("123\n```release-note\nfrom 123\n```\n"),
+						User: &github.User{
+							Login: strPtr("test-user-b"),
+						},
+					},
+					124: {
+						Number: intPtr(124),
+						Body:   strPtr("124\n```release-note\nfrom 124\n```\n"),
+						User: &github.User{
+							Login: strPtr("k8s-infra-cherrypick-robot"),
+						},
+						Head: &github.PullRequestBranch{
+							Label: strPtr("k8s-infra-cherrypick-robot:cherry-pick-122-to-release-0.x"),
+						},
+					},
+				}
+
+				return func(_ context.Context, org, repo string, prID int) (*github.PullRequest, *github.Response, error) {
+					checkOrgRepo(t, org, repo)
+					if err := seenPRs.Mark(prID); err != nil {
+						t.Errorf("In GetPullRequest: %v", err)
+					}
+
+					return prsMap[prID], nil, nil
+				}
+			},
+			resultsChecker: func(t *testing.T, results []*Result) {
+				type pr struct {
+					num    int
+					author string
+				}
+				expectMap := map[string]pr{
+					"123": {
+						num:    123,
+						author: "test-user-b",
+					},
+					"124": {
+						num:    124,
+						author: "test-user-a",
+					},
+				}
+
+				for _, result := range results {
+					expected, found := expectMap[*result.commit.SHA]
+					if !found {
+						t.Errorf("Unexpected SHA %s", *result.commit.SHA)
+					}
+					if expected.num != *result.pullRequest.Number {
+						t.Errorf("Expecting %d got %d for SHA %s", expected.num, *result.pullRequest.Number, *result.commit.SHA)
+					}
+					if expected.author != *result.pullRequest.User.Login {
+						t.Errorf("Expecting %s got %s for SHA %s", expected.author, *result.pullRequest.User.Login, *result.commit.SHA)
+					}
+				}
+			},
+			expectedGetPullRequestCallCount: 3,
+		},
 		"when GetPullRequest(...) returns an error": {
 			commitList: []*github.RepositoryCommit{repoCommit("some-sha", "some #123 thing")},
 			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {
