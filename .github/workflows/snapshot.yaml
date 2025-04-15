@@ -30,7 +30,7 @@ jobs:
           check-latest: true
 
       - name: Install bom
-        uses: kubernetes-sigs/release-actions/setup-bom@a69972745f85aab4ba5d6c681e2a0e7f73eaff2b # v0.3.0
+        uses: kubernetes-sigs/release-actions/setup-bom@a30d93cf2aa029e1e4c8a6c79f766aebf429fddb # v0.3.1
 
       - name: Test release build
         uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552 # v6.3.0
@@ -72,7 +72,7 @@ jobs:
           fetch-depth: 1
 
       - name: Install tejolote
-        uses: kubernetes-sigs/release-actions/setup-tejolote@a69972745f85aab4ba5d6c681e2a0e7f73eaff2b # v0.3.0
+        uses: kubernetes-sigs/release-actions/setup-tejolote@a30d93cf2aa029e1e4c8a6c79f766aebf429fddb # v0.3.1
 
       - run: |
           tejolote attest github://kubernetes/release/"${GITHUB_RUN_ID}" --output release.intoto.json
