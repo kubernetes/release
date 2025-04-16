@@ -381,7 +381,7 @@ func TestUpdatePatchSchedule(t *testing.T) {
 				UpcomingReleases: []*PatchRelease{
 					{
 						CherryPickDeadline: "2024-03-08",
-						TargetDate:         "2024-03-13",
+						TargetDate:         "2024-03-12",
 					},
 					{
 						CherryPickDeadline: "2024-04-12",
@@ -399,8 +399,8 @@ func TestUpdatePatchSchedule(t *testing.T) {
 						Release: "1.30",
 						Next: &PatchRelease{
 							Release:            "1.30.4",
-							CherryPickDeadline: "2024-04-05",
-							TargetDate:         "2024-04-09",
+							CherryPickDeadline: "2024-04-12",
+							TargetDate:         "2024-04-17",
 						},
 						EndOfLifeDate:            "2025-01-01",
 						MaintenanceModeStartDate: "2024-12-01",
