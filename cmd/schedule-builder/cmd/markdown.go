@@ -263,12 +263,46 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 			}
 
 			cherryPickDeadlinePlusOneMonth := cherryPickDeadline.AddDate(0, 1, 0)
-			cherryPickDay := firstFriday(cherryPickDeadlinePlusOneMonth)
-			newCherryPickDeadline := time.Date(cherryPickDeadlinePlusOneMonth.Year(), cherryPickDeadlinePlusOneMonth.Month(), cherryPickDay, 0, 0, 0, 0, time.UTC)
 
-			targetDatePlusOneMonth := targetDate.AddDate(0, 1, 0)
-			targetDateDay := secondTuesday(targetDatePlusOneMonth)
-			newTargetDate := time.Date(targetDatePlusOneMonth.Year(), targetDatePlusOneMonth.Month(), targetDateDay, 0, 0, 0, 0, time.UTC)
+			var (
+				newCherryPickDeadline time.Time
+				newTargetDate         time.Time
+				found                 bool
+			)
+
+			for _, u := range schedule.UpcomingReleases {
+				if u == nil {
+					continue
+				}
+
+				upcomingCherryPickDeadline, err := time.Parse(refDate, u.CherryPickDeadline)
+				if err != nil {
+					return fmt.Errorf("parse upcoming cherry pick deadline: %w", err)
+				}
+
+				if cherryPickDeadlinePlusOneMonth.Month() == upcomingCherryPickDeadline.Month() &&
+					cherryPickDeadlinePlusOneMonth.Year() == upcomingCherryPickDeadline.Year() {
+					newCherryPickDeadline = upcomingCherryPickDeadline
+
+					newTargetDate, err = time.Parse(refDate, u.TargetDate)
+					if err != nil {
+						return fmt.Errorf("parse upcoming release date: %w", err)
+					}
+
+					found = true
+
+					break
+				}
+			}
+
+			if !found {
+				cherryPickDay := firstFriday(cherryPickDeadlinePlusOneMonth)
+				newCherryPickDeadline = time.Date(cherryPickDeadlinePlusOneMonth.Year(), cherryPickDeadlinePlusOneMonth.Month(), cherryPickDay, 0, 0, 0, 0, time.UTC)
+
+				targetDatePlusOneMonth := targetDate.AddDate(0, 1, 0)
+				targetDateDay := secondTuesday(targetDatePlusOneMonth)
+				newTargetDate = time.Date(targetDatePlusOneMonth.Year(), targetDatePlusOneMonth.Month(), targetDateDay, 0, 0, 0, 0, time.UTC)
+			}
 
 			sched.Next = &PatchRelease{
 				Release:            nextReleaseVersion.String(),
