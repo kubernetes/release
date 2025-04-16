@@ -33,7 +33,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
 	github.com/tj/go-spin v1.1.0
-	github.com/yuin/goldmark v1.7.9
+	github.com/yuin/goldmark v1.7.10
 	golang.org/x/net v0.39.0
 	golang.org/x/oauth2 v0.29.0
 	golang.org/x/text v0.24.0
