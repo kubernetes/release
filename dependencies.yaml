@@ -329,7 +329,7 @@ dependencies:
   # kube-cross dependents (i.e. k8s-cloud-builder)
   # To be updated after kubernetes/kubernetes update)
   - name: "registry.k8s.io/build-image/kube-cross: dependents k8s-cloud-builder (v1.33-cross1.24)"
-    version: v1.33.0-go1.24.0-bullseye.0
+    version: v1.33.0-go1.24.2-bullseye.0
     refPaths:
       - path: images/k8s-cloud-builder/variants.yaml
         match: "KUBE_CROSS_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -361,7 +361,7 @@ dependencies:
 
   # Golang (current release branch: master)
   - name: "golang: after kubernetes/kubernetes update (master)"
-    version: 1.24.0
+    version: 1.24.2
     refPaths:
       - path: images/releng/k8s-ci-builder/Makefile
         match: GO_VERSION\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
@@ -398,7 +398,7 @@ dependencies:
 
   # k8s-ci-builder
   - name: "golang: releng tooling for k8s-ci-builder (master)"
-    version: 1.24.0
+    version: 1.24.2
     refPaths:
       - path: images/releng/k8s-ci-builder/Makefile
         match: GO_VERSION_TOOLING\ \?=\ \d+.\d+(alpha|beta|rc)?\.?(\d+)?
