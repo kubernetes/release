@@ -2,7 +2,10 @@
 
 CLI and validation tools for Kubelet Container Runtime Interface (CRI) .
 
-[![Build Status](https://travis-ci.org/kubernetes-sigs/cri-tools.svg?branch=master)](https://travis-ci.org/kubernetes-sigs/cri-tools)
+[![Build Status](https://github.com/kubernetes-sigs/cri-tools/workflows/build/badge.svg)](https://github.com/kubernetes-sigs/cri-tools/actions/workflows/build.yml)
+[![e2e](https://github.com/kubernetes-sigs/cri-tools/workflows/cri-tools%20e2e%20test/badge.svg)](https://github.com/kubernetes-sigs/cri-tools/actions/workflows/e2e.yml)
+[![critest containerd](https://github.com/kubernetes-sigs/cri-tools/workflows/critest%20containerd/badge.svg)](https://github.com/kubernetes-sigs/cri-tools/actions/workflows/containerd.yml)
+[![critest CRI-O](https://github.com/kubernetes-sigs/cri-tools/workflows/critest%20CRI-O/badge.svg)](https://github.com/kubernetes-sigs/cri-tools/actions/workflows/crio.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes-sigs/cri-tools)](https://goreportcard.com/report/github.com/kubernetes-sigs/cri-tools)
 
 ## What is the scope of this project?
@@ -17,13 +20,12 @@ cri-tools aims to provide a series of debugging and validation tools for Kubelet
 - Building a new kubelet container runtime based on CRI.
 - Managing pods/containers for CRI-compatible runtimes by end-users, e.g. pods created by crictl may be removed automatically by kubelet because of non-exist on the kube-apiserver.
 
-## Current Status
-
-Version matrix:
+## Compatibility matrix: cri-tools ⬄ Kubernetes
 
 | Kubernetes Version | cri-tools Version | cri-tools branch |
 | ------------------ | ----------------- | ---------------- |
-| ≥ 1.16.x           | ≥ 1.16.x          | master           |
+| ≥ 1.27.x           | ≥ 1.27.x          | master           |
+| ≥ 1.16.x ≤ 1.26.x  | ≥ 1.16.x ≤ 1.26.x | master           |
 | 1.15.X             | v1.15.0           | release-1.15     |
 | 1.14.X             | v1.14.0           | release-1.14     |
 | 1.13.X             | v1.13.0           | release-1.13     |
@@ -34,14 +36,30 @@ Version matrix:
 | 1.8.X              | v0.2              | release-1.8      |
 | 1.7.X              | v0.1              | release-1.7      |
 
-See the [roadmap](docs/roadmap.md) for information about current and future milestones.
+It's recommended to use the same cri-tools and Kubernetes minor version, because
+new features added to the Container Runtime Interface (CRI) may not be fully
+supported if they diverge.
+
+cri-tools follows the Kubernetes release cycles with respect to its minor
+versions (`1.x.y`). Patch releases (`1.x.z`) for Kubernetes are not in sync with
+those from cri-tools, because they are scheduled for each month, whereas
+cri-tools provides them only if necessary. If a Kubernetes release goes [End of
+Life](https://kubernetes.io/releases/patch-releases/), then the corresponding
+cri-tools version can be considered in the same way.
+
+All new minor versions of cri-tools are being created from the `master` branch,
+whereas corresponding `release-1.x` branches will be created if a patch release
+is planned.
+
+See the [roadmap](docs/roadmap.md) for information about current and future
+milestones.
 
 ## Install
 
 ### Install crictl
 
 ```sh
-VERSION="v1.25.0"
+VERSION="v1.32.0"
 wget https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-$VERSION-linux-amd64.tar.gz
 sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
 rm -f crictl-$VERSION-linux-amd64.tar.gz
@@ -50,7 +68,7 @@ rm -f crictl-$VERSION-linux-amd64.tar.gz
 ### Install critest
 
 ```sh
-VERSION="v1.25.0"
+VERSION="v1.32.0"
 wget https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/critest-$VERSION-linux-amd64.tar.gz
 sudo tar zxvf critest-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
 rm -f critest-$VERSION-linux-amd64.tar.gz
@@ -75,14 +93,6 @@ You can reach the maintainers of this project at:
 
 - Slack: #sig-node
 - Mailing List: <https://groups.google.com/forum/#!forum/kubernetes-sig-node>
-
-## Kubernetes Incubator
-
-This is a [Kubernetes Incubator project](https://github.com/kubernetes/community/blob/master/archive/incubator.md). The incubator team for the project is:
-
-- Sponsor: Dawn Chen (@dchen1107)
-- Champion: Yu-Ju Hong (@yujuhong)
-- SIG: sig-node
 
 ## Contributing
 
