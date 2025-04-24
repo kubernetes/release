@@ -27,9 +27,9 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 
 	"sigs.k8s.io/release-sdk/object"
+	"sigs.k8s.io/yaml"
 
 	"k8s.io/release/pkg/notes"
 )

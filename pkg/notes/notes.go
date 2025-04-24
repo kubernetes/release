@@ -41,9 +41,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"gopkg.in/yaml.v2"
 
 	"sigs.k8s.io/release-sdk/github"
+	"sigs.k8s.io/yaml"
 
 	"k8s.io/release/pkg/notes/options"
 )
