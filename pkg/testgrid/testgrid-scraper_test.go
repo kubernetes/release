@@ -17,7 +17,6 @@ limitations under the License.
 package testgrid
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -35,7 +34,7 @@ func TestRequestTestgridSummaryPos(t *testing.T) {
 	// positive dashboard names
 	for _, dashboardName := range posDashboardNames {
 		// When
-		summary, err := ReqTestgridDashboardSummary(context.Background(), dashboardName)
+		summary, err := ReqTestgridDashboardSummary(t.Context(), dashboardName)
 
 		// Then
 		require.NoError(t, err)
@@ -52,7 +51,7 @@ func TestRequestTestgridSummaryNeg(t *testing.T) {
 	// negative dashboard names
 	for _, dashboardName := range negDashboardNames {
 		// When
-		summary, err := ReqTestgridDashboardSummary(context.Background(), dashboardName)
+		summary, err := ReqTestgridDashboardSummary(t.Context(), dashboardName)
 
 		// Then
 		require.Error(t, err)
@@ -64,7 +63,7 @@ func TestRequestTestgridSummariesPos(t *testing.T) {
 	// Given
 	// positive dashboard names
 	// When
-	data, err := ReqTestgridDashboardSummaries(context.Background(), posDashboardNames)
+	data, err := ReqTestgridDashboardSummaries(t.Context(), posDashboardNames)
 
 	// Then
 	require.NoError(t, err)
@@ -75,7 +74,7 @@ func TestRequestTestgridSummariesNeg(t *testing.T) {
 	// Given
 	// negative dashboard names
 	// When
-	data, err := ReqTestgridDashboardSummaries(context.Background(), negDashboardNames)
+	data, err := ReqTestgridDashboardSummaries(t.Context(), negDashboardNames)
 
 	// Then
 	require.Error(t, err)
@@ -86,7 +85,7 @@ func TestRequestTestgridSummariesPosNeg(t *testing.T) {
 	// Given
 	// Request positive and negative dashboard names, expect to get an error and receive positive dashboard name summaries
 	// When
-	data, err := ReqTestgridDashboardSummaries(context.Background(), append(negDashboardNames, posDashboardNames...))
+	data, err := ReqTestgridDashboardSummaries(t.Context(), append(negDashboardNames, posDashboardNames...))
 
 	// Then
 	require.Error(t, err, "an error should be returned as not all dashboard name references are correct")

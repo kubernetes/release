@@ -45,7 +45,7 @@ func githubClient(t *testing.T) (kgithub.Client, context.Context) {
 
 	c := kgithub.New()
 
-	return c.Client(), context.Background()
+	return c.Client(), t.Context()
 }
 
 func TestStripActionRequired(t *testing.T) {
@@ -595,7 +595,7 @@ func TestCapitalizeString(t *testing.T) {
 }
 
 func TestReleaseNoteForPullRequest(t *testing.T) {
-	g, err := NewGatherer(context.Background(), &options.Options{
+	g, err := NewGatherer(t.Context(), &options.Options{
 		GithubBaseURL: kgithub.GitHubURL,
 		GithubOrg:     DefaultOrg,
 		GithubRepo:    "release",
