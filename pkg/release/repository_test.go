@@ -18,7 +18,6 @@ package release_test
 
 import (
 	"errors"
-	"os"
 	"testing"
 
 	gogit "github.com/go-git/go-git/v5"
@@ -42,7 +41,8 @@ func newSUT(t *testing.T) *sut {
 
 	_, err := gogit.PlainInit(dir, false)
 	require.NoError(t, err)
-	require.NoError(t, os.Chdir(dir))
+
+	t.Chdir(dir)
 
 	repo := release.NewRepo()
 	err = repo.Open()

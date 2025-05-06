@@ -208,7 +208,7 @@ func TestListCommits(t *testing.T) {
 				}
 			}
 
-			gatherer := NewGathererWithClient(context.Background(), client)
+			gatherer := NewGathererWithClient(t.Context(), client)
 			commits, err := gatherer.listCommits(tc.branch, tc.start, tc.end)
 
 			checkErrMsg(t, err, tc.expectedErrMsg)
@@ -472,7 +472,7 @@ func TestGatherNotes(t *testing.T) {
 
 			client := &githubfakes.FakeClient{}
 
-			gatherer := NewGathererWithClient(context.Background(), client)
+			gatherer := NewGathererWithClient(t.Context(), client)
 
 			if stubber := tc.listPullRequestsWithCommitStubber; stubber != nil {
 				client.ListPullRequestsWithCommitStub = stubber(t)
