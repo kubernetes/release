@@ -1,6 +1,7 @@
 module k8s.io/release
 
-go 1.23.8
+go 1.24.0
+
 toolchain go1.24.2
 
 require (
