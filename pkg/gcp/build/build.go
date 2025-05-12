@@ -405,7 +405,7 @@ func ListJobs(project string, lastJobs int64) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Start Time", "Finish Time", "Status", "Console Logs"})
+	table.Header([]string{"Start Time", "Finish Time", "Status", "Console Logs"})
 
 	for _, build := range req.Builds {
 		table.Append([]string{strings.TrimSpace(build.StartTime), strings.TrimSpace(build.FinishTime), strings.TrimSpace(build.Status), strings.TrimSpace(build.LogUrl)})
