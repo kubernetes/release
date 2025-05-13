@@ -399,19 +399,19 @@ dependencies:
         match: "GO_VERSION_TOOLING: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
 
   - name: "golang: releng tooling for k8s-ci-builder (previous release branches: 1.32)"
-    version: 1.23.8
+    version: 1.24.2
     refPaths:
       - path: images/releng/k8s-ci-builder/variants.yaml
         match: "GO_VERSION_TOOLING: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
 
   - name: "golang: releng tooling for k8s-ci-builder (previous release branches: 1.31)"
-    version: 1.23.8
+    version: 1.24.2
     refPaths:
       - path: images/releng/k8s-ci-builder/variants.yaml
         match: "GO_VERSION_TOOLING: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
 
   - name: "golang: releng tooling for k8s-ci-builder (previous release branches: 1.30)"
-    version: 1.23.8
+    version: 1.24.2
     refPaths:
       - path: images/releng/k8s-ci-builder/variants.yaml
         match: "GO_VERSION_TOOLING: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"

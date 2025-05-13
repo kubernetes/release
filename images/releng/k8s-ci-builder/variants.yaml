@@ -17,15 +17,15 @@ variants:
   '1.32':
     CONFIG: '1.32'
     GO_VERSION: '1.23.8'
-    GO_VERSION_TOOLING: '1.23.8'
+    GO_VERSION_TOOLING: '1.24.2'
     OS_CODENAME: 'bullseye'
   '1.31':
     CONFIG: '1.31'
     GO_VERSION: '1.23.8'
-    GO_VERSION_TOOLING: '1.23.8'
+    GO_VERSION_TOOLING: '1.24.2'
     OS_CODENAME: 'bullseye'
   '1.30':
     CONFIG: '1.30'
     GO_VERSION: '1.23.8'
-    GO_VERSION_TOOLING: '1.23.8'
+    GO_VERSION_TOOLING: '1.24.2'
     OS_CODENAME: 'bullseye'
