@@ -24,10 +24,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/release/cmd/schedule-builder/model"
 	"sigs.k8s.io/release-utils/log"
 	"sigs.k8s.io/release-utils/version"
 	"sigs.k8s.io/yaml"
+
+	"k8s.io/release/cmd/schedule-builder/model"
 )
 
 // rootCmd represents the base command when called without any subcommands.

@@ -28,15 +28,16 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/release/cmd/schedule-builder/model"
 	"sigs.k8s.io/release-utils/util"
 	"sigs.k8s.io/yaml"
+
+	"k8s.io/release/cmd/schedule-builder/model"
 )
 
 //go:embed templates/*.tmpl
 var tpls embed.FS
 
-// runs with `--type=patch` to return the patch schedule
+// runs with `--type=patch` to return the patch schedule.
 func parsePatchSchedule(patchSchedule model.PatchSchedule) string {
 	output := []string{}
 
@@ -107,7 +108,7 @@ func parsePatchSchedule(patchSchedule model.PatchSchedule) string {
 	return scheduleOut
 }
 
-// runs with `--type=release` to return the release cycle schedule
+// runs with `--type=release` to return the release cycle schedule.
 func parseReleaseSchedule(releaseSchedule model.ReleaseSchedule) string {
 	type RelSched struct {
 		K8VersionWithDot    string
@@ -121,6 +122,7 @@ func parseReleaseSchedule(releaseSchedule model.ReleaseSchedule) string {
 	relSched.K8VersionWithDot = releaseSchedule.Releases[0].Version
 	relSched.K8VersionWithoutDot = removeDotfromVersion(releaseSchedule.Releases[0].Version)
 	relSched.Arr = []model.Timeline{}
+
 	for _, releaseSchedule := range releaseSchedule.Releases {
 		for _, timeline := range releaseSchedule.Timeline {
 			if timeline.Tldr {
@@ -315,6 +317,7 @@ func updatePatchSchedule(refTime time.Time, schedule model.PatchSchedule, eolBra
 	}
 
 	newSchedules := []*model.Schedule{}
+
 	for i, sched := range schedule.Schedules {
 		appendItem := true
 

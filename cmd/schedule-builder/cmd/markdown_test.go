@@ -467,6 +467,7 @@ func TestUpdatePatchSchedule(t *testing.T) {
 
 			scheduleYamlBytes, err := os.ReadFile(scheduleFile.Name())
 			require.NoError(t, err)
+
 			patchRes := model.PatchSchedule{}
 			require.NoError(t, yaml.UnmarshalStrict(scheduleYamlBytes, &patchRes))
 
@@ -474,6 +475,7 @@ func TestUpdatePatchSchedule(t *testing.T) {
 
 			eolYamlBytes, err := os.ReadFile(eolFile.Name())
 			require.NoError(t, err)
+
 			eolRes := model.EolBranches{}
 			require.NoError(t, yaml.UnmarshalStrict(eolYamlBytes, &eolRes))
 

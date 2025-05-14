@@ -30,16 +30,15 @@ import (
 	"text/template"
 	"time"
 
-	"gomodules.xyz/envconfig"
-	"gopkg.in/gomail.v2"
-	"gopkg.in/yaml.v3"
-
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ses"
 	"github.com/sirupsen/logrus"
+	"gomodules.xyz/envconfig"
+	"gopkg.in/gomail.v2"
+	"gopkg.in/yaml.v3"
 
 	"k8s.io/release/cmd/schedule-builder/model"
 )
@@ -61,7 +60,7 @@ type Config struct {
 type Options struct {
 	AWSSess *session.Session
 	Config  *Config
-	Context context.Context
+	Context context.Context //nolint:containedctx //  Can't remove this without a breaking change
 }
 
 const (
@@ -83,10 +82,12 @@ func main() {
 
 func getConfig() (*Config, error) {
 	var c Config
+
 	err := envconfig.Process("", &c)
 	if err != nil {
 		return nil, err
 	}
+
 	return &c, nil
 }
 
@@ -121,6 +122,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	}
 
 	logrus.Infof("Will pull the patch release schedule from: %s", o.Config.SchedulePath)
+
 	data, err := loadFileOrURL(o.Config.SchedulePath)
 	if err != nil {
 		return events.APIGatewayProxyResponse{
@@ -157,6 +159,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 		days := t.Sub(currentTime).Hours() / 24
 		intDay, _ := math.Modf(days)
 		logrus.Infof("Cherry pick deadline: %d, days to alert: %d", int(intDay), o.Config.DaysToAlert)
+
 		if int(intDay) == o.Config.DaysToAlert {
 			output.Releases = append(output.Releases, TemplateRelease{
 				Release:            patch.Release,
@@ -168,6 +171,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 
 	if !shouldSendEmail {
 		logrus.Info("No email is needed to send")
+
 		return events.APIGatewayProxyResponse{
 			Body:       `{"status": "ok"}`,
 			StatusCode: http.StatusOK,
@@ -183,6 +187,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	}
 
 	var tmplBytes bytes.Buffer
+
 	err = tmpl.Execute(&tmplBytes, output)
 	if err != nil {
 		return events.APIGatewayProxyResponse{
@@ -192,6 +197,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	}
 
 	logrus.Info("Sending mail")
+
 	subject := "[Please Read] Upcoming Patch Releases Cherry-Pick Deadline for Kubernetes"
 	fromEmail := o.Config.FromEmail
 
@@ -220,20 +226,21 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	}, nil
 }
 
-// Recipient struct to hold email IDs
+// Recipient struct to hold email IDs.
 type Recipient struct {
 	toEmails  []string
 	ccEmails  []string
 	bccEmails []string
 }
 
-// SendEmailSES sends email to specified email IDs
+// SendEmailSES sends email to specified email IDs.
 func (o *Options) SendEmailRawSES(messageBody, subject, fromEmail string, recipient Recipient) error {
 	// create raw message
 	msg := gomail.NewMessage()
 
 	// set to section
 	recipients := make([]*string, 0, len(recipient.toEmails))
+
 	for _, r := range recipient.toEmails {
 		recipient := r
 		recipients = append(recipients, &recipient)
@@ -246,6 +253,7 @@ func (o *Options) SendEmailRawSES(messageBody, subject, fromEmail string, recipi
 			recipient := r
 			recipients = append(recipients, &recipient)
 		}
+
 		msg.SetHeader("cc", recipient.ccEmails...)
 	}
 
@@ -256,6 +264,7 @@ func (o *Options) SendEmailRawSES(messageBody, subject, fromEmail string, recipi
 			recipient := r
 			recipients = append(recipients, &recipient)
 		}
+
 		msg.SetHeader("bcc", recipient.bccEmails...)
 	}
 
@@ -269,9 +278,11 @@ func (o *Options) SendEmailRawSES(messageBody, subject, fromEmail string, recipi
 
 	// create a new buffer to add raw data
 	var emailRaw bytes.Buffer
+
 	_, err := msg.WriteTo(&emailRaw)
 	if err != nil {
 		logrus.Errorf("Failed to write mail: %v", err)
+
 		return err
 	}
 
@@ -284,22 +295,27 @@ func (o *Options) SendEmailRawSES(messageBody, subject, fromEmail string, recipi
 	_, err = svc.SendRawEmail(input)
 	if err != nil {
 		logrus.Errorf("Error sending mail - %v", err)
+
 		return err
 	}
 
 	logrus.Infof("Email sent successfully to: %q", recipient.toEmails)
+
 	return nil
 }
 
 func loadFileOrURL(fileRef string) ([]byte, error) {
 	var raw []byte
+
 	var err error
 	if strings.HasPrefix(fileRef, "http://") || strings.HasPrefix(fileRef, "https://") {
-		resp, err := http.Get(fileRef) //nolint:gosec // we are not using user input we set via env var
+		resp, err := http.Get(fileRef) //nolint:gosec,noctx // we are not using user input we set via env var
 		if err != nil {
 			return nil, err
 		}
+
 		defer resp.Body.Close()
+
 		raw, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
