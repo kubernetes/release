@@ -30,13 +30,15 @@ import (
 
 	"sigs.k8s.io/release-utils/util"
 	"sigs.k8s.io/yaml"
+
+	"k8s.io/release/cmd/schedule-builder/model"
 )
 
 //go:embed templates/*.tmpl
 var tpls embed.FS
 
 // runs with `--type=patch` to return the patch schedule.
-func parsePatchSchedule(patchSchedule PatchSchedule) string {
+func parsePatchSchedule(patchSchedule model.PatchSchedule) string {
 	output := []string{}
 
 	if len(patchSchedule.UpcomingReleases) > 0 {
@@ -107,11 +109,11 @@ func parsePatchSchedule(patchSchedule PatchSchedule) string {
 }
 
 // runs with `--type=release` to return the release cycle schedule.
-func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
+func parseReleaseSchedule(releaseSchedule model.ReleaseSchedule) string {
 	type RelSched struct {
 		K8VersionWithDot    string
 		K8VersionWithoutDot string
-		Arr                 []Timeline
+		Arr                 []model.Timeline
 		TimelineOutput      string
 	}
 
@@ -119,7 +121,7 @@ func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 
 	relSched.K8VersionWithDot = releaseSchedule.Releases[0].Version
 	relSched.K8VersionWithoutDot = removeDotfromVersion(releaseSchedule.Releases[0].Version)
-	relSched.Arr = []Timeline{}
+	relSched.Arr = []model.Timeline{}
 
 	for _, releaseSchedule := range releaseSchedule.Releases {
 		for _, timeline := range releaseSchedule.Timeline {
@@ -153,7 +155,7 @@ func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 	return scheduleOut
 }
 
-func patchReleaseInPreviousList(a string, previousPatches []*PatchRelease) bool {
+func patchReleaseInPreviousList(a string, previousPatches []*model.PatchRelease) bool {
 	for _, b := range previousPatches {
 		if b.Release == a {
 			return true
@@ -200,7 +202,7 @@ const (
 `
 )
 
-func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches EolBranches, filePath, eolFilePath string) error {
+func updatePatchSchedule(refTime time.Time, schedule model.PatchSchedule, eolBranches model.EolBranches, filePath, eolFilePath string) error {
 	removeSchedules := []int{}
 
 	for i, sched := range schedule.Schedules {
@@ -224,7 +226,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 				}
 
 				logrus.Infof("Moving %s to end of life", sched.Release)
-				eolBranches.Branches = append([]*EolBranch{{
+				eolBranches.Branches = append([]*model.EolBranch{{
 					Release:           sched.Release,
 					FinalPatchRelease: sched.Next.Release,
 					EndOfLifeDate:     sched.Next.TargetDate,
@@ -245,7 +247,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 			}
 
 			// Copy the release to the previousPatches section
-			sched.PreviousPatches = append([]*PatchRelease{sched.Next}, sched.PreviousPatches...)
+			sched.PreviousPatches = append([]*model.PatchRelease{sched.Next}, sched.PreviousPatches...)
 
 			// Create a new next release
 			nextReleaseVersion, err := util.TagStringToSemver(sched.Next.Release)
@@ -304,7 +306,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 				newTargetDate = time.Date(targetDatePlusOneMonth.Year(), targetDatePlusOneMonth.Month(), targetDateDay, 0, 0, 0, 0, time.UTC)
 			}
 
-			sched.Next = &PatchRelease{
+			sched.Next = &model.PatchRelease{
 				Release:            nextReleaseVersion.String(),
 				CherryPickDeadline: newCherryPickDeadline.Format(refDate),
 				TargetDate:         newTargetDate.Format(refDate),
@@ -314,7 +316,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 		}
 	}
 
-	newSchedules := []*Schedule{}
+	newSchedules := []*model.Schedule{}
 
 	for i, sched := range schedule.Schedules {
 		appendItem := true
@@ -334,7 +336,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 
 	schedule.Schedules = newSchedules
 
-	newUpcomingReleases := []*PatchRelease{}
+	newUpcomingReleases := []*model.PatchRelease{}
 	latestDate := refTime
 
 	for _, upcomingRelease := range schedule.UpcomingReleases {
@@ -369,7 +371,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 
 		logrus.Infof("Adding new upcoming release for %s", nextTargetDate.Format(refDateMonthly))
 
-		newUpcomingReleases = append(newUpcomingReleases, &PatchRelease{
+		newUpcomingReleases = append(newUpcomingReleases, &model.PatchRelease{
 			CherryPickDeadline: nextCherryPickDeadline.Format(refDate),
 			TargetDate:         nextTargetDate.Format(refDate),
 		})
