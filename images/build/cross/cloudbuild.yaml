@@ -21,6 +21,7 @@ steps:
     - REVISION=$_REVISION
     - PROTOBUF_VERSION=$_PROTOBUF_VERSION
     - REGISTRY=$_REGISTRY
+    - PLATFORMS=$_PLATFORMS
     # default cloudbuild has HOME=/builder/home and docker buildx is in /root/.docker/cli-plugins/docker-buildx
     # set the home to /root explicitly to if using docker buildx
     - HOME=/root
@@ -45,6 +46,7 @@ substitutions:
   _REVISION: '0'
   _PROTOBUF_VERSION: '0.0.0'
   _REGISTRY: 'fake.repository/registry-name'
+  _PLATFORMS: 'linux/amd64 linux/arm64'
 
 tags:
 - 'kube-cross'
