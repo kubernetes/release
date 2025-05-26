@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	"k8s.io/release/pkg/obs"
 	"k8s.io/release/pkg/obs/obsfakes"
 )
@@ -50,8 +51,8 @@ func TestInitOBSRoot(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		require.NoError(t, os.Setenv(obs.OBSPasswordKey, tc.password))
-		require.NoError(t, os.Setenv(obs.OBSUsernameKey, tc.username))
+		t.Setenv(obs.OBSPasswordKey, tc.password)
+		t.Setenv(obs.OBSUsernameKey, tc.username)
 
 		mock := &obsfakes.FakeStageImpl{}
 		sut := obs.NewDefaultStage(obs.DefaultStageOptions())
@@ -149,7 +150,7 @@ func TestCheckReleaseBranchStateStage(t *testing.T) {
 		},
 	} {
 		opts := preconfigureStageOptions(t)
-		sut := generateTestingStageState(opts)
+		sut := generateTestingStageState(t, opts)
 
 		mock := &obsfakes.FakeStageImpl{}
 		tc.prepare(mock)
@@ -181,7 +182,7 @@ func TestGenerateReleaseVersionStage(t *testing.T) {
 		},
 	} {
 		opts := preconfigureStageOptions(t)
-		sut := generateTestingStageState(opts)
+		sut := generateTestingStageState(t, opts)
 
 		mock := &obsfakes.FakeStageImpl{}
 		tc.prepare(mock)
@@ -357,14 +358,16 @@ func preconfigureStageOptions(t *testing.T) *obs.StageOptions {
 	opts.ReleaseBranch = "release-1.20"
 	opts.BuildVersion = "v1.20.0"
 	opts.SpecTemplatePath = newSpecPathWithPackages(t, "/path/to/spec", opts.Packages)
+
 	return opts
 }
 
-func generateTestingStageState(opts *obs.StageOptions) *obs.DefaultStage {
+func generateTestingStageState(t *testing.T, opts *obs.StageOptions) *obs.DefaultStage {
 	sut := obs.NewDefaultStage(opts)
 	sut.SetState(obs.DefaultStageState())
 
-	sut.ValidateOptions()
+	err := sut.ValidateOptions()
+	require.NoError(t, err)
 
 	return sut
 }
