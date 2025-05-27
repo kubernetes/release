@@ -55,7 +55,6 @@ SIG Release Slack thread:
   - [ ] go-runner image
   - [ ] distroless-iptables image
   - [ ] publishing bot rules
-  - [ ] test image
 
 > **Note**
 > This update may require an update to go.sum files, for example: https://github.com/kubernetes/kubernetes/pull/118507
