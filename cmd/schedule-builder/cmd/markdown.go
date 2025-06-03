@@ -26,6 +26,8 @@ import (
 	"time"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/renderer"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-utils/util"
@@ -42,9 +44,30 @@ func parsePatchSchedule(patchSchedule PatchSchedule) string {
 	if len(patchSchedule.UpcomingReleases) > 0 {
 		output = append(output, "### Upcoming Monthly Releases\n")
 		tableString := &strings.Builder{}
-		table := tablewriter.NewWriter(tableString)
-		table.SetAutoWrapText(false)
-		table.SetHeader([]string{"Monthly Patch Release", "Cherry Pick Deadline", "Target Date"})
+		table := tablewriter.NewTable(tableString,
+			tablewriter.WithConfig(tablewriter.Config{
+				Header: tw.CellConfig{
+					Alignment: tw.CellAlignment{Global: tw.AlignLeft},
+				},
+			}),
+			tablewriter.WithHeader([]string{"Monthly Patch Release", "Cherry Pick Deadline", "Target Date"}),
+			tablewriter.WithRenderer(renderer.NewMarkdown()),
+			tablewriter.WithRendition(tw.Rendition{
+				Symbols: tw.NewSymbols(tw.StyleMarkdown),
+				Borders: tw.Border{
+					Left:   tw.On,
+					Top:    tw.Off,
+					Right:  tw.On,
+					Bottom: tw.Off,
+				},
+				Settings: tw.Settings{
+					Separators: tw.Separators{
+						BetweenRows: tw.On,
+					},
+				},
+			}),
+			tablewriter.WithRowAutoWrap(tw.WrapNone),
+		)
 
 		for _, upcoming := range patchSchedule.UpcomingReleases {
 			targetDate, err := time.Parse(refDate, upcoming.TargetDate)
@@ -54,16 +77,14 @@ func parsePatchSchedule(patchSchedule PatchSchedule) string {
 				continue
 			}
 
-			table.Append([]string{
+			_ = table.Append([]string{
 				targetDate.Format(refDateMonthly),
 				strings.TrimSpace(upcoming.CherryPickDeadline),
 				strings.TrimSpace(upcoming.TargetDate),
 			})
 		}
 
-		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
-		table.SetCenterSeparator("|")
-		table.Render()
+		_ = table.Render()
 
 		output = append(output, tableString.String())
 	}
@@ -79,22 +100,44 @@ func parsePatchSchedule(patchSchedule PatchSchedule) string {
 		)
 
 		tableString := &strings.Builder{}
-		table := tablewriter.NewWriter(tableString)
-		table.SetAutoWrapText(false)
-		table.SetHeader([]string{"Patch Release", "Cherry Pick Deadline", "Target Date", "Note"})
+		table := tablewriter.NewTable(tableString,
+			tablewriter.WithConfig(tablewriter.Config{
+				Header: tw.CellConfig{
+					Alignment: tw.CellAlignment{Global: tw.AlignLeft},
+				},
+				Row: tw.CellConfig{
+					Alignment: tw.CellAlignment{Global: tw.AlignLeft},
+				},
+			}),
+			tablewriter.WithHeader([]string{"Patch Release", "Cherry Pick Deadline", "Target Date", "Note"}),
+			tablewriter.WithRenderer(renderer.NewMarkdown()),
+			tablewriter.WithRendition(tw.Rendition{
+				Symbols: tw.NewSymbols(tw.StyleMarkdown),
+				Borders: tw.Border{
+					Left:   tw.On,
+					Top:    tw.Off,
+					Right:  tw.On,
+					Bottom: tw.Off,
+				},
+				Settings: tw.Settings{
+					Separators: tw.Separators{
+						BetweenRows: tw.On,
+					},
+				},
+			}),
+			tablewriter.WithRowAutoWrap(tw.WrapNone),
+		)
 
 		// Check if the next patch release is in the Previous Patch list, if yes dont read in the output
 		if !patchReleaseInPreviousList(releaseSchedule.Next.Release, releaseSchedule.PreviousPatches) {
-			table.Append([]string{strings.TrimSpace(releaseSchedule.Next.Release), strings.TrimSpace(releaseSchedule.Next.CherryPickDeadline), strings.TrimSpace(releaseSchedule.Next.TargetDate), ""})
+			_ = table.Append([]string{strings.TrimSpace(releaseSchedule.Next.Release), strings.TrimSpace(releaseSchedule.Next.CherryPickDeadline), strings.TrimSpace(releaseSchedule.Next.TargetDate), ""})
 		}
 
 		for _, previous := range releaseSchedule.PreviousPatches {
-			table.Append([]string{strings.TrimSpace(previous.Release), strings.TrimSpace(previous.CherryPickDeadline), strings.TrimSpace(previous.TargetDate), strings.TrimSpace(previous.Note)})
+			_ = table.Append([]string{strings.TrimSpace(previous.Release), strings.TrimSpace(previous.CherryPickDeadline), strings.TrimSpace(previous.TargetDate), strings.TrimSpace(previous.Note)})
 		}
 
-		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
-		table.SetCenterSeparator("|")
-		table.Render()
+		_ = table.Render()
 
 		output = append(output, tableString.String())
 	}
@@ -131,17 +174,40 @@ func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 
 	for _, releaseSchedule := range releaseSchedule.Releases {
 		tableString := &strings.Builder{}
-		table := tablewriter.NewWriter(tableString)
-		table.SetAutoWrapText(false)
-		table.SetHeader([]string{"**What**", "**Who**", "**When**", "**WEEK**", "**CI Signal**"})
+		table := tablewriter.NewTable(tableString,
+			tablewriter.WithConfig(tablewriter.Config{
+				Header: tw.CellConfig{
+					Alignment: tw.CellAlignment{Global: tw.AlignCenter},
+				},
+				Row: tw.CellConfig{
+					Alignment: tw.CellAlignment{Global: tw.AlignLeft},
+				},
+			}),
+			tablewriter.WithHeader([]string{"**What**", "**Who**", "**When**", "**WEEK**", "**CI Signal**"}),
+			tablewriter.WithRenderer(renderer.NewMarkdown()),
+			tablewriter.WithRendition(tw.Rendition{
+				Symbols: tw.NewSymbols(tw.StyleMarkdown),
+				Borders: tw.Border{
+					Left:   tw.On,
+					Top:    tw.Off,
+					Right:  tw.On,
+					Bottom: tw.Off,
+				},
+				Settings: tw.Settings{
+					Separators: tw.Separators{
+						BetweenRows:    tw.On,
+						BetweenColumns: tw.Off,
+					},
+				},
+			}),
+			tablewriter.WithRowAutoWrap(tw.WrapNone),
+		)
 
 		for _, timeline := range releaseSchedule.Timeline {
-			table.Append([]string{strings.TrimSpace(timeline.What), strings.TrimSpace(timeline.Who), strings.TrimSpace(timeline.When), strings.TrimSpace(timeline.Week), strings.TrimSpace(timeline.CISignal), ""})
+			_ = table.Append([]string{strings.TrimSpace(timeline.What), strings.TrimSpace(timeline.Who), strings.TrimSpace(timeline.When), strings.TrimSpace(timeline.Week), strings.TrimSpace(timeline.CISignal), ""})
 		}
 
-		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
-		table.SetCenterSeparator("|")
-		table.Render()
+		_ = table.Render()
 
 		relSched.TimelineOutput = tableString.String()
 	}

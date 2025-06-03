@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/renderer"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/cloudbuild/v1"
 
@@ -121,10 +123,30 @@ func (h *History) Run() error {
 	}
 
 	tableString := &strings.Builder{}
-	table := tablewriter.NewWriter(tableString)
-	table.SetAutoWrapText(false)
-
-	table.SetHeader([]string{"Step", "Command", "Link", "Start", "Duration", "Succeeded?"})
+	table := tablewriter.NewTable(tableString,
+		tablewriter.WithConfig(tablewriter.Config{
+			Header: tw.CellConfig{
+				Alignment: tw.CellAlignment{Global: tw.AlignLeft},
+			},
+		}),
+		tablewriter.WithHeader([]string{"Step", "Command", "Link", "Start", "Duration", "Succeeded?"}),
+		tablewriter.WithRenderer(renderer.NewMarkdown()),
+		tablewriter.WithRendition(tw.Rendition{
+			Symbols: tw.NewSymbols(tw.StyleMarkdown),
+			Borders: tw.Border{
+				Left:   tw.On,
+				Top:    tw.Off,
+				Right:  tw.On,
+				Bottom: tw.Off,
+			},
+			Settings: tw.Settings{
+				Separators: tw.Separators{
+					BetweenRows: tw.On,
+				},
+			},
+		}),
+		tablewriter.WithRowAutoWrap(tw.WrapNone),
+	)
 
 	for i := len(jobs) - 1; i >= 0; i-- {
 		job := jobs[i]
@@ -183,17 +205,17 @@ func (h *History) Run() error {
 		out := time.Time{}.Add(diff)
 
 		step := fmt.Sprintf("`%s%s`", mock, subcommand)
-		table.Append([]string{
+		if err := table.Append([]string{
 			step, command, logs, start,
 			out.Format("15:04:05"), status[job.Status],
-		})
+		}); err != nil {
+			return fmt.Errorf("append row to table: %w", err)
+		}
 	}
 
-	table.SetBorders(tablewriter.Border{
-		Left: true, Top: false, Right: true, Bottom: false,
-	})
-	table.SetCenterSeparator("|")
-	table.Render()
+	if err := table.Render(); err != nil {
+		return err
+	}
 
 	fmt.Print(tableString.String())
 
