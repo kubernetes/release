@@ -34,13 +34,13 @@ import (
 	gogit "github.com/go-git/go-git/v5"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
 
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/editor"
 	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/yaml"
 
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/document"
