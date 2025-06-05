@@ -29,6 +29,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/renderer"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/api/cloudbuild/v1"
@@ -404,14 +406,27 @@ func ListJobs(project string, lastJobs int64) error {
 		return fmt.Errorf("failed to listing the builds: %w", err)
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Start Time", "Finish Time", "Status", "Console Logs"})
+	table := tablewriter.NewTable(os.Stdout,
+		tablewriter.WithConfig(tablewriter.Config{
+			Header: tw.CellConfig{
+				Alignment: tw.CellAlignment{Global: tw.AlignLeft},
+			},
+		}),
+		tablewriter.WithHeader([]string{"Start Time", "Finish Time", "Status", "Console Logs"}),
+		tablewriter.WithRenderer(renderer.NewMarkdown()),
+		tablewriter.WithRendition(tw.Rendition{Symbols: tw.NewSymbols(tw.StyleMarkdown)}),
+		tablewriter.WithRowAutoWrap(tw.WrapNone),
+	)
 
 	for _, build := range req.Builds {
-		table.Append([]string{strings.TrimSpace(build.StartTime), strings.TrimSpace(build.FinishTime), strings.TrimSpace(build.Status), strings.TrimSpace(build.LogUrl)})
+		if err := table.Append([]string{strings.TrimSpace(build.StartTime), strings.TrimSpace(build.FinishTime), strings.TrimSpace(build.Status), strings.TrimSpace(build.LogUrl)}); err != nil {
+			return err
+		}
 	}
 
-	table.Render()
+	if err := table.Render(); err != nil {
+		return err
+	}
 
 	return nil
 }
