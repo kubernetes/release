@@ -3,13 +3,17 @@ name: test-snapshot-release
 
 on:
   pull_request:
+    branches:
+      - master
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   snapshot:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
 
     steps:
       - name: Harden Runner
@@ -21,6 +25,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v3.5.2
         with:
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Set up Go
         id: go
@@ -70,6 +75,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Install tejolote
         uses: kubernetes-sigs/release-actions/setup-tejolote@a30d93cf2aa029e1e4c8a6c79f766aebf429fddb # v0.3.1
