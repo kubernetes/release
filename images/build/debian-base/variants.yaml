@@ -1,4 +1,4 @@
 variants:
   bookworm:
     CONFIG: 'bookworm'
-    IMAGE_VERSION: 'bookworm-v1.0.4'
+    IMAGE_VERSION: 'bookworm-v1.0.5'
