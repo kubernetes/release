@@ -25,10 +25,14 @@ import (
 	"time"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/renderer"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/shurcooL/githubv4"
 	"github.com/spf13/cobra"
 	"github.com/tj/go-spin"
 	"golang.org/x/net/context"
+
+	"sigs.k8s.io/release-utils/util"
 )
 
 var rootCmd = &cobra.Command{
@@ -245,18 +249,38 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 			return fmt.Errorf("could not write to output stream: %w", err)
 		}
 
-		table := tablewriter.NewWriter(out)
 		data := [][]string{}
+		table := util.NewTableWriter(out, tablewriter.WithConfig(tablewriter.Config{
+			Header: tw.CellConfig{
+				Alignment: tw.CellAlignment{Global: tw.AlignLeft},
+			},
+		}),
+			tablewriter.WithHeader([]string{"TESTGRID BOARD", "TITLE", "STATUS", "STATUS DETAILS"}),
+			tablewriter.WithRenderer(renderer.NewMarkdown()),
+			tablewriter.WithRendition(tw.Rendition{
+				Symbols: tw.NewSymbols(tw.StyleMarkdown),
+				Borders: tw.Border{
+					Left:   tw.On,
+					Top:    tw.Off,
+					Right:  tw.On,
+					Bottom: tw.Off,
+				},
+				Settings: tw.Settings{
+					Separators: tw.Separators{
+						BetweenRows: tw.On,
+					},
+				},
+			}),
+			tablewriter.WithRowAutoWrap(tw.WrapNone),
+		)
 
 		// table in short version differs from regular table
 		if cfg.ShortReport {
-			table.SetHeader([]string{"TESTGRID BOARD", "TITLE", "STATUS", "STATUS DETAILS"})
-
 			for _, record := range r.Records {
 				data = append(data, []string{record.TestgridBoard, record.Title, record.Status, record.StatusDetails})
 			}
 		} else {
-			table.SetHeader([]string{"TESTGRID BOARD", "TITLE", "STATUS", "STATUS DETAILS", "URL", "UPDATED AT"})
+			table.Options(tablewriter.WithHeader([]string{"TESTGRID BOARD", "TITLE", "STATUS", "STATUS DETAILS", "URL", "UPDATED AT"}))
 
 			for _, record := range r.Records {
 				data = append(data, []string{
@@ -269,10 +293,13 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 			}
 		}
 
-		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
-		table.AppendBulk(data)
-		table.SetCenterSeparator("|")
-		table.Render()
+		if err := table.Bulk(data); err != nil {
+			return err
+		}
+
+		if err := table.Render(); err != nil {
+			return err
+		}
 
 		// write a summary
 		countCategories := map[string]int{}
