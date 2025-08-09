@@ -24,7 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-sdk/regex"
-	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/helpers"
 )
 
 const (
@@ -136,7 +136,7 @@ func GenerateReleaseVersion(
 	// if branch == git.DefaultBranch, version is an alpha or beta
 	// if branch == release, version is a rc
 	// if branch == release+1, version is an alpha
-	v, err := util.TagStringToSemver(version)
+	v, err := helpers.TagStringToSemver(version)
 	if err != nil {
 		return nil, fmt.Errorf("invalid formatted version %s", version)
 	}

@@ -26,7 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-sdk/osc"
-	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/helpers"
 
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/obs/specs"
@@ -333,7 +333,7 @@ func (d *DefaultStage) GeneratePackageVersion() {
 		d.state.packageVersion = d.options.Version
 	} else {
 		// TODO(xmudrii): We probably want to build non prime versions as well?
-		d.state.packageVersion = util.TrimTagPrefix(d.state.versions.Prime())
+		d.state.packageVersion = helpers.TrimTagPrefix(d.state.versions.Prime())
 	}
 
 	logrus.Infof("Using package version: %s", d.state.packageVersion)
@@ -350,7 +350,7 @@ func (d *DefaultStage) GenerateOBSProject() error {
 		return nil
 	}
 
-	primeSemver, err := util.TagStringToSemver(d.state.versions.Prime())
+	primeSemver, err := helpers.TagStringToSemver(d.state.versions.Prime())
 	if err != nil {
 		return fmt.Errorf("parsing prime version as semver: %w", err)
 	}

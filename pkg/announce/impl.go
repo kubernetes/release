@@ -26,7 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-utils/command"
-	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/helpers"
 
 	"k8s.io/release/pkg/kubecross"
 )
@@ -67,7 +67,7 @@ func (i *defaultImpl) Create(workDir, message string) error {
 // k8s-cloud-builder container will be running the same Go version as
 // the kube-cross container used to build the release.
 func (i *defaultImpl) GetGoVersion(tag string) (string, error) {
-	semver, err := util.TagStringToSemver(tag)
+	semver, err := helpers.TagStringToSemver(tag)
 	if err != nil {
 		return "", fmt.Errorf("parse version tag: %w", err)
 	}

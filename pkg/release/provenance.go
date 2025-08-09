@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/bom/pkg/provenance"
 	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/object"
-	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/helpers"
 )
 
 func NewProvenanceChecker(opts *ProvenanceCheckerOptions) *ProvenanceChecker {
@@ -136,7 +136,7 @@ func (di *defaultProvenanceCheckerImpl) downloadStagedArtifacts(
 ) error {
 	logrus.Infof("Synching stage from %s to %s", path, opts.StageDirectory)
 
-	if !util.Exists(opts.StageDirectory) {
+	if !helpers.Exists(opts.StageDirectory) {
 		if err := os.MkdirAll(opts.StageDirectory, os.FileMode(0o755)); err != nil {
 			return fmt.Errorf("creating local working directory: %w", err)
 		}
