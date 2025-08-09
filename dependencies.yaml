@@ -15,7 +15,7 @@ dependencies:
 
   # cosign
   - name: "ghcr.io/sigstore/cosign/cosign"
-    version: v2.5.0-dev@sha256:d6786d0b31f9577ed6cc1f7fb5080f2335f0cbff2cfceffef5043ee83ebc3a6e
+    version: v2.5.3-dev@sha256:fe84ab87222b60d2d87f5efcb8ef3cfd895897c088fbeb973280689c81aedff1
     refPaths:
       - path: images/build/go-runner/cloudbuild.yaml
         match: ghcr.io/sigstore/cosign/cosign:v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?-dev@sha256:[a-f0-9]{64}
