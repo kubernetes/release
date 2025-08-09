@@ -2,7 +2,7 @@
 timeout: 7200s
 
 options:
-  substitution_option: ALLOW_LOOSE
+  substitutionOption: ALLOW_LOOSE
   machineType: 'N1_HIGHCPU_8'
 
 steps:
