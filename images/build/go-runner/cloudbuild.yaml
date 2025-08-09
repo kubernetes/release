@@ -6,7 +6,7 @@ timeout: 3600s
 # this prevents errors if you don't use both _GIT_TAG and _PULL_BASE_REF,
 # or any new substitutions added in the future.
 options:
-  substitution_option: ALLOW_LOOSE
+  substitutionOption: ALLOW_LOOSE
   machineType: 'N1_HIGHCPU_8'
 
 steps:

@@ -2,7 +2,7 @@
 # See https://cloud.google.com/cloud-build/docs/build-config
 timeout: 1200s
 options:
-  substitution_option: ALLOW_LOOSE
+  substitutionOption: ALLOW_LOOSE
 steps:
   - name: gcr.io/cloud-builders/docker
     dir: ./images/releng/ci
