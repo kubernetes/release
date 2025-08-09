@@ -22,7 +22,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/helpers"
 
 	"k8s.io/release/pkg/consts"
 	"k8s.io/release/pkg/release"
@@ -92,7 +92,7 @@ func (s *Specs) GetKubernetesReleaseDownloadLink(baseURL, name, version, arch st
 	return fmt.Sprintf(
 		"%s/%s/bin/linux/%s/%s",
 		baseURL,
-		util.AddTagPrefix(version),
+		helpers.AddTagPrefix(version),
 		arch,
 		name,
 	)
@@ -116,7 +116,7 @@ func (s *Specs) GetKubernetesCIDownloadLink(baseURL, name, version, arch string)
 
 	return fmt.Sprintf(
 		"%s/ci/%s/bin/linux/%s/%s",
-		baseURL, util.AddTagPrefix(version), arch, name), nil
+		baseURL, helpers.AddTagPrefix(version), arch, name), nil
 }
 
 // GetCRIToolsVersion gets the latest cri-tools version from GitHub.

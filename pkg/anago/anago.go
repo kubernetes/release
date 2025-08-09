@@ -25,8 +25,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-sdk/git"
+	"sigs.k8s.io/release-utils/helpers"
 	"sigs.k8s.io/release-utils/log"
-	"sigs.k8s.io/release-utils/util"
 	"sigs.k8s.io/release-utils/version"
 
 	"k8s.io/release/pkg/announce"
@@ -125,7 +125,7 @@ func (o *Options) ValidateBuildVersion(state *State) error {
 		return errors.New("invalid BuildVersion specified")
 	}
 
-	semverBuildVersion, err := util.TagStringToSemver(o.BuildVersion)
+	semverBuildVersion, err := helpers.TagStringToSemver(o.BuildVersion)
 	if err != nil {
 		return fmt.Errorf("invalid build version: %s: %w", o.BuildVersion, err)
 	}

@@ -29,8 +29,8 @@ import (
 
 	"sigs.k8s.io/release-sdk/gcli"
 	"sigs.k8s.io/release-sdk/object"
+	"sigs.k8s.io/release-utils/helpers"
 	"sigs.k8s.io/release-utils/http"
-	"sigs.k8s.io/release-utils/util"
 )
 
 // Publisher is the structure for publishing anything release related.
@@ -177,7 +177,7 @@ func (p *Publisher) PublishVersion(
 		}
 	}
 
-	sv, err := util.TagStringToSemver(version)
+	sv, err := helpers.TagStringToSemver(version)
 	if err != nil {
 		return fmt.Errorf("invalid version %s", version)
 	}
@@ -284,12 +284,12 @@ func (p *Publisher) VerifyLatestUpdate(
 		return true, nil
 	}
 
-	sv, err := util.TagStringToSemver(version)
+	sv, err := helpers.TagStringToSemver(version)
 	if err != nil {
 		return false, fmt.Errorf("invalid version format %s", version)
 	}
 
-	gcsSemverVersion, err := util.TagStringToSemver(gcsVersion)
+	gcsSemverVersion, err := helpers.TagStringToSemver(gcsVersion)
 	if err != nil {
 		return false, fmt.Errorf("invalid GCS version format %s", gcsVersion)
 	}

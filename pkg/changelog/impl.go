@@ -33,8 +33,8 @@ import (
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-sdk/object"
+	"sigs.k8s.io/release-utils/helpers"
 	"sigs.k8s.io/release-utils/http"
-	"sigs.k8s.io/release-utils/util"
 
 	"k8s.io/release/pkg/cve"
 	"k8s.io/release/pkg/notes"
@@ -100,7 +100,7 @@ type impl interface {
 type defaultImpl struct{}
 
 func (*defaultImpl) TagStringToSemver(tag string) (semver.Version, error) {
-	return util.TagStringToSemver(tag)
+	return helpers.TagStringToSemver(tag)
 }
 
 func (*defaultImpl) OpenRepo(repoPath string) (*git.Repo, error) {

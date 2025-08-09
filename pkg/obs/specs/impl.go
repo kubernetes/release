@@ -26,9 +26,9 @@ import (
 	"github.com/blang/semver/v4"
 
 	"sigs.k8s.io/release-sdk/object"
+	"sigs.k8s.io/release-utils/helpers"
 	khttp "sigs.k8s.io/release-utils/http"
 	"sigs.k8s.io/release-utils/tar"
-	"sigs.k8s.io/release-utils/util"
 
 	"k8s.io/release/pkg/obs/metadata"
 	"k8s.io/release/pkg/release"
@@ -121,11 +121,11 @@ func (d *defaultImpl) GCSCopyToLocal(gcsPath, dst string) error {
 }
 
 func (d *defaultImpl) TagStringToSemver(tag string) (semver.Version, error) {
-	return util.TagStringToSemver(tag)
+	return helpers.TagStringToSemver(tag)
 }
 
 func (d *defaultImpl) TrimTagPrefix(tag string) string {
-	return util.TrimTagPrefix(tag)
+	return helpers.TrimTagPrefix(tag)
 }
 
 func (d *defaultImpl) LoadPackageMetadata(path string) (metadata.PackageMetadataList, error) {

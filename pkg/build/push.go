@@ -28,8 +28,8 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/release-utils/helpers"
 	"sigs.k8s.io/release-utils/tar"
-	"sigs.k8s.io/release-utils/util"
 
 	"k8s.io/release/pkg/release"
 )
@@ -294,14 +294,14 @@ func (bi *Instance) StageLocalArtifacts() error {
 
 	logrus.Infof("Cleaning staging dir %s", stageDir)
 
-	if err := util.RemoveAndReplaceDir(stageDir); err != nil {
+	if err := helpers.RemoveAndReplaceDir(stageDir); err != nil {
 		return fmt.Errorf("remove and replace GCS staging directory: %w", err)
 	}
 
 	// Copy release tarballs to local GCS staging directory for push
 	logrus.Info("Copying release tarballs")
 
-	if err := util.CopyDirContentsLocal(
+	if err := helpers.CopyDirContentsLocal(
 		filepath.Join(bi.opts.BuildDir, release.ReleaseTarsPath), stageDir,
 	); err != nil {
 		return fmt.Errorf("copy source directory into destination: %w", err)
@@ -326,7 +326,7 @@ func (bi *Instance) StageLocalArtifacts() error {
 	// Copy the plain binaries to GCS. This is useful for install scripts that
 	// download the binaries directly and don't need tars.
 	plainBinariesPath := filepath.Join(bi.opts.BuildDir, release.ReleaseStagePath)
-	if util.Exists(plainBinariesPath) {
+	if helpers.Exists(plainBinariesPath) {
 		logrus.Info("Copying plain binaries")
 
 		if err := release.CopyBinaries(
@@ -346,7 +346,7 @@ func (bi *Instance) StageLocalArtifacts() error {
 		"kubernetes-source.spdx":  filepath.Join(os.TempDir(), fmt.Sprintf("source-bom-%s.spdx", bi.opts.Version)),
 		"kubernetes-release.spdx": filepath.Join(os.TempDir(), fmt.Sprintf("release-bom-%s.spdx", bi.opts.Version)),
 	} {
-		if err := util.CopyFileLocal(
+		if err := helpers.CopyFileLocal(
 			sbom, filepath.Join(stageDir, filename), false,
 		); err != nil {
 			return fmt.Errorf("copying SBOM manifests: %w", err)
@@ -382,7 +382,7 @@ func (bi *Instance) copyStageFiles(stageDir string, files []stageFile) error {
 			}
 		}
 
-		if err := util.CopyFileLocal(
+		if err := helpers.CopyFileLocal(
 			filepath.Join(bi.opts.BuildDir, file.srcPath),
 			dstPath, file.required,
 		); err != nil {

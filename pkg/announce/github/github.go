@@ -29,7 +29,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/release-sdk/github"
-	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/helpers"
 )
 
 type GitHub struct {
@@ -60,7 +60,7 @@ func (g *GitHub) UpdateGitHubPage() (err error) {
 	gh := g.github()
 	releaseVerb := "Posting"
 
-	semver, err := util.TagStringToSemver(g.options.Tag)
+	semver, err := helpers.TagStringToSemver(g.options.Tag)
 	if err != nil {
 		return fmt.Errorf("parsing semver from tag: %w", err)
 	}
@@ -172,7 +172,7 @@ func (g *GitHub) UpdateGitHubPage() (err error) {
 			// If the first page of releases does not include a release that is
 			// greater than *our* release, we can assume that ours will be the
 			// latest release right now.
-			releaseSemver, err := util.TagStringToSemver(release.GetTagName())
+			releaseSemver, err := helpers.TagStringToSemver(release.GetTagName())
 			if err != nil {
 				return fmt.Errorf("parsing existing release tags as semver: %w", err)
 			}

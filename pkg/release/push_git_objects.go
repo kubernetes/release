@@ -25,7 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-sdk/git"
-	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/helpers"
 )
 
 // GitObjectPusher is an object that pushes things to a gitrepo.
@@ -198,7 +198,7 @@ func (gp *GitObjectPusher) PushTag(newTag string) (err error) {
 
 // checkTagName verifies that the specified tag name is valid.
 func (gp *GitObjectPusher) checkTagName(tagName string) error {
-	_, err := util.TagStringToSemver(tagName)
+	_, err := helpers.TagStringToSemver(tagName)
 	if err != nil {
 		return fmt.Errorf("transforming tag into semver: %w", err)
 	}

@@ -30,15 +30,15 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/promo-tools/v3/image"
+	"sigs.k8s.io/promo-tools/v4/image/consts"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/env"
 	rhash "sigs.k8s.io/release-utils/hash"
+	"sigs.k8s.io/release-utils/helpers"
 	"sigs.k8s.io/release-utils/tar"
-	"sigs.k8s.io/release-utils/util"
 )
 
 const (
@@ -108,13 +108,13 @@ const (
 	ProductionBucketURL = "https://dl.k8s.io"
 
 	// Production registry root URL.
-	GCRIOPathProd = image.ProdRegistry
+	GCRIOPathProd = consts.ProdRegistry
 
 	// Staging registry root URL prefix.
-	GCRIOPathStagingPrefix = image.StagingRepoPrefix
+	GCRIOPathStagingPrefix = consts.StagingRepoPrefix
 
 	// Staging registry root URL.
-	GCRIOPathStaging = GCRIOPathStagingPrefix + image.StagingRepoSuffix
+	GCRIOPathStaging = GCRIOPathStagingPrefix + consts.StagingRepoSuffix
 
 	// Mock staging registry root URL.
 	GCRIOPathMock = GCRIOPathStaging + "/mock"
@@ -303,7 +303,7 @@ func CopyBinaries(rootPath, targetPath string) error {
 		// We assume here the "server package" is a superset of the "client
 		// package"
 		serverSrc := filepath.Join(rootPath, "server", platformArch.Name())
-		if util.Exists(serverSrc) {
+		if helpers.Exists(serverSrc) {
 			logrus.Infof("Server source found in %s, copying them", serverSrc)
 			src = filepath.Join(serverSrc, "kubernetes", "server", "bin")
 		}
@@ -311,18 +311,18 @@ func CopyBinaries(rootPath, targetPath string) error {
 		dst := filepath.Join(targetPath, "bin", platform, arch)
 		logrus.Infof("Copying server binaries from %s to %s", src, dst)
 
-		if err := util.CopyDirContentsLocal(src, dst); err != nil {
+		if err := helpers.CopyDirContentsLocal(src, dst); err != nil {
 			return fmt.Errorf("copy server binaries from %s to %s: %w", src, dst, err)
 		}
 
 		// Copy node binaries if they exist and this isn't a 'server' platform
 		nodeSrc := filepath.Join(rootPath, "node", platformArch.Name())
-		if !util.Exists(serverSrc) && util.Exists(nodeSrc) {
+		if !helpers.Exists(serverSrc) && helpers.Exists(nodeSrc) {
 			src = filepath.Join(nodeSrc, "kubernetes", "node", "bin")
 
 			logrus.Infof("Copying node binaries from %s to %s", src, dst)
 
-			if err := util.CopyDirContentsLocal(src, dst); err != nil {
+			if err := helpers.CopyDirContentsLocal(src, dst); err != nil {
 				return fmt.Errorf("copy node binaries from %s to %s: %w", src, dst, err)
 			}
 		}
@@ -390,7 +390,7 @@ func WriteChecksums(rootPath string) error {
 	// After all the checksum files are generated, move them into the bucket
 	// staging area
 	moveFile := func(file string) error {
-		if err := util.CopyFileLocal(
+		if err := helpers.CopyFileLocal(
 			file, filepath.Join(rootPath, file), true,
 		); err != nil {
 			return fmt.Errorf("move %s sums file to %s: %w", file, rootPath, err)
