@@ -27,6 +27,7 @@ import (
 func TestContainsString(t *testing.T) {
 	tmpfile, err := os.CreateTemp(t.TempDir(), "")
 	require.NoError(t, err)
+
 	defer os.Remove(tmpfile.Name())
 
 	// Decode a fragment of kubectl into a temporary file:

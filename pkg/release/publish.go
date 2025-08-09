@@ -465,6 +465,7 @@ func (p *Publisher) PublishReleaseNotesIndex(
 		}
 
 		defer os.RemoveAll(tempDir)
+
 		tempIndexFile := filepath.Join(tempDir, releaseNotesIndex)
 
 		if err := p.client.CopyToLocal(
