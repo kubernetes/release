@@ -40,6 +40,7 @@ func ReqTestgridDashboardSummaries(ctx context.Context, dashboardNames []Dashboa
 	// Worker
 	requestData := func(done <-chan interface{}, dashboardNames ...DashboardName) <-chan SummaryLookup {
 		summaryLookups := make(chan SummaryLookup)
+
 		go func() {
 			defer close(summaryLookups)
 
@@ -163,6 +164,7 @@ func (d *JobData) Overview() (Overview, error) {
 // UnmarshalTestgridSummary used to unmarshal bytes into TestgridSummary.
 func UnmarshalTestgridSummary(data []byte) (JobData, error) {
 	var r JobData
+
 	err := json.Unmarshal(data, &r)
 
 	return r, err

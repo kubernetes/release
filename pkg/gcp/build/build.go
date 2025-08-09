@@ -254,6 +254,7 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 		}
 
 		defer f.Close()
+
 		cmd.AddWriter(f)
 	}
 
@@ -362,6 +363,7 @@ func RunBuildJobs(o *Options) []error {
 	for k, v := range vs {
 		go func(job string, vc map[string]string) {
 			defer w.Done()
+
 			logrus.Infof("Starting job %q...", job)
 
 			if err := RunSingleJob(o, job, uploaded, tag, mergeMaps(extraSubs, vc)); err != nil {

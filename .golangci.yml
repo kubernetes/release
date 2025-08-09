@@ -81,7 +81,7 @@ linters:
     - usetesting
     - wastedassign
     - whitespace
-    - wsl
+    - wsl_v5
     - zerologlint
     # - cyclop
     # - depguard
