@@ -653,6 +653,7 @@ type commitList struct {
 func (l *commitList) Add(c []*gogithub.RepositoryCommit) {
 	l.Lock()
 	defer l.Unlock()
+
 	l.list = append(l.list, c...)
 }
 
@@ -917,6 +918,7 @@ type resultList struct {
 func (l *resultList) Add(r *Result) {
 	l.Lock()
 	defer l.Unlock()
+
 	l.list = append(l.list, r)
 }
 

@@ -279,6 +279,7 @@ func setupTestDir(t *testing.T, dir string) {
 
 func repoTagTarball(t *testing.T, path, repoTag string) {
 	const manifestJSON = "manifest.json"
+
 	manifestJSONPath := filepath.Join(filepath.Dir(path), manifestJSON)
 	require.NoError(t, os.WriteFile(
 		manifestJSONPath,

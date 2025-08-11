@@ -141,6 +141,7 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 	}
 
 	var tempDir string
+
 	defer func() {
 		if tempDir != "" {
 			os.RemoveAll(tempDir)
