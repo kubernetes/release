@@ -21,7 +21,7 @@ require (
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.11.3
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
 	github.com/nozzle/throttler v0.0.0-20180817012639-2ea982251481
-	github.com/olekukonko/tablewriter v0.0.5
+	github.com/olekukonko/tablewriter v1.0.9
 	github.com/psampaz/go-mod-outdated v0.9.0
 	github.com/saschagrunert/go-modiff v1.3.5
 	github.com/sendgrid/rest v2.6.9+incompatible
@@ -45,7 +45,7 @@ require (
 	sigs.k8s.io/mdtoc v1.4.0
 	sigs.k8s.io/promo-tools/v3 v3.6.0
 	sigs.k8s.io/release-sdk v0.12.3
-	sigs.k8s.io/release-utils v0.11.1
+	sigs.k8s.io/release-utils v0.12.1
 	sigs.k8s.io/yaml v1.6.0
 )
 
@@ -214,6 +214,8 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/oleiade/reflections v1.1.0 // indirect
+	github.com/olekukonko/errors v1.1.0 // indirect
+	github.com/olekukonko/ll v0.0.9 // indirect
 	github.com/open-policy-agent/opa v1.4.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
