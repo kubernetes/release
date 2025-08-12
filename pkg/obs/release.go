@@ -25,7 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-sdk/osc"
-	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/helpers"
 
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/release"
@@ -271,7 +271,7 @@ func (d *DefaultRelease) GenerateOBSProject() error {
 		return nil
 	}
 
-	primeSemver, err := util.TagStringToSemver(d.state.versions.Prime())
+	primeSemver, err := helpers.TagStringToSemver(d.state.versions.Prime())
 	if err != nil {
 		return fmt.Errorf("parsing prime version as semver: %w", err)
 	}

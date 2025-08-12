@@ -23,7 +23,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/stretchr/testify/require"
 
-	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/helpers"
 
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/release/releasefakes"
@@ -73,7 +73,7 @@ func TestGetKubeVersionSuccess(t *testing.T) {
 		tag, err := sut.GetKubeVersion(tc.versionType)
 		require.NoError(t, err)
 
-		s, err := util.TagStringToSemver(tag)
+		s, err := helpers.TagStringToSemver(tag)
 		require.NoError(t, err)
 
 		require.EqualValues(t, 1, s.Major)

@@ -28,7 +28,6 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/api/cloudbuild/v1"
@@ -37,6 +36,7 @@ import (
 	"sigs.k8s.io/release-sdk/gcli"
 	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/command"
+	"sigs.k8s.io/release-utils/helpers"
 	"sigs.k8s.io/release-utils/tar"
 	"sigs.k8s.io/yaml"
 
@@ -406,14 +406,13 @@ func ListJobs(project string, lastJobs int64) error {
 		return fmt.Errorf("failed to listing the builds: %w", err)
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Start Time", "Finish Time", "Status", "Console Logs"})
+	table := helpers.NewTableWriterWithDefaultsAndHeader(os.Stdout, []string{"Start Time", "Finish Time", "Status", "Console Logs"})
 
 	for _, build := range req.Builds {
-		table.Append([]string{strings.TrimSpace(build.StartTime), strings.TrimSpace(build.FinishTime), strings.TrimSpace(build.Status), strings.TrimSpace(build.LogUrl)})
+		_ = table.Append([]string{strings.TrimSpace(build.StartTime), strings.TrimSpace(build.FinishTime), strings.TrimSpace(build.Status), strings.TrimSpace(build.LogUrl)})
 	}
 
-	table.Render()
+	_ = table.Render()
 
 	return nil
 }

@@ -36,7 +36,7 @@ import (
 
 	"sigs.k8s.io/release-sdk/gcli"
 	"sigs.k8s.io/release-sdk/git"
-	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/helpers"
 	utilsversion "sigs.k8s.io/release-utils/version"
 
 	"k8s.io/release/gcb"
@@ -303,7 +303,7 @@ func (g *GCB) Submit() error {
 		if !g.options.NonInteractive {
 			var err error
 
-			_, submit, err = util.Ask(
+			_, submit, err = helpers.Ask(
 				fmt.Sprintf("Really submit a --nomock release job against the %s branch? (yes/no)", g.options.Branch),
 				"yes",
 				3,
@@ -482,7 +482,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket, forceBu
 
 	gcbSubs["BUILDVERSION"] = buildVersion
 
-	buildVersionSemver, err := util.TagStringToSemver(buildVersion)
+	buildVersionSemver, err := helpers.TagStringToSemver(buildVersion)
 	if err != nil {
 		return gcbSubs, fmt.Errorf("parse build version: %w", err)
 	}
@@ -502,7 +502,7 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket, forceBu
 		return nil, fmt.Errorf("generate release version: %w", err)
 	}
 
-	primeSemver, err := util.TagStringToSemver(versions.Prime())
+	primeSemver, err := helpers.TagStringToSemver(versions.Prime())
 	if err != nil {
 		return gcbSubs, fmt.Errorf("parse prime version: %w", err)
 	}

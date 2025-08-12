@@ -25,10 +25,9 @@ import (
 	"text/template" // NOLINT // Mark text/template as not to be checked for producing yaml.
 	"time"
 
-	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/helpers"
 	"sigs.k8s.io/yaml"
 )
 
@@ -42,9 +41,7 @@ func parsePatchSchedule(patchSchedule PatchSchedule) string {
 	if len(patchSchedule.UpcomingReleases) > 0 {
 		output = append(output, "### Upcoming Monthly Releases\n")
 		tableString := &strings.Builder{}
-		table := tablewriter.NewWriter(tableString)
-		table.SetAutoWrapText(false)
-		table.SetHeader([]string{"Monthly Patch Release", "Cherry Pick Deadline", "Target Date"})
+		table := helpers.NewTableWriterWithDefaultsAndHeader(tableString, []string{"Monthly Patch Release", "Cherry Pick Deadline", "Target Date"})
 
 		for _, upcoming := range patchSchedule.UpcomingReleases {
 			targetDate, err := time.Parse(refDate, upcoming.TargetDate)
@@ -54,16 +51,14 @@ func parsePatchSchedule(patchSchedule PatchSchedule) string {
 				continue
 			}
 
-			table.Append([]string{
+			_ = table.Append([]string{
 				targetDate.Format(refDateMonthly),
 				strings.TrimSpace(upcoming.CherryPickDeadline),
 				strings.TrimSpace(upcoming.TargetDate),
 			})
 		}
 
-		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
-		table.SetCenterSeparator("|")
-		table.Render()
+		_ = table.Render()
 
 		output = append(output, tableString.String())
 	}
@@ -79,22 +74,18 @@ func parsePatchSchedule(patchSchedule PatchSchedule) string {
 		)
 
 		tableString := &strings.Builder{}
-		table := tablewriter.NewWriter(tableString)
-		table.SetAutoWrapText(false)
-		table.SetHeader([]string{"Patch Release", "Cherry Pick Deadline", "Target Date", "Note"})
+		table := helpers.NewTableWriterWithDefaultsAndHeader(tableString, []string{"Patch Release", "Cherry Pick Deadline", "Target Date", "Note"})
 
 		// Check if the next patch release is in the Previous Patch list, if yes dont read in the output
 		if !patchReleaseInPreviousList(releaseSchedule.Next.Release, releaseSchedule.PreviousPatches) {
-			table.Append([]string{strings.TrimSpace(releaseSchedule.Next.Release), strings.TrimSpace(releaseSchedule.Next.CherryPickDeadline), strings.TrimSpace(releaseSchedule.Next.TargetDate), ""})
+			_ = table.Append([]string{strings.TrimSpace(releaseSchedule.Next.Release), strings.TrimSpace(releaseSchedule.Next.CherryPickDeadline), strings.TrimSpace(releaseSchedule.Next.TargetDate), ""})
 		}
 
 		for _, previous := range releaseSchedule.PreviousPatches {
-			table.Append([]string{strings.TrimSpace(previous.Release), strings.TrimSpace(previous.CherryPickDeadline), strings.TrimSpace(previous.TargetDate), strings.TrimSpace(previous.Note)})
+			_ = table.Append([]string{strings.TrimSpace(previous.Release), strings.TrimSpace(previous.CherryPickDeadline), strings.TrimSpace(previous.TargetDate), strings.TrimSpace(previous.Note)})
 		}
 
-		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
-		table.SetCenterSeparator("|")
-		table.Render()
+		_ = table.Render()
 
 		output = append(output, tableString.String())
 	}
@@ -131,17 +122,13 @@ func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 
 	for _, releaseSchedule := range releaseSchedule.Releases {
 		tableString := &strings.Builder{}
-		table := tablewriter.NewWriter(tableString)
-		table.SetAutoWrapText(false)
-		table.SetHeader([]string{"**What**", "**Who**", "**When**", "**WEEK**", "**CI Signal**"})
+		table := helpers.NewTableWriterWithDefaultsAndHeader(tableString, []string{"**What**", "**Who**", "**When**", "**WEEK**", "**CI Signal**"})
 
 		for _, timeline := range releaseSchedule.Timeline {
-			table.Append([]string{strings.TrimSpace(timeline.What), strings.TrimSpace(timeline.Who), strings.TrimSpace(timeline.When), strings.TrimSpace(timeline.Week), strings.TrimSpace(timeline.CISignal), ""})
+			_ = table.Append([]string{strings.TrimSpace(timeline.What), strings.TrimSpace(timeline.Who), strings.TrimSpace(timeline.When), strings.TrimSpace(timeline.Week), strings.TrimSpace(timeline.CISignal), ""})
 		}
 
-		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
-		table.SetCenterSeparator("|")
-		table.Render()
+		_ = table.Render()
 
 		relSched.TimelineOutput = tableString.String()
 	}
@@ -248,7 +235,7 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 			sched.PreviousPatches = append([]*PatchRelease{sched.Next}, sched.PreviousPatches...)
 
 			// Create a new next release
-			nextReleaseVersion, err := util.TagStringToSemver(sched.Next.Release)
+			nextReleaseVersion, err := helpers.TagStringToSemver(sched.Next.Release)
 			if err != nil {
 				return fmt.Errorf("parse semver version: %w", err)
 			}

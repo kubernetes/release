@@ -24,7 +24,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/helpers"
 
 	"k8s.io/release/pkg/consts"
 )
@@ -126,7 +126,7 @@ func (o *Options) Validate() error {
 	}
 
 	// Replace the "+" with a "-" to make it semver-compliant
-	o.Version = util.TrimTagPrefix(o.Version)
+	o.Version = helpers.TrimTagPrefix(o.Version)
 
 	return nil
 }

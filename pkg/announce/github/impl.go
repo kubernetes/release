@@ -26,7 +26,7 @@ import (
 
 	githubsdk "sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-utils/hash"
-	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/helpers"
 )
 
 type defaultImpl struct{}
@@ -69,7 +69,7 @@ func (i *defaultImpl) processAssetFiles(assetFiles []string) (releaseAssets []ma
 		logrus.Debugf("Checking asset file %s", path)
 
 		// Verify path exists
-		if !util.Exists(path) {
+		if !helpers.Exists(path) {
 			return nil, errors.New("unable to render release page, asset file does not exist")
 		}
 

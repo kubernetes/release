@@ -31,7 +31,7 @@ import (
 const expectedPatchSchedule = `### Upcoming Monthly Releases
 
 | MONTHLY PATCH RELEASE | CHERRY PICK DEADLINE | TARGET DATE |
-|-----------------------|----------------------|-------------|
+|:----------------------|:---------------------|:------------|
 | June 2020             | 2020-06-12           | 2020-06-17  |
 
 ### Timeline
@@ -43,7 +43,7 @@ Next patch release is **X.Y.ZZZ**
 **X.Y** enters maintenance mode on **THEN** and End of Life is on **NOW**.
 
 | PATCH RELEASE | CHERRY PICK DEADLINE | TARGET DATE | NOTE |
-|---------------|----------------------|-------------|------|
+|:--------------|:---------------------|:------------|:-----|
 | X.Y.ZZZ       | 2020-06-12           | 2020-06-17  |      |
 | X.Y.XXX       | 2020-05-15           | 2020-05-20  | honk |
 | X.Y.YYY       | 2020-04-13           | 2020-04-16  |      |
@@ -91,20 +91,20 @@ The X.Y release cycle is proposed as follows:
 
 ## Timeline
 
-| **WHAT**  | **WHO** |  **WHEN**  | **WEEK** | **CI SIGNAL** |  |
-|-----------|---------|------------|----------|---------------|--|
-| Testing-A | tester  | 2020-06-17 | week 1   | green         |  |
-| Testing-B | tester  | 2020-06-19 | week 1   | green         |  |
-| Testing-C | tester  | 2020-06-20 | week 1   | green         |  |
-| Testing-D | tester  | 2020-06-21 | week 1   | green         |  |
-| Testing-E | tester  | 2020-06-22 | week 1   | green         |  |
-| Testing-F | tester  | 2020-06-25 | week 2   | green         |  |
-| Testing-G | tester  | 2020-06-26 | week 2   | green         |  |
-| Testing-H | tester  | 2020-06-27 | week 2   | green         |  |
-| Testing-I | tester  | 2020-06-27 | week 2   | green         |  |
-| Testing-J | tester  | 2020-06-27 | week 2   | green         |  |
-| Testing-K | tester  | 2020-06-28 | week 2   | green         |  |
-| Testing-L | tester  | 2020-06-28 | week 2   | green         |  |
+| ** WHAT ** | ** WHO ** | ** WHEN ** | ** WEEK ** | ** CI SIGNAL ** |   |
+|:-----------|:----------|:-----------|:-----------|:----------------|:--|
+| Testing-A  | tester    | 2020-06-17 | week 1     | green           |   |
+| Testing-B  | tester    | 2020-06-19 | week 1     | green           |   |
+| Testing-C  | tester    | 2020-06-20 | week 1     | green           |   |
+| Testing-D  | tester    | 2020-06-21 | week 1     | green           |   |
+| Testing-E  | tester    | 2020-06-22 | week 1     | green           |   |
+| Testing-F  | tester    | 2020-06-25 | week 2     | green           |   |
+| Testing-G  | tester    | 2020-06-26 | week 2     | green           |   |
+| Testing-H  | tester    | 2020-06-27 | week 2     | green           |   |
+| Testing-I  | tester    | 2020-06-27 | week 2     | green           |   |
+| Testing-J  | tester    | 2020-06-27 | week 2     | green           |   |
+| Testing-K  | tester    | 2020-06-28 | week 2     | green           |   |
+| Testing-L  | tester    | 2020-06-28 | week 2     | green           |   |
 
 ## Phases
 

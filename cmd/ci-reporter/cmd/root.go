@@ -24,11 +24,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/olekukonko/tablewriter"
 	"github.com/shurcooL/githubv4"
 	"github.com/spf13/cobra"
 	"github.com/tj/go-spin"
 	"golang.org/x/net/context"
+
+	"sigs.k8s.io/release-utils/helpers"
 )
 
 var rootCmd = &cobra.Command{
@@ -245,18 +246,18 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 			return fmt.Errorf("could not write to output stream: %w", err)
 		}
 
-		table := tablewriter.NewWriter(out)
+		table := helpers.NewTableWriter(out)
 		data := [][]string{}
 
 		// table in short version differs from regular table
 		if cfg.ShortReport {
-			table.SetHeader([]string{"TESTGRID BOARD", "TITLE", "STATUS", "STATUS DETAILS"})
+			table.Header([]string{"TESTGRID BOARD", "TITLE", "STATUS", "STATUS DETAILS"})
 
 			for _, record := range r.Records {
 				data = append(data, []string{record.TestgridBoard, record.Title, record.Status, record.StatusDetails})
 			}
 		} else {
-			table.SetHeader([]string{"TESTGRID BOARD", "TITLE", "STATUS", "STATUS DETAILS", "URL", "UPDATED AT"})
+			table.Header([]string{"TESTGRID BOARD", "TITLE", "STATUS", "STATUS DETAILS", "URL", "UPDATED AT"})
 
 			for _, record := range r.Records {
 				data = append(data, []string{
@@ -269,10 +270,8 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 			}
 		}
 
-		table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
-		table.AppendBulk(data)
-		table.SetCenterSeparator("|")
-		table.Render()
+		_ = table.Bulk(data)
+		_ = table.Render()
 
 		// write a summary
 		countCategories := map[string]int{}
