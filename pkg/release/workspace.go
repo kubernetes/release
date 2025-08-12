@@ -31,8 +31,8 @@ import (
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-sdk/object"
+	"sigs.k8s.io/release-utils/helpers"
 	"sigs.k8s.io/release-utils/tar"
-	"sigs.k8s.io/release-utils/util"
 )
 
 // PrepareWorkspaceStage sets up the workspace by cloning a new copy of k/k.
@@ -171,7 +171,7 @@ func ListBuildBinaries(gitroot, version string) (list []struct{ Path, Platform, 
 	rootPath := filepath.Join(buildDir, ReleaseStagePath)
 
 	platformsPath := filepath.Join(rootPath, "client")
-	if !util.Exists(platformsPath) {
+	if !helpers.Exists(platformsPath) {
 		logrus.Infof("Not adding binaries as %s was not found", platformsPath)
 
 		return list, nil
@@ -209,7 +209,7 @@ func ListBuildBinaries(gitroot, version string) (list []struct{ Path, Platform, 
 		// We assume here the "server package" is a superset of the "client
 		// package"
 		serverSrc := filepath.Join(rootPath, "server", platformArch.Name())
-		if util.Exists(serverSrc) {
+		if helpers.Exists(serverSrc) {
 			src = filepath.Join(serverSrc, "kubernetes", "server", "bin")
 		}
 
@@ -242,7 +242,7 @@ func ListBuildBinaries(gitroot, version string) (list []struct{ Path, Platform, 
 
 		// Copy node binaries if they exist and this isn't a 'server' platform
 		nodeSrc := filepath.Join(rootPath, "node", platformArch.Name())
-		if !util.Exists(serverSrc) && util.Exists(nodeSrc) {
+		if !helpers.Exists(serverSrc) && helpers.Exists(nodeSrc) {
 			src = filepath.Join(nodeSrc, "kubernetes", "node", "bin")
 			if err := filepath.Walk(src,
 				func(path string, info os.FileInfo, err error) error {

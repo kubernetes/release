@@ -26,8 +26,8 @@ import (
 
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/object"
+	"sigs.k8s.io/release-utils/helpers"
 	"sigs.k8s.io/release-utils/log"
-	"sigs.k8s.io/release-utils/util"
 
 	"k8s.io/release/pkg/announce"
 	"k8s.io/release/pkg/announce/github"
@@ -539,7 +539,7 @@ func (d *DefaultRelease) CreateAnnouncement() error {
 	announceOpts.WithWorkDir(filepath.Join(workspaceDir, "src"))
 
 	// Get a semver from the prime tag
-	primeSemver, err := util.TagStringToSemver(d.state.versions.Prime())
+	primeSemver, err := helpers.TagStringToSemver(d.state.versions.Prime())
 	if err != nil {
 		return fmt.Errorf("parsing prime version into semver: %w", err)
 	}

@@ -30,7 +30,7 @@ import (
 
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github"
-	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/helpers"
 
 	"k8s.io/release/pkg/notes/options"
 )
@@ -112,7 +112,7 @@ func (c *Changelog) Run() error {
 		if len(tag.Pre) == 0 { //nolint:gocritic // a switch case would not make it better
 			// Still create the downloads table
 			downloadsTable := &bytes.Buffer{}
-			startTag := util.SemverToTagString(semver.Version{
+			startTag := helpers.SemverToTagString(semver.Version{
 				Major: tag.Major, Minor: tag.Minor - 1, Patch: 0,
 			})
 
@@ -133,7 +133,7 @@ func (c *Changelog) Run() error {
 			// v1.x.0-alpha.1 releases use the previous minor as start commit.
 			// Those are usually the first releases being cut on master after
 			// the previous final has been released.
-			startRev = util.SemverToTagString(semver.Version{
+			startRev = helpers.SemverToTagString(semver.Version{
 				Major: tag.Major, Minor: tag.Minor - 1, Patch: 0,
 			})
 			logrus.Infof("Using previous minor %s as start tag", startRev)
@@ -182,7 +182,7 @@ func (c *Changelog) Run() error {
 		}
 
 		// A patch version, let’s just use the previous patch
-		startTag := util.SemverToTagString(semver.Version{
+		startTag := helpers.SemverToTagString(semver.Version{
 			Major: tag.Major, Minor: tag.Minor, Patch: tag.Patch - 1,
 		})
 
@@ -419,7 +419,7 @@ func (c *Changelog) writeHTML(tag semver.Version, markdown string) error {
 	output := bytes.Buffer{}
 	if err := c.TemplateExecute(t, &output, struct {
 		Title, Content string
-	}{util.SemverToTagString(tag), content.String()}); err != nil {
+	}{helpers.SemverToTagString(tag), content.String()}); err != nil {
 		return fmt.Errorf("execute HTML template: %w", err)
 	}
 
@@ -513,7 +513,7 @@ func (c *Changelog) commitChanges(
 	logrus.Info("Committing changes to main branch in repository")
 
 	if err := c.Commit(repo, fmt.Sprintf(
-		"CHANGELOG: Update directory for %s release", util.SemverToTagString(tag),
+		"CHANGELOG: Update directory for %s release", helpers.SemverToTagString(tag),
 	)); err != nil {
 		return fmt.Errorf("committing changes into repository: %w", err)
 	}
@@ -546,7 +546,7 @@ func (c *Changelog) commitChanges(
 		logrus.Info("Committing changes to release branch in repository")
 
 		if err := c.Commit(repo, fmt.Sprintf(
-			"Update %s for %s", releaseChangelog, util.SemverToTagString(tag),
+			"Update %s for %s", releaseChangelog, helpers.SemverToTagString(tag),
 		)); err != nil {
 			return fmt.Errorf("committing changes into repository: %w", err)
 		}

@@ -24,8 +24,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/release-utils/env"
+	"sigs.k8s.io/release-utils/helpers"
 	"sigs.k8s.io/release-utils/http"
-	"sigs.k8s.io/release-utils/util"
 
 	"k8s.io/release/pkg/mail"
 	"k8s.io/release/pkg/release"
@@ -116,7 +116,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 
 	logrus.Info("Retrieving release announcement from Google Cloud Bucket")
 
-	tag := util.AddTagPrefix(announceRootOpts.tag)
+	tag := helpers.AddTagPrefix(announceRootOpts.tag)
 	u := fmt.Sprintf(
 		"%s/release/%s/announcement.html",
 		release.URLPrefixForBucket(release.ProductionBucket), tag,
@@ -180,7 +180,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 	yes := true
 
 	if rootOpts.nomock {
-		_, yes, err = util.Ask("Send email? (y/N)", "y:Y:yes|n:N:no|N", 10)
+		_, yes, err = helpers.Ask("Send email? (y/N)", "y:Y:yes|n:N:no|N", 10)
 		if err != nil {
 			return err
 		}

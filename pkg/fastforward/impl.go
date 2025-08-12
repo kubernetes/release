@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-utils/env"
-	"sigs.k8s.io/release-utils/util"
+	"sigs.k8s.io/release-utils/helpers"
 
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/release"
@@ -115,7 +115,7 @@ func (*defaultImpl) RepoDir(r *git.Repo) string {
 }
 
 func (*defaultImpl) Ask(q, e string, r int) (answer string, success bool, err error) {
-	return util.Ask(q, e, r)
+	return helpers.Ask(q, e, r)
 }
 
 func (*defaultImpl) RepoPush(r *git.Repo, remoteBranch string) error {
@@ -163,7 +163,7 @@ func (*defaultImpl) MkdirTemp(dir, pattern string) (string, error) {
 }
 
 func (*defaultImpl) Exists(path string) bool {
-	return util.Exists(path)
+	return helpers.Exists(path)
 }
 
 func (*defaultImpl) ConfigureGlobalDefaultUserAndEmail() error {
