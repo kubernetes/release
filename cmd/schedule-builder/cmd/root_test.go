@@ -38,7 +38,7 @@ Next patch release is **1.18.4**
 **1.18** enters maintenance mode on **TBD** and End of Life is on **TBD**.
 
 | PATCH RELEASE | CHERRY PICK DEADLINE | TARGET DATE | NOTE |
-|---------------|----------------------|-------------|------|
+|:--------------|:---------------------|:------------|:-----|
 | 1.18.4        | 2020-06-12           | 2020-06-17  |      |
 | 1.18.3        | 2020-05-15           | 2020-05-20  |      |
 | 1.18.2        | 2020-04-13           | 2020-04-16  |      |
@@ -50,7 +50,7 @@ Next patch release is **1.17.7**
 **1.17** enters maintenance mode on **TBD** and End of Life is on **TBD**.
 
 | PATCH RELEASE | CHERRY PICK DEADLINE | TARGET DATE | NOTE |
-|---------------|----------------------|-------------|------|
+|:--------------|:---------------------|:------------|:-----|
 | 1.17.7        | 2020-06-12           | 2020-06-17  |      |
 | 1.17.6        | 2020-05-15           | 2020-05-20  |      |
 
@@ -61,7 +61,7 @@ Next patch release is **1.16.11**
 **1.16** enters maintenance mode on **TBD** and End of Life is on **TBD**.
 
 | PATCH RELEASE | CHERRY PICK DEADLINE | TARGET DATE | NOTE |
-|---------------|----------------------|-------------|------|
+|:--------------|:---------------------|:------------|:-----|
 | 1.16.11       | 2020-06-12           | 2020-06-17  |      |
 | 1.16.10       | 2020-05-15           | 2020-05-20  |      |
 | 1.16.9        | 2020-04-13           | 2020-04-16  |      |
@@ -109,43 +109,43 @@ The 1.23 release cycle is proposed as follows:
 
 ## Timeline
 
-|                                 **WHAT**                                 |            **WHO**            |       **WHEN**        |  **WEEK**   |                  **CI SIGNAL**                   |  |
-|--------------------------------------------------------------------------|-------------------------------|-----------------------|-------------|--------------------------------------------------|--|
-| Start of Release Cycle                                                   | Lead                          | Mon August 23, 2021   | week 1      | master-blocking                                  |  |
-| Start Enhancements Tracking                                              | Enhancements Lead             | Mon August 23, 2021   | week 1      |                                                  |  |
-| 1.23.0-alpha.1 released                                                  | Branch Manager                | Wed August 25, 2021   | week 1      |                                                  |  |
-| Schedule finalized                                                       | Lead                          | Thu August 26, 2021   | week 1      |                                                  |  |
-| Team finalized                                                           | Lead                          | Fri August 27, 2021   | week 1      |                                                  |  |
-| Production Readiness Soft Freeze                                         | Enhancements Lead             | Thu September 2, 2021 | week 2      |                                                  |  |
-| Start Release Notes Draft                                                | Release Notes Lead            | Tue September 7, 2021 | week 3      |                                                  |  |
-| Begin Enhancements Freeze (23:59 PDT)                                    | Enhancements Lead             | Thu September 9, 2021 | week 3      | master-blocking, master-informing                |  |
-| 1.23.0-alpha.2 released                                                  | Branch Manager                | TBD                   | TBD         |                                                  |  |
-| 1.23.0-alpha.3 released                                                  | Branch Manager                | TBD                   | TBD         |                                                  |  |
-| KubeCon NA + Co-located events                                           |                               | October 11-15, 2021   | week 8      |                                                  |  |
-| 1.23.0-alpha.4 released                                                  | Branch Manager                | TBD                   | TBD         |                                                  |  |
-| Begin Burndown (MWF meetings)                                            | Lead                          | Mon November 1, 2021  | week 11     | 1.23-blocking, master-blocking, master-informing |  |
-| Call for Exceptions                                                      | Lead                          | Mon November 1, 2021  | 2021	week 11 |                                                  |  |
-| Brace Yourself, Code Freeze is Coming                                    | Comms / Bug Triage            | Mon November 1, 2021  | week 11     |                                                  |  |
-| Begin Feature blog freeze (23:59 PDT)                                    | Comms Lead                    | Tue November 2, 2021  | week 11     |                                                  |  |
-| Burndown Meetings daily                                                  | Lead                          | Mon November 15, 2021 | week 13     |                                                  |  |
-| Begin Code Freeze (18:00 PST)                                            | Branch Manager                | Tue November 16, 2021 | week 13     |                                                  |  |
-| 1.23.0-beta.0 released                                                   | Branch Manager                | Tue November 16, 2021 | week 13     |                                                  |  |
-| Docs deadline - Open placeholder PRs                                     | Docs Lead                     | Thu November 18, 2021 | week 13     |                                                  |  |
-| Test Freeze (18:00 PST)                                                  | Branch Manager                | Tue November 23, 2021 | week 14     |                                                  |  |
-| Docs deadline - PRs ready for review                                     | Docs Lead                     | Tue November 23, 2021 | week 14     |                                                  |  |
-| 1.23.0-rc.0 released                                                     | Branch Manager                | Tue November 23, 2021 | week 14     |                                                  |  |
-| release-1.23 branch created                                              | Branch Manager                | Tue November 23, 2021 | week 14     |                                                  |  |
-| Start final draft of Release Notes                                       | Release Notes Lead            | Tue November 23, 2021 | week 14     |                                                  |  |
-| Release blog ready to review (23:59 PST)                                 | Comms / Docs                  | Tue November 23, 2021 | week 14     |                                                  |  |
-| Docs complete - All PRs reviewed and ready to merge                      | Docs Lead                     | Tue November 30, 2021 | week 15     |                                                  |  |
-| Feature blogs ready to review (23:59 PST)                                | Enhancement Owner / SIG Leads | Tue November 30, 2021 | week 15     |                                                  |  |
-| Release Notes complete - reviewed & merged to k/sig-release (23:59 PST)  | Release Notes Lead            | Thu December 2, 2021  | week 15     |                                                  |  |
-| v1.23.0 released                                                         | Branch Manager                | Tue December 7, 2021  | week 16     |                                                  |  |
-| Release blog published                                                   | Comms                         | Tue December 7, 2021  | week 16     |                                                  |  |
-| Thaw                                                                     | Branch Manager                | Tue December 7, 2021  | week 16     |                                                  |  |
-| Release retrospective part 1 (7:30am PST during the SIG Release meeting) | Community                     | Tue December 14, 2021 | week 17     |                                                  |  |
-| Release retrospective part 2 (10:00am PST)                               | Community                     | Wed December 15, 2021 | week 17     |                                                  |  |
-| Release retrospective part 3 (10:00am PST)                               | Community                     | Thu December 16, 2021 | week 17     |                                                  |  |
+| ** WHAT **                                                               | ** WHO **                     | ** WHEN **            | ** WEEK **  | ** CI SIGNAL **                                  |   |
+|:-------------------------------------------------------------------------|:------------------------------|:----------------------|:------------|:-------------------------------------------------|:--|
+| Start of Release Cycle                                                   | Lead                          | Mon August 23, 2021   | week 1      | master-blocking                                  |   |
+| Start Enhancements Tracking                                              | Enhancements Lead             | Mon August 23, 2021   | week 1      |                                                  |   |
+| 1.23.0-alpha.1 released                                                  | Branch Manager                | Wed August 25, 2021   | week 1      |                                                  |   |
+| Schedule finalized                                                       | Lead                          | Thu August 26, 2021   | week 1      |                                                  |   |
+| Team finalized                                                           | Lead                          | Fri August 27, 2021   | week 1      |                                                  |   |
+| Production Readiness Soft Freeze                                         | Enhancements Lead             | Thu September 2, 2021 | week 2      |                                                  |   |
+| Start Release Notes Draft                                                | Release Notes Lead            | Tue September 7, 2021 | week 3      |                                                  |   |
+| Begin Enhancements Freeze (23:59 PDT)                                    | Enhancements Lead             | Thu September 9, 2021 | week 3      | master-blocking, master-informing                |   |
+| 1.23.0-alpha.2 released                                                  | Branch Manager                | TBD                   | TBD         |                                                  |   |
+| 1.23.0-alpha.3 released                                                  | Branch Manager                | TBD                   | TBD         |                                                  |   |
+| KubeCon NA + Co-located events                                           |                               | October 11-15, 2021   | week 8      |                                                  |   |
+| 1.23.0-alpha.4 released                                                  | Branch Manager                | TBD                   | TBD         |                                                  |   |
+| Begin Burndown (MWF meetings)                                            | Lead                          | Mon November 1, 2021  | week 11     | 1.23-blocking, master-blocking, master-informing |   |
+| Call for Exceptions                                                      | Lead                          | Mon November 1, 2021  | 2021	week 11 |                                                  |   |
+| Brace Yourself, Code Freeze is Coming                                    | Comms / Bug Triage            | Mon November 1, 2021  | week 11     |                                                  |   |
+| Begin Feature blog freeze (23:59 PDT)                                    | Comms Lead                    | Tue November 2, 2021  | week 11     |                                                  |   |
+| Burndown Meetings daily                                                  | Lead                          | Mon November 15, 2021 | week 13     |                                                  |   |
+| Begin Code Freeze (18:00 PST)                                            | Branch Manager                | Tue November 16, 2021 | week 13     |                                                  |   |
+| 1.23.0-beta.0 released                                                   | Branch Manager                | Tue November 16, 2021 | week 13     |                                                  |   |
+| Docs deadline - Open placeholder PRs                                     | Docs Lead                     | Thu November 18, 2021 | week 13     |                                                  |   |
+| Test Freeze (18:00 PST)                                                  | Branch Manager                | Tue November 23, 2021 | week 14     |                                                  |   |
+| Docs deadline - PRs ready for review                                     | Docs Lead                     | Tue November 23, 2021 | week 14     |                                                  |   |
+| 1.23.0-rc.0 released                                                     | Branch Manager                | Tue November 23, 2021 | week 14     |                                                  |   |
+| release-1.23 branch created                                              | Branch Manager                | Tue November 23, 2021 | week 14     |                                                  |   |
+| Start final draft of Release Notes                                       | Release Notes Lead            | Tue November 23, 2021 | week 14     |                                                  |   |
+| Release blog ready to review (23:59 PST)                                 | Comms / Docs                  | Tue November 23, 2021 | week 14     |                                                  |   |
+| Docs complete - All PRs reviewed and ready to merge                      | Docs Lead                     | Tue November 30, 2021 | week 15     |                                                  |   |
+| Feature blogs ready to review (23:59 PST)                                | Enhancement Owner / SIG Leads | Tue November 30, 2021 | week 15     |                                                  |   |
+| Release Notes complete - reviewed & merged to k/sig-release (23:59 PST)  | Release Notes Lead            | Thu December 2, 2021  | week 15     |                                                  |   |
+| v1.23.0 released                                                         | Branch Manager                | Tue December 7, 2021  | week 16     |                                                  |   |
+| Release blog published                                                   | Comms                         | Tue December 7, 2021  | week 16     |                                                  |   |
+| Thaw                                                                     | Branch Manager                | Tue December 7, 2021  | week 16     |                                                  |   |
+| Release retrospective part 1 (7:30am PST during the SIG Release meeting) | Community                     | Tue December 14, 2021 | week 17     |                                                  |   |
+| Release retrospective part 2 (10:00am PST)                               | Community                     | Wed December 15, 2021 | week 17     |                                                  |   |
+| Release retrospective part 3 (10:00am PST)                               | Community                     | Thu December 16, 2021 | week 17     |                                                  |   |
 
 ## Phases
 
