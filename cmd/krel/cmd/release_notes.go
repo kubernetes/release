@@ -138,6 +138,7 @@ type releaseNotesOptions struct {
 	githubOrg          string
 	draftRepo          string
 	mapProviders       []string
+	includeLabels      []string
 }
 
 type releaseNotesResult struct {
@@ -239,6 +240,14 @@ func init() {
 		"",
 		true,
 		"update the cloned repository to fetch any upstream change (default: true)",
+	)
+
+	releaseNotesCmd.PersistentFlags().StringSliceVarP(
+		&releaseNotesOpts.includeLabels,
+		"include-labels",
+		"l",
+		[]string{},
+		"specify one or more PR labels to include in release notes",
 	)
 
 	rootCmd.AddCommand(releaseNotesCmd)
@@ -909,6 +918,7 @@ func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
 	notesOptions.MapProviderStrings = releaseNotesOpts.mapProviders
 	notesOptions.AddMarkdownLinks = true
+	notesOptions.IncludeLabels = releaseNotesOpts.includeLabels
 
 	// If the release for the tag we are using has a mapping directory,
 	// add it to the mapProviders array to read the edits from the release team:
@@ -964,6 +974,7 @@ func gatherNotesFrom(repoPath, startTag string) (*notes.ReleaseNotes, error) {
 	notesOptions.MapProviderStrings = releaseNotesOpts.mapProviders
 	notesOptions.ListReleaseNotesV2 = releaseNotesOpts.listReleaseNotesV2
 	notesOptions.AddMarkdownLinks = true
+	notesOptions.IncludeLabels = releaseNotesOpts.includeLabels
 
 	if err := notesOptions.ValidateAndFinish(); err != nil {
 		return nil, err
