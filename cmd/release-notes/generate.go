@@ -249,6 +249,14 @@ func addGenerateFlags(subcommand *cobra.Command) {
 		false,
 		"enable experimental implementation to list commits (ListReleaseNotesV2)",
 	)
+
+	subcommand.PersistentFlags().StringSliceVarP(
+		&opts.IncludeLabels,
+		"include-labels",
+		"l",
+		[]string{},
+		"specify one or more PR labels to include in release notes",
+	)
 }
 
 // addGenerate adds the generate subcomand to the main release notes cobra cmd.

@@ -37,19 +37,20 @@ import (
 
 // Options are the main settings for generating the changelog.
 type Options struct {
-	RepoPath     string
-	Tag          string
-	Branch       string
-	Bucket       string
-	Tars         string
-	Images       string
-	HTMLFile     string
-	JSONFile     string
-	RecordDir    string
-	ReplayDir    string
-	CVEDataDir   string
-	CloneCVEMaps bool
-	Dependencies bool
+	RepoPath      string
+	Tag           string
+	Branch        string
+	Bucket        string
+	Tars          string
+	Images        string
+	HTMLFile      string
+	JSONFile      string
+	RecordDir     string
+	ReplayDir     string
+	CVEDataDir    string
+	CloneCVEMaps  bool
+	Dependencies  bool
+	IncludeLabels []string
 }
 
 // Changelog can be used to generate the changelog for a release.
@@ -278,6 +279,7 @@ func (c *Changelog) generateReleaseNotes(
 	notesOptions.ReplayDir = c.options.ReplayDir
 	notesOptions.Pull = false
 	notesOptions.AddMarkdownLinks = true
+	notesOptions.IncludeLabels = c.options.IncludeLabels
 
 	if c.options.CVEDataDir != "" {
 		notesOptions.MapProviderStrings = append(

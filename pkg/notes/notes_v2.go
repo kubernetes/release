@@ -157,6 +157,10 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 		return nil, nil
 	}
 
+	if len(g.options.IncludeLabels) > 0 && !matchesLabelFilter(pr.Labels, g.options.IncludeLabels) {
+		return nil, nil
+	}
+
 	text, err := noteTextFromString(prBody)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
