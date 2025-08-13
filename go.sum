@@ -1397,8 +1397,8 @@ sigs.k8s.io/promo-tools/v4 v4.0.6-0.20250812112707-5ea87f85afbd/go.mod h1:sH90dL
 sigs.k8s.io/randfill v0.0.0-20250304075658-069ef1bbf016/go.mod h1:XeLlZ/jmk4i1HRopwe7/aU3H5n1zNUcX6TM94b3QxOY=
 sigs.k8s.io/randfill v1.0.0 h1:JfjMILfT8A6RbawdsK2JXGBR5AQVfd+9TbzrlneTyrU=
 sigs.k8s.io/randfill v1.0.0/go.mod h1:XeLlZ/jmk4i1HRopwe7/aU3H5n1zNUcX6TM94b3QxOY=
-sigs.k8s.io/release-sdk v0.12.4-0.20250809110342-befb0e4cde00 h1:Ko8z//Et8nzPAr39CvFTZ72ncsYm1nxxrGS594YGzKE=
-sigs.k8s.io/release-sdk v0.12.4-0.20250809110342-befb0e4cde00/go.mod h1:v27+ik29MOntJORPhi+6/FrCRQ2n2w4anqobVfqYE5c=
+sigs.k8s.io/release-sdk v0.12.4 h1:zu4iBA4gLKT4/cW7Htt4Jl904mCd9e1bc1os+tFmQ1I=
+sigs.k8s.io/release-sdk v0.12.4/go.mod h1:v27+ik29MOntJORPhi+6/FrCRQ2n2w4anqobVfqYE5c=
 sigs.k8s.io/release-utils v0.12.1 h1:3p9w137wBTTApHlL8izdJHcCuaBe8wZhQz+B0QIAaBE=
 sigs.k8s.io/release-utils v0.12.1/go.mod h1:0z7JOb7iQcuDQcemQw5CSVrkH8evRHY0DMMjcyRB1e4=
 sigs.k8s.io/structured-merge-diff/v4 v4.6.0 h1:IUA9nvMmnKWcj5jl84xn+T5MnlZKThmUW1TdblaLVAc=
