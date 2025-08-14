@@ -38,7 +38,7 @@ require (
 	golang.org/x/text v0.28.0
 	google.golang.org/api v0.246.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/apimachinery v0.33.3
+	k8s.io/apimachinery v0.33.4
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
 	sigs.k8s.io/bom v0.6.1-0.20250809182942-3af5abaeaa9e
 	sigs.k8s.io/mdtoc v1.4.0
