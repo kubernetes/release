@@ -16,6 +16,8 @@
 # platform go binary for the architecture kubernetes cares about.
 
 ARG BASEIMAGE
+ARG GO_VERSION
+FROM golang:${GO_VERSION}-alpine as go-source
 FROM ${BASEIMAGE}
 
 ##------------------------------------------------------------
@@ -40,7 +42,9 @@ ENV KUBE_CROSSPLATFORMS \
   windows/amd64 windows/386
 
 ##------------------------------------------------------------
-
+COPY --from=go-source /usr/local/go /usr/local/go
+ENV PATH=/usr/local/go/bin:$PATH
+ENV GOROOT=/usr/local/go
 # Pre-compile the standard go library when cross-compiling. This is much easier now when we have go1.5+
 RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
     && if [ ${targetArch} = "amd64" ]; then \
@@ -52,12 +56,17 @@ fi
 RUN apt-get -q update \
     && apt-get install -qqy \
         apt-utils \
+        curl \
         file \
+        git \
+        gnupg2 \
+        iproute2 \
         jq \
+        openssh-client \
         patch \
         rsync \
         unzip \
-        iproute2
+        wget
 
 # Use dynamic cgo linking for architectures other than amd64 for the server platforms
 # To install crossbuild essential for other architectures add the following repository.
