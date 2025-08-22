@@ -247,7 +247,7 @@ func init() {
 		"include-labels",
 		"l",
 		[]string{},
-		"specify one or more PR labels to include in release notes",
+		"only PRs with one of these labels are considered. Set to empty to include all PRs",
 	)
 
 	rootCmd.AddCommand(releaseNotesCmd)

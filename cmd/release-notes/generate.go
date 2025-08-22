@@ -255,7 +255,7 @@ func addGenerateFlags(subcommand *cobra.Command) {
 		"include-labels",
 		"l",
 		[]string{},
-		"specify one or more PR labels to include in release notes",
+		"Only PRs with one of these labels are considered. Set to empty to include all PRs",
 	)
 }
 

@@ -134,7 +134,7 @@ type Options struct {
 	// this option should be set to false to take advantage of Github's autolinked references.
 	AddMarkdownLinks bool
 
-	// IncludeLabels enables including only PRs that have one or more specific labels.
+	// IncludeLabels can be used to filter PRs by labels so only PRs with one or more specified labels are included.
 	IncludeLabels []string
 }
 
