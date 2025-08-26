@@ -682,6 +682,19 @@ func MatchesExcludeFilter(msg string) bool {
 	return matchesFilter(msg, noteExclusionFilters)
 }
 
+// matchesLabelFilter returns true if any of PR labels match the includeLabels.
+func matchesLabelFilter(prLabels []*gogithub.Label, includeLabels []string) bool {
+	for _, include := range includeLabels {
+		for _, label := range prLabels {
+			if label.GetName() == include {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 func matchesFilter(msg string, filters []*regexp.Regexp) bool {
 	for _, filter := range filters {
 		if filter.MatchString(msg) {
