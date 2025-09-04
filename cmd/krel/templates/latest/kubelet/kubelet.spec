@@ -21,15 +21,9 @@ Requires: iptables >= 1.4.21
 Requires: {{ $dep.Name }} {{ $dep.VersionConstraint }}
 {{ end }}
 %if "%{_vendor}" == "debbuild"
-Requires: iproute2
 Requires: mount
-Requires: conntrack
-%else
-Requires: iproute
-Requires: conntrack-tools
 %endif
 Requires: util-linux
-Requires: ethtool
 
 %if "%{_vendor}" == "debbuild"
 BuildRequires: systemd-deb-macros
