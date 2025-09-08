@@ -1,13 +1,13 @@
 # See https://github.com/kubernetes/test-infra/blob/master/config/jobs/image-pushing/README.md for more details on image pushing process
 
 # this must be specified in seconds. If omitted, defaults to 600s (10 mins)
-timeout: 3600s
+timeout: 28800s
 
 # this prevents errors if you don't use both _GIT_TAG and _PULL_BASE_REF,
 # or any new substitutions added in the future.
 options:
   substitutionOption: ALLOW_LOOSE
-  machineType: 'N1_HIGHCPU_8'
+  machineType: E2_HIGHCPU_32
 
 steps:
   - name: 'ghcr.io/sigstore/cosign/cosign:v2.5.3-dev@sha256:fe84ab87222b60d2d87f5efcb8ef3cfd895897c088fbeb973280689c81aedff1'
