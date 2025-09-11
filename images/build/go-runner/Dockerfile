@@ -12,49 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Build the manager binary
-ARG DISTROLESS_IMAGE
+# Build args that need to be available for FROM statements
+ARG GO_VERSION
 ARG BUILDER_IMAGE
+ARG DISTROLESS_IMAGE
+
+# Get Go from official Alpine image
+FROM golang:${GO_VERSION}-alpine as go-source
+
+# Build the manager binary
 FROM ${BUILDER_IMAGE} as builder
 WORKDIR /workspace
 
-# Install dependencies for building Go from source
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    git \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-
-# Download and build Go from source
-ARG GO_VERSION
-
-ARG TARGETARCH
-RUN echo "Determining bootstrap Go version for ${GO_VERSION}" && \
-    BOOTSTRAP_GO_VERSION=$(curl -fsSL "https://raw.githubusercontent.com/golang/go/go${GO_VERSION}/src/make.bash" | grep "^bootgo=" | cut -d= -f2) && \
-    echo "Installing bootstrap Go version: ${BOOTSTRAP_GO_VERSION} (${TARGETARCH})" && \
-    GO_ARCH="${TARGETARCH}"; \
-    if [ "${TARGETARCH}" = "arm" ]; then GO_ARCH="armv6l"; fi && \
-    curl -fsSL "https://go.dev/dl/go${BOOTSTRAP_GO_VERSION}.linux-${GO_ARCH}.tar.gz" -o /tmp/go-bootstrap.tar.gz && \
-    tar -xzf /tmp/go-bootstrap.tar.gz -C /usr/local && \
-    mv /usr/local/go /usr/local/go-bootstrap && \
-    rm /tmp/go-bootstrap.tar.gz
-
-# Download Go source
-RUN echo "Downloading Go source version: ${GO_VERSION}" && \
-    curl -fsSL "https://go.dev/dl/go${GO_VERSION}.src.tar.gz" -o /tmp/go.src.tar.gz && \
-    tar -xzf /tmp/go.src.tar.gz -C /usr/local && \
-    rm /tmp/go.src.tar.gz
-
-# Build Go from source with bootstrap
-WORKDIR /usr/local/go/src
-ENV GOROOT_BOOTSTRAP=/usr/local/go-bootstrap
-RUN ./make.bash
+# Copy Go installation from official image
+COPY --from=go-source /usr/local/go /usr/local/go
 
 # Set up Go environment
 ENV PATH=/usr/local/go/bin:$PATH
 ENV GOROOT=/usr/local/go
-ENV GOPATH=/workspace/gopath
 
 # Copy the sources
 WORKDIR /workspace
@@ -90,6 +65,5 @@ FROM ${DISTROLESS_IMAGE}
 LABEL maintainers="Kubernetes Authors"
 LABEL description="go based runner for distroless scenarios"
 WORKDIR /
-COPY --from=builder /usr/local/go /usr/local/go
 COPY --from=builder /workspace/go-runner .
 ENTRYPOINT ["/go-runner"]
