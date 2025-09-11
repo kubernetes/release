@@ -1,7 +1,7 @@
 variants:
   go1.25-bookworm:
     CONFIG: 'go1.25-bookworm'
-    GO_VERSION: '1.25rc2'
+    GO_VERSION: '1.25.0'
     OS_CODENAME: 'bookworm'
     REVISION: '0'
   go1.24-bookworm:
