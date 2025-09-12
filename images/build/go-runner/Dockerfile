@@ -12,13 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Build the manager binary
-ARG DISTROLESS_IMAGE
+# Build args that need to be available for FROM statements
+ARG GO_VERSION
 ARG BUILDER_IMAGE
+ARG DISTROLESS_IMAGE
+
+# Get Go from official Alpine image
+FROM golang:${GO_VERSION}-alpine as go-source
+
+# Build the manager binary
 FROM ${BUILDER_IMAGE} as builder
 WORKDIR /workspace
 
+# Copy Go installation from official image
+COPY --from=go-source /usr/local/go /usr/local/go
+
+# Set up Go environment
+ENV PATH=/usr/local/go/bin:$PATH
+ENV GOROOT=/usr/local/go
+
 # Copy the sources
+WORKDIR /workspace
 COPY ./go-runner.go ./
 COPY ./go.* ./
 
@@ -38,11 +52,8 @@ ENV GOPROXY="https://proxy.golang.org|direct"
 
 # Build
 ARG package=.
-ARG ARCH
 
 ENV CGO_ENABLED=0
-ENV GOOS=linux
-ENV GOARCH=${ARCH}
 
 RUN go env
 
