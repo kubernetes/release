@@ -243,20 +243,6 @@ func addGenerateFlags(subcommand *cobra.Command) {
 		[]string{},
 		"specify a location to recursively look for release notes *.y[a]ml file mappings",
 	)
-	subcommand.PersistentFlags().BoolVar(
-		&opts.ListReleaseNotesV2,
-		"list-v2",
-		false,
-		"enable experimental implementation to list commits (ListReleaseNotesV2)",
-	)
-
-	subcommand.PersistentFlags().StringSliceVarP(
-		&opts.IncludeLabels,
-		"include-labels",
-		"l",
-		[]string{},
-		"Only PRs with one of these labels are considered. Set to empty to include all PRs",
-	)
 }
 
 // addGenerate adds the generate subcomand to the main release notes cobra cmd.

@@ -245,10 +245,12 @@ func init() {
 	releaseNotesCmd.PersistentFlags().StringSliceVarP(
 		&releaseNotesOpts.includeLabels,
 		"include-labels",
-		"l",
+		"",
 		[]string{},
 		"only PRs with one of these labels are considered. Set to empty to include all PRs",
 	)
+
+	_ = releaseNotesCmd.PersistentFlags().MarkDeprecated("create-website-pr", "This flag is deprecated and will be removed in a future release. Use --create-draft-pr instead.")
 
 	rootCmd.AddCommand(releaseNotesCmd)
 }
