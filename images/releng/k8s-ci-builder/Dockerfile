@@ -29,6 +29,9 @@ COPY --from=go-source /usr/local/go /go
 # Set up Go environment
 ENV PATH=/go/bin:$PATH
 ENV GOROOT=/go
+ENV GOLANG_VERSION=${GO_VERSION_TOOLING}
+ENV GOTOOLCHAIN=local
+ENV GOPATH=/go
 
 WORKDIR /go/src/k8s.io/release
 

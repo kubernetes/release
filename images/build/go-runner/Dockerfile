@@ -29,6 +29,9 @@ COPY --from=go-source /usr/local/go /usr/local/go
 # Set up Go environment
 ENV PATH=/usr/local/go/bin:$PATH
 ENV GOROOT=/usr/local/go
+ENV GOLANG_VERSION=${GO_VERSION}
+ENV GOTOOLCHAIN=local
+ENV GOPATH=/usr/local/go
 
 # Copy the sources
 COPY ./go-runner.go ./

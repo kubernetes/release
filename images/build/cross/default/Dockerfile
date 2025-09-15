@@ -45,6 +45,10 @@ ENV KUBE_CROSSPLATFORMS \
 COPY --from=go-source /usr/local/go /usr/local/go
 ENV PATH=/usr/local/go/bin:$PATH
 ENV GOROOT=/usr/local/go
+ENV GOLANG_VERSION=${GO_VERSION}
+ENV GOTOOLCHAIN=local
+ENV GOPATH=/usr/local/go
+
 # Pre-compile the standard go library when cross-compiling. This is much easier now when we have go1.5+
 RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
     && if [ ${targetArch} = "amd64" ]; then \

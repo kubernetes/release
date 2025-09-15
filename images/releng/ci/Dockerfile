@@ -26,6 +26,9 @@ COPY --from=go-source /usr/local/go /usr/local/go
 # Set up Go environment
 ENV PATH=/usr/local/go/bin:$PATH
 ENV GOROOT=/usr/local/go
+ENV GOLANG_VERSION=${GO_VERSION}
+ENV GOTOOLCHAIN=local
+ENV GOPATH=/usr/local/go
 
 # Install required packages for adding Google Cloud SDK repository
 RUN apt-get update && \
