@@ -35,7 +35,7 @@ REVISION ?= 0
 TYPE ?= default
 
 # Build args
-BASEIMAGE ?= golang:$(GO_VERSION)-$(OS_CODENAME)
+BASEIMAGE ?= debian:$(OS_CODENAME)-slim
 PROTOBUF_VERSION ?= 3.19.4
 
 IMAGE = $(REGISTRY)/$(IMGNAME)
@@ -83,6 +83,8 @@ container: check-env init-docker-buildx
 			--tag $(IMAGE)-$${platform##*/}:latest-$(CONFIG)-$(TYPE) \
 			--build-arg=BASEIMAGE=$(BASEIMAGE) \
 			--build-arg=PROTOBUF_VERSION=$(PROTOBUF_VERSION) \
+			--build-arg=TARGETPLATFORM=$${platform} \
+			--build-arg=GO_VERSION=$(GO_VERSION) \
 			--file $(TYPE)/Dockerfile \
 			.; \
 	done
