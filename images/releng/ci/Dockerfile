@@ -37,8 +37,10 @@ RUN apt-get update && \
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | \
     tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
 
-RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
-    apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+# Use gpg instead of apt-key (apt-key is deprecated and not present)
+RUN install -m 0755 -d /usr/share/keyrings && \
+    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+    gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
 
 RUN apt-get update && \
     apt-get install -y \
@@ -52,8 +54,8 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # install goreleaser
-ARG GORELEASER_VERSION=v2.0.1
-ARG GORELEASER_SHA=48cea4e770468c85d3ee11e6c2fb7b59af9f28080781d47c48c59ba95b2eb86b
+ARG GORELEASER_VERSION=v2.12.2
+ARG GORELEASER_SHA=b7c923e1ff208a5aa4c800ee0331d9fdc8d3ea434f1126e43088676b34d5717b
 RUN  \
     GORELEASER_DOWNLOAD_FILE=goreleaser_Linux_x86_64.tar.gz && \
     GORELEASER_DOWNLOAD_URL=https://github.com/goreleaser/goreleaser/releases/download/${GORELEASER_VERSION}/${GORELEASER_DOWNLOAD_FILE} && \
@@ -64,8 +66,8 @@ RUN  \
     goreleaser -v
 
 # install ko
-ARG KO_VERSION=v0.15.4
-ARG KO_SHA=511c88351d061cd510900376ae4731dfd916ca39c1cc7de5fc6f2b5cbde2007c
+ARG KO_VERSION=v0.18.0
+ARG KO_SHA=ce8c8776b243357e0a822c279b06c34302460221e834765dee5f4e9e2c0b7b38
 RUN  \
     KO_DOWNLOAD_FILE=ko_${KO_VERSION#v}_Linux_x86_64.tar.gz && \
     KO_DOWNLOAD_URL=https://github.com/ko-build/ko/releases/download/${KO_VERSION}/${KO_DOWNLOAD_FILE} && \
