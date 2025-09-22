@@ -102,18 +102,22 @@ func TestListCommits(t *testing.T) {
 			}},
 			getCommitArgValidator: func(t *testing.T, callCount int, ctx context.Context, org, repo, rev string) {
 				checkOrgRepo(t, org, repo)
+
 				if a, e := rev, "the-start"; callCount == 0 && a != e {
 					t.Errorf("Expected to be called with revision '%s' on first call, got: '%s'", e, a)
 				}
+
 				if a, e := rev, "the-end"; callCount == 1 && a != e {
 					t.Errorf("Expected to be called with revision '%s' on second call, got: '%s'", e, a)
 				}
 			},
 			listCommitsArgValidator: func(t *testing.T, callCount int, ctx context.Context, org, repo string, clo *github.CommitsListOptions) {
 				checkOrgRepo(t, org, repo)
+
 				if page, minimum, maximum := clo.Page, 1, 100; page < minimum || page > maximum {
 					t.Errorf("Expected page number to be between %d and %d, got: %d", minimum, maximum, page)
 				}
+
 				if a, e := clo.SHA, "the-branch"; a != e {
 					t.Errorf("Expected SHA to be the branch '%s', got: '%s'", e, a)
 				}
@@ -288,6 +292,7 @@ func TestGatherNotes(t *testing.T) {
 			listPullRequestsWithCommitStubber: func(t *testing.T) listPullRequestsWithCommitStub {
 				return func(_ context.Context, org, repo, sha string, _ *github.ListOptions) ([]*github.PullRequest, *github.Response, error) {
 					checkOrgRepo(t, org, repo)
+
 					if e, a := "some-random-sha", sha; e != a {
 						t.Errorf("Expected ListPullRequestsWithCommit(...) to be called for SHA '%s', have been called for '%s'", e, a)
 					}
@@ -312,6 +317,7 @@ func TestGatherNotes(t *testing.T) {
 
 				return func(_ context.Context, org, repo string, prID int) (*github.PullRequest, *github.Response, error) {
 					checkOrgRepo(t, org, repo)
+
 					if err := seenPRs.Mark(prID); err != nil {
 						t.Errorf("In GetPullRequest: %v", err)
 					}
@@ -357,6 +363,7 @@ func TestGatherNotes(t *testing.T) {
 
 				return func(_ context.Context, org, repo string, prID int) (*github.PullRequest, *github.Response, error) {
 					checkOrgRepo(t, org, repo)
+
 					if err := seenPRs.Mark(prID); err != nil {
 						t.Errorf("In GetPullRequest: %v", err)
 					}
@@ -369,6 +376,7 @@ func TestGatherNotes(t *testing.T) {
 					num    int
 					author string
 				}
+
 				expectMap := map[string]pr{
 					"123": {
 						num:    123,
@@ -385,9 +393,11 @@ func TestGatherNotes(t *testing.T) {
 					if !found {
 						t.Errorf("Unexpected SHA %s", *result.commit.SHA)
 					}
+
 					if expected.num != *result.pullRequest.Number {
 						t.Errorf("Expecting %d got %d for SHA %s", expected.num, *result.pullRequest.Number, *result.commit.SHA)
 					}
+
 					if expected.author != *result.pullRequest.User.Login {
 						t.Errorf("Expecting %s got %s for SHA %s", expected.author, *result.pullRequest.User.Login, *result.commit.SHA)
 					}
@@ -441,6 +451,7 @@ func TestGatherNotes(t *testing.T) {
 					{pullRequest(14, "```release-note ```", "closed")},
 					{pullRequest(15, "```release-note\n\n```", "open")},
 				}
+
 				var callCount int64 = -1
 
 				return func(_ context.Context, _, _, _ string, _ *github.ListOptions) ([]*github.PullRequest, *github.Response, error) {

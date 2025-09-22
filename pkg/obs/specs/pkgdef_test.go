@@ -67,6 +67,7 @@ func TestConstructPackageDefinition(t *testing.T) {
 			},
 			prepare: func(mock *specsfakes.FakeImpl) {
 				mock.TrimTagPrefixReturns("not-parsable")
+
 				version, _ := semver.New("0.0.0")
 				mock.TagStringToSemverReturns(*version, err)
 			},
