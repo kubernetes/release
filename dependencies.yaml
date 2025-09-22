@@ -70,7 +70,7 @@ dependencies:
   #     match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
 
   - name: "golang: 1.<major> (github workflows)"
-    version: 1.24
+    version: 1.25
     refPaths:
       - path: .github/workflows/release.yml
         match: "go-version: '\\d+.\\d+'"
