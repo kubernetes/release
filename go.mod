@@ -39,12 +39,12 @@ require (
 	google.golang.org/api v0.246.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apimachinery v0.34.1
-	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
+	k8s.io/utils v0.0.0-20250820121507-0af2bda4dd1d
 	sigs.k8s.io/bom v0.6.1-0.20250809182942-3af5abaeaa9e
 	sigs.k8s.io/mdtoc v1.4.0
 	sigs.k8s.io/promo-tools/v4 v4.0.6-0.20250812112707-5ea87f85afbd
 	sigs.k8s.io/release-sdk v0.12.4
-	sigs.k8s.io/release-utils v0.12.1
+	sigs.k8s.io/release-utils v0.12.2
 	sigs.k8s.io/yaml v1.6.0
 )
 
@@ -215,7 +215,7 @@ require (
 	github.com/oleiade/reflections v1.1.0 // indirect
 	github.com/olekukonko/errors v1.1.0 // indirect
 	github.com/olekukonko/ll v0.0.9 // indirect
-	github.com/olekukonko/tablewriter v1.0.9 // indirect
+	github.com/olekukonko/tablewriter v1.1.0 // indirect
 	github.com/open-policy-agent/opa v1.4.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
