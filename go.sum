@@ -1388,8 +1388,8 @@ modernc.org/sqlite v1.28.0/go.mod h1:Qxpazz0zH8Z1xCFyi5GSL3FzbtZ3fvbjmywNogldEW0
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
 rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
-sigs.k8s.io/bom v0.7.0 h1:AJADhJ+LhxAjVgIkXWy1Pa9FFCwlRm7vgDsNnOe9wjw=
-sigs.k8s.io/bom v0.7.0/go.mod h1:ZZGiedgfeh2Nl/dk/gtbzFd63B3jyK1nxrue8c3fgJI=
+sigs.k8s.io/bom v0.7.1 h1:CYPI0m/7wNXTaPI+TwCBumKAjWBJ3rob1SWGPbcq/ow=
+sigs.k8s.io/bom v0.7.1/go.mod h1:ZZGiedgfeh2Nl/dk/gtbzFd63B3jyK1nxrue8c3fgJI=
 sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 h1:gBQPwqORJ8d8/YNZWEjoZs7npUVDpVXUUOFfW6CgAqE=
 sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8/go.mod h1:mdzfpAEoE6DHQEN0uh9ZbOCuHbLK5wOm7dK4ctXE9Tg=
 sigs.k8s.io/mdtoc v1.4.0 h1:2pDEwJSjoVrGr5BPkG+LoLkYLKvgtGYurrBY8ul3SxQ=
