@@ -18,9 +18,9 @@ REGISTRY?="gcr.io/k8s-staging-build-image"
 IMAGE=$(REGISTRY)/setcap
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= bookworm-v1.0.4
+IMAGE_VERSION ?= bookworm-v1.0.6
 CONFIG ?= bookworm
-DEBIAN_BASE_VERSION ?= bookworm-v1.0.4
+DEBIAN_BASE_VERSION ?= bookworm-v1.0.6
 
 ARCH?=amd64
 ALL_ARCH = amd64 arm arm64 ppc64le s390x
