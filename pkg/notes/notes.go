@@ -24,10 +24,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"maps"
 	"math/big"
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -517,7 +519,7 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result) (*ReleaseNote, error) {
 	author := pr.GetUser().GetLogin()
 	authorURL := pr.GetUser().GetHTMLURL()
 	prURL := pr.GetHTMLURL()
-	isFeature := hasString(labelsWithPrefix(pr, "kind"), "feature")
+	isFeature := slices.Contains(labelsWithPrefix(pr, "kind"), "feature")
 	sigLabels := labelsWithPrefix(pr, "sig")
 	noteSuffix := prettifySIGList(sigLabels)
 
@@ -1058,16 +1060,6 @@ func unlist(note string) string {
 	return res.String()
 }
 
-func hasString(a []string, x string) bool {
-	for _, n := range a {
-		if x == n {
-			return true
-		}
-	}
-
-	return false
-}
-
 // canWaitAndRetry retruen true if the gatherer hit the GitHub API secondary rate limit.
 func canWaitAndRetry(r *gogithub.Response, err error) bool {
 	// If we hit the secondary rate limit...
@@ -1349,9 +1341,7 @@ func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap, markdownLinks bool) er
 		rn.DataFields = make(map[string]ReleaseNotesDataField)
 	}
 
-	for key, df := range noteMap.DataFields {
-		rn.DataFields[key] = df
-	}
+	maps.Copy(rn.DataFields, noteMap.DataFields)
 
 	// If parts of the markup where modified, change them
 	// TODO: Spin this to sep function

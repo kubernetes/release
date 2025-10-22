@@ -121,7 +121,7 @@ func runTestGridShot(opts *TestGridOptions) error {
 			return fmt.Errorf("unable to retrieve release announcement form url: %s: %w", testGridDashboard, err)
 		}
 
-		var result map[string]interface{}
+		var result map[string]any
 
 		err = json.Unmarshal(content, &result)
 		if err != nil {

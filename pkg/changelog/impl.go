@@ -83,7 +83,7 @@ type impl interface {
 	) error
 	ParseHTMLTemplate(text string) (*template.Template, error)
 	TemplateExecute(
-		tpl *template.Template, wr io.Writer, data interface{},
+		tpl *template.Template, wr io.Writer, data any,
 	) error
 	Abs(path string) (string, error)
 
@@ -198,7 +198,7 @@ func (*defaultImpl) ParseHTMLTemplate(text string) (*template.Template, error) {
 }
 
 func (*defaultImpl) TemplateExecute(
-	tpl *template.Template, wr io.Writer, data interface{},
+	tpl *template.Template, wr io.Writer, data any,
 ) error {
 	return tpl.Execute(wr, data)
 }

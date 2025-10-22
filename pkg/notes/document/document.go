@@ -430,8 +430,8 @@ func (d *Document) template(templateSpec string) (string, error) {
 	templatePathOrOnline := strings.TrimPrefix(templateSpec, options.GoTemplatePrefix)
 
 	// Check for inline template
-	if strings.HasPrefix(templatePathOrOnline, options.GoTemplatePrefixInline) {
-		return strings.TrimPrefix(templatePathOrOnline, options.GoTemplatePrefixInline), nil
+	if after, ok := strings.CutPrefix(templatePathOrOnline, options.GoTemplatePrefixInline); ok {
+		return after, nil
 	}
 
 	// Assume file-based template

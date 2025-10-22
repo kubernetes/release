@@ -192,8 +192,8 @@ func getAssetsFromStrings(assetStrings []string) ([]sbom.Asset, error) {
 	for _, s := range assetStrings {
 		isBucket = false
 
-		if strings.HasPrefix(s, "gs:") {
-			s = strings.TrimPrefix(s, "gs:")
+		if after, ok := strings.CutPrefix(s, "gs:"); ok {
+			s = after
 			isBucket = true
 		}
 

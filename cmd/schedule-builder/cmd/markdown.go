@@ -21,6 +21,7 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"text/template" // NOLINT // Mark text/template as not to be checked for producing yaml.
 	"time"
@@ -156,7 +157,7 @@ func removeDotfromVersion(a string) string {
 
 // process applies the data structure 'vars' onto an already
 // parsed template 't', and returns the resulting string.
-func process(t *template.Template, vars interface{}) string {
+func process(t *template.Template, vars any) string {
 	var tmplBytes bytes.Buffer
 
 	err := t.Execute(&tmplBytes, vars)
@@ -167,7 +168,7 @@ func process(t *template.Template, vars interface{}) string {
 	return tmplBytes.String()
 }
 
-func processFile(fileName string, vars interface{}) string {
+func processFile(fileName string, vars any) string {
 	tmpl, err := template.ParseFS(tpls, fileName)
 	if err != nil {
 		panic(err)
@@ -306,12 +307,8 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 	for i, sched := range schedule.Schedules {
 		appendItem := true
 
-		for _, k := range removeSchedules {
-			if i == k {
-				appendItem = false
-
-				break
-			}
+		if slices.Contains(removeSchedules, i) {
+			appendItem = false
 		}
 
 		if appendItem {

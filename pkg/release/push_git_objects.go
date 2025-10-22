@@ -19,6 +19,7 @@ package release
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/blang/semver/v4"
@@ -157,15 +158,7 @@ func (gp *GitObjectPusher) PushTag(newTag string) (err error) {
 	}
 
 	// verify that the tag exists locally before trying to push
-	tagExists := false
-
-	for _, tag := range currentTags {
-		if tag == newTag {
-			tagExists = true
-
-			break
-		}
-	}
+	tagExists := slices.Contains(currentTags, newTag)
 
 	if !tagExists {
 		return fmt.Errorf("unable to push tag %s, it does not exist in the repo yet", newTag)

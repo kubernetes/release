@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -176,7 +177,7 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 	author := pr.GetUser().GetLogin()
 	authorURL := pr.GetUser().GetHTMLURL()
 	prURL := pr.GetHTMLURL()
-	isFeature := hasString(labelsWithPrefix(pr, "kind"), "feature")
+	isFeature := slices.Contains(labelsWithPrefix(pr, "kind"), "feature")
 	sigLabels := labelsWithPrefix(pr, "sig")
 	noteSuffix := prettifySIGList(sigLabels)
 

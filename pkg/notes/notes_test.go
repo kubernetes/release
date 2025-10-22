@@ -440,7 +440,7 @@ func testApplyMapHelper(t *testing.T, testDir string, makeNewNote func() *Releas
 		require.True(t, ok, "found map test without testcase")
 
 		// Read the property this test case checks
-		property, ok := testcase.(map[interface{}]interface{})["property"].(string)
+		property, ok := testcase.(map[any]any)["property"].(string)
 		require.True(t, ok)
 		require.NotEmpty(t, property)
 		require.NotEmpty(t, property, "testcase found without property")
@@ -451,10 +451,10 @@ func testApplyMapHelper(t *testing.T, testDir string, makeNewNote func() *Releas
 		originalVal := reflect.Indirect(reflectedOriginalNote).FieldByName(property)
 
 		// Factor the test name
-		testName, ok := testcase.(map[interface{}]interface{})["name"].(string)
+		testName, ok := testcase.(map[any]any)["name"].(string)
 		require.True(t, ok)
 
-		switch expectedValue := testcase.(map[interface{}]interface{})["expected"].(type) {
+		switch expectedValue := testcase.(map[any]any)["expected"].(type) {
 		case bool:
 			actualVal := reflect.Indirect(reflectedNote).FieldByName(property).Bool()
 			require.Equalf(t, expectedValue, actualVal, "Failed %s", testName)
@@ -464,7 +464,7 @@ func testApplyMapHelper(t *testing.T, testDir string, makeNewNote func() *Releas
 			actualVal := reflect.Indirect(reflectedNote).FieldByName(property).String()
 			require.Equalf(t, expectedValue, actualVal, "Failed %s", testName)
 			require.NotEqualf(t, expectedValue, originalVal.String(), "Failed %s", testName)
-		case []interface{}:
+		case []any:
 			// Handle string slice cases
 			actualVal := reflect.Indirect(reflectedNote).FieldByName(property)
 			actualSlice := make([]string, 0)

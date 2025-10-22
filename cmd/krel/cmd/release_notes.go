@@ -1312,7 +1312,7 @@ func fixReleaseNotes(workDir string, releaseNotes *notes.ReleaseNotes) error {
 }
 
 // Check two values and print a prefix if they are different.
-func pointIfChanged(label string, var1, var2 interface{}) string {
+func pointIfChanged(label string, var1, var2 any) string {
 	changed := false
 	// Check if alues are string
 	var1String, ok1 := var1.(string)
