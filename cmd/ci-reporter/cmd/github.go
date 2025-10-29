@@ -220,7 +220,7 @@ func GetGithubReportData(ctx context.Context, cfg Config, denyListFieldFilter, a
 	// lookup project board information
 	var queryCiSignalProjectBoard ciSignalProjectBoardGraphQLQuery
 
-	variablesProjectBoardFields := map[string]interface{}{
+	variablesProjectBoardFields := map[string]any{
 		"projectBoardID": githubv4.ID(ciSignalProjectBoardID),
 	}
 	if err := cfg.GithubClient.Query(ctx, &queryCiSignalProjectBoard, variablesProjectBoardFields); err != nil {

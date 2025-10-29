@@ -127,7 +127,7 @@ type ReleaseNotesMap struct {
 }
 
 // ReleaseNotesDataField extra data added to a release note.
-type ReleaseNotesDataField interface{}
+type ReleaseNotesDataField any
 
 // DirectoryMapProvider is a provider that gets maps from a directory.
 type DirectoryMapProvider struct {

@@ -16,7 +16,11 @@ limitations under the License.
 
 package consts
 
-import "github.com/sirupsen/logrus"
+import (
+	"slices"
+
+	"github.com/sirupsen/logrus"
+)
 
 const (
 	PackageCRITools      string = "cri-tools"
@@ -72,15 +76,7 @@ func IsSupported(field string, input, expected []string) bool {
 	notSupported := []string{}
 
 	for _, i := range input {
-		supported := false
-
-		for _, j := range expected {
-			if i == j {
-				supported = true
-
-				break
-			}
-		}
+		supported := slices.Contains(expected, i)
 
 		if !supported {
 			notSupported = append(notSupported, i)

@@ -169,7 +169,7 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 
 		gcsClient := object.NewGCS()
 
-		for _, file := range strings.Fields(output) {
+		for file := range strings.FieldsSeq(output) {
 			if strings.HasSuffix(file, ".sha256") || strings.HasSuffix(file, ".sha512") ||
 				strings.HasSuffix(file, ":") || strings.HasSuffix(file, ".docker_tag") ||
 				strings.Contains(file, "SHA256SUMS") || strings.Contains(file, "SHA512SUMS") ||

@@ -19,6 +19,7 @@ package build
 import (
 	"errors"
 	"fmt"
+	maps0 "maps"
 	"os"
 	"path"
 	"path/filepath"
@@ -384,9 +385,7 @@ func mergeMaps(maps ...map[string]string) map[string]string {
 	out := map[string]string{}
 
 	for _, m := range maps {
-		for k, v := range m {
-			out[k] = v
-		}
+		maps0.Copy(out, m)
 	}
 
 	return out

@@ -38,7 +38,7 @@ type SummaryLookup struct {
 // This function implements a concurrency pattern to send http requests concurrently.
 func ReqTestgridDashboardSummaries(ctx context.Context, dashboardNames []DashboardName) (DashboardData, error) {
 	// Worker
-	requestData := func(done <-chan interface{}, dashboardNames ...DashboardName) <-chan SummaryLookup {
+	requestData := func(done <-chan any, dashboardNames ...DashboardName) <-chan SummaryLookup {
 		summaryLookups := make(chan SummaryLookup)
 
 		go func() {
@@ -61,7 +61,7 @@ func ReqTestgridDashboardSummaries(ctx context.Context, dashboardNames []Dashboa
 		return summaryLookups
 	}
 
-	done := make(chan interface{})
+	done := make(chan any)
 	defer close(done)
 
 	dashboardData := DashboardData{}
@@ -196,17 +196,17 @@ func (j *JobSummary) GetJobURL(jobName JobName) string {
 
 // Test contains information about tests if the status if the Job is failing.
 type Test struct {
-	DisplayName    string        `json:"display_name"`
-	TestName       string        `json:"test_name"`
-	FailCount      int64         `json:"fail_count"`
-	FailTimestamp  int64         `json:"fail_timestamp"`
-	PassTimestamp  int64         `json:"pass_timestamp"`
-	BuildLink      string        `json:"build_link"`
-	BuildURLText   string        `json:"build_url_text"`
-	BuildLinkText  string        `json:"build_link_text"`
-	FailureMessage string        `json:"failure_message"`
-	LinkedBugs     []interface{} `json:"linked_bugs"`
-	FailTestLink   string        `json:"fail_test_link"`
+	DisplayName    string `json:"display_name"`
+	TestName       string `json:"test_name"`
+	FailCount      int64  `json:"fail_count"`
+	FailTimestamp  int64  `json:"fail_timestamp"`
+	PassTimestamp  int64  `json:"pass_timestamp"`
+	BuildLink      string `json:"build_link"`
+	BuildURLText   string `json:"build_url_text"`
+	BuildLinkText  string `json:"build_link_text"`
+	FailureMessage string `json:"failure_message"`
+	LinkedBugs     []any  `json:"linked_bugs"`
+	FailTestLink   string `json:"fail_test_link"`
 }
 
 // DashboardName type for the testgrid dashboard (like sig-release-master-blocking).

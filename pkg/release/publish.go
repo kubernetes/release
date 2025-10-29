@@ -69,8 +69,8 @@ type publisherClient interface {
 	TempDir(dir, pattern string) (name string, err error)
 	CopyToLocal(remote, local string) error
 	ReadFile(filename string) ([]byte, error)
-	Unmarshal(data []byte, v interface{}) error
-	Marshal(v interface{}) ([]byte, error)
+	Unmarshal(data []byte, v any) error
+	Marshal(v any) ([]byte, error)
 	TempFile(dir, pattern string) (f *os.File, err error)
 	CopyToRemote(local, remote string) error
 }
@@ -133,11 +133,11 @@ func (*defaultPublisher) ReadFile(filename string) ([]byte, error) {
 	return os.ReadFile(filename)
 }
 
-func (*defaultPublisher) Unmarshal(data []byte, v interface{}) error {
+func (*defaultPublisher) Unmarshal(data []byte, v any) error {
 	return json.Unmarshal(data, v)
 }
 
-func (*defaultPublisher) Marshal(v interface{}) ([]byte, error) {
+func (*defaultPublisher) Marshal(v any) ([]byte, error) {
 	return json.Marshal(v)
 }
 
@@ -421,8 +421,8 @@ func (p *Publisher) PublishToGcs(
 
 func FixPublicReleaseNotesURL(gcsPath string) string {
 	const prefix = "gs://" + ProductionBucket
-	if strings.HasPrefix(gcsPath, prefix) {
-		gcsPath = ProductionBucketURL + strings.TrimPrefix(gcsPath, prefix)
+	if after, ok := strings.CutPrefix(gcsPath, prefix); ok {
+		gcsPath = ProductionBucketURL + after
 	}
 
 	return gcsPath
