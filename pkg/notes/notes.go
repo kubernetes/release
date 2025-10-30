@@ -37,7 +37,7 @@ import (
 	"time"
 	"unicode"
 
-	gogithub "github.com/google/go-github/v72/github"
+	gogithub "github.com/google/go-github/v75/github"
 	"github.com/nozzle/throttler"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/sirupsen/logrus"

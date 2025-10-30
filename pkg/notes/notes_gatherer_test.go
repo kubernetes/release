@@ -28,7 +28,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/google/go-github/v72/github"
+	"github.com/google/go-github/v75/github"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-sdk/git"
