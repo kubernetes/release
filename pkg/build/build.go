@@ -22,8 +22,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-sdk/object"
-
-	"k8s.io/release/pkg/release"
 )
 
 var DefaultExtraVersionMarkers = []string{}
@@ -150,13 +148,6 @@ func (bi *Instance) getGCSBuildPath(version string) (string, error) {
 
 func (bi *Instance) setBucket() {
 	bucket := bi.opts.Bucket
-
-	if bi.opts.Bucket == "" {
-		if bi.opts.CI {
-			// TODO: Remove this once all CI and release jobs run on K8s Infra
-			bucket = release.CIBucketLegacy
-		}
-	}
 
 	bi.opts.Bucket = bucket
 

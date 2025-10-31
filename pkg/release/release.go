@@ -91,9 +91,6 @@ const (
 	// WindowsLocalPath is the directory where Windows GCE scripts are created.
 	WindowsLocalPath = ReleaseStagePath + "/full/kubernetes/cluster/gce/windows"
 
-	// CIBucketLegacy is the default bucket for Kubernetes CI releases.
-	CIBucketLegacy = "kubernetes-release-dev"
-
 	// CIBucketK8sInfra is the community infra bucket for Kubernetes CI releases.
 	CIBucketK8sInfra = "k8s-release-dev"
 
