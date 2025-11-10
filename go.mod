@@ -33,7 +33,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/tj/go-spin v1.1.0
 	github.com/yuin/goldmark v1.7.13
-	go.yaml.in/yaml/v4 v4.0.0-rc.2
+	go.yaml.in/yaml/v4 v4.0.0-rc.3
 	golang.org/x/net v0.46.0
 	golang.org/x/oauth2 v0.33.0
 	golang.org/x/text v0.30.0
