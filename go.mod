@@ -34,7 +34,6 @@ require (
 	github.com/tj/go-spin v1.1.0
 	github.com/yuin/goldmark v1.7.13
 	go.yaml.in/yaml/v4 v4.0.0-rc.3
-	golang.org/x/net v0.47.0
 	golang.org/x/oauth2 v0.33.0
 	golang.org/x/text v0.31.0
 	google.golang.org/api v0.248.0
@@ -305,6 +304,7 @@ require (
 	golang.org/x/crypto v0.44.0 // indirect
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
 	golang.org/x/mod v0.29.0 // indirect
+	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/term v0.37.0 // indirect
