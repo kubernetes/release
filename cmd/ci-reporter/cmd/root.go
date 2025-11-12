@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,7 +28,6 @@ import (
 	"github.com/shurcooL/githubv4"
 	"github.com/spf13/cobra"
 	"github.com/tj/go-spin"
-	"golang.org/x/net/context"
 
 	"sigs.k8s.io/release-utils/helpers"
 )

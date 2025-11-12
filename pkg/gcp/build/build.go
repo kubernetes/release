@@ -17,6 +17,7 @@ limitations under the License.
 package build
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	maps0 "maps"
@@ -30,7 +31,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
 	"google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/option"
 
