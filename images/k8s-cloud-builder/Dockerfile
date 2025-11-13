@@ -81,6 +81,8 @@ ENV PATH="${GOOGLE_DIR}/google-cloud-sdk/bin:${PATH}"
 
 # Install docker cli
 # https://docs.docker.com/install/linux/docker-ce/debian/
+# Pin to version 24.0.x for API version 1.43 compatibility with DinD in CI
+# See: https://github.com/kubernetes/release/issues/4180
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
     && apt-key fingerprint 0EBFCD88 \
     && add-apt-repository \
@@ -89,7 +91,7 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
       stable" \
     && apt-get -y update \
     && apt-get -qqy install \
-        docker-ce-cli
+        docker-ce-cli=5:24.0.*
 
 # Cleanup a bit
 RUN apt-get -qqy remove \
