@@ -103,7 +103,7 @@ RUN echo "Installing Packages ..." \
         && rm -rf /var/lib/apt/lists/* \
     && echo "Installing Go ..." \
         && export GO_TARBALL="go${GO_VERSION}.linux-amd64.tar.gz"\
-        && curl -fsSL "https://storage.googleapis.com/golang/${GO_TARBALL}" --output "${GO_TARBALL}" \
+        && curl -fsSL "https://dl.google.com/go/${GO_TARBALL}" --output "${GO_TARBALL}" \
         && tar xzf "${GO_TARBALL}" -C /usr/local \
         && rm "${GO_TARBALL}"\
         && mkdir -p "${GOPATH}/bin" \
