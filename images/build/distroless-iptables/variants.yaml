@@ -1,16 +1,11 @@
 variants:
   distroless-bookworm-go1.25:
     CONFIG: 'distroless-bookworm'
-    IMAGE_VERSION: 'v0.8.5'
+    IMAGE_VERSION: 'v0.8.6'
     BASEIMAGE: 'debian:bookworm-slim'
-    GORUNNER_VERSION: 'v2.4.0-go1.25.4-bookworm.0'
+    GORUNNER_VERSION: 'v2.4.0-go1.25.5-bookworm.0'
   distroless-bookworm-go1.24:
     CONFIG: 'distroless-bookworm'
-    IMAGE_VERSION: 'v0.7.12'
+    IMAGE_VERSION: 'v0.7.13'
     BASEIMAGE: 'debian:bookworm-slim'
-    GORUNNER_VERSION: 'v2.4.0-go1.24.10-bookworm.0'
-  distroless-bookworm-go1.23:
-    CONFIG: 'distroless-bookworm'
-    IMAGE_VERSION: 'v0.6.13'
-    BASEIMAGE: 'debian:bookworm-slim'
-    GORUNNER_VERSION: 'v2.4.0-go1.23.12-bookworm.0'
+    GORUNNER_VERSION: 'v2.4.0-go1.24.11-bookworm.0'
