@@ -30,7 +30,7 @@ COPY --from=go-source /usr/local/go /usr/local/go
 ENV PATH=/usr/local/go/bin:$PATH
 ENV GOROOT=/usr/local/go
 ENV GOLANG_VERSION=${GO_VERSION}
-ENV GOTOOLCHAIN=local
+ENV GOTOOLCHAIN=auto
 ENV GOPATH=/usr/local/go
 
 # Copy the sources

@@ -46,7 +46,7 @@ COPY --from=go-source /usr/local/go /usr/local/go
 ENV PATH=/usr/local/go/bin:$PATH
 ENV GOROOT=/usr/local/go
 ENV GOLANG_VERSION=${GO_VERSION}
-ENV GOTOOLCHAIN=local
+ENV GOTOOLCHAIN=auto
 ENV GOPATH=/usr/local/go
 
 # Pre-compile the standard go library when cross-compiling. This is much easier now when we have go1.5+
