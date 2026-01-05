@@ -28,7 +28,6 @@ RUN apt -y update && \
     apt -y install bash curl && \
     mkdir -p "${STAGE_DIR}" && \
     /stage-binaries-from-package.sh "${STAGE_DIR}" conntrack \
-    ebtables    \
     ipset       \
     iptables    \
     kmod        && \
