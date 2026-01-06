@@ -55,6 +55,9 @@ export DOCKER_CLI_EXPERIMENTAL=enabled
 #       not supported in specific architectures
 PLATFORMS ?= linux/amd64 linux/arm64 #linux/arm
 
+KUBE_DYNAMIC_CROSSPLATFORMS ?= "arm64 armhf i386 ppc64el s390x"
+KUBE_CROSSPLATFORMS ?= "linux/386 linux/arm linux/arm64 linux/ppc64le linux/s390x darwin/amd64 windows/amd64 windows/386"
+
 # for legacy images only build linux/amd64
 ifeq ($(TYPE), legacy)
   PLATFORMS = linux/amd64
@@ -85,6 +88,8 @@ container: check-env init-docker-buildx
 			--build-arg=PROTOBUF_VERSION=$(PROTOBUF_VERSION) \
 			--build-arg=TARGETPLATFORM=$${platform} \
 			--build-arg=GO_VERSION=$(GO_VERSION) \
+			--build-arg=KUBE_DYNAMIC_CROSSPLATFORMS=$(KUBE_DYNAMIC_CROSSPLATFORMS) \
+			--build-arg=KUBE_CROSSPLATFORMS=$(KUBE_CROSSPLATFORMS) \
 			--file $(TYPE)/Dockerfile \
 			.; \
 	done
