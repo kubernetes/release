@@ -26,20 +26,14 @@ ARG TARGETPLATFORM
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV GOARM 7
-ENV KUBE_DYNAMIC_CROSSPLATFORMS \
-  arm64 \
-  armhf \
-  i386 \
-  ppc64el \
-  s390x
 
-ENV KUBE_CROSSPLATFORMS \
-  linux/386 \
-  linux/arm linux/arm64 \
-  linux/ppc64le \
-  linux/s390x \
-  darwin/amd64 \
-  windows/amd64 windows/386
+# the default value for KUBE_DYNAMIC_CROSSPLATFORMS and KUBE_CROSSPLATFORMS is set for
+# backward compatibility with the old Dockerfile. 
+ARG KUBE_DYNAMIC_CROSSPLATFORMS="arm64 armhf i386 ppc64el s390x"
+ARG KUBE_CROSSPLATFORMS="linux/386 linux/arm linux/arm64 linux/ppc64le linux/s390x darwin/amd64 windows/amd64 windows/386"
+
+ENV KUBE_DYNAMIC_CROSSPLATFORMS=${KUBE_DYNAMIC_CROSSPLATFORMS}
+ENV KUBE_CROSSPLATFORMS=${KUBE_CROSSPLATFORMS}
 
 ##------------------------------------------------------------
 COPY --from=go-source /usr/local/go /usr/local/go
