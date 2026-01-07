@@ -27,8 +27,7 @@ RUN apt -y update && \
     apt -y dist-upgrade && \
     apt -y install bash curl && \
     mkdir -p "${STAGE_DIR}" && \
-    /stage-binaries-from-package.sh "${STAGE_DIR}" conntrack \
-    ipset       \
+    /stage-binaries-from-package.sh "${STAGE_DIR}" ipset \
     iptables    \
     kmod        && \
     `# below binaries and dash are used by iptables-wrapper-installer.sh` \
