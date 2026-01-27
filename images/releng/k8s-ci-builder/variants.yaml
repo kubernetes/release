@@ -1,14 +1,19 @@
 variants:
   default:
     CONFIG: default
-    GO_VERSION: '1.25.5'
-    GO_VERSION_TOOLING: '1.25.5'
+    GO_VERSION: '1.25.6'
+    GO_VERSION_TOOLING: '1.25.6'
     OS_CODENAME: 'bullseye'
   next:
     CONFIG: next
-    GO_VERSION: '1.25.5'
-    GO_VERSION_TOOLING: '1.25.5'
+    GO_VERSION: '1.25.6'
+    GO_VERSION_TOOLING: '1.25.6'
     OS_CODENAME: 'bookworm'
+  '1.36':
+    CONFIG: '1.36'
+    GO_VERSION: '1.25.6'
+    GO_VERSION_TOOLING: '1.25.6'
+    OS_CODENAME: 'bullseye'
   '1.35':
     CONFIG: '1.35'
     GO_VERSION: '1.25.5'
