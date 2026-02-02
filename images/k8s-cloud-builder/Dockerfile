@@ -96,6 +96,15 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
         docker-ce-cli=5:24.0.* \
     && apt-mark hold docker-ce-cli
 
+# Install docker-buildx plugin manually to avoid apt pulling in newer API versions
+# Buildx v0.14.1 supports Docker API 1.41+ (Docker Engine 20.10+)
+# See: https://github.com/docker/buildx/releases
+ARG BUILDX_VERSION=0.14.1
+RUN mkdir -p /usr/lib/docker/cli-plugins \
+    && curl -fsSL "https://github.com/docker/buildx/releases/download/v${BUILDX_VERSION}/buildx-v${BUILDX_VERSION}.linux-amd64" \
+        -o /usr/lib/docker/cli-plugins/docker-buildx \
+    && chmod +x /usr/lib/docker/cli-plugins/docker-buildx
+
 # Cleanup a bit
 RUN apt-get -qqy remove \
       wget \
