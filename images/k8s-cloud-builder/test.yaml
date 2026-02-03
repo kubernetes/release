@@ -32,6 +32,10 @@ commandTests:
   - -c
   - |
     pip list | grep '^crcmod\b'
+- name:           docker buildx is installed
+  command:        docker
+  args:           [ "buildx", "version" ]
+  expectedOutput: [ "github.com/docker/buildx" ]
 
 - name:    commands are available
   command: /test.sh
