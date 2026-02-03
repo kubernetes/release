@@ -278,7 +278,6 @@ func (g *GCB) Submit() error {
 	logrus.Infof("Running GCB with the following options: %+v", g.options)
 
 	g.options.NoSource = true
-	g.options.DiskSize = release.DefaultDiskSize
 
 	g.options.Async = true
 

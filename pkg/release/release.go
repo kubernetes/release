@@ -51,10 +51,8 @@ const (
 	DefaultK8sRef  = git.DefaultRef
 
 	// TODO(vdf): Need to reference K8s Infra project here.
-	DefaultKubernetesStagingProject = "kubernetes-release-test"
+	DefaultKubernetesStagingProject = "k8s-release"
 	DefaultRelengStagingTestProject = "k8s-staging-releng-test"
-	DefaultRelengStagingProject     = "k8s-staging-releng"
-	DefaultDiskSize                 = "500"
 
 	versionReleaseRE   = `v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-?([a-zA-Z0-9]+\.(0|[1-9][0-9]*)\.)?`
 	versionBuildRE     = `([0-9]{1,})\+([0-9a-f]{5,40})`
@@ -95,7 +93,7 @@ const (
 	CIBucketK8sInfra = "k8s-release-dev"
 
 	// TestBucket is the default bucket for mocked Kubernetes releases.
-	TestBucket = "kubernetes-release-gcb"
+	TestBucket = "5d7373bbdcb8270361b96548387bf2a9ad0d48758c35"
 
 	// ProductionBucket is the default bucket for Kubernetes releases.
 	// Owned by SIG k8s Infra: https://git.k8s.io/community/sig-k8s-infra
@@ -111,7 +109,7 @@ const (
 	GCRIOPathStagingPrefix = consts.StagingRepoPrefix
 
 	// Staging registry root URL.
-	GCRIOPathStaging = GCRIOPathStagingPrefix + consts.StagingRepoSuffix
+	GCRIOPathStaging = "gcr.io/k8s-staging-kubernetes"
 
 	// Mock staging registry root URL.
 	GCRIOPathMock = GCRIOPathStaging + "/mock"

@@ -49,6 +49,7 @@ func ConfigureDocker() error {
 	err := gcli.GCloud(
 		"auth",
 		"configure-docker",
+		"gcr.io,us-central1-docker.pkg.dev",
 	)
 	if err != nil {
 		return fmt.Errorf("running 'gcloud auth configure-docker': %w", err)
