@@ -1,9 +1,9 @@
 timeout: 14400s
 availableSecrets:
   secretManager:
-    - versionName: projects/k8s-release/secrets/github-token/versions/latest
+    - versionName: projects/$PROJECT_ID/secrets/github-token/versions/latest
       env: GITHUB_TOKEN
-    - versionName: projects/k8s-release/secrets/obs-password/versions/latest
+    - versionName: projects/$PROJECT_ID/secrets/obs-password/versions/latest
       env: OBS_PASSWORD
 
 steps:
