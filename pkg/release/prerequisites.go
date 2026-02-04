@@ -126,23 +126,6 @@ func (p *PrerequisitesChecker) Run(workdir string) error {
 		return errors.New("not all commands available")
 	}
 
-	// Docker version checks
-	const minVersion = "18.06.0"
-
-	logrus.Infof("Verifying minimum Docker version %s", minVersion)
-
-	versionOutput, err := p.impl.DockerVersion()
-	if err != nil {
-		return fmt.Errorf("validate docker version: %w", err)
-	}
-
-	if versionOutput < minVersion {
-		return fmt.Errorf(
-			"minimum docker version %s required, got %s",
-			minVersion, versionOutput,
-		)
-	}
-
 	// Google Cloud checks
 	logrus.Info("Verifying Google Cloud access")
 
