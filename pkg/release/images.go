@@ -138,7 +138,7 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 			logrus.Infof("Pushing %s", newTagWithArch)
 
 			if err := i.Execute(
-				"gcloud", "docker", "--", "push", newTagWithArch,
+				"docker", "push", newTagWithArch,
 			); err != nil {
 				return fmt.Errorf("push container image: %w", err)
 			}

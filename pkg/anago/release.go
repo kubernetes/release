@@ -609,7 +609,7 @@ func (d *DefaultRelease) UpdateGitHubPage() error {
 		Tag:                   d.state.versions.Prime(),
 		NoMock:                d.options.NoMock,
 		UpdateIfReleaseExists: true,
-		Name:                  "Kubernetes " + d.state.versions.Prime(),
+		Name:                  d.state.versions.Prime(),
 		Draft:                 false,
 		Owner:                 git.DefaultGithubOrg,
 		Repo:                  git.DefaultGithubRepo,

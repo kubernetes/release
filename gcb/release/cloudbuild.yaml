@@ -1,150 +1,119 @@
 timeout: 14400s
-
-#### SECURITY NOTICE ####
-# Google Cloud Build (GCB) supports the usage of secrets for build requests.
-# Secrets appear within GCB configs as base64-encoded strings.
-# These secrets are GCP Cloud KMS-encrypted and cannot be decrypted by any human or system
-# outside of GCP Cloud KMS for the GCP project this encrypted resource was created for.
-# Seeing the base64-encoded encrypted blob here is not a security event for the project.
-#
-# Adding new keys to the existing default keyring `release` in the default
-# project `k8s-releng-prod` can be done by:
-# ```
-# gcloud kms keys create $KEY --project k8s-releng-prod --location global --keyring release --purpose encryption
-# ```
-#
-# After that, verify that the key is marked as "Available" there:
-# https://console.cloud.google.com/security/kms/keyring/manage/global/release/key?project=k8s-releng-prod
-#
-# Now encrypt any secret:
-# ```
-# echo -n my-secret > pw
-# gcloud kms encrypt --project k8s-releng-prod --location global --keyring release --key $KEY --plaintext-file pw --ciphertext-file pw.enc
-# base64 pw.enc -w0
-# ```
-#
-# Use the base64 output printed above as secretEnv value below. Then just
-# reference it via secretEnv in a step.
-#
-# More details on using encrypted resources on Google Cloud Build can be found here:
-# https://cloud.google.com/cloud-build/docs/securing-builds/use-encrypted-secrets-credentials
-#
-# (Please do not remove this security notice.)
-secrets:
-- kmsKeyName: projects/k8s-releng-prod/locations/global/keyRings/release/cryptoKeys/encrypt-0
-  secretEnv:
-    GITHUB_TOKEN: CiQAIkWjMODH+TR8+6KmsAValHBKkX2PjVWSzyNdScGCIl0rBlYSUQBLz1D++mrhyd+wXohoQEGDuyQHvFzQyT7NEvI2BR/WBmnu1S9+E5GgER8OOnaQg+dGEMrYzEQIiTOB8WPxU7ecsIyo0AuegcBH24dj9L2tDw==
-- kmsKeyName: projects/k8s-releng-prod/locations/global/keyRings/release/cryptoKeys/obs
-  secretEnv:
-    OBS_PASSWORD: CiQAXrrgPTLzLId8sRADEJYdBeOCBv7djdomvYV/9cdEbNKUBrMSPAA2Zz9jrArtxsYUKk1if2nZE6w0wPosrAKDpko8c/WErfYajTQ/yF88gZd3DdllDHmYzTqHCA0eLbie9A==
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/github-token/versions/latest
+      env: GITHUB_TOKEN
+    - versionName: projects/$PROJECT_ID/secrets/obs-password/versions/latest
+      env: OBS_PASSWORD
 
 steps:
-- name: gcr.io/cloud-builders/git
-  dir: "go/src/k8s.io"
-  args:
-  - "clone"
-  - "https://github.com/${_TOOL_ORG}/${_TOOL_REPO}"
+  - name: gcr.io/cloud-builders/git
+    dir: "go/src/k8s.io"
+    args:
+      - "clone"
+      - "https://github.com/${_TOOL_ORG}/${_TOOL_REPO}"
 
-- name: gcr.io/cloud-builders/git
-  entrypoint: "bash"
-  dir: "go/src/k8s.io/release"
-  args:
-  - '-c'
-  - |
-    git fetch
-    echo "Checking out ${_TOOL_REF}"
-    git checkout ${_TOOL_REF}
+  - name: gcr.io/cloud-builders/git
+    entrypoint: "bash"
+    dir: "go/src/k8s.io/release"
+    args:
+      - "-c"
+      - |
+        git fetch
+        echo "Checking out ${_TOOL_REF}"
+        git checkout ${_TOOL_REF}
 
-- name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
-  dir: go/src/k8s.io/release
-  env:
-  - KREL_OUTPUT_PATH=/workspace/bin/krel
-  - "TOOL_ORG=${_TOOL_ORG}"
-  - "TOOL_REPO=${_TOOL_REPO}"
-  - "TOOL_REF=${_TOOL_REF}"
-  - "FORCE_BUILD_KREL=${_FORCE_BUILD_KREL}"
-  args:
-  - ./hack/get-krel
+  - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
+    dir: go/src/k8s.io/release
+    env:
+      - KREL_OUTPUT_PATH=/workspace/bin/krel
+      - "TOOL_ORG=${_TOOL_ORG}"
+      - "TOOL_REPO=${_TOOL_REPO}"
+      - "TOOL_REF=${_TOOL_REF}"
+      - "FORCE_BUILD_KREL=${_FORCE_BUILD_KREL}"
+    args:
+      - ./hack/get-krel
 
-- name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
-  dir: "/workspace"
-  env:
-  - "TOOL_ORG=${_TOOL_ORG}"
-  - "TOOL_REPO=${_TOOL_REPO}"
-  - "TOOL_REF=${_TOOL_REF}"
-  - "K8S_ORG=${_K8S_ORG}"
-  - "K8S_REPO=${_K8S_REPO}"
-  - "K8S_REF=${_K8S_REF}"
-  - GOOGLE_SERVICE_ACCOUNT_NAME=krel-staging@k8s-releng-prod.iam.gserviceaccount.com
-  args:
-  - "bin/krel"
-  - "sign"
-  - "blobs"
-  - "--certificate-identity=krel-staging@k8s-releng-prod.iam.gserviceaccount.com"
-  - "--certificate-oidc-issuer=https://accounts.google.com"
-  - "--log-level=${_LOG_LEVEL}"
-  - "${_KUBERNETES_GCS_BUCKET}"
+  - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
+    dir: "/workspace"
+    env:
+      - "TOOL_ORG=${_TOOL_ORG}"
+      - "TOOL_REPO=${_TOOL_REPO}"
+      - "TOOL_REF=${_TOOL_REF}"
+      - "K8S_ORG=${_K8S_ORG}"
+      - "K8S_REPO=${_K8S_REPO}"
+      - "K8S_REF=${_K8S_REF}"
+      - GOOGLE_SERVICE_ACCOUNT_NAME=krel-staging@k8s-releng-prod.iam.gserviceaccount.com
+    args:
+      - "bin/krel"
+      - "sign"
+      - "blobs"
+      - "--certificate-identity=krel-staging@k8s-releng-prod.iam.gserviceaccount.com"
+      - "--certificate-oidc-issuer=https://accounts.google.com"
+      - "--log-level=${_LOG_LEVEL}"
+      - "${_KUBERNETES_GCS_BUCKET}"
 
-- name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
-  dir: "/workspace"
-  env:
-  - "TOOL_ORG=${_TOOL_ORG}"
-  - "TOOL_REPO=${_TOOL_REPO}"
-  - "TOOL_REF=${_TOOL_REF}"
-  - "K8S_ORG=${_K8S_ORG}"
-  - "K8S_REPO=${_K8S_REPO}"
-  - "K8S_REF=${_K8S_REF}"
-  - GOOGLE_SERVICE_ACCOUNT_NAME=krel-staging@k8s-releng-prod.iam.gserviceaccount.com
-  secretEnv:
-  - GITHUB_TOKEN
-  args:
-  - "bin/krel"
-  - "release"
-  - "--submit=false"
-  - "${_NOMOCK}"
-  - "--log-level=${_LOG_LEVEL}"
-  - "--type=${_TYPE}"
-  - "--branch=${_RELEASE_BRANCH}"
-  - "--build-version=${_BUILDVERSION}"
+  - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
+    dir: "/workspace"
+    env:
+      - "TOOL_ORG=${_TOOL_ORG}"
+      - "TOOL_REPO=${_TOOL_REPO}"
+      - "TOOL_REF=${_TOOL_REF}"
+      - "K8S_ORG=${_K8S_ORG}"
+      - "K8S_REPO=${_K8S_REPO}"
+      - "K8S_REF=${_K8S_REF}"
+      - GOOGLE_SERVICE_ACCOUNT_NAME=krel-staging@k8s-releng-prod.iam.gserviceaccount.com
+    secretEnv:
+      - GITHUB_TOKEN
+    args:
+      - "bin/krel"
+      - "release"
+      - "--submit=false"
+      - "${_NOMOCK}"
+      - "--log-level=${_LOG_LEVEL}"
+      - "--type=${_TYPE}"
+      - "--branch=${_RELEASE_BRANCH}"
+      - "--build-version=${_BUILDVERSION}"
 
-- name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
-  dir: "/workspace"
-  env:
-  - "TOOL_ORG=${_TOOL_ORG}"
-  - "TOOL_REPO=${_TOOL_REPO}"
-  - "TOOL_REF=${_TOOL_REF}"
-  - "K8S_ORG=${_K8S_ORG}"
-  - "K8S_REPO=${_K8S_REPO}"
-  - "K8S_REF=${_K8S_REF}"
-  secretEnv:
-  - OBS_PASSWORD
-  args:
-  - "bin/krel"
-  - "obs"
-  - "release"
-  - "--submit=false"
-  - "${_NOMOCK}"
-  - "--log-level=${_LOG_LEVEL}"
-  - "--type=${_TYPE}"
-  - "--branch=${_RELEASE_BRANCH}"
-  - "--build-version=${_BUILDVERSION}"
+  - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
+    dir: "/workspace"
+    env:
+      - "TOOL_ORG=${_TOOL_ORG}"
+      - "TOOL_REPO=${_TOOL_REPO}"
+      - "TOOL_REF=${_TOOL_REF}"
+      - "K8S_ORG=${_K8S_ORG}"
+      - "K8S_REPO=${_K8S_REPO}"
+      - "K8S_REF=${_K8S_REF}"
+    secretEnv:
+      - OBS_PASSWORD
+    args:
+      - "bin/krel"
+      - "obs"
+      - "release"
+      - "--submit=false"
+      - "${_NOMOCK}"
+      - "--log-level=${_LOG_LEVEL}"
+      - "--type=${_TYPE}"
+      - "--branch=${_RELEASE_BRANCH}"
+      - "--build-version=${_BUILDVERSION}"
 
 tags:
-- ${_GCP_USER_TAG}
-- ${_RELEASE_BRANCH}
-- ${_NOMOCK_TAG}
-- RELEASE
-- ${_GIT_TAG}
-- ${_TYPE_TAG}
-- ${_MAJOR_VERSION_TAG}
-- ${_MINOR_VERSION_TAG}
-- ${_PATCH_VERSION_TAG}
-- ${_KUBERNETES_VERSION_TAG}
+  - ${_GCP_USER_TAG}
+  - ${_RELEASE_BRANCH}
+  - ${_NOMOCK_TAG}
+  - RELEASE
+  - ${_GIT_TAG}
+  - ${_TYPE_TAG}
+  - ${_MAJOR_VERSION_TAG}
+  - ${_MINOR_VERSION_TAG}
+  - ${_PATCH_VERSION_TAG}
+  - ${_KUBERNETES_VERSION_TAG}
 
 options:
-  machineType: E2_HIGHCPU_32
+  pool:
+    name: "projects/$PROJECT_ID/locations/us-central1/workerPools/c3-highcpu-44"
 
 substitutions:
   # _GIT_TAG will be filled with a git-based tag of the form vYYYYMMDD-hash, and
   # can be used as a substitution
-  _GIT_TAG: '12345'
+  _GIT_TAG: "12345"

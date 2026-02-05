@@ -131,6 +131,16 @@ type FakeStageImpl struct {
 	commitEmptyReturnsOnCall map[int]struct {
 		result1 error
 	}
+	ConfigureDockerStub        func() error
+	configureDockerMutex       sync.RWMutex
+	configureDockerArgsForCall []struct {
+	}
+	configureDockerReturns struct {
+		result1 error
+	}
+	configureDockerReturnsOnCall map[int]struct {
+		result1 error
+	}
 	CurrentBranchStub        func(*git.Repo) (string, error)
 	currentBranchMutex       sync.RWMutex
 	currentBranchArgsForCall []struct {
@@ -997,6 +1007,59 @@ func (fake *FakeStageImpl) CommitEmptyReturnsOnCall(i int, result1 error) {
 		})
 	}
 	fake.commitEmptyReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) ConfigureDocker() error {
+	fake.configureDockerMutex.Lock()
+	ret, specificReturn := fake.configureDockerReturnsOnCall[len(fake.configureDockerArgsForCall)]
+	fake.configureDockerArgsForCall = append(fake.configureDockerArgsForCall, struct {
+	}{})
+	stub := fake.ConfigureDockerStub
+	fakeReturns := fake.configureDockerReturns
+	fake.recordInvocation("ConfigureDocker", []interface{}{})
+	fake.configureDockerMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) ConfigureDockerCallCount() int {
+	fake.configureDockerMutex.RLock()
+	defer fake.configureDockerMutex.RUnlock()
+	return len(fake.configureDockerArgsForCall)
+}
+
+func (fake *FakeStageImpl) ConfigureDockerCalls(stub func() error) {
+	fake.configureDockerMutex.Lock()
+	defer fake.configureDockerMutex.Unlock()
+	fake.ConfigureDockerStub = stub
+}
+
+func (fake *FakeStageImpl) ConfigureDockerReturns(result1 error) {
+	fake.configureDockerMutex.Lock()
+	defer fake.configureDockerMutex.Unlock()
+	fake.ConfigureDockerStub = nil
+	fake.configureDockerReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) ConfigureDockerReturnsOnCall(i int, result1 error) {
+	fake.configureDockerMutex.Lock()
+	defer fake.configureDockerMutex.Unlock()
+	fake.ConfigureDockerStub = nil
+	if fake.configureDockerReturnsOnCall == nil {
+		fake.configureDockerReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.configureDockerReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -2853,80 +2916,6 @@ func (fake *FakeStageImpl) WriteSourceBOMReturnsOnCall(i int, result1 error) {
 func (fake *FakeStageImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.addBinariesToSBOMMutex.RLock()
-	defer fake.addBinariesToSBOMMutex.RUnlock()
-	fake.addTarfilesToSBOMMutex.RLock()
-	defer fake.addTarfilesToSBOMMutex.RUnlock()
-	fake.branchNeedsCreationMutex.RLock()
-	defer fake.branchNeedsCreationMutex.RUnlock()
-	fake.buildBaseArtifactsSBOMMutex.RLock()
-	defer fake.buildBaseArtifactsSBOMMutex.RUnlock()
-	fake.checkPrerequisitesMutex.RLock()
-	defer fake.checkPrerequisitesMutex.RUnlock()
-	fake.checkReleaseBucketMutex.RLock()
-	defer fake.checkReleaseBucketMutex.RUnlock()
-	fake.checkoutMutex.RLock()
-	defer fake.checkoutMutex.RUnlock()
-	fake.commitEmptyMutex.RLock()
-	defer fake.commitEmptyMutex.RUnlock()
-	fake.currentBranchMutex.RLock()
-	defer fake.currentBranchMutex.RUnlock()
-	fake.deleteLocalSourceTarballMutex.RLock()
-	defer fake.deleteLocalSourceTarballMutex.RUnlock()
-	fake.dockerHubLoginMutex.RLock()
-	defer fake.dockerHubLoginMutex.RUnlock()
-	fake.generateAttestationMutex.RLock()
-	defer fake.generateAttestationMutex.RUnlock()
-	fake.generateChangelogMutex.RLock()
-	defer fake.generateChangelogMutex.RUnlock()
-	fake.generateReleaseVersionMutex.RLock()
-	defer fake.generateReleaseVersionMutex.RUnlock()
-	fake.generateSourceTreeBOMMutex.RLock()
-	defer fake.generateSourceTreeBOMMutex.RUnlock()
-	fake.generateVersionArtifactsBOMMutex.RLock()
-	defer fake.generateVersionArtifactsBOMMutex.RUnlock()
-	fake.getOutputDirSubjectsMutex.RLock()
-	defer fake.getOutputDirSubjectsMutex.RUnlock()
-	fake.getProvenanceSubjectsMutex.RLock()
-	defer fake.getProvenanceSubjectsMutex.RUnlock()
-	fake.listBinariesMutex.RLock()
-	defer fake.listBinariesMutex.RUnlock()
-	fake.listImageArchivesMutex.RLock()
-	defer fake.listImageArchivesMutex.RUnlock()
-	fake.listTarballsMutex.RLock()
-	defer fake.listTarballsMutex.RUnlock()
-	fake.makeCrossMutex.RLock()
-	defer fake.makeCrossMutex.RUnlock()
-	fake.mergeMutex.RLock()
-	defer fake.mergeMutex.RUnlock()
-	fake.openRepoMutex.RLock()
-	defer fake.openRepoMutex.RUnlock()
-	fake.prepareWorkspaceStageMutex.RLock()
-	defer fake.prepareWorkspaceStageMutex.RUnlock()
-	fake.pushAttestationMutex.RLock()
-	defer fake.pushAttestationMutex.RUnlock()
-	fake.pushContainerImagesMutex.RLock()
-	defer fake.pushContainerImagesMutex.RUnlock()
-	fake.pushReleaseArtifactsMutex.RLock()
-	defer fake.pushReleaseArtifactsMutex.RUnlock()
-	fake.revParseMutex.RLock()
-	defer fake.revParseMutex.RUnlock()
-	fake.revParseTagMutex.RLock()
-	defer fake.revParseTagMutex.RUnlock()
-	fake.stageLocalArtifactsMutex.RLock()
-	defer fake.stageLocalArtifactsMutex.RUnlock()
-	fake.stageLocalSourceTreeMutex.RLock()
-	defer fake.stageLocalSourceTreeMutex.RUnlock()
-	fake.submitMutex.RLock()
-	defer fake.submitMutex.RUnlock()
-	fake.tagMutex.RLock()
-	defer fake.tagMutex.RUnlock()
-	fake.toFileMutex.RLock()
-	defer fake.toFileMutex.RUnlock()
-	fake.verifyArtifactsMutex.RLock()
-	defer fake.verifyArtifactsMutex.RUnlock()
-	fake.writeSourceBOMMutex.RLock()
-	defer fake.writeSourceBOMMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

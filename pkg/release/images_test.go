@@ -23,9 +23,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"sigs.k8s.io/release-utils/http"
 
 	"k8s.io/release/pkg/release"
 	"k8s.io/release/pkg/release/releasefakes"
@@ -374,8 +377,9 @@ func TestValidate(t *testing.T) {
 		clientMock := &releasefakes.FakeImageImpl{}
 		sut.SetImpl(clientMock)
 		buildPath, cleanup := tc.prepare(clientMock)
-
-		err := sut.Validate(release.GCRIOPathStaging, "v1.18.9", buildPath)
+		version, _ := fetchStableMarker()
+		// The staging registry has a 90d retention policy, so fetch a recent version of k/k
+		err := sut.Validate(release.GCRIOPathStaging, version, buildPath)
 		if tc.shouldError {
 			require.Error(t, err)
 		} else {
@@ -400,7 +404,7 @@ func newImagesPath(t *testing.T) string {
 func prepareImages(t *testing.T, tempDir string, mock *releasefakes.FakeImageImpl) {
 	c := 0
 
-	for _, arch := range []string{"amd64", "arm", "arm64"} {
+	for _, arch := range []string{"amd64", "s390x", "ppc64le", "arm64"} {
 		archPath := filepath.Join(tempDir, release.ImagesPath, arch)
 		require.NoError(t, os.MkdirAll(archPath, os.FileMode(0o755)))
 
@@ -411,11 +415,14 @@ func prepareImages(t *testing.T, tempDir string, mock *releasefakes.FakeImageImp
 				filepath.Join(archPath, image),
 				[]byte{}, os.FileMode(0o644),
 			))
+
+			version, _ := fetchStableMarker()
 			mock.RepoTagFromTarballReturnsOnCall(
 				c,
 				fmt.Sprintf(
-					"registry.k8s.io/%s:v1.18.9",
+					"registry.k8s.io/%s:%s",
 					strings.TrimSuffix(image, ".tar"),
+					version,
 				),
 				nil,
 			)
@@ -423,4 +430,15 @@ func prepareImages(t *testing.T, tempDir string, mock *releasefakes.FakeImageImp
 			c++
 		}
 	}
+}
+
+func fetchStableMarker() (string, error) {
+	content, err := http.NewAgent().WithTimeout(30 * time.Second).Get("https://dl.k8s.io/release/stable.txt")
+	if err != nil {
+		fmt.Println("Error:", err)
+
+		return "", err
+	}
+
+	return string(content), nil
 }

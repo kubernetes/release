@@ -36,6 +36,7 @@ import (
 
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/changelog"
+	"k8s.io/release/pkg/gcp/auth"
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/release"
 )
@@ -154,6 +155,7 @@ type stageImpl interface {
 	Merge(repo *git.Repo, rev string) error
 	CheckReleaseBucket(options *build.Options) error
 	DockerHubLogin() error
+	ConfigureDocker() error
 	MakeCross(version string) error
 	GenerateChangelog(options *changelog.Options) error
 	StageLocalSourceTree(
@@ -255,6 +257,10 @@ func (d *defaultStageImpl) MakeCross(version string) error {
 
 func (d *defaultStageImpl) DockerHubLogin() error {
 	return release.DockerHubLogin()
+}
+
+func (d *defaultStageImpl) ConfigureDocker() error {
+	return auth.ConfigureDocker()
 }
 
 func (d *defaultStageImpl) GenerateChangelog(options *changelog.Options) error {
@@ -577,6 +583,10 @@ func (d *DefaultStage) Build() error {
 		return fmt.Errorf("logging into Docker Hub: %w", err)
 	}
 
+	// Login to Artifact Registry as well
+	if err := d.impl.ConfigureDocker(); err != nil {
+		return fmt.Errorf("configuring docker auth: %w", err)
+	}
 	// Call MakeCross for each of the versions we are building
 	for _, version := range d.state.versions.Ordered() {
 		if err := d.impl.MakeCross(version); err != nil {

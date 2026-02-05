@@ -25,7 +25,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -63,7 +62,6 @@ type Options struct {
 	AllowDirty     bool
 	NoSource       bool
 	Async          bool
-	DiskSize       string
 	Variant        string
 	EnvPassthrough string
 }
@@ -196,6 +194,7 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 	args := []string{
 		"builds", "submit",
 		"--verbosity", "info",
+		"--region", "us-central1",
 		"--config", o.CloudbuildFile,
 		"--substitutions", strings.Join(s, ","),
 	}
@@ -226,22 +225,6 @@ func RunSingleJob(o *Options, jobName, uploaded, version string, subs map[string
 		} else {
 			args = append(args, ".")
 		}
-	}
-
-	if o.DiskSize != "" {
-		diskSizeInt, intErr := strconv.Atoi(o.DiskSize)
-		if intErr != nil {
-			return intErr
-		}
-
-		if diskSizeInt > 1000 {
-			return errors.New("selected disk size must be no greater than 1000 GB")
-		} else if diskSizeInt <= 0 {
-			return errors.New("selected disk size must be greater than 0 GB")
-		}
-
-		diskSizeArg := "--disk-size=" + o.DiskSize
-		args = append(args, diskSizeArg)
 	}
 
 	cmd := command.New(gcli.GCloudExecutable, args...)
