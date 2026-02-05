@@ -33,7 +33,6 @@ import (
 	"sigs.k8s.io/release-utils/command"
 
 	"k8s.io/release/pkg/consts"
-	"k8s.io/release/pkg/gcp/auth"
 )
 
 // Images is a wrapper around container image related functionality.
@@ -120,11 +119,6 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 		"Pushing container images from %s to registry %s",
 		releaseImagesPath, registry,
 	)
-	// Configure docker client for gcr.io authentication to allow communication
-	// with non-public registries.
-	if configureErr := auth.ConfigureDocker(); configureErr != nil {
-		return fmt.Errorf("configuring docker auth: %w", configureErr)
-	}
 
 	manifestImages, err := i.GetManifestImages(
 		registry, version, buildPath,
