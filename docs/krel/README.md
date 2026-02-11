@@ -54,6 +54,49 @@ krel has several subcommands that perform various tasks during the release lifec
 | stage                               | Stage a new Kubernetes version                                                              |
 | testgridshot                        | Take a screenshot of the testgrid dashboards                                                |
 
+## Sending Release Announcements
+
+The `krel announce send` command sends release announcement emails via the
+Gmail API using Google OAuth. No additional setup is required — a browser
+window will open for authorization on each run.
+
+In mock mode (default), emails are sent to
+[kubernetes-announce-test](https://groups.google.com/g/kubernetes-announce-test).
+In production mode (`--nomock`), emails are sent to
+[kubernetes-announce](https://groups.google.com/g/kubernetes-announce) and
+[dev@kubernetes.io](https://groups.google.com/a/kubernetes.io/g/dev).
+
+```shell
+# Mock run (sends to kubernetes-announce-test only):
+krel announce send --tag v1.35.1
+
+# Production run (sends to kubernetes-announce and dev):
+krel announce send --tag v1.35.1 --nomock
+
+# Print announcement content without sending:
+krel announce send --tag v1.35.1 --print-only
+```
+
+### Headless environments (`--no-browser`)
+
+If you are running `krel` in a headless environment (e.g. SSH session), use the
+`--no-browser` flag:
+
+```shell
+krel announce send --tag v1.35.1 --no-browser
+```
+
+This prints the OAuth authorization URL to the terminal instead of opening a
+browser. Open the URL in any browser (can be on another machine), authorize the
+application, and the browser will redirect to `http://localhost?code=...`. Since
+no local server is listening, the page will fail to load — this is expected.
+Copy the full URL from the browser's address bar and paste it back into the
+terminal to complete authentication.
+
+The OAuth app is managed in the
+[k8s-release](https://console.cloud.google.com/auth/clients?project=k8s-release)
+Google Cloud project.
+
 ## Important Notes
 
 Some of the krel subcommands are under development and their usage may already differ from these docs.
