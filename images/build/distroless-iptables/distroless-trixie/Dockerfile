@@ -49,9 +49,9 @@ RUN curl -o "${STAGE_DIR}"/iptables-wrapper-installer.sh https://raw.githubuserc
 # dedupe this binary by just copying it from the go-runner image
 FROM ${GORUNNERIMAGE} as gorunner
 
-# We need to use distroless:base here as tzdata, glibc and some other base packages
-# are required
-FROM gcr.io/distroless/base-debian12 as intermediate
+# We need to use distroless:static here as tzdata, and some other base packages are required.
+# We supply our own C libraries alongside some additional C binaries.
+FROM gcr.io/distroless/static-debian13 as intermediate
 
 ARG SKIP_WRAPPER_CHECK
 
