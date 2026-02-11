@@ -19,7 +19,7 @@ file_to_package() {
     # `dpkg-query --search $file-pattern` outputs lines with the format: "$package: $file-path"
     # where $file-path belongs to $package
     # https://manpages.debian.org/jessie/dpkg/dpkg-query.1.en.html
-    (dpkg-query --search "$(realpath "${1}")" || true) | cut -d':' -f1
+    (dpkg-query --search "$(realpath "${1}")") | cut -d':' -f1
 }
 
 # package_to_copyright gives the path to the copyright file for the package $1
@@ -30,10 +30,11 @@ package_to_copyright() {
 # stage_file stages the filepath $1 to $2, following symlinks
 # and staging copyrights
 stage_file() {
-    # /lib is a symlink to /usr/lib in debian 12, means we just stick to
+    # /lib is a symlink to /usr/lib in debian 13, means we just stick to
     # /usr/lib for all libraries to avoid separating symlinks with the actual binaries
+    # ditto /lib64
     from="${1}"
-    if [[ $from = /lib/*  ]]; then
+    if [[ $from = /lib*/* ]]; then
         from="/usr$from"
     fi
     cp -a --parents "${from}" "${2}"
