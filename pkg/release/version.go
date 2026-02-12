@@ -24,7 +24,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/release-sdk/git"
-	"sigs.k8s.io/release-utils/http"
+
+	"k8s.io/release/pkg/consts"
 )
 
 // Version is a wrapper around version related functionality.
@@ -42,7 +43,7 @@ type VersionClient interface {
 type versionClient struct{}
 
 func (*versionClient) GetURLResponse(url string) (string, error) {
-	c, err := http.NewAgent().Get(url)
+	c, err := consts.NewHTTPAgent().Get(url)
 	if err != nil {
 		return "", err
 	}

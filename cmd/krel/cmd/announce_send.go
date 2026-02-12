@@ -25,8 +25,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/release-utils/helpers"
-	"sigs.k8s.io/release-utils/http"
 
+	"k8s.io/release/pkg/consts"
 	"k8s.io/release/pkg/mail"
 	"k8s.io/release/pkg/release"
 )
@@ -104,7 +104,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 	)
 	logrus.Infof("Using announcement remote URL: %s", u)
 
-	content, err := http.NewAgent().Get(u)
+	content, err := consts.NewHTTPAgent().Get(u)
 	if err != nil {
 		return fmt.Errorf(
 			"unable to retrieve release announcement from url: %s: %w", u, err,

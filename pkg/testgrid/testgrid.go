@@ -24,7 +24,7 @@ import (
 	pb "github.com/GoogleCloudPlatform/testgrid/pb/config"
 	"github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/release-utils/http"
+	"k8s.io/release/pkg/consts"
 )
 
 const testgridConfigURL = "https://storage.googleapis.com/k8s-testgrid/config"
@@ -51,7 +51,7 @@ type Client interface {
 type testGridClient struct{}
 
 func (t *testGridClient) GetURLResponse(url string) ([]byte, error) {
-	return http.NewAgent().Get(url)
+	return consts.NewHTTPAgent().Get(url)
 }
 
 // SetClient can be used to set the internal HTTP client.

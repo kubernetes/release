@@ -30,7 +30,8 @@ import (
 	"sigs.k8s.io/release-sdk/gcli"
 	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/helpers"
-	"sigs.k8s.io/release-utils/http"
+
+	"k8s.io/release/pkg/consts"
 )
 
 // Publisher is the structure for publishing anything release related.
@@ -97,7 +98,7 @@ func (*defaultPublisher) GSUtilStatus(args ...string) (bool, error) {
 }
 
 func (*defaultPublisher) GetURLResponse(url string) (string, error) {
-	c, err := http.NewAgent().Get(url)
+	c, err := consts.NewHTTPAgent().Get(url)
 	if err != nil {
 		return "", err
 	}
