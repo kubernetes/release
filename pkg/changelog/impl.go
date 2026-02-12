@@ -34,8 +34,8 @@ import (
 	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/helpers"
-	"sigs.k8s.io/release-utils/http"
 
+	"k8s.io/release/pkg/consts"
 	"k8s.io/release/pkg/cve"
 	"k8s.io/release/pkg/notes"
 	"k8s.io/release/pkg/notes/document"
@@ -208,7 +208,7 @@ func (*defaultImpl) Abs(path string) (string, error) {
 }
 
 func (*defaultImpl) GetURLResponse(url string) (string, error) {
-	content, err := http.NewAgent().Get(url)
+	content, err := consts.NewHTTPAgent().Get(url)
 	if err != nil {
 		return "", err
 	}

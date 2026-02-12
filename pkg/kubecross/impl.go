@@ -19,7 +19,7 @@ package kubecross
 import (
 	"bytes"
 
-	"sigs.k8s.io/release-utils/http"
+	"k8s.io/release/pkg/consts"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
@@ -32,7 +32,7 @@ type impl interface {
 type defaultImpl struct{}
 
 func (*defaultImpl) GetURLResponse(url string) (string, error) {
-	content, err := http.NewAgent().Get(url)
+	content, err := consts.NewHTTPAgent().Get(url)
 	if err != nil {
 		return "", err
 	}
