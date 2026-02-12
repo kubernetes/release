@@ -20,7 +20,7 @@ steps:
       - '--certificate-identity=keyless@distroless.iam.gserviceaccount.com'
       - 'gcr.io/distroless/$_DISTROLESS_IMAGE'
 
-  - name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v20210917-12df099d55'
+  - name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v20260205-38cfa9523f'
     entrypoint: 'bash'
     dir: ./images/build/go-runner
     env:

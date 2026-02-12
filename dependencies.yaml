@@ -460,7 +460,7 @@ dependencies:
 
   # Build environments
   - name: "gcr.io/k8s-staging-test-infra/gcb-docker-gcloud"
-    version: v20210917-12df099d55
+    version: v20260205-38cfa9523f
     refPaths:
       - path: images/build/cross/cloudbuild.yaml
         match: "name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{10}'"
