@@ -17,275 +17,59 @@ limitations under the License.
 package mail_test
 
 import (
-	"errors"
 	"testing"
 
-	"github.com/sendgrid/rest"
-	sendgridMail "github.com/sendgrid/sendgrid-go/helpers/mail"
 	"github.com/stretchr/testify/require"
 
 	"k8s.io/release/pkg/mail"
-	"k8s.io/release/pkg/mail/mailfakes"
-	it "k8s.io/release/pkg/testing"
 )
 
-func TestSetDefaultSender(t *testing.T) {
-	for _, tc := range []struct {
-		description string
-		prep        func(*mailfakes.FakeAPIClient)
-		expect      func(error, string)
-	}{
-		{
-			description: "Should succeed",
-			prep: func(c *mailfakes.FakeAPIClient) {
-				c.APIReturnsOnCall(0, &rest.Response{
-					StatusCode: 200,
-					Body:       `{"email": "me@mail.com"}`,
-				}, nil)
-				c.APIReturnsOnCall(1, &rest.Response{
-					StatusCode: 200,
-					Body:       `{"first_name": "Firstname", "last_name": "Lastname"}`,
-				}, nil)
-			},
-			expect: func(err error, desc string) { require.NoError(t, err, desc) },
-		},
-		{
-			description: "Should fail with wrong JSON in second response",
-			prep: func(c *mailfakes.FakeAPIClient) {
-				c.APIReturnsOnCall(0, &rest.Response{
-					StatusCode: 200,
-					Body:       `{"email": "me@mail.com"}`,
-				}, nil)
-				c.APIReturnsOnCall(1, &rest.Response{
-					StatusCode: 200,
-					Body:       "wrong-json",
-				}, nil)
-			},
-			expect: func(err error, desc string) { require.Error(t, err, desc) },
-		},
-		{
-			description: "Should fail with wrong status code in second response",
-			prep: func(c *mailfakes.FakeAPIClient) {
-				c.APIReturnsOnCall(0, &rest.Response{
-					StatusCode: 200,
-					Body:       `{"email": "me@mail.com"}`,
-				}, nil)
-				c.APIReturnsOnCall(1, &rest.Response{StatusCode: 400}, nil)
-			},
-			expect: func(err error, desc string) { require.Error(t, err, desc) },
-		},
-		{
-			description: "Should fail with failing second response",
-			prep: func(c *mailfakes.FakeAPIClient) {
-				c.APIReturnsOnCall(0, &rest.Response{
-					StatusCode: 200,
-					Body:       `{"email": "me@mail.com"}`,
-				}, nil)
-				c.APIReturnsOnCall(1, nil, errors.New(""))
-			},
-			expect: func(err error, desc string) { require.Error(t, err, desc) },
-		},
-		{
-			description: "Should fail with wrong JSON in first response",
-			prep: func(c *mailfakes.FakeAPIClient) {
-				c.APIReturnsOnCall(0, &rest.Response{
-					StatusCode: 200,
-					Body:       "wrong-json",
-				}, nil)
-			},
-			expect: func(err error, desc string) { require.Error(t, err, desc) },
-		},
-		{
-			description: "Should fail with wrong status code in first response",
-			prep: func(c *mailfakes.FakeAPIClient) {
-				c.APIReturnsOnCall(0, &rest.Response{StatusCode: 400}, nil)
-			},
-			expect: func(err error, desc string) { require.Error(t, err, desc) },
-		},
-		{
-			description: "Should fail with failing first response",
-			prep: func(c *mailfakes.FakeAPIClient) {
-				c.APIReturnsOnCall(0, nil, errors.New(""))
-			},
-			expect: func(err error, desc string) { require.Error(t, err, desc) },
-		},
-	} {
-		m := mail.NewSender("")
-		c := &mailfakes.FakeAPIClient{}
-		tc.prep(c)
-		m.SetAPIClient(c)
-
-		err := m.SetDefaultSender()
-
-		tc.expect(err, tc.description)
-	}
-}
-
-func TestMailSender(t *testing.T) {
+func TestGoogleGroupRecipients(t *testing.T) {
 	t.Parallel()
 
-	it.Run(t, "SetRecipients", recipientTest)
-	it.Run(t, "SetSender", senderTest)
-	it.Run(t, "Send", sendTest)
-
-	it.Run(t, "main", func(t *testing.T) {
-		m := mail.NewSender("")
-		c := &mailfakes.FakeSendClient{}
-		c.SendReturns(&rest.Response{
-			Body:       "some API response",
-			StatusCode: 202,
-		}, nil)
-		m.SetSendClient(c)
-		require.NoError(t, m.SetSender("Jane Doe", "djane@example.org"))
-		require.NoError(t, m.SetRecipients("Max Mustermann", "mmustermann@example.org"))
-		require.NoError(t, m.Send("some content", "some subject"))
-	})
-}
-
-func sendTest(t *testing.T) {
 	tests := map[string]struct {
-		sendgridSendResponse *rest.Response
-		sendgridSendErr      error
-		message              string
-		subject              string
-		apiKey               string
-
-		expectedSendgridAPIKey string
-		expectedErr            string
+		groups   []mail.GoogleGroup
+		expected []mail.Recipient
 	}{
-		"the token is used": {
-			apiKey:                 "some key",
-			sendgridSendResponse:   simpleResponse("", 202),
-			expectedSendgridAPIKey: "some key",
+		"announce and dev groups": {
+			groups: []mail.GoogleGroup{
+				mail.KubernetesAnnounceGoogleGroup,
+				mail.KubernetesDevGoogleGroup,
+			},
+			expected: []mail.Recipient{
+				{
+					Name:    "kubernetes-announce",
+					Address: "kubernetes-announce@googlegroups.com",
+				},
+				{
+					Name:    "dev",
+					Address: "dev@kubernetes.io",
+				},
+			},
 		},
-		"when #Send returns an error, bubble it up": {
-			sendgridSendErr: errors.New("some sendgrid err"),
-			expectedErr:     "some sendgrid err",
+		"test group": {
+			groups: []mail.GoogleGroup{
+				mail.KubernetesAnnounceTestGoogleGroup,
+			},
+			expected: []mail.Recipient{
+				{
+					Name:    "kubernetes-announce-test",
+					Address: "kubernetes-announce-test@googlegroups.com",
+				},
+			},
 		},
-		"when #Send returns an empty response, an error is returned": {
-			expectedErr: "empty API response",
-		},
-		"when #Send returns an invalid status code, an error holding the API response is returned": {
-			sendgridSendResponse: simpleResponse("some API response", 500),
-			expectedErr:          "some API response",
+		"empty groups": {
+			groups:   []mail.GoogleGroup{},
+			expected: []mail.Recipient{},
 		},
 	}
 
 	for name, tc := range tests {
-		it.Run(t, name, func(t *testing.T) {
-			m := mail.NewSender(tc.apiKey)
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-			sgClient := &mailfakes.FakeSendClient{}
-			sgClient.SendReturns(tc.sendgridSendResponse, tc.sendgridSendErr)
-
-			m.SetSendClient(sgClient)
-			require.Equal(t, tc.expectedSendgridAPIKey, tc.apiKey, "SendgridClient#creator arg")
-
-			err := m.Send(tc.message, tc.subject)
-			it.CheckErrSub(t, err, tc.expectedErr)
-
-			require.Equal(t, 1, sgClient.SendCallCount(), "SendgridClient#Send call count")
-
-			email := sgClient.SendArgsForCall(0)
-			require.Equalf(t, tc.subject, email.Subject, "the mail's subject")
-			require.Equalf(t, tc.message, email.Content[0].Value, "the mail's body")
+			recipients := mail.GoogleGroupRecipients(tc.groups...)
+			require.Equal(t, tc.expected, recipients)
 		})
 	}
-}
-
-func simpleResponse(body string, code int) *rest.Response {
-	return &rest.Response{Body: body, StatusCode: code}
-}
-
-func senderTest(t *testing.T) {
-	tests := map[string]struct {
-		senderName  string
-		senderEmail string
-		expectedErr string
-	}{
-		"happy path": {
-			senderName:  "name",
-			senderEmail: "email",
-		},
-		"when email is empty, error": {
-			senderName:  "name",
-			senderEmail: "",
-			expectedErr: "email must not be empty",
-		},
-	}
-
-	for name, tc := range tests {
-		it.Run(t, name, func(t *testing.T) {
-			m := &mail.Sender{}
-			err := m.SetSender(tc.senderName, tc.senderEmail)
-			it.CheckErr(t, err, tc.expectedErr)
-		})
-	}
-}
-
-func recipientTest(t *testing.T) {
-	tests := map[string]struct {
-		recipientArgs [][]string
-		expectedErr   string
-	}{
-		"when # of recipient args is even, succeed": {
-			recipientArgs: [][]string{
-				{},
-				{"name", "email"},
-				{"name", "email", "otherName", "otherEmail"},
-			},
-		},
-		"when # of recipients args is not even, error": {
-			recipientArgs: [][]string{
-				{"one"},
-				{"one", "two", "three"},
-			},
-			expectedErr: "must be called with alternating recipient's names and email addresses",
-		},
-		"when email is empty, error": {
-			recipientArgs: [][]string{
-				{"name", ""},
-				{"name", "email", "otherName", ""},
-			},
-			expectedErr: "email must not be empty",
-		},
-	}
-
-	for name, tc := range tests {
-		it.Run(t, name, func(t *testing.T) {
-			for _, args := range tc.recipientArgs {
-				it.Run(t, "", func(t *testing.T) {
-					m := &mail.Sender{}
-					err := m.SetRecipients(args...)
-					it.CheckErr(t, err, tc.expectedErr)
-				})
-			}
-		})
-	}
-}
-
-func TestSetGoogleGroupRecipients(t *testing.T) {
-	groups := []mail.GoogleGroup{
-		mail.KubernetesAnnounceGoogleGroup,
-		mail.KubernetesDevGoogleGroup,
-	}
-
-	expectedRecipients := []*sendgridMail.Email{
-		{
-			Address: "dev@kubernetes.io",
-			Name:    "dev",
-		},
-		{
-			Address: "kubernetes-announce@googlegroups.com",
-			Name:    "kubernetes-announce",
-		},
-	}
-
-	m := &mail.Sender{}
-	err := m.SetGoogleGroupRecipients(groups...)
-	require.NoError(t, err)
-
-	recipients := m.GetRecipients()
-	require.NotEmpty(t, recipients)
-	require.ElementsMatch(t, expectedRecipients, recipients)
 }

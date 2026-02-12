@@ -17,13 +17,13 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/release-utils/env"
 	"sigs.k8s.io/release-utils/helpers"
 	"sigs.k8s.io/release-utils/http"
 
@@ -31,13 +31,9 @@ import (
 	"k8s.io/release/pkg/release"
 )
 
-const (
-	sendgridAPIKeyEnvKey = "SENDGRID_API_KEY" //nolint:gosec // it's just the key
-	nameFlag             = "name"
-	emailFlag            = "email"
-)
+const noBrowserFlag = "no-browser"
 
-// announceCmd represents the subcommand for `krel announce`.
+// sendAnnounceCmd represents the subcommand for `krel announce send`.
 var sendAnnounceCmd = &cobra.Command{
 	Use:   "send",
 	Short: "Announce Kubernetes releases",
@@ -47,28 +43,26 @@ krel announce send can be used to mail an announcement of an already
 built Kubernetes release to the %q and %q Google Groups.
 
 By default the mail will be sent only to a test Google Group %q,
-ie: the announcement run will only be a mock run.  To do an
+ie: the announcement run will only be a mock run. To do an
 official announcement, use the --nomock flag.
 
-It is necessary to export the $%s environment variable. An API key can be created by
-registering a sendgrid.com account and adding the key here:
+Email is sent via the Gmail API using Google OAuth. A browser window
+will open for authorization on each run. No additional setup is
+needed.
 
-https://app.sendgrid.com/settings/api_keys
-
-Beside this, if the flags for a valid sender name (--%s,-n) and sender email
-address (--%s,-e) are not set, then it tries to retrieve those values directly
-from the Sendgrid API.
+Use --%s to print the authorization URL for manual copy/paste
+(useful in headless environments). After authorizing in the browser,
+the redirect will fail to load. Copy the full URL from the browser's
+address bar and paste it back into the terminal.
 
 Setting a valid Kubernetes tag (--%s,-t) is always necessary.
 
-If --%s,-p is given, then krel announce will only print the email content
-without doing anything else.`,
+If --%s,-p is given, then krel announce will only print the email
+content without doing anything else.`,
 		mail.KubernetesAnnounceGoogleGroup,
 		mail.KubernetesDevGoogleGroup,
 		mail.KubernetesAnnounceTestGoogleGroup,
-		sendgridAPIKeyEnvKey,
-		nameFlag,
-		emailFlag,
+		noBrowserFlag,
 		tagFlag,
 		printOnlyFlag,
 	),
@@ -80,30 +74,17 @@ without doing anything else.`,
 }
 
 type sendAnnounceOptions struct {
-	sendgridAPIKey string
-	name           string
-	email          string
+	noBrowser bool
 }
 
 var sendAnnounceOpts = &sendAnnounceOptions{}
 
 func init() {
-	sendAnnounceOpts.sendgridAPIKey = env.Default(sendgridAPIKeyEnvKey, "")
-
-	sendAnnounceCmd.PersistentFlags().StringVarP(
-		&sendAnnounceOpts.name,
-		nameFlag,
-		"n",
-		"",
-		"mail sender name",
-	)
-
-	sendAnnounceCmd.PersistentFlags().StringVarP(
-		&sendAnnounceOpts.email,
-		emailFlag,
-		"e",
-		"",
-		"email address",
+	sendAnnounceCmd.PersistentFlags().BoolVar(
+		&sendAnnounceOpts.noBrowser,
+		noBrowserFlag,
+		false,
+		"disable automatic browser opening for OAuth (manual URL copy/paste)",
 	)
 
 	announceCmd.AddCommand(sendAnnounceCmd)
@@ -126,7 +107,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 	content, err := http.NewAgent().Get(u)
 	if err != nil {
 		return fmt.Errorf(
-			"unable to retrieve release announcement form url: %s: %w", u, err,
+			"unable to retrieve release announcement from url: %s: %w", u, err,
 		)
 	}
 
@@ -137,26 +118,11 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 		return nil
 	}
 
-	if opts.sendgridAPIKey == "" {
-		return fmt.Errorf(
-			"$%s is not set", sendgridAPIKeyEnvKey,
-		)
-	}
+	logrus.Info("Starting Gmail OAuth flow")
 
-	logrus.Info("Preparing mail sender")
-
-	m := mail.NewSender(opts.sendgridAPIKey)
-
-	if opts.name != "" && opts.email != "" {
-		if err := m.SetSender(opts.name, opts.email); err != nil {
-			return fmt.Errorf("unable to set mail sender: %w", err)
-		}
-	} else {
-		logrus.Info("Retrieving default sender from sendgrid API")
-
-		if err := m.SetDefaultSender(); err != nil {
-			return fmt.Errorf("setting default sender: %w", err)
-		}
+	sender, err := mail.NewGmailSender(context.Background(), opts.noBrowser)
+	if err != nil {
+		return fmt.Errorf("creating Gmail sender: %w", err)
 	}
 
 	groups := []mail.GoogleGroup{mail.KubernetesAnnounceTestGoogleGroup}
@@ -169,9 +135,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 
 	logrus.Infof("Using Google Groups as announcement target: %v", groups)
 
-	if err := m.SetGoogleGroupRecipients(groups...); err != nil {
-		return fmt.Errorf("unable to set mail recipients: %w", err)
-	}
+	sender.SetGoogleGroupRecipients(groups...)
 
 	logrus.Info("Sending mail")
 
@@ -187,7 +151,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 	}
 
 	if yes {
-		if err := m.Send(string(content), subject); err != nil {
+		if err := sender.Send(string(content), subject); err != nil {
 			return fmt.Errorf("unable to send mail: %w", err)
 		}
 	}
