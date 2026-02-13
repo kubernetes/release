@@ -16,11 +16,11 @@ ARG GO_VERSION
 ARG DISTROLESS_IMAGE
 ARG BUILDER_IMAGE
 
-# Get Go from official Alpine image
-FROM golang:${GO_VERSION}-alpine as go-source
+# Get Go from official Alpine image (use native platform to avoid emulation)
+FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine as go-source
 
-# Build the manager binary
-FROM ${BUILDER_IMAGE} as builder
+# Build the manager binary (use native platform for build, cross-compile to target)
+FROM --platform=$BUILDPLATFORM ${BUILDER_IMAGE} as builder
 WORKDIR /workspace
 
 # Copy Go installation from official image
@@ -31,7 +31,7 @@ ENV PATH=/usr/local/go/bin:$PATH
 ENV GOROOT=/usr/local/go
 ENV GOLANG_VERSION=${GO_VERSION}
 ENV GOTOOLCHAIN=auto
-ENV GOPATH=/usr/local/go
+ENV GOPATH=/workspace
 
 # Copy the sources
 COPY ./go-runner.go ./
@@ -56,8 +56,15 @@ ARG package=.
 
 ENV CGO_ENABLED=0
 
+# Determine target architecture from build platform
+ARG TARGETARCH
+ARG TARGETOS
+ENV GOOS=${TARGETOS}
+ENV GOARCH=${TARGETARCH}
+
 RUN go env
 
+# Use cross-compilation to avoid QEMU emulation issues with Go 1.26.0 runtime
 RUN go build -ldflags '-s -w -buildid= -extldflags "-static"' \
     -o go-runner ${package}
 

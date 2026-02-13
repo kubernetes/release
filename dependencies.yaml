@@ -143,6 +143,20 @@ dependencies:
     refPaths:
       - path: images/build/go-runner/VERSION
 
+  - name: "registry.k8s.io/build-image/go-runner (go1.26-bookworm)"
+    version: v2.4.0-go1.26.0-bookworm.0
+    refPaths:
+      - path: images/build/go-runner/variants.yaml
+        match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
+
+  - name: "registry.k8s.io/build-image/go-runner: image revision (go1.26-bookworm)"
+    version: 0
+    refPaths:
+      - path: images/build/go-runner/Makefile
+        match: REVISION \?= \d+
+      - path: images/build/go-runner/variants.yaml
+        match: REVISION:\ '\d+'
+
   - name: "registry.k8s.io/build-image/go-runner (go1.25-bookworm)"
     version: v2.4.0-go1.25.7-bookworm.0
     refPaths:
@@ -170,6 +184,28 @@ dependencies:
         match: REVISION \?= \d+
       - path: images/build/go-runner/variants.yaml
         match: REVISION:\ '\d+'
+
+ # kube-cross (Kubernetes v1.36)
+  - name: "registry.k8s.io/build-image/kube-cross: config variant (v1.36-go1.26)"
+    version: go1.26-bullseye
+    refPaths:
+      - path: images/build/cross/variants.yaml
+        match: "CONFIG: 'go\\d+.\\d+-bullseye'"
+
+  - name: "registry.k8s.io/build-image/kube-cross (v1.36-go1.26)"
+    version: v1.36.0-go1.26.0-bullseye.0
+    refPaths:
+      - path: images/build/cross/variants.yaml
+        match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
+
+  - name: "registry.k8s.io/build-image/kube-cross: image revision (v1.36-go1.26)"
+    version: 0
+    refPaths:
+      - path: images/build/cross/Makefile
+        match: REVISION \?= \d+
+      - path: images/build/cross/variants.yaml
+        match: REVISION:\ '\d+'
+
 
   # kube-cross (Kubernetes v1.36)
   - name: "registry.k8s.io/build-image/kube-cross: config variant (v1.36-go1.25)"
