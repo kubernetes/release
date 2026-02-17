@@ -29,3 +29,8 @@ variants:
     GO_VERSION: '1.24.13'
     GO_VERSION_TOOLING: '1.24.13'
     OS_CODENAME: 'bullseye'
+  '1.32':
+    CONFIG: '1.32'
+    GO_VERSION: '1.24.13'
+    GO_VERSION_TOOLING: '1.24.13'
+    OS_CODENAME: 'bullseye'
