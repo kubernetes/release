@@ -243,6 +243,13 @@ func addGenerateFlags(subcommand *cobra.Command) {
 		[]string{},
 		"specify a location to recursively look for release notes *.y[a]ml file mappings",
 	)
+
+	subcommand.PersistentFlags().StringVar(
+		&opts.ReleaseNoteRegex,
+		"release-note-regex",
+		"",
+		"Optional regex to extract release note from PR body. Must have a named group 'note'. If unset, default ```release-note blocks are used.",
+	)
 }
 
 // addGenerate adds the generate subcomand to the main release notes cobra cmd.
