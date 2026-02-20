@@ -5,6 +5,8 @@ availableSecrets:
       env: GITHUB_TOKEN
     - versionName: projects/$PROJECT_ID/secrets/obs-password/versions/latest
       env: OBS_PASSWORD
+    - versionName: projects/$PROJECT_ID/secrets/fastly-purge-token/versions/latest
+      env: FASTLY_API_TOKEN
 
 steps:
   - name: gcr.io/cloud-builders/git
@@ -62,9 +64,11 @@ steps:
       - "K8S_ORG=${_K8S_ORG}"
       - "K8S_REPO=${_K8S_REPO}"
       - "K8S_REF=${_K8S_REF}"
+      - "FASTLY_SERVICE_NAME=${_FASTLY_SERVICE_NAME}"
       - GOOGLE_SERVICE_ACCOUNT_NAME=krel-staging@k8s-releng-prod.iam.gserviceaccount.com
     secretEnv:
       - GITHUB_TOKEN
+      - FASTLY_API_TOKEN
     args:
       - "bin/krel"
       - "release"
@@ -110,6 +114,7 @@ tags:
   - ${_KUBERNETES_VERSION_TAG}
 
 options:
+  substitutionOption: ALLOW_LOOSE
   pool:
     name: "projects/$PROJECT_ID/locations/us-central1/workerPools/c3-highcpu-44"
 

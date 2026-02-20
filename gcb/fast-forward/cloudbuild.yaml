@@ -64,6 +64,7 @@ tags:
   - ${_TYPE}
 
 options:
+  substitutionOption: ALLOW_LOOSE
   pool:
     name: "projects/$PROJECT_ID/locations/us-central1/workerPools/c3-highcpu-44"
 
