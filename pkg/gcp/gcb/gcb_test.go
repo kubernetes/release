@@ -228,6 +228,7 @@ func TestSetGCBSubstitutionsSuccess(t *testing.T) {
 				"K8S_ORG":                git.DefaultGithubOrg,
 				"K8S_REPO":               git.DefaultGithubRepo,
 				"K8S_REF":                git.DefaultRef,
+				"FASTLY_SERVICE_NAME":    "dl.k8s.dev",
 			},
 		},
 		{

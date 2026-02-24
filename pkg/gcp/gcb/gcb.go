@@ -317,10 +317,6 @@ func (g *GCB) Submit() error {
 			gcbSubs["NOMOCK"] = "--" + gcbSubs["NOMOCK_TAG"]
 		}
 	} else {
-		// TODO: Remove once cloudbuild.yaml doesn't strictly require vars to be set.
-		gcbSubs["NOMOCK_TAG"] = ""
-		gcbSubs["NOMOCK"] = ""
-
 		userBucket := strings.ReplaceAll(release.TestBucket, "gcb", gcbSubs["GCP_USER_TAG"])
 
 		userBucketSetErr := os.Setenv("USER_BUCKET", userBucket)
@@ -513,6 +509,11 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket, forceBu
 
 	if g.options.Release {
 		gcbSubs["KUBERNETES_GCS_BUCKET"] = fmt.Sprintf("%s/stage/%s/%s/gcs-stage/%s", gcsBucket, buildVersion, versions.Prime(), versions.Prime())
+		if g.options.NoMock {
+			gcbSubs["FASTLY_SERVICE_NAME"] = "dl.k8s.io"
+		} else {
+			gcbSubs["FASTLY_SERVICE_NAME"] = "dl.k8s.dev"
+		}
 	}
 
 	return gcbSubs, nil
