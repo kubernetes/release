@@ -389,7 +389,7 @@ func (p *Publisher) PublishToGcs(
 		"-m",
 		"-h", "Content-Type:text/plain",
 		"-h", "Cache-Control:private, max-age=0, no-transform",
-		"-h", "Surrogate-Key: "+surrogateKey,
+		"-h", "x-goog-meta-surrogate-key: "+surrogateKey,
 		"cp",
 		latestFile,
 		publishFileDst,
