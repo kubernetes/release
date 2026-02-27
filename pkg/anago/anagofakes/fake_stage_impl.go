@@ -270,6 +270,17 @@ type FakeStageImpl struct {
 		result1 []in_toto.Subject
 		result2 error
 	}
+	GoModDownloadStub        func(string) error
+	goModDownloadMutex       sync.RWMutex
+	goModDownloadArgsForCall []struct {
+		arg1 string
+	}
+	goModDownloadReturns struct {
+		result1 error
+	}
+	goModDownloadReturnsOnCall map[int]struct {
+		result1 error
+	}
 	ListBinariesStub func(string) ([]struct {
 		Path     string
 		Platform string
@@ -1690,6 +1701,67 @@ func (fake *FakeStageImpl) GetProvenanceSubjectsReturnsOnCall(i int, result1 []i
 		result1 []in_toto.Subject
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeStageImpl) GoModDownload(arg1 string) error {
+	fake.goModDownloadMutex.Lock()
+	ret, specificReturn := fake.goModDownloadReturnsOnCall[len(fake.goModDownloadArgsForCall)]
+	fake.goModDownloadArgsForCall = append(fake.goModDownloadArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.GoModDownloadStub
+	fakeReturns := fake.goModDownloadReturns
+	fake.recordInvocation("GoModDownload", []interface{}{arg1})
+	fake.goModDownloadMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) GoModDownloadCallCount() int {
+	fake.goModDownloadMutex.RLock()
+	defer fake.goModDownloadMutex.RUnlock()
+	return len(fake.goModDownloadArgsForCall)
+}
+
+func (fake *FakeStageImpl) GoModDownloadCalls(stub func(string) error) {
+	fake.goModDownloadMutex.Lock()
+	defer fake.goModDownloadMutex.Unlock()
+	fake.GoModDownloadStub = stub
+}
+
+func (fake *FakeStageImpl) GoModDownloadArgsForCall(i int) string {
+	fake.goModDownloadMutex.RLock()
+	defer fake.goModDownloadMutex.RUnlock()
+	argsForCall := fake.goModDownloadArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStageImpl) GoModDownloadReturns(result1 error) {
+	fake.goModDownloadMutex.Lock()
+	defer fake.goModDownloadMutex.Unlock()
+	fake.GoModDownloadStub = nil
+	fake.goModDownloadReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) GoModDownloadReturnsOnCall(i int, result1 error) {
+	fake.goModDownloadMutex.Lock()
+	defer fake.goModDownloadMutex.Unlock()
+	fake.GoModDownloadStub = nil
+	if fake.goModDownloadReturnsOnCall == nil {
+		fake.goModDownloadReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.goModDownloadReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeStageImpl) ListBinaries(arg1 string) ([]struct {
