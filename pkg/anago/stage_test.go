@@ -613,6 +613,13 @@ func TestGenerateBillOfMaterials(t *testing.T) {
 		shouldError bool
 	}{
 		{
+			// GoModDownload fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.GoModDownloadReturns(err)
+			},
+			shouldError: true,
+		},
+		{
 			// GenerateSourceTreeBOM fails
 			prepare: func(mock *anagofakes.FakeStageImpl) {
 				mock.GenerateSourceTreeBOMReturns(nil, err)

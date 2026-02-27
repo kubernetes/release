@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/bom/pkg/provenance"
 	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/git"
+	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/log"
 
 	"k8s.io/release/pkg/build"
@@ -167,6 +168,7 @@ type stageImpl interface {
 		options *build.Options, srcPath, gcsPath string,
 	) error
 	PushContainerImages(options *build.Options) error
+	GoModDownload(path string) error
 	GenerateVersionArtifactsBOM(string) error
 	GenerateSourceTreeBOM(options *spdx.DocGenerateOptions) (*spdx.Document, error)
 	WriteSourceBOM(spdxDoc *spdx.Document, version string) error
@@ -792,6 +794,16 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 	return nil
 }
 
+func (d *defaultStageImpl) GoModDownload(path string) error {
+	logrus.Infof("Pre-populating Go module cache in %s", path)
+
+	if err := command.NewWithWorkDir(path, "go", "mod", "download").RunSuccess(); err != nil {
+		return fmt.Errorf("running go mod download in %s: %w", path, err)
+	}
+
+	return nil
+}
+
 func (d *defaultStageImpl) GenerateSourceTreeBOM(
 	options *spdx.DocGenerateOptions,
 ) (*spdx.Document, error) {
@@ -821,6 +833,12 @@ func (d *defaultStageImpl) WriteSourceBOM(
 }
 
 func (d *DefaultStage) GenerateBillOfMaterials() error {
+	// Pre-populate the Go module cache so that bom's license scanner
+	// can find modules locally instead of git-cloning each dependency.
+	if err := d.impl.GoModDownload(gitRoot); err != nil {
+		return fmt.Errorf("pre-populating go module cache: %w", err)
+	}
+
 	// For the Kubernetes source, we only generate the SBOM once as both
 	// versions are cut from the same point in the git history. The
 	// resulting SPDX document will be customized for each version
