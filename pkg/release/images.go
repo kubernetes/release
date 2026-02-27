@@ -26,6 +26,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -110,6 +111,19 @@ func (*defaultImageImpl) VerifyImage(_ *sign.Signer, _ string) error {
 
 var tagRegex = regexp.MustCompile(`^.+/(.+):.+$`)
 
+// publishWorkers is the number of concurrent workers for pushing and
+// signing arch-specific container images. Kept small to avoid
+// overwhelming the registry or docker daemon.
+const publishWorkers = 3
+
+// tarballItem holds metadata collected for a single arch-specific image
+// tarball, used to decouple the collection phase from the push/sign phase.
+type tarballItem struct {
+	path           string
+	origTag        string
+	newTagWithArch string
+}
+
 // PublishImages releases container images to the provided target registry.
 func (i *Images) Publish(registry, version, buildPath string) error {
 	version = i.normalizeVersion(version)
@@ -120,38 +134,17 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 		releaseImagesPath, registry,
 	)
 
+	// Phase 1: Collect all tarball metadata and build the manifest map.
+	var items []tarballItem
+
 	manifestImages, err := i.GetManifestImages(
 		registry, version, buildPath,
 		func(path, origTag, newTagWithArch string) error {
-			if err := i.Execute(
-				"docker", "load", "-qi", path,
-			); err != nil {
-				return fmt.Errorf("load container image: %w", err)
-			}
-
-			if err := i.Execute(
-				"docker", "tag", origTag, newTagWithArch,
-			); err != nil {
-				return fmt.Errorf("tag container image: %w", err)
-			}
-
-			logrus.Infof("Pushing %s", newTagWithArch)
-
-			if err := i.Execute(
-				"docker", "push", newTagWithArch,
-			); err != nil {
-				return fmt.Errorf("push container image: %w", err)
-			}
-
-			if err := i.SignImage(i.signer, newTagWithArch); err != nil {
-				return fmt.Errorf("sign container image: %w", err)
-			}
-
-			if err := i.Execute(
-				"docker", "rmi", origTag, newTagWithArch,
-			); err != nil {
-				return fmt.Errorf("remove local container image: %w", err)
-			}
+			items = append(items, tarballItem{
+				path:           path,
+				origTag:        origTag,
+				newTagWithArch: newTagWithArch,
+			})
 
 			return nil
 		},
@@ -160,6 +153,26 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 		return fmt.Errorf("get manifest images: %w", err)
 	}
 
+	// Phase 2: Push and sign all arch-specific images in parallel.
+	logrus.Infof(
+		"Pushing %d arch-specific images with %d workers",
+		len(items), publishWorkers,
+	)
+
+	g := new(errgroup.Group)
+	g.SetLimit(publishWorkers)
+
+	for _, item := range items {
+		g.Go(func() error {
+			return i.pushAndSignImage(item)
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return fmt.Errorf("push arch-specific images: %w", err)
+	}
+
+	// Phase 3: Create, push, and sign manifest lists (sequential).
 	if err := os.Setenv("DOCKER_CLI_EXPERIMENTAL", "enabled"); err != nil {
 		return fmt.Errorf("enable docker experimental CLI: %w", err)
 	}
@@ -223,6 +236,42 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 		if err := i.SignImage(i.signer, imageVersion); err != nil {
 			return fmt.Errorf("sign manifest list: %w", err)
 		}
+	}
+
+	return nil
+}
+
+// pushAndSignImage loads, tags, pushes, signs, and removes a single
+// arch-specific container image.
+func (i *Images) pushAndSignImage(item tarballItem) error {
+	if err := i.Execute(
+		"docker", "load", "-qi", item.path,
+	); err != nil {
+		return fmt.Errorf("load container image: %w", err)
+	}
+
+	if err := i.Execute(
+		"docker", "tag", item.origTag, item.newTagWithArch,
+	); err != nil {
+		return fmt.Errorf("tag container image: %w", err)
+	}
+
+	logrus.Infof("Pushing %s", item.newTagWithArch)
+
+	if err := i.Execute(
+		"docker", "push", item.newTagWithArch,
+	); err != nil {
+		return fmt.Errorf("push container image: %w", err)
+	}
+
+	if err := i.SignImage(i.signer, item.newTagWithArch); err != nil {
+		return fmt.Errorf("sign container image: %w", err)
+	}
+
+	if err := i.Execute(
+		"docker", "rmi", item.origTag, item.newTagWithArch,
+	); err != nil {
+		return fmt.Errorf("remove local container image: %w", err)
 	}
 
 	return nil

@@ -95,7 +95,13 @@ func TestPublish(t *testing.T) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
-				mock.ExecuteReturnsOnCall(0, errors.New(""))
+				mock.ExecuteCalls(func(_ string, args ...string) error {
+					if len(args) > 0 && args[0] == "load" {
+						return errors.New("")
+					}
+
+					return nil
+				})
 
 				return tempDir, func() {
 					require.NoError(t, os.RemoveAll(tempDir))
@@ -109,7 +115,13 @@ func TestPublish(t *testing.T) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
-				mock.ExecuteReturnsOnCall(1, errors.New(""))
+				mock.ExecuteCalls(func(_ string, args ...string) error {
+					if len(args) > 0 && args[0] == "tag" {
+						return errors.New("")
+					}
+
+					return nil
+				})
 
 				return tempDir, func() {
 					require.NoError(t, os.RemoveAll(tempDir))
@@ -123,7 +135,13 @@ func TestPublish(t *testing.T) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
-				mock.ExecuteReturnsOnCall(2, errors.New(""))
+				mock.ExecuteCalls(func(_ string, args ...string) error {
+					if len(args) > 0 && args[0] == "push" {
+						return errors.New("")
+					}
+
+					return nil
+				})
 
 				return tempDir, func() {
 					require.NoError(t, os.RemoveAll(tempDir))
@@ -137,7 +155,13 @@ func TestPublish(t *testing.T) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
-				mock.ExecuteReturnsOnCall(3, errors.New(""))
+				mock.ExecuteCalls(func(_ string, args ...string) error {
+					if len(args) > 0 && args[0] == "rmi" {
+						return errors.New("")
+					}
+
+					return nil
+				})
 
 				return tempDir, func() {
 					require.NoError(t, os.RemoveAll(tempDir))
@@ -150,8 +174,7 @@ func TestPublish(t *testing.T) {
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
-
-				mock.ExecuteReturnsOnCall(36, errors.New(""))
+				failOnManifestSubcommand(mock, "create")
 
 				return tempDir, func() {
 					require.NoError(t, os.RemoveAll(tempDir))
@@ -164,8 +187,7 @@ func TestPublish(t *testing.T) {
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
-
-				mock.ExecuteReturnsOnCall(37, errors.New(""))
+				failOnManifestSubcommand(mock, "annotate")
 
 				return tempDir, func() {
 					require.NoError(t, os.RemoveAll(tempDir))
@@ -178,17 +200,7 @@ func TestPublish(t *testing.T) {
 			prepare: func(mock *releasefakes.FakeImageImpl) (string, func()) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
-
-				i := 0
-				mock.ExecuteCalls(func(cmd string, args ...string) error {
-					// There is an ExponentialBackoff which we have to overcome
-					if i == 40 {
-						return errors.New("")
-					}
-					i++
-
-					return nil
-				})
+				failOnManifestSubcommand(mock, "push")
 
 				return tempDir, func() {
 					require.NoError(t, os.RemoveAll(tempDir))
@@ -251,7 +263,9 @@ func TestPublish(t *testing.T) {
 				tempDir := newImagesPath(t)
 				prepareImages(t, tempDir, mock)
 
-				mock.SignImageReturnsOnCall(10, errors.New(""))
+				// 4 arches × 3 images = 12 arch-specific sign calls (indices 0-11),
+				// then manifest list signing starts at index 12.
+				mock.SignImageReturnsOnCall(12, errors.New(""))
 
 				return tempDir, func() {
 					require.NoError(t, os.RemoveAll(tempDir))
@@ -430,6 +444,16 @@ func prepareImages(t *testing.T, tempDir string, mock *releasefakes.FakeImageImp
 			c++
 		}
 	}
+}
+
+func failOnManifestSubcommand(mock *releasefakes.FakeImageImpl, subcmd string) {
+	mock.ExecuteCalls(func(_ string, args ...string) error {
+		if len(args) >= 2 && args[0] == "manifest" && args[1] == subcmd {
+			return errors.New("")
+		}
+
+		return nil
+	})
 }
 
 func fetchStableMarker() (string, error) {
