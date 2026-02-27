@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-sdk/object"
+	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/helpers"
 	"sigs.k8s.io/release-utils/tar"
 )
@@ -58,9 +59,34 @@ func PrepareWorkspaceStage(directory string, noMock bool) error {
 
 	logrus.Infof("Cloning repository %s/%s to %s", k8sOrg, k8sRepo, directory)
 
-	repo, err := git.CloneOrOpenGitHubRepo(directory, k8sOrg, k8sRepo, false)
-	if err != nil {
-		return fmt.Errorf("clone k/k repository: %w", err)
+	var repo *git.Repo
+
+	if !helpers.Exists(directory) {
+		// Use blobless clone for fresh checkouts. This downloads the full
+		// commit graph (needed for changelog generation) but defers blob
+		// downloads until checkout, significantly reducing clone time.
+		repoURL := git.GetRepoURL(k8sOrg, k8sRepo, false)
+		logrus.Infof("Performing blobless clone from %s", repoURL)
+
+		if err := command.New(
+			"git", "clone", "--filter=blob:none", repoURL, directory,
+		).RunSuccess(); err != nil {
+			return fmt.Errorf("blobless clone k/k repository: %w", err)
+		}
+
+		var err error
+
+		repo, err = git.OpenRepo(directory)
+		if err != nil {
+			return fmt.Errorf("open blobless-cloned k/k repository: %w", err)
+		}
+	} else {
+		var err error
+
+		repo, err = git.CloneOrOpenGitHubRepo(directory, k8sOrg, k8sRepo, false)
+		if err != nil {
+			return fmt.Errorf("clone k/k repository: %w", err)
+		}
 	}
 
 	// Prewarm the SPDX licenses cache. As it is one of the main
