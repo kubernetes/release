@@ -30,8 +30,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	gitobject "github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/mattn/go-isatty"
-	"github.com/nozzle/throttler"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 
 	"k8s.io/release/pkg/notes/options"
 )
@@ -65,7 +65,8 @@ func (g *Gatherer) ListReleaseNotesV2() (*ReleaseNotes, error) {
 		mapProviders = append(mapProviders, provider)
 	}
 
-	t := throttler.New(maxParallelRequests, len(pairs))
+	eg := new(errgroup.Group)
+	eg.SetLimit(maxParallelRequests)
 
 	aggregator := releaseNotesAggregator{
 		releaseNotes: NewReleaseNotes(),
@@ -83,11 +84,12 @@ func (g *Gatherer) ListReleaseNotesV2() (*ReleaseNotes, error) {
 	}
 
 	for _, pair := range pairs {
-		// pair needs to be scoped in parameter so that the specific variable read
-		// happens when the goroutine is declared, not when referenced inside
-		go func(pair *commitPrPair) {
-			noteMaps := []*ReleaseNotesMap{}
+		eg.Go(func() error {
+			var noteMaps []*ReleaseNotesMap
+
 			for _, provider := range mapProviders {
+				var err error
+
 				noteMaps, err = provider.GetMapsForPR(pair.PrNum)
 				if err != nil {
 					logrus.WithFields(logrus.Fields{
@@ -129,15 +131,12 @@ func (g *Gatherer) ListReleaseNotesV2() (*ReleaseNotes, error) {
 			}
 
 			bar.Increment()
-			t.Done(nil)
-		}(pair)
 
-		if t.Throttle() > 0 {
-			break
-		}
+			return nil
+		})
 	}
 
-	if err := t.Err(); err != nil {
+	if err := eg.Wait(); err != nil {
 		return nil, err
 	}
 

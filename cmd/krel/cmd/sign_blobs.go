@@ -23,9 +23,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/nozzle/throttler"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 
 	"sigs.k8s.io/release-sdk/gcli"
 	"sigs.k8s.io/release-sdk/object"
@@ -201,10 +201,11 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 		}
 	}
 
-	t := throttler.New(int(signOpts.maxWorkers), len(bundle)) //nolint:gosec // overflow is highly unlikely
+	g := new(errgroup.Group)
+	g.SetLimit(int(signOpts.maxWorkers)) //nolint:gosec // overflow is highly unlikely
 
 	for _, fileBundle := range bundle {
-		go func(fileBundle signingBundle) {
+		g.Go(func() error {
 			logrus.Infof("Signing %s...", fileBundle.fileToSign)
 
 			signerOpts := sign.Default()
@@ -228,20 +229,14 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 
 			signer := sign.New(signerOpts)
 			if _, err := signer.SignFile(fileBundle.fileLocalLocation); err != nil {
-				t.Done(fmt.Errorf("signing the file %s: %w", fileBundle.fileLocalLocation, err))
-
-				return
+				return fmt.Errorf("signing the file %s: %w", fileBundle.fileLocalLocation, err)
 			}
 
-			t.Done(nil)
-		}(fileBundle)
-
-		if t.Throttle() > 0 {
-			break
-		}
+			return nil
+		})
 	}
 
-	if err := t.Err(); err != nil {
+	if err := g.Wait(); err != nil {
 		return fmt.Errorf("signing the blobs: %w", err)
 	}
 
