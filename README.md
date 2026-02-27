@@ -25,8 +25,6 @@ Individual tools can be installed via `go install k8s.io/release/cmd/$TOOL@lates
   - [`release-notes`](#release-notes)
   - [`gcbuilder`](#gcbuilder)
   - [`publish-release`](#publish-release)
-- [Legacy](#legacy)
-  - [`push-build.sh`](#push-buildsh)
 - [Contributing](#contributing)
 
 **Each of the headings below links to a tool's location.**
@@ -129,16 +127,6 @@ A tool to announce software releases. Currently supports updating the
 release page on GitHub based on templates and updating release artifacts.
 
 Details: [Documentation](cmd/publish-release/README.md)
-
-## Legacy
-
-### [`push-build.sh`](push-build.sh)
-
-Push a CI build of Kubernetes to Google Cloud Storage (GCS).
-
-Status: Deprecated (but still in use)
-
-Audience: [Release Managers][release-managers], Prowjobs
 
 ## Contributing
 
