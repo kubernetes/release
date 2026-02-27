@@ -38,9 +38,9 @@ import (
 	"unicode"
 
 	gogithub "github.com/google/go-github/v75/github"
-	"github.com/nozzle/throttler"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -614,33 +614,34 @@ func (g *Gatherer) listCommits(branch, start, end string) ([]*gogithub.Repositor
 
 	allCommits.Add(commits)
 
-	remainingPages := resp.LastPage - 1
-	if remainingPages < 1 {
+	if resp.LastPage <= 1 {
 		return allCommits.List(), nil
 	}
 
-	t := throttler.New(maxParallelRequests, remainingPages)
+	eg, ctx := errgroup.WithContext(g.context)
+	eg.SetLimit(maxParallelRequests)
 
 	for page := 2; page <= resp.LastPage; page++ {
 		clo := clo
 		clo.Page = page
 
-		go func() {
-			commits, _, err := worker(&clo)
-			if err == nil {
-				allCommits.Add(commits)
+		eg.Go(func() error {
+			if err := ctx.Err(); err != nil {
+				return err
 			}
 
-			t.Done(err)
-		}()
+			commits, _, err := worker(&clo)
+			if err != nil {
+				return err
+			}
 
-		// abort all, if we got one error
-		if t.Throttle() > 0 {
-			break
-		}
+			allCommits.Add(commits)
+
+			return nil
+		})
 	}
 
-	if err := t.Err(); err != nil {
+	if err := eg.Wait(); err != nil {
 		return nil, err
 	}
 
@@ -730,17 +731,15 @@ func (g *Gatherer) gatherNotes(commits []*gogithub.RepositoryCommit) (filtered [
 	// In case we parallelize the above mentioned API calls and the volume of
 	// them is bigger than expected, we might go well above the
 	// `maxParallelRequests` of parallel requests. In that case we probably
-	// should introduce the throttler as a global concept (on the Gatherer or so)
-	// and use that throttler for all API calls.
-	t := throttler.New(maxParallelRequests, nrOfCommits)
+	// should introduce the errgroup as a global concept (on the Gatherer or so)
+	// and use that errgroup for all API calls.
+	eg, ctx := errgroup.WithContext(g.context)
 
-	notesForCommit := func(commit *gogithub.RepositoryCommit) {
-		res, err := g.notesForCommit(commit)
-		if err == nil && res != nil {
-			allResults.Add(res)
-		}
-
-		t.Done(err)
+	if g.options.ReplayDir == "" && g.options.RecordDir == "" {
+		eg.SetLimit(maxParallelRequests)
+	} else {
+		// Ensure the same order like recorded
+		eg.SetLimit(1)
 	}
 
 	for i, commit := range commits {
@@ -750,19 +749,25 @@ func (g *Gatherer) gatherNotes(commits []*gogithub.RepositoryCommit) (filtered [
 			commit.GetSHA(),
 		)
 
-		if g.options.ReplayDir == "" && g.options.RecordDir == "" {
-			go notesForCommit(commit)
-		} else {
-			// Ensure the same order like recorded
-			notesForCommit(commit)
-		}
+		eg.Go(func() error {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
 
-		if t.Throttle() > 0 {
-			break
-		}
-	} // for range commits
+			res, err := g.notesForCommit(commit)
+			if err != nil {
+				return err
+			}
 
-	if err := t.Err(); err != nil {
+			if res != nil {
+				allResults.Add(res)
+			}
+
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
 		return nil, err
 	}
 
