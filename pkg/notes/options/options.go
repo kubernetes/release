@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -136,6 +137,13 @@ type Options struct {
 
 	// IncludeLabels can be used to filter PRs by labels so only PRs with one or more specified labels are included.
 	IncludeLabels []string
+
+	// ReleaseNoteRegex optionally overrides how release note text is extracted from PR bodies.
+	// When set, this regex is used instead of the default ```release-note blocks. Must define a named capture "note".
+	ReleaseNoteRegex string
+
+	// ReleaseNoteRegexCompiled is the compiled form of ReleaseNoteRegex, set when a gatherer is created.
+	ReleaseNoteRegexCompiled *regexp.Regexp
 }
 
 type RevisionDiscoveryMode string
