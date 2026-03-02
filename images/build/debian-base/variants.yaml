@@ -2,3 +2,8 @@ variants:
   bookworm:
     CONFIG: 'bookworm'
     IMAGE_VERSION: 'bookworm-v1.0.7'
+    ALL_ARCH: amd64 arm arm64 ppc64le s390x
+  trixie:
+    CONFIG: 'trixie'
+    IMAGE_VERSION: 'trixie-v1.0.0'
+    ALL_ARCH: amd64 arm arm64 ppc64le riscv64 s390x
