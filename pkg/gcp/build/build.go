@@ -408,10 +408,31 @@ func GetJobsByTag(project, tagsFilter string) ([]*cloudbuild.Build, error) {
 		return nil, fmt.Errorf("failed to fetching gcloud credentials... try running \"gcloud auth application-default login\": %w", err)
 	}
 
-	req, err := service.Projects.Builds.List(project).Filter(tagsFilter).PageSize(50).Do()
-	if err != nil {
-		return nil, fmt.Errorf("failed to listing the builds: %w", err)
+	parent := fmt.Sprintf("projects/%s/locations/us-central1", project)
+
+	var allBuilds []*cloudbuild.Build
+
+	pageToken := ""
+
+	for {
+		call := service.Projects.Locations.Builds.List(parent).Filter(tagsFilter).PageSize(50)
+		if pageToken != "" {
+			call = call.PageToken(pageToken)
+		}
+
+		resp, err := call.Do()
+		if err != nil {
+			return nil, fmt.Errorf("failed to list the builds: %w", err)
+		}
+
+		allBuilds = append(allBuilds, resp.Builds...)
+
+		if resp.NextPageToken == "" {
+			break
+		}
+
+		pageToken = resp.NextPageToken
 	}
 
-	return req.Builds, nil
+	return allBuilds, nil
 }
