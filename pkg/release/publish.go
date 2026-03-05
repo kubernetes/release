@@ -63,6 +63,7 @@ func (p *Publisher) SetClient(client publisherClient) {
 // publisherClient is a client for working with GCS
 //
 //counterfeiter:generate . publisherClient
+//nolint:interfacebloat // large interface is by design
 type publisherClient interface {
 	GSUtil(args ...string) error
 	GSUtilOutput(args ...string) (string, error)

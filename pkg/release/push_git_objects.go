@@ -189,32 +189,6 @@ func (gp *GitObjectPusher) PushTag(newTag string) (err error) {
 	return nil
 }
 
-// checkTagName verifies that the specified tag name is valid.
-func (gp *GitObjectPusher) checkTagName(tagName string) error {
-	_, err := helpers.TagStringToSemver(tagName)
-	if err != nil {
-		return fmt.Errorf("transforming tag into semver: %w", err)
-	}
-
-	return nil
-}
-
-// checkBranchName verifies that the branch name is valid.
-func (gp *GitObjectPusher) checkBranchName(branchName string) error {
-	if !strings.HasPrefix(branchName, "release-") {
-		return errors.New("branch name has to start with release-")
-	}
-
-	versionTag := strings.TrimPrefix(branchName, "release-")
-	// Add .0 and check is we get a valid semver
-	_, err := semver.Parse(versionTag + ".0")
-	if err != nil {
-		return fmt.Errorf("parsing semantic version in branchname: %w", err)
-	}
-
-	return nil
-}
-
 // PushMain pushes the main branch to the origin.
 func (gp *GitObjectPusher) PushMain() error {
 	logrus.Infof("Checkout %s branch to push objects", git.DefaultBranch)
@@ -259,6 +233,32 @@ func (gp *GitObjectPusher) PushMain() error {
 	// logrun -s git push$dryrun_flag origin master || return 1
 	if err := gp.repo.Push(git.DefaultBranch); err != nil {
 		return fmt.Errorf("pushing %s branch: %w", git.DefaultBranch, err)
+	}
+
+	return nil
+}
+
+// checkTagName verifies that the specified tag name is valid.
+func (gp *GitObjectPusher) checkTagName(tagName string) error {
+	_, err := helpers.TagStringToSemver(tagName)
+	if err != nil {
+		return fmt.Errorf("transforming tag into semver: %w", err)
+	}
+
+	return nil
+}
+
+// checkBranchName verifies that the branch name is valid.
+func (gp *GitObjectPusher) checkBranchName(branchName string) error {
+	if !strings.HasPrefix(branchName, "release-") {
+		return errors.New("branch name has to start with release-")
+	}
+
+	versionTag := strings.TrimPrefix(branchName, "release-")
+	// Add .0 and check is we get a valid semver
+	_, err := semver.Parse(versionTag + ".0")
+	if err != nil {
+		return fmt.Errorf("parsing semantic version in branchname: %w", err)
 	}
 
 	return nil

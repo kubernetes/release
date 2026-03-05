@@ -65,7 +65,7 @@ func NewPEBinary(filePath string, opts *Options) (bin *PEBinary, err error) {
 	if header == nil {
 		logrus.Infof("file is not a PE executable")
 
-		return nil, nil
+		return nil, nil //nolint:nilnil // intentional nil,nil return
 	}
 
 	return &PEBinary{
@@ -173,7 +173,7 @@ func GetPEHeader(path string) (*PEHeader, error) {
 		// windows executable
 		logrus.Debug("File is not a valid windows PE executable")
 
-		return nil, nil
+		return nil, nil //nolint:nilnil // intentional nil,nil return
 	}
 
 	if _, err := f.Seek(base, 0); err != nil {

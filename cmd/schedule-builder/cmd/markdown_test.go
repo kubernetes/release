@@ -463,7 +463,7 @@ func TestUpdatePatchSchedule(t *testing.T) {
 
 			require.NoError(t, updatePatchSchedule(tc.refTime, tc.givenSchedule, EolBranches{}, scheduleFile.Name(), eolFile.Name()))
 
-			scheduleYamlBytes, err := os.ReadFile(scheduleFile.Name())
+			scheduleYamlBytes, err := os.ReadFile(scheduleFile.Name()) //nolint:gosec // G703 - temp file path is safe
 			require.NoError(t, err)
 
 			patchRes := PatchSchedule{}
@@ -471,7 +471,7 @@ func TestUpdatePatchSchedule(t *testing.T) {
 
 			assert.Equal(t, tc.expectedSchedule, patchRes)
 
-			eolYamlBytes, err := os.ReadFile(eolFile.Name())
+			eolYamlBytes, err := os.ReadFile(eolFile.Name()) //nolint:gosec // G703 - temp file path is safe
 			require.NoError(t, err)
 
 			eolRes := EolBranches{}

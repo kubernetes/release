@@ -39,8 +39,9 @@ const (
 
 // Binary is the base type of the package. It abstracts a binary executable.
 type Binary struct {
-	options *Options
 	binaryImplementation
+
+	options *Options
 }
 
 // Options to control the binary checker.
@@ -73,7 +74,7 @@ func NewWithOptions(filePath string, opts *Options) (bin *Binary, err error) {
 
 // getArchImplementation returns the implementation that corresponds
 // to the specified binary.
-func getArchImplementation(filePath string, opts *Options) (impl binaryImplementation, err error) {
+func getArchImplementation(filePath string, opts *Options) (impl binaryImplementation, err error) { //nolint:ireturn // returning interface is intentional
 	// Check if we're dealing with a Linux binary
 	elf, err := NewELFBinary(filePath, opts)
 	if err != nil {

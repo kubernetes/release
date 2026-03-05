@@ -28,8 +28,9 @@ import (
 )
 
 type SBOM struct {
-	options *Options
 	impl
+
+	options *Options
 }
 
 // NewGitHub returns a new GitHub instance.

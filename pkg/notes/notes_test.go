@@ -37,7 +37,7 @@ const (
 	releaseNoteBlock = mdSep + "release-note"
 )
 
-func githubClient(t *testing.T) (kgithub.Client, context.Context) {
+func githubClient(t *testing.T) (kgithub.Client, context.Context) { //nolint:ireturn // returning interface is intentional
 	_, tokenSet := os.LookupEnv(kgithub.TokenEnvKey)
 	if !tokenSet {
 		t.Skipf("%s environment variable is not set", kgithub.TokenEnvKey)
@@ -263,6 +263,7 @@ func TestPrettySIG(t *testing.T) {
 	}
 }
 
+//nolint:dupword // test data contains intentional repeated words
 func TestNoteTextFromString(t *testing.T) {
 	noteBlock := func(note string) string {
 		return releaseNoteBlock + "\n" + note + "\n" + mdSep
@@ -279,8 +280,7 @@ func TestNoteTextFromString(t *testing.T) {
 			},
 		},
 		{
-			noteBlock("test\ntest\ntest"),
-			func(res string, err error) {
+			noteBlock("test\ntest\ntest"), func(res string, err error) {
 				require.NoError(t, err)
 				require.Equal(t, "test\ntest\ntest", res)
 			},
@@ -294,8 +294,7 @@ func TestNoteTextFromString(t *testing.T) {
 		},
 		{
 			noteBlock(
-				"- item\n  item\n  item",
-			),
+				"- item\n  item\n  item"),
 			func(res string, err error) {
 				require.NoError(t, err)
 				require.Equal(t, "item\nitem\nitem", res)
@@ -303,8 +302,7 @@ func TestNoteTextFromString(t *testing.T) {
 		},
 		{
 			noteBlock(
-				"- item\n  item\n- item\n  item",
-			),
+				"- item\n  item\n- item\n  item"),
 			func(res string, err error) {
 				require.NoError(t, err)
 				require.Equal(t, "item\nitem\n- item\n  item", res)
@@ -467,7 +465,7 @@ func testApplyMapHelper(t *testing.T, testDir string, makeNewNote func() *Releas
 		case []any:
 			// Handle string slice cases
 			actualVal := reflect.Indirect(reflectedNote).FieldByName(property)
-			actualSlice := make([]string, 0)
+			actualSlice := make([]string, 0, actualVal.Len())
 
 			for i := range actualVal.Len() {
 				actualSlice = append(actualSlice, actualVal.Index(i).String())

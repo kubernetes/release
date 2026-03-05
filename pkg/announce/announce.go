@@ -62,8 +62,9 @@ Managers</a>.
 `
 
 type Announce struct {
-	options *Options
 	impl
+
+	options *Options
 }
 
 // NewAnnounce returns a new Announce instance.

@@ -91,7 +91,7 @@ func (t *TestGrid) configFromURL(url string) (cfg *pb.Configuration, err error) 
 
 	defer func() {
 		if err == nil {
-			err = os.Remove(tmpFile.Name())
+			err = os.Remove(tmpFile.Name()) //nolint:gosec // G703 - temp file path is safe
 		}
 	}()
 

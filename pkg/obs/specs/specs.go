@@ -132,8 +132,9 @@ func (o *Options) Validate() error {
 }
 
 type Specs struct {
-	options *Options
 	impl
+
+	options *Options
 }
 
 func New(opts *Options) *Specs {

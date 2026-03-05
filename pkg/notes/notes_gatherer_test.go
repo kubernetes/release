@@ -244,6 +244,7 @@ func TestListCommits(t *testing.T) {
 	}
 }
 
+//nolint:maintidx // complex but acceptable
 func TestGatherNotes(t *testing.T) {
 	t.Parallel()
 
@@ -556,6 +557,7 @@ func newIntsRecorder(ints ...int) *intsRecorder {
 
 type intsRecorder struct {
 	sync.Mutex
+
 	seen map[int]bool
 }
 

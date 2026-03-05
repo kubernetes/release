@@ -39,6 +39,7 @@ import (
 // releaseClient is a client for release a previously staged release.
 //
 //counterfeiter:generate . releaseClient
+//nolint:interfacebloat // large interface is by design
 type releaseClient interface {
 	// Submit can be used to submit a Google Cloud Build (GCB) job.
 	Submit(stream bool) error
@@ -121,6 +122,7 @@ type defaultReleaseImpl struct{}
 // releaseImpl is the implementation of the release client.
 //
 //counterfeiter:generate . releaseImpl
+//nolint:interfacebloat // large interface is by design
 type releaseImpl interface {
 	Submit(options *gcb.Options) error
 	ToFile(fileName string) error

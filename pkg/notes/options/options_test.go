@@ -36,6 +36,7 @@ import (
 
 type testOptions struct {
 	*Options
+
 	testRepo *testRepo
 }
 

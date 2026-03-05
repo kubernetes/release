@@ -87,6 +87,7 @@ var argFunc = func(cmd *cobra.Command, args []string) error {
 	if len(args) != 1 {
 		return errors.New("command takes only one argument: a CVE identifier")
 	}
+
 	cveOpts.CVE = strings.ToUpper(args[0])
 	if err := cve.NewClient().CheckID(cveOpts.CVE); err != nil {
 		return fmt.Errorf("invalid CVE ID. Format must match %s", cve.CVEIDRegExp)
@@ -119,7 +120,7 @@ func writeNewCVE(opts *cveOptions) (err error) {
 		return fmt.Errorf("creating new cve data map: %w", err)
 	}
 
-	oldFile, err := os.ReadFile(file.Name())
+	oldFile, err := os.ReadFile(file.Name()) //nolint:gosec // G703 - temp file path is safe
 	if err != nil {
 		return fmt.Errorf("reading local copy of CVE entry: %w", err)
 	}
@@ -197,7 +198,7 @@ func editExistingCVE(opts *cveOptions) (err error) {
 		return fmt.Errorf("copying CVE entry for edting: %w", err)
 	}
 
-	oldFile, err := os.ReadFile(file.Name())
+	oldFile, err := os.ReadFile(file.Name()) //nolint:gosec // G703 - temp file path is safe
 	if err != nil {
 		return fmt.Errorf("reading local copy of CVE entry: %w", err)
 	}

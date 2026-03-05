@@ -39,6 +39,7 @@ import (
 // Images is a wrapper around container image related functionality.
 type Images struct {
 	imageImpl
+
 	signer *sign.Signer
 }
 
@@ -241,42 +242,6 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 	return nil
 }
 
-// pushAndSignImage loads, tags, pushes, signs, and removes a single
-// arch-specific container image.
-func (i *Images) pushAndSignImage(item tarballItem) error {
-	if err := i.Execute(
-		"docker", "load", "-qi", item.path,
-	); err != nil {
-		return fmt.Errorf("load container image: %w", err)
-	}
-
-	if err := i.Execute(
-		"docker", "tag", item.origTag, item.newTagWithArch,
-	); err != nil {
-		return fmt.Errorf("tag container image: %w", err)
-	}
-
-	logrus.Infof("Pushing %s", item.newTagWithArch)
-
-	if err := i.Execute(
-		"docker", "push", item.newTagWithArch,
-	); err != nil {
-		return fmt.Errorf("push container image: %w", err)
-	}
-
-	if err := i.SignImage(i.signer, item.newTagWithArch); err != nil {
-		return fmt.Errorf("sign container image: %w", err)
-	}
-
-	if err := i.Execute(
-		"docker", "rmi", item.origTag, item.newTagWithArch,
-	); err != nil {
-		return fmt.Errorf("remove local container image: %w", err)
-	}
-
-	return nil
-}
-
 // Validates that image manifests have been pushed to a specified remote
 // registry.
 func (i *Images) Validate(registry, version, buildPath string) error {
@@ -351,7 +316,7 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 			logrus.Infof("Digest for %s on %s: %s", imageVersion, arch, digest)
 		}
 
-		if err := os.RemoveAll(manifestFile.Name()); err != nil {
+		if err := os.RemoveAll(manifestFile.Name()); err != nil { //nolint:gosec // G703 - temp file path is safe
 			return fmt.Errorf("remove manifest file: %w", err)
 		}
 	}
@@ -424,7 +389,7 @@ func (i *Images) Exists(registry, version string, fast bool) (bool, error) {
 			logrus.Infof("Digest for %s on %s: %s", imageVersion, arch, digest)
 		}
 
-		if err := os.RemoveAll(manifestFile.Name()); err != nil {
+		if err := os.RemoveAll(manifestFile.Name()); err != nil { //nolint:gosec // G703 - temp file path is safe
 			return false, fmt.Errorf("remove manifest file: %w", err)
 		}
 	}
@@ -462,6 +427,7 @@ func (i *Images) GetManifestImages(
 				if err != nil {
 					return err
 				}
+
 				if info.IsDir() {
 					return nil
 				}
@@ -509,6 +475,42 @@ func (i *Images) GetManifestImages(
 	}
 
 	return manifestImages, nil
+}
+
+// pushAndSignImage loads, tags, pushes, signs, and removes a single
+// arch-specific container image.
+func (i *Images) pushAndSignImage(item tarballItem) error {
+	if err := i.Execute(
+		"docker", "load", "-qi", item.path,
+	); err != nil {
+		return fmt.Errorf("load container image: %w", err)
+	}
+
+	if err := i.Execute(
+		"docker", "tag", item.origTag, item.newTagWithArch,
+	); err != nil {
+		return fmt.Errorf("tag container image: %w", err)
+	}
+
+	logrus.Infof("Pushing %s", item.newTagWithArch)
+
+	if err := i.Execute(
+		"docker", "push", item.newTagWithArch,
+	); err != nil {
+		return fmt.Errorf("push container image: %w", err)
+	}
+
+	if err := i.SignImage(i.signer, item.newTagWithArch); err != nil {
+		return fmt.Errorf("sign container image: %w", err)
+	}
+
+	if err := i.Execute(
+		"docker", "rmi", item.origTag, item.newTagWithArch,
+	); err != nil {
+		return fmt.Errorf("remove local container image: %w", err)
+	}
+
+	return nil
 }
 
 // normalizeVersion normalizes an container image version by replacing all invalid characters.

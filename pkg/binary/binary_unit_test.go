@@ -33,7 +33,7 @@ func TestContainsString(t *testing.T) {
 	// Decode a fragment of kubectl into a temporary file:
 	binData, err := base64.StdEncoding.DecodeString(kubectlFragment)
 	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(tmpfile.Name(), binData, os.FileMode(0o644)))
+	require.NoError(t, os.WriteFile(tmpfile.Name(), binData, os.FileMode(0o644))) //nolint:gosec // G703 - temp file path is safe
 	bin := Binary{
 		options: &Options{
 			Path: tmpfile.Name(),
@@ -52,6 +52,7 @@ func TestContainsString(t *testing.T) {
 	require.NoError(t, err)
 }
 
+//nolint:dupword // binary test data
 var kubectlFragment = `nxsirlx0QAAAAAAA0HZAFANwVyHQekA7vuLSGA57QHEaitUNKXtAY+ef53SofUDqSbATP1Z+QGgo
 7CEZK4RA97PI/X55hUACFbBWgMiFQO85+v5CLoZABGeTp8C4i0D///////+PQBhRnRjrAphA5jvf
 zhnyo0BqJIxot/+oQB7FLgvj9rJAaUuYyn5qtECfyHUuMhK1QAAAAAAAiMNAER3/Jb8Vx0Dhka4+

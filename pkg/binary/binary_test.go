@@ -132,7 +132,7 @@ func TestGetELFHeader(t *testing.T) {
 	for _, testBin := range GetTestHeaders() {
 		f := writeTestBinary(t, testBin.Data)
 		header, err := binary.GetELFHeader(f.Name())
-		os.Remove(f.Name())
+		os.Remove(f.Name()) //nolint:gosec // G703 - temp file path is safe
 		require.NoError(t, err)
 
 		if testBin.OS == "linux" {
@@ -148,7 +148,7 @@ func TestGetMachOHeader(t *testing.T) {
 	for _, testBin := range GetTestHeaders() {
 		f := writeTestBinary(t, testBin.Data)
 		header, err := binary.GetMachOHeader(f.Name())
-		os.Remove(f.Name())
+		os.Remove(f.Name()) //nolint:gosec // G703 - temp file path is safe
 		require.NoError(t, err)
 
 		if testBin.OS == "darwin" {
@@ -164,7 +164,7 @@ func TestGetPEHeader(t *testing.T) {
 	for _, testBin := range GetTestHeaders() {
 		f := writeTestBinary(t, testBin.Data)
 		header, err := binary.GetPEHeader(f.Name())
-		os.Remove(f.Name())
+		os.Remove(f.Name()) //nolint:gosec // G703 - temp file path is safe
 		require.NoError(t, err)
 
 		if testBin.OS == "windows" {

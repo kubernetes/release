@@ -39,6 +39,7 @@ type defaultImpl struct{}
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //counterfeiter:generate . impl
 //go:generate /usr/bin/env bash -c "cat ../../../hack/boilerplate/boilerplate.generatego.txt specsfakes/fake_impl.go > specsfakes/_fake_impl.go && mv specsfakes/_fake_impl.go specsfakes/fake_impl.go"
+//nolint:interfacebloat // large interface is by design
 type impl interface {
 	GetKubeVersion(versionType release.VersionType) (string, error)
 	GetRequest(url string) (*http.Response, error)

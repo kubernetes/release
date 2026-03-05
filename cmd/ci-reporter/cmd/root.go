@@ -151,7 +151,7 @@ type CIReporters []CIReporter
 var AllImplementedReporters = CIReporters{GithubReporter{}, TestgridReporter{}}
 
 // SearchReporter used to filter a implemented reporter by name.
-func SearchReporter(ctx context.Context, reporterName string) (CIReporter, error) {
+func SearchReporter(ctx context.Context, reporterName string) (CIReporter, error) { //nolint:ireturn // returning interface is intentional
 	var reporter CIReporter
 
 	reporterFound := false
@@ -281,10 +281,12 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 			countCategories[data[i][categoryIndex]]++
 		}
 
-		categoryCounts := ""
+		var categoryCountsBuilder strings.Builder
 		for category, categoryCount := range countCategories {
-			categoryCounts += fmt.Sprintf("%s:%d ", category, categoryCount)
+			fmt.Fprintf(&categoryCountsBuilder, "%s:%d ", category, categoryCount)
 		}
+
+		categoryCounts := categoryCountsBuilder.String()
 
 		if _, err := fmt.Fprintf(out, "\nSUMMARY - Total:%d %s\n", len(data), categoryCounts); err != nil {
 			return fmt.Errorf("could not write to output stream: %w", err)

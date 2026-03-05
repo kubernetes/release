@@ -72,7 +72,7 @@ type FileMetadata struct {
 // binaries in `dir`.
 func fetchFileMetadata(dir, urlPrefix, tag string) (*FileMetadata, error) {
 	if dir == "" {
-		return nil, nil
+		return nil, nil //nolint:nilnil // intentional nil,nil return
 	}
 
 	if tag == "" {
@@ -104,7 +104,7 @@ func fetchFileMetadata(dir, urlPrefix, tag string) (*FileMetadata, error) {
 	}
 
 	if fileCount == 0 {
-		return nil, nil
+		return nil, nil //nolint:nilnil // intentional nil,nil return
 	}
 
 	return fm, nil
@@ -112,7 +112,7 @@ func fetchFileMetadata(dir, urlPrefix, tag string) (*FileMetadata, error) {
 
 func fetchImageMetadata(dir, tag string) (*ImageMetadata, error) {
 	if dir == "" {
-		return nil, nil
+		return nil, nil //nolint:nilnil // intentional nil,nil return
 	}
 
 	if tag == "" {
@@ -127,7 +127,7 @@ func fetchImageMetadata(dir, tag string) (*ImageMetadata, error) {
 	}
 
 	if len(manifests) == 0 {
-		return nil, nil
+		return nil, nil //nolint:nilnil // intentional nil,nil return
 	}
 
 	res := ImageMetadata{}
@@ -559,8 +559,7 @@ func mapKind(kind notes.Kind) notes.Kind {
 }
 
 func prettyKind(kind notes.Kind) string {
-	//nolint:exhaustive // all cases are covered by default
-	switch kind {
+	switch kind { //nolint:exhaustive // all cases are covered by default
 	case notes.KindAPIChange:
 		return "API Change"
 

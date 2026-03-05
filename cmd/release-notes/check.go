@@ -45,6 +45,7 @@ const (
 
 type checkPROptions struct {
 	options.Options
+
 	PullRequests []int
 }
 

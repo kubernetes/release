@@ -263,7 +263,7 @@ func processRemoteAsset(urlString string) (path string, err error) {
 	}
 	defer rc.Close()
 
-	f, err := os.Create(filepath.Join(tmpDir, filename))
+	f, err := os.Create(filepath.Join(tmpDir, filename)) //nolint:gosec // G703 - temp dir path is safe
 	if err != nil {
 		return path, fmt.Errorf("creating temporary file: %w", err)
 	}
@@ -308,7 +308,7 @@ func runGithubPage(opts *githubPageCmdLineOptions) (err error) {
 		}
 	}
 
-	var newAssets []string //nolint: prealloc,gocritic
+	var newAssets []string //nolint:gocritic
 	for _, a := range assets {
 		newAssets = append(newAssets, a.ReadFrom)
 	}

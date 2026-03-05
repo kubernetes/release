@@ -263,7 +263,7 @@ func getVariants(o *Options) (variants, error) {
 			return nil, fmt.Errorf("no variants.yaml found, but a build variant (%q) was specified: %w", o.Variant, err)
 		}
 
-		return nil, nil
+		return nil, nil //nolint:nilnil // intentional nil,nil return
 	}
 
 	v := struct {

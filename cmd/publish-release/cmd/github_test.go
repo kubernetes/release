@@ -33,7 +33,7 @@ func TestProcessRemoteAsset(t *testing.T) {
 
 	t.Setenv(gacVar, "")
 
-	files := []string{}
+	files := []string{} //nolint:prealloc // dynamic append
 
 	defer func() {
 		for _, f := range files {

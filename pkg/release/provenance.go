@@ -33,6 +33,13 @@ import (
 	"sigs.k8s.io/release-utils/helpers"
 )
 
+// ProvenanceChecker is the main structure to check the provenance.
+type ProvenanceChecker struct {
+	objStore *object.GCS
+	options  *ProvenanceCheckerOptions
+	impl     provenanceCheckerImplementation
+}
+
 func NewProvenanceChecker(opts *ProvenanceCheckerOptions) *ProvenanceChecker {
 	p := &ProvenanceChecker{
 		objStore: object.NewGCS(),
@@ -43,13 +50,6 @@ func NewProvenanceChecker(opts *ProvenanceCheckerOptions) *ProvenanceChecker {
 	p.impl = &defaultProvenanceCheckerImpl{}
 
 	return p
-}
-
-// ProvenanceChecker is the main structure to check the provenance.
-type ProvenanceChecker struct {
-	objStore *object.GCS
-	options  *ProvenanceCheckerOptions
-	impl     provenanceCheckerImplementation
 }
 
 // CheckStageProvenance validates the provenance for the provided build version.
@@ -218,16 +218,16 @@ func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(
 	return nil
 }
 
+type ProvenanceReader struct {
+	options *ProvenanceReaderOptions
+	impl    provenanceReaderImplementation
+}
+
 func NewProvenanceReader(opts *ProvenanceReaderOptions) *ProvenanceReader {
 	return &ProvenanceReader{
 		options: opts,
 		impl:    &defaultProvenanceReaderImpl{},
 	}
-}
-
-type ProvenanceReader struct {
-	options *ProvenanceReaderOptions
-	impl    provenanceReaderImplementation
 }
 
 type provenanceReaderImplementation interface {

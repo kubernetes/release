@@ -385,6 +385,7 @@ func TestWriteChecksums(t *testing.T) {
 
 				subTempDir := filepath.Join(tempDir, "test")
 				require.NoError(t, os.MkdirAll(subTempDir, os.FileMode(0o755)))
+
 				for i, v := range []byte{1, 2} {
 					require.NoError(t, os.WriteFile(
 						filepath.Join(subTempDir, strconv.Itoa(i+len(rootSHAs))),

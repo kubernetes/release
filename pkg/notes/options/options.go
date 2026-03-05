@@ -289,6 +289,37 @@ func (o *Options) ValidateAndFinish() (err error) {
 	return nil
 }
 
+// Client returns a Client to be used by the Gatherer. Depending on
+// the provided options this is either a real client talking to the GitHub API,
+// a Client which in addition records the responses from Github and stores them
+// on disk, or a Client that replays those pre-recorded responses and does not
+// talk to the GitHub API at all.
+func (o *Options) Client() (github.Client, error) { //nolint:ireturn // returning interface is intentional
+	if o.ReplayDir != "" {
+		return github.NewReplayer(o.ReplayDir), nil
+	}
+
+	var gh *github.GitHub
+
+	var err error
+	// Create a real GitHub API client
+	if o.GithubBaseURL != "" && o.GithubUploadURL != "" {
+		gh, err = github.NewEnterpriseWithToken(o.GithubBaseURL, o.GithubUploadURL, o.githubToken)
+	} else {
+		gh, err = github.NewWithToken(o.githubToken)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to create GitHub client: %w", err)
+	}
+
+	if o.RecordDir != "" {
+		return github.NewRecorder(gh.Client(), o.RecordDir), nil
+	}
+
+	return gh.Client(), nil
+}
+
 // checkFormatOptions verifies that template related options are sane.
 func (o *Options) checkFormatOptions() error {
 	// Validate the output format and template
@@ -383,35 +414,4 @@ func (o *Options) repo() (repo *git.Repo, err error) {
 	}
 
 	return repo, nil
-}
-
-// Client returns a Client to be used by the Gatherer. Depending on
-// the provided options this is either a real client talking to the GitHub API,
-// a Client which in addition records the responses from Github and stores them
-// on disk, or a Client that replays those pre-recorded responses and does not
-// talk to the GitHub API at all.
-func (o *Options) Client() (github.Client, error) {
-	if o.ReplayDir != "" {
-		return github.NewReplayer(o.ReplayDir), nil
-	}
-
-	var gh *github.GitHub
-
-	var err error
-	// Create a real GitHub API client
-	if o.GithubBaseURL != "" && o.GithubUploadURL != "" {
-		gh, err = github.NewEnterpriseWithToken(o.GithubBaseURL, o.GithubUploadURL, o.githubToken)
-	} else {
-		gh, err = github.NewWithToken(o.githubToken)
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("unable to create GitHub client: %w", err)
-	}
-
-	if o.RecordDir != "" {
-		return github.NewRecorder(gh.Client(), o.RecordDir), nil
-	}
-
-	return gh.Client(), nil
 }

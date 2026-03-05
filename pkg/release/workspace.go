@@ -244,6 +244,7 @@ func ListBuildBinaries(gitroot, version string) (list []struct{ Path, Platform, 
 				if err != nil {
 					return err
 				}
+
 				if info.IsDir() {
 					return nil
 				}
@@ -275,6 +276,7 @@ func ListBuildBinaries(gitroot, version string) (list []struct{ Path, Platform, 
 					if err != nil {
 						return err
 					}
+
 					if info.IsDir() {
 						return nil
 					}
@@ -309,6 +311,7 @@ func ListBuildTarballs(gitroot, version string) (tarList []string, err error) {
 			if err != nil {
 				return err
 			}
+
 			if info.IsDir() {
 				return nil
 			}

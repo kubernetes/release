@@ -56,7 +56,7 @@ func NewELFBinary(filePath string, opts *Options) (*ELFBinary, error) {
 	if header == nil {
 		logrus.Debug("file is not an ELF binary")
 
-		return nil, nil
+		return nil, nil //nolint:nilnil // intentional nil,nil return
 	}
 
 	return &ELFBinary{
@@ -148,7 +148,7 @@ func GetELFHeader(path string) (*ELFHeader, error) {
 	if string(hBytes[1:4]) != "ELF" {
 		logrus.Debug("Binary is not an ELF executable")
 
-		return nil, nil
+		return nil, nil //nolint:nilnil // intentional nil,nil return
 	}
 
 	// Check if binary byte order is big or little endian
