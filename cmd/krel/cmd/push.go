@@ -19,7 +19,10 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	"sigs.k8s.io/release-utils/version"
 
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/release"
@@ -154,5 +157,6 @@ func init() {
 }
 
 func runPushBuild(opts *build.Options) error {
+	logrus.Infof("Running krel push version: %s", version.GetVersionInfo().GitVersion)
 	return build.NewInstance(opts).Push()
 }
