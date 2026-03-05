@@ -221,9 +221,15 @@ func (bi *Instance) findLatestVersion() (latestVersion string, err error) {
 		latestVersion += "-" + bi.opts.VersionSuffix
 	}
 
+	latestVersion = strings.TrimSpace(latestVersion)
+
+	// Update opts.Version so that StageLocalArtifacts and
+	// PushReleaseArtifacts use the same resolved version path.
+	bi.opts.Version = latestVersion
+
 	setupBuildDir(bi)
 
-	return strings.TrimSpace(latestVersion), nil
+	return latestVersion, nil
 }
 
 func setupBuildDir(bi *Instance) {
