@@ -129,6 +129,10 @@ linters:
       - common-false-positives
       - legacy
       - std-error-handling
+    rules:
+      - linters:
+          - staticcheck
+        text: "SA1019: intoto.Subject is deprecated"
     paths:
       - third_party$
       - builtin$
