@@ -36,6 +36,7 @@ import (
 // stageClient is a client for staging releases.
 //
 //counterfeiter:generate . stageClient
+//nolint:interfacebloat // large interface is by design
 type stageClient interface {
 	// Submit can be used to submit a Google Cloud Build (GCB) job.
 	Submit(stream bool) error
@@ -120,6 +121,7 @@ type defaultStageImpl struct{}
 // stageImpl is the implementation of the stage client.
 //
 //counterfeiter:generate . stageImpl
+//nolint:interfacebloat // large interface is by design
 type stageImpl interface {
 	Submit(options *gcb.Options) error
 	CheckPrerequisites(workspaceDir string) error

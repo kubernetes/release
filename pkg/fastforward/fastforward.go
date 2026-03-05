@@ -68,6 +68,7 @@ type Options struct {
 // FastForward is the main structure of this package.
 type FastForward struct {
 	impl
+
 	options *Options
 }
 
@@ -83,6 +84,8 @@ const pushUpstreamQuestion = `Are you ready to push the local branch fast-forwar
 Please only answer after you have validated the changes.`
 
 // Run starts the FastForward.
+//
+//nolint:maintidx // complex but acceptable
 func (f *FastForward) Run() (err error) {
 	if f.options.Submit {
 		if err := f.prepareToolRepo(); err != nil {

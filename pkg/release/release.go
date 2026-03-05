@@ -341,6 +341,7 @@ func WriteChecksums(rootPath string) error {
 				if err != nil {
 					return err
 				}
+
 				if info.IsDir() {
 					return nil
 				}
@@ -427,6 +428,7 @@ func WriteChecksums(rootPath string) error {
 			if err != nil {
 				return err
 			}
+
 			if file.IsDir() {
 				return nil
 			}

@@ -36,6 +36,7 @@ type defaultImpl struct{}
 //counterfeiter:generate . impl
 //go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt fastforwardfakes/fake_impl.go > fastforwardfakes/_fake_impl.go && mv fastforwardfakes/_fake_impl.go fastforwardfakes/fake_impl.go"
 
+//nolint:interfacebloat // large interface is by design
 type impl interface {
 	CloneOrOpenDefaultGitHubRepoSSH(string) (*git.Repo, error)
 	RepoSetDry(*git.Repo)

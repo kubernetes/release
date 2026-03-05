@@ -34,6 +34,7 @@ import (
 	"k8s.io/release/pkg/release/releasefakes"
 )
 
+//nolint:maintidx // complex but acceptable
 func TestPublish(t *testing.T) {
 	t.Parallel()
 

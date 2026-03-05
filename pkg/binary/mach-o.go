@@ -58,7 +58,7 @@ func NewMachOBinary(filePath string, opts *Options) (*MachOBinary, error) {
 	if header == nil {
 		logrus.Debug("File is not a Mach-O binary")
 
-		return nil, nil
+		return nil, nil //nolint:nilnil // intentional nil,nil return
 	}
 
 	return &MachOBinary{
@@ -170,7 +170,7 @@ func GetMachOHeader(path string) (*MachOHeader, error) {
 	default:
 		logrus.Debug("File is not a Mach-O binary")
 
-		return nil, nil
+		return nil, nil //nolint:nilnil // intentional nil,nil return
 	}
 
 	header := &MachOHeader{}

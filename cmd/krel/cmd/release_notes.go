@@ -333,6 +333,8 @@ func runReleaseNotes() (err error) {
 }
 
 // createDraftPR pushes the release notes draft to the users fork.
+//
+//nolint:maintidx // complex but acceptable
 func createDraftPR(repoPath, tag string) (err error) {
 	tagVersion, err := helpers.TagStringToSemver(tag)
 	if err != nil {
@@ -650,7 +652,7 @@ func addReferenceToAssetsFile(repoPath, newJSONFile string) error {
 
 		// Add the current version right after the array export
 		if strings.Contains(scanner.Text(), "export const assets =") {
-			assetsBuffer.WriteString(fmt.Sprintf("  'assets/%s',\n", newJSONFile))
+			fmt.Fprintf(&assetsBuffer, "  'assets/%s',\n", newJSONFile)
 
 			assetsFileWasModified = true
 		}
@@ -1473,7 +1475,7 @@ func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.R
 	blankFile := true
 
 	for _, line := range lines {
-		// If only only one line is not blank/comment
+		// If only one line is not blank/comment
 		if line != "---" && !re.MatchString(line) {
 			blankFile = false
 

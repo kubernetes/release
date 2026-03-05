@@ -93,7 +93,7 @@ func ReqTestgridDashboardSummary(ctx context.Context, dashboardName DashboardNam
 		return nil, fmt.Errorf("create new request: %w", err)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req) //nolint:gosec // G704 - URL is constructed from validated input
 	if err != nil {
 		return nil, fmt.Errorf("request remote content: %w", err)
 	}
@@ -233,7 +233,7 @@ func (j *JobSummary) FilterSigs() []string {
 		}
 	}
 
-	sigs := []string{}
+	sigs := make([]string, 0, len(sigsInvolved))
 	for k := range sigsInvolved {
 		sigs = append(sigs, k)
 	}

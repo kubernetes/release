@@ -188,6 +188,7 @@ const (
 `
 )
 
+//nolint:maintidx // complex but acceptable
 func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches EolBranches, filePath, eolFilePath string) error {
 	removeSchedules := []int{}
 

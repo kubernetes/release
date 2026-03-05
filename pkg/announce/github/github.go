@@ -33,8 +33,9 @@ import (
 )
 
 type GitHub struct {
-	options *Options
 	impl
+
+	options *Options
 }
 
 // NewGitHub returns a new GitHub instance.
@@ -51,6 +52,8 @@ func (g *GitHub) SetImplementation(i impl) {
 }
 
 // UpdateGitHubPage updates a github page with data from the release.
+//
+//nolint:maintidx // complex but acceptable
 func (g *GitHub) UpdateGitHubPage() (err error) {
 	token := os.Getenv(github.TokenEnvKey)
 	if token == "" {

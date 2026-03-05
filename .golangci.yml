@@ -5,6 +5,7 @@ run:
 linters:
   default: none
   enable:
+    - arangolint
     - asasalint
     - asciicheck
     - bidichk
@@ -16,7 +17,9 @@ linters:
     - decorder
     - dogsled
     - dupl
+    - dupword
     - durationcheck
+    - embeddedstructfieldcheck
     - errcheck
     - errchkjson
     - errname
@@ -25,6 +28,7 @@ linters:
     - exptostd
     - fatcontext
     - forcetypeassert
+    - funcorder
     - ginkgolinter
     - gocheckcompilerdirectives
     - gochecksumtype
@@ -44,15 +48,21 @@ linters:
     - iface
     - importas
     - ineffassign
+    - interfacebloat
     - intrange
+    - iotamixing
+    - ireturn
     - loggercheck
+    - maintidx
     - makezero
     - mirror
     - misspell
+    - modernize
     - musttag
     - nakedret
     - nilerr
     - nilnesserr
+    - nilnil
     - nlreturn
     - noctx
     - nolintlint
@@ -76,6 +86,7 @@ linters:
     - tparallel
     - unconvert
     - unparam
+    - unqueryvet
     - unused
     - usestdlibvars
     - usetesting
@@ -85,7 +96,6 @@ linters:
     - zerologlint
     # - cyclop
     # - depguard
-    # - dupword
     # - err113
     # - exhaustruct
     # - forbidigo
@@ -93,14 +103,12 @@ linters:
     # - gochecknoglobals
     # - gochecknoinits
     # - gocognit
+    # - godoclint
     # - inamedparam
-    # - interfacebloat
-    # - ireturn
     # - lll
-    # - maintidx
     # - mnd
     # - nestif
-    # - nilnil
+    # - noinlineerr
     # - nonamedreturns
     # - paralleltest
     # - tagliatelle

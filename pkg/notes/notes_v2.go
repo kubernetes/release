@@ -42,8 +42,9 @@ type commitPrPair struct {
 }
 
 type releaseNotesAggregator struct {
-	releaseNotes *ReleaseNotes
 	sync.RWMutex
+
+	releaseNotes *ReleaseNotes
 }
 
 func (g *Gatherer) ListReleaseNotesV2() (*ReleaseNotes, error) {
@@ -154,11 +155,11 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 	prBody := pr.GetBody()
 
 	if MatchesExcludeFilter(prBody) {
-		return nil, nil
+		return nil, nil //nolint:nilnil // intentional nil,nil return
 	}
 
 	if len(g.options.IncludeLabels) > 0 && !matchesLabelFilter(pr.Labels, g.options.IncludeLabels) {
-		return nil, nil
+		return nil, nil //nolint:nilnil // intentional nil,nil return
 	}
 
 	text, err := noteTextFromString(prBody)
@@ -168,7 +169,7 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 			"pr":  pair.PrNum,
 		}).Debugf("ignore err: %v", err)
 
-		return nil, nil
+		return nil, nil //nolint:nilnil // intentional nil,nil return
 	}
 
 	documentation := DocumentationFromString(prBody)

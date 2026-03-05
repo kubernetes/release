@@ -30,6 +30,7 @@ import (
 	"k8s.io/release/pkg/notes"
 )
 
+//nolint:maintidx // complex but acceptable
 func TestRun(t *testing.T) {
 	err := errors.New("")
 
@@ -125,6 +126,7 @@ func TestRun(t *testing.T) {
 		{ // DependencyChanges failed
 			prepare: func(mock *changelogfakes.FakeImpl, opts *changelog.Options) {
 				opts.Dependencies = true
+
 				mock.DependencyChangesReturns("", err)
 			},
 			shouldErr: true,
@@ -270,6 +272,7 @@ func TestRun(t *testing.T) {
 		{ // CloneCVEData returns error
 			prepare: func(mock *changelogfakes.FakeImpl, o *changelog.Options) {
 				o.CloneCVEMaps = true
+
 				mock.TagStringToSemverReturns(semver.Version{
 					Major: 1,
 					Minor: 19,
@@ -282,6 +285,7 @@ func TestRun(t *testing.T) {
 		{ // CloneCVEData returns empty string
 			prepare: func(mock *changelogfakes.FakeImpl, o *changelog.Options) {
 				o.CloneCVEMaps = true
+
 				mock.TagStringToSemverReturns(semver.Version{
 					Major: 1,
 					Minor: 19,

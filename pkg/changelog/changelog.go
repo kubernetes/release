@@ -55,8 +55,9 @@ type Options struct {
 
 // Changelog can be used to generate the changelog for a release.
 type Changelog struct {
-	options *Options
 	impl
+
+	options *Options
 }
 
 // New creates a new Changelog instance.
@@ -527,7 +528,7 @@ func (c *Changelog) commitChanges(
 			return fmt.Errorf("checking out release branch %s: %w", branch, err)
 		}
 
-		// Remove all other changelog files if we’re on the the first official release
+		// Remove all other changelog files if we’re on the first official release
 		if tag.Patch == 0 && len(tag.Pre) == 0 {
 			pattern := filepath.Join(RepoChangelogDir, "CHANGELOG-*.md")
 			logrus.Infof("Removing unnecessary %s files", pattern)

@@ -62,6 +62,7 @@ func (s *Specs) BuildSpecs(pkgDef *PackageDefinition, specOnly bool) (err error)
 		if f.IsDir() {
 			return s.Mkdir(specFile, f.Mode())
 		}
+
 		if filepath.Ext(templateFile) == ".spec" || filepath.Ext(templateFile) == ".rpmlintrc" {
 			// Spec is intentionally saved outside package dir, which is later on archived
 			specFile = filepath.Join(pkgDef.SpecOutputPath, templateFile[len(tplDir):])

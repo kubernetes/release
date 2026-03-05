@@ -30,6 +30,7 @@ import (
 
 var errTest = errors.New("test")
 
+//nolint:maintidx // complex but acceptable
 func TestRun(t *testing.T) {
 	t.Parallel()
 
