@@ -31,7 +31,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/cloudbuild/v1"
-	"google.golang.org/api/option"
 
 	"sigs.k8s.io/release-sdk/gcli"
 	"sigs.k8s.io/release-sdk/object"
@@ -376,9 +375,8 @@ func mergeMaps(maps ...map[string]string) map[string]string {
 
 func ListJobs(project string, lastJobs int64) error {
 	ctx := context.Background()
-	opts := option.WithCredentialsFile("")
 
-	service, err := cloudbuild.NewService(ctx, opts)
+	service, err := cloudbuild.NewService(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to fetching gcloud credentials... try running \"gcloud auth application-default login\": %w", err)
 	}
@@ -401,9 +399,8 @@ func ListJobs(project string, lastJobs int64) error {
 
 func GetJobsByTag(project, tagsFilter string) ([]*cloudbuild.Build, error) {
 	ctx := context.Background()
-	opts := option.WithCredentialsFile("")
 
-	service, err := cloudbuild.NewService(ctx, opts)
+	service, err := cloudbuild.NewService(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetching gcloud credentials... try running \"gcloud auth application-default login\": %w", err)
 	}
