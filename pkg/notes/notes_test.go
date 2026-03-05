@@ -321,7 +321,7 @@ func TestNoteTextFromString(t *testing.T) {
 			},
 		},
 	} {
-		tc.expect(noteTextFromString(tc.input))
+		tc.expect(noteTextFromString(tc.input, nil))
 	}
 }
 

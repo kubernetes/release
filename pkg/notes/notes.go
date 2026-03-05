@@ -234,6 +234,29 @@ func NewGatherer(ctx context.Context, opts *options.Options) (*Gatherer, error) 
 		return nil, fmt.Errorf("unable to create notes client: %w", err)
 	}
 
+	if opts.ReleaseNoteRegex != "" {
+		re, err := regexp.Compile(opts.ReleaseNoteRegex)
+		if err != nil {
+			return nil, fmt.Errorf("invalid --release-note-regex: %w", err)
+		}
+
+		hasNote := false
+
+		for _, n := range re.SubexpNames() {
+			if n == "note" {
+				hasNote = true
+
+				break
+			}
+		}
+
+		if !hasNote {
+			return nil, errors.New("--release-note-regex must define a named capture group 'note', e.g. (?P<note>...)")
+		}
+
+		opts.ReleaseNoteRegexCompiled = re
+	}
+
 	return &Gatherer{
 		client:  client,
 		context: ctx,
@@ -394,27 +417,28 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 	return notes, nil
 }
 
-// noteTextFromString returns the text of the release note given a string which
-// may contain the commit message, the PR description, etc.
-// This is generally the content inside the ```release-note ``` stanza.
-func noteTextFromString(s string) (string, error) {
-	// check release note is not empty
-	// Matches "release-notes" block with no meaningful content (ex. only whitespace, empty, just newlines)
-	emptyExps := []*regexp.Regexp{
-		regexp.MustCompile("(?i)```release-notes?\\s*```\\s*"),
-	}
+// noteTextFromString returns the text of the release note from a string (e.g. PR body).
+// If customRegex is non-nil, exps is set to just that; otherwise exps are the default
+// ```release-note / ```dev-release-note patterns. All patterns must capture a "note" group.
+func noteTextFromString(s string, customRegex *regexp.Regexp) (string, error) {
+	var exps []*regexp.Regexp
+	if customRegex != nil {
+		exps = []*regexp.Regexp{customRegex}
+	} else {
+		emptyExps := []*regexp.Regexp{
+			regexp.MustCompile("(?i)```release-notes?\\s*```\\s*"),
+		}
 
-	if matchesFilter(s, emptyExps) {
-		return "", errors.New("empty release note")
-	}
+		if matchesFilter(s, emptyExps) {
+			return "", errors.New("empty release note")
+		}
 
-	exps := []*regexp.Regexp{
-		// (?s) is needed for '.' to be matching on newlines, by default that's disabled
-		// we need to match ungreedy 'U', because after the notes a `docs` block can occur
-		regexp.MustCompile("(?sU)```release-notes?\\r\\n(?P<note>.+)\\r\\n```"),
-		regexp.MustCompile("(?sU)```dev-release-notes?\\r\\n(?P<note>.+)"),
-		regexp.MustCompile("(?sU)```\\r\\n(?P<note>.+)\\r\\n```"),
-		regexp.MustCompile("(?sU)```release-notes?\n(?P<note>.+)\n```"),
+		exps = []*regexp.Regexp{
+			regexp.MustCompile("(?sU)```release-notes?\\r\\n(?P<note>.+)\\r\\n```"),
+			regexp.MustCompile("(?sU)```dev-release-notes?\\r\\n(?P<note>.+)"),
+			regexp.MustCompile("(?sU)```\\r\\n(?P<note>.+)\\r\\n```"),
+			regexp.MustCompile("(?sU)```release-notes?\n(?P<note>.+)\n```"),
+		}
 	}
 
 	for _, exp := range exps {
@@ -509,7 +533,7 @@ func (g *Gatherer) ReleaseNoteFromCommit(result *Result) (*ReleaseNote, error) {
 
 	prBody := pr.GetBody()
 
-	text, err := noteTextFromString(prBody)
+	text, err := noteTextFromString(prBody, g.options.ReleaseNoteRegexCompiled)
 	if err != nil {
 		return nil, err
 	}
@@ -796,7 +820,7 @@ func (g *Gatherer) ReleaseNoteForPullRequest(prNr int) (*ReleaseNote, error) {
 
 	// If we didn't match the exclusion filter, try to extract the release note from the PR.
 	// If we can't extract the release note, consider that the PR is invalid and take the next one
-	s, err := noteTextFromString(prBody)
+	s, err := noteTextFromString(prBody, g.options.ReleaseNoteRegexCompiled)
 	if err != nil && !doNotPublish {
 		return nil, fmt.Errorf("PR #%d does not seem to contain a valid release note: %w", pr.GetNumber(), err)
 	}
@@ -872,7 +896,7 @@ func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, e
 
 		// If we didn't match the exclusion filter, try to extract the release note from the PR.
 		// If we can't extract the release note, consider that the PR is invalid and take the next one
-		s, err := noteTextFromString(prBody)
+		s, err := noteTextFromString(prBody, g.options.ReleaseNoteRegexCompiled)
 		if err != nil {
 			logrus.Infof("PR #%d does not seem to contain a valid release note, skipping", pr.GetNumber())
 

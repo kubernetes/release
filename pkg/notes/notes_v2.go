@@ -161,7 +161,7 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 		return nil, nil
 	}
 
-	text, err := noteTextFromString(prBody)
+	text, err := noteTextFromString(prBody, g.options.ReleaseNoteRegexCompiled)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"sha": pair.Commit.Hash.String(),
