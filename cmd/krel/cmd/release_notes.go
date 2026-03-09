@@ -19,6 +19,7 @@ package cmd
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -941,7 +942,7 @@ func releaseNotesJSON(repoPath, tag string) (jsonString string, err error) {
 	}
 
 	// Fetch the notes
-	releaseNotes, err := notes.GatherReleaseNotes(notesOptions)
+	releaseNotes, err := notes.GatherReleaseNotes(context.TODO(), notesOptions)
 	if err != nil {
 		return "", fmt.Errorf("gathering release notes: %w", err)
 	}
@@ -988,7 +989,7 @@ func gatherNotesFrom(repoPath, startTag string) (*notes.ReleaseNotes, error) {
 	logrus.Infof("Using end tag %v", releaseNotesOpts.tag)
 
 	// Fetch the notes
-	releaseNotes, err := notes.GatherReleaseNotes(notesOptions)
+	releaseNotes, err := notes.GatherReleaseNotes(context.TODO(), notesOptions)
 	if err != nil {
 		return nil, fmt.Errorf("gathering release notes: %w", err)
 	}

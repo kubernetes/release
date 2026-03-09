@@ -18,6 +18,7 @@ limitations under the License.
 package changelogfakes
 
 import (
+	"context"
 	"io"
 	"io/fs"
 	"sync"
@@ -138,10 +139,11 @@ type FakeImpl struct {
 		result1 string
 		result2 error
 	}
-	GatherReleaseNotesStub        func(*options.Options) (*notes.ReleaseNotes, error)
+	GatherReleaseNotesStub        func(context.Context, *options.Options) (*notes.ReleaseNotes, error)
 	gatherReleaseNotesMutex       sync.RWMutex
 	gatherReleaseNotesArgsForCall []struct {
-		arg1 *options.Options
+		arg1 context.Context
+		arg2 *options.Options
 	}
 	gatherReleaseNotesReturns struct {
 		result1 *notes.ReleaseNotes
@@ -894,18 +896,19 @@ func (fake *FakeImpl) DependencyChangesReturnsOnCall(i int, result1 string, resu
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) GatherReleaseNotes(arg1 *options.Options) (*notes.ReleaseNotes, error) {
+func (fake *FakeImpl) GatherReleaseNotes(arg1 context.Context, arg2 *options.Options) (*notes.ReleaseNotes, error) {
 	fake.gatherReleaseNotesMutex.Lock()
 	ret, specificReturn := fake.gatherReleaseNotesReturnsOnCall[len(fake.gatherReleaseNotesArgsForCall)]
 	fake.gatherReleaseNotesArgsForCall = append(fake.gatherReleaseNotesArgsForCall, struct {
-		arg1 *options.Options
-	}{arg1})
+		arg1 context.Context
+		arg2 *options.Options
+	}{arg1, arg2})
 	stub := fake.GatherReleaseNotesStub
 	fakeReturns := fake.gatherReleaseNotesReturns
-	fake.recordInvocation("GatherReleaseNotes", []interface{}{arg1})
+	fake.recordInvocation("GatherReleaseNotes", []interface{}{arg1, arg2})
 	fake.gatherReleaseNotesMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -919,17 +922,17 @@ func (fake *FakeImpl) GatherReleaseNotesCallCount() int {
 	return len(fake.gatherReleaseNotesArgsForCall)
 }
 
-func (fake *FakeImpl) GatherReleaseNotesCalls(stub func(*options.Options) (*notes.ReleaseNotes, error)) {
+func (fake *FakeImpl) GatherReleaseNotesCalls(stub func(context.Context, *options.Options) (*notes.ReleaseNotes, error)) {
 	fake.gatherReleaseNotesMutex.Lock()
 	defer fake.gatherReleaseNotesMutex.Unlock()
 	fake.GatherReleaseNotesStub = stub
 }
 
-func (fake *FakeImpl) GatherReleaseNotesArgsForCall(i int) *options.Options {
+func (fake *FakeImpl) GatherReleaseNotesArgsForCall(i int) (context.Context, *options.Options) {
 	fake.gatherReleaseNotesMutex.RLock()
 	defer fake.gatherReleaseNotesMutex.RUnlock()
 	argsForCall := fake.gatherReleaseNotesArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeImpl) GatherReleaseNotesReturns(result1 *notes.ReleaseNotes, result2 error) {

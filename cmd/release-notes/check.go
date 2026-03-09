@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -155,7 +154,7 @@ To generate release notes from these blocks, use release-notes generate.
 		SilenceUsage:  false,
 		SilenceErrors: false,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			g, err := notes.NewGatherer(context.Background(), &options.Options{
+			g, err := notes.NewGatherer(cmd.Context(), &options.Options{
 				GithubBaseURL: checkPROpts.GithubBaseURL,
 				GithubOrg:     checkPROpts.GithubOrg,
 				GithubRepo:    checkPROpts.GithubRepo,

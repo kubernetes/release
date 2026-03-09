@@ -17,6 +17,7 @@ limitations under the License.
 package changelog
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -64,7 +65,7 @@ type impl interface {
 
 	// Used in `generateReleaseNotes()`
 	ValidateAndFinish(opts *options.Options) error
-	GatherReleaseNotes(opts *options.Options) (*notes.ReleaseNotes, error)
+	GatherReleaseNotes(ctx context.Context, opts *options.Options) (*notes.ReleaseNotes, error)
 	NewDocument(
 		releaseNotes *notes.ReleaseNotes, previousRev, currentRev string,
 	) (*document.Document, error)
@@ -151,9 +152,9 @@ func (*defaultImpl) ValidateAndFinish(opts *options.Options) error {
 }
 
 func (*defaultImpl) GatherReleaseNotes(
-	opts *options.Options,
+	ctx context.Context, opts *options.Options,
 ) (*notes.ReleaseNotes, error) {
-	return notes.GatherReleaseNotes(opts)
+	return notes.GatherReleaseNotes(ctx, opts)
 }
 
 func (*defaultImpl) NewDocument(

@@ -254,7 +254,7 @@ func addGenerate(parent *cobra.Command) {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			releaseNotes, err := notes.GatherReleaseNotes(opts)
+			releaseNotes, err := notes.GatherReleaseNotes(cmd.Context(), opts)
 			if err != nil {
 				return fmt.Errorf("gathering release notes: %w", err)
 			}

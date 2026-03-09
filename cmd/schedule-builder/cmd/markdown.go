@@ -99,7 +99,7 @@ func parsePatchSchedule(patchSchedule PatchSchedule) string {
 }
 
 // runs with `--type=release` to return the release cycle schedule.
-func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
+func parseReleaseSchedule(releaseSchedule ReleaseSchedule) (string, error) {
 	type RelSched struct {
 		K8VersionWithDot    string
 		K8VersionWithoutDot string
@@ -134,11 +134,14 @@ func parseReleaseSchedule(releaseSchedule ReleaseSchedule) string {
 		relSched.TimelineOutput = tableString.String()
 	}
 
-	scheduleOut := processFile("templates/rel-schedule.tmpl", relSched)
+	scheduleOut, err := processFile("templates/rel-schedule.tmpl", relSched)
+	if err != nil {
+		return "", fmt.Errorf("processing release schedule template: %w", err)
+	}
 
 	logrus.Info("Release Schedule parsed")
 
-	return scheduleOut
+	return scheduleOut, nil
 }
 
 func patchReleaseInPreviousList(a string, previousPatches []*PatchRelease) bool {
@@ -157,21 +160,20 @@ func removeDotfromVersion(a string) string {
 
 // process applies the data structure 'vars' onto an already
 // parsed template 't', and returns the resulting string.
-func process(t *template.Template, vars any) string {
+func process(t *template.Template, vars any) (string, error) {
 	var tmplBytes bytes.Buffer
 
-	err := t.Execute(&tmplBytes, vars)
-	if err != nil {
-		panic(err)
+	if err := t.Execute(&tmplBytes, vars); err != nil {
+		return "", fmt.Errorf("executing template: %w", err)
 	}
 
-	return tmplBytes.String()
+	return tmplBytes.String(), nil
 }
 
-func processFile(fileName string, vars any) string {
+func processFile(fileName string, vars any) (string, error) {
 	tmpl, err := template.ParseFS(tpls, fileName)
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("parsing template %s: %w", fileName, err)
 	}
 
 	return process(tmpl, vars)

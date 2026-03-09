@@ -206,7 +206,11 @@ func run(opts *options) error {
 
 		logrus.Infof("Generating markdown output for type %q", typeRelease)
 
-		scheduleOut = parseReleaseSchedule(releaseSchedule)
+		scheduleOut, err = parseReleaseSchedule(releaseSchedule)
+		if err != nil {
+			return fmt.Errorf("parsing release schedule: %w", err)
+		}
+
 		println(scheduleOut)
 
 	default:

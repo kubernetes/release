@@ -338,7 +338,8 @@ func TestParseReleaseSchedule(t *testing.T) {
 
 	for _, tc := range testcases {
 		fmt.Printf("Test case: %s\n", tc.name)
-		out := parseReleaseSchedule(tc.schedule)
+		out, err := parseReleaseSchedule(tc.schedule)
+		require.NoError(t, err)
 		require.Equal(t, expectedReleaseSchedule, out)
 	}
 }

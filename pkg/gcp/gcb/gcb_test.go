@@ -31,7 +31,7 @@ import (
 	"k8s.io/release/pkg/release"
 )
 
-func mockRepo() gcb.Repository { //nolint:ireturn // interface return is by design
+func mockRepo() *gcbfakes.FakeRepository {
 	mock := &gcbfakes.FakeRepository{}
 	mock.OpenReturns(nil)
 	mock.CheckStateReturns(nil)
@@ -40,14 +40,14 @@ func mockRepo() gcb.Repository { //nolint:ireturn // interface return is by desi
 	return mock
 }
 
-func mockVersion(version string) gcb.Version { //nolint:ireturn // interface return is by design
+func mockVersion(version string) *gcbfakes.FakeVersion {
 	mock := &gcbfakes.FakeVersion{}
 	mock.GetKubeVersionForBranchReturns(version, nil)
 
 	return mock
 }
 
-func mockRelease(version string) gcb.Release { //nolint:ireturn // interface return is by design
+func mockRelease(version string) *gcbfakes.FakeRelease {
 	mock := &gcbfakes.FakeRelease{}
 	mock.GenerateReleaseVersionReturns(
 		release.NewReleaseVersions(version, "", "", "", ""), nil,
