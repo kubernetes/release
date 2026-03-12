@@ -141,6 +141,9 @@ linters:
       - linters:
           - staticcheck
         text: "SA1019: intoto.Subject is deprecated"
+      - linters:
+          - nolintlint
+        text: "directive .* is unused for linter \"ireturn\""
     paths:
       - third_party$
       - builtin$

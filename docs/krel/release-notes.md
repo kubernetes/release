@@ -52,7 +52,7 @@ Flags:
       --fix                 fix release notes
       --fork string         the user's fork in the form org/repo. Used to submit Pull Requests for the website and draft
   -h, --help                help for release-notes
-      --list-v2             enable experimental implementation to list commits (ListReleaseNotesV2)
+      --list-v2             use git graph traversal to list commits instead of GitHub API date-based filtering (default true)
   -m, --maps-from strings   specify a location to recursively look for release notes *.y[a]ml file mappings
       --repo string         the local path to the repository to be used (default "/tmp/k8s")
   -t, --tag string          version tag for the notes
