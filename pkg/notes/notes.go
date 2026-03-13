@@ -265,8 +265,6 @@ func GatherReleaseNotes(opts *options.Options) (*ReleaseNotes, error) {
 	startTime := time.Now()
 
 	if gatherer.options.ListReleaseNotesV2 {
-		logrus.Warn("EXPERIMENTAL IMPLEMENTATION ListReleaseNotesV2 ENABLED")
-
 		releaseNotes, err = gatherer.ListReleaseNotesV2()
 	} else {
 		releaseNotes, err = gatherer.ListReleaseNotes()

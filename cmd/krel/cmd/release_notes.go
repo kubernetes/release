@@ -215,8 +215,8 @@ func init() {
 	releaseNotesCmd.PersistentFlags().BoolVar(
 		&releaseNotesOpts.listReleaseNotesV2,
 		"list-v2",
-		false,
-		"enable experimental implementation to list commits (ListReleaseNotesV2)",
+		true,
+		"use git graph traversal to list commits instead of GitHub API date-based filtering",
 	)
 
 	releaseNotesCmd.PersistentFlags().BoolVar(

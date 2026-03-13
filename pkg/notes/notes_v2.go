@@ -73,6 +73,12 @@ func (g *Gatherer) ListReleaseNotesV2() (*ReleaseNotes, error) {
 		releaseNotes: NewReleaseNotes(),
 	}
 
+	dedupeCache := struct {
+		sync.Mutex
+
+		seen map[string]struct{}
+	}{seen: map[string]struct{}{}}
+
 	pairsCount := len(pairs)
 	logrus.Infof("processing release notes for %d commits", pairsCount)
 
@@ -89,16 +95,16 @@ func (g *Gatherer) ListReleaseNotesV2() (*ReleaseNotes, error) {
 			var noteMaps []*ReleaseNotesMap
 
 			for _, provider := range mapProviders {
-				var err error
-
-				noteMaps, err = provider.GetMapsForPR(pair.PrNum)
+				providerMaps, err := provider.GetMapsForPR(pair.PrNum)
 				if err != nil {
 					logrus.WithFields(logrus.Fields{
 						"pr": pair.PrNum,
 					}).Errorf("ignore err: %v", err)
 
-					noteMaps = []*ReleaseNotesMap{}
+					continue
 				}
+
+				noteMaps = append(noteMaps, providerMaps...)
 			}
 
 			releaseNote, err := g.buildReleaseNote(pair)
@@ -112,13 +118,27 @@ func (g *Gatherer) ListReleaseNotesV2() (*ReleaseNotes, error) {
 						}
 					}
 
-					logrus.WithFields(logrus.Fields{
-						"pr":   pair.PrNum,
-						"note": releaseNote.Text,
-					}).Debugf("finalized release note")
-					aggregator.Lock()
-					aggregator.releaseNotes.Set(pair.PrNum, releaseNote)
-					aggregator.Unlock()
+					dedupeCache.Lock()
+
+					_, duplicate := dedupeCache.seen[releaseNote.Markdown]
+					if !duplicate {
+						dedupeCache.seen[releaseNote.Markdown] = struct{}{}
+					}
+					dedupeCache.Unlock()
+
+					if duplicate {
+						logrus.WithFields(logrus.Fields{
+							"pr": pair.PrNum,
+						}).Debugf("skip: duplicate release note")
+					} else {
+						logrus.WithFields(logrus.Fields{
+							"pr":   pair.PrNum,
+							"note": releaseNote.Text,
+						}).Debugf("finalized release note")
+						aggregator.Lock()
+						aggregator.releaseNotes.Set(pair.PrNum, releaseNote)
+						aggregator.Unlock()
+					}
 				} else {
 					logrus.WithFields(logrus.Fields{
 						"pr": pair.PrNum,
@@ -170,6 +190,22 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 		}).Debugf("ignore err: %v", err)
 
 		return nil, nil //nolint:nilnil // intentional nil,nil return
+	}
+
+	if isAutomatedCherryPickPR(pr) {
+		logrus.Infof("PR #%d seems to be an automated cherry-pick, retrieving origin info", pr.GetNumber())
+
+		originPRNum, err := originPrNumFromPr(pr)
+		if err != nil {
+			return nil, err
+		}
+
+		originPR, err := g.getPr(originPRNum)
+		if err != nil {
+			return nil, err
+		}
+
+		pr.User = originPR.GetUser()
 	}
 
 	documentation := DocumentationFromString(prBody)
@@ -290,6 +326,10 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 			return nil, fmt.Errorf("finding CommitObject: %w", err)
 		}
 
+		if len(commitPointer.ParentHashes) == 0 {
+			return nil, fmt.Errorf("commit %s has no parents, cannot traverse further", hashString)
+		}
+
 		// Find and collect PR number from commit message
 		prNums, err := prsNumForCommitFromMessage(commitPointer.Message)
 		if errors.Is(err, errNoPRIDFoundInCommitMessage) {
@@ -297,7 +337,6 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 				"sha": hashString,
 			}).Debug("no associated PR found")
 
-			// Advance pointer based on left parent
 			hashPointer = commitPointer.ParentHashes[0]
 
 			continue
@@ -308,7 +347,6 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 				"sha": hashString,
 			}).Warnf("ignore err: %v", err)
 
-			// Advance pointer based on left parent
 			hashPointer = commitPointer.ParentHashes[0]
 
 			continue
@@ -322,7 +360,6 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 		// Only taking the first one, assuming they are merged by Prow
 		pairs = append(pairs, &commitPrPair{Commit: commitPointer, PrNum: prNums[0]})
 
-		// Advance pointer based on left parent
 		hashPointer = commitPointer.ParentHashes[0]
 	}
 
