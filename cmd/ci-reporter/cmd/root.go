@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/shurcooL/githubv4"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/tj/go-spin"
 
@@ -218,7 +219,7 @@ func PrintReporterData(cfg *Config, reports *CIReportDataFields) error {
 
 	defer func() {
 		if err := out.Close(); err != nil {
-			panic(err)
+			logrus.Errorf("Failed to close output file: %v", err)
 		}
 	}()
 

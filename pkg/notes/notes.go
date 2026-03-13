@@ -252,10 +252,10 @@ func NewGathererWithClient(ctx context.Context, c github.Client) *Gatherer {
 
 // GatherReleaseNotes creates a new gatherer and collects the release notes
 // afterwards.
-func GatherReleaseNotes(opts *options.Options) (*ReleaseNotes, error) {
+func GatherReleaseNotes(ctx context.Context, opts *options.Options) (*ReleaseNotes, error) {
 	logrus.Info("Gathering release notes")
 
-	gatherer, err := NewGatherer(context.Background(), opts)
+	gatherer, err := NewGatherer(ctx, opts)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving notes gatherer: %w", err)
 	}
@@ -269,7 +269,7 @@ func GatherReleaseNotes(opts *options.Options) (*ReleaseNotes, error) {
 
 		releaseNotes, err = gatherer.ListReleaseNotesV2()
 	} else {
-		releaseNotes, err = gatherer.ListReleaseNotes()
+		releaseNotes, err = gatherer.ListReleaseNotes() //nolint:contextcheck // context is stored in gatherer
 	}
 
 	if err != nil {

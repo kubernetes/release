@@ -69,7 +69,7 @@ content without doing anything else.`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runAnnounce(sendAnnounceOpts, announceOpts, rootOpts)
+		return runAnnounce(cmd.Context(), sendAnnounceOpts, announceOpts, rootOpts)
 	},
 }
 
@@ -90,7 +90,7 @@ func init() {
 	announceCmd.AddCommand(sendAnnounceCmd)
 }
 
-func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, rootOpts *rootOptions) error {
+func runAnnounce(ctx context.Context, opts *sendAnnounceOptions, announceRootOpts *announceOptions, rootOpts *rootOptions) error {
 	if err := announceRootOpts.Validate(); err != nil {
 		return fmt.Errorf("validating announcement send options: %w", err)
 	}
@@ -120,7 +120,7 @@ func runAnnounce(opts *sendAnnounceOptions, announceRootOpts *announceOptions, r
 
 	logrus.Info("Starting Gmail OAuth flow")
 
-	sender, err := mail.NewGmailSender(context.Background(), opts.noBrowser)
+	sender, err := mail.NewGmailSender(ctx, opts.noBrowser)
 	if err != nil {
 		return fmt.Errorf("creating Gmail sender: %w", err)
 	}
