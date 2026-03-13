@@ -32,7 +32,7 @@ require (
 	go.yaml.in/yaml/v4 v4.0.0-rc.4
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sync v0.20.0
-	golang.org/x/text v0.34.0
+	golang.org/x/text v0.35.0
 	google.golang.org/api v0.269.0
 	k8s.io/apimachinery v0.35.2
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
