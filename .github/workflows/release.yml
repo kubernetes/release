@@ -35,7 +35,7 @@ jobs:
           check-latest: true
           cache: false
 
-      - uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+      - uses: sigstore/cosign-installer@ba7bc0a3fef59531c69a25acd34668d6d3fe6f22 # v4.1.0
 
       - name: Install bom
         uses: kubernetes-sigs/release-actions/setup-bom@8af7b2a5596dff526de9db59b2c4b8457e9f52a1 # v0.4.0
@@ -88,7 +88,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
         with:
           files: release.intoto.json
           tag_name: "${{ steps.tag.outputs.tag_name }}"
