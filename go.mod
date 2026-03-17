@@ -7,7 +7,7 @@ require (
 	github.com/GoogleCloudPlatform/testgrid v0.0.38
 	github.com/blang/semver/v4 v4.0.0
 	github.com/cheggaaa/pb/v3 v3.1.7
-	github.com/fastly/go-fastly/v13 v13.1.0
+	github.com/fastly/go-fastly/v13 v13.1.1
 	github.com/go-git/go-git/v5 v5.17.0
 	github.com/goark/go-cvss v1.6.7
 	github.com/golang/protobuf v1.5.4
