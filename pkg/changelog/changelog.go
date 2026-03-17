@@ -19,6 +19,7 @@ package changelog
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -292,7 +293,8 @@ func (c *Changelog) generateReleaseNotes(
 		return "", "", fmt.Errorf("validating notes options: %w", err)
 	}
 
-	releaseNotes, err := c.GatherReleaseNotes(notesOptions)
+	// TODO: thread context from Changelog.Run() once it accepts one
+	releaseNotes, err := c.GatherReleaseNotes(context.TODO(), notesOptions)
 	if err != nil {
 		return "", "", fmt.Errorf("gather release notes: %w", err)
 	}

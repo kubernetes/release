@@ -17,6 +17,7 @@ limitations under the License.
 package document
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -260,9 +261,9 @@ var kindMap = map[notes.Kind]notes.Kind{
 // GatherReleaseNotesDocument creates a new gatherer and collects the release
 // notes into a fresh document.
 func GatherReleaseNotesDocument(
-	opts *options.Options, previousRev, currentRev string,
+	ctx context.Context, opts *options.Options, previousRev, currentRev string,
 ) (*Document, error) {
-	releaseNotes, err := notes.GatherReleaseNotes(opts)
+	releaseNotes, err := notes.GatherReleaseNotes(ctx, opts)
 	if err != nil {
 		return nil, fmt.Errorf("gathering release notes: %w", err)
 	}
