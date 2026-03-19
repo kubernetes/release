@@ -64,7 +64,7 @@ RUN apt-get -qqy purge ".*python2.*" \
 RUN pip3 install --no-cache-dir \
       # for gcloud https://cloud.google.com/storage/docs/gsutil/addlhelp/CRC32CandInstallingcrcmod
       crcmod \
-      osc \
+      osc==1.23.0 \
       yq
 
 # common::set_cloud_binaries() looks for it in this path

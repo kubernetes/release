@@ -274,6 +274,12 @@ dependencies:
       - path: images/build/cross/variants.yaml
         match: REVISION:\ '\d+'
 
+  # osc (k8s-cloud-builder)
+  - name: "osc"
+    version: 1.23.0
+    refPaths:
+      - path: images/k8s-cloud-builder/Dockerfile
+        match: "osc==((([0-9]+)\\.([0-9]+)\\.([0-9]+)))"
   # kube-cross dependents (i.e. k8s-cloud-builder)
   # To be updated after kubernetes/kubernetes update)
   - name: "registry.k8s.io/build-image/kube-cross: dependents k8s-cloud-builder (v1.36-cross1.26)"
