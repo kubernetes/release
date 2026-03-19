@@ -144,7 +144,7 @@ func runAnnounce(ctx context.Context, opts *sendAnnounceOptions, announceRootOpt
 	yes := true
 
 	if rootOpts.nomock {
-		_, yes, err = helpers.Ask("Send email? (y/N)", "y:Y:yes|n:N:no|N", 10)
+		_, yes, err = helpers.Ask("Send email? (y/N)", "y:Y:yes|n:N:no|N", 1)
 		if err != nil {
 			return err
 		}
@@ -153,6 +153,12 @@ func runAnnounce(ctx context.Context, opts *sendAnnounceOptions, announceRootOpt
 	if yes {
 		if err := sender.Send(string(content), subject); err != nil {
 			return fmt.Errorf("unable to send mail: %w", err)
+		}
+
+		logrus.Infof("Successfully sent announcement: %q", subject)
+
+		for _, group := range groups {
+			logrus.Infof("Mailing list: https://groups.google.com/g/%s", group)
 		}
 	}
 
