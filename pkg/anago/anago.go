@@ -23,6 +23,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/helpers"
@@ -271,7 +272,7 @@ func (s *Stage) Run() error {
 		return fmt.Errorf("init log file: %w", err)
 	}
 
-	logger := log.NewStepLogger(12)
+	logger := log.NewStepLogger(11)
 	v := version.GetVersionInfo()
 	logger.Infof("Using krel version: %s", v.GitVersion)
 
@@ -323,16 +324,20 @@ func (s *Stage) Run() error {
 		return fmt.Errorf("generate changelog: %w", err)
 	}
 
-	logger.WithStep().Info("Verifying artifacts")
+	logger.WithStep().Info("Verifying artifacts and generating bill of materials")
 
-	if err := s.client.VerifyArtifacts(); err != nil {
-		return fmt.Errorf("verifying artifacts: %w", err)
-	}
+	g := new(errgroup.Group)
 
-	logger.WithStep().Info("Generating bill of materials")
+	g.Go(func() error {
+		return s.client.VerifyArtifacts()
+	})
 
-	if err := s.client.GenerateBillOfMaterials(); err != nil {
-		return fmt.Errorf("generating sbom: %w", err)
+	g.Go(func() error {
+		return s.client.GenerateBillOfMaterials()
+	})
+
+	if err := g.Wait(); err != nil {
+		return err
 	}
 
 	logger.WithStep().Info("Staging artifacts")
