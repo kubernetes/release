@@ -19,7 +19,7 @@ package fastforward
 import (
 	"os"
 
-	gogithub "github.com/google/go-github/v75/github"
+	gogithub "github.com/google/go-github/v84/github"
 
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-sdk/github"
