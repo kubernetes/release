@@ -10,12 +10,14 @@ availableSecrets:
 
 steps:
   - name: gcr.io/cloud-builders/git
+    id: 'clone'
     dir: "go/src/k8s.io"
     args:
       - "clone"
       - "https://github.com/${_TOOL_ORG}/${_TOOL_REPO}"
 
   - name: gcr.io/cloud-builders/git
+    id: 'checkout'
     entrypoint: "bash"
     dir: "go/src/k8s.io/release"
     args:
@@ -26,6 +28,7 @@ steps:
         git checkout ${_TOOL_REF}
 
   - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
+    id: 'build-krel'
     dir: go/src/k8s.io/release
     env:
       - KREL_OUTPUT_PATH=/workspace/bin/krel
@@ -37,6 +40,7 @@ steps:
       - ./hack/get-krel
 
   - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
+    id: 'stage'
     dir: "/workspace"
     env:
       - "TOOL_ORG=${_TOOL_ORG}"
@@ -62,6 +66,8 @@ steps:
       - "--build-version=${_BUILDVERSION}"
 
   - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
+    id: 'obs-stage'
+    waitFor: ['stage']
     dir: "/workspace"
     env:
       - "TOOL_ORG=${_TOOL_ORG}"
