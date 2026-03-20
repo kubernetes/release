@@ -113,9 +113,8 @@ func (*defaultImageImpl) VerifyImage(_ *sign.Signer, _ string) error {
 var tagRegex = regexp.MustCompile(`^.+/(.+):.+$`)
 
 // publishWorkers is the number of concurrent workers for pushing and
-// signing arch-specific container images. Kept small to avoid
-// overwhelming the registry or docker daemon.
-const publishWorkers = 3
+// signing arch-specific container images.
+const publishWorkers = 5
 
 // tarballItem holds metadata collected for a single arch-specific image
 // tarball, used to decouple the collection phase from the push/sign phase.
