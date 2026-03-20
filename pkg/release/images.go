@@ -173,70 +173,27 @@ func (i *Images) Publish(registry, version, buildPath string) error {
 		return fmt.Errorf("push arch-specific images: %w", err)
 	}
 
-	// Phase 3: Create, push, and sign manifest lists (sequential).
+	// Phase 3: Create, push, and sign manifest lists in parallel.
 	if err := os.Setenv("DOCKER_CLI_EXPERIMENTAL", "enabled"); err != nil {
 		return fmt.Errorf("enable docker experimental CLI: %w", err)
 	}
 
+	logrus.Infof(
+		"Processing %d manifest lists with %d workers",
+		len(manifestImages), publishWorkers,
+	)
+
+	mg := new(errgroup.Group)
+	mg.SetLimit(publishWorkers)
+
 	for image, arches := range manifestImages {
-		imageVersion := fmt.Sprintf("%s:%s", image, version)
-		logrus.Infof("Creating manifest image %s", imageVersion)
+		mg.Go(func() error {
+			return i.createPushSignManifest(image, arches, version)
+		})
+	}
 
-		manifests := []string{}
-		for _, arch := range arches {
-			manifests = append(manifests,
-				fmt.Sprintf("%s-%s:%s", image, arch, version),
-			)
-		}
-
-		if err := i.Execute("docker", append(
-			[]string{"manifest", "create", "--amend", imageVersion},
-			manifests...,
-		)...); err != nil {
-			return fmt.Errorf("create manifest: %w", err)
-		}
-
-		for _, arch := range arches {
-			logrus.Infof(
-				"Annotating %s-%s:%s with --arch %s",
-				image, arch, version, arch,
-			)
-
-			if err := i.Execute(
-				"docker", "manifest", "annotate", "--arch", arch,
-				imageVersion, fmt.Sprintf("%s-%s:%s", image, arch, version),
-			); err != nil {
-				return fmt.Errorf("annotate manifest with arch: %w", err)
-			}
-		}
-
-		logrus.Infof("Pushing manifest image %s", imageVersion)
-
-		if err := wait.ExponentialBackoff(wait.Backoff{
-			Duration: time.Second,
-			Factor:   1.5,
-			Steps:    5,
-		}, func() (bool, error) {
-			if err := i.Execute("docker", "manifest", "push", imageVersion, "--purge"); err == nil {
-				return true, nil
-			} else if strings.Contains(err.Error(), "request canceled while waiting for connection") {
-				// The error is unfortunately not exported:
-				// https://github.com/golang/go/blob/dc04f3b/src/net/http/client.go#L720
-				// https://github.com/golang/go/blob/dc04f3b/src/net/http/transport.go#L2518
-				// ref: https://github.com/kubernetes/release/issues/2810
-				logrus.Info("Retrying manifest push")
-
-				return false, nil
-			}
-
-			return false, err
-		}); err != nil {
-			return fmt.Errorf("push manifest: %w", err)
-		}
-
-		if err := i.SignImage(i.signer, imageVersion); err != nil {
-			return fmt.Errorf("sign manifest list: %w", err)
-		}
+	if err := mg.Wait(); err != nil {
+		return fmt.Errorf("process manifest lists: %w", err)
 	}
 
 	return nil
@@ -508,6 +465,74 @@ func (i *Images) pushAndSignImage(item tarballItem) error {
 		"docker", "rmi", item.origTag, item.newTagWithArch,
 	); err != nil {
 		return fmt.Errorf("remove local container image: %w", err)
+	}
+
+	return nil
+}
+
+// createPushSignManifest creates a manifest list for a single image,
+// annotates each architecture, pushes with retry, and signs.
+func (i *Images) createPushSignManifest(image string, arches []string, version string) error {
+	imageVersion := fmt.Sprintf("%s:%s", image, version)
+	logrus.Infof("Creating manifest image %s", imageVersion)
+
+	manifests := make([]string, 0, len(arches))
+	for _, arch := range arches {
+		manifests = append(manifests,
+			fmt.Sprintf("%s-%s:%s", image, arch, version),
+		)
+	}
+
+	if err := i.Execute("docker", append(
+		[]string{"manifest", "create", "--amend", imageVersion},
+		manifests...,
+	)...); err != nil {
+		return fmt.Errorf("create manifest: %w", err)
+	}
+
+	for _, arch := range arches {
+		logrus.Infof(
+			"Annotating %s-%s:%s with --arch %s",
+			image, arch, version, arch,
+		)
+
+		if err := i.Execute(
+			"docker", "manifest", "annotate", "--arch", arch,
+			imageVersion, fmt.Sprintf("%s-%s:%s", image, arch, version),
+		); err != nil {
+			return fmt.Errorf("annotate manifest with arch: %w", err)
+		}
+	}
+
+	logrus.Infof("Pushing manifest image %s", imageVersion)
+
+	if err := wait.ExponentialBackoff(wait.Backoff{
+		Duration: time.Second,
+		Factor:   1.5,
+		Steps:    5,
+	}, func() (bool, error) {
+		err := i.Execute("docker", "manifest", "push", imageVersion, "--purge")
+		if err == nil {
+			return true, nil
+		}
+
+		if strings.Contains(err.Error(), "request canceled while waiting for connection") {
+			// The error is unfortunately not exported:
+			// https://github.com/golang/go/blob/dc04f3b/src/net/http/client.go#L720
+			// https://github.com/golang/go/blob/dc04f3b/src/net/http/transport.go#L2518
+			// ref: https://github.com/kubernetes/release/issues/2810
+			logrus.Info("Retrying manifest push")
+
+			return false, nil
+		}
+
+		return false, err
+	}); err != nil {
+		return fmt.Errorf("push manifest: %w", err)
+	}
+
+	if err := i.SignImage(i.signer, imageVersion); err != nil {
+		return fmt.Errorf("sign manifest list: %w", err)
 	}
 
 	return nil
