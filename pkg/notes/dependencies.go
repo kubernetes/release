@@ -17,6 +17,7 @@ limitations under the License.
 package notes
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -37,13 +38,13 @@ func NewDependencies() *Dependencies {
 //counterfeiter:generate . MoDiff
 //go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt notesfakes/fake_mo_diff.go > notesfakes/_fake_mo_diff.go && mv notesfakes/_fake_mo_diff.go notesfakes/fake_mo_diff.go"
 type MoDiff interface {
-	Run(*modiff.Config) (string, error)
+	Run(context.Context, *modiff.Config) (string, error)
 }
 
 type moDiff struct{}
 
-func (m *moDiff) Run(config *modiff.Config) (string, error) {
-	return modiff.Run(config)
+func (m *moDiff) Run(ctx context.Context, config *modiff.Config) (string, error) {
+	return modiff.Run(ctx, config)
 }
 
 // SetMoDiff can be used to set the internal MoDiff implementation.
@@ -65,7 +66,7 @@ func (d *Dependencies) ChangesForURL(url, from, to string) (string, error) {
 		strings.TrimPrefix(url, "https://"), from, to, true, 2,
 	)
 
-	res, err := d.moDiff.Run(config)
+	res, err := d.moDiff.Run(context.TODO(), config)
 	if err != nil {
 		return "", fmt.Errorf("getting dependency changes: %w", err)
 	}

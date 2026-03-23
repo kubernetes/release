@@ -18,6 +18,7 @@ limitations under the License.
 package notesfakes
 
 import (
+	"context"
 	"sync"
 
 	"github.com/saschagrunert/go-modiff/pkg/modiff"
@@ -25,10 +26,11 @@ import (
 )
 
 type FakeMoDiff struct {
-	RunStub        func(*modiff.Config) (string, error)
+	RunStub        func(context.Context, *modiff.Config) (string, error)
 	runMutex       sync.RWMutex
 	runArgsForCall []struct {
-		arg1 *modiff.Config
+		arg1 context.Context
+		arg2 *modiff.Config
 	}
 	runReturns struct {
 		result1 string
@@ -42,18 +44,19 @@ type FakeMoDiff struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeMoDiff) Run(arg1 *modiff.Config) (string, error) {
+func (fake *FakeMoDiff) Run(arg1 context.Context, arg2 *modiff.Config) (string, error) {
 	fake.runMutex.Lock()
 	ret, specificReturn := fake.runReturnsOnCall[len(fake.runArgsForCall)]
 	fake.runArgsForCall = append(fake.runArgsForCall, struct {
-		arg1 *modiff.Config
-	}{arg1})
+		arg1 context.Context
+		arg2 *modiff.Config
+	}{arg1, arg2})
 	stub := fake.RunStub
 	fakeReturns := fake.runReturns
-	fake.recordInvocation("Run", []interface{}{arg1})
+	fake.recordInvocation("Run", []interface{}{arg1, arg2})
 	fake.runMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -67,17 +70,17 @@ func (fake *FakeMoDiff) RunCallCount() int {
 	return len(fake.runArgsForCall)
 }
 
-func (fake *FakeMoDiff) RunCalls(stub func(*modiff.Config) (string, error)) {
+func (fake *FakeMoDiff) RunCalls(stub func(context.Context, *modiff.Config) (string, error)) {
 	fake.runMutex.Lock()
 	defer fake.runMutex.Unlock()
 	fake.RunStub = stub
 }
 
-func (fake *FakeMoDiff) RunArgsForCall(i int) *modiff.Config {
+func (fake *FakeMoDiff) RunArgsForCall(i int) (context.Context, *modiff.Config) {
 	fake.runMutex.RLock()
 	defer fake.runMutex.RUnlock()
 	argsForCall := fake.runArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeMoDiff) RunReturns(result1 string, result2 error) {
@@ -109,8 +112,6 @@ func (fake *FakeMoDiff) RunReturnsOnCall(i int, result1 string, result2 error) {
 func (fake *FakeMoDiff) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.runMutex.RLock()
-	defer fake.runMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
