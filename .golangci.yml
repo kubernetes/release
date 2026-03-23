@@ -144,6 +144,9 @@ linters:
       - linters:
           - nolintlint
         text: "directive .* is unused for linter \"ireturn\""
+      - linters:
+          - nolintlint
+        text: "directive .* is unused for linter \"gosec\""
     paths:
       - third_party$
       - builtin$

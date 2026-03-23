@@ -337,27 +337,27 @@ func TestGatherNotes(t *testing.T) {
 				seenPRs := newIntsRecorder(122, 123, 124)
 				prsMap := map[int]*github.PullRequest{
 					122: {
-						Number: intPtr(122),
-						Body:   strPtr("122\n```release-note\nfrom 122\n```\n"),
+						Number: new(122),
+						Body:   new("122\n```release-note\nfrom 122\n```\n"),
 						User: &github.User{
-							Login: strPtr("test-user-a"),
+							Login: new("test-user-a"),
 						},
 					},
 					123: {
-						Number: intPtr(123),
-						Body:   strPtr("123\n```release-note\nfrom 123\n```\n"),
+						Number: new(123),
+						Body:   new("123\n```release-note\nfrom 123\n```\n"),
 						User: &github.User{
-							Login: strPtr("test-user-b"),
+							Login: new("test-user-b"),
 						},
 					},
 					124: {
-						Number: intPtr(124),
-						Body:   strPtr("124\n```release-note\nfrom 124\n```\n"),
+						Number: new(124),
+						Body:   new("124\n```release-note\nfrom 124\n```\n"),
 						User: &github.User{
-							Login: strPtr("k8s-infra-cherrypick-robot"),
+							Login: new("k8s-infra-cherrypick-robot"),
 						},
 						Head: &github.PullRequestBranch{
-							Label: strPtr("k8s-infra-cherrypick-robot:cherry-pick-122-to-release-0.x"),
+							Label: new("k8s-infra-cherrypick-robot:cherry-pick-122-to-release-0.x"),
 						},
 					},
 				}
@@ -514,9 +514,9 @@ func TestGatherNotes(t *testing.T) {
 
 func pullRequest(id int, msg, state string) *github.PullRequest {
 	return &github.PullRequest{
-		Body:   strPtr(msg),
-		Number: intPtr(id),
-		State:  strPtr(state),
+		Body:   new(msg),
+		Number: new(id),
+		State:  new(state),
 	}
 }
 
@@ -532,9 +532,9 @@ func manyRepoCommits(nr int) []*github.RepositoryCommit {
 
 func repoCommit(sha, commitMsg string) *github.RepositoryCommit {
 	return &github.RepositoryCommit{
-		SHA: strPtr(sha),
+		SHA: new(sha),
 		Commit: &github.Commit{
-			Message: strPtr(commitMsg),
+			Message: new(commitMsg),
 		},
 	}
 }
@@ -578,9 +578,6 @@ func (s *intsRecorder) Mark(what int) error {
 
 	return nil
 }
-
-func intPtr(i int) *int       { return &i }
-func strPtr(s string) *string { return &s }
 
 func checkCallCount(t *testing.T, what string, expected, actual int) {
 	t.Helper()

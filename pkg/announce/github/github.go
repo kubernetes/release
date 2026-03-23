@@ -26,8 +26,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/utils/ptr"
-
 	"sigs.k8s.io/release-sdk/github"
 	"sigs.k8s.io/release-utils/helpers"
 )
@@ -203,10 +201,10 @@ func (g *GitHub) UpdateGitHubPage() (err error) {
 
 	ghOpts := &github.UpdateReleasePageOptions{
 		Name:       &g.options.Name,
-		Body:       ptr.To(output.String()),
+		Body:       new(output.String()),
 		Draft:      &g.options.Draft,
 		Prerelease: &isPrerelease,
-		Latest:     ptr.To(markAsLatest),
+		Latest:     new(markAsLatest),
 	}
 
 	// Call GitHub to set the release page
