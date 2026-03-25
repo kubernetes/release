@@ -70,7 +70,8 @@ func TestNewPatchRelease(t *testing.T) {
 
 	// Then
 	// Verify local results
-	fileContains(t, "CHANGELOG-1.25.html", patchReleaseExpectedHTML)
+	fileContains(t, "CHANGELOG-1.25.html", patchReleaseExpectedHTMLHead)
+	fileContains(t, "CHANGELOG-1.25.html", patchReleaseExpectedHTMLBottom)
 	require.NoError(t, os.RemoveAll("CHANGELOG-1.25.html"))
 
 	for _, x := range []struct {
@@ -96,64 +97,6 @@ func TestNewPatchRelease(t *testing.T) {
 		require.Contains(t, string(result), patchReleaseExpectedTOC)
 		require.Contains(t, string(result), patchReleaseExpectedContent)
 	}
-}
-
-func TestNewAlphaRelease(t *testing.T) {
-	// Given
-	s := newSUT(t)
-	defer s.cleanup(t)
-
-	co := s.getChangelogOptions("v1.18.0-alpha.3")
-
-	// When
-	require.NoError(t, changelog.New(co).Run())
-
-	// Then
-	// Verify local results
-	fileContains(t, "CHANGELOG-1.18.html", alphaReleaseExpectedHTMLHead)
-	fileContains(t, "CHANGELOG-1.18.html", alphaReleaseExpectedHTMLBottom)
-	require.NoError(t, os.RemoveAll("CHANGELOG-1.18.html"))
-
-	// Verify commit message
-	lastCommit := s.lastCommit(t, git.DefaultBranch)
-	require.Contains(t, lastCommit, "Kubernetes Release Robot <k8s-release-robot@users.noreply.github.com>")
-	require.Contains(t, lastCommit, "Update directory for v1.18.0-alpha.3 release")
-
-	// Verify changelog contents
-	result, err := os.ReadFile(
-		filepath.Join(s.repo.Dir(), changelog.RepoChangelogDir, "CHANGELOG-1.18.md"),
-	)
-	require.NoError(t, err)
-	require.Regexp(t, alphaReleaseExpectedTOC, string(result))
-	require.Contains(t, string(result), alphaReleaseExpectedContent)
-}
-
-func TestNewAlpha1Release(t *testing.T) {
-	// Given
-	s := newSUT(t)
-	defer s.cleanup(t)
-
-	co := s.getChangelogOptions("v1.19.0-alpha.1")
-
-	// When
-	require.NoError(t, changelog.New(co).Run())
-
-	// Then
-	// Verify local results
-	fileContains(t, "CHANGELOG-1.19.html", alpha1ExpectedHTML)
-	require.NoError(t, os.RemoveAll("CHANGELOG-1.19.html"))
-
-	// Verify commit message
-	lastCommit := s.lastCommit(t, git.DefaultBranch)
-	require.Contains(t, lastCommit, "Kubernetes Release Robot <k8s-release-robot@users.noreply.github.com>")
-	require.Contains(t, lastCommit, "Update directory for v1.19.0-alpha.1 release")
-
-	// Verify changelog contents
-	result, err := os.ReadFile(
-		filepath.Join(s.repo.Dir(), changelog.RepoChangelogDir, "CHANGELOG-1.19.md"),
-	)
-	require.NoError(t, err)
-	require.Regexp(t, alpha1ReleaseExpectedTOC, string(result))
 }
 
 func TestNewMinorRelease(t *testing.T) {

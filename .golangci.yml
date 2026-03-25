@@ -142,6 +142,10 @@ linters:
           - staticcheck
         text: "SA1019: intoto.Subject is deprecated"
       - linters:
+          - ireturn
+        path: pkg/notes/options/options.go
+        text: "Client returns interface"
+      - linters:
           - nolintlint
         text: "directive .* is unused for linter \"ireturn\""
       - linters:

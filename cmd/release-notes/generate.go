@@ -166,13 +166,6 @@ func addGenerateFlags(subcommand *cobra.Command) {
 		"Add links for PRs and authors are added in the markdown format",
 	)
 
-	subcommand.PersistentFlags().StringVar(
-		&opts.RequiredAuthor,
-		"required-author",
-		env.Default("REQUIRED_AUTHOR", "k8s-ci-robot"),
-		"Only commits from this GitHub user are considered. Set to empty string to include all users",
-	)
-
 	subcommand.PersistentFlags().BoolVar(
 		&opts.Debug,
 		"debug",
