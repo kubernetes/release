@@ -28,6 +28,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"slices"
 	"sort"
@@ -37,7 +38,12 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/cheggaaa/pb/v3"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	gitobject "github.com/go-git/go-git/v5/plumbing/object"
 	gogithub "github.com/google/go-github/v84/github"
+	"github.com/mattn/go-isatty"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
@@ -52,7 +58,6 @@ import (
 
 var (
 	errNoPRIDFoundInCommitMessage       = errors.New("no PR IDs found in the commit message")
-	errNoPRFoundForCommitSHA            = errors.New("no PR found for this commit")
 	errNoOriginPRIDFoundInPR            = errors.New("no origin PR IDs found in the PR")
 	apiSleepTime                  int64 = 60
 )
@@ -215,9 +220,15 @@ func (r *ReleaseNotes) Set(prNumber int, note *ReleaseNote) {
 	r.history = append(r.history, prNumber)
 }
 
-type Result struct {
-	commit      *gogithub.RepositoryCommit
-	pullRequest *gogithub.PullRequest
+type commitPrPair struct {
+	Commit *gitobject.Commit
+	PrNum  int
+}
+
+type releaseNotesAggregator struct {
+	sync.RWMutex
+
+	releaseNotes *ReleaseNotes
 }
 
 type Gatherer struct {
@@ -260,16 +271,9 @@ func GatherReleaseNotes(ctx context.Context, opts *options.Options) (*ReleaseNot
 		return nil, fmt.Errorf("retrieving notes gatherer: %w", err)
 	}
 
-	var releaseNotes *ReleaseNotes
-
 	startTime := time.Now()
 
-	if gatherer.options.ListReleaseNotesV2 {
-		releaseNotes, err = gatherer.ListReleaseNotesV2()
-	} else {
-		releaseNotes, err = gatherer.ListReleaseNotes() //nolint:contextcheck // context is stored in gatherer
-	}
-
+	releaseNotes, err := gatherer.ListReleaseNotes()
 	if err != nil {
 		return nil, fmt.Errorf("listing release notes: %w", err)
 	}
@@ -282,7 +286,13 @@ func GatherReleaseNotes(ctx context.Context, opts *options.Options) (*ReleaseNot
 // ListReleaseNotes produces a list of fully contextualized release notes
 // starting from a given commit SHA and ending at starting a given commit SHA.
 func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
-	// Load map providers
+	// left parent of Git commits is always the main branch parent
+	pairs, err := g.listLeftParentCommits(g.options)
+	if err != nil {
+		return nil, fmt.Errorf("listing offline commits: %w", err)
+	}
+
+	// load map providers specified in options
 	mapProviders := []MapProvider{}
 
 	for _, initString := range g.options.MapProviderStrings {
@@ -294,102 +304,104 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 		mapProviders = append(mapProviders, provider)
 	}
 
-	commits, err := g.listCommits(g.options.Branch, g.options.StartSHA, g.options.EndSHA)
-	if err != nil {
-		return nil, fmt.Errorf("listing commits: %w", err)
+	eg := new(errgroup.Group)
+	eg.SetLimit(maxParallelRequests)
+
+	aggregator := releaseNotesAggregator{
+		releaseNotes: NewReleaseNotes(),
 	}
 
-	// Get the PRs into a temporary results set
-	resultsTemp, err := g.gatherNotes(commits)
-	if err != nil {
-		return nil, fmt.Errorf("gathering notes: %w", err)
+	dedupeCache := struct {
+		sync.Mutex
+
+		seen map[string]struct{}
+	}{seen: map[string]struct{}{}}
+
+	pairsCount := len(pairs)
+	logrus.Infof("processing release notes for %d commits", pairsCount)
+
+	// display progress bar in stdout, since stderr is used by logger
+	bar := pb.New(pairsCount).SetWriter(os.Stdout)
+
+	// only display progress bar in user TTY
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		bar.Start()
 	}
 
-	// Cycle the results and add the complete notes, as well as those that
-	// have a map associated with it
-	results := []*Result{}
+	for _, pair := range pairs {
+		eg.Go(func() error {
+			var noteMaps []*ReleaseNotesMap
 
-	logrus.Info("Checking PRs for mapped data")
-
-	for _, res := range resultsTemp {
-		// If the PR has no release note, check if we have to add it
-		if MatchesExcludeFilter(*res.pullRequest.Body) {
 			for _, provider := range mapProviders {
-				noteMaps, err := provider.GetMapsForPR(res.pullRequest.GetNumber())
+				providerMaps, err := provider.GetMapsForPR(pair.PrNum)
 				if err != nil {
-					return nil, fmt.Errorf(
-						"checking if a map exists for PR %d: %w", res.pullRequest.GetNumber(),
-						err)
+					logrus.WithFields(logrus.Fields{
+						"pr": pair.PrNum,
+					}).Errorf("ignore err: %v", err)
+
+					continue
 				}
 
-				if len(noteMaps) != 0 {
-					logrus.Infof(
-						"Artificially adding pr #%d because a map for it was found",
-						res.pullRequest.GetNumber(),
-					)
+				noteMaps = append(noteMaps, providerMaps...)
+			}
 
-					results = append(results, res)
+			releaseNote, err := g.buildReleaseNote(pair)
+			if err == nil {
+				if releaseNote == nil {
+					logrus.WithFields(logrus.Fields{
+						"pr": pair.PrNum,
+					}).Debugf("skip: empty release note")
 				} else {
-					logrus.Debugf(
-						"Skipping PR #%d because it contains no release note",
-						res.pullRequest.GetNumber(),
-					)
+					for _, noteMap := range noteMaps {
+						if err := releaseNote.ApplyMap(noteMap, g.options.AddMarkdownLinks); err != nil {
+							logrus.WithFields(logrus.Fields{
+								"pr": pair.PrNum,
+							}).Errorf("ignore err: %v", err)
+						}
+					}
+
+					dedupeCache.Lock()
+
+					_, duplicate := dedupeCache.seen[releaseNote.Markdown]
+					if !duplicate {
+						dedupeCache.seen[releaseNote.Markdown] = struct{}{}
+					}
+					dedupeCache.Unlock()
+
+					if duplicate {
+						logrus.WithFields(logrus.Fields{
+							"pr": pair.PrNum,
+						}).Debugf("skip: duplicate release note")
+					} else {
+						logrus.WithFields(logrus.Fields{
+							"pr":   pair.PrNum,
+							"note": releaseNote.Text,
+						}).Debugf("finalized release note")
+						aggregator.Lock()
+						aggregator.releaseNotes.Set(pair.PrNum, releaseNote)
+						aggregator.Unlock()
+					}
 				}
+			} else {
+				logrus.WithFields(logrus.Fields{
+					"sha": pair.Commit.Hash.String(),
+					"pr":  pair.PrNum,
+				}).Errorf("err: %v", err)
 			}
-		} else {
-			// Append the note as it is
-			results = append(results, res)
-		}
+
+			bar.Increment()
+
+			return nil
+		})
 	}
 
-	dedupeCache := map[string]struct{}{}
-	notes := NewReleaseNotes()
-
-	for _, result := range results {
-		if g.options.RequiredAuthor != "" {
-			if result.commit.GetAuthor().GetLogin() != g.options.RequiredAuthor {
-				logrus.Infof(
-					"Skipping release note for PR #%d because required author %q does not match with %q",
-					result.pullRequest.GetNumber(), g.options.RequiredAuthor, result.commit.GetAuthor().GetLogin(),
-				)
-
-				continue
-			}
-		}
-
-		note, err := g.ReleaseNoteFromCommit(result)
-		if err != nil {
-			logrus.Errorf(
-				"Getting the release note from commit %s (PR #%d): %v",
-				result.commit.GetSHA(),
-				result.pullRequest.GetNumber(),
-				err)
-
-			continue
-		}
-
-		// Query our map providers for additional data for the release note
-		for _, provider := range mapProviders {
-			noteMaps, err := provider.GetMapsForPR(result.pullRequest.GetNumber())
-			if err != nil {
-				return nil, fmt.Errorf("error while looking up note map: %w", err)
-			}
-
-			for _, noteMap := range noteMaps {
-				if err := note.ApplyMap(noteMap, g.options.AddMarkdownLinks); err != nil {
-					return nil, fmt.Errorf("applying notemap for PR #%d: %w", result.pullRequest.GetNumber(), err)
-				}
-			}
-		}
-
-		if _, ok := dedupeCache[note.Markdown]; !ok {
-			notes.Set(note.PrNumber, note)
-
-			dedupeCache[note.Markdown] = struct{}{}
-		}
+	if err := eg.Wait(); err != nil {
+		return nil, err
 	}
 
-	return notes, nil
+	bar.Finish()
+
+	return aggregator.releaseNotes, nil
 }
 
 // noteTextFromString returns the text of the release note given a string which
@@ -500,69 +512,6 @@ func classifyURL(u *url.URL) DocType {
 	return DocTypeExternal
 }
 
-// ReleaseNoteFromCommit produces a full contextualized release note given a
-// GitHub commit API resource.
-func (g *Gatherer) ReleaseNoteFromCommit(result *Result) (*ReleaseNote, error) {
-	pr := result.pullRequest
-
-	prBody := pr.GetBody()
-
-	text, err := noteTextFromString(prBody)
-	if err != nil {
-		return nil, err
-	}
-
-	documentation := DocumentationFromString(prBody)
-
-	author := pr.GetUser().GetLogin()
-	authorURL := pr.GetUser().GetHTMLURL()
-	prURL := pr.GetHTMLURL()
-	isFeature := slices.Contains(labelsWithPrefix(pr, "kind"), "feature")
-	sigLabels := labelsWithPrefix(pr, "sig")
-	noteSuffix := prettifySIGList(sigLabels)
-
-	isDuplicateSIG := len(labelsWithPrefix(pr, "sig")) > 1
-
-	isDuplicateKind := len(labelsWithPrefix(pr, "kind")) > 1
-
-	// TODO: Spin this to sep function
-	indented := strings.ReplaceAll(text, "\n", "\n  ")
-	markdown := fmt.Sprintf("%s (#%d, @%s)",
-		indented, pr.GetNumber(), author)
-
-	if g.options.AddMarkdownLinks {
-		markdown = fmt.Sprintf("%s ([#%d](%s), [@%s](%s))",
-			indented, pr.GetNumber(), prURL, author, authorURL)
-	}
-
-	if noteSuffix != "" {
-		markdown = fmt.Sprintf("%s [%s]", markdown, noteSuffix)
-	}
-
-	// Uppercase the first character of the markdown to make it look uniform
-	markdown = capitalizeString(markdown)
-
-	return &ReleaseNote{
-		Commit:         result.commit.GetSHA(),
-		Text:           text,
-		Markdown:       markdown,
-		Documentation:  documentation,
-		Author:         author,
-		AuthorURL:      authorURL,
-		PrURL:          prURL,
-		PrNumber:       pr.GetNumber(),
-		SIGs:           sigLabels,
-		Kinds:          labelsWithPrefix(pr, "kind"),
-		Areas:          labelsWithPrefix(pr, "area"),
-		Feature:        isFeature,
-		Duplicate:      isDuplicateSIG,
-		DuplicateKind:  isDuplicateKind,
-		ActionRequired: labelExactMatch(pr, "release-note-action-required"),
-		DoNotPublish:   labelExactMatch(pr, "release-note-none"),
-		PRBody:         prBody,
-	}, nil
-}
-
 // ReleaseNoteForPullRequest returns a release note from a pull request number.
 // If the release note is blank or.
 func (g *Gatherer) ReleaseNoteForPullRequest(prNr int) (*ReleaseNote, error) {
@@ -627,107 +576,204 @@ func (g *Gatherer) ReleaseNoteForPullRequest(prNr int) (*ReleaseNote, error) {
 	return note, nil
 }
 
-// listCommits lists all commits starting from a given commit SHA and ending at
-// a given commit SHA.
-func (g *Gatherer) listCommits(branch, start, end string) ([]*gogithub.RepositoryCommit, error) {
-	startCommit, _, err := g.client.GetCommit(g.context, g.options.GithubOrg, g.options.GithubRepo, start)
+func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
+	pr, _, err := g.client.GetPullRequest(g.context, g.options.GithubOrg, g.options.GithubRepo, pair.PrNum)
 	if err != nil {
-		return nil, fmt.Errorf("retrieve start commit: %w", err)
+		return nil, err
 	}
 
-	endCommit, _, err := g.client.GetCommit(g.context, g.options.GithubOrg, g.options.GithubRepo, end)
-	if err != nil {
-		return nil, fmt.Errorf("retrieve end commit: %w", err)
+	prBody := pr.GetBody()
+
+	if MatchesExcludeFilter(prBody) {
+		return nil, nil //nolint:nilnil // intentional nil,nil return
 	}
 
-	allCommits := &commitList{}
+	if len(g.options.IncludeLabels) > 0 && !matchesLabelFilter(pr.Labels, g.options.IncludeLabels) {
+		return nil, nil //nolint:nilnil // intentional nil,nil return
+	}
 
-	worker := func(clo *gogithub.CommitsListOptions) (
-		commits []*gogithub.RepositoryCommit, resp *gogithub.Response, err error,
-	) {
-		for {
-			commits, resp, err = g.client.ListCommits(g.context, g.options.GithubOrg, g.options.GithubRepo, clo)
-			if err != nil {
-				if !canWaitAndRetry(resp, err) {
-					return nil, nil, err
-				}
-			} else {
-				break
-			}
+	text, err := noteTextFromString(prBody)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"sha": pair.Commit.Hash.String(),
+			"pr":  pair.PrNum,
+		}).Debugf("ignore err: %v", err)
+
+		return nil, nil //nolint:nilnil // intentional nil,nil return
+	}
+
+	if isAutomatedCherryPickPR(pr) {
+		logrus.Infof("PR #%d seems to be an automated cherry-pick, retrieving origin info", pr.GetNumber())
+
+		originPRNum, err := originPrNumFromPr(pr)
+		if err != nil {
+			return nil, err
 		}
 
-		return commits, resp, err
+		originPR, err := g.getPr(originPRNum)
+		if err != nil {
+			return nil, err
+		}
+
+		pr.User = originPR.GetUser()
 	}
 
-	clo := gogithub.CommitsListOptions{
-		SHA:   branch,
-		Since: startCommit.GetCommitter().GetDate().Time,
-		Until: endCommit.GetCommitter().GetDate().Time,
-		ListOptions: gogithub.ListOptions{
-			Page:    1,
-			PerPage: 100,
-		},
+	documentation := DocumentationFromString(prBody)
+
+	author := pr.GetUser().GetLogin()
+	authorURL := pr.GetUser().GetHTMLURL()
+	prURL := pr.GetHTMLURL()
+	isFeature := slices.Contains(labelsWithPrefix(pr, "kind"), "feature")
+	sigLabels := labelsWithPrefix(pr, "sig")
+	noteSuffix := prettifySIGList(sigLabels)
+
+	isDuplicateSIG := len(labelsWithPrefix(pr, "sig")) > 1
+
+	isDuplicateKind := len(labelsWithPrefix(pr, "kind")) > 1
+
+	indented := strings.ReplaceAll(text, "\n", "\n  ")
+	markdown := fmt.Sprintf("%s (#%d, @%s)",
+		indented, pr.GetNumber(), author)
+
+	if g.options.AddMarkdownLinks {
+		markdown = fmt.Sprintf("%s ([#%d](%s), [@%s](%s))",
+			indented, pr.GetNumber(), prURL, author, authorURL)
 	}
 
-	commits, resp, err := worker(&clo)
+	if noteSuffix != "" {
+		markdown = fmt.Sprintf("%s [%s]", markdown, noteSuffix)
+	}
+
+	// Uppercase the first character of the markdown to make it look uniform
+	markdown = capitalizeString(markdown)
+
+	return &ReleaseNote{
+		Commit:         pair.Commit.Hash.String(),
+		Text:           text,
+		Markdown:       markdown,
+		Documentation:  documentation,
+		Author:         author,
+		AuthorURL:      authorURL,
+		PrURL:          prURL,
+		PrNumber:       pr.GetNumber(),
+		SIGs:           sigLabels,
+		Kinds:          labelsWithPrefix(pr, "kind"),
+		Areas:          labelsWithPrefix(pr, "area"),
+		Feature:        isFeature,
+		Duplicate:      isDuplicateSIG,
+		DuplicateKind:  isDuplicateKind,
+		ActionRequired: labelExactMatch(pr, "release-note-action-required"),
+		DoNotPublish:   labelExactMatch(pr, "release-note-none"),
+		PRBody:         prBody,
+	}, nil
+}
+
+func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair, error) {
+	localRepository, err := git.PlainOpen(opts.RepoPath)
 	if err != nil {
 		return nil, err
 	}
 
-	allCommits.Add(commits)
+	// opts.StartSHA points to a tag (e.g. 1.20.0) which is on a release branch (e.g. release-1.20)
+	// this means traveling through commit history from opts.EndSHA will never reach opts.StartSHA
 
-	if resp.LastPage <= 1 {
-		return allCommits.List(), nil
+	// the stopping point to be set should be the last shared commit between release branch and primary (master) branch
+	// usually, following the left / first parents, it would be
+
+	// ^ master
+	// |
+	// * tag: 1.21.0-alpha.x / 1.21.0-beta.y
+	// |
+	// : :
+	// | |
+	// | * tag: v1.20.0, some merge commit pointed by opts.StartSHA
+	// | |
+	// | * Anago GCB release commit (begin branch out of release-1.20)
+	// |/
+	// x last shared commit
+
+	// merge base would resolve to last shared commit, marked by (x)
+
+	endCommit, err := localRepository.CommitObject(plumbing.NewHash(opts.EndSHA))
+	if err != nil {
+		return nil, fmt.Errorf("finding commit of EndSHA: %w", err)
 	}
 
-	eg, ctx := errgroup.WithContext(g.context)
-	eg.SetLimit(maxParallelRequests)
-
-	for page := 2; page <= resp.LastPage; page++ {
-		clo := clo
-		clo.Page = page
-
-		eg.Go(func() error {
-			if err := ctx.Err(); err != nil {
-				return err
-			}
-
-			commits, _, err := worker(&clo)
-			if err != nil {
-				return err
-			}
-
-			allCommits.Add(commits)
-
-			return nil
-		})
+	startCommit, err := localRepository.CommitObject(plumbing.NewHash(opts.StartSHA))
+	if err != nil {
+		return nil, fmt.Errorf("finding commit of StartSHA: %w", err)
 	}
 
-	if err := eg.Wait(); err != nil {
-		return nil, err
+	logrus.Debugf("finding merge base (last shared commit) between the two SHAs")
+
+	startTime := time.Now()
+
+	lastSharedCommits, err := endCommit.MergeBase(startCommit)
+	if err != nil {
+		return nil, fmt.Errorf("finding shared commits: %w", err)
 	}
 
-	return allCommits.List(), nil
-}
+	if len(lastSharedCommits) == 0 {
+		return nil, errors.New("no shared commits between the provided SHAs")
+	}
 
-type commitList struct {
-	sync.RWMutex
+	logrus.Debugf("found merge base in %v", time.Since(startTime))
 
-	list []*gogithub.RepositoryCommit
-}
+	stopHash := lastSharedCommits[0].Hash
+	logrus.Infof("will stop at %s", stopHash.String())
 
-func (l *commitList) Add(c []*gogithub.RepositoryCommit) {
-	l.Lock()
-	defer l.Unlock()
+	currentTagHash := plumbing.NewHash(opts.EndSHA)
 
-	l.list = append(l.list, c...)
-}
+	pairs := []*commitPrPair{}
 
-func (l *commitList) List() []*gogithub.RepositoryCommit {
-	l.RLock()
-	defer l.RUnlock()
+	hashPointer := currentTagHash
+	for hashPointer != stopHash {
+		hashString := hashPointer.String()
 
-	return l.list
+		// Find and collect commit objects
+		commitPointer, err := localRepository.CommitObject(hashPointer)
+		if err != nil {
+			return nil, fmt.Errorf("finding CommitObject: %w", err)
+		}
+
+		if len(commitPointer.ParentHashes) == 0 {
+			return nil, fmt.Errorf("commit %s has no parents, cannot traverse further", hashString)
+		}
+
+		// Find and collect PR number from commit message
+		prNums, err := prsNumForCommitFromMessage(commitPointer.Message)
+		if errors.Is(err, errNoPRIDFoundInCommitMessage) {
+			logrus.WithFields(logrus.Fields{
+				"sha": hashString,
+			}).Debug("no associated PR found")
+
+			hashPointer = commitPointer.ParentHashes[0]
+
+			continue
+		}
+
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"sha": hashString,
+			}).Warnf("ignore err: %v", err)
+
+			hashPointer = commitPointer.ParentHashes[0]
+
+			continue
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"sha": hashString,
+			"prs": prNums,
+		}).Debug("found PR from commit")
+
+		// Only taking the first one, assuming they are merged by Prow
+		pairs = append(pairs, &commitPrPair{Commit: commitPointer, PrNum: prNums[0]})
+
+		hashPointer = commitPointer.ParentHashes[0]
+	}
+
+	return pairs, nil
 }
 
 // noteExclusionFilters is a list of regular expressions that match commits
@@ -771,143 +817,6 @@ func matchesFilter(msg string, filters []*regexp.Regexp) bool {
 	return false
 }
 
-// gatherNotes list commits that have release notes starting from a given
-// commit SHA and ending at a given commit SHA. This function is similar to
-// listCommits except that only commits with tagged release notes are returned.
-func (g *Gatherer) gatherNotes(commits []*gogithub.RepositoryCommit) (filtered []*Result, err error) {
-	allResults := &resultList{}
-
-	nrOfCommits := len(commits)
-
-	// A note about prallelism:
-	//
-	// We make 2 different requests to GitHub further down the stack:
-	// - If we find PR numbers in a commit message, we do one API call per found
-	//   number. The assumption is, that this is mostly just one (or just a couple
-	//   of) PRs. The calls to the API do run in serial right now.
-	// - If we don't find a PR number in the commit message, we ask the API if
-	//   GitHub knows about PRs that are connected to that specific commit. The
-	//   assumption again is that this is either one or just a couple of PRs. The
-	//   results probably fit into one GitHub result page. If not, and we need to
-	//   query multiple times (paging), we currently also do that in serial.
-	//
-	// In case we parallelize the above mentioned API calls and the volume of
-	// them is bigger than expected, we might go well above the
-	// `maxParallelRequests` of parallel requests. In that case we probably
-	// should introduce the errgroup as a global concept (on the Gatherer or so)
-	// and use that errgroup for all API calls.
-	eg, ctx := errgroup.WithContext(g.context)
-
-	if g.options.ReplayDir == "" && g.options.RecordDir == "" {
-		eg.SetLimit(maxParallelRequests)
-	} else {
-		// Ensure the same order like recorded
-		eg.SetLimit(1)
-	}
-
-	for i, commit := range commits {
-		logrus.Infof(
-			"Starting to process commit %d of %d (%0.2f%%): %s",
-			i+1, nrOfCommits, (float64(i+1)/float64(nrOfCommits))*100.0,
-			commit.GetSHA(),
-		)
-
-		eg.Go(func() error {
-			if err := ctx.Err(); err != nil {
-				return err
-			}
-
-			res, err := g.notesForCommit(commit)
-			if err != nil {
-				return err
-			}
-
-			if res != nil {
-				allResults.Add(res)
-			}
-
-			return nil
-		})
-	}
-
-	if err := eg.Wait(); err != nil {
-		return nil, err
-	}
-
-	return allResults.List(), nil
-}
-
-func (g *Gatherer) notesForCommit(commit *gogithub.RepositoryCommit) (*Result, error) {
-	prs, err := g.prsFromCommit(commit)
-	if err != nil {
-		if errors.Is(err, errNoPRIDFoundInCommitMessage) || errors.Is(err, errNoPRFoundForCommitSHA) {
-			logrus.Debugf(
-				"No matches found when parsing PR from commit SHA %s",
-				commit.GetSHA(),
-			)
-
-			return nil, nil //nolint:nilnil // intentional nil,nil return
-		}
-
-		return nil, err
-	}
-
-	for _, pr := range prs {
-		prBody := pr.GetBody()
-
-		logrus.Debugf(
-			"Got PR #%d for commit: %s", pr.GetNumber(), commit.GetSHA(),
-		)
-
-		// If we match exclusion filter (release-note-none), we don't look further,
-		// instead we return that PR. We return that PR because it might have a map,
-		// which is checked after this function returns
-		if MatchesExcludeFilter(prBody) {
-			res := &Result{commit: commit, pullRequest: pr}
-			logrus.Infof("PR #%d contains exclusion (release-note-none)", pr.GetNumber())
-
-			return res, nil
-		}
-
-		// If we didn't match the exclusion filter, try to extract the release note from the PR.
-		// If we can't extract the release note, consider that the PR is invalid and take the next one
-		s, err := noteTextFromString(prBody)
-		if err != nil {
-			logrus.Infof("PR #%d does not seem to contain a valid release note, skipping", pr.GetNumber())
-
-			continue
-		}
-
-		// If we found a valid release note, return the PR, otherwise, take the next one
-		if s != "" {
-			if isAutomatedCherryPickPR(pr) {
-				logrus.Infof("PR #%d seems to be an automated cherry-pick, retrieving origin info", pr.GetNumber())
-
-				originPRNum, err := originPrNumFromPr(pr)
-				if err != nil {
-					return nil, err
-				}
-
-				originPR, err := g.getPr(originPRNum)
-				if err != nil {
-					return nil, err
-				}
-
-				pr.User = originPR.GetUser()
-			}
-
-			res := &Result{commit: commit, pullRequest: pr}
-			logrus.Infof("PR #%d seems to contain a release note", pr.GetNumber())
-			// Do not test further PRs for this commit as soon as one PR matched
-			return res, nil
-		}
-
-		logrus.Infof("PR #%d does not seem to contain a valid release note, skipping", pr.GetNumber())
-	}
-
-	return nil, nil //nolint:nilnil // intentional nil,nil return
-}
-
 func isAutomatedCherryPickPR(pr *gogithub.PullRequest) bool {
 	if pr == nil || pr.GetUser() == nil {
 		return false
@@ -927,42 +836,6 @@ func originPrNumFromPr(pr *gogithub.PullRequest) (int, error) {
 	}
 
 	return originPR, nil
-}
-
-type resultList struct {
-	sync.RWMutex
-
-	list []*Result
-}
-
-func (l *resultList) Add(r *Result) {
-	l.Lock()
-	defer l.Unlock()
-
-	l.list = append(l.list, r)
-}
-
-func (l *resultList) List() []*Result {
-	l.RLock()
-	defer l.RUnlock()
-
-	return l.list
-}
-
-// prsFromCommit return an API Pull Request struct given a commit struct. This is
-// useful for going from a commit log to the PR (which contains useful info such
-// as labels).
-func (g *Gatherer) prsFromCommit(commit *gogithub.RepositoryCommit) (
-	[]*gogithub.PullRequest, error,
-) {
-	githubPRs, err := g.prsForCommitFromMessage(*commit.Commit.Message)
-	if err != nil {
-		logrus.Debugf("No PR found for commit %s: %v", commit.GetSHA(), err)
-
-		return g.prsForCommitFromSHA(*commit.SHA)
-	}
-
-	return githubPRs, err
 }
 
 // labelsWithPrefix is a helper for fetching all labels on a PR that start with
@@ -1091,76 +964,6 @@ func canWaitAndRetry(r *gogithub.Response, err error) bool {
 	}
 
 	return false
-}
-
-// prsForCommitFromSHA retrieves the PR numbers for a commit given its sha.
-func (g *Gatherer) prsForCommitFromSHA(sha string) (prs []*gogithub.PullRequest, err error) {
-	plo := &gogithub.ListOptions{
-		Page:    1,
-		PerPage: 100,
-	}
-
-	prs = []*gogithub.PullRequest{}
-
-	var pResult []*gogithub.PullRequest
-
-	var resp *gogithub.Response
-
-	for {
-		for {
-			pResult, resp, err = g.client.ListPullRequestsWithCommit(
-				g.context, g.options.GithubOrg, g.options.GithubRepo, sha, plo,
-			)
-			if err != nil {
-				if !canWaitAndRetry(resp, err) {
-					return nil, err
-				}
-			} else {
-				break
-			}
-		}
-
-		for _, result := range pResult {
-			if result.GetState() == "closed" {
-				prs = append(prs, result)
-			}
-		}
-
-		if resp.NextPage == 0 {
-			break
-		}
-
-		plo.Page++
-		if plo.Page > resp.LastPage {
-			break
-		}
-	}
-
-	if len(prs) == 0 {
-		return nil, errNoPRFoundForCommitSHA
-	}
-
-	return prs, nil
-}
-
-func (g *Gatherer) prsForCommitFromMessage(commitMessage string) (prs []*gogithub.PullRequest, err error) {
-	prsNum, err := prsNumForCommitFromMessage(commitMessage)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, prNum := range prsNum {
-		// Given the PR number that we've now converted to an integer, get the PR from
-		// the API
-		pr, err := g.getPr(prNum)
-		if err != nil {
-			return prs, err
-		}
-
-		prs = append(prs, pr)
-	}
-
-	return prs, err
 }
 
 func (g *Gatherer) getPr(prNum int) (*gogithub.PullRequest, error) {

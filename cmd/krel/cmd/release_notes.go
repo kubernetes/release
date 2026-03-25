@@ -125,21 +125,20 @@ permissions to your fork of k/sig-release and k-sigs/release-notes.`,
 }
 
 type releaseNotesOptions struct {
-	createDraftPR      bool
-	createWebsitePR    bool
-	fixNotes           bool
-	listReleaseNotesV2 bool
-	interactiveMode    bool
-	updateRepo         bool
-	useSSH             bool
-	repoPath           string
-	tag                string
-	userFork           string
-	websiteRepo        string
-	githubOrg          string
-	draftRepo          string
-	mapProviders       []string
-	includeLabels      []string
+	createDraftPR   bool
+	createWebsitePR bool
+	fixNotes        bool
+	interactiveMode bool
+	updateRepo      bool
+	useSSH          bool
+	repoPath        string
+	tag             string
+	userFork        string
+	websiteRepo     string
+	githubOrg       string
+	draftRepo       string
+	mapProviders    []string
+	includeLabels   []string
 }
 
 type releaseNotesResult struct {
@@ -211,13 +210,6 @@ func init() {
 		"fork",
 		"",
 		"the user's fork in the form org/repo. Used to submit Pull Requests for the website and draft",
-	)
-
-	releaseNotesCmd.PersistentFlags().BoolVar(
-		&releaseNotesOpts.listReleaseNotesV2,
-		"list-v2",
-		true,
-		"use git graph traversal to list commits instead of GitHub API date-based filtering",
 	)
 
 	releaseNotesCmd.PersistentFlags().BoolVar(
@@ -977,7 +969,6 @@ func gatherNotesFrom(repoPath, startTag string) (*notes.ReleaseNotes, error) {
 	notesOptions.EndRev = releaseNotesOpts.tag
 	notesOptions.Debug = logrus.StandardLogger().Level >= logrus.DebugLevel
 	notesOptions.MapProviderStrings = releaseNotesOpts.mapProviders
-	notesOptions.ListReleaseNotesV2 = releaseNotesOpts.listReleaseNotesV2
 	notesOptions.AddMarkdownLinks = true
 	notesOptions.IncludeLabels = releaseNotesOpts.includeLabels
 

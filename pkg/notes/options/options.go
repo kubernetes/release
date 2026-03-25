@@ -84,10 +84,6 @@ type Options struct {
 	// `go-template:inline:<template>`.
 	GoTemplate string
 
-	// RequiredAuthor can be used to filter the release notes by the commit
-	// author
-	RequiredAuthor string
-
 	// DiscoverMode can be used to automatically discover StartSHA and EndSHA.
 	// Can be either RevisionDiscoveryModeNONE (default),
 	// RevisionDiscoveryModeMergeBaseToLatest,
@@ -111,9 +107,6 @@ type Options struct {
 	// If true, then the release notes generator will print messages in debug
 	// log level
 	Debug bool
-
-	// EXPERIMENTAL: Feature flag for using v2 implementation to list commits
-	ListReleaseNotesV2 bool
 
 	// RecordDir specifies the directory for API call recordings. Cannot be
 	// used together with ReplayDir.
@@ -187,22 +180,19 @@ func (o *Options) ValidateAndFinish() (err error) {
 		return errors.New("please do not use record and replay together")
 	}
 
-	// Recover for replay if needed
 	if o.ReplayDir != "" {
 		logrus.Info("Using replay mode")
-
-		return nil
-	}
-
-	// The GitHub Token is required if replay is not specified
-	token, ok := os.LookupEnv(github.TokenEnvKey)
-	if ok {
-		o.githubToken = token
-	} else if o.ReplayDir == "" {
-		return fmt.Errorf(
-			"neither environment variable `%s` nor `replay` option is set",
-			github.TokenEnvKey,
-		)
+	} else {
+		// The GitHub Token is required if replay is not specified
+		token, ok := os.LookupEnv(github.TokenEnvKey)
+		if ok {
+			o.githubToken = token
+		} else {
+			return fmt.Errorf(
+				"neither environment variable `%s` nor `replay` option is set",
+				github.TokenEnvKey,
+			)
+		}
 	}
 
 	// Set RepoPath to <tempdir>/<gh-org>-<gh-repo> if empty

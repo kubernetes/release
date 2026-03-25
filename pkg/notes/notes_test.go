@@ -20,13 +20,15 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"os"
 	"reflect"
 	"testing"
 
+	gitobject "github.com/go-git/go-git/v5/plumbing/object"
+	gogithub "github.com/google/go-github/v84/github"
 	"github.com/stretchr/testify/require"
 
 	kgithub "sigs.k8s.io/release-sdk/github"
+	"sigs.k8s.io/release-sdk/github/githubfakes"
 
 	"k8s.io/release/pkg/notes/options"
 )
@@ -36,17 +38,6 @@ const (
 	docsBlock        = mdSep + "docs"
 	releaseNoteBlock = mdSep + "release-note"
 )
-
-func githubClient(t *testing.T) (kgithub.Client, context.Context) { //nolint:ireturn // returning interface is intentional
-	_, tokenSet := os.LookupEnv(kgithub.TokenEnvKey)
-	if !tokenSet {
-		t.Skipf("%s environment variable is not set", kgithub.TokenEnvKey)
-	}
-
-	c := kgithub.New()
-
-	return c.Client(), t.Context()
-}
 
 func TestStripActionRequired(t *testing.T) {
 	notes := []string{
@@ -67,25 +58,6 @@ func TestStripStar(t *testing.T) {
 
 	for _, note := range notes {
 		require.Equal(t, "The note text", stripStar(note))
-	}
-}
-
-func TestReleaseNoteParsing(t *testing.T) {
-	c, ctx := githubClient(t)
-	commitsWithNote := []string{
-		"973dcd0c1a2555a6726aed8248ca816c9771253f",
-		"27e5971c11cfcda703a39ed670a565f0f3564713",
-	}
-	gatherer := NewGathererWithClient(ctx, c)
-
-	for _, sha := range commitsWithNote {
-		fmt.Println(sha)
-		commit, _, err := c.GetRepoCommit(ctx, "kubernetes", "kubernetes", sha)
-		require.NoError(t, err)
-		prs, err := gatherer.prsFromCommit(commit)
-		require.NoError(t, err)
-		_, err = gatherer.ReleaseNoteFromCommit(&Result{commit: commit, pullRequest: prs[0]})
-		require.NoError(t, err)
 	}
 }
 
@@ -649,6 +621,127 @@ func TestReleaseNoteForPullRequest(t *testing.T) {
 			}
 
 			require.Equal(t, tc.expectedNote, note.Markdown)
+		})
+	}
+}
+
+func newTestGatherer(t *testing.T, client *githubfakes.FakeClient, opts *options.Options) *Gatherer {
+	t.Helper()
+
+	if opts == nil {
+		opts = options.New()
+	}
+
+	return &Gatherer{
+		client:  client,
+		context: context.Background(),
+		options: opts,
+	}
+}
+
+func TestBuildReleaseNote(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		prBody       string
+		prLabels     []*gogithub.Label
+		prUser       *gogithub.User
+		expectNil    bool
+		expectText   string
+		expectPRBody bool
+	}{
+		"valid release note": {
+			prBody: "something\n```release-note\nFixed a bug\n```\n",
+			prUser: &gogithub.User{
+				Login:   new("testuser"),
+				HTMLURL: new("https://github.com/testuser"),
+			},
+			expectText:   "Fixed a bug",
+			expectPRBody: true,
+		},
+		"excluded release note": {
+			prBody:    "```release-note\nnone\n```",
+			expectNil: true,
+		},
+		"empty release note": {
+			prBody:    "```release-note\n\n```",
+			expectNil: true,
+		},
+		"release note with labels": {
+			prBody: "```release-note\nAdded feature X\n```\n",
+			prUser: &gogithub.User{
+				Login:   new("dev"),
+				HTMLURL: new("https://github.com/dev"),
+			},
+			prLabels: []*gogithub.Label{
+				{Name: new("sig/node")},
+				{Name: new("kind/feature")},
+				{Name: new("area/kubelet")},
+			},
+			expectText:   "Added feature X",
+			expectPRBody: true,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			client := &githubfakes.FakeClient{}
+			client.GetPullRequestStub = func(_ context.Context, _, _ string, _ int) (*gogithub.PullRequest, *gogithub.Response, error) {
+				pr := &gogithub.PullRequest{
+					Body:    new(tc.prBody),
+					Number:  new(42),
+					HTMLURL: new("https://github.com/kubernetes/kubernetes/pull/42"),
+					User:    tc.prUser,
+					Labels:  tc.prLabels,
+				}
+
+				return pr, nil, nil
+			}
+
+			gatherer := newTestGatherer(t, client, nil)
+
+			pair := &commitPrPair{
+				Commit: &gitobject.Commit{},
+				PrNum:  42,
+			}
+
+			note, err := gatherer.buildReleaseNote(pair)
+
+			if tc.expectNil {
+				require.NoError(t, err)
+				require.Nil(t, note)
+
+				return
+			}
+
+			require.NoError(t, err)
+			require.NotNil(t, note)
+			require.Equal(t, tc.expectText, note.Text)
+			require.Equal(t, 42, note.PrNumber)
+
+			if tc.expectPRBody {
+				require.Equal(t, tc.prBody, note.PRBody)
+			}
+
+			if tc.prUser != nil {
+				require.Equal(t, tc.prUser.GetLogin(), note.Author)
+			}
+
+			if tc.prLabels != nil {
+				for _, label := range tc.prLabels {
+					labelName := label.GetName()
+					switch {
+					case len(labelName) > 4 && labelName[:4] == "sig/":
+						require.Contains(t, note.SIGs, labelName[4:])
+					case len(labelName) > 5 && labelName[:5] == "kind/":
+						require.Contains(t, note.Kinds, labelName[5:])
+					case len(labelName) > 5 && labelName[:5] == "area/":
+						require.Contains(t, note.Areas, labelName[5:])
+					}
+				}
+			}
 		})
 	}
 }
