@@ -52,7 +52,6 @@ const (
 
 	// TODO(vdf): Need to reference K8s Infra project here.
 	DefaultKubernetesStagingProject = "k8s-release"
-	DefaultRelengStagingTestProject = "k8s-staging-releng-test"
 
 	versionReleaseRE   = `v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-?([a-zA-Z0-9]+\.(0|[1-9][0-9]*)\.)?`
 	versionBuildRE     = `([0-9]{1,})\+([0-9a-f]{5,40})`
