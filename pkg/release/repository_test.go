@@ -99,19 +99,61 @@ func TestCheckStateSuccess(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCheckStateFailedNoRemoteFound(t *testing.T) {
+func TestCheckStateNoRemoteFallsBackToURL(t *testing.T) {
 	// Given
 	sut := newSUT(t)
 	sut.mock.CurrentBranchReturns("branch", nil)
 	sut.mock.RemotesReturns([]*git.Remote{
 		git.NewRemote("origin", []string{"some-other-url"}),
 	}, nil)
+	sut.mock.HeadReturns("dbade8e", nil)
+	sut.mock.RevParseReturns("dbade8e", nil)
+	sut.mock.LsRemoteReturns("dbade8e refs/heads/branch", nil)
+
+	// When
+	err := sut.repo.CheckState("org", "repo", "branch", false)
+
+	// Then
+	require.NoError(t, err)
+	// Verify ls-remote was called with the constructed URL
+	args := sut.mock.LsRemoteArgsForCall(0)
+	require.Equal(t, "https://github.com/org/repo", args[0])
+}
+
+func TestCheckStateNoRemotesConfigured(t *testing.T) {
+	// Given
+	sut := newSUT(t)
+	sut.mock.CurrentBranchReturns("branch", nil)
+	sut.mock.RemotesReturns(nil, nil)
+	sut.mock.HeadReturns("dbade8e", nil)
+	sut.mock.RevParseReturns("dbade8e", nil)
+	sut.mock.LsRemoteReturns("dbade8e refs/heads/branch", nil)
+
+	// When
+	err := sut.repo.CheckState("org", "repo", "branch", false)
+
+	// Then
+	require.NoError(t, err)
+
+	args := sut.mock.LsRemoteArgsForCall(0)
+	require.Equal(t, "https://github.com/org/repo", args[0])
+}
+
+func TestCheckStateNoRemoteFallsBackToURLLsRemoteFails(t *testing.T) {
+	// Given
+	sut := newSUT(t)
+	sut.mock.CurrentBranchReturns("branch", nil)
+	sut.mock.RemotesReturns(nil, nil)
+	sut.mock.HeadReturns("dbade8e", nil)
+	sut.mock.RevParseReturns("dbade8e", nil)
+	sut.mock.LsRemoteReturns("", errors.New("network error"))
 
 	// When
 	err := sut.repo.CheckState("org", "repo", "branch", false)
 
 	// Then
 	require.Error(t, err)
+	require.Contains(t, err.Error(), "getting remote HEAD")
 }
 
 func TestCheckStateFailedRemoteFailed(t *testing.T) {
