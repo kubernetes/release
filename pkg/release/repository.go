@@ -142,36 +142,37 @@ func (r *Repo) CheckState(expOrg, expRepo, expRev string, nomock bool) error {
 		return fmt.Errorf("retrieving repository remotes: %w", err)
 	}
 
-	var foundRemote *git.Remote
+	var remoteTarget string
 
 	for _, remote := range remotes {
 		for _, url := range remote.URLs() {
 			if strings.Contains(url, filepath.Join(expOrg, expRepo)) {
-				foundRemote = remote
+				remoteTarget = remote.Name()
+				logrus.Infof(
+					"Found matching organization %q and repository %q in remote: %s (%s)",
+					expOrg, expRepo, remote.Name(), strings.Join(remote.URLs(), ", "),
+				)
 
 				break
 			}
 		}
 
-		if foundRemote != nil {
+		if remoteTarget != "" {
 			break
 		}
 	}
 
-	if foundRemote == nil {
-		return fmt.Errorf(
-			"unable to find remote matching organization %q and repository %q",
-			expOrg, expRepo,
+	if remoteTarget == "" {
+		// No named remote found. This can happen when the repository
+		// was cloned by Prow's clonerefs using direct fetch URLs
+		// without configuring a named remote. Fall back to the
+		// constructed HTTPS URL for ls-remote verification.
+		remoteTarget = fmt.Sprintf("https://github.com/%s/%s", expOrg, expRepo)
+		logrus.Infof(
+			"No matching remote found, using URL for verification: %s",
+			remoteTarget,
 		)
 	}
-
-	logrus.Infof(
-		"Found matching organization %q and repository %q in remote: %s (%s)",
-		expOrg,
-		expRepo,
-		foundRemote.Name(),
-		strings.Join(foundRemote.URLs(), ", "),
-	)
 
 	logrus.Info("Verifying remote HEAD commit")
 
@@ -180,7 +181,7 @@ func (r *Repo) CheckState(expOrg, expRepo, expRev string, nomock bool) error {
 		ref = fmt.Sprintf("refs/tags/%s^{}", expRev)
 	}
 
-	lsRemoteOut, err := r.repo.LsRemote(foundRemote.Name(), ref)
+	lsRemoteOut, err := r.repo.LsRemote(remoteTarget, ref)
 	if err != nil {
 		return fmt.Errorf("getting remote HEAD: %w", err)
 	}
