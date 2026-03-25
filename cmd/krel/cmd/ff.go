@@ -82,7 +82,7 @@ func init() {
 	ffCmd.PersistentFlags().StringVar(&ffOpts.GitHubRepo, "github-repo", release.GetK8sRepo(), "the GitHub Repository to be used do the initial clone")
 	ffCmd.PersistentFlags().StringVar(&ffOpts.Branch, "branch", "", "branch")
 	ffCmd.PersistentFlags().StringVar(&ffOpts.MainRef, "ref", kgit.Remotify(kgit.DefaultBranch), "ref on the main branch")
-	ffCmd.PersistentFlags().StringVar(&ffOpts.GCPProjectID, "project-id", release.DefaultRelengStagingTestProject, "Google Cloud Project to use to submit the job")
+	ffCmd.PersistentFlags().StringVar(&ffOpts.GCPProjectID, "project-id", release.DefaultKubernetesStagingProject, "Google Cloud Project to use to submit the job")
 	ffCmd.PersistentFlags().BoolVar(&ffOpts.Cleanup, "cleanup", false, "cleanup the repository after the run")
 	ffCmd.PersistentFlags().BoolVar(&ffOpts.NonInteractive, "non-interactive", false, "do not require any user interaction")
 	ffCmd.PersistentFlags().BoolVar(&ffOpts.Submit, "submit", false, "run inside of Google Cloud Build by submitting a new job")
