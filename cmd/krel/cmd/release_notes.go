@@ -110,7 +110,8 @@ permissions to your fork of k/sig-release and k-sigs/release-notes.`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		// If none of the operation modes is defined, show the usage help and exit
 		if !releaseNotesOpts.createDraftPR &&
-			!releaseNotesOpts.createWebsitePR {
+			!releaseNotesOpts.createWebsitePR &&
+			!releaseNotesOpts.rerun {
 			if err := cmd.Help(); err != nil {
 				return err
 			}
@@ -125,20 +126,25 @@ permissions to your fork of k/sig-release and k-sigs/release-notes.`,
 }
 
 type releaseNotesOptions struct {
-	createDraftPR   bool
-	createWebsitePR bool
-	fixNotes        bool
-	interactiveMode bool
-	updateRepo      bool
-	useSSH          bool
-	repoPath        string
-	tag             string
-	userFork        string
-	websiteRepo     string
-	githubOrg       string
-	draftRepo       string
-	mapProviders    []string
-	includeLabels   []string
+	createDraftPR       bool
+	createWebsitePR     bool
+	fixNotes            bool
+	interactiveMode     bool
+	updateRepo          bool
+	useSSH              bool
+	rerun               bool
+	repoPath            string
+	tag                 string
+	userFork            string
+	websiteRepo         string
+	githubOrg           string
+	draftRepo           string
+	draftPRSourceFork   string
+	draftPRSourceBranch string
+	draftPRPushFork     string
+	draftPRPushBranch   string
+	mapProviders        []string
+	includeLabels       []string
 }
 
 type releaseNotesResult struct {
@@ -243,6 +249,41 @@ func init() {
 		"only PRs with one of these labels are considered. Set to empty to include all PRs",
 	)
 
+	releaseNotesCmd.PersistentFlags().BoolVar(
+		&releaseNotesOpts.rerun,
+		"rerun",
+		false,
+		"rerun release notes generation against an existing draft branch (mutually exclusive with --create-draft-pr and --create-website-pr)",
+	)
+
+	releaseNotesCmd.PersistentFlags().StringVar(
+		&releaseNotesOpts.draftPRSourceFork,
+		"draft-pr-source-fork",
+		"",
+		"k/sig-release fork to fetch the existing draft branch from; 'org' or 'org/repo' (required with --rerun)",
+	)
+
+	releaseNotesCmd.PersistentFlags().StringVar(
+		&releaseNotesOpts.draftPRSourceBranch,
+		"draft-pr-source-branch",
+		"",
+		"branch to fetch from the source k/sig-release fork (default: release-notes-draft-<tag>)",
+	)
+
+	releaseNotesCmd.PersistentFlags().StringVar(
+		&releaseNotesOpts.draftPRPushFork,
+		"draft-pr-push-fork",
+		"",
+		"k/sig-release fork to push the updated branch to; 'org' or 'org/repo' (omit to skip push)",
+	)
+
+	releaseNotesCmd.PersistentFlags().StringVar(
+		&releaseNotesOpts.draftPRPushBranch,
+		"draft-pr-push-branch",
+		"",
+		"branch to push to on the destination k/sig-release fork (default: same as source branch)",
+	)
+
 	_ = releaseNotesCmd.PersistentFlags().MarkDeprecated("create-website-pr", "This flag is deprecated and will be removed in a future release. Use --create-draft-pr instead.")
 
 	rootCmd.AddCommand(releaseNotesCmd)
@@ -279,6 +320,11 @@ func runReleaseNotes() (err error) {
 	// First, validate cmdline options
 	if err := releaseNotesOpts.Validate(); err != nil {
 		return fmt.Errorf("validating command line options: %w", err)
+	}
+
+	// If --rerun is set, enter the rerun codepath and return
+	if releaseNotesOpts.rerun {
+		return rerunDraftNotes(releaseNotesOpts.repoPath, tag)
 	}
 
 	// before running the generators, verify that the repositories are ready
@@ -321,6 +367,232 @@ func runReleaseNotes() (err error) {
 	if releaseNotesOpts.createDraftPR || releaseNotesOpts.createWebsitePR {
 		logrus.Info("Release notes generation complete!")
 	}
+
+	return nil
+}
+
+// rerunDraftNotes fetches an existing draft branch from a source fork of
+// k/sig-release, regenerates the release notes (applying maps),
+// and optionally pushes the result to a destination fork.
+//
+//nolint:maintidx // complex but acceptable
+func rerunDraftNotes(repoPath, tag string) error {
+	tagVersion, err := helpers.TagStringToSemver(tag)
+	if err != nil {
+		return fmt.Errorf("reading tag: %s: %w", tag, err)
+	}
+
+	// Parse source fork org/repo
+	sourceParts := strings.SplitN(releaseNotesOpts.draftPRSourceFork, "/", 2)
+	sourceOrg, sourceRepo := sourceParts[0], sourceParts[1]
+
+	branchname := releaseNotesOpts.draftPRSourceBranch
+
+	gh := github.New()
+
+	// Verify source fork is a fork of k/sig-release
+	logrus.Infof("Verifying %s/%s is a fork of %s/%s",
+		sourceOrg, sourceRepo, git.DefaultGithubOrg, git.DefaultGithubReleaseRepo)
+
+	isFork, err := gh.RepoIsForkOf(
+		sourceOrg, sourceRepo,
+		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"while checking if %s/%s is a fork of %s/%s: %w",
+			sourceOrg, sourceRepo,
+			git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, err,
+		)
+	}
+
+	if !isFork {
+		return fmt.Errorf(
+			"%s/%s is not a fork of %s/%s",
+			sourceOrg, sourceRepo,
+			git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
+		)
+	}
+
+	// Clone upstream k/sig-release
+	logrus.Info("Cloning upstream kubernetes/sig-release")
+
+	opts := &gogit.CloneOptions{}
+
+	sigReleaseRepo, err := git.CleanCloneGitHubRepo(
+		git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
+		false, true, opts,
+	)
+	if err != nil {
+		return fmt.Errorf("cloning kubernetes/sig-release: %w", err)
+	}
+
+	// Do NOT call Cleanup — preserve the local clone for user inspection
+
+	// Add the source fork as a remote named "source"
+	logrus.Infof("Adding remote 'source' for %s/%s", sourceOrg, sourceRepo)
+
+	// Use HTTPS for the source remote — it's a read-only fetch from a public fork
+	if err := sigReleaseRepo.AddRemote("source", sourceOrg, sourceRepo, false); err != nil {
+		return fmt.Errorf("adding source remote %s/%s: %w", sourceOrg, sourceRepo, err)
+	}
+
+	// Fetch the source branch
+	logrus.Infof("Fetching branch %s from source remote", branchname)
+
+	if err := command.NewWithWorkDir(
+		sigReleaseRepo.Dir(), "git", "fetch", "source", branchname,
+	).RunSuccess(); err != nil {
+		// Handle error when the source branch does not exist
+		return fmt.Errorf(
+			"fetching branch %s from %s/%s: branch may not exist on the source fork: %w",
+			branchname, sourceOrg, sourceRepo, err,
+		)
+	}
+
+	// Checkout the fetched branch locally
+	logrus.Infof("Checking out branch %s", branchname)
+
+	if err := command.NewWithWorkDir(
+		sigReleaseRepo.Dir(), "git", "checkout", "-B", branchname, "source/"+branchname,
+	).RunSuccess(); err != nil {
+		return fmt.Errorf("checking out branch %s: %w", branchname, err)
+	}
+
+	// Compute startTag (previous minor version, same as createDraftPR)
+	start := helpers.SemverToTagString(semver.Version{
+		Major: tagVersion.Major,
+		Minor: tagVersion.Minor - 1,
+		Patch: 0,
+	})
+
+	// Gather release notes from k/k.
+	// The release path inside the sig-release repository
+	releasePath := filepath.Join("releases", fmt.Sprintf("release-%d.%d", tagVersion.Major, tagVersion.Minor))
+	releaseDir := filepath.Join(sigReleaseRepo.Dir(), releasePath)
+
+	// Add the fetched branch's maps directory to map providers
+	branchMapsDir := filepath.Join(releaseDir, releaseNotesWorkDir, mapsMainDirectory)
+	originalMapProviders := releaseNotesOpts.mapProviders
+	if helpers.Exists(branchMapsDir) {
+		logrus.Infof("Loading maps from fetched branch: %s", branchMapsDir)
+		releaseNotesOpts.mapProviders = append([]string{branchMapsDir}, releaseNotesOpts.mapProviders...)
+	}
+
+	releaseNotes, err := gatherNotesFrom(repoPath, start)
+	if err != nil {
+		return fmt.Errorf("gathering release notes for tag %s: %w", start, err)
+	}
+
+	// Restore original map providers
+	releaseNotesOpts.mapProviders = originalMapProviders
+
+	// Build the notes result (markdown + JSON)
+	result, err := buildNotesResult(start, releaseNotes)
+	if err != nil {
+		return fmt.Errorf("building release notes results: %w", err)
+	}
+
+	// Write the regenerated files to the working tree
+	logrus.Debugf("Release notes draft files will be written to %s", releaseDir)
+
+	if err := createNotesWorkDir(releaseDir); err != nil {
+		return fmt.Errorf("creating working directory: %w", err)
+	}
+
+	//nolint:gosec // TODO(gosec): G306
+	if err := os.WriteFile(
+		filepath.Join(releaseDir, releaseNotesWorkDir, draftMarkdownFile),
+		[]byte(result.markdown), 0o644,
+	); err != nil {
+		return fmt.Errorf("writing release notes draft: %w", err)
+	}
+
+	logrus.Infof("Release Notes Markdown Draft written to %s",
+		filepath.Join(releaseDir, releaseNotesWorkDir, draftMarkdownFile))
+
+	//nolint:gosec // TODO(gosec): G306
+	if err := os.WriteFile(
+		filepath.Join(releaseDir, releaseNotesWorkDir, draftJSONFile),
+		[]byte(result.json), 0o644,
+	); err != nil {
+		return fmt.Errorf("writing release notes json file: %w", err)
+	}
+
+	logrus.Infof("Release Notes JSON version written to %s",
+		filepath.Join(releaseDir, releaseNotesWorkDir, draftJSONFile))
+
+	// Create a commit with the updated files
+	if err := createDraftCommit(
+		sigReleaseRepo, releasePath, "Release Notes draft for k/k "+tag,
+	); err != nil {
+		return fmt.Errorf("creating release notes commit: %w", err)
+	}
+
+	// Optional push to destination fork
+	if releaseNotesOpts.draftPRPushFork != "" {
+		pushParts := strings.SplitN(releaseNotesOpts.draftPRPushFork, "/", 2)
+		pushOrg, pushRepo := pushParts[0], pushParts[1]
+		pushBranch := releaseNotesOpts.draftPRPushBranch
+
+		// Verify push fork is a fork of k/sig-release
+		logrus.Infof("Verifying %s/%s is a fork of %s/%s",
+			pushOrg, pushRepo, git.DefaultGithubOrg, git.DefaultGithubReleaseRepo)
+
+		isPushFork, err := gh.RepoIsForkOf(
+			pushOrg, pushRepo,
+			git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
+		)
+		if err != nil {
+			return fmt.Errorf(
+				"while checking if %s/%s is a fork of %s/%s: %w",
+				pushOrg, pushRepo,
+				git.DefaultGithubOrg, git.DefaultGithubReleaseRepo, err,
+			)
+		}
+
+		if !isPushFork {
+			return fmt.Errorf(
+				"%s/%s is not a fork of %s/%s",
+				pushOrg, pushRepo,
+				git.DefaultGithubOrg, git.DefaultGithubReleaseRepo,
+			)
+		}
+
+		// Add the push fork as a remote named "userfork"
+		if err := sigReleaseRepo.AddRemote(userForkName, pushOrg, pushRepo, false); err != nil {
+			return fmt.Errorf("adding push remote %s/%s: %w", pushOrg, pushRepo, err)
+		}
+
+		// Push with --force-with-lease
+		logrus.Infof("Pushing to %s/%s branch %s with --force-with-lease", pushOrg, pushRepo, pushBranch)
+
+		if err := command.NewWithWorkDir(
+			sigReleaseRepo.Dir(),
+			"git", "push", "--force-with-lease", userForkName, branchname+":"+pushBranch,
+		).RunSuccess(); err != nil {
+			return fmt.Errorf("pushing to %s/%s branch %s: %w", pushOrg, pushRepo, pushBranch, err)
+		}
+
+		// Log that existing PR will be updated
+		logrus.Infof("Pushed to %s/%s branch %s — any existing PR will be updated by this push", pushOrg, pushRepo, pushBranch)
+	}
+
+	// Print the local clone path
+	fmt.Println()
+	fmt.Println("Local sig-release clone preserved at:")
+	fmt.Println(sigReleaseRepo.Dir())
+
+	if releaseNotesOpts.draftPRPushFork == "" {
+		fmt.Println()
+		fmt.Println("No --draft-pr-push-fork was specified, so no push was performed.")
+		fmt.Println("To push manually, run:")
+		fmt.Printf("  cd %s\n", sigReleaseRepo.Dir())
+		fmt.Printf("  git remote add userfork <your-fork-url>\n")
+		fmt.Printf("  git push --force-with-lease userfork %s\n", branchname)
+	}
+
+	logrus.Info("Rerun complete!")
 
 	return nil
 }
@@ -1030,6 +1302,46 @@ func (o *releaseNotesOptions) Validate() error {
 	_, err := helpers.TagStringToSemver(releaseNotesOpts.tag)
 	if err != nil {
 		return fmt.Errorf("reading tag: %s: %w", releaseNotesOpts.tag, err)
+	}
+
+	// Rerun validation
+	if o.rerun {
+		if o.createDraftPR || o.createWebsitePR {
+			return errors.New("--rerun cannot be used with --create-draft-pr or --create-website-pr")
+		}
+
+		if o.draftPRSourceFork == "" {
+			return errors.New("--draft-pr-source-fork is required when using --rerun")
+		}
+
+		if o.tag == "" {
+			return errors.New("--tag is required when using --rerun")
+		}
+
+		// Parse --draft-pr-source-fork: if no "/" present, append "/sig-release"
+		if !strings.Contains(o.draftPRSourceFork, "/") {
+			o.draftPRSourceFork = o.draftPRSourceFork + "/" + git.DefaultGithubReleaseRepo
+		}
+
+		// Parse --draft-pr-push-fork: if no "/" present, append "/sig-release"
+		if o.draftPRPushFork != "" && !strings.Contains(o.draftPRPushFork, "/") {
+			o.draftPRPushFork = o.draftPRPushFork + "/" + git.DefaultGithubReleaseRepo
+		}
+
+		// Resolve --draft-pr-source-branch default
+		if o.draftPRSourceBranch == "" {
+			o.draftPRSourceBranch = draftBranchPrefix + o.tag
+		}
+
+		// Resolve --draft-pr-push-branch default to source branch
+		if o.draftPRPushBranch == "" {
+			o.draftPRPushBranch = o.draftPRSourceBranch
+		}
+
+		// Warn if --rerun without --maps-from
+		if len(o.mapProviders) == 0 {
+			logrus.Warn("Running --rerun without --maps-from will automatically pick up map files from releases/release-x.yz/release-notes/maps folder")
+		}
 	}
 
 	// Options for PR creation
