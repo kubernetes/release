@@ -110,8 +110,7 @@ permissions to your fork of k/sig-release and k-sigs/release-notes.`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		// If none of the operation modes is defined, show the usage help and exit
 		if !releaseNotesOpts.createDraftPR &&
-			!releaseNotesOpts.createWebsitePR &&
-			!releaseNotesOpts.rerun {
+			!releaseNotesOpts.createWebsitePR {
 			if err := cmd.Help(); err != nil {
 				return err
 			}
@@ -125,6 +124,44 @@ permissions to your fork of k/sig-release and k-sigs/release-notes.`,
 	},
 }
 
+// rerunCmd represents the `krel release-notes rerun` subcommand.
+var rerunCmd = &cobra.Command{
+	Use:   "rerun",
+	Short: "Rerun release notes generation against an existing draft PR branch",
+	Long: `krel release-notes rerun
+
+Re-generates the release notes draft against an existing PR branch. The process:
+
+1. Clone upstream k/sig-release and fetch the draft branch from --draft-pr-source-fork.
+2. Gather release notes from k/k for the given --tag range.
+3. Apply map files (from the branch and any extra --maps-from paths).
+4. Write the updated markdown and JSON drafts, then commit.
+5. If --draft-pr-push-fork is set, push the branch there (updating any open PR).
+
+The local clone is preserved after the run so you can inspect or push manually.`,
+	Example: `  # Rerun against an existing draft branch and push to a destination fork:
+  krel release-notes rerun \
+    --tag v1.36.0 \
+    --draft-pr-source-fork "myorg/sig-release-repo" \
+    --draft-pr-push-fork "destorg"
+
+  # Rerun with additional maps from a local directory:
+  krel release-notes rerun \
+    --tag v1.36.0 \
+    --draft-pr-source-fork "myorg/sig-release" \
+    --maps-from "/path/to/extra/maps"`,
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		return validateRerunOpts(releaseNotesOpts)
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		tag := releaseNotesOpts.tag
+
+		return rerunDraftNotes(releaseNotesOpts.repoPath, tag)
+	},
+}
+
 type releaseNotesOptions struct {
 	createDraftPR       bool
 	createWebsitePR     bool
@@ -132,7 +169,6 @@ type releaseNotesOptions struct {
 	interactiveMode     bool
 	updateRepo          bool
 	useSSH              bool
-	rerun               bool
 	repoPath            string
 	tag                 string
 	userFork            string
@@ -249,43 +285,38 @@ func init() {
 		"only PRs with one of these labels are considered. Set to empty to include all PRs",
 	)
 
-	releaseNotesCmd.PersistentFlags().BoolVar(
-		&releaseNotesOpts.rerun,
-		"rerun",
-		false,
-		"rerun release notes generation against an existing draft branch (mutually exclusive with --create-draft-pr and --create-website-pr)",
-	)
+	_ = releaseNotesCmd.PersistentFlags().MarkDeprecated("create-website-pr", "This flag is deprecated and will be removed in a future release. Use --create-draft-pr instead.")
 
-	releaseNotesCmd.PersistentFlags().StringVar(
+	// Register rerun subcommand flags
+	rerunCmd.Flags().StringVar(
 		&releaseNotesOpts.draftPRSourceFork,
 		"draft-pr-source-fork",
 		"",
-		"k/sig-release fork to fetch the existing draft branch from; 'org' or 'org/repo' (required with --rerun)",
+		"k/sig-release fork to fetch the existing draft branch from; 'org' or 'org/repo' (required)",
 	)
 
-	releaseNotesCmd.PersistentFlags().StringVar(
+	rerunCmd.Flags().StringVar(
 		&releaseNotesOpts.draftPRSourceBranch,
 		"draft-pr-source-branch",
 		"",
 		"branch to fetch from the source k/sig-release fork (default: release-notes-draft-<tag>)",
 	)
 
-	releaseNotesCmd.PersistentFlags().StringVar(
+	rerunCmd.Flags().StringVar(
 		&releaseNotesOpts.draftPRPushFork,
 		"draft-pr-push-fork",
 		"",
 		"k/sig-release fork to push the updated branch to; 'org' or 'org/repo' (omit to skip push)",
 	)
 
-	releaseNotesCmd.PersistentFlags().StringVar(
+	rerunCmd.Flags().StringVar(
 		&releaseNotesOpts.draftPRPushBranch,
 		"draft-pr-push-branch",
 		"",
 		"branch to push to on the destination k/sig-release fork (default: same as source branch)",
 	)
 
-	_ = releaseNotesCmd.PersistentFlags().MarkDeprecated("create-website-pr", "This flag is deprecated and will be removed in a future release. Use --create-draft-pr instead.")
-
+	releaseNotesCmd.AddCommand(rerunCmd)
 	rootCmd.AddCommand(releaseNotesCmd)
 }
 
@@ -320,11 +351,6 @@ func runReleaseNotes() (err error) {
 	// First, validate cmdline options
 	if err := releaseNotesOpts.Validate(); err != nil {
 		return fmt.Errorf("validating command line options: %w", err)
-	}
-
-	// If --rerun is set, enter the rerun codepath and return
-	if releaseNotesOpts.rerun {
-		return rerunDraftNotes(releaseNotesOpts.repoPath, tag)
 	}
 
 	// before running the generators, verify that the repositories are ready
@@ -1303,51 +1329,59 @@ func (o *releaseNotesOptions) Validate() error {
 		return fmt.Errorf("reading tag: %s: %w", releaseNotesOpts.tag, err)
 	}
 
-	// Rerun validation
-	if o.rerun {
-		if o.createDraftPR || o.createWebsitePR {
-			return errors.New("--rerun cannot be used with --create-draft-pr or --create-website-pr")
-		}
-
-		if o.draftPRSourceFork == "" {
-			return errors.New("--draft-pr-source-fork is required when using --rerun")
-		}
-
-		if o.tag == "" {
-			return errors.New("--tag is required when using --rerun")
-		}
-
-		// Parse --draft-pr-source-fork: if no "/" present, append "/sig-release"
-		if !strings.Contains(o.draftPRSourceFork, "/") {
-			o.draftPRSourceFork = o.draftPRSourceFork + "/" + git.DefaultGithubReleaseRepo
-		}
-
-		// Parse --draft-pr-push-fork: if no "/" present, append "/sig-release"
-		if o.draftPRPushFork != "" && !strings.Contains(o.draftPRPushFork, "/") {
-			o.draftPRPushFork = o.draftPRPushFork + "/" + git.DefaultGithubReleaseRepo
-		}
-
-		// Resolve --draft-pr-source-branch default
-		if o.draftPRSourceBranch == "" {
-			o.draftPRSourceBranch = draftBranchPrefix + o.tag
-		}
-
-		// Resolve --draft-pr-push-branch default to source branch
-		if o.draftPRPushBranch == "" {
-			o.draftPRPushBranch = o.draftPRSourceBranch
-		}
-
-		// Warn if --rerun without --maps-from
-		if len(o.mapProviders) == 0 {
-			logrus.Warn("Running --rerun without --maps-from will automatically pick up map files from releases/release-x.yz/release-notes/maps folder")
-		}
-	}
-
 	// Options for PR creation
 	if o.createDraftPR || o.createWebsitePR {
 		if o.userFork == "" {
 			return errors.New("cannot generate the Release Notes PR without --fork")
 		}
+	}
+
+	return nil
+}
+
+// validateRerunOpts validates options specific to the rerun subcommand.
+func validateRerunOpts(o *releaseNotesOptions) error {
+	token, isset := os.LookupEnv(github.TokenEnvKey)
+	if !isset || token == "" {
+		return fmt.Errorf("cannot generate release notes if %s env variable is not set", github.TokenEnvKey)
+	}
+
+	if o.tag == "" {
+		return errors.New("--tag is required")
+	}
+
+	if o.draftPRSourceFork == "" {
+		return errors.New("--draft-pr-source-fork is required")
+	}
+
+	// Parse --draft-pr-source-fork: if no "/" present, append "/sig-release"
+	if !strings.Contains(o.draftPRSourceFork, "/") {
+		o.draftPRSourceFork = o.draftPRSourceFork + "/" + git.DefaultGithubReleaseRepo
+	}
+
+	// Parse --draft-pr-push-fork: if no "/" present, append "/sig-release"
+	if o.draftPRPushFork != "" && !strings.Contains(o.draftPRPushFork, "/") {
+		o.draftPRPushFork = o.draftPRPushFork + "/" + git.DefaultGithubReleaseRepo
+	}
+
+	// Resolve --draft-pr-source-branch default
+	if o.draftPRSourceBranch == "" {
+		o.draftPRSourceBranch = draftBranchPrefix + o.tag
+	}
+
+	// Resolve --draft-pr-push-branch default to source branch
+	if o.draftPRPushBranch == "" {
+		o.draftPRPushBranch = o.draftPRSourceBranch
+	}
+
+	// Warn if rerun without --maps-from
+	if len(o.mapProviders) == 0 {
+		mapsPath := "releases/release-x.yz/release-notes/maps"
+		if tagVersion, err := helpers.TagStringToSemver(o.tag); err == nil {
+			mapsPath = fmt.Sprintf("releases/release-%d.%d/release-notes/maps", tagVersion.Major, tagVersion.Minor)
+		}
+
+		logrus.Warnf("Running rerun without --maps-from will automatically pick up map files from %s folder", mapsPath)
 	}
 
 	return nil
