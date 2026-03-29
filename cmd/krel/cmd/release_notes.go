@@ -374,8 +374,6 @@ func runReleaseNotes() (err error) {
 // rerunDraftNotes fetches an existing draft branch from a source fork of
 // k/sig-release, regenerates the release notes (applying maps),
 // and optionally pushes the result to a destination fork.
-//
-//nolint:maintidx // complex but acceptable
 func rerunDraftNotes(repoPath, tag string) error {
 	tagVersion, err := helpers.TagStringToSemver(tag)
 	if err != nil {
@@ -474,6 +472,7 @@ func rerunDraftNotes(repoPath, tag string) error {
 	// Add the fetched branch's maps directory to map providers
 	branchMapsDir := filepath.Join(releaseDir, releaseNotesWorkDir, mapsMainDirectory)
 	originalMapProviders := releaseNotesOpts.mapProviders
+
 	if helpers.Exists(branchMapsDir) {
 		logrus.Infof("Loading maps from fetched branch: %s", branchMapsDir)
 		releaseNotesOpts.mapProviders = append([]string{branchMapsDir}, releaseNotesOpts.mapProviders...)
