@@ -1130,6 +1130,7 @@ func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap, markdownLinks bool) er
 
 	if noteMap.ReleaseNote.SIGs != nil {
 		rn.SIGs = *noteMap.ReleaseNote.SIGs
+		reRenderMarkdown = true
 	}
 
 	if noteMap.ReleaseNote.Feature != nil {
@@ -1163,7 +1164,7 @@ func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap, markdownLinks bool) er
 				indented, rn.PrNumber, rn.PrURL, rn.Author, rn.AuthorURL)
 		}
 		// Add sig labels to markdown
-		if len(rn.SIGs) > 1 {
+		if len(rn.SIGs) >= 1 {
 			markdown = fmt.Sprintf("%s [%s]", markdown, prettifySIGList(rn.SIGs))
 		}
 		// Uppercase the first character of the markdown to make it look uniform
