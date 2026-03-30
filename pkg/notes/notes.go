@@ -699,9 +699,18 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 		return nil, fmt.Errorf("finding commit of EndSHA: %w", err)
 	}
 
-	startCommit, err := localRepository.CommitObject(plumbing.NewHash(opts.StartSHA))
+	// When SkipFirstCommit is used, the StartSHA is advanced to the next
+	// commit which may not be on the first-parent chain. Use the original
+	// tag SHA for the merge base calculation so the traversal can find a
+	// valid stop point via first-parent walking.
+	mergeBaseSHA := opts.StartSHA
+	if opts.OriginalStartSHA != "" {
+		mergeBaseSHA = opts.OriginalStartSHA
+	}
+
+	startCommit, err := localRepository.CommitObject(plumbing.NewHash(mergeBaseSHA))
 	if err != nil {
-		return nil, fmt.Errorf("finding commit of StartSHA: %w", err)
+		return nil, fmt.Errorf("finding commit of merge base SHA: %w", err)
 	}
 
 	logrus.Debugf("finding merge base (last shared commit) between the two SHAs")
