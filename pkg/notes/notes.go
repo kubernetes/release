@@ -1095,12 +1095,16 @@ func (rn *ReleaseNote) ApplyMap(noteMap *ReleaseNotesMap, markdownLinks bool) er
 
 	rn.IsMapped = true
 
-	if noteMap.PRBody != nil && rn.PRBody != "" && rn.PRBody != *noteMap.PRBody {
-		logrus.Warnf("Original PR body of release note mapping changed for PR: #%d", rn.PrNumber)
+	if noteMap.PRBody != nil {
+		if rn.PRBody != "" && rn.PRBody != *noteMap.PRBody {
+			logrus.Warnf("Original PR body of release note mapping changed for PR: #%d", rn.PrNumber)
 
-		dmp := diffmatchpatch.New()
-		diffs := dmp.DiffMain(rn.PRBody, *noteMap.PRBody, false)
-		logrus.Warnf("The diff between actual release note body and mapped one is:\n%s", dmp.DiffPrettyText(diffs))
+			dmp := diffmatchpatch.New()
+			diffs := dmp.DiffMain(rn.PRBody, *noteMap.PRBody, false)
+			logrus.Warnf("The diff between actual release note body and mapped one is:\n%s", dmp.DiffPrettyText(diffs))
+		}
+
+		rn.PRBody = *noteMap.PRBody
 	}
 
 	reRenderMarkdown := false
