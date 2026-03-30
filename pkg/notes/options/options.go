@@ -75,6 +75,11 @@ type Options struct {
 	// release notes.
 	SkipFirstCommit bool
 
+	// OriginalStartSHA is the unmodified start SHA before SkipFirstCommit
+	// advances it. Used for merge base calculation in listLeftParentCommits
+	// because the skipped-to commit may not be on the first-parent chain.
+	OriginalStartSHA string
+
 	// Format specifies the format of the release notes. Can be either
 	// `json` or `markdown`.
 	Format string
@@ -236,6 +241,8 @@ func (o *Options) ValidateAndFinish() (err error) {
 
 			if o.SkipFirstCommit {
 				logrus.Infof("Skipping first commit: %s", sha)
+
+				o.OriginalStartSHA = sha
 
 				sha, err = repo.NextCommit(sha, git.DefaultRemote+"/"+o.Branch)
 				if err != nil {
