@@ -72,7 +72,7 @@ releases:
     - what: Call for Exceptions
       who: Lead
       when: Mon November 1, 2021
-      week:  2021	week 11
+      week: week 11
       ciSignal:
     - what: Brace Yourself, Code Freeze is Coming
       who: Comms / Bug Triage
