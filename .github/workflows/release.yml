@@ -38,7 +38,7 @@ jobs:
       - uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
 
       - name: Install bom
-        uses: kubernetes-sigs/release-actions/setup-bom@cbe0488670ad0c0ff422fbef963da3bfe451a891 # v0.4.2
+        uses: kubernetes-sigs/release-actions/setup-bom@8753ea6bdadb814d779c6ec34eaca689dbfb492b # v0.4.3
 
       - name: Build and publish release
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
@@ -80,7 +80,7 @@ jobs:
         run: echo "tag_name=${GITHUB_REF#refs/*/}" >> "$GITHUB_OUTPUT"
 
       - name: Install tejolote
-        uses: kubernetes-sigs/release-actions/setup-tejolote@cbe0488670ad0c0ff422fbef963da3bfe451a891 # v0.4.2
+        uses: kubernetes-sigs/release-actions/setup-tejolote@8753ea6bdadb814d779c6ec34eaca689dbfb492b # v0.4.3
 
       - run: |
           tejolote attest --artifacts github://kubernetes/release/${{ steps.tag.outputs.tag_name }} github://kubernetes/release/"${GITHUB_RUN_ID}" --output release.intoto.json --sign
