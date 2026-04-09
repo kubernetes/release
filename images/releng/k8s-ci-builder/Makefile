@@ -24,8 +24,8 @@ IMAGE = $(REGISTRY)/$(IMGNAME)
 TAG ?= $(shell git describe --tags --always --dirty)
 
 # Build args
-GO_VERSION ?= 1.26.0
-GO_VERSION_TOOLING ?= 1.26.0
+GO_VERSION ?= 1.26.2
+GO_VERSION_TOOLING ?= 1.26.2
 OS_CODENAME ?= bookworm
 IMAGE_ARG ?= $(IMAGE):$(TAG)-$(CONFIG)
 
