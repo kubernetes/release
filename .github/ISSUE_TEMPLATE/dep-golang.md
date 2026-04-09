@@ -45,7 +45,7 @@ SIG Release Slack thread:
 
 #### After kube-cross and distroless-iptables image promotions
 
-<!-- Example: https://github.com/kubernetes/kubernetes/pull/122201 -->
+<!-- Example: https://github.com/kubernetes/kubernetes/pull/138299 -->
 - [ ] kubernetes/kubernetes update (`master`): 
 
   Ensure the following have been updated within the PR:
@@ -54,7 +54,6 @@ SIG Release Slack thread:
   - [ ] kube-cross image
   - [ ] go-runner image
   - [ ] distroless-iptables image
-  - [ ] publishing bot rules
 
 > **Note**
 > This update may require an update to go.sum files, for example: https://github.com/kubernetes/kubernetes/pull/118507
@@ -67,7 +66,7 @@ Notice: Always use the oldest supported distribution release (Debian bullseye as
 time of writing) to achieve maximum glibc compatibility of the kubelet. Other
 images can use the latest available release.
 
-Example: https://github.com/kubernetes/release/pull/3390
+Example: https://github.com/kubernetes/release/pull/4368
 -->
 - [ ] `k8s-cloud-builder` and `k8s-ci-builder` image updates: 
 
@@ -99,41 +98,6 @@ branch, since it is the only other branch with a go1.15 minor version on it.
 - [ ] Kubernetes 1.y-1: 
 - [ ] Kubernetes 1.y-2: 
 - [ ] Kubernetes 1.y-3: 
-
-<!--
-  If the Golang version of the active development branch (`master`) is newer than
-any of the Golang versions on _active_ release branches, then the current
-Golang versions for all release branches need to be updated within publishing
-bot rules.
-  Concrete example:
-  - `master` was just updated from go1.16.6 to go1.16.7
-  - cherry picks were issued to the 1.22 and 1.21 branches
-  - `release-1.20` was also updated from go1.15.14 to go1.15.15
-  - these changes were cherry picked to the 1.19 branch
-
-  In this case, because we updated the default go version on `master` to
-go1.16.7, there's no action required for staging repositories using go1.16.
-  However, for staging repository branches using go1.15, the `master` branch's
-publishing bot rules need to be updated to learn about the Golang update that
-happened for the 1.20 and 1.19 Kubernetes release branches.
-  PR: https://github.com/kubernetes/kubernetes/pull/122299
--->
-- [ ] publishing bot rule updates for active Golang versions: 
-
-
-#### After kubernetes/kubernetes (release branches) has been updated
-
-<!--
-Notice: Always use the oldest supported distribution release (Debian bullseye as
-time of writing) to achieve maximum glibc compatibility of the kubelet. Other
-images can use the latest available release.
-
-Example: https://github.com/kubernetes/release/pull/3394
--->
-- [ ] `k8s-cloud-builder` and `k8s-ci-builder` image updates: 
-
-<!-- Example: https://github.com/kubernetes/test-infra/pull/31398 -->
-- [ ] `kubekins`/`krte` image updates: 
 
 ### Follow-up items
 
