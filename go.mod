@@ -34,7 +34,7 @@ require (
 	golang.org/x/sync v0.20.0
 	golang.org/x/text v0.36.0
 	google.golang.org/api v0.273.0
-	k8s.io/apimachinery v0.35.3
+	k8s.io/apimachinery v0.35.4
 	sigs.k8s.io/bom v0.7.1
 	sigs.k8s.io/mdtoc v1.4.0
 	sigs.k8s.io/promo-tools/v4 v4.4.1
