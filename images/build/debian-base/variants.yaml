@@ -2,3 +2,6 @@ variants:
   bookworm:
     CONFIG: 'bookworm'
     IMAGE_VERSION: 'bookworm-v1.0.7'
+  trixie:
+    CONFIG: 'trixie'
+    IMAGE_VERSION: 'trixie-v1.0.0'
