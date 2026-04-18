@@ -736,6 +736,10 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 	pairs := []*commitPrPair{}
 
 	hashPointer := currentTagHash
+	// Track PRs we've already emitted because the same PR can be discoverable
+	// from multiple commits or merge parents.
+	seenPRs := map[int]struct{}{}
+
 	for hashPointer != stopHash {
 		hashString := hashPointer.String()
 
@@ -755,30 +759,62 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 			logrus.WithFields(logrus.Fields{
 				"sha": hashString,
 			}).Debug("no associated PR found")
-
-			hashPointer = commitPointer.ParentHashes[0]
-
-			continue
-		}
-
-		if err != nil {
+		} else if err != nil {
 			logrus.WithFields(logrus.Fields{
 				"sha": hashString,
 			}).Warnf("ignore err: %v", err)
+		} else {
+			logrus.WithFields(logrus.Fields{
+				"sha": hashString,
+				"prs": prNums,
+			}).Debug("found PR from commit")
 
-			hashPointer = commitPointer.ParentHashes[0]
-
-			continue
+			if _, ok := seenPRs[prNums[0]]; !ok {
+				pairs = append(pairs, &commitPrPair{Commit: commitPointer, PrNum: prNums[0]})
+				seenPRs[prNums[0]] = struct{}{}
+			}
 		}
 
-		logrus.WithFields(logrus.Fields{
-			"sha": hashString,
-			"prs": prNums,
-		}).Debug("found PR from commit")
+		// For merge commits, inspect non-first parents as well. This catches PRs
+		// that might not be visible from first-parent traversal alone.
+		if len(commitPointer.ParentHashes) > 1 {
+			for _, parentHash := range commitPointer.ParentHashes[1:] {
+				parentCommit, err := localRepository.CommitObject(parentHash)
+				if err != nil {
+					logrus.WithFields(logrus.Fields{
+						"sha":    hashString,
+						"parent": parentHash.String(),
+					}).Warnf("ignore parent commit lookup err: %v", err)
+					continue
+				}
 
-		// Only taking the first one, assuming they are merged by Prow
-		pairs = append(pairs, &commitPrPair{Commit: commitPointer, PrNum: prNums[0]})
+				parentPRNums, err := prsNumForCommitFromMessage(parentCommit.Message)
+				if errors.Is(err, errNoPRIDFoundInCommitMessage) {
+					continue
+				}
 
+				if err != nil {
+					logrus.WithFields(logrus.Fields{
+						"sha":    hashString,
+						"parent": parentHash.String(),
+					}).Warnf("ignore parent PR parse err: %v", err)
+					continue
+				}
+
+				logrus.WithFields(logrus.Fields{
+					"sha":        hashString,
+					"parent_sha": parentHash.String(),
+					"prs":        parentPRNums,
+				}).Debug("found PR from non-first parent")
+
+				if _, ok := seenPRs[parentPRNums[0]]; !ok {
+					pairs = append(pairs, &commitPrPair{Commit: parentCommit, PrNum: parentPRNums[0]})
+					seenPRs[parentPRNums[0]] = struct{}{}
+				}
+			}
+		}
+
+		// Continue along the first parent to stay on the release branch lineage.
 		hashPointer = commitPointer.ParentHashes[0]
 	}
 
