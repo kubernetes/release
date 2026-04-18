@@ -755,15 +755,16 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 
 		// Find and collect PR number from commit message
 		prNums, err := prsNumForCommitFromMessage(commitPointer.Message)
-		if errors.Is(err, errNoPRIDFoundInCommitMessage) {
+		switch {
+		case errors.Is(err, errNoPRIDFoundInCommitMessage):
 			logrus.WithFields(logrus.Fields{
 				"sha": hashString,
 			}).Debug("no associated PR found")
-		} else if err != nil {
+		case err != nil:
 			logrus.WithFields(logrus.Fields{
 				"sha": hashString,
 			}).Warnf("ignore err: %v", err)
-		} else {
+		default:
 			logrus.WithFields(logrus.Fields{
 				"sha": hashString,
 				"prs": prNums,
@@ -785,6 +786,7 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 						"sha":    hashString,
 						"parent": parentHash.String(),
 					}).Warnf("ignore parent commit lookup err: %v", err)
+
 					continue
 				}
 
@@ -798,6 +800,7 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 						"sha":    hashString,
 						"parent": parentHash.String(),
 					}).Warnf("ignore parent PR parse err: %v", err)
+
 					continue
 				}
 
