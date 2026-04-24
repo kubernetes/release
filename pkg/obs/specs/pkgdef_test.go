@@ -17,6 +17,7 @@ limitations under the License.
 package specs_test
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -192,6 +193,96 @@ func TestConstructPackageDefinition(t *testing.T) {
 			require.Equal(t, tc.channel, pkgDef.Channel)
 			require.Equal(t, tc.version, pkgDef.Version)
 		}
+	}
+}
+
+func TestGetMetadataWithVersionConstraint(t *testing.T) {
+	testcases := []struct {
+		name            string
+		packageVersion  string
+		constrainedMeta []metadata.PackageMetadata
+		prepare         func(mock *specsfakes.FakeImpl, ver semver.Version)
+		shouldErr       bool
+		expectedResult  *metadata.PackageMetadata
+	}{
+		{
+			name:           "single matching constraint returns metadata",
+			packageVersion: "1.30.0",
+			constrainedMeta: []metadata.PackageMetadata{
+				{VersionConstraint: ">=1.28.0 <1.31.0"},
+				{VersionConstraint: ">=1.31.0"},
+			},
+			prepare: func(mock *specsfakes.FakeImpl, ver semver.Version) {
+				mock.TagStringToSemverReturns(ver, nil)
+			},
+			shouldErr:      false,
+			expectedResult: &metadata.PackageMetadata{VersionConstraint: ">=1.28.0 <1.31.0"},
+		},
+		{
+			name:           "multiple overlapping constraints return error",
+			packageVersion: "1.30.0",
+			constrainedMeta: []metadata.PackageMetadata{
+				{VersionConstraint: ">=1.28.0"},
+				{VersionConstraint: ">=1.29.0"},
+			},
+			prepare: func(mock *specsfakes.FakeImpl, ver semver.Version) {
+				mock.TagStringToSemverReturns(ver, nil)
+			},
+			shouldErr: true,
+		},
+		{
+			name:           "no matching constraint returns error",
+			packageVersion: "1.27.0",
+			constrainedMeta: []metadata.PackageMetadata{
+				{VersionConstraint: ">=1.28.0"},
+			},
+			prepare: func(mock *specsfakes.FakeImpl, ver semver.Version) {
+				v, _ := semver.New("1.27.0")
+				mock.TagStringToSemverReturns(*v, nil)
+			},
+			shouldErr: true,
+		},
+		{
+			name:           "invalid version returns error",
+			packageVersion: "not-a-version",
+			constrainedMeta: []metadata.PackageMetadata{
+				{VersionConstraint: ">=1.28.0"},
+			},
+			prepare: func(mock *specsfakes.FakeImpl, ver semver.Version) {
+				mock.TagStringToSemverReturns(ver, errors.New("invalid version"))
+			},
+			shouldErr: true,
+		},
+		{
+			name:           "invalid constraint expression returns error",
+			packageVersion: "1.30.0",
+			constrainedMeta: []metadata.PackageMetadata{
+				{VersionConstraint: "not-a-constraint"},
+			},
+			prepare: func(mock *specsfakes.FakeImpl, ver semver.Version) {
+				mock.TagStringToSemverReturns(ver, nil)
+			},
+			shouldErr: true,
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			ver, _ := semver.New("1.30.0")
+
+			sut := specs.New(&specs.Options{})
+			mock := &specsfakes.FakeImpl{}
+			tc.prepare(mock, *ver)
+			sut.SetImpl(mock)
+
+			result, err := sut.GetMetadataWithVersionConstraint("testpkg", tc.packageVersion, tc.constrainedMeta)
+			if tc.shouldErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.expectedResult, result)
+			}
+		})
 	}
 }
 
