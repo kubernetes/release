@@ -17,9 +17,12 @@ limitations under the License.
 package cmd
 
 import (
+	"bufio"
 	"bytes"
 	"embed"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"slices"
 	"strings"
@@ -188,7 +191,51 @@ const (
 # schedule-builder -uc data/releases/schedule.yaml -e data/releases/eol.yaml
 ---
 `
+	defaultUpcomingReleases  = 3
+	extendedUpcomingReleases = 4
 )
+
+// isInMaintenanceWindow reports whether refTime sits between sched's
+// maintenanceModeStartDate (inclusive) and endOfLifeDate (exclusive).
+// Unparseable values (commonly "TBD") return false.
+func isInMaintenanceWindow(refTime time.Time, sched *Schedule) bool {
+	if sched == nil || sched.MaintenanceModeStartDate == "" || sched.EndOfLifeDate == "" {
+		return false
+	}
+
+	mms, err := time.Parse(refDate, sched.MaintenanceModeStartDate)
+	if err != nil {
+		return false
+	}
+
+	eol, err := time.Parse(refDate, sched.EndOfLifeDate)
+	if err != nil {
+		return false
+	}
+
+	return !refTime.Before(mms) && refTime.Before(eol)
+}
+
+// confirmExtraUpcoming asks the operator whether to extend the upcoming
+// patch window to 4 entries during a maintenance-mode overlap. Overridable
+// in tests.
+var confirmExtraUpcoming = func(oldest *Schedule) (bool, error) {
+	fmt.Fprintf(os.Stderr,
+		"Oldest supported release %s is in its maintenance window "+
+			"(maintenanceModeStartDate=%s, endOfLifeDate=%s).\n"+
+			"Generate an additional upcoming patch release entry (%d total instead of %d)? [y/N]: ",
+		oldest.Release, oldest.MaintenanceModeStartDate, oldest.EndOfLifeDate,
+		extendedUpcomingReleases, defaultUpcomingReleases)
+
+	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
+	if err != nil && !errors.Is(err, io.EOF) {
+		return false, fmt.Errorf("read confirmation: %w", err)
+	}
+
+	answer := strings.TrimSpace(strings.ToLower(line))
+
+	return answer == "y" || answer == "yes", nil
+}
 
 //nolint:maintidx // complex but acceptable
 func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches EolBranches, filePath, eolFilePath string) error {
@@ -321,6 +368,23 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 
 	schedule.Schedules = newSchedules
 
+	upcomingCap := defaultUpcomingReleases
+
+	if len(schedule.Schedules) > 0 {
+		oldest := schedule.Schedules[len(schedule.Schedules)-1]
+		if isInMaintenanceWindow(refTime, oldest) {
+			ok, err := confirmExtraUpcoming(oldest)
+			if err != nil {
+				return err
+			}
+
+			if ok {
+				upcomingCap = extendedUpcomingReleases
+				logrus.Infof("Extending upcoming patch window to %d entries while %s is in maintenance mode", extendedUpcomingReleases, oldest.Release)
+			}
+		}
+	}
+
 	newUpcomingReleases := []*PatchRelease{}
 	latestDate := refTime
 
@@ -342,8 +406,8 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 	}
 
 	for {
-		if len(newUpcomingReleases) >= 3 {
-			logrus.Infof("Got 3 new upcoming releases, not adding any more")
+		if len(newUpcomingReleases) >= upcomingCap {
+			logrus.Infof("Got %d new upcoming releases, not adding any more", upcomingCap)
 
 			break
 		}

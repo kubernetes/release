@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"testing"
@@ -479,6 +480,135 @@ func TestUpdatePatchSchedule(t *testing.T) {
 			require.NoError(t, yaml.UnmarshalStrict(eolYamlBytes, &eolRes))
 
 			assert.Equal(t, tc.expectedEolBranches, eolRes)
+		})
+	}
+}
+
+func TestUpdatePatchScheduleMaintenanceWindow(t *testing.T) {
+	refTime := time.Date(2026, 5, 24, 0, 0, 0, 0, time.UTC)
+
+	// Four supported minors with the oldest (1.30) sitting in its
+	// maintenance window relative to refTime. Each Next.TargetDate is
+	// after refTime so the per-schedule patch-bump loop short-circuits.
+	baseSchedule := func() PatchSchedule {
+		return PatchSchedule{
+			Schedules: []*Schedule{
+				{
+					Release: "1.33",
+					Next: &PatchRelease{
+						Release:            "1.33.1",
+						CherryPickDeadline: "2026-06-05",
+						TargetDate:         "2026-06-09",
+					},
+					EndOfLifeDate:            "2027-06-01",
+					MaintenanceModeStartDate: "2027-03-01",
+				},
+				{
+					Release: "1.32",
+					Next: &PatchRelease{
+						Release:            "1.32.5",
+						CherryPickDeadline: "2026-06-05",
+						TargetDate:         "2026-06-09",
+					},
+					EndOfLifeDate:            "2027-02-01",
+					MaintenanceModeStartDate: "2026-11-01",
+				},
+				{
+					Release: "1.31",
+					Next: &PatchRelease{
+						Release:            "1.31.10",
+						CherryPickDeadline: "2026-06-05",
+						TargetDate:         "2026-06-09",
+					},
+					EndOfLifeDate:            "2026-10-01",
+					MaintenanceModeStartDate: "2026-08-01",
+				},
+				{
+					Release: "1.30",
+					Next: &PatchRelease{
+						Release:            "1.30.15",
+						CherryPickDeadline: "2026-06-05",
+						TargetDate:         "2026-06-09",
+					},
+					EndOfLifeDate:            "2026-07-01",
+					MaintenanceModeStartDate: "2026-04-01",
+				},
+			},
+		}
+	}
+
+	for _, tc := range []struct {
+		name              string
+		confirm           func(*Schedule) (bool, error)
+		mutate            func(PatchSchedule) PatchSchedule
+		wantUpcomingCount int
+		wantErr           string
+	}{
+		{
+			name:              "overlap accepted - extends upcoming to 4",
+			confirm:           func(*Schedule) (bool, error) { return true, nil },
+			wantUpcomingCount: 4,
+		},
+		{
+			name:              "overlap declined - upcoming stays at 3",
+			confirm:           func(*Schedule) (bool, error) { return false, nil },
+			wantUpcomingCount: 3,
+		},
+		{
+			name: "TBD maintenance date - prompter never called",
+			confirm: func(*Schedule) (bool, error) {
+				t.Fatal("confirmExtraUpcoming must not be called when MaintenanceModeStartDate is TBD")
+
+				return false, nil
+			},
+			mutate: func(s PatchSchedule) PatchSchedule {
+				s.Schedules[3].MaintenanceModeStartDate = "TBD"
+
+				return s
+			},
+			wantUpcomingCount: 3,
+		},
+		{
+			name:    "prompt error bubbles up",
+			confirm: func(*Schedule) (bool, error) { return false, errors.New("boom") },
+			wantErr: "boom",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			orig := confirmExtraUpcoming
+
+			t.Cleanup(func() {
+				confirmExtraUpcoming = orig
+			})
+
+			confirmExtraUpcoming = tc.confirm
+
+			sched := baseSchedule()
+			if tc.mutate != nil {
+				sched = tc.mutate(sched)
+			}
+
+			scheduleFile, err := os.CreateTemp(t.TempDir(), "schedule-")
+			require.NoError(t, err)
+			require.NoError(t, scheduleFile.Close())
+
+			err = updatePatchSchedule(refTime, sched, EolBranches{}, scheduleFile.Name(), "")
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+
+				return
+			}
+
+			require.NoError(t, err)
+
+			scheduleYamlBytes, err := os.ReadFile(scheduleFile.Name()) //nolint:gosec // G304 - temp file path is safe
+			require.NoError(t, err)
+
+			patchRes := PatchSchedule{}
+			require.NoError(t, yaml.UnmarshalStrict(scheduleYamlBytes, &patchRes))
+
+			assert.Len(t, patchRes.UpcomingReleases, tc.wantUpcomingCount)
+			assert.Len(t, patchRes.Schedules, 4, "schedules[] count must be unchanged")
 		})
 	}
 }
