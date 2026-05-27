@@ -159,6 +159,7 @@ func DefaultOptions() *Options {
 			consts.ArchitectureARM64,
 			consts.ArchitecturePPC64,
 			consts.ArchitectureS390X,
+			consts.ArchitectureLoong64,
 		},
 		SpecTemplatePath: defaultSpecTemplatePath,
 		Workspace:        defaultWorkspaceDir,

@@ -52,6 +52,10 @@ ifeq ($(ARCH),s390x)
 	BASEIMAGE?=s390x/debian:$(CONFIG)-slim
 	QEMUARCH=s390x
 endif
+ifeq ($(ARCH),loong64)
+	BASEIMAGE?=loongarch64/debian:$(CONFIG)-slim
+	QEMUARCH=loongarch64
+endif
 
 sub-build-%:
 	$(MAKE) ARCH=$* build

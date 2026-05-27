@@ -29,8 +29,8 @@ ENV GOARM 7
 
 # the default value for KUBE_DYNAMIC_CROSSPLATFORMS and KUBE_CROSSPLATFORMS is set for
 # backward compatibility with the old Dockerfile. 
-ARG KUBE_DYNAMIC_CROSSPLATFORMS="arm64 armhf i386 ppc64el s390x"
-ARG KUBE_CROSSPLATFORMS="linux/386 linux/arm linux/arm64 linux/ppc64le linux/s390x darwin/amd64 windows/amd64 windows/386"
+ARG KUBE_DYNAMIC_CROSSPLATFORMS="arm64 armhf i386 ppc64el s390x loongarch64"
+ARG KUBE_CROSSPLATFORMS="linux/386 linux/arm linux/arm64 linux/ppc64le linux/s390x linux/loong64 darwin/amd64 windows/amd64 windows/386"
 
 ENV KUBE_DYNAMIC_CROSSPLATFORMS=${KUBE_DYNAMIC_CROSSPLATFORMS}
 ENV KUBE_CROSSPLATFORMS=${KUBE_CROSSPLATFORMS}
@@ -83,7 +83,7 @@ RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
 fi
 
 RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
-  && if [ ${targetArch} = "ppc64le" ] || [ ${targetArch} = "s390x" ]; then \
+  && if [ ${targetArch} = "ppc64le" ] || [ ${targetArch} = "s390x" ] || [ ${targetArch} = "loong64" ]; then \
     apt-get update \
     && apt-get install -y build-essential; \
 fi

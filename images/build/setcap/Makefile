@@ -23,7 +23,7 @@ CONFIG ?= bookworm
 DEBIAN_BASE_VERSION ?= bookworm-v1.0.7
 
 ARCH?=amd64
-ALL_ARCH = amd64 arm arm64 ppc64le s390x
+ALL_ARCH = amd64 arm arm64 ppc64le s390x loong64
 
 BASE_REGISTRY?=registry.k8s.io/build-image
 BASEIMAGE?=$(BASE_REGISTRY)/debian-base-$(ARCH):$(DEBIAN_BASE_VERSION)
