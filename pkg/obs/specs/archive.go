@@ -35,6 +35,7 @@ var obsArchitectures = map[string]string{
 	"arm64":   "aarch64",
 	"ppc64le": "ppc64le",
 	"s390x":   "s390x",
+	"loong64": "loongarch64",
 }
 
 // BuildArtifactsArchive downloads and archives artifacts from the given

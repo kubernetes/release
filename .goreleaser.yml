@@ -25,6 +25,7 @@ builds:
     goarch:
       - amd64
       - arm64
+      - loong64
 
   - id: release-notes
     no_unique_dist_dir: true
@@ -36,6 +37,7 @@ builds:
     goarch:
       - amd64
       - arm64
+      - loong64
 
   - id: publish-release
     no_unique_dist_dir: true
@@ -47,6 +49,7 @@ builds:
     goarch:
       - amd64
       - arm64
+      - loong64
 
   - id: schedule-builder
     no_unique_dist_dir: true
@@ -58,6 +61,7 @@ builds:
     goarch:
       - amd64
       - arm64
+      - loong64
 
 archives:
   - format: binary
