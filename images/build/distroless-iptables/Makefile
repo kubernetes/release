@@ -24,7 +24,7 @@ BASEIMAGE ?= debian:bookworm-slim
 GORUNNER_VERSION ?= v2.4.0-go1.25.10-bookworm.0
 
 ARCH?=amd64
-ALL_ARCH = amd64 arm arm64 ppc64le s390x
+ALL_ARCH ?= amd64 arm arm64 ppc64le s390x
 
 BASE_REGISTRY?=registry.k8s.io/build-image
 
