@@ -15,22 +15,41 @@
 ARG BASEIMAGE
 ARG GORUNNERIMAGE
 # Using directly debian base, as we are going to just copy the required binaries
-FROM ${BASEIMAGE} as build
+FROM ${BASEIMAGE} AS build
 
+# Install compilation toolchain and dependencies
+RUN apt-get -y update && \
+    apt-get -y dist-upgrade && \
+    apt-get -y install --no-install-recommends \
+        git ca-certificates build-essential autoconf automake libtool \
+        bison flex pkg-config libgmp-dev libreadline-dev \
+        libedit-dev libjansson-dev \
+        libmnl-dev libnftnl-dev
+
+# Build nftables
+ADD --checksum=sha256:bef0c9cfdca5f8b988957046c2cb33ef9869730593da0eacae4748201acf1116 https://netfilter.org/projects/nftables/files/nftables-1.0.6.1.tar.xz /
+COPY patches /patches
+COPY setup-metadata.sh /setup-metadata.sh
+RUN cd / && tar xf /nftables-1.0.6.1.tar.xz && cd nftables-1.0.6.1 && \
+    for p in $(cat /patches/series); do patch -p1 --forward < "/patches/$p" || exit 1; done && \
+    ./configure --disable-man-doc --enable-static --disable-shared --sbindir=/usr/sbin && make && make install && \
+    /setup-metadata.sh
+
+RUN ldconfig
+
+WORKDIR /
 COPY stage-binary-and-deps.sh /
 COPY stage-binaries-from-package.sh /
 COPY package-utils.sh /
 
 # TODO: /bin/sleep is used by a specific e2e test
 ARG STAGE_DIR="/opt/stage"
-RUN apt -y update && \
-    apt -y dist-upgrade && \
-    apt -y install bash curl && \
+RUN apt-get -y install bash curl && \
     mkdir -p "${STAGE_DIR}" && \
     /stage-binaries-from-package.sh "${STAGE_DIR}" ipset \
     iptables    \
-    nftables    \
     kmod        && \
+    /stage-binary-and-deps.sh "${STAGE_DIR}" /usr/sbin/nft && \
     `# below binaries and dash are used by iptables-wrapper-installer.sh` \
     /stage-binary-and-deps.sh "${STAGE_DIR}" /bin/dash \
     /bin/cat \
@@ -47,11 +66,11 @@ RUN curl -o "${STAGE_DIR}"/iptables-wrapper-installer.sh https://raw.githubuserc
 
 # we're going to borrow the /go-runner binary in the final image
 # dedupe this binary by just copying it from the go-runner image
-FROM ${GORUNNERIMAGE} as gorunner
+FROM ${GORUNNERIMAGE} AS gorunner
 
 # We need to use distroless:base here as tzdata, glibc and some other base packages
 # are required
-FROM gcr.io/distroless/base-debian12 as intermediate
+FROM gcr.io/distroless/base-debian12 AS intermediate
 
 ARG SKIP_WRAPPER_CHECK
 
