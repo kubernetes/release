@@ -17,15 +17,31 @@ ARG GORUNNERIMAGE
 # Using directly debian base, as we are going to just copy the required binaries
 FROM ${BASEIMAGE} as build
 
+# Build patched nftables package
+ARG PKGNAME=nftables_1.0.6
+RUN apt-get -y update && \
+    apt-get -y dist-upgrade && \
+    apt-get -y install --no-install-recommends \
+        build-essential devscripts debhelper dh-make \
+        bison flex libeditreadline-dev libgmp-dev libjansson-dev libmnl-dev libnftnl-dev libxtables-dev
+WORKDIR /build
+ADD --checksum=sha256:2407430ddd82987670e48dc2fda9e280baa8307abec04ab18d609df3db005e4c http://deb.debian.org/debian/pool/main/n/nftables/nftables_1.0.6.orig.tar.xz /build
+RUN tar xf nftables_1.0.6.orig.tar.xz
+COPY nftables/ nftables-1.0.6/
+ENV DEBFULLNAME="Kubernetes Release Team"
+ENV DEBEMAIL=release-team@kubernetes.io
+WORKDIR /build/nftables-1.0.6
+RUN debuild -us -uc
+
+WORKDIR /
 COPY stage-binary-and-deps.sh /
 COPY stage-binaries-from-package.sh /
 COPY package-utils.sh /
 
 # TODO: /bin/sleep is used by a specific e2e test
 ARG STAGE_DIR="/opt/stage"
-RUN apt -y update && \
-    apt -y dist-upgrade && \
-    apt -y install bash curl && \
+RUN apt-get -y install bash curl && \
+    apt-get -y -f install /build/nftables_*.deb /build/libnftables1_*.deb && \
     mkdir -p "${STAGE_DIR}" && \
     /stage-binaries-from-package.sh "${STAGE_DIR}" ipset \
     iptables    \

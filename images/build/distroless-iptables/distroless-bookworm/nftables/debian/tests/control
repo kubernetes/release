@@ -1,0 +1,20 @@
+Test-Command: nft -h
+Depends: @
+Restrictions: needs-root, superficial
+
+Tests: internaltest-shell.sh
+Depends: kmod, @
+Restrictions: needs-root, allow-stderr, isolation-container, flaky
+
+Tests: internaltest-monitor.sh
+Depends: @
+Restrictions: needs-root, allow-stderr, isolation-container, flaky
+
+# Disable test until we decide what to do with the nftables python module
+#Tests: internaltest-py.sh
+#Depends: @, python
+#Restrictions: needs-root, allow-stderr, isolation-container, build-needed
+
+Tests: systemd-service-test.sh
+Depends: systemd, @
+Restrictions: needs-root, allow-stderr, isolation-container

@@ -1,0 +1,4 @@
+debian/examples/*
+etc/nftables/osf/pf.os
+usr/share/doc/nftables/examples/*
+usr/share/nftables/*nft

@@ -1,0 +1,3 @@
+/usr/lib/*/libnftables.so
+usr/include/nftables/*
+usr/lib/*/pkgconfig/*
