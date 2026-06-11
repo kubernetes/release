@@ -289,9 +289,10 @@ func TestTagRepository(t *testing.T) {
 			createReleaseBranch: true,
 			shouldError:         true,
 		},
-		{ // failure on RevParse new rc creating release branch
+		{ // tag exists but resolving the expected commit fails, new rc creating release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.RevParseTagReturns("", nil)
+				mock.RevParseTagReturns("existingcommit123", nil) // Tag exists
+				mock.RevParseReturns("", err)                     // But RevParse fails to resolve expected commit
 			},
 			versions:            newRCVersions,
 			releaseBranch:       "release-1.20",
@@ -326,9 +327,10 @@ func TestTagRepository(t *testing.T) {
 			createReleaseBranch: true,
 			shouldError:         true,
 		},
-		{ // failure on RevParse new rc checking out release branch
+		{ // tag exists but resolving the expected commit fails, new rc checking out release branch
 			prepare: func(mock *anagofakes.FakeStageImpl) {
-				mock.RevParseTagReturns("", nil)
+				mock.RevParseTagReturns("existingcommit456", nil) // Tag exists
+				mock.RevParseReturns("", err)                     // But RevParse fails to resolve expected commit
 			},
 			versions:            newRCVersions,
 			releaseBranch:       "release-1.20",
@@ -369,6 +371,17 @@ func TestTagRepository(t *testing.T) {
 			versions:      newBetaVersions,
 			releaseBranch: git.DefaultBranch,
 			shouldError:   true,
+		},
+		{ // idempotent: single tag exists and points to correct commit, should skip
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				// Tag exists and returns a commit SHA
+				mock.RevParseTagReturns("1234567890abcdef", nil)
+				// RevParse resolves the expected commit to the same SHA
+				mock.RevParseReturns("1234567890abcdef", nil)
+			},
+			versions:      newBetaVersions, // Only has one version: v1.20.0-beta.1
+			releaseBranch: git.DefaultBranch,
+			shouldError:   false,
 		},
 	} {
 		opts := anago.DefaultStageOptions()
@@ -709,6 +722,103 @@ func TestGenerateBillOfMaterials(t *testing.T) {
 		} else {
 			require.NoError(t, err)
 		}
+	}
+}
+
+func TestTagRepositoryIdempotent(t *testing.T) {
+	// Test with single version to isolate the issue
+	singleVersions := release.NewReleaseVersions(
+		"v1.20.0-beta.1", "", "", "v1.20.0-beta.1", "",
+	)
+	rcReleaseBranchVersions := release.NewReleaseVersions(
+		"v1.20.0-rc.0", "", "v1.20.0-rc.0", "", "",
+	)
+
+	for _, tc := range []struct {
+		name                string
+		prepare             func(*anagofakes.FakeStageImpl)
+		versions            *release.Versions
+		releaseBranch       string
+		createReleaseBranch bool
+		shouldError         bool
+	}{
+		{
+			name: "tag exists and points to correct commit - should skip",
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseTagReturns("1234567890abcdef", nil)
+				mock.RevParseReturns("1234567890abcdef", nil)
+			},
+			versions:      singleVersions,
+			releaseBranch: git.DefaultBranch,
+			shouldError:   false,
+		},
+		{
+			name: "tag exists but points to wrong commit - should error",
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseTagReturns("wrongcommit1234567890abcdef", nil)
+				mock.RevParseReturns("1234567890abcdef", nil)
+			},
+			versions:      singleVersions,
+			releaseBranch: git.DefaultBranch,
+			shouldError:   true,
+		},
+		{
+			name: "tag exists but RevParse fails - should error",
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseTagReturns("1234567890abcdef", nil)
+				mock.RevParseReturns("", err)
+			},
+			versions:      singleVersions,
+			releaseBranch: git.DefaultBranch,
+			shouldError:   true,
+		},
+		{
+			name: "release branch tag on empty commit above build commit - should skip",
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseTagReturns("emptyReleaseCommit", nil) // tag on empty release commit
+				mock.RevParseReturns("buildVersionCommit", nil)    // expected and tag parent both = build commit
+			},
+			versions:            rcReleaseBranchVersions,
+			releaseBranch:       "release-1.20",
+			createReleaseBranch: true,
+			shouldError:         false,
+		},
+		{
+			name: "default branch tag points to child of build commit - should error",
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.RevParseTagReturns("childOfBuildCommit", nil)
+				mock.RevParseReturns("buildVersionCommit", nil) // parent would match, but not a release branch
+			},
+			versions:      singleVersions,
+			releaseBranch: git.DefaultBranch,
+			shouldError:   true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := anago.DefaultStageOptions()
+			opts.BuildVersion = "v1.20.0-beta.1.358+4628c605aadb9b"
+			opts.ReleaseBranch = tc.releaseBranch
+			state := anago.DefaultState()
+			err := opts.Validate(state)
+			require.NoError(t, err)
+
+			sut := anago.NewDefaultStage(opts)
+
+			state.SetVersions(tc.versions)
+			state.SetCreateReleaseBranch(tc.createReleaseBranch)
+			sut.SetState(&anago.StageState{state})
+
+			mock := &anagofakes.FakeStageImpl{}
+			tc.prepare(mock)
+			sut.SetImpl(mock)
+
+			err = sut.TagRepository()
+			if tc.shouldError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
 	}
 }
 
