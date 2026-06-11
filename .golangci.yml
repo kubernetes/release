@@ -39,7 +39,7 @@ linters:
     - godox
     - goheader
     - gomoddirectives
-    - gomodguard
+    - gomodguard_v2
     - goprintffuncname
     - gosec
     - gosmopolitan
@@ -119,6 +119,8 @@ linters:
   settings:
     gocritic:
       enable-all: true
+    goconst:
+      ignore-tests: true
     gocyclo:
       min-complexity: 40
     godox:
