@@ -172,6 +172,7 @@ func (d *defaultStageImpl) RemovePackageFiles(path string) error {
 
 		logrus.Infof("Removing path: %s", fullPath)
 
+		//nolint:gosec // G122: paths come from walking a trusted, locally-prepared package directory
 		return os.RemoveAll(fullPath)
 	})
 }

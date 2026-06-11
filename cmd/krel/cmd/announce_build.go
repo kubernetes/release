@@ -79,7 +79,7 @@ var buildBranchAnnounceCmd = &cobra.Command{
 }
 
 var buildReleaseAnnounceCmd = &cobra.Command{
-	Use:           "release",
+	Use:           releaseCmdUse,
 	Short:         "Build the announcement Kubernetes for new releases",
 	Long:          "krel announce build release",
 	SilenceUsage:  true,

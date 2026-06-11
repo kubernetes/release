@@ -71,6 +71,9 @@ const (
 	// maxParallelRequests is the maximum parallel requests we shall make to the
 	// GitHub API.
 	maxParallelRequests = 10
+
+	// logFieldSHA is the log field key for a commit SHA.
+	logFieldSHA = "sha"
 )
 
 const k8sCherryPickBotUsername = "k8s-infra-cherrypick-robot"
@@ -384,8 +387,8 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 				}
 			} else {
 				logrus.WithFields(logrus.Fields{
-					"sha": pair.Commit.Hash.String(),
-					"pr":  pair.PrNum,
+					logFieldSHA: pair.Commit.Hash.String(),
+					"pr":        pair.PrNum,
 				}).Errorf("err: %v", err)
 			}
 
@@ -595,8 +598,8 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 	text, err := noteTextFromString(prBody)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
-			"sha": pair.Commit.Hash.String(),
-			"pr":  pair.PrNum,
+			logFieldSHA: pair.Commit.Hash.String(),
+			"pr":        pair.PrNum,
 		}).Debugf("ignore err: %v", err)
 
 		return nil, nil //nolint:nilnil // intentional nil,nil return
@@ -753,7 +756,7 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 		prNums, err := prsNumForCommitFromMessage(commitPointer.Message)
 		if errors.Is(err, errNoPRIDFoundInCommitMessage) {
 			logrus.WithFields(logrus.Fields{
-				"sha": hashString,
+				logFieldSHA: hashString,
 			}).Debug("no associated PR found")
 
 			hashPointer = commitPointer.ParentHashes[0]
@@ -763,7 +766,7 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
-				"sha": hashString,
+				logFieldSHA: hashString,
 			}).Warnf("ignore err: %v", err)
 
 			hashPointer = commitPointer.ParentHashes[0]
@@ -772,8 +775,8 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 		}
 
 		logrus.WithFields(logrus.Fields{
-			"sha": hashString,
-			"prs": prNums,
+			logFieldSHA: hashString,
+			"prs":       prNums,
 		}).Debug("found PR from commit")
 
 		// Only taking the first one, assuming they are merged by Prow

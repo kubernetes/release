@@ -53,6 +53,8 @@ const (
 	draftMarkdownFile = "release-notes-draft.md"
 	// draftJSONFile is the json version of the release notes.
 	draftJSONFile = "release-notes-draft.json"
+	// yamlExt is the file extension used for release notes map files.
+	yamlExt = "yaml"
 	// serviceDirectory is where we keep the files used to generate the notes.
 	releaseNotesWorkDir = "release-notes"
 	// mapsMainDirectory is where we will save the release notes maps.
@@ -565,7 +567,7 @@ func createDraftCommit(repo *git.Repo, releasePath, commitMessage string) error 
 	releaseDirectories := []struct{ Path, Name, Ext string }{
 		{
 			Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsMainDirectory),
-			Name: "release notes maps", Ext: "yaml",
+			Name: "release notes maps", Ext: yamlExt,
 		},
 		{
 			Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsSessionDirectory),
@@ -573,11 +575,11 @@ func createDraftCommit(repo *git.Repo, releasePath, commitMessage string) error 
 		},
 		{
 			Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsCVEDirectory),
-			Name: "release notes cve data", Ext: "yaml",
+			Name: "release notes cve data", Ext: yamlExt,
 		},
 		{
 			Path: filepath.Join(releasePath, releaseNotesWorkDir, mapsThemesDirectory),
-			Name: "release notes major theme files", Ext: "yaml",
+			Name: "release notes major theme files", Ext: yamlExt,
 		},
 	}
 
@@ -1440,7 +1442,7 @@ func editReleaseNote(pr int, workDir string, originalNote, modifiedNote *notes.R
 		output += string(yamlCode) + " # " + strings.ReplaceAll(string(unalteredYAML), "\n", "\n # ")
 	}
 
-	kubeEditor := editor.NewDefaultEditor([]string{"KUBE_EDITOR", "EDITOR"})
+	kubeEditor := editor.NewDefaultEditor(editorEnvs)
 
 	changes, tempFilePath, err := kubeEditor.LaunchTempFile("release-notes-map-", ".yaml", bytes.NewReader([]byte(output)))
 	if err != nil {
