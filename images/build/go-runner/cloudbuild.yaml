@@ -10,7 +10,7 @@ options:
   machineType: 'N1_HIGHCPU_8'
 
 steps:
-  - name: 'ghcr.io/sigstore/cosign/cosign:v2.6.0-dev@sha256:927acebad5fd845802b560f2a1b2cfa7c7170a5056511d2cae137a5e4fc39a4c'
+  - name: 'ghcr.io/sigstore/cosign/cosign:v3.1.1-dev@sha256:0dcd21d8b6464a526e3225f44c50f34687e861dcf010f566b3caa4f0e5cd898a'
     dir: ./images/build/go-runner
     env:
       - TUF_ROOT=/tmp
@@ -49,7 +49,7 @@ substitutions:
   _PULL_BASE_REF: 'dev'
   _CONFIG: 'go-major-codename'
   _IMAGE_VERSION: 'v0.0.0-go0.0.0-codename.0'
-  _GO_MAJOR_VERSION: '1.22'
+  _GO_MAJOR_VERSION: '1.26'
   _OS_CODENAME: 'codename'
   _REVISION: '0'
   _GO_VERSION: '0.0.0'
