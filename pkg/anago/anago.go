@@ -58,6 +58,12 @@ const (
 
 	// The default license for all artifacts.
 	LicenseIdentifier = "Apache-2.0"
+
+	// kubernetesPackageRef is the SPDX reference for the kubernetes package.
+	kubernetesPackageRef = "SPDXRef-Package-kubernetes"
+
+	// sourceCodeComment is the SBOM relationship comment for source code.
+	sourceCodeComment = "Source code"
 )
 
 // Options are settings which will be used by `StageOptions` as well as

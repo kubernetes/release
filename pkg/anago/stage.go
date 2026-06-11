@@ -683,9 +683,9 @@ func (d *defaultStageImpl) AddBinariesToSBOM(sbom *spdx.Document, version string
 
 		file.AddRelationship(&spdx.Relationship{
 			FullRender:       false,
-			PeerReference:    "SPDXRef-Package-kubernetes",
+			PeerReference:    kubernetesPackageRef,
 			PeerExtReference: "kubernetes-" + version,
-			Comment:          "Source code",
+			Comment:          sourceCodeComment,
 			Type:             spdx.GENERATED_FROM,
 		})
 	}
@@ -717,9 +717,9 @@ func (d *defaultStageImpl) AddTarfilesToSBOM(sbom *spdx.Document, version string
 
 		file.AddRelationship(&spdx.Relationship{
 			FullRender:       false,
-			PeerReference:    "SPDXRef-Package-kubernetes",
+			PeerReference:    kubernetesPackageRef,
 			PeerExtReference: "kubernetes-" + version,
-			Comment:          "Source code",
+			Comment:          sourceCodeComment,
 			Type:             spdx.GENERATED_FROM,
 		})
 	}
@@ -781,9 +781,9 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 	for _, pkg := range doc.Packages {
 		pkg.AddRelationship(&spdx.Relationship{
 			FullRender:       false,
-			PeerReference:    "SPDXRef-Package-kubernetes",
+			PeerReference:    kubernetesPackageRef,
 			PeerExtReference: "kubernetes-" + version,
-			Comment:          "Source code",
+			Comment:          sourceCodeComment,
 			Type:             spdx.GENERATED_FROM,
 		})
 	}
