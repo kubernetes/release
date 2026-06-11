@@ -432,17 +432,45 @@ func (d *DefaultStage) TagRepository() error {
 	for _, version := range d.state.versions.Ordered() {
 		logrus.Infof("Preparing version %s", version)
 
-		// Ensure that the tag not already exists
-		if _, err := d.impl.RevParseTag(repo, version); err == nil {
-			return fmt.Errorf("tag %s already exists", version)
-		}
-
 		// Usually the build version contains a commit we can reference. If
 		// not, because the build version is exactly a tag, then we fallback to
 		// that tag.
 		commit := d.options.BuildVersion
 		if len(d.state.semverBuildVersion.Build) > 0 {
 			commit = d.state.semverBuildVersion.Build[0]
+		}
+
+		// If the tag already exists from a previous (partial) run, verify it
+		// points to the expected commit and skip re-tagging. On release
+		// branches the tag sits on an empty release commit whose parent is the
+		// build version commit, so accept that case as well.
+		if existingTagCommit, err := d.impl.RevParseTag(repo, version); err == nil {
+			expectedCommitSHA, err := d.impl.RevParse(repo, commit)
+			if err != nil {
+				return fmt.Errorf("resolve expected commit %s: %w", commit, err)
+			}
+
+			if existingTagCommit == expectedCommitSHA {
+				logrus.Infof("Tag %s already points to correct commit %s, skipping tag creation", version, expectedCommitSHA)
+
+				continue
+			}
+
+			// On release branches the tag is created on an empty release
+			// commit whose first parent is the build commit, so accept that
+			// too. On the default branch the tag must point exactly at the
+			// build commit, so this exception is gated to release branches.
+			taggedOnReleaseBranch := strings.HasPrefix(d.options.ReleaseBranch, "release-") &&
+				(!d.state.createReleaseBranch || version == d.state.versions.Prime())
+			if taggedOnReleaseBranch {
+				if parentCommit, perr := d.impl.RevParse(repo, version+"^"); perr == nil && parentCommit == expectedCommitSHA {
+					logrus.Infof("Tag %s already points to a release commit on top of %s, skipping tag creation", version, expectedCommitSHA)
+
+					continue
+				}
+			}
+
+			return fmt.Errorf("tag %s already exists but points to commit %s, expected %s", version, existingTagCommit, expectedCommitSHA)
 		}
 
 		if d.state.createReleaseBranch {
@@ -455,10 +483,15 @@ func (d *DefaultStage) TagRepository() error {
 					d.options.ReleaseBranch, commit,
 				)
 
+				// Use -B so a re-run resets the branch to the build commit
+				// instead of failing if it already exists from a previous
+				// partial run. This also guarantees HEAD is at the build
+				// commit, so the empty release commit below is not stacked on
+				// top of a stale one.
 				if err := d.impl.Checkout(
-					repo, "-b", d.options.ReleaseBranch, commit,
+					repo, "-B", d.options.ReleaseBranch, commit,
 				); err != nil {
-					return fmt.Errorf("create new release branch: %w", err)
+					return fmt.Errorf("create release branch: %w", err)
 				}
 			} else {
 				logrus.Infof(
