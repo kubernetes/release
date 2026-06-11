@@ -1,0 +1,14 @@
+The file /usr/share/doc/nftables/examples/sysvinit/nftables.init is a typical
+sysvinit script for you to use as /etc/init.d/nftables.
+
+Given Debian default init system is systemd, I have no intention to support
+sysvinit apart of providing this example file.
+
+Read the script carefully before using it, as is just an example.
+You will likely require to manually edit and install the script in order to
+properly use it.
+
+I will probably drop all sysvinit-related stuff like this in the future.
+---
+		The nftables package Debian maintainer,
+			Arturo Borrero Gonzalez - 12/Nov/2015

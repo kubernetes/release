@@ -1,0 +1,42 @@
+How to start
+============
+
+The nftables Debian package gives you access to the 'nft' utility.
+There is another component, in the kernel, which is the nf_tables subsystem.
+From the nft utility you control which rules are loaded into the kernel.
+
+The Debian package comes with some example ruleset you may use as a starting
+point. Check them at /usr/share/doc/nftables/examples/
+
+Extensive online documentation is available at:
+
+ https://wiki.nftables.org
+
+The default rules file in debian is /etc/nftables.conf
+
+Some basic commands
+===================
+
+Try these basic commands to know more about nftables on your machine:
+
+user@debian:~$ sudo nft list ruleset
+user@debian:~$ sudo nft flush ruleset
+user@debian:~$ sudo nft add table inet filter
+user@debian:~$ sudo nft add chain inet filter input { type filter hook input priority 0 \; policy drop }
+user@debian:~$ sudo nft add rule inet filter input ct state established counter accept
+user@debian:~$ sudo nft list ruleset
+
+System service (auto-load at boot)
+==================================
+
+This package includes a pre-configured systemd service file which you can
+optionally enable to auto-load your firewall at boot time.
+
+user@debian:~$ sudo systemctl enable nftables.service
+
+Migrating from iptables
+=======================
+
+Please read the docs at:
+
+ https://wiki.nftables.org/wiki-nftables/index.php/Moving_from_iptables_to_nftables

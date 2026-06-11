@@ -1,0 +1,115 @@
+From 70c03d81df0e87fb416bd1f38409367e9d08ed7f Mon Sep 17 00:00:00 2001
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+Date: Mon, 6 Feb 2023 15:28:41 +0100
+Subject: [PATCH 2/3,nft] rule: expand standalone chain that contains rules
+
+[ upstream 27c753e4a8d4744f479345e3f5e34cafef751602 commit ]
+
+Otherwise rules that this chain contains are ignored when expressed
+using the following syntax:
+
+chain inet filter input2 {
+       type filter hook input priority filter; policy accept;
+       ip saddr 1.2.3.4 tcp dport { 22, 443, 123 } drop
+}
+
+When expanding the chain, remove the rule so the new CMD_OBJ_CHAIN
+case does not expand it again.
+
+Closes: https://bugzilla.netfilter.org/show_bug.cgi?id=1655
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+---
+ src/rule.c                                    | 15 +++++++++---
+ .../testcases/include/0020include_chain_0     | 23 +++++++++++++++++++
+ .../include/dumps/0020include_chain_0.nft     |  6 +++++
+ 3 files changed, 41 insertions(+), 3 deletions(-)
+ create mode 100755 tests/shell/testcases/include/0020include_chain_0
+ create mode 100644 tests/shell/testcases/include/dumps/0020include_chain_0.nft
+
+diff --git a/src/rule.c b/src/rule.c
+index 43c6520517ce..323d89afd141 100644
+--- a/src/rule.c
++++ b/src/rule.c
+@@ -1312,11 +1312,12 @@ void cmd_add_loc(struct cmd *cmd, uint16_t offset, const struct location *loc)
+ 
+ static void nft_cmd_expand_chain(struct chain *chain, struct list_head *new_cmds)
+ {
+-	struct rule *rule;
++	struct rule *rule, *next;
+ 	struct handle h;
+ 	struct cmd *new;
+ 
+-	list_for_each_entry(rule, &chain->rules, list) {
++	list_for_each_entry_safe(rule, next, &chain->rules, list) {
++		list_del(&rule->list);
+ 		memset(&h, 0, sizeof(h));
+ 		handle_merge(&h, &rule->handle);
+ 		if (chain->flags & CHAIN_F_BINDING) {
+@@ -1324,7 +1325,7 @@ static void nft_cmd_expand_chain(struct chain *chain, struct list_head *new_cmds
+ 			rule->handle.chain.location = chain->location;
+ 		}
+ 		new = cmd_alloc(CMD_ADD, CMD_OBJ_RULE, &h,
+-				&rule->location, rule_get(rule));
++				&rule->location, rule);
+ 		list_add_tail(&new->list, new_cmds);
+ 	}
+ }
+@@ -1385,6 +1386,14 @@ void nft_cmd_expand(struct cmd *cmd)
+ 
+ 		list_splice(&new_cmds, &cmd->list);
+ 		break;
++	case CMD_OBJ_CHAIN:
++		chain = cmd->chain;
++		if (!chain || list_empty(&chain->rules))
++			break;
++
++		nft_cmd_expand_chain(chain, &new_cmds);
++		list_splice(&new_cmds, &cmd->list);
++		break;
+ 	case CMD_OBJ_SET:
+ 	case CMD_OBJ_MAP:
+ 		set = cmd->set;
+diff --git a/tests/shell/testcases/include/0020include_chain_0 b/tests/shell/testcases/include/0020include_chain_0
+new file mode 100755
+index 000000000000..8f78e8c606ec
+--- /dev/null
++++ b/tests/shell/testcases/include/0020include_chain_0
+@@ -0,0 +1,23 @@
++#!/bin/bash
++
++set -e
++
++tmpfile1=$(mktemp -p .)
++if [ ! -w $tmpfile1 ] ; then
++	echo "Failed to create tmp file" >&2
++	exit 0
++fi
++
++trap "rm -rf $tmpfile1" EXIT # cleanup if aborted
++
++RULESET="table inet filter { }
++include \"$tmpfile1\""
++
++RULESET2="chain inet filter input2 {
++	type filter hook input priority filter; policy accept;
++	ip saddr 1.2.3.4 tcp dport { 22, 443, 123 } drop
++}"
++
++echo "$RULESET2" > $tmpfile1
++
++$NFT -o -f - <<< $RULESET
+diff --git a/tests/shell/testcases/include/dumps/0020include_chain_0.nft b/tests/shell/testcases/include/dumps/0020include_chain_0.nft
+new file mode 100644
+index 000000000000..3ad6db14d2f5
+--- /dev/null
++++ b/tests/shell/testcases/include/dumps/0020include_chain_0.nft
+@@ -0,0 +1,6 @@
++table inet filter {
++	chain input2 {
++		type filter hook input priority filter; policy accept;
++		ip saddr 1.2.3.4 tcp dport { 22, 123, 443 } drop
++	}
++}
+-- 
+2.30.2
+

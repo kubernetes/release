@@ -1,0 +1,13 @@
+These are some examples of the nftables syntax.
+
+You may find example configurations for different families and operations (nat,
+filter, mangle).
+
+Also, you may find concrete configurations models, for example a simple
+ruleset for a workstation.
+
+For up-to-date information about syntax and usage, head to the official
+wiki at: http://wiki.nftables.org
+---
+                The nftables package Debian maintainer,
+                        Arturo Borrero Gonzalez - 13/Nov/2015

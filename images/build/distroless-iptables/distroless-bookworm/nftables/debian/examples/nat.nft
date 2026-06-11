@@ -1,0 +1,30 @@
+#!/usr/sbin/nft -f
+
+table ip nat {
+	chain prerouting {
+		type nat hook prerouting priority 0;
+
+		#Thanks to nftables maps, if you have a previous iptables NAT (destination NAT) ruleset like this:
+		# % iptables -t nat -A PREROUTING -p tcp --dport 1000 -j DNAT --to-destination 1.1.1.1:1234
+		# % iptables -t nat -A PREROUTING -p udp --dport 2000 -j DNAT --to-destination 2.2.2.2:2345
+		# % iptables -t nat -A PREROUTING -p tcp --dport 3000 -j DNAT --to-destination 3.3.3.3:3456
+
+		# It can be easily translated to nftables in a single line:
+
+		dnat tcp dport map { 1000 : 1.1.1.1, 2000 : 2.2.2.2, 3000 : 3.3.3.3} \
+				: tcp dport map { 1000 : 1234, 2000 : 2345, 3000 : 3456 }
+	}
+
+	chain postrouting {
+		type nat hook postrouting priority 0;
+
+		#Likewise, in iptables NAT (source NAT):
+		# % iptables -t nat -A POSTROUTING -s 192.168.1.1 -j SNAT --to-source 1.1.1.1
+		# % iptables -t nat -A POSTROUTING -s 192.168.2.2 -j SNAT --to-source 2.2.2.2
+		# % iptables -t nat -A POSTROUTING -s 192.168.3.3 -j SNAT --to-source 3.3.3.3
+
+		# Translated to a nftables one-liner:
+
+		snat ip saddr map { 192.168.1.1 : 1.1.1.1, 192.168.2.2 : 2.2.2.2, 192.168.3.3 : 3.3.3.3 }
+	}
+}

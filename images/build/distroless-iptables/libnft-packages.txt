@@ -1,0 +1,5 @@
+amd64	https://github.com/danwinship/debian-nftables/releases/download/v1/libnftables1_1.0.6-2.1+k8s1_amd64.deb	fd1074219aacf421d43427ba81691026c7495007a4a4e6a037858ad81f030844
+arm	https://github.com/danwinship/debian-nftables/releases/download/v1/libnftables1_1.0.6-2.1+k8s1_armhf.deb	432106a665de92a3d5fd2b89fca4be816f8ea36be48ab894db64e2726a03d11b
+arm64	https://github.com/danwinship/debian-nftables/releases/download/v1/libnftables1_1.0.6-2.1+k8s1_arm64.deb	762fc53859d6537ee0c70eec421e330c6f0d88fd41e6d8558529287138418e67
+ppc64le	https://github.com/danwinship/debian-nftables/releases/download/v1/libnftables1_1.0.6-2.1+k8s1_ppc64el.deb	14e7ef4c3cb20416e8b217d6b891eadbf94a0b30ac0d5e966b41670866a0e218
+s390x	https://github.com/danwinship/debian-nftables/releases/download/v1/libnftables1_1.0.6-2.1+k8s1_s390x.deb	76de3538ce7fb2a643bbbdbe4db70c6be087e677ae8641a62845cfb3714a7503
