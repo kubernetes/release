@@ -63,6 +63,9 @@ RUN ldconfig
 ARG STAGE_DIR="/opt/stage"
 RUN apt-get -y install bash curl && \
     mkdir -p "${STAGE_DIR}" && \
+    echo "libmnl ${LIBMNL_VERSION} $(git -C /libmnl rev-parse HEAD)" > "${STAGE_DIR}/nftables-source.txt" && \
+    echo "libnftnl ${LIBNFTNL_VERSION} $(git -C /libnftnl rev-parse HEAD)" >> "${STAGE_DIR}/nftables-source.txt" && \
+    echo "nftables ${NFTABLES_VERSION} $(git -C /nftables rev-parse HEAD)" >> "${STAGE_DIR}/nftables-source.txt" && \
     /stage-binaries-from-package.sh "${STAGE_DIR}" ipset \
     iptables    \
     kmod        && \
