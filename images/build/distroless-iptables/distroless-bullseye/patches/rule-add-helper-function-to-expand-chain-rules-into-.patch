@@ -1,0 +1,82 @@
+From 4e5b0a64227dde250f94bec45b3fb127d78b7fd2 Mon Sep 17 00:00:00 2001
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+Date: Mon, 6 Feb 2023 15:28:40 +0100
+Subject: [PATCH 1/3,nft] rule: add helper function to expand chain rules intoi
+ commands
+
+[ upstream commit 784597a4ed63b9decb10d74fdb49a1b021e22728 ]
+
+This patch adds a helper function to expand chain rules into commands.
+This comes in preparation for the follow up patch.
+
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+---
+ src/rule.c | 39 ++++++++++++++++++++++-----------------
+ 1 file changed, 22 insertions(+), 17 deletions(-)
+
+diff --git a/src/rule.c b/src/rule.c
+index 1402210acd8d..43c6520517ce 100644
+--- a/src/rule.c
++++ b/src/rule.c
+@@ -1310,13 +1310,31 @@ void cmd_add_loc(struct cmd *cmd, uint16_t offset, const struct location *loc)
+ 	cmd->num_attrs++;
+ }
+ 
++static void nft_cmd_expand_chain(struct chain *chain, struct list_head *new_cmds)
++{
++	struct rule *rule;
++	struct handle h;
++	struct cmd *new;
++
++	list_for_each_entry(rule, &chain->rules, list) {
++		memset(&h, 0, sizeof(h));
++		handle_merge(&h, &rule->handle);
++		if (chain->flags & CHAIN_F_BINDING) {
++			rule->handle.chain_id = chain->handle.chain_id;
++			rule->handle.chain.location = chain->location;
++		}
++		new = cmd_alloc(CMD_ADD, CMD_OBJ_RULE, &h,
++				&rule->location, rule_get(rule));
++		list_add_tail(&new->list, new_cmds);
++	}
++}
++
+ void nft_cmd_expand(struct cmd *cmd)
+ {
+ 	struct list_head new_cmds;
+ 	struct flowtable *ft;
+ 	struct table *table;
+ 	struct chain *chain;
+-	struct rule *rule;
+ 	struct set *set;
+ 	struct obj *obj;
+ 	struct cmd *new;
+@@ -1362,22 +1380,9 @@ void nft_cmd_expand(struct cmd *cmd)
+ 					&ft->location, flowtable_get(ft));
+ 			list_add_tail(&new->list, &new_cmds);
+ 		}
+-		list_for_each_entry(chain, &table->chains, list) {
+-			list_for_each_entry(rule, &chain->rules, list) {
+-				memset(&h, 0, sizeof(h));
+-				handle_merge(&h, &rule->handle);
+-				if (chain->flags & CHAIN_F_BINDING) {
+-					rule->handle.chain_id =
+-						chain->handle.chain_id;
+-					rule->handle.chain.location =
+-						chain->location;
+-				}
+-				new = cmd_alloc(CMD_ADD, CMD_OBJ_RULE, &h,
+-						&rule->location,
+-						rule_get(rule));
+-				list_add_tail(&new->list, &new_cmds);
+-			}
+-		}
++		list_for_each_entry(chain, &table->chains, list)
++			nft_cmd_expand_chain(chain, &new_cmds);
++
+ 		list_splice(&new_cmds, &cmd->list);
+ 		break;
+ 	case CMD_OBJ_SET:
+-- 
+2.30.2
+

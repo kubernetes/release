@@ -1,0 +1,52 @@
+Description: fix handling of invalid octal strings
+ .
+ nft treats numeric strings beginning with a leading zero as octal, even if they
+ contain non-octal digits (8 or 9), truncating the string as soon as one of
+ these is reached.  Thus the string "0308" will be incorrectly parsed as 24.
+ This patch causes nft to reject such strings instead.
+Author: Jeremy Sowden <jeremy@azazel.net>
+Last-Update: 2023-01-26
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=932880
+Bug: https://bugzilla.netfilter.org/show_bug.cgi?id=1363
+Forwarded: https://lore.kernel.org/netfilter-devel/20221216202714.1413699-1-jeremy@azazel.net/
+Applied-Upstream: https://git.netfilter.org/nftables/commit/?id=f0f9cd656c005ba9a17cd3cef5769c285064b202
+
+--- a/src/scanner.l
++++ b/src/scanner.l
+@@ -118,7 +118,6 @@
+ hexdigit	[0-9a-fA-F]
+ decstring	{digit}+
+ hexstring	0[xX]{hexdigit}+
+-numberstring	({decstring}|{hexstring})
+ letter		[a-zA-Z]
+ string		({letter}|[_.])({letter}|{digit}|[/\-_\.])*
+ quotedstring	\"[^"]*\"
+@@ -819,13 +818,26 @@
+ 				return STRING;
+ 			}
+ 
+-{numberstring}		{
++{hexstring}		{
+ 				errno = 0;
+-				yylval->val = strtoull(yytext, NULL, 0);
++				yylval->val = strtoull(yytext, NULL, 16);
+ 				if (errno != 0) {
+ 					yylval->string = xstrdup(yytext);
+ 					return STRING;
+ 				}
++				return NUM;
++			}
++
++{decstring}		{
++				int base = yytext[0] == '0' ? 8 : 10;
++				char *end;
++
++				errno = 0;
++				yylval->val = strtoull(yytext, &end, base);
++				if (errno != 0 || *end) {
++					yylval->string = xstrdup(yytext);
++					return STRING;
++				}
+ 				return NUM;
+ 			}
+ 

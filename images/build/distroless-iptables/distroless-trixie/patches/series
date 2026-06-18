@@ -1,0 +1,6 @@
+0001-debian-bug-1038724.patch
+invalid-octal-fix.patch
+rule-add-helper-function-to-expand-chain-rules-into-.patch
+rule-expand-standalone-chain-that-contains-rules.patch
+src-expand-table-command-before-evaluation.patch
+fix-list-crash.patch

@@ -1,3 +1,0 @@
-version=4
-opts="pgpmode=auto" \
-https://www.netfilter.org/pub/nftables/nftables-((?!0.100|0.099)\S+).tar.xz

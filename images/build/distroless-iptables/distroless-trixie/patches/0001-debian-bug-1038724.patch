@@ -1,0 +1,66 @@
+From 29bed4fa594c3f6e343a8b5669d61e20c7129cca Mon Sep 17 00:00:00 2001
+From: Florian Westphal <fw@strlen.de>
+Date: Sun, 18 Jun 2023 18:39:45 +0200
+Subject: cache: include set elements in "nft set list"
+
+Make "nft list sets" include set elements in listing by default.
+In nftables 1.0.0, "nft list sets" did not include the set elements,
+but with "--json" they were included.
+
+1.0.1 and newer never include them.
+This causes a problem for people updating from 1.0.0 and relying
+on the presence of the set elements.
+
+Change nftables to always include the set elements.
+The "--terse" option is honored to get the "no elements" behaviour.
+
+Fixes: a1a6b0a5c3c4 ("cache: finer grain cache population for list commands")
+Link: https://marc.info/?l=netfilter&m=168704941828372&w=2
+Signed-off-by: Florian Westphal <fw@strlen.de>
+---
+ src/cache.c | 2 ++
+ src/rule.c  | 8 +-------
+ 2 files changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/src/cache.c b/src/cache.c
+index 95adee7f..becfa57f 100644
+--- a/src/cache.c
++++ b/src/cache.c
+@@ -235,6 +235,8 @@ static unsigned int evaluate_cache_list(struct nft_ctx *nft, struct cmd *cmd,
+ 	case CMD_OBJ_SETS:
+ 	case CMD_OBJ_MAPS:
+ 		flags |= NFT_CACHE_TABLE | NFT_CACHE_SET;
++		if (!nft_output_terse(&nft->output))
++			flags |= NFT_CACHE_SETELEM;
+ 		break;
+ 	case CMD_OBJ_FLOWTABLE:
+ 		if (filter &&
+diff --git a/src/rule.c b/src/rule.c
+index 633a5a12..1faa1a27 100644
+--- a/src/rule.c
++++ b/src/rule.c
+@@ -1574,11 +1574,6 @@ static int do_list_table(struct netlink_ctx *ctx, struct table *table)
+ 
+ static int do_list_sets(struct netlink_ctx *ctx, struct cmd *cmd)
+ {
+-	struct print_fmt_options opts = {
+-		.tab		= "\t",
+-		.nl		= "\n",
+-		.stmt_separator	= "\n",
+-	};
+ 	struct table *table;
+ 	struct set *set;
+ 
+@@ -1601,8 +1596,7 @@ static int do_list_sets(struct netlink_ctx *ctx, struct cmd *cmd)
+ 			if (cmd->obj == CMD_OBJ_MAPS &&
+ 			    !map_is_literal(set->flags))
+ 				continue;
+-			set_print_declaration(set, &opts, &ctx->nft->output);
+-			nft_print(&ctx->nft->output, "%s}%s", opts.tab, opts.nl);
++			set_print(set, &ctx->nft->output);
+ 		}
+ 
+ 		nft_print(&ctx->nft->output, "}\n");
+-- 
+cgit v1.2.3
+
