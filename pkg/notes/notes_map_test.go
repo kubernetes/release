@@ -17,6 +17,7 @@ limitations under the License.
 package notes
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -64,6 +65,43 @@ func TestGetMapsForPR(t *testing.T) {
 	maps, err = provider.GetMapsForPR(123)
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, 4, len(maps))
+}
+
+func TestGetMapsForPR_Concurrent(t *testing.T) {
+	provider := &DirectoryMapProvider{Path: "maps/testdata"}
+
+	const numGoroutines = 100
+
+	var wg sync.WaitGroup
+
+	wg.Add(numGoroutines)
+
+	results := make([][]*ReleaseNotesMap, numGoroutines)
+	errs := make([]error, numGoroutines)
+
+	for i := range numGoroutines {
+		go func(idx int) {
+			defer wg.Done()
+
+			results[idx], errs[idx] = provider.GetMapsForPR(95000)
+		}(i)
+	}
+
+	wg.Wait()
+
+	// All calls should succeed
+	for i, err := range errs {
+		require.NoError(t, err, "goroutine %d returned error", i)
+	}
+
+	// All calls should return consistent results
+	for i := 1; i < numGoroutines; i++ {
+		require.Len(t, results[i], len(results[0]),
+			"goroutine %d returned different number of maps", i)
+	}
+
+	// Maps should be populated (non-empty result for known PR)
+	require.NotEmpty(t, results[0], "expected non-empty maps for PR 95000")
 }
 
 func TestReleaseNotesMapIntegrity(t *testing.T) {
