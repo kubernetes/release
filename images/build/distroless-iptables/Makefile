@@ -24,14 +24,15 @@ BASEIMAGE ?= debian:bookworm-slim
 GORUNNER_VERSION ?= v2.4.0-go1.26.4-bookworm.0
 
 ARCH?=amd64
-ALL_ARCH = amd64 arm arm64 ppc64le s390x
+ALL_ARCH ?= amd64 arm arm64 ppc64le s390x
 
 BASE_REGISTRY?=registry.k8s.io/build-image
 
 GORUNNERIMAGE?=$(BASE_REGISTRY)/go-runner:$(GORUNNER_VERSION)
 
-QEMUVERSION=7.2.0-1
+QEMUVERSION ?= 7.2.0-1
 QEMUIMAGE ?= multiarch/qemu-user-static
+QEMUFLAGS ?= --reset -p yes
 
 ifneq ($(ARCH), amd64)
 	SKIP_WRAPPER_CHECK=--no-sanity-check
@@ -47,7 +48,7 @@ build:
 	umask 0022
 
 	# Enable execution of multi-architecture containers
-	docker run --rm --privileged $(QEMUIMAGE):$(QEMUVERSION) --reset -p yes
+	docker run --rm --privileged $(QEMUIMAGE):$(QEMUVERSION) $(QEMUFLAGS)
 	docker buildx version
 	BUILDER=$(shell docker buildx create --use)
 	docker buildx build \
