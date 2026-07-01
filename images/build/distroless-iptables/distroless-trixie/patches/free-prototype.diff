@@ -1,0 +1,10 @@
+--- nftables-1.0.6.1/src/parser_bison.y.orig	2026-06-21 10:14:26.854541200 -0400
++++ nftables-1.0.6.1/src/parser_bison.y	2026-06-21 10:14:43.469373633 -0400
+@@ -13,6 +13,7 @@
+ #include <ctype.h>
+ #include <stddef.h>
+ #include <stdio.h>
++#include <stdlib.h>
+ #include <inttypes.h>
+ #include <syslog.h>
+ #include <net/if.h>
