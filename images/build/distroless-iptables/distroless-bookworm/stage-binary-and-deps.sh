@@ -27,7 +27,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-
 . package-utils.sh
 
 # binary_to_libraries identifies the library files needed by the binary $1 with ldd

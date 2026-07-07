@@ -51,7 +51,7 @@ main() {
     shift
     while (( "$#" )); do        # While there are arguments still to be shifted
         PACKAGE="${1}"
-        apt -y install "${PACKAGE}"
+        apt -y install --no-install-recommends "${PACKAGE}"
         stage_file_list "${PACKAGE}" "$STAGE_DIR"
         while IFS= read -r c_dep; do
             stage_file_list "${c_dep}" "${STAGE_DIR}"
