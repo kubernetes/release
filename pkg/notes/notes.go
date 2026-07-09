@@ -42,7 +42,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	gitobject "github.com/go-git/go-git/v5/plumbing/object"
-	gogithub "github.com/google/go-github/v84/github"
+	gogithub "github.com/google/go-github/v88/github"
 	"github.com/mattn/go-isatty"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/sirupsen/logrus"
