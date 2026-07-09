@@ -38,7 +38,7 @@ require (
 	sigs.k8s.io/bom v0.7.1
 	sigs.k8s.io/mdtoc v1.4.0
 	sigs.k8s.io/promo-tools/v4 v4.5.1
-	sigs.k8s.io/release-sdk v0.12.6
+	sigs.k8s.io/release-sdk v0.12.7
 	sigs.k8s.io/release-utils v0.12.4
 	sigs.k8s.io/yaml v1.6.0
 )
@@ -189,6 +189,7 @@ require (
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-github/v73 v73.0.0 // indirect
+	github.com/google/go-github/v88 v88.0.0 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/jsonapi v1.0.0 // indirect
 	github.com/google/licenseclassifier/v2 v2.0.0 // indirect
