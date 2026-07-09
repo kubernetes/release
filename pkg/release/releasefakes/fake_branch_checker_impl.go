@@ -108,8 +108,6 @@ func (fake *FakeBranchCheckerImpl) LSRemoteExecReturnsOnCall(i int, result1 stri
 func (fake *FakeBranchCheckerImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.lSRemoteExecMutex.RLock()
-	defer fake.lSRemoteExecMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

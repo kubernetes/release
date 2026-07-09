@@ -535,20 +535,6 @@ func (fake *FakeRepository) RevParseReturnsOnCall(i int, result1 string, result2
 func (fake *FakeRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.currentBranchMutex.RLock()
-	defer fake.currentBranchMutex.RUnlock()
-	fake.describeMutex.RLock()
-	defer fake.describeMutex.RUnlock()
-	fake.headMutex.RLock()
-	defer fake.headMutex.RUnlock()
-	fake.isDirtyMutex.RLock()
-	defer fake.isDirtyMutex.RUnlock()
-	fake.lsRemoteMutex.RLock()
-	defer fake.lsRemoteMutex.RUnlock()
-	fake.remotesMutex.RLock()
-	defer fake.remotesMutex.RUnlock()
-	fake.revParseMutex.RLock()
-	defer fake.revParseMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

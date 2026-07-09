@@ -197,10 +197,6 @@ func (fake *FakeRelease) NeedsCreationReturnsOnCall(i int, result1 bool, result2
 func (fake *FakeRelease) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.generateReleaseVersionMutex.RLock()
-	defer fake.generateReleaseVersionMutex.RUnlock()
-	fake.needsCreationMutex.RLock()
-	defer fake.needsCreationMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

@@ -176,10 +176,6 @@ func (fake *FakeImpl) ProcessAssetFilesReturnsOnCall(i int, result1 []map[string
 func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.githubMutex.RLock()
-	defer fake.githubMutex.RUnlock()
-	fake.processAssetFilesMutex.RLock()
-	defer fake.processAssetFilesMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

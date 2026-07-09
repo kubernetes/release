@@ -304,14 +304,6 @@ func (fake *FakeImpl) WriteFileReturnsOnCall(i int, result1 error) {
 func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.docBuilderMutex.RLock()
-	defer fake.docBuilderMutex.RUnlock()
-	fake.spdxClientMutex.RLock()
-	defer fake.spdxClientMutex.RUnlock()
-	fake.tmpFileMutex.RLock()
-	defer fake.tmpFileMutex.RUnlock()
-	fake.writeFileMutex.RLock()
-	defer fake.writeFileMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

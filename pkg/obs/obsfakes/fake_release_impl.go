@@ -637,22 +637,6 @@ func (fake *FakeReleaseImpl) SubmitReturnsOnCall(i int, result1 error) {
 func (fake *FakeReleaseImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.branchNeedsCreationMutex.RLock()
-	defer fake.branchNeedsCreationMutex.RUnlock()
-	fake.checkPrerequisitesMutex.RLock()
-	defer fake.checkPrerequisitesMutex.RUnlock()
-	fake.checkoutProjectMutex.RLock()
-	defer fake.checkoutProjectMutex.RUnlock()
-	fake.createOBSConfigFileMutex.RLock()
-	defer fake.createOBSConfigFileMutex.RUnlock()
-	fake.generateReleaseVersionMutex.RLock()
-	defer fake.generateReleaseVersionMutex.RUnlock()
-	fake.mkdirAllMutex.RLock()
-	defer fake.mkdirAllMutex.RUnlock()
-	fake.releasePackageMutex.RLock()
-	defer fake.releasePackageMutex.RUnlock()
-	fake.submitMutex.RLock()
-	defer fake.submitMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

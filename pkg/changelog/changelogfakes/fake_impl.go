@@ -20,7 +20,7 @@ package changelogfakes
 import (
 	"context"
 	"io"
-	"io/fs"
+	"os"
 	"sync"
 	"text/template"
 
@@ -327,17 +327,17 @@ type FakeImpl struct {
 	rmReturnsOnCall map[int]struct {
 		result1 error
 	}
-	StatStub        func(string) (fs.FileInfo, error)
+	StatStub        func(string) (os.FileInfo, error)
 	statMutex       sync.RWMutex
 	statArgsForCall []struct {
 		arg1 string
 	}
 	statReturns struct {
-		result1 fs.FileInfo
+		result1 os.FileInfo
 		result2 error
 	}
 	statReturnsOnCall map[int]struct {
-		result1 fs.FileInfo
+		result1 os.FileInfo
 		result2 error
 	}
 	TagStringToSemverStub        func(string) (semver.Version, error)
@@ -353,12 +353,12 @@ type FakeImpl struct {
 		result1 semver.Version
 		result2 error
 	}
-	TemplateExecuteStub        func(*template.Template, io.Writer, interface{}) error
+	TemplateExecuteStub        func(*template.Template, io.Writer, any) error
 	templateExecuteMutex       sync.RWMutex
 	templateExecuteArgsForCall []struct {
 		arg1 *template.Template
 		arg2 io.Writer
-		arg3 interface{}
+		arg3 any
 	}
 	templateExecuteReturns struct {
 		result1 error
@@ -377,12 +377,12 @@ type FakeImpl struct {
 	validateAndFinishReturnsOnCall map[int]struct {
 		result1 error
 	}
-	WriteFileStub        func(string, []byte, fs.FileMode) error
+	WriteFileStub        func(string, []byte, os.FileMode) error
 	writeFileMutex       sync.RWMutex
 	writeFileArgsForCall []struct {
 		arg1 string
 		arg2 []byte
-		arg3 fs.FileMode
+		arg3 os.FileMode
 	}
 	writeFileReturns struct {
 		result1 error
@@ -1788,7 +1788,7 @@ func (fake *FakeImpl) RmReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) Stat(arg1 string) (fs.FileInfo, error) {
+func (fake *FakeImpl) Stat(arg1 string) (os.FileInfo, error) {
 	fake.statMutex.Lock()
 	ret, specificReturn := fake.statReturnsOnCall[len(fake.statArgsForCall)]
 	fake.statArgsForCall = append(fake.statArgsForCall, struct {
@@ -1813,7 +1813,7 @@ func (fake *FakeImpl) StatCallCount() int {
 	return len(fake.statArgsForCall)
 }
 
-func (fake *FakeImpl) StatCalls(stub func(string) (fs.FileInfo, error)) {
+func (fake *FakeImpl) StatCalls(stub func(string) (os.FileInfo, error)) {
 	fake.statMutex.Lock()
 	defer fake.statMutex.Unlock()
 	fake.StatStub = stub
@@ -1826,28 +1826,28 @@ func (fake *FakeImpl) StatArgsForCall(i int) string {
 	return argsForCall.arg1
 }
 
-func (fake *FakeImpl) StatReturns(result1 fs.FileInfo, result2 error) {
+func (fake *FakeImpl) StatReturns(result1 os.FileInfo, result2 error) {
 	fake.statMutex.Lock()
 	defer fake.statMutex.Unlock()
 	fake.StatStub = nil
 	fake.statReturns = struct {
-		result1 fs.FileInfo
+		result1 os.FileInfo
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) StatReturnsOnCall(i int, result1 fs.FileInfo, result2 error) {
+func (fake *FakeImpl) StatReturnsOnCall(i int, result1 os.FileInfo, result2 error) {
 	fake.statMutex.Lock()
 	defer fake.statMutex.Unlock()
 	fake.StatStub = nil
 	if fake.statReturnsOnCall == nil {
 		fake.statReturnsOnCall = make(map[int]struct {
-			result1 fs.FileInfo
+			result1 os.FileInfo
 			result2 error
 		})
 	}
 	fake.statReturnsOnCall[i] = struct {
-		result1 fs.FileInfo
+		result1 os.FileInfo
 		result2 error
 	}{result1, result2}
 }
@@ -1916,13 +1916,13 @@ func (fake *FakeImpl) TagStringToSemverReturnsOnCall(i int, result1 semver.Versi
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) TemplateExecute(arg1 *template.Template, arg2 io.Writer, arg3 interface{}) error {
+func (fake *FakeImpl) TemplateExecute(arg1 *template.Template, arg2 io.Writer, arg3 any) error {
 	fake.templateExecuteMutex.Lock()
 	ret, specificReturn := fake.templateExecuteReturnsOnCall[len(fake.templateExecuteArgsForCall)]
 	fake.templateExecuteArgsForCall = append(fake.templateExecuteArgsForCall, struct {
 		arg1 *template.Template
 		arg2 io.Writer
-		arg3 interface{}
+		arg3 any
 	}{arg1, arg2, arg3})
 	stub := fake.TemplateExecuteStub
 	fakeReturns := fake.templateExecuteReturns
@@ -1943,13 +1943,13 @@ func (fake *FakeImpl) TemplateExecuteCallCount() int {
 	return len(fake.templateExecuteArgsForCall)
 }
 
-func (fake *FakeImpl) TemplateExecuteCalls(stub func(*template.Template, io.Writer, interface{}) error) {
+func (fake *FakeImpl) TemplateExecuteCalls(stub func(*template.Template, io.Writer, any) error) {
 	fake.templateExecuteMutex.Lock()
 	defer fake.templateExecuteMutex.Unlock()
 	fake.TemplateExecuteStub = stub
 }
 
-func (fake *FakeImpl) TemplateExecuteArgsForCall(i int) (*template.Template, io.Writer, interface{}) {
+func (fake *FakeImpl) TemplateExecuteArgsForCall(i int) (*template.Template, io.Writer, any) {
 	fake.templateExecuteMutex.RLock()
 	defer fake.templateExecuteMutex.RUnlock()
 	argsForCall := fake.templateExecuteArgsForCall[i]
@@ -2040,7 +2040,7 @@ func (fake *FakeImpl) ValidateAndFinishReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) WriteFile(arg1 string, arg2 []byte, arg3 fs.FileMode) error {
+func (fake *FakeImpl) WriteFile(arg1 string, arg2 []byte, arg3 os.FileMode) error {
 	var arg2Copy []byte
 	if arg2 != nil {
 		arg2Copy = make([]byte, len(arg2))
@@ -2051,7 +2051,7 @@ func (fake *FakeImpl) WriteFile(arg1 string, arg2 []byte, arg3 fs.FileMode) erro
 	fake.writeFileArgsForCall = append(fake.writeFileArgsForCall, struct {
 		arg1 string
 		arg2 []byte
-		arg3 fs.FileMode
+		arg3 os.FileMode
 	}{arg1, arg2Copy, arg3})
 	stub := fake.WriteFileStub
 	fakeReturns := fake.writeFileReturns
@@ -2072,13 +2072,13 @@ func (fake *FakeImpl) WriteFileCallCount() int {
 	return len(fake.writeFileArgsForCall)
 }
 
-func (fake *FakeImpl) WriteFileCalls(stub func(string, []byte, fs.FileMode) error) {
+func (fake *FakeImpl) WriteFileCalls(stub func(string, []byte, os.FileMode) error) {
 	fake.writeFileMutex.Lock()
 	defer fake.writeFileMutex.Unlock()
 	fake.WriteFileStub = stub
 }
 
-func (fake *FakeImpl) WriteFileArgsForCall(i int) (string, []byte, fs.FileMode) {
+func (fake *FakeImpl) WriteFileArgsForCall(i int) (string, []byte, os.FileMode) {
 	fake.writeFileMutex.RLock()
 	defer fake.writeFileMutex.RUnlock()
 	argsForCall := fake.writeFileArgsForCall[i]
@@ -2111,60 +2111,6 @@ func (fake *FakeImpl) WriteFileReturnsOnCall(i int, result1 error) {
 func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.absMutex.RLock()
-	defer fake.absMutex.RUnlock()
-	fake.addMutex.RLock()
-	defer fake.addMutex.RUnlock()
-	fake.checkoutMutex.RLock()
-	defer fake.checkoutMutex.RUnlock()
-	fake.cloneCVEDataMutex.RLock()
-	defer fake.cloneCVEDataMutex.RUnlock()
-	fake.commitMutex.RLock()
-	defer fake.commitMutex.RUnlock()
-	fake.createDownloadsTableMutex.RLock()
-	defer fake.createDownloadsTableMutex.RUnlock()
-	fake.currentBranchMutex.RLock()
-	defer fake.currentBranchMutex.RUnlock()
-	fake.dependencyChangesMutex.RLock()
-	defer fake.dependencyChangesMutex.RUnlock()
-	fake.gatherReleaseNotesMutex.RLock()
-	defer fake.gatherReleaseNotesMutex.RUnlock()
-	fake.generateTOCMutex.RLock()
-	defer fake.generateTOCMutex.RUnlock()
-	fake.getURLResponseMutex.RLock()
-	defer fake.getURLResponseMutex.RUnlock()
-	fake.latestGitHubTagsPerBranchMutex.RLock()
-	defer fake.latestGitHubTagsPerBranchMutex.RUnlock()
-	fake.markdownToHTMLMutex.RLock()
-	defer fake.markdownToHTMLMutex.RUnlock()
-	fake.newDocumentMutex.RLock()
-	defer fake.newDocumentMutex.RUnlock()
-	fake.openRepoMutex.RLock()
-	defer fake.openRepoMutex.RUnlock()
-	fake.parseHTMLTemplateMutex.RLock()
-	defer fake.parseHTMLTemplateMutex.RUnlock()
-	fake.readFileMutex.RLock()
-	defer fake.readFileMutex.RUnlock()
-	fake.renderMarkdownTemplateMutex.RLock()
-	defer fake.renderMarkdownTemplateMutex.RUnlock()
-	fake.repoDirMutex.RLock()
-	defer fake.repoDirMutex.RUnlock()
-	fake.revParseMutex.RLock()
-	defer fake.revParseMutex.RUnlock()
-	fake.revParseTagMutex.RLock()
-	defer fake.revParseTagMutex.RUnlock()
-	fake.rmMutex.RLock()
-	defer fake.rmMutex.RUnlock()
-	fake.statMutex.RLock()
-	defer fake.statMutex.RUnlock()
-	fake.tagStringToSemverMutex.RLock()
-	defer fake.tagStringToSemverMutex.RUnlock()
-	fake.templateExecuteMutex.RLock()
-	defer fake.templateExecuteMutex.RUnlock()
-	fake.validateAndFinishMutex.RLock()
-	defer fake.validateAndFinishMutex.RUnlock()
-	fake.writeFileMutex.RLock()
-	defer fake.writeFileMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

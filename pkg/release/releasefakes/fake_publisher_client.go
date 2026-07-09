@@ -128,10 +128,10 @@ type FakePublisherClient struct {
 		result1 string
 		result2 error
 	}
-	MarshalStub        func(interface{}) ([]byte, error)
+	MarshalStub        func(any) ([]byte, error)
 	marshalMutex       sync.RWMutex
 	marshalArgsForCall []struct {
-		arg1 interface{}
+		arg1 any
 	}
 	marshalReturns struct {
 		result1 []byte
@@ -195,11 +195,11 @@ type FakePublisherClient struct {
 		result1 *os.File
 		result2 error
 	}
-	UnmarshalStub        func([]byte, interface{}) error
+	UnmarshalStub        func([]byte, any) error
 	unmarshalMutex       sync.RWMutex
 	unmarshalArgsForCall []struct {
 		arg1 []byte
-		arg2 interface{}
+		arg2 any
 	}
 	unmarshalReturns struct {
 		result1 error
@@ -721,11 +721,11 @@ func (fake *FakePublisherClient) GetURLResponseReturnsOnCall(i int, result1 stri
 	}{result1, result2}
 }
 
-func (fake *FakePublisherClient) Marshal(arg1 interface{}) ([]byte, error) {
+func (fake *FakePublisherClient) Marshal(arg1 any) ([]byte, error) {
 	fake.marshalMutex.Lock()
 	ret, specificReturn := fake.marshalReturnsOnCall[len(fake.marshalArgsForCall)]
 	fake.marshalArgsForCall = append(fake.marshalArgsForCall, struct {
-		arg1 interface{}
+		arg1 any
 	}{arg1})
 	stub := fake.MarshalStub
 	fakeReturns := fake.marshalReturns
@@ -746,13 +746,13 @@ func (fake *FakePublisherClient) MarshalCallCount() int {
 	return len(fake.marshalArgsForCall)
 }
 
-func (fake *FakePublisherClient) MarshalCalls(stub func(interface{}) ([]byte, error)) {
+func (fake *FakePublisherClient) MarshalCalls(stub func(any) ([]byte, error)) {
 	fake.marshalMutex.Lock()
 	defer fake.marshalMutex.Unlock()
 	fake.MarshalStub = stub
 }
 
-func (fake *FakePublisherClient) MarshalArgsForCall(i int) interface{} {
+func (fake *FakePublisherClient) MarshalArgsForCall(i int) any {
 	fake.marshalMutex.RLock()
 	defer fake.marshalMutex.RUnlock()
 	argsForCall := fake.marshalArgsForCall[i]
@@ -1043,7 +1043,7 @@ func (fake *FakePublisherClient) TempFileReturnsOnCall(i int, result1 *os.File, 
 	}{result1, result2}
 }
 
-func (fake *FakePublisherClient) Unmarshal(arg1 []byte, arg2 interface{}) error {
+func (fake *FakePublisherClient) Unmarshal(arg1 []byte, arg2 any) error {
 	var arg1Copy []byte
 	if arg1 != nil {
 		arg1Copy = make([]byte, len(arg1))
@@ -1053,7 +1053,7 @@ func (fake *FakePublisherClient) Unmarshal(arg1 []byte, arg2 interface{}) error 
 	ret, specificReturn := fake.unmarshalReturnsOnCall[len(fake.unmarshalArgsForCall)]
 	fake.unmarshalArgsForCall = append(fake.unmarshalArgsForCall, struct {
 		arg1 []byte
-		arg2 interface{}
+		arg2 any
 	}{arg1Copy, arg2})
 	stub := fake.UnmarshalStub
 	fakeReturns := fake.unmarshalReturns
@@ -1074,13 +1074,13 @@ func (fake *FakePublisherClient) UnmarshalCallCount() int {
 	return len(fake.unmarshalArgsForCall)
 }
 
-func (fake *FakePublisherClient) UnmarshalCalls(stub func([]byte, interface{}) error) {
+func (fake *FakePublisherClient) UnmarshalCalls(stub func([]byte, any) error) {
 	fake.unmarshalMutex.Lock()
 	defer fake.unmarshalMutex.Unlock()
 	fake.UnmarshalStub = stub
 }
 
-func (fake *FakePublisherClient) UnmarshalArgsForCall(i int) ([]byte, interface{}) {
+func (fake *FakePublisherClient) UnmarshalArgsForCall(i int) ([]byte, any) {
 	fake.unmarshalMutex.RLock()
 	defer fake.unmarshalMutex.RUnlock()
 	argsForCall := fake.unmarshalArgsForCall[i]
@@ -1113,34 +1113,6 @@ func (fake *FakePublisherClient) UnmarshalReturnsOnCall(i int, result1 error) {
 func (fake *FakePublisherClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.copyToLocalMutex.RLock()
-	defer fake.copyToLocalMutex.RUnlock()
-	fake.copyToRemoteMutex.RLock()
-	defer fake.copyToRemoteMutex.RUnlock()
-	fake.gSUtilMutex.RLock()
-	defer fake.gSUtilMutex.RUnlock()
-	fake.gSUtilOutputMutex.RLock()
-	defer fake.gSUtilOutputMutex.RUnlock()
-	fake.gSUtilStatusMutex.RLock()
-	defer fake.gSUtilStatusMutex.RUnlock()
-	fake.getMarkerPathMutex.RLock()
-	defer fake.getMarkerPathMutex.RUnlock()
-	fake.getReleasePathMutex.RLock()
-	defer fake.getReleasePathMutex.RUnlock()
-	fake.getURLResponseMutex.RLock()
-	defer fake.getURLResponseMutex.RUnlock()
-	fake.marshalMutex.RLock()
-	defer fake.marshalMutex.RUnlock()
-	fake.normalizePathMutex.RLock()
-	defer fake.normalizePathMutex.RUnlock()
-	fake.readFileMutex.RLock()
-	defer fake.readFileMutex.RUnlock()
-	fake.tempDirMutex.RLock()
-	defer fake.tempDirMutex.RUnlock()
-	fake.tempFileMutex.RLock()
-	defer fake.tempFileMutex.RUnlock()
-	fake.unmarshalMutex.RLock()
-	defer fake.unmarshalMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

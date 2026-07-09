@@ -460,18 +460,6 @@ func (fake *FakePrerequisitesCheckerImpl) UsageReturnsOnCall(i int, result1 *dis
 func (fake *FakePrerequisitesCheckerImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.commandAvailableMutex.RLock()
-	defer fake.commandAvailableMutex.RUnlock()
-	fake.configureGlobalDefaultUserAndEmailMutex.RLock()
-	defer fake.configureGlobalDefaultUserAndEmailMutex.RUnlock()
-	fake.dockerVersionMutex.RLock()
-	defer fake.dockerVersionMutex.RUnlock()
-	fake.gCloudOutputMutex.RLock()
-	defer fake.gCloudOutputMutex.RUnlock()
-	fake.isEnvSetMutex.RLock()
-	defer fake.isEnvSetMutex.RUnlock()
-	fake.usageMutex.RLock()
-	defer fake.usageMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
