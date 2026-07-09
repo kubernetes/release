@@ -111,8 +111,6 @@ func (fake *FakeVersion) GetKubeVersionForBranchReturnsOnCall(i int, result1 str
 func (fake *FakeVersion) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.getKubeVersionForBranchMutex.RLock()
-	defer fake.getKubeVersionForBranchMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

@@ -633,26 +633,6 @@ func (fake *FakeReleaseClient) ValidateOptionsReturnsOnCall(i int, result1 error
 func (fake *FakeReleaseClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.checkPrerequisitesMutex.RLock()
-	defer fake.checkPrerequisitesMutex.RUnlock()
-	fake.checkReleaseBranchStateMutex.RLock()
-	defer fake.checkReleaseBranchStateMutex.RUnlock()
-	fake.checkoutOBSProjectMutex.RLock()
-	defer fake.checkoutOBSProjectMutex.RUnlock()
-	fake.generateOBSProjectMutex.RLock()
-	defer fake.generateOBSProjectMutex.RUnlock()
-	fake.generateReleaseVersionMutex.RLock()
-	defer fake.generateReleaseVersionMutex.RUnlock()
-	fake.initOBSRootMutex.RLock()
-	defer fake.initOBSRootMutex.RUnlock()
-	fake.initStateMutex.RLock()
-	defer fake.initStateMutex.RUnlock()
-	fake.releasePackagesMutex.RLock()
-	defer fake.releasePackagesMutex.RUnlock()
-	fake.submitMutex.RLock()
-	defer fake.submitMutex.RUnlock()
-	fake.validateOptionsMutex.RLock()
-	defer fake.validateOptionsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
