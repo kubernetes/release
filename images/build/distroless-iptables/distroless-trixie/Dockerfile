@@ -24,7 +24,7 @@ RUN apt-get -y update && \
         git ca-certificates build-essential autoconf automake libtool \
         bison flex pkg-config libgmp-dev libreadline-dev \
         libedit-dev libjansson-dev \
-        libmnl-dev libnftnl-dev
+        libmnl-dev libnftnl-dev libxtables-dev
 
 # Build nftables
 ADD --checksum=sha256:bef0c9cfdca5f8b988957046c2cb33ef9869730593da0eacae4748201acf1116 https://netfilter.org/projects/nftables/files/nftables-1.0.6.1.tar.xz /
@@ -32,7 +32,7 @@ COPY patches /patches
 COPY setup-metadata.sh /setup-metadata.sh
 RUN cd / && tar xf /nftables-1.0.6.1.tar.xz && cd nftables-1.0.6.1 && \
     for p in $(cat /patches/series); do patch -p1 --forward < "/patches/$p" || exit 1; done && \
-    ./configure --disable-man-doc --enable-static --disable-shared --sbindir=/usr/sbin && make && make install && \
+    ./configure --with-json --with-xtables --disable-man-doc --enable-static --disable-shared --sbindir=/usr/sbin && make && make install && \
     /setup-metadata.sh
 
 RUN ldconfig
