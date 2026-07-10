@@ -368,7 +368,33 @@ func TestUpdatePatchSchedule(t *testing.T) {
 						MaintenanceModeStartDate: "2024-12-01",
 					},
 					{ // next not set
-						Release: "1.29",
+						Release:       "1.29",
+						EndOfLifeDate: "2025-02-28",
+					},
+					{ // next and previous not set & EOL
+						Release:       "1.17",
+						EndOfLifeDate: "2021-01-13",
+					},
+					{ // next not set & EOL
+						Release:       "1.23",
+						EndOfLifeDate: "2023-02-28",
+						PreviousPatches: []*PatchRelease{
+							{
+								Release:            "1.23.17",
+								CherryPickDeadline: "2023-02-10",
+								TargetDate:         "2023-02-15",
+							},
+							{
+								Release:            "1.23.16",
+								CherryPickDeadline: "2023-01-13",
+								TargetDate:         "2023-01-18",
+							},
+							{
+								Release:            "1.23.15",
+								CherryPickDeadline: "2022-12-02",
+								TargetDate:         "2022-12-08",
+							},
+						},
 					},
 					{ // EOL
 						Release:       "1.20",
@@ -425,7 +451,12 @@ func TestUpdatePatchSchedule(t *testing.T) {
 						},
 					},
 					{
-						Release: "1.29",
+						Release:       "1.29",
+						EndOfLifeDate: "2025-02-28",
+					},
+					{
+						Release:       "1.17",
+						EndOfLifeDate: "2021-01-13",
 					},
 				},
 				UpcomingReleases: []*PatchRelease{
@@ -448,7 +479,12 @@ func TestUpdatePatchSchedule(t *testing.T) {
 					{
 						Release:           "1.20",
 						FinalPatchRelease: "1.20.10",
-						EndOfLifeDate:     "2023-12-12",
+						EndOfLifeDate:     "2023-01-01",
+					},
+					{
+						Release:           "1.23",
+						FinalPatchRelease: "1.23.17",
+						EndOfLifeDate:     "2023-02-28",
 					},
 				},
 			},
