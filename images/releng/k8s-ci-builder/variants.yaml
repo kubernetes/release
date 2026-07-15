@@ -29,8 +29,3 @@ variants:
     GO_VERSION: '1.25.12'
     GO_VERSION_TOOLING: '1.25.12'
     OS_CODENAME: 'bookworm'
-  '1.33':
-    CONFIG: '1.33'
-    GO_VERSION: '1.25.11'
-    GO_VERSION_TOOLING: '1.25.11'
-    OS_CODENAME: 'bookworm'
