@@ -1,16 +1,13 @@
 variants:
   v1.37-cross1.26-bullseye:
     CONFIG: 'cross1.26'
-    KUBE_CROSS_VERSION: 'v1.37.0-go1.26.4-bullseye.0'
+    KUBE_CROSS_VERSION: 'v1.37.0-go1.26.5-bullseye.0'
   v1.36-cross1.26-bullseye:
     CONFIG: 'cross1.26'
-    KUBE_CROSS_VERSION: 'v1.36.0-go1.26.4-bullseye.0'
+    KUBE_CROSS_VERSION: 'v1.36.0-go1.26.5-bullseye.0'
   v1.35-cross1.25-bullseye:
     CONFIG: 'cross1.25'
-    KUBE_CROSS_VERSION: 'v1.35.0-go1.25.11-bullseye.0'
+    KUBE_CROSS_VERSION: 'v1.35.0-go1.25.12-bullseye.0'
   v1.34-cross1.25-bullseye:
     CONFIG: 'cross1.25'
-    KUBE_CROSS_VERSION: 'v1.34.0-go1.25.11-bullseye.0'
-  v1.33-cross1.25-bullseye:
-    CONFIG: 'cross1.25'
-    KUBE_CROSS_VERSION: 'v1.33.0-go1.25.11-bullseye.0'
+    KUBE_CROSS_VERSION: 'v1.34.0-go1.25.12-bullseye.0'
