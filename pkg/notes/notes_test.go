@@ -474,6 +474,67 @@ func TestApplyMap(t *testing.T) {
 	testApplyMapHelper(t, "maps/testdata/applymap-unit-test/", makeNewNote)
 }
 
+func TestApplyMapPreservesDoNotPublish(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		note     func(t *testing.T) *ReleaseNote
+		expected bool
+	}{
+		{
+			name: "keeps normal release notes publishable",
+			note: func(t *testing.T) *ReleaseNote {
+				return &ReleaseNote{}
+			},
+			expected: false,
+		},
+		{
+			name: "keeps unmapped release notes marked not to publish",
+			note: func(t *testing.T) *ReleaseNote {
+				return &ReleaseNote{DoNotPublish: true}
+			},
+			expected: true,
+		},
+		{
+			name: "keeps release-note-none when a map overrides the note",
+			note: func(t *testing.T) *ReleaseNote {
+				note := &ReleaseNote{DoNotPublish: true}
+				require.NoError(t, note.ApplyMap(&ReleaseNotesMap{}, false))
+				return note
+			},
+			expected: true,
+		},
+		{
+			name: "keeps map-level suppression",
+			note: func(t *testing.T) *ReleaseNote {
+				doNotPublish := true
+				note := &ReleaseNote{}
+				noteMap := &ReleaseNotesMap{}
+				noteMap.ReleaseNote.DoNotPublish = &doNotPublish
+				require.NoError(t, note.ApplyMap(noteMap, false))
+				return note
+			},
+			expected: true,
+		},
+		{
+			name: "keeps map-level suppression when later maps omit do_not_publish",
+			note: func(t *testing.T) *ReleaseNote {
+				doNotPublish := true
+				note := &ReleaseNote{}
+				noteMap := &ReleaseNotesMap{}
+				noteMap.ReleaseNote.DoNotPublish = &doNotPublish
+				require.NoError(t, note.ApplyMap(noteMap, false))
+				require.NoError(t, note.ApplyMap(&ReleaseNotesMap{}, false))
+				return note
+			},
+			expected: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.expected, tc.note(t).DoNotPublish)
+		})
+	}
+}
+
 func TestApplyMapNoSigs(t *testing.T) {
 	makeNewNote := func() *ReleaseNote {
 		return &ReleaseNote{
