@@ -24,10 +24,11 @@ CONFIG ?= bookworm
 
 TAR_FILE ?= rootfs.tar
 ARCH ?= amd64
-ALL_ARCH = amd64 arm arm64 ppc64le s390x
+ALL_ARCH ?= amd64 arm arm64 ppc64le s390x
 
-QEMUVERSION=7.2.0-1
+QEMUVERSION ?= 7.2.0-1
 QEMUIMAGE ?= multiarch/qemu-user-static
+QEMUFLAGS ?= --reset -p yes
 
 # This option is for running docker manifest command
 export DOCKER_CLI_EXPERIMENTAL := enabled
@@ -75,7 +76,7 @@ build: clean
 	umask 0022
 
 	# Enable execution of multi-architecture containers
-	docker run --rm --privileged $(QEMUIMAGE):$(QEMUVERSION) --reset -p yes
+	docker run --rm --privileged $(QEMUIMAGE):$(QEMUVERSION) $(QEMUFLAGS)
 	docker buildx version
 	BUILDER=$(shell docker buildx create --use)
 
