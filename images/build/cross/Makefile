@@ -30,7 +30,7 @@ IMGNAME = kube-cross
 KUBERNETES_VERSION ?= v1.38.0
 GO_VERSION ?= 1.27.3
 GO_MAJOR_VERSION ?= 1.27
-OS_CODENAME ?= bullseye
+OS_CODENAME ?= trixie
 REVISION ?= 0
 TYPE ?= default
 
@@ -49,8 +49,8 @@ IMAGE_VERSION = $(KUBERNETES_VERSION)-$(BUILD_METADATA)
 
 PLATFORMS ?= linux/amd64 linux/arm64 linux/ppc64le linux/s390x
 
-KUBE_DYNAMIC_CROSSPLATFORMS ?= "arm64 armhf i386 ppc64el s390x"
-KUBE_CROSSPLATFORMS ?= "linux/386 linux/arm linux/arm64 linux/ppc64le linux/s390x darwin/amd64 windows/amd64 windows/386"
+KUBE_DYNAMIC_CROSSPLATFORMS ?= "arm64 armhf i386 ppc64el s390x riscv64"
+KUBE_CROSSPLATFORMS ?= "linux/386 linux/arm linux/arm64 linux/ppc64le linux/s390x linux/riscv64 darwin/amd64 windows/amd64 windows/386"
 
 ARCHS = $(patsubst linux/%,%,$(PLATFORMS))
 
