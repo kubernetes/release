@@ -257,12 +257,6 @@ func (fake *FakeImpl) ReadChangelogFileReturnsOnCall(i int, result1 []byte, resu
 func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.createMutex.RLock()
-	defer fake.createMutex.RUnlock()
-	fake.getGoVersionMutex.RLock()
-	defer fake.getGoVersionMutex.RUnlock()
-	fake.readChangelogFileMutex.RLock()
-	defer fake.readChangelogFileMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

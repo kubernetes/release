@@ -15,24 +15,36 @@ Kubernetes Releases. This includes manually executed tasks like generating the R
 
 ## Installation
 
-Either download the latest version of `krel` by using the `hack/get-krel` script:
+Choose one of the following options:
+
+**Repo-local (binary in `./bin/krel`):**
 
 ```shell
 ./hack/get-krel
 ```
 
-Or compile `krel` by running the `compile-release-tools` script from the root of this repo:
+Use `./bin/krel` or add `./bin` to your `PATH`.
+
+**Build from source (binary in `./bin/krel`):**
 
 ```shell
 ./compile-release-tools krel
 ```
 
-Or run the following command in the terminal:
+**Go install (binary in your Go bin directory):**
 
 ```shell
 go install k8s.io/release/cmd/krel@latest
 ```
 
+This installs to `$(go env GOBIN)` (or `$(go env GOPATH)/bin` when `GOBIN` is unset).
+Add that directory to your `PATH` if needed:
+
+```shell
+export PATH="$PATH:$(go env GOBIN):$(go env GOPATH)/bin"
+```
+
+Note: Examples below assume `krel` is on your `PATH`. For repo-local installs, use `./bin/krel`.
 ## Usage:
 
 krel has several subcommands that perform various tasks during the release lifecycle:

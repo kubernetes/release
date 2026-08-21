@@ -42,7 +42,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	gitobject "github.com/go-git/go-git/v5/plumbing/object"
-	gogithub "github.com/google/go-github/v84/github"
+	gogithub "github.com/google/go-github/v88/github"
 	"github.com/mattn/go-isatty"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/sirupsen/logrus"
@@ -71,6 +71,9 @@ const (
 	// maxParallelRequests is the maximum parallel requests we shall make to the
 	// GitHub API.
 	maxParallelRequests = 10
+
+	// logFieldSHA is the log field key for a commit SHA.
+	logFieldSHA = "sha"
 )
 
 const k8sCherryPickBotUsername = "k8s-infra-cherrypick-robot"
@@ -384,8 +387,8 @@ func (g *Gatherer) ListReleaseNotes() (*ReleaseNotes, error) {
 				}
 			} else {
 				logrus.WithFields(logrus.Fields{
-					"sha": pair.Commit.Hash.String(),
-					"pr":  pair.PrNum,
+					logFieldSHA: pair.Commit.Hash.String(),
+					"pr":        pair.PrNum,
 				}).Errorf("err: %v", err)
 			}
 
@@ -595,8 +598,8 @@ func (g *Gatherer) buildReleaseNote(pair *commitPrPair) (*ReleaseNote, error) {
 	text, err := noteTextFromString(prBody)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
-			"sha": pair.Commit.Hash.String(),
-			"pr":  pair.PrNum,
+			logFieldSHA: pair.Commit.Hash.String(),
+			"pr":        pair.PrNum,
 		}).Debugf("ignore err: %v", err)
 
 		return nil, nil //nolint:nilnil // intentional nil,nil return
@@ -758,16 +761,16 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 		switch {
 		case errors.Is(err, errNoPRIDFoundInCommitMessage):
 			logrus.WithFields(logrus.Fields{
-				"sha": hashString,
+				logFieldSHA: hashString,
 			}).Debug("no associated PR found")
 		case err != nil:
 			logrus.WithFields(logrus.Fields{
-				"sha": hashString,
+				logFieldSHA: hashString,
 			}).Warnf("ignore err: %v", err)
 		default:
 			logrus.WithFields(logrus.Fields{
-				"sha": hashString,
-				"prs": prNums,
+				logFieldSHA: hashString,
+				"prs":       prNums,
 			}).Debug("found PR from commit")
 
 			if _, ok := seenPRs[prNums[0]]; !ok {
@@ -783,8 +786,8 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 				parentCommit, err := localRepository.CommitObject(parentHash)
 				if err != nil {
 					logrus.WithFields(logrus.Fields{
-						"sha":    hashString,
-						"parent": parentHash.String(),
+						logFieldSHA: hashString,
+						"parent":    parentHash.String(),
 					}).Warnf("ignore parent commit lookup err: %v", err)
 
 					continue
@@ -797,15 +800,15 @@ func (g *Gatherer) listLeftParentCommits(opts *options.Options) ([]*commitPrPair
 
 				if err != nil {
 					logrus.WithFields(logrus.Fields{
-						"sha":    hashString,
-						"parent": parentHash.String(),
+						logFieldSHA: hashString,
+						"parent":    parentHash.String(),
 					}).Warnf("ignore parent PR parse err: %v", err)
 
 					continue
 				}
 
 				logrus.WithFields(logrus.Fields{
-					"sha":        hashString,
+					logFieldSHA:  hashString,
 					"parent_sha": parentHash.String(),
 					"prs":        parentPRNums,
 				}).Debug("found PR from non-first parent")

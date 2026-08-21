@@ -18,7 +18,6 @@ limitations under the License.
 package specsfakes
 
 import (
-	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -144,11 +143,11 @@ type FakeImpl struct {
 		result1 metadata.PackageMetadataList
 		result2 error
 	}
-	MkdirStub        func(string, fs.FileMode) error
+	MkdirStub        func(string, os.FileMode) error
 	mkdirMutex       sync.RWMutex
 	mkdirArgsForCall []struct {
 		arg1 string
-		arg2 fs.FileMode
+		arg2 os.FileMode
 	}
 	mkdirReturns struct {
 		result1 error
@@ -156,11 +155,11 @@ type FakeImpl struct {
 	mkdirReturnsOnCall map[int]struct {
 		result1 error
 	}
-	MkdirAllStub        func(string, fs.FileMode) error
+	MkdirAllStub        func(string, os.FileMode) error
 	mkdirAllMutex       sync.RWMutex
 	mkdirAllArgsForCall []struct {
 		arg1 string
-		arg2 fs.FileMode
+		arg2 os.FileMode
 	}
 	mkdirAllReturns struct {
 		result1 error
@@ -190,17 +189,17 @@ type FakeImpl struct {
 	removeFileReturnsOnCall map[int]struct {
 		result1 error
 	}
-	StatStub        func(string) (fs.FileInfo, error)
+	StatStub        func(string) (os.FileInfo, error)
 	statMutex       sync.RWMutex
 	statArgsForCall []struct {
 		arg1 string
 	}
 	statReturns struct {
-		result1 fs.FileInfo
+		result1 os.FileInfo
 		result2 error
 	}
 	statReturnsOnCall map[int]struct {
-		result1 fs.FileInfo
+		result1 os.FileInfo
 		result2 error
 	}
 	TagStringToSemverStub        func(string) (semver.Version, error)
@@ -239,12 +238,12 @@ type FakeImpl struct {
 	walkReturnsOnCall map[int]struct {
 		result1 error
 	}
-	WriteFileStub        func(string, []byte, fs.FileMode) error
+	WriteFileStub        func(string, []byte, os.FileMode) error
 	writeFileMutex       sync.RWMutex
 	writeFileArgsForCall []struct {
 		arg1 string
 		arg2 []byte
-		arg3 fs.FileMode
+		arg3 os.FileMode
 	}
 	writeFileReturns struct {
 		result1 error
@@ -824,12 +823,12 @@ func (fake *FakeImpl) LoadPackageMetadataReturnsOnCall(i int, result1 metadata.P
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) Mkdir(arg1 string, arg2 fs.FileMode) error {
+func (fake *FakeImpl) Mkdir(arg1 string, arg2 os.FileMode) error {
 	fake.mkdirMutex.Lock()
 	ret, specificReturn := fake.mkdirReturnsOnCall[len(fake.mkdirArgsForCall)]
 	fake.mkdirArgsForCall = append(fake.mkdirArgsForCall, struct {
 		arg1 string
-		arg2 fs.FileMode
+		arg2 os.FileMode
 	}{arg1, arg2})
 	stub := fake.MkdirStub
 	fakeReturns := fake.mkdirReturns
@@ -850,13 +849,13 @@ func (fake *FakeImpl) MkdirCallCount() int {
 	return len(fake.mkdirArgsForCall)
 }
 
-func (fake *FakeImpl) MkdirCalls(stub func(string, fs.FileMode) error) {
+func (fake *FakeImpl) MkdirCalls(stub func(string, os.FileMode) error) {
 	fake.mkdirMutex.Lock()
 	defer fake.mkdirMutex.Unlock()
 	fake.MkdirStub = stub
 }
 
-func (fake *FakeImpl) MkdirArgsForCall(i int) (string, fs.FileMode) {
+func (fake *FakeImpl) MkdirArgsForCall(i int) (string, os.FileMode) {
 	fake.mkdirMutex.RLock()
 	defer fake.mkdirMutex.RUnlock()
 	argsForCall := fake.mkdirArgsForCall[i]
@@ -886,12 +885,12 @@ func (fake *FakeImpl) MkdirReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) MkdirAll(arg1 string, arg2 fs.FileMode) error {
+func (fake *FakeImpl) MkdirAll(arg1 string, arg2 os.FileMode) error {
 	fake.mkdirAllMutex.Lock()
 	ret, specificReturn := fake.mkdirAllReturnsOnCall[len(fake.mkdirAllArgsForCall)]
 	fake.mkdirAllArgsForCall = append(fake.mkdirAllArgsForCall, struct {
 		arg1 string
-		arg2 fs.FileMode
+		arg2 os.FileMode
 	}{arg1, arg2})
 	stub := fake.MkdirAllStub
 	fakeReturns := fake.mkdirAllReturns
@@ -912,13 +911,13 @@ func (fake *FakeImpl) MkdirAllCallCount() int {
 	return len(fake.mkdirAllArgsForCall)
 }
 
-func (fake *FakeImpl) MkdirAllCalls(stub func(string, fs.FileMode) error) {
+func (fake *FakeImpl) MkdirAllCalls(stub func(string, os.FileMode) error) {
 	fake.mkdirAllMutex.Lock()
 	defer fake.mkdirAllMutex.Unlock()
 	fake.MkdirAllStub = stub
 }
 
-func (fake *FakeImpl) MkdirAllArgsForCall(i int) (string, fs.FileMode) {
+func (fake *FakeImpl) MkdirAllArgsForCall(i int) (string, os.FileMode) {
 	fake.mkdirAllMutex.RLock()
 	defer fake.mkdirAllMutex.RUnlock()
 	argsForCall := fake.mkdirAllArgsForCall[i]
@@ -1070,7 +1069,7 @@ func (fake *FakeImpl) RemoveFileReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) Stat(arg1 string) (fs.FileInfo, error) {
+func (fake *FakeImpl) Stat(arg1 string) (os.FileInfo, error) {
 	fake.statMutex.Lock()
 	ret, specificReturn := fake.statReturnsOnCall[len(fake.statArgsForCall)]
 	fake.statArgsForCall = append(fake.statArgsForCall, struct {
@@ -1095,7 +1094,7 @@ func (fake *FakeImpl) StatCallCount() int {
 	return len(fake.statArgsForCall)
 }
 
-func (fake *FakeImpl) StatCalls(stub func(string) (fs.FileInfo, error)) {
+func (fake *FakeImpl) StatCalls(stub func(string) (os.FileInfo, error)) {
 	fake.statMutex.Lock()
 	defer fake.statMutex.Unlock()
 	fake.StatStub = stub
@@ -1108,28 +1107,28 @@ func (fake *FakeImpl) StatArgsForCall(i int) string {
 	return argsForCall.arg1
 }
 
-func (fake *FakeImpl) StatReturns(result1 fs.FileInfo, result2 error) {
+func (fake *FakeImpl) StatReturns(result1 os.FileInfo, result2 error) {
 	fake.statMutex.Lock()
 	defer fake.statMutex.Unlock()
 	fake.StatStub = nil
 	fake.statReturns = struct {
-		result1 fs.FileInfo
+		result1 os.FileInfo
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeImpl) StatReturnsOnCall(i int, result1 fs.FileInfo, result2 error) {
+func (fake *FakeImpl) StatReturnsOnCall(i int, result1 os.FileInfo, result2 error) {
 	fake.statMutex.Lock()
 	defer fake.statMutex.Unlock()
 	fake.StatStub = nil
 	if fake.statReturnsOnCall == nil {
 		fake.statReturnsOnCall = make(map[int]struct {
-			result1 fs.FileInfo
+			result1 os.FileInfo
 			result2 error
 		})
 	}
 	fake.statReturnsOnCall[i] = struct {
-		result1 fs.FileInfo
+		result1 os.FileInfo
 		result2 error
 	}{result1, result2}
 }
@@ -1321,7 +1320,7 @@ func (fake *FakeImpl) WalkReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeImpl) WriteFile(arg1 string, arg2 []byte, arg3 fs.FileMode) error {
+func (fake *FakeImpl) WriteFile(arg1 string, arg2 []byte, arg3 os.FileMode) error {
 	var arg2Copy []byte
 	if arg2 != nil {
 		arg2Copy = make([]byte, len(arg2))
@@ -1332,7 +1331,7 @@ func (fake *FakeImpl) WriteFile(arg1 string, arg2 []byte, arg3 fs.FileMode) erro
 	fake.writeFileArgsForCall = append(fake.writeFileArgsForCall, struct {
 		arg1 string
 		arg2 []byte
-		arg3 fs.FileMode
+		arg3 os.FileMode
 	}{arg1, arg2Copy, arg3})
 	stub := fake.WriteFileStub
 	fakeReturns := fake.writeFileReturns
@@ -1353,13 +1352,13 @@ func (fake *FakeImpl) WriteFileCallCount() int {
 	return len(fake.writeFileArgsForCall)
 }
 
-func (fake *FakeImpl) WriteFileCalls(stub func(string, []byte, fs.FileMode) error) {
+func (fake *FakeImpl) WriteFileCalls(stub func(string, []byte, os.FileMode) error) {
 	fake.writeFileMutex.Lock()
 	defer fake.writeFileMutex.Unlock()
 	fake.WriteFileStub = stub
 }
 
-func (fake *FakeImpl) WriteFileArgsForCall(i int) (string, []byte, fs.FileMode) {
+func (fake *FakeImpl) WriteFileArgsForCall(i int) (string, []byte, os.FileMode) {
 	fake.writeFileMutex.RLock()
 	defer fake.writeFileMutex.RUnlock()
 	argsForCall := fake.writeFileArgsForCall[i]
@@ -1392,42 +1391,6 @@ func (fake *FakeImpl) WriteFileReturnsOnCall(i int, result1 error) {
 func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.compressMutex.RLock()
-	defer fake.compressMutex.RUnlock()
-	fake.createFileMutex.RLock()
-	defer fake.createFileMutex.RUnlock()
-	fake.extractMutex.RLock()
-	defer fake.extractMutex.RUnlock()
-	fake.gCSCopyToLocalMutex.RLock()
-	defer fake.gCSCopyToLocalMutex.RUnlock()
-	fake.getKubeVersionMutex.RLock()
-	defer fake.getKubeVersionMutex.RUnlock()
-	fake.getRequestMutex.RLock()
-	defer fake.getRequestMutex.RUnlock()
-	fake.headRequestMutex.RLock()
-	defer fake.headRequestMutex.RUnlock()
-	fake.isExistMutex.RLock()
-	defer fake.isExistMutex.RUnlock()
-	fake.loadPackageMetadataMutex.RLock()
-	defer fake.loadPackageMetadataMutex.RUnlock()
-	fake.mkdirMutex.RLock()
-	defer fake.mkdirMutex.RUnlock()
-	fake.mkdirAllMutex.RLock()
-	defer fake.mkdirAllMutex.RUnlock()
-	fake.removeAllMutex.RLock()
-	defer fake.removeAllMutex.RUnlock()
-	fake.removeFileMutex.RLock()
-	defer fake.removeFileMutex.RUnlock()
-	fake.statMutex.RLock()
-	defer fake.statMutex.RUnlock()
-	fake.tagStringToSemverMutex.RLock()
-	defer fake.tagStringToSemverMutex.RUnlock()
-	fake.trimTagPrefixMutex.RLock()
-	defer fake.trimTagPrefixMutex.RUnlock()
-	fake.walkMutex.RLock()
-	defer fake.walkMutex.RUnlock()
-	fake.writeFileMutex.RLock()
-	defer fake.writeFileMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

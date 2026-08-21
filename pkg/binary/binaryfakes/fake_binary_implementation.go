@@ -225,12 +225,6 @@ func (fake *FakeBinaryImplementation) OSReturnsOnCall(i int, result1 string) {
 func (fake *FakeBinaryImplementation) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.archMutex.RLock()
-	defer fake.archMutex.RUnlock()
-	fake.linkModeMutex.RLock()
-	defer fake.linkModeMutex.RUnlock()
-	fake.oSMutex.RLock()
-	defer fake.oSMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

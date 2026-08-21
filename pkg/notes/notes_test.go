@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	gitobject "github.com/go-git/go-git/v5/plumbing/object"
-	gogithub "github.com/google/go-github/v84/github"
+	gogithub "github.com/google/go-github/v88/github"
 	"github.com/stretchr/testify/require"
 
 	kgithub "sigs.k8s.io/release-sdk/github"

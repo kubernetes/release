@@ -409,16 +409,6 @@ func (fake *FakeImageImpl) VerifyImageReturnsOnCall(i int, result1 error) {
 func (fake *FakeImageImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.executeMutex.RLock()
-	defer fake.executeMutex.RUnlock()
-	fake.executeOutputMutex.RLock()
-	defer fake.executeOutputMutex.RUnlock()
-	fake.repoTagFromTarballMutex.RLock()
-	defer fake.repoTagFromTarballMutex.RUnlock()
-	fake.signImageMutex.RLock()
-	defer fake.signImageMutex.RUnlock()
-	fake.verifyImageMutex.RLock()
-	defer fake.verifyImageMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

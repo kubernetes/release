@@ -125,7 +125,7 @@ func writeNewCVE(opts *cveOptions) (err error) {
 		return fmt.Errorf("reading local copy of CVE entry: %w", err)
 	}
 
-	kubeEditor := editor.NewDefaultEditor([]string{"KUBE_EDITOR", "EDITOR"})
+	kubeEditor := editor.NewDefaultEditor(editorEnvs)
 
 	changes, tempFilePath, err := kubeEditor.LaunchTempFile(
 		"cve-datamap-", ".yaml", bytes.NewReader(oldFile),
@@ -203,7 +203,7 @@ func editExistingCVE(opts *cveOptions) (err error) {
 		return fmt.Errorf("reading local copy of CVE entry: %w", err)
 	}
 
-	kubeEditor := editor.NewDefaultEditor([]string{"KUBE_EDITOR", "EDITOR"})
+	kubeEditor := editor.NewDefaultEditor(editorEnvs)
 
 	changes, tempFilePath, err := kubeEditor.LaunchTempFile(
 		"cve-datamap-", ".yaml", bytes.NewReader(oldFile),

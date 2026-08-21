@@ -155,24 +155,37 @@ func (s *Specs) GetPackageMetadata(templateDir, packageName, packageVersion stri
 
 // GetMetadataWithVersionConstraint parses metadata and takes metadata that
 // matches the given version constraint.
-func (s *Specs) GetMetadataWithVersionConstraint(packageName, packageVersion string, constraintedMetadata []metadata.PackageMetadata) (*metadata.PackageMetadata, error) {
-	for _, m := range constraintedMetadata {
+func (s *Specs) GetMetadataWithVersionConstraint(packageName, packageVersion string, constrainedMetadata []metadata.PackageMetadata) (*metadata.PackageMetadata, error) {
+	kubeSemVer, err := s.TagStringToSemver(packageVersion)
+	if err != nil {
+		return nil, fmt.Errorf("parsing package version %s: %w", packageVersion, err)
+	}
+
+	lastMatchedIdx := -1
+	matchedConstraints := []string{}
+
+	for i, m := range constrainedMetadata {
 		r, err := semver.ParseRange(m.VersionConstraint)
 		if err != nil {
 			return nil, fmt.Errorf("parsing semver range for package %s: %w", packageName, err)
 		}
 
-		kubeSemVer, err := s.TagStringToSemver(packageVersion)
-		if err != nil {
-			return nil, fmt.Errorf("parsing package version %s: %w", packageVersion, err)
-		}
-
 		if r(kubeSemVer) {
-			return &m, nil
+			matchedConstraints = append(matchedConstraints, m.VersionConstraint)
+			lastMatchedIdx = i
 		}
 	}
 
-	return nil, fmt.Errorf("package %s is not defined in metadata.yaml file", packageName)
+	if len(matchedConstraints) > 1 {
+		return nil, fmt.Errorf("multiple constraints match for package %q with version %q: %#v",
+			packageName, packageVersion, matchedConstraints)
+	}
+
+	if lastMatchedIdx != -1 {
+		return &constrainedMetadata[lastMatchedIdx], nil
+	}
+
+	return nil, fmt.Errorf("package %q is not defined in metadata.yaml file", packageName)
 }
 
 // GetPackageSource gets the download link for artifacts for the given package.

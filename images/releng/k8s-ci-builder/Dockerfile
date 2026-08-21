@@ -108,7 +108,12 @@ RUN echo "Installing Packages ..." \
         && rm "${GO_TARBALL}"\
         && mkdir -p "${GOPATH}/bin" \
     && echo "Installing gcloud SDK, kubectl ..." \
-        && curl -fsSL https://dl.google.com/dl/cloudsdk/channels/rapid/google-cloud-sdk.tar.gz --output google-cloud-sdk.tar.gz \
+        `# Pin to the last gcloud release supporting Python 3.9: the bullseye` \
+        `# base ships Python 3.9, but gcloud CLI >= 554.0.0 requires 3.10+ and` \
+        `# fails with "TypeError: unsupported operand type(s) for |".` \
+        `# TODO: migrate the base image to bookworm/trixie, then drop this pin.` \
+        && CLOUD_SDK_VERSION=553.0.0 \
+        && curl -fsSL "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz" --output google-cloud-sdk.tar.gz \
         && tar xzf google-cloud-sdk.tar.gz -C / \
         && rm google-cloud-sdk.tar.gz \
         && /google-cloud-sdk/install.sh \

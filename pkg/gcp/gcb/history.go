@@ -19,6 +19,7 @@ package gcb
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -123,8 +124,8 @@ func (h *History) Run() error {
 	tableString := &strings.Builder{}
 	table := helpers.NewTableWriterWithDefaultsAndHeader(tableString, []string{"Step", "Command", "Link", "Start", "Duration", "Succeeded?"})
 
-	for i := len(jobs) - 1; i >= 0; i-- {
-		job := jobs[i]
+	for _, v := range slices.Backward(jobs) {
+		job := v
 		subcommand := ""
 
 		for _, tag := range job.Tags {

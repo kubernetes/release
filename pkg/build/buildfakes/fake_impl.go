@@ -330,14 +330,6 @@ func (fake *FakeImpl) RenameReturnsOnCall(i int, result1 error) {
 func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.checkoutMutex.RLock()
-	defer fake.checkoutMutex.RUnlock()
-	fake.commandMutex.RLock()
-	defer fake.commandMutex.RUnlock()
-	fake.openRepoMutex.RLock()
-	defer fake.openRepoMutex.RUnlock()
-	fake.renameMutex.RLock()
-	defer fake.renameMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

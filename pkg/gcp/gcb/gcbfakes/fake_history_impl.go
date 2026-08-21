@@ -190,10 +190,6 @@ func (fake *FakeHistoryImpl) ParseTimeReturnsOnCall(i int, result1 time.Time, re
 func (fake *FakeHistoryImpl) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.getJobsByTagMutex.RLock()
-	defer fake.getJobsByTagMutex.RUnlock()
-	fake.parseTimeMutex.RLock()
-	defer fake.parseTimeMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

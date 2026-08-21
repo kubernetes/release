@@ -26,7 +26,13 @@ import (
 
 const (
 	nl = "\n"
+
+	releaseCmdUse = "release"
 )
+
+// editorEnvs lists the environment variables consulted to find the editor
+// used for interactive edits.
+var editorEnvs = []string{"KUBE_EDITOR", "EDITOR"}
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{

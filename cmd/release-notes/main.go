@@ -133,6 +133,12 @@ func WriteReleaseNotes(releaseNotes *notes.ReleaseNotes) (err error) {
 					return fmt.Errorf("generating dependency report: %w", err)
 				}
 
+				// Wrap each subsection in dropdowns
+				deps = strings.ReplaceAll(deps, "### Added\n", "<details><summary>Added</summary>\n\n")
+				deps = strings.ReplaceAll(deps, "### Changed\n", "</details>\n\n<details><summary>Changed</summary>\n\n")
+				deps = strings.ReplaceAll(deps, "### Removed\n", "</details>\n\n<details><summary>Removed</summary>\n\n")
+				deps += "\n</details>"
+
 				markdown += strings.Repeat(nl, 2) + deps
 			}
 		}

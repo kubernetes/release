@@ -525,13 +525,15 @@ func (bi *Instance) StageLocalSourceTree(workDir, buildVersion string) error {
 	tarballPath := filepath.Join(workDir, release.SourcesTar)
 	logrus.Infof("Creating source tree tarball %s", tarballPath)
 
-	exclude, err := regexp.Compile(fmt.Sprintf(`.*/%s-.*`, release.BuildDir))
+	excludeBuildDir, err := regexp.Compile(fmt.Sprintf(`.*/%s-.*`, release.BuildDir))
 	if err != nil {
 		return fmt.Errorf("compile tarball exclude regex: %w", err)
 	}
 
+	excludeGit := regexp.MustCompile(`(^|/)\.git(/|$)`)
+
 	if err := tar.Compress(
-		tarballPath, filepath.Join(workDir, "src"), exclude,
+		tarballPath, filepath.Join(workDir, "src"), excludeBuildDir, excludeGit,
 	); err != nil {
 		return fmt.Errorf("create tarball: %w", err)
 	}

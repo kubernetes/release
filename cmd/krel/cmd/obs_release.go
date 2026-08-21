@@ -29,7 +29,7 @@ import (
 
 // obsReleaseCmd represents the subcommand for `krel obs release`.
 var obsReleaseCmd = &cobra.Command{
-	Use:   "release",
+	Use:   releaseCmdUse,
 	Short: "Release packages for a new Kubernetes version or Kubernetes subproject",
 	Long: fmt.Sprintf(`krel obs release
 

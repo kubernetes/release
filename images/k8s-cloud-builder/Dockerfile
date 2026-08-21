@@ -71,11 +71,24 @@ RUN pip3 install --no-cache-dir \
 ARG GOOGLE_DIR='/opt/google'
 
 # Install gcloud
-RUN bash -c \
-      'bash <(curl -sSL https://sdk.cloud.google.com) \
-        --install-dir="${GOOGLE_DIR}" \
-        --disable-prompts \
-        >/dev/null'
+#
+# Pin to the last release that still supports Python 3.9. The kube-cross base
+# image is Debian bullseye (Python 3.9), but gcloud CLI >= 554.0.0 requires
+# Python 3.10+ and fails to install on 3.9 with:
+#   TypeError: unsupported operand type(s) for |: 'type' and 'type'
+# TODO: migrate the kube-cross base image to bookworm (Python 3.11) or trixie,
+# then drop this pin and install the latest gcloud SDK again.
+ARG CLOUD_SDK_VERSION=553.0.0
+RUN mkdir -p "${GOOGLE_DIR}" \
+    && curl -fsSL "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz" \
+      | tar -xz -C "${GOOGLE_DIR}" \
+    && "${GOOGLE_DIR}/google-cloud-sdk/install.sh" \
+        --disable-installation-options \
+        --bash-completion=false \
+        --path-update=false \
+        --usage-reporting=false \
+        --quiet \
+        >/dev/null
 
 ENV PATH="${GOOGLE_DIR}/google-cloud-sdk/bin:${PATH}"
 

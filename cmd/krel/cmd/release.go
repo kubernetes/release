@@ -31,7 +31,7 @@ import (
 
 // releaseCmd represents the subcommand for `krel release`.
 var releaseCmd = &cobra.Command{
-	Use:   "release",
+	Use:   releaseCmdUse,
 	Short: "Release a staged Kubernetes version",
 	Long: fmt.Sprintf(`krel release
 
