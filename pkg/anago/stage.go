@@ -20,16 +20,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
-	"time"
 
 	"github.com/blang/semver/v4"
 	gogit "github.com/go-git/go-git/v5"
-	intoto "github.com/in-toto/in-toto-golang/in_toto"
-	slsa "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v0.2"
+	slsa "github.com/in-toto/attestation/go/predicates/provenance/v1"
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"sigs.k8s.io/bom/pkg/provenance"
 	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/command"
@@ -181,10 +183,10 @@ type stageImpl interface {
 	AddBinariesToSBOM(*spdx.Document, string) error
 	AddTarfilesToSBOM(*spdx.Document, string) error
 	VerifyArtifacts([]string) error
-	GenerateAttestation(*StageState, *StageOptions) (*provenance.Statement, error)
-	PushAttestation(*provenance.Statement, *StageOptions) error
-	GetProvenanceSubjects(*StageOptions, string) ([]intoto.Subject, error)
-	GetOutputDirSubjects(*StageOptions, string, string) ([]intoto.Subject, error)
+	GenerateAttestation(*StageState, *StageOptions) (*intoto.Statement, error)
+	PushAttestation(*intoto.Statement, *StageOptions) error
+	GetProvenanceSubjects(*StageOptions, string) ([]*intoto.ResourceDescriptor, error)
+	GetOutputDirSubjects(*StageOptions, string, string) ([]*intoto.ResourceDescriptor, error)
 }
 
 func (d *defaultStageImpl) Submit(options *gcb.Options) error {
@@ -1030,15 +1032,17 @@ func (d *DefaultStage) StageArtifacts() error {
 
 // GenerateAttestation creates a provenance attestation with its predicate
 // preloaded with the current krel run information.
-func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *StageOptions) (attestation *provenance.Statement, err error) {
-	// Build the arguments RawMessage:
-	arguments := map[string]string{
+func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *StageOptions) (attestation *intoto.Statement, err error) {
+	// Build the external parameters struct:
+	extParameters, err := structpb.NewStruct(map[string]any{
+		"entryPoint":    "https://git.k8s.io/release/gcb/stage/cloudbuild.yaml",
 		"type":          options.ReleaseType,
 		"branch":        options.ReleaseBranch,
 		"build-version": options.BuildVersion,
-	}
-	if options.NoMock {
-		arguments["nomock"] = "true"
+		"nomock":        strconv.FormatBool(options.NoMock),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("building external parameters struct: %w", err)
 	}
 
 	// Fetch the last commit:
@@ -1055,37 +1059,59 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 
 	// Create the predicate to populate it with the current
 	// run metadata:
-	p := provenance.NewSLSAPredicate()
+	predicate := &slsa.Provenance{
+		BuildDefinition: &slsa.BuildDefinition{
+			BuildType:          "https://cloudbuild.googleapis.com/CloudBuildYaml@v1",
+			ExternalParameters: extParameters,
+			InternalParameters: &structpb.Struct{},
+			ResolvedDependencies: []*intoto.ResourceDescriptor{
+				{
+					Uri: "git+https://github.com/kubernetes/kubernetes",
+					Digest: map[string]string{
+						intoto.AlgorithmSHA1.String():      commitSHA,
+						intoto.AlgorithmGitCommit.String(): commitSHA,
+					},
+				},
+			},
+		},
+		RunDetails: &slsa.RunDetails{
+			Builder: &slsa.Builder{
+				Id:                  "https://git.k8s.io/release/docs/krel",
+				Version:             map[string]string{},
+				BuilderDependencies: []*intoto.ResourceDescriptor{},
+			},
+			Metadata: &slsa.BuildMetadata{
+				InvocationId: os.Getenv("BUILD_ID"),
+				StartedOn:    timestamppb.New(state.startTime.UTC()),
+				FinishedOn:   timestamppb.Now(),
+			},
+			Byproducts: []*intoto.ResourceDescriptor{},
+		},
+	}
 
-	// SLSA v02, builder ID is a TypeURI
-	p.Builder.ID = "https://git.k8s.io/release/docs/krel"
+	// The statement carries the predicate as a generic struct, so
+	// round-trip the typed provenance through its JSON form:
+	predicateJSON, err := protojson.Marshal(predicate)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling provenance predicate: %w", err)
+	}
 
-	// Some of these fields have yet to be checked to assign the
-	// correct values to them
-	// This is commented as the in-toto go port does not have it
-	p.Metadata.BuildInvocationID = os.Getenv("BUILD_ID")
-	p.Metadata.Completeness.Parameters = true // The parameters are complete as we know the from GCB
-	p.Metadata.Completeness.Materials = true  // The materials are complete as we only use the github repo
-	startTime := state.startTime.UTC()
-	endTime := time.Now().UTC()
-	p.Metadata.BuildStartedOn = &startTime
-	p.Metadata.BuildFinishedOn = &endTime
-	p.Invocation.ConfigSource.EntryPoint = "https://git.k8s.io/release/gcb/stage/cloudbuild.yaml"
-	p.BuildType = "https://cloudbuild.googleapis.com/CloudBuildYaml@v1"
-	p.Invocation.Parameters = arguments
+	predicateStruct := &structpb.Struct{}
+	if err := protojson.Unmarshal(predicateJSON, predicateStruct); err != nil {
+		return nil, fmt.Errorf("converting provenance predicate to struct: %w", err)
+	}
 
-	p.AddMaterial("git+https://github.com/kubernetes/kubernetes", slsa.DigestSet{"sha1": commitSHA})
-
-	// Create the new attestation and attach the predicate
-	attestation = provenance.NewSLSAStatement()
-	attestation.Predicate = p
-
-	return attestation, nil
+	return &intoto.Statement{
+		Type:          intoto.StatementTypeUri,
+		Subject:       []*intoto.ResourceDescriptor{},
+		PredicateType: "https://slsa.dev/provenance/v1",
+		Predicate:     predicateStruct,
+	}, nil
 }
 
 // PushAttestation writes the provenance metadata to the staging location in
 // the Google Cloud Bucket.
-func (d *defaultStageImpl) PushAttestation(attestation *provenance.Statement, options *StageOptions) (err error) {
+func (d *defaultStageImpl) PushAttestation(attestation *intoto.Statement, options *StageOptions) (err error) {
 	gcsPath := filepath.Join(options.Bucket(), release.StagePath, options.BuildVersion)
 
 	// Create a temporary file:
@@ -1093,12 +1119,17 @@ func (d *defaultStageImpl) PushAttestation(attestation *provenance.Statement, op
 	if err != nil {
 		return fmt.Errorf("creating temp file for provenance metadata: %w", err)
 	}
+	defer f.Close()
+
 	// Write the provenance statement to disk:
-	if err := attestation.Write(f.Name()); err != nil {
-		return fmt.Errorf("writing provenance attestation to disk: %w", err)
+	jsonData, err := protojson.Marshal(attestation)
+	if err != nil {
+		return fmt.Errorf("marshaling provenance attestation: %w", err)
 	}
 
-	// TODO for SLSA2: Sign the attestation
+	if _, err := f.Write(jsonData); err != nil {
+		return fmt.Errorf("writing provenance attestation to disk: %w", err)
+	}
 
 	// Upload the metadata file to the staging bucket
 	pushBuildOptions := &build.Options{
@@ -1122,7 +1153,7 @@ func (d *defaultStageImpl) PushAttestation(attestation *provenance.Statement, op
 // as intoto subjects. All paths are translated to their final path in the bucket.
 func (d *defaultStageImpl) GetOutputDirSubjects(
 	options *StageOptions, path, version string,
-) ([]intoto.Subject, error) {
+) ([]*intoto.ResourceDescriptor, error) {
 	return release.NewProvenanceReader(&release.ProvenanceReaderOptions{
 		Bucket:       options.Bucket(),
 		BuildVersion: options.BuildVersion,
@@ -1134,7 +1165,7 @@ func (d *defaultStageImpl) GetOutputDirSubjects(
 // the staging bucket location.
 func (d *defaultStageImpl) GetProvenanceSubjects(
 	options *StageOptions, path string,
-) ([]intoto.Subject, error) {
+) ([]*intoto.ResourceDescriptor, error) {
 	return release.NewProvenanceReader(&release.ProvenanceReaderOptions{
 		Bucket:       options.Bucket(),
 		BuildVersion: options.BuildVersion,

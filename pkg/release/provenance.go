@@ -24,7 +24,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	intoto "github.com/in-toto/in-toto-golang/in_toto"
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/bom/pkg/provenance"
@@ -32,13 +32,6 @@ import (
 	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/helpers"
 )
-
-// ProvenanceChecker is the main structure to check the provenance.
-type ProvenanceChecker struct {
-	objStore *object.GCS
-	options  *ProvenanceCheckerOptions
-	impl     provenanceCheckerImplementation
-}
 
 func NewProvenanceChecker(opts *ProvenanceCheckerOptions) *ProvenanceChecker {
 	p := &ProvenanceChecker{
@@ -50,6 +43,13 @@ func NewProvenanceChecker(opts *ProvenanceCheckerOptions) *ProvenanceChecker {
 	p.impl = &defaultProvenanceCheckerImpl{}
 
 	return p
+}
+
+// ProvenanceChecker is the main structure to check the provenance.
+type ProvenanceChecker struct {
+	objStore *object.GCS
+	options  *ProvenanceCheckerOptions
+	impl     provenanceCheckerImplementation
 }
 
 // CheckStageProvenance validates the provenance for the provided build version.
@@ -163,10 +163,10 @@ func (di *defaultProvenanceCheckerImpl) processAttestation(
 	// the gcs bucket prefix from the subjects to read from the local copy
 	gcsPath := object.GcsPrefix + filepath.Join(opts.StageBucket, StagePath)
 
-	newSubjects := []intoto.Subject{}
+	newSubjects := []*intoto.ResourceDescriptor{}
 
 	for i, sub := range s.Subject {
-		newSubjects = append(newSubjects, intoto.Subject{
+		newSubjects = append(newSubjects, &intoto.ResourceDescriptor{
 			Name:   strings.TrimPrefix(sub.Name, gcsPath),
 			Digest: sub.Digest,
 		})
@@ -218,11 +218,6 @@ func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(
 	return nil
 }
 
-type ProvenanceReader struct {
-	options *ProvenanceReaderOptions
-	impl    provenanceReaderImplementation
-}
-
 func NewProvenanceReader(opts *ProvenanceReaderOptions) *ProvenanceReader {
 	return &ProvenanceReader{
 		options: opts,
@@ -230,9 +225,14 @@ func NewProvenanceReader(opts *ProvenanceReaderOptions) *ProvenanceReader {
 	}
 }
 
+type ProvenanceReader struct {
+	options *ProvenanceReaderOptions
+	impl    provenanceReaderImplementation
+}
+
 type provenanceReaderImplementation interface {
-	GetStagingSubjects(*ProvenanceReaderOptions, string) ([]intoto.Subject, error)
-	GetBuildSubjects(*ProvenanceReaderOptions, string, string) ([]intoto.Subject, error)
+	GetStagingSubjects(*ProvenanceReaderOptions, string) ([]*intoto.ResourceDescriptor, error)
+	GetBuildSubjects(*ProvenanceReaderOptions, string, string) ([]*intoto.ResourceDescriptor, error)
 }
 
 type ProvenanceReaderOptions struct {
@@ -243,14 +243,14 @@ type ProvenanceReaderOptions struct {
 
 // GetBuildSubjects returns all artifacts in the output directory
 // as intoto subjects, ready to add to the attestation.
-func (pr *ProvenanceReader) GetBuildSubjects(path, version string) ([]intoto.Subject, error) {
+func (pr *ProvenanceReader) GetBuildSubjects(path, version string) ([]*intoto.ResourceDescriptor, error) {
 	return pr.impl.GetBuildSubjects(pr.options, path, version)
 }
 
 // GetStagingSubjects reads artifacts from the GCB workspace and returns them
 // as in-toto subjects, with their paths normalized to their final locations
 // in the staging bucket.
-func (pr *ProvenanceReader) GetStagingSubjects(path string) ([]intoto.Subject, error) {
+func (pr *ProvenanceReader) GetStagingSubjects(path string) ([]*intoto.ResourceDescriptor, error) {
 	return pr.impl.GetStagingSubjects(pr.options, path)
 }
 
@@ -258,7 +258,7 @@ type defaultProvenanceReaderImpl struct{}
 
 func (di *defaultProvenanceReaderImpl) GetStagingSubjects(
 	opts *ProvenanceReaderOptions, path string,
-) ([]intoto.Subject, error) {
+) ([]*intoto.ResourceDescriptor, error) {
 	// Create the dummy statement to read artifacts
 	dummy := provenance.NewSLSAStatement()
 
@@ -294,7 +294,7 @@ func (di *defaultProvenanceReaderImpl) GetStagingSubjects(
 
 func (di *defaultProvenanceReaderImpl) GetBuildSubjects(
 	opts *ProvenanceReaderOptions, path, version string,
-) ([]intoto.Subject, error) {
+) ([]*intoto.ResourceDescriptor, error) {
 	// The path in the bucket were built artifacts will be staged
 	gcsPath := filepath.Join(opts.Bucket, StagePath, opts.BuildVersion)
 
@@ -310,7 +310,7 @@ func (di *defaultProvenanceReaderImpl) GetBuildSubjects(
 
 	// Cycle the subjects, translate the paths and copy them to the
 	// real attestation:
-	newSubjects := []intoto.Subject{}
+	newSubjects := []*intoto.ResourceDescriptor{}
 
 	for _, subject := range dummy.Subject {
 		// If the artifact is not in the images or gcs-stage dir, skip

@@ -20,10 +20,9 @@ package anago_test
 import (
 	"testing"
 
-	intoto "github.com/in-toto/in-toto-golang/in_toto"
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/stretchr/testify/require"
 
-	"sigs.k8s.io/bom/pkg/provenance"
 	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/git"
 
@@ -568,9 +567,9 @@ func TestStageArtifacts(t *testing.T) {
 		opts := anago.DefaultStageOptions()
 		sut := anago.NewDefaultStage(opts)
 		mock := &anagofakes.FakeStageImpl{}
-		mock.GenerateAttestationReturns(provenance.NewSLSAStatement(), nil)
-		mock.GetProvenanceSubjectsReturns([]intoto.Subject{}, nil)
-		mock.GetOutputDirSubjectsReturns([]intoto.Subject{}, nil)
+		mock.GenerateAttestationReturns(&intoto.Statement{}, nil)
+		mock.GetProvenanceSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
+		mock.GetOutputDirSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
 		tc.prepare(mock)
 		sut.SetImpl(mock)
 
