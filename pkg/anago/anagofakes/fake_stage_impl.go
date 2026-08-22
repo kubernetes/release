@@ -21,13 +21,12 @@ import (
 	"sync"
 
 	semver "github.com/blang/semver/v4"
-	"github.com/in-toto/in-toto-golang/in_toto"
+	v1 "github.com/in-toto/attestation/go/v1"
 	"k8s.io/release/pkg/anago"
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/changelog"
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/release"
-	"sigs.k8s.io/bom/pkg/provenance"
 	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/git"
 )
@@ -176,18 +175,18 @@ type FakeStageImpl struct {
 	dockerHubLoginReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GenerateAttestationStub        func(*anago.StageState, *anago.StageOptions) (*provenance.Statement, error)
+	GenerateAttestationStub        func(*anago.StageState, *anago.StageOptions) (*v1.Statement, error)
 	generateAttestationMutex       sync.RWMutex
 	generateAttestationArgsForCall []struct {
 		arg1 *anago.StageState
 		arg2 *anago.StageOptions
 	}
 	generateAttestationReturns struct {
-		result1 *provenance.Statement
+		result1 *v1.Statement
 		result2 error
 	}
 	generateAttestationReturnsOnCall map[int]struct {
-		result1 *provenance.Statement
+		result1 *v1.Statement
 		result2 error
 	}
 	GenerateChangelogStub        func(*changelog.Options) error
@@ -241,7 +240,7 @@ type FakeStageImpl struct {
 	generateVersionArtifactsBOMReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GetOutputDirSubjectsStub        func(*anago.StageOptions, string, string) ([]in_toto.Subject, error)
+	GetOutputDirSubjectsStub        func(*anago.StageOptions, string, string) ([]*v1.ResourceDescriptor, error)
 	getOutputDirSubjectsMutex       sync.RWMutex
 	getOutputDirSubjectsArgsForCall []struct {
 		arg1 *anago.StageOptions
@@ -249,25 +248,25 @@ type FakeStageImpl struct {
 		arg3 string
 	}
 	getOutputDirSubjectsReturns struct {
-		result1 []in_toto.Subject
+		result1 []*v1.ResourceDescriptor
 		result2 error
 	}
 	getOutputDirSubjectsReturnsOnCall map[int]struct {
-		result1 []in_toto.Subject
+		result1 []*v1.ResourceDescriptor
 		result2 error
 	}
-	GetProvenanceSubjectsStub        func(*anago.StageOptions, string) ([]in_toto.Subject, error)
+	GetProvenanceSubjectsStub        func(*anago.StageOptions, string) ([]*v1.ResourceDescriptor, error)
 	getProvenanceSubjectsMutex       sync.RWMutex
 	getProvenanceSubjectsArgsForCall []struct {
 		arg1 *anago.StageOptions
 		arg2 string
 	}
 	getProvenanceSubjectsReturns struct {
-		result1 []in_toto.Subject
+		result1 []*v1.ResourceDescriptor
 		result2 error
 	}
 	getProvenanceSubjectsReturnsOnCall map[int]struct {
-		result1 []in_toto.Subject
+		result1 []*v1.ResourceDescriptor
 		result2 error
 	}
 	GoModDownloadStub        func(string) error
@@ -379,10 +378,10 @@ type FakeStageImpl struct {
 	prepareWorkspaceStageReturnsOnCall map[int]struct {
 		result1 error
 	}
-	PushAttestationStub        func(*provenance.Statement, *anago.StageOptions) error
+	PushAttestationStub        func(*v1.Statement, *anago.StageOptions) error
 	pushAttestationMutex       sync.RWMutex
 	pushAttestationArgsForCall []struct {
-		arg1 *provenance.Statement
+		arg1 *v1.Statement
 		arg2 *anago.StageOptions
 	}
 	pushAttestationReturns struct {
@@ -1254,7 +1253,7 @@ func (fake *FakeStageImpl) DockerHubLoginReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeStageImpl) GenerateAttestation(arg1 *anago.StageState, arg2 *anago.StageOptions) (*provenance.Statement, error) {
+func (fake *FakeStageImpl) GenerateAttestation(arg1 *anago.StageState, arg2 *anago.StageOptions) (*v1.Statement, error) {
 	fake.generateAttestationMutex.Lock()
 	ret, specificReturn := fake.generateAttestationReturnsOnCall[len(fake.generateAttestationArgsForCall)]
 	fake.generateAttestationArgsForCall = append(fake.generateAttestationArgsForCall, struct {
@@ -1280,7 +1279,7 @@ func (fake *FakeStageImpl) GenerateAttestationCallCount() int {
 	return len(fake.generateAttestationArgsForCall)
 }
 
-func (fake *FakeStageImpl) GenerateAttestationCalls(stub func(*anago.StageState, *anago.StageOptions) (*provenance.Statement, error)) {
+func (fake *FakeStageImpl) GenerateAttestationCalls(stub func(*anago.StageState, *anago.StageOptions) (*v1.Statement, error)) {
 	fake.generateAttestationMutex.Lock()
 	defer fake.generateAttestationMutex.Unlock()
 	fake.GenerateAttestationStub = stub
@@ -1293,28 +1292,28 @@ func (fake *FakeStageImpl) GenerateAttestationArgsForCall(i int) (*anago.StageSt
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeStageImpl) GenerateAttestationReturns(result1 *provenance.Statement, result2 error) {
+func (fake *FakeStageImpl) GenerateAttestationReturns(result1 *v1.Statement, result2 error) {
 	fake.generateAttestationMutex.Lock()
 	defer fake.generateAttestationMutex.Unlock()
 	fake.GenerateAttestationStub = nil
 	fake.generateAttestationReturns = struct {
-		result1 *provenance.Statement
+		result1 *v1.Statement
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeStageImpl) GenerateAttestationReturnsOnCall(i int, result1 *provenance.Statement, result2 error) {
+func (fake *FakeStageImpl) GenerateAttestationReturnsOnCall(i int, result1 *v1.Statement, result2 error) {
 	fake.generateAttestationMutex.Lock()
 	defer fake.generateAttestationMutex.Unlock()
 	fake.GenerateAttestationStub = nil
 	if fake.generateAttestationReturnsOnCall == nil {
 		fake.generateAttestationReturnsOnCall = make(map[int]struct {
-			result1 *provenance.Statement
+			result1 *v1.Statement
 			result2 error
 		})
 	}
 	fake.generateAttestationReturnsOnCall[i] = struct {
-		result1 *provenance.Statement
+		result1 *v1.Statement
 		result2 error
 	}{result1, result2}
 }
@@ -1572,7 +1571,7 @@ func (fake *FakeStageImpl) GenerateVersionArtifactsBOMReturnsOnCall(i int, resul
 	}{result1}
 }
 
-func (fake *FakeStageImpl) GetOutputDirSubjects(arg1 *anago.StageOptions, arg2 string, arg3 string) ([]in_toto.Subject, error) {
+func (fake *FakeStageImpl) GetOutputDirSubjects(arg1 *anago.StageOptions, arg2 string, arg3 string) ([]*v1.ResourceDescriptor, error) {
 	fake.getOutputDirSubjectsMutex.Lock()
 	ret, specificReturn := fake.getOutputDirSubjectsReturnsOnCall[len(fake.getOutputDirSubjectsArgsForCall)]
 	fake.getOutputDirSubjectsArgsForCall = append(fake.getOutputDirSubjectsArgsForCall, struct {
@@ -1599,7 +1598,7 @@ func (fake *FakeStageImpl) GetOutputDirSubjectsCallCount() int {
 	return len(fake.getOutputDirSubjectsArgsForCall)
 }
 
-func (fake *FakeStageImpl) GetOutputDirSubjectsCalls(stub func(*anago.StageOptions, string, string) ([]in_toto.Subject, error)) {
+func (fake *FakeStageImpl) GetOutputDirSubjectsCalls(stub func(*anago.StageOptions, string, string) ([]*v1.ResourceDescriptor, error)) {
 	fake.getOutputDirSubjectsMutex.Lock()
 	defer fake.getOutputDirSubjectsMutex.Unlock()
 	fake.GetOutputDirSubjectsStub = stub
@@ -1612,33 +1611,33 @@ func (fake *FakeStageImpl) GetOutputDirSubjectsArgsForCall(i int) (*anago.StageO
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
-func (fake *FakeStageImpl) GetOutputDirSubjectsReturns(result1 []in_toto.Subject, result2 error) {
+func (fake *FakeStageImpl) GetOutputDirSubjectsReturns(result1 []*v1.ResourceDescriptor, result2 error) {
 	fake.getOutputDirSubjectsMutex.Lock()
 	defer fake.getOutputDirSubjectsMutex.Unlock()
 	fake.GetOutputDirSubjectsStub = nil
 	fake.getOutputDirSubjectsReturns = struct {
-		result1 []in_toto.Subject
+		result1 []*v1.ResourceDescriptor
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeStageImpl) GetOutputDirSubjectsReturnsOnCall(i int, result1 []in_toto.Subject, result2 error) {
+func (fake *FakeStageImpl) GetOutputDirSubjectsReturnsOnCall(i int, result1 []*v1.ResourceDescriptor, result2 error) {
 	fake.getOutputDirSubjectsMutex.Lock()
 	defer fake.getOutputDirSubjectsMutex.Unlock()
 	fake.GetOutputDirSubjectsStub = nil
 	if fake.getOutputDirSubjectsReturnsOnCall == nil {
 		fake.getOutputDirSubjectsReturnsOnCall = make(map[int]struct {
-			result1 []in_toto.Subject
+			result1 []*v1.ResourceDescriptor
 			result2 error
 		})
 	}
 	fake.getOutputDirSubjectsReturnsOnCall[i] = struct {
-		result1 []in_toto.Subject
+		result1 []*v1.ResourceDescriptor
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeStageImpl) GetProvenanceSubjects(arg1 *anago.StageOptions, arg2 string) ([]in_toto.Subject, error) {
+func (fake *FakeStageImpl) GetProvenanceSubjects(arg1 *anago.StageOptions, arg2 string) ([]*v1.ResourceDescriptor, error) {
 	fake.getProvenanceSubjectsMutex.Lock()
 	ret, specificReturn := fake.getProvenanceSubjectsReturnsOnCall[len(fake.getProvenanceSubjectsArgsForCall)]
 	fake.getProvenanceSubjectsArgsForCall = append(fake.getProvenanceSubjectsArgsForCall, struct {
@@ -1664,7 +1663,7 @@ func (fake *FakeStageImpl) GetProvenanceSubjectsCallCount() int {
 	return len(fake.getProvenanceSubjectsArgsForCall)
 }
 
-func (fake *FakeStageImpl) GetProvenanceSubjectsCalls(stub func(*anago.StageOptions, string) ([]in_toto.Subject, error)) {
+func (fake *FakeStageImpl) GetProvenanceSubjectsCalls(stub func(*anago.StageOptions, string) ([]*v1.ResourceDescriptor, error)) {
 	fake.getProvenanceSubjectsMutex.Lock()
 	defer fake.getProvenanceSubjectsMutex.Unlock()
 	fake.GetProvenanceSubjectsStub = stub
@@ -1677,28 +1676,28 @@ func (fake *FakeStageImpl) GetProvenanceSubjectsArgsForCall(i int) (*anago.Stage
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeStageImpl) GetProvenanceSubjectsReturns(result1 []in_toto.Subject, result2 error) {
+func (fake *FakeStageImpl) GetProvenanceSubjectsReturns(result1 []*v1.ResourceDescriptor, result2 error) {
 	fake.getProvenanceSubjectsMutex.Lock()
 	defer fake.getProvenanceSubjectsMutex.Unlock()
 	fake.GetProvenanceSubjectsStub = nil
 	fake.getProvenanceSubjectsReturns = struct {
-		result1 []in_toto.Subject
+		result1 []*v1.ResourceDescriptor
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeStageImpl) GetProvenanceSubjectsReturnsOnCall(i int, result1 []in_toto.Subject, result2 error) {
+func (fake *FakeStageImpl) GetProvenanceSubjectsReturnsOnCall(i int, result1 []*v1.ResourceDescriptor, result2 error) {
 	fake.getProvenanceSubjectsMutex.Lock()
 	defer fake.getProvenanceSubjectsMutex.Unlock()
 	fake.GetProvenanceSubjectsStub = nil
 	if fake.getProvenanceSubjectsReturnsOnCall == nil {
 		fake.getProvenanceSubjectsReturnsOnCall = make(map[int]struct {
-			result1 []in_toto.Subject
+			result1 []*v1.ResourceDescriptor
 			result2 error
 		})
 	}
 	fake.getProvenanceSubjectsReturnsOnCall[i] = struct {
-		result1 []in_toto.Subject
+		result1 []*v1.ResourceDescriptor
 		result2 error
 	}{result1, result2}
 }
@@ -2232,11 +2231,11 @@ func (fake *FakeStageImpl) PrepareWorkspaceStageReturnsOnCall(i int, result1 err
 	}{result1}
 }
 
-func (fake *FakeStageImpl) PushAttestation(arg1 *provenance.Statement, arg2 *anago.StageOptions) error {
+func (fake *FakeStageImpl) PushAttestation(arg1 *v1.Statement, arg2 *anago.StageOptions) error {
 	fake.pushAttestationMutex.Lock()
 	ret, specificReturn := fake.pushAttestationReturnsOnCall[len(fake.pushAttestationArgsForCall)]
 	fake.pushAttestationArgsForCall = append(fake.pushAttestationArgsForCall, struct {
-		arg1 *provenance.Statement
+		arg1 *v1.Statement
 		arg2 *anago.StageOptions
 	}{arg1, arg2})
 	stub := fake.PushAttestationStub
@@ -2258,13 +2257,13 @@ func (fake *FakeStageImpl) PushAttestationCallCount() int {
 	return len(fake.pushAttestationArgsForCall)
 }
 
-func (fake *FakeStageImpl) PushAttestationCalls(stub func(*provenance.Statement, *anago.StageOptions) error) {
+func (fake *FakeStageImpl) PushAttestationCalls(stub func(*v1.Statement, *anago.StageOptions) error) {
 	fake.pushAttestationMutex.Lock()
 	defer fake.pushAttestationMutex.Unlock()
 	fake.PushAttestationStub = stub
 }
 
-func (fake *FakeStageImpl) PushAttestationArgsForCall(i int) (*provenance.Statement, *anago.StageOptions) {
+func (fake *FakeStageImpl) PushAttestationArgsForCall(i int) (*v1.Statement, *anago.StageOptions) {
 	fake.pushAttestationMutex.RLock()
 	defer fake.pushAttestationMutex.RUnlock()
 	argsForCall := fake.pushAttestationArgsForCall[i]
