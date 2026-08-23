@@ -1083,22 +1083,14 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 			Metadata: &slsa.BuildMetadata{
 				InvocationId: os.Getenv("BUILD_ID"),
 				StartedOn:    timestamppb.New(state.startTime.UTC()),
-				FinishedOn:   timestamppb.Now(),
 			},
 			Byproducts: []*intoto.ResourceDescriptor{},
 		},
 	}
 
-	// The statement carries the predicate as a generic struct, so
-	// round-trip the typed provenance through its JSON form:
-	predicateJSON, err := protojson.Marshal(predicate)
+	predicateStruct, err := provenanceToStruct(predicate)
 	if err != nil {
-		return nil, fmt.Errorf("marshaling provenance predicate: %w", err)
-	}
-
-	predicateStruct := &structpb.Struct{}
-	if err := protojson.Unmarshal(predicateJSON, predicateStruct); err != nil {
-		return nil, fmt.Errorf("converting provenance predicate to struct: %w", err)
+		return nil, err
 	}
 
 	return &intoto.Statement{
@@ -1120,6 +1112,27 @@ func (d *defaultStageImpl) PushAttestation(attestation *intoto.Statement, option
 		return fmt.Errorf("creating temp file for provenance metadata: %w", err)
 	}
 	defer f.Close()
+
+	// Staging is complete at this point, so record the build end time
+	// in the predicate before serializing the statement:
+	predicate, err := provenanceFromStruct(attestation.GetPredicate())
+	if err != nil {
+		return err
+	}
+
+	if predicate.GetRunDetails() == nil {
+		predicate.RunDetails = &slsa.RunDetails{}
+	}
+
+	if predicate.GetRunDetails().GetMetadata() == nil {
+		predicate.RunDetails.Metadata = &slsa.BuildMetadata{}
+	}
+
+	predicate.RunDetails.Metadata.FinishedOn = timestamppb.Now()
+
+	if attestation.Predicate, err = provenanceToStruct(predicate); err != nil {
+		return err
+	}
 
 	// Write the provenance statement to disk:
 	jsonData, err := protojson.Marshal(attestation)
@@ -1147,6 +1160,37 @@ func (d *defaultStageImpl) PushAttestation(attestation *intoto.Statement, option
 	}
 
 	return nil
+}
+
+// provenanceToStruct converts the SLSA provenance predicate into a proto struct
+func provenanceToStruct(predicate *slsa.Provenance) (*structpb.Struct, error) {
+	data, err := protojson.Marshal(predicate)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling provenance predicate: %w", err)
+	}
+
+	res := &structpb.Struct{}
+	if err := protojson.Unmarshal(data, res); err != nil {
+		return nil, fmt.Errorf("converting provenance predicate to struct: %w", err)
+	}
+
+	return res, nil
+}
+
+// provenanceFromStruct parses the predicate struct of an in-toto statement back
+// into the typed SLSA provenance predicate.
+func provenanceFromStruct(predicate *structpb.Struct) (*slsa.Provenance, error) {
+	data, err := protojson.Marshal(predicate)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling provenance predicate struct: %w", err)
+	}
+
+	res := &slsa.Provenance{}
+	if err := protojson.Unmarshal(data, res); err != nil {
+		return nil, fmt.Errorf("parsing provenance predicate: %w", err)
+	}
+
+	return res, nil
 }
 
 // GetOutputDirSubjects reads the built artifacts and returns them
