@@ -25,6 +25,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	buildtypev1 "k8s.io/release/pkg/anago/buildtypes/v1"
 )
 
 func TestProvenanceStructRoundTrip(t *testing.T) {
@@ -47,7 +49,7 @@ func TestProvenanceStructRoundTrip(t *testing.T) {
 		},
 	}
 
-	asStruct, err := provenanceToStruct(original)
+	asStruct, err := protoToStruct(original)
 	require.NoError(t, err)
 	require.Equal(t, "https://example.com/buildtype@v1",
 		asStruct.GetFields()["buildDefinition"].GetStructValue().GetFields()["buildType"].GetStringValue(),
@@ -61,4 +63,26 @@ func TestProvenanceStructRoundTrip(t *testing.T) {
 	parsed, err = provenanceFromStruct(nil)
 	require.NoError(t, err)
 	require.Nil(t, parsed.GetRunDetails())
+}
+
+func TestExternalParametersToStruct(t *testing.T) {
+	t.Parallel()
+
+	params, err := protoToStruct(&buildtypev1.ExternalParameters{
+		ReleaseType:   "alpha",
+		ReleaseBranch: "master",
+		BuildVersion:  "v1.36.0-alpha.1.10+abcdef",
+		Nomock:        false,
+	})
+	require.NoError(t, err)
+
+	fields := params.GetFields()
+	require.Equal(t, "alpha", fields["releaseType"].GetStringValue())
+	require.Equal(t, "master", fields["releaseBranch"].GetStringValue())
+	require.Equal(t, "v1.36.0-alpha.1.10+abcdef", fields["buildVersion"].GetStringValue())
+
+	// Default values must be recorded explicitly in the parameters
+	require.Contains(t, fields, "nomock")
+	require.False(t, fields["nomock"].GetBoolValue())
+	require.Contains(t, fields, "entryPoint")
 }

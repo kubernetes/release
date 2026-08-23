@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/blang/semver/v4"
@@ -29,6 +28,7 @@ import (
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/release-utils/command"
 	"sigs.k8s.io/release-utils/log"
 
+	buildtypev1 "k8s.io/release/pkg/anago/buildtypes/v1"
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/changelog"
 	"k8s.io/release/pkg/gcp/auth"
@@ -1033,16 +1034,16 @@ func (d *DefaultStage) StageArtifacts() error {
 // GenerateAttestation creates a provenance attestation with its predicate
 // preloaded with the current krel run information.
 func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *StageOptions) (attestation *intoto.Statement, err error) {
-	// Build the external parameters struct:
-	extParameters, err := structpb.NewStruct(map[string]any{
-		"entryPoint":    "https://git.k8s.io/release/gcb/stage/cloudbuild.yaml",
-		"type":          options.ReleaseType,
-		"branch":        options.ReleaseBranch,
-		"build-version": options.BuildVersion,
-		"nomock":        strconv.FormatBool(options.NoMock),
+	// Build the external parameters as defined by the krel buildType:
+	extParameters, err := protoToStruct(&buildtypev1.ExternalParameters{
+		ReleaseType:   options.ReleaseType,
+		ReleaseBranch: options.ReleaseBranch,
+		BuildVersion:  options.BuildVersion,
+		Nomock:        options.NoMock,
+		EntryPoint:    "https://git.k8s.io/release/gcb/stage/cloudbuild.yaml",
 	})
 	if err != nil {
-		return nil, fmt.Errorf("building external parameters struct: %w", err)
+		return nil, fmt.Errorf("building external parameters: %w", err)
 	}
 
 	// Fetch the last commit:
@@ -1061,7 +1062,7 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 	// run metadata:
 	predicate := &slsa.Provenance{
 		BuildDefinition: &slsa.BuildDefinition{
-			BuildType:          "https://cloudbuild.googleapis.com/CloudBuildYaml@v1",
+			BuildType:          buildtypev1.BuildType,
 			ExternalParameters: extParameters,
 			InternalParameters: &structpb.Struct{},
 			ResolvedDependencies: []*intoto.ResourceDescriptor{
@@ -1090,7 +1091,7 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 		},
 	}
 
-	predicateStruct, err := provenanceToStruct(predicate)
+	predicateStruct, err := protoToStruct(predicate)
 	if err != nil {
 		return nil, err
 	}
@@ -1132,7 +1133,7 @@ func (d *defaultStageImpl) PushAttestation(attestation *intoto.Statement, option
 
 	predicate.RunDetails.Metadata.FinishedOn = timestamppb.Now()
 
-	if attestation.Predicate, err = provenanceToStruct(predicate); err != nil {
+	if attestation.Predicate, err = protoToStruct(predicate); err != nil {
 		return err
 	}
 
@@ -1164,16 +1165,16 @@ func (d *defaultStageImpl) PushAttestation(attestation *intoto.Statement, option
 	return nil
 }
 
-// provenanceToStruct converts the SLSA provenance predicate into a proto struct.
-func provenanceToStruct(predicate *slsa.Provenance) (*structpb.Struct, error) {
-	data, err := protojson.Marshal(predicate)
+// protoToStruct converts a proto message into the generic proto struct.
+func protoToStruct(msg proto.Message) (*structpb.Struct, error) {
+	data, err := protojson.MarshalOptions{EmitDefaultValues: true}.Marshal(msg)
 	if err != nil {
-		return nil, fmt.Errorf("marshaling provenance predicate: %w", err)
+		return nil, fmt.Errorf("marshaling %T: %w", msg, err)
 	}
 
 	res := &structpb.Struct{}
 	if err := protojson.Unmarshal(data, res); err != nil {
-		return nil, fmt.Errorf("converting provenance predicate to struct: %w", err)
+		return nil, fmt.Errorf("converting %T to struct: %w", msg, err)
 	}
 
 	return res, nil
