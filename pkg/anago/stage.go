@@ -1066,7 +1066,9 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 			InternalParameters: &structpb.Struct{},
 			ResolvedDependencies: []*intoto.ResourceDescriptor{
 				{
-					Uri: "git+https://github.com/kubernetes/kubernetes",
+					// Reference the repository the workspace was cloned from,
+					// which may be a fork when running in mock mode.
+					Uri: "git+" + git.GetRepoURL(release.GetK8sOrg(), release.GetK8sRepo(), false),
 					Digest: map[string]string{
 						intoto.AlgorithmSHA1.String():      commitSHA,
 						intoto.AlgorithmGitCommit.String(): commitSHA,
@@ -1162,7 +1164,7 @@ func (d *defaultStageImpl) PushAttestation(attestation *intoto.Statement, option
 	return nil
 }
 
-// provenanceToStruct converts the SLSA provenance predicate into a proto struct
+// provenanceToStruct converts the SLSA provenance predicate into a proto struct.
 func provenanceToStruct(predicate *slsa.Provenance) (*structpb.Struct, error) {
 	data, err := protojson.Marshal(predicate)
 	if err != nil {
