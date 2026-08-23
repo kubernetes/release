@@ -37,9 +37,10 @@ None.
 
 ### Resolved dependencies
 
-The Kubernetes source repository the artifacts were built from, identified
-by its `git+https` URI and the digest of the commit checked out for the
-build.
+The Kubernetes sources the artifacts were built from, one descriptor per
+version built. Each descriptor points to the URI of the repository and the
+release tag of the version, with the digest of the commit the tag points
+to. The artifacts of each version are built from the checkout of its tag.
 
 ## Run details
 
@@ -64,7 +65,7 @@ build.
     "internalParameters": {},
     "resolvedDependencies": [
       {
-        "uri": "git+https://github.com/kubernetes/kubernetes",
+        "uri": "git+https://github.com/kubernetes/kubernetes@refs/tags/v1.36.0-alpha.1",
         "digest": {
           "gitCommit": "abcdef0123456789abcdef0123456789abcdef01",
           "sha1": "abcdef0123456789abcdef0123456789abcdef01"

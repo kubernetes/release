@@ -17,6 +17,7 @@ limitations under the License.
 package anago
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -1046,36 +1047,25 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 		return nil, fmt.Errorf("building external parameters: %w", err)
 	}
 
-	// Fetch the last commit:
+	// Resolve the sources the artifacts were built from:
 	repo, err := git.OpenRepo(gitRoot)
 	if err != nil {
-		return nil, fmt.Errorf("opening repository to check commit hash: %w", err)
+		return nil, fmt.Errorf("opening repository to resolve the sources: %w", err)
 	}
 
-	// Get the k/k commit we are building
-	commitSHA, err := repo.LastCommitSha()
+	sources, err := sourceDependencies(repo, state)
 	if err != nil {
-		return nil, fmt.Errorf("getting k/k build point: %w", err)
+		return nil, err
 	}
 
 	// Create the predicate to populate it with the current
 	// run metadata:
 	predicate := &slsa.Provenance{
 		BuildDefinition: &slsa.BuildDefinition{
-			BuildType:          buildtypev1.BuildType,
-			ExternalParameters: extParameters,
-			InternalParameters: &structpb.Struct{},
-			ResolvedDependencies: []*intoto.ResourceDescriptor{
-				{
-					// Reference the repository the workspace was cloned from,
-					// which may be a fork when running in mock mode.
-					Uri: "git+" + git.GetRepoURL(release.GetK8sOrg(), release.GetK8sRepo(), false),
-					Digest: map[string]string{
-						intoto.AlgorithmSHA1.String():      commitSHA,
-						intoto.AlgorithmGitCommit.String(): commitSHA,
-					},
-				},
-			},
+			BuildType:            buildtypev1.BuildType,
+			ExternalParameters:   extParameters,
+			InternalParameters:   &structpb.Struct{},
+			ResolvedDependencies: sources,
 		},
 		RunDetails: &slsa.RunDetails{
 			Builder: &slsa.Builder{
@@ -1163,6 +1153,39 @@ func (d *defaultStageImpl) PushAttestation(attestation *intoto.Statement, option
 	}
 
 	return nil
+}
+
+// sourceDependencies returns the Kubernetes sources the artifacts were
+// built from as resource descriptors. The artifacts of each version are
+// built from the checkout of its release tag, so one descriptor per tag is
+// returned, with the digest of the commit the tag points to.
+func sourceDependencies(repo *git.Repo, state *StageState) ([]*intoto.ResourceDescriptor, error) {
+	if state.versions == nil || len(state.versions.Ordered()) == 0 {
+		return nil, errors.New("no release versions to resolve the sources from")
+	}
+
+	// Reference the repository the workspace was cloned from, which may be
+	// a fork when running in mock mode.
+	repoURI := "git+" + git.GetRepoURL(release.GetK8sOrg(), release.GetK8sRepo(), false)
+
+	sources := []*intoto.ResourceDescriptor{}
+
+	for _, version := range state.versions.Ordered() {
+		commitSHA, err := repo.RevParseTag(version)
+		if err != nil {
+			return nil, fmt.Errorf("resolving commit of tag %s: %w", version, err)
+		}
+
+		sources = append(sources, &intoto.ResourceDescriptor{
+			Uri: repoURI + "@refs/tags/" + version,
+			Digest: map[string]string{
+				intoto.AlgorithmSHA1.String():      commitSHA,
+				intoto.AlgorithmGitCommit.String(): commitSHA,
+			},
+		})
+	}
+
+	return sources, nil
 }
 
 // protoToStruct converts a proto message into the generic proto struct.

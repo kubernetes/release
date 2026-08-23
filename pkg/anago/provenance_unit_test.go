@@ -26,7 +26,11 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"sigs.k8s.io/release-sdk/git"
+	"sigs.k8s.io/release-utils/command"
+
 	buildtypev1 "k8s.io/release/pkg/anago/buildtypes/v1"
+	"k8s.io/release/pkg/release"
 )
 
 func TestProvenanceStructRoundTrip(t *testing.T) {
@@ -85,4 +89,76 @@ func TestExternalParametersToStruct(t *testing.T) {
 	require.Contains(t, fields, "nomock")
 	require.False(t, fields["nomock"].GetBoolValue())
 	require.Contains(t, fields, "entryPoint")
+}
+
+// testGit runs a git command in dir with a fixed identity and no signing,
+// returning its trimmed output.
+func testGit(t *testing.T, dir string, args ...string) string {
+	t.Helper()
+
+	out, err := command.NewWithWorkDir(dir, "git", append([]string{
+		"-c", "user.name=test", "-c", "user.email=test@example.com",
+		"-c", "commit.gpgsign=false", "-c", "tag.gpgsign=false",
+	}, args...)...).RunSilentSuccessOutput()
+	require.NoError(t, err)
+
+	return out.OutputTrimNL()
+}
+
+func TestSourceDependencies(t *testing.T) {
+	t.Parallel()
+
+	// A repository with a build point commit tagged as alpha and an
+	// empty release commit on top of it tagged as the official release,
+	// as done on release branches.
+	dir := t.TempDir()
+	testGit(t, dir, "init", "-q", "-b", "release-1.29")
+	testGit(t, dir, "commit", "-q", "--allow-empty", "-m", "build point")
+	buildPointSHA := testGit(t, dir, "rev-parse", "HEAD")
+	testGit(t, dir, "tag", "-a", "v1.30.0-alpha.1", "-m", "alpha")
+	testGit(t, dir, "commit", "-q", "--allow-empty", "-m", "release commit")
+	releaseSHA := testGit(t, dir, "rev-parse", "HEAD")
+	testGit(t, dir, "tag", "-a", "v1.29.1", "-m", "official")
+
+	repo, err := git.OpenRepo(dir)
+	require.NoError(t, err)
+
+	repoURI := "git+" + git.GetRepoURL(release.GetK8sOrg(), release.GetK8sRepo(), false)
+	digest := func(sha string) map[string]string {
+		return map[string]string{"sha1": sha, "gitCommit": sha}
+	}
+
+	t.Run("one descriptor per release tag", func(t *testing.T) {
+		t.Parallel()
+
+		state := DefaultStageState()
+		state.versions = release.NewReleaseVersions("", "v1.29.1", "", "", "v1.30.0-alpha.1")
+
+		sources, err := sourceDependencies(repo, state)
+		require.NoError(t, err)
+		require.Len(t, sources, 2)
+
+		// The release tags in order, resolved to the tagged commits
+		require.Equal(t, repoURI+"@refs/tags/v1.29.1", sources[0].GetUri())
+		require.Equal(t, digest(releaseSHA), sources[0].GetDigest())
+		require.Equal(t, repoURI+"@refs/tags/v1.30.0-alpha.1", sources[1].GetUri())
+		require.Equal(t, digest(buildPointSHA), sources[1].GetDigest())
+	})
+
+	t.Run("no versions", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := sourceDependencies(repo, DefaultStageState())
+		require.Error(t, err)
+	})
+
+	t.Run("missing tag", func(t *testing.T) {
+		t.Parallel()
+
+		state := DefaultStageState()
+		state.versions = release.NewReleaseVersions("", "v9.9.9", "", "", "")
+
+		_, err := sourceDependencies(repo, state)
+		require.Error(t, err)
+	})
 }
