@@ -134,6 +134,11 @@ update-deps-go: ## Update all golang dependencies for this repo
 	$(MAKE) test-go-unit
 	./hack/update-all.sh
 
+.SILENT: protos
+.PHONY:  protos
+protos: ## Regenerate the Go code of the protobuf definitions
+	buf generate
+
 .SILENT: update-mocks
 .PHONY:  update-mocks
 update-mocks: ## Update all generated mocks
