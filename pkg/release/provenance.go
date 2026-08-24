@@ -26,10 +26,12 @@ import (
 
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"sigs.k8s.io/bom/pkg/provenance"
 	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/object"
+	"sigs.k8s.io/release-utils/hash"
 	"sigs.k8s.io/release-utils/helpers"
 )
 
@@ -90,7 +92,7 @@ func (pc *ProvenanceChecker) CheckStageProvenance(buildVersion string) error {
 
 	logrus.Infof(
 		"Successfully verified provenance information of %d staged artifacts",
-		len(statement.Subject),
+		len(statement.GetSubject()),
 	)
 
 	return nil
@@ -123,8 +125,8 @@ type ProvenanceCheckerOptions struct {
 
 type provenanceCheckerImplementation interface {
 	downloadStagedArtifacts(*ProvenanceCheckerOptions, *object.GCS, string) error
-	processAttestation(*ProvenanceCheckerOptions, string) (*provenance.Statement, error)
-	checkProvenance(*ProvenanceCheckerOptions, *provenance.Statement) error
+	processAttestation(*ProvenanceCheckerOptions, string) (*intoto.Statement, error)
+	checkProvenance(*ProvenanceCheckerOptions, *intoto.Statement) error
 	generateFinalAttestation(opts *ProvenanceCheckerOptions, sbom, stageProvenance, version string) error
 }
 
@@ -149,40 +151,92 @@ func (di *defaultProvenanceCheckerImpl) downloadStagedArtifacts(
 	return nil
 }
 
-// processAttestation.
+// processAttestation reads the SLSA attestation generated during the stage
+// run. Note that for now the attestation itself is not verified, we only
+// use it to extract the subjects to check the staged artifacts.
 func (di *defaultProvenanceCheckerImpl) processAttestation(
 	opts *ProvenanceCheckerOptions, buildVersion string,
-) (s *provenance.Statement, err error) {
+) (*intoto.Statement, error) {
 	// Load the downloaded statement
-	s, err = provenance.LoadStatement(filepath.Join(opts.StageDirectory, buildVersion, ProvenanceFilename))
+	data, err := os.ReadFile(filepath.Join(opts.StageDirectory, buildVersion, ProvenanceFilename))
 	if err != nil {
-		return nil, fmt.Errorf("loading staging provenance file: %w", err)
+		return nil, fmt.Errorf("reading staging provenance file: %w", err)
+	}
+
+	s := &intoto.Statement{}
+	if err := protojson.Unmarshal(data, s); err != nil {
+		return nil, fmt.Errorf("parsing staging provenance file: %w", err)
 	}
 
 	// We've downloaded all artifacts, so to check we need to strip
 	// the gcs bucket prefix from the subjects to read from the local copy
 	gcsPath := object.GcsPrefix + filepath.Join(opts.StageBucket, StagePath)
 
-	newSubjects := []*intoto.ResourceDescriptor{}
-
-	for i, sub := range s.Subject {
-		newSubjects = append(newSubjects, &intoto.ResourceDescriptor{
-			Name:   strings.TrimPrefix(sub.Name, gcsPath),
-			Digest: sub.Digest,
-		})
-		s.Subject[i].Name = strings.TrimPrefix(sub.Name, gcsPath)
+	for _, sub := range s.GetSubject() {
+		sub.Name = strings.TrimPrefix(sub.GetName(), gcsPath)
 	}
-
-	s.Subject = newSubjects
 
 	return s, nil
 }
 
+// checkProvenance verifies the hashes of the local copies of the staged
+// artifacts against the subjects of the attestation.
 func (di *defaultProvenanceCheckerImpl) checkProvenance(
-	opts *ProvenanceCheckerOptions, s *provenance.Statement,
+	opts *ProvenanceCheckerOptions, s *intoto.Statement,
 ) error {
-	if err := s.VerifySubjects(opts.StageDirectory); err != nil {
-		return fmt.Errorf("checking subjects in attestation: %w", err)
+	hashers := map[string]func(string) (string, error){
+		intoto.AlgorithmSHA256.String(): hash.SHA256ForFile,
+		intoto.AlgorithmSHA512.String(): hash.SHA512ForFile,
+	}
+
+	errs := 0
+
+	for _, sub := range s.GetSubject() {
+		if sub.GetName() == "" {
+			logrus.Error("Found empty subject in provenance attestation")
+
+			errs++
+
+			continue
+		}
+
+		checked := false
+
+		for algo, expected := range sub.GetDigest() {
+			hasher, ok := hashers[algo]
+			if !ok {
+				continue
+			}
+
+			actual, err := hasher(filepath.Join(opts.StageDirectory, sub.GetName()))
+			if err != nil {
+				logrus.Errorf("Hashing %s: %v", sub.GetName(), err)
+
+				errs++
+
+				break
+			}
+
+			if actual != expected {
+				logrus.Errorf("Invalid %s hash in %s", algo, sub.GetName())
+
+				errs++
+
+				break
+			}
+
+			checked = true
+		}
+
+		if !checked && sub.GetDigest() != nil {
+			logrus.Errorf("Subject %s has no supported digest", sub.GetName())
+
+			errs++
+		}
+	}
+
+	if errs > 0 {
+		return fmt.Errorf("%d errors verifying subjects of the provenance attestation", errs)
 	}
 
 	return nil
