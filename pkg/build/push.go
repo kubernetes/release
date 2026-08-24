@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -28,6 +30,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/helpers"
 	"sigs.k8s.io/release-utils/tar"
 
@@ -530,10 +533,15 @@ func (bi *Instance) StageLocalSourceTree(workDir, buildVersion string) error {
 		return fmt.Errorf("compile tarball exclude regex: %w", err)
 	}
 
-	excludeGit := regexp.MustCompile(`(^|/)\.git(/|$)`)
+	// The tarball ships the workspace clones, including their git
+	// directories, as the release process relies on their state. Make sure
+	// no repository leaks the credentials embedded in its remote URLs:
+	if err := stripRemoteCredentials(filepath.Join(workDir, "src")); err != nil {
+		return fmt.Errorf("stripping remote credentials from workspace repositories: %w", err)
+	}
 
 	if err := tar.Compress(
-		tarballPath, filepath.Join(workDir, "src"), excludeBuildDir, excludeGit,
+		tarballPath, filepath.Join(workDir, "src"), excludeBuildDir,
 	); err != nil {
 		return fmt.Errorf("create tarball: %w", err)
 	}
@@ -552,6 +560,60 @@ func (bi *Instance) StageLocalSourceTree(workDir, buildVersion string) error {
 	}
 
 	return nil
+}
+
+// stripRemoteCredentials replaces the remote URLs of every git repository
+// found under path with their equivalents without credentials. The workspace
+// clones authenticate with the GitHub token embedded in their remote URLs,
+// which must not leak into the staged source tarball.
+func stripRemoteCredentials(path string) error {
+	return filepath.WalkDir(path, func(entry string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !d.IsDir() || d.Name() != ".git" {
+			return nil
+		}
+
+		repoPath := filepath.Dir(entry)
+
+		repo, err := git.OpenRepo(repoPath)
+		if err != nil {
+			return fmt.Errorf("opening workspace repository %s: %w", repoPath, err)
+		}
+
+		remotes, err := repo.Remotes()
+		if err != nil {
+			return fmt.Errorf("listing remotes of %s: %w", repoPath, err)
+		}
+
+		for _, remote := range remotes {
+			for _, remoteURL := range remote.URLs() {
+				parsed, err := url.Parse(remoteURL)
+				if err != nil || parsed.User == nil {
+					continue
+				}
+
+				parsed.User = nil
+
+				logrus.Infof(
+					"Removing credentials from remote %s of %s", remote.Name(), repoPath,
+				)
+
+				if err := repo.SetURL(remote.Name(), parsed.String()); err != nil {
+					return fmt.Errorf("setting URL of remote %s: %w", remote.Name(), err)
+				}
+
+				// SetURL replaces all remote URLs; break to avoid
+				// iterating the now-stale URL list.
+				break
+			}
+		}
+
+		// Do not descend into the git directory itself
+		return filepath.SkipDir
+	})
 }
 
 // DeleteLocalSourceTarball the deletion of the tarball is now decoupled from
