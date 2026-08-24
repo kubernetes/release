@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/storage v1.62.3
 	github.com/GoogleCloudPlatform/testgrid v0.0.38
 	github.com/blang/semver/v4 v4.0.0
-	github.com/cheggaaa/pb/v3 v3.2.0
+	github.com/cheggaaa/pb/v3 v3.2.1
 	github.com/fastly/go-fastly/v13 v13.1.2
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/goark/go-cvss v1.6.7
@@ -24,7 +24,7 @@ require (
 	github.com/sergi/go-diff v1.4.0
 	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/shurcooL/githubv4 v0.0.0-20220115235240-a14260e6f8a2
-	github.com/sirupsen/logrus v1.10.0
+	github.com/sirupsen/logrus v1.10.1
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
 	github.com/tj/go-spin v1.1.0
@@ -34,7 +34,7 @@ require (
 	golang.org/x/sync v0.22.0
 	golang.org/x/text v0.41.0
 	google.golang.org/api v0.283.0
-	k8s.io/apimachinery v0.36.3
+	k8s.io/apimachinery v0.36.4
 	sigs.k8s.io/bom v0.7.1
 	sigs.k8s.io/mdtoc v1.4.0
 	sigs.k8s.io/promo-tools/v4 v4.5.1
@@ -218,7 +218,7 @@ require (
 	github.com/lestrrat-go/option/v2 v2.0.0 // indirect
 	github.com/letsencrypt/boulder v0.20260309.0 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
-	github.com/mattn/go-runewidth v0.0.24 // indirect
+	github.com/mattn/go-runewidth v0.0.27 // indirect
 	github.com/miekg/pkcs11 v1.1.1 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
