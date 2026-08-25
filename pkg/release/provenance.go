@@ -35,6 +35,14 @@ import (
 	"sigs.k8s.io/release-utils/helpers"
 )
 
+// ProvenanceChecker is the main structure to check the provenance.
+type ProvenanceChecker struct {
+	objStore *object.GCS
+	options  *ProvenanceCheckerOptions
+	impl     provenanceCheckerImplementation
+}
+
+// NewProvenanceChecker returns a new ProvenanceChecker instance.
 func NewProvenanceChecker(opts *ProvenanceCheckerOptions) *ProvenanceChecker {
 	p := &ProvenanceChecker{
 		objStore: object.NewGCS(),
@@ -45,13 +53,6 @@ func NewProvenanceChecker(opts *ProvenanceCheckerOptions) *ProvenanceChecker {
 	p.impl = &defaultProvenanceCheckerImpl{}
 
 	return p
-}
-
-// ProvenanceChecker is the main structure to check the provenance.
-type ProvenanceChecker struct {
-	objStore *object.GCS
-	options  *ProvenanceCheckerOptions
-	impl     provenanceCheckerImplementation
 }
 
 // CheckStageProvenance validates the provenance for the provided build version.
@@ -255,7 +256,7 @@ func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(
 	// Rewrite the provenance sublects to list their full paths in the bucket
 	for i, sub := range slsaStatement.Subject {
 		slsaStatement.Subject[i].Name = object.GcsPrefix + filepath.Join(
-			opts.StageBucket, "release", version, sub.Name,
+			opts.StageBucket, "release", version, sub.GetName(),
 		)
 	}
 
@@ -272,16 +273,17 @@ func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(
 	return nil
 }
 
+type ProvenanceReader struct {
+	options *ProvenanceReaderOptions
+	impl    provenanceReaderImplementation
+}
+
+// NewProvenanceReader returns a new ProvenanceReader instance.
 func NewProvenanceReader(opts *ProvenanceReaderOptions) *ProvenanceReader {
 	return &ProvenanceReader{
 		options: opts,
 		impl:    &defaultProvenanceReaderImpl{},
 	}
-}
-
-type ProvenanceReader struct {
-	options *ProvenanceReaderOptions
-	impl    provenanceReaderImplementation
 }
 
 type provenanceReaderImplementation interface {
@@ -335,12 +337,12 @@ func (di *defaultProvenanceReaderImpl) GetStagingSubjects(
 	}
 
 	// Check if we are dealing with the sources tar and translate to the top
-	if dummy.Subject[0].Name == filepath.Join(opts.WorkspaceDir, SourcesTar) {
+	if dummy.Subject[0].GetName() == filepath.Join(opts.WorkspaceDir, SourcesTar) {
 		dummy.Subject[0].Name = SourcesTar
 	}
 
 	for i, s := range dummy.Subject {
-		dummy.Subject[i].Name = object.GcsPrefix + filepath.Join(gcsPath, s.Name)
+		dummy.Subject[i].Name = object.GcsPrefix + filepath.Join(gcsPath, s.GetName())
 	}
 
 	return dummy.Subject, nil
@@ -368,15 +370,15 @@ func (di *defaultProvenanceReaderImpl) GetBuildSubjects(
 
 	for _, subject := range dummy.Subject {
 		// If the artifact is not in the images or gcs-stage dir, skip
-		if !strings.HasPrefix(subject.Name, ImagesPath) &&
-			!strings.HasPrefix(subject.Name, GCSStagePath) {
+		if !strings.HasPrefix(subject.GetName(), ImagesPath) &&
+			!strings.HasPrefix(subject.GetName(), GCSStagePath) {
 			continue
 		}
 
 		// Now the tricky part. We need to re-append the version tag. Eg
 		// gcs-stage/v1.23.0-alpha.4/file.txt should be
 		// v1.23.0-alpha.4/gcs-stage/v1.23.0-alpha.4/file.txt should be
-		subject.Name = object.GcsPrefix + filepath.Join(gcsPath, version, subject.Name)
+		subject.Name = object.GcsPrefix + filepath.Join(gcsPath, version, subject.GetName())
 
 		newSubjects = append(newSubjects, subject)
 	}
