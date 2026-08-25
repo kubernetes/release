@@ -56,7 +56,7 @@ RUN dpkg --purge --force-remove-essential \
         e2fsprogs \
         libss2 \
         libcom-err2 \
-        libext2fs2 \
+        libext2fs2t64 \
         logsave \
         ncurses-base \
         ncurses-bin \
