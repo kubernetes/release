@@ -1042,7 +1042,7 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 		BuildVersion:  options.BuildVersion,
 		Nomock:        options.NoMock,
 		EntryPoint:    "https://git.k8s.io/release/gcb/stage/cloudbuild.yaml",
-	})
+	}, true)
 	if err != nil {
 		return nil, fmt.Errorf("building external parameters: %w", err)
 	}
@@ -1081,7 +1081,7 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 		},
 	}
 
-	predicateStruct, err := protoToStruct(predicate)
+	predicateStruct, err := protoToStruct(predicate, false)
 	if err != nil {
 		return nil, err
 	}
@@ -1123,7 +1123,7 @@ func (d *defaultStageImpl) PushAttestation(attestation *intoto.Statement, option
 
 	predicate.RunDetails.Metadata.FinishedOn = timestamppb.Now()
 
-	if attestation.Predicate, err = protoToStruct(predicate); err != nil {
+	if attestation.Predicate, err = protoToStruct(predicate, false); err != nil {
 		return err
 	}
 
@@ -1189,8 +1189,10 @@ func sourceDependencies(repo *git.Repo, state *StageState) ([]*intoto.ResourceDe
 }
 
 // protoToStruct converts a proto message into the generic proto struct.
-func protoToStruct(msg proto.Message) (*structpb.Struct, error) {
-	data, err := protojson.MarshalOptions{EmitDefaultValues: true}.Marshal(msg)
+// When emitDefaultValues is set, fields set to their default values are
+// kept so that the resulting struct records the message in full.
+func protoToStruct(msg proto.Message, emitDefaultValues bool) (*structpb.Struct, error) {
+	data, err := protojson.MarshalOptions{EmitDefaultValues: emitDefaultValues}.Marshal(msg)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling %T: %w", msg, err)
 	}

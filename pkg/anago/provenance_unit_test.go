@@ -53,11 +53,20 @@ func TestProvenanceStructRoundTrip(t *testing.T) {
 		},
 	}
 
-	asStruct, err := protoToStruct(original)
+	asStruct, err := protoToStruct(original, false)
 	require.NoError(t, err)
 	require.Equal(t, "https://example.com/buildtype@v1",
 		asStruct.GetFields()["buildDefinition"].GetStructValue().GetFields()["buildType"].GetStringValue(),
 	)
+
+	// Unset fields of the predicate must not be recorded as empty values
+	depFields := asStruct.GetFields()["buildDefinition"].GetStructValue().
+		GetFields()["resolvedDependencies"].GetListValue().GetValues()[0].GetStructValue().GetFields()
+	require.Contains(t, depFields, "uri")
+	require.Contains(t, depFields, "digest")
+	require.NotContains(t, depFields, "name")
+	require.NotContains(t, depFields, "mediaType")
+	require.NotContains(t, depFields, "downloadLocation")
 
 	parsed, err := provenanceFromStruct(asStruct)
 	require.NoError(t, err)
@@ -77,7 +86,7 @@ func TestExternalParametersToStruct(t *testing.T) {
 		ReleaseBranch: "master",
 		BuildVersion:  "v1.36.0-alpha.1.10+abcdef",
 		Nomock:        false,
-	})
+	}, true)
 	require.NoError(t, err)
 
 	fields := params.GetFields()
