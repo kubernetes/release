@@ -18,10 +18,13 @@ package release
 
 import (
 	"crypto/sha1" //nolint:gosec // used for file integrity checks, NOT security
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	intoto "github.com/in-toto/attestation/go/v1"
@@ -180,14 +183,20 @@ func (di *defaultProvenanceCheckerImpl) processAttestation(
 	return s, nil
 }
 
+// hexRegex matches lowercase hex encoded digest values.
+var hexRegex = regexp.MustCompile(`^[0-9a-f]+$`)
+
 // checkProvenance verifies the hashes of the local copies of the staged
 // artifacts against the subjects of the attestation.
 func (di *defaultProvenanceCheckerImpl) checkProvenance(
 	opts *ProvenanceCheckerOptions, s *intoto.Statement,
 ) error {
-	hashers := map[string]func(string) (string, error){
-		intoto.AlgorithmSHA256.String(): hash.SHA256ForFile,
-		intoto.AlgorithmSHA512.String(): hash.SHA512ForFile,
+	hashers := map[string]struct {
+		hashFile     func(string) (string, error)
+		digestLength int
+	}{
+		intoto.AlgorithmSHA256.String(): {hash.SHA256ForFile, sha256.Size * 2},
+		intoto.AlgorithmSHA512.String(): {hash.SHA512ForFile, sha512.Size * 2},
 	}
 
 	errs := 0
@@ -201,7 +210,9 @@ func (di *defaultProvenanceCheckerImpl) checkProvenance(
 			continue
 		}
 
-		checked := false
+		// checked records if at least one digest of the subject was
+		// verified, failed if any of its digests failed to verify:
+		checked, failed := false, false
 
 		for algo, expected := range sub.GetDigest() {
 			hasher, ok := hashers[algo]
@@ -209,11 +220,21 @@ func (di *defaultProvenanceCheckerImpl) checkProvenance(
 				continue
 			}
 
-			actual, err := hasher(filepath.Join(opts.StageDirectory, sub.GetName()))
+			if len(expected) != hasher.digestLength || !hexRegex.MatchString(expected) {
+				logrus.Errorf("Malformed %s digest in %s", algo, sub.GetName())
+
+				errs++
+				failed = true
+
+				break
+			}
+
+			actual, err := hasher.hashFile(filepath.Join(opts.StageDirectory, sub.GetName()))
 			if err != nil {
 				logrus.Errorf("Hashing %s: %v", sub.GetName(), err)
 
 				errs++
+				failed = true
 
 				break
 			}
@@ -222,6 +243,7 @@ func (di *defaultProvenanceCheckerImpl) checkProvenance(
 				logrus.Errorf("Invalid %s hash in %s", algo, sub.GetName())
 
 				errs++
+				failed = true
 
 				break
 			}
@@ -229,7 +251,8 @@ func (di *defaultProvenanceCheckerImpl) checkProvenance(
 			checked = true
 		}
 
-		if !checked && sub.GetDigest() != nil {
+		// Every subject must have at least one verified digest
+		if !checked && !failed {
 			logrus.Errorf("Subject %s has no supported digest", sub.GetName())
 
 			errs++

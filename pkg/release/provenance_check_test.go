@@ -89,6 +89,16 @@ func TestProcessAttestationAndCheckProvenance(t *testing.T) {
 	parsed.Subject[0].Digest = map[string]string{"md5": "abc"}
 	require.Error(t, impl.checkProvenance(opts, parsed))
 
+	// A subject without any digest fails
+	parsed.Subject[0].Digest = nil
+	require.Error(t, impl.checkProvenance(opts, parsed))
+
+	// Malformed digest values fail
+	for _, digest := range []string{"not-a-hash", sha256Sum + "ff", "FF" + sha256Sum[2:]} {
+		parsed.Subject[0].Digest = map[string]string{"sha256": digest}
+		require.Error(t, impl.checkProvenance(opts, parsed), digest)
+	}
+
 	// A missing artifact fails
 	parsed.Subject[0].Digest = map[string]string{"sha256": sha256Sum}
 	parsed.Subject[0].Name = "does-not-exist.tar.gz"
