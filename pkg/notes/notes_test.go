@@ -231,7 +231,7 @@ func TestPrettySIG(t *testing.T) {
 	}
 
 	for input, expected := range cases {
-		require.Equal(t, expected, (prettySIG(input)))
+		require.Equal(t, expected, prettySIG(input))
 	}
 }
 
