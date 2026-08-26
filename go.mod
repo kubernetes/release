@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/storage v1.62.3
 	github.com/GoogleCloudPlatform/testgrid v0.0.38
 	github.com/blang/semver/v4 v4.0.0
+	github.com/carabiner-dev/signer v0.6.0
 	github.com/cheggaaa/pb/v3 v3.2.1
 	github.com/fastly/go-fastly/v13 v13.1.2
 	github.com/go-git/go-git/v5 v5.19.2
@@ -24,6 +25,8 @@ require (
 	github.com/sergi/go-diff v1.4.0
 	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/shurcooL/githubv4 v0.0.0-20220115235240-a14260e6f8a2
+	github.com/sigstore/sigstore v1.10.9
+	github.com/sigstore/sigstore-go v1.3.0
 	github.com/sirupsen/logrus v1.10.1
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
@@ -115,6 +118,8 @@ require (
 	github.com/buildkite/go-pipeline v0.15.0 // indirect
 	github.com/buildkite/interpolate v0.1.5 // indirect
 	github.com/buildkite/roko v1.4.0 // indirect
+	github.com/carabiner-dev/attestation v0.2.1 // indirect
+	github.com/carabiner-dev/command v0.3.1 // indirect
 	github.com/carabiner-dev/hasher v0.2.4 // indirect
 	github.com/carabiner-dev/spdx3 v0.1.0 // indirect
 	github.com/carabiner-dev/unpack v0.3.1 // indirect
@@ -271,11 +276,9 @@ require (
 	github.com/shurcooL/graphql v0.0.0-20230722043721-ed46e5a46466 // indirect
 	github.com/sigstore/cosign/v2 v2.6.3 // indirect
 	github.com/sigstore/fulcio v1.8.6 // indirect
-	github.com/sigstore/protobuf-specs v0.5.1 // indirect
+	github.com/sigstore/protobuf-specs v0.5.2 // indirect
 	github.com/sigstore/rekor v1.5.3 // indirect
 	github.com/sigstore/rekor-tiles/v2 v2.3.0 // indirect
-	github.com/sigstore/sigstore v1.10.9 // indirect
-	github.com/sigstore/sigstore-go v1.3.0 // indirect
 	github.com/sigstore/timestamp-authority/v2 v2.1.3 // indirect
 	github.com/skeema/knownhosts v1.3.2 // indirect
 	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
