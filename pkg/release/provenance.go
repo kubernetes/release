@@ -18,18 +18,23 @@ package release
 
 import (
 	"crypto/sha1" //nolint:gosec // used for file integrity checks, NOT security
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
-	intoto "github.com/in-toto/in-toto-golang/in_toto"
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"sigs.k8s.io/bom/pkg/provenance"
 	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/object"
+	"sigs.k8s.io/release-utils/hash"
 	"sigs.k8s.io/release-utils/helpers"
 )
 
@@ -40,6 +45,7 @@ type ProvenanceChecker struct {
 	impl     provenanceCheckerImplementation
 }
 
+// NewProvenanceChecker returns a new ProvenanceChecker instance.
 func NewProvenanceChecker(opts *ProvenanceCheckerOptions) *ProvenanceChecker {
 	p := &ProvenanceChecker{
 		objStore: object.NewGCS(),
@@ -90,7 +96,7 @@ func (pc *ProvenanceChecker) CheckStageProvenance(buildVersion string) error {
 
 	logrus.Infof(
 		"Successfully verified provenance information of %d staged artifacts",
-		len(statement.Subject),
+		len(statement.GetSubject()),
 	)
 
 	return nil
@@ -123,8 +129,8 @@ type ProvenanceCheckerOptions struct {
 
 type provenanceCheckerImplementation interface {
 	downloadStagedArtifacts(*ProvenanceCheckerOptions, *object.GCS, string) error
-	processAttestation(*ProvenanceCheckerOptions, string) (*provenance.Statement, error)
-	checkProvenance(*ProvenanceCheckerOptions, *provenance.Statement) error
+	processAttestation(*ProvenanceCheckerOptions, string) (*intoto.Statement, error)
+	checkProvenance(*ProvenanceCheckerOptions, *intoto.Statement) error
 	generateFinalAttestation(opts *ProvenanceCheckerOptions, sbom, stageProvenance, version string) error
 }
 
@@ -149,40 +155,112 @@ func (di *defaultProvenanceCheckerImpl) downloadStagedArtifacts(
 	return nil
 }
 
-// processAttestation.
+// processAttestation reads the SLSA attestation generated during the stage
+// run. Note that for now the attestation itself is not verified, we only
+// use it to extract the subjects to check the staged artifacts.
 func (di *defaultProvenanceCheckerImpl) processAttestation(
 	opts *ProvenanceCheckerOptions, buildVersion string,
-) (s *provenance.Statement, err error) {
+) (*intoto.Statement, error) {
 	// Load the downloaded statement
-	s, err = provenance.LoadStatement(filepath.Join(opts.StageDirectory, buildVersion, ProvenanceFilename))
+	data, err := os.ReadFile(filepath.Join(opts.StageDirectory, buildVersion, ProvenanceFilename))
 	if err != nil {
-		return nil, fmt.Errorf("loading staging provenance file: %w", err)
+		return nil, fmt.Errorf("reading staging provenance file: %w", err)
+	}
+
+	s := &intoto.Statement{}
+	if err := protojson.Unmarshal(data, s); err != nil {
+		return nil, fmt.Errorf("parsing staging provenance file: %w", err)
 	}
 
 	// We've downloaded all artifacts, so to check we need to strip
 	// the gcs bucket prefix from the subjects to read from the local copy
 	gcsPath := object.GcsPrefix + filepath.Join(opts.StageBucket, StagePath)
 
-	newSubjects := []intoto.Subject{}
-
-	for i, sub := range s.Subject {
-		newSubjects = append(newSubjects, intoto.Subject{
-			Name:   strings.TrimPrefix(sub.Name, gcsPath),
-			Digest: sub.Digest,
-		})
-		s.Subject[i].Name = strings.TrimPrefix(sub.Name, gcsPath)
+	for _, sub := range s.GetSubject() {
+		sub.Name = strings.TrimPrefix(sub.GetName(), gcsPath)
 	}
-
-	s.Subject = newSubjects
 
 	return s, nil
 }
 
+// hexRegex matches lowercase hex encoded digest values.
+var hexRegex = regexp.MustCompile(`^[0-9a-f]+$`)
+
+// checkProvenance verifies the hashes of the local copies of the staged
+// artifacts against the subjects of the attestation.
 func (di *defaultProvenanceCheckerImpl) checkProvenance(
-	opts *ProvenanceCheckerOptions, s *provenance.Statement,
+	opts *ProvenanceCheckerOptions, s *intoto.Statement,
 ) error {
-	if err := s.VerifySubjects(opts.StageDirectory); err != nil {
-		return fmt.Errorf("checking subjects in attestation: %w", err)
+	hashers := map[string]struct {
+		hashFile     func(string) (string, error)
+		digestLength int
+	}{
+		intoto.AlgorithmSHA256.String(): {hash.SHA256ForFile, sha256.Size * 2},
+		intoto.AlgorithmSHA512.String(): {hash.SHA512ForFile, sha512.Size * 2},
+	}
+
+	errs := 0
+
+	for _, sub := range s.GetSubject() {
+		if sub.GetName() == "" {
+			logrus.Error("Found empty subject in provenance attestation")
+
+			errs++
+
+			continue
+		}
+
+		// checked records if at least one digest of the subject was
+		// verified, failed if any of its digests failed to verify:
+		checked, failed := false, false
+
+		for algo, expected := range sub.GetDigest() {
+			hasher, ok := hashers[algo]
+			if !ok {
+				continue
+			}
+
+			if len(expected) != hasher.digestLength || !hexRegex.MatchString(expected) {
+				logrus.Errorf("Malformed %s digest in %s", algo, sub.GetName())
+
+				errs++
+				failed = true
+
+				break
+			}
+
+			actual, err := hasher.hashFile(filepath.Join(opts.StageDirectory, sub.GetName()))
+			if err != nil {
+				logrus.Errorf("Hashing %s: %v", sub.GetName(), err)
+
+				errs++
+				failed = true
+
+				break
+			}
+
+			if actual != expected {
+				logrus.Errorf("Invalid %s hash in %s", algo, sub.GetName())
+
+				errs++
+				failed = true
+
+				break
+			}
+
+			checked = true
+		}
+
+		// Every subject must have at least one verified digest
+		if !checked && !failed {
+			logrus.Errorf("Subject %s has no supported digest", sub.GetName())
+
+			errs++
+		}
+	}
+
+	if errs > 0 {
+		return fmt.Errorf("%d errors verifying subjects of the provenance attestation", errs)
 	}
 
 	return nil
@@ -201,7 +279,7 @@ func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(
 	// Rewrite the provenance sublects to list their full paths in the bucket
 	for i, sub := range slsaStatement.Subject {
 		slsaStatement.Subject[i].Name = object.GcsPrefix + filepath.Join(
-			opts.StageBucket, "release", version, sub.Name,
+			opts.StageBucket, "release", version, sub.GetName(),
 		)
 	}
 
@@ -223,6 +301,7 @@ type ProvenanceReader struct {
 	impl    provenanceReaderImplementation
 }
 
+// NewProvenanceReader returns a new ProvenanceReader instance.
 func NewProvenanceReader(opts *ProvenanceReaderOptions) *ProvenanceReader {
 	return &ProvenanceReader{
 		options: opts,
@@ -231,8 +310,8 @@ func NewProvenanceReader(opts *ProvenanceReaderOptions) *ProvenanceReader {
 }
 
 type provenanceReaderImplementation interface {
-	GetStagingSubjects(*ProvenanceReaderOptions, string) ([]intoto.Subject, error)
-	GetBuildSubjects(*ProvenanceReaderOptions, string, string) ([]intoto.Subject, error)
+	GetStagingSubjects(*ProvenanceReaderOptions, string) ([]*intoto.ResourceDescriptor, error)
+	GetBuildSubjects(*ProvenanceReaderOptions, string, string) ([]*intoto.ResourceDescriptor, error)
 }
 
 type ProvenanceReaderOptions struct {
@@ -243,14 +322,14 @@ type ProvenanceReaderOptions struct {
 
 // GetBuildSubjects returns all artifacts in the output directory
 // as intoto subjects, ready to add to the attestation.
-func (pr *ProvenanceReader) GetBuildSubjects(path, version string) ([]intoto.Subject, error) {
+func (pr *ProvenanceReader) GetBuildSubjects(path, version string) ([]*intoto.ResourceDescriptor, error) {
 	return pr.impl.GetBuildSubjects(pr.options, path, version)
 }
 
 // GetStagingSubjects reads artifacts from the GCB workspace and returns them
 // as in-toto subjects, with their paths normalized to their final locations
 // in the staging bucket.
-func (pr *ProvenanceReader) GetStagingSubjects(path string) ([]intoto.Subject, error) {
+func (pr *ProvenanceReader) GetStagingSubjects(path string) ([]*intoto.ResourceDescriptor, error) {
 	return pr.impl.GetStagingSubjects(pr.options, path)
 }
 
@@ -258,7 +337,7 @@ type defaultProvenanceReaderImpl struct{}
 
 func (di *defaultProvenanceReaderImpl) GetStagingSubjects(
 	opts *ProvenanceReaderOptions, path string,
-) ([]intoto.Subject, error) {
+) ([]*intoto.ResourceDescriptor, error) {
 	// Create the dummy statement to read artifacts
 	dummy := provenance.NewSLSAStatement()
 
@@ -281,12 +360,12 @@ func (di *defaultProvenanceReaderImpl) GetStagingSubjects(
 	}
 
 	// Check if we are dealing with the sources tar and translate to the top
-	if dummy.Subject[0].Name == filepath.Join(opts.WorkspaceDir, SourcesTar) {
+	if dummy.Subject[0].GetName() == filepath.Join(opts.WorkspaceDir, SourcesTar) {
 		dummy.Subject[0].Name = SourcesTar
 	}
 
 	for i, s := range dummy.Subject {
-		dummy.Subject[i].Name = object.GcsPrefix + filepath.Join(gcsPath, s.Name)
+		dummy.Subject[i].Name = object.GcsPrefix + filepath.Join(gcsPath, s.GetName())
 	}
 
 	return dummy.Subject, nil
@@ -294,7 +373,7 @@ func (di *defaultProvenanceReaderImpl) GetStagingSubjects(
 
 func (di *defaultProvenanceReaderImpl) GetBuildSubjects(
 	opts *ProvenanceReaderOptions, path, version string,
-) ([]intoto.Subject, error) {
+) ([]*intoto.ResourceDescriptor, error) {
 	// The path in the bucket were built artifacts will be staged
 	gcsPath := filepath.Join(opts.Bucket, StagePath, opts.BuildVersion)
 
@@ -310,19 +389,19 @@ func (di *defaultProvenanceReaderImpl) GetBuildSubjects(
 
 	// Cycle the subjects, translate the paths and copy them to the
 	// real attestation:
-	newSubjects := []intoto.Subject{}
+	newSubjects := []*intoto.ResourceDescriptor{}
 
 	for _, subject := range dummy.Subject {
 		// If the artifact is not in the images or gcs-stage dir, skip
-		if !strings.HasPrefix(subject.Name, ImagesPath) &&
-			!strings.HasPrefix(subject.Name, GCSStagePath) {
+		if !strings.HasPrefix(subject.GetName(), ImagesPath) &&
+			!strings.HasPrefix(subject.GetName(), GCSStagePath) {
 			continue
 		}
 
 		// Now the tricky part. We need to re-append the version tag. Eg
 		// gcs-stage/v1.23.0-alpha.4/file.txt should be
 		// v1.23.0-alpha.4/gcs-stage/v1.23.0-alpha.4/file.txt should be
-		subject.Name = object.GcsPrefix + filepath.Join(gcsPath, version, subject.Name)
+		subject.Name = object.GcsPrefix + filepath.Join(gcsPath, version, subject.GetName())
 
 		newSubjects = append(newSubjects, subject)
 	}

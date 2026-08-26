@@ -1,0 +1,8 @@
+version: v2
+plugins:
+  # Run protoc-gen-go from the google.golang.org/protobuf module version
+  # pinned in go.mod so that generation is reproducible. The Go code is
+  # written to the go_package of each proto, relative to the repository root.
+  - local: ["go", "run", "google.golang.org/protobuf/cmd/protoc-gen-go"]
+    out: .
+    opt: module=k8s.io/release

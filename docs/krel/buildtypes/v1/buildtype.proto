@@ -1,0 +1,43 @@
+// Copyright 2026 The Kubernetes Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+// Schema of the SLSA build type
+// https://git.k8s.io/release/docs/krel/buildtypes/v1
+// describing a Kubernetes release process run performed by krel.
+package k8s.release.anago.buildtypes.v1;
+
+option go_package = "k8s.io/release/pkg/anago/buildtypes/v1";
+
+// ExternalParameters are the externally controlled inputs of a krel
+// run. They are recorded in the externalParameters field of the build
+// definition of the SLSA provenance predicate.
+message ExternalParameters {
+  // Type of release to build: alpha, beta, rc or official.
+  string release_type = 1;
+
+  // Kubernetes branch the release is built from, either master or a
+  // release-X.Y branch.
+  string release_branch = 2;
+
+  // Build version to release, in the form vX.Y.Z-[alpha|beta|rc].N.C+SHA.
+  string build_version = 3;
+
+  // Whether the run stages the artifacts to the production locations.
+  bool nomock = 4;
+
+  // Cloud Build configuration the run was submitted with.
+  string entry_point = 5;
+}

@@ -66,13 +66,13 @@ func TestGetBuildSubjects(t *testing.T) {
 
 	// Check subjects match in their data and rewritten path
 	for _, sub := range subjects {
-		filename := filepath.Base(sub.Name)
+		filename := filepath.Base(sub.GetName())
 		require.NotEmpty(t, filename)
 		_, ok := testFiles[filename]
 		require.True(t, ok)
-		require.Equal(t, testFiles[filename].checksum, sub.Digest["sha256"])
-		require.True(t, strings.HasPrefix(sub.Name, object.GcsPrefix+gcsPath), filename)
-		require.True(t, strings.HasPrefix(sub.Name, object.GcsPrefix+filepath.Join(gcsPath, version)), filename)
+		require.Equal(t, testFiles[filename].checksum, sub.GetDigest()["sha256"])
+		require.True(t, strings.HasPrefix(sub.GetName(), object.GcsPrefix+gcsPath), filename)
+		require.True(t, strings.HasPrefix(sub.GetName(), object.GcsPrefix+filepath.Join(gcsPath, version)), filename)
 	}
 }
 
@@ -115,16 +115,16 @@ func TestGetStagingSubjects(t *testing.T) {
 	// Al subjects should appear in the provenance data, we have an exception
 	// with the sources tar which always goes to the top of the staging dir
 	for _, sub := range subjects {
-		filename := filepath.Base(sub.Name)
+		filename := filepath.Base(sub.GetName())
 		require.NotEmpty(t, filename)
 
 		_, ok := testFiles[filepath.Join("second", filename)]
 		if filename == SourcesTar {
 			require.False(t, ok)
-			require.Equal(t, sub.Name, object.GcsPrefix+filepath.Join(gcsPath, SourcesTar))
+			require.Equal(t, sub.GetName(), object.GcsPrefix+filepath.Join(gcsPath, SourcesTar))
 		} else {
 			require.True(t, ok)
-			require.True(t, strings.HasPrefix(sub.Name, object.GcsPrefix+gcsPath), filename)
+			require.True(t, strings.HasPrefix(sub.GetName(), object.GcsPrefix+gcsPath), filename)
 		}
 	}
 }

@@ -1,0 +1,10 @@
+version: v2
+modules:
+  - path: .
+lint:
+  use:
+    - STANDARD
+  except:
+    # The proto packages carry the full k8s.io/release path, not the
+    # directory path relative to the repository root.
+    - PACKAGE_DIRECTORY_MATCH
