@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -36,6 +37,23 @@ func TestRunSignAttestation(t *testing.T) {
 			signOpts, &signAttestationOptions{}, filepath.Join(t.TempDir(), "missing.json"),
 		)
 		require.Error(t, err)
+	})
+
+	t.Run("invalid service account key from the environment", func(t *testing.T) {
+		t.Parallel()
+
+		dir := t.TempDir()
+		statement := filepath.Join(dir, "statement.json")
+		require.NoError(t, os.WriteFile(statement, []byte(`{
+			"_type": "https://in-toto.io/Statement/v1",
+			"subject": [{"name": "a", "digest": {"sha256": "0e8a8b6f7c6cf3b0f2f2b6c2d1a4f4b3c2e1d0f9a8b7c6d5e4f3a2b1c0d9e8f7"}}],
+			"predicateType": "https://example.com/test", "predicate": {}
+		}`), 0o600))
+
+		err := runSignAttestation(
+			signOpts, &signAttestationOptions{serviceAccountJSON: `{"type": "authorized_user"}`}, statement,
+		)
+		require.ErrorContains(t, err, "not a service account key")
 	})
 
 	t.Run("output path cannot be created", func(t *testing.T) {

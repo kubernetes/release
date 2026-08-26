@@ -37,6 +37,10 @@ import (
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt attestationfakes/fake_signer_implementation.go > attestationfakes/_fake_signer_implementation.go && mv attestationfakes/_fake_signer_implementation.go attestationfakes/fake_signer_implementation.go"
 
+// ServiceAccountEnvKey is the name of the environment variable that can
+// carry the JSON contents of the Google service account key to sign with.
+const ServiceAccountEnvKey = "KREL_SIGNING_SERVICE_ACCOUNT_KEY"
+
 // ErrNoIdentity is returned when the service account key did not yield an
 // identity token.
 var ErrNoIdentity = errors.New("service account key did not produce an identity token")
@@ -46,10 +50,16 @@ type SignerOptions struct {
 	// ServiceAccountFile is the path to a Google service account key (JSON).
 	// When set, the statement is signed exclusively with the identity of that
 	// service account: the signer will not fall back to any other credential
-	// if obtaining a certificate with it fails. When empty, the signer tries
-	// the ambient credentials of the environment (the GCP metadata server or
+	// if obtaining a certificate with it fails. When neither this nor
+	// ServiceAccountJSON is set, the signer tries the ambient credentials of
+	// the environment (the GCP metadata server or
 	// GOOGLE_APPLICATION_CREDENTIALS, GitHub Actions, GitLab CI).
 	ServiceAccountFile string
+
+	// ServiceAccountJSON is the contents of a Google service account key. It
+	// locks the signer to the service account exactly like ServiceAccountFile
+	// does, which takes precedence when both are set.
+	ServiceAccountJSON []byte
 
 	// Timeout bounds the identity token exchange with Google when signing
 	// with a service account key.
@@ -61,6 +71,12 @@ func DefaultSignerOptions() *SignerOptions {
 	return &SignerOptions{
 		Timeout: 3 * time.Minute,
 	}
+}
+
+// hasServiceAccount returns true when a service account key was configured,
+// either as a file or as its JSON contents.
+func (o *SignerOptions) hasServiceAccount() bool {
+	return o.ServiceAccountFile != "" || len(o.ServiceAccountJSON) > 0
 }
 
 // Signer signs in-toto statements using a Google Cloud identity and wraps
@@ -88,7 +104,7 @@ func NewSigner(opts *SignerOptions) *Signer {
 type signerImplementation interface {
 	ReadStatement(path string) ([]byte, error)
 	NewSigner() *signer.Signer
-	ServiceAccountToken(ctx context.Context, keyFile, audience string) (*oauthflow.OIDCIDToken, error)
+	ServiceAccountToken(ctx context.Context, keyFile string, keyJSON []byte, audience string) (*oauthflow.OIDCIDToken, error)
 	SignStatement(sgnr *signer.Signer, token *oauthflow.OIDCIDToken, data []byte) (*sbundle.Bundle, error)
 	WriteBundle(sgnr *signer.Signer, bndl *sbundle.Bundle, w io.Writer) error
 }
@@ -108,14 +124,14 @@ func (s *Signer) SignFile(path string, w io.Writer) error {
 	// the signer runs its own ambient credential discovery.
 	var token *oauthflow.OIDCIDToken
 
-	if s.options.ServiceAccountFile != "" {
+	if s.options.hasServiceAccount() {
 		ctx, cancel := context.WithTimeout(context.Background(), s.options.Timeout)
 		defer cancel()
 
 		// The token audience must match the client ID the sigstore instance
 		// expects, otherwise Fulcio will reject it.
 		token, err = s.impl.ServiceAccountToken(
-			ctx, s.options.ServiceAccountFile, sgnr.Options.OIDCConfig.ClientID,
+			ctx, s.options.ServiceAccountFile, s.options.ServiceAccountJSON, sgnr.Options.OIDCConfig.ClientID,
 		)
 		if err != nil {
 			return fmt.Errorf("obtaining identity from service account key: %w", err)
@@ -171,17 +187,28 @@ func (*defaultSignerImpl) NewSigner() *signer.Signer {
 }
 
 // ServiceAccountToken obtains an OIDC token for the given audience from
-// Google Cloud using the service account key in keyFile. The identity of the
-// host is never used, even if exchanging the key fails.
+// Google Cloud using a service account key, either the file in keyFile or
+// the key contents in keyJSON (the file takes precedence). The identity of
+// the host is never used, even if exchanging the key fails.
 func (*defaultSignerImpl) ServiceAccountToken(
-	ctx context.Context, keyFile, audience string,
+	ctx context.Context, keyFile string, keyJSON []byte, audience string,
 ) (*oauthflow.OIDCIDToken, error) {
-	logrus.Infof("Obtaining identity token from service account key %s", keyFile)
+	var key gcp.Option
 
-	provider, err := gcp.New(
-		gcp.WithServiceAccountFile(keyFile),
-		gcp.WithAmbientCredentials(false),
-	)
+	switch {
+	case keyFile != "":
+		logrus.Infof("Obtaining identity token from service account key %s", keyFile)
+
+		key = gcp.WithServiceAccountFile(keyFile)
+	case len(keyJSON) > 0:
+		logrus.Info("Obtaining identity token from service account key data")
+
+		key = gcp.WithServiceAccountJSON(keyJSON)
+	default:
+		return nil, errors.New("no service account key configured")
+	}
+
+	provider, err := gcp.New(key, gcp.WithAmbientCredentials(false))
 	if err != nil {
 		return nil, fmt.Errorf("creating GCP identity provider: %w", err)
 	}

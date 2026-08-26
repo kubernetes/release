@@ -32,6 +32,8 @@ const serviceAccountFileFlag = "service-account-file"
 type signAttestationOptions struct {
 	outputPath         string
 	serviceAccountFile string
+	// serviceAccountJSON is the key data read from the environment
+	serviceAccountJSON string
 }
 
 var signAttestationOpts = &signAttestationOptions{}
@@ -49,9 +51,11 @@ or to the file set with --` + outputPathFlag + `.
 By default the statement is signed with the ambient identity provider.
 
 To sign with an explicit identity, pass a Google Cloud service account key
-file with --` + serviceAccountFileFlag + `. The signer is then locked to that
-service account: the certificate is only requested with its identity and signing
-fails if that is not possible, it never falls back to the ambient credentials.`,
+file with --` + serviceAccountFileFlag + ` or set the contents of the key in
+the ` + attestation.ServiceAccountEnvKey + ` environment variable (the flag
+takes precedence). The signer is then locked to that service account: the
+certificate is only requested with its identity and signing fails if that is
+not possible, it never falls back to the ambient credentials.`,
 
 	Example: `  # Sign an attestation using the ambient GCP credentials:
   krel sign attestation provenance.json > provenance.json.sigstore.json
@@ -62,6 +66,10 @@ fails if that is not possible, it never falls back to the ambient credentials.`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(_ *cobra.Command, args []string) error {
+		if key, isSet := os.LookupEnv(attestation.ServiceAccountEnvKey); isSet {
+			signAttestationOpts.serviceAccountJSON = key
+		}
+
 		return runSignAttestation(singOpts, signAttestationOpts, args[0])
 	},
 }
@@ -78,7 +86,7 @@ func init() {
 		&signAttestationOpts.serviceAccountFile,
 		serviceAccountFileFlag,
 		"",
-		"path to a Google service account key (defaults to ambien credentials)",
+		"path to a Google service account key (defaults to $"+attestation.ServiceAccountEnvKey+" or the ambient credentials)",
 	)
 
 	signCmd.AddCommand(signAttestationCmd)
@@ -87,6 +95,7 @@ func init() {
 func runSignAttestation(signOpts *signOptions, opts *signAttestationOptions, statementPath string) (err error) {
 	signerOpts := attestation.DefaultSignerOptions()
 	signerOpts.ServiceAccountFile = opts.serviceAccountFile
+	signerOpts.ServiceAccountJSON = []byte(opts.serviceAccountJSON)
 	signerOpts.Timeout = signOpts.timeout
 
 	var out io.Writer = os.Stdout
