@@ -19,8 +19,8 @@ IMAGE ?= $(REGISTRY)/debian-base
 BUILD_IMAGE ?= debian-build
 
 TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= bookworm-v1.0.8
-CONFIG ?= bookworm
+IMAGE_VERSION ?= trixie-v1.0.0
+CONFIG ?= trixie
 
 TAR_FILE ?= rootfs.tar
 ARCH ?= amd64
