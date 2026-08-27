@@ -118,6 +118,7 @@ func (s *Signer) SignFile(path string, w io.Writer) error {
 	}
 
 	sgnr := s.impl.NewSigner()
+	defer sgnr.Close()
 
 	// When a service account key is set, the identity token is minted here
 	// from the key and pinned into the signer. Otherwise token is left nil and
@@ -229,7 +230,8 @@ func (*defaultSignerImpl) ServiceAccountToken(
 // sigstore bundle. If token is not nil, the signer is locked to it: the
 // Fulcio certificate can only be obtained with that identity and the signer
 // will not try its own credential discovery. A nil token leaves the signer's
-// ambient credential providers in charge of finding an identity.
+// ambient credential providers in charge of finding an identity. The caller
+// owns the signer and is responsible for closing it.
 func (*defaultSignerImpl) SignStatement(
 	sgnr *signer.Signer, token *oauthflow.OIDCIDToken, data []byte,
 ) (*sbundle.Bundle, error) {
@@ -237,8 +239,6 @@ func (*defaultSignerImpl) SignStatement(
 		sgnr.Options.Token = token
 		sgnr.Options.DisableSTS = true
 	}
-
-	defer sgnr.Close()
 
 	return sgnr.SignStatementBundle(data)
 }
