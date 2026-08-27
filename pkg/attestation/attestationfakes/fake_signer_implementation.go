@@ -95,6 +95,18 @@ type FakeSignerImplementation struct {
 	writeBundleReturnsOnCall map[int]struct {
 		result1 error
 	}
+	WriteFileStub        func(string, []byte) error
+	writeFileMutex       sync.RWMutex
+	writeFileArgsForCall []struct {
+		arg1 string
+		arg2 []byte
+	}
+	writeFileReturns struct {
+		result1 error
+	}
+	writeFileReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -418,6 +430,73 @@ func (fake *FakeSignerImplementation) WriteBundleReturnsOnCall(i int, result1 er
 		})
 	}
 	fake.writeBundleReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeSignerImplementation) WriteFile(arg1 string, arg2 []byte) error {
+	var arg2Copy []byte
+	if arg2 != nil {
+		arg2Copy = make([]byte, len(arg2))
+		copy(arg2Copy, arg2)
+	}
+	fake.writeFileMutex.Lock()
+	ret, specificReturn := fake.writeFileReturnsOnCall[len(fake.writeFileArgsForCall)]
+	fake.writeFileArgsForCall = append(fake.writeFileArgsForCall, struct {
+		arg1 string
+		arg2 []byte
+	}{arg1, arg2Copy})
+	stub := fake.WriteFileStub
+	fakeReturns := fake.writeFileReturns
+	fake.recordInvocation("WriteFile", []interface{}{arg1, arg2Copy})
+	fake.writeFileMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeSignerImplementation) WriteFileCallCount() int {
+	fake.writeFileMutex.RLock()
+	defer fake.writeFileMutex.RUnlock()
+	return len(fake.writeFileArgsForCall)
+}
+
+func (fake *FakeSignerImplementation) WriteFileCalls(stub func(string, []byte) error) {
+	fake.writeFileMutex.Lock()
+	defer fake.writeFileMutex.Unlock()
+	fake.WriteFileStub = stub
+}
+
+func (fake *FakeSignerImplementation) WriteFileArgsForCall(i int) (string, []byte) {
+	fake.writeFileMutex.RLock()
+	defer fake.writeFileMutex.RUnlock()
+	argsForCall := fake.writeFileArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeSignerImplementation) WriteFileReturns(result1 error) {
+	fake.writeFileMutex.Lock()
+	defer fake.writeFileMutex.Unlock()
+	fake.WriteFileStub = nil
+	fake.writeFileReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeSignerImplementation) WriteFileReturnsOnCall(i int, result1 error) {
+	fake.writeFileMutex.Lock()
+	defer fake.writeFileMutex.Unlock()
+	fake.WriteFileStub = nil
+	if fake.writeFileReturnsOnCall == nil {
+		fake.writeFileReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.writeFileReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }

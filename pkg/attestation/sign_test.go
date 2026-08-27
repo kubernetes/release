@@ -185,12 +185,15 @@ func TestSignStatementLocksToken(t *testing.T) {
 	require.True(t, creds.DisableSTS)
 }
 
-// fakeObjectStore is an objectStore that serves a fixed object.
+// fakeObjectStore is an objectStore that serves a fixed object and records
+// what gets uploaded.
 type fakeObjectStore struct {
-	data    []byte
-	err     error
-	gcsPath string
-	dst     string
+	data     []byte
+	err      error
+	gcsPath  string
+	dst      string
+	src      string
+	uploaded []byte
 }
 
 func (f *fakeObjectStore) CopyToLocal(gcsPath, dst string) error {
@@ -200,6 +203,60 @@ func (f *fakeObjectStore) CopyToLocal(gcsPath, dst string) error {
 	}
 
 	return os.WriteFile(dst, f.data, 0o600)
+}
+
+func (f *fakeObjectStore) CopyToRemote(src, gcsPath string) error {
+	f.src, f.gcsPath = src, gcsPath
+	if f.err != nil {
+		return f.err
+	}
+
+	data, err := os.ReadFile(src)
+	f.uploaded = data
+
+	return err
+}
+
+func TestWriteFile(t *testing.T) {
+	t.Parallel()
+
+	const gcsPath = "gs://bucket/stage/v1.36.0-alpha.1/provenance.json.sigstore.json"
+
+	want := []byte("bundle")
+
+	t.Run("local file", func(t *testing.T) {
+		t.Parallel()
+
+		filePath := filepath.Join(t.TempDir(), "bundle.json")
+		store := &fakeObjectStore{}
+
+		require.NoError(t, (&defaultSignerImpl{gcs: store}).WriteFile(filePath, want))
+
+		data, err := os.ReadFile(filePath)
+		require.NoError(t, err)
+		require.Equal(t, want, data)
+		require.Empty(t, store.gcsPath, "local files must not touch GCS")
+	})
+
+	t.Run("upload to GCS", func(t *testing.T) {
+		t.Parallel()
+
+		store := &fakeObjectStore{}
+
+		require.NoError(t, (&defaultSignerImpl{gcs: store}).WriteFile(gcsPath, want))
+		require.Equal(t, gcsPath, store.gcsPath)
+		require.Equal(t, want, store.uploaded)
+		require.Equal(t, "provenance.json.sigstore.json", filepath.Base(store.src))
+		require.NoFileExists(t, store.src, "temporary upload must be cleaned up")
+	})
+
+	t.Run("upload fails", func(t *testing.T) {
+		t.Parallel()
+
+		store := &fakeObjectStore{err: errTest}
+
+		require.ErrorIs(t, (&defaultSignerImpl{gcs: store}).WriteFile(gcsPath, want), errTest)
+	})
 }
 
 func TestReadStatementFromGCS(t *testing.T) {
