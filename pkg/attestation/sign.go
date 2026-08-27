@@ -112,6 +112,7 @@ type signerImplementation interface {
 	ServiceAccountToken(ctx context.Context, keyFile string, keyJSON []byte, audience string) (*oauthflow.OIDCIDToken, error)
 	SignStatement(sgnr *signer.Signer, token *oauthflow.OIDCIDToken, data []byte) (*sbundle.Bundle, error)
 	WriteBundle(sgnr *signer.Signer, bndl *sbundle.Bundle, w io.Writer) error
+	WriteFile(filePath string, data []byte) error
 }
 
 // SignFile reads the in-toto statement stored in path, which can be a local
@@ -161,9 +162,20 @@ func (s *Signer) SignFile(statementPath string, w io.Writer) error {
 	return nil
 }
 
+// WriteFile writes data to filePath, a local file or an object in Google
+// Cloud Storage (gs://bucket/path) which is overwritten if it exists.
+func (s *Signer) WriteFile(filePath string, data []byte) error {
+	if err := s.impl.WriteFile(filePath, data); err != nil {
+		return fmt.Errorf("writing %s: %w", filePath, err)
+	}
+
+	return nil
+}
+
 // objectStore abstracts the Google Cloud Storage operations the signer needs.
 type objectStore interface {
 	CopyToLocal(gcsPath, dst string) error
+	CopyToRemote(src, gcsPath string) error
 }
 
 type defaultSignerImpl struct {
@@ -262,6 +274,35 @@ func (*defaultSignerImpl) SignStatement(
 // WriteBundle marshals the bundle as JSON into w.
 func (*defaultSignerImpl) WriteBundle(sgnr *signer.Signer, bndl *sbundle.Bundle, w io.Writer) error {
 	return sgnr.WriteBundle(bndl, w)
+}
+
+// WriteFile writes data to a local file or, when filePath is a gs:// URL,
+// uploads it to Google Cloud Storage, replacing the object if it exists.
+func (di *defaultSignerImpl) WriteFile(filePath string, data []byte) error {
+	if !strings.HasPrefix(filePath, object.GcsPrefix) {
+		return os.WriteFile(filePath, data, 0o644) //nolint:gosec // bundles are public
+	}
+
+	tmpDir, err := os.MkdirTemp("", "krel-sign-attestation-")
+	if err != nil {
+		return fmt.Errorf("creating temporary directory: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	localPath := filepath.Join(tmpDir, path.Base(filePath))
+	if err := os.WriteFile(localPath, data, 0o600); err != nil {
+		return fmt.Errorf("writing temporary file: %w", err)
+	}
+
+	if di.gcs == nil {
+		di.gcs = newGCSClient()
+	}
+
+	if err := di.gcs.CopyToRemote(localPath, filePath); err != nil {
+		return fmt.Errorf("uploading to %s: %w", filePath, err)
+	}
+
+	return nil
 }
 
 // readFile returns the contents of a local file or, when filePath is a

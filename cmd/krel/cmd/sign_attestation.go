@@ -46,8 +46,9 @@ var signAttestationCmd = &cobra.Command{
 
 Signs an in-toto statement using sigstore and writes the resulting bundle
 (DSSE envelope, Fulcio certificate and transparency log proofs) to stdout
-or to the file set with --` + outputPathFlag + `. The statement can be a local
-file or an object in Google Cloud Storage (gs://bucket/path/statement.json).
+or to the file set with --` + outputPathFlag + `. Both the statement and the
+output path can be local files or objects in Google Cloud Storage
+(gs://bucket/path/statement.json).
 
 By default the statement is signed with the ambient identity provider.
 
@@ -83,7 +84,7 @@ func init() {
 		&signAttestationOpts.outputPath,
 		outputPathFlag,
 		"",
-		"write the signed bundle to a file instead of stdout",
+		"write the signed bundle to a file or gs:// object instead of stdout",
 	)
 
 	signAttestationCmd.PersistentFlags().StringVar(
@@ -105,7 +106,10 @@ func runSignAttestation(signOpts *signOptions, opts *signAttestationOptions, sta
 	// We will now sign the bundle in memory to avoid writing until
 	// we know signing succeeded
 	var bundle bytes.Buffer
-	if err := attestation.NewSigner(signerOpts).SignFile(statementPath, &bundle); err != nil {
+
+	signer := attestation.NewSigner(signerOpts)
+
+	if err := signer.SignFile(statementPath, &bundle); err != nil {
 		return fmt.Errorf("signing attestation: %w", err)
 	}
 
@@ -117,8 +121,8 @@ func runSignAttestation(signOpts *signOptions, opts *signAttestationOptions, sta
 		return nil
 	}
 
-	if err := os.WriteFile(opts.outputPath, bundle.Bytes(), 0o644); err != nil { //nolint:gosec // bundles are public
-		return fmt.Errorf("writing bundle to %s: %w", opts.outputPath, err)
+	if err := signer.WriteFile(opts.outputPath, bundle.Bytes()); err != nil {
+		return fmt.Errorf("writing bundle: %w", err)
 	}
 
 	logrus.Infof("Signed bundle written to %s", opts.outputPath)
