@@ -67,12 +67,11 @@ type FakeSignerImplementation struct {
 		result1 *oauthflow.OIDCIDToken
 		result2 error
 	}
-	SignStatementStub        func(*signer.Signer, *oauthflow.OIDCIDToken, []byte) (*bundle.Bundle, error)
+	SignStatementStub        func(*signer.Signer, []byte) (*bundle.Bundle, error)
 	signStatementMutex       sync.RWMutex
 	signStatementArgsForCall []struct {
 		arg1 *signer.Signer
-		arg2 *oauthflow.OIDCIDToken
-		arg3 []byte
+		arg2 []byte
 	}
 	signStatementReturns struct {
 		result1 *bundle.Bundle
@@ -82,12 +81,11 @@ type FakeSignerImplementation struct {
 		result1 *bundle.Bundle
 		result2 error
 	}
-	WriteBundleStub        func(*signer.Signer, *bundle.Bundle, io.Writer) error
+	WriteBundleStub        func(*bundle.Bundle, io.Writer) error
 	writeBundleMutex       sync.RWMutex
 	writeBundleArgsForCall []struct {
-		arg1 *signer.Signer
-		arg2 *bundle.Bundle
-		arg3 io.Writer
+		arg1 *bundle.Bundle
+		arg2 io.Writer
 	}
 	writeBundleReturns struct {
 		result1 error
@@ -300,25 +298,24 @@ func (fake *FakeSignerImplementation) ServiceAccountTokenReturnsOnCall(i int, re
 	}{result1, result2}
 }
 
-func (fake *FakeSignerImplementation) SignStatement(arg1 *signer.Signer, arg2 *oauthflow.OIDCIDToken, arg3 []byte) (*bundle.Bundle, error) {
-	var arg3Copy []byte
-	if arg3 != nil {
-		arg3Copy = make([]byte, len(arg3))
-		copy(arg3Copy, arg3)
+func (fake *FakeSignerImplementation) SignStatement(arg1 *signer.Signer, arg2 []byte) (*bundle.Bundle, error) {
+	var arg2Copy []byte
+	if arg2 != nil {
+		arg2Copy = make([]byte, len(arg2))
+		copy(arg2Copy, arg2)
 	}
 	fake.signStatementMutex.Lock()
 	ret, specificReturn := fake.signStatementReturnsOnCall[len(fake.signStatementArgsForCall)]
 	fake.signStatementArgsForCall = append(fake.signStatementArgsForCall, struct {
 		arg1 *signer.Signer
-		arg2 *oauthflow.OIDCIDToken
-		arg3 []byte
-	}{arg1, arg2, arg3Copy})
+		arg2 []byte
+	}{arg1, arg2Copy})
 	stub := fake.SignStatementStub
 	fakeReturns := fake.signStatementReturns
-	fake.recordInvocation("SignStatement", []interface{}{arg1, arg2, arg3Copy})
+	fake.recordInvocation("SignStatement", []interface{}{arg1, arg2Copy})
 	fake.signStatementMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -332,17 +329,17 @@ func (fake *FakeSignerImplementation) SignStatementCallCount() int {
 	return len(fake.signStatementArgsForCall)
 }
 
-func (fake *FakeSignerImplementation) SignStatementCalls(stub func(*signer.Signer, *oauthflow.OIDCIDToken, []byte) (*bundle.Bundle, error)) {
+func (fake *FakeSignerImplementation) SignStatementCalls(stub func(*signer.Signer, []byte) (*bundle.Bundle, error)) {
 	fake.signStatementMutex.Lock()
 	defer fake.signStatementMutex.Unlock()
 	fake.SignStatementStub = stub
 }
 
-func (fake *FakeSignerImplementation) SignStatementArgsForCall(i int) (*signer.Signer, *oauthflow.OIDCIDToken, []byte) {
+func (fake *FakeSignerImplementation) SignStatementArgsForCall(i int) (*signer.Signer, []byte) {
 	fake.signStatementMutex.RLock()
 	defer fake.signStatementMutex.RUnlock()
 	argsForCall := fake.signStatementArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeSignerImplementation) SignStatementReturns(result1 *bundle.Bundle, result2 error) {
@@ -371,20 +368,19 @@ func (fake *FakeSignerImplementation) SignStatementReturnsOnCall(i int, result1 
 	}{result1, result2}
 }
 
-func (fake *FakeSignerImplementation) WriteBundle(arg1 *signer.Signer, arg2 *bundle.Bundle, arg3 io.Writer) error {
+func (fake *FakeSignerImplementation) WriteBundle(arg1 *bundle.Bundle, arg2 io.Writer) error {
 	fake.writeBundleMutex.Lock()
 	ret, specificReturn := fake.writeBundleReturnsOnCall[len(fake.writeBundleArgsForCall)]
 	fake.writeBundleArgsForCall = append(fake.writeBundleArgsForCall, struct {
-		arg1 *signer.Signer
-		arg2 *bundle.Bundle
-		arg3 io.Writer
-	}{arg1, arg2, arg3})
+		arg1 *bundle.Bundle
+		arg2 io.Writer
+	}{arg1, arg2})
 	stub := fake.WriteBundleStub
 	fakeReturns := fake.writeBundleReturns
-	fake.recordInvocation("WriteBundle", []interface{}{arg1, arg2, arg3})
+	fake.recordInvocation("WriteBundle", []interface{}{arg1, arg2})
 	fake.writeBundleMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -398,17 +394,17 @@ func (fake *FakeSignerImplementation) WriteBundleCallCount() int {
 	return len(fake.writeBundleArgsForCall)
 }
 
-func (fake *FakeSignerImplementation) WriteBundleCalls(stub func(*signer.Signer, *bundle.Bundle, io.Writer) error) {
+func (fake *FakeSignerImplementation) WriteBundleCalls(stub func(*bundle.Bundle, io.Writer) error) {
 	fake.writeBundleMutex.Lock()
 	defer fake.writeBundleMutex.Unlock()
 	fake.WriteBundleStub = stub
 }
 
-func (fake *FakeSignerImplementation) WriteBundleArgsForCall(i int) (*signer.Signer, *bundle.Bundle, io.Writer) {
+func (fake *FakeSignerImplementation) WriteBundleArgsForCall(i int) (*bundle.Bundle, io.Writer) {
 	fake.writeBundleMutex.RLock()
 	defer fake.writeBundleMutex.RUnlock()
 	argsForCall := fake.writeBundleArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeSignerImplementation) WriteBundleReturns(result1 error) {

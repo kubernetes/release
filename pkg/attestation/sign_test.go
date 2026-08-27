@@ -65,7 +65,7 @@ func TestSignFile(t *testing.T) {
 		{
 			name: "success with ambient credentials",
 			prepare: func(mock *attestationfakes.FakeSignerImplementation) {
-				mock.WriteBundleCalls(func(_ *signer.Signer, _ *sbundle.Bundle, w io.Writer) error {
+				mock.WriteBundleCalls(func(_ *sbundle.Bundle, w io.Writer) error {
 					_, err := w.Write([]byte("bundle"))
 
 					return err
@@ -78,7 +78,7 @@ func TestSignFile(t *testing.T) {
 			opts: &SignerOptions{ServiceAccountFile: "key.json"},
 			prepare: func(mock *attestationfakes.FakeSignerImplementation) {
 				mock.ServiceAccountTokenReturns(&oauthflow.OIDCIDToken{Subject: "sa@example.com"}, nil)
-				mock.WriteBundleCalls(func(_ *signer.Signer, _ *sbundle.Bundle, w io.Writer) error {
+				mock.WriteBundleCalls(func(_ *sbundle.Bundle, w io.Writer) error {
 					_, err := w.Write([]byte("bundle"))
 
 					return err
@@ -92,7 +92,7 @@ func TestSignFile(t *testing.T) {
 			opts: &SignerOptions{ServiceAccountJSON: []byte("service-account-key-data")},
 			prepare: func(mock *attestationfakes.FakeSignerImplementation) {
 				mock.ServiceAccountTokenReturns(&oauthflow.OIDCIDToken{Subject: "sa@example.com"}, nil)
-				mock.WriteBundleCalls(func(_ *signer.Signer, _ *sbundle.Bundle, w io.Writer) error {
+				mock.WriteBundleCalls(func(_ *sbundle.Bundle, w io.Writer) error {
 					_, err := w.Write([]byte("bundle"))
 
 					return err
@@ -164,6 +164,147 @@ func TestSignFile(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSignFiles(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name       string
+		opts       *SignerOptions
+		paths      []string
+		prepare    func(*attestationfakes.FakeSignerImplementation)
+		shouldErr  bool
+		wantSAToks int
+		wantSigns  int
+	}{
+		{
+			name:      "one statement with ambient credentials",
+			paths:     []string{"a.json"},
+			prepare:   func(*attestationfakes.FakeSignerImplementation) {},
+			wantSigns: 1,
+		},
+		{
+			name:  "several statements with service account key",
+			opts:  &SignerOptions{ServiceAccountFile: "key.json"},
+			paths: []string{"a.json", "gs://bucket/b.json", "c.json"},
+			prepare: func(mock *attestationfakes.FakeSignerImplementation) {
+				mock.ServiceAccountTokenReturns(&oauthflow.OIDCIDToken{Subject: "sa@example.com"}, nil)
+			},
+			wantSAToks: 1,
+			wantSigns:  3,
+		},
+		{
+			name:      "no statements",
+			paths:     []string{},
+			prepare:   func(*attestationfakes.FakeSignerImplementation) {},
+			shouldErr: true,
+		},
+		{
+			name:  "ReadStatement fails, nothing is signed",
+			paths: []string{"a.json", "b.json"},
+			prepare: func(mock *attestationfakes.FakeSignerImplementation) {
+				mock.ReadStatementReturnsOnCall(1, nil, errTest)
+			},
+			shouldErr: true,
+		},
+		{
+			name:  "ServiceAccountToken fails",
+			opts:  &SignerOptions{ServiceAccountFile: "key.json"},
+			paths: []string{"a.json"},
+			prepare: func(mock *attestationfakes.FakeSignerImplementation) {
+				mock.ServiceAccountTokenReturns(nil, errTest)
+			},
+			shouldErr:  true,
+			wantSAToks: 1,
+		},
+		{
+			name:  "SignStatement fails mid batch",
+			paths: []string{"a.json", "b.json", "c.json"},
+			prepare: func(mock *attestationfakes.FakeSignerImplementation) {
+				mock.SignStatementReturnsOnCall(1, nil, errTest)
+			},
+			shouldErr: true,
+			wantSigns: 2,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var bundles []*sbundle.Bundle
+
+			mock := &attestationfakes.FakeSignerImplementation{}
+			mock.NewSignerReturns(signer.NewSigner())
+			mock.ReadStatementCalls(func(statementPath string) ([]byte, error) {
+				return []byte("statement:" + statementPath), nil
+			})
+			mock.SignStatementCalls(func(_ *signer.Signer, _ []byte) (*sbundle.Bundle, error) {
+				bndl := &sbundle.Bundle{}
+				bundles = append(bundles, bndl)
+
+				return bndl, nil
+			})
+			tc.prepare(mock)
+
+			sut := NewSigner(tc.opts)
+			sut.impl = mock
+
+			signed, err := sut.SignFiles(tc.paths)
+			if tc.shouldErr {
+				require.Error(t, err)
+				require.Nil(t, signed)
+
+				if len(tc.paths) > 0 {
+					require.ErrorIs(t, err, errTest)
+				}
+			} else {
+				require.NoError(t, err)
+				require.Len(t, signed, len(tc.paths))
+				// Results come back in the order of the statements
+				for i, statementPath := range tc.paths {
+					require.Equal(t, statementPath, signed[i].Path)
+					require.Same(t, bundles[i], signed[i].Bundle)
+
+					_, data := mock.SignStatementArgsForCall(i)
+					require.Equal(t, "statement:"+statementPath, string(data))
+				}
+			}
+
+			require.Equal(t, tc.wantSigns, mock.SignStatementCallCount())
+			require.Equal(t, tc.wantSAToks, mock.ServiceAccountTokenCallCount())
+
+			if tc.wantSigns > 0 {
+				// All statements are signed with the same signer so that the
+				// identity and Fulcio certificate are reused.
+				require.Equal(t, 1, mock.NewSignerCallCount())
+
+				first, _ := mock.SignStatementArgsForCall(0)
+				for i := range tc.wantSigns {
+					sgnr, _ := mock.SignStatementArgsForCall(i)
+					require.Same(t, first, sgnr)
+				}
+
+				// With a key, the signer is locked to the service account
+				if tc.wantSAToks > 0 {
+					require.NotNil(t, first.Options.Token)
+					require.Equal(t, "sa@example.com", first.Options.Token.Subject)
+					require.True(t, first.Options.DisableSTS)
+				} else {
+					require.Nil(t, first.Options.Token)
+					require.False(t, first.Options.DisableSTS)
+				}
+			}
+		})
+	}
+}
+
+func TestWriteBundle(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	require.NoError(t, (&defaultSignerImpl{}).WriteBundle(&sbundle.Bundle{}, &out))
+	require.JSONEq(t, `{}`, out.String())
 }
 
 func TestSignStatementLocksToken(t *testing.T) {
@@ -308,6 +449,7 @@ func TestReadStatement(t *testing.T) {
 		content   string
 		missing   bool
 		shouldErr bool
+		errIs     error
 	}{
 		{name: "valid statement", content: testStatement},
 		{name: "missing file", missing: true, shouldErr: true},
@@ -324,6 +466,25 @@ func TestReadStatement(t *testing.T) {
 			content:   `{"_type": "https://in-toto.io/Statement/v1", "subject": [{"name": "a"}], "predicate": {}}`,
 			shouldErr: true,
 		},
+		{
+			name: "already signed: sigstore bundle",
+			content: `{"mediaType": "application/vnd.dev.sigstore.bundle.v0.3+json",
+			"verificationMaterial": {}, "dsseEnvelope": {"payload": "e30=", "payloadType": "application/vnd.in-toto+json", "signatures": []}}`,
+			shouldErr: true,
+			errIs:     ErrAlreadySigned,
+		},
+		{
+			name:      "already signed: bundle without media type",
+			content:   `{"verificationMaterial": {}, "dsseEnvelope": {"payload": "e30="}}`,
+			shouldErr: true,
+			errIs:     ErrAlreadySigned,
+		},
+		{
+			name:      "already signed: DSSE envelope",
+			content:   `{"payloadType": "application/vnd.in-toto+json", "payload": "e30=", "signatures": [{"sig": "x"}]}`,
+			shouldErr: true,
+			errIs:     ErrAlreadySigned,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -336,6 +497,10 @@ func TestReadStatement(t *testing.T) {
 			data, err := (&defaultSignerImpl{}).ReadStatement(path)
 			if tc.shouldErr {
 				require.Error(t, err)
+
+				if tc.errIs != nil {
+					require.ErrorIs(t, err, tc.errIs)
+				}
 
 				return
 			}
