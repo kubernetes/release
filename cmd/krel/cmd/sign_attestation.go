@@ -17,8 +17,8 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -92,36 +92,32 @@ func init() {
 	signCmd.AddCommand(signAttestationCmd)
 }
 
-func runSignAttestation(signOpts *signOptions, opts *signAttestationOptions, statementPath string) (err error) {
+func runSignAttestation(signOpts *signOptions, opts *signAttestationOptions, statementPath string) error {
 	signerOpts := attestation.DefaultSignerOptions()
 	signerOpts.ServiceAccountFile = opts.serviceAccountFile
 	signerOpts.ServiceAccountJSON = []byte(opts.serviceAccountJSON)
 	signerOpts.Timeout = signOpts.timeout
 
-	var out io.Writer = os.Stdout
-
-	if opts.outputPath != "" {
-		f, err := os.Create(opts.outputPath)
-		if err != nil {
-			return fmt.Errorf("creating output file: %w", err)
-		}
-
-		defer func() {
-			if cerr := f.Close(); cerr != nil && err == nil {
-				err = fmt.Errorf("closing output file: %w", cerr)
-			}
-		}()
-
-		out = f
-	}
-
-	if err := attestation.NewSigner(signerOpts).SignFile(statementPath, out); err != nil {
+	// We will now sign the bundle in memory to avoid writing until
+	// we know signing succeeded
+	var bundle bytes.Buffer
+	if err := attestation.NewSigner(signerOpts).SignFile(statementPath, &bundle); err != nil {
 		return fmt.Errorf("signing attestation: %w", err)
 	}
 
-	if opts.outputPath != "" {
-		logrus.Infof("Signed bundle written to %s", opts.outputPath)
+	if opts.outputPath == "" {
+		if _, err := bundle.WriteTo(os.Stdout); err != nil {
+			return fmt.Errorf("writing bundle to stdout: %w", err)
+		}
+
+		return nil
 	}
+
+	if err := os.WriteFile(opts.outputPath, bundle.Bytes(), 0o644); err != nil { //nolint:gosec // bundles are public
+		return fmt.Errorf("writing bundle to %s: %w", opts.outputPath, err)
+	}
+
+	logrus.Infof("Signed bundle written to %s", opts.outputPath)
 
 	return nil
 }

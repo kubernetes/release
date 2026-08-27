@@ -56,14 +56,17 @@ func TestRunSignAttestation(t *testing.T) {
 		require.ErrorContains(t, err, "not a service account key")
 	})
 
-	t.Run("output path cannot be created", func(t *testing.T) {
+	t.Run("output file is not touched when signing fails", func(t *testing.T) {
 		t.Parallel()
+
+		outputPath := filepath.Join(t.TempDir(), "out.json")
 
 		err := runSignAttestation(
 			signOpts,
-			&signAttestationOptions{outputPath: filepath.Join(t.TempDir(), "no", "such", "dir", "out.json")},
+			&signAttestationOptions{outputPath: outputPath},
 			filepath.Join(t.TempDir(), "missing.json"),
 		)
-		require.ErrorContains(t, err, "creating output file")
+		require.ErrorContains(t, err, "signing attestation")
+		require.NoFileExists(t, outputPath)
 	})
 }
