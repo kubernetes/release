@@ -27,10 +27,14 @@ import (
 	"k8s.io/release/pkg/attestation"
 )
 
-const serviceAccountFileFlag = "service-account-file"
+const (
+	serviceAccountFileFlag = "service-account-file"
+	inPlaceFlag            = "in-place"
+)
 
 type signAttestationOptions struct {
 	outputPath         string
+	inPlace            bool
 	serviceAccountFile string
 	// serviceAccountJSON is the key data read from the environment
 	serviceAccountJSON string
@@ -40,15 +44,23 @@ var signAttestationOpts = &signAttestationOptions{}
 
 // signAttestationCmd represents the subcommand for `krel sign attestation`.
 var signAttestationCmd = &cobra.Command{
-	Use:   "attestation statement.json",
+	Use:   "attestation statement.json [--in-place statement.json...]",
 	Short: "Sign an in-toto statement into a sigstore bundle",
-	Long: `krel sign attestation attestation.json
+	Long: `krel sign attestation attestation.json [--in-place statement.json...]
 
 Signs an in-toto statement using sigstore and writes the resulting bundle
 (DSSE envelope, Fulcio certificate and transparency log proofs) to stdout
 or to the file set with --` + outputPathFlag + `. Both the statement and the
 output path can be local files or objects in Google Cloud Storage
 (gs://bucket/path/statement.json).
+
+With --` + inPlaceFlag + `, the signed bundle replaces the statement file (or
+gs:// object) itself. Several statements can then be signed at once, all in
+the same signing session, reusing the identity and the Fulcio certificate.
+--` + outputPathFlag + ` can be combined with --` + inPlaceFlag + ` to
+additionally write a copy of the bundle, but only for a single statement.
+Files that are already signed (sigstore bundles or DSSE envelopes) are
+rejected.
 
 By default the statement is signed with the ambient identity provider.
 
@@ -66,8 +78,11 @@ not possible, it never falls back to the ambient credentials.`,
   krel sign attestation --service-account-file key.json --output-path provenance.sigstore.json provenance.json
 
   # Sign a staged provenance stored in a bucket:
-  krel sign attestation gs://k8s-release-dev/stage/v1.36.0-alpha.1.10+abcdef/provenance.json`,
-	Args:          cobra.ExactArgs(1),
+  krel sign attestation gs://k8s-release-dev/stage/v1.36.0-alpha.1.10+abcdef/provenance.json
+
+  # Sign several statements in place, replacing the originals with the bundles:
+  krel sign attestation --in-place gs://bucket/stage/build/provenance.json sbom.intoto.json`,
+	Args:          cobra.MinimumNArgs(1),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(_ *cobra.Command, args []string) error {
@@ -75,7 +90,7 @@ not possible, it never falls back to the ambient credentials.`,
 			signAttestationOpts.serviceAccountJSON = key
 		}
 
-		return runSignAttestation(singOpts, signAttestationOpts, args[0])
+		return runSignAttestation(singOpts, signAttestationOpts, args)
 	},
 }
 
@@ -85,6 +100,13 @@ func init() {
 		outputPathFlag,
 		"",
 		"write the signed bundle to a file or gs:// object instead of stdout",
+	)
+
+	signAttestationCmd.PersistentFlags().BoolVar(
+		&signAttestationOpts.inPlace,
+		inPlaceFlag,
+		false,
+		"replace each statement file or gs:// object with its signed bundle",
 	)
 
 	signAttestationCmd.PersistentFlags().StringVar(
@@ -97,19 +119,27 @@ func init() {
 	signCmd.AddCommand(signAttestationCmd)
 }
 
-func runSignAttestation(signOpts *signOptions, opts *signAttestationOptions, statementPath string) error {
+func runSignAttestation(signOpts *signOptions, opts *signAttestationOptions, statements []string) error {
+	if err := validateSignAttestationArgs(opts, statements); err != nil {
+		return err
+	}
+
 	signerOpts := attestation.DefaultSignerOptions()
 	signerOpts.ServiceAccountFile = opts.serviceAccountFile
 	signerOpts.ServiceAccountJSON = []byte(opts.serviceAccountJSON)
 	signerOpts.Timeout = signOpts.timeout
 
+	signer := attestation.NewSigner(signerOpts)
+
+	if opts.inPlace {
+		return signInPlace(signer, opts, statements)
+	}
+
 	// We will now sign the bundle in memory to avoid writing until
 	// we know signing succeeded
 	var bundle bytes.Buffer
 
-	signer := attestation.NewSigner(signerOpts)
-
-	if err := signer.SignFile(statementPath, &bundle); err != nil {
+	if err := signer.SignFile(statements[0], &bundle); err != nil {
 		return fmt.Errorf("signing attestation: %w", err)
 	}
 
@@ -126,6 +156,53 @@ func runSignAttestation(signOpts *signOptions, opts *signAttestationOptions, sta
 	}
 
 	logrus.Infof("Signed bundle written to %s", opts.outputPath)
+
+	return nil
+}
+
+// signInPlace signs all statements in one session and replaces each of them
+// with its resulting bundle. Nothing is written unless all statements are signed.
+func signInPlace(signer *attestation.Signer, opts *signAttestationOptions, statements []string) error {
+	signed, err := signer.SignFiles(statements)
+	if err != nil {
+		return fmt.Errorf("signing attestations: %w", err)
+	}
+
+	for _, statement := range signed {
+		var bundle bytes.Buffer
+		if err := signer.WriteBundle(statement.Bundle, &bundle); err != nil {
+			return fmt.Errorf("serializing bundle of %s: %w", statement.Path, err)
+		}
+
+		if err := signer.WriteFile(statement.Path, bundle.Bytes()); err != nil {
+			return fmt.Errorf("replacing statement with its bundle: %w", err)
+		}
+
+		logrus.Infof("Signed %s in place", statement.Path)
+
+		if opts.outputPath != "" {
+			if err := signer.WriteFile(opts.outputPath, bundle.Bytes()); err != nil {
+				return fmt.Errorf("writing bundle copy: %w", err)
+			}
+
+			logrus.Infof("Signed bundle written to %s", opts.outputPath)
+		}
+	}
+
+	return nil
+}
+
+// validateSignAttestationArgs checks the combination of flags and statements.
+func validateSignAttestationArgs(opts *signAttestationOptions, statements []string) error {
+	if len(statements) > 1 {
+		if !opts.inPlace {
+			return fmt.Errorf("signing more than one statement requires --%s", inPlaceFlag)
+		}
+
+		if opts.outputPath != "" {
+			return fmt.Errorf("--%s can only be used when signing a single statement", outputPathFlag)
+		}
+	}
 
 	return nil
 }

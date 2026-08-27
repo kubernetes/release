@@ -19,6 +19,7 @@ package attestation
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -46,9 +47,15 @@ import (
 // carry the JSON contents of the Google service account key to sign with.
 const ServiceAccountEnvKey = "KREL_SIGNING_SERVICE_ACCOUNT_KEY"
 
-// ErrNoIdentity is returned when the service account key did not yield an
-// identity token.
-var ErrNoIdentity = errors.New("service account key did not produce an identity token")
+var (
+	// ErrNoIdentity is returned when the service account key did not yield an
+	// identity token.
+	ErrNoIdentity = errors.New("service account key did not produce an identity token")
+
+	// ErrAlreadySigned is returned when the file to sign is already a signed
+	// artifact (a sigstore bundle or a DSSE envelope) instead of a statement.
+	ErrAlreadySigned = errors.New("file is already signed")
+)
 
 // SignerOptions configures the attestation Signer.
 type SignerOptions struct {
@@ -110,52 +117,106 @@ type signerImplementation interface {
 	ReadStatement(statementPath string) ([]byte, error)
 	NewSigner() *signer.Signer
 	ServiceAccountToken(ctx context.Context, keyFile string, keyJSON []byte, audience string) (*oauthflow.OIDCIDToken, error)
-	SignStatement(sgnr *signer.Signer, token *oauthflow.OIDCIDToken, data []byte) (*sbundle.Bundle, error)
-	WriteBundle(sgnr *signer.Signer, bndl *sbundle.Bundle, w io.Writer) error
+	SignStatement(sgnr *signer.Signer, data []byte) (*sbundle.Bundle, error)
+	WriteBundle(bndl *sbundle.Bundle, w io.Writer) error
 	WriteFile(filePath string, data []byte) error
+}
+
+// SignedStatement is the result of signing one statement.
+type SignedStatement struct {
+	// Path of the file the statement was read from.
+	Path string
+	// Bundle is the sigstore bundle wrapping the signed statement.
+	Bundle *sbundle.Bundle
 }
 
 // SignFile reads the in-toto statement stored in path, which can be a local
 // file or an object in Google Cloud Storage (gs://bucket/path), signs it and
 // writes the resulting sigstore bundle to w.
 func (s *Signer) SignFile(statementPath string, w io.Writer) error {
-	data, err := s.impl.ReadStatement(statementPath)
+	signed, err := s.SignFiles([]string{statementPath})
 	if err != nil {
-		return fmt.Errorf("reading statement: %w", err)
+		return err
+	}
+
+	return s.WriteBundle(signed[0].Bundle, w)
+}
+
+// SignFiles reads the in-toto statements stored in paths (local files or
+// gs:// objects) and signs them, returning the signed statements in the
+// same order. All statements are read and validated before anything is
+// signed and they all share the same signing session: the identity token is
+// obtained once and the Fulcio certificate is reused for every signature
+// while it remains valid.
+func (s *Signer) SignFiles(paths []string) ([]*SignedStatement, error) {
+	if len(paths) == 0 {
+		return nil, errors.New("no statements to sign")
+	}
+
+	type statement struct {
+		path string
+		data []byte
+	}
+
+	statements := make([]statement, 0, len(paths))
+
+	for _, statementPath := range paths {
+		data, err := s.impl.ReadStatement(statementPath)
+		if err != nil {
+			return nil, fmt.Errorf("reading statement %s: %w", statementPath, err)
+		}
+
+		statements = append(statements, statement{path: statementPath, data: data})
 	}
 
 	sgnr := s.impl.NewSigner()
 	defer sgnr.Close()
 
 	// When a service account key is set, the identity token is minted here
-	// from the key and pinned into the signer. Otherwise token is left nil and
-	// the signer runs its own ambient credential discovery.
-	var token *oauthflow.OIDCIDToken
-
+	// from the key and pinned into the signer, which is locked to it: the
+	// Fulcio certificate can only be obtained with that identity and the
+	// signer will not try its own credential discovery. Otherwise, the
+	// signer's ambient credential providers are in charge of finding one.
 	if s.options.hasServiceAccount() {
 		ctx, cancel := context.WithTimeout(context.Background(), s.options.Timeout)
 		defer cancel()
 
 		// The token audience must match the client ID the sigstore instance
 		// expects, otherwise Fulcio will reject it.
-		token, err = s.impl.ServiceAccountToken(
+		token, err := s.impl.ServiceAccountToken(
 			ctx, s.options.ServiceAccountFile, s.options.ServiceAccountJSON, sgnr.Options.OIDCConfig.ClientID,
 		)
 		if err != nil {
-			return fmt.Errorf("obtaining identity from service account key: %w", err)
+			return nil, fmt.Errorf("obtaining identity from service account key: %w", err)
 		}
 
-		logrus.Infof("Signing statement %s as %s", statementPath, token.Subject)
+		sgnr.Options.Token = token
+		sgnr.Options.DisableSTS = true
+
+		logrus.Infof("Signing %d statement(s) as %s", len(statements), token.Subject)
 	} else {
-		logrus.Infof("Signing statement %s with the ambient credentials", statementPath)
+		logrus.Infof("Signing %d statement(s) with the ambient credentials", len(statements))
 	}
 
-	bndl, err := s.impl.SignStatement(sgnr, token, data)
-	if err != nil {
-		return fmt.Errorf("signing statement: %w", err)
+	signed := make([]*SignedStatement, 0, len(statements))
+
+	for _, statement := range statements {
+		logrus.Infof("Signing statement %s", statement.path)
+
+		bndl, err := s.impl.SignStatement(sgnr, statement.data)
+		if err != nil {
+			return nil, fmt.Errorf("signing statement %s: %w", statement.path, err)
+		}
+
+		signed = append(signed, &SignedStatement{Path: statement.path, Bundle: bndl})
 	}
 
-	if err := s.impl.WriteBundle(sgnr, bndl, w); err != nil {
+	return signed, nil
+}
+
+// WriteBundle writes the sigstore bundle as JSON to w.
+func (s *Signer) WriteBundle(bndl *sbundle.Bundle, w io.Writer) error {
+	if err := s.impl.WriteBundle(bndl, w); err != nil {
 		return fmt.Errorf("writing bundle: %w", err)
 	}
 
@@ -191,6 +252,10 @@ func (di *defaultSignerImpl) ReadStatement(statementPath string) ([]byte, error)
 	data, err := di.readFile(statementPath)
 	if err != nil {
 		return nil, fmt.Errorf("reading file: %w", err)
+	}
+
+	if isSigned(data) {
+		return nil, ErrAlreadySigned
 	}
 
 	statement := &intoto.Statement{}
@@ -254,26 +319,26 @@ func (*defaultSignerImpl) ServiceAccountToken(
 	return token, nil
 }
 
-// SignStatement signs the statement data and wraps the signed envelope in a
-// sigstore bundle. If token is not nil, the signer is locked to it: the
-// Fulcio certificate can only be obtained with that identity and the signer
-// will not try its own credential discovery. A nil token leaves the signer's
-// ambient credential providers in charge of finding an identity. The caller
-// owns the signer and is responsible for closing it.
-func (*defaultSignerImpl) SignStatement(
-	sgnr *signer.Signer, token *oauthflow.OIDCIDToken, data []byte,
-) (*sbundle.Bundle, error) {
-	if token != nil {
-		sgnr.Options.Token = token
-		sgnr.Options.DisableSTS = true
-	}
-
+// SignStatement signs the statement data with sgnr and wraps the signed
+// envelope in a sigstore bundle. Repeated calls on the same signer reuse its
+// identity and Fulcio certificate. The caller owns the signer and is
+// responsible for closing it.
+func (*defaultSignerImpl) SignStatement(sgnr *signer.Signer, data []byte) (*sbundle.Bundle, error) {
 	return sgnr.SignStatementBundle(data)
 }
 
 // WriteBundle marshals the bundle as JSON into w.
-func (*defaultSignerImpl) WriteBundle(sgnr *signer.Signer, bndl *sbundle.Bundle, w io.Writer) error {
-	return sgnr.WriteBundle(bndl, w)
+func (*defaultSignerImpl) WriteBundle(bndl *sbundle.Bundle, w io.Writer) error {
+	bundleJSON, err := protojson.Marshal(bndl)
+	if err != nil {
+		return fmt.Errorf("marshaling bundle: %w", err)
+	}
+
+	if _, err := w.Write(bundleJSON); err != nil {
+		return fmt.Errorf("writing bundle: %w", err)
+	}
+
+	return nil
 }
 
 // WriteFile writes data to a local file or, when filePath is a gs:// URL,
@@ -340,4 +405,23 @@ func newGCSClient() *object.GCS {
 	)
 
 	return gcs
+}
+
+// isSigned returns true if data looks like an already signed artifact, that
+// is a sigstore bundle or a DSSE envelope, rather than a bare statement.
+func isSigned(data []byte) bool {
+	probe := struct {
+		MediaType    string          `json:"mediaType"`
+		DSSEEnvelope json.RawMessage `json:"dsseEnvelope"`
+		PayloadType  string          `json:"payloadType"`
+		Signatures   json.RawMessage `json:"signatures"`
+	}{}
+
+	if err := json.Unmarshal(data, &probe); err != nil {
+		return false
+	}
+
+	return strings.HasPrefix(probe.MediaType, "application/vnd.dev.sigstore.bundle") ||
+		len(probe.DSSEEnvelope) > 0 ||
+		(probe.PayloadType != "" && len(probe.Signatures) > 0)
 }
