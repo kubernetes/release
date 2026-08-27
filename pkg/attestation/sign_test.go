@@ -185,6 +185,64 @@ func TestSignStatementLocksToken(t *testing.T) {
 	require.True(t, creds.DisableSTS)
 }
 
+// fakeObjectStore is an objectStore that serves a fixed object.
+type fakeObjectStore struct {
+	data    []byte
+	err     error
+	gcsPath string
+	dst     string
+}
+
+func (f *fakeObjectStore) CopyToLocal(gcsPath, dst string) error {
+	f.gcsPath, f.dst = gcsPath, dst
+	if f.err != nil {
+		return f.err
+	}
+
+	return os.WriteFile(dst, f.data, 0o600)
+}
+
+func TestReadStatementFromGCS(t *testing.T) {
+	t.Parallel()
+
+	const gcsPath = "gs://bucket/stage/v1.36.0-alpha.1/provenance.json"
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
+		store := &fakeObjectStore{data: []byte(testStatement)}
+
+		want := []byte(testStatement)
+
+		data, err := (&defaultSignerImpl{gcs: store}).ReadStatement(gcsPath)
+		require.NoError(t, err)
+		require.Equal(t, want, data)
+		require.Equal(t, gcsPath, store.gcsPath)
+		require.Equal(t, "provenance.json", filepath.Base(store.dst))
+		require.NoFileExists(t, store.dst, "temporary download must be cleaned up")
+	})
+
+	t.Run("download fails", func(t *testing.T) {
+		t.Parallel()
+
+		store := &fakeObjectStore{err: errTest}
+
+		data, err := (&defaultSignerImpl{gcs: store}).ReadStatement(gcsPath)
+		require.ErrorIs(t, err, errTest)
+		require.Nil(t, data)
+	})
+
+	t.Run("object is not a statement", func(t *testing.T) {
+		t.Parallel()
+
+		store := &fakeObjectStore{data: []byte("not a statement")}
+
+		data, err := (&defaultSignerImpl{gcs: store}).ReadStatement(gcsPath)
+		require.Error(t, err)
+		require.Nil(t, data)
+	})
+}
+
 func TestReadStatement(t *testing.T) {
 	t.Parallel()
 

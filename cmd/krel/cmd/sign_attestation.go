@@ -46,7 +46,8 @@ var signAttestationCmd = &cobra.Command{
 
 Signs an in-toto statement using sigstore and writes the resulting bundle
 (DSSE envelope, Fulcio certificate and transparency log proofs) to stdout
-or to the file set with --` + outputPathFlag + `.
+or to the file set with --` + outputPathFlag + `. The statement can be a local
+file or an object in Google Cloud Storage (gs://bucket/path/statement.json).
 
 By default the statement is signed with the ambient identity provider.
 
@@ -61,7 +62,10 @@ not possible, it never falls back to the ambient credentials.`,
   krel sign attestation provenance.json > provenance.json.sigstore.json
 
   # Sign using a service account key:
-  krel sign attestation --service-account-file key.json --output-path provenance.sigstore.json provenance.json`,
+  krel sign attestation --service-account-file key.json --output-path provenance.sigstore.json provenance.json
+
+  # Sign a staged provenance stored in a bucket:
+  krel sign attestation gs://k8s-release-dev/stage/v1.36.0-alpha.1.10+abcdef/provenance.json`,
 	Args:          cobra.ExactArgs(1),
 	SilenceUsage:  true,
 	SilenceErrors: true,

@@ -23,6 +23,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/carabiner-dev/signer"
@@ -32,6 +35,8 @@ import (
 	"github.com/sigstore/sigstore/pkg/oauthflow"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/encoding/protojson"
+
+	"sigs.k8s.io/release-sdk/object"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
@@ -102,17 +107,18 @@ func NewSigner(opts *SignerOptions) *Signer {
 
 //counterfeiter:generate . signerImplementation
 type signerImplementation interface {
-	ReadStatement(path string) ([]byte, error)
+	ReadStatement(statementPath string) ([]byte, error)
 	NewSigner() *signer.Signer
 	ServiceAccountToken(ctx context.Context, keyFile string, keyJSON []byte, audience string) (*oauthflow.OIDCIDToken, error)
 	SignStatement(sgnr *signer.Signer, token *oauthflow.OIDCIDToken, data []byte) (*sbundle.Bundle, error)
 	WriteBundle(sgnr *signer.Signer, bndl *sbundle.Bundle, w io.Writer) error
 }
 
-// SignFile reads the in-toto statement stored in path, signs it and writes
-// the resulting sigstore bundle to w.
-func (s *Signer) SignFile(path string, w io.Writer) error {
-	data, err := s.impl.ReadStatement(path)
+// SignFile reads the in-toto statement stored in path, which can be a local
+// file or an object in Google Cloud Storage (gs://bucket/path), signs it and
+// writes the resulting sigstore bundle to w.
+func (s *Signer) SignFile(statementPath string, w io.Writer) error {
+	data, err := s.impl.ReadStatement(statementPath)
 	if err != nil {
 		return fmt.Errorf("reading statement: %w", err)
 	}
@@ -138,9 +144,9 @@ func (s *Signer) SignFile(path string, w io.Writer) error {
 			return fmt.Errorf("obtaining identity from service account key: %w", err)
 		}
 
-		logrus.Infof("Signing statement %s as %s", path, token.Subject)
+		logrus.Infof("Signing statement %s as %s", statementPath, token.Subject)
 	} else {
-		logrus.Infof("Signing statement %s with the ambient credentials", path)
+		logrus.Infof("Signing statement %s with the ambient credentials", statementPath)
 	}
 
 	bndl, err := s.impl.SignStatement(sgnr, token, data)
@@ -155,12 +161,22 @@ func (s *Signer) SignFile(path string, w io.Writer) error {
 	return nil
 }
 
-type defaultSignerImpl struct{}
+// objectStore abstracts the Google Cloud Storage operations the signer needs.
+type objectStore interface {
+	CopyToLocal(gcsPath, dst string) error
+}
 
-// ReadStatement reads the file in path and ensures it contains a valid
-// in-toto statement before it gets signed.
-func (*defaultSignerImpl) ReadStatement(path string) ([]byte, error) {
-	data, err := os.ReadFile(path)
+type defaultSignerImpl struct {
+	// gcs is the object store used to fetch statements from Google Cloud
+	// Storage. Defaults to a GCS client when nil.
+	gcs objectStore
+}
+
+// ReadStatement reads the statement in path, a local file or an object in
+// Google Cloud Storage, and ensures it contains a valid in-toto statement
+// before it gets signed.
+func (di *defaultSignerImpl) ReadStatement(statementPath string) ([]byte, error) {
+	data, err := di.readFile(statementPath)
 	if err != nil {
 		return nil, fmt.Errorf("reading file: %w", err)
 	}
@@ -246,4 +262,41 @@ func (*defaultSignerImpl) SignStatement(
 // WriteBundle marshals the bundle as JSON into w.
 func (*defaultSignerImpl) WriteBundle(sgnr *signer.Signer, bndl *sbundle.Bundle, w io.Writer) error {
 	return sgnr.WriteBundle(bndl, w)
+}
+
+// readFile returns the contents of a local file or, when filePath is a
+// gs:// URL, of the object it points to in Google Cloud Storage.
+func (di *defaultSignerImpl) readFile(filePath string) ([]byte, error) {
+	if !strings.HasPrefix(filePath, object.GcsPrefix) {
+		return os.ReadFile(filePath)
+	}
+
+	tmpDir, err := os.MkdirTemp("", "krel-sign-attestation-")
+	if err != nil {
+		return nil, fmt.Errorf("creating temporary directory: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	if di.gcs == nil {
+		di.gcs = newGCSClient()
+	}
+
+	localPath := filepath.Join(tmpDir, path.Base(filePath))
+	if err := di.gcs.CopyToLocal(filePath, localPath); err != nil {
+		return nil, fmt.Errorf("downloading %s: %w", filePath, err)
+	}
+
+	return os.ReadFile(localPath)
+}
+
+// newGCSClient returns a GCS client configured to copy single objects.
+func newGCSClient() *object.GCS {
+	gcs := object.NewGCS()
+	gcs.SetOptions(
+		gcs.WithConcurrent(false),
+		gcs.WithRecursive(false),
+		gcs.WithNoClobber(false),
+	)
+
+	return gcs
 }
