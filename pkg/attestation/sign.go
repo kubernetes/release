@@ -73,8 +73,17 @@ type SignerOptions struct {
 	// does, which takes precedence when both are set.
 	ServiceAccountJSON []byte
 
+	// ImpersonateServiceAccount is the email of a Google service account to
+	// sign as by impersonating it through the IAM Credentials API. The
+	// credential calling the API is the service account key, when one is
+	// set, or the ambient Google Cloud credential of the host otherwise; it
+	// needs roles/iam.serviceAccountTokenCreator on the impersonated account.
+	// Like the keys, it locks the signer to that identity: signing fails if
+	// impersonation does, it never falls back to another credential.
+	ImpersonateServiceAccount string
+
 	// Timeout bounds the identity token exchange with Google when signing
-	// with a service account key.
+	// with a pinned identity.
 	Timeout time.Duration
 }
 
@@ -85,10 +94,11 @@ func DefaultSignerOptions() *SignerOptions {
 	}
 }
 
-// hasServiceAccount returns true when a service account key was configured,
-// either as a file or as its JSON contents.
-func (o *SignerOptions) hasServiceAccount() bool {
-	return o.ServiceAccountFile != "" || len(o.ServiceAccountJSON) > 0
+// hasPinnedIdentity returns true when the signer must sign with a specific
+// identity: a service account key (file or JSON contents) or a service
+// account to impersonate.
+func (o *SignerOptions) hasPinnedIdentity() bool {
+	return o.ServiceAccountFile != "" || len(o.ServiceAccountJSON) > 0 || o.ImpersonateServiceAccount != ""
 }
 
 // Signer signs in-toto statements using a Google Cloud identity and wraps
@@ -116,7 +126,7 @@ func NewSigner(opts *SignerOptions) *Signer {
 type signerImplementation interface {
 	ReadStatement(statementPath string) ([]byte, error)
 	NewSigner() *signer.Signer
-	ServiceAccountToken(ctx context.Context, keyFile string, keyJSON []byte, audience string) (*oauthflow.OIDCIDToken, error)
+	IdentityToken(ctx context.Context, keyFile string, keyJSON []byte, impersonate, audience string) (*oauthflow.OIDCIDToken, error)
 	SignStatement(sgnr *signer.Signer, data []byte) (*sbundle.Bundle, error)
 	WriteBundle(bndl *sbundle.Bundle, w io.Writer) error
 	WriteFile(filePath string, data []byte) error
@@ -172,22 +182,24 @@ func (s *Signer) SignFiles(paths []string) ([]*SignedStatement, error) {
 	sgnr := s.impl.NewSigner()
 	defer sgnr.Close()
 
-	// When a service account key is set, the identity token is minted here
-	// from the key and pinned into the signer, which is locked to it: the
-	// Fulcio certificate can only be obtained with that identity and the
-	// signer will not try its own credential discovery. Otherwise, the
-	// signer's ambient credential providers are in charge of finding one.
-	if s.options.hasServiceAccount() {
+	// When an identity is pinned (a service account key or an account to
+	// impersonate), the identity token is minted here and pinned into the
+	// signer, which is locked to it: the Fulcio certificate can only be
+	// obtained with that identity and the signer will not try its own
+	// credential discovery. Otherwise, the signer's ambient credential
+	// providers are in charge of finding one.
+	if s.options.hasPinnedIdentity() {
 		ctx, cancel := context.WithTimeout(context.Background(), s.options.Timeout)
 		defer cancel()
 
 		// The token audience must match the client ID the sigstore instance
 		// expects, otherwise Fulcio will reject it.
-		token, err := s.impl.ServiceAccountToken(
-			ctx, s.options.ServiceAccountFile, s.options.ServiceAccountJSON, sgnr.Options.OIDCConfig.ClientID,
+		token, err := s.impl.IdentityToken(
+			ctx, s.options.ServiceAccountFile, s.options.ServiceAccountJSON,
+			s.options.ImpersonateServiceAccount, sgnr.Options.OIDCConfig.ClientID,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("obtaining identity from service account key: %w", err)
+			return nil, fmt.Errorf("obtaining the signing identity: %w", err)
 		}
 
 		sgnr.Options.Token = token
@@ -280,29 +292,45 @@ func (*defaultSignerImpl) NewSigner() *signer.Signer {
 	return signer.NewSigner()
 }
 
-// ServiceAccountToken obtains an OIDC token for the given audience from
-// Google Cloud using a service account key, either the file in keyFile or
-// the key contents in keyJSON (the file takes precedence). The identity of
-// the host is never used, even if exchanging the key fails.
-func (*defaultSignerImpl) ServiceAccountToken(
-	ctx context.Context, keyFile string, keyJSON []byte, audience string,
+// IdentityToken obtains an OIDC token for the given audience from Google
+// Cloud for a pinned identity: a service account key, either the file in
+// keyFile or the key contents in keyJSON (the file takes precedence), and/or
+// a service account to impersonate.
+//
+// If a key is set, the identity of the host is never used, even if exchanging
+// the key fails.
+//
+// With impersonation, the key or the ambient credential of the host authenticates
+// the IAM Credentials API call, minting the token for the impersonated account.
+// Equally, any failure is an error and the provider never falls back to signing
+// with the caller's own identity.
+func (*defaultSignerImpl) IdentityToken(
+	ctx context.Context, keyFile string, keyJSON []byte, impersonate, audience string,
 ) (*oauthflow.OIDCIDToken, error) {
-	var key gcp.Option
+	providerOpts := []gcp.Option{}
 
 	switch {
 	case keyFile != "":
 		logrus.Infof("Obtaining identity token from service account key %s", keyFile)
 
-		key = gcp.WithServiceAccountFile(keyFile)
+		providerOpts = append(providerOpts, gcp.WithServiceAccountFile(keyFile), gcp.WithAmbientCredentials(false))
 	case len(keyJSON) > 0:
 		logrus.Info("Obtaining identity token from service account key data")
 
-		key = gcp.WithServiceAccountJSON(keyJSON)
-	default:
-		return nil, errors.New("no service account key configured")
+		providerOpts = append(providerOpts, gcp.WithServiceAccountJSON(keyJSON), gcp.WithAmbientCredentials(false))
 	}
 
-	provider, err := gcp.New(key, gcp.WithAmbientCredentials(false))
+	if impersonate != "" {
+		logrus.Infof("Impersonating service account %s", impersonate)
+
+		providerOpts = append(providerOpts, gcp.WithImpersonation(impersonate))
+	}
+
+	if len(providerOpts) == 0 {
+		return nil, errors.New("no service account key or account to impersonate configured")
+	}
+
+	provider, err := gcp.New(providerOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("creating GCP identity provider: %w", err)
 	}

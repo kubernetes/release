@@ -28,8 +28,9 @@ import (
 )
 
 const (
-	serviceAccountFileFlag = "service-account-file"
-	inPlaceFlag            = "in-place"
+	serviceAccountFileFlag        = "service-account-file"
+	impersonateServiceAccountFlag = "impersonate-service-account"
+	inPlaceFlag                   = "in-place"
 )
 
 type signAttestationOptions struct {
@@ -37,7 +38,8 @@ type signAttestationOptions struct {
 	inPlace            bool
 	serviceAccountFile string
 	// serviceAccountJSON is the key data read from the environment
-	serviceAccountJSON string
+	serviceAccountJSON        string
+	impersonateServiceAccount string
 }
 
 var signAttestationOpts = &signAttestationOptions{}
@@ -67,9 +69,15 @@ By default the statement is signed with the ambient identity provider.
 To sign with an explicit identity, pass a Google Cloud service account key
 file with --` + serviceAccountFileFlag + ` or set the contents of the key in
 the ` + attestation.ServiceAccountEnvKey + ` environment variable (the flag
-takes precedence). The signer is then locked to that service account: the
-certificate is only requested with its identity and signing fails if that is
-not possible, it never falls back to the ambient credentials.`,
+takes precedence). To sign as a service account without holding its key,
+pass its email with --` + impersonateServiceAccountFlag + `: the identity
+token is minted through the IAM Credentials API using the key, if one is
+set, or the ambient Google Cloud credentials of the host, which need
+roles/iam.serviceAccountTokenCreator on the impersonated account.
+
+In both cases the signer is locked to that service account: the certificate
+is only requested with its identity and signing fails if that is not
+possible, it never falls back to the ambient credentials.`,
 
 	Example: `  # Sign an attestation using the ambient GCP credentials:
   krel sign attestation provenance.json > provenance.json.sigstore.json
@@ -79,6 +87,9 @@ not possible, it never falls back to the ambient credentials.`,
 
   # Sign a staged provenance stored in a bucket:
   krel sign attestation gs://k8s-release-dev/stage/v1.36.0-alpha.1.10+abcdef/provenance.json
+
+  # Sign as the staging signer account by impersonating it from a Cloud Build job:
+  krel sign attestation --impersonate-service-account=krel-staging@k8s-releng-prod.iam.gserviceaccount.com provenance.json
 
   # Sign several statements in place, replacing the originals with the bundles:
   krel sign attestation --in-place gs://bucket/stage/build/provenance.json sbom.intoto.json`,
@@ -116,6 +127,13 @@ func init() {
 		"path to a Google service account key (defaults to $"+attestation.ServiceAccountEnvKey+" or the ambient credentials)",
 	)
 
+	signAttestationCmd.PersistentFlags().StringVar(
+		&signAttestationOpts.impersonateServiceAccount,
+		impersonateServiceAccountFlag,
+		"",
+		"email of a Google service account to sign as by impersonating it",
+	)
+
 	signCmd.AddCommand(signAttestationCmd)
 }
 
@@ -127,6 +145,7 @@ func runSignAttestation(signOpts *signOptions, opts *signAttestationOptions, sta
 	signerOpts := attestation.DefaultSignerOptions()
 	signerOpts.ServiceAccountFile = opts.serviceAccountFile
 	signerOpts.ServiceAccountJSON = []byte(opts.serviceAccountJSON)
+	signerOpts.ImpersonateServiceAccount = opts.impersonateServiceAccount
 	signerOpts.Timeout = signOpts.timeout
 
 	signer := attestation.NewSigner(signerOpts)

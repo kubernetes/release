@@ -268,8 +268,8 @@ github.com/carabiner-dev/command v0.3.1 h1:iBkh+AjwziFZmyihv/izypCV74nkmaslZxb5A
 github.com/carabiner-dev/command v0.3.1/go.mod h1:0mWfS5BU/krtaI1hgD5wjmLpjWVlf38KY8usA8zfF5c=
 github.com/carabiner-dev/hasher v0.2.4 h1:VaI04+FBHaNV/UEy0NmVoRg0pKLFeN76KPOHbTDvvhE=
 github.com/carabiner-dev/hasher v0.2.4/go.mod h1:W83zi1+E3he4Cpldss8yoXNj6GdDUpr3M45dOAzem/w=
-github.com/carabiner-dev/signer v0.6.0 h1:ke8aXVLTNl5nCYqr3ALvWF+/5bXyr0DduhiETPHTl9U=
-github.com/carabiner-dev/signer v0.6.0/go.mod h1:dg1OvK3lTePsPrbvoBZO5SBt0DHd2/NLdM2wfB2/4/8=
+github.com/carabiner-dev/signer v0.6.1 h1:3GnpNt16Qzw476lgCGMZRThtofTy7Ke1A60HqNboWnc=
+github.com/carabiner-dev/signer v0.6.1/go.mod h1:dg1OvK3lTePsPrbvoBZO5SBt0DHd2/NLdM2wfB2/4/8=
 github.com/carabiner-dev/spdx3 v0.1.0 h1:Q6nMLXV0BhtqDQuwRDOaJDZR670TK4jdOvZqvTW/ctY=
 github.com/carabiner-dev/spdx3 v0.1.0/go.mod h1:d/t010TrZvYZBeYGpvHeId6QpRvGLlqK7cy0E81npPA=
 github.com/carabiner-dev/unpack v0.3.1 h1:VnB2rzMHeu8iQhFz7BV22mjilw8a5hR3rF497+YqYJE=
