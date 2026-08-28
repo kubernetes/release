@@ -77,7 +77,7 @@ func TestSignFile(t *testing.T) {
 			name: "success with service account key",
 			opts: &SignerOptions{ServiceAccountFile: "key.json"},
 			prepare: func(mock *attestationfakes.FakeSignerImplementation) {
-				mock.ServiceAccountTokenReturns(&oauthflow.OIDCIDToken{Subject: "sa@example.com"}, nil)
+				mock.IdentityTokenReturns(&oauthflow.OIDCIDToken{Subject: "sa@example.com"}, nil)
 				mock.WriteBundleCalls(func(_ *sbundle.Bundle, w io.Writer) error {
 					_, err := w.Write([]byte("bundle"))
 
@@ -91,7 +91,7 @@ func TestSignFile(t *testing.T) {
 			name: "success with service account JSON",
 			opts: &SignerOptions{ServiceAccountJSON: []byte("service-account-key-data")},
 			prepare: func(mock *attestationfakes.FakeSignerImplementation) {
-				mock.ServiceAccountTokenReturns(&oauthflow.OIDCIDToken{Subject: "sa@example.com"}, nil)
+				mock.IdentityTokenReturns(&oauthflow.OIDCIDToken{Subject: "sa@example.com"}, nil)
 				mock.WriteBundleCalls(func(_ *sbundle.Bundle, w io.Writer) error {
 					_, err := w.Write([]byte("bundle"))
 
@@ -109,10 +109,24 @@ func TestSignFile(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			name: "ServiceAccountToken fails",
+			name: "success impersonating a service account",
+			opts: &SignerOptions{ImpersonateServiceAccount: "signer@example.iam.gserviceaccount.com"},
+			prepare: func(mock *attestationfakes.FakeSignerImplementation) {
+				mock.IdentityTokenReturns(&oauthflow.OIDCIDToken{Subject: "signer@example.iam.gserviceaccount.com"}, nil)
+				mock.WriteBundleCalls(func(_ *sbundle.Bundle, w io.Writer) error {
+					_, err := w.Write([]byte("bundle"))
+
+					return err
+				})
+			},
+			wantOutput: "bundle",
+			wantSAToks: 1,
+		},
+		{
+			name: "IdentityToken fails",
 			opts: &SignerOptions{ServiceAccountFile: "key.json"},
 			prepare: func(mock *attestationfakes.FakeSignerImplementation) {
-				mock.ServiceAccountTokenReturns(nil, errTest)
+				mock.IdentityTokenReturns(nil, errTest)
 			},
 			shouldErr:  true,
 			wantSAToks: 1,
@@ -153,13 +167,14 @@ func TestSignFile(t *testing.T) {
 				require.Equal(t, tc.wantOutput, out.String())
 			}
 
-			require.Equal(t, tc.wantSAToks, mock.ServiceAccountTokenCallCount())
+			require.Equal(t, tc.wantSAToks, mock.IdentityTokenCallCount())
 
 			if tc.wantSAToks > 0 {
 				wantKeyData := tc.opts.ServiceAccountJSON
-				_, keyFile, keyData, audience := mock.ServiceAccountTokenArgsForCall(0)
+				_, keyFile, keyData, impersonate, audience := mock.IdentityTokenArgsForCall(0)
 				require.Equal(t, tc.opts.ServiceAccountFile, keyFile)
 				require.Equal(t, wantKeyData, keyData)
+				require.Equal(t, tc.opts.ImpersonateServiceAccount, impersonate)
 				require.NotEmpty(t, audience, "audience must be the sigstore OIDC client ID")
 			}
 		})
@@ -189,7 +204,7 @@ func TestSignFiles(t *testing.T) {
 			opts:  &SignerOptions{ServiceAccountFile: "key.json"},
 			paths: []string{"a.json", "gs://bucket/b.json", "c.json"},
 			prepare: func(mock *attestationfakes.FakeSignerImplementation) {
-				mock.ServiceAccountTokenReturns(&oauthflow.OIDCIDToken{Subject: "sa@example.com"}, nil)
+				mock.IdentityTokenReturns(&oauthflow.OIDCIDToken{Subject: "sa@example.com"}, nil)
 			},
 			wantSAToks: 1,
 			wantSigns:  3,
@@ -209,11 +224,11 @@ func TestSignFiles(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			name:  "ServiceAccountToken fails",
+			name:  "IdentityToken fails",
 			opts:  &SignerOptions{ServiceAccountFile: "key.json"},
 			paths: []string{"a.json"},
 			prepare: func(mock *attestationfakes.FakeSignerImplementation) {
-				mock.ServiceAccountTokenReturns(nil, errTest)
+				mock.IdentityTokenReturns(nil, errTest)
 			},
 			shouldErr:  true,
 			wantSAToks: 1,
@@ -271,7 +286,7 @@ func TestSignFiles(t *testing.T) {
 			}
 
 			require.Equal(t, tc.wantSigns, mock.SignStatementCallCount())
-			require.Equal(t, tc.wantSAToks, mock.ServiceAccountTokenCallCount())
+			require.Equal(t, tc.wantSAToks, mock.IdentityTokenCallCount())
 
 			if tc.wantSigns > 0 {
 				// All statements are signed with the same signer so that the
@@ -559,7 +574,7 @@ func serviceAccountKey(t *testing.T, credType, tokenURI string) []byte {
 	return keyData
 }
 
-func TestServiceAccountToken(t *testing.T) {
+func TestIdentityToken(t *testing.T) {
 	t.Parallel()
 
 	const subject = "signer@example.iam.gserviceaccount.com"
@@ -587,8 +602,8 @@ func TestServiceAccountToken(t *testing.T) {
 		srv := newTokenServer(t, http.StatusOK, `{"id_token": "`+fakeJWT(t, subject)+`"}`)
 		opts := &SignerOptions{ServiceAccountFile: writeServiceAccountKey(t, "service_account", srv.URL)}
 
-		token, err := (&defaultSignerImpl{}).ServiceAccountToken(
-			context.Background(), opts.ServiceAccountFile, opts.ServiceAccountJSON, "sigstore",
+		token, err := (&defaultSignerImpl{}).IdentityToken(
+			context.Background(), opts.ServiceAccountFile, opts.ServiceAccountJSON, opts.ImpersonateServiceAccount, "sigstore",
 		)
 		require.NoError(t, err)
 		require.NotNil(t, token)
@@ -602,8 +617,8 @@ func TestServiceAccountToken(t *testing.T) {
 		srv := newTokenServer(t, http.StatusOK, `{"id_token": "`+fakeJWT(t, subject)+`"}`)
 		opts := &SignerOptions{ServiceAccountJSON: serviceAccountKey(t, "service_account", srv.URL)}
 
-		token, err := (&defaultSignerImpl{}).ServiceAccountToken(
-			context.Background(), opts.ServiceAccountFile, opts.ServiceAccountJSON, "sigstore",
+		token, err := (&defaultSignerImpl{}).IdentityToken(
+			context.Background(), opts.ServiceAccountFile, opts.ServiceAccountJSON, opts.ImpersonateServiceAccount, "sigstore",
 		)
 		require.NoError(t, err)
 		require.NotNil(t, token)
@@ -619,8 +634,8 @@ func TestServiceAccountToken(t *testing.T) {
 			ServiceAccountJSON: []byte("not even json"),
 		}
 
-		token, err := (&defaultSignerImpl{}).ServiceAccountToken(
-			context.Background(), opts.ServiceAccountFile, opts.ServiceAccountJSON, "sigstore",
+		token, err := (&defaultSignerImpl{}).IdentityToken(
+			context.Background(), opts.ServiceAccountFile, opts.ServiceAccountJSON, opts.ImpersonateServiceAccount, "sigstore",
 		)
 		require.NoError(t, err)
 		require.NotNil(t, token)
@@ -629,7 +644,7 @@ func TestServiceAccountToken(t *testing.T) {
 	t.Run("no key configured", func(t *testing.T) {
 		t.Parallel()
 
-		token, err := (&defaultSignerImpl{}).ServiceAccountToken(context.Background(), "", nil, "sigstore")
+		token, err := (&defaultSignerImpl{}).IdentityToken(context.Background(), "", nil, "", "sigstore")
 		require.Error(t, err)
 		require.Nil(t, token)
 	})
@@ -639,8 +654,8 @@ func TestServiceAccountToken(t *testing.T) {
 
 		opts := &SignerOptions{ServiceAccountJSON: serviceAccountKey(t, "authorized_user", "http://127.0.0.1:1")}
 
-		token, err := (&defaultSignerImpl{}).ServiceAccountToken(
-			context.Background(), opts.ServiceAccountFile, opts.ServiceAccountJSON, "sigstore",
+		token, err := (&defaultSignerImpl{}).IdentityToken(
+			context.Background(), opts.ServiceAccountFile, opts.ServiceAccountJSON, opts.ImpersonateServiceAccount, "sigstore",
 		)
 		require.Error(t, err)
 		require.Nil(t, token)
@@ -652,8 +667,8 @@ func TestServiceAccountToken(t *testing.T) {
 		srv := newTokenServer(t, http.StatusUnauthorized, `{"error": "invalid_grant"}`)
 		opts := &SignerOptions{ServiceAccountFile: writeServiceAccountKey(t, "service_account", srv.URL)}
 
-		token, err := (&defaultSignerImpl{}).ServiceAccountToken(
-			context.Background(), opts.ServiceAccountFile, opts.ServiceAccountJSON, "sigstore",
+		token, err := (&defaultSignerImpl{}).IdentityToken(
+			context.Background(), opts.ServiceAccountFile, opts.ServiceAccountJSON, opts.ImpersonateServiceAccount, "sigstore",
 		)
 		require.Error(t, err)
 		require.Nil(t, token)
@@ -665,8 +680,8 @@ func TestServiceAccountToken(t *testing.T) {
 		srv := newTokenServer(t, http.StatusOK, `{}`)
 		opts := &SignerOptions{ServiceAccountFile: writeServiceAccountKey(t, "service_account", srv.URL)}
 
-		token, err := (&defaultSignerImpl{}).ServiceAccountToken(
-			context.Background(), opts.ServiceAccountFile, opts.ServiceAccountJSON, "sigstore",
+		token, err := (&defaultSignerImpl{}).IdentityToken(
+			context.Background(), opts.ServiceAccountFile, opts.ServiceAccountJSON, opts.ImpersonateServiceAccount, "sigstore",
 		)
 		require.Error(t, err)
 		require.Nil(t, token)
@@ -677,8 +692,8 @@ func TestServiceAccountToken(t *testing.T) {
 
 		opts := &SignerOptions{ServiceAccountFile: writeServiceAccountKey(t, "authorized_user", "http://127.0.0.1:1")}
 
-		token, err := (&defaultSignerImpl{}).ServiceAccountToken(
-			context.Background(), opts.ServiceAccountFile, opts.ServiceAccountJSON, "sigstore",
+		token, err := (&defaultSignerImpl{}).IdentityToken(
+			context.Background(), opts.ServiceAccountFile, opts.ServiceAccountJSON, opts.ImpersonateServiceAccount, "sigstore",
 		)
 		require.Error(t, err)
 		require.Nil(t, token)
@@ -689,10 +704,50 @@ func TestServiceAccountToken(t *testing.T) {
 
 		opts := &SignerOptions{ServiceAccountFile: filepath.Join(t.TempDir(), "missing.json")}
 
-		token, err := (&defaultSignerImpl{}).ServiceAccountToken(
-			context.Background(), opts.ServiceAccountFile, opts.ServiceAccountJSON, "sigstore",
+		token, err := (&defaultSignerImpl{}).IdentityToken(
+			context.Background(), opts.ServiceAccountFile, opts.ServiceAccountJSON, opts.ImpersonateServiceAccount, "sigstore",
 		)
 		require.Error(t, err)
 		require.Nil(t, token)
 	})
+
+	t.Run("invalid account to impersonate is rejected", func(t *testing.T) {
+		t.Parallel()
+
+		token, err := (&defaultSignerImpl{}).IdentityToken(context.Background(), "", nil, "not-an-email", "sigstore")
+		require.ErrorContains(t, err, "not a valid service account email")
+		require.Nil(t, token)
+	})
+
+	t.Run("impersonation with a key that cannot be exchanged fails", func(t *testing.T) {
+		t.Parallel()
+
+		// The key exchange is the caller credential for impersonation. When it
+		// fails, the token request must fail, never fall back to the host.
+		srv := newTokenServer(t, http.StatusUnauthorized, `{"error": "invalid_grant"}`)
+		opts := &SignerOptions{
+			ServiceAccountFile:        writeServiceAccountKey(t, "service_account", srv.URL),
+			ImpersonateServiceAccount: "signer@example.iam.gserviceaccount.com",
+		}
+
+		token, err := (&defaultSignerImpl{}).IdentityToken(
+			context.Background(), opts.ServiceAccountFile, opts.ServiceAccountJSON, opts.ImpersonateServiceAccount, "sigstore",
+		)
+		require.ErrorContains(t, err, "impersonating signer@example.iam.gserviceaccount.com")
+		require.Nil(t, token)
+	})
+}
+
+// TestIdentityTokenImpersonationOffGCP checks that impersonating without any
+// Google Cloud credential is an error and not a fallback. No t.Parallel: it
+// points the metadata server lookup at a closed port with t.Setenv.
+func TestIdentityTokenImpersonationOffGCP(t *testing.T) { //nolint:paralleltest // uses t.Setenv
+	t.Setenv("GCE_METADATA_HOST", "127.0.0.1:1")
+	t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+
+	token, err := (&defaultSignerImpl{}).IdentityToken(
+		context.Background(), "", nil, "signer@example.iam.gserviceaccount.com", "sigstore",
+	)
+	require.ErrorContains(t, err, "no Google Cloud credential available")
+	require.Nil(t, token)
 }

@@ -28,6 +28,23 @@ import (
 )
 
 type FakeSignerImplementation struct {
+	IdentityTokenStub        func(context.Context, string, []byte, string, string) (*oauthflow.OIDCIDToken, error)
+	identityTokenMutex       sync.RWMutex
+	identityTokenArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 []byte
+		arg4 string
+		arg5 string
+	}
+	identityTokenReturns struct {
+		result1 *oauthflow.OIDCIDToken
+		result2 error
+	}
+	identityTokenReturnsOnCall map[int]struct {
+		result1 *oauthflow.OIDCIDToken
+		result2 error
+	}
 	NewSignerStub        func() *signer.Signer
 	newSignerMutex       sync.RWMutex
 	newSignerArgsForCall []struct {
@@ -49,22 +66,6 @@ type FakeSignerImplementation struct {
 	}
 	readStatementReturnsOnCall map[int]struct {
 		result1 []byte
-		result2 error
-	}
-	ServiceAccountTokenStub        func(context.Context, string, []byte, string) (*oauthflow.OIDCIDToken, error)
-	serviceAccountTokenMutex       sync.RWMutex
-	serviceAccountTokenArgsForCall []struct {
-		arg1 context.Context
-		arg2 string
-		arg3 []byte
-		arg4 string
-	}
-	serviceAccountTokenReturns struct {
-		result1 *oauthflow.OIDCIDToken
-		result2 error
-	}
-	serviceAccountTokenReturnsOnCall map[int]struct {
-		result1 *oauthflow.OIDCIDToken
 		result2 error
 	}
 	SignStatementStub        func(*signer.Signer, []byte) (*bundle.Bundle, error)
@@ -107,6 +108,79 @@ type FakeSignerImplementation struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeSignerImplementation) IdentityToken(arg1 context.Context, arg2 string, arg3 []byte, arg4 string, arg5 string) (*oauthflow.OIDCIDToken, error) {
+	var arg3Copy []byte
+	if arg3 != nil {
+		arg3Copy = make([]byte, len(arg3))
+		copy(arg3Copy, arg3)
+	}
+	fake.identityTokenMutex.Lock()
+	ret, specificReturn := fake.identityTokenReturnsOnCall[len(fake.identityTokenArgsForCall)]
+	fake.identityTokenArgsForCall = append(fake.identityTokenArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 []byte
+		arg4 string
+		arg5 string
+	}{arg1, arg2, arg3Copy, arg4, arg5})
+	stub := fake.IdentityTokenStub
+	fakeReturns := fake.identityTokenReturns
+	fake.recordInvocation("IdentityToken", []interface{}{arg1, arg2, arg3Copy, arg4, arg5})
+	fake.identityTokenMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4, arg5)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeSignerImplementation) IdentityTokenCallCount() int {
+	fake.identityTokenMutex.RLock()
+	defer fake.identityTokenMutex.RUnlock()
+	return len(fake.identityTokenArgsForCall)
+}
+
+func (fake *FakeSignerImplementation) IdentityTokenCalls(stub func(context.Context, string, []byte, string, string) (*oauthflow.OIDCIDToken, error)) {
+	fake.identityTokenMutex.Lock()
+	defer fake.identityTokenMutex.Unlock()
+	fake.IdentityTokenStub = stub
+}
+
+func (fake *FakeSignerImplementation) IdentityTokenArgsForCall(i int) (context.Context, string, []byte, string, string) {
+	fake.identityTokenMutex.RLock()
+	defer fake.identityTokenMutex.RUnlock()
+	argsForCall := fake.identityTokenArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5
+}
+
+func (fake *FakeSignerImplementation) IdentityTokenReturns(result1 *oauthflow.OIDCIDToken, result2 error) {
+	fake.identityTokenMutex.Lock()
+	defer fake.identityTokenMutex.Unlock()
+	fake.IdentityTokenStub = nil
+	fake.identityTokenReturns = struct {
+		result1 *oauthflow.OIDCIDToken
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeSignerImplementation) IdentityTokenReturnsOnCall(i int, result1 *oauthflow.OIDCIDToken, result2 error) {
+	fake.identityTokenMutex.Lock()
+	defer fake.identityTokenMutex.Unlock()
+	fake.IdentityTokenStub = nil
+	if fake.identityTokenReturnsOnCall == nil {
+		fake.identityTokenReturnsOnCall = make(map[int]struct {
+			result1 *oauthflow.OIDCIDToken
+			result2 error
+		})
+	}
+	fake.identityTokenReturnsOnCall[i] = struct {
+		result1 *oauthflow.OIDCIDToken
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeSignerImplementation) NewSigner() *signer.Signer {
@@ -222,78 +296,6 @@ func (fake *FakeSignerImplementation) ReadStatementReturnsOnCall(i int, result1 
 	}
 	fake.readStatementReturnsOnCall[i] = struct {
 		result1 []byte
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeSignerImplementation) ServiceAccountToken(arg1 context.Context, arg2 string, arg3 []byte, arg4 string) (*oauthflow.OIDCIDToken, error) {
-	var arg3Copy []byte
-	if arg3 != nil {
-		arg3Copy = make([]byte, len(arg3))
-		copy(arg3Copy, arg3)
-	}
-	fake.serviceAccountTokenMutex.Lock()
-	ret, specificReturn := fake.serviceAccountTokenReturnsOnCall[len(fake.serviceAccountTokenArgsForCall)]
-	fake.serviceAccountTokenArgsForCall = append(fake.serviceAccountTokenArgsForCall, struct {
-		arg1 context.Context
-		arg2 string
-		arg3 []byte
-		arg4 string
-	}{arg1, arg2, arg3Copy, arg4})
-	stub := fake.ServiceAccountTokenStub
-	fakeReturns := fake.serviceAccountTokenReturns
-	fake.recordInvocation("ServiceAccountToken", []interface{}{arg1, arg2, arg3Copy, arg4})
-	fake.serviceAccountTokenMutex.Unlock()
-	if stub != nil {
-		return stub(arg1, arg2, arg3, arg4)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	return fakeReturns.result1, fakeReturns.result2
-}
-
-func (fake *FakeSignerImplementation) ServiceAccountTokenCallCount() int {
-	fake.serviceAccountTokenMutex.RLock()
-	defer fake.serviceAccountTokenMutex.RUnlock()
-	return len(fake.serviceAccountTokenArgsForCall)
-}
-
-func (fake *FakeSignerImplementation) ServiceAccountTokenCalls(stub func(context.Context, string, []byte, string) (*oauthflow.OIDCIDToken, error)) {
-	fake.serviceAccountTokenMutex.Lock()
-	defer fake.serviceAccountTokenMutex.Unlock()
-	fake.ServiceAccountTokenStub = stub
-}
-
-func (fake *FakeSignerImplementation) ServiceAccountTokenArgsForCall(i int) (context.Context, string, []byte, string) {
-	fake.serviceAccountTokenMutex.RLock()
-	defer fake.serviceAccountTokenMutex.RUnlock()
-	argsForCall := fake.serviceAccountTokenArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
-}
-
-func (fake *FakeSignerImplementation) ServiceAccountTokenReturns(result1 *oauthflow.OIDCIDToken, result2 error) {
-	fake.serviceAccountTokenMutex.Lock()
-	defer fake.serviceAccountTokenMutex.Unlock()
-	fake.ServiceAccountTokenStub = nil
-	fake.serviceAccountTokenReturns = struct {
-		result1 *oauthflow.OIDCIDToken
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeSignerImplementation) ServiceAccountTokenReturnsOnCall(i int, result1 *oauthflow.OIDCIDToken, result2 error) {
-	fake.serviceAccountTokenMutex.Lock()
-	defer fake.serviceAccountTokenMutex.Unlock()
-	fake.ServiceAccountTokenStub = nil
-	if fake.serviceAccountTokenReturnsOnCall == nil {
-		fake.serviceAccountTokenReturnsOnCall = make(map[int]struct {
-			result1 *oauthflow.OIDCIDToken
-			result2 error
-		})
-	}
-	fake.serviceAccountTokenReturnsOnCall[i] = struct {
-		result1 *oauthflow.OIDCIDToken
 		result2 error
 	}{result1, result2}
 }
