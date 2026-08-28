@@ -15,6 +15,7 @@ steps:
       - "clone"
       - "https://github.com/${_TOOL_ORG}/${_TOOL_REPO}"
 
+  # Clone k/release
   - name: gcr.io/cloud-builders/git
     entrypoint: "bash"
     dir: "go/src/k8s.io/release"
@@ -25,6 +26,7 @@ steps:
         echo "Checking out ${_TOOL_REF}"
         git checkout ${_TOOL_REF}
 
+  # Download (or build) krel
   - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
     dir: go/src/k8s.io/release
     env:
@@ -36,6 +38,7 @@ steps:
     args:
       - ./hack/get-krel
 
+  # Build and stage the release artifacts
   - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
     dir: "/workspace"
     env:
@@ -61,6 +64,19 @@ steps:
       - "--branch=${_RELEASE_BRANCH}"
       - "--build-version=${_BUILDVERSION}"
 
+  # Sign and re-upload the attestations generated during the build. 
+  - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
+    dir: "/workspace"
+    args:
+      - "bin/krel"
+      - "sign"
+      - "attestation"
+      - "--in-place"
+      - "--impersonate-service-account=krel-staging@k8s-releng-prod.iam.gserviceaccount.com"
+      - "--log-level=${_LOG_LEVEL}"
+      - "${_STAGE_BUCKET}/stage/${_BUILDVERSION}/provenance.json"
+
+  # Stage the packages that will go to OBS
   - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
     dir: "/workspace"
     env:
@@ -105,3 +121,8 @@ substitutions:
   # _GIT_TAG will be filled with a git-based tag of the form vYYYYMMDD-hash, and
   # can be used as a substitution
   _GIT_TAG: "12345"
+
+  # _STAGE_BUCKET is set by krel gcb to the mock or production bucket where
+  # the artifacts are staged. We default to the mock bucket so that a job
+  # submitted by hand can never touch production.
+  _STAGE_BUCKET: "gs://5d7373bbdcb8270361b96548387bf2a9ad0d48758c35"
