@@ -507,6 +507,10 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket, forceBu
 	gcbSubs["PATCH_VERSION_TAG"] = strconv.FormatUint(primeSemver.Patch, 10)
 	gcbSubs["KUBERNETES_VERSION_TAG"] = primeSemver.String()
 
+	// Bucket where the artifacts get staged, mock or production, so that
+	// stage jobs can locate the artifacts to sign.
+	gcbSubs["STAGE_BUCKET"] = gcsBucket
+
 	if g.options.Release {
 		gcbSubs["KUBERNETES_GCS_BUCKET"] = fmt.Sprintf("%s/stage/%s/%s/gcs-stage/%s", gcsBucket, buildVersion, versions.Prime(), versions.Prime())
 		if g.options.NoMock {
