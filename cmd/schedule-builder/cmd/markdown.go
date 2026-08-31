@@ -243,8 +243,8 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 
 	for i, sched := range schedule.Schedules {
 		for {
-			if sched.Next == nil {
-				logrus.Warnf("Next release not set for %s, skipping", sched.Release)
+			if sched.Next == nil && sched.EndOfLifeDate == "" {
+				logrus.Warnf("Next release and end of life date not set for %s, skipping", sched.Release)
 
 				break
 			}
@@ -261,14 +261,39 @@ func updatePatchSchedule(refTime time.Time, schedule PatchSchedule, eolBranches 
 					break
 				}
 
+				// The branch may have no next release left, for example if the
+				// final patch release already got shipped. In that case fall
+				// back to the latest previous patch and the scheduled end of
+				// life date.
+				var finalPatchRelease string
+
+				endOfLifeDate := sched.EndOfLifeDate
+
+				switch {
+				case sched.Next != nil:
+					finalPatchRelease = sched.Next.Release
+					endOfLifeDate = sched.Next.TargetDate
+				case len(sched.PreviousPatches) > 0:
+					finalPatchRelease = sched.PreviousPatches[0].Release
+				default:
+					return fmt.Errorf("no patch release found for end of life release %s", sched.Release)
+				}
+
 				logrus.Infof("Moving %s to end of life", sched.Release)
 				eolBranches.Branches = append([]*EolBranch{{
 					Release:           sched.Release,
-					FinalPatchRelease: sched.Next.Release,
-					EndOfLifeDate:     sched.Next.TargetDate,
+					FinalPatchRelease: finalPatchRelease,
+					EndOfLifeDate:     endOfLifeDate,
 				}}, eolBranches.Branches...)
 
 				removeSchedules = append(removeSchedules, i)
+
+				break
+			}
+
+			// Not yet past end of life but no next release to advance.
+			if sched.Next == nil {
+				logrus.Warnf("Next release not set for %s, skipping", sched.Release)
 
 				break
 			}
