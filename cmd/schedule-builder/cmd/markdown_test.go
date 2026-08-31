@@ -453,6 +453,69 @@ func TestUpdatePatchSchedule(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:    "succeed to move end of life release without next release",
+			refTime: time.Date(2024, 4, 3, 0, 0, 0, 0, time.UTC),
+			givenSchedule: PatchSchedule{
+				Schedules: []*Schedule{
+					{ // EOL, final patch release already shipped so next is unset
+						Release:       "1.20",
+						EndOfLifeDate: "2023-12-12",
+						PreviousPatches: []*PatchRelease{
+							{
+								Release:            "1.20.10",
+								CherryPickDeadline: "2023-12-08",
+								TargetDate:         "2023-12-12",
+							},
+							{
+								Release:            "1.20.9",
+								CherryPickDeadline: "2023-11-10",
+								TargetDate:         "2023-11-14",
+							},
+						},
+					},
+				},
+				UpcomingReleases: []*PatchRelease{
+					{
+						CherryPickDeadline: "2024-04-12",
+						TargetDate:         "2024-04-17",
+					},
+					{
+						CherryPickDeadline: "2024-05-10",
+						TargetDate:         "2024-05-14",
+					},
+					{
+						CherryPickDeadline: "2024-06-07",
+						TargetDate:         "2024-06-11",
+					},
+				},
+			},
+			expectedSchedule: PatchSchedule{
+				UpcomingReleases: []*PatchRelease{
+					{
+						CherryPickDeadline: "2024-04-12",
+						TargetDate:         "2024-04-17",
+					},
+					{
+						CherryPickDeadline: "2024-05-10",
+						TargetDate:         "2024-05-14",
+					},
+					{
+						CherryPickDeadline: "2024-06-07",
+						TargetDate:         "2024-06-11",
+					},
+				},
+			},
+			expectedEolBranches: EolBranches{
+				Branches: []*EolBranch{
+					{
+						Release:           "1.20",
+						FinalPatchRelease: "1.20.10",
+						EndOfLifeDate:     "2023-12-12",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			scheduleFile, err := os.CreateTemp(t.TempDir(), "schedule-")
