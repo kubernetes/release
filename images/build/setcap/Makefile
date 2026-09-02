@@ -23,14 +23,15 @@ CONFIG ?= bookworm
 DEBIAN_BASE_VERSION ?= bookworm-v1.0.7
 
 ARCH?=amd64
-ALL_ARCH = amd64 arm arm64 ppc64le s390x
+ALL_ARCH ?= amd64 arm arm64 ppc64le s390x
 
 BASE_REGISTRY?=registry.k8s.io/build-image
 BASEIMAGE?=$(BASE_REGISTRY)/debian-base-$(ARCH):$(DEBIAN_BASE_VERSION)
 
 # Build args
-QEMUVERSION=7.2.0-1
+QEMUVERSION ?= 7.2.0-1
 QEMUIMAGE ?= multiarch/qemu-user-static
+QEMUFLAGS ?= --reset -p yes
 
 # This option is for running docker manifest command
 export DOCKER_CLI_EXPERIMENTAL := enabled
@@ -40,7 +41,7 @@ build:
 	umask 0022
 
 	# Enable execution of multi-architecture containers
-	docker run --rm --privileged $(QEMUIMAGE):$(QEMUVERSION) --reset -p yes
+	docker run --rm --privileged $(QEMUIMAGE):$(QEMUVERSION) $(QEMUFLAGS)
 	docker buildx version
 	BUILDER=$(shell docker buildx create --use)
 	docker buildx build \
