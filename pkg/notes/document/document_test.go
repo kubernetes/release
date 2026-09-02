@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"sigs.k8s.io/yaml"
 
 	"sigs.k8s.io/release-utils/command"
 
@@ -459,6 +460,54 @@ func TestNew(t *testing.T) {
 						NoteEntries: &notes.Notes{"PR#1", "PR#2"},
 					},
 				},
+			},
+		},
+		{
+			"unmapped do not publish notes are skipped",
+			func() *notes.ReleaseNotes {
+				n := notes.NewReleaseNotes()
+				note := makeReleaseNote(notes.KindBug, "This note should not be published.")
+				note.DoNotPublish = true
+				n.Set(0, note)
+
+				return n
+			},
+			&Document{
+				NotesWithActionRequired: notes.Notes{},
+				Notes:                   NoteCollection{},
+			},
+		},
+		{
+			"mapped release-note-none notes are skipped",
+			func() *notes.ReleaseNotes {
+				n := notes.NewReleaseNotes()
+				note := makeReleaseNote(notes.KindBug, "Mapped note should not be published.")
+				note.DoNotPublish = true
+				require.NoError(t, note.ApplyMap(&notes.ReleaseNotesMap{}, false))
+				n.Set(0, note)
+
+				return n
+			},
+			&Document{
+				NotesWithActionRequired: notes.Notes{},
+				Notes:                   NoteCollection{},
+			},
+		},
+		{
+			"mapped do not publish notes are skipped",
+			func() *notes.ReleaseNotes {
+				n := notes.NewReleaseNotes()
+				note := makeReleaseNote(notes.KindBug, "Mapped note should not be published.")
+				noteMap := &notes.ReleaseNotesMap{}
+				require.NoError(t, yaml.Unmarshal([]byte("pr: 0\nreleasenote:\n  do_not_publish: true\n"), noteMap))
+				require.NoError(t, note.ApplyMap(noteMap, false))
+				n.Set(0, note)
+
+				return n
+			},
+			&Document{
+				NotesWithActionRequired: notes.Notes{},
+				Notes:                   NoteCollection{},
 			},
 		},
 	}
