@@ -51,7 +51,7 @@ mkdir -p %{buildroot}%{_sharedstatedir}/kubelet/
 mkdir -p %{buildroot}%{_sysconfdir}/kubernetes/manifests/
 
 install -p -m 755 ${KUBE_ARCH}/kubelet %{buildroot}%{_bindir}/kubelet
-install -p -m 644 kubelet.service %{buildroot}%{_unitdir}/kubelet.service
+install -p -m 600 kubelet.service %{buildroot}%{_unitdir}/kubelet.service
 
 # Required because dpkg-deb doesn't keep empty directories
 %if "%{_vendor}" == "debbuild"
