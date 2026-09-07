@@ -30,7 +30,7 @@ IMGNAME = kube-cross
 KUBERNETES_VERSION ?= v1.37.0
 GO_VERSION ?= 1.26.5
 GO_MAJOR_VERSION ?= 1.26
-OS_CODENAME ?= bullseye
+OS_CODENAME ?= trixie
 REVISION ?= 0
 TYPE ?= default
 
@@ -55,8 +55,8 @@ export DOCKER_CLI_EXPERIMENTAL=enabled
 #       not supported in specific architectures
 PLATFORMS ?= linux/amd64 linux/arm64 #linux/arm
 
-KUBE_DYNAMIC_CROSSPLATFORMS ?= "arm64 armhf i386 ppc64el s390x"
-KUBE_CROSSPLATFORMS ?= "linux/386 linux/arm linux/arm64 linux/ppc64le linux/s390x darwin/amd64 windows/amd64 windows/386"
+KUBE_DYNAMIC_CROSSPLATFORMS ?= "arm64 armhf i386 ppc64el s390x riscv64"
+KUBE_CROSSPLATFORMS ?= "linux/386 linux/arm linux/arm64 linux/ppc64le linux/s390x linux/riscv64 darwin/amd64 windows/amd64 windows/386"
 
 # for legacy images only build linux/amd64
 ifeq ($(TYPE), legacy)
