@@ -16,7 +16,7 @@ Source0: %{name}_%{version}.orig.tar.gz
 Source1: %{name}.rpmlintrc
 
 BuildRequires: systemd
-Requires: iptables >= 1.4.21
+Recommends: iptables >= 1.8.4
 {{ range $dep := .Metadata.Dependencies }}
 Requires: {{ $dep.Name }} {{ $dep.VersionConstraint }}
 {{ end }}
