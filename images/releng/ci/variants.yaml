@@ -1,4 +1,9 @@
 variants:
+  go1.27-trixie:
+    CONFIG: 'go1.27-trixie'
+    GO_VERSION: '1.27.1'
+    OS_CODENAME: 'trixie'
+    REVISION: '0'
   go1.26-trixie:
     CONFIG: 'go1.26-trixie'
     GO_VERSION: '1.26.5'
