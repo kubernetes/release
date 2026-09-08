@@ -17,14 +17,14 @@ include $(CURDIR)/../../Makefile.common-image
 
 IMGNAME = go-runner
 APP_VERSION = $(shell cat VERSION)
-GO_MAJOR_VERSION ?= 1.26
+GO_MAJOR_VERSION ?= 1.27
 REVISION ?= 0
-GO_VERSION ?= 1.26.5
+GO_VERSION ?= 1.27.1
 OS_CODENAME ?= bookworm-slim
 
 # Build args
 DISTROLESS_REGISTRY ?= gcr.io/distroless
-DISTROLESS_IMAGE ?= static-debian12
+DISTROLESS_IMAGE ?= static-debian13
 BUILDER_IMAGE ?= debian:$(OS_CODENAME)
 
 # Configuration

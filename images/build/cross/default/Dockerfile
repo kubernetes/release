@@ -50,6 +50,24 @@ RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
     && go clean -cache; \
 fi
 
+# Debian 11 (bullseye) reached the end of its LTS window on 2026-08-31. Its
+# bullseye-security Release file is no longer re-signed, so apt rejects the whole
+# update as expired, and the security pool is being pruned behind the CDN, which
+# makes deb.debian.org return intermittent 404s for packages the index still
+# lists. bullseye is not on archive.debian.org yet, so pin to the snapshot the
+# base image was built from (the debian:bullseye-slim sources.list ships these
+# entries commented out) -- an immutable archive that keeps the security suite
+# intact. Only bullseye is switched; newer bases keep validating Valid-Until.
+RUN . /etc/os-release \
+    && if [ "${VERSION_CODENAME}" = "bullseye" ]; then \
+        sed -i \
+            -e 's|^deb http://deb.debian.org|# deb http://deb.debian.org|' \
+            -e 's|^# deb http://snapshot.debian.org|deb http://snapshot.debian.org|' \
+            /etc/apt/sources.list \
+        && echo 'Acquire::Check-Valid-Until "false";' \
+            > /etc/apt/apt.conf.d/99no-check-valid-until; \
+fi
+
 # Install packages
 RUN apt-get -q update \
     && apt-get install -qqy \
