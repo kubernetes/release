@@ -47,7 +47,7 @@ RUN apt-get update && \
         bsdmainutils \
         build-essential \
         git \
-        google-cloud-sdk \
+        google-cloud-cli \
         jq \
         rpmlint \
         wget \
