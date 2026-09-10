@@ -70,7 +70,7 @@ dependencies:
   #     match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
 
   - name: "golang: go.mod"
-    version: 1.26
+    version: 1.27
     refPaths:
       - path: go.mod
         match: go \d+.\d+
@@ -331,7 +331,7 @@ dependencies:
 
   # golangci-lint-version
   - name: "golangci-lint"
-    version: v2.12
+    version: v2.13
     refPaths:
       - path: .github/workflows/lint.yml
         match: "version: v\\d+.\\d+?\\.?(\\d+)?"
