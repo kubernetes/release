@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 	"go.yaml.in/yaml/v4"
@@ -131,17 +132,20 @@ type ReleaseNotesDataField any
 
 // DirectoryMapProvider is a provider that gets maps from a directory.
 type DirectoryMapProvider struct {
-	Path string
-	Maps map[int][]*ReleaseNotesMap
+	Path    string
+	Maps    map[int][]*ReleaseNotesMap
+	once    sync.Once
+	loadErr error
 }
 
 // GetMapsForPR get the release notes maps for a specific PR number.
 func (mp *DirectoryMapProvider) GetMapsForPR(pr int) (notesMap []*ReleaseNotesMap, err error) {
-	if mp.Maps == nil {
-		err := mp.readMaps()
-		if err != nil {
-			return nil, fmt.Errorf("while reading release notes maps: %w", err)
-		}
+	mp.once.Do(func() {
+		mp.loadErr = mp.readMaps()
+	})
+
+	if mp.loadErr != nil {
+		return nil, fmt.Errorf("while reading release notes maps: %w", mp.loadErr)
 	}
 
 	if notesMap, ok := mp.Maps[pr]; ok {
