@@ -20,7 +20,7 @@ IMAGE=$(REGISTRY)/distroless-iptables
 TAG ?= $(shell git describe --tags --always --dirty)
 IMAGE_VERSION ?= v0.10.0
 CONFIG ?= distroless-bookworm
-BASEIMAGE ?= debian:bookworm-slim
+BASEIMAGE ?= debian:bookworm-20260713-slim
 GORUNNER_VERSION ?= v2.4.0-go1.27.1-bookworm.0
 
 ARCH?=amd64

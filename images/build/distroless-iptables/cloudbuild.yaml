@@ -1,5 +1,8 @@
 # See https://cloud.google.com/cloud-build/docs/build-config
-timeout: 7200s
+# The non-amd64 arches are built under qemu emulation, where compiling nftables
+# is slow and highly variable (ppc64le has been seen to take anywhere from 23 to
+# 62 minutes). Building all five arches needs well over the previous 7200s.
+timeout: 14400s
 
 options:
   substitutionOption: ALLOW_LOOSE
