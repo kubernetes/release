@@ -32,9 +32,11 @@ package_to_copyright() {
 stage_file() {
     # /lib is a symlink to /usr/lib in debian 13, means we just stick to
     # /usr/lib for all libraries to avoid separating symlinks with the actual binaries
-    # ditto /lib64
+    # ditto /lib64, /bin and /sbin. distroless static-debian13 has /bin, /sbin and
+    # /lib as symlinks into /usr, so staging a real bin/ directory would make the
+    # final `COPY --from=build /opt/stage /` fail with "cannot copy to non-directory"
     from="${1}"
-    if [[ $from = /lib*/* ]]; then
+    if [[ $from = /lib*/* || $from = /bin/* || $from = /sbin/* ]]; then
         from="/usr$from"
     fi
     cp -a --parents "${from}" "${2}"

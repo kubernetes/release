@@ -2,7 +2,7 @@ variants:
   distroless-tri-go1.27:
     CONFIG: 'distroless-trixie'
     IMAGE_VERSION: 'v0.11.0'
-    BASEIMAGE: 'debian:bookworm-slim'
+    BASEIMAGE: 'debian:trixie-slim'
     GORUNNER_VERSION: 'v2.4.0-go1.27.1-trixie.0'
   distroless-bookworm-go1.27:
     CONFIG: 'distroless-bookworm'
