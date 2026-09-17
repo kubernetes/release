@@ -62,7 +62,7 @@ RUN apt-get -y install bash curl && \
 
 RUN curl -o "${STAGE_DIR}"/iptables-wrapper-installer.sh https://raw.githubusercontent.com/kubernetes-sigs/iptables-wrappers/v2/iptables-wrapper-installer.sh && \
     chmod +x "${STAGE_DIR}"/iptables-wrapper-installer.sh && \
-    ln -sf /bin/dash "${STAGE_DIR}"/bin/sh
+    ln -sf /usr/bin/dash "${STAGE_DIR}"/usr/bin/sh
 
 # we're going to borrow the /go-runner binary in the final image
 # dedupe this binary by just copying it from the go-runner image
