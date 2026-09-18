@@ -1,28 +1,33 @@
 variants:
   default:
     CONFIG: default
-    GO_VERSION: '1.26.5'
-    GO_VERSION_TOOLING: '1.26.5'
+    GO_VERSION: '1.27.1'
+    GO_VERSION_TOOLING: '1.27.1'
     OS_CODENAME: 'bookworm'
   next:
     CONFIG: next
-    GO_VERSION: '1.26.5'
-    GO_VERSION_TOOLING: '1.26.5'
+    GO_VERSION: '1.27.1'
+    GO_VERSION_TOOLING: '1.27.1'
+    OS_CODENAME: 'bookworm'
+  '1.38':
+    CONFIG: '1.38'
+    GO_VERSION: '1.27.1'
+    GO_VERSION_TOOLING: '1.27.1'
     OS_CODENAME: 'bookworm'
   '1.37':
-    CONFIG: '1.36'
-    GO_VERSION: '1.26.5'
-    GO_VERSION_TOOLING: '1.26.5'
+    CONFIG: '1.37'
+    GO_VERSION: '1.26.8'
+    GO_VERSION_TOOLING: '1.26.8'
     OS_CODENAME: 'bookworm'
   '1.36':
     CONFIG: '1.36'
-    GO_VERSION: '1.26.5'
-    GO_VERSION_TOOLING: '1.26.5'
+    GO_VERSION: '1.26.8'
+    GO_VERSION_TOOLING: '1.26.8'
     OS_CODENAME: 'bookworm'
   '1.35':
     CONFIG: '1.35'
-    GO_VERSION: '1.26.5'
-    GO_VERSION_TOOLING: '1.26.5'
+    GO_VERSION: '1.26.8'
+    GO_VERSION_TOOLING: '1.26.8'
     OS_CODENAME: 'bookworm'
   '1.34':
     CONFIG: '1.34'
