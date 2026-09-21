@@ -113,6 +113,9 @@ type Options struct {
 	// Do not update the latest file.
 	NoUpdateLatest bool
 
+	// Do not sign the pushed container images.
+	NoSign bool
+
 	// Do not mark published bits on GCS as publicly readable.
 	PrivateBucket bool
 
