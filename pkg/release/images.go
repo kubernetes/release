@@ -41,19 +41,28 @@ type Images struct {
 	imageImpl
 
 	signer *sign.Signer
+
+	signingEnabled bool
 }
 
 // NewImages creates a new Images instance.
 func NewImages() *Images {
 	return &Images{
-		imageImpl: &defaultImageImpl{},
-		signer:    sign.New(sign.Default()),
+		imageImpl:      &defaultImageImpl{},
+		signer:         sign.New(sign.Default()),
+		signingEnabled: true,
 	}
 }
 
 // SetImpl can be used to set the internal image implementation.
 func (i *Images) SetImpl(impl imageImpl) {
 	i.imageImpl = impl
+}
+
+// SetSigningEnabled can be used to enable or disable the signing of published
+// container images and manifest lists.
+func (i *Images) SetSigningEnabled(enabled bool) {
+	i.signingEnabled = enabled
 }
 
 // imageImpl is a client for working with container images.
@@ -456,8 +465,12 @@ func (i *Images) pushAndSignImage(item tarballItem) error {
 		return fmt.Errorf("push container image: %w", err)
 	}
 
-	if err := i.SignImage(i.signer, item.newTagWithArch); err != nil {
-		return fmt.Errorf("sign container image: %w", err)
+	if i.signingEnabled {
+		if err := i.SignImage(i.signer, item.newTagWithArch); err != nil {
+			return fmt.Errorf("sign container image: %w", err)
+		}
+	} else {
+		logrus.Infof("Skipping signing of %s", item.newTagWithArch)
 	}
 
 	if err := i.Execute(
@@ -530,8 +543,12 @@ func (i *Images) createPushSignManifest(image string, arches []string, version s
 		return fmt.Errorf("push manifest: %w", err)
 	}
 
-	if err := i.SignImage(i.signer, imageVersion); err != nil {
-		return fmt.Errorf("sign manifest list: %w", err)
+	if i.signingEnabled {
+		if err := i.SignImage(i.signer, imageVersion); err != nil {
+			return fmt.Errorf("sign manifest list: %w", err)
+		}
+	} else {
+		logrus.Infof("Skipping signing of manifest list %s", imageVersion)
 	}
 
 	return nil
