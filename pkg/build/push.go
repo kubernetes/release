@@ -445,6 +445,12 @@ func (bi *Instance) PushContainerImages() error {
 
 	images := release.NewImages()
 
+	if bi.opts.NoSign {
+		logrus.Info("Signing is disabled, will not sign container images")
+
+		images.SetSigningEnabled(false)
+	}
+
 	logrus.Infof("Publishing container images for %s", bi.opts.Version)
 
 	if err := images.Publish(

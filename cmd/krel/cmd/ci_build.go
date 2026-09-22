@@ -40,6 +40,9 @@ krel ci-build --bucket cool-bucket --gcs-root new-gcs-root - Push to gs://cool-b
 
 var ciBuildOpts = &build.Options{}
 
+// ciBuildSign is the inverse of `build.Options.NoSign`, exposed as `--sign`.
+var ciBuildSign bool
+
 var ciBuildCmd = &cobra.Command{
 	Use:           "ci-build",
 	Short:         "Build Kubernetes in CI and push release artifacts to Google Cloud Storage (GCS)",
@@ -142,11 +145,19 @@ func init() {
 		"Validate that the remote image digests exists",
 	)
 
+	ciBuildCmd.PersistentFlags().BoolVar(
+		&ciBuildSign,
+		"sign",
+		true,
+		"Sign the pushed container images, use --sign=false to skip the signing step",
+	)
+
 	rootCmd.AddCommand(ciBuildCmd)
 }
 
 func runCIBuild(opts *build.Options) error {
 	opts.CI = true
+	opts.NoSign = !ciBuildSign
 
 	return build.NewInstance(opts).Build()
 }
