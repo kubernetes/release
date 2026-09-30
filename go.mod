@@ -18,7 +18,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/in-toto/attestation v1.2.0
 	github.com/mattn/go-isatty v0.0.24
-	github.com/maxbrunsfeld/counterfeiter/v6 v6.13.0
+	github.com/maxbrunsfeld/counterfeiter/v6 v6.14.0
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
 	github.com/psampaz/go-mod-outdated v0.9.0
 	github.com/saschagrunert/go-modiff v1.4.1
