@@ -17,6 +17,7 @@ limitations under the License.
 package anago
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -33,6 +34,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"sigs.k8s.io/bom/pkg/bom"
+	"sigs.k8s.io/bom/pkg/license"
 	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/command"
@@ -176,12 +179,12 @@ type stageImpl interface {
 	PushContainerImages(options *build.Options) error
 	GoModDownload(path string) error
 	GenerateVersionArtifactsBOM(string) error
-	GenerateSourceTreeBOM(options *spdx.DocGenerateOptions) (*spdx.Document, error)
+	GenerateSourceTreeBOM(options *bom.GenerateOptions) (*spdx.Document, error)
 	WriteSourceBOM(spdxDoc *spdx.Document, version string) error
 	ListBinaries(version string) ([]struct{ Path, Platform, Arch string }, error)
 	ListImageArchives(string) ([]string, error)
 	ListTarballs(version string) ([]string, error)
-	BuildBaseArtifactsSBOM(*spdx.DocGenerateOptions) (*spdx.Document, error)
+	BuildBaseArtifactsSBOM(*bom.GenerateOptions) (*spdx.Document, error)
 	AddBinariesToSBOM(*spdx.Document, string) error
 	AddTarfilesToSBOM(*spdx.Document, string) error
 	VerifyArtifacts([]string) error
@@ -764,10 +767,37 @@ func (d *defaultStageImpl) AddTarfilesToSBOM(sbom *spdx.Document, version string
 	return nil
 }
 
-func (d *defaultStageImpl) BuildBaseArtifactsSBOM(options *spdx.DocGenerateOptions) (*spdx.Document, error) {
+func (d *defaultStageImpl) BuildBaseArtifactsSBOM(options *bom.GenerateOptions) (*spdx.Document, error) {
 	logrus.Info("Generating release artifacts SBOM")
 
-	return spdx.NewDocBuilder().Generate(options)
+	return generateSPDXDocument(options)
+}
+
+// generateSPDXDocument generates an SBOM and converts it to the SPDX object
+// model, completing it the same way bom does when writing SPDX documents.
+func generateSPDXDocument(options *bom.GenerateOptions) (*spdx.Document, error) {
+	pdoc, err := bom.Generate(context.Background(), options)
+	if err != nil {
+		return nil, fmt.Errorf("generating SBOM: %w", err)
+	}
+
+	doc, err := spdx.FromProtobom(pdoc)
+	if err != nil {
+		return nil, fmt.Errorf("converting SBOM to SPDX: %w", err)
+	}
+
+	listVersion, err := semver.ParseTolerant(license.DefaultCatalogOpts.Version)
+	if err != nil {
+		return nil, fmt.Errorf("parsing license list version: %w", err)
+	}
+
+	doc.LicenseListVersion = fmt.Sprintf("%d.%d", listVersion.Major, listVersion.Minor)
+
+	if doc.Creator.Organization == "" {
+		doc.Creator.Organization = sbomOrganization
+	}
+
+	return doc, nil
 }
 
 func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
@@ -778,15 +808,11 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 
 	// Build the base artifacts sbom. We only pass it the images for
 	// now as the binaries and tarballs need more processing
-	doc, err := d.BuildBaseArtifactsSBOM(&spdx.DocGenerateOptions{
+	doc, err := d.BuildBaseArtifactsSBOM(&bom.GenerateOptions{
 		Name:           "Kubernetes Release " + version,
-		AnalyseLayers:  false,
-		OnlyDirectDeps: false,
-		License:        LicenseIdentifier,
 		Namespace:      fmt.Sprintf("https://sbom.k8s.io/%s/release", version),
-		ScanLicenses:   false,
-		Tarballs:       images,
-		OutputFile:     filepath.Join(),
+		ImageArchives:  images,
+		NoDependencies: true,
 	})
 	if err != nil {
 		return fmt.Errorf("generating base artifacts sbom for %s: %w", version, err)
@@ -844,11 +870,11 @@ func (d *defaultStageImpl) GoModDownload(path string) error {
 }
 
 func (d *defaultStageImpl) GenerateSourceTreeBOM(
-	options *spdx.DocGenerateOptions,
+	options *bom.GenerateOptions,
 ) (*spdx.Document, error) {
 	logrus.Info("Generating Kubernetes source SBOM file")
 
-	doc, err := spdx.NewDocBuilder().Generate(options)
+	doc, err := generateSPDXDocument(options)
 	if err != nil {
 		return nil, fmt.Errorf("generating Kubernetes source code SBOM: %w", err)
 	}
@@ -882,13 +908,9 @@ func (d *DefaultStage) GenerateBillOfMaterials() error {
 	// versions are cut from the same point in the git history. The
 	// resulting SPDX document will be customized for each version
 	// in WriteSourceBOM() before writing the actual files.
-	spdxDOC, err := d.impl.GenerateSourceTreeBOM(&spdx.DocGenerateOptions{
-		ProcessGoModules: true,
-		License:          LicenseIdentifier,
-		OutputFile:       filepath.Join(os.TempDir(), "kubernetes-source.spdx"),
-		Namespace:        "https://sbom.k8s.io/REPLACE/source", // This one gets replaced when writing to disk
-		ScanLicenses:     true,
-		Directories:      []string{gitRoot},
+	spdxDOC, err := d.impl.GenerateSourceTreeBOM(&bom.GenerateOptions{
+		Namespace:   "https://sbom.k8s.io/REPLACE/source", // This one gets replaced when writing to disk
+		Directories: []string{gitRoot},
 	})
 	if err != nil {
 		return fmt.Errorf("generating the kubernetes source SBOM: %w", err)

@@ -19,6 +19,7 @@ package sbom
 const (
 	sbomFileName      = "sbom.spdx"
 	assetDownloadPath = "/releases/download/"
+	sbomOrganization  = "Kubernetes Release Engineering"
 )
 
 type Asset struct {

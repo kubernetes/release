@@ -31,6 +31,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"sigs.k8s.io/bom/pkg/bom"
 	"sigs.k8s.io/bom/pkg/provenance"
 	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/object"
@@ -269,9 +270,14 @@ func (di *defaultProvenanceCheckerImpl) checkProvenance(
 func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(
 	opts *ProvenanceCheckerOptions, sbom, stageProvenance, version string,
 ) error {
-	doc, err := spdx.OpenDoc(sbom)
+	pdoc, err := bom.Open(sbom)
 	if err != nil {
 		return fmt.Errorf("parsing sbom for version %s from %s: %w", version, sbom, err)
+	}
+
+	doc, err := spdx.FromProtobom(pdoc)
+	if err != nil {
+		return fmt.Errorf("converting sbom for version %s: %w", version, err)
 	}
 
 	slsaStatement := doc.ToProvenanceStatement(spdx.DefaultProvenanceOptions)

@@ -64,6 +64,9 @@ const (
 
 	// sourceCodeComment is the SBOM relationship comment for source code.
 	sourceCodeComment = "Source code"
+
+	// sbomOrganization is the organization credited as creator of the SBOMs.
+	sbomOrganization = "Kubernetes Release Engineering"
 )
 
 // Options are settings which will be used by `StageOptions` as well as
