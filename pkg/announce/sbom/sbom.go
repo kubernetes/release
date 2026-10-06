@@ -22,8 +22,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/bom/pkg/bom"
 	"sigs.k8s.io/bom/pkg/serialize"
-	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/github"
 )
 
@@ -56,16 +56,11 @@ func (s *SBOM) Generate() (string, error) {
 
 	logrus.Infof("SBOM will be temporarily written to %s", sbomFile)
 
-	builder := s.docBuilder()
-	builderOpts := &spdx.DocGenerateOptions{
-		ProcessGoModules: true,
-		ScanLicenses:     true,
-		Name:             s.options.ReleaseName,
-		Namespace:        github.GitHubURL + s.options.Repo + "@" + s.options.Tag,
-		Directories:      []string{s.options.RepoDirectory},
-	}
-
-	doc, err := builder.Generate(builderOpts)
+	doc, err := s.generateDocument(&bom.GenerateOptions{
+		Name:        s.options.ReleaseName,
+		Namespace:   github.GitHubURL + s.options.Repo + "@" + s.options.Tag,
+		Directories: []string{s.options.RepoDirectory},
+	})
 	if err != nil {
 		return "", fmt.Errorf("generating initial SBOM: %w", err)
 	}

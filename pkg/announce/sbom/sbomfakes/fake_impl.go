@@ -20,25 +20,26 @@ package sbomfakes
 import (
 	"sync"
 
+	"sigs.k8s.io/bom/pkg/bom"
 	"sigs.k8s.io/bom/pkg/spdx"
 )
 
 type FakeImpl struct {
-	docBuilderStub        func() *spdx.DocBuilder
-	docBuilderMutex       sync.RWMutex
-	docBuilderArgsForCall []struct {
+	generateDocumentStub        func(*bom.GenerateOptions) (*spdx.Document, error)
+	generateDocumentMutex       sync.RWMutex
+	generateDocumentArgsForCall []FakeImplGenerateDocumentArgs
+	generateDocumentReturns     struct {
+		result1 *spdx.Document
+		result2 error
 	}
-	docBuilderReturns struct {
-		result1 *spdx.DocBuilder
-	}
-	docBuilderReturnsOnCall map[int]struct {
-		result1 *spdx.DocBuilder
+	generateDocumentReturnsOnCall map[int]struct {
+		result1 *spdx.Document
+		result2 error
 	}
 	spdxClientStub        func() *spdx.SPDX
 	spdxClientMutex       sync.RWMutex
-	spdxClientArgsForCall []struct {
-	}
-	spdxClientReturns struct {
+	spdxClientArgsForCall []struct{}
+	spdxClientReturns     struct {
 		result1 *spdx.SPDX
 	}
 	spdxClientReturnsOnCall map[int]struct {
@@ -46,9 +47,8 @@ type FakeImpl struct {
 	}
 	tmpFileStub        func() (string, error)
 	tmpFileMutex       sync.RWMutex
-	tmpFileArgsForCall []struct {
-	}
-	tmpFileReturns struct {
+	tmpFileArgsForCall []struct{}
+	tmpFileReturns     struct {
 		result1 string
 		result2 error
 	}
@@ -58,78 +58,103 @@ type FakeImpl struct {
 	}
 	writeFileStub        func(string, []byte) error
 	writeFileMutex       sync.RWMutex
-	writeFileArgsForCall []struct {
-		arg1 string
-		arg2 []byte
-	}
-	writeFileReturns struct {
+	writeFileArgsForCall []FakeImplWriteFileArgs
+	writeFileReturns     struct {
 		result1 error
 	}
 	writeFileReturnsOnCall map[int]struct {
 		result1 error
 	}
 	invocations      map[string][][]interface{}
+	callOrder        []string
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeImpl) docBuilder() *spdx.DocBuilder {
-	fake.docBuilderMutex.Lock()
-	ret, specificReturn := fake.docBuilderReturnsOnCall[len(fake.docBuilderArgsForCall)]
-	fake.docBuilderArgsForCall = append(fake.docBuilderArgsForCall, struct {
-	}{})
-	stub := fake.docBuilderStub
-	fakeReturns := fake.docBuilderReturns
-	fake.recordInvocation("docBuilder", []interface{}{})
-	fake.docBuilderMutex.Unlock()
+// FakeImplGenerateDocumentArgs holds the arguments of one call to generateDocument.
+type FakeImplGenerateDocumentArgs struct {
+	Arg1 *bom.GenerateOptions
+}
+
+// FakeImplWriteFileArgs holds the arguments of one call to writeFile.
+type FakeImplWriteFileArgs struct {
+	Arg1 string
+	Arg2 []byte
+}
+
+func (fake *FakeImpl) generateDocument(arg1 *bom.GenerateOptions) (*spdx.Document, error) {
+	fake.generateDocumentMutex.Lock()
+	ret, specificReturn := fake.generateDocumentReturnsOnCall[len(fake.generateDocumentArgsForCall)]
+	fake.generateDocumentArgsForCall = append(fake.generateDocumentArgsForCall, FakeImplGenerateDocumentArgs{arg1})
+	stub := fake.generateDocumentStub
+	fakeReturns := fake.generateDocumentReturns
+	fake.recordInvocation("generateDocument", []interface{}{arg1})
+	fake.generateDocumentMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
-		return ret.result1
+		return ret.result1, ret.result2
 	}
-	return fakeReturns.result1
+	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeImpl) DocBuilderCallCount() int {
-	fake.docBuilderMutex.RLock()
-	defer fake.docBuilderMutex.RUnlock()
-	return len(fake.docBuilderArgsForCall)
+func (fake *FakeImpl) GenerateDocumentCallCount() int {
+	fake.generateDocumentMutex.RLock()
+	defer fake.generateDocumentMutex.RUnlock()
+	return len(fake.generateDocumentArgsForCall)
 }
 
-func (fake *FakeImpl) DocBuilderCalls(stub func() *spdx.DocBuilder) {
-	fake.docBuilderMutex.Lock()
-	defer fake.docBuilderMutex.Unlock()
-	fake.docBuilderStub = stub
+func (fake *FakeImpl) GenerateDocumentCalls(stub func(*bom.GenerateOptions) (*spdx.Document, error)) {
+	fake.generateDocumentMutex.Lock()
+	defer fake.generateDocumentMutex.Unlock()
+	fake.generateDocumentStub = stub
 }
 
-func (fake *FakeImpl) DocBuilderReturns(result1 *spdx.DocBuilder) {
-	fake.docBuilderMutex.Lock()
-	defer fake.docBuilderMutex.Unlock()
-	fake.docBuilderStub = nil
-	fake.docBuilderReturns = struct {
-		result1 *spdx.DocBuilder
-	}{result1}
+func (fake *FakeImpl) GenerateDocumentArgsForCall(i int) *bom.GenerateOptions {
+	fake.generateDocumentMutex.RLock()
+	defer fake.generateDocumentMutex.RUnlock()
+	argsForCall := fake.generateDocumentArgsForCall[i]
+	return argsForCall.Arg1
 }
 
-func (fake *FakeImpl) DocBuilderReturnsOnCall(i int, result1 *spdx.DocBuilder) {
-	fake.docBuilderMutex.Lock()
-	defer fake.docBuilderMutex.Unlock()
-	fake.docBuilderStub = nil
-	if fake.docBuilderReturnsOnCall == nil {
-		fake.docBuilderReturnsOnCall = make(map[int]struct {
-			result1 *spdx.DocBuilder
+func (fake *FakeImpl) GenerateDocumentArgs() []FakeImplGenerateDocumentArgs {
+	fake.generateDocumentMutex.RLock()
+	defer fake.generateDocumentMutex.RUnlock()
+	args := make([]FakeImplGenerateDocumentArgs, len(fake.generateDocumentArgsForCall))
+	copy(args, fake.generateDocumentArgsForCall)
+	return args
+}
+
+func (fake *FakeImpl) GenerateDocumentReturns(result1 *spdx.Document, result2 error) {
+	fake.generateDocumentMutex.Lock()
+	defer fake.generateDocumentMutex.Unlock()
+	fake.generateDocumentStub = nil
+	fake.generateDocumentReturns = struct {
+		result1 *spdx.Document
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImpl) GenerateDocumentReturnsOnCall(i int, result1 *spdx.Document, result2 error) {
+	fake.generateDocumentMutex.Lock()
+	defer fake.generateDocumentMutex.Unlock()
+	fake.generateDocumentStub = nil
+	if fake.generateDocumentReturnsOnCall == nil {
+		fake.generateDocumentReturnsOnCall = make(map[int]struct {
+			result1 *spdx.Document
+			result2 error
 		})
 	}
-	fake.docBuilderReturnsOnCall[i] = struct {
-		result1 *spdx.DocBuilder
-	}{result1}
+	fake.generateDocumentReturnsOnCall[i] = struct {
+		result1 *spdx.Document
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeImpl) spdxClient() *spdx.SPDX {
 	fake.spdxClientMutex.Lock()
 	ret, specificReturn := fake.spdxClientReturnsOnCall[len(fake.spdxClientArgsForCall)]
-	fake.spdxClientArgsForCall = append(fake.spdxClientArgsForCall, struct {
-	}{})
+	fake.spdxClientArgsForCall = append(fake.spdxClientArgsForCall, struct{}{})
 	stub := fake.spdxClientStub
 	fakeReturns := fake.spdxClientReturns
 	fake.recordInvocation("spdxClient", []interface{}{})
@@ -181,8 +206,7 @@ func (fake *FakeImpl) SpdxClientReturnsOnCall(i int, result1 *spdx.SPDX) {
 func (fake *FakeImpl) tmpFile() (string, error) {
 	fake.tmpFileMutex.Lock()
 	ret, specificReturn := fake.tmpFileReturnsOnCall[len(fake.tmpFileArgsForCall)]
-	fake.tmpFileArgsForCall = append(fake.tmpFileArgsForCall, struct {
-	}{})
+	fake.tmpFileArgsForCall = append(fake.tmpFileArgsForCall, struct{}{})
 	stub := fake.tmpFileStub
 	fakeReturns := fake.tmpFileReturns
 	fake.recordInvocation("tmpFile", []interface{}{})
@@ -242,10 +266,7 @@ func (fake *FakeImpl) writeFile(arg1 string, arg2 []byte) error {
 	}
 	fake.writeFileMutex.Lock()
 	ret, specificReturn := fake.writeFileReturnsOnCall[len(fake.writeFileArgsForCall)]
-	fake.writeFileArgsForCall = append(fake.writeFileArgsForCall, struct {
-		arg1 string
-		arg2 []byte
-	}{arg1, arg2Copy})
+	fake.writeFileArgsForCall = append(fake.writeFileArgsForCall, FakeImplWriteFileArgs{arg1, arg2Copy})
 	stub := fake.writeFileStub
 	fakeReturns := fake.writeFileReturns
 	fake.recordInvocation("writeFile", []interface{}{arg1, arg2Copy})
@@ -275,7 +296,15 @@ func (fake *FakeImpl) WriteFileArgsForCall(i int) (string, []byte) {
 	fake.writeFileMutex.RLock()
 	defer fake.writeFileMutex.RUnlock()
 	argsForCall := fake.writeFileArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.Arg1, argsForCall.Arg2
+}
+
+func (fake *FakeImpl) WriteFileArgs() []FakeImplWriteFileArgs {
+	fake.writeFileMutex.RLock()
+	defer fake.writeFileMutex.RUnlock()
+	args := make([]FakeImplWriteFileArgs, len(fake.writeFileArgsForCall))
+	copy(args, fake.writeFileArgsForCall)
+	return args
 }
 
 func (fake *FakeImpl) WriteFileReturns(result1 error) {
@@ -311,9 +340,18 @@ func (fake *FakeImpl) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
+func (fake *FakeImpl) CallOrder() []string {
+	fake.invocationsMutex.RLock()
+	defer fake.invocationsMutex.RUnlock()
+	order := make([]string, len(fake.callOrder))
+	copy(order, fake.callOrder)
+	return order
+}
+
 func (fake *FakeImpl) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
+	fake.callOrder = append(fake.callOrder, key)
 	if fake.invocations == nil {
 		fake.invocations = map[string][][]interface{}{}
 	}

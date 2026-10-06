@@ -17,10 +17,15 @@ limitations under the License.
 package sbom
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/blang/semver/v4"
+
+	"sigs.k8s.io/bom/pkg/bom"
+	"sigs.k8s.io/bom/pkg/license"
 	"sigs.k8s.io/bom/pkg/spdx"
 )
 
@@ -32,7 +37,7 @@ type defaultImpl struct{}
 
 type impl interface {
 	tmpFile() (string, error)
-	docBuilder() *spdx.DocBuilder
+	generateDocument(options *bom.GenerateOptions) (*spdx.Document, error)
 	spdxClient() *spdx.SPDX
 	writeFile(file string, data []byte) error
 }
@@ -47,8 +52,31 @@ func (i *defaultImpl) tmpFile() (string, error) {
 	return filepath.Join(dir, sbomFileName), nil
 }
 
-func (i *defaultImpl) docBuilder() *spdx.DocBuilder {
-	return spdx.NewDocBuilder()
+// generateDocument generates an SBOM and converts it to the SPDX object
+// model, completing it the same way bom does when writing SPDX documents.
+func (i *defaultImpl) generateDocument(options *bom.GenerateOptions) (*spdx.Document, error) {
+	pdoc, err := bom.Generate(context.Background(), options)
+	if err != nil {
+		return nil, fmt.Errorf("generating SBOM: %w", err)
+	}
+
+	doc, err := spdx.FromProtobom(pdoc)
+	if err != nil {
+		return nil, fmt.Errorf("converting SBOM to SPDX: %w", err)
+	}
+
+	listVersion, err := semver.ParseTolerant(license.DefaultCatalogOpts.Version)
+	if err != nil {
+		return nil, fmt.Errorf("parsing license list version: %w", err)
+	}
+
+	doc.LicenseListVersion = fmt.Sprintf("%d.%d", listVersion.Major, listVersion.Minor)
+
+	if doc.Creator.Organization == "" {
+		doc.Creator.Organization = sbomOrganization
+	}
+
+	return doc, nil
 }
 
 func (i *defaultImpl) spdxClient() *spdx.SPDX {

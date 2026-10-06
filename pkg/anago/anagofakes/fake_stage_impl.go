@@ -27,6 +27,7 @@ import (
 	"k8s.io/release/pkg/changelog"
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/release"
+	"sigs.k8s.io/bom/pkg/bom"
 	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/git"
 )
@@ -71,10 +72,10 @@ type FakeStageImpl struct {
 		result1 bool
 		result2 error
 	}
-	BuildBaseArtifactsSBOMStub        func(*spdx.DocGenerateOptions) (*spdx.Document, error)
+	BuildBaseArtifactsSBOMStub        func(*bom.GenerateOptions) (*spdx.Document, error)
 	buildBaseArtifactsSBOMMutex       sync.RWMutex
 	buildBaseArtifactsSBOMArgsForCall []struct {
-		arg1 *spdx.DocGenerateOptions
+		arg1 *bom.GenerateOptions
 	}
 	buildBaseArtifactsSBOMReturns struct {
 		result1 *spdx.Document
@@ -216,10 +217,10 @@ type FakeStageImpl struct {
 		result1 *release.Versions
 		result2 error
 	}
-	GenerateSourceTreeBOMStub        func(*spdx.DocGenerateOptions) (*spdx.Document, error)
+	GenerateSourceTreeBOMStub        func(*bom.GenerateOptions) (*spdx.Document, error)
 	generateSourceTreeBOMMutex       sync.RWMutex
 	generateSourceTreeBOMArgsForCall []struct {
-		arg1 *spdx.DocGenerateOptions
+		arg1 *bom.GenerateOptions
 	}
 	generateSourceTreeBOMReturns struct {
 		result1 *spdx.Document
@@ -718,11 +719,11 @@ func (fake *FakeStageImpl) BranchNeedsCreationReturnsOnCall(i int, result1 bool,
 	}{result1, result2}
 }
 
-func (fake *FakeStageImpl) BuildBaseArtifactsSBOM(arg1 *spdx.DocGenerateOptions) (*spdx.Document, error) {
+func (fake *FakeStageImpl) BuildBaseArtifactsSBOM(arg1 *bom.GenerateOptions) (*spdx.Document, error) {
 	fake.buildBaseArtifactsSBOMMutex.Lock()
 	ret, specificReturn := fake.buildBaseArtifactsSBOMReturnsOnCall[len(fake.buildBaseArtifactsSBOMArgsForCall)]
 	fake.buildBaseArtifactsSBOMArgsForCall = append(fake.buildBaseArtifactsSBOMArgsForCall, struct {
-		arg1 *spdx.DocGenerateOptions
+		arg1 *bom.GenerateOptions
 	}{arg1})
 	stub := fake.BuildBaseArtifactsSBOMStub
 	fakeReturns := fake.buildBaseArtifactsSBOMReturns
@@ -743,13 +744,13 @@ func (fake *FakeStageImpl) BuildBaseArtifactsSBOMCallCount() int {
 	return len(fake.buildBaseArtifactsSBOMArgsForCall)
 }
 
-func (fake *FakeStageImpl) BuildBaseArtifactsSBOMCalls(stub func(*spdx.DocGenerateOptions) (*spdx.Document, error)) {
+func (fake *FakeStageImpl) BuildBaseArtifactsSBOMCalls(stub func(*bom.GenerateOptions) (*spdx.Document, error)) {
 	fake.buildBaseArtifactsSBOMMutex.Lock()
 	defer fake.buildBaseArtifactsSBOMMutex.Unlock()
 	fake.BuildBaseArtifactsSBOMStub = stub
 }
 
-func (fake *FakeStageImpl) BuildBaseArtifactsSBOMArgsForCall(i int) *spdx.DocGenerateOptions {
+func (fake *FakeStageImpl) BuildBaseArtifactsSBOMArgsForCall(i int) *bom.GenerateOptions {
 	fake.buildBaseArtifactsSBOMMutex.RLock()
 	defer fake.buildBaseArtifactsSBOMMutex.RUnlock()
 	argsForCall := fake.buildBaseArtifactsSBOMArgsForCall[i]
@@ -1446,11 +1447,11 @@ func (fake *FakeStageImpl) GenerateReleaseVersionReturnsOnCall(i int, result1 *r
 	}{result1, result2}
 }
 
-func (fake *FakeStageImpl) GenerateSourceTreeBOM(arg1 *spdx.DocGenerateOptions) (*spdx.Document, error) {
+func (fake *FakeStageImpl) GenerateSourceTreeBOM(arg1 *bom.GenerateOptions) (*spdx.Document, error) {
 	fake.generateSourceTreeBOMMutex.Lock()
 	ret, specificReturn := fake.generateSourceTreeBOMReturnsOnCall[len(fake.generateSourceTreeBOMArgsForCall)]
 	fake.generateSourceTreeBOMArgsForCall = append(fake.generateSourceTreeBOMArgsForCall, struct {
-		arg1 *spdx.DocGenerateOptions
+		arg1 *bom.GenerateOptions
 	}{arg1})
 	stub := fake.GenerateSourceTreeBOMStub
 	fakeReturns := fake.generateSourceTreeBOMReturns
@@ -1471,13 +1472,13 @@ func (fake *FakeStageImpl) GenerateSourceTreeBOMCallCount() int {
 	return len(fake.generateSourceTreeBOMArgsForCall)
 }
 
-func (fake *FakeStageImpl) GenerateSourceTreeBOMCalls(stub func(*spdx.DocGenerateOptions) (*spdx.Document, error)) {
+func (fake *FakeStageImpl) GenerateSourceTreeBOMCalls(stub func(*bom.GenerateOptions) (*spdx.Document, error)) {
 	fake.generateSourceTreeBOMMutex.Lock()
 	defer fake.generateSourceTreeBOMMutex.Unlock()
 	fake.GenerateSourceTreeBOMStub = stub
 }
 
-func (fake *FakeStageImpl) GenerateSourceTreeBOMArgsForCall(i int) *spdx.DocGenerateOptions {
+func (fake *FakeStageImpl) GenerateSourceTreeBOMArgsForCall(i int) *bom.GenerateOptions {
 	fake.generateSourceTreeBOMMutex.RLock()
 	defer fake.generateSourceTreeBOMMutex.RUnlock()
 	argsForCall := fake.generateSourceTreeBOMArgsForCall[i]
