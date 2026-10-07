@@ -563,6 +563,24 @@ func TestStageArtifacts(t *testing.T) {
 			},
 			shouldError: true,
 		},
+		{ // GetImageSubjects fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.GetImageSubjectsReturns(nil, err)
+			},
+			shouldError: true,
+		},
+		{ // no container images to attest
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.GetImageSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
+			},
+			shouldError: true,
+		},
+		{ // PushImageAttestation fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.PushImageAttestationReturns(err)
+			},
+			shouldError: true,
+		},
 	} {
 		opts := anago.DefaultStageOptions()
 		sut := anago.NewDefaultStage(opts)
@@ -570,6 +588,7 @@ func TestStageArtifacts(t *testing.T) {
 		mock.GenerateAttestationReturns(&intoto.Statement{}, nil)
 		mock.GetProvenanceSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
 		mock.GetOutputDirSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
+		mock.GetImageSubjectsReturns([]*intoto.ResourceDescriptor{{Name: "image"}}, nil)
 		tc.prepare(mock)
 		sut.SetImpl(mock)
 
@@ -586,6 +605,52 @@ func TestStageArtifacts(t *testing.T) {
 			require.NoError(t, err)
 		}
 	}
+}
+
+func TestStageArtifactsImageAttestation(t *testing.T) {
+	sut := anago.NewDefaultStage(anago.DefaultStageOptions())
+	mock := &anagofakes.FakeStageImpl{}
+	mock.GenerateAttestationReturns(&intoto.Statement{
+		Type:          intoto.StatementTypeUri,
+		PredicateType: "https://slsa.dev/provenance/v1",
+	}, nil)
+	mock.GetProvenanceSubjectsReturns([]*intoto.ResourceDescriptor{{Name: "gs://bucket/sources.tar.gz"}}, nil)
+	mock.GetOutputDirSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
+	mock.GetImageSubjectsReturns([]*intoto.ResourceDescriptor{{
+		Name:   "gcr.io/k8s-staging-kubernetes/kube-apiserver",
+		Digest: map[string]string{"sha256": "abc"},
+	}}, nil)
+	sut.SetImpl(mock)
+	sut.SetState(generateTestingStageState(&testStateParameters{versionsTag: &testVersionTag}))
+
+	require.NoError(t, sut.StageArtifacts())
+
+	// The images of each version are attested in one statement, with the
+	// predicate of the artifacts and only the images as subjects
+	require.Equal(t, 1, mock.PushImageAttestationCallCount())
+	imageStatement, _ := mock.PushImageAttestationArgsForCall(0)
+	require.Equal(t, "https://slsa.dev/provenance/v1", imageStatement.GetPredicateType())
+	require.Len(t, imageStatement.GetSubject(), mock.GetImageSubjectsCallCount())
+
+	for _, subject := range imageStatement.GetSubject() {
+		require.Equal(t, "gcr.io/k8s-staging-kubernetes/kube-apiserver", subject.GetName())
+	}
+
+	registry, _, _ := mock.GetImageSubjectsArgsForCall(0)
+	require.Equal(t, anago.DefaultStageOptions().ContainerRegistry(), registry)
+
+	artifactStatement, _ := mock.PushAttestationArgsForCall(0)
+	for _, subject := range artifactStatement.GetSubject() {
+		require.NotEqual(t, "gcr.io/k8s-staging-kubernetes/kube-apiserver", subject.GetName())
+	}
+
+	// Both statements record the same end of the build
+	finishedOn := func(s *intoto.Statement) string {
+		return s.GetPredicate().GetFields()["runDetails"].GetStructValue().
+			GetFields()["metadata"].GetStructValue().GetFields()["finishedOn"].GetStringValue()
+	}
+	require.NotEmpty(t, finishedOn(artifactStatement))
+	require.Equal(t, finishedOn(artifactStatement), finishedOn(imageStatement))
 }
 
 func TestSubmitStageImpl(t *testing.T) {

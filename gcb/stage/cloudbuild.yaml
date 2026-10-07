@@ -64,7 +64,11 @@ steps:
       - "--branch=${_RELEASE_BRANCH}"
       - "--build-version=${_BUILDVERSION}"
 
-  # Sign and re-upload the attestations generated during the build. 
+  # Sign and re-upload the attestations generated during the build, and
+  # attach the provenance of the container images to them in the registry,
+  # where the image promoter verifies it. The registry credentials come from
+  # the docker configuration of the stage step in the shared home directory,
+  # or else from the service account of the build.
   - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
     dir: "/workspace"
     args:
@@ -72,9 +76,11 @@ steps:
       - "sign"
       - "attestation"
       - "--in-place"
+      - "--attach-to-images"
       - "--impersonate-service-account=krel-staging@k8s-releng-prod.iam.gserviceaccount.com"
       - "--log-level=${_LOG_LEVEL}"
       - "${_STAGE_BUCKET}/stage/${_BUILDVERSION}/provenance.json"
+      - "${_STAGE_BUCKET}/stage/${_BUILDVERSION}/image-provenance.json"
 
   # Stage the packages that will go to OBS
   - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}

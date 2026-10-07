@@ -49,6 +49,26 @@ to. The artifacts of each version are built from the checkout of its tag.
 - `metadata.startedOn` / `metadata.finishedOn`: start of the krel process
   and completion of the artifact staging.
 
+## Attestations
+
+A `krel stage` run writes two statements with this predicate to the stage
+directory in the bucket, and the stage Cloud Build job signs both in place
+into sigstore bundles as `krel-staging@k8s-releng-prod.iam.gserviceaccount.com`:
+
+- `provenance.json` is about the staged files, named by their `gs://` path.
+  `krel release` checks the staged artifacts against it and publishes it
+  with the release.
+- `image-provenance.json` is about the pushed container images, named by
+  their registry repository with the SHA-256 digest of their manifest: each
+  manifest list, and each arch-specific image both in its own repository
+  and in the repository of its manifest list, where clients pulling the
+  manifest list resolve it. The signing step also attaches the bundle to
+  each of these images as an OCI referrer, in the sigstore bundle format
+  cosign uses (`krel sign attestation --attach-to-images`). The image
+  promoter verifies it and carries it to `registry.k8s.io` when the images
+  get promoted, once the promoter manifest of `k8s-staging-kubernetes` in
+  kubernetes/k8s.io has a provenance policy that trusts this signer.
+
 ## Example
 
 ```json

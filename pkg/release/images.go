@@ -17,14 +17,21 @@ limitations under the License.
 package release
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/crane"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 
@@ -74,6 +81,7 @@ type imageImpl interface {
 	RepoTagFromTarball(path string) (string, error)
 	SignImage(*sign.Signer, string) error
 	VerifyImage(*sign.Signer, string) error
+	RemoteManifest(reference string) ([]byte, error)
 }
 
 type defaultImageImpl struct{}
@@ -117,6 +125,34 @@ func (*defaultImageImpl) VerifyImage(_ *sign.Signer, _ string) error {
 	// _, err := signer.VerifyImage(reference)
 	// return err
 	return nil
+}
+
+// RemoteManifest reads the manifest of the image, retrying for a while, since
+// it runs after hours of building, when a short registry failure would fail
+// the whole stage run.
+func (*defaultImageImpl) RemoteManifest(reference string) ([]byte, error) {
+	var manifest []byte
+
+	if err := wait.ExponentialBackoff(wait.Backoff{
+		Duration: time.Second,
+		Factor:   2,
+		Steps:    5,
+	}, func() (bool, error) {
+		var err error
+
+		manifest, err = crane.Manifest(reference)
+		if err != nil {
+			logrus.Warnf("Reading manifest of %s, retrying: %v", reference, err)
+
+			return false, nil
+		}
+
+		return true, nil
+	}); err != nil {
+		return nil, fmt.Errorf("reading manifest of %s: %w", reference, err)
+	}
+
+	return manifest, nil
 }
 
 var tagRegex = regexp.MustCompile(`^.+/(.+):.+$`)
@@ -440,6 +476,94 @@ func (i *Images) GetManifestImages(
 	}
 
 	return manifestImages, nil
+}
+
+// Subjects returns the pushed container images of a version as provenance
+// subjects, named by their repository: each manifest list, and each
+// arch-specific image both in its own repository and in the repository of
+// its manifest list, where clients pulling the manifest list resolve it.
+func (i *Images) Subjects(registry, version, buildPath string) ([]*intoto.ResourceDescriptor, error) {
+	version = i.normalizeVersion(version)
+
+	manifestImages, err := i.GetManifestImages(registry, version, buildPath, nil)
+	if err != nil {
+		return nil, fmt.Errorf("get manifest images: %w", err)
+	}
+
+	subjects := []*intoto.ResourceDescriptor{}
+
+	for _, image := range slices.Sorted(maps.Keys(manifestImages)) {
+		imageVersion := fmt.Sprintf("%s:%s", image, version)
+
+		manifestBytes, err := i.RemoteManifest(imageVersion)
+		if err != nil {
+			return nil, fmt.Errorf("get remote manifest list %s: %w", imageVersion, err)
+		}
+
+		index, err := v1.ParseIndexManifest(bytes.NewReader(manifestBytes))
+		if err != nil {
+			return nil, fmt.Errorf("parse manifest list %s: %w", imageVersion, err)
+		}
+
+		subjects = append(subjects, imageSubject(image, sha256Hex(manifestBytes)))
+
+		for _, arch := range slices.Sorted(slices.Values(manifestImages[image])) {
+			archDigest := ""
+
+			for m := range index.Manifests {
+				desc := &index.Manifests[m]
+				if desc.Platform != nil && desc.Platform.Architecture == arch {
+					archDigest = desc.Digest.Hex
+
+					break
+				}
+			}
+
+			if archDigest == "" {
+				return nil, fmt.Errorf("manifest list %s has no %s image", imageVersion, arch)
+			}
+
+			// The manifest list references the arch-specific image pushed
+			// before, by digest.
+			archImage := fmt.Sprintf("%s-%s", image, arch)
+			archVersion := fmt.Sprintf("%s:%s", archImage, version)
+
+			archBytes, err := i.RemoteManifest(archVersion)
+			if err != nil {
+				return nil, fmt.Errorf("get remote manifest %s: %w", archVersion, err)
+			}
+
+			if digest := sha256Hex(archBytes); digest != archDigest {
+				return nil, fmt.Errorf(
+					"manifest list %s references sha256:%s for %s, but %s is sha256:%s",
+					imageVersion, archDigest, arch, archVersion, digest,
+				)
+			}
+
+			subjects = append(subjects,
+				imageSubject(archImage, archDigest),
+				imageSubject(image, archDigest),
+			)
+		}
+	}
+
+	return subjects, nil
+}
+
+// imageSubject returns the provenance subject of an image digest in a
+// repository.
+func imageSubject(repository, digest string) *intoto.ResourceDescriptor {
+	return &intoto.ResourceDescriptor{
+		Name:   repository,
+		Digest: map[string]string{intoto.AlgorithmSHA256.String(): digest},
+	}
+}
+
+// sha256Hex returns the hex encoded SHA-256 digest of data.
+func sha256Hex(data []byte) string {
+	sum := sha256.Sum256(data)
+
+	return hex.EncodeToString(sum[:])
 }
 
 // pushAndSignImage loads, tags, pushes, signs, and removes a single
