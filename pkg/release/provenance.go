@@ -21,6 +21,7 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,6 +29,7 @@ import (
 	"strings"
 
 	intoto "github.com/in-toto/attestation/go/v1"
+	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -37,6 +39,8 @@ import (
 	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/hash"
 	"sigs.k8s.io/release-utils/helpers"
+
+	"k8s.io/release/pkg/attestation"
 )
 
 // ProvenanceChecker is the main structure to check the provenance.
@@ -163,7 +167,7 @@ func (di *defaultProvenanceCheckerImpl) processAttestation(
 	opts *ProvenanceCheckerOptions, buildVersion string,
 ) (*intoto.Statement, error) {
 	// Load the downloaded statement
-	data, err := os.ReadFile(filepath.Join(opts.StageDirectory, buildVersion, ProvenanceFilename))
+	data, err := readStageStatement(filepath.Join(opts.StageDirectory, buildVersion, ProvenanceFilename))
 	if err != nil {
 		return nil, fmt.Errorf("reading staging provenance file: %w", err)
 	}
@@ -280,26 +284,92 @@ func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(
 		return fmt.Errorf("converting sbom for version %s: %w", version, err)
 	}
 
-	slsaStatement := doc.ToProvenanceStatement(spdx.DefaultProvenanceOptions)
+	// The SBOM only provides the subjects: bom's statements declare the
+	// SLSA v0.2 predicate type and bom can't read the v1 predicate of the
+	// stage run.
+	subjects := doc.ToProvenanceStatement(spdx.DefaultProvenanceOptions).Subject
 
 	// Rewrite the provenance sublects to list their full paths in the bucket
-	for i, sub := range slsaStatement.Subject {
-		slsaStatement.Subject[i].Name = object.GcsPrefix + filepath.Join(
+	for i, sub := range subjects {
+		subjects[i].Name = object.GcsPrefix + filepath.Join(
 			opts.StageBucket, "release", version, sub.GetName(),
 		)
 	}
 
-	if err := slsaStatement.ClonePredicate(stageProvenance); err != nil {
-		return fmt.Errorf("cloning SLSA predicate from staging provenance: %s: %w", stageProvenance, err)
+	data, err := readStageStatement(stageProvenance)
+	if err != nil {
+		return fmt.Errorf("reading staging provenance: %w", err)
 	}
 
-	if err := slsaStatement.Write(
-		filepath.Join(os.TempDir(), fmt.Sprintf("provenance-%s.json", version)),
+	stageStatement := &intoto.Statement{}
+	if err := protojson.Unmarshal(data, stageStatement); err != nil {
+		return fmt.Errorf("parsing staging provenance %s: %w", stageProvenance, err)
+	}
+
+	statement := &intoto.Statement{
+		Type:          intoto.StatementTypeUri,
+		Subject:       subjects,
+		PredicateType: stageStatement.GetPredicateType(),
+		Predicate:     stageStatement.GetPredicate(),
+	}
+
+	if err := statement.Validate(); err != nil {
+		return fmt.Errorf("checking final provenance attestation for %s: %w", version, err)
+	}
+
+	finalData, err := protojson.Marshal(statement)
+	if err != nil {
+		return fmt.Errorf("serializing final provenance attestation for %s: %w", version, err)
+	}
+
+	// The release pushes it from there, see PushArtifacts in pkg/anago.
+	if err := os.WriteFile( //nolint:gosec // G303: a fixed name the release copies
+		filepath.Join(os.TempDir(), fmt.Sprintf("provenance-%s.json", version)), finalData, 0o600,
 	); err != nil {
 		return fmt.Errorf("writing final provenance attestation for %s: %w", version, err)
 	}
 
 	return nil
+}
+
+// inTotoPayloadType is the DSSE payload type of in-toto statements.
+const inTotoPayloadType = "application/vnd.in-toto+json"
+
+// readStageStatement returns the in-toto statement of the stage provenance
+// in path. The stage run signs the provenance in place, so the file is a
+// sigstore bundle with the statement in its DSSE envelope; builds staged
+// before that hold the bare statement.
+//
+// TODO: verify the bundle against the krel-staging@k8s-releng-prod.iam.gserviceaccount.com
+// identity, issued by https://accounts.google.com, before trusting its
+// subjects.
+func readStageStatement(path string) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading %s: %w", path, err)
+	}
+
+	if !attestation.IsSigstoreBundle(data) {
+		return data, nil
+	}
+
+	bundle := &protobundle.Bundle{}
+	if err := protojson.Unmarshal(data, bundle); err != nil {
+		return nil, fmt.Errorf("parsing sigstore bundle %s: %w", path, err)
+	}
+
+	envelope := bundle.GetDsseEnvelope()
+	if envelope == nil {
+		return nil, errors.New("the sigstore bundle holds no DSSE envelope")
+	}
+
+	if envelope.GetPayloadType() != inTotoPayloadType {
+		return nil, fmt.Errorf(
+			"the sigstore bundle holds a %q payload, not an in-toto statement", envelope.GetPayloadType(),
+		)
+	}
+
+	return envelope.GetPayload(), nil
 }
 
 type ProvenanceReader struct {
