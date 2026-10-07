@@ -313,6 +313,129 @@ func TestSignFiles(t *testing.T) {
 	}
 }
 
+func TestWriteBundleFile(t *testing.T) {
+	t.Parallel()
+
+	newMock := func() *attestationfakes.FakeSignerImplementation {
+		mock := &attestationfakes.FakeSignerImplementation{}
+		mock.WriteBundleCalls(func(_ *sbundle.Bundle, w io.Writer) error {
+			_, err := w.Write([]byte("bundle"))
+
+			return err
+		})
+
+		return mock
+	}
+
+	t.Run("writes the serialized bundle", func(t *testing.T) {
+		t.Parallel()
+
+		mock := newMock()
+		sut := NewSigner(nil)
+		sut.impl = mock
+
+		require.NoError(t, sut.WriteBundleFile("gs://bucket/out.json", &sbundle.Bundle{}))
+		require.Equal(t, 1, mock.WriteFileCallCount())
+
+		path, data := mock.WriteFileArgsForCall(0)
+		require.Equal(t, "gs://bucket/out.json", path)
+		require.Equal(t, "bundle", string(data))
+	})
+
+	t.Run("nothing is written when serializing fails", func(t *testing.T) {
+		t.Parallel()
+
+		mock := newMock()
+		mock.WriteBundleReturns(errTest)
+
+		sut := NewSigner(nil)
+		sut.impl = mock
+
+		require.ErrorIs(t, sut.WriteBundleFile("out.json", &sbundle.Bundle{}), errTest)
+		require.Zero(t, mock.WriteFileCallCount())
+	})
+
+	t.Run("writing fails", func(t *testing.T) {
+		t.Parallel()
+
+		mock := newMock()
+		mock.WriteFileReturns(errTest)
+
+		sut := NewSigner(nil)
+		sut.impl = mock
+
+		require.ErrorIs(t, sut.WriteBundleFile("out.json", &sbundle.Bundle{}), errTest)
+	})
+}
+
+func TestSignFilesInPlace(t *testing.T) {
+	t.Parallel()
+
+	newMock := func() *attestationfakes.FakeSignerImplementation {
+		mock := &attestationfakes.FakeSignerImplementation{}
+		mock.NewSignerReturns(signer.NewSigner())
+		mock.ReadStatementCalls(func(statementPath string) ([]byte, error) {
+			return []byte("statement:" + statementPath), nil
+		})
+		mock.SignStatementReturns(&sbundle.Bundle{}, nil)
+		mock.WriteBundleCalls(func(_ *sbundle.Bundle, w io.Writer) error {
+			_, err := w.Write([]byte("bundle"))
+
+			return err
+		})
+
+		return mock
+	}
+
+	t.Run("replaces every statement with its bundle", func(t *testing.T) {
+		t.Parallel()
+
+		mock := newMock()
+		sut := NewSigner(nil)
+		sut.impl = mock
+
+		paths := []string{"a.json", "gs://bucket/b.json"}
+		signed, err := sut.SignFilesInPlace(paths)
+		require.NoError(t, err)
+		require.Len(t, signed, 2)
+		require.Equal(t, 2, mock.WriteFileCallCount())
+
+		for i, statementPath := range paths {
+			path, data := mock.WriteFileArgsForCall(i)
+			require.Equal(t, statementPath, path)
+			require.Equal(t, "bundle", string(data))
+		}
+	})
+
+	t.Run("nothing is written when signing fails", func(t *testing.T) {
+		t.Parallel()
+
+		mock := newMock()
+		mock.SignStatementReturnsOnCall(1, nil, errTest)
+
+		sut := NewSigner(nil)
+		sut.impl = mock
+
+		signed, err := sut.SignFilesInPlace([]string{"a.json", "b.json"})
+		require.ErrorIs(t, err, errTest)
+		require.Nil(t, signed)
+		require.Zero(t, mock.WriteFileCallCount())
+	})
+
+	t.Run("writing fails", func(t *testing.T) {
+		t.Parallel()
+
+		mock := newMock()
+		mock.WriteFileReturns(errTest)
+
+		sut := NewSigner(nil)
+		sut.impl = mock
+
+		_, err := sut.SignFilesInPlace([]string{"a.json"})
+		require.ErrorIs(t, err, errTest)
+	})
+}
+
 func TestWriteBundle(t *testing.T) {
 	t.Parallel()
 

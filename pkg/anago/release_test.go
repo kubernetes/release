@@ -199,6 +199,12 @@ func TestPushArtifacts(t *testing.T) {
 			prepare:     func(*anagofakes.FakeReleaseImpl) {},
 			shouldError: false,
 		},
+		{ // SignProvenance fails
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.SignProvenanceReturns(err)
+			},
+			shouldError: true,
+		},
 		{ // CheckReleaseBucket fails
 			prepare: func(mock *anagofakes.FakeReleaseImpl) {
 				mock.CheckReleaseBucketReturns(err)
@@ -265,6 +271,25 @@ func TestPushArtifacts(t *testing.T) {
 			require.NoError(t, err)
 		}
 	}
+}
+
+func TestPushArtifactsSignsProvenanceFirst(t *testing.T) {
+	opts := anago.DefaultReleaseOptions()
+	sut := anago.NewDefaultRelease(opts)
+	sut.SetState(
+		generateTestingReleaseState(&testStateParameters{versionsTag: &testVersionTag}),
+	)
+
+	mock := &anagofakes.FakeReleaseImpl{}
+	mock.SignProvenanceReturns(err)
+	sut.SetImpl(mock)
+
+	// A signing failure publishes nothing
+	require.Error(t, sut.PushArtifacts())
+	require.Equal(t, 1, mock.SignProvenanceCallCount())
+	require.Zero(t, mock.CopyStagedFromGCSCallCount())
+	require.Zero(t, mock.PublishVersionCallCount())
+	require.Zero(t, mock.CopyToRemoteCallCount())
 }
 
 func TestPrepareWorkspaceRelease(t *testing.T) {
