@@ -51,8 +51,10 @@ Build (GCB) job, which does:
    state. This means that the staged sources will be downloaded from the bucket
    which should contain a copy of the repository.
 
-4. Push Artifacts: Pushes the generated artifacts to the release bucket and
-   Google Container Registry.
+4. Push Artifacts: Signs the provenance of the release in place as the
+   Google service account named by GOOGLE_SERVICE_ACCOUNT_NAME, which has to
+   be set for local runs too, and pushes the generated artifacts to the
+   release bucket and Google Container Registry.
 
 5. Push Git Objects: Pushes the new tags and branches to the repository remote
    on GitHub.
