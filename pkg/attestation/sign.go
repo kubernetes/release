@@ -18,6 +18,7 @@ limitations under the License.
 package attestation
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -224,6 +225,38 @@ func (s *Signer) SignFiles(paths []string) ([]*SignedStatement, error) {
 	}
 
 	return signed, nil
+}
+
+// SignFilesInPlace signs the statements in paths like SignFiles and
+// replaces each of them with its sigstore bundle. Nothing is written unless
+// all statements are signed, but the writes are not atomic: when one fails,
+// the statements before it are replaced already.
+func (s *Signer) SignFilesInPlace(paths []string) ([]*SignedStatement, error) {
+	signed, err := s.SignFiles(paths)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, statement := range signed {
+		if err := s.WriteBundleFile(statement.Path, statement.Bundle); err != nil {
+			return nil, fmt.Errorf("replacing statement with its bundle: %w", err)
+		}
+
+		logrus.Infof("Signed %s in place", statement.Path)
+	}
+
+	return signed, nil
+}
+
+// WriteBundleFile writes the sigstore bundle as JSON to filePath, a local
+// file or an object in Google Cloud Storage (gs://bucket/path).
+func (s *Signer) WriteBundleFile(filePath string, bndl *sbundle.Bundle) error {
+	var data bytes.Buffer
+	if err := s.WriteBundle(bndl, &data); err != nil {
+		return fmt.Errorf("serializing bundle for %s: %w", filePath, err)
+	}
+
+	return s.WriteFile(filePath, data.Bytes())
 }
 
 // WriteBundle writes the sigstore bundle as JSON to w.
