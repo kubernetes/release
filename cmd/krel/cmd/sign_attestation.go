@@ -31,11 +31,13 @@ const (
 	serviceAccountFileFlag        = "service-account-file"
 	impersonateServiceAccountFlag = "impersonate-service-account"
 	inPlaceFlag                   = "in-place"
+	attachToImagesFlag            = "attach-to-images"
 )
 
 type signAttestationOptions struct {
 	outputPath         string
 	inPlace            bool
+	attachToImages     bool
 	serviceAccountFile string
 	// serviceAccountJSON is the key data read from the environment
 	serviceAccountJSON        string
@@ -62,7 +64,15 @@ the same signing session, reusing the identity and the Fulcio certificate.
 --` + outputPathFlag + ` can be combined with --` + inPlaceFlag + ` to
 additionally write a copy of the bundle, but only for a single statement.
 Files that are already signed (sigstore bundles or DSSE envelopes) are
-rejected.
+rejected, except that --` + inPlaceFlag + ` keeps a sigstore bundle as it is,
+and only attaches it with --` + attachToImagesFlag + `, so that a run after a
+failure signs what is left.
+
+With --` + attachToImagesFlag + `, each bundle is also attached as an OCI
+referrer to the container images its statement is about, the subjects named
+by their registry repository with a SHA-256 digest, in the sigstore bundle
+format cosign uses. Images that already carry an attestation of the same
+predicate type are skipped.
 
 By default the statement is signed with the ambient identity provider.
 
@@ -92,7 +102,10 @@ possible, it never falls back to the ambient credentials.`,
   krel sign attestation --impersonate-service-account=krel-staging@k8s-releng-prod.iam.gserviceaccount.com provenance.json
 
   # Sign several statements in place, replacing the originals with the bundles:
-  krel sign attestation --in-place gs://bucket/stage/build/provenance.json sbom.intoto.json`,
+  krel sign attestation --in-place gs://bucket/stage/build/provenance.json sbom.intoto.json
+
+  # Sign the provenance of staged images and attach it to them:
+  krel sign attestation --in-place --attach-to-images gs://bucket/stage/build/image-provenance.json`,
 	Args:          cobra.MinimumNArgs(1),
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -118,6 +131,13 @@ func init() {
 		inPlaceFlag,
 		false,
 		"replace each statement file or gs:// object with its signed bundle",
+	)
+
+	signAttestationCmd.PersistentFlags().BoolVar(
+		&signAttestationOpts.attachToImages,
+		attachToImagesFlag,
+		false,
+		"attach each bundle as OCI referrer to the container images its statement is about",
 	)
 
 	signAttestationCmd.PersistentFlags().StringVar(
@@ -154,12 +174,21 @@ func runSignAttestation(signOpts *signOptions, opts *signAttestationOptions, sta
 		return signInPlace(signer, opts, statements)
 	}
 
-	// We will now sign the bundle in memory to avoid writing until
-	// we know signing succeeded
+	signed, err := signer.SignFiles(statements[:1])
+	if err != nil {
+		return fmt.Errorf("signing attestation: %w", err)
+	}
+
+	// The bundle is kept in memory to avoid writing until we know signing
+	// succeeded
 	var bundle bytes.Buffer
 
-	if err := signer.SignFile(statements[0], &bundle); err != nil {
-		return fmt.Errorf("signing attestation: %w", err)
+	if err := signer.WriteBundle(signed[0].Bundle, &bundle); err != nil {
+		return fmt.Errorf("serializing bundle: %w", err)
+	}
+
+	if err := attachToImages(signer, opts, signed); err != nil {
+		return err
 	}
 
 	if opts.outputPath == "" {
@@ -179,15 +208,50 @@ func runSignAttestation(signOpts *signOptions, opts *signAttestationOptions, sta
 	return nil
 }
 
-// signInPlace signs all statements in one session and replaces each of them
-// with its resulting bundle. Nothing is written unless all statements are signed.
+// signInPlace signs the statements in one session and replaces each of them
+// with its bundle, after attaching the bundles to their images when
+// requested. Nothing is written unless all statements are signed and
+// attached, and statements that are bundles already are kept and only
+// attached, so that running it again after a failure signs what is left and
+// attaches to the images that don't have the attestation yet.
 func signInPlace(signer *attestation.Signer, opts *signAttestationOptions, statements []string) error {
-	signed, err := signer.SignFiles(statements)
-	if err != nil {
-		return fmt.Errorf("signing attestations: %w", err)
+	signed := make([]*attestation.SignedStatement, 0, len(statements))
+	toSign := make([]string, 0, len(statements))
+
+	for _, statement := range statements {
+		bndl, err := signer.ReadBundle(statement)
+		if err != nil {
+			return err
+		}
+
+		if bndl == nil {
+			toSign = append(toSign, statement)
+
+			continue
+		}
+
+		logrus.Infof("%s is signed already, keeping its bundle", statement)
+		signed = append(signed, &attestation.SignedStatement{Path: statement, Bundle: bndl})
 	}
 
-	for _, statement := range signed {
+	fresh := []*attestation.SignedStatement{}
+
+	if len(toSign) > 0 {
+		var err error
+
+		fresh, err = signer.SignFiles(toSign)
+		if err != nil {
+			return fmt.Errorf("signing attestations: %w", err)
+		}
+	}
+
+	signed = append(signed, fresh...)
+
+	if err := attachToImages(signer, opts, signed); err != nil {
+		return err
+	}
+
+	for _, statement := range fresh {
 		var bundle bytes.Buffer
 		if err := signer.WriteBundle(statement.Bundle, &bundle); err != nil {
 			return fmt.Errorf("serializing bundle of %s: %w", statement.Path, err)
@@ -198,14 +262,41 @@ func signInPlace(signer *attestation.Signer, opts *signAttestationOptions, state
 		}
 
 		logrus.Infof("Signed %s in place", statement.Path)
+	}
 
-		if opts.outputPath != "" {
-			if err := signer.WriteFile(opts.outputPath, bundle.Bytes()); err != nil {
-				return fmt.Errorf("writing bundle copy: %w", err)
-			}
+	if opts.outputPath == "" {
+		return nil
+	}
 
-			logrus.Infof("Signed bundle written to %s", opts.outputPath)
+	// Only allowed with a single statement, see validateSignAttestationArgs
+	var bundle bytes.Buffer
+	if err := signer.WriteBundle(signed[0].Bundle, &bundle); err != nil {
+		return fmt.Errorf("serializing bundle of %s: %w", signed[0].Path, err)
+	}
+
+	if err := signer.WriteFile(opts.outputPath, bundle.Bytes()); err != nil {
+		return fmt.Errorf("writing bundle copy: %w", err)
+	}
+
+	logrus.Infof("Signed bundle written to %s", opts.outputPath)
+
+	return nil
+}
+
+// attachToImages attaches the bundles to the container images their
+// statements are about, when requested.
+func attachToImages(signer *attestation.Signer, opts *signAttestationOptions, signed []*attestation.SignedStatement) error {
+	if !opts.attachToImages {
+		return nil
+	}
+
+	for _, statement := range signed {
+		attached, err := signer.AttachToImages(statement)
+		if err != nil {
+			return fmt.Errorf("attaching the bundle of %s to its images: %w", statement.Path, err)
 		}
+
+		logrus.Infof("Attached the bundle of %s to %d image(s)", statement.Path, attached)
 	}
 
 	return nil
