@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -31,6 +32,8 @@ const (
 	serviceAccountFileFlag        = "service-account-file"
 	impersonateServiceAccountFlag = "impersonate-service-account"
 	inPlaceFlag                   = "in-place"
+	attachToImagesFlag            = "attach-to-images"
+	imageRepositoryFlag           = "image-repository"
 )
 
 type signAttestationOptions struct {
@@ -40,6 +43,10 @@ type signAttestationOptions struct {
 	// serviceAccountJSON is the key data read from the environment
 	serviceAccountJSON        string
 	impersonateServiceAccount string
+	// attachToImages are the statements whose bundles get attached to the
+	// container images they are about, below imageRepository
+	attachToImages  []string
+	imageRepository string
 }
 
 var signAttestationOpts = &signAttestationOptions{}
@@ -63,6 +70,15 @@ the same signing session, reusing the identity and the Fulcio certificate.
 additionally write a copy of the bundle, but only for a single statement.
 Files that are already signed (sigstore bundles or DSSE envelopes) are
 rejected.
+
+With --` + attachToImagesFlag + ` naming one of the statements, its bundle is
+also attached as an OCI referrer to the container images the statement is
+about, in the sigstore bundle format cosign uses, before anything is
+written. Its subjects have to be gs:// objects, which are skipped, or images
+with a SHA-256 digest in the repository set with --` + imageRepositoryFlag + `
+or below it, anything else fails. Images that carry a bundle with the same
+statement already are skipped. The registry credentials are the Google Cloud
+credentials of the host.
 
 By default the statement is signed with the ambient identity provider.
 
@@ -92,7 +108,13 @@ possible, it never falls back to the ambient credentials.`,
   krel sign attestation --impersonate-service-account=krel-staging@k8s-releng-prod.iam.gserviceaccount.com provenance.json
 
   # Sign several statements in place, replacing the originals with the bundles:
-  krel sign attestation --in-place gs://bucket/stage/build/provenance.json sbom.intoto.json`,
+  krel sign attestation --in-place gs://bucket/stage/build/provenance.json sbom.intoto.json
+
+  # Sign the provenances of a stage in place and attach the one of the staged images to them:
+  krel sign attestation --in-place \
+    --attach-to-images gs://bucket/stage/build/image-provenance.json \
+    --image-repository gcr.io/k8s-staging-kubernetes \
+    gs://bucket/stage/build/provenance.json gs://bucket/stage/build/image-provenance.json`,
 	Args:          cobra.MinimumNArgs(1),
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -118,6 +140,20 @@ func init() {
 		inPlaceFlag,
 		false,
 		"replace each statement file or gs:// object with its signed bundle",
+	)
+
+	signAttestationCmd.PersistentFlags().StringArrayVar(
+		&signAttestationOpts.attachToImages,
+		attachToImagesFlag,
+		nil,
+		"statement whose bundle gets attached as OCI referrer to the container images it is about (can be repeated)",
+	)
+
+	signAttestationCmd.PersistentFlags().StringVar(
+		&signAttestationOpts.imageRepository,
+		imageRepositoryFlag,
+		"",
+		"repository the images to attach to have to be in or below, required with --"+attachToImagesFlag,
 	)
 
 	signAttestationCmd.PersistentFlags().StringVar(
@@ -148,18 +184,35 @@ func runSignAttestation(signOpts *signOptions, opts *signAttestationOptions, sta
 	signerOpts.ImpersonateServiceAccount = opts.impersonateServiceAccount
 	signerOpts.Timeout = signOpts.timeout
 
-	signer := attestation.NewSigner(signerOpts)
+	attacher := attestation.NewAttacher(&attestation.AttacherOptions{Repository: opts.imageRepository})
 
+	return signAttestations(attestation.NewSigner(signerOpts), attacher, opts, statements)
+}
+
+// signAttestations signs the statements and writes the bundles, after
+// attaching the requested ones to their images.
+func signAttestations(
+	signer *attestation.Signer, attacher *attestation.Attacher, opts *signAttestationOptions, statements []string,
+) error {
 	if opts.inPlace {
-		return signInPlace(signer, opts, statements)
+		return signInPlace(signer, attacher, opts, statements)
 	}
 
-	// We will now sign the bundle in memory to avoid writing until
-	// we know signing succeeded
+	signed, err := signer.SignFiles(statements[:1])
+	if err != nil {
+		return fmt.Errorf("signing attestation: %w", err)
+	}
+
+	// The bundle is kept in memory to avoid writing until we know signing
+	// succeeded
 	var bundle bytes.Buffer
 
-	if err := signer.SignFile(statements[0], &bundle); err != nil {
-		return fmt.Errorf("signing attestation: %w", err)
+	if err := signer.WriteBundle(signed[0].Bundle, &bundle); err != nil {
+		return fmt.Errorf("serializing bundle: %w", err)
+	}
+
+	if err := attachToImages(signer, attacher, opts, signed); err != nil {
+		return err
 	}
 
 	if opts.outputPath == "" {
@@ -179,12 +232,19 @@ func runSignAttestation(signOpts *signOptions, opts *signAttestationOptions, sta
 	return nil
 }
 
-// signInPlace signs all statements in one session and replaces each of them
-// with its resulting bundle. Nothing is written unless all statements are signed.
-func signInPlace(signer *attestation.Signer, opts *signAttestationOptions, statements []string) error {
+// signInPlace signs the statements in one session and replaces each of them
+// with its bundle, after attaching the requested bundles to their images.
+// Nothing is written unless all statements are signed and attached.
+func signInPlace(
+	signer *attestation.Signer, attacher *attestation.Attacher, opts *signAttestationOptions, statements []string,
+) error {
 	signed, err := signer.SignFiles(statements)
 	if err != nil {
 		return fmt.Errorf("signing attestations: %w", err)
+	}
+
+	if err := attachToImages(signer, attacher, opts, signed); err != nil {
+		return err
 	}
 
 	for _, statement := range signed {
@@ -198,14 +258,49 @@ func signInPlace(signer *attestation.Signer, opts *signAttestationOptions, state
 		}
 
 		logrus.Infof("Signed %s in place", statement.Path)
+	}
 
-		if opts.outputPath != "" {
-			if err := signer.WriteFile(opts.outputPath, bundle.Bytes()); err != nil {
-				return fmt.Errorf("writing bundle copy: %w", err)
-			}
+	if opts.outputPath == "" {
+		return nil
+	}
 
-			logrus.Infof("Signed bundle written to %s", opts.outputPath)
+	// Only allowed with a single statement, see validateSignAttestationArgs
+	var bundle bytes.Buffer
+	if err := signer.WriteBundle(signed[0].Bundle, &bundle); err != nil {
+		return fmt.Errorf("serializing bundle of %s: %w", signed[0].Path, err)
+	}
+
+	if err := signer.WriteFile(opts.outputPath, bundle.Bytes()); err != nil {
+		return fmt.Errorf("writing bundle copy: %w", err)
+	}
+
+	logrus.Infof("Signed bundle written to %s", opts.outputPath)
+
+	return nil
+}
+
+// attachToImages attaches the bundles of the statements named with
+// --attach-to-images to the container images they are about.
+func attachToImages(
+	signer *attestation.Signer, attacher *attestation.Attacher, opts *signAttestationOptions,
+	signed []*attestation.SignedStatement,
+) error {
+	for _, statement := range signed {
+		if !slices.Contains(opts.attachToImages, statement.Path) {
+			continue
 		}
+
+		var bundle bytes.Buffer
+		if err := signer.WriteBundle(statement.Bundle, &bundle); err != nil {
+			return fmt.Errorf("serializing bundle of %s: %w", statement.Path, err)
+		}
+
+		attached, err := attacher.AttachToImages(statement, bundle.Bytes())
+		if err != nil {
+			return fmt.Errorf("attaching the bundle of %s to its images: %w", statement.Path, err)
+		}
+
+		logrus.Infof("Attached the bundle of %s to %d image(s)", statement.Path, attached)
 	}
 
 	return nil
@@ -221,6 +316,20 @@ func validateSignAttestationArgs(opts *signAttestationOptions, statements []stri
 		if opts.outputPath != "" {
 			return fmt.Errorf("--%s can only be used when signing a single statement", outputPathFlag)
 		}
+	}
+
+	for _, statement := range opts.attachToImages {
+		if !slices.Contains(statements, statement) {
+			return fmt.Errorf("--%s %s is not one of the statements to sign", attachToImagesFlag, statement)
+		}
+	}
+
+	if len(opts.attachToImages) > 0 && opts.imageRepository == "" {
+		return fmt.Errorf("--%s requires --%s", attachToImagesFlag, imageRepositoryFlag)
+	}
+
+	if len(opts.attachToImages) == 0 && opts.imageRepository != "" {
+		return fmt.Errorf("--%s requires --%s", imageRepositoryFlag, attachToImagesFlag)
 	}
 
 	return nil

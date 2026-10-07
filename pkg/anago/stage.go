@@ -190,6 +190,8 @@ type stageImpl interface {
 	VerifyArtifacts([]string) error
 	GenerateAttestation(*StageState, *StageOptions) (*intoto.Statement, error)
 	PushAttestation(*intoto.Statement, *StageOptions) error
+	PushImageAttestation(*intoto.Statement, *StageOptions) error
+	GetImageSubjects(registry, version, buildDir string) ([]*intoto.ResourceDescriptor, error)
 	GetProvenanceSubjects(*StageOptions, string) ([]*intoto.ResourceDescriptor, error)
 	GetOutputDirSubjects(*StageOptions, string, string) ([]*intoto.ResourceDescriptor, error)
 }
@@ -310,6 +312,12 @@ func (d *defaultStageImpl) PushContainerImages(
 	options *build.Options,
 ) error {
 	return build.NewInstance(options).PushContainerImages()
+}
+
+func (d *defaultStageImpl) GetImageSubjects(
+	registry, version, buildDir string,
+) ([]*intoto.ResourceDescriptor, error) {
+	return release.NewImages().Subjects(registry, version, buildDir)
 }
 
 func (d *DefaultStage) Submit(stream bool) error {
@@ -944,6 +952,16 @@ func (d *DefaultStage) StageArtifacts() error {
 	if err != nil {
 		return fmt.Errorf("generating the provenance attestation: %w", err)
 	}
+
+	// The provenance of the container images pushed to the registry, with
+	// the same predicate. It gets signed after the stage run and attached
+	// to the images, where the image promoter verifies it.
+	imageStatement := &intoto.Statement{
+		Type:          statement.GetType(),
+		Subject:       []*intoto.ResourceDescriptor{},
+		PredicateType: statement.GetPredicateType(),
+		Predicate:     proto.CloneOf(statement.GetPredicate()),
+	}
 	// Init push options for provenance document
 	pushBuildOptions := &build.Options{
 		Bucket:                     d.options.Bucket(),
@@ -1015,6 +1033,15 @@ func (d *DefaultStage) StageArtifacts() error {
 			return fmt.Errorf("pushing container images: %w", err)
 		}
 
+		imageSubjects, err := d.impl.GetImageSubjects(
+			pushBuildOptions.Registry, version, buildDir,
+		)
+		if err != nil {
+			return fmt.Errorf("getting the pushed container images of version %s: %w", version, err)
+		}
+
+		imageStatement.Subject = append(imageStatement.Subject, imageSubjects...)
+
 		// Add artifacts to the attestation, this should get both release-images
 		// and gcs-stage directories in one call.
 		subjects, err = d.impl.GetOutputDirSubjects(
@@ -1027,9 +1054,26 @@ func (d *DefaultStage) StageArtifacts() error {
 		statement.Subject = append(statement.Subject, subjects...)
 	}
 
+	// Staging is complete at this point, so record the build end time in
+	// both statements, which describe the same build
+	finished := timestamppb.Now()
+	for _, st := range []*intoto.Statement{statement, imageStatement} {
+		if err := setFinishedOn(st, finished); err != nil {
+			return fmt.Errorf("recording the end of the build in the provenance: %w", err)
+		}
+	}
+
+	if len(imageStatement.GetSubject()) == 0 {
+		return errors.New("no container images were staged to attest")
+	}
+
 	// Push the attestation metadata file to the bucket
 	if err := d.impl.PushAttestation(statement, d.options); err != nil {
 		return fmt.Errorf("writing provenance metadata to disk: %w", err)
+	}
+
+	if err := d.impl.PushImageAttestation(imageStatement, d.options); err != nil {
+		return fmt.Errorf("writing container image provenance metadata: %w", err)
 	}
 
 	// Delete the local source tarball
@@ -1123,63 +1167,15 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 
 // PushAttestation writes the provenance metadata to the staging location in
 // the Google Cloud Bucket.
-func (d *defaultStageImpl) PushAttestation(attestation *intoto.Statement, options *StageOptions) (err error) {
-	gcsPath := filepath.Join(options.Bucket(), release.StagePath, options.BuildVersion)
+func (d *defaultStageImpl) PushAttestation(attestation *intoto.Statement, options *StageOptions) error {
+	return d.pushStatement(attestation, options, release.ProvenanceFilename)
+}
 
-	// Create a temporary file:
-	f, err := os.CreateTemp("", "provenance-")
-	if err != nil {
-		return fmt.Errorf("creating temp file for provenance metadata: %w", err)
-	}
-	defer f.Close()
-
-	// Staging is complete at this point, so record the build end time
-	// in the predicate before serializing the statement:
-	predicate, err := provenanceFromStruct(attestation.GetPredicate())
-	if err != nil {
-		return err
-	}
-
-	if predicate.GetRunDetails() == nil {
-		predicate.RunDetails = &slsa.RunDetails{}
-	}
-
-	if predicate.GetRunDetails().GetMetadata() == nil {
-		predicate.RunDetails.Metadata = &slsa.BuildMetadata{}
-	}
-
-	predicate.RunDetails.Metadata.FinishedOn = timestamppb.Now()
-
-	if attestation.Predicate, err = protoToStruct(predicate, false); err != nil {
-		return err
-	}
-
-	// Write the provenance statement to disk:
-	jsonData, err := protojson.Marshal(attestation)
-	if err != nil {
-		return fmt.Errorf("marshaling provenance attestation: %w", err)
-	}
-
-	if _, err := f.Write(jsonData); err != nil {
-		return fmt.Errorf("writing provenance attestation to disk: %w", err)
-	}
-
-	// Upload the metadata file to the staging bucket
-	pushBuildOptions := &build.Options{
-		Bucket:   options.Bucket(),
-		AllowDup: true,
-	}
-
-	if err := d.CheckReleaseBucket(pushBuildOptions); err != nil {
-		return fmt.Errorf("check release bucket access: %w", err)
-	}
-
-	// Push the provenance file to GCS
-	if err := d.PushReleaseArtifacts(pushBuildOptions, f.Name(), filepath.Join(gcsPath, release.ProvenanceFilename)); err != nil {
-		return fmt.Errorf("pushing provenance manifest: %w", err)
-	}
-
-	return nil
+// PushImageAttestation writes the provenance metadata of the staged container
+// images next to the provenance of the staged artifacts. The stage Cloud Build
+// job signs it and attaches it to the images, see gcb/stage/cloudbuild.yaml.
+func (d *defaultStageImpl) PushImageAttestation(attestation *intoto.Statement, options *StageOptions) error {
+	return d.pushStatement(attestation, options, release.ImageProvenanceFilename)
 }
 
 // sourceDependencies returns the Kubernetes sources the artifacts were
@@ -1270,4 +1266,69 @@ func (d *defaultStageImpl) GetProvenanceSubjects(
 		BuildVersion: options.BuildVersion,
 		WorkspaceDir: workspaceDir,
 	}).GetStagingSubjects(path)
+}
+
+// setFinishedOn records the end of the build in the provenance predicate of
+// the statement.
+func setFinishedOn(attestation *intoto.Statement, finished *timestamppb.Timestamp) error {
+	predicate, err := provenanceFromStruct(attestation.GetPredicate())
+	if err != nil {
+		return err
+	}
+
+	if predicate.GetRunDetails() == nil {
+		predicate.RunDetails = &slsa.RunDetails{}
+	}
+
+	if predicate.GetRunDetails().GetMetadata() == nil {
+		predicate.RunDetails.Metadata = &slsa.BuildMetadata{}
+	}
+
+	predicate.RunDetails.Metadata.FinishedOn = finished
+
+	attestation.Predicate, err = protoToStruct(predicate, false)
+
+	return err
+}
+
+// pushStatement writes a provenance statement to fileName in the staging
+// location in the Google Cloud Bucket.
+func (d *defaultStageImpl) pushStatement(
+	attestation *intoto.Statement, options *StageOptions, fileName string,
+) (err error) {
+	gcsPath := filepath.Join(options.Bucket(), release.StagePath, options.BuildVersion)
+
+	// Create a temporary file:
+	f, err := os.CreateTemp("", "provenance-")
+	if err != nil {
+		return fmt.Errorf("creating temp file for provenance metadata: %w", err)
+	}
+	defer f.Close()
+
+	// Write the provenance statement to disk:
+	jsonData, err := protojson.Marshal(attestation)
+	if err != nil {
+		return fmt.Errorf("marshaling provenance attestation: %w", err)
+	}
+
+	if _, err := f.Write(jsonData); err != nil {
+		return fmt.Errorf("writing provenance attestation to disk: %w", err)
+	}
+
+	// Upload the metadata file to the staging bucket
+	pushBuildOptions := &build.Options{
+		Bucket:   options.Bucket(),
+		AllowDup: true,
+	}
+
+	if err := d.CheckReleaseBucket(pushBuildOptions); err != nil {
+		return fmt.Errorf("check release bucket access: %w", err)
+	}
+
+	// Push the provenance file to GCS
+	if err := d.PushReleaseArtifacts(pushBuildOptions, f.Name(), filepath.Join(gcsPath, fileName)); err != nil {
+		return fmt.Errorf("pushing provenance manifest: %w", err)
+	}
+
+	return nil
 }
