@@ -18,6 +18,7 @@ limitations under the License.
 package anago_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -483,22 +484,60 @@ func TestUpdateGitHubPage(t *testing.T) {
 }
 
 func TestCheckProvenance(t *testing.T) {
+	unsigned := fmt.Errorf("verifying staging provenance file: %w", release.ErrStageProvenanceUnsigned)
+
 	for _, tc := range []struct {
 		prepare     func(*anagofakes.FakeReleaseImpl)
+		nomock      bool
+		fork        bool
 		shouldError bool
 	}{
 		{ // success
 			prepare:     func(*anagofakes.FakeReleaseImpl) {},
 			shouldError: false,
 		},
-		{ // Provenance does not check
+		{ // Signed provenance does not verify in a mock release
 			prepare: func(mock *anagofakes.FakeReleaseImpl) {
 				mock.CheckStageProvenanceReturns(err)
 			},
 			shouldError: true,
 		},
+		{ // Unsigned provenance in a mock release
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.CheckStageProvenanceReturns(unsigned)
+			},
+			shouldError: false,
+		},
+		{ // Provenance does not check in a mock release from a fork
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.CheckStageProvenanceReturns(err)
+			},
+			fork:        true,
+			shouldError: false,
+		},
+		{ // Provenance does not check in an official release
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.CheckStageProvenanceReturns(err)
+			},
+			nomock:      true,
+			shouldError: true,
+		},
+		{ // Unsigned provenance in an official release
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.CheckStageProvenanceReturns(unsigned)
+			},
+			nomock:      true,
+			shouldError: true,
+		},
 	} {
+		if tc.fork {
+			t.Setenv("K8S_ORG", "someone")
+		} else {
+			t.Setenv("K8S_ORG", release.DefaultK8sOrg)
+		}
+
 		opts := anago.DefaultReleaseOptions()
+		opts.NoMock = tc.nomock
 		sut := anago.NewDefaultRelease(opts)
 		sut.SetState(
 			generateTestingReleaseState(&testStateParameters{versionsTag: &testVersionTag}),

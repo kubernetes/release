@@ -1140,7 +1140,7 @@ func (d *defaultStageImpl) GenerateAttestation(state *StageState, options *Stage
 		},
 		RunDetails: &slsa.RunDetails{
 			Builder: &slsa.Builder{
-				Id:                  "https://git.k8s.io/release/docs/krel",
+				Id:                  release.StageProvenanceBuilder,
 				Version:             map[string]string{},
 				BuilderDependencies: []*intoto.ResourceDescriptor{},
 			},
