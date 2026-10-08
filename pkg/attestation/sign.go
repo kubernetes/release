@@ -29,9 +29,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/carabiner-dev/signer"
-	"github.com/carabiner-dev/signer/sts/providers/gcp"
 	intoto "github.com/in-toto/attestation/go/v1"
+	"github.com/policylabs/signer"
+	"github.com/policylabs/signer/sts/providers/gcp"
 	sbundle "github.com/sigstore/sigstore-go/pkg/bundle"
 	"github.com/sigstore/sigstore/pkg/oauthflow"
 	"github.com/sirupsen/logrus"

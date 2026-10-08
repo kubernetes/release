@@ -46,7 +46,6 @@ func mockGenerateReleaseVersionRelease(mock *anagofakes.FakeReleaseClient) {
 	mock.GenerateReleaseVersionReturns(nil)
 }
 
-//nolint:dupl // duplications in those tests are intentional
 func TestRunStage(t *testing.T) {
 	for _, tc := range []struct {
 		prepare     func(*anagofakes.FakeStageClient)
@@ -132,7 +131,6 @@ func TestRunStage(t *testing.T) {
 	}
 }
 
-//nolint:dupl // duplications in those tests are intentional
 func TestRunRelease(t *testing.T) {
 	for _, tc := range []struct {
 		prepare     func(*anagofakes.FakeReleaseClient)
@@ -178,6 +176,13 @@ func TestRunRelease(t *testing.T) {
 			prepare: func(mock *anagofakes.FakeReleaseClient) {
 				mockGenerateReleaseVersionRelease(mock)
 				mock.PrepareWorkspaceReturns(err)
+			},
+			shouldError: true,
+		},
+		{ // CheckProvenance fails
+			prepare: func(mock *anagofakes.FakeReleaseClient) {
+				mockGenerateReleaseVersionRelease(mock)
+				mock.CheckProvenanceReturns(err)
 			},
 			shouldError: true,
 		},

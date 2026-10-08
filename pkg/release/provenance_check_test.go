@@ -23,6 +23,8 @@ import (
 	"testing"
 
 	intoto "github.com/in-toto/attestation/go/v1"
+	plattestation "github.com/policylabs/attestation"
+	sapi "github.com/policylabs/signer/api/v1"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	protodsse "github.com/sigstore/protobuf-specs/gen/pb-go/dsse"
 	"github.com/stretchr/testify/require"
@@ -53,25 +55,53 @@ func signedProvenance(t *testing.T, statement []byte, payloadType string) []byte
 	return data
 }
 
-func TestProcessAttestationAndCheckProvenance(t *testing.T) {
-	t.Parallel()
+// verifiedBy records a verified signature by the identity spec on the
+// envelope, instead of verifying it against the sigstore trust roots.
+func verifiedBy(t *testing.T, spec string) func(plattestation.Envelope) error {
+	t.Helper()
 
-	for _, tc := range []struct {
-		name   string
-		signed bool
-	}{
-		{"bare statement", false},
-		{"sigstore bundle", true},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			testProcessAttestationAndCheckProvenance(t, tc.signed)
+	id, err := sapi.NewIdentityFromSpec(spec)
+	require.NoError(t, err)
+
+	return func(envelope plattestation.Envelope) error {
+		envelope.GetStatement().GetPredicate().SetVerification(&sapi.Verification{
+			Signature: &sapi.SignatureVerification{
+				Verified:   true,
+				Status:     sapi.VerificationStatus_VERIFIED,
+				Identities: []*sapi.Identity{id},
+			},
 		})
+
+		return nil
 	}
 }
 
-func testProcessAttestationAndCheckProvenance(t *testing.T, signed bool) {
+// stagePredicate returns a SLSA v1 provenance predicate of a stage run of
+// the repository.
+func stagePredicate(t *testing.T, builder, repo string) *structpb.Struct {
 	t.Helper()
+
+	predicate, err := structpb.NewStruct(map[string]any{
+		"buildDefinition": map[string]any{
+			"buildType":          "https://git.k8s.io/release/docs/krel/buildtypes/v1",
+			"externalParameters": map[string]any{},
+			"resolvedDependencies": []any{map[string]any{
+				"uri":    "git+https://" + repo + "@refs/tags/v1.36.0",
+				"digest": map[string]any{"gitCommit": "0123456789abcdef0123456789abcdef01234567"},
+			}},
+		},
+		"runDetails": map[string]any{
+			"builder":  map[string]any{"id": builder},
+			"metadata": map[string]any{"invocationId": "build-id"},
+		},
+	})
+	require.NoError(t, err)
+
+	return predicate
+}
+
+func TestProcessAttestationAndCheckProvenance(t *testing.T) {
+	t.Parallel()
 
 	const (
 		bucket       = "test-bucket"
@@ -97,13 +127,12 @@ func testProcessAttestationAndCheckProvenance(t *testing.T, signed bool) {
 			Name:   object.GcsPrefix + filepath.Join(bucket, StagePath, artifact),
 			Digest: map[string]string{"sha256": sha256Sum, "sha512": sha512Sum},
 		}},
+		Predicate: stagePredicate(t, StageProvenanceBuilder, "github.com/kubernetes/kubernetes"),
 	}
 	data, err := protojson.Marshal(statement)
 	require.NoError(t, err)
 
-	if signed {
-		data = signedProvenance(t, data, inTotoPayloadType)
-	}
+	data = signedProvenance(t, data, inTotoPayloadType)
 
 	require.NoError(t, os.MkdirAll(filepath.Join(stageDir, buildVersion), 0o755))
 	require.NoError(t, os.WriteFile(
@@ -114,9 +143,9 @@ func testProcessAttestationAndCheckProvenance(t *testing.T, signed bool) {
 		StageBucket:    bucket,
 		StageDirectory: stageDir,
 	}
-	impl := &defaultProvenanceCheckerImpl{}
+	impl := &defaultProvenanceCheckerImpl{verifySignatures: verifiedBy(t, StageProvenanceSigner)}
 
-	// The attestation parses and the subject paths lose the bucket prefix
+	// The attestation verifies and the subject paths lose the bucket prefix
 	parsed, err := impl.processAttestation(opts, buildVersion)
 	require.NoError(t, err)
 	require.Len(t, parsed.GetSubject(), 1)
@@ -198,7 +227,6 @@ func TestGenerateFinalAttestation(t *testing.T) { //nolint:paralleltest // sets 
 		name string
 		data []byte
 	}{
-		{"bare statement", stageStatement},
 		{"sigstore bundle", signedProvenance(t, stageStatement, inTotoPayloadType)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -262,6 +290,10 @@ func TestReadStageStatementInvalidBundle(t *testing.T) {
 			data: []byte(`{"mediaType": "application/vnd.dev.sigstore.bundle.v0.3+json"}`),
 		},
 		{
+			name: "bare statement",
+			data: []byte(`{"_type": "https://in-toto.io/Statement/v1"}`),
+		},
+		{
 			name: "malformed bundle",
 			data: []byte(`{"mediaType": "application/vnd.dev.sigstore.bundle.v0.3+json", "dsseEnvelope": 42}`),
 		},
@@ -273,6 +305,111 @@ func TestReadStageStatementInvalidBundle(t *testing.T) {
 			require.NoError(t, os.WriteFile(path, tc.data, 0o600))
 			_, err := readStageStatement(path)
 			require.Error(t, err)
+		})
+	}
+}
+
+func TestVerifyStageProvenance(t *testing.T) {
+	t.Parallel()
+
+	const otherSigner = "sigstore::https://accounts.google.com::someone@example.com"
+
+	statement := func(predicateType string, predicate *structpb.Struct) []byte {
+		data, err := protojson.Marshal(&intoto.Statement{
+			Type:          intoto.StatementTypeUri,
+			PredicateType: predicateType,
+			Subject: []*intoto.ResourceDescriptor{{
+				Name:   "gs://test-bucket/stage/v1.36.0/src.tar.gz",
+				Digest: map[string]string{"sha256": strings.Repeat("a", 64)},
+			}},
+			Predicate: predicate,
+		})
+		require.NoError(t, err)
+
+		return data
+	}
+
+	// The provenance of stage runs by krel releases before the SLSA v1
+	// predicate.
+	v02, err := structpb.NewStruct(map[string]any{
+		"builder":   map[string]any{"id": StageProvenanceBuilder},
+		"buildType": "https://cloudbuild.googleapis.com/CloudBuildYaml@v1",
+		"materials": []any{map[string]any{
+			"uri":    "git+https://github.com/kubernetes/kubernetes",
+			"digest": map[string]any{"sha1": "0123456789abcdef0123456789abcdef01234567"},
+		}},
+	})
+	require.NoError(t, err)
+
+	v1 := statement("https://slsa.dev/provenance/v1",
+		stagePredicate(t, StageProvenanceBuilder, "github.com/kubernetes/kubernetes"))
+
+	for _, tc := range []struct {
+		name   string
+		data   []byte
+		verify func(plattestation.Envelope) error
+		err    string
+	}{
+		{
+			name:   "SLSA v1 provenance signed by the stage signer",
+			data:   signedProvenance(t, v1, inTotoPayloadType),
+			verify: verifiedBy(t, StageProvenanceSigner),
+		},
+		{
+			name:   "SLSA v0.2 provenance signed by the stage signer",
+			data:   signedProvenance(t, statement("https://slsa.dev/provenance/v0.2", v02), inTotoPayloadType),
+			verify: verifiedBy(t, StageProvenanceSigner),
+		},
+		{
+			name:   "bare statement",
+			data:   v1,
+			verify: verifiedBy(t, StageProvenanceSigner),
+			err:    "not a sigstore bundle",
+		},
+		{
+			name:   "signed by another identity",
+			data:   signedProvenance(t, v1, inTotoPayloadType),
+			verify: verifiedBy(t, otherSigner),
+			err:    "verified signer does not match",
+		},
+		{
+			name:   "signature not verified",
+			data:   signedProvenance(t, v1, inTotoPayloadType),
+			verify: func(plattestation.Envelope) error { return nil },
+			err:    "not signed or signature did not verify",
+		},
+		{
+			name:   "signature verification error",
+			data:   signedProvenance(t, v1, inTotoPayloadType),
+			verify: func(plattestation.Envelope) error { return os.ErrInvalid },
+			err:    "verifying signatures",
+		},
+		{
+			name: "built from another repository",
+			data: signedProvenance(t, statement("https://slsa.dev/provenance/v1",
+				stagePredicate(t, StageProvenanceBuilder, "github.com/someone/kubernetes")), inTotoPayloadType),
+			verify: verifiedBy(t, StageProvenanceSigner),
+			err:    "source-repo-match",
+		},
+		{
+			name: "built by another builder",
+			data: signedProvenance(t, statement("https://slsa.dev/provenance/v1",
+				stagePredicate(t, "https://example.com/builder", "github.com/kubernetes/kubernetes")), inTotoPayloadType),
+			verify: verifiedBy(t, StageProvenanceSigner),
+			err:    "builder-id-trusted",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			impl := &defaultProvenanceCheckerImpl{verifySignatures: tc.verify}
+
+			err := impl.verifyStageProvenance(tc.data, "github.com/kubernetes/kubernetes")
+			if tc.err == "" {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, tc.err)
+			}
 		})
 	}
 }

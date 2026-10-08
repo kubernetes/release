@@ -473,9 +473,7 @@ func (r *Release) Run() error {
 	logger.WithStep().Info("Checking artifacts provenance")
 
 	if err := r.client.CheckProvenance(); err != nil {
-		// For now, we only notify provenance errors as not to treat
-		// them as fatal while we finish testing SLSA compliance.
-		logrus.Warnf("Unable to check provenance attestation: %v", err)
+		return fmt.Errorf("check provenance: %w", err)
 	}
 
 	logger.WithStep().Info("Creating announcement")
