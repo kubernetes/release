@@ -29,9 +29,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/carabiner-dev/signer"
-	"github.com/carabiner-dev/signer/sts/providers/gcp"
 	intoto "github.com/in-toto/attestation/go/v1"
+	"github.com/policylabs/signer"
+	"github.com/policylabs/signer/sts/providers/gcp"
 	sbundle "github.com/sigstore/sigstore-go/pkg/bundle"
 	"github.com/sigstore/sigstore/pkg/oauthflow"
 	"github.com/sirupsen/logrus"
@@ -435,11 +435,27 @@ func newGCSClient() *object.GCS {
 	return gcs
 }
 
+// IsSigstoreBundle returns true if data is a sigstore bundle.
+func IsSigstoreBundle(data []byte) bool {
+	probe := struct {
+		MediaType string `json:"mediaType"`
+	}{}
+
+	if err := json.Unmarshal(data, &probe); err != nil {
+		return false
+	}
+
+	return strings.HasPrefix(probe.MediaType, "application/vnd.dev.sigstore.bundle")
+}
+
 // isSigned returns true if data looks like an already signed artifact, that
 // is a sigstore bundle or a DSSE envelope, rather than a bare statement.
 func isSigned(data []byte) bool {
+	if IsSigstoreBundle(data) {
+		return true
+	}
+
 	probe := struct {
-		MediaType    string          `json:"mediaType"`
 		DSSEEnvelope json.RawMessage `json:"dsseEnvelope"`
 		PayloadType  string          `json:"payloadType"`
 		Signatures   json.RawMessage `json:"signatures"`
@@ -449,7 +465,6 @@ func isSigned(data []byte) bool {
 		return false
 	}
 
-	return strings.HasPrefix(probe.MediaType, "application/vnd.dev.sigstore.bundle") ||
-		len(probe.DSSEEnvelope) > 0 ||
+	return len(probe.DSSEEnvelope) > 0 ||
 		(probe.PayloadType != "" && len(probe.Signatures) > 0)
 }

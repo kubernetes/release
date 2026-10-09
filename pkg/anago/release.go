@@ -631,9 +631,19 @@ func (d *DefaultRelease) UpdateGitHubPage() error {
 }
 
 // CheckProvenance verifies the artifacts staged in the release bucket
-// by verifying the provenance metadata generated during the stage run.
+// by verifying the provenance metadata generated during the stage run. A
+// failure fails official releases (--nomock), mock releases only warn: they
+// may run locally on an unsigned stage, or from a fork that older stage runs
+// didn't record as their source.
 func (d *DefaultRelease) CheckProvenance() error {
-	return d.impl.CheckStageProvenance(d.options.Bucket(), d.options.BuildVersion, d.state.versions)
+	err := d.impl.CheckStageProvenance(d.options.Bucket(), d.options.BuildVersion, d.state.versions)
+	if err != nil && !d.options.NoMock {
+		logrus.Warnf("Unable to check provenance attestation of the mock release: %v", err)
+
+		return nil
+	}
+
+	return err
 }
 
 func (d *defaultReleaseImpl) CheckStageProvenance(bucket, buildVersion string, versions *release.Versions) error {

@@ -17,10 +17,12 @@ limitations under the License.
 package release
 
 import (
+	"context"
 	"crypto/sha1" //nolint:gosec // used for file integrity checks, NOT security
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,7 +30,12 @@ import (
 	"strings"
 
 	intoto "github.com/in-toto/attestation/go/v1"
+	plattestation "github.com/policylabs/attestation"
+	"github.com/policylabs/collector/envelope/bundle"
+	sapi "github.com/policylabs/signer/api/v1"
+	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	"github.com/sirupsen/logrus"
+	"github.com/slsa-framework/verifier/pkg/slsa"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"sigs.k8s.io/bom/pkg/bom"
@@ -37,6 +44,18 @@ import (
 	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/hash"
 	"sigs.k8s.io/release-utils/helpers"
+
+	"k8s.io/release/pkg/attestation"
+)
+
+const (
+	// StageProvenanceSigner is the identity that signs the provenance of a
+	// stage run, see the attestation step of gcb/stage/cloudbuild.yaml.
+	StageProvenanceSigner = "sigstore::https://accounts.google.com::krel-staging@k8s-releng-prod.iam.gserviceaccount.com"
+
+	// StageProvenanceBuilder is the builder ID of the provenance of a stage
+	// run.
+	StageProvenanceBuilder = "https://git.k8s.io/release/docs/krel"
 )
 
 // ProvenanceChecker is the main structure to check the provenance.
@@ -135,7 +154,12 @@ type provenanceCheckerImplementation interface {
 	generateFinalAttestation(opts *ProvenanceCheckerOptions, sbom, stageProvenance, version string) error
 }
 
-type defaultProvenanceCheckerImpl struct{}
+type defaultProvenanceCheckerImpl struct {
+	// verifySignatures verifies the signatures of the stage provenance and
+	// records the outcome in it, against the sigstore public good instance
+	// when nil.
+	verifySignatures func(plattestation.Envelope) error
+}
 
 // downloadReleaseArtifacts sybc.
 func (di *defaultProvenanceCheckerImpl) downloadStagedArtifacts(
@@ -157,15 +181,26 @@ func (di *defaultProvenanceCheckerImpl) downloadStagedArtifacts(
 }
 
 // processAttestation reads the SLSA attestation generated during the stage
-// run. Note that for now the attestation itself is not verified, we only
-// use it to extract the subjects to check the staged artifacts.
+// run, verifies it, see verifyStageProvenance, and returns its statement,
+// whose subjects are the staged artifacts to check.
 func (di *defaultProvenanceCheckerImpl) processAttestation(
 	opts *ProvenanceCheckerOptions, buildVersion string,
 ) (*intoto.Statement, error) {
 	// Load the downloaded statement
-	data, err := os.ReadFile(filepath.Join(opts.StageDirectory, buildVersion, ProvenanceFilename))
+	path := filepath.Join(opts.StageDirectory, buildVersion, ProvenanceFilename)
+
+	bundleData, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading staging provenance file: %w", err)
+	}
+
+	if err := di.verifyStageProvenance(bundleData, stageProvenanceSource()); err != nil {
+		return nil, fmt.Errorf("verifying staging provenance file: %w", err)
+	}
+
+	data, err := stageStatement(bundleData)
+	if err != nil {
+		return nil, fmt.Errorf("unwrapping staging provenance file: %w", err)
 	}
 
 	s := &intoto.Statement{}
@@ -182,6 +217,116 @@ func (di *defaultProvenanceCheckerImpl) processAttestation(
 	}
 
 	return s, nil
+}
+
+// stageProvenanceSource is the repository the stage run builds from, which
+// is a fork in mock runs with K8S_ORG or K8S_REPO set.
+func stageProvenanceSource() string {
+	return "github.com/" + GetK8sOrg() + "/" + GetK8sRepo()
+}
+
+// verifyStageProvenance verifies that the provenance of the stage run is a
+// sigstore bundle signed by StageProvenanceSigner, about a build of the
+// source repository by StageProvenanceBuilder, with the SLSA verifier.
+func (di *defaultProvenanceCheckerImpl) verifyStageProvenance(data []byte, source string) error {
+	if !attestation.IsSigstoreBundle(data) {
+		return errors.New("not a sigstore bundle, so it is not signed")
+	}
+
+	envelopes, err := (&bundle.Parser{}).Parse(data)
+	if err != nil {
+		return fmt.Errorf("parsing sigstore bundle: %w", err)
+	}
+
+	if len(envelopes) != 1 {
+		return fmt.Errorf("expected one statement in the sigstore bundle, found %d", len(envelopes))
+	}
+
+	verify := di.verifySignatures
+	if verify == nil {
+		verify = func(envelope plattestation.Envelope) error {
+			return envelope.Verify() //nolint:wrapcheck // wrapped by the caller
+		}
+	}
+
+	if err := verify(envelopes[0]); err != nil {
+		return fmt.Errorf("verifying signatures: %w", err)
+	}
+
+	return checkStageStatement(envelopes[0].GetStatement(), source)
+}
+
+// checkStageStatement checks a stage provenance statement whose signatures
+// are verified against the signer, builder and source of a stage run. The
+// verifier checks the builder only from SLSA build level 2 on, where a
+// trusted builder has to be bound to its signer, so that is the level the
+// check requires. The stage run still meets level 1 only, since it signs its
+// provenance itself.
+func checkStageStatement(statement plattestation.Statement, source string) error {
+	if statement == nil {
+		return errors.New("the sigstore bundle holds no in-toto statement")
+	}
+
+	signer, err := sapi.NewIdentityFromSpec(StageProvenanceSigner)
+	if err != nil {
+		return fmt.Errorf("parsing signer identity: %w", err)
+	}
+
+	verifier, err := slsa.New()
+	if err != nil {
+		return fmt.Errorf("creating SLSA verifier: %w", err)
+	}
+
+	res, err := verifier.Verify(context.Background(), statement,
+		slsa.WithRequireSignatures(true),
+		slsa.WithExpectedSigners([]*sapi.Identity{signer}),
+		slsa.WithParam("trusted_builders", []string{StageProvenanceBuilder}),
+		slsa.WithParam("expected_source", source),
+		slsa.WithMinLevel(2),
+		slsa.WithSkipBuildTypeChecks(true),
+	)
+	if err == nil && !res.Pass() {
+		err = errors.New(failureReason(res))
+	}
+
+	if err != nil {
+		return fmt.Errorf(
+			"expected signer %s, builder %s and source %s: %w",
+			StageProvenanceSigner, StageProvenanceBuilder, source, err,
+		)
+	}
+
+	return nil
+}
+
+// failureReason lists the failed controls of a SLSA verifier result.
+func failureReason(res *slsa.Result) string {
+	var reasons []string
+
+	for _, layer := range [][]*slsa.ControlResult{res.CoreResults, res.BuildTypeResults, res.UserResults} {
+		for _, cr := range layer {
+			if cr.Status != slsa.StatusFail && cr.Status != slsa.StatusError {
+				continue
+			}
+
+			reason := cr.ID
+			if cr.Message != "" {
+				reason += " (" + cr.Message + ")"
+			}
+
+			reasons = append(reasons, reason)
+		}
+	}
+
+	if res.Message != "" {
+		reasons = append(reasons, res.Message)
+	}
+
+	if len(reasons) == 0 {
+		return string(res.Status)
+	}
+
+	return strings.Join(reasons, ", ")
 }
 
 // hexRegex matches lowercase hex encoded digest values.
@@ -280,26 +425,93 @@ func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(
 		return fmt.Errorf("converting sbom for version %s: %w", version, err)
 	}
 
-	slsaStatement := doc.ToProvenanceStatement(spdx.DefaultProvenanceOptions)
+	// The SBOM only provides the subjects: bom's statements declare the
+	// SLSA v0.2 predicate type and bom can't read the v1 predicate of the
+	// stage run.
+	subjects := doc.ToProvenanceStatement(spdx.DefaultProvenanceOptions).Subject
 
 	// Rewrite the provenance sublects to list their full paths in the bucket
-	for i, sub := range slsaStatement.Subject {
-		slsaStatement.Subject[i].Name = object.GcsPrefix + filepath.Join(
+	for i, sub := range subjects {
+		subjects[i].Name = object.GcsPrefix + filepath.Join(
 			opts.StageBucket, "release", version, sub.GetName(),
 		)
 	}
 
-	if err := slsaStatement.ClonePredicate(stageProvenance); err != nil {
-		return fmt.Errorf("cloning SLSA predicate from staging provenance: %s: %w", stageProvenance, err)
+	data, err := readStageStatement(stageProvenance)
+	if err != nil {
+		return fmt.Errorf("reading staging provenance: %w", err)
 	}
 
-	if err := slsaStatement.Write(
-		filepath.Join(os.TempDir(), fmt.Sprintf("provenance-%s.json", version)),
+	stageStatement := &intoto.Statement{}
+	if err := protojson.Unmarshal(data, stageStatement); err != nil {
+		return fmt.Errorf("parsing staging provenance %s: %w", stageProvenance, err)
+	}
+
+	statement := &intoto.Statement{
+		Type:          intoto.StatementTypeUri,
+		Subject:       subjects,
+		PredicateType: stageStatement.GetPredicateType(),
+		Predicate:     stageStatement.GetPredicate(),
+	}
+
+	if err := statement.Validate(); err != nil {
+		return fmt.Errorf("checking final provenance attestation for %s: %w", version, err)
+	}
+
+	finalData, err := protojson.Marshal(statement)
+	if err != nil {
+		return fmt.Errorf("serializing final provenance attestation for %s: %w", version, err)
+	}
+
+	// The release pushes it from there, see PushArtifacts in pkg/anago.
+	if err := os.WriteFile( //nolint:gosec // G303: a fixed name the release copies
+		filepath.Join(os.TempDir(), fmt.Sprintf("provenance-%s.json", version)), finalData, 0o600,
 	); err != nil {
 		return fmt.Errorf("writing final provenance attestation for %s: %w", version, err)
 	}
 
 	return nil
+}
+
+// inTotoPayloadType is the DSSE payload type of in-toto statements.
+const inTotoPayloadType = "application/vnd.in-toto+json"
+
+// readStageStatement returns the in-toto statement of the stage provenance
+// in path, see stageStatement.
+func readStageStatement(path string) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading %s: %w", path, err)
+	}
+
+	return stageStatement(data)
+}
+
+// stageStatement returns the in-toto statement of the stage provenance. The
+// stage run signs the provenance in place, so it is a sigstore bundle with
+// the statement in its DSSE envelope.
+func stageStatement(data []byte) ([]byte, error) {
+	if !attestation.IsSigstoreBundle(data) {
+		return nil, errors.New("not a sigstore bundle, so it is not signed")
+	}
+
+	sigstoreBundle := &protobundle.Bundle{}
+	if err := (protojson.UnmarshalOptions{DiscardUnknown: true}).Unmarshal(data, sigstoreBundle); err != nil {
+		return nil, fmt.Errorf("parsing sigstore bundle: %w", err)
+	}
+
+	envelope := sigstoreBundle.GetDsseEnvelope()
+	if envelope == nil {
+		return nil, errors.New("the sigstore bundle holds no DSSE envelope")
+	}
+
+	if envelope.GetPayloadType() != inTotoPayloadType {
+		return nil, fmt.Errorf(
+			"the sigstore bundle holds a %q payload, not an in-toto statement", envelope.GetPayloadType(),
+		)
+	}
+
+	return envelope.GetPayload(), nil
 }
 
 type ProvenanceReader struct {
