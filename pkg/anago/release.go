@@ -17,9 +17,11 @@ limitations under the License.
 package anago
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
@@ -31,6 +33,7 @@ import (
 
 	"k8s.io/release/pkg/announce"
 	"k8s.io/release/pkg/announce/github"
+	"k8s.io/release/pkg/attestation"
 	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/release"
@@ -117,7 +120,16 @@ func (d *DefaultRelease) SetState(state *ReleaseState) {
 }
 
 // defaultReleaseImpl is the default internal release client implementation.
-type defaultReleaseImpl struct{}
+type defaultReleaseImpl struct {
+	// newProvenanceSigner returns the signer of the final provenance
+	// attestations, attestation.NewSigner if nil.
+	newProvenanceSigner func(*attestation.SignerOptions) provenanceSigner
+}
+
+// provenanceSigner signs statements in place, see attestation.Signer.
+type provenanceSigner interface {
+	SignFilesInPlace(paths []string) ([]*attestation.SignedStatement, error)
+}
 
 // releaseImpl is the implementation of the release client.
 //
@@ -159,6 +171,7 @@ type releaseImpl interface {
 	) error
 	CreatePubBotBranchIssue(string) error
 	CheckStageProvenance(string, string, *release.Versions) error
+	SignProvenance(versions []string) error
 }
 
 func (d *defaultReleaseImpl) Submit(options *gcb.Options) error {
@@ -382,6 +395,12 @@ func (d *DefaultRelease) PrepareWorkspace() error {
 
 func (d *DefaultRelease) PushArtifacts() error {
 	const gcsRoot = "release"
+
+	// Sign the final provenance before anything gets published, so that a
+	// release never publishes it unsigned.
+	if err := d.impl.SignProvenance(d.state.versions.Ordered()); err != nil {
+		return fmt.Errorf("signing provenance attestations: %w", err)
+	}
 
 	for _, version := range d.state.versions.Ordered() {
 		logrus.Infof("Pushing artifacts for version %s", version)
@@ -634,6 +653,52 @@ func (d *DefaultRelease) UpdateGitHubPage() error {
 // by verifying the provenance metadata generated during the stage run.
 func (d *DefaultRelease) CheckProvenance() error {
 	return d.impl.CheckStageProvenance(d.options.Bucket(), d.options.BuildVersion, d.state.versions)
+}
+
+// SignProvenance signs the final provenance attestations of the versions in
+// place, like the stage run signs its provenance, as the account named by
+// GOOGLE_SERVICE_ACCOUNT_NAME, which the release job impersonates to sign the
+// artifacts too. A version without a final attestation fails, so that the
+// release doesn't publish it without provenance.
+func (d *defaultReleaseImpl) SignProvenance(versions []string) error {
+	account := os.Getenv("GOOGLE_SERVICE_ACCOUNT_NAME")
+	if account == "" {
+		return errors.New(
+			"GOOGLE_SERVICE_ACCOUNT_NAME must name the account to sign the provenance attestations as",
+		)
+	}
+
+	paths := make([]string, 0, len(versions))
+
+	for _, version := range versions {
+		path := filepath.Join(os.TempDir(), fmt.Sprintf("provenance-%s.json", version))
+
+		if _, err := os.Stat(path); err != nil {
+			return fmt.Errorf("checking provenance attestation for %s: %w", version, err)
+		}
+
+		paths = append(paths, path)
+	}
+
+	if len(paths) == 0 {
+		return nil
+	}
+
+	opts := attestation.DefaultSignerOptions()
+	opts.ImpersonateServiceAccount = account
+
+	newSigner := d.newProvenanceSigner
+	if newSigner == nil {
+		newSigner = func(opts *attestation.SignerOptions) provenanceSigner {
+			return attestation.NewSigner(opts)
+		}
+	}
+
+	if _, err := newSigner(opts).SignFilesInPlace(paths); err != nil {
+		return fmt.Errorf("signing %s in place: %w", strings.Join(paths, ", "), err)
+	}
+
+	return nil
 }
 
 func (d *defaultReleaseImpl) CheckStageProvenance(bucket, buildVersion string, versions *release.Versions) error {

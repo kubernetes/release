@@ -182,31 +182,21 @@ func runSignAttestation(signOpts *signOptions, opts *signAttestationOptions, sta
 // signInPlace signs all statements in one session and replaces each of them
 // with its resulting bundle. Nothing is written unless all statements are signed.
 func signInPlace(signer *attestation.Signer, opts *signAttestationOptions, statements []string) error {
-	signed, err := signer.SignFiles(statements)
+	signed, err := signer.SignFilesInPlace(statements)
 	if err != nil {
-		return fmt.Errorf("signing attestations: %w", err)
+		return fmt.Errorf("signing attestations in place: %w", err)
 	}
 
-	for _, statement := range signed {
-		var bundle bytes.Buffer
-		if err := signer.WriteBundle(statement.Bundle, &bundle); err != nil {
-			return fmt.Errorf("serializing bundle of %s: %w", statement.Path, err)
-		}
-
-		if err := signer.WriteFile(statement.Path, bundle.Bytes()); err != nil {
-			return fmt.Errorf("replacing statement with its bundle: %w", err)
-		}
-
-		logrus.Infof("Signed %s in place", statement.Path)
-
-		if opts.outputPath != "" {
-			if err := signer.WriteFile(opts.outputPath, bundle.Bytes()); err != nil {
-				return fmt.Errorf("writing bundle copy: %w", err)
-			}
-
-			logrus.Infof("Signed bundle written to %s", opts.outputPath)
-		}
+	if opts.outputPath == "" {
+		return nil
 	}
+
+	// Only allowed with a single statement, see validateSignAttestationArgs
+	if err := signer.WriteBundleFile(opts.outputPath, signed[0].Bundle); err != nil {
+		return fmt.Errorf("writing bundle copy: %w", err)
+	}
+
+	logrus.Infof("Signed bundle written to %s", opts.outputPath)
 
 	return nil
 }
