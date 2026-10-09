@@ -313,6 +313,38 @@ func TestSignFiles(t *testing.T) {
 	}
 }
 
+func TestReadBundle(t *testing.T) {
+	t.Parallel()
+
+	s := NewSigner(nil)
+	dir := t.TempDir()
+
+	// A sigstore bundle is read
+	bndl, err := s.ReadBundle(filepath.Join("testdata", "signed-statement.sigstore.json"))
+	require.NoError(t, err)
+	require.NotNil(t, bndl)
+	require.NotNil(t, bndl.GetDsseEnvelope())
+
+	// An unsigned statement has no bundle
+	unsigned := filepath.Join(dir, "statement.json")
+	require.NoError(t, os.WriteFile(unsigned, []byte(`{"_type": "https://in-toto.io/Statement/v1"}`), 0o600))
+	bndl, err = s.ReadBundle(unsigned)
+	require.NoError(t, err)
+	require.Nil(t, bndl)
+
+	// A malformed bundle fails
+	malformed := filepath.Join(dir, "malformed.json")
+	require.NoError(t, os.WriteFile(
+		malformed, []byte(`{"mediaType": "application/vnd.dev.sigstore.bundle.v0.3+json"}`), 0o600,
+	))
+	_, err = s.ReadBundle(malformed)
+	require.Error(t, err)
+
+	// A missing file fails
+	_, err = s.ReadBundle(filepath.Join(dir, "missing.json"))
+	require.Error(t, err)
+}
+
 func TestWriteBundle(t *testing.T) {
 	t.Parallel()
 

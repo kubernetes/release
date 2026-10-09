@@ -704,8 +704,8 @@ github.com/lestrrat-go/jwx/v3 v3.1.1 h1:yd9AdPmZ4INnQ7k42IrzXYpnEG803+SrQ6hdMvzH
 github.com/lestrrat-go/jwx/v3 v3.1.1/go.mod h1:uw/MN2M/Xiu4FhwcIwH11Zsh9JWx9SWzgALl7/uIEkU=
 github.com/lestrrat-go/option/v2 v2.0.0 h1:XxrcaJESE1fokHy3FpaQ/cXW8ZsIdWcdFzzLOcID3Ss=
 github.com/lestrrat-go/option/v2 v2.0.0/go.mod h1:oSySsmzMoR0iRzCDCaUfsCzxQHUEuhOViQObyy7S6Vg=
-github.com/lib/pq v1.10.9 h1:YXG7RB+JIjhP29X+OtkiDnYaXQwpS4JEWq7dtCCRUEw=
-github.com/lib/pq v1.10.9/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
+github.com/lib/pq v1.12.0 h1:mC1zeiNamwKBecjHarAr26c/+d8V5w/u4J0I/yASbJo=
+github.com/lib/pq v1.12.0/go.mod h1:/p+8NSbOcwzAEI7wiMXFlgydTwcgTr3OSKMsD2BitpA=
 github.com/mattn/go-colorable v0.1.15 h1:+u9SLTRGnXv73cEsnsmoZBom+dMU88B2M0aDcWy0/jY=
 github.com/mattn/go-colorable v0.1.15/go.mod h1:6LmQG8QLFO4G5z1gPvYEzlUgJ2wF+stgPZH1UqBm1s8=
 github.com/mattn/go-isatty v0.0.24 h1:tGZZoVgT/KiqK1c8ocVLeDS8BSWMRd47J3Lbz7vsReI=
@@ -858,6 +858,8 @@ github.com/shurcooL/graphql v0.0.0-20230722043721-ed46e5a46466 h1:17JxqqJY66GmZV
 github.com/shurcooL/graphql v0.0.0-20230722043721-ed46e5a46466/go.mod h1:9dIRpgIY7hVhoqfe0/FcYp0bpInZaT7dc3BYOprrIUE=
 github.com/sigstore/cosign/v2 v2.6.5 h1:D7kFSWS2HzfD+LpEuBO89D1KfOAODlkWuuhzXS8yzi0=
 github.com/sigstore/cosign/v2 v2.6.5/go.mod h1:g+P/LgYyJkC85WGGDho7yySl3C6xTJzzpLm21ZV+E6s=
+github.com/sigstore/cosign/v3 v3.1.3 h1:001JQRI/PJ/5T+g/kJ1KTvKFbb322+fomc+pHDZ/6sg=
+github.com/sigstore/cosign/v3 v3.1.3/go.mod h1:DmjtYkWDMdbG26X+QSOPB6QQGkLjRjQCIxxNs6wV6bA=
 github.com/sigstore/fulcio v1.8.6 h1:vkvRpdhVAZjZHa0ltiJeLSILG9U8ADJoe5Z+RdZSLJk=
 github.com/sigstore/fulcio v1.8.6/go.mod h1:7RwoGdMM0xpc9qc382sjSw7P9OLKbKIwQZXvYz4JPb4=
 github.com/sigstore/protobuf-specs v0.5.2 h1:RSWWUY8QrVTxbYH00jY/jg2e7YnjzrpwP+PeHTMll0E=

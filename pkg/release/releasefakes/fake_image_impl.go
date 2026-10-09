@@ -50,6 +50,19 @@ type FakeImageImpl struct {
 		result1 string
 		result2 error
 	}
+	RemoteManifestStub        func(string) ([]byte, error)
+	remoteManifestMutex       sync.RWMutex
+	remoteManifestArgsForCall []struct {
+		arg1 string
+	}
+	remoteManifestReturns struct {
+		result1 []byte
+		result2 error
+	}
+	remoteManifestReturnsOnCall map[int]struct {
+		result1 []byte
+		result2 error
+	}
 	RepoTagFromTarballStub        func(string) (string, error)
 	repoTagFromTarballMutex       sync.RWMutex
 	repoTagFromTarballArgsForCall []struct {
@@ -214,6 +227,70 @@ func (fake *FakeImageImpl) ExecuteOutputReturnsOnCall(i int, result1 string, res
 	}
 	fake.executeOutputReturnsOnCall[i] = struct {
 		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImageImpl) RemoteManifest(arg1 string) ([]byte, error) {
+	fake.remoteManifestMutex.Lock()
+	ret, specificReturn := fake.remoteManifestReturnsOnCall[len(fake.remoteManifestArgsForCall)]
+	fake.remoteManifestArgsForCall = append(fake.remoteManifestArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.RemoteManifestStub
+	fakeReturns := fake.remoteManifestReturns
+	fake.recordInvocation("RemoteManifest", []interface{}{arg1})
+	fake.remoteManifestMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeImageImpl) RemoteManifestCallCount() int {
+	fake.remoteManifestMutex.RLock()
+	defer fake.remoteManifestMutex.RUnlock()
+	return len(fake.remoteManifestArgsForCall)
+}
+
+func (fake *FakeImageImpl) RemoteManifestCalls(stub func(string) ([]byte, error)) {
+	fake.remoteManifestMutex.Lock()
+	defer fake.remoteManifestMutex.Unlock()
+	fake.RemoteManifestStub = stub
+}
+
+func (fake *FakeImageImpl) RemoteManifestArgsForCall(i int) string {
+	fake.remoteManifestMutex.RLock()
+	defer fake.remoteManifestMutex.RUnlock()
+	argsForCall := fake.remoteManifestArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeImageImpl) RemoteManifestReturns(result1 []byte, result2 error) {
+	fake.remoteManifestMutex.Lock()
+	defer fake.remoteManifestMutex.Unlock()
+	fake.RemoteManifestStub = nil
+	fake.remoteManifestReturns = struct {
+		result1 []byte
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImageImpl) RemoteManifestReturnsOnCall(i int, result1 []byte, result2 error) {
+	fake.remoteManifestMutex.Lock()
+	defer fake.remoteManifestMutex.Unlock()
+	fake.RemoteManifestStub = nil
+	if fake.remoteManifestReturnsOnCall == nil {
+		fake.remoteManifestReturnsOnCall = make(map[int]struct {
+			result1 []byte
+			result2 error
+		})
+	}
+	fake.remoteManifestReturnsOnCall[i] = struct {
+		result1 []byte
 		result2 error
 	}{result1, result2}
 }

@@ -28,6 +28,33 @@ import (
 )
 
 type FakeSignerImplementation struct {
+	AttachBundleStub        func(string, []byte, string) error
+	attachBundleMutex       sync.RWMutex
+	attachBundleArgsForCall []struct {
+		arg1 string
+		arg2 []byte
+		arg3 string
+	}
+	attachBundleReturns struct {
+		result1 error
+	}
+	attachBundleReturnsOnCall map[int]struct {
+		result1 error
+	}
+	HasReferrerStub        func(string, string) (bool, error)
+	hasReferrerMutex       sync.RWMutex
+	hasReferrerArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	hasReferrerReturns struct {
+		result1 bool
+		result2 error
+	}
+	hasReferrerReturnsOnCall map[int]struct {
+		result1 bool
+		result2 error
+	}
 	IdentityTokenStub        func(context.Context, string, []byte, string, string) (*oauthflow.OIDCIDToken, error)
 	identityTokenMutex       sync.RWMutex
 	identityTokenArgsForCall []struct {
@@ -54,6 +81,19 @@ type FakeSignerImplementation struct {
 	}
 	newSignerReturnsOnCall map[int]struct {
 		result1 *signer.Signer
+	}
+	ReadBundleStub        func(string) (*bundle.Bundle, error)
+	readBundleMutex       sync.RWMutex
+	readBundleArgsForCall []struct {
+		arg1 string
+	}
+	readBundleReturns struct {
+		result1 *bundle.Bundle
+		result2 error
+	}
+	readBundleReturnsOnCall map[int]struct {
+		result1 *bundle.Bundle
+		result2 error
 	}
 	ReadStatementStub        func(string) ([]byte, error)
 	readStatementMutex       sync.RWMutex
@@ -108,6 +148,139 @@ type FakeSignerImplementation struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeSignerImplementation) AttachBundle(arg1 string, arg2 []byte, arg3 string) error {
+	var arg2Copy []byte
+	if arg2 != nil {
+		arg2Copy = make([]byte, len(arg2))
+		copy(arg2Copy, arg2)
+	}
+	fake.attachBundleMutex.Lock()
+	ret, specificReturn := fake.attachBundleReturnsOnCall[len(fake.attachBundleArgsForCall)]
+	fake.attachBundleArgsForCall = append(fake.attachBundleArgsForCall, struct {
+		arg1 string
+		arg2 []byte
+		arg3 string
+	}{arg1, arg2Copy, arg3})
+	stub := fake.AttachBundleStub
+	fakeReturns := fake.attachBundleReturns
+	fake.recordInvocation("AttachBundle", []interface{}{arg1, arg2Copy, arg3})
+	fake.attachBundleMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeSignerImplementation) AttachBundleCallCount() int {
+	fake.attachBundleMutex.RLock()
+	defer fake.attachBundleMutex.RUnlock()
+	return len(fake.attachBundleArgsForCall)
+}
+
+func (fake *FakeSignerImplementation) AttachBundleCalls(stub func(string, []byte, string) error) {
+	fake.attachBundleMutex.Lock()
+	defer fake.attachBundleMutex.Unlock()
+	fake.AttachBundleStub = stub
+}
+
+func (fake *FakeSignerImplementation) AttachBundleArgsForCall(i int) (string, []byte, string) {
+	fake.attachBundleMutex.RLock()
+	defer fake.attachBundleMutex.RUnlock()
+	argsForCall := fake.attachBundleArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeSignerImplementation) AttachBundleReturns(result1 error) {
+	fake.attachBundleMutex.Lock()
+	defer fake.attachBundleMutex.Unlock()
+	fake.AttachBundleStub = nil
+	fake.attachBundleReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeSignerImplementation) AttachBundleReturnsOnCall(i int, result1 error) {
+	fake.attachBundleMutex.Lock()
+	defer fake.attachBundleMutex.Unlock()
+	fake.AttachBundleStub = nil
+	if fake.attachBundleReturnsOnCall == nil {
+		fake.attachBundleReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.attachBundleReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeSignerImplementation) HasReferrer(arg1 string, arg2 string) (bool, error) {
+	fake.hasReferrerMutex.Lock()
+	ret, specificReturn := fake.hasReferrerReturnsOnCall[len(fake.hasReferrerArgsForCall)]
+	fake.hasReferrerArgsForCall = append(fake.hasReferrerArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.HasReferrerStub
+	fakeReturns := fake.hasReferrerReturns
+	fake.recordInvocation("HasReferrer", []interface{}{arg1, arg2})
+	fake.hasReferrerMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeSignerImplementation) HasReferrerCallCount() int {
+	fake.hasReferrerMutex.RLock()
+	defer fake.hasReferrerMutex.RUnlock()
+	return len(fake.hasReferrerArgsForCall)
+}
+
+func (fake *FakeSignerImplementation) HasReferrerCalls(stub func(string, string) (bool, error)) {
+	fake.hasReferrerMutex.Lock()
+	defer fake.hasReferrerMutex.Unlock()
+	fake.HasReferrerStub = stub
+}
+
+func (fake *FakeSignerImplementation) HasReferrerArgsForCall(i int) (string, string) {
+	fake.hasReferrerMutex.RLock()
+	defer fake.hasReferrerMutex.RUnlock()
+	argsForCall := fake.hasReferrerArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeSignerImplementation) HasReferrerReturns(result1 bool, result2 error) {
+	fake.hasReferrerMutex.Lock()
+	defer fake.hasReferrerMutex.Unlock()
+	fake.HasReferrerStub = nil
+	fake.hasReferrerReturns = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeSignerImplementation) HasReferrerReturnsOnCall(i int, result1 bool, result2 error) {
+	fake.hasReferrerMutex.Lock()
+	defer fake.hasReferrerMutex.Unlock()
+	fake.HasReferrerStub = nil
+	if fake.hasReferrerReturnsOnCall == nil {
+		fake.hasReferrerReturnsOnCall = make(map[int]struct {
+			result1 bool
+			result2 error
+		})
+	}
+	fake.hasReferrerReturnsOnCall[i] = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeSignerImplementation) IdentityToken(arg1 context.Context, arg2 string, arg3 []byte, arg4 string, arg5 string) (*oauthflow.OIDCIDToken, error) {
@@ -234,6 +407,70 @@ func (fake *FakeSignerImplementation) NewSignerReturnsOnCall(i int, result1 *sig
 	fake.newSignerReturnsOnCall[i] = struct {
 		result1 *signer.Signer
 	}{result1}
+}
+
+func (fake *FakeSignerImplementation) ReadBundle(arg1 string) (*bundle.Bundle, error) {
+	fake.readBundleMutex.Lock()
+	ret, specificReturn := fake.readBundleReturnsOnCall[len(fake.readBundleArgsForCall)]
+	fake.readBundleArgsForCall = append(fake.readBundleArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.ReadBundleStub
+	fakeReturns := fake.readBundleReturns
+	fake.recordInvocation("ReadBundle", []interface{}{arg1})
+	fake.readBundleMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeSignerImplementation) ReadBundleCallCount() int {
+	fake.readBundleMutex.RLock()
+	defer fake.readBundleMutex.RUnlock()
+	return len(fake.readBundleArgsForCall)
+}
+
+func (fake *FakeSignerImplementation) ReadBundleCalls(stub func(string) (*bundle.Bundle, error)) {
+	fake.readBundleMutex.Lock()
+	defer fake.readBundleMutex.Unlock()
+	fake.ReadBundleStub = stub
+}
+
+func (fake *FakeSignerImplementation) ReadBundleArgsForCall(i int) string {
+	fake.readBundleMutex.RLock()
+	defer fake.readBundleMutex.RUnlock()
+	argsForCall := fake.readBundleArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeSignerImplementation) ReadBundleReturns(result1 *bundle.Bundle, result2 error) {
+	fake.readBundleMutex.Lock()
+	defer fake.readBundleMutex.Unlock()
+	fake.ReadBundleStub = nil
+	fake.readBundleReturns = struct {
+		result1 *bundle.Bundle
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeSignerImplementation) ReadBundleReturnsOnCall(i int, result1 *bundle.Bundle, result2 error) {
+	fake.readBundleMutex.Lock()
+	defer fake.readBundleMutex.Unlock()
+	fake.ReadBundleStub = nil
+	if fake.readBundleReturnsOnCall == nil {
+		fake.readBundleReturnsOnCall = make(map[int]struct {
+			result1 *bundle.Bundle
+			result2 error
+		})
+	}
+	fake.readBundleReturnsOnCall[i] = struct {
+		result1 *bundle.Bundle
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeSignerImplementation) ReadStatement(arg1 string) ([]byte, error) {
