@@ -809,13 +809,16 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 	// Build the base artifacts sbom. We only pass it the images for
 	// now as the binaries and tarballs need more processing
 	doc, err := d.BuildBaseArtifactsSBOM(&bom.GenerateOptions{
-		Name:           "Kubernetes Release " + version,
-		Namespace:      fmt.Sprintf("https://sbom.k8s.io/%s/release", version),
-		ImageArchives:  images,
-		NoDependencies: true,
+		Name:          "Kubernetes Release " + version,
+		Namespace:     fmt.Sprintf("https://sbom.k8s.io/%s/release", version),
+		ImageArchives: images,
 	})
 	if err != nil {
 		return fmt.Errorf("generating base artifacts sbom for %s: %w", version, err)
+	}
+
+	if len(doc.Packages) == 0 {
+		return fmt.Errorf("no images in the base artifacts sbom for %s", version)
 	}
 
 	// Add the binaries and tarballs
@@ -840,7 +843,9 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 
 	doc.ExternalDocRefs = append(doc.ExternalDocRefs, extRef)
 
-	// Stamp all packages. We do this here because it includes both images and
+	// Stamp all packages, which are the images, as generated from the source
+	// code. The binaries and tarballs got the same relationship when they were
+	// added as files.
 	for _, pkg := range doc.Packages {
 		pkg.AddRelationship(&spdx.Relationship{
 			FullRender:       false,
@@ -898,8 +903,8 @@ func (d *defaultStageImpl) WriteSourceBOM(
 }
 
 func (d *DefaultStage) GenerateBillOfMaterials() error {
-	// Pre-populate the Go module cache so that bom's license scanner
-	// can find modules locally instead of git-cloning each dependency.
+	// Pre-populate the Go module cache so that bom can fall back to the
+	// local go.mod copies when a module can't be fetched from the proxy.
 	if err := d.impl.GoModDownload(gitRoot); err != nil {
 		return fmt.Errorf("pre-populating go module cache: %w", err)
 	}
