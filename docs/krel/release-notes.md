@@ -64,7 +64,7 @@ Global Flags:
 
 ### Examples
 
-`krel release-notes` has two main modes of operation:
+`krel release-notes` has three main modes of operation:
 
 #### Update the Release Notes markdown draft
 
@@ -105,6 +105,54 @@ krel release-notes --create-website-pr --fork=kubefriend --tag v1.19.0-beta.1
 As with `--create-draft-pr`, `--tag` is optional and will default to the latest release.
 You can override the name of your fork of kubernetes-sigs/release-notes by specifying
 the full repository slug: `--fork=myorg/myreponame`.
+
+#### Rerun against an existing draft branch
+
+After the initial `--create-draft-pr` run creates a PR against k/sig-release, reviewers may suggest changes. To incorporate those changes (via [map files](../release-notes-maps.md)), you need to regenerate the draft against the existing branch.
+
+The `rerun` subcommand handles this workflow — it fetches an existing draft branch from any fork, regenerates the notes with maps applied, and optionally pushes the result to a destination fork.
+
+This solves the problem where re-running `--create-draft-pr` fails because the branch already exists on the fork, and also supports handoffs where a different team member needs to pick up the rerun work from a colleague's fork.
+
+The process:
+
+1. Clone upstream k/sig-release and fetch the draft branch from `--draft-pr-source-fork`
+2. Gather release notes from k/k for the given `--tag` range
+3. Apply map files (from the branch and any extra `--maps-from` paths)
+4. Write the updated markdown and JSON drafts, then commit
+5. If `--draft-pr-push-fork` is set, push the branch there (updating any open PR)
+
+The local clone is preserved after the run so you can inspect or push manually.
+
+```bash
+# Rerun and push to your own fork (updates the open PR):
+krel release-notes rerun \
+  --tag v1.36.0-beta.0 \
+  --draft-pr-source-fork colleague \
+  --draft-pr-push-fork myfork
+
+# Rerun with additional local maps, no push (inspect locally):
+krel release-notes rerun \
+  --tag v1.36.0-beta.0 \
+  --draft-pr-source-fork myfork \
+  --maps-from /path/to/extra/maps
+```
+
+The `--draft-pr-source-fork` flag accepts either an org name (`myorg`, which expands to `myorg/sig-release`) or a full slug (`myorg/myrepo`).  
+The same applies to `--draft-pr-push-fork`.
+
+If `--draft-pr-source-branch` is not specified, it defaults to `release-notes-draft-<tag>`.
+
+Flags specific to `rerun`:
+
+```
+      --draft-pr-source-fork string     k/sig-release fork to fetch the existing draft branch from (required)
+      --draft-pr-source-branch string   branch to fetch (default: release-notes-draft-<tag>)
+      --draft-pr-push-fork string       k/sig-release fork to push the updated branch to (omit to skip push)
+      --draft-pr-push-branch string     branch to push to on the destination fork (default: same as source branch)
+```
+
+Inherited flags from the parent command (`--tag`, `--maps-from`, `--repo`, `--use-ssh`, `--update-repo`, `--include-labels`) are also available.
 
 ### Usage notes
 
