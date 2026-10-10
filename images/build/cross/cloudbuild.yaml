@@ -5,8 +5,7 @@ options:
   substitutionOption: ALLOW_LOOSE
 
 steps:
-  - name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v20260205-38cfa9523f'
-    entrypoint: 'bash'
+  - name: 'registry.k8s.io/releng/gcb-docker-gcloud:v20260806'
     dir: ./images/build/cross
     env:
     - TAG=$_GIT_TAG
@@ -25,10 +24,8 @@ steps:
     # set the home to /root explicitly to if using docker buildx
     - HOME=/root
     args:
-    - -c
-    - |
-      gcloud auth configure-docker \
-      && make manifest
+    - make 
+    - manifest
 
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and

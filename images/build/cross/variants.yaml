@@ -1,4 +1,13 @@
 variants:
+  v1.38-go1.27-trixie:
+    CONFIG: 'go1.27-trixie'
+    TYPE: 'default'
+    IMAGE_VERSION: 'v1.38.0-go1.27.2-trixie.0'
+    KUBERNETES_VERSION: 'v1.38.0'
+    GO_VERSION: '1.27.2'
+    GO_MAJOR_VERSION: '1.27'
+    OS_CODENAME: 'trixie'
+    REVISION: '0'
   v1.38-go1.27-bullseye:
     CONFIG: 'go1.27-bullseye'
     TYPE: 'default'
