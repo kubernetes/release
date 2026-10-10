@@ -47,15 +47,9 @@ BUILD_METADATA = go$(GO_VERSION)-$(OS_CODENAME).$(REVISION)
 
 IMAGE_VERSION = $(KUBERNETES_VERSION)-$(BUILD_METADATA)
 
-# Ensure support for 'docker buildx' and 'docker manifest' commands
-export DOCKER_CLI_EXPERIMENTAL=enabled
+PLATFORMS ?= linux/amd64 linux/arm64 linux/ppc64le linux/s390x
 
-# TODO: Support multi-arch kube-cross images for linux/arm
-#       Currently some of the components references in the Dockerfile are
-#       not supported in specific architectures
-PLATFORMS ?= linux/amd64 linux/arm64 #linux/arm
-
-KUBE_DYNAMIC_CROSSPLATFORMS ?= "arm64 armhf i386 ppc64el s390x"
+KUBE_DYNAMIC_CROSSPLATFORMS ?= "arm64 i386 ppc64el s390x"
 KUBE_CROSSPLATFORMS ?= "linux/386 linux/arm linux/arm64 linux/ppc64le linux/s390x darwin/amd64 windows/amd64 windows/386"
 
 # for legacy images only build linux/amd64
@@ -73,7 +67,7 @@ endif
 # build with buildx
 # https://github.com/docker/buildx/issues/59
 .PHONY: container
-container: check-env init-docker-buildx
+container: check-env
 	echo "Building $(IMGNAME) for the following platforms: $(PLATFORMS)"
 	@for platform in $(PLATFORMS); do \
 		echo "Starting build for $${platform} platform"; \
@@ -110,7 +104,3 @@ manifest: push
 	@for platform in $(ARCHS); do docker manifest annotate --arch "$${platform}" ${IMAGE}:${IMAGE_VERSION} ${IMAGE}-$${platform}:${IMAGE_VERSION}; done
 	docker manifest push --purge $(IMAGE):$(IMAGE_VERSION)
 
-# enable buildx
-.PHONY: init-docker-buildx
-init-docker-buildx:
-	./../../../hack/init-buildx.sh

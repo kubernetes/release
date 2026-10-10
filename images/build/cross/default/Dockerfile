@@ -15,22 +15,21 @@
 # This file creates a standard build environment for building cross
 # platform go binary for the architecture kubernetes cares about.
 
-ARG BASEIMAGE
-ARG GO_VERSION
-FROM golang:${GO_VERSION}-alpine as go-source
+ARG BASEIMAGE=debian:stable-slim
+ARG GO_VERSION=1
+FROM golang:${GO_VERSION}-alpine AS go-source
 FROM ${BASEIMAGE}
 
 ##------------------------------------------------------------
 # global ARGs & ENVs
+ARG GO_VERSION
 ARG TARGETPLATFORM
 ARG DEBIAN_FRONTEND=noninteractive
 
-ENV GOARM 7
-
 # the default value for KUBE_DYNAMIC_CROSSPLATFORMS and KUBE_CROSSPLATFORMS is set for
 # backward compatibility with the old Dockerfile. 
-ARG KUBE_DYNAMIC_CROSSPLATFORMS="arm64 armhf i386 ppc64el s390x"
-ARG KUBE_CROSSPLATFORMS="linux/386 linux/arm linux/arm64 linux/ppc64le linux/s390x darwin/amd64 windows/amd64 windows/386"
+ARG KUBE_DYNAMIC_CROSSPLATFORMS="arm64 i386 ppc64el s390x"
+ARG KUBE_CROSSPLATFORMS="linux/386 linux/arm64 linux/ppc64le linux/s390x darwin/amd64 windows/amd64 windows/386"
 
 ENV KUBE_DYNAMIC_CROSSPLATFORMS=${KUBE_DYNAMIC_CROSSPLATFORMS}
 ENV KUBE_CROSSPLATFORMS=${KUBE_CROSSPLATFORMS}
@@ -45,10 +44,10 @@ ENV GOPATH=/usr/local/go
 
 # Pre-compile the standard go library when cross-compiling. This is much easier now when we have go1.5+
 RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
-    && if [ ${targetArch} = "amd64" ]; then \
-    for platform in ${KUBE_CROSSPLATFORMS}; do GOOS=${platform%/*} GOARCH=${platform##*/} go install std; done \
-    && go clean -cache; \
-fi
+  && if [ ${targetArch} = "amd64" ]; then \
+  for platform in ${KUBE_CROSSPLATFORMS}; do GOOS=${platform%/*} GOARCH=${platform##*/} go install std; done \
+  && go clean -cache; \
+  fi
 
 # Debian 11 (bullseye) reached the end of its LTS window on 2026-08-31. Its
 # bullseye-security Release file is no longer re-signed, so apt rejects the whole
@@ -59,64 +58,64 @@ fi
 # entries commented out) -- an immutable archive that keeps the security suite
 # intact. Only bullseye is switched; newer bases keep validating Valid-Until.
 RUN . /etc/os-release \
-    && if [ "${VERSION_CODENAME}" = "bullseye" ]; then \
-        sed -i \
-            -e 's|^deb http://deb.debian.org|# deb http://deb.debian.org|' \
-            -e 's|^# deb http://snapshot.debian.org|deb http://snapshot.debian.org|' \
-            /etc/apt/sources.list \
-        && echo 'Acquire::Check-Valid-Until "false";' \
-            > /etc/apt/apt.conf.d/99no-check-valid-until; \
-fi
+  && if [ "${VERSION_CODENAME}" = "bullseye" ]; then \
+  sed -i \
+  -e 's|^deb http://deb.debian.org|# deb http://deb.debian.org|' \
+  -e 's|^# deb http://snapshot.debian.org|deb http://snapshot.debian.org|' \
+  /etc/apt/sources.list \
+  && echo 'Acquire::Check-Valid-Until "false";' \
+  > /etc/apt/apt.conf.d/99no-check-valid-until; \
+  fi
 
 # Install packages
 RUN apt-get -q update \
-    && apt-get install -qqy \
-        apt-utils \
-        curl \
-        file \
-        git \
-        gnupg2 \
-        iproute2 \
-        jq \
-        openssh-client \
-        patch \
-        rsync \
-        unzip \
-        wget
+  && apt-get install -qqy \
+  apt-utils \
+  curl \
+  file \
+  git \
+  gnupg2 \
+  iproute2 \
+  jq \
+  openssh-client \
+  patch \
+  rsync \
+  unzip \
+  wget
 
 # Use dynamic cgo linking for architectures other than amd64 for the server platforms
 # To install crossbuild essential for other architectures add the following repository.
 RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
   && if [ ${targetArch} = "amd64" ]; then \
-    apt-get update \
-    && apt-get install -y build-essential mingw-w64 \
-    && for platform in ${KUBE_DYNAMIC_CROSSPLATFORMS}; do apt-get install -y crossbuild-essential-${platform}; done \
-fi
+  apt-get update \
+  && apt-get install -y build-essential mingw-w64 \
+  && for platform in ${KUBE_DYNAMIC_CROSSPLATFORMS}; do apt-get install -y crossbuild-essential-${platform}; done \
+  fi
 
 RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
   && if [ ${targetArch} = "arm64" ]; then \
-    apt-get update \
-    && apt-get install -y build-essential gcc-x86-64-linux-gnu \
-    && apt-get install -y crossbuild-essential-ppc64el crossbuild-essential-s390x; \
-fi
+  apt-get update \
+  && apt-get install -y build-essential gcc-x86-64-linux-gnu \
+  && apt-get install -y crossbuild-essential-ppc64el crossbuild-essential-s390x; \
+  fi
 
 RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
   && if [ ${targetArch} = "ppc64le" ] || [ ${targetArch} = "s390x" ]; then \
-    apt-get update \
-    && apt-get install -y build-essential; \
-fi
+  apt-get update \
+  && apt-get install -y build-essential; \
+  fi
 
-ENV PROTOBUF_VERSION 23.4
+ENV PROTOBUF_VERSION=23.4
 RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
   && if [ ${targetArch} = "amd64" ]; then \
   ZIPNAME="protoc-${PROTOBUF_VERSION}-linux-x86_64.zip"; \
-elif [ ${targetArch} = "arm64" ]; then \
+  elif [ ${targetArch} = "arm64" ]; then \
   ZIPNAME="protoc-${PROTOBUF_VERSION}-linux-aarch_64.zip"; \
-elif [ ${targetArch} = "ppc64le" ]; then \
+  elif [ ${targetArch} = "ppc64le" ]; then \
   ZIPNAME="protoc-${PROTOBUF_VERSION}-linux-ppcle_64.zip"; \
-elif [ ${targetArch} = "s390x" ]; then \
+  elif [ ${targetArch} = "s390x" ]; then \
   ZIPNAME="protoc-${PROTOBUF_VERSION}-linux-s390_64.zip"; \
-fi \
+  fi \
   && mkdir /tmp/protoc && cd /tmp/protoc \
   && wget "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/${ZIPNAME}" \
   && unzip "${ZIPNAME}" \
@@ -126,22 +125,16 @@ fi \
   && rm -rf /tmp/protoc \
   && protoc --version
 
-# work around 64MB tmpfs size in Docker 1.6
-ENV TMPDIR /tmp.k8s
-RUN mkdir $TMPDIR \
-  && chmod a+rwx $TMPDIR \
-  && chmod o+t $TMPDIR
-
 # Get the code coverage tool and goimports
 RUN for i in {1..5}; do GOPROXY="direct" go install golang.org/x/tools/cmd/cover@latest && break || sleep 15; done  \
-    && for i in {1..5}; do GOPROXY="direct" go install golang.org/x/tools/cmd/goimports@latest && break || sleep 15; done  \
-    && go clean -cache
+  && for i in {1..5}; do GOPROXY="direct" go install golang.org/x/tools/cmd/goimports@latest && break || sleep 15; done  \
+  && go clean -cache
 
 # Cleanup a bit
 RUN apt-get -qqy remove \
-      wget \
-    && apt-get clean \
-    && rm -rf -- \
-        /var/lib/apt/lists/*
+  wget \
+  && apt-get clean \
+  && rm -rf -- \
+  /var/lib/apt/lists/*
 
 ENTRYPOINT []
