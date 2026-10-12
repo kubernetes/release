@@ -22,7 +22,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/carabiner-dev/signer"
+	"github.com/policylabs/signer"
 	"github.com/sigstore/sigstore-go/pkg/bundle"
 	"github.com/sigstore/sigstore/pkg/oauthflow"
 )

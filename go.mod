@@ -6,7 +6,6 @@ require (
 	cloud.google.com/go/storage v1.69.0
 	github.com/GoogleCloudPlatform/testgrid v0.0.38
 	github.com/blang/semver/v4 v4.0.0
-	github.com/carabiner-dev/signer v0.6.3-0.20260918053410-bc4fb95601f7
 	github.com/cheggaaa/pb/v3 v3.2.1
 	github.com/fastly/go-fastly/v13 v13.1.2
 	github.com/go-git/go-git/v5 v5.19.3
@@ -20,6 +19,7 @@ require (
 	github.com/mattn/go-isatty v0.0.24
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.14.0
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
+	github.com/policylabs/signer v0.6.4
 	github.com/psampaz/go-mod-outdated v0.9.0
 	github.com/saschagrunert/go-modiff v1.4.1
 	github.com/sergi/go-diff v1.4.0
@@ -119,7 +119,6 @@ require (
 	github.com/buildkite/go-pipeline v0.17.1 // indirect
 	github.com/buildkite/interpolate v0.1.5 // indirect
 	github.com/buildkite/roko v1.4.0 // indirect
-	github.com/carabiner-dev/attestation v0.2.1 // indirect
 	github.com/carabiner-dev/command v0.3.3 // indirect
 	github.com/carabiner-dev/hasher v0.2.4 // indirect
 	github.com/carabiner-dev/spdx3 v0.1.0 // indirect
@@ -257,7 +256,7 @@ require (
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
-	github.com/policylabs/signer v0.6.4 // indirect
+	github.com/policylabs/attestation v0.3.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/protobom/protobom v0.6.2 // indirect
 	github.com/protocolbuffers/txtpbfmt v0.0.0-20260217160748-a481f6a22f94 // indirect
