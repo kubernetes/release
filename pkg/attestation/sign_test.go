@@ -33,7 +33,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/carabiner-dev/signer"
+	"github.com/policylabs/signer"
 	sbundle "github.com/sigstore/sigstore-go/pkg/bundle"
 	"github.com/sigstore/sigstore/pkg/oauthflow"
 	"github.com/stretchr/testify/assert"
