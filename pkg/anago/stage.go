@@ -20,14 +20,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/blang/semver/v4"
 	gogit "github.com/go-git/go-git/v5"
 	slsa "github.com/in-toto/attestation/go/predicates/provenance/v1"
 	intoto "github.com/in-toto/attestation/go/v1"
+	protosbom "github.com/protobom/protobom/pkg/sbom"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -831,17 +834,22 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 	}
 
 	// Reference the source code SBOM as external document
+	sourcePath := filepath.Join(os.TempDir(), fmt.Sprintf("source-bom-%s.spdx", version))
 	extRef := spdx.ExternalDocumentRef{
 		ID:  "kubernetes-" + version,
 		URI: fmt.Sprintf("https://sbom.k8s.io/%s/source", version),
 	}
-	if err := extRef.ReadSourceFile(
-		filepath.Join(os.TempDir(), fmt.Sprintf("source-bom-%s.spdx", version)),
-	); err != nil {
+
+	if err := extRef.ReadSourceFile(sourcePath); err != nil {
 		return fmt.Errorf("reading the source file as external reference: %w", err)
 	}
 
 	doc.ExternalDocRefs = append(doc.ExternalDocRefs, extRef)
+
+	source, err := sourcePackage(sourcePath)
+	if err != nil {
+		return fmt.Errorf("reading the source package of %s: %w", version, err)
+	}
 
 	// Stamp all packages, which are the images, as generated from the source
 	// code. The binaries and tarballs got the same relationship when they were
@@ -856,12 +864,155 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 		})
 	}
 
+	// The relationships reference the source package as kubernetesPackageRef
+	// until its ID in the source SBOM is known.
+	setSourceReference(doc, extRef.ID, source.SPDXID())
+
 	// Write the Release Artifacts SBOM to disk
 	if err := doc.Write(filepath.Join(os.TempDir(), fmt.Sprintf("release-bom-%s.spdx", version))); err != nil {
 		return fmt.Errorf("writing artifacts SBOM for %s: %w", version, err)
 	}
 
+	if err := writeSPDX3(
+		doc, filepath.Join(os.TempDir(), fmt.Sprintf("release-bom-%s.spdx3.json", version)), version, extRef, source,
+	); err != nil {
+		return fmt.Errorf("writing SPDX 3 artifacts SBOM for %s: %w", version, err)
+	}
+
 	return nil
+}
+
+// writeSPDX3 writes the release artifacts SBOM of the version as SPDX 3
+// JSON-LD to path, next to the SPDX 2.3 tag-value document, which sbom.k8s.io
+// keeps serving. Its IRI is the URL sbom.k8s.io would serve it under, not the
+// namespace of the SPDX 2.3 document.
+func writeSPDX3(
+	doc *spdx.Document, path, version string, extRef spdx.ExternalDocumentRef, source *spdx.Package,
+) error {
+	pdoc, err := spdx.ToProtobom(doc)
+	if err != nil {
+		return fmt.Errorf("converting SBOM to protobom: %w", err)
+	}
+
+	pdoc.GetMetadata().Id = fmt.Sprintf("https://sbom.k8s.io/%s/release.spdx3.json#SPDXRef-DOCUMENT", version)
+	addSourcePackage(doc, pdoc, version, extRef, source)
+
+	f, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("creating %s: %w", path, err)
+	}
+
+	if err := spdx.WriteSPDX3(f, pdoc); err != nil {
+		f.Close()
+
+		return fmt.Errorf("writing %s: %w", path, err)
+	}
+
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("closing %s: %w", path, err)
+	}
+
+	return nil
+}
+
+// sourcePackage returns the package the source SBOM in path describes, the
+// Kubernetes source code.
+func sourcePackage(path string) (*spdx.Package, error) {
+	pdoc, err := bom.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("opening %s: %w", path, err)
+	}
+
+	doc, err := spdx.FromProtobom(pdoc)
+	if err != nil {
+		return nil, fmt.Errorf("converting %s: %w", path, err)
+	}
+
+	packages := slices.Collect(maps.Values(doc.Packages))
+	if len(packages) != 1 {
+		return nil, fmt.Errorf("expected one package in %s, found %d", path, len(packages))
+	}
+
+	return packages[0], nil
+}
+
+// setSourceReference points the relationships of the SBOM to the source code
+// in the external document extRefID to the package sourceID.
+func setSourceReference(doc *spdx.Document, extRefID, sourceID string) {
+	for _, object := range sbomObjects(doc) {
+		for _, rel := range *object.GetRelationships() {
+			if rel.PeerExtReference == extRefID {
+				rel.PeerReference = sourceID
+			}
+		}
+	}
+}
+
+// sbomObjects returns the packages and files of the SBOM in a stable order.
+func sbomObjects(doc *spdx.Document) []spdx.Object {
+	objects := make([]spdx.Object, 0, len(doc.Packages)+len(doc.Files))
+	for _, key := range slices.Sorted(maps.Keys(doc.Packages)) {
+		objects = append(objects, doc.Packages[key])
+	}
+
+	for _, key := range slices.Sorted(maps.Keys(doc.Files)) {
+		objects = append(objects, doc.Files[key])
+	}
+
+	return objects
+}
+
+// addSourcePackage adds the source package to the converted SBOM. The SPDX
+// 2.3 document references it in the source SBOM, another document, which
+// protobom can't express, so the conversion drops the generated-from
+// relationships to it. The source package becomes an element of the SBOM
+// instead, with the ID of the package in the source SBOM, a reference to the
+// source SBOM and one relationship to everything generated from it. It
+// carries the version of the release rather than the one bom derives for the
+// module in the source SBOM, since it describes the source code of the
+// release.
+func addSourcePackage(
+	doc *spdx.Document, pdoc *protosbom.Document, version string, extRef spdx.ExternalDocumentRef, source *spdx.Package,
+) {
+	sourceID := strings.TrimPrefix(source.SPDXID(), "SPDXRef-")
+
+	generated := []string{}
+
+	for _, object := range sbomObjects(doc) {
+		for _, rel := range *object.GetRelationships() {
+			if rel.Type == spdx.GENERATED_FROM && rel.PeerExtReference == extRef.ID {
+				generated = append(generated, strings.TrimPrefix(object.SPDXID(), "SPDXRef-"))
+
+				break
+			}
+		}
+	}
+
+	if len(generated) == 0 {
+		return
+	}
+
+	pdoc.GetNodeList().AddNode(&protosbom.Node{
+		Id:      sourceID,
+		Type:    protosbom.Node_PACKAGE,
+		Name:    source.Name,
+		Version: version,
+		Comment: sourceCodeComment,
+		Identifiers: map[int32]string{
+			int32(protosbom.SoftwareIdentifierType_PURL): "pkg:golang/k8s.io/kubernetes@" + version,
+		},
+		ExternalReferences: []*protosbom.ExternalReference{{
+			Type:    protosbom.ExternalReference_BOM,
+			Url:     extRef.URI,
+			Comment: "SBOM of the source code",
+		}},
+	})
+
+	pdoc.GetNodeList().AddEdge(&protosbom.Edge{
+		Type: protosbom.Edge_generates,
+		From: sourceID,
+		To:   generated,
+	})
 }
 
 func (d *defaultStageImpl) GoModDownload(path string) error {
