@@ -19,18 +19,59 @@ package release
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	intoto "github.com/in-toto/attestation/go/v1"
+	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
+	protodsse "github.com/sigstore/protobuf-specs/gen/pb-go/dsse"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 
+	"sigs.k8s.io/bom/pkg/spdx"
 	"sigs.k8s.io/release-sdk/object"
 	"sigs.k8s.io/release-utils/hash"
 )
 
+// signedProvenance wraps the statement in a sigstore bundle like the stage
+// run does with krel sign attestation --in-place. The signature is not
+// verified, so it doesn't have to be valid.
+func signedProvenance(t *testing.T, statement []byte, payloadType string) []byte {
+	t.Helper()
+
+	data, err := protojson.Marshal(&protobundle.Bundle{
+		MediaType: "application/vnd.dev.sigstore.bundle.v0.3+json",
+		Content: &protobundle.Bundle_DsseEnvelope{DsseEnvelope: &protodsse.Envelope{
+			Payload:     statement,
+			PayloadType: payloadType,
+			Signatures:  []*protodsse.Signature{{Sig: []byte("signature")}},
+		}},
+	})
+	require.NoError(t, err)
+
+	return data
+}
+
 func TestProcessAttestationAndCheckProvenance(t *testing.T) {
 	t.Parallel()
+
+	for _, tc := range []struct {
+		name   string
+		signed bool
+	}{
+		{"bare statement", false},
+		{"sigstore bundle", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			testProcessAttestationAndCheckProvenance(t, tc.signed)
+		})
+	}
+}
+
+func testProcessAttestationAndCheckProvenance(t *testing.T, signed bool) {
+	t.Helper()
 
 	const (
 		bucket       = "test-bucket"
@@ -59,6 +100,11 @@ func TestProcessAttestationAndCheckProvenance(t *testing.T) {
 	}
 	data, err := protojson.Marshal(statement)
 	require.NoError(t, err)
+
+	if signed {
+		data = signedProvenance(t, data, inTotoPayloadType)
+	}
+
 	require.NoError(t, os.MkdirAll(filepath.Join(stageDir, buildVersion), 0o755))
 	require.NoError(t, os.WriteFile(
 		filepath.Join(stageDir, buildVersion, ProvenanceFilename), data, 0o600,
@@ -103,4 +149,130 @@ func TestProcessAttestationAndCheckProvenance(t *testing.T) {
 	parsed.Subject[0].Digest = map[string]string{"sha256": sha256Sum}
 	parsed.Subject[0].Name = "does-not-exist.tar.gz"
 	require.Error(t, impl.checkProvenance(opts, parsed))
+}
+
+// TestGenerateFinalAttestation runs on its own: the final attestation is
+// written to the temporary directory of the process.
+func TestGenerateFinalAttestation(t *testing.T) { //nolint:paralleltest // sets TMPDIR
+	const (
+		bucket  = "test-bucket"
+		version = "v1.36.0"
+	)
+
+	tmpDir := t.TempDir()
+	t.Setenv("TMPDIR", tmpDir)
+
+	// A release SBOM with one binary, built and written like the stage run
+	// does in GenerateVersionArtifactsBOM
+	binary := filepath.Join(t.TempDir(), "kubectl")
+	require.NoError(t, os.WriteFile(binary, []byte("kubectl binary"), 0o600))
+
+	file := spdx.NewFile()
+	require.NoError(t, file.ReadSourceFile(binary))
+	file.Name = filepath.Join("bin", "linux", "amd64", "kubectl")
+	file.FileName = file.Name
+	doc := spdx.NewDocument()
+	doc.Name = "Kubernetes Release " + version
+	doc.Namespace = "https://sbom.k8s.io/" + version + "/release"
+	require.NoError(t, doc.AddFile(file))
+	sbom := filepath.Join(t.TempDir(), "kubernetes-release.spdx")
+	require.NoError(t, doc.Write(sbom))
+
+	// The SLSA v1 provenance of the stage run, signed in place
+	predicate, err := structpb.NewStruct(map[string]any{
+		"buildDefinition": map[string]any{"buildType": "https://k8s.io/release/stage"},
+	})
+	require.NoError(t, err)
+	stageStatement, err := protojson.Marshal(&intoto.Statement{
+		Type:          intoto.StatementTypeUri,
+		PredicateType: "https://slsa.dev/provenance/v1",
+		Subject: []*intoto.ResourceDescriptor{{
+			Name:   "gs://test-bucket/stage/kubernetes.tar.gz",
+			Digest: map[string]string{"sha256": strings.Repeat("b", 64)},
+		}},
+		Predicate: predicate,
+	})
+	require.NoError(t, err)
+
+	for _, tc := range []struct {
+		name string
+		data []byte
+	}{
+		{"bare statement", stageStatement},
+		{"sigstore bundle", signedProvenance(t, stageStatement, inTotoPayloadType)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			stageProvenance := filepath.Join(t.TempDir(), ProvenanceFilename)
+			require.NoError(t, os.WriteFile(stageProvenance, tc.data, 0o600))
+
+			impl := &defaultProvenanceCheckerImpl{}
+			require.NoError(t, impl.generateFinalAttestation(
+				&ProvenanceCheckerOptions{StageBucket: bucket}, sbom, stageProvenance, version,
+			))
+
+			data, err := os.ReadFile(filepath.Join(tmpDir, "provenance-"+version+".json"))
+			require.NoError(t, err)
+
+			final := &intoto.Statement{}
+			require.NoError(t, protojson.Unmarshal(data, final))
+
+			require.Equal(t, intoto.StatementTypeUri, final.GetType())
+			require.Equal(t, "https://slsa.dev/provenance/v1", final.GetPredicateType())
+			require.Equal(t,
+				"https://k8s.io/release/stage",
+				final.GetPredicate().GetFields()["buildDefinition"].GetStructValue().GetFields()["buildType"].GetStringValue(),
+			)
+
+			// The subjects are the files of the SBOM in the release bucket
+			require.NotEmpty(t, final.GetSubject())
+
+			for _, sub := range final.GetSubject() {
+				require.True(t,
+					strings.HasPrefix(sub.GetName(), "gs://"+bucket+"/release/"+version+"/"), sub.GetName(),
+				)
+			}
+
+			require.Contains(t, subjectNames(final), "gs://"+bucket+"/release/"+version+"/bin/linux/amd64/kubectl")
+		})
+	}
+}
+
+func subjectNames(s *intoto.Statement) []string {
+	names := make([]string, 0, len(s.GetSubject()))
+	for _, sub := range s.GetSubject() {
+		names = append(names, sub.GetName())
+	}
+
+	return names
+}
+
+func TestReadStageStatementInvalidBundle(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name string
+		data []byte
+	}{
+		{
+			name: "another payload type",
+			data: signedProvenance(t, []byte("{}"), "application/octet-stream"),
+		},
+		{
+			name: "no DSSE envelope",
+			data: []byte(`{"mediaType": "application/vnd.dev.sigstore.bundle.v0.3+json"}`),
+		},
+		{
+			name: "malformed bundle",
+			data: []byte(`{"mediaType": "application/vnd.dev.sigstore.bundle.v0.3+json", "dsseEnvelope": 42}`),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			path := filepath.Join(t.TempDir(), ProvenanceFilename)
+			require.NoError(t, os.WriteFile(path, tc.data, 0o600))
+			_, err := readStageStatement(path)
+			require.Error(t, err)
+		})
+	}
 }
