@@ -1,12 +1,11 @@
 # See https://cloud.google.com/cloud-build/docs/build-config
-timeout: 9000s
+timeout: 3600s
 
 options:
   substitutionOption: ALLOW_LOOSE
 
 steps:
-  - name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v20260205-38cfa9523f'
-    entrypoint: 'bash'
+  - name: 'registry.k8s.io/releng/gcb-docker-gcloud:v20260806'
     dir: ./images/build/cross
     env:
     - TAG=$_GIT_TAG
@@ -21,14 +20,13 @@ steps:
     - REVISION=$_REVISION
     - PROTOBUF_VERSION=$_PROTOBUF_VERSION
     - REGISTRY=$_REGISTRY
+    - PLATFORMS=$_PLATFORMS
     # default cloudbuild has HOME=/builder/home and docker buildx is in /root/.docker/cli-plugins/docker-buildx
     # set the home to /root explicitly to if using docker buildx
     - HOME=/root
     args:
-    - -c
-    - |
-      gcloud auth configure-docker \
-      && make manifest
+    - make 
+    - manifest
 
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
@@ -44,6 +42,7 @@ substitutions:
   _OS_CODENAME: 'codename'
   _REVISION: '0'
   _PROTOBUF_VERSION: '0.0.0'
+  _PLATFORMS: 'linux/amd64 linux/arm64 linux/ppc64le linux/s390x'
   _REGISTRY: 'fake.repository/registry-name'
 
 tags:

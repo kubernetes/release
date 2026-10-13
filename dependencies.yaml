@@ -180,6 +180,18 @@ dependencies:
         match: REVISION:\ '\d+'
 
   # kube-cross (Kubernetes v1.38)
+  - name: "registry.k8s.io/build-image/kube-cross: config variant (v1.38-go1.27-trixie)"
+    version: go1.27-trixie
+    refPaths:
+      - path: images/build/cross/variants.yaml
+        match: "CONFIG: 'go\\d+.\\d+-trixie'"
+
+  - name: "registry.k8s.io/build-image/kube-cross (v1.38-go1.27-trixie)"
+    version: v1.38.0-go1.27.1-trixie.0
+    refPaths:
+      - path: images/build/cross/variants.yaml
+        match: "IMAGE_VERSION: 'v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
+
   - name: "registry.k8s.io/build-image/kube-cross: config variant (v1.38-go1.27)"
     version: go1.27-bullseye
     refPaths:
@@ -270,7 +282,7 @@ dependencies:
     version: 23.4
     refPaths:
       - path: images/build/cross/default/Dockerfile
-        match: "PROTOBUF_VERSION [0-9]+\\.[0-9]+"
+        match: "PROTOBUF_VERSION=[0-9]+\\.[0-9]+"
 
   # Golang (current development branch: master/1.38)
   - name: "golang: after kubernetes/kubernetes update (master, next, and 1.38)"
@@ -340,6 +352,8 @@ dependencies:
         match: "OS_CODENAME: 'trixie'"
       - path: images/build/debian-base/Makefile
         match: CONFIG\ \?=\ trixie
+      - path: images/build/cross/variants.yaml
+        match: "OS_CODENAME: 'trixie'"
 
   - name: "Debian: codename (default)"
     version: bookworm
@@ -453,8 +467,6 @@ dependencies:
   - name: "gcr.io/k8s-staging-test-infra/gcb-docker-gcloud"
     version: v20260205-38cfa9523f
     refPaths:
-      - path: images/build/cross/cloudbuild.yaml
-        match: "name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{10}'"
       - path: images/build/debian-base/cloudbuild.yaml
         match: "name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{10}'"
       - path: images/build/go-runner/cloudbuild.yaml
@@ -463,6 +475,12 @@ dependencies:
         match: "name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{10}'"
       - path: images/releng/k8s-ci-builder/cloudbuild.yaml
         match: "name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{10}'"
+
+  - name: "registry.k8s.io/releng/gcb-docker-gcloud"
+    version: v20260806
+    refPaths:
+      - path: images/build/cross/cloudbuild.yaml
+        match: "name: 'registry.k8s.io/releng/gcb-docker-gcloud:v[0-9]{8}'"
 
   - name: qemu
     version: 7.2.0-1
