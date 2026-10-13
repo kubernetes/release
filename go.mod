@@ -22,6 +22,7 @@ require (
 	github.com/policylabs/attestation v0.3.0
 	github.com/policylabs/collector v0.4.0
 	github.com/policylabs/signer v0.6.5
+	github.com/protobom/protobom v0.6.2
 	github.com/psampaz/go-mod-outdated v0.9.0
 	github.com/saschagrunert/go-modiff v1.4.1
 	github.com/sergi/go-diff v1.4.0
@@ -192,7 +193,6 @@ require (
 	github.com/policylabs/policy v0.5.7-0.20261004134513-55e5473eef09 // indirect
 	github.com/policylabs/predicates v0.6.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
-	github.com/protobom/protobom v0.6.2 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/sassoftware/relic/v8 v8.2.0 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.11.1 // indirect
