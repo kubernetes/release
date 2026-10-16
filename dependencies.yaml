@@ -137,13 +137,25 @@ dependencies:
     refPaths:
       - path: images/build/go-runner/VERSION
 
+  - name: "registry.k8s.io/build-image/go-runner (go1.27-trixie)"
+    version: v2.4.0-go1.27.2-trixie.0
+    refPaths:
+      - path: images/build/go-runner/variants.yaml
+        match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
+
+  - name: "registry.k8s.io/build-image/go-runner: image revision (go1.27-trixie)"
+    version: 0
+    refPaths:
+      - path: images/build/go-runner/variants.yaml
+        match: REVISION:\ '\d+'
+
   - name: "registry.k8s.io/build-image/go-runner (go1.27-bookworm)"
     version: v2.4.0-go1.27.2-bookworm.0
     refPaths:
       - path: images/build/go-runner/variants.yaml
         match: v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
 
-  - name: "registry.k8s.io/build-image/go-runner: image revision (go1.26-bookworm)"
+  - name: "registry.k8s.io/build-image/go-runner: image revision (go1.27-bookworm)"
     version: 0
     refPaths:
       - path: images/build/go-runner/Makefile
@@ -354,6 +366,8 @@ dependencies:
         match: CONFIG\ \?=\ trixie
       - path: images/build/cross/variants.yaml
         match: "OS_CODENAME: 'trixie'"
+      - path: images/build/go-runner/variants.yaml
+        match: "OS_CODENAME: 'trixie'"
       - path: images/build/setcap/variants.yaml
         match: "CONFIG: 'trixie'"
 
@@ -391,7 +405,7 @@ dependencies:
       - path: images/build/setcap/variants.yaml
         match: "DEBIAN_BASE_VERSION: 'bookworm-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
-  - name: "registry.k8s.io/build-image/debian-base: dependents"
+  - name: "registry.k8s.io/build-image/debian-base: dependents (trixie)"
     version: trixie-v1.0.1
     refPaths:
       # TODO: uncoment when we default this in the Makefile and remove the bookworm 1.27 variant
@@ -401,7 +415,7 @@ dependencies:
         match: "DEBIAN_BASE_VERSION: 'trixie-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/distroless-iptables (distroless-trixie-go1.27)"
-    version: v0.11.0
+    version: v0.11.1
     refPaths:
       # TODO: uncoment when we default this in the Makefile and remove the bookworm 1.27 variant
       # - path: images/build/distroless-iptables/Makefile
@@ -410,13 +424,13 @@ dependencies:
         match: IMAGE_VERSION:\ \'v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)\'
 
   - name: "registry.k8s.io/build-image/go-runner: dependents (distroless-trixie-go1.27)"
-    version: v2.4.0-go1.27.1-trixie.0
+    version: v2.4.0-go1.27.2-trixie.0
     refPaths:
       - path: images/build/distroless-iptables/variants.yaml
         match: GORUNNER_VERSION:\ \'v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)\'
 
   - name: "registry.k8s.io/build-image/distroless-iptables (distroless-bookworm-go1.27)"
-    version: v0.10.0
+    version: v0.10.1
     refPaths:
       - path: images/build/distroless-iptables/Makefile
         match: IMAGE_VERSION\ \?=\ v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -424,19 +438,19 @@ dependencies:
         match: IMAGE_VERSION:\ \'v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)\'
 
   - name: "registry.k8s.io/build-image/go-runner: dependents (distroless-bookworm-go1.27)"
-    version: v2.4.0-go1.27.1-bookworm.0
+    version: v2.4.0-go1.27.2-bookworm.0
     refPaths:
       - path: images/build/distroless-iptables/variants.yaml
         match: GORUNNER_VERSION:\ \'v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)\'
 
   - name: "registry.k8s.io/build-image/distroless-iptables (distroless-bookworm-go1.26)"
-    version: v0.9.7
+    version: v0.9.8
     refPaths:
       - path: images/build/distroless-iptables/variants.yaml
         match: IMAGE_VERSION:\ \'v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)\'
 
   - name: "registry.k8s.io/build-image/go-runner: dependents (distroless-bookworm-go1.26)"
-    version: v2.4.0-go1.26.8-bookworm.0
+    version: v2.4.0-go1.26.9-bookworm.0
     refPaths:
       - path: images/build/distroless-iptables/variants.yaml
         match: GORUNNER_VERSION:\ \'v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)\'
