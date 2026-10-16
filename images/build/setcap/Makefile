@@ -12,68 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-.PHONY:	build push all all-build all-push-images all-push push-manifest
+# include the common image-building Makefiles
+include $(CURDIR)/../../Makefile.common-image
 
-REGISTRY?="gcr.io/k8s-staging-build-image"
-IMAGE=$(REGISTRY)/setcap
-
-TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= bookworm-v1.0.7
+IMGNAME = setcap
+IMAGE_VERSION ?= bookworm-v1.0.9
 CONFIG ?= bookworm
-DEBIAN_BASE_VERSION ?= bookworm-v1.0.7
-
-ARCH?=amd64
-ALL_ARCH = amd64 arm arm64 ppc64le s390x
-
-BASE_REGISTRY?=registry.k8s.io/build-image
-BASEIMAGE?=$(BASE_REGISTRY)/debian-base-$(ARCH):$(DEBIAN_BASE_VERSION)
+DEBIAN_BASE_VERSION ?= bookworm-v1.0.9
 
 # Build args
-QEMUVERSION=7.2.0-1
-QEMUIMAGE ?= multiarch/qemu-user-static
+BASE_REGISTRY ?= registry.k8s.io/build-image
+BASEIMAGE ?= $(BASE_REGISTRY)/debian-base:$(DEBIAN_BASE_VERSION)
 
-# This option is for running docker manifest command
-export DOCKER_CLI_EXPERIMENTAL := enabled
+PLATFORMS ?= linux/amd64 linux/arm64 linux/ppc64le linux/s390x
 
-build:
-	# Fix possible issues with the local umask
-	umask 0022
-
-	# Enable execution of multi-architecture containers
-	docker run --rm --privileged $(QEMUIMAGE):$(QEMUVERSION) --reset -p yes
-	docker buildx version
-	BUILDER=$(shell docker buildx create --use)
-	docker buildx build \
-		--pull \
-		--load \
-		--platform linux/$(ARCH) \
-		-t $(IMAGE)-$(ARCH):$(IMAGE_VERSION) \
-		-t $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
-		-t $(IMAGE)-$(ARCH):latest-$(CONFIG) \
-		--build-arg=BASEIMAGE=$(BASEIMAGE) \
-		.
-	docker buildx rm $$BUILDER
-
-push: build
-	docker push $(IMAGE)-$(ARCH):$(IMAGE_VERSION)
-	docker push $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG)
-	docker push $(IMAGE)-$(ARCH):latest-$(CONFIG)
-
-sub-build-%:
-	$(MAKE) ARCH=$* build
-
-all-build: $(addprefix sub-build-,$(ALL_ARCH))
-
-sub-push-image-%:
-	$(MAKE) ARCH=$* push
-
-all-push-images: $(addprefix sub-push-image-,$(ALL_ARCH))
-
-all-push: all-push-images push-manifest
-
-push-manifest:
-	docker manifest create --amend $(IMAGE):$(IMAGE_VERSION) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(IMAGE_VERSION)~g")
-	@for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${IMAGE}:${IMAGE_VERSION} ${IMAGE}-$${arch}:${IMAGE_VERSION}; done
-	docker manifest push --purge ${IMAGE}:${IMAGE_VERSION}
-
-all: all-push
+BUILD_ARGS = --pull \
+             --build-arg=BASEIMAGE=$(BASEIMAGE)

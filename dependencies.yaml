@@ -354,6 +354,8 @@ dependencies:
         match: CONFIG\ \?=\ trixie
       - path: images/build/cross/variants.yaml
         match: "OS_CODENAME: 'trixie'"
+      - path: images/build/setcap/variants.yaml
+        match: "CONFIG: 'trixie'"
 
   - name: "Debian: codename (default)"
     version: bookworm
@@ -378,9 +380,11 @@ dependencies:
         match: IMAGE_VERSION\ \?=\ trixie-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
       - path: images/build/debian-base/variants.yaml
         match: "IMAGE_VERSION: 'trixie-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
+      - path: images/build/setcap/variants.yaml
+        match: "IMAGE_VERSION: 'trixie-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/debian-base: dependents"
-    version: bookworm-v1.0.7
+    version: bookworm-v1.0.9
     refPaths:
       - path: images/build/setcap/Makefile
         match: DEBIAN_BASE_VERSION\ \?=\ bookworm-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -441,7 +445,7 @@ dependencies:
         match: GORUNNER_VERSION:\ \'v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)\'
 
   - name: "registry.k8s.io/build-image/setcap"
-    version: bookworm-v1.0.7
+    version: bookworm-v1.0.9
     refPaths:
       - path: images/build/setcap/Makefile
         match: IMAGE_VERSION\ \?=\ bookworm-v((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)
@@ -456,7 +460,7 @@ dependencies:
         match: "IMAGE_VERSION: 'bookworm-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
 
   - name: "registry.k8s.io/build-image/setcap (next candidate)"
-    version: bookworm-v1.0.7
+    version: bookworm-v1.0.9
     refPaths:
       - path: images/build/setcap/variants.yaml
         match: "DEBIAN_BASE_VERSION: 'bookworm-v((([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)'"
@@ -469,8 +473,6 @@ dependencies:
     refPaths:
       - path: images/build/go-runner/cloudbuild.yaml
         match: "name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{10}'"
-      - path: images/build/setcap/cloudbuild.yaml
-        match: "name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{10}'"
       - path: images/releng/k8s-ci-builder/cloudbuild.yaml
         match: "name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v[0-9]{8}-[a-z0-9]{10}'"
 
@@ -481,13 +483,13 @@ dependencies:
         match: "name: 'registry.k8s.io/releng/gcb-docker-gcloud:v[0-9]{8}'"
       - path: images/build/debian-base/cloudbuild.yaml
         match: "name: 'registry.k8s.io/releng/gcb-docker-gcloud:v[0-9]{8}'"
+      - path: images/build/setcap/cloudbuild.yaml
+        match: "name: 'registry.k8s.io/releng/gcb-docker-gcloud:v[0-9]{8}'"
 
   - name: qemu
     version: 7.2.0-1
     refPaths:
       - path: images/build/distroless-iptables/Makefile
-        match: QEMUVERSION
-      - path: images/build/setcap/Makefile
         match: QEMUVERSION
 
   - name: Docker buildx

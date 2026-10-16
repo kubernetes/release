@@ -19,13 +19,11 @@ IMAGE = $(REGISTRY)/$(IMGNAME)
 
 TAG ?= $(shell git describe --tags --always --dirty)
 
-# TODO: Uncomment once all images using this Makefile can be built on all
-#       supported Kubernetes server platforms.
-#PLATFORMS ?= linux/amd64 linux/arm linux/arm64 linux/ppc64le linux/s390x
-ARCHS = $(patsubst linux/%,%,$(PLATFORMS))
+BUILD_CONTEXT ?= .
 
-# Ensure support for 'docker buildx' and 'docker manifest' commands
-export DOCKER_CLI_EXPERIMENTAL=enabled
+
+PLATFORMS ?= linux/amd64 linux/arm64 linux/ppc64le linux/s390x
+ARCHS = $(patsubst linux/%,%,$(PLATFORMS))
 
 .PHONY: check-env
 check-env:
@@ -33,14 +31,12 @@ ifndef REGISTRY
 	$(error REGISTRY is undefined, please set to registry you want to push)
 endif
 
-# build with buildx
-# https://github.com/docker/buildx/issues/59
 .PHONY: container
-container: check-env init-docker-buildx
+container: check-env
 	echo "Building $(IMGNAME) for the following platforms: $(PLATFORMS)"
 	@for platform in $(PLATFORMS); do \
 		echo "Starting build for $${platform} platform"; \
-		docker buildx build \
+		docker build \
 			--load \
 			--progress plain \
 			--platform $${platform} \
@@ -48,7 +44,7 @@ container: check-env init-docker-buildx
 			--tag $(IMAGE)-$${platform##*/}:$(TAG)-$(CONFIG) \
 			--tag $(IMAGE)-$${platform##*/}:latest-$(CONFIG) \
 			$(BUILD_ARGS) \
-			.; \
+			$(BUILD_CONTEXT) || exit 1; \
 	done
 
 .PHONY: push
@@ -56,9 +52,9 @@ push: container
 	echo "Pushing $(IMGNAME) tags"
 	@for platform in $(PLATFORMS); do \
 		echo "Pushing tags for $${platform} platform"; \
-		docker push $(IMAGE)-$${platform##*/}:$(IMAGE_VERSION); \
-		docker push $(IMAGE)-$${platform##*/}:$(TAG)-$(CONFIG); \
-		docker push $(IMAGE)-$${platform##*/}:latest-$(CONFIG); \
+		docker push $(IMAGE)-$${platform##*/}:$(IMAGE_VERSION) || exit 1; \
+		docker push $(IMAGE)-$${platform##*/}:$(TAG)-$(CONFIG) || exit 1; \
+		docker push $(IMAGE)-$${platform##*/}:latest-$(CONFIG) || exit 1; \
 	done
 
 .PHONY: manifest
@@ -66,8 +62,3 @@ manifest: push
 	docker manifest create --amend $(IMAGE):$(IMAGE_VERSION) $(shell echo $(ARCHS) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(IMAGE_VERSION)~g")
 	@for platform in $(ARCHS); do docker manifest annotate --arch "$${platform}" ${IMAGE}:${IMAGE_VERSION} ${IMAGE}-$${platform}:${IMAGE_VERSION}; done
 	docker manifest push --purge $(IMAGE):$(IMAGE_VERSION)
-
-# enable buildx
-.PHONY: init-docker-buildx
-init-docker-buildx:
-	./../../../hack/init-buildx.sh
