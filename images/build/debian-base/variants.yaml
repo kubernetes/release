@@ -1,7 +1,9 @@
 variants:
-  bookworm:
-    CONFIG: 'bookworm'
-    IMAGE_VERSION: 'bookworm-v1.0.8'
   trixie:
     CONFIG: 'trixie'
-    IMAGE_VERSION: 'trixie-v1.0.0'
+    IMAGE_VERSION: 'trixie-v1.0.1'
+    BASEIMAGE: 'debian:trixie-slim'
+  bookworm:
+    CONFIG: 'bookworm'
+    IMAGE_VERSION: 'bookworm-v1.0.9'
+    BASEIMAGE: 'debian:bookworm-20260713-slim' # last bookworm version with s390x image
