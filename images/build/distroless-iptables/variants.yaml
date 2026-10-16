@@ -1,9 +1,9 @@
 variants:
   distroless-trixie-go1.27:
     CONFIG: 'distroless-trixie'
-    IMAGE_VERSION: 'v0.11.0'
+    IMAGE_VERSION: 'v0.11.1'
     BASEIMAGE: 'debian:trixie-slim'
-    GORUNNER_VERSION: 'v2.4.0-go1.27.1-trixie.0'
+    GORUNNER_VERSION: 'v2.4.0-go1.27.2-trixie.0'
   # NOTE: the bookworm variants pin a dated base tag instead of the floating
   # debian:bookworm-slim. As of the 2026-08-03 build, the official bookworm-slim
   # image no longer publishes linux/s390x (bookworm is oldstable), which breaks
@@ -12,14 +12,14 @@ variants:
   # brought up to date at build time.
   distroless-bookworm-go1.27:
     CONFIG: 'distroless-bookworm'
-    IMAGE_VERSION: 'v0.10.0'
+    IMAGE_VERSION: 'v0.10.1'
     BASEIMAGE: 'debian:bookworm-20260713-slim'
-    GORUNNER_VERSION: 'v2.4.0-go1.27.1-bookworm.0'
+    GORUNNER_VERSION: 'v2.4.0-go1.27.2-bookworm.0'
   distroless-bookworm-go1.26:
     CONFIG: 'distroless-bookworm'
-    IMAGE_VERSION: 'v0.9.7'
+    IMAGE_VERSION: 'v0.9.8'
     BASEIMAGE: 'debian:bookworm-20260713-slim'
-    GORUNNER_VERSION: 'v2.4.0-go1.26.8-bookworm.0'
+    GORUNNER_VERSION: 'v2.4.0-go1.26.9-bookworm.0'
   distroless-bookworm-go1.25:
     CONFIG: 'distroless-bookworm'
     IMAGE_VERSION: 'v0.8.14'

@@ -11,7 +11,7 @@ This image is compiled for multiple architectures.
 
 If you're editing the Dockerfile or some other thing, amend the variants.yaml and bump the versions in dependencies.yaml.
 
-Build and push images for all the architectures:
+Build and push images for all the architectures, then push the manifest list:
 
 ```console
 $ make manifest REGISTRY=<registry>
@@ -19,6 +19,7 @@ $ make manifest REGISTRY=<registry>
 # ---> <registry>/setcap-arm64:TAG
 # ---> <registry>/setcap-ppc64le:TAG
 # ---> <registry>/setcap-s390x:TAG
+# ---> <registry>/setcap:TAG
 ```
 
 If you don't want to push the images, run `make container REGISTRY=<registry>` instead. Use `PLATFORMS=linux/<arch>` to limit the platforms built.
