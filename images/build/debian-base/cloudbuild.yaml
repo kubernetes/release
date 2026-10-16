@@ -3,27 +3,22 @@ timeout: 1500s
 
 options:
   substitutionOption: ALLOW_LOOSE
-  machineType: 'N1_HIGHCPU_8'
 
 steps:
-  - name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v20260205-38cfa9523f'
-    entrypoint: bash
+  - name: 'registry.k8s.io/releng/gcb-docker-gcloud:v20260806'
     dir: ./images/build/debian-base
     env:
-      - DOCKER_CLI_EXPERIMENTAL=enabled
       - REGISTRY=$_REGISTRY
-      - IMAGE=$_REGISTRY/debian-base
       - BUILD_IMAGE=debian-build
       - TAG=$_GIT_TAG
       - PULL_BASE_REF=$_PULL_BASE_REF
       - IMAGE_VERSION=$_IMAGE_VERSION
+      - BASEIMAGE=$_BASEIMAGE
       - CONFIG=$_CONFIG
       - HOME=/root  # for docker buildx
     args:
-    - -c
-    - |
-      gcloud auth configure-docker && \
-      make all-push
+    - make
+    - manifest
 
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
@@ -32,6 +27,7 @@ substitutions:
   _PULL_BASE_REF: 'dev'
   _IMAGE_VERSION: 'codename-v0.0.0'
   _CONFIG: 'codename'
+  _BASEIMAGE: 'fakedebian:fake-slim'
   _REGISTRY: 'fake.repository/registry-name'
 
 tags:
@@ -40,8 +36,3 @@ tags:
 - ${_PULL_BASE_REF}
 - ${_IMAGE_VERSION}
 - ${_CONFIG}
-
-images:
-  - 'gcr.io/$PROJECT_ID/debian-base-amd64:$_IMAGE_VERSION'
-  - 'gcr.io/$PROJECT_ID/debian-base-amd64:$_GIT_TAG-$_CONFIG'
-  - 'gcr.io/$PROJECT_ID/debian-base-amd64:latest-$_CONFIG'

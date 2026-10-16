@@ -12,100 +12,84 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-all: all-build
+# set default shell
+SHELL=/bin/bash -o pipefail
 
-REGISTRY ?= gcr.io/k8s-staging-build-image
-IMAGE ?= $(REGISTRY)/debian-base
+IMGNAME = debian-base
 BUILD_IMAGE ?= debian-build
 
-TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_VERSION ?= trixie-v1.0.0
+IMAGE_VERSION ?= trixie-v1.0.1
 CONFIG ?= trixie
 
+# Build args
+BASEIMAGE ?= debian:$(CONFIG)-slim
+
+IMAGE = $(REGISTRY)/$(IMGNAME)
+TAG ?= $(shell git describe --tags --always --dirty)
+
 TAR_FILE ?= rootfs.tar
-ARCH ?= amd64
-ALL_ARCH = amd64 arm arm64 ppc64le s390x
 
-QEMUVERSION=7.2.0-1
-QEMUIMAGE ?= multiarch/qemu-user-static
+PLATFORMS ?= linux/amd64 linux/arm64 linux/ppc64le linux/s390x
 
-# This option is for running docker manifest command
-export DOCKER_CLI_EXPERIMENTAL := enabled
+ARCHS = $(patsubst linux/%,%,$(PLATFORMS))
 
-ifeq ($(ARCH),amd64)
-	BASEIMAGE?=debian:$(CONFIG)-slim
-	QEMUARCH=x86_64
-endif
-ifeq ($(ARCH),arm)
-	BASEIMAGE?=arm32v7/debian:$(CONFIG)-slim
-	QEMUARCH=arm
-endif
-ifeq ($(ARCH),arm64)
-	BASEIMAGE?=arm64v8/debian:$(CONFIG)-slim
-	QEMUARCH=aarch64
-endif
-ifeq ($(ARCH),ppc64le)
-	BASEIMAGE?=ppc64le/debian:$(CONFIG)-slim
-	QEMUARCH=ppc64le
-endif
-ifeq ($(ARCH),s390x)
-	BASEIMAGE?=s390x/debian:$(CONFIG)-slim
-	QEMUARCH=s390x
+check-env:
+ifndef REGISTRY
+	$(error REGISTRY is undefined, please set to registry you want to push)
 endif
 
-sub-build-%:
-	$(MAKE) ARCH=$* build
+.PHONY: container
+container: check-env clean
+	echo "Building $(IMGNAME) for the following platforms: $(PLATFORMS)"
+	for platform in $(PLATFORMS); do \
+		arch=$${platform##*/}; \
+		echo "Starting build for $${platform} platform"; \
+		docker build \
+			--pull \
+			--load \
+			--progress plain \
+			--platform $${platform} \
+			--tag $(BUILD_IMAGE)-$${arch} \
+			--build-arg=BASEIMAGE=$(BASEIMAGE) \
+			--file $(CONFIG)/Dockerfile.build \
+			$(CONFIG) || exit 1; \
+		docker rm -f $(BUILD_IMAGE)-$${arch} >/dev/null 2>&1 || true; \
+		docker create --platform $${platform} --name $(BUILD_IMAGE)-$${arch} $(BUILD_IMAGE)-$${arch} || exit 1; \
+		docker export $(BUILD_IMAGE)-$${arch} > $(CONFIG)/$(TAR_FILE) || exit 1; \
+		docker rm -f $(BUILD_IMAGE)-$${arch}; \
+		docker build \
+			--load \
+			--progress plain \
+			--platform $${platform} \
+			--tag $(IMAGE)-$${arch}:$(IMAGE_VERSION) \
+			--tag $(IMAGE)-$${arch}:$(TAG)-$(CONFIG) \
+			--tag $(IMAGE)-$${arch}:latest-$(CONFIG) \
+			$(CONFIG) || exit 1; \
+		rm -f $(CONFIG)/$(TAR_FILE); \
+	done
 
-all-build: $(addprefix sub-build-,$(ALL_ARCH))
+.PHONY: push
+push: container
+	echo "Pushing $(IMGNAME) tags"
+	@for platform in $(PLATFORMS); do \
+		arch=$${platform##*/}; \
+		echo "Pushing tags for $${platform} platform"; \
+		docker push $(IMAGE)-$${arch}:$(IMAGE_VERSION) || exit 1; \
+		docker push $(IMAGE)-$${arch}:$(TAG)-$(CONFIG) || exit 1; \
+		docker push $(IMAGE)-$${arch}:latest-$(CONFIG) || exit 1; \
+	done
 
-sub-push-image-%:
-	$(MAKE) ARCH=$* push
+.PHONY: manifest
+manifest: push
+	docker manifest create --amend $(IMAGE):$(IMAGE_VERSION) $(shell echo $(ARCHS) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(IMAGE_VERSION)~g")
+	@for platform in $(ARCHS); do docker manifest annotate --arch "$${platform}" ${IMAGE}:${IMAGE_VERSION} ${IMAGE}-$${platform}:${IMAGE_VERSION}; done
+	docker manifest push --purge $(IMAGE):$(IMAGE_VERSION)
 
-all-push-images: $(addprefix sub-push-image-,$(ALL_ARCH))
-
-all-push: all-push-images push-manifest
-
-push-manifest:
-	docker manifest create --amend $(IMAGE):$(IMAGE_VERSION) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(IMAGE_VERSION)~g")
-	@for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${IMAGE}:${IMAGE_VERSION} ${IMAGE}-$${arch}:${IMAGE_VERSION}; done
-	docker manifest push --purge ${IMAGE}:${IMAGE_VERSION}
-
-build: clean
-	# Fix possible issues with the local umask
-	umask 0022
-
-	# Enable execution of multi-architecture containers
-	docker run --rm --privileged $(QEMUIMAGE):$(QEMUVERSION) --reset -p yes
-	docker buildx version
-	BUILDER=$(shell docker buildx create --use)
-
-	docker buildx build \
-		--pull \
-		--load \
-		--platform linux/$(ARCH) \
-		--build-arg BASEIMAGE=$(BASEIMAGE) \
-		--build-arg ARCH=$(QEMUARCH) \
-		-t $(BUILD_IMAGE) \
-		-f $(CONFIG)/Dockerfile.build \
-		$(CONFIG)
-	docker create --name $(BUILD_IMAGE) $(BUILD_IMAGE)
-	docker export $(BUILD_IMAGE) > $(CONFIG)/$(TAR_FILE)
-	docker buildx build \
-		--load \
-		--platform linux/$(ARCH) \
-		-t $(IMAGE)-$(ARCH):$(IMAGE_VERSION) \
-		-t $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG) \
-		-t $(IMAGE)-$(ARCH):latest-$(CONFIG) \
-		$(CONFIG)
-	docker buildx rm $$BUILDER
-	rm $(CONFIG)/rootfs.tar
-
-push: build
-	docker push $(IMAGE)-$(ARCH):$(IMAGE_VERSION)
-	docker push $(IMAGE)-$(ARCH):$(TAG)-$(CONFIG)
-	docker push $(IMAGE)-$(ARCH):latest-$(CONFIG)
-
+.PHONY: clean
 clean:
-	docker rmi -f $(IMAGE)-$(ARCH):$(IMAGE_VERSION) || true
-	docker rmi -f $(BUILD_IMAGE)   || true
-	docker rm  -f $(BUILD_IMAGE)   || true
+	@for arch in $(ARCHS); do \
+		docker rmi -f $(IMAGE)-$${arch}:$(IMAGE_VERSION) || true; \
+		docker rm  -f $(BUILD_IMAGE)-$${arch} || true; \
+		docker rmi -f $(BUILD_IMAGE)-$${arch} || true; \
+	done
+	rm -f $(CONFIG)/$(TAR_FILE)
