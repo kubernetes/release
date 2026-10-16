@@ -19,8 +19,7 @@ steps:
       - '--certificate-identity=keyless@distroless.iam.gserviceaccount.com'
       - 'gcr.io/distroless/$_DISTROLESS_IMAGE'
 
-  - name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v20260205-38cfa9523f'
-    entrypoint: 'bash'
+  - name: 'registry.k8s.io/releng/gcb-docker-gcloud:v20260806'
     dir: ./images/build/go-runner
     env:
       - DOCKER_CLI_EXPERIMENTAL=enabled
@@ -36,10 +35,8 @@ steps:
       - GO_VERSION=$_GO_VERSION
       - DISTROLESS_IMAGE=$_DISTROLESS_IMAGE
     args:
-      - '-c'
-      - |
-        gcloud auth configure-docker \
-        && make manifest
+      - make
+      - manifest
 
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
@@ -66,8 +63,3 @@ tags:
   - ${_REVISION}
   - ${_GO_VERSION}
   - ${_DISTROLESS_IMAGE}
-
-images:
-  - 'gcr.io/$PROJECT_ID/go-runner-amd64:$_IMAGE_VERSION'
-  - 'gcr.io/$PROJECT_ID/go-runner-amd64:$_GIT_TAG-$_CONFIG'
-  - 'gcr.io/$PROJECT_ID/go-runner-amd64:latest-$_CONFIG'
