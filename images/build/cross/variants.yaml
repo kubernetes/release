@@ -58,3 +58,14 @@ variants:
     OS_CODENAME: 'bullseye'
     REVISION: '0'
     PLATFORMS: 'linux/amd64 linux/arm64'
+  # Temporary: remove after 2026-10-27
+  v1.34-go1.26-bullseye:
+    CONFIG: 'go1.26-bullseye'
+    TYPE: 'default'
+    IMAGE_VERSION: 'v1.34.0-go1.26.9-bullseye.0'
+    KUBERNETES_VERSION: 'v1.34.0'
+    GO_VERSION: '1.26.9'
+    GO_MAJOR_VERSION: '1.26'
+    OS_CODENAME: 'bullseye'
+    REVISION: '0'
+    PLATFORMS: 'linux/amd64 linux/arm64'
