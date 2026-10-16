@@ -1,5 +1,5 @@
 variants:
-  distroless-tri-go1.27:
+  distroless-trixie-go1.27:
     CONFIG: 'distroless-trixie'
     IMAGE_VERSION: 'v0.11.0'
     BASEIMAGE: 'debian:trixie-slim'

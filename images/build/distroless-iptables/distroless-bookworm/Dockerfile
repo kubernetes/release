@@ -72,7 +72,7 @@ FROM ${GORUNNERIMAGE} AS gorunner
 # are required
 FROM gcr.io/distroless/base-debian12 AS intermediate
 
-ARG SKIP_WRAPPER_CHECK
+ARG TARGETARCH
 
 COPY clean-distroless.sh /clean-distroless.sh
 COPY --from=build /opt/stage /
@@ -80,7 +80,7 @@ COPY --from=gorunner /go-runner /go-runner
 # iptables-wrapper-installer needs to know that iptables exists before doing all its magic
 RUN echo "" >  /usr/sbin/iptables && \
     `# We skip sanity check in iptables-wrapper-installer due to qemu multiarch problems `\
-    /iptables-wrapper-installer.sh ${SKIP_WRAPPER_CHECK} && \
+    /iptables-wrapper-installer.sh $([ "${TARGETARCH}" = amd64 ] || echo --no-sanity-check) && \
     /clean-distroless.sh
 
 FROM scratch

@@ -39,8 +39,9 @@ binary_to_libraries() {
     `# we want only the path remaining, not the (0x${LOCATION})` \
     | awk '{print $1}' \
     `# linux-vdso.so.1 is a special virtual shared object from the kernel` \
+    `# (linux-vdso64.so.1 on ppc64le/s390x)` \
     `# see: http://man7.org/linux/man-pages/man7/vdso.7.html` \
-    | grep -v 'linux-vdso.so.1'
+    | grep -vE '^linux-vdso(32|64)?\.so\.1$'
 }
 
 # main script logic
