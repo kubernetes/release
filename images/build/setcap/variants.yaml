@@ -1,6 +1,9 @@
 variants:
-  # Debian 12 - Kubernetes 1.28 and newer
+  trixie:
+    CONFIG: 'trixie'
+    IMAGE_VERSION: 'trixie-v1.0.1'
+    DEBIAN_BASE_VERSION: 'trixie-v1.0.1'
   bookworm:
     CONFIG: 'bookworm'
-    IMAGE_VERSION: 'bookworm-v1.0.7'
-    DEBIAN_BASE_VERSION: 'bookworm-v1.0.7'
+    IMAGE_VERSION: 'bookworm-v1.0.9'
+    DEBIAN_BASE_VERSION: 'bookworm-v1.0.9'

@@ -9,17 +9,16 @@ This image is compiled for multiple architectures.
 
 ### How to release
 
-If you're editing the Dockerfile or some other thing, please bump the TAG in the Makefile.
+If you're editing the Dockerfile or some other thing, amend the variants.yaml and bump the versions in dependencies.yaml.
 
 Build and push images for all the architectures:
 
 ```console
-$ make all-push
-# ---> gcr.io/k8s-staging-build-image/setcap-amd64:TAG
-# ---> gcr.io/k8s-staging-build-image/setcap-arm:TAG
-# ---> gcr.io/k8s-staging-build-image/setcap-arm64:TAG
-# ---> gcr.io/k8s-staging-build-image/setcap-ppc64le:TAG
-# ---> gcr.io/k8s-staging-build-image/setcap-s390x:TAG
+$ make manifest REGISTRY=<registry>
+# ---> <registry>/setcap-amd64:TAG
+# ---> <registry>/setcap-arm64:TAG
+# ---> <registry>/setcap-ppc64le:TAG
+# ---> <registry>/setcap-s390x:TAG
 ```
 
-If you don't want to push the images, run `make sub-build-{target_arch}` or `make all-build` instead
+If you don't want to push the images, run `make container REGISTRY=<registry>` instead. Use `PLATFORMS=linux/<arch>` to limit the platforms built.
