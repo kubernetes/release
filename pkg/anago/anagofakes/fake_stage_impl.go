@@ -241,6 +241,21 @@ type FakeStageImpl struct {
 	generateVersionArtifactsBOMReturnsOnCall map[int]struct {
 		result1 error
 	}
+	GetImageSubjectsStub        func(string, string, string) ([]*v1.ResourceDescriptor, error)
+	getImageSubjectsMutex       sync.RWMutex
+	getImageSubjectsArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 string
+	}
+	getImageSubjectsReturns struct {
+		result1 []*v1.ResourceDescriptor
+		result2 error
+	}
+	getImageSubjectsReturnsOnCall map[int]struct {
+		result1 []*v1.ResourceDescriptor
+		result2 error
+	}
 	GetOutputDirSubjectsStub        func(*anago.StageOptions, string, string) ([]*v1.ResourceDescriptor, error)
 	getOutputDirSubjectsMutex       sync.RWMutex
 	getOutputDirSubjectsArgsForCall []struct {
@@ -400,6 +415,18 @@ type FakeStageImpl struct {
 		result1 error
 	}
 	pushContainerImagesReturnsOnCall map[int]struct {
+		result1 error
+	}
+	PushImageAttestationStub        func(*v1.Statement, *anago.StageOptions) error
+	pushImageAttestationMutex       sync.RWMutex
+	pushImageAttestationArgsForCall []struct {
+		arg1 *v1.Statement
+		arg2 *anago.StageOptions
+	}
+	pushImageAttestationReturns struct {
+		result1 error
+	}
+	pushImageAttestationReturnsOnCall map[int]struct {
 		result1 error
 	}
 	PushReleaseArtifactsStub        func(*build.Options, string, string) error
@@ -1572,6 +1599,72 @@ func (fake *FakeStageImpl) GenerateVersionArtifactsBOMReturnsOnCall(i int, resul
 	}{result1}
 }
 
+func (fake *FakeStageImpl) GetImageSubjects(arg1 string, arg2 string, arg3 string) ([]*v1.ResourceDescriptor, error) {
+	fake.getImageSubjectsMutex.Lock()
+	ret, specificReturn := fake.getImageSubjectsReturnsOnCall[len(fake.getImageSubjectsArgsForCall)]
+	fake.getImageSubjectsArgsForCall = append(fake.getImageSubjectsArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 string
+	}{arg1, arg2, arg3})
+	stub := fake.GetImageSubjectsStub
+	fakeReturns := fake.getImageSubjectsReturns
+	fake.recordInvocation("GetImageSubjects", []interface{}{arg1, arg2, arg3})
+	fake.getImageSubjectsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeStageImpl) GetImageSubjectsCallCount() int {
+	fake.getImageSubjectsMutex.RLock()
+	defer fake.getImageSubjectsMutex.RUnlock()
+	return len(fake.getImageSubjectsArgsForCall)
+}
+
+func (fake *FakeStageImpl) GetImageSubjectsCalls(stub func(string, string, string) ([]*v1.ResourceDescriptor, error)) {
+	fake.getImageSubjectsMutex.Lock()
+	defer fake.getImageSubjectsMutex.Unlock()
+	fake.GetImageSubjectsStub = stub
+}
+
+func (fake *FakeStageImpl) GetImageSubjectsArgsForCall(i int) (string, string, string) {
+	fake.getImageSubjectsMutex.RLock()
+	defer fake.getImageSubjectsMutex.RUnlock()
+	argsForCall := fake.getImageSubjectsArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeStageImpl) GetImageSubjectsReturns(result1 []*v1.ResourceDescriptor, result2 error) {
+	fake.getImageSubjectsMutex.Lock()
+	defer fake.getImageSubjectsMutex.Unlock()
+	fake.GetImageSubjectsStub = nil
+	fake.getImageSubjectsReturns = struct {
+		result1 []*v1.ResourceDescriptor
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStageImpl) GetImageSubjectsReturnsOnCall(i int, result1 []*v1.ResourceDescriptor, result2 error) {
+	fake.getImageSubjectsMutex.Lock()
+	defer fake.getImageSubjectsMutex.Unlock()
+	fake.GetImageSubjectsStub = nil
+	if fake.getImageSubjectsReturnsOnCall == nil {
+		fake.getImageSubjectsReturnsOnCall = make(map[int]struct {
+			result1 []*v1.ResourceDescriptor
+			result2 error
+		})
+	}
+	fake.getImageSubjectsReturnsOnCall[i] = struct {
+		result1 []*v1.ResourceDescriptor
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeStageImpl) GetOutputDirSubjects(arg1 *anago.StageOptions, arg2 string, arg3 string) ([]*v1.ResourceDescriptor, error) {
 	fake.getOutputDirSubjectsMutex.Lock()
 	ret, specificReturn := fake.getOutputDirSubjectsReturnsOnCall[len(fake.getOutputDirSubjectsArgsForCall)]
@@ -2351,6 +2444,68 @@ func (fake *FakeStageImpl) PushContainerImagesReturnsOnCall(i int, result1 error
 		})
 	}
 	fake.pushContainerImagesReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) PushImageAttestation(arg1 *v1.Statement, arg2 *anago.StageOptions) error {
+	fake.pushImageAttestationMutex.Lock()
+	ret, specificReturn := fake.pushImageAttestationReturnsOnCall[len(fake.pushImageAttestationArgsForCall)]
+	fake.pushImageAttestationArgsForCall = append(fake.pushImageAttestationArgsForCall, struct {
+		arg1 *v1.Statement
+		arg2 *anago.StageOptions
+	}{arg1, arg2})
+	stub := fake.PushImageAttestationStub
+	fakeReturns := fake.pushImageAttestationReturns
+	fake.recordInvocation("PushImageAttestation", []interface{}{arg1, arg2})
+	fake.pushImageAttestationMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) PushImageAttestationCallCount() int {
+	fake.pushImageAttestationMutex.RLock()
+	defer fake.pushImageAttestationMutex.RUnlock()
+	return len(fake.pushImageAttestationArgsForCall)
+}
+
+func (fake *FakeStageImpl) PushImageAttestationCalls(stub func(*v1.Statement, *anago.StageOptions) error) {
+	fake.pushImageAttestationMutex.Lock()
+	defer fake.pushImageAttestationMutex.Unlock()
+	fake.PushImageAttestationStub = stub
+}
+
+func (fake *FakeStageImpl) PushImageAttestationArgsForCall(i int) (*v1.Statement, *anago.StageOptions) {
+	fake.pushImageAttestationMutex.RLock()
+	defer fake.pushImageAttestationMutex.RUnlock()
+	argsForCall := fake.pushImageAttestationArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeStageImpl) PushImageAttestationReturns(result1 error) {
+	fake.pushImageAttestationMutex.Lock()
+	defer fake.pushImageAttestationMutex.Unlock()
+	fake.PushImageAttestationStub = nil
+	fake.pushImageAttestationReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) PushImageAttestationReturnsOnCall(i int, result1 error) {
+	fake.pushImageAttestationMutex.Lock()
+	defer fake.pushImageAttestationMutex.Unlock()
+	fake.PushImageAttestationStub = nil
+	if fake.pushImageAttestationReturnsOnCall == nil {
+		fake.pushImageAttestationReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.pushImageAttestationReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
