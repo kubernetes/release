@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<body>
+<p>Hello Kubernetes Community!</p>
+{{- range .Releases }}
+<p>The cherry-pick deadline for the <b>{{ .Release }}</b> branch is <b>{{ .CherryPickDeadline }} EOD PT.</b></p>
+{{- end }}
+<p>Here are some quick links to search for cherry-pick PRs:</p>
+<ul>
+{{- range .Releases }}
+<li>release-{{ .Release }}: <a href="https://github.com/kubernetes/kubernetes/pulls?q=is%3Apr+is%3Aopen+base%3Arelease-{{ .Release }}+label%3Ado-not-merge%2Fcherry-pick-not-approved">all open cherry-picks</a>, <a href="https://github.com/kubernetes/kubernetes/pulls?q=is%3Apr+is%3Aopen+base%3Arelease-{{ .Release }}+label%3Ado-not-merge%2Fcherry-pick-not-approved+label%3Algtm+label%3Aapproved+-label%3Ado-not-merge%2Fhold+-label%3Ado-not-merge%2Fneeds-kind+-label%3Ado-not-merge%2Frelease-note-label-needed">ready for Release Managers review</a></li>
+{{- end }}
+</ul>
+<p>For PRs that you intend to land for the upcoming patch sets, please ensure they have:</p>
+<ul>
+<li>a release note in the PR description</li>
+<li>/sig</li>
+<li>/kind</li>
+<li>/priority</li>
+<li>/lgtm</li>
+<li>/approve</li>
+<li>passing tests and not on hold</li>
+</ul>
+<p>If your PR does not show up in the "ready for Release Managers review" link above, it is missing one of the items above.</p>
+<p>Details on the cherry-pick process can be found here:<br>
+<a href="https://git.k8s.io/community/contributors/devel/sig-release/cherry-picks.md">https://git.k8s.io/community/contributors/devel/sig-release/cherry-picks.md</a></p>
+<p>We keep general info and up-to-date timelines for patch releases here:<br>
+<a href="https://kubernetes.io/releases/patch-releases/#upcoming-monthly-releases">https://kubernetes.io/releases/patch-releases/#upcoming-monthly-releases</a></p>
+<p>If you have any questions for the Release Managers, please feel free to reach out to us at #release-management (Kubernetes Slack) or <a href="mailto:release-managers@kubernetes.io">release-managers@kubernetes.io</a>.</p>
+<p>We wish everyone a happy and safe week!</p>
+<p>SIG Release Team</p>
+</body>
+</html>
