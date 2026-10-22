@@ -23,8 +23,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-
-	"k8s.io/release/pkg/attestation"
 )
 
 func TestValidateSignAttestationArgs(t *testing.T) {
@@ -106,7 +104,23 @@ func TestRunSignAttestation(t *testing.T) {
 		require.NoFileExists(t, outputPath)
 	})
 
-	t.Run("in place refuses an already signed file and leaves it untouched", func(t *testing.T) {
+	t.Run("in place keeps an already signed file untouched", func(t *testing.T) {
+		t.Parallel()
+
+		original, err := os.ReadFile(filepath.Join("..", "..", "..", "pkg", "attestation", "testdata", "signed-statement.sigstore.json"))
+		require.NoError(t, err)
+
+		bundlePath := filepath.Join(t.TempDir(), "provenance.json")
+		require.NoError(t, os.WriteFile(bundlePath, original, 0o600)) //nolint:gosec // G703: a test directory
+
+		require.NoError(t, runSignAttestation(signOpts, &signAttestationOptions{inPlace: true}, []string{bundlePath}))
+
+		data, err := os.ReadFile(bundlePath)
+		require.NoError(t, err)
+		require.Equal(t, original, data)
+	})
+
+	t.Run("in place fails on a malformed bundle and leaves it untouched", func(t *testing.T) {
 		t.Parallel()
 
 		original := []byte(`{"mediaType": "application/vnd.dev.sigstore.bundle.v0.3+json", "dsseEnvelope": {}}`)
@@ -115,7 +129,7 @@ func TestRunSignAttestation(t *testing.T) {
 		require.NoError(t, os.WriteFile(bundlePath, original, 0o600))
 
 		err := runSignAttestation(signOpts, &signAttestationOptions{inPlace: true}, []string{bundlePath})
-		require.ErrorIs(t, err, attestation.ErrAlreadySigned)
+		require.ErrorContains(t, err, "parsing sigstore bundle")
 
 		data, err := os.ReadFile(bundlePath)
 		require.NoError(t, err)

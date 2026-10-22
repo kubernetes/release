@@ -17,6 +17,8 @@ limitations under the License.
 package release_test
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -466,4 +468,118 @@ func fetchStableMarker() (string, error) {
 	}
 
 	return string(content), nil
+}
+
+func TestSubjects(t *testing.T) {
+	t.Parallel()
+
+	const (
+		registry = "gcr.io/k8s-staging-kubernetes"
+		version  = "v1.36.0+abc"
+		tag      = "v1.36.0_abc"
+	)
+
+	archManifests := map[string][]byte{
+		"amd64": []byte(`{"schemaVersion":2,"config":{"digest":"sha256:amd64"}}`),
+		"arm64": []byte(`{"schemaVersion":2,"config":{"digest":"sha256:arm64"}}`),
+	}
+
+	digest := func(data []byte) string {
+		sum := sha256.Sum256(data)
+
+		return hex.EncodeToString(sum[:])
+	}
+
+	manifestList := func(arches ...string) []byte {
+		manifests := make([]string, 0, len(arches))
+		for _, arch := range arches {
+			manifests = append(manifests, fmt.Sprintf(
+				`{"mediaType":"application/vnd.docker.distribution.manifest.v2+json","digest":"sha256:%s","size":%d,"platform":{"architecture":%q,"os":"linux"}}`,
+				digest(archManifests[arch]), len(archManifests[arch]), arch,
+			))
+		}
+
+		return []byte(`{"schemaVersion":2,"mediaType":"application/vnd.docker.distribution.manifest.list.v2+json","manifests":[` +
+			strings.Join(manifests, ",") + `]}`)
+	}
+
+	for _, tc := range []struct {
+		name         string
+		list         []byte
+		archManifest func(arch string) []byte
+		err          string
+	}{
+		{
+			name:         "success",
+			list:         manifestList("amd64", "arm64"),
+			archManifest: func(arch string) []byte { return archManifests[arch] },
+		},
+		{
+			name:         "missing architecture",
+			list:         manifestList("amd64"),
+			archManifest: func(arch string) []byte { return archManifests[arch] },
+			err:          "has no arm64 image",
+		},
+		{
+			name:         "arch image differs from the manifest list",
+			list:         manifestList("amd64", "arm64"),
+			archManifest: func(string) []byte { return []byte(`{"schemaVersion":2}`) },
+			err:          "references sha256:",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			buildPath := newImagesPath(t)
+			for _, arch := range []string{"amd64", "arm64"} {
+				archPath := filepath.Join(buildPath, release.ImagesPath, arch)
+				require.NoError(t, os.MkdirAll(archPath, os.FileMode(0o755)))
+				require.NoError(t, os.WriteFile(
+					filepath.Join(archPath, "kube-apiserver.tar"), []byte{}, os.FileMode(0o644),
+				))
+			}
+
+			mock := &releasefakes.FakeImageImpl{}
+			mock.RepoTagFromTarballStub = func(path string) (string, error) {
+				return fmt.Sprintf("registry.k8s.io/kube-apiserver-%s:%s", filepath.Base(filepath.Dir(path)), version), nil
+			}
+			mock.RemoteManifestStub = func(ref string) ([]byte, error) {
+				switch ref {
+				case registry + "/kube-apiserver:" + tag:
+					return tc.list, nil
+				case registry + "/kube-apiserver-amd64:" + tag:
+					return tc.archManifest("amd64"), nil
+				case registry + "/kube-apiserver-arm64:" + tag:
+					return tc.archManifest("arm64"), nil
+				}
+
+				return nil, errors.New("unexpected reference " + ref)
+			}
+
+			sut := release.NewImages()
+			sut.SetImpl(mock)
+
+			subjects, err := sut.Subjects(registry, version, buildPath)
+			if tc.err != "" {
+				require.ErrorContains(t, err, tc.err)
+
+				return
+			}
+
+			require.NoError(t, err)
+
+			got := make([]string, 0, len(subjects))
+			for _, subject := range subjects {
+				got = append(got, subject.GetName()+"@"+subject.GetDigest()["sha256"])
+			}
+
+			require.Equal(t, []string{
+				registry + "/kube-apiserver@" + digest(tc.list),
+				registry + "/kube-apiserver-amd64@" + digest(archManifests["amd64"]),
+				registry + "/kube-apiserver@" + digest(archManifests["amd64"]),
+				registry + "/kube-apiserver-arm64@" + digest(archManifests["arm64"]),
+				registry + "/kube-apiserver@" + digest(archManifests["arm64"]),
+			}, got)
+		})
+	}
 }

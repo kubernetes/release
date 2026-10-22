@@ -125,11 +125,14 @@ func NewSigner(opts *SignerOptions) *Signer {
 //counterfeiter:generate . signerImplementation
 type signerImplementation interface {
 	ReadStatement(statementPath string) ([]byte, error)
+	ReadBundle(bundlePath string) (*sbundle.Bundle, error)
 	NewSigner() *signer.Signer
 	IdentityToken(ctx context.Context, keyFile string, keyJSON []byte, impersonate, audience string) (*oauthflow.OIDCIDToken, error)
 	SignStatement(sgnr *signer.Signer, data []byte) (*sbundle.Bundle, error)
 	WriteBundle(bndl *sbundle.Bundle, w io.Writer) error
 	WriteFile(filePath string, data []byte) error
+	HasReferrer(ref, predicateType string) (bool, error)
+	AttachBundle(ref string, bundle []byte, predicateType string) error
 }
 
 // SignedStatement is the result of signing one statement.
@@ -138,6 +141,18 @@ type SignedStatement struct {
 	Path string
 	// Bundle is the sigstore bundle wrapping the signed statement.
 	Bundle *sbundle.Bundle
+}
+
+// ReadBundle returns the sigstore bundle stored in path, a local file or an
+// object in Google Cloud Storage, or nil if path holds a statement that is
+// not signed yet.
+func (s *Signer) ReadBundle(bundlePath string) (*sbundle.Bundle, error) {
+	bndl, err := s.impl.ReadBundle(bundlePath)
+	if err != nil {
+		return nil, fmt.Errorf("reading %s: %w", bundlePath, err)
+	}
+
+	return bndl, nil
 }
 
 // SignFile reads the in-toto statement stored in path, which can be a local
@@ -255,6 +270,26 @@ type defaultSignerImpl struct {
 	// gcs is the object store used to fetch statements from Google Cloud
 	// Storage. Defaults to a GCS client when nil.
 	gcs objectStore
+}
+
+// ReadBundle reads the sigstore bundle in path, a local file or an object in
+// Google Cloud Storage, and returns nil if the file is not signed.
+func (di *defaultSignerImpl) ReadBundle(bundlePath string) (*sbundle.Bundle, error) {
+	data, err := di.readFile(bundlePath)
+	if err != nil {
+		return nil, fmt.Errorf("reading file: %w", err)
+	}
+
+	if !isSigned(data) {
+		return nil, nil //nolint:nilnil // an unsigned statement has no bundle
+	}
+
+	bndl := &sbundle.Bundle{}
+	if err := bndl.UnmarshalJSON(data); err != nil {
+		return nil, fmt.Errorf("parsing sigstore bundle: %w", err)
+	}
+
+	return bndl, nil
 }
 
 // ReadStatement reads the statement in path, a local file or an object in
