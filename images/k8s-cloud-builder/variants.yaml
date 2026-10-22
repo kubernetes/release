@@ -1,4 +1,7 @@
 variants:
+  v1.38-cross1.27-trixie:
+    CONFIG: 'cross1.27-trixie'
+    KUBE_CROSS_VERSION: 'v1.38.0-go1.27.2-trixie.0'
   v1.38-cross1.27-bullseye:
     CONFIG: 'cross1.27'
     KUBE_CROSS_VERSION: 'v1.38.0-go1.27.2-bullseye.0'

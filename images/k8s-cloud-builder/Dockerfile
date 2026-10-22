@@ -38,27 +38,23 @@ RUN apt-get -q update \
         libbtrfs-dev \
         libdevmapper-dev \
         libgpgme-dev \
-        lsb-release \
         make \
         net-tools \
         pandoc \
         rsync \
-        software-properties-common \
         tzdata \
         unzip
 
-# We want to get rid of python2, we want only python3
-#
-# Right now, the image chain looks like this:
-#  k8s-cloud-builder <- registry.k8s.io/kube-cross:v1.13.4-1 <- golang:1.13.4 <- buildpack-deps:buster-scm <- debian:buster
-# python2 comes in with buildpack-deps:buster-scm, because that image installs
-# mercurial which in turn has a hard dependency on python2
-RUN apt-get -qqy purge ".*python2.*" \
-    && apt-get -qqy install \
-        python3-minimal \
-        python3-pip \
-    && update-alternatives --install /usr/bin/python python /usr/bin/python3 90 \
-    && update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 90
+# Use a virtual environment for Debian's externally managed Python.
+RUN apt-get -qqy install \
+        python3-dev \
+        python3-venv \
+    && python3 -m venv /opt/venv
+
+ENV PATH="/opt/venv/bin:${PATH}" \
+    CLOUDSDK_PYTHON=/opt/venv/bin/python3 \
+    CLOUDSDK_GSUTIL_PYTHON=/opt/venv/bin/python3 \
+    CLOUDSDK_PYTHON_SITEPACKAGES=1
 
 # Install Pip packages
 RUN pip3 install --no-cache-dir \
@@ -72,12 +68,10 @@ ARG GOOGLE_DIR='/opt/google'
 
 # Install gcloud
 #
-# Pin to the last release that still supports Python 3.9. The kube-cross base
-# image is Debian bullseye (Python 3.9), but gcloud CLI >= 554.0.0 requires
+# Keep this pin for the Bullseye variants, which use Python 3.9.
+# gcloud CLI >= 554.0.0 requires
 # Python 3.10+ and fails to install on 3.9 with:
 #   TypeError: unsupported operand type(s) for |: 'type' and 'type'
-# TODO: migrate the kube-cross base image to bookworm (Python 3.11) or trixie,
-# then drop this pin and install the latest gcloud SDK again.
 ARG CLOUD_SDK_VERSION=553.0.0
 RUN mkdir -p "${GOOGLE_DIR}" \
     && curl -fsSL "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz" \
@@ -93,21 +87,15 @@ RUN mkdir -p "${GOOGLE_DIR}" \
 ENV PATH="${GOOGLE_DIR}/google-cloud-sdk/bin:${PATH}"
 
 # Install docker cli
-# https://docs.docker.com/install/linux/docker-ce/debian/
+# https://docs.docker.com/engine/install/binaries/
 # Pin to version 24.0.x for API version 1.43 compatibility with DinD in CI
 # See: https://github.com/kubernetes/release/issues/4180
-# Exclude buildx and compose plugins which pull in newer API versions
-RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
-    && apt-key fingerprint 0EBFCD88 \
-    && add-apt-repository \
-      "deb [arch=amd64] https://download.docker.com/linux/debian \
-      $(lsb_release -cs) \
-      stable" \
-    && apt-get -y update \
-    && apt-get -qqy install \
-        --no-install-recommends \
-        docker-ce-cli=5:24.0.* \
-    && apt-mark hold docker-ce-cli
+# Use the static CLI archive because Trixie has no Docker 24 apt package.
+ARG DOCKER_VERSION=24.0.9
+RUN curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz" \
+        -o /tmp/docker.tgz \
+    && tar -xzf /tmp/docker.tgz -C /usr/local/bin --strip-components=1 docker/docker \
+    && rm /tmp/docker.tgz
 
 # Install docker-buildx plugin manually to avoid apt pulling in newer API versions
 # Buildx v0.14.1 supports Docker API 1.41+ (Docker Engine 20.10+)

@@ -32,6 +32,18 @@ commandTests:
   - -c
   - |
     pip list | grep '^crcmod\b'
+- name:           gsutil uses compiled crcmod
+  command:        gsutil
+  args:           [ "version", "-l" ]
+  expectedOutput: [ "compiled crcmod: True" ]
+- name:           gcloud runs with the configured Python
+  command:        gcloud
+  args:           [ "version" ]
+  expectedOutput: [ "Google Cloud SDK" ]
+- name:           docker cli is compatible with the CI daemon
+  command:        docker
+  args:           [ "--version" ]
+  expectedOutput: [ "Docker version 24\\.0\\." ]
 - name:           docker buildx is installed
   command:        docker
   args:           [ "buildx", "version" ]
