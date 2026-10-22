@@ -455,20 +455,29 @@ func TestUpdateGitHubPage(t *testing.T) {
 func TestCheckProvenance(t *testing.T) {
 	for _, tc := range []struct {
 		prepare     func(*anagofakes.FakeReleaseImpl)
+		nomock      bool
 		shouldError bool
 	}{
 		{ // success
 			prepare:     func(*anagofakes.FakeReleaseImpl) {},
 			shouldError: false,
 		},
-		{ // Provenance does not check
+		{ // Provenance does not check in a mock release
 			prepare: func(mock *anagofakes.FakeReleaseImpl) {
 				mock.CheckStageProvenanceReturns(err)
 			},
+			shouldError: false,
+		},
+		{ // Provenance does not check in an official release
+			prepare: func(mock *anagofakes.FakeReleaseImpl) {
+				mock.CheckStageProvenanceReturns(err)
+			},
+			nomock:      true,
 			shouldError: true,
 		},
 	} {
 		opts := anago.DefaultReleaseOptions()
+		opts.NoMock = tc.nomock
 		sut := anago.NewDefaultRelease(opts)
 		sut.SetState(
 			generateTestingReleaseState(&testStateParameters{versionsTag: &testVersionTag}),
