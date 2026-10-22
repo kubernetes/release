@@ -30,6 +30,6 @@ steps:
 substitutions:
   _GIT_TAG: "12345"
   _DOCKER_VERSION: "29"
-  _GO_VERSION: "1.26.5"
+  _GO_VERSION: "1.27.3-alpine3.24"
 tags:
   - gcb-docker-gcloud

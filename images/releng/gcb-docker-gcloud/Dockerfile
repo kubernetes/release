@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG GO_VERSION=1
+ARG GO_VERSION=1-alpine
 # Includes bash, docker, and gcloud
-FROM golang:${GO_VERSION}-alpine
+FROM golang:${GO_VERSION}
 # upstream go image sets GOTOOLCHAIN=local
 # this means that we won't auto-select the appropriate go for the project being
 # built, so we set it back to auto, which is the default if GOTOOLCHAIN is not set

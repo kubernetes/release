@@ -37,6 +37,8 @@ dependencies:
         match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
       - path: images/releng/ci/variants.yaml
         match: "GO_VERSION: '\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?'"
+      - path: images/releng/gcb-docker-gcloud/cloudbuild.yaml
+        match: "_GO_VERSION: \"\\d+.\\d+(alpha|beta|rc)?\\.?(\\d+)?(-alpine\\d+\\.\\d+)?\""
 
   # Golang (for images, previous stable)
   # To be updated before kubernetes/kubernetes update
