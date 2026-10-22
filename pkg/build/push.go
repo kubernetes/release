@@ -354,6 +354,9 @@ func (bi *Instance) StageLocalArtifacts() error {
 	for filename, sbom := range map[string]string{
 		"kubernetes-source.spdx":  filepath.Join(os.TempDir(), fmt.Sprintf("source-bom-%s.spdx", bi.opts.Version)),
 		"kubernetes-release.spdx": filepath.Join(os.TempDir(), fmt.Sprintf("release-bom-%s.spdx", bi.opts.Version)),
+		"kubernetes-release.spdx3.json": filepath.Join(
+			os.TempDir(), fmt.Sprintf("release-bom-%s.spdx3.json", bi.opts.Version),
+		),
 	} {
 		if err := helpers.CopyFileLocal(
 			sbom, filepath.Join(stageDir, filename), false,
