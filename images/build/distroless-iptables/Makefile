@@ -16,10 +16,10 @@
 include $(CURDIR)/../../Makefile.common-image
 
 IMGNAME = distroless-iptables
-IMAGE_VERSION ?= v0.10.1
+IMAGE_VERSION ?= v0.10.2
 CONFIG ?= distroless-bookworm
 BASEIMAGE ?= debian:bookworm-20260713-slim
-GORUNNER_VERSION ?= v2.4.0-go1.27.2-bookworm.0
+GORUNNER_VERSION ?= v2.4.0-go1.27.3-bookworm.0
 
 BASE_REGISTRY ?= registry.k8s.io/build-image
 GORUNNERIMAGE ?= $(BASE_REGISTRY)/go-runner:$(GORUNNER_VERSION)
