@@ -248,6 +248,18 @@ type FakeReleaseImpl struct {
 	pushTagsReturnsOnCall map[int]struct {
 		result1 error
 	}
+	SignProvenanceStub        func([]string, bool) error
+	signProvenanceMutex       sync.RWMutex
+	signProvenanceArgsForCall []struct {
+		arg1 []string
+		arg2 bool
+	}
+	signProvenanceReturns struct {
+		result1 error
+	}
+	signProvenanceReturnsOnCall map[int]struct {
+		result1 error
+	}
 	SubmitStub        func(*gcb.Options) error
 	submitMutex       sync.RWMutex
 	submitArgsForCall []struct {
@@ -1374,6 +1386,73 @@ func (fake *FakeReleaseImpl) PushTagsReturnsOnCall(i int, result1 error) {
 		})
 	}
 	fake.pushTagsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) SignProvenance(arg1 []string, arg2 bool) error {
+	var arg1Copy []string
+	if arg1 != nil {
+		arg1Copy = make([]string, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.signProvenanceMutex.Lock()
+	ret, specificReturn := fake.signProvenanceReturnsOnCall[len(fake.signProvenanceArgsForCall)]
+	fake.signProvenanceArgsForCall = append(fake.signProvenanceArgsForCall, struct {
+		arg1 []string
+		arg2 bool
+	}{arg1Copy, arg2})
+	stub := fake.SignProvenanceStub
+	fakeReturns := fake.signProvenanceReturns
+	fake.recordInvocation("SignProvenance", []interface{}{arg1Copy, arg2})
+	fake.signProvenanceMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeReleaseImpl) SignProvenanceCallCount() int {
+	fake.signProvenanceMutex.RLock()
+	defer fake.signProvenanceMutex.RUnlock()
+	return len(fake.signProvenanceArgsForCall)
+}
+
+func (fake *FakeReleaseImpl) SignProvenanceCalls(stub func([]string, bool) error) {
+	fake.signProvenanceMutex.Lock()
+	defer fake.signProvenanceMutex.Unlock()
+	fake.SignProvenanceStub = stub
+}
+
+func (fake *FakeReleaseImpl) SignProvenanceArgsForCall(i int) ([]string, bool) {
+	fake.signProvenanceMutex.RLock()
+	defer fake.signProvenanceMutex.RUnlock()
+	argsForCall := fake.signProvenanceArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeReleaseImpl) SignProvenanceReturns(result1 error) {
+	fake.signProvenanceMutex.Lock()
+	defer fake.signProvenanceMutex.Unlock()
+	fake.SignProvenanceStub = nil
+	fake.signProvenanceReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeReleaseImpl) SignProvenanceReturnsOnCall(i int, result1 error) {
+	fake.signProvenanceMutex.Lock()
+	defer fake.signProvenanceMutex.Unlock()
+	fake.SignProvenanceStub = nil
+	if fake.signProvenanceReturnsOnCall == nil {
+		fake.signProvenanceReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.signProvenanceReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
