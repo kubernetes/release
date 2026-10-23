@@ -26,12 +26,32 @@ commandTests:
   - -c
   - |
     echo "$PATH" | tr : '\n' | grep '^/opt/google/google-cloud-sdk/bin$'
-- name:           crcmod python module is installed
+- name:           crcmod python module is installed for gcloud
   command:        bash
   args:
   - -c
   - |
-    pip list | grep '^crcmod\b'
+    "${CLOUDSDK_PYTHON}" -m pip list | grep '^crcmod\b'
+- name:           gcloud Python does not see the osc and yq packages
+  command:        bash
+  args:
+  - -c
+  - |
+    "${CLOUDSDK_PYTHON}" -c 'import osc'
+  expectedError:  [ "ModuleNotFoundError" ]
+  exitCode:       1
+- name:           gsutil uses compiled crcmod
+  command:        gsutil
+  args:           [ "version", "-l" ]
+  expectedOutput: [ "compiled crcmod: True" ]
+- name:           gcloud runs with the configured Python
+  command:        gcloud
+  args:           [ "version" ]
+  expectedOutput: [ "Google Cloud SDK" ]
+- name:           docker cli is compatible with the CI daemon
+  command:        docker
+  args:           [ "--version" ]
+  expectedOutput: [ "Docker version 24\\.0\\." ]
 - name:           docker buildx is installed
   command:        docker
   args:           [ "buildx", "version" ]

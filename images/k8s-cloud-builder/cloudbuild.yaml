@@ -11,6 +11,7 @@ steps:
     - --tag=${_REGISTRY}/k8s-cloud-builder:latest-${_CONFIG}
     - --tag=${_REGISTRY}/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
     - --build-arg=KUBE_CROSS_VERSION=${_KUBE_CROSS_VERSION}
+    - --build-arg=CLOUD_SDK_VERSION=${_CLOUD_SDK_VERSION}
     - .
   - name: gcr.io/gcp-runtimes/container-structure-test
     id: test
@@ -26,6 +27,8 @@ substitutions:
   _PULL_BASE_REF: 'dev'
   _CONFIG: 'cross0.0'
   _KUBE_CROSS_VERSION: 'v0.0.0-go0.0.0-codename.0'
+  # Variants that do not set CLOUD_SDK_VERSION get the latest gcloud CLI.
+  _CLOUD_SDK_VERSION: 'latest'
   _REGISTRY: 'fake.repository/registry-name'
 
 images:
