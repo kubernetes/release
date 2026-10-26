@@ -25,45 +25,45 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Install packages
 RUN apt-get -q update \
     && apt-get install -qqy \
-        apt-transport-https \
         bsdmainutils \
         ca-certificates \
         curl \
         gettext-base \
         git \
-        gnupg2 \
         grep \
         jq \
         libassuan-dev \
         libbtrfs-dev \
         libdevmapper-dev \
         libgpgme-dev \
-        lsb-release \
         make \
         net-tools \
         pandoc \
+        python3-dev \
+        python3-venv \
         rsync \
-        software-properties-common \
         tzdata \
         unzip
 
-# We want to get rid of python2, we want only python3
-#
-# Right now, the image chain looks like this:
-#  k8s-cloud-builder <- registry.k8s.io/kube-cross:v1.13.4-1 <- golang:1.13.4 <- buildpack-deps:buster-scm <- debian:buster
-# python2 comes in with buildpack-deps:buster-scm, because that image installs
-# mercurial which in turn has a hard dependency on python2
-RUN apt-get -qqy purge ".*python2.*" \
-    && apt-get -qqy install \
-        python3-minimal \
-        python3-pip \
-    && update-alternatives --install /usr/bin/python python /usr/bin/python3 90 \
-    && update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 90
+# Use virtual environments for Debian's externally managed Python.
+# gcloud gets its own venv with only crcmod, so that the osc and yq
+# dependencies cannot shadow the libraries that gcloud bundles.
+RUN python3 -m venv /opt/gcloud-venv \
+    && python3 -m venv /opt/venv
+
+ENV PATH="/opt/venv/bin:${PATH}" \
+    CLOUDSDK_PYTHON=/opt/gcloud-venv/bin/python3 \
+    CLOUDSDK_GSUTIL_PYTHON=/opt/gcloud-venv/bin/python3 \
+    CLOUDSDK_PYTHON_SITEPACKAGES=1
 
 # Install Pip packages
-RUN pip3 install --no-cache-dir \
+# Upgrade pip first, because the Bullseye venv ships pip 20.3.4.
+RUN /opt/gcloud-venv/bin/pip install --no-cache-dir -U pip \
+    && /opt/gcloud-venv/bin/pip install --no-cache-dir \
       # for gcloud https://cloud.google.com/storage/docs/gsutil/addlhelp/CRC32CandInstallingcrcmod
       crcmod \
+    && pip3 install --no-cache-dir -U pip \
+    && pip3 install --no-cache-dir \
       osc \
       yq
 
@@ -72,15 +72,19 @@ ARG GOOGLE_DIR='/opt/google'
 
 # Install gcloud
 #
-# Pin to the last release that still supports Python 3.9. The kube-cross base
-# image is Debian bullseye (Python 3.9), but gcloud CLI >= 554.0.0 requires
-# Python 3.10+ and fails to install on 3.9 with:
+# CLOUD_SDK_VERSION is set per variant in variants.yaml, and "latest" installs
+# the current release. The Bullseye variants pin 553.0.0 because they use
+# Python 3.9, and gcloud CLI >= 554.0.0 requires Python 3.10+ and fails to
+# install on 3.9 with:
 #   TypeError: unsupported operand type(s) for |: 'type' and 'type'
-# TODO: migrate the kube-cross base image to bookworm (Python 3.11) or trixie,
-# then drop this pin and install the latest gcloud SDK again.
-ARG CLOUD_SDK_VERSION=553.0.0
-RUN mkdir -p "${GOOGLE_DIR}" \
-    && curl -fsSL "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz" \
+ARG CLOUD_SDK_VERSION=latest
+RUN if [ "${CLOUD_SDK_VERSION}" = latest ]; then \
+        CLOUD_SDK_TARBALL=google-cloud-cli-linux-x86_64.tar.gz; \
+    else \
+        CLOUD_SDK_TARBALL="google-cloud-cli-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz"; \
+    fi \
+    && mkdir -p "${GOOGLE_DIR}" \
+    && curl -fsSL "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/${CLOUD_SDK_TARBALL}" \
       | tar -xz -C "${GOOGLE_DIR}" \
     && "${GOOGLE_DIR}/google-cloud-sdk/install.sh" \
         --disable-installation-options \
@@ -93,29 +97,27 @@ RUN mkdir -p "${GOOGLE_DIR}" \
 ENV PATH="${GOOGLE_DIR}/google-cloud-sdk/bin:${PATH}"
 
 # Install docker cli
-# https://docs.docker.com/install/linux/docker-ce/debian/
+# https://docs.docker.com/engine/install/binaries/
 # Pin to version 24.0.x for API version 1.43 compatibility with DinD in CI
 # See: https://github.com/kubernetes/release/issues/4180
-# Exclude buildx and compose plugins which pull in newer API versions
-RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
-    && apt-key fingerprint 0EBFCD88 \
-    && add-apt-repository \
-      "deb [arch=amd64] https://download.docker.com/linux/debian \
-      $(lsb_release -cs) \
-      stable" \
-    && apt-get -y update \
-    && apt-get -qqy install \
-        --no-install-recommends \
-        docker-ce-cli=5:24.0.* \
-    && apt-mark hold docker-ce-cli
+# Use the static CLI archive because Trixie has no Docker 24 apt package.
+ARG DOCKER_VERSION=24.0.9
+ARG DOCKER_SHA256=692ecfc28333485d184f628b74c25b2894cee9495a51a5418ba60ef95bf733ca
+RUN curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz" \
+        -o /tmp/docker.tgz \
+    && echo "${DOCKER_SHA256}  /tmp/docker.tgz" | sha256sum -c - \
+    && tar -xzf /tmp/docker.tgz -C /usr/local/bin --strip-components=1 docker/docker \
+    && rm /tmp/docker.tgz
 
 # Install docker-buildx plugin manually to avoid apt pulling in newer API versions
 # Buildx v0.14.1 supports Docker API 1.41+ (Docker Engine 20.10+)
 # See: https://github.com/docker/buildx/releases
 ARG BUILDX_VERSION=0.14.1
+ARG BUILDX_SHA256=68e4f8895331ade982de8085a8c137b8af65f3ef95040b6c6113552243638508
 RUN mkdir -p /usr/lib/docker/cli-plugins \
     && curl -fsSL "https://github.com/docker/buildx/releases/download/v${BUILDX_VERSION}/buildx-v${BUILDX_VERSION}.linux-amd64" \
         -o /usr/lib/docker/cli-plugins/docker-buildx \
+    && echo "${BUILDX_SHA256}  /usr/lib/docker/cli-plugins/docker-buildx" | sha256sum -c - \
     && chmod +x /usr/lib/docker/cli-plugins/docker-buildx
 
 # Cleanup a bit
