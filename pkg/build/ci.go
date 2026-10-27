@@ -55,6 +55,10 @@ func (bi *Instance) Build() error {
 		)
 	}
 
+	if err := bi.checkS3Options(); err != nil {
+		return err
+	}
+
 	buildExists, buildExistsErr := bi.checkBuildExists()
 	if buildExistsErr != nil {
 		return fmt.Errorf("checking if build exists: %w", buildExistsErr)
@@ -66,12 +70,6 @@ func (bi *Instance) Build() error {
 
 	logrus.Infof("Proceeding with a new build...")
 
-	// TODO: Should this be configurable?
-	envErr := os.Setenv("KUBE_RELEASE_RUN_TESTS", "n")
-	if envErr != nil {
-		return fmt.Errorf("setting 'KUBE_RELEASE_RUN_TESTS' to 'n': %w", envErr)
-	}
-
 	// Configure docker client for gcr.io authentication to allow communication
 	// with non-public registries.
 	if bi.opts.ConfigureDocker {
@@ -80,26 +78,8 @@ func (bi *Instance) Build() error {
 		}
 	}
 
-	if cleanErr := command.New(
-		"make",
-		"clean",
-	).RunSuccess(); cleanErr != nil {
-		return fmt.Errorf("running make clean: %w", cleanErr)
-	}
-
-	// Create a Kubernetes build
-	releaseType := "release"
-	if bi.opts.Fast {
-		releaseType = "quick-release"
-	}
-
-	cmd := command.New("make", releaseType)
-	if bi.opts.KubeBuildPlatforms != "" {
-		cmd.Env("KUBE_BUILD_PLATFORMS=" + bi.opts.KubeBuildPlatforms)
-	}
-
-	if buildErr := cmd.RunSuccess(); buildErr != nil {
-		return fmt.Errorf("running make %s: %w", releaseType, buildErr)
+	if err := bi.makeRelease(); err != nil {
+		return err
 	}
 
 	// Pushing the build
@@ -121,40 +101,20 @@ func (bi *Instance) checkBuildExists() (bool, error) {
 		return false, nil
 	}
 
-	gcsBuildRoot, gcsBuildRootErr := bi.getGCSBuildPath(bi.opts.Version)
-	if gcsBuildRootErr != nil {
-		return false, fmt.Errorf("get GCS build root: %w", gcsBuildRootErr)
-	}
+	var (
+		foundItems  int
+		existErrors []error
+	)
 
-	kubernetesTar, kubernetesTarErr := bi.objStore.NormalizePath(gcsBuildRoot, release.KubernetesTar)
-	if kubernetesTarErr != nil {
-		return false, fmt.Errorf("get tarball path: %w", kubernetesTarErr)
-	}
+	if bi.isS3() {
+		foundItems, existErrors = bi.s3BuildPathsExist(version)
+	} else {
+		var err error
 
-	binPath, binPathErr := bi.objStore.NormalizePath(gcsBuildRoot, "bin")
-	if binPathErr != nil {
-		return false, fmt.Errorf("get binary path: %w", binPathErr)
-	}
-
-	gcsBuildPaths := []string{
-		gcsBuildRoot,
-		kubernetesTar,
-		binPath,
-	}
-
-	// TODO: Do we need to handle the errors more effectively?
-	existErrors := []error{}
-	foundItems := 0
-
-	for _, path := range gcsBuildPaths {
-		logrus.Infof("Checking if GCS build path (%s) exists", path)
-
-		exists, existErr := bi.objStore.PathExists(path)
-		if existErr != nil || !exists {
-			existErrors = append(existErrors, existErr)
+		foundItems, existErrors, err = bi.gcsBuildPathsExist(version)
+		if err != nil {
+			return false, err
 		}
-
-		foundItems++
 	}
 
 	images := release.NewImages()
@@ -174,4 +134,68 @@ func (bi *Instance) checkBuildExists() (bool, error) {
 	logrus.Infof("The following error(s) occurred while looking for a build: %v", existErrors)
 
 	return false, nil
+}
+
+func (bi *Instance) gcsBuildPathsExist(version string) (foundItems int, existErrors []error, err error) {
+	gcsBuildRoot, gcsBuildRootErr := bi.getGCSBuildPath(version)
+	if gcsBuildRootErr != nil {
+		return 0, nil, fmt.Errorf("get GCS build root: %w", gcsBuildRootErr)
+	}
+
+	kubernetesTar, kubernetesTarErr := bi.objStore.NormalizePath(gcsBuildRoot, release.KubernetesTar)
+	if kubernetesTarErr != nil {
+		return 0, nil, fmt.Errorf("get tarball path: %w", kubernetesTarErr)
+	}
+
+	binPath, binPathErr := bi.objStore.NormalizePath(gcsBuildRoot, "bin")
+	if binPathErr != nil {
+		return 0, nil, fmt.Errorf("get binary path: %w", binPathErr)
+	}
+
+	gcsBuildPaths := []string{
+		gcsBuildRoot,
+		kubernetesTar,
+		binPath,
+	}
+
+	// TODO: Do we need to handle the errors more effectively?
+	for _, path := range gcsBuildPaths {
+		logrus.Infof("Checking if GCS build path (%s) exists", path)
+
+		exists, existErr := bi.objStore.PathExists(path)
+		if existErr != nil || !exists {
+			existErrors = append(existErrors, existErr)
+		}
+
+		foundItems++
+	}
+
+	return foundItems, existErrors, nil
+}
+
+// makeRelease runs the Kubernetes release build in RepoRoot, or in the current
+// working directory if RepoRoot is not set.
+func (bi *Instance) makeRelease() error {
+	if err := command.NewWithWorkDir(
+		bi.opts.RepoRoot, "make", "clean",
+	).RunSuccess(); err != nil {
+		return fmt.Errorf("running make clean: %w", err)
+	}
+
+	releaseType := "release"
+	if bi.opts.Fast {
+		releaseType = "quick-release"
+	}
+
+	cmd := command.NewWithWorkDir(bi.opts.RepoRoot, "make", releaseType).
+		Env("KUBE_RELEASE_RUN_TESTS=n")
+	if bi.opts.KubeBuildPlatforms != "" {
+		cmd.Env("KUBE_BUILD_PLATFORMS=" + bi.opts.KubeBuildPlatforms)
+	}
+
+	if err := cmd.RunSuccess(); err != nil {
+		return fmt.Errorf("running make %s: %w", releaseType, err)
+	}
+
+	return nil
 }

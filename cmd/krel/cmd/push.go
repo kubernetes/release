@@ -37,13 +37,14 @@ Scenarios:
 
 krel push                                   - Do a developer push
 krel push --ci                              - Do a CI push
-krel push --bucket=kubernetes-release-$USER - Do a developer push to kubernetes-release-$USER`
+krel push --bucket=kubernetes-release-$USER - Do a developer push to kubernetes-release-$USER
+krel push --ci --bucket=s3://bucket/prefix  - Do a CI push to s3://bucket/prefix/ci`
 
 var pushBuildOpts = &build.Options{}
 
 var pushBuildCmd = &cobra.Command{
 	Use:           "push",
-	Short:         "Push Kubernetes release artifacts to Google Cloud Storage (GCS)",
+	Short:         "Push Kubernetes release artifacts to Google Cloud Storage (GCS) or Amazon S3",
 	Long:          pushCmdDescription,
 	Example:       pushCmdExample,
 	SilenceUsage:  true,
@@ -83,14 +84,14 @@ func init() {
 		&pushBuildOpts.PrivateBucket,
 		"private-bucket",
 		false,
-		"Do not mark published bits on GCS as publicly readable",
+		"Do not mark published bits on GCS as publicly readable (not supported for S3)",
 	)
 
 	pushBuildCmd.PersistentFlags().StringVar(
 		&pushBuildOpts.Bucket,
 		"bucket",
 		"devel",
-		"Specify an alternate bucket for pushes (normally 'devel' or 'ci')",
+		"Specify an alternate bucket for pushes (normally 'devel' or 'ci'), or an s3://<bucket>[/<prefix>] URL to push to Amazon S3, which stores every '+' in the object keys as a space",
 	)
 
 	pushBuildCmd.PersistentFlags().StringVar(
@@ -116,11 +117,19 @@ func init() {
 	)
 
 	pushBuildCmd.PersistentFlags().StringVar(
-		&pushBuildOpts.GCSRoot,
+		&pushBuildOpts.BucketRoot,
+		"bucket-root",
+		"",
+		"Specify an alternate path in the bucket to push artifacts to",
+	)
+
+	pushBuildCmd.PersistentFlags().StringVar(
+		&pushBuildOpts.GCSRoot, //nolint:staticcheck // --gcs-root is deprecated, too
 		"gcs-root",
 		"",
 		"Specify an alternate GCS path to push artifacts to",
 	)
+	_ = pushBuildCmd.PersistentFlags().MarkDeprecated("gcs-root", "This flag is deprecated and will be removed in v0.24.0. Use --bucket-root instead.")
 
 	pushBuildCmd.PersistentFlags().StringVar(
 		&pushBuildOpts.VersionSuffix,

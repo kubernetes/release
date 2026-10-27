@@ -50,3 +50,26 @@ func TestBuildDirFromRepoRoot(t *testing.T) {
 		})
 	}
 }
+
+func TestBucketRoot(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		opts     *Options
+		expected string
+	}{
+		"defaults to the build type": {opts: &Options{CI: true}, expected: "ci"},
+		"deprecated GCSRoot":         {opts: &Options{GCSRoot: "old"}, expected: "old"},
+		"BucketRoot":                 {opts: &Options{BucketRoot: "new"}, expected: "new"},
+		"BucketRoot over GCSRoot":    {opts: &Options{BucketRoot: "new", GCSRoot: "old"}, expected: "new"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			opts := NewInstance(tc.opts).opts
+			if opts.BucketRoot != tc.expected || opts.GCSRoot != tc.expected {
+				t.Errorf("got BucketRoot %q and GCSRoot %q, want %q", opts.BucketRoot, opts.GCSRoot, tc.expected)
+			}
+		})
+	}
+}

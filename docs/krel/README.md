@@ -56,7 +56,7 @@ krel has several subcommands that perform various tasks during the release lifec
 | Subcommand                          | Description                                                                                 |
 | ----------------------------------- | --------------------------------------------------------------------------------------------|
 | announce                            | Build and announce Kubernetes releases                                                      |
-| ci-build                            | Build Kubernetes in CI and push release artifacts to Google Cloud Storage (GCS)             |
+| ci-build                            | Build Kubernetes in CI and push release artifacts to GCS or Amazon S3                       |
 | cve                                 | Add and edit CVE information                                                                |
 | [ff](ff.md)                         | Fast forward a Kubernetes release branch                                                    |
 | history                             | Run history to build a list of commands that ran when cutting a specific Kubernetes release |
