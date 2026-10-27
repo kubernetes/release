@@ -107,6 +107,10 @@ var ExtraWindowsStageFiles = []stageFile{
 
 // Push pushes the build by taking the internal options into account.
 func (bi *Instance) Push() error {
+	if err := bi.checkS3Options(); err != nil {
+		return err
+	}
+
 	version, err := bi.findLatestVersion()
 	if err != nil {
 		return fmt.Errorf("find latest version: %w", err)
@@ -128,6 +132,10 @@ func (bi *Instance) Push() error {
 
 	if err := bi.PushContainerImages(); err != nil {
 		return fmt.Errorf("push container images: %w", err)
+	}
+
+	if bi.isS3() {
+		return bi.pushToS3(version)
 	}
 
 	gcsDest, gcsDestErr := bi.getGCSBuildPath(version)
@@ -161,7 +169,7 @@ func (bi *Instance) Push() error {
 		version,
 		bi.opts.BuildDir,
 		bi.opts.Bucket,
-		bi.opts.GCSRoot,
+		bi.opts.BucketRoot,
 		extraVersionMarkers,
 		bi.opts.PrivateBucket,
 		bi.opts.Fast,
@@ -254,8 +262,20 @@ func setupBuildDir(bi *Instance) {
 }
 
 // CheckReleaseBucket verifies that a release bucket exists and the current
-// authenticated GCP user has write permissions to it.
+// authenticated GCP user has write permissions to it. For an s3:// bucket, it
+// only verifies access, as S3 cannot check write permissions without writing.
 func (bi *Instance) CheckReleaseBucket() error {
+	if bi.isS3() {
+		bucket, _ := bi.s3Location()
+		logrus.Infof("Checking access to S3 bucket %s", bucket)
+
+		if err := bi.s3.CheckBucket(bucket); err != nil {
+			return fmt.Errorf("access S3 bucket %s: %w", bucket, err)
+		}
+
+		return nil
+	}
+
 	logrus.Infof("Checking bucket %s for write permissions", bi.opts.Bucket)
 
 	client, err := storage.NewClient(context.Background())

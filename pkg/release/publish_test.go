@@ -161,6 +161,57 @@ func TestPublishVersion(t *testing.T) {
 	}
 }
 
+func TestVersionMarkers(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		buildType   string
+		version     string
+		extra       []string
+		fast        bool
+		expected    []string
+		shouldError bool
+	}{
+		{
+			buildType: "ci",
+			version:   "v1.36.0-alpha.0.12+0123456789abcd",
+			extra:     []string{"extra"},
+			expected:  []string{"latest", "latest-1", "latest-1.36", "extra"},
+		},
+		{
+			buildType: "ci",
+			version:   "v1.36.0-alpha.0.12+0123456789abcd",
+			fast:      true,
+			expected:  []string{"latest-fast"},
+		},
+		{
+			buildType: "release",
+			version:   "v1.36.1",
+			expected:  []string{"stable", "stable-1", "stable-1.36"},
+		},
+		{
+			buildType: "release",
+			version:   "v1.36.0-rc.1",
+			expected:  []string{"latest", "latest-1", "latest-1.36"},
+		},
+		{
+			buildType:   "ci",
+			version:     "wrong",
+			shouldError: true,
+		},
+	} {
+		markers, err := release.VersionMarkers(tc.buildType, tc.version, tc.extra, tc.fast)
+		if tc.shouldError {
+			require.Error(t, err)
+
+			continue
+		}
+
+		require.NoError(t, err)
+		require.Equal(t, tc.expected, markers)
+	}
+}
+
 func TestPublishReleaseNotesIndex(t *testing.T) {
 	err := errors.New("")
 

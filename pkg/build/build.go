@@ -30,6 +30,7 @@ var DefaultExtraVersionMarkers = []string{}
 type Instance struct {
 	opts     *Options
 	objStore object.GCS
+	s3       s3Client
 }
 
 // NewInstance can be used to create a new build `Instance`.
@@ -38,11 +39,12 @@ func NewInstance(opts *Options) *Instance {
 	instance := &Instance{
 		opts:     opts,
 		objStore: *object.NewGCS(),
+		s3:       &awsCLI{},
 	}
 
 	instance.setBuildType()
 	instance.setBucket()
-	instance.setGCSRoot()
+	instance.setBucketRoot()
 
 	return instance
 }
@@ -50,6 +52,12 @@ func NewInstance(opts *Options) *Instance {
 // Options are the main options to pass to `Instance`.
 type Options struct {
 	// Specify an alternate bucket for pushes (normally 'devel' or 'ci').
+	//
+	// An s3://<bucket>[/<prefix>] URL pushes to Amazon S3 instead of GCS, in
+	// the same layout under the prefix, with the aws CLI. Unlike on GCS:
+	//   - the objects get no ACLs, so they are only public if the bucket policy
+	//     makes them, and PrivateBucket is rejected.
+	//   - every "+" in the object keys is stored as a space, see S3ObjectKey.
 	Bucket string
 
 	// Specify an alternate build directory (relative to RepoRoot). Will be automatically determined
@@ -57,7 +65,7 @@ type Options struct {
 	BuildDir string
 
 	// Used to make determinations on where to push artifacts
-	// Can be overridden using `GCSRoot`.
+	// Can be overridden using `BucketRoot`.
 	//
 	// May be one of: 'devel', 'ci', 'release'
 	BuildType string
@@ -74,7 +82,7 @@ type Options struct {
 	// only).
 	ExtraVersionMarkers []string
 
-	// The top-level GCS directory builds will be released to.
+	// The top-level directory in the bucket builds will be released to.
 	// If specified, it will override BuildType.
 	//
 	// When unset:
@@ -83,11 +91,16 @@ type Options struct {
 	//
 	// When set:
 	//   - BuildType: "ci"
-	//   - GCSRoot: "new-root"
+	//   - BucketRoot: "new-root"
 	//   - final path: gs://<bucket>/new-root
 	//
 	// This option exists to handle the now-deprecated GCSSuffix option, which
 	// was not plumbed through
+	BucketRoot string
+
+	// GCSRoot is the former name of BucketRoot, which takes precedence.
+	//
+	// Deprecated: Use BucketRoot instead. GCSRoot will be removed in v0.24.0.
 	GCSRoot string
 
 	// Version to be used. Usually automatically discovered, but it can be
@@ -116,7 +129,8 @@ type Options struct {
 	// Do not sign the pushed container images.
 	NoSign bool
 
-	// Do not mark published bits on GCS as publicly readable.
+	// Do not mark published bits on GCS as publicly readable. Not supported
+	// for S3.
 	PrivateBucket bool
 
 	// Validate that the remote image digests exists.
@@ -138,7 +152,7 @@ func (bi *Instance) getGCSBuildPath(version string) (string, error) {
 
 	buildPath, err := bi.objStore.GetReleasePath(
 		bi.opts.Bucket,
-		bi.opts.GCSRoot,
+		bi.opts.BucketRoot,
 		version,
 		bi.opts.Fast,
 	)
@@ -168,10 +182,17 @@ func (bi *Instance) setBuildType() {
 	logrus.Infof("Build type has been set to %s", bi.opts.BuildType)
 }
 
-func (bi *Instance) setGCSRoot() {
-	if bi.opts.GCSRoot == "" {
-		bi.opts.GCSRoot = bi.opts.BuildType
+func (bi *Instance) setBucketRoot() {
+	if bi.opts.BucketRoot == "" {
+		bi.opts.BucketRoot = bi.opts.GCSRoot
 	}
 
-	logrus.Infof("GCS root has been set to %s", bi.opts.GCSRoot)
+	if bi.opts.BucketRoot == "" {
+		bi.opts.BucketRoot = bi.opts.BuildType
+	}
+
+	// Callers may still read the deprecated field until it is removed.
+	bi.opts.GCSRoot = bi.opts.BucketRoot
+
+	logrus.Infof("Bucket root has been set to %s", bi.opts.BucketRoot)
 }

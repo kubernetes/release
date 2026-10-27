@@ -174,18 +174,9 @@ func (p *Publisher) PublishVersion(
 ) error {
 	logrus.Info("Publishing version")
 
-	releaseType := "latest"
-
-	if buildType == "release" {
-		// For release/ targets, type should be 'stable'
-		if !strings.Contains(version, ReleaseTypeAlpha) && !strings.Contains(version, ReleaseTypeBeta) && !strings.Contains(version, ReleaseTypeRC) {
-			releaseType = "stable"
-		}
-	}
-
-	sv, err := helpers.TagStringToSemver(version)
+	versionMarkers, err := VersionMarkers(buildType, version, extraVersionMarkers, fast)
 	if err != nil {
-		return fmt.Errorf("invalid version %s", version)
+		return err
 	}
 
 	markerPath, markerPathErr := p.client.GetMarkerPath(
@@ -211,25 +202,6 @@ func (p *Publisher) PublishVersion(
 	// TODO: This should explicitly do a `gsutil ls` via gcs.PathExists
 	if err := p.client.GSUtil("ls", releasePath); err != nil {
 		return fmt.Errorf("release files don't exist at %s: %w", releasePath, err)
-	}
-
-	var versionMarkers []string
-	if fast {
-		versionMarkers = append(
-			versionMarkers,
-			releaseType+"-fast",
-		)
-	} else {
-		versionMarkers = append(
-			versionMarkers,
-			releaseType,
-			fmt.Sprintf("%s-%d", releaseType, sv.Major),
-			fmt.Sprintf("%s-%d.%d", releaseType, sv.Major, sv.Minor),
-		)
-	}
-
-	if len(extraVersionMarkers) > 0 {
-		versionMarkers = append(versionMarkers, extraVersionMarkers...)
 	}
 
 	logrus.Infof("Publish version markers: %v", versionMarkers)
@@ -264,6 +236,43 @@ func (p *Publisher) PublishVersion(
 	}
 
 	return nil
+}
+
+// VersionMarkers returns the names, without the ".txt" extension, of the
+// version marker files that PublishVersion updates for version.
+func VersionMarkers(
+	buildType, version string, extraVersionMarkers []string, fast bool,
+) ([]string, error) {
+	releaseType := "latest"
+
+	if buildType == "release" {
+		// For release/ targets, type should be 'stable'
+		if !strings.Contains(version, ReleaseTypeAlpha) && !strings.Contains(version, ReleaseTypeBeta) && !strings.Contains(version, ReleaseTypeRC) {
+			releaseType = "stable"
+		}
+	}
+
+	sv, err := helpers.TagStringToSemver(version)
+	if err != nil {
+		return nil, fmt.Errorf("invalid version %s", version)
+	}
+
+	var versionMarkers []string
+	if fast {
+		versionMarkers = append(
+			versionMarkers,
+			releaseType+"-fast",
+		)
+	} else {
+		versionMarkers = append(
+			versionMarkers,
+			releaseType,
+			fmt.Sprintf("%s-%d", releaseType, sv.Major),
+			fmt.Sprintf("%s-%d.%d", releaseType, sv.Major, sv.Minor),
+		)
+	}
+
+	return append(versionMarkers, extraVersionMarkers...), nil
 }
 
 // VerifyLatestUpdate checks if the new version is greater than the version

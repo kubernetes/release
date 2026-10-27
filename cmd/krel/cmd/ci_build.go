@@ -31,12 +31,13 @@ Build Kubernetes in CI and push artifacts.
 Developer pushes simply run as they do pushing to devel/ on GCS.`
 
 const ciBuildExample = `
-krel ci-build [--noupdatelatest] [--bucket=<GCS bucket>] [--gcs-root=<GCS root>]
+krel ci-build [--noupdatelatest] [--bucket=<bucket>] [--bucket-root=<bucket root>]
 
 Scenarios:
 
-krel ci-build --allow-dup --fast --registry=gcr.io/foo     - Run a fast build and push images to gcr.io/foo
-krel ci-build --bucket cool-bucket --gcs-root new-gcs-root - Push to gs://cool-bucket/new-gcs-root`
+krel ci-build --allow-dup --fast --registry=gcr.io/foo           - Run a fast build and push images to gcr.io/foo
+krel ci-build --bucket cool-bucket --bucket-root new-bucket-root - Push to gs://cool-bucket/new-bucket-root
+krel ci-build --bucket s3://cool-bucket                          - Push to s3://cool-bucket/ci`
 
 var ciBuildOpts = &build.Options{}
 
@@ -45,7 +46,7 @@ var ciBuildSign bool
 
 var ciBuildCmd = &cobra.Command{
 	Use:           "ci-build",
-	Short:         "Build Kubernetes in CI and push release artifacts to Google Cloud Storage (GCS)",
+	Short:         "Build Kubernetes in CI and push release artifacts to Google Cloud Storage (GCS) or Amazon S3",
 	Long:          ciBuildCmdDescription,
 	Example:       ciBuildExample,
 	SilenceUsage:  true,
@@ -96,7 +97,7 @@ func init() {
 		&ciBuildOpts.Bucket,
 		"bucket",
 		"",
-		"Specify an alternate bucket for pushes (normally 'devel' or 'ci')",
+		"Specify an alternate bucket for pushes (normally 'devel' or 'ci'), or an s3://<bucket>[/<prefix>] URL to push to Amazon S3, which stores every '+' in the object keys as a space",
 	)
 
 	ciBuildCmd.PersistentFlags().StringVar(
@@ -125,11 +126,19 @@ func init() {
 	)
 
 	ciBuildCmd.PersistentFlags().StringVar(
-		&ciBuildOpts.GCSRoot,
+		&ciBuildOpts.BucketRoot,
+		"bucket-root",
+		"",
+		"Specify an alternate path in the bucket to push artifacts to",
+	)
+
+	ciBuildCmd.PersistentFlags().StringVar(
+		&ciBuildOpts.GCSRoot, //nolint:staticcheck // --gcs-root is deprecated, too
 		"gcs-root",
 		"",
 		"Specify an alternate GCS path to push artifacts to",
 	)
+	_ = ciBuildCmd.PersistentFlags().MarkDeprecated("gcs-root", "This flag is deprecated and will be removed in v0.24.0. Use --bucket-root instead.")
 
 	ciBuildCmd.PersistentFlags().StringVar(
 		&ciBuildOpts.VersionSuffix,
