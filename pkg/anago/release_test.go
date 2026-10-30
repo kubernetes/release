@@ -276,6 +276,7 @@ func TestPushArtifacts(t *testing.T) {
 func TestPushArtifactsSignsProvenanceFirst(t *testing.T) {
 	opts := anago.DefaultReleaseOptions()
 	opts.NoMock = true
+	opts.SigningAccount = "krel-staging@k8s-releng-prod.iam.gserviceaccount.com"
 	sut := anago.NewDefaultRelease(opts)
 	sut.SetState(
 		generateTestingReleaseState(&testStateParameters{versionsTag: &testVersionTag}),
@@ -289,8 +290,10 @@ func TestPushArtifactsSignsProvenanceFirst(t *testing.T) {
 	require.Error(t, sut.PushArtifacts())
 	require.Equal(t, 1, mock.SignProvenanceCallCount())
 
-	// Official releases require the final provenance
-	_, required := mock.SignProvenanceArgsForCall(0)
+	// Official releases require the final provenance, signed as the account
+	// of the options
+	account, _, required := mock.SignProvenanceArgsForCall(0)
+	require.Equal(t, opts.SigningAccount, account)
 	require.True(t, required)
 	require.Zero(t, mock.CopyStagedFromGCSCallCount())
 	require.Zero(t, mock.PublishVersionCallCount())

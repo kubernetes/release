@@ -171,7 +171,7 @@ type releaseImpl interface {
 	) error
 	CreatePubBotBranchIssue(string) error
 	CheckStageProvenance(string, string, *release.Versions) error
-	SignProvenance(versions []string, required bool) error
+	SignProvenance(account string, versions []string, required bool) error
 }
 
 func (d *defaultReleaseImpl) Submit(options *gcb.Options) error {
@@ -398,7 +398,7 @@ func (d *DefaultRelease) PushArtifacts() error {
 
 	// Sign the final provenance before anything gets published, so that a
 	// release never publishes it unsigned.
-	if err := d.impl.SignProvenance(d.state.versions.Ordered(), d.options.NoMock); err != nil {
+	if err := d.impl.SignProvenance(d.options.SigningAccount, d.state.versions.Ordered(), d.options.NoMock); err != nil {
 		return fmt.Errorf("signing provenance attestations: %w", err)
 	}
 
@@ -656,21 +656,13 @@ func (d *DefaultRelease) CheckProvenance() error {
 }
 
 // SignProvenance signs the final provenance attestations of the versions in
-// place, like the stage run signs its provenance, as the account named by
-// GOOGLE_SERVICE_ACCOUNT_NAME, which the release job impersonates to sign the
-// artifacts too. When the final attestations are required, which they are
-// for official releases, a version without one fails, so that the release
-// doesn't publish it without provenance; otherwise it is skipped with a
-// warning, like mock releases only warn when the stage provenance doesn't
-// check.
-func (d *defaultReleaseImpl) SignProvenance(versions []string, required bool) error {
-	account := os.Getenv("GOOGLE_SERVICE_ACCOUNT_NAME")
-	if account == "" {
-		return errors.New(
-			"GOOGLE_SERVICE_ACCOUNT_NAME must name the account to sign the provenance attestations as",
-		)
-	}
-
+// place, like the stage run signs its provenance, as the given account, which
+// the release job also impersonates to sign the artifacts. When the final
+// attestations are required, which they are for official releases, a
+// version without one fails, so that the release doesn't publish it without
+// provenance; otherwise it is skipped with a warning, like mock releases only
+// warn when the stage provenance doesn't check.
+func (d *defaultReleaseImpl) SignProvenance(account string, versions []string, required bool) error {
 	paths := make([]string, 0, len(versions))
 
 	for _, version := range versions {
@@ -689,6 +681,10 @@ func (d *defaultReleaseImpl) SignProvenance(versions []string, required bool) er
 
 	if len(paths) == 0 {
 		return nil
+	}
+
+	if account == "" {
+		return errors.New("no account to sign the provenance attestations as, see --signing-account")
 	}
 
 	opts := attestation.DefaultSignerOptions()

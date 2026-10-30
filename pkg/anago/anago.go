@@ -375,6 +375,10 @@ func DefaultReleaseState() *ReleaseState {
 // ReleaseOptions contains the options for running `Release`.
 type ReleaseOptions struct {
 	*Options
+
+	// SigningAccount is the Google service account the release job
+	// impersonates to sign the final provenance attestations.
+	SigningAccount string
 }
 
 // DefaultReleaseOptions create a new default `ReleaseOptions`.
