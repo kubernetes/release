@@ -650,9 +650,24 @@ func (d *DefaultRelease) UpdateGitHubPage() error {
 }
 
 // CheckProvenance verifies the artifacts staged in the release bucket
-// by verifying the provenance metadata generated during the stage run.
+// by verifying the provenance metadata generated during the stage run. A
+// failure fails official releases (--nomock). Mock releases only warn when
+// the stage provenance is unsigned, like the one of a local stage, or when
+// they run from a fork, which older stage runs didn't record as their
+// source. A signed stage provenance that doesn't verify fails them too.
 func (d *DefaultRelease) CheckProvenance() error {
-	return d.impl.CheckStageProvenance(d.options.Bucket(), d.options.BuildVersion, d.state.versions)
+	err := d.impl.CheckStageProvenance(d.options.Bucket(), d.options.BuildVersion, d.state.versions)
+	if err == nil || d.options.NoMock {
+		return err
+	}
+
+	if errors.Is(err, release.ErrStageProvenanceUnsigned) || release.StageFromFork() {
+		logrus.Warnf("Unable to check provenance attestation of the mock release: %v", err)
+
+		return nil
+	}
+
+	return err
 }
 
 // SignProvenance signs the final provenance attestations of the versions in
