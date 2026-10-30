@@ -50,6 +50,19 @@ type FakeImageImpl struct {
 		result1 string
 		result2 error
 	}
+	RemoteManifestStub        func(string) ([]byte, error)
+	remoteManifestMutex       sync.RWMutex
+	remoteManifestArgsForCall []struct {
+		arg1 string
+	}
+	remoteManifestReturns struct {
+		result1 []byte
+		result2 error
+	}
+	remoteManifestReturnsOnCall map[int]struct {
+		result1 []byte
+		result2 error
+	}
 	RepoTagFromTarballStub        func(string) (string, error)
 	repoTagFromTarballMutex       sync.RWMutex
 	repoTagFromTarballArgsForCall []struct {
@@ -74,6 +87,19 @@ type FakeImageImpl struct {
 	}
 	signImageReturnsOnCall map[int]struct {
 		result1 error
+	}
+	TarballConfigDigestStub        func(string) (string, error)
+	tarballConfigDigestMutex       sync.RWMutex
+	tarballConfigDigestArgsForCall []struct {
+		arg1 string
+	}
+	tarballConfigDigestReturns struct {
+		result1 string
+		result2 error
+	}
+	tarballConfigDigestReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
 	}
 	VerifyImageStub        func(*sign.Signer, string) error
 	verifyImageMutex       sync.RWMutex
@@ -218,6 +244,70 @@ func (fake *FakeImageImpl) ExecuteOutputReturnsOnCall(i int, result1 string, res
 	}{result1, result2}
 }
 
+func (fake *FakeImageImpl) RemoteManifest(arg1 string) ([]byte, error) {
+	fake.remoteManifestMutex.Lock()
+	ret, specificReturn := fake.remoteManifestReturnsOnCall[len(fake.remoteManifestArgsForCall)]
+	fake.remoteManifestArgsForCall = append(fake.remoteManifestArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.RemoteManifestStub
+	fakeReturns := fake.remoteManifestReturns
+	fake.recordInvocation("RemoteManifest", []interface{}{arg1})
+	fake.remoteManifestMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeImageImpl) RemoteManifestCallCount() int {
+	fake.remoteManifestMutex.RLock()
+	defer fake.remoteManifestMutex.RUnlock()
+	return len(fake.remoteManifestArgsForCall)
+}
+
+func (fake *FakeImageImpl) RemoteManifestCalls(stub func(string) ([]byte, error)) {
+	fake.remoteManifestMutex.Lock()
+	defer fake.remoteManifestMutex.Unlock()
+	fake.RemoteManifestStub = stub
+}
+
+func (fake *FakeImageImpl) RemoteManifestArgsForCall(i int) string {
+	fake.remoteManifestMutex.RLock()
+	defer fake.remoteManifestMutex.RUnlock()
+	argsForCall := fake.remoteManifestArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeImageImpl) RemoteManifestReturns(result1 []byte, result2 error) {
+	fake.remoteManifestMutex.Lock()
+	defer fake.remoteManifestMutex.Unlock()
+	fake.RemoteManifestStub = nil
+	fake.remoteManifestReturns = struct {
+		result1 []byte
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImageImpl) RemoteManifestReturnsOnCall(i int, result1 []byte, result2 error) {
+	fake.remoteManifestMutex.Lock()
+	defer fake.remoteManifestMutex.Unlock()
+	fake.RemoteManifestStub = nil
+	if fake.remoteManifestReturnsOnCall == nil {
+		fake.remoteManifestReturnsOnCall = make(map[int]struct {
+			result1 []byte
+			result2 error
+		})
+	}
+	fake.remoteManifestReturnsOnCall[i] = struct {
+		result1 []byte
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeImageImpl) RepoTagFromTarball(arg1 string) (string, error) {
 	fake.repoTagFromTarballMutex.Lock()
 	ret, specificReturn := fake.repoTagFromTarballReturnsOnCall[len(fake.repoTagFromTarballArgsForCall)]
@@ -342,6 +432,70 @@ func (fake *FakeImageImpl) SignImageReturnsOnCall(i int, result1 error) {
 	fake.signImageReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
+}
+
+func (fake *FakeImageImpl) TarballConfigDigest(arg1 string) (string, error) {
+	fake.tarballConfigDigestMutex.Lock()
+	ret, specificReturn := fake.tarballConfigDigestReturnsOnCall[len(fake.tarballConfigDigestArgsForCall)]
+	fake.tarballConfigDigestArgsForCall = append(fake.tarballConfigDigestArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.TarballConfigDigestStub
+	fakeReturns := fake.tarballConfigDigestReturns
+	fake.recordInvocation("TarballConfigDigest", []interface{}{arg1})
+	fake.tarballConfigDigestMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeImageImpl) TarballConfigDigestCallCount() int {
+	fake.tarballConfigDigestMutex.RLock()
+	defer fake.tarballConfigDigestMutex.RUnlock()
+	return len(fake.tarballConfigDigestArgsForCall)
+}
+
+func (fake *FakeImageImpl) TarballConfigDigestCalls(stub func(string) (string, error)) {
+	fake.tarballConfigDigestMutex.Lock()
+	defer fake.tarballConfigDigestMutex.Unlock()
+	fake.TarballConfigDigestStub = stub
+}
+
+func (fake *FakeImageImpl) TarballConfigDigestArgsForCall(i int) string {
+	fake.tarballConfigDigestMutex.RLock()
+	defer fake.tarballConfigDigestMutex.RUnlock()
+	argsForCall := fake.tarballConfigDigestArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeImageImpl) TarballConfigDigestReturns(result1 string, result2 error) {
+	fake.tarballConfigDigestMutex.Lock()
+	defer fake.tarballConfigDigestMutex.Unlock()
+	fake.TarballConfigDigestStub = nil
+	fake.tarballConfigDigestReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeImageImpl) TarballConfigDigestReturnsOnCall(i int, result1 string, result2 error) {
+	fake.tarballConfigDigestMutex.Lock()
+	defer fake.tarballConfigDigestMutex.Unlock()
+	fake.TarballConfigDigestStub = nil
+	if fake.tarballConfigDigestReturnsOnCall == nil {
+		fake.tarballConfigDigestReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.tarballConfigDigestReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeImageImpl) VerifyImage(arg1 *sign.Signer, arg2 string) error {

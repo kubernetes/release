@@ -17,14 +17,27 @@ limitations under the License.
 package release
 
 import (
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
 	"fmt"
+	"maps"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/crane"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/google"
+	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 
@@ -74,6 +87,8 @@ type imageImpl interface {
 	RepoTagFromTarball(path string) (string, error)
 	SignImage(*sign.Signer, string) error
 	VerifyImage(*sign.Signer, string) error
+	RemoteManifest(reference string) ([]byte, error)
+	TarballConfigDigest(path string) (string, error)
 }
 
 type defaultImageImpl struct{}
@@ -117,6 +132,71 @@ func (*defaultImageImpl) VerifyImage(_ *sign.Signer, _ string) error {
 	// _, err := signer.VerifyImage(reference)
 	// return err
 	return nil
+}
+
+// remoteManifestTimeout bounds each attempt to read a manifest.
+const remoteManifestTimeout = time.Minute
+
+// RemoteManifest reads the manifest of the image, retrying for a while, since
+// it runs after hours of building, when a short registry failure would fail
+// the whole stage run. A client error other than too many requests isn't
+// retried, and every attempt has a time limit. The credentials are the
+// Google Cloud credentials of the host, like the ones that attach the
+// provenance to the images.
+func (*defaultImageImpl) RemoteManifest(reference string) ([]byte, error) {
+	var (
+		manifest []byte
+		lastErr  error
+	)
+
+	if err := wait.ExponentialBackoff(wait.Backoff{
+		Duration: time.Second,
+		Factor:   2,
+		Steps:    5,
+	}, func() (bool, error) {
+		ctx, cancel := context.WithTimeout(context.Background(), remoteManifestTimeout)
+		defer cancel()
+
+		manifest, lastErr = crane.Manifest(reference, crane.WithContext(ctx), crane.WithAuthFromKeychain(google.Keychain))
+		if lastErr == nil {
+			return true, nil
+		}
+
+		var terr *transport.Error
+		if errors.As(lastErr, &terr) && terr.StatusCode >= http.StatusBadRequest &&
+			terr.StatusCode < http.StatusInternalServerError && terr.StatusCode != http.StatusTooManyRequests {
+			return false, lastErr
+		}
+
+		logrus.Warnf("Reading manifest of %s, retrying: %v", reference, lastErr)
+
+		return false, nil
+	}); err != nil {
+		// The backoff only reports that it ran out of steps.
+		if lastErr != nil {
+			err = lastErr
+		}
+
+		return nil, fmt.Errorf("reading manifest of %s: %w", reference, err)
+	}
+
+	return manifest, nil
+}
+
+// TarballConfigDigest returns the digest of the config of the image in the
+// tarball, which docker push keeps as it is.
+func (*defaultImageImpl) TarballConfigDigest(path string) (string, error) {
+	img, err := tarball.ImageFromPath(path, nil)
+	if err != nil {
+		return "", fmt.Errorf("reading image tarball %s: %w", path, err)
+	}
+
+	digest, err := img.ConfigName()
+	if err != nil {
+		return "", fmt.Errorf("reading config digest of %s: %w", path, err)
+	}
+
+	return digest.String(), nil
 }
 
 var tagRegex = regexp.MustCompile(`^.+/(.+):.+$`)
@@ -235,7 +315,7 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 	for image, arches := range manifestImages {
 		imageVersion := fmt.Sprintf("%s:%s", image, version)
 
-		manifestBytes, err := crane.Manifest(imageVersion)
+		manifestBytes, err := i.RemoteManifest(imageVersion)
 		if err != nil {
 			return fmt.Errorf("get remote manifest from %s: %w", imageVersion, err)
 		}
@@ -246,15 +326,9 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 			return fmt.Errorf("verify signed manifest list: %w", err)
 		}
 
-		manifest := string(manifestBytes)
-
-		manifestFile, err := os.CreateTemp("", "manifest-")
+		index, err := v1.ParseIndexManifest(bytes.NewReader(manifestBytes))
 		if err != nil {
-			return fmt.Errorf("create temp file for manifest: %w", err)
-		}
-
-		if _, err := manifestFile.WriteString(manifest); err != nil {
-			return fmt.Errorf("write manifest to %s: %w", manifestFile.Name(), err)
+			return fmt.Errorf("parse manifest list %s: %w", imageVersion, err)
 		}
 
 		for _, arch := range arches {
@@ -262,27 +336,12 @@ func (i *Images) Validate(registry, version, buildPath string) error {
 				"Checking image digest for %s on %s architecture", image, arch,
 			)
 
-			digest, err := i.ExecuteOutput(
-				"jq", "--arg", "a", arch, "-r",
-				".manifests[] | select(.platform.architecture == $a) | .digest",
-				manifestFile.Name(),
-			)
+			digest, err := platformDigest(index, arch)
 			if err != nil {
-				return fmt.Errorf("get digest from manifest file %s for arch %s: %w", manifestFile.Name(), arch, err)
-			}
-
-			if digest == "" {
-				return fmt.Errorf(
-					"could not find the image digest for %s on %s",
-					imageVersion, arch,
-				)
+				return fmt.Errorf("could not find the image digest for %s: %w", imageVersion, err)
 			}
 
 			logrus.Infof("Digest for %s on %s: %s", imageVersion, arch, digest)
-		}
-
-		if err := os.RemoveAll(manifestFile.Name()); err != nil { //nolint:gosec // G703 - temp file path is safe
-			return fmt.Errorf("remove manifest file: %w", err)
 		}
 	}
 
@@ -440,6 +499,150 @@ func (i *Images) GetManifestImages(
 	}
 
 	return manifestImages, nil
+}
+
+// Subjects returns the pushed container images of a version as provenance
+// subjects, named by their repository: each manifest list, and each
+// arch-specific image both in its own repository and in the repository of
+// its manifest list, where clients pulling the manifest list resolve it.
+func (i *Images) Subjects(registry, version, buildPath string) ([]*intoto.ResourceDescriptor, error) {
+	version = i.normalizeVersion(version)
+
+	// The tarballs of the arch-specific images by their tag, to tie the
+	// pushed images to this build.
+	tarballs := map[string]string{}
+
+	manifestImages, err := i.GetManifestImages(registry, version, buildPath,
+		func(path, _, newTagWithArch string) error {
+			tarballs[newTagWithArch] = path
+
+			return nil
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get manifest images: %w", err)
+	}
+
+	subjects := []*intoto.ResourceDescriptor{}
+
+	for _, image := range slices.Sorted(maps.Keys(manifestImages)) {
+		imageVersion := fmt.Sprintf("%s:%s", image, version)
+
+		manifestBytes, err := i.RemoteManifest(imageVersion)
+		if err != nil {
+			return nil, fmt.Errorf("get remote manifest list %s: %w", imageVersion, err)
+		}
+
+		index, err := v1.ParseIndexManifest(bytes.NewReader(manifestBytes))
+		if err != nil {
+			return nil, fmt.Errorf("parse manifest list %s: %w", imageVersion, err)
+		}
+
+		subjects = append(subjects, imageSubject(image, sha256Hex(manifestBytes)))
+
+		for _, arch := range slices.Sorted(slices.Values(manifestImages[image])) {
+			platform, err := platformDigest(index, arch)
+			if err != nil {
+				return nil, fmt.Errorf("manifest list %s: %w", imageVersion, err)
+			}
+
+			archDigest := platform.Hex
+
+			// The manifest list references the arch-specific image pushed
+			// before, by digest.
+			archImage := fmt.Sprintf("%s-%s", image, arch)
+			archVersion := fmt.Sprintf("%s:%s", archImage, version)
+
+			archBytes, err := i.RemoteManifest(archVersion)
+			if err != nil {
+				return nil, fmt.Errorf("get remote manifest %s: %w", archVersion, err)
+			}
+
+			if digest := sha256Hex(archBytes); digest != archDigest {
+				return nil, fmt.Errorf(
+					"manifest list %s references sha256:%s for %s, but %s is sha256:%s",
+					imageVersion, archDigest, arch, archVersion, digest,
+				)
+			}
+
+			// The tags can move, so the image in the registry has to be the
+			// one this build produced: docker push keeps its config.
+			if err := i.checkBuiltImage(archVersion, archBytes, tarballs[archVersion]); err != nil {
+				return nil, err
+			}
+
+			subjects = append(subjects,
+				imageSubject(archImage, archDigest),
+				imageSubject(image, archDigest),
+			)
+		}
+	}
+
+	return subjects, nil
+}
+
+// checkBuiltImage checks that the pushed image with the manifest has the
+// config of the image in the tarball of this build.
+func (i *Images) checkBuiltImage(reference string, manifestBytes []byte, tarballPath string) error {
+	if tarballPath == "" {
+		return fmt.Errorf("no image tarball of this build for %s", reference)
+	}
+
+	manifest, err := v1.ParseManifest(bytes.NewReader(manifestBytes))
+	if err != nil {
+		return fmt.Errorf("parse manifest %s: %w", reference, err)
+	}
+
+	built, err := i.TarballConfigDigest(tarballPath)
+	if err != nil {
+		return fmt.Errorf("get config digest of %s: %w", tarballPath, err)
+	}
+
+	if pushed := manifest.Config.Digest.String(); pushed != built {
+		return fmt.Errorf(
+			"%s has the config %s, but the image built in %s has %s", reference, pushed, tarballPath, built,
+		)
+	}
+
+	return nil
+}
+
+// platformDigest returns the digest of the linux image of the architecture
+// in the manifest list, which has to list exactly one.
+func platformDigest(index *v1.IndexManifest, arch string) (v1.Hash, error) {
+	var found []v1.Hash
+
+	for m := range index.Manifests {
+		desc := &index.Manifests[m]
+		if desc.Platform != nil && desc.Platform.OS == "linux" && desc.Platform.Architecture == arch {
+			found = append(found, desc.Digest)
+		}
+	}
+
+	switch len(found) {
+	case 0:
+		return v1.Hash{}, fmt.Errorf("no linux/%s image", arch)
+	case 1:
+		return found[0], nil
+	default:
+		return v1.Hash{}, fmt.Errorf("%d linux/%s images", len(found), arch)
+	}
+}
+
+// imageSubject returns the provenance subject of an image digest in a
+// repository.
+func imageSubject(repository, digest string) *intoto.ResourceDescriptor {
+	return &intoto.ResourceDescriptor{
+		Name:   repository,
+		Digest: map[string]string{intoto.AlgorithmSHA256.String(): digest},
+	}
+}
+
+// sha256Hex returns the hex encoded SHA-256 digest of data.
+func sha256Hex(data []byte) string {
+	sum := sha256.Sum256(data)
+
+	return hex.EncodeToString(sum[:])
 }
 
 // pushAndSignImage loads, tags, pushes, signs, and removes a single

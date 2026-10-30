@@ -64,7 +64,11 @@ steps:
       - "--branch=${_RELEASE_BRANCH}"
       - "--build-version=${_BUILDVERSION}"
 
-  # Sign and re-upload the attestations generated during the build. 
+  # Sign and re-upload the attestations generated during the build, and
+  # attach the provenance of the container images to them in the registry,
+  # where the image promoter verifies it. Its images have to be in the
+  # registry of the stage, the credentials are the ones of the service
+  # account of the build only.
   - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
     dir: "/workspace"
     args:
@@ -72,9 +76,12 @@ steps:
       - "sign"
       - "attestation"
       - "--in-place"
+      - "--attach-to-images=${_STAGE_BUCKET}/stage/${_BUILDVERSION}/image-provenance.json"
+      - "--image-repository=${_STAGE_REGISTRY}"
       - "--impersonate-service-account=krel-staging@k8s-releng-prod.iam.gserviceaccount.com"
       - "--log-level=${_LOG_LEVEL}"
       - "${_STAGE_BUCKET}/stage/${_BUILDVERSION}/provenance.json"
+      - "${_STAGE_BUCKET}/stage/${_BUILDVERSION}/image-provenance.json"
 
   # Stage the packages that will go to OBS
   - name: gcr.io/k8s-staging-releng/k8s-cloud-builder:${_KUBE_CROSS_VERSION}
@@ -126,3 +133,8 @@ substitutions:
   # the artifacts are staged. We default to the mock bucket so that a job
   # submitted by hand can never touch production.
   _STAGE_BUCKET: "gs://5d7373bbdcb8270361b96548387bf2a9ad0d48758c35"
+
+  # _STAGE_REGISTRY is set by krel gcb to the mock or production registry of
+  # the staged images, the only one the provenance of the images gets
+  # attached in. We default to the mock registry, like the bucket.
+  _STAGE_REGISTRY: "gcr.io/k8s-staging-kubernetes/mock"

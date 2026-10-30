@@ -511,6 +511,13 @@ func (g *GCB) SetGCBSubstitutions(toolOrg, toolRepo, toolRef, gcsBucket, forceBu
 	// stage jobs can locate the artifacts to sign.
 	gcbSubs["STAGE_BUCKET"] = gcsBucket
 
+	// Registry the images get staged to, mock or production, which the
+	// stage jobs attach the provenance of the images in, and nowhere else.
+	gcbSubs["STAGE_REGISTRY"] = release.GCRIOPathMock
+	if g.options.NoMock {
+		gcbSubs["STAGE_REGISTRY"] = release.GCRIOPathStaging
+	}
+
 	if g.options.Release {
 		gcbSubs["KUBERNETES_GCS_BUCKET"] = fmt.Sprintf("%s/stage/%s/%s/gcs-stage/%s", gcsBucket, buildVersion, versions.Prime(), versions.Prime())
 		if g.options.NoMock {

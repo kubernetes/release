@@ -17,14 +17,24 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/policylabs/signer"
+	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
+	protodsse "github.com/sigstore/protobuf-specs/gen/pb-go/dsse"
+	sbundle "github.com/sigstore/sigstore-go/pkg/bundle"
 	"github.com/stretchr/testify/require"
 
 	"k8s.io/release/pkg/attestation"
+	"k8s.io/release/pkg/attestation/attestationfakes"
 )
 
 func TestValidateSignAttestationArgs(t *testing.T) {
@@ -62,6 +72,31 @@ func TestValidateSignAttestationArgs(t *testing.T) {
 			name:       "several statements in place with output path",
 			opts:       &signAttestationOptions{inPlace: true, outputPath: "out.json"},
 			statements: []string{"a.json", "b.json"},
+			shouldErr:  true,
+		},
+		{
+			name: "attaching one of several statements",
+			opts: &signAttestationOptions{
+				inPlace: true, attachToImages: []string{"b.json"}, imageRepository: "gcr.io/k8s-staging-kubernetes",
+			},
+			statements: []string{"a.json", "b.json"},
+		},
+		{
+			name:       "attaching a statement that isn't signed",
+			opts:       &signAttestationOptions{attachToImages: []string{"b.json"}, imageRepository: "gcr.io/k8s-staging-kubernetes"},
+			statements: []string{"a.json"},
+			shouldErr:  true,
+		},
+		{
+			name:       "attaching without a repository",
+			opts:       &signAttestationOptions{attachToImages: []string{"a.json"}},
+			statements: []string{"a.json"},
+			shouldErr:  true,
+		},
+		{
+			name:       "a repository without attaching",
+			opts:       &signAttestationOptions{imageRepository: "gcr.io/k8s-staging-kubernetes"},
+			statements: []string{"a.json"},
 			shouldErr:  true,
 		},
 	} {
@@ -162,4 +197,106 @@ func TestRunSignAttestation(t *testing.T) {
 		)
 		require.ErrorContains(t, err, "not a valid service account email")
 	})
+}
+
+// imageStatementJSON is a statement about one staged image.
+const imageStatementJSON = `{
+	"_type": "https://in-toto.io/Statement/v1",
+	"subject": [{"name": "gcr.io/k8s-staging-kubernetes/kube-apiserver", "digest": {"sha256": "0e8a8b6f7c6cf3b0f2f2b6c2d1a4f4b3c2e1d0f9a8b7c6d5e4f3a2b1c0d9e8f7"}}],
+	"predicateType": "https://slsa.dev/provenance/v1", "predicate": {}
+}`
+
+func TestSignAttestationsAttachesBeforeWriting(t *testing.T) {
+	t.Parallel()
+
+	const (
+		provenance      = "gs://bucket/stage/v1.36.0/provenance.json"
+		imageProvenance = "gs://bucket/stage/v1.36.0/image-provenance.json"
+	)
+
+	for _, tc := range []struct {
+		name      string
+		attachErr error
+		calls     []string
+	}{
+		{
+			name: "attaches the image provenance, then replaces both statements",
+			calls: []string{
+				"attach gcr.io/k8s-staging-kubernetes/kube-apiserver@sha256:0e8a8b6f7c6cf3b0f2f2b6c2d1a4f4b3c2e1d0f9a8b7c6d5e4f3a2b1c0d9e8f7",
+				"write " + provenance,
+				"write " + imageProvenance,
+			},
+		},
+		{
+			name:      "a failed attach leaves the statements in the bucket untouched",
+			attachErr: errors.New("registry down"),
+			calls: []string{
+				"attach gcr.io/k8s-staging-kubernetes/kube-apiserver@sha256:0e8a8b6f7c6cf3b0f2f2b6c2d1a4f4b3c2e1d0f9a8b7c6d5e4f3a2b1c0d9e8f7",
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var (
+				mu    sync.Mutex
+				calls []string
+			)
+
+			record := func(call string) {
+				mu.Lock()
+				defer mu.Unlock()
+
+				calls = append(calls, call)
+			}
+
+			signerImpl := &attestationfakes.FakeSignerImplementation{}
+			signerImpl.NewSignerReturns(signer.NewSigner())
+			signerImpl.ReadStatementReturns([]byte(imageStatementJSON), nil)
+			signerImpl.SignStatementCalls(func(_ *signer.Signer, data []byte) (*sbundle.Bundle, error) {
+				return &sbundle.Bundle{Bundle: &protobundle.Bundle{
+					Content: &protobundle.Bundle_DsseEnvelope{DsseEnvelope: &protodsse.Envelope{Payload: data}},
+				}}, nil
+			})
+			signerImpl.WriteBundleCalls(func(_ *sbundle.Bundle, w io.Writer) error {
+				_, err := w.Write([]byte("bundle"))
+
+				return err
+			})
+			signerImpl.WriteFileCalls(func(path string, _ []byte) error {
+				record("write " + path)
+
+				return nil
+			})
+
+			attacherImpl := &attestationfakes.FakeAttacherImplementation{}
+			attacherImpl.AttachBundleCalls(func(_ context.Context, ref name.Digest, _ []byte, _ string) error {
+				record("attach " + ref.String())
+
+				return tc.attachErr
+			})
+
+			sut := attestation.NewSigner(attestation.DefaultSignerOptions())
+			sut.SetImpl(signerImpl)
+
+			attacher := attestation.NewAttacher(&attestation.AttacherOptions{Repository: "gcr.io/k8s-staging-kubernetes"})
+			attacher.SetImpl(attacherImpl)
+
+			// Only the image provenance is attached, though both statements
+			// name the same image here.
+			err := signAttestations(sut, attacher, &signAttestationOptions{
+				inPlace:         true,
+				attachToImages:  []string{imageProvenance},
+				imageRepository: "gcr.io/k8s-staging-kubernetes",
+			}, []string{provenance, imageProvenance})
+
+			if tc.attachErr != nil {
+				require.ErrorIs(t, err, tc.attachErr)
+			} else {
+				require.NoError(t, err)
+			}
+
+			require.Equal(t, tc.calls, calls)
+		})
+	}
 }

@@ -42,6 +42,7 @@ import (
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 //go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt attestationfakes/fake_signer_implementation.go > attestationfakes/_fake_signer_implementation.go && mv attestationfakes/_fake_signer_implementation.go attestationfakes/fake_signer_implementation.go"
+//go:generate /usr/bin/env bash -c "cat ../../hack/boilerplate/boilerplate.generatego.txt attestationfakes/fake_attacher_implementation.go > attestationfakes/_fake_attacher_implementation.go && mv attestationfakes/_fake_attacher_implementation.go attestationfakes/fake_attacher_implementation.go"
 
 // ServiceAccountEnvKey is the name of the environment variable that can
 // carry the JSON contents of the Google service account key to sign with.
@@ -120,6 +121,11 @@ func NewSigner(opts *SignerOptions) *Signer {
 		options: opts,
 		impl:    &defaultSignerImpl{},
 	}
+}
+
+// SetImpl replaces the implementation of the signer, for testing.
+func (s *Signer) SetImpl(impl signerImplementation) {
+	s.impl = impl
 }
 
 //counterfeiter:generate . signerImplementation
