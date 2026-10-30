@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -52,9 +53,10 @@ Build (GCB) job, which does:
    which should contain a copy of the repository.
 
 4. Push Artifacts: Signs the provenance of the release in place as the
-   Google service account named by GOOGLE_SERVICE_ACCOUNT_NAME, which has to
-   be set for local runs too, and pushes the generated artifacts to the
-   release bucket and Google Container Registry.
+   Google service account set with --signing-account, which defaults to
+   GOOGLE_SERVICE_ACCOUNT_NAME, and pushes the generated artifacts to the
+   release bucket and Google Container Registry. Jobs submitted to Google
+   Cloud Build sign as the account of the release job instead.
 
 5. Push Git Objects: Pushes the new tags and branches to the repository remote
    on GitHub.
@@ -70,6 +72,10 @@ Build (GCB) job, which does:
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if submitJob && cmd.Flags().Changed("signing-account") {
+			logrus.Warn("Ignoring --signing-account, the submitted release job signs as its own account")
+		}
+
 		return runRelease(releaseOptions)
 	},
 }
@@ -105,6 +111,15 @@ func init() {
 			buildVersionFlag,
 			"",
 			"The build version to be released.",
+		)
+
+	releaseCmd.PersistentFlags().
+		StringVar(
+			&releaseOptions.SigningAccount,
+			"signing-account",
+			os.Getenv("GOOGLE_SERVICE_ACCOUNT_NAME"),
+			"The Google service account to sign the provenance attestations as, from $GOOGLE_SERVICE_ACCOUNT_NAME. "+
+				"Only used with --submit=false, the submitted release job signs as its own account",
 		)
 
 	releaseCmd.PersistentFlags().

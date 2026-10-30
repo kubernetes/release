@@ -41,7 +41,7 @@ func (f *fakeProvenanceSigner) SignFilesInPlace(paths []string) ([]*attestation.
 // TestSignProvenance checks which final attestations SignProvenance signs and
 // as which account, without reaching out to sigstore: the attestations are
 // read from the temporary directory of the process.
-func TestSignProvenance(t *testing.T) { //nolint:paralleltest // sets TMPDIR and the signing account
+func TestSignProvenance(t *testing.T) { //nolint:paralleltest // sets TMPDIR
 	tmpDir := t.TempDir()
 	t.Setenv("TMPDIR", tmpDir)
 
@@ -57,29 +57,32 @@ func TestSignProvenance(t *testing.T) { //nolint:paralleltest // sets TMPDIR and
 		return signer
 	}}
 
-	// Without the signing account nothing is signed
-	t.Setenv("GOOGLE_SERVICE_ACCOUNT_NAME", "")
-	require.Error(t, impl.SignProvenance([]string{"v1.36.0"}, true))
+	const account = "krel-staging@k8s-releng-prod.iam.gserviceaccount.com"
+
+	// Without the signing account nothing is signed, which only fails when
+	// there is something to sign
+	require.ErrorContains(t, impl.SignProvenance("", []string{"v1.36.0"}, true), "--signing-account")
+	require.Nil(t, signer.paths)
+	require.NoError(t, impl.SignProvenance("", []string{"v1.36.1"}, false))
 	require.Nil(t, signer.paths)
 
-	t.Setenv("GOOGLE_SERVICE_ACCOUNT_NAME", "krel-staging@k8s-releng-prod.iam.gserviceaccount.com")
-	require.NoError(t, impl.SignProvenance([]string{"v1.36.0"}, true))
+	require.NoError(t, impl.SignProvenance(account, []string{"v1.36.0"}, true))
 	require.Equal(t, []string{filepath.Join(tmpDir, "provenance-v1.36.0.json")}, signer.paths)
-	require.Equal(t, "krel-staging@k8s-releng-prod.iam.gserviceaccount.com", gotOpts.ImpersonateServiceAccount)
+	require.Equal(t, account, gotOpts.ImpersonateServiceAccount)
 
 	// A missing final attestation fails before anything is signed when it
 	// is required
 	signer.paths = nil
 
-	require.Error(t, impl.SignProvenance([]string{"v1.36.0", "v1.36.1"}, true))
+	require.Error(t, impl.SignProvenance(account, []string{"v1.36.0", "v1.36.1"}, true))
 	require.Nil(t, signer.paths)
 
 	// and is skipped otherwise
-	require.NoError(t, impl.SignProvenance([]string{"v1.36.0", "v1.36.1"}, false))
+	require.NoError(t, impl.SignProvenance(account, []string{"v1.36.0", "v1.36.1"}, false))
 	require.Equal(t, []string{filepath.Join(tmpDir, "provenance-v1.36.0.json")}, signer.paths)
 
 	// A signing failure fails
 	signer.err = errors.New("signing failed")
 
-	require.Error(t, impl.SignProvenance([]string{"v1.36.0"}, true))
+	require.Error(t, impl.SignProvenance(account, []string{"v1.36.0"}, true))
 }

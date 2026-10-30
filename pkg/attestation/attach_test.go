@@ -17,7 +17,10 @@ limitations under the License.
 package attestation
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http/httptest"
 	"strings"
@@ -25,8 +28,12 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/registry"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/google/go-containerregistry/pkg/v1/static"
+	"github.com/google/go-containerregistry/pkg/v1/types"
+	ociremote "github.com/sigstore/cosign/v3/pkg/oci/remote"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	protodsse "github.com/sigstore/protobuf-specs/gen/pb-go/dsse"
 	sbundle "github.com/sigstore/sigstore-go/pkg/bundle"
@@ -40,8 +47,9 @@ const (
 	digestA = "0e8a8b6f7c6cf3b0f2f2b6c2d1a4f4b3c2e1d0f9a8b7c6d5e4f3a2b1c0d9e8f7"
 	digestB = "1e8a8b6f7c6cf3b0f2f2b6c2d1a4f4b3c2e1d0f9a8b7c6d5e4f3a2b1c0d9e8f7"
 
-	stagingRepository = "gcr.io/k8s-staging-kubernetes"
-	provenanceType    = "https://slsa.dev/provenance/v1"
+	stagingRepository  = "gcr.io/k8s-staging-kubernetes"
+	provenanceType     = "https://slsa.dev/provenance/v1"
+	bundleV03MediaType = "application/vnd.dev.sigstore.bundle.v0.3+json"
 )
 
 // imageStatement returns a statement with the subjects of the staged images
@@ -281,6 +289,42 @@ func TestAttachBundleToRegistry(t *testing.T) {
 			require.NoError(t, err)
 			require.False(t, exists)
 
+			// Neither do our statement in a layer of another media type, nor
+			// in a bundle layer larger than the bundles of a stage, which
+			// isn't read at all, nor in a compressed bundle layer, which
+			// isn't decompressed.
+			annotations := map[string]string{ociremote.BundlePredicateType: provenanceType}
+			require.NoError(t, ociremote.WriteReferrer(ref, "application/json",
+				[]v1.Layer{static.NewLayer(testBundle(t, ours), "application/json")}, annotations))
+
+			var compressed bytes.Buffer
+
+			zw := gzip.NewWriter(&compressed)
+			_, err = zw.Write(testBundle(t, ours))
+			require.NoError(t, err)
+			require.NoError(t, zw.Close())
+			require.NoError(t, impl.AttachBundle(ctx, ref, compressed.Bytes(), provenanceType))
+
+			large := append(testBundle(t, ours), bytes.Repeat([]byte(" "), maxBundleSize)...)
+			require.NoError(t, impl.AttachBundle(ctx, ref, large, provenanceType))
+
+			exists, err = impl.HasBundle(ctx, ref, provenanceType, []byte(ours))
+			require.NoError(t, err)
+			require.False(t, exists)
+
+			// Bundle layers of an unknown size or with a blob that can't be
+			// read are skipped instead of failing the lookup.
+			missing, _, err := v1.SHA256(strings.NewReader("missing"))
+			require.NoError(t, err)
+			putReferrer(t, ref, []v1.Descriptor{
+				{MediaType: bundleV03MediaType, Size: -1, Digest: missing},
+				{MediaType: bundleV03MediaType, Size: 7, Digest: missing},
+			})
+
+			exists, err = impl.HasBundle(ctx, ref, provenanceType, []byte(ours))
+			require.NoError(t, err)
+			require.False(t, exists)
+
 			require.NoError(t, impl.AttachBundle(ctx, ref, testBundle(t, ours), provenanceType))
 
 			exists, err = impl.HasBundle(ctx, ref, provenanceType, []byte(ours))
@@ -293,3 +337,35 @@ func TestAttachBundleToRegistry(t *testing.T) {
 		})
 	}
 }
+
+// putReferrer writes a referrer manifest of the image with the layers and the
+// predicate type annotation, without pushing any blobs, like a manifest
+// planted to point at blobs which don't match it.
+func putReferrer(t *testing.T, subject name.Digest, layers []v1.Descriptor) {
+	t.Helper()
+
+	img, err := remote.Get(subject)
+	require.NoError(t, err)
+
+	empty, size, err := v1.SHA256(strings.NewReader("{}"))
+	require.NoError(t, err)
+
+	raw, err := json.Marshal(&v1.Manifest{
+		SchemaVersion: 2,
+		MediaType:     types.OCIManifestSchema1,
+		Config:        v1.Descriptor{MediaType: types.MediaType("application/vnd.oci.empty.v1+json"), Size: size, Digest: empty},
+		Layers:        layers,
+		Subject:       &img.Descriptor,
+		Annotations:   map[string]string{ociremote.BundlePredicateType: provenanceType},
+	})
+	require.NoError(t, err)
+
+	digest, _, err := v1.SHA256(bytes.NewReader(raw))
+	require.NoError(t, err)
+
+	require.NoError(t, remote.Put(subject.Context().Digest(digest.String()), &rawManifest{raw: raw}))
+}
+
+type rawManifest struct{ raw []byte }
+
+func (m *rawManifest) RawManifest() ([]byte, error) { return m.raw, nil }

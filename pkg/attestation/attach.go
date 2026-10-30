@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/google"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	intoto "github.com/in-toto/attestation/go/v1"
@@ -39,6 +40,17 @@ import (
 
 // defaultAttachTimeout bounds the registry requests for one image.
 const defaultAttachTimeout = 2 * time.Minute
+
+const (
+	// bundleMediaTypePrefix starts the media types of sigstore bundle
+	// layers, like application/vnd.dev.sigstore.bundle.v0.3+json.
+	bundleMediaTypePrefix = "application/vnd.dev.sigstore.bundle"
+
+	// maxBundleSize bounds the existing bundles read to compare their
+	// statement. The bundles of the stage provenance are far smaller, so a
+	// larger layer isn't one of them.
+	maxBundleSize = 4 << 20
+)
 
 // AttacherOptions configures where and how bundles get attached.
 type AttacherOptions struct {
@@ -229,30 +241,38 @@ func (*defaultAttacherImpl) HasBundle(ctx context.Context, ref name.Digest, pred
 	return false, nil
 }
 
-// bundleCarries returns whether the bundle in the layer of the referrer has
-// a DSSE envelope with the payload.
+// bundleCarries returns whether a sigstore bundle layer of the referrer has
+// a DSSE envelope with the payload. Only layers which the manifest of the
+// referrer names as sigstore bundles of at most maxBundleSize get read, so
+// that a large layer planted on an image can't exhaust the signing step.
 func bundleCarries(referrer name.Digest, payload []byte, opts []remote.Option) (bool, error) {
 	img, err := remote.Image(referrer, opts...)
 	if err != nil {
 		return false, fmt.Errorf("reading the referrer %s: %w", referrer, err)
 	}
 
-	layers, err := img.Layers()
+	manifest, err := img.Manifest()
 	if err != nil {
-		return false, fmt.Errorf("reading the layers of %s: %w", referrer, err)
+		return false, fmt.Errorf("reading the manifest of %s: %w", referrer, err)
 	}
 
-	for _, layer := range layers {
-		reader, err := layer.Uncompressed()
-		if err != nil {
-			return false, fmt.Errorf("reading a layer of %s: %w", referrer, err)
+	for i := range manifest.Layers {
+		// A size the manifest doesn't state, which the registry client
+		// doesn't check the blob against, doesn't belong to a bundle either.
+		desc := &manifest.Layers[i]
+		if !strings.HasPrefix(string(desc.MediaType), bundleMediaTypePrefix) ||
+			desc.Size <= 0 || desc.Size > maxBundleSize {
+			continue
 		}
 
-		data, err := io.ReadAll(reader)
-		_ = reader.Close()
-
+		// A layer that can't be read, like one planted with a blob that
+		// doesn't match, can't stop the step: at worst the bundle gets
+		// attached once more.
+		data, err := readBundleLayer(img, desc.Digest)
 		if err != nil {
-			return false, fmt.Errorf("reading a layer of %s: %w", referrer, err)
+			logrus.Warnf("Skipping a layer of %s which can't be read: %v", referrer, err)
+
+			continue
 		}
 
 		// Only the statement matters here, so the bundle is parsed without
@@ -268,6 +288,25 @@ func bundleCarries(referrer name.Digest, payload []byte, opts []remote.Option) (
 	}
 
 	return false, nil
+}
+
+// readBundleLayer reads the layer as stored, since cosign writes bundles
+// uncompressed. The registry client checks the blob against the size and
+// digest of the manifest, so nothing gets decompressed and no more than
+// maxBundleSize gets read; the limited reader only backs that up.
+func readBundleLayer(img v1.Image, digest v1.Hash) ([]byte, error) {
+	layer, err := img.LayerByDigest(digest)
+	if err != nil {
+		return nil, err
+	}
+
+	reader, err := layer.Compressed()
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+
+	return io.ReadAll(io.LimitReader(reader, maxBundleSize))
 }
 
 // AttachBundle attaches the sigstore bundle as an OCI referrer to the image.
