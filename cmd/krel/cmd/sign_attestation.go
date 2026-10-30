@@ -247,13 +247,10 @@ func signInPlace(
 		return err
 	}
 
+	// Not SignFilesInPlace, which writes right after signing: the bundles
+	// are attached before anything is written.
 	for _, statement := range signed {
-		var bundle bytes.Buffer
-		if err := signer.WriteBundle(statement.Bundle, &bundle); err != nil {
-			return fmt.Errorf("serializing bundle of %s: %w", statement.Path, err)
-		}
-
-		if err := signer.WriteFile(statement.Path, bundle.Bytes()); err != nil {
+		if err := signer.WriteBundleFile(statement.Path, statement.Bundle); err != nil {
 			return fmt.Errorf("replacing statement with its bundle: %w", err)
 		}
 
@@ -265,12 +262,7 @@ func signInPlace(
 	}
 
 	// Only allowed with a single statement, see validateSignAttestationArgs
-	var bundle bytes.Buffer
-	if err := signer.WriteBundle(signed[0].Bundle, &bundle); err != nil {
-		return fmt.Errorf("serializing bundle of %s: %w", signed[0].Path, err)
-	}
-
-	if err := signer.WriteFile(opts.outputPath, bundle.Bytes()); err != nil {
+	if err := signer.WriteBundleFile(opts.outputPath, signed[0].Bundle); err != nil {
 		return fmt.Errorf("writing bundle copy: %w", err)
 	}
 
