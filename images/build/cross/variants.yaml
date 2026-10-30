@@ -8,6 +8,8 @@ variants:
     GO_MAJOR_VERSION: '1.27'
     OS_CODENAME: 'trixie'
     REVISION: '0'
+    KUBE_DYNAMIC_CROSSPLATFORMS: 'arm64 armhf i386 ppc64el s390x riscv64'
+    KUBE_CROSSPLATFORMS: 'linux/386 linux/arm linux/arm64 linux/ppc64le linux/s390x linux/riscv64 darwin/amd64 windows/amd64 windows/386'
   v1.38-go1.27-bullseye:
     CONFIG: 'go1.27-bullseye'
     TYPE: 'default'

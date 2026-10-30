@@ -96,7 +96,10 @@ RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
   && if [ ${targetArch} = "arm64" ]; then \
   apt-get update \
   && apt-get install -y build-essential gcc-x86-64-linux-gnu \
-  && apt-get install -y crossbuild-essential-ppc64el crossbuild-essential-s390x; \
+  && apt-get install -y crossbuild-essential-ppc64el crossbuild-essential-s390x \
+  && case " ${KUBE_DYNAMIC_CROSSPLATFORMS} " in \
+  *" riscv64 "*) apt-get install -y crossbuild-essential-riscv64 ;; \
+  esac; \
   fi
 
 RUN targetArch=$(echo $TARGETPLATFORM | cut -f2 -d '/') \
