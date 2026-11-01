@@ -100,11 +100,13 @@ kubelet:
     dependencies:
       - name: kubernetes-cni
         versionConstraint: ">= 1.1.1"
-  - versionConstraint: ">= 1.28.0"
+  - versionConstraint: ">= 1.28.0 < 1.36.0"
     sourceURLTemplate: "{{ KubernetesURL }}"
     dependencies:
       - name: kubernetes-cni
         versionConstraint: ">= 1.2.0"
+  - versionConstraint: ">= 1.36.0"
+    sourceURLTemplate: "{{ KubernetesURL }}"
 kubernetes-cni:
   - versionConstraint: ">= 0.8.7"
     sourceURLTemplate: "https://github.com/containernetworking/plugins/releases/download/v{{ .PackageVersion }}/cni-plugins-linux-{{ .Architecture }}-v{{ .PackageVersion }}.tgz"
