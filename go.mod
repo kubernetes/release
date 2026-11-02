@@ -43,7 +43,7 @@ require (
 	golang.org/x/text v0.43.0
 	google.golang.org/api v0.309.0
 	google.golang.org/protobuf v1.36.12
-	k8s.io/apimachinery v0.37.1
+	k8s.io/apimachinery v0.37.2
 	sigs.k8s.io/bom v0.8.0
 	sigs.k8s.io/mdtoc v1.4.0
 	sigs.k8s.io/promo-tools/v4 v4.8.0
