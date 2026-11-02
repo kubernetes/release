@@ -17,6 +17,7 @@ limitations under the License.
 package release
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -421,4 +422,46 @@ func TestVerifyWithin(t *testing.T) {
 
 		return nil
 	}), "no result after")
+}
+
+// TestVerifyStageProvenanceSigned verifies the signed stage provenance of
+// v1.37.1 the way official releases do: the collector verifies its signature
+// against the Sigstore trusted root, which the signer embeds and uses offline
+// while it is fresh, and the SLSA verifier reads that verification.
+func TestVerifyStageProvenanceSigned(t *testing.T) {
+	t.Parallel()
+
+	data, err := os.ReadFile(filepath.Join("testdata", "stage-provenance-v1.37.1.json"))
+	require.NoError(t, err)
+
+	impl := &defaultProvenanceCheckerImpl{}
+
+	payload, err := impl.verifyStageProvenance(data, "github.com/kubernetes/kubernetes")
+	require.NoError(t, err)
+
+	statement := &intoto.Statement{}
+	require.NoError(t, protojson.Unmarshal(payload, statement))
+	require.Equal(t, "https://slsa.dev/provenance/v0.2", statement.GetPredicateType())
+	require.Len(t, statement.GetSubject(), 451)
+
+	// The provenance is about another source repository.
+	_, err = impl.verifyStageProvenance(data, "github.com/someone/kubernetes")
+	require.ErrorContains(t, err, "source-repo-match")
+
+	// A changed subject digest in the statement, with everything else left
+	// as it is, matches neither the transparency log entry nor the signature.
+	bundle := &protobundle.Bundle{}
+	require.NoError(t, protojson.Unmarshal(data, bundle))
+
+	const digest = "7b6ceb5dd4e84daf0e1727f125e4d79e1cd302213d09f4bd80956a58988e81df" // src.tar.gz
+
+	signed := bundle.GetDsseEnvelope().GetPayload()
+	require.Equal(t, 1, bytes.Count(signed, []byte(digest)))
+	bundle.GetDsseEnvelope().Payload = bytes.Replace(signed, []byte(digest), []byte(strings.Repeat("0", 64)), 1)
+
+	data, err = protojson.Marshal(bundle)
+	require.NoError(t, err)
+
+	_, err = impl.verifyStageProvenance(data, "github.com/kubernetes/kubernetes")
+	require.ErrorContains(t, err, "statement signature did not verify")
 }
