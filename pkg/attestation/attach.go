@@ -257,11 +257,8 @@ func bundleCarries(referrer name.Digest, payload []byte, opts []remote.Option) (
 	}
 
 	for i := range manifest.Layers {
-		// A size the manifest doesn't state, which the registry client
-		// doesn't check the blob against, doesn't belong to a bundle either.
 		desc := &manifest.Layers[i]
-		if !strings.HasPrefix(string(desc.MediaType), bundleMediaTypePrefix) ||
-			desc.Size <= 0 || desc.Size > maxBundleSize {
+		if !isBundleLayer(desc) {
 			continue
 		}
 
@@ -290,10 +287,24 @@ func bundleCarries(referrer name.Digest, payload []byte, opts []remote.Option) (
 	return false, nil
 }
 
+// isBundleLayer returns whether the layer could be a bundle of ours, a
+// sigstore bundle of at most maxBundleSize in the registry. A size the
+// manifest doesn't state, which the registry client doesn't check the blob
+// against, doesn't belong to one. Neither do URLs to fetch the blob from when
+// the registry doesn't have it, which cosign never sets, so that a planted
+// referrer can't make the step reach out to other hosts.
+func isBundleLayer(desc *v1.Descriptor) bool {
+	return strings.HasPrefix(string(desc.MediaType), bundleMediaTypePrefix) &&
+		desc.Size > 0 && desc.Size <= maxBundleSize && len(desc.URLs) == 0
+}
+
 // readBundleLayer reads the layer as stored, since cosign writes bundles
 // uncompressed. The registry client checks the blob against the size and
 // digest of the manifest, so nothing gets decompressed and no more than
-// maxBundleSize gets read; the limited reader only backs that up.
+// maxBundleSize gets read. It checks the digest only once it reads the end
+// of the blob, so the limited reader allows one byte more than that: a blob
+// of exactly maxBundleSize still reaches its end, whether or not the
+// transport reports it together with the last bytes.
 func readBundleLayer(img v1.Image, digest v1.Hash) ([]byte, error) {
 	layer, err := img.LayerByDigest(digest)
 	if err != nil {
@@ -306,7 +317,7 @@ func readBundleLayer(img v1.Image, digest v1.Hash) ([]byte, error) {
 	}
 	defer reader.Close()
 
-	return io.ReadAll(io.LimitReader(reader, maxBundleSize))
+	return io.ReadAll(io.LimitReader(reader, maxBundleSize+1))
 }
 
 // AttachBundle attaches the sigstore bundle as an OCI referrer to the image.

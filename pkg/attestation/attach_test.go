@@ -22,8 +22,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/name"
@@ -334,6 +337,125 @@ func TestAttachBundleToRegistry(t *testing.T) {
 			exists, err = impl.HasBundle(ctx, ref, "https://spdx.dev/Document", []byte(ours))
 			require.NoError(t, err)
 			require.False(t, exists)
+		})
+	}
+}
+
+// TestHasBundleChecksBlobs checks that the bundle layers of a referrer are
+// read only with a matching digest, against a registry which serves another
+// blob of the same size for one digest. The registry client checks the
+// digest once it reads the end of the blob. A response with a
+// Content-Length reports the end together with the last bytes, a chunked one
+// only on the next read, which the limited reader has to allow for.
+func TestHasBundleChecksBlobs(t *testing.T) {
+	t.Parallel()
+
+	for _, chunked := range []bool{true, false} {
+		t.Run(fmt.Sprintf("chunked %t", chunked), func(t *testing.T) {
+			t.Parallel()
+
+			var tampered struct {
+				sync.Mutex
+
+				digest string
+				data   []byte
+			}
+
+			// putReferrer only shows up through the referrers API.
+			handler := registry.New(registry.WithReferrersSupport(true))
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				tampered.Lock()
+				digest, data := tampered.digest, tampered.data
+				tampered.Unlock()
+
+				if digest != "" && r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/blobs/"+digest) {
+					if !chunked {
+						w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+					}
+
+					_, _ = w.Write(data)
+
+					// The closing chunk follows the data separately.
+					if flusher, ok := w.(http.Flusher); ok && chunked {
+						flusher.Flush()
+					}
+
+					return
+				}
+
+				handler.ServeHTTP(w, r)
+			}))
+			t.Cleanup(server.Close)
+
+			img, err := random.Image(1024, 1)
+			require.NoError(t, err)
+
+			repo := strings.TrimPrefix(server.URL, "http://") + "/kube-apiserver"
+			tag, err := name.NewTag(repo + ":v1.36.0")
+			require.NoError(t, err)
+			require.NoError(t, remote.Write(tag, img))
+
+			digest, err := img.Digest()
+			require.NoError(t, err)
+
+			ref, err := name.NewDigest(repo + "@" + digest.String())
+			require.NoError(t, err)
+
+			ctx := t.Context()
+			impl := &defaultAttacherImpl{}
+			ours := imageStatement()
+			other := imageStatement(`{"name": "gcr.io/k8s-staging-kubernetes/pause", "digest": {"sha256": "` + digestA + `"}}`)
+
+			// A bundle of another statement of exactly maxBundleSize, whose
+			// blob the registry swaps for a bundle of our statement of the
+			// same size, doesn't count, since its digest doesn't match.
+			padded := func(statement string) []byte {
+				data := testBundle(t, statement)
+
+				return append(data, bytes.Repeat([]byte(" "), maxBundleSize-len(data))...)
+			}
+
+			stored := padded(other)
+			storedDigest, _, err := v1.SHA256(bytes.NewReader(stored))
+			require.NoError(t, err)
+			require.NoError(t, impl.AttachBundle(ctx, ref, stored, provenanceType))
+
+			tampered.Lock()
+			tampered.digest, tampered.data = storedDigest.String(), padded(ours)
+			tampered.Unlock()
+
+			exists, err := impl.HasBundle(ctx, ref, provenanceType, []byte(ours))
+			require.NoError(t, err)
+			require.False(t, exists)
+		})
+	}
+}
+
+func TestIsBundleLayer(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name string
+		desc v1.Descriptor
+		want bool
+	}{
+		{"bundle", v1.Descriptor{MediaType: bundleV03MediaType, Size: 1024}, true},
+		{"bundle of the largest size", v1.Descriptor{MediaType: bundleV03MediaType, Size: maxBundleSize}, true},
+		{"other media type", v1.Descriptor{MediaType: "application/json", Size: 1024}, false},
+		{"too large", v1.Descriptor{MediaType: bundleV03MediaType, Size: maxBundleSize + 1}, false},
+		{"unknown size", v1.Descriptor{MediaType: bundleV03MediaType, Size: -1}, false},
+		{"empty", v1.Descriptor{MediaType: bundleV03MediaType}, false},
+		{"foreign URLs", v1.Descriptor{
+			MediaType: bundleV03MediaType, Size: 1024, URLs: []string{"https://example.com/bundle"},
+		}, false},
+		{"foreign URLs and unknown size", v1.Descriptor{
+			MediaType: bundleV03MediaType, Size: -1, URLs: []string{"https://example.com/bundle"},
+		}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			require.Equal(t, tc.want, isBundleLayer(&tc.desc))
 		})
 	}
 }
