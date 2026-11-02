@@ -47,7 +47,7 @@ require (
 	sigs.k8s.io/bom v0.8.0
 	sigs.k8s.io/mdtoc v1.4.0
 	sigs.k8s.io/promo-tools/v4 v4.8.0
-	sigs.k8s.io/release-sdk v0.13.0
+	sigs.k8s.io/release-sdk v0.13.1
 	sigs.k8s.io/release-utils v0.12.5
 	sigs.k8s.io/yaml v1.6.0
 )
