@@ -59,7 +59,10 @@ const (
 	// The default license for all artifacts.
 	LicenseIdentifier = "Apache-2.0"
 
-	// kubernetesPackageRef is the SPDX reference for the kubernetes package.
+	// kubernetesPackageRef is a placeholder for the SPDX reference of the
+	// kubernetes package in the source SBOM, which the generated-from
+	// relationships get while the artifacts are added. setSourceReference
+	// replaces it with the ID of the package the source SBOM describes.
 	kubernetesPackageRef = "SPDXRef-Package-kubernetes"
 
 	// sourceCodeComment is the SBOM relationship comment for source code.
