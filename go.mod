@@ -21,7 +21,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
 	github.com/policylabs/attestation v0.3.0
 	github.com/policylabs/collector v0.4.0
-	github.com/policylabs/signer v0.6.5-0.20261015200636-00dacc16df2a
+	github.com/policylabs/signer v0.6.5
 	github.com/psampaz/go-mod-outdated v0.9.0
 	github.com/saschagrunert/go-modiff v1.4.1
 	github.com/sergi/go-diff v1.4.0
@@ -83,7 +83,7 @@ require (
 	github.com/buildkite/interpolate v0.1.5 // indirect
 	github.com/buildkite/roko v1.4.0 // indirect
 	github.com/carabiner-dev/attestation v0.2.1 // indirect
-	github.com/carabiner-dev/command v0.3.3 // indirect
+	github.com/carabiner-dev/command v0.3.4 // indirect
 	github.com/carabiner-dev/hasher v0.2.4 // indirect
 	github.com/carabiner-dev/openeox v1.0.0 // indirect
 	github.com/carabiner-dev/osv v0.1.2 // indirect
@@ -206,7 +206,7 @@ require (
 	github.com/slsa-framework/source-tool v0.7.0 // indirect
 	github.com/spdx/tools-golang v0.5.7 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/spiffe/go-spiffe/v2 v2.8.2 // indirect
+	github.com/spiffe/go-spiffe/v2 v2.9.0 // indirect
 	github.com/theupdateframework/go-tuf v0.7.0 // indirect
 	github.com/theupdateframework/go-tuf/v2 v2.4.2 // indirect
 	github.com/transparency-dev/formats v0.1.1 // indirect
