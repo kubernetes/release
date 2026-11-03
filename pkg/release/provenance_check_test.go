@@ -206,6 +206,15 @@ func TestGenerateFinalAttestation(t *testing.T) { //nolint:paralleltest // sets 
 	doc.Name = "Kubernetes Release " + version
 	doc.Namespace = "https://sbom.k8s.io/" + version + "/release"
 	require.NoError(t, doc.AddFile(file))
+
+	// An image package has a digest but no download location, which the
+	// SBOM writes as NONE
+	image := spdx.NewPackage()
+	image.Name = "registry.k8s.io/kube-apiserver-amd64:" + version
+	image.BuildID(image.Name)
+	image.Checksum = map[string]string{"SHA256": strings.Repeat("c", 64)}
+	require.NoError(t, doc.AddPackage(image))
+
 	sbom := filepath.Join(t.TempDir(), "kubernetes-release.spdx")
 	require.NoError(t, doc.Write(sbom))
 
@@ -243,16 +252,11 @@ func TestGenerateFinalAttestation(t *testing.T) { //nolint:paralleltest // sets 
 		final.GetPredicate().GetFields()["buildDefinition"].GetStructValue().GetFields()["buildType"].GetStringValue(),
 	)
 
-	// The subjects are the files of the SBOM in the release bucket
-	require.NotEmpty(t, final.GetSubject())
-
-	for _, sub := range final.GetSubject() {
-		require.True(t,
-			strings.HasPrefix(sub.GetName(), "gs://"+bucket+"/release/"+version+"/"), sub.GetName(),
-		)
-	}
-
-	require.Contains(t, subjectNames(final), "gs://"+bucket+"/release/"+version+"/bin/linux/amd64/kubectl")
+	// The subjects are only the files of the SBOM in the release bucket
+	require.Equal(t,
+		[]string{"gs://" + bucket + "/release/" + version + "/bin/linux/amd64/kubectl"},
+		subjectNames(final),
+	)
 }
 
 func TestGenerateFinalAttestationUnverified(t *testing.T) {
