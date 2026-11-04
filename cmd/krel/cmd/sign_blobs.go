@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -60,6 +61,32 @@ type signingBundle struct {
 	destinationPathToCopy string
 	fileToSign            string
 	fileLocalLocation     string
+
+	// remoteLocation is the object in the bucket the file is downloaded
+	// from, empty for local files.
+	remoteLocation string
+
+	// signaturePath and certificatePath name the signature and certificate
+	// of a previous run, if both exist.
+	signaturePath   string
+	certificatePath string
+
+	// signed is set when the file got a new signature in this run.
+	signed bool
+}
+
+var (
+	// unsignedSuffixes are the suffixes of listed objects that are not
+	// signed.
+	unsignedSuffixes = []string{".sha256", ".sha512", ":", ".docker_tag", certExt, sigExt, ".pem"}
+
+	// unsignedNames are the names of listed objects that are not signed.
+	unsignedNames = []string{"SHA256SUMS", "SHA512SUMS", "README", "Makefile"}
+)
+
+// fileVerifier verifies the signature and certificate of a file.
+type fileVerifier interface {
+	VerifyFile(path string, ignoreTLog bool) (*sign.SignedObject, error)
 }
 
 var signBlobOpts = &signBlobOptions{}
@@ -167,45 +194,94 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 			return fmt.Errorf("listing bucket contents: %w", err)
 		}
 
-		gcsClient := object.NewGCS()
+		objects := strings.Fields(output)
 
-		for file := range strings.FieldsSeq(output) {
-			if strings.HasSuffix(file, ".sha256") || strings.HasSuffix(file, ".sha512") ||
-				strings.HasSuffix(file, ":") || strings.HasSuffix(file, ".docker_tag") ||
-				strings.Contains(file, "SHA256SUMS") || strings.Contains(file, "SHA512SUMS") ||
-				strings.Contains(file, "README") || strings.Contains(file, "Makefile") ||
-				strings.HasSuffix(file, certExt) || strings.HasSuffix(file, sigExt) || strings.HasSuffix(file, ".pem") {
+		listed := make(map[string]struct{}, len(objects))
+		for _, file := range objects {
+			listed[file] = struct{}{}
+		}
+
+		for _, file := range objects {
+			if !isSignable(file) {
 				continue
 			}
 
 			destinationPath := strings.TrimPrefix(file, object.GcsPrefix)
 
 			localPath := filepath.Join(tempDir, filepath.Dir(destinationPath), filepath.Base(destinationPath))
-			if err := gcsClient.CopyToLocal(file, localPath); err != nil {
-				return fmt.Errorf("copying file to sign: %w", err)
-			}
 
-			bundle = append(bundle, signingBundle{
+			fileBundle := signingBundle{
 				destinationPathToCopy: filepath.Dir(destinationPath),
 				fileToSign:            filepath.Base(destinationPath),
 				fileLocalLocation:     localPath,
-			})
+				remoteLocation:        file,
+			}
+
+			// The signature of a previous run gets downloaded with the
+			// file, so that it is verified instead of signing the file
+			// again.
+			if canVerify(signBlobOpts) && hasSignatureObjects(listed, file) {
+				fileBundle.signaturePath = localPath + sigExt
+				fileBundle.certificatePath = localPath + certExt
+			}
+
+			bundle = append(bundle, fileBundle)
 		}
 	} else {
 		// Local files
 		for _, arg := range args {
-			bundle = append(bundle, signingBundle{
+			fileBundle := signingBundle{
 				fileLocalLocation: arg,
 				fileToSign:        filepath.Base(arg),
-			})
+			}
+
+			// A previous run wrote its signature where this one writes it.
+			signaturePath, certificatePath := outputPaths(signBlobOpts, arg)
+			if fileExists(signaturePath) && fileExists(certificatePath) {
+				fileBundle.signaturePath = signaturePath
+				fileBundle.certificatePath = certificatePath
+			}
+
+			bundle = append(bundle, fileBundle)
 		}
 	}
 
-	g := new(errgroup.Group)
+	// Files whose existing signature verifies are not signed again, so
+	// that a rerun keeps the signatures of a previous run. A file that
+	// changed since, for example because the stage ran again, gets a new
+	// signature, as its old one doesn't verify anymore.
+	newVerifier := func(signaturePath, certificatePath string) fileVerifier {
+		return newBlobVerifier(signOpts, signBlobOpts, signaturePath, certificatePath)
+	}
+
+	gcsClient := object.NewGCS()
+
+	g, ctx := errgroup.WithContext(context.Background())
 	g.SetLimit(int(signOpts.maxWorkers)) //nolint:gosec // overflow is highly unlikely
 
-	for _, fileBundle := range bundle {
+	for i := range bundle {
 		g.Go(func() error {
+			// Each worker writes only its own element, which is read
+			// after g.Wait().
+			fileBundle := &bundle[i]
+
+			// Another file failed already, its error stops the run.
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+
+			if fileBundle.remoteLocation != "" {
+				if err := downloadFile(gcsClient, fileBundle); err != nil {
+					return err
+				}
+			}
+
+			if !needsSigning(fileBundle, signBlobOpts, newVerifier) {
+				logrus.Infof("Skipping %s, it is signed already", fileBundle.fileToSign)
+
+				return keepSignature(signBlobOpts, fileBundle)
+			}
+
 			logrus.Infof("Signing %s...", fileBundle.fileToSign)
 
 			signerOpts := sign.Default()
@@ -214,13 +290,7 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 			signerOpts.PrivateKeyPath = signBlobOpts.privateKeyPath
 			signerOpts.PublicKeyPath = signBlobOpts.publicKeyPath
 
-			signerOpts.OutputCertificatePath = fmt.Sprintf("%s/%s%s", signBlobOpts.outputPath, fileBundle.fileToSign, certExt)
-			signerOpts.OutputSignaturePath = fmt.Sprintf("%s/%s%s", signBlobOpts.outputPath, fileBundle.fileToSign, sigExt)
-
-			if signBlobOpts.outputPath == "" {
-				signerOpts.OutputCertificatePath = fmt.Sprintf("%s%s", fileBundle.fileLocalLocation, certExt)
-				signerOpts.OutputSignaturePath = fmt.Sprintf("%s%s", fileBundle.fileLocalLocation, sigExt)
-			}
+			signerOpts.OutputSignaturePath, signerOpts.OutputCertificatePath = outputPaths(signBlobOpts, fileBundle.fileLocalLocation)
 
 			signerOpts.CertIdentity = signBlobOpts.certIdentity
 			signerOpts.CertIdentityRegexp = signBlobOpts.certIdentityRegexp
@@ -231,6 +301,8 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 			if _, err := signer.SignFile(fileBundle.fileLocalLocation); err != nil {
 				return fmt.Errorf("signing the file %s: %w", fileBundle.fileLocalLocation, err)
 			}
+
+			fileBundle.signed = true
 
 			return nil
 		})
@@ -244,13 +316,11 @@ func runSignBlobs(signOpts *signOptions, signBlobOpts *signBlobOptions, args []s
 		logrus.Info("Copying Certificates and Signatures back to the bucket...")
 
 		for _, fileBundle := range bundle {
-			certFiles := fmt.Sprintf("%s/%s%s", signBlobOpts.outputPath, fileBundle.fileToSign, certExt)
-			signFiles := fmt.Sprintf("%s/%s%s", signBlobOpts.outputPath, fileBundle.fileToSign, sigExt)
-
-			if signBlobOpts.outputPath == "" {
-				certFiles = fmt.Sprintf("%s%s", fileBundle.fileLocalLocation, certExt)
-				signFiles = fmt.Sprintf("%s%s", fileBundle.fileLocalLocation, sigExt)
+			if !fileBundle.signed {
+				continue
 			}
+
+			signFiles, certFiles := outputPaths(signBlobOpts, fileBundle.fileLocalLocation)
 
 			logrus.Infof("Copying %s and %s...", certFiles, signFiles)
 
@@ -290,4 +360,170 @@ func validateSignBlobsArgs(args []string) error {
 	}
 
 	return nil
+}
+
+// isSignable reports whether a file listed in the bucket gets signed.
+func isSignable(file string) bool {
+	for _, suffix := range unsignedSuffixes {
+		if strings.HasSuffix(file, suffix) {
+			return false
+		}
+	}
+
+	for _, name := range unsignedNames {
+		if strings.Contains(file, name) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// downloadFile downloads the file to sign and the signature and certificate
+// of a previous run, if it has them. A failed download of the signature
+// leads to signing the file again, like a signature that doesn't verify.
+func downloadFile(gcsClient *object.GCS, fileBundle *signingBundle) error {
+	if err := gcsClient.CopyToLocal(fileBundle.remoteLocation, fileBundle.fileLocalLocation); err != nil {
+		return fmt.Errorf("copying file to sign: %w", err)
+	}
+
+	if fileBundle.signaturePath == "" {
+		return nil
+	}
+
+	if err := errors.Join(
+		gcsClient.CopyToLocal(fileBundle.remoteLocation+sigExt, fileBundle.signaturePath),
+		gcsClient.CopyToLocal(fileBundle.remoteLocation+certExt, fileBundle.certificatePath),
+	); err != nil {
+		logrus.Warnf("Copying the existing signature of %s failed, signing it again: %v", fileBundle.remoteLocation, err)
+
+		fileBundle.signaturePath = ""
+		fileBundle.certificatePath = ""
+	}
+
+	return nil
+}
+
+// hasSignatureObjects reports whether the listed objects contain a
+// signature and a certificate for the file.
+func hasSignatureObjects(listed map[string]struct{}, file string) bool {
+	_, hasSignature := listed[file+sigExt]
+	_, hasCertificate := listed[file+certExt]
+
+	return hasSignature && hasCertificate
+}
+
+// fileExists reports whether the path exists.
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+
+	return err == nil
+}
+
+// canVerify reports whether an existing signature can be verified: only
+// keyless signatures are, against the identity and issuer of the options.
+// Signing with a key writes no certificate, so those files are always
+// signed again.
+func canVerify(opts *signBlobOptions) bool {
+	if opts.privateKeyPath != "" {
+		return false
+	}
+
+	return (opts.certIdentity != "" || opts.certIdentityRegexp != "") &&
+		(opts.certOidcIssuer != "" || opts.certOidcIssuerRegexp != "")
+}
+
+// outputPaths returns where the signature and certificate of the file are
+// written: next to it, or in the output path.
+func outputPaths(opts *signBlobOptions, path string) (signaturePath, certificatePath string) {
+	if opts.outputPath == "" {
+		return path + sigExt, path + certExt
+	}
+
+	return filepath.Join(opts.outputPath, filepath.Base(path)+sigExt), filepath.Join(opts.outputPath, filepath.Base(path)+certExt)
+}
+
+// newBlobVerifier returns a verifier for the signature and certificate of a
+// previous run of the file.
+func newBlobVerifier(signOpts *signOptions, opts *signBlobOptions, signaturePath, certificatePath string) *sign.Signer {
+	verifierOpts := sign.Default()
+	verifierOpts.Verbose = signOpts.verbose
+	verifierOpts.Timeout = signOpts.timeout
+	verifierOpts.OutputSignaturePath = signaturePath
+	verifierOpts.OutputCertificatePath = certificatePath
+	verifierOpts.CertIdentity = opts.certIdentity
+	verifierOpts.CertIdentityRegexp = opts.certIdentityRegexp
+	verifierOpts.CertOidcIssuer = opts.certOidcIssuer
+	verifierOpts.CertOidcIssuerRegexp = opts.certOidcIssuerRegexp
+
+	return sign.New(verifierOpts)
+}
+
+// needsSigning reports whether the file has to be signed: unless the
+// signature and certificate of a previous run exist and verify.
+func needsSigning(
+	fileBundle *signingBundle, opts *signBlobOptions, newVerifier func(signaturePath, certificatePath string) fileVerifier,
+) bool {
+	if fileBundle.signaturePath == "" || !canVerify(opts) {
+		return true
+	}
+
+	return !signatureVerifies(newVerifier(fileBundle.signaturePath, fileBundle.certificatePath), fileBundle.fileLocalLocation)
+}
+
+// keepSignature puts the verified signature and certificate of a previous
+// run where this run writes them, so that the output path holds the
+// signatures of all files, also the skipped ones.
+func keepSignature(opts *signBlobOptions, fileBundle *signingBundle) error {
+	signaturePath, certificatePath := outputPaths(opts, fileBundle.fileLocalLocation)
+
+	if err := copyFile(fileBundle.signaturePath, signaturePath); err != nil {
+		return fmt.Errorf("keeping the existing signature of %s: %w", fileBundle.fileToSign, err)
+	}
+
+	if err := copyFile(fileBundle.certificatePath, certificatePath); err != nil {
+		return fmt.Errorf("keeping the existing certificate of %s: %w", fileBundle.fileToSign, err)
+	}
+
+	return nil
+}
+
+// copyFile copies src to dst, unless both are the same file.
+func copyFile(src, dst string) error {
+	if src == dst {
+		return nil
+	}
+
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return fmt.Errorf("reading %s: %w", src, err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return fmt.Errorf("creating the directory of %s: %w", dst, err)
+	}
+
+	if err := os.WriteFile(dst, data, 0o644); err != nil { //nolint:gosec // signatures and certificates are public
+		return fmt.Errorf("writing %s: %w", dst, err)
+	}
+
+	return nil
+}
+
+// signatureVerifies reports whether the existing signature of the file
+// verifies for its current content, including its transparency log entry.
+// Any error, also a temporary one like an unavailable transparency log,
+// leads to signing the file again: that is always correct and only costs
+// time, while failing would block the release. Errors can't be told apart
+// reliably either, Rekor rejects the search for a changed file with a bad
+// request instead of an empty result.
+func signatureVerifies(verifier fileVerifier, path string) bool {
+	signed, err := verifier.VerifyFile(path, false)
+	if err != nil {
+		logrus.Warnf("Existing signature of %s does not verify, signing it again: %v", path, err)
+
+		return false
+	}
+
+	return signed != nil
 }
