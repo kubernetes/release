@@ -319,7 +319,7 @@ func New(
 			doc.CVEList = append(doc.CVEList, newcve)
 		}
 
-		if !note.IsMapped && note.DoNotPublish {
+		if note.DoNotPublish {
 			logrus.Debugf("Skipping PR %d as (marked to not be published)", pr)
 
 			continue
