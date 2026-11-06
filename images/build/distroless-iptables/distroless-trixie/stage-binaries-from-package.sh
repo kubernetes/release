@@ -27,7 +27,7 @@ set -e
 stage_file_list() {
     IFS="
     "
-    REQUIRED_FILES="$(dpkg -L "${1}" | grep -vE '(/\.|/s?bin/|/usr/share/(man|doc|.*-completion))' | sed 's/\n/ /g')"
+    REQUIRED_FILES="$(dpkg -L "${1}" | grep -vE '(/\.|/s?bin/|/usr/share/(man|doc|.*-completion)|/usr/lib/.*/gconv/)' | sed 's/\n/ /g')"
     for file in $REQUIRED_FILES; do 
         if [ -f "$file" ]; then
             stage_file "${file}" "${STAGE_DIR}"

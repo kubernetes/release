@@ -42,46 +42,27 @@ COPY stage-binary-and-deps.sh /
 COPY stage-binaries-from-package.sh /
 COPY package-utils.sh /
 
-# TODO: /bin/sleep is used by a specific e2e test
+# Stage iptables (for iptables and ipvs modes), ipset and modprobe (for ipvs) and nft (for
+# nftables mode). The symlinks created by update-alternatives aren't considered part of
+# the iptables package so we have to stage them by hand. (k/k requires at least
+# `/usr/sbin/iptables` to be present as part of mode auto-detection, and users may expect
+# to be able to `kubectl exec` the other binaries for debugging.)
 ARG STAGE_DIR="/opt/stage"
-RUN apt-get -y install bash curl && \
-    mkdir -p "${STAGE_DIR}" && \
-    /stage-binaries-from-package.sh "${STAGE_DIR}" ipset \
-    iptables    \
-    kmod        && \
-    /stage-binary-and-deps.sh "${STAGE_DIR}" /usr/sbin/nft && \
-    `# below binaries and dash are used by iptables-wrapper-installer.sh` \
-    /stage-binary-and-deps.sh "${STAGE_DIR}" /bin/dash \
-    /bin/cat \
-    /bin/chmod \
-    /bin/grep \
-    /bin/ln  \
-    /bin/rm \
-    /bin/sleep \
-    /usr/bin/wc
-
-RUN curl -o "${STAGE_DIR}"/iptables-wrapper-installer.sh https://raw.githubusercontent.com/kubernetes-sigs/iptables-wrappers/v2/iptables-wrapper-installer.sh && \
-    chmod +x "${STAGE_DIR}"/iptables-wrapper-installer.sh && \
-    ln -sf /usr/bin/dash "${STAGE_DIR}"/usr/bin/sh
+RUN mkdir -p "${STAGE_DIR}" && \
+    /stage-binaries-from-package.sh "${STAGE_DIR}" ipset iptables kmod && \
+    /stage-binary-and-deps.sh "${STAGE_DIR}" /usr/sbin/iptables /usr/sbin/iptables-save /usr/sbin/iptables-restore /usr/sbin/ip6tables /usr/sbin/ip6tables-save /usr/sbin/ip6tables-restore && \
+    /stage-binary-and-deps.sh "${STAGE_DIR}" /usr/sbin/nft
 
 # we're going to borrow the /go-runner binary in the final image
 # dedupe this binary by just copying it from the go-runner image
 FROM ${GORUNNERIMAGE} AS gorunner
 
-# We need to use distroless:static here as tzdata, and some other base packages are required.
+# We need to use distroless:static here, as tzdata and some other base packages are required.
 # We supply our own C libraries alongside some additional C binaries.
 FROM gcr.io/distroless/static-debian13 AS intermediate
 
-ARG TARGETARCH
-
-COPY clean-distroless.sh /clean-distroless.sh
 COPY --from=build /opt/stage /
 COPY --from=gorunner /go-runner /go-runner
-# iptables-wrapper-installer needs to know that iptables exists before doing all its magic
-RUN echo "" >  /usr/sbin/iptables && \
-    `# We skip sanity check in iptables-wrapper-installer due to qemu multiarch problems `\
-    /iptables-wrapper-installer.sh $([ "${TARGETARCH}" = amd64 ] || echo --no-sanity-check) && \
-    /clean-distroless.sh
 
 FROM scratch
 COPY --from=intermediate / /
