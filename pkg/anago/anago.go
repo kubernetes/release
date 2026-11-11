@@ -206,6 +206,13 @@ func (s *State) SetVersions(versions *release.Versions) {
 // StageState holds the release process state.
 type StageState struct {
 	*State
+
+	// ArtifactsBOMs are the release artifacts SBOMs by version, which
+	// GenerateBillOfMaterials generates and StageArtifacts writes once the
+	// container images are pushed, since they record the digests of the
+	// pushed images. GenerateBillOfMaterials runs concurrently with
+	// VerifyArtifacts, which must not access them.
+	ArtifactsBOMs map[string]*ArtifactsBOM
 }
 
 // DefaultStageState create a new default `StageState`.

@@ -19,6 +19,7 @@ require (
 	github.com/mattn/go-isatty v0.0.24
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.14.0
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
+	github.com/package-url/packageurl-go v0.1.7
 	github.com/policylabs/attestation v0.3.0
 	github.com/policylabs/collector v0.4.0
 	github.com/policylabs/signer v0.6.7
@@ -183,7 +184,6 @@ require (
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/openvex/go-vex v0.2.9 // indirect
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20260730052020-9509daabeece // indirect
-	github.com/package-url/packageurl-go v0.1.7 // indirect
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/peterhellberg/link v1.2.0 // indirect
 	github.com/pjbgf/sha1cd v0.7.0 // indirect

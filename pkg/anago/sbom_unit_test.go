@@ -20,8 +20,10 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/bom/pkg/spdx"
@@ -217,4 +219,182 @@ func TestWriteSPDX3(t *testing.T) {
 
 	// A path that can't be created fails
 	require.Error(t, writeSPDX3(doc, filepath.Join(t.TempDir(), "missing", "sbom.spdx3.json"), "v1.36.0", extRef, source))
+}
+
+func TestSetImageDigests(t *testing.T) {
+	t.Parallel()
+
+	computed := strings.Repeat("a", 64)
+	pushed := strings.Repeat("b", 64)
+	index := strings.Repeat("c", 64)
+
+	// image returns an image package as bom generates it from the image
+	// archive of the repository, with the digest it computes.
+	image := func(repository, version string) *spdx.Package {
+		pkg := spdx.NewPackage()
+		pkg.Name = "registry.k8s.io/" + repository + ":v1.38.0"
+		pkg.BuildID(pkg.Name)
+		pkg.Checksum = map[string]string{"SHA256": computed}
+		pkg.ExternalRefs = []spdx.ExternalRef{{
+			Category: spdx.CatPackageManager,
+			Type:     spdx.ExtRefTypePurl,
+			Locator: "pkg:oci/" + repository + "@" + version +
+				"?arch=amd64&repository_url=registry.k8s.io%2F" + repository + "&tag=v1.38.0",
+		}}
+
+		return pkg
+	}
+
+	// The pushed images as GetImageSubjects returns them: the manifest list,
+	// and the arch-specific image in its own repository and in the one of
+	// the manifest list.
+	subjects := []*intoto.ResourceDescriptor{
+		{Name: "gcr.io/k8s-staging-kubernetes/kube-apiserver", Digest: map[string]string{"sha256": index}},
+		{Name: "gcr.io/k8s-staging-kubernetes/kube-apiserver-amd64", Digest: map[string]string{"sha256": pushed}},
+		{Name: "gcr.io/k8s-staging-kubernetes/kube-apiserver", Digest: map[string]string{"sha256": pushed}},
+	}
+
+	for _, tc := range []struct {
+		name     string
+		packages []*spdx.Package
+		subjects []*intoto.ResourceDescriptor
+		wantErr  string
+	}{
+		{
+			name:     "arch-specific image",
+			packages: []*spdx.Package{image("kube-apiserver-amd64", "sha256%3A"+computed)},
+			subjects: subjects,
+		},
+		{
+			// The repository of the manifest list holds several images.
+			name:     "image in the repository of a manifest list",
+			packages: []*spdx.Package{image("kube-apiserver", "sha256%3A"+computed)},
+			subjects: subjects,
+			wantErr:  "2 pushed images",
+		},
+		{
+			name:     "image not pushed",
+			packages: []*spdx.Package{image("kube-proxy-amd64", "sha256%3A"+computed)},
+			subjects: subjects,
+			wantErr:  "no pushed image",
+		},
+		{
+			name:     "pushed image without digest",
+			packages: []*spdx.Package{image("kube-apiserver-amd64", "sha256%3A"+computed)},
+			subjects: []*intoto.ResourceDescriptor{{Name: "gcr.io/k8s-staging-kubernetes/kube-apiserver-amd64"}},
+			wantErr:  "no sha256 digest",
+		},
+		{
+			name:     "package URL without digest",
+			packages: []*spdx.Package{image("kube-apiserver-amd64", "v1.38.0")},
+			subjects: subjects,
+			wantErr:  "no sha256 digest",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			doc := spdx.NewDocument()
+			for _, pkg := range tc.packages {
+				require.NoError(t, doc.AddPackage(pkg))
+			}
+
+			// Packages without an OCI package URL keep their checksum.
+			other := spdx.NewPackage()
+			other.Name = "k8s.io/kubernetes"
+			other.BuildID(other.Name)
+			other.Checksum = map[string]string{"SHA256": computed}
+			other.ExternalRefs = []spdx.ExternalRef{{
+				Category: spdx.CatPackageManager,
+				Type:     spdx.ExtRefTypePurl,
+				Locator:  "pkg:golang/k8s.io/kubernetes@v1.38.0",
+			}}
+			require.NoError(t, doc.AddPackage(other))
+
+			err := setImageDigests(doc, tc.subjects)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+
+				return
+			}
+
+			require.NoError(t, err)
+
+			pkg := tc.packages[0]
+			require.Equal(t, pushed, pkg.Checksum["SHA256"])
+			require.Equal(t,
+				"pkg:oci/kube-apiserver-amd64@sha256%3A"+pushed+
+					"?arch=amd64&repository_url=registry.k8s.io%2Fkube-apiserver-amd64&tag=v1.38.0",
+				pkg.ExternalRefs[0].Locator,
+				"only the digest changes",
+			)
+
+			require.Equal(t, computed, other.Checksum["SHA256"])
+			require.Equal(t, "pkg:golang/k8s.io/kubernetes@v1.38.0", other.ExternalRefs[0].Locator)
+		})
+	}
+
+	// bom writes the package URL of an image reference with the registry
+	// only as repository_url, the package matches by its name
+	t.Run("repository URL without the image name", func(t *testing.T) {
+		t.Parallel()
+
+		pkg := image("kube-apiserver-amd64", "sha256%3A"+computed)
+		pkg.ExternalRefs[0].Locator = "pkg:oci/kube-apiserver-amd64@sha256%3A" + computed +
+			"?arch=amd64&repository_url=registry.k8s.io&tag=v1.38.0"
+
+		doc := spdx.NewDocument()
+		require.NoError(t, doc.AddPackage(pkg))
+		require.NoError(t, setImageDigests(doc, subjects))
+		require.Equal(t, pushed, pkg.Checksum["SHA256"])
+		require.Equal(t,
+			"pkg:oci/kube-apiserver-amd64@sha256%3A"+pushed+"?arch=amd64&repository_url=registry.k8s.io&tag=v1.38.0",
+			pkg.ExternalRefs[0].Locator,
+		)
+	})
+}
+
+// TestWriteVersionArtifactsBOM runs on its own: the SBOMs are written to the
+// temporary directory of the process.
+func TestWriteVersionArtifactsBOM(t *testing.T) { //nolint:paralleltest // sets TMPDIR
+	const version = "v1.36.0"
+
+	tmpDir := t.TempDir()
+	t.Setenv("TMPDIR", tmpDir)
+
+	sourcePath, source := sourceDocument(t)
+	extRef := spdx.ExternalDocumentRef{ID: sourceDocumentID(version), URI: "https://sbom.k8s.io/v1.36.0/source"}
+	require.NoError(t, extRef.ReadSourceFile(sourcePath))
+
+	doc := spdx.NewDocument()
+	doc.Name = "Kubernetes Release " + version
+	doc.Namespace = "https://sbom.k8s.io/" + version + "/release"
+	doc.ExternalDocRefs = append(doc.ExternalDocRefs, extRef)
+
+	pkg := spdx.NewPackage()
+	pkg.Name = "registry.k8s.io/kube-apiserver-amd64:" + version
+	pkg.BuildID(pkg.Name)
+	pkg.AddRelationship(&spdx.Relationship{
+		PeerReference:    source.SPDXID(),
+		PeerExtReference: extRef.ID,
+		Type:             spdx.GENERATED_FROM,
+	})
+	require.NoError(t, doc.AddPackage(pkg))
+
+	sbom := &ArtifactsBOM{Doc: doc, SourceRef: extRef, Source: source}
+	impl := &defaultStageImpl{}
+	require.NoError(t, impl.WriteVersionArtifactsBOM(sbom, version))
+
+	// Both formats are written where staging the artifacts picks them up
+	spdx2, err := os.ReadFile(filepath.Join(tmpDir, "release-bom-"+version+".spdx"))
+	require.NoError(t, err)
+	require.Contains(t, string(spdx2), "ExternalDocumentRef: DocumentRef-"+extRef.ID+" "+extRef.URI)
+
+	spdx3, err := os.ReadFile(filepath.Join(tmpDir, "release-bom-"+version+".spdx3.json"))
+	require.NoError(t, err)
+	require.Contains(t, string(spdx3), extRef.URI)
+
+	// A temporary directory that doesn't exist fails
+	t.Setenv("TMPDIR", filepath.Join(tmpDir, "missing"))
+	require.Error(t, impl.WriteVersionArtifactsBOM(sbom, version))
 }
