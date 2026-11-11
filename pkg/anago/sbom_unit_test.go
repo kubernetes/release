@@ -20,8 +20,10 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/bom/pkg/spdx"
@@ -217,4 +219,118 @@ func TestWriteSPDX3(t *testing.T) {
 
 	// A path that can't be created fails
 	require.Error(t, writeSPDX3(doc, filepath.Join(t.TempDir(), "missing", "sbom.spdx3.json"), "v1.36.0", extRef, source))
+}
+
+func TestSetImageDigests(t *testing.T) {
+	t.Parallel()
+
+	computed := strings.Repeat("a", 64)
+	pushed := strings.Repeat("b", 64)
+	index := strings.Repeat("c", 64)
+
+	// image returns an image package as bom generates it from the image
+	// archive of the repository, with the digest it computes.
+	image := func(repository, version string) *spdx.Package {
+		pkg := spdx.NewPackage()
+		pkg.Name = "registry.k8s.io/" + repository + ":v1.38.0"
+		pkg.BuildID(pkg.Name)
+		pkg.Checksum = map[string]string{"SHA256": computed}
+		pkg.ExternalRefs = []spdx.ExternalRef{{
+			Category: spdx.CatPackageManager,
+			Type:     spdx.ExtRefTypePurl,
+			Locator: "pkg:oci/" + repository + "@" + version +
+				"?arch=amd64&repository_url=registry.k8s.io%2F" + repository + "&tag=v1.38.0",
+		}}
+
+		return pkg
+	}
+
+	// The pushed images as GetImageSubjects returns them: the manifest list,
+	// and the arch-specific image in its own repository and in the one of
+	// the manifest list.
+	subjects := []*intoto.ResourceDescriptor{
+		{Name: "gcr.io/k8s-staging-kubernetes/kube-apiserver", Digest: map[string]string{"sha256": index}},
+		{Name: "gcr.io/k8s-staging-kubernetes/kube-apiserver-amd64", Digest: map[string]string{"sha256": pushed}},
+		{Name: "gcr.io/k8s-staging-kubernetes/kube-apiserver", Digest: map[string]string{"sha256": pushed}},
+	}
+
+	for _, tc := range []struct {
+		name     string
+		packages []*spdx.Package
+		subjects []*intoto.ResourceDescriptor
+		wantErr  string
+	}{
+		{
+			name:     "arch-specific image",
+			packages: []*spdx.Package{image("kube-apiserver-amd64", "sha256%3A"+computed)},
+			subjects: subjects,
+		},
+		{
+			// The repository of the manifest list holds several images.
+			name:     "image in the repository of a manifest list",
+			packages: []*spdx.Package{image("kube-apiserver", "sha256%3A"+computed)},
+			subjects: subjects,
+			wantErr:  "2 pushed images",
+		},
+		{
+			name:     "image not pushed",
+			packages: []*spdx.Package{image("kube-proxy-amd64", "sha256%3A"+computed)},
+			subjects: subjects,
+			wantErr:  "no pushed image",
+		},
+		{
+			name:     "pushed image without digest",
+			packages: []*spdx.Package{image("kube-apiserver-amd64", "sha256%3A"+computed)},
+			subjects: []*intoto.ResourceDescriptor{{Name: "gcr.io/k8s-staging-kubernetes/kube-apiserver-amd64"}},
+			wantErr:  "no sha256 digest",
+		},
+		{
+			name:     "package URL without digest",
+			packages: []*spdx.Package{image("kube-apiserver-amd64", "v1.38.0")},
+			subjects: subjects,
+			wantErr:  "no sha256 digest",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			doc := spdx.NewDocument()
+			for _, pkg := range tc.packages {
+				require.NoError(t, doc.AddPackage(pkg))
+			}
+
+			// Packages without an OCI package URL keep their checksum.
+			other := spdx.NewPackage()
+			other.Name = "k8s.io/kubernetes"
+			other.BuildID(other.Name)
+			other.Checksum = map[string]string{"SHA256": computed}
+			other.ExternalRefs = []spdx.ExternalRef{{
+				Category: spdx.CatPackageManager,
+				Type:     spdx.ExtRefTypePurl,
+				Locator:  "pkg:golang/k8s.io/kubernetes@v1.38.0",
+			}}
+			require.NoError(t, doc.AddPackage(other))
+
+			err := setImageDigests(doc, tc.subjects)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+
+				return
+			}
+
+			require.NoError(t, err)
+
+			pkg := tc.packages[0]
+			require.Equal(t, pushed, pkg.Checksum["SHA256"])
+			require.Equal(t,
+				"pkg:oci/kube-apiserver-amd64@sha256%3A"+pushed+
+					"?arch=amd64&repository_url=registry.k8s.io%2Fkube-apiserver-amd64&tag=v1.38.0",
+				pkg.ExternalRefs[0].Locator,
+				"only the digest changes",
+			)
+
+			require.Equal(t, computed, other.Checksum["SHA256"])
+			require.Equal(t, "pkg:golang/k8s.io/kubernetes@v1.38.0", other.ExternalRefs[0].Locator)
+		})
+	}
 }
