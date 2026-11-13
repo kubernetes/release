@@ -41,7 +41,7 @@ require (
 	go.yaml.in/yaml/v4 v4.0.0
 	golang.org/x/oauth2 v0.38.0
 	golang.org/x/sync v0.25.0
-	golang.org/x/text v0.43.0
+	golang.org/x/text v0.44.0
 	google.golang.org/api v0.311.0
 	google.golang.org/protobuf v1.36.12
 	k8s.io/apimachinery v0.37.2
