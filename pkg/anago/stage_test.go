@@ -18,6 +18,7 @@ limitations under the License.
 package anago_test
 
 import (
+	"strings"
 	"testing"
 
 	intoto "github.com/in-toto/attestation/go/v1"
@@ -28,6 +29,7 @@ import (
 
 	"k8s.io/release/pkg/anago"
 	"k8s.io/release/pkg/anago/anagofakes"
+	"k8s.io/release/pkg/build"
 	"k8s.io/release/pkg/release"
 )
 
@@ -581,6 +583,18 @@ func TestStageArtifacts(t *testing.T) {
 			},
 			shouldError: true,
 		},
+		{ // WriteVersionArtifactsBOM fails
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.WriteVersionArtifactsBOMReturns(err)
+			},
+			shouldError: true,
+		},
+		{ // an image of the artifacts SBOM was not pushed
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.GenerateVersionArtifactsBOMReturns(imageSBOM(t, "kube-proxy-amd64"), nil)
+			},
+			shouldError: true,
+		},
 	} {
 		opts := anago.DefaultStageOptions()
 		sut := anago.NewDefaultStage(opts)
@@ -588,7 +602,9 @@ func TestStageArtifacts(t *testing.T) {
 		mock.GenerateAttestationReturns(&intoto.Statement{}, nil)
 		mock.GetProvenanceSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
 		mock.GetOutputDirSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
-		mock.GetImageSubjectsReturns([]*intoto.ResourceDescriptor{{Name: "image"}}, nil)
+		mock.GetImageSubjectsReturns([]*intoto.ResourceDescriptor{testImageSubject}, nil)
+		mock.GenerateSourceTreeBOMReturns(&spdx.Document{}, nil)
+		mock.GenerateVersionArtifactsBOMReturns(imageSBOM(t, "kube-apiserver-amd64"), nil)
 		tc.prepare(mock)
 		sut.SetImpl(mock)
 
@@ -598,6 +614,9 @@ func TestStageArtifacts(t *testing.T) {
 			),
 		)
 
+		// Staging writes the artifacts SBOMs generated before
+		require.NoError(t, sut.GenerateBillOfMaterials())
+
 		err := sut.StageArtifacts()
 		if tc.shouldError {
 			require.Error(t, err)
@@ -605,6 +624,93 @@ func TestStageArtifacts(t *testing.T) {
 			require.NoError(t, err)
 		}
 	}
+}
+
+// testImageSubject is a pushed image as GetImageSubjects returns it.
+var testImageSubject = &intoto.ResourceDescriptor{
+	Name:   "gcr.io/k8s-staging-kubernetes/kube-apiserver-amd64",
+	Digest: map[string]string{"sha256": strings.Repeat("b", 64)},
+}
+
+// imageSBOM returns an artifacts SBOM with the image package of the
+// repository, as bom generates it from the image archive: with a digest that
+// no registry serves.
+func imageSBOM(t *testing.T, repository string) *spdx.Document {
+	t.Helper()
+
+	doc := spdx.NewDocument()
+	pkg := spdx.NewPackage()
+	pkg.Name = "registry.k8s.io/" + repository + ":v1.38.0"
+	pkg.BuildID(pkg.Name)
+	pkg.Checksum = map[string]string{"SHA256": strings.Repeat("a", 64)}
+	pkg.ExternalRefs = []spdx.ExternalRef{{
+		Category: spdx.CatPackageManager,
+		Type:     spdx.ExtRefTypePurl,
+		Locator: "pkg:oci/" + repository + "@sha256%3A" + strings.Repeat("a", 64) +
+			"?arch=amd64&repository_url=registry.k8s.io%2F" + repository + "&tag=v1.38.0",
+	}}
+	require.NoError(t, doc.AddPackage(pkg))
+
+	return doc
+}
+
+func TestStageArtifactsWritesSBOMAfterPush(t *testing.T) {
+	sut := anago.NewDefaultStage(anago.DefaultStageOptions())
+	mock := &anagofakes.FakeStageImpl{}
+	mock.GenerateAttestationReturns(&intoto.Statement{}, nil)
+	mock.GetProvenanceSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
+	mock.GetOutputDirSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
+	mock.GetImageSubjectsReturns([]*intoto.ResourceDescriptor{testImageSubject}, nil)
+	mock.GenerateSourceTreeBOMReturns(&spdx.Document{}, nil)
+	mock.GenerateVersionArtifactsBOMReturns(imageSBOM(t, "kube-apiserver-amd64"), nil)
+
+	var steps []string
+
+	mock.PushContainerImagesCalls(func(*build.Options) error {
+		steps = append(steps, "push images")
+
+		return nil
+	})
+	mock.WriteVersionArtifactsBOMCalls(func(*spdx.Document, string) error {
+		steps = append(steps, "write SBOM")
+
+		return nil
+	})
+	mock.StageLocalArtifactsCalls(func(*build.Options) error {
+		steps = append(steps, "stage artifacts")
+
+		return nil
+	})
+	sut.SetImpl(mock)
+	sut.SetState(generateTestingStageState(&testStateParameters{versionsTag: &testVersionTag}))
+
+	require.NoError(t, sut.GenerateBillOfMaterials())
+	require.NoError(t, sut.StageArtifacts())
+
+	// The SBOM records the digests of the pushed images, and the staged
+	// artifacts include it, with their checksums
+	require.Equal(t, []string{"push images", "write SBOM", "stage artifacts"}, steps)
+
+	doc, version := mock.WriteVersionArtifactsBOMArgsForCall(0)
+	require.Equal(t, testVersionTag, version)
+
+	for _, pkg := range doc.Packages {
+		require.Equal(t, strings.Repeat("b", 64), pkg.Checksum["SHA256"])
+		require.Contains(t, pkg.ExternalRefs[0].Locator, "@sha256%3A"+strings.Repeat("b", 64)+"?")
+	}
+}
+
+func TestStageArtifactsWithoutArtifactsSBOM(t *testing.T) {
+	sut := anago.NewDefaultStage(anago.DefaultStageOptions())
+	mock := &anagofakes.FakeStageImpl{}
+	mock.GenerateAttestationReturns(&intoto.Statement{}, nil)
+	mock.GetProvenanceSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
+	mock.GetImageSubjectsReturns([]*intoto.ResourceDescriptor{testImageSubject}, nil)
+	sut.SetImpl(mock)
+	sut.SetState(generateTestingStageState(&testStateParameters{versionsTag: &testVersionTag}))
+
+	require.ErrorContains(t, sut.StageArtifacts(), "no artifacts SBOM")
+	require.Zero(t, mock.StageLocalArtifactsCallCount())
 }
 
 func TestStageArtifactsImageAttestation(t *testing.T) {
@@ -620,9 +726,12 @@ func TestStageArtifactsImageAttestation(t *testing.T) {
 		Name:   "gcr.io/k8s-staging-kubernetes/kube-apiserver",
 		Digest: map[string]string{"sha256": "abc"},
 	}}, nil)
+	mock.GenerateSourceTreeBOMReturns(&spdx.Document{}, nil)
+	mock.GenerateVersionArtifactsBOMReturns(&spdx.Document{}, nil)
 	sut.SetImpl(mock)
 	sut.SetState(generateTestingStageState(&testStateParameters{versionsTag: &testVersionTag}))
 
+	require.NoError(t, sut.GenerateBillOfMaterials())
 	require.NoError(t, sut.StageArtifacts())
 
 	// The images of each version are attested in one statement, with the
@@ -707,7 +816,7 @@ func TestGenerateBillOfMaterials(t *testing.T) {
 			// GenerateVersionArtifactsBOM fails
 			prepare: func(mock *anagofakes.FakeStageImpl) {
 				mock.GenerateSourceTreeBOMReturns(&spdx.Document{}, nil)
-				mock.GenerateVersionArtifactsBOMReturns(err)
+				mock.GenerateVersionArtifactsBOMReturns(nil, err)
 			},
 			shouldError: true,
 		},
@@ -715,7 +824,7 @@ func TestGenerateBillOfMaterials(t *testing.T) {
 			// WriteSourceBOM fails
 			prepare: func(mock *anagofakes.FakeStageImpl) {
 				mock.GenerateSourceTreeBOMReturns(&spdx.Document{}, nil)
-				mock.GenerateVersionArtifactsBOMReturns(err)
+				mock.GenerateVersionArtifactsBOMReturns(nil, err)
 			},
 			shouldError: true,
 		},
@@ -723,7 +832,7 @@ func TestGenerateBillOfMaterials(t *testing.T) {
 			// WriteSourceBOM fails
 			prepare: func(mock *anagofakes.FakeStageImpl) {
 				mock.GenerateSourceTreeBOMReturns(&spdx.Document{}, nil)
-				mock.GenerateVersionArtifactsBOMReturns(nil)
+				mock.GenerateVersionArtifactsBOMReturns(&spdx.Document{}, nil)
 				mock.WriteSourceBOMReturns(err)
 			},
 			shouldError: true,
@@ -732,7 +841,7 @@ func TestGenerateBillOfMaterials(t *testing.T) {
 			// success
 			prepare: func(mock *anagofakes.FakeStageImpl) {
 				mock.GenerateSourceTreeBOMReturns(&spdx.Document{}, nil)
-				mock.GenerateVersionArtifactsBOMReturns(nil)
+				mock.GenerateVersionArtifactsBOMReturns(&spdx.Document{}, nil)
 				mock.WriteSourceBOMReturns(nil)
 			},
 			shouldError: false,
