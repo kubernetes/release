@@ -33,7 +33,7 @@ set -o pipefail
 # binary_to_libraries identifies the library files needed by the binary $1 with ldd
 binary_to_libraries() {
     # see: https://man7.org/linux/man-pages/man1/ldd.1.html
-    ldd "${1}" \
+    ldd "${1}" 2>/dev/null \
     `# strip the leading '${name} => ' if any so only '/lib-foo.so (0xf00)' remains` \
     | sed -E 's#.* => /#/#' \
     `# we want only the path remaining, not the (0x${LOCATION})` \
