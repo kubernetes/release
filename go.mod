@@ -13,7 +13,7 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/google/go-containerregistry v0.22.1
 	github.com/google/go-github/v88 v88.0.0
-	github.com/google/safetext v0.0.0-20230106111101-7156a760e523
+	github.com/google/safetext v0.1.0
 	github.com/google/uuid v1.6.0
 	github.com/in-toto/attestation v1.2.0
 	github.com/mattn/go-isatty v0.0.24
@@ -250,4 +250,5 @@ require (
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.55.0 // indirect
+	mvdan.cc/sh/v3 v3.14.1 // indirect
 )
