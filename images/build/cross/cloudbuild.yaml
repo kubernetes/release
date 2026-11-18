@@ -21,6 +21,8 @@ steps:
     - PROTOBUF_VERSION=$_PROTOBUF_VERSION
     - REGISTRY=$_REGISTRY
     - PLATFORMS=$_PLATFORMS
+    - KUBE_DYNAMIC_CROSSPLATFORMS=$_KUBE_DYNAMIC_CROSSPLATFORMS
+    - KUBE_CROSSPLATFORMS=$_KUBE_CROSSPLATFORMS
     # default cloudbuild has HOME=/builder/home and docker buildx is in /root/.docker/cli-plugins/docker-buildx
     # set the home to /root explicitly to if using docker buildx
     - HOME=/root
@@ -43,6 +45,8 @@ substitutions:
   _REVISION: '0'
   _PROTOBUF_VERSION: '0.0.0'
   _PLATFORMS: 'linux/amd64 linux/arm64 linux/ppc64le linux/s390x'
+  _KUBE_DYNAMIC_CROSSPLATFORMS: 'arm64 armhf i386 ppc64el s390x'
+  _KUBE_CROSSPLATFORMS: 'linux/386 linux/arm linux/arm64 linux/ppc64le linux/s390x darwin/amd64 windows/amd64 windows/386'
   _REGISTRY: 'fake.repository/registry-name'
 
 tags:
