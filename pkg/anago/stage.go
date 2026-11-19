@@ -18,20 +18,27 @@ package anago
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/blang/semver/v4"
 	gogit "github.com/go-git/go-git/v5"
+	"github.com/google/go-containerregistry/pkg/name"
 	slsa "github.com/in-toto/attestation/go/predicates/provenance/v1"
 	intoto "github.com/in-toto/attestation/go/v1"
+	openvex "github.com/openvex/go-vex/pkg/vex"
 	protosbom "github.com/protobom/protobom/pkg/sbom"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -50,6 +57,7 @@ import (
 	"k8s.io/release/pkg/gcp/auth"
 	"k8s.io/release/pkg/gcp/gcb"
 	"k8s.io/release/pkg/release"
+	"k8s.io/release/pkg/vex"
 )
 
 // stageClient is a client for staging releases.
@@ -108,6 +116,12 @@ type stageClient interface {
 	// source code and the release artifacts.
 	GenerateBillOfMaterials() error
 
+	// ScanVulnerabilities scans the source code of the built binaries with
+	// govulncheck and keeps the results to assemble the VEX documents of the
+	// staged artifacts. Findings go into VEX; scan failures suppress VEX
+	// without blocking the release.
+	ScanVulnerabilities() error
+
 	// StageArtifacts copies the build artifacts to a Google Cloud Bucket.
 	StageArtifacts() error
 }
@@ -117,11 +131,15 @@ type DefaultStage struct {
 	impl    stageImpl
 	options *StageOptions
 	state   *StageState
+
+	// vexScans holds the govulncheck output until the pushed image digests
+	// are available to assemble product-specific VEX documents.
+	vexScans map[string][]byte
 }
 
 // NewDefaultStage creates a new defaultStage instance.
 func NewDefaultStage(options *StageOptions) *DefaultStage {
-	return &DefaultStage{&defaultStageImpl{}, options, nil}
+	return &DefaultStage{impl: &defaultStageImpl{}, options: options}
 }
 
 // SetImpl can be used to set the internal stage implementation.
@@ -138,6 +156,16 @@ func (d *DefaultStage) SetState(state *StageState) {
 // State returns the internal state.
 func (d *DefaultStage) State() *StageState {
 	return d.state
+}
+
+// SetVEXScans supplies vulnerability scans for testing the staging step.
+func (d *DefaultStage) SetVEXScans(scans map[string][]byte) {
+	d.vexScans = scans
+}
+
+// GetVEXScans returns the vulnerability scans kept for staging.
+func (d *DefaultStage) GetVEXScans() map[string][]byte {
+	return d.vexScans
 }
 
 // defaultStageImpl is the default internal stage client implementation.
@@ -197,6 +225,9 @@ type stageImpl interface {
 	GetImageSubjects(registry, version, buildDir string) ([]*intoto.ResourceDescriptor, error)
 	GetProvenanceSubjects(*StageOptions, string) ([]*intoto.ResourceDescriptor, error)
 	GetOutputDirSubjects(*StageOptions, string, string) ([]*intoto.ResourceDescriptor, error)
+	ScanVulnerabilities(binaries []string) (map[string][]byte, error)
+	AddVEXDocuments(scans map[string][]byte, options *StageOptions, version string) error
+	AddImageVEXDocuments(scans map[string][]byte, imageSubjects []*intoto.ResourceDescriptor, version string) error
 }
 
 func (d *defaultStageImpl) Submit(options *gcb.Options) error {
@@ -259,8 +290,8 @@ func (d *defaultStageImpl) CommitEmpty(repo *git.Repo, msg string) error {
 	return repo.CommitEmpty(msg)
 }
 
-func (d *defaultStageImpl) Tag(repo *git.Repo, name, message string) error {
-	return repo.Tag(name, message)
+func (d *defaultStageImpl) Tag(repo *git.Repo, tagName, message string) error {
+	return repo.Tag(tagName, message)
 }
 
 func (d *defaultStageImpl) Merge(repo *git.Repo, rev string) error {
@@ -321,6 +352,163 @@ func (d *defaultStageImpl) GetImageSubjects(
 	registry, version, buildDir string,
 ) ([]*intoto.ResourceDescriptor, error) {
 	return release.NewImages().Subjects(registry, version, buildDir)
+}
+
+// ScanVulnerabilities runs govulncheck on the source code of each binary and
+// returns its OpenVEX output per binary name. Unsupported binaries and clean
+// scans have no VEX documents. If any scan fails, no VEX is returned, but the
+// failure does not fail the stage.
+func (d *defaultStageImpl) ScanVulnerabilities(binaries []string) (map[string][]byte, error) {
+	return scanBinaries(gitRoot, binaries, vex.NewScanner())
+}
+
+func scanBinaries(sourceDir string, binaries []string, scanner *vex.Scanner) (map[string][]byte, error) {
+	scans := map[string][]byte{}
+
+	var mu sync.Mutex
+
+	g := new(errgroup.Group)
+	g.SetLimit(maxConcurrentScans)
+
+	for _, binary := range binaries {
+		// The source entry point of a release binary is cmd/<name> in
+		// k/kubernetes.
+		if _, err := os.Stat(filepath.Join(sourceDir, "cmd", binary)); errors.Is(err, os.ErrNotExist) {
+			logrus.Infof("Skipping VEX for %s, no source entry point", binary)
+
+			continue
+		} else if err != nil {
+			return nil, err
+		}
+
+		g.Go(func() error {
+			scan, err := scanner.RunScan(context.Background(), sourceDir, "./cmd/"+binary)
+			if err != nil {
+				return err
+			}
+			// A clean scan contains no assertions about any product. Publishing
+			// one document per product would give all of them the same ID.
+			doc, err := openvex.Parse(scan)
+			if err != nil {
+				return err
+			}
+
+			if len(doc.Statements) == 0 {
+				logrus.Infof("No vulnerability statements for %s, skipping VEX", binary)
+
+				return nil
+			}
+
+			mu.Lock()
+			scans[binary] = scan
+			mu.Unlock()
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	return scans, nil
+}
+
+// AddVEXDocuments assembles the VEX documents of the built binaries of the
+// version from the vulnerability scans, and writes them next to the other
+// artifacts. Binaries without a scan, and documents that fail to assemble,
+// are skipped with a warning.
+func (d *defaultStageImpl) AddVEXDocuments(
+	scans map[string][]byte, _ *StageOptions, version string,
+) error {
+	binaries, err := d.ListBinaries(version)
+	if err != nil {
+		return fmt.Errorf("listing the built binaries of %s: %w", version, err)
+	}
+
+	docs := map[string][]byte{}
+
+	var errs []error
+
+	for _, binary := range binaries {
+		if _, ok := scans[binarySourceName(binary)]; !ok {
+			continue
+		}
+
+		doc, fileName, err := binaryVEXDocument(scans, binary)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("assembling VEX for %s: %w", binary.Path, err))
+
+			continue
+		}
+
+		docs[fileName] = doc
+	}
+
+	if len(docs) == 0 {
+		logrus.Warnf("No VEX documents of binaries to stage for %s", version)
+
+		return errors.Join(errs...)
+	}
+
+	if err := writeVEXDocuments(docs, versionGCSStageDir(version)); err != nil {
+		errs = append(errs, err)
+	}
+
+	return errors.Join(errs...)
+}
+
+// AddImageVEXDocuments assembles the VEX documents of the pushed container
+// images of the version from the vulnerability scans of the binaries they
+// are built from, and writes them into the local GCS staging directory. Images
+// without a scan, and documents that fail to assemble, are skipped with a
+// warning.
+func (d *defaultStageImpl) AddImageVEXDocuments(
+	scans map[string][]byte, imageSubjects []*intoto.ResourceDescriptor,
+	version string,
+) error {
+	docs := map[string][]byte{}
+
+	var errs []error
+
+	// Each arch-specific image is a subject twice: in its own repository,
+	// and in the repository of its manifest list, where clients pulling
+	// the manifest list resolve it. Only the first subject of a repository
+	// gets a VEX document, which is the manifest list for the repositories
+	// of the manifest lists.
+	subjects := map[string]struct{}{}
+
+	for _, subject := range imageSubjects {
+		if _, ok := subjects[subject.GetName()]; ok {
+			continue
+		}
+
+		subjects[subject.GetName()] = struct{}{}
+		if _, ok := scans[imageBinaryName(filepath.Base(subject.GetName()))]; !ok {
+			continue
+		}
+
+		doc, fileName, err := imageVEXDocument(scans, subject)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("assembling VEX for %s: %w", subject.GetName(), err))
+
+			continue
+		}
+
+		docs[fileName] = doc
+	}
+
+	if len(docs) == 0 {
+		logrus.Warnf("No VEX documents of container images to stage for %s", version)
+
+		return errors.Join(errs...)
+	}
+
+	if err := writeVEXDocuments(docs, versionGCSStageDir(version)); err != nil {
+		errs = append(errs, err)
+	}
+
+	return errors.Join(errs...)
 }
 
 func (d *DefaultStage) Submit(stream bool) error {
@@ -387,7 +575,8 @@ func (d *DefaultStage) InitLogFile() error {
 }
 
 func (d *DefaultStage) InitState() {
-	d.state = &StageState{DefaultState()}
+	d.state = &StageState{State: DefaultState()}
+	d.vexScans = nil
 }
 
 func (d *DefaultStage) ValidateOptions() error {
@@ -1119,6 +1308,49 @@ func (d *DefaultStage) GenerateBillOfMaterials() error {
 	return nil
 }
 
+// ScanVulnerabilities scans the source code of the built binaries with
+// govulncheck and keeps the results to assemble the VEX documents of the
+// staged artifacts. Failures only skip the VEX documents: they never fail
+// the stage.
+func (d *DefaultStage) ScanVulnerabilities() error {
+	binaries := map[string]struct{}{}
+	d.vexScans = nil
+
+	for _, version := range d.state.versions.Ordered() {
+		list, err := d.impl.ListBinaries(version)
+		if err != nil {
+			logrus.Warnf("Unable to list binaries for VEX in %s: %v", version, err)
+
+			continue
+		}
+
+		for _, binary := range list {
+			binaries[binarySourceName(binary)] = struct{}{}
+		}
+	}
+
+	if len(binaries) == 0 {
+		logrus.Warn("Skipping the VEX documents, no built binaries found")
+
+		return nil
+	}
+
+	scans, err := d.impl.ScanVulnerabilities(slices.Sorted(maps.Keys(binaries)))
+	if err != nil {
+		logrus.Warnf("Vulnerability scan failed; publishing no VEX documents: %v", err)
+
+		return nil
+	}
+
+	if len(scans) == 0 {
+		logrus.Warn("No VEX vulnerability statements to stage")
+	}
+
+	d.vexScans = scans
+
+	return nil
+}
+
 func (d *DefaultStage) StageArtifacts() error {
 	// Generate the intoto attestation, reloaded with the current run data
 	statement, err := d.impl.GenerateAttestation(d.state, d.options)
@@ -1174,6 +1406,21 @@ func (d *DefaultStage) StageArtifacts() error {
 		pushBuildOptions.Version = version
 		pushBuildOptions.BuildDir = buildDir
 
+		// Push container images before staging artifacts, so their registry
+		// digests are available for the version's product-specific metadata.
+		if err := d.impl.PushContainerImages(pushBuildOptions); err != nil {
+			return fmt.Errorf("pushing container images: %w", err)
+		}
+
+		imageSubjects, err := d.impl.GetImageSubjects(
+			pushBuildOptions.Registry, version, buildDir,
+		)
+		if err != nil {
+			return fmt.Errorf("getting the pushed container images of version %s: %w", version, err)
+		}
+
+		imageStatement.Subject = append(imageStatement.Subject, imageSubjects...)
+
 		// Stage local artifacts and write checksums
 		if err := d.impl.StageLocalArtifacts(pushBuildOptions); err != nil {
 			return fmt.Errorf("staging local artifacts: %w", err)
@@ -1182,6 +1429,17 @@ func (d *DefaultStage) StageArtifacts() error {
 		gcsPath := filepath.Join(
 			d.options.Bucket(), release.StagePath, d.options.BuildVersion, version,
 		)
+		if len(d.vexScans) > 0 {
+			if err := d.impl.AddVEXDocuments(d.vexScans, d.options, version); err != nil {
+				logrus.Warnf("Staging the VEX documents of %s: %v", version, err)
+			}
+
+			if err := d.impl.AddImageVEXDocuments(
+				d.vexScans, imageSubjects, version,
+			); err != nil {
+				logrus.Warnf("Staging the image VEX documents of %s: %v", version, err)
+			}
+		}
 
 		// Push gcs-stage to GCS
 		if err := d.impl.PushReleaseArtifacts(
@@ -1200,20 +1458,6 @@ func (d *DefaultStage) StageArtifacts() error {
 		); err != nil {
 			return fmt.Errorf("pushing release artifacts: %w", err)
 		}
-
-		// Push container images into registry
-		if err := d.impl.PushContainerImages(pushBuildOptions); err != nil {
-			return fmt.Errorf("pushing container images: %w", err)
-		}
-
-		imageSubjects, err := d.impl.GetImageSubjects(
-			pushBuildOptions.Registry, version, buildDir,
-		)
-		if err != nil {
-			return fmt.Errorf("getting the pushed container images of version %s: %w", version, err)
-		}
-
-		imageStatement.Subject = append(imageStatement.Subject, imageSubjects...)
 
 		// Add artifacts to the attestation, this should get both release-images
 		// and gcs-stage directories in one call.
@@ -1504,4 +1748,139 @@ func (d *defaultStageImpl) pushStatement(
 	}
 
 	return nil
+}
+
+// versionGCSStageDir matches the source of the gcs-stage PushReleaseArtifacts call.
+func versionGCSStageDir(version string) string {
+	return filepath.Join(gitRoot, fmt.Sprintf("%s-%s", release.BuildDir, version), release.GCSStagePath, version)
+}
+
+// writeVEXDocuments adds VEX files to the version's local GCS staging directory.
+// StageLocalArtifacts must have created dir before this runs.
+func writeVEXDocuments(docs map[string][]byte, dir string) error {
+	if _, err := os.Stat(dir); err != nil {
+		return fmt.Errorf("checking VEX staging directory %s: %w", dir, err)
+	}
+
+	var errs []error
+
+	for fileName, doc := range docs {
+		if err := os.WriteFile(filepath.Join(dir, fileName), doc, 0o600); err != nil {
+			logrus.Warnf("Unable to stage VEX document %s: %v", fileName, err)
+			errs = append(errs, fmt.Errorf("staging %s: %w", fileName, err))
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
+// binaryVEXDocument assembles the VEX document of one built binary from the
+// vulnerability scans of its source, and returns it with its file name.
+func binaryVEXDocument(
+	scans map[string][]byte,
+	binary struct{ Path, Platform, Arch string },
+) (doc []byte, fileName string, err error) {
+	sourceName := binarySourceName(binary)
+
+	scan, ok := scans[sourceName]
+	if !ok {
+		return nil, "", fmt.Errorf("no vulnerability scan of %s", sourceName)
+	}
+
+	digest, err := fileDigest(binary.Path)
+	if err != nil {
+		return nil, "", fmt.Errorf("hashing %s: %w", binary.Path, err)
+	}
+
+	product, err := vex.BinaryProduct(digest)
+	if err != nil {
+		return nil, "", fmt.Errorf("building the product of %s: %w", binary.Path, err)
+	}
+
+	doc, err = vex.PatchDocument(scan, product)
+	if err != nil {
+		return nil, "", fmt.Errorf("patching the document of %s: %w", binary.Path, err)
+	}
+
+	return doc, fmt.Sprintf("%s%s-%s-%s.json",
+		release.VEXFilenamePrefix, sourceName, binary.Platform, binary.Arch,
+	), nil
+}
+
+// binarySourceName maps the Windows executable name back to its Go source
+// entry point. The executable's bytes are still used for the product hash.
+func binarySourceName(binary struct{ Path, Platform, Arch string }) string {
+	binaryName := filepath.Base(binary.Path)
+	if binary.Platform == "windows" {
+		return strings.TrimSuffix(binaryName, ".exe")
+	}
+
+	return binaryName
+}
+
+// imageVEXDocument assembles the VEX document of one container image subject
+// from the vulnerability scans of the binary it is built from, and returns
+// it with its file name.
+func imageVEXDocument(
+	scans map[string][]byte, subject *intoto.ResourceDescriptor,
+) (doc []byte, fileName string, err error) {
+	imageName := filepath.Base(subject.GetName())
+
+	scan, ok := scans[imageBinaryName(imageName)]
+	if !ok {
+		return nil, "", fmt.Errorf("no vulnerability scan of %s", imageBinaryName(imageName))
+	}
+
+	// The digest of a subject is bare hex, the image reference needs its
+	// algorithm, too.
+	digest := subject.GetDigest()[intoto.AlgorithmSHA256.String()]
+
+	ref, err := name.NewDigest(subject.GetName()+"@sha256:"+digest, name.StrictValidation)
+	if err != nil {
+		return nil, "", fmt.Errorf("%s is not an image: %w", subject.GetName(), err)
+	}
+
+	product, err := vex.ImageProduct(ref)
+	if err != nil {
+		return nil, "", fmt.Errorf("building the product of %s: %w", subject.GetName(), err)
+	}
+
+	doc, err = vex.PatchDocument(scan, product)
+	if err != nil {
+		return nil, "", fmt.Errorf("patching the document of %s: %w", subject.GetName(), err)
+	}
+
+	return doc, fmt.Sprintf("%s%s.json", release.ImageVEXFilenamePrefix, imageName), nil
+}
+
+// imageArchitectures are the architecture suffixes of the repositories of
+// the arch-specific container images, which are named <image>-<arch>.
+var imageArchitectures = []string{"amd64", "arm", "arm64", "ppc64le", "s390x"}
+
+// imageBinaryName returns the name of the binary an image repository is
+// named after, stripping the architecture suffix of arch-specific images.
+func imageBinaryName(imageName string) string {
+	for _, arch := range imageArchitectures {
+		if binaryName, ok := strings.CutSuffix(imageName, "-"+arch); ok {
+			return binaryName
+		}
+	}
+
+	return imageName
+}
+
+// fileDigest returns the SHA-256 digest of the file at path, hex encoded.
+func fileDigest(path string) (string, error) {
+	f, err := os.Open(path) //nolint:gosec // the path is a release build artifact selected by the staging process
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	hash := sha256.New()
+	if _, err := io.Copy(hash, f); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }

@@ -125,6 +125,9 @@ const (
 
 	ProvenanceFilename      = "provenance.json"       // Name of the SLSA provenance file (used in stage and release)
 	ImageProvenanceFilename = "image-provenance.json" // Name of the SLSA provenance file of the staged container images
+
+	VEXFilenamePrefix      = "vex-"       // Prefix of the OpenVEX file names of the release binaries: vex-<name>-<platform>-<arch>.json
+	ImageVEXFilenamePrefix = "image-vex-" // Prefix of the OpenVEX file names of the release container images: image-vex-<name>.json
 )
 
 var ManifestImages = []string{

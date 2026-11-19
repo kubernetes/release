@@ -46,6 +46,7 @@ func mockGenerateReleaseVersionRelease(mock *anagofakes.FakeReleaseClient) {
 	mock.GenerateReleaseVersionReturns(nil)
 }
 
+//nolint:dupl // Stage and release runners intentionally cover analogous error paths separately.
 func TestRunStage(t *testing.T) {
 	for _, tc := range []struct {
 		prepare     func(*anagofakes.FakeStageClient)
@@ -108,6 +109,13 @@ func TestRunStage(t *testing.T) {
 			},
 			shouldError: true,
 		},
+		{ // VEX scan errors do not prevent staging
+			prepare: func(mock *anagofakes.FakeStageClient) {
+				mockGenerateReleaseVersionStage(mock)
+				mock.ScanVulnerabilitiesReturns(err)
+			},
+			shouldError: false,
+		},
 		{ // StageArtifacts fails
 			prepare: func(mock *anagofakes.FakeStageClient) {
 				mockGenerateReleaseVersionStage(mock)
@@ -127,10 +135,12 @@ func TestRunStage(t *testing.T) {
 			require.Error(t, err)
 		} else {
 			require.NoError(t, err)
+			require.Equal(t, 1, mock.StageArtifactsCallCount())
 		}
 	}
 }
 
+//nolint:dupl // Stage and release runners intentionally cover analogous error paths separately.
 func TestRunRelease(t *testing.T) {
 	for _, tc := range []struct {
 		prepare     func(*anagofakes.FakeReleaseClient)

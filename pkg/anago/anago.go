@@ -70,6 +70,11 @@ const (
 
 	// sbomOrganization is the organization credited as creator of the SBOMs.
 	sbomOrganization = "Kubernetes Release Engineering"
+
+	// maxConcurrentScans caps the maximum number of govulncheck vulnerability
+	// scans that can be done simultaneously, so that we don't over stress the
+	// staging.
+	maxConcurrentScans = 3
 )
 
 // Options are settings which will be used by `StageOptions` as well as
@@ -336,7 +341,7 @@ func (s *Stage) Run() error {
 		return fmt.Errorf("generate changelog: %w", err)
 	}
 
-	logger.WithStep().Info("Verifying artifacts and generating bill of materials")
+	logger.WithStep().Info("Verifying artifacts, generating bill of materials and scanning for vulnerabilities")
 
 	g := new(errgroup.Group)
 
@@ -346,6 +351,14 @@ func (s *Stage) Run() error {
 
 	g.Go(func() error {
 		return s.client.GenerateBillOfMaterials()
+	})
+
+	g.Go(func() error {
+		if err := s.client.ScanVulnerabilities(); err != nil {
+			logrus.Warnf("Unable to scan for VEX: %v", err)
+		}
+
+		return nil
 	})
 
 	if err := g.Wait(); err != nil {
