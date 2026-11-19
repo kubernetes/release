@@ -32,12 +32,8 @@ import (
 type FakeReleaseImpl struct {
 	BranchNeedsCreationStub        func(string, string, semver.Version) (bool, error)
 	branchNeedsCreationMutex       sync.RWMutex
-	branchNeedsCreationArgsForCall []struct {
-		arg1 string
-		arg2 string
-		arg3 semver.Version
-	}
-	branchNeedsCreationReturns struct {
+	branchNeedsCreationArgsForCall []FakeReleaseImplBranchNeedsCreationArgs
+	branchNeedsCreationReturns     struct {
 		result1 bool
 		result2 error
 	}
@@ -47,9 +43,8 @@ type FakeReleaseImpl struct {
 	}
 	CheckPrerequisitesStub        func() error
 	checkPrerequisitesMutex       sync.RWMutex
-	checkPrerequisitesArgsForCall []struct {
-	}
-	checkPrerequisitesReturns struct {
+	checkPrerequisitesArgsForCall []struct{}
+	checkPrerequisitesReturns     struct {
 		result1 error
 	}
 	checkPrerequisitesReturnsOnCall map[int]struct {
@@ -57,10 +52,8 @@ type FakeReleaseImpl struct {
 	}
 	CheckReleaseBucketStub        func(*build.Options) error
 	checkReleaseBucketMutex       sync.RWMutex
-	checkReleaseBucketArgsForCall []struct {
-		arg1 *build.Options
-	}
-	checkReleaseBucketReturns struct {
+	checkReleaseBucketArgsForCall []FakeReleaseImplCheckReleaseBucketArgs
+	checkReleaseBucketReturns     struct {
 		result1 error
 	}
 	checkReleaseBucketReturnsOnCall map[int]struct {
@@ -68,12 +61,8 @@ type FakeReleaseImpl struct {
 	}
 	CheckStageProvenanceStub        func(string, string, *release.Versions) error
 	checkStageProvenanceMutex       sync.RWMutex
-	checkStageProvenanceArgsForCall []struct {
-		arg1 string
-		arg2 string
-		arg3 *release.Versions
-	}
-	checkStageProvenanceReturns struct {
+	checkStageProvenanceArgsForCall []FakeReleaseImplCheckStageProvenanceArgs
+	checkStageProvenanceReturns     struct {
 		result1 error
 	}
 	checkStageProvenanceReturnsOnCall map[int]struct {
@@ -81,12 +70,8 @@ type FakeReleaseImpl struct {
 	}
 	CopyStagedFromGCSStub        func(*build.Options, string, string) error
 	copyStagedFromGCSMutex       sync.RWMutex
-	copyStagedFromGCSArgsForCall []struct {
-		arg1 *build.Options
-		arg2 string
-		arg3 string
-	}
-	copyStagedFromGCSReturns struct {
+	copyStagedFromGCSArgsForCall []FakeReleaseImplCopyStagedFromGCSArgs
+	copyStagedFromGCSReturns     struct {
 		result1 error
 	}
 	copyStagedFromGCSReturnsOnCall map[int]struct {
@@ -94,12 +79,8 @@ type FakeReleaseImpl struct {
 	}
 	CopyToRemoteStub        func(object.Store, string, string) error
 	copyToRemoteMutex       sync.RWMutex
-	copyToRemoteArgsForCall []struct {
-		arg1 object.Store
-		arg2 string
-		arg3 string
-	}
-	copyToRemoteReturns struct {
+	copyToRemoteArgsForCall []FakeReleaseImplCopyToRemoteArgs
+	copyToRemoteReturns     struct {
 		result1 error
 	}
 	copyToRemoteReturnsOnCall map[int]struct {
@@ -107,10 +88,8 @@ type FakeReleaseImpl struct {
 	}
 	CreateAnnouncementStub        func(*announce.Options) error
 	createAnnouncementMutex       sync.RWMutex
-	createAnnouncementArgsForCall []struct {
-		arg1 *announce.Options
-	}
-	createAnnouncementReturns struct {
+	createAnnouncementArgsForCall []FakeReleaseImplCreateAnnouncementArgs
+	createAnnouncementReturns     struct {
 		result1 error
 	}
 	createAnnouncementReturnsOnCall map[int]struct {
@@ -118,10 +97,8 @@ type FakeReleaseImpl struct {
 	}
 	CreatePubBotBranchIssueStub        func(string) error
 	createPubBotBranchIssueMutex       sync.RWMutex
-	createPubBotBranchIssueArgsForCall []struct {
-		arg1 string
-	}
-	createPubBotBranchIssueReturns struct {
+	createPubBotBranchIssueArgsForCall []FakeReleaseImplCreatePubBotBranchIssueArgs
+	createPubBotBranchIssueReturns     struct {
 		result1 error
 	}
 	createPubBotBranchIssueReturnsOnCall map[int]struct {
@@ -129,13 +106,8 @@ type FakeReleaseImpl struct {
 	}
 	GenerateReleaseVersionStub        func(string, string, string, bool) (*release.Versions, error)
 	generateReleaseVersionMutex       sync.RWMutex
-	generateReleaseVersionArgsForCall []struct {
-		arg1 string
-		arg2 string
-		arg3 string
-		arg4 bool
-	}
-	generateReleaseVersionReturns struct {
+	generateReleaseVersionArgsForCall []FakeReleaseImplGenerateReleaseVersionArgs
+	generateReleaseVersionReturns     struct {
 		result1 *release.Versions
 		result2 error
 	}
@@ -145,10 +117,8 @@ type FakeReleaseImpl struct {
 	}
 	NewGitPusherStub        func(*release.GitObjectPusherOptions) (*release.GitObjectPusher, error)
 	newGitPusherMutex       sync.RWMutex
-	newGitPusherArgsForCall []struct {
-		arg1 *release.GitObjectPusherOptions
-	}
-	newGitPusherReturns struct {
+	newGitPusherArgsForCall []FakeReleaseImplNewGitPusherArgs
+	newGitPusherReturns     struct {
 		result1 *release.GitObjectPusher
 		result2 error
 	}
@@ -158,11 +128,8 @@ type FakeReleaseImpl struct {
 	}
 	NormalizePathStub        func(object.Store, ...string) (string, error)
 	normalizePathMutex       sync.RWMutex
-	normalizePathArgsForCall []struct {
-		arg1 object.Store
-		arg2 []string
-	}
-	normalizePathReturns struct {
+	normalizePathArgsForCall []FakeReleaseImplNormalizePathArgs
+	normalizePathReturns     struct {
 		result1 string
 		result2 error
 	}
@@ -172,11 +139,8 @@ type FakeReleaseImpl struct {
 	}
 	PrepareWorkspaceReleaseStub        func(string, string) error
 	prepareWorkspaceReleaseMutex       sync.RWMutex
-	prepareWorkspaceReleaseArgsForCall []struct {
-		arg1 string
-		arg2 string
-	}
-	prepareWorkspaceReleaseReturns struct {
+	prepareWorkspaceReleaseArgsForCall []FakeReleaseImplPrepareWorkspaceReleaseArgs
+	prepareWorkspaceReleaseReturns     struct {
 		result1 error
 	}
 	prepareWorkspaceReleaseReturnsOnCall map[int]struct {
@@ -184,12 +148,8 @@ type FakeReleaseImpl struct {
 	}
 	PublishReleaseNotesIndexStub        func(string, string, string) error
 	publishReleaseNotesIndexMutex       sync.RWMutex
-	publishReleaseNotesIndexArgsForCall []struct {
-		arg1 string
-		arg2 string
-		arg3 string
-	}
-	publishReleaseNotesIndexReturns struct {
+	publishReleaseNotesIndexArgsForCall []FakeReleaseImplPublishReleaseNotesIndexArgs
+	publishReleaseNotesIndexReturns     struct {
 		result1 error
 	}
 	publishReleaseNotesIndexReturnsOnCall map[int]struct {
@@ -197,17 +157,8 @@ type FakeReleaseImpl struct {
 	}
 	PublishVersionStub        func(string, string, string, string, string, []string, bool, bool) error
 	publishVersionMutex       sync.RWMutex
-	publishVersionArgsForCall []struct {
-		arg1 string
-		arg2 string
-		arg3 string
-		arg4 string
-		arg5 string
-		arg6 []string
-		arg7 bool
-		arg8 bool
-	}
-	publishVersionReturns struct {
+	publishVersionArgsForCall []FakeReleaseImplPublishVersionArgs
+	publishVersionReturns     struct {
 		result1 error
 	}
 	publishVersionReturnsOnCall map[int]struct {
@@ -215,11 +166,8 @@ type FakeReleaseImpl struct {
 	}
 	PushBranchesStub        func(*release.GitObjectPusher, []string) error
 	pushBranchesMutex       sync.RWMutex
-	pushBranchesArgsForCall []struct {
-		arg1 *release.GitObjectPusher
-		arg2 []string
-	}
-	pushBranchesReturns struct {
+	pushBranchesArgsForCall []FakeReleaseImplPushBranchesArgs
+	pushBranchesReturns     struct {
 		result1 error
 	}
 	pushBranchesReturnsOnCall map[int]struct {
@@ -227,10 +175,8 @@ type FakeReleaseImpl struct {
 	}
 	PushMainBranchStub        func(*release.GitObjectPusher) error
 	pushMainBranchMutex       sync.RWMutex
-	pushMainBranchArgsForCall []struct {
-		arg1 *release.GitObjectPusher
-	}
-	pushMainBranchReturns struct {
+	pushMainBranchArgsForCall []FakeReleaseImplPushMainBranchArgs
+	pushMainBranchReturns     struct {
 		result1 error
 	}
 	pushMainBranchReturnsOnCall map[int]struct {
@@ -238,11 +184,8 @@ type FakeReleaseImpl struct {
 	}
 	PushTagsStub        func(*release.GitObjectPusher, []string) error
 	pushTagsMutex       sync.RWMutex
-	pushTagsArgsForCall []struct {
-		arg1 *release.GitObjectPusher
-		arg2 []string
-	}
-	pushTagsReturns struct {
+	pushTagsArgsForCall []FakeReleaseImplPushTagsArgs
+	pushTagsReturns     struct {
 		result1 error
 	}
 	pushTagsReturnsOnCall map[int]struct {
@@ -250,12 +193,8 @@ type FakeReleaseImpl struct {
 	}
 	SignProvenanceStub        func(string, []string, bool) error
 	signProvenanceMutex       sync.RWMutex
-	signProvenanceArgsForCall []struct {
-		arg1 string
-		arg2 []string
-		arg3 bool
-	}
-	signProvenanceReturns struct {
+	signProvenanceArgsForCall []FakeReleaseImplSignProvenanceArgs
+	signProvenanceReturns     struct {
 		result1 error
 	}
 	signProvenanceReturnsOnCall map[int]struct {
@@ -263,10 +202,8 @@ type FakeReleaseImpl struct {
 	}
 	SubmitStub        func(*gcb.Options) error
 	submitMutex       sync.RWMutex
-	submitArgsForCall []struct {
-		arg1 *gcb.Options
-	}
-	submitReturns struct {
+	submitArgsForCall []FakeReleaseImplSubmitArgs
+	submitReturns     struct {
 		result1 error
 	}
 	submitReturnsOnCall map[int]struct {
@@ -274,10 +211,8 @@ type FakeReleaseImpl struct {
 	}
 	ToFileStub        func(string) error
 	toFileMutex       sync.RWMutex
-	toFileArgsForCall []struct {
-		arg1 string
-	}
-	toFileReturns struct {
+	toFileArgsForCall []FakeReleaseImplToFileArgs
+	toFileReturns     struct {
 		result1 error
 	}
 	toFileReturnsOnCall map[int]struct {
@@ -285,10 +220,8 @@ type FakeReleaseImpl struct {
 	}
 	UpdateGitHubPageStub        func(*github.Options) error
 	updateGitHubPageMutex       sync.RWMutex
-	updateGitHubPageArgsForCall []struct {
-		arg1 *github.Options
-	}
-	updateGitHubPageReturns struct {
+	updateGitHubPageArgsForCall []FakeReleaseImplUpdateGitHubPageArgs
+	updateGitHubPageReturns     struct {
 		result1 error
 	}
 	updateGitHubPageReturnsOnCall map[int]struct {
@@ -296,29 +229,155 @@ type FakeReleaseImpl struct {
 	}
 	ValidateImagesStub        func(string, string, string) error
 	validateImagesMutex       sync.RWMutex
-	validateImagesArgsForCall []struct {
-		arg1 string
-		arg2 string
-		arg3 string
-	}
-	validateImagesReturns struct {
+	validateImagesArgsForCall []FakeReleaseImplValidateImagesArgs
+	validateImagesReturns     struct {
 		result1 error
 	}
 	validateImagesReturnsOnCall map[int]struct {
 		result1 error
 	}
 	invocations      map[string][][]interface{}
+	callOrder        []string
 	invocationsMutex sync.RWMutex
+}
+
+// FakeReleaseImplBranchNeedsCreationArgs holds the arguments of one call to BranchNeedsCreation.
+type FakeReleaseImplBranchNeedsCreationArgs struct {
+	Arg1 string
+	Arg2 string
+	Arg3 semver.Version
+}
+
+// FakeReleaseImplCheckReleaseBucketArgs holds the arguments of one call to CheckReleaseBucket.
+type FakeReleaseImplCheckReleaseBucketArgs struct {
+	Arg1 *build.Options
+}
+
+// FakeReleaseImplCheckStageProvenanceArgs holds the arguments of one call to CheckStageProvenance.
+type FakeReleaseImplCheckStageProvenanceArgs struct {
+	Arg1 string
+	Arg2 string
+	Arg3 *release.Versions
+}
+
+// FakeReleaseImplCopyStagedFromGCSArgs holds the arguments of one call to CopyStagedFromGCS.
+type FakeReleaseImplCopyStagedFromGCSArgs struct {
+	Arg1 *build.Options
+	Arg2 string
+	Arg3 string
+}
+
+// FakeReleaseImplCopyToRemoteArgs holds the arguments of one call to CopyToRemote.
+type FakeReleaseImplCopyToRemoteArgs struct {
+	Arg1 object.Store
+	Arg2 string
+	Arg3 string
+}
+
+// FakeReleaseImplCreateAnnouncementArgs holds the arguments of one call to CreateAnnouncement.
+type FakeReleaseImplCreateAnnouncementArgs struct {
+	Arg1 *announce.Options
+}
+
+// FakeReleaseImplCreatePubBotBranchIssueArgs holds the arguments of one call to CreatePubBotBranchIssue.
+type FakeReleaseImplCreatePubBotBranchIssueArgs struct {
+	Arg1 string
+}
+
+// FakeReleaseImplGenerateReleaseVersionArgs holds the arguments of one call to GenerateReleaseVersion.
+type FakeReleaseImplGenerateReleaseVersionArgs struct {
+	Arg1 string
+	Arg2 string
+	Arg3 string
+	Arg4 bool
+}
+
+// FakeReleaseImplNewGitPusherArgs holds the arguments of one call to NewGitPusher.
+type FakeReleaseImplNewGitPusherArgs struct {
+	Arg1 *release.GitObjectPusherOptions
+}
+
+// FakeReleaseImplNormalizePathArgs holds the arguments of one call to NormalizePath.
+type FakeReleaseImplNormalizePathArgs struct {
+	Arg1 object.Store
+	Arg2 []string
+}
+
+// FakeReleaseImplPrepareWorkspaceReleaseArgs holds the arguments of one call to PrepareWorkspaceRelease.
+type FakeReleaseImplPrepareWorkspaceReleaseArgs struct {
+	Arg1 string
+	Arg2 string
+}
+
+// FakeReleaseImplPublishReleaseNotesIndexArgs holds the arguments of one call to PublishReleaseNotesIndex.
+type FakeReleaseImplPublishReleaseNotesIndexArgs struct {
+	Arg1 string
+	Arg2 string
+	Arg3 string
+}
+
+// FakeReleaseImplPublishVersionArgs holds the arguments of one call to PublishVersion.
+type FakeReleaseImplPublishVersionArgs struct {
+	Arg1 string
+	Arg2 string
+	Arg3 string
+	Arg4 string
+	Arg5 string
+	Arg6 []string
+	Arg7 bool
+	Arg8 bool
+}
+
+// FakeReleaseImplPushBranchesArgs holds the arguments of one call to PushBranches.
+type FakeReleaseImplPushBranchesArgs struct {
+	Arg1 *release.GitObjectPusher
+	Arg2 []string
+}
+
+// FakeReleaseImplPushMainBranchArgs holds the arguments of one call to PushMainBranch.
+type FakeReleaseImplPushMainBranchArgs struct {
+	Arg1 *release.GitObjectPusher
+}
+
+// FakeReleaseImplPushTagsArgs holds the arguments of one call to PushTags.
+type FakeReleaseImplPushTagsArgs struct {
+	Arg1 *release.GitObjectPusher
+	Arg2 []string
+}
+
+// FakeReleaseImplSignProvenanceArgs holds the arguments of one call to SignProvenance.
+type FakeReleaseImplSignProvenanceArgs struct {
+	Arg1 string
+	Arg2 []string
+	Arg3 bool
+}
+
+// FakeReleaseImplSubmitArgs holds the arguments of one call to Submit.
+type FakeReleaseImplSubmitArgs struct {
+	Arg1 *gcb.Options
+}
+
+// FakeReleaseImplToFileArgs holds the arguments of one call to ToFile.
+type FakeReleaseImplToFileArgs struct {
+	Arg1 string
+}
+
+// FakeReleaseImplUpdateGitHubPageArgs holds the arguments of one call to UpdateGitHubPage.
+type FakeReleaseImplUpdateGitHubPageArgs struct {
+	Arg1 *github.Options
+}
+
+// FakeReleaseImplValidateImagesArgs holds the arguments of one call to ValidateImages.
+type FakeReleaseImplValidateImagesArgs struct {
+	Arg1 string
+	Arg2 string
+	Arg3 string
 }
 
 func (fake *FakeReleaseImpl) BranchNeedsCreation(arg1 string, arg2 string, arg3 semver.Version) (bool, error) {
 	fake.branchNeedsCreationMutex.Lock()
 	ret, specificReturn := fake.branchNeedsCreationReturnsOnCall[len(fake.branchNeedsCreationArgsForCall)]
-	fake.branchNeedsCreationArgsForCall = append(fake.branchNeedsCreationArgsForCall, struct {
-		arg1 string
-		arg2 string
-		arg3 semver.Version
-	}{arg1, arg2, arg3})
+	fake.branchNeedsCreationArgsForCall = append(fake.branchNeedsCreationArgsForCall, FakeReleaseImplBranchNeedsCreationArgs{arg1, arg2, arg3})
 	stub := fake.BranchNeedsCreationStub
 	fakeReturns := fake.branchNeedsCreationReturns
 	fake.recordInvocation("BranchNeedsCreation", []interface{}{arg1, arg2, arg3})
@@ -348,7 +407,15 @@ func (fake *FakeReleaseImpl) BranchNeedsCreationArgsForCall(i int) (string, stri
 	fake.branchNeedsCreationMutex.RLock()
 	defer fake.branchNeedsCreationMutex.RUnlock()
 	argsForCall := fake.branchNeedsCreationArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.Arg1, argsForCall.Arg2, argsForCall.Arg3
+}
+
+func (fake *FakeReleaseImpl) BranchNeedsCreationArgs() []FakeReleaseImplBranchNeedsCreationArgs {
+	fake.branchNeedsCreationMutex.RLock()
+	defer fake.branchNeedsCreationMutex.RUnlock()
+	args := make([]FakeReleaseImplBranchNeedsCreationArgs, len(fake.branchNeedsCreationArgsForCall))
+	copy(args, fake.branchNeedsCreationArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) BranchNeedsCreationReturns(result1 bool, result2 error) {
@@ -380,8 +447,7 @@ func (fake *FakeReleaseImpl) BranchNeedsCreationReturnsOnCall(i int, result1 boo
 func (fake *FakeReleaseImpl) CheckPrerequisites() error {
 	fake.checkPrerequisitesMutex.Lock()
 	ret, specificReturn := fake.checkPrerequisitesReturnsOnCall[len(fake.checkPrerequisitesArgsForCall)]
-	fake.checkPrerequisitesArgsForCall = append(fake.checkPrerequisitesArgsForCall, struct {
-	}{})
+	fake.checkPrerequisitesArgsForCall = append(fake.checkPrerequisitesArgsForCall, struct{}{})
 	stub := fake.CheckPrerequisitesStub
 	fakeReturns := fake.checkPrerequisitesReturns
 	fake.recordInvocation("CheckPrerequisites", []interface{}{})
@@ -433,9 +499,7 @@ func (fake *FakeReleaseImpl) CheckPrerequisitesReturnsOnCall(i int, result1 erro
 func (fake *FakeReleaseImpl) CheckReleaseBucket(arg1 *build.Options) error {
 	fake.checkReleaseBucketMutex.Lock()
 	ret, specificReturn := fake.checkReleaseBucketReturnsOnCall[len(fake.checkReleaseBucketArgsForCall)]
-	fake.checkReleaseBucketArgsForCall = append(fake.checkReleaseBucketArgsForCall, struct {
-		arg1 *build.Options
-	}{arg1})
+	fake.checkReleaseBucketArgsForCall = append(fake.checkReleaseBucketArgsForCall, FakeReleaseImplCheckReleaseBucketArgs{arg1})
 	stub := fake.CheckReleaseBucketStub
 	fakeReturns := fake.checkReleaseBucketReturns
 	fake.recordInvocation("CheckReleaseBucket", []interface{}{arg1})
@@ -465,7 +529,15 @@ func (fake *FakeReleaseImpl) CheckReleaseBucketArgsForCall(i int) *build.Options
 	fake.checkReleaseBucketMutex.RLock()
 	defer fake.checkReleaseBucketMutex.RUnlock()
 	argsForCall := fake.checkReleaseBucketArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeReleaseImpl) CheckReleaseBucketArgs() []FakeReleaseImplCheckReleaseBucketArgs {
+	fake.checkReleaseBucketMutex.RLock()
+	defer fake.checkReleaseBucketMutex.RUnlock()
+	args := make([]FakeReleaseImplCheckReleaseBucketArgs, len(fake.checkReleaseBucketArgsForCall))
+	copy(args, fake.checkReleaseBucketArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) CheckReleaseBucketReturns(result1 error) {
@@ -494,11 +566,7 @@ func (fake *FakeReleaseImpl) CheckReleaseBucketReturnsOnCall(i int, result1 erro
 func (fake *FakeReleaseImpl) CheckStageProvenance(arg1 string, arg2 string, arg3 *release.Versions) error {
 	fake.checkStageProvenanceMutex.Lock()
 	ret, specificReturn := fake.checkStageProvenanceReturnsOnCall[len(fake.checkStageProvenanceArgsForCall)]
-	fake.checkStageProvenanceArgsForCall = append(fake.checkStageProvenanceArgsForCall, struct {
-		arg1 string
-		arg2 string
-		arg3 *release.Versions
-	}{arg1, arg2, arg3})
+	fake.checkStageProvenanceArgsForCall = append(fake.checkStageProvenanceArgsForCall, FakeReleaseImplCheckStageProvenanceArgs{arg1, arg2, arg3})
 	stub := fake.CheckStageProvenanceStub
 	fakeReturns := fake.checkStageProvenanceReturns
 	fake.recordInvocation("CheckStageProvenance", []interface{}{arg1, arg2, arg3})
@@ -528,7 +596,15 @@ func (fake *FakeReleaseImpl) CheckStageProvenanceArgsForCall(i int) (string, str
 	fake.checkStageProvenanceMutex.RLock()
 	defer fake.checkStageProvenanceMutex.RUnlock()
 	argsForCall := fake.checkStageProvenanceArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.Arg1, argsForCall.Arg2, argsForCall.Arg3
+}
+
+func (fake *FakeReleaseImpl) CheckStageProvenanceArgs() []FakeReleaseImplCheckStageProvenanceArgs {
+	fake.checkStageProvenanceMutex.RLock()
+	defer fake.checkStageProvenanceMutex.RUnlock()
+	args := make([]FakeReleaseImplCheckStageProvenanceArgs, len(fake.checkStageProvenanceArgsForCall))
+	copy(args, fake.checkStageProvenanceArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) CheckStageProvenanceReturns(result1 error) {
@@ -557,11 +633,7 @@ func (fake *FakeReleaseImpl) CheckStageProvenanceReturnsOnCall(i int, result1 er
 func (fake *FakeReleaseImpl) CopyStagedFromGCS(arg1 *build.Options, arg2 string, arg3 string) error {
 	fake.copyStagedFromGCSMutex.Lock()
 	ret, specificReturn := fake.copyStagedFromGCSReturnsOnCall[len(fake.copyStagedFromGCSArgsForCall)]
-	fake.copyStagedFromGCSArgsForCall = append(fake.copyStagedFromGCSArgsForCall, struct {
-		arg1 *build.Options
-		arg2 string
-		arg3 string
-	}{arg1, arg2, arg3})
+	fake.copyStagedFromGCSArgsForCall = append(fake.copyStagedFromGCSArgsForCall, FakeReleaseImplCopyStagedFromGCSArgs{arg1, arg2, arg3})
 	stub := fake.CopyStagedFromGCSStub
 	fakeReturns := fake.copyStagedFromGCSReturns
 	fake.recordInvocation("CopyStagedFromGCS", []interface{}{arg1, arg2, arg3})
@@ -591,7 +663,15 @@ func (fake *FakeReleaseImpl) CopyStagedFromGCSArgsForCall(i int) (*build.Options
 	fake.copyStagedFromGCSMutex.RLock()
 	defer fake.copyStagedFromGCSMutex.RUnlock()
 	argsForCall := fake.copyStagedFromGCSArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.Arg1, argsForCall.Arg2, argsForCall.Arg3
+}
+
+func (fake *FakeReleaseImpl) CopyStagedFromGCSArgs() []FakeReleaseImplCopyStagedFromGCSArgs {
+	fake.copyStagedFromGCSMutex.RLock()
+	defer fake.copyStagedFromGCSMutex.RUnlock()
+	args := make([]FakeReleaseImplCopyStagedFromGCSArgs, len(fake.copyStagedFromGCSArgsForCall))
+	copy(args, fake.copyStagedFromGCSArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) CopyStagedFromGCSReturns(result1 error) {
@@ -620,11 +700,7 @@ func (fake *FakeReleaseImpl) CopyStagedFromGCSReturnsOnCall(i int, result1 error
 func (fake *FakeReleaseImpl) CopyToRemote(arg1 object.Store, arg2 string, arg3 string) error {
 	fake.copyToRemoteMutex.Lock()
 	ret, specificReturn := fake.copyToRemoteReturnsOnCall[len(fake.copyToRemoteArgsForCall)]
-	fake.copyToRemoteArgsForCall = append(fake.copyToRemoteArgsForCall, struct {
-		arg1 object.Store
-		arg2 string
-		arg3 string
-	}{arg1, arg2, arg3})
+	fake.copyToRemoteArgsForCall = append(fake.copyToRemoteArgsForCall, FakeReleaseImplCopyToRemoteArgs{arg1, arg2, arg3})
 	stub := fake.CopyToRemoteStub
 	fakeReturns := fake.copyToRemoteReturns
 	fake.recordInvocation("CopyToRemote", []interface{}{arg1, arg2, arg3})
@@ -654,7 +730,15 @@ func (fake *FakeReleaseImpl) CopyToRemoteArgsForCall(i int) (object.Store, strin
 	fake.copyToRemoteMutex.RLock()
 	defer fake.copyToRemoteMutex.RUnlock()
 	argsForCall := fake.copyToRemoteArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.Arg1, argsForCall.Arg2, argsForCall.Arg3
+}
+
+func (fake *FakeReleaseImpl) CopyToRemoteArgs() []FakeReleaseImplCopyToRemoteArgs {
+	fake.copyToRemoteMutex.RLock()
+	defer fake.copyToRemoteMutex.RUnlock()
+	args := make([]FakeReleaseImplCopyToRemoteArgs, len(fake.copyToRemoteArgsForCall))
+	copy(args, fake.copyToRemoteArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) CopyToRemoteReturns(result1 error) {
@@ -683,9 +767,7 @@ func (fake *FakeReleaseImpl) CopyToRemoteReturnsOnCall(i int, result1 error) {
 func (fake *FakeReleaseImpl) CreateAnnouncement(arg1 *announce.Options) error {
 	fake.createAnnouncementMutex.Lock()
 	ret, specificReturn := fake.createAnnouncementReturnsOnCall[len(fake.createAnnouncementArgsForCall)]
-	fake.createAnnouncementArgsForCall = append(fake.createAnnouncementArgsForCall, struct {
-		arg1 *announce.Options
-	}{arg1})
+	fake.createAnnouncementArgsForCall = append(fake.createAnnouncementArgsForCall, FakeReleaseImplCreateAnnouncementArgs{arg1})
 	stub := fake.CreateAnnouncementStub
 	fakeReturns := fake.createAnnouncementReturns
 	fake.recordInvocation("CreateAnnouncement", []interface{}{arg1})
@@ -715,7 +797,15 @@ func (fake *FakeReleaseImpl) CreateAnnouncementArgsForCall(i int) *announce.Opti
 	fake.createAnnouncementMutex.RLock()
 	defer fake.createAnnouncementMutex.RUnlock()
 	argsForCall := fake.createAnnouncementArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeReleaseImpl) CreateAnnouncementArgs() []FakeReleaseImplCreateAnnouncementArgs {
+	fake.createAnnouncementMutex.RLock()
+	defer fake.createAnnouncementMutex.RUnlock()
+	args := make([]FakeReleaseImplCreateAnnouncementArgs, len(fake.createAnnouncementArgsForCall))
+	copy(args, fake.createAnnouncementArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) CreateAnnouncementReturns(result1 error) {
@@ -744,9 +834,7 @@ func (fake *FakeReleaseImpl) CreateAnnouncementReturnsOnCall(i int, result1 erro
 func (fake *FakeReleaseImpl) CreatePubBotBranchIssue(arg1 string) error {
 	fake.createPubBotBranchIssueMutex.Lock()
 	ret, specificReturn := fake.createPubBotBranchIssueReturnsOnCall[len(fake.createPubBotBranchIssueArgsForCall)]
-	fake.createPubBotBranchIssueArgsForCall = append(fake.createPubBotBranchIssueArgsForCall, struct {
-		arg1 string
-	}{arg1})
+	fake.createPubBotBranchIssueArgsForCall = append(fake.createPubBotBranchIssueArgsForCall, FakeReleaseImplCreatePubBotBranchIssueArgs{arg1})
 	stub := fake.CreatePubBotBranchIssueStub
 	fakeReturns := fake.createPubBotBranchIssueReturns
 	fake.recordInvocation("CreatePubBotBranchIssue", []interface{}{arg1})
@@ -776,7 +864,15 @@ func (fake *FakeReleaseImpl) CreatePubBotBranchIssueArgsForCall(i int) string {
 	fake.createPubBotBranchIssueMutex.RLock()
 	defer fake.createPubBotBranchIssueMutex.RUnlock()
 	argsForCall := fake.createPubBotBranchIssueArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeReleaseImpl) CreatePubBotBranchIssueArgs() []FakeReleaseImplCreatePubBotBranchIssueArgs {
+	fake.createPubBotBranchIssueMutex.RLock()
+	defer fake.createPubBotBranchIssueMutex.RUnlock()
+	args := make([]FakeReleaseImplCreatePubBotBranchIssueArgs, len(fake.createPubBotBranchIssueArgsForCall))
+	copy(args, fake.createPubBotBranchIssueArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) CreatePubBotBranchIssueReturns(result1 error) {
@@ -805,12 +901,7 @@ func (fake *FakeReleaseImpl) CreatePubBotBranchIssueReturnsOnCall(i int, result1
 func (fake *FakeReleaseImpl) GenerateReleaseVersion(arg1 string, arg2 string, arg3 string, arg4 bool) (*release.Versions, error) {
 	fake.generateReleaseVersionMutex.Lock()
 	ret, specificReturn := fake.generateReleaseVersionReturnsOnCall[len(fake.generateReleaseVersionArgsForCall)]
-	fake.generateReleaseVersionArgsForCall = append(fake.generateReleaseVersionArgsForCall, struct {
-		arg1 string
-		arg2 string
-		arg3 string
-		arg4 bool
-	}{arg1, arg2, arg3, arg4})
+	fake.generateReleaseVersionArgsForCall = append(fake.generateReleaseVersionArgsForCall, FakeReleaseImplGenerateReleaseVersionArgs{arg1, arg2, arg3, arg4})
 	stub := fake.GenerateReleaseVersionStub
 	fakeReturns := fake.generateReleaseVersionReturns
 	fake.recordInvocation("GenerateReleaseVersion", []interface{}{arg1, arg2, arg3, arg4})
@@ -840,7 +931,15 @@ func (fake *FakeReleaseImpl) GenerateReleaseVersionArgsForCall(i int) (string, s
 	fake.generateReleaseVersionMutex.RLock()
 	defer fake.generateReleaseVersionMutex.RUnlock()
 	argsForCall := fake.generateReleaseVersionArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+	return argsForCall.Arg1, argsForCall.Arg2, argsForCall.Arg3, argsForCall.Arg4
+}
+
+func (fake *FakeReleaseImpl) GenerateReleaseVersionArgs() []FakeReleaseImplGenerateReleaseVersionArgs {
+	fake.generateReleaseVersionMutex.RLock()
+	defer fake.generateReleaseVersionMutex.RUnlock()
+	args := make([]FakeReleaseImplGenerateReleaseVersionArgs, len(fake.generateReleaseVersionArgsForCall))
+	copy(args, fake.generateReleaseVersionArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) GenerateReleaseVersionReturns(result1 *release.Versions, result2 error) {
@@ -872,9 +971,7 @@ func (fake *FakeReleaseImpl) GenerateReleaseVersionReturnsOnCall(i int, result1 
 func (fake *FakeReleaseImpl) NewGitPusher(arg1 *release.GitObjectPusherOptions) (*release.GitObjectPusher, error) {
 	fake.newGitPusherMutex.Lock()
 	ret, specificReturn := fake.newGitPusherReturnsOnCall[len(fake.newGitPusherArgsForCall)]
-	fake.newGitPusherArgsForCall = append(fake.newGitPusherArgsForCall, struct {
-		arg1 *release.GitObjectPusherOptions
-	}{arg1})
+	fake.newGitPusherArgsForCall = append(fake.newGitPusherArgsForCall, FakeReleaseImplNewGitPusherArgs{arg1})
 	stub := fake.NewGitPusherStub
 	fakeReturns := fake.newGitPusherReturns
 	fake.recordInvocation("NewGitPusher", []interface{}{arg1})
@@ -904,7 +1001,15 @@ func (fake *FakeReleaseImpl) NewGitPusherArgsForCall(i int) *release.GitObjectPu
 	fake.newGitPusherMutex.RLock()
 	defer fake.newGitPusherMutex.RUnlock()
 	argsForCall := fake.newGitPusherArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeReleaseImpl) NewGitPusherArgs() []FakeReleaseImplNewGitPusherArgs {
+	fake.newGitPusherMutex.RLock()
+	defer fake.newGitPusherMutex.RUnlock()
+	args := make([]FakeReleaseImplNewGitPusherArgs, len(fake.newGitPusherArgsForCall))
+	copy(args, fake.newGitPusherArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) NewGitPusherReturns(result1 *release.GitObjectPusher, result2 error) {
@@ -934,15 +1039,17 @@ func (fake *FakeReleaseImpl) NewGitPusherReturnsOnCall(i int, result1 *release.G
 }
 
 func (fake *FakeReleaseImpl) NormalizePath(arg1 object.Store, arg2 ...string) (string, error) {
+	var arg2Copy []string
+	if arg2 != nil {
+		arg2Copy = make([]string, len(arg2))
+		copy(arg2Copy, arg2)
+	}
 	fake.normalizePathMutex.Lock()
 	ret, specificReturn := fake.normalizePathReturnsOnCall[len(fake.normalizePathArgsForCall)]
-	fake.normalizePathArgsForCall = append(fake.normalizePathArgsForCall, struct {
-		arg1 object.Store
-		arg2 []string
-	}{arg1, arg2})
+	fake.normalizePathArgsForCall = append(fake.normalizePathArgsForCall, FakeReleaseImplNormalizePathArgs{arg1, arg2Copy})
 	stub := fake.NormalizePathStub
 	fakeReturns := fake.normalizePathReturns
-	fake.recordInvocation("NormalizePath", []interface{}{arg1, arg2})
+	fake.recordInvocation("NormalizePath", []interface{}{arg1, arg2Copy})
 	fake.normalizePathMutex.Unlock()
 	if stub != nil {
 		return stub(arg1, arg2...)
@@ -969,7 +1076,15 @@ func (fake *FakeReleaseImpl) NormalizePathArgsForCall(i int) (object.Store, []st
 	fake.normalizePathMutex.RLock()
 	defer fake.normalizePathMutex.RUnlock()
 	argsForCall := fake.normalizePathArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.Arg1, argsForCall.Arg2
+}
+
+func (fake *FakeReleaseImpl) NormalizePathArgs() []FakeReleaseImplNormalizePathArgs {
+	fake.normalizePathMutex.RLock()
+	defer fake.normalizePathMutex.RUnlock()
+	args := make([]FakeReleaseImplNormalizePathArgs, len(fake.normalizePathArgsForCall))
+	copy(args, fake.normalizePathArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) NormalizePathReturns(result1 string, result2 error) {
@@ -1001,10 +1116,7 @@ func (fake *FakeReleaseImpl) NormalizePathReturnsOnCall(i int, result1 string, r
 func (fake *FakeReleaseImpl) PrepareWorkspaceRelease(arg1 string, arg2 string) error {
 	fake.prepareWorkspaceReleaseMutex.Lock()
 	ret, specificReturn := fake.prepareWorkspaceReleaseReturnsOnCall[len(fake.prepareWorkspaceReleaseArgsForCall)]
-	fake.prepareWorkspaceReleaseArgsForCall = append(fake.prepareWorkspaceReleaseArgsForCall, struct {
-		arg1 string
-		arg2 string
-	}{arg1, arg2})
+	fake.prepareWorkspaceReleaseArgsForCall = append(fake.prepareWorkspaceReleaseArgsForCall, FakeReleaseImplPrepareWorkspaceReleaseArgs{arg1, arg2})
 	stub := fake.PrepareWorkspaceReleaseStub
 	fakeReturns := fake.prepareWorkspaceReleaseReturns
 	fake.recordInvocation("PrepareWorkspaceRelease", []interface{}{arg1, arg2})
@@ -1034,7 +1146,15 @@ func (fake *FakeReleaseImpl) PrepareWorkspaceReleaseArgsForCall(i int) (string, 
 	fake.prepareWorkspaceReleaseMutex.RLock()
 	defer fake.prepareWorkspaceReleaseMutex.RUnlock()
 	argsForCall := fake.prepareWorkspaceReleaseArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.Arg1, argsForCall.Arg2
+}
+
+func (fake *FakeReleaseImpl) PrepareWorkspaceReleaseArgs() []FakeReleaseImplPrepareWorkspaceReleaseArgs {
+	fake.prepareWorkspaceReleaseMutex.RLock()
+	defer fake.prepareWorkspaceReleaseMutex.RUnlock()
+	args := make([]FakeReleaseImplPrepareWorkspaceReleaseArgs, len(fake.prepareWorkspaceReleaseArgsForCall))
+	copy(args, fake.prepareWorkspaceReleaseArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) PrepareWorkspaceReleaseReturns(result1 error) {
@@ -1063,11 +1183,7 @@ func (fake *FakeReleaseImpl) PrepareWorkspaceReleaseReturnsOnCall(i int, result1
 func (fake *FakeReleaseImpl) PublishReleaseNotesIndex(arg1 string, arg2 string, arg3 string) error {
 	fake.publishReleaseNotesIndexMutex.Lock()
 	ret, specificReturn := fake.publishReleaseNotesIndexReturnsOnCall[len(fake.publishReleaseNotesIndexArgsForCall)]
-	fake.publishReleaseNotesIndexArgsForCall = append(fake.publishReleaseNotesIndexArgsForCall, struct {
-		arg1 string
-		arg2 string
-		arg3 string
-	}{arg1, arg2, arg3})
+	fake.publishReleaseNotesIndexArgsForCall = append(fake.publishReleaseNotesIndexArgsForCall, FakeReleaseImplPublishReleaseNotesIndexArgs{arg1, arg2, arg3})
 	stub := fake.PublishReleaseNotesIndexStub
 	fakeReturns := fake.publishReleaseNotesIndexReturns
 	fake.recordInvocation("PublishReleaseNotesIndex", []interface{}{arg1, arg2, arg3})
@@ -1097,7 +1213,15 @@ func (fake *FakeReleaseImpl) PublishReleaseNotesIndexArgsForCall(i int) (string,
 	fake.publishReleaseNotesIndexMutex.RLock()
 	defer fake.publishReleaseNotesIndexMutex.RUnlock()
 	argsForCall := fake.publishReleaseNotesIndexArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.Arg1, argsForCall.Arg2, argsForCall.Arg3
+}
+
+func (fake *FakeReleaseImpl) PublishReleaseNotesIndexArgs() []FakeReleaseImplPublishReleaseNotesIndexArgs {
+	fake.publishReleaseNotesIndexMutex.RLock()
+	defer fake.publishReleaseNotesIndexMutex.RUnlock()
+	args := make([]FakeReleaseImplPublishReleaseNotesIndexArgs, len(fake.publishReleaseNotesIndexArgsForCall))
+	copy(args, fake.publishReleaseNotesIndexArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) PublishReleaseNotesIndexReturns(result1 error) {
@@ -1131,16 +1255,7 @@ func (fake *FakeReleaseImpl) PublishVersion(arg1 string, arg2 string, arg3 strin
 	}
 	fake.publishVersionMutex.Lock()
 	ret, specificReturn := fake.publishVersionReturnsOnCall[len(fake.publishVersionArgsForCall)]
-	fake.publishVersionArgsForCall = append(fake.publishVersionArgsForCall, struct {
-		arg1 string
-		arg2 string
-		arg3 string
-		arg4 string
-		arg5 string
-		arg6 []string
-		arg7 bool
-		arg8 bool
-	}{arg1, arg2, arg3, arg4, arg5, arg6Copy, arg7, arg8})
+	fake.publishVersionArgsForCall = append(fake.publishVersionArgsForCall, FakeReleaseImplPublishVersionArgs{arg1, arg2, arg3, arg4, arg5, arg6Copy, arg7, arg8})
 	stub := fake.PublishVersionStub
 	fakeReturns := fake.publishVersionReturns
 	fake.recordInvocation("PublishVersion", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6Copy, arg7, arg8})
@@ -1170,7 +1285,15 @@ func (fake *FakeReleaseImpl) PublishVersionArgsForCall(i int) (string, string, s
 	fake.publishVersionMutex.RLock()
 	defer fake.publishVersionMutex.RUnlock()
 	argsForCall := fake.publishVersionArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5, argsForCall.arg6, argsForCall.arg7, argsForCall.arg8
+	return argsForCall.Arg1, argsForCall.Arg2, argsForCall.Arg3, argsForCall.Arg4, argsForCall.Arg5, argsForCall.Arg6, argsForCall.Arg7, argsForCall.Arg8
+}
+
+func (fake *FakeReleaseImpl) PublishVersionArgs() []FakeReleaseImplPublishVersionArgs {
+	fake.publishVersionMutex.RLock()
+	defer fake.publishVersionMutex.RUnlock()
+	args := make([]FakeReleaseImplPublishVersionArgs, len(fake.publishVersionArgsForCall))
+	copy(args, fake.publishVersionArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) PublishVersionReturns(result1 error) {
@@ -1204,10 +1327,7 @@ func (fake *FakeReleaseImpl) PushBranches(arg1 *release.GitObjectPusher, arg2 []
 	}
 	fake.pushBranchesMutex.Lock()
 	ret, specificReturn := fake.pushBranchesReturnsOnCall[len(fake.pushBranchesArgsForCall)]
-	fake.pushBranchesArgsForCall = append(fake.pushBranchesArgsForCall, struct {
-		arg1 *release.GitObjectPusher
-		arg2 []string
-	}{arg1, arg2Copy})
+	fake.pushBranchesArgsForCall = append(fake.pushBranchesArgsForCall, FakeReleaseImplPushBranchesArgs{arg1, arg2Copy})
 	stub := fake.PushBranchesStub
 	fakeReturns := fake.pushBranchesReturns
 	fake.recordInvocation("PushBranches", []interface{}{arg1, arg2Copy})
@@ -1237,7 +1357,15 @@ func (fake *FakeReleaseImpl) PushBranchesArgsForCall(i int) (*release.GitObjectP
 	fake.pushBranchesMutex.RLock()
 	defer fake.pushBranchesMutex.RUnlock()
 	argsForCall := fake.pushBranchesArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.Arg1, argsForCall.Arg2
+}
+
+func (fake *FakeReleaseImpl) PushBranchesArgs() []FakeReleaseImplPushBranchesArgs {
+	fake.pushBranchesMutex.RLock()
+	defer fake.pushBranchesMutex.RUnlock()
+	args := make([]FakeReleaseImplPushBranchesArgs, len(fake.pushBranchesArgsForCall))
+	copy(args, fake.pushBranchesArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) PushBranchesReturns(result1 error) {
@@ -1266,9 +1394,7 @@ func (fake *FakeReleaseImpl) PushBranchesReturnsOnCall(i int, result1 error) {
 func (fake *FakeReleaseImpl) PushMainBranch(arg1 *release.GitObjectPusher) error {
 	fake.pushMainBranchMutex.Lock()
 	ret, specificReturn := fake.pushMainBranchReturnsOnCall[len(fake.pushMainBranchArgsForCall)]
-	fake.pushMainBranchArgsForCall = append(fake.pushMainBranchArgsForCall, struct {
-		arg1 *release.GitObjectPusher
-	}{arg1})
+	fake.pushMainBranchArgsForCall = append(fake.pushMainBranchArgsForCall, FakeReleaseImplPushMainBranchArgs{arg1})
 	stub := fake.PushMainBranchStub
 	fakeReturns := fake.pushMainBranchReturns
 	fake.recordInvocation("PushMainBranch", []interface{}{arg1})
@@ -1298,7 +1424,15 @@ func (fake *FakeReleaseImpl) PushMainBranchArgsForCall(i int) *release.GitObject
 	fake.pushMainBranchMutex.RLock()
 	defer fake.pushMainBranchMutex.RUnlock()
 	argsForCall := fake.pushMainBranchArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeReleaseImpl) PushMainBranchArgs() []FakeReleaseImplPushMainBranchArgs {
+	fake.pushMainBranchMutex.RLock()
+	defer fake.pushMainBranchMutex.RUnlock()
+	args := make([]FakeReleaseImplPushMainBranchArgs, len(fake.pushMainBranchArgsForCall))
+	copy(args, fake.pushMainBranchArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) PushMainBranchReturns(result1 error) {
@@ -1332,10 +1466,7 @@ func (fake *FakeReleaseImpl) PushTags(arg1 *release.GitObjectPusher, arg2 []stri
 	}
 	fake.pushTagsMutex.Lock()
 	ret, specificReturn := fake.pushTagsReturnsOnCall[len(fake.pushTagsArgsForCall)]
-	fake.pushTagsArgsForCall = append(fake.pushTagsArgsForCall, struct {
-		arg1 *release.GitObjectPusher
-		arg2 []string
-	}{arg1, arg2Copy})
+	fake.pushTagsArgsForCall = append(fake.pushTagsArgsForCall, FakeReleaseImplPushTagsArgs{arg1, arg2Copy})
 	stub := fake.PushTagsStub
 	fakeReturns := fake.pushTagsReturns
 	fake.recordInvocation("PushTags", []interface{}{arg1, arg2Copy})
@@ -1365,7 +1496,15 @@ func (fake *FakeReleaseImpl) PushTagsArgsForCall(i int) (*release.GitObjectPushe
 	fake.pushTagsMutex.RLock()
 	defer fake.pushTagsMutex.RUnlock()
 	argsForCall := fake.pushTagsArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.Arg1, argsForCall.Arg2
+}
+
+func (fake *FakeReleaseImpl) PushTagsArgs() []FakeReleaseImplPushTagsArgs {
+	fake.pushTagsMutex.RLock()
+	defer fake.pushTagsMutex.RUnlock()
+	args := make([]FakeReleaseImplPushTagsArgs, len(fake.pushTagsArgsForCall))
+	copy(args, fake.pushTagsArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) PushTagsReturns(result1 error) {
@@ -1399,11 +1538,7 @@ func (fake *FakeReleaseImpl) SignProvenance(arg1 string, arg2 []string, arg3 boo
 	}
 	fake.signProvenanceMutex.Lock()
 	ret, specificReturn := fake.signProvenanceReturnsOnCall[len(fake.signProvenanceArgsForCall)]
-	fake.signProvenanceArgsForCall = append(fake.signProvenanceArgsForCall, struct {
-		arg1 string
-		arg2 []string
-		arg3 bool
-	}{arg1, arg2Copy, arg3})
+	fake.signProvenanceArgsForCall = append(fake.signProvenanceArgsForCall, FakeReleaseImplSignProvenanceArgs{arg1, arg2Copy, arg3})
 	stub := fake.SignProvenanceStub
 	fakeReturns := fake.signProvenanceReturns
 	fake.recordInvocation("SignProvenance", []interface{}{arg1, arg2Copy, arg3})
@@ -1433,7 +1568,15 @@ func (fake *FakeReleaseImpl) SignProvenanceArgsForCall(i int) (string, []string,
 	fake.signProvenanceMutex.RLock()
 	defer fake.signProvenanceMutex.RUnlock()
 	argsForCall := fake.signProvenanceArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.Arg1, argsForCall.Arg2, argsForCall.Arg3
+}
+
+func (fake *FakeReleaseImpl) SignProvenanceArgs() []FakeReleaseImplSignProvenanceArgs {
+	fake.signProvenanceMutex.RLock()
+	defer fake.signProvenanceMutex.RUnlock()
+	args := make([]FakeReleaseImplSignProvenanceArgs, len(fake.signProvenanceArgsForCall))
+	copy(args, fake.signProvenanceArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) SignProvenanceReturns(result1 error) {
@@ -1462,9 +1605,7 @@ func (fake *FakeReleaseImpl) SignProvenanceReturnsOnCall(i int, result1 error) {
 func (fake *FakeReleaseImpl) Submit(arg1 *gcb.Options) error {
 	fake.submitMutex.Lock()
 	ret, specificReturn := fake.submitReturnsOnCall[len(fake.submitArgsForCall)]
-	fake.submitArgsForCall = append(fake.submitArgsForCall, struct {
-		arg1 *gcb.Options
-	}{arg1})
+	fake.submitArgsForCall = append(fake.submitArgsForCall, FakeReleaseImplSubmitArgs{arg1})
 	stub := fake.SubmitStub
 	fakeReturns := fake.submitReturns
 	fake.recordInvocation("Submit", []interface{}{arg1})
@@ -1494,7 +1635,15 @@ func (fake *FakeReleaseImpl) SubmitArgsForCall(i int) *gcb.Options {
 	fake.submitMutex.RLock()
 	defer fake.submitMutex.RUnlock()
 	argsForCall := fake.submitArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeReleaseImpl) SubmitArgs() []FakeReleaseImplSubmitArgs {
+	fake.submitMutex.RLock()
+	defer fake.submitMutex.RUnlock()
+	args := make([]FakeReleaseImplSubmitArgs, len(fake.submitArgsForCall))
+	copy(args, fake.submitArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) SubmitReturns(result1 error) {
@@ -1523,9 +1672,7 @@ func (fake *FakeReleaseImpl) SubmitReturnsOnCall(i int, result1 error) {
 func (fake *FakeReleaseImpl) ToFile(arg1 string) error {
 	fake.toFileMutex.Lock()
 	ret, specificReturn := fake.toFileReturnsOnCall[len(fake.toFileArgsForCall)]
-	fake.toFileArgsForCall = append(fake.toFileArgsForCall, struct {
-		arg1 string
-	}{arg1})
+	fake.toFileArgsForCall = append(fake.toFileArgsForCall, FakeReleaseImplToFileArgs{arg1})
 	stub := fake.ToFileStub
 	fakeReturns := fake.toFileReturns
 	fake.recordInvocation("ToFile", []interface{}{arg1})
@@ -1555,7 +1702,15 @@ func (fake *FakeReleaseImpl) ToFileArgsForCall(i int) string {
 	fake.toFileMutex.RLock()
 	defer fake.toFileMutex.RUnlock()
 	argsForCall := fake.toFileArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeReleaseImpl) ToFileArgs() []FakeReleaseImplToFileArgs {
+	fake.toFileMutex.RLock()
+	defer fake.toFileMutex.RUnlock()
+	args := make([]FakeReleaseImplToFileArgs, len(fake.toFileArgsForCall))
+	copy(args, fake.toFileArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) ToFileReturns(result1 error) {
@@ -1584,9 +1739,7 @@ func (fake *FakeReleaseImpl) ToFileReturnsOnCall(i int, result1 error) {
 func (fake *FakeReleaseImpl) UpdateGitHubPage(arg1 *github.Options) error {
 	fake.updateGitHubPageMutex.Lock()
 	ret, specificReturn := fake.updateGitHubPageReturnsOnCall[len(fake.updateGitHubPageArgsForCall)]
-	fake.updateGitHubPageArgsForCall = append(fake.updateGitHubPageArgsForCall, struct {
-		arg1 *github.Options
-	}{arg1})
+	fake.updateGitHubPageArgsForCall = append(fake.updateGitHubPageArgsForCall, FakeReleaseImplUpdateGitHubPageArgs{arg1})
 	stub := fake.UpdateGitHubPageStub
 	fakeReturns := fake.updateGitHubPageReturns
 	fake.recordInvocation("UpdateGitHubPage", []interface{}{arg1})
@@ -1616,7 +1769,15 @@ func (fake *FakeReleaseImpl) UpdateGitHubPageArgsForCall(i int) *github.Options 
 	fake.updateGitHubPageMutex.RLock()
 	defer fake.updateGitHubPageMutex.RUnlock()
 	argsForCall := fake.updateGitHubPageArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.Arg1
+}
+
+func (fake *FakeReleaseImpl) UpdateGitHubPageArgs() []FakeReleaseImplUpdateGitHubPageArgs {
+	fake.updateGitHubPageMutex.RLock()
+	defer fake.updateGitHubPageMutex.RUnlock()
+	args := make([]FakeReleaseImplUpdateGitHubPageArgs, len(fake.updateGitHubPageArgsForCall))
+	copy(args, fake.updateGitHubPageArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) UpdateGitHubPageReturns(result1 error) {
@@ -1645,11 +1806,7 @@ func (fake *FakeReleaseImpl) UpdateGitHubPageReturnsOnCall(i int, result1 error)
 func (fake *FakeReleaseImpl) ValidateImages(arg1 string, arg2 string, arg3 string) error {
 	fake.validateImagesMutex.Lock()
 	ret, specificReturn := fake.validateImagesReturnsOnCall[len(fake.validateImagesArgsForCall)]
-	fake.validateImagesArgsForCall = append(fake.validateImagesArgsForCall, struct {
-		arg1 string
-		arg2 string
-		arg3 string
-	}{arg1, arg2, arg3})
+	fake.validateImagesArgsForCall = append(fake.validateImagesArgsForCall, FakeReleaseImplValidateImagesArgs{arg1, arg2, arg3})
 	stub := fake.ValidateImagesStub
 	fakeReturns := fake.validateImagesReturns
 	fake.recordInvocation("ValidateImages", []interface{}{arg1, arg2, arg3})
@@ -1679,7 +1836,15 @@ func (fake *FakeReleaseImpl) ValidateImagesArgsForCall(i int) (string, string, s
 	fake.validateImagesMutex.RLock()
 	defer fake.validateImagesMutex.RUnlock()
 	argsForCall := fake.validateImagesArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.Arg1, argsForCall.Arg2, argsForCall.Arg3
+}
+
+func (fake *FakeReleaseImpl) ValidateImagesArgs() []FakeReleaseImplValidateImagesArgs {
+	fake.validateImagesMutex.RLock()
+	defer fake.validateImagesMutex.RUnlock()
+	args := make([]FakeReleaseImplValidateImagesArgs, len(fake.validateImagesArgsForCall))
+	copy(args, fake.validateImagesArgsForCall)
+	return args
 }
 
 func (fake *FakeReleaseImpl) ValidateImagesReturns(result1 error) {
@@ -1715,9 +1880,18 @@ func (fake *FakeReleaseImpl) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
+func (fake *FakeReleaseImpl) CallOrder() []string {
+	fake.invocationsMutex.RLock()
+	defer fake.invocationsMutex.RUnlock()
+	order := make([]string, len(fake.callOrder))
+	copy(order, fake.callOrder)
+	return order
+}
+
 func (fake *FakeReleaseImpl) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
+	fake.callOrder = append(fake.callOrder, key)
 	if fake.invocations == nil {
 		fake.invocations = map[string][][]interface{}{}
 	}

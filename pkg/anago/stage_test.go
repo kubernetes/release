@@ -18,6 +18,8 @@ limitations under the License.
 package anago_test
 
 import (
+	"path/filepath"
+	"slices"
 	"testing"
 
 	intoto "github.com/in-toto/attestation/go/v1"
@@ -394,7 +396,7 @@ func TestTagRepository(t *testing.T) {
 
 		state.SetVersions(tc.versions)
 		state.SetCreateReleaseBranch(tc.createReleaseBranch)
-		sut.SetState(&anago.StageState{state})
+		sut.SetState(&anago.StageState{State: state})
 
 		mock := &anagofakes.FakeStageImpl{}
 		tc.prepare(mock)
@@ -653,6 +655,229 @@ func TestStageArtifactsImageAttestation(t *testing.T) {
 	require.Equal(t, finishedOn(artifactStatement), finishedOn(imageStatement))
 }
 
+func TestScanVulnerabilities(t *testing.T) {
+	for _, tc := range []struct {
+		prepare func(*anagofakes.FakeStageImpl)
+	}{
+		{ // success
+			prepare: func(*anagofakes.FakeStageImpl) {},
+		},
+		{ // ListBinaries fails; report it after staging finishes
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.ListBinariesReturns(nil, err)
+			},
+		},
+		{ // ScanVulnerabilities fails, the stage must not fail
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.ScanVulnerabilitiesReturns(nil, err)
+			},
+		},
+		{ // no built binaries, the stage must not fail
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.ListBinariesReturns(nil, nil)
+			},
+		},
+	} {
+		opts := anago.DefaultStageOptions()
+		sut := anago.NewDefaultStage(opts)
+		mock := &anagofakes.FakeStageImpl{}
+		mock.ListBinariesReturns([]struct{ Path, Platform, Arch string }{
+			{Path: "/build/client/linux-amd64/kubernetes/client/bin/kubectl", Platform: "linux", Arch: "amd64"},
+			{Path: "/build/client/darwin-arm64/kubernetes/client/bin/kubectl", Platform: "darwin", Arch: "arm64"},
+			{Path: "/build/client/linux-amd64/kubernetes/client/bin/kubectl-convert", Platform: "linux", Arch: "amd64"},
+		}, nil)
+		tc.prepare(mock)
+		sut.SetImpl(mock)
+
+		sut.SetState(
+			generateTestingStageState(
+				&testStateParameters{versionsTag: &testVersionTag},
+			),
+		)
+
+		require.NoError(t, sut.ScanVulnerabilities())
+	}
+
+	// The scans of the binaries are kept in DefaultStage, with the binary
+	// names deduplicated across platforms and sorted.
+	opts := anago.DefaultStageOptions()
+	sut := anago.NewDefaultStage(opts)
+	mock := &anagofakes.FakeStageImpl{}
+	scans := map[string][]byte{"kubectl": []byte(`{}`)}
+
+	mock.ListBinariesReturns([]struct{ Path, Platform, Arch string }{
+		{Path: "/build/client/linux-amd64/kubernetes/client/bin/kubectl", Platform: "linux", Arch: "amd64"},
+		{Path: "/build/client/darwin-arm64/kubernetes/client/bin/kubectl", Platform: "darwin", Arch: "arm64"},
+	}, nil)
+	mock.ScanVulnerabilitiesReturns(scans, nil)
+	sut.SetImpl(mock)
+
+	state := generateTestingStageState(&testStateParameters{versionsTag: &testVersionTag})
+	sut.SetState(state)
+
+	require.NoError(t, sut.ScanVulnerabilities())
+	require.Equal(t, 1, mock.ScanVulnerabilitiesCallCount())
+	require.Equal(t, []string{"kubectl"}, mock.ScanVulnerabilitiesArgsForCall(0))
+	require.Equal(t, scans, sut.GetVEXScans())
+}
+
+func TestScanVulnerabilitiesContinuesAfterListingError(t *testing.T) {
+	versions := release.NewReleaseVersions("v1.20.0-rc.0", "", "v1.20.0-rc.0", "", "v1.21.0-alpha.0")
+	state := anago.DefaultStageState()
+	state.SetVersions(versions)
+
+	sut := anago.NewDefaultStage(anago.DefaultStageOptions())
+	mock := &anagofakes.FakeStageImpl{}
+	mock.ListBinariesReturnsOnCall(0, nil, err)
+	mock.ListBinariesReturnsOnCall(1, []struct{ Path, Platform, Arch string }{
+		{Path: "/build/client/linux-amd64/kubernetes/client/bin/kubectl", Platform: "linux", Arch: "amd64"},
+		{Path: "/build/client/windows-amd64/kubernetes/client/bin/kubectl.exe", Platform: "windows", Arch: "amd64"},
+	}, nil)
+	mock.ScanVulnerabilitiesReturns(map[string][]byte{"kubectl": []byte(`{}`)}, nil)
+	sut.SetImpl(mock)
+	sut.SetState(state)
+
+	require.NoError(t, sut.ScanVulnerabilities())
+	require.Equal(t, 2, mock.ListBinariesCallCount())
+	require.Equal(t, []string{"kubectl"}, mock.ScanVulnerabilitiesArgsForCall(0))
+	require.NotEmpty(t, sut.GetVEXScans())
+
+	// A listing error does not prevent the other version's scan or the
+	// usual artifact staging, and it does not fail the release.
+	mock.GenerateAttestationReturns(&intoto.Statement{}, nil)
+	mock.GetProvenanceSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
+	mock.GetOutputDirSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
+	mock.GetImageSubjectsReturns([]*intoto.ResourceDescriptor{{Name: "image"}}, nil)
+	require.NoError(t, sut.StageArtifacts())
+	require.Equal(t, 2, mock.AddVEXDocumentsCallCount())
+	require.Equal(t, 2, mock.AddImageVEXDocumentsCallCount())
+	require.Equal(t, 1, mock.PushAttestationCallCount())
+	require.Equal(t, 1, mock.PushImageAttestationCallCount())
+}
+
+func TestScanVulnerabilitiesDiscardsPartialScanOnError(t *testing.T) {
+	sut := anago.NewDefaultStage(anago.DefaultStageOptions())
+	mock := &anagofakes.FakeStageImpl{}
+	mock.ListBinariesReturns([]struct{ Path, Platform, Arch string }{
+		{Path: "/build/client/linux-amd64/kubernetes/client/bin/kubectl", Platform: "linux", Arch: "amd64"},
+	}, nil)
+	mock.ScanVulnerabilitiesReturns(map[string][]byte{"kubectl": []byte(`{}`)}, err)
+	sut.SetImpl(mock)
+
+	state := generateTestingStageState(&testStateParameters{versionsTag: &testVersionTag})
+	sut.SetState(state)
+
+	require.NoError(t, sut.ScanVulnerabilities())
+	require.Empty(t, sut.GetVEXScans())
+
+	mock.GenerateAttestationReturns(&intoto.Statement{}, nil)
+	mock.GetProvenanceSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
+	mock.GetOutputDirSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
+	mock.GetImageSubjectsReturns([]*intoto.ResourceDescriptor{{Name: "image"}}, nil)
+	require.NoError(t, sut.StageArtifacts())
+	require.Zero(t, mock.AddVEXDocumentsCallCount())
+	require.Zero(t, mock.AddImageVEXDocumentsCallCount())
+}
+
+func TestStageArtifactsVEX(t *testing.T) {
+	for _, tc := range []struct {
+		prepare func(*anagofakes.FakeStageImpl)
+	}{
+		{ // success
+			prepare: func(*anagofakes.FakeStageImpl) {},
+		},
+		{ // AddVEXDocuments fails; log and continue
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.AddVEXDocumentsReturns(err)
+			},
+		},
+		{ // StageImageVEXDocuments fails; log and continue
+			prepare: func(mock *anagofakes.FakeStageImpl) {
+				mock.AddImageVEXDocumentsReturns(err)
+			},
+		},
+	} {
+		opts := anago.DefaultStageOptions()
+		sut := anago.NewDefaultStage(opts)
+		mock := &anagofakes.FakeStageImpl{}
+		mock.GenerateAttestationReturns(&intoto.Statement{}, nil)
+		mock.GetProvenanceSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
+		mock.GetOutputDirSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
+
+		imageSubjects := []*intoto.ResourceDescriptor{{
+			Name:   "gcr.io/k8s-staging-kubernetes/kube-apiserver",
+			Digest: map[string]string{"sha256": "abc"},
+		}}
+		mock.GetImageSubjectsReturns(imageSubjects, nil)
+		tc.prepare(mock)
+		sut.SetImpl(mock)
+
+		state := generateTestingStageState(&testStateParameters{versionsTag: &testVersionTag})
+		scans := map[string][]byte{"kube-apiserver": []byte(`{}`)}
+
+		sut.SetState(state)
+		sut.SetVEXScans(scans)
+
+		require.NoError(t, sut.StageArtifacts())
+
+		// Both VEX staging methods run with the scans of DefaultStage, the
+		// image subjects of the version, and its options.
+		require.Equal(t, 1, mock.AddVEXDocumentsCallCount())
+		gotScans, gotOptions, gotVersion := mock.AddVEXDocumentsArgsForCall(0)
+		require.Equal(t, scans, gotScans)
+		require.Equal(t, opts, gotOptions)
+		require.Equal(t, testVersionTag, gotVersion)
+		require.Equal(t, 1, mock.PushAttestationCallCount())
+		require.Equal(t, 1, mock.PushImageAttestationCallCount())
+
+		require.Equal(t, 1, mock.AddImageVEXDocumentsCallCount())
+		gotScans, gotSubjects, gotVersion := mock.AddImageVEXDocumentsArgsForCall(0)
+		require.Equal(t, scans, gotScans)
+		require.Equal(t, imageSubjects, gotSubjects)
+		require.Equal(t, opts, gotOptions)
+		require.Equal(t, testVersionTag, gotVersion)
+
+		// Images are pushed and their digests collected before staging;
+		// both kinds of VEX must be written before gcs-stage is uploaded.
+		order := mock.CallOrder()
+		require.Less(t, slices.Index(order, "PushContainerImages"), slices.Index(order, "GetImageSubjects"))
+		require.Less(t, slices.Index(order, "GetImageSubjects"), slices.Index(order, "StageLocalArtifacts"))
+		require.Less(t, slices.Index(order, "StageLocalArtifacts"), slices.Index(order, "AddVEXDocuments"))
+		require.Less(t, slices.Index(order, "StageLocalArtifacts"), slices.Index(order, "AddImageVEXDocuments"))
+		require.Less(t, slices.Index(order, "AddVEXDocuments"), slices.Index(order, "PushReleaseArtifacts"))
+		require.Less(t, slices.Index(order, "StageImageVEXDocuments"), slices.Index(order, "PushReleaseArtifacts"))
+		firstPush := slices.Index(order, "PushReleaseArtifacts")
+		secondPush := firstPush + 1 + slices.Index(order[firstPush+1:], "PushReleaseArtifacts")
+		require.Less(t, secondPush, slices.Index(order, "GetOutputDirSubjects"))
+
+		require.Equal(t, 2, mock.PushReleaseArtifactsCallCount())
+		pushOptions, source, destination := mock.PushReleaseArtifactsArgsForCall(0)
+		require.Equal(t, filepath.Join(pushOptions.BuildDir, release.GCSStagePath, testVersionTag), source)
+		require.Equal(t, filepath.Join(opts.Bucket(), release.StagePath, opts.BuildVersion, testVersionTag, release.GCSStagePath, testVersionTag), destination)
+		_, source, destination = mock.PushReleaseArtifactsArgsForCall(1)
+		require.Equal(t, filepath.Join(pushOptions.BuildDir, release.ImagesPath), source)
+		require.Equal(t, filepath.Join(opts.Bucket(), release.StagePath, opts.BuildVersion, testVersionTag, release.ImagesPath), destination)
+	}
+}
+
+func TestStageArtifactsWithoutVEXScans(t *testing.T) {
+	// Without vulnerability scans, e.g. when every scan failed, no VEX
+	// documents are staged.
+	sut := anago.NewDefaultStage(anago.DefaultStageOptions())
+	mock := &anagofakes.FakeStageImpl{}
+	mock.GenerateAttestationReturns(&intoto.Statement{}, nil)
+	mock.GetProvenanceSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
+	mock.GetOutputDirSubjectsReturns([]*intoto.ResourceDescriptor{}, nil)
+	mock.GetImageSubjectsReturns([]*intoto.ResourceDescriptor{{Name: "image"}}, nil)
+	sut.SetImpl(mock)
+
+	sut.SetState(generateTestingStageState(&testStateParameters{versionsTag: &testVersionTag}))
+
+	require.NoError(t, sut.StageArtifacts())
+	require.Equal(t, 0, mock.AddVEXDocumentsCallCount())
+	require.Equal(t, 0, mock.AddImageVEXDocumentsCallCount())
+}
+
 func TestSubmitStageImpl(t *testing.T) {
 	for _, tc := range []struct {
 		prepare     func(*anagofakes.FakeStageImpl)
@@ -870,7 +1095,7 @@ func TestTagRepositoryIdempotent(t *testing.T) {
 
 			state.SetVersions(tc.versions)
 			state.SetCreateReleaseBranch(tc.createReleaseBranch)
-			sut.SetState(&anago.StageState{state})
+			sut.SetState(&anago.StageState{State: state})
 
 			mock := &anagofakes.FakeStageImpl{}
 			tc.prepare(mock)
