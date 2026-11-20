@@ -215,6 +215,15 @@ func TestGenerateFinalAttestation(t *testing.T) { //nolint:paralleltest // sets 
 	image.Checksum = map[string]string{"SHA256": strings.Repeat("c", 64)}
 	require.NoError(t, doc.AddPackage(image))
 
+	// A binary in the image is a package with its path in the image as file
+	// name, which is not a file of the release either
+	inImage := spdx.NewPackage()
+	inImage.Name = "k8s.io/kubernetes"
+	inImage.FileName = "/usr/bin/kubectl"
+	inImage.BuildID("usr-bin-kubectl", inImage.Name)
+	inImage.Checksum = map[string]string{"SHA256": strings.Repeat("d", 64)}
+	require.NoError(t, doc.AddPackage(inImage))
+
 	sbom := filepath.Join(t.TempDir(), "kubernetes-release.spdx")
 	require.NoError(t, doc.Write(sbom))
 

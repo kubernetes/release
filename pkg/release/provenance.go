@@ -24,6 +24,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -486,15 +487,17 @@ func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(
 
 	// The SBOM only provides the subjects: bom's statements declare the
 	// SLSA v0.2 predicate type and bom can't read the v1 predicate of the
-	// stage run. Only the files of the release are subjects: bom names the
-	// subject of a package after its download location, which is NONE for
-	// the images, their layers and the binaries in them.
-	subjects := slices.DeleteFunc(
-		doc.ToProvenanceStatement(spdx.DefaultProvenanceOptions).Subject,
-		func(sub *intoto.ResourceDescriptor) bool {
-			return sub.GetName() == spdx.NONE || sub.GetName() == spdx.NOASSERTION
-		},
-	)
+	// stage run. Only the files of the release are subjects. The SBOM
+	// describes them as files, and the images, their layers and the
+	// binaries in them as packages, which are not files in the bucket even
+	// when they carry a file name.
+	subjects := make([]*intoto.ResourceDescriptor, 0, len(doc.Files))
+
+	for _, id := range slices.Sorted(maps.Keys(doc.Files)) {
+		if sub := doc.Files[id].ToProvenanceSubject(); sub != nil {
+			subjects = append(subjects, sub)
+		}
+	}
 
 	// Rewrite the provenance subjects to list their full paths in the bucket
 	for i, sub := range subjects {
