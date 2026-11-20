@@ -230,16 +230,18 @@ type FakeStageImpl struct {
 		result1 *spdx.Document
 		result2 error
 	}
-	GenerateVersionArtifactsBOMStub        func(string) error
+	GenerateVersionArtifactsBOMStub        func(string) (*spdx.Document, error)
 	generateVersionArtifactsBOMMutex       sync.RWMutex
 	generateVersionArtifactsBOMArgsForCall []struct {
 		arg1 string
 	}
 	generateVersionArtifactsBOMReturns struct {
-		result1 error
+		result1 *spdx.Document
+		result2 error
 	}
 	generateVersionArtifactsBOMReturnsOnCall map[int]struct {
-		result1 error
+		result1 *spdx.Document
+		result2 error
 	}
 	GetImageSubjectsStub        func(string, string, string) ([]*v1.ResourceDescriptor, error)
 	getImageSubjectsMutex       sync.RWMutex
@@ -550,6 +552,18 @@ type FakeStageImpl struct {
 		result1 error
 	}
 	writeSourceBOMReturnsOnCall map[int]struct {
+		result1 error
+	}
+	WriteVersionArtifactsBOMStub        func(*spdx.Document, string) error
+	writeVersionArtifactsBOMMutex       sync.RWMutex
+	writeVersionArtifactsBOMArgsForCall []struct {
+		arg1 *spdx.Document
+		arg2 string
+	}
+	writeVersionArtifactsBOMReturns struct {
+		result1 error
+	}
+	writeVersionArtifactsBOMReturnsOnCall map[int]struct {
 		result1 error
 	}
 	invocations      map[string][][]interface{}
@@ -1538,7 +1552,7 @@ func (fake *FakeStageImpl) GenerateSourceTreeBOMReturnsOnCall(i int, result1 *sp
 	}{result1, result2}
 }
 
-func (fake *FakeStageImpl) GenerateVersionArtifactsBOM(arg1 string) error {
+func (fake *FakeStageImpl) GenerateVersionArtifactsBOM(arg1 string) (*spdx.Document, error) {
 	fake.generateVersionArtifactsBOMMutex.Lock()
 	ret, specificReturn := fake.generateVersionArtifactsBOMReturnsOnCall[len(fake.generateVersionArtifactsBOMArgsForCall)]
 	fake.generateVersionArtifactsBOMArgsForCall = append(fake.generateVersionArtifactsBOMArgsForCall, struct {
@@ -1552,9 +1566,9 @@ func (fake *FakeStageImpl) GenerateVersionArtifactsBOM(arg1 string) error {
 		return stub(arg1)
 	}
 	if specificReturn {
-		return ret.result1
+		return ret.result1, ret.result2
 	}
-	return fakeReturns.result1
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeStageImpl) GenerateVersionArtifactsBOMCallCount() int {
@@ -1563,7 +1577,7 @@ func (fake *FakeStageImpl) GenerateVersionArtifactsBOMCallCount() int {
 	return len(fake.generateVersionArtifactsBOMArgsForCall)
 }
 
-func (fake *FakeStageImpl) GenerateVersionArtifactsBOMCalls(stub func(string) error) {
+func (fake *FakeStageImpl) GenerateVersionArtifactsBOMCalls(stub func(string) (*spdx.Document, error)) {
 	fake.generateVersionArtifactsBOMMutex.Lock()
 	defer fake.generateVersionArtifactsBOMMutex.Unlock()
 	fake.GenerateVersionArtifactsBOMStub = stub
@@ -1576,27 +1590,30 @@ func (fake *FakeStageImpl) GenerateVersionArtifactsBOMArgsForCall(i int) string 
 	return argsForCall.arg1
 }
 
-func (fake *FakeStageImpl) GenerateVersionArtifactsBOMReturns(result1 error) {
+func (fake *FakeStageImpl) GenerateVersionArtifactsBOMReturns(result1 *spdx.Document, result2 error) {
 	fake.generateVersionArtifactsBOMMutex.Lock()
 	defer fake.generateVersionArtifactsBOMMutex.Unlock()
 	fake.GenerateVersionArtifactsBOMStub = nil
 	fake.generateVersionArtifactsBOMReturns = struct {
-		result1 error
-	}{result1}
+		result1 *spdx.Document
+		result2 error
+	}{result1, result2}
 }
 
-func (fake *FakeStageImpl) GenerateVersionArtifactsBOMReturnsOnCall(i int, result1 error) {
+func (fake *FakeStageImpl) GenerateVersionArtifactsBOMReturnsOnCall(i int, result1 *spdx.Document, result2 error) {
 	fake.generateVersionArtifactsBOMMutex.Lock()
 	defer fake.generateVersionArtifactsBOMMutex.Unlock()
 	fake.GenerateVersionArtifactsBOMStub = nil
 	if fake.generateVersionArtifactsBOMReturnsOnCall == nil {
 		fake.generateVersionArtifactsBOMReturnsOnCall = make(map[int]struct {
-			result1 error
+			result1 *spdx.Document
+			result2 error
 		})
 	}
 	fake.generateVersionArtifactsBOMReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
+		result1 *spdx.Document
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeStageImpl) GetImageSubjects(arg1 string, arg2 string, arg3 string) ([]*v1.ResourceDescriptor, error) {
@@ -3101,6 +3118,8 @@ func (fake *FakeStageImpl) WriteSourceBOM(arg1 *spdx.Document, arg2 string) erro
 func (fake *FakeStageImpl) WriteSourceBOMCallCount() int {
 	fake.writeSourceBOMMutex.RLock()
 	defer fake.writeSourceBOMMutex.RUnlock()
+	fake.writeVersionArtifactsBOMMutex.RLock()
+	defer fake.writeVersionArtifactsBOMMutex.RUnlock()
 	return len(fake.writeSourceBOMArgsForCall)
 }
 
@@ -3113,6 +3132,8 @@ func (fake *FakeStageImpl) WriteSourceBOMCalls(stub func(*spdx.Document, string)
 func (fake *FakeStageImpl) WriteSourceBOMArgsForCall(i int) (*spdx.Document, string) {
 	fake.writeSourceBOMMutex.RLock()
 	defer fake.writeSourceBOMMutex.RUnlock()
+	fake.writeVersionArtifactsBOMMutex.RLock()
+	defer fake.writeVersionArtifactsBOMMutex.RUnlock()
 	argsForCall := fake.writeSourceBOMArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
@@ -3136,6 +3157,68 @@ func (fake *FakeStageImpl) WriteSourceBOMReturnsOnCall(i int, result1 error) {
 		})
 	}
 	fake.writeSourceBOMReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) WriteVersionArtifactsBOM(arg1 *spdx.Document, arg2 string) error {
+	fake.writeVersionArtifactsBOMMutex.Lock()
+	ret, specificReturn := fake.writeVersionArtifactsBOMReturnsOnCall[len(fake.writeVersionArtifactsBOMArgsForCall)]
+	fake.writeVersionArtifactsBOMArgsForCall = append(fake.writeVersionArtifactsBOMArgsForCall, struct {
+		arg1 *spdx.Document
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.WriteVersionArtifactsBOMStub
+	fakeReturns := fake.writeVersionArtifactsBOMReturns
+	fake.recordInvocation("WriteVersionArtifactsBOM", []interface{}{arg1, arg2})
+	fake.writeVersionArtifactsBOMMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStageImpl) WriteVersionArtifactsBOMCallCount() int {
+	fake.writeVersionArtifactsBOMMutex.RLock()
+	defer fake.writeVersionArtifactsBOMMutex.RUnlock()
+	return len(fake.writeVersionArtifactsBOMArgsForCall)
+}
+
+func (fake *FakeStageImpl) WriteVersionArtifactsBOMCalls(stub func(*spdx.Document, string) error) {
+	fake.writeVersionArtifactsBOMMutex.Lock()
+	defer fake.writeVersionArtifactsBOMMutex.Unlock()
+	fake.WriteVersionArtifactsBOMStub = stub
+}
+
+func (fake *FakeStageImpl) WriteVersionArtifactsBOMArgsForCall(i int) (*spdx.Document, string) {
+	fake.writeVersionArtifactsBOMMutex.RLock()
+	defer fake.writeVersionArtifactsBOMMutex.RUnlock()
+	argsForCall := fake.writeVersionArtifactsBOMArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeStageImpl) WriteVersionArtifactsBOMReturns(result1 error) {
+	fake.writeVersionArtifactsBOMMutex.Lock()
+	defer fake.writeVersionArtifactsBOMMutex.Unlock()
+	fake.WriteVersionArtifactsBOMStub = nil
+	fake.writeVersionArtifactsBOMReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStageImpl) WriteVersionArtifactsBOMReturnsOnCall(i int, result1 error) {
+	fake.writeVersionArtifactsBOMMutex.Lock()
+	defer fake.writeVersionArtifactsBOMMutex.Unlock()
+	fake.WriteVersionArtifactsBOMStub = nil
+	if fake.writeVersionArtifactsBOMReturnsOnCall == nil {
+		fake.writeVersionArtifactsBOMReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.writeVersionArtifactsBOMReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }

@@ -30,6 +30,7 @@ import (
 	gogit "github.com/go-git/go-git/v5"
 	slsa "github.com/in-toto/attestation/go/predicates/provenance/v1"
 	intoto "github.com/in-toto/attestation/go/v1"
+	"github.com/package-url/packageurl-go"
 	protosbom "github.com/protobom/protobom/pkg/sbom"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -117,11 +118,16 @@ type DefaultStage struct {
 	impl    stageImpl
 	options *StageOptions
 	state   *StageState
+
+	// artifactsBOMs are the release artifacts SBOMs by version. They are
+	// written once the container images are pushed, since they record the
+	// digests of the pushed images.
+	artifactsBOMs map[string]*spdx.Document
 }
 
 // NewDefaultStage creates a new defaultStage instance.
 func NewDefaultStage(options *StageOptions) *DefaultStage {
-	return &DefaultStage{&defaultStageImpl{}, options, nil}
+	return &DefaultStage{impl: &defaultStageImpl{}, options: options}
 }
 
 // SetImpl can be used to set the internal stage implementation.
@@ -181,7 +187,8 @@ type stageImpl interface {
 	) error
 	PushContainerImages(options *build.Options) error
 	GoModDownload(path string) error
-	GenerateVersionArtifactsBOM(string) error
+	GenerateVersionArtifactsBOM(string) (*spdx.Document, error)
+	WriteVersionArtifactsBOM(*spdx.Document, string) error
 	GenerateSourceTreeBOM(options *bom.GenerateOptions) (*spdx.Document, error)
 	WriteSourceBOM(spdxDoc *spdx.Document, version string) error
 	ListBinaries(version string) ([]struct{ Path, Platform, Arch string }, error)
@@ -735,7 +742,7 @@ func (d *defaultStageImpl) AddBinariesToSBOM(sbom *spdx.Document, version string
 		file.AddRelationship(&spdx.Relationship{
 			FullRender:       false,
 			PeerReference:    kubernetesPackageRef,
-			PeerExtReference: "kubernetes-" + version,
+			PeerExtReference: sourceDocumentID(version),
 			Comment:          sourceCodeComment,
 			Type:             spdx.GENERATED_FROM,
 		})
@@ -769,7 +776,7 @@ func (d *defaultStageImpl) AddTarfilesToSBOM(sbom *spdx.Document, version string
 		file.AddRelationship(&spdx.Relationship{
 			FullRender:       false,
 			PeerReference:    kubernetesPackageRef,
-			PeerExtReference: "kubernetes-" + version,
+			PeerExtReference: sourceDocumentID(version),
 			Comment:          sourceCodeComment,
 			Type:             spdx.GENERATED_FROM,
 		})
@@ -811,10 +818,12 @@ func generateSPDXDocument(options *bom.GenerateOptions) (*spdx.Document, error) 
 	return doc, nil
 }
 
-func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
+// GenerateVersionArtifactsBOM generates the release artifacts SBOM of the
+// version. WriteVersionArtifactsBOM writes it once the images are pushed.
+func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) (*spdx.Document, error) {
 	images, err := d.ListImageArchives(version)
 	if err != nil {
-		return fmt.Errorf("getting artifacts list: %w", err)
+		return nil, fmt.Errorf("getting artifacts list: %w", err)
 	}
 
 	// Build the base artifacts sbom. We only pass it the images for
@@ -825,38 +834,37 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 		ImageArchives: images,
 	})
 	if err != nil {
-		return fmt.Errorf("generating base artifacts sbom for %s: %w", version, err)
+		return nil, fmt.Errorf("generating base artifacts sbom for %s: %w", version, err)
 	}
 
 	if len(doc.Packages) == 0 {
-		return fmt.Errorf("no images in the base artifacts sbom for %s", version)
+		return nil, fmt.Errorf("no images in the base artifacts sbom for %s", version)
 	}
 
 	// Add the binaries and tarballs
 	if err := d.AddBinariesToSBOM(doc, version); err != nil {
-		return fmt.Errorf("adding binaries to %s SBOM: %w", version, err)
+		return nil, fmt.Errorf("adding binaries to %s SBOM: %w", version, err)
 	}
 
 	if err := d.AddTarfilesToSBOM(doc, version); err != nil {
-		return fmt.Errorf("adding tarballs to %s SBOM: %w", version, err)
+		return nil, fmt.Errorf("adding tarballs to %s SBOM: %w", version, err)
 	}
 
 	// Reference the source code SBOM as external document
-	sourcePath := filepath.Join(os.TempDir(), fmt.Sprintf("source-bom-%s.spdx", version))
 	extRef := spdx.ExternalDocumentRef{
-		ID:  "kubernetes-" + version,
+		ID:  sourceDocumentID(version),
 		URI: fmt.Sprintf("https://sbom.k8s.io/%s/source", version),
 	}
 
-	if err := extRef.ReadSourceFile(sourcePath); err != nil {
-		return fmt.Errorf("reading the source file as external reference: %w", err)
+	if err := extRef.ReadSourceFile(sourceBOMPath(version)); err != nil {
+		return nil, fmt.Errorf("reading the source file as external reference: %w", err)
 	}
 
 	doc.ExternalDocRefs = append(doc.ExternalDocRefs, extRef)
 
-	source, err := sourcePackage(sourcePath)
+	source, err := sourcePackage(sourceBOMPath(version))
 	if err != nil {
-		return fmt.Errorf("reading the source package of %s: %w", version, err)
+		return nil, fmt.Errorf("reading the source package of %s: %w", version, err)
 	}
 
 	// Stamp all packages, which are the images, as generated from the source
@@ -866,7 +874,7 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 		pkg.AddRelationship(&spdx.Relationship{
 			FullRender:       false,
 			PeerReference:    kubernetesPackageRef,
-			PeerExtReference: "kubernetes-" + version,
+			PeerExtReference: sourceDocumentID(version),
 			Comment:          sourceCodeComment,
 			Type:             spdx.GENERATED_FROM,
 		})
@@ -876,18 +884,124 @@ func (d *defaultStageImpl) GenerateVersionArtifactsBOM(version string) error {
 	// until its ID in the source SBOM is known.
 	setSourceReference(doc, extRef.ID, source.SPDXID())
 
-	// Write the Release Artifacts SBOM to disk
+	return doc, nil
+}
+
+// WriteVersionArtifactsBOM writes the release artifacts SBOM of the version
+// to disk, in SPDX 2.3 and SPDX 3, where staging the artifacts picks it up.
+func (d *defaultStageImpl) WriteVersionArtifactsBOM(doc *spdx.Document, version string) error {
+	idx := slices.IndexFunc(doc.ExternalDocRefs, func(ref spdx.ExternalDocumentRef) bool {
+		return ref.ID == sourceDocumentID(version)
+	})
+	if idx == -1 {
+		return fmt.Errorf("the artifacts SBOM of %s does not reference the source SBOM", version)
+	}
+
+	source, err := sourcePackage(sourceBOMPath(version))
+	if err != nil {
+		return fmt.Errorf("reading the source package of %s: %w", version, err)
+	}
+
 	if err := doc.Write(filepath.Join(os.TempDir(), fmt.Sprintf("release-bom-%s.spdx", version))); err != nil {
 		return fmt.Errorf("writing artifacts SBOM for %s: %w", version, err)
 	}
 
 	if err := writeSPDX3(
-		doc, filepath.Join(os.TempDir(), fmt.Sprintf("release-bom-%s.spdx3.json", version)), version, extRef, source,
+		doc, filepath.Join(os.TempDir(), fmt.Sprintf("release-bom-%s.spdx3.json", version)),
+		version, doc.ExternalDocRefs[idx], source,
 	); err != nil {
 		return fmt.Errorf("writing SPDX 3 artifacts SBOM for %s: %w", version, err)
 	}
 
 	return nil
+}
+
+// sourceDocumentID returns the ID the artifacts SBOM of the version
+// references the source SBOM by.
+func sourceDocumentID(version string) string {
+	return "kubernetes-" + version
+}
+
+// sourceBOMPath returns the path WriteSourceBOM writes the source SBOM of the
+// version to.
+func sourceBOMPath(version string) string {
+	return filepath.Join(os.TempDir(), fmt.Sprintf("source-bom-%s.spdx", version))
+}
+
+// setImageDigests records the digests of the pushed images in the image
+// packages of the artifacts SBOM: their checksum and the version of their
+// OCI package URL. bom reads the images from the archives of the build, which
+// have no registry manifest, and computes one whose digest no registry
+// serves, since docker push compresses the layers again. A package matches
+// the pushed image with the same repository name, the last element of the
+// repository_url of its package URL, whatever the registry. Every image
+// package must match exactly one pushed image.
+func setImageDigests(doc *spdx.Document, images []*intoto.ResourceDescriptor) error {
+	digests := map[string][]string{}
+
+	for _, image := range images {
+		name := repositoryName(image.GetName())
+
+		digest := image.GetDigest()[intoto.AlgorithmSHA256.String()]
+		if digest == "" {
+			return fmt.Errorf("pushed image %s has no sha256 digest", image.GetName())
+		}
+
+		if !slices.Contains(digests[name], digest) {
+			digests[name] = append(digests[name], digest)
+		}
+	}
+
+	for _, key := range slices.Sorted(maps.Keys(doc.Packages)) {
+		pkg := doc.Packages[key]
+
+		for i := range pkg.ExternalRefs {
+			ref := &pkg.ExternalRefs[i]
+			if ref.Type != spdx.ExtRefTypePurl || !strings.HasPrefix(ref.Locator, "pkg:"+packageurl.TypeOCI+"/") {
+				continue
+			}
+
+			purl, err := packageurl.FromString(ref.Locator)
+			if err != nil {
+				return fmt.Errorf("parsing the package URL of %s: %w", pkg.Name, err)
+			}
+
+			name := purl.Name
+			if repository := purl.Qualifiers.Map()["repository_url"]; repository != "" {
+				name = repositoryName(repository)
+			}
+
+			switch found := digests[name]; len(found) {
+			case 0:
+				return fmt.Errorf("no pushed image for %s", pkg.Name)
+			case 1:
+				// Only the digest changes, the package URL keeps the form bom
+				// writes.
+				computed, ok := strings.CutPrefix(purl.Version, "sha256:")
+				if !ok || computed == "" {
+					return fmt.Errorf("the package URL of %s has no sha256 digest", pkg.Name)
+				}
+
+				ref.Locator = strings.Replace(ref.Locator, computed, found[0], 1)
+
+				if pkg.Checksum == nil {
+					pkg.Checksum = map[string]string{}
+				}
+
+				pkg.Checksum["SHA256"] = found[0]
+			default:
+				return fmt.Errorf("%d pushed images for %s", len(found), pkg.Name)
+			}
+		}
+	}
+
+	return nil
+}
+
+// repositoryName returns the last element of a repository, the name of an
+// image without its registry and path.
+func repositoryName(repository string) string {
+	return repository[strings.LastIndex(repository, "/")+1:]
 }
 
 // writeSPDX3 writes the release artifacts SBOM of the version as SPDX 3
@@ -1076,7 +1190,7 @@ func (d *defaultStageImpl) WriteSourceBOM(
 	spdxDoc.Namespace = fmt.Sprintf("https://sbom.k8s.io/%s/source", version)
 	spdxDoc.Name = "kubernetes-" + version
 
-	if err := spdxDoc.Write(filepath.Join(os.TempDir(), fmt.Sprintf("source-bom-%s.spdx", version))); err != nil {
+	if err := spdxDoc.Write(sourceBOMPath(version)); err != nil {
 		return fmt.Errorf("writing the source code SBOM: %w", err)
 	}
 
@@ -1104,16 +1218,22 @@ func (d *DefaultStage) GenerateBillOfMaterials() error {
 
 	// We generate an artifacts sbom for each of the versions
 	// we are building
+	d.artifactsBOMs = map[string]*spdx.Document{}
+
 	for _, version := range d.state.versions.Ordered() {
 		// Render the common source SBOM for this version
 		if err := d.impl.WriteSourceBOM(spdxDOC, version); err != nil {
 			return fmt.Errorf("writing SBOM for version %s: %w", version, err)
 		}
 
-		// Render the artifacts SBOM for version
-		if err := d.impl.GenerateVersionArtifactsBOM(version); err != nil {
+		// Generate the artifacts SBOM for version. StageArtifacts writes it
+		// with the digests of the pushed images.
+		doc, err := d.impl.GenerateVersionArtifactsBOM(version)
+		if err != nil {
 			return fmt.Errorf("generating SBOM for version %s: %w", version, err)
 		}
+
+		d.artifactsBOMs[version] = doc
 	}
 
 	return nil
@@ -1174,6 +1294,35 @@ func (d *DefaultStage) StageArtifacts() error {
 		pushBuildOptions.Version = version
 		pushBuildOptions.BuildDir = buildDir
 
+		// Push container images into registry. This comes first, since only
+		// the push determines the digests of the images, which the artifacts
+		// SBOM records.
+		if err := d.impl.PushContainerImages(pushBuildOptions); err != nil {
+			return fmt.Errorf("pushing container images: %w", err)
+		}
+
+		imageSubjects, err := d.impl.GetImageSubjects(
+			pushBuildOptions.Registry, version, buildDir,
+		)
+		if err != nil {
+			return fmt.Errorf("getting the pushed container images of version %s: %w", version, err)
+		}
+
+		imageStatement.Subject = append(imageStatement.Subject, imageSubjects...)
+
+		doc, ok := d.artifactsBOMs[version]
+		if !ok {
+			return fmt.Errorf("no artifacts SBOM generated for version %s", version)
+		}
+
+		if err := setImageDigests(doc, imageSubjects); err != nil {
+			return fmt.Errorf("recording the pushed images in the artifacts SBOM of %s: %w", version, err)
+		}
+
+		if err := d.impl.WriteVersionArtifactsBOM(doc, version); err != nil {
+			return fmt.Errorf("writing the artifacts SBOM of %s: %w", version, err)
+		}
+
 		// Stage local artifacts and write checksums
 		if err := d.impl.StageLocalArtifacts(pushBuildOptions); err != nil {
 			return fmt.Errorf("staging local artifacts: %w", err)
@@ -1200,20 +1349,6 @@ func (d *DefaultStage) StageArtifacts() error {
 		); err != nil {
 			return fmt.Errorf("pushing release artifacts: %w", err)
 		}
-
-		// Push container images into registry
-		if err := d.impl.PushContainerImages(pushBuildOptions); err != nil {
-			return fmt.Errorf("pushing container images: %w", err)
-		}
-
-		imageSubjects, err := d.impl.GetImageSubjects(
-			pushBuildOptions.Registry, version, buildDir,
-		)
-		if err != nil {
-			return fmt.Errorf("getting the pushed container images of version %s: %w", version, err)
-		}
-
-		imageStatement.Subject = append(imageStatement.Subject, imageSubjects...)
 
 		// Add artifacts to the attestation, this should get both release-images
 		// and gcs-stage directories in one call.
