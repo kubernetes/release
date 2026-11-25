@@ -193,19 +193,25 @@ func TestGenerateFinalAttestation(t *testing.T) { //nolint:paralleltest // sets 
 	tmpDir := t.TempDir()
 	t.Setenv("TMPDIR", tmpDir)
 
-	// A release SBOM with one binary, built and written like the stage run
-	// does in GenerateVersionArtifactsBOM
-	binary := filepath.Join(t.TempDir(), "kubectl")
-	require.NoError(t, os.WriteFile(binary, []byte("kubectl binary"), 0o600))
-
-	file := spdx.NewFile()
-	require.NoError(t, file.ReadSourceFile(binary))
-	file.Name = filepath.Join("bin", "linux", "amd64", "kubectl")
-	file.FileName = file.Name
+	// A release SBOM with a binary and a tarball, built and written like
+	// the stage run does in GenerateVersionArtifactsBOM
 	doc := spdx.NewDocument()
 	doc.Name = "Kubernetes Release " + version
 	doc.Namespace = "https://sbom.k8s.io/" + version + "/release"
-	require.NoError(t, doc.AddFile(file))
+
+	for _, name := range []string{
+		filepath.Join("bin", "linux", "amd64", "kubectl"),
+		"kubernetes-server-linux-amd64.tar.gz",
+	} {
+		artifact := filepath.Join(t.TempDir(), filepath.Base(name))
+		require.NoError(t, os.WriteFile(artifact, []byte(name), 0o600))
+
+		file := spdx.NewFile()
+		require.NoError(t, file.ReadSourceFile(artifact))
+		file.Name = name
+		file.FileName = name
+		require.NoError(t, doc.AddFile(file))
+	}
 
 	// An image package has a digest but no download location, which the
 	// SBOM writes as NONE
@@ -214,6 +220,19 @@ func TestGenerateFinalAttestation(t *testing.T) { //nolint:paralleltest // sets 
 	image.BuildID(image.Name)
 	image.Checksum = map[string]string{"SHA256": strings.Repeat("c", 64)}
 	require.NoError(t, doc.AddPackage(image))
+
+	// A binary in the image is a package with its path in the image as file
+	// name, which is not a file of the release either
+	inImage := spdx.NewPackage()
+	inImage.Name = "k8s.io/kubernetes"
+	inImage.FileName = "/usr/bin/kubectl"
+	inImage.BuildID("usr-bin-kubectl", inImage.Name)
+	inImage.Checksum = map[string]string{"SHA256": strings.Repeat("d", 64)}
+	image.AddRelationship(&spdx.Relationship{
+		FullRender: true,
+		Type:       spdx.CONTAINS,
+		Peer:       inImage,
+	})
 
 	sbom := filepath.Join(t.TempDir(), "kubernetes-release.spdx")
 	require.NoError(t, doc.Write(sbom))
@@ -253,10 +272,22 @@ func TestGenerateFinalAttestation(t *testing.T) { //nolint:paralleltest // sets 
 	)
 
 	// The subjects are only the files of the SBOM in the release bucket
-	require.Equal(t,
-		[]string{"gs://" + bucket + "/release/" + version + "/bin/linux/amd64/kubectl"},
-		subjectNames(final),
-	)
+	require.Equal(t, []string{
+		"gs://" + bucket + "/release/" + version + "/bin/linux/amd64/kubectl",
+		"gs://" + bucket + "/release/" + version + "/kubernetes-server-linux-amd64.tar.gz",
+	}, subjectNames(final))
+
+	// A file of the release without a checksum fails instead of being
+	// dropped from the subjects
+	unhashed := spdx.NewFile()
+	unhashed.Name = "kubernetes.tar.gz"
+	unhashed.FileName = unhashed.Name
+	unhashed.BuildID(unhashed.Name)
+	require.NoError(t, doc.AddFile(unhashed))
+	require.NoError(t, doc.Write(sbom))
+	require.ErrorContains(t, impl.generateFinalAttestation(
+		&ProvenanceCheckerOptions{StageBucket: bucket}, sbom, stage, version,
+	), "no name or checksum")
 }
 
 func TestGenerateFinalAttestationUnverified(t *testing.T) {
