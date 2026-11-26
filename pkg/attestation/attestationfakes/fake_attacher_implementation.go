@@ -39,13 +39,14 @@ type FakeAttacherImplementation struct {
 	attachBundleReturnsOnCall map[int]struct {
 		result1 error
 	}
-	HasBundleStub        func(context.Context, name.Digest, string, []byte) (bool, error)
+	HasBundleStub        func(context.Context, name.Digest, string, []byte, []byte) (bool, error)
 	hasBundleMutex       sync.RWMutex
 	hasBundleArgsForCall []struct {
 		arg1 context.Context
 		arg2 name.Digest
 		arg3 string
 		arg4 []byte
+		arg5 []byte
 	}
 	hasBundleReturns struct {
 		result1 bool
@@ -128,11 +129,16 @@ func (fake *FakeAttacherImplementation) AttachBundleReturnsOnCall(i int, result1
 	}{result1}
 }
 
-func (fake *FakeAttacherImplementation) HasBundle(arg1 context.Context, arg2 name.Digest, arg3 string, arg4 []byte) (bool, error) {
+func (fake *FakeAttacherImplementation) HasBundle(arg1 context.Context, arg2 name.Digest, arg3 string, arg4 []byte, arg5 []byte) (bool, error) {
 	var arg4Copy []byte
 	if arg4 != nil {
 		arg4Copy = make([]byte, len(arg4))
 		copy(arg4Copy, arg4)
+	}
+	var arg5Copy []byte
+	if arg5 != nil {
+		arg5Copy = make([]byte, len(arg5))
+		copy(arg5Copy, arg5)
 	}
 	fake.hasBundleMutex.Lock()
 	ret, specificReturn := fake.hasBundleReturnsOnCall[len(fake.hasBundleArgsForCall)]
@@ -141,13 +147,14 @@ func (fake *FakeAttacherImplementation) HasBundle(arg1 context.Context, arg2 nam
 		arg2 name.Digest
 		arg3 string
 		arg4 []byte
-	}{arg1, arg2, arg3, arg4Copy})
+		arg5 []byte
+	}{arg1, arg2, arg3, arg4Copy, arg5Copy})
 	stub := fake.HasBundleStub
 	fakeReturns := fake.hasBundleReturns
-	fake.recordInvocation("HasBundle", []interface{}{arg1, arg2, arg3, arg4Copy})
+	fake.recordInvocation("HasBundle", []interface{}{arg1, arg2, arg3, arg4Copy, arg5Copy})
 	fake.hasBundleMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3, arg4)
+		return stub(arg1, arg2, arg3, arg4, arg5)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -161,17 +168,17 @@ func (fake *FakeAttacherImplementation) HasBundleCallCount() int {
 	return len(fake.hasBundleArgsForCall)
 }
 
-func (fake *FakeAttacherImplementation) HasBundleCalls(stub func(context.Context, name.Digest, string, []byte) (bool, error)) {
+func (fake *FakeAttacherImplementation) HasBundleCalls(stub func(context.Context, name.Digest, string, []byte, []byte) (bool, error)) {
 	fake.hasBundleMutex.Lock()
 	defer fake.hasBundleMutex.Unlock()
 	fake.HasBundleStub = stub
 }
 
-func (fake *FakeAttacherImplementation) HasBundleArgsForCall(i int) (context.Context, name.Digest, string, []byte) {
+func (fake *FakeAttacherImplementation) HasBundleArgsForCall(i int) (context.Context, name.Digest, string, []byte, []byte) {
 	fake.hasBundleMutex.RLock()
 	defer fake.hasBundleMutex.RUnlock()
 	argsForCall := fake.hasBundleArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5
 }
 
 func (fake *FakeAttacherImplementation) HasBundleReturns(result1 bool, result2 error) {

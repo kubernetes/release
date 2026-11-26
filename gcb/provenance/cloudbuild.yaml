@@ -1,0 +1,84 @@
+# The signing build of SLSA build level 3: it writes and signs the provenance
+# of a stage build from outside of it, see krel provenance and
+# docs/krel/buildtypes/v2.
+#
+# It runs in k8s-releng-prod from a trigger managed in kubernetes/k8s.io,
+# never submitted by hand: a Pub/Sub trigger on the cloud-builds topic of
+# k8s-release, filtered on successful builds, sets _STAGE_BUILD_ID from the
+# buildId attribute of the message, and a second trigger on the rerun topic
+# sets it from the message a release manager publishes. The trigger runs the
+# build as krel-provenance-builder@k8s-releng-prod.iam.gserviceaccount.com,
+# the only account that can impersonate the signer in _SIGNER, or as the
+# mock builder for the mock signer. krel checks that the build is a
+# successful stage, started by the production or mock stage trigger and run
+# as krel-stage@k8s-release.iam.gserviceaccount.com, and that it staged to
+# the bucket and registry of the signer, the production ones for nomock
+# stages or the mock ones.
+timeout: 3600s
+
+steps:
+  # krel is a pinned release, verified against its signature from the
+  # release workflow of kubernetes/release before it runs.
+  - name: curlimages/curl:8.17.0@sha256:935d9100e9ba842cdb060de42472c7ca90cfe9a7c96e4dacb55e79e560b3ff40
+    dir: /workspace
+    args:
+      - "--fail"
+      - "--silent"
+      - "--show-error"
+      - "--location"
+      - "--retry"
+      - "5"
+      - "--remote-name-all"
+      - "https://github.com/kubernetes/release/releases/download/${_KREL_VERSION}/krel-amd64-linux"
+      - "https://github.com/kubernetes/release/releases/download/${_KREL_VERSION}/krel-amd64-linux.sigstore.json"
+
+  - name: gcr.io/projectsigstore/cosign:v2.6.1@sha256:68839b7f13dac5a6744a5d8818e984dd39183374e37855c19e14d623d9bc9037
+    dir: /workspace
+    args:
+      - "verify-blob"
+      - "krel-amd64-linux"
+      - "--bundle=krel-amd64-linux.sigstore.json"
+      - "--certificate-identity=https://github.com/kubernetes/release/.github/workflows/release.yml@refs/tags/${_KREL_VERSION}"
+      - "--certificate-oidc-issuer=https://token.actions.githubusercontent.com"
+
+  - name: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim@sha256:934bb306bc5a5e103baaf1f95d39d2ccc7e8bf0c778f6450ad7574783203df3b
+    dir: /workspace
+    entrypoint: bash
+    args:
+      - "-c"
+      - |
+        chmod +x krel-amd64-linux
+        ./krel-amd64-linux provenance \
+          --build-id="${_STAGE_BUILD_ID}" \
+          --project="${_STAGE_PROJECT}" \
+          --region="${_STAGE_REGION}" \
+          --signer="${_SIGNER}" \
+          --stage-trigger-id="${_STAGE_TRIGGER_ID}" \
+          --mock-stage-trigger-id="${_MOCK_STAGE_TRIGGER_ID}" \
+          --scratch-dir=/workspace/stage
+
+options:
+  # Required for builds that run as a user-specified service account.
+  logging: CLOUD_LOGGING_ONLY
+  diskSizeGb: 100
+
+substitutions:
+  # _STAGE_BUILD_ID is set by the trigger.
+  _STAGE_BUILD_ID: ""
+
+  _STAGE_PROJECT: "k8s-release"
+  _STAGE_REGION: "us-central1"
+
+  # _SIGNER defaults to the mock signer, so that a build without the
+  # production trigger never signs as the production signer.
+  _SIGNER: "krel-provenance-mock@k8s-releng-prod.iam.gserviceaccount.com"
+
+  # _STAGE_TRIGGER_ID and _MOCK_STAGE_TRIGGER_ID are the IDs of the triggers
+  # of production and mock stages in k8s-release, set by the trigger: only
+  # their builds get signed provenance, not builds submitted by hand.
+  _STAGE_TRIGGER_ID: ""
+  _MOCK_STAGE_TRIGGER_ID: ""
+
+  # _KREL_VERSION is the kubernetes/release release that runs, the first one
+  # with krel provenance once there is one; moving it is a reviewed change.
+  _KREL_VERSION: "v0.23.1"

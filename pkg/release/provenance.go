@@ -256,6 +256,17 @@ const stageVerificationTimeout = 5 * time.Minute
 // returns the in-toto statement it verified, the payload of its DSSE
 // envelope.
 func (di *defaultProvenanceCheckerImpl) verifyStageProvenance(data []byte, source string) ([]byte, error) {
+	return verifyProvenanceBundle(data, di.verifySignatures, StageProvenanceSigner, StageProvenanceBuilder, source)
+}
+
+// verifyProvenanceBundle verifies that data is a sigstore bundle of an in-toto
+// statement signed by the signer, a sigstore identity spec, about a build by
+// the builder from the source repository, which is not checked when empty,
+// and returns the statement it verified. verify checks the signatures, and
+// verifies them against the sigstore public good instance when nil.
+func verifyProvenanceBundle(
+	data []byte, verify func(plattestation.Envelope) error, signer, builder, source string,
+) ([]byte, error) {
 	if !attestation.IsSigstoreBundle(data) {
 		return nil, ErrStageProvenanceUnsigned
 	}
@@ -278,7 +289,6 @@ func (di *defaultProvenanceCheckerImpl) verifyStageProvenance(data []byte, sourc
 		return nil, fmt.Errorf("the sigstore bundle holds a %q payload, not an in-toto statement", payloadType)
 	}
 
-	verify := di.verifySignatures
 	if verify == nil {
 		verify = func(envelope plattestation.Envelope) error {
 			return envelope.Verify() //nolint:wrapcheck // wrapped by the caller
@@ -289,7 +299,7 @@ func (di *defaultProvenanceCheckerImpl) verifyStageProvenance(data []byte, sourc
 		return nil, fmt.Errorf("verifying signatures: %w", err)
 	}
 
-	if err := checkStageStatement(envelopes[0].GetStatement(), source); err != nil {
+	if err := checkProvenanceStatement(envelopes[0].GetStatement(), signer, builder, source); err != nil {
 		return nil, err
 	}
 
@@ -313,18 +323,18 @@ func verifyWithin(timeout time.Duration, verify func() error) error {
 	}
 }
 
-// checkStageStatement checks a stage provenance statement whose signatures
-// are verified against the signer, builder and source of a stage run. The
-// verifier checks the builder only from SLSA build level 2 on, where a
-// trusted builder has to be bound to its signer, so that is the level the
-// check requires. The stage run still meets level 1 only, since it signs its
-// provenance itself.
-func checkStageStatement(statement plattestation.Statement, source string) error {
+// checkProvenanceStatement checks a provenance statement whose signatures are
+// verified against the signer, builder and source, which is not checked when
+// empty. The verifier checks the builder only from SLSA build level 2 on,
+// where a trusted builder has to be bound to its signer, so that is the
+// level the check requires. A stage run still meets level 1 only, since it
+// signs its provenance itself.
+func checkProvenanceStatement(statement plattestation.Statement, signerSpec, builder, source string) error {
 	if statement == nil {
 		return errors.New("the sigstore bundle holds no in-toto statement")
 	}
 
-	signer, err := sapi.NewIdentityFromSpec(StageProvenanceSigner)
+	signer, err := sapi.NewIdentityFromSpec(signerSpec)
 	if err != nil {
 		return fmt.Errorf("parsing signer identity: %w", err)
 	}
@@ -337,23 +347,24 @@ func checkStageStatement(statement plattestation.Statement, source string) error
 	ctx, cancel := context.WithTimeout(context.Background(), stageVerificationTimeout)
 	defer cancel()
 
-	res, err := verifier.Verify(ctx, statement,
+	opts := []slsa.VerificationOption{
 		slsa.WithRequireSignatures(true),
 		slsa.WithExpectedSigners([]*sapi.Identity{signer}),
-		slsa.WithParam("trusted_builders", []string{StageProvenanceBuilder}),
-		slsa.WithParam("expected_source", source),
+		slsa.WithParam("trusted_builders", []string{builder}),
 		slsa.WithMinLevel(2),
 		slsa.WithSkipBuildTypeChecks(true),
-	)
+	}
+	if source != "" {
+		opts = append(opts, slsa.WithParam("expected_source", source))
+	}
+
+	res, err := verifier.Verify(ctx, statement, opts...)
 	if err == nil && !res.Pass() {
 		err = errors.New(failureReason(res))
 	}
 
 	if err != nil {
-		return fmt.Errorf(
-			"expected signer %s, builder %s and source %s: %w",
-			StageProvenanceSigner, StageProvenanceBuilder, source, err,
-		)
+		return fmt.Errorf("expected signer %s, builder %s and source %s: %w", signerSpec, builder, source, err)
 	}
 
 	return nil
@@ -475,35 +486,9 @@ func (di *defaultProvenanceCheckerImpl) checkProvenance(
 func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(
 	opts *ProvenanceCheckerOptions, sbom string, stage *intoto.Statement, version string,
 ) error {
-	pdoc, err := bom.Open(sbom)
+	subjects, err := finalSubjects(sbom, opts.StageBucket, version)
 	if err != nil {
-		return fmt.Errorf("parsing sbom for version %s from %s: %w", version, sbom, err)
-	}
-
-	doc, err := spdx.FromProtobom(pdoc)
-	if err != nil {
-		return fmt.Errorf("converting sbom for version %s: %w", version, err)
-	}
-
-	// The SBOM only provides the subjects: bom's statements declare the
-	// SLSA v0.2 predicate type and bom can't read the v1 predicate of the
-	// stage run. Only the files of the release are subjects. The SBOM
-	// describes them as files, and the images, their layers and the
-	// binaries in them as packages, which are not files in the bucket even
-	// when they carry a file name. This relies on AddBinariesToSBOM and
-	// AddTarfilesToSBOM adding the artifacts as top-level files: a file
-	// nested under a package is not listed.
-	subjects := make([]*intoto.ResourceDescriptor, 0, len(doc.Files))
-
-	// List the subjects with their full paths in the bucket
-	for _, id := range slices.Sorted(maps.Keys(doc.Files)) {
-		sub := doc.Files[id].ToProvenanceSubject()
-		if sub == nil {
-			return fmt.Errorf("file %s of the %s SBOM has no name or checksum to attest", id, version)
-		}
-
-		sub.Name = object.GcsPrefix + filepath.Join(opts.StageBucket, "release", version, sub.GetName())
-		subjects = append(subjects, sub)
+		return err
 	}
 
 	statement := &intoto.Statement{
@@ -530,6 +515,44 @@ func (di *defaultProvenanceCheckerImpl) generateFinalAttestation(
 	}
 
 	return nil
+}
+
+// finalSubjects returns the files of the release of the version that the
+// release SBOM sbom lists, as provenance subjects named by their path in
+// the release directory of the bucket.
+func finalSubjects(sbom, bucket, version string) ([]*intoto.ResourceDescriptor, error) {
+	pdoc, err := bom.Open(sbom)
+	if err != nil {
+		return nil, fmt.Errorf("parsing sbom for version %s from %s: %w", version, sbom, err)
+	}
+
+	doc, err := spdx.FromProtobom(pdoc)
+	if err != nil {
+		return nil, fmt.Errorf("converting sbom for version %s: %w", version, err)
+	}
+
+	// The SBOM only provides the subjects: bom's statements declare the
+	// SLSA v0.2 predicate type and bom can't read the v1 predicate of the
+	// stage run. Only the files of the release are subjects. The SBOM
+	// describes them as files, and the images, their layers and the
+	// binaries in them as packages, which are not files in the bucket even
+	// when they carry a file name. This relies on AddBinariesToSBOM and
+	// AddTarfilesToSBOM adding the artifacts as top-level files: a file
+	// nested under a package is not listed.
+	subjects := make([]*intoto.ResourceDescriptor, 0, len(doc.Files))
+
+	// List the subjects with their full paths in the bucket
+	for _, id := range slices.Sorted(maps.Keys(doc.Files)) {
+		sub := doc.Files[id].ToProvenanceSubject()
+		if sub == nil {
+			return nil, fmt.Errorf("file %s of the %s SBOM has no name or checksum to attest", id, version)
+		}
+
+		sub.Name = object.GcsPrefix + filepath.Join(bucket, "release", version, sub.GetName())
+		subjects = append(subjects, sub)
+	}
+
+	return subjects, nil
 }
 
 // inTotoPayloadType is the DSSE payload type of in-toto statements.

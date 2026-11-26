@@ -86,6 +86,23 @@ func signedImageStatement(payload string) *SignedStatement {
 	}
 }
 
+func TestAttachToImagesExactBundle(t *testing.T) {
+	t.Parallel()
+
+	mock := &attestationfakes.FakeAttacherImplementation{}
+	sut := NewAttacher(&AttacherOptions{Repository: "gcr.io/k8s-staging-kubernetes", ExactBundle: true})
+	sut.SetImpl(mock)
+
+	_, err := sut.AttachToImages(signedImageStatement(imageStatement()), []byte("bundle"))
+	require.NoError(t, err)
+	require.NotZero(t, mock.HasBundleCallCount())
+
+	for i := range mock.HasBundleCallCount() {
+		_, _, _, _, bundle := mock.HasBundleArgsForCall(i)
+		require.Equal(t, []byte("bundle"), bundle, "only this bundle counts as attached")
+	}
+}
+
 func TestAttachToImages(t *testing.T) {
 	t.Parallel()
 
@@ -110,7 +127,7 @@ func TestAttachToImages(t *testing.T) {
 			name:   "skips images that have the same statement already",
 			signed: signedImageStatement(imageStatement()),
 			prepare: func(mock *attestationfakes.FakeAttacherImplementation) {
-				mock.HasBundleCalls(func(_ context.Context, ref name.Digest, _ string, _ []byte) (bool, error) {
+				mock.HasBundleCalls(func(_ context.Context, ref name.Digest, _ string, _, _ []byte) (bool, error) {
 					return strings.Contains(ref.String(), "-amd64@"), nil
 				})
 			},
@@ -225,9 +242,10 @@ func TestAttachToImages(t *testing.T) {
 			require.Equal(t, len(tc.attached), mock.AttachBundleCallCount())
 
 			for i := range mock.HasBundleCallCount() {
-				_, _, predicateType, payload := mock.HasBundleArgsForCall(i)
+				_, _, predicateType, payload, bundle := mock.HasBundleArgsForCall(i)
 				require.Equal(t, provenanceType, predicateType)
 				require.Equal(t, tc.signed.Bundle.GetDsseEnvelope().GetPayload(), payload, "the statement decides")
+				require.Nil(t, bundle, "any bundle with the statement counts by default")
 			}
 
 			for i, ref := range tc.attached {
@@ -279,7 +297,7 @@ func TestAttachBundleToRegistry(t *testing.T) {
 			ours := imageStatement()
 			other := imageStatement(`{"name": "gcr.io/k8s-staging-kubernetes/pause", "digest": {"sha256": "` + digestA + `"}}`)
 
-			exists, err := impl.HasBundle(ctx, ref, provenanceType, []byte(ours))
+			exists, err := impl.HasBundle(ctx, ref, provenanceType, []byte(ours), nil)
 			require.NoError(t, err)
 			require.False(t, exists)
 
@@ -288,7 +306,7 @@ func TestAttachBundleToRegistry(t *testing.T) {
 			// count.
 			require.NoError(t, impl.AttachBundle(ctx, ref, testBundle(t, other), provenanceType))
 
-			exists, err = impl.HasBundle(ctx, ref, provenanceType, []byte(ours))
+			exists, err = impl.HasBundle(ctx, ref, provenanceType, []byte(ours), nil)
 			require.NoError(t, err)
 			require.False(t, exists)
 
@@ -311,7 +329,7 @@ func TestAttachBundleToRegistry(t *testing.T) {
 			large := append(testBundle(t, ours), bytes.Repeat([]byte(" "), maxBundleSize)...)
 			require.NoError(t, impl.AttachBundle(ctx, ref, large, provenanceType))
 
-			exists, err = impl.HasBundle(ctx, ref, provenanceType, []byte(ours))
+			exists, err = impl.HasBundle(ctx, ref, provenanceType, []byte(ours), nil)
 			require.NoError(t, err)
 			require.False(t, exists)
 
@@ -324,19 +342,33 @@ func TestAttachBundleToRegistry(t *testing.T) {
 				{MediaType: bundleV03MediaType, Size: 7, Digest: missing},
 			})
 
-			exists, err = impl.HasBundle(ctx, ref, provenanceType, []byte(ours))
+			exists, err = impl.HasBundle(ctx, ref, provenanceType, []byte(ours), nil)
 			require.NoError(t, err)
 			require.False(t, exists)
 
 			require.NoError(t, impl.AttachBundle(ctx, ref, testBundle(t, ours), provenanceType))
 
-			exists, err = impl.HasBundle(ctx, ref, provenanceType, []byte(ours))
+			exists, err = impl.HasBundle(ctx, ref, provenanceType, []byte(ours), nil)
 			require.NoError(t, err)
 			require.True(t, exists)
 
-			exists, err = impl.HasBundle(ctx, ref, "https://spdx.dev/Document", []byte(ours))
+			exists, err = impl.HasBundle(ctx, ref, "https://spdx.dev/Document", []byte(ours), nil)
 			require.NoError(t, err)
 			require.False(t, exists)
+
+			// With the exact bundle, another bundle of the same statement,
+			// like one signed by someone else, doesn't count.
+			ourBundle := append(testBundle(t, ours), ' ')
+
+			exists, err = impl.HasBundle(ctx, ref, provenanceType, []byte(ours), ourBundle)
+			require.NoError(t, err)
+			require.False(t, exists)
+
+			require.NoError(t, impl.AttachBundle(ctx, ref, ourBundle, provenanceType))
+
+			exists, err = impl.HasBundle(ctx, ref, provenanceType, []byte(ours), ourBundle)
+			require.NoError(t, err)
+			require.True(t, exists)
 		})
 	}
 }
@@ -424,7 +456,7 @@ func TestHasBundleChecksBlobs(t *testing.T) {
 			tampered.digest, tampered.data = storedDigest.String(), padded(ours)
 			tampered.Unlock()
 
-			exists, err := impl.HasBundle(ctx, ref, provenanceType, []byte(ours))
+			exists, err := impl.HasBundle(ctx, ref, provenanceType, []byte(ours), nil)
 			require.NoError(t, err)
 			require.False(t, exists)
 		})

@@ -62,6 +62,12 @@ type AttacherOptions struct {
 
 	// Timeout bounds the registry requests for one image.
 	Timeout time.Duration
+
+	// ExactBundle makes only a referrer with the same bundle count as
+	// attached already, not any one with the same statement. A statement
+	// built from public data can be signed by anyone who can write to the
+	// repository, and such a bundle must not stop the real one.
+	ExactBundle bool
 }
 
 // Attacher attaches signed statements to the container images they are
@@ -88,7 +94,7 @@ func (a *Attacher) SetImpl(impl attacherImplementation) {
 
 //counterfeiter:generate . attacherImplementation
 type attacherImplementation interface {
-	HasBundle(ctx context.Context, ref name.Digest, predicateType string, payload []byte) (bool, error)
+	HasBundle(ctx context.Context, ref name.Digest, predicateType string, payload, bundle []byte) (bool, error)
 	AttachBundle(ctx context.Context, ref name.Digest, bundle []byte, predicateType string) error
 }
 
@@ -158,7 +164,12 @@ func (a *Attacher) attach(ref name.Digest, bundle []byte, predicateType string, 
 	ctx, cancel := context.WithTimeout(context.Background(), a.options.Timeout)
 	defer cancel()
 
-	exists, err := a.impl.HasBundle(ctx, ref, predicateType, payload)
+	var exact []byte
+	if a.options.ExactBundle {
+		exact = bundle
+	}
+
+	exists, err := a.impl.HasBundle(ctx, ref, predicateType, payload, exact)
 	if err != nil {
 		return false, fmt.Errorf("looking up the attestations of %s: %w", ref, err)
 	}
@@ -209,8 +220,11 @@ func imageReference(subject *intoto.ResourceDescriptor, repository string) (name
 type defaultAttacherImpl struct{}
 
 // HasBundle returns whether the image has a sigstore bundle referrer of the
-// predicate type whose DSSE envelope carries the payload.
-func (*defaultAttacherImpl) HasBundle(ctx context.Context, ref name.Digest, predicateType string, payload []byte) (bool, error) {
+// predicate type whose DSSE envelope carries the payload or, if bundle is set,
+// which is that bundle.
+func (*defaultAttacherImpl) HasBundle(
+	ctx context.Context, ref name.Digest, predicateType string, payload, bundle []byte,
+) (bool, error) {
 	opts := []remote.Option{remote.WithContext(ctx), remote.WithAuthFromKeychain(google.Keychain)}
 
 	index, err := remote.Referrers(ref, opts...)
@@ -228,7 +242,7 @@ func (*defaultAttacherImpl) HasBundle(ctx context.Context, ref name.Digest, pred
 			continue
 		}
 
-		same, err := bundleCarries(ref.Context().Digest(manifest.Manifests[i].Digest.String()), payload, opts)
+		same, err := bundleCarries(ref.Context().Digest(manifest.Manifests[i].Digest.String()), payload, bundle, opts)
 		if err != nil {
 			return false, err
 		}
@@ -242,10 +256,10 @@ func (*defaultAttacherImpl) HasBundle(ctx context.Context, ref name.Digest, pred
 }
 
 // bundleCarries returns whether a sigstore bundle layer of the referrer has
-// a DSSE envelope with the payload. Only layers which the manifest of the
+// a DSSE envelope with the payload or, if bundle is set, is that bundle. Only layers which the manifest of the
 // referrer names as sigstore bundles of at most maxBundleSize get read, so
 // that a large layer planted on an image can't exhaust the signing step.
-func bundleCarries(referrer name.Digest, payload []byte, opts []remote.Option) (bool, error) {
+func bundleCarries(referrer name.Digest, payload, bundle []byte, opts []remote.Option) (bool, error) {
 	img, err := remote.Image(referrer, opts...)
 	if err != nil {
 		return false, fmt.Errorf("reading the referrer %s: %w", referrer, err)
@@ -268,6 +282,14 @@ func bundleCarries(referrer name.Digest, payload []byte, opts []remote.Option) (
 		data, err := readBundleLayer(img, desc.Digest)
 		if err != nil {
 			logrus.Warnf("Skipping a layer of %s which can't be read: %v", referrer, err)
+
+			continue
+		}
+
+		if bundle != nil {
+			if bytes.Equal(data, bundle) {
+				return true, nil
+			}
 
 			continue
 		}
