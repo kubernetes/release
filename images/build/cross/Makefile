@@ -49,8 +49,8 @@ IMAGE_VERSION = $(KUBERNETES_VERSION)-$(BUILD_METADATA)
 
 PLATFORMS ?= linux/amd64 linux/arm64 linux/ppc64le linux/s390x
 
-KUBE_DYNAMIC_CROSSPLATFORMS ?= "arm64 armhf i386 ppc64el s390x"
-KUBE_CROSSPLATFORMS ?= "linux/386 linux/arm linux/arm64 linux/ppc64le linux/s390x darwin/amd64 windows/amd64 windows/386"
+KUBE_DYNAMIC_CROSSPLATFORMS ?= arm64 armhf i386 ppc64el s390x
+KUBE_CROSSPLATFORMS ?= linux/386 linux/arm linux/arm64 linux/ppc64le linux/s390x darwin/amd64 windows/amd64 windows/386
 
 ARCHS = $(patsubst linux/%,%,$(PLATFORMS))
 
@@ -77,8 +77,8 @@ container: check-env
 			--build-arg=PROTOBUF_VERSION=$(PROTOBUF_VERSION) \
 			--build-arg=TARGETPLATFORM=$${platform} \
 			--build-arg=GO_VERSION=$(GO_VERSION) \
-			--build-arg=KUBE_DYNAMIC_CROSSPLATFORMS=$(KUBE_DYNAMIC_CROSSPLATFORMS) \
-			--build-arg=KUBE_CROSSPLATFORMS=$(KUBE_CROSSPLATFORMS) \
+			--build-arg=KUBE_DYNAMIC_CROSSPLATFORMS="$(KUBE_DYNAMIC_CROSSPLATFORMS)" \
+			--build-arg=KUBE_CROSSPLATFORMS="$(KUBE_CROSSPLATFORMS)" \
 			--file $(TYPE)/Dockerfile \
 			.; \
 	done
