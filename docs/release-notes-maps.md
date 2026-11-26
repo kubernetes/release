@@ -35,7 +35,7 @@ Pull Request. The second part provides a mechanism for adding more data
 to a release note to provide more context or additional
 information to a release note.
 
-### Overriding Fields: the `release-note` section
+### Overriding Fields: the `releasenote` section
 
 The first part of the YAML in a map file overrides the data defined in the release note pull request. Each of the fields corresponds to a PR data field. A map file
 can contain any of them. An example:
@@ -44,7 +44,7 @@ can contain any of them. An example:
 ---
 pr: 123
 commit: 1a89038915fe77d73bf7c9cfa8f2ce123a464c82
-release-note:  
+releasenote:
   text: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
   author: kubernetes-ci-robot
   areas:
@@ -61,7 +61,10 @@ release-note:
       url: https://github.com/kubernetes/enhancements/tree/master/keps/sig-release/1733-release-notes
       type: kep
 ```
-Any of the fields defined in a map file fully overrides its PR counterpart. 
+Any of the fields defined in a map file fully overrides its PR counterpart.
+A map that omits `do_not_publish` does not clear a PR-level
+`release-note-none` exclusion. To suppress a mapped note explicitly, set
+`releasenote.do_not_publish: true`.
 
 ### Adding data: The `datafields` section
 
@@ -125,4 +128,3 @@ with the provider by its schema (for example "gs://"). Then hack the
 `notes.NewProviderFromInitString` function to recognize it. Finally,
 add your file reading logic and implement the `GetMapsForPR()` hook to
 return the data when called.
-
